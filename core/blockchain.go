@@ -1,12 +1,12 @@
 package core
 
 import(
-  "boltdb/bolt"
+  "github.com/boltdb/bolt"
 )
 
 type Blockchain struct {
   tip []byte
-  db *bold.DB
+  db *bolt.DB
 }
 
 func (bc *Blockchain) AddBlock(data string) {
@@ -22,7 +22,7 @@ func (bc *Blockchain) AddBlock(data string) {
     err := b.Put(newBlock.Hash, newBlock.Serialize())
     err = b.Put([]byte("l"), newBlock.Hash)
     bc.tip = newBlock.Hash
-    retur nil
+    return nil
   })
 }
 

@@ -1,12 +1,12 @@
 package core
 
 import (
-  "boltdb/bolt"
+  "github.com/boltdb/bolt"
 )
 
 type BlockchainIterator struct {
   currentHash []byte
-  db *bold.DB
+  db *bolt.DB
 }
 
 
