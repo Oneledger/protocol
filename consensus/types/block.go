@@ -15,8 +15,7 @@ import (
 	tps "github.com/tendermint/tendermint/types"
 )
 
-// Block defines the atomic unit of a Tendermint blockchain.
-// TODO: add Version byte
+// Block defines the atomic unit for oneledger blockchain.
 type Block struct {
 	*Header    `json:"header"`
 	*Data      `json:"data"`

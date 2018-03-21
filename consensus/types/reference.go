@@ -6,3 +6,7 @@ type Reference struct {
 	Type string `json:"type"`
 	Url url.URL `json:"type"`
 }
+
+func verify(){
+
+}
