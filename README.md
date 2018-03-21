@@ -1,2 +1,2 @@
 # prototype-api
-API for Bitcoin, Ethereum.
+Client for Bitcoin, Ethereum JSON RPC API.
