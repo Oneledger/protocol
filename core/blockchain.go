@@ -1,12 +1,16 @@
 package core
 
 import(
-  "boltdb/bolt"
+  "github.com/boltdb/bolt"
+  "log"
 )
+
+const blockBucket = "blockBucket" //it is like a table name
+const dbFile = "fancyBlock.db" //Mmmm, isn't it fancy?
 
 type Blockchain struct {
   tip []byte
-  db *bold.DB
+  db *bolt.DB
 }
 
 func (bc *Blockchain) AddBlock(data string) {
@@ -16,14 +20,25 @@ func (bc *Blockchain) AddBlock(data string) {
     lastHash = b.Get([]byte("l"))
     return nil
   })
+  if err != nil {
+    log.Panic(err)
+  }
   newBlock := NewBlock(data, lastHash)
   err = bc.db.Update(func(tx *bolt.Tx) error{
-    b := tx.Bucket([]byte(blocksBucket))
+    b := tx.Bucket([]byte(blockBucket))
     err := b.Put(newBlock.Hash, newBlock.Serialize())
     err = b.Put([]byte("l"), newBlock.Hash)
+    if err != nil {
+      log.Panic(err)
+    }
     bc.tip = newBlock.Hash
-    retur nil
+    return nil
   })
+  
+}
+
+func (bc *Blockchain) CloseDB() {
+  bc.db.Close()
 }
 
 
@@ -40,17 +55,23 @@ func NewBlockchain() *Blockchain {
   db, err := bolt.Open(dbFile, 0600, nil)
 
   err = db.Update(func(tx *bolt.Tx) error {
-    b := tx.Bucket([]byte(blocksBucket))
+    b := tx.Bucket([]byte(blockBucket))
     if b == nil {
       genesis := NewGenesisBlock()
-      b, err := tx.CreateBucket([]byte(blocksBucket))
+      b, err := tx.CreateBucket([]byte(blockBucket))
       err = b.Put(genesis.Hash, genesis.Serialize())
       err = b.Put([]byte("l"), genesis.Hash)//l will store the hash of last block
+      return err
     }else{
       tip = b.Get([]byte("l"))
     }
     return nil
   })
+
+  if err != nil {
+    log.Panic(err)
+  }
+
   bc := Blockchain{tip, db}
   return &bc
 }
