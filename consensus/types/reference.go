@@ -6,6 +6,7 @@ import (
 	"bytes"
 	"errors"
 	cmn "github.com/tendermint/tmlibs/common"
+	"github.com/tendermint/tmlibs/merkle"
 )
 
 var (
@@ -17,15 +18,19 @@ var (
 
 type Reference struct {
 	Type string `json:"type"`
-	Url url.URL `json:"type"`
+	Url url.URL `json:"url"`
 	ReferenceHash cmn.HexBytes `json:"referenceHash"`
 }
 
-func (referenceA *Reference) verify(referenceType string, hash cmn.HexBytes) error {
-	if referenceA.Type != referenceType{
+func (reference *Reference) verify(referenceType string, hash cmn.HexBytes) error {
+	if reference.Type != referenceType{
 		return ErrRefInvalidType
-	}else if bytes.Equal(referenceA.ReferenceHash.Bytes(), hash.Bytes()){
+	}else if bytes.Equal(reference.ReferenceHash.Bytes(), hash.Bytes()){
 		return ErrRefInvalidHash
 	}
 	return nil
+}
+
+func (reference *Reference) Hash() cmn.HexBytes {
+	return merkle.SimpleHashFromBytes([]byte(reference.Type + reference.Url.String()))
 }
