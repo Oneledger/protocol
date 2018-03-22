@@ -19,6 +19,7 @@ import (
 type Block struct {
 	*Header    `json:"header"`
 	*Data      `json:"data"`
+	*Reference `json:"reference"`
 	Evidence   EvidenceData `json:"evidence"`
 	LastCommit *Commit      `json:"last_commit"`
 }
@@ -400,7 +401,6 @@ type Data struct {
 	// NOTE: not all txs here are valid.  We're just agreeing on the order first.
 	// This means that block.AppHash does not include these txs.
 	Txs tps.Txs `json:"txs"`
-	Reference Reference `json:"reference"`
 
 	// Volatile
 	hash cmn.HexBytes
