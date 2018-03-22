@@ -1,6 +1,13 @@
 package core
 
-import "fmt"
+import (
+  "fmt"
+  "bytes"
+  "crypto/sha256"
+  "encoding/gob"
+  "encoding/hex"
+  "log"
+)
 
 type TxInput struct {
   TxId []byte
@@ -14,12 +21,25 @@ type TxOutput struct {
 }
 
 type Transaction struct {
-  Id []byte
+  ID []byte
   Input []TxInput
   Output []TxOutput
 }
 
-const reward = 1024
+const reward = 10
+
+func (tx *Transaction) setID() {
+  var encoded bytes.Buffer
+  var hash [32]byte
+
+  enc := gob.NewEncoder(&encoded)
+  err := enc.Encode(tx)
+  if err != nil {
+    log.Panic(err)
+  }
+  hash = sha256.Sum256(encoded.Bytes())
+  tx.ID = hash[:]
+}
 
 func CoinbaseTx(to string, data string) *Transaction {
   if data == "" {
@@ -28,5 +48,6 @@ func CoinbaseTx(to string, data string) *Transaction {
   txin := TxInput{[]byte{}, 0, data}
   txout := TxOutput{reward, to}
   tx := Transaction{nil, []TxInput{txin}, []TxOutput{txout}}
+  tx.setID()
   return &tx
 }

@@ -31,18 +31,19 @@ func (bc *Blockchain) Iterator() *BlockchainIterator {
   return &BlockchainIterator{bc.tip, bc.db}
 }
 
-func NewGenesisBlock() *Block {
-  return NewBlock("Genesis Block", []byte{})
+func NewGenesisBlock(coinbase *Transaction) *Block {
+  return NewBlock([]*Transaction{coinbase}, []byte{})
 }
 
-func NewBlockchain() *Blockchain {
+func NewBlockchain(address string) *Blockchain {
   var tip []byte
   db, err := bolt.Open(dbFile, 0600, nil)
 
   err = db.Update(func(tx *bolt.Tx) error {
     b := tx.Bucket([]byte(blocksBucket))
     if b == nil {
-      genesis := NewGenesisBlock()
+      coinbaseTx := CoinbaseTx(address, "")
+      genesis := NewGenesisBlock(coinbaseTx)
       b, err := tx.CreateBucket([]byte(blocksBucket))
       err = b.Put(genesis.Hash, genesis.Serialize())
       err = b.Put([]byte("l"), genesis.Hash)//l will store the hash of last block
