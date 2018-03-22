@@ -34,7 +34,7 @@ func (bc *Blockchain) AddBlock(data string) {
     bc.tip = newBlock.Hash
     return nil
   })
-  
+
 }
 
 func (bc *Blockchain) CloseDB() {
@@ -57,14 +57,9 @@ func NewBlockchain(address string) *Blockchain {
   err = db.Update(func(tx *bolt.Tx) error {
     b := tx.Bucket([]byte(blockBucket))
     if b == nil {
-<<<<<<< HEAD
       coinbaseTx := CoinbaseTx(address, "")
       genesis := NewGenesisBlock(coinbaseTx)
       b, err := tx.CreateBucket([]byte(blocksBucket))
-=======
-      genesis := NewGenesisBlock()
-      b, err := tx.CreateBucket([]byte(blockBucket))
->>>>>>> master
       err = b.Put(genesis.Hash, genesis.Serialize())
       err = b.Put([]byte("l"), genesis.Hash)//l will store the hash of last block
       return err
