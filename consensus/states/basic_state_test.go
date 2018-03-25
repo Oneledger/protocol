@@ -16,7 +16,6 @@ import (
 	dbm "github.com/tendermint/tmlibs/db"
 
 	cfg "github.com/tendermint/tendermint/config"
-	"github.com/tendermint/tendermint/types"
 
 )
 

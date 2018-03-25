@@ -12,7 +12,6 @@ import (
 var (
 	ErrRefInvalidType	            = errors.New("Invalid Reference Type")
 	ErrRefInvalidHash			    = errors.New("Invalid Reference Hash")
-	ErrRefInvalidUrl				= errors.New("Invalid Reference Url")
 )
 
 
