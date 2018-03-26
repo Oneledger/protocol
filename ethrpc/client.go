@@ -170,3 +170,25 @@ func (rpc *EthRPCClient) EthGetBlockByHash(hash string, withTransactions bool) (
 func (rpc *EthRPCClient) EthGetBlockByNumber(number int, withTransactions bool) (*Block, error) {
 	return rpc.getBlock("eth_getBlockByNumber", withTransactions, common.IntToHex(number), withTransactions)
 }
+
+func (rpc *EthRPCClient) getTransaction(method string, params ...interface{}) (*Transaction, error) {
+	transaction := new(Transaction)
+
+	err := rpc.call(method, transaction, params...)
+	return transaction, err
+}
+
+// EthGetTransactionByHash returns the information about a transaction requested by transaction hash.
+func (rpc *EthRPCClient) EthGetTransactionByHash(hash string) (*Transaction, error) {
+	return rpc.getTransaction("eth_getTransactionByHash", hash)
+}
+
+// EthGetTransactionByBlockHashAndIndex returns information about a transaction by block hash and transaction index position.
+func (rpc *EthRPCClient) EthGetTransactionByBlockHashAndIndex(blockHash string, transactionIndex int) (*Transaction, error) {
+	return rpc.getTransaction("eth_getTransactionByBlockHashAndIndex", blockHash, common.IntToHex(transactionIndex))
+}
+
+// EthGetTransactionByBlockNumberAndIndex returns information about a transaction by block number and transaction index position.
+func (rpc *EthRPCClient) EthGetTransactionByBlockNumberAndIndex(blockNumber, transactionIndex int) (*Transaction, error) {
+	return rpc.getTransaction("eth_getTransactionByBlockNumberAndIndex", common.IntToHex(blockNumber), common.IntToHex(transactionIndex))
+}
