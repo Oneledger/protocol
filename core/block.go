@@ -2,7 +2,6 @@ package core
 import (
     "bytes"
     "crypto/sha256"
-    "strconv"
     "time"
     "encoding/gob"
     "log"
@@ -27,12 +26,12 @@ func (b *Block) HashTransaction() []byte {
   return txHash[:]
 }
 
-func (b *Block) SetHash() {
-  timestamp := []byte(strconv.FormatInt(b.Timestamp, 10))
-  headers := bytes.Join([][]byte{b.PrevBlockHash,b.Data, timestamp},[]byte{})
-  hash := sha256.Sum256(headers)
-  b.Hash = hash[:]
-}
+// func (b *Block) SetHash() {
+//   timestamp := []byte(strconv.FormatInt(b.Timestamp, 10))
+//   headers := bytes.Join([][]byte{b.PrevBlockHash,b.Data, timestamp},[]byte{})
+//   hash := sha256.Sum256(headers)
+//   b.Hash = hash[:]
+// }
 
 func NewBlock(transactions []*Transaction, prevBlockHash []byte) *Block {
   block := &Block{time.Now().Unix(), transactions, prevBlockHash, []byte{},int64(0)}

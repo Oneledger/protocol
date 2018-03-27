@@ -13,7 +13,7 @@ type Blockchain struct {
   db *bolt.DB
 }
 
-func (bc *Blockchain) AddBlock(data string) {
+func (bc *Blockchain) AddBlock(transactions []*Transaction) {
   var lastHash []byte
   err := bc.db.View(func(tx *bolt.Tx) error {
     b := tx.Bucket([]byte(blockBucket))
@@ -23,7 +23,7 @@ func (bc *Blockchain) AddBlock(data string) {
   if err != nil {
     log.Panic(err)
   }
-  newBlock := NewBlock(data, lastHash)
+  newBlock := NewBlock(transactions, lastHash)
   err = bc.db.Update(func(tx *bolt.Tx) error{
     b := tx.Bucket([]byte(blockBucket))
     err := b.Put(newBlock.Hash, newBlock.Serialize())
@@ -59,7 +59,7 @@ func NewBlockchain(address string) *Blockchain {
     if b == nil {
       coinbaseTx := CoinbaseTx(address, "")
       genesis := NewGenesisBlock(coinbaseTx)
-      b, err := tx.CreateBucket([]byte(blocksBucket))
+      b, err := tx.CreateBucket([]byte(blockBucket))
       err = b.Put(genesis.Hash, genesis.Serialize())
       err = b.Put([]byte("l"), genesis.Hash)//l will store the hash of last block
       return err

@@ -1,11 +1,9 @@
 package core
 
 import (
-  "fmt"
   "bytes"
   "crypto/sha256"
   "encoding/gob"
-  "encoding/hex"
   "log"
 )
 
