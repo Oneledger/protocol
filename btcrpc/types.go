@@ -4,8 +4,8 @@ package btcrpc
 type Block struct {
 	// The block hash
 	Hash string `json:"hash"`
-	// // The number of confirmations
-	// Confirmations uint64 `json:"confirmations"`
+	// The number of confirmations
+	Confirmations uint64 `json:"confirmations"`
 	// The block size
 	Size uint64 `json:"size"`
 	// The block height or index
@@ -20,8 +20,8 @@ type Block struct {
 	Nonce uint64 `json:"nonce"`
 	// The bits
 	Bits string `json:"bits"`
-	// // The difficulty
-	// Difficulty float64 `json:"difficulty"`
+	// The difficulty
+	Difficulty float64 `json:"difficulty"`
 	// Total amount of work in active chain, in hexadecimal
 	Chainwork string `json:"chainwork,omitempty"`
 	// The hash of the previous block
