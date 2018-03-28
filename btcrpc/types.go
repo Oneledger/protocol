@@ -63,6 +63,23 @@ type Vout struct {
 	ScriptPubKey ScriptPubKey `json:"scriptPubKey"`
 }
 
+// UnspendableOutput - represents a unspendable (locked) output
+type UnspendableOutput struct {
+	TxId string `json:"txid"`
+	Vout uint64 `json:"vout"`
+}
+
+// ValidateAddressResponse - represents a response to "validateaddress" call
+type ValidateAddressResponse struct {
+	IsValid      bool   `json:"isvalid"`
+	Address      string `json:"address"`
+	IsMine       bool   `json:"ismine"`
+	IsScript     bool   `json:"isscript"`
+	PubKey       string `json:"pubkey"`
+	IsCompressed bool   `json:"iscompressed"`
+	Account      string `json:"account"`
+}
+
 // Transaction - represents a transaction
 type Transaction struct {
 	Amount          float64              `json:"amount"`
