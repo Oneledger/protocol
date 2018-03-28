@@ -34,11 +34,18 @@ type rpcRequest struct {
 	Params  interface{} `json:"params"`
 }
 
-// rpcError represents a RCP error
-/*type rpcError struct {
-	Code    int16  `json:"code"`
-	Message string `json:"message"`
-}*/
+// handleError - handle error returned by client.call
+func handleError(err error, r *rpcResponse) error {
+	if err != nil {
+		return err
+	}
+	if r.Err != nil {
+		rr := r.Err.(map[string]interface{})
+		return errors.New(fmt.Sprintf("(%v) %s", rr["code"].(float64), rr["message"].(string)))
+
+	}
+	return nil
+}
 
 type rpcResponse struct {
 	Id     int64           `json:"id"`
