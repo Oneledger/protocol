@@ -17,3 +17,10 @@ type EventDataNewPrevote struct {
 	Vote *Vote `json:"vote"`
 }
 
+type EventDataNewCommit struct {
+	Commit *Commit `json:"commit"`
+}
+
+type EventDataNewPrecommit struct {
+	Precommit *Commit `json:"precommit"`
+}
