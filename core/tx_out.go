@@ -11,9 +11,7 @@ type TxOutput struct {
 }
 
 func (out *TxOutput) AssignPubKeyHash(address []byte) {
-  pubKeyHash := utils.Base58Decode(address)
-  pubKeyHash = pubKeyHash[1:len(pubKeyHash) - 4]
-  out.PubKeyHash = pubKeyHash
+  out.PubKeyHash = utils.HashPubKey(address)
 }
 
 func (out *TxOutput) VerifyTxOutput(pubKeyHash []byte) bool {
