@@ -1,7 +1,7 @@
 package core
 
 import (
-  "../utils",
+  "../utils"
   "bytes"
 )
 
