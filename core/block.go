@@ -2,6 +2,10 @@ package core
 import (
     "time"
     "../utils"
+
+    "bytes"
+    "encoding/gob"
+    "log"
 )
 
 type Block struct {
@@ -32,14 +36,14 @@ func (block *Block) HashTransactions () []byte{
   for _, tx := range block.Transactions {
     transactions = append(transactions, tx.Serialize())
   }
-  mTree := utils.NewMerkleNode(transactions)
+  mTree := utils.NewMerkleTree(transactions)
   return mTree.RootNode.Data
 }
 
 func (block *Block) Serialize() []byte {
   var result bytes.Buffer
   encoder := gob.NewEncoder(&result)
-  err := encoder.Encode(b)
+  err := encoder.Encode(block)
   if err != nil {
     log.Panic(err)
   }
