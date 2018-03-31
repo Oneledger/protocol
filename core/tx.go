@@ -154,6 +154,9 @@ func (tx *Tx) String() string {
 	return strings.Join(lines, "\n")
 }
 
+func NewUTXOTransaction(wallet *Wallet ,to string, amount int, utxoSet *UTXOSet) *Tx {
+  return &Tx{} //TODO: implementation
+}
 
 
 
