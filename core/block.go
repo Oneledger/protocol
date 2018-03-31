@@ -1,11 +1,7 @@
 package core
 import (
-    "bytes"
-    "crypto/sha256"
-    "strconv"
     "time"
-    "encoding/gob"
-    "log"
+    "../utils"
 )
 
 type Block struct {
@@ -13,13 +9,13 @@ type Block struct {
   Transactions  []*Tx
   PrevBlockHash []byte
   Hash          []byte
-  Nonce         int
+  Nonce         int64
   Height        int
 }
 
 func NewBlock (transactions []*Tx, prevBlockHash []byte, height int) *Block {
   block := Block{time.Now().Unix(), transactions, prevBlockHash, []byte{}, 0, height}
-  pow := NewProofOfWork(block) //TODO: Yeah, we are going to remove this
+  pow := NewProofOfWork(&block) //TODO: Yeah, we are going to remove this
   nonce, hash := pow.Run()
 
   block.Hash = hash[:]
@@ -28,5 +24,34 @@ func NewBlock (transactions []*Tx, prevBlockHash []byte, height int) *Block {
 }
 
 func NewGenesisBlock(coinbase *Tx) *Block {
-  return NewBlock([]*Transactions{coinbase}, []byte{}, 0)
+  return NewBlock([]*Tx{coinbase}, []byte{}, 0)
+}
+
+func (block *Block) HashTransactions () []byte{
+  var transactions [][]byte
+  for _, tx := range block.Transactions {
+    transactions = append(transactions, tx.Serialize())
+  }
+  mTree := utils.NewMerkleNode(transactions)
+  return mTree.RootNode.Data
+}
+
+func (block *Block) Serialize() []byte {
+  var result bytes.Buffer
+  encoder := gob.NewEncoder(&result)
+  err := encoder.Encode(b)
+  if err != nil {
+    log.Panic(err)
+  }
+  return result.Bytes()
+}
+
+func DeserializeBlock(d []byte) * Block {
+  var block Block
+  decoder := gob.NewDecoder(bytes.NewReader(d))
+  err := decoder.Decode(&block)
+  if err != nil {
+    log.Panic(err)
+  }
+  return &block
 }

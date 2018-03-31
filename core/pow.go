@@ -2,12 +2,11 @@ package core
 
 import (
   "bytes"
-  "encoding/binary"
-  "log"
   "math"
   "crypto/sha256"
   "math/big"
   "fmt"
+  "../utils"
 )
 
 const targetBits = 24 //hard code for now
@@ -18,15 +17,6 @@ type ProofOfWork struct {
 	target *big.Int
 }
 
-// IntToHex converts an int64 to a byte array
-func IntToHex(num int64) []byte {
-    buff := new(bytes.Buffer)
-    err := binary.Write(buff, binary.BigEndian, num)
-    if err != nil {
-        log.Panic(err)
-    }
-    return buff.Bytes()
-}
 
 func NewProofOfWork(b *Block) *ProofOfWork {
   target := big.NewInt(1)
@@ -37,19 +27,19 @@ func NewProofOfWork(b *Block) *ProofOfWork {
 func (pow *ProofOfWork) PrepareData(nonce int64) []byte {
   data := bytes.Join([][]byte{
       pow.block.PrevBlockHash,
-      pow.block.Data,
-      IntToHex(pow.block.Timestamp),
-      IntToHex(int64(targetBits)),
-      IntToHex(int64(nonce)),
+      pow.block.HashTransactions(),
+      utils.IntToHex(pow.block.Timestamp),
+      utils.IntToHex(int64(targetBits)),
+      utils.IntToHex(int64(nonce)),
     },[]byte{})
   return data
 }
 
-func (pow *ProofOfWork) Mine() (int64, []byte) {
+func (pow *ProofOfWork) Run() (int64, []byte) {
   var hashInt big.Int
   var hash [32]byte
   nonce := int64(0)
-  fmt.Printf("Mining the block containing \"%s\"\n",pow.block.Data)
+  fmt.Printf("Mining the block")
   for nonce < maxNonce {
     data := pow.PrepareData(nonce)
     hash = sha256.Sum256(data)

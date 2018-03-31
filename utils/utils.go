@@ -5,6 +5,7 @@ import (
   "encoding/binary"
   "log"
   "crypto/sha256"
+  "encoding/gob"
 
   "golang.org/x/crypto/ripemd160"
 )
@@ -33,4 +34,22 @@ func HashPubKey(pubKey []byte) []byte {
     log.Panic(err)
   }
   return ripemd160Hasher.Sum(nil);
+}
+
+func Serialize (anything interface{}) []byte {
+  var encoded bytes.Buffer
+  encoder := gob.NewEncoder(&encoded)
+  err := encoder.Encode(anything)
+  if err != nil {
+    log.Panic(err)
+  }
+  return encoded.Bytes()
+}
+func Deserialize(data []byte, anything interface{}) interface{} {
+  decoder := gob.NewDecoder(bytes.NewReader(data))
+	err := decoder.Decode(&anything)
+	if err != nil {
+		log.Panic(err)
+	}
+	return anything
 }
