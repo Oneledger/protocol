@@ -154,6 +154,22 @@ func (tx *Tx) String() string {
 	return strings.Join(lines, "\n")
 }
 
+func NewCoinbaseTx(to, data string) *Tx {
+  if data == "" {
+    randData := make([]byte, 20)
+    _, err := rand.Read(randData)
+    if err != nil {
+      log.Panic(err)
+    }
+    data = fmt.Sprintf("%x", randData)
+  }
+  txin := TxInput{[]byte{}, -1, nil, []byte(data)}
+  txout := NewTxOutput(subsidy, to)
+  tx := Tx{nil, []TxInput{txin}, []TxOutput{*txout}}
+  tx.Id = tx.Hash()
+  return &tx
+}
+
 func NewUTXOTransaction(wallet *Wallet ,to string, amount int, utxoSet *UTXOSet) *Tx {
   return &Tx{} //TODO: implementation
 }
@@ -166,5 +182,4 @@ func NewUTXOTransaction(wallet *Wallet ,to string, amount int, utxoSet *UTXOSet)
 
 
 
-
-func placeHolder() {}
+//end of file
