@@ -6,6 +6,8 @@ import (
   "crypto/ecdsa"
   "encoding/hex"
   "crypto/rand"
+  "crypto/elliptic"
+  "math/big"
 
   "github.com/jinzhu/copier"
   "log"
@@ -20,6 +22,12 @@ type Tx struct {
   Id        []byte
   Inputs    []TxInput
   Outputs   []TxOutput
+}
+
+type TxPreSignature struct {
+  TxId          []byte
+  TxOutputIndex int
+  PubKey        []byte
 }
 
 func (tx *Tx) IsCoinbase() bool {
@@ -38,7 +46,7 @@ func DeserializeTx(data []byte) Tx {
 }
 
 func (tx *Tx) Hash () []byte {
-  txCloned := tx.TrimmedClone()
+  txCloned := tx.Clone()
   txCloned.Id = []byte{}
   hash := sha256.Sum256(txCloned.Serialize())
   return hash[:]
@@ -50,43 +58,77 @@ func (tx *Tx) Clone() Tx {
   return txCloned
 }
 
-func (tx *Tx) TrimmedClone() Tx {
-  var inputs []TxInput
-  var outputs []TxOutput
-  for _, input := range tx.Inputs {
-    inputs = append(inputs, TxInput{input.Id, input.OutputIndex, nil, nil})
-  }
-  for _, output := range tx.Outputs {
-    outputs = append(outputs, TxOutput{output.Value, output.PubKeyHash})
-  }
-  return Tx{tx.Id,inputs, outputs}
+func NewPreSignature(currentTx *Tx, prevTxMap map[string]Tx, currentInput *TxInput) TxPreSignature {
+  prevTx := prevTxMap[hex.EncodeToString(currentInput.Id)]
+  return TxPreSignature{currentTx.Id, currentInput.OutputIndex, prevTx.Outputs[currentInput.OutputIndex].PubKeyHash}
 }
 
-func (tx *Tx) Sign(privKey ecdsa.PrivateKey, prevTxs map[string]Tx) Tx{
+func GetSignedData(privKey ecdsa.PrivateKey,dataToSign *TxPreSignature) []byte{
+  data := fmt.Sprintf("%x\n", dataToSign)
+  r, s, err := ecdsa.Sign(rand.Reader, &privKey, []byte(data))
+  if err != nil {
+    log.Panic(err)
+  }
+  signature := append(r.Bytes(), s.Bytes()...)
+  return signature
+}
+
+func validatePrevTransactions(tx *Tx, prevTxMap map[string]Tx) bool {
+  for _, input := range tx.Inputs {
+    if prevTxMap[hex.EncodeToString(input.Id)].Id == nil {
+      return false
+    }
+  }
+  return true;
+}
+
+func (tx *Tx) Sign(privKey ecdsa.PrivateKey, prevTxMap map[string]Tx){
   if tx.IsCoinbase() {
-    return Tx{}
+    return
+  }
+  if validatePrevTransactions(tx, prevTxMap) {
+    log.Panic("ERROR: Previous transaction is not correct")
+  }
+
+  for inputId, input := range tx.Inputs {
+    dataToSign := NewPreSignature(tx, prevTxMap, &input)
+    signature := GetSignedData(privKey, &dataToSign)
+    tx.Inputs[inputId].Signature = signature
+  }
+}
+
+func extractBytes(data []byte) (big.Int, big.Int) {
+  a := big.Int{}
+  b := big.Int{}
+  len := len(data)
+  a.SetBytes(data[:(len/2)])
+  b.SetBytes(data[(len/2):])
+  return a, b
+}
+
+func verifiedInputTx(input *TxInput,dataToSign *TxPreSignature) bool{
+  r, s := extractBytes(input.Signature)
+  x, y := extractBytes(input.PubKey)
+  data := fmt.Sprintf("%x\n", dataToSign)
+  curve := elliptic.P256()
+  rawPubKey := ecdsa.PublicKey{Curve: curve, X: &x, Y: &y}
+	return ecdsa.Verify(&rawPubKey, []byte(data), &r, &s)
+}
+
+func (tx *Tx) Verify(prevTxMap map[string]Tx) bool{
+  if tx.IsCoinbase() {
+    return true
+  }
+  if validatePrevTransactions(tx, prevTxMap) {
+    log.Panic("ERROR: Previous transaction is not correct")
   }
   for _, input := range tx.Inputs {
-    if prevTxs[hex.EncodeToString(input.Id)].Id == nil {
-      log.Panic("ERROR: Previous transaction is not correct")
+    dataToSign := NewPreSignature(tx, prevTxMap, &input)
+    if verifiedInputTx(&input, &dataToSign) == false {
+      return false
     }
   }
-  txCloned := tx.TrimmedClone()
-
-  for inputId, input := range txCloned.Inputs {
-    prevTx := prevTxs[hex.EncodeToString(input.Id)]
-    txCloned.Inputs[inputId].Signature = nil
-    txCloned.Inputs[inputId].PubKey = prevTx.Outputs[input.OutputIndex].PubKeyHash
-    dataToSign := fmt.Sprintf("%x\n", txCloned)
-    r, s, err := ecdsa.Sign(rand.Reader, &privKey, []byte(dataToSign))
-    if err != nil {
-      log.Panic(err)
-    }
-    signature := append(r.Bytes(), s.Bytes()...)
-    tx.Inputs[inputId].Signature = signature
-    txCloned.Inputs[inputId].PubKey = nil
-  }
-  return txCloned
+  return true
 }
 
 func (tx *Tx) String() string {
@@ -111,7 +153,6 @@ func (tx *Tx) String() string {
 
 	return strings.Join(lines, "\n")
 }
-
 
 
 
