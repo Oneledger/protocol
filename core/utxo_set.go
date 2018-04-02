@@ -10,5 +10,5 @@ import (
 const bucketName = "chainstate"
 
 type UTXOSet struct {
-
+  Blockchain *Blockchain
 }

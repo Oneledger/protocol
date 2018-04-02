@@ -10,6 +10,11 @@ type TxOutput struct {
   PubKeyHash []byte
 }
 
+// TXOutputs collects TXOutput
+type TxOutputs struct {
+	Outputs []TxOutput
+}
+
 func (out *TxOutput) AssignPubKeyHash(address []byte) {
   out.PubKeyHash = utils.HashPubKey(address)
 }
