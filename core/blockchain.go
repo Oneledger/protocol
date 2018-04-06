@@ -5,10 +5,10 @@ import (
    "encoding/hex"
 	 "errors"
 	 "fmt"
-	 "log"
 	 "os"
 
-	"github.com/boltdb/bolt"
+
+  "../utils"
 )
 
 const dbFile = "blockchain_%s.db"
@@ -17,110 +17,48 @@ const genesisCoinbaseData = "The Times 31/Mar/2018 Is The Bitcoin Price Finally 
 
 type Blockchain struct {
   tip []byte
-  db *bolt.DB
+  databaseObject *utils.DatabaseObject
 }
 
 func CreateBlockchain(address, nodeId string) *Blockchain {
   dbFile := fmt.Sprintf(dbFile, nodeId)
-  if dbExists(dbFile) {
-    fmt.Println("Blockchain already exists.")
-    os.Exit(1)
-  }
-  var tip []byte
+  requireNotExist(dbFile)
+
+  databaseObject := utils.CreateNewDatabaseObject(dbFile, blocksBucket)
+
   cbtx := NewCoinbaseTx(address, genesisCoinbaseData)
   genesis := NewGenesisBlock(cbtx)
-  db, err := bolt.Open(dbFile, 0600, nil)
-  if err != nil {
-    log.Panic(err)
-  }
-  err = db.Update(func(tx *bolt.Tx) error {
-		b, err := tx.CreateBucket([]byte(blocksBucket))
-		if err != nil {
-			log.Panic(err)
-		}
 
-		err = b.Put(genesis.Hash, genesis.Serialize())
-		if err != nil {
-			log.Panic(err)
-		}
+  databaseObject.Set(genesis.Hash, genesis.Serialize())
+  databaseObject.Set([]byte("l"), genesis.Hash)
 
-		err = b.Put([]byte("l"), genesis.Hash)
-		if err != nil {
-			log.Panic(err)
-		}
-		tip = genesis.Hash
-
-		return nil
-	})
-	if err != nil {
-		log.Panic(err)
-	}
-
-	bc := Blockchain{tip, db}
-
+	bc := Blockchain{genesis.Hash, &databaseObject}
 	return &bc
 }
 
 func NewBlockchain(nodeID string) *Blockchain {
   dbFile := fmt.Sprintf(dbFile, nodeID)
-	if dbExists(dbFile) == false {
-		fmt.Println("No existing blockchain found. Create one first.")
-		os.Exit(1)
-	}
+	requireExist(dbFile)
 
-	var tip []byte
-	db, err := bolt.Open(dbFile, 0600, nil)
-	if err != nil {
-		log.Panic(err)
-	}
-
-	err = db.Update(func(tx *bolt.Tx) error {
-		b := tx.Bucket([]byte(blocksBucket))
-		tip = b.Get([]byte("l"))
-
-		return nil
-	})
-	if err != nil {
-		log.Panic(err)
-	}
-
-	bc := Blockchain{tip, db}
+  databaseObject := utils.CreateNewDatabaseObject(dbFile, blocksBucket)
+  tip := databaseObject.Get([]byte("l"))
+	bc := Blockchain{tip, &databaseObject}
 
 	return &bc
 }
 
 func (bc *Blockchain) AddBlock(block *Block){
-  err := bc.db.Update(func(tx *bolt.Tx) error {
-		b := tx.Bucket([]byte(blocksBucket))
-		blockInDb := b.Get(block.Hash)
-
-		if blockInDb != nil {
-			return nil
-		}
-
-		blockData := block.Serialize()
-		err := b.Put(block.Hash, blockData)
-		if err != nil {
-			log.Panic(err)
-		}
-
-		lastHash := b.Get([]byte("l"))
-		lastBlockData := b.Get(lastHash)
-		lastBlock := DeserializeBlock(lastBlockData)
-
-		if block.Height > lastBlock.Height {
-			err = b.Put([]byte("l"), block.Hash)
-			if err != nil {
-				log.Panic(err)
-			}
-			bc.tip = block.Hash
-		}
-
-		return nil
-	})
-	if err != nil {
-		log.Panic(err)
-	}
+  blockBytes := bc.databaseObject.Get(block.Hash)
+  if blockBytes!= nil {
+    return //the block exists
+  }
+  bc.databaseObject.Set(block.Hash, block.Serialize())
+  lastBlockData := bc.databaseObject.GetLastBlockData()
+  lastBlock := DeserializeBlock(lastBlockData)
+  if block.Height > lastBlock.Height {
+    bc.databaseObject.SetLastHash(block.Hash)
+    bc.tip = block.Hash
+  }
 }
 
 // FindTransaction finds a transaction by its ID
@@ -190,7 +128,7 @@ func (bc *Blockchain) FindUTXO() map[string]TxOutputs {
 
 // Iterator returns a BlockchainIterat
 func (bc *Blockchain) Iterator() *BlockchainIterator {
-	bci := &BlockchainIterator{bc.tip, bc.db}
+	bci := &BlockchainIterator{bc.tip, bc.databaseObject.Db}
 
 	return bci
 }
@@ -201,4 +139,18 @@ func dbExists(dbFile string) bool {
 	}
 
 	return true
+}
+
+func requireExist(dbFile string){
+  if dbExists(dbFile) == false {
+    fmt.Println("No existing blockchain found. Create one first.")
+		os.Exit(1)
+  }
+}
+
+func requireNotExist(dbFile string){
+  if dbExists(dbFile) == true {
+    fmt.Println("Blockchain already exists.")
+		os.Exit(1)
+  }
 }
