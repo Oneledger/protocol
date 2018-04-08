@@ -87,50 +87,54 @@ func (bc *Blockchain) FindUTXO() map[string]TxOutputs {
 	UTXO := make(map[string]TxOutputs)
 	spentTXOs := make(map[string][]int)
 	bci := bc.Iterator()
-
 	for {
-		block := bci.Next()
-
-		for _, tx := range block.Transactions {
-			txID := hex.EncodeToString(tx.Id)
-
-		Outputs:
-			for outIdx, out := range tx.Outputs {
-				// Was the output spent?
-				if spentTXOs[txID] != nil {
-					for _, spentOutIdx := range spentTXOs[txID] {
-						if spentOutIdx == outIdx {
-							continue Outputs
-						}
-					}
-				}
-
-				outs := UTXO[txID]
-				outs.Outputs = append(outs.Outputs, out)
-				UTXO[txID] = outs
-			}
-
-			if tx.IsCoinbase() == false {
-				for _, in := range tx.Inputs {
-					inTxID := hex.EncodeToString(in.Id)
-					spentTXOs[inTxID] = append(spentTXOs[inTxID], in.OutputIndex)
-				}
-			}
-		}
-
+    block := bci.Next()
+    UTXO = appendUTXO(tx, spentTXOs, UTXO)
+    spentTXOs = appendSpentTXOs(tx, spentTXOs)
 		if len(block.PrevBlockHash) == 0 {
 			break
 		}
 	}
-
 	return UTXO
 }
 
 // Iterator returns a BlockchainIterat
 func (bc *Blockchain) Iterator() *BlockchainIterator {
 	bci := &BlockchainIterator{bc.tip, bc.databaseObject.Db}
-
 	return bci
+}
+
+func appendUTXO(tx Tx, spentTXOs map[string][]int, utxo map[string]TxOutputs) map[string]TxOutputs {
+  txId := hex.EncodeToString(tx.Id)
+  for outputIndex, output := range tx.Outputs {
+    if isOutputSpent(txId, outputIndex, spentTXOs) == false {
+      outs := utxo[txId]
+      outs.Outputs = append(outs.Outputs, out)
+      utxo[txId] = outs
+    }
+  }
+  return utxo
+}
+
+func isOutputSpent(txId string, outputIndex int, spentTXOs map[string][]int) {
+  if spentTXOs[txId] != nil {
+    for _, spentOutputIdx := range spentTXOs[txId] {
+      if spentOutputIdx == outputIndex {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+func appendSpentTXOs(tx Tx, spentTXOs map[string][]int) map[string][]int{
+  if tx.IsCoinbase() == false {
+    for _, in := range tx.Inputs {
+      inTxId := hex.EncodeToString(in.Id)
+      spentTXOs[inTxId] = append(spentTXOs[inTxId], in.OutputIndex)
+    }
+  }
+  return spentTXOs
 }
 
 func dbExists(dbFile string) bool {
