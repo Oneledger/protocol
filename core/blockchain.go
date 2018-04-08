@@ -87,14 +87,20 @@ func (bc *Blockchain) FindUTXO() map[string]TxOutputs {
 	UTXO := make(map[string]TxOutputs)
 	spentTXOs := make(map[string][]int)
 	bci := bc.Iterator()
+
 	for {
-    block := bci.Next()
-    UTXO = appendUTXO(tx, spentTXOs, UTXO)
-    spentTXOs = appendSpentTXOs(tx, spentTXOs)
+		block := bci.Next()
+
+		for _, tx := range block.Transactions {
+      UTXO = appendUTXO(tx, spentTXOs, UTXO)
+      spentTXOs = appendSpentTXOs(tx, spentTXOs)
+		}
+
 		if len(block.PrevBlockHash) == 0 {
 			break
 		}
 	}
+
 	return UTXO
 }
 
@@ -104,19 +110,19 @@ func (bc *Blockchain) Iterator() *BlockchainIterator {
 	return bci
 }
 
-func appendUTXO(tx Tx, spentTXOs map[string][]int, utxo map[string]TxOutputs) map[string]TxOutputs {
+func appendUTXO(tx *Tx, spentTXOs map[string][]int, utxo map[string]TxOutputs) map[string]TxOutputs {
   txId := hex.EncodeToString(tx.Id)
   for outputIndex, output := range tx.Outputs {
     if isOutputSpent(txId, outputIndex, spentTXOs) == false {
       outs := utxo[txId]
-      outs.Outputs = append(outs.Outputs, out)
+      outs.Outputs = append(outs.Outputs, output)
       utxo[txId] = outs
     }
   }
   return utxo
 }
 
-func isOutputSpent(txId string, outputIndex int, spentTXOs map[string][]int) {
+func isOutputSpent(txId string, outputIndex int, spentTXOs map[string][]int) bool{
   if spentTXOs[txId] != nil {
     for _, spentOutputIdx := range spentTXOs[txId] {
       if spentOutputIdx == outputIndex {
@@ -127,7 +133,7 @@ func isOutputSpent(txId string, outputIndex int, spentTXOs map[string][]int) {
   return false;
 }
 
-func appendSpentTXOs(tx Tx, spentTXOs map[string][]int) map[string][]int{
+func appendSpentTXOs(tx *Tx, spentTXOs map[string][]int) map[string][]int{
   if tx.IsCoinbase() == false {
     for _, in := range tx.Inputs {
       inTxId := hex.EncodeToString(in.Id)
