@@ -10,7 +10,7 @@ type CLI struct {
 }
 
 type CLIRunner interface {
-  run(args []string)
+  Run(args []string)
 }
 
 const cmd_createblockchain = "createblockchain"
@@ -46,7 +46,7 @@ func (cli *CLI) Run() {
   nodeID := os.Getenv("NODE_ID")
   requireNotEmpty(nodeID, "NODE_ID")
   runner := cli.getCliRunner(os.Args[1])
-  runner.run(os.Args[2:])
+  runner.Run(os.Args[2:])
 }
 
 func (cli *CLI) getCliRunner(commandName string) CLIRunner {
