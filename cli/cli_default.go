@@ -8,7 +8,7 @@ type DefaultRunner struct {
   cli *CLI
 }
 
-func (runner DefaultRunner) run(args []string) {
+func (runner DefaultRunner) Run(args []string) {
   runner.cli.PrintUsage()
   os.Exit(1)
 }
