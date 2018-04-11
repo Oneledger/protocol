@@ -4,15 +4,36 @@ GOTOOLS = \
 
 all: test 
 
+#
+# Initialize the dependencies
+#
+setup: tools
+	dep init
+
+#
+# Get the tools if they are missing
+#
 tools:
 	go get -u -v $(GOTOOLS)
+
+#
+# Build a local copy
+#
 build:
+	dep ensure
 	go build github.com/Oneledger/prototype/node/cmd/fullnode
 
+#
+# Build and install a copy into bin
+#
 install:
 	go install github.com/Oneledger/prototype/node/cmd/fullnode
 
+#
+# Run any of the unit tests
+#
 test:
 	go test -v `glide novendor`
+
 .PHONY: all test build
 

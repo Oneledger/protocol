@@ -7,12 +7,12 @@ import (
 	//"github.com/tendermint/tmlibs/common"
 )
 
-type Context struct {
+type ApplicationContext struct {
 	types.BaseApplication
 }
 
-func NewContext() *Context {
-	return &Context{}
+func NewApplicationContext() *ApplicationContext {
+	return &ApplicationContext{}
 }
 
 type responseInfo struct {
@@ -20,31 +20,34 @@ type responseInfo struct {
 	Txs    int `json:"txs"`
 }
 
-func (app *Context) Info(req types.RequestInfo) types.ResponseInfo {
+func (app *ApplicationContext) Info(req types.RequestInfo) types.ResponseInfo {
 	hashes := 0
 	txs := 0
 
 	bytes, _ := json.Marshal(&responseInfo{Hashes: hashes, Txs: txs})
 
+	// TODO: need to cast bytes into this type...
+	info := string(bytes)
+
 	return types.ResponseInfo{Data: info}
 }
 
-func (app *Context) Query() types.ResponseQuery {
+func (app *ApplicationContext) Query() types.ResponseQuery {
 	return types.ResponseQuery{}
 }
 
-func (app *Context) SetOption(req types.RequestSetOption) types.ResponseSetOption {
+func (app *ApplicationContext) SetOption(req types.RequestSetOption) types.ResponseSetOption {
 	return types.ResponseSetOption{}
 }
 
-func (app *Context) DeliverTx(tx []byte) types.ResponseDeliverTx {
+func (app *ApplicationContext) DeliverTx(tx []byte) types.ResponseDeliverTx {
 	return types.ResponseDeliverTx{}
 }
 
-func (app *Context) CheckTx(tx []byte) types.ResponseCheckTx {
+func (app *ApplicationContext) CheckTx(tx []byte) types.ResponseCheckTx {
 	return types.ResponseCheckTx{}
 }
 
-func (app *Context) Commit() types.ResponseCommit {
+func (app *ApplicationContext) Commit() types.ResponseCommit {
 	return types.ResponseCommit{}
 }
