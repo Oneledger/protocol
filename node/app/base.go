@@ -2,6 +2,7 @@ package app
 
 import (
 	//"fmt"
+	"encoding/json"
 	"github.com/tendermint/abci/types"
 	//"github.com/tendermint/tmlibs/common"
 )
@@ -14,10 +15,18 @@ func NewContext() *Context {
 	return &Context{}
 }
 
+type responseInfo struct {
+	Hashes int `json:"hashes"`
+	Txs    int `json:"txs"`
+}
+
 func (app *Context) Info(req types.RequestInfo) types.ResponseInfo {
-	return types.ResponseInfo{
-		Data: "{ \"hashes\": 0, \"txs\": 0 }",
-	}
+	hashes := 0
+	txs := 0
+
+	bytes, _ := json.Marshal(&responseInfo{Hashes: hashes, Txs: txs})
+
+	return types.ResponseInfo{Data: info}
 }
 
 func (app *Context) Query() types.ResponseQuery {

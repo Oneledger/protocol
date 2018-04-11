@@ -1,0 +1,21 @@
+#!/bin/sh
+
+#
+# Startup Tendermint consensus
+#
+tendermint node > $LOGDIR/tendermint.log
+
+#
+# Startup Fullnode
+#
+
+fullnode node > $LOGDIR/tendermint.log
+
+#
+# Startup Ethereum
+#
+
+#
+# Startup Bitcoin
+#
+

@@ -17,4 +17,5 @@ func main() {
 }
 
 func Start(cmd *cobra.Command, args []string) {
+	fmt.Println("Start")
 }
