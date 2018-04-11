@@ -1,0 +1,36 @@
+!/bin/sh
+#
+# Clear out all of the chains: ours, geth and bitcoin
+#
+
+set -eu
+
+# Control the working directory
+pushd $GOPATH/test
+
+#
+# Cleanout any of the old database files
+#
+
+#
+# Reset the main tendermint chain
+#
+tendermint unsafe_reset_all
+tendermint init
+
+#
+# Reset our chain
+#
+fullnode unsafe_reset_all
+fullnode init
+
+#
+# Reset Etheruem's chain
+#
+
+#
+# Reset the Bitcoin chain
+#
+
+popd
+
