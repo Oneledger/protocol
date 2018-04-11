@@ -1,6 +1,11 @@
 #!/bin/sh
 
 #
+# For now, use local dir but needs to be fixed
+#
+LOGDIR=`pwd`
+
+#
 # Startup Tendermint consensus
 #
 tendermint node > $LOGDIR/tendermint.log

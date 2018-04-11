@@ -7,10 +7,10 @@ all: test
 tools:
 	go get -u -v $(GOTOOLS)
 build:
-	go build github.com/Oneledger/prototype/node/cmd
+	go build github.com/Oneledger/prototype/node/cmd/fullnode
 
 install:
-	go install github.com/Oneledger/prototype/node/cmd
+	go install github.com/Oneledger/prototype/node/cmd/fullnode
 
 test:
 	go test -v `glide novendor`
