@@ -16,29 +16,13 @@ var service common.Service
 var logger log.Logger
 
 func main() {
-	Initialize()
-	ParseArgs()
-}
-
-func ParseArgs() {
-	// TODO: Initialize Cobra (cli) and Viper (config)
-
-	// TODO: Cobra will call this...
-	//StartNode(nil, nil)
+	// Pass control to Cobra
 	Execute()
 }
 
-func Initialize() {
+// init starts up right away, so the logging is initialized as early as possible
+func init() {
 	// Setup initial logging
 	logger = log.NewTMLogger(log.NewSyncWriter(os.Stdout))
-	logger.Info("Starting")
+	logger.Debug("Starting")
 }
-
-/*
-func StartNode(cmd *cobra.Command, args []string) {
-	fmt.Println("Starting up a Node")
-	node := app.NewApplicationContext()
-	service = server.NewGRPCServer("unix://data.sock", types.NewGRPCApplication(*node))
-	service.SetLogger(logger)
-}
-*/
