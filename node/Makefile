@@ -11,6 +11,12 @@ setup: tools
 	dep init
 
 #
+# Update the dependencies if they have changed.
+#
+update: 
+	dep ensure
+
+#
 # Get the tools if they are missing
 #
 tools:
@@ -20,7 +26,6 @@ tools:
 # Build a local copy
 #
 build:
-	dep ensure
 	go build github.com/Oneledger/prototype/node/cmd/fullnode
 
 #
