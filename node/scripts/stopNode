@@ -1,0 +1,37 @@
+#!/bin/sh
+
+#
+# Startup a single node in our chain (tendermint for consensus and a fullnode validator)
+#
+
+#
+# For now, use local dir but needs to be fixed
+#
+export CMD=$GOPATH/src/github.com/Oneledger/prototype/node/scripts
+
+export WORK=$GOPATH/test
+export LOG=$GOPATH/test
+export DATA=$GOPATH/data
+
+pushd $WORK > /dev/null
+
+#
+# Startup Tendermint consensus
+#
+pidof -k tendermint
+
+#
+# Startup Fullnode
+#
+
+pidof -k fullnode
+
+#
+# Startup Ethereum
+#
+
+#
+# Startup Bitcoin
+#
+
+popd >> /dev/null
