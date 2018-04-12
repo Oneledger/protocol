@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# Clear out all of the chains: ours, geth and bitcoin
+# Reset our chain, remove any extra files and databases
 #
 
 set -eu
