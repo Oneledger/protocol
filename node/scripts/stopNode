@@ -18,27 +18,13 @@ pushd $WORK > /dev/null
 #
 # Startup Tendermint consensus
 #
-pids=`pidof tendermint`
-if [ -z $pids ]
-then
-	echo "Starting Tendermint"
-	tendermint node > $LOG/tendermint.log &
-else
-	echo "Tendermint is already running"
-fi
+pidof -k tendermint
 
 #
 # Startup Fullnode
 #
 
-pids=`pidof fullnode`
-if [ -z $pids ]
-then
-	echo "Starting Fullnode"
-	fullnode node > $LOG/fullnode.log &
-else
-	echo "Fullnode is already running"
-fi
+pidof -k fullnode
 
 #
 # Startup Ethereum

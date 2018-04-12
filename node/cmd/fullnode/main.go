@@ -1,21 +1,28 @@
+/*
+	Copyright 2017-2018 OneLedger
+
+	A fullnode for the OneLedger chain. Includes cli arguments to initialize, restart, etc.
+*/
+
 package main
 
 import (
-	"fmt"
-	"github.com/spf13/cobra"
+	"github.com/tendermint/tmlibs/common"
+	"github.com/tendermint/tmlibs/log"
+	"os"
 )
 
-var start = &cobra.Command{
-	Run:   Start,
-	Use:   "start",
-	Short: "Start",
-	Long:  "Start",
-}
+var service common.Service
+var logger log.Logger
 
 func main() {
-	fmt.Println("Staring OneLedger Node")
+	// Pass control to Cobra
+	Execute()
 }
 
-func Start(cmd *cobra.Command, args []string) {
-	fmt.Println("Start")
+// init starts up right away, so the logging is initialized as early as possible
+func init() {
+	// Setup initial logging
+	logger = log.NewTMLogger(log.NewSyncWriter(os.Stdout))
+	logger.Debug("Starting")
 }

@@ -1,0 +1,6 @@
+#!/bin/sh
+
+#
+# Reset the Bitcoin chain back to genesis
+#
+
