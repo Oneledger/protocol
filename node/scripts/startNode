@@ -3,21 +3,38 @@
 #
 # For now, use local dir but needs to be fixed
 #
+export CMD=$GOPATH/src/github.com/Oneledger/prototype/node/scripts
+
 export WORK=$GOPATH/test
 export LOG=$GOPATH/test
 export DATA=$GOPATH/data
 
-pushd $WORK
+pushd $WORK > /dev/null
+
 #
 # Startup Tendermint consensus
 #
-tendermint node > $LOG/tendermint.log &
+pids=`pidof tendermint`
+if [ -z $pids ]
+then
+	echo "Starting Tendermint"
+	tendermint node > $LOG/tendermint.log &
+else
+	echo "Tendermint is already running"
+fi
 
 #
 # Startup Fullnode
 #
 
-fullnode node > $LOG/fullnode.log &
+pids=`pidof fullnode`
+if [ -z $pids ]
+then
+	echo "Starting Fullnode"
+	fullnode node > $LOG/fullnode.log &
+else
+	echo "Fullnode is already running"
+fi
 
 #
 # Startup Ethereum
@@ -27,4 +44,4 @@ fullnode node > $LOG/fullnode.log &
 # Startup Bitcoin
 #
 
-popd
+popd >> /dev/null
