@@ -3,18 +3,21 @@
 #
 # For now, use local dir but needs to be fixed
 #
-LOGDIR=`pwd`
+export WORK=$GOPATH/test
+export LOG=$GOPATH/test
+export DATA=$GOPATH/data
 
+pushd $WORK
 #
 # Startup Tendermint consensus
 #
-tendermint node > $LOGDIR/tendermint.log
+tendermint node > $LOG/tendermint.log &
 
 #
 # Startup Fullnode
 #
 
-fullnode node > $LOGDIR/tendermint.log
+fullnode node > $LOG/fullnode.log &
 
 #
 # Startup Ethereum
@@ -24,3 +27,4 @@ fullnode node > $LOGDIR/tendermint.log
 # Startup Bitcoin
 #
 
+popd

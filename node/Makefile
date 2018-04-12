@@ -37,8 +37,23 @@ install:
 #
 # Run any of the unit tests
 #
-test:
+utest:
 	go test -v `glide novendor`
 
-.PHONY: all test build
+#
+# System Testing, bring up everything
+#
+test:
+	./scripts/startNode
+
+#
+# Reset all of the chains, back to genesis
+#
+reset:
+	./scripts/resetChain
+
+#
+# targets that are not associated with files
+#
+.PHONY: all utest reset test install build tools update
 
