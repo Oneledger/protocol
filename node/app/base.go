@@ -7,7 +7,7 @@ package app
 
 import (
 	//"fmt"
-	"encoding/json"
+
 	"github.com/tendermint/abci/types"
 	"github.com/tendermint/tmlibs/db"
 	"github.com/tendermint/tmlibs/log"
@@ -40,15 +40,14 @@ type responseInfo struct {
 func (app ApplicationContext) Info(req types.RequestInfo) types.ResponseInfo {
 	app.log.Debug("Message: Info")
 
-	// TODO: temp variables for now
-	hashes := 10
-	txs := 10
+	info := NewResponseInfo(10, 10)
 
-	bytes, _ := json.Marshal(&responseInfo{Hashes: hashes, Txs: txs})
+	//json := info.Json()
+	_ = info.Json()
 
-	app.log.Debug("Message: Info", "bytes", bytes)
+	app.log.Debug("Message: Info", "info", info)
 
-	//return types.ResponseInfo{Data: string(bytes)}
+	//return types.ResponseInfo{Data: json}
 	return types.ResponseInfo{}
 }
 
