@@ -9,41 +9,20 @@ import (
 	//"fmt"
 
 	"github.com/tendermint/abci/types"
-	"github.com/tendermint/tmlibs/db"
 	"github.com/tendermint/tmlibs/log"
 )
 
 var logger log.Logger
-
-// NewApplicationContext initializes a new application
-func NewApplicationContext(logger log.Logger) *ApplicationContext {
-	return &ApplicationContext{
-		log: logger,
-		db:  db.NewMemDB(),
-	}
-}
-
-func (app ApplicationContext) Store(key Key, value Message) {
-	app.db.Set(key, value)
-}
-
-func (app ApplicationContext) Load(key Key) (value Message) {
-	return app.db.Get(key)
-}
-
-// Response arguments
-type responseInfo struct {
-	Hashes int `json:"hashes"`
-	Txs    int `json:"txs"`
-}
+var key Key = Key("x")
 
 func (app ApplicationContext) Info(req types.RequestInfo) types.ResponseInfo {
 	app.log.Debug("Message: Info")
 
 	info := NewResponseInfo(10, 10)
 
-	//json := info.Json()
-	_ = info.Json()
+	//_ = info.Json()
+	json := info.JsonMessage()
+	app.db.Store(key, json)
 
 	app.log.Debug("Message: Info", "info", info)
 

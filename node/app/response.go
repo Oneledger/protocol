@@ -26,3 +26,7 @@ func (info *ResponseInfo) Json() string {
 	}
 	return string(bytes)
 }
+
+func (info *ResponseInfo) JsonMessage() Message {
+	return Message(info.Json())
+}

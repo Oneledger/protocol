@@ -7,7 +7,6 @@ package app
 
 import (
 	"github.com/tendermint/abci/types"
-	"github.com/tendermint/tmlibs/db"
 	"github.com/tendermint/tmlibs/log"
 )
 
@@ -19,5 +18,13 @@ type ApplicationContext struct {
 	types.BaseApplication
 
 	log log.Logger // inherited logger
-	db  *db.MemDB  // key/value database in memory
+	db  Datastore  // key/value database in memory
+}
+
+// NewApplicationContext initializes a new application
+func NewApplicationContext(logger log.Logger) *ApplicationContext {
+	return &ApplicationContext{
+		log: logger,
+		db:  *NewDatastore(),
+	}
 }
