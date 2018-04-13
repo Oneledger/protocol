@@ -28,8 +28,9 @@ tendermint init > $LOG/tendermint_init.log
 #
 # Reset our chain
 #
-fullnode unsafe_reset_all > $LOG/fullnode_init.log
-fullnode init > $LOG/fullnode_init.log
+
+#fullnode unsafe_reset_all > $LOG/fullnode_init.log
+#fullnode init > $LOG/fullnode_init.log
 
 #
 # Reset Etheruem's chain

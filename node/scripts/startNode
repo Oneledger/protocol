@@ -21,8 +21,10 @@ pushd $WORK > /dev/null
 pids=`pidof tendermint`
 if [ -z $pids ]
 then
-	echo "Starting Tendermint"
-	tendermint node > $LOG/tendermint.log &
+	echo "============================================================" >> $LOG/tendermint.log
+	echo "Starting Tendermint" >> $LOG/tendermint.log
+	echo "============================================================" >> $LOG/tendermint.log
+	tendermint node --proxy_app "unix://data.sock" >> $LOG/tendermint.log &
 else
 	echo "Tendermint is already running"
 fi
@@ -34,8 +36,10 @@ fi
 pids=`pidof fullnode`
 if [ -z $pids ]
 then
-	echo "Starting Fullnode"
-	fullnode node > $LOG/fullnode.log &
+	echo "============================================================" >> $LOG/fullnode.log
+	echo "Starting Fullnode" >> $LOG/fullnode.log
+	echo "============================================================" >> $LOG/fullnode.log
+	fullnode node >> $LOG/fullnode.log &
 else
 	echo "Fullnode is already running"
 fi
@@ -47,5 +51,6 @@ fi
 #
 # Startup Bitcoin
 #
+echo "Everything is Started"
 
 popd >> /dev/null

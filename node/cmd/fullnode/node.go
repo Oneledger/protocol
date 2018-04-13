@@ -21,7 +21,7 @@ func init() {
 func StartNode(cmd *cobra.Command, args []string) {
 	logger.Info("Starting up a Node")
 
-	node := app.NewApplicationContext()
+	node := app.NewApplicationContext(logger)
 
 	service = server.NewGRPCServer("unix://data.sock", types.NewGRPCApplication(*node))
 	service.SetLogger(logger)

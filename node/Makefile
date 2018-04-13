@@ -43,8 +43,14 @@ utest:
 #
 # System Testing, bring up everything
 #
-test:
+test: install
 	./scripts/startNode
+
+#
+# System Testing, bring it all down
+#
+stop: 
+	./scripts/stopNode
 
 #
 # Reset all of the chains, back to genesis
