@@ -18,7 +18,7 @@ var key Key = Key("x")
 func (app ApplicationContext) Info(req types.RequestInfo) types.ResponseInfo {
 	app.log.Debug("Message: Info")
 
-	info := NewResponseInfo(10, 10)
+	info := NewResponseInfo(0, 0, 0)
 
 	//_ = info.Json()
 	json := info.JsonMessage()

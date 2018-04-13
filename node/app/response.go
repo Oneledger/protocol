@@ -9,12 +9,14 @@ import "encoding/json"
 type ResponseInfo struct {
 	Hashes int `json:"hashes"`
 	Txs    int `json:"txs"`
+	Size   int `json:"size"`
 }
 
-func NewResponseInfo(hashes int, txs int) *ResponseInfo {
+func NewResponseInfo(hashes int, txs int, size int) *ResponseInfo {
 	return &ResponseInfo{
 		Hashes: hashes,
 		Txs:    txs,
+		Size:   size,
 	}
 }
 
