@@ -18,13 +18,19 @@ pushd $WORK > /dev/null
 #
 # Startup Tendermint consensus
 #
-pidof -k tendermint
+
+echo "============================================================" >> $LOG/tendermint.log
+echo "Stopping Tendermint" >> $LOG/tendermint.log
+echo "============================================================" >> $LOG/tendermint.log
+pidof -k tendermint >> $LOG/tendermint.log
 
 #
 # Startup Fullnode
 #
-
-pidof -k fullnode
+echo "============================================================" >> $LOG/fullnode.log
+echo "Stopping Fullnode" >> $LOG/fullnode.log
+echo "============================================================" >> $LOG/fullnode.log
+pidof -k fullnode >> $LOG/fullnode.log
 
 #
 # Startup Ethereum
