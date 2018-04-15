@@ -1,3 +1,8 @@
+/*
+	Copyright 2017-2018 OneLedger
+
+	Start a node (server) running.
+*/
 package main
 
 import (
@@ -21,7 +26,7 @@ func init() {
 func StartNode(cmd *cobra.Command, args []string) {
 	logger.Info("Starting up a Node")
 
-	node := app.NewApplicationContext(logger)
+	node := app.NewApplication(logger)
 
 	service = server.NewGRPCServer("unix://data.sock", types.NewGRPCApplication(*node))
 	service.SetLogger(logger)

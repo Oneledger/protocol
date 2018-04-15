@@ -1,5 +1,5 @@
 /*
-	Copywrite 2017-2018 OneLedger
+	Copyright 2017-2018 OneLedger
 
 	Encapsulate the underlying storage from our app. Currently using
 	Tendermint's memdb (just in memory Merkle Tree)

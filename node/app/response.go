@@ -1,5 +1,7 @@
 /*
-	Copywrite 2017-2018 OneLedger
+	Copyright 2017-2018 OneLedger
+
+	Return a Response to an Info messages
 */
 package app
 
@@ -7,16 +9,16 @@ import "encoding/json"
 
 // Response arguments
 type ResponseInfo struct {
-	Hashes int `json:"hashes"`
-	Txs    int `json:"txs"`
-	Size   int `json:"size"`
+	//Hashes int `json:"hashes"`
+	//Txs    int `json:"txs"`
+	Size int `json:"size"`
 }
 
 func NewResponseInfo(hashes int, txs int, size int) *ResponseInfo {
 	return &ResponseInfo{
-		Hashes: hashes,
-		Txs:    txs,
-		Size:   size,
+		//Hashes: hashes,
+		//Txs:    txs,
+		Size: size,
 	}
 }
 

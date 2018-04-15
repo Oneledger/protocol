@@ -1,5 +1,5 @@
 /*
-	Copywrite 2017-2018 OneLedger
+	Copyright 2017-2018 OneLedger
 
 	Setup the root command structure for the cli
 */
