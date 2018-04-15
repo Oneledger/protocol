@@ -1,0 +1,5 @@
+#!/bin/sh
+
+#
+# Startup a bunch of nodes to act as a full block chain instance
+#
