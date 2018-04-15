@@ -3,7 +3,6 @@
 
 	A fullnode for the OneLedger chain. Includes cli arguments to initialize, restart, etc.
 */
-
 package main
 
 import (

@@ -43,7 +43,7 @@ utest:
 #
 # System Testing, bring up everything
 #
-test: install
+test: stop install
 	./scripts/startNode
 
 #
