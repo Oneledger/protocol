@@ -9,7 +9,6 @@ import (
 	"github.com/Oneledger/prototype/node/app"
 	"github.com/spf13/cobra"
 	"github.com/tendermint/abci/server"
-	"github.com/tendermint/abci/types"
 	"github.com/tendermint/tmlibs/common"
 )
 
@@ -28,7 +27,9 @@ func StartNode(cmd *cobra.Command, args []string) {
 
 	node := app.NewApplication(logger)
 
-	service = server.NewGRPCServer("unix://data.sock", types.NewGRPCApplication(*node))
+	// TODO: Switch on config
+	//service = server.NewGRPCServer("unix://data.sock", types.NewGRPCApplication(*node))
+	service = server.NewSocketServer("tcp://127.0.0.1:46658", *node)
 	service.SetLogger(logger)
 
 	// Set it running
