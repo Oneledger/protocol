@@ -9,87 +9,94 @@ import (
 	//"fmt"
 
 	"github.com/tendermint/abci/types"
-	"github.com/tendermint/tmlibs/log"
 )
 
 // ApplicationContext keeps all of the upper level global values.
 type Application struct {
 	types.BaseApplication
 
-	log log.Logger // inherited logger
-	db  Datastore  // key/value database in memory
+	status   *Datastore // current state of any composite transactions
+	accounts *Datastore // identity management
+	utxo     *Datastore // unspent transctions
 }
 
 // NewApplicationContext initializes a new application
-func NewApplication(logger log.Logger) *Application {
+func NewApplication() *Application {
+
 	return &Application{
-		log: logger,
-		db:  *NewDatastore(),
+		status:   NewDatastore("status", MEMORY),
+		accounts: NewDatastore("accounts", MEMORY),
+		utxo:     NewDatastore("utxo", MEMORY),
 	}
 }
 
-var logger log.Logger
-var key Key = Key("x")
-
-func (app Application) Info(req types.RequestInfo) types.ResponseInfo {
-	app.log.Debug("Message: Info")
-
-	info := NewResponseInfo(0, 0, 0)
-
-	//_ = info.Json()
-	json := info.JsonMessage()
-	app.db.Store(key, json)
-
-	app.log.Debug("Message: Info", "info", info)
-
-	return types.ResponseInfo{Data: string(json)}
-	//return types.ResponseInfo{}
-}
-
+// InitChain is called when a new chain is getting created
 func (app Application) InitChain(req types.RequestInitChain) types.ResponseInitChain {
-	app.log.Debug("Message: InitChain")
+	Log.Debug("Message: InitChain")
 
 	return types.ResponseInitChain{}
 }
 
+// TODO: temporary
+var key Key = []byte("Key")
+
+// Info returns the current block information
+func (app Application) Info(req types.RequestInfo) types.ResponseInfo {
+	info := NewResponseInfo(0, 0, 0)
+	json := info.JSON()
+
+	Log.Debug("Message: Info", "req", req, "info", json)
+
+	return types.ResponseInfo{
+		Data: json,
+	}
+}
+
+// Query returns a transaction or a proof
 func (app Application) Query(req types.RequestQuery) types.ResponseQuery {
-	app.log.Debug("Message: Query")
+	Log.Debug("Message: Query", "req", req)
 
 	return types.ResponseQuery{}
 }
 
+// SetOption changes the underlying options for the ABCi app
 func (app Application) SetOption(req types.RequestSetOption) types.ResponseSetOption {
-	app.log.Debug("Message: SetOption")
+	Log.Debug("Message: SetOption")
 
 	return types.ResponseSetOption{}
 }
 
+// CheckTx tests to see if a transaction is valid
 func (app Application) CheckTx(tx []byte) types.ResponseCheckTx {
-	app.log.Debug("Message: CheckTx")
+	Log.Debug("Message: CheckTx", "tx", tx)
 
 	return types.ResponseCheckTx{Code: types.CodeTypeOK}
 }
 
+// BeginBlock is called when a new block is started
 func (app Application) BeginBlock(req types.RequestBeginBlock) types.ResponseBeginBlock {
-	app.log.Debug("Message: BeginBlock")
+	Log.Debug("Message: BeginBlock", "req", req)
 
 	return types.ResponseBeginBlock{}
 }
 
+// DeliverTx accepts a transaction and updates all relevant data
 func (app Application) DeliverTx(tx []byte) types.ResponseDeliverTx {
-	app.log.Debug("Message: DeliverTx")
+	Log.Debug("Message: DeliverTx", "tx", tx)
 
 	return types.ResponseDeliverTx{Code: types.CodeTypeOK}
 }
 
+// EndBlock is called at the end of all of the transactions
 func (app Application) EndBlock(req types.RequestEndBlock) types.ResponseEndBlock {
-	app.log.Debug("Message: EndBlock")
+	Log.Debug("Message: EndBlock", "req", req)
 
 	return types.ResponseEndBlock{}
 }
 
+// Commit tells the app to make everything persistent
 func (app Application) Commit() types.ResponseCommit {
-	app.log.Debug("Message: Commit")
+	Log.Debug("Message: Commit")
 
 	return types.ResponseCommit{}
 }

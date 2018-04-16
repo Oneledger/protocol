@@ -23,7 +23,7 @@ func NewResponseInfo(hashes int, txs int, size int) *ResponseInfo {
 }
 
 // Convert to JSON
-func (info *ResponseInfo) Json() string {
+func (info *ResponseInfo) JSON() string {
 	bytes, err := json.Marshal(info)
 	if err != nil {
 		panic("Marshal Failed")
@@ -31,6 +31,7 @@ func (info *ResponseInfo) Json() string {
 	return string(bytes)
 }
 
-func (info *ResponseInfo) JsonMessage() Message {
-	return Message(info.Json())
+// Return as a Message
+func (info *ResponseInfo) JSONMessage() Message {
+	return Message(info.JSON())
 }

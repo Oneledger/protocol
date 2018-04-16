@@ -1,7 +1,7 @@
 /*
 	Copyright 2017-2018 OneLedger
 
-	Setup the root command structure for the cli
+	Setup the root command structure for all of cli commands
 */
 package main
 
@@ -23,7 +23,7 @@ func Execute() {
 	}
 }
 
-// Initialize Cobra
+// Initialize Cobra, config global arguments
 func init() {
 	cobra.OnInitialize(environment)
 	// RootCmd.PersistentFlags().StringVarP(&variable, "c", "command", "description")

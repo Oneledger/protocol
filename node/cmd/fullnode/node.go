@@ -1,12 +1,13 @@
 /*
 	Copyright 2017-2018 OneLedger
 
-	Start a node (server) running.
+	Cli to start a node (server) running.
 */
 package main
 
 import (
-	"github.com/Oneledger/prototype/node/app"
+	"github.com/Oneledger/prototype/node/app" // Import namespace
+
 	"github.com/spf13/cobra"
 	"github.com/tendermint/abci/server"
 	"github.com/tendermint/tmlibs/common"
@@ -23,14 +24,16 @@ func init() {
 }
 
 func StartNode(cmd *cobra.Command, args []string) {
-	logger.Info("Starting up a Node")
+	app.Log.Info("Starting up a Node")
 
-	node := app.NewApplication(logger)
+	node := app.NewApplication()
 
 	// TODO: Switch on config
 	//service = server.NewGRPCServer("unix://data.sock", types.NewGRPCApplication(*node))
 	service = server.NewSocketServer("tcp://127.0.0.1:46658", *node)
-	service.SetLogger(logger)
+	service.SetLogger(app.GetLogger())
+
+	// TODO: catch any panics
 
 	// Set it running
 	err := service.Start()
@@ -38,8 +41,9 @@ func StartNode(cmd *cobra.Command, args []string) {
 		common.Exit(err.Error())
 	}
 
+	// Catch any signals, stop nicely
 	common.TrapSignal(func() {
-		logger.Info("Shutting down")
+		app.Log.Info("Shutting down")
 		service.Stop()
 	})
 }
