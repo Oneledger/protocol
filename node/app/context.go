@@ -5,18 +5,31 @@
 
 	Precedence:
 		- Default values
+	 	- Environment variables (like $OLROOT)
 		- Configuration files
 		- Command line arguments
 		- Overrides
 */
 package app
 
+import "os"
+
+var Current *Context
+
 type Context struct {
-	name string
+	Name    string
+	Debug   bool
+	RootDir string
+}
+
+func init() {
+	Current = NewContext("Global")
 }
 
 func NewContext(name string) *Context {
 	return &Context{
-		name: name,
+		Name:    name,
+		Debug:   false,
+		RootDir: os.Getenv("OLROOT"),
 	}
 }

@@ -20,7 +20,5 @@ func main() {
 
 // init starts up right away, so the logging and context is initialized as early as possible
 func init() {
-	app.Log.Debug("Starting Fullnode")
-
 	context = app.NewContext("Fullnode")
 }

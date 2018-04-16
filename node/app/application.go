@@ -18,6 +18,8 @@ type Application struct {
 	status   *Datastore // current state of any composite transactions
 	accounts *Datastore // identity management
 	utxo     *Datastore // unspent transctions
+
+	// TODO: basecoin has fees and staking too?
 }
 
 // NewApplicationContext initializes a new application
@@ -36,9 +38,6 @@ func (app Application) InitChain(req types.RequestInitChain) types.ResponseInitC
 
 	return types.ResponseInitChain{}
 }
-
-// TODO: temporary
-var key Key = []byte("Key")
 
 // Info returns the current block information
 func (app Application) Info(req types.RequestInfo) types.ResponseInfo {
@@ -70,6 +69,14 @@ func (app Application) SetOption(req types.RequestSetOption) types.ResponseSetOp
 func (app Application) CheckTx(tx []byte) types.ResponseCheckTx {
 	Log.Debug("Message: CheckTx", "tx", tx)
 
+	result, err := Parse(Message(tx))
+	if err != 0 {
+		return types.ResponseCheckTx{Code: uint32(err)}
+	}
+
+	// TODO: Do something real here
+	_ = result
+
 	return types.ResponseCheckTx{Code: types.CodeTypeOK}
 }
 
@@ -83,6 +90,14 @@ func (app Application) BeginBlock(req types.RequestBeginBlock) types.ResponseBeg
 // DeliverTx accepts a transaction and updates all relevant data
 func (app Application) DeliverTx(tx []byte) types.ResponseDeliverTx {
 	Log.Debug("Message: DeliverTx", "tx", tx)
+
+	result, err := Parse(Message(tx))
+	if err != 0 {
+		return types.ResponseDeliverTx{Code: uint32(err)}
+	}
+
+	// TODO: Do something real here
+	_ = result
 
 	return types.ResponseDeliverTx{Code: types.CodeTypeOK}
 }

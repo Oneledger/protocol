@@ -18,8 +18,9 @@ const (
 )
 
 type Datastore struct {
-	name string
-	data *db.MemDB
+	name  string
+	ttype DatastoreType
+	data  *db.MemDB
 }
 
 // NewApplicationContext initializes a new application
@@ -41,10 +42,12 @@ func NewDatastore(name string, dsType DatastoreType) *Datastore {
 	}
 }
 
+// Store inserts or updates a value under a key
 func (store Datastore) Store(key Key, value Message) {
 	store.data.Set(key, value)
 }
 
+// Load return the stored value
 func (store Datastore) Load(key Key) (value Message) {
 	return store.data.Get(key)
 }
