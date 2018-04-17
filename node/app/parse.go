@@ -3,7 +3,7 @@
 */
 package app
 
-type Error uint32 // Matches Tendermint
+type Error uint32 // Matches Tendermint status
 
 const (
 	PARSE_ERROR     Error = 101

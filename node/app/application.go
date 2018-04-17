@@ -1,7 +1,7 @@
 /*
 	Copyright 2017-2018 OneLedger
 
-	ABCi application node to process transactions from Tendermint
+	AN ABCi application node to process transactions from Tendermint Consensus
 */
 package app
 
@@ -24,7 +24,6 @@ type Application struct {
 
 // NewApplicationContext initializes a new application
 func NewApplication() *Application {
-
 	return &Application{
 		status:   NewDatastore("status", MEMORY),
 		accounts: NewDatastore("accounts", MEMORY),
@@ -34,7 +33,7 @@ func NewApplication() *Application {
 
 // InitChain is called when a new chain is getting created
 func (app Application) InitChain(req types.RequestInitChain) types.ResponseInitChain {
-	Log.Debug("Message: InitChain")
+	Log.Debug("Message: InitChain", "req", req)
 
 	return types.ResponseInitChain{}
 }
@@ -42,12 +41,11 @@ func (app Application) InitChain(req types.RequestInitChain) types.ResponseInitC
 // Info returns the current block information
 func (app Application) Info(req types.RequestInfo) types.ResponseInfo {
 	info := NewResponseInfo(0, 0, 0)
-	json := info.JSON()
 
-	Log.Debug("Message: Info", "req", req, "info", json)
+	Log.Debug("Message: Info", "req", req, "info", info)
 
 	return types.ResponseInfo{
-		Data: json,
+		Data: info.JSON(),
 	}
 }
 
@@ -80,11 +78,15 @@ func (app Application) CheckTx(tx []byte) types.ResponseCheckTx {
 	return types.ResponseCheckTx{Code: types.CodeTypeOK}
 }
 
+// Type aliases
+type BeginRequest = types.RequestBeginBlock
+type BeginResponse = types.ResponseBeginBlock
+
 // BeginBlock is called when a new block is started
-func (app Application) BeginBlock(req types.RequestBeginBlock) types.ResponseBeginBlock {
+func (app Application) BeginBlock(req BeginRequest) BeginResponse {
 	Log.Debug("Message: BeginBlock", "req", req)
 
-	return types.ResponseBeginBlock{}
+	return BeginResponse{}
 }
 
 // DeliverTx accepts a transaction and updates all relevant data
