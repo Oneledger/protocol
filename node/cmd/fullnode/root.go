@@ -32,8 +32,9 @@ func Execute() {
 // Initialize Cobra, config global arguments
 func init() {
 	cobra.OnInitialize(environment)
-	RootCmd.PersistentFlags().StringVarP(&app.Current.RootDir, "root", "r", "Invalid", "Set root directory")
 	RootCmd.PersistentFlags().BoolVarP(&app.Current.Debug, "debug", "d", false, "Set DEBUG mode")
+	RootCmd.PersistentFlags().StringVarP(&app.Current.RootDir, "root", "r", "Invalid", "Set root directory")
+	RootCmd.PersistentFlags().StringVarP(&app.Current.Name, "name", "n", "OneLedger", "Set a name")
 }
 
 // Initialize Viper

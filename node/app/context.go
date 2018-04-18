@@ -17,9 +17,11 @@ import "os"
 var Current *Context
 
 type Context struct {
-	Name    string
-	Debug   bool
-	RootDir string
+	Debug     bool
+	Name      string
+	RootDir   string
+	Transport string
+	Address   string
 }
 
 func init() {

@@ -20,16 +20,14 @@ var nodeCmd = &cobra.Command{
 }
 
 // TODO: Move to Context
-var name string
 var transport string
 var address string
 
 func init() {
 	RootCmd.AddCommand(nodeCmd)
 
-	nodeCmd.Flags().StringVarP(&name, "name", "n", "Fullnode", "node name")
-	nodeCmd.Flags().StringVarP(&transport, "transport", "t", "socket", "transport (socket | grpc)")
-	nodeCmd.Flags().StringVarP(&address, "address", "a", "tcp://127.0.0.1:46658", "full address")
+	nodeCmd.Flags().StringVarP(&app.Current.Transport, "transport", "t", "socket", "transport (socket | grpc)")
+	nodeCmd.Flags().StringVarP(&app.Current.Address, "address", "a", "tcp://127.0.0.1:46658", "full address")
 }
 
 func HandleArguments() {
