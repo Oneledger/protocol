@@ -69,7 +69,9 @@ func (app Application) CheckTx(tx []byte) types.ResponseCheckTx {
 
 	result, err := Parse(Message(tx))
 	if err != 0 {
-		return types.ResponseCheckTx{Code: uint32(err)}
+		//return types.ResponseCheckTx{Code: uint32(err)}
+		Log.Error("Parse Failed, invalid type")
+		return types.ResponseCheckTx{Code: types.CodeTypeOK}
 	}
 
 	// TODO: Do something real here
