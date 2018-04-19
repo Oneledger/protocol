@@ -43,11 +43,11 @@ func NewDatastore(name string, dsType DatastoreType) *Datastore {
 }
 
 // Store inserts or updates a value under a key
-func (store Datastore) Store(key Key, value Message) {
+func (store Datastore) Store(key DatabaseKey, value Message) {
 	store.data.Set(key, value)
 }
 
 // Load return the stored value
-func (store Datastore) Load(key Key) (value Message) {
+func (store Datastore) Load(key DatabaseKey) (value Message) {
 	return store.data.Get(key)
 }

@@ -6,16 +6,12 @@
 package main
 
 import (
+	"os"
+
 	"github.com/Oneledger/prototype/node/app"
-
-	crypto "github.com/tendermint/go-crypto"
-	wire "github.com/tendermint/go-wire"
-	"github.com/tendermint/go-wire/data"
-	rpcclient "github.com/tendermint/tendermint/rpc/client"
-
-	//"golang.org/x/net/trace"
-
 	"github.com/spf13/cobra"
+	wire "github.com/tendermint/go-wire"
+	rpcclient "github.com/tendermint/tendermint/rpc/client"
 )
 
 var sendCmd = &cobra.Command{
@@ -24,36 +20,8 @@ var sendCmd = &cobra.Command{
 	Run:   IssueRequest,
 }
 
-type Coin struct {
-	Denom  string `json:"denom"`
-	Amount int64  `json:"amount"`
-}
-
-type Coins []Coin
-
-type TxInput struct {
-	Address   data.Bytes       `json:"address"`   // Hash of the PubKey
-	Coins     Coins            `json:"coins"`     //
-	Sequence  int              `json:"sequence"`  // Must be 1 greater than the last committed TxInput
-	Signature crypto.Signature `json:"signature"` // Depends on the PubKey type and the whole Tx
-	PubKey    crypto.PubKey    `json:"pub_key"`   // Is present iff Sequence == 0
-}
-
-type TxOutput struct {
-	Address data.Bytes `json:"address"` // Hash of the PubKey
-	Coins   Coins      `json:"coins"`   //
-}
-
-type SendTx struct {
-	Gas     int64      `json:"gas"`
-	Fee     Coin       `json:"fee"`
-	Inputs  []TxInput  `json:"inputs"`
-	Outputs []TxOutput `json:"outputs"`
-}
-
-// TODO: Basecoin structure, should revise
-// TODO: typing should be way better
-type Transaction struct {
+// TODO: typing should be way better, see if cobr can help with this...
+type TransactionArguments struct {
 	to       string
 	amount   string
 	fee      string
@@ -61,16 +29,10 @@ type Transaction struct {
 	sequence int
 }
 
-var transaction *Transaction
-
-type FullSendTx struct {
-	ChainId string
-	Signers []crypto.PubKey
-	Tx      *SendTx
-}
+var transaction *TransactionArguments
 
 func init() {
-	transaction = &Transaction{}
+	transaction = &TransactionArguments{}
 
 	RootCmd.AddCommand(sendCmd)
 
@@ -84,10 +46,33 @@ func init() {
 	sendCmd.Flags().StringVar(&transaction.fee, "fee", "1olt", "include a fee")
 }
 
+// Convert the arguments?
 func HandleSendArguments() {
 }
 
-func SignTransaction(full *FullSendTx) {
+// SignTransaction with the local keys
+func SignTransaction(full *app.FullSendTransaction) {
+}
+
+// Pack a request into a transferable format (wire)
+func PackRequest(request *app.FullSendTransaction) []byte {
+	packet := wire.BinaryBytes(request)
+	return packet
+}
+
+// CreateRequest builds and signs the transaction based on the arguments
+func CreateRequest() []byte {
+	// Create base transaction
+	send := &app.SendTransaction{Type: app.SEND_TRANSACTION}
+	full := &app.FullSendTransaction{Transaction: send}
+
+	// Sign it
+	SignTransaction(full)
+
+	// Encode the message
+	packet := PackRequest(full)
+
+	return packet
 }
 
 // IssueRequest sends out a sendTx to all of the nodes in the chain
@@ -96,25 +81,17 @@ func IssueRequest(cmd *cobra.Command, args []string) {
 
 	app.Log.Debug("Have Request", "tx", transaction)
 
-	// Create base transaction
-	send := &SendTx{}
-	full := &FullSendTx{Tx: send}
-
-	// Sign it
-	SignTransaction(full)
-
 	// Create message
-	packet := wire.BinaryBytes(full)
-	_ = packet
+	packet := CreateRequest()
 
 	app.Log.Debug("Creating Client")
-	/*
-	 */
 	client := rpcclient.NewHTTP("127.0.0.1:46657", "/websocket")
+
 	result, err := client.BroadcastTxCommit(packet)
 	if err != nil {
 		app.Log.Error("Error", "err", err)
+		os.Exit(-1)
 	}
-	app.Log.Debug("Returned", "result", result)
+	app.Log.Debug("Returned Successfully", "result", result)
 
 }

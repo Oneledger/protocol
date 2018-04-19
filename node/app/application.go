@@ -31,6 +31,10 @@ func NewApplication() *Application {
 	}
 }
 
+// Type aliases
+type BeginRequest = types.RequestBeginBlock
+type BeginResponse = types.ResponseBeginBlock
+
 // InitChain is called when a new chain is getting created
 func (app Application) InitChain(req types.RequestInitChain) types.ResponseInitChain {
 	Log.Debug("Message: InitChain", "req", req)
@@ -79,10 +83,6 @@ func (app Application) CheckTx(tx []byte) types.ResponseCheckTx {
 
 	return types.ResponseCheckTx{Code: types.CodeTypeOK}
 }
-
-// Type aliases
-type BeginRequest = types.RequestBeginBlock
-type BeginResponse = types.ResponseBeginBlock
 
 // BeginBlock is called when a new block is started
 func (app Application) BeginBlock(req BeginRequest) BeginResponse {

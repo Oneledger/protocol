@@ -8,6 +8,7 @@ package app
 type TransactionType byte
 
 const (
+	SEND_TRANSACTION TransactionType = iota
 	SWAP_TRANSACTION TransactionType = iota
 	VERIFY_PREPARE   TransactionType = iota
 	VERIFY_COMMIT    TransactionType = iota
@@ -22,7 +23,7 @@ type TransactionBase struct {
 }
 
 // Synchronize a swap between two users
-type SwapTransaction struct {
+type SwapTransactionBase struct {
 	// TODO: Fix this to embed it properly.
 	//TransactionBase
 	ttype TransactionType
@@ -34,8 +35,21 @@ type SwapTransaction struct {
 	fee          int
 }
 
+// Synchronize a swap between two users
+type SendTransactionBase struct {
+	// TODO: Fix this to embed it properly.
+	//TransactionBase
+	ttype TransactionType
+
+	from         string // TODO: put in addresses here
+	to           string
+	exchangeRate int
+	amount       int
+	fee          int
+}
+
 // TODO: roughed in...
-type CoinTransaction struct {
+type CoinTransactionBase struct {
 	TransactionBase
 
 	inputs  []string

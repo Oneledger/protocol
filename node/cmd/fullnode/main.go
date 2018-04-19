@@ -10,6 +10,7 @@ import (
 	"github.com/tendermint/tmlibs/common"
 )
 
+// Common to all of the sub-commands
 var service common.Service
 
 var context *app.Context // Global runtime context
