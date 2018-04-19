@@ -24,7 +24,8 @@ then
 	echo "============================================================" >> $LOG/tendermint.log
 	echo "Starting Tendermint" >> $LOG/tendermint.log
 	echo "============================================================" >> $LOG/tendermint.log
-	tendermint node --proxy_app "unix://data.sock" >> $LOG/tendermint.log &
+	#tendermint node --proxy_app "unix://data.sock" >> $LOG/tendermint.log &
+	tendermint node >> $LOG/tendermint.log &
 else
 	echo "Tendermint is already running"
 fi

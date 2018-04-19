@@ -41,6 +41,19 @@ utest:
 	go test -v `glide novendor`
 
 #
+# Full Testing, bring up everything, send a transaction and then stop
+#
+full: stop reset install
+	./scripts/startNode
+
+	# TODO: should have a wait of knowing the chain is ready
+	sleep 9 
+
+	fullnode send
+	sleep 3
+	./scripts/stopNode
+
+#
 # System Testing, bring up everything
 #
 test: stop install

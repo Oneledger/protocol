@@ -6,22 +6,20 @@
 package main
 
 import (
+	"github.com/Oneledger/prototype/node/app"
 	"github.com/tendermint/tmlibs/common"
-	"github.com/tendermint/tmlibs/log"
-	"os"
 )
 
+// Common to all of the sub-commands
 var service common.Service
-var logger log.Logger
+
+var context *app.Context // Global runtime context
 
 func main() {
-	// Pass control to Cobra
-	Execute()
+	Execute() // Pass control to Cobra
 }
 
-// init starts up right away, so the logging is initialized as early as possible
+// init starts up right away, so the logging and context is initialized as early as possible
 func init() {
-	// Setup initial logging
-	logger = log.NewTMLogger(log.NewSyncWriter(os.Stdout))
-	logger.Debug("Starting")
+	context = app.NewContext("Fullnode")
 }
