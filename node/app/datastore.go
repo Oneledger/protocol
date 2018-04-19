@@ -10,21 +10,44 @@ import (
 	"github.com/tendermint/tmlibs/db"
 )
 
+type DatastoreType int
+
+const (
+	MEMORY     DatastoreType = iota
+	PERSISTENT DatastoreType = iota
+)
+
 type Datastore struct {
-	data *db.MemDB
+	name  string
+	ttype DatastoreType
+	data  *db.MemDB
 }
 
 // NewApplicationContext initializes a new application
-func NewDatastore() *Datastore {
-	return &Datastore{
-		data: db.NewMemDB(),
+func NewDatastore(name string, dsType DatastoreType) *Datastore {
+	switch dsType {
+
+	case MEMORY:
+		return &Datastore{
+			name: name,
+			data: db.NewMemDB(),
+		}
+
+	case PERSISTENT:
+		panic("Not yet implemented")
+
+	default:
+		panic("Unknown Type")
+
 	}
 }
 
-func (store Datastore) Store(key Key, value Message) {
+// Store inserts or updates a value under a key
+func (store Datastore) Store(key DatabaseKey, value Message) {
 	store.data.Set(key, value)
 }
 
-func (store Datastore) Load(key Key) (value Message) {
+// Load return the stored value
+func (store Datastore) Load(key DatabaseKey) (value Message) {
 	return store.data.Get(key)
 }
