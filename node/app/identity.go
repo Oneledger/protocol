@@ -5,34 +5,54 @@
 */
 package app
 
-type IdentityType int
+import (
+	crypto "github.com/tendermint/go-crypto"
+	"github.com/tendermint/go-wire/data"
+)
 
-// TODO: should be dynamic?
+// Aliases to hide some of the basic underlying types.
+type Address = data.Bytes
+type Signature = crypto.Signature
+type PublicKey = crypto.PubKey
+type PrivateKey = crypto.PrivKey
+
+// ENUM for type
+type IdentityType int
 
 const (
 	ONELEDGER IdentityType = iota
-	BITCOIN   IdentityType = iota
-	ETHEREUM  IdentityType = iota
+	BITCOIN
+	ETHEREUM
 )
 
-type Identity struct {
-	ttype IdentityType
+// Polymorphism
+type Identity interface {
 }
 
+type IdentityBase struct {
+	Type IdentityType
+	Name string
+}
+
+// Information we need about our fullnode identities
 type IdentityOneLedger struct {
-	base Identity
-
-	name string
+	IdentityBase
+	PublicKey PublicKey
+	PrivteKey PrivateKey
 }
 
+// Information we need for the installed Bitcoin node
 type IdentityBitcoin struct {
-	base Identity
-
-	name string
+	IdentityBase
+	Address   Address
+	PublicKey PublicKey
+	PrivteKey PrivateKey
 }
 
+// Information we need for the installed Ethereum node
 type IdentityEthereum struct {
-	base Identity
-
-	name string
+	IdentityBase
+	Address   Address
+	PublicKey PublicKey
+	PrivteKey PrivateKey
 }

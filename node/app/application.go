@@ -7,7 +7,6 @@ package app
 
 import (
 	//"fmt"
-
 	"github.com/tendermint/abci/types"
 )
 
@@ -50,6 +49,8 @@ func (app Application) Info(req types.RequestInfo) types.ResponseInfo {
 
 	return types.ResponseInfo{
 		Data: info.JSON(),
+		// LastBlockHeight: lastHeight,
+		// LastBlockAppHash: lastAppHash,
 	}
 }
 
@@ -73,13 +74,13 @@ func (app Application) CheckTx(tx []byte) types.ResponseCheckTx {
 
 	result, err := Parse(Message(tx))
 	if err != 0 {
-		//return types.ResponseCheckTx{Code: uint32(err)}
-		Log.Error("Parse Failed, invalid type")
-		return types.ResponseCheckTx{Code: types.CodeTypeOK}
+		return types.ResponseCheckTx{Code: err}
 	}
 
-	// TODO: Do something real here
-	_ = result
+	// Check that this is a valid transaction
+	if err = result.Validate(); err != 0 {
+		return types.ResponseCheckTx{Code: err}
+	}
 
 	return types.ResponseCheckTx{Code: types.CodeTypeOK}
 }
@@ -97,11 +98,16 @@ func (app Application) DeliverTx(tx []byte) types.ResponseDeliverTx {
 
 	result, err := Parse(Message(tx))
 	if err != 0 {
-		return types.ResponseDeliverTx{Code: uint32(err)}
+		return types.ResponseDeliverTx{Code: err}
 	}
 
-	// TODO: Do something real here
-	_ = result
+	if err = result.Validate(); err != 0 {
+		return types.ResponseDeliverTx{Code: err}
+	}
+
+	if err = result.ProcessTransaction(); err != 0 {
+		return types.ResponseDeliverTx{Code: err}
+	}
 
 	return types.ResponseDeliverTx{Code: types.CodeTypeOK}
 }
@@ -116,6 +122,9 @@ func (app Application) EndBlock(req types.RequestEndBlock) types.ResponseEndBloc
 // Commit tells the app to make everything persistent
 func (app Application) Commit() types.ResponseCommit {
 	Log.Debug("Message: Commit")
+
+	// TODO: Empty commit for now, but all transactional work should be queued, and
+	// only persisted on commit.
 
 	return types.ResponseCommit{}
 }

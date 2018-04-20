@@ -26,7 +26,7 @@ tools:
 # Build a local copy
 #
 build:
-	go build github.com/Oneledger/prototype/node/cmd/fullnode
+	go build -o testFullnode github.com/Oneledger/prototype/node/cmd/fullnode
 
 #
 # Build and install a copy into bin
