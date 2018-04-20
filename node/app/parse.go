@@ -7,7 +7,8 @@ import (
 	wire "github.com/tendermint/go-wire"
 )
 
-type Error uint32 // Matches Tendermint status
+//type Error uint32 // Matches Tendermint status
+type Error = uint32 // Matches Tendermint status
 
 const (
 	SUCCESS         Error = 0

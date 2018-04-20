@@ -10,6 +10,9 @@ import (
 	"github.com/tendermint/tmlibs/db"
 )
 
+type DatabaseKey []byte // Database key
+
+// ENUM for datastore type
 type DatastoreType int
 
 const (
@@ -17,6 +20,7 @@ const (
 	PERSISTENT DatastoreType = iota
 )
 
+// Wrap the underlying usage
 type Datastore struct {
 	name  string
 	ttype DatastoreType

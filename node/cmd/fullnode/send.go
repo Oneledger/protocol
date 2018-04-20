@@ -64,6 +64,11 @@ func IssueRequest(cmd *cobra.Command, args []string) {
 
 }
 
+func GetPublicKey() app.PublicKey {
+	// TODO: Really not sure about this.
+	return app.PublicKey{}
+}
+
 // GetSigners will return the public keys of the signers
 func GetSigners() []app.PublicKey {
 	return nil

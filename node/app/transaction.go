@@ -7,20 +7,22 @@ package app
 
 var ChainId string
 
+type Message []byte // Contents of a transaction
+
+// ENUM for type
 type TransactionType byte
 
 const (
 	SEND_TRANSACTION TransactionType = iota
-	SWAP_TRANSACTION TransactionType = iota
-	VERIFY_PREPARE   TransactionType = iota
-	VERIFY_COMMIT    TransactionType = iota
+	SWAP_TRANSACTION
+	VERIFY_PREPARE
+	VERIFY_COMMIT
 )
 
-func init() {
-	ChainId = "OneLedger-Root"
-}
-
+// Polymorphism and Serializable
 type Transaction interface {
+	Validate() Error
+	ProcessTransaction() Error
 }
 
 // Base Data for each type
@@ -51,23 +53,22 @@ type SendTransaction struct {
 	Outputs []SendOutput `json:"outputs"`
 }
 
-func Validate(transaction Transaction) Error {
-	switch transaction.(type) {
-
-	case SwapTransaction:
-		return ValidateSwap(transaction)
-
-	case SendTransaction:
-		return ValidateSend(transaction)
-
-	}
-	return MISSING_VALUE
+func init() {
+	ChainId = "OneLedger-Root"
 }
 
-func ValidateSwap(transaction Transaction) Error {
+func (transaction *SendTransaction) Validate() Error {
 	return SUCCESS
 }
 
-func ValidateSend(transaction Transaction) Error {
+func (transaction *SendTransaction) ProcessTransaction() Error {
+	return SUCCESS
+}
+
+func (transaction *SwapTransaction) Validate() Error {
+	return SUCCESS
+}
+
+func (transaction *SwapTransaction) ProcessTransaction() Error {
 	return SUCCESS
 }
