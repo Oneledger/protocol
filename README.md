@@ -19,4 +19,3 @@ Initial version for OneLedger's protocol, focusing on cross-chain transactions a
 
 ### Cli
 	- Implements a miner with Satosi consenses (PoW)
-
