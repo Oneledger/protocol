@@ -29,11 +29,9 @@ type TransactionArguments struct {
 	sequence int
 }
 
-var transaction *TransactionArguments
+var transaction *TransactionArguments = &TransactionArguments{}
 
 func init() {
-	transaction = &TransactionArguments{}
-
 	RootCmd.AddCommand(sendCmd)
 
 	// Operational Parameters
@@ -46,44 +44,14 @@ func init() {
 	sendCmd.Flags().StringVar(&transaction.fee, "fee", "1olt", "include a fee")
 }
 
-// Convert the arguments?
-func HandleSendArguments() {
-}
-
-// SignTransaction with the local keys
-func SignTransaction(full *app.FullSendTransaction) {
-}
-
-// Pack a request into a transferable format (wire)
-func PackRequest(request *app.FullSendTransaction) []byte {
-	packet := wire.BinaryBytes(request)
-	return packet
-}
-
-// CreateRequest builds and signs the transaction based on the arguments
-func CreateRequest() []byte {
-	// Create base transaction
-	send := &app.SendTransaction{Type: app.SEND_TRANSACTION}
-	full := &app.FullSendTransaction{Transaction: send}
-
-	// Sign it
-	SignTransaction(full)
-
-	// Encode the message
-	packet := PackRequest(full)
-
-	return packet
-}
-
 // IssueRequest sends out a sendTx to all of the nodes in the chain
 func IssueRequest(cmd *cobra.Command, args []string) {
-	app.Log.Info("Issuing a client request")
-
 	app.Log.Debug("Have Request", "tx", transaction)
 
 	// Create message
 	packet := CreateRequest()
 
+	// TODO: Init?
 	app.Log.Debug("Creating Client")
 	client := rpcclient.NewHTTP("127.0.0.1:46657", "/websocket")
 
@@ -94,4 +62,39 @@ func IssueRequest(cmd *cobra.Command, args []string) {
 	}
 	app.Log.Debug("Returned Successfully", "result", result)
 
+}
+
+// GetSigners will return the public keys of the signers
+func GetSigners() []app.PublicKey {
+	return nil
+}
+
+// CreateRequest builds and signs the transaction based on the arguments
+func CreateRequest() []byte {
+	signers := GetSigners()
+
+	// Create base transaction
+	transaction := &app.SwapTransaction{
+		TransactionBase: app.TransactionBase{
+			Type:    app.SWAP_TRANSACTION,
+			ChainId: app.ChainId,
+			Signers: signers,
+		},
+	}
+
+	signed := SignTransaction(app.Transaction(transaction))
+	packet := PackRequest(signed)
+
+	return packet
+}
+
+// SignTransaction with the local keys
+func SignTransaction(transaction app.Transaction) app.Transaction {
+	return transaction
+}
+
+// Pack a request into a transferable format (wire)
+func PackRequest(request app.Transaction) []byte {
+	packet := wire.BinaryBytes(request)
+	return packet
 }

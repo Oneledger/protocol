@@ -13,8 +13,10 @@ const (
 	SUCCESS         Error = 0
 	PARSE_ERROR     Error = 101
 	NOT_IMPLEMENTED Error = 201
+	MISSING_VALUE   Error = 301
 )
 
+// Unpack an encoded (wire) message
 func UnpackMessage(message Message) (TransactionType, Message) {
 	value, size, err := wire.GetVarint(message)
 	if err != nil {
@@ -64,14 +66,21 @@ func Parse(message Message) (Transaction, Error) {
 	return nil, PARSE_ERROR
 }
 
-func ParseSend(message Message) *SendTransactionBase {
+// Parse a send request
+func ParseSend(message Message) *SendTransaction {
 	Log.Debug("Have a Send")
 
-	return &SendTransactionBase{ttype: SEND_TRANSACTION}
+	return &SendTransaction{
+		TransactionBase: TransactionBase{Type: SEND_TRANSACTION},
+	}
 }
 
-func ParseSwap(message Message) *SwapTransactionBase {
+// Parse a swap request
+func ParseSwap(message Message) *SwapTransaction {
 	Log.Debug("Have a Swap")
 
-	return &SwapTransactionBase{ttype: SWAP_TRANSACTION}
+	//return &SwapTransaction{Type: SWAP_TRANSACTION}
+	return &SwapTransaction{
+		TransactionBase: TransactionBase{Type: SWAP_TRANSACTION},
+	}
 }

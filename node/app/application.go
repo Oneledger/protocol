@@ -50,6 +50,8 @@ func (app Application) Info(req types.RequestInfo) types.ResponseInfo {
 
 	return types.ResponseInfo{
 		Data: info.JSON(),
+		// LastBlockHeight: lastHeight,
+		// LastBlockAppHash: lastAppHash,
 	}
 }
 
