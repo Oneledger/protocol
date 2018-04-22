@@ -105,7 +105,7 @@ func (app Application) DeliverTx(tx []byte) types.ResponseDeliverTx {
 		return types.ResponseDeliverTx{Code: err}
 	}
 
-	if err = result.ProcessTransaction(); err != 0 {
+	if err = result.ProcessDeliver(); err != 0 {
 		return types.ResponseDeliverTx{Code: err}
 	}
 

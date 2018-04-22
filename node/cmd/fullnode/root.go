@@ -32,6 +32,7 @@ func Execute() {
 // Initialize Cobra, config global arguments
 func init() {
 	cobra.OnInitialize(environment)
+
 	RootCmd.PersistentFlags().BoolVarP(&app.Current.Debug, "debug", "d", app.Current.Debug, "Set DEBUG mode")
 	RootCmd.PersistentFlags().StringVarP(&app.Current.RootDir, "root", "r", app.Current.RootDir, "Set root directory")
 	RootCmd.PersistentFlags().StringVarP(&app.Current.Name, "name", "n", app.Current.Name, "Set a name")
