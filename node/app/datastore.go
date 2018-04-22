@@ -1,8 +1,10 @@
 /*
 	Copyright 2017-2018 OneLedger
 
-	Encapsulate the underlying storage from our app. Currently using
-	Tendermint's memdb (just an in-memory Merkle Tree)
+	Encapsulate the underlying storage from our app. Currently using:
+		Tendermint's memdb (just an in-memory Merkle Tree)
+		Tendermint's persistent kvstore (with Merkle Trees & Proofs)
+
 */
 package app
 
@@ -41,8 +43,9 @@ func NewDatastore(name string, dsType DatastoreType) *Datastore {
 		}
 
 	case PERSISTENT:
-		storage, err := db.NewGoLevelDB("OneLedger-"+name, "./")
-		if err == nil {
+		storage, err := db.NewGoLevelDB("OneLedger-"+name, Current.RootDir)
+		if err != nil {
+			Log.Error("Database create failed", "err", err)
 			panic("Can't create a database")
 		}
 
