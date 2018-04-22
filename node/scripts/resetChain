@@ -8,9 +8,9 @@ set -eu
 #
 # Setup the paths
 #
-export WORK=$GOPATH/test
-export LOG=$GOPATH/test
-export DATA=$GOPATH/data
+export WORK=$OLDATA
+export LOG=$OLDATA
+export DATA=$OLDATA/tendermint
 
 # Control the working directory
 pushd $WORK
@@ -22,8 +22,8 @@ pushd $WORK
 #
 # Reset the main tendermint chain
 #
-tendermint unsafe_reset_all > $LOG/tendermint_init.log
-tendermint init > $LOG/tendermint_init.log
+tendermint unsafe_reset_all --home $DATA > $LOG/tendermint_init.log
+tendermint init --home $DATA > $LOG/tendermint_init.log
 
 #
 # Reset our chain

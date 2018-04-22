@@ -24,9 +24,9 @@ type Application struct {
 // NewApplicationContext initializes a new application
 func NewApplication() *Application {
 	return &Application{
-		status:   NewDatastore("status", MEMORY),
-		accounts: NewDatastore("accounts", MEMORY),
-		utxo:     NewDatastore("utxo", MEMORY),
+		status:   NewDatastore("status", PERSISTENT),
+		accounts: NewDatastore("accounts", PERSISTENT),
+		utxo:     NewDatastore("utxo", PERSISTENT),
 	}
 }
 
