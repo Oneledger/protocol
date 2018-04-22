@@ -22,8 +22,8 @@ const (
 // Polymorphism and Serializable
 type Transaction interface {
 	Validate() Error
-	ProcessCheck() Error
-	ProcessDeliver() Error
+	ProcessCheck(*Application) Error
+	ProcessDeliver(*Application) Error
 }
 
 // Base Data for each type
@@ -65,12 +65,12 @@ func (transaction *SendTransaction) Validate() Error {
 	return SUCCESS
 }
 
-func (transaction *SendTransaction) ProcessCheck() Error {
+func (transaction *SendTransaction) ProcessCheck(app *Application) Error {
 	// TODO: // Update in memory copy of Merkle Tree
 	return SUCCESS
 }
 
-func (transaction *SendTransaction) ProcessDeliver() Error {
+func (transaction *SendTransaction) ProcessDeliver(app *Application) Error {
 	// TODO: // Update in final copy of Merkle Tree
 	return SUCCESS
 }
@@ -80,10 +80,10 @@ func (transaction *SwapTransaction) Validate() Error {
 	return SUCCESS
 }
 
-func (transaction *SwapTransaction) ProcessCheck() Error {
+func (transaction *SwapTransaction) ProcessCheck(app *Application) Error {
 	return SUCCESS
 }
 
-func (transaction *SwapTransaction) ProcessDeliver() Error {
+func (transaction *SwapTransaction) ProcessDeliver(app *Application) Error {
 	return SUCCESS
 }

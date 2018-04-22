@@ -16,7 +16,8 @@ type Application struct {
 
 	status   *Datastore // current state of any composite transactions
 	accounts *Datastore // identity management
-	utxo     *Datastore // unspent transctions
+	//utxo     *Datastore // unspent transctions
+	utxo *ChainState // unspent transctions
 
 	// TODO: basecoin has fees and staking too?
 }
@@ -26,7 +27,8 @@ func NewApplication() *Application {
 	return &Application{
 		status:   NewDatastore("status", PERSISTENT),
 		accounts: NewDatastore("accounts", PERSISTENT),
-		utxo:     NewDatastore("utxo", PERSISTENT),
+		//utxo:     NewDatastore("utxo", PERSISTENT),
+		utxo: NewChainState("utxo", PERSISTENT),
 	}
 }
 
@@ -82,6 +84,10 @@ func (app Application) CheckTx(tx []byte) types.ResponseCheckTx {
 		return types.ResponseCheckTx{Code: err}
 	}
 
+	if err = result.ProcessCheck(&app); err != 0 {
+		return types.ResponseCheckTx{Code: err}
+	}
+
 	return types.ResponseCheckTx{Code: types.CodeTypeOK}
 }
 
@@ -105,7 +111,7 @@ func (app Application) DeliverTx(tx []byte) types.ResponseDeliverTx {
 		return types.ResponseDeliverTx{Code: err}
 	}
 
-	if err = result.ProcessDeliver(); err != 0 {
+	if err = result.ProcessDeliver(&app); err != 0 {
 		return types.ResponseDeliverTx{Code: err}
 	}
 
