@@ -20,3 +20,7 @@ func NewAccounts(name string) *Accounts {
 func GetAccount(identity Identity) (string, Error) {
 	return identity.Name(), 0
 }
+
+func (acc *Accounts) AllAccounts() []Identity {
+	return nil
+}

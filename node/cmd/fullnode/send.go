@@ -51,8 +51,6 @@ func IssueRequest(cmd *cobra.Command, args []string) {
 	// Create message
 	packet := CreateRequest()
 
-	app.Log.Debug("Creating Client")
-
 	// TODO: Get this from the config file.
 	client := rpcclient.NewHTTP("127.0.0.1:46657", "/websocket")
 

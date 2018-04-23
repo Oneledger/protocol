@@ -13,7 +13,7 @@ import (
 	"github.com/tendermint/tmlibs/db"
 )
 
-type DatabaseKey []byte // Database key
+type DatabaseKey = []byte // Database key
 
 // ENUM for datastore type
 type DatastoreType int
@@ -57,7 +57,6 @@ func NewDatastore(name string, newType DatastoreType) *Datastore {
 			Name: name,
 			Tree: tree,
 		}
-
 	default:
 		panic("Unknown Type")
 
@@ -65,25 +64,32 @@ func NewDatastore(name string, newType DatastoreType) *Datastore {
 }
 
 // Store inserts or updates a value under a key
-func (store Datastore) Store(key DatabaseKey, value Message) {
+func (store Datastore) Store(key DatabaseKey, value Message) Message {
 	switch store.Type {
+
 	case MEMORY:
 		store.Data.Set(key, value)
+
 	case PERSISTENT:
 		store.Tree.Set(key, value)
+
 	default:
 		panic("Unknown Type")
 	}
+	return value
 }
 
 // Load return the stored value
 func (store Datastore) Load(key DatabaseKey) (value Message) {
 	switch store.Type {
+
 	case MEMORY:
 		return store.Data.Get(key)
+
 	case PERSISTENT:
 		_, value := store.Tree.Get(key)
 		return Message(value)
+
 	default:
 		panic("Unknown Type")
 	}

@@ -8,7 +8,7 @@ package main
 import "fmt"
 
 type Terminal interface {
-	Print(text string)
+	Print(text ...interface{})
 	Read() string
 }
 
@@ -26,11 +26,11 @@ func NewTty() *Tty {
 }
 
 // TODO: Add varargs, pretty formatting, logging and detect disconnected terminals
-func (tty *Tty) Print(text string) {
-	fmt.Println(text)
+func (tty *Tty) Print(text ...interface{}) {
+	fmt.Println(text...)
 }
 
 // TODO: Catch a disconnected terminal, maybe read input from files?
 func (tty *Tty) Read() string {
-	return "missing"
+	return "missing input"
 }

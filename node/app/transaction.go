@@ -7,7 +7,7 @@ package app
 
 var ChainId string
 
-type Message []byte // Contents of a transaction
+type Message = []byte // Contents of a transaction
 
 // ENUM for type
 type TransactionType byte

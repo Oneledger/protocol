@@ -7,6 +7,8 @@ package app
 
 import (
 	//"fmt"
+	"bytes"
+
 	"github.com/tendermint/abci/types"
 )
 
@@ -14,11 +16,10 @@ import (
 type Application struct {
 	types.BaseApplication
 
-	status *Datastore // current state of any composite transactions (pending, verified, etc.)
-
-	accounts *Accounts // Keep all of the user accounts locally for their node
-
-	utxo *ChainState // unspent transctions
+	Admin    *Datastore  // any administrative parameters
+	Status   *Datastore  // current state of any composite transactions (pending, verified, etc.)
+	Accounts *Accounts   // Keep all of the user accounts locally for their node
+	Utxo     *ChainState // unspent transctions
 
 	// TODO: basecoin has fees and staking too?
 }
@@ -26,9 +27,10 @@ type Application struct {
 // NewApplicationContext initializes a new application
 func NewApplication() *Application {
 	return &Application{
-		status:   NewDatastore("status", PERSISTENT),
-		accounts: NewAccounts("accounts"),
-		utxo:     NewChainState("utxo", PERSISTENT),
+		Admin:    NewDatastore("admin", PERSISTENT),
+		Status:   NewDatastore("status", PERSISTENT),
+		Accounts: NewAccounts("accounts"),
+		Utxo:     NewChainState("utxo", PERSISTENT),
 	}
 }
 
@@ -39,6 +41,8 @@ type BeginResponse = types.ResponseBeginBlock
 // InitChain is called when a new chain is getting created
 func (app Application) InitChain(req types.RequestInitChain) types.ResponseInitChain {
 	Log.Debug("Message: InitChain", "req", req)
+
+	// TODO: Insure that all of the databases and shared resources are reset here
 
 	return types.ResponseInitChain{}
 }
@@ -91,9 +95,24 @@ func (app Application) CheckTx(tx []byte) types.ResponseCheckTx {
 	return types.ResponseCheckTx{Code: types.CodeTypeOK}
 }
 
+var chainKey DatabaseKey = DatabaseKey("chainId")
+
 // BeginBlock is called when a new block is started
 func (app Application) BeginBlock(req BeginRequest) BeginResponse {
 	Log.Debug("Message: BeginBlock", "req", req)
+
+	newChainId := Message(req.Header.ChainID)
+
+	chainId := app.Admin.Load(chainKey)
+
+	if chainId == nil {
+		chainId = app.Admin.Store(chainKey, newChainId)
+
+	} else if bytes.Compare(chainId, newChainId) != 0 {
+		//panic("Mismatching chains")
+	}
+
+	Log.Debug("ChainID is", "id", chainId)
 
 	return BeginResponse{}
 }
