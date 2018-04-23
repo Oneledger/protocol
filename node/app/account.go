@@ -5,20 +5,18 @@
 */
 package app
 
-// The current
-type Account struct {
-	Name     string
-	Identity Identity
-	Balance  Coins
-	Chains   []Identity
+// The persistent collection of all accounts known by this node
+type Accounts struct {
+	accounts *Datastore
 }
 
-// TODO: Set defaults here
-func NewAccount() *Account {
-	return &Account{}
+// Initialize or reconnect to the database
+func NewAccounts(name string) *Accounts {
+	accounts := NewDatastore(name, PERSISTENT)
+	return &Accounts{accounts: accounts}
 }
 
-func GetAccount(identity Identity) (*Account, Error) {
-	// TODO: Build up the Account information
-	return &Account{}, 28
+// Given an identity, get the account
+func GetAccount(identity Identity) (string, Error) {
+	return identity.Name(), 0
 }

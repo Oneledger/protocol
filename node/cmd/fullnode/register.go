@@ -6,8 +6,6 @@
 package main
 
 import (
-	"fmt"
-
 	"github.com/Oneledger/prototype/node/app"
 	"github.com/spf13/cobra"
 )
@@ -42,9 +40,10 @@ func init() {
 func Register(cmd *cobra.Command, args []string) {
 	app.Log.Debug("Register Account")
 
+	//identity, err := app.FindIdentity(arguments.name)
 	identity, err := app.FindIdentity(arguments.name)
 	if err != 0 {
-		app.Log.Error("Invalid Identity string")
+		Console.Print("Invalid Identity String")
 		return
 	}
 
@@ -55,25 +54,29 @@ func Register(cmd *cobra.Command, args []string) {
 	}
 }
 
+func ConvertPublicKey(keystring string) app.PublicKey {
+	return app.PublicKey{}
+}
+
 func CreateIdentity() {
 	chainType, err := app.FindIdentityType(arguments.chain)
 	if err != 0 {
-		fmt.Println("Invalid identity type")
+		Console.Print("Invalid Identity Type")
 	}
 
-	identity := app.NewIdentity(arguments.name, chainType)
+	pubkey := ConvertPublicKey(arguments.pubkey)
+
+	identity := app.NewIdentity(chainType, arguments.name, pubkey)
 
 	// TODO: Need to conver the input...
-	identity.AddPublicKey(app.PublicKey{})   //arguments.pubkey)
 	identity.AddPrivateKey(app.PrivateKey{}) //arguments.privkey)
 
-	fmt.Println("New Account has been created")
+	Console.Print("New Account has been created")
 }
 
 func UpdateIdentity(identity app.Identity) {
 	// TODO: Need to conver the input...
-	identity.AddPublicKey(app.PublicKey{})   //arguments.pubkey)
 	identity.AddPrivateKey(app.PrivateKey{}) //arguments.privkey)
 
-	fmt.Println("New Account has been updated")
+	Console.Print("New Account has been updated")
 }

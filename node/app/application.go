@@ -14,8 +14,9 @@ import (
 type Application struct {
 	types.BaseApplication
 
-	status   *Datastore // current state of any composite transactions (pending, verified, etc.)
-	accounts *Datastore // identity management
+	status *Datastore // current state of any composite transactions (pending, verified, etc.)
+
+	accounts *Accounts // Keep all of the user accounts locally for their node
 
 	utxo *ChainState // unspent transctions
 
@@ -26,9 +27,8 @@ type Application struct {
 func NewApplication() *Application {
 	return &Application{
 		status:   NewDatastore("status", PERSISTENT),
-		accounts: NewDatastore("accounts", PERSISTENT),
-		//utxo:     NewDatastore("utxo", PERSISTENT),
-		utxo: NewChainState("utxo", PERSISTENT),
+		accounts: NewAccounts("accounts"),
+		utxo:     NewChainState("utxo", PERSISTENT),
 	}
 }
 
