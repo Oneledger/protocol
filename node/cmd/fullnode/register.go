@@ -18,11 +18,10 @@ var registerCmd = &cobra.Command{
 
 // Arguments to the command
 type RegistrationArguments struct {
-	chain     string
-	account   string
-	chainType string
-	pubkey    string
-	privkey   string
+	name    string
+	chain   string
+	pubkey  string
+	privkey string
 }
 
 var arguments = &RegistrationArguments{}
@@ -31,6 +30,7 @@ func init() {
 	RootCmd.AddCommand(registerCmd)
 
 	// Transaction Parameters
+	registerCmd.Flags().StringVarP(&arguments.name, "name", "n", "Me", "User's Identity")
 	registerCmd.Flags().StringVarP(&arguments.chain, "chain", "c", "OneLedger-Root", "Specify the chain")
 	registerCmd.Flags().StringVarP(&arguments.pubkey, "pubkey", "k", "0x00000000", "Specify a public key")
 	registerCmd.Flags().StringVarP(&arguments.privkey, "privkey", "p", "0x00000000", "Specify a private key")
@@ -39,4 +39,44 @@ func init() {
 // IssueRequest sends out a sendTx to all of the nodes in the chain
 func Register(cmd *cobra.Command, args []string) {
 	app.Log.Debug("Register Account")
+
+	//identity, err := app.FindIdentity(arguments.name)
+	identity, err := app.FindIdentity(arguments.name)
+	if err != 0 {
+		Console.Print("Invalid Identity String")
+		return
+	}
+
+	if identity == nil {
+		CreateIdentity()
+	} else {
+		UpdateIdentity(identity)
+	}
+}
+
+func ConvertPublicKey(keystring string) app.PublicKey {
+	return app.PublicKey{}
+}
+
+func CreateIdentity() {
+	chainType, err := app.FindIdentityType(arguments.chain)
+	if err != 0 {
+		Console.Print("Invalid Identity Type")
+	}
+
+	pubkey := ConvertPublicKey(arguments.pubkey)
+
+	identity := app.NewIdentity(chainType, arguments.name, pubkey)
+
+	// TODO: Need to conver the input...
+	identity.AddPrivateKey(app.PrivateKey{}) //arguments.privkey)
+
+	Console.Print("New Account has been created")
+}
+
+func UpdateIdentity(identity app.Identity) {
+	// TODO: Need to conver the input...
+	identity.AddPrivateKey(app.PrivateKey{}) //arguments.privkey)
+
+	Console.Print("New Account has been updated")
 }

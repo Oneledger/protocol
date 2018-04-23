@@ -13,7 +13,7 @@ import (
 	"github.com/tendermint/tmlibs/db"
 )
 
-type DatabaseKey []byte // Database key
+type DatabaseKey = []byte // Database key
 
 // ENUM for datastore type
 type DatastoreType int
@@ -32,12 +32,13 @@ type Datastore struct {
 }
 
 // NewApplicationContext initializes a new application
-func NewDatastore(name string, dsType DatastoreType) *Datastore {
-	switch dsType {
+func NewDatastore(name string, newType DatastoreType) *Datastore {
+	switch newType {
 
 	case MEMORY:
 		// TODO: No Merkle tree?
 		return &Datastore{
+			Type: newType,
 			Name: name,
 			Data: db.NewMemDB(),
 		}
@@ -52,10 +53,10 @@ func NewDatastore(name string, dsType DatastoreType) *Datastore {
 		tree := iavl.NewTree(storage, 1000) // Do I need a historic tree here?
 
 		return &Datastore{
+			Type: newType,
 			Name: name,
 			Tree: tree,
 		}
-
 	default:
 		panic("Unknown Type")
 
@@ -63,11 +64,33 @@ func NewDatastore(name string, dsType DatastoreType) *Datastore {
 }
 
 // Store inserts or updates a value under a key
-func (store Datastore) Store(key DatabaseKey, value Message) {
-	store.Data.Set(key, value)
+func (store Datastore) Store(key DatabaseKey, value Message) Message {
+	switch store.Type {
+
+	case MEMORY:
+		store.Data.Set(key, value)
+
+	case PERSISTENT:
+		store.Tree.Set(key, value)
+
+	default:
+		panic("Unknown Type")
+	}
+	return value
 }
 
 // Load return the stored value
 func (store Datastore) Load(key DatabaseKey) (value Message) {
-	return store.Data.Get(key)
+	switch store.Type {
+
+	case MEMORY:
+		return store.Data.Get(key)
+
+	case PERSISTENT:
+		_, value := store.Tree.Get(key)
+		return Message(value)
+
+	default:
+		panic("Unknown Type")
+	}
 }

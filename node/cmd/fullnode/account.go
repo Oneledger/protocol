@@ -18,11 +18,7 @@ var accountCmd = &cobra.Command{
 
 // Arguments to the command
 type ListArguments struct {
-	user      string
-	account   string
-	chainType string
-	pubkey    string
-	privkey   string
+	user string
 }
 
 var listargs = &ListArguments{}
@@ -30,20 +26,44 @@ var listargs = &ListArguments{}
 func init() {
 	RootCmd.AddCommand(accountCmd)
 
-	// Operational Parameters
-	//sendCmd.Flags().StringVarP(&app.Current.Transport, "transport", "t", "socket", "transport (socket | grpc)")
-	//sendCmd.Flags().StringVarP(&app.Current.Address, "address", "a", "tcp://127.0.0.1:46658", "full address")
-
 	// Transaction Parameters
-	accountCmd.Flags().StringVarP(&listargs.account, "account", "a", "undefined", "account")
-	accountCmd.Flags().StringVarP(&listargs.user, "user", "u", "undefined", "user")
+	accountCmd.Flags().StringVarP(&listargs.user, "user", "u", "", "user account name")
 }
 
 // IssueRequest sends out a sendTx to all of the nodes in the chain
 func ListAccount(cmd *cobra.Command, args []string) {
-	app.Log.Debug("Listing Account Details")
+
+	// TODO: We can't do this, need to be 'light-client' instead...
+	node := app.NewApplication()
+
+	if listargs.user != "" {
+		Console.Print("Listing Account Details for", listargs.user)
+		identity, err := app.FindIdentity(listargs.user)
+		if err != 0 {
+			app.Log.Error("Not a valid identity", "err", err)
+			return
+		}
+		AccountInfo(node, identity)
+		return
+	}
+
+	Console.Print("Listing Account Details for all users")
+	for _, identity := range node.Accounts.AllAccounts() {
+		AccountInfo(node, identity)
+	}
 }
 
-// Verify that the account actually has access to the chain in question
-func VerifyAccess() {
+func AccountInfo(node *app.Application, identity app.Identity) {
+
+	name, err := app.GetAccount(identity)
+	if err != 0 {
+		app.Log.Error("Invalid Account", "err", err)
+		return
+	}
+
+	PrintAccount(identity, name)
+}
+
+func PrintAccount(identity app.Identity, name string) {
+	Console.Print("Identity")
 }
