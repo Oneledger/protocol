@@ -51,8 +51,9 @@ func IssueRequest(cmd *cobra.Command, args []string) {
 	// Create message
 	packet := CreateRequest()
 
-	// TODO: Init?
 	app.Log.Debug("Creating Client")
+
+	// TODO: Get this from the config file.
 	client := rpcclient.NewHTTP("127.0.0.1:46657", "/websocket")
 
 	result, err := client.BroadcastTxCommit(packet)
@@ -60,8 +61,8 @@ func IssueRequest(cmd *cobra.Command, args []string) {
 		app.Log.Error("Error", "err", err)
 		os.Exit(-1)
 	}
-	app.Log.Debug("Returned Successfully", "result", result)
 
+	app.Log.Debug("Returned Successfully", "result", result)
 }
 
 func GetPublicKey() app.PublicKey {

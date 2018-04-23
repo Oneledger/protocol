@@ -14,9 +14,9 @@ import (
 type Application struct {
 	types.BaseApplication
 
-	status   *Datastore // current state of any composite transactions
+	status   *Datastore // current state of any composite transactions (pending, verified, etc.)
 	accounts *Datastore // identity management
-	//utxo     *Datastore // unspent transctions
+
 	utxo *ChainState // unspent transctions
 
 	// TODO: basecoin has fees and staking too?

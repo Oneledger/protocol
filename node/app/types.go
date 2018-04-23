@@ -25,15 +25,15 @@ type ExchangeRate struct {
 
 // inputs into a send transaction (similar to Bitcoin)
 type SendInput struct {
-	Address   Address   `json:"address"`   // Hash of the PubKey
-	Coins     Coins     `json:"coins"`     //
-	Sequence  int       `json:"sequence"`  // Must be 1 greater than the last committed Input (reply protection?)
-	Signature Signature `json:"signature"` // Depends on the PubKey type and the whole Tx (?)
-	PubKey    PublicKey `json:"pub_key"`   // Is present iff Sequence == 0 (?)
+	Address   Address   `json:"address"`
+	Coins     Coins     `json:"coins"`
+	Sequence  int       `json:"sequence"`
+	Signature Signature `json:"signature"`
+	PubKey    PublicKey `json:"pub_key"`
 }
 
 // outputs for a send transaction (similar to Bitcoin)
 type SendOutput struct {
-	Address Address `json:"address"` // Hash of the PubKey
-	Coins   Coins   `json:"coins"`   //
+	Address Address `json:"address"`
+	Coins   Coins   `json:"coins"`
 }

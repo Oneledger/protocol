@@ -6,6 +6,8 @@
 package main
 
 import (
+	"fmt"
+
 	"github.com/Oneledger/prototype/node/app"
 	"github.com/spf13/cobra"
 )
@@ -18,11 +20,7 @@ var accountCmd = &cobra.Command{
 
 // Arguments to the command
 type ListArguments struct {
-	user      string
-	account   string
-	chainType string
-	pubkey    string
-	privkey   string
+	identity string
 }
 
 var listargs = &ListArguments{}
@@ -30,20 +28,29 @@ var listargs = &ListArguments{}
 func init() {
 	RootCmd.AddCommand(accountCmd)
 
-	// Operational Parameters
-	//sendCmd.Flags().StringVarP(&app.Current.Transport, "transport", "t", "socket", "transport (socket | grpc)")
-	//sendCmd.Flags().StringVarP(&app.Current.Address, "address", "a", "tcp://127.0.0.1:46658", "full address")
-
 	// Transaction Parameters
-	accountCmd.Flags().StringVarP(&listargs.account, "account", "a", "undefined", "account")
-	accountCmd.Flags().StringVarP(&listargs.user, "user", "u", "undefined", "user")
+	accountCmd.Flags().StringVarP(&listargs.identity, "identity", "u", "undefined", "user account name")
 }
 
 // IssueRequest sends out a sendTx to all of the nodes in the chain
 func ListAccount(cmd *cobra.Command, args []string) {
 	app.Log.Debug("Listing Account Details")
+
+	identity, err := app.FindIdentity(listargs.identity)
+	if err != 0 {
+		app.Log.Error("Not a valid identity", "err", err)
+		return
+	}
+
+	account, err := app.GetAccount(identity)
+	if err != 0 {
+		app.Log.Error("Invalid Account", "err", err)
+		return
+	}
+
+	PrintAccount(identity, account)
 }
 
-// Verify that the account actually has access to the chain in question
-func VerifyAccess() {
+func PrintAccount(identity app.Identity, account *app.Account) {
+	fmt.Println("Identity")
 }
