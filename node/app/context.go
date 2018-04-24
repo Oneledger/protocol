@@ -3,6 +3,8 @@
 
 	The overall running context. Initialized right away, but is mutable.
 
+	Contains the main variables.
+
 	Precedence:
 		- Default values
 	 	- Environment variables (like $OLROOT)

@@ -4,6 +4,7 @@
 	Encapsulate the underlying storage from our app. Currently using:
 		Tendermint's memdb (just an in-memory Merkle Tree)
 		Tendermint's persistent kvstore (with Merkle Trees & Proofs)
+			- Can only be opened by one process...
 
 */
 package app
