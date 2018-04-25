@@ -1,10 +1,16 @@
 /*
 	Copyright 2017-2018 OneLedger
+
+	TODO: We want configurable, switchable conversions for the different pathways
+		- transactions sent from Tendermint (is this a mix between wire and JSON?)
+		- data stored in LevelDB
+		- queries coming in from http
 */
 package app
 
 import (
 	"bytes"
+	"encoding/json"
 	"reflect"
 
 	wire "github.com/tendermint/go-wire"
@@ -38,8 +44,23 @@ func Deserialize(input []byte, output interface{}) (msg interface{}, err error) 
 	return msg, err
 }
 
-// Convert into wire's version of JSON (which is still non-standard?)
+// Go's version of JSON
 func ConvertToJSON(input interface{}) (msg []byte, err error) {
+	bytes, err := json.Marshal(input)
+	if err != nil {
+		return nil, err
+	}
+	return bytes, nil
+}
+
+// Go's version of JSON
+func ConvertFromJSON(input []byte, output interface{}) (err error) {
+	err = json.Unmarshal(input, output)
+	return err
+}
+
+// Convert into wire's version of JSON (which is still non-standard?)
+func ConvertToWireJSON(input interface{}) (msg []byte, err error) {
 	var count int
 
 	buffer := new(bytes.Buffer)
@@ -50,7 +71,7 @@ func ConvertToJSON(input interface{}) (msg []byte, err error) {
 }
 
 // Convert from wire's JSON format back into the original golang type
-func ConvertFromJSON(input []byte, output interface{}) (err error) {
+func ConvertFromWireJSON(input []byte, output interface{}) (err error) {
 
 	valueOf := reflect.ValueOf(output)
 

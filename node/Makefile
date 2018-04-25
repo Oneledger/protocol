@@ -49,7 +49,7 @@ full: stop reset install
 	# TODO: should have a wait of knowing the chain is ready
 	sleep 9 
 
-	fullnode send
+	olclient send
 	sleep 3
 	./scripts/stopNode
 

@@ -18,8 +18,8 @@ type Application struct {
 
 	Admin    *Datastore  // any administrative parameters
 	Status   *Datastore  // current state of any composite transactions (pending, verified, etc.)
-	Accounts *Accounts   // Keep all of the user accounts locally for their node
-	Utxo     *ChainState // unspent transctions
+	Accounts *Accounts   // Keep all of the user accounts locally for their node (identity management)
+	Utxo     *ChainState // unspent transction output (for each type of coin)
 
 	// TODO: basecoin has fees and staking too?
 }

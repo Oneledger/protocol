@@ -5,8 +5,6 @@
 */
 package app
 
-import "encoding/json"
-
 // Response arguments
 type ResponseInfo struct {
 	//Hashes int `json:"hashes"`
@@ -24,11 +22,19 @@ func NewResponseInfo(hashes int, txs int, size int) *ResponseInfo {
 
 // Convert to JSON
 func (info *ResponseInfo) JSON() string {
-	bytes, err := json.Marshal(info)
+	bytes, err := ConvertToJSON(info)
 	if err != nil {
-		panic("Marshal Failed")
+		// TODO: Replace this with real error handling
+		panic("JSON conversion failed")
 	}
 	return string(bytes)
+	/*
+		bytes, err := json.Marshal(info)
+		if err != nil {
+			panic("Marshal Failed")
+		}
+		return string(bytes)
+	*/
 }
 
 // Return as a Message
