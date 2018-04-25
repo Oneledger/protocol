@@ -72,8 +72,7 @@ func TestStruct(t *testing.T) {
 	buffer, err := Serialize(basic)
 
 	if err != nil {
-		Log.Debug("Serialized failed", "err", err)
-		assert.FailNow(t, "Serialization failed ")
+		assert.FailNow(t, "Serialization failed ", err.Error())
 	} else {
 		Log.Debug("buffer", "buffer", buffer)
 	}
@@ -83,7 +82,7 @@ func TestStruct(t *testing.T) {
 	value := base.(*Basic)
 
 	if err != nil {
-		assert.FailNow(t, "Deserialization failed", err.Error())
+		assert.Fail(t, "Deserialization failed", err.Error())
 	} else {
 		Log.Debug("result", "value", value)
 	}
@@ -128,25 +127,23 @@ func TestInterface(t *testing.T) {
 	var generic BasicType
 
 	generic = &Basic{Pad: "-------", Number: 654321, Name: "A rose by any other name"}
+	Log.Debug("generic", "generic", generic)
 
 	buffer, err := Serialize(generic)
-
 	if err != nil {
-		Log.Debug("Serialized failed", "err", err)
+		assert.FailNow(t, "Serialization failed", err.Error())
 	} else {
 		Log.Debug("buffer", "buffer", buffer)
 	}
 
-	result, err := Deserialize(buffer, generic)
-	//value := result.(BasicType).(*Basic)
-	value := result.(*Basic)
-
+	result, err := Deserialize(buffer, struct{ BasicType }{})
 	if err != nil {
-		Log.Debug("Deserialized failed", "err", err)
+		assert.Fail(t, "Deserialization failed", err.Error())
 	} else {
 		Log.Debug("result", "result", result)
-		Log.Debug("result", "value", value)
 	}
 
+	value := result.(struct{ BasicType }).BasicType
+	Log.Debug("value", "value", value)
 	assert.Equal(t, generic, value, "These should be equal")
 }

@@ -26,13 +26,13 @@ tools:
 # Build a local copy
 #
 build:
-	go build -o testFullnode github.com/Oneledger/prototype/node/cmd/fullnode
+	go build -o testFullnode github.com/Oneledger/prototype/node/cmd/...
 
 #
 # Build and install a copy into bin
 #
 install:
-	go install github.com/Oneledger/prototype/node/cmd/fullnode
+	go install github.com/Oneledger/prototype/node/cmd/...
 
 #
 # Run any of the unit tests
@@ -56,7 +56,13 @@ full: stop reset install
 #
 # System Testing, bring up everything
 #
-test: stop install
+test: start
+	echo "Running"
+
+#
+# Start up a node, make sure it is stopped first
+#
+start: stop install
 	./scripts/startNode
 
 #

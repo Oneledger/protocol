@@ -1,7 +1,7 @@
 /*
 	Copyright 2017-2018 OneLedger
 
-	Cli to interact with a with the chain.
+	Gets the account information, this is a node operation (and won't run if a node already exists)
 */
 package main
 
@@ -29,6 +29,8 @@ func init() {
 	// Transaction Parameters
 	accountCmd.Flags().StringVarP(&listargs.user, "user", "u", "", "user account name")
 }
+
+// TODO: This should be moved to the core...
 
 // IssueRequest sends out a sendTx to all of the nodes in the chain
 func ListAccount(cmd *cobra.Command, args []string) {

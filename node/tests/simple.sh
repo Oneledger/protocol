@@ -12,7 +12,7 @@ $OLTEST/startNode
 sleep 9
 
 # assumes fullnode is in the PATH
-fullnode send --to 0x01010100101
+olclient send --to 0x01010100101
 
 sleep 3
 
