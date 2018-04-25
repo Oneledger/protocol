@@ -1,5 +1,9 @@
 /*
 	Copyright 2017-2018 OneLedger
+
+	Parse the incoming transactions
+
+	TODO: switch from individual wire calls, to reading/writing directly to structs
 */
 package app
 
@@ -7,7 +11,6 @@ import (
 	wire "github.com/tendermint/go-wire"
 )
 
-//type Error uint32 // Matches Tendermint status
 type Error = uint32 // Matches Tendermint status
 
 const (
