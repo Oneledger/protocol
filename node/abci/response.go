@@ -3,7 +3,12 @@
 
 	Return a Response to an Info messages
 */
-package app
+package abci
+
+import (
+	"github.com/Oneledger/prototype/node/comm"
+	"github.com/Oneledger/prototype/node/convert"
+)
 
 // Response arguments
 type ResponseInfo struct {
@@ -22,7 +27,7 @@ func NewResponseInfo(hashes int, txs int, size int) *ResponseInfo {
 
 // Convert to JSON
 func (info *ResponseInfo) JSON() string {
-	bytes, err := ConvertToJSON(info)
+	bytes, err := convert.ToJSON(info)
 	if err != nil {
 		// TODO: Replace this with real error handling
 		panic("JSON conversion failed")
@@ -38,6 +43,6 @@ func (info *ResponseInfo) JSON() string {
 }
 
 // Return as a Message
-func (info *ResponseInfo) JSONMessage() Message {
-	return Message(info.JSON())
+func (info *ResponseInfo) JSONMessage() comm.Message {
+	return comm.Message(info.JSON())
 }

@@ -3,12 +3,14 @@
 
 	Wrap a query.
 */
-package app
+package abci
+
+import "github.com/Oneledger/prototype/node/comm"
 
 type Query struct {
 	account string
 }
 
-func (query Query) JSON() Message {
+func (query Query) JSON() comm.Message {
 	return nil
 }

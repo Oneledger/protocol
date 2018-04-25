@@ -9,6 +9,7 @@ import (
 	//"fmt"
 	"bytes"
 
+	"github.com/Oneledger/prototype/node/abci"
 	"github.com/tendermint/abci/types"
 )
 
@@ -49,7 +50,7 @@ func (app Application) InitChain(req types.RequestInitChain) types.ResponseInitC
 
 // Info returns the current block information
 func (app Application) Info(req types.RequestInfo) types.ResponseInfo {
-	info := NewResponseInfo(0, 0, 0)
+	info := abci.NewResponseInfo(0, 0, 0)
 
 	Log.Debug("Message: Info", "req", req, "info", info)
 

@@ -3,7 +3,7 @@
 
 	Tests to validate the way wire handles various struct conversions.
 */
-package app
+package comm
 
 import (
 	"testing"

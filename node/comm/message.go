@@ -6,15 +6,16 @@
 		- data stored in LevelDB
 		- queries coming in from http
 */
-package app
+package comm
 
 import (
 	"bytes"
-	"encoding/json"
 	"reflect"
 
 	wire "github.com/tendermint/go-wire"
 )
+
+type Message = []byte
 
 // Given any type of input (except Maps), convert it into wire format
 func Serialize(input interface{}) (msg []byte, err error) {
@@ -42,43 +43,4 @@ func Deserialize(input []byte, output interface{}) (msg interface{}, err error) 
 		//msg = wire.ReadBinary(output, buffer, 0, &count, &err)
 	}
 	return msg, err
-}
-
-// Go's version of JSON
-func ConvertToJSON(input interface{}) (msg []byte, err error) {
-	bytes, err := json.Marshal(input)
-	if err != nil {
-		return nil, err
-	}
-	return bytes, nil
-}
-
-// Go's version of JSON
-func ConvertFromJSON(input []byte, output interface{}) (err error) {
-	err = json.Unmarshal(input, output)
-	return err
-}
-
-// Convert into wire's version of JSON (which is still non-standard?)
-func ConvertToWireJSON(input interface{}) (msg []byte, err error) {
-	var count int
-
-	buffer := new(bytes.Buffer)
-
-	wire.WriteJSON(input, buffer, &count, &err)
-
-	return buffer.Bytes(), err
-}
-
-// Convert from wire's JSON format back into the original golang type
-func ConvertFromWireJSON(input []byte, output interface{}) (err error) {
-
-	valueOf := reflect.ValueOf(output)
-
-	if valueOf.Kind() == reflect.Ptr {
-		wire.ReadJSONPtr(output, input, &err)
-	} else {
-		wire.ReadJSON(output, input, &err)
-	}
-	return err
 }
