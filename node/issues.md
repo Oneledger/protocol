@@ -12,3 +12,5 @@
 
 			- remove repo copy (or sync with vendor copy?)
 		
+	- still having a problem where local Tendermint is taken over vendor copy.
+

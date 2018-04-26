@@ -41,23 +41,20 @@ utest:
 	go test -v `glide novendor`
 
 #
-# Full Testing, bring up everything, send a transaction and then stop
-#
-full: stop reset install
-	./scripts/startNode
-
-	# TODO: should have a wait of knowing the chain is ready
-	sleep 9 
-
-	olclient send
-	sleep 3
-	./scripts/stopNode
-
-#
 # System Testing, bring up everything
 #
 test: start
 	echo "Running"
+
+#
+# Full Testing, bring up everything, send a transaction and then stop
+#
+full: stop reset install
+	./scripts/startNode
+	sleep 9 # TODO: should have a wait of knowing the chain is ready
+	olclient send
+	sleep 3
+	./scripts/stopNode
 
 #
 # Start up a node, make sure it is stopped first
@@ -80,5 +77,6 @@ reset:
 #
 # targets that are not associated with files
 #
-.PHONY: all utest reset test install build tools update
+#
+.PHONY: all build install utest test tools update stop start full
 
