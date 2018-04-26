@@ -2,6 +2,7 @@
 	Copyright 2017-2018 OneLedger
 
 	Cover over the Tendermint client handling.
+
 	TODO: Make this generic to handle HTTP and local clients
 */
 package main
@@ -16,6 +17,7 @@ import (
 
 var cachedClient *rpcclient.HTTP
 
+// TODO: Want to switch client type, based on config or cli args.
 func GetClient() *rpcclient.HTTP {
 	cachedClient = rpcclient.NewHTTP("127.0.0.1:46657", "/websocket")
 	return cachedClient
@@ -23,8 +25,6 @@ func GetClient() *rpcclient.HTTP {
 
 // Broadcast packet to the chain
 func Broadcast(packet []byte) *ctypes.ResultBroadcastTxCommit {
-	// TODO: Get this from the config file.
-
 	client := GetClient()
 
 	result, err := client.BroadcastTxCommit(packet)

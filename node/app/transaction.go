@@ -19,6 +19,10 @@ const (
 	VERIFY_COMMIT
 )
 
+func init() {
+	ChainId = "OneLedger-Root"
+}
+
 // Polymorphism and Serializable
 type Transaction interface {
 	Validate() Error
@@ -34,17 +38,6 @@ type TransactionBase struct {
 }
 
 // Synchronize a swap between two users
-type SwapTransaction struct {
-	TransactionBase
-
-	Party1       Address      `json:"party1"`
-	Party2       Address      `json:"party2"`
-	ExchangeRate ExchangeRate `json:"exchangeRate"`
-	Amount       Coin         `json:"amount"`
-	Fee          Coin         `json:"fee"`
-}
-
-// Synchronize a swap between two users
 type SendTransaction struct {
 	TransactionBase
 
@@ -52,10 +45,6 @@ type SendTransaction struct {
 	Fee     Coin         `json:"fee"`
 	Inputs  []SendInput  `json:"inputs"`
 	Outputs []SendOutput `json:"outputs"`
-}
-
-func init() {
-	ChainId = "OneLedger-Root"
 }
 
 func (transaction *SendTransaction) Validate() Error {
@@ -73,6 +62,18 @@ func (transaction *SendTransaction) ProcessCheck(app *Application) Error {
 func (transaction *SendTransaction) ProcessDeliver(app *Application) Error {
 	// TODO: // Update in final copy of Merkle Tree
 	return SUCCESS
+}
+
+// Synchronize a swap between two users
+type SwapTransaction struct {
+	TransactionBase
+
+	Party1   Address `json:"party1"`
+	Party2   Address `json:"party2"`
+	Fee      Coin    `json:"fee"`
+	Gas      Coin    `json:"fee"`
+	Amount   Coin    `json:"amount"`
+	Exchange Coin    `json:"exchange"`
 }
 
 // Issue swaps across other chains, make sure fees are collected

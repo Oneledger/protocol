@@ -26,19 +26,24 @@ var account *AccountArguments = &AccountArguments{}
 func init() {
 	RootCmd.AddCommand(accountCmd)
 
-	// Operational Parameters
-	//accountCmd.Flags().StringVarP(&app.Current.Transport, "transport", "t", "socket", "transport (socket | grpc)")
-	//accountCmd.Flags().StringVarP(&app.Current.Address, "address", "a", "tcp://127.0.0.1:46658", "full address")
-
+	// TODO: I want to have a default account?
 	// Transaction Parameters
 	accountCmd.Flags().StringVar(&account.user, "user", "undefined", "send recipient")
 }
 
+// Format the request into a query structure
+func FormatRequest() []byte {
+	return app.Message("User=" + account.user)
+}
+
 // IssueRequest sends out a sendTx to all of the nodes in the chain
 func CheckAccount(cmd *cobra.Command, args []string) {
-	app.Log.Debug("Checking Acccount", "tx", transaction)
+	app.Log.Debug("Checking Acccount", "account", account)
 
-	query := Query("path", app.Message("x=y"))
+	request := FormatRequest()
 
-	app.Log.Debug("Returned Successfully", "query", query)
+	// TODO: path was a partial URL path? Need to check to see if that is still required.
+	response := Query("/account", request).Response
+
+	app.Log.Debug("Returned Successfully with", "response", string(response.Value))
 }

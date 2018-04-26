@@ -15,14 +15,6 @@ type Coin struct {
 
 type Coins []Coin
 
-// A rate of exchange, agreeed upon between two parties
-type ExchangeRate struct {
-	//Rate float64 // TODO: should this actually be a rational pair? wire is really unhappy about floats...
-	Source      string `json:"source"`
-	Numerator   int64  `json:"numerator"`
-	Denominator int64  `json:"denominator"`
-}
-
 // inputs into a send transaction (similar to Bitcoin)
 type SendInput struct {
 	Address   Address   `json:"address"`

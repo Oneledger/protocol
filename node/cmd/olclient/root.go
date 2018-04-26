@@ -16,7 +16,7 @@ import (
 
 var RootCmd = &cobra.Command{
 	Use:   "olclient",
-	Short: "olclient",
+	Short: "OneLedger client",
 	Long:  "Client access to the OneLedger chain",
 }
 
@@ -41,5 +41,6 @@ func init() {
 // Initialize Viper
 func environment() {
 	app.Log.Debug("Setting up Environment")
+
 	viper.AutomaticEnv()
 }

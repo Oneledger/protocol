@@ -1,14 +1,21 @@
 /*
 	Copyright 2017-2018 OneLedger
 
-	Encapsulate any terminal handling, to allow scripting later.
+	Encapsulate any reads/writes to a terminal, to allow scripting later.
+
+	Should be separate from logging...
 */
 package main
 
 import "fmt"
 
 type Terminal interface {
-	Print(text ...interface{})
+	//Print(text ...interface{})
+	Question(text ...interface{})
+	Info(text ...interface{})
+	Warning(text ...interface{})
+	Error(text ...interface{})
+
 	Read() string
 }
 
@@ -25,8 +32,24 @@ func NewTty() *Tty {
 	return &Tty{}
 }
 
-// TODO: Add varargs, pretty formatting, logging and detect disconnected terminals
+// TODO: Depreciate
 func (tty *Tty) Print(text ...interface{}) {
+	fmt.Println(text...)
+}
+
+func (tty *Tty) Question(text ...interface{}) {
+	fmt.Println(text...)
+}
+
+func (tty *Tty) Info(text ...interface{}) {
+	fmt.Println(text...)
+}
+
+func (tty *Tty) Warning(text ...interface{}) {
+	fmt.Println(text...)
+}
+
+func (tty *Tty) Error(text ...interface{}) {
 	fmt.Println(text...)
 }
 

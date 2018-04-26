@@ -59,9 +59,11 @@ func (app Application) Info(req RequestInfo) ResponseInfo {
 
 // Query returns a transaction or a proof
 func (app Application) Query(req RequestQuery) ResponseQuery {
-	Log.Debug("Message: Query", "req", req)
+	Log.Debug("Message: Query", "req", req, "path", req.Path, "data", req.Data)
 
-	return ResponseQuery{}
+	result := HandleQuery(req.Path, req.Data)
+
+	return ResponseQuery{Key: Message("result"), Value: result}
 }
 
 // SetOption changes the underlying options for the ABCi app
