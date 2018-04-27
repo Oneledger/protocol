@@ -10,6 +10,7 @@ import (
 
 	"github.com/Oneledger/prototype/node/app"
 	"github.com/Oneledger/prototype/node/convert"
+	"github.com/Oneledger/prototype/node/log"
 	"github.com/spf13/cobra"
 )
 
@@ -99,14 +100,14 @@ func CreateSwapRequest() []byte {
 
 // IssueRequest sends out a sendTx to all of the nodes in the chain
 func SwapCurrency(cmd *cobra.Command, args []string) {
-	app.Log.Debug("Swap Request", "tx", swapargs)
+	log.Debug("Swap Request", "tx", swapargs)
 
 	// Create message
 	packet := CreateSwapRequest()
 
 	result := Broadcast(packet)
 
-	app.Log.Debug("Returned Successfully", "result", result)
+	log.Debug("Returned Successfully", "result", result)
 }
 
 func GetAddress(value string) app.Address {

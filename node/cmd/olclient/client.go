@@ -10,7 +10,7 @@ package main
 import (
 	"os"
 
-	"github.com/Oneledger/prototype/node/app"
+	"github.com/Oneledger/prototype/node/log"
 	rpcclient "github.com/tendermint/tendermint/rpc/client"
 	ctypes "github.com/tendermint/tendermint/rpc/core/types"
 )
@@ -29,7 +29,7 @@ func Broadcast(packet []byte) *ctypes.ResultBroadcastTxCommit {
 
 	result, err := client.BroadcastTxCommit(packet)
 	if err != nil {
-		app.Log.Error("Error", "err", err)
+		log.Error("Error", "err", err)
 		os.Exit(-1)
 	}
 	return result
@@ -41,7 +41,7 @@ func Query(path string, packet []byte) *ctypes.ResultABCIQuery {
 
 	result, err := client.ABCIQuery(path, packet)
 	if err != nil {
-		app.Log.Error("Error", "err", err)
+		log.Error("Error", "err", err)
 		os.Exit(-1)
 	}
 	return result

@@ -10,6 +10,7 @@ import (
 	"os"
 
 	"github.com/Oneledger/prototype/node/app"
+	"github.com/Oneledger/prototype/node/log"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -21,7 +22,7 @@ var RootCmd = &cobra.Command{
 }
 
 func Execute() {
-	app.Log.Debug("Parse Commamnds")
+	log.Debug("Parse Commamnds")
 
 	if err := RootCmd.Execute(); err != nil {
 		fmt.Println(err)
@@ -40,7 +41,7 @@ func init() {
 
 // Initialize Viper
 func environment() {
-	app.Log.Debug("Setting up Environment")
+	log.Debug("Setting up Environment")
 
 	viper.AutomaticEnv()
 }

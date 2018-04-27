@@ -7,6 +7,7 @@ package main
 
 import (
 	"github.com/Oneledger/prototype/node/app"
+	"github.com/Oneledger/prototype/node/log"
 	"github.com/spf13/cobra"
 )
 
@@ -42,7 +43,7 @@ func ListAccount(cmd *cobra.Command, args []string) {
 		Console.Print("Listing Account Details for", listargs.user)
 		identity, err := app.FindIdentity(listargs.user)
 		if err != 0 {
-			app.Log.Error("Not a valid identity", "err", err)
+			log.Error("Not a valid identity", "err", err)
 			return
 		}
 		AccountInfo(node, identity)
@@ -59,7 +60,7 @@ func AccountInfo(node *app.Application, identity app.Identity) {
 
 	name, err := app.GetAccount(identity)
 	if err != 0 {
-		app.Log.Error("Invalid Account", "err", err)
+		log.Error("Invalid Account", "err", err)
 		return
 	}
 

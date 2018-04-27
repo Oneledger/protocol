@@ -10,6 +10,7 @@
 package app
 
 import (
+	"github.com/Oneledger/prototype/node/log"
 	"github.com/tendermint/iavl" // TODO: Double check this with cosmos-sdk
 	"github.com/tendermint/tmlibs/db"
 )
@@ -47,7 +48,7 @@ func NewDatastore(name string, newType DatastoreType) *Datastore {
 	case PERSISTENT:
 		storage, err := db.NewGoLevelDB("OneLedger-"+name, Current.RootDir)
 		if err != nil {
-			Log.Error("Database create failed", "err", err)
+			log.Error("Database create failed", "err", err)
 			panic("Can't create a database")
 		}
 

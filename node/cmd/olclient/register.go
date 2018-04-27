@@ -7,6 +7,7 @@ package main
 
 import (
 	"github.com/Oneledger/prototype/node/app"
+	"github.com/Oneledger/prototype/node/log"
 	"github.com/spf13/cobra"
 )
 
@@ -38,7 +39,7 @@ func init() {
 
 // IssueRequest sends out a sendTx to all of the nodes in the chain
 func Register(cmd *cobra.Command, args []string) {
-	app.Log.Debug("Register Account")
+	log.Debug("Register Account")
 
 	//identity, err := app.FindIdentity(arguments.name)
 	identity, err := app.FindIdentity(arguments.name)

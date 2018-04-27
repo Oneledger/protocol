@@ -10,6 +10,7 @@ import (
 	"bytes"
 
 	"github.com/Oneledger/prototype/node/abci"
+	"github.com/Oneledger/prototype/node/log"
 	"github.com/tendermint/abci/types"
 )
 
@@ -37,7 +38,7 @@ func NewApplication() *Application {
 
 // InitChain is called when a new chain is getting created
 func (app Application) InitChain(req RequestInitChain) ResponseInitChain {
-	Log.Debug("Message: InitChain", "req", req)
+	log.Debug("Message: InitChain", "req", req)
 
 	// TODO: Insure that all of the databases and shared resources are reset here
 
@@ -48,7 +49,7 @@ func (app Application) InitChain(req RequestInitChain) ResponseInitChain {
 func (app Application) Info(req RequestInfo) ResponseInfo {
 	info := abci.NewResponseInfo(0, 0, 0)
 
-	Log.Debug("Message: Info", "req", req, "info", info)
+	log.Debug("Message: Info", "req", req, "info", info)
 
 	return ResponseInfo{
 		Data: info.JSON(),
@@ -59,7 +60,7 @@ func (app Application) Info(req RequestInfo) ResponseInfo {
 
 // Query returns a transaction or a proof
 func (app Application) Query(req RequestQuery) ResponseQuery {
-	Log.Debug("Message: Query", "req", req, "path", req.Path, "data", req.Data)
+	log.Debug("Message: Query", "req", req, "path", req.Path, "data", req.Data)
 
 	result := HandleQuery(req.Path, req.Data)
 
@@ -68,14 +69,14 @@ func (app Application) Query(req RequestQuery) ResponseQuery {
 
 // SetOption changes the underlying options for the ABCi app
 func (app Application) SetOption(req RequestSetOption) ResponseSetOption {
-	Log.Debug("Message: SetOption")
+	log.Debug("Message: SetOption")
 
 	return ResponseSetOption{}
 }
 
 // CheckTx tests to see if a transaction is valid
 func (app Application) CheckTx(tx []byte) ResponseCheckTx {
-	Log.Debug("Message: CheckTx", "tx", tx)
+	log.Debug("Message: CheckTx", "tx", tx)
 
 	result, err := Parse(Message(tx))
 	if err != 0 {
@@ -98,7 +99,7 @@ var chainKey DatabaseKey = DatabaseKey("chainId")
 
 // BeginBlock is called when a new block is started
 func (app Application) BeginBlock(req RequestBeginBlock) ResponseBeginBlock {
-	Log.Debug("Message: BeginBlock", "req", req)
+	log.Debug("Message: BeginBlock", "req", req)
 
 	newChainId := Message(req.Header.ChainID)
 
@@ -111,14 +112,14 @@ func (app Application) BeginBlock(req RequestBeginBlock) ResponseBeginBlock {
 		//panic("Mismatching chains")
 	}
 
-	Log.Debug("ChainID is", "id", chainId)
+	log.Debug("ChainID is", "id", chainId)
 
 	return ResponseBeginBlock{}
 }
 
 // DeliverTx accepts a transaction and updates all relevant data
 func (app Application) DeliverTx(tx []byte) ResponseDeliverTx {
-	Log.Debug("Message: DeliverTx", "tx", tx)
+	log.Debug("Message: DeliverTx", "tx", tx)
 
 	result, err := Parse(Message(tx))
 	if err != 0 {
@@ -138,14 +139,14 @@ func (app Application) DeliverTx(tx []byte) ResponseDeliverTx {
 
 // EndBlock is called at the end of all of the transactions
 func (app Application) EndBlock(req RequestEndBlock) ResponseEndBlock {
-	Log.Debug("Message: EndBlock", "req", req)
+	log.Debug("Message: EndBlock", "req", req)
 
 	return ResponseEndBlock{}
 }
 
 // Commit tells the app to make everything persistent
 func (app Application) Commit() ResponseCommit {
-	Log.Debug("Message: Commit")
+	log.Debug("Message: Commit")
 
 	// TODO: Empty commit for now, but all transactional work should be queued, and
 	// only persisted on commit.

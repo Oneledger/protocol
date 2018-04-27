@@ -19,6 +19,7 @@ var Domain map[string]bool
 
 func init() {
 	Domain = make(map[string]bool)
+
 	Domain["bitcoin"] = true
 	Domain["oneledger"] = true
 	Domain["etheruem"] = true
@@ -35,7 +36,10 @@ type Convert struct {
 }
 
 func NewConvert() *Convert {
-	return &Convert{}
+	return &Convert{
+		Errors: make(map[string]error),
+		Index:  make(map[string]int),
+	}
 }
 
 type PublicKey = crypto.PubKey
@@ -94,10 +98,16 @@ func (convert *Convert) GetCurrency(value string) string {
 }
 
 func (convert *Convert) GetInt64(value string) int64 {
+	// app.Log.Debug("Converting to Int64", "value", value)
+
 	result, err := strconv.ParseInt(value, 10, 64)
 	if err != nil {
+		// app.Log.Debug("Success", "result", result)
 		return result
 	}
+
+	// app.Log.Debug("Failure", "err", err)
 	convert.AddError(value, err)
+
 	return 0
 }

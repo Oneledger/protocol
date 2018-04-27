@@ -7,6 +7,7 @@ package main
 
 import (
 	"github.com/Oneledger/prototype/node/app"
+	"github.com/Oneledger/prototype/node/log"
 	"github.com/spf13/cobra"
 )
 
@@ -64,12 +65,12 @@ func CreateRequest() []byte {
 
 // IssueRequest sends out a sendTx to all of the nodes in the chain
 func IssueRequest(cmd *cobra.Command, args []string) {
-	app.Log.Debug("Have Request", "tx", transaction)
+	log.Debug("Have Request", "tx", transaction)
 
 	// Create message
 	packet := CreateRequest()
 
 	result := Broadcast(packet)
 
-	app.Log.Debug("Returned Successfully", "result", result)
+	log.Debug("Returned Successfully", "result", result)
 }

@@ -11,6 +11,7 @@
 package app
 
 import (
+	"github.com/Oneledger/prototype/node/log"
 	"github.com/tendermint/iavl"
 	"github.com/tendermint/tmlibs/db"
 )
@@ -39,7 +40,7 @@ func createDatabase(name string, newType DatastoreType) *iavl.VersionedTree {
 	// TODO: Assuming persistence for right now
 	storage, err := db.NewGoLevelDB("OneLedger-"+name, Current.RootDir)
 	if err != nil {
-		Log.Error("Database create failed", "err", err, "count", count)
+		log.Error("Database create failed", "err", err, "count", count)
 		panic("Can't create a database")
 	}
 
