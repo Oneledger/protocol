@@ -4,11 +4,13 @@
 	Encapsulate the underlying storage from our app. Currently using:
 		Tendermint's memdb (just an in-memory Merkle Tree)
 		Tendermint's persistent kvstore (with Merkle Trees & Proofs)
+			- Can only be opened by one process...
 
 */
 package app
 
 import (
+	"github.com/Oneledger/prototype/node/log"
 	"github.com/tendermint/iavl" // TODO: Double check this with cosmos-sdk
 	"github.com/tendermint/tmlibs/db"
 )
@@ -46,7 +48,7 @@ func NewDatastore(name string, newType DatastoreType) *Datastore {
 	case PERSISTENT:
 		storage, err := db.NewGoLevelDB("OneLedger-"+name, Current.RootDir)
 		if err != nil {
-			Log.Error("Database create failed", "err", err)
+			log.Error("Database create failed", "err", err)
 			panic("Can't create a database")
 		}
 

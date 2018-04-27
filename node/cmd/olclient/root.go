@@ -16,13 +16,13 @@ import (
 )
 
 var RootCmd = &cobra.Command{
-	Use:   "fullnode",
-	Short: "fullnode",
-	Long:  "OneLedger chain, fullnode",
+	Use:   "olclient",
+	Short: "OneLedger client",
+	Long:  "Client access to the OneLedger chain",
 }
 
 func Execute() {
-	log.Debug("Parse Commamnds")
+	log.Debug("Parse Commands")
 
 	if err := RootCmd.Execute(); err != nil {
 		fmt.Println(err)
@@ -42,5 +42,6 @@ func init() {
 // Initialize Viper
 func environment() {
 	log.Debug("Setting up Environment")
+
 	viper.AutomaticEnv()
 }

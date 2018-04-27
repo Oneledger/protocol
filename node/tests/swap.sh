@@ -17,11 +17,17 @@ $OLSCRIPT/startNode
 
 sleep 9
 
-# assumes fullnode is in the PATH
-fullnode swap --user Alice --from 0x01010100101 --to 0x0100101010 --amount 3BTC --amount 100ETH 
-fullnode swap --user Bob --from 0x01010100101 --to 0x0100101010 --amount 3BTC --amount 100ETH 
+# Put some money in the user accounts
+olclient send --user Admin --to Alice --amount 100000 --currency OTC 
+olclient send --user Admin --to Bob --amount 100000 --currency OTC 
 
-fullnode account --user Alice
+# assumes fullnode is in the PATH
+olclient swap --user Alice --to 0x0100101010 --amount 3 --currency BTC --exchange 100 --excurrency ETH 
+olclient swap --user Bob --to 0x0100101010 --amount 100 --currency ETH --exchange 3 --excurrency BTC 
+
+# Check the balances
+olclient account --user Alice
+olclient account --user Bob
 
 sleep 3
 

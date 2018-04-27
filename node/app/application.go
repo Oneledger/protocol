@@ -9,6 +9,8 @@ import (
 	//"fmt"
 	"bytes"
 
+	"github.com/Oneledger/prototype/node/abci"
+	"github.com/Oneledger/prototype/node/log"
 	"github.com/tendermint/abci/types"
 )
 
@@ -18,8 +20,8 @@ type Application struct {
 
 	Admin    *Datastore  // any administrative parameters
 	Status   *Datastore  // current state of any composite transactions (pending, verified, etc.)
-	Accounts *Accounts   // Keep all of the user accounts locally for their node
-	Utxo     *ChainState // unspent transctions
+	Accounts *Accounts   // Keep all of the user accounts locally for their node (identity management)
+	Utxo     *ChainState // unspent transction output (for each type of coin)
 
 	// TODO: basecoin has fees and staking too?
 }
@@ -34,26 +36,22 @@ func NewApplication() *Application {
 	}
 }
 
-// Type aliases
-type BeginRequest = types.RequestBeginBlock
-type BeginResponse = types.ResponseBeginBlock
-
 // InitChain is called when a new chain is getting created
-func (app Application) InitChain(req types.RequestInitChain) types.ResponseInitChain {
-	Log.Debug("Message: InitChain", "req", req)
+func (app Application) InitChain(req RequestInitChain) ResponseInitChain {
+	log.Debug("Message: InitChain", "req", req)
 
 	// TODO: Insure that all of the databases and shared resources are reset here
 
-	return types.ResponseInitChain{}
+	return ResponseInitChain{}
 }
 
 // Info returns the current block information
-func (app Application) Info(req types.RequestInfo) types.ResponseInfo {
-	info := NewResponseInfo(0, 0, 0)
+func (app Application) Info(req RequestInfo) ResponseInfo {
+	info := abci.NewResponseInfo(0, 0, 0)
 
-	Log.Debug("Message: Info", "req", req, "info", info)
+	log.Debug("Message: Info", "req", req, "info", info)
 
-	return types.ResponseInfo{
+	return ResponseInfo{
 		Data: info.JSON(),
 		// LastBlockHeight: lastHeight,
 		// LastBlockAppHash: lastAppHash,
@@ -61,45 +59,47 @@ func (app Application) Info(req types.RequestInfo) types.ResponseInfo {
 }
 
 // Query returns a transaction or a proof
-func (app Application) Query(req types.RequestQuery) types.ResponseQuery {
-	Log.Debug("Message: Query", "req", req)
+func (app Application) Query(req RequestQuery) ResponseQuery {
+	log.Debug("Message: Query", "req", req, "path", req.Path, "data", req.Data)
 
-	return types.ResponseQuery{}
+	result := HandleQuery(req.Path, req.Data)
+
+	return ResponseQuery{Key: Message("result"), Value: result}
 }
 
 // SetOption changes the underlying options for the ABCi app
-func (app Application) SetOption(req types.RequestSetOption) types.ResponseSetOption {
-	Log.Debug("Message: SetOption")
+func (app Application) SetOption(req RequestSetOption) ResponseSetOption {
+	log.Debug("Message: SetOption")
 
-	return types.ResponseSetOption{}
+	return ResponseSetOption{}
 }
 
 // CheckTx tests to see if a transaction is valid
-func (app Application) CheckTx(tx []byte) types.ResponseCheckTx {
-	Log.Debug("Message: CheckTx", "tx", tx)
+func (app Application) CheckTx(tx []byte) ResponseCheckTx {
+	log.Debug("Message: CheckTx", "tx", tx)
 
 	result, err := Parse(Message(tx))
 	if err != 0 {
-		return types.ResponseCheckTx{Code: err}
+		return ResponseCheckTx{Code: err}
 	}
 
 	// Check that this is a valid transaction
 	if err = result.Validate(); err != 0 {
-		return types.ResponseCheckTx{Code: err}
+		return ResponseCheckTx{Code: err}
 	}
 
 	if err = result.ProcessCheck(&app); err != 0 {
-		return types.ResponseCheckTx{Code: err}
+		return ResponseCheckTx{Code: err}
 	}
 
-	return types.ResponseCheckTx{Code: types.CodeTypeOK}
+	return ResponseCheckTx{Code: types.CodeTypeOK}
 }
 
 var chainKey DatabaseKey = DatabaseKey("chainId")
 
 // BeginBlock is called when a new block is started
-func (app Application) BeginBlock(req BeginRequest) BeginResponse {
-	Log.Debug("Message: BeginBlock", "req", req)
+func (app Application) BeginBlock(req RequestBeginBlock) ResponseBeginBlock {
+	log.Debug("Message: BeginBlock", "req", req)
 
 	newChainId := Message(req.Header.ChainID)
 
@@ -112,44 +112,44 @@ func (app Application) BeginBlock(req BeginRequest) BeginResponse {
 		//panic("Mismatching chains")
 	}
 
-	Log.Debug("ChainID is", "id", chainId)
+	log.Debug("ChainID is", "id", chainId)
 
-	return BeginResponse{}
+	return ResponseBeginBlock{}
 }
 
 // DeliverTx accepts a transaction and updates all relevant data
-func (app Application) DeliverTx(tx []byte) types.ResponseDeliverTx {
-	Log.Debug("Message: DeliverTx", "tx", tx)
+func (app Application) DeliverTx(tx []byte) ResponseDeliverTx {
+	log.Debug("Message: DeliverTx", "tx", tx)
 
 	result, err := Parse(Message(tx))
 	if err != 0 {
-		return types.ResponseDeliverTx{Code: err}
+		return ResponseDeliverTx{Code: err}
 	}
 
 	if err = result.Validate(); err != 0 {
-		return types.ResponseDeliverTx{Code: err}
+		return ResponseDeliverTx{Code: err}
 	}
 
 	if err = result.ProcessDeliver(&app); err != 0 {
-		return types.ResponseDeliverTx{Code: err}
+		return ResponseDeliverTx{Code: err}
 	}
 
-	return types.ResponseDeliverTx{Code: types.CodeTypeOK}
+	return ResponseDeliverTx{Code: types.CodeTypeOK}
 }
 
 // EndBlock is called at the end of all of the transactions
-func (app Application) EndBlock(req types.RequestEndBlock) types.ResponseEndBlock {
-	Log.Debug("Message: EndBlock", "req", req)
+func (app Application) EndBlock(req RequestEndBlock) ResponseEndBlock {
+	log.Debug("Message: EndBlock", "req", req)
 
-	return types.ResponseEndBlock{}
+	return ResponseEndBlock{}
 }
 
 // Commit tells the app to make everything persistent
-func (app Application) Commit() types.ResponseCommit {
-	Log.Debug("Message: Commit")
+func (app Application) Commit() ResponseCommit {
+	log.Debug("Message: Commit")
 
 	// TODO: Empty commit for now, but all transactional work should be queued, and
 	// only persisted on commit.
 
-	return types.ResponseCommit{}
+	return ResponseCommit{}
 }

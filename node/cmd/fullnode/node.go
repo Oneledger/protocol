@@ -7,6 +7,7 @@ package main
 
 import (
 	"github.com/Oneledger/prototype/node/app" // Import namespace
+	"github.com/Oneledger/prototype/node/log"
 
 	"github.com/spf13/cobra"
 	"github.com/tendermint/abci/server"
@@ -34,14 +35,14 @@ func HandleArguments() {
 }
 
 func StartNode(cmd *cobra.Command, args []string) {
-	app.Log.Info("Starting up a Node")
+	log.Info("Starting up a Node")
 
 	node := app.NewApplication()
 
 	// TODO: Switch on config
 	//service = server.NewGRPCServer("unix://data.sock", types.NewGRPCApplication(*node))
 	service = server.NewSocketServer("tcp://127.0.0.1:46658", *node)
-	service.SetLogger(app.GetLogger())
+	service.SetLogger(log.GetLogger())
 
 	// TODO: catch any panics
 
@@ -53,7 +54,7 @@ func StartNode(cmd *cobra.Command, args []string) {
 
 	// Catch any signals, stop nicely
 	common.TrapSignal(func() {
-		app.Log.Info("Shutting down")
+		log.Info("Shutting down")
 		service.Stop()
 	})
 }

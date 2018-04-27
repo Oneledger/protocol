@@ -7,6 +7,7 @@ package main
 
 import (
 	"github.com/Oneledger/prototype/node/app"
+	"github.com/Oneledger/prototype/node/log"
 	"github.com/spf13/cobra"
 )
 
@@ -38,12 +39,12 @@ func init() {
 
 // IssueRequest sends out a sendTx to all of the nodes in the chain
 func Register(cmd *cobra.Command, args []string) {
-	app.Log.Debug("Register Account")
+	log.Debug("Register Account")
 
 	//identity, err := app.FindIdentity(arguments.name)
 	identity, err := app.FindIdentity(arguments.name)
 	if err != 0 {
-		Console.Print("Invalid Identity String")
+		Console.Error("Invalid Identity String")
 		return
 	}
 
@@ -58,10 +59,12 @@ func ConvertPublicKey(keystring string) app.PublicKey {
 	return app.PublicKey{}
 }
 
+// TODO: This should be moved out of cmd and into it's own package
 func CreateIdentity() {
 	chainType, err := app.FindIdentityType(arguments.chain)
 	if err != 0 {
-		Console.Print("Invalid Identity Type")
+		Console.Error("Invalid Identity Type")
+		return
 	}
 
 	pubkey := ConvertPublicKey(arguments.pubkey)
@@ -71,12 +74,12 @@ func CreateIdentity() {
 	// TODO: Need to conver the input...
 	identity.AddPrivateKey(app.PrivateKey{}) //arguments.privkey)
 
-	Console.Print("New Account has been created")
+	Console.Info("New Account has been created")
 }
 
 func UpdateIdentity(identity app.Identity) {
 	// TODO: Need to conver the input...
 	identity.AddPrivateKey(app.PrivateKey{}) //arguments.privkey)
 
-	Console.Print("New Account has been updated")
+	Console.Info("New Account has been updated")
 }
