@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/Oneledger/prototype/node/log"
 	crypto "github.com/tendermint/go-crypto"
 )
 
@@ -39,6 +40,7 @@ func NewConvert() *Convert {
 	return &Convert{
 		Errors: make(map[string]error),
 		Index:  make(map[string]int),
+		Next:   0,
 	}
 }
 
@@ -46,6 +48,7 @@ type PublicKey = crypto.PubKey
 type PrivateKey = crypto.PrivKey
 
 func (convert *Convert) HasErrors() bool {
+	log.Debug("Has Errors", "Errors", convert.Errors)
 	if len(convert.Errors) < 1 {
 		return false
 	}
@@ -54,8 +57,8 @@ func (convert *Convert) HasErrors() bool {
 
 func (convert *Convert) GetErrors() string {
 	buffer := ""
-	for text := range convert.Errors {
-		buffer += text
+	for _, value := range convert.Errors {
+		buffer += value.Error()
 	}
 	return buffer
 }
@@ -98,15 +101,15 @@ func (convert *Convert) GetCurrency(value string) string {
 }
 
 func (convert *Convert) GetInt64(value string) int64 {
-	// app.Log.Debug("Converting to Int64", "value", value)
+	log.Debug("Converting to Int64", "value", value)
 
 	result, err := strconv.ParseInt(value, 10, 64)
-	if err != nil {
-		// app.Log.Debug("Success", "result", result)
+	if err == nil {
+		log.Debug("Success", "result", result)
 		return result
 	}
 
-	// app.Log.Debug("Failure", "err", err)
+	log.Debug("Failure", "err", err)
 	convert.AddError(value, err)
 
 	return 0

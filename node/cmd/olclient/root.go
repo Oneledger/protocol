@@ -22,7 +22,7 @@ var RootCmd = &cobra.Command{
 }
 
 func Execute() {
-	log.Debug("Parse Commamnds")
+	log.Debug("Parse Commands")
 
 	if err := RootCmd.Execute(); err != nil {
 		fmt.Println(err)
