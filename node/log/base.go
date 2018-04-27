@@ -3,7 +3,7 @@
 
 	Setup a global logger
 */
-package app
+package log
 
 import (
 	"os"
@@ -11,11 +11,11 @@ import (
 	"github.com/tendermint/tmlibs/log"
 )
 
-var Log log.Logger
+var current log.Logger
 
 // init a logger right away
 func init() {
-	Log = NewLogger()
+	current = NewLogger()
 }
 
 // NewLogger sets in the defaults
@@ -25,10 +25,22 @@ func NewLogger() log.Logger {
 
 // TODO: should be push/pop?
 func SetLogger(logger log.Logger) {
-	Log = logger
+	current = logger
 }
 
 // GetLogger lets the gobal logger get passed to libraries
 func GetLogger() log.Logger {
-	return Log
+	return current
+}
+
+func Info(msg string, args ...interface{}) {
+	current.Info(msg, args...)
+}
+
+func Debug(msg string, args ...interface{}) {
+	current.Debug(msg, args...)
+}
+
+func Error(msg string, args ...interface{}) {
+	current.Error(msg, args...)
 }

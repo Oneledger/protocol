@@ -8,12 +8,6 @@
   revision = "675abc5df3c5531bc741b56a765e35623459da6d"
 
 [[projects]]
-  name = "github.com/davecgh/go-spew"
-  packages = ["spew"]
-  revision = "346938d642f2ec3594ed81d874461961cd0faa76"
-  version = "v1.1.0"
-
-[[projects]]
   branch = "master"
   name = "github.com/ebuchman/fail-test"
   packages = ["."]
@@ -212,7 +206,6 @@
   packages = [
     "client",
     "example/code",
-    "example/dummy",
     "example/kvstore",
     "server",
     "types"
@@ -231,12 +224,6 @@
   revision = "d8387025d2b9d158cf4efb07e7ebf814bcce2057"
 
 [[projects]]
-  name = "github.com/tendermint/go-amino"
-  packages = ["."]
-  revision = "42246108ff925a457fb709475070a03dfd3e2b5c"
-  version = "0.9.6"
-
-[[projects]]
   name = "github.com/tendermint/go-crypto"
   packages = ["."]
   revision = "c3e19f3ea26f5c3357e0bcbb799b0761ef923755"
@@ -251,6 +238,12 @@
   revision = "fa721242b042ecd4c6ed1a934ee740db4f74e45c"
   source = "github.com/tendermint/go-amino"
   version = "v0.7.3"
+
+[[projects]]
+  name = "github.com/tendermint/iavl"
+  packages = ["."]
+  revision = "fd37a0fa3a7454423233bc3d5ea828f38e0af787"
+  version = "v0.7.0"
 
 [[projects]]
   name = "github.com/tendermint/tendermint"
@@ -399,6 +392,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "915369bce4572a1ca677ed8cabab014fb382aeba69d3a403aa08cf3536e834e7"
+  inputs-digest = "1a934dc1643a37c965d493c090ab140f0d70a3a951a72f6379c3e54567237826"
   solver-name = "gps-cdcl"
   solver-version = 1
