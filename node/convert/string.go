@@ -10,7 +10,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/Oneledger/prototype/node/log"
 	crypto "github.com/tendermint/go-crypto"
 )
 
@@ -48,7 +47,6 @@ type PublicKey = crypto.PubKey
 type PrivateKey = crypto.PrivKey
 
 func (convert *Convert) HasErrors() bool {
-	log.Debug("Has Errors", "Errors", convert.Errors)
 	if len(convert.Errors) < 1 {
 		return false
 	}
@@ -101,15 +99,11 @@ func (convert *Convert) GetCurrency(value string) string {
 }
 
 func (convert *Convert) GetInt64(value string) int64 {
-	log.Debug("Converting to Int64", "value", value)
-
 	result, err := strconv.ParseInt(value, 10, 64)
 	if err == nil {
-		log.Debug("Success", "result", result)
 		return result
 	}
 
-	log.Debug("Failure", "err", err)
 	convert.AddError(value, err)
 
 	return 0

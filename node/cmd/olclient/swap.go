@@ -22,6 +22,7 @@ var swapCmd = &cobra.Command{
 
 // Arguments to the command
 type SwapArguments struct {
+	user       string
 	to         string
 	from       string
 	amount     string
@@ -39,8 +40,9 @@ func init() {
 	RootCmd.AddCommand(swapCmd)
 
 	// Transaction Parameters
-	swapCmd.Flags().StringVarP(&swapargs.to, "to", "t", "unknown", "to user")
-	swapCmd.Flags().StringVarP(&swapargs.from, "from", "f", "unknown", "from user")
+	swapCmd.Flags().StringVarP(&swapargs.user, "user", "u", "unknown", "user name")
+	swapCmd.Flags().StringVarP(&swapargs.from, "from", "f", "unknown", "base address")
+	swapCmd.Flags().StringVarP(&swapargs.to, "to", "t", "unknown", "target address")
 	swapCmd.Flags().StringVarP(&swapargs.amount, "amount", "a", "100", "the coins to exchange")
 	swapCmd.Flags().StringVarP(&swapargs.fee, "fee", "c", "1", "fees in coins")
 	swapCmd.Flags().StringVarP(&swapargs.gas, "gas", "g", "1", "gas, if necessary")
@@ -57,6 +59,9 @@ func CreateSwapRequest() []byte {
 
 	party1 := app.Address(conv.GetHash(swapargs.to))
 	party2 := app.Address(conv.GetHash(swapargs.from))
+
+	// TOOD: a clash with the basic data model
+	signers := GetSigners()
 
 	fee := app.Coin{
 		Currency: conv.GetCurrency(swapargs.currency),
@@ -84,6 +89,11 @@ func CreateSwapRequest() []byte {
 	}
 
 	swap := &app.SwapTransaction{
+		TransactionBase: app.TransactionBase{
+			Type:    app.SEND_TRANSACTION,
+			ChainId: app.ChainId,
+			Signers: signers,
+		},
 		Party1:   party1,
 		Party2:   party2,
 		Fee:      fee,
