@@ -31,7 +31,7 @@ type SwapArguments struct {
 	currency   string
 	exchange   string
 	excurrency string
-	sequence   string // Replay protection
+	sequence   int // Replay protection
 }
 
 var swapargs = &SwapArguments{}
@@ -49,9 +49,11 @@ func init() {
 	swapCmd.Flags().StringVarP(&swapargs.currency, "currency", "x", "OLT", "currency of amount")
 	swapCmd.Flags().StringVarP(&swapargs.exchange, "exchange", "e", "0", "the value to trade for")
 	swapCmd.Flags().StringVarP(&swapargs.excurrency, "excurrency", "y", "ETH", "the currency")
+	swapCmd.Flags().IntVarP(&swapargs.sequence, "sequence", "s", 1, "replay seqeunce number")
 }
 
 func CreateSwapRequest() []byte {
+	log.Debug("swap args", "swapargs", swapargs)
 
 	// TODO: Need better validation and error handling...
 
@@ -90,9 +92,10 @@ func CreateSwapRequest() []byte {
 
 	swap := &app.SwapTransaction{
 		TransactionBase: app.TransactionBase{
-			Type:    app.SEND_TRANSACTION,
-			ChainId: app.ChainId,
-			Signers: signers,
+			Type:     app.SEND_TRANSACTION,
+			ChainId:  app.ChainId,
+			Signers:  signers,
+			Sequence: swapargs.sequence,
 		},
 		Party1:   party1,
 		Party2:   party2,

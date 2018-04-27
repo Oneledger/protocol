@@ -21,7 +21,7 @@ var sendCmd = &cobra.Command{
 }
 
 // TODO: typing should be way better, see if cobr can help with this...
-type TransactionArguments struct {
+type SendArguments struct {
 	user     string
 	to       string // the recipient
 	from     string
@@ -32,7 +32,7 @@ type TransactionArguments struct {
 	sequence int // Replay protection
 }
 
-var transaction *TransactionArguments = &TransactionArguments{}
+var sendargs *SendArguments = &SendArguments{}
 
 func init() {
 	RootCmd.AddCommand(sendCmd)
@@ -42,12 +42,13 @@ func init() {
 	sendCmd.Flags().StringVarP(&app.Current.Address, "address", "a", "tcp://127.0.0.1:46658", "full address")
 
 	// Transaction Parameters
-	sendCmd.Flags().StringVar(&transaction.user, "user", "undefined", "base user account")
-	sendCmd.Flags().StringVar(&transaction.to, "to", "undefined", "send recipient")
-	sendCmd.Flags().StringVar(&transaction.amount, "amount", "0", "specify an amount")
-	sendCmd.Flags().StringVar(&transaction.currency, "currency", "OLT", "the currency")
-	sendCmd.Flags().StringVar(&transaction.fee, "fee", "1", "include a fee")
-	sendCmd.Flags().StringVar(&transaction.gas, "gas", "1", "include gas")
+	sendCmd.Flags().StringVar(&sendargs.user, "user", "undefined", "user name")
+	sendCmd.Flags().StringVar(&sendargs.to, "to", "undefined", "send recipient")
+	sendCmd.Flags().StringVar(&sendargs.amount, "amount", "0", "specify an amount")
+	sendCmd.Flags().StringVar(&sendargs.currency, "currency", "OLT", "the currency")
+	sendCmd.Flags().StringVar(&sendargs.fee, "fee", "1", "include a fee")
+	sendCmd.Flags().StringVar(&sendargs.gas, "gas", "1", "include gas")
+	sendCmd.Flags().IntVarP(&sendargs.sequence, "sequence", "s", 1, "unique sequence number (replay protection)")
 }
 
 // CreateRequest builds and signs the transaction based on the arguments
@@ -56,12 +57,12 @@ func CreateRequest() []byte {
 
 	conv := convert.NewConvert()
 
-	to := app.Address(conv.GetHash(swapargs.to))
+	to := app.Address(conv.GetHash(sendargs.to))
 	_ = to
 
 	gas := app.Coin{
-		Currency: conv.GetCurrency(swapargs.currency),
-		Amount:   conv.GetInt64(swapargs.gas),
+		Currency: conv.GetCurrency(sendargs.currency),
+		Amount:   conv.GetInt64(sendargs.gas),
 	}
 
 	if conv.HasErrors() {
@@ -70,16 +71,17 @@ func CreateRequest() []byte {
 	}
 
 	// Create base transaction
-	transaction := &app.SendTransaction{
+	send := &app.SendTransaction{
 		TransactionBase: app.TransactionBase{
-			Type:    app.SEND_TRANSACTION,
-			ChainId: app.ChainId,
-			Signers: signers,
+			Type:     app.SEND_TRANSACTION,
+			ChainId:  app.ChainId,
+			Signers:  signers,
+			Sequence: sendargs.sequence,
 		},
 		Gas: gas,
 	}
 
-	signed := SignTransaction(app.Transaction(transaction))
+	signed := SignTransaction(app.Transaction(send))
 	packet := PackRequest(signed)
 
 	return packet
@@ -87,7 +89,7 @@ func CreateRequest() []byte {
 
 // IssueRequest sends out a sendTx to all of the nodes in the chain
 func IssueRequest(cmd *cobra.Command, args []string) {
-	log.Debug("Have Request", "tx", transaction)
+	log.Debug("Have Send Request", "sendargs", sendargs)
 
 	// Create message
 	packet := CreateRequest()

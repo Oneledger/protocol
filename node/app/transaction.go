@@ -32,9 +32,10 @@ type Transaction interface {
 
 // Base Data for each type
 type TransactionBase struct {
-	Type    TransactionType `json:"type"`
-	ChainId string          `json:"chain_id"`
-	Signers []PublicKey     `json:"signers"`
+	Type     TransactionType `json:"type"`
+	ChainId  string          `json:"chain_id"`
+	Signers  []PublicKey     `json:"signers"`
+	Sequence int             `json:"sequence"`
 }
 
 // Synchronize a swap between two users
