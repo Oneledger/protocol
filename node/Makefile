@@ -75,6 +75,18 @@ reset:
 	./scripts/resetChain
 
 #
+# Startup a tmux monitor
+#
+monitor:
+	./scripts/monitor
+
+#
+# stop a tmux monitor
+#
+stopmon:
+	./scripts/stopmon
+
+#
 # targets that are not associated with files
 #
 #
