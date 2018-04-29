@@ -1,0 +1,7 @@
+#!/bin/sh
+
+#
+# Inside of the monitor, close everything
+#
+
+tmux kill-server
