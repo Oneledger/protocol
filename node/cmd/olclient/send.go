@@ -24,10 +24,10 @@ var sendCmd = &cobra.Command{
 type SendArguments struct {
 	user     string
 	to       string // the recipient
-	from     string
+	from     string // the source
 	amount   string
 	fee      string
-	gas      string // TODO: Not sure this is necessary, unless the chain is like Ethereum
+	gas      string // Optional
 	currency string
 	sequence int // Replay protection
 }

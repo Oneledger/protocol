@@ -92,7 +92,7 @@ func CreateSwapRequest() []byte {
 
 	swap := &app.SwapTransaction{
 		TransactionBase: app.TransactionBase{
-			Type:     app.SEND_TRANSACTION,
+			Type:     app.SWAP_TRANSACTION,
 			ChainId:  app.ChainId,
 			Signers:  signers,
 			Sequence: swapargs.sequence,
