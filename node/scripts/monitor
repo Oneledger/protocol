@@ -12,7 +12,7 @@ $TMUX -2 new-session -d -s $SESSION
 # Setup a window for tailing log files
 $TMUX new-window -t $SESSION:1 -n 'OneLedger NodeMonitor v0.1'
 
-$TMUX split-window -v -p 55
+$TMUX split-window -v -p 60 
 $TMUX split-window -v -p 40
 
 $TMUX select-pane -t 0

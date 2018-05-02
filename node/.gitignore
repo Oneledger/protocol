@@ -3,3 +3,4 @@ temp
 *.old
 *.bk
 testFullnode
+testOlclient

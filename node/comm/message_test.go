@@ -8,21 +8,22 @@ package comm
 import (
 	"testing"
 
+	"github.com/Oneledger/prototype/node/log"
 	"github.com/stretchr/testify/assert"
 	wire "github.com/tendermint/go-wire"
 )
 
 // Test just an integer
 func TestInt(t *testing.T) {
-	Log.Info("Testing int")
+	log.Info("Testing int")
 	variable := 5
 
 	buffer, err := Serialize(variable)
 
 	if err != nil {
-		Log.Debug("Serialized failed", "err", err)
+		log.Debug("Serialized failed", "err", err)
 	} else {
-		Log.Debug("buffer", "buffer", buffer)
+		log.Debug("buffer", "buffer", buffer)
 	}
 
 	var integer int
@@ -31,9 +32,9 @@ func TestInt(t *testing.T) {
 	result, err := Deserialize(buffer, integer)
 
 	if err != nil {
-		Log.Debug("Deserialized failed", "err", err)
+		log.Debug("Deserialized failed", "err", err)
 	} else {
-		Log.Debug("result", "result", result)
+		log.Debug("result", "result", result)
 	}
 
 	assert.Equal(t, variable, result, "These should be equal")
@@ -53,6 +54,7 @@ func (Basic) IsBasicType() {}
 const typeBasic = 0x88
 
 func Register() {
+
 	// Tell wire how to find the underlying types for a given interface
 	var _ = wire.RegisterInterface(
 		struct{ BasicType }{},
@@ -62,19 +64,19 @@ func Register() {
 
 // Basic structural conversion
 func TestStruct(t *testing.T) {
-	Log.Info("Testing Struct")
+	log.Info("Testing Struct")
 
-	//Register()
+	Register()
 
 	basic := &Basic{Pad: "xxxx", Number: 123456, Name: "A Name"}
-	Log.Debug("The basic type", "basic", basic)
+	log.Debug("The basic type", "basic", basic)
 
 	buffer, err := Serialize(basic)
 
 	if err != nil {
 		assert.FailNow(t, "Serialization failed ", err.Error())
 	} else {
-		Log.Debug("buffer", "buffer", buffer)
+		log.Debug("buffer", "buffer", buffer)
 	}
 
 	result := new(Basic)
@@ -84,7 +86,7 @@ func TestStruct(t *testing.T) {
 	if err != nil {
 		assert.Fail(t, "Deserialization failed", err.Error())
 	} else {
-		Log.Debug("result", "value", value)
+		log.Debug("result", "value", value)
 	}
 
 	assert.Equal(t, basic, value, "These should be equal")
@@ -92,58 +94,58 @@ func TestStruct(t *testing.T) {
 
 // Basic structural conversion
 func TestStruct2(t *testing.T) {
-	Log.Info("Testing Struct2")
+	log.Info("Testing Struct2")
 
-	//Register()
+	Register()
 
 	basic := &Basic{Pad: "xxxx", Number: 123456, Name: "A Name"}
-	Log.Debug("The basic type", "basic", basic)
+	log.Debug("The basic type", "basic", basic)
 
 	buffer, err := Serialize(basic)
 
 	if err != nil {
-		Log.Debug("Serialized failed", "err", err)
+		log.Debug("Serialized failed", "err", err)
 	} else {
-		Log.Debug("buffer", "buffer", buffer)
+		log.Debug("buffer", "buffer", buffer)
 	}
 
 	result, err := Deserialize(buffer, struct{ *Basic }{})
 	value := result.(struct{ *Basic }).Basic
 
 	if err != nil {
-		Log.Debug("Deserialized failed", "err", err)
+		log.Debug("Deserialized failed", "err", err)
 	} else {
-		Log.Debug("result", "value", value)
+		log.Debug("result", "value", value)
 	}
 
 	assert.Equal(t, basic, value, "These should be equal")
 }
 
 func TestInterface(t *testing.T) {
-	Log.Info("Testing Interface")
+	log.Info("Testing Interface")
 
 	Register()
 
 	var generic BasicType
 
 	generic = &Basic{Pad: "-------", Number: 654321, Name: "A rose by any other name"}
-	Log.Debug("generic", "generic", generic)
+	log.Debug("generic", "generic", generic)
 
 	buffer, err := Serialize(generic)
 	if err != nil {
 		assert.FailNow(t, "Serialization failed", err.Error())
 	} else {
-		Log.Debug("buffer", "buffer", buffer)
+		log.Debug("buffer", "buffer", buffer)
 	}
 
 	result, err := Deserialize(buffer, struct{ BasicType }{})
 	if err != nil {
 		assert.Fail(t, "Deserialization failed", err.Error())
 	} else {
-		Log.Debug("result", "result", result)
+		log.Debug("result", "result", result)
 	}
 
 	value := result.(struct{ BasicType }).BasicType
-	Log.Debug("value", "value", value)
+	log.Debug("value", "value", value)
 	assert.Equal(t, generic, value, "These should be equal")
 }
