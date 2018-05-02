@@ -1,58 +1,60 @@
 package core
 import (
-    "bytes"
-    "crypto/sha256"
+
     "time"
+    "../utils"
+
+    "bytes"
+
     "encoding/gob"
     "log"
 )
 
 type Block struct {
   Timestamp     int64
-  Transactions  []*Transaction
+
+  Transactions  []*Tx
+
   PrevBlockHash []byte
   Hash          []byte
   Nonce         int64
+  Height        int
 }
 
-func (b *Block) HashTransaction() []byte {
-  var txHashes [][]byte
-  var txHash [32]byte
+func NewBlock (transactions []*Tx, prevBlockHash []byte, height int) *Block {
+  block := Block{time.Now().Unix(), transactions, prevBlockHash, []byte{}, 0, height}
+  pow := NewProofOfWork(&block) //TODO: Yeah, we are going to remove this
+  nonce, hash := pow.Run()
 
-  for _, tx := range b.Transactions {
-    txHashes = append(txHashes, tx.ID)
-  }
-  txHash = sha256.Sum256(bytes.Join(txHashes,[]byte{}))
-  return txHash[:]
-}
-
-// func (b *Block) SetHash() {
-//   timestamp := []byte(strconv.FormatInt(b.Timestamp, 10))
-//   headers := bytes.Join([][]byte{b.PrevBlockHash,b.Data, timestamp},[]byte{})
-//   hash := sha256.Sum256(headers)
-//   b.Hash = hash[:]
-// }
-
-func NewBlock(transactions []*Transaction, prevBlockHash []byte) *Block {
-  block := &Block{time.Now().Unix(), transactions, prevBlockHash, []byte{},int64(0)}
-  pow := NewProofOfWork(block)
-  nonce, hash := pow.Mine()
-  block.Hash = hash
+  block.Hash = hash[:]
   block.Nonce = nonce
-  return block
+  return &block
 }
 
-func (b *Block) Serialize() []byte {
+func NewGenesisBlock(coinbase *Tx) *Block {
+  return NewBlock([]*Tx{coinbase}, []byte{}, 0)
+}
+
+func (block *Block) HashTransactions () []byte{
+  var transactions [][]byte
+  for _, tx := range block.Transactions {
+    transactions = append(transactions, tx.Serialize())
+  }
+  mTree := utils.NewMerkleTree(transactions)
+  return mTree.RootNode.Data
+}
+
+func (block *Block) Serialize() []byte {
   var result bytes.Buffer
   encoder := gob.NewEncoder(&result)
-  err := encoder.Encode(b)
+  err := encoder.Encode(block)
   if err != nil {
     log.Panic(err)
   }
   return result.Bytes()
 }
 
-func DeserializeBlock(d []byte) *Block {
+func DeserializeBlock(d []byte) * Block {
   var block Block
   decoder := gob.NewDecoder(bytes.NewReader(d))
   err := decoder.Decode(&block)
