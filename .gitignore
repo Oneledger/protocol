@@ -1,3 +1,4 @@
 vendor
 .glide
 *.sw[op]
+.idea/
