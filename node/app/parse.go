@@ -54,15 +54,15 @@ func Parse(message Message) (Transaction, Error) {
 
 		return transaction, SUCCESS
 
-	case VERIFY_PREPARE:
-		log.Error("Have Prepare, not implemented yet")
+	case READY_TRANSACTION:
+		transaction := ParseReady(body)
 
-		return nil, NOT_IMPLEMENTED
+		return transaction, SUCCESS
 
-	case VERIFY_COMMIT:
-		log.Error("Have Commit, not implemented yet")
+	case VERIFY_TRANSACTION:
+		transaction := ParseVerify(body)
 
-		return nil, NOT_IMPLEMENTED
+		return transaction, SUCCESS
 
 	default:
 		log.Error("Unknown type", "command", command)
@@ -87,5 +87,25 @@ func ParseSwap(message Message) *SwapTransaction {
 	//return &SwapTransaction{Type: SWAP_TRANSACTION}
 	return &SwapTransaction{
 		TransactionBase: TransactionBase{Type: SWAP_TRANSACTION},
+	}
+}
+
+// Parse a ready request
+func ParseReady(message Message) *ReadyTransaction {
+	log.Debug("Have a Ready")
+
+	//return &SwapTransaction{Type: SWAP_TRANSACTION}
+	return &ReadyTransaction{
+		TransactionBase: TransactionBase{Type: READY_TRANSACTION},
+	}
+}
+
+// Parse a ready request
+func ParseVerify(message Message) *VerifyTransaction {
+	log.Debug("Have a Ready")
+
+	//return &SwapTransaction{Type: SWAP_TRANSACTION}
+	return &VerifyTransaction{
+		TransactionBase: TransactionBase{Type: VERIFY_TRANSACTION},
 	}
 }

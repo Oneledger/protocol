@@ -71,14 +71,14 @@ func CreateIdentity() {
 
 	identity := app.NewIdentity(chainType, arguments.name, pubkey)
 
-	// TODO: Need to conver the input...
+	// TODO: Need to convert the input...
 	identity.AddPrivateKey(app.PrivateKey{}) //arguments.privkey)
 
 	Console.Info("New Account has been created")
 }
 
 func UpdateIdentity(identity app.Identity) {
-	// TODO: Need to conver the input...
+	// TODO: Need to convert the input...
 	identity.AddPrivateKey(app.PrivateKey{}) //arguments.privkey)
 
 	Console.Info("New Account has been updated")

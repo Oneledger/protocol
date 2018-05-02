@@ -26,7 +26,8 @@ tools:
 # Build a local copy
 #
 build:
-	go build -o testFullnode github.com/Oneledger/prototype/node/cmd/...
+	go build -o testFullnode github.com/Oneledger/prototype/node/cmd/fullnode
+	go build -o testOlclient github.com/Oneledger/prototype/node/cmd/olclient
 
 #
 # Build and install a copy into bin
@@ -73,6 +74,18 @@ stop:
 #
 reset:
 	./scripts/resetChain
+
+#
+# Startup a tmux monitor
+#
+monitor:
+	./scripts/monitor
+
+#
+# stop a tmux monitor
+#
+stopmon:
+	./scripts/stopmon
 
 #
 # targets that are not associated with files
