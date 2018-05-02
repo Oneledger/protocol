@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 #
 # Startup a single node in our chain (tendermint for consensus and a fullnode validator)
@@ -18,7 +18,7 @@ pushd $WORK > /dev/null
 #
 # Startup Tendermint consensus
 #
-pids=`pidof tendermint`
+pids=`pgrep tendermint`
 if [ -z $pids ]
 then
 	echo "============================================================" >> $LOG/tendermint.log
@@ -34,7 +34,7 @@ fi
 # Startup Fullnode
 #
 
-pids=`pidof fullnode`
+pids=`pgrep fullnode`
 if [ -z $pids ]
 then
 	echo "============================================================" >> $LOG/fullnode.log
