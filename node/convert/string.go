@@ -108,3 +108,15 @@ func (convert *Convert) GetInt64(value string) int64 {
 
 	return 0
 }
+
+func (convert *Convert) GetInt(value string) int {
+	// TODO: Not portable, ints match cpu arch (32 or 64)
+	result, err := strconv.ParseInt(value, 10, 0)
+	if err == nil {
+		return int(result)
+	}
+
+	convert.AddError(value, err)
+
+	return 0
+}

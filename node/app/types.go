@@ -9,7 +9,7 @@ package app
 
 // Coin is the basic amount, specified in integers, at the smallest increment (i.e. a satoshi, not a bitcoin)
 type Coin struct {
-	Currency string `json:"denom"`
+	Currency string `json:"currency"`
 	Amount   int64  `json:"amount"`
 }
 

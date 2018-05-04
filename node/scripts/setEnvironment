@@ -1,0 +1,5 @@
+export OLROOT=$GOPATH/go/src/github.com/Oneledger
+export OLREPO=$OLROOT/prototype
+export OLDATA=$GOPATH/test
+export OLTEST=$OLREPO/node/tests
+export OLSCRIPT=$OLREPO/scripts
