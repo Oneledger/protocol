@@ -3,14 +3,22 @@
 # Reset our chain, remove any extra files and databases
 #
 
-set -eu
+#set -eu
+
+if [ -z "$1" ]; then
+	export NODENAME="OneLedger-One"
+else
+	export NODENAME="$1"
+fi
 
 #
 # Setup the paths
 #
-export WORK=$OLDATA
-export LOG=$OLDATA
-export DATA=$OLDATA/tendermint
+export WORK=$OLDATA/$NODENAME
+export LOG=$WORK
+export DATA=$WORK/tendermint
+
+mkdir -p $DATA
 
 # Control the working directory
 pushd $WORK
