@@ -1,4 +1,4 @@
-export OLROOT=$GOPATH/go/src/github.com/Oneledger
+export OLROOT=$GOPATH/src/github.com/Oneledger
 export OLREPO=$OLROOT/prototype
 export OLDATA=$GOPATH/test
 export OLTEST=$OLREPO/node/tests
