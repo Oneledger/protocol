@@ -1,7 +1,9 @@
 #!/bin/bash
 
+#
+#   Stop all bitcoind process
+#
 
-export BTCDATA=$OLDATA/bitcoin
 export LOG=$OLDATA
 
 echo "============================================" >> $LOG/bitcoin.log
