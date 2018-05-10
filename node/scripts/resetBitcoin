@@ -9,7 +9,6 @@ export LOG=$OLDATA
 
 echo "============================================================" >> $LOG/bitcoin.log
 echo "Clean all bitcoin data" >> $LOG/bitcoin.log
-echo "============================================================" >> $LOG/bitcoin.log
 
 rm -rf $BTCDATA/bitcoin/*
 

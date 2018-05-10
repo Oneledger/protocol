@@ -4,8 +4,9 @@
 export BTCDATA=$OLDATA/bitcoin
 export LOG=$OLDATA
 
+echo "============================================" >> $LOG/bitcoin.log
 echo "Killing all bitcoin process" >> $LOG/bitcoin.log
 
 killall --regex bitcoin.*
 
-echo "Running Bitcoin process: $(pgrep bitcoin.* | wc -l)" >> $LOG/bitcoin.log
+echo "Running Bitcoin process: $(pgrep bitcoin.* | wc -l)"

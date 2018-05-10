@@ -10,7 +10,6 @@ export LOG=$OLDATA
 
 echo "===========================================" >> $LOG/bitcoin.log
 echo "Launch Bitcoin local testnet " >> $LOG/bitcoin.log
-echo "===========================================" >> $LOG/bitcoin.log
 bitcoind -regtest -datadir=$BTCDATA/A -daemon -rpcuser=oltest01 -rpcpassword=olpass01 -server=1 -rpcallowip=127.0.0.1/0 -listen -rpcthreads=300 -rpcworkqueue=128 -rpcport=18831 -port=17631 -connect=localhost:17632
 bitcoind -regtest -datadir=$BTCDATA/B -daemon -rpcuser=oltest01 -rpcpassword=olpass01 -server=1 -rpcallowip=127.0.0.1/0 -listen -rpcthreads=300 -rpcworkqueue=128 -rpcport=18832 -port=17632 -connect=localhost:17633
 bitcoind -regtest -datadir=$BTCDATA/C -daemon -rpcuser=oltest01 -rpcpassword=olpass01 -server=1 -rpcallowip=127.0.0.1/0 -listen -rpcthreads=300 -rpcworkqueue=128 -rpcport=18833 -port=17633 -connect=localhost:17631
