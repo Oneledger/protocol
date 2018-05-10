@@ -1,3 +1,5 @@
+# basic path setup for the scripts, source this file to have correct pwd
+
 export OLROOT=$GOPATH/src/github.com/Oneledger
 export OLREPO=$OLROOT/prototype
 export OLDATA=$GOPATH/test
