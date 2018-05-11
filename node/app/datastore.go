@@ -49,7 +49,7 @@ func NewDatastore(name string, newType DatastoreType) *Datastore {
 		storage, err := db.NewGoLevelDB("OneLedger-"+name, Current.RootDir)
 		if err != nil {
 			log.Error("Database create failed", "err", err)
-			panic("Can't create a database")
+			panic("Can't create a database " + Current.RootDir + "/" + "OneLedger-" + name)
 		}
 
 		tree := iavl.NewTree(storage, 1000) // Do I need a historic tree here?

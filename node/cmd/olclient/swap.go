@@ -39,11 +39,16 @@ var swapargs = &SwapArguments{}
 func init() {
 	RootCmd.AddCommand(swapCmd)
 
+	// Operational Parameters
+	// TODO: Should be global flags?
+	swapCmd.Flags().StringVarP(&app.Current.Transport, "transport", "t", "socket", "transport (socket | grpc)")
+	swapCmd.Flags().StringVarP(&app.Current.Address, "address", "a", "tcp://127.0.0.1:46658", "full address")
+
 	// Transaction Parameters
 	swapCmd.Flags().StringVarP(&swapargs.user, "user", "u", "unknown", "user name")
 	swapCmd.Flags().StringVarP(&swapargs.from, "from", "f", "unknown", "base address")
-	swapCmd.Flags().StringVarP(&swapargs.to, "to", "t", "unknown", "target address")
-	swapCmd.Flags().StringVarP(&swapargs.amount, "amount", "a", "100", "the coins to exchange")
+	swapCmd.Flags().StringVarP(&swapargs.to, "to", "d", "unknown", "target address")
+	swapCmd.Flags().StringVarP(&swapargs.amount, "amount", "v", "100", "the coins to exchange")
 	swapCmd.Flags().StringVarP(&swapargs.fee, "fee", "c", "1", "fees in coins")
 	swapCmd.Flags().StringVarP(&swapargs.gas, "gas", "g", "1", "gas, if necessary")
 	swapCmd.Flags().StringVarP(&swapargs.currency, "currency", "x", "OLT", "currency of amount")
