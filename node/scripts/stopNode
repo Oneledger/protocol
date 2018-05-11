@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 #
 # Startup a single node in our chain (tendermint for consensus and a fullnode validator)
@@ -28,7 +28,7 @@ pushd $WORK > /dev/null
 echo "============================================================" >> $LOG/tendermint.log
 echo "Stopping Tendermint" >> $LOG/tendermint.log
 echo "============================================================" >> $LOG/tendermint.log
-pidof -k tendermint >> $LOG/tendermint.log
+pkill tendermint >> $LOG/tendermint.log
 
 #
 # Startup Fullnode
@@ -36,7 +36,7 @@ pidof -k tendermint >> $LOG/tendermint.log
 echo "============================================================" >> $LOG/fullnode.log
 echo "Stopping Fullnode" >> $LOG/fullnode.log
 echo "============================================================" >> $LOG/fullnode.log
-pidof -k fullnode >> $LOG/fullnode.log
+pkill fullnode >> $LOG/fullnode.log
 
 #
 # Startup Ethereum

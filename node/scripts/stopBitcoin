@@ -1,0 +1,14 @@
+#!/bin/bash
+
+#
+#   Stop all bitcoind process
+#
+
+export LOG=$OLDATA
+
+echo "============================================" >> $LOG/bitcoin.log
+echo "Killing all bitcoin process" >> $LOG/bitcoin.log
+
+pkill bitcoin.*
+
+echo "Running Bitcoin process: $(pgrep bitcoin.* | wc -l)"

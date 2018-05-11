@@ -1,16 +1,20 @@
 package core
 import (
+
     "time"
     "../utils"
 
     "bytes"
+
     "encoding/gob"
     "log"
 )
 
 type Block struct {
   Timestamp     int64
+
   Transactions  []*Tx
+
   PrevBlockHash []byte
   Hash          []byte
   Nonce         int64
