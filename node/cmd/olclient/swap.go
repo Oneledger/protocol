@@ -39,6 +39,11 @@ var swapargs = &SwapArguments{}
 func init() {
 	RootCmd.AddCommand(swapCmd)
 
+	// Operational Parameters
+	// TODO: Should be global flags?
+	sendCmd.Flags().StringVarP(&app.Current.Transport, "transport", "t", "socket", "transport (socket | grpc)")
+	sendCmd.Flags().StringVarP(&app.Current.Address, "address", "a", "tcp://127.0.0.1:46658", "full address")
+
 	// Transaction Parameters
 	swapCmd.Flags().StringVarP(&swapargs.user, "user", "u", "unknown", "user name")
 	swapCmd.Flags().StringVarP(&swapargs.from, "from", "f", "unknown", "base address")
