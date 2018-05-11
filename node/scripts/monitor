@@ -1,25 +1,31 @@
 #!/bin/bash
 
+if [ -z "$1" ]; then
+	export NODENAME="OneLedger-One"
+else
+	export NODENAME=$1
+fi
+
 #
 # TMUX script to monitor a node in the chain
 #
-SESSION=OneLedger-Node
+SESSION=OneLedger-Node-$NODENAME
 TMUX=tmux 
 # TMUX=tmux -CC # MacOS integration?
 
 $TMUX -2 new-session -d -s $SESSION
 
 # Setup a window for tailing log files
-$TMUX new-window -t $SESSION:1 -n 'OneLedger NodeMonitor v0.1'
+$TMUX new-window -t $SESSION:1 -n "OneLedger NodeMonitor v0.1 for $NODENAME"
 
 $TMUX split-window -v -p 60 
 $TMUX split-window -v -p 40
 
 $TMUX select-pane -t 0
-$TMUX send-keys "pushd $OLDATA/OneLedger-One; tail -f tendermint.log" C-m
+$TMUX send-keys "pushd $OLDATA/$NODENAME; tail -f tendermint.log" C-m
 
 $TMUX select-pane -t 1
-$TMUX send-keys "pushd $OLDATA/OneLedger-One; tail -f fullnode.log" C-m
+$TMUX send-keys "pushd $OLDATA/$NODENAME; tail -f fullnode.log" C-m
 
 $TMUX select-pane -t 2
 
