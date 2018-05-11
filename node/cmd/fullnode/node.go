@@ -6,8 +6,8 @@
 package main
 
 import (
-	"github.com/Oneledger/prototype/node/app" // Import namespace
-	"github.com/Oneledger/prototype/node/log"
+	"github.com/Oneledger/protocol/node/app" // Import namespace
+	"github.com/Oneledger/protocol/node/log"
 
 	"github.com/spf13/cobra"
 	"github.com/tendermint/abci/server"

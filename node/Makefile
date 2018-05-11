@@ -26,14 +26,14 @@ tools:
 # Build a local copy
 #
 build:
-	go build -o testFullnode github.com/Oneledger/prototype/node/cmd/fullnode
-	go build -o testOlclient github.com/Oneledger/prototype/node/cmd/olclient
+	go build -o testFullnode github.com/Oneledger/protocol/node/cmd/fullnode
+	go build -o testOlclient github.com/Oneledger/protocol/node/cmd/olclient
 
 #
 # Build and install a copy into bin
 #
 install:
-	go install github.com/Oneledger/prototype/node/cmd/...
+	go install github.com/Oneledger/protocol/node/cmd/...
 
 #
 # Run any of the unit tests

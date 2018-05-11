@@ -1,23 +1,18 @@
 package states
 
 import (
-	"github.com/Oneledger/prototype/consensus/types"
+	"github.com/Oneledger/protocol/consensus/types"
 	"sync"
 )
 
 type BasicState interface {
-	Enter (event types.Event) *BasicState
-	Exit (event types.Event) *BasicState
-	Process ()
+	Enter(event types.Event) *BasicState
+	Exit(event types.Event) *BasicState
+	Process()
 }
-
-
 
 type Propose struct {
-
 }
-
-
 
 var instance *Propose
 var once sync.Once
@@ -30,5 +25,4 @@ func GetPropose() *Propose {
 }
 
 type NewHeight struct {
-
 }

@@ -10,7 +10,7 @@ package main
 import (
 	"os"
 
-	"github.com/Oneledger/prototype/node/log"
+	"github.com/Oneledger/protocol/node/log"
 	rpcclient "github.com/tendermint/tendermint/rpc/client"
 	ctypes "github.com/tendermint/tendermint/rpc/core/types"
 )

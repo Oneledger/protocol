@@ -8,7 +8,7 @@ package comm
 import (
 	"testing"
 
-	"github.com/Oneledger/prototype/node/log"
+	"github.com/Oneledger/protocol/node/log"
 	"github.com/stretchr/testify/assert"
 	wire "github.com/tendermint/go-wire"
 )

@@ -9,8 +9,8 @@ import (
 	//"fmt"
 	"bytes"
 
-	"github.com/Oneledger/prototype/node/abci"
-	"github.com/Oneledger/prototype/node/log"
+	"github.com/Oneledger/protocol/node/abci"
+	"github.com/Oneledger/protocol/node/log"
 	"github.com/tendermint/abci/types"
 )
 
