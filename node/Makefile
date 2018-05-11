@@ -66,6 +66,12 @@ start: stop install
 #
 # System Testing, bring it all down
 #
+list: 
+	pgrep -lf tendermint
+
+#
+# System Testing, bring it all down
+#
 stop: 
 	./scripts/stopNode
 

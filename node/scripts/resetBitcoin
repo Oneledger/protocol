@@ -4,3 +4,15 @@
 # Reset the Bitcoin chain back to genesis
 #
 
+export LOG=$OLDATA
+
+echo "============================================================" >> $LOG/bitcoin.log
+echo "Clean all bitcoin data" >> $LOG/bitcoin.log
+
+rm -rf $OLDATA/bitcoin/bitcoin/*
+
+mkdir -p $OLDATA/bitcoin/A
+mkdir -p $OLDATA/bitcoin/B
+mkdir -p $OLDATA/bitcoin/C
+
+echo "Bitcoin data reset done"

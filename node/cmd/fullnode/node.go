@@ -41,7 +41,8 @@ func StartNode(cmd *cobra.Command, args []string) {
 
 	// TODO: Switch on config
 	//service = server.NewGRPCServer("unix://data.sock", types.NewGRPCApplication(*node))
-	service = server.NewSocketServer("tcp://127.0.0.1:46658", *node)
+	//service = server.NewSocketServer("tcp://127.0.0.1:46658", *node)
+	service = server.NewSocketServer(app.Current.Address, *node)
 	service.SetLogger(log.GetLogger())
 
 	// TODO: catch any panics
