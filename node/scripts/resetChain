@@ -3,42 +3,32 @@
 # Reset our chain, remove any extra files and databases
 #
 
-set -eu
+
+if [ -z "$1" ]; then
+	NODECOUNT="$1"
+else
+	NODECOUNT=3
+fi
 
 #
-# Setup the paths
+# Startup a bunch of nodes to act as a full block chain instance
 #
-export WORK=$OLDATA
-export LOG=$OLDATA
-export DATA=$OLDATA/tendermint
+export CMD=$OLSCRIPT
 
-# Control the working directory
-pushd $WORK
+export STAGING=$OLDATA/staging
 
-#
-# Cleanout any of the old database files
-#
+mkdir -p $STAGING
 
 #
-# Reset the main tendermint chain
+# Generate the overall genesis and validator information
 #
-tendermint unsafe_reset_all --home $DATA > $LOG/tendermint_init.log
-tendermint init --home $DATA > $LOG/tendermint_init.log
+tendermint testnet --home $STAGING --dir $STAGING --n $NODECOUNT
 
-#
-# Reset our chain
-#
+nodes="OneLedger-One#mach0 OneLedger-Two#mach1 OneLedger-Three#mach2"
 
-#fullnode unsafe_reset_all > $LOG/fullnode_init.log
-#fullnode init > $LOG/fullnode_init.log
-
-#
-# Reset Etheruem's chain
-#
-
-#
-# Reset the Bitcoin chain
-#
-
-popd
+for node in $nodes
+do
+	echo "Resetting $node"
+	$CMD/resetNode $node $STAGING 
+done
 

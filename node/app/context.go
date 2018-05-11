@@ -27,7 +27,7 @@ type Context struct {
 }
 
 func init() {
-	Current = NewContext("Global")
+	Current = NewContext("OneLedger-One")
 }
 
 // Set the default values for any context variables here (and no where else)
@@ -35,6 +35,6 @@ func NewContext(name string) *Context {
 	return &Context{
 		Name:    name,
 		Debug:   false,
-		RootDir: os.Getenv("OLDATA") + "/fullnode",
+		RootDir: os.Getenv("OLDATA") + "/" + name + "/fullnode",
 	}
 }
