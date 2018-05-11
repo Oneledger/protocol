@@ -10,7 +10,7 @@
 package app
 
 import (
-	"github.com/Oneledger/prototype/node/log"
+	"github.com/Oneledger/protocol/node/log"
 	"github.com/tendermint/iavl" // TODO: Double check this with cosmos-sdk
 	"github.com/tendermint/tmlibs/db"
 )

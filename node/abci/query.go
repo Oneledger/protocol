@@ -5,7 +5,7 @@
 */
 package abci
 
-import "github.com/Oneledger/prototype/node/comm"
+import "github.com/Oneledger/protocol/node/comm"
 
 type Query struct {
 	account string

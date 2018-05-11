@@ -26,14 +26,14 @@ tools:
 # Build a local copy
 #
 build:
-	go build -o testFullnode github.com/Oneledger/prototype/node/cmd/fullnode
-	go build -o testOlclient github.com/Oneledger/prototype/node/cmd/olclient
+	go build -o testFullnode github.com/Oneledger/protocol/node/cmd/fullnode
+	go build -o testOlclient github.com/Oneledger/protocol/node/cmd/olclient
 
 #
 # Build and install a copy into bin
 #
 install:
-	go install github.com/Oneledger/prototype/node/cmd/...
+	go install github.com/Oneledger/protocol/node/cmd/...
 
 #
 # Run any of the unit tests
@@ -51,17 +51,17 @@ test: start
 # Full Testing, bring up everything, send a transaction and then stop
 #
 full: stop reset install
-	./scripts/startNode
+	./scripts/startChain
 	sleep 9 # TODO: should have a wait of knowing the chain is ready
-	olclient send
+	olclient send --address 127.0.0.1:46601
 	sleep 3
-	./scripts/stopNode
+	./scripts/stopChain
 
 #
 # Start up a node, make sure it is stopped first
 #
 start: stop install
-	./scripts/startNode
+	./scripts/startChain
 
 #
 # System Testing, bring it all down
@@ -73,13 +73,13 @@ list:
 # System Testing, bring it all down
 #
 stop: 
-	./scripts/stopNode
+	./scripts/stopChain
 
 #
 # Reset all of the chains, back to genesis
 #
 reset:
-	./scripts/resetChain
+	./scripts/resetChain 4
 
 #
 # Startup a tmux monitor

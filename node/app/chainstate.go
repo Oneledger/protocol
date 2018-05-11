@@ -11,7 +11,7 @@
 package app
 
 import (
-	"github.com/Oneledger/prototype/node/log"
+	"github.com/Oneledger/protocol/node/log"
 	"github.com/tendermint/iavl"
 	"github.com/tendermint/tmlibs/db"
 )

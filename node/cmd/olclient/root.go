@@ -9,8 +9,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/Oneledger/prototype/node/app"
-	"github.com/Oneledger/prototype/node/log"
+	"github.com/Oneledger/protocol/node/app"
+	"github.com/Oneledger/protocol/node/log"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
