@@ -9,8 +9,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/Oneledger/prototype/node/app"
-	"github.com/Oneledger/prototype/node/log"
+	"github.com/Oneledger/protocol/node/app"
+	"github.com/Oneledger/protocol/node/log"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -22,7 +22,7 @@ var RootCmd = &cobra.Command{
 }
 
 func Execute() {
-	log.Debug("Parse Commamnds")
+	log.Debug("Parse Commands")
 
 	if err := RootCmd.Execute(); err != nil {
 		fmt.Println(err)

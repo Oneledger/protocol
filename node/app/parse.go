@@ -8,7 +8,7 @@
 package app
 
 import (
-	"github.com/Oneledger/prototype/node/log"
+	"github.com/Oneledger/protocol/node/log"
 	wire "github.com/tendermint/go-wire"
 )
 

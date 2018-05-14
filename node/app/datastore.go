@@ -10,7 +10,7 @@
 package app
 
 import (
-	"github.com/Oneledger/prototype/node/log"
+	"github.com/Oneledger/protocol/node/log"
 	"github.com/tendermint/iavl" // TODO: Double check this with cosmos-sdk
 	"github.com/tendermint/tmlibs/db"
 )
@@ -49,7 +49,7 @@ func NewDatastore(name string, newType DatastoreType) *Datastore {
 		storage, err := db.NewGoLevelDB("OneLedger-"+name, Current.RootDir)
 		if err != nil {
 			log.Error("Database create failed", "err", err)
-			panic("Can't create a database")
+			panic("Can't create a database " + Current.RootDir + "/" + "OneLedger-" + name)
 		}
 
 		tree := iavl.NewTree(storage, 1000) // Do I need a historic tree here?

@@ -6,7 +6,7 @@
 package main
 
 import (
-	"github.com/Oneledger/prototype/node/app"
+	"github.com/Oneledger/protocol/node/app"
 	"github.com/tendermint/tmlibs/common"
 )
 

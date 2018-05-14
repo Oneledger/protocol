@@ -1,0 +1,82 @@
+#!/bin/sh
+#
+# Reset our chain, remove any extra files and databases
+#
+
+# TODO: Set this up to not copy if subdir is empty
+if [ -z "$1" ]; then
+	export NODENAME="OneLedger-One"
+	export SUBDIR=""
+	export STAGING="mach0"
+else
+	export NODENAME=`echo $1 | awk -F# '{ print $1 }'`
+	export SUBDIR=`echo $1 | awk -F# '{ print $2 }'`
+	export STAGING="$2"
+fi
+
+echo "Resetting with:"
+echo "Nodename: $NODENAME"
+echo "Subdir: $SUBDIR"
+echo "Staging: $STAGING"
+
+#
+# Setup the paths
+#
+export WORK=$OLDATA/$NODENAME
+export LOG=$WORK
+export DATA=$WORK/tendermint
+
+#
+# Cleanup, but don't delete directories...
+#
+mkdir -p $DATA/config
+mkdir -p $DATA/data
+find $DATA -type f -exec rm -f {} \;
+
+#
+# Control the working directory
+#
+pushd $WORK
+
+#
+# Cleanout any of the old database files
+#
+rm $LOG/*.log > /dev/null 2>&1
+
+#
+# Setup the initial files
+#
+cp $STAGING/config/config.toml $DATA/config/config.toml
+cp $STAGING/$SUBDIR/config/priv_validator.json $DATA/config/priv_validator.json
+cp $STAGING/$SUBDIR/config/genesis.json $DATA/config/genesis.json
+
+ls $DATA/config
+
+
+#
+# Reset the main tendermint chain
+#
+#tendermint unsafe_reset_all --home $DATA > $LOG/tendermint_init.log
+
+#
+# Do the initialization process
+#
+#tendermint init --home $DATA > $LOG/tendermint_init.log
+
+#
+# Reset our chain
+#
+
+#fullnode unsafe_reset_all > $LOG/fullnode_init.log
+#fullnode init > $LOG/fullnode_init.log
+
+#
+# Reset Etheruem's chain
+#
+
+#
+# Reset the Bitcoin chain
+#
+
+popd
+

@@ -6,8 +6,8 @@
 package abci
 
 import (
-	"github.com/Oneledger/prototype/node/comm"
-	"github.com/Oneledger/prototype/node/convert"
+	"github.com/Oneledger/protocol/node/comm"
+	"github.com/Oneledger/protocol/node/convert"
 )
 
 // Response arguments

@@ -6,7 +6,7 @@
 package main
 
 import (
-	"github.com/Oneledger/prototype/node/version"
+	"github.com/Oneledger/protocol/node/version"
 	"github.com/spf13/cobra"
 )
 

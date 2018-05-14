@@ -1,8 +1,8 @@
 package states
 
 import (
-	"../types"
 
+	"../types"
 )
 
 
@@ -14,10 +14,7 @@ type BasicState interface {
 	Process()
 }
 
-
-
 type Propose struct {
-
 }
 
 type Prevote struct {
@@ -35,7 +32,6 @@ type NewHeight struct{
 type Commit struct {
 
 }
-
 
 type DriveChain struct{
 

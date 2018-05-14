@@ -5,7 +5,7 @@
 */
 package app
 
-import "github.com/Oneledger/prototype/node/log"
+import "github.com/Oneledger/protocol/node/log"
 
 var ChainId string
 
