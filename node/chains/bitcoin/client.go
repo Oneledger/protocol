@@ -1,7 +1,7 @@
 package bitcoin
 
 import (
-	btc "github.com/Oneledger/prototype-api/btcrpc"
+	btc "github.com/Oneledger/prototype/node/chains/btcrpc"
 	"time"
 
 )
