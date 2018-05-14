@@ -1,5 +1,9 @@
 package states
 
+
+/*
+	Event to drive the change of states
+ */
 type BasicEvent interface {
 	New()
 }

@@ -7,7 +7,7 @@ import (
 
 
 /*
-	This is the basic
+	Basic state representation of the consensus state machine
  */
 type BasicState interface {
 	Change()
