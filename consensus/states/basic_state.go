@@ -1,14 +1,17 @@
 package states
 
 import (
-	"github.com/Oneledger/prototype/consensus/types"
-	"sync"
+	"../types"
+
 )
 
+
+/*
+	This is the basic
+ */
 type BasicState interface {
-	Enter (event types.Event) *BasicState
-	Exit (event types.Event) *BasicState
-	Process ()
+	Change()
+	Process()
 }
 
 
@@ -17,18 +20,23 @@ type Propose struct {
 
 }
 
+type Prevote struct {
 
-
-var instance *Propose
-var once sync.Once
-
-func GetPropose() *Propose {
-	once.Do(func() {
-		instance = &Propose{}
-	})
-	return instance
 }
 
-type NewHeight struct {
+type Precommit struct{
+
+}
+
+type NewHeight struct{
+
+}
+
+type Commit struct {
+
+}
+
+
+type DriveChain struct{
 
 }

@@ -1,5 +1,8 @@
 package states
 
+type BasicEvent interface {
+	New()
+}
 
 type EventActionPrevote struct {
 	Prevote *Prevote `json:"prevote"`
