@@ -9,7 +9,7 @@ import (
 	"net/http"
 	"encoding/json"
 
-	"github.com/Oneledger/prototype/node/chains/common"
+	"../common"
 )
 
 
