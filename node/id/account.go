@@ -6,22 +6,31 @@
 package id
 
 import (
+	"github.com/Oneledger/protocol/node/comm"
 	"github.com/Oneledger/protocol/node/data"
 	"github.com/Oneledger/protocol/node/err"
+	"github.com/Oneledger/protocol/node/log"
 )
 
 // The persistent collection of all accounts known by this node
 type Accounts struct {
-	accounts *data.Datastore
+	data *data.Datastore
 }
 
 // Initialize or reconnect to the database
 func NewAccounts(name string) *Accounts {
-	accounts := data.NewDatastore(name, data.PERSISTENT)
-	return &Accounts{accounts: accounts}
+	data := data.NewDatastore(name, data.PERSISTENT)
+
+	return &Accounts{data: data}
 }
 
-func (acc *Accounts) AddAccount() {
+func (acc *Accounts) AddAccount(identity Identity) {
+	buffer, err := comm.Serialize(identity)
+	if err != nil {
+		log.Error("Serialize Failed", "err", err)
+		return
+	}
+	acc.data.Store([]byte(identity.Name()), buffer)
 }
 
 func (acc *Accounts) DeleteAccount() {

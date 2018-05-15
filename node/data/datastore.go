@@ -29,10 +29,11 @@ const (
 
 // Wrap the underlying usage
 type Datastore struct {
-	Type DatastoreType
-	Name string
-	Data *db.MemDB
-	Tree *iavl.Tree
+	Type    DatastoreType
+	Name    string
+	data    *db.MemDB
+	tree    *iavl.VersionedTree
+	version int64
 }
 
 // NewApplicationContext initializes a new application
@@ -44,7 +45,7 @@ func NewDatastore(name string, newType DatastoreType) *Datastore {
 		return &Datastore{
 			Type: newType,
 			Name: name,
-			Data: db.NewMemDB(),
+			data: db.NewMemDB(),
 		}
 
 	case PERSISTENT:
@@ -54,12 +55,13 @@ func NewDatastore(name string, newType DatastoreType) *Datastore {
 			panic("Can't create a database " + global.Current.RootDir + "/" + "OneLedger-" + name)
 		}
 
-		tree := iavl.NewTree(storage, 1000) // Do I need a historic tree here?
+		tree := iavl.NewVersionedTree(storage, 1000) // Do I need a historic tree here?
 
 		return &Datastore{
-			Type: newType,
-			Name: name,
-			Tree: tree,
+			Type:    newType,
+			Name:    name,
+			tree:    tree,
+			version: tree.Version64(),
 		}
 	default:
 		panic("Unknown Type")
@@ -72,10 +74,10 @@ func (store Datastore) Store(key DatabaseKey, value Message) Message {
 	switch store.Type {
 
 	case MEMORY:
-		store.Data.Set(key, value)
+		store.data.Set(key, value)
 
 	case PERSISTENT:
-		store.Tree.Set(key, value)
+		store.tree.Set(key, value)
 
 	default:
 		panic("Unknown Type")
@@ -88,14 +90,27 @@ func (store Datastore) Load(key DatabaseKey) (value Message) {
 	switch store.Type {
 
 	case MEMORY:
-		return store.Data.Get(key)
+		return store.data.Get(key)
 
 	case PERSISTENT:
-		_, value := store.Tree.Get(key)
+		_, value := store.tree.Get(key)
 		return Message(value)
 
 	default:
 		panic("Unknown Type")
+	}
+}
+
+// Commit the changes to persistence
+func (store Datastore) Commit() {
+	switch store.Type {
+	case PERSISTENT:
+		_, store.version, _ = store.tree.SaveVersion()
+
+		// Save only one copy at a time
+		if store.version-1 > 1 {
+			store.tree.DeleteVersion(store.version - 1)
+		}
 	}
 }
 
