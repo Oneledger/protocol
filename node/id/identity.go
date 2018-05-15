@@ -38,6 +38,7 @@ type IdentityKey []byte
 type Identity interface {
 	AddPrivateKey(PrivateKey)
 	Name() string
+	Key() []byte
 }
 
 type IdentityBase struct {
@@ -47,30 +48,6 @@ type IdentityBase struct {
 
 	Key       IdentityKey
 	PublicKey PublicKey
-}
-
-// Information we need about our own fullnode identities
-type IdentityOneLedger struct {
-	IdentityBase
-
-	PrivateKey PrivateKey
-
-	NodeId      string
-	ExternalIds []Identity
-}
-
-// Information we need for a Bitcoin account
-type IdentityBitcoin struct {
-	IdentityBase
-
-	PrivateKey PrivateKey
-}
-
-// Information we need for an Ethereum account
-type IdentityEthereum struct {
-	IdentityBase
-
-	PrivateKey PrivateKey
 }
 
 // Hash the public key to get a unqiue hash that can act as a key
@@ -126,6 +103,16 @@ func FindIdentity(name string) (Identity, err.Code) {
 
 // OneLedger
 
+// Information we need about our own fullnode identities
+type IdentityOneLedger struct {
+	IdentityBase
+
+	PrivateKey PrivateKey
+
+	NodeId      string
+	ExternalIds []Identity
+}
+
 func (identity *IdentityOneLedger) AddPublicKey(key PublicKey) {
 	identity.PublicKey = key
 }
@@ -138,7 +125,18 @@ func (identity *IdentityOneLedger) Name() string {
 	return identity.IdentityBase.Name
 }
 
+func (identity *IdentityOneLedger) Key() []byte {
+	return []byte(identity.IdentityBase.Name)
+}
+
 // Bitcoin
+
+// Information we need for a Bitcoin account
+type IdentityBitcoin struct {
+	IdentityBase
+
+	PrivateKey PrivateKey
+}
 
 func (identity *IdentityBitcoin) AddPublicKey(key PublicKey) {
 	identity.PublicKey = key
@@ -152,7 +150,18 @@ func (identity *IdentityBitcoin) Name() string {
 	return identity.IdentityBase.Name
 }
 
+func (identity *IdentityBitcoin) Key() []byte {
+	return []byte(identity.IdentityBase.Name)
+}
+
 // Ethereum
+
+// Information we need for an Ethereum account
+type IdentityEthereum struct {
+	IdentityBase
+
+	PrivateKey PrivateKey
+}
 
 func (identity *IdentityEthereum) AddPublicKey(key PublicKey) {
 	identity.PublicKey = key
@@ -164,4 +173,8 @@ func (identity *IdentityEthereum) AddPrivateKey(key PrivateKey) {
 
 func (identity *IdentityEthereum) Name() string {
 	return identity.IdentityBase.Name
+}
+
+func (identity *IdentityEthereum) Key() []byte {
+	return []byte(identity.IdentityBase.Name)
 }

@@ -30,7 +30,7 @@ func (acc *Accounts) AddAccount(identity Identity) {
 		log.Error("Serialize Failed", "err", err)
 		return
 	}
-	acc.data.Store([]byte(identity.Name()), buffer)
+	acc.data.Store(identity.Key(), buffer)
 }
 
 func (acc *Accounts) DeleteAccount() {
