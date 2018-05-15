@@ -7,6 +7,7 @@ package main
 
 import (
 	"github.com/Oneledger/protocol/node/app"
+	"github.com/Oneledger/protocol/node/id"
 	"github.com/Oneledger/protocol/node/log"
 	"github.com/spf13/cobra"
 )
@@ -31,8 +32,6 @@ func init() {
 	accountCmd.Flags().StringVarP(&listargs.user, "user", "u", "", "user account name")
 }
 
-// TODO: This should be moved to the core...
-
 // IssueRequest sends out a sendTx to all of the nodes in the chain
 func ListAccount(cmd *cobra.Command, args []string) {
 
@@ -41,7 +40,7 @@ func ListAccount(cmd *cobra.Command, args []string) {
 
 	if listargs.user != "" {
 		Console.Print("Listing Account Details for", listargs.user)
-		identity, err := app.FindIdentity(listargs.user)
+		identity, err := id.FindIdentity(listargs.user)
 		if err != 0 {
 			log.Error("Not a valid identity", "err", err)
 			return
@@ -56,17 +55,6 @@ func ListAccount(cmd *cobra.Command, args []string) {
 	}
 }
 
-func AccountInfo(node *app.Application, identity app.Identity) {
-
-	name, err := app.GetAccount(identity)
-	if err != 0 {
-		log.Error("Invalid Account", "err", err)
-		return
-	}
-
-	PrintAccount(identity, name)
-}
-
-func PrintAccount(identity app.Identity, name string) {
+func AccountInfo(node *app.Application, identity id.Identity) {
 	Console.Print("Identity")
 }

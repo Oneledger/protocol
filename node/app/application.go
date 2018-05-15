@@ -10,29 +10,36 @@ import (
 	"bytes"
 
 	"github.com/Oneledger/protocol/node/abci"
+	"github.com/Oneledger/protocol/node/data"
+	"github.com/Oneledger/protocol/node/id"
 	"github.com/Oneledger/protocol/node/log"
+	"github.com/Oneledger/protocol/node/transaction"
 	"github.com/tendermint/abci/types"
 )
+
+var ChainId string
+
+func init() {
+	ChainId = "OneLedger-Root"
+}
 
 // ApplicationContext keeps all of the upper level global values.
 type Application struct {
 	types.BaseApplication
 
-	Admin    *Datastore  // any administrative parameters
-	Status   *Datastore  // current state of any composite transactions (pending, verified, etc.)
-	Accounts *Accounts   // Keep all of the user accounts locally for their node (identity management)
-	Utxo     *ChainState // unspent transction output (for each type of coin)
-
-	// TODO: basecoin has fees and staking too?
+	Admin    *data.Datastore  // any administrative parameters
+	Status   *data.Datastore  // current state of any composite transactions (pending, verified, etc.)
+	Accounts *id.Accounts     // Keep all of the user accounts locally for their node (identity management)
+	Utxo     *data.ChainState // unspent transction output (for each type of coin)
 }
 
 // NewApplicationContext initializes a new application
 func NewApplication() *Application {
 	return &Application{
-		Admin:    NewDatastore("admin", PERSISTENT),
-		Status:   NewDatastore("status", PERSISTENT),
-		Accounts: NewAccounts("accounts"),
-		Utxo:     NewChainState("utxo", PERSISTENT),
+		Admin:    data.NewDatastore("admin", data.PERSISTENT),
+		Status:   data.NewDatastore("status", data.PERSISTENT),
+		Accounts: id.NewAccounts("accounts"),
+		Utxo:     data.NewChainState("utxo", data.PERSISTENT),
 	}
 }
 
@@ -49,10 +56,13 @@ func (app Application) InitChain(req RequestInitChain) ResponseInitChain {
 func (app Application) Info(req RequestInfo) ResponseInfo {
 	info := abci.NewResponseInfo(0, 0, 0)
 
+	// lastHeight := app.Utxo.Commit.Height()
+
 	log.Debug("Message: Info", "req", req, "info", info)
 
 	return ResponseInfo{
 		Data: info.JSON(),
+		// Version: version,
 		// LastBlockHeight: lastHeight,
 		// LastBlockAppHash: lastAppHash,
 	}
@@ -64,7 +74,7 @@ func (app Application) Query(req RequestQuery) ResponseQuery {
 
 	result := HandleQuery(req.Path, req.Data)
 
-	return ResponseQuery{Key: Message("result"), Value: result}
+	return ResponseQuery{Key: transaction.Message("result"), Value: result}
 }
 
 // SetOption changes the underlying options for the ABCi app
@@ -78,7 +88,7 @@ func (app Application) SetOption(req RequestSetOption) ResponseSetOption {
 func (app Application) CheckTx(tx []byte) ResponseCheckTx {
 	log.Debug("Message: CheckTx", "tx", tx)
 
-	result, err := Parse(Message(tx))
+	result, err := transaction.Parse(transaction.Message(tx))
 	if err != 0 {
 		return ResponseCheckTx{Code: err}
 	}
@@ -95,13 +105,13 @@ func (app Application) CheckTx(tx []byte) ResponseCheckTx {
 	return ResponseCheckTx{Code: types.CodeTypeOK}
 }
 
-var chainKey DatabaseKey = DatabaseKey("chainId")
+var chainKey data.DatabaseKey = data.DatabaseKey("chainId")
 
 // BeginBlock is called when a new block is started
 func (app Application) BeginBlock(req RequestBeginBlock) ResponseBeginBlock {
 	log.Debug("Message: BeginBlock", "req", req)
 
-	newChainId := Message(req.Header.ChainID)
+	newChainId := transaction.Message(req.Header.ChainID)
 
 	chainId := app.Admin.Load(chainKey)
 
@@ -121,7 +131,7 @@ func (app Application) BeginBlock(req RequestBeginBlock) ResponseBeginBlock {
 func (app Application) DeliverTx(tx []byte) ResponseDeliverTx {
 	log.Debug("Message: DeliverTx", "tx", tx)
 
-	result, err := Parse(Message(tx))
+	result, err := transaction.Parse(transaction.Message(tx))
 	if err != 0 {
 		return ResponseDeliverTx{Code: err}
 	}

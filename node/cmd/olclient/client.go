@@ -10,7 +10,7 @@ package main
 import (
 	"os"
 
-	"github.com/Oneledger/protocol/node/app"
+	"github.com/Oneledger/protocol/node/global"
 	"github.com/Oneledger/protocol/node/log"
 	rpcclient "github.com/tendermint/tendermint/rpc/client"
 	ctypes "github.com/tendermint/tendermint/rpc/core/types"
@@ -21,7 +21,7 @@ var cachedClient *rpcclient.HTTP
 // TODO: Want to switch client type, based on config or cli args.
 func GetClient() *rpcclient.HTTP {
 	//cachedClient = rpcclient.NewHTTP("127.0.0.1:46657", "/websocket")
-	cachedClient = rpcclient.NewHTTP(app.Current.Address, "/websocket")
+	cachedClient = rpcclient.NewHTTP(global.Current.Address, "/websocket")
 	return cachedClient
 }
 

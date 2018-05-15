@@ -6,7 +6,7 @@
 package main
 
 import (
-	"github.com/Oneledger/protocol/node/app"
+	"github.com/Oneledger/protocol/node/id"
 	"github.com/Oneledger/protocol/node/log"
 	"github.com/spf13/cobra"
 )
@@ -42,7 +42,7 @@ func Register(cmd *cobra.Command, args []string) {
 	log.Debug("Register Account")
 
 	//identity, err := app.FindIdentity(arguments.name)
-	identity, err := app.FindIdentity(arguments.name)
+	identity, err := id.FindIdentity(arguments.name)
 	if err != 0 {
 		Console.Error("Invalid Identity String")
 		return
@@ -55,13 +55,13 @@ func Register(cmd *cobra.Command, args []string) {
 	}
 }
 
-func ConvertPublicKey(keystring string) app.PublicKey {
-	return app.PublicKey{}
+func ConvertPublicKey(keystring string) id.PublicKey {
+	return id.PublicKey{}
 }
 
 // TODO: This should be moved out of cmd and into it's own package
 func CreateIdentity() {
-	chainType, err := app.FindIdentityType(arguments.chain)
+	chainType, err := id.FindIdentityType(arguments.chain)
 	if err != 0 {
 		Console.Error("Invalid Identity Type")
 		return
@@ -69,17 +69,17 @@ func CreateIdentity() {
 
 	pubkey := ConvertPublicKey(arguments.pubkey)
 
-	identity := app.NewIdentity(chainType, arguments.name, pubkey)
+	identity := id.NewIdentity(chainType, arguments.name, pubkey)
 
 	// TODO: Need to convert the input...
-	identity.AddPrivateKey(app.PrivateKey{}) //arguments.privkey)
+	identity.AddPrivateKey(id.PrivateKey{}) //arguments.privkey)
 
 	Console.Info("New Account has been created")
 }
 
-func UpdateIdentity(identity app.Identity) {
+func UpdateIdentity(identity id.Identity) {
 	// TODO: Need to convert the input...
-	identity.AddPrivateKey(app.PrivateKey{}) //arguments.privkey)
+	identity.AddPrivateKey(id.PrivateKey{}) //arguments.privkey)
 
 	Console.Info("New Account has been updated")
 }

@@ -6,7 +6,10 @@
 package main
 
 import (
+	"os"
+
 	"github.com/Oneledger/protocol/node/app" // Import namespace
+	"github.com/Oneledger/protocol/node/global"
 	"github.com/Oneledger/protocol/node/log"
 
 	"github.com/spf13/cobra"
@@ -27,8 +30,8 @@ var address string
 func init() {
 	RootCmd.AddCommand(nodeCmd)
 
-	nodeCmd.Flags().StringVarP(&app.Current.Transport, "transport", "t", "socket", "transport (socket | grpc)")
-	nodeCmd.Flags().StringVarP(&app.Current.Address, "address", "a", "tcp://127.0.0.1:46658", "full address")
+	nodeCmd.Flags().StringVarP(&global.Current.Transport, "transport", "t", "socket", "transport (socket | grpc)")
+	nodeCmd.Flags().StringVarP(&global.Current.Address, "address", "a", "tcp://127.0.0.1:46658", "full address")
 }
 
 func HandleArguments() {
@@ -37,12 +40,21 @@ func HandleArguments() {
 func StartNode(cmd *cobra.Command, args []string) {
 	log.Info("Starting up a Node")
 
+	// Catch any underlying panics, for now just print out the details properly and stop
+	defer func() {
+		if r := recover(); r != nil {
+			log.Error("Fatal Error, coming down", "r", r)
+			os.Exit(-1)
+		}
+	}()
+
 	node := app.NewApplication()
 
 	// TODO: Switch on config
 	//service = server.NewGRPCServer("unix://data.sock", types.NewGRPCApplication(*node))
 	//service = server.NewSocketServer("tcp://127.0.0.1:46658", *node)
-	service = server.NewSocketServer(app.Current.Address, *node)
+
+	service = server.NewSocketServer(global.Current.Address, *node)
 	service.SetLogger(log.GetLogger())
 
 	// TODO: catch any panics

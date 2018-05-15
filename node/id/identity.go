@@ -5,9 +5,10 @@
 
 	TODO: Need to pick a system key for identities. Is a hash of pubkey reasonable?
 */
-package app
+package id
 
 import (
+	"github.com/Oneledger/protocol/node/err"
 	crypto "github.com/tendermint/go-crypto"
 	"github.com/tendermint/go-wire/data"
 	"golang.org/x/crypto/ripemd160"
@@ -104,24 +105,26 @@ func NewIdentity(newType IdentityType, name string, Key PublicKey) Identity {
 }
 
 // TODO: really should be part of the enum, as a map...
-func FindIdentityType(typeName string) (IdentityType, Error) {
+func FindIdentityType(typeName string) (IdentityType, err.Code) {
 	switch typeName {
 	case "OneLedger":
-		return ONELEDGER, 0
+		return ONELEDGER, err.SUCCESS
 
 	case "Ethereum":
-		return ETHEREUM, 0
+		return ETHEREUM, err.SUCCESS
 
 	case "Bitcoin":
-		return BITCOIN, 0
+		return BITCOIN, err.SUCCESS
 	}
 	return 0, 42
 }
 
-func FindIdentity(name string) (Identity, Error) {
+func FindIdentity(name string) (Identity, err.Code) {
 	// TODO: Lookup the identity in the node's database
 	return &IdentityOneLedger{IdentityBase: IdentityBase{Name: name}}, 0
 }
+
+// OneLedger
 
 func (identity *IdentityOneLedger) AddPublicKey(key PublicKey) {
 	identity.PublicKey = key
@@ -135,6 +138,8 @@ func (identity *IdentityOneLedger) Name() string {
 	return identity.IdentityBase.Name
 }
 
+// Bitcoin
+
 func (identity *IdentityBitcoin) AddPublicKey(key PublicKey) {
 	identity.PublicKey = key
 }
@@ -146,6 +151,8 @@ func (identity *IdentityBitcoin) AddPrivateKey(key PrivateKey) {
 func (identity *IdentityBitcoin) Name() string {
 	return identity.IdentityBase.Name
 }
+
+// Ethereum
 
 func (identity *IdentityEthereum) AddPublicKey(key PublicKey) {
 	identity.PublicKey = key

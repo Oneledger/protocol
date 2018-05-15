@@ -7,14 +7,16 @@
 			- Can only be opened by one process...
 
 */
-package app
+package data
 
 import (
+	"github.com/Oneledger/protocol/node/global"
 	"github.com/Oneledger/protocol/node/log"
 	"github.com/tendermint/iavl" // TODO: Double check this with cosmos-sdk
 	"github.com/tendermint/tmlibs/db"
 )
 
+type Message = []byte
 type DatabaseKey = []byte // Database key
 
 // ENUM for datastore type
@@ -46,10 +48,10 @@ func NewDatastore(name string, newType DatastoreType) *Datastore {
 		}
 
 	case PERSISTENT:
-		storage, err := db.NewGoLevelDB("OneLedger-"+name, Current.RootDir)
+		storage, err := db.NewGoLevelDB("OneLedger-"+name, global.Current.RootDir)
 		if err != nil {
 			log.Error("Database create failed", "err", err)
-			panic("Can't create a database " + Current.RootDir + "/" + "OneLedger-" + name)
+			panic("Can't create a database " + global.Current.RootDir + "/" + "OneLedger-" + name)
 		}
 
 		tree := iavl.NewTree(storage, 1000) // Do I need a historic tree here?
@@ -92,6 +94,16 @@ func (store Datastore) Load(key DatabaseKey) (value Message) {
 		_, value := store.Tree.Get(key)
 		return Message(value)
 
+	default:
+		panic("Unknown Type")
+	}
+}
+
+// Empty out all rows from the database
+func (store Datastore) Empty() {
+	switch store.Type {
+	case MEMORY:
+	case PERSISTENT:
 	default:
 		panic("Unknown Type")
 	}

@@ -5,20 +5,12 @@
 
 	TODO: switch from individual wire calls, to reading/writing directly to structs
 */
-package app
+package transaction
 
 import (
+	"github.com/Oneledger/protocol/node/err"
 	"github.com/Oneledger/protocol/node/log"
 	wire "github.com/tendermint/go-wire"
-)
-
-type Error = uint32 // Matches Tendermint status
-
-const (
-	SUCCESS         Error = 0
-	PARSE_ERROR     Error = 101
-	NOT_IMPLEMENTED Error = 201
-	MISSING_VALUE   Error = 301
 )
 
 // Unpack an encoded (wire) message
@@ -37,7 +29,7 @@ func UnpackMessage(message Message) (TransactionType, Message) {
 }
 
 // Parse a message into the appropriate transaction
-func Parse(message Message) (Transaction, Error) {
+func Parse(message Message) (Transaction, err.Code) {
 	log.Debug("Parsing a Transaction")
 
 	command, body := UnpackMessage(message)
@@ -47,28 +39,28 @@ func Parse(message Message) (Transaction, Error) {
 	case SEND_TRANSACTION:
 		transaction := ParseSend(body)
 
-		return transaction, SUCCESS
+		return transaction, err.SUCCESS
 
 	case SWAP_TRANSACTION:
 		transaction := ParseSwap(body)
 
-		return transaction, SUCCESS
+		return transaction, err.SUCCESS
 
 	case READY_TRANSACTION:
 		transaction := ParseReady(body)
 
-		return transaction, SUCCESS
+		return transaction, err.SUCCESS
 
 	case VERIFY_TRANSACTION:
 		transaction := ParseVerify(body)
 
-		return transaction, SUCCESS
+		return transaction, err.SUCCESS
 
 	default:
 		log.Error("Unknown type", "command", command)
 	}
 
-	return nil, PARSE_ERROR
+	return nil, err.PARSE_ERROR
 }
 
 // Parse a send request
