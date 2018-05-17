@@ -5,7 +5,7 @@
 
 	TODO: switch from individual wire calls, to reading/writing directly to structs
 */
-package transaction
+package action
 
 import (
 	"github.com/Oneledger/protocol/node/err"

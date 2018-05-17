@@ -5,7 +5,7 @@
 
 	If a type requires functions or a few types are intertwinded, then should be in their own file.
 */
-package transaction
+package action
 
 import "github.com/Oneledger/protocol/node/id"
 

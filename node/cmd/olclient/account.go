@@ -6,8 +6,8 @@
 package main
 
 import (
+	"github.com/Oneledger/protocol/node/action"
 	"github.com/Oneledger/protocol/node/log"
-	"github.com/Oneledger/protocol/node/transaction"
 	"github.com/spf13/cobra"
 )
 
@@ -34,7 +34,7 @@ func init() {
 
 // Format the request into a query structure
 func FormatRequest() []byte {
-	return transaction.Message("User=" + account.user)
+	return action.Message("User=" + account.user)
 }
 
 // IssueRequest sends out a sendTx to all of the nodes in the chain

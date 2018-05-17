@@ -8,12 +8,12 @@ package main
 import (
 	"os"
 
+	"github.com/Oneledger/protocol/node/action"
 	"github.com/Oneledger/protocol/node/app"
 	"github.com/Oneledger/protocol/node/convert"
 	"github.com/Oneledger/protocol/node/global"
 	"github.com/Oneledger/protocol/node/id"
 	"github.com/Oneledger/protocol/node/log"
-	"github.com/Oneledger/protocol/node/transaction"
 	"github.com/spf13/cobra"
 )
 
@@ -73,22 +73,22 @@ func CreateSwapRequest() []byte {
 	// TOOD: a clash with the basic data model
 	signers := GetSigners()
 
-	fee := transaction.Coin{
+	fee := action.Coin{
 		Currency: conv.GetCurrency(swapargs.currency),
 		Amount:   conv.GetInt64(swapargs.fee),
 	}
 
-	gas := transaction.Coin{
+	gas := action.Coin{
 		Currency: conv.GetCurrency(swapargs.currency),
 		Amount:   conv.GetInt64(swapargs.gas),
 	}
 
-	amount := transaction.Coin{
+	amount := action.Coin{
 		Currency: conv.GetCurrency(swapargs.currency),
 		Amount:   conv.GetInt64(swapargs.amount),
 	}
 
-	exchange := transaction.Coin{
+	exchange := action.Coin{
 		Currency: conv.GetCurrency(swapargs.excurrency),
 		Amount:   conv.GetInt64(swapargs.exchange),
 	}
@@ -98,9 +98,9 @@ func CreateSwapRequest() []byte {
 		os.Exit(-1)
 	}
 
-	swap := &transaction.SwapTransaction{
-		TransactionBase: transaction.TransactionBase{
-			Type:     transaction.SWAP_TRANSACTION,
+	swap := &action.SwapTransaction{
+		TransactionBase: action.TransactionBase{
+			Type:     action.SWAP_TRANSACTION,
 			ChainId:  app.ChainId,
 			Signers:  signers,
 			Sequence: swapargs.sequence,
@@ -113,7 +113,7 @@ func CreateSwapRequest() []byte {
 		Exchange: exchange,
 	}
 
-	signed := SignTransaction(transaction.Transaction(swap))
+	signed := SignTransaction(action.Transaction(swap))
 	packet := PackRequest(signed)
 
 	return packet

@@ -8,12 +8,12 @@ package main
 import (
 	"os"
 
+	"github.com/Oneledger/protocol/node/action"
 	"github.com/Oneledger/protocol/node/app"
 	"github.com/Oneledger/protocol/node/convert"
 	"github.com/Oneledger/protocol/node/global"
 	"github.com/Oneledger/protocol/node/id"
 	"github.com/Oneledger/protocol/node/log"
-	"github.com/Oneledger/protocol/node/transaction"
 	"github.com/spf13/cobra"
 )
 
@@ -64,7 +64,7 @@ func CreateRequest() []byte {
 	to := id.Address(conv.GetHash(sendargs.to))
 	_ = to
 
-	gas := transaction.Coin{
+	gas := action.Coin{
 		Currency: conv.GetCurrency(sendargs.currency),
 		Amount:   conv.GetInt64(sendargs.gas),
 	}
@@ -75,9 +75,9 @@ func CreateRequest() []byte {
 	}
 
 	// Create base transaction
-	send := &transaction.SendTransaction{
-		TransactionBase: transaction.TransactionBase{
-			Type:     transaction.SEND_TRANSACTION,
+	send := &action.SendTransaction{
+		TransactionBase: action.TransactionBase{
+			Type:     action.SEND_TRANSACTION,
 			ChainId:  app.ChainId,
 			Signers:  signers,
 			Sequence: sendargs.sequence,
@@ -85,7 +85,7 @@ func CreateRequest() []byte {
 		Gas: gas,
 	}
 
-	signed := SignTransaction(transaction.Transaction(send))
+	signed := SignTransaction(action.Transaction(send))
 	packet := PackRequest(signed)
 
 	return packet

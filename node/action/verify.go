@@ -3,7 +3,7 @@
 
 	An incoming transaction, send, swap, ready, verification, etc.
 */
-package transaction
+package action
 
 import (
 	"github.com/Oneledger/protocol/node/err"

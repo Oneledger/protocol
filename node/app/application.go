@@ -10,10 +10,10 @@ import (
 	"bytes"
 
 	"github.com/Oneledger/protocol/node/abci"
+	"github.com/Oneledger/protocol/node/action"
 	"github.com/Oneledger/protocol/node/data"
 	"github.com/Oneledger/protocol/node/id"
 	"github.com/Oneledger/protocol/node/log"
-	"github.com/Oneledger/protocol/node/transaction"
 	"github.com/tendermint/abci/types"
 )
 
@@ -74,7 +74,7 @@ func (app Application) Query(req RequestQuery) ResponseQuery {
 
 	result := HandleQuery(req.Path, req.Data)
 
-	return ResponseQuery{Key: transaction.Message("result"), Value: result}
+	return ResponseQuery{Key: action.Message("result"), Value: result}
 }
 
 // SetOption changes the underlying options for the ABCi app
@@ -88,7 +88,7 @@ func (app Application) SetOption(req RequestSetOption) ResponseSetOption {
 func (app Application) CheckTx(tx []byte) ResponseCheckTx {
 	log.Debug("Message: CheckTx", "tx", tx)
 
-	result, err := transaction.Parse(transaction.Message(tx))
+	result, err := action.Parse(action.Message(tx))
 	if err != 0 {
 		return ResponseCheckTx{Code: err}
 	}
@@ -111,7 +111,7 @@ var chainKey data.DatabaseKey = data.DatabaseKey("chainId")
 func (app Application) BeginBlock(req RequestBeginBlock) ResponseBeginBlock {
 	log.Debug("Message: BeginBlock", "req", req)
 
-	newChainId := transaction.Message(req.Header.ChainID)
+	newChainId := action.Message(req.Header.ChainID)
 
 	chainId := app.Admin.Load(chainKey)
 
@@ -131,7 +131,7 @@ func (app Application) BeginBlock(req RequestBeginBlock) ResponseBeginBlock {
 func (app Application) DeliverTx(tx []byte) ResponseDeliverTx {
 	log.Debug("Message: DeliverTx", "tx", tx)
 
-	result, err := transaction.Parse(transaction.Message(tx))
+	result, err := action.Parse(action.Message(tx))
 	if err != 0 {
 		return ResponseDeliverTx{Code: err}
 	}

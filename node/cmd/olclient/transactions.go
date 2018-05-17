@@ -6,8 +6,8 @@
 package main
 
 import (
+	"github.com/Oneledger/protocol/node/action"
 	"github.com/Oneledger/protocol/node/id"
-	"github.com/Oneledger/protocol/node/transaction"
 	wire "github.com/tendermint/go-wire"
 )
 
@@ -22,12 +22,12 @@ func GetSigners() []id.PublicKey {
 }
 
 // SignTransaction with the local keys
-func SignTransaction(transaction transaction.Transaction) transaction.Transaction {
+func SignTransaction(transaction action.Transaction) action.Transaction {
 	return transaction
 }
 
 // Pack a request into a transferable format (wire)
-func PackRequest(request transaction.Transaction) []byte {
+func PackRequest(request action.Transaction) []byte {
 	packet := wire.BinaryBytes(request)
 	return packet
 }
