@@ -28,7 +28,6 @@ nodes="OneLedger-One#mach0 OneLedger-Two#mach1 OneLedger-Three#mach2"
 
 for node in $nodes
 do
-	echo "Resetting $node"
 	$CMD/resetNode $node $STAGING 
 done
 
