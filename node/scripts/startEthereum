@@ -1,0 +1,26 @@
+#!/bin/bash
+
+#
+# Startup an Etherum chain
+#
+
+export LOG=$OLDATA
+export OLETH=$OLDATA/ethereum
+
+echo "============================================================" >> $LOG/ethereum.log
+echo "Start ethereum network" >> $LOG/ethereum.log
+
+geth --datadir $OLETH/A --networkid 20180229 --port 30301 --rpcport 28101 --nodiscover 2 >>  $OLETH/A/eth.log &
+sleep 3
+
+geth --datadir $OLETH/B --networkid 20180229 --port 30302 --rpcport 28102 --nodiscover 2 >>  $OLETH/B/eth.log &
+sleep 3
+
+geth --datadir $OLETH/C --networkid 20180229 --port 30303 --rpcport 28103 --nodiscover 2 >>  $OLETH/C/eth.log &
+
+sleep 5
+
+geth --exec "admin.addPeer($(geth --exec "admin.nodeInfo.enode" attach ipc:$OLETH/A/geth.ipc))" attach ipc:$OLETH/B/geth.ipc
+geth --exec "admin.addPeer($(geth --exec "admin.nodeInfo.enode" attach ipc:$OLETH/B/geth.ipc))" attach ipc:$OLETH/C/geth.ipc
+geth --exec "admin.addPeer($(geth --exec "admin.nodeInfo.enode" attach ipc:$OLETH/C/geth.ipc))" attach ipc:$OLETH/A/geth.ipc
+
