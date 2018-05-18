@@ -36,23 +36,38 @@ func Parse(message Message) (Transaction, err.Code) {
 
 	switch command {
 
-	case SEND_TRANSACTION:
+	case SEND:
 		transaction := ParseSend(body)
 
 		return transaction, err.SUCCESS
 
-	case SWAP_TRANSACTION:
+	case SWAP:
 		transaction := ParseSwap(body)
 
 		return transaction, err.SUCCESS
 
-	case READY_TRANSACTION:
-		transaction := ParseReady(body)
+	case EXTERNAL_SEND:
+		transaction := ParseExternalSend(body)
 
 		return transaction, err.SUCCESS
 
-	case VERIFY_TRANSACTION:
-		transaction := ParseVerify(body)
+	case EXTERNAL_LOCK:
+		transaction := ParseExternalLock(body)
+
+		return transaction, err.SUCCESS
+
+	case PREPARE:
+		transaction := ParsePrepare(body)
+
+		return transaction, err.SUCCESS
+
+	case COMMIT:
+		transaction := ParseCommit(body)
+
+		return transaction, err.SUCCESS
+
+	case FORGET:
+		transaction := ParseForget(body)
 
 		return transaction, err.SUCCESS
 
@@ -64,40 +79,68 @@ func Parse(message Message) (Transaction, err.Code) {
 }
 
 // Parse a send request
-func ParseSend(message Message) *SendTransaction {
+func ParseSend(message Message) *Send {
 	log.Debug("Have a Send")
 
-	return &SendTransaction{
-		TransactionBase: TransactionBase{Type: SEND_TRANSACTION},
+	return &Send{
+		TransactionBase: TransactionBase{Type: SEND},
 	}
 }
 
 // Parse a swap request
-func ParseSwap(message Message) *SwapTransaction {
+func ParseSwap(message Message) *Swap {
 	log.Debug("Have a Swap")
 
 	//return &SwapTransaction{Type: SWAP_TRANSACTION}
-	return &SwapTransaction{
-		TransactionBase: TransactionBase{Type: SWAP_TRANSACTION},
+	return &Swap{
+		TransactionBase: TransactionBase{Type: SWAP},
+	}
+}
+
+// Parse a send request
+func ParseExternalSend(message Message) *ExternalSend {
+	log.Debug("Have an ExternalSend")
+
+	return &ExternalSend{
+		TransactionBase: TransactionBase{Type: EXTERNAL_SEND},
+	}
+}
+
+// Parse a send request
+func ParseExternalLock(message Message) *ExternalLock {
+	log.Debug("Have an ExternalLock")
+
+	return &ExternalLock{
+		TransactionBase: TransactionBase{Type: EXTERNAL_LOCK},
 	}
 }
 
 // Parse a ready request
-func ParseReady(message Message) *ReadyTransaction {
+func ParsePrepare(message Message) *Prepare {
 	log.Debug("Have a Ready")
 
 	//return &SwapTransaction{Type: SWAP_TRANSACTION}
-	return &ReadyTransaction{
-		TransactionBase: TransactionBase{Type: READY_TRANSACTION},
+	return &Prepare{
+		TransactionBase: TransactionBase{Type: PREPARE},
 	}
 }
 
 // Parse a ready request
-func ParseVerify(message Message) *VerifyTransaction {
+func ParseCommit(message Message) *Commit {
 	log.Debug("Have a Ready")
 
 	//return &SwapTransaction{Type: SWAP_TRANSACTION}
-	return &VerifyTransaction{
-		TransactionBase: TransactionBase{Type: VERIFY_TRANSACTION},
+	return &Commit{
+		TransactionBase: TransactionBase{Type: COMMIT},
+	}
+}
+
+// Forget the transaction
+func ParseForget(message Message) *Forget {
+	log.Debug("Have a Ready")
+
+	//return &SwapTransaction{Type: SWAP_TRANSACTION}
+	return &Forget{
+		TransactionBase: TransactionBase{Type: FORGET},
 	}
 }

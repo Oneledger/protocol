@@ -7,20 +7,15 @@
 */
 package action
 
-import "github.com/Oneledger/protocol/node/id"
-
-// Coin is the basic amount, specified in integers, at the smallest increment (i.e. a satoshi, not a bitcoin)
-type Coin struct {
-	Currency string `json:"currency"`
-	Amount   int64  `json:"amount"`
-}
-
-type Coins []Coin
+import (
+	"github.com/Oneledger/protocol/node/data"
+	"github.com/Oneledger/protocol/node/id"
+)
 
 // inputs into a send transaction (similar to Bitcoin)
 type SendInput struct {
 	Address   id.Address   `json:"address"`
-	Coins     Coins        `json:"coins"`
+	Coins     data.Coins   `json:"coins"`
 	Sequence  int          `json:"sequence"`
 	Signature id.Signature `json:"signature"`
 	PubKey    PublicKey    `json:"pub_key"`
@@ -29,5 +24,5 @@ type SendInput struct {
 // outputs for a send transaction (similar to Bitcoin)
 type SendOutput struct {
 	Address id.Address `json:"address"`
-	Coins   Coins      `json:"coins"`
+	Coins   data.Coins `json:"coins"`
 }

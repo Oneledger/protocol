@@ -18,10 +18,13 @@ type PublicKey = crypto.PubKey
 type TransactionType byte
 
 const (
-	SEND_TRANSACTION TransactionType = iota
-	SWAP_TRANSACTION
-	READY_TRANSACTION
-	VERIFY_TRANSACTION
+	SEND TransactionType = iota
+	EXTERNAL_SEND
+	EXTERNAL_LOCK
+	SWAP
+	PREPARE
+	COMMIT
+	FORGET
 )
 
 // Polymorphism and Serializable
@@ -34,7 +37,7 @@ type Transaction interface {
 // Base Data for each type
 type TransactionBase struct {
 	Type    TransactionType `json:"type"`
-	ChainId string          `json:"chain_id"`
+	ChainId string          `json:"chain_id"` // TODO: Not necessary?
 	Signers []PublicKey     `json:"signers"`
 
 	// TODO: Should these be for all transactions or just driving ones?

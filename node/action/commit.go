@@ -11,23 +11,23 @@ import (
 )
 
 // TODO: This needs to be filled out properly, need a model for other-chain actions...
-type ReadyTransaction struct {
+type Commit struct {
 	TransactionBase
 
 	Target string `json:"target"`
 }
 
-func (transaction *ReadyTransaction) Validate() err.Code {
-	log.Debug("Validating Ready Transaction")
+func (transaction *Commit) Validate() err.Code {
+	log.Debug("Validating Commit Transaction")
 	return err.SUCCESS
 }
 
-func (transaction *ReadyTransaction) ProcessCheck(app interface{}) err.Code {
-	log.Debug("Processing Ready Transaction for CheckTx")
+func (transaction *Commit) ProcessCheck(app interface{}) err.Code {
+	log.Debug("Processing Commit Transaction for CheckTx")
 	return err.SUCCESS
 }
 
-func (transaction *ReadyTransaction) ProcessDeliver(app interface{}) err.Code {
-	log.Debug("Processing Ready Transaction for DeliverTx")
+func (transaction *Commit) ProcessDeliver(app interface{}) err.Code {
+	log.Debug("Processing Commit Transaction for DeliverTx")
 	return err.SUCCESS
 }

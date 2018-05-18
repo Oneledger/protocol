@@ -11,6 +11,7 @@ import (
 	"github.com/Oneledger/protocol/node/action"
 	"github.com/Oneledger/protocol/node/app"
 	"github.com/Oneledger/protocol/node/convert"
+	"github.com/Oneledger/protocol/node/data"
 	"github.com/Oneledger/protocol/node/global"
 	"github.com/Oneledger/protocol/node/id"
 	"github.com/Oneledger/protocol/node/log"
@@ -73,22 +74,22 @@ func CreateSwapRequest() []byte {
 	// TOOD: a clash with the basic data model
 	signers := GetSigners()
 
-	fee := action.Coin{
+	fee := data.Coin{
 		Currency: conv.GetCurrency(swapargs.currency),
 		Amount:   conv.GetInt64(swapargs.fee),
 	}
 
-	gas := action.Coin{
+	gas := data.Coin{
 		Currency: conv.GetCurrency(swapargs.currency),
 		Amount:   conv.GetInt64(swapargs.gas),
 	}
 
-	amount := action.Coin{
+	amount := data.Coin{
 		Currency: conv.GetCurrency(swapargs.currency),
 		Amount:   conv.GetInt64(swapargs.amount),
 	}
 
-	exchange := action.Coin{
+	exchange := data.Coin{
 		Currency: conv.GetCurrency(swapargs.excurrency),
 		Amount:   conv.GetInt64(swapargs.exchange),
 	}
@@ -98,9 +99,9 @@ func CreateSwapRequest() []byte {
 		os.Exit(-1)
 	}
 
-	swap := &action.SwapTransaction{
+	swap := &action.Swap{
 		TransactionBase: action.TransactionBase{
-			Type:     action.SWAP_TRANSACTION,
+			Type:     action.SWAP,
 			ChainId:  app.ChainId,
 			Signers:  signers,
 			Sequence: swapargs.sequence,

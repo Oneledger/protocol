@@ -11,23 +11,23 @@ import (
 )
 
 // TODO: This needs to be filled out properly, need a model for other-chain actions...
-type VerifyTransaction struct {
+type Forget struct {
 	TransactionBase
 
 	Target string `json:"target"`
 }
 
-func (transaction *VerifyTransaction) Validate() err.Code {
-	log.Debug("Validating Verify Transaction")
+func (transaction *Forget) Validate() err.Code {
+	log.Debug("Validating Forget Transaction")
 	return err.SUCCESS
 }
 
-func (transaction *VerifyTransaction) ProcessCheck(app interface{}) err.Code {
-	log.Debug("Processing Verify Transaction for CheckTx")
+func (transaction *Forget) ProcessCheck(app interface{}) err.Code {
+	log.Debug("Processing Forget Transaction for CheckTx")
 	return err.SUCCESS
 }
 
-func (transaction *VerifyTransaction) ProcessDeliver(app interface{}) err.Code {
-	log.Debug("Processing Verify Transaction for DeliverTx")
+func (transaction *Forget) ProcessDeliver(app interface{}) err.Code {
+	log.Debug("Processing Forget Transaction for DeliverTx")
 	return err.SUCCESS
 }

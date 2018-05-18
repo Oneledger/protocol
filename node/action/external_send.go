@@ -12,7 +12,7 @@ import (
 )
 
 // Synchronize a swap between two users
-type Send struct {
+type ExternalSend struct {
 	TransactionBase
 
 	Gas     data.Coin    `json:"gas"`
@@ -21,8 +21,8 @@ type Send struct {
 	Outputs []SendOutput `json:"outputs"`
 }
 
-func (transaction *Send) Validate() err.Code {
-	log.Debug("Validating Send Transaction")
+func (transaction *ExternalSend) Validate() err.Code {
+	log.Debug("Validating ExternalSend Transaction")
 
 	// TODO: Make sure all of the parameters are there
 	// TODO: Check all signatures and keys
@@ -30,15 +30,15 @@ func (transaction *Send) Validate() err.Code {
 	return err.SUCCESS
 }
 
-func (transaction *Send) ProcessCheck(app interface{}) err.Code {
-	log.Debug("Processing Send Transaction for CheckTx")
+func (transaction *ExternalSend) ProcessCheck(app interface{}) err.Code {
+	log.Debug("Processing ExternalSend Transaction for CheckTx")
 
 	// TODO: // Update in memory copy of Merkle Tree
 	return err.SUCCESS
 }
 
-func (transaction *Send) ProcessDeliver(app interface{}) err.Code {
-	log.Debug("Processing Send Transaction for DeliverTx")
+func (transaction *ExternalSend) ProcessDeliver(app interface{}) err.Code {
+	log.Debug("Processing ExternalSend Transaction for DeliverTx")
 
 	// TODO: // Update in final copy of Merkle Tree
 	return err.SUCCESS
