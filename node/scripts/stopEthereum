@@ -1,0 +1,16 @@
+#!/bin/bash
+
+#
+#   Stop all ethereum process
+#
+
+export LOG=$OLDATA
+
+echo "============================================" >> $LOG/ethereum.log
+echo "Killing all bitcoin process" >> $LOG/ethereum.log
+
+pkill geth.*
+
+sleep 10
+
+echo "Running Ethereum process: $(pgrep geth.* | wc -l)"
