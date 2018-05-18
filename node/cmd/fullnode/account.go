@@ -15,7 +15,7 @@ import (
 var accountCmd = &cobra.Command{
 	Use:   "account",
 	Short: "List out account details",
-	Run:   ListAccount,
+	Run:   ListIdentities,
 }
 
 // Arguments to the command
@@ -33,28 +33,28 @@ func init() {
 }
 
 // IssueRequest sends out a sendTx to all of the nodes in the chain
-func ListAccount(cmd *cobra.Command, args []string) {
+func ListIdentities(cmd *cobra.Command, args []string) {
 
 	// TODO: We can't do this, need to be 'light-client' instead...
 	node := app.NewApplication()
 
 	if listargs.user != "" {
 		Console.Print("Listing Account Details for", listargs.user)
-		identity, err := id.FindIdentity(listargs.user)
+		identity, err := node.Identities.FindIdentity(listargs.user)
 		if err != 0 {
 			log.Error("Not a valid identity", "err", err)
 			return
 		}
-		AccountInfo(node, identity)
+		IdentityInfo(node, identity)
 		return
 	}
 
 	Console.Print("Listing Account Details for all users")
-	for _, identity := range node.Accounts.AllAccounts() {
-		AccountInfo(node, identity)
+	for _, identity := range node.Identities.AllIdentities() {
+		IdentityInfo(node, &identity)
 	}
 }
 
-func AccountInfo(node *app.Application, identity id.Identity) {
+func IdentityInfo(node *app.Application, identity *id.Identity) {
 	Console.Print("Identity")
 }

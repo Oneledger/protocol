@@ -18,6 +18,7 @@ Identity -- an individual in meatspace
 	- Contact Info
 	- Primary Account
 	- Set of Secondary Accounts
+	- Set of ChainNodes
 
 Account -- information needed to access an account on a chain
 

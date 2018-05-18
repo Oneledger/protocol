@@ -27,19 +27,21 @@ func init() {
 type Application struct {
 	types.BaseApplication
 
-	Admin    *data.Datastore  // any administrative parameters
-	Status   *data.Datastore  // current state of any composite transactions (pending, verified, etc.)
-	Accounts *id.Accounts     // Keep all of the user accounts locally for their node (identity management)
-	Utxo     *data.ChainState // unspent transction output (for each type of coin)
+	Admin      *data.Datastore  // any administrative parameters
+	Status     *data.Datastore  // current state of any composite transactions (pending, verified, etc.)
+	Identities *id.Identities   // Keep a higher-level identity for a given user
+	Accounts   *id.Accounts     // Keep all of the user accounts locally for their node (identity management)
+	Utxo       *data.ChainState // unspent transction output (for each type of coin)
 }
 
 // NewApplicationContext initializes a new application
 func NewApplication() *Application {
 	return &Application{
-		Admin:    data.NewDatastore("admin", data.PERSISTENT),
-		Status:   data.NewDatastore("status", data.PERSISTENT),
-		Accounts: id.NewAccounts("accounts"),
-		Utxo:     data.NewChainState("utxo", data.PERSISTENT),
+		Admin:      data.NewDatastore("admin", data.PERSISTENT),
+		Status:     data.NewDatastore("status", data.PERSISTENT),
+		Identities: id.NewIdentities("identities"),
+		Accounts:   id.NewAccounts("accounts"),
+		Utxo:       data.NewChainState("utxo", data.PERSISTENT),
 	}
 }
 

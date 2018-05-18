@@ -1,180 +1,78 @@
 /*
 	Copyright 2017-2018 OneLedger
 
-	Identities management for any of the associated chains
-
-	TODO: Need to pick a system key for identities. Is a hash of pubkey reasonable?
+	Current state of a given user, assembled from persistence
 */
 package id
 
 import (
+	"github.com/Oneledger/protocol/node/comm"
+	"github.com/Oneledger/protocol/node/data"
 	"github.com/Oneledger/protocol/node/err"
-	crypto "github.com/tendermint/go-crypto"
-	"github.com/tendermint/go-wire/data"
-	"golang.org/x/crypto/ripemd160"
+	"github.com/Oneledger/protocol/node/log"
 )
 
-// Aliases to hide some of the basic underlying types.
-
-type Address = data.Bytes // OneLedger address, like Tendermint the hash of the associated PubKey
-
-type PublicKey = crypto.PubKey
-type PrivateKey = crypto.PrivKey
-
-type Signature = crypto.Signature
-
-// enum for type
-type IdentityType int
-
-const (
-	ONELEDGER IdentityType = iota
-	BITCOIN
-	ETHEREUM
-)
-
-type IdentityKey []byte
-
-// Polymorphism
-type Identity interface {
-	AddPrivateKey(PrivateKey)
-	Name() string
-	Key() []byte
+// The persistent collection of all accounts known by this node
+type Identities struct {
+	data *data.Datastore
 }
 
-type IdentityBase struct {
-	Type IdentityType
-
-	Name string // TODO: Not sure this is normalized?
-
-	Key       IdentityKey
-	PublicKey PublicKey
+type Identity struct {
+	UserId      string
+	UserName    string
+	ContactInfo string
+	Primary     Account
+	Secondary   []Account
 }
 
-// Hash the public key to get a unqiue hash that can act as a key
-func NewIdentityKey(key PublicKey) IdentityKey {
-	hasher := ripemd160.New()
+// Initialize or reconnect to the database
+func NewIdentities(name string) *Identities {
+	data := data.NewDatastore(name, data.PERSISTENT)
 
-	bytes, err := key.MarshalJSON()
+	return &Identities{
+		data: data,
+	}
+}
+
+func NewIdentity(userId string, userName string, contactInfo string) *Identity {
+	return &Identity{
+		UserId:      userId,
+		UserName:    userName,
+		ContactInfo: contactInfo,
+	}
+}
+
+func (ids *Identities) AddIdentity(identity Identity) {
+	buffer, err := comm.Serialize(identity)
 	if err != nil {
-		panic("Unable to Marshal the key into bytes")
+		log.Error("Serialize Failed", "err", err)
+		return
 	}
-
-	hasher.Write(bytes)
-
-	return hasher.Sum(nil)
+	ids.data.Store(identity.Key(), buffer)
 }
 
-func NewIdentity(newType IdentityType, name string, Key PublicKey) Identity {
-	switch newType {
-
-	case ONELEDGER:
-		return &IdentityOneLedger{}
-
-	case BITCOIN:
-		return &IdentityBitcoin{}
-
-	case ETHEREUM:
-		return &IdentityEthereum{}
-
-	default:
-		panic("Unknown Type")
-	}
+func (ids *Identities) DeleteAccount() {
 }
 
-// TODO: really should be part of the enum, as a map...
-func FindIdentityType(typeName string) (IdentityType, err.Code) {
-	switch typeName {
-	case "OneLedger":
-		return ONELEDGER, err.SUCCESS
-
-	case "Ethereum":
-		return ETHEREUM, err.SUCCESS
-
-	case "Bitcoin":
-		return BITCOIN, err.SUCCESS
-	}
-	return 0, 42
+func (ids *Identities) FindIdentity(name string) (*Identity, err.Code) {
+	return nil, err.SUCCESS
 }
 
-func FindIdentity(name string) (Identity, err.Code) {
-	// TODO: Lookup the identity in the node's database
-	return &IdentityOneLedger{IdentityBase: IdentityBase{Name: name}}, 0
+func (ids *Identities) AllIdentities() []Identity {
+	return nil
 }
 
-// OneLedger
-
-// Information we need about our own fullnode identities
-type IdentityOneLedger struct {
-	IdentityBase
-
-	PrivateKey PrivateKey
-
-	NodeId      string
-	ExternalIds []Identity
+func (id *Identity) Key() []byte {
+	return []byte(id.UserId)
 }
 
-func (identity *IdentityOneLedger) AddPublicKey(key PublicKey) {
-	identity.PublicKey = key
+/*
+func (identity Identity) Format() (string, err.Code) {
+	return identity.Format(), err.SUCCESS
 }
 
-func (identity *IdentityOneLedger) AddPrivateKey(key PrivateKey) {
-	identity.PrivateKey = key
+// Given an identity, get the account
+func (identity Identity) GetName() (string, err.Code) {
+	return identity.Name(), err.SUCCESS
 }
-
-func (identity *IdentityOneLedger) Name() string {
-	return identity.IdentityBase.Name
-}
-
-func (identity *IdentityOneLedger) Key() []byte {
-	return []byte(identity.IdentityBase.Name)
-}
-
-// Bitcoin
-
-// Information we need for a Bitcoin account
-type IdentityBitcoin struct {
-	IdentityBase
-
-	PrivateKey PrivateKey
-}
-
-func (identity *IdentityBitcoin) AddPublicKey(key PublicKey) {
-	identity.PublicKey = key
-}
-
-func (identity *IdentityBitcoin) AddPrivateKey(key PrivateKey) {
-	identity.PrivateKey = key
-}
-
-func (identity *IdentityBitcoin) Name() string {
-	return identity.IdentityBase.Name
-}
-
-func (identity *IdentityBitcoin) Key() []byte {
-	return []byte(identity.IdentityBase.Name)
-}
-
-// Ethereum
-
-// Information we need for an Ethereum account
-type IdentityEthereum struct {
-	IdentityBase
-
-	PrivateKey PrivateKey
-}
-
-func (identity *IdentityEthereum) AddPublicKey(key PublicKey) {
-	identity.PublicKey = key
-}
-
-func (identity *IdentityEthereum) AddPrivateKey(key PrivateKey) {
-	identity.PrivateKey = key
-}
-
-func (identity *IdentityEthereum) Name() string {
-	return identity.IdentityBase.Name
-}
-
-func (identity *IdentityEthereum) Key() []byte {
-	return []byte(identity.IdentityBase.Name)
-}
+*/
