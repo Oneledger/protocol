@@ -37,39 +37,39 @@ func Parse(message Message) (Transaction, err.Code) {
 	switch command {
 
 	case SEND:
-		transaction := ParseSend(body)
+		action := ParseSend(body)
 
-		return transaction, err.SUCCESS
+		return action, err.SUCCESS
 
 	case SWAP:
-		transaction := ParseSwap(body)
+		action := ParseSwap(body)
 
-		return transaction, err.SUCCESS
+		return action, err.SUCCESS
 
 	case EXTERNAL_SEND:
-		transaction := ParseExternalSend(body)
+		action := ParseExternalSend(body)
 
-		return transaction, err.SUCCESS
+		return action, err.SUCCESS
 
 	case EXTERNAL_LOCK:
-		transaction := ParseExternalLock(body)
+		action := ParseExternalLock(body)
 
-		return transaction, err.SUCCESS
+		return action, err.SUCCESS
 
 	case PREPARE:
-		transaction := ParsePrepare(body)
+		action := ParsePrepare(body)
 
-		return transaction, err.SUCCESS
+		return action, err.SUCCESS
 
 	case COMMIT:
-		transaction := ParseCommit(body)
+		action := ParseCommit(body)
 
-		return transaction, err.SUCCESS
+		return action, err.SUCCESS
 
 	case FORGET:
-		transaction := ParseForget(body)
+		action := ParseForget(body)
 
-		return transaction, err.SUCCESS
+		return action, err.SUCCESS
 
 	default:
 		log.Error("Unknown type", "command", command)
