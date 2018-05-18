@@ -11,11 +11,10 @@
 
 Identity -- an individual in meatspace
 
-	- User Id
+	- User Name (unqiue string)
 	-----------------------
 
-	- User Name (naming collisions?)
-	- Contact Info
+	- Contact Info (email address?)
 	- Primary Account
 	- Set of Secondary Accounts
 	- Set of ChainNodes
@@ -39,17 +38,17 @@ Balance -- the last known balance of an account on a chain (leafs in UTXO)
 
 Group -- a hiearchtical (or graph) collection, fine-grained
 
-	- Group Id
+	- Group Name (unqiue string)
 	-----------------------
 
-	- Group Name (naming collisions?)
 	- Public key?
 	- Private key?
 
 	- Set of Roles
 	- Set of Data
 
-	- Set of Identities and Groups (parents or children?)
+	- Set of Included Identities 
+	- Set of Included Groups (children)
 
 Role -- the ability to view data or perform an an action
 

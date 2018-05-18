@@ -21,7 +21,6 @@ type Address = wdata.Bytes // OneLedger address, like Tendermint the hash of the
 
 type PublicKey = crypto.PubKey
 type PrivateKey = crypto.PrivKey
-
 type Signature = crypto.Signature
 
 // enum for type
@@ -58,10 +57,10 @@ type Account interface {
 type AccountBase struct {
 	Type AccountType
 
-	Name string // TODO: Not sure this is normalized?
-
-	Key       AccountKey
-	PublicKey PublicKey
+	Key        AccountKey
+	Name       string
+	PublicKey  PublicKey
+	PrivateKey PrivateKey
 }
 
 // Hash the public key to get a unqiue hash that can act as a key
@@ -120,11 +119,6 @@ func FindAccount(name string) (Account, err.Code) {
 // Information we need about our own fullnode identities
 type AccountOneLedger struct {
 	AccountBase
-
-	PrivateKey PrivateKey
-
-	NodeId      string
-	ExternalIds []Identity
 }
 
 func (account *AccountOneLedger) AddPublicKey(key PublicKey) {
@@ -148,8 +142,6 @@ func (account *AccountOneLedger) Key() []byte {
 // Information we need for a Bitcoin account
 type AccountBitcoin struct {
 	AccountBase
-
-	PrivateKey PrivateKey
 }
 
 func (account *AccountBitcoin) AddPublicKey(key PublicKey) {
@@ -173,8 +165,6 @@ func (account *AccountBitcoin) Key() []byte {
 // Information we need for an Ethereum account
 type AccountEthereum struct {
 	AccountBase
-
-	PrivateKey PrivateKey
 }
 
 func (account *AccountEthereum) AddPublicKey(key PublicKey) {

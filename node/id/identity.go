@@ -18,11 +18,11 @@ type Identities struct {
 }
 
 type Identity struct {
-	UserId      string
 	UserName    string
 	ContactInfo string
 	Primary     Account
 	Secondary   []Account
+	Nodes       map[string]data.ChainNode
 }
 
 // Initialize or reconnect to the database
@@ -34,9 +34,8 @@ func NewIdentities(name string) *Identities {
 	}
 }
 
-func NewIdentity(userId string, userName string, contactInfo string) *Identity {
+func NewIdentity(userName string, contactInfo string) *Identity {
 	return &Identity{
-		UserId:      userId,
 		UserName:    userName,
 		ContactInfo: contactInfo,
 	}
@@ -63,7 +62,7 @@ func (ids *Identities) AllIdentities() []Identity {
 }
 
 func (id *Identity) Key() []byte {
-	return []byte(id.UserId)
+	return []byte(id.UserName)
 }
 
 /*
