@@ -11,4 +11,6 @@ echo "Killing all bitcoin process" >> $LOG/bitcoin.log
 
 pkill bitcoin.*
 
+sleep 10
+
 echo "Running Bitcoin process: $(pgrep bitcoin.* | wc -l)"
