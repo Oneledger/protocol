@@ -5,6 +5,7 @@
 #
 
 export LOG=$OLDATA
+export OLETH=$OLDATA/ethereum
 
 echo "============================================================" >> $LOG/ethereum.log
 echo "Clean all ethereum data" >> $LOG/ethereum.log
@@ -21,7 +22,7 @@ geth --datadir $OLDATA/ethereum/A init $OLSCRIPT/data/ethGenesis.json
 geth --datadir $OLDATA/ethereum/B init $OLSCRIPT/data/ethGenesis.json
 geth --datadir $OLDATA/ethereum/C init $OLSCRIPT/data/ethGenesis.json
 
-
+echo "Get pre-alloc account"
 # PASS for A: 1234
 # PASS for B: 2345
 # PASS for C: 3456
