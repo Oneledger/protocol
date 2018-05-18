@@ -7,7 +7,7 @@
 export LOG=$OLDATA
 
 echo "============================================" >> $LOG/ethereum.log
-echo "Killing all bitcoin process" >> $LOG/ethereum.log
+echo "Killing all Ethereum process" >> $LOG/ethereum.log
 
 pkill geth.*
 
