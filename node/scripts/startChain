@@ -6,9 +6,10 @@
 export CMD=$OLSCRIPT
 
 setup="\
-	OneLedger-One#127.0.0.1:46611 \
-	OneLedger-Two#127.0.0.1:46612 \
-	OneLedger-Three#127.0.0.1:46613 \
+	OneLedger-Admin#127.0.0.1:46611 \
+	OneLedger-Alice#127.0.0.1:46612 \
+	OneLedger-Bob#127.0.0.1:46613 \
+	OneLedger-Carol#127.0.0.1:46614 \
 "
 peers=""
 for entry in $setup
@@ -26,14 +27,13 @@ do
 	fi
 done
 
-#peers="842bf7def90dcc955833909364c84fecca941316@127.0.0.1:46611,7e5d6fbd319877aa8de30680cd6fc45d1ca7a41d@127.0.0.1:46612,6e2ea713878f38838049072f412d9501e7cb47e6@127.0.0.1:46613"
-
 local=tcp://127.0.0.1
 
 nodes="\
-	  OneLedger-One#$local:46601#$local:46611#$local:46621#$peers \
-	  OneLedger-Two#$local:46602#$local:46612#$local:46622#$peers \
-	OneLedger-Three#$local:46603#$local:46613#$local:46623#$peers \
+	  OneLedger-Admin#$local:46601#$local:46611#$local:46621#$peers \
+	  OneLedger-Alice#$local:46602#$local:46612#$local:46622#$peers \
+	    OneLedger-Bob#$local:46603#$local:46613#$local:46623#$peers \
+	  OneLedger-Carol#$local:46604#$local:46614#$local:46624#$peers \
 "
 
 for entry in $nodes 
