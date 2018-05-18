@@ -14,7 +14,7 @@ import (
 
 // Synchronize a swap between two users
 type Swap struct {
-	TransactionBase
+	Base
 
 	Party1   id.Address `json:"party1"`
 	Party2   id.Address `json:"party2"`

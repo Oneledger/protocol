@@ -14,7 +14,7 @@ import (
 )
 
 // Unpack an encoded (wire) message
-func UnpackMessage(message Message) (TransactionType, Message) {
+func UnpackMessage(message Message) (Type, Message) {
 	value, size, err := wire.GetVarint(message)
 	if err != nil {
 		log.Debug("Wire returned an error", "err", err)
@@ -24,7 +24,7 @@ func UnpackMessage(message Message) (TransactionType, Message) {
 		log.Debug("Wire returned a bad size", "size", size)
 		panic("Sizing Error")
 	}
-	return TransactionType(value), message[1:]
+	return Type(value), message[1:]
 
 }
 
@@ -83,7 +83,7 @@ func ParseSend(message Message) *Send {
 	log.Debug("Have a Send")
 
 	return &Send{
-		TransactionBase: TransactionBase{Type: SEND},
+		Base: Base{Type: SEND},
 	}
 }
 
@@ -93,7 +93,7 @@ func ParseSwap(message Message) *Swap {
 
 	//return &SwapTransaction{Type: SWAP_TRANSACTION}
 	return &Swap{
-		TransactionBase: TransactionBase{Type: SWAP},
+		Base: Base{Type: SWAP},
 	}
 }
 
@@ -102,7 +102,7 @@ func ParseExternalSend(message Message) *ExternalSend {
 	log.Debug("Have an ExternalSend")
 
 	return &ExternalSend{
-		TransactionBase: TransactionBase{Type: EXTERNAL_SEND},
+		Base: Base{Type: EXTERNAL_SEND},
 	}
 }
 
@@ -111,7 +111,7 @@ func ParseExternalLock(message Message) *ExternalLock {
 	log.Debug("Have an ExternalLock")
 
 	return &ExternalLock{
-		TransactionBase: TransactionBase{Type: EXTERNAL_LOCK},
+		Base: Base{Type: EXTERNAL_LOCK},
 	}
 }
 
@@ -121,7 +121,7 @@ func ParsePrepare(message Message) *Prepare {
 
 	//return &SwapTransaction{Type: SWAP_TRANSACTION}
 	return &Prepare{
-		TransactionBase: TransactionBase{Type: PREPARE},
+		Base: Base{Type: PREPARE},
 	}
 }
 
@@ -131,7 +131,7 @@ func ParseCommit(message Message) *Commit {
 
 	//return &SwapTransaction{Type: SWAP_TRANSACTION}
 	return &Commit{
-		TransactionBase: TransactionBase{Type: COMMIT},
+		Base: Base{Type: COMMIT},
 	}
 }
 
@@ -141,6 +141,6 @@ func ParseForget(message Message) *Forget {
 
 	//return &SwapTransaction{Type: SWAP_TRANSACTION}
 	return &Forget{
-		TransactionBase: TransactionBase{Type: FORGET},
+		Base: Base{Type: FORGET},
 	}
 }

@@ -100,7 +100,7 @@ func CreateSwapRequest() []byte {
 	}
 
 	swap := &action.Swap{
-		TransactionBase: action.TransactionBase{
+		Base: action.Base{
 			Type:     action.SWAP,
 			ChainId:  app.ChainId,
 			Signers:  signers,

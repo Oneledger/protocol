@@ -15,10 +15,10 @@ type Message = []byte // Contents of a transaction
 type PublicKey = crypto.PubKey
 
 // ENUM for type
-type TransactionType byte
+type Type byte
 
 const (
-	SEND TransactionType = iota
+	SEND Type = iota
 	EXTERNAL_SEND
 	EXTERNAL_LOCK
 	SWAP
@@ -35,10 +35,10 @@ type Transaction interface {
 }
 
 // Base Data for each type
-type TransactionBase struct {
-	Type    TransactionType `json:"type"`
-	ChainId string          `json:"chain_id"` // TODO: Not necessary?
-	Signers []PublicKey     `json:"signers"`
+type Base struct {
+	Type    Type        `json:"type"`
+	ChainId string      `json:"chain_id"` // TODO: Not necessary?
+	Signers []PublicKey `json:"signers"`
 
 	// TODO: Should these be for all transactions or just driving ones?
 	Sequence int        `json:"sequence"`

@@ -13,7 +13,7 @@ import (
 
 // Synchronize a swap between two users
 type Send struct {
-	TransactionBase
+	Base
 
 	Gas     data.Coin    `json:"gas"`
 	Fee     data.Coin    `json:"fee"`

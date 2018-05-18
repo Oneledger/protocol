@@ -77,7 +77,7 @@ func CreateRequest() []byte {
 
 	// Create base transaction
 	send := &action.Send{
-		TransactionBase: action.TransactionBase{
+		Base: action.Base{
 			Type:     action.SEND,
 			ChainId:  app.ChainId,
 			Signers:  signers,

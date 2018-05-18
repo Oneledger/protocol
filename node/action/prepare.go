@@ -12,7 +12,7 @@ import (
 
 // TODO: This needs to be filled out properly, need a model for other-chain actions...
 type Prepare struct {
-	TransactionBase
+	Base
 
 	Target string `json:"target"`
 }
