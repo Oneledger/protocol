@@ -24,3 +24,6 @@ geth --exec "admin.addPeer($(geth --exec "admin.nodeInfo.enode" attach ipc:$OLET
 geth --exec "admin.addPeer($(geth --exec "admin.nodeInfo.enode" attach ipc:$OLETH/B/geth.ipc))" attach ipc:$OLETH/C/geth.ipc
 geth --exec "admin.addPeer($(geth --exec "admin.nodeInfo.enode" attach ipc:$OLETH/C/geth.ipc))" attach ipc:$OLETH/A/geth.ipc
 
+sleep 3
+echo "Start miner for network" >> $LOG/ethereum.log
+geth --exec "miner.start()" attach ipc:$OLETH/C/geth.ipc
