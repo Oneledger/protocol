@@ -20,6 +20,10 @@ const OnionPacketSize = 1366
 // CommitSig message will move the pending HTLC to the newly created commitment
 // transaction, marking them as "staged".
 type UpdateAddHTLC struct {
+	// ChanID is the particular active channel that this UpdateAddHTLC is
+	// bound to.
+	ChanID ChannelID
+
 	// ID is the identification server for this HTLC. This value is
 	// explicitly included as it allows nodes to survive single-sided
 	// restarts. The ID value for this sides starts at zero, and increases
