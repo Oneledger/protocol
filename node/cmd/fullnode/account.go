@@ -40,7 +40,7 @@ func ListIdentities(cmd *cobra.Command, args []string) {
 
 	if listargs.user != "" {
 		Console.Print("Listing Account Details for", listargs.user)
-		identity, err := node.Identities.FindIdentity(listargs.user)
+		identity, err := node.Identities.Find(listargs.user)
 		if err != 0 {
 			log.Error("Not a valid identity", "err", err)
 			return
@@ -50,8 +50,8 @@ func ListIdentities(cmd *cobra.Command, args []string) {
 	}
 
 	Console.Print("Listing Account Details for all users")
-	for _, identity := range node.Identities.AllIdentities() {
-		IdentityInfo(node, &identity)
+	for _, identity := range node.Identities.FindAll() {
+		IdentityInfo(node, identity)
 	}
 }
 

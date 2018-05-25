@@ -5,11 +5,11 @@
 # Arguments are packed by @ symbol (makes it easier to use an array to drive the mechanics)
 #
 if [ -z "$1" ]; then
-	export NODENAME="OneLedger-One"
-	export RADDR="tcp://127.0.0.1:46656"
-	export TADDR="tcp://127.0.0.1:46657"
-	export FADDR="tcp://127.0.0.1:46658"
-	export PEERS="0@127.0.0.1:46656"
+	export NODENAME="OneLedger-Admin"
+	export RADDR="tcp://127.0.0.1:46601"
+	export TADDR="tcp://127.0.0.1:46602"
+	export FADDR="tcp://127.0.0.1:46603"
+	export PEERS="0@127.0.0.1:46602"
 else
 	export NODENAME=`echo $1 | awk -F# '{ print $1 }'`
 	export RADDR=`echo $1 | awk -F# '{ print $2 }'`

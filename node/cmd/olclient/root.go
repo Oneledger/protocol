@@ -34,9 +34,20 @@ func Execute() {
 func init() {
 	cobra.OnInitialize(environment)
 
-	RootCmd.PersistentFlags().BoolVarP(&global.Current.Debug, "debug", "d", global.Current.Debug, "Set DEBUG mode")
-	RootCmd.PersistentFlags().StringVarP(&global.Current.RootDir, "root", "r", global.Current.RootDir, "Set root directory")
-	RootCmd.PersistentFlags().StringVarP(&global.Current.Name, "name", "n", global.Current.Name, "Set a name")
+	RootCmd.PersistentFlags().BoolVarP(&global.Current.Debug, "debug", "d",
+		global.Current.Debug, "Set DEBUG mode")
+
+	RootCmd.PersistentFlags().StringVarP(&global.Current.RootDir, "root", "r",
+		global.Current.RootDir, "Set root directory")
+
+	RootCmd.PersistentFlags().StringVarP(&global.Current.Name, "name", "n",
+		global.Current.Name, "Set a node name")
+
+	RootCmd.PersistentFlags().StringVarP(&global.Current.Transport, "transport", "t",
+		global.Current.Transport, "transport (socket | grpc)")
+
+	RootCmd.PersistentFlags().StringVarP(&global.Current.Address, "address", "a",
+		global.Current.Address, "full address")
 }
 
 // Initialize Viper

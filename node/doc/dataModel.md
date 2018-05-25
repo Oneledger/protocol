@@ -11,44 +11,28 @@
 
 Identity -- an individual in meatspace
 
-	- User Name (unqiue string)
+	- User Id
 	-----------------------
 
-	- Contact Info (email address?)
-	- Primary Account
-	- Set of Secondary Accounts
-	- Map of ChainNodes
-
-Account -- information needed to access an account on a chain
-
-	- Address (hash of pubkey)
-	-----------------------
-
-	- Chain
-	- Public key
-	- Private key
-	- Owner (Identity or Group)
-
-Balance -- the last known balance of an account on a chain (leafs in UTXO)
-
-	- Address (hash of pubkey)
-	-----------------------
-
-	- Coin
+	- User Name (naming collisions?)
+	- Contact Info
+	- default Account
+	- Set of Accounts (Set of Wallets?)
+	- Set of Trusted ChainNode 
 
 Group -- a hiearchtical (or graph) collection, fine-grained
 
-	- Group Name (unqiue string)
+	- Group Id
 	-----------------------
 
+	- Group Name (naming collisions?)
 	- Public key?
 	- Private key?
 
 	- Set of Roles
 	- Set of Data
 
-	- Set of Included Identities 
-	- Set of Included Groups (children)
+	- Set of Identities and Groups (parents or children?)
 
 Role -- the ability to view data or perform an an action
 
@@ -58,6 +42,30 @@ Role -- the ability to view data or perform an an action
 	- Description
 	- Action
 	- Data?
+
+Account -- information needed to access an account on a chain
+
+	- Address (hash of pubkey)
+	-----------------------
+
+	- Chain 
+	- Public key
+	- Private key
+	- Balance@height
+	- Set of Active HTLC states
+
+Wallet -- a group of accounts
+
+	-----------------------
+	- Description
+	- Set of Accounts
+
+Balance -- the last known balance of an account on a chain (leafs in UTXO)
+
+	- Address (hash of pubkey)
+	-----------------------
+
+	- Coin
 
 Chain -- a decentralized system 
 

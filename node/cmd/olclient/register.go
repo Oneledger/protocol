@@ -6,6 +6,8 @@
 package main
 
 import (
+	"github.com/Oneledger/protocol/node/app"
+	"github.com/Oneledger/protocol/node/comm"
 	"github.com/Oneledger/protocol/node/log"
 	"github.com/spf13/cobra"
 )
@@ -40,20 +42,18 @@ func init() {
 func Register(cmd *cobra.Command, args []string) {
 	log.Debug("Register Account")
 
-	//identity, err := app.FindIdentity(arguments.name)
-	/*
-		identity, err := app.Identities.FindIdentity(arguments.name)
-		if err != 0 {
-			Console.Error("Invalid Identity String")
-			return
-		}
-
-		if identity == nil {
-			CreateIdentity()
-		} else {
-			UpdateIdentity(identity)
-		}
-	*/
+	cli := &app.RegisterArguments{
+		Name:       arguments.name,
+		Chain:      arguments.chain,
+		PublicKey:  arguments.pubkey,
+		PrivateKey: arguments.privkey,
+	}
+	buffer, err := comm.Serialize(cli)
+	if err != nil {
+		log.Error("Register Failed", "err", err)
+		return
+	}
+	SetOption("Register", string(buffer))
 }
 
 /*

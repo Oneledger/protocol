@@ -17,6 +17,7 @@ type Identities struct {
 	data *data.Datastore
 }
 
+// A user of a OneLedger node, but not necessarily the chain itself.
 type Identity struct {
 	UserName    string
 	ContactInfo string
@@ -34,6 +35,58 @@ func NewIdentities(name string) *Identities {
 	}
 }
 
+func (ids *Identities) Add(identity *Identity) {
+	buffer, err := comm.Serialize(identity)
+	key := identity.Key()
+
+	if err != nil {
+		log.Error("Serialize Failed", "err", err)
+		return
+	}
+	ids.data.Store(key, buffer)
+	ids.data.Commit()
+}
+
+func (ids *Identities) Delete() {
+}
+
+func (ids *Identities) Exists(name string) bool {
+	id := NewIdentity(name, "")
+
+	value := ids.data.Load(id.Key())
+	if value != nil {
+		log.Debug("Identity Exists", "value", value)
+		return true
+	}
+	log.Debug("Identity Does not Exist", "name", name)
+	return false
+}
+
+func (ids *Identities) Find(name string) (*Identity, err.Code) {
+	return nil, err.SUCCESS
+}
+
+func (ids *Identities) FindAll() []*Identity {
+	keys := ids.data.List()
+	size := len(keys)
+	results := make([]*Identity, size, size)
+	for i := 0; i < size; i++ {
+		identity := &Identity{}
+		base, _ := comm.Deserialize(ids.data.Load(keys[i]), identity)
+		results[i] = base.(*Identity)
+	}
+	return results
+}
+
+func (ids *Identities) Dump() {
+	list := ids.FindAll()
+	size := len(list)
+	for i := 0; i < size; i++ {
+		identity := list[i]
+		log.Info("Entry", "UserName", identity.UserName)
+	}
+}
+
 func NewIdentity(userName string, contactInfo string) *Identity {
 	return &Identity{
 		UserName:    userName,
@@ -41,28 +94,8 @@ func NewIdentity(userName string, contactInfo string) *Identity {
 	}
 }
 
-func (ids *Identities) AddIdentity(identity Identity) {
-	buffer, err := comm.Serialize(identity)
-	if err != nil {
-		log.Error("Serialize Failed", "err", err)
-		return
-	}
-	ids.data.Store(identity.Key(), buffer)
-}
-
-func (ids *Identities) DeleteAccount() {
-}
-
-func (ids *Identities) FindIdentity(name string) (*Identity, err.Code) {
-	return nil, err.SUCCESS
-}
-
-func (ids *Identities) AllIdentities() []Identity {
-	return nil
-}
-
-func (id *Identity) Key() []byte {
-	return []byte(id.UserName)
+func (id *Identity) Key() data.DatabaseKey {
+	return data.DatabaseKey(id.UserName)
 }
 
 /*

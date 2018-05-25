@@ -17,7 +17,7 @@ do
 	export name=`echo $entry | awk -F# '{ print $1 }'`
 	export ip=`echo $entry | awk -F# '{ print $2 }'`
 
-	key=`$CMD/enquireNode $name`
+	key=`$CMD/getNodeId $name`
 
 	if [ -z "$peers" ]
 	then

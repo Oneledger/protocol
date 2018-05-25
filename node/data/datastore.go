@@ -10,6 +10,10 @@
 package data
 
 import (
+	"os"
+	"path/filepath"
+
+	"github.com/Oneledger/protocol/node/comm"
 	"github.com/Oneledger/protocol/node/global"
 	"github.com/Oneledger/protocol/node/log"
 	"github.com/tendermint/iavl" // TODO: Double check this with cosmos-sdk
@@ -29,11 +33,24 @@ const (
 
 // Wrap the underlying usage
 type Datastore struct {
-	Type    DatastoreType
-	Name    string
-	data    *db.MemDB
-	tree    *iavl.VersionedTree
-	version int64
+	Type     DatastoreType
+	Name     string
+	File     string
+	memory   *db.MemDB
+	tree     *iavl.VersionedTree
+	database *db.GoLevelDB
+	version  int64
+}
+
+func Exists(name string, dir string) bool {
+	dbPath := filepath.Join(dir, name+".db")
+	info, err := os.Stat(dbPath)
+	if err != nil {
+		log.Debug("Missing file?", "err", err)
+		return false
+	}
+	_ = info
+	return true
 }
 
 // NewApplicationContext initializes a new application
@@ -43,29 +60,55 @@ func NewDatastore(name string, newType DatastoreType) *Datastore {
 	case MEMORY:
 		// TODO: No Merkle tree?
 		return &Datastore{
-			Type: newType,
-			Name: name,
-			data: db.NewMemDB(),
+			Type:   newType,
+			Name:   name,
+			memory: db.NewMemDB(),
 		}
 
 	case PERSISTENT:
-		storage, err := db.NewGoLevelDB("OneLedger-"+name, global.Current.RootDir)
+		fullname := "OneLedger-" + name
+		if Exists(fullname, global.Current.RootDir) {
+			log.Debug("Appending to database", "name", fullname)
+
+		} else {
+			log.Info("Creating new database", "name", fullname)
+		}
+		storage, err := db.NewGoLevelDB(fullname, global.Current.RootDir)
 		if err != nil {
 			log.Error("Database create failed", "err", err)
-			panic("Can't create a database " + global.Current.RootDir + "/" + "OneLedger-" + name)
+			panic("Can't create a database " + global.Current.RootDir + "/" + fullname)
 		}
 
-		tree := iavl.NewVersionedTree(storage, 1000) // Do I need a historic tree here?
+		tree := iavl.NewVersionedTree(storage, 100) // Do I need a historic tree here?
 
 		return &Datastore{
-			Type:    newType,
-			Name:    name,
-			tree:    tree,
-			version: tree.Version64(),
+			Type:     newType,
+			Name:     name,
+			File:     fullname,
+			tree:     tree,
+			database: storage,
+			version:  tree.Version64(),
 		}
 	default:
 		panic("Unknown Type")
 
+	}
+}
+
+func (store Datastore) Close() {
+	switch store.Type {
+
+	case MEMORY:
+		store.memory = nil
+
+	case PERSISTENT:
+		store.tree = nil
+		store.database.Close()
+		store.database = nil
+		log.Debug("Closing database " + store.Name)
+
+	default:
+		panic("Unknown Type")
 	}
 }
 
@@ -74,7 +117,7 @@ func (store Datastore) Store(key DatabaseKey, value Message) Message {
 	switch store.Type {
 
 	case MEMORY:
-		store.data.Set(key, value)
+		store.memory.Set(key, value)
 
 	case PERSISTENT:
 		store.tree.Set(key, value)
@@ -85,15 +128,31 @@ func (store Datastore) Store(key DatabaseKey, value Message) Message {
 	return value
 }
 
+func (store Datastore) Exists(key DatabaseKey) bool {
+	switch store.Type {
+
+	case MEMORY:
+		return store.memory.Has(key)
+
+	case PERSISTENT:
+		return store.tree.Has(key)
+
+	default:
+		panic("Unknown Type")
+	}
+	return false
+}
+
 // Load return the stored value
 func (store Datastore) Load(key DatabaseKey) (value Message) {
 	switch store.Type {
 
 	case MEMORY:
-		return store.data.Get(key)
+		return store.memory.Get(key)
 
 	case PERSISTENT:
-		_, value := store.tree.Get(key)
+		index, value := store.tree.Get(key)
+		log.Debug("Load", "index", index, "key", key, "value", value)
 		return Message(value)
 
 	default:
@@ -104,13 +163,70 @@ func (store Datastore) Load(key DatabaseKey) (value Message) {
 // Commit the changes to persistence
 func (store Datastore) Commit() {
 	switch store.Type {
+
 	case PERSISTENT:
-		_, store.version, _ = store.tree.SaveVersion()
+
+		log.Debug("Persisting the version tree")
+		hash, version, err := store.tree.SaveVersion()
+		if err != nil {
+			log.Fatal("Database Error", "err", err)
+		}
+
+		buffer, _ := comm.Serialize(version)
+		store.tree.Set([]byte("args"), buffer)
+		hash, version, err = store.tree.SaveVersion()
+		if err != nil {
+			log.Fatal("Database Error", "err", err)
+		}
+
+		buffer, _ = comm.Serialize(version)
+		store.tree.Set([]byte("args"), buffer)
+		hash, version, err = store.tree.SaveVersion()
+		if err != nil {
+			log.Fatal("Database Error", "err", err)
+		}
+
+		store.database.Set([]byte("Junk"), []byte("Stuff"))
+
+		log.Debug("Committed", "version", store.version, "hash", hash)
+
+		store.version = version
 
 		// Save only one copy at a time
-		if store.version-1 > 1 {
-			store.tree.DeleteVersion(store.version - 1)
+		//if store.version-10 > 10 {
+		//		store.tree.DeleteVersion(store.version - 10)
+		//	}
+	}
+}
+
+func (store Datastore) Dump() {
+	texts := store.database.Stats()
+	for key, value := range texts {
+		log.Debug("Stat", key, value)
+	}
+
+	iter := store.database.Iterator(nil, nil)
+	for ; iter.Valid(); iter.Next() {
+		log.Debug("Row", iter.Key(), iter.Value())
+	}
+}
+
+func (store Datastore) List() (keys []DatabaseKey) {
+	switch store.Type {
+
+	case PERSISTENT:
+		//store.tree.
+		size := store.tree.Size()
+		results := make([]DatabaseKey, size, size)
+
+		for i := 0; i < store.tree.Size(); i++ {
+			key, _ := store.tree.GetByIndex(i)
+			results[i] = DatabaseKey(key)
 		}
+		return results
+
+	default:
+		panic("Invalid Op")
 	}
 }
 

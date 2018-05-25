@@ -23,10 +23,6 @@ var nodeCmd = &cobra.Command{
 	Run:   StartNode,
 }
 
-// TODO: Move to Context
-var transport string
-var address string
-
 func init() {
 	RootCmd.AddCommand(nodeCmd)
 

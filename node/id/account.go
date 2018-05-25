@@ -8,8 +8,12 @@
 package id
 
 import (
+	"reflect"
+
+	"github.com/Oneledger/protocol/node/comm"
 	"github.com/Oneledger/protocol/node/data"
 	"github.com/Oneledger/protocol/node/err"
+	"github.com/Oneledger/protocol/node/log"
 	crypto "github.com/tendermint/go-crypto"
 	wdata "github.com/tendermint/go-wire/data"
 	"golang.org/x/crypto/ripemd160"
@@ -27,7 +31,8 @@ type Signature = crypto.Signature
 type AccountType int
 
 const (
-	ONELEDGER AccountType = iota
+	UNKNOWN AccountType = iota
+	ONELEDGER
 	BITCOIN
 	ETHEREUM
 )
@@ -45,13 +50,59 @@ func NewAccounts(name string) *Accounts {
 	}
 }
 
+func (acc *Accounts) Add(account Account) {
+	buffer, _ := comm.Serialize(account)
+	acc.data.Store(account.Key(), buffer)
+	acc.data.Commit()
+}
+
+func (acc *Accounts) Delete(account Account) {
+}
+
+func (acc *Accounts) Exists(newType AccountType, name string) bool {
+	account := NewAccount(newType, name, PublicKey{})
+	value := acc.data.Load(account.Key())
+	if value != nil {
+		return true
+	}
+	return false
+}
+
+func (acc *Accounts) FindAll() []Account {
+	keys := acc.data.List()
+	size := len(keys)
+	results := make([]Account, size, size)
+	for i := 0; i < size; i++ {
+		// TODO: This is dangerous...
+		account := &AccountOneLedger{}
+		base, _ := comm.Deserialize(acc.data.Load(keys[i]), account)
+		results[i] = base.(Account)
+	}
+	return results
+}
+
+func (acc *Accounts) Dump() {
+	list := acc.FindAll()
+	size := len(list)
+	for i := 0; i < size; i++ {
+		account := list[i]
+		log.Info("Account", "Name", account.Name())
+		log.Info("Type", "Type", reflect.TypeOf(account))
+	}
+}
+
+func (acc *Accounts) Find(name string) (Account, err.Code) {
+	// TODO: Lookup the identity in the node's database
+	return &AccountOneLedger{AccountBase: AccountBase{Name: name}}, 0
+}
+
 type AccountKey []byte
 
 // Polymorphism
 type Account interface {
 	AddPrivateKey(PrivateKey)
 	Name() string
-	Key() []byte
+	Key() data.DatabaseKey
 }
 
 type AccountBase struct {
@@ -67,6 +118,7 @@ type AccountBase struct {
 func NewAccountKey(key PublicKey) AccountKey {
 	hasher := ripemd160.New()
 
+	// TODO: This deosn't seem right?
 	bytes, err := key.MarshalJSON()
 	if err != nil {
 		panic("Unable to Marshal the key into bytes")
@@ -77,41 +129,57 @@ func NewAccountKey(key PublicKey) AccountKey {
 	return hasher.Sum(nil)
 }
 
-func NewAccount(newType AccountType, name string, Key PublicKey) Account {
+func NewAccount(newType AccountType, name string, key PublicKey) Account {
 	switch newType {
 
 	case ONELEDGER:
-		return &AccountOneLedger{}
+		return &AccountOneLedger{
+			AccountBase{
+				Type:      newType,
+				Key:       NewAccountKey(key),
+				Name:      name,
+				PublicKey: key,
+			},
+		}
 
 	case BITCOIN:
-		return &AccountBitcoin{}
+		return &AccountBitcoin{
+			AccountBase{
+				Type:      newType,
+				Key:       NewAccountKey(key),
+				Name:      name,
+				PublicKey: key,
+			},
+		}
 
 	case ETHEREUM:
-		return &AccountEthereum{}
+		return &AccountEthereum{
+			AccountBase{
+				Type:      newType,
+				Key:       NewAccountKey(key),
+				Name:      name,
+				PublicKey: key,
+			},
+		}
 
 	default:
 		panic("Unknown Type")
 	}
 }
 
-// TODO: really should be part of the enum, as a map...
-func FindAccountType(typeName string) (AccountType, err.Code) {
+// Map type to string
+func ParseAccountType(typeName string) AccountType {
 	switch typeName {
 	case "OneLedger":
-		return ONELEDGER, err.SUCCESS
+		return ONELEDGER
 
 	case "Ethereum":
-		return ETHEREUM, err.SUCCESS
+		return ETHEREUM
 
 	case "Bitcoin":
-		return BITCOIN, err.SUCCESS
+		return BITCOIN
 	}
-	return 0, 42
-}
-
-func FindAccount(name string) (Account, err.Code) {
-	// TODO: Lookup the identity in the node's database
-	return &AccountOneLedger{AccountBase: AccountBase{Name: name}}, 0
+	return UNKNOWN
 }
 
 // OneLedger
@@ -133,8 +201,8 @@ func (account *AccountOneLedger) Name() string {
 	return account.AccountBase.Name
 }
 
-func (account *AccountOneLedger) Key() []byte {
-	return []byte(account.AccountBase.Name)
+func (account *AccountOneLedger) Key() data.DatabaseKey {
+	return data.DatabaseKey(account.AccountBase.Name)
 }
 
 // Bitcoin
@@ -156,8 +224,8 @@ func (account *AccountBitcoin) Name() string {
 	return account.AccountBase.Name
 }
 
-func (account *AccountBitcoin) Key() []byte {
-	return []byte(account.AccountBase.Name)
+func (account *AccountBitcoin) Key() data.DatabaseKey {
+	return data.DatabaseKey(account.AccountBase.Name)
 }
 
 // Ethereum
@@ -179,6 +247,6 @@ func (account *AccountEthereum) Name() string {
 	return account.AccountBase.Name
 }
 
-func (account *AccountEthereum) Key() []byte {
-	return []byte(account.AccountBase.Name)
+func (account *AccountEthereum) Key() data.DatabaseKey {
+	return data.DatabaseKey(account.AccountBase.Name)
 }

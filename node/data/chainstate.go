@@ -32,7 +32,7 @@ type ChainState struct {
 
 func NewChainState(name string, newType DatastoreType) *ChainState {
 	count = 0
-	chain := &ChainState{}
+	chain := &ChainState{Name: name}
 	chain.reset()
 	return chain
 }
@@ -46,7 +46,7 @@ func createDatabase(name string, newType DatastoreType) *iavl.VersionedTree {
 	}
 
 	// TODO: cosmos seems to be using VersionedTree now????
-	tree := iavl.NewVersionedTree(storage, 1000) // Do I need a historic tree here?
+	tree := iavl.NewVersionedTree(storage, 100) // Do I need a historic tree here?
 
 	count = count + 1
 

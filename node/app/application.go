@@ -54,6 +54,15 @@ func (app Application) InitChain(req RequestInitChain) ResponseInitChain {
 	return ResponseInitChain{}
 }
 
+// SetOption changes the underlying options for the ABCi app
+func (app Application) SetOption(req RequestSetOption) ResponseSetOption {
+	log.Debug("Message: SetOption")
+
+	SetOption(&app, req.Key, []byte(req.Value))
+
+	return ResponseSetOption{Code: types.CodeTypeOK}
+}
+
 // Info returns the current block information
 func (app Application) Info(req RequestInfo) ResponseInfo {
 	info := abci.NewResponseInfo(0, 0, 0)
@@ -77,13 +86,6 @@ func (app Application) Query(req RequestQuery) ResponseQuery {
 	result := HandleQuery(req.Path, req.Data)
 
 	return ResponseQuery{Key: action.Message("result"), Value: result}
-}
-
-// SetOption changes the underlying options for the ABCi app
-func (app Application) SetOption(req RequestSetOption) ResponseSetOption {
-	log.Debug("Message: SetOption")
-
-	return ResponseSetOption{}
 }
 
 // CheckTx tests to see if a transaction is valid
