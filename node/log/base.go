@@ -6,6 +6,7 @@
 package log
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/tendermint/tmlibs/log"
@@ -33,6 +34,10 @@ func GetLogger() log.Logger {
 	return current
 }
 
+func Raw(text string) {
+	fmt.Print(text)
+}
+
 func Info(msg string, args ...interface{}) {
 	current.Info(msg, args...)
 }
@@ -43,4 +48,9 @@ func Debug(msg string, args ...interface{}) {
 
 func Error(msg string, args ...interface{}) {
 	current.Error(msg, args...)
+}
+
+func Fatal(msg string, args ...interface{}) {
+	current.Error(msg, args...)
+	panic("Execution stopped due to " + msg)
 }

@@ -9,7 +9,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/Oneledger/protocol/node/app"
+	"github.com/Oneledger/protocol/node/global"
 	"github.com/Oneledger/protocol/node/log"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -34,9 +34,20 @@ func Execute() {
 func init() {
 	cobra.OnInitialize(environment)
 
-	RootCmd.PersistentFlags().BoolVarP(&app.Current.Debug, "debug", "d", app.Current.Debug, "Set DEBUG mode")
-	RootCmd.PersistentFlags().StringVarP(&app.Current.RootDir, "root", "r", app.Current.RootDir, "Set root directory")
-	RootCmd.PersistentFlags().StringVarP(&app.Current.Name, "name", "n", app.Current.Name, "Set a name")
+	RootCmd.PersistentFlags().StringVarP(&global.Current.Transport, "transport", "t",
+		global.Current.Transport, "transport (socket | grpc)")
+
+	RootCmd.PersistentFlags().StringVarP(&global.Current.Address, "address", "a",
+		global.Current.Address, "full address")
+
+	RootCmd.PersistentFlags().BoolVarP(&global.Current.Debug, "debug", "d",
+		global.Current.Debug, "Set DEBUG mode")
+
+	RootCmd.PersistentFlags().StringVarP(&global.Current.RootDir, "root", "r",
+		global.Current.RootDir, "Set root directory")
+
+	RootCmd.PersistentFlags().StringVarP(&global.Current.Name, "name", "n",
+		global.Current.Name, "Set a name")
 }
 
 // Initialize Viper

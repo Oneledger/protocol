@@ -7,6 +7,7 @@ package main
 
 import (
 	"github.com/Oneledger/protocol/node/app"
+	"github.com/Oneledger/protocol/node/id"
 	"github.com/Oneledger/protocol/node/log"
 	"github.com/spf13/cobra"
 )
@@ -14,7 +15,7 @@ import (
 var accountCmd = &cobra.Command{
 	Use:   "account",
 	Short: "List out account details",
-	Run:   ListAccount,
+	Run:   ListIdentities,
 }
 
 // Arguments to the command
@@ -31,42 +32,29 @@ func init() {
 	accountCmd.Flags().StringVarP(&listargs.user, "user", "u", "", "user account name")
 }
 
-// TODO: This should be moved to the core...
-
 // IssueRequest sends out a sendTx to all of the nodes in the chain
-func ListAccount(cmd *cobra.Command, args []string) {
+func ListIdentities(cmd *cobra.Command, args []string) {
 
 	// TODO: We can't do this, need to be 'light-client' instead...
 	node := app.NewApplication()
 
 	if listargs.user != "" {
 		Console.Print("Listing Account Details for", listargs.user)
-		identity, err := app.FindIdentity(listargs.user)
+		identity, err := node.Identities.Find(listargs.user)
 		if err != 0 {
 			log.Error("Not a valid identity", "err", err)
 			return
 		}
-		AccountInfo(node, identity)
+		IdentityInfo(node, identity)
 		return
 	}
 
 	Console.Print("Listing Account Details for all users")
-	for _, identity := range node.Accounts.AllAccounts() {
-		AccountInfo(node, identity)
+	for _, identity := range node.Identities.FindAll() {
+		IdentityInfo(node, identity)
 	}
 }
 
-func AccountInfo(node *app.Application, identity app.Identity) {
-
-	name, err := app.GetAccount(identity)
-	if err != 0 {
-		log.Error("Invalid Account", "err", err)
-		return
-	}
-
-	PrintAccount(identity, name)
-}
-
-func PrintAccount(identity app.Identity, name string) {
+func IdentityInfo(node *app.Application, identity *id.Identity) {
 	Console.Print("Identity")
 }

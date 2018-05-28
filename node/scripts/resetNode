@@ -14,10 +14,7 @@ else
 	export STAGING="$2"
 fi
 
-echo "Resetting with:"
-echo "Nodename: $NODENAME"
-echo "Subdir: $SUBDIR"
-echo "Staging: $STAGING"
+echo "Resetting $NODENAME"
 
 #
 # Setup the paths
@@ -36,7 +33,7 @@ find $DATA -type f -exec rm -f {} \;
 #
 # Control the working directory
 #
-pushd $WORK
+pushd $WORK > /dev/null
 
 #
 # Cleanout any of the old database files
@@ -78,5 +75,5 @@ ls $DATA/config
 # Reset the Bitcoin chain
 #
 
-popd
+popd > /dev/null
 

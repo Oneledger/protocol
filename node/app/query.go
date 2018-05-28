@@ -1,5 +1,7 @@
 /*
 	Copyright 2017-2018 OneLedger
+
+	Implement all of the query mechanics for the node and the chain
 */
 package app
 

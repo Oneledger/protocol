@@ -6,14 +6,14 @@
 package main
 
 import (
-	"github.com/Oneledger/protocol/node/app"
+	"github.com/Oneledger/protocol/node/global"
 	"github.com/tendermint/tmlibs/common"
 )
 
 // Common to all of the sub-commands
 var service common.Service
 
-var context *app.Context // Global runtime context
+var context *global.Context // Global runtime context
 
 func main() {
 	Execute() // Pass control to Cobra
@@ -21,5 +21,5 @@ func main() {
 
 // init starts up right away, so the logging and context is initialized as early as possible
 func init() {
-	context = app.NewContext("Fullnode")
+	context = global.NewContext("Fullnode")
 }
