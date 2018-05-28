@@ -177,3 +177,12 @@ CurrencyDomain
 	ETH
 	USD
 	CAD
+
+Swap:
+	- create lockbox on opposite chain
+	- sign other box on current chain 
+	- verify both boxes
+	- send pre-image to counterparty
+	- read the opposite chain
+	- open lockbox
+
