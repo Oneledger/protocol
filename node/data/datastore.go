@@ -13,7 +13,6 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/Oneledger/protocol/node/comm"
 	"github.com/Oneledger/protocol/node/global"
 	"github.com/Oneledger/protocol/node/log"
 	"github.com/tendermint/iavl" // TODO: Double check this with cosmos-sdk
@@ -79,7 +78,12 @@ func NewDatastore(name string, newType DatastoreType) *Datastore {
 			panic("Can't create a database " + global.Current.RootDir + "/" + fullname)
 		}
 
-		tree := iavl.NewVersionedTree(storage, 100) // Do I need a historic tree here?
+		tree := iavl.NewVersionedTree(storage, 100)
+
+		// Note: the tree is empty, until at least one version is loaded
+		tree.LoadVersion(0)
+
+		log.Debug("Setup Tree", "version", tree.Version64())
 
 		return &Datastore{
 			Type:     newType,
@@ -135,7 +139,13 @@ func (store Datastore) Exists(key DatabaseKey) bool {
 		return store.memory.Has(key)
 
 	case PERSISTENT:
-		return store.tree.Has(key)
+		version := store.tree.Version64()
+		index, value := store.tree.GetVersioned(key, version)
+		if index != -1 {
+			log.Debug("Found", "value", value, "version", version)
+			return true
+		}
+		log.Debug("Not Found", "version", version)
 
 	default:
 		panic("Unknown Type")
@@ -151,8 +161,9 @@ func (store Datastore) Load(key DatabaseKey) (value Message) {
 		return store.memory.Get(key)
 
 	case PERSISTENT:
-		index, value := store.tree.Get(key)
-		log.Debug("Load", "index", index, "key", key, "value", value)
+		version := store.tree.Version64()
+		index, value := store.tree.GetVersioned(key, version)
+		log.Debug("Load", "index", index, "key", key, "value", value, "version", version)
 		return Message(value)
 
 	default:
@@ -167,26 +178,11 @@ func (store Datastore) Commit() {
 	case PERSISTENT:
 
 		log.Debug("Persisting the version tree")
+
 		hash, version, err := store.tree.SaveVersion()
 		if err != nil {
 			log.Fatal("Database Error", "err", err)
 		}
-
-		buffer, _ := comm.Serialize(version)
-		store.tree.Set([]byte("args"), buffer)
-		hash, version, err = store.tree.SaveVersion()
-		if err != nil {
-			log.Fatal("Database Error", "err", err)
-		}
-
-		buffer, _ = comm.Serialize(version)
-		store.tree.Set([]byte("args"), buffer)
-		hash, version, err = store.tree.SaveVersion()
-		if err != nil {
-			log.Fatal("Database Error", "err", err)
-		}
-
-		store.database.Set([]byte("Junk"), []byte("Stuff"))
 
 		log.Debug("Committed", "version", store.version, "hash", hash)
 
@@ -207,7 +203,9 @@ func (store Datastore) Dump() {
 
 	iter := store.database.Iterator(nil, nil)
 	for ; iter.Valid(); iter.Next() {
-		log.Debug("Row", iter.Key(), iter.Value())
+		hash := iter.Key()
+		node := iter.Value()
+		log.Debug("Row", hash, node)
 	}
 }
 

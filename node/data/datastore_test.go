@@ -6,6 +6,8 @@
 package data
 
 import (
+	"bytes"
+	"fmt"
 	"testing"
 
 	"github.com/Oneledger/protocol/node/global"
@@ -20,28 +22,31 @@ func TestDatabase(t *testing.T) {
 	value := []byte("TheValue")
 
 	ds.Store(key, value)
-
-	log.Debug("Store Check")
-	Check(ds, key)
+	Check("Storage", ds, key, value)
 
 	ds.Commit()
+	Check("Commited", ds, key, value)
 
-	log.Debug("Commit Check")
-	Check(ds, key)
 	ds.Dump()
-
 	ds.Close()
 
 	ds = NewDatastore("localTestingDatabase", PERSISTENT)
-	log.Debug("Reopen Check")
-	Check(ds, key)
+	Check("Reopened", ds, key, value)
+
 	ds.Dump()
 }
 
-func Check(ds *Datastore, key []byte) {
+func Check(text string, ds *Datastore, key []byte, value []byte) {
+	log.Debug(text + " Check")
+
 	if ds.Exists(key) {
 		result := ds.Load(key)
-		log.Debug("Found Data", "result", result)
+		text := fmt.Sprintf("[%X]:\t[%X]\n", key, result)
+		log.Debug("Found Data", "text", text)
+		if bytes.Compare(result, value) != 0 {
+			log.Debug("but it differs", "value", value, "result", result)
+		}
+
 	} else {
 		log.Debug("Missing key", "key", key)
 	}

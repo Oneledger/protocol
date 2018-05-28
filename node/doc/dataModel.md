@@ -106,14 +106,14 @@ TransactionDomain
 
 SwapInstruction -- synchronize two (N?) transactions on different chains
 
-	- List of ExternalSend
+	- List of Send/ExternalSend
 	- Sequence 
 	-----------------------
 
 	- Fee
 	- Gas
 	
-Send -- a transaction on our chain
+Send -- a transaction on our chain (we don't need this anymore...)
 
 	- Set of Inputs
 	- Set of Outputs
@@ -123,7 +123,7 @@ Send -- a transaction on our chain
 	- Fee
 	- Gas
 
-ExternalSend -- a transction send to bitcoin, ethereum, cosmos, aion, etc. 
+ExternalSend -- a transction send to oneledger, bitcoin, ethereum, cosmos, aion, etc. 
 
 	- Set of Inputs
 	- Set of Outputs
