@@ -13,12 +13,8 @@ $OLSCRIPT/resetChain
 $OLTEST/register.sh
 
 # Startup the chains
-$OLSCRIPT/startNode
+$OLSCRIPT/startChain
 
-sleep 9
-
-olclient account --user Alice
-
-sleep 3
+olclient account --identity Alice --address tcp://127.0.0.1:46601
 
 $OLSCRIPT/stopnode

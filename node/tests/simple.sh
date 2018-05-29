@@ -12,7 +12,7 @@ $OLTEST/startNode
 sleep 9
 
 # assumes fullnode is in the PATH
-olclient send --counterparty 0x01010100101
+olclient send --counterparty Bob --address tcp://127.0.0.1:46601
 
 sleep 3
 
