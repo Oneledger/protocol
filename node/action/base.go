@@ -18,13 +18,17 @@ type PublicKey = crypto.PubKey
 type Type byte
 
 const (
-	SEND Type = iota
-	EXTERNAL_SEND
-	EXTERNAL_LOCK
-	SWAP
-	PREPARE
-	COMMIT
-	FORGET
+	INVALID       Type = iota
+	SEND               // Do a normal send transaction on local chain
+	EXTERNAL_SEND      // Do send on external chain
+	EXTERNAL_LOCK      // Lock some data on external chain
+	SWAP               // Start a swap between chains
+	VERIFY             // Verify that a lockbox is correct
+	PUBLISH            // Publish data (preimage) on a chain
+	READ               // Read a specific transaction on a chain
+	PREPARE            // Do everything, except commit
+	COMMIT             // Commit to doing the work
+	FORGET             // Rollback and forget that this happened
 )
 
 // Polymorphism and Serializable
@@ -32,6 +36,7 @@ type Transaction interface {
 	Validate() err.Code
 	ProcessCheck(interface{}) err.Code
 	ProcessDeliver(interface{}) err.Code
+	Expand(interface{}) Commands
 }
 
 // Base Data for each type
@@ -43,4 +48,10 @@ type Base struct {
 	// TODO: Should these be for all transactions or just driving ones?
 	Sequence int        `json:"sequence"`
 	Owner    id.Address `json:"owner"`
+}
+
+// Get the correct chain for an action
+func GetChain(transaction interface{}) id.AccountType {
+	// TODO: Need to fix this
+	return id.BITCOIN
 }

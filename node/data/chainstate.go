@@ -61,7 +61,10 @@ func (state *ChainState) Commit() {
 }
 
 func (state *ChainState) reset() {
-	//state.Committed = createDatabase(state.Name, state.Type)
-	state.Delivered = createDatabase(state.Name, state.Type)
+	// TODO: I need three copies of the tree, only one is ultimately mutable... (checked changed rollback)
+	// TODO: Close before repoen, better just update...
+
 	//state.Checked = createDatabase(state.Name, state.Type)
+	state.Delivered = createDatabase(state.Name, state.Type)
+	//state.Committed = createDatabase(state.Name, state.Type)
 }

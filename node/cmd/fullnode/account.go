@@ -20,7 +20,7 @@ var accountCmd = &cobra.Command{
 
 // Arguments to the command
 type ListArguments struct {
-	user string
+	identity string
 }
 
 var listargs = &ListArguments{}
@@ -29,7 +29,7 @@ func init() {
 	RootCmd.AddCommand(accountCmd)
 
 	// Transaction Parameters
-	accountCmd.Flags().StringVarP(&listargs.user, "user", "u", "", "user account name")
+	accountCmd.Flags().StringVar(&listargs.identity, "identity", "unknown", "user account name")
 }
 
 // IssueRequest sends out a sendTx to all of the nodes in the chain
@@ -38,23 +38,23 @@ func ListIdentities(cmd *cobra.Command, args []string) {
 	// TODO: We can't do this, need to be 'light-client' instead...
 	node := app.NewApplication()
 
-	if listargs.user != "" {
-		Console.Print("Listing Account Details for", listargs.user)
-		identity, err := node.Identities.Find(listargs.user)
+	if listargs.identity != "" {
+		Console.Print("Listing Account Details for", listargs.identity)
+		id, err := node.Identities.Find(listargs.identity)
 		if err != 0 {
 			log.Error("Not a valid identity", "err", err)
 			return
 		}
-		IdentityInfo(node, identity)
+		IdentityInfo(node, id)
 		return
 	}
 
 	Console.Print("Listing Account Details for all users")
-	for _, identity := range node.Identities.FindAll() {
-		IdentityInfo(node, identity)
+	for _, id := range node.Identities.FindAll() {
+		IdentityInfo(node, id)
 	}
 }
 
-func IdentityInfo(node *app.Application, identity *id.Identity) {
+func IdentityInfo(node *app.Application, id *id.Identity) {
 	Console.Print("Identity")
 }

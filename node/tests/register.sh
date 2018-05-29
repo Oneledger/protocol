@@ -3,7 +3,7 @@
 #
 # Test creating a single send transaction in a 1-node chain, reset each time
 #
-OLTEST=$GOPATH/src/github.com/Oneledger/prototype/node/scripts
+OLTEST=$GOPATH/src/github.com/Oneledger/protocol/node/scripts
 
 # assumes fullnode is in the PATH
 #olclient register --address $ADDRESS --name Paul 
@@ -25,10 +25,10 @@ else
 	$OLTEST/stopChain
 fi
 
-fullnode register --address $ADDRESS --name Paul
-fullnode register --address $ADDRESS --chain OneLedger --name Paul --pubkey 0x01 --privkey 0x01
-fullnode register --address $ADDRESS --chain Bitcoin --name Paul --pubkey 0x01 --privkey 0x01
-fullnode register --address $ADDRESS --chain Ethereum --name Paul --pubkey 0x01 --privkey 0x01
+fullnode register --address $ADDRESS --identity Paul
+fullnode register --address $ADDRESS --chain OneLedger --identity Paul --pubkey 0x01 --privkey 0x01
+fullnode register --address $ADDRESS --chain Bitcoin --identity Paul --pubkey 0x01 --privkey 0x01
+fullnode register --address $ADDRESS --chain Ethereum --identity Paul --pubkey 0x01 --privkey 0x01
 
 if [ -z "$status" ]; then
 	echo "Chain isn't restarted"

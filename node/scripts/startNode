@@ -54,14 +54,14 @@ fi
 #
 # Startup Fullnode
 #
-pids=`pgrep -f "fullnode.*--name $NODENAME.*"`
+pids=`pgrep -f "fullnode.*--node $NODENAME.*"`
 if [ -z "$pids" ]
 
 then
 	echo "============================================================" >> $LOG/fullnode.log
 	echo "Starting Fullnode" >> $LOG/fullnode.log
 	echo "============================================================" >> $LOG/fullnode.log
-	fullnode node --name $NODENAME --root $WORK/fullnode --address $FADDR >> $LOG/fullnode.log 2>&1 &
+	fullnode node --node $NODENAME --root $WORK/fullnode --address $FADDR >> $LOG/fullnode.log 2>&1 &
 else
 	echo "Fullnode $NODENAME is already running"
 fi

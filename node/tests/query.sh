@@ -3,8 +3,8 @@
 #
 # Test creating a single send transaction in a 1-node chain, reset each time
 #
-OLSCRIPT=$GOPATH/src/github.com/Oneledger/prototype/node/scripts
-OLTEST=$GOPATH/src/github.com/Oneledger/prototype/node/tests
+OLSCRIPT=$GOPATH/src/github.com/Oneledger/protocol/node/scripts
+OLTEST=$GOPATH/src/github.com/Oneledger/protocol/node/tests
 
 # Clear out the existing chains
 $OLSCRIPT/resetChain

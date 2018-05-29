@@ -25,9 +25,6 @@ var nodeCmd = &cobra.Command{
 
 func init() {
 	RootCmd.AddCommand(nodeCmd)
-
-	nodeCmd.Flags().StringVarP(&global.Current.Transport, "transport", "t", "socket", "transport (socket | grpc)")
-	nodeCmd.Flags().StringVarP(&global.Current.Address, "address", "a", "tcp://127.0.0.1:46658", "full address")
 }
 
 func HandleArguments() {

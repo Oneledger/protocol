@@ -123,7 +123,7 @@ func (app Application) BeginBlock(req RequestBeginBlock) ResponseBeginBlock {
 		chainId = app.Admin.Store(chainKey, newChainId)
 
 	} else if bytes.Compare(chainId, newChainId) != 0 {
-		//panic("Mismatching chains")
+		log.Error("Mismatching chains", "chainId", chainId, "newChainId", newChainId)
 	}
 
 	log.Debug("ChainID is", "id", chainId)

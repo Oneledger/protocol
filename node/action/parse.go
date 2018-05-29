@@ -34,6 +34,7 @@ func Parse(message Message) (Transaction, err.Code) {
 
 	command, body := UnpackMessage(message)
 
+	// TODO: Can I do this with deserialize?
 	switch command {
 
 	case SEND:
@@ -72,7 +73,7 @@ func Parse(message Message) (Transaction, err.Code) {
 		return action, err.SUCCESS
 
 	default:
-		log.Error("Unknown type", "command", command)
+		log.Error("Unknown transaction", "command", command)
 	}
 
 	return nil, err.PARSE_ERROR

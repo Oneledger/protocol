@@ -26,16 +26,15 @@ var swapCmd = &cobra.Command{
 
 // Arguments to the command
 type SwapArguments struct {
-	user       string
-	to         string
-	from       string
-	amount     string
-	fee        string
-	gas        string // TODO: Not sure this is necessary, unless the chain is like Ethereum
-	currency   string
-	exchange   string
-	excurrency string
-	sequence   int // Replay protection
+	party        string
+	counterparty string
+	amount       string
+	fee          string
+	gas          string // TODO: Not sure this is necessary, unless the chain is like Ethereum
+	currency     string
+	exchange     string
+	excurrency   string
+	nonce        int64
 }
 
 var swapargs = &SwapArguments{}
@@ -43,22 +42,17 @@ var swapargs = &SwapArguments{}
 func init() {
 	RootCmd.AddCommand(swapCmd)
 
-	// Operational Parameters
-	// TODO: Should be global flags?
-	swapCmd.Flags().StringVarP(&global.Current.Transport, "transport", "t", "socket", "transport (socket | grpc)")
-	swapCmd.Flags().StringVarP(&global.Current.Address, "address", "a", "tcp://127.0.0.1:46658", "full address")
-
 	// Transaction Parameters
-	swapCmd.Flags().StringVarP(&swapargs.user, "user", "u", "unknown", "user name")
-	swapCmd.Flags().StringVarP(&swapargs.from, "from", "f", "unknown", "base address")
-	swapCmd.Flags().StringVarP(&swapargs.to, "to", "d", "unknown", "target address")
-	swapCmd.Flags().StringVarP(&swapargs.amount, "amount", "v", "100", "the coins to exchange")
-	swapCmd.Flags().StringVarP(&swapargs.fee, "fee", "c", "1", "fees in coins")
-	swapCmd.Flags().StringVarP(&swapargs.gas, "gas", "g", "1", "gas, if necessary")
-	swapCmd.Flags().StringVarP(&swapargs.currency, "currency", "x", "OLT", "currency of amount")
-	swapCmd.Flags().StringVarP(&swapargs.exchange, "exchange", "e", "0", "the value to trade for")
-	swapCmd.Flags().StringVarP(&swapargs.excurrency, "excurrency", "y", "ETH", "the currency")
-	swapCmd.Flags().IntVarP(&swapargs.sequence, "sequence", "s", 1, "replay seqeunce number")
+	swapCmd.Flags().StringVar(&swapargs.party, "party", "unknown", "base address")
+	swapCmd.Flags().StringVar(&swapargs.counterparty, "counterparty", "unknown", "target address")
+	swapCmd.Flags().StringVar(&swapargs.amount, "amount", "0", "the coins to exchange")
+	swapCmd.Flags().StringVar(&swapargs.currency, "currency", "OLT", "currency of amount")
+	swapCmd.Flags().StringVar(&swapargs.exchange, "exchange", "0", "the value to trade for")
+	swapCmd.Flags().StringVar(&swapargs.excurrency, "excurrency", "ETH", "the currency")
+	swapCmd.Flags().Int64Var(&swapargs.nonce, "nonce", 1001, "number used once")
+
+	swapCmd.Flags().StringVar(&swapargs.fee, "fee", "1", "fees in coins")
+	swapCmd.Flags().StringVar(&swapargs.gas, "gas", "1", "gas, if necessary")
 }
 
 func CreateSwapRequest() []byte {
@@ -68,8 +62,8 @@ func CreateSwapRequest() []byte {
 
 	conv := convert.NewConvert()
 
-	party1 := id.Address(conv.GetHash(swapargs.to))
-	party2 := id.Address(conv.GetHash(swapargs.from))
+	party := id.Address(conv.GetHash(swapargs.party))
+	counterparty := id.Address(conv.GetHash(swapargs.counterparty))
 
 	// TOOD: a clash with the basic data model
 	signers := GetSigners()
@@ -104,14 +98,15 @@ func CreateSwapRequest() []byte {
 			Type:     action.SWAP,
 			ChainId:  app.ChainId,
 			Signers:  signers,
-			Sequence: swapargs.sequence,
+			Sequence: global.Current.Sequence,
 		},
-		Party1:   party1,
-		Party2:   party2,
-		Fee:      fee,
-		Gas:      gas,
-		Amount:   amount,
-		Exchange: exchange,
+		Party:        party,
+		CounterParty: counterparty,
+		Fee:          fee,
+		Gas:          gas,
+		Amount:       amount,
+		Exchange:     exchange,
+		Nonce:        swapargs.nonce,
 	}
 
 	signed := SignTransaction(action.Transaction(swap))

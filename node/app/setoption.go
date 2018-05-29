@@ -12,7 +12,7 @@ import (
 )
 
 type RegisterArguments struct {
-	Name       string
+	Identity   string
 	Chain      string
 	PublicKey  string
 	PrivateKey string
@@ -29,7 +29,7 @@ func SetOption(app *Application, key string, value []byte) bool {
 			return false
 		}
 		args := result.(*RegisterArguments)
-		Register(app, args.Name, args.Name, id.ParseAccountType(args.Chain))
+		Register(app, args.Identity, args.Identity, id.ParseAccountType(args.Chain))
 
 	default:
 		return false

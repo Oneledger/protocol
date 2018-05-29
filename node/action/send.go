@@ -15,10 +15,11 @@ import (
 type Send struct {
 	Base
 
-	Gas     data.Coin    `json:"gas"`
-	Fee     data.Coin    `json:"fee"`
 	Inputs  []SendInput  `json:"inputs"`
 	Outputs []SendOutput `json:"outputs"`
+
+	Gas data.Coin `json:"gas"`
+	Fee data.Coin `json:"fee"`
 }
 
 func (transaction *Send) Validate() err.Code {
@@ -42,4 +43,10 @@ func (transaction *Send) ProcessDeliver(app interface{}) err.Code {
 
 	// TODO: // Update in final copy of Merkle Tree
 	return err.SUCCESS
+}
+
+// Given a transaction, expand it into a list of Commands to execute against various chains.
+func (transaction *Send) Expand(app interface{}) Commands {
+	// TODO: Table-driven mechanics, probably elsewhere
+	return []Command{}
 }

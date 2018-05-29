@@ -40,5 +40,5 @@ for entry in $nodes
 do
 	echo "------ STARTING $entry ------"
 	$CMD/startNode $entry
-	sleep 10
+	sleep 3 
 done

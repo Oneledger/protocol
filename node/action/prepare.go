@@ -31,3 +31,9 @@ func (transaction *Prepare) ProcessDeliver(app interface{}) err.Code {
 	log.Debug("Processing Prepare Transaction for DeliverTx")
 	return err.SUCCESS
 }
+
+// Given a transaction, expand it into a list of Commands to execute against various chains.
+func (transaction *Prepare) Expand(app interface{}) Commands {
+	// TODO: Table-driven mechanics, probably elsewhere
+	return []Command{}
+}
