@@ -6,6 +6,7 @@ import (
 	"github.com/btcsuite/btcd/btcec"
 
 	"github.com/Oneledger/protocol/node/log"
+	"github.com/Oneledger/protocol/node/id"
 )
 
 //general hash method for the actions messages
@@ -83,8 +84,14 @@ func (sb *SwapBox) Verify(message Message) bool{
 	return true
 }
 
-func SharePreImage(remote string, preImage []byte) (err.Code) {
-	log.Info("preImage: "+ string(preImage) + " is shared with: "+remote)
+func SharePreImage(remoteAddress id.Address, preImage []byte) (err.Code) {
+	log.Info("preImage: "+ string(preImage) + " is shared with: "+remoteAddress.String())
+	return SubmitToOl(remoteAddress, preImage)
+}
+
+//TODO: this function is called to send message to another address in oneledger node
+func SubmitToOl(dest id.Address, message Message) err.Code{
+	log.Info(string(message)+"is send.")
 	return err.SUCCESS
 }
 
