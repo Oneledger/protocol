@@ -6,6 +6,7 @@
 package action
 
 import (
+	"github.com/Oneledger/protocol/node/data"
 	"github.com/Oneledger/protocol/node/err"
 	"github.com/Oneledger/protocol/node/id"
 	crypto "github.com/tendermint/go-crypto"
@@ -51,7 +52,7 @@ type Base struct {
 }
 
 // Get the correct chain for an action
-func GetChain(transaction interface{}) id.AccountType {
+func GetChain(transaction interface{}) data.ChainType {
 	// TODO: Need to fix this
-	return id.BITCOIN
+	return data.BITCOIN
 }

@@ -19,8 +19,8 @@ $OLSCRIPT/startChain
 sleep 6 
 
 # Put some money in the user accounts
-olclient send -s 1002 --party Admin --counterparty Alice --amount 100000 --currency OLT 
-olclient send -s 1003 --party Admin --counterparty Bob --amount 100000 --currency OLT 
+olclient send --address tcp://127.0.0.1:46601 -s 1002 --party Admin --counterparty Alice --amount 100000 --currency OLT 
+olclient send --address tcp://127.0.0.1:46601 -s 1003 --party Admin --counterparty Bob --amount 100000 --currency OLT 
 
 # assumes fullnode is in the PATH
 olclient swap -s 2001 \
@@ -36,8 +36,8 @@ olclient swap -s 2001 \
 olclient wait --completed swap --party Alice --party Bob -s 2001
 
 # Check the balances
-olclient account --user Alice
-olclient account --user Bob
+olclient account --identity Alice --address tcp://127.0.0.1:46601
+olclient account --identity Bob --address tcp://127.0.0.1:46601
 
 sleep 3
 

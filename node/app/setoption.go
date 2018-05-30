@@ -7,6 +7,7 @@ package app
 
 import (
 	"github.com/Oneledger/protocol/node/comm"
+	"github.com/Oneledger/protocol/node/data"
 	"github.com/Oneledger/protocol/node/id"
 	"github.com/Oneledger/protocol/node/log"
 )
@@ -39,7 +40,7 @@ func SetOption(app *Application, key string, value []byte) bool {
 }
 
 // Register Identities and Accounts from the user.
-func Register(app *Application, idName string, name string, chain id.AccountType) bool {
+func Register(app *Application, idName string, name string, chain data.ChainType) bool {
 
 	status := false
 
@@ -52,7 +53,7 @@ func Register(app *Application, idName string, name string, chain id.AccountType
 		log.Debug("Existing Identity", "idName", idName)
 	}
 
-	if chain == id.UNKNOWN {
+	if chain == data.UNKNOWN {
 		return status
 	}
 

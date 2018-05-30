@@ -3,15 +3,17 @@
 */
 package action
 
-import "github.com/Oneledger/protocol/node/id"
+import (
+	"github.com/Oneledger/protocol/node/data"
+)
 
 type Object interface{}
 
 // Given an action and a chain, return a list of commands
-func GetCommands(action Type, chain id.AccountType) Commands {
+func GetCommands(action Type, chain data.ChainType) Commands {
 	for i := 0; i < len(FunctionMapping); i++ {
 		transactionType := FunctionMapping[i][0].(Type)
-		target := FunctionMapping[i][1].(id.AccountType)
+		target := FunctionMapping[i][1].(data.ChainType)
 		if action == transactionType && target == chain {
 			size := len(FunctionMapping[i]) - 2
 			result := make(Commands, size, size)
@@ -27,7 +29,7 @@ func GetCommands(action Type, chain id.AccountType) Commands {
 var FunctionMapping = [][]Object{
 	[]Object{
 		SWAP,
-		id.BITCOIN,
+		data.BITCOIN,
 		Command{
 			Function: CREATE_LOCKBOX,
 		},
@@ -37,7 +39,7 @@ var FunctionMapping = [][]Object{
 	},
 	[]Object{
 		SWAP,
-		id.ETHEREUM,
+		data.ETHEREUM,
 		Command{
 			Function: CREATE_LOCKBOX,
 		},
@@ -47,7 +49,7 @@ var FunctionMapping = [][]Object{
 	},
 	[]Object{
 		SEND,
-		id.BITCOIN,
+		data.BITCOIN,
 		Command{
 			Function: SUBMIT_TRANSACTION,
 		},

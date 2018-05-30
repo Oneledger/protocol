@@ -28,14 +28,16 @@ type PrivateKey = crypto.PrivKey
 type Signature = crypto.Signature
 
 // enum for type
-type AccountType int
+//type AccountType int
 
+/*
 const (
 	UNKNOWN AccountType = iota
 	ONELEDGER
 	BITCOIN
 	ETHEREUM
 )
+*/
 
 // The persistent collection of all accounts known by this node
 type Accounts struct {
@@ -59,7 +61,7 @@ func (acc *Accounts) Add(account Account) {
 func (acc *Accounts) Delete(account Account) {
 }
 
-func (acc *Accounts) Exists(newType AccountType, name string) bool {
+func (acc *Accounts) Exists(newType data.ChainType, name string) bool {
 	account := NewAccount(newType, name, PublicKey{})
 	value := acc.data.Load(account.Key())
 	if value != nil {
@@ -106,9 +108,11 @@ type Account interface {
 }
 
 type AccountBase struct {
-	Type AccountType
+	//Type AccountType
+	Type data.ChainType
 
-	Key        AccountKey
+	Key AccountKey
+
 	Name       string
 	PublicKey  PublicKey
 	PrivateKey PrivateKey
@@ -129,10 +133,10 @@ func NewAccountKey(key PublicKey) AccountKey {
 	return hasher.Sum(nil)
 }
 
-func NewAccount(newType AccountType, name string, key PublicKey) Account {
+func NewAccount(newType data.ChainType, name string, key PublicKey) Account {
 	switch newType {
 
-	case ONELEDGER:
+	case data.ONELEDGER:
 		return &AccountOneLedger{
 			AccountBase{
 				Type:      newType,
@@ -142,7 +146,7 @@ func NewAccount(newType AccountType, name string, key PublicKey) Account {
 			},
 		}
 
-	case BITCOIN:
+	case data.BITCOIN:
 		return &AccountBitcoin{
 			AccountBase{
 				Type:      newType,
@@ -152,7 +156,7 @@ func NewAccount(newType AccountType, name string, key PublicKey) Account {
 			},
 		}
 
-	case ETHEREUM:
+	case data.ETHEREUM:
 		return &AccountEthereum{
 			AccountBase{
 				Type:      newType,
@@ -168,18 +172,18 @@ func NewAccount(newType AccountType, name string, key PublicKey) Account {
 }
 
 // Map type to string
-func ParseAccountType(typeName string) AccountType {
+func ParseAccountType(typeName string) data.ChainType {
 	switch typeName {
 	case "OneLedger":
-		return ONELEDGER
+		return data.ONELEDGER
 
 	case "Ethereum":
-		return ETHEREUM
+		return data.ETHEREUM
 
 	case "Bitcoin":
-		return BITCOIN
+		return data.BITCOIN
 	}
-	return UNKNOWN
+	return data.UNKNOWN
 }
 
 // OneLedger
