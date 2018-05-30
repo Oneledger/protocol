@@ -28,9 +28,9 @@ type BoxLocker struct{
 }
 
 
-// Sign the locker with preImage and nonce for message passed, the message should be the full information of Transaction
-// The nonce is used to preventing the 3rd party from get the message even through he get the preImage, where nonce
-// should only be known by the participants of the message sharing
+// Sign the locker with preImage and nonce for message passed, the message should be the full information of
+// Transaction. The nonce is used to preventing the 3rd party from get the message even through he get the preImage,
+// where nonce should only be known by the participants of the message sharing
 func (bl *BoxLocker) Sign( preImage []byte, nonce []byte, message Message) error {
 	privKey, pubkey := btcec.PrivKeyFromBytes(btcec.S256(), append(preImage, nonce...))
 
@@ -59,6 +59,7 @@ type SwapBox struct{
 
 
 func CreateSwapBox(swap Swap) *SwapBox {
+	//TODO: add the necessary mechanism fo create the swap
 	return &SwapBox{swap, BoxLocker{}, BoxLocker{}}
 }
 
@@ -89,16 +90,16 @@ func SharePreImage(remoteAddress id.Address, preImage []byte) (err.Code) {
 	return SubmitToOl(remoteAddress, preImage)
 }
 
-//TODO: this function is called to send message to another address in oneledger node
+//TODO: this function is called to send message to another address in oneledger node, move it to corret place
 func SubmitToOl(dest id.Address, message Message) err.Code{
 	log.Info(string(message)+"is send.")
 	return err.SUCCESS
 }
 
 func (sb *SwapBox) CheckRemoteChain (){
-
+	//TODO: check the transaction initialed on remote chain. need to update Swap struct to get the remote information
 }
 
 func (sb *SwapBox) ExecuteSwap() {
-
+	//TODO: call /node/chains/btcrpc/interfaces or /node/chains/btcrpc/interfaces to finalize the HTLC transaction
 }
