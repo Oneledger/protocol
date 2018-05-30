@@ -182,6 +182,7 @@ CurrencyDomain
 	CAD
 
 ExternalSwap Steps:
+
 	- create lockbox on opposite chain
 	- sign other box on current chain 
 	- verify both boxes

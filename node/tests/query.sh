@@ -15,6 +15,12 @@ $OLTEST/register.sh
 # Startup the chains
 $OLSCRIPT/startChain
 
-olclient account --identity Alice --address tcp://127.0.0.1:46601
+# Find the addresses
+addrAdmin=`$OLSCRIPT/lookup Admin RPCAddress tcp://127.0.0.1:`
+addrAlice=`$OLSCRIPT/lookup Alice RPCAddress tcp://127.0.0.1:`
+addrBob=`$OLSCRIPT/lookup Bob RPCAddress tcp://127.0.0.1:`
+
+# List out the account details
+olclient account --identity Alice --address $addrAlice
 
 $OLSCRIPT/stopnode

@@ -9,10 +9,12 @@ $OLTEST/resetChain
 
 $OLTEST/startNode
 
-sleep 9
+addrAdmin=`$OLSCRIPT/lookup Admin RPCAddress tcp://127.0.0.1:`
+addrAlice=`$OLSCRIPT/lookup Alice RPCAddress tcp://127.0.0.1:`
+addrBob=`$OLSCRIPT/lookup Bob RPCAddress tcp://127.0.0.1:`
 
 # assumes fullnode is in the PATH
-olclient send --counterparty Bob --address tcp://127.0.0.1:46601
+olclient send --counterparty Bob --address $addrBob
 
 sleep 3
 
