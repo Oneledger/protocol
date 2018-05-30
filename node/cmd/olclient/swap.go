@@ -8,8 +8,12 @@ package main
 import (
 	"os"
 
+	"github.com/Oneledger/protocol/node/action"
 	"github.com/Oneledger/protocol/node/app"
 	"github.com/Oneledger/protocol/node/convert"
+	"github.com/Oneledger/protocol/node/data"
+	"github.com/Oneledger/protocol/node/global"
+	"github.com/Oneledger/protocol/node/id"
 	"github.com/Oneledger/protocol/node/log"
 	"github.com/spf13/cobra"
 )
@@ -41,8 +45,8 @@ func init() {
 
 	// Operational Parameters
 	// TODO: Should be global flags?
-	swapCmd.Flags().StringVarP(&app.Current.Transport, "transport", "t", "socket", "transport (socket | grpc)")
-	swapCmd.Flags().StringVarP(&app.Current.Address, "address", "a", "tcp://127.0.0.1:46658", "full address")
+	swapCmd.Flags().StringVarP(&global.Current.Transport, "transport", "t", "socket", "transport (socket | grpc)")
+	swapCmd.Flags().StringVarP(&global.Current.Address, "address", "a", "tcp://127.0.0.1:46658", "full address")
 
 	// Transaction Parameters
 	swapCmd.Flags().StringVarP(&swapargs.user, "user", "u", "unknown", "user name")
@@ -64,28 +68,28 @@ func CreateSwapRequest() []byte {
 
 	conv := convert.NewConvert()
 
-	party1 := app.Address(conv.GetHash(swapargs.to))
-	party2 := app.Address(conv.GetHash(swapargs.from))
+	party1 := id.Address(conv.GetHash(swapargs.to))
+	party2 := id.Address(conv.GetHash(swapargs.from))
 
 	// TOOD: a clash with the basic data model
 	signers := GetSigners()
 
-	fee := app.Coin{
+	fee := data.Coin{
 		Currency: conv.GetCurrency(swapargs.currency),
 		Amount:   conv.GetInt64(swapargs.fee),
 	}
 
-	gas := app.Coin{
+	gas := data.Coin{
 		Currency: conv.GetCurrency(swapargs.currency),
 		Amount:   conv.GetInt64(swapargs.gas),
 	}
 
-	amount := app.Coin{
+	amount := data.Coin{
 		Currency: conv.GetCurrency(swapargs.currency),
 		Amount:   conv.GetInt64(swapargs.amount),
 	}
 
-	exchange := app.Coin{
+	exchange := data.Coin{
 		Currency: conv.GetCurrency(swapargs.excurrency),
 		Amount:   conv.GetInt64(swapargs.exchange),
 	}
@@ -95,9 +99,9 @@ func CreateSwapRequest() []byte {
 		os.Exit(-1)
 	}
 
-	swap := &app.SwapTransaction{
-		TransactionBase: app.TransactionBase{
-			Type:     app.SWAP_TRANSACTION,
+	swap := &action.Swap{
+		Base: action.Base{
+			Type:     action.SWAP,
 			ChainId:  app.ChainId,
 			Signers:  signers,
 			Sequence: swapargs.sequence,
@@ -110,7 +114,7 @@ func CreateSwapRequest() []byte {
 		Exchange: exchange,
 	}
 
-	signed := SignTransaction(app.Transaction(swap))
+	signed := SignTransaction(action.Transaction(swap))
 	packet := PackRequest(signed)
 
 	return packet
@@ -128,8 +132,8 @@ func SwapCurrency(cmd *cobra.Command, args []string) {
 	log.Debug("Returned Successfully", "result", result)
 }
 
-func GetAddress(value string) app.Address {
-	return app.Address{}
+func GetAddress(value string) id.Address {
+	return id.Address{}
 }
 
 func GetCurrency(value string) string {

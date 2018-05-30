@@ -5,9 +5,9 @@
 
 
 if [ -z "$1" ]; then
-	NODECOUNT="$1"
+	NODECOUNT=4
 else
-	NODECOUNT=3
+	NODECOUNT="$1"
 fi
 
 #
@@ -24,11 +24,10 @@ mkdir -p $STAGING
 #
 tendermint testnet --home $STAGING --dir $STAGING --n $NODECOUNT
 
-nodes="OneLedger-One#mach0 OneLedger-Two#mach1 OneLedger-Three#mach2"
+nodes="OneLedger-Admin#mach0 OneLedger-Alice#mach1 OneLedger-Bob#mach2 OneLedger-Carol#mach3"
 
 for node in $nodes
 do
-	echo "Resetting $node"
 	$CMD/resetNode $node $STAGING 
 done
 

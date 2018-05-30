@@ -5,3 +5,4 @@ export OLREPO=$OLROOT/protocol
 export OLDATA=$GOPATH/test
 export OLTEST=$OLREPO/node/tests
 export OLSCRIPT=$OLREPO/node/scripts
+

@@ -5,7 +5,15 @@
 */
 package main
 
-import "fmt"
+import (
+	"bufio"
+	"errors"
+	"fmt"
+	"os"
+
+	"github.com/Oneledger/protocol/node/log"
+	isatty "github.com/mattn/go-isatty"
+)
 
 type Terminal interface {
 	Print(text ...interface{})
@@ -25,12 +33,46 @@ func NewTty() *Tty {
 	return &Tty{}
 }
 
-// TODO: Add varargs, pretty formatting, logging and detect disconnected terminals
+// Print to a terminal, add a layer of presentation on top.
 func (tty *Tty) Print(text ...interface{}) {
 	fmt.Println(text...)
 }
 
-// TODO: Catch a disconnected terminal, maybe read input from files?
+// Test to see if the process is still connected to a terminal
+func inputIsTty(buf *bufio.Reader) bool {
+	if isatty.IsTerminal(os.Stdin.Fd()) {
+		return true
+	}
+
+	// Windows portability
+	if isatty.IsCygwinTerminal(os.Stdin.Fd()) {
+		return true
+	}
+
+	return false
+}
+
+// Read in user input from a terminal, if we are connected to one.
 func (tty *Tty) Read() string {
-	return "missing input"
+	var buffer []byte
+	var size int
+	var err error
+
+	input := bufio.NewReader(os.Stdin)
+	if inputIsTty(input) {
+		size, err = os.Stdin.Read(buffer)
+		if err != nil {
+			log.Error("Input Error", "err", err)
+			// Go down hard, input is broken.
+			panic(err)
+		}
+		if size == 0 {
+			log.Error("Empty Input")
+			panic(errors.New("Missing Input"))
+		}
+	} else {
+		return "missing input"
+	}
+
+	return string(buffer)
 }

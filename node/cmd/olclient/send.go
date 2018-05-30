@@ -8,8 +8,12 @@ package main
 import (
 	"os"
 
+	"github.com/Oneledger/protocol/node/action"
 	"github.com/Oneledger/protocol/node/app"
 	"github.com/Oneledger/protocol/node/convert"
+	"github.com/Oneledger/protocol/node/data"
+	"github.com/Oneledger/protocol/node/global"
+	"github.com/Oneledger/protocol/node/id"
 	"github.com/Oneledger/protocol/node/log"
 	"github.com/spf13/cobra"
 )
@@ -39,8 +43,8 @@ func init() {
 
 	// Operational Parameters
 	// TODO: Should be global flags?
-	sendCmd.Flags().StringVarP(&app.Current.Transport, "transport", "t", "socket", "transport (socket | grpc)")
-	sendCmd.Flags().StringVarP(&app.Current.Address, "address", "a", "tcp://127.0.0.1:46658", "full address")
+	sendCmd.Flags().StringVarP(&global.Current.Transport, "transport", "t", "socket", "transport (socket | grpc)")
+	sendCmd.Flags().StringVarP(&global.Current.Address, "address", "a", "tcp://127.0.0.1:46658", "full address")
 
 	// Transaction Parameters
 	sendCmd.Flags().StringVar(&sendargs.user, "user", "undefined", "user name")
@@ -58,10 +62,10 @@ func CreateRequest() []byte {
 
 	conv := convert.NewConvert()
 
-	to := app.Address(conv.GetHash(sendargs.to))
+	to := id.Address(conv.GetHash(sendargs.to))
 	_ = to
 
-	gas := app.Coin{
+	gas := data.Coin{
 		Currency: conv.GetCurrency(sendargs.currency),
 		Amount:   conv.GetInt64(sendargs.gas),
 	}
@@ -72,9 +76,9 @@ func CreateRequest() []byte {
 	}
 
 	// Create base transaction
-	send := &app.SendTransaction{
-		TransactionBase: app.TransactionBase{
-			Type:     app.SEND_TRANSACTION,
+	send := &action.Send{
+		Base: action.Base{
+			Type:     action.SEND,
 			ChainId:  app.ChainId,
 			Signers:  signers,
 			Sequence: sendargs.sequence,
@@ -82,7 +86,7 @@ func CreateRequest() []byte {
 		Gas: gas,
 	}
 
-	signed := SignTransaction(app.Transaction(send))
+	signed := SignTransaction(action.Transaction(send))
 	packet := PackRequest(signed)
 
 	return packet

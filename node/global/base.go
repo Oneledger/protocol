@@ -12,7 +12,7 @@
 		- Command line arguments
 		- Overrides
 */
-package app
+package global
 
 import "os"
 
