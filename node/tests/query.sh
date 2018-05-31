@@ -23,4 +23,4 @@ addrBob=`$OLSCRIPT/lookup Bob RPCAddress tcp://127.0.0.1:`
 # List out the account details
 olclient account --identity Alice --address $addrAlice
 
-$OLSCRIPT/stopnode
+$OLSCRIPT/stopChain

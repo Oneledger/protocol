@@ -45,7 +45,6 @@ func Exists(name string, dir string) bool {
 	dbPath := filepath.Join(dir, name+".db")
 	info, err := os.Stat(dbPath)
 	if err != nil {
-		log.Debug("Missing file?", "err", err)
 		return false
 	}
 	_ = info
@@ -67,8 +66,7 @@ func NewDatastore(name string, newType DatastoreType) *Datastore {
 	case PERSISTENT:
 		fullname := "OneLedger-" + name
 		if Exists(fullname, global.Current.RootDir) {
-			log.Debug("Appending to database", "name", fullname)
-
+			//log.Debug("Appending to database", "name", fullname)
 		} else {
 			log.Info("Creating new database", "name", fullname)
 		}
@@ -82,8 +80,6 @@ func NewDatastore(name string, newType DatastoreType) *Datastore {
 
 		// Note: the tree is empty, until at least one version is loaded
 		tree.LoadVersion(0)
-
-		log.Debug("Setup Tree", "version", tree.Version64())
 
 		return &Datastore{
 			Type:     newType,
@@ -109,7 +105,6 @@ func (store Datastore) Close() {
 		store.tree = nil
 		store.database.Close()
 		store.database = nil
-		log.Debug("Closing database " + store.Name)
 
 	default:
 		panic("Unknown Type")
@@ -140,12 +135,10 @@ func (store Datastore) Exists(key DatabaseKey) bool {
 
 	case PERSISTENT:
 		version := store.tree.Version64()
-		index, value := store.tree.GetVersioned(key, version)
+		index, _ := store.tree.GetVersioned(key, version)
 		if index != -1 {
-			log.Debug("Found", "value", value, "version", version)
 			return true
 		}
-		log.Debug("Not Found", "version", version)
 
 	default:
 		panic("Unknown Type")
@@ -162,8 +155,7 @@ func (store Datastore) Load(key DatabaseKey) (value Message) {
 
 	case PERSISTENT:
 		version := store.tree.Version64()
-		index, value := store.tree.GetVersioned(key, version)
-		log.Debug("Load", "index", index, "key", key, "value", value, "version", version)
+		_, value := store.tree.GetVersioned(key, version)
 		return Message(value)
 
 	default:
@@ -176,16 +168,10 @@ func (store Datastore) Commit() {
 	switch store.Type {
 
 	case PERSISTENT:
-
-		log.Debug("Persisting the version tree")
-
-		hash, version, err := store.tree.SaveVersion()
+		_, version, err := store.tree.SaveVersion()
 		if err != nil {
 			log.Fatal("Database Error", "err", err)
 		}
-
-		log.Debug("Committed", "version", store.version, "hash", hash)
-
 		store.version = version
 
 		// Save only one copy at a time

@@ -62,6 +62,7 @@ var cachedClient *rpcclient.HTTP
 // TODO: Want to switch client type, based on config or cli args.
 func GetClient() *rpcclient.HTTP {
 	//cachedClient = rpcclient.NewHTTP("127.0.0.1:46657", "/websocket")
+	log.Debug("RPCClient", "address", global.Current.Address)
 	cachedClient = rpcclient.NewHTTP(global.Current.Address, "/websocket")
 	return cachedClient
 }

@@ -45,4 +45,4 @@ olclient account --identity Bob --address $addrBob
 
 sleep 3
 
-$OLSCRIPT/stopnode
+$OLSCRIPT/stopChain

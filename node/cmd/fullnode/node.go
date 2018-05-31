@@ -7,6 +7,8 @@ package main
 
 import (
 	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/Oneledger/protocol/node/app" // Import namespace
 	"github.com/Oneledger/protocol/node/global"
@@ -15,7 +17,6 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/tendermint/abci/server"
-	"github.com/tendermint/tmlibs/common"
 )
 
 var nodeCmd = &cobra.Command{
@@ -49,18 +50,34 @@ func StartNode(cmd *cobra.Command, args []string) {
 	//service = server.NewGRPCServer("unix://data.sock", types.NewGRPCApplication(*node))
 	//service = server.NewSocketServer("tcp://127.0.0.1:46658", *node)
 
+	log.Debug("Starting", "address", global.Current.Address)
+
+	CatchSigterm()
+
 	service = server.NewSocketServer(global.Current.Address, *node)
 	service.SetLogger(log.GetLogger())
-
-	// Catch any signals, stop nicely
-	common.TrapSignal(func() {
-		log.Info("Shutting down from Signal")
-		service.Stop()
-	})
 
 	// Set it running
 	err := service.Start()
 	if err != nil {
-		common.Exit(err.Error())
+		os.Exit(-1)
 	}
+
+	select {} // Wait forever
+}
+
+func CatchSigterm() {
+	// Catch a SIGTERM and stop
+	sigs := make(chan os.Signal, 1)
+	signal.Notify(sigs, os.Interrupt, syscall.SIGTERM)
+	go func() {
+		for sig := range sigs {
+			log.Info("Shutting down from Signal", "signal", sig)
+			if service != nil {
+				service.Stop()
+				os.Exit(-1)
+			}
+		}
+	}()
+
 }
