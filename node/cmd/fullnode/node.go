@@ -11,6 +11,7 @@ import (
 	"github.com/Oneledger/protocol/node/app" // Import namespace
 	"github.com/Oneledger/protocol/node/global"
 	"github.com/Oneledger/protocol/node/log"
+	"github.com/Oneledger/protocol/node/persist"
 
 	"github.com/spf13/cobra"
 	"github.com/tendermint/abci/server"
@@ -36,12 +37,13 @@ func StartNode(cmd *cobra.Command, args []string) {
 	// Catch any underlying panics, for now just print out the details properly and stop
 	defer func() {
 		if r := recover(); r != nil {
-			log.Error("Fatal Error, coming down", "r", r)
+			log.Error("Fatal Panic, shutting down", "r", r)
 			os.Exit(-1)
 		}
 	}()
 
 	node := app.NewApplication()
+	global.Current.SetApplication(persist.Access(node))
 
 	// TODO: Switch on config
 	//service = server.NewGRPCServer("unix://data.sock", types.NewGRPCApplication(*node))
@@ -50,17 +52,15 @@ func StartNode(cmd *cobra.Command, args []string) {
 	service = server.NewSocketServer(global.Current.Address, *node)
 	service.SetLogger(log.GetLogger())
 
-	// TODO: catch any panics
+	// Catch any signals, stop nicely
+	common.TrapSignal(func() {
+		log.Info("Shutting down from Signal")
+		service.Stop()
+	})
 
 	// Set it running
 	err := service.Start()
 	if err != nil {
 		common.Exit(err.Error())
 	}
-
-	// Catch any signals, stop nicely
-	common.TrapSignal(func() {
-		log.Info("Shutting down")
-		service.Stop()
-	})
 }
