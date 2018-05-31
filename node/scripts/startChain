@@ -35,10 +35,11 @@ nodes="\
 	    OneLedger-Bob#$local:46603#$local:46613#$local:46623#$peers \
 	  OneLedger-Carol#$local:46604#$local:46614#$local:46624#$peers \
 "
+nodes="Admin Alice Bob Carol"
 
 for entry in $nodes 
 do
 	echo "------ STARTING $entry ------"
 	$CMD/startNode $entry
-	sleep 10
+	sleep 3 
 done

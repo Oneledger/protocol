@@ -29,7 +29,7 @@ func init() {
 
 	// TODO: I want to have a default account?
 	// Transaction Parameters
-	accountCmd.Flags().StringVar(&account.user, "user", "undefined", "send recipient")
+	accountCmd.Flags().StringVar(&account.user, "identity", "undefined", "identity name")
 }
 
 // Format the request into a query structure

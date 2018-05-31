@@ -20,6 +20,7 @@ import (
 var ChainId string
 
 func init() {
+	// TODO: Should be driven from config
 	ChainId = "OneLedger-Root"
 }
 
@@ -43,6 +44,23 @@ func NewApplication() *Application {
 		Accounts:   id.NewAccounts("accounts"),
 		Utxo:       data.NewChainState("utxo", data.PERSISTENT),
 	}
+}
+
+// Access to the local persistent databases
+func (app Application) GetAdmin() interface{} {
+	return app.Admin
+}
+
+func (app Application) GetStatus() interface{} {
+	return app.Status
+}
+
+func (app Application) GetIdentities() interface{} {
+	return app.Identities
+}
+
+func (app Application) GetAccounts() interface{} {
+	return app.Accounts
 }
 
 // InitChain is called when a new chain is getting created
@@ -123,7 +141,7 @@ func (app Application) BeginBlock(req RequestBeginBlock) ResponseBeginBlock {
 		chainId = app.Admin.Store(chainKey, newChainId)
 
 	} else if bytes.Compare(chainId, newChainId) != 0 {
-		//panic("Mismatching chains")
+		log.Error("Mismatching chains", "chainId", chainId, "newChainId", newChainId)
 	}
 
 	log.Debug("ChainID is", "id", chainId)

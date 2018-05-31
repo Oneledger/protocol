@@ -3,17 +3,18 @@
 #
 # Test creating a single send transaction in a 1-node chain, reset each time
 #
-OLTEST=$GOPATH/src/github.com/Oneledger/prototype/node/scripts
+OLTEST=$GOPATH/src/github.com/Oneledger/protocol/node/scripts
 
 $OLTEST/resetChain
+$OLTEST/startChain
 
-$OLTEST/startNode
-
-sleep 9
+addrAdmin=`$OLSCRIPT/lookup Admin RPCAddress tcp://127.0.0.1:`
+addrAlice=`$OLSCRIPT/lookup Alice RPCAddress tcp://127.0.0.1:`
+addrBob=`$OLSCRIPT/lookup Bob RPCAddress tcp://127.0.0.1:`
 
 # assumes fullnode is in the PATH
-olclient send --to 0x01010100101
+olclient send --party Bob --counterparty Alice --address $addrBob
 
 sleep 3
 
-$OLTEST/stopnode
+$OLTEST/stopChain

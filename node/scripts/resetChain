@@ -14,7 +14,6 @@ fi
 # Startup a bunch of nodes to act as a full block chain instance
 #
 export CMD=$OLSCRIPT
-
 export STAGING=$OLDATA/staging
 
 mkdir -p $STAGING

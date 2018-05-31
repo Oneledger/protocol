@@ -1,29 +1,33 @@
 #!/bin/bash
 
-#
-# Startup a single node in our chain (tendermint for consensus and a fullnode validator)
-# Arguments are packed by @ symbol (makes it easier to use an array to drive the mechanics)
-#
-if [ -z "$1" ]; then
-	export NODENAME="OneLedger-Admin"
-	export RADDR="tcp://127.0.0.1:46601"
-	export TADDR="tcp://127.0.0.1:46602"
-	export FADDR="tcp://127.0.0.1:46603"
-	export PEERS="0@127.0.0.1:46602"
-else
-	export NODENAME=`echo $1 | awk -F# '{ print $1 }'`
-	export RADDR=`echo $1 | awk -F# '{ print $2 }'`
-	export TADDR=`echo $1 | awk -F# '{ print $3 }'`
-	export FADDR=`echo $1 | awk -F# '{ print $4 }'`
-	export PEERS=`echo $1 | awk -F# '{ print $5 }'`
-fi
-
-#
-# For now, use local dir but needs to be fixed
-#
 export CMD=$OLSCRIPT
 
-export WORK=$OLDATA/$NODENAME
+
+if [ -z "$1" ]; then
+	name="Admin"
+else 
+	name=$1
+fi
+
+echo "Starting $name"
+
+prefix="tcp://127.0.0.1:"
+nodeName=`$CMD/lookup $name NodeName`
+p2pAddress=`$CMD/lookup $name P2PAddress $prefix`
+rpcAddress=`$CMD/lookup $name RPCAddress $prefix`
+appAddress=`$CMD/lookup $name AppAddress $prefix`
+
+prefix="127.0.0.1:"
+key=`$CMD/getNodeId $nodeName`
+peers=`$CMD/lookup $name Peers $prefix $id`
+
+#echo "nodeName=$nodeName"
+#echo "p2pAddress=$p2pAddress"
+#echo "rpcAddress=$rpcAddress"
+#echo "appAddress=$appAddress"
+#echo "peers=$peers"
+
+export WORK=$OLDATA/$nodeName
 export LOG=$WORK
 export DATA=$WORK/tendermint
 
@@ -41,29 +45,29 @@ then
 	echo "============================================================" >> $LOG/tendermint.log
 	#tendermint node --proxy_app "unix://data.sock" >> $LOG/tendermint.log &
 	tendermint node --home $DATA \
-		--moniker $NODENAME \
-		--rpc.laddr $RADDR \
-		--p2p.laddr $TADDR \
-		--proxy_app $FADDR \
-		--p2p.persistent_peers $PEERS \
+		--moniker $nodeName \
+		--rpc.laddr $rpcAddress \
+		--p2p.laddr $p2pAddress \
+		--proxy_app $appAddress \
+		--p2p.persistent_peers $peers \
 		>> $LOG/tendermint.log 2>&1 &
 else
-	echo "Tendermint $NODENAME is already running"
+	echo "Tendermint $nodeName is already running"
 fi
 
 #
 # Startup Fullnode
 #
-pids=`pgrep -f "fullnode.*--name $NODENAME.*"`
+pids=`pgrep -f "fullnode.*--node $nodeName.*"`
 if [ -z "$pids" ]
 
 then
 	echo "============================================================" >> $LOG/fullnode.log
 	echo "Starting Fullnode" >> $LOG/fullnode.log
 	echo "============================================================" >> $LOG/fullnode.log
-	fullnode node --name $NODENAME --root $WORK/fullnode --address $FADDR >> $LOG/fullnode.log 2>&1 &
+	fullnode node --node $nodeName --root $WORK/fullnode --address $appAddress >> $LOG/fullnode.log 2>&1 &
 else
-	echo "Fullnode $NODENAME is already running"
+	echo "Fullnode $nodeName is already running"
 fi
 
 #
@@ -73,6 +77,6 @@ fi
 #
 # Startup Bitcoin
 #
-echo "$NODENAME is Started"
+echo "$nodeName is Started"
 
 popd >> /dev/null

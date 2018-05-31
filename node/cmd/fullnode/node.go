@@ -7,14 +7,16 @@ package main
 
 import (
 	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/Oneledger/protocol/node/app" // Import namespace
 	"github.com/Oneledger/protocol/node/global"
 	"github.com/Oneledger/protocol/node/log"
+	"github.com/Oneledger/protocol/node/persist"
 
 	"github.com/spf13/cobra"
 	"github.com/tendermint/abci/server"
-	"github.com/tendermint/tmlibs/common"
 )
 
 var nodeCmd = &cobra.Command{
@@ -25,9 +27,6 @@ var nodeCmd = &cobra.Command{
 
 func init() {
 	RootCmd.AddCommand(nodeCmd)
-
-	nodeCmd.Flags().StringVarP(&global.Current.Transport, "transport", "t", "socket", "transport (socket | grpc)")
-	nodeCmd.Flags().StringVarP(&global.Current.Address, "address", "a", "tcp://127.0.0.1:46658", "full address")
 }
 
 func HandleArguments() {
@@ -39,31 +38,46 @@ func StartNode(cmd *cobra.Command, args []string) {
 	// Catch any underlying panics, for now just print out the details properly and stop
 	defer func() {
 		if r := recover(); r != nil {
-			log.Error("Fatal Error, coming down", "r", r)
+			log.Error("Fatal Panic, shutting down", "r", r)
 			os.Exit(-1)
 		}
 	}()
 
 	node := app.NewApplication()
+	global.Current.SetApplication(persist.Access(node))
 
 	// TODO: Switch on config
 	//service = server.NewGRPCServer("unix://data.sock", types.NewGRPCApplication(*node))
 	//service = server.NewSocketServer("tcp://127.0.0.1:46658", *node)
 
+	log.Debug("Starting", "address", global.Current.Address)
+
+	CatchSigterm()
+
 	service = server.NewSocketServer(global.Current.Address, *node)
 	service.SetLogger(log.GetLogger())
-
-	// TODO: catch any panics
 
 	// Set it running
 	err := service.Start()
 	if err != nil {
-		common.Exit(err.Error())
+		os.Exit(-1)
 	}
 
-	// Catch any signals, stop nicely
-	common.TrapSignal(func() {
-		log.Info("Shutting down")
-		service.Stop()
-	})
+	select {} // Wait forever
+}
+
+func CatchSigterm() {
+	// Catch a SIGTERM and stop
+	sigs := make(chan os.Signal, 1)
+	signal.Notify(sigs, os.Interrupt, syscall.SIGTERM)
+	go func() {
+		for sig := range sigs {
+			log.Info("Shutting down from Signal", "signal", sig)
+			if service != nil {
+				service.Stop()
+				os.Exit(-1)
+			}
+		}
+	}()
+
 }
