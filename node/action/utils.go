@@ -7,6 +7,7 @@ import (
 
 	"github.com/Oneledger/protocol/node/log"
 	"github.com/Oneledger/protocol/node/id"
+	"github.com/go-errors/errors"
 )
 
 //general hash method for the actions messages
@@ -31,18 +32,22 @@ type BoxLocker struct{
 // Sign the locker with preImage and nonce for message passed, the message should be the full information of
 // Transaction. The nonce is used to preventing the 3rd party from get the message even through he get the preImage,
 // where nonce should only be known by the participants of the message sharing
-func (bl *BoxLocker) Sign( preImage []byte, nonce []byte, message Message) error {
+func (bl *BoxLocker) Sign( preImage []byte, nonce []byte, message Message) (bool, error) {
 	privKey, pubkey := btcec.PrivKeyFromBytes(btcec.S256(), append(preImage, nonce...))
 
 	signature, err := privKey.Sign(_hash(message))
 
 	if err != nil {
-		log.Error("BoxLocker sign error")
+		return false, errors.New("BoxLocker sign error")
 	}
-
-	bl.Signature = signature
-	bl.PubKey = pubkey
-	return err
+	if bl.Signature != nil && bl.PubKey != nil {
+		bl.Signature = signature
+		bl.PubKey = pubkey
+		return true, nil
+	} else if bl.Signature == signature && bl.PubKey == pubkey {
+		return true, nil
+	}
+	return false, errors.New("Sign Error for preImage and nonce not match")
 }
 
 // Verify the pubKey with the signature for the message got.
@@ -85,6 +90,22 @@ func (sb *SwapBox) Verify(message Message) bool{
 	return true
 }
 
+//
+func (sb *SwapBox) unlock(localPreImage []byte, remotePreImage, nonce []byte, message Message) bool {
+	a, err1 := sb.LocalLocker.Sign(remotePreImage,nonce,message)
+	b, err2 := sb.RemoteLocker.Sign(localPreImage,nonce,message)
+
+	if err1 != nil {
+		log.Error("Remote preImage is wrong")
+		return false
+	}
+	if err2 != nil {
+		log.Error("Local preImage is wrong")
+		return false
+	}
+	return a&&b
+}
+
 func SharePreImage(remoteAddress id.Address, preImage []byte) (err.Code) {
 	log.Info("preImage: "+ string(preImage) + " is shared with: "+remoteAddress.String())
 	return SubmitToOl(remoteAddress, preImage)
@@ -96,10 +117,14 @@ func SubmitToOl(dest id.Address, message Message) err.Code{
 	return err.SUCCESS
 }
 
-func (sb *SwapBox) CheckRemoteChain (){
-	//TODO: check the transaction initialed on remote chain. need to update Swap struct to get the remote information
+func (sb *SwapBox)CheckRemoteBox (box *SwapBox) bool {
+	//TODO: check the transaction initialed on remote node. need to update Swap struct to get the remote information
+	return true
 }
 
-func (sb *SwapBox) ExecuteSwap() {
+func (sb *SwapBox) Execute(box *SwapBox) {
 	//TODO: call /node/chains/btcrpc/interfaces or /node/chains/btcrpc/interfaces to finalize the HTLC transaction
+	if sb.CheckRemoteBox(box) {
+		sb.unlock([]byte{},[]byte{},[]byte{},Message{})
+	}
 }
