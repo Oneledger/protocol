@@ -4,3 +4,4 @@ temp
 *.bk
 testFullnode
 testOlclient
+*.db

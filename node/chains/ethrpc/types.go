@@ -6,7 +6,7 @@ import (
 	"math/big"
 	"unsafe"
 
-	helper "github.com/Oneledger/prototype/node/chains/common"
+	helper "../common"
 )
 
 // Syncing - object with syncing data info

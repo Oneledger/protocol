@@ -6,7 +6,7 @@
 package main
 
 import (
-	"github.com/Oneledger/protocol/node/app"
+	"github.com/Oneledger/protocol/node/action"
 	"github.com/Oneledger/protocol/node/log"
 	"github.com/spf13/cobra"
 )
@@ -29,12 +29,12 @@ func init() {
 
 	// TODO: I want to have a default account?
 	// Transaction Parameters
-	accountCmd.Flags().StringVar(&account.user, "user", "undefined", "send recipient")
+	accountCmd.Flags().StringVar(&account.user, "identity", "undefined", "identity name")
 }
 
 // Format the request into a query structure
 func FormatRequest() []byte {
-	return app.Message("User=" + account.user)
+	return action.Message("User=" + account.user)
 }
 
 // IssueRequest sends out a sendTx to all of the nodes in the chain

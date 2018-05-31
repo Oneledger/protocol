@@ -8,8 +8,12 @@ package main
 import (
 	"os"
 
+	"github.com/Oneledger/protocol/node/action"
 	"github.com/Oneledger/protocol/node/app"
 	"github.com/Oneledger/protocol/node/convert"
+	"github.com/Oneledger/protocol/node/data"
+	"github.com/Oneledger/protocol/node/global"
+	"github.com/Oneledger/protocol/node/id"
 	"github.com/Oneledger/protocol/node/log"
 	"github.com/spf13/cobra"
 )
@@ -22,14 +26,12 @@ var sendCmd = &cobra.Command{
 
 // TODO: typing should be way better, see if cobr can help with this...
 type SendArguments struct {
-	user     string
-	to       string // the recipient
-	from     string // the source
-	amount   string
-	fee      string
-	gas      string // Optional
-	currency string
-	sequence int // Replay protection
+	party        string // the recipient
+	counterparty string // the source
+	amount       string
+	fee          string
+	gas          string // Optional
+	currency     string
 }
 
 var sendargs *SendArguments = &SendArguments{}
@@ -37,19 +39,14 @@ var sendargs *SendArguments = &SendArguments{}
 func init() {
 	RootCmd.AddCommand(sendCmd)
 
-	// Operational Parameters
-	// TODO: Should be global flags?
-	sendCmd.Flags().StringVarP(&app.Current.Transport, "transport", "t", "socket", "transport (socket | grpc)")
-	sendCmd.Flags().StringVarP(&app.Current.Address, "address", "a", "tcp://127.0.0.1:46658", "full address")
-
 	// Transaction Parameters
-	sendCmd.Flags().StringVar(&sendargs.user, "user", "undefined", "user name")
-	sendCmd.Flags().StringVar(&sendargs.to, "to", "undefined", "send recipient")
+	sendCmd.Flags().StringVar(&sendargs.party, "party", "undefined", "send recipient")
+	sendCmd.Flags().StringVar(&sendargs.counterparty, "counterparty", "undefined", "send recipient")
 	sendCmd.Flags().StringVar(&sendargs.amount, "amount", "0", "specify an amount")
 	sendCmd.Flags().StringVar(&sendargs.currency, "currency", "OLT", "the currency")
+
 	sendCmd.Flags().StringVar(&sendargs.fee, "fee", "1", "include a fee")
 	sendCmd.Flags().StringVar(&sendargs.gas, "gas", "1", "include gas")
-	sendCmd.Flags().IntVarP(&sendargs.sequence, "sequence", "s", 1, "unique sequence number (replay protection)")
 }
 
 // CreateRequest builds and signs the transaction based on the arguments
@@ -58,10 +55,12 @@ func CreateRequest() []byte {
 
 	conv := convert.NewConvert()
 
-	to := app.Address(conv.GetHash(sendargs.to))
-	_ = to
+	party := id.Address(conv.GetHash(sendargs.party))
+	counterparty := id.Address(conv.GetHash(sendargs.counterparty))
+	_ = party
+	_ = counterparty
 
-	gas := app.Coin{
+	gas := data.Coin{
 		Currency: conv.GetCurrency(sendargs.currency),
 		Amount:   conv.GetInt64(sendargs.gas),
 	}
@@ -72,17 +71,18 @@ func CreateRequest() []byte {
 	}
 
 	// Create base transaction
-	send := &app.SendTransaction{
-		TransactionBase: app.TransactionBase{
-			Type:     app.SEND_TRANSACTION,
+	send := &action.Send{
+		Base: action.Base{
+			Type:     action.SEND,
 			ChainId:  app.ChainId,
 			Signers:  signers,
-			Sequence: sendargs.sequence,
+			Sequence: global.Current.Sequence,
 		},
+		Fee: gas,
 		Gas: gas,
 	}
 
-	signed := SignTransaction(app.Transaction(send))
+	signed := SignTransaction(action.Transaction(send))
 	packet := PackRequest(signed)
 
 	return packet

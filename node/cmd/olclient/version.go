@@ -22,8 +22,8 @@ func init() {
 
 func Version(cmd *cobra.Command, args []string) {
 	version := version.Current
-	Console.Info("Client Version is " + version.String())
+	Console.Info("Olclient version is " + version.String())
 
 	// TODO: Way better to ask the node, than to assume
-	Console.Info("Node Version is " + version.String())
+	Console.Info("Fullnode version is " + version.String())
 }

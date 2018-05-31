@@ -3,7 +3,7 @@ package ethrpc
 import (
 	"fmt"
 	
-	"github.com/Oneledger/prototype/node/chains/common"
+	"../common"
 )
 
 

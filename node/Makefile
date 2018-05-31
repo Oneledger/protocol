@@ -52,9 +52,9 @@ test: start
 #
 full: stop reset install
 	./scripts/startChain
-	sleep 9 # TODO: should have a wait of knowing the chain is ready
+	@sleep 9 # TODO: should have a way of knowing the chain is ready
 	olclient send --address 127.0.0.1:46601
-	sleep 3
+	@sleep 3
 	./scripts/stopChain
 
 #
