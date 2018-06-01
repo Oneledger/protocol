@@ -9,6 +9,11 @@ else
 	name=$1
 fi
 
+if [ "$2" = "register" ]; then
+	echo "Adding the Register Flag"
+	extra="--register $name"
+fi
+
 echo "Starting $name"
 
 prefix="tcp://127.0.0.1:"
@@ -65,7 +70,8 @@ then
 	echo "============================================================" >> $LOG/fullnode.log
 	echo "Starting Fullnode" >> $LOG/fullnode.log
 	echo "============================================================" >> $LOG/fullnode.log
-	fullnode node --node $nodeName --root $WORK/fullnode --address $appAddress >> $LOG/fullnode.log 2>&1 &
+	fullnode node --node $nodeName --root $WORK/fullnode --address $appAddress $extra >> $LOG/fullnode.log 2>&1 &
+	echo fullnode node --node $nodeName --root $WORK/fullnode --address $appAddress $extra 
 else
 	echo "Fullnode $nodeName is already running"
 fi

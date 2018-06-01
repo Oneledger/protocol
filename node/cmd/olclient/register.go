@@ -7,6 +7,7 @@ package main
 
 import (
 	"github.com/Oneledger/protocol/node/app"
+	"github.com/Oneledger/protocol/node/cmd/shared"
 	"github.com/Oneledger/protocol/node/comm"
 	"github.com/Oneledger/protocol/node/log"
 	"github.com/spf13/cobra"
@@ -53,7 +54,7 @@ func Register(cmd *cobra.Command, args []string) {
 		log.Error("Register Failed", "err", err)
 		return
 	}
-	SetOption("Register", string(buffer))
+	shared.SetOption("Register", string(buffer))
 }
 
 /*

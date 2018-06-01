@@ -12,6 +12,7 @@ import (
 	"github.com/Oneledger/protocol/node/log"
 )
 
+// Arguments for registration
 type RegisterArguments struct {
 	Identity   string
 	Chain      string
@@ -19,12 +20,14 @@ type RegisterArguments struct {
 	PrivateKey string
 }
 
-func SetOption(app *Application, key string, value []byte) bool {
+func SetOption(app *Application, key string, value string) bool {
 	log.Debug("Redirecting the option handling")
+
 	switch key {
+
 	case "Register":
 		var arguments RegisterArguments
-		result, err := comm.Deserialize(value, &arguments)
+		result, err := comm.Deserialize([]byte(value), &arguments)
 		if err != nil {
 			log.Error("Can't set options", "err", err)
 			return false
@@ -49,6 +52,7 @@ func Register(app *Application, idName string, name string, chain data.ChainType
 		identity := id.NewIdentity(idName, "Contact Info")
 		app.Identities.Add(identity)
 		status = true
+
 	} else {
 		log.Debug("Existing Identity", "idName", idName)
 	}
@@ -58,11 +62,13 @@ func Register(app *Application, idName string, name string, chain data.ChainType
 	}
 
 	accountName := idName + "-" + name
+
 	if !app.Accounts.Exists(chain, accountName) {
 		log.Debug("Adding new Account", "accountName", accountName)
 		account := id.NewAccount(chain, accountName, id.PublicKey{})
 		app.Accounts.Add(account)
 		status = true
+
 	} else {
 		log.Debug("Existing Account", "accountName", accountName)
 	}

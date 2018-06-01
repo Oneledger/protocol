@@ -5,7 +5,7 @@
 
 	TODO: Make this generic to handle HTTP and local clients
 */
-package main
+package shared
 
 import (
 	"os"

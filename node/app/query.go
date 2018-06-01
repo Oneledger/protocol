@@ -7,6 +7,7 @@ package app
 
 import "strings"
 
+// Top-level list of all query types
 func HandleQuery(path string, message []byte) []byte {
 	switch path {
 	case "/account":
@@ -15,6 +16,7 @@ func HandleQuery(path string, message []byte) []byte {
 	return HandleError("Unknown Path", path, message)
 }
 
+// Get the account information for a given user
 func HandleAccountQuery(message []byte) []byte {
 	text := string(message)
 
@@ -27,6 +29,7 @@ func HandleAccountQuery(message []byte) []byte {
 	return []byte("Unknown Query")
 }
 
+// Return a nicely formatted error message
 func HandleError(text string, path string, massage []byte) []byte {
 	return []byte("Invalid Query")
 }

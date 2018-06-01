@@ -25,11 +25,24 @@ var nodeCmd = &cobra.Command{
 	Run:   StartNode,
 }
 
+type Arguments struct {
+	identity string
+}
+
+var arguments = &Arguments{}
+
 func init() {
 	RootCmd.AddCommand(nodeCmd)
+
+	nodeCmd.Flags().StringVar(&arguments.identity, "register", "", "Register this identity")
 }
 
 func HandleArguments() {
+}
+
+func Register() {
+	if arguments.identity != "" {
+	}
 }
 
 func StartNode(cmd *cobra.Command, args []string) {

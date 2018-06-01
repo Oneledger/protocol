@@ -94,6 +94,10 @@ func NewIdentity(userName string, contactInfo string) *Identity {
 	}
 }
 
+func (id *Identity) IsExternal() bool {
+	return true
+}
+
 func (id *Identity) Key() data.DatabaseKey {
 	return data.DatabaseKey(id.UserName)
 }

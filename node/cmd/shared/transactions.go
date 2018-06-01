@@ -3,7 +3,7 @@
 
 	Common Transaction utilities
 */
-package main
+package shared
 
 import (
 	"github.com/Oneledger/protocol/node/action"

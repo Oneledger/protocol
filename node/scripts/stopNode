@@ -5,9 +5,9 @@
 #
 
 if [ -z "$1" ]; then
-	export NODENAME="OneLedger-One"
+	export name="Admin"
 else
-	export NODENAME=$1
+	export name=$1
 fi
 
 #
@@ -15,35 +15,38 @@ fi
 #
 export CMD=$OLSCRIPT
 
-export WORK=$OLDATA/$NODENAME
+nodeName=`$CMD/lookup $name NodeName`
+
+export WORK=$OLDATA/$nodeName
 export LOG=$WORK
 export DATA=$WORK/tendermint
 
 pushd $WORK > /dev/null
 
+echo "Stopping $nodeName"
 #
-# Startup Tendermint consensus
+# Stop Tendermint consensus
 #
 
 echo "============================================================" >> $LOG/tendermint.log
 echo "Stopping Tendermint" >> $LOG/tendermint.log
 echo "============================================================" >> $LOG/tendermint.log
-pkill tendermint >> $LOG/tendermint.log
+pkill -f "tendermint.*--home $DATA.*" >> $LOG/tendermint.log
 
 #
-# Startup Fullnode
+# Stop Fullnode
 #
 echo "============================================================" >> $LOG/fullnode.log
 echo "Stopping Fullnode" >> $LOG/fullnode.log
 echo "============================================================" >> $LOG/fullnode.log
-pkill fullnode >> $LOG/fullnode.log
+pkill -f "fullnode.*--node $nodeName.*" >> $LOG/fullnode.log
 
 #
-# Startup Ethereum
+# Stop Ethereum
 #
 
 #
-# Startup Bitcoin
+# Stop Bitcoin
 #
 
 popd >> /dev/null

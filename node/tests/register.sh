@@ -10,9 +10,7 @@ status=`$OLTEST/statusChain`
 echo "ChainStatus: $status"
 
 if [ -z "$status" ]; then
-	echo "Chain wasn't running"
-else
-	$OLTEST/stopChain
+	echo "Chain isn't running"
 fi
 
 list="Admin Alice Bob Carol"
@@ -21,20 +19,12 @@ for name in $list
 do
 	address=`$OLSCRIPT/lookup $name RPCAddress tcp://127.0.0.1:`
 
-	fullnode register --address $address --identity $name
+	$OLTEST/stopNode $name 
 
-	fullnode register --address $address --chain OneLedger --identity $name \
-		--pubkey 0x0103a39e93332 --privkey 0x0103a39e93332
+	fullnode register --identity $name --address $address
+	fullnode register --identity $name --address $address --chain OneLedger --pubkey 0x01 --privkey 0x01
+	fullnode register --identity $name --address $address --chain Bitcoin --pubkey 0x01 --privkey 0x01
+	fullnode register --identity $name --address $address --chain Ethereum --pubkey 0x01 --privkey 0x01
 
-	fullnode register --address $address --chain Bitcoin --identity $name \
-		--pubkey 0x0203a39e93332 --privkey 0x0203a39e93332 
-
-	fullnode register --address $address --chain Ethereum --identity $name \
-		--pubkey 0x0303a39e93332 --privkey 0x0303a39e93332 
+	$OLTEST/startNode $name register 
 done
-
-if [ -z "$status" ]; then
-	echo "Chain isn't restarted"
-else
-	$OLTEST/startChain
-fi
