@@ -9,7 +9,6 @@ nodes="Admin Alice Bob Carol"
 
 for entry in $nodes 
 do
-	echo "------ STARTING $entry ------"
 	$CMD/startNode $entry
-	sleep 3 
+	sleep 2 
 done

@@ -20,7 +20,7 @@ type Register struct {
 }
 
 func (transaction Register) Validate() err.Code {
-	log.Debug("Validating Send Transaction")
+	log.Debug("Validating Register Transaction")
 
 	// TODO: Make sure all of the parameters are there
 	// TODO: Check all signatures and keys
@@ -65,6 +65,8 @@ func (transaction Register) ProcessDeliver(app interface{}) err.Code {
 		log.Debug("Ignoring Duplicate Identity")
 	}
 	identities.Add(id.NewIdentity(transaction.Identity, "Contact Information"))
+
+	log.Info("Updating External Identity Reference!!!", "id", transaction.Identity)
 
 	return err.SUCCESS
 }

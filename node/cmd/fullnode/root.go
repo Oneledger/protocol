@@ -40,15 +40,19 @@ func init() {
 	RootCmd.PersistentFlags().StringVar(&global.Current.Node, "node",
 		global.Current.Node, "Set a node name")
 
+	// Get information to connect to an ABCI app (myself)
+	RootCmd.PersistentFlags().StringVar(&global.Current.App, "app",
+		global.Current.App, "app address")
+
+	// Get information to connect to a my tendermint node
+	RootCmd.PersistentFlags().StringVarP(&global.Current.Address, "address", "a",
+		global.Current.Address, "consensus address")
+
 	RootCmd.PersistentFlags().StringVarP(&global.Current.Transport, "transport", "t",
 		global.Current.Transport, "transport (socket | grpc)")
 
-	RootCmd.PersistentFlags().StringVarP(&global.Current.Address, "address", "a",
-		global.Current.Address, "full address")
-
 	RootCmd.PersistentFlags().BoolVarP(&global.Current.Debug, "debug", "d",
 		global.Current.Debug, "Set DEBUG mode")
-
 }
 
 // Initialize Viper

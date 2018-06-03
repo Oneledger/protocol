@@ -9,8 +9,10 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"github.com/Oneledger/protocol/node/app" // Import namespace
+	"github.com/Oneledger/protocol/node/cmd/shared"
 	"github.com/Oneledger/protocol/node/global"
 	"github.com/Oneledger/protocol/node/log"
 	"github.com/Oneledger/protocol/node/persist"
@@ -25,23 +27,35 @@ var nodeCmd = &cobra.Command{
 	Run:   StartNode,
 }
 
-type Arguments struct {
-	identity string
-}
-
-var arguments = &Arguments{}
+var arguments = &shared.RegisterArguments{}
 
 func init() {
 	RootCmd.AddCommand(nodeCmd)
 
-	nodeCmd.Flags().StringVar(&arguments.identity, "register", "", "Register this identity")
+	nodeCmd.Flags().StringVar(&arguments.Identity, "register", "", "Register this identity")
 }
 
 func HandleArguments() {
 }
 
 func Register() {
-	if arguments.identity != "" {
+	defer func() {
+		log.Debug("Catching A Panic")
+		if r := recover(); r != nil {
+			log.Error("Ignoring Client Panic", "r", r)
+		}
+	}()
+
+	if arguments.Identity != "" {
+		log.Debug("Have Register Request", "arguments", arguments)
+
+		// TODO: Maybe Tendermint isn't ready for transactions...
+		time.Sleep(5 * time.Second)
+
+		packet := shared.CreateRegisterRequest(arguments)
+		result := shared.Broadcast(packet)
+
+		log.Debug("Registered Successfully", "result", result)
 	}
 }
 
@@ -52,6 +66,9 @@ func StartNode(cmd *cobra.Command, args []string) {
 	defer func() {
 		if r := recover(); r != nil {
 			log.Error("Fatal Panic, shutting down", "r", r)
+			if service != nil {
+				service.Stop()
+			}
 			os.Exit(-1)
 		}
 	}()
@@ -63,11 +80,11 @@ func StartNode(cmd *cobra.Command, args []string) {
 	//service = server.NewGRPCServer("unix://data.sock", types.NewGRPCApplication(*node))
 	//service = server.NewSocketServer("tcp://127.0.0.1:46658", *node)
 
-	log.Debug("Starting", "address", global.Current.Address)
+	log.Debug("Starting", "app", global.Current.App)
 
 	CatchSigterm()
 
-	service = server.NewSocketServer(global.Current.Address, *node)
+	service = server.NewSocketServer(global.Current.App, *node)
 	service.SetLogger(log.GetLogger())
 
 	// Set it running
@@ -75,6 +92,13 @@ func StartNode(cmd *cobra.Command, args []string) {
 	if err != nil {
 		os.Exit(-1)
 	}
+
+	log.Debug("Started, now see if we need t broadcast anything...")
+
+	// If the register flag is set, do that before waiting
+	Register()
+
+	log.Debug("Waiting forever")
 
 	select {} // Wait forever
 }
@@ -88,8 +112,8 @@ func CatchSigterm() {
 			log.Info("Shutting down from Signal", "signal", sig)
 			if service != nil {
 				service.Stop()
-				os.Exit(-1)
 			}
+			os.Exit(-1)
 		}
 	}()
 

@@ -57,7 +57,7 @@ then
 		--p2p.persistent_peers $peers \
 		>> $LOG/tendermint.log 2>&1 &
 else
-	echo "Tendermint $nodeName is already running"
+	echo "Tendermint $nodeName was already running"
 fi
 
 #
@@ -70,10 +70,14 @@ then
 	echo "============================================================" >> $LOG/fullnode.log
 	echo "Starting Fullnode" >> $LOG/fullnode.log
 	echo "============================================================" >> $LOG/fullnode.log
-	fullnode node --node $nodeName --root $WORK/fullnode --address $appAddress $extra >> $LOG/fullnode.log 2>&1 &
-	echo fullnode node --node $nodeName --root $WORK/fullnode --address $appAddress $extra 
+	fullnode node --node $nodeName \
+		--root $WORK/fullnode \
+		--app $appAddress \
+		--address $rpcAddress \
+		$extra \
+		>> $LOG/fullnode.log 2>&1 &
 else
-	echo "Fullnode $nodeName is already running"
+	echo "Fullnode $nodeName was already running"
 fi
 
 #
@@ -83,6 +87,6 @@ fi
 #
 # Startup Bitcoin
 #
-echo "$nodeName is Started"
+echo "$nodeName has been Started"
 
 popd >> /dev/null

@@ -47,6 +47,9 @@ utest:
 test: start
 	echo "Running"
 
+status: 
+	./scripts/statusChain
+
 #
 # Full Testing, bring up everything, send a transaction and then stop
 #
