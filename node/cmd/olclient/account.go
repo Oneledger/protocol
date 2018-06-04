@@ -7,7 +7,7 @@ package main
 
 import (
 	"github.com/Oneledger/protocol/node/action"
-	"github.com/Oneledger/protocol/node/cmd/shared"
+	"github.com/Oneledger/protocol/node/comm"
 	"github.com/Oneledger/protocol/node/log"
 	"github.com/spf13/cobra"
 )
@@ -45,7 +45,7 @@ func CheckAccount(cmd *cobra.Command, args []string) {
 	request := FormatRequest()
 
 	// TODO: path was a partial URL path? Need to check to see if that is still required.
-	response := shared.Query("/account", request).Response
+	response := comm.Query("/account", request).Response
 
 	log.Debug("Returned Successfully with", "response", string(response.Value))
 }

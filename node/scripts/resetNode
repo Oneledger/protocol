@@ -26,9 +26,12 @@ export DATA=$WORK/tendermint
 #
 # Cleanup, but don't delete directories...
 #
+find $DATA -depth -name "*.wal" -type d -exec rm -r {} \;
+find $WORK -depth -name "*.db" -type d -exec rm -r {} \;
+find $WORK -type f -exec rm -f {} \;
+
 mkdir -p $DATA/config
 mkdir -p $DATA/data
-find $DATA -type f -exec rm -f {} \;
 
 #
 # Control the working directory
@@ -47,7 +50,7 @@ cp $STAGING/config/config.toml $DATA/config/config.toml
 cp $STAGING/$SUBDIR/config/priv_validator.json $DATA/config/priv_validator.json
 cp $STAGING/$SUBDIR/config/genesis.json $DATA/config/genesis.json
 
-ls $DATA/config
+#ls $DATA/config
 
 
 #

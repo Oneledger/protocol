@@ -22,8 +22,6 @@ var RootCmd = &cobra.Command{
 }
 
 func Execute() {
-	log.Debug("fullnode Parse Commands")
-
 	if err := RootCmd.Execute(); err != nil {
 		fmt.Println(err)
 		os.Exit(-1)
@@ -57,6 +55,6 @@ func init() {
 
 // Initialize Viper
 func environment() {
-	log.Debug("Setting up Environment")
+	log.Debug("fullnode")
 	viper.AutomaticEnv()
 }

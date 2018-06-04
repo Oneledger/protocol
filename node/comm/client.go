@@ -5,7 +5,7 @@
 
 	TODO: Make this generic to handle HTTP and local clients
 */
-package shared
+package comm
 
 import (
 	"os"

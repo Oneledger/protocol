@@ -15,14 +15,17 @@ import (
 	isatty "github.com/mattn/go-isatty"
 )
 
+// Simple Terminal operations
 type Terminal interface {
 	Print(text ...interface{})
 	Read() string
 }
 
+// Enforce a type underneath
 type Tty struct {
 }
 
+// Declare a global Console that is usable from all of the cmds
 var Console Terminal
 
 func init() {

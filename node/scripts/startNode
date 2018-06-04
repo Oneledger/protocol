@@ -14,7 +14,7 @@ if [ "$2" = "register" ]; then
 	extra="--register $name"
 fi
 
-echo "Starting $name"
+#echo "Starting $name"
 
 prefix="tcp://127.0.0.1:"
 nodeName=`$CMD/lookup $name NodeName`
@@ -25,12 +25,6 @@ appAddress=`$CMD/lookup $name AppAddress $prefix`
 prefix="127.0.0.1:"
 key=`$CMD/getNodeId $nodeName`
 peers=`$CMD/lookup $name Peers $prefix $id`
-
-#echo "nodeName=$nodeName"
-#echo "p2pAddress=$p2pAddress"
-#echo "rpcAddress=$rpcAddress"
-#echo "appAddress=$appAddress"
-#echo "peers=$peers"
 
 export WORK=$OLDATA/$nodeName
 export LOG=$WORK
@@ -48,7 +42,7 @@ then
 	echo "============================================================" >> $LOG/tendermint.log
 	echo "Starting Tendermint" >> $LOG/tendermint.log
 	echo "============================================================" >> $LOG/tendermint.log
-	#tendermint node --proxy_app "unix://data.sock" >> $LOG/tendermint.log &
+
 	tendermint node --home $DATA \
 		--moniker $nodeName \
 		--rpc.laddr $rpcAddress \
@@ -56,6 +50,8 @@ then
 		--proxy_app $appAddress \
 		--p2p.persistent_peers $peers \
 		>> $LOG/tendermint.log 2>&1 &
+
+	echo "Tendermint $nodeName has been started"
 else
 	echo "Tendermint $nodeName was already running"
 fi
@@ -76,17 +72,10 @@ then
 		--address $rpcAddress \
 		$extra \
 		>> $LOG/fullnode.log 2>&1 &
+
+	echo "$nodeName has been Started"
 else
 	echo "Fullnode $nodeName was already running"
 fi
-
-#
-# Startup Ethereum
-#
-
-#
-# Startup Bitcoin
-#
-echo "$nodeName has been Started"
 
 popd >> /dev/null

@@ -7,9 +7,7 @@
 package main
 
 import (
-	"github.com/Oneledger/protocol/node/action"
 	"github.com/Oneledger/protocol/node/app"
-	"github.com/Oneledger/protocol/node/global"
 	"github.com/Oneledger/protocol/node/id"
 	"github.com/spf13/cobra"
 )
@@ -30,6 +28,7 @@ type RegisterArguments struct {
 
 var regArguments = &RegisterArguments{}
 
+// Initialize the command and flags
 func init() {
 	RootCmd.AddCommand(registerCmd)
 
@@ -46,16 +45,21 @@ func RegisterUsers(cmd *cobra.Command, args []string) {
 	// TODO: We can't do this, need to be 'light-client' instead...
 	node := app.NewApplication()
 
-	var signers []id.PublicKey
+	app.Register(node, regArguments.identity, regArguments.identity+"-OneLedger",
+		id.ParseAccountType(regArguments.chain))
 
-	app.Register(node, regArguments.identity, regArguments.identity+"-OneLedger", id.ParseAccountType(regArguments.chain))
-	transaction := action.Register{
-		Base: action.Base{
-			Type:     action.REGISTER,
-			ChainId:  app.ChainId,
-			Signers:  signers,
-			Sequence: global.Current.Sequence,
-		},
-	}
-	action.SubmitTransaction(action.Transaction(transaction))
+	// TODO: The node command registers, not the registration command
+	/*
+		var signers []id.PublicKey
+		transaction := action.Register{
+			Base: action.Base{
+				Type:     action.REGISTER,
+				ChainId:  app.ChainId,
+				Signers:  signers,
+				Sequence: global.Current.Sequence,
+			},
+		}
+	*/
+
+	// action.SubmitTransaction(action.Transaction(transaction))
 }

@@ -22,10 +22,10 @@ $TMUX split-window -v -p 60
 $TMUX split-window -v -p 40
 
 $TMUX select-pane -t 0
-$TMUX send-keys "pushd $OLDATA/$NODENAME; tail -f tendermint.log" C-m
+$TMUX send-keys "pushd $OLDATA/$NODENAME; tail -F tendermint.log" C-m
 
 $TMUX select-pane -t 1
-$TMUX send-keys "pushd $OLDATA/$NODENAME; tail -f fullnode.log" C-m
+$TMUX send-keys "pushd $OLDATA/$NODENAME; tail -F fullnode.log" C-m
 
 $TMUX select-pane -t 2
 

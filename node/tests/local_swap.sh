@@ -7,13 +7,13 @@ OLSCRIPT=$GOPATH/src/github.com/Oneledger/protocol/node/scripts
 OLTEST=$GOPATH/src/github.com/Oneledger/protocol/node/tests
 
 # Clear out the existing chains
-$OLSCRIPT/resetChain
+$OLSCRIPT/resetOneLedger
 
 # Add in or update users
 $OLTEST/register.sh
 
 # Startup the chains
-$OLSCRIPT/startChain
+$OLSCRIPT/startOneLedger
 
 # olclient wait --initialized
 sleep 1 
@@ -45,4 +45,4 @@ olclient account --identity Bob --address $addrBob
 
 sleep 3
 
-$OLSCRIPT/stopChain
+$OLSCRIPT/stopOneLedger

@@ -1,5 +1,9 @@
-/* Copyright 2017 - 2018 OneLedger
- */
+/*
+	Copyright 2017 - 2018 OneLedger
+
+	Structures and functions for getting command line arguments, and functions
+	to convert these into specific requests.
+*/
 package shared
 
 import (
@@ -13,6 +17,13 @@ import (
 	"github.com/Oneledger/protocol/node/id"
 	"github.com/Oneledger/protocol/node/log"
 )
+
+func SignAndPack(transaction action.Transaction) []byte {
+	signed := action.SignTransaction(transaction)
+	packet := action.PackRequest(signed)
+
+	return packet
+}
 
 type RegisterArguments struct {
 	Identity string
@@ -32,10 +43,7 @@ func CreateRegisterRequest(args *RegisterArguments) []byte {
 		Identity: args.Identity,
 	}
 
-	signed := SignTransaction(action.Transaction(reg))
-	packet := PackRequest(signed)
-
-	return packet
+	return SignAndPack(action.Transaction(reg))
 }
 
 type SendArguments struct {
@@ -86,10 +94,7 @@ func CreateSendRequest(args *SendArguments) []byte {
 		Gas: gas,
 	}
 
-	signed := SignTransaction(action.Transaction(send))
-	packet := PackRequest(signed)
-
-	return packet
+	return SignAndPack(action.Transaction(send))
 }
 
 // Arguments to the command
@@ -160,8 +165,5 @@ func CreateSwapRequest(args *SwapArguments) []byte {
 		Nonce:        args.Nonce,
 	}
 
-	signed := SignTransaction(action.Transaction(swap))
-	packet := PackRequest(signed)
-
-	return packet
+	return SignAndPack(action.Transaction(swap))
 }

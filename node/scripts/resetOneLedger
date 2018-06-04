@@ -23,6 +23,8 @@ mkdir -p $STAGING
 #
 tendermint testnet --home $STAGING --dir $STAGING --n $NODECOUNT
 
+# TODO: Set the chain name, and set an initial amount of tokens and that admin owns them all
+
 nodes="OneLedger-Admin#mach0 OneLedger-Alice#mach1 OneLedger-Bob#mach2 OneLedger-Carol#mach3"
 
 for node in $nodes
