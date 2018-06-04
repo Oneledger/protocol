@@ -9,7 +9,7 @@ package olwallet
 import (
 	"crypto/sha256"
 	"github.com/btcsuite/btcd/btcec"
-	"../channeldb"
+	//"../channeldb"
 )
 
 // OneLedgerChannel implements the state machine which corresponds to the current commitment protocol wire spec.
