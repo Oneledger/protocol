@@ -1,10 +1,16 @@
 pragma solidity ^0.4.0;
 
-import "./HTLCChannel.sol"
-contract HTLC {
+import "./HTLC.sol";
 
+contract HTLCGenerator {
+    using SafeMath for uint256;
+    uint256 balances;
 
-    function createChannel(){
+    function() external payable{
+        createHTLC();
+    }
 
+    function createHTLC() public payable returns (HTLC newContract) {
+        newContract = new HTLC(msg.sender);
     }
 }
