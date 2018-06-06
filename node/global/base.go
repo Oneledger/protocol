@@ -28,7 +28,8 @@ type Context struct {
 	Node        string // Name of this instance
 	RootDir     string // Working directory for this instance
 	Transport   string // socket vs grpc
-	Address     string // address
+	App         string // app address
+	Address     string // node address
 	Sequence    int
 }
 

@@ -3,12 +3,10 @@
 
 	Common Transaction utilities
 */
-package main
+package shared
 
 import (
-	"github.com/Oneledger/protocol/node/action"
 	"github.com/Oneledger/protocol/node/id"
-	wire "github.com/tendermint/go-wire"
 )
 
 func GetPublicKey() id.PublicKey {
@@ -21,6 +19,7 @@ func GetSigners() []id.PublicKey {
 	return nil
 }
 
+/*
 // SignTransaction with the local keys
 func SignTransaction(transaction action.Transaction) action.Transaction {
 	return transaction
@@ -31,3 +30,4 @@ func PackRequest(request action.Transaction) []byte {
 	packet := wire.BinaryBytes(request)
 	return packet
 }
+*/

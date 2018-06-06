@@ -3,38 +3,32 @@
 #
 # Test creating a single send transaction in a 1-node chain, reset each time
 #
-OLTEST=$GOPATH/src/github.com/Oneledger/protocol/node/scripts
+CMD=$GOPATH/src/github.com/Oneledger/protocol/node/scripts
 
-status=`$OLTEST/statusChain`
+# The chain has to be running
 
-echo "ChainStatus: $status"
+$CMD/startOneLedger
 
-if [ -z "$status" ]; then
-	echo "Chain wasn't running"
-else
-	$OLTEST/stopChain
-fi
+#status=`$CMD/statusOneLedger`
+#
+#echo "OneLedger: $status"
+#
+#if [ -z "$status" ]; then
+#	echo "OneLedger isn't running"
+#fi
 
 list="Admin Alice Bob Carol"
 
 for name in $list 
 do
-	address=`$OLSCRIPT/lookup $name RPCAddress tcp://127.0.0.1:`
+	address=`$CMD/lookup $name RPCAddress tcp://127.0.0.1:`
 
-	fullnode register --address $address --identity $name
+	$CMD/stopNode $name 
 
-	fullnode register --address $address --chain OneLedger --identity $name \
-		--pubkey 0x0103a39e93332 --privkey 0x0103a39e93332
+	fullnode register --identity $name --address $address
+	fullnode register --identity $name --address $address --chain OneLedger --pubkey 0x01 --privkey 0x01
+	fullnode register --identity $name --address $address --chain Bitcoin --pubkey 0x01 --privkey 0x01
+	fullnode register --identity $name --address $address --chain Ethereum --pubkey 0x01 --privkey 0x01
 
-	fullnode register --address $address --chain Bitcoin --identity $name \
-		--pubkey 0x0203a39e93332 --privkey 0x0203a39e93332 
-
-	fullnode register --address $address --chain Ethereum --identity $name \
-		--pubkey 0x0303a39e93332 --privkey 0x0303a39e93332 
+	$CMD/startNode $name register 
 done
-
-if [ -z "$status" ]; then
-	echo "Chain isn't restarted"
-else
-	$OLTEST/startChain
-fi

@@ -1,16 +1,16 @@
 #!/bin/sh
 
 if [ -z "$1" ]; then
-	export NODENAME="OneLedger-Admin"
+	nodeName="OneLedger-Admin"
 else
-	export NODENAME=`echo $1 | awk -F# '{ print $1 }'`
+	nodeName=`echo $1 | awk -F# '{ print $1 }'`
 fi
 
-export CMD=$OLSCRIPT
+CMD=$OLSCRIPT
 
-export WORK=$OLDATA/$NODENAME
-export LOG=$WORK
-export DATA=$WORK/tendermint
+WORK=$OLDATA/$nodeName
+LOG=$WORK
+DATA=$WORK/tendermint
 
 pushd $WORK > /dev/null
 
