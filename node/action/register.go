@@ -64,7 +64,7 @@ func (transaction Register) ProcessDeliver(app interface{}) err.Code {
 		}
 		log.Debug("Ignoring Duplicate Identity")
 	}
-	identities.Add(id.NewIdentity(transaction.Identity, "Contact Information"))
+	identities.Add(id.NewIdentity(transaction.Identity, "Contact Information", true))
 
 	log.Info("Updating External Identity Reference!!!", "id", transaction.Identity)
 

@@ -56,9 +56,16 @@ var cachedClient *rpcclient.HTTP
 // HTTP interface, allows Broadcast?
 // TODO: Want to switch client type, based on config or cli args.
 func GetClient() *rpcclient.HTTP {
-	log.Debug("RPCClient", "address", global.Current.Address)
+
+	if cachedClient != nil {
+		log.Debug("Cached RPCClient", "address", global.Current.Address)
+		return cachedClient
+	}
+
+	log.Debug("Initializing RPCClient", "address", global.Current.Address)
 
 	cachedClient = rpcclient.NewHTTP(global.Current.Address, "/websocket")
+
 	return cachedClient
 }
 
@@ -73,12 +80,13 @@ func Broadcast(packet []byte) *ctypes.ResultBroadcastTxCommit {
 		log.Error("Error", "err", err)
 		os.Exit(-1)
 	}
+
 	return result
 }
 
 // Send a very specific query
 func Query(path string, packet []byte) *ctypes.ResultABCIQuery {
-	log.Debug("Query")
+	log.Debug("ABCi Query")
 
 	client := GetClient()
 
@@ -87,5 +95,8 @@ func Query(path string, packet []byte) *ctypes.ResultABCIQuery {
 		log.Error("Error", "err", err)
 		os.Exit(-1)
 	}
+
+	log.Debug("ABCi Query", "result", result)
+
 	return result
 }

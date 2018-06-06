@@ -35,7 +35,7 @@ func init() {
 
 // Format the request into a query structure
 func FormatRequest() []byte {
-	return action.Message("User=" + account.user)
+	return action.Message("Account=" + account.user)
 }
 
 // IssueRequest sends out a sendTx to all of the nodes in the chain

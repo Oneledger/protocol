@@ -5,9 +5,9 @@
 
 # TODO: Set this up to not copy if subdir is empty
 if [ -z "$1" ]; then
-	export NODENAME="OneLedger-One"
-	export SUBDIR=""
-	export STAGING="mach0"
+	export NODENAME="OneLedger-Admin"
+	export SUBDIR="mach0"
+	export STAGING=$OLDATA/staging
 else
 	export NODENAME=`echo $1 | awk -F# '{ print $1 }'`
 	export SUBDIR=`echo $1 | awk -F# '{ print $2 }'`
@@ -23,15 +23,16 @@ export WORK=$OLDATA/$NODENAME
 export LOG=$WORK
 export DATA=$WORK/tendermint
 
+# Force the directories to exist to handled recreating the directories
+mkdir -p $DATA/config
+mkdir -p $DATA/data
+
 #
 # Cleanup, but don't delete directories...
 #
 find $DATA -depth -name "*.wal" -type d -exec rm -r {} \;
 find $WORK -depth -name "*.db" -type d -exec rm -r {} \;
 find $WORK -type f -exec rm -f {} \;
-
-mkdir -p $DATA/config
-mkdir -p $DATA/data
 
 #
 # Control the working directory
@@ -48,7 +49,8 @@ rm $LOG/*.log > /dev/null 2>&1
 #
 cp $STAGING/config/config.toml $DATA/config/config.toml
 cp $STAGING/$SUBDIR/config/priv_validator.json $DATA/config/priv_validator.json
-cp $STAGING/$SUBDIR/config/genesis.json $DATA/config/genesis.json
+#cp $STAGING/$SUBDIR/config/genesis.json $DATA/config/genesis.json
+cat $STAGING/$SUBDIR/config/genesis.json | jq -f $CMD/genesis.jq > $DATA/config/genesis.json
 
 #ls $DATA/config
 

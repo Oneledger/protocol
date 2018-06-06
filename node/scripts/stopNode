@@ -21,6 +21,8 @@ export WORK=$OLDATA/$nodeName
 export LOG=$WORK
 export DATA=$WORK/tendermint
 
+mkdir -p $DATA
+
 pushd $WORK > /dev/null
 
 echo "Stopping $nodeName"

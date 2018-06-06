@@ -92,7 +92,11 @@ type AccountKey []byte
 type Account interface {
 	Key() data.DatabaseKey
 	Name() string
+
+	AddPublicKey(PublicKey)
 	AddPrivateKey(PrivateKey)
+
+	AsString() string
 }
 
 type AccountBase struct {
@@ -197,6 +201,12 @@ func (account *AccountOneLedger) Key() data.DatabaseKey {
 	return data.DatabaseKey(account.AccountBase.Name)
 }
 
+func (account *AccountOneLedger) AsString() string {
+
+	// TODO: Add in UTXO entry
+	return "- " + account.AccountBase.Name
+}
+
 // Bitcoin
 
 // Information we need for a Bitcoin account
@@ -220,6 +230,10 @@ func (account *AccountBitcoin) Key() data.DatabaseKey {
 	return data.DatabaseKey(account.AccountBase.Name)
 }
 
+func (account *AccountBitcoin) AsString() string {
+	return "- " + account.AccountBase.Name
+}
+
 // Ethereum
 
 // Information we need for an Ethereum account
@@ -241,4 +255,8 @@ func (account *AccountEthereum) Name() string {
 
 func (account *AccountEthereum) Key() data.DatabaseKey {
 	return data.DatabaseKey(account.AccountBase.Name)
+}
+
+func (account *AccountEthereum) AsString() string {
+	return "- " + account.AccountBase.Name
 }

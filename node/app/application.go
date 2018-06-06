@@ -66,6 +66,11 @@ func (app Application) GetAccounts() interface{} {
 	return app.Accounts
 }
 
+// Access to the local persistent databases
+func (app Application) GetUtxo() interface{} {
+	return app.Utxo
+}
+
 // InitChain is called when a new chain is getting created
 func (app Application) InitChain(req RequestInitChain) ResponseInitChain {
 	log.Debug("Message: InitChain", "req", req)
@@ -104,7 +109,7 @@ func (app Application) Info(req RequestInfo) ResponseInfo {
 func (app Application) Query(req RequestQuery) ResponseQuery {
 	log.Debug("Message: Query", "req", req, "path", req.Path, "data", req.Data)
 
-	result := HandleQuery(req.Path, req.Data)
+	result := HandleQuery(app, req.Path, req.Data)
 
 	return ResponseQuery{Key: action.Message("result"), Value: result}
 }

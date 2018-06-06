@@ -9,6 +9,9 @@ nodes="Admin Alice Bob Carol"
 
 for entry in $nodes 
 do
-	$CMD/startNode $entry
-	sleep 2 
+	$CMD/testNode $entry
+	if [ $? -eq 0 ]; then 
+		$CMD/startNode $entry
+		sleep 2 
+	fi
 done

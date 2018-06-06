@@ -34,7 +34,7 @@ func init() {
 
 	// Transaction Parameters
 	registerCmd.Flags().StringVar(&regArguments.identity, "identity", "unknown", "User's Identity")
-	registerCmd.Flags().StringVar(&regArguments.chain, "chain", "OneLedger-Root", "Specify the chain")
+	registerCmd.Flags().StringVar(&regArguments.chain, "chain", "OneLedger", "Specify the chain")
 	registerCmd.Flags().StringVar(&regArguments.pubkey, "pubkey", "0x00000000", "Specify a public key")
 	registerCmd.Flags().StringVar(&regArguments.privkey, "privkey", "0x00000000", "Specify a private key")
 }
@@ -45,7 +45,7 @@ func RegisterUsers(cmd *cobra.Command, args []string) {
 	// TODO: We can't do this, need to be 'light-client' instead...
 	node := app.NewApplication()
 
-	app.Register(node, regArguments.identity, regArguments.identity+"-OneLedger",
+	app.Register(node, regArguments.identity, regArguments.chain,
 		id.ParseAccountType(regArguments.chain))
 
 	// TODO: The node command registers, not the registration command

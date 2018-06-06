@@ -30,7 +30,7 @@ func init() {
 	RootCmd.AddCommand(accountCmd)
 
 	// Transaction Parameters
-	accountCmd.Flags().StringVar(&listargs.identity, "identity", "unknown", "user account name")
+	accountCmd.Flags().StringVar(&listargs.identity, "identity", "", "user account name")
 }
 
 // IssueRequest sends out a sendTx to all of the nodes in the chain
@@ -45,7 +45,11 @@ func ListIdentities(cmd *cobra.Command, args []string) {
 			log.Error("Not a valid identity", "err", err)
 			return
 		}
-		IdentityInfo(node, id)
+		if id != nil {
+			IdentityInfo(node, id)
+		} else {
+			Console.Print("Unknown Account")
+		}
 		return
 	}
 
