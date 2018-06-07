@@ -16,12 +16,13 @@ import (
 type Swap struct {
 	Base
 
-	Party1   id.Address `json:"party1"`
-	Party2   id.Address `json:"party2"`
-	Fee      data.Coin  `json:"fee"`
-	Gas      data.Coin  `json:"fee"`
-	Amount   data.Coin  `json:"amount"`
-	Exchange data.Coin  `json:"exchange"`
+	Party        id.Address `json:"party"`
+	CounterParty id.Address `json:"counter_party"`
+	Fee          data.Coin  `json:"fee"`
+	Gas          data.Coin  `json:"fee"`
+	Amount       data.Coin  `json:"amount"`
+	Exchange     data.Coin  `json:"exchange"`
+	Nonce        int64      `json:"nonce"`
 }
 
 // Issue swaps across other chains, make sure fees are collected
@@ -32,10 +33,40 @@ func (transaction *Swap) Validate() err.Code {
 
 func (transaction *Swap) ProcessCheck(app interface{}) err.Code {
 	log.Debug("Processing Swap Transaction for CheckTx")
+
+	// TODO: Check all of the data to make sure it is valid.
 	return err.SUCCESS
 }
 
 func (transaction *Swap) ProcessDeliver(app interface{}) err.Code {
 	log.Debug("Processing Swap Transaction for DeliverTx")
+
+	commands := transaction.Expand(app)
+
+	Resolve(app, commands)
+
+	for i := 0; i < commands.Count(); i++ {
+		status := Execute(app, commands[i])
+		if status != err.SUCCESS {
+			log.Error("Failed to Execute", "command", commands[i])
+			return err.EXPAND_ERROR
+		}
+	}
+
+	return err.SUCCESS
+}
+
+// Given a transaction, expand it into a list of Commands to execute against various chains.
+func (transaction *Swap) Expand(app interface{}) Commands {
+	// TODO: Table-driven mechanics, probably elsewhere
+	chain := GetChain(transaction)
+	return GetCommands(SWAP, chain)
+}
+
+// Plug in data from the rest of a system into a set of commands
+func Resolve(app interface{}, commands Commands) {
+}
+
+func Execute(app interface{}, command Command) err.Code {
 	return err.SUCCESS
 }

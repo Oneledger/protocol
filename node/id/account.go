@@ -2,8 +2,6 @@
 	Copyright 2017-2018 OneLedger
 
 	Identities management for any of the associated chains
-
-	TODO: Need to pick a system key for identities. Is a hash of pubkey reasonable?
 */
 package id
 
@@ -20,22 +18,11 @@ import (
 )
 
 // Aliases to hide some of the basic underlying types.
-
 type Address = wdata.Bytes // OneLedger address, like Tendermint the hash of the associated PubKey
 
 type PublicKey = crypto.PubKey
 type PrivateKey = crypto.PrivKey
 type Signature = crypto.Signature
-
-// enum for type
-type AccountType int
-
-const (
-	UNKNOWN AccountType = iota
-	ONELEDGER
-	BITCOIN
-	ETHEREUM
-)
 
 // The persistent collection of all accounts known by this node
 type Accounts struct {
@@ -59,7 +46,7 @@ func (acc *Accounts) Add(account Account) {
 func (acc *Accounts) Delete(account Account) {
 }
 
-func (acc *Accounts) Exists(newType AccountType, name string) bool {
+func (acc *Accounts) Exists(newType data.ChainType, name string) bool {
 	account := NewAccount(newType, name, PublicKey{})
 	value := acc.data.Load(account.Key())
 	if value != nil {
@@ -72,18 +59,21 @@ func (acc *Accounts) FindAll() []Account {
 	keys := acc.data.List()
 	size := len(keys)
 	results := make([]Account, size, size)
+
 	for i := 0; i < size; i++ {
 		// TODO: This is dangerous...
 		account := &AccountOneLedger{}
 		base, _ := comm.Deserialize(acc.data.Load(keys[i]), account)
 		results[i] = base.(Account)
 	}
+
 	return results
 }
 
 func (acc *Accounts) Dump() {
 	list := acc.FindAll()
 	size := len(list)
+
 	for i := 0; i < size; i++ {
 		account := list[i]
 		log.Info("Account", "Name", account.Name())
@@ -100,15 +90,20 @@ type AccountKey []byte
 
 // Polymorphism
 type Account interface {
-	AddPrivateKey(PrivateKey)
-	Name() string
 	Key() data.DatabaseKey
+	Name() string
+
+	AddPublicKey(PublicKey)
+	AddPrivateKey(PrivateKey)
+
+	AsString() string
 }
 
 type AccountBase struct {
-	Type AccountType
+	Type data.ChainType
 
-	Key        AccountKey
+	Key AccountKey
+
 	Name       string
 	PublicKey  PublicKey
 	PrivateKey PrivateKey
@@ -129,10 +124,11 @@ func NewAccountKey(key PublicKey) AccountKey {
 	return hasher.Sum(nil)
 }
 
-func NewAccount(newType AccountType, name string, key PublicKey) Account {
+// Create a new account for a given chain
+func NewAccount(newType data.ChainType, name string, key PublicKey) Account {
 	switch newType {
 
-	case ONELEDGER:
+	case data.ONELEDGER:
 		return &AccountOneLedger{
 			AccountBase{
 				Type:      newType,
@@ -142,7 +138,7 @@ func NewAccount(newType AccountType, name string, key PublicKey) Account {
 			},
 		}
 
-	case BITCOIN:
+	case data.BITCOIN:
 		return &AccountBitcoin{
 			AccountBase{
 				Type:      newType,
@@ -152,7 +148,7 @@ func NewAccount(newType AccountType, name string, key PublicKey) Account {
 			},
 		}
 
-	case ETHEREUM:
+	case data.ETHEREUM:
 		return &AccountEthereum{
 			AccountBase{
 				Type:      newType,
@@ -168,18 +164,18 @@ func NewAccount(newType AccountType, name string, key PublicKey) Account {
 }
 
 // Map type to string
-func ParseAccountType(typeName string) AccountType {
+func ParseAccountType(typeName string) data.ChainType {
 	switch typeName {
 	case "OneLedger":
-		return ONELEDGER
+		return data.ONELEDGER
 
 	case "Ethereum":
-		return ETHEREUM
+		return data.ETHEREUM
 
 	case "Bitcoin":
-		return BITCOIN
+		return data.BITCOIN
 	}
-	return UNKNOWN
+	return data.UNKNOWN
 }
 
 // OneLedger
@@ -205,6 +201,12 @@ func (account *AccountOneLedger) Key() data.DatabaseKey {
 	return data.DatabaseKey(account.AccountBase.Name)
 }
 
+func (account *AccountOneLedger) AsString() string {
+
+	// TODO: Add in UTXO entry
+	return "- " + account.AccountBase.Name
+}
+
 // Bitcoin
 
 // Information we need for a Bitcoin account
@@ -228,6 +230,10 @@ func (account *AccountBitcoin) Key() data.DatabaseKey {
 	return data.DatabaseKey(account.AccountBase.Name)
 }
 
+func (account *AccountBitcoin) AsString() string {
+	return "- " + account.AccountBase.Name
+}
+
 // Ethereum
 
 // Information we need for an Ethereum account
@@ -249,4 +255,8 @@ func (account *AccountEthereum) Name() string {
 
 func (account *AccountEthereum) Key() data.DatabaseKey {
 	return data.DatabaseKey(account.AccountBase.Name)
+}
+
+func (account *AccountEthereum) AsString() string {
+	return "- " + account.AccountBase.Name
 }

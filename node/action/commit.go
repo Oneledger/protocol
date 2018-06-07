@@ -31,3 +31,9 @@ func (transaction *Commit) ProcessDeliver(app interface{}) err.Code {
 	log.Debug("Processing Commit Transaction for DeliverTx")
 	return err.SUCCESS
 }
+
+// Given a transaction, expand it into a list of Commands to execute against various chains.
+func (transaction *Commit) Expand(app interface{}) Commands {
+	// TODO: Table-driven mechanics, probably elsewhere
+	return []Command{}
+}

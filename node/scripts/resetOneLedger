@@ -14,7 +14,6 @@ fi
 # Startup a bunch of nodes to act as a full block chain instance
 #
 export CMD=$OLSCRIPT
-
 export STAGING=$OLDATA/staging
 
 mkdir -p $STAGING
@@ -23,6 +22,8 @@ mkdir -p $STAGING
 # Generate the overall genesis and validator information
 #
 tendermint testnet --home $STAGING --dir $STAGING --n $NODECOUNT
+
+# TODO: Set the chain name, and set an initial amount of tokens and that admin owns them all
 
 nodes="OneLedger-Admin#mach0 OneLedger-Alice#mach1 OneLedger-Bob#mach2 OneLedger-Carol#mach3"
 

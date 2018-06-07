@@ -12,4 +12,6 @@ const (
 	PARSE_ERROR     Code = 101
 	NOT_IMPLEMENTED Code = 201
 	MISSING_VALUE   Code = 301
+	EXPAND_ERROR    Code = 401
+	DUPLICATE       Code = 501
 )

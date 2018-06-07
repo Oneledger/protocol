@@ -5,7 +5,7 @@
 
 	Should be separate from logging...
 */
-package main
+package shared
 
 import "fmt"
 

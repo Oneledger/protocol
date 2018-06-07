@@ -21,5 +21,5 @@ func main() {
 
 // init starts up right away, so the logging and context is initialized as early as possible
 func init() {
-	context = global.NewContext("Fullnode")
+	context = global.NewContext("olclient")
 }

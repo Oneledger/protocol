@@ -3,35 +3,32 @@
 #
 # Test creating a single send transaction in a 1-node chain, reset each time
 #
-OLTEST=$GOPATH/src/github.com/Oneledger/prototype/node/scripts
+CMD=$GOPATH/src/github.com/Oneledger/protocol/node/scripts
 
-# assumes fullnode is in the PATH
-#olclient register --address $ADDRESS --name Paul 
-#olclient register --address $ADDRESS --chain OneLedger --name Paul --pubkey 0x01 --privkey 0x01
-#olclient register --address $ADDRESS --chain Bitcoin --name Paul --pubkey 0x02 --privkey 0x02
-#olclient register --address $ADDRESS --chain Ethereum --name Paul --pubkey 0x02 --privkey 0x02
+# The chain has to be running
 
-# TODO: Stop the chain, add the accounts, then restart
+$CMD/startOneLedger
 
-ADDRESS="tcp://127.0.0.1:46621"
+#status=`$CMD/statusOneLedger`
+#
+#echo "OneLedger: $status"
+#
+#if [ -z "$status" ]; then
+#	echo "OneLedger isn't running"
+#fi
 
-status=`$OLTEST/statusChain`
+list="Admin Alice Bob Carol"
 
-echo "ChainStatus: $status"
+for name in $list 
+do
+	address=`$CMD/lookup $name RPCAddress tcp://127.0.0.1:`
 
-if [ -z "$status" ]; then
-	echo "Chain wasn't running"
-else
-	$OLTEST/stopChain
-fi
+	$CMD/stopNode $name 
 
-fullnode register --address $ADDRESS --name Paul
-fullnode register --address $ADDRESS --chain OneLedger --name Paul --pubkey 0x01 --privkey 0x01
-fullnode register --address $ADDRESS --chain Bitcoin --name Paul --pubkey 0x01 --privkey 0x01
-fullnode register --address $ADDRESS --chain Ethereum --name Paul --pubkey 0x01 --privkey 0x01
+	fullnode register --identity $name --address $address
+	fullnode register --identity $name --address $address --chain OneLedger --pubkey 0x01 --privkey 0x01
+	fullnode register --identity $name --address $address --chain Bitcoin --pubkey 0x01 --privkey 0x01
+	fullnode register --identity $name --address $address --chain Ethereum --pubkey 0x01 --privkey 0x01
 
-if [ -z "$status" ]; then
-	echo "Chain isn't restarted"
-else
-	$OLTEST/startChain
-fi
+	$CMD/startNode $name register 
+done

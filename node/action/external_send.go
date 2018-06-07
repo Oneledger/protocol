@@ -43,3 +43,9 @@ func (transaction *ExternalSend) ProcessDeliver(app interface{}) err.Code {
 	// TODO: // Update in final copy of Merkle Tree
 	return err.SUCCESS
 }
+
+// Given a transaction, expand it into a list of Commands to execute against various chains.
+func (transaction *ExternalSend) Expand(app interface{}) Commands {
+	// TODO: Table-driven mechanics, probably elsewhere
+	return []Command{}
+}

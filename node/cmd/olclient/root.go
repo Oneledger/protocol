@@ -22,8 +22,7 @@ var RootCmd = &cobra.Command{
 }
 
 func Execute() {
-	log.Debug("Parse Commands")
-
+	log.Debug("olclient")
 	if err := RootCmd.Execute(); err != nil {
 		fmt.Println(err)
 		os.Exit(-1)
@@ -34,25 +33,26 @@ func Execute() {
 func init() {
 	cobra.OnInitialize(environment)
 
-	RootCmd.PersistentFlags().BoolVarP(&global.Current.Debug, "debug", "d",
-		global.Current.Debug, "Set DEBUG mode")
-
-	RootCmd.PersistentFlags().StringVarP(&global.Current.RootDir, "root", "r",
+	RootCmd.PersistentFlags().StringVar(&global.Current.RootDir, "root",
 		global.Current.RootDir, "Set root directory")
 
-	RootCmd.PersistentFlags().StringVarP(&global.Current.Name, "name", "n",
-		global.Current.Name, "Set a node name")
+	RootCmd.PersistentFlags().StringVar(&global.Current.Node, "node",
+		global.Current.Node, "Set a node name")
+
+	RootCmd.PersistentFlags().BoolVarP(&global.Current.Debug, "debug", "d",
+		global.Current.Debug, "Set DEBUG mode")
 
 	RootCmd.PersistentFlags().StringVarP(&global.Current.Transport, "transport", "t",
 		global.Current.Transport, "transport (socket | grpc)")
 
 	RootCmd.PersistentFlags().StringVarP(&global.Current.Address, "address", "a",
 		global.Current.Address, "full address")
+
+	RootCmd.PersistentFlags().IntVarP(&global.Current.Sequence, "sequence", "s",
+		global.Current.Sequence, "unique sequence id")
 }
 
 // Initialize Viper
 func environment() {
-	log.Debug("Setting up Environment")
-
 	viper.AutomaticEnv()
 }

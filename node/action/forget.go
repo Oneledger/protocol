@@ -31,3 +31,9 @@ func (transaction *Forget) ProcessDeliver(app interface{}) err.Code {
 	log.Debug("Processing Forget Transaction for DeliverTx")
 	return err.SUCCESS
 }
+
+// Given a transaction, expand it into a list of Commands to execute against various chains.
+func (transaction *Forget) Expand(app interface{}) Commands {
+	// TODO: Table-driven mechanics, probably elsewhere
+	return []Command{}
+}
