@@ -40,7 +40,7 @@ import (
 // TestInitiateCommand
 func TestInitiateCommand(t *testing.T) {
 	chainParams = &chaincfg.TestNet3Params
-	cp2Addr, err := btcutil.DecodeAddress("", chainParams)
+	cp2Addr, err := btcutil.DecodeAddress("0x0001", chainParams)
 	if err != nil {
 		t.Errorf("failed to decode participant address: %v", err)
 	}
@@ -63,11 +63,11 @@ func TestInitiateCommand(t *testing.T) {
 
 	var cmd command
 	cmd = &initiateCmd{cp2Addr: cp2AddrP2PKH, amount: amount}
-	runCommand(cmd)
+	runCommand(cmd, t)
 }
 
 
-func runCommand(cmd command) {
+func runCommand(cmd command, t *testing.T) {
 	// Offline commands don't need to talk to the wallet.
 	if cmd, ok := cmd.(offlineCommand); ok {
 		cmd.runOfflineCommand()
@@ -121,5 +121,5 @@ func TestRedeemCommand(t *testing.T) {
 
 	var cmd command
 	cmd = &redeemCmd{contract: contract, contractTx: &contractTx, secret: secret}
-	runCommand(cmd)
+	runCommand(cmd, t)
 }
