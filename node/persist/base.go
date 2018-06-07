@@ -9,4 +9,5 @@ type Access interface {
 	GetStatus() interface{}
 	GetIdentities() interface{}
 	GetAccounts() interface{}
+	GetUtxo() interface{}
 }

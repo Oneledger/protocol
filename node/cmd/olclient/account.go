@@ -7,6 +7,7 @@ package main
 
 import (
 	"github.com/Oneledger/protocol/node/action"
+	"github.com/Oneledger/protocol/node/comm"
 	"github.com/Oneledger/protocol/node/log"
 	"github.com/spf13/cobra"
 )
@@ -34,7 +35,7 @@ func init() {
 
 // Format the request into a query structure
 func FormatRequest() []byte {
-	return action.Message("User=" + account.user)
+	return action.Message("Account=" + account.user)
 }
 
 // IssueRequest sends out a sendTx to all of the nodes in the chain
@@ -44,7 +45,7 @@ func CheckAccount(cmd *cobra.Command, args []string) {
 	request := FormatRequest()
 
 	// TODO: path was a partial URL path? Need to check to see if that is still required.
-	response := Query("/account", request).Response
+	response := comm.Query("/account", request).Response
 
 	log.Debug("Returned Successfully with", "response", string(response.Value))
 }

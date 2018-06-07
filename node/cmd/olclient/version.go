@@ -6,6 +6,7 @@
 package main
 
 import (
+	"github.com/Oneledger/protocol/node/cmd/shared"
 	"github.com/Oneledger/protocol/node/version"
 	"github.com/spf13/cobra"
 )
@@ -22,8 +23,8 @@ func init() {
 
 func Version(cmd *cobra.Command, args []string) {
 	version := version.Current
-	Console.Info("Olclient version is " + version.String())
+	shared.Console.Info("Olclient version is " + version.String())
 
 	// TODO: Way better to ask the node, than to assume
-	Console.Info("Fullnode version is " + version.String())
+	shared.Console.Info("Fullnode version is " + version.String())
 }

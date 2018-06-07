@@ -57,7 +57,7 @@ func createDatabase(name string, newType DatastoreType) *iavl.VersionedTree {
 func (state *ChainState) Commit() {
 
 	state.Delivered.SaveVersion() // TODO: This does not seem to be updating the database
-	state.reset()
+	//state.reset()
 }
 
 func (state *ChainState) reset() {

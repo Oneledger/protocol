@@ -51,16 +51,24 @@ func (app Application) GetAdmin() interface{} {
 	return app.Admin
 }
 
+// Access to the local persistent databases
 func (app Application) GetStatus() interface{} {
 	return app.Status
 }
 
+// Access to the local persistent databases
 func (app Application) GetIdentities() interface{} {
 	return app.Identities
 }
 
+// Access to the local persistent databases
 func (app Application) GetAccounts() interface{} {
 	return app.Accounts
+}
+
+// Access to the local persistent databases
+func (app Application) GetUtxo() interface{} {
+	return app.Utxo
 }
 
 // InitChain is called when a new chain is getting created
@@ -76,7 +84,7 @@ func (app Application) InitChain(req RequestInitChain) ResponseInitChain {
 func (app Application) SetOption(req RequestSetOption) ResponseSetOption {
 	log.Debug("Message: SetOption")
 
-	SetOption(&app, req.Key, []byte(req.Value))
+	SetOption(&app, req.Key, req.Value)
 
 	return ResponseSetOption{Code: types.CodeTypeOK}
 }
@@ -101,7 +109,7 @@ func (app Application) Info(req RequestInfo) ResponseInfo {
 func (app Application) Query(req RequestQuery) ResponseQuery {
 	log.Debug("Message: Query", "req", req, "path", req.Path, "data", req.Data)
 
-	result := HandleQuery(req.Path, req.Data)
+	result := HandleQuery(app, req.Path, req.Data)
 
 	return ResponseQuery{Key: action.Message("result"), Value: result}
 }
@@ -144,8 +152,6 @@ func (app Application) BeginBlock(req RequestBeginBlock) ResponseBeginBlock {
 		log.Error("Mismatching chains", "chainId", chainId, "newChainId", newChainId)
 	}
 
-	log.Debug("ChainID is", "id", chainId)
-
 	return ResponseBeginBlock{}
 }
 
@@ -180,8 +186,8 @@ func (app Application) EndBlock(req RequestEndBlock) ResponseEndBlock {
 func (app Application) Commit() ResponseCommit {
 	log.Debug("Message: Commit")
 
-	// TODO: Empty commit for now, but all transactional work should be queued, and
-	// only persisted on commit.
+	// Commit any pending changes.
+	//app.Utxo.Commit()
 
 	return ResponseCommit{}
 }

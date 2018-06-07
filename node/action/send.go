@@ -6,9 +6,11 @@
 package action
 
 import (
+	"github.com/Oneledger/protocol/node/comm"
 	"github.com/Oneledger/protocol/node/data"
 	"github.com/Oneledger/protocol/node/err"
 	"github.com/Oneledger/protocol/node/log"
+	"github.com/Oneledger/protocol/node/persist"
 )
 
 // Synchronize a swap between two users
@@ -34,14 +36,25 @@ func (transaction *Send) Validate() err.Code {
 func (transaction *Send) ProcessCheck(app interface{}) err.Code {
 	log.Debug("Processing Send Transaction for CheckTx")
 
-	// TODO: // Update in memory copy of Merkle Tree
+	// TODO: Validate the transaction
+
 	return err.SUCCESS
 }
 
 func (transaction *Send) ProcessDeliver(app interface{}) err.Code {
 	log.Debug("Processing Send Transaction for DeliverTx")
 
-	// TODO: // Update in final copy of Merkle Tree
+	chain := app.(persist.Access).GetUtxo().(*data.ChainState)
+
+	// TODO: Revalidate the transaction
+	// TODO: Need to roolback any errors occur
+
+	// Update the database to the final set of entries
+	for _, entry := range transaction.Outputs {
+		value, _ := comm.Serialize(entry.Coins)
+		chain.Delivered.Set(entry.Address, value)
+	}
+
 	return err.SUCCESS
 }
 

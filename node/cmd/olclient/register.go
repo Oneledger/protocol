@@ -32,15 +32,15 @@ func init() {
 	RootCmd.AddCommand(registerCmd)
 
 	// Transaction Parameters
-	registerCmd.Flags().StringVar(&arguments.identity, "identity", "Me", "User's Identity")
-	registerCmd.Flags().StringVar(&arguments.chain, "chain", "OneLedger-Root", "Specify the chain")
+	registerCmd.Flags().StringVar(&arguments.identity, "identity", "Unknown", "User's Identity")
+	registerCmd.Flags().StringVar(&arguments.chain, "chain", "OneLedger", "Specify the chain")
 	registerCmd.Flags().StringVar(&arguments.pubkey, "pubkey", "0x00000000", "Specify a public key")
 	registerCmd.Flags().StringVar(&arguments.privkey, "privkey", "0x00000000", "Specify a private key")
 }
 
 // IssueRequest sends out a sendTx to all of the nodes in the chain
 func Register(cmd *cobra.Command, args []string) {
-	log.Debug("Register Account")
+	log.Debug("Client Register Account via SetOption...")
 
 	cli := &app.RegisterArguments{
 		Identity:   arguments.identity,
@@ -48,12 +48,13 @@ func Register(cmd *cobra.Command, args []string) {
 		PublicKey:  arguments.pubkey,
 		PrivateKey: arguments.privkey,
 	}
+
 	buffer, err := comm.Serialize(cli)
 	if err != nil {
 		log.Error("Register Failed", "err", err)
 		return
 	}
-	SetOption("Register", string(buffer))
+	comm.SetOption("Register", string(buffer))
 }
 
 /*

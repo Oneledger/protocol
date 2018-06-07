@@ -5,8 +5,8 @@
 #
 OLTEST=$GOPATH/src/github.com/Oneledger/protocol/node/scripts
 
-$OLTEST/resetChain
-$OLTEST/startChain
+$OLTEST/resetOneLedger
+$OLTEST/startOneLedger
 
 addrAdmin=`$OLSCRIPT/lookup Admin RPCAddress tcp://127.0.0.1:`
 addrAlice=`$OLSCRIPT/lookup Alice RPCAddress tcp://127.0.0.1:`
@@ -17,4 +17,4 @@ olclient send --party Bob --counterparty Alice --address $addrBob
 
 sleep 3
 
-$OLTEST/stopChain
+$OLTEST/stopOneLedger
