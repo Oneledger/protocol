@@ -3,30 +3,31 @@
 
 	Common Transaction utilities
 */
-package main
+package shared
 
 import (
-	"github.com/Oneledger/protocol/node/app"
-	wire "github.com/tendermint/go-wire"
+	"github.com/Oneledger/protocol/node/id"
 )
 
-func GetPublicKey() app.PublicKey {
+func GetPublicKey() id.PublicKey {
 	// TODO: Really not sure about this.
-	return app.PublicKey{}
+	return id.PublicKey{}
 }
 
 // GetSigners will return the public keys of the signers
-func GetSigners() []app.PublicKey {
+func GetSigners() []id.PublicKey {
 	return nil
 }
 
+/*
 // SignTransaction with the local keys
-func SignTransaction(transaction app.Transaction) app.Transaction {
+func SignTransaction(transaction action.Transaction) action.Transaction {
 	return transaction
 }
 
 // Pack a request into a transferable format (wire)
-func PackRequest(request app.Transaction) []byte {
+func PackRequest(request action.Transaction) []byte {
 	packet := wire.BinaryBytes(request)
 	return packet
 }
+*/

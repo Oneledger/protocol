@@ -76,6 +76,13 @@ type offlineCommand interface {
 type initiateCmd struct {
 	cp2Addr *btcutil.AddressPubKeyHash
 	amount  btcutil.Amount
+	lockTime int64
+}
+
+type redeemCmd struct {
+	contract   []byte
+	contractTx *wire.MsgTx
+	secret     []byte
 }
 
 func normalizeAddress(addr string, defaultPort string) (hostport string, err error) {
@@ -364,9 +371,7 @@ func buildContract(c *rpc.Client, args *contractArgs) (*builtContract, error) {
 	if err != nil {
 		return nil, fmt.Errorf("getrawchangeaddress: %v", err)
 	}
-	refundAddrH, ok := refundAddr.(interface {
-		Hash160() *[ripemd160.Size]byte
-	})
+	refundAddrH, ok := refundAddr.(interface {Hash160() *[ripemd160.Size]byte})
 	if !ok {
 		return nil, errors.New("unable to create hash160 from change address")
 	}
@@ -525,12 +530,12 @@ func (cmd *initiateCmd) runCommand(c *rpc.Client) error {
 
 	// locktime after 500,000,000 (Tue Nov  5 00:53:20 1985 UTC) is interpreted
 	// as a unix time rather than a block height.
-	locktime := time.Now().Add(48 * time.Hour).Unix()
+	// locktime := time.Now().Add(48 * time.Hour).Unix()
 
 	b, err := buildContract(c, &contractArgs{
 		them:       cmd.cp2Addr,
 		amount:     cmd.amount,
-		locktime:   locktime,
+		locktime:   cmd.lockTime,
 		secretHash: secretHash,
 	})
 	if err != nil {
@@ -569,6 +574,114 @@ func refundP2SHContract(contract, sig, pubkey []byte) ([]byte, error) {
 	b.AddData(sig)
 	b.AddData(pubkey)
 	b.AddInt64(0)
+	b.AddData(contract)
+	return b.Script()
+}
+
+func (cmd *redeemCmd) runCommand(c *rpc.Client) error {
+	pushes, err := txscript.ExtractAtomicSwapDataPushes(0, cmd.contract)
+	if err != nil {
+		return err
+	}
+	if pushes == nil {
+		return errors.New("contract is not an atomic swap script recognized by this tool")
+	}
+	recipientAddr, err := btcutil.NewAddressPubKeyHash(pushes.RecipientHash160[:],
+		chainParams)
+	if err != nil {
+		return err
+	}
+	contractHash := btcutil.Hash160(cmd.contract)
+	contractOut := -1
+	for i, out := range cmd.contractTx.TxOut {
+		sc, addrs, _, _ := txscript.ExtractPkScriptAddrs(out.PkScript, chainParams)
+		if sc == txscript.ScriptHashTy &&
+			bytes.Equal(addrs[0].(*btcutil.AddressScriptHash).Hash160()[:], contractHash) {
+			contractOut = i
+			break
+		}
+	}
+	if contractOut == -1 {
+		return errors.New("transaction does not contain a contract output")
+	}
+
+	addr, err := getRawChangeAddress(c)
+	if err != nil {
+		return fmt.Errorf("getrawchangeaddres: %v", err)
+	}
+	outScript, err := txscript.PayToAddrScript(addr)
+	if err != nil {
+		return err
+	}
+
+	contractTxHash := cmd.contractTx.TxHash()
+	contractOutPoint := wire.OutPoint{
+		Hash:  contractTxHash,
+		Index: uint32(contractOut),
+	}
+
+	feePerKb, minFeePerKb, err := getFeePerKb(c)
+	if err != nil {
+		return err
+	}
+
+	redeemTx := wire.NewMsgTx(txVersion)
+	redeemTx.LockTime = uint32(pushes.LockTime)
+	redeemTx.AddTxIn(wire.NewTxIn(&contractOutPoint, nil, nil))
+	redeemTx.AddTxOut(wire.NewTxOut(0, outScript)) // amount set below
+	redeemSize := estimateRedeemSerializeSize(cmd.contract, redeemTx.TxOut)
+	fee := txrules.FeeForSerializeSize(feePerKb, redeemSize)
+	redeemTx.TxOut[0].Value = cmd.contractTx.TxOut[contractOut].Value - int64(fee)
+	if txrules.IsDustOutput(redeemTx.TxOut[0], minFeePerKb) {
+		return fmt.Errorf("redeem output value of %v is dust", btcutil.Amount(redeemTx.TxOut[0].Value))
+	}
+
+	redeemSig, redeemPubKey, err := createSig(redeemTx, 0, cmd.contract, recipientAddr, c)
+	if err != nil {
+		return err
+	}
+	redeemSigScript, err := redeemP2SHContract(cmd.contract, redeemSig, redeemPubKey, cmd.secret)
+	if err != nil {
+		return err
+	}
+	redeemTx.TxIn[0].SignatureScript = redeemSigScript
+
+	redeemTxHash := redeemTx.TxHash()
+	redeemFeePerKb := calcFeePerKb(fee, redeemTx.SerializeSize())
+
+	var buf bytes.Buffer
+	buf.Grow(redeemTx.SerializeSize())
+	redeemTx.Serialize(&buf)
+	fmt.Printf("Redeem fee: %v (%0.8f BTC/kB)\n\n", fee, redeemFeePerKb)
+	fmt.Printf("Redeem transaction (%v):\n", &redeemTxHash)
+	fmt.Printf("%x\n\n", buf.Bytes())
+
+	if verify {
+		e, err := txscript.NewEngine(cmd.contractTx.TxOut[contractOutPoint.Index].PkScript,
+			redeemTx, 0, txscript.StandardVerifyFlags, txscript.NewSigCache(10),
+			txscript.NewTxSigHashes(redeemTx), cmd.contractTx.TxOut[contractOut].Value)
+		if err != nil {
+			panic(err)
+		}
+		err = e.Execute()
+		if err != nil {
+			panic(err)
+		}
+	}
+
+	return publishTx(c, redeemTx, "redeem")
+}
+
+
+// redeemP2SHContract returns the signature script to redeem a contract output
+// using the redeemer's signature and the initiator's secret.  This function
+// assumes P2SH and appends the contract as the final data push.
+func redeemP2SHContract(contract, sig, pubkey, secret []byte) ([]byte, error) {
+	b := txscript.NewScriptBuilder()
+	b.AddData(sig)
+	b.AddData(pubkey)
+	b.AddData(secret)
+	b.AddInt64(1)
 	b.AddData(contract)
 	return b.Script()
 }

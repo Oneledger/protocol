@@ -1,0 +1,19 @@
+#!/bin/sh
+
+if [ -z "$1" ]; then
+	nodeName="OneLedger-Admin"
+else
+	nodeName=`echo $1 | awk -F# '{ print $1 }'`
+fi
+
+CMD=$OLSCRIPT
+
+WORK=$OLDATA/$nodeName
+LOG=$WORK
+DATA=$WORK/tendermint
+
+pushd $WORK > /dev/null
+
+tendermint show_node_id --home $DATA
+
+popd > /dev/null

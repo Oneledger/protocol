@@ -1,0 +1,9 @@
+#!/bin/sh
+
+# List of pids if the chain is running
+# No output if the chain isn't running
+
+echo "Tendermint:"
+pgrep tendermint
+echo "Fullnode:"
+pgrep fullnode

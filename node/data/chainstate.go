@@ -8,9 +8,10 @@
 
 	The difficulty comes from the underlying code not quite being thread-safe...
 */
-package app
+package data
 
 import (
+	"github.com/Oneledger/protocol/node/global"
 	"github.com/Oneledger/protocol/node/log"
 	"github.com/tendermint/iavl"
 	"github.com/tendermint/tmlibs/db"
@@ -31,21 +32,21 @@ type ChainState struct {
 
 func NewChainState(name string, newType DatastoreType) *ChainState {
 	count = 0
-	chain := &ChainState{}
+	chain := &ChainState{Name: name}
 	chain.reset()
 	return chain
 }
 
 func createDatabase(name string, newType DatastoreType) *iavl.VersionedTree {
 	// TODO: Assuming persistence for right now
-	storage, err := db.NewGoLevelDB("OneLedger-"+name, Current.RootDir)
+	storage, err := db.NewGoLevelDB("OneLedger-"+name, global.Current.RootDir)
 	if err != nil {
 		log.Error("Database create failed", "err", err, "count", count)
 		panic("Can't create a database")
 	}
 
 	// TODO: cosmos seems to be using VersionedTree now????
-	tree := iavl.NewVersionedTree(storage, 1000) // Do I need a historic tree here?
+	tree := iavl.NewVersionedTree(storage, 100) // Do I need a historic tree here?
 
 	count = count + 1
 
@@ -56,11 +57,14 @@ func createDatabase(name string, newType DatastoreType) *iavl.VersionedTree {
 func (state *ChainState) Commit() {
 
 	state.Delivered.SaveVersion() // TODO: This does not seem to be updating the database
-	state.reset()
+	//state.reset()
 }
 
 func (state *ChainState) reset() {
-	//state.Committed = createDatabase(state.Name, state.Type)
-	state.Delivered = createDatabase(state.Name, state.Type)
+	// TODO: I need three copies of the tree, only one is ultimately mutable... (checked changed rollback)
+	// TODO: Close before repoen, better just update...
+
 	//state.Checked = createDatabase(state.Name, state.Type)
+	state.Delivered = createDatabase(state.Name, state.Type)
+	//state.Committed = createDatabase(state.Name, state.Type)
 }

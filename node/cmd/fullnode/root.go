@@ -9,7 +9,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/Oneledger/protocol/node/app"
+	"github.com/Oneledger/protocol/node/global"
 	"github.com/Oneledger/protocol/node/log"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -22,8 +22,6 @@ var RootCmd = &cobra.Command{
 }
 
 func Execute() {
-	log.Debug("Parse Commands")
-
 	if err := RootCmd.Execute(); err != nil {
 		fmt.Println(err)
 		os.Exit(-1)
@@ -34,13 +32,29 @@ func Execute() {
 func init() {
 	cobra.OnInitialize(environment)
 
-	RootCmd.PersistentFlags().BoolVarP(&app.Current.Debug, "debug", "d", app.Current.Debug, "Set DEBUG mode")
-	RootCmd.PersistentFlags().StringVarP(&app.Current.RootDir, "root", "r", app.Current.RootDir, "Set root directory")
-	RootCmd.PersistentFlags().StringVarP(&app.Current.Name, "name", "n", app.Current.Name, "Set a name")
+	RootCmd.PersistentFlags().StringVar(&global.Current.RootDir, "root",
+		global.Current.RootDir, "Set root directory")
+
+	RootCmd.PersistentFlags().StringVar(&global.Current.Node, "node",
+		global.Current.Node, "Set a node name")
+
+	// Get information to connect to an ABCI app (myself)
+	RootCmd.PersistentFlags().StringVar(&global.Current.App, "app",
+		global.Current.App, "app address")
+
+	// Get information to connect to a my tendermint node
+	RootCmd.PersistentFlags().StringVarP(&global.Current.Address, "address", "a",
+		global.Current.Address, "consensus address")
+
+	RootCmd.PersistentFlags().StringVarP(&global.Current.Transport, "transport", "t",
+		global.Current.Transport, "transport (socket | grpc)")
+
+	RootCmd.PersistentFlags().BoolVarP(&global.Current.Debug, "debug", "d",
+		global.Current.Debug, "Set DEBUG mode")
 }
 
 // Initialize Viper
 func environment() {
-	log.Debug("Setting up Environment")
+	log.Debug("fullnode")
 	viper.AutomaticEnv()
 }

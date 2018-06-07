@@ -1,0 +1,30 @@
+#!/bin/sh
+#
+# Reset our chain, remove any extra files and databases
+#
+
+# TODO: Set this up to not copy if subdir is empty
+if [ -z "$1" ]; then
+	export NODENAME="OneLedger-Admin"
+	export SUBDIR="mach0"
+	export STAGING=$OLDATA/staging
+else
+	export NODENAME=`echo $1 | awk -F# '{ print $1 }'`
+	export SUBDIR=`echo $1 | awk -F# '{ print $2 }'`
+	export STAGING="$2"
+fi
+
+echo "Config $NODENAME"
+
+#
+# Setup the paths
+#
+export CMD=$OLSCRIPT
+export WORK=$OLDATA/$NODENAME
+export LOG=$WORK
+export DATA=$WORK/tendermint
+
+#cp $STAGING/config/config.toml $DATA/config/config.toml
+#cp $STAGING/$SUBDIR/config/priv_validator.json $DATA/config/priv_validator.json
+cat $STAGING/$SUBDIR/config/genesis.json | jq -f $CMD/genesis.jq 
+

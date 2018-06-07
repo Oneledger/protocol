@@ -7,6 +7,7 @@ package main
 
 import (
 	"github.com/Oneledger/protocol/node/app"
+	"github.com/Oneledger/protocol/node/comm"
 	"github.com/Oneledger/protocol/node/log"
 	"github.com/spf13/cobra"
 )
@@ -19,10 +20,10 @@ var registerCmd = &cobra.Command{
 
 // Arguments to the command
 type RegistrationArguments struct {
-	name    string
-	chain   string
-	pubkey  string
-	privkey string
+	identity string
+	chain    string
+	pubkey   string
+	privkey  string
 }
 
 var arguments = &RegistrationArguments{}
@@ -31,37 +32,39 @@ func init() {
 	RootCmd.AddCommand(registerCmd)
 
 	// Transaction Parameters
-	registerCmd.Flags().StringVarP(&arguments.name, "name", "n", "Me", "User's Identity")
-	registerCmd.Flags().StringVarP(&arguments.chain, "chain", "c", "OneLedger-Root", "Specify the chain")
-	registerCmd.Flags().StringVarP(&arguments.pubkey, "pubkey", "k", "0x00000000", "Specify a public key")
-	registerCmd.Flags().StringVarP(&arguments.privkey, "privkey", "p", "0x00000000", "Specify a private key")
+	registerCmd.Flags().StringVar(&arguments.identity, "identity", "Unknown", "User's Identity")
+	registerCmd.Flags().StringVar(&arguments.chain, "chain", "OneLedger", "Specify the chain")
+	registerCmd.Flags().StringVar(&arguments.pubkey, "pubkey", "0x00000000", "Specify a public key")
+	registerCmd.Flags().StringVar(&arguments.privkey, "privkey", "0x00000000", "Specify a private key")
 }
 
 // IssueRequest sends out a sendTx to all of the nodes in the chain
 func Register(cmd *cobra.Command, args []string) {
-	log.Debug("Register Account")
+	log.Debug("Client Register Account via SetOption...")
 
-	//identity, err := app.FindIdentity(arguments.name)
-	identity, err := app.FindIdentity(arguments.name)
-	if err != 0 {
-		Console.Error("Invalid Identity String")
+	cli := &app.RegisterArguments{
+		Identity:   arguments.identity,
+		Chain:      arguments.chain,
+		PublicKey:  arguments.pubkey,
+		PrivateKey: arguments.privkey,
+	}
+
+	buffer, err := comm.Serialize(cli)
+	if err != nil {
+		log.Error("Register Failed", "err", err)
 		return
 	}
-
-	if identity == nil {
-		CreateIdentity()
-	} else {
-		UpdateIdentity(identity)
-	}
+	comm.SetOption("Register", string(buffer))
 }
 
-func ConvertPublicKey(keystring string) app.PublicKey {
-	return app.PublicKey{}
+/*
+func ConvertPublicKey(keystring string) id.PublicKey {
+	return id.PublicKey{}
 }
 
 // TODO: This should be moved out of cmd and into it's own package
 func CreateIdentity() {
-	chainType, err := app.FindIdentityType(arguments.chain)
+	chainType, err := id.FindIdentityType(arguments.chain)
 	if err != 0 {
 		Console.Error("Invalid Identity Type")
 		return
@@ -69,17 +72,18 @@ func CreateIdentity() {
 
 	pubkey := ConvertPublicKey(arguments.pubkey)
 
-	identity := app.NewIdentity(chainType, arguments.name, pubkey)
+	identity := id.NewIdentity(chainType, arguments.name, pubkey)
 
 	// TODO: Need to convert the input...
-	identity.AddPrivateKey(app.PrivateKey{}) //arguments.privkey)
+	//identity.AddPrivateKey(id.PrivateKey{}) //arguments.privkey)
 
 	Console.Info("New Account has been created")
 }
 
-func UpdateIdentity(identity app.Identity) {
+func UpdateIdentity(identity id.Identity) {
 	// TODO: Need to convert the input...
-	identity.AddPrivateKey(app.PrivateKey{}) //arguments.privkey)
+	//identity.AddPrivateKey(id.PrivateKey{}) //arguments.privkey)
 
 	Console.Info("New Account has been updated")
 }
+*/
