@@ -9,6 +9,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/Oneledger/protocol/node/data"
+	"github.com/Oneledger/protocol/node/id"
 	"github.com/Oneledger/protocol/node/log"
 )
 
@@ -80,12 +82,23 @@ func AccountInfo(app Application, name string) []byte {
 
 		for _, curr := range accounts {
 			buffer += curr.AsString() + ", "
+			if curr.Chain() == data.ONELEDGER {
+				buffer += GetBalance(curr)
+			}
 		}
 		return []byte(buffer)
 	}
 	account, _ := app.Accounts.Find(name)
 
+	buffer := "Answer: 1 account.AsString()"
+	if account.Chain() == data.ONELEDGER {
+		buffer += GetBalance(account)
+	}
 	return []byte(account.AsString())
+}
+
+func GetBalance(account id.Account) string {
+	return ""
 }
 
 // Return a nicely formatted error message

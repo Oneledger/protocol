@@ -98,6 +98,7 @@ type AccountKey []byte
 type Account interface {
 	Key() data.DatabaseKey
 	Name() string
+	Chain() data.ChainType
 
 	AddPublicKey(PublicKey)
 	AddPrivateKey(PrivateKey)
@@ -213,6 +214,10 @@ func (account *AccountOneLedger) AsString() string {
 	return "- " + account.AccountBase.Name
 }
 
+func (account *AccountOneLedger) Chain() data.ChainType {
+	return data.ONELEDGER
+}
+
 // Bitcoin
 
 // Information we need for a Bitcoin account
@@ -240,6 +245,10 @@ func (account *AccountBitcoin) AsString() string {
 	return "- " + account.AccountBase.Name
 }
 
+func (account *AccountBitcoin) Chain() data.ChainType {
+	return data.BITCOIN
+}
+
 // Ethereum
 
 // Information we need for an Ethereum account
@@ -265,4 +274,8 @@ func (account *AccountEthereum) Key() data.DatabaseKey {
 
 func (account *AccountEthereum) AsString() string {
 	return "- " + account.AccountBase.Name
+}
+
+func (account *AccountEthereum) Chain() data.ChainType {
+	return data.ETHEREUM
 }
