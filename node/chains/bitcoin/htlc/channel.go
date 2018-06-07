@@ -3,7 +3,7 @@
 
 	OneLedger Wallet
 */
-package olwallet
+package htlc
 
 
 import (

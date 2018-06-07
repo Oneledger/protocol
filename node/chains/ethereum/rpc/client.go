@@ -1,4 +1,4 @@
-package ethrpc
+package rpc
 
 import (
 	"io/ioutil"
@@ -9,7 +9,7 @@ import (
 	"net/http"
 	"encoding/json"
 
-	"../common"
+	"../../common"
 )
 
 

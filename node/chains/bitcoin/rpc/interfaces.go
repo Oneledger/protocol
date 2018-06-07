@@ -1,4 +1,4 @@
-package btcrpc
+package rpc
 
 import (
 	"encoding/json"

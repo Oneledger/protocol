@@ -1,4 +1,4 @@
-package btcrpc
+package rpc
 
 // Block - Represents a block
 type Block struct {

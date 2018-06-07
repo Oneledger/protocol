@@ -1,4 +1,4 @@
-package olwallet
+package htlc
 
 import (
 	"strconv"
