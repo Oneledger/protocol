@@ -61,6 +61,17 @@ func (acc *Accounts) Exists(newType data.ChainType, name string) bool {
 	return false
 }
 
+func (acc *Accounts) Find(name string) (Account, err.Code) {
+	account := NewAccount(data.ONELEDGER, name, PublicKey{})
+	value := acc.data.Load(account.Key())
+	if value != nil {
+		account := &AccountOneLedger{}
+		base, _ := comm.Deserialize(value, account)
+		return base.(Account), err.SUCCESS
+	}
+	return nil, err.SUCCESS
+}
+
 func (acc *Accounts) FindAll() []Account {
 	keys := acc.data.List()
 	size := len(keys)
@@ -85,11 +96,6 @@ func (acc *Accounts) Dump() {
 		log.Info("Account", "Name", account.Name())
 		log.Info("Type", "Type", reflect.TypeOf(account))
 	}
-}
-
-func (acc *Accounts) Find(name string) (Account, err.Code) {
-	// TODO: Lookup the identity in the node's database
-	return &AccountOneLedger{AccountBase: AccountBase{Name: name}}, 0
 }
 
 type AccountKey []byte

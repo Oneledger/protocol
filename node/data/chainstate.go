@@ -11,6 +11,7 @@
 package data
 
 import (
+	"github.com/Oneledger/protocol/node/comm"
 	"github.com/Oneledger/protocol/node/global"
 	"github.com/Oneledger/protocol/node/log"
 	"github.com/tendermint/iavl"
@@ -35,6 +36,17 @@ func NewChainState(name string, newType DatastoreType) *ChainState {
 	chain := &ChainState{Name: name}
 	chain.reset()
 	return chain
+}
+
+func (state *ChainState) Find(key []byte) *Balance {
+	version := state.Delivered.Version64()
+	_, value := state.Delivered.GetVersioned(key, version)
+	if value != nil {
+		var balance Balance
+		result, _ := comm.Deserialize(value, &balance)
+		return result.(*Balance)
+	}
+	return nil
 }
 
 func createDatabase(name string, newType DatastoreType) *iavl.VersionedTree {

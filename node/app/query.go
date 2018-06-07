@@ -83,7 +83,7 @@ func AccountInfo(app Application, name string) []byte {
 		for _, curr := range accounts {
 			buffer += curr.AsString() + ", "
 			if curr.Chain() == data.ONELEDGER {
-				buffer += GetBalance(curr)
+				buffer += GetBalance(app, curr)
 			}
 		}
 		return []byte(buffer)
@@ -92,13 +92,17 @@ func AccountInfo(app Application, name string) []byte {
 
 	buffer := "Answer: 1 account.AsString()"
 	if account.Chain() == data.ONELEDGER {
-		buffer += GetBalance(account)
+		buffer += GetBalance(app, account)
 	}
 	return []byte(account.AsString())
 }
 
-func GetBalance(account id.Account) string {
-	return ""
+func GetBalance(app Application, account id.Account) string {
+	result := app.Utxo.Find(account.Key())
+	if result == nil {
+		return ""
+	}
+	return fmt.Sprintf("%d", result.Amount)
 }
 
 // Return a nicely formatted error message
