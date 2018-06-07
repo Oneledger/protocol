@@ -55,6 +55,21 @@ type SendArguments struct {
 	Fee          string
 }
 
+func GetBalance(name id.Address) data.Coin {
+	balance := data.Coin{
+		Currency: "OLT",
+		Amount:   100,
+	}
+	return balance
+}
+
+type BalanceArguments struct {
+}
+
+func CreateBalanceRequest(args *BalanceArguments) []byte {
+	return []byte(nil)
+}
+
 // CreateRequest builds and signs the transaction based on the arguments
 func CreateSendRequest(args *SendArguments) []byte {
 	signers := GetSigners()
@@ -62,19 +77,50 @@ func CreateSendRequest(args *SendArguments) []byte {
 	conv := convert.NewConvert()
 
 	party := id.Address(conv.GetHash(args.Party))
-	counterparty := id.Address(conv.GetHash(args.CounterParty))
-	_ = party
-	_ = counterparty
+	counterParty := id.Address(conv.GetHash(args.CounterParty))
 
 	amount := data.Coin{
 		Currency: conv.GetCurrency(args.Currency),
 		Amount:   conv.GetInt64(args.Amount),
 	}
-	_ = amount
+
+	// Build up the Inputs
+	partyBalance := GetBalance(party)
+	counterPartyBalance := GetBalance(counterParty)
+
+	inputs := make([]action.SendInput, 2)
+	input := action.SendInput{
+		Address: party,
+		Coin:    partyBalance,
+	}
+	inputs = append(inputs, input)
+	input = action.SendInput{
+		Address: counterParty,
+		Coin:    counterPartyBalance,
+	}
+	inputs = append(inputs, input)
+
+	// Build up the outputs
+	outputs := make([]action.SendOutput, 2)
+	output := action.SendOutput{
+		Address: party,
+		Coin:    partyBalance.Minus(amount),
+	}
+	outputs = append(outputs, output)
+	output = action.SendOutput{
+		Address: counterParty,
+		Coin:    counterPartyBalance.Plus(amount),
+	}
+	outputs = append(outputs, output)
 
 	gas := data.Coin{
 		Currency: conv.GetCurrency(args.Currency),
 		Amount:   conv.GetInt64(args.Gas),
+	}
+
+	fee := data.Coin{
+		Currency: conv.GetCurrency(args.Currency),
+		Amount:   conv.GetInt64(args.Fee),
 	}
 
 	if conv.HasErrors() {
@@ -90,8 +136,10 @@ func CreateSendRequest(args *SendArguments) []byte {
 			Signers:  signers,
 			Sequence: global.Current.Sequence,
 		},
-		Fee: gas,
-		Gas: gas,
+		Inputs:  inputs,
+		Outputs: outputs,
+		Fee:     fee,
+		Gas:     gas,
 	}
 
 	return SignAndPack(action.SEND, action.Transaction(send))
@@ -119,7 +167,7 @@ func CreateSwapRequest(args *SwapArguments) []byte {
 	conv := convert.NewConvert()
 
 	party := id.Address(conv.GetHash(args.Party))
-	counterparty := id.Address(conv.GetHash(args.CounterParty))
+	counterParty := id.Address(conv.GetHash(args.CounterParty))
 
 	// TOOD: a clash with the basic data model
 	signers := GetSigners()
@@ -157,7 +205,7 @@ func CreateSwapRequest(args *SwapArguments) []byte {
 			Sequence: global.Current.Sequence,
 		},
 		Party:        party,
-		CounterParty: counterparty,
+		CounterParty: counterParty,
 		Fee:          fee,
 		Gas:          gas,
 		Amount:       amount,

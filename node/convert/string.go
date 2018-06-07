@@ -15,17 +15,18 @@ import (
 
 const CURRENCY = 0x123
 
-var Domain map[string]bool
+var Domain map[string]string
 
 func init() {
-	Domain = make(map[string]bool)
+	Domain = make(map[string]string)
 
-	Domain["bitcoin"] = true
-	Domain["oneledger"] = true
-	Domain["etheruem"] = true
-	Domain["btc"] = true
-	Domain["olt"] = true
-	Domain["eth"] = true
+	// keys are lowercase, maps back to proper string
+	Domain["oneledger"] = "OneLedger"
+	Domain["bitcoin"] = "Bitcoin"
+	Domain["etheruem"] = "Ethereum"
+	Domain["olt"] = "OLT"
+	Domain["btc"] = "BTC"
+	Domain["eth"] = "ETH"
 }
 
 // Build up a list of error messages
@@ -91,8 +92,8 @@ func (convert *Convert) GetHash(value string) []byte {
 
 func (convert *Convert) GetCurrency(value string) string {
 	key := strings.ToLower(value)
-	if Domain[key] {
-		return key
+	if result, ok := Domain[key]; ok {
+		return result
 	}
 	convert.AddError(value, errors.New("Invalid Currency"))
 	return ""

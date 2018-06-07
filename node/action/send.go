@@ -36,7 +36,7 @@ func (transaction *Send) Validate() err.Code {
 func (transaction *Send) ProcessCheck(app interface{}) err.Code {
 	log.Debug("Processing Send Transaction for CheckTx")
 
-	// TODO: Validate the transaction
+	// TODO: Validate the transaction against the UTXO database, check tree
 
 	return err.SUCCESS
 }
@@ -47,11 +47,11 @@ func (transaction *Send) ProcessDeliver(app interface{}) err.Code {
 	chain := app.(persist.Access).GetUtxo().(*data.ChainState)
 
 	// TODO: Revalidate the transaction
-	// TODO: Need to roolback any errors occur
+	// TODO: Need to rollback if any errors occur
 
 	// Update the database to the final set of entries
 	for _, entry := range transaction.Outputs {
-		value, _ := comm.Serialize(entry.Coins)
+		value, _ := comm.Serialize(entry.Coin)
 		chain.Delivered.Set(entry.Address, value)
 	}
 

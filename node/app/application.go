@@ -76,10 +76,10 @@ func (app Application) GetUtxo() interface{} {
 func (app Application) InitChain(req RequestInitChain) ResponseInitChain {
 	log.Debug("Message: InitChain", "req", req)
 
+	// TODO: This is coming from the AppState?
 	balance := data.Balance{
 		Amount: data.Coin{Currency: "OLT", Amount: 21000000000},
 	}
-
 	buffer, _ := comm.Serialize(balance)
 	app.Utxo.Delivered.Set(data.DatabaseKey("Admin"), buffer)
 	app.Utxo.Delivered.SaveVersion()
@@ -102,6 +102,7 @@ func (app Application) SetOption(req RequestSetOption) ResponseSetOption {
 func (app Application) Info(req RequestInfo) ResponseInfo {
 	info := abci.NewResponseInfo(0, 0, 0)
 
+	// TODO: Get the correct height from the last committed tree
 	// lastHeight := app.Utxo.Commit.Height()
 
 	log.Debug("Message: Info", "req", req, "info", info)
@@ -196,7 +197,7 @@ func (app Application) Commit() ResponseCommit {
 	log.Debug("Message: Commit")
 
 	// Commit any pending changes.
-	//app.Utxo.Commit()
+	app.Utxo.Commit()
 
 	return ResponseCommit{}
 }

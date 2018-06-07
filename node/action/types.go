@@ -15,14 +15,14 @@ import (
 // inputs into a send transaction (similar to Bitcoin)
 type SendInput struct {
 	Address   id.Address   `json:"address"`
-	Coins     data.Coins   `json:"coins"`
-	Sequence  int          `json:"sequence"`
-	Signature id.Signature `json:"signature"`
+	Coin      data.Coin    `json:"coin"`
 	PubKey    PublicKey    `json:"pub_key"`
+	Signature id.Signature `json:"signature"`
+	Sequence  int          `json:"sequence"`
 }
 
 // outputs for a send transaction (similar to Bitcoin)
 type SendOutput struct {
 	Address id.Address `json:"address"`
-	Coins   data.Coins `json:"coins"`
+	Coin    data.Coin  `json:"coin"`
 }
