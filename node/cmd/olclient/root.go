@@ -10,7 +10,6 @@ import (
 	"os"
 
 	"github.com/Oneledger/protocol/node/global"
-	"github.com/Oneledger/protocol/node/log"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -22,7 +21,6 @@ var RootCmd = &cobra.Command{
 }
 
 func Execute() {
-	log.Debug("olclient")
 	if err := RootCmd.Execute(); err != nil {
 		fmt.Println(err)
 		os.Exit(-1)

@@ -48,13 +48,14 @@ func Register(app *Application, name string, scope string, chain data.ChainType)
 	status := false
 
 	if !app.Identities.Exists(name) {
-		log.Debug("Adding new Identity", "name", name)
+		log.Debug("Registering a new Identity", "name", name)
 		identity := id.NewIdentity(name, "Contact Info", false)
 		app.Identities.Add(identity)
 		status = true
 
 	} else {
-		log.Debug("Existing Identity", "name", name)
+		log.Debug("Not Registering existing Identity", "name", name)
+		app.Identities.Dump()
 	}
 
 	if chain == data.UNKNOWN {

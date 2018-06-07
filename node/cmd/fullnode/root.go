@@ -10,7 +10,6 @@ import (
 	"os"
 
 	"github.com/Oneledger/protocol/node/global"
-	"github.com/Oneledger/protocol/node/log"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -55,6 +54,5 @@ func init() {
 
 // Initialize Viper
 func environment() {
-	log.Debug("fullnode")
 	viper.AutomaticEnv()
 }

@@ -38,7 +38,13 @@ func NewAccounts(name string) *Accounts {
 }
 
 func (acc *Accounts) Add(account Account) {
+
+	if value := acc.data.Load(account.Key()); value != nil {
+		log.Debug("Key is being updated")
+	}
+
 	buffer, _ := comm.Serialize(account)
+
 	acc.data.Store(account.Key(), buffer)
 	acc.data.Commit()
 }

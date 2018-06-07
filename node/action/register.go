@@ -40,11 +40,13 @@ func (transaction Register) ProcessCheck(app interface{}) err.Code {
 	}
 
 	if id == nil {
+		log.Debug("Success, it is new", "id", id)
 		return err.SUCCESS
 	}
 
-	// TODO: // Update in memory copy of Merkle Tree
-	return err.DUPLICATE
+	log.Debug("Failure, it exists", "id", id)
+
+	return err.SUCCESS
 }
 
 // Add the identity into the database as external, don't overwrite a local identity
@@ -59,14 +61,17 @@ func (transaction Register) ProcessDeliver(app interface{}) err.Code {
 	}
 
 	if entry != nil {
-		if entry.IsExternal() {
-			return err.DUPLICATE
-		}
+		/*
+			if !entry.IsExternal() {
+				return err.SUCCESS
+			}
+		*/
 		log.Debug("Ignoring Duplicate Identity")
+	} else {
+		identities.Add(id.NewIdentity(transaction.Identity, "Contact Information", true))
 	}
-	identities.Add(id.NewIdentity(transaction.Identity, "Contact Information", true))
 
-	log.Info("Updating External Identity Reference!!!", "id", transaction.Identity)
+	log.Info("Updated External Identity Reference!!!", "id", transaction.Identity)
 
 	return err.SUCCESS
 }

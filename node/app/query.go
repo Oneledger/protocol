@@ -32,21 +32,29 @@ func HandleIdentityQuery(app Application, message []byte) []byte {
 
 	text := string(message)
 
+	name := ""
 	parts := strings.Split(text, "=")
-	if len(parts) == 0 {
-		ids := app.Identities.FindAll()
-		buffer := ""
-		for _, curr := range ids {
-			buffer += curr.AsString()
+	if len(parts) > 1 {
+		name = parts[1]
+	}
+	return IdentityInfo(app, name)
+}
+
+func IdentityInfo(app Application, name string) []byte {
+	if name == "" || name == "undefined" {
+		identities := app.Identities.FindAll()
+
+		count := fmt.Sprintf("%d", len(identities))
+		buffer := "Answer: " + count + " "
+
+		for _, curr := range identities {
+			buffer += curr.AsString() + ", "
 		}
 		return []byte(buffer)
-
-	} else if len(parts) == 2 {
-		if parts[0] == "Identity" {
-			return []byte("Identity Information")
-		}
 	}
-	return []byte("Unknown Identity Query")
+	identity, _ := app.Identities.Find(name)
+
+	return []byte(identity.AsString())
 }
 
 // Get the account information for a given user

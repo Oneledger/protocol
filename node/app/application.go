@@ -11,6 +11,7 @@ import (
 
 	"github.com/Oneledger/protocol/node/abci"
 	"github.com/Oneledger/protocol/node/action"
+	"github.com/Oneledger/protocol/node/comm"
 	"github.com/Oneledger/protocol/node/data"
 	"github.com/Oneledger/protocol/node/id"
 	"github.com/Oneledger/protocol/node/log"
@@ -75,6 +76,14 @@ func (app Application) GetUtxo() interface{} {
 func (app Application) InitChain(req RequestInitChain) ResponseInitChain {
 	log.Debug("Message: InitChain", "req", req)
 
+	balance := data.Balance{
+		Amount: data.Coin{Currency: "OLT", Amount: 21000000000},
+	}
+
+	buffer, _ := comm.Serialize(balance)
+	app.Utxo.Delivered.Set(data.DatabaseKey("Admin"), buffer)
+	app.Utxo.Delivered.SaveVersion()
+
 	// TODO: Insure that all of the databases and shared resources are reset here
 
 	return ResponseInitChain{}
@@ -119,7 +128,7 @@ func (app Application) CheckTx(tx []byte) ResponseCheckTx {
 	log.Debug("Message: CheckTx", "tx", tx)
 
 	result, err := action.Parse(action.Message(tx))
-	if err != 0 {
+	if err != 0 || result == nil {
 		return ResponseCheckTx{Code: err}
 	}
 
@@ -160,7 +169,7 @@ func (app Application) DeliverTx(tx []byte) ResponseDeliverTx {
 	log.Debug("Message: DeliverTx", "tx", tx)
 
 	result, err := action.Parse(action.Message(tx))
-	if err != 0 {
+	if err != 0 || result == nil {
 		return ResponseDeliverTx{Code: err}
 	}
 

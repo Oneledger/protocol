@@ -37,15 +37,20 @@ func NewIdentities(name string) *Identities {
 }
 
 func (ids *Identities) Add(identity *Identity) {
-	buffer, err := comm.Serialize(identity)
-	key := identity.Key()
 
+	buffer, err := comm.Serialize(identity)
 	if err != nil {
 		log.Error("Serialize Failed", "err", err)
 		return
 	}
+
+	key := identity.Key()
 	ids.data.Store(key, buffer)
 	ids.data.Commit()
+}
+
+func (ids *Identities) Close() {
+	ids.data.Close()
 }
 
 func (ids *Identities) Delete() {
@@ -59,11 +64,22 @@ func (ids *Identities) Exists(name string) bool {
 		log.Debug("Identity Exists", "name", name, "value", value)
 		return true
 	}
+
 	log.Debug("Identity Does not Exist", "name", name)
 	return false
 }
 
 func (ids *Identities) Find(name string) (*Identity, err.Code) {
+	id := NewIdentity(name, "", true)
+
+	value := ids.data.Load(id.Key())
+	if value != nil {
+		identity := &Identity{}
+		base, _ := comm.Deserialize(value, identity)
+
+		return base.(*Identity), err.SUCCESS
+	}
+
 	return nil, err.SUCCESS
 }
 

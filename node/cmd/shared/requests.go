@@ -18,9 +18,9 @@ import (
 	"github.com/Oneledger/protocol/node/log"
 )
 
-func SignAndPack(transaction action.Transaction) []byte {
+func SignAndPack(ttype action.Type, transaction action.Transaction) []byte {
 	signed := action.SignTransaction(transaction)
-	packet := action.PackRequest(signed)
+	packet := action.PackRequest(ttype, signed)
 
 	return packet
 }
@@ -35,7 +35,7 @@ func CreateRegisterRequest(args *RegisterArguments) []byte {
 
 	reg := &action.Register{
 		Base: action.Base{
-			Type:     action.SEND,
+			Type:     action.REGISTER,
 			ChainId:  app.ChainId,
 			Signers:  signers,
 			Sequence: global.Current.Sequence,
@@ -43,7 +43,7 @@ func CreateRegisterRequest(args *RegisterArguments) []byte {
 		Identity: args.Identity,
 	}
 
-	return SignAndPack(action.Transaction(reg))
+	return SignAndPack(action.REGISTER, action.Transaction(reg))
 }
 
 type SendArguments struct {
@@ -94,7 +94,7 @@ func CreateSendRequest(args *SendArguments) []byte {
 		Gas: gas,
 	}
 
-	return SignAndPack(action.Transaction(send))
+	return SignAndPack(action.SEND, action.Transaction(send))
 }
 
 // Arguments to the command
@@ -165,5 +165,5 @@ func CreateSwapRequest(args *SwapArguments) []byte {
 		Nonce:        args.Nonce,
 	}
 
-	return SignAndPack(action.Transaction(swap))
+	return SignAndPack(action.SWAP, action.Transaction(swap))
 }

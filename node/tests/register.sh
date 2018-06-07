@@ -22,13 +22,15 @@ list="Admin Alice Bob Carol"
 for name in $list 
 do
 	address=`$CMD/lookup $name RPCAddress tcp://127.0.0.1:`
+	nodeName=`$CMD/lookup $name NodeName`
+	WORK=$OLDATA/$nodeName
 
 	$CMD/stopNode $name 
 
-	fullnode register --identity $name --address $address
-	fullnode register --identity $name --address $address --chain OneLedger --pubkey 0x01 --privkey 0x01
-	fullnode register --identity $name --address $address --chain Bitcoin --pubkey 0x01 --privkey 0x01
-	fullnode register --identity $name --address $address --chain Ethereum --pubkey 0x01 --privkey 0x01
+	fullnode register --root $WORK/fullnode --identity $name --address $address
+	fullnode register --root $WORK/fullnode --identity $name --address $address --chain OneLedger --pubkey 0x01 --privkey 0x01
+	fullnode register --root $WORK/fullnode --identity $name --address $address --chain Bitcoin --pubkey 0x01 --privkey 0x01
+	fullnode register --root $WORK/fullnode --identity $name --address $address --chain Ethereum --pubkey 0x01 --privkey 0x01
 
 	$CMD/startNode $name register 
 done

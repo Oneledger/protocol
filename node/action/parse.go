@@ -8,23 +8,25 @@
 package action
 
 import (
+	"github.com/Oneledger/protocol/node/comm"
 	"github.com/Oneledger/protocol/node/err"
 	"github.com/Oneledger/protocol/node/log"
 	wire "github.com/tendermint/go-wire"
 )
 
-// Unpack an encoded (wire) message
 func UnpackMessage(message Message) (Type, Message) {
-	value, size, err := wire.GetVarint(message)
-	if err != nil {
-		log.Debug("Wire returned an error", "err", err)
-		panic("Wire Error")
-	}
-	if size != 2 {
-		log.Debug("Wire returned a bad size", "size", size)
-		panic("Sizing Error")
-	}
-	return Type(value), message[1:]
+	value := wire.GetInt32(message)
+	/*
+		if err != nil {
+			log.Debug("Wire returned an error", "err", err)
+			panic("Wire Error")
+		}
+		if size != 2 {
+			log.Debug("Wire returned a bad size", "size", size)
+			panic("Sizing Error")
+		}
+	*/
+	return Type(value), message[4:]
 
 }
 
@@ -69,6 +71,11 @@ func Parse(message Message) (Transaction, err.Code) {
 
 	case FORGET:
 		action := ParseForget(body)
+
+		return action, err.SUCCESS
+
+	case REGISTER:
+		action := ParseRegister(body)
 
 		return action, err.SUCCESS
 
@@ -118,9 +125,8 @@ func ParseExternalLock(message Message) *ExternalLock {
 
 // Parse a ready request
 func ParsePrepare(message Message) *Prepare {
-	log.Debug("Have a Ready")
+	log.Debug("Have a Prepare")
 
-	//return &SwapTransaction{Type: SWAP_TRANSACTION}
 	return &Prepare{
 		Base: Base{Type: PREPARE},
 	}
@@ -128,9 +134,8 @@ func ParsePrepare(message Message) *Prepare {
 
 // Parse a ready request
 func ParseCommit(message Message) *Commit {
-	log.Debug("Have a Ready")
+	log.Debug("Have a Commit")
 
-	//return &SwapTransaction{Type: SWAP_TRANSACTION}
 	return &Commit{
 		Base: Base{Type: COMMIT},
 	}
@@ -138,10 +143,24 @@ func ParseCommit(message Message) *Commit {
 
 // Forget the transaction
 func ParseForget(message Message) *Forget {
-	log.Debug("Have a Ready")
+	log.Debug("Have a Forget")
 
-	//return &SwapTransaction{Type: SWAP_TRANSACTION}
 	return &Forget{
 		Base: Base{Type: FORGET},
 	}
+}
+
+// Forget the transaction
+func ParseRegister(message Message) *Register {
+	log.Debug("Have a Register Request")
+	register := &Register{
+		Base: Base{Type: REGISTER},
+	}
+
+	result, err := comm.Deserialize(message, register)
+	if err != nil {
+		log.Error("ParseRegister", "err", err)
+		return nil
+	}
+	return result.(*Register)
 }
