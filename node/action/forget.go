@@ -10,7 +10,6 @@ import (
 	"github.com/Oneledger/protocol/node/log"
 )
 
-// TODO: This needs to be filled out properly, need a model for other-chain actions...
 type Forget struct {
 	Base
 

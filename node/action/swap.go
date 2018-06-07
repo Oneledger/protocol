@@ -18,10 +18,10 @@ type Swap struct {
 
 	Party        id.Address `json:"party"`
 	CounterParty id.Address `json:"counter_party"`
-	Fee          data.Coin  `json:"fee"`
-	Gas          data.Coin  `json:"fee"`
 	Amount       data.Coin  `json:"amount"`
 	Exchange     data.Coin  `json:"exchange"`
+	Fee          data.Coin  `json:"fee"`
+	Gas          data.Coin  `json:"fee"`
 	Nonce        int64      `json:"nonce"`
 }
 
@@ -65,8 +65,11 @@ func (transaction *Swap) Expand(app interface{}) Commands {
 
 // Plug in data from the rest of a system into a set of commands
 func Resolve(app interface{}, commands Commands) {
+	// TODO: Pick the chain
+	// TODO: Fill in all of the necessary data
 }
 
+// Execute the function
 func Execute(app interface{}, command Command) err.Code {
 	return err.SUCCESS
 }

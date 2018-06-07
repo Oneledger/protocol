@@ -6,6 +6,7 @@ package action
 
 type CommandType int
 
+// Set of possible commands that can be driven from a transaction
 const (
 	NOOP CommandType = iota
 	SUBMIT_TRANSACTION

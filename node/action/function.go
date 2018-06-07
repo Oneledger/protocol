@@ -1,5 +1,7 @@
 /*
 	Copyright 2017 - 2018 OneLedger
+
+	Table-driven list of all of the possible functions associated with their transactions
 */
 package action
 

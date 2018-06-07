@@ -10,7 +10,6 @@ import (
 	"github.com/Oneledger/protocol/node/data"
 	"github.com/Oneledger/protocol/node/err"
 	"github.com/Oneledger/protocol/node/log"
-	"github.com/Oneledger/protocol/node/persist"
 )
 
 // Synchronize a swap between two users
@@ -44,7 +43,7 @@ func (transaction *Send) ProcessCheck(app interface{}) err.Code {
 func (transaction *Send) ProcessDeliver(app interface{}) err.Code {
 	log.Debug("Processing Send Transaction for DeliverTx")
 
-	chain := app.(persist.Access).GetUtxo().(*data.ChainState)
+	chain := GetUtxo(app)
 
 	// TODO: Revalidate the transaction
 	// TODO: Need to rollback if any errors occur

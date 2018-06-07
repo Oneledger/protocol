@@ -9,7 +9,6 @@ import (
 	"github.com/Oneledger/protocol/node/err"
 	"github.com/Oneledger/protocol/node/id"
 	"github.com/Oneledger/protocol/node/log"
-	"github.com/Oneledger/protocol/node/persist"
 )
 
 // Register an identity with the chain
@@ -32,7 +31,7 @@ func (transaction Register) Validate() err.Code {
 func (transaction Register) ProcessCheck(app interface{}) err.Code {
 	log.Debug("Processing Register Transaction for CheckTx")
 
-	identities := app.(persist.Access).GetIdentities().(*id.Identities)
+	identities := GetIdentities(app)
 	id, errs := identities.Find(transaction.Identity)
 
 	if errs != err.SUCCESS {
@@ -53,7 +52,7 @@ func (transaction Register) ProcessCheck(app interface{}) err.Code {
 func (transaction Register) ProcessDeliver(app interface{}) err.Code {
 	log.Debug("Processing Register Transaction for DeliverTx")
 
-	identities := app.(persist.Access).GetIdentities().(*id.Identities)
+	identities := GetIdentities(app)
 	entry, errs := identities.Find(transaction.Identity)
 
 	if errs != err.SUCCESS {

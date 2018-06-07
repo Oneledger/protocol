@@ -14,22 +14,14 @@ import (
 	wire "github.com/tendermint/go-wire"
 )
 
+// Pull out the type, so that the message can be deserialized
 func UnpackMessage(message Message) (Type, Message) {
 	value := wire.GetInt32(message)
-	/*
-		if err != nil {
-			log.Debug("Wire returned an error", "err", err)
-			panic("Wire Error")
-		}
-		if size != 2 {
-			log.Debug("Wire returned a bad size", "size", size)
-			panic("Sizing Error")
-		}
-	*/
 	return Type(value), message[4:]
 
 }
 
+// TODO: Need a better way to handle the polymorphism...
 // Parse a message into the appropriate transaction
 func Parse(message Message) (Transaction, err.Code) {
 	log.Debug("Parsing a Transaction")
@@ -88,66 +80,107 @@ func Parse(message Message) (Transaction, err.Code) {
 
 // Parse a send request
 func ParseSend(message Message) *Send {
-	log.Debug("Have a Send")
-
-	return &Send{
+	log.Debug("Have a Send Request")
+	register := &Send{
 		Base: Base{Type: SEND},
 	}
+
+	result, err := comm.Deserialize(message, register)
+	if err != nil {
+		log.Error("ParseSend", "err", err)
+		return nil
+	}
+	return result.(*Send)
 }
 
 // Parse a swap request
 func ParseSwap(message Message) *Swap {
-	log.Debug("Have a Swap")
-
-	//return &SwapTransaction{Type: SWAP_TRANSACTION}
-	return &Swap{
+	log.Debug("Have a Swap` Request")
+	register := &Swap{
 		Base: Base{Type: SWAP},
 	}
+
+	result, err := comm.Deserialize(message, register)
+	if err != nil {
+		log.Error("ParseSwap", "err", err)
+		return nil
+	}
+	return result.(*Swap)
 }
 
 // Parse a send request
 func ParseExternalSend(message Message) *ExternalSend {
-	log.Debug("Have an ExternalSend")
-
-	return &ExternalSend{
+	log.Debug("Have a ExternalSend Request")
+	register := &ExternalSend{
 		Base: Base{Type: EXTERNAL_SEND},
 	}
+
+	result, err := comm.Deserialize(message, register)
+	if err != nil {
+		log.Error("ParseExternalSend", "err", err)
+		return nil
+	}
+	return result.(*ExternalSend)
 }
 
 // Parse a send request
 func ParseExternalLock(message Message) *ExternalLock {
-	log.Debug("Have an ExternalLock")
-
-	return &ExternalLock{
+	log.Debug("Have a ExternalLock Request")
+	register := &ExternalLock{
 		Base: Base{Type: EXTERNAL_LOCK},
 	}
+
+	result, err := comm.Deserialize(message, register)
+	if err != nil {
+		log.Error("ParseExternalLock", "err", err)
+		return nil
+	}
+	return result.(*ExternalLock)
 }
 
 // Parse a ready request
 func ParsePrepare(message Message) *Prepare {
-	log.Debug("Have a Prepare")
-
-	return &Prepare{
+	log.Debug("Have a Prepare Request")
+	register := &Prepare{
 		Base: Base{Type: PREPARE},
 	}
+
+	result, err := comm.Deserialize(message, register)
+	if err != nil {
+		log.Error("ParsePrepare", "err", err)
+		return nil
+	}
+	return result.(*Prepare)
 }
 
 // Parse a ready request
 func ParseCommit(message Message) *Commit {
-	log.Debug("Have a Commit")
-
-	return &Commit{
+	log.Debug("Have a Commit Request")
+	register := &Commit{
 		Base: Base{Type: COMMIT},
 	}
+
+	result, err := comm.Deserialize(message, register)
+	if err != nil {
+		log.Error("ParseCommit", "err", err)
+		return nil
+	}
+	return result.(*Commit)
 }
 
 // Forget the transaction
 func ParseForget(message Message) *Forget {
-	log.Debug("Have a Forget")
-
-	return &Forget{
+	log.Debug("Have a Forget Request")
+	register := &Forget{
 		Base: Base{Type: FORGET},
 	}
+
+	result, err := comm.Deserialize(message, register)
+	if err != nil {
+		log.Error("ParseForget", "err", err)
+		return nil
+	}
+	return result.(*Forget)
 }
 
 // Forget the transaction
