@@ -1,20 +1,15 @@
 package olwallet
 
 import (
-	"bytes"
-	"crypto/sha256"
-	"encoding/hex"
-	"errors"
-	"fmt"
-	"os"
 	"strconv"
-	"strings"
 	"testing"
 
 	"github.com/btcsuite/btcd/chaincfg"
 	rpc "github.com/btcsuite/btcd/rpcclient"
-	"github.com/btcsuite/btcd/wire"
 	"github.com/btcsuite/btcutil"
+	"github.com/btcsuite/btcd/wire"
+	"encoding/hex"
+	"bytes"
 )
 
 
@@ -68,7 +63,11 @@ func TestInitiateCommand(t *testing.T) {
 
 	var cmd command
 	cmd = &initiateCmd{cp2Addr: cp2AddrP2PKH, amount: amount}
+	runCommand(cmd)
+}
 
+
+func runCommand(cmd command) {
 	// Offline commands don't need to talk to the wallet.
 	if cmd, ok := cmd.(offlineCommand); ok {
 		cmd.runOfflineCommand()
@@ -96,4 +95,31 @@ func TestInitiateCommand(t *testing.T) {
 	}()
 
 	err = cmd.runCommand(client)
+}
+
+
+func TestRedeemCommand(t *testing.T) {
+	contract, err := hex.DecodeString("")
+	if err != nil {
+		t.Errorf("failed to decode contract: %v", err)
+	}
+
+	contractTxBytes, err := hex.DecodeString("")
+	if err != nil {
+		t.Errorf("failed to decode contract transaction: %v", err)
+	}
+	var contractTx wire.MsgTx
+	err = contractTx.Deserialize(bytes.NewReader(contractTxBytes))
+	if err != nil {
+		t.Errorf("failed to decode contract transaction: %v", err)
+	}
+
+	secret, err := hex.DecodeString("")
+	if err != nil {
+		t.Errorf("failed to decode secret: %v", err)
+	}
+
+	var cmd command
+	cmd = &redeemCmd{contract: contract, contractTx: &contractTx, secret: secret}
+	runCommand(cmd)
 }
