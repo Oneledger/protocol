@@ -69,7 +69,7 @@ func (ids *Identities) Exists(name string) bool {
 	return false
 }
 
-func (ids *Identities) Find(name string) (*Identity, err.Code) {
+func (ids *Identities) FindName(name string) (*Identity, err.Code) {
 	id := NewIdentity(name, "", true)
 
 	value := ids.data.Load(id.Key())
@@ -126,7 +126,7 @@ func (id *Identity) AsString() string {
 	if id.External {
 		buffer += "(External)"
 	} else {
-		buffer += " " + id.ContactInfo
+		buffer += "(Local) " + id.ContactInfo
 	}
 	return buffer
 }

@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/Oneledger/protocol/node/id"
 	crypto "github.com/tendermint/go-crypto"
 )
 
@@ -68,16 +69,26 @@ func (convert *Convert) AddError(value string, err error) {
 	convert.Next++
 }
 
+// TODO: Should go through a set of different possibilties and settle on the best option
+func (convert *Convert) GetAccountKey(value string) id.AccountKey {
+	// TODO: See if this is an identity?
+	// TODO: See if this is in utxo?
+	return id.AccountKey(value)
+}
+
+// TODO: Needs to have real values
 func (convert *Convert) GetPublicKey(value string) PublicKey {
 	// TODO: Is this a file reference? If so, read in the key
 	// TODO: Is this actionally the key
 	return PublicKey{}
 }
 
+// TODO: Needs to have real values
 func (convert *Convert) GetPrivateKey(value string) PrivateKey {
 	return PrivateKey{}
 }
 
+// TODO: Need to be ripeMd?
 func (convert *Convert) HashKey(key PublicKey) []byte {
 	return nil
 }

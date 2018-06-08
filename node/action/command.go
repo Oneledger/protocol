@@ -4,6 +4,8 @@
 
 package action
 
+import "github.com/Oneledger/protocol/node/data"
+
 type CommandType int
 
 // Set of possible commands that can be driven from a transaction
@@ -23,6 +25,7 @@ const (
 type Command struct {
 	Function CommandType
 	Data     map[string]string
+	Chain    data.ChainType
 }
 
 type Commands []Command

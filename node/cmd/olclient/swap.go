@@ -49,15 +49,17 @@ func SwapCurrency(cmd *cobra.Command, args []string) {
 	log.Debug("Returned Successfully", "result", result)
 }
 
-func GetAddress(value string) id.Address {
-	return id.Address{}
+// TODO: Do this properly
+func GetAccountKey(value string) id.AccountKey {
+	return id.AccountKey{}
 }
 
+// TODO: Check to see that this is a valid currency
 func GetCurrency(value string) string {
-	// TODO: Check to see that this is a valid currency
 	return value
 }
 
+// TODO: Fix this
 func GetInteger(value string) int64 {
 	return -1
 }

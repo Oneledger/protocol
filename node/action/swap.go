@@ -16,13 +16,13 @@ import (
 type Swap struct {
 	Base
 
-	Party        id.Address `json:"party"`
-	CounterParty id.Address `json:"counter_party"`
-	Amount       data.Coin  `json:"amount"`
-	Exchange     data.Coin  `json:"exchange"`
-	Fee          data.Coin  `json:"fee"`
-	Gas          data.Coin  `json:"fee"`
-	Nonce        int64      `json:"nonce"`
+	Party        id.AccountKey `json:"party"`
+	CounterParty id.AccountKey `json:"counter_party"`
+	Amount       data.Coin     `json:"amount"`
+	Exchange     data.Coin     `json:"exchange"`
+	Fee          data.Coin     `json:"fee"`
+	Gas          data.Coin     `json:"fee"`
+	Nonce        int64         `json:"nonce"`
 }
 
 // Issue swaps across other chains, make sure fees are collected

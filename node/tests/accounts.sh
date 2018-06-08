@@ -6,6 +6,8 @@
 CMD=$GOPATH/src/github.com/Oneledger/protocol/node/scripts
 OLTEST=$GOPATH/src/github.com/Oneledger/protocol/node/tests
 
+$CMD/startChain
+
 # Find the addresses
 addrAdmin=`$CMD/lookup Admin RPCAddress tcp://127.0.0.1:`
 addrAlice=`$CMD/lookup Alice RPCAddress tcp://127.0.0.1:`

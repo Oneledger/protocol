@@ -32,19 +32,20 @@ func (transaction Register) ProcessCheck(app interface{}) err.Code {
 	log.Debug("Processing Register Transaction for CheckTx")
 
 	identities := GetIdentities(app)
-	id, errs := identities.Find(transaction.Identity)
+	id, errs := identities.FindName(transaction.Identity)
 
 	if errs != err.SUCCESS {
 		return errs
 	}
 
 	if id == nil {
-		log.Debug("Success, it is new", "id", id)
+		log.Debug("Success, can add new Identity", "id", id)
 		return err.SUCCESS
 	}
 
-	log.Debug("Failure, it exists", "id", id)
+	log.Debug("Identity already exists", "id", id)
 
+	// TODO: Not necessarily a failure, since this identity might be local
 	return err.SUCCESS
 }
 
@@ -53,7 +54,7 @@ func (transaction Register) ProcessDeliver(app interface{}) err.Code {
 	log.Debug("Processing Register Transaction for DeliverTx")
 
 	identities := GetIdentities(app)
-	entry, errs := identities.Find(transaction.Identity)
+	entry, errs := identities.FindName(transaction.Identity)
 
 	if errs != err.SUCCESS {
 		return errs

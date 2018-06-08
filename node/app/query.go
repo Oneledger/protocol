@@ -43,7 +43,7 @@ func HandleIdentityQuery(app Application, message []byte) []byte {
 }
 
 func IdentityInfo(app Application, name string) []byte {
-	if name == "" || name == "undefined" {
+	if name == "" {
 		identities := app.Identities.FindAll()
 
 		count := fmt.Sprintf("%d", len(identities))
@@ -54,7 +54,7 @@ func IdentityInfo(app Application, name string) []byte {
 		}
 		return []byte(buffer)
 	}
-	identity, _ := app.Identities.Find(name)
+	identity, _ := app.Identities.FindName(name)
 
 	return []byte(identity.AsString())
 }
@@ -74,23 +74,25 @@ func HandleAccountQuery(app Application, message []byte) []byte {
 }
 
 func AccountInfo(app Application, name string) []byte {
-	if name == "" || name == "undefined" {
+	if name == "" {
 		accounts := app.Accounts.FindAll()
 
 		count := fmt.Sprintf("%d", len(accounts))
-		buffer := "Answer: " + count + " "
+		buffer := "Answer[" + count + "]: "
 
 		for _, curr := range accounts {
-			buffer += curr.AsString() + ", "
+			buffer += curr.AsString()
 			if curr.Chain() == data.ONELEDGER {
 				buffer += GetBalance(app, curr)
 			}
+			buffer += ", "
 		}
 		return []byte(buffer)
 	}
-	account, _ := app.Accounts.Find(name)
+	account, _ := app.Accounts.FindName(name)
+	log.Debug("account", "account", account)
 
-	buffer := "Answer: 1 account.AsString()"
+	buffer := "Answer[1]: " + account.AsString()
 	if account.Chain() == data.ONELEDGER {
 		buffer += GetBalance(app, account)
 	}
@@ -98,11 +100,15 @@ func AccountInfo(app Application, name string) []byte {
 }
 
 func GetBalance(app Application, account id.Account) string {
-	result := app.Utxo.Find(account.Key())
+	log.Debug("Searching for", "key", account.AccountKey())
+
+	result := app.Utxo.Find(account.AccountKey())
 	if result == nil {
-		return ""
+		buffer := fmt.Sprintf("%x", account.AccountKey())
+		return " NOT FOUND: " + buffer
 	}
-	return fmt.Sprintf("%d", result.Amount)
+
+	return fmt.Sprintf(" %d", result.Amount)
 }
 
 // Return a nicely formatted error message

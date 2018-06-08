@@ -28,8 +28,9 @@ func init() {
 	waitCmd.Flags().StringArrayVar(&strings, "party", strings, "send recipient")
 }
 
+// TODO: Wait for real things to happen...
 func Wait(cmd *cobra.Command, args []string) {
 	log.Debug("Waiting")
-	time.Sleep(10 * 1024 * 1024)
+	time.Sleep(10 * time.Second)
 
 }

@@ -13,6 +13,10 @@ type Coin struct {
 
 type Coins []Coin
 
+func NewCoin(amount int64, currency string) Coin {
+	return Coin{Currency: currency, Amount: amount}
+}
+
 func (coin Coin) Minus(value Coin) Coin {
 
 	if coin.Currency != value.Currency {

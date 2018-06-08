@@ -50,6 +50,6 @@ func RegisterUsers(cmd *cobra.Command, args []string) {
 
 	accountType := id.ParseAccountType(chain)
 
-	app.Register(node, name, chain, accountType)
+	app.RegisterLocally(node, name, chain, accountType)
 
 }

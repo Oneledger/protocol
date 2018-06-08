@@ -15,6 +15,7 @@ addrAlice=`$CMD/lookup Alice RPCAddress tcp://127.0.0.1:`
 addrBob=`$CMD/lookup Bob RPCAddress tcp://127.0.0.1:`
 
 # List out the account details
+olclient identity --identity Alice --address $addrAlice
 olclient account --identity Alice --address $addrAlice
 
 $CMD/stopOneLedger

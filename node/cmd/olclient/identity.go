@@ -30,7 +30,7 @@ func init() {
 
 	// TODO: I want to have a default account?
 	// Transaction Parameters
-	identityCmd.Flags().StringVar(&ident.identity, "identity", "undefined", "identity name")
+	identityCmd.Flags().StringVar(&ident.identity, "identity", "", "identity name")
 }
 
 // Format the request into a query structure

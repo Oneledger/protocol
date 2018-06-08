@@ -18,3 +18,7 @@ type Balance struct {
 	// Address id.Address
 	Amount Coin
 }
+
+func NewBalance(amount int64, currency string) Balance {
+	return Balance{Amount: NewCoin(amount, currency)}
+}

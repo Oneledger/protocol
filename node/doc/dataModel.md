@@ -3,9 +3,11 @@
 ## Notes
 
 - All keys are numeric (how do we generate these?)
-- All entities have a readable string name (or composite)
+- Decentralized keys are hard to make unique
+- All entities have a readable string name (or composite), that isn't the key
 - Lists are ordered, sets are not
 - Domain tables are persistent enumerations that are changable at runtime
+- Permissions should be on both code and data, and they should be separated
 
 ## Model
 
@@ -21,9 +23,10 @@ Identity -- an individual in meatspace
 	- Contact Info
 	- default Account
 	- Set of Accounts (Set of Wallets?)
-	- Set of Trusted ChainNode 
+	- Set of Trusted ChainNodes
 
-Group -- a hiearchtical (or graph) collection, fine-grained
+
+Group -- a hiearchtical (or graph?) collection, fine-grained
 
 	- Group Id
 	-----------------------
@@ -32,12 +35,12 @@ Group -- a hiearchtical (or graph) collection, fine-grained
 	- Public key?
 	- Private key?
 
-	- Set of Roles
-	- Set of Data
+	- Set of Accessible Roles
+	- Set of Accessible Data
 
 	- Set of Identities and Groups (parents or children?)
 
-Role -- the ability to view data or perform an an action
+Role -- the ability to view or perform an an action
 
 	- Role Id
 	-----------------------
@@ -46,11 +49,16 @@ Role -- the ability to view data or perform an an action
 	- Action
 	- Data?
 
+Address -- Bitcoin temporary random address
+Address -- Tendermint hash of public
+Address -- Ethereum hash of public
+
 Account -- information needed to access an account on a chain
 
-	- Address (hash of pubkey)
+	- Account Key - Different (OneLedger, Ethereum or Bitcoin)
 	-----------------------
 
+	- Name
 	- Chain 
 	- Public key
 	- Private key
@@ -65,7 +73,7 @@ Wallet -- a group of accounts
 
 Balance -- the last known balance of an account on a chain (leafs in UTXO)
 
-	- Address (hash of pubkey)
+	- Account Key
 	-----------------------
 
 	- Coin
@@ -86,9 +94,24 @@ ChainNode -- a specific access point in a chain
 
 	-----------------------
 
-	- Name
+	- NodeName
 	- Location
 	- Permissions?
+
+AccountKey
+	- Can be an identity
+	- Can be an account on a chain
+	- Can be an temporary account on a chain
+
+Inputs -- account and existing balance
+
+	-----------------------
+
+
+Outputs -- account and new balance
+
+	-----------------------
+
 
 Transaction -- an action sent to our chain (instruction, statement, expression, transaction)
 
@@ -97,7 +120,7 @@ Transaction -- an action sent to our chain (instruction, statement, expression, 
 	- Transaction Type 
 	- Transaction Data
 
-TransactionDomain
+TransactionDomain -- Types of available transactions
 
 	- Send
 	- ExternalSend
@@ -189,5 +212,4 @@ ExternalSwap Steps:
 	- send pre-image to counterparty
 	- read the opposite chain
 	- open lockbox
-
 

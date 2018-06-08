@@ -86,7 +86,7 @@ func Broadcast(packet []byte) *ctypes.ResultBroadcastTxCommit {
 
 // Send a very specific query
 func Query(path string, packet []byte) *ctypes.ResultABCIQuery {
-	log.Debug("ABCi Query")
+	log.Debug("sending ABCi Query", "path", path, "packet", packet)
 
 	client := GetClient()
 

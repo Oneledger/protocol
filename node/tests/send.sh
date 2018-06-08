@@ -6,6 +6,7 @@
 CMD=$GOPATH/src/github.com/Oneledger/protocol/node/scripts
 
 $CMD/startOneLedger
+sleep 5
 
 addrAdmin=`$OLSCRIPT/lookup Admin RPCAddress tcp://127.0.0.1:`
 addrAlice=`$OLSCRIPT/lookup Alice RPCAddress tcp://127.0.0.1:`
@@ -22,5 +23,5 @@ sleep 5
 
 olclient account --address $addrAdmin
 olclient account --address $addrBob
+olclient account --address $addrAlice
 
-#$CMD/stopOneLedger

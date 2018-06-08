@@ -47,9 +47,11 @@ type Base struct {
 	ChainId string      `json:"chain_id"` // TODO: Not necessary?
 	Signers []PublicKey `json:"signers"`
 
+	// Relative to Chain
+	Owner id.AccountKey `json:"owner"`
+
 	// TODO: Should these be for all transactions or just driving ones?
-	Sequence int        `json:"sequence"`
-	Owner    id.Address `json:"owner"`
+	Sequence int `json:"sequence"`
 }
 
 // Get the correct chain for an action

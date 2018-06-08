@@ -50,8 +50,8 @@ func (transaction *Send) ProcessDeliver(app interface{}) err.Code {
 
 	// Update the database to the final set of entries
 	for _, entry := range transaction.Outputs {
-		value, _ := comm.Serialize(entry.Coin)
-		chain.Delivered.Set(entry.Address, value)
+		buffer, _ := comm.Serialize(entry.Amount)
+		chain.Delivered.Set(entry.AccountKey, buffer)
 	}
 
 	return err.SUCCESS

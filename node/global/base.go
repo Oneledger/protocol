@@ -24,13 +24,16 @@ var Current *Context
 
 type Context struct {
 	Application persist.Access
-	Debug       bool   // DEBUG flag
-	Node        string // Name of this instance
-	RootDir     string // Working directory for this instance
-	Transport   string // socket vs grpc
-	App         string // app address
-	Address     string // node address
-	Sequence    int
+
+	Debug bool // DEBUG flag
+
+	Node      string // Name of this instance
+	RootDir   string // Working directory for this instance
+	App       string // app address
+	Address   string // node address
+	Transport string // socket vs grpc
+
+	Sequence int
 }
 
 func init() {

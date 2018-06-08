@@ -38,7 +38,23 @@ func NewChainState(name string, newType DatastoreType) *ChainState {
 	return chain
 }
 
-func (state *ChainState) Find(key []byte) *Balance {
+// Test this against the checked UTXO data to make sure the transaction is legit
+func (state *ChainState) Test(key DatabaseKey, balance Balance) bool {
+	//buffer := comm.Serialize(balance)
+	//state.Checked.Set(key, buffer)
+	return true
+}
+
+// Do this for the Delivery side
+func (state *ChainState) Set(key DatabaseKey, balance Balance) {
+	buffer, _ := comm.Serialize(balance)
+
+	// TODO: Get some error handling in here
+	state.Delivered.Set(key, buffer)
+}
+
+// TODO: Should be against the commit tree, not the delivered one!!!
+func (state *ChainState) Find(key DatabaseKey) *Balance {
 	version := state.Delivered.Version64()
 	_, value := state.Delivered.GetVersioned(key, version)
 	if value != nil {
@@ -47,6 +63,16 @@ func (state *ChainState) Find(key []byte) *Balance {
 		return result.(*Balance)
 	}
 	return nil
+}
+
+// TODO: Should be against the commit tree, not the delivered one!!!
+func (state *ChainState) Exists(key DatabaseKey) bool {
+	version := state.Delivered.Version64()
+	_, value := state.Delivered.GetVersioned([]byte(key), version)
+	if value != nil {
+		return true
+	}
+	return false
 }
 
 func createDatabase(name string, newType DatastoreType) *iavl.VersionedTree {

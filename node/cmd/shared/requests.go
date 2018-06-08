@@ -55,7 +55,8 @@ type SendArguments struct {
 	Fee          string
 }
 
-func GetBalance(name id.Address) data.Coin {
+// TODO: Get this from the database
+func GetBalance(account id.AccountKey) data.Coin {
 	balance := data.Coin{
 		Currency: "OLT",
 		Amount:   100,
@@ -76,8 +77,16 @@ func CreateSendRequest(args *SendArguments) []byte {
 
 	conv := convert.NewConvert()
 
-	party := id.Address(conv.GetHash(args.Party))
-	counterParty := id.Address(conv.GetHash(args.CounterParty))
+	if args.Party == "" {
+		log.Fatal("Missing Party information")
+	}
+	if args.CounterParty == "" {
+		log.Fatal("Missing Party information")
+	}
+
+	// TODO: Can't convert identities to accounts, this way!
+	party := conv.GetAccountKey(args.Party)
+	counterParty := conv.GetAccountKey(args.CounterParty)
 
 	amount := data.Coin{
 		Currency: conv.GetCurrency(args.Currency),
@@ -89,29 +98,15 @@ func CreateSendRequest(args *SendArguments) []byte {
 	counterPartyBalance := GetBalance(counterParty)
 
 	inputs := make([]action.SendInput, 2)
-	input := action.SendInput{
-		Address: party,
-		Coin:    partyBalance,
-	}
-	inputs = append(inputs, input)
-	input = action.SendInput{
-		Address: counterParty,
-		Coin:    counterPartyBalance,
-	}
-	inputs = append(inputs, input)
+	inputs = append(inputs,
+		action.NewSendInput(party, partyBalance),
+		action.NewSendInput(counterParty, counterPartyBalance))
 
 	// Build up the outputs
 	outputs := make([]action.SendOutput, 2)
-	output := action.SendOutput{
-		Address: party,
-		Coin:    partyBalance.Minus(amount),
-	}
-	outputs = append(outputs, output)
-	output = action.SendOutput{
-		Address: counterParty,
-		Coin:    counterPartyBalance.Plus(amount),
-	}
-	outputs = append(outputs, output)
+	outputs = append(outputs,
+		action.NewSendOutput(party, partyBalance.Minus(amount)),
+		action.NewSendOutput(counterParty, counterPartyBalance.Plus(amount)))
 
 	gas := data.Coin{
 		Currency: conv.GetCurrency(args.Currency),
@@ -166,8 +161,8 @@ func CreateSwapRequest(args *SwapArguments) []byte {
 
 	conv := convert.NewConvert()
 
-	party := id.Address(conv.GetHash(args.Party))
-	counterParty := id.Address(conv.GetHash(args.CounterParty))
+	party := conv.GetAccountKey(args.Party)
+	counterParty := conv.GetAccountKey(args.CounterParty)
 
 	// TOOD: a clash with the basic data model
 	signers := GetSigners()
