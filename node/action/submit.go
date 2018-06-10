@@ -5,7 +5,6 @@ package action
 
 import (
 	"bytes"
-	"time"
 
 	"github.com/Oneledger/protocol/node/comm"
 	"github.com/Oneledger/protocol/node/log"
@@ -13,7 +12,7 @@ import (
 )
 
 func BroadcastTransaction(ttype Type, transaction Transaction) {
-	log.Debug("Send this to the chain")
+	log.Debug("Broadcast a transaction to the chain")
 
 	// Don't let the death of a client stop the node from running
 	defer func() {
@@ -23,11 +22,10 @@ func BroadcastTransaction(ttype Type, transaction Transaction) {
 		}
 	}()
 
-	// TODO: Maybe Tendermint isn't ready for transactions...
-	// TODO: Can I test this somehow?
-	time.Sleep(10 * time.Second)
+	//time.Sleep(10 * time.Second)
 
 	packet := SignAndPack(ttype, transaction)
+
 	result := comm.Broadcast(packet)
 
 	log.Debug("Submitted Successfully", "result", result)

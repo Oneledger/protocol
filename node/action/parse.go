@@ -71,6 +71,11 @@ func Parse(message Message) (Transaction, err.Code) {
 
 		return action, err.SUCCESS
 
+	case VERIFY:
+		action := ParseVerify(body)
+
+		return action, err.SUCCESS
+
 	default:
 		log.Error("Unknown transaction", "command", command)
 	}
@@ -196,4 +201,19 @@ func ParseRegister(message Message) *Register {
 		return nil
 	}
 	return result.(*Register)
+}
+
+// Forget the transaction
+func ParseVerify(message Message) *Verify {
+	log.Debug("Have a Verify Request")
+	register := &Verify{
+		Base: Base{Type: VERIFY},
+	}
+
+	result, err := comm.Deserialize(message, register)
+	if err != nil {
+		log.Error("ParseVerify", "err", err)
+		return nil
+	}
+	return result.(*Verify)
 }

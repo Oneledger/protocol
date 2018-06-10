@@ -8,6 +8,8 @@ package action
 
 import (
 	"github.com/Oneledger/protocol/node/data"
+	"github.com/Oneledger/protocol/node/global"
+	"github.com/Oneledger/protocol/node/id"
 	"github.com/Oneledger/protocol/node/log"
 )
 
@@ -52,6 +54,22 @@ func OpenLockbox(chain data.ChainType, context map[string]string) bool {
 }
 
 func WaitForChain(chain data.ChainType, context map[string]string) bool {
-	log.Info("Executing OpenLockbox Command", "chain", chain, "context", context)
+	log.Info("Executing WaitForChain Command", "chain", chain, "context", context)
+
+	// Make sure it is pushed forward first...
+	global.Current.Sequence += 32
+
+	signers := []id.PublicKey(nil)
+
+	verify := Verify{
+		Base: Base{
+			Type:     VERIFY,
+			ChainId:  "OneLedger-Root",
+			Signers:  signers,
+			Sequence: global.Current.Sequence,
+		},
+	}
+	BroadcastTransaction(VERIFY, Transaction(verify))
+
 	return true
 }

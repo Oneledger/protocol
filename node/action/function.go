@@ -14,6 +14,28 @@ import (
 
 type Object interface{}
 
+// Table-Driven Mapping between transactions and the specific actions to be performed on a set of chains
+var FunctionMapping = [][]Object{
+	[]Object{
+		SWAP,
+		Command{
+			Function: CREATE_LOCKBOX,
+		},
+		Command{
+			Function: SIGN_LOCKBOX,
+		},
+		Command{
+			Function: WAIT_FOR_CHAIN,
+		},
+	},
+	[]Object{
+		SEND,
+		Command{
+			Function: SUBMIT_TRANSACTION,
+		},
+	},
+}
+
 // Given an action and a chain, return a list of commands
 func GetCommands(action Type, chain data.ChainType) Commands {
 	for i := 0; i < len(FunctionMapping); i++ {
@@ -35,26 +57,4 @@ func GetCommands(action Type, chain data.ChainType) Commands {
 	log.Debug("No Commands", "action", action, "chain", chain)
 
 	return []Command{} // Empty Commands
-}
-
-// Table-Driven Mapping between transactions and the specific actions to be performed on a set of chains
-var FunctionMapping = [][]Object{
-	[]Object{
-		SWAP,
-		Command{
-			Function: CREATE_LOCKBOX,
-		},
-		Command{
-			Function: SIGN_LOCKBOX,
-		},
-		Command{
-			Function: WAIT_FOR_CHAIN,
-		},
-	},
-	[]Object{
-		SEND,
-		Command{
-			Function: SUBMIT_TRANSACTION,
-		},
-	},
 }

@@ -72,19 +72,36 @@ func (app Application) GetUtxo() interface{} {
 	return app.Utxo
 }
 
+type BasicState struct {
+	Account string `json:"account"`
+	Amount  int64  `json:"coins"` // TODO: Should be corrected as Amount, not coins
+}
+
+func (app Application) SetupState(stateBytes []byte) {
+	log.Debug("SetupState", "state", string(stateBytes))
+
+	var base BasicState
+	des, _ := comm.Deserialize(stateBytes, &base)
+	state := des.(*BasicState)
+
+	// TODO: Should be more flexible to match genesis block
+	balance := data.Balance{
+		Amount: data.Coin{Currency: "OLT", Amount: state.Amount},
+	}
+	buffer, _ := comm.Serialize(balance)
+
+	app.Utxo.Delivered.Set(data.DatabaseKey(state.Account), buffer)
+	app.Utxo.Delivered.SaveVersion()
+	app.Utxo.Commit()
+
+	log.Info("Set the Genesis State of the UTXO database")
+}
+
 // InitChain is called when a new chain is getting created
 func (app Application) InitChain(req RequestInitChain) ResponseInitChain {
 	log.Debug("Message: InitChain", "req", req)
 
-	// TODO: This is coming from the AppState?
-	balance := data.Balance{
-		Amount: data.Coin{Currency: "OLT", Amount: 21000000000},
-	}
-	buffer, _ := comm.Serialize(balance)
-	app.Utxo.Delivered.Set(data.DatabaseKey("Admin"), buffer)
-	app.Utxo.Delivered.SaveVersion()
-
-	// TODO: Insure that all of the databases and shared resources are reset here
+	app.SetupState(req.AppStateBytes)
 
 	return ResponseInitChain{}
 }

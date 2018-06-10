@@ -73,12 +73,13 @@ func GetClient() *rpcclient.HTTP {
 }
 
 // Broadcast packet to the chain
-func Broadcast(packet []byte) *ctypes.ResultBroadcastTxCommit {
+func Broadcast(packet []byte) *ctypes.ResultBroadcastTx {
 	log.Debug("Broadcast")
 
 	client := GetClient()
 
-	result, err := client.BroadcastTxCommit(packet)
+	//result, err := client.BroadcastTxCommit(packet)
+	result, err := client.BroadcastTxAsync(packet)
 	if err != nil {
 		log.Error("Error", "err", err)
 		os.Exit(-1)

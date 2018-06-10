@@ -17,6 +17,13 @@ func NewCoin(amount int64, currency string) Coin {
 	return Coin{Currency: currency, Amount: amount}
 }
 
+func (coin Coin) IsValid() bool {
+	if coin.Currency == "" {
+		return false
+	}
+	return true
+}
+
 func (coin Coin) Minus(value Coin) Coin {
 
 	if coin.Currency != value.Currency {

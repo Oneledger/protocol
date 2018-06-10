@@ -15,4 +15,5 @@ const (
 	MISSING_VALUE   Code = 401
 	EXPAND_ERROR    Code = 501
 	DUPLICATE       Code = 601
+	MISSING_DATA    Code = 701
 )

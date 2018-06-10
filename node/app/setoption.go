@@ -21,7 +21,7 @@ type RegisterArguments struct {
 }
 
 func SetOption(app *Application, key string, value string) bool {
-	log.Debug("Redirecting the option handling")
+	log.Debug("Setting Application Options", "key", key, "value", value)
 
 	switch key {
 
@@ -36,6 +36,7 @@ func SetOption(app *Application, key string, value string) bool {
 		RegisterLocally(app, args.Identity, args.Identity, id.ParseAccountType(args.Chain))
 
 	default:
+		log.Warn("Unknown Option", "key", key)
 		return false
 	}
 	return true
@@ -44,7 +45,6 @@ func SetOption(app *Application, key string, value string) bool {
 
 // Register Identities and Accounts from the user.
 func RegisterLocally(app *Application, name string, scope string, chain data.ChainType) bool {
-
 	status := false
 
 	// Identities are global

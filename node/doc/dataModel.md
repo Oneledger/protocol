@@ -206,10 +206,23 @@ CurrencyDomain
 
 ExternalSwap Steps:
 
-	- create lockbox on opposite chain
-	- sign other box on current chain 
-	- verify both boxes
-	- send pre-image to counterparty
+        - test to see if this is me?
+	- see if both sides of swap are transactions
+	- create lockbox on primary chain
+	- wait for other box to be ready
+		- check
+		- wait for other box to be ready
+	- sign other box on secondary chain 
+	- wait -- initialized...
+		- check
+		- wait -- initialized...
+	- verify box on primary chain
+	- verify box on secondary chain
+	- wait -- verified...
+		- check
+		- wait -- verified...
+	- send pre-image to counterparty via transaction
+	- wait
 	- read the opposite chain
 	- open lockbox
 

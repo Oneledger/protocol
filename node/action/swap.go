@@ -25,9 +25,19 @@ type Swap struct {
 	Nonce        int64         `json:"nonce"`
 }
 
-// Issue swaps across other chains, make sure fees are collected
+// Ensure that all of the base values are at least reasonable.
 func (transaction *Swap) Validate() err.Code {
 	log.Debug("Validating Swap Transaction")
+
+	if transaction.Party == nil {
+		return err.MISSING_DATA
+	}
+	if transaction.CounterParty == nil {
+		return err.MISSING_DATA
+	}
+	if !transaction.Amount.IsValid() {
+		return err.MISSING_DATA
+	}
 	return err.SUCCESS
 }
 
@@ -61,6 +71,7 @@ func (transaction *Swap) ProcessDeliver(app interface{}) err.Code {
 // Given a transaction, expand it into a list of Commands to execute against various chains.
 func (transaction *Swap) Expand(app interface{}) Commands {
 	chain := GetChain(transaction)
+
 	return GetCommands(SWAP, chain)
 }
 
@@ -80,6 +91,8 @@ func Resolve(app interface{}, transaction Transaction, commands Commands) {
 
 // Execute the function
 func Execute(app interface{}, command Command) err.Code {
-	log.Debug("Executing", "command", command)
-	return err.SUCCESS
+	if command.Execute() {
+		return err.SUCCESS
+	}
+	return err.NOT_IMPLEMENTED
 }
