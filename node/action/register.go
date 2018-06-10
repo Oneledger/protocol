@@ -49,6 +49,10 @@ func (transaction Register) ProcessCheck(app interface{}) err.Code {
 	return err.SUCCESS
 }
 
+func (transaction Register) ThisNode(app interface{}) bool {
+	return true
+}
+
 // Add the identity into the database as external, don't overwrite a local identity
 func (transaction Register) ProcessDeliver(app interface{}) err.Code {
 	log.Debug("Processing Register Transaction for DeliverTx")

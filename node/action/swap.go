@@ -49,6 +49,10 @@ func (transaction *Swap) ProcessCheck(app interface{}) err.Code {
 	return err.SUCCESS
 }
 
+func (transaction *Swap) ThisNode(app interface{}) bool {
+	return true
+}
+
 // Start the swap
 func (transaction *Swap) ProcessDeliver(app interface{}) err.Code {
 	log.Debug("Processing Swap Transaction for DeliverTx")
@@ -70,9 +74,9 @@ func (transaction *Swap) ProcessDeliver(app interface{}) err.Code {
 
 // Given a transaction, expand it into a list of Commands to execute against various chains.
 func (transaction *Swap) Expand(app interface{}) Commands {
-	chain := GetChain(transaction)
+	chains := GetChains(transaction)
 
-	return GetCommands(SWAP, chain)
+	return GetCommands(SWAP, chains)
 }
 
 // Plug in data from the rest of a system into a set of commands
@@ -83,9 +87,9 @@ func Resolve(app interface{}, transaction Transaction, commands Commands) {
 	utxo := GetUtxo(app)
 	_ = utxo
 
-	chain := GetChain(transaction)
+	chains := GetChains(transaction)
 	for i := 0; i < len(commands); i++ {
-		commands[i].Chain = chain
+		commands[i].Chain = chains[0]
 	}
 }
 

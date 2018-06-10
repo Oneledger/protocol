@@ -46,6 +46,10 @@ func (transaction *Send) ProcessCheck(app interface{}) err.Code {
 	return err.SUCCESS
 }
 
+func (transaction *Send) ThisNode(app interface{}) bool {
+	return true
+}
+
 func (transaction *Send) ProcessDeliver(app interface{}) err.Code {
 	log.Debug("Processing Send Transaction for DeliverTx")
 

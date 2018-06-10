@@ -7,6 +7,7 @@ package action
 
 import (
 	"github.com/Oneledger/protocol/node/err"
+	"github.com/Oneledger/protocol/node/id"
 	"github.com/Oneledger/protocol/node/log"
 )
 
@@ -14,7 +15,7 @@ import (
 type Verify struct {
 	Base
 
-	Target string `json:"target"`
+	Target id.AccountKey `json:"target"`
 }
 
 func (transaction Verify) Validate() err.Code {
@@ -25,6 +26,10 @@ func (transaction Verify) Validate() err.Code {
 func (transaction Verify) ProcessCheck(app interface{}) err.Code {
 	log.Debug("Processing Verify Transaction for CheckTx")
 	return err.SUCCESS
+}
+
+func (transaction Verify) ThisNode(app interface{}) bool {
+	return true
 }
 
 func (transaction Verify) ProcessDeliver(app interface{}) err.Code {

@@ -155,6 +155,7 @@ func (app Application) CheckTx(tx []byte) ResponseCheckTx {
 		return ResponseCheckTx{Code: err}
 	}
 
+	// Check that this transaction works in the context
 	if err = result.ProcessCheck(&app); err != 0 {
 		return ResponseCheckTx{Code: err}
 	}
@@ -176,7 +177,7 @@ func (app Application) BeginBlock(req RequestBeginBlock) ResponseBeginBlock {
 		chainId = app.Admin.Store(chainKey, newChainId)
 
 	} else if bytes.Compare(chainId, newChainId) != 0 {
-		log.Error("Mismatching chains", "chainId", chainId, "newChainId", newChainId)
+		log.Warn("Mismatching chains", "chainId", chainId, "newChainId", newChainId)
 	}
 
 	return ResponseBeginBlock{}
@@ -195,8 +196,10 @@ func (app Application) DeliverTx(tx []byte) ResponseDeliverTx {
 		return ResponseDeliverTx{Code: err}
 	}
 
-	if err = result.ProcessDeliver(&app); err != 0 {
-		return ResponseDeliverTx{Code: err}
+	if result.ThisNode(app) {
+		if err = result.ProcessDeliver(&app); err != 0 {
+			return ResponseDeliverTx{Code: err}
+		}
 	}
 
 	return ResponseDeliverTx{Code: types.CodeTypeOK}

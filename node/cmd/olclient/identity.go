@@ -43,7 +43,8 @@ func CheckIdentity(cmd *cobra.Command, args []string) {
 	log.Debug("Checking Identity", "identity", ident)
 
 	request := FormatIdentityRequest()
-	response := comm.Query("/identity", request).Response
-
-	log.Debug("Returned Successfully with", "response", string(response.Value))
+	result := comm.Query("/identity", request)
+	if result != nil {
+		log.Debug("Returned Successfully with", "response", string(result.Response.Value))
+	}
 }

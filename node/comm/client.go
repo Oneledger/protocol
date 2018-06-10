@@ -8,8 +8,6 @@
 package comm
 
 import (
-	"os"
-
 	"github.com/Oneledger/protocol/node/global"
 	"github.com/Oneledger/protocol/node/log"
 	client "github.com/tendermint/abci/client"
@@ -53,28 +51,40 @@ func SetOption(key string, value string) {
 	}
 }
 
-var cachedClient *rpcclient.HTTP
+//var cachedClient *rpcclient.HTTP
 
 // HTTP interface, allows Broadcast?
 // TODO: Want to switch client type, based on config or cli args.
-func GetClient() *rpcclient.HTTP {
+func GetClient() (client *rpcclient.HTTP) {
 
-	if cachedClient != nil {
-		log.Debug("Cached RpcClient", "address", global.Current.RpcAddress)
-		return cachedClient
-	}
+	defer func() {
+		log.Debug("Executing at EOF")
+		if r := recover(); r != nil {
+			log.Error("Ignoring Client Panic", "r", r)
+			client = nil
+		}
+	}()
+
+	/*
+		if cachedClient != nil {
+			log.Debug("Cached RpcClient", "address", global.Current.RpcAddress)
+			return cachedClient
+		}
+	*/
 
 	log.Debug("Initializing RpcClient", "address", global.Current.RpcAddress)
 
 	// TODO: Try multiple times before giving up
-	cachedClient = rpcclient.NewHTTP(global.Current.RpcAddress, "/websocket")
+	cachedClient := rpcclient.NewHTTP(global.Current.RpcAddress, "/websocket")
+
+	log.Debug("Have RpcClient", "client", cachedClient)
 
 	return cachedClient
 }
 
 // Broadcast packet to the chain
 func Broadcast(packet []byte) *ctypes.ResultBroadcastTx {
-	log.Debug("Broadcast")
+	log.Debug("Broadcast", "packet", packet)
 
 	client := GetClient()
 
@@ -82,22 +92,23 @@ func Broadcast(packet []byte) *ctypes.ResultBroadcastTx {
 	result, err := client.BroadcastTxAsync(packet)
 	if err != nil {
 		log.Error("Error", "err", err)
-		os.Exit(-1)
 	}
 
 	return result
 }
 
 // Send a very specific query
-func Query(path string, packet []byte) *ctypes.ResultABCIQuery {
+func Query(path string, packet []byte) (res *ctypes.ResultABCIQuery) {
 	log.Debug("sending ABCi Query", "path", path, "packet", packet)
 
 	client := GetClient()
 
+	log.Debug("About to do an ABCIQuery")
+
 	result, err := client.ABCIQuery(path, packet)
 	if err != nil {
 		log.Error("Error", "err", err)
-		os.Exit(-1)
+		return nil
 	}
 
 	log.Debug("ABCi Query", "result", result)

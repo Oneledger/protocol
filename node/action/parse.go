@@ -24,8 +24,6 @@ func UnpackMessage(message Message) (Type, Message) {
 // TODO: Need a better way to handle the polymorphism...
 // Parse a message into the appropriate transaction
 func Parse(message Message) (Transaction, err.Code) {
-	log.Debug("Parsing a Transaction")
-
 	command, body := UnpackMessage(message)
 
 	// TODO: Can I do this with deserialize?
@@ -205,7 +203,7 @@ func ParseRegister(message Message) *Register {
 
 // Forget the transaction
 func ParseVerify(message Message) *Verify {
-	log.Debug("Have a Verify Request")
+	log.Debug("Have a Verify Request", "messsage", message)
 	register := &Verify{
 		Base: Base{Type: VERIFY},
 	}

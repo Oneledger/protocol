@@ -27,6 +27,10 @@ func (transaction *Commit) ProcessCheck(app interface{}) err.Code {
 	return err.SUCCESS
 }
 
+func (transaction *Commit) ThisNode(app interface{}) bool {
+	return true
+}
+
 func (transaction *Commit) ProcessDeliver(app interface{}) err.Code {
 	log.Debug("Processing Commit Transaction for DeliverTx")
 	return err.SUCCESS

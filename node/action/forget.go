@@ -26,6 +26,10 @@ func (transaction *Forget) ProcessCheck(app interface{}) err.Code {
 	return err.SUCCESS
 }
 
+func (transaction *Forget) ThisNode(app interface{}) bool {
+	return true
+}
+
 func (transaction *Forget) ProcessDeliver(app interface{}) err.Code {
 	log.Debug("Processing Forget Transaction for DeliverTx")
 	return err.SUCCESS

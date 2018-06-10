@@ -29,6 +29,7 @@ type ChainState struct {
 	Checked   *iavl.VersionedTree
 	Delivered *iavl.VersionedTree
 	Committed *iavl.VersionedTree
+	database  *db.GoLevelDB
 }
 
 func NewChainState(name string, newType DatastoreType) *ChainState {
@@ -75,7 +76,7 @@ func (state *ChainState) Exists(key DatabaseKey) bool {
 	return false
 }
 
-func createDatabase(name string, newType DatastoreType) *iavl.VersionedTree {
+func initializeDatabase(name string, newType DatastoreType) (*iavl.VersionedTree, *db.GoLevelDB) {
 	// TODO: Assuming persistence for right now
 	storage, err := db.NewGoLevelDB("OneLedger-"+name, global.Current.RootDir)
 	if err != nil {
@@ -88,21 +89,25 @@ func createDatabase(name string, newType DatastoreType) *iavl.VersionedTree {
 
 	count = count + 1
 
-	return tree
+	return tree, storage
 }
 
 // TODO: Not sure about this, it seems to be Cosmos-sdk's way of getting arround the immutable copy problem...
 func (state *ChainState) Commit() {
 
-	state.Delivered.SaveVersion() // TODO: This does not seem to be updating the database
-	//state.reset()
+	state.Delivered.SaveVersion()
+
+	// Force the database to completely close, then repoen it.
+	state.database.Close()
+	state.database = nil
+	state.reset()
 }
 
 func (state *ChainState) reset() {
 	// TODO: I need three copies of the tree, only one is ultimately mutable... (checked changed rollback)
-	// TODO: Close before repoen, better just update...
+	// TODO: Close before reopen, better just update...
 
 	//state.Checked = createDatabase(state.Name, state.Type)
-	state.Delivered = createDatabase(state.Name, state.Type)
+	state.Delivered, state.database = initializeDatabase(state.Name, state.Type)
 	//state.Committed = createDatabase(state.Name, state.Type)
 }

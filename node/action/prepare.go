@@ -27,6 +27,10 @@ func (transaction *Prepare) ProcessCheck(app interface{}) err.Code {
 	return err.SUCCESS
 }
 
+func (transaction *Prepare) ThisNode(app interface{}) bool {
+	return true
+}
+
 func (transaction *Prepare) ProcessDeliver(app interface{}) err.Code {
 	log.Debug("Processing Prepare Transaction for DeliverTx")
 	return err.SUCCESS

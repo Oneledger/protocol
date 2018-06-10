@@ -47,7 +47,7 @@ func Debug(msg string, args ...interface{}) {
 }
 
 func Warn(msg string, args ...interface{}) {
-	current.Error(msg, args...)
+	current.Error("WARNING: "+msg, args...)
 }
 
 func Error(msg string, args ...interface{}) {

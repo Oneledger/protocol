@@ -37,7 +37,8 @@ var FunctionMapping = [][]Object{
 }
 
 // Given an action and a chain, return a list of commands
-func GetCommands(action Type, chain data.ChainType) Commands {
+func GetCommands(action Type, chains []data.ChainType) Commands {
+
 	for i := 0; i < len(FunctionMapping); i++ {
 		transactionType := FunctionMapping[i][0].(Type)
 
@@ -54,7 +55,7 @@ func GetCommands(action Type, chain data.ChainType) Commands {
 		}
 	}
 
-	log.Debug("No Commands", "action", action, "chain", chain)
+	log.Debug("No Commands", "action", action, "chains", chains)
 
 	return []Command{} // Empty Commands
 }
