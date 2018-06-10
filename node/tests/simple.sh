@@ -17,4 +17,7 @@ olclient send --party Bob --counterparty Alice --address $addrBob
 
 sleep 3
 
+olclient account -a $addrAlice
+olclient account -a $addrBob
+
 $CMD/stopOneLedger

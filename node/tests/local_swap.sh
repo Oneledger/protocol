@@ -3,46 +3,48 @@
 #
 # Test creating a single send transaction in a 1-node chain, reset each time
 #
-OLSCRIPT=$GOPATH/src/github.com/Oneledger/protocol/node/scripts
-OLTEST=$GOPATH/src/github.com/Oneledger/protocol/node/tests
+CMD=$GOPATH/src/github.com/Oneledger/protocol/node/scripts
+TEST=$GOPATH/src/github.com/Oneledger/protocol/node/tests
 
 # Clear out the existing chains
-$OLSCRIPT/resetOneLedger
+$CMD/resetOneLedger
 
 # Add in or update users
-$OLTEST/register.sh
+$TEST/register.sh
 
 # Startup the chains
-$OLSCRIPT/startOneLedger
+$CMD/startOneLedger
 
-# olclient wait --initialized
-sleep 1 
-
-addrAdmin=`$OLSCRIPT/lookup Admin RPCAddress tcp://127.0.0.1:`
-addrAlice=`$OLSCRIPT/lookup Alice RPCAddress tcp://127.0.0.1:`
-addrBob=`$OLSCRIPT/lookup Bob RPCAddress tcp://127.0.0.1:`
+addrAdmin=`$CMD/lookup Admin RPCAddress tcp://127.0.0.1:`
+addrAlice=`$CMD/lookup Alice RPCAddress tcp://127.0.0.1:`
+addrBob=`$CMD/lookup Bob RPCAddress tcp://127.0.0.1:`
 
 # Put some money in the user accounts
-olclient send --address $addrAdmin -s 1002 --party Admin --counterparty Alice --amount 100000 --currency OLT 
-olclient send --address $addrAdmin -s 1003 --party Admin --counterparty Bob --amount 100000 --currency OLT 
+SEQ=`$CMD\nextSeq`
+olclient send $SEQ -a $addrAdmin \
+	--party Admin --counterparty Alice --amount 100000 --currency OLT 
+
+SEQ=`$CMD\nextSeq`
+olclient send $SEQ -a $addrAdmin \
+	--party Admin --counterparty Bob --amount 100000 --currency OLT 
 
 # assumes fullnode is in the PATH
-olclient swap -s 2001 \
-	--address $addrAlice \
+SEQ=`$CMD\nextSeq`
+olclient swap $SEQ -a $addrAlice \
 	--party Alice --counterparty Bob --nonce 28 \
 	--amount 3 --currency OLT --exchange 100 --excurrency ETH 
 
-olclient swap -s 2001 \
-	--address $addrBob \
+SEQ=`$CMD\nextSeq`
+olclient swap $SEQ -a $addrBob \
 	--party Bob --counterparty Alice --nonce 28 \
 	--amount 100 --currency ETH --exchange 3 --excurrency OLT 
 
-olclient wait --completed swap --party Alice --party Bob -s 2001
+SEQ=`$CMD\nextSeq`
 
 # Check the balances
-olclient account --identity Alice --address $addrAlice
-olclient account --identity Bob --address $addrBob
+olclient account -a $addrAlice --identity Alice
+olclient account -a $addrBob --identity Bob
 
 sleep 3
 
-$OLSCRIPT/stopOneLedger
+$CMD/stopOneLedger

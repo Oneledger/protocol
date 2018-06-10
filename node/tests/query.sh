@@ -4,7 +4,6 @@
 # Test creating a single send transaction in a 1-node chain, reset each time
 #
 CMD=$GOPATH/src/github.com/Oneledger/protocol/node/scripts
-OLTEST=$GOPATH/src/github.com/Oneledger/protocol/node/tests
 
 # Startup the chains
 $CMD/startOneLedger
@@ -15,7 +14,7 @@ addrAlice=`$CMD/lookup Alice RPCAddress tcp://127.0.0.1:`
 addrBob=`$CMD/lookup Bob RPCAddress tcp://127.0.0.1:`
 
 # List out the account details
-olclient identity --identity Alice --address $addrAlice
-olclient account --identity Alice --address $addrAlice
+olclient identity -a $addrAlice --identity Alice
+olclient account  -a $addrAlice --identity Alice
 
 $CMD/stopOneLedger
