@@ -18,6 +18,7 @@ import (
 	"github.com/Oneledger/protocol/node/log"
 )
 
+// Prepare a transaction to be issued.
 func SignAndPack(ttype action.Type, transaction action.Transaction) []byte {
 	signed := action.SignTransaction(transaction)
 	packet := action.PackRequest(ttype, signed)
@@ -25,6 +26,7 @@ func SignAndPack(ttype action.Type, transaction action.Transaction) []byte {
 	return packet
 }
 
+// Registration
 type RegisterArguments struct {
 	Identity string
 }
@@ -46,16 +48,7 @@ func CreateRegisterRequest(args *RegisterArguments) []byte {
 	return SignAndPack(action.REGISTER, action.Transaction(reg))
 }
 
-type SendArguments struct {
-	Party        string
-	CounterParty string
-	Currency     string
-	Amount       string
-	Gas          string
-	Fee          string
-}
-
-// TODO: Get this from the database
+// TODO: Get this from the database, need an inquiry from a trusted node?
 func GetBalance(account id.AccountKey) data.Coin {
 	balance := data.Coin{
 		Currency: "OLT",
@@ -69,6 +62,15 @@ type BalanceArguments struct {
 
 func CreateBalanceRequest(args *BalanceArguments) []byte {
 	return []byte(nil)
+}
+
+type SendArguments struct {
+	Party        string
+	CounterParty string
+	Currency     string
+	Amount       string
+	Gas          string
+	Fee          string
 }
 
 // CreateRequest builds and signs the transaction based on the arguments

@@ -35,9 +35,11 @@ func (transaction *Swap) ProcessCheck(app interface{}) err.Code {
 	log.Debug("Processing Swap Transaction for CheckTx")
 
 	// TODO: Check all of the data to make sure it is valid.
+
 	return err.SUCCESS
 }
 
+// Start the swap
 func (transaction *Swap) ProcessDeliver(app interface{}) err.Code {
 	log.Debug("Processing Swap Transaction for DeliverTx")
 

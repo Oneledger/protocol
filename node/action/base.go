@@ -54,8 +54,9 @@ type Base struct {
 	Sequence int `json:"sequence"`
 }
 
-// Get the correct chain for an action
+// Get the correct chain for this action
 func GetChain(transaction interface{}) data.ChainType {
+
 	// TODO: Need to fix this, should not be hardcoded to a given chain
 	return data.BITCOIN
 }

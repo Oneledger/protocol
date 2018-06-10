@@ -12,6 +12,7 @@ import (
 	"github.com/Oneledger/protocol/node/data"
 	"github.com/Oneledger/protocol/node/id"
 	"github.com/Oneledger/protocol/node/log"
+	"github.com/Oneledger/protocol/node/version"
 )
 
 // Top-level list of all query types
@@ -23,6 +24,9 @@ func HandleQuery(app Application, path string, message []byte) []byte {
 
 	case "/account":
 		return HandleAccountQuery(app, message)
+
+	case "/version":
+		return HandleVersionQuery(app, message)
 	}
 
 	return HandleError("Unknown Path", path, message)
@@ -73,7 +77,9 @@ func HandleAccountQuery(app Application, message []byte) []byte {
 	return AccountInfo(app, name)
 }
 
+// Return the information for a given account
 func AccountInfo(app Application, name string) []byte {
+
 	if name == "" {
 		accounts := app.Accounts.FindAll()
 
@@ -89,6 +95,7 @@ func AccountInfo(app Application, name string) []byte {
 		}
 		return []byte(buffer)
 	}
+
 	account, _ := app.Accounts.FindName(name)
 	log.Debug("account", "account", account)
 
@@ -99,6 +106,7 @@ func AccountInfo(app Application, name string) []byte {
 	return []byte(account.AsString())
 }
 
+// Get the balancd for an account
 func GetBalance(app Application, account id.Account) string {
 	log.Debug("Searching for", "key", account.AccountKey())
 
@@ -114,4 +122,8 @@ func GetBalance(app Application, account id.Account) string {
 // Return a nicely formatted error message
 func HandleError(text string, path string, massage []byte) []byte {
 	return []byte("Invalid Query")
+}
+
+func HandleVersionQuery(app Application, message []byte) []byte {
+	return []byte(version.Current.String())
 }

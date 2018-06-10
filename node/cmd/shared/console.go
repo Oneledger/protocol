@@ -9,19 +9,22 @@ package shared
 
 import "fmt"
 
+type Tty struct {
+}
+
 type Terminal interface {
+	// Output
 	//Print(text ...interface{})
 	Question(text ...interface{})
 	Info(text ...interface{})
 	Warning(text ...interface{})
 	Error(text ...interface{})
 
+	// Input
 	Read() string
 }
 
-type Tty struct {
-}
-
+// A globally accessable terminal called Console
 var Console Terminal
 
 func init() {
@@ -54,6 +57,7 @@ func (tty *Tty) Error(text ...interface{}) {
 }
 
 // TODO: Catch a disconnected terminal, maybe read input from files?
+// TODO: Will need this to handled getting secure passwords at the client...
 func (tty *Tty) Read() string {
 	return "missing input"
 }
