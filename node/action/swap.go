@@ -45,7 +45,7 @@ func (transaction *Swap) ProcessDeliver(app interface{}) err.Code {
 
 	commands := transaction.Expand(app)
 
-	Resolve(app, commands)
+	Resolve(app, transaction, commands)
 
 	for i := 0; i < commands.Count(); i++ {
 		status := Execute(app, commands[i])
@@ -60,18 +60,26 @@ func (transaction *Swap) ProcessDeliver(app interface{}) err.Code {
 
 // Given a transaction, expand it into a list of Commands to execute against various chains.
 func (transaction *Swap) Expand(app interface{}) Commands {
-	// TODO: Table-driven mechanics, probably elsewhere
 	chain := GetChain(transaction)
 	return GetCommands(SWAP, chain)
 }
 
 // Plug in data from the rest of a system into a set of commands
-func Resolve(app interface{}, commands Commands) {
-	// TODO: Pick the chain
-	// TODO: Fill in all of the necessary data
+func Resolve(app interface{}, transaction Transaction, commands Commands) {
+	identities := GetIdentities(app)
+	_ = identities
+
+	utxo := GetUtxo(app)
+	_ = utxo
+
+	chain := GetChain(transaction)
+	for i := 0; i < len(commands); i++ {
+		commands[i].Chain = chain
+	}
 }
 
 // Execute the function
 func Execute(app interface{}, command Command) err.Code {
+	log.Debug("Executing", "command", command)
 	return err.SUCCESS
 }

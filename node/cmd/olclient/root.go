@@ -34,8 +34,8 @@ func init() {
 	RootCmd.PersistentFlags().StringVar(&global.Current.RootDir, "root",
 		global.Current.RootDir, "Set root directory")
 
-	RootCmd.PersistentFlags().StringVar(&global.Current.Node, "node",
-		global.Current.Node, "Set a node name")
+	RootCmd.PersistentFlags().StringVar(&global.Current.NodeName, "node",
+		global.Current.NodeName, "Set a node name")
 
 	RootCmd.PersistentFlags().BoolVarP(&global.Current.Debug, "debug", "d",
 		global.Current.Debug, "Set DEBUG mode")
@@ -43,8 +43,8 @@ func init() {
 	RootCmd.PersistentFlags().StringVarP(&global.Current.Transport, "transport", "t",
 		global.Current.Transport, "transport (socket | grpc)")
 
-	RootCmd.PersistentFlags().StringVarP(&global.Current.Address, "address", "a",
-		global.Current.Address, "full address")
+	RootCmd.PersistentFlags().StringVarP(&global.Current.RpcAddress, "address", "a",
+		global.Current.RpcAddress, "full address")
 
 	RootCmd.PersistentFlags().IntVarP(&global.Current.Sequence, "sequence", "s",
 		global.Current.Sequence, "unique sequence id")

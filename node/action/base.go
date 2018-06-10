@@ -55,6 +55,7 @@ type Base struct {
 }
 
 // Get the correct chain for this action
+// TODO: Need to return a list of chains?
 func GetChain(transaction interface{}) data.ChainType {
 
 	// TODO: Need to fix this, should not be hardcoded to a given chain

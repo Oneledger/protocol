@@ -12,7 +12,7 @@ import (
 	wire "github.com/tendermint/go-wire"
 )
 
-func SubmitTransaction(ttype Type, transaction Transaction) {
+func BroadcastTransaction(ttype Type, transaction Transaction) {
 	log.Debug("Send this to the chain")
 
 	// Don't let the death of a client stop the node from running
