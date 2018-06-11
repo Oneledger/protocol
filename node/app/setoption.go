@@ -49,13 +49,13 @@ func RegisterLocally(app *Application, name string, scope string, chain data.Cha
 
 	// Identities are global
 	if !app.Identities.Exists(name) {
-		log.Debug("Registering a new Identity", "name", name)
+		log.Debug("Registering a New Identity", "name", name)
 		identity := id.NewIdentity(name, "Contact Info", false)
 		app.Identities.Add(identity)
 		status = true
 
 	} else {
-		log.Debug("Not Registering existing Identity", "name", name)
+		log.Debug("Not Registering Existing Identity", "name", name)
 		app.Identities.Dump()
 	}
 
@@ -67,15 +67,18 @@ func RegisterLocally(app *Application, name string, scope string, chain data.Cha
 	accountName := name + "-" + scope
 
 	if !app.Accounts.Exists(chain, accountName) {
-		log.Debug("Adding new Account", "accountName", accountName)
+		log.Debug("Registering New Account", "accountName", accountName)
 		account := id.NewAccount(chain, accountName, id.PublicKey{})
 		app.Accounts.Add(account)
+		log.Debug("New Account", "key", account.AccountKey(), "account", account)
 
 		// Fill in a
 		if !app.Utxo.Exists(account.AccountKey()) {
 			balance := data.NewBalance(0, "OLT")
 			buffer, _ := comm.Serialize(balance)
 			app.Utxo.Delivered.Set(account.AccountKey(), buffer)
+			app.Utxo.Commit()
+			log.Debug("New Utxo", "key", account.AccountKey(), "balance", balance)
 		}
 		status = true
 

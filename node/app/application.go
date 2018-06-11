@@ -90,7 +90,12 @@ func (app Application) SetupState(stateBytes []byte) {
 	}
 	buffer, _ := comm.Serialize(balance)
 
-	app.Utxo.Delivered.Set(data.DatabaseKey(state.Account), buffer)
+	// Register the identity and account first
+	RegisterLocally(&app, state.Account, "OneLedger", data.ONELEDGER)
+	account, _ := app.Accounts.FindName(state.Account)
+
+	// Use the account key in the database.
+	app.Utxo.Delivered.Set(account.AccountKey(), buffer)
 	app.Utxo.Delivered.SaveVersion()
 	app.Utxo.Commit()
 

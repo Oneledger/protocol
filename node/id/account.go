@@ -218,10 +218,7 @@ func (account *AccountOneLedger) AccountKey() AccountKey {
 }
 
 func (account *AccountOneLedger) AsString() string {
-
-	buffer := fmt.Sprintf("%x", account.AccountKey())
-	// TODO: Add in UTXO entry
-	return account.AccountBase.Name + ":" + buffer
+	return account.AccountBase.Name
 }
 
 func (account *AccountOneLedger) Chain() data.ChainType {

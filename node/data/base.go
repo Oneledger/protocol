@@ -5,6 +5,8 @@
 */
 package data
 
+import "fmt"
+
 /*
 type Chain struct {
 }
@@ -21,4 +23,8 @@ type Balance struct {
 
 func NewBalance(amount int64, currency string) Balance {
 	return Balance{Amount: NewCoin(amount, currency)}
+}
+
+func (balance Balance) AsString() string {
+	return fmt.Sprintf("%d%s", balance.Amount.Amount, balance.Amount.Currency)
 }
