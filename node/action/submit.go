@@ -4,15 +4,15 @@
 package action
 
 import (
-	"time"
+	"bytes"
 
 	"github.com/Oneledger/protocol/node/comm"
 	"github.com/Oneledger/protocol/node/log"
 	wire "github.com/tendermint/go-wire"
 )
 
-func SubmitTransaction(transaction Transaction) {
-	log.Debug("Send this to the chain")
+func BroadcastTransaction(ttype Type, transaction Transaction) {
+	log.Debug("Broadcast a transaction to the chain")
 
 	// Don't let the death of a client stop the node from running
 	defer func() {
@@ -22,19 +22,18 @@ func SubmitTransaction(transaction Transaction) {
 		}
 	}()
 
-	// TODO: Maybe Tendermint isn't ready for transactions...
-	// TODO: Can I test this somehow?
-	time.Sleep(10 * time.Second)
+	//time.Sleep(10 * time.Second)
 
-	packet := SignAndPack(transaction)
+	packet := SignAndPack(ttype, transaction)
+
 	result := comm.Broadcast(packet)
 
 	log.Debug("Submitted Successfully", "result", result)
 }
 
-func SignAndPack(transaction Transaction) []byte {
+func SignAndPack(ttype Type, transaction Transaction) []byte {
 	signed := SignTransaction(transaction)
-	packet := PackRequest(signed)
+	packet := PackRequest(ttype, signed)
 
 	return packet
 }
@@ -45,7 +44,19 @@ func SignTransaction(transaction Transaction) Transaction {
 }
 
 // Pack a request into a transferable format (wire)
-func PackRequest(request Transaction) []byte {
-	packet := wire.BinaryBytes(request)
+func PackRequest(ttype Type, request Transaction) []byte {
+	var base int32
+
+	// Stick a 32 bit integer in front, so that we can identify the struct for deserialization
+	buff := new(bytes.Buffer)
+	n, err := int(0), error(nil)
+	base = int32(ttype)
+	wire.WriteInt32(base, buff, &n, &err)
+	bytes := buff.Bytes()
+
+	packet, _ := comm.Serialize(request)
+	packet = append(bytes, packet...)
+
+	//packet := wire.BinaryBytes(request)
 	return packet
 }

@@ -14,7 +14,7 @@ addrBob=`$CMD/lookup Bob RPCAddress tcp://127.0.0.1:`
 addrCarol=`$CMD/lookup Carol RPCAddress tcp://127.0.0.1:`
 
 # List out the account details
-olclient account -a $addrAdmin
-olclient account -a $addrAlice
-olclient account -a $addrBob
-olclient account -a $addrCarol
+olclient identity -a $addrAdmin
+olclient identity -a $addrAlice
+olclient identity -a $addrBob
+olclient identity -a $addrCarol

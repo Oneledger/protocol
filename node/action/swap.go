@@ -16,18 +16,28 @@ import (
 type Swap struct {
 	Base
 
-	Party        id.Address `json:"party"`
-	CounterParty id.Address `json:"counter_party"`
-	Fee          data.Coin  `json:"fee"`
-	Gas          data.Coin  `json:"fee"`
-	Amount       data.Coin  `json:"amount"`
-	Exchange     data.Coin  `json:"exchange"`
-	Nonce        int64      `json:"nonce"`
+	Party        id.AccountKey `json:"party"`
+	CounterParty id.AccountKey `json:"counter_party"`
+	Amount       data.Coin     `json:"amount"`
+	Exchange     data.Coin     `json:"exchange"`
+	Fee          data.Coin     `json:"fee"`
+	Gas          data.Coin     `json:"fee"`
+	Nonce        int64         `json:"nonce"`
 }
 
-// Issue swaps across other chains, make sure fees are collected
+// Ensure that all of the base values are at least reasonable.
 func (transaction *Swap) Validate() err.Code {
 	log.Debug("Validating Swap Transaction")
+
+	if transaction.Party == nil {
+		return err.MISSING_DATA
+	}
+	if transaction.CounterParty == nil {
+		return err.MISSING_DATA
+	}
+	if !transaction.Amount.IsValid() {
+		return err.MISSING_DATA
+	}
 	return err.SUCCESS
 }
 
@@ -35,15 +45,21 @@ func (transaction *Swap) ProcessCheck(app interface{}) err.Code {
 	log.Debug("Processing Swap Transaction for CheckTx")
 
 	// TODO: Check all of the data to make sure it is valid.
+
 	return err.SUCCESS
 }
 
+func (transaction *Swap) ThisNode(app interface{}) bool {
+	return true
+}
+
+// Start the swap
 func (transaction *Swap) ProcessDeliver(app interface{}) err.Code {
 	log.Debug("Processing Swap Transaction for DeliverTx")
 
 	commands := transaction.Expand(app)
 
-	Resolve(app, commands)
+	Resolve(app, transaction, commands)
 
 	for i := 0; i < commands.Count(); i++ {
 		status := Execute(app, commands[i])
@@ -58,15 +74,29 @@ func (transaction *Swap) ProcessDeliver(app interface{}) err.Code {
 
 // Given a transaction, expand it into a list of Commands to execute against various chains.
 func (transaction *Swap) Expand(app interface{}) Commands {
-	// TODO: Table-driven mechanics, probably elsewhere
-	chain := GetChain(transaction)
-	return GetCommands(SWAP, chain)
+	chains := GetChains(transaction)
+
+	return GetCommands(SWAP, chains)
 }
 
 // Plug in data from the rest of a system into a set of commands
-func Resolve(app interface{}, commands Commands) {
+func Resolve(app interface{}, transaction Transaction, commands Commands) {
+	identities := GetIdentities(app)
+	_ = identities
+
+	utxo := GetUtxo(app)
+	_ = utxo
+
+	chains := GetChains(transaction)
+	for i := 0; i < len(commands); i++ {
+		commands[i].Chain = chains[0]
+	}
 }
 
+// Execute the function
 func Execute(app interface{}, command Command) err.Code {
-	return err.SUCCESS
+	if command.Execute() {
+		return err.SUCCESS
+	}
+	return err.NOT_IMPLEMENTED
 }

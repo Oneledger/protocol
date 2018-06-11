@@ -6,7 +6,10 @@
 package main
 
 import (
+	"os"
+
 	"github.com/Oneledger/protocol/node/global"
+	"github.com/Oneledger/protocol/node/log"
 	"github.com/tendermint/tmlibs/common"
 )
 
@@ -16,6 +19,8 @@ var service common.Service
 var context *global.Context // Global runtime context
 
 func main() {
+	log.Debug("Fullnode", "args", os.Args)
+
 	Execute() // Pass control to Cobra
 }
 

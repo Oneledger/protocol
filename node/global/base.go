@@ -23,14 +23,17 @@ import (
 var Current *Context
 
 type Context struct {
-	Application persist.Access
-	Debug       bool   // DEBUG flag
-	Node        string // Name of this instance
-	RootDir     string // Working directory for this instance
-	Transport   string // socket vs grpc
-	App         string // app address
-	Address     string // node address
-	Sequence    int
+	Application persist.Access // Global Access to the application when it is running
+
+	Debug bool // DEBUG flag
+
+	NodeName   string // Name of this instance
+	RootDir    string // Working directory for this instance
+	AppAddress string // app address
+	RpcAddress string // rpc address
+	Transport  string // socket vs grpc
+
+	Sequence int // replay protection
 }
 
 func init() {
@@ -40,10 +43,10 @@ func init() {
 // Set the default values for any context variables here (and no where else)
 func NewContext(name string) *Context {
 	return &Context{
-		Node:     name,
+		NodeName: name,
 		Debug:    false,
 		RootDir:  os.Getenv("OLDATA") + "/" + name + "/fullnode",
-		Sequence: 1001,
+		Sequence: 101,
 	}
 }
 

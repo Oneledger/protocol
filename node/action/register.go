@@ -9,7 +9,6 @@ import (
 	"github.com/Oneledger/protocol/node/err"
 	"github.com/Oneledger/protocol/node/id"
 	"github.com/Oneledger/protocol/node/log"
-	"github.com/Oneledger/protocol/node/persist"
 )
 
 // Register an identity with the chain
@@ -32,41 +31,51 @@ func (transaction Register) Validate() err.Code {
 func (transaction Register) ProcessCheck(app interface{}) err.Code {
 	log.Debug("Processing Register Transaction for CheckTx")
 
-	identities := app.(persist.Access).GetIdentities().(*id.Identities)
-	id, errs := identities.Find(transaction.Identity)
+	identities := GetIdentities(app)
+	id, errs := identities.FindName(transaction.Identity)
 
 	if errs != err.SUCCESS {
 		return errs
 	}
 
 	if id == nil {
+		log.Debug("Success, can add new Identity", "id", id)
 		return err.SUCCESS
 	}
 
-	// TODO: // Update in memory copy of Merkle Tree
-	return err.DUPLICATE
+	log.Debug("Identity already exists", "id", id)
+
+	// TODO: Not necessarily a failure, since this identity might be local
+	return err.SUCCESS
+}
+
+func (transaction Register) ThisNode(app interface{}) bool {
+	return true
 }
 
 // Add the identity into the database as external, don't overwrite a local identity
 func (transaction Register) ProcessDeliver(app interface{}) err.Code {
 	log.Debug("Processing Register Transaction for DeliverTx")
 
-	identities := app.(persist.Access).GetIdentities().(*id.Identities)
-	entry, errs := identities.Find(transaction.Identity)
+	identities := GetIdentities(app)
+	entry, errs := identities.FindName(transaction.Identity)
 
 	if errs != err.SUCCESS {
 		return errs
 	}
 
 	if entry != nil {
-		if entry.IsExternal() {
-			return err.DUPLICATE
-		}
+		/*
+			if !entry.IsExternal() {
+				return err.SUCCESS
+			}
+		*/
 		log.Debug("Ignoring Duplicate Identity")
+	} else {
+		identities.Add(id.NewIdentity(transaction.Identity, "Contact Information", true))
 	}
-	identities.Add(id.NewIdentity(transaction.Identity, "Contact Information", true))
 
-	log.Info("Updating External Identity Reference!!!", "id", transaction.Identity)
+	log.Info("Updated External Identity Reference!!!", "id", transaction.Identity)
 
 	return err.SUCCESS
 }

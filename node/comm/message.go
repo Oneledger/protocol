@@ -22,7 +22,6 @@ func Serialize(input interface{}) (msg []byte, err error) {
 	if err != nil {
 		log.Error("Marshal", "err", err)
 	}
-	log.Debug("Flattened", "buffer", buffer)
 
 	return buffer, err
 

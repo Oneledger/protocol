@@ -10,7 +10,6 @@ import (
 	"github.com/Oneledger/protocol/node/log"
 )
 
-// TODO: This needs to be filled out properly, need a model for other-chain actions...
 type Forget struct {
 	Base
 
@@ -25,6 +24,10 @@ func (transaction *Forget) Validate() err.Code {
 func (transaction *Forget) ProcessCheck(app interface{}) err.Code {
 	log.Debug("Processing Forget Transaction for CheckTx")
 	return err.SUCCESS
+}
+
+func (transaction *Forget) ThisNode(app interface{}) bool {
+	return true
 }
 
 func (transaction *Forget) ProcessDeliver(app interface{}) err.Code {

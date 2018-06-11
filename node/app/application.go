@@ -11,6 +11,7 @@ import (
 
 	"github.com/Oneledger/protocol/node/abci"
 	"github.com/Oneledger/protocol/node/action"
+	"github.com/Oneledger/protocol/node/comm"
 	"github.com/Oneledger/protocol/node/data"
 	"github.com/Oneledger/protocol/node/id"
 	"github.com/Oneledger/protocol/node/log"
@@ -71,11 +72,36 @@ func (app Application) GetUtxo() interface{} {
 	return app.Utxo
 }
 
+type BasicState struct {
+	Account string `json:"account"`
+	Amount  int64  `json:"coins"` // TODO: Should be corrected as Amount, not coins
+}
+
+func (app Application) SetupState(stateBytes []byte) {
+	log.Debug("SetupState", "state", string(stateBytes))
+
+	var base BasicState
+	des, _ := comm.Deserialize(stateBytes, &base)
+	state := des.(*BasicState)
+
+	// TODO: Should be more flexible to match genesis block
+	balance := data.Balance{
+		Amount: data.Coin{Currency: "OLT", Amount: state.Amount},
+	}
+	buffer, _ := comm.Serialize(balance)
+
+	app.Utxo.Delivered.Set(data.DatabaseKey(state.Account), buffer)
+	app.Utxo.Delivered.SaveVersion()
+	app.Utxo.Commit()
+
+	log.Info("Set the Genesis State of the UTXO database")
+}
+
 // InitChain is called when a new chain is getting created
 func (app Application) InitChain(req RequestInitChain) ResponseInitChain {
 	log.Debug("Message: InitChain", "req", req)
 
-	// TODO: Insure that all of the databases and shared resources are reset here
+	app.SetupState(req.AppStateBytes)
 
 	return ResponseInitChain{}
 }
@@ -93,6 +119,7 @@ func (app Application) SetOption(req RequestSetOption) ResponseSetOption {
 func (app Application) Info(req RequestInfo) ResponseInfo {
 	info := abci.NewResponseInfo(0, 0, 0)
 
+	// TODO: Get the correct height from the last committed tree
 	// lastHeight := app.Utxo.Commit.Height()
 
 	log.Debug("Message: Info", "req", req, "info", info)
@@ -119,7 +146,7 @@ func (app Application) CheckTx(tx []byte) ResponseCheckTx {
 	log.Debug("Message: CheckTx", "tx", tx)
 
 	result, err := action.Parse(action.Message(tx))
-	if err != 0 {
+	if err != 0 || result == nil {
 		return ResponseCheckTx{Code: err}
 	}
 
@@ -128,6 +155,7 @@ func (app Application) CheckTx(tx []byte) ResponseCheckTx {
 		return ResponseCheckTx{Code: err}
 	}
 
+	// Check that this transaction works in the context
 	if err = result.ProcessCheck(&app); err != 0 {
 		return ResponseCheckTx{Code: err}
 	}
@@ -149,7 +177,7 @@ func (app Application) BeginBlock(req RequestBeginBlock) ResponseBeginBlock {
 		chainId = app.Admin.Store(chainKey, newChainId)
 
 	} else if bytes.Compare(chainId, newChainId) != 0 {
-		log.Error("Mismatching chains", "chainId", chainId, "newChainId", newChainId)
+		log.Warn("Mismatching chains", "chainId", chainId, "newChainId", newChainId)
 	}
 
 	return ResponseBeginBlock{}
@@ -160,7 +188,7 @@ func (app Application) DeliverTx(tx []byte) ResponseDeliverTx {
 	log.Debug("Message: DeliverTx", "tx", tx)
 
 	result, err := action.Parse(action.Message(tx))
-	if err != 0 {
+	if err != 0 || result == nil {
 		return ResponseDeliverTx{Code: err}
 	}
 
@@ -168,8 +196,10 @@ func (app Application) DeliverTx(tx []byte) ResponseDeliverTx {
 		return ResponseDeliverTx{Code: err}
 	}
 
-	if err = result.ProcessDeliver(&app); err != 0 {
-		return ResponseDeliverTx{Code: err}
+	if result.ThisNode(app) {
+		if err = result.ProcessDeliver(&app); err != 0 {
+			return ResponseDeliverTx{Code: err}
+		}
 	}
 
 	return ResponseDeliverTx{Code: types.CodeTypeOK}
@@ -187,7 +217,7 @@ func (app Application) Commit() ResponseCommit {
 	log.Debug("Message: Commit")
 
 	// Commit any pending changes.
-	//app.Utxo.Commit()
+	app.Utxo.Commit()
 
 	return ResponseCommit{}
 }

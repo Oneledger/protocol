@@ -1,7 +1,7 @@
 /*
 	Copyright 2017-2018 OneLedger
 
-	Common Transaction utilities
+	Common Transaction utilities, helps to create them consistently
 */
 package shared
 
@@ -9,6 +9,7 @@ import (
 	"github.com/Oneledger/protocol/node/id"
 )
 
+// Given an Identity or Account, get the correct associated public key
 func GetPublicKey() id.PublicKey {
 	// TODO: Really not sure about this.
 	return id.PublicKey{}
@@ -18,16 +19,3 @@ func GetPublicKey() id.PublicKey {
 func GetSigners() []id.PublicKey {
 	return nil
 }
-
-/*
-// SignTransaction with the local keys
-func SignTransaction(transaction action.Transaction) action.Transaction {
-	return transaction
-}
-
-// Pack a request into a transferable format (wire)
-func PackRequest(request action.Transaction) []byte {
-	packet := wire.BinaryBytes(request)
-	return packet
-}
-*/

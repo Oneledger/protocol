@@ -1,47 +1,28 @@
 /*
 	Copyright 2017 - 2018 OneLedger
+
+	Table-driven list of all of the possible functions associated with their transactions
+
+	Need to fill in the target chain later, since for any set of instructions it changes...
 */
 package action
 
 import (
 	"github.com/Oneledger/protocol/node/data"
+	"github.com/Oneledger/protocol/node/log"
 )
 
 type Object interface{}
 
-// Given an action and a chain, return a list of commands
-func GetCommands(action Type, chain data.ChainType) Commands {
-	for i := 0; i < len(FunctionMapping); i++ {
-		transactionType := FunctionMapping[i][0].(Type)
-		target := FunctionMapping[i][1].(data.ChainType)
-		if action == transactionType && target == chain {
-			size := len(FunctionMapping[i]) - 2
-			result := make(Commands, size, size)
-			for j := 0; j < size; j++ {
-				result[j] = FunctionMapping[i][j+2].(Command)
-			}
-			return result
-		}
-	}
-	return []Command{} // Empty Commands
-}
-
+// Table-Driven Mapping between transactions and the specific actions to be performed on a set of chains
 var FunctionMapping = [][]Object{
 	[]Object{
 		SWAP,
-		data.BITCOIN,
 		Command{
 			Function: CREATE_LOCKBOX,
 		},
 		Command{
-			Function: WAIT_FOR_CHAIN,
-		},
-	},
-	[]Object{
-		SWAP,
-		data.ETHEREUM,
-		Command{
-			Function: CREATE_LOCKBOX,
+			Function: SIGN_LOCKBOX,
 		},
 		Command{
 			Function: WAIT_FOR_CHAIN,
@@ -49,9 +30,32 @@ var FunctionMapping = [][]Object{
 	},
 	[]Object{
 		SEND,
-		data.BITCOIN,
 		Command{
 			Function: SUBMIT_TRANSACTION,
 		},
 	},
+}
+
+// Given an action and a chain, return a list of commands
+func GetCommands(action Type, chains []data.ChainType) Commands {
+
+	for i := 0; i < len(FunctionMapping); i++ {
+		transactionType := FunctionMapping[i][0].(Type)
+
+		// The asymmetric start of the list of commands
+		offset := 1
+
+		if action == transactionType {
+			size := len(FunctionMapping[i]) - offset
+			result := make(Commands, size, size)
+			for j := 0; j < size; j++ {
+				result[j] = FunctionMapping[i][j+offset].(Command)
+			}
+			return result
+		}
+	}
+
+	log.Debug("No Commands", "action", action, "chains", chains)
+
+	return []Command{} // Empty Commands
 }

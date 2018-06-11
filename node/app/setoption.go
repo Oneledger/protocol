@@ -21,7 +21,7 @@ type RegisterArguments struct {
 }
 
 func SetOption(app *Application, key string, value string) bool {
-	log.Debug("Redirecting the option handling")
+	log.Debug("Setting Application Options", "key", key, "value", value)
 
 	switch key {
 
@@ -33,9 +33,10 @@ func SetOption(app *Application, key string, value string) bool {
 			return false
 		}
 		args := result.(*RegisterArguments)
-		Register(app, args.Identity, args.Identity, id.ParseAccountType(args.Chain))
+		RegisterLocally(app, args.Identity, args.Identity, id.ParseAccountType(args.Chain))
 
 	default:
+		log.Warn("Unknown Option", "key", key)
 		return false
 	}
 	return true
@@ -43,30 +44,39 @@ func SetOption(app *Application, key string, value string) bool {
 }
 
 // Register Identities and Accounts from the user.
-func Register(app *Application, name string, scope string, chain data.ChainType) bool {
-
+func RegisterLocally(app *Application, name string, scope string, chain data.ChainType) bool {
 	status := false
 
+	// Identities are global
 	if !app.Identities.Exists(name) {
-		log.Debug("Adding new Identity", "name", name)
+		log.Debug("Registering a new Identity", "name", name)
 		identity := id.NewIdentity(name, "Contact Info", false)
 		app.Identities.Add(identity)
 		status = true
 
 	} else {
-		log.Debug("Existing Identity", "name", name)
+		log.Debug("Not Registering existing Identity", "name", name)
+		app.Identities.Dump()
 	}
 
 	if chain == data.UNKNOWN {
 		return status
 	}
 
+	// Accounts are relative to a chain
 	accountName := name + "-" + scope
 
 	if !app.Accounts.Exists(chain, accountName) {
 		log.Debug("Adding new Account", "accountName", accountName)
 		account := id.NewAccount(chain, accountName, id.PublicKey{})
 		app.Accounts.Add(account)
+
+		// Fill in a
+		if !app.Utxo.Exists(account.AccountKey()) {
+			balance := data.NewBalance(0, "OLT")
+			buffer, _ := comm.Serialize(balance)
+			app.Utxo.Delivered.Set(account.AccountKey(), buffer)
+		}
 		status = true
 
 	} else {

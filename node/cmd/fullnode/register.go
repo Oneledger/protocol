@@ -45,21 +45,11 @@ func RegisterUsers(cmd *cobra.Command, args []string) {
 	// TODO: We can't do this, need to be 'light-client' instead...
 	node := app.NewApplication()
 
-	app.Register(node, regArguments.identity, regArguments.chain,
-		id.ParseAccountType(regArguments.chain))
+	name := regArguments.identity
+	chain := regArguments.chain
 
-	// TODO: The node command registers, not the registration command
-	/*
-		var signers []id.PublicKey
-		transaction := action.Register{
-			Base: action.Base{
-				Type:     action.REGISTER,
-				ChainId:  app.ChainId,
-				Signers:  signers,
-				Sequence: global.Current.Sequence,
-			},
-		}
-	*/
+	accountType := id.ParseAccountType(chain)
 
-	// action.SubmitTransaction(action.Transaction(transaction))
+	app.RegisterLocally(node, name, chain, accountType)
+
 }

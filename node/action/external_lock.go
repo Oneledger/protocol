@@ -37,6 +37,10 @@ func (transaction *ExternalLock) ProcessCheck(app interface{}) err.Code {
 	return err.SUCCESS
 }
 
+func (transaction *ExternalLock) ThisNode(app interface{}) bool {
+	return true
+}
+
 func (transaction *ExternalLock) ProcessDeliver(app interface{}) err.Code {
 	log.Debug("Processing ExternalLock Transaction for DeliverTx")
 

@@ -58,9 +58,10 @@ status:
 #
 full: reset install
 	./scripts/startOneLedger
-	@sleep 9 # TODO: should have a way of knowing the chain is ready
-	olclient send --address 127.0.0.1:46601
-	@sleep 3
+	./tests/register.sh
+	./tests/send.sh
+	./tests/identity.sh
+	./tests/accounts.sh
 	./scripts/stopOneLedger
 
 #

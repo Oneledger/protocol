@@ -10,7 +10,6 @@ import (
 	"github.com/Oneledger/protocol/node/data"
 	"github.com/Oneledger/protocol/node/err"
 	"github.com/Oneledger/protocol/node/log"
-	"github.com/Oneledger/protocol/node/persist"
 )
 
 // Synchronize a swap between two users
@@ -36,26 +35,45 @@ func (transaction *Send) Validate() err.Code {
 func (transaction *Send) ProcessCheck(app interface{}) err.Code {
 	log.Debug("Processing Send Transaction for CheckTx")
 
-	// TODO: Validate the transaction
+	if !CheckAmounts(transaction.Inputs, transaction.Outputs) {
+		return err.INVALID
+	}
+
+	// TODO: Validate the transaction against the UTXO database, check tree
+	chain := GetUtxo(app)
+	_ = chain
 
 	return err.SUCCESS
+}
+
+func (transaction *Send) ThisNode(app interface{}) bool {
+	return true
 }
 
 func (transaction *Send) ProcessDeliver(app interface{}) err.Code {
 	log.Debug("Processing Send Transaction for DeliverTx")
 
-	chain := app.(persist.Access).GetUtxo().(*data.ChainState)
+	if !CheckAmounts(transaction.Inputs, transaction.Outputs) {
+		return err.INVALID
+	}
 
 	// TODO: Revalidate the transaction
-	// TODO: Need to roolback any errors occur
+	// TODO: Need to rollback if any errors occur
+
+	chain := GetUtxo(app)
 
 	// Update the database to the final set of entries
 	for _, entry := range transaction.Outputs {
-		value, _ := comm.Serialize(entry.Coins)
-		chain.Delivered.Set(entry.Address, value)
+		buffer, _ := comm.Serialize(entry.Amount)
+		chain.Delivered.Set(entry.AccountKey, buffer)
 	}
 
 	return err.SUCCESS
+}
+
+// Make sure the inputs and outputs all add up correctly.
+func CheckAmounts(inputs []SendInput, outputs []SendOutput) bool {
+	return true
 }
 
 // Given a transaction, expand it into a list of Commands to execute against various chains.

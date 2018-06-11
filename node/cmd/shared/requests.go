@@ -18,13 +18,15 @@ import (
 	"github.com/Oneledger/protocol/node/log"
 )
 
-func SignAndPack(transaction action.Transaction) []byte {
+// Prepare a transaction to be issued.
+func SignAndPack(ttype action.Type, transaction action.Transaction) []byte {
 	signed := action.SignTransaction(transaction)
-	packet := action.PackRequest(signed)
+	packet := action.PackRequest(ttype, signed)
 
 	return packet
 }
 
+// Registration
 type RegisterArguments struct {
 	Identity string
 }
@@ -35,7 +37,7 @@ func CreateRegisterRequest(args *RegisterArguments) []byte {
 
 	reg := &action.Register{
 		Base: action.Base{
-			Type:     action.SEND,
+			Type:     action.REGISTER,
 			ChainId:  app.ChainId,
 			Signers:  signers,
 			Sequence: global.Current.Sequence,
@@ -43,7 +45,23 @@ func CreateRegisterRequest(args *RegisterArguments) []byte {
 		Identity: args.Identity,
 	}
 
-	return SignAndPack(action.Transaction(reg))
+	return SignAndPack(action.REGISTER, action.Transaction(reg))
+}
+
+// TODO: Get this from the database, need an inquiry from a trusted node?
+func GetBalance(account id.AccountKey) data.Coin {
+	balance := data.Coin{
+		Currency: "OLT",
+		Amount:   100,
+	}
+	return balance
+}
+
+type BalanceArguments struct {
+}
+
+func CreateBalanceRequest(args *BalanceArguments) []byte {
+	return []byte(nil)
 }
 
 type SendArguments struct {
@@ -61,20 +79,45 @@ func CreateSendRequest(args *SendArguments) []byte {
 
 	conv := convert.NewConvert()
 
-	party := id.Address(conv.GetHash(args.Party))
-	counterparty := id.Address(conv.GetHash(args.CounterParty))
-	_ = party
-	_ = counterparty
+	if args.Party == "" {
+		log.Fatal("Missing Party information")
+	}
+	if args.CounterParty == "" {
+		log.Fatal("Missing Party information")
+	}
+
+	// TODO: Can't convert identities to accounts, this way!
+	party := conv.GetAccountKey(args.Party)
+	counterParty := conv.GetAccountKey(args.CounterParty)
 
 	amount := data.Coin{
 		Currency: conv.GetCurrency(args.Currency),
 		Amount:   conv.GetInt64(args.Amount),
 	}
-	_ = amount
+
+	// Build up the Inputs
+	partyBalance := GetBalance(party)
+	counterPartyBalance := GetBalance(counterParty)
+
+	inputs := make([]action.SendInput, 2)
+	inputs = append(inputs,
+		action.NewSendInput(party, partyBalance),
+		action.NewSendInput(counterParty, counterPartyBalance))
+
+	// Build up the outputs
+	outputs := make([]action.SendOutput, 2)
+	outputs = append(outputs,
+		action.NewSendOutput(party, partyBalance.Minus(amount)),
+		action.NewSendOutput(counterParty, counterPartyBalance.Plus(amount)))
 
 	gas := data.Coin{
 		Currency: conv.GetCurrency(args.Currency),
 		Amount:   conv.GetInt64(args.Gas),
+	}
+
+	fee := data.Coin{
+		Currency: conv.GetCurrency(args.Currency),
+		Amount:   conv.GetInt64(args.Fee),
 	}
 
 	if conv.HasErrors() {
@@ -90,11 +133,13 @@ func CreateSendRequest(args *SendArguments) []byte {
 			Signers:  signers,
 			Sequence: global.Current.Sequence,
 		},
-		Fee: gas,
-		Gas: gas,
+		Inputs:  inputs,
+		Outputs: outputs,
+		Fee:     fee,
+		Gas:     gas,
 	}
 
-	return SignAndPack(action.Transaction(send))
+	return SignAndPack(action.SEND, action.Transaction(send))
 }
 
 // Arguments to the command
@@ -118,8 +163,8 @@ func CreateSwapRequest(args *SwapArguments) []byte {
 
 	conv := convert.NewConvert()
 
-	party := id.Address(conv.GetHash(args.Party))
-	counterparty := id.Address(conv.GetHash(args.CounterParty))
+	party := conv.GetAccountKey(args.Party)
+	counterParty := conv.GetAccountKey(args.CounterParty)
 
 	// TOOD: a clash with the basic data model
 	signers := GetSigners()
@@ -157,7 +202,7 @@ func CreateSwapRequest(args *SwapArguments) []byte {
 			Sequence: global.Current.Sequence,
 		},
 		Party:        party,
-		CounterParty: counterparty,
+		CounterParty: counterParty,
 		Fee:          fee,
 		Gas:          gas,
 		Amount:       amount,
@@ -165,5 +210,5 @@ func CreateSwapRequest(args *SwapArguments) []byte {
 		Nonce:        args.Nonce,
 	}
 
-	return SignAndPack(action.Transaction(swap))
+	return SignAndPack(action.SWAP, action.Transaction(swap))
 }

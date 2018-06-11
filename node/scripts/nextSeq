@@ -1,0 +1,16 @@
+#!/bin/sh
+#
+# Move the sequence ids forward for testing, so that similar queries don't get caught in reply protection
+
+# Get the next seqeunce
+VAL=`cat sequence`
+
+# output it 
+echo "-s $VAL"
+
+# Increment it
+VAL=$(($VAL + 1))
+
+# Overwrite the file wit the next one
+echo $VAL > sequence
+

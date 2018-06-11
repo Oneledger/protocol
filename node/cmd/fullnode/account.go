@@ -40,7 +40,7 @@ func ListIdentities(cmd *cobra.Command, args []string) {
 
 	if listargs.identity != "" {
 		Console.Print("Listing Account Details for", listargs.identity)
-		id, err := node.Identities.Find(listargs.identity)
+		id, err := node.Identities.FindName(listargs.identity)
 		if err != 0 {
 			log.Error("Not a valid identity", "err", err)
 			return

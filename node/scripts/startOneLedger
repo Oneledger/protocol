@@ -12,6 +12,6 @@ do
 	$CMD/testNode $entry
 	if [ $? -eq 0 ]; then 
 		$CMD/startNode $entry
-		sleep 2 
+		sleep 3 
 	fi
 done

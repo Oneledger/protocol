@@ -45,6 +45,7 @@ func Register() {
 	defer func() {
 		if r := recover(); r != nil {
 			log.Error("Ignoring Client Panic", "r", r)
+			return
 		}
 	}()
 
@@ -63,7 +64,6 @@ func Register() {
 
 // Start a node to run continously
 func StartNode(cmd *cobra.Command, args []string) {
-	log.Info("Starting up a Node")
 
 	// Catch any underlying panics, for now just print out the details properly and stop
 	defer func() {
@@ -76,18 +76,17 @@ func StartNode(cmd *cobra.Command, args []string) {
 		}
 	}()
 
+	log.Debug("Starting", "appAddress", global.Current.AppAddress)
+
 	node := app.NewApplication()
 	global.Current.SetApplication(persist.Access(node))
+
+	CatchSigterm()
 
 	// TODO: Switch on config
 	//service = server.NewGRPCServer("unix://data.sock", types.NewGRPCApplication(*node))
 	//service = server.NewSocketServer("tcp://127.0.0.1:46658", *node)
-
-	log.Debug("Starting", "app", global.Current.App)
-
-	CatchSigterm()
-
-	service = server.NewSocketServer(global.Current.App, *node)
+	service = server.NewSocketServer(global.Current.AppAddress, *node)
 	service.SetLogger(log.GetLogger())
 
 	// Set it running

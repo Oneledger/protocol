@@ -37,6 +37,7 @@ const (
 type Transaction interface {
 	Validate() err.Code
 	ProcessCheck(interface{}) err.Code
+	ThisNode(interface{}) bool
 	ProcessDeliver(interface{}) err.Code
 	Expand(interface{}) Commands
 }
@@ -47,13 +48,17 @@ type Base struct {
 	ChainId string      `json:"chain_id"` // TODO: Not necessary?
 	Signers []PublicKey `json:"signers"`
 
+	// Relative to Chain
+	Owner id.AccountKey `json:"owner"`
+
 	// TODO: Should these be for all transactions or just driving ones?
-	Sequence int        `json:"sequence"`
-	Owner    id.Address `json:"owner"`
+	Sequence int `json:"sequence"`
 }
 
-// Get the correct chain for an action
-func GetChain(transaction interface{}) data.ChainType {
-	// TODO: Need to fix this
-	return data.BITCOIN
+// Get the correct chain for this action
+// TODO: Need to return a list of chains?
+func GetChains(transaction interface{}) []data.ChainType {
+
+	// TODO: Need to fix this, should not be hardcoded to a given chain
+	return []data.ChainType{data.BITCOIN, data.ETHEREUM}
 }
