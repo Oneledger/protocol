@@ -24,6 +24,7 @@
 #   go-tests = true
 #   unused-packages = true
 
+ required = ["github.com/mattn/go-isatty",  "github.com/pkg/errors" ]
 
 [[constraint]]
   name = "golang.org/x/net"
@@ -33,9 +34,9 @@
   name = "github.com/golang/protobuf"
   version = "~1.0.0"
 
-#[[constraint]]
-#  name = "github.com/mattn/go-isatty"
-#  version = "~0.0.3"
+[[constraint]]
+  name = "github.com/mattn/go-isatty"
+  version = "~0.0.3"
 
 [[constraint]]
   name = "github.com/pkg/errors"
@@ -79,3 +80,4 @@
 [prune]
   go-tests = true
   unused-packages = true
+

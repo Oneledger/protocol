@@ -123,7 +123,7 @@ func (sb *SwapBox)CheckRemoteBox (box *SwapBox) bool {
 }
 
 func (sb *SwapBox) Execute(box *SwapBox) {
-	//TODO: call /node/chains/btcrpc/interfaces or /node/chains/btcrpc/interfaces to finalize the HTLC transaction
+	//TODO: call /node/chains/rpc/interfaces or /node/chains/rpc/interfaces to finalize the HTLC transaction
 	if sb.CheckRemoteBox(box) {
 		sb.unlock([]byte{},[]byte{},[]byte{},Message{})
 	}
