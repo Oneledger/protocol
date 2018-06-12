@@ -16,8 +16,7 @@ func ScheduleBlockGeneration(cli brpc.Bitcoind, interval time.Duration ) chan bo
 		for {
 			select {
 			case <-ticker.C:
-				//TODO add generate block rpc call wrapped
-				//call generate block for num
+				cli.Generate(1)
 			case <-stop:
 				ticker.Stop()
 				return
