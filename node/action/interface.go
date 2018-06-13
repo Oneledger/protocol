@@ -23,33 +23,43 @@ func SubmitTransaction(chain data.ChainType, context map[string]string) bool {
 	return true
 }
 
-func CreateLockbox(chain data.ChainType, context map[string]string) bool {
-	log.Info("Executing CreateLockbox Command", "chain", chain, "context", context)
+func Initiate(chain data.ChainType, context map[string]string) bool {
+	log.Info("Executing Initiate Command", "chain", chain, "context", context)
+	switch chain {
+
+	case data.BITCOIN:
+		return CreateContractBTC(context)
+	case data.ETHEREUM:
+		return CreateContractETH(context)
+	case data.ONELEDGER:
+		return CreateContractOLT(context)
+	default:
+		return false
+	}
+}
+
+func Participate(chain data.ChainType, context map[string]string) bool {
+	log.Info("Executing Participate Command", "chain", chain, "context", context)
 	return true
 }
 
-func SignLockbox(chain data.ChainType, context map[string]string) bool {
-	log.Info("Executing SignLockbox Command", "chain", chain, "context", context)
+func Redeem(chain data.ChainType, context map[string]string) bool {
+	log.Info("Executing Redeem Command", "chain", chain, "context", context)
 	return true
 }
 
-func VerifyLockbox(chain data.ChainType, context map[string]string) bool {
-	log.Info("Executing VerifyLockbox Command", "chain", chain, "context", context)
+func Refund(chain data.ChainType, context map[string]string) bool {
+	log.Info("Executing Refund Command", "chain", chain, "context", context)
 	return true
 }
 
-func SendKey(chain data.ChainType, context map[string]string) bool {
-	log.Info("Executing SendKey Command", "chain", chain, "context", context)
+func ExtractSecret(chain data.ChainType, context map[string]string) bool {
+	log.Info("Executing ExtractSecret Command", "chain", chain, "context", context)
 	return true
 }
 
-func ReadChain(chain data.ChainType, context map[string]string) bool {
-	log.Info("Executing ReadChain Command", "chain", chain, "context", context)
-	return true
-}
-
-func OpenLockbox(chain data.ChainType, context map[string]string) bool {
-	log.Info("Executing OpenLockbox Command", "chain", chain, "context", context)
+func AuditContract(chain data.ChainType, context map[string]string) bool {
+	log.Info("Executing AuditContract Command", "chain", chain, "context", context)
 	return true
 }
 

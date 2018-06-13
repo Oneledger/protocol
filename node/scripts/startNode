@@ -21,6 +21,8 @@ nodeName=`$CMD/lookup $name NodeName`
 p2pAddress=`$CMD/lookup $name P2PAddress $prefix`
 rpcAddress=`$CMD/lookup $name RPCAddress $prefix`
 appAddress=`$CMD/lookup $name AppAddress $prefix`
+btcRpcAddress=`$CMD/lookup $name BTCRpcAddress`
+ethRpcAddress=`$CMD/lookup $name ETHRpcAddress`
 
 prefix="127.0.0.1:"
 key=`$CMD/getNodeId $nodeName`
@@ -70,6 +72,7 @@ then
 		--root $WORK/fullnode \
 		--app $appAddress \
 		--address $rpcAddress \
+		--btcrpc
 		$extra \
 		>> $LOG/fullnode.log 2>&1 &
 

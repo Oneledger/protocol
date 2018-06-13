@@ -12,12 +12,12 @@ type CommandType int
 const (
 	NOOP CommandType = iota
 	SUBMIT_TRANSACTION
-	CREATE_LOCKBOX
-	SIGN_LOCKBOX
-	VERIFY_LOCKBOX
-	SEND_KEY
-	READ_CHAIN
-	OPEN_LOCKBOX
+	INITIATE
+	PARTICIPATE
+	REDEEM
+	REFUND
+	EXTRACTSECRET
+	AUDITCONTRACT
 	WAIT_FOR_CHAIN
 )
 
@@ -36,23 +36,23 @@ func (command Command) Execute() bool {
 	case SUBMIT_TRANSACTION:
 		return SubmitTransaction(command.Chain, command.Data)
 
-	case CREATE_LOCKBOX:
-		return CreateLockbox(command.Chain, command.Data)
+	case INITIATE:
+		return Initiate(command.Chain, command.Data)
 
-	case SIGN_LOCKBOX:
-		return SignLockbox(command.Chain, command.Data)
+	case PARTICIPATE:
+		return Participate(command.Chain, command.Data)
 
-	case VERIFY_LOCKBOX:
-		return VerifyLockbox(command.Chain, command.Data)
+	case REDEEM:
+		return Redeem(command.Chain, command.Data)
 
-	case SEND_KEY:
-		return SendKey(command.Chain, command.Data)
+	case REFUND:
+		return Refund(command.Chain, command.Data)
 
-	case READ_CHAIN:
-		return ReadChain(command.Chain, command.Data)
+	case EXTRACTSECRET:
+		return ExtractSecret(command.Chain, command.Data)
 
-	case OPEN_LOCKBOX:
-		return OpenLockbox(command.Chain, command.Data)
+	case AUDITCONTRACT:
+		return AuditContract(command.Chain, command.Data)
 
 	case WAIT_FOR_CHAIN:
 		return WaitForChain(command.Chain, command.Data)

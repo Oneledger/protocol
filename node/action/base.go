@@ -17,6 +17,8 @@ type PublicKey = crypto.PubKey
 
 // ENUM for type
 type Type byte
+type Role byte
+
 
 const (
 	INVALID       Type = iota
@@ -31,6 +33,14 @@ const (
 	PREPARE            // Do everything, except commit
 	COMMIT             // Commit to doing the work
 	FORGET             // Rollback and forget that this happened
+
+)
+
+const (
+	ALL 		Role = iota
+	INITIATOR
+	PARTICIPANT
+	WITNESS
 )
 
 // Polymorphism and Serializable

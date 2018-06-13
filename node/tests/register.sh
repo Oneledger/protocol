@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 #
 # Register all of the identities and accounts on OneLedger
 #
