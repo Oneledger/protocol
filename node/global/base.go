@@ -23,26 +23,36 @@ import (
 var Current *Context
 
 type Context struct {
-	Application persist.Access
-	Debug       bool   // DEBUG flag
-	Node        string // Name of this instance
-	RootDir     string // Working directory for this instance
-	Transport   string // socket vs grpc
-	Address     string // address
-	Sequence    int
+	Application persist.Access // Global Access to the application when it is running
+
+	Debug bool // DEBUG flag
+
+	NodeName        string // Name of this instance
+	NodeAccountName string // TODO: Should be a list of accounts
+	RootDir         string // Working directory for this instance
+	AppAddress      string // app address
+	RpcAddress      string // rpc address
+	Transport       string // socket vs grpc
+
+	Sequence int // replay protection
+	BTCRpcPort int
+	ETHRpcPort int
 }
 
 func init() {
-	Current = NewContext("OneLedger")
+	Current = NewContext("OneLedger-Default")
 }
 
 // Set the default values for any context variables here (and no where else)
 func NewContext(name string) *Context {
 	return &Context{
-		Node:     name,
-		Debug:    false,
-		RootDir:  os.Getenv("OLDATA") + "/" + name + "/fullnode",
-		Sequence: 1001,
+		Debug: false,
+
+		NodeName:        name,
+		NodeAccountName: name,
+		RootDir:         os.Getenv("OLDATA") + "/" + name + "/fullnode",
+
+		Sequence: 101,
 	}
 }
 

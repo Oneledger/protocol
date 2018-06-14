@@ -1,7 +1,7 @@
 /*
 	Copyright 2017-2018 OneLedger
 
-	Gets the account information, this is a node operation (and won't run if a node already exists)
+	Gets the account information, this is a node operation (and won't run if a node already is already running)
 */
 package main
 
@@ -25,27 +25,31 @@ type ListArguments struct {
 
 var listargs = &ListArguments{}
 
+// Setup the command in Cobra
 func init() {
 	RootCmd.AddCommand(accountCmd)
 
 	// Transaction Parameters
-	accountCmd.Flags().StringVar(&listargs.identity, "identity", "unknown", "user account name")
+	accountCmd.Flags().StringVar(&listargs.identity, "identity", "", "user account name")
 }
 
 // IssueRequest sends out a sendTx to all of the nodes in the chain
 func ListIdentities(cmd *cobra.Command, args []string) {
 
-	// TODO: We can't do this, need to be 'light-client' instead...
 	node := app.NewApplication()
 
 	if listargs.identity != "" {
 		Console.Print("Listing Account Details for", listargs.identity)
-		id, err := node.Identities.Find(listargs.identity)
+		id, err := node.Identities.FindName(listargs.identity)
 		if err != 0 {
 			log.Error("Not a valid identity", "err", err)
 			return
 		}
-		IdentityInfo(node, id)
+		if id != nil {
+			IdentityInfo(node, id)
+		} else {
+			Console.Print("Unknown Account")
+		}
 		return
 	}
 
@@ -56,5 +60,6 @@ func ListIdentities(cmd *cobra.Command, args []string) {
 }
 
 func IdentityInfo(node *app.Application, id *id.Identity) {
-	Console.Print("Identity")
+	Console.Print("Identity " + id.UserName)
+	// TODO: This out the know active accounts.
 }

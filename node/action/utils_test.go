@@ -16,23 +16,35 @@ func TestBoxLocker_Sign(t *testing.T) {
 		log.Error(err.Error())
 		return
 	}
-	privKey, pubKey := btcec.PrivKeyFromBytes(btcec.S256(), pkBytes)
 
 	// Sign a message using the private key.
 	message := "test message"
 	messageHash := chainhash.DoubleHashB([]byte(message))
-	signature, err := privKey.Sign(messageHash)
+
+	locker := BoxLocker{}
+	r , err := locker.Sign(pkBytes[:len(pkBytes)/2],pkBytes[len(pkBytes)/2:], messageHash)
+
+	assert.Equal(t, true, r, "Sign with preimage and nonce success")
 	if err != nil {
 		log.Error(err.Error())
 		return
 	}
 
 	// Serialize and display the signature.
-	log.Info("Serialized Signature: %x\n", signature.Serialize())
+	log.Info("Serialized Signature: %x\n", locker.Signature.Serialize())
 
 	// Verify the signature for the message using the public key.
-	verified := signature.Verify(messageHash, pubKey)
-	assert.Equal(t, true, verified,"signature verified")
+	verified := locker.Signature.Verify(messageHash, locker.PubKey)
+	assert.Equal(t, true, verified,"Signature verified with pubKey")
+
+	// Test sign again with wrong nonce
+	r, err = locker.Sign(pkBytes[:len(pkBytes)/2], pkBytes[len(pkBytes)/2-1:], messageHash)
+	assert.Equal(t, false, r, err.Error())
+
+	// Test sign again with wrong preImage
+	r, err = locker.Sign(pkBytes[:len(pkBytes)/2-1], pkBytes[len(pkBytes)/2:], messageHash)
+	assert.Equal(t, false, r, err.Error())
+
 }
 
 func TestBoxLocker_Verify(t *testing.T) {
@@ -58,16 +70,19 @@ func TestBoxLocker_Verify(t *testing.T) {
 		log.Error(err.Error())
 		return
 	}
+
 	signature, err := btcec.ParseSignature(sigBytes, btcec.S256())
 	if err != nil {
 		log.Error(err.Error())
 		return
 	}
 
+	locker := BoxLocker{signature, pubKey}
+
 	// Verify the signature for the message using the public key.
 	message := "test message"
 	messageHash := chainhash.DoubleHashB([]byte(message))
-	verified := signature.Verify(messageHash, pubKey)
+	verified := locker.Verify(messageHash)
 	assert.Equal(t,true, verified, "Signature verified")
 }
 

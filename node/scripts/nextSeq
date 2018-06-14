@@ -1,0 +1,19 @@
+#!/bin/sh
+#
+# Move the sequence ids forward for testing, so that similar queries don't get caught in reply protection
+
+
+export CMD=$OLSCRIPT
+
+# Get the next seqeunce
+VAL=`cat $CMD/sequence`
+
+# output it 
+echo "-s $VAL"
+
+# Increment it
+VAL=$(($VAL + 1))
+
+# Overwrite the file wit the next one
+echo $VAL > $CMD/sequence
+

@@ -1,4 +1,4 @@
-package btcrpc
+package rpc
 
 import (
 	"encoding/json"
@@ -370,5 +370,15 @@ func (b *Bitcoind) ValidateAddress(address string) (va ValidateAddressResponse, 
 		return
 	}
 	err = json.Unmarshal(r.Result, &va)
+	return
+}
+
+//generate blockNumber of block on regtest network
+func (b *Bitcoind) Generate(blockNumber uint64) (bh string, err error) {
+	r, err := b.client.call("generate", []uint64{blockNumber} )
+	if err = handleError(err, &r); err != nil {
+		return
+	}
+	err = json.Unmarshal(r.Result, &bh)
 	return
 }

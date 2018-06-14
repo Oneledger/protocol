@@ -1,9 +1,9 @@
-package ethrpc
+package rpc
 
 import (
 	"fmt"
 	
-	"../common"
+	"../../common"
 )
 
 

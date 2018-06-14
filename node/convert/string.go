@@ -10,22 +10,24 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/Oneledger/protocol/node/id"
 	crypto "github.com/tendermint/go-crypto"
 )
 
 const CURRENCY = 0x123
 
-var Domain map[string]bool
+var Domain map[string]string
 
 func init() {
-	Domain = make(map[string]bool)
+	Domain = make(map[string]string)
 
-	Domain["bitcoin"] = true
-	Domain["oneledger"] = true
-	Domain["etheruem"] = true
-	Domain["btc"] = true
-	Domain["olt"] = true
-	Domain["eth"] = true
+	// keys are lowercase, maps back to proper string
+	Domain["oneledger"] = "OneLedger"
+	Domain["bitcoin"] = "Bitcoin"
+	Domain["etheruem"] = "Ethereum"
+	Domain["olt"] = "OLT"
+	Domain["btc"] = "BTC"
+	Domain["eth"] = "ETH"
 }
 
 // Build up a list of error messages
@@ -67,16 +69,26 @@ func (convert *Convert) AddError(value string, err error) {
 	convert.Next++
 }
 
+// TODO: Should go through a set of different possibilties and settle on the best option
+func (convert *Convert) GetAccountKey(value string) id.AccountKey {
+	// TODO: See if this is an identity?
+	// TODO: See if this is in utxo?
+	return id.AccountKey(value)
+}
+
+// TODO: Needs to have real values
 func (convert *Convert) GetPublicKey(value string) PublicKey {
 	// TODO: Is this a file reference? If so, read in the key
 	// TODO: Is this actionally the key
 	return PublicKey{}
 }
 
+// TODO: Needs to have real values
 func (convert *Convert) GetPrivateKey(value string) PrivateKey {
 	return PrivateKey{}
 }
 
+// TODO: Need to be ripeMd?
 func (convert *Convert) HashKey(key PublicKey) []byte {
 	return nil
 }
@@ -91,8 +103,8 @@ func (convert *Convert) GetHash(value string) []byte {
 
 func (convert *Convert) GetCurrency(value string) string {
 	key := strings.ToLower(value)
-	if Domain[key] {
-		return key
+	if result, ok := Domain[key]; ok {
+		return result
 	}
 	convert.AddError(value, errors.New("Invalid Currency"))
 	return ""

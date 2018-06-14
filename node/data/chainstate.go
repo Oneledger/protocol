@@ -11,12 +11,14 @@
 package data
 
 import (
+	"github.com/Oneledger/protocol/node/comm"
 	"github.com/Oneledger/protocol/node/global"
 	"github.com/Oneledger/protocol/node/log"
 	"github.com/tendermint/iavl"
 	"github.com/tendermint/tmlibs/db"
 )
 
+// Number of times we initialized since starting
 var count int
 
 type ChainState struct {
@@ -28,6 +30,7 @@ type ChainState struct {
 	Checked   *iavl.VersionedTree
 	Delivered *iavl.VersionedTree
 	Committed *iavl.VersionedTree
+	database  *db.GoLevelDB
 }
 
 func NewChainState(name string, newType DatastoreType) *ChainState {
@@ -37,7 +40,90 @@ func NewChainState(name string, newType DatastoreType) *ChainState {
 	return chain
 }
 
-func createDatabase(name string, newType DatastoreType) *iavl.VersionedTree {
+// Test this against the checked UTXO data to make sure the transaction is legit
+func (state *ChainState) Test(key DatabaseKey, balance Balance) bool {
+	//buffer := comm.Serialize(balance)
+	//state.Checked.Set(key, buffer)
+	return true
+}
+
+// Do this for the Delivery side
+func (state *ChainState) Set(key DatabaseKey, balance Balance) {
+	buffer, _ := comm.Serialize(balance)
+
+	// TODO: Get some error handling in here
+	state.Delivered.Set(key, buffer)
+}
+
+func (state *ChainState) FindAll() map[string]*Balance {
+	mapping := make(map[string]*Balance, 1)
+
+	for i := int64(0); i < state.Delivered.Size64(); i++ {
+		key, value := state.Delivered.GetByIndex64(i)
+		var balance Balance
+		result, _ := comm.Deserialize(value, &balance)
+		mapping[string(key)] = result.(*Balance)
+	}
+	return mapping
+}
+
+// TODO: Should be against the commit tree, not the delivered one!!!
+func (state *ChainState) Find(key DatabaseKey) *Balance {
+	version := state.Delivered.Version64()
+	_, value := state.Delivered.GetVersioned(key, version)
+	if value != nil {
+		var balance Balance
+		result, _ := comm.Deserialize(value, &balance)
+		return result.(*Balance)
+	}
+	return nil
+}
+
+// TODO: Should be against the commit tree, not the delivered one!!!
+func (state *ChainState) Exists(key DatabaseKey) bool {
+	version := state.Delivered.Version64()
+	_, value := state.Delivered.GetVersioned([]byte(key), version)
+	if value != nil {
+		return true
+	}
+	return false
+}
+
+// TODO: Not sure about this, it seems to be Cosmos-sdk's way of getting arround the immutable copy problem...
+func (state *ChainState) Commit() {
+
+	state.Delivered.SaveVersion()
+
+	// Force the database to completely close, then repoen it.
+	state.database.Close()
+	state.database = nil
+	state.reset()
+}
+
+func (state *ChainState) Dump() {
+	texts := state.database.Stats()
+	for key, value := range texts {
+		log.Debug("Stat", key, value)
+	}
+
+	iter := state.database.Iterator(nil, nil)
+	for ; iter.Valid(); iter.Next() {
+		hash := iter.Key()
+		node := iter.Value()
+		log.Debug("Row", hash, node)
+	}
+}
+
+func (state *ChainState) reset() {
+	// TODO: I need three copies of the tree, only one is ultimately mutable... (checked changed rollback)
+	// TODO: Close before reopen, better just update...
+
+	//state.Checked = createDatabase(state.Name, state.Type)
+	state.Delivered, state.database = initializeDatabase(state.Name, state.Type)
+	//state.Committed = createDatabase(state.Name, state.Type)
+}
+
+func initializeDatabase(name string, newType DatastoreType) (*iavl.VersionedTree, *db.GoLevelDB) {
 	// TODO: Assuming persistence for right now
 	storage, err := db.NewGoLevelDB("OneLedger-"+name, global.Current.RootDir)
 	if err != nil {
@@ -46,25 +132,10 @@ func createDatabase(name string, newType DatastoreType) *iavl.VersionedTree {
 	}
 
 	// TODO: cosmos seems to be using VersionedTree now????
-	tree := iavl.NewVersionedTree(storage, 100) // Do I need a historic tree here?
+	tree := iavl.NewVersionedTree(storage, 1000) // Do I need a historic tree here?
+	tree.LoadVersion(0)
 
 	count = count + 1
 
-	return tree
-}
-
-// TODO: Not sure about this, it seems to be Cosmos-sdk's way of getting arround the immutable copy problem...
-func (state *ChainState) Commit() {
-
-	state.Delivered.SaveVersion() // TODO: This does not seem to be updating the database
-	state.reset()
-}
-
-func (state *ChainState) reset() {
-	// TODO: I need three copies of the tree, only one is ultimately mutable... (checked changed rollback)
-	// TODO: Close before repoen, better just update...
-
-	//state.Checked = createDatabase(state.Name, state.Type)
-	state.Delivered = createDatabase(state.Name, state.Type)
-	//state.Committed = createDatabase(state.Name, state.Type)
+	return tree, storage
 }

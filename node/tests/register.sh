@@ -1,40 +1,39 @@
-#!/bin/sh
-
+#!/bin/bash
 #
-# Test creating a single send transaction in a 1-node chain, reset each time
+# Register all of the identities and accounts on OneLedger
 #
-OLTEST=$GOPATH/src/github.com/Oneledger/protocol/node/scripts
+# Need to test to see if this has already been done...
+#
+CMD=$GOPATH/src/github.com/Oneledger/protocol/node/scripts
 
-status=`$OLTEST/statusChain`
+list="Alice Bob Carol"
 
-echo "ChainStatus: $status"
-
-if [ -z "$status" ]; then
-	echo "Chain wasn't running"
-else
-	$OLTEST/stopChain
-fi
-
-list="Admin Alice Bob Carol"
+$CMD/startOneLedger
 
 for name in $list 
 do
-	address=`$OLSCRIPT/lookup $name RPCAddress tcp://127.0.0.1:`
+	nodeAddr=`$CMD/lookup $name RPCAddress tcp://127.0.0.1:`
+	nodeName=`$CMD/lookup $name NodeName`
+	WORK=$OLDATA/$nodeName
+	ROOT=$WORK/fullnode
 
-	fullnode register --address $address --identity $name
+	$CMD/stopNode $name 
 
-	fullnode register --address $address --chain OneLedger --identity $name \
-		--pubkey 0x0103a39e93332 --privkey 0x0103a39e93332
+	# Setup a global Identity and OneLedger account
+	fullnode register --root $ROOT -a $nodeAddr \
+		--node $nodeName \
+		--identity $name 
 
-	fullnode register --address $address --chain Bitcoin --identity $name \
-		--pubkey 0x0203a39e93332 --privkey 0x0203a39e93332 
+	# Fill in the specific chain accounts
+	fullnode register --root $ROOT -a $nodeAddr \
+		--node $nodeName \
+		--identity $name --chain Bitcoin 
 
-	fullnode register --address $address --chain Ethereum --identity $name \
-		--pubkey 0x0303a39e93332 --privkey 0x0303a39e93332 
+	fullnode register --root $ROOT -a $nodeAddr \
+		--node $nodeName \
+		--identity $name --chain Ethereum 
+
+	# Broadtcast it to all of the nodes to make sure it is unique
+	$CMD/startNode $name register 
+	sleep 5
 done
-
-if [ -z "$status" ]; then
-	echo "Chain isn't restarted"
-else
-	$OLTEST/startChain
-fi

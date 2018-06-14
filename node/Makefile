@@ -48,21 +48,41 @@ test: start
 	echo "Running"
 
 #
+# Check out the running status
+#
+status: 
+	./scripts/statusOneLedger
+
+#
 # Full Testing, bring up everything, send a transaction and then stop
 #
-full: stop reset install
-	./scripts/startChain
-	@sleep 9 # TODO: should have a way of knowing the chain is ready
-	olclient send --address 127.0.0.1:46601
-	@sleep 3
-	./scripts/stopChain
+full: reset install
+	./tests/register.sh
+	./tests/send.sh
+	./tests/identity.sh
+	./tests/accounts.sh
+	./tests/utxo.sh
+	./scripts/stopOneLedger
+
+#
+# Full Testing, bring up everything, send a transaction and then stop
+#
+swap: reset install
+	./tests/register.sh
+	./tests/swap.sh
+	./tests/identity.sh
+	./tests/accounts.sh
+	./tests/utxo.sh
+	./scripts/stopOneLedger
 
 #
 # Start up a node, make sure it is stopped first
 #
-start: stop install
-	./scripts/startChain
+restart: reset install
+	./scripts/startOneLedger
 
+start: install
+	./scripts/startOneLedger
 #
 # System Testing, bring it all down
 #
@@ -73,13 +93,13 @@ list:
 # System Testing, bring it all down
 #
 stop: 
-	./scripts/stopChain
+	./scripts/stopOneLedger
 
 #
 # Reset all of the chains, back to genesis
 #
-reset:
-	./scripts/resetChain 4
+reset: stop
+	./scripts/resetOneLedger 4
 
 #
 # Startup a tmux monitor
@@ -98,4 +118,3 @@ stopmon:
 #
 #
 .PHONY: all build install utest test tools update stop start full
-

@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/Oneledger/protocol/node/action"
+	"github.com/Oneledger/protocol/node/data"
 	"github.com/Oneledger/protocol/node/id"
 	"github.com/Oneledger/protocol/node/log"
 )
@@ -25,15 +26,16 @@ func TestRegister(t *testing.T) {
 	}
 }
 
+// Test the local storage of the database.
 func register(app *Application, idName string, t *testing.T) {
 	chains := [][]Object{
-		[]Object{"OneLedger", id.ONELEDGER},
-		[]Object{"Bitcoin", id.BITCOIN},
-		[]Object{"Ethereum", id.ETHEREUM},
+		[]Object{"OneLedger", data.ONELEDGER},
+		[]Object{"Bitcoin", data.BITCOIN},
+		[]Object{"Ethereum", data.ETHEREUM},
 	}
 
 	// Create all of the accounts
-	identity := id.NewIdentity(idName, "Contact Info")
+	identity := id.NewIdentity(idName, "Contact Info", false)
 
 	log.Debug("Adding", "name", idName)
 
@@ -46,9 +48,12 @@ func register(app *Application, idName string, t *testing.T) {
 		chain := set[1]
 		log.Debug("Adding", "name", name, "chain", chain)
 
-		account := id.NewAccount(chain.(id.AccountType), idName+"-"+name.(string), key)
+		account := id.NewAccount(chain.(data.ChainType), idName+"-"+name.(string), key)
 		app.Accounts.Add(account)
 	}
+
+	app.Identities.Close()
+	app.Identities = id.NewIdentities("identities")
 
 	// TODO: Test that they all exist
 	log.Info("Output")

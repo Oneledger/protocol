@@ -6,6 +6,7 @@
 package action
 
 import (
+	"github.com/Oneledger/protocol/node/comm"
 	"github.com/Oneledger/protocol/node/data"
 	"github.com/Oneledger/protocol/node/err"
 	"github.com/Oneledger/protocol/node/log"
@@ -34,15 +35,48 @@ func (transaction *Send) Validate() err.Code {
 func (transaction *Send) ProcessCheck(app interface{}) err.Code {
 	log.Debug("Processing Send Transaction for CheckTx")
 
-	// TODO: // Update in memory copy of Merkle Tree
+	if !CheckAmounts(transaction.Inputs, transaction.Outputs) {
+		return err.INVALID
+	}
+
+	// TODO: Validate the transaction against the UTXO database, check tree
+	chain := GetUtxo(app)
+	_ = chain
+
 	return err.SUCCESS
+}
+
+func (transaction *Send) ShouldProcess(app interface{}) bool {
+	return true
 }
 
 func (transaction *Send) ProcessDeliver(app interface{}) err.Code {
 	log.Debug("Processing Send Transaction for DeliverTx")
 
-	// TODO: // Update in final copy of Merkle Tree
+	if !CheckAmounts(transaction.Inputs, transaction.Outputs) {
+		return err.INVALID
+	}
+
+	// TODO: Revalidate the transaction
+	// TODO: Need to rollback if any errors occur
+
+	chain := GetUtxo(app)
+
+	// Update the database to the final set of entries
+	for _, entry := range transaction.Outputs {
+		balance := data.Balance{
+			Amount: entry.Amount,
+		}
+		buffer, _ := comm.Serialize(balance)
+		chain.Delivered.Set(entry.AccountKey, buffer)
+	}
+
 	return err.SUCCESS
+}
+
+// Make sure the inputs and outputs all add up correctly.
+func CheckAmounts(inputs []SendInput, outputs []SendOutput) bool {
+	return true
 }
 
 // Given a transaction, expand it into a list of Commands to execute against various chains.

@@ -9,23 +9,24 @@ else
 	name=$1
 fi
 
-echo "Starting $name"
+if [ "$2" = "register" ]; then
+	echo "Adding the Register Flag"
+	extra="--register $name"
+fi
+
+#echo "Starting $name"
 
 prefix="tcp://127.0.0.1:"
 nodeName=`$CMD/lookup $name NodeName`
 p2pAddress=`$CMD/lookup $name P2PAddress $prefix`
 rpcAddress=`$CMD/lookup $name RPCAddress $prefix`
 appAddress=`$CMD/lookup $name AppAddress $prefix`
+btcRpcAddress=`$CMD/lookup $name BTCRpcAddress`
+ethRpcAddress=`$CMD/lookup $name ETHRpcAddress`
 
 prefix="127.0.0.1:"
 key=`$CMD/getNodeId $nodeName`
 peers=`$CMD/lookup $name Peers $prefix $id`
-
-#echo "nodeName=$nodeName"
-#echo "p2pAddress=$p2pAddress"
-#echo "rpcAddress=$rpcAddress"
-#echo "appAddress=$appAddress"
-#echo "peers=$peers"
 
 export WORK=$OLDATA/$nodeName
 export LOG=$WORK
@@ -43,7 +44,7 @@ then
 	echo "============================================================" >> $LOG/tendermint.log
 	echo "Starting Tendermint" >> $LOG/tendermint.log
 	echo "============================================================" >> $LOG/tendermint.log
-	#tendermint node --proxy_app "unix://data.sock" >> $LOG/tendermint.log &
+
 	tendermint node --home $DATA \
 		--moniker $nodeName \
 		--rpc.laddr $rpcAddress \
@@ -51,8 +52,10 @@ then
 		--proxy_app $appAddress \
 		--p2p.persistent_peers $peers \
 		>> $LOG/tendermint.log 2>&1 &
+
+	echo "Tendermint $nodeName has been started"
 else
-	echo "Tendermint $nodeName is already running"
+	echo "Tendermint $nodeName was already running"
 fi
 
 #
@@ -65,18 +68,17 @@ then
 	echo "============================================================" >> $LOG/fullnode.log
 	echo "Starting Fullnode" >> $LOG/fullnode.log
 	echo "============================================================" >> $LOG/fullnode.log
-	fullnode node --node $nodeName --root $WORK/fullnode --address $appAddress >> $LOG/fullnode.log 2>&1 &
+	fullnode node --node $nodeName \
+		--root $WORK/fullnode \
+		--app $appAddress \
+		--address $rpcAddress \
+		--btcrpc
+		$extra \
+		>> $LOG/fullnode.log 2>&1 &
+
+	echo "$nodeName has been Started"
 else
-	echo "Fullnode $nodeName is already running"
+	echo "Fullnode $nodeName was already running"
 fi
-
-#
-# Startup Ethereum
-#
-
-#
-# Startup Bitcoin
-#
-echo "$nodeName is Started"
 
 popd >> /dev/null

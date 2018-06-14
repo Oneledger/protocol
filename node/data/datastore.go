@@ -15,7 +15,7 @@ import (
 
 	"github.com/Oneledger/protocol/node/global"
 	"github.com/Oneledger/protocol/node/log"
-	"github.com/tendermint/iavl" // TODO: Double check this with cosmos-sdk
+	"github.com/tendermint/iavl"
 	"github.com/tendermint/tmlibs/db"
 )
 
@@ -25,6 +25,7 @@ type DatabaseKey = []byte // Database key
 // ENUM for datastore type
 type DatastoreType int
 
+// Different types
 const (
 	MEMORY     DatastoreType = iota
 	PERSISTENT DatastoreType = iota
@@ -32,15 +33,19 @@ const (
 
 // Wrap the underlying usage
 type Datastore struct {
-	Type     DatastoreType
-	Name     string
-	File     string
+	Type DatastoreType
+
+	Name string
+	File string
+
 	memory   *db.MemDB
 	tree     *iavl.VersionedTree
 	database *db.GoLevelDB
-	version  int64
+
+	version int64
 }
 
+// Test to see if this exists already
 func Exists(name string, dir string) bool {
 	dbPath := filepath.Join(dir, name+".db")
 	info, err := os.Stat(dbPath)
@@ -65,11 +70,13 @@ func NewDatastore(name string, newType DatastoreType) *Datastore {
 
 	case PERSISTENT:
 		fullname := "OneLedger-" + name
+
 		if Exists(fullname, global.Current.RootDir) {
 			//log.Debug("Appending to database", "name", fullname)
 		} else {
 			log.Info("Creating new database", "name", fullname)
 		}
+
 		storage, err := db.NewGoLevelDB(fullname, global.Current.RootDir)
 		if err != nil {
 			log.Error("Database create failed", "err", err)
@@ -95,6 +102,7 @@ func NewDatastore(name string, newType DatastoreType) *Datastore {
 	}
 }
 
+// Close the database
 func (store Datastore) Close() {
 	switch store.Type {
 
@@ -161,6 +169,7 @@ func (store Datastore) Load(key DatabaseKey) (value Message) {
 	default:
 		panic("Unknown Type")
 	}
+	return Message(nil)
 }
 
 // Commit the changes to persistence
@@ -174,13 +183,14 @@ func (store Datastore) Commit() {
 		}
 		store.version = version
 
-		// Save only one copy at a time
+		// Save only a few copies at a time
 		//if store.version-10 > 10 {
 		//		store.tree.DeleteVersion(store.version - 10)
 		//	}
 	}
 }
 
+// Dump out the contents of the database
 func (store Datastore) Dump() {
 	texts := store.database.Stats()
 	for key, value := range texts {
@@ -195,6 +205,7 @@ func (store Datastore) Dump() {
 	}
 }
 
+// List all of the keys
 func (store Datastore) List() (keys []DatabaseKey) {
 	switch store.Type {
 

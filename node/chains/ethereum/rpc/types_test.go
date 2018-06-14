@@ -1,4 +1,4 @@
-package ethrpc
+package rpc
 
 import (
 	"encoding/json"

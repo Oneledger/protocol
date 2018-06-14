@@ -37,6 +37,10 @@ func (transaction *ExternalSend) ProcessCheck(app interface{}) err.Code {
 	return err.SUCCESS
 }
 
+func (transaction *ExternalSend) ShouldProcess(app interface{}) bool {
+	return true
+}
+
 func (transaction *ExternalSend) ProcessDeliver(app interface{}) err.Code {
 	log.Debug("Processing ExternalSend Transaction for DeliverTx")
 

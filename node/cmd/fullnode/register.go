@@ -26,16 +26,17 @@ type RegisterArguments struct {
 	privkey  string
 }
 
-var arguments = &RegisterArguments{}
+var regArguments = &RegisterArguments{}
 
+// Initialize the command and flags
 func init() {
 	RootCmd.AddCommand(registerCmd)
 
 	// Transaction Parameters
-	registerCmd.Flags().StringVar(&arguments.identity, "identity", "unknown", "User's Identity")
-	registerCmd.Flags().StringVar(&arguments.chain, "chain", "OneLedger-Root", "Specify the chain")
-	registerCmd.Flags().StringVar(&arguments.pubkey, "pubkey", "0x00000000", "Specify a public key")
-	registerCmd.Flags().StringVar(&arguments.privkey, "privkey", "0x00000000", "Specify a private key")
+	registerCmd.Flags().StringVar(&regArguments.identity, "identity", "", "User's Identity")
+	registerCmd.Flags().StringVar(&regArguments.chain, "chain", "OneLedger", "Specify the chain")
+	registerCmd.Flags().StringVar(&regArguments.pubkey, "pubkey", "", "Specify a public key")
+	registerCmd.Flags().StringVar(&regArguments.privkey, "privkey", "", "Specify a private key")
 }
 
 // IssueRequest sends out a sendTx to all of the nodes in the chain
@@ -44,5 +45,13 @@ func RegisterUsers(cmd *cobra.Command, args []string) {
 	// TODO: We can't do this, need to be 'light-client' instead...
 	node := app.NewApplication()
 
-	app.Register(node, arguments.identity, arguments.identity+"-OneLedger", id.ParseAccountType(arguments.chain))
+	name := regArguments.identity
+	chain := regArguments.chain
+
+	accountType := id.ParseAccountType(chain)
+
+	publicKey, privateKey := id.GenerateKeys()
+
+	app.RegisterLocally(node, name, chain, accountType, publicKey, privateKey)
+
 }

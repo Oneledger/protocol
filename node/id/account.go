@@ -2,12 +2,11 @@
 	Copyright 2017-2018 OneLedger
 
 	Identities management for any of the associated chains
-
-	TODO: Need to pick a system key for identities. Is a hash of pubkey reasonable?
 */
 package id
 
 import (
+	"fmt"
 	"reflect"
 
 	"github.com/Oneledger/protocol/node/comm"
@@ -20,24 +19,11 @@ import (
 )
 
 // Aliases to hide some of the basic underlying types.
-
-type Address = wdata.Bytes // OneLedger address, like Tendermint the hash of the associated PubKey
+type AccountKey = wdata.Bytes // OneLedger address, like Tendermint the hash of the associated PubKey
 
 type PublicKey = crypto.PubKey
 type PrivateKey = crypto.PrivKey
 type Signature = crypto.Signature
-
-// enum for type
-//type AccountType int
-
-/*
-const (
-	UNKNOWN AccountType = iota
-	ONELEDGER
-	BITCOIN
-	ETHEREUM
-)
-*/
 
 // The persistent collection of all accounts known by this node
 type Accounts struct {
@@ -53,8 +39,14 @@ func NewAccounts(name string) *Accounts {
 }
 
 func (acc *Accounts) Add(account Account) {
+
+	if value := acc.data.Load(account.AccountKey()); value != nil {
+		log.Debug("Key is being updated")
+	}
+
 	buffer, _ := comm.Serialize(account)
-	acc.data.Store(account.Key(), buffer)
+
+	acc.data.Store(account.AccountKey(), buffer)
 	acc.data.Commit()
 }
 
@@ -62,30 +54,60 @@ func (acc *Accounts) Delete(account Account) {
 }
 
 func (acc *Accounts) Exists(newType data.ChainType, name string) bool {
-	account := NewAccount(newType, name, PublicKey{})
-	value := acc.data.Load(account.Key())
-	if value != nil {
+	account := NewAccount(newType, name, PublicKey{}, PrivateKey{})
+
+	if value := acc.data.Load(account.AccountKey()); value != nil {
 		return true
 	}
+
 	return false
+}
+
+func (acc *Accounts) Find(account Account) (Account, err.Code) {
+	return acc.FindKey(account.AccountKey())
+}
+
+func (acc *Accounts) FindIdentity(identity Identity) (Account, err.Code) {
+	// TODO: Should have better name mapping between identities and accounts
+	account := NewAccount(data.ONELEDGER, identity.UserName+"-OneLedger", PublicKey{}, PrivateKey{})
+	return acc.Find(account)
+
+}
+
+func (acc *Accounts) FindName(name string) (Account, err.Code) {
+	account := NewAccount(data.ONELEDGER, name, PublicKey{}, PrivateKey{})
+	return acc.Find(account)
+}
+
+func (acc *Accounts) FindKey(key AccountKey) (Account, err.Code) {
+	value := acc.data.Load(key)
+	if value != nil {
+		account := &AccountOneLedger{}
+		base, _ := comm.Deserialize(value, account)
+		return base.(Account), err.SUCCESS
+	}
+	return nil, err.SUCCESS
 }
 
 func (acc *Accounts) FindAll() []Account {
 	keys := acc.data.List()
 	size := len(keys)
 	results := make([]Account, size, size)
+
 	for i := 0; i < size; i++ {
 		// TODO: This is dangerous...
 		account := &AccountOneLedger{}
 		base, _ := comm.Deserialize(acc.data.Load(keys[i]), account)
 		results[i] = base.(Account)
 	}
+
 	return results
 }
 
 func (acc *Accounts) Dump() {
 	list := acc.FindAll()
 	size := len(list)
+
 	for i := 0; i < size; i++ {
 		account := list[i]
 		log.Info("Account", "Name", account.Name())
@@ -93,22 +115,24 @@ func (acc *Accounts) Dump() {
 	}
 }
 
-func (acc *Accounts) Find(name string) (Account, err.Code) {
-	// TODO: Lookup the identity in the node's database
-	return &AccountOneLedger{AccountBase: AccountBase{Name: name}}, 0
-}
-
-type AccountKey []byte
+//type AccountKey []byte
 
 // Polymorphism
 type Account interface {
-	AddPrivateKey(PrivateKey)
 	Name() string
-	Key() data.DatabaseKey
+	Chain() data.ChainType
+
+	AccountKey() AccountKey
+	PublicKey() PublicKey
+	PrivateKey() PrivateKey
+
+	//AddPublicKey(PublicKey)
+	//AddPrivateKey(PrivateKey)
+
+	AsString() string
 }
 
 type AccountBase struct {
-	//Type AccountType
 	Type data.ChainType
 
 	Key AccountKey
@@ -133,36 +157,40 @@ func NewAccountKey(key PublicKey) AccountKey {
 	return hasher.Sum(nil)
 }
 
-func NewAccount(newType data.ChainType, name string, key PublicKey) Account {
+// Create a new account for a given chain
+func NewAccount(newType data.ChainType, name string, key PublicKey, priv PrivateKey) Account {
 	switch newType {
 
 	case data.ONELEDGER:
 		return &AccountOneLedger{
 			AccountBase{
-				Type:      newType,
-				Key:       NewAccountKey(key),
-				Name:      name,
-				PublicKey: key,
+				Type:       newType,
+				Key:        NewAccountKey(key),
+				Name:       name,
+				PublicKey:  key,
+				PrivateKey: priv,
 			},
 		}
 
 	case data.BITCOIN:
 		return &AccountBitcoin{
 			AccountBase{
-				Type:      newType,
-				Key:       NewAccountKey(key),
-				Name:      name,
-				PublicKey: key,
+				Type:       newType,
+				Key:        NewAccountKey(key),
+				Name:       name,
+				PublicKey:  key,
+				PrivateKey: priv,
 			},
 		}
 
 	case data.ETHEREUM:
 		return &AccountEthereum{
 			AccountBase{
-				Type:      newType,
-				Key:       NewAccountKey(key),
-				Name:      name,
-				PublicKey: key,
+				Type:       newType,
+				Key:        NewAccountKey(key),
+				Name:       name,
+				PublicKey:  key,
+				PrivateKey: priv,
 			},
 		}
 
@@ -183,6 +211,7 @@ func ParseAccountType(typeName string) data.ChainType {
 	case "Bitcoin":
 		return data.BITCOIN
 	}
+
 	return data.UNKNOWN
 }
 
@@ -193,6 +222,7 @@ type AccountOneLedger struct {
 	AccountBase
 }
 
+/*
 func (account *AccountOneLedger) AddPublicKey(key PublicKey) {
 	account.PublicKey = key
 }
@@ -200,13 +230,30 @@ func (account *AccountOneLedger) AddPublicKey(key PublicKey) {
 func (account *AccountOneLedger) AddPrivateKey(key PrivateKey) {
 	account.PrivateKey = key
 }
+*/
 
 func (account *AccountOneLedger) Name() string {
 	return account.AccountBase.Name
 }
 
-func (account *AccountOneLedger) Key() data.DatabaseKey {
-	return data.DatabaseKey(account.AccountBase.Name)
+func (account *AccountOneLedger) AccountKey() AccountKey {
+	return data.DatabaseKey(account.AccountBase.Key)
+}
+
+func (account *AccountOneLedger) PublicKey() PublicKey {
+	return account.AccountBase.PublicKey
+}
+
+func (account *AccountOneLedger) PrivateKey() PrivateKey {
+	return account.AccountBase.PrivateKey
+}
+
+func (account *AccountOneLedger) AsString() string {
+	return account.AccountBase.Name
+}
+
+func (account *AccountOneLedger) Chain() data.ChainType {
+	return data.ONELEDGER
 }
 
 // Bitcoin
@@ -216,6 +263,7 @@ type AccountBitcoin struct {
 	AccountBase
 }
 
+/*
 func (account *AccountBitcoin) AddPublicKey(key PublicKey) {
 	account.PublicKey = key
 }
@@ -223,13 +271,31 @@ func (account *AccountBitcoin) AddPublicKey(key PublicKey) {
 func (account *AccountBitcoin) AddPrivateKey(key PrivateKey) {
 	account.PrivateKey = key
 }
+*/
 
 func (account *AccountBitcoin) Name() string {
 	return account.AccountBase.Name
 }
 
-func (account *AccountBitcoin) Key() data.DatabaseKey {
-	return data.DatabaseKey(account.AccountBase.Name)
+func (account *AccountBitcoin) AccountKey() AccountKey {
+	return data.DatabaseKey(account.AccountBase.Key)
+}
+
+func (account *AccountBitcoin) PublicKey() PublicKey {
+	return account.AccountBase.PublicKey
+}
+
+func (account *AccountBitcoin) PrivateKey() PrivateKey {
+	return account.AccountBase.PrivateKey
+}
+
+func (account *AccountBitcoin) AsString() string {
+	buffer := fmt.Sprintf("%x", account.AccountKey())
+	return "BTC:" + account.AccountBase.Name + ":" + buffer
+}
+
+func (account *AccountBitcoin) Chain() data.ChainType {
+	return data.BITCOIN
 }
 
 // Ethereum
@@ -239,6 +305,7 @@ type AccountEthereum struct {
 	AccountBase
 }
 
+/*
 func (account *AccountEthereum) AddPublicKey(key PublicKey) {
 	account.PublicKey = key
 }
@@ -246,11 +313,29 @@ func (account *AccountEthereum) AddPublicKey(key PublicKey) {
 func (account *AccountEthereum) AddPrivateKey(key PrivateKey) {
 	account.PrivateKey = key
 }
+*/
 
 func (account *AccountEthereum) Name() string {
 	return account.AccountBase.Name
 }
 
-func (account *AccountEthereum) Key() data.DatabaseKey {
-	return data.DatabaseKey(account.AccountBase.Name)
+func (account *AccountEthereum) AccountKey() AccountKey {
+	return data.DatabaseKey(account.AccountBase.Key)
+}
+
+func (account *AccountEthereum) PublicKey() PublicKey {
+	return account.AccountBase.PublicKey
+}
+
+func (account *AccountEthereum) PrivateKey() PrivateKey {
+	return account.AccountBase.PrivateKey
+}
+
+func (account *AccountEthereum) AsString() string {
+	buffer := fmt.Sprintf("%x", account.AccountKey())
+	return "ETH:" + account.AccountBase.Name + ":" + buffer
+}
+
+func (account *AccountEthereum) Chain() data.ChainType {
+	return data.ETHEREUM
 }

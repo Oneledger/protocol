@@ -22,7 +22,6 @@ func Serialize(input interface{}) (msg []byte, err error) {
 	if err != nil {
 		log.Error("Marshal", "err", err)
 	}
-	log.Debug("Flattened", "buffer", buffer)
 
 	return buffer, err
 
@@ -44,7 +43,8 @@ func Deserialize(input []byte, output interface{}) (msg interface{}, err error) 
 
 	err = json.Unmarshal(input, output)
 	if err != nil {
-		log.Error("Unmarshal", "err", err)
+		log.Fatal("Unmarshal", "err", err)
+		//log.Error("Unmarshal", "err", err)
 	}
 
 	return output, err

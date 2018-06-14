@@ -1,26 +1,20 @@
-#!/bin/sh
+#!/bin/bash
 
 #
 # Test creating a single send transaction in a 1-node chain, reset each time
 #
-OLSCRIPT=$GOPATH/src/github.com/Oneledger/protocol/node/scripts
-OLTEST=$GOPATH/src/github.com/Oneledger/protocol/node/tests
-
-# Clear out the existing chains
-$OLSCRIPT/resetChain
-
-# Add in the new users
-$OLTEST/register.sh
+CMD=$GOPATH/src/github.com/Oneledger/protocol/node/scripts
 
 # Startup the chains
-$OLSCRIPT/startChain
+$CMD/startOneLedger
 
 # Find the addresses
-addrAdmin=`$OLSCRIPT/lookup Admin RPCAddress tcp://127.0.0.1:`
-addrAlice=`$OLSCRIPT/lookup Alice RPCAddress tcp://127.0.0.1:`
-addrBob=`$OLSCRIPT/lookup Bob RPCAddress tcp://127.0.0.1:`
+addrAdmin=`$CMD/lookup Admin RPCAddress tcp://127.0.0.1:`
+addrAlice=`$CMD/lookup Alice RPCAddress tcp://127.0.0.1:`
+addrBob=`$CMD/lookup Bob RPCAddress tcp://127.0.0.1:`
 
 # List out the account details
-olclient account --identity Alice --address $addrAlice
+olclient identity -a $addrAlice --identity Alice
+olclient account  -a $addrAlice --identity Alice
 
-$OLSCRIPT/stopChain
+$CMD/stopOneLedger

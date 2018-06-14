@@ -1,4 +1,4 @@
-package ethrpc
+package rpc
 
 import (
 	"bytes"
@@ -6,7 +6,7 @@ import (
 	"math/big"
 	"unsafe"
 
-	helper "../common"
+	helper "../../common"
 )
 
 // Syncing - object with syncing data info
