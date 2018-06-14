@@ -169,6 +169,7 @@ func (store Datastore) Load(key DatabaseKey) (value Message) {
 	default:
 		panic("Unknown Type")
 	}
+	return Message(nil)
 }
 
 // Commit the changes to persistence

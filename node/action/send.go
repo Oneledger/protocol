@@ -46,7 +46,7 @@ func (transaction *Send) ProcessCheck(app interface{}) err.Code {
 	return err.SUCCESS
 }
 
-func (transaction *Send) ThisNode(app interface{}) bool {
+func (transaction *Send) ShouldProcess(app interface{}) bool {
 	return true
 }
 
@@ -64,7 +64,10 @@ func (transaction *Send) ProcessDeliver(app interface{}) err.Code {
 
 	// Update the database to the final set of entries
 	for _, entry := range transaction.Outputs {
-		buffer, _ := comm.Serialize(entry.Amount)
+		balance := data.Balance{
+			Amount: entry.Amount,
+		}
+		buffer, _ := comm.Serialize(balance)
 		chain.Delivered.Set(entry.AccountKey, buffer)
 	}
 

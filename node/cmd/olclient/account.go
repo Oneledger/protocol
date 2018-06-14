@@ -43,7 +43,10 @@ func CheckAccount(cmd *cobra.Command, args []string) {
 	//log.Debug("Checking Account", "account", account)
 
 	request := FormatRequest()
-	response := comm.Query("/account", request).Response
-
-	log.Debug("Returned Successfully with", "response", string(response.Value))
+	response := comm.Query("/account", request)
+	if response != nil {
+		log.Debug("Returned Successfully with", "response", string(response.Response.Value))
+	} else {
+		log.Debug("Query Failed")
+	}
 }

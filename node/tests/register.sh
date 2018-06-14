@@ -6,7 +6,9 @@
 #
 CMD=$GOPATH/src/github.com/Oneledger/protocol/node/scripts
 
-list="Admin Alice Bob Carol"
+list="Alice Bob Carol"
+
+$CMD/startOneLedger
 
 for name in $list 
 do
@@ -17,26 +19,21 @@ do
 
 	$CMD/stopNode $name 
 
-	# Setup a global Identity
+	# Setup a global Identity and OneLedger account
 	fullnode register --root $ROOT -a $nodeAddr \
+		--node $nodeName \
 		--identity $name 
 
-	# Associated it with a OneLedger account
+	# Fill in the specific chain accounts
 	fullnode register --root $ROOT -a $nodeAddr \
-		--identity $name --chain OneLedger --pubkey 0x01010100111 --privkey 0x01
+		--node $nodeName \
+		--identity $name --chain Bitcoin 
+
+	fullnode register --root $ROOT -a $nodeAddr \
+		--node $nodeName \
+		--identity $name --chain Ethereum 
 
 	# Broadtcast it to all of the nodes to make sure it is unique
 	$CMD/startNode $name register 
 	sleep 5
-	$CMD/stopNode $name 
-
-	# Fill in the specific chain accounts
-	fullnode register --root $ROOT -a $nodeAddr \
-		--identity $name --chain Bitcoin --pubkey 0x01 --privkey 0x01
-
-	fullnode register --root $ROOT -a $nodeAddr \
-		--identity $name --chain Ethereum --pubkey 0x01 --privkey 0x01
-
-	# Everything should be functional now
-	$CMD/startNode $name 
 done
