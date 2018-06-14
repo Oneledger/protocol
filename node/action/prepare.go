@@ -27,7 +27,7 @@ func (transaction *Prepare) ProcessCheck(app interface{}) err.Code {
 	return err.SUCCESS
 }
 
-func (transaction *Prepare) ThisNode(app interface{}) bool {
+func (transaction *Prepare) ShouldProcess(app interface{}) bool {
 	return true
 }
 

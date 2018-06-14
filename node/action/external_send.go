@@ -37,7 +37,7 @@ func (transaction *ExternalSend) ProcessCheck(app interface{}) err.Code {
 	return err.SUCCESS
 }
 
-func (transaction *ExternalSend) ThisNode(app interface{}) bool {
+func (transaction *ExternalSend) ShouldProcess(app interface{}) bool {
 	return true
 }
 

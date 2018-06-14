@@ -17,6 +17,7 @@ type PublicKey = crypto.PubKey
 
 // ENUM for type
 type Type byte
+type Role byte
 
 const (
 	INVALID       Type = iota
@@ -33,11 +34,18 @@ const (
 	FORGET             // Rollback and forget that this happened
 )
 
+const (
+	ALL         Role = iota
+	INITIATOR        // Register a new identity with the chain
+	PARTICIPANT      // Do a normal send transaction on local chain
+	NONE
+)
+
 // Polymorphism and Serializable
 type Transaction interface {
 	Validate() err.Code
 	ProcessCheck(interface{}) err.Code
-	ThisNode(interface{}) bool
+	ShouldProcess(interface{}) bool
 	ProcessDeliver(interface{}) err.Code
 	Expand(interface{}) Commands
 }

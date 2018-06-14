@@ -25,6 +25,9 @@ func HandleQuery(app Application, path string, message []byte) []byte {
 	case "/account":
 		return HandleAccountQuery(app, message)
 
+	case "/utxo":
+		return HandleUtxoQuery(app, message)
+
 	case "/version":
 		return HandleVersionQuery(app, message)
 	}
@@ -89,7 +92,7 @@ func AccountInfo(app Application, name string) []byte {
 		for _, curr := range accounts {
 			buffer += curr.AsString()
 			if curr.Chain() == data.ONELEDGER {
-				buffer += GetBalance(app, curr)
+				buffer += " " + GetBalance(app, curr)
 			}
 			buffer += ", "
 		}
@@ -101,22 +104,51 @@ func AccountInfo(app Application, name string) []byte {
 
 	buffer := "Answer[1]: " + account.AsString()
 	if account.Chain() == data.ONELEDGER {
-		buffer += GetBalance(app, account)
+		buffer += " " + GetBalance(app, account)
 	}
-	return []byte(account.AsString())
+	return []byte(buffer)
+}
+
+func HandleUtxoQuery(app Application, message []byte) []byte {
+	log.Debug("UtxoQuery", "message", message)
+
+	text := string(message)
+
+	name := ""
+	parts := strings.Split(text, "=")
+	if len(parts) > 1 {
+		name = parts[1]
+	}
+	result := UtxoInfo(app, name)
+	log.Debug("Returning", "result", string(result))
+	return result
+}
+
+func UtxoInfo(app Application, name string) []byte {
+	buffer := ""
+	if name == "" {
+		entries := app.Utxo.FindAll()
+		for key, value := range entries {
+			buffer += key + ":" + value.AsString() + ", "
+		}
+
+	} else {
+		value := app.Utxo.Find(data.DatabaseKey(name))
+		buffer += name + ":" + value.AsString()
+
+	}
+	return []byte(buffer)
 }
 
 // Get the balancd for an account
 func GetBalance(app Application, account id.Account) string {
-	log.Debug("Searching for", "key", account.AccountKey())
-
 	result := app.Utxo.Find(account.AccountKey())
 	if result == nil {
-		buffer := fmt.Sprintf("%x", account.AccountKey())
-		return " NOT FOUND: " + buffer
+		log.Debug("Balance Not Found", "key", account.AccountKey())
+		return " [nil]"
 	}
 
-	return fmt.Sprintf(" %d", result.Amount)
+	return result.AsString()
 }
 
 // Return a nicely formatted error message

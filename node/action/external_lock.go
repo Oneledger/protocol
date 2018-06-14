@@ -37,7 +37,7 @@ func (transaction *ExternalLock) ProcessCheck(app interface{}) err.Code {
 	return err.SUCCESS
 }
 
-func (transaction *ExternalLock) ThisNode(app interface{}) bool {
+func (transaction *ExternalLock) ShouldProcess(app interface{}) bool {
 	return true
 }
 

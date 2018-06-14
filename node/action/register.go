@@ -7,6 +7,7 @@ package action
 
 import (
 	"github.com/Oneledger/protocol/node/err"
+	"github.com/Oneledger/protocol/node/global"
 	"github.com/Oneledger/protocol/node/id"
 	"github.com/Oneledger/protocol/node/log"
 )
@@ -16,10 +17,20 @@ type Register struct {
 	Base
 
 	Identity string
+	NodeName string
 }
 
+// Check the fields to make sure they have valid values.
 func (transaction Register) Validate() err.Code {
 	log.Debug("Validating Register Transaction")
+
+	if transaction.Identity == "" {
+		return err.MISSING_DATA
+	}
+
+	if transaction.NodeName == "" {
+		return err.MISSING_DATA
+	}
 
 	// TODO: Make sure all of the parameters are there
 	// TODO: Check all signatures and keys
@@ -39,7 +50,7 @@ func (transaction Register) ProcessCheck(app interface{}) err.Code {
 	}
 
 	if id == nil {
-		log.Debug("Success, can add new Identity", "id", id)
+		log.Debug("Success, it is a new Identity", "id", id)
 		return err.SUCCESS
 	}
 
@@ -49,7 +60,7 @@ func (transaction Register) ProcessCheck(app interface{}) err.Code {
 	return err.SUCCESS
 }
 
-func (transaction Register) ThisNode(app interface{}) bool {
+func (transaction Register) ShouldProcess(app interface{}) bool {
 	return true
 }
 
@@ -72,7 +83,7 @@ func (transaction Register) ProcessDeliver(app interface{}) err.Code {
 		*/
 		log.Debug("Ignoring Duplicate Identity")
 	} else {
-		identities.Add(id.NewIdentity(transaction.Identity, "Contact Information", true))
+		identities.Add(id.NewIdentity(transaction.Identity, "Contact Information", true, global.Current.NodeName))
 	}
 
 	log.Info("Updated External Identity Reference!!!", "id", transaction.Identity)
