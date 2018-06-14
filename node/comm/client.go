@@ -33,6 +33,7 @@ func NewAppClient() client.Client {
 	return client
 }
 
+// Set an option in the ABCi app directly
 func SetOption(key string, value string) {
 	log.Debug("Setting Option")
 
@@ -82,7 +83,7 @@ func GetClient() (client *rpcclient.HTTP) {
 	return cachedClient
 }
 
-// Broadcast packet to the chain
+// An async Broadcast to the chain
 func Broadcast(packet []byte) *ctypes.ResultBroadcastTx {
 	log.Debug("Broadcast", "packet", packet)
 
@@ -90,6 +91,20 @@ func Broadcast(packet []byte) *ctypes.ResultBroadcastTx {
 
 	//result, err := client.BroadcastTxCommit(packet)
 	result, err := client.BroadcastTxAsync(packet)
+	if err != nil {
+		log.Error("Error", "err", err)
+	}
+
+	return result
+}
+
+// A sync'ed broadcast to the chain that waits for the commit to happen
+func BroadcastCommit(packet []byte) *ctypes.ResultBroadcastTxCommit {
+	log.Debug("Broadcast", "packet", packet)
+
+	client := GetClient()
+
+	result, err := client.BroadcastTxCommit(packet)
 	if err != nil {
 		log.Error("Error", "err", err)
 	}

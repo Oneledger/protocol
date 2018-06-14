@@ -28,7 +28,7 @@ func (transaction Verify) ProcessCheck(app interface{}) err.Code {
 	return err.SUCCESS
 }
 
-func (transaction Verify) ThisNode(app interface{}) bool {
+func (transaction Verify) ShouldProcess(app interface{}) bool {
 	return true
 }
 

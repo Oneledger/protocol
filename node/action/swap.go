@@ -6,8 +6,12 @@
 package action
 
 import (
+	"bytes"
+
+	"github.com/Oneledger/protocol/node/comm"
 	"github.com/Oneledger/protocol/node/data"
 	"github.com/Oneledger/protocol/node/err"
+	"github.com/Oneledger/protocol/node/global"
 	"github.com/Oneledger/protocol/node/id"
 	"github.com/Oneledger/protocol/node/log"
 )
@@ -49,23 +53,162 @@ func (transaction *Swap) ProcessCheck(app interface{}) err.Code {
 	return err.SUCCESS
 }
 
-func (transaction *Swap) ThisNode(app interface{}) bool {
+func FindSwap(status *data.Datastore, key data.DatabaseKey) Transaction {
+	result := status.Load(key)
+	var transaction Transaction
+	buffer, err := comm.Deserialize(result, transaction)
+	if err != nil {
+		return nil
+	}
+	return buffer.(Transaction)
+}
+
+// TODO: Change to return Role as INITIATOR or PARTICIPANT
+func FindMatchingSwap(status *data.Datastore, counterParty id.Account, role Role, transaction *Swap) bool {
+
+	result := FindSwap(status, counterParty.AccountKey())
+	if result != nil {
+		if MatchSwap(result.(*Swap), transaction) {
+			return true
+		}
+	}
+
+	return false
+}
+
+func MatchSwap(left *Swap, right *Swap) bool {
+	if left.Base.Type != right.Base.Type {
+		return false
+	}
+	if left.Base.Sequence != right.Base.Sequence {
+		return false
+	}
+	if bytes.Compare(left.Party, right.Party) == 0 {
+		return false
+	}
+	if bytes.Compare(left.CounterParty, right.CounterParty) == 0 {
+		return false
+	}
+	if left.Amount != right.Amount {
+		return false
+	}
 	return true
+}
+
+func ProcessSwap(app interface{}, transaction *Swap) bool {
+	status := GetStatus(app)
+
+	account := transaction.GetNodeAccount(app)
+	role := transaction.GetRole(account)
+
+	if role == NONE {
+		log.Error("Can't find a role for this swap")
+		return false
+	}
+
+	var primary id.Account
+	if role == INITIATOR {
+		primary = GetAccount(app, transaction.Party)
+	} else {
+		primary = GetAccount(app, transaction.CounterParty)
+	}
+
+	SaveSwap(status, primary, transaction)
+
+	if FindMatchingSwap(status, primary, role, transaction) {
+		return true
+	}
+	return false
+}
+
+func SaveSwap(status *data.Datastore, account id.Account, transaction *Swap) {
+	buffer, _ := comm.Serialize(transaction)
+
+	status.Store(account.AccountKey(), buffer)
+}
+
+// Is this node one of the partipants in the swap
+func (transaction *Swap) ShouldProcess(app interface{}) bool {
+	account := transaction.GetNodeAccount(app)
+
+	if transaction.GetRole(account) != ALL {
+		return true
+	}
+
+	return false
+}
+
+func GetAccount(app interface{}, accountKey id.AccountKey) id.Account {
+	accounts := GetAccounts(app)
+	account, _ := accounts.FindKey(accountKey)
+
+	return account
+}
+
+func (transaction *Swap) GetNodeAccount(app interface{}) id.Account {
+
+	identities := GetIdentities(app)
+	if identities == nil {
+		log.Error("Indentities database missing")
+		return nil
+	}
+
+	identity, _ := identities.FindName(global.Current.NodeAccountName)
+	if identity == nil {
+		log.Error("Node does not have name or not registered", "name", global.Current.NodeAccountName)
+		return nil
+	}
+
+	accounts := GetAccounts(app)
+	if identities == nil {
+		log.Error("Accounts database missing")
+		return nil
+	}
+
+	account, _ := accounts.FindIdentity(*identity)
+	if identity == nil {
+		log.Error("Node does not have account")
+		return nil
+	}
+
+	return account
+}
+
+func (transaction *Swap) GetRole(account id.Account) Role {
+	if account == nil {
+		return NONE
+	}
+
+	initiator := transaction.Party
+	participant := transaction.CounterParty
+
+	if bytes.Compare(initiator, account.AccountKey()) == 0 {
+		return INITIATOR
+	}
+
+	if bytes.Compare(participant, account.AccountKey()) == 0 {
+		return PARTICIPANT
+	}
+
+	// TODO: Shouldn't be in-band this way
+	return ALL
 }
 
 // Start the swap
 func (transaction *Swap) ProcessDeliver(app interface{}) err.Code {
 	log.Debug("Processing Swap Transaction for DeliverTx")
 
-	commands := transaction.Expand(app)
+	if ProcessSwap(app, transaction) {
+		commands := transaction.Expand(app)
 
-	Resolve(app, transaction, commands)
+		Resolve(app, transaction, commands)
 
-	for i := 0; i < commands.Count(); i++ {
-		status := Execute(app, commands[i])
-		if status != err.SUCCESS {
-			log.Error("Failed to Execute", "command", commands[i])
-			return err.EXPAND_ERROR
+		for i := 0; i < commands.Count(); i++ {
+			status := Execute(app, commands[i])
+			if status != err.SUCCESS {
+				log.Error("Failed to Execute", "command", commands[i])
+				return err.EXPAND_ERROR
+			}
 		}
 	}
 

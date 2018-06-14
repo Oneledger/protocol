@@ -33,10 +33,10 @@ func init() {
 	RootCmd.AddCommand(registerCmd)
 
 	// Transaction Parameters
-	registerCmd.Flags().StringVar(&regArguments.identity, "identity", "unknown", "User's Identity")
+	registerCmd.Flags().StringVar(&regArguments.identity, "identity", "", "User's Identity")
 	registerCmd.Flags().StringVar(&regArguments.chain, "chain", "OneLedger", "Specify the chain")
-	registerCmd.Flags().StringVar(&regArguments.pubkey, "pubkey", "0x00000000", "Specify a public key")
-	registerCmd.Flags().StringVar(&regArguments.privkey, "privkey", "0x00000000", "Specify a private key")
+	registerCmd.Flags().StringVar(&regArguments.pubkey, "pubkey", "", "Specify a public key")
+	registerCmd.Flags().StringVar(&regArguments.privkey, "privkey", "", "Specify a private key")
 }
 
 // IssueRequest sends out a sendTx to all of the nodes in the chain
@@ -50,6 +50,8 @@ func RegisterUsers(cmd *cobra.Command, args []string) {
 
 	accountType := id.ParseAccountType(chain)
 
-	app.RegisterLocally(node, name, chain, accountType)
+	publicKey, privateKey := id.GenerateKeys()
+
+	app.RegisterLocally(node, name, chain, accountType, publicKey, privateKey)
 
 }

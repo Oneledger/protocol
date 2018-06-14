@@ -2,8 +2,11 @@
 #
 # Move the sequence ids forward for testing, so that similar queries don't get caught in reply protection
 
+
+export CMD=$OLSCRIPT
+
 # Get the next seqeunce
-VAL=`cat sequence`
+VAL=`cat $CMD/sequence`
 
 # output it 
 echo "-s $VAL"
@@ -12,5 +15,5 @@ echo "-s $VAL"
 VAL=$(($VAL + 1))
 
 # Overwrite the file wit the next one
-echo $VAL > sequence
+echo $VAL > $CMD/sequence
 

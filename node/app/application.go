@@ -84,15 +84,18 @@ func (app Application) SetupState(stateBytes []byte) {
 	des, _ := comm.Deserialize(stateBytes, &base)
 	state := des.(*BasicState)
 
+	publicKey, privateKey := id.GenerateKeys()
+
+	// TODO: This should probably only occur on the Admin node, for other nodes how do I know the key?
+	// Register the identity and account first
+	RegisterLocally(&app, state.Account, "OneLedger", data.ONELEDGER, publicKey, privateKey)
+	account, _ := app.Accounts.FindName(state.Account)
+
 	// TODO: Should be more flexible to match genesis block
 	balance := data.Balance{
 		Amount: data.Coin{Currency: "OLT", Amount: state.Amount},
 	}
 	buffer, _ := comm.Serialize(balance)
-
-	// Register the identity and account first
-	RegisterLocally(&app, state.Account, "OneLedger", data.ONELEDGER)
-	account, _ := app.Accounts.FindName(state.Account)
 
 	// Use the account key in the database.
 	app.Utxo.Delivered.Set(account.AccountKey(), buffer)
@@ -201,7 +204,7 @@ func (app Application) DeliverTx(tx []byte) ResponseDeliverTx {
 		return ResponseDeliverTx{Code: err}
 	}
 
-	if result.ThisNode(app) {
+	if result.ShouldProcess(app) {
 		if err = result.ProcessDeliver(&app); err != 0 {
 			return ResponseDeliverTx{Code: err}
 		}

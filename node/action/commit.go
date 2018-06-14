@@ -27,7 +27,7 @@ func (transaction *Commit) ProcessCheck(app interface{}) err.Code {
 	return err.SUCCESS
 }
 
-func (transaction *Commit) ThisNode(app interface{}) bool {
+func (transaction *Commit) ShouldProcess(app interface{}) bool {
 	return true
 }
 

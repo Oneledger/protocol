@@ -25,6 +25,9 @@ func HandleQuery(app Application, path string, message []byte) []byte {
 	case "/account":
 		return HandleAccountQuery(app, message)
 
+	case "/utxo":
+		return HandleUtxoQuery(app, message)
+
 	case "/version":
 		return HandleVersionQuery(app, message)
 	}
@@ -102,6 +105,37 @@ func AccountInfo(app Application, name string) []byte {
 	buffer := "Answer[1]: " + account.AsString()
 	if account.Chain() == data.ONELEDGER {
 		buffer += " " + GetBalance(app, account)
+	}
+	return []byte(buffer)
+}
+
+func HandleUtxoQuery(app Application, message []byte) []byte {
+	log.Debug("UtxoQuery", "message", message)
+
+	text := string(message)
+
+	name := ""
+	parts := strings.Split(text, "=")
+	if len(parts) > 1 {
+		name = parts[1]
+	}
+	result := UtxoInfo(app, name)
+	log.Debug("Returning", "result", string(result))
+	return result
+}
+
+func UtxoInfo(app Application, name string) []byte {
+	buffer := ""
+	if name == "" {
+		entries := app.Utxo.FindAll()
+		for key, value := range entries {
+			buffer += key + ":" + value.AsString() + ", "
+		}
+
+	} else {
+		value := app.Utxo.Find(data.DatabaseKey(name))
+		buffer += name + ":" + value.AsString()
+
 	}
 	return []byte(buffer)
 }

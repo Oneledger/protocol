@@ -43,6 +43,7 @@ func CreateRegisterRequest(args *RegisterArguments) []byte {
 			Sequence: global.Current.Sequence,
 		},
 		Identity: args.Identity,
+		NodeName: global.Current.NodeName,
 	}
 
 	return SignAndPack(action.REGISTER, action.Transaction(reg))

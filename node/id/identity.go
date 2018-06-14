@@ -20,6 +20,7 @@ type Identities struct {
 // A user of a OneLedger node, but not necessarily the chain itself.
 type Identity struct {
 	UserName    string
+	NodeName    string
 	External    bool
 	ContactInfo string
 	Primary     Account
@@ -57,20 +58,18 @@ func (ids *Identities) Delete() {
 }
 
 func (ids *Identities) Exists(name string) bool {
-	id := NewIdentity(name, "", true)
+	id := NewIdentity(name, "", true, "")
 
 	value := ids.data.Load(id.Key())
 	if value != nil {
-		log.Debug("Identity Exists", "name", name, "value", value)
 		return true
 	}
 
-	log.Debug("Identity Does not Exist", "name", name)
 	return false
 }
 
 func (ids *Identities) FindName(name string) (*Identity, err.Code) {
-	id := NewIdentity(name, "", true)
+	id := NewIdentity(name, "", true, "")
 
 	value := ids.data.Load(id.Key())
 	if value != nil {
@@ -100,15 +99,16 @@ func (ids *Identities) Dump() {
 	size := len(list)
 	for i := 0; i < size; i++ {
 		identity := list[i]
-		log.Info("Entry", "UserName", identity.UserName)
+		log.Info("Entry", "UserName", identity.UserName, "NodeName", identity.NodeName)
 	}
 }
 
-func NewIdentity(userName string, contactInfo string, external bool) *Identity {
+func NewIdentity(userName string, contactInfo string, external bool, nodeName string) *Identity {
 	return &Identity{
 		UserName:    userName,
 		ContactInfo: contactInfo,
 		External:    external,
+		NodeName:    nodeName,
 	}
 }
 

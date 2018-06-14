@@ -55,6 +55,18 @@ func (state *ChainState) Set(key DatabaseKey, balance Balance) {
 	state.Delivered.Set(key, buffer)
 }
 
+func (state *ChainState) FindAll() map[string]*Balance {
+	mapping := make(map[string]*Balance, 1)
+
+	for i := int64(0); i < state.Delivered.Size64(); i++ {
+		key, value := state.Delivered.GetByIndex64(i)
+		var balance Balance
+		result, _ := comm.Deserialize(value, &balance)
+		mapping[string(key)] = result.(*Balance)
+	}
+	return mapping
+}
+
 // TODO: Should be against the commit tree, not the delivered one!!!
 func (state *ChainState) Find(key DatabaseKey) *Balance {
 	version := state.Delivered.Version64()

@@ -57,11 +57,22 @@ status:
 # Full Testing, bring up everything, send a transaction and then stop
 #
 full: reset install
-	./scripts/startOneLedger
 	./tests/register.sh
 	./tests/send.sh
 	./tests/identity.sh
 	./tests/accounts.sh
+	./tests/utxo.sh
+	./scripts/stopOneLedger
+
+#
+# Full Testing, bring up everything, send a transaction and then stop
+#
+swap: reset install
+	./tests/register.sh
+	./tests/swap.sh
+	./tests/identity.sh
+	./tests/accounts.sh
+	./tests/utxo.sh
 	./scripts/stopOneLedger
 
 #

@@ -26,7 +26,7 @@ func (transaction *Forget) ProcessCheck(app interface{}) err.Code {
 	return err.SUCCESS
 }
 
-func (transaction *Forget) ThisNode(app interface{}) bool {
+func (transaction *Forget) ShouldProcess(app interface{}) bool {
 	return true
 }
 

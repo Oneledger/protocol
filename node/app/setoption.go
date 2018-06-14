@@ -8,6 +8,7 @@ package app
 import (
 	"github.com/Oneledger/protocol/node/comm"
 	"github.com/Oneledger/protocol/node/data"
+	"github.com/Oneledger/protocol/node/global"
 	"github.com/Oneledger/protocol/node/id"
 	"github.com/Oneledger/protocol/node/log"
 )
@@ -33,7 +34,9 @@ func SetOption(app *Application, key string, value string) bool {
 			return false
 		}
 		args := result.(*RegisterArguments)
-		RegisterLocally(app, args.Identity, args.Identity, id.ParseAccountType(args.Chain))
+		publicKey, privateKey := id.GenerateKeys()
+		RegisterLocally(app, args.Identity, args.Identity, id.ParseAccountType(args.Chain),
+			publicKey, privateKey)
 
 	default:
 		log.Warn("Unknown Option", "key", key)
@@ -44,20 +47,10 @@ func SetOption(app *Application, key string, value string) bool {
 }
 
 // Register Identities and Accounts from the user.
-func RegisterLocally(app *Application, name string, scope string, chain data.ChainType) bool {
+func RegisterLocally(app *Application, name string, scope string, chain data.ChainType,
+	publicKey id.PublicKey, privateKey id.PrivateKey) bool {
+
 	status := false
-
-	// Identities are global
-	if !app.Identities.Exists(name) {
-		log.Debug("Registering a New Identity", "name", name)
-		identity := id.NewIdentity(name, "Contact Info", false)
-		app.Identities.Add(identity)
-		status = true
-
-	} else {
-		log.Debug("Not Registering Existing Identity", "name", name)
-		app.Identities.Dump()
-	}
 
 	if chain == data.UNKNOWN {
 		return status
@@ -68,11 +61,15 @@ func RegisterLocally(app *Application, name string, scope string, chain data.Cha
 
 	if !app.Accounts.Exists(chain, accountName) {
 		log.Debug("Registering New Account", "accountName", accountName)
-		account := id.NewAccount(chain, accountName, id.PublicKey{})
+		account := id.NewAccount(chain, accountName, publicKey, privateKey)
 		app.Accounts.Add(account)
+
+		// TODO: This should add to a list
+		global.Current.NodeAccountName = accountName
+
 		log.Debug("New Account", "key", account.AccountKey(), "account", account)
 
-		// Fill in a
+		// Fill in the balance
 		if !app.Utxo.Exists(account.AccountKey()) {
 			balance := data.NewBalance(0, "OLT")
 			buffer, _ := comm.Serialize(balance)
@@ -84,6 +81,18 @@ func RegisterLocally(app *Application, name string, scope string, chain data.Cha
 
 	} else {
 		log.Debug("Existing Account", "accountName", accountName)
+	}
+
+	// Identities are global
+	if !app.Identities.Exists(name) {
+		log.Debug("Registering a New Identity", "name", name)
+		identity := id.NewIdentity(name, "Contact Info", false, global.Current.NodeName)
+		app.Identities.Add(identity)
+		status = true
+
+	} else {
+		log.Debug("Not Registering Existing Identity", "name", name)
+		app.Identities.Dump()
 	}
 
 	return status
