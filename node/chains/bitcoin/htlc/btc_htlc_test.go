@@ -10,6 +10,7 @@ import (
 	"github.com/btcsuite/btcd/wire"
 	"encoding/hex"
 	"bytes"
+	"crypto/sha256"
 )
 
 
@@ -61,16 +62,16 @@ func TestInitiateCommand(t *testing.T) {
 		t.Errorf("failed to decode amount: %v", err)
 	}
 
-	var cmd command
-	cmd = &initiateCmd{cp2Addr: cp2AddrP2PKH, amount: amount}
+	var cmd Command
+	cmd = &InitiateCmd{cp2Addr: cp2AddrP2PKH, amount: amount}
 	runCommand(cmd, t)
 }
 
 
-func runCommand(cmd command, t *testing.T) {
+func runCommand(cmd Command, t *testing.T) {
 	// Offline commands don't need to talk to the wallet.
-	if cmd, ok := cmd.(offlineCommand); ok {
-		cmd.runOfflineCommand()
+	if cmd, ok := cmd.(OfflineCommand); ok {
+		cmd.RunOfflineCommand()
 	}
 
 	connect, err := normalizeAddress(*connectFlag, walletPort(chainParams))
@@ -94,7 +95,7 @@ func runCommand(cmd command, t *testing.T) {
 		client.WaitForShutdown()
 	}()
 
-	err = cmd.runCommand(client)
+	err = cmd.RunCommand(client)
 }
 
 
@@ -119,7 +120,107 @@ func TestRedeemCommand(t *testing.T) {
 		t.Errorf("failed to decode secret: %v", err)
 	}
 
-	var cmd command
-	cmd = &redeemCmd{contract: contract, contractTx: &contractTx, secret: secret}
+	var cmd Command
+	cmd = &RedeemCmd{contract: contract, contractTx: &contractTx, secret: secret}
 	runCommand(cmd, t)
+}
+
+func TestParticipateCommand(t *testing.T) {
+	cp1Addr, err := btcutil.DecodeAddress("", chainParams)
+	if err != nil {
+		t.Errorf("failed to decode initiator address: %v", err)
+	}
+	if !cp1Addr.IsForNet(chainParams) {
+		t.Errorf("initiator address is not " + "intended for use on %v", chainParams.Name)
+	}
+	cp1AddrP2PKH, ok := cp1Addr.(*btcutil.AddressPubKeyHash)
+	if !ok {
+		t.Errorf("initiator address is not P2PKH")
+	}
+
+	amountF64, err := strconv.ParseFloat("", 64)
+	if err != nil {
+		t.Errorf("failed to decode amount: %v", err)
+	}
+	amount, err := btcutil.NewAmount(amountF64)
+	if err != nil {
+		t.Errorf("failed to get amount: %v", err)
+	}
+
+	secretHash, err := hex.DecodeString("")
+	if err != nil {
+		t.Errorf("secret hash must be hex encoded")
+	}
+	if len(secretHash) != sha256.Size {
+		t.Errorf("secret hash has wrong size")
+	}
+	var cmd Command
+	cmd = &ParticipateCmd{cp1Addr: cp1AddrP2PKH, amount: amount, secretHash: secretHash}
+	runCommand(cmd, t)
+}
+
+
+func TestRefundCommand(t *testing.T) {
+	contract, err := hex.DecodeString("")
+	if err != nil {
+		t.Errorf("failed to decode contract: %v", err)
+	}
+
+	contractTxBytes, err := hex.DecodeString("")
+	if err != nil {
+		t.Errorf("failed to decode contract transaction: %v", err)
+	}
+	var contractTx wire.MsgTx
+	err = contractTx.Deserialize(bytes.NewReader(contractTxBytes))
+	if err != nil {
+		t.Errorf("failed to decode contract transaction: %v", err)
+	}
+
+	var cmd Command
+	cmd = &RefundCmd{contract: contract, contractTx: &contractTx}
+	runCommand(cmd, t)
+}
+
+func TestExtractSecretCommand(t *testing.T) {
+	redemptionTxBytes, err := hex.DecodeString("")
+	if err != nil {
+		t.Errorf("failed to decode redemption transaction: %v", err)
+	}
+	var redemptionTx wire.MsgTx
+	err = redemptionTx.Deserialize(bytes.NewReader(redemptionTxBytes))
+	if err != nil {
+		t.Errorf("failed to decode redemption transaction: %v", err)
+	}
+
+	secretHash, err := hex.DecodeString("")
+	if err != nil {
+		t.Errorf("secret hash must be hex encoded")
+	}
+	if len(secretHash) != sha256.Size {
+		t.Errorf("secret hash has wrong size")
+	}
+	var cmd Command
+	cmd = &ExtractSecretCmd{redemptionTx: &redemptionTx, secretHash: secretHash}
+	runCommand(cmd, t)
+}
+
+func TestAuditContractCommand(t *testing.T) {
+	contract, err := hex.DecodeString("")
+	if err != nil {
+		t.Errorf("failed to decode contract: %v", err)
+	}
+
+	contractTxBytes, err := hex.DecodeString("")
+	if err != nil {
+		t.Errorf("failed to decode contract transaction: %v", err)
+	}
+	var contractTx wire.MsgTx
+	err = contractTx.Deserialize(bytes.NewReader(contractTxBytes))
+	if err != nil {
+		t.Errorf("failed to decode contract transaction: %v", err)
+	}
+	var cmd Command
+	cmd = &AuditContractCmd{contract: contract, contractTx: &contractTx}
+	runCommand(cmd, t)
+
 }

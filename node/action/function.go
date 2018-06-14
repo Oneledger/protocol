@@ -18,11 +18,34 @@ type Object interface{}
 var FunctionMapping = [][]Object{
 	[]Object{
 		SWAP,
+		INITIATOR,
 		Command{
-			Function: CREATE_LOCKBOX,
+			Function: INITIATE,
 		},
 		Command{
-			Function: SIGN_LOCKBOX,
+			Function: AUDITCONTRACT,
+		},
+		Command{
+			Function: REDEEM,
+		},
+		Command{
+			Function: WAIT_FOR_CHAIN,
+		},
+	},
+	[]Object{
+		SWAP,
+		PARTICIPANT,
+		Command{
+			Function: AUDITCONTRACT,
+		},
+		Command{
+			Function: PARTICIPATE,
+		},
+		Command{
+			Function: EXTRACTSECRET,
+		},
+		Command{
+			Function: REDEEM,
 		},
 		Command{
 			Function: WAIT_FOR_CHAIN,
@@ -30,6 +53,7 @@ var FunctionMapping = [][]Object{
 	},
 	[]Object{
 		SEND,
+		ALL,
 		Command{
 			Function: SUBMIT_TRANSACTION,
 		},
@@ -37,15 +61,16 @@ var FunctionMapping = [][]Object{
 }
 
 // Given an action and a chain, return a list of commands
-func GetCommands(action Type, chains []data.ChainType) Commands {
+func GetCommands(action Type, role Role, chains []data.ChainType) Commands {
 
 	for i := 0; i < len(FunctionMapping); i++ {
 		transactionType := FunctionMapping[i][0].(Type)
+		transactionRole := FunctionMapping[i][1].(Role)
 
 		// The asymmetric start of the list of commands
-		offset := 1
+		offset := 2
 
-		if action == transactionType {
+		if action == transactionType && role == transactionRole {
 			size := len(FunctionMapping[i]) - offset
 			result := make(Commands, size, size)
 			for j := 0; j < size; j++ {

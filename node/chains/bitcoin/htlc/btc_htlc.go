@@ -19,6 +19,7 @@ import (
 	"github.com/btcsuite/btcwallet/wallet/txrules"
 	"golang.org/x/crypto/ripemd160"
 	"flag"
+	"time"
 )
 
 const verify = true
@@ -62,26 +63,48 @@ var (
 //   cp2 redeems btc with S
 
 
-type command interface {
-	runCommand(*rpc.Client) error
+type Command interface {
+	RunCommand(*rpc.Client) error
 }
 
 // offline commands don't require wallet RPC.
-type offlineCommand interface {
-	command
-	runOfflineCommand() error
+type OfflineCommand interface {
+	Command
+	RunOfflineCommand() error
 }
 
-type initiateCmd struct {
+type InitiateCmd struct {
 	cp2Addr *btcutil.AddressPubKeyHash
 	amount  btcutil.Amount
 	lockTime int64
 }
 
-type redeemCmd struct {
+type RedeemCmd struct {
 	contract   []byte
 	contractTx *wire.MsgTx
 	secret     []byte
+}
+
+type ParticipateCmd struct {
+	cp1Addr    *btcutil.AddressPubKeyHash
+	amount     btcutil.Amount
+	secretHash []byte
+	lockTime int64
+}
+
+type RefundCmd struct {
+	contract   []byte
+	contractTx *wire.MsgTx
+}
+
+type ExtractSecretCmd struct {
+	redemptionTx *wire.MsgTx
+	secretHash   []byte
+}
+
+type AuditContractCmd struct {
+	contract   []byte
+	contractTx *wire.MsgTx
 }
 
 func normalizeAddress(addr string, defaultPort string) (hostport string, err error) {
@@ -519,17 +542,13 @@ func calcFeePerKb(absoluteFee btcutil.Amount, serializeSize int) float64 {
 	return float64(absoluteFee) / float64(serializeSize) / 1e5
 }
 
-func (cmd *initiateCmd) runCommand(c *rpc.Client) error {
+func (cmd *InitiateCmd) RunCommand(c *rpc.Client) error {
 	var secret [secretSize]byte
 	_, err := rand.Read(secret[:])
 	if err != nil {
 		return err
 	}
 	secretHash := sha256Hash(secret[:])
-
-	// locktime after 500,000,000 (Tue Nov  5 00:53:20 1985 UTC) is interpreted
-	// as a unix time rather than a block height.
-	// locktime := time.Now().Add(48 * time.Hour).Unix()
 
 	b, err := buildContract(c, &contractArgs{
 		them:       cmd.cp2Addr,
@@ -577,7 +596,7 @@ func refundP2SHContract(contract, sig, pubkey []byte) ([]byte, error) {
 	return b.Script()
 }
 
-func (cmd *redeemCmd) runCommand(c *rpc.Client) error {
+func (cmd *RedeemCmd) RunCommand(c *rpc.Client) error {
 	pushes, err := txscript.ExtractAtomicSwapDataPushes(0, cmd.contract)
 	if err != nil {
 		return err
@@ -683,4 +702,168 @@ func redeemP2SHContract(contract, sig, pubkey, secret []byte) ([]byte, error) {
 	b.AddInt64(1)
 	b.AddData(contract)
 	return b.Script()
+}
+
+
+func (cmd *ParticipateCmd) RunCommand(c *rpc.Client) error {
+	b, err := buildContract(c, &contractArgs{
+		them:       cmd.cp1Addr,
+		amount:     cmd.amount,
+		locktime:   cmd.lockTime,
+		secretHash: cmd.secretHash,
+	})
+	if err != nil {
+		return err
+	}
+
+	refundTxHash := b.refundTx.TxHash()
+	contractFeePerKb := calcFeePerKb(b.contractFee, b.contractTx.SerializeSize())
+	refundFeePerKb := calcFeePerKb(b.refundFee, b.refundTx.SerializeSize())
+
+	fmt.Printf("Contract fee: %v (%0.8f BTC/kB)\n", b.contractFee, contractFeePerKb)
+	fmt.Printf("Refund fee:   %v (%0.8f BTC/kB)\n\n", b.refundFee, refundFeePerKb)
+	fmt.Printf("Contract (%v):\n", b.contractP2SH)
+	fmt.Printf("%x\n\n", b.contract)
+	var contractBuf bytes.Buffer
+	contractBuf.Grow(b.contractTx.SerializeSize())
+	b.contractTx.Serialize(&contractBuf)
+	fmt.Printf("Contract transaction (%v):\n", b.contractTxHash)
+	fmt.Printf("%x\n\n", contractBuf.Bytes())
+	var refundBuf bytes.Buffer
+	refundBuf.Grow(b.refundTx.SerializeSize())
+	b.refundTx.Serialize(&refundBuf)
+	fmt.Printf("Refund transaction (%v):\n", &refundTxHash)
+	fmt.Printf("%x\n\n", refundBuf.Bytes())
+
+	return publishTx(c, b.contractTx, "contract")
+}
+
+
+func (cmd *RefundCmd) RunCommand(c *rpc.Client) error {
+	pushes, err := txscript.ExtractAtomicSwapDataPushes(0, cmd.contract)
+	if err != nil {
+		return err
+	}
+	if pushes == nil {
+		return errors.New("contract is not an atomic swap script recognized by this tool")
+	}
+
+	feePerKb, minFeePerKb, err := getFeePerKb(c)
+	if err != nil {
+		return err
+	}
+
+	refundTx, refundFee, err := buildRefund(c, cmd.contract, cmd.contractTx, feePerKb, minFeePerKb)
+	if err != nil {
+		return err
+	}
+	refundTxHash := refundTx.TxHash()
+	var buf bytes.Buffer
+	buf.Grow(refundTx.SerializeSize())
+	refundTx.Serialize(&buf)
+
+	refundFeePerKb := calcFeePerKb(refundFee, refundTx.SerializeSize())
+
+	fmt.Printf("Refund fee: %v (%0.8f BTC/kB)\n\n", refundFee, refundFeePerKb)
+	fmt.Printf("Refund transaction (%v):\n", &refundTxHash)
+	fmt.Printf("%x\n\n", buf.Bytes())
+
+	return publishTx(c, refundTx, "refund")
+}
+
+
+func (cmd *ExtractSecretCmd) RunCommand(c *rpc.Client) error {
+	return cmd.RunOfflineCommand()
+}
+
+func (cmd *ExtractSecretCmd) RunOfflineCommand() error {
+	// Loop over all pushed data from all inputs, searching for one that hashes
+	// to the expected hash.  By searching through all data pushes, we avoid any
+	// issues that could be caused by the initiator redeeming the participant's
+	// contract with some "nonstandard" or unrecognized transaction or script
+	// type.
+	for _, in := range cmd.redemptionTx.TxIn {
+		pushes, err := txscript.PushedData(in.SignatureScript)
+		if err != nil {
+			return err
+		}
+		for _, push := range pushes {
+			if bytes.Equal(sha256Hash(push), cmd.secretHash) {
+				fmt.Printf("Secret: %x\n", push)
+				return nil
+			}
+		}
+	}
+	return errors.New("transaction does not contain the secret")
+}
+
+
+func (cmd *AuditContractCmd) RunCommand(c *rpc.Client) error {
+	return cmd.RunOfflineCommand()
+}
+
+func (cmd *AuditContractCmd) RunOfflineCommand() error {
+	contractHash160 := btcutil.Hash160(cmd.contract)
+	contractOut := -1
+	for i, out := range cmd.contractTx.TxOut {
+		sc, addrs, _, err := txscript.ExtractPkScriptAddrs(out.PkScript, chainParams)
+		if err != nil || sc != txscript.ScriptHashTy {
+			continue
+		}
+		if bytes.Equal(addrs[0].(*btcutil.AddressScriptHash).Hash160()[:], contractHash160) {
+			contractOut = i
+			break
+		}
+	}
+	if contractOut == -1 {
+		return errors.New("transaction does not contain the contract output")
+	}
+
+	pushes, err := txscript.ExtractAtomicSwapDataPushes(0, cmd.contract)
+	if err != nil {
+		return err
+	}
+	if pushes == nil {
+		return errors.New("contract is not an atomic swap script recognized by this tool")
+	}
+	if pushes.SecretSize != secretSize {
+		return fmt.Errorf("contract specifies strange secret size %v", pushes.SecretSize)
+	}
+
+	contractAddr, err := btcutil.NewAddressScriptHash(cmd.contract, chainParams)
+	if err != nil {
+		return err
+	}
+	recipientAddr, err := btcutil.NewAddressPubKeyHash(pushes.RecipientHash160[:],
+		chainParams)
+	if err != nil {
+		return err
+	}
+	refundAddr, err := btcutil.NewAddressPubKeyHash(pushes.RefundHash160[:],
+		chainParams)
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("Contract address:        %v\n", contractAddr)
+	fmt.Printf("Contract value:          %v\n", btcutil.Amount(cmd.contractTx.TxOut[contractOut].Value))
+	fmt.Printf("Recipient address:       %v\n", recipientAddr)
+	fmt.Printf("Author's refund address: %v\n\n", refundAddr)
+
+	fmt.Printf("Secret hash: %x\n\n", pushes.SecretHash[:])
+
+	if pushes.LockTime >= int64(txscript.LockTimeThreshold) {
+		t := time.Unix(pushes.LockTime, 0)
+		fmt.Printf("Locktime: %v\n", t.UTC())
+		reachedAt := time.Until(t).Truncate(time.Second)
+		if reachedAt > 0 {
+			fmt.Printf("Locktime reached in %v\n", reachedAt)
+		} else {
+			fmt.Printf("Contract refund time lock has expired\n")
+		}
+	} else {
+		fmt.Printf("Locktime: block %v\n", pushes.LockTime)
+	}
+
+	return nil
 }

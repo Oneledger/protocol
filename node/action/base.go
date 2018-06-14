@@ -32,6 +32,14 @@ const (
 	PREPARE            // Do everything, except commit
 	COMMIT             // Commit to doing the work
 	FORGET             // Rollback and forget that this happened
+
+)
+
+const (
+	ALL 		Role = iota
+	INITIATOR
+	PARTICIPANT
+	WITNESS
 )
 
 const (

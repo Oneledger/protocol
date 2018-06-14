@@ -14,6 +14,9 @@ import (
 	"github.com/Oneledger/protocol/node/global"
 	"github.com/Oneledger/protocol/node/id"
 	"github.com/Oneledger/protocol/node/log"
+	"github.com/Oneledger/protocol/node/chains/bitcoin"
+	"github.com/Oneledger/protocol/node/global"
+	"github.com/Oneledger/protocol/node/chains/bitcoin/htlc"
 )
 
 // Synchronize a swap between two users
@@ -232,6 +235,7 @@ func Resolve(app interface{}, transaction Transaction, commands Commands) {
 
 	chains := GetChains(transaction)
 	for i := 0; i < len(commands); i++ {
+		//TODO: add parameter for actions
 		commands[i].Chain = chains[0]
 	}
 }
@@ -243,3 +247,21 @@ func Execute(app interface{}, command Command) err.Code {
 	}
 	return err.NOT_IMPLEMENTED
 }
+
+
+func CreateContractBTC(context map[string]string) bool {
+	cli := bitcoin.GetBtcClient(global.Current.BTCRpcPort)
+	//todo: runCommand(initCmd,cli)
+
+	return true
+}
+
+func CreateContractETH(context map[string]string) bool {
+	return true
+}
+
+func CreateContractOLT(context map[string]string) bool {
+	return true
+}
+
+ 

@@ -35,6 +35,8 @@ type Context struct {
 	Transport       string // socket vs grpc
 
 	Sequence int // replay protection
+	BTCRpcPort int
+	ETHRpcPort int
 }
 
 func init() {

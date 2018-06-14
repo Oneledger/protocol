@@ -18,12 +18,10 @@ sleep 3
 
 geth --datadir $OLETH/C --networkid 20180229 --port 30303 --rpcport 28103 --nodiscover 2 >>  $OLETH/C/eth.log &
 
-sleep 5
+sleep 3
 
 geth --exec "admin.addPeer($(geth --exec "admin.nodeInfo.enode" attach ipc:$OLETH/A/geth.ipc))" attach ipc:$OLETH/B/geth.ipc
 geth --exec "admin.addPeer($(geth --exec "admin.nodeInfo.enode" attach ipc:$OLETH/B/geth.ipc))" attach ipc:$OLETH/C/geth.ipc
 geth --exec "admin.addPeer($(geth --exec "admin.nodeInfo.enode" attach ipc:$OLETH/C/geth.ipc))" attach ipc:$OLETH/A/geth.ipc
 
 sleep 3
-echo "Start miner for network" >> $LOG/ethereum.log
-geth --exec "miner.start()" attach ipc:$OLETH/C/geth.ipc
