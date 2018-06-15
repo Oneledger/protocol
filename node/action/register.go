@@ -16,8 +16,9 @@ import (
 type Register struct {
 	Base
 
-	Identity string
-	NodeName string
+	Identity   string
+	NodeName   string
+	AccountKey id.AccountKey
 }
 
 // Check the fields to make sure they have valid values.
@@ -50,7 +51,7 @@ func (transaction Register) ProcessCheck(app interface{}) err.Code {
 	}
 
 	if id == nil {
-		log.Debug("Success, it is a new Identity", "id", id)
+		log.Debug("Success, it is a new Identity", "id", transaction.Identity)
 		return err.SUCCESS
 	}
 
@@ -76,17 +77,13 @@ func (transaction Register) ProcessDeliver(app interface{}) err.Code {
 	}
 
 	if entry != nil {
-		/*
-			if !entry.IsExternal() {
-				return err.SUCCESS
-			}
-		*/
-		log.Debug("Ignoring Duplicate Identity")
+		log.Debug("Ignoring Existin Identity")
 	} else {
-		identities.Add(id.NewIdentity(transaction.Identity, "Contact Information", true, global.Current.NodeName))
+		identities.Add(id.NewIdentity(transaction.Identity, "Contact Information",
+			true, global.Current.NodeName, transaction.AccountKey))
 	}
 
-	log.Info("Updated External Identity Reference!!!", "id", transaction.Identity)
+	log.Info("Updated External Identity Reference!!!", "id", transaction.Identity, "key", transaction.AccountKey)
 
 	return err.SUCCESS
 }

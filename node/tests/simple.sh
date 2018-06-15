@@ -8,7 +8,6 @@ CMD=$GOPATH/src/github.com/Oneledger/protocol/node/scripts
 $CMD/resetOneLedger
 $CMD/startOneLedger
 
-addrAdmin=`$CMD/lookup Admin RPCAddress tcp://127.0.0.1:`
 addrAlice=`$CMD/lookup Alice RPCAddress tcp://127.0.0.1:`
 addrBob=`$CMD/lookup Bob RPCAddress tcp://127.0.0.1:`
 

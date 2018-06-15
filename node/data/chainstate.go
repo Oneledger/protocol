@@ -62,6 +62,7 @@ func (state *ChainState) FindAll() map[string]*Balance {
 		key, value := state.Delivered.GetByIndex64(i)
 		var balance Balance
 		result, _ := comm.Deserialize(value, &balance)
+		log.Debug("FindAll", "i", i, "key", string(key), "value", value, "result", result)
 		mapping[string(key)] = result.(*Balance)
 	}
 	return mapping

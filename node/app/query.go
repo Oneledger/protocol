@@ -30,9 +30,35 @@ func HandleQuery(app Application, path string, message []byte) []byte {
 
 	case "/version":
 		return HandleVersionQuery(app, message)
+
+	case "/accountKey":
+		return HandleAccountKeyQuery(app, message)
 	}
 
 	return HandleError("Unknown Path", path, message)
+}
+
+// Get the account information for a given user
+func HandleAccountKeyQuery(app Application, message []byte) []byte {
+	log.Debug("AccountKeyQuery", "message", message)
+
+	text := string(message)
+
+	name := ""
+	parts := strings.Split(text, "=")
+	if len(parts) > 1 {
+		name = parts[1]
+	}
+	return AccountKey(app, name)
+}
+
+func AccountKey(app Application, name string) []byte {
+	identity, _ := app.Identities.FindName(name)
+
+	if identity != nil {
+		return identity.AccountKey
+	}
+	return []byte("Not Found")
 }
 
 // Get the account information for a given user
@@ -83,11 +109,12 @@ func HandleAccountQuery(app Application, message []byte) []byte {
 // Return the information for a given account
 func AccountInfo(app Application, name string) []byte {
 
+	var buffer string
 	if name == "" {
 		accounts := app.Accounts.FindAll()
 
 		count := fmt.Sprintf("%d", len(accounts))
-		buffer := "Answer[" + count + "]: "
+		buffer = "Answer[" + count + "]: "
 
 		for _, curr := range accounts {
 			buffer += curr.AsString()
@@ -102,9 +129,13 @@ func AccountInfo(app Application, name string) []byte {
 	account, _ := app.Accounts.FindName(name)
 	log.Debug("account", "account", account)
 
-	buffer := "Answer[1]: " + account.AsString()
-	if account.Chain() == data.ONELEDGER {
-		buffer += " " + GetBalance(app, account)
+	if account != nil {
+		buffer = "Answer[1]: " + account.AsString()
+		if account.Chain() == data.ONELEDGER {
+			buffer += " " + GetBalance(app, account)
+		}
+	} else {
+		buffer = "Answer[0]: "
 	}
 	return []byte(buffer)
 }
@@ -129,7 +160,8 @@ func UtxoInfo(app Application, name string) []byte {
 	if name == "" {
 		entries := app.Utxo.FindAll()
 		for key, value := range entries {
-			buffer += key + ":" + value.AsString() + ", "
+			account, _ := app.Accounts.FindKey([]byte(key))
+			buffer += account.Name() + ":" + value.AsString() + ", "
 		}
 
 	} else {

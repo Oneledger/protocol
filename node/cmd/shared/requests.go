@@ -35,6 +35,8 @@ type RegisterArguments struct {
 func CreateRegisterRequest(args *RegisterArguments) []byte {
 	signers := GetSigners()
 
+	accountKey := GetAccountKey(args.Identity)
+
 	reg := &action.Register{
 		Base: action.Base{
 			Type:     action.REGISTER,
@@ -42,8 +44,9 @@ func CreateRegisterRequest(args *RegisterArguments) []byte {
 			Signers:  signers,
 			Sequence: global.Current.Sequence,
 		},
-		Identity: args.Identity,
-		NodeName: global.Current.NodeName,
+		Identity:   args.Identity,
+		NodeName:   global.Current.NodeName,
+		AccountKey: accountKey,
 	}
 
 	return SignAndPack(action.REGISTER, action.Transaction(reg))
@@ -110,6 +113,72 @@ func CreateSendRequest(args *SendArguments) []byte {
 	outputs = append(outputs,
 		action.NewSendOutput(party, partyBalance.Minus(amount)),
 		action.NewSendOutput(counterParty, counterPartyBalance.Plus(amount)))
+
+	gas := data.Coin{
+		Currency: conv.GetCurrency(args.Currency),
+		Amount:   conv.GetInt64(args.Gas),
+	}
+
+	fee := data.Coin{
+		Currency: conv.GetCurrency(args.Currency),
+		Amount:   conv.GetInt64(args.Fee),
+	}
+
+	if conv.HasErrors() {
+		Console.Error(conv.GetErrors())
+		os.Exit(-1)
+	}
+
+	// Create base transaction
+	send := &action.Send{
+		Base: action.Base{
+			Type:     action.SEND,
+			ChainId:  app.ChainId,
+			Signers:  signers,
+			Sequence: global.Current.Sequence,
+		},
+		Inputs:  inputs,
+		Outputs: outputs,
+		Fee:     fee,
+		Gas:     gas,
+	}
+
+	return SignAndPack(action.SEND, action.Transaction(send))
+}
+
+// CreateRequest builds and signs the transaction based on the arguments
+func CreateMintRequest(args *SendArguments) []byte {
+	signers := GetSigners()
+
+	conv := convert.NewConvert()
+
+	if args.Party == "" {
+		log.Fatal("Missing Party information")
+	}
+
+	// TODO: Can't convert identities to accounts, this way!
+	party := conv.GetAccountKey(args.Party)
+	zero := conv.GetAccountKey("Zero")
+
+	amount := data.Coin{
+		Currency: conv.GetCurrency(args.Currency),
+		Amount:   conv.GetInt64(args.Amount),
+	}
+
+	// Build up the Inputs
+	zeroBalance := GetBalance(zero)
+	partyBalance := GetBalance(party)
+
+	inputs := make([]action.SendInput, 2)
+	inputs = append(inputs,
+		action.NewSendInput(zero, zeroBalance),
+		action.NewSendInput(party, partyBalance))
+
+	// Build up the outputs
+	outputs := make([]action.SendOutput, 2)
+	outputs = append(outputs,
+		action.NewSendOutput(zero, zeroBalance.Minus(amount)),
+		action.NewSendOutput(party, partyBalance.Plus(amount)))
 
 	gas := data.Coin{
 		Currency: conv.GetCurrency(args.Currency),

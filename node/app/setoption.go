@@ -8,6 +8,7 @@ package app
 import (
 	"github.com/Oneledger/protocol/node/comm"
 	"github.com/Oneledger/protocol/node/data"
+	"github.com/Oneledger/protocol/node/err"
 	"github.com/Oneledger/protocol/node/global"
 	"github.com/Oneledger/protocol/node/id"
 	"github.com/Oneledger/protocol/node/log"
@@ -34,8 +35,8 @@ func SetOption(app *Application, key string, value string) bool {
 			return false
 		}
 		args := result.(*RegisterArguments)
-		publicKey, privateKey := id.GenerateKeys()
-		RegisterLocally(app, args.Identity, args.Identity, id.ParseAccountType(args.Chain),
+		publicKey, privateKey := id.GenerateKeys([]byte(args.Identity)) // TODO: Switch with passphrase
+		RegisterLocally(app, args.Identity, "OneLedger", id.ParseAccountType(args.Chain),
 			publicKey, privateKey)
 
 	default:
@@ -57,6 +58,7 @@ func RegisterLocally(app *Application, name string, scope string, chain data.Cha
 	}
 
 	// Accounts are relative to a chain
+	// TODO: Scope is tied to chain for demo purposes?
 	accountName := name + "-" + scope
 
 	if !app.Accounts.Exists(chain, accountName) {
@@ -65,7 +67,9 @@ func RegisterLocally(app *Application, name string, scope string, chain data.Cha
 		app.Accounts.Add(account)
 
 		// TODO: This should add to a list
-		global.Current.NodeAccountName = accountName
+		if name != "Zero" && chain == data.ONELEDGER {
+			global.Current.NodeAccountName = accountName
+		}
 
 		log.Debug("New Account", "key", account.AccountKey(), "account", account)
 
@@ -76,6 +80,8 @@ func RegisterLocally(app *Application, name string, scope string, chain data.Cha
 			app.Utxo.Delivered.Set(account.AccountKey(), buffer)
 			app.Utxo.Commit()
 			log.Debug("New Utxo", "key", account.AccountKey(), "balance", balance)
+		} else {
+			log.Debug("Existing Utxo", "key", account.AccountKey())
 		}
 		status = true
 
@@ -85,10 +91,20 @@ func RegisterLocally(app *Application, name string, scope string, chain data.Cha
 
 	// Identities are global
 	if !app.Identities.Exists(name) {
-		log.Debug("Registering a New Identity", "name", name)
-		identity := id.NewIdentity(name, "Contact Info", false, global.Current.NodeName)
-		app.Identities.Add(identity)
-		status = true
+		account, errs := app.Accounts.FindNameOnChain(accountName, chain)
+		if errs != err.SUCCESS {
+			log.Fatal("Account Error", "errs", errs, "Name", accountName, "account", account)
+		}
+		if account != nil {
+			log.Debug("Registering a New Identity", "name", name)
+			identity := id.NewIdentity(name, "Contact Info", false,
+				global.Current.NodeName, account.AccountKey())
+
+			app.Identities.Add(identity)
+			status = true
+		} else {
+			log.Fatal("Account Missing", "Name", accountName, "Chain", chain)
+		}
 
 	} else {
 		log.Debug("Not Registering Existing Identity", "name", name)

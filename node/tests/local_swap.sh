@@ -15,31 +15,26 @@ $TEST/register.sh
 # Startup the chains
 $CMD/startOneLedger
 
-addrAdmin=`$CMD/lookup Admin RPCAddress tcp://127.0.0.1:`
 addrAlice=`$CMD/lookup Alice RPCAddress tcp://127.0.0.1:`
 addrBob=`$CMD/lookup Bob RPCAddress tcp://127.0.0.1:`
 
 # Put some money in the user accounts
 SEQ=`$CMD\nextSeq`
-olclient send $SEQ -a $addrAdmin \
-	--party Admin --counterparty Alice --amount 100000 --currency OLT 
+olclient send -s $SEQ -a $addrAlice --party Alice --amount 100000 --currency OLT 
 
 SEQ=`$CMD\nextSeq`
-olclient send $SEQ -a $addrAdmin \
-	--party Admin --counterparty Bob --amount 100000 --currency OLT 
+olclient send -s $SEQ -a $addrBob --party Bob --amount 100000 --currency OLT 
 
 # assumes fullnode is in the PATH
 SEQ=`$CMD\nextSeq`
-olclient swap $SEQ -a $addrAlice \
+olclient swap -s $SEQ -a $addrAlice \
 	--party Alice --counterparty Bob --nonce 28 \
 	--amount 3 --currency OLT --exchange 100 --excurrency ETH 
 
 SEQ=`$CMD\nextSeq`
-olclient swap $SEQ -a $addrBob \
+olclient swap -s $SEQ -a $addrBob \
 	--party Bob --counterparty Alice --nonce 28 \
 	--amount 100 --currency ETH --exchange 3 --excurrency OLT 
-
-SEQ=`$CMD\nextSeq`
 
 # Check the balances
 olclient account -a $addrAlice --identity Alice

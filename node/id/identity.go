@@ -19,13 +19,17 @@ type Identities struct {
 
 // A user of a OneLedger node, but not necessarily the chain itself.
 type Identity struct {
-	UserName    string
-	NodeName    string
-	External    bool
+	Name string // A unique name for the identity
+
+	NodeName    string // The origin of this account
 	ContactInfo string
-	Primary     Account
-	Secondary   []Account
-	Nodes       map[string]data.ChainNode
+
+	AccountKey AccountKey // A key
+
+	External   bool
+	Additional []Account
+
+	Nodes map[string]data.ChainNode
 }
 
 // Initialize or reconnect to the database
@@ -58,7 +62,7 @@ func (ids *Identities) Delete() {
 }
 
 func (ids *Identities) Exists(name string) bool {
-	id := NewIdentity(name, "", true, "")
+	id := NewIdentity(name, "", true, "", nil)
 
 	value := ids.data.Load(id.Key())
 	if value != nil {
@@ -69,7 +73,7 @@ func (ids *Identities) Exists(name string) bool {
 }
 
 func (ids *Identities) FindName(name string) (*Identity, err.Code) {
-	id := NewIdentity(name, "", true, "")
+	id := NewIdentity(name, "", true, "", nil)
 
 	value := ids.data.Load(id.Key())
 	if value != nil {
@@ -99,16 +103,17 @@ func (ids *Identities) Dump() {
 	size := len(list)
 	for i := 0; i < size; i++ {
 		identity := list[i]
-		log.Info("Entry", "UserName", identity.UserName, "NodeName", identity.NodeName)
+		log.Info("Identity", "Name", identity.Name, "NodeName", identity.NodeName, "AccountKey", identity.AccountKey)
 	}
 }
 
-func NewIdentity(userName string, contactInfo string, external bool, nodeName string) *Identity {
+func NewIdentity(name string, contactInfo string, external bool, nodeName string, accountKey AccountKey) *Identity {
 	return &Identity{
-		UserName:    userName,
+		Name:        name,
 		ContactInfo: contactInfo,
 		External:    external,
 		NodeName:    nodeName,
+		AccountKey:  accountKey,
 	}
 }
 
@@ -117,12 +122,12 @@ func (id *Identity) IsExternal() bool {
 }
 
 func (id *Identity) Key() data.DatabaseKey {
-	return data.DatabaseKey(id.UserName)
+	return data.DatabaseKey(id.Name)
 }
 
 func (id *Identity) AsString() string {
 	buffer := ""
-	buffer += id.UserName
+	buffer += id.Name
 	if id.External {
 		buffer += "(External)"
 	} else {

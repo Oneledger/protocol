@@ -4,7 +4,7 @@ export CMD=$OLSCRIPT
 
 
 if [ -z "$1" ]; then
-	name="Admin"
+	name="David"
 else 
 	name=$1
 fi
@@ -21,8 +21,8 @@ nodeName=`$CMD/lookup $name NodeName`
 p2pAddress=`$CMD/lookup $name P2PAddress $prefix`
 rpcAddress=`$CMD/lookup $name RPCAddress $prefix`
 appAddress=`$CMD/lookup $name AppAddress $prefix`
-btcRpcAddress=`$CMD/lookup $name BTCRpcAddress`
-ethRpcAddress=`$CMD/lookup $name ETHRpcAddress`
+btcAddress=`$CMD/lookup $name BTCAddress $prefix`
+ethAddress=`$CMD/lookup $name ETHAddress $prefix`
 
 prefix="127.0.0.1:"
 key=`$CMD/getNodeId $nodeName`
@@ -72,7 +72,8 @@ then
 		--root $WORK/fullnode \
 		--app $appAddress \
 		--address $rpcAddress \
-		--btcrpc
+		--btcrpc $btcAddress \
+		--ethrpc $ethAddress \
 		$extra \
 		>> $LOG/fullnode.log 2>&1 &
 
