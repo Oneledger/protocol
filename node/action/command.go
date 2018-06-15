@@ -25,6 +25,7 @@ type Parameter byte
 
 const (
 	ROLE Parameter = iota
+	PASSWORD
 )
 
 type FunctionValue interface{}
