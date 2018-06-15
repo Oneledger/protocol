@@ -7,16 +7,16 @@ package action
 
 import (
 	"bytes"
+	"strings"
 
+	"github.com/Oneledger/protocol/node/chains/bitcoin"
 	"github.com/Oneledger/protocol/node/comm"
+	"github.com/Oneledger/protocol/node/convert"
 	"github.com/Oneledger/protocol/node/data"
 	"github.com/Oneledger/protocol/node/err"
 	"github.com/Oneledger/protocol/node/global"
 	"github.com/Oneledger/protocol/node/id"
 	"github.com/Oneledger/protocol/node/log"
-	"github.com/Oneledger/protocol/node/chains/bitcoin"
-	"github.com/Oneledger/protocol/node/global"
-	"github.com/Oneledger/protocol/node/chains/bitcoin/htlc"
 )
 
 // Synchronize a swap between two users
@@ -56,7 +56,28 @@ func (transaction *Swap) ProcessCheck(app interface{}) err.Code {
 	return err.SUCCESS
 }
 
-func FindSwap(status *data.Datastore, key data.DatabaseKey) Transaction {
+// Start the swap
+func (transaction *Swap) ProcessDeliver(app interface{}) err.Code {
+	log.Debug("Processing Swap Transaction for DeliverTx")
+
+	if ProcessSwap(app, transaction) {
+		commands := transaction.Expand(app)
+
+		Resolve(app, transaction, commands)
+
+		for i := 0; i < commands.Count(); i++ {
+			status := Execute(app, commands[i])
+			if status != err.SUCCESS {
+				log.Error("Failed to Execute", "command", commands[i])
+				return err.EXPAND_ERROR
+			}
+		}
+	}
+
+	return err.SUCCESS
+}
+
+func FindSwap(status *data.Datastore, key id.AccountKey) Transaction {
 	result := status.Load(key)
 	var transaction Transaction
 	buffer, err := comm.Deserialize(result, transaction)
@@ -148,6 +169,17 @@ func GetAccount(app interface{}, accountKey id.AccountKey) id.Account {
 	return account
 }
 
+// Map the identity to a specific account on a chain
+func GetChainAccount(app interface{}, name string, chain data.ChainType) id.Account {
+	identities := GetIdentities(app)
+	accounts := GetAccounts(app)
+
+	identity, _ := identities.FindName(name)
+	account, _ := accounts.FindKey(identity.Chain[chain])
+
+	return account
+}
+
 func (transaction *Swap) GetNodeAccount(app interface{}) id.Account {
 
 	identities := GetIdentities(app)
@@ -197,36 +229,21 @@ func (transaction *Swap) GetRole(account id.Account) Role {
 	return ALL
 }
 
-// Start the swap
-func (transaction *Swap) ProcessDeliver(app interface{}) err.Code {
-	log.Debug("Processing Swap Transaction for DeliverTx")
-
-	if ProcessSwap(app, transaction) {
-		commands := transaction.Expand(app)
-
-		Resolve(app, transaction, commands)
-
-		for i := 0; i < commands.Count(); i++ {
-			status := Execute(app, commands[i])
-			if status != err.SUCCESS {
-				log.Error("Failed to Execute", "command", commands[i])
-				return err.EXPAND_ERROR
-			}
-		}
-	}
-
-	return err.SUCCESS
-}
-
 // Given a transaction, expand it into a list of Commands to execute against various chains.
 func (transaction *Swap) Expand(app interface{}) Commands {
 	chains := GetChains(transaction)
 
-	return GetCommands(SWAP, chains)
+	account := transaction.GetNodeAccount(app)
+	role := transaction.GetRole(account)
+
+	return GetCommands(SWAP, role, chains)
 }
 
 // Plug in data from the rest of a system into a set of commands
-func Resolve(app interface{}, transaction Transaction, commands Commands) {
+func Resolve(app interface{}, transaction Transaction, commands Commands) Commands {
+	swap := transaction.(*Swap)
+	account := swap.GetNodeAccount(app)
+
 	identities := GetIdentities(app)
 	_ = identities
 
@@ -235,9 +252,15 @@ func Resolve(app interface{}, transaction Transaction, commands Commands) {
 
 	chains := GetChains(transaction)
 	for i := 0; i < len(commands); i++ {
-		//TODO: add parameter for actions
-		commands[i].Chain = chains[0]
+		role := swap.GetRole(account)
+		if role == INITIATOR {
+			commands[i].Chain = chains[0]
+		} else {
+			commands[i].Chain = chains[1]
+		}
+		commands[i].Data[ROLE] = role
 	}
+	return commands
 }
 
 // Execute the function
@@ -248,20 +271,25 @@ func Execute(app interface{}, command Command) err.Code {
 	return err.NOT_IMPLEMENTED
 }
 
+func CreateContractBTC(context map[Parameter]FunctionValue) bool {
+	address := global.Current.BTCAddress
+	parts := strings.Split(address, ":")
+	port := convert.GetInt(parts[1], 46688)
 
-func CreateContractBTC(context map[string]string) bool {
-	cli := bitcoin.GetBtcClient(global.Current.BTCRpcPort)
+	role := GetInt(context[ROLE])
+	_ = role
+
+	cli := bitcoin.GetBtcClient(port)
+	_ = cli
 	//todo: runCommand(initCmd,cli)
 
 	return true
 }
 
-func CreateContractETH(context map[string]string) bool {
+func CreateContractETH(context map[Parameter]FunctionValue) bool {
 	return true
 }
 
-func CreateContractOLT(context map[string]string) bool {
+func CreateContractOLT(context map[Parameter]FunctionValue) bool {
 	return true
 }
-
- 

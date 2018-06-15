@@ -5,7 +5,7 @@
 
 # TODO: Set this up to not copy if subdir is empty
 if [ -z "$1" ]; then
-	export NODENAME="OneLedger-Admin"
+	export NODENAME="OneLedger-David"
 	export SUBDIR="mach0"
 	export STAGING=$OLDATA/staging
 else

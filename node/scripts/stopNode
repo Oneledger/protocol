@@ -5,7 +5,7 @@
 #
 
 if [ -z "$1" ]; then
-	export name="Admin-Node"
+	export name="David-Node"
 else
 	export name=$1
 fi

@@ -59,7 +59,6 @@ func SetOption(key string, value string) {
 func GetClient() (client *rpcclient.HTTP) {
 
 	defer func() {
-		log.Debug("Executing at EOF")
 		if r := recover(); r != nil {
 			log.Error("Ignoring Client Panic", "r", r)
 			client = nil
@@ -73,12 +72,10 @@ func GetClient() (client *rpcclient.HTTP) {
 		}
 	*/
 
-	log.Debug("Initializing RpcClient", "address", global.Current.RpcAddress)
-
 	// TODO: Try multiple times before giving up
 	cachedClient := rpcclient.NewHTTP(global.Current.RpcAddress, "/websocket")
 
-	log.Debug("Have RpcClient", "client", cachedClient)
+	log.Debug("RpcClient", "address", global.Current.RpcAddress, "client", cachedClient)
 
 	return cachedClient
 }

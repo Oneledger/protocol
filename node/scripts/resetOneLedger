@@ -25,7 +25,7 @@ tendermint testnet --home $STAGING --dir $STAGING --n $NODECOUNT
 
 # TODO: Set the chain name, and set an initial amount of tokens and that admin owns them all
 
-nodes="Admin-Node#mach0 Alice-Node#mach1 Bob-Node#mach2 Carol-Node#mach3"
+nodes="David-Node#mach0 Alice-Node#mach1 Bob-Node#mach2 Carol-Node#mach3"
 
 for node in $nodes
 do

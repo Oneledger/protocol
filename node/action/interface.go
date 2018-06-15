@@ -13,17 +13,17 @@ import (
 	"github.com/Oneledger/protocol/node/log"
 )
 
-func Noop(chain data.ChainType, context map[string]string) bool {
+func Noop(chain data.ChainType, context map[Parameter]FunctionValue) bool {
 	log.Info("Executing Noop Command", "chain", chain, "context", context)
 	return true
 }
 
-func SubmitTransaction(chain data.ChainType, context map[string]string) bool {
+func SubmitTransaction(chain data.ChainType, context map[Parameter]FunctionValue) bool {
 	log.Info("Executing SubmitTransaction Command", "chain", chain, "context", context)
 	return true
 }
 
-func Initiate(chain data.ChainType, context map[string]string) bool {
+func Initiate(chain data.ChainType, context map[Parameter]FunctionValue) bool {
 	log.Info("Executing Initiate Command", "chain", chain, "context", context)
 	switch chain {
 
@@ -38,32 +38,32 @@ func Initiate(chain data.ChainType, context map[string]string) bool {
 	}
 }
 
-func Participate(chain data.ChainType, context map[string]string) bool {
+func Participate(chain data.ChainType, context map[Parameter]FunctionValue) bool {
 	log.Info("Executing Participate Command", "chain", chain, "context", context)
 	return true
 }
 
-func Redeem(chain data.ChainType, context map[string]string) bool {
+func Redeem(chain data.ChainType, context map[Parameter]FunctionValue) bool {
 	log.Info("Executing Redeem Command", "chain", chain, "context", context)
 	return true
 }
 
-func Refund(chain data.ChainType, context map[string]string) bool {
+func Refund(chain data.ChainType, context map[Parameter]FunctionValue) bool {
 	log.Info("Executing Refund Command", "chain", chain, "context", context)
 	return true
 }
 
-func ExtractSecret(chain data.ChainType, context map[string]string) bool {
+func ExtractSecret(chain data.ChainType, context map[Parameter]FunctionValue) bool {
 	log.Info("Executing ExtractSecret Command", "chain", chain, "context", context)
 	return true
 }
 
-func AuditContract(chain data.ChainType, context map[string]string) bool {
+func AuditContract(chain data.ChainType, context map[Parameter]FunctionValue) bool {
 	log.Info("Executing AuditContract Command", "chain", chain, "context", context)
 	return true
 }
 
-func WaitForChain(chain data.ChainType, context map[string]string) bool {
+func WaitForChain(chain data.ChainType, context map[Parameter]FunctionValue) bool {
 	log.Info("Executing WaitForChain Command", "chain", chain, "context", context)
 
 	// Make sure it is pushed forward first...

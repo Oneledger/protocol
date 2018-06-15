@@ -1,19 +1,19 @@
 package bitcoin
 
 import (
-	brpc "./rpc"
 	"time"
+
+	brpc "github.com/Oneledger/protocol/node/chains/bitcoin/rpc"
+
 	"github.com/Oneledger/protocol/node/log"
-
 )
-
 
 func GetBtcClient(rpcPort int) *brpc.Bitcoind {
 
 	usr, pass := getCredential()
-	cli, err :=  brpc.New("127.0.0.1", rpcPort , usr, pass, false)
+	cli, err := brpc.New("127.0.0.1", rpcPort, usr, pass, false)
 
-	if err != nil{
+	if err != nil {
 		log.Error(err.Error())
 		return nil
 	}
@@ -21,15 +21,14 @@ func GetBtcClient(rpcPort int) *brpc.Bitcoind {
 	return cli
 }
 
-func getCredential() (usr string, pass string){
+func getCredential() (usr string, pass string) {
 	//todo: getCredential from database which should be randomly generated when register or import if user already has bitcoin node
 	usr = "oltest01"
 	pass = "olpass01"
 	return
 }
 
-
-func ScheduleBlockGeneration(cli brpc.Bitcoind, interval time.Duration ) chan bool {
+func ScheduleBlockGeneration(cli brpc.Bitcoind, interval time.Duration) chan bool {
 	ticker := time.NewTicker(interval * time.Second)
 	stop := make(chan bool)
 	go func() {
@@ -49,4 +48,3 @@ func ScheduleBlockGeneration(cli brpc.Bitcoind, interval time.Duration ) chan bo
 func StopBlockGeneration(stop chan bool) {
 	close(stop)
 }
-

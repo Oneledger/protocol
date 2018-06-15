@@ -36,13 +36,6 @@ const (
 )
 
 const (
-	ALL 		Role = iota
-	INITIATOR
-	PARTICIPANT
-	WITNESS
-)
-
-const (
 	ALL         Role = iota
 	INITIATOR        // Register a new identity with the chain
 	PARTICIPANT      // Do a normal send transaction on local chain

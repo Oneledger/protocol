@@ -21,11 +21,19 @@ const (
 	WAIT_FOR_CHAIN
 )
 
+type Parameter byte
+
+const (
+	ROLE Parameter = iota
+)
+
+type FunctionValue interface{}
+
 // A command to execute again a chain, needs to be polymorphic
 type Command struct {
 	Function CommandType
 	Chain    data.ChainType
-	Data     map[string]string
+	Data     map[Parameter]FunctionValue
 }
 
 func (command Command) Execute() bool {

@@ -60,6 +60,6 @@ func ListIdentities(cmd *cobra.Command, args []string) {
 }
 
 func IdentityInfo(node *app.Application, id *id.Identity) {
-	Console.Print("Identity " + id.UserName)
+	Console.Print("Identity " + id.Name)
 	// TODO: This out the know active accounts.
 }

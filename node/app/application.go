@@ -84,12 +84,12 @@ func (app Application) SetupState(stateBytes []byte) {
 	des, _ := comm.Deserialize(stateBytes, &base)
 	state := des.(*BasicState)
 
-	publicKey, privateKey := id.GenerateKeys()
+	publicKey, privateKey := id.GenerateKeys([]byte(state.Account)) // TODO: switch with passphrase
 
 	// TODO: This should probably only occur on the Admin node, for other nodes how do I know the key?
 	// Register the identity and account first
 	RegisterLocally(&app, state.Account, "OneLedger", data.ONELEDGER, publicKey, privateKey)
-	account, _ := app.Accounts.FindName(state.Account)
+	account, _ := app.Accounts.FindName(state.Account + "-OneLedger")
 
 	// TODO: Should be more flexible to match genesis block
 	balance := data.Balance{
