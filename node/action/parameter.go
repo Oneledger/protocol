@@ -16,3 +16,23 @@ func GetInt(value FunctionValue) int {
 	}
 	return 0
 }
+
+func GetRole(value FunctionValue) Role {
+	switch value.(type) {
+	case Role:
+		return value.(Role)
+	default:
+		log.Fatal("Bad Type Cast in Function Parameter", "value", value)
+	}
+	return 0
+}
+
+func GetString(value FunctionValue) string {
+	switch value.(type) {
+	case string:
+		return value.(string)
+	default:
+		log.Fatal("Bad Type Cast in Function Parameter", "value", value)
+	}
+	return ""
+}

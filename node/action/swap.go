@@ -259,6 +259,7 @@ func Resolve(app interface{}, transaction Transaction, commands Commands) Comman
 			commands[i].Chain = chains[1]
 		}
 		commands[i].Data[ROLE] = role
+		commands[i].Data[PASSWORD] = "I rock"
 	}
 	return commands
 }
@@ -276,8 +277,11 @@ func CreateContractBTC(context map[Parameter]FunctionValue) bool {
 	parts := strings.Split(address, ":")
 	port := convert.GetInt(parts[1], 46688)
 
-	role := GetInt(context[ROLE])
+	role := GetRole(context[ROLE])
+	password := GetString(context[PASSWORD])
+
 	_ = role
+	_ = password
 
 	cli := bitcoin.GetBtcClient(port)
 	_ = cli
