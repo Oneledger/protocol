@@ -169,6 +169,17 @@ func GetAccount(app interface{}, accountKey id.AccountKey) id.Account {
 	return account
 }
 
+// Map the identity to a specific account on a chain
+func GetChainAccount(app interface{}, name string, chain data.ChainType) id.Account {
+	identities := GetIdentities(app)
+	accounts := GetAccounts(app)
+
+	identity, _ := identities.FindName(name)
+	account, _ := accounts.FindKey(identity.Chain[chain])
+
+	return account
+}
+
 func (transaction *Swap) GetNodeAccount(app interface{}) id.Account {
 
 	identities := GetIdentities(app)
@@ -229,7 +240,10 @@ func (transaction *Swap) Expand(app interface{}) Commands {
 }
 
 // Plug in data from the rest of a system into a set of commands
-func Resolve(app interface{}, transaction Transaction, commands Commands) {
+func Resolve(app interface{}, transaction Transaction, commands Commands) Commands {
+	swap := transaction.(*Swap)
+	account := swap.GetNodeAccount(app)
+
 	identities := GetIdentities(app)
 	_ = identities
 
@@ -238,9 +252,15 @@ func Resolve(app interface{}, transaction Transaction, commands Commands) {
 
 	chains := GetChains(transaction)
 	for i := 0; i < len(commands); i++ {
-		//TODO: add parameter for actions
-		commands[i].Chain = chains[0]
+		role := swap.GetRole(account)
+		if role == INITIATOR {
+			commands[i].Chain = chains[0]
+		} else {
+			commands[i].Chain = chains[1]
+		}
+		commands[i].Data[ROLE] = role
 	}
+	return commands
 }
 
 // Execute the function
@@ -251,10 +271,13 @@ func Execute(app interface{}, command Command) err.Code {
 	return err.NOT_IMPLEMENTED
 }
 
-func CreateContractBTC(context map[string]string) bool {
+func CreateContractBTC(context map[Parameter]FunctionValue) bool {
 	address := global.Current.BTCAddress
 	parts := strings.Split(address, ":")
 	port := convert.GetInt(parts[1], 46688)
+
+	role := GetInt(context[ROLE])
+	_ = role
 
 	cli := bitcoin.GetBtcClient(port)
 	_ = cli
@@ -263,10 +286,10 @@ func CreateContractBTC(context map[string]string) bool {
 	return true
 }
 
-func CreateContractETH(context map[string]string) bool {
+func CreateContractETH(context map[Parameter]FunctionValue) bool {
 	return true
 }
 
-func CreateContractOLT(context map[string]string) bool {
+func CreateContractOLT(context map[Parameter]FunctionValue) bool {
 	return true
 }

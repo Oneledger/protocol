@@ -8,7 +8,6 @@ package app
 import (
 	"github.com/Oneledger/protocol/node/comm"
 	"github.com/Oneledger/protocol/node/data"
-	"github.com/Oneledger/protocol/node/err"
 	"github.com/Oneledger/protocol/node/global"
 	"github.com/Oneledger/protocol/node/id"
 	"github.com/Oneledger/protocol/node/log"
@@ -61,9 +60,10 @@ func RegisterLocally(app *Application, name string, scope string, chain data.Cha
 	// TODO: Scope is tied to chain for demo purposes?
 	accountName := name + "-" + scope
 
-	if !app.Accounts.Exists(chain, accountName) {
+	account, _ := app.Accounts.FindNameOnChain(accountName, chain)
+	if account == nil {
 		log.Debug("Registering New Account", "accountName", accountName)
-		account := id.NewAccount(chain, accountName, publicKey, privateKey)
+		account = id.NewAccount(chain, accountName, publicKey, privateKey)
 		app.Accounts.Add(account)
 
 		// TODO: This should add to a list
@@ -72,43 +72,42 @@ func RegisterLocally(app *Application, name string, scope string, chain data.Cha
 		}
 
 		log.Debug("New Account", "key", account.AccountKey(), "account", account)
-
-		// Fill in the balance
-		if !app.Utxo.Exists(account.AccountKey()) {
-			balance := data.NewBalance(0, "OLT")
-			buffer, _ := comm.Serialize(balance)
-			app.Utxo.Delivered.Set(account.AccountKey(), buffer)
-			app.Utxo.Commit()
-			log.Debug("New Utxo", "key", account.AccountKey(), "balance", balance)
-		} else {
-			log.Debug("Existing Utxo", "key", account.AccountKey())
-		}
 		status = true
 
 	} else {
 		log.Debug("Existing Account", "accountName", accountName)
 	}
 
-	// Identities are global
-	if !app.Identities.Exists(name) {
-		account, errs := app.Accounts.FindNameOnChain(accountName, chain)
-		if errs != err.SUCCESS {
-			log.Fatal("Account Error", "errs", errs, "Name", accountName, "account", account)
-		}
-		if account != nil {
-			log.Debug("Registering a New Identity", "name", name)
-			identity := id.NewIdentity(name, "Contact Info", false,
-				global.Current.NodeName, account.AccountKey())
+	// Fill in the balance
+	if !app.Utxo.Exists(account.AccountKey()) {
+		balance := data.NewBalance(0, "OLT")
+		buffer, _ := comm.Serialize(balance)
+		app.Utxo.Delivered.Set(account.AccountKey(), buffer)
+		app.Utxo.Commit()
+		log.Debug("New Utxo", "key", account.AccountKey(), "balance", balance)
+		status = true
+	} else {
+		log.Debug("Existing Utxo", "key", account.AccountKey())
+	}
 
-			app.Identities.Add(identity)
-			status = true
-		} else {
-			log.Fatal("Account Missing", "Name", accountName, "Chain", chain)
-		}
+	// Identities are global
+	identity, _ := app.Identities.FindName(name)
+	if identity == nil {
+		log.Debug("Registering a New Identity", "name", name)
+		identity = id.NewIdentity(name, "Contact Info", false,
+			global.Current.NodeName, account.AccountKey())
+		app.Identities.Add(identity)
+		status = true
 
 	} else {
 		log.Debug("Not Registering Existing Identity", "name", name)
 		app.Identities.Dump()
+	}
+
+	if chain != data.ONELEDGER {
+		// Associate this account with the identity
+		identity.SetAccount(chain, account)
+		app.Identities.Add(identity)
 	}
 
 	return status

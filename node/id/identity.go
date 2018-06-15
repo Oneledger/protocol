@@ -26,8 +26,8 @@ type Identity struct {
 
 	AccountKey AccountKey // A key
 
-	External   bool
-	Additional []Account
+	External bool
+	Chain    map[data.ChainType]AccountKey // TODO: Should be more than one account per chain
 
 	Nodes map[string]data.ChainNode
 }
@@ -114,7 +114,12 @@ func NewIdentity(name string, contactInfo string, external bool, nodeName string
 		External:    external,
 		NodeName:    nodeName,
 		AccountKey:  accountKey,
+		Chain:       make(map[data.ChainType]AccountKey, 2),
 	}
+}
+
+func (id *Identity) SetAccount(chain data.ChainType, account Account) {
+	id.Chain[chain] = account.AccountKey()
 }
 
 func (id *Identity) IsExternal() bool {
