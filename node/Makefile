@@ -57,12 +57,13 @@ status:
 # Full Testing, bring up everything, send a transaction and then stop
 #
 full: reset install
-	./tests/register.sh
-	./tests/send.sh
-	./tests/identity.sh
-	./tests/accounts.sh
-	./tests/utxo.sh
-	./scripts/stopOneLedger
+	./tests/full.sh
+	#./tests/register.sh
+	#./tests/send.sh
+	#./tests/identity.sh
+	#./tests/accounts.sh
+	#./tests/utxo.sh
+	#./scripts/stopOneLedger
 
 #
 # Full Testing, bring up everything, send a transaction and then stop

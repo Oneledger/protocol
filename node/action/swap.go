@@ -30,6 +30,7 @@ type Swap struct {
 	Fee          data.Coin     `json:"fee"`
 	Gas          data.Coin     `json:"fee"`
 	Nonce        int64         `json:"nonce"`
+	Preimage     []byte        `json:"preimage"`
 }
 
 // Ensure that all of the base values are at least reasonable.
@@ -250,16 +251,31 @@ func Resolve(app interface{}, transaction Transaction, commands Commands) Comman
 	utxo := GetUtxo(app)
 	_ = utxo
 
+	var iindex, pindex int
+
 	chains := GetChains(transaction)
 	for i := 0; i < len(commands); i++ {
 		role := swap.GetRole(account)
 		if role == INITIATOR {
 			commands[i].Chain = chains[0]
+			iindex = 0
+			pindex = 1
 		} else {
 			commands[i].Chain = chains[1]
+			iindex = 1
+			pindex = 0
 		}
+
 		commands[i].Data[ROLE] = role
-		commands[i].Data[PASSWORD] = "I rock"
+		commands[i].Data[INITIATOR_ACCOUNT] = chains[iindex]
+		commands[i].Data[PARTICIPANT_ACCOUNT] = chains[pindex]
+
+		commands[i].Data[AMOUNT] = swap.Amount
+		commands[i].Data[EXCHANGE] = swap.Exchange
+		commands[i].Data[NONCE] = swap.Nonce
+		commands[i].Data[PREIMAGE] = swap.Preimage
+
+		commands[i].Data[PASSWORD] = "password" // TODO: Needs to be corrected
 	}
 	return commands
 }

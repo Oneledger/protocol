@@ -38,6 +38,7 @@ func (transaction *Send) ProcessCheck(app interface{}) err.Code {
 	log.Debug("Processing Send Transaction for CheckTx")
 
 	if !CheckAmounts(transaction.Inputs, transaction.Outputs) {
+		log.Debug("FAILED", "inputs", transaction.Inputs, "outputs", transaction.Outputs)
 		return err.INVALID
 	}
 

@@ -6,9 +6,11 @@
 package app
 
 import (
+	"encoding/hex"
 	"fmt"
 	"strings"
 
+	"github.com/Oneledger/protocol/node/comm"
 	"github.com/Oneledger/protocol/node/data"
 	"github.com/Oneledger/protocol/node/id"
 	"github.com/Oneledger/protocol/node/log"
@@ -33,6 +35,9 @@ func HandleQuery(app Application, path string, message []byte) []byte {
 
 	case "/accountKey":
 		return HandleAccountKeyQuery(app, message)
+
+	case "/balance":
+		return HandleBalanceQuery(app, message)
 	}
 
 	return HandleError("Unknown Path", path, message)
@@ -190,4 +195,32 @@ func HandleError(text string, path string, massage []byte) []byte {
 
 func HandleVersionQuery(app Application, message []byte) []byte {
 	return []byte(version.Current.String())
+}
+
+// Get the account information for a given user
+func HandleBalanceQuery(app Application, message []byte) []byte {
+	log.Debug("BalanceQuery", "message", message)
+
+	text := string(message)
+
+	var key []byte
+	parts := strings.Split(text, "=")
+	if len(parts) > 1 {
+		key, _ = hex.DecodeString(parts[1])
+	}
+	return Balance(app, key)
+}
+
+func Balance(app Application, accountKey []byte) []byte {
+
+	balance := app.Utxo.Find(accountKey)
+	if balance == nil {
+		log.Warn("Balance FAILED", "key", accountKey)
+		result := data.NewBalance(0, "OLT")
+		balance = &result
+	}
+	//log.Debug("Balance", "key", accountKey, "balance", balance)
+
+	buffer, _ := comm.Serialize(balance)
+	return buffer
 }

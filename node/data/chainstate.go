@@ -31,6 +31,9 @@ type ChainState struct {
 	Delivered *iavl.VersionedTree
 	Committed *iavl.VersionedTree
 	database  *db.GoLevelDB
+	Version   int64
+	Height    int
+	Hash      []byte
 }
 
 func NewChainState(name string, newType DatastoreType) *ChainState {
@@ -91,14 +94,20 @@ func (state *ChainState) Exists(key DatabaseKey) bool {
 }
 
 // TODO: Not sure about this, it seems to be Cosmos-sdk's way of getting arround the immutable copy problem...
-func (state *ChainState) Commit() {
+func (state *ChainState) Commit() ([]byte, int64) {
 
-	state.Delivered.SaveVersion()
+	hash, version, err := state.Delivered.SaveVersion()
+	if err != nil {
+		log.Fatal("Saving", "err", err)
+	}
 
 	// Force the database to completely close, then repoen it.
 	state.database.Close()
 	state.database = nil
+
 	state.reset()
+
+	return hash, version
 }
 
 func (state *ChainState) Dump() {
@@ -122,6 +131,13 @@ func (state *ChainState) reset() {
 	//state.Checked = createDatabase(state.Name, state.Type)
 	state.Delivered, state.database = initializeDatabase(state.Name, state.Type)
 	//state.Committed = createDatabase(state.Name, state.Type)
+
+	// TODO: Can I stick the delivered database into the checked tree?
+
+	// Essentially the last commited value...
+	state.Hash = state.Delivered.Hash()
+	state.Version = state.Delivered.Version64()
+	state.Height = state.Delivered.Height()
 }
 
 func initializeDatabase(name string, newType DatastoreType) (*iavl.VersionedTree, *db.GoLevelDB) {

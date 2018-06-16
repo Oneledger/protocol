@@ -23,8 +23,17 @@ const (
 
 type Parameter byte
 
+// TODO: Move to parameter.go
 const (
 	ROLE Parameter = iota
+	INITIATOR_ACCOUNT
+	PARTICIPANT_ACCOUNT
+
+	AMOUNT
+	EXCHANGE
+	NONCE
+	PREIMAGE
+
 	PASSWORD
 )
 
