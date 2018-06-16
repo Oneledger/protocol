@@ -129,11 +129,6 @@ func MatchSwap(left *Swap, right *Swap) bool {
 	if left.Base.ChainId != right.Base.ChainId {
 		return false
 	}
-	/*
-		if left.Base.Sequence != right.Base.Sequence {
-			return false
-		}
-	*/
 	if bytes.Compare(left.Party, right.CounterParty) != 0 {
 		return false
 	}
