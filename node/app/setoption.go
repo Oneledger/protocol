@@ -7,8 +7,6 @@ package app
 
 import (
 	"github.com/Oneledger/protocol/node/comm"
-	"github.com/Oneledger/protocol/node/data"
-	"github.com/Oneledger/protocol/node/global"
 	"github.com/Oneledger/protocol/node/id"
 	"github.com/Oneledger/protocol/node/log"
 )
@@ -44,71 +42,4 @@ func SetOption(app *Application, key string, value string) bool {
 	}
 	return true
 
-}
-
-// Register Identities and Accounts from the user.
-func RegisterLocally(app *Application, name string, scope string, chain data.ChainType,
-	publicKey id.PublicKey, privateKey id.PrivateKey) bool {
-
-	status := false
-
-	if chain == data.UNKNOWN {
-		return status
-	}
-
-	// Accounts are relative to a chain
-	// TODO: Scope is tied to chain for demo purposes?
-	accountName := name + "-" + scope
-
-	account, _ := app.Accounts.FindNameOnChain(accountName, chain)
-	if account == nil {
-		log.Debug("Registering New Account", "accountName", accountName)
-		account = id.NewAccount(chain, accountName, publicKey, privateKey)
-		app.Accounts.Add(account)
-
-		// TODO: This should add to a list
-		if name != "Zero" && chain == data.ONELEDGER {
-			global.Current.NodeAccountName = accountName
-		}
-
-		log.Debug("New Account", "key", account.AccountKey(), "account", account)
-		status = true
-
-	} else {
-		log.Debug("Existing Account", "accountName", accountName)
-	}
-
-	// Fill in the balance
-	if !app.Utxo.Exists(account.AccountKey()) {
-		balance := data.NewBalance(0, "OLT")
-		buffer, _ := comm.Serialize(balance)
-		app.Utxo.Delivered.Set(account.AccountKey(), buffer)
-		app.Utxo.Commit()
-		log.Debug("New Utxo", "key", account.AccountKey(), "balance", balance)
-		status = true
-	} else {
-		log.Debug("Existing Utxo", "key", account.AccountKey())
-	}
-
-	// Identities are global
-	identity, _ := app.Identities.FindName(name)
-	if identity == nil {
-		log.Debug("Registering a New Identity", "name", name)
-		identity = id.NewIdentity(name, "Contact Info", false,
-			global.Current.NodeName, account.AccountKey())
-		app.Identities.Add(identity)
-		status = true
-
-	} else {
-		log.Debug("Not Registering Existing Identity", "name", name)
-		app.Identities.Dump()
-	}
-
-	if chain != data.ONELEDGER {
-		// Associate this account with the identity
-		identity.SetAccount(chain, account)
-		app.Identities.Add(identity)
-	}
-
-	return status
 }

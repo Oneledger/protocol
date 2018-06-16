@@ -12,6 +12,7 @@ import (
 
 	"github.com/Oneledger/protocol/node/comm"
 	"github.com/Oneledger/protocol/node/data"
+	"github.com/Oneledger/protocol/node/err"
 	"github.com/Oneledger/protocol/node/id"
 	"github.com/Oneledger/protocol/node/log"
 	"github.com/Oneledger/protocol/node/version"
@@ -165,8 +166,24 @@ func UtxoInfo(app Application, name string) []byte {
 	if name == "" {
 		entries := app.Utxo.FindAll()
 		for key, value := range entries {
-			account, _ := app.Accounts.FindKey([]byte(key))
-			buffer += account.Name() + ":" + value.AsString() + ", "
+			account, errs := app.Accounts.FindKey([]byte(key))
+			if errs != err.SUCCESS {
+				log.Fatal("Accounts", "err", errs, "key", key)
+			}
+
+			var name string
+			if account == nil {
+				name = fmt.Sprintf("%X", key)
+			} else {
+				name = account.Name()
+			}
+
+			if value != nil {
+				buffer += name + ":" + value.AsString() + ", "
+			} else {
+				buffer += name + ":EMPTY, "
+			}
+
 		}
 
 	} else {

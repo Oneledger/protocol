@@ -70,10 +70,10 @@ func (transaction Register) ProcessDeliver(app interface{}) err.Code {
 	log.Debug("Processing Register Transaction for DeliverTx")
 
 	identities := GetIdentities(app)
-	entry, errs := identities.FindName(transaction.Identity)
+	entry, status := identities.FindName(transaction.Identity)
 
-	if errs != err.SUCCESS {
-		return errs
+	if status != err.SUCCESS {
+		return status
 	}
 
 	if entry != nil {
@@ -81,9 +81,8 @@ func (transaction Register) ProcessDeliver(app interface{}) err.Code {
 	} else {
 		identities.Add(id.NewIdentity(transaction.Identity, "Contact Information",
 			true, global.Current.NodeName, transaction.AccountKey))
+		log.Info("Updated External Identity", "id", transaction.Identity, "key", transaction.AccountKey)
 	}
-
-	log.Info("Updated External Identity Reference!!!", "id", transaction.Identity, "key", transaction.AccountKey)
 
 	return err.SUCCESS
 }

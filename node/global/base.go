@@ -54,7 +54,7 @@ func NewContext(name string) *Context {
 		DisablePasswords: true,
 
 		NodeName:        name,
-		NodeAccountName: name,
+		NodeAccountName: "Zero-OneLedger",
 		RootDir:         os.Getenv("OLDATA") + "/" + name + "/fullnode",
 
 		Sequence: 101,

@@ -24,6 +24,13 @@ func (coin Coin) LessThanEqual(value int) bool {
 	return false
 }
 
+func (coin Coin) LessThan(value int) bool {
+	if coin.Amount < int64(value) {
+		return true
+	}
+	return false
+}
+
 func (coin Coin) IsValid() bool {
 	if coin.Currency == "" {
 		return false

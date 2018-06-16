@@ -14,6 +14,7 @@ import (
 	"github.com/Oneledger/protocol/node/comm"
 	"github.com/Oneledger/protocol/node/convert"
 	"github.com/Oneledger/protocol/node/data"
+	"github.com/Oneledger/protocol/node/global"
 	"github.com/Oneledger/protocol/node/id"
 	"github.com/Oneledger/protocol/node/log"
 	"github.com/tendermint/abci/types"
@@ -46,6 +47,16 @@ func NewApplication() *Application {
 		Identities: id.NewIdentities("identities"),
 		Accounts:   id.NewAccounts("accounts"),
 		Utxo:       data.NewChainState("utxo", data.PERSISTENT),
+	}
+}
+
+// Initial the state of the application from persistent data
+func (app Application) Initialize() {
+	param := app.Admin.Load(data.DatabaseKey("NodeAccountName"))
+	if param != nil {
+		var name string
+		buffer, _ := comm.Deserialize(param, &name)
+		global.Current.NodeAccountName = *(buffer.(*string))
 	}
 }
 

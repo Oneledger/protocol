@@ -53,7 +53,7 @@ then
 		--p2p.persistent_peers $peers \
 		>> $LOG/tendermint.log 2>&1 &
 
-	echo "Tendermint $nodeName has been started"
+	#echo "Tendermint $nodeName has been started"
 else
 	echo "Tendermint $nodeName was already running"
 fi

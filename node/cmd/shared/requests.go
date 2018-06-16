@@ -274,6 +274,7 @@ func CreateSwapRequest(args *SwapArguments) []byte {
 			Type:     action.SWAP,
 			ChainId:  app.ChainId,
 			Signers:  signers,
+			Owner:    party,
 			Sequence: global.Current.Sequence,
 		},
 		Party:        party,

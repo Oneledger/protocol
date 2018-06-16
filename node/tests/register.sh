@@ -15,6 +15,7 @@ do
 	nodeAddr=`$CMD/lookup $name RPCAddress tcp://127.0.0.1:`
 	nodeName=`$CMD/lookup $name NodeName`
 	WORK=$OLDATA/$nodeName
+	LOG=$WORK
 	ROOT=$WORK/fullnode
 
 	$CMD/stopNode $name 
@@ -22,16 +23,19 @@ do
 	# Setup a global Identity and OneLedger account
 	fullnode register --root $ROOT -a $nodeAddr \
 		--node $nodeName \
-		--identity $name 
+		--identity $name \
+		>> $LOG/fullnode.log 2>&1
 
 	# Fill in the specific chain accounts
 	fullnode register --root $ROOT -a $nodeAddr \
 		--node $nodeName \
-		--identity $name --chain Bitcoin 
+		--identity $name --chain Bitcoin \
+		>> $LOG/fullnode.log 2>&1
 
 	fullnode register --root $ROOT -a $nodeAddr \
 		--node $nodeName \
-		--identity $name --chain Ethereum 
+		--identity $name --chain Ethereum \
+		>> $LOG/fullnode.log 2>&1
 
 	# Broadtcast it to all of the nodes to make sure it is unique
 	$CMD/startNode $name register 
