@@ -4,6 +4,7 @@
 package convert
 
 import (
+	"fmt"
 	"strconv"
 )
 
@@ -14,4 +15,12 @@ func GetInt(value string, defaultValue int) int {
 		return defaultValue
 	}
 	return result
+}
+
+func GetString(value int) string {
+	return fmt.Sprintf("%d", value)
+}
+
+func GetString64(value int64) string {
+	return fmt.Sprintf("%d", value)
 }

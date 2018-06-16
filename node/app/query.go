@@ -6,10 +6,13 @@
 package app
 
 import (
+	"encoding/hex"
 	"fmt"
 	"strings"
 
+	"github.com/Oneledger/protocol/node/comm"
 	"github.com/Oneledger/protocol/node/data"
+	"github.com/Oneledger/protocol/node/err"
 	"github.com/Oneledger/protocol/node/id"
 	"github.com/Oneledger/protocol/node/log"
 	"github.com/Oneledger/protocol/node/version"
@@ -33,6 +36,9 @@ func HandleQuery(app Application, path string, message []byte) []byte {
 
 	case "/accountKey":
 		return HandleAccountKeyQuery(app, message)
+
+	case "/balance":
+		return HandleBalanceQuery(app, message)
 	}
 
 	return HandleError("Unknown Path", path, message)
@@ -160,8 +166,24 @@ func UtxoInfo(app Application, name string) []byte {
 	if name == "" {
 		entries := app.Utxo.FindAll()
 		for key, value := range entries {
-			account, _ := app.Accounts.FindKey([]byte(key))
-			buffer += account.Name() + ":" + value.AsString() + ", "
+			account, errs := app.Accounts.FindKey([]byte(key))
+			if errs != err.SUCCESS {
+				log.Fatal("Accounts", "err", errs, "key", key)
+			}
+
+			var name string
+			if account == nil {
+				name = fmt.Sprintf("%X", key)
+			} else {
+				name = account.Name()
+			}
+
+			if value != nil {
+				buffer += name + ":" + value.AsString() + ", "
+			} else {
+				buffer += name + ":EMPTY, "
+			}
+
 		}
 
 	} else {
@@ -190,4 +212,32 @@ func HandleError(text string, path string, massage []byte) []byte {
 
 func HandleVersionQuery(app Application, message []byte) []byte {
 	return []byte(version.Current.String())
+}
+
+// Get the account information for a given user
+func HandleBalanceQuery(app Application, message []byte) []byte {
+	log.Debug("BalanceQuery", "message", message)
+
+	text := string(message)
+
+	var key []byte
+	parts := strings.Split(text, "=")
+	if len(parts) > 1 {
+		key, _ = hex.DecodeString(parts[1])
+	}
+	return Balance(app, key)
+}
+
+func Balance(app Application, accountKey []byte) []byte {
+
+	balance := app.Utxo.Find(accountKey)
+	if balance == nil {
+		log.Warn("Balance FAILED", "key", accountKey)
+		result := data.NewBalance(0, "OLT")
+		balance = &result
+	}
+	//log.Debug("Balance", "key", accountKey, "balance", balance)
+
+	buffer, _ := comm.Serialize(balance)
+	return buffer
 }

@@ -53,7 +53,7 @@ func CreateRegisterRequest(args *RegisterArguments) []byte {
 }
 
 // TODO: Get this from the database, need an inquiry from a trusted node?
-func GetBalance(account id.AccountKey) data.Coin {
+func XGetBalance(account id.AccountKey) data.Coin {
 	balance := data.Coin{
 		Currency: "OLT",
 		Amount:   100,
@@ -86,13 +86,18 @@ func CreateSendRequest(args *SendArguments) []byte {
 	if args.Party == "" {
 		log.Fatal("Missing Party information")
 	}
+
 	if args.CounterParty == "" {
-		log.Fatal("Missing Party information")
+		log.Fatal("Missing CounterParty information")
 	}
 
 	// TODO: Can't convert identities to accounts, this way!
-	party := conv.GetAccountKey(args.Party)
-	counterParty := conv.GetAccountKey(args.CounterParty)
+	party := GetAccountKey(args.Party)
+	counterParty := GetAccountKey(args.CounterParty)
+
+	if args.Currency == "" || args.Amount == "" {
+		log.Fatal("Missing an amount")
+	}
 
 	amount := data.Coin{
 		Currency: conv.GetCurrency(args.Currency),
@@ -103,13 +108,13 @@ func CreateSendRequest(args *SendArguments) []byte {
 	partyBalance := GetBalance(party)
 	counterPartyBalance := GetBalance(counterParty)
 
-	inputs := make([]action.SendInput, 2)
+	inputs := make([]action.SendInput, 0)
 	inputs = append(inputs,
 		action.NewSendInput(party, partyBalance),
 		action.NewSendInput(counterParty, counterPartyBalance))
 
 	// Build up the outputs
-	outputs := make([]action.SendOutput, 2)
+	outputs := make([]action.SendOutput, 0)
 	outputs = append(outputs,
 		action.NewSendOutput(party, partyBalance.Minus(amount)),
 		action.NewSendOutput(counterParty, counterPartyBalance.Plus(amount)))
@@ -157,8 +162,8 @@ func CreateMintRequest(args *SendArguments) []byte {
 	}
 
 	// TODO: Can't convert identities to accounts, this way!
-	party := conv.GetAccountKey(args.Party)
-	zero := conv.GetAccountKey("Zero")
+	party := GetAccountKey(args.Party)
+	zero := GetAccountKey("Zero")
 
 	amount := data.Coin{
 		Currency: conv.GetCurrency(args.Currency),
@@ -169,13 +174,13 @@ func CreateMintRequest(args *SendArguments) []byte {
 	zeroBalance := GetBalance(zero)
 	partyBalance := GetBalance(party)
 
-	inputs := make([]action.SendInput, 2)
+	inputs := make([]action.SendInput, 0)
 	inputs = append(inputs,
 		action.NewSendInput(zero, zeroBalance),
 		action.NewSendInput(party, partyBalance))
 
 	// Build up the outputs
-	outputs := make([]action.SendOutput, 2)
+	outputs := make([]action.SendOutput, 0)
 	outputs = append(outputs,
 		action.NewSendOutput(zero, zeroBalance.Minus(amount)),
 		action.NewSendOutput(party, partyBalance.Plus(amount)))
@@ -233,8 +238,8 @@ func CreateSwapRequest(args *SwapArguments) []byte {
 
 	conv := convert.NewConvert()
 
-	party := conv.GetAccountKey(args.Party)
-	counterParty := conv.GetAccountKey(args.CounterParty)
+	party := GetAccountKey(args.Party)
+	counterParty := GetAccountKey(args.CounterParty)
 
 	// TOOD: a clash with the basic data model
 	signers := GetSigners()
@@ -269,6 +274,7 @@ func CreateSwapRequest(args *SwapArguments) []byte {
 			Type:     action.SWAP,
 			ChainId:  app.ChainId,
 			Signers:  signers,
+			Owner:    party,
 			Sequence: global.Current.Sequence,
 		},
 		Party:        party,

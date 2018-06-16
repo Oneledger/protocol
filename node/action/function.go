@@ -74,7 +74,15 @@ func GetCommands(action Type, role Role, chains []data.ChainType) Commands {
 			size := len(FunctionMapping[i]) - offset
 			result := make(Commands, size, size)
 			for j := 0; j < size; j++ {
-				result[j] = FunctionMapping[i][j+offset].(Command)
+				var copy Command
+				orig := FunctionMapping[i][j+offset].(Command)
+
+				// Make sure we take a copy of this, not the original
+				copy.Function = orig.Function
+				copy.Chain = orig.Chain
+				copy.Data = make(map[Parameter]FunctionValue)
+
+				result[j] = copy
 			}
 			return result
 		}

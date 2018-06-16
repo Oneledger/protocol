@@ -30,6 +30,7 @@ type Swap struct {
 	Fee          data.Coin     `json:"fee"`
 	Gas          data.Coin     `json:"fee"`
 	Nonce        int64         `json:"nonce"`
+	Preimage     []byte        `json:"preimage"`
 }
 
 // Ensure that all of the base values are at least reasonable.
@@ -37,14 +38,22 @@ func (transaction *Swap) Validate() err.Code {
 	log.Debug("Validating Swap Transaction")
 
 	if transaction.Party == nil {
+		log.Debug("Missing Party")
 		return err.MISSING_DATA
 	}
 	if transaction.CounterParty == nil {
+		log.Debug("Missing CounterParty")
 		return err.MISSING_DATA
 	}
 	if !transaction.Amount.IsValid() {
+		log.Debug("Amount Isn't Valid")
 		return err.MISSING_DATA
 	}
+	if !transaction.Exchange.IsValid() {
+		log.Debug("Exchange Isn't Valid")
+		return err.MISSING_DATA
+	}
+	log.Debug("Swap is validated!")
 	return err.SUCCESS
 }
 
@@ -61,6 +70,7 @@ func (transaction *Swap) ProcessDeliver(app interface{}) err.Code {
 	log.Debug("Processing Swap Transaction for DeliverTx")
 
 	if ProcessSwap(app, transaction) {
+		log.Debug("Expanding the Transaction into Functions")
 		commands := transaction.Expand(app)
 
 		Resolve(app, transaction, commands)
@@ -72,6 +82,8 @@ func (transaction *Swap) ProcessDeliver(app interface{}) err.Code {
 				return err.EXPAND_ERROR
 			}
 		}
+	} else {
+		log.Debug("Not Involved or Not Ready")
 	}
 
 	return err.SUCCESS
@@ -79,8 +91,12 @@ func (transaction *Swap) ProcessDeliver(app interface{}) err.Code {
 
 func FindSwap(status *data.Datastore, key id.AccountKey) Transaction {
 	result := status.Load(key)
-	var transaction Transaction
-	buffer, err := comm.Deserialize(result, transaction)
+	if result == nil {
+		return nil
+	}
+
+	var transaction Swap
+	buffer, err := comm.Deserialize(result, &transaction)
 	if err != nil {
 		return nil
 	}
@@ -88,74 +104,103 @@ func FindSwap(status *data.Datastore, key id.AccountKey) Transaction {
 }
 
 // TODO: Change to return Role as INITIATOR or PARTICIPANT
-func FindMatchingSwap(status *data.Datastore, counterParty id.Account, role Role, transaction *Swap) bool {
+func FindMatchingSwap(status *data.Datastore, accountKey id.AccountKey, transaction *Swap) *Swap {
 
-	result := FindSwap(status, counterParty.AccountKey())
+	result := FindSwap(status, accountKey)
 	if result != nil {
-		if MatchSwap(result.(*Swap), transaction) {
-			return true
+		entry := result.(*Swap)
+		if MatchSwap(entry, transaction) {
+			return entry
+		} else {
+			log.Debug("Swap doesn't match", "key", accountKey, "transaction", transaction, "entry", entry)
 		}
+	} else {
+		log.Debug("Swap not found", "key", accountKey)
 	}
 
-	return false
+	return nil
 }
 
+// Two matching swap requests from different parties
 func MatchSwap(left *Swap, right *Swap) bool {
 	if left.Base.Type != right.Base.Type {
 		return false
 	}
-	if left.Base.Sequence != right.Base.Sequence {
+	if left.Base.ChainId != right.Base.ChainId {
 		return false
 	}
-	if bytes.Compare(left.Party, right.Party) == 0 {
+	/*
+		if left.Base.Sequence != right.Base.Sequence {
+			return false
+		}
+	*/
+	if bytes.Compare(left.Party, right.CounterParty) != 0 {
 		return false
 	}
-	if bytes.Compare(left.CounterParty, right.CounterParty) == 0 {
+	if bytes.Compare(left.CounterParty, right.Party) != 0 {
 		return false
 	}
-	if left.Amount != right.Amount {
+	if left.Amount != right.Exchange {
 		return false
 	}
+	if left.Exchange != right.Amount {
+		return false
+	}
+	if left.Nonce != right.Nonce {
+		return false
+	}
+
 	return true
 }
 
 func ProcessSwap(app interface{}, transaction *Swap) bool {
 	status := GetStatus(app)
-
 	account := transaction.GetNodeAccount(app)
-	role := transaction.GetRole(account)
 
-	if role == NONE {
-		log.Error("Can't find a role for this swap")
+	isParty := transaction.IsParty(account)
+
+	if isParty == nil {
+		log.Debug("No Account", "account", account)
 		return false
 	}
 
-	var primary id.Account
-	if role == INITIATOR {
-		primary = GetAccount(app, transaction.Party)
+	if *isParty {
+		otherSide := FindMatchingSwap(status, transaction.CounterParty, transaction)
+		if otherSide != nil {
+			return true
+		} else {
+			SaveSwap(status, transaction.CounterParty, transaction)
+			log.Debug("Not Ready", "account", account)
+			return false
+		}
 	} else {
-		primary = GetAccount(app, transaction.CounterParty)
+		otherSide := FindMatchingSwap(status, transaction.Party, transaction)
+		if otherSide != nil {
+			return true
+
+		} else {
+			SaveSwap(status, transaction.Party, transaction)
+			log.Debug("Not Ready", "account", account)
+			return false
+		}
 	}
 
-	SaveSwap(status, primary, transaction)
-
-	if FindMatchingSwap(status, primary, role, transaction) {
-		return true
-	}
+	log.Debug("Not Involved", "account", account)
 	return false
 }
 
-func SaveSwap(status *data.Datastore, account id.Account, transaction *Swap) {
+func SaveSwap(status *data.Datastore, accountKey id.AccountKey, transaction *Swap) {
+	log.Debug("SaveSwap", "key", accountKey)
 	buffer, _ := comm.Serialize(transaction)
-
-	status.Store(account.AccountKey(), buffer)
+	status.Store(accountKey, buffer)
+	status.Commit()
 }
 
 // Is this node one of the partipants in the swap
 func (transaction *Swap) ShouldProcess(app interface{}) bool {
 	account := transaction.GetNodeAccount(app)
 
-	if transaction.GetRole(account) != ALL {
+	if transaction.IsParty(account) != nil {
 		return true
 	}
 
@@ -182,51 +227,37 @@ func GetChainAccount(app interface{}, name string, chain data.ChainType) id.Acco
 
 func (transaction *Swap) GetNodeAccount(app interface{}) id.Account {
 
-	identities := GetIdentities(app)
-	if identities == nil {
-		log.Error("Indentities database missing")
-		return nil
-	}
-
-	identity, _ := identities.FindName(global.Current.NodeAccountName)
-	if identity == nil {
-		log.Error("Node does not have name or not registered", "name", global.Current.NodeAccountName)
-		return nil
-	}
-
 	accounts := GetAccounts(app)
-	if identities == nil {
-		log.Error("Accounts database missing")
-		return nil
-	}
-
-	account, _ := accounts.FindIdentity(*identity)
-	if identity == nil {
-		log.Error("Node does not have account")
+	account, _ := accounts.FindName(global.Current.NodeAccountName)
+	if account == nil {
+		log.Error("Node does not have account", "name", global.Current.NodeAccountName)
+		accounts.Dump()
 		return nil
 	}
 
 	return account
 }
 
-func (transaction *Swap) GetRole(account id.Account) Role {
+func (transaction *Swap) IsParty(account id.Account) *bool {
+
 	if account == nil {
-		return NONE
+		log.Debug("Getting Role for empty account")
+		return nil
 	}
 
-	initiator := transaction.Party
-	participant := transaction.CounterParty
-
-	if bytes.Compare(initiator, account.AccountKey()) == 0 {
-		return INITIATOR
+	var isParty bool
+	if bytes.Compare(transaction.Party, account.AccountKey()) == 0 {
+		isParty = true
+		return &isParty
 	}
 
-	if bytes.Compare(participant, account.AccountKey()) == 0 {
-		return PARTICIPANT
+	if bytes.Compare(transaction.CounterParty, account.AccountKey()) == 0 {
+		isParty = false
+		return &isParty
 	}
 
 	// TODO: Shouldn't be in-band this way
-	return ALL
+	return nil
 }
 
 // Given a transaction, expand it into a list of Commands to execute against various chains.
@@ -234,7 +265,11 @@ func (transaction *Swap) Expand(app interface{}) Commands {
 	chains := GetChains(transaction)
 
 	account := transaction.GetNodeAccount(app)
-	role := transaction.GetRole(account)
+	isParty := transaction.IsParty(account)
+	role := PARTICIPANT
+	if *isParty {
+		role = INITIATOR
+	}
 
 	return GetCommands(SWAP, role, chains)
 }
@@ -250,16 +285,36 @@ func Resolve(app interface{}, transaction Transaction, commands Commands) Comman
 	utxo := GetUtxo(app)
 	_ = utxo
 
+	var iindex, pindex int
+
 	chains := GetChains(transaction)
 	for i := 0; i < len(commands); i++ {
-		role := swap.GetRole(account)
-		if role == INITIATOR {
+		isParty := swap.IsParty(account)
+		if *isParty {
 			commands[i].Chain = chains[0]
+			iindex = 0
+			pindex = 1
 		} else {
 			commands[i].Chain = chains[1]
+			iindex = 1
+			pindex = 0
 		}
+
+		role := PARTICIPANT
+		if *isParty {
+			role = INITIATOR
+		}
+
 		commands[i].Data[ROLE] = role
-		commands[i].Data[PASSWORD] = "I rock"
+		commands[i].Data[INITIATOR_ACCOUNT] = chains[iindex]
+		commands[i].Data[PARTICIPANT_ACCOUNT] = chains[pindex]
+
+		commands[i].Data[AMOUNT] = swap.Amount
+		commands[i].Data[EXCHANGE] = swap.Exchange
+		commands[i].Data[NONCE] = swap.Nonce
+		commands[i].Data[PREIMAGE] = swap.Preimage
+
+		commands[i].Data[PASSWORD] = "password" // TODO: Needs to be corrected
 	}
 	return commands
 }

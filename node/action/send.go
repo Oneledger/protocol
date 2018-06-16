@@ -38,6 +38,7 @@ func (transaction *Send) ProcessCheck(app interface{}) err.Code {
 	log.Debug("Processing Send Transaction for CheckTx")
 
 	if !CheckAmounts(transaction.Inputs, transaction.Outputs) {
+		log.Debug("FAILED", "inputs", transaction.Inputs, "outputs", transaction.Outputs)
 		return err.INVALID
 	}
 
@@ -79,7 +80,7 @@ func (transaction *Send) ProcessDeliver(app interface{}) err.Code {
 // Make sure the inputs and outputs all add up correctly.
 func CheckAmounts(inputs []SendInput, outputs []SendOutput) bool {
 	for _, input := range inputs {
-		if input.Amount.LessThanEqual(0) {
+		if input.Amount.LessThan(0) {
 			return false
 		}
 		if bytes.Compare(input.AccountKey, []byte("")) == 0 {
@@ -87,7 +88,7 @@ func CheckAmounts(inputs []SendInput, outputs []SendOutput) bool {
 		}
 	}
 	for _, output := range outputs {
-		if output.Amount.LessThanEqual(0) {
+		if output.Amount.LessThan(0) {
 			return false
 		}
 		if bytes.Compare(output.AccountKey, []byte("")) == 0 {

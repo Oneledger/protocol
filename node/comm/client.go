@@ -75,30 +75,29 @@ func GetClient() (client *rpcclient.HTTP) {
 	// TODO: Try multiple times before giving up
 	cachedClient := rpcclient.NewHTTP(global.Current.RpcAddress, "/websocket")
 
-	log.Debug("RpcClient", "address", global.Current.RpcAddress, "client", cachedClient)
+	log.Debug("RPC Client", "address", global.Current.RpcAddress, "client", cachedClient)
 
 	return cachedClient
 }
 
 // An async Broadcast to the chain
 func Broadcast(packet []byte) *ctypes.ResultBroadcastTx {
-	log.Debug("Broadcast", "packet", packet)
 
 	client := GetClient()
 
 	//result, err := client.BroadcastTxCommit(packet)
 	result, err := client.BroadcastTxAsync(packet)
 	if err != nil {
-		log.Error("Error", "err", err)
+		log.Error("Broadcast Error", "err", err, "packet", packet)
 	}
+
+	log.Debug("Broadcast", "packet", packet, "result", result)
 
 	return result
 }
 
 // A sync'ed broadcast to the chain that waits for the commit to happen
 func BroadcastCommit(packet []byte) *ctypes.ResultBroadcastTxCommit {
-	log.Debug("Broadcast", "packet", packet)
-
 	client := GetClient()
 
 	result, err := client.BroadcastTxCommit(packet)
@@ -106,24 +105,22 @@ func BroadcastCommit(packet []byte) *ctypes.ResultBroadcastTxCommit {
 		log.Error("Error", "err", err)
 	}
 
+	log.Debug("Broadcast", "packet", packet, "result", result)
+
 	return result
 }
 
 // Send a very specific query
 func Query(path string, packet []byte) (res *ctypes.ResultABCIQuery) {
-	log.Debug("sending ABCi Query", "path", path, "packet", packet)
-
 	client := GetClient()
-
-	log.Debug("About to do an ABCIQuery")
 
 	result, err := client.ABCIQuery(path, packet)
 	if err != nil {
-		log.Error("Error", "err", err)
+		log.Error("ABCi Query Error", "err", err)
 		return nil
 	}
 
-	log.Debug("ABCi Query", "result", result)
+	log.Debug("ABCi Query", "path", path, "packet", packet, "result", result)
 
 	return result
 }

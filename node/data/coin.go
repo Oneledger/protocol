@@ -24,6 +24,13 @@ func (coin Coin) LessThanEqual(value int) bool {
 	return false
 }
 
+func (coin Coin) LessThan(value int) bool {
+	if coin.Amount < int64(value) {
+		return true
+	}
+	return false
+}
+
 func (coin Coin) IsValid() bool {
 	if coin.Currency == "" {
 		return false
@@ -34,7 +41,8 @@ func (coin Coin) IsValid() bool {
 func (coin Coin) Minus(value Coin) Coin {
 
 	if coin.Currency != value.Currency {
-		log.Error("Mismatching Currencies", "coin", coin, "value", value)
+		//log.Error("Mismatching Currencies", "coin", coin, "value", value)
+		log.Fatal("Mismatching Currencies", "coin", coin, "value", value)
 		return coin
 	}
 
@@ -47,7 +55,8 @@ func (coin Coin) Minus(value Coin) Coin {
 
 func (coin Coin) Plus(value Coin) Coin {
 	if coin.Currency != value.Currency {
-		log.Error("Mismatching Currencies", "coin", coin, "value", value)
+		//log.Error("Mismatching Currencies", "coin", coin, "value", value)
+		log.Fatal("Mismatching Currencies", "coin", coin, "value", value)
 		return coin
 	}
 
