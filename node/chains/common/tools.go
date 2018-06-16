@@ -1,10 +1,12 @@
+/*
+	Copyright 2017 - 2018 OneLedger
+*/
 package common
 
 import (
-	"net/http"
 	"io"
+	"net/http"
 )
-
 
 type HttpClient interface {
 	Post(url string, contentType string, body io.Reader) (*http.Response, error)

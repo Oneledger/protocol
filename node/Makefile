@@ -7,6 +7,13 @@ all: test
 #
 # Initialize the dependencies
 #
+install: tools update
+	cd setup
+	./install.sh
+
+#
+# Initialize the dependencies
+#
 setup: tools
 	dep init
 
