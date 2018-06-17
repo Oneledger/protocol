@@ -7,15 +7,12 @@ all: test
 #
 # Initialize the dependencies
 #
-install: tools update
+setup: tools
 	cd setup
 	./install.sh
-
-#
-# Initialize the dependencies
-#
-setup: tools
+	cd ..
 	dep init
+	dep ensure
 
 #
 # Update the dependencies if they have changed.
