@@ -49,7 +49,7 @@ list:
 # Check out the running status
 #
 status: 
-	./scripts/statusOneLedger
+	./scripts/status
 
 #
 # Run any of the unit tests

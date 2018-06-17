@@ -109,7 +109,7 @@ func (app Application) SetupState(stateBytes []byte) {
 
 	// TODO: Should be more flexible to match genesis block
 	balance := data.Balance{
-		Amount: data.Coin{Currency: "OLT", Amount: state.Amount},
+		Amount: data.NewCoin(state.Amount, "OLT"),
 	}
 	buffer, _ := comm.Serialize(balance)
 

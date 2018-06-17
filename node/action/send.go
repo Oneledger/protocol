@@ -27,9 +27,11 @@ func (transaction *Send) Validate() err.Code {
 	log.Debug("Validating Send Transaction")
 
 	if transaction.Fee.LessThan(0) {
+		log.Debug("Missing Fee", "send", transaction)
 		return err.MISSING_DATA
 	}
 	if transaction.Gas.LessThan(0) {
+		log.Debug("Missing Gas", "send", transaction)
 		return err.MISSING_DATA
 	}
 
@@ -66,10 +68,16 @@ func (transaction *Send) ProcessDeliver(app interface{}) err.Code {
 
 	// Update the database to the final set of entries
 	for _, entry := range transaction.Outputs {
+
 		balance := data.Balance{
 			Amount: entry.Amount,
 		}
-		buffer, _ := comm.Serialize(balance)
+
+		buffer, status := comm.Serialize(balance)
+		if status != nil {
+			log.Fatal("Serialize", "status", status)
+		}
+
 		chain.Delivered.Set(entry.AccountKey, buffer)
 	}
 
