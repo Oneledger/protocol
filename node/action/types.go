@@ -10,6 +10,7 @@ package action
 import (
 	"bytes"
 
+	"github.com/Oneledger/protocol/node/comm"
 	"github.com/Oneledger/protocol/node/data"
 	"github.com/Oneledger/protocol/node/id"
 	"github.com/Oneledger/protocol/node/log"
@@ -53,4 +54,55 @@ func NewSendOutput(accountKey id.AccountKey, amount data.Coin) SendOutput {
 		AccountKey: accountKey,
 		Amount:     amount,
 	}
+}
+
+func CheckBalance(app interface{}, accountKey id.AccountKey, amount data.Coin) bool {
+	utxo := GetUtxo(app)
+
+	version := utxo.Delivered.Version64()
+	_, value := utxo.Delivered.GetVersioned(accountKey, version)
+	if value != nil {
+		return false
+	}
+
+	var bal data.Balance
+	buffer, _ := comm.Deserialize(value, bal)
+	if buffer == nil {
+		return false
+	}
+
+	balance := buffer.(data.Balance)
+	if !balance.Amount.Equals(amount) {
+		return false
+	}
+	return true
+}
+
+func CheckAmounts(app interface{}, inputs []SendInput, outputs []SendOutput) bool {
+	total := data.NewCoin(0, "OLT")
+	for _, input := range inputs {
+		if input.Amount.LessThan(0) {
+			return false
+		}
+		if bytes.Compare(input.AccountKey, []byte("")) == 0 {
+			return false
+		}
+		if !CheckBalance(app, input.AccountKey, input.Amount) {
+			return false
+		}
+		total.Plus(input.Amount)
+	}
+	for _, output := range outputs {
+		if output.Amount.LessThan(0) {
+			return false
+		}
+		if bytes.Compare(output.AccountKey, []byte("")) == 0 {
+			return false
+		}
+		total.Minus(output.Amount)
+	}
+	if !total.Equals(data.NewCoin(0, "OLT")) {
+		return false
+	}
+	return true
 }

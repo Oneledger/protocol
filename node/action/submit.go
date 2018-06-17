@@ -34,10 +34,7 @@ func BroadcastTransaction(ttype Type, transaction Transaction) {
 		}
 	}()
 
-	//time.Sleep(10 * time.Second)
-
 	packet := SignAndPack(ttype, transaction)
-
 	result := comm.Broadcast(packet)
 
 	log.Debug("Submitted Successfully", "result", result)
@@ -69,6 +66,5 @@ func PackRequest(ttype Type, request Transaction) []byte {
 	packet, _ := comm.Serialize(request)
 	packet = append(bytes, packet...)
 
-	//packet := wire.BinaryBytes(request)
 	return packet
 }

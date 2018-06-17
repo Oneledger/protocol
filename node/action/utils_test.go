@@ -1,8 +1,9 @@
 package action
 
 import (
-	"testing"
 	"encoding/hex"
+	"testing"
+
 	"github.com/Oneledger/protocol/node/log"
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
@@ -22,7 +23,7 @@ func TestBoxLocker_Sign(t *testing.T) {
 	messageHash := chainhash.DoubleHashB([]byte(message))
 
 	locker := BoxLocker{}
-	r , err := locker.Sign(pkBytes[:len(pkBytes)/2],pkBytes[len(pkBytes)/2:], messageHash)
+	r, err := locker.Sign(pkBytes[:len(pkBytes)/2], pkBytes[len(pkBytes)/2:], messageHash)
 
 	assert.Equal(t, true, r, "Sign with preimage and nonce success")
 	if err != nil {
@@ -35,7 +36,7 @@ func TestBoxLocker_Sign(t *testing.T) {
 
 	// Verify the signature for the message using the public key.
 	verified := locker.Signature.Verify(messageHash, locker.PubKey)
-	assert.Equal(t, true, verified,"Signature verified with pubKey")
+	assert.Equal(t, true, verified, "Signature verified with pubKey")
 
 	// Test sign again with wrong nonce
 	r, err = locker.Sign(pkBytes[:len(pkBytes)/2], pkBytes[len(pkBytes)/2-1:], messageHash)
@@ -83,6 +84,5 @@ func TestBoxLocker_Verify(t *testing.T) {
 	message := "test message"
 	messageHash := chainhash.DoubleHashB([]byte(message))
 	verified := locker.Verify(messageHash)
-	assert.Equal(t,true, verified, "Signature verified")
+	assert.Equal(t, true, verified, "Signature verified")
 }
-

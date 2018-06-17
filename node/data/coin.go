@@ -35,7 +35,25 @@ func (coin Coin) IsValid() bool {
 	if coin.Currency == "" {
 		return false
 	}
+	// TODO: Double check this
+	if coin.LessThan(0) {
+		return false
+	}
 	return true
+}
+
+func (coin Coin) Equals(value Coin) bool {
+	if coin.Amount == value.Amount {
+		return true
+	}
+	return false
+}
+
+func (coin Coin) EqualsInt64(value int64) bool {
+	if coin.Amount == value {
+		return true
+	}
+	return false
 }
 
 func (coin Coin) Minus(value Coin) Coin {

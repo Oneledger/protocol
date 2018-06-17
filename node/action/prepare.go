@@ -33,7 +33,19 @@ func (transaction *Prepare) ShouldProcess(app interface{}) bool {
 
 func (transaction *Prepare) ProcessDeliver(app interface{}) err.Code {
 	log.Debug("Processing Prepare Transaction for DeliverTx")
+
+	commands := transaction.Expand(app)
+	transaction.Resolve(app, commands)
+	for i := 0; i < commands.Count(); i++ {
+		status := Execute(app, commands[i])
+		if status != err.SUCCESS {
+			return err.EXPAND_ERROR
+		}
+	}
 	return err.SUCCESS
+}
+
+func (transaction *Prepare) Resolve(app interface{}, commands Commands) {
 }
 
 // Given a transaction, expand it into a list of Commands to execute against various chains.

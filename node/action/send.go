@@ -6,8 +6,6 @@
 package action
 
 import (
-	"bytes"
-
 	"github.com/Oneledger/protocol/node/comm"
 	"github.com/Oneledger/protocol/node/data"
 	"github.com/Oneledger/protocol/node/err"
@@ -28,16 +26,20 @@ type Send struct {
 func (transaction *Send) Validate() err.Code {
 	log.Debug("Validating Send Transaction")
 
-	// TODO: Make sure all of the parameters are there
-	// TODO: Check all signatures and keys
-	// TODO: Vet that the sender has the values
+	if transaction.Fee.LessThan(0) {
+		return err.MISSING_DATA
+	}
+	if transaction.Gas.LessThan(0) {
+		return err.MISSING_DATA
+	}
+
 	return err.SUCCESS
 }
 
 func (transaction *Send) ProcessCheck(app interface{}) err.Code {
 	log.Debug("Processing Send Transaction for CheckTx")
 
-	if !CheckAmounts(transaction.Inputs, transaction.Outputs) {
+	if !CheckAmounts(app, transaction.Inputs, transaction.Outputs) {
 		log.Debug("FAILED", "inputs", transaction.Inputs, "outputs", transaction.Outputs)
 		return err.INVALID
 	}
@@ -56,12 +58,9 @@ func (transaction *Send) ShouldProcess(app interface{}) bool {
 func (transaction *Send) ProcessDeliver(app interface{}) err.Code {
 	log.Debug("Processing Send Transaction for DeliverTx")
 
-	if !CheckAmounts(transaction.Inputs, transaction.Outputs) {
+	if !CheckAmounts(app, transaction.Inputs, transaction.Outputs) {
 		return err.INVALID
 	}
-
-	// TODO: Revalidate the transaction
-	// TODO: Need to rollback if any errors occur
 
 	chain := GetUtxo(app)
 
@@ -77,25 +76,7 @@ func (transaction *Send) ProcessDeliver(app interface{}) err.Code {
 	return err.SUCCESS
 }
 
-// Make sure the inputs and outputs all add up correctly.
-func CheckAmounts(inputs []SendInput, outputs []SendOutput) bool {
-	for _, input := range inputs {
-		if input.Amount.LessThan(0) {
-			return false
-		}
-		if bytes.Compare(input.AccountKey, []byte("")) == 0 {
-			return false
-		}
-	}
-	for _, output := range outputs {
-		if output.Amount.LessThan(0) {
-			return false
-		}
-		if bytes.Compare(output.AccountKey, []byte("")) == 0 {
-			return false
-		}
-	}
-	return true
+func (transaction *Send) Resolve(app interface{}, commands Commands) {
 }
 
 // Given a transaction, expand it into a list of Commands to execute against various chains.

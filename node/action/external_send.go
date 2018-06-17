@@ -44,8 +44,19 @@ func (transaction *ExternalSend) ShouldProcess(app interface{}) bool {
 func (transaction *ExternalSend) ProcessDeliver(app interface{}) err.Code {
 	log.Debug("Processing ExternalSend Transaction for DeliverTx")
 
-	// TODO: // Update in final copy of Merkle Tree
+	commands := transaction.Expand(app)
+	transaction.Resolve(app, commands)
+
+	for i := 0; i < commands.Count(); i++ {
+		status := Execute(app, commands[i])
+		if status != err.SUCCESS {
+			return err.EXPAND_ERROR
+		}
+	}
 	return err.SUCCESS
+}
+
+func (transaction *ExternalSend) Resolve(app interface{}, commands Commands) {
 }
 
 // Given a transaction, expand it into a list of Commands to execute against various chains.

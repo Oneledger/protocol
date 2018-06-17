@@ -73,7 +73,7 @@ func (transaction *Swap) ProcessDeliver(app interface{}) err.Code {
 		log.Debug("Expanding the Transaction into Functions")
 		commands := transaction.Expand(app)
 
-		Resolve(app, transaction, commands)
+		transaction.Resolve(app, commands)
 
 		for i := 0; i < commands.Count(); i++ {
 			status := Execute(app, commands[i])
@@ -270,8 +270,9 @@ func (transaction *Swap) Expand(app interface{}) Commands {
 }
 
 // Plug in data from the rest of a system into a set of commands
-func Resolve(app interface{}, transaction Transaction, commands Commands) Commands {
-	swap := transaction.(*Swap)
+func (swap *Swap) Resolve(app interface{}, commands Commands) {
+	transaction := Transaction(swap)
+
 	account := swap.GetNodeAccount(app)
 
 	identities := GetIdentities(app)
@@ -311,7 +312,7 @@ func Resolve(app interface{}, transaction Transaction, commands Commands) Comman
 
 		commands[i].Data[PASSWORD] = "password" // TODO: Needs to be corrected
 	}
-	return commands
+	return
 }
 
 // Execute the function

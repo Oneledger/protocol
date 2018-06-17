@@ -49,6 +49,7 @@ type Transaction interface {
 	ShouldProcess(interface{}) bool
 	ProcessDeliver(interface{}) err.Code
 	Expand(interface{}) Commands
+	Resolve(interface{}, Commands)
 }
 
 // Base Data for each type
