@@ -16,4 +16,5 @@ const (
 	EXPAND_ERROR    Code = 501
 	DUPLICATE       Code = 601
 	MISSING_DATA    Code = 701
+	BAD_VALUE       Code = 801
 )

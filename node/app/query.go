@@ -62,9 +62,16 @@ func AccountKey(app Application, name string) []byte {
 	identity, _ := app.Identities.FindName(name)
 
 	if identity != nil {
-		return identity.AccountKey
+		return []byte(hex.EncodeToString(identity.AccountKey))
 	}
-	return []byte("Not Found")
+
+	// Maybe this is an AccountName, not an identity
+	account, _ := app.Accounts.FindName(name)
+	if account != nil {
+		return []byte(hex.EncodeToString(account.AccountKey()))
+	}
+
+	return []byte(nil)
 }
 
 // Get the account information for a given user
@@ -133,7 +140,7 @@ func AccountInfo(app Application, name string) []byte {
 	}
 
 	account, _ := app.Accounts.FindName(name)
-	log.Debug("account", "account", account)
+	log.Debug("Accounts", "name", name, "account", account)
 
 	if account != nil {
 		buffer = "Answer[1]: " + account.AsString()
@@ -175,7 +182,7 @@ func UtxoInfo(app Application, name string) []byte {
 			if account == nil {
 				name = fmt.Sprintf("%X", key)
 			} else {
-				name = account.Name()
+				name = account.Name() + "@" + fmt.Sprintf("%X", key)
 			}
 
 			if value != nil {
@@ -232,7 +239,8 @@ func Balance(app Application, accountKey []byte) []byte {
 
 	balance := app.Utxo.Find(accountKey)
 	if balance == nil {
-		log.Warn("Balance FAILED", "key", accountKey)
+		log.Fatal("Balance FAILED", "accountKey", accountKey)
+		//log.Warn("Balance FAILED", "accountKey", accountKey)
 		result := data.NewBalance(0, "OLT")
 		balance = &result
 	}

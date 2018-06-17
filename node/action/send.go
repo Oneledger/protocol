@@ -30,6 +30,7 @@ func (transaction *Send) Validate() err.Code {
 		log.Debug("Missing Fee", "send", transaction)
 		return err.MISSING_DATA
 	}
+
 	if transaction.Gas.LessThan(0) {
 		log.Debug("Missing Gas", "send", transaction)
 		return err.MISSING_DATA

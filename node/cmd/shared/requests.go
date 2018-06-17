@@ -137,12 +137,12 @@ func CreateMintRequest(args *SendArguments) []byte {
 	conv := convert.NewConvert()
 
 	if args.Party == "" {
-		log.Fatal("Missing Party information")
+		log.Fatal("Missing Party information", "args", args)
 	}
 
 	// TODO: Can't convert identities to accounts, this way!
 	party := GetAccountKey(args.Party)
-	zero := GetAccountKey("Zero")
+	zero := GetAccountKey("Zero-OneLedger")
 
 	amount := conv.GetCoin(args.Amount, args.Currency)
 
@@ -175,6 +175,7 @@ func CreateMintRequest(args *SendArguments) []byte {
 			Type:     action.SEND,
 			ChainId:  app.ChainId,
 			Signers:  signers,
+			Owner:    zero,
 			Sequence: global.Current.Sequence,
 		},
 		Inputs:  inputs,
@@ -191,9 +192,9 @@ type SwapArguments struct {
 	Party        string
 	CounterParty string
 	Amount       string
+	Currency     string
 	Fee          string
 	Gas          string // TODO: Not sure this is necessary, unless the chain is like Ethereum
-	Currency     string
 	Exchange     string
 	Excurrency   string
 	Nonce        int64
@@ -210,10 +211,10 @@ func CreateSwapRequest(args *SwapArguments) []byte {
 
 	signers := GetSigners()
 
-	fee := conv.GetCoin(args.Fee, args.Currency)
-	gas := conv.GetCoin(args.Gas, args.Currency)
+	fee := conv.GetCoin(args.Fee, "OLT")
+	gas := conv.GetCoin(args.Gas, "OLT")
 	amount := conv.GetCoin(args.Amount, args.Currency)
-	exchange := conv.GetCoin(args.Exchange, args.Currency)
+	exchange := conv.GetCoin(args.Exchange, args.Excurrency)
 
 	if conv.HasErrors() {
 		Console.Error(conv.GetErrors())

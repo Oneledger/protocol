@@ -41,6 +41,18 @@ func NewCoin(amount int64, currency string) Coin {
 	return coin
 }
 
+// See if the coin is one of a list of currencies
+func (coin Coin) IsCurrency(currencies ...string) bool {
+	found := false
+	for _, currency := range currencies {
+		if coin.Currency == currency {
+			found = true
+			break
+		}
+	}
+	return found
+}
+
 func (coin Coin) LessThanEqual(value int64) bool {
 	if coin.Amount.Cmp(big.NewInt(value)) <= 0 {
 		return true

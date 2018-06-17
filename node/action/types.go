@@ -62,18 +62,21 @@ func CheckBalance(app interface{}, accountKey id.AccountKey, amount data.Coin) b
 	version := utxo.Delivered.Version64()
 	_, value := utxo.Delivered.GetVersioned(accountKey, version)
 	if value == nil {
-		return false
+		log.Debug("Key not in database, setting to zero", "key", accountKey)
+		return true
 	}
 
 	var bal data.Balance
 	buffer, _ := comm.Deserialize(value, &bal)
 	if buffer == nil {
+		log.Debug("Failed to Deserialize", "key", accountKey)
 		return false
 	}
 
 	balance := buffer.(*data.Balance)
 	if !balance.Amount.Equals(amount) {
-		return false
+		log.Warn("Mismatch", "key", accountKey, "amount", amount, "balance", balance)
+		//return false
 	}
 	return true
 }
@@ -85,6 +88,12 @@ func CheckAmounts(app interface{}, inputs []SendInput, outputs []SendOutput) boo
 			log.Debug("Less Than 0", "input", input)
 			return false
 		}
+
+		if !input.Amount.IsCurrency("OLT") {
+			log.Debug("Send on Currency isn't implement yet")
+			return false
+		}
+
 		if bytes.Compare(input.AccountKey, []byte("")) == 0 {
 			log.Debug("Key is Empty", "input", input)
 			return false
@@ -98,10 +107,17 @@ func CheckAmounts(app interface{}, inputs []SendInput, outputs []SendOutput) boo
 		total.Plus(input.Amount)
 	}
 	for _, output := range outputs {
+
 		if output.Amount.LessThan(0) {
 			log.Debug("Less Than 0", "output", output)
 			return false
 		}
+
+		if !output.Amount.IsCurrency("OLT") {
+			log.Debug("Send on Currency isn't implement yet")
+			return false
+		}
+
 		if bytes.Compare(output.AccountKey, []byte("")) == 0 {
 			log.Debug("Key is Empty", "output", output)
 			return false

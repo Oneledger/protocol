@@ -55,6 +55,6 @@ func Error(msg string, args ...interface{}) {
 }
 
 func Fatal(msg string, args ...interface{}) {
-	current.Error(msg, args...)
+	current.Error("FATAL: "+msg, args...)
 	panic("Execution stopped due to " + msg)
 }

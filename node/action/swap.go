@@ -41,18 +41,22 @@ func (transaction *Swap) Validate() err.Code {
 		log.Debug("Missing Party")
 		return err.MISSING_DATA
 	}
+
 	if transaction.CounterParty == nil {
 		log.Debug("Missing CounterParty")
 		return err.MISSING_DATA
 	}
-	if !transaction.Amount.IsValid() {
-		log.Debug("Amount Isn't Valid")
-		return err.MISSING_DATA
+
+	if !transaction.Amount.IsCurrency("BTC", "ETH") {
+		log.Debug("Swap on Currency isn't implement yet")
+		return err.NOT_IMPLEMENTED
 	}
-	if !transaction.Exchange.IsValid() {
-		log.Debug("Exchange Isn't Valid")
-		return err.MISSING_DATA
+
+	if !transaction.Exchange.IsCurrency("BTC", "ETH") {
+		log.Debug("Swap on Currency isn't implement yet")
+		return err.NOT_IMPLEMENTED
 	}
+
 	log.Debug("Swap is validated!")
 	return err.SUCCESS
 }
@@ -124,24 +128,31 @@ func FindMatchingSwap(status *data.Datastore, accountKey id.AccountKey, transact
 // Two matching swap requests from different parties
 func MatchSwap(left *Swap, right *Swap) bool {
 	if left.Base.Type != right.Base.Type {
+		log.Debug("Type is wrong")
 		return false
 	}
 	if left.Base.ChainId != right.Base.ChainId {
+		log.Debug("ChainId is wrong")
 		return false
 	}
 	if bytes.Compare(left.Party, right.CounterParty) != 0 {
+		log.Debug("Party/CounterParty is wrong")
 		return false
 	}
 	if bytes.Compare(left.CounterParty, right.Party) != 0 {
+		log.Debug("CounterParty/Party is wrong")
 		return false
 	}
-	if left.Amount != right.Exchange {
+	if !left.Amount.Equals(right.Exchange) {
+		log.Debug("Amount/Exchange is wrong")
 		return false
 	}
-	if left.Exchange != right.Amount {
+	if !left.Exchange.Equals(right.Amount) {
+		log.Debug("Exchange/Amount is wrong")
 		return false
 	}
 	if left.Nonce != right.Nonce {
+		log.Debug("Nonce is wrong")
 		return false
 	}
 

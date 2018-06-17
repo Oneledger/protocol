@@ -34,7 +34,7 @@ func init() {
 
 // IssueRequest sends out a sendTx to all of the nodes in the chain
 func IssueMintRequest(cmd *cobra.Command, args []string) {
-	log.Debug("Have Testmint Request", "sendargs", mintargs)
+	log.Debug("Have Testmint Request", "mintargs", mintargs)
 
 	// Create message
 	packet := shared.CreateMintRequest(mintargs)
