@@ -2,10 +2,9 @@ package rpc
 
 import (
 	"fmt"
-	
-	"../../common"
-)
 
+	"github.com/Oneledger/protocol/node/chains/common"
+)
 
 // Web3ClientVersion returns the current client version.
 func (rpc *EthRPCClient) Web3ClientVersion() (string, error) {
@@ -30,7 +29,7 @@ func (rpc *EthRPCClient) EthSyncing() (*Syncing, error) {
 	if err != nil {
 		return nil, err
 	}
-	
+
 	return syncing, err
 }
 

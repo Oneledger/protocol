@@ -60,8 +60,9 @@ utest:
 #
 # System Testing, bring up everything
 #
-test: start
-	@echo "OneLedger is now Running"
+test: reset install start
+	@echo "OneLedger Initialize"
+	./scripts/stopOneLedger
 
 #
 # Full Testing, bring up everything, send a transaction and then stop
