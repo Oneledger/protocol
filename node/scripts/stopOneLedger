@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 #
 # loop through all of the nodes and ask them to stop
@@ -7,7 +7,7 @@ export CMD=$OLSCRIPT
 
 nodes="David Alice Bob Carol"
 
-for entry in $nodes 
+for entry in $nodes
 do
 	$CMD/stopNode $entry
 done

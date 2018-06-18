@@ -1,18 +1,23 @@
-#!/bin/sh
+#!/bin/bash
 #
 # Install the OneLedger protocol and all of it's dependencies
 #
 
 #Install Bitcoin
-./install_bitcoin.sh
+echo "Installing Bitcoin"
+sudo ./install_bitcoin.sh
+echo "======Bitcoin finished====="
+
 
 #Install Ethereum
-./install_etheruem.sh
-./install_cpuminer.sh
+echo "Installing Ethereum"
+./install_ethereum.sh
+echo "=====Ethereum finished====="
 
 #Install Consensus
+echo "Installing consensus"
 ./install_consensus.sh
+echo "=====Install finished====="
 
-#Install Protocol
-./install_prototype.sh
+
 
