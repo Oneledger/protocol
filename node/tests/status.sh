@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 #
 # Test creating a single send transaction in a 1-node chain, reset each time

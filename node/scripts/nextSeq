@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 #
 # Move the sequence ids forward for testing, so that similar queries don't get caught in reply protection
 
@@ -8,7 +8,7 @@ export CMD=$OLSCRIPT
 # Get the next seqeunce
 VAL=`cat $CMD/sequence`
 
-# output it 
+# output it
 echo "$VAL"
 
 # Increment it
