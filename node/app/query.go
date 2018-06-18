@@ -239,8 +239,8 @@ func Balance(app Application, accountKey []byte) []byte {
 
 	balance := app.Utxo.Find(accountKey)
 	if balance == nil {
-		log.Fatal("Balance FAILED", "accountKey", accountKey)
-		//log.Warn("Balance FAILED", "accountKey", accountKey)
+		//log.Fatal("Balance FAILED", "accountKey", accountKey)
+		log.Warn("Balance FAILED", "accountKey", accountKey)
 		result := data.NewBalance(0, "OLT")
 		balance = &result
 	}

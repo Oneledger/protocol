@@ -1,17 +1,16 @@
 package rpc
 
 import (
-	"io/ioutil"
 	"bytes"
+	"encoding/json"
 	"fmt"
-	"os"
+	"io/ioutil"
 	"log"
 	"net/http"
-	"encoding/json"
+	"os"
 
-	"../../common"
+	"github.com/Oneledger/protocol/node/chains/common"
 )
-
 
 // EthError - ethereum error
 type EthError struct {

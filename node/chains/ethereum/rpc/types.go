@@ -6,7 +6,7 @@ import (
 	"math/big"
 	"unsafe"
 
-	helper "../../common"
+	helper "github.com/Oneledger/protocol/node/chains/common"
 )
 
 // Syncing - object with syncing data info
@@ -218,24 +218,24 @@ func (proxy *JsonBlockWithoutTransactions) toBlock() Block {
 
 // JsonBlockWithTransactions - Block with Transaction json object
 type JsonBlockWithTransactions struct {
-	Number           hexInt             `json:"number"`
-	Hash             string             `json:"hash"`
-	ParentHash       string             `json:"parentHash"`
-	Nonce            string             `json:"nonce"`
-	Sha3Uncles       string             `json:"sha3Uncles"`
-	LogsBloom        string             `json:"logsBloom"`
-	TransactionsRoot string             `json:"transactionsRoot"`
-	StateRoot        string             `json:"stateRoot"`
-	Miner            string             `json:"miner"`
-	Difficulty       hexBig             `json:"difficulty"`
-	TotalDifficulty  hexBig             `json:"totalDifficulty"`
-	ExtraData        string             `json:"extraData"`
-	Size             hexInt             `json:"size"`
-	GasLimit         hexInt             `json:"gasLimit"`
-	GasUsed          hexInt             `json:"gasUsed"`
-	Timestamp        hexInt             `json:"timestamp"`
-	Transactions     []JsonTransaction 	`json:"transactions"`
-	Uncles           []string           `json:"uncles"`
+	Number           hexInt            `json:"number"`
+	Hash             string            `json:"hash"`
+	ParentHash       string            `json:"parentHash"`
+	Nonce            string            `json:"nonce"`
+	Sha3Uncles       string            `json:"sha3Uncles"`
+	LogsBloom        string            `json:"logsBloom"`
+	TransactionsRoot string            `json:"transactionsRoot"`
+	StateRoot        string            `json:"stateRoot"`
+	Miner            string            `json:"miner"`
+	Difficulty       hexBig            `json:"difficulty"`
+	TotalDifficulty  hexBig            `json:"totalDifficulty"`
+	ExtraData        string            `json:"extraData"`
+	Size             hexInt            `json:"size"`
+	GasLimit         hexInt            `json:"gasLimit"`
+	GasUsed          hexInt            `json:"gasUsed"`
+	Timestamp        hexInt            `json:"timestamp"`
+	Transactions     []JsonTransaction `json:"transactions"`
+	Uncles           []string          `json:"uncles"`
 }
 
 func (proxy *JsonBlockWithTransactions) toBlock() Block {
