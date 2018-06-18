@@ -12,9 +12,7 @@ import (
 	"github.com/Oneledger/protocol/node/action"
 	"github.com/Oneledger/protocol/node/app"
 	"github.com/Oneledger/protocol/node/convert"
-	"github.com/Oneledger/protocol/node/data"
 	"github.com/Oneledger/protocol/node/global"
-	"github.com/Oneledger/protocol/node/id"
 	"github.com/Oneledger/protocol/node/log"
 )
 
@@ -50,15 +48,6 @@ func CreateRegisterRequest(args *RegisterArguments) []byte {
 	}
 
 	return SignAndPack(action.REGISTER, action.Transaction(reg))
-}
-
-// TODO: Get this from the database, need an inquiry from a trusted node?
-func XGetBalance(account id.AccountKey) data.Coin {
-	balance := data.Coin{
-		Currency: "OLT",
-		Amount:   100,
-	}
-	return balance
 }
 
 type BalanceArguments struct {
@@ -99,10 +88,7 @@ func CreateSendRequest(args *SendArguments) []byte {
 		log.Fatal("Missing an amount")
 	}
 
-	amount := data.Coin{
-		Currency: conv.GetCurrency(args.Currency),
-		Amount:   conv.GetInt64(args.Amount),
-	}
+	amount := conv.GetCoin(args.Amount, args.Currency)
 
 	// Build up the Inputs
 	partyBalance := GetBalance(party)
@@ -119,15 +105,8 @@ func CreateSendRequest(args *SendArguments) []byte {
 		action.NewSendOutput(party, partyBalance.Minus(amount)),
 		action.NewSendOutput(counterParty, counterPartyBalance.Plus(amount)))
 
-	gas := data.Coin{
-		Currency: conv.GetCurrency(args.Currency),
-		Amount:   conv.GetInt64(args.Gas),
-	}
-
-	fee := data.Coin{
-		Currency: conv.GetCurrency(args.Currency),
-		Amount:   conv.GetInt64(args.Fee),
-	}
+	fee := conv.GetCoin(args.Fee, args.Currency)
+	gas := conv.GetCoin(args.Gas, args.Currency)
 
 	if conv.HasErrors() {
 		Console.Error(conv.GetErrors())
@@ -158,17 +137,14 @@ func CreateMintRequest(args *SendArguments) []byte {
 	conv := convert.NewConvert()
 
 	if args.Party == "" {
-		log.Fatal("Missing Party information")
+		log.Fatal("Missing Party information", "args", args)
 	}
 
 	// TODO: Can't convert identities to accounts, this way!
 	party := GetAccountKey(args.Party)
-	zero := GetAccountKey("Zero")
+	zero := GetAccountKey("Zero-OneLedger")
 
-	amount := data.Coin{
-		Currency: conv.GetCurrency(args.Currency),
-		Amount:   conv.GetInt64(args.Amount),
-	}
+	amount := conv.GetCoin(args.Amount, args.Currency)
 
 	// Build up the Inputs
 	zeroBalance := GetBalance(zero)
@@ -185,15 +161,8 @@ func CreateMintRequest(args *SendArguments) []byte {
 		action.NewSendOutput(zero, zeroBalance.Minus(amount)),
 		action.NewSendOutput(party, partyBalance.Plus(amount)))
 
-	gas := data.Coin{
-		Currency: conv.GetCurrency(args.Currency),
-		Amount:   conv.GetInt64(args.Gas),
-	}
-
-	fee := data.Coin{
-		Currency: conv.GetCurrency(args.Currency),
-		Amount:   conv.GetInt64(args.Fee),
-	}
+	gas := conv.GetCoin(args.Gas, args.Currency)
+	fee := conv.GetCoin(args.Fee, args.Currency)
 
 	if conv.HasErrors() {
 		Console.Error(conv.GetErrors())
@@ -206,6 +175,7 @@ func CreateMintRequest(args *SendArguments) []byte {
 			Type:     action.SEND,
 			ChainId:  app.ChainId,
 			Signers:  signers,
+			Owner:    zero,
 			Sequence: global.Current.Sequence,
 		},
 		Inputs:  inputs,
@@ -222,9 +192,9 @@ type SwapArguments struct {
 	Party        string
 	CounterParty string
 	Amount       string
+	Currency     string
 	Fee          string
 	Gas          string // TODO: Not sure this is necessary, unless the chain is like Ethereum
-	Currency     string
 	Exchange     string
 	Excurrency   string
 	Nonce        int64
@@ -234,35 +204,17 @@ type SwapArguments struct {
 func CreateSwapRequest(args *SwapArguments) []byte {
 	log.Debug("swap args", "args", args)
 
-	// TODO: Need better validation and error handling...
-
 	conv := convert.NewConvert()
 
 	party := GetAccountKey(args.Party)
 	counterParty := GetAccountKey(args.CounterParty)
 
-	// TOOD: a clash with the basic data model
 	signers := GetSigners()
 
-	fee := data.Coin{
-		Currency: conv.GetCurrency(args.Currency),
-		Amount:   conv.GetInt64(args.Fee),
-	}
-
-	gas := data.Coin{
-		Currency: conv.GetCurrency(args.Currency),
-		Amount:   conv.GetInt64(args.Gas),
-	}
-
-	amount := data.Coin{
-		Currency: conv.GetCurrency(args.Currency),
-		Amount:   conv.GetInt64(args.Amount),
-	}
-
-	exchange := data.Coin{
-		Currency: conv.GetCurrency(args.Excurrency),
-		Amount:   conv.GetInt64(args.Exchange),
-	}
+	fee := conv.GetCoin(args.Fee, "OLT")
+	gas := conv.GetCoin(args.Gas, "OLT")
+	amount := conv.GetCoin(args.Amount, args.Currency)
+	exchange := conv.GetCoin(args.Exchange, args.Excurrency)
 
 	if conv.HasErrors() {
 		Console.Error(conv.GetErrors())

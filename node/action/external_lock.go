@@ -24,16 +24,24 @@ type ExternalLock struct {
 func (transaction *ExternalLock) Validate() err.Code {
 	log.Debug("Validating ExternalLock Transaction")
 
-	// TODO: Make sure all of the parameters are there
-	// TODO: Check all signatures and keys
-	// TODO: Vet that the sender has the values
+	if transaction.Fee.LessThan(0) {
+		return err.MISSING_DATA
+	}
 	return err.SUCCESS
 }
 
 func (transaction *ExternalLock) ProcessCheck(app interface{}) err.Code {
 	log.Debug("Processing ExternalLock Transaction for CheckTx")
 
-	// TODO: // Update in memory copy of Merkle Tree
+	commands := transaction.Expand(app)
+	transaction.Resolve(app, commands)
+
+	for i := 0; i < commands.Count(); i++ {
+		status := Execute(app, commands[i])
+		if status != err.SUCCESS {
+			return err.EXPAND_ERROR
+		}
+	}
 	return err.SUCCESS
 }
 
@@ -46,6 +54,9 @@ func (transaction *ExternalLock) ProcessDeliver(app interface{}) err.Code {
 
 	// TODO: // Update in final copy of Merkle Tree
 	return err.SUCCESS
+}
+
+func (transaction *ExternalLock) Resolve(app interface{}, commands Commands) {
 }
 
 // Given a transaction, expand it into a list of Commands to execute against various chains.

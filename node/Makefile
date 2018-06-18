@@ -8,7 +8,11 @@ all: test
 # Initialize the dependencies
 #
 setup: tools
+	cd setup
+	./install.sh
+	cd ..
 	dep init
+	dep ensure
 
 #
 # Update the dependencies if they have changed.
@@ -45,7 +49,7 @@ list:
 # Check out the running status
 #
 status: 
-	./scripts/statusOneLedger
+	./scripts/status
 
 #
 # Run any of the unit tests

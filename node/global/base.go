@@ -40,7 +40,7 @@ type Context struct {
 	BTCAddress string // Bitcoin node Address port
 	ETHAddress string // Ethereum node Address port
 
-	Sequence int // replay protection
+	Sequence int64 // replay protection
 }
 
 func init() {

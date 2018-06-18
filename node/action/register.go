@@ -33,9 +33,6 @@ func (transaction Register) Validate() err.Code {
 		return err.MISSING_DATA
 	}
 
-	// TODO: Make sure all of the parameters are there
-	// TODO: Check all signatures and keys
-	// TODO: Vet that the sender has the values
 	return err.SUCCESS
 }
 
@@ -44,10 +41,10 @@ func (transaction Register) ProcessCheck(app interface{}) err.Code {
 	log.Debug("Processing Register Transaction for CheckTx")
 
 	identities := GetIdentities(app)
-	id, errs := identities.FindName(transaction.Identity)
+	id, status := identities.FindName(transaction.Identity)
 
-	if errs != err.SUCCESS {
-		return errs
+	if status != err.SUCCESS {
+		return status
 	}
 
 	if id == nil {
@@ -55,9 +52,8 @@ func (transaction Register) ProcessCheck(app interface{}) err.Code {
 		return err.SUCCESS
 	}
 
+	// Not necessarily a failure, since this identity might be local
 	log.Debug("Identity already exists", "id", id)
-
-	// TODO: Not necessarily a failure, since this identity might be local
 	return err.SUCCESS
 }
 
@@ -85,6 +81,9 @@ func (transaction Register) ProcessDeliver(app interface{}) err.Code {
 	}
 
 	return err.SUCCESS
+}
+
+func (transaction Register) Resolve(app interface{}, commands Commands) {
 }
 
 // Given a transaction, expand it into a list of Commands to execute against various chains.

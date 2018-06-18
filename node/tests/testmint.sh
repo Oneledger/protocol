@@ -17,21 +17,30 @@ $CMD/startOneLedger
 
 addrAlice=`$CMD/lookup Alice RPCAddress tcp://127.0.0.1:`
 addrBob=`$CMD/lookup Bob RPCAddress tcp://127.0.0.1:`
+addrCarol=`$CMD/lookup Carol RPCAddress tcp://127.0.0.1:`
+addrDavid=`$CMD/lookup David RPCAddress tcp://127.0.0.1:`
 
 # olclient wait --initialized
 #sleep 2 
 
 # Put some money in the user accounts
 SEQ=`$CMD/nextSeq`
-olclient testmint -s $SEQ -a $addrAlice --party Alice --amount 100000 --currency OLT 
+olclient testmint -s $SEQ -a $addrAlice --party Alice --amount 100001 --currency OLT 
 
 SEQ=`$CMD/nextSeq`
-olclient testmint -s $SEQ -a $addrBob --party Bob --amount 100000 --currency OLT 
+olclient testmint -s $SEQ -a $addrBob --party Bob --amount 50002 --currency OLT 
+
+SEQ=`$CMD/nextSeq`
+olclient testmint -s $SEQ -a $addrCarol --party Carol --amount 25003 --currency OLT 
+
+SEQ=`$CMD/nextSeq`
+olclient testmint -s $SEQ -a $addrDavid --party David --amount 12004 --currency OLT 
+
+sleep 10
 
 olclient account -a $addrAlice --identity Alice
 olclient account -a $addrBob --identity Bob
-
-olclient account -a $addrBob --identity Zer
+olclient account -a $addrBob --identity Zero
 
 
 $CMD/stopOneLedger

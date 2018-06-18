@@ -1,0 +1,9 @@
+#!/bin/sh
+
+#
+# One script to start em all.
+#
+./resetBitcoin
+./resetEthereum
+./resetOneLedger
+

@@ -1,5 +1,8 @@
-package common
+/*
+	Copyright 2017 - 2018 OneLedger
+*/
 
+package common
 
 import (
 	"math/big"

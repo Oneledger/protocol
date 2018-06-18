@@ -49,19 +49,19 @@ type Transaction interface {
 	ShouldProcess(interface{}) bool
 	ProcessDeliver(interface{}) err.Code
 	Expand(interface{}) Commands
+	Resolve(interface{}, Commands)
 }
 
 // Base Data for each type
 type Base struct {
-	Type    Type        `json:"type"`
-	ChainId string      `json:"chain_id"` // TODO: Not necessary?
-	Signers []PublicKey `json:"signers"`
+	Type    Type   `json:"type"`
+	ChainId string `json:"chain_id"`
 
-	// Relative to Chain
-	Owner id.AccountKey `json:"owner"`
+	Owner   id.AccountKey `json:"owner"`
+	Signers []PublicKey   `json:"signers"`
 
-	// TODO: Should these be for all transactions or just driving ones?
-	Sequence int `json:"sequence"`
+	Sequence int64 `json:"sequence"`
+	Delay    int64 `json:"delay"` // Pause the transaction in the mempool
 }
 
 // Get the correct chain for this action

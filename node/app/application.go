@@ -109,7 +109,7 @@ func (app Application) SetupState(stateBytes []byte) {
 
 	// TODO: Should be more flexible to match genesis block
 	balance := data.Balance{
-		Amount: data.Coin{Currency: "OLT", Amount: state.Amount},
+		Amount: data.NewCoin(state.Amount, "OLT"),
 	}
 	buffer, _ := comm.Serialize(balance)
 
@@ -132,7 +132,7 @@ func (app Application) InitChain(req RequestInitChain) ResponseInitChain {
 
 // SetOption changes the underlying options for the ABCi app
 func (app Application) SetOption(req RequestSetOption) ResponseSetOption {
-	log.Debug("Message: SetOption")
+	log.Debug("Message: SetOption", "key", req.Key, "value", req.Value)
 
 	SetOption(&app, req.Key, req.Value)
 
@@ -204,8 +204,8 @@ func (app Application) CheckTx(tx []byte) ResponseCheckTx {
 		Data:      []byte("Data"),
 		Log:       "Log Data",
 		Info:      "Info Data",
-		GasWanted: 1,
-		GasUsed:   1,
+		GasWanted: 1000,
+		GasUsed:   1000,
 		Tags:      []common.KVPair(nil),
 		Fee:       common.KI64Pair{},
 	}
@@ -255,8 +255,8 @@ func (app Application) DeliverTx(tx []byte) ResponseDeliverTx {
 		Data:      []byte("Data"),
 		Log:       "Log Data",
 		Info:      "Info Data",
-		GasWanted: 1,
-		GasUsed:   1,
+		GasWanted: 1000,
+		GasUsed:   1000,
 		Tags:      []common.KVPair(nil),
 		Fee:       common.KI64Pair{},
 	}
@@ -276,7 +276,7 @@ func (app Application) Commit() ResponseCommit {
 	// Commit any pending changes.
 	hash, version := app.Utxo.Commit()
 
-	log.Debug("Commit", "hash", hash, "version", version)
+	log.Debug("Committed", "hash", hash, "version", version)
 
 	return ResponseCommit{}
 }

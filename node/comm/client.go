@@ -8,6 +8,8 @@
 package comm
 
 import (
+	"time"
+
 	"github.com/Oneledger/protocol/node/global"
 	"github.com/Oneledger/protocol/node/log"
 	client "github.com/tendermint/abci/client"
@@ -52,7 +54,7 @@ func SetOption(key string, value string) {
 	}
 }
 
-//var cachedClient *rpcclient.HTTP
+var cachedClient *rpcclient.HTTP
 
 // HTTP interface, allows Broadcast?
 // TODO: Want to switch client type, based on config or cli args.
@@ -73,9 +75,18 @@ func GetClient() (client *rpcclient.HTTP) {
 	*/
 
 	// TODO: Try multiple times before giving up
-	cachedClient := rpcclient.NewHTTP(global.Current.RpcAddress, "/websocket")
 
-	log.Debug("RPC Client", "address", global.Current.RpcAddress, "client", cachedClient)
+	for i := 0; i < 3; i++ {
+		cachedClient = rpcclient.NewHTTP(global.Current.RpcAddress, "/websocket")
+
+		log.Debug("RPC Client", "address", global.Current.RpcAddress, "client", cachedClient)
+		if cachedClient != nil {
+			break
+		}
+
+		log.Warn("Retrying RPC Client", "address", global.Current.RpcAddress)
+		time.Sleep(1 * time.Second)
+	}
 
 	return cachedClient
 }
