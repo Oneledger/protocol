@@ -51,11 +51,11 @@ func init() {
 	RootCmd.PersistentFlags().BoolVarP(&global.Current.Debug, "debug", "d",
 		global.Current.Debug, "Set DEBUG mode")
 
-	RootCmd.PersistentFlags().StringVar(&global.Current.BTCRpcPort, "btcrpc",
-		global.Current.BTCRpcPort, "bitcoin rpc port")
+	RootCmd.PersistentFlags().StringVar(&global.Current.BTCAddress, "btcrpc",
+		global.Current.BTCAddress, "bitcoin rpc address")
 
-	RootCmd.PersistentFlags().IntVar(&global.Current.ETHRpcPort, "ethrpc",
-		global.Current.ETHRpcPort, "etherem rpc port")
+	RootCmd.PersistentFlags().StringVar(&global.Current.ETHAddress, "ethrpc",
+		global.Current.ETHAddress, "etherem rpc address")
 }
 
 // Initialize Viper

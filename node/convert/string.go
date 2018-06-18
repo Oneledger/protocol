@@ -10,7 +10,9 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/Oneledger/protocol/node/data"
 	"github.com/Oneledger/protocol/node/id"
+	"github.com/Oneledger/protocol/node/log"
 	crypto "github.com/tendermint/go-crypto"
 )
 
@@ -101,11 +103,19 @@ func (convert *Convert) GetHash(value string) []byte {
 	return convert.HashKey(result)
 }
 
+func (convert *Convert) GetCoin(amountStr string, currencyStr string) data.Coin {
+	currency := convert.GetCurrency(currencyStr)
+	amountInt64 := convert.GetInt64(amountStr)
+	return data.NewCoin(amountInt64, currency)
+}
+
 func (convert *Convert) GetCurrency(value string) string {
 	key := strings.ToLower(value)
 	if result, ok := Domain[key]; ok {
 		return result
 	}
+	log.Error("MISSING Currency", "value", value)
+
 	convert.AddError(value, errors.New("Invalid Currency"))
 	return ""
 }

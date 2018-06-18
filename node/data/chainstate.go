@@ -25,12 +25,16 @@ type ChainState struct {
 	Name string
 	Type DatastoreType
 
-	// TODO: This doesn't work (can connect the roots to the underlying db)
-
-	Checked   *iavl.VersionedTree
-	Delivered *iavl.VersionedTree
-	Committed *iavl.VersionedTree
+	Delivered *iavl.VersionedTree // Build us a new set of transactions
 	database  *db.GoLevelDB
+
+	Checked   *iavl.VersionedTree // Temporary and can be Rolled Back
+	Committed *iavl.VersionedTree // Last Persistent Tree
+
+	// Last committed values
+	Version int64
+	Height  int
+	Hash    []byte
 }
 
 func NewChainState(name string, newType DatastoreType) *ChainState {
@@ -60,8 +64,11 @@ func (state *ChainState) FindAll() map[string]*Balance {
 
 	for i := int64(0); i < state.Delivered.Size64(); i++ {
 		key, value := state.Delivered.GetByIndex64(i)
+
 		var balance Balance
 		result, _ := comm.Deserialize(value, &balance)
+
+		log.Debug("FindAll", "i", i, "key", string(key), "value", value, "result", result)
 		mapping[string(key)] = result.(*Balance)
 	}
 	return mapping
@@ -69,8 +76,10 @@ func (state *ChainState) FindAll() map[string]*Balance {
 
 // TODO: Should be against the commit tree, not the delivered one!!!
 func (state *ChainState) Find(key DatabaseKey) *Balance {
+
 	version := state.Delivered.Version64()
 	_, value := state.Delivered.GetVersioned(key, version)
+
 	if value != nil {
 		var balance Balance
 		result, _ := comm.Deserialize(value, &balance)
@@ -81,8 +90,10 @@ func (state *ChainState) Find(key DatabaseKey) *Balance {
 
 // TODO: Should be against the commit tree, not the delivered one!!!
 func (state *ChainState) Exists(key DatabaseKey) bool {
+
 	version := state.Delivered.Version64()
 	_, value := state.Delivered.GetVersioned([]byte(key), version)
+
 	if value != nil {
 		return true
 	}
@@ -90,18 +101,25 @@ func (state *ChainState) Exists(key DatabaseKey) bool {
 }
 
 // TODO: Not sure about this, it seems to be Cosmos-sdk's way of getting arround the immutable copy problem...
-func (state *ChainState) Commit() {
+func (state *ChainState) Commit() ([]byte, int64) {
 
-	state.Delivered.SaveVersion()
+	hash, version, err := state.Delivered.SaveVersion()
+	if err != nil {
+		log.Fatal("Saving", "err", err)
+	}
 
 	// Force the database to completely close, then repoen it.
 	state.database.Close()
 	state.database = nil
+
 	state.reset()
+
+	return hash, version
 }
 
 func (state *ChainState) Dump() {
 	texts := state.database.Stats()
+
 	for key, value := range texts {
 		log.Debug("Stat", key, value)
 	}
@@ -110,7 +128,7 @@ func (state *ChainState) Dump() {
 	for ; iter.Valid(); iter.Next() {
 		hash := iter.Key()
 		node := iter.Value()
-		log.Debug("Row", hash, node)
+		log.Debug("ChainState", hash, node)
 	}
 }
 
@@ -121,6 +139,13 @@ func (state *ChainState) reset() {
 	//state.Checked = createDatabase(state.Name, state.Type)
 	state.Delivered, state.database = initializeDatabase(state.Name, state.Type)
 	//state.Committed = createDatabase(state.Name, state.Type)
+
+	// TODO: Can I stick the delivered database into the checked tree?
+
+	// Essentially, the last commited value...
+	state.Hash = state.Delivered.Hash()
+	state.Version = state.Delivered.Version64()
+	state.Height = state.Delivered.Height()
 }
 
 func initializeDatabase(name string, newType DatastoreType) (*iavl.VersionedTree, *db.GoLevelDB) {

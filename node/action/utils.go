@@ -1,10 +1,10 @@
 package action
 
 import (
+	"errors"
 
-	"golang.org/x/crypto/ripemd160"
 	"github.com/btcsuite/btcd/btcec"
-	"github.com/go-errors/errors"
+	"golang.org/x/crypto/ripemd160"
 )
 
 //general hash method for the actions messages
@@ -17,19 +17,17 @@ func _hash(bytes []byte) []byte {
 	return hasher.Sum(nil)
 }
 
-
 // General BoxLocker struct to act as locker for any information exchange box of transactions, if verify valid
 // then the lock can be release, otherwise box modified somehow
-type BoxLocker struct{
+type BoxLocker struct {
 	Signature *btcec.Signature
-	PubKey *btcec.PublicKey
+	PubKey    *btcec.PublicKey
 }
-
 
 // Sign the locker with preImage and nonce for message passed, the message should be the full information of
 // Transaction. The nonce is used to preventing the 3rd party from get the message even through he get the preImage,
 // where nonce should only be known by the participants of the message sharing
-func (bl *BoxLocker) Sign( preImage []byte, nonce []byte, message Message) (bool, error) {
+func (bl *BoxLocker) Sign(preImage []byte, nonce []byte, message Message) (bool, error) {
 	privKey, pubkey := btcec.PrivKeyFromBytes(btcec.S256(), append(preImage, nonce...))
 
 	signature, err := privKey.Sign(_hash(message))
@@ -49,5 +47,5 @@ func (bl *BoxLocker) Sign( preImage []byte, nonce []byte, message Message) (bool
 
 // Verify the pubKey with the signature for the message got.
 func (bl *BoxLocker) Verify(message Message) bool {
-	return bl.Signature.Verify(_hash(message),bl.PubKey)
+	return bl.Signature.Verify(_hash(message), bl.PubKey)
 }

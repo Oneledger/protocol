@@ -9,6 +9,7 @@ import (
 	"errors"
 
 	//"github.com/tendermint/go-crypto/keys/bcrypt"
+	"github.com/Oneledger/protocol/node/log"
 	"github.com/tendermint/go-crypto"
 )
 
@@ -19,8 +20,15 @@ const (
 	SECP256K1
 )
 
-func GenerateKeys() (PublicKey, PrivateKey) {
-	return PublicKey{}, PrivateKey{}
+func GenerateKeys(secret []byte) (PublicKey, PrivateKey) {
+	private, err := Generate(secret, ED25519) // TODO: Should be configurable
+
+	if err != nil {
+		log.Fatal("Key Generation Failed")
+	}
+
+	public := private.PubKey()
+	return public, private
 }
 
 func Generate(secret []byte, algorithm KeyAlgorithm) (PrivateKey, error) {

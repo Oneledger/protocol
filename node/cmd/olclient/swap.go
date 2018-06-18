@@ -8,7 +8,6 @@ package main
 import (
 	"github.com/Oneledger/protocol/node/cmd/shared"
 	"github.com/Oneledger/protocol/node/comm"
-	"github.com/Oneledger/protocol/node/id"
 	"github.com/Oneledger/protocol/node/log"
 	"github.com/spf13/cobra"
 )
@@ -49,17 +48,14 @@ func SwapCurrency(cmd *cobra.Command, args []string) {
 	log.Debug("Returned Successfully", "result", result)
 }
 
-// TODO: Do this properly
-func GetAccountKey(value string) id.AccountKey {
-	return id.AccountKey{}
-}
-
 // TODO: Check to see that this is a valid currency
 func GetCurrency(value string) string {
 	return value
 }
 
 // TODO: Fix this
+/*
 func GetInteger(value string) int64 {
 	return -1
 }
+*/

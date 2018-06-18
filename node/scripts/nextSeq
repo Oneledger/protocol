@@ -9,7 +9,7 @@ export CMD=$OLSCRIPT
 VAL=`cat $CMD/sequence`
 
 # output it 
-echo "-s $VAL"
+echo "$VAL"
 
 # Increment it
 VAL=$(($VAL + 1))

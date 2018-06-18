@@ -79,6 +79,14 @@ func StartNode(cmd *cobra.Command, args []string) {
 	log.Debug("Starting", "appAddress", global.Current.AppAddress)
 
 	node := app.NewApplication()
+	node.Initialize()
+
+	if global.Current.NodeAccountName == "" {
+		log.Warn("Missing NodeAccount")
+	} else {
+		log.Info("Node", "account", global.Current.NodeAccountName)
+	}
+
 	global.Current.SetApplication(persist.Access(node))
 
 	CatchSigterm()

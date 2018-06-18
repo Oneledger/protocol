@@ -8,6 +8,7 @@ package id
 import (
 	"fmt"
 	"reflect"
+	"strings"
 
 	"github.com/Oneledger/protocol/node/comm"
 	"github.com/Oneledger/protocol/node/data"
@@ -41,7 +42,7 @@ func NewAccounts(name string) *Accounts {
 func (acc *Accounts) Add(account Account) {
 
 	if value := acc.data.Load(account.AccountKey()); value != nil {
-		log.Debug("Key is being updated")
+		log.Debug("Key is being updated", "key", account.AccountKey())
 	}
 
 	buffer, _ := comm.Serialize(account)
@@ -69,22 +70,55 @@ func (acc *Accounts) Find(account Account) (Account, err.Code) {
 
 func (acc *Accounts) FindIdentity(identity Identity) (Account, err.Code) {
 	// TODO: Should have better name mapping between identities and accounts
-	account := NewAccount(data.ONELEDGER, identity.UserName+"-OneLedger", PublicKey{}, PrivateKey{})
+	account := NewAccount(data.ONELEDGER, identity.Name+"-OneLedger", PublicKey{}, PrivateKey{})
 	return acc.Find(account)
 
 }
 
+func (acc *Accounts) FindNameOnChain(name string, chain data.ChainType) (Account, err.Code) {
+
+	// TODO: Should be replaced with a real index
+	for _, entry := range acc.FindAll() {
+		if Matches(entry, name, chain) {
+			return entry, err.SUCCESS
+		}
+	}
+	return nil, err.SUCCESS
+}
+
 func (acc *Accounts) FindName(name string) (Account, err.Code) {
-	account := NewAccount(data.ONELEDGER, name, PublicKey{}, PrivateKey{})
-	return acc.Find(account)
+	return acc.FindNameOnChain(name, data.ONELEDGER)
+}
+
+func Matches(account Account, name string, chain data.ChainType) bool {
+	if strings.EqualFold(account.Name(), name) {
+		if account.Chain() == chain {
+			return true
+		}
+	}
+	return false
 }
 
 func (acc *Accounts) FindKey(key AccountKey) (Account, err.Code) {
 	value := acc.data.Load(key)
 	if value != nil {
-		account := &AccountOneLedger{}
-		base, _ := comm.Deserialize(value, account)
-		return base.(Account), err.SUCCESS
+		// TODO: Should be switchable
+		accountOneLedger := &AccountOneLedger{}
+		base, _ := comm.Deserialize(value, accountOneLedger)
+		if base != nil {
+			return base.(Account), err.SUCCESS
+		}
+		accountEthereum := &AccountEthereum{}
+		base, _ = comm.Deserialize(value, accountEthereum)
+		if base != nil {
+			return base.(Account), err.SUCCESS
+		}
+		accountBitcoin := &AccountBitcoin{}
+		base, _ = comm.Deserialize(value, accountBitcoin)
+		if base != nil {
+			return base.(Account), err.SUCCESS
+		}
+		log.Fatal("Can't deserialize", "value", value)
 	}
 	return nil, err.SUCCESS
 }
@@ -104,18 +138,16 @@ func (acc *Accounts) FindAll() []Account {
 	return results
 }
 
+// List out all of the accounts
 func (acc *Accounts) Dump() {
 	list := acc.FindAll()
 	size := len(list)
 
 	for i := 0; i < size; i++ {
 		account := list[i]
-		log.Info("Account", "Name", account.Name())
-		log.Info("Type", "Type", reflect.TypeOf(account))
+		log.Info("Account", "Name", account.Name(), "Key", account.AccountKey(), "Type", reflect.TypeOf(account))
 	}
 }
-
-//type AccountKey []byte
 
 // Polymorphism
 type Account interface {

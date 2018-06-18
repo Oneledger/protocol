@@ -8,7 +8,11 @@ all: test
 # Initialize the dependencies
 #
 setup: tools
+	cd setup
+	./install.sh
+	cd ..
 	dep init
+	dep ensure
 
 #
 # Update the dependencies if they have changed.
@@ -23,7 +27,7 @@ tools:
 	go get -u -v $(GOTOOLS)
 
 #
-# Build a local copy
+# Build a local copy, not that useful
 #
 build:
 	go build -o testFullnode github.com/Oneledger/protocol/node/cmd/fullnode
@@ -36,6 +40,18 @@ install:
 	go install github.com/Oneledger/protocol/node/cmd/...
 
 #
+# List out all of the tendermint processes
+#
+list: 
+	pgrep -lf tendermint
+
+#
+# Check out the running status
+#
+status: 
+	./scripts/status
+
+#
 # Run any of the unit tests
 #
 utest:
@@ -44,31 +60,20 @@ utest:
 #
 # System Testing, bring up everything
 #
-test: start
-	echo "Running"
-
-#
-# Check out the running status
-#
-status: 
-	./scripts/statusOneLedger
-
-#
-# Full Testing, bring up everything, send a transaction and then stop
-#
-full: reset install
-	./tests/register.sh
-	./tests/send.sh
-	./tests/identity.sh
-	./tests/accounts.sh
-	./tests/utxo.sh
+test: reset install start
+	@echo "OneLedger Initialize"
 	./scripts/stopOneLedger
 
 #
 # Full Testing, bring up everything, send a transaction and then stop
 #
-swap: reset install
-	./tests/register.sh
+fulltest: reset install
+	./tests/full.sh
+
+#
+# Full Testing, bring up everything, send a transaction and then stop
+#
+swaptest: reset install
 	./tests/swap.sh
 	./tests/identity.sh
 	./tests/accounts.sh
@@ -83,11 +88,6 @@ restart: reset install
 
 start: install
 	./scripts/startOneLedger
-#
-# System Testing, bring it all down
-#
-list: 
-	pgrep -lf tendermint
 
 #
 # System Testing, bring it all down
@@ -114,7 +114,6 @@ stopmon:
 	./scripts/stopmon
 
 #
-# targets that are not associated with files
-#
+# targets that are not associated with any files
 #
 .PHONY: all build install utest test tools update stop start full

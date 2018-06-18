@@ -12,10 +12,13 @@ import (
 	"github.com/Oneledger/protocol/node/abci"
 	"github.com/Oneledger/protocol/node/action"
 	"github.com/Oneledger/protocol/node/comm"
+	"github.com/Oneledger/protocol/node/convert"
 	"github.com/Oneledger/protocol/node/data"
+	"github.com/Oneledger/protocol/node/global"
 	"github.com/Oneledger/protocol/node/id"
 	"github.com/Oneledger/protocol/node/log"
 	"github.com/tendermint/abci/types"
+	"github.com/tendermint/tmlibs/common"
 )
 
 var ChainId string
@@ -44,6 +47,16 @@ func NewApplication() *Application {
 		Identities: id.NewIdentities("identities"),
 		Accounts:   id.NewAccounts("accounts"),
 		Utxo:       data.NewChainState("utxo", data.PERSISTENT),
+	}
+}
+
+// Initial the state of the application from persistent data
+func (app Application) Initialize() {
+	param := app.Admin.Load(data.DatabaseKey("NodeAccountName"))
+	if param != nil {
+		var name string
+		buffer, _ := comm.Deserialize(param, &name)
+		global.Current.NodeAccountName = *(buffer.(*string))
 	}
 }
 
@@ -77,6 +90,7 @@ type BasicState struct {
 	Amount  int64  `json:"coins"` // TODO: Should be corrected as Amount, not coins
 }
 
+// Use the Genesis block to initialze the system
 func (app Application) SetupState(stateBytes []byte) {
 	log.Debug("SetupState", "state", string(stateBytes))
 
@@ -84,16 +98,18 @@ func (app Application) SetupState(stateBytes []byte) {
 	des, _ := comm.Deserialize(stateBytes, &base)
 	state := des.(*BasicState)
 
-	publicKey, privateKey := id.GenerateKeys()
+	// TODO: Can't generate a different key for each node. Needs to be in the genesis? Or ignored?
+	//publicKey, privateKey := id.GenerateKeys([]byte(state.Account)) // TODO: switch with passphrase
+	publicKey, privateKey := id.PublicKey{}, id.PrivateKey{}
 
 	// TODO: This should probably only occur on the Admin node, for other nodes how do I know the key?
 	// Register the identity and account first
 	RegisterLocally(&app, state.Account, "OneLedger", data.ONELEDGER, publicKey, privateKey)
-	account, _ := app.Accounts.FindName(state.Account)
+	account, _ := app.Accounts.FindName(state.Account + "-OneLedger")
 
 	// TODO: Should be more flexible to match genesis block
 	balance := data.Balance{
-		Amount: data.Coin{Currency: "OLT", Amount: state.Amount},
+		Amount: data.NewCoin(state.Amount, "OLT"),
 	}
 	buffer, _ := comm.Serialize(balance)
 
@@ -102,7 +118,7 @@ func (app Application) SetupState(stateBytes []byte) {
 	app.Utxo.Delivered.SaveVersion()
 	app.Utxo.Commit()
 
-	log.Info("Set the Genesis State of the UTXO database")
+	log.Info("Genesis State UTXO database", "balance", balance)
 }
 
 // InitChain is called when a new chain is getting created
@@ -116,15 +132,20 @@ func (app Application) InitChain(req RequestInitChain) ResponseInitChain {
 
 // SetOption changes the underlying options for the ABCi app
 func (app Application) SetOption(req RequestSetOption) ResponseSetOption {
-	log.Debug("Message: SetOption")
+	log.Debug("Message: SetOption", "key", req.Key, "value", req.Value)
 
 	SetOption(&app, req.Key, req.Value)
 
-	return ResponseSetOption{Code: types.CodeTypeOK}
+	return ResponseSetOption{
+		Code: types.CodeTypeOK,
+		Log:  "Log Data",
+		Info: "Info Data",
+	}
 }
 
 // Info returns the current block information
 func (app Application) Info(req RequestInfo) ResponseInfo {
+
 	info := abci.NewResponseInfo(0, 0, 0)
 
 	// TODO: Get the correct height from the last committed tree
@@ -133,10 +154,11 @@ func (app Application) Info(req RequestInfo) ResponseInfo {
 	log.Debug("Message: Info", "req", req, "info", info)
 
 	return ResponseInfo{
-		Data: info.JSON(),
-		// Version: version,
-		// LastBlockHeight: lastHeight,
-		// LastBlockAppHash: lastAppHash,
+		Data:            info.JSON(),
+		Version:         convert.GetString64(app.Utxo.Version),
+		LastBlockHeight: int64(app.Utxo.Height),
+		// TODO: Should return a valid AppHash
+		//LastBlockAppHash: app.Utxo.Hash,
 	}
 }
 
@@ -146,7 +168,16 @@ func (app Application) Query(req RequestQuery) ResponseQuery {
 
 	result := HandleQuery(app, req.Path, req.Data)
 
-	return ResponseQuery{Key: action.Message("result"), Value: result}
+	return ResponseQuery{
+		Code:   2,
+		Log:    "Log Information",
+		Info:   "Info Information",
+		Index:  0,
+		Key:    action.Message("result"),
+		Value:  result,
+		Proof:  nil,
+		Height: int64(app.Utxo.Height),
+	}
 }
 
 // CheckTx tests to see if a transaction is valid
@@ -168,7 +199,16 @@ func (app Application) CheckTx(tx []byte) ResponseCheckTx {
 		return ResponseCheckTx{Code: err}
 	}
 
-	return ResponseCheckTx{Code: types.CodeTypeOK}
+	return ResponseCheckTx{
+		Code:      types.CodeTypeOK,
+		Data:      []byte("Data"),
+		Log:       "Log Data",
+		Info:      "Info Data",
+		GasWanted: 1000,
+		GasUsed:   1000,
+		Tags:      []common.KVPair(nil),
+		Fee:       common.KI64Pair{},
+	}
 }
 
 var chainKey data.DatabaseKey = data.DatabaseKey("chainId")
@@ -210,7 +250,16 @@ func (app Application) DeliverTx(tx []byte) ResponseDeliverTx {
 		}
 	}
 
-	return ResponseDeliverTx{Code: types.CodeTypeOK}
+	return ResponseDeliverTx{
+		Code:      types.CodeTypeOK,
+		Data:      []byte("Data"),
+		Log:       "Log Data",
+		Info:      "Info Data",
+		GasWanted: 1000,
+		GasUsed:   1000,
+		Tags:      []common.KVPair(nil),
+		Fee:       common.KI64Pair{},
+	}
 }
 
 // EndBlock is called at the end of all of the transactions
@@ -225,7 +274,9 @@ func (app Application) Commit() ResponseCommit {
 	log.Debug("Message: Commit")
 
 	// Commit any pending changes.
-	app.Utxo.Commit()
+	hash, version := app.Utxo.Commit()
+
+	log.Debug("Committed", "hash", hash, "version", version)
 
 	return ResponseCommit{}
 }

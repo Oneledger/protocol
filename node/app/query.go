@@ -6,10 +6,13 @@
 package app
 
 import (
+	"encoding/hex"
 	"fmt"
 	"strings"
 
+	"github.com/Oneledger/protocol/node/comm"
 	"github.com/Oneledger/protocol/node/data"
+	"github.com/Oneledger/protocol/node/err"
 	"github.com/Oneledger/protocol/node/id"
 	"github.com/Oneledger/protocol/node/log"
 	"github.com/Oneledger/protocol/node/version"
@@ -30,9 +33,45 @@ func HandleQuery(app Application, path string, message []byte) []byte {
 
 	case "/version":
 		return HandleVersionQuery(app, message)
+
+	case "/accountKey":
+		return HandleAccountKeyQuery(app, message)
+
+	case "/balance":
+		return HandleBalanceQuery(app, message)
 	}
 
 	return HandleError("Unknown Path", path, message)
+}
+
+// Get the account information for a given user
+func HandleAccountKeyQuery(app Application, message []byte) []byte {
+	log.Debug("AccountKeyQuery", "message", message)
+
+	text := string(message)
+
+	name := ""
+	parts := strings.Split(text, "=")
+	if len(parts) > 1 {
+		name = parts[1]
+	}
+	return AccountKey(app, name)
+}
+
+func AccountKey(app Application, name string) []byte {
+	identity, _ := app.Identities.FindName(name)
+
+	if identity != nil {
+		return []byte(hex.EncodeToString(identity.AccountKey))
+	}
+
+	// Maybe this is an AccountName, not an identity
+	account, _ := app.Accounts.FindName(name)
+	if account != nil {
+		return []byte(hex.EncodeToString(account.AccountKey()))
+	}
+
+	return []byte(nil)
 }
 
 // Get the account information for a given user
@@ -83,11 +122,12 @@ func HandleAccountQuery(app Application, message []byte) []byte {
 // Return the information for a given account
 func AccountInfo(app Application, name string) []byte {
 
+	var buffer string
 	if name == "" {
 		accounts := app.Accounts.FindAll()
 
 		count := fmt.Sprintf("%d", len(accounts))
-		buffer := "Answer[" + count + "]: "
+		buffer = "Answer[" + count + "]: "
 
 		for _, curr := range accounts {
 			buffer += curr.AsString()
@@ -100,11 +140,15 @@ func AccountInfo(app Application, name string) []byte {
 	}
 
 	account, _ := app.Accounts.FindName(name)
-	log.Debug("account", "account", account)
+	log.Debug("Accounts", "name", name, "account", account)
 
-	buffer := "Answer[1]: " + account.AsString()
-	if account.Chain() == data.ONELEDGER {
-		buffer += " " + GetBalance(app, account)
+	if account != nil {
+		buffer = "Answer[1]: " + account.AsString()
+		if account.Chain() == data.ONELEDGER {
+			buffer += " " + GetBalance(app, account)
+		}
+	} else {
+		buffer = "Answer[0]: "
 	}
 	return []byte(buffer)
 }
@@ -129,7 +173,24 @@ func UtxoInfo(app Application, name string) []byte {
 	if name == "" {
 		entries := app.Utxo.FindAll()
 		for key, value := range entries {
-			buffer += key + ":" + value.AsString() + ", "
+			account, errs := app.Accounts.FindKey([]byte(key))
+			if errs != err.SUCCESS {
+				log.Fatal("Accounts", "err", errs, "key", key)
+			}
+
+			var name string
+			if account == nil {
+				name = fmt.Sprintf("%X", key)
+			} else {
+				name = account.Name() + "@" + fmt.Sprintf("%X", key)
+			}
+
+			if value != nil {
+				buffer += name + ":" + value.AsString() + ", "
+			} else {
+				buffer += name + ":EMPTY, "
+			}
+
 		}
 
 	} else {
@@ -158,4 +219,33 @@ func HandleError(text string, path string, massage []byte) []byte {
 
 func HandleVersionQuery(app Application, message []byte) []byte {
 	return []byte(version.Current.String())
+}
+
+// Get the account information for a given user
+func HandleBalanceQuery(app Application, message []byte) []byte {
+	log.Debug("BalanceQuery", "message", message)
+
+	text := string(message)
+
+	var key []byte
+	parts := strings.Split(text, "=")
+	if len(parts) > 1 {
+		key, _ = hex.DecodeString(parts[1])
+	}
+	return Balance(app, key)
+}
+
+func Balance(app Application, accountKey []byte) []byte {
+
+	balance := app.Utxo.Find(accountKey)
+	if balance == nil {
+		//log.Fatal("Balance FAILED", "accountKey", accountKey)
+		log.Warn("Balance FAILED", "accountKey", accountKey)
+		result := data.NewBalance(0, "OLT")
+		balance = &result
+	}
+	//log.Debug("Balance", "key", accountKey, "balance", balance)
+
+	buffer, _ := comm.Serialize(balance)
+	return buffer
 }

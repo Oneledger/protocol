@@ -7,16 +7,16 @@ package action
 
 import (
 	"bytes"
+	"strings"
 
+	"github.com/Oneledger/protocol/node/chains/bitcoin"
 	"github.com/Oneledger/protocol/node/comm"
+	"github.com/Oneledger/protocol/node/convert"
 	"github.com/Oneledger/protocol/node/data"
 	"github.com/Oneledger/protocol/node/err"
 	"github.com/Oneledger/protocol/node/global"
 	"github.com/Oneledger/protocol/node/id"
 	"github.com/Oneledger/protocol/node/log"
-	"github.com/Oneledger/protocol/node/chains/bitcoin"
-	"github.com/Oneledger/protocol/node/global"
-	"github.com/Oneledger/protocol/node/chains/bitcoin/htlc"
 )
 
 // Synchronize a swap between two users
@@ -30,6 +30,7 @@ type Swap struct {
 	Fee          data.Coin     `json:"fee"`
 	Gas          data.Coin     `json:"fee"`
 	Nonce        int64         `json:"nonce"`
+	Preimage     []byte        `json:"preimage"`
 }
 
 // Ensure that all of the base values are at least reasonable.
@@ -37,14 +38,26 @@ func (transaction *Swap) Validate() err.Code {
 	log.Debug("Validating Swap Transaction")
 
 	if transaction.Party == nil {
+		log.Debug("Missing Party")
 		return err.MISSING_DATA
 	}
+
 	if transaction.CounterParty == nil {
+		log.Debug("Missing CounterParty")
 		return err.MISSING_DATA
 	}
-	if !transaction.Amount.IsValid() {
-		return err.MISSING_DATA
+
+	if !transaction.Amount.IsCurrency("BTC", "ETH") {
+		log.Debug("Swap on Currency isn't implement yet")
+		return err.NOT_IMPLEMENTED
 	}
+
+	if !transaction.Exchange.IsCurrency("BTC", "ETH") {
+		log.Debug("Swap on Currency isn't implement yet")
+		return err.NOT_IMPLEMENTED
+	}
+
+	log.Debug("Swap is validated!")
 	return err.SUCCESS
 }
 
@@ -56,10 +69,38 @@ func (transaction *Swap) ProcessCheck(app interface{}) err.Code {
 	return err.SUCCESS
 }
 
-func FindSwap(status *data.Datastore, key data.DatabaseKey) Transaction {
+// Start the swap
+func (transaction *Swap) ProcessDeliver(app interface{}) err.Code {
+	log.Debug("Processing Swap Transaction for DeliverTx")
+
+	if ProcessSwap(app, transaction) {
+		log.Debug("Expanding the Transaction into Functions")
+		commands := transaction.Expand(app)
+
+		transaction.Resolve(app, commands)
+
+		for i := 0; i < commands.Count(); i++ {
+			status := Execute(app, commands[i])
+			if status != err.SUCCESS {
+				log.Error("Failed to Execute", "command", commands[i])
+				return err.EXPAND_ERROR
+			}
+		}
+	} else {
+		log.Debug("Not Involved or Not Ready")
+	}
+
+	return err.SUCCESS
+}
+
+func FindSwap(status *data.Datastore, key id.AccountKey) Transaction {
 	result := status.Load(key)
-	var transaction Transaction
-	buffer, err := comm.Deserialize(result, transaction)
+	if result == nil {
+		return nil
+	}
+
+	var transaction Swap
+	buffer, err := comm.Deserialize(result, &transaction)
 	if err != nil {
 		return nil
 	}
@@ -67,74 +108,105 @@ func FindSwap(status *data.Datastore, key data.DatabaseKey) Transaction {
 }
 
 // TODO: Change to return Role as INITIATOR or PARTICIPANT
-func FindMatchingSwap(status *data.Datastore, counterParty id.Account, role Role, transaction *Swap) bool {
+func FindMatchingSwap(status *data.Datastore, accountKey id.AccountKey, transaction *Swap) *Swap {
 
-	result := FindSwap(status, counterParty.AccountKey())
+	result := FindSwap(status, accountKey)
 	if result != nil {
-		if MatchSwap(result.(*Swap), transaction) {
-			return true
+		entry := result.(*Swap)
+		if MatchSwap(entry, transaction) {
+			return entry
+		} else {
+			log.Debug("Swap doesn't match", "key", accountKey, "transaction", transaction, "entry", entry)
 		}
+	} else {
+		log.Debug("Swap not found", "key", accountKey)
 	}
 
-	return false
+	return nil
 }
 
+// Two matching swap requests from different parties
 func MatchSwap(left *Swap, right *Swap) bool {
 	if left.Base.Type != right.Base.Type {
+		log.Debug("Type is wrong")
 		return false
 	}
-	if left.Base.Sequence != right.Base.Sequence {
+	if left.Base.ChainId != right.Base.ChainId {
+		log.Debug("ChainId is wrong")
 		return false
 	}
-	if bytes.Compare(left.Party, right.Party) == 0 {
+	if bytes.Compare(left.Party, right.CounterParty) != 0 {
+		log.Debug("Party/CounterParty is wrong")
 		return false
 	}
-	if bytes.Compare(left.CounterParty, right.CounterParty) == 0 {
+	if bytes.Compare(left.CounterParty, right.Party) != 0 {
+		log.Debug("CounterParty/Party is wrong")
 		return false
 	}
-	if left.Amount != right.Amount {
+	if !left.Amount.Equals(right.Exchange) {
+		log.Debug("Amount/Exchange is wrong")
 		return false
 	}
+	if !left.Exchange.Equals(right.Amount) {
+		log.Debug("Exchange/Amount is wrong")
+		return false
+	}
+	if left.Nonce != right.Nonce {
+		log.Debug("Nonce is wrong")
+		return false
+	}
+
 	return true
 }
 
 func ProcessSwap(app interface{}, transaction *Swap) bool {
 	status := GetStatus(app)
-
 	account := transaction.GetNodeAccount(app)
-	role := transaction.GetRole(account)
 
-	if role == NONE {
-		log.Error("Can't find a role for this swap")
+	isParty := transaction.IsParty(account)
+
+	if isParty == nil {
+		log.Debug("No Account", "account", account)
 		return false
 	}
 
-	var primary id.Account
-	if role == INITIATOR {
-		primary = GetAccount(app, transaction.Party)
+	if *isParty {
+		otherSide := FindMatchingSwap(status, transaction.CounterParty, transaction)
+		if otherSide != nil {
+			return true
+		} else {
+			SaveSwap(status, transaction.CounterParty, transaction)
+			log.Debug("Not Ready", "account", account)
+			return false
+		}
 	} else {
-		primary = GetAccount(app, transaction.CounterParty)
+		otherSide := FindMatchingSwap(status, transaction.Party, transaction)
+		if otherSide != nil {
+			return true
+
+		} else {
+			SaveSwap(status, transaction.Party, transaction)
+			log.Debug("Not Ready", "account", account)
+			return false
+		}
 	}
 
-	SaveSwap(status, primary, transaction)
-
-	if FindMatchingSwap(status, primary, role, transaction) {
-		return true
-	}
+	log.Debug("Not Involved", "account", account)
 	return false
 }
 
-func SaveSwap(status *data.Datastore, account id.Account, transaction *Swap) {
+func SaveSwap(status *data.Datastore, accountKey id.AccountKey, transaction *Swap) {
+	log.Debug("SaveSwap", "key", accountKey)
 	buffer, _ := comm.Serialize(transaction)
-
-	status.Store(account.AccountKey(), buffer)
+	status.Store(accountKey, buffer)
+	status.Commit()
 }
 
 // Is this node one of the partipants in the swap
 func (transaction *Swap) ShouldProcess(app interface{}) bool {
 	account := transaction.GetNodeAccount(app)
 
-	if transaction.GetRole(account) != ALL {
+	if transaction.IsParty(account) != nil {
 		return true
 	}
 
@@ -148,96 +220,110 @@ func GetAccount(app interface{}, accountKey id.AccountKey) id.Account {
 	return account
 }
 
+// Map the identity to a specific account on a chain
+func GetChainAccount(app interface{}, name string, chain data.ChainType) id.Account {
+	identities := GetIdentities(app)
+	accounts := GetAccounts(app)
+
+	identity, _ := identities.FindName(name)
+	account, _ := accounts.FindKey(identity.Chain[chain])
+
+	return account
+}
+
 func (transaction *Swap) GetNodeAccount(app interface{}) id.Account {
 
-	identities := GetIdentities(app)
-	if identities == nil {
-		log.Error("Indentities database missing")
-		return nil
-	}
-
-	identity, _ := identities.FindName(global.Current.NodeAccountName)
-	if identity == nil {
-		log.Error("Node does not have name or not registered", "name", global.Current.NodeAccountName)
-		return nil
-	}
-
 	accounts := GetAccounts(app)
-	if identities == nil {
-		log.Error("Accounts database missing")
-		return nil
-	}
-
-	account, _ := accounts.FindIdentity(*identity)
-	if identity == nil {
-		log.Error("Node does not have account")
+	account, _ := accounts.FindName(global.Current.NodeAccountName)
+	if account == nil {
+		log.Error("Node does not have account", "name", global.Current.NodeAccountName)
+		accounts.Dump()
 		return nil
 	}
 
 	return account
 }
 
-func (transaction *Swap) GetRole(account id.Account) Role {
+func (transaction *Swap) IsParty(account id.Account) *bool {
+
 	if account == nil {
-		return NONE
+		log.Debug("Getting Role for empty account")
+		return nil
 	}
 
-	initiator := transaction.Party
-	participant := transaction.CounterParty
-
-	if bytes.Compare(initiator, account.AccountKey()) == 0 {
-		return INITIATOR
+	var isParty bool
+	if bytes.Compare(transaction.Party, account.AccountKey()) == 0 {
+		isParty = true
+		return &isParty
 	}
 
-	if bytes.Compare(participant, account.AccountKey()) == 0 {
-		return PARTICIPANT
+	if bytes.Compare(transaction.CounterParty, account.AccountKey()) == 0 {
+		isParty = false
+		return &isParty
 	}
 
 	// TODO: Shouldn't be in-band this way
-	return ALL
-}
-
-// Start the swap
-func (transaction *Swap) ProcessDeliver(app interface{}) err.Code {
-	log.Debug("Processing Swap Transaction for DeliverTx")
-
-	if ProcessSwap(app, transaction) {
-		commands := transaction.Expand(app)
-
-		Resolve(app, transaction, commands)
-
-		for i := 0; i < commands.Count(); i++ {
-			status := Execute(app, commands[i])
-			if status != err.SUCCESS {
-				log.Error("Failed to Execute", "command", commands[i])
-				return err.EXPAND_ERROR
-			}
-		}
-	}
-
-	return err.SUCCESS
+	return nil
 }
 
 // Given a transaction, expand it into a list of Commands to execute against various chains.
 func (transaction *Swap) Expand(app interface{}) Commands {
 	chains := GetChains(transaction)
 
-	return GetCommands(SWAP, chains)
+	account := transaction.GetNodeAccount(app)
+	isParty := transaction.IsParty(account)
+	role := PARTICIPANT
+	if *isParty {
+		role = INITIATOR
+	}
+
+	return GetCommands(SWAP, role, chains)
 }
 
 // Plug in data from the rest of a system into a set of commands
-func Resolve(app interface{}, transaction Transaction, commands Commands) {
+func (swap *Swap) Resolve(app interface{}, commands Commands) {
+	transaction := Transaction(swap)
+
+	account := swap.GetNodeAccount(app)
+
 	identities := GetIdentities(app)
 	_ = identities
 
 	utxo := GetUtxo(app)
 	_ = utxo
 
+	var iindex, pindex int
+
 	chains := GetChains(transaction)
 	for i := 0; i < len(commands); i++ {
-		//TODO: add parameter for actions
-		commands[i].Chain = chains[0]
+		isParty := swap.IsParty(account)
+		if *isParty {
+			commands[i].Chain = chains[0]
+			iindex = 0
+			pindex = 1
+		} else {
+			commands[i].Chain = chains[1]
+			iindex = 1
+			pindex = 0
+		}
+
+		role := PARTICIPANT
+		if *isParty {
+			role = INITIATOR
+		}
+
+		commands[i].Data[ROLE] = role
+		commands[i].Data[INITIATOR_ACCOUNT] = chains[iindex]
+		commands[i].Data[PARTICIPANT_ACCOUNT] = chains[pindex]
+
+		commands[i].Data[AMOUNT] = swap.Amount
+		commands[i].Data[EXCHANGE] = swap.Exchange
+		commands[i].Data[NONCE] = swap.Nonce
+		commands[i].Data[PREIMAGE] = swap.Preimage
+
+		commands[i].Data[PASSWORD] = "password" // TODO: Needs to be corrected
 	}
+	return
 }
 
 // Execute the function
@@ -248,20 +334,28 @@ func Execute(app interface{}, command Command) err.Code {
 	return err.NOT_IMPLEMENTED
 }
 
+func CreateContractBTC(context map[Parameter]FunctionValue) bool {
+	address := global.Current.BTCAddress
+	parts := strings.Split(address, ":")
+	port := convert.GetInt(parts[1], 46688)
 
-func CreateContractBTC(context map[string]string) bool {
-	cli := bitcoin.GetBtcClient(global.Current.BTCRpcPort)
+	role := GetRole(context[ROLE])
+	password := GetString(context[PASSWORD])
+
+	_ = role
+	_ = password
+
+	cli := bitcoin.GetBtcClient(port)
+	_ = cli
 	//todo: runCommand(initCmd,cli)
 
 	return true
 }
 
-func CreateContractETH(context map[string]string) bool {
+func CreateContractETH(context map[Parameter]FunctionValue) bool {
 	return true
 }
 
-func CreateContractOLT(context map[string]string) bool {
+func CreateContractOLT(context map[Parameter]FunctionValue) bool {
 	return true
 }
-
- 

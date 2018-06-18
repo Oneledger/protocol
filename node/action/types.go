@@ -10,6 +10,7 @@ package action
 import (
 	"bytes"
 
+	"github.com/Oneledger/protocol/node/comm"
 	"github.com/Oneledger/protocol/node/data"
 	"github.com/Oneledger/protocol/node/id"
 	"github.com/Oneledger/protocol/node/log"
@@ -53,4 +54,79 @@ func NewSendOutput(accountKey id.AccountKey, amount data.Coin) SendOutput {
 		AccountKey: accountKey,
 		Amount:     amount,
 	}
+}
+
+func CheckBalance(app interface{}, accountKey id.AccountKey, amount data.Coin) bool {
+	utxo := GetUtxo(app)
+
+	version := utxo.Delivered.Version64()
+	_, value := utxo.Delivered.GetVersioned(accountKey, version)
+	if value == nil {
+		log.Debug("Key not in database, setting to zero", "key", accountKey)
+		return true
+	}
+
+	var bal data.Balance
+	buffer, _ := comm.Deserialize(value, &bal)
+	if buffer == nil {
+		log.Debug("Failed to Deserialize", "key", accountKey)
+		return false
+	}
+
+	balance := buffer.(*data.Balance)
+	if !balance.Amount.Equals(amount) {
+		log.Warn("Mismatch", "key", accountKey, "amount", amount, "balance", balance)
+		//return false
+	}
+	return true
+}
+
+func CheckAmounts(app interface{}, inputs []SendInput, outputs []SendOutput) bool {
+	total := data.NewCoin(0, "OLT")
+	for _, input := range inputs {
+		if input.Amount.LessThan(0) {
+			log.Debug("Less Than 0", "input", input)
+			return false
+		}
+
+		if !input.Amount.IsCurrency("OLT") {
+			log.Debug("Send on Currency isn't implement yet")
+			return false
+		}
+
+		if bytes.Compare(input.AccountKey, []byte("")) == 0 {
+			log.Debug("Key is Empty", "input", input)
+			return false
+		}
+		if !CheckBalance(app, input.AccountKey, input.Amount) {
+			log.Debug("Balance is missing", "input", input)
+
+			// TODO: Temporarily disabled
+			//return false
+		}
+		total.Plus(input.Amount)
+	}
+	for _, output := range outputs {
+
+		if output.Amount.LessThan(0) {
+			log.Debug("Less Than 0", "output", output)
+			return false
+		}
+
+		if !output.Amount.IsCurrency("OLT") {
+			log.Debug("Send on Currency isn't implement yet")
+			return false
+		}
+
+		if bytes.Compare(output.AccountKey, []byte("")) == 0 {
+			log.Debug("Key is Empty", "output", output)
+			return false
+		}
+		total.Minus(output.Amount)
+	}
+	if !total.Equals(data.NewCoin(0, "OLT")) {
+		log.Debug("Doesn't add up", "inputs", inputs, "outputs", outputs)
+		return false
+	}
+	return true
 }

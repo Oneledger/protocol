@@ -16,8 +16,9 @@ import (
 type Register struct {
 	Base
 
-	Identity string
-	NodeName string
+	Identity   string
+	NodeName   string
+	AccountKey id.AccountKey
 }
 
 // Check the fields to make sure they have valid values.
@@ -32,9 +33,6 @@ func (transaction Register) Validate() err.Code {
 		return err.MISSING_DATA
 	}
 
-	// TODO: Make sure all of the parameters are there
-	// TODO: Check all signatures and keys
-	// TODO: Vet that the sender has the values
 	return err.SUCCESS
 }
 
@@ -43,20 +41,19 @@ func (transaction Register) ProcessCheck(app interface{}) err.Code {
 	log.Debug("Processing Register Transaction for CheckTx")
 
 	identities := GetIdentities(app)
-	id, errs := identities.FindName(transaction.Identity)
+	id, status := identities.FindName(transaction.Identity)
 
-	if errs != err.SUCCESS {
-		return errs
+	if status != err.SUCCESS {
+		return status
 	}
 
 	if id == nil {
-		log.Debug("Success, it is a new Identity", "id", id)
+		log.Debug("Success, it is a new Identity", "id", transaction.Identity)
 		return err.SUCCESS
 	}
 
+	// Not necessarily a failure, since this identity might be local
 	log.Debug("Identity already exists", "id", id)
-
-	// TODO: Not necessarily a failure, since this identity might be local
 	return err.SUCCESS
 }
 
@@ -69,26 +66,24 @@ func (transaction Register) ProcessDeliver(app interface{}) err.Code {
 	log.Debug("Processing Register Transaction for DeliverTx")
 
 	identities := GetIdentities(app)
-	entry, errs := identities.FindName(transaction.Identity)
+	entry, status := identities.FindName(transaction.Identity)
 
-	if errs != err.SUCCESS {
-		return errs
+	if status != err.SUCCESS {
+		return status
 	}
 
 	if entry != nil {
-		/*
-			if !entry.IsExternal() {
-				return err.SUCCESS
-			}
-		*/
-		log.Debug("Ignoring Duplicate Identity")
+		log.Debug("Ignoring Existin Identity")
 	} else {
-		identities.Add(id.NewIdentity(transaction.Identity, "Contact Information", true, global.Current.NodeName))
+		identities.Add(id.NewIdentity(transaction.Identity, "Contact Information",
+			true, global.Current.NodeName, transaction.AccountKey))
+		log.Info("Updated External Identity", "id", transaction.Identity, "key", transaction.AccountKey)
 	}
 
-	log.Info("Updated External Identity Reference!!!", "id", transaction.Identity)
-
 	return err.SUCCESS
+}
+
+func (transaction Register) Resolve(app interface{}, commands Commands) {
 }
 
 // Given a transaction, expand it into a list of Commands to execute against various chains.

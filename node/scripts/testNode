@@ -4,7 +4,7 @@ export CMD=$OLSCRIPT
 
 
 if [ -z "$1" ]; then
-	name="Admin"
+	name="David"
 else 
 	name=$1
 fi

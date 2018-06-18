@@ -21,11 +21,29 @@ const (
 	WAIT_FOR_CHAIN
 )
 
+type Parameter byte
+
+// TODO: Move to parameter.go
+const (
+	ROLE Parameter = iota
+	INITIATOR_ACCOUNT
+	PARTICIPANT_ACCOUNT
+
+	AMOUNT
+	EXCHANGE
+	NONCE
+	PREIMAGE
+
+	PASSWORD
+)
+
+type FunctionValue interface{}
+
 // A command to execute again a chain, needs to be polymorphic
 type Command struct {
 	Function CommandType
 	Chain    data.ChainType
-	Data     map[string]string
+	Data     map[Parameter]FunctionValue
 }
 
 func (command Command) Execute() bool {

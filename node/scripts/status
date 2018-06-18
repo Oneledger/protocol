@@ -1,0 +1,19 @@
+#!/bin/bash
+
+# List of pids if the chain is running
+# No output if the chain isn't running
+
+echo -n "  Fullnode: "
+pgrep -f "fullnode.*--node.*" | tr "\n" ","
+echo
+
+echo -n "Tendermint: "
+pgrep -f "tendermint.*--home.*" | tr "\n" ","
+echo
+
+echo -n "  Ethereum: "
+pgrep -f "geth.*--datadir.*" | tr "\n" ","
+echo
+
+echo -n "   Bitcoin: "
+pgrep -f "bitcoind.*-regtest.*" | tr "\n" ","

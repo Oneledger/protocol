@@ -12,9 +12,7 @@ import (
 	"github.com/Oneledger/protocol/node/action"
 	"github.com/Oneledger/protocol/node/app"
 	"github.com/Oneledger/protocol/node/convert"
-	"github.com/Oneledger/protocol/node/data"
 	"github.com/Oneledger/protocol/node/global"
-	"github.com/Oneledger/protocol/node/id"
 	"github.com/Oneledger/protocol/node/log"
 )
 
@@ -35,6 +33,8 @@ type RegisterArguments struct {
 func CreateRegisterRequest(args *RegisterArguments) []byte {
 	signers := GetSigners()
 
+	accountKey := GetAccountKey(args.Identity)
+
 	reg := &action.Register{
 		Base: action.Base{
 			Type:     action.REGISTER,
@@ -42,20 +42,12 @@ func CreateRegisterRequest(args *RegisterArguments) []byte {
 			Signers:  signers,
 			Sequence: global.Current.Sequence,
 		},
-		Identity: args.Identity,
-		NodeName: global.Current.NodeName,
+		Identity:   args.Identity,
+		NodeName:   global.Current.NodeName,
+		AccountKey: accountKey,
 	}
 
 	return SignAndPack(action.REGISTER, action.Transaction(reg))
-}
-
-// TODO: Get this from the database, need an inquiry from a trusted node?
-func GetBalance(account id.AccountKey) data.Coin {
-	balance := data.Coin{
-		Currency: "OLT",
-		Amount:   100,
-	}
-	return balance
 }
 
 type BalanceArguments struct {
@@ -83,43 +75,38 @@ func CreateSendRequest(args *SendArguments) []byte {
 	if args.Party == "" {
 		log.Fatal("Missing Party information")
 	}
+
 	if args.CounterParty == "" {
-		log.Fatal("Missing Party information")
+		log.Fatal("Missing CounterParty information")
 	}
 
 	// TODO: Can't convert identities to accounts, this way!
-	party := conv.GetAccountKey(args.Party)
-	counterParty := conv.GetAccountKey(args.CounterParty)
+	party := GetAccountKey(args.Party)
+	counterParty := GetAccountKey(args.CounterParty)
 
-	amount := data.Coin{
-		Currency: conv.GetCurrency(args.Currency),
-		Amount:   conv.GetInt64(args.Amount),
+	if args.Currency == "" || args.Amount == "" {
+		log.Fatal("Missing an amount")
 	}
+
+	amount := conv.GetCoin(args.Amount, args.Currency)
 
 	// Build up the Inputs
 	partyBalance := GetBalance(party)
 	counterPartyBalance := GetBalance(counterParty)
 
-	inputs := make([]action.SendInput, 2)
+	inputs := make([]action.SendInput, 0)
 	inputs = append(inputs,
 		action.NewSendInput(party, partyBalance),
 		action.NewSendInput(counterParty, counterPartyBalance))
 
 	// Build up the outputs
-	outputs := make([]action.SendOutput, 2)
+	outputs := make([]action.SendOutput, 0)
 	outputs = append(outputs,
 		action.NewSendOutput(party, partyBalance.Minus(amount)),
 		action.NewSendOutput(counterParty, counterPartyBalance.Plus(amount)))
 
-	gas := data.Coin{
-		Currency: conv.GetCurrency(args.Currency),
-		Amount:   conv.GetInt64(args.Gas),
-	}
-
-	fee := data.Coin{
-		Currency: conv.GetCurrency(args.Currency),
-		Amount:   conv.GetInt64(args.Fee),
-	}
+	fee := conv.GetCoin(args.Fee, args.Currency)
+	gas := conv.GetCoin(args.Gas, args.Currency)
 
 	if conv.HasErrors() {
 		Console.Error(conv.GetErrors())
@@ -143,14 +130,71 @@ func CreateSendRequest(args *SendArguments) []byte {
 	return SignAndPack(action.SEND, action.Transaction(send))
 }
 
+// CreateRequest builds and signs the transaction based on the arguments
+func CreateMintRequest(args *SendArguments) []byte {
+	signers := GetSigners()
+
+	conv := convert.NewConvert()
+
+	if args.Party == "" {
+		log.Fatal("Missing Party information", "args", args)
+	}
+
+	// TODO: Can't convert identities to accounts, this way!
+	party := GetAccountKey(args.Party)
+	zero := GetAccountKey("Zero-OneLedger")
+
+	amount := conv.GetCoin(args.Amount, args.Currency)
+
+	// Build up the Inputs
+	zeroBalance := GetBalance(zero)
+	partyBalance := GetBalance(party)
+
+	inputs := make([]action.SendInput, 0)
+	inputs = append(inputs,
+		action.NewSendInput(zero, zeroBalance),
+		action.NewSendInput(party, partyBalance))
+
+	// Build up the outputs
+	outputs := make([]action.SendOutput, 0)
+	outputs = append(outputs,
+		action.NewSendOutput(zero, zeroBalance.Minus(amount)),
+		action.NewSendOutput(party, partyBalance.Plus(amount)))
+
+	gas := conv.GetCoin(args.Gas, args.Currency)
+	fee := conv.GetCoin(args.Fee, args.Currency)
+
+	if conv.HasErrors() {
+		Console.Error(conv.GetErrors())
+		os.Exit(-1)
+	}
+
+	// Create base transaction
+	send := &action.Send{
+		Base: action.Base{
+			Type:     action.SEND,
+			ChainId:  app.ChainId,
+			Signers:  signers,
+			Owner:    zero,
+			Sequence: global.Current.Sequence,
+		},
+		Inputs:  inputs,
+		Outputs: outputs,
+		Fee:     fee,
+		Gas:     gas,
+	}
+
+	return SignAndPack(action.SEND, action.Transaction(send))
+}
+
 // Arguments to the command
 type SwapArguments struct {
 	Party        string
 	CounterParty string
 	Amount       string
+	Currency     string
 	Fee          string
 	Gas          string // TODO: Not sure this is necessary, unless the chain is like Ethereum
-	Currency     string
 	Exchange     string
 	Excurrency   string
 	Nonce        int64
@@ -160,35 +204,17 @@ type SwapArguments struct {
 func CreateSwapRequest(args *SwapArguments) []byte {
 	log.Debug("swap args", "args", args)
 
-	// TODO: Need better validation and error handling...
-
 	conv := convert.NewConvert()
 
-	party := conv.GetAccountKey(args.Party)
-	counterParty := conv.GetAccountKey(args.CounterParty)
+	party := GetAccountKey(args.Party)
+	counterParty := GetAccountKey(args.CounterParty)
 
-	// TOOD: a clash with the basic data model
 	signers := GetSigners()
 
-	fee := data.Coin{
-		Currency: conv.GetCurrency(args.Currency),
-		Amount:   conv.GetInt64(args.Fee),
-	}
-
-	gas := data.Coin{
-		Currency: conv.GetCurrency(args.Currency),
-		Amount:   conv.GetInt64(args.Gas),
-	}
-
-	amount := data.Coin{
-		Currency: conv.GetCurrency(args.Currency),
-		Amount:   conv.GetInt64(args.Amount),
-	}
-
-	exchange := data.Coin{
-		Currency: conv.GetCurrency(args.Excurrency),
-		Amount:   conv.GetInt64(args.Exchange),
-	}
+	fee := conv.GetCoin(args.Fee, "OLT")
+	gas := conv.GetCoin(args.Gas, "OLT")
+	amount := conv.GetCoin(args.Amount, args.Currency)
+	exchange := conv.GetCoin(args.Exchange, args.Excurrency)
 
 	if conv.HasErrors() {
 		Console.Error(conv.GetErrors())
@@ -200,6 +226,7 @@ func CreateSwapRequest(args *SwapArguments) []byte {
 			Type:     action.SWAP,
 			ChainId:  app.ChainId,
 			Signers:  signers,
+			Owner:    party,
 			Sequence: global.Current.Sequence,
 		},
 		Party:        party,

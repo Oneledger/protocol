@@ -1,5 +1,7 @@
+/*
+	Copyright 2017 - 2018 OneLedger
+*/
 package common
-
 
 import (
 	"fmt"
