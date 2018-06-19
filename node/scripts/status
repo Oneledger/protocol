@@ -17,3 +17,4 @@ echo
 
 echo -n "   Bitcoin: "
 pgrep -f "bitcoind.*-regtest.*" | tr "\n" ","
+echo
