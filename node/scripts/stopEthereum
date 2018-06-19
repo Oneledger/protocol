@@ -11,6 +11,6 @@ echo "Killing all Ethereum process" >> $LOG/ethereum.log
 
 pkill geth.*
 
-sleep 10
+sleep 5
 
 echo "Running Ethereum process: $(pgrep geth.* | wc -l)"

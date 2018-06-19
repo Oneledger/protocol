@@ -11,13 +11,15 @@ contract HTLC {
     uint256 public lockPeriod;
     uint256 public startFromTime;
     bytes32 public scrHash;
-    bytes32 private scr;
+    bytes private scr;
 
     constructor(
         address _sender
     ) public {
         require(_sender != address(0));
         sender = _sender;
+        startFromTime = now;
+        lockPeriod = 0;
     }
 
     event Release(address sender, address receiver, uint256 value);
@@ -35,6 +37,7 @@ contract HTLC {
         require(_receiver != address(0));
         require(_lockPeriod >= 24 hours );
         require(balance > 0);
+        require(startFromTime + lockPeriod < now );
 
         receiver = _receiver;
         lockPeriod = _lockPeriod;
@@ -52,12 +55,13 @@ contract HTLC {
         return true;
     }
 
-    function validate(bytes32 scr_) private view returns (bool) {
-        return keccak256(abi.encodePacked(scr_)) == scrHash;
+    function validate(bytes scr_) public view {
+        require(keccak256(abi.encodePacked(scr_)) == scrHash);
+        require(balance > 0);
     }
 
-    function redeem(bytes32 scr_) public returns (bool) {
-        require(validate(scr_));
+    function redeem(bytes scr_) public returns (bool) {
+        validate(scr_);
         scr = scr_;
         address(receiver).transfer(balance);
         balance = 0;
@@ -65,9 +69,10 @@ contract HTLC {
         return true;
     }
 
-    function refund(bytes32 scr_) public returns (bool) {
+    function refund(bytes scr_) public returns (bool) {
         require((startFromTime + lockPeriod) > now);
-        require(validate(scr_));
+        validate(scr_);
+
 
         address(sender).transfer(balance);
         balance = 0;
@@ -75,9 +80,7 @@ contract HTLC {
         return true;
     }
 
-    function extractMsg() public view returns (bytes32) {
-        require(msg.sender == receiver);
-        require(validate(scr));
+    function extractMsg() public view returns (bytes) {
         return scr;
     }
 
