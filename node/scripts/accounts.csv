@@ -1,4 +1,4 @@
-Identity,NodeName,RPCAddress,P2PAddress,AppAddress,BTCAddress,ETHAddress,
+Identity,NodeName,RPCAddress,P2PAddress,AppAddress,BTCAddress,ETHAddress
 David,David-Node,46601,46611,46621,18831,28101
 Alice,Alice-Node,46602,46612,46622,18832,28102
 Bob,Bob-Node,46603,46613,46623,18833,28103

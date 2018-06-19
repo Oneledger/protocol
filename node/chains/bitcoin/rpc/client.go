@@ -1,14 +1,16 @@
 package rpc
 
 import (
-	"io/ioutil"
-	"crypto/tls"
 	"bytes"
-	"time"
-	"net/http"
+	"crypto/tls"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io/ioutil"
+	"net/http"
+	"time"
+
+	"github.com/ethereum/go-ethereum/log"
 )
 
 const (
@@ -96,6 +98,7 @@ func (c *BTCRpcClient) doTimeoutRequest(timer *time.Timer, req *http.Request) (*
 
 // call prepare & exec the request
 func (c *BTCRpcClient) call(method string, params interface{}) (rr rpcResponse, err error) {
+	log.Debug("CALL")
 	connectTimer := time.NewTimer(RPCCLIENT_TIMEOUT * time.Second)
 	rpcR := rpcRequest{time.Now().UnixNano(), "1.0", method, params}
 	payloadBuffer := &bytes.Buffer{}
@@ -131,6 +134,7 @@ func (c *BTCRpcClient) call(method string, params interface{}) (rr rpcResponse, 
 		err = errors.New("HTTP error: " + resp.Status)
 		return
 	}
+	log.Debug("DeepClient", "data", data)
 	err = json.Unmarshal(data, &rr)
 	return
 }

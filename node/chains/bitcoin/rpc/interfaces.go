@@ -4,8 +4,10 @@ import (
 	"encoding/json"
 	"errors"
 	"strconv"
-)
 
+	"github.com/Oneledger/protocol/node/log"
+	//"github.com/ethereum/go-ethereum/log"
+)
 
 // Bitcoind - represents a Bitcoind client
 type Bitcoind struct {
@@ -374,11 +376,14 @@ func (b *Bitcoind) ValidateAddress(address string) (va ValidateAddressResponse, 
 }
 
 //generate blockNumber of block on regtest network
-func (b *Bitcoind) Generate(blockNumber uint64) (bh string, err error) {
-	r, err := b.client.call("generate", []uint64{blockNumber} )
+func (b *Bitcoind) Generate(blockNumber uint64) (bh []string, err error) {
+	log.Debug("GENERATE")
+	r, err := b.client.call("generate", []uint64{blockNumber})
+	log.Debug("Call", "r", r, "err", err)
 	if err = handleError(err, &r); err != nil {
 		return
 	}
+	log.Debug("Unmarshal", "r", r, "err", err)
 	err = json.Unmarshal(r.Result, &bh)
 	return
 }
