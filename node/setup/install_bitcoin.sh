@@ -1,15 +1,15 @@
-#! /bin/bash
+#!/bin/bash
 
 # Install dependencies using Homebrew on Mac
 install_dependencies_on_mac () {
-	brew install autoconf 
-	brew install automake 
-	brew install libtool 
-	brew install boost 
-	brew install miniupnpc 
-	brew install openssl 
-	brew install pkg-config 
-	brew install protobuf 
+	brew install autoconf
+	brew install automake
+	brew install libtool
+	brew install boost
+	brew install miniupnpc
+	brew install openssl
+	brew install pkg-config
+	brew install protobuf
 	brew install libevent
 	# Install berkeley-db
 	brew install berkeley-db4
@@ -21,10 +21,10 @@ install_dependencies_on_mac () {
 build_bitcoin_on_mac () {
 	# Clone source code
 	git clone https://github.com/bitcoin/bitcoin.git
-	
+
 	cd bitcoin
 	git checkout v0.16.0
-	
+
 	# Build
 	./autogen.sh
 	# Disable the GUI
@@ -56,7 +56,7 @@ case "$current_uname" in
 	else
 		brew update
 	fi
-	
+
 	# Test if bitcoind installed
 	which -s bitcoind
 	if [[ $? != 0 ]] ; then
