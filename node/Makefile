@@ -2,22 +2,28 @@ GOTOOLS = \
 	  github.com/mitchellh/gox \
 	  github.com/Masterminds/glide
 
-all: test 
+all: test
+
+#
+# Make sure the environment variables are setup correctly
+#
+check:
+	@./checkEnv || exit 1
 
 #
 # Initialize the dependencies
 #
-setup: tools
-	cd setup
-	./install.sh
-	cd ..
-	dep init
+setup: check tools
+	./setup/install.sh
+	#dep init
+	@echo "==== Running dep ensure, this may take awhile... ===="
 	dep ensure
+	@echo "==== Done setting up dependencies! ===="
 
 #
 # Update the dependencies if they have changed.
 #
-update: 
+update: check
 	dep ensure
 
 #
@@ -25,13 +31,6 @@ update:
 #
 tools:
 	go get -u -v $(GOTOOLS)
-
-#
-# Build a local copy, not that useful
-#
-build:
-	go build -o testFullnode github.com/Oneledger/protocol/node/cmd/fullnode
-	go build -o testOlclient github.com/Oneledger/protocol/node/cmd/olclient
 
 #
 # Build and install a copy into bin
@@ -42,13 +41,13 @@ install:
 #
 # List out all of the tendermint processes
 #
-list: 
+list:
 	pgrep -lf tendermint
 
 #
 # Check out the running status
 #
-status: 
+status: check
 	./scripts/status
 
 #
@@ -60,7 +59,7 @@ utest:
 #
 # System Testing, bring up everything
 #
-test: reset install start
+test: check reset install start
 	@echo "OneLedger Initialize"
 	./scripts/stopOneLedger
 
@@ -86,31 +85,31 @@ swaptest: reset install
 restart: reset install
 	./scripts/startOneLedger
 
-start: install
+start: check install
 	./scripts/startOneLedger
 
 #
 # System Testing, bring it all down
 #
-stop: 
+stop: check
 	./scripts/stopOneLedger
 
 #
 # Reset all of the chains, back to genesis
 #
-reset: stop
+reset: check stop
 	./scripts/resetOneLedger 4
 
 #
 # Startup a tmux monitor
 #
-monitor:
+monitor: check
 	./scripts/monitor
 
 #
 # stop a tmux monitor
 #
-stopmon:
+stopmon: check
 	./scripts/stopmon
 
 #
