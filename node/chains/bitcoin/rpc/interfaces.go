@@ -4,6 +4,16 @@ import (
 	"encoding/json"
 	"errors"
 	"strconv"
+	"encoding/hex"
+	"bytes"
+	"github.com/btcsuite/btcd/wire"
+	"github.com/btcsuite/btcutil"
+	"fmt"
+	"github.com/btcsuite/btcd/chaincfg"
+	"github.com/btcsuite/btcd/chaincfg/chainhash"
+	"github.com/btcsuite/btcd/txscript"
+	"github.com/btcsuite/btcwallet/wallet/txrules"
+	"github.com/btcsuite/btcd/btcjson"
 )
 
 
@@ -149,22 +159,6 @@ func (b *Bitcoind) GetNewAddress(account ...string) (addr string, err error) {
 		return
 	}
 	err = json.Unmarshal(r.Result, &addr)
-	return
-}
-
-// GetRawChangeAddress Returns a new Bitcoin address, for receiving change.
-// This is for use with raw transactions, NOT normal use.
-func (b *Bitcoind) GetRawChangeAddress(account ...string) (rawAddress string, err error) {
-	// 0 or 1 account
-	if len(account) > 1 {
-		err = errors.New("Bad parameters for GetRawChangeAddress: you can set 0 or 1 account")
-		return
-	}
-	r, err := b.client.call("getrawchangeaddress", account)
-	if err = handleError(err, &r); err != nil {
-		return
-	}
-	err = json.Unmarshal(r.Result, &rawAddress)
 	return
 }
 
@@ -381,4 +375,236 @@ func (b *Bitcoind) Generate(blockNumber uint64) (bh string, err error) {
 	}
 	err = json.Unmarshal(r.Result, &bh)
 	return
+}
+
+// DumpPrivKey return private key as string associated to public <address>
+func (b *Bitcoind) DumpPrivKey(address btcutil.Address) (*btcutil.WIF, error) {
+	addr := address.EncodeAddress()
+	res, err := b.client.call("dumpprivkey", []string{addr})
+
+	// Unmarshal result as a string.
+	var privKeyWIF string
+	err = json.Unmarshal(res.Result, &privKeyWIF)
+	if err != nil {
+		return nil, err
+	}
+
+	return btcutil.DecodeWIF(privKeyWIF)
+}
+
+func (b *Bitcoind) FundRawTransaction(tx *wire.MsgTx, feePerKb btcutil.Amount) (fundedTx *wire.MsgTx, fee btcutil.Amount, err error) {
+	var buf bytes.Buffer
+	buf.Grow(tx.SerializeSize())
+	tx.Serialize(&buf)
+	param0, err := json.Marshal(hex.EncodeToString(buf.Bytes()))
+	if err != nil {
+		return nil, 0, err
+	}
+	param1, err := json.Marshal(struct {
+		FeeRate float64 `json:"feeRate"`
+	}{
+		FeeRate: feePerKb.ToBTC(),
+	})
+	if err != nil {
+		return nil, 0, err
+	}
+	params := []json.RawMessage{param0, param1}
+	rawResp, err := b.client.call("fundrawtransaction", params)
+
+	if err != nil {
+		return nil, 0, err
+	}
+	var resp struct {
+		Hex       string  `json:"hex"`
+		Fee       float64 `json:"fee"`
+		ChangePos float64 `json:"changepos"`
+	}
+	err = json.Unmarshal(rawResp.Result, &resp)
+	if err != nil {
+		return nil, 0, err
+	}
+	fundedTxBytes, err := hex.DecodeString(resp.Hex)
+	if err != nil {
+		return nil, 0, err
+	}
+	fundedTx = &wire.MsgTx{}
+	err = fundedTx.Deserialize(bytes.NewReader(fundedTxBytes))
+	if err != nil {
+		return nil, 0, err
+	}
+	feeAmount, err := btcutil.NewAmount(resp.Fee)
+	if err != nil {
+		return nil, 0, err
+	}
+	return fundedTx, feeAmount, nil
+}
+
+// getFeePerKb queries the wallet for the transaction relay fee/kB to use and
+// the minimum mempool relay fee.  It first tries to get the user-set fee in the
+// wallet.  If unset, it attempts to find an estimate using estimatefee 6.  If
+// both of these fail, it falls back to mempool relay fee policy.
+func (b *Bitcoind) GetFeePerKb() (useFee, relayFee btcutil.Amount, err error) {
+	var netInfoResp struct {
+		RelayFee float64 `json:"relayfee"`
+	}
+	var walletInfoResp struct {
+		PayTxFee float64 `json:"paytxfee"`
+	}
+	var estimateResp struct {
+		FeeRate float64 `json:"feerate"`
+	}
+
+	netInfoRawResp, err := b.client.call("getnetworkinfo", nil)
+	if err == nil {
+		err = json.Unmarshal(netInfoRawResp.Result, &netInfoResp)
+		if err != nil {
+			return 0, 0, err
+		}
+	}
+	walletInfoRawResp, err := b.client.call("getwalletinfo", nil)
+	if err == nil {
+		err = json.Unmarshal(walletInfoRawResp.Result, &walletInfoResp)
+		if err != nil {
+			return 0, 0, err
+		}
+	}
+
+	relayFee, err = btcutil.NewAmount(netInfoResp.RelayFee)
+	if err != nil {
+		return 0, 0, err
+	}
+	payTxFee, err := btcutil.NewAmount(walletInfoResp.PayTxFee)
+	if err != nil {
+		return 0, 0, err
+	}
+
+	// Use user-set wallet fee when set and not lower than the network relay
+	// fee.
+	if payTxFee != 0 {
+		maxFee := payTxFee
+		if relayFee > maxFee {
+			maxFee = relayFee
+		}
+		return maxFee, relayFee, nil
+	}
+
+	params := []json.RawMessage{[]byte("6")}
+	estimateRawResp, err := b.client.call("estimatesmartfee", params)
+	if err != nil {
+		return 0, 0, err
+	}
+
+	err = json.Unmarshal(estimateRawResp.Result, &estimateResp)
+	if err == nil && estimateResp.FeeRate > 0 {
+		useFee, err = btcutil.NewAmount(estimateResp.FeeRate)
+		if relayFee > useFee {
+			useFee = relayFee
+		}
+		return useFee, relayFee, err
+	}
+
+	fmt.Println("warning: falling back to mempool relay fee policy")
+	return relayFee, relayFee, nil
+}
+
+var (
+	chainParams = &chaincfg.MainNetParams
+)
+
+// getRawChangeAddress calls the getrawchangeaddress JSON-RPC method.  It is
+// implemented manually as the rpcclient implementation always passes the
+// account parameter which was removed in Bitcoin Core 0.15.
+func (b *Bitcoind) GetRawChangeAddress() (btcutil.Address, error) {
+	params := []json.RawMessage{[]byte(`"legacy"`)}
+	rawResp, err := b.client.call("getrawchangeaddress", params)
+	if err != nil {
+		return nil, err
+	}
+	var addrStr string
+	err = json.Unmarshal(rawResp.Result, &addrStr)
+	if err != nil {
+		return nil, err
+	}
+	addr, err := btcutil.DecodeAddress(addrStr, chainParams)
+	if err != nil {
+		return nil, err
+	}
+	if !addr.IsForNet(chainParams) {
+		return nil, fmt.Errorf("address %v is not intended for use on %v",
+			addrStr, chainParams.Name)
+	}
+	if _, ok := addr.(*btcutil.AddressPubKeyHash); !ok {
+		return nil, fmt.Errorf("getrawchangeaddress: address %v is not P2PKH",
+			addr)
+	}
+	return addr, nil
+}
+
+
+func (b *Bitcoind) PublishTx(tx *wire.MsgTx, name string) (*chainhash.Hash, error) {
+	txHex := ""
+	if tx != nil {
+		// Serialize the transaction and convert to hex string.
+		buf := bytes.NewBuffer(make([]byte, 0, tx.SerializeSize()))
+		if err := tx.Serialize(buf); err != nil {
+
+		}
+		txHex = hex.EncodeToString(buf.Bytes())
+	}
+
+	txHash, err := b.client.call("sendrawtransaction", []interface{}{txHex, false})
+	if err != nil {
+		return nil, fmt.Errorf("sendrawtransaction: %v", err)
+	}
+	fmt.Printf("Published %s transaction (%v)\n", name, txHash)
+	// Unmarshal result as a string.
+	var txHashStr string
+	err = json.Unmarshal(txHash.Result, &txHashStr)
+	if err != nil {
+		return nil, err
+	}
+	return chainhash.NewHashFromStr(txHashStr)
+}
+
+// SignRawTransaction signs inputs for the passed transaction and returns the
+// signed transaction as well as whether or not all inputs are now signed.
+//
+// This function assumes the RPC server already knows the input transactions and
+// private keys for the passed transaction which needs to be signed and uses the
+// default signature hash type.  Use one of the SignRawTransaction# variants to
+// specify that information if needed.
+func (b *Bitcoind) SignRawTransaction(tx *wire.MsgTx) (*wire.MsgTx, bool, error) {
+	txHex := ""
+	if tx != nil {
+		// Serialize the transaction and convert to hex string.
+		buf := bytes.NewBuffer(make([]byte, 0, tx.SerializeSize()))
+		if err := tx.Serialize(buf); err != nil {
+
+		}
+		txHex = hex.EncodeToString(buf.Bytes())
+	}
+
+	res, err := b.client.call("signrawtransaction", []interface{}{txHex})
+	if err != nil {
+		return nil, false, err
+	}
+	// Unmarshal as a signrawtransaction result.
+	var signRawTxResult btcjson.SignRawTransactionResult
+	err = json.Unmarshal(res.Result, &signRawTxResult)
+	if err != nil {
+		return nil, false, err
+	}
+
+	// Decode the serialized transaction hex to raw bytes.
+	serializedTx, err := hex.DecodeString(signRawTxResult.Hex)
+	if err != nil {
+		return nil, false, err
+	}
+
+	// Deserialize the transaction and return it.
+	var msgTx wire.MsgTx
+	if err := msgTx.Deserialize(bytes.NewReader(serializedTx)); err != nil {
+		return nil, false, err
+	}
+	return &msgTx, signRawTxResult.Complete, nil
 }

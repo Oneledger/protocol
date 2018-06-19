@@ -4,15 +4,12 @@ import (
 	"bytes"
 	"crypto/rand"
 	"crypto/sha256"
-	"encoding/hex"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"net"
 
 	"github.com/btcsuite/btcd/chaincfg"
-	"github.com/btcsuite/btcd/chaincfg/chainhash"
-	rpc "github.com/btcsuite/btcd/rpcclient"
+	"../rpc"
 	"github.com/btcsuite/btcd/txscript"
 	"github.com/btcsuite/btcd/wire"
 	"github.com/btcsuite/btcutil"
@@ -20,6 +17,7 @@ import (
 	"golang.org/x/crypto/ripemd160"
 	"flag"
 	"time"
+	"github.com/btcsuite/btcd/chaincfg/chainhash"
 )
 
 const verify = true
@@ -63,15 +61,15 @@ var (
 //   cp2 redeems btc with S
 
 
-type Command interface {
-	RunCommand(*rpc.Client) error
-}
-
-// offline commands don't require wallet RPC.
-type OfflineCommand interface {
-	Command
-	RunOfflineCommand() error
-}
+//type Command interface {
+//	RunCommand(*rpc.Bitcoind) error
+//}
+//
+//// offline commands don't require wallet RPC.
+//type OfflineCommand interface {
+//	Command
+//	RunOfflineCommand() error
+//}
 
 type InitiateCmd struct {
 	cp2Addr *btcutil.AddressPubKeyHash
@@ -129,179 +127,6 @@ func walletPort(params *chaincfg.Params) string {
 	default:
 		return ""
 	}
-}
-
-// createSig creates and returns the serialized raw signature and compressed
-// pubkey for a transaction input signature.  Due to limitations of the Bitcoin
-// Core RPC API, this requires dumping a private key and signing in the client,
-// rather than letting the wallet sign.
-func createSig(tx *wire.MsgTx, idx int, pkScript []byte, addr btcutil.Address,
-	c *rpc.Client) (sig, pubkey []byte, err error) {
-
-	wif, err := c.DumpPrivKey(addr)
-	if err != nil {
-		return nil, nil, err
-	}
-	sig, err = txscript.RawTxInSignature(tx, idx, pkScript, txscript.SigHashAll, wif.PrivKey)
-	if err != nil {
-		return nil, nil, err
-	}
-	return sig, wif.PrivKey.PubKey().SerializeCompressed(), nil
-}
-
-// fundRawTransaction calls the fundrawtransaction JSON-RPC method.  It is
-// implemented manually as client support is currently missing from the
-// btcd/rpcclient package.
-func fundRawTransaction(c *rpc.Client, tx *wire.MsgTx, feePerKb btcutil.Amount) (fundedTx *wire.MsgTx, fee btcutil.Amount, err error) {
-	var buf bytes.Buffer
-	buf.Grow(tx.SerializeSize())
-	tx.Serialize(&buf)
-	param0, err := json.Marshal(hex.EncodeToString(buf.Bytes()))
-	if err != nil {
-		return nil, 0, err
-	}
-	param1, err := json.Marshal(struct {
-		FeeRate float64 `json:"feeRate"`
-	}{
-		FeeRate: feePerKb.ToBTC(),
-	})
-	if err != nil {
-		return nil, 0, err
-	}
-	params := []json.RawMessage{param0, param1}
-	rawResp, err := c.RawRequest("fundrawtransaction", params)
-	if err != nil {
-		return nil, 0, err
-	}
-	var resp struct {
-		Hex       string  `json:"hex"`
-		Fee       float64 `json:"fee"`
-		ChangePos float64 `json:"changepos"`
-	}
-	err = json.Unmarshal(rawResp, &resp)
-	if err != nil {
-		return nil, 0, err
-	}
-	fundedTxBytes, err := hex.DecodeString(resp.Hex)
-	if err != nil {
-		return nil, 0, err
-	}
-	fundedTx = &wire.MsgTx{}
-	err = fundedTx.Deserialize(bytes.NewReader(fundedTxBytes))
-	if err != nil {
-		return nil, 0, err
-	}
-	feeAmount, err := btcutil.NewAmount(resp.Fee)
-	if err != nil {
-		return nil, 0, err
-	}
-	return fundedTx, feeAmount, nil
-}
-
-// getFeePerKb queries the wallet for the transaction relay fee/kB to use and
-// the minimum mempool relay fee.  It first tries to get the user-set fee in the
-// wallet.  If unset, it attempts to find an estimate using estimatefee 6.  If
-// both of these fail, it falls back to mempool relay fee policy.
-func getFeePerKb(c *rpc.Client) (useFee, relayFee btcutil.Amount, err error) {
-	var netInfoResp struct {
-		RelayFee float64 `json:"relayfee"`
-	}
-	var walletInfoResp struct {
-		PayTxFee float64 `json:"paytxfee"`
-	}
-	var estimateResp struct {
-		FeeRate float64 `json:"feerate"`
-	}
-
-	netInfoRawResp, err := c.RawRequest("getnetworkinfo", nil)
-	if err == nil {
-		err = json.Unmarshal(netInfoRawResp, &netInfoResp)
-		if err != nil {
-			return 0, 0, err
-		}
-	}
-	walletInfoRawResp, err := c.RawRequest("getwalletinfo", nil)
-	if err == nil {
-		err = json.Unmarshal(walletInfoRawResp, &walletInfoResp)
-		if err != nil {
-			return 0, 0, err
-		}
-	}
-
-	relayFee, err = btcutil.NewAmount(netInfoResp.RelayFee)
-	if err != nil {
-		return 0, 0, err
-	}
-	payTxFee, err := btcutil.NewAmount(walletInfoResp.PayTxFee)
-	if err != nil {
-		return 0, 0, err
-	}
-
-	// Use user-set wallet fee when set and not lower than the network relay
-	// fee.
-	if payTxFee != 0 {
-		maxFee := payTxFee
-		if relayFee > maxFee {
-			maxFee = relayFee
-		}
-		return maxFee, relayFee, nil
-	}
-
-	params := []json.RawMessage{[]byte("6")}
-	estimateRawResp, err := c.RawRequest("estimatesmartfee", params)
-	if err != nil {
-		return 0, 0, err
-	}
-
-	err = json.Unmarshal(estimateRawResp, &estimateResp)
-	if err == nil && estimateResp.FeeRate > 0 {
-		useFee, err = btcutil.NewAmount(estimateResp.FeeRate)
-		if relayFee > useFee {
-			useFee = relayFee
-		}
-		return useFee, relayFee, err
-	}
-
-	fmt.Println("warning: falling back to mempool relay fee policy")
-	return relayFee, relayFee, nil
-}
-
-// getRawChangeAddress calls the getrawchangeaddress JSON-RPC method.  It is
-// implemented manually as the rpcclient implementation always passes the
-// account parameter which was removed in Bitcoin Core 0.15.
-func getRawChangeAddress(c *rpc.Client) (btcutil.Address, error) {
-	params := []json.RawMessage{[]byte(`"legacy"`)}
-	rawResp, err := c.RawRequest("getrawchangeaddress", params)
-	if err != nil {
-		return nil, err
-	}
-	var addrStr string
-	err = json.Unmarshal(rawResp, &addrStr)
-	if err != nil {
-		return nil, err
-	}
-	addr, err := btcutil.DecodeAddress(addrStr, chainParams)
-	if err != nil {
-		return nil, err
-	}
-	if !addr.IsForNet(chainParams) {
-		return nil, fmt.Errorf("address %v is not intended for use on %v",
-			addrStr, chainParams.Name)
-	}
-	if _, ok := addr.(*btcutil.AddressPubKeyHash); !ok {
-		return nil, fmt.Errorf("getrawchangeaddress: address %v is not P2PKH",
-			addr)
-	}
-	return addr, nil
-}
-
-func publishTx(c *rpc.Client, tx *wire.MsgTx, name string) error {
-	txHash, err := c.SendRawTransaction(tx, false)
-	if err != nil {
-		return fmt.Errorf("sendrawtransaction: %v", err)
-	}
-	fmt.Printf("Published %s transaction (%v)\n", name, txHash)
-	return nil
 }
 
 // contractArgs specifies the common parameters used to create the initiator's
@@ -372,7 +197,6 @@ func atomicSwapContract(pkhMe, pkhThem *[ripemd160.Size]byte, locktime int64, se
 	return b.Script()
 }
 
-
 // builtContract houses the details regarding a contract and the contract
 // payment transaction, as well as the transaction to perform a refund.
 type builtContract struct {
@@ -385,11 +209,12 @@ type builtContract struct {
 	refundFee      btcutil.Amount
 }
 
+
 // buildContract creates a contract for the parameters specified in args, using
 // wallet RPC to generate an internal address to redeem the refund and to sign
 // the payment to the contract transaction.
-func buildContract(c *rpc.Client, args *contractArgs) (*builtContract, error) {
-	refundAddr, err := getRawChangeAddress(c)
+func buildContract(b *rpc.Bitcoind, args *contractArgs) (*builtContract, error) {
+	refundAddr, err := b.GetRawChangeAddress()
 	if err != nil {
 		return nil, fmt.Errorf("getrawchangeaddress: %v", err)
 	}
@@ -412,18 +237,18 @@ func buildContract(c *rpc.Client, args *contractArgs) (*builtContract, error) {
 		return nil, err
 	}
 
-	feePerKb, minFeePerKb, err := getFeePerKb(c)
+	feePerKb, minFeePerKb, err := b.GetFeePerKb()
 	if err != nil {
 		return nil, err
 	}
 
 	unsignedContract := wire.NewMsgTx(txVersion)
 	unsignedContract.AddTxOut(wire.NewTxOut(int64(args.amount), contractP2SHPkScript))
-	unsignedContract, contractFee, err := fundRawTransaction(c, unsignedContract, feePerKb)
+	unsignedContract, contractFee, err := b.FundRawTransaction(unsignedContract, feePerKb)
 	if err != nil {
 		return nil, fmt.Errorf("fundrawtransaction: %v", err)
 	}
-	contractTx, complete, err := c.SignRawTransaction(unsignedContract)
+	contractTx, complete, err := b.SignRawTransaction(unsignedContract)
 	if err != nil {
 		return nil, fmt.Errorf("signrawtransaction: %v", err)
 	}
@@ -433,7 +258,7 @@ func buildContract(c *rpc.Client, args *contractArgs) (*builtContract, error) {
 
 	contractTxHash := contractTx.TxHash()
 
-	refundTx, refundFee, err := buildRefund(c, contract, contractTx, feePerKb, minFeePerKb)
+	refundTx, refundFee, err := buildRefund(b, contract, contractTx, feePerKb, minFeePerKb)
 	if err != nil {
 		return nil, err
 	}
@@ -449,7 +274,25 @@ func buildContract(c *rpc.Client, args *contractArgs) (*builtContract, error) {
 	}, nil
 }
 
-func buildRefund(c *rpc.Client, contract []byte, contractTx *wire.MsgTx, feePerKb, minFeePerKb btcutil.Amount) (
+
+// createSig creates and returns the serialized raw signature and compressed
+// pubkey for a transaction input signature.  Due to limitations of the Bitcoin
+// Core RPC API, this requires dumping a private key and signing in the client,
+// rather than letting the wallet sign.
+func createSig(b *rpc.Bitcoind, tx *wire.MsgTx, idx int, pkScript []byte, address btcutil.Address) (sig, pubkey []byte, err error) {
+	wif, err := b.DumpPrivKey(address)
+	if err != nil {
+		return nil, nil, err
+	}
+	sig, err = txscript.RawTxInSignature(tx, idx, pkScript, txscript.SigHashAll, wif.PrivKey)
+	if err != nil {
+		return nil, nil, err
+	}
+	return sig, wif.PrivKey.PubKey().SerializeCompressed(), nil
+}
+
+
+func buildRefund(b *rpc.Bitcoind, contract []byte, contractTx *wire.MsgTx, feePerKb, minFeePerKb btcutil.Amount) (
 	refundTx *wire.MsgTx, refundFee btcutil.Amount, err error) {
 
 	contractP2SH, err := btcutil.NewAddressScriptHash(contract, chainParams)
@@ -473,7 +316,7 @@ func buildRefund(c *rpc.Client, contract []byte, contractTx *wire.MsgTx, feePerK
 		return nil, 0, errors.New("contract tx does not contain a P2SH contract payment")
 	}
 
-	refundAddress, err := getRawChangeAddress(c)
+	refundAddress, err := b.GetRawChangeAddress()
 	if err != nil {
 		return nil, 0, fmt.Errorf("getrawchangeaddress: %v", err)
 	}
@@ -507,7 +350,7 @@ func buildRefund(c *rpc.Client, contract []byte, contractTx *wire.MsgTx, feePerK
 	txIn.Sequence = 0
 	refundTx.AddTxIn(txIn)
 
-	refundSig, refundPubKey, err := createSig(refundTx, 0, contract, refundAddr, c)
+	refundSig, refundPubKey, err := createSig(b, refundTx, 0, contract, refundAddr)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -542,11 +385,11 @@ func calcFeePerKb(absoluteFee btcutil.Amount, serializeSize int) float64 {
 	return float64(absoluteFee) / float64(serializeSize) / 1e5
 }
 
-func (cmd *InitiateCmd) RunCommand(c *rpc.Client) error {
+func (cmd *InitiateCmd) RunCommand(c *rpc.Bitcoind) (*chainhash.Hash, error) {
 	var secret [secretSize]byte
 	_, err := rand.Read(secret[:])
 	if err != nil {
-		return err
+		return nil, err
 	}
 	secretHash := sha256Hash(secret[:])
 
@@ -557,7 +400,7 @@ func (cmd *InitiateCmd) RunCommand(c *rpc.Client) error {
 		secretHash: secretHash,
 	})
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	refundTxHash := b.refundTx.TxHash()
@@ -581,7 +424,7 @@ func (cmd *InitiateCmd) RunCommand(c *rpc.Client) error {
 	fmt.Printf("Refund transaction (%v):\n", &refundTxHash)
 	fmt.Printf("%x\n\n", refundBuf.Bytes())
 
-	return publishTx(c, b.contractTx, "contract")
+	return c.PublishTx(b.contractTx, "contract")
 }
 
 // refundP2SHContract returns the signature script to refund a contract output
@@ -596,18 +439,18 @@ func refundP2SHContract(contract, sig, pubkey []byte) ([]byte, error) {
 	return b.Script()
 }
 
-func (cmd *RedeemCmd) RunCommand(c *rpc.Client) error {
+func (cmd *RedeemCmd) RunCommand(c *rpc.Bitcoind) (*chainhash.Hash, error) {
 	pushes, err := txscript.ExtractAtomicSwapDataPushes(0, cmd.contract)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if pushes == nil {
-		return errors.New("contract is not an atomic swap script recognized by this tool")
+		return nil, errors.New("contract is not an atomic swap script recognized by this tool")
 	}
 	recipientAddr, err := btcutil.NewAddressPubKeyHash(pushes.RecipientHash160[:],
 		chainParams)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	contractHash := btcutil.Hash160(cmd.contract)
 	contractOut := -1
@@ -620,16 +463,16 @@ func (cmd *RedeemCmd) RunCommand(c *rpc.Client) error {
 		}
 	}
 	if contractOut == -1 {
-		return errors.New("transaction does not contain a contract output")
+		return nil, errors.New("transaction does not contain a contract output")
 	}
 
-	addr, err := getRawChangeAddress(c)
+	addr, err := c.GetRawChangeAddress()
 	if err != nil {
-		return fmt.Errorf("getrawchangeaddres: %v", err)
+		return nil, err
 	}
 	outScript, err := txscript.PayToAddrScript(addr)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	contractTxHash := cmd.contractTx.TxHash()
@@ -638,9 +481,9 @@ func (cmd *RedeemCmd) RunCommand(c *rpc.Client) error {
 		Index: uint32(contractOut),
 	}
 
-	feePerKb, minFeePerKb, err := getFeePerKb(c)
+	feePerKb, minFeePerKb, err := c.GetFeePerKb()
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	redeemTx := wire.NewMsgTx(txVersion)
@@ -651,16 +494,16 @@ func (cmd *RedeemCmd) RunCommand(c *rpc.Client) error {
 	fee := txrules.FeeForSerializeSize(feePerKb, redeemSize)
 	redeemTx.TxOut[0].Value = cmd.contractTx.TxOut[contractOut].Value - int64(fee)
 	if txrules.IsDustOutput(redeemTx.TxOut[0], minFeePerKb) {
-		return fmt.Errorf("redeem output value of %v is dust", btcutil.Amount(redeemTx.TxOut[0].Value))
+		return nil, fmt.Errorf("redeem output value of %v is dust", btcutil.Amount(redeemTx.TxOut[0].Value))
 	}
 
-	redeemSig, redeemPubKey, err := createSig(redeemTx, 0, cmd.contract, recipientAddr, c)
+	redeemSig, redeemPubKey, err := createSig(c, redeemTx, 0, cmd.contract, recipientAddr)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	redeemSigScript, err := redeemP2SHContract(cmd.contract, redeemSig, redeemPubKey, cmd.secret)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	redeemTx.TxIn[0].SignatureScript = redeemSigScript
 
@@ -687,7 +530,7 @@ func (cmd *RedeemCmd) RunCommand(c *rpc.Client) error {
 		}
 	}
 
-	return publishTx(c, redeemTx, "redeem")
+	return c.PublishTx(redeemTx, "redeem")
 }
 
 
@@ -705,7 +548,7 @@ func redeemP2SHContract(contract, sig, pubkey, secret []byte) ([]byte, error) {
 }
 
 
-func (cmd *ParticipateCmd) RunCommand(c *rpc.Client) error {
+func (cmd *ParticipateCmd) RunCommand(c *rpc.Bitcoind) (*chainhash.Hash, error) {
 	b, err := buildContract(c, &contractArgs{
 		them:       cmd.cp1Addr,
 		amount:     cmd.amount,
@@ -713,7 +556,7 @@ func (cmd *ParticipateCmd) RunCommand(c *rpc.Client) error {
 		secretHash: cmd.secretHash,
 	})
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	refundTxHash := b.refundTx.TxHash()
@@ -735,27 +578,27 @@ func (cmd *ParticipateCmd) RunCommand(c *rpc.Client) error {
 	fmt.Printf("Refund transaction (%v):\n", &refundTxHash)
 	fmt.Printf("%x\n\n", refundBuf.Bytes())
 
-	return publishTx(c, b.contractTx, "contract")
+	return c.PublishTx(b.contractTx, "contract")
 }
 
 
-func (cmd *RefundCmd) RunCommand(c *rpc.Client) error {
+func (cmd *RefundCmd) RunCommand(c *rpc.Bitcoind) (*chainhash.Hash, error) {
 	pushes, err := txscript.ExtractAtomicSwapDataPushes(0, cmd.contract)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if pushes == nil {
-		return errors.New("contract is not an atomic swap script recognized by this tool")
+		return nil, errors.New("contract is not an atomic swap script recognized by this tool")
 	}
 
-	feePerKb, minFeePerKb, err := getFeePerKb(c)
+	feePerKb, minFeePerKb, err := c.GetFeePerKb()
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	refundTx, refundFee, err := buildRefund(c, cmd.contract, cmd.contractTx, feePerKb, minFeePerKb)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	refundTxHash := refundTx.TxHash()
 	var buf bytes.Buffer
@@ -768,11 +611,11 @@ func (cmd *RefundCmd) RunCommand(c *rpc.Client) error {
 	fmt.Printf("Refund transaction (%v):\n", &refundTxHash)
 	fmt.Printf("%x\n\n", buf.Bytes())
 
-	return publishTx(c, refundTx, "refund")
+	return c.PublishTx(refundTx, "refund")
 }
 
 
-func (cmd *ExtractSecretCmd) RunCommand(c *rpc.Client) error {
+func (cmd *ExtractSecretCmd) RunCommand(c *rpc.Bitcoind) error {
 	return cmd.RunOfflineCommand()
 }
 
@@ -798,7 +641,7 @@ func (cmd *ExtractSecretCmd) RunOfflineCommand() error {
 }
 
 
-func (cmd *AuditContractCmd) RunCommand(c *rpc.Client) error {
+func (cmd *AuditContractCmd) RunCommand(c *rpc.Bitcoind) error {
 	return cmd.RunOfflineCommand()
 }
 
