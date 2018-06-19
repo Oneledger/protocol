@@ -2,7 +2,7 @@ GOTOOLS = \
 	  github.com/mitchellh/gox \
 	  github.com/Masterminds/glide
 
-all: test 
+all: test
 
 #
 # Make sure the environment variables are setup correctly
@@ -16,7 +16,9 @@ check:
 setup: check tools
 	./setup/install.sh
 	#dep init
+	@echo "==== Running dep ensure, this may take awhile... ===="
 	dep ensure
+	@echo "==== Done setting up dependencies! ===="
 
 #
 # Update the dependencies if they have changed.
@@ -33,13 +35,13 @@ tools:
 #
 # Build and install a copy into bin
 #
-install: 
+install:
 	go install github.com/Oneledger/protocol/node/cmd/...
 
 #
 # List out all of the tendermint processes
 #
-list: 
+list:
 	pgrep -lf tendermint
 
 #
