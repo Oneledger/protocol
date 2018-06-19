@@ -26,6 +26,13 @@ if [ -z "$OLSETUP" ]; then
 	status="FAILED"
 fi
 
+gobin=`echo $PATH | grep "$GOPATH\/bin"`
+
+if [ -z "$gobin" ]; then
+	echo "Missing local Go /bin directory from PATH"
+	status="FAILED"
+fi
+
 if [ -z "$status" ]; then
 	#echo "Environment is setup correctly"
 	exit 0
