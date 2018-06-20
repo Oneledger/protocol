@@ -336,8 +336,6 @@ func Execute(app interface{}, command Command) err.Code {
 
 func CreateContractBTC(context map[Parameter]FunctionValue) bool {
 	address := global.Current.BTCAddress
-	parts := strings.Split(address, ":")
-	port := convert.GetInt(parts[1], 46688)
 
 	role := GetRole(context[ROLE])
 	password := GetString(context[PASSWORD])
@@ -345,7 +343,7 @@ func CreateContractBTC(context map[Parameter]FunctionValue) bool {
 	_ = role
 	_ = password
 
-	cli := bitcoin.GetBtcClient(port)
+	cli := bitcoin.GetBtcClient(address)
 	_ = cli
 	//todo: runCommand(initCmd,cli)
 

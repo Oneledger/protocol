@@ -10,29 +10,26 @@ import (
 	"net"
 	"encoding/base64"
 	"strconv"
+	"github.com/Oneledger/protocol/node/convert"
 )
 
 
 func GetBtcClient(address string) *brpc.Bitcoind {
 	addr:= strings.Split(address,":")
 	if len(addr) < 2 {
-		log.Error("address not in correct format")
+		log.Error("address not in correct format", "fullAddress", address)
 	}
 	ip := net.ParseIP(addr[0])
 	if ip == nil {
-		log.Error("address can not be parsed")
+		log.Error("address can not be parsed", "addr", addr)
 	}
 
-	port, err := strconv.Atoi(addr[1])
-	if err != nil {
-		log.Error(err.Error())
-	}
+	port := convert.GetInt(addr[1], 46688)
 
 	usr, pass := getCredential()
 	cli, err :=  brpc.New(ip.String(), port, usr, pass, false)
-
 	if err != nil{
-		log.Error(err.Error())
+		log.Error("Can't get the btc rpc client at given address", "err", err)
 		return nil
 	}
 
