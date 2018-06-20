@@ -16,7 +16,8 @@ import (
 	"github.com/Oneledger/protocol/node/id"
 	"github.com/Oneledger/protocol/node/log"
 	"github.com/Oneledger/protocol/node/chains/ethereum"
-	"github.com/Oneledger/protocol/node/chains/ethereum/htlc"
+
+	"math/big"
 	"github.com/ethereum/go-ethereum/common"
 )
 
@@ -80,12 +81,16 @@ func (transaction *Swap) ProcessDeliver(app interface{}) err.Code {
 
 		transaction.Resolve(app, commands)
 
+		//before loop of execute, lastResult is nil
+		var lastResult map[Parameter]FunctionValue
+
 		for i := 0; i < commands.Count(); i++ {
-			status := Execute(app, commands[i])
+			status, result := Execute(app, commands[i], lastResult)
 			if status != err.SUCCESS {
 				log.Error("Failed to Execute", "command", commands[i])
 				return err.EXPAND_ERROR
 			}
+			lastResult = result
 		}
 	} else {
 		log.Debug("Not Involved or Not Ready")
@@ -328,11 +333,11 @@ func (swap *Swap) Resolve(app interface{}, commands Commands) {
 }
 
 // Execute the function
-func Execute(app interface{}, command Command) err.Code {
+func Execute(app interface{}, command Command, lastResult map[Parameter]FunctionValue) (err.Code, map[Parameter]FunctionValue) {
 	if command.Execute() {
-		return err.SUCCESS
+		return err.SUCCESS,lastResult
 	}
-	return err.NOT_IMPLEMENTED
+	return err.NOT_IMPLEMENTED,lastResult
 }
 
 func CreateContractBTC(context map[Parameter]FunctionValue) bool {
@@ -351,13 +356,27 @@ func CreateContractBTC(context map[Parameter]FunctionValue) bool {
 	return true
 }
 
-func CreateContractETH(context map[Parameter]FunctionValue) (bool, *htlc.Htlc, common.Address) {
-	cli := ethereum.GetEthClient()
-
-	_ = htlc.DeployHtlc(,cli,)
+func CreateContractETH(context map[Parameter]FunctionValue) (bool, map[Parameter]FunctionValue) {
 
 
-	return true,
+	contract := ethereum.GetHtlContract()
+	role := GetRole(context[ROLE])
+	var value = big.NewInt(0)
+	var receiver common.Address
+	if role == INITIATOR {
+		value = GetCoin(context[AMOUNT]).Amount
+		account := GetAccountKey(context[PARTICIPANT_ACCOUNT])
+		//todo: make the account to be ethereum address
+		receiver = common.HexToAddress(account.String())
+	} else if role == PARTICIPANT {
+		value = GetCoin(context[EXCHANGE]).Amount
+	}
+
+	contract.Funds(value)
+	//todo: call contract.setup()
+	_ = receiver
+
+	return true, make(map[Parameter]FunctionValue, )
 }
 
 func CreateContractOLT(context map[Parameter]FunctionValue) bool {

@@ -10,12 +10,19 @@ import (
 	"github.com/Oneledger/protocol/node/chains/ethereum/htlc"
 	"github.com/ethereum/go-ethereum/common"
 	"strings"
+	"github.com/ethereum/go-ethereum/core/types"
 )
 
 var client *ethclient.Client
-var contract *htlc.Htlc
+var htlContract = &HtlContract{}
 
-func GetEthClient() (*ethclient.Client) {
+type HtlContract struct {
+	Contract 	*htlc.Htlc
+	Address 	common.Address
+	Txs			[]*types.Transaction
+}
+
+func getEthClient() (*ethclient.Client) {
 	if client == nil {
 		for i := 0; i < 3; i++ {
 			cli, err := ethclient.Dial(global.Current.ETHAddress)
@@ -39,7 +46,7 @@ func GetEthClient() (*ethclient.Client) {
 
 }
 
-func GethAuth() (*bind.TransactOpts) {
+func gethAuth() (*bind.TransactOpts) {
 	//todo: generate auth when register without pre-allocate
 	nodeName := global.Current.NodeName
 	switch nodeName {
@@ -71,3 +78,90 @@ func GethAuth() (*bind.TransactOpts) {
 	}
 }
 
+func GetHtlContract() *HtlContract {
+	cli := getEthClient()
+
+	if htlContract.Contract == nil {
+		auth := gethAuth()
+		auth.GasLimit = 2000000
+		address, tx, contract, err := htlc.DeployHtlc(auth, cli, auth.From)
+		if err != nil {
+			log.Fatal("Failed to create htlc for the node", "err", err)
+		}
+		htlContract.Contract = contract
+		htlContract.Address = address
+		htlContract.Txs = append(htlContract.Txs, tx)
+		return htlContract
+
+	} else {
+		balance, err := htlContract.Contract.Balance(&bind.CallOpts{Pending: true})
+		if err != nil {
+			log.Fatal("Previous htlc not callable, re-deploy", "err", err, "address", htlContract.Address)
+		}
+		log.Warn("htlc already initialed", "address", htlContract.Address, "Tx", htlContract.Txs[0], "Balance", balance)
+		time.Sleep(1 * time.Second)
+	}
+	return htlContract
+}
+
+func (h *HtlContract) Funds(value *big.Int) error {
+	auth := gethAuth()
+	auth.Value = value
+	tx, err := h.Contract.Funds(auth)
+	if err != nil {
+		log.Error("Can't fund the htlc", "err", err, "auth", auth)
+		return err
+	}
+	h.Txs = append(h.Txs, tx)
+	log.Info("Fund htlc","address", h.Address, "tx", h.Txs[len(h.Txs)], "value", value)
+	return nil
+}
+
+func (h *HtlContract) Setup(lockTime *big.Int, receiver common.Address, scrHash [32]byte) error {
+	auth := gethAuth()
+
+	tx, err := h.Contract.Setup(auth, lockTime, receiver, scrHash)
+	if err != nil {
+		log.Error("Can't setup the htlc", "err", err, "auth", auth)
+		return err
+	}
+	h.Txs = append(h.Txs, tx)
+	log.Info("Setup htlc","address", h.Address, "tx", h.Txs[len(h.Txs)])
+	return nil
+}
+
+func (h *HtlContract) Redeem(scr []byte) error {
+	auth := gethAuth()
+
+	tx, err := h.Contract.Redeem(auth, scr)
+	if err != nil {
+		log.Error("Can't redeem the htlc", "err", err, "auth", auth)
+		return err
+	}
+	h.Txs = append(h.Txs, tx)
+	log.Info("Redeem htlc","address", h.Address, "tx", h.Txs[len(h.Txs)], "scr", scr, "value", tx.Value())
+	return nil
+}
+
+func (h *HtlContract) Refund(scr []byte) error {
+	auth := gethAuth()
+
+	tx, err := h.Contract.Refund(auth, scr)
+	if err != nil {
+		log.Error("Can't refund the htlc", "err", err, "auth", auth)
+		return err
+	}
+	h.Txs = append(h.Txs, tx)
+	log.Info("Refund htlc","address", h.Address, "tx", h.Txs[len(h.Txs)], "value", tx.Value())
+	return nil
+}
+
+func (h *HtlContract) Audit(lockTime *big.Int, receiver common.Address, scrHash [32]byte) error {
+	result, err := h.Contract.Audit(&bind.CallOpts{Pending: true}, receiver, lockTime,  scrHash)
+	if err != nil {
+		log.Error("Can't audit the htlc", "err", err)
+		return err
+	}
+	log.Info("Audit htlc","result", result, "tx")
+	return nil
+}
