@@ -7,16 +7,17 @@ package action
 
 import (
 	"bytes"
-	"strings"
 
 	"github.com/Oneledger/protocol/node/chains/bitcoin"
 	"github.com/Oneledger/protocol/node/comm"
-	"github.com/Oneledger/protocol/node/convert"
 	"github.com/Oneledger/protocol/node/data"
 	"github.com/Oneledger/protocol/node/err"
 	"github.com/Oneledger/protocol/node/global"
 	"github.com/Oneledger/protocol/node/id"
 	"github.com/Oneledger/protocol/node/log"
+	"github.com/Oneledger/protocol/node/chains/ethereum"
+	"github.com/Oneledger/protocol/node/chains/ethereum/htlc"
+	"github.com/ethereum/go-ethereum/common"
 )
 
 // Synchronize a swap between two users
@@ -350,10 +351,20 @@ func CreateContractBTC(context map[Parameter]FunctionValue) bool {
 	return true
 }
 
-func CreateContractETH(context map[Parameter]FunctionValue) bool {
-	return true
+func CreateContractETH(context map[Parameter]FunctionValue) (bool, *htlc.Htlc, common.Address) {
+	cli := ethereum.GetEthClient()
+
+	_ = htlc.DeployHtlc(,cli,)
+
+
+	return true,
 }
 
 func CreateContractOLT(context map[Parameter]FunctionValue) bool {
+	return true
+}
+
+
+func ParticipateETH(context map[Parameter]FunctionValue) bool {
 	return true
 }
