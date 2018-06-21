@@ -4,12 +4,15 @@
 package bitcoin
 
 import (
+	"strconv"
 	"testing"
 	"time"
 
+	"github.com/Oneledger/protocol/node/chains/bitcoin/htlc"
 	brpc "github.com/Oneledger/protocol/node/chains/bitcoin/rpc"
 	"github.com/Oneledger/protocol/node/log"
-	"github.com/btcsuite/btcd/rpcclient"
+	"github.com/btcsuite/btcd/chaincfg"
+	"github.com/btcsuite/btcutil"
 )
 
 func XTestGeneration(t *testing.T) {
@@ -95,6 +98,32 @@ func TestHTLC(t *testing.T) {
 }
 
 func BobSetup(bitcoin *brpc.Bitcoind) {
-	client := rpcclient.Client{}
-	contract, err := htlc.buildContract(client, nil)
+	log.Debug("BobSetup", "bitcoin", bitcoin)
+	chainParams := &chaincfg.TestNet3Params
+
+	cp2Addr, err := btcutil.DecodeAddress("0x0001", chainParams)
+	if err != nil {
+		log.Error("failed to decode participant address", "err", err)
+	}
+	if !cp2Addr.IsForNet(chainParams) {
+		log.Error("participant address is not intended for use on", "name", chainParams.Name)
+	}
+	cp2AddrP2PKH, ok := cp2Addr.(*btcutil.AddressPubKeyHash)
+	if !ok {
+		log.Error("participant address is not P2PKH")
+	}
+
+	amountF64, err := strconv.ParseFloat("", 64)
+	if err != nil {
+		log.Error("failed to decode amount", "err", err)
+	}
+	amount, err := btcutil.NewAmount(amountF64)
+	if err != nil {
+		log.Error("failed to decode amount", "err", err)
+	}
+
+	initiate := htlc.NewInitiateCmd(cp2AddrP2PKH, amount, 1000)
+	hash, err := initiate.RunCommand(bitcoin)
+
+	log.Debug("Results", "initiateCmd", initiate, "hash", hash, "err", err)
 }

@@ -8,16 +8,17 @@ import (
 	"fmt"
 	"net"
 
+	"flag"
+	"time"
+
+	"github.com/Oneledger/protocol/node/chains/bitcoin/rpc"
 	"github.com/btcsuite/btcd/chaincfg"
-	"../rpc"
+	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/btcsuite/btcd/txscript"
 	"github.com/btcsuite/btcd/wire"
 	"github.com/btcsuite/btcutil"
 	"github.com/btcsuite/btcwallet/wallet/txrules"
 	"golang.org/x/crypto/ripemd160"
-	"flag"
-	"time"
-	"github.com/btcsuite/btcd/chaincfg/chainhash"
 )
 
 const verify = true
@@ -27,7 +28,7 @@ const secretSize = 32
 const txVersion = 2
 
 var (
-	chainParams = &chaincfg.MainNetParams
+	chainParams = &chaincfg.RegressionNetParams
 )
 
 var (
@@ -60,7 +61,6 @@ var (
 //     - must verify H(S) in contract is hash of known secret
 //   cp2 redeems btc with S
 
-
 //type Command interface {
 //	RunCommand(*rpc.Bitcoind) error
 //}
@@ -72,8 +72,8 @@ var (
 //}
 
 type InitiateCmd struct {
-	cp2Addr *btcutil.AddressPubKeyHash
-	amount  btcutil.Amount
+	cp2Addr  *btcutil.AddressPubKeyHash
+	amount   btcutil.Amount
 	lockTime int64
 }
 
@@ -87,7 +87,7 @@ type ParticipateCmd struct {
 	cp1Addr    *btcutil.AddressPubKeyHash
 	amount     btcutil.Amount
 	secretHash []byte
-	lockTime int64
+	lockTime   int64
 }
 
 type RefundCmd struct {
@@ -209,7 +209,6 @@ type builtContract struct {
 	refundFee      btcutil.Amount
 }
 
-
 // buildContract creates a contract for the parameters specified in args, using
 // wallet RPC to generate an internal address to redeem the refund and to sign
 // the payment to the contract transaction.
@@ -218,7 +217,7 @@ func buildContract(b *rpc.Bitcoind, args *contractArgs) (*builtContract, error) 
 	if err != nil {
 		return nil, fmt.Errorf("getrawchangeaddress: %v", err)
 	}
-	refundAddrH, ok := refundAddr.(interface {Hash160() *[ripemd160.Size]byte})
+	refundAddrH, ok := refundAddr.(interface{ Hash160() *[ripemd160.Size]byte })
 	if !ok {
 		return nil, errors.New("unable to create hash160 from change address")
 	}
@@ -274,7 +273,6 @@ func buildContract(b *rpc.Bitcoind, args *contractArgs) (*builtContract, error) 
 	}, nil
 }
 
-
 // createSig creates and returns the serialized raw signature and compressed
 // pubkey for a transaction input signature.  Due to limitations of the Bitcoin
 // Core RPC API, this requires dumping a private key and signing in the client,
@@ -290,7 +288,6 @@ func createSig(b *rpc.Bitcoind, tx *wire.MsgTx, idx int, pkScript []byte, addres
 	}
 	return sig, wif.PrivKey.PubKey().SerializeCompressed(), nil
 }
-
 
 func buildRefund(b *rpc.Bitcoind, contract []byte, contractTx *wire.MsgTx, feePerKb, minFeePerKb btcutil.Amount) (
 	refundTx *wire.MsgTx, refundFee btcutil.Amount, err error) {
@@ -533,7 +530,6 @@ func (cmd *RedeemCmd) RunCommand(c *rpc.Bitcoind) (*chainhash.Hash, error) {
 	return c.PublishTx(redeemTx, "redeem")
 }
 
-
 // redeemP2SHContract returns the signature script to redeem a contract output
 // using the redeemer's signature and the initiator's secret.  This function
 // assumes P2SH and appends the contract as the final data push.
@@ -546,7 +542,6 @@ func redeemP2SHContract(contract, sig, pubkey, secret []byte) ([]byte, error) {
 	b.AddData(contract)
 	return b.Script()
 }
-
 
 func (cmd *ParticipateCmd) RunCommand(c *rpc.Bitcoind) (*chainhash.Hash, error) {
 	b, err := buildContract(c, &contractArgs{
@@ -581,7 +576,6 @@ func (cmd *ParticipateCmd) RunCommand(c *rpc.Bitcoind) (*chainhash.Hash, error) 
 	return c.PublishTx(b.contractTx, "contract")
 }
 
-
 func (cmd *RefundCmd) RunCommand(c *rpc.Bitcoind) (*chainhash.Hash, error) {
 	pushes, err := txscript.ExtractAtomicSwapDataPushes(0, cmd.contract)
 	if err != nil {
@@ -614,7 +608,6 @@ func (cmd *RefundCmd) RunCommand(c *rpc.Bitcoind) (*chainhash.Hash, error) {
 	return c.PublishTx(refundTx, "refund")
 }
 
-
 func (cmd *ExtractSecretCmd) RunCommand(c *rpc.Bitcoind) error {
 	return cmd.RunOfflineCommand()
 }
@@ -639,7 +632,6 @@ func (cmd *ExtractSecretCmd) RunOfflineCommand() error {
 	}
 	return errors.New("transaction does not contain the secret")
 }
-
 
 func (cmd *AuditContractCmd) RunCommand(c *rpc.Bitcoind) error {
 	return cmd.RunOfflineCommand()
