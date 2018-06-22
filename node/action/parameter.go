@@ -63,10 +63,10 @@ func GetCoin(value FunctionValue) data.Coin {
 	return data.Coin{}
 }
 
-func GetAccountKey(value FunctionValue) id.AccountKey {
+func GetIdAccount(value FunctionValue) id.Account {
 	switch value.(type) {
-	case id.AccountKey:
-		return value.(id.AccountKey)
+	case id.Account:
+		return value.(id.Account)
 	default:
 		log.Fatal("Bad Type Cast in Function Parameter", "value", value)
 	}

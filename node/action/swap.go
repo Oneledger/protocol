@@ -25,8 +25,8 @@ import (
 type Swap struct {
 	Base
 
-	Party        id.AccountKey `json:"party"`
-	CounterParty id.AccountKey `json:"counter_party"`
+	Party        Party 		   `json:"party"`
+	CounterParty Party 		   `json:"counter_party"`
 	Amount       data.Coin     `json:"amount"`
 	Exchange     data.Coin     `json:"exchange"`
 	Fee          data.Coin     `json:"fee"`
@@ -35,16 +35,21 @@ type Swap struct {
 	Preimage     []byte        `json:"preimage"`
 }
 
+type Party struct{
+	Key 		id.AccountKey
+	Accounts 	map[data.ChainType]string
+}
+
 // Ensure that all of the base values are at least reasonable.
 func (transaction *Swap) Validate() err.Code {
 	log.Debug("Validating Swap Transaction")
 
-	if transaction.Party == nil {
+	if transaction.Party.Key == nil {
 		log.Debug("Missing Party")
 		return err.MISSING_DATA
 	}
 
-	if transaction.CounterParty == nil {
+	if transaction.CounterParty.Key == nil {
 		log.Debug("Missing CounterParty")
 		return err.MISSING_DATA
 	}
@@ -114,13 +119,30 @@ func FindSwap(status *data.Datastore, key id.AccountKey) Transaction {
 }
 
 // TODO: Change to return Role as INITIATOR or PARTICIPANT
-func FindMatchingSwap(status *data.Datastore, accountKey id.AccountKey, transaction *Swap) *Swap {
+func FindMatchingSwap(status *data.Datastore, accountKey id.AccountKey, transaction *Swap, isParty bool) (matched *Swap) {
 
 	result := FindSwap(status, accountKey)
 	if result != nil {
 		entry := result.(*Swap)
 		if MatchSwap(entry, transaction) {
-			return entry
+			if isParty {
+				matched.Party = transaction.Party
+				matched.CounterParty = entry.Party
+				matched.Amount = transaction.Amount
+				matched.Exchange = transaction.Exchange
+			} else {
+				matched.Party = entry.Party
+				matched.CounterParty = transaction.Party
+				matched.Amount = transaction.Exchange
+				matched.Exchange = transaction.Amount
+			}
+			matched.Base = transaction.Base
+			matched.Fee = transaction.Fee
+			matched.Nonce = transaction.Nonce
+			//todo: get preimage for this swap
+			matched.Preimage = []byte("super cool pre-image")
+
+			return matched
 		} else {
 			log.Debug("Swap doesn't match", "key", accountKey, "transaction", transaction, "entry", entry)
 		}
@@ -141,11 +163,11 @@ func MatchSwap(left *Swap, right *Swap) bool {
 		log.Debug("ChainId is wrong")
 		return false
 	}
-	if bytes.Compare(left.Party, right.CounterParty) != 0 {
+	if bytes.Compare(left.Party.Key, right.CounterParty.Key) != 0 {
 		log.Debug("Party/CounterParty is wrong")
 		return false
 	}
-	if bytes.Compare(left.CounterParty, right.Party) != 0 {
+	if bytes.Compare(left.CounterParty.Key, right.Party.Key) != 0 {
 		log.Debug("CounterParty/Party is wrong")
 		return false
 	}
@@ -165,7 +187,7 @@ func MatchSwap(left *Swap, right *Swap) bool {
 	return true
 }
 
-func ProcessSwap(app interface{}, transaction *Swap) bool {
+func ProcessSwap(app interface{}, transaction *Swap) *Swap {
 	status := GetStatus(app)
 	account := transaction.GetNodeAccount(app)
 
@@ -173,32 +195,33 @@ func ProcessSwap(app interface{}, transaction *Swap) bool {
 
 	if isParty == nil {
 		log.Debug("No Account", "account", account)
-		return false
+		return nil
 	}
 
+
 	if *isParty {
-		otherSide := FindMatchingSwap(status, transaction.CounterParty, transaction)
-		if otherSide != nil {
-			return true
+		matchedSwap := FindMatchingSwap(status, transaction.CounterParty.Key, transaction, *isParty)
+		if matchedSwap != nil {
+			return matchedSwap
 		} else {
-			SaveSwap(status, transaction.CounterParty, transaction)
+			SaveSwap(status, transaction.CounterParty.Key, transaction)
 			log.Debug("Not Ready", "account", account)
-			return false
+			return nil
 		}
 	} else {
-		otherSide := FindMatchingSwap(status, transaction.Party, transaction)
-		if otherSide != nil {
-			return true
+		matchedSwap := FindMatchingSwap(status, transaction.Party.Key, transaction, *isParty)
+		if matchedSwap != nil {
+			return matchedSwap
 
 		} else {
-			SaveSwap(status, transaction.Party, transaction)
+			SaveSwap(status, transaction.Party.Key, transaction)
 			log.Debug("Not Ready", "account", account)
-			return false
+			return nil
 		}
 	}
 
 	log.Debug("Not Involved", "account", account)
-	return false
+	return nil
 }
 
 func SaveSwap(status *data.Datastore, accountKey id.AccountKey, transaction *Swap) {
@@ -258,12 +281,12 @@ func (transaction *Swap) IsParty(account id.Account) *bool {
 	}
 
 	var isParty bool
-	if bytes.Compare(transaction.Party, account.AccountKey()) == 0 {
+	if bytes.Compare(transaction.Party.Key, account.AccountKey()) == 0 {
 		isParty = true
 		return &isParty
 	}
 
-	if bytes.Compare(transaction.CounterParty, account.AccountKey()) == 0 {
+	if bytes.Compare(transaction.CounterParty.Key, account.AccountKey()) == 0 {
 		isParty = false
 		return &isParty
 	}
@@ -294,6 +317,7 @@ func (swap *Swap) Resolve(app interface{}, commands Commands) {
 
 	identities := GetIdentities(app)
 	_ = identities
+	name := global.Current.NodeIdentity
 
 	utxo := GetUtxo(app)
 	_ = utxo
@@ -316,11 +340,14 @@ func (swap *Swap) Resolve(app interface{}, commands Commands) {
 		role := PARTICIPANT
 		if *isParty {
 			role = INITIATOR
+			commands[i].Data[INITIATOR_ACCOUNT] = GetChainAccount(app, name, chains[iindex])
+		} else {
+			commands[i].Data[PARTICIPANT_ACCOUNT] = GetChainAccount(app, name, chains[pindex])
 		}
 
 		commands[i].Data[ROLE] = role
-		commands[i].Data[INITIATOR_ACCOUNT] = chains[iindex]
-		commands[i].Data[PARTICIPANT_ACCOUNT] = chains[pindex]
+
+
 
 		commands[i].Data[AMOUNT] = swap.Amount
 		commands[i].Data[EXCHANGE] = swap.Exchange
@@ -365,8 +392,9 @@ func CreateContractETH(context map[Parameter]FunctionValue) (bool, map[Parameter
 	var receiver common.Address
 	if role == INITIATOR {
 		value = GetCoin(context[AMOUNT]).Amount
-		account := GetAccountKey(context[PARTICIPANT_ACCOUNT])
-		//todo: make the account to be ethereum address
+		account := GetIdAccount(context[PARTICIPANT_ACCOUNT])
+		receiver :=
+
 		receiver = common.HexToAddress(account.String())
 	} else if role == PARTICIPANT {
 		value = GetCoin(context[EXCHANGE]).Amount

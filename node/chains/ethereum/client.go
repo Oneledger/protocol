@@ -46,7 +46,12 @@ func getEthClient() (*ethclient.Client) {
 
 }
 
-func gethAuth() (*bind.TransactOpts) {
+func GetAddress() common.Address {
+	auth := GetAuth()
+	return auth.From
+}
+
+func GetAuth() (*bind.TransactOpts) {
 	//todo: generate auth when register without pre-allocate
 	nodeName := global.Current.NodeName
 	switch nodeName {
@@ -78,11 +83,13 @@ func gethAuth() (*bind.TransactOpts) {
 	}
 }
 
+
+
 func GetHtlContract() *HtlContract {
 	cli := getEthClient()
 
 	if htlContract.Contract == nil {
-		auth := gethAuth()
+		auth := GetAuth()
 		auth.GasLimit = 2000000
 		address, tx, contract, err := htlc.DeployHtlc(auth, cli, auth.From)
 		if err != nil {
@@ -105,7 +112,7 @@ func GetHtlContract() *HtlContract {
 }
 
 func (h *HtlContract) Funds(value *big.Int) error {
-	auth := gethAuth()
+	auth := GetAuth()
 	auth.Value = value
 	tx, err := h.Contract.Funds(auth)
 	if err != nil {
@@ -118,7 +125,7 @@ func (h *HtlContract) Funds(value *big.Int) error {
 }
 
 func (h *HtlContract) Setup(lockTime *big.Int, receiver common.Address, scrHash [32]byte) error {
-	auth := gethAuth()
+	auth := GetAuth()
 
 	tx, err := h.Contract.Setup(auth, lockTime, receiver, scrHash)
 	if err != nil {
@@ -131,7 +138,7 @@ func (h *HtlContract) Setup(lockTime *big.Int, receiver common.Address, scrHash 
 }
 
 func (h *HtlContract) Redeem(scr []byte) error {
-	auth := gethAuth()
+	auth := GetAuth()
 
 	tx, err := h.Contract.Redeem(auth, scr)
 	if err != nil {
@@ -144,7 +151,7 @@ func (h *HtlContract) Redeem(scr []byte) error {
 }
 
 func (h *HtlContract) Refund(scr []byte) error {
-	auth := gethAuth()
+	auth := GetAuth()
 
 	tx, err := h.Contract.Refund(auth, scr)
 	if err != nil {

@@ -17,6 +17,8 @@ import (
 	crypto "github.com/tendermint/go-crypto"
 	wdata "github.com/tendermint/go-wire/data"
 	"golang.org/x/crypto/ripemd160"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/Oneledger/protocol/node/chains/ethereum"
 )
 
 // Aliases to hide some of the basic underlying types.
@@ -202,6 +204,8 @@ func NewAccount(newType data.ChainType, name string, key PublicKey, priv Private
 				PublicKey:  key,
 				PrivateKey: priv,
 			},
+			//todo: change to olt wallet auth
+			NewAccountKey(key),
 		}
 
 	case data.BITCOIN:
@@ -213,6 +217,8 @@ func NewAccount(newType data.ChainType, name string, key PublicKey, priv Private
 				PublicKey:  key,
 				PrivateKey: priv,
 			},
+			//todo: change to bitcoin auth
+			NewAccountKey(key),
 		}
 
 	case data.ETHEREUM:
@@ -221,9 +227,10 @@ func NewAccount(newType data.ChainType, name string, key PublicKey, priv Private
 				Type:       newType,
 				Key:        NewAccountKey(key),
 				Name:       name,
-				PublicKey:  key,
-				PrivateKey: priv,
+				PublicKey:  nil,
+				PrivateKey: nil,
 			},
+			ethereum.GetAuth(),
 		}
 
 	default:
@@ -252,6 +259,8 @@ func ParseAccountType(typeName string) data.ChainType {
 // Information we need about our own fullnode identities
 type AccountOneLedger struct {
 	AccountBase
+	//todo: need to be change to the right type
+	ChainAuth	AccountKey
 }
 
 /*
@@ -293,6 +302,8 @@ func (account *AccountOneLedger) Chain() data.ChainType {
 // Information we need for a Bitcoin account
 type AccountBitcoin struct {
 	AccountBase
+	//todo: need to be change to the right type
+	ChainAuth AccountKey
 }
 
 /*
@@ -335,6 +346,8 @@ func (account *AccountBitcoin) Chain() data.ChainType {
 // Information we need for an Ethereum account
 type AccountEthereum struct {
 	AccountBase
+
+	ChainAuth *bind.TransactOpts
 }
 
 /*

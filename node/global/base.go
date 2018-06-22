@@ -30,6 +30,7 @@ type Context struct {
 
 	NodeName        string // Name of this instance
 	NodeAccountName string // TODO: Should be a list of accounts
+	NodeIdentity	string
 	RootDir         string // Working directory for this instance
 
 	RpcAddress string // rpc address
