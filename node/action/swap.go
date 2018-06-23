@@ -79,12 +79,12 @@ func (transaction *Swap) ProcessCheck(app interface{}) err.Code {
 // Start the swap
 func (transaction *Swap) ProcessDeliver(app interface{}) err.Code {
 	log.Debug("Processing Swap Transaction for DeliverTx")
-
-	if ProcessSwap(app, transaction) {
+	matchedSwap := ProcessSwap(app, transaction)
+	if  matchedSwap != nil {
 		log.Debug("Expanding the Transaction into Functions")
-		commands := transaction.Expand(app)
+		commands := matchedSwap.Expand(app)
 
-		transaction.Resolve(app, commands)
+		matchedSwap.Resolve(app, commands)
 
 		//before loop of execute, lastResult is nil
 		var lastResult map[Parameter]FunctionValue
@@ -340,9 +340,10 @@ func (swap *Swap) Resolve(app interface{}, commands Commands) {
 		role := PARTICIPANT
 		if *isParty {
 			role = INITIATOR
-			commands[i].Data[INITIATOR_ACCOUNT] = GetChainAccount(app, name, chains[iindex])
+			commands[i].Data[INITIATOR_ACCOUNT] = swap.Party.Accounts
+			commands[i].Data[PARTICIPANT_ACCOUNT] = swap.CounterParty.Accounts
 		} else {
-			commands[i].Data[PARTICIPANT_ACCOUNT] = GetChainAccount(app, name, chains[pindex])
+			commands[i].Data[PARTICIPANT_ACCOUNT] = swap.CounterParty.
 		}
 
 		commands[i].Data[ROLE] = role
@@ -357,6 +358,11 @@ func (swap *Swap) Resolve(app interface{}, commands Commands) {
 		commands[i].Data[PASSWORD] = "password" // TODO: Needs to be corrected
 	}
 	return
+}
+
+
+func (swap *Swap) getOrder() int {
+	return data.Currencies[swap.Amount.Currency] - 1
 }
 
 // Execute the function
