@@ -325,8 +325,11 @@ func (swap *Swap) Resolve(app interface{}, commands Commands) {
 	var iindex, pindex int
 
 	chains := GetChains(transaction)
+	isParty := swap.IsParty(account)
+	role := swap.getRole(*isParty)
+
 	for i := 0; i < len(commands); i++ {
-		isParty := swap.IsParty(account)
+
 		if *isParty {
 			commands[i].Chain = chains[0]
 			iindex = 0
@@ -337,13 +340,26 @@ func (swap *Swap) Resolve(app interface{}, commands Commands) {
 			pindex = 0
 		}
 
-		role := PARTICIPANT
+		_ = iindex
+		_ = pindex
 		if *isParty {
-			role = INITIATOR
-			commands[i].Data[INITIATOR_ACCOUNT] = swap.Party.Accounts
-			commands[i].Data[PARTICIPANT_ACCOUNT] = swap.CounterParty.Accounts
+			if role == INITIATOR {
+				commands[i].Data[INITIATOR_ACCOUNT] = swap.Party.Accounts
+				commands[i].Data[PARTICIPANT_ACCOUNT] = swap.CounterParty.Accounts
+			} else {
+				commands[i].Data[INITIATOR_ACCOUNT] = swap.CounterParty.Accounts
+				commands[i].Data[PARTICIPANT_ACCOUNT] = swap.Party.Accounts
+			}
+
 		} else {
-			commands[i].Data[PARTICIPANT_ACCOUNT] = swap.CounterParty.
+			if role == PARTICIPANT {
+				commands[i].Data[INITIATOR_ACCOUNT] = swap.Party.Accounts
+				commands[i].Data[PARTICIPANT_ACCOUNT] = swap.CounterParty.Accounts
+			} else {
+				commands[i].Data[INITIATOR_ACCOUNT] = swap.CounterParty.Accounts
+				commands[i].Data[PARTICIPANT_ACCOUNT] = swap.Party.Accounts
+			}
+
 		}
 
 		commands[i].Data[ROLE] = role
@@ -361,8 +377,21 @@ func (swap *Swap) Resolve(app interface{}, commands Commands) {
 }
 
 
-func (swap *Swap) getOrder() int {
-	return data.Currencies[swap.Amount.Currency] - 1
+func (swap *Swap) getRole(isParty bool) Role {
+
+	if isParty {
+		if data.Currencies[swap.Amount.Currency] < data.Currencies[swap.Exchange.Currency]{
+			return INITIATOR
+		} else {
+			return PARTICIPANT
+		}
+	} else {
+		if data.Currencies[swap.Exchange.Currency] < data.Currencies[swap.Amount.Currency] {
+			return PARTICIPANT
+		} else {
+			return INITIATOR
+		}
+	}
 }
 
 // Execute the function
