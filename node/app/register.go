@@ -1,6 +1,5 @@
 /*
 	Copyright 2017 - 2018 OneLedger
-
 	Handle the basic local registeration for identities and accounts
 */
 
@@ -69,7 +68,7 @@ func RegisterLocally(app *Application, name string, scope string, chain data.Cha
 	if identity == nil {
 		identity = id.NewIdentity(name, "Contact Info", false,
 			global.Current.NodeName, account.AccountKey())
-
+		global.Current.NodeIdentity = name
 		app.Identities.Add(identity)
 		//app.Identities.Commit()
 
