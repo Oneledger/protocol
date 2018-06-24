@@ -1,10 +1,16 @@
 /*
 	Copyright 2017 - 2018 Oneledger
+
+	Functions to wrap the atomic swap mechanics for Bitcoin
 */
 package htlc
 
-import "github.com/btcsuite/btcutil"
+import (
+	"github.com/btcsuite/btcd/wire"
+	"github.com/btcsuite/btcutil"
+)
 
+// Initiate a new swpa between parties
 func NewInitiateCmd(cp2Addr *btcutil.AddressPubKeyHash, amount btcutil.Amount, lockTime int64) *InitiateCmd {
 	return &InitiateCmd{
 		cp2Addr:  cp2Addr,
@@ -13,40 +19,46 @@ func NewInitiateCmd(cp2Addr *btcutil.AddressPubKeyHash, amount btcutil.Amount, l
 	}
 }
 
-func NewParticipateCmd() *ParticipateCmd {
+// Participate in the swap
+func NewParticipateCmd(cp1Addr *btcutil.AddressPubKeyHash, amount btcutil.Amount,
+	secretHash []byte, lockTime int64) *ParticipateCmd {
 	return &ParticipateCmd{
-		cp1Addr:    nil,
-		amount:     2000,
-		secretHash: []byte(nil),
-		lockTime:   1000,
+		cp1Addr:    cp1Addr,
+		amount:     amount,
+		secretHash: secretHash,
+		lockTime:   lockTime,
 	}
 }
 
-func NewRedeemCmd() *RedeemCmd {
+// Redeem the asset within the contact, the swap is approved
+func NewRedeemCmd(contract []byte, contractTx *wire.MsgTx, secret []byte) *RedeemCmd {
 	return &RedeemCmd{
-		contract:   nil,
-		contractTx: nil,
-		secret:     nil,
+		contract:   contract,
+		contractTx: contractTx,
+		secret:     secret,
 	}
 }
 
-func NewRefundCmd() *RefundCmd {
+// Collect the refund of the contract, it has failed somehow
+func NewRefundCmd(contract []byte, contractTx *wire.MsgTx) *RefundCmd {
 	return &RefundCmd{
-		contract:   nil,
-		contractTx: nil,
+		contract:   contract,
+		contractTx: contractTx,
 	}
 }
 
-func NewExtractSecretCmd() *ExtractSecretCmd {
+// Extract the secret from the transaction as issued by the counterparty
+func NewExtractSecretCmd(redemptionTx *wire.MsgTx, secretHash []byte) *ExtractSecretCmd {
 	return &ExtractSecretCmd{
-		redemptionTx: nil,
-		secretHash:   nil,
+		redemptionTx: redemptionTx,
+		secretHash:   secretHash,
 	}
 }
 
-func NewAuditContractCmd() *AuditContractCmd {
+// Audit an existing contract
+func NewAuditContractCmd(contract []byte, contractTx *wire.MsgTx) *AuditContractCmd {
 	return &AuditContractCmd{
-		contract:   nil,
-		contractTx: nil,
+		contract:   contract,
+		contractTx: contractTx,
 	}
 }

@@ -382,6 +382,9 @@ func calcFeePerKb(absoluteFee btcutil.Amount, serializeSize int) float64 {
 	return float64(absoluteFee) / float64(serializeSize) / 1e5
 }
 
+var LastContract []byte = nil
+var LastContractTx *wire.MsgTx = nil
+
 func (cmd *InitiateCmd) RunCommand(c *rpc.Bitcoind) (*chainhash.Hash, error) {
 	var secret [secretSize]byte
 	_, err := rand.Read(secret[:])
@@ -399,6 +402,8 @@ func (cmd *InitiateCmd) RunCommand(c *rpc.Bitcoind) (*chainhash.Hash, error) {
 	if err != nil {
 		return nil, err
 	}
+	LastContract = b.contract
+	LastContractTx = b.contractTx
 
 	refundTxHash := b.refundTx.TxHash()
 	contractFeePerKb := calcFeePerKb(b.contractFee, b.contractTx.SerializeSize())

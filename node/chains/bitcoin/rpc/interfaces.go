@@ -8,12 +8,12 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/Oneledger/protocol/node/log"
 	"github.com/btcsuite/btcd/btcjson"
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/btcsuite/btcd/wire"
 	"github.com/btcsuite/btcutil"
-	"github.com/ethereum/go-ethereum/log"
 )
 
 // Bitcoind - represents a Bitcoind client
@@ -520,22 +520,29 @@ func (b *Bitcoind) GetRawChangeAddress() (btcutil.Address, error) {
 	params := []json.RawMessage{[]byte(`"legacy"`)}
 	rawResp, err := b.client.call("getrawchangeaddress", params)
 	if err != nil {
+		log.Debug("Failed call")
 		return nil, err
 	}
 	var addrStr string
 	err = json.Unmarshal(rawResp.Result, &addrStr)
 	if err != nil {
+		log.Debug("Failed to Unmarshal")
 		return nil, err
 	}
 	addr, err := btcutil.DecodeAddress(addrStr, chainParams)
 	if err != nil {
+		log.Debug("Failed to Decode")
 		return nil, err
 	}
-	if !addr.IsForNet(chainParams) {
-		return nil, fmt.Errorf("address %v is not intended for use on %v",
-			addrStr, chainParams.Name)
-	}
+	/*
+		if !addr.IsForNet(chainParams) {
+			log.Debug("Failed for Net")
+			return nil, fmt.Errorf("address %v is not intended for use on %v",
+				addrStr, chainParams.Name)
+		}
+	*/
 	if _, ok := addr.(*btcutil.AddressPubKeyHash); !ok {
+		log.Debug("Failed type conversion")
 		return nil, fmt.Errorf("getrawchangeaddress: address %v is not P2PKH",
 			addr)
 	}
