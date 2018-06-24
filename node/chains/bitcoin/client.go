@@ -9,17 +9,16 @@ import (
 
 	brpc "github.com/Oneledger/protocol/node/chains/bitcoin/rpc"
 
-	"github.com/Oneledger/protocol/node/log"
-	"strings"
-	"net"
 	"encoding/base64"
-	"strconv"
+	"net"
+	"strings"
+
 	"github.com/Oneledger/protocol/node/convert"
+	"github.com/Oneledger/protocol/node/log"
 )
 
-
 func GetBtcClient(address string) *brpc.Bitcoind {
-	addr:= strings.Split(address,":")
+	addr := strings.Split(address, ":")
 	if len(addr) < 2 {
 		log.Error("address not in correct format", "fullAddress", address)
 	}
@@ -31,8 +30,8 @@ func GetBtcClient(address string) *brpc.Bitcoind {
 	port := convert.GetInt(addr[1], 46688)
 
 	usr, pass := getCredential()
-	cli, err :=  brpc.New(ip.String(), port, usr, pass, false)
-	if err != nil{
+	cli, err := brpc.New(ip.String(), port, usr, pass, false)
+	if err != nil {
 		log.Error("Can't get the btc rpc client at given address", "err", err)
 		return nil
 	}
@@ -40,7 +39,7 @@ func GetBtcClient(address string) *brpc.Bitcoind {
 	return cli
 }
 
-func getCredential() (usr string, pass string){
+func getCredential() (usr string, pass string) {
 	//todo: getCredential from database which should be randomly generated when register or import if user already has bitcoin node
 	usrBytes, err := base64.StdEncoding.DecodeString("b2x0ZXN0MDE=")
 	if err != nil {

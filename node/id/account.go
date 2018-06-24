@@ -10,15 +10,15 @@ import (
 	"reflect"
 	"strings"
 
+	"github.com/Oneledger/protocol/node/chains/ethereum"
 	"github.com/Oneledger/protocol/node/comm"
 	"github.com/Oneledger/protocol/node/data"
 	"github.com/Oneledger/protocol/node/err"
 	"github.com/Oneledger/protocol/node/log"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	crypto "github.com/tendermint/go-crypto"
 	wdata "github.com/tendermint/go-wire/data"
 	"golang.org/x/crypto/ripemd160"
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-	"github.com/Oneledger/protocol/node/chains/ethereum"
 )
 
 // Aliases to hide some of the basic underlying types.
@@ -227,8 +227,8 @@ func NewAccount(newType data.ChainType, name string, key PublicKey, priv Private
 				Type:       newType,
 				Key:        NewAccountKey(key),
 				Name:       name,
-				PublicKey:  nil,
-				PrivateKey: nil,
+				PublicKey:  PublicKey{},
+				PrivateKey: PrivateKey{},
 			},
 			ethereum.GetAuth(),
 		}
@@ -260,7 +260,7 @@ func ParseAccountType(typeName string) data.ChainType {
 type AccountOneLedger struct {
 	AccountBase
 	//todo: need to be change to the right type
-	ChainAuth	AccountKey
+	ChainAuth AccountKey
 }
 
 /*
