@@ -25,3 +25,5 @@ geth --exec "admin.addPeer($(geth --exec "admin.nodeInfo.enode" attach ipc:$OLET
 geth --exec "admin.addPeer($(geth --exec "admin.nodeInfo.enode" attach ipc:$OLETH/C/geth.ipc))" attach ipc:$OLETH/A/geth.ipc
 
 sleep 3
+
+geth --exec "miner.start(1)" attach ipc:$OLETH/C/geth.ipc 

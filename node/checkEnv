@@ -1,0 +1,41 @@
+#!/bin/bash
+
+status=""
+if [ -z "$OLROOT" ]; then
+	echo "Missing OLROOT Environment variable"
+	status="FAILED"
+fi
+
+if [ -z "$OLDATA" ]; then
+	echo "Missing OLDATA Environment variable"
+	status="FAILED"
+fi
+
+if [ -z "$OLSCRIPT" ]; then
+	echo "Missing OLSCRIPT Environment variable"
+	status="FAILED"
+fi
+
+if [ -z "$OLTEST" ]; then
+	echo "Missing OLTEST Environment variable"
+	status="FAILED"
+fi
+
+if [ -z "$OLSETUP" ]; then
+	echo "Missing OLSETUP Environment variable"
+	status="FAILED"
+fi
+
+gobin=`echo $PATH | grep "$GOPATH\/bin"`
+
+if [ -z "$gobin" ]; then
+	echo "Missing local Go /bin directory from PATH"
+	status="FAILED"
+fi
+
+if [ -z "$status" ]; then
+	#echo "Environment is setup correctly"
+	exit 0
+fi
+
+exit 1

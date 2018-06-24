@@ -1,7 +1,7 @@
 #!/bin/bash
 
 go get -u github.com/tendermint/tendermint/cmd/tendermint
-go get -u github.com/tendermint/abci/cmd/abci-cmd
+#go get -u github.com/tendermint/abci/cmd/abci-cli
 
 pushd $GOPATH/src/github.com/tendermint/tendermint
 git checkout tags/v0.18.0

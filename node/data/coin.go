@@ -23,10 +23,10 @@ type Coins []Coin
 
 var OLTBase *big.Float = big.NewFloat(1000000000000000000)
 
-var Currencies map[string]bool = map[string]bool{
-	"OLT": true,
-	"BLT": true,
-	"ETH": true,
+var Currencies map[string]int = map[string]int{
+	"OLT": 0,
+	"BTC": 1,
+	"ETH": 2,
 }
 
 func NewCoin(amount int64, currency string) Coin {

@@ -17,7 +17,7 @@ first == 1 {
 	next
 }
 
-{ 
+{
 	for (i=1;i<=NF;i++) {
 		data[i]=$i
 	}
@@ -36,7 +36,8 @@ END {
 		init=0
 		for (name in identity) {
 			nodeName=variable[name,"NodeName"]
-			"./getNodeId " nodeName | getline id
+			commandName="./getNodeId " nodeName
+			commandName | getline id
 			entry=id "@" Prefix variable[name,"P2PAddress"]
 			if (init == 0) {
 				buffer=entry

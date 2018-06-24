@@ -35,6 +35,8 @@ const (
 	PREIMAGE
 
 	PASSWORD
+	ETHCONTRACT
+	BTCCONTRACT
 )
 
 type FunctionValue interface{}

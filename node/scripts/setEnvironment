@@ -1,8 +1,9 @@
 # basic path setup for the scripts, source this file to have correct pwd
 
 export OLROOT=$GOPATH/src/github.com/Oneledger
-export OLREPO=$OLROOT/protocol
+export OLTEST=$OLROOT/protocol/node/tests
+export OLSCRIPT=$OLROOT/protocol/node/scripts
+export OLSETUP=$OLROOT/protocol/node/setup
+
 export OLDATA=$GOPATH/test
-export OLTEST=$OLREPO/node/tests
-export OLSCRIPT=$OLREPO/node/scripts
 

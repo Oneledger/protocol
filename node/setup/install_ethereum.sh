@@ -1,4 +1,4 @@
-#! /bin/bash
+#!/bin/bash
 
 current_uname=$(uname);
 case "$current_uname" in
@@ -11,7 +11,7 @@ case "$current_uname" in
 	else
 		brew update
 	fi
-	
+
 	# Test if geth installed
 	which -s geth
 	if [[ $? != 0 ]] ; then
@@ -22,16 +22,16 @@ case "$current_uname" in
 	;;
     (*Linux*)
 	current_platform='Linux'
-	apt-get update
-	apt-get install software-properties-common
+	sudo apt-get update
+	sudo apt-get install software-properties-common
 
 	# Test if geth installed
 	which geth
 	if [[ $? != 0 ]] ; then
 		# Install geth from PPA
-		add-apt-repository -y ppa:ethereum/ethereum
-		apt-get update
-		apt-get install ethereum
+		sudo add-apt-repository -y ppa:ethereum/ethereum
+		sudo apt-get update
+		sudo apt-get install ethereum
 	fi
 	;;
     (*) echo 'error: unsupported platform.'; exit 2; ;;

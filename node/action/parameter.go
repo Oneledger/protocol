@@ -9,6 +9,8 @@ import (
 	"github.com/Oneledger/protocol/node/data"
 	"github.com/Oneledger/protocol/node/id"
 	"github.com/Oneledger/protocol/node/log"
+	"github.com/Oneledger/protocol/node/chains/ethereum"
+	"github.com/Oneledger/protocol/node/chains/bitcoin"
 )
 
 func GetInt(value FunctionValue) int {
@@ -61,10 +63,10 @@ func GetCoin(value FunctionValue) data.Coin {
 	return data.Coin{}
 }
 
-func GetAccountKey(value FunctionValue) id.AccountKey {
+func GetIdAccount(value FunctionValue) id.Account {
 	switch value.(type) {
-	case id.AccountKey:
-		return value.(id.AccountKey)
+	case id.Account:
+		return value.(id.Account)
 	default:
 		log.Fatal("Bad Type Cast in Function Parameter", "value", value)
 	}
@@ -79,4 +81,14 @@ func GetBytes(value FunctionValue) []byte {
 		log.Fatal("Bad Type Cast in Function Parameter", "value", value)
 	}
 	return []byte(nil)
+}
+
+func GetETHContract(value FunctionValue) *ethereum.HtlContract {
+	switch value.(type) {
+	case ethereum.HtlContract:
+		return value.(*ethereum.HtlContract)
+	default:
+		log.Fatal("Bad Type Cast in Function Parameter", "value", value)
+	}
+	return nil
 }
