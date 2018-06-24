@@ -36,7 +36,7 @@ func XTestClient(t *testing.T) {
 func XTestBlockGeneration(t *testing.T) {
 	log.Info("TESTING THE GENERATION")
 
-	testnet := GetBtcClient(18831)
+	testnet := GetBtcClient("127.0.0.1:18831")
 
 	if testnet == nil {
 		log.Fatal("Can't Get Client")
@@ -52,7 +52,7 @@ func XTestBlockGeneration(t *testing.T) {
 }
 
 func Setup() *brpc.Bitcoind {
-	testnet := GetBtcClient(18831)
+	testnet := GetBtcClient("127.0.0.1:18831")
 
 	if testnet == nil {
 		log.Fatal("Can't Get Client")
