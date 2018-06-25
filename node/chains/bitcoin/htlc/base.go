@@ -19,13 +19,21 @@ func NewInitiateCmd(cp2Addr *btcutil.AddressPubKeyHash, amount btcutil.Amount, l
 	}
 }
 
+// Audit an existing contract
+func NewAuditContractCmd(contract []byte, contractTx *wire.MsgTx) *AuditContractCmd {
+	return &AuditContractCmd{
+		contract:   contract,
+		contractTx: contractTx,
+	}
+}
+
 // Participate in the swap
 func NewParticipateCmd(cp1Addr *btcutil.AddressPubKeyHash, amount btcutil.Amount,
-	secretHash []byte, lockTime int64) *ParticipateCmd {
+	secretHash [32]byte, lockTime int64) *ParticipateCmd {
 	return &ParticipateCmd{
 		cp1Addr:    cp1Addr,
 		amount:     amount,
-		secretHash: secretHash,
+		secretHash: secretHash[:],
 		lockTime:   lockTime,
 	}
 }
@@ -48,17 +56,9 @@ func NewRefundCmd(contract []byte, contractTx *wire.MsgTx) *RefundCmd {
 }
 
 // Extract the secret from the transaction as issued by the counterparty
-func NewExtractSecretCmd(redemptionTx *wire.MsgTx, secretHash []byte) *ExtractSecretCmd {
+func NewExtractSecretCmd(redemptionTx *wire.MsgTx, secretHash [32]byte) *ExtractSecretCmd {
 	return &ExtractSecretCmd{
 		redemptionTx: redemptionTx,
-		secretHash:   secretHash,
-	}
-}
-
-// Audit an existing contract
-func NewAuditContractCmd(contract []byte, contractTx *wire.MsgTx) *AuditContractCmd {
-	return &AuditContractCmd{
-		contract:   contract,
-		contractTx: contractTx,
+		secretHash:   secretHash[:],
 	}
 }

@@ -10,6 +10,7 @@ import (
 	"github.com/Oneledger/protocol/node/data"
 	"github.com/Oneledger/protocol/node/id"
 	"github.com/Oneledger/protocol/node/log"
+	"github.com/btcsuite/btcutil"
 )
 
 func GetInt(value FunctionValue) int {
@@ -26,6 +27,16 @@ func GetInt64(value FunctionValue) int64 {
 	switch value.(type) {
 	case int64:
 		return value.(int64)
+	default:
+		log.Fatal("Bad Type Cast in Function Parameter", "value", value)
+	}
+	return 0
+}
+
+func GetAmount(value FunctionValue) btcutil.Amount {
+	switch value.(type) {
+	case btcutil.Amount:
+		return value.(btcutil.Amount)
 	default:
 		log.Fatal("Bad Type Cast in Function Parameter", "value", value)
 	}
@@ -66,6 +77,16 @@ func GetIdAccount(value FunctionValue) id.Account {
 	switch value.(type) {
 	case id.Account:
 		return value.(id.Account)
+	default:
+		log.Fatal("Bad Type Cast in Function Parameter", "value", value)
+	}
+	return nil
+}
+
+func GetAccountKey(value FunctionValue) id.AccountKey {
+	switch value.(type) {
+	case id.AccountKey:
+		return value.(id.AccountKey)
 	default:
 		log.Fatal("Bad Type Cast in Function Parameter", "value", value)
 	}

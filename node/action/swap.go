@@ -9,6 +9,7 @@ import (
 	"bytes"
 
 	"github.com/Oneledger/protocol/node/chains/bitcoin"
+	"github.com/Oneledger/protocol/node/chains/bitcoin/htlc"
 	"github.com/Oneledger/protocol/node/chains/ethereum"
 	"github.com/Oneledger/protocol/node/comm"
 	"github.com/Oneledger/protocol/node/data"
@@ -16,6 +17,9 @@ import (
 	"github.com/Oneledger/protocol/node/global"
 	"github.com/Oneledger/protocol/node/id"
 	"github.com/Oneledger/protocol/node/log"
+	"github.com/btcsuite/btcd/chaincfg"
+	bwire "github.com/btcsuite/btcd/wire"
+	"github.com/btcsuite/btcutil"
 
 	"math/big"
 
@@ -400,18 +404,56 @@ func Execute(app interface{}, command Command, lastResult map[Parameter]Function
 	return err.NOT_IMPLEMENTED, lastResult
 }
 
+func GetPubKeyHash(address string) *btcutil.AddressPubKeyHash {
+
+	// TODO: Needs to be configurable
+	chainParams := &chaincfg.RegressionNetParams
+	hash, _ := btcutil.NewAddressPubKeyHash([]byte(address), chainParams)
+
+	return hash
+}
+
+// TODO: Needs to be configurable
+var timeout int64 = 100000
+
 func CreateContractBTC(context map[Parameter]FunctionValue) (bool, map[Parameter]FunctionValue) {
-	address := global.Current.BTCAddress
+	btcAddress := global.Current.BTCAddress
 
+	amount := GetAmount(context[AMOUNT])
+
+	var accountKey id.AccountKey
+	var client int
 	role := GetRole(context[ROLE])
-	password := GetString(context[PASSWORD])
+	if role == INITIATOR {
+		client = 1
+		accountKey = GetAccountKey(context[INITIATOR_ACCOUNT])
+	} else {
+		client = 2
+		accountKey = GetAccountKey(context[PARTICIPANT_ACCOUNT])
+	}
+	_ = accountKey
 
-	_ = role
+	password := GetString(context[PASSWORD])
 	_ = password
 
-	cli := bitcoin.GetBtcClient(address)
-	_ = cli
-	//todo: runCommand(initCmd,cli)
+	config := chaincfg.RegressionNetParams // TODO: should be passed in
+
+	cli := bitcoin.GetBtcClient(btcAddress, client, &config)
+
+	if role == INITIATOR {
+
+		address := GetPubKeyHash(btcAddress)
+
+		_, err := htlc.NewInitiateCmd(address, amount, timeout).RunCommand(cli)
+		if err != nil {
+			log.Error("Bitcoin Initiate", "err", err)
+			return false, nil
+		}
+	} else {
+		contract := []byte(nil)
+		contractTx := &bwire.MsgTx{}
+		_ = htlc.NewAuditContractCmd(contract, contractTx).RunCommand(cli)
+	}
 
 	return true, nil
 }
