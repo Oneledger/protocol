@@ -8,6 +8,7 @@ import (
 	"time"
 
 	brpc "github.com/Oneledger/protocol/node/chains/bitcoin/rpc"
+	"github.com/btcsuite/btcd/chaincfg"
 
 	"encoding/base64"
 	"net"
@@ -17,11 +18,12 @@ import (
 	"github.com/Oneledger/protocol/node/log"
 )
 
-func GetBtcClient(address string) *brpc.Bitcoind {
+func GetBtcClient(address string, id int, chainParams *chaincfg.Params) *brpc.Bitcoind {
 	addr := strings.Split(address, ":")
 	if len(addr) < 2 {
 		log.Error("address not in correct format", "fullAddress", address)
 	}
+
 	ip := net.ParseIP(addr[0])
 	if ip == nil {
 		log.Error("address can not be parsed", "addr", addr)
@@ -29,8 +31,16 @@ func GetBtcClient(address string) *brpc.Bitcoind {
 
 	port := convert.GetInt(addr[1], 46688)
 
-	usr, pass := getCredential()
-	cli, err := brpc.New(ip.String(), port, usr, pass, false)
+	// TODO: Needs to be passed in as a param
+	var usr, pass string
+	if id == 1 {
+		usr, pass = getCredential()
+	} else {
+		usr = "oltest02"
+		pass = "olpass02"
+	}
+
+	cli, err := brpc.New(ip.String(), port, usr, pass, false, chainParams)
 	if err != nil {
 		log.Error("Can't get the btc rpc client at given address", "err", err)
 		return nil
