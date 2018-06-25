@@ -56,7 +56,7 @@ contract HTLC {
     }
 
     function validate(bytes scr_) public view {
-        require(keccak256(abi.encodePacked(scr_)) == scrHash);
+        require(sha256((abi.encodePacked(scr_))) == scrHash);
         require(balance > 0);
     }
 
