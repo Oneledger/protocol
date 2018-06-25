@@ -33,11 +33,17 @@ func GetBtcClient(address string, id int, chainParams *chaincfg.Params) *brpc.Bi
 
 	// TODO: Needs to be passed in as a param
 	var usr, pass string
-	if id == 1 {
+	switch id {
+	case 1:
 		usr, pass = getCredential()
-	} else {
+	case 2:
 		usr = "oltest02"
 		pass = "olpass02"
+	case 3:
+		usr = "oltest03"
+		pass = "olpass03"
+	default:
+		log.Fatal("Invalid", "id", id)
 	}
 
 	cli, err := brpc.New(ip.String(), port, usr, pass, false, chainParams)

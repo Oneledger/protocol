@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"crypto/rand"
 	"crypto/sha256"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"net"
@@ -312,7 +313,7 @@ func buildRefund(b *rpc.Bitcoind, contract []byte, contractTx *wire.MsgTx, feePe
 		return nil, 0, err
 	}
 
-	log.Debug("About to Extract", "contract", contract)
+	log.Debug("About to Extract", "contract", hex.EncodeToString(contract))
 	pushes, err := txscript.ExtractAtomicSwapDataPushes(0, contract)
 	if err != nil {
 		log.Fatal("ExtractAtomicSwapDataPushes", "err", err)
@@ -383,6 +384,49 @@ func calcFeePerKb(absoluteFee btcutil.Amount, serializeSize int) float64 {
 var LastContract []byte = nil
 var LastContractTx *wire.MsgTx = nil
 
+func copyArray(from []byte) []byte {
+	to := make([]byte, len(from))
+	for i := 0; i < len(from); i++ {
+		to[i] = from[i]
+	}
+	return to
+}
+
+func copyMsgTx(from *wire.MsgTx) *wire.MsgTx {
+	var to wire.MsgTx
+
+	to.Version = from.Version
+	to.TxIn = copyTxIn(from.TxIn)
+	to.TxOut = copyTxOut(from.TxOut)
+	to.LockTime = from.LockTime
+
+	return &to
+}
+
+func copyTxIn(from []*wire.TxIn) []*wire.TxIn {
+	var to []*wire.TxIn
+	to = make([]*wire.TxIn, len(from))
+	for i := 0; i < len(from); i++ {
+		to[i] = &wire.TxIn{}
+		to[i].PreviousOutPoint = from[i].PreviousOutPoint
+		to[i].SignatureScript = copyArray(from[i].SignatureScript)
+		to[i].Witness = from[i].Witness
+		to[i].Sequence = from[i].Sequence
+	}
+	return to
+}
+
+func copyTxOut(from []*wire.TxOut) []*wire.TxOut {
+	var to []*wire.TxOut
+	to = make([]*wire.TxOut, len(from))
+	for i := 0; i < len(from); i++ {
+		to[i] = &wire.TxOut{}
+		to[i].Value = from[i].Value
+		to[i].PkScript = copyArray(from[i].PkScript)
+	}
+	return to
+}
+
 func (cmd *InitiateCmd) RunCommand(c *rpc.Bitcoind) (*chainhash.Hash, error) {
 	log.Debug("About to Initiate")
 	var secret [secretSize]byte
@@ -402,8 +446,8 @@ func (cmd *InitiateCmd) RunCommand(c *rpc.Bitcoind) (*chainhash.Hash, error) {
 	if err != nil {
 		return nil, err
 	}
-	LastContract = b.contract
-	LastContractTx = b.contractTx
+	LastContract = copyArray(b.contract)
+	LastContractTx = copyMsgTx(b.contractTx)
 
 	refundTxHash := b.refundTx.TxHash()
 	contractFeePerKb := calcFeePerKb(b.contractFee, b.contractTx.SerializeSize())
@@ -447,6 +491,7 @@ func refundP2SHContract(contract, sig, pubkey []byte) ([]byte, error) {
 func (cmd *RedeemCmd) RunCommand(c *rpc.Bitcoind) (*chainhash.Hash, error) {
 	pushes, err := txscript.ExtractAtomicSwapDataPushes(0, cmd.contract)
 	if err != nil {
+		log.Debug("Extract")
 		return nil, err
 	}
 	if pushes == nil {
@@ -473,10 +518,12 @@ func (cmd *RedeemCmd) RunCommand(c *rpc.Bitcoind) (*chainhash.Hash, error) {
 
 	addr, err := c.GetRawChangeAddress()
 	if err != nil {
+		log.Debug("RawChange")
 		return nil, err
 	}
 	outScript, err := txscript.PayToAddrScript(addr)
 	if err != nil {
+		log.Debug("PayToAddr")
 		return nil, err
 	}
 
@@ -488,6 +535,7 @@ func (cmd *RedeemCmd) RunCommand(c *rpc.Bitcoind) (*chainhash.Hash, error) {
 
 	feePerKb, minFeePerKb, err := c.GetFeePerKb()
 	if err != nil {
+		log.Debug("GetFee")
 		return nil, err
 	}
 
@@ -504,10 +552,12 @@ func (cmd *RedeemCmd) RunCommand(c *rpc.Bitcoind) (*chainhash.Hash, error) {
 
 	redeemSig, redeemPubKey, err := createSig(c, redeemTx, 0, cmd.contract, recipientAddr)
 	if err != nil {
+		log.Debug("createSig")
 		return nil, err
 	}
 	redeemSigScript, err := redeemP2SHContract(cmd.contract, redeemSig, redeemPubKey, cmd.secret)
 	if err != nil {
+		log.Debug("redeem", "err", err)
 		return nil, err
 	}
 	redeemTx.TxIn[0].SignatureScript = redeemSigScript
@@ -527,10 +577,12 @@ func (cmd *RedeemCmd) RunCommand(c *rpc.Bitcoind) (*chainhash.Hash, error) {
 			redeemTx, 0, txscript.StandardVerifyFlags, txscript.NewSigCache(10),
 			txscript.NewTxSigHashes(redeemTx), cmd.contractTx.TxOut[contractOut].Value)
 		if err != nil {
+			log.Debug("NewEngine", "err", err)
 			panic(err)
 		}
 		err = e.Execute()
 		if err != nil {
+			log.Debug("Execute", "err", err)
 			panic(err)
 		}
 	}
@@ -641,8 +693,10 @@ func (cmd *ExtractSecretCmd) RunOfflineCommand() error {
 	return errors.New("transaction does not contain the secret")
 }
 
-func (cmd *AuditContractCmd) RunCommand(c *rpc.Bitcoind) error {
-	return cmd.RunOfflineCommand(c.ChainParams)
+func (cmd *AuditContractCmd) RunCommand(b *rpc.Bitcoind) error {
+	log.Debug("======================================================", "bitcoin", b)
+	log.Debug("Audit (Offline)", "bitcoin", b)
+	return cmd.RunOfflineCommand(b.ChainParams)
 }
 
 func (cmd *AuditContractCmd) RunOfflineCommand(chainParams *chaincfg.Params) error {

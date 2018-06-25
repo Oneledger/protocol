@@ -4,6 +4,7 @@
 package bitcoin
 
 import (
+	"crypto/sha256"
 	"reflect"
 	"strconv"
 	"testing"
@@ -18,17 +19,38 @@ import (
 	"github.com/btcsuite/btcutil"
 )
 
+func SetChain() {
+	testnode1 := Setup(1)
+	testnode2 := Setup(2)
+	//testnode3 := Setup(3)
+	Generate(testnode1, 20)
+	Generate(testnode2, 101)
+	//Generate(testnode3, 100)
+	hash, err := testnode1.GetBalance("", 0)
+	log.Debug("Balance", "hash", hash, "err", err)
+	hash, err = testnode2.GetBalance("", 0)
+	log.Debug("Balance", "hash", hash, "err", err)
+	//testnode3.GetBalance("",0)
+}
+func XTestSetChain(t *testing.T) {
+	SetChain()
+}
+
 func TestSwap(t *testing.T) {
 	log.Info("Setup Working Swap Test")
 	testnode1 := Setup(1)
-	testnode2 := Setup(1)
+	testnode2 := Setup(2)
+	testnode3 := Setup(3)
 
-	AliceBobSuccessfulSwap(testnode1, testnode2, []byte("A secret"))
+	secret := []byte("No secrets")
+	secretHash := sha256.Sum256(secret)
+
+	AliceBobSuccessfulSwap(testnode1, testnode2, testnode3, secret, secretHash)
 
 	//TypeAddresses()
 }
 
-func TestDump(t *testing.T) {
+func XTestDump(t *testing.T) {
 	testnode1 := Setup(1)
 	testnode2 := Setup(2)
 	Dump(testnode1)
@@ -61,19 +83,25 @@ func XTestBlockGeneration(t *testing.T) {
 }
 
 func Setup(id int) *brpc.Bitcoind {
-	var testnode1 *brpc.Bitcoind
-	if id == 1 {
-		testnode1 = GetBtcClient("127.0.0.1:18831", id, &chaincfg.RegressionNetParams)
-	} else {
-		testnode1 = GetBtcClient("127.0.0.1:18832", id, &chaincfg.RegressionNetParams)
+	var testnode *brpc.Bitcoind
+
+	switch id {
+	case 1:
+		testnode = GetBtcClient("127.0.0.1:18831", id, &chaincfg.RegressionNetParams)
+	case 2:
+		testnode = GetBtcClient("127.0.0.1:18832", id, &chaincfg.RegressionNetParams)
+	case 3:
+		testnode = GetBtcClient("127.0.0.1:18833", id, &chaincfg.RegressionNetParams)
+	default:
+		log.Fatal("Invalid", "id", id)
 	}
 
-	if testnode1 == nil {
+	if testnode == nil {
 		log.Fatal("Can't Get Client", "config", chaincfg.RegressionNetParams)
 	}
-	log.Debug("Have a Bitcoin Client", "testnode1", testnode1)
+	log.Debug("Have a Bitcoin Client", "testnode", testnode)
 
-	return testnode1
+	return testnode
 }
 
 func Generate(testnode *brpc.Bitcoind, count uint64) {
@@ -168,10 +196,12 @@ func GetAmount(value string) btcutil.Amount {
 	return amount
 }
 
-func AliceBobSuccessfulSwap(testnode1 *brpc.Bitcoind, testnode2 *brpc.Bitcoind, secret []byte) {
+func AliceBobSuccessfulSwap(testnode1 *brpc.Bitcoind, testnode2 *brpc.Bitcoind,
+	testnode3 *brpc.Bitcoind, secret []byte, secretHash [32]byte) {
+
 	log.Debug("AliceBobSuccessfulSwap", "testnode1", testnode1, "testnode2", testnode2)
 
-	Generate(testnode1, 2)
+	Generate(testnode3, 6)
 
 	timeout := int64(1000)
 
@@ -183,38 +213,70 @@ func AliceBobSuccessfulSwap(testnode1 *brpc.Bitcoind, testnode2 *brpc.Bitcoind, 
 	testnode2.SendToAddress("oltest02", 1000.0, "Fill an Account", "Fill the Account")
 	testnode2.SendToAddress("oltest01", 10210.0, "Fill an Account", "Fill the Account")
 
-	Generate(testnode1, 20)
+	Generate(testnode3, 20)
 
 	log.Debug("Addresses", "alice", aliceAddress, "bob", bobAddress)
 
 	amount := GetAmount("0.32822")
 
-	hash, err := htlc.NewInitiateCmd(aliceAddress, amount, timeout).RunCommand(testnode1)
+	log.Debug("==== INITIATE COMMAND")
+	hash, err := htlc.NewInitiateCmd(bobAddress, amount, timeout).RunCommand(testnode1)
 	if err != nil {
 		log.Warn("Initiate", "err", err)
 	}
 
 	// Not threadsafe...
-	contract := htlc.LastContract
-	contractTx := htlc.LastContractTx
+	aliceContract := copyArray(htlc.LastContract)
+	aliceContractTx := copyMsgTx(htlc.LastContractTx)
 
 	time.Sleep(5 * time.Second)
-	Generate(testnode1, 6)
+	Generate(testnode3, 6)
 
-	hash, err = htlc.NewInitiateCmd(aliceAddress, amount, timeout).RunCommand(testnode2)
+	log.Debug("==== AUDIT COMMAND")
+	err = htlc.NewAuditContractCmd(aliceContract, aliceContractTx).RunCommand(testnode2)
 	if err != nil {
-		log.Warn("Initiate", "err", err)
+		log.Warn("Audit", "err", err)
 	}
 
-	hash, err = htlc.NewParticipateCmd(bobAddress, amount, secret, timeout).RunCommand(testnode2)
+	time.Sleep(5 * time.Second)
+	Generate(testnode3, 6)
+
+	log.Debug("==== PARTICIPATE COMMAND")
+	hash, err = htlc.NewParticipateCmd(aliceAddress, amount, secretHash, timeout).RunCommand(testnode2)
 	if err != nil {
 		log.Warn("Participate", "err", err)
 	}
 
-	time.Sleep(3 * time.Second)
-	Generate(testnode1, 6)
+	bobContract := copyArray(htlc.LastContract)
+	bobContractTx := copyMsgTx(htlc.LastContractTx)
 
-	hash, err = htlc.NewRedeemCmd(contract, contractTx, secret).RunCommand(testnode1)
+	_ = bobContract
+	_ = bobContractTx
+
+	time.Sleep(3 * time.Second)
+	Generate(testnode3, 12)
+
+	/*
+		log.Debug("==== REDEEM COMMAND")
+		hash, err = htlc.NewRedeemCmd(bobContract, bobContractTx, secret).RunCommand(testnode1)
+		if err != nil {
+			log.Warn("Redeem", "err", err)
+		}
+
+		redemptionContract := copyArray(htlc.LastContract)
+		//_ = redemptionContract
+		redemptionContractTx := copyMsgTx(htlc.LastContractTx)
+
+		// TODO: Extract Secret
+		log.Debug("==== EXTRACT COMMAND")
+		err = htlc.NewExtractSecretCmd(redemptionContractTx, secretHash).RunCommand(testnode2)
+		if err != nil {
+			log.Warn("Extract", "err", err)
+		}
+	*/
+
+	log.Debug("==== 2nd REDEEM COMMAND")
+	hash, err = htlc.NewRedeemCmd(bobContract, bobContractTx, secret).RunCommand(testnode2)
 	if err != nil {
 		log.Warn("Redeem", "err", err)
 	}
