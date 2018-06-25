@@ -8,10 +8,10 @@ import (
 	"fmt"
 	"net"
 
-	"flag"
 	"time"
 
 	"github.com/Oneledger/protocol/node/chains/bitcoin/rpc"
+	"github.com/Oneledger/protocol/node/log"
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/btcsuite/btcd/txscript"
@@ -26,18 +26,6 @@ const verify = true
 const secretSize = 32
 
 const txVersion = 2
-
-var (
-	chainParams = &chaincfg.RegressionNetParams
-)
-
-var (
-	flagset     = flag.NewFlagSet("", flag.ExitOnError)
-	connectFlag = flagset.String("s", "localhost", "host[:port] of Bitcoin Core wallet RPC server")
-	rpcuserFlag = flagset.String("rpcuser", "", "username for wallet RPC authentication")
-	rpcpassFlag = flagset.String("rpcpass", "", "password for wallet RPC authentication")
-	testnetFlag = flagset.Bool("testnet", false, "use testnet network")
-)
 
 // There are two directions that the atomic swap can be performed, as the
 // initiator can be on either chain.  This tool only deals with creating the
@@ -227,7 +215,7 @@ func buildContract(b *rpc.Bitcoind, args *contractArgs) (*builtContract, error) 
 	if err != nil {
 		return nil, err
 	}
-	contractP2SH, err := btcutil.NewAddressScriptHash(contract, chainParams)
+	contractP2SH, err := btcutil.NewAddressScriptHash(contract, b.ChainParams)
 	if err != nil {
 		return nil, err
 	}
@@ -290,9 +278,10 @@ func createSig(b *rpc.Bitcoind, tx *wire.MsgTx, idx int, pkScript []byte, addres
 }
 
 func buildRefund(b *rpc.Bitcoind, contract []byte, contractTx *wire.MsgTx, feePerKb, minFeePerKb btcutil.Amount) (
+
 	refundTx *wire.MsgTx, refundFee btcutil.Amount, err error) {
 
-	contractP2SH, err := btcutil.NewAddressScriptHash(contract, chainParams)
+	contractP2SH, err := btcutil.NewAddressScriptHash(contract, b.ChainParams)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -317,18 +306,22 @@ func buildRefund(b *rpc.Bitcoind, contract []byte, contractTx *wire.MsgTx, feePe
 	if err != nil {
 		return nil, 0, fmt.Errorf("getrawchangeaddress: %v", err)
 	}
+
 	refundOutScript, err := txscript.PayToAddrScript(refundAddress)
 	if err != nil {
 		return nil, 0, err
 	}
 
+	log.Debug("About to Extract", "contract", contract)
 	pushes, err := txscript.ExtractAtomicSwapDataPushes(0, contract)
 	if err != nil {
-		// expected to only be called with good input
-		panic(err)
+		log.Fatal("ExtractAtomicSwapDataPushes", "err", err)
+	}
+	if pushes == nil {
+		log.Warn("Not a swap contract")
 	}
 
-	refundAddr, err := btcutil.NewAddressPubKeyHash(pushes.RefundHash160[:], chainParams)
+	refundAddr, err := btcutil.NewAddressPubKeyHash(pushes.RefundHash160[:], b.ChainParams)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -336,9 +329,11 @@ func buildRefund(b *rpc.Bitcoind, contract []byte, contractTx *wire.MsgTx, feePe
 	refundTx = wire.NewMsgTx(txVersion)
 	refundTx.LockTime = uint32(pushes.LockTime)
 	refundTx.AddTxOut(wire.NewTxOut(0, refundOutScript)) // amount set below
+
 	refundSize := estimateRefundSerializeSize(contract, refundTx.TxOut)
 	refundFee = txrules.FeeForSerializeSize(feePerKb, refundSize)
 	refundTx.TxOut[0].Value = contractTx.TxOut[contractOutPoint.Index].Value - int64(refundFee)
+
 	if txrules.IsDustOutput(refundTx.TxOut[0], minFeePerKb) {
 		return nil, 0, fmt.Errorf("refund output value of %v is dust", btcutil.Amount(refundTx.TxOut[0].Value))
 	}
@@ -351,6 +346,8 @@ func buildRefund(b *rpc.Bitcoind, contract []byte, contractTx *wire.MsgTx, feePe
 	if err != nil {
 		return nil, 0, err
 	}
+
+	log.Debug("About to Refund")
 	refundSigScript, err := refundP2SHContract(contract, refundSig, refundPubKey)
 	if err != nil {
 		return nil, 0, err
@@ -370,6 +367,7 @@ func buildRefund(b *rpc.Bitcoind, contract []byte, contractTx *wire.MsgTx, feePe
 		}
 	}
 
+	log.Debug("Finished")
 	return refundTx, refundFee, nil
 }
 
@@ -386,6 +384,7 @@ var LastContract []byte = nil
 var LastContractTx *wire.MsgTx = nil
 
 func (cmd *InitiateCmd) RunCommand(c *rpc.Bitcoind) (*chainhash.Hash, error) {
+	log.Debug("About to Initiate")
 	var secret [secretSize]byte
 	_, err := rand.Read(secret[:])
 	if err != nil {
@@ -393,6 +392,7 @@ func (cmd *InitiateCmd) RunCommand(c *rpc.Bitcoind) (*chainhash.Hash, error) {
 	}
 	secretHash := sha256Hash(secret[:])
 
+	log.Debug("About to build contract")
 	b, err := buildContract(c, &contractArgs{
 		them:       cmd.cp2Addr,
 		amount:     cmd.amount,
@@ -408,6 +408,8 @@ func (cmd *InitiateCmd) RunCommand(c *rpc.Bitcoind) (*chainhash.Hash, error) {
 	refundTxHash := b.refundTx.TxHash()
 	contractFeePerKb := calcFeePerKb(b.contractFee, b.contractTx.SerializeSize())
 	refundFeePerKb := calcFeePerKb(b.refundFee, b.refundTx.SerializeSize())
+
+	log.Debug("About to grow")
 
 	fmt.Printf("Secret:      %x\n", secret)
 	fmt.Printf("Secret hash: %x\n\n", secretHash)
@@ -426,6 +428,7 @@ func (cmd *InitiateCmd) RunCommand(c *rpc.Bitcoind) (*chainhash.Hash, error) {
 	fmt.Printf("Refund transaction (%v):\n", &refundTxHash)
 	fmt.Printf("%x\n\n", refundBuf.Bytes())
 
+	log.Debug("About to Publish")
 	return c.PublishTx(b.contractTx, "contract")
 }
 
@@ -450,14 +453,14 @@ func (cmd *RedeemCmd) RunCommand(c *rpc.Bitcoind) (*chainhash.Hash, error) {
 		return nil, errors.New("contract is not an atomic swap script recognized by this tool")
 	}
 	recipientAddr, err := btcutil.NewAddressPubKeyHash(pushes.RecipientHash160[:],
-		chainParams)
+		c.ChainParams)
 	if err != nil {
 		return nil, err
 	}
 	contractHash := btcutil.Hash160(cmd.contract)
 	contractOut := -1
 	for i, out := range cmd.contractTx.TxOut {
-		sc, addrs, _, _ := txscript.ExtractPkScriptAddrs(out.PkScript, chainParams)
+		sc, addrs, _, _ := txscript.ExtractPkScriptAddrs(out.PkScript, c.ChainParams)
 		if sc == txscript.ScriptHashTy &&
 			bytes.Equal(addrs[0].(*btcutil.AddressScriptHash).Hash160()[:], contractHash) {
 			contractOut = i
@@ -639,10 +642,10 @@ func (cmd *ExtractSecretCmd) RunOfflineCommand() error {
 }
 
 func (cmd *AuditContractCmd) RunCommand(c *rpc.Bitcoind) error {
-	return cmd.RunOfflineCommand()
+	return cmd.RunOfflineCommand(c.ChainParams)
 }
 
-func (cmd *AuditContractCmd) RunOfflineCommand() error {
+func (cmd *AuditContractCmd) RunOfflineCommand(chainParams *chaincfg.Params) error {
 	contractHash160 := btcutil.Hash160(cmd.contract)
 	contractOut := -1
 	for i, out := range cmd.contractTx.TxOut {

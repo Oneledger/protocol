@@ -9,15 +9,16 @@ import (
 	"bytes"
 
 	"github.com/Oneledger/protocol/node/chains/bitcoin"
+	"github.com/Oneledger/protocol/node/chains/ethereum"
 	"github.com/Oneledger/protocol/node/comm"
 	"github.com/Oneledger/protocol/node/data"
 	"github.com/Oneledger/protocol/node/err"
 	"github.com/Oneledger/protocol/node/global"
 	"github.com/Oneledger/protocol/node/id"
 	"github.com/Oneledger/protocol/node/log"
-	"github.com/Oneledger/protocol/node/chains/ethereum"
 
 	"math/big"
+
 	"github.com/ethereum/go-ethereum/common"
 )
 
@@ -25,19 +26,19 @@ import (
 type Swap struct {
 	Base
 
-	Party        Party 		   `json:"party"`
-	CounterParty Party 		   `json:"counter_party"`
-	Amount       data.Coin     `json:"amount"`
-	Exchange     data.Coin     `json:"exchange"`
-	Fee          data.Coin     `json:"fee"`
-	Gas          data.Coin     `json:"fee"`
-	Nonce        int64         `json:"nonce"`
-	Preimage     []byte        `json:"preimage"`
+	Party        Party     `json:"party"`
+	CounterParty Party     `json:"counter_party"`
+	Amount       data.Coin `json:"amount"`
+	Exchange     data.Coin `json:"exchange"`
+	Fee          data.Coin `json:"fee"`
+	Gas          data.Coin `json:"fee"`
+	Nonce        int64     `json:"nonce"`
+	Preimage     []byte    `json:"preimage"`
 }
 
-type Party struct{
-	Key 		id.AccountKey
-	Accounts 	map[data.ChainType]string
+type Party struct {
+	Key      id.AccountKey
+	Accounts map[data.ChainType]string
 }
 
 // Ensure that all of the base values are at least reasonable.
@@ -80,7 +81,7 @@ func (transaction *Swap) ProcessCheck(app interface{}) err.Code {
 func (transaction *Swap) ProcessDeliver(app interface{}) err.Code {
 	log.Debug("Processing Swap Transaction for DeliverTx")
 	matchedSwap := ProcessSwap(app, transaction)
-	if  matchedSwap != nil {
+	if matchedSwap != nil {
 		log.Debug("Expanding the Transaction into Functions")
 		commands := matchedSwap.Expand(app)
 
@@ -197,7 +198,6 @@ func ProcessSwap(app interface{}, transaction *Swap) *Swap {
 		log.Debug("No Account", "account", account)
 		return nil
 	}
-
 
 	if *isParty {
 		matchedSwap := FindMatchingSwap(status, transaction.CounterParty.Key, transaction, *isParty)
@@ -318,6 +318,7 @@ func (swap *Swap) Resolve(app interface{}, commands Commands) {
 	identities := GetIdentities(app)
 	_ = identities
 	name := global.Current.NodeIdentity
+	_ = name
 
 	utxo := GetUtxo(app)
 	_ = utxo
@@ -364,8 +365,6 @@ func (swap *Swap) Resolve(app interface{}, commands Commands) {
 
 		commands[i].Data[ROLE] = role
 
-
-
 		commands[i].Data[AMOUNT] = swap.Amount
 		commands[i].Data[EXCHANGE] = swap.Exchange
 		commands[i].Data[NONCE] = swap.Nonce
@@ -376,11 +375,10 @@ func (swap *Swap) Resolve(app interface{}, commands Commands) {
 	return
 }
 
-
 func (swap *Swap) getRole(isParty bool) Role {
 
 	if isParty {
-		if data.Currencies[swap.Amount.Currency] < data.Currencies[swap.Exchange.Currency]{
+		if data.Currencies[swap.Amount.Currency] < data.Currencies[swap.Exchange.Currency] {
 			return INITIATOR
 		} else {
 			return PARTICIPANT
@@ -396,13 +394,13 @@ func (swap *Swap) getRole(isParty bool) Role {
 
 // Execute the function
 func Execute(app interface{}, command Command, lastResult map[Parameter]FunctionValue) (err.Code, map[Parameter]FunctionValue) {
-	if command.Execute() {
-		return err.SUCCESS,lastResult
+	if status, lastResult := command.Execute(); status {
+		return err.SUCCESS, lastResult
 	}
-	return err.NOT_IMPLEMENTED,lastResult
+	return err.NOT_IMPLEMENTED, lastResult
 }
 
-func CreateContractBTC(context map[Parameter]FunctionValue) bool {
+func CreateContractBTC(context map[Parameter]FunctionValue) (bool, map[Parameter]FunctionValue) {
 	address := global.Current.BTCAddress
 
 	role := GetRole(context[ROLE])
@@ -415,11 +413,10 @@ func CreateContractBTC(context map[Parameter]FunctionValue) bool {
 	_ = cli
 	//todo: runCommand(initCmd,cli)
 
-	return true
+	return true, nil
 }
 
 func CreateContractETH(context map[Parameter]FunctionValue) (bool, map[Parameter]FunctionValue) {
-
 
 	contract := ethereum.GetHtlContract()
 	role := GetRole(context[ROLE])
@@ -428,9 +425,9 @@ func CreateContractETH(context map[Parameter]FunctionValue) (bool, map[Parameter
 	if role == INITIATOR {
 		value = GetCoin(context[AMOUNT]).Amount
 		account := GetIdAccount(context[PARTICIPANT_ACCOUNT])
-		receiver :=
+		//receiver :=
 
-		receiver = common.HexToAddress(account.String())
+		receiver = common.HexToAddress(account.AsString())
 	} else if role == PARTICIPANT {
 		value = GetCoin(context[EXCHANGE]).Amount
 	}
@@ -439,14 +436,13 @@ func CreateContractETH(context map[Parameter]FunctionValue) (bool, map[Parameter
 	//todo: call contract.setup()
 	_ = receiver
 
-	return true, make(map[Parameter]FunctionValue, )
+	return true, make(map[Parameter]FunctionValue)
 }
 
-func CreateContractOLT(context map[Parameter]FunctionValue) bool {
-	return true
+func CreateContractOLT(context map[Parameter]FunctionValue) (bool, map[Parameter]FunctionValue) {
+	return true, nil
 }
 
-
-func ParticipateETH(context map[Parameter]FunctionValue) bool {
-	return true
+func ParticipateETH(context map[Parameter]FunctionValue) (bool, map[Parameter]FunctionValue) {
+	return true, nil
 }

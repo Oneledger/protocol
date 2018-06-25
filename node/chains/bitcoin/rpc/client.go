@@ -9,13 +9,12 @@ import (
 	"io/ioutil"
 	"net/http"
 	"time"
-
-	"github.com/ethereum/go-ethereum/log"
 )
 
 const (
 	// VERSION - represents bitcoind package version
 	VERSION = 0.1
+
 	// RPCCLIENT_TIMEOUT - represent http timeout for rcp client
 	RPCCLIENT_TIMEOUT = 30
 )
@@ -98,15 +97,17 @@ func (c *BTCRpcClient) doTimeoutRequest(timer *time.Timer, req *http.Request) (*
 
 // call prepare & exec the request
 func (c *BTCRpcClient) call(method string, params interface{}) (rr rpcResponse, err error) {
-	log.Debug("CALL")
+
 	connectTimer := time.NewTimer(RPCCLIENT_TIMEOUT * time.Second)
 	rpcR := rpcRequest{time.Now().UnixNano(), "1.0", method, params}
 	payloadBuffer := &bytes.Buffer{}
 	jsonEncoder := json.NewEncoder(payloadBuffer)
+
 	err = jsonEncoder.Encode(rpcR)
 	if err != nil {
 		return
 	}
+
 	req, err := http.NewRequest("POST", c.serverAddr, payloadBuffer)
 	if err != nil {
 		return
@@ -126,15 +127,15 @@ func (c *BTCRpcClient) call(method string, params interface{}) (rr rpcResponse, 
 	defer resp.Body.Close()
 
 	data, err := ioutil.ReadAll(resp.Body)
-	//fmt.Println(string(data))
 	if err != nil {
 		return
 	}
+
 	if resp.StatusCode != 200 {
 		err = errors.New("HTTP error: " + resp.Status)
 		return
 	}
-	log.Debug("DeepClient", "data", data)
+
 	err = json.Unmarshal(data, &rr)
 	return
 }
