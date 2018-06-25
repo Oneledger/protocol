@@ -20,6 +20,8 @@ import (
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
+	"crypto/sha256"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 )
 
 // Synchronize a swap between two users
@@ -424,25 +426,73 @@ func CreateContractETH(context map[Parameter]FunctionValue) (bool, map[Parameter
 	var receiver common.Address
 	if role == INITIATOR {
 		value = GetCoin(context[AMOUNT]).Amount
-		account := GetIdAccount(context[PARTICIPANT_ACCOUNT])
-		//receiver :=
-
-		receiver = common.HexToAddress(account.AsString())
+		receiverParty := GetParty(context[PARTICIPANT_ACCOUNT])
+		receiver = common.BytesToAddress([]byte(receiverParty.Accounts[data.ETHEREUM]))
 	} else if role == PARTICIPANT {
 		value = GetCoin(context[EXCHANGE]).Amount
+		receiverParty := GetParty(context[INITIATOR_ACCOUNT])
+		receiver = common.BytesToAddress([]byte(receiverParty.Accounts[data.ETHEREUM]))
 	}
+	scr := GetBytes(context[PASSWORD])
+	scrHash := sha256.Sum256([]byte(scr))
+
+
 
 	contract.Funds(value)
-	//todo: call contract.setup()
-	_ = receiver
+	contract.Setup(big.NewInt(25*3600), receiver, scrHash)
 
-	return true, make(map[Parameter]FunctionValue)
+
+	context[ETHCONTRACT] = contract
+	return true, context
 }
 
 func CreateContractOLT(context map[Parameter]FunctionValue) (bool, map[Parameter]FunctionValue) {
+	log.Warn("Not supported")
 	return true, nil
 }
 
 func ParticipateETH(context map[Parameter]FunctionValue) (bool, map[Parameter]FunctionValue) {
-	return true, nil
+	address := ethereum.GetAddress()
+	contract := GetETHContract(context[ETHCONTRACT])
+	scrHash, err := contract.Contract.ScrHash(&bind.CallOpts{Pending: true})
+	if err != nil {
+		log.Error("can't get the secret Hash", "contract", contract.Address, "err", err)
+	}
+
+	locktime, err := contract.Contract.LockPeriod(&bind.CallOpts{Pending: true})
+	if err != nil {
+		log.Error("can't get the lock period", "contract", contract.Address, "err", err)
+	}
+	_ = scrHash
+	_ = locktime
+	receiver, err := contract.Contract.Receiver(&bind.CallOpts{Pending: true})
+	if err != nil || receiver != address  {
+		log.Error("can't get the receiver or receiver not correct", "err", err, "contract", contract.Address, "receiver", receiver, "my address", address)
+	}
+
+	success, result := CreateContractBTC(context)
+	if success != false {
+		log.Error("failed to participate because can't create contract")
+	}
+
+	return true, result
+}
+
+
+func RedeemETH(context map[Parameter]FunctionValue) (bool, map[Parameter]FunctionValue) {
+	contract := GetETHContract(context[ETHCONTRACT])
+	//todo: make it correct scr, by extract or from local storage
+	scr := []byte("my cool secret")
+	contract.Redeem(scr)
+	context[ETHCONTRACT] = contract
+	return true, context
+}
+
+func RefundETH(context map[Parameter]FunctionValue) (bool, map[Parameter]FunctionValue) {
+	contract := GetETHContract(context[ETHCONTRACT])
+	//todo: make it correct scr, by extract or from local storage
+	scr := []byte("my cool secret")
+	contract.Refund(scr)
+	context[ETHCONTRACT] = contract
+	return true, context
 }
