@@ -11,8 +11,8 @@ import (
 
 	"math/big"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/crypto"
 
+	"crypto/sha256"
 )
 
 
@@ -37,10 +37,11 @@ func TestHtlc(t *testing.T) {
 		log.Error("Failed to retrieve balance: ", "err", err)
 	}
 	log.Debug("balance:", "balance", balance)
-
-	testHtlc_Funds(auth, opt, htlcontract)
+	value := new(big.Int)
+	value.SetString("1000000000000000000000", 10)
+	testHtlc_Funds(auth, opt, htlcontract, value)
 	testHtlc_Setup(auth, htlcontract)
-	testHtlc_Audit(auth, opt, htlcontract)
+	testHtlc_Audit(auth, opt, htlcontract, value)
 	testHtlc_Redeem(auth, opt, htlcontract)
 	testHtlc_ExtractMsg(opt, address)
 	testHtlc_Refund(auth, htlcontract)
@@ -61,10 +62,10 @@ func getClientAndAuth() (*ethclient.Client, *bind.TransactOpts, *bind.CallOpts){
 	return cli,auth,opt
 }
 
-func testHtlc_Funds(auth *bind.TransactOpts, opt *bind.CallOpts, contract *Htlc) {
+func testHtlc_Funds(auth *bind.TransactOpts, opt *bind.CallOpts, contract *Htlc, v *big.Int) {
 	log.Debug("======test funds()======")
 	auth.GasLimit = 2000000
-	auth.Value = big.NewInt(1000000000000000000)
+	auth.Value = v
 
 	log.Debug("auth",  "auth", auth)
 
@@ -86,7 +87,7 @@ func testHtlc_Funds(auth *bind.TransactOpts, opt *bind.CallOpts, contract *Htlc)
 
 func getScrPair() (scrHash [32]byte, scr []byte) {
 	s := "testswap"
-	scrHash = [32]byte(crypto.Keccak256Hash([]byte(s)))
+	scrHash = [32]byte(sha256.Sum256([]byte(s)))
 	scr = []byte(s)
 	return
 }
@@ -121,6 +122,13 @@ func testHtlc_Setup(auth *bind.TransactOpts, contract *Htlc) {
 		log.Error("failed to get receiver", "err", err)
 	}
 	log.Debug("receiver in contract: ", "address", addr)
+
+	sh, err := contract.ScrHash(&bind.CallOpts{Pending: true})
+	if err != nil {
+		log.Error("can't get the secret hash", "err", err)
+	}
+	log.Debug("scrHash in contract", "scrhash",sh)
+
 }
 
 func testHtlc_Redeem(auth *bind.TransactOpts, opt *bind.CallOpts, contract *Htlc) {
@@ -198,7 +206,7 @@ func testHtlc_Refund(auth *bind.TransactOpts, contract *Htlc) {
 
 }
 
-func testHtlc_Audit(auth *bind.TransactOpts, opt *bind.CallOpts, contract *Htlc) {
+func testHtlc_Audit(auth *bind.TransactOpts, opt *bind.CallOpts, contract *Htlc, v *big.Int) {
 
 	log.Debug("======test audit()======")
 
@@ -206,7 +214,7 @@ func testHtlc_Audit(auth *bind.TransactOpts, opt *bind.CallOpts, contract *Htlc)
 	log.Debug("receiver: ", "address", receiver.String())
 
 	scrHash, _ := getScrPair()
-	r, err :=contract.Audit(opt, receiver, big.NewInt(1000000000000000000), scrHash )
+	r, err :=contract.Audit(opt, receiver, v, scrHash )
 	if err != nil {
 		log.Error("Failed to audit the contract", "err", err)
 	}
@@ -215,8 +223,10 @@ func testHtlc_Audit(auth *bind.TransactOpts, opt *bind.CallOpts, contract *Htlc)
 	var falseScrHash [32]byte
 	copy(falseScrHash[:], "falsetest")
 	r, err =contract.Audit(opt, receiver,big.NewInt(10), falseScrHash )
-	if err != nil {
-		log.Error("Failed to audit the contract", "err", err)
+	if err != nil && r == false {
+		log.Debug("Failed to audit the contract as expected because used false secret", "r", r)
+	} else {
+		log.Error("something wrong with audit", "err", err, "r", r)
 	}
-	log.Debug("Incorrect audit result", "r", r)
+
 }

@@ -8,7 +8,6 @@ package action
 import (
 	"github.com/Oneledger/protocol/node/chains/ethereum"
 	"github.com/Oneledger/protocol/node/data"
-	"github.com/Oneledger/protocol/node/id"
 	"github.com/Oneledger/protocol/node/log"
 	"github.com/btcsuite/btcutil"
 )
@@ -73,14 +72,14 @@ func GetCoin(value FunctionValue) data.Coin {
 	return data.Coin{}
 }
 
-func GetIdAccount(value FunctionValue) id.Account {
+func GetParty(value FunctionValue) Party {
 	switch value.(type) {
-	case id.Account:
-		return value.(id.Account)
+	case Party:
+		return value.(Party)
 	default:
 		log.Fatal("Bad Type Cast in Function Parameter", "value", value)
 	}
-	return nil
+	return Party{nil, nil}
 }
 
 func GetAccountKey(value FunctionValue) id.AccountKey {
