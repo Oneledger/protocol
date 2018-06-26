@@ -219,7 +219,7 @@ func AliceBobSuccessfulSwap(testnode1 *brpc.Bitcoind, testnode2 *brpc.Bitcoind,
 
 	amount := GetAmount("0.32822")
 
-	log.Debug("==== INITIATE COMMAND")
+	log.Debug("==== ALICE INITIATE COMMAND")
 	hash, err := htlc.NewInitiateCmd(bobAddress, amount, timeout).RunCommand(testnode1)
 	if err != nil {
 		log.Warn("Initiate", "err", err)
@@ -232,7 +232,7 @@ func AliceBobSuccessfulSwap(testnode1 *brpc.Bitcoind, testnode2 *brpc.Bitcoind,
 	time.Sleep(5 * time.Second)
 	Generate(testnode3, 6)
 
-	log.Debug("==== AUDIT COMMAND")
+	log.Debug("==== BOB AUDIT COMMAND")
 	err = htlc.NewAuditContractCmd(aliceContract, aliceContractTx).RunCommand(testnode2)
 	if err != nil {
 		log.Warn("Audit", "err", err)
@@ -241,7 +241,7 @@ func AliceBobSuccessfulSwap(testnode1 *brpc.Bitcoind, testnode2 *brpc.Bitcoind,
 	time.Sleep(5 * time.Second)
 	Generate(testnode3, 6)
 
-	log.Debug("==== PARTICIPATE COMMAND")
+	log.Debug("==== BOB PARTICIPATE COMMAND")
 	hash, err = htlc.NewParticipateCmd(aliceAddress, amount, secretHash, timeout).RunCommand(testnode2)
 	if err != nil {
 		log.Warn("Participate", "err", err)
@@ -253,30 +253,37 @@ func AliceBobSuccessfulSwap(testnode1 *brpc.Bitcoind, testnode2 *brpc.Bitcoind,
 	_ = bobContract
 	_ = bobContractTx
 
-	time.Sleep(3 * time.Second)
-	Generate(testnode3, 12)
+	log.Debug("==== ALICE AUDIT COMMAND")
+	err = htlc.NewAuditContractCmd(bobContract, bobContractTx).RunCommand(testnode1)
+	if err != nil {
+		log.Warn("Audit", "err", err)
+	}
 
-	/*
-		log.Debug("==== REDEEM COMMAND")
-		hash, err = htlc.NewRedeemCmd(bobContract, bobContractTx, secret).RunCommand(testnode1)
-		if err != nil {
-			log.Warn("Redeem", "err", err)
-		}
+	time.Sleep(5 * time.Second)
+	Generate(testnode3, 6)
 
-		redemptionContract := copyArray(htlc.LastContract)
-		//_ = redemptionContract
-		redemptionContractTx := copyMsgTx(htlc.LastContractTx)
+	bobPubKey := GetBitcoinPubKey()
 
-		// TODO: Extract Secret
-		log.Debug("==== EXTRACT COMMAND")
-		err = htlc.NewExtractSecretCmd(redemptionContractTx, secretHash).RunCommand(testnode2)
-		if err != nil {
-			log.Warn("Extract", "err", err)
-		}
-	*/
+	log.Debug("==== ALICE REDEEM COMMAND")
+	hash, err = htlc.NewRedeemCmd(bobPubKey, bobContract, bobContractTx, secret).RunCommand(testnode1)
+	if err != nil {
+		log.Warn("Redeem", "err", err)
+	}
 
-	log.Debug("==== 2nd REDEEM COMMAND")
-	hash, err = htlc.NewRedeemCmd(bobContract, bobContractTx, secret).RunCommand(testnode2)
+	redemptionContract := copyArray(htlc.LastContract)
+	redemptionContractTx := copyMsgTx(htlc.LastContractTx)
+	_ = redemptionContract
+	_ = redemptionContractTx
+
+	// TODO: Extract Secret
+	log.Debug("==== BOB EXTRACT COMMAND")
+	err = htlc.NewExtractSecretCmd(aliceContractTx, secretHash).RunCommand(testnode2)
+	if err != nil {
+		log.Warn("Extract", "err", err)
+	}
+
+	log.Debug("==== BOB REDEEM COMMAND")
+	hash, err = htlc.NewRedeemCmd(aliceContract, aliceContractTx, secret).RunCommand(testnode2)
 	if err != nil {
 		log.Warn("Redeem", "err", err)
 	}

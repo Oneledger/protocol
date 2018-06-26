@@ -266,7 +266,7 @@ func buildContract(b *rpc.Bitcoind, args *contractArgs) (*builtContract, error) 
 // pubkey for a transaction input signature.  Due to limitations of the Bitcoin
 // Core RPC API, this requires dumping a private key and signing in the client,
 // rather than letting the wallet sign.
-func createSig(b *rpc.Bitcoind, tx *wire.MsgTx, idx int, pkScript []byte, address btcutil.Address) (sig, pubkey []byte, err error) {
+func createSig(b *rpc.Bitcoind, tx *wire.MsgTx, idx int, pkScript []byte, address btcutil.Address, ipubkey []byte) (sig, pubkey []byte, err error) {
 	wif, err := b.DumpPrivKey(address)
 	if err != nil {
 		return nil, nil, err
