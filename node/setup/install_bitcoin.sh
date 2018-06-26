@@ -70,17 +70,17 @@ case "$current_uname" in
 	;;
     (*Linux*)
 	current_platform='Linux'
-	apt-get update
-	apt-get install software-properties-common
+	sudo apt-get update
+	sudo apt-get install software-properties-common
 
 	# Test if bitcoind installed
 	which bitcoind
 	if [[ $? != 0 ]] ; then
 		# Add bitcoin official PPA repo
-		add-apt-repository -y ppa:bitcoin/bitcoin
-		apt-get update
+		sudo add-apt-repository -y ppa:bitcoin/bitcoin
+		sudo apt-get update
 		# Install bitcoind from PPA
-		apt-get install bitcoind
+		sudo apt-get install bitcoind
 	fi
 	;;
     (*) echo 'error: unsupported platform.'; exit 2; ;;
