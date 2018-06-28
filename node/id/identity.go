@@ -6,6 +6,8 @@
 package id
 
 import (
+	"encoding/hex"
+
 	"github.com/Oneledger/protocol/node/comm"
 	"github.com/Oneledger/protocol/node/data"
 	"github.com/Oneledger/protocol/node/err"
@@ -139,6 +141,22 @@ func (id *Identity) AsString() string {
 		buffer += "(Local) " + id.ContactInfo
 	}
 	return buffer
+}
+
+type IdentityExport struct {
+	Name       string
+	External   bool
+	AccountKey string
+}
+
+// Export returns an easily printable struct
+func (id *Identity) Export() IdentityExport {
+	accountKey := hex.EncodeToString(id.AccountKey)
+	return IdentityExport{
+		Name:       id.Name,
+		External:   id.IsExternal(),
+		AccountKey: accountKey,
+	}
 }
 
 /*

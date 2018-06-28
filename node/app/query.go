@@ -74,6 +74,10 @@ func AccountKey(app Application, name string) []byte {
 	return []byte(nil)
 }
 
+type IdentityQuery struct {
+	Identities []id.IdentityExport
+}
+
 // Get the account information for a given user
 func HandleIdentityQuery(app Application, message []byte) []byte {
 	log.Debug("IdentityQuery", "message", message)
@@ -89,20 +93,24 @@ func HandleIdentityQuery(app Application, message []byte) []byte {
 }
 
 func IdentityInfo(app Application, name string) []byte {
+	var result IdentityQuery
 	if name == "" {
 		identities := app.Identities.FindAll()
+		result.Identities = make([]id.IdentityExport, len(identities))
 
-		count := fmt.Sprintf("%d", len(identities))
-		buffer := "Answer: " + count + " "
-
-		for _, curr := range identities {
-			buffer += curr.AsString() + ", "
+		for i, identity := range identities {
+			result.Identities[i] = identity.Export()
 		}
-		return []byte(buffer)
+	} else {
+		identity, _ := app.Identities.FindName(name)
+		result.Identities = []id.IdentityExport{identity.Export()}
 	}
-	identity, _ := app.Identities.FindName(name)
 
-	return []byte(identity.AsString())
+	buffer, err := comm.Serialize(result)
+	if err != nil {
+		log.Debug("Failed to serialize identity query")
+	}
+	return buffer
 }
 
 // Get the account information for a given user
