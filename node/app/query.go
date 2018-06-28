@@ -119,38 +119,47 @@ func HandleAccountQuery(app Application, message []byte) []byte {
 	return AccountInfo(app, name)
 }
 
-// Return the information for a given account
-func AccountInfo(app Application, name string) []byte {
+type AccountQuery struct {
+	Accounts []id.AccountExport
+}
 
-	var buffer string
+func getAccountExport(app Application, account id.Account) id.AccountExport {
+	export := account.Export()
+	if export.Type == "OneLedger" {
+		export.Balance = GetBalance(app, account)
+	}
+	return export
+}
+
+// AccountInfo returns the information for a given account
+func AccountInfo(app Application, name string) []byte {
 	if name == "" {
+		var result AccountQuery
 		accounts := app.Accounts.FindAll()
 
-		count := fmt.Sprintf("%d", len(accounts))
-		buffer = "Answer[" + count + "]: "
-
-		for _, curr := range accounts {
-			buffer += curr.AsString()
-			if curr.Chain() == data.ONELEDGER {
-				buffer += " " + GetBalance(app, curr)
-			}
-			buffer += ", "
+		for _, account := range accounts {
+			accountExport := getAccountExport(app, account)
+			result.Accounts = append(result.Accounts, accountExport)
 		}
-		return []byte(buffer)
+
+		buffer, err := comm.Serialize(result)
+		if err != nil {
+			log.Warn("Failed to Serialize plural AccountInfo query")
+		}
+		return buffer
 	}
 
 	account, _ := app.Accounts.FindName(name)
-	log.Debug("Accounts", "name", name, "account", account)
+	accountExport := getAccountExport(app, account)
+	result := &AccountQuery{Accounts: []id.AccountExport{accountExport}}
 
-	if account != nil {
-		buffer = "Answer[1]: " + account.AsString()
-		if account.Chain() == data.ONELEDGER {
-			buffer += " " + GetBalance(app, account)
-		}
-	} else {
-		buffer = "Answer[0]: "
+	buffer, err := comm.Serialize(result)
+	if err != nil {
+		log.Warn("Failed to Serialize singular AccountInfo query")
 	}
-	return []byte(buffer)
+
+	log.Debug("Accounts", "name", name, "account", account)
+	return buffer
 }
 
 func HandleUtxoQuery(app Application, message []byte) []byte {
