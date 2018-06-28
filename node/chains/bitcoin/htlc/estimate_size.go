@@ -16,7 +16,7 @@ const (
 	//   - OP_DATA_33
 	//   - 33 bytes serialized compressed pubkey
 	//   - OP_DATA_32
-	//   - 32 bytes secret
+	//   - 32 bytes Secret
 	//   - OP_TRUE
 	redeemAtomicSwapSigScriptSize = 1 + 73 + 1 + 33 + 1 + 32 + 1
 

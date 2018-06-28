@@ -14,14 +14,14 @@ package htlc
 //   cp1 initiates (olt)
 //   cp2 participates with cp1 H(S) (btc)
 //   cp1 redeems btc revealing S
-//     - must verify H(S) in contract is hash of known secret
+//     - must verify H(S) in contract is hash of known Secret
 //   cp2 redeems olt with S
 //
 // Scenerio 2:
 //   cp1 initiates (btc)
 //   cp2 participates with cp1 H(S) (olt)
 //   cp1 redeems olt revealing S
-//     - must verify H(S) in contract is hash of known secret
+//     - must verify H(S) in contract is hash of known Secret
 //   cp2 redeems btc with S
 
 

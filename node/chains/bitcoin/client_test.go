@@ -17,6 +17,9 @@ import (
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/btcsuite/btcd/wire"
 	"github.com/btcsuite/btcutil"
+	"encoding/hex"
+	"crypto/rand"
+	"bytes"
 )
 
 func SetChain() {
@@ -42,10 +45,15 @@ func TestSwap(t *testing.T) {
 	testnode2 := Setup(2)
 	testnode3 := Setup(3)
 
-	secret := []byte("No secrets")
-	secretHash := sha256.Sum256(secret)
+	var secret [32]byte
+	_, err := rand.Read(secret[:])
+	if err != nil {
+		log.Error("failed to get random secret with 32 length", "err", err)
+	}
+	secretHash := sha256.Sum256(secret[:])
 
-	AliceBobSuccessfulSwap(testnode1, testnode2, testnode3, secret, secretHash)
+	log.Debug("secret pair", "secret",hex.EncodeToString(secret[:]), "secretHash", hex.EncodeToString(secretHash[:]))
+	AliceBobSuccessfulSwap(testnode1, testnode2, testnode3, secret[:], secretHash)
 
 	//TypeAddresses()
 }
@@ -105,12 +113,12 @@ func Setup(id int) *brpc.Bitcoind {
 }
 
 func Generate(testnode *brpc.Bitcoind, count uint64) {
-	log.Debug("About to Generate")
+	log.Debug("About to Generate blocks", "cnt", count)
 	text, err := testnode.Generate(count)
 	if err != nil {
 		log.Fatal("Generate", "err", err)
 	}
-	log.Debug("Generate", "text", text)
+	log.Debug("Generated", "text", text)
 }
 
 func Dump(testnode *brpc.Bitcoind) {
@@ -203,15 +211,15 @@ func AliceBobSuccessfulSwap(testnode1 *brpc.Bitcoind, testnode2 *brpc.Bitcoind,
 
 	Generate(testnode3, 6)
 
-	timeout := int64(1000)
-
+	aliceTimeout := time.Now().Add( 2 * time.Minute).Unix()
+	bobTimeout := time.Now().Add( 1 * time.Minute).Unix()
 	aliceAddress := GetRawAddress(testnode1)
 	bobAddress := GetRawAddress(testnode2)
 
-	testnode1.SendToAddress("oltest01", 234.0, "Fill Account", "Fill Account")
-	testnode1.SendToAddress("oltest02", 30000.0, "Fill Account", "Fill Account")
-	testnode2.SendToAddress("oltest02", 1000.0, "Fill an Account", "Fill the Account")
-	testnode2.SendToAddress("oltest01", 10210.0, "Fill an Account", "Fill the Account")
+	//testnode1.SendToAddress("oltest01", 234.0, "Fill Account", "Fill Account")
+	//testnode1.SendToAddress("oltest02", 30000.0, "Fill Account", "Fill Account")
+	//testnode2.SendToAddress("oltest02", 1000.0, "Fill an Account", "Fill the Account")
+	//testnode2.SendToAddress("oltest01", 10210.0, "Fill an Account", "Fill the Account")
 
 	Generate(testnode3, 20)
 
@@ -220,7 +228,7 @@ func AliceBobSuccessfulSwap(testnode1 *brpc.Bitcoind, testnode2 *brpc.Bitcoind,
 	amount := GetAmount("0.32822")
 
 	log.Debug("==== ALICE INITIATE COMMAND")
-	hash, err := htlc.NewInitiateCmd(bobAddress, amount, timeout).RunCommand(testnode1)
+	hash, err := htlc.NewInitiateCmd(bobAddress, amount, aliceTimeout, secretHash).RunCommand(testnode1)
 	if err != nil {
 		log.Warn("Initiate", "err", err)
 	}
@@ -229,8 +237,8 @@ func AliceBobSuccessfulSwap(testnode1 *brpc.Bitcoind, testnode2 *brpc.Bitcoind,
 	aliceContract := copyArray(htlc.LastContract)
 	aliceContractTx := copyMsgTx(htlc.LastContractTx)
 
-	time.Sleep(5 * time.Second)
-	Generate(testnode3, 6)
+	time.Sleep(3 * time.Second)
+	Generate(testnode3, 10)
 
 	log.Debug("==== BOB AUDIT COMMAND")
 	err = htlc.NewAuditContractCmd(aliceContract, aliceContractTx).RunCommand(testnode2)
@@ -238,20 +246,17 @@ func AliceBobSuccessfulSwap(testnode1 *brpc.Bitcoind, testnode2 *brpc.Bitcoind,
 		log.Warn("Audit", "err", err)
 	}
 
-	time.Sleep(5 * time.Second)
-	Generate(testnode3, 6)
+	time.Sleep(3 * time.Second)
+	Generate(testnode3, 10)
 
 	log.Debug("==== BOB PARTICIPATE COMMAND")
-	hash, err = htlc.NewParticipateCmd(aliceAddress, amount, secretHash, timeout).RunCommand(testnode2)
+	hash, err = htlc.NewParticipateCmd(aliceAddress, amount*2, secretHash, bobTimeout).RunCommand(testnode2)
 	if err != nil {
 		log.Warn("Participate", "err", err)
 	}
 
 	bobContract := copyArray(htlc.LastContract)
 	bobContractTx := copyMsgTx(htlc.LastContractTx)
-
-	_ = bobContract
-	_ = bobContractTx
 
 	log.Debug("==== ALICE AUDIT COMMAND")
 	err = htlc.NewAuditContractCmd(bobContract, bobContractTx).RunCommand(testnode1)
@@ -262,33 +267,35 @@ func AliceBobSuccessfulSwap(testnode1 *brpc.Bitcoind, testnode2 *brpc.Bitcoind,
 	time.Sleep(5 * time.Second)
 	Generate(testnode3, 6)
 
-	bobPubKey := GetBitcoinPubKey()
-
 	log.Debug("==== ALICE REDEEM COMMAND")
-	hash, err = htlc.NewRedeemCmd(bobPubKey, bobContract, bobContractTx, secret).RunCommand(testnode1)
+	hash, err = htlc.NewRedeemCmd(bobContract, bobContractTx, secret).RunCommand(testnode1)
 	if err != nil {
 		log.Warn("Redeem", "err", err)
 	}
 
-	redemptionContract := copyArray(htlc.LastContract)
 	redemptionContractTx := copyMsgTx(htlc.LastContractTx)
-	_ = redemptionContract
-	_ = redemptionContractTx
 
 	// TODO: Extract Secret
 	log.Debug("==== BOB EXTRACT COMMAND")
-	err = htlc.NewExtractSecretCmd(aliceContractTx, secretHash).RunCommand(testnode2)
+	err = htlc.NewExtractSecretCmd(redemptionContractTx, secretHash).RunCommand(testnode2)
 	if err != nil {
 		log.Warn("Extract", "err", err)
 	}
+	extractSecret := copyArray(htlc.Secret)
+	if !bytes.Equal(extractSecret, secret) {
+		log.Warn("Extract Secret doesn't match", "extract", extractSecret, "original", secret)
+	}
+	log.Debug("Extracted Secret matches", "secret", hex.EncodeToString(extractSecret))
 
 	log.Debug("==== BOB REDEEM COMMAND")
-	hash, err = htlc.NewRedeemCmd(aliceContract, aliceContractTx, secret).RunCommand(testnode2)
+	hash, err = htlc.NewRedeemCmd(aliceContract, aliceContractTx, extractSecret).RunCommand(testnode2)
 	if err != nil {
 		log.Warn("Redeem", "err", err)
 	}
 
 	log.Debug("Results", "hash", hash)
+	time.Sleep(3 * time.Second)
+	Generate(testnode3, 10)
 }
 
 func GetContractTx(hash *chainhash.Hash) *wire.MsgTx {

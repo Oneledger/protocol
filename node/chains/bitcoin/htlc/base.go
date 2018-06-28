@@ -11,11 +11,12 @@ import (
 )
 
 // Initiate a new swpa between parties
-func NewInitiateCmd(cp2Addr *btcutil.AddressPubKeyHash, amount btcutil.Amount, lockTime int64) *InitiateCmd {
+func NewInitiateCmd(cp2Addr *btcutil.AddressPubKeyHash, amount btcutil.Amount, lockTime int64, scrHash [32]byte) *InitiateCmd {
 	return &InitiateCmd{
 		cp2Addr:  cp2Addr,
 		amount:   amount,
 		lockTime: lockTime,
+		scrHash:  scrHash,
 	}
 }
 
@@ -55,7 +56,7 @@ func NewRefundCmd(contract []byte, contractTx *wire.MsgTx) *RefundCmd {
 	}
 }
 
-// Extract the secret from the transaction as issued by the counterparty
+// Extract the Secret from the transaction as issued by the counterparty
 func NewExtractSecretCmd(redemptionTx *wire.MsgTx, secretHash [32]byte) *ExtractSecretCmd {
 	return &ExtractSecretCmd{
 		redemptionTx: redemptionTx,
