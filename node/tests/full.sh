@@ -15,7 +15,7 @@ $TEST/register.sh
 $TEST/send.sh
 $TEST/identity.sh
 $TEST/accounts.sh
-$TEST/utxo.sh
+#$TEST/utxo.sh
 
 $CMD/stopOneLedger
 

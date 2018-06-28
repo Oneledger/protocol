@@ -41,10 +41,10 @@ olclient send -s $SEQ -a $addrDavid --party David --counterparty Carol --amount 
 
 sleep 8
 
-olclient utxo -a $addrAlice
-olclient utxo -a $addrBob
-olclient utxo -a $addrCarol
-olclient utxo -a $addrDavid
+#olclient utxo -a $addrAlice
+#olclient utxo -a $addrBob
+#olclient utxo -a $addrCarol
+#olclient utxo -a $addrDavid
 
 olclient identity -a $addrAlice
 olclient identity -a $addrBob
