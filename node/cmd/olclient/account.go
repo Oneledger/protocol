@@ -12,7 +12,6 @@ import (
 	"github.com/Oneledger/protocol/node/app"
 	"github.com/Oneledger/protocol/node/cmd/shared"
 	"github.com/Oneledger/protocol/node/comm"
-	"github.com/Oneledger/protocol/node/log"
 	"github.com/spf13/cobra"
 )
 
@@ -51,10 +50,9 @@ func CheckAccount(cmd *cobra.Command, args []string) {
 		// var accountQuery app.AccountQuery
 		var prototype app.AccountQuery
 		result, _ := comm.Deserialize(response.Response.Value, &prototype)
-		shared.Console.Info("\nCheckAccount response: \n")
 		printQuery(result.(*app.AccountQuery))
 	} else {
-		log.Debug("Query Failed")
+		shared.Console.Warning("Query Failed")
 	}
 }
 
@@ -66,6 +64,8 @@ func printQuery(accountQuery *app.AccountQuery) {
 	accountType := "      Type:"
 	accountKey := "AccountKey:"
 	nodeName := "  NodeName:"
+
+	shared.Console.Info("\nCheckAccount response: \n")
 
 	for _, export := range exports {
 		shared.Console.Info(fmt.Sprintf(nodeName+" %s", export.NodeName))
