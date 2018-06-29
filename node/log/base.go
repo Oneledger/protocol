@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/Oneledger/protocol/node/global"
 	"github.com/tendermint/tmlibs/log"
 )
 
@@ -43,7 +44,9 @@ func Info(msg string, args ...interface{}) {
 }
 
 func Debug(msg string, args ...interface{}) {
-	current.Debug(msg, args...)
+	if global.Current.Debug {
+		current.Debug(msg, args...)
+	}
 }
 
 func Warn(msg string, args ...interface{}) {

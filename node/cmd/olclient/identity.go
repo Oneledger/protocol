@@ -6,8 +6,13 @@
 package main
 
 import (
+	"fmt"
+
 	"github.com/Oneledger/protocol/node/action"
+	"github.com/Oneledger/protocol/node/app"
+	"github.com/Oneledger/protocol/node/cmd/shared"
 	"github.com/Oneledger/protocol/node/comm"
+	"github.com/Oneledger/protocol/node/id"
 	"github.com/Oneledger/protocol/node/log"
 	"github.com/spf13/cobra"
 )
@@ -43,8 +48,41 @@ func CheckIdentity(cmd *cobra.Command, args []string) {
 	log.Debug("Checking Identity", "identity", ident)
 
 	request := FormatIdentityRequest()
-	result := comm.Query("/identity", request)
-	if result != nil {
-		log.Debug("Returned Successfully with", "response", string(result.Response.Value))
+	response := comm.Query("/identity", request)
+	if response != nil {
+		var prototype app.IdentityQuery
+		result, err := comm.Deserialize(response.Response.Value, &prototype)
+		if err != nil {
+			shared.Console.Error("Failed to deserialize IdentityQuery:")
+			return
+		}
+		printResponse(result.(*app.IdentityQuery))
 	}
+}
+
+func printResponse(idQuery *app.IdentityQuery) {
+	shared.Console.Info("\nCheckIdentity Response:\n")
+
+	for _, identity := range idQuery.Identities {
+		printIdentity(&identity)
+	}
+}
+
+func printIdentity(export *id.IdentityExport) {
+	// Right-align fieldnames in console
+	name := "      Name:"
+	scope := "     Scope:"
+	accountKey := "AccountKey:"
+
+	var scopeOutput string
+	if export.External {
+		scopeOutput = "External"
+	} else {
+		scopeOutput = "Local"
+	}
+
+	shared.Console.Info(fmt.Sprintf(name+" %s", export.Name))
+	shared.Console.Info(fmt.Sprintf(scope+" %s", scopeOutput))
+	shared.Console.Info(fmt.Sprintf(accountKey+" %s", export.AccountKey))
+	shared.Console.Info()
 }

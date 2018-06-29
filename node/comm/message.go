@@ -10,8 +10,6 @@ package comm
 
 import (
 	"encoding/json"
-
-	"github.com/Oneledger/protocol/node/log"
 )
 
 type Message = []byte
@@ -19,10 +17,6 @@ type Message = []byte
 // Given any type of input (except Maps), convert it into wire format
 func Serialize(input interface{}) (msg []byte, err error) {
 	buffer, err := json.Marshal(input)
-	if err != nil {
-		log.Error("Marshal", "err", err)
-	}
-
 	return buffer, err
 
 	// TODO: Do we really need wire here?
@@ -42,11 +36,6 @@ func Serialize(input interface{}) (msg []byte, err error) {
 func Deserialize(input []byte, output interface{}) (msg interface{}, err error) {
 
 	err = json.Unmarshal(input, output)
-	if err != nil {
-		log.Fatal("Unmarshal", "err", err)
-		//log.Error("Unmarshal", "err", err)
-	}
-
 	return output, err
 
 	// TODO: Do we really need wire here?
