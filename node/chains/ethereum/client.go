@@ -1,32 +1,33 @@
 package ethereum
 
 import (
-	"github.com/ethereum/go-ethereum/ethclient"
-	"github.com/Oneledger/protocol/node/log"
-	"github.com/Oneledger/protocol/node/global"
-	"time"
 	"math/big"
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-	"github.com/Oneledger/protocol/node/chains/ethereum/htlc"
-	"github.com/ethereum/go-ethereum/common"
 	"strings"
+	"time"
+
+	"github.com/Oneledger/protocol/node/chains/ethereum/htlc"
+	"github.com/Oneledger/protocol/node/global"
+	"github.com/Oneledger/protocol/node/log"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/ethclient"
 )
 
 var client *ethclient.Client
 var htlContract = &HtlContract{}
 
 type HtlContract struct {
-	Contract 	*htlc.Htlc
-	Address 	common.Address
-	Txs			[]*types.Transaction
+	Contract *htlc.Htlc
+	Address  common.Address
+	Txs      []*types.Transaction
 }
 
-func getEthClient() (*ethclient.Client) {
+func getEthClient() *ethclient.Client {
 	if client == nil {
 		for i := 0; i < 3; i++ {
 			cli, err := ethclient.Dial(global.Current.ETHAddress)
-			if err != nil{
+			if err != nil {
 				log.Fatal("failed to get geth ipc ", "err", err)
 				time.Sleep(3 * time.Second)
 			}
@@ -35,7 +36,7 @@ func getEthClient() (*ethclient.Client) {
 	} else if id, _ := client.NetworkID(nil); id == big.NewInt(20180229) {
 		for i := 0; i < 3; i++ {
 			cli, err := ethclient.Dial(global.Current.ETHAddress)
-			if err != nil{
+			if err != nil {
 				log.Fatal("failed to get geth ipc ", "err", err)
 				time.Sleep(3 * time.Second)
 			}
@@ -51,7 +52,7 @@ func GetAddress() common.Address {
 	return auth.From
 }
 
-func GetAuth() (*bind.TransactOpts) {
+func GetAuth() *bind.TransactOpts {
 	//todo: generate auth when register without pre-allocate
 	nodeName := global.Current.NodeName
 	switch nodeName {
@@ -72,18 +73,16 @@ func GetAuth() (*bind.TransactOpts) {
 		return auth
 	case "Carol-Node":
 		key := `{"address":"8a309f95de0e47edb61de8fa0cf8bdd722271789","crypto":{"cipher":"aes-128-ctr","ciphertext":"81becb7ca37be737af147aa0552b1639b770d76ba98fa82069325fe1ce6e1aa1","cipherparams":{"iv":"5be20f263a46d6cca53cb0ae490245fd"},"kdf":"scrypt","kdfparams":{"dklen":32,"n":262144,"p":1,"r":8,"salt":"12456c9a74778a06449596676cc90f2f046e306b5db74688600c04577529b9c2"},"mac":"6737c9dd93f0abc8e102590984790214c2b9dfc36ea6e2b769e80c19eb22e4e8"},"id":"fbaef12b-a667-4c4e-b4c7-7234ef37cbe9","version":3}`
-		auth, err := bind.NewTransactor(strings.NewReader(key),"3456")
+		auth, err := bind.NewTransactor(strings.NewReader(key), "3456")
 		if err != nil {
-			log.Fatal( "Can't get pre-allocate auth for Carol", "err", err)
+			log.Fatal("Can't get pre-allocate auth for Carol", "err", err)
 		}
 		return auth
 	default:
-		log.Info("This node don't have pre-allocate Eth account")
+		log.Info("This node don't have pre-allocate Eth account", "nodeName", nodeName)
 		return nil
 	}
 }
-
-
 
 func GetHtlContract() *HtlContract {
 	cli := getEthClient()
@@ -120,7 +119,7 @@ func (h *HtlContract) Funds(value *big.Int) error {
 		return err
 	}
 	h.Txs = append(h.Txs, tx)
-	log.Info("Fund htlc","address", h.Address, "tx", h.Txs[len(h.Txs)], "value", value)
+	log.Info("Fund htlc", "address", h.Address, "tx", h.Txs[len(h.Txs)], "value", value)
 	return nil
 }
 
@@ -133,7 +132,7 @@ func (h *HtlContract) Setup(lockTime *big.Int, receiver common.Address, scrHash 
 		return err
 	}
 	h.Txs = append(h.Txs, tx)
-	log.Info("Setup htlc","address", h.Address, "tx", h.Txs[len(h.Txs)])
+	log.Info("Setup htlc", "address", h.Address, "tx", h.Txs[len(h.Txs)])
 	return nil
 }
 
@@ -146,7 +145,7 @@ func (h *HtlContract) Redeem(scr []byte) error {
 		return err
 	}
 	h.Txs = append(h.Txs, tx)
-	log.Info("Redeem htlc","address", h.Address, "tx", h.Txs[len(h.Txs)], "scr", scr, "value", tx.Value())
+	log.Info("Redeem htlc", "address", h.Address, "tx", h.Txs[len(h.Txs)], "scr", scr, "value", tx.Value())
 	return nil
 }
 
@@ -159,16 +158,16 @@ func (h *HtlContract) Refund(scr []byte) error {
 		return err
 	}
 	h.Txs = append(h.Txs, tx)
-	log.Info("Refund htlc","address", h.Address, "tx", h.Txs[len(h.Txs)], "value", tx.Value())
+	log.Info("Refund htlc", "address", h.Address, "tx", h.Txs[len(h.Txs)], "value", tx.Value())
 	return nil
 }
 
 func (h *HtlContract) Audit(lockTime *big.Int, receiver common.Address, scrHash [32]byte) error {
-	result, err := h.Contract.Audit(&bind.CallOpts{Pending: true}, receiver, lockTime,  scrHash)
+	result, err := h.Contract.Audit(&bind.CallOpts{Pending: true}, receiver, lockTime, scrHash)
 	if err != nil {
 		log.Error("Can't audit the htlc", "err", err)
 		return err
 	}
-	log.Info("Audit htlc","result", result, "tx")
+	log.Info("Audit htlc", "result", result, "tx")
 	return nil
 }

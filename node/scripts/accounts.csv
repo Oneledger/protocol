@@ -1,5 +1,5 @@
 Identity,NodeName,RPCAddress,P2PAddress,AppAddress,BTCAddress,ETHAddress
-David,David-Node,46601,46611,46621,18831,NONE
-Alice,Alice-Node,46602,46612,46622,18832,$OLDATA/ethereum/A/geth.ipc
-Bob,Bob-Node,46603,46613,46623,18833,$OLDATA/ethereum/B/geth.ipc
-Carol,Carol-Node,46604,46614,46624,18834,$OLDATA/ethereum/C/geth.ipc
+David,David-Node,46601,46611,46621,18833,NONE
+Alice,Alice-Node,46602,46612,46622,18831,$OLDATA/ethereum/A/geth.ipc
+Bob,Bob-Node,46603,46613,46623,18832,$OLDATA/ethereum/B/geth.ipc
+Carol,Carol-Node,46604,46614,46624,18833,$OLDATA/ethereum/C/geth.ipc
