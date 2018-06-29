@@ -7,42 +7,56 @@ package action
 
 import (
 	"bytes"
-	"strings"
 
 	"github.com/Oneledger/protocol/node/chains/bitcoin"
+	"github.com/Oneledger/protocol/node/chains/bitcoin/htlc"
+	"github.com/Oneledger/protocol/node/chains/ethereum"
 	"github.com/Oneledger/protocol/node/comm"
-	"github.com/Oneledger/protocol/node/convert"
 	"github.com/Oneledger/protocol/node/data"
 	"github.com/Oneledger/protocol/node/err"
 	"github.com/Oneledger/protocol/node/global"
 	"github.com/Oneledger/protocol/node/id"
 	"github.com/Oneledger/protocol/node/log"
+	"github.com/btcsuite/btcd/chaincfg"
+	bwire "github.com/btcsuite/btcd/wire"
+	"github.com/btcsuite/btcutil"
+
+	"math/big"
+
+	"github.com/ethereum/go-ethereum/common"
+	"crypto/sha256"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 )
 
 // Synchronize a swap between two users
 type Swap struct {
 	Base
 
-	Party        id.AccountKey `json:"party"`
-	CounterParty id.AccountKey `json:"counter_party"`
-	Amount       data.Coin     `json:"amount"`
-	Exchange     data.Coin     `json:"exchange"`
-	Fee          data.Coin     `json:"fee"`
-	Gas          data.Coin     `json:"fee"`
-	Nonce        int64         `json:"nonce"`
-	Preimage     []byte        `json:"preimage"`
+	Party        Party     `json:"party"`
+	CounterParty Party     `json:"counter_party"`
+	Amount       data.Coin `json:"amount"`
+	Exchange     data.Coin `json:"exchange"`
+	Fee          data.Coin `json:"fee"`
+	Gas          data.Coin `json:"fee"`
+	Nonce        int64     `json:"nonce"`
+	Preimage     []byte    `json:"preimage"`
+}
+
+type Party struct {
+	Key      id.AccountKey
+	Accounts map[data.ChainType]string
 }
 
 // Ensure that all of the base values are at least reasonable.
 func (transaction *Swap) Validate() err.Code {
 	log.Debug("Validating Swap Transaction")
 
-	if transaction.Party == nil {
+	if transaction.Party.Key == nil {
 		log.Debug("Missing Party")
 		return err.MISSING_DATA
 	}
 
-	if transaction.CounterParty == nil {
+	if transaction.CounterParty.Key == nil {
 		log.Debug("Missing CounterParty")
 		return err.MISSING_DATA
 	}
@@ -72,19 +86,23 @@ func (transaction *Swap) ProcessCheck(app interface{}) err.Code {
 // Start the swap
 func (transaction *Swap) ProcessDeliver(app interface{}) err.Code {
 	log.Debug("Processing Swap Transaction for DeliverTx")
-
-	if ProcessSwap(app, transaction) {
+	matchedSwap := ProcessSwap(app, transaction)
+	if matchedSwap != nil {
 		log.Debug("Expanding the Transaction into Functions")
-		commands := transaction.Expand(app)
+		commands := matchedSwap.Expand(app)
 
-		transaction.Resolve(app, commands)
+		matchedSwap.Resolve(app, commands)
+
+		//before loop of execute, lastResult is nil
+		var lastResult map[Parameter]FunctionValue
 
 		for i := 0; i < commands.Count(); i++ {
-			status := Execute(app, commands[i])
+			status, result := Execute(app, commands[i], lastResult)
 			if status != err.SUCCESS {
 				log.Error("Failed to Execute", "command", commands[i])
 				return err.EXPAND_ERROR
 			}
+			lastResult = result
 		}
 	} else {
 		log.Debug("Not Involved or Not Ready")
@@ -108,13 +126,30 @@ func FindSwap(status *data.Datastore, key id.AccountKey) Transaction {
 }
 
 // TODO: Change to return Role as INITIATOR or PARTICIPANT
-func FindMatchingSwap(status *data.Datastore, accountKey id.AccountKey, transaction *Swap) *Swap {
+func FindMatchingSwap(status *data.Datastore, accountKey id.AccountKey, transaction *Swap, isParty bool) (matched *Swap) {
 
 	result := FindSwap(status, accountKey)
 	if result != nil {
 		entry := result.(*Swap)
 		if MatchSwap(entry, transaction) {
-			return entry
+			if isParty {
+				matched.Party = transaction.Party
+				matched.CounterParty = entry.Party
+				matched.Amount = transaction.Amount
+				matched.Exchange = transaction.Exchange
+			} else {
+				matched.Party = entry.Party
+				matched.CounterParty = transaction.Party
+				matched.Amount = transaction.Exchange
+				matched.Exchange = transaction.Amount
+			}
+			matched.Base = transaction.Base
+			matched.Fee = transaction.Fee
+			matched.Nonce = transaction.Nonce
+			//todo: get preimage for this swap
+			matched.Preimage = []byte("super cool pre-image")
+
+			return matched
 		} else {
 			log.Debug("Swap doesn't match", "key", accountKey, "transaction", transaction, "entry", entry)
 		}
@@ -135,11 +170,11 @@ func MatchSwap(left *Swap, right *Swap) bool {
 		log.Debug("ChainId is wrong")
 		return false
 	}
-	if bytes.Compare(left.Party, right.CounterParty) != 0 {
+	if bytes.Compare(left.Party.Key, right.CounterParty.Key) != 0 {
 		log.Debug("Party/CounterParty is wrong")
 		return false
 	}
-	if bytes.Compare(left.CounterParty, right.Party) != 0 {
+	if bytes.Compare(left.CounterParty.Key, right.Party.Key) != 0 {
 		log.Debug("CounterParty/Party is wrong")
 		return false
 	}
@@ -159,7 +194,7 @@ func MatchSwap(left *Swap, right *Swap) bool {
 	return true
 }
 
-func ProcessSwap(app interface{}, transaction *Swap) bool {
+func ProcessSwap(app interface{}, transaction *Swap) *Swap {
 	status := GetStatus(app)
 	account := transaction.GetNodeAccount(app)
 
@@ -167,37 +202,40 @@ func ProcessSwap(app interface{}, transaction *Swap) bool {
 
 	if isParty == nil {
 		log.Debug("No Account", "account", account)
-		return false
+		return nil
 	}
 
 	if *isParty {
-		otherSide := FindMatchingSwap(status, transaction.CounterParty, transaction)
-		if otherSide != nil {
-			return true
+		matchedSwap := FindMatchingSwap(status, transaction.CounterParty.Key, transaction, *isParty)
+		if matchedSwap != nil {
+			return matchedSwap
 		} else {
-			SaveSwap(status, transaction.CounterParty, transaction)
+			SaveSwap(status, transaction.CounterParty.Key, transaction)
 			log.Debug("Not Ready", "account", account)
-			return false
+			return nil
 		}
 	} else {
-		otherSide := FindMatchingSwap(status, transaction.Party, transaction)
-		if otherSide != nil {
-			return true
+		matchedSwap := FindMatchingSwap(status, transaction.Party.Key, transaction, *isParty)
+		if matchedSwap != nil {
+			return matchedSwap
 
 		} else {
-			SaveSwap(status, transaction.Party, transaction)
+			SaveSwap(status, transaction.Party.Key, transaction)
 			log.Debug("Not Ready", "account", account)
-			return false
+			return nil
 		}
 	}
 
 	log.Debug("Not Involved", "account", account)
-	return false
+	return nil
 }
 
 func SaveSwap(status *data.Datastore, accountKey id.AccountKey, transaction *Swap) {
 	log.Debug("SaveSwap", "key", accountKey)
-	buffer, _ := comm.Serialize(transaction)
+	buffer, err := comm.Serialize(transaction)
+	if err != nil {
+		log.Error("Failed to Serialize SaveSwap transaction")
+	}
 	status.Store(accountKey, buffer)
 	status.Commit()
 }
@@ -252,12 +290,12 @@ func (transaction *Swap) IsParty(account id.Account) *bool {
 	}
 
 	var isParty bool
-	if bytes.Compare(transaction.Party, account.AccountKey()) == 0 {
+	if bytes.Compare(transaction.Party.Key, account.AccountKey()) == 0 {
 		isParty = true
 		return &isParty
 	}
 
-	if bytes.Compare(transaction.CounterParty, account.AccountKey()) == 0 {
+	if bytes.Compare(transaction.CounterParty.Key, account.AccountKey()) == 0 {
 		isParty = false
 		return &isParty
 	}
@@ -288,6 +326,8 @@ func (swap *Swap) Resolve(app interface{}, commands Commands) {
 
 	identities := GetIdentities(app)
 	_ = identities
+	name := global.Current.NodeIdentity
+	_ = name
 
 	utxo := GetUtxo(app)
 	_ = utxo
@@ -295,8 +335,11 @@ func (swap *Swap) Resolve(app interface{}, commands Commands) {
 	var iindex, pindex int
 
 	chains := GetChains(transaction)
+	isParty := swap.IsParty(account)
+	role := swap.getRole(*isParty)
+
 	for i := 0; i < len(commands); i++ {
-		isParty := swap.IsParty(account)
+
 		if *isParty {
 			commands[i].Chain = chains[0]
 			iindex = 0
@@ -307,14 +350,29 @@ func (swap *Swap) Resolve(app interface{}, commands Commands) {
 			pindex = 0
 		}
 
-		role := PARTICIPANT
+		_ = iindex
+		_ = pindex
 		if *isParty {
-			role = INITIATOR
+			if role == INITIATOR {
+				commands[i].Data[INITIATOR_ACCOUNT] = swap.Party.Accounts
+				commands[i].Data[PARTICIPANT_ACCOUNT] = swap.CounterParty.Accounts
+			} else {
+				commands[i].Data[INITIATOR_ACCOUNT] = swap.CounterParty.Accounts
+				commands[i].Data[PARTICIPANT_ACCOUNT] = swap.Party.Accounts
+			}
+
+		} else {
+			if role == PARTICIPANT {
+				commands[i].Data[INITIATOR_ACCOUNT] = swap.Party.Accounts
+				commands[i].Data[PARTICIPANT_ACCOUNT] = swap.CounterParty.Accounts
+			} else {
+				commands[i].Data[INITIATOR_ACCOUNT] = swap.CounterParty.Accounts
+				commands[i].Data[PARTICIPANT_ACCOUNT] = swap.Party.Accounts
+			}
+
 		}
 
 		commands[i].Data[ROLE] = role
-		commands[i].Data[INITIATOR_ACCOUNT] = chains[iindex]
-		commands[i].Data[PARTICIPANT_ACCOUNT] = chains[pindex]
 
 		commands[i].Data[AMOUNT] = swap.Amount
 		commands[i].Data[EXCHANGE] = swap.Exchange
@@ -326,36 +384,160 @@ func (swap *Swap) Resolve(app interface{}, commands Commands) {
 	return
 }
 
-// Execute the function
-func Execute(app interface{}, command Command) err.Code {
-	if command.Execute() {
-		return err.SUCCESS
+func (swap *Swap) getRole(isParty bool) Role {
+
+	if isParty {
+		if data.Currencies[swap.Amount.Currency] < data.Currencies[swap.Exchange.Currency] {
+			return INITIATOR
+		} else {
+			return PARTICIPANT
+		}
+	} else {
+		if data.Currencies[swap.Exchange.Currency] < data.Currencies[swap.Amount.Currency] {
+			return PARTICIPANT
+		} else {
+			return INITIATOR
+		}
 	}
-	return err.NOT_IMPLEMENTED
 }
 
-func CreateContractBTC(context map[Parameter]FunctionValue) bool {
-	address := global.Current.BTCAddress
-	parts := strings.Split(address, ":")
-	port := convert.GetInt(parts[1], 46688)
+// Execute the function
+func Execute(app interface{}, command Command, lastResult map[Parameter]FunctionValue) (err.Code, map[Parameter]FunctionValue) {
+	if status, lastResult := command.Execute(); status {
+		return err.SUCCESS, lastResult
+	}
+	return err.NOT_IMPLEMENTED, lastResult
+}
 
+func GetPubKeyHash(address string) *btcutil.AddressPubKeyHash {
+
+	// TODO: Needs to be configurable
+	chainParams := &chaincfg.RegressionNetParams
+	hash, _ := btcutil.NewAddressPubKeyHash([]byte(address), chainParams)
+
+	return hash
+}
+
+// TODO: Needs to be configurable
+var timeout int64 = 100000
+
+func CreateContractBTC(context map[Parameter]FunctionValue) (bool, map[Parameter]FunctionValue) {
+	btcAddress := global.Current.BTCAddress
+
+	amount := GetAmount(context[AMOUNT])
+
+	var accountKey id.AccountKey
+	var client int
 	role := GetRole(context[ROLE])
-	password := GetString(context[PASSWORD])
+	if role == INITIATOR {
+		client = 1
+		accountKey = GetAccountKey(context[INITIATOR_ACCOUNT])
+	} else {
+		client = 2
+		accountKey = GetAccountKey(context[PARTICIPANT_ACCOUNT])
+	}
+	_ = accountKey
 
-	_ = role
+	password := GetString(context[PASSWORD])
 	_ = password
 
-	cli := bitcoin.GetBtcClient(port)
-	_ = cli
-	//todo: runCommand(initCmd,cli)
+	config := chaincfg.RegressionNetParams // TODO: should be passed in
 
-	return true
+	cli := bitcoin.GetBtcClient(btcAddress, client, &config)
+
+	if role == INITIATOR {
+
+		address := GetPubKeyHash(btcAddress)
+
+		_, err := htlc.NewInitiateCmd(address, amount, timeout).RunCommand(cli)
+		if err != nil {
+			log.Error("Bitcoin Initiate", "err", err)
+			return false, nil
+		}
+	} else {
+		contract := []byte(nil)
+		contractTx := &bwire.MsgTx{}
+		_ = htlc.NewAuditContractCmd(contract, contractTx).RunCommand(cli)
+	}
+
+	return true, nil
 }
 
-func CreateContractETH(context map[Parameter]FunctionValue) bool {
-	return true
+func CreateContractETH(context map[Parameter]FunctionValue) (bool, map[Parameter]FunctionValue) {
+
+	contract := ethereum.GetHtlContract()
+	role := GetRole(context[ROLE])
+	var value = big.NewInt(0)
+	var receiver common.Address
+	if role == INITIATOR {
+		value = GetCoin(context[AMOUNT]).Amount
+		receiverParty := GetParty(context[PARTICIPANT_ACCOUNT])
+		receiver = common.BytesToAddress([]byte(receiverParty.Accounts[data.ETHEREUM]))
+	} else if role == PARTICIPANT {
+		value = GetCoin(context[EXCHANGE]).Amount
+		receiverParty := GetParty(context[INITIATOR_ACCOUNT])
+		receiver = common.BytesToAddress([]byte(receiverParty.Accounts[data.ETHEREUM]))
+	}
+	scr := GetBytes(context[PASSWORD])
+	scrHash := sha256.Sum256([]byte(scr))
+
+
+
+	contract.Funds(value)
+	contract.Setup(big.NewInt(25*3600), receiver, scrHash)
+
+
+	context[ETHCONTRACT] = contract
+	return true, context
 }
 
-func CreateContractOLT(context map[Parameter]FunctionValue) bool {
-	return true
+func CreateContractOLT(context map[Parameter]FunctionValue) (bool, map[Parameter]FunctionValue) {
+	log.Warn("Not supported")
+	return true, nil
+}
+
+func ParticipateETH(context map[Parameter]FunctionValue) (bool, map[Parameter]FunctionValue) {
+	address := ethereum.GetAddress()
+	contract := GetETHContract(context[ETHCONTRACT])
+	scrHash, err := contract.Contract.ScrHash(&bind.CallOpts{Pending: true})
+	if err != nil {
+		log.Error("can't get the secret Hash", "contract", contract.Address, "err", err)
+	}
+
+	locktime, err := contract.Contract.LockPeriod(&bind.CallOpts{Pending: true})
+	if err != nil {
+		log.Error("can't get the lock period", "contract", contract.Address, "err", err)
+	}
+	_ = scrHash
+	_ = locktime
+	receiver, err := contract.Contract.Receiver(&bind.CallOpts{Pending: true})
+	if err != nil || receiver != address  {
+		log.Error("can't get the receiver or receiver not correct", "err", err, "contract", contract.Address, "receiver", receiver, "my address", address)
+	}
+
+	success, result := CreateContractBTC(context)
+	if success != false {
+		log.Error("failed to participate because can't create contract")
+	}
+
+	return true, result
+}
+
+
+func RedeemETH(context map[Parameter]FunctionValue) (bool, map[Parameter]FunctionValue) {
+	contract := GetETHContract(context[ETHCONTRACT])
+	//todo: make it correct scr, by extract or from local storage
+	scr := []byte("my cool secret")
+	contract.Redeem(scr)
+	context[ETHCONTRACT] = contract
+	return true, context
+}
+
+func RefundETH(context map[Parameter]FunctionValue) (bool, map[Parameter]FunctionValue) {
+	contract := GetETHContract(context[ETHCONTRACT])
+	//todo: make it correct scr, by extract or from local storage
+	scr := []byte("my cool secret")
+	contract.Refund(scr)
+	context[ETHCONTRACT] = contract
+	return true, context
 }

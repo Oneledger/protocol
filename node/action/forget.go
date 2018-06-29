@@ -35,8 +35,12 @@ func (transaction *Forget) ProcessDeliver(app interface{}) err.Code {
 	commands := transaction.Expand(app)
 	transaction.Resolve(app, commands)
 
+	//before loop of execute, lastResult is nil
+	var lastResult map[Parameter]FunctionValue
+	var status err.Code
+
 	for i := 0; i < commands.Count(); i++ {
-		status := Execute(app, commands[i])
+		status, lastResult = Execute(app, commands[i], lastResult)
 		if status != err.SUCCESS {
 			return err.EXPAND_ERROR
 		}

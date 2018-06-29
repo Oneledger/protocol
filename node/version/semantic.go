@@ -19,7 +19,7 @@ var Current *Version
 func init() {
 	Current = &Version{
 		Major:      0,
-		Minor:      3,
+		Minor:      4,
 		Patch:      0,
 		PreRelease: "",
 		MetaData:   "",

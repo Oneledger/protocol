@@ -35,6 +35,8 @@ const (
 	PREIMAGE
 
 	PASSWORD
+	ETHCONTRACT
+	BTCCONTRACT
 )
 
 type FunctionValue interface{}
@@ -46,7 +48,7 @@ type Command struct {
 	Data     map[Parameter]FunctionValue
 }
 
-func (command Command) Execute() bool {
+func (command Command) Execute() (bool, map[Parameter]FunctionValue) {
 	switch command.Function {
 	case NOOP:
 		return Noop(command.Chain, command.Data)
@@ -76,7 +78,7 @@ func (command Command) Execute() bool {
 		return WaitForChain(command.Chain, command.Data)
 	}
 
-	return true
+	return true, nil
 }
 
 type Commands []Command

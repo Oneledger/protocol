@@ -13,17 +13,17 @@ import (
 	"github.com/Oneledger/protocol/node/log"
 )
 
-func Noop(chain data.ChainType, context map[Parameter]FunctionValue) bool {
+func Noop(chain data.ChainType, context map[Parameter]FunctionValue) (bool, map[Parameter]FunctionValue) {
 	log.Info("Executing Noop Command", "chain", chain, "context", context)
-	return true
+	return true, nil
 }
 
-func SubmitTransaction(chain data.ChainType, context map[Parameter]FunctionValue) bool {
+func SubmitTransaction(chain data.ChainType, context map[Parameter]FunctionValue) (bool, map[Parameter]FunctionValue) {
 	log.Info("Executing SubmitTransaction Command", "chain", chain, "context", context)
-	return true
+	return true, nil
 }
 
-func Initiate(chain data.ChainType, context map[Parameter]FunctionValue) bool {
+func Initiate(chain data.ChainType, context map[Parameter]FunctionValue) (bool, map[Parameter]FunctionValue) {
 	log.Info("Executing Initiate Command", "chain", chain, "context", context)
 	switch chain {
 
@@ -34,36 +34,36 @@ func Initiate(chain data.ChainType, context map[Parameter]FunctionValue) bool {
 	case data.ONELEDGER:
 		return CreateContractOLT(context)
 	default:
-		return false
+		return false, nil
 	}
 }
 
-func Participate(chain data.ChainType, context map[Parameter]FunctionValue) bool {
+func Participate(chain data.ChainType, context map[Parameter]FunctionValue) (bool, map[Parameter]FunctionValue) {
 	log.Info("Executing Participate Command", "chain", chain, "context", context)
-	return true
+	return true, nil
 }
 
-func Redeem(chain data.ChainType, context map[Parameter]FunctionValue) bool {
+func Redeem(chain data.ChainType, context map[Parameter]FunctionValue) (bool, map[Parameter]FunctionValue) {
 	log.Info("Executing Redeem Command", "chain", chain, "context", context)
-	return true
+	return true, nil
 }
 
-func Refund(chain data.ChainType, context map[Parameter]FunctionValue) bool {
+func Refund(chain data.ChainType, context map[Parameter]FunctionValue) (bool, map[Parameter]FunctionValue) {
 	log.Info("Executing Refund Command", "chain", chain, "context", context)
-	return true
+	return true, nil
 }
 
-func ExtractSecret(chain data.ChainType, context map[Parameter]FunctionValue) bool {
+func ExtractSecret(chain data.ChainType, context map[Parameter]FunctionValue) (bool, map[Parameter]FunctionValue) {
 	log.Info("Executing ExtractSecret Command", "chain", chain, "context", context)
-	return true
+	return true, nil
 }
 
-func AuditContract(chain data.ChainType, context map[Parameter]FunctionValue) bool {
+func AuditContract(chain data.ChainType, context map[Parameter]FunctionValue) (bool, map[Parameter]FunctionValue) {
 	log.Info("Executing AuditContract Command", "chain", chain, "context", context)
-	return true
+	return true, nil
 }
 
-func WaitForChain(chain data.ChainType, context map[Parameter]FunctionValue) bool {
+func WaitForChain(chain data.ChainType, context map[Parameter]FunctionValue) (bool, map[Parameter]FunctionValue) {
 	log.Info("Executing WaitForChain Command", "chain", chain, "context", context)
 
 	// Make sure it is pushed forward first...
@@ -81,5 +81,5 @@ func WaitForChain(chain data.ChainType, context map[Parameter]FunctionValue) boo
 	}
 	BroadcastTransaction(VERIFY, Transaction(verify))
 
-	return true
+	return true, nil
 }

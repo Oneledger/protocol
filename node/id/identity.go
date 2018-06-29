@@ -6,6 +6,8 @@
 package id
 
 import (
+	"encoding/hex"
+
 	"github.com/Oneledger/protocol/node/comm"
 	"github.com/Oneledger/protocol/node/data"
 	"github.com/Oneledger/protocol/node/err"
@@ -78,7 +80,10 @@ func (ids *Identities) FindName(name string) (*Identity, err.Code) {
 	value := ids.data.Load(id.Key())
 	if value != nil {
 		identity := &Identity{}
-		base, _ := comm.Deserialize(value, identity)
+		base, status := comm.Deserialize(value, identity)
+		if status != nil {
+			log.Fatal("Failed to deserialize Identity: ", status)
+		}
 
 		return base.(*Identity), err.SUCCESS
 	}
@@ -92,7 +97,10 @@ func (ids *Identities) FindAll() []*Identity {
 	results := make([]*Identity, size, size)
 	for i := 0; i < size; i++ {
 		identity := &Identity{}
-		base, _ := comm.Deserialize(ids.data.Load(keys[i]), identity)
+		base, err := comm.Deserialize(ids.data.Load(keys[i]), identity)
+		if err != nil {
+			log.Fatal("Failed to deserialize Identities: ", err)
+		}
 		results[i] = base.(*Identity)
 	}
 	return results
@@ -139,6 +147,22 @@ func (id *Identity) AsString() string {
 		buffer += "(Local) " + id.ContactInfo
 	}
 	return buffer
+}
+
+type IdentityExport struct {
+	Name       string
+	External   bool
+	AccountKey string
+}
+
+// Export returns an easily printable struct
+func (id *Identity) Export() IdentityExport {
+	accountKey := hex.EncodeToString(id.AccountKey)
+	return IdentityExport{
+		Name:       id.Name,
+		External:   id.IsExternal(),
+		AccountKey: accountKey,
+	}
 }
 
 /*

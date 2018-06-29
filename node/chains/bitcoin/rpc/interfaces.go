@@ -1,24 +1,34 @@
 package rpc
 
 import (
+	"bytes"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"strconv"
-)
 
+	"github.com/Oneledger/protocol/node/log"
+	"github.com/btcsuite/btcd/btcjson"
+	"github.com/btcsuite/btcd/chaincfg"
+	"github.com/btcsuite/btcd/chaincfg/chainhash"
+	"github.com/btcsuite/btcd/wire"
+	"github.com/btcsuite/btcutil"
+)
 
 // Bitcoind - represents a Bitcoind client
 type Bitcoind struct {
-	client *BTCRpcClient
+	client      *BTCRpcClient
+	ChainParams *chaincfg.Params
 }
 
 // New - return a new bitcoind
-func New(host string, port int, user, passwd string, useSSL bool) (*Bitcoind, error) {
+func New(host string, port int, user, passwd string, useSSL bool, chainParams *chaincfg.Params) (*Bitcoind, error) {
 	BTCRpcClient, err := newClient(host, port, user, passwd, useSSL)
 	if err != nil {
 		return nil, err
 	}
-	return &Bitcoind{BTCRpcClient}, nil
+	return &Bitcoind{client: BTCRpcClient, ChainParams: chainParams}, nil
 }
 
 // GetAccount returns the account associated with the given address.
@@ -62,6 +72,7 @@ func (b *Bitcoind) GetBalance(account string, minconf uint64) (balance float64, 
 	if err = handleError(err, &r); err != nil {
 		return
 	}
+
 	balance, err = strconv.ParseFloat(string(r.Result), 64)
 	return
 }
@@ -72,6 +83,7 @@ func (b *Bitcoind) GetBestBlockhash() (bestBlockHash string, err error) {
 	if err = handleError(err, &r); err != nil {
 		return
 	}
+
 	err = json.Unmarshal(r.Result, &bestBlockHash)
 	return
 }
@@ -82,6 +94,7 @@ func (b *Bitcoind) GetBlock(blockHash string) (block Block, err error) {
 	if err = handleError(err, &r); err != nil {
 		return
 	}
+
 	err = json.Unmarshal(r.Result, &block)
 	return
 }
@@ -92,6 +105,7 @@ func (b *Bitcoind) GetBlockCount() (count uint64, err error) {
 	if err = handleError(err, &r); err != nil {
 		return
 	}
+
 	count, err = strconv.ParseUint(string(r.Result), 10, 64)
 	return
 }
@@ -102,6 +116,7 @@ func (b *Bitcoind) GetBlockHash(index uint64) (hash string, err error) {
 	if err = handleError(err, &r); err != nil {
 		return
 	}
+
 	err = json.Unmarshal(r.Result, &hash)
 	return
 }
@@ -113,6 +128,7 @@ func (b *Bitcoind) GetDifficulty() (difficulty float64, err error) {
 	if err = handleError(err, &r); err != nil {
 		return
 	}
+
 	difficulty, err = strconv.ParseFloat(string(r.Result), 64)
 	return
 }
@@ -123,6 +139,7 @@ func (b *Bitcoind) GetGenerate() (generate bool, err error) {
 	if err = handleError(err, &r); err != nil {
 		return
 	}
+
 	err = json.Unmarshal(r.Result, &generate)
 	return
 }
@@ -133,6 +150,7 @@ func (b *Bitcoind) GetHashesPerSec() (hashpersec float64, err error) {
 	if err = handleError(err, &r); err != nil {
 		return
 	}
+
 	err = json.Unmarshal(r.Result, &hashpersec)
 	return
 }
@@ -144,27 +162,13 @@ func (b *Bitcoind) GetNewAddress(account ...string) (addr string, err error) {
 		err = errors.New("Bad parameters for GetNewAddress: you can set 0 or 1 account")
 		return
 	}
+
 	r, err := b.client.call("getnewaddress", account)
 	if err = handleError(err, &r); err != nil {
 		return
 	}
-	err = json.Unmarshal(r.Result, &addr)
-	return
-}
 
-// GetRawChangeAddress Returns a new Bitcoin address, for receiving change.
-// This is for use with raw transactions, NOT normal use.
-func (b *Bitcoind) GetRawChangeAddress(account ...string) (rawAddress string, err error) {
-	// 0 or 1 account
-	if len(account) > 1 {
-		err = errors.New("Bad parameters for GetRawChangeAddress: you can set 0 or 1 account")
-		return
-	}
-	r, err := b.client.call("getrawchangeaddress", account)
-	if err = handleError(err, &r); err != nil {
-		return
-	}
-	err = json.Unmarshal(r.Result, &rawAddress)
+	err = json.Unmarshal(r.Result, &addr)
 	return
 }
 
@@ -174,6 +178,7 @@ func (b *Bitcoind) GetRawMempool() (txId []string, err error) {
 	if err = handleError(err, &r); err != nil {
 		return
 	}
+
 	err = json.Unmarshal(r.Result, &txId)
 	return
 }
@@ -184,6 +189,7 @@ func (b *Bitcoind) GetRawTransaction(txId string, verbose bool) (rawTx interface
 	if err = handleError(err, &r); err != nil {
 		return
 	}
+
 	if !verbose {
 		err = json.Unmarshal(r.Result, &rawTx)
 	} else {
@@ -191,6 +197,7 @@ func (b *Bitcoind) GetRawTransaction(txId string, verbose bool) (rawTx interface
 		err = json.Unmarshal(r.Result, &t)
 		rawTx = t
 	}
+
 	return
 }
 
@@ -201,10 +208,12 @@ func (b *Bitcoind) GetReceivedByAccount(account string, minconf uint32) (amount 
 	if account == "all" {
 		account = ""
 	}
+
 	r, err := b.client.call("getreceivedbyaccount", []interface{}{account, minconf})
 	if err = handleError(err, &r); err != nil {
 		return
 	}
+
 	err = json.Unmarshal(r.Result, &amount)
 	return
 }
@@ -218,6 +227,7 @@ func (b *Bitcoind) GetReceivedByAddress(address string, minconf uint32) (amount 
 	if err = handleError(err, &r); err != nil {
 		return
 	}
+
 	err = json.Unmarshal(r.Result, &amount)
 	return
 }
@@ -228,6 +238,7 @@ func (b *Bitcoind) GetTransaction(txid string) (transaction Transaction, err err
 	if err = handleError(err, &r); err != nil {
 		return
 	}
+
 	err = json.Unmarshal(r.Result, &transaction)
 	return
 }
@@ -238,6 +249,7 @@ func (b *Bitcoind) GetTxOut(txid string, n uint32, includeMempool bool) (transac
 	if err = handleError(err, &r); err != nil {
 		return
 	}
+
 	err = json.Unmarshal(r.Result, &transactionOut)
 	return
 }
@@ -248,6 +260,7 @@ func (b *Bitcoind) GetTxOutsetInfo() (txOutSet TransactionOutSet, err error) {
 	if err = handleError(err, &r); err != nil {
 		return
 	}
+
 	err = json.Unmarshal(r.Result, &txOutSet)
 	return
 }
@@ -258,6 +271,7 @@ func (b *Bitcoind) ListAccounts(minconf int32) (accounts map[string]float64, err
 	if err = handleError(err, &r); err != nil {
 		return
 	}
+
 	err = json.Unmarshal(r.Result, &accounts)
 	return
 }
@@ -268,9 +282,11 @@ func (b *Bitcoind) ListSinceBlock(blockHash string, targetConfirmations uint32) 
 	if err = handleError(err, &r); err != nil {
 		return
 	}
+
 	type ts struct {
 		Transactions []Transaction
 	}
+
 	var result ts
 	if err = json.Unmarshal(r.Result, &result); err != nil {
 		return
@@ -287,6 +303,7 @@ func (b *Bitcoind) ListTransactions(account string, count, from uint32) (transac
 	if err = handleError(err, &r); err != nil {
 		return
 	}
+
 	err = json.Unmarshal(r.Result, &transaction)
 	return
 }
@@ -296,10 +313,12 @@ func (b *Bitcoind) ListUnspent(minconf, maxconf uint32) (transactions []Transact
 	if maxconf > 999999 {
 		maxconf = 999999
 	}
+
 	r, err := b.client.call("listunspent", []interface{}{minconf, maxconf})
 	if err = handleError(err, &r); err != nil {
 		return
 	}
+
 	err = json.Unmarshal(r.Result, &transactions)
 	return
 }
@@ -310,6 +329,7 @@ func (b *Bitcoind) ListLockUnspent() (unspendableOutputs []UnspendableOutput, er
 	if err = handleError(err, &r); err != nil {
 		return
 	}
+
 	err = json.Unmarshal(r.Result, &unspendableOutputs)
 	return
 }
@@ -320,6 +340,7 @@ func (b *Bitcoind) LockUnspent(lock bool, outputs []UnspendableOutput) (success 
 	if err = handleError(err, &r); err != nil {
 		return
 	}
+
 	err = json.Unmarshal(r.Result, &success)
 	return
 }
@@ -330,6 +351,7 @@ func (b *Bitcoind) Move(formAccount, toAccount string, amount float64, minconf u
 	if err = handleError(err, &r); err != nil {
 		return
 	}
+
 	err = json.Unmarshal(r.Result, &success)
 	return
 
@@ -343,6 +365,7 @@ func (b *Bitcoind) SendFrom(fromAccount, toAddress string, amount float64, minco
 	if err = handleError(err, &r); err != nil {
 		return
 	}
+
 	err = json.Unmarshal(r.Result, &txID)
 	return
 }
@@ -353,6 +376,7 @@ func (b *Bitcoind) SendToAddress(toAddress string, amount float64, comment, comm
 	if err = handleError(err, &r); err != nil {
 		return
 	}
+
 	err = json.Unmarshal(r.Result, &txID)
 	return
 }
@@ -369,16 +393,280 @@ func (b *Bitcoind) ValidateAddress(address string) (va ValidateAddressResponse, 
 	if err = handleError(err, &r); err != nil {
 		return
 	}
+
 	err = json.Unmarshal(r.Result, &va)
 	return
 }
 
 //generate blockNumber of block on regtest network
-func (b *Bitcoind) Generate(blockNumber uint64) (bh string, err error) {
-	r, err := b.client.call("generate", []uint64{blockNumber} )
+func (b *Bitcoind) Generate(blockNumber uint64) (bh []string, err error) {
+	r, err := b.client.call("generate", []uint64{blockNumber})
 	if err = handleError(err, &r); err != nil {
 		return
 	}
+
 	err = json.Unmarshal(r.Result, &bh)
 	return
+}
+
+// DumpPrivKey return private key as string associated to public <address>
+func (b *Bitcoind) DumpPrivKey(address btcutil.Address) (*btcutil.WIF, error) {
+	addr := address.EncodeAddress()
+	res, err := b.client.call("dumpprivkey", []string{addr})
+	log.Debug("Call dumpprivkey", "res", res, "err", err, "address", address, "addr", addr)
+
+	// Unmarshal result as a string.
+	var privKeyWIF string
+	err = json.Unmarshal(res.Result, &privKeyWIF)
+	if err != nil {
+		log.Debug("Unmarshal", "res", res)
+		return nil, err
+	}
+
+	return btcutil.DecodeWIF(privKeyWIF)
+}
+
+func (b *Bitcoind) FundRawTransaction(tx *wire.MsgTx, feePerKb btcutil.Amount) (fundedTx *wire.MsgTx, fee btcutil.Amount, err error) {
+	log.Debug("FundRawTransaction", "fee", feePerKb)
+
+	var buf bytes.Buffer
+	buf.Grow(tx.SerializeSize())
+	tx.Serialize(&buf)
+
+	param0, err := json.Marshal(hex.EncodeToString(buf.Bytes()))
+	if err != nil {
+		return nil, 0, err
+	}
+
+	param1, err := json.Marshal(struct {
+		FeeRate float64 `json:"feeRate"`
+		//Change_type string  `json:"change_type"`
+	}{
+		FeeRate: feePerKb.ToBTC(),
+		//FeeRate:     0.00000000001,
+		//Change_type: "legacy",
+	})
+	if err != nil {
+		return nil, 0, err
+	}
+
+	params := []json.RawMessage{param0, param1}
+	rawResp, err := b.client.call("fundrawtransaction", params)
+
+	var resp struct {
+		Hex       string  `json:"hex"`
+		Fee       float64 `json:"fee"`
+		ChangePos float64 `json:"changepos"`
+	}
+
+	if err != nil {
+		log.Debug("Failed to Fund", "feePerKb", feePerKb, "params", params, "err", err, "rawResp", rawResp)
+		resp.Hex = hex.EncodeToString(buf.Bytes())
+		resp.Fee = 0.00001
+		resp.ChangePos = -1
+
+		//return nil, 0, err
+	} else {
+		err = json.Unmarshal(rawResp.Result, &resp)
+		if err != nil {
+			return nil, 0, err
+		}
+	}
+
+	fundedTxBytes, err := hex.DecodeString(resp.Hex)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	fundedTx = &wire.MsgTx{}
+	err = fundedTx.Deserialize(bytes.NewReader(fundedTxBytes))
+	if err != nil {
+		return nil, 0, err
+	}
+
+	feeAmount, err := btcutil.NewAmount(resp.Fee)
+	if err != nil {
+		return nil, 0, err
+	}
+	return fundedTx, feeAmount, nil
+}
+
+// getFeePerKb queries the wallet for the transaction relay fee/kB to use and
+// the minimum mempool relay fee.  It first tries to get the user-set fee in the
+// wallet.  If unset, it attempts to find an estimate using estimatefee 6.  If
+// both of these fail, it falls back to mempool relay fee policy.
+func (b *Bitcoind) GetFeePerKb() (useFee, relayFee btcutil.Amount, err error) {
+	var netInfoResp struct {
+		RelayFee float64 `json:"relayfee"`
+	}
+	var walletInfoResp struct {
+		PayTxFee float64 `json:"paytxfee"`
+	}
+	var estimateResp struct {
+		FeeRate float64 `json:"feerate"`
+	}
+
+	netInfoRawResp, err := b.client.call("getnetworkinfo", nil)
+	if err == nil {
+		err = json.Unmarshal(netInfoRawResp.Result, &netInfoResp)
+		if err != nil {
+			return 0, 0, err
+		}
+	}
+
+	walletInfoRawResp, err := b.client.call("getwalletinfo", nil)
+	if err == nil {
+		err = json.Unmarshal(walletInfoRawResp.Result, &walletInfoResp)
+		if err != nil {
+			return 0, 0, err
+		}
+	}
+
+	relayFee, err = btcutil.NewAmount(netInfoResp.RelayFee)
+	if err != nil {
+		return 0, 0, err
+	}
+
+	payTxFee, err := btcutil.NewAmount(walletInfoResp.PayTxFee)
+	if err != nil {
+		return 0, 0, err
+	}
+
+	// Use user-set wallet fee when set and not lower than the network relay
+	// fee.
+	if payTxFee != 0 {
+		maxFee := payTxFee
+		if relayFee > maxFee {
+			maxFee = relayFee
+		}
+		return maxFee, relayFee, nil
+	}
+
+	params := []json.RawMessage{[]byte("6")}
+	estimateRawResp, err := b.client.call("estimatesmartfee", params)
+	if err != nil {
+		return 0, 0, err
+	}
+
+	err = json.Unmarshal(estimateRawResp.Result, &estimateResp)
+	if err == nil && estimateResp.FeeRate > 0 {
+		useFee, err = btcutil.NewAmount(estimateResp.FeeRate)
+		if relayFee > useFee {
+			useFee = relayFee
+		}
+		return useFee, relayFee, err
+	}
+
+	fmt.Println("warning: falling back to mempool relay fee policy")
+	return relayFee, relayFee, nil
+}
+
+// getRawChangeAddress calls the getrawchangeaddress JSON-RPC method.  It is
+// implemented manually as the rpcclient implementation always passes the
+// account parameter which was removed in Bitcoin Core 0.15.
+func (b *Bitcoind) GetRawChangeAddress() (btcutil.Address, error) {
+	params := []json.RawMessage{[]byte(`"legacy"`)}
+
+	rawResp, err := b.client.call("getrawchangeaddress", params)
+	if err != nil {
+		return nil, err
+	}
+
+	var addrStr string
+	err = json.Unmarshal(rawResp.Result, &addrStr)
+	if err != nil {
+		return nil, err
+	}
+	addr, err := btcutil.DecodeAddress(addrStr, b.ChainParams)
+	if err != nil {
+		return nil, err
+	}
+
+	/*
+		// TODO: Failing
+		if !addr.IsForNet(chainParams) {
+			log.Debug("Failed for Net")
+			return nil, fmt.Errorf("address %v is not intended for use on %v",
+				addrStr, chainParams.Name)
+		}
+	*/
+
+	if _, ok := addr.(*btcutil.AddressPubKeyHash); !ok {
+		log.Debug("Failed type conversion")
+		return nil, fmt.Errorf("getrawchangeaddress: address %v is not P2PKH",
+			addr)
+	}
+	return addr, nil
+}
+
+func (b *Bitcoind) PublishTx(tx *wire.MsgTx, name string) (*chainhash.Hash, error) {
+	txHex := ""
+	if tx != nil {
+		// Serialize the transaction and convert to hex string.
+		buf := bytes.NewBuffer(make([]byte, 0, tx.SerializeSize()))
+		if err := tx.Serialize(buf); err != nil {
+
+		}
+		txHex = hex.EncodeToString(buf.Bytes())
+	}
+
+	txHash, err := b.client.call("sendrawtransaction", []interface{}{txHex, false})
+	if err != nil {
+		return nil, fmt.Errorf("sendrawtransaction: %v", err)
+	}
+	fmt.Printf("Published %s transaction (%v)\n", name, txHash)
+
+	// Unmarshal result as a string.
+	var txHashStr string
+	err = json.Unmarshal(txHash.Result, &txHashStr)
+	if err != nil {
+		return nil, err
+	}
+
+	return chainhash.NewHashFromStr(txHashStr)
+}
+
+// SignRawTransaction signs inputs for the passed transaction and returns the
+// signed transaction as well as whether or not all inputs are now signed.
+//
+// This function assumes the RPC server already knows the input transactions and
+// private keys for the passed transaction which needs to be signed and uses the
+// default signature hash type.  Use one of the SignRawTransaction# variants to
+// specify that information if needed.
+func (b *Bitcoind) SignRawTransaction(tx *wire.MsgTx) (*wire.MsgTx, bool, error) {
+	txHex := ""
+	if tx != nil {
+		// Serialize the transaction and convert to hex string.
+		buf := bytes.NewBuffer(make([]byte, 0, tx.SerializeSize()))
+		if err := tx.Serialize(buf); err != nil {
+
+		}
+		txHex = hex.EncodeToString(buf.Bytes())
+	}
+
+	res, err := b.client.call("signrawtransaction", []interface{}{txHex})
+	if err != nil {
+		return nil, false, err
+	}
+
+	// Unmarshal as a signrawtransaction result.
+	var signRawTxResult btcjson.SignRawTransactionResult
+	err = json.Unmarshal(res.Result, &signRawTxResult)
+	if err != nil {
+		return nil, false, err
+	}
+
+	// Decode the serialized transaction hex to raw bytes.
+	serializedTx, err := hex.DecodeString(signRawTxResult.Hex)
+	if err != nil {
+		return nil, false, err
+	}
+
+	// Deserialize the transaction and return it.
+	var msgTx wire.MsgTx
+	if err := msgTx.Deserialize(bytes.NewReader(serializedTx)); err != nil {
+		return nil, false, err
+	}
+
+	return &msgTx, signRawTxResult.Complete, nil
 }

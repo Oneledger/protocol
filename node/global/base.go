@@ -30,6 +30,7 @@ type Context struct {
 
 	NodeName        string // Name of this instance
 	NodeAccountName string // TODO: Should be a list of accounts
+	NodeIdentity    string
 	RootDir         string // Working directory for this instance
 
 	RpcAddress string // rpc address
@@ -50,7 +51,7 @@ func init() {
 // Set the default values for any context variables here (and no where else)
 func NewContext(name string) *Context {
 	return &Context{
-		Debug:            true,
+		Debug:            false,
 		DisablePasswords: true,
 
 		NodeName:        name,

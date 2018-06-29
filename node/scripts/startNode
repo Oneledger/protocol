@@ -22,7 +22,7 @@ p2pAddress=`$CMD/lookup $name P2PAddress $prefix`
 rpcAddress=`$CMD/lookup $name RPCAddress $prefix`
 appAddress=`$CMD/lookup $name AppAddress $prefix`
 btcAddress=`$CMD/lookup $name BTCAddress $prefix`
-ethAddress=`$CMD/lookup $name ETHAddress $prefix`
+ethAddress=`$CMD/lookup $name ETHAddress `
 
 prefix="127.0.0.1:"
 key=`$CMD/getNodeId $nodeName`
