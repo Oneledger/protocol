@@ -12,7 +12,8 @@ RUN apt-get update && apt-get install -y \
   jq \
   libboost-all-dev \
   libevent-dev \
-  libssl-dev
+  libssl-dev \
+  tmux
 
 # Create oneledger user and its home
 RUN rm -rf /var/lib/apt/lists/* \
