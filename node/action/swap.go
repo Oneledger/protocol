@@ -26,6 +26,8 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"crypto/sha256"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"time"
+	"crypto/rand"
 )
 
 // Synchronize a swap between two users
@@ -376,7 +378,14 @@ func (swap *Swap) Resolve(app interface{}, commands Commands) {
 		commands[i].Data[NONCE] = swap.Nonce
 		commands[i].Data[PREIMAGE] = swap.Preimage
 
-		commands[i].Data[PASSWORD] = "password" // TODO: Needs to be corrected
+
+		var secret [32]byte
+		_, err := rand.Read(secret[:])
+		if err != nil {
+			log.Error("failed to get random secret with 32 length", "err", err)
+		}
+		secretHash := sha256.Sum256(secret[:])
+		commands[i].Data[PASSWORD] = secretHash
 	}
 	return
 }
@@ -416,7 +425,7 @@ func GetPubKeyHash(address string) *btcutil.AddressPubKeyHash {
 }
 
 // TODO: Needs to be configurable
-var timeout int64 = 100000
+var timeout = time.Now().Add( 24 * time.Hour).Unix()
 
 func CreateContractBTC(context map[Parameter]FunctionValue) (bool, map[Parameter]FunctionValue) {
 	btcAddress := global.Current.BTCAddress
@@ -424,13 +433,11 @@ func CreateContractBTC(context map[Parameter]FunctionValue) (bool, map[Parameter
 	amount := GetAmount(context[AMOUNT])
 
 	var accountKey id.AccountKey
-	var client int
+
 	role := GetRole(context[ROLE])
 	if role == INITIATOR {
-		client = 1
-		accountKey = GetAccountKey(context[INITIATOR_ACCOUNT])
+		accountKey = GetParty(context[INITIATOR_ACCOUNT])
 	} else {
-		client = 2
 		accountKey = GetAccountKey(context[PARTICIPANT_ACCOUNT])
 	}
 	_ = accountKey
@@ -440,13 +447,13 @@ func CreateContractBTC(context map[Parameter]FunctionValue) (bool, map[Parameter
 
 	config := chaincfg.RegressionNetParams // TODO: should be passed in
 
-	cli := bitcoin.GetBtcClient(btcAddress, client, &config)
+	cli := bitcoin.GetBtcClient(btcAddress, &config)
 
 	if role == INITIATOR {
 
 		address := GetPubKeyHash(btcAddress)
 
-		_, err := htlc.NewInitiateCmd(address, amount, timeout).RunCommand(cli)
+		_, err := htlc.NewInitiateCmd(address, amount, 2 * timeout,  ).RunCommand(cli)
 		if err != nil {
 			log.Error("Bitcoin Initiate", "err", err)
 			return false, nil
@@ -478,11 +485,8 @@ func CreateContractETH(context map[Parameter]FunctionValue) (bool, map[Parameter
 	scr := GetBytes(context[PASSWORD])
 	scrHash := sha256.Sum256([]byte(scr))
 
-
-
 	contract.Funds(value)
 	contract.Setup(big.NewInt(25*3600), receiver, scrHash)
-
 
 	context[ETHCONTRACT] = contract
 	return true, context
