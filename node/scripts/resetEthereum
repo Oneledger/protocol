@@ -8,7 +8,7 @@ export LOG=$OLDATA
 export OLETH=$OLDATA/ethereum
 
 echo "============================================================" >> $LOG/ethereum.log
-echo "Clean all ethereum data" >> $LOG/ethereum.log
+echo "Clean all ethereum data"
 
 rm -rf $OLDATA/ethereum/*
 
@@ -16,11 +16,11 @@ mkdir -p $OLDATA/ethereum/A
 mkdir -p $OLDATA/ethereum/B
 mkdir -p $OLDATA/ethereum/C
 
-echo "Setup folder with genesis block" >> $LOG/ethereum.log
+echo "Setup folder with genesis block"
 
-geth --datadir $OLDATA/ethereum/A init $OLSCRIPT/data/ethGenesis.json
-geth --datadir $OLDATA/ethereum/B init $OLSCRIPT/data/ethGenesis.json
-geth --datadir $OLDATA/ethereum/C init $OLSCRIPT/data/ethGenesis.json
+geth --datadir $OLDATA/ethereum/A init $OLSCRIPT/data/ethGenesis.json >> $LOG/ethereum.log 2>&1
+geth --datadir $OLDATA/ethereum/B init $OLSCRIPT/data/ethGenesis.json >> $LOG/ethereum.log 2>&1
+geth --datadir $OLDATA/ethereum/C init $OLSCRIPT/data/ethGenesis.json >> $LOG/ethereum.log 2>&1
 
 echo "Get pre-alloc account"
 # PASS for A: 1234
