@@ -226,8 +226,8 @@ func CreateSwapRequest(args *SwapArguments) []byte {
 	//todo: change the correct bitcoin address
 	//account[data.BITCOIN] = string(partyKey)
 	//account[data.ETHEREUM] = ethereum.GetAddress().String()
-	account[data.BITCOIN] = global.Current.BTCAddress
-	account[data.ETHEREUM] = global.Current.ETHAddress
+	account[data.BITCOIN] = "bitcoin"
+	account[data.ETHEREUM] = "ethereum"
 
 	party := action.Party{Key: partyKey, Accounts: account}
 	counterParty := action.Party{Key: counterPartyKey, Accounts: counterAccount}

@@ -23,9 +23,10 @@ import (
 
 	"math/big"
 
-	"github.com/ethereum/go-ethereum/common"
 	"crypto/sha256"
+
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/common"
 )
 
 // Synchronize a swap between two users
@@ -132,6 +133,9 @@ func FindMatchingSwap(status *data.Datastore, accountKey id.AccountKey, transact
 	if result != nil {
 		entry := result.(*Swap)
 		if MatchSwap(entry, transaction) {
+			log.Debug("MatchSwap", "transaction", transaction, "entry", entry, "isParty", isParty)
+			var base Swap
+			matched = &base
 			if isParty {
 				matched.Party = transaction.Party
 				matched.CounterParty = entry.Party
@@ -424,17 +428,18 @@ var timeout int64 = 100000
 func CreateContractBTC(context map[Parameter]FunctionValue) (bool, map[Parameter]FunctionValue) {
 	btcAddress := global.Current.BTCAddress
 
-	amount := GetAmount(context[AMOUNT])
+	//amount := GetAmount(context[AMOUNT])
+	amount, _ := btcutil.NewAmount(0)
 
 	var accountKey id.AccountKey
 	var client int
 	role := GetRole(context[ROLE])
 	if role == INITIATOR {
 		client = 1
-		accountKey = GetAccountKey(context[INITIATOR_ACCOUNT])
+		//accountKey = GetAccountKey(context[INITIATOR_ACCOUNT])
 	} else {
 		client = 2
-		accountKey = GetAccountKey(context[PARTICIPANT_ACCOUNT])
+		//accountKey = GetAccountKey(context[PARTICIPANT_ACCOUNT])
 	}
 	_ = accountKey
 
@@ -481,11 +486,8 @@ func CreateContractETH(context map[Parameter]FunctionValue) (bool, map[Parameter
 	scr := GetBytes(context[PASSWORD])
 	scrHash := sha256.Sum256([]byte(scr))
 
-
-
 	contract.Funds(value)
 	contract.Setup(big.NewInt(25*3600), receiver, scrHash)
-
 
 	context[ETHCONTRACT] = contract
 	return true, context
@@ -511,7 +513,7 @@ func ParticipateETH(context map[Parameter]FunctionValue) (bool, map[Parameter]Fu
 	_ = scrHash
 	_ = locktime
 	receiver, err := contract.Contract.Receiver(&bind.CallOpts{Pending: true})
-	if err != nil || receiver != address  {
+	if err != nil || receiver != address {
 		log.Error("can't get the receiver or receiver not correct", "err", err, "contract", contract.Address, "receiver", receiver, "my address", address)
 	}
 
@@ -522,7 +524,6 @@ func ParticipateETH(context map[Parameter]FunctionValue) (bool, map[Parameter]Fu
 
 	return true, result
 }
-
 
 func RedeemETH(context map[Parameter]FunctionValue) (bool, map[Parameter]FunctionValue) {
 	contract := GetETHContract(context[ETHCONTRACT])

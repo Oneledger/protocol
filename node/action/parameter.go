@@ -38,7 +38,7 @@ func GetAmount(value FunctionValue) btcutil.Amount {
 	case btcutil.Amount:
 		return value.(btcutil.Amount)
 	default:
-		log.Fatal("Bad Type Cast in Function Parameter", "value", value)
+		log.Fatal("Bad Type Cast in Function Parameter")
 	}
 	return 0
 }
