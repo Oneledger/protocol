@@ -80,9 +80,11 @@ ENV BDB_PREFIX $BITCOIN_DIR/db4
 RUN $BITCOIN_DIR/autogen.sh \
   && $BITCOIN_DIR/configure --without-gui BDB_LIBS="-L${BDB_PREFIX}/lib -ldb_cxx-4.8" BDB_CFLAGS="-I${BDB_PREFIX}/include"
 
-RUN make && make install && make update
+RUN make && make install
 
 USER oneledger
 
-WORKDIR $OLROOT/protocol
+WORKDIR $OLROOT/protocol/node
+
+RUN make update
 
