@@ -1,4 +1,4 @@
-# OneLedger Protocol
+# OneLedger Protocol (MVP)
 
 Initial version for the OneLedger Protocol, focusing on cross-chain transactions and identity management for the two different chains, Ethereum and Bitcoin.
 
