@@ -55,7 +55,10 @@ func (app Application) Initialize() {
 	param := app.Admin.Load(data.DatabaseKey("NodeAccountName"))
 	if param != nil {
 		var name string
-		buffer, _ := comm.Deserialize(param, &name)
+		buffer, err := comm.Deserialize(param, &name)
+		if err != nil {
+			log.Error("Failed to deserialize persistent data")
+		}
 		global.Current.NodeAccountName = *(buffer.(*string))
 	}
 }
@@ -95,7 +98,10 @@ func (app Application) SetupState(stateBytes []byte) {
 	log.Debug("SetupState", "state", string(stateBytes))
 
 	var base BasicState
-	des, _ := comm.Deserialize(stateBytes, &base)
+	des, err := comm.Deserialize(stateBytes, &base)
+	if err != nil {
+		log.Fatal("Failed to deserialize stateBytes during SetupState")
+	}
 	state := des.(*BasicState)
 
 	// TODO: Can't generate a different key for each node. Needs to be in the genesis? Or ignored?
@@ -111,7 +117,11 @@ func (app Application) SetupState(stateBytes []byte) {
 	balance := data.Balance{
 		Amount: data.NewCoin(state.Amount, "OLT"),
 	}
-	buffer, _ := comm.Serialize(balance)
+
+	buffer, err := comm.Serialize(balance)
+	if err != nil {
+		log.Error("Failed to Serialize balance")
+	}
 
 	// Use the account key in the database.
 	app.Utxo.Delivered.Set(account.AccountKey(), buffer)

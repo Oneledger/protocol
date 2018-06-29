@@ -263,6 +263,9 @@ func Balance(app Application, accountKey []byte) []byte {
 	}
 	//log.Debug("Balance", "key", accountKey, "balance", balance)
 
-	buffer, _ := comm.Serialize(balance)
+	buffer, err := comm.Serialize(balance)
+	if err != nil {
+		log.Error("Failed to Serialize balance")
+	}
 	return buffer
 }

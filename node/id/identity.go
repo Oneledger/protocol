@@ -80,7 +80,10 @@ func (ids *Identities) FindName(name string) (*Identity, err.Code) {
 	value := ids.data.Load(id.Key())
 	if value != nil {
 		identity := &Identity{}
-		base, _ := comm.Deserialize(value, identity)
+		base, status := comm.Deserialize(value, identity)
+		if status != nil {
+			log.Fatal("Failed to deserialize Identity: ", status)
+		}
 
 		return base.(*Identity), err.SUCCESS
 	}
@@ -94,7 +97,10 @@ func (ids *Identities) FindAll() []*Identity {
 	results := make([]*Identity, size, size)
 	for i := 0; i < size; i++ {
 		identity := &Identity{}
-		base, _ := comm.Deserialize(ids.data.Load(keys[i]), identity)
+		base, err := comm.Deserialize(ids.data.Load(keys[i]), identity)
+		if err != nil {
+			log.Fatal("Failed to deserialize Identities: ", err)
+		}
 		results[i] = base.(*Identity)
 	}
 	return results

@@ -53,7 +53,10 @@ func (state *ChainState) Test(key DatabaseKey, balance Balance) bool {
 
 // Do this for the Delivery side
 func (state *ChainState) Set(key DatabaseKey, balance Balance) {
-	buffer, _ := comm.Serialize(balance)
+	buffer, err := comm.Serialize(balance)
+	if err != nil {
+		log.Error("Failed to Deserialize balance: ", err)
+	}
 
 	// TODO: Get some error handling in here
 	state.Delivered.Set(key, buffer)
@@ -66,7 +69,11 @@ func (state *ChainState) FindAll() map[string]*Balance {
 		key, value := state.Delivered.GetByIndex64(i)
 
 		var balance Balance
-		result, _ := comm.Deserialize(value, &balance)
+		result, err := comm.Deserialize(value, &balance)
+		if err != nil {
+			log.Error("Failed to Deserialize: FindAll", "i", i, "key", string(key))
+			continue
+		}
 
 		log.Debug("FindAll", "i", i, "key", string(key), "value", value, "result", result)
 		mapping[string(key)] = result.(*Balance)
@@ -82,7 +89,11 @@ func (state *ChainState) Find(key DatabaseKey) *Balance {
 
 	if value != nil {
 		var balance Balance
-		result, _ := comm.Deserialize(value, &balance)
+		result, err := comm.Deserialize(value, &balance)
+		if err != nil {
+			log.Error("Failed to deserialize Balance in chainstate: ", err)
+			return nil
+		}
 		return result.(*Balance)
 	}
 	return nil

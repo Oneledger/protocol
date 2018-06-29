@@ -230,7 +230,10 @@ func ProcessSwap(app interface{}, transaction *Swap) *Swap {
 
 func SaveSwap(status *data.Datastore, accountKey id.AccountKey, transaction *Swap) {
 	log.Debug("SaveSwap", "key", accountKey)
-	buffer, _ := comm.Serialize(transaction)
+	buffer, err := comm.Serialize(transaction)
+	if err != nil {
+		log.Error("Failed to Serialize SaveSwap transaction")
+	}
 	status.Store(accountKey, buffer)
 	status.Commit()
 }

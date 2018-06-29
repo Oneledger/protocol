@@ -51,7 +51,11 @@ func CheckIdentity(cmd *cobra.Command, args []string) {
 	response := comm.Query("/identity", request)
 	if response != nil {
 		var prototype app.IdentityQuery
-		result, _ := comm.Deserialize(response.Response.Value, &prototype)
+		result, err := comm.Deserialize(response.Response.Value, &prototype)
+		if err != nil {
+			shared.Console.Error("Failed to deserialize IdentityQuery:")
+			return
+		}
 		printResponse(result.(*app.IdentityQuery))
 	}
 }

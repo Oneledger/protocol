@@ -49,7 +49,10 @@ func (acc *Accounts) Add(account Account) {
 		log.Debug("Key is being updated", "key", account.AccountKey())
 	}
 
-	buffer, _ := comm.Serialize(account)
+	buffer, err := comm.Serialize(account)
+	if err != nil {
+		log.Warn("Failed to Deserialize account: ", err)
+	}
 
 	acc.data.Store(account.AccountKey(), buffer)
 	acc.data.Commit()
@@ -135,7 +138,11 @@ func (acc *Accounts) FindAll() []Account {
 	for i := 0; i < size; i++ {
 		// TODO: This is dangerous...
 		account := &AccountOneLedger{}
-		base, _ := comm.Deserialize(acc.data.Load(keys[i]), account)
+		base, err := comm.Deserialize(acc.data.Load(keys[i]), account)
+		if err != nil {
+			log.Warn("Failed to Deserialize Account at index " + string(i))
+			continue
+		}
 		results[i] = base.(Account)
 	}
 
