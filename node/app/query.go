@@ -132,6 +132,9 @@ type AccountQuery struct {
 }
 
 func getAccountExport(app Application, account id.Account) id.AccountExport {
+	if account == nil {
+		return id.AccountExport{}
+	}
 	export := account.Export()
 	if export.Type == "OneLedger" {
 		export.Balance = GetBalance(app, account)

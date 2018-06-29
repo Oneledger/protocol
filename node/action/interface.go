@@ -28,11 +28,11 @@ func Initiate(chain data.ChainType, context map[Parameter]FunctionValue) (bool, 
 	switch chain {
 
 	case data.BITCOIN:
-		return CreateContractBTC(context)
+		return true, nil
 	case data.ETHEREUM:
-		return CreateContractETH(context)
+		return true, nil
 	case data.ONELEDGER:
-		return CreateContractOLT(context)
+		return true, nil
 	default:
 		return false, nil
 	}

@@ -51,7 +51,7 @@ func init() {
 // Set the default values for any context variables here (and no where else)
 func NewContext(name string) *Context {
 	return &Context{
-		Debug:            true,
+		Debug:            false,
 		DisablePasswords: true,
 
 		NodeName:        name,
