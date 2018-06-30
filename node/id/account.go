@@ -11,13 +11,11 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/Oneledger/protocol/node/chains/ethereum"
 	"github.com/Oneledger/protocol/node/comm"
 	"github.com/Oneledger/protocol/node/data"
 	"github.com/Oneledger/protocol/node/err"
 	"github.com/Oneledger/protocol/node/global"
 	"github.com/Oneledger/protocol/node/log"
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	crypto "github.com/tendermint/go-crypto"
 	wdata "github.com/tendermint/go-wire/data"
 	"golang.org/x/crypto/ripemd160"
@@ -240,7 +238,7 @@ func NewAccount(newType data.ChainType, name string, key PublicKey, priv Private
 				PrivateKey: priv,
 			},
 			//todo: change to olt wallet auth
-			NewAccountKey(key),
+			//NewAccountKey(key),
 		}
 
 	case data.BITCOIN:
@@ -253,7 +251,7 @@ func NewAccount(newType data.ChainType, name string, key PublicKey, priv Private
 				PrivateKey: priv,
 			},
 			//todo: change to bitcoin auth
-			NewAccountKey(key),
+			//NewAccountKey(key),
 		}
 
 	case data.ETHEREUM:
@@ -265,7 +263,7 @@ func NewAccount(newType data.ChainType, name string, key PublicKey, priv Private
 				PublicKey:  PublicKey{},
 				PrivateKey: PrivateKey{},
 			},
-			ethereum.GetAuth(),
+			//ethereum.GetAuth(),
 		}
 
 	default:
@@ -295,7 +293,7 @@ func ParseAccountType(typeName string) data.ChainType {
 type AccountOneLedger struct {
 	AccountBase
 	//todo: need to be change to the right type
-	ChainAuth AccountKey
+	//ChainAuth AccountKey
 }
 
 /*
@@ -351,7 +349,7 @@ func (account *AccountOneLedger) Export() AccountExport {
 type AccountBitcoin struct {
 	AccountBase
 	//todo: need to be change to the right type
-	ChainAuth AccountKey
+	//ChainAuth AccountKey
 }
 
 /*
@@ -407,7 +405,7 @@ func (account *AccountBitcoin) Export() AccountExport {
 type AccountEthereum struct {
 	AccountBase
 
-	ChainAuth *bind.TransactOpts
+	//ChainAuth *bind.TransactOpts
 }
 
 /*

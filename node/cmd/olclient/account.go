@@ -77,7 +77,9 @@ func printQuery(accountQuery *app.AccountQuery) {
 		shared.Console.Info(fmt.Sprintf(name+" %s", export.Name))
 		shared.Console.Info(fmt.Sprintf(accountType+" %s", export.Type))
 		shared.Console.Info(fmt.Sprintf(accountKey+" %s", export.AccountKey))
-		shared.Console.Info(fmt.Sprintf(balance+" %s", export.Balance))
+		if export.Type == "OneLedger" {
+			shared.Console.Info(fmt.Sprintf(balance+" %s", export.Balance))
+		}
 		shared.Console.Info("\n")
 	}
 }
