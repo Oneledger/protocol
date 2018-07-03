@@ -37,6 +37,8 @@ const (
 	PASSWORD
 	ETHCONTRACT
 	BTCCONTRACT
+
+	LOCKTIME
 )
 
 type FunctionValue interface{}

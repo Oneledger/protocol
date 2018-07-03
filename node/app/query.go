@@ -16,6 +16,8 @@ import (
 	"github.com/Oneledger/protocol/node/id"
 	"github.com/Oneledger/protocol/node/log"
 	"github.com/Oneledger/protocol/node/version"
+	"github.com/Oneledger/protocol/node/convert"
+	"github.com/Oneledger/protocol/node/chains/common"
 )
 
 // Top-level list of all query types
@@ -39,6 +41,9 @@ func HandleQuery(app Application, path string, message []byte) []byte {
 
 	case "/balance":
 		return HandleBalanceQuery(app, message)
+
+	case "/swapAddress":
+		return HandleSwapAddressQuery(app, message)
 	}
 
 	return HandleError("Unknown Path", path, message)
@@ -271,4 +276,22 @@ func Balance(app Application, accountKey []byte) []byte {
 		log.Error("Failed to Serialize balance")
 	}
 	return buffer
+}
+
+func HandleSwapAddressQuery(app Application, message []byte) []byte {
+	log.Debug("SwapAddressQuery", "message", message)
+
+	text := string(message)
+	conv := convert.NewConvert()
+	var chain data.ChainType
+	parts := strings.Split(text, "=")
+	if len(parts) > 1 {
+		chain = conv.GetChain(parts[1])
+	}
+
+	return SwapAddres(chain)
+}
+
+func SwapAddres(chain data.ChainType) []byte {
+	return common.GetSwapAddress(chain)
 }

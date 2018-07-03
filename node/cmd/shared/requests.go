@@ -15,6 +15,7 @@ import (
 	"github.com/Oneledger/protocol/node/data"
 	"github.com/Oneledger/protocol/node/global"
 	"github.com/Oneledger/protocol/node/log"
+	"github.com/Oneledger/protocol/node/data"
 )
 
 // Prepare a transaction to be issued.
@@ -223,11 +224,9 @@ func CreateSwapRequest(args *SwapArguments) []byte {
 	}
 	account := make(map[data.ChainType]string)
 	counterAccount := make(map[data.ChainType]string)
-	//todo: change the correct bitcoin address
-	//account[data.BITCOIN] = string(partyKey)
-	//account[data.ETHEREUM] = ethereum.GetAddress().String()
-	account[data.BITCOIN] = "bitcoin"
-	account[data.ETHEREUM] = "ethereum"
+
+	account[conv.GetChain(args.Currency)] = GetSwapAddress(conv.GetCurrency(args.Currency))
+	account[conv.GetChain(args.Excurrency)] = GetSwapAddress(conv.GetCurrency(args.Excurrency))
 
 	party := action.Party{Key: partyKey, Accounts: account}
 	counterParty := action.Party{Key: counterPartyKey, Accounts: counterAccount}

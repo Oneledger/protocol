@@ -11,6 +11,7 @@ import (
 	"github.com/Oneledger/protocol/node/id"
 	"github.com/Oneledger/protocol/node/log"
 	"github.com/btcsuite/btcutil"
+	"github.com/Oneledger/protocol/node/id"
 )
 
 func GetInt(value FunctionValue) int {

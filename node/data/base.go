@@ -26,5 +26,5 @@ func NewBalance(amount int64, currency string) Balance {
 }
 
 func (balance Balance) AsString() string {
-	return fmt.Sprintf("%d%s", balance.Amount.Amount, balance.Amount.Currency)
+	return fmt.Sprintf("%d%s", balance.Amount.Amount, balance.Amount.Currency.Name)
 }

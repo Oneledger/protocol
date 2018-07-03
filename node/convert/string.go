@@ -142,3 +142,14 @@ func (convert *Convert) GetInt(value string) int {
 
 	return 0
 }
+
+func (convert *Convert) GetChain(value string) data.ChainType{
+	currencyName := convert.GetCurrency(value)
+	currency, ok := data.Currencies[currencyName]
+	if ok {
+		return currency.Chain
+	}
+	log.Error("Can't find the currency", "value", value)
+
+	return data.UNKNOWN
+}
