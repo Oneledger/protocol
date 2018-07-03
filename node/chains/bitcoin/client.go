@@ -16,6 +16,8 @@ import (
 
 	"github.com/Oneledger/protocol/node/convert"
 	"github.com/Oneledger/protocol/node/log"
+	"github.com/btcsuite/btcutil"
+	"strconv"
 )
 
 func GetBtcClient(address string, chainParams *chaincfg.Params) *brpc.Bitcoind {
@@ -93,4 +95,25 @@ func ScheduleBlockGeneration(cli brpc.Bitcoind, interval time.Duration) chan boo
 
 func StopBlockGeneration(stop chan bool) {
 	close(stop)
+}
+
+func GetRawAddress(client *brpc.Bitcoind) *btcutil.AddressPubKeyHash {
+	addr, _ := client.GetRawChangeAddress()
+	if addr == nil {
+		log.Fatal("Missing Address")
+	}
+	return addr.(*btcutil.AddressPubKeyHash)
+}
+
+func GetAmount(value string) btcutil.Amount {
+	number, err := strconv.ParseFloat(value, 64)
+	if err != nil {
+		log.Fatal("failed to decode amount", "err", err, "value", value)
+	}
+
+	amount, err := btcutil.NewAmount(number)
+	if err != nil {
+		log.Fatal("failed to create Bitcoin amount", "err", err, "number", number)
+	}
+	return amount
 }

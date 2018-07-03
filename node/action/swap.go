@@ -393,13 +393,13 @@ func (swap *Swap) Resolve(app interface{}, commands Commands) {
 func (swap *Swap) getRole(isParty bool) Role {
 
 	if isParty {
-		if data.Currencies[swap.Amount.Currency] < data.Currencies[swap.Exchange.Currency] {
+		if swap.Amount.Currency.Id < swap.Exchange.Currency.Id {
 			return INITIATOR
 		} else {
 			return PARTICIPANT
 		}
 	} else {
-		if data.Currencies[swap.Exchange.Currency] < data.Currencies[swap.Amount.Currency] {
+		if swap.Exchange.Currency.Id < swap.Amount.Currency.Id {
 			return PARTICIPANT
 		} else {
 			return INITIATOR

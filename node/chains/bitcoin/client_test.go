@@ -6,7 +6,6 @@ package bitcoin
 import (
 	"crypto/sha256"
 	"reflect"
-	"strconv"
 	"testing"
 	"time"
 
@@ -183,26 +182,6 @@ func TypeAddresses() {
 }
 
 // bitcoin-cli -regtest -rpcuser=oltest01 -rpcpassword=olpass01  -rpcport=18831 getrawchangeaddress
-func GetRawAddress(testnode *brpc.Bitcoind) *btcutil.AddressPubKeyHash {
-	addr, _ := testnode.GetRawChangeAddress()
-	if addr == nil {
-		log.Fatal("Missing Address")
-	}
-	return addr.(*btcutil.AddressPubKeyHash)
-}
-
-func GetAmount(value string) btcutil.Amount {
-	number, err := strconv.ParseFloat(value, 64)
-	if err != nil {
-		log.Fatal("failed to decode amount", "err", err, "value", value)
-	}
-
-	amount, err := btcutil.NewAmount(number)
-	if err != nil {
-		log.Fatal("failed to create Bitcoin amount", "err", err, "number", number)
-	}
-	return amount
-}
 
 func AliceBobSuccessfulSwap(testnode1 *brpc.Bitcoind, testnode2 *brpc.Bitcoind,
 	testnode3 *brpc.Bitcoind, secret []byte, secretHash [32]byte) {
@@ -215,11 +194,6 @@ func AliceBobSuccessfulSwap(testnode1 *brpc.Bitcoind, testnode2 *brpc.Bitcoind,
 	bobTimeout := time.Now().Add( 1 * time.Minute).Unix()
 	aliceAddress := GetRawAddress(testnode1)
 	bobAddress := GetRawAddress(testnode2)
-
-	//testnode1.SendToAddress("oltest01", 234.0, "Fill Account", "Fill Account")
-	//testnode1.SendToAddress("oltest02", 30000.0, "Fill Account", "Fill Account")
-	//testnode2.SendToAddress("oltest02", 1000.0, "Fill an Account", "Fill the Account")
-	//testnode2.SendToAddress("oltest01", 10210.0, "Fill an Account", "Fill the Account")
 
 	Generate(testnode3, 20)
 
