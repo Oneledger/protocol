@@ -12,6 +12,7 @@ import (
 	"github.com/Oneledger/protocol/node/action"
 	"github.com/Oneledger/protocol/node/app"
 	"github.com/Oneledger/protocol/node/convert"
+	"github.com/Oneledger/protocol/node/data"
 	"github.com/Oneledger/protocol/node/global"
 	"github.com/Oneledger/protocol/node/log"
 	"github.com/Oneledger/protocol/node/data"
@@ -228,7 +229,7 @@ func CreateSwapRequest(args *SwapArguments) []byte {
 	account[conv.GetChain(args.Excurrency)] = GetSwapAddress(conv.GetCurrency(args.Excurrency))
 
 	party := action.Party{Key: partyKey, Accounts: account}
-	counterParty := action.Party{Key: counterPartyKey, Accounts:counterAccount}
+	counterParty := action.Party{Key: counterPartyKey, Accounts: counterAccount}
 
 	swap := &action.Swap{
 		Base: action.Base{

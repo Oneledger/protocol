@@ -67,9 +67,9 @@ func CheckBalance(app interface{}, accountKey id.AccountKey, amount data.Coin) b
 	}
 
 	var bal data.Balance
-	buffer, _ := comm.Deserialize(value, &bal)
-	if buffer == nil {
-		log.Debug("Failed to Deserialize", "key", accountKey)
+	buffer, err := comm.Deserialize(value, &bal)
+	if err != nil || buffer == nil {
+		log.Error("Failed to Deserialize", "key", accountKey)
 		return false
 	}
 

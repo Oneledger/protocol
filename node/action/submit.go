@@ -63,8 +63,12 @@ func PackRequest(ttype Type, request Transaction) []byte {
 	wire.WriteInt32(base, buff, &n, &err)
 	bytes := buff.Bytes()
 
-	packet, _ := comm.Serialize(request)
-	packet = append(bytes, packet...)
+	packet, err := comm.Serialize(request)
+	if err != nil {
+		log.Error("Failed to Serialize packet: ", err)
+	} else {
+		packet = append(bytes, packet...)
+	}
 
 	return packet
 }

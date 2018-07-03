@@ -2,3 +2,4 @@ vendor
 .glide
 *.sw[op]
 .idea/
+scripts/sequence

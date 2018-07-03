@@ -8,6 +8,7 @@ package action
 import (
 	"github.com/Oneledger/protocol/node/chains/ethereum"
 	"github.com/Oneledger/protocol/node/data"
+	"github.com/Oneledger/protocol/node/id"
 	"github.com/Oneledger/protocol/node/log"
 	"github.com/btcsuite/btcutil"
 	"github.com/Oneledger/protocol/node/id"
@@ -38,7 +39,7 @@ func GetAmount(value FunctionValue) btcutil.Amount {
 	case btcutil.Amount:
 		return value.(btcutil.Amount)
 	default:
-		log.Fatal("Bad Type Cast in Function Parameter", "value", value)
+		log.Fatal("Bad Type Cast in Function Parameter")
 	}
 	return 0
 }

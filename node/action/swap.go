@@ -23,7 +23,6 @@ import (
 
 	"math/big"
 
-	"github.com/ethereum/go-ethereum/common"
 	"crypto/sha256"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"time"
@@ -134,6 +133,9 @@ func FindMatchingSwap(status *data.Datastore, accountKey id.AccountKey, transact
 	if result != nil {
 		entry := result.(*Swap)
 		if MatchSwap(entry, transaction) {
+			log.Debug("MatchSwap", "transaction", transaction, "entry", entry, "isParty", isParty)
+			var base Swap
+			matched = &base
 			if isParty {
 				matched.Party = transaction.Party
 				matched.CounterParty = entry.Party
@@ -234,7 +236,10 @@ func ProcessSwap(app interface{}, transaction *Swap) *Swap {
 
 func SaveSwap(status *data.Datastore, accountKey id.AccountKey, transaction *Swap) {
 	log.Debug("SaveSwap", "key", accountKey)
-	buffer, _ := comm.Serialize(transaction)
+	buffer, err := comm.Serialize(transaction)
+	if err != nil {
+		log.Error("Failed to Serialize SaveSwap transaction")
+	}
 	status.Store(accountKey, buffer)
 	status.Commit()
 }
@@ -430,7 +435,8 @@ var timeout = time.Now().Add( 24 * time.Hour).Unix()
 func CreateContractBTC(context map[Parameter]FunctionValue) (bool, map[Parameter]FunctionValue) {
 	btcAddress := global.Current.BTCAddress
 
-	amount := GetAmount(context[AMOUNT])
+	//amount := GetAmount(context[AMOUNT])
+	amount, _ := btcutil.NewAmount(0)
 
 	var accountKey id.AccountKey
 
@@ -512,7 +518,7 @@ func ParticipateETH(context map[Parameter]FunctionValue) (bool, map[Parameter]Fu
 	_ = scrHash
 	_ = locktime
 	receiver, err := contract.Contract.Receiver(&bind.CallOpts{Pending: true})
-	if err != nil || receiver != address  {
+	if err != nil || receiver != address {
 		log.Error("can't get the receiver or receiver not correct", "err", err, "contract", contract.Address, "receiver", receiver, "my address", address)
 	}
 
@@ -523,7 +529,6 @@ func ParticipateETH(context map[Parameter]FunctionValue) (bool, map[Parameter]Fu
 
 	return true, result
 }
-
 
 func RedeemETH(context map[Parameter]FunctionValue) (bool, map[Parameter]FunctionValue) {
 	contract := GetETHContract(context[ETHCONTRACT])

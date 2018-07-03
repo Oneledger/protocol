@@ -40,7 +40,10 @@ func RegisterLocally(app *Application, name string, scope string, chain data.Cha
 			log.Debug("Updating NodeAccount", "name", accountName)
 
 			global.Current.NodeAccountName = accountName
-			buffer, _ := comm.Serialize(accountName)
+			buffer, err := comm.Serialize(accountName)
+			if err != nil {
+				log.Warn("Failed to Serialize accountName")
+			}
 			app.Admin.Store(data.DatabaseKey("NodeAccountName"), buffer)
 			app.Admin.Commit()
 		}
@@ -54,7 +57,10 @@ func RegisterLocally(app *Application, name string, scope string, chain data.Cha
 	// Fill in the balance
 	if chain == data.ONELEDGER && !app.Utxo.Exists(account.AccountKey()) {
 		balance := data.NewBalance(0, "OLT")
-		buffer, _ := comm.Serialize(balance)
+		buffer, err := comm.Serialize(balance)
+		if err != nil {
+			log.Warn("Failed to Serialize balance")
+		}
 
 		app.Utxo.Delivered.Set(account.AccountKey(), buffer)
 		app.Utxo.Commit()
