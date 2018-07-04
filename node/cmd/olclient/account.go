@@ -6,9 +6,12 @@
 package main
 
 import (
+	"fmt"
+
 	"github.com/Oneledger/protocol/node/action"
+	"github.com/Oneledger/protocol/node/app"
+	"github.com/Oneledger/protocol/node/cmd/shared"
 	"github.com/Oneledger/protocol/node/comm"
-	"github.com/Oneledger/protocol/node/log"
 	"github.com/spf13/cobra"
 )
 
@@ -41,12 +44,42 @@ func FormatRequest() []byte {
 // IssueRequest sends out a sendTx to all of the nodes in the chain
 func CheckAccount(cmd *cobra.Command, args []string) {
 	//log.Debug("Checking Account", "account", account)
-
 	request := FormatRequest()
 	response := comm.Query("/account", request)
 	if response != nil {
-		log.Debug("Returned Successfully with", "response", string(response.Response.Value))
+		// var accountQuery app.AccountQuery
+		var prototype app.AccountQuery
+		result, err := comm.Deserialize(response.Response.Value, &prototype)
+		if err != nil {
+			shared.Console.Error("Failed to deserialize AccountQuery")
+			shared.Console.Warning("Query failed")
+			return
+		}
+		printQuery(result.(*app.AccountQuery))
 	} else {
-		log.Debug("Query Failed")
+		shared.Console.Warning("Query Failed")
+	}
+}
+
+func printQuery(accountQuery *app.AccountQuery) {
+	exports := accountQuery.Accounts
+
+	name := "      Name:"
+	balance := "   Balance:"
+	accountType := "      Type:"
+	accountKey := "AccountKey:"
+	nodeName := "  NodeName:"
+
+	shared.Console.Info("\nCheckAccount response: \n")
+
+	for _, export := range exports {
+		shared.Console.Info(fmt.Sprintf(nodeName+" %s", export.NodeName))
+		shared.Console.Info(fmt.Sprintf(name+" %s", export.Name))
+		shared.Console.Info(fmt.Sprintf(accountType+" %s", export.Type))
+		shared.Console.Info(fmt.Sprintf(accountKey+" %s", export.AccountKey))
+		if export.Type == "OneLedger" {
+			shared.Console.Info(fmt.Sprintf(balance+" %s", export.Balance))
+		}
+		shared.Console.Info("\n")
 	}
 }

@@ -1,4 +1,4 @@
-# OneLedger Protocol
+# OneLedger Protocol (MVP)
 
 Initial version for the OneLedger Protocol, focusing on cross-chain transactions and identity management for the two different chains, Ethereum and Bitcoin.
 
@@ -84,6 +84,9 @@ If everything is set up properly, you can begin testing the OneLedger Protocol w
 | `make test` | Tests system initialization, brings up everything |
 | `make swaptest` | Test swap mechanics between BTC and ETH |
 | `make fulltest` | Does a full test, makes use of test scripts in the `/tests` folder |
+| `make status` | Lists all running nodes |
+| `make monitor` | Start tmux session |
+| `make stopmon` | Stops tmux session |
 
 ## Components
 

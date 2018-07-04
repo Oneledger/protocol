@@ -135,6 +135,9 @@ func FindMatchingSwap(status *data.Datastore, accountKey id.AccountKey, transact
 	if result != nil {
 		entry := result.(*Swap)
 		if MatchSwap(entry, transaction) {
+			log.Debug("MatchSwap", "transaction", transaction, "entry", entry, "isParty", isParty)
+			var base Swap
+			matched = &base
 			if isParty {
 				matched.Party = transaction.Party
 				matched.CounterParty = entry.Party
@@ -235,7 +238,10 @@ func ProcessSwap(app interface{}, transaction *Swap) *Swap {
 
 func SaveSwap(status *data.Datastore, accountKey id.AccountKey, transaction *Swap) {
 	log.Debug("SaveSwap", "key", accountKey)
-	buffer, _ := comm.Serialize(transaction)
+	buffer, err := comm.Serialize(transaction)
+	if err != nil {
+		log.Error("Failed to Serialize SaveSwap transaction")
+	}
 	status.Store(accountKey, buffer)
 	status.Commit()
 }
@@ -522,9 +528,9 @@ func AuditContractBTC(context map[Parameter]FunctionValue) (bool, map[Parameter]
 
 	cmd := htlc.NewAuditContractCmd(contract.Contract, contract.ContractTx)
 	cli := bitcoin.GetBtcClient(global.Current.BTCAddress, &chaincfg.RegressionNetParams) //todo: to make it configurable
-	err := cmd.RunCommand(cli)
-	if err != nil {
-		log.Error("Bitcoin Audit", "err", err)
+	e := cmd.RunCommand(cli)
+	if e != nil {
+		log.Error("Bitcoin Audit", "err", e)
 		return false, nil
 	}
 	context[PREIMAGE] = cmd.SecretHash
@@ -534,28 +540,28 @@ func AuditContractBTC(context map[Parameter]FunctionValue) (bool, map[Parameter]
 func AuditContractETH(context map[Parameter]FunctionValue) (bool, map[Parameter]FunctionValue) {
 	contract := GetETHContract(context[ETHCONTRACT])
 
-	scrHash, err := contract.Contract.ScrHash(&bind.CallOpts{Pending: true})
-	if err != nil {
-		log.Error("can't get the secret Hash", "contract", contract.Address, "err", err)
+	scrHash, e := contract.Contract.ScrHash(&bind.CallOpts{Pending: true})
+	if e != nil {
+		log.Error("can't get the secret Hash", "contract", contract.Address, "err", e)
 		return false, nil
 	}
 
-	locktime, err := contract.Contract.LockPeriod(&bind.CallOpts{Pending: true})
-	if err != nil {
-		log.Error("can't get the lock period", "contract", contract.Address, "err", err)
+	locktime, e := contract.Contract.LockPeriod(&bind.CallOpts{Pending: true})
+	if e != nil {
+		log.Error("can't get the lock period", "contract", contract.Address, "err", e)
 		return false, nil
 	}
 	address := ethereum.GetAddress()
 
-	receiver, err := contract.Contract.Receiver(&bind.CallOpts{Pending: true})
-	if err != nil || receiver != address  {
-		log.Error("can't get the receiver or receiver not correct", "err", err, "contract", contract.Address, "receiver", receiver, "my address", address)
+	receiver, e := contract.Contract.Receiver(&bind.CallOpts{Pending: true})
+	if e != nil || receiver != address {
+		log.Error("can't get the receiver or receiver not correct", "err", e, "contract", contract.Address, "receiver", receiver, "my address", address)
 		return false, nil
 	}
 
-	err = contract.Audit(locktime, address, scrHash)
-	if err !=nil {
-		log.Fatal("Failed to audit the contract with correct input", "err", err)
+	e = contract.Audit(locktime, address, scrHash)
+	if e !=nil {
+		log.Fatal("Failed to audit the contract with correct input", "err", e)
 		return false, nil
 	}
 
@@ -576,7 +582,6 @@ func ParticipateETH(context map[Parameter]FunctionValue) (bool, map[Parameter]Fu
 
 	return true, result
 }
-
 
 func RedeemETH(context map[Parameter]FunctionValue) (bool, map[Parameter]FunctionValue) {
 	contract := GetETHContract(context[ETHCONTRACT])

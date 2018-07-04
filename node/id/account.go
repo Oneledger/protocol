@@ -6,16 +6,16 @@
 package id
 
 import (
+	"encoding/hex"
 	"fmt"
 	"reflect"
 	"strings"
 
-	"github.com/Oneledger/protocol/node/chains/ethereum"
 	"github.com/Oneledger/protocol/node/comm"
 	"github.com/Oneledger/protocol/node/data"
 	"github.com/Oneledger/protocol/node/err"
+	"github.com/Oneledger/protocol/node/global"
 	"github.com/Oneledger/protocol/node/log"
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	crypto "github.com/tendermint/go-crypto"
 	wdata "github.com/tendermint/go-wire/data"
 	"golang.org/x/crypto/ripemd160"
@@ -47,7 +47,10 @@ func (acc *Accounts) Add(account Account) {
 		log.Debug("Key is being updated", "key", account.AccountKey())
 	}
 
-	buffer, _ := comm.Serialize(account)
+	buffer, err := comm.Serialize(account)
+	if err != nil {
+		log.Warn("Failed to Deserialize account: ", err)
+	}
 
 	acc.data.Store(account.AccountKey(), buffer)
 	acc.data.Commit()
@@ -133,7 +136,11 @@ func (acc *Accounts) FindAll() []Account {
 	for i := 0; i < size; i++ {
 		// TODO: This is dangerous...
 		account := &AccountOneLedger{}
-		base, _ := comm.Deserialize(acc.data.Load(keys[i]), account)
+		base, err := comm.Deserialize(acc.data.Load(keys[i]), account)
+		if err != nil {
+			log.Warn("Failed to Deserialize Account at index " + string(i))
+			continue
+		}
 		results[i] = base.(Account)
 	}
 
@@ -160,10 +167,36 @@ type Account interface {
 	PublicKey() PublicKey
 	PrivateKey() PrivateKey
 
+	Export() AccountExport
+
 	//AddPublicKey(PublicKey)
 	//AddPrivateKey(PrivateKey)
 
 	AsString() string
+}
+
+// AccountExport struct holds important account info in a
+type AccountExport struct {
+	Type       string
+	AccountKey string
+	Name       string
+	// Balance must come from utxo database, fill when needed
+	Balance  string
+	NodeName string
+}
+
+func getAccountType(chain data.ChainType) string {
+	switch chain {
+	case data.ONELEDGER:
+		return "OneLedger"
+
+	case data.ETHEREUM:
+		return "Ethereum"
+
+	case data.BITCOIN:
+		return "Bitcoin"
+	}
+	return "Unknown"
 }
 
 type AccountBase struct {
@@ -205,7 +238,7 @@ func NewAccount(newType data.ChainType, name string, key PublicKey, priv Private
 				PrivateKey: priv,
 			},
 			//todo: change to olt wallet auth
-			NewAccountKey(key),
+			//NewAccountKey(key),
 		}
 
 	case data.BITCOIN:
@@ -218,7 +251,7 @@ func NewAccount(newType data.ChainType, name string, key PublicKey, priv Private
 				PrivateKey: priv,
 			},
 			//todo: change to bitcoin auth
-			NewAccountKey(key),
+			//NewAccountKey(key),
 		}
 
 	case data.ETHEREUM:
@@ -230,7 +263,7 @@ func NewAccount(newType data.ChainType, name string, key PublicKey, priv Private
 				PublicKey:  PublicKey{},
 				PrivateKey: PrivateKey{},
 			},
-			ethereum.GetAuth(),
+			//ethereum.GetAuth(),
 		}
 
 	default:
@@ -260,7 +293,7 @@ func ParseAccountType(typeName string) data.ChainType {
 type AccountOneLedger struct {
 	AccountBase
 	//todo: need to be change to the right type
-	ChainAuth AccountKey
+	//ChainAuth AccountKey
 }
 
 /*
@@ -290,11 +323,24 @@ func (account *AccountOneLedger) PrivateKey() PrivateKey {
 }
 
 func (account *AccountOneLedger) AsString() string {
-	return account.AccountBase.Name
+	buffer := fmt.Sprintf("%x", account.AccountKey())
+	return "OneLedger:" + account.AccountBase.Name + ":" + buffer
 }
 
 func (account *AccountOneLedger) Chain() data.ChainType {
 	return data.ONELEDGER
+}
+
+func (account *AccountOneLedger) Export() AccountExport {
+	accountType := getAccountType(account.AccountBase.Type)
+	name := account.Name()
+	key := hex.EncodeToString(account.AccountKey())
+	return AccountExport{
+		Type:       accountType,
+		AccountKey: key,
+		Name:       name,
+		NodeName:   global.Current.NodeName,
+	}
 }
 
 // Bitcoin
@@ -303,7 +349,7 @@ func (account *AccountOneLedger) Chain() data.ChainType {
 type AccountBitcoin struct {
 	AccountBase
 	//todo: need to be change to the right type
-	ChainAuth AccountKey
+	//ChainAuth AccountKey
 }
 
 /*
@@ -341,13 +387,25 @@ func (account *AccountBitcoin) Chain() data.ChainType {
 	return data.BITCOIN
 }
 
+func (account *AccountBitcoin) Export() AccountExport {
+	accountType := getAccountType(account.AccountBase.Type)
+	name := account.Name()
+	key := hex.EncodeToString(account.AccountKey())
+	return AccountExport{
+		Type:       accountType,
+		AccountKey: key,
+		Name:       name,
+		NodeName:   global.Current.NodeName,
+	}
+}
+
 // Ethereum
 
 // Information we need for an Ethereum account
 type AccountEthereum struct {
 	AccountBase
 
-	ChainAuth *bind.TransactOpts
+	//ChainAuth *bind.TransactOpts
 }
 
 /*
@@ -383,4 +441,16 @@ func (account *AccountEthereum) AsString() string {
 
 func (account *AccountEthereum) Chain() data.ChainType {
 	return data.ETHEREUM
+}
+
+func (account *AccountEthereum) Export() AccountExport {
+	accountType := getAccountType(account.AccountBase.Type)
+	name := account.Name()
+	key := hex.EncodeToString(account.AccountKey())
+	return AccountExport{
+		Type:       accountType,
+		AccountKey: key,
+		Name:       name,
+		NodeName:   global.Current.NodeName,
+	}
 }
