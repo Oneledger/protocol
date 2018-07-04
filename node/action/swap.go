@@ -23,11 +23,12 @@ import (
 
 	"math/big"
 
-	"github.com/ethereum/go-ethereum/common"
 	"crypto/sha256"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"time"
 	"crypto/rand"
+	olcommon "github.com/Oneledger/protocol/node/chains/common"
+	ethcommon "github.com/ethereum/go-ethereum/common"
 )
 
 // Synchronize a swap between two users
@@ -303,91 +304,19 @@ func (transaction *Swap) IsParty(account id.Account) *bool {
 	return nil
 }
 
-// Given a transaction, expand it into a list of Commands to execute against various chains.
-func (transaction *Swap) Expand(app interface{}) Commands {
-	chains := GetChains(transaction)
+// Get the correct chains order for this action
+func (swap *Swap) getChains() []data.ChainType {
 
-	account := transaction.GetNodeAccount(app)
-	isParty := transaction.IsParty(account)
-	role := PARTICIPANT
-	if *isParty {
-		role = INITIATOR
+	var first, second data.ChainType
+	if swap.Amount.Currency.Id < swap.Exchange.Currency.Id {
+		first = data.Currencies[swap.Amount.Currency.Name].Chain
+		second = data.Currencies[swap.Exchange.Currency.Name].Chain
+	} else {
+		first = data.Currencies[swap.Exchange.Currency.Name].Chain
+		second = data.Currencies[swap.Amount.Currency.Name].Chain
 	}
 
-	return GetCommands(SWAP, role, chains)
-}
-
-// Plug in data from the rest of a system into a set of commands
-func (swap *Swap) Resolve(app interface{}, commands Commands) {
-	transaction := Transaction(swap)
-
-	account := swap.GetNodeAccount(app)
-
-	identities := GetIdentities(app)
-	_ = identities
-	name := global.Current.NodeIdentity
-	_ = name
-
-	utxo := GetUtxo(app)
-	_ = utxo
-
-	var iindex, pindex int
-
-	chains := GetChains(transaction)
-	isParty := swap.IsParty(account)
-	role := swap.getRole(*isParty)
-
-	for i := 0; i < len(commands); i++ {
-
-		if *isParty {
-			commands[i].Chain = chains[0]
-			iindex = 0
-			pindex = 1
-		} else {
-			commands[i].Chain = chains[1]
-			iindex = 1
-			pindex = 0
-		}
-
-		_ = iindex
-		_ = pindex
-		if *isParty {
-			if role == INITIATOR {
-				commands[i].Data[INITIATOR_ACCOUNT] = swap.Party.Accounts
-				commands[i].Data[PARTICIPANT_ACCOUNT] = swap.CounterParty.Accounts
-			} else {
-				commands[i].Data[INITIATOR_ACCOUNT] = swap.CounterParty.Accounts
-				commands[i].Data[PARTICIPANT_ACCOUNT] = swap.Party.Accounts
-			}
-
-		} else {
-			if role == PARTICIPANT {
-				commands[i].Data[INITIATOR_ACCOUNT] = swap.Party.Accounts
-				commands[i].Data[PARTICIPANT_ACCOUNT] = swap.CounterParty.Accounts
-			} else {
-				commands[i].Data[INITIATOR_ACCOUNT] = swap.CounterParty.Accounts
-				commands[i].Data[PARTICIPANT_ACCOUNT] = swap.Party.Accounts
-			}
-
-		}
-
-		commands[i].Data[ROLE] = role
-
-		commands[i].Data[AMOUNT] = swap.Amount
-		commands[i].Data[EXCHANGE] = swap.Exchange
-		commands[i].Data[NONCE] = swap.Nonce
-		commands[i].Data[PREIMAGE] = swap.Preimage
-
-
-		var secret [32]byte
-		_, err := rand.Read(secret[:])
-		if err != nil {
-			log.Error("failed to get random secret with 32 length", "err", err)
-		}
-		secretHash := sha256.Sum256(secret[:])
-		commands[i].Data[PASSWORD] = secretHash
-	}
-	return
+	return []data.ChainType{first, second}
 }
 
 func (swap *Swap) getRole(isParty bool) Role {
@@ -405,6 +334,87 @@ func (swap *Swap) getRole(isParty bool) Role {
 			return INITIATOR
 		}
 	}
+}
+
+// Given a transaction, expand it into a list of Commands to execute against various chains.
+func (transaction *Swap) Expand(app interface{}) Commands {
+	chains := transaction.getChains()
+
+	account := transaction.GetNodeAccount(app)
+	isParty := transaction.IsParty(account)
+	role := PARTICIPANT
+	if *isParty {
+		role = INITIATOR
+	}
+
+	return GetCommands(SWAP, role, chains)
+}
+
+// Plug in data from the rest of a system into a set of commands
+func (swap *Swap) Resolve(app interface{}, commands Commands) {
+	account := swap.GetNodeAccount(app)
+
+	identities := GetIdentities(app)
+	_ = identities
+	name := global.Current.NodeIdentity
+	_ = name
+
+	utxo := GetUtxo(app)
+	_ = utxo
+
+	chains := swap.getChains()
+	isParty := swap.IsParty(account)
+	role := swap.getRole(*isParty)
+
+	for i := 0; i < len(commands); i++ {
+
+		side := commands[i].Side
+		if &side == nil {
+			log.Fatal("command need a side to proceed", "command", commands[i])
+		}
+		if *isParty {
+			commands[i].Chain = chains[side]
+		} else {
+			commands[i].Chain = chains[side]
+		}
+
+		if *isParty {
+			if role == INITIATOR {
+				commands[i].Data[INITIATOR_ACCOUNT] = swap.Party
+				commands[i].Data[PARTICIPANT_ACCOUNT] = swap.CounterParty
+			} else {
+				commands[i].Data[INITIATOR_ACCOUNT] = swap.CounterParty
+				commands[i].Data[PARTICIPANT_ACCOUNT] = swap.Party
+			}
+
+		} else {
+			if role == PARTICIPANT {
+				commands[i].Data[INITIATOR_ACCOUNT] = swap.Party
+				commands[i].Data[PARTICIPANT_ACCOUNT] = swap.CounterParty
+			} else {
+				commands[i].Data[INITIATOR_ACCOUNT] = swap.CounterParty
+				commands[i].Data[PARTICIPANT_ACCOUNT] = swap.Party
+			}
+
+		}
+
+		commands[i].Data[ROLE] = role
+		commands[i].Data[AMOUNT] = swap.Amount
+		commands[i].Data[EXCHANGE] = swap.Exchange
+		commands[i].Data[NONCE] = swap.Nonce
+
+		if role == INITIATOR {
+			var secret [32]byte
+			_, err := rand.Read(secret[:])
+			if err != nil {
+				log.Error("failed to get random secret with 32 length", "err", err)
+			}
+			secretHash := sha256.Sum256(secret[:])
+			commands[i].Data[PREIMAGE] = secretHash
+			commands[i].Data[PASSWORD] = secret
+		}
+	}
+	return
 }
 
 // Execute the function
@@ -425,46 +435,49 @@ func GetPubKeyHash(address string) *btcutil.AddressPubKeyHash {
 }
 
 // TODO: Needs to be configurable
-var timeout = time.Now().Add( 24 * time.Hour).Unix()
+var lockPeriod = 24 * time.Hour
 
 func CreateContractBTC(context map[Parameter]FunctionValue) (bool, map[Parameter]FunctionValue) {
-	btcAddress := global.Current.BTCAddress
 
-	amount := GetAmount(context[AMOUNT])
-
-	var accountKey id.AccountKey
-
+	timeout := time.Now().Add(2 * lockPeriod).Unix()
+	var value = big.NewInt(0)
+	var receiverParty Party
+	var receiver *btcutil.AddressPubKeyHash
 	role := GetRole(context[ROLE])
 	if role == INITIATOR {
-		accountKey = GetParty(context[INITIATOR_ACCOUNT])
+		value = GetCoin(context[AMOUNT]).Amount
+		receiverParty = GetParty(context[INITIATOR_ACCOUNT])
 	} else {
-		accountKey = GetAccountKey(context[PARTICIPANT_ACCOUNT])
+		value = GetCoin(context[EXCHANGE]).Amount
+		receiverParty = GetParty(context[PARTICIPANT_ACCOUNT])
 	}
-	_ = accountKey
+	olcommon.GetAddressFromByteArray(data.BITCOIN, receiverParty.Accounts[data.BITCOIN], receiver)
 
-	password := GetString(context[PASSWORD])
-	_ = password
+	scr := GetByte32(context[PASSWORD])
+	preimage := GetByte32(context[PREIMAGE])
+	scrHash := sha256.Sum256(scr[:])
+
+	if !bytes.Equal(preimage[:], scrHash[:]) {
+		log.Fatal("Secret and Secret Hash doesn't match", "preimage", preimage, "scrHash", scrHash)
+	}
 
 	config := chaincfg.RegressionNetParams // TODO: should be passed in
 
-	cli := bitcoin.GetBtcClient(btcAddress, &config)
+	cli := bitcoin.GetBtcClient(global.Current.BTCAddress, &config)
 
-	if role == INITIATOR {
+	amount := bitcoin.GetAmount(value.String())
 
-		address := GetPubKeyHash(btcAddress)
+	initCmd := htlc.NewInitiateCmd(receiver, amount, 2 * timeout, preimage)
 
-		_, err := htlc.NewInitiateCmd(address, amount, 2 * timeout,  ).RunCommand(cli)
-		if err != nil {
-			log.Error("Bitcoin Initiate", "err", err)
-			return false, nil
-		}
-	} else {
-		contract := []byte(nil)
-		contractTx := &bwire.MsgTx{}
-		_ = htlc.NewAuditContractCmd(contract, contractTx).RunCommand(cli)
+	_, err := initCmd.RunCommand(cli)
+	if err != nil {
+		log.Error("Bitcoin Initiate", "err", err)
+		return false, nil
 	}
 
-	return true, nil
+	contract := &bitcoin.HTLContract{Contract: initCmd.Contract, ContractTx: initCmd.ContractTx}
+	context[BTCCONTRACT] = contract
+	return true, context
 }
 
 func CreateContractETH(context map[Parameter]FunctionValue) (bool, map[Parameter]FunctionValue) {
@@ -472,21 +485,27 @@ func CreateContractETH(context map[Parameter]FunctionValue) (bool, map[Parameter
 	contract := ethereum.GetHtlContract()
 	role := GetRole(context[ROLE])
 	var value = big.NewInt(0)
-	var receiver common.Address
+	var receiver ethcommon.Address
+	var receiverParty Party
 	if role == INITIATOR {
 		value = GetCoin(context[AMOUNT]).Amount
-		receiverParty := GetParty(context[PARTICIPANT_ACCOUNT])
-		receiver = common.BytesToAddress([]byte(receiverParty.Accounts[data.ETHEREUM]))
-	} else if role == PARTICIPANT {
+		receiverParty = GetParty(context[PARTICIPANT_ACCOUNT])
+	} else {
 		value = GetCoin(context[EXCHANGE]).Amount
-		receiverParty := GetParty(context[INITIATOR_ACCOUNT])
-		receiver = common.BytesToAddress([]byte(receiverParty.Accounts[data.ETHEREUM]))
+		receiverParty = GetParty(context[INITIATOR_ACCOUNT])
 	}
-	scr := GetBytes(context[PASSWORD])
-	scrHash := sha256.Sum256([]byte(scr))
+	olcommon.GetAddressFromByteArray(data.ETHEREUM,receiverParty.Accounts[data.ETHEREUM], receiver)
+	scr := GetByte32(context[PASSWORD])
+	preimage := GetByte32(context[PREIMAGE])
+	scrHash := sha256.Sum256(scr[:])
 
+	if !bytes.Equal(preimage[:], scrHash[:]) {
+		log.Fatal("Secret and Secret Hash doesn't match", "preimage", preimage, "scrHash", scrHash)
+	}
+
+	timeoutSecond := int64(lockPeriod.Seconds())
 	contract.Funds(value)
-	contract.Setup(big.NewInt(25*3600), receiver, scrHash)
+	contract.Setup(big.NewInt(timeoutSecond), receiver, scrHash)
 
 	context[ETHCONTRACT] = contract
 	return true, context
@@ -494,28 +513,62 @@ func CreateContractETH(context map[Parameter]FunctionValue) (bool, map[Parameter
 
 func CreateContractOLT(context map[Parameter]FunctionValue) (bool, map[Parameter]FunctionValue) {
 	log.Warn("Not supported")
-	return true, nil
+	return true, context
 }
 
-func ParticipateETH(context map[Parameter]FunctionValue) (bool, map[Parameter]FunctionValue) {
-	address := ethereum.GetAddress()
+
+func AuditContractBTC(context map[Parameter]FunctionValue) (bool, map[Parameter]FunctionValue) {
+	contract := GetBTCContract(context[BTCCONTRACT])
+
+	cmd := htlc.NewAuditContractCmd(contract.Contract, contract.ContractTx)
+	cli := bitcoin.GetBtcClient(global.Current.BTCAddress, &chaincfg.RegressionNetParams) //todo: to make it configurable
+	err := cmd.RunCommand(cli)
+	if err != nil {
+		log.Error("Bitcoin Audit", "err", err)
+		return false, nil
+	}
+	context[PREIMAGE] = cmd.SecretHash
+	return true, context
+}
+
+func AuditContractETH(context map[Parameter]FunctionValue) (bool, map[Parameter]FunctionValue) {
 	contract := GetETHContract(context[ETHCONTRACT])
+
 	scrHash, err := contract.Contract.ScrHash(&bind.CallOpts{Pending: true})
 	if err != nil {
 		log.Error("can't get the secret Hash", "contract", contract.Address, "err", err)
+		return false, nil
 	}
 
 	locktime, err := contract.Contract.LockPeriod(&bind.CallOpts{Pending: true})
 	if err != nil {
 		log.Error("can't get the lock period", "contract", contract.Address, "err", err)
+		return false, nil
 	}
-	_ = scrHash
-	_ = locktime
+	address := ethereum.GetAddress()
+
 	receiver, err := contract.Contract.Receiver(&bind.CallOpts{Pending: true})
 	if err != nil || receiver != address  {
 		log.Error("can't get the receiver or receiver not correct", "err", err, "contract", contract.Address, "receiver", receiver, "my address", address)
+		return false, nil
 	}
 
+	err = contract.Audit(locktime, address, scrHash)
+	if err !=nil {
+		log.Fatal("Failed to audit the contract with correct input", "err", err)
+		return false, nil
+	}
+
+	context[PREIMAGE] = scrHash
+	return true, context
+}
+
+func ParticipateBTC(context map[Parameter]FunctionValue) (bool, map[Parameter]FunctionValue) {
+
+	return false, nil
+}
+
+func ParticipateETH(context map[Parameter]FunctionValue) (bool, map[Parameter]FunctionValue) {
 	success, result := CreateContractBTC(context)
 	if success != false {
 		log.Error("failed to participate because can't create contract")

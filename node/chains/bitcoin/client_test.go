@@ -202,14 +202,15 @@ func AliceBobSuccessfulSwap(testnode1 *brpc.Bitcoind, testnode2 *brpc.Bitcoind,
 	amount := GetAmount("0.32822")
 
 	log.Debug("==== ALICE INITIATE COMMAND")
-	hash, err := htlc.NewInitiateCmd(bobAddress, amount, aliceTimeout, secretHash).RunCommand(testnode1)
+	initCmd := htlc.NewInitiateCmd(bobAddress, amount, aliceTimeout, secretHash)
+	hash, err := initCmd.RunCommand(testnode1)
 	if err != nil {
 		log.Warn("Initiate", "err", err)
 	}
 
 	// Not threadsafe...
-	aliceContract := copyArray(htlc.LastContract)
-	aliceContractTx := copyMsgTx(htlc.LastContractTx)
+	aliceContract := initCmd.Contract
+	aliceContractTx := initCmd.ContractTx
 
 	time.Sleep(3 * time.Second)
 	Generate(testnode3, 10)
@@ -224,13 +225,14 @@ func AliceBobSuccessfulSwap(testnode1 *brpc.Bitcoind, testnode2 *brpc.Bitcoind,
 	Generate(testnode3, 10)
 
 	log.Debug("==== BOB PARTICIPATE COMMAND")
-	hash, err = htlc.NewParticipateCmd(aliceAddress, amount*2, secretHash, bobTimeout).RunCommand(testnode2)
+	partCmd := htlc.NewParticipateCmd(aliceAddress, amount*2, secretHash, bobTimeout)
+	hash, err = partCmd.RunCommand(testnode2)
 	if err != nil {
 		log.Warn("Participate", "err", err)
 	}
 
-	bobContract := copyArray(htlc.LastContract)
-	bobContractTx := copyMsgTx(htlc.LastContractTx)
+	bobContract := partCmd.Contract
+	bobContractTx := partCmd.ContractTx
 
 	log.Debug("==== ALICE AUDIT COMMAND")
 	err = htlc.NewAuditContractCmd(bobContract, bobContractTx).RunCommand(testnode1)
@@ -242,20 +244,24 @@ func AliceBobSuccessfulSwap(testnode1 *brpc.Bitcoind, testnode2 *brpc.Bitcoind,
 	Generate(testnode3, 6)
 
 	log.Debug("==== ALICE REDEEM COMMAND")
-	hash, err = htlc.NewRedeemCmd(bobContract, bobContractTx, secret).RunCommand(testnode1)
+	redeemCmd := htlc.NewRedeemCmd(bobContract, bobContractTx, secret)
+	hash, err = redeemCmd.RunCommand(testnode1)
 	if err != nil {
 		log.Warn("Redeem", "err", err)
 	}
 
-	redemptionContractTx := copyMsgTx(htlc.LastContractTx)
+	redemptionContractTx := redeemCmd.RedeemContractTx
 
 	// TODO: Extract Secret
 	log.Debug("==== BOB EXTRACT COMMAND")
-	err = htlc.NewExtractSecretCmd(redemptionContractTx, secretHash).RunCommand(testnode2)
+	extractCmd := htlc.NewExtractSecretCmd(redemptionContractTx, secretHash)
+	err = extractCmd.RunCommand(testnode2)
+
 	if err != nil {
 		log.Warn("Extract", "err", err)
 	}
-	extractSecret := copyArray(htlc.Secret)
+	extractSecret := extractCmd.Secret
+
 	if !bytes.Equal(extractSecret, secret) {
 		log.Warn("Extract Secret doesn't match", "extract", extractSecret, "original", secret)
 	}

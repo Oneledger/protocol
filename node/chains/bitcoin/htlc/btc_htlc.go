@@ -60,16 +60,19 @@ const txVersion = 2
 //}
 
 type InitiateCmd struct {
-	cp2Addr  *btcutil.AddressPubKeyHash
-	amount   btcutil.Amount
-	lockTime int64
-	scrHash  [secretSize]byte
+	cp2Addr  	*btcutil.AddressPubKeyHash
+	amount   	btcutil.Amount
+	lockTime 	int64
+	scrHash  	[secretSize]byte
+	Contract 	[]byte
+	ContractTx	*wire.MsgTx
 }
 
 type RedeemCmd struct {
-	contract   []byte
-	contractTx *wire.MsgTx
-	secret     []byte
+	contract   			[]byte
+	contractTx 			*wire.MsgTx
+	secret     			[]byte
+	RedeemContractTx	*wire.MsgTx
 }
 
 type ParticipateCmd struct {
@@ -77,6 +80,8 @@ type ParticipateCmd struct {
 	amount     btcutil.Amount
 	secretHash []byte
 	lockTime   int64
+	Contract 	[]byte
+	ContractTx	*wire.MsgTx
 }
 
 type RefundCmd struct {
@@ -87,11 +92,13 @@ type RefundCmd struct {
 type ExtractSecretCmd struct {
 	redemptionTx *wire.MsgTx
 	secretHash   []byte
+	Secret		 []byte
 }
 
 type AuditContractCmd struct {
 	contract   []byte
 	contractTx *wire.MsgTx
+	SecretHash [secretSize]byte
 }
 
 func normalizeAddress(addr string, defaultPort string) (hostport string, err error) {
@@ -383,10 +390,6 @@ func calcFeePerKb(absoluteFee btcutil.Amount, serializeSize int) float64 {
 	return float64(absoluteFee) / float64(serializeSize) / 1e5
 }
 
-var LastContract []byte = nil
-var LastContractTx *wire.MsgTx = nil
-var Secret []byte = nil
-
 func copyArray(from []byte) []byte {
 	to := make([]byte, len(from))
 	for i := 0; i < len(from); i++ {
@@ -449,8 +452,8 @@ func (cmd *InitiateCmd) RunCommand(c *rpc.Bitcoind) (*chainhash.Hash, error) {
 	if err != nil {
 		return nil, err
 	}
-	LastContract = copyArray(b.contract)
-	LastContractTx = copyMsgTx(b.contractTx)
+	cmd.Contract = copyArray(b.contract)
+	cmd.ContractTx = copyMsgTx(b.contractTx)
 
 	refundTxHash := b.refundTx.TxHash()
 	contractFeePerKb := calcFeePerKb(b.contractFee, b.contractTx.SerializeSize())
@@ -575,7 +578,7 @@ func (cmd *RedeemCmd) RunCommand(c *rpc.Bitcoind) (*chainhash.Hash, error) {
 	fmt.Printf("Redeem transaction (%v):\n", &redeemTxHash)
 	fmt.Printf("%x\n\n", buf.Bytes())
 
-	LastContractTx = copyMsgTx(redeemTx)
+	cmd.RedeemContractTx = copyMsgTx(redeemTx)
 
 	if verify {
 		e, err := txscript.NewEngine(cmd.contractTx.TxOut[contractOutPoint.Index].PkScript,
@@ -619,8 +622,8 @@ func (cmd *ParticipateCmd) RunCommand(c *rpc.Bitcoind) (*chainhash.Hash, error) 
 		return nil, err
 	}
 
-	LastContract = copyArray(b.contract)
-	LastContractTx = copyMsgTx(b.contractTx)
+	cmd.Contract = copyArray(b.contract)
+	cmd.ContractTx = copyMsgTx(b.contractTx)
 
 	refundTxHash := b.refundTx.TxHash()
 	contractFeePerKb := calcFeePerKb(b.contractFee, b.contractTx.SerializeSize())
@@ -694,7 +697,7 @@ func (cmd *ExtractSecretCmd) RunOfflineCommand() error {
 		for _, push := range pushes {
 			if bytes.Equal(sha256Hash(push), cmd.secretHash) {
 				fmt.Printf("Secret: %x\n", push)
-				Secret = copyArray(push)
+				cmd.Secret = copyArray(push)
 				return nil
 			}
 		}
@@ -757,7 +760,7 @@ func (cmd *AuditContractCmd) RunOfflineCommand(chainParams *chaincfg.Params) err
 	fmt.Printf("Author's refund address: %v\n\n", refundAddr)
 
 	fmt.Printf("Secret hash: %x\n\n", pushes.SecretHash[:])
-
+	cmd.SecretHash = pushes.SecretHash
 	if pushes.LockTime >= int64(txscript.LockTimeThreshold) {
 		t := time.Unix(pushes.LockTime, 0)
 		fmt.Printf("Locktime: %v\n", t.UTC())

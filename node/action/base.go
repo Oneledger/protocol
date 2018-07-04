@@ -6,10 +6,9 @@
 package action
 
 import (
-	"github.com/Oneledger/protocol/node/data"
 	"github.com/Oneledger/protocol/node/err"
 	"github.com/Oneledger/protocol/node/id"
-	crypto "github.com/tendermint/go-crypto"
+	"github.com/tendermint/go-crypto"
 )
 
 type Message = []byte // Contents of a transaction
@@ -62,12 +61,4 @@ type Base struct {
 
 	Sequence int64 `json:"sequence"`
 	Delay    int64 `json:"delay"` // Pause the transaction in the mempool
-}
-
-// Get the correct chain for this action
-// TODO: Need to return a list of chains?
-func GetChains(transaction interface{}) []data.ChainType {
-
-	// TODO: Need to fix this, should not be hardcoded to a given chain
-	return []data.ChainType{data.BITCOIN, data.ETHEREUM}
 }

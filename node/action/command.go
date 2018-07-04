@@ -48,6 +48,7 @@ type Command struct {
 	Function CommandType
 	Chain    data.ChainType
 	Data     map[Parameter]FunctionValue
+	Side     int
 }
 
 func (command Command) Execute() (bool, map[Parameter]FunctionValue) {

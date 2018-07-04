@@ -18,6 +18,7 @@ import (
 	"github.com/Oneledger/protocol/node/log"
 	"github.com/btcsuite/btcutil"
 	"strconv"
+	"github.com/btcsuite/btcd/wire"
 )
 
 func GetBtcClient(address string, chainParams *chaincfg.Params) *brpc.Bitcoind {
@@ -116,4 +117,9 @@ func GetAmount(value string) btcutil.Amount {
 		log.Fatal("failed to create Bitcoin amount", "err", err, "number", number)
 	}
 	return amount
+}
+
+type HTLContract struct {
+	Contract 	[]byte
+	ContractTx 	*wire.MsgTx
 }

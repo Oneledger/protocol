@@ -21,15 +21,19 @@ var FunctionMapping = [][]Object{
 		INITIATOR,
 		Command{
 			Function: INITIATE,
+			Side:     0,
 		},
 		Command{
 			Function: AUDITCONTRACT,
+			Side:     1,
 		},
 		Command{
 			Function: REDEEM,
+			Side:     1,
 		},
 		Command{
 			Function: WAIT_FOR_CHAIN,
+			Side:     0,
 		},
 	},
 	[]Object{
@@ -37,18 +41,23 @@ var FunctionMapping = [][]Object{
 		PARTICIPANT,
 		Command{
 			Function: AUDITCONTRACT,
+			Side:     0,
 		},
 		Command{
 			Function: PARTICIPATE,
+			Side:     1,
 		},
 		Command{
 			Function: EXTRACTSECRET,
+			Side:     1,
 		},
 		Command{
 			Function: REDEEM,
+			Side: 	  0,
 		},
 		Command{
 			Function: WAIT_FOR_CHAIN,
+			Side:     1,
 		},
 	},
 	[]Object{

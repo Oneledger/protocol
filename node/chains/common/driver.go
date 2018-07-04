@@ -38,12 +38,13 @@ func GetAddressFromByteArray(chain data.ChainType, address string, target interf
 
 		switch target.(type) {
 
-		case btcutil.AddressPubKeyHash:
+		case *btcutil.AddressPubKeyHash:
 			target = result.(*btcutil.AddressPubKeyHash)
 		default:
 			log.Fatal("not appropriate address type to convert yet", "address", address, "target", reflect.TypeOf(target))
 		}
 		return
+
 	} else if chain == data.ETHEREUM {
 		switch target.(type) {
 
