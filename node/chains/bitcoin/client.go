@@ -19,6 +19,8 @@ import (
 	"github.com/btcsuite/btcutil"
 	"strconv"
 	"github.com/btcsuite/btcd/wire"
+	"github.com/Oneledger/protocol/node/action"
+	"github.com/Oneledger/protocol/node/comm"
 )
 
 func GetBtcClient(address string, chainParams *chaincfg.Params) *brpc.Bitcoind {
@@ -120,6 +122,26 @@ func GetAmount(value string) btcutil.Amount {
 }
 
 type HTLContract struct {
-	Contract 	[]byte
-	ContractTx 	*wire.MsgTx
+	Contract 	[]byte		`json:"contract"`
+	ContractTx 	*wire.MsgTx	`json:"contractTx"`
+}
+
+func (h *HTLContract) ToMessage() action.Message {
+	msg, err := comm.Serialize(h)
+	if err != nil {
+	    log.Error("Failed to serialize htlc", "err", err)
+    }
+    return msg
+}
+
+func GetHTLCFromMessage(message action.Message) *HTLContract{
+	log.Debug("Parse message to HTLC")
+	register := &HTLContract{}
+
+	result, err := comm.Deserialize(message, register)
+	if err != nil {
+		log.Error("Failed parse htlc contract", "err", err)
+		return nil
+	}
+	return  result.(*HTLContract)
 }

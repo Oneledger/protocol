@@ -42,12 +42,12 @@ func GetSwapAddress(currencyName string) string {
 	response := comm.Query("/swapAddress", request)
 
 	if response == nil || response.Response.Value == nil {
-		log.Fatal("Failed to get address",  "chain", chain)
+		log.Fatal("Failed to get address",  "chain", currencyName)
 	}
 
 	value := response.Response.Value
 	if value == nil || len(value) == 0 {
-		log.Fatal("Returned address is empty", "chain", chain )
+		log.Fatal("Returned address is empty", "chain", currencyName )
 	}
 
 	return string(value)

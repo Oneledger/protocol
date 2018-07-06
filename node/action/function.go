@@ -21,51 +21,70 @@ var FunctionMapping = [][]Object{
 		INITIATOR,
 		Command{
 			Function: INITIATE,
-			Side:     0,
+			Order:    0,
 		},
 		Command{
-			Function: AUDITCONTRACT,
-			Side:     1,
-		},
-		Command{
-			Function: REDEEM,
-			Side:     1,
-		},
-		Command{
-			Function: WAIT_FOR_CHAIN,
-			Side:     0,
+			Function: SUBMIT_TRANSACTION,
+			Order:    0,
 		},
 	},
 	[]Object{
 		SWAP,
 		PARTICIPANT,
 		Command{
+		    Function: NOOP, //intentionally
+        },
+    },
+	[]Object{
+		PUBLISH,
+		INITIATOR,
+		Command{
 			Function: AUDITCONTRACT,
-			Side:     0,
-		},
-		Command{
-			Function: PARTICIPATE,
-			Side:     1,
-		},
-		Command{
-			Function: EXTRACTSECRET,
-			Side:     1,
+			Order:    1,
 		},
 		Command{
 			Function: REDEEM,
-			Side: 	  0,
+			Order:    1,
 		},
 		Command{
-			Function: WAIT_FOR_CHAIN,
-			Side:     1,
+			Function: SUBMIT_TRANSACTION,
+            Order:    1,
 		},
 	},
 	[]Object{
+		PUBLISH,
+        PARTICIPANT,
+        Command{
+            Function: AUDITCONTRACT,
+            Order:    0,
+        },
+        Command{
+            Function: PARTICIPATE,
+            Order:    1,
+        },
+        Command{
+            Function: SUBMIT_TRANSACTION,
+            Order:    1,
+        },
+	},
+    []Object{
+        PUBLISH,
+        ALL,
+        Command{
+            Function: EXTRACTSECRET,
+            Order:    1,
+        },
+        Command{
+            Function: REDEEM,
+            Order:    0,
+        },
+    },
+	[]Object{
 		SEND,
 		ALL,
-		Command{
-			Function: SUBMIT_TRANSACTION,
-		},
+        Command{
+            Function: PREPARE_TRANSACTION,
+        },
 	},
 }
 

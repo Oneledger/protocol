@@ -74,6 +74,10 @@ func Parse(message Message) (Transaction, err.Code) {
 
 		return action, err.SUCCESS
 
+	case PUBLISH:
+		action := ParsePublish(body)
+
+		return action, err.SUCCESS
 	default:
 		log.Error("Unknown transaction", "command", command)
 	}
@@ -214,4 +218,18 @@ func ParseVerify(message Message) *Verify {
 		return nil
 	}
 	return result.(*Verify)
+}
+
+func ParsePublish(message Message) *Publish {
+	log.Debug("Have a Publish Request")
+	register := &Publish{
+		Base: Base{Type: PUBLISH},
+	}
+
+	result, err := comm.Deserialize(message, register)
+	if err != nil {
+		log.Error("ParsePublish", "err", err)
+		return nil
+	}
+	return  result.(*Publish)
 }

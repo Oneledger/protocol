@@ -12,15 +12,17 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
+	"github.com/Oneledger/protocol/node/action"
+	"github.com/Oneledger/protocol/node/comm"
 )
 
 var client *ethclient.Client
-var htlContract = &HtlContract{}
+var htlContract = &HTLContract{}
 
-type HtlContract struct {
-	Contract *htlc.Htlc
-	Address  common.Address
-	Txs      []*types.Transaction
+type HTLContract struct {
+	Contract *htlc.Htlc				`json:"contract"`
+	Address  common.Address			`json:"address"`
+	Txs      []*types.Transaction	`json:"Txs"`
 }
 
 func getEthClient() *ethclient.Client {
@@ -84,7 +86,7 @@ func GetAuth() *bind.TransactOpts {
 	}
 }
 
-func GetHtlContract() *HtlContract {
+func GetHtlContract() *HTLContract {
 	cli := getEthClient()
 
 	if htlContract.Contract == nil {
@@ -110,7 +112,7 @@ func GetHtlContract() *HtlContract {
 	return htlContract
 }
 
-func (h *HtlContract) Funds(value *big.Int) error {
+func (h *HTLContract) Funds(value *big.Int) error {
 	auth := GetAuth()
 	auth.Value = value
 	tx, err := h.Contract.Funds(auth)
@@ -123,7 +125,7 @@ func (h *HtlContract) Funds(value *big.Int) error {
 	return nil
 }
 
-func (h *HtlContract) Setup(lockTime *big.Int, receiver common.Address, scrHash [32]byte) error {
+func (h *HTLContract) Setup(lockTime *big.Int, receiver common.Address, scrHash [32]byte) error {
 	auth := GetAuth()
 
 	tx, err := h.Contract.Setup(auth, lockTime, receiver, scrHash)
@@ -136,7 +138,7 @@ func (h *HtlContract) Setup(lockTime *big.Int, receiver common.Address, scrHash 
 	return nil
 }
 
-func (h *HtlContract) Redeem(scr []byte) error {
+func (h *HTLContract) Redeem(scr []byte) error {
 	auth := GetAuth()
 
 	tx, err := h.Contract.Redeem(auth, scr)
@@ -149,7 +151,7 @@ func (h *HtlContract) Redeem(scr []byte) error {
 	return nil
 }
 
-func (h *HtlContract) Refund(scr []byte) error {
+func (h *HTLContract) Refund(scr []byte) error {
 	auth := GetAuth()
 
 	tx, err := h.Contract.Refund(auth, scr)
@@ -162,7 +164,7 @@ func (h *HtlContract) Refund(scr []byte) error {
 	return nil
 }
 
-func (h *HtlContract) Audit(lockTime *big.Int, receiver common.Address, scrHash [32]byte) error {
+func (h *HTLContract) Audit(lockTime *big.Int, receiver common.Address, scrHash [32]byte) error {
 	result, err := h.Contract.Audit(&bind.CallOpts{Pending: true}, receiver, lockTime, scrHash)
 	if err != nil {
 		log.Error("Can't audit the htlc", "err", err)
@@ -170,4 +172,34 @@ func (h *HtlContract) Audit(lockTime *big.Int, receiver common.Address, scrHash 
 	}
 	log.Info("Audit htlc", "result", result, "tx")
 	return nil
+}
+
+func (h *HTLContract) Extract() []byte {
+
+    result, err := h.Contract.ExtractMsg(&bind.CallOpts{Pending: true})
+    if err != nil {
+        log.Error("Failed to extract secret", "err", err)
+    }
+    return result
+}
+
+
+func GetHTLCFromMessage(message action.Message) *HTLContract {
+	log.Debug("Parse message to HTLC")
+	register := &HTLContract{}
+
+	result, err := comm.Deserialize(message, register)
+	if err != nil {
+		log.Error("parse htlc contract failed", "err", err)
+		return nil
+	}
+	return  result.(*HTLContract)
+}
+
+func (h *HTLContract) ToMessage() action.Message {
+    msg, err := comm.Serialize(h)
+    if err != nil {
+        log.Error("Failed to serialize htlc", "err", err)
+    }
+    return msg
 }

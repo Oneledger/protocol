@@ -42,7 +42,7 @@ func (info *ResponseInfo) JSON() string {
 	*/
 }
 
-// Return as a Message
+// Return as a Contract
 func (info *ResponseInfo) JSONMessage() comm.Message {
 	return comm.Message(info.JSON())
 }

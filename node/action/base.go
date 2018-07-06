@@ -26,7 +26,7 @@ const (
 	EXTERNAL_LOCK      // Lock some data on external chain
 	SWAP               // Start a swap between chains
 	VERIFY             // Verify that a lockbox is correct
-	PUBLISH            // Publish data (preimage) on a chain
+	PUBLISH            // Exchange data on a chain
 	READ               // Read a specific transaction on a chain
 	PREPARE            // Do everything, except commit
 	COMMIT             // Commit to doing the work

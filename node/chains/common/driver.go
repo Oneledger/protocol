@@ -10,6 +10,7 @@ import (
 	"github.com/Oneledger/protocol/node/log"
 	"reflect"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/Oneledger/protocol/node/action"
 )
 
 func GetSwapAddress(chain data.ChainType) []byte {
@@ -57,4 +58,8 @@ func GetAddressFromByteArray(chain data.ChainType, address string, target interf
 	} else {
 		log.Fatal("not supported chain", "chain", chain)
 	}
+}
+
+type Contract interface {
+	ToMessage() action.Message
 }

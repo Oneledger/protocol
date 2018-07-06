@@ -11,8 +11,28 @@ import (
 	"github.com/Oneledger/protocol/node/id"
 	"github.com/Oneledger/protocol/node/log"
 	"github.com/btcsuite/btcutil"
-	"github.com/Oneledger/protocol/node/id"
 	"github.com/Oneledger/protocol/node/chains/bitcoin"
+)
+
+type Parameter byte
+
+// TODO: Move to parameter.go
+const (
+	ROLE Parameter = iota
+	INITIATOR_ACCOUNT
+	PARTICIPANT_ACCOUNT
+
+	AMOUNT
+	EXCHANGE
+	NONCE
+	PREIMAGE
+
+	PASSWORD
+	ETHCONTRACT
+	BTCCONTRACT
+
+	LOCKTIME
+	ORDER
 )
 
 func GetInt(value FunctionValue) int {
@@ -115,10 +135,10 @@ func GetByte32(value FunctionValue) [32]byte {
 	return [32]byte(nil)
 }
 
-func GetETHContract(value FunctionValue) *ethereum.HtlContract {
+func GetETHContract(value FunctionValue) *ethereum.HTLContract {
 	switch value.(type) {
-	case *ethereum.HtlContract:
-		return value.(*ethereum.HtlContract)
+	case *ethereum.HTLContract:
+		return value.(*ethereum.HTLContract)
 	default:
 		log.Fatal("Bad Type Cast in Function Parameter", "value", value)
 	}
