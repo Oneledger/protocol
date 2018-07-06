@@ -33,6 +33,7 @@ const (
 
 	LOCKTIME
 	ORDER
+	CHAINID
 )
 
 func GetInt(value FunctionValue) int {
@@ -132,7 +133,7 @@ func GetByte32(value FunctionValue) [32]byte {
 	default:
 		log.Fatal("Bad Type Cast in Function Parameter", "value", value)
 	}
-	return [32]byte(nil)
+	return [32]byte{}
 }
 
 func GetETHContract(value FunctionValue) *ethereum.HTLContract {

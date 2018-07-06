@@ -14,9 +14,8 @@ import (
     "github.com/Oneledger/protocol/node/data"
     "github.com/Oneledger/protocol/node/chains/bitcoin"
     "github.com/Oneledger/protocol/node/chains/ethereum"
-    "github.com/Oneledger/protocol/node/app"
-    "github.com/Oneledger/protocol/node/cmd/shared"
     "github.com/Oneledger/protocol/node/comm"
+
 )
 
 // Synchronize a publish between two users
@@ -138,6 +137,7 @@ func (publish *Publish) Resolve(app interface{}, commands Commands) {
         if commands[i].Function == SUBMIT_TRANSACTION {
             commands[i].Chain = data.ONELEDGER
             commands[i].Data[ORDER] = publish.Order + 1
+            commands[i].Data[CHAINID] = GetChainID(app)
         }
     }
     return
@@ -145,7 +145,7 @@ func (publish *Publish) Resolve(app interface{}, commands Commands) {
 
 
 func SubmitTransactionOLT(context map[Parameter]FunctionValue, chain data.ChainType) (bool, map[Parameter]FunctionValue) {
-    signers := shared.GetSigners()
+    signers := make([]PublicKey, 0)
     role := GetRole(context[ROLE])
     var target Party
 
@@ -157,23 +157,25 @@ func SubmitTransactionOLT(context map[Parameter]FunctionValue, chain data.ChainT
 
     var contract Message
     if chain == data.BITCOIN {
-        contract = GetBTCContract(context[BTCCONTRACT]).ToMessage()
+       contract = GetBTCContract(context[BTCCONTRACT]).ToMessage()
     } else if chain == data.ETHEREUM {
-        contract = GetETHContract(context[ETHCONTRACT]).ToMessage()
+       contract = GetETHContract(context[ETHCONTRACT]).ToMessage()
     }
     order := GetInt(context[ORDER])
     secretHash := GetByte32(context[PREIMAGE])
+
+    chainId := GetString(context[CHAINID])
     publish := &Publish{
-        Base: Base{
-            Type:     PUBLISH,
-            ChainId:  app.ChainId,
-            Signers:  signers,
-            Sequence: global.Current.Sequence,
-        },
-        Target:     target.Key,
-        Contract:   contract,
-        SecretHash: secretHash,
-        Order:      order,
+       Base: Base{
+           Type:     PUBLISH,
+           ChainId:  chainId,
+           Signers:  signers,
+           Sequence: global.Current.Sequence,
+       },
+       Target:     target.Key,
+       Contract:   contract,
+       SecretHash: secretHash,
+       Order:      order,
     }
 
     packet := SignAndPack(PUBLISH, Transaction(publish))

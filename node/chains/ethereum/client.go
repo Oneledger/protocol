@@ -12,7 +12,6 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
-	"github.com/Oneledger/protocol/node/action"
 	"github.com/Oneledger/protocol/node/comm"
 )
 
@@ -184,7 +183,7 @@ func (h *HTLContract) Extract() []byte {
 }
 
 
-func GetHTLCFromMessage(message action.Message) *HTLContract {
+func GetHTLCFromMessage(message []byte) *HTLContract {
 	log.Debug("Parse message to HTLC")
 	register := &HTLContract{}
 
@@ -196,7 +195,7 @@ func GetHTLCFromMessage(message action.Message) *HTLContract {
 	return  result.(*HTLContract)
 }
 
-func (h *HTLContract) ToMessage() action.Message {
+func (h *HTLContract) ToMessage() []byte {
     msg, err := comm.Serialize(h)
     if err != nil {
         log.Error("Failed to serialize htlc", "err", err)

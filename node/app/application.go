@@ -88,6 +88,10 @@ func (app Application) GetUtxo() interface{} {
 	return app.Utxo
 }
 
+func (app Application) GetChainID() interface{} {
+    return ChainId
+}
+
 type BasicState struct {
 	Account string `json:"account"`
 	Amount  int64  `json:"coins"` // TODO: Should be corrected as Amount, not coins

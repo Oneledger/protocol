@@ -19,7 +19,6 @@ import (
 	"github.com/btcsuite/btcutil"
 	"strconv"
 	"github.com/btcsuite/btcd/wire"
-	"github.com/Oneledger/protocol/node/action"
 	"github.com/Oneledger/protocol/node/comm"
 )
 
@@ -126,7 +125,7 @@ type HTLContract struct {
 	ContractTx 	*wire.MsgTx	`json:"contractTx"`
 }
 
-func (h *HTLContract) ToMessage() action.Message {
+func (h *HTLContract) ToMessage() []byte {
 	msg, err := comm.Serialize(h)
 	if err != nil {
 	    log.Error("Failed to serialize htlc", "err", err)
@@ -134,7 +133,7 @@ func (h *HTLContract) ToMessage() action.Message {
     return msg
 }
 
-func GetHTLCFromMessage(message action.Message) *HTLContract{
+func GetHTLCFromMessage(message []byte) *HTLContract{
 	log.Debug("Parse message to HTLC")
 	register := &HTLContract{}
 
