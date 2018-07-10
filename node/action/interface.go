@@ -19,7 +19,7 @@ func Noop(chain data.ChainType, context map[Parameter]FunctionValue) (bool, map[
 }
 
 func PrepareTransaction(chain data.ChainType, context map[Parameter]FunctionValue) (bool, map[Parameter]FunctionValue) {
-	log.Info("Executing SubmitTransaction Command", "chain", chain, "context", context)
+	log.Info("Executing PrepareTransaction Command", "chain", chain, "context", context)
 	return true, nil
 }
 

@@ -26,8 +26,8 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"time"
 	"crypto/rand"
-	olcommon "github.com/Oneledger/protocol/node/chains/common"
-	ethcommon "github.com/ethereum/go-ethereum/common"
+	"github.com/Oneledger/protocol/node/chains/common"
+    "reflect"
 )
 
 // Synchronize a swap between two users
@@ -329,14 +329,14 @@ func (swap *Swap) getChains() []data.ChainType {
 
 func (swap *Swap) getRole(isParty bool) Role {
 
-	if isParty {
-		if swap.Amount.Currency.Id < swap.Exchange.Currency.Id {
+	if swap.Amount.Currency.Id < swap.Exchange.Currency.Id {
+		if isParty {
 			return INITIATOR
 		} else {
 			return PARTICIPANT
 		}
 	} else {
-		if swap.Exchange.Currency.Id < swap.Amount.Currency.Id {
+		if isParty {
 			return PARTICIPANT
 		} else {
 			return INITIATOR
@@ -378,33 +378,21 @@ func (swap *Swap) Resolve(app interface{}, commands Commands) {
 		if &side == nil {
 			log.Fatal("command need a side to proceed", "command", commands[i])
 		}
-		if *isParty {
-			commands[i].Chain = chains[side]
-		} else {
-			commands[i].Chain = chains[side]
-		}
-		var key id.AccountKey
-		//todo: make it nicer
-		if *isParty {
-			if role == INITIATOR {
-				commands[i].Data[INITIATOR_ACCOUNT] = swap.Party
-				commands[i].Data[PARTICIPANT_ACCOUNT] = swap.CounterParty
+		//log.Debug("commandslist", "command", commands[i])
 
-			} else {
-				commands[i].Data[INITIATOR_ACCOUNT] = swap.CounterParty
-				commands[i].Data[PARTICIPANT_ACCOUNT] = swap.Party
-			}
+		commands[i].Chain = chains[side]
+
+		var key id.AccountKey
+
+		if *isParty {
+		    commands[i].Data[MY_ACCOUNT] = swap.Party
+		    commands[i].Data[THEM_ACCOUNT] = swap.CounterParty
 			commands[i].Data[AMOUNT] = swap.Amount
 			commands[i].Data[EXCHANGE] = swap.Exchange
             key = swap.CounterParty.Key
 		} else {
-			if role == PARTICIPANT {
-				commands[i].Data[INITIATOR_ACCOUNT] = swap.Party
-				commands[i].Data[PARTICIPANT_ACCOUNT] = swap.CounterParty
-			} else {
-				commands[i].Data[INITIATOR_ACCOUNT] = swap.CounterParty
-				commands[i].Data[PARTICIPANT_ACCOUNT] = swap.Party
-			}
+		    commands[i].Data[MY_ACCOUNT] = swap.CounterParty
+		    commands[i].Data[THEM_ACCOUNT] = swap.Party
 			commands[i].Data[AMOUNT] = swap.Exchange
 			commands[i].Data[EXCHANGE] = swap.Amount
             key = swap.Party.Key
@@ -430,17 +418,21 @@ func (swap *Swap) Resolve(app interface{}, commands Commands) {
                 commands[i].Data[PASSWORD] = secret
                 commands[i].Data[PREIMAGE] = sha256.Sum256(secret[:])
             }
-		} else {
-
-        }
+		}
 	}
 	return
 }
 
 // Execute the function
 func Execute(app interface{}, command Command, lastResult map[Parameter]FunctionValue) (err.Code, map[Parameter]FunctionValue) {
-	if status, lastResult := command.Execute(); status {
-		return err.SUCCESS, lastResult
+    //make sure the first execute use the context, and later uses last result. so if command are executed in a row, every executed function should only add
+    //parameters in the context and return instead of create new context every time
+    if len(lastResult) > 0 {
+        command.Data = lastResult
+    }
+    status, result := command.Execute()
+	if  status {
+		return err.SUCCESS, result
 	}
 	return err.NOT_IMPLEMENTED, lastResult
 }
@@ -455,31 +447,29 @@ func GetPubKeyHash(address string) *btcutil.AddressPubKeyHash {
 }
 
 // TODO: Needs to be configurable
-var lockPeriod = 24 * time.Hour
+var lockPeriod = 25 * time.Hour
 var tokens = make(map[string][32]byte)
 
 func CreateContractBTC(context map[Parameter]FunctionValue) (bool, map[Parameter]FunctionValue) {
 
 	timeout := time.Now().Add(2 * lockPeriod).Unix()
 
-	var receiverParty Party
-	var receiver *btcutil.AddressPubKeyHash
-	role := GetRole(context[ROLE])
-	if role == INITIATOR {
-		receiverParty = GetParty(context[PARTICIPANT_ACCOUNT])
-	} else {
-		receiverParty = GetParty(context[INITIATOR_ACCOUNT])
-	}
-	value := GetCoin(context[AMOUNT]).Amount
-	olcommon.GetAddressFromByteArray(data.BITCOIN, receiverParty.Accounts[data.BITCOIN], receiver)
+    value := GetCoin(context[AMOUNT]).Amount
 
-	scr := GetByte32(context[PASSWORD])
-	preimage := GetByte32(context[PREIMAGE])
-	scrHash := sha256.Sum256(scr[:])
+    receiverParty := GetParty(context[THEM_ACCOUNT])
+    receiver := common.GetBTCAddressFromByteArray(data.BITCOIN, receiverParty.Accounts[data.BITCOIN])
+    if receiver == nil {
+        log.Fatal("Failed to get btc address from string", "address", receiverParty.Accounts[data.BITCOIN], "target", reflect.TypeOf(receiver))
+    }
 
-	if !bytes.Equal(preimage[:], scrHash[:]) {
-		log.Fatal("Secret and Secret Hash doesn't match", "preimage", preimage, "scrHash", scrHash)
-	}
+    preimage := GetByte32(context[PREIMAGE])
+    if context[PASSWORD] != nil {
+        scr := GetByte32(context[PASSWORD])
+        scrHash := sha256.Sum256(scr[:])
+        if !bytes.Equal(preimage[:], scrHash[:]) {
+            log.Fatal("Secret and Secret Hash doesn't match", "preimage", preimage, "scrHash", scrHash)
+        }
+    }
 
 	config := chaincfg.RegressionNetParams // TODO: should be passed in
 
@@ -487,39 +477,39 @@ func CreateContractBTC(context map[Parameter]FunctionValue) (bool, map[Parameter
 
 	amount := bitcoin.GetAmount(value.String())
 
-	initCmd := htlc.NewInitiateCmd(receiver, amount, 2 * timeout, preimage)
+	initCmd := htlc.NewInitiateCmd(receiver, amount, timeout, preimage)
 
 	_, err := initCmd.RunCommand(cli)
 	if err != nil {
-		log.Error("Bitcoin Initiate", "err", err)
+		log.Error("Bitcoin Initiate", "err", err, "context", context)
 		return false, nil
 	}
 
-	contract := &bitcoin.HTLContract{Contract: initCmd.Contract, ContractTx: initCmd.ContractTx}
+    contract := &bitcoin.HTLContract{Contract: initCmd.Contract, ContractTx: *initCmd.ContractTx}
+
 	context[BTCCONTRACT] = contract
+	log.Debug("btc contract","contract", context[BTCCONTRACT])
 	return true, context
 }
 
 func CreateContractETH(context map[Parameter]FunctionValue) (bool, map[Parameter]FunctionValue) {
 
 	contract := ethereum.GetHtlContract()
-	role := GetRole(context[ROLE])
-	var receiver ethcommon.Address
 	var receiverParty Party
     preimage := GetByte32(context[PREIMAGE])
 
-	if role == INITIATOR {
-		receiverParty = GetParty(context[PARTICIPANT_ACCOUNT])
+    value := GetCoin(context[EXCHANGE]).Amount
 
-	} else {
-		receiverParty = GetParty(context[INITIATOR_ACCOUNT])
-	}
-	value := GetCoin(context[EXCHANGE]).Amount
-	olcommon.GetAddressFromByteArray(data.ETHEREUM,receiverParty.Accounts[data.ETHEREUM], receiver)
+    receiverParty = GetParty(context[THEM_ACCOUNT])
+	receiver := common.GetETHAddressFromByteArray(data.ETHEREUM,receiverParty.Accounts[data.ETHEREUM])
+    if receiver == nil {
+        log.Fatal("Failed to get eth address from string", "address", receiverParty.Accounts[data.ETHEREUM], "target", reflect.TypeOf(receiver))
+    }
 
 	timeoutSecond := int64(lockPeriod.Seconds())
 	contract.Funds(value)
-	contract.Setup(big.NewInt(timeoutSecond), receiver, preimage)
+	time.Sleep(3 * time.Second)
+	contract.Setup(big.NewInt(timeoutSecond), *receiver, preimage)
 
 	context[ETHCONTRACT] = contract
 	return true, context
@@ -529,7 +519,7 @@ func CreateContractETH(context map[Parameter]FunctionValue) (bool, map[Parameter
 func AuditContractBTC(context map[Parameter]FunctionValue) (bool, map[Parameter]FunctionValue) {
 	contract := GetBTCContract(context[BTCCONTRACT])
 
-	cmd := htlc.NewAuditContractCmd(contract.Contract, contract.ContractTx)
+	cmd := htlc.NewAuditContractCmd(contract.Contract, &contract.ContractTx)
 	cli := bitcoin.GetBtcClient(global.Current.BTCAddress, &chaincfg.RegressionNetParams) //todo: to make it configurable
 	e := cmd.RunCommand(cli)
 	if e != nil {
@@ -543,24 +533,28 @@ func AuditContractBTC(context map[Parameter]FunctionValue) (bool, map[Parameter]
 func AuditContractETH(context map[Parameter]FunctionValue) (bool, map[Parameter]FunctionValue) {
 	contract := GetETHContract(context[ETHCONTRACT])
 
-	scrHash, e := contract.Contract.ScrHash(&bind.CallOpts{Pending: true})
+	scrHash, e := contract.HTLContractObject().ScrHash(&bind.CallOpts{Pending: true})
 	if e != nil {
 		log.Error("can't get the secret Hash", "contract", contract.Address, "err", e)
 		return false, nil
 	}
 
-	locktime, e := contract.Contract.LockPeriod(&bind.CallOpts{Pending: true})
+	locktime, e := contract.HTLContractObject().LockPeriod(&bind.CallOpts{Pending: true})
 	if e != nil {
 		log.Error("can't get the lock period", "contract", contract.Address, "err", e)
 		return false, nil
 	}
 	address := ethereum.GetAddress()
 
-	receiver, e := contract.Contract.Receiver(&bind.CallOpts{Pending: true})
-	if e != nil || receiver != address {
-		log.Error("can't get the receiver or receiver not correct", "err", e, "contract", contract.Address, "receiver", receiver, "my address", address)
+	receiver, e := contract.HTLContractObject().Receiver(&bind.CallOpts{Pending: true})
+	if e != nil {
+		log.Error("can't get the receiver", "err", e)
 		return false, nil
 	}
+	if !bytes.Equal(address.Bytes(), receiver.Bytes()) {
+        log.Error("receiver not correct",  "contract", contract.Address, "receiver", receiver, "myAddress", address)
+        return false, nil
+    }
 
 	e = contract.Audit(locktime, address, scrHash)
 	if e !=nil {
@@ -582,8 +576,9 @@ func ParticipateBTC(context map[Parameter]FunctionValue) (bool, map[Parameter]Fu
 
 func ParticipateETH(context map[Parameter]FunctionValue) (bool, map[Parameter]FunctionValue) {
 	success, result := CreateContractETH(context)
-	if success != false {
+	if success == false {
 		log.Error("failed to participate because can't create contract")
+		return false, nil
 	}
 	return true, result
 }
@@ -592,14 +587,14 @@ func RedeemBTC(context map[Parameter]FunctionValue) (bool, map[Parameter]Functio
     contract := GetBTCContract(context[BTCCONTRACT])
     scr := GetByte32(context[PASSWORD])
 
-    cmd := htlc.NewRedeemCmd(contract.Contract, contract.ContractTx, scr[:])
+    cmd := htlc.NewRedeemCmd(contract.Contract, &contract.ContractTx, scr[:])
     cli := bitcoin.GetBtcClient(global.Current.BTCAddress, &chaincfg.RegressionNetParams) //todo: to make it configurable
     _, e := cmd.RunCommand(cli)
     if e != nil {
         log.Error("Bitcoin Audit", "err", e)
         return false, nil
     }
-    context[BTCCONTRACT] = &bitcoin.HTLContract{Contract: contract.Contract, ContractTx: cmd.RedeemContractTx}
+    context[BTCCONTRACT] = &bitcoin.HTLContract{Contract: contract.Contract, ContractTx: *cmd.RedeemContractTx}
     return true, context
 }
 
@@ -616,7 +611,7 @@ func RefundBTC(context map[Parameter]FunctionValue) (bool, map[Parameter]Functio
     contract := GetBTCContract(context[BTCCONTRACT])
     //todo: make it correct scr, by extract or from local storage
 
-    cmd := htlc.NewRefundCmd(contract.Contract, contract.ContractTx)
+    cmd := htlc.NewRefundCmd(contract.Contract, &contract.ContractTx)
     cli := bitcoin.GetBtcClient(global.Current.BTCAddress, &chaincfg.RegressionNetParams) //todo: to make it configurable
     _, e := cmd.RunCommand(cli)
     if e != nil {
@@ -638,7 +633,7 @@ func RefundETH(context map[Parameter]FunctionValue) (bool, map[Parameter]Functio
 func ExtractSecretBTC(context map[Parameter]FunctionValue) (bool, map[Parameter]FunctionValue) {
     contract := GetBTCContract(context[BTCCONTRACT])
     scrHash := GetByte32(context[PREIMAGE])
-    cmd := htlc.NewExtractSecretCmd(contract.ContractTx, scrHash)
+    cmd := htlc.NewExtractSecretCmd(&contract.ContractTx, scrHash)
     cli := bitcoin.GetBtcClient(global.Current.BTCAddress, &chaincfg.RegressionNetParams) //todo: to make it configurable
     e := cmd.RunCommand(cli)
     if e != nil {

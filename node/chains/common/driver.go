@@ -8,55 +8,51 @@ import (
 	"github.com/Oneledger/protocol/node/chains/ethereum"
 	"github.com/btcsuite/btcutil"
 	"github.com/Oneledger/protocol/node/log"
-	"reflect"
 	"github.com/ethereum/go-ethereum/common"
 )
 
 func GetSwapAddress(chain data.ChainType) []byte {
+    switch chain {
 
-	if chain == data.BITCOIN {
-		cli := bitcoin.GetBtcClient(global.Current.BTCAddress, &chaincfg.RegressionNetParams )
+    case data.BITCOIN:
+        cli := bitcoin.GetBtcClient(global.Current.BTCAddress, &chaincfg.RegressionNetParams )
+        return []byte(bitcoin.GetRawAddress(cli).String())
+    case data.ETHEREUM:
+        return ethereum.GetAddress().Bytes()
 
-		return []byte(bitcoin.GetRawAddress(cli).String())
-	} else if chain == data.ETHEREUM {
-
-		return ethereum.GetAddress().Bytes()
-	}
-	return nil
+    default:
+        return nil
+    }
 }
 
 
 
-func GetAddressFromByteArray(chain data.ChainType, address string, target interface{}) {
+func GetBTCAddressFromByteArray(chain data.ChainType, address string) *btcutil.AddressPubKeyHash {
 
 	if chain == data.BITCOIN {
 		result, err := btcutil.DecodeAddress( address , &chaincfg.RegressionNetParams)
 		if err != nil {
 			log.Error("failed to get addressPubKeyHash")
-			return
+			return nil
 		}
 
-		switch target.(type) {
-
-		case *btcutil.AddressPubKeyHash:
-			target = result.(*btcutil.AddressPubKeyHash)
-		default:
-			log.Fatal("not appropriate address type to convert yet", "address", address, "target", reflect.TypeOf(target))
-		}
-		return
-
-	} else if chain == data.ETHEREUM {
-		switch target.(type) {
-
-		case common.Address:
-			target = common.BytesToAddress([]byte(address))
-		default:
-			log.Fatal("not appropriate address type to convert yet", "address", address, "target", reflect.TypeOf(target))
-		}
-		return
+		return result.(*btcutil.AddressPubKeyHash)
 	} else {
 		log.Fatal("not supported chain", "chain", chain)
 	}
+	return nil
+}
+
+func GetETHAddressFromByteArray(chain data.ChainType, address string) *common.Address {
+    var result common.Address
+    if chain == data.ETHEREUM {
+        result = common.BytesToAddress([]byte(address))
+        return &result
+    } else {
+        log.Fatal("not supported chain", "chain", chain)
+    }
+
+    return nil
 }
 
 type Contract interface {

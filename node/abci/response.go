@@ -13,14 +13,14 @@ import (
 // Response arguments
 type ResponseInfo struct {
 	//Hashes int `json:"hashes"`
-	//Txs    int `json:"txs"`
+	//Tx    int `json:"txs"`
 	Size int `json:"size"`
 }
 
 func NewResponseInfo(hashes int, txs int, size int) *ResponseInfo {
 	return &ResponseInfo{
 		//Hashes: hashes,
-		//Txs:    txs,
+		//Tx:    txs,
 		Size: size,
 	}
 }

@@ -288,7 +288,7 @@ func HandleSwapAddressQuery(app Application, message []byte) []byte {
 	if len(parts) > 1 {
 		chain = conv.GetChain(parts[1])
 	}
-
+	log.Debug("swap address", "chain", chain)
 	return SwapAddres(chain)
 }
 

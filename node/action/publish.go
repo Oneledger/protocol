@@ -22,9 +22,9 @@ import (
 type Publish struct {
 	Base
 
-	Target      id.AccountKey `json:"party"`
+	Target      id.AccountKey `json:"target"`
 	Contract    Message       `json:"message"` //message converted from HTLContract
-	SecretHash  [32]byte
+	SecretHash  [32]byte      `json:"secrethash"`
 	Order       int           `json:"order"`
 }
 
@@ -117,6 +117,7 @@ func (transaction *Publish) FindSwap(app interface{}) *Swap {
 
     status := GetStatus(app)
     senderKey := transaction.Base.Owner
+    log.Debug("FindSwap", "key",senderKey)
     swap := FindSwap(status, senderKey).(*Swap)
     return swap
 }
@@ -127,15 +128,19 @@ func (publish *Publish) Resolve(app interface{}, commands Commands) {
 	swap.Resolve(app, commands)
 
 	for i := 0; i < len(commands); i++ {
-        if commands[i].Chain == data.BITCOIN {
-            contract := bitcoin.GetHTLCFromMessage(publish.Contract)
-            commands[i].Data[BTCCONTRACT] = contract
-        } else if commands[i].Chain == data.ETHEREUM {
-            contract := ethereum.GetHTLCFromMessage(publish.Contract)
-            commands[i].Data[ETHCONTRACT] = contract
+
+	    if commands[i].Function == AUDITCONTRACT {
+            if commands[i].Chain == data.BITCOIN {
+                contract := bitcoin.GetHTLCFromMessage(publish.Contract)
+                commands[i].Data[BTCCONTRACT] = contract
+
+            } else if commands[i].Chain == data.ETHEREUM {
+                contract := ethereum.GetHTLCFromMessage(publish.Contract)
+                commands[i].Data[ETHCONTRACT] = contract
+            }
         }
+        commands[i].Data[PREIMAGE] = publish.SecretHash
         if commands[i].Function == SUBMIT_TRANSACTION {
-            commands[i].Chain = data.ONELEDGER
             commands[i].Data[ORDER] = publish.Order + 1
             commands[i].Data[CHAINID] = GetChainID(app)
         }
@@ -146,21 +151,19 @@ func (publish *Publish) Resolve(app interface{}, commands Commands) {
 
 func SubmitTransactionOLT(context map[Parameter]FunctionValue, chain data.ChainType) (bool, map[Parameter]FunctionValue) {
     signers := make([]PublicKey, 0)
-    role := GetRole(context[ROLE])
-    var target Party
-
-    if role == INITIATOR {
-        target = GetParty(context[PARTICIPANT_ACCOUNT])
-    } else if role == PARTICIPANT {
-        target = GetParty(context[INITIATOR_ACCOUNT])
-    }
+    owner := GetParty(context[MY_ACCOUNT])
+    target := GetParty(context[THEM_ACCOUNT])
 
     var contract Message
     if chain == data.BITCOIN {
-       contract = GetBTCContract(context[BTCCONTRACT]).ToMessage()
+        log.Debug("BTC contract", "contract", context[BTCCONTRACT])
+        contract = GetBTCContract(context[BTCCONTRACT]).ToMessage()
+
     } else if chain == data.ETHEREUM {
-       contract = GetETHContract(context[ETHCONTRACT]).ToMessage()
+        contract = GetETHContract(context[ETHCONTRACT]).ToMessage()
     }
+    log.Debug("parsed contract", "contract", contract, "chain", chain, "context", context)
+
     order := GetInt(context[ORDER])
     secretHash := GetByte32(context[PREIMAGE])
 
@@ -170,6 +173,7 @@ func SubmitTransactionOLT(context map[Parameter]FunctionValue, chain data.ChainT
            Type:     PUBLISH,
            ChainId:  chainId,
            Signers:  signers,
+           Owner:    owner.Key,
            Sequence: global.Current.Sequence,
        },
        Target:     target.Key,

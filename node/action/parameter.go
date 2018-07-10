@@ -19,8 +19,8 @@ type Parameter byte
 // TODO: Move to parameter.go
 const (
 	ROLE Parameter = iota
-	INITIATOR_ACCOUNT
-	PARTICIPANT_ACCOUNT
+    MY_ACCOUNT
+    THEM_ACCOUNT
 
 	AMOUNT
 	EXCHANGE
@@ -37,6 +37,9 @@ const (
 )
 
 func GetInt(value FunctionValue) int {
+    if value == nil {
+        return 0
+    }
 	switch value.(type) {
 	case int:
 		return value.(int)
@@ -77,6 +80,9 @@ func GetRole(value FunctionValue) Role {
 }
 
 func GetString(value FunctionValue) string {
+    if value == nil {
+        return ""
+    }
 	switch value.(type) {
 	case string:
 		return value.(string)

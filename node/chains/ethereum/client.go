@@ -13,21 +13,22 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/Oneledger/protocol/node/comm"
+    "os"
 )
 
 var client *ethclient.Client
 var htlContract = &HTLContract{}
 
 type HTLContract struct {
-	Contract *htlc.Htlc				`json:"contract"`
-	Address  common.Address			`json:"address"`
-	Txs      []*types.Transaction	`json:"Txs"`
+	Address common.Address     `json:"address"`
+	Tx      *types.Transaction `json:"Tx"`
 }
 
 func getEthClient() *ethclient.Client {
+    address := os.Getenv("OLDATA") + "/" + global.Current.ETHAddress
 	if client == nil {
 		for i := 0; i < 3; i++ {
-			cli, err := ethclient.Dial(global.Current.ETHAddress)
+			cli, err := ethclient.Dial(address)
 			if err != nil {
 				log.Fatal("failed to get geth ipc ", "err", err)
 				time.Sleep(3 * time.Second)
@@ -36,7 +37,7 @@ func getEthClient() *ethclient.Client {
 		}
 	} else if id, _ := client.NetworkID(nil); id == big.NewInt(20180229) {
 		for i := 0; i < 3; i++ {
-			cli, err := ethclient.Dial(global.Current.ETHAddress)
+			cli, err := ethclient.Dial(address)
 			if err != nil {
 				log.Fatal("failed to get geth ipc ", "err", err)
 				time.Sleep(3 * time.Second)
@@ -88,83 +89,93 @@ func GetAuth() *bind.TransactOpts {
 func GetHtlContract() *HTLContract {
 	cli := getEthClient()
 
-	if htlContract.Contract == nil {
+	if htlContract.Tx == nil {
 		auth := GetAuth()
 		auth.GasLimit = 2000000
-		address, tx, contract, err := htlc.DeployHtlc(auth, cli, auth.From)
+		address, tx, _, err := htlc.DeployHtlc(auth, cli, auth.From)
 		if err != nil {
 			log.Fatal("Failed to create htlc for the node", "err", err)
 		}
-		htlContract.Contract = contract
+
 		htlContract.Address = address
-		htlContract.Txs = append(htlContract.Txs, tx)
+		htlContract.Tx = tx
 		return htlContract
 
 	} else {
-		balance, err := htlContract.Contract.Balance(&bind.CallOpts{Pending: true})
+		balance, err := htlContract.HTLContractObject().Balance(&bind.CallOpts{Pending: true})
 		if err != nil {
 			log.Fatal("Previous htlc not callable, re-deploy", "err", err, "address", htlContract.Address)
 		}
-		log.Warn("htlc already initialed", "address", htlContract.Address, "Tx", htlContract.Txs[0], "Balance", balance)
+		log.Warn("htlc already initialed", "address", htlContract.Address, "Tx", htlContract.Tx, "Balance", balance)
 		time.Sleep(1 * time.Second)
 	}
 	return htlContract
+}
+func (h *HTLContract) HTLContractObject() *htlc.Htlc{
+    cli := getEthClient()
+    contract, err := htlc.NewHtlc(h.Address, cli)
+    if err != nil {
+        log.Error("Failed to initial htlc contract from address", "address", h.Address)
+    }
+    return contract
 }
 
 func (h *HTLContract) Funds(value *big.Int) error {
 	auth := GetAuth()
 	auth.Value = value
-	tx, err := h.Contract.Funds(auth)
+	tx, err := h.HTLContractObject().Funds(auth)
 	if err != nil {
 		log.Error("Can't fund the htlc", "err", err, "auth", auth)
 		return err
 	}
-	h.Txs = append(h.Txs, tx)
-	log.Info("Fund htlc", "address", h.Address, "tx", h.Txs[len(h.Txs)], "value", value)
+	h.Tx = tx
+	log.Info("Fund htlc", "address", h.Address, "tx", h.Tx, "value", value)
 	return nil
 }
 
 func (h *HTLContract) Setup(lockTime *big.Int, receiver common.Address, scrHash [32]byte) error {
 	auth := GetAuth()
-
-	tx, err := h.Contract.Setup(auth, lockTime, receiver, scrHash)
+    auth.GasLimit = 200000
+    contract := h.HTLContractObject()
+	tx, err := contract.Setup(auth, lockTime, receiver, scrHash)
 	if err != nil {
 		log.Error("Can't setup the htlc", "err", err, "auth", auth)
 		return err
 	}
-	h.Txs = append(h.Txs, tx)
-	log.Info("Setup htlc", "address", h.Address, "tx", h.Txs[len(h.Txs)])
+	h.Tx = tx
+	r, _ := contract.Receiver(&bind.CallOpts{Pending: true})
+	log.Info("Setup htlc", "address", h.Address, "tx", h.Tx, "receiver", receiver, "r", r)
 	return nil
 }
 
 func (h *HTLContract) Redeem(scr []byte) error {
 	auth := GetAuth()
 
-	tx, err := h.Contract.Redeem(auth, scr)
+	tx, err := h.HTLContractObject().Redeem(auth, scr)
 	if err != nil {
 		log.Error("Can't redeem the htlc", "err", err, "auth", auth)
 		return err
 	}
-	h.Txs = append(h.Txs, tx)
-	log.Info("Redeem htlc", "address", h.Address, "tx", h.Txs[len(h.Txs)], "scr", scr, "value", tx.Value())
+	h.Tx = tx
+	log.Info("Redeem htlc", "address", h.Address, "tx", h.Tx, "scr", scr, "value", tx.Value())
 	return nil
 }
 
 func (h *HTLContract) Refund(scr []byte) error {
 	auth := GetAuth()
 
-	tx, err := h.Contract.Refund(auth, scr)
+	tx, err := h.HTLContractObject().Refund(auth, scr)
 	if err != nil {
 		log.Error("Can't refund the htlc", "err", err, "auth", auth)
 		return err
 	}
-	h.Txs = append(h.Txs, tx)
-	log.Info("Refund htlc", "address", h.Address, "tx", h.Txs[len(h.Txs)], "value", tx.Value())
+	h.Tx = tx
+	log.Info("Refund htlc", "address", h.Address, "tx", h.Tx, "value", tx.Value())
 	return nil
 }
 
 func (h *HTLContract) Audit(lockTime *big.Int, receiver common.Address, scrHash [32]byte) error {
-	result, err := h.Contract.Audit(&bind.CallOpts{Pending: true}, receiver, lockTime, scrHash)
+	result, err := h.HTLContractObject().Audit(&bind.CallOpts{Pending: true}, receiver, lockTime, scrHash)
 	if err != nil {
 		log.Error("Can't audit the htlc", "err", err)
 		return err
@@ -175,7 +186,7 @@ func (h *HTLContract) Audit(lockTime *big.Int, receiver common.Address, scrHash 
 
 func (h *HTLContract) Extract() []byte {
 
-    result, err := h.Contract.ExtractMsg(&bind.CallOpts{Pending: true})
+    result, err := h.HTLContractObject().ExtractMsg(&bind.CallOpts{Pending: true})
     if err != nil {
         log.Error("Failed to extract secret", "err", err)
     }
@@ -184,7 +195,7 @@ func (h *HTLContract) Extract() []byte {
 
 
 func GetHTLCFromMessage(message []byte) *HTLContract {
-	log.Debug("Parse message to HTLC")
+	log.Debug("Parse message to ETH HTLC")
 	register := &HTLContract{}
 
 	result, err := comm.Deserialize(message, register)

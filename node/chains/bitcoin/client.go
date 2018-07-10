@@ -122,7 +122,7 @@ func GetAmount(value string) btcutil.Amount {
 
 type HTLContract struct {
 	Contract 	[]byte		`json:"contract"`
-	ContractTx 	*wire.MsgTx	`json:"contractTx"`
+	ContractTx 	wire.MsgTx	`json:"contractTx"`
 }
 
 func (h *HTLContract) ToMessage() []byte {
@@ -134,7 +134,7 @@ func (h *HTLContract) ToMessage() []byte {
 }
 
 func GetHTLCFromMessage(message []byte) *HTLContract{
-	log.Debug("Parse message to HTLC")
+	log.Debug("Parse message to BTC HTLC")
 	register := &HTLContract{}
 
 	result, err := comm.Deserialize(message, register)

@@ -109,6 +109,7 @@ func GetCommands(action Type, role Role, chains []data.ChainType) Commands {
 				copy.Function = orig.Function
 				copy.Chain = orig.Chain
 				copy.Data = make(map[Parameter]FunctionValue)
+				copy.Order = orig.Order
 
 				result[j] = copy
 			}
