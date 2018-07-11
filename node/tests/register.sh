@@ -10,7 +10,7 @@ list="David Alice Bob Carol"
 
 $CMD/startOneLedger
 
-echo "===================test registration======================="
+echo "=================== Test Registration ======================="
 for name in $list
 do
 	nodeAddr=`$CMD/lookup $name RPCAddress tcp://127.0.0.1:`
@@ -19,7 +19,7 @@ do
 	LOG=$WORK
 	ROOT=$WORK/fullnode
 
-    echo "register [$name] "
+    echo "Register [$name] "
 	$CMD/stopNode $name
 
 	# Setup a global Identity and OneLedger account
@@ -41,5 +41,5 @@ do
 
 	# Broadtcast it to all of the nodes to make sure it is unique
 	$CMD/startNode $name register
-	sleep 6
+	sleep 10
 done

@@ -74,11 +74,13 @@ func CreateSendRequest(args *SendArguments) []byte {
 	conv := convert.NewConvert()
 
 	if args.Party == "" {
-		log.Fatal("Missing Party information")
+		log.Error("Missing Party information")
+		return nil
 	}
 
 	if args.CounterParty == "" {
-		log.Fatal("Missing CounterParty information")
+		log.Error("Missing CounterParty information")
+		return nil
 	}
 
 	// TODO: Can't convert identities to accounts, this way!
@@ -86,14 +88,15 @@ func CreateSendRequest(args *SendArguments) []byte {
 	counterParty := GetAccountKey(args.CounterParty)
 
 	if args.Currency == "" || args.Amount == "" {
-		log.Fatal("Missing an amount")
+		log.Error("Missing an amount")
+		return nil
 	}
 
 	amount := conv.GetCoin(args.Amount, args.Currency)
 
 	// Build up the Inputs
-	partyBalance := GetBalance(party)
-	counterPartyBalance := GetBalance(counterParty)
+	partyBalance := *GetBalance(party)
+	counterPartyBalance := *GetBalance(counterParty)
 
 	inputs := make([]action.SendInput, 0)
 	inputs = append(inputs,
@@ -138,7 +141,8 @@ func CreateMintRequest(args *SendArguments) []byte {
 	conv := convert.NewConvert()
 
 	if args.Party == "" {
-		log.Fatal("Missing Party information", "args", args)
+		log.Error("Missing Party information", "args", args)
+		return nil
 	}
 
 	// TODO: Can't convert identities to accounts, this way!
@@ -148,8 +152,8 @@ func CreateMintRequest(args *SendArguments) []byte {
 	amount := conv.GetCoin(args.Amount, args.Currency)
 
 	// Build up the Inputs
-	zeroBalance := GetBalance(zero)
-	partyBalance := GetBalance(party)
+	zeroBalance := *GetBalance(zero)
+	partyBalance := *GetBalance(party)
 
 	inputs := make([]action.SendInput, 0)
 	inputs = append(inputs,
