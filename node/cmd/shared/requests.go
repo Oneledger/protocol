@@ -95,13 +95,17 @@ func CreateSendRequest(args *SendArguments) []byte {
 	amount := conv.GetCoin(args.Amount, args.Currency)
 
 	// Build up the Inputs
-	partyBalance := *GetBalance(party)
-	counterPartyBalance := *GetBalance(counterParty)
+	partyBalance := GetBalance(party)
+	counterPartyBalance := GetBalance(counterParty)
+	if partyBalance == nil || counterPartyBalance == nil {
+		log.Error("Missing Balances")
+		return nil
+	}
 
 	inputs := make([]action.SendInput, 0)
 	inputs = append(inputs,
-		action.NewSendInput(party, partyBalance),
-		action.NewSendInput(counterParty, counterPartyBalance))
+		action.NewSendInput(party, *partyBalance),
+		action.NewSendInput(counterParty, *counterPartyBalance))
 
 	// Build up the outputs
 	outputs := make([]action.SendOutput, 0)
@@ -152,13 +156,18 @@ func CreateMintRequest(args *SendArguments) []byte {
 	amount := conv.GetCoin(args.Amount, args.Currency)
 
 	// Build up the Inputs
-	zeroBalance := *GetBalance(zero)
-	partyBalance := *GetBalance(party)
+	zeroBalance := GetBalance(zero)
+	partyBalance := GetBalance(party)
+
+	if zeroBalance == nil || partyBalance == nil {
+		log.Error("Missing Balances")
+		return nil
+	}
 
 	inputs := make([]action.SendInput, 0)
 	inputs = append(inputs,
-		action.NewSendInput(zero, zeroBalance),
-		action.NewSendInput(party, partyBalance))
+		action.NewSendInput(zero, *zeroBalance),
+		action.NewSendInput(party, *partyBalance))
 
 	// Build up the outputs
 	outputs := make([]action.SendOutput, 0)
