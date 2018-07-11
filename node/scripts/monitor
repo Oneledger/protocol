@@ -6,6 +6,8 @@ else
 	export NODENAME=$1
 fi
 
+export LANG="C.UTF-8"
+
 #
 # TMUX script to monitor a node in the chain
 #
