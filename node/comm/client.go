@@ -99,7 +99,7 @@ func Broadcast(packet []byte) *ctypes.ResultBroadcastTx {
 	//result, err := client.BroadcastTxCommit(packet)
 	result, err := client.BroadcastTxAsync(packet)
 	if err != nil {
-		log.Error("Broadcast Error", "err", err, "packet", packet)
+		log.Error("Broadcast Error", "err", err)
 	}
 
 	log.Debug("Broadcast", "packet", packet, "result", result)

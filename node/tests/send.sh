@@ -10,7 +10,7 @@ $CMD/startOneLedger
 addrAlice=`$OLSCRIPT/lookup Alice RPCAddress tcp://127.0.0.1:`
 addrBob=`$OLSCRIPT/lookup Bob RPCAddress tcp://127.0.0.1:`
 
-echo "===================test send transaction=================="
+echo "=================== Test Send Transaction =================="
 # Put some money in the user accounts
 SEQ=`$CMD/nextSeq`
 olclient testmint -s $SEQ -a $addrAlice --party Alice --amount 10000 --currency OLT

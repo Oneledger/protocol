@@ -48,7 +48,7 @@ list:
 # Check out the running status
 #
 status: check
-	./scripts/status
+	@./scripts/status
 
 #
 # Run any of the unit tests
@@ -61,56 +61,56 @@ utest:
 #
 test: check reset install start
 	@echo "OneLedger Initialize"
-	./scripts/stopOneLedger
+	@./scripts/stopOneLedger
 
 #
 # Full Testing, bring up everything, send a transaction and then stop
 #
 fulltest: reset install
-	./tests/full.sh
+	@./tests/full.sh
 
 #
 # Full Testing, bring up everything, send a transaction and then stop
 #
 swaptest: reset install
-	./tests/swap.sh
-	./tests/identity.sh
-	./tests/accounts.sh
-	./tests/utxo.sh
-	./scripts/stopOneLedger
+	@./tests/swap.sh
+	@./tests/identity.sh
+	@./tests/accounts.sh
+	@./tests/utxo.sh
+	@./scripts/stopOneLedger
 
 #
 # Start up a node, make sure it is stopped first
 #
 restart: reset install
-	./scripts/startOneLedger
+	@./scripts/startOneLedger
 
 start: check install
-	./scripts/startOneLedger
+	@./scripts/startOneLedger
 
 #
 # System Testing, bring it all down
 #
 stop: check
-	./scripts/stopOneLedger
+	@./scripts/stopOneLedger
 
 #
 # Reset all of the chains, back to genesis
 #
 reset: check stop
-	./scripts/resetOneLedger 4
+	@./scripts/resetOneLedger 4
 
 #
 # Startup a tmux monitor
 #
 monitor: check
-	./scripts/monitor
+	@./scripts/monitor
 
 #
 # stop a tmux monitor
 #
 stopmon: check
-	./scripts/stopmon
+	@./scripts/stopmon
 
 #
 # targets that are not associated with any files
