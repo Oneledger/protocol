@@ -96,7 +96,7 @@ func GetHtlContract() *HTLContract {
 		if err != nil {
 			log.Fatal("Failed to create htlc for the node", "err", err)
 		}
-
+        time.Sleep(6 * time.Second)
 		htlContract.Address = address
 		htlContract.Tx = tx
 		return htlContract
@@ -123,6 +123,7 @@ func (h *HTLContract) HTLContractObject() *htlc.Htlc{
 func (h *HTLContract) Funds(value *big.Int) error {
 	auth := GetAuth()
 	auth.Value = value
+	auth.GasLimit = 200000
 	tx, err := h.HTLContractObject().Funds(auth)
 	if err != nil {
 		log.Error("Can't fund the htlc", "err", err, "auth", auth)
@@ -130,6 +131,7 @@ func (h *HTLContract) Funds(value *big.Int) error {
 	}
 	h.Tx = tx
 	log.Info("Fund htlc", "address", h.Address, "tx", h.Tx, "value", value)
+    time.Sleep(6 * time.Second)
 	return nil
 }
 
@@ -143,6 +145,7 @@ func (h *HTLContract) Setup(lockTime *big.Int, receiver common.Address, scrHash 
 		return err
 	}
 	h.Tx = tx
+    time.Sleep(6 * time.Second)
 	r, _ := contract.Receiver(&bind.CallOpts{Pending: true})
 	log.Info("Setup htlc", "address", h.Address, "tx", h.Tx, "receiver", receiver, "r", r)
 	return nil

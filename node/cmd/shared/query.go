@@ -37,7 +37,7 @@ func GetAccountKey(identity string) []byte {
 	return key
 }
 
-func GetSwapAddress(currencyName string) string {
+func GetSwapAddress(currencyName string) []byte {
 	request := action.Message("currency=" + currencyName)
 	response := comm.Query("/swapAddress", request)
 
@@ -50,7 +50,7 @@ func GetSwapAddress(currencyName string) string {
 		log.Fatal("Returned address is empty", "chain", currencyName )
 	}
 
-	return string(value)
+	return value
 }
 
 func GetBalance(accountKey id.AccountKey) data.Coin {

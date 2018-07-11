@@ -24,7 +24,7 @@ func PrepareTransaction(chain data.ChainType, context map[Parameter]FunctionValu
 }
 
 func SubmitTransaction(chain data.ChainType, context map[Parameter]FunctionValue) (bool, map[Parameter]FunctionValue) {
-	log.Info("Executing SubmitTransaction Command", "chain", chain, "context", context)
+	log.Info("Executing SubmitTransaction Command", "chain", chain, "context", context, "sequence", context[SEQUENCE])
 	return SubmitTransactionOLT(context, chain)
 }
 

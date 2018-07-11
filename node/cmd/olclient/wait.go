@@ -31,6 +31,6 @@ func init() {
 // TODO: Wait for real things to happen...
 func Wait(cmd *cobra.Command, args []string) {
 	log.Debug("Waiting")
-	time.Sleep(10 * time.Second)
+	time.Sleep(60 * time.Second)
 
 }

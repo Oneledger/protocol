@@ -32,7 +32,7 @@ const (
 	BTCCONTRACT
 
 	LOCKTIME
-	ORDER
+    SEQUENCE
 	CHAINID
 )
 

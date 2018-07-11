@@ -27,10 +27,10 @@ func GetSwapAddress(chain data.ChainType) []byte {
 
 
 
-func GetBTCAddressFromByteArray(chain data.ChainType, address string) *btcutil.AddressPubKeyHash {
+func GetBTCAddressFromByteArray(chain data.ChainType, address []byte) *btcutil.AddressPubKeyHash {
 
 	if chain == data.BITCOIN {
-		result, err := btcutil.DecodeAddress( address , &chaincfg.RegressionNetParams)
+		result, err := btcutil.DecodeAddress( string(address), &chaincfg.RegressionNetParams)
 		if err != nil {
 			log.Error("failed to get addressPubKeyHash")
 			return nil
@@ -43,10 +43,11 @@ func GetBTCAddressFromByteArray(chain data.ChainType, address string) *btcutil.A
 	return nil
 }
 
-func GetETHAddressFromByteArray(chain data.ChainType, address string) *common.Address {
+func GetETHAddressFromByteArray(chain data.ChainType, address []byte) *common.Address {
     var result common.Address
     if chain == data.ETHEREUM {
-        result = common.BytesToAddress([]byte(address))
+        result = common.BytesToAddress(address)
+        log.Debug("ethereum address","address", address, "resuslt", result)
         return &result
     } else {
         log.Fatal("not supported chain", "chain", chain)
