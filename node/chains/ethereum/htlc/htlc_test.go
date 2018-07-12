@@ -38,7 +38,7 @@ func TestHtlc(t *testing.T) {
 	}
 	log.Debug("balance:", "balance", balance)
 	value := new(big.Int)
-	value.SetString("1000000000000000000000", 10)
+	value.SetString("100000000000000000000", 10)
 	testHtlc_Funds(auth, opt, htlcontract, value)
 	testHtlc_Setup(auth, htlcontract)
 	testHtlc_Audit(auth, opt, htlcontract, value)
@@ -138,6 +138,11 @@ func testHtlc_Redeem(auth *bind.TransactOpts, opt *bind.CallOpts, contract *Htlc
 	receiver := common.HexToAddress("0xd7858005867c3449f6673a91f6e4f719f10e12e5")
 	log.Debug("receiver: ", "address", receiver.String())
 
+    balance, err := contract.Balance(opt)
+    if err != nil {
+        log.Error("Failed to retrieve balance: ", "err",  err)
+    }
+    log.Debug("balance before redeem", "balance", balance)
 
 	addr, err := contract.Receiver(&bind.CallOpts{Pending: true})
 	if err != nil {
@@ -156,11 +161,11 @@ func testHtlc_Redeem(auth *bind.TransactOpts, opt *bind.CallOpts, contract *Htlc
 	time.Sleep(20 * time.Second)
 	log.Debug("redeem transaction to be mined", "transaction", tx.Hash(), "value", tx.Value())
 
-	balance, err := contract.Balance(opt)
+	balance, err = contract.Balance(opt)
 	if err != nil {
 		log.Error("Failed to retrieve balance: ", "err",  err)
 	}
-	log.Debug("balance:", "balance", balance)
+	log.Debug("balance after redeem", "balance", balance)
 
 }
 
@@ -198,6 +203,10 @@ func testHtlc_Refund(auth *bind.TransactOpts, contract *Htlc) {
 	log.Debug("======test refund()======")
 	_, scr := getScrPair()
 
+	balance, err := contract.Balance(&bind.CallOpts{Pending: false})
+
+	log.Debug("balance before refund", "balance", balance)
+
 	tx, err := contract.Refund(auth,scr)
 	if err != nil{
 		log.Error("Failed to call the refund", )
@@ -222,7 +231,7 @@ func testHtlc_Audit(auth *bind.TransactOpts, opt *bind.CallOpts, contract *Htlc,
 
 	var falseScrHash [32]byte
 	copy(falseScrHash[:], "falsetest")
-	r, err =contract.Audit(opt, receiver,big.NewInt(10), falseScrHash )
+	r, err =contract.Audit(opt, receiver, big.NewInt(10), falseScrHash )
 	if err != nil && r == false {
 		log.Debug("Failed to audit the contract as expected because used false secret", "r", r)
 	} else {

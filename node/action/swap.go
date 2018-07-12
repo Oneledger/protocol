@@ -512,6 +512,7 @@ func CreateContractETH(context map[Parameter]FunctionValue) (bool, map[Parameter
     }
 
 	timeoutSecond := int64(lockPeriod.Seconds())
+	log.Debug("Create ETH HTLC", "value", value, "receiver", receiver, "preimage", preimage)
 	contract.Funds(value)
 	contract.Setup(big.NewInt(timeoutSecond), *receiver, preimage)
 
@@ -539,17 +540,7 @@ func AuditContractBTC(context map[Parameter]FunctionValue) (bool, map[Parameter]
 func AuditContractETH(context map[Parameter]FunctionValue) (bool, map[Parameter]FunctionValue) {
 	contract := GetETHContract(context[ETHCONTRACT])
 
-	scrHash, e := contract.HTLContractObject().ScrHash(&bind.CallOpts{Pending: true})
-	if e != nil {
-		log.Error("can't get the secret Hash", "contract", contract.Address, "err", e)
-		return false, nil
-	}
-
-	locktime, e := contract.HTLContractObject().LockPeriod(&bind.CallOpts{Pending: true})
-	if e != nil {
-		log.Error("can't get the lock period", "contract", contract.Address, "err", e)
-		return false, nil
-	}
+	scrHash := GetByte32(context[PREIMAGE])
 	address := ethereum.GetAddress()
 
 	receiver, e := contract.HTLContractObject().Receiver(&bind.CallOpts{Pending: true})
@@ -561,13 +552,15 @@ func AuditContractETH(context map[Parameter]FunctionValue) (bool, map[Parameter]
         log.Error("receiver not correct",  "contract", contract.Address, "receiver", receiver, "myAddress", address)
         return false, nil
     }
-    log.Debug("Auditing ETH Contract","locktime", locktime, "receiver", receiver, "scrHash", scrHash)
-    //todo: fix the smart contract locktime check
-	//e = contract.Audit(locktime, address, scrHash)
-	//if e != nil {
-	//	log.Fatal("Failed to audit the contract with correct input", "err", e)
-	//	return false, nil
-	//}
+
+    value := GetCoin(context[EXCHANGE]).Amount
+
+    log.Debug("Auditing ETH Contract","receiver", receiver, "value", value, "scrHash", scrHash)
+	e = contract.Audit(address, value ,scrHash)
+	if e != nil {
+		log.Fatal("Failed to audit the contract with correct input", "err", e)
+		return false, nil
+	}
 
 	context[PREIMAGE] = scrHash
 	return true, context
