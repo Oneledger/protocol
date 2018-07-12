@@ -164,9 +164,6 @@ func SubmitTransactionOLT(context map[Parameter]FunctionValue, chain data.ChainT
         contract = GetETHContract(context[ETHCONTRACT]).ToMessage()
     }
 
-    if context[SEQUENCE] == nil {
-        log.Debug("we hit here")
-    }
     sequence := GetInt(context[SEQUENCE])
     secretHash := GetByte32(context[PREIMAGE])
     chainId := GetString(context[CHAINID])

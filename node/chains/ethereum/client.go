@@ -184,7 +184,6 @@ func (h *HTLContract) Redeem(scr []byte) error {
 	h.Tx = tx
 	time.Sleep(6 * time.Second)
     balance, err = h.HTLContractObject().Balance(&bind.CallOpts{Pending: false})
-    if err!= nil {log.Debug("we hit here")}
     log.Debug("balance after redeem", "balance", balance, "err", err)
 	log.Info("Redeem htlc", "address", h.Address, "tx", tx, "scr", scr, "txaddress", tx.Hash())
 	return nil
