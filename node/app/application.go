@@ -259,9 +259,14 @@ func (app Application) DeliverTx(tx []byte) ResponseDeliverTx {
 	}
 
 	if result.ShouldProcess(app) {
-		if err = result.ProcessDeliver(&app); err != 0 {
-			return ResponseDeliverTx{Code: err}
-		}
+	    ttype, _ := action.UnpackMessage(action.Message(tx))
+	    if ttype == action.SWAP {
+               go result.ProcessDeliver(&app)
+        } else {
+            if err = result.ProcessDeliver(&app); err != 0 {
+                return ResponseDeliverTx{Code: err}
+            }
+        }
 	}
 
 	return ResponseDeliverTx{

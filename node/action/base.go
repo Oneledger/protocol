@@ -31,7 +31,7 @@ const (
 	PREPARE            // Do everything, except commit
 	COMMIT             // Commit to doing the work
 	FORGET             // Rollback and forget that this happened
-
+ 	CHECKFORERROR	   //todo: check something happened(with a delay transaction), otherwise it's an error
 )
 
 const (
