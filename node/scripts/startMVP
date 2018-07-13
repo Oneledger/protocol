@@ -3,7 +3,10 @@
 #
 # One script to start em all.
 #
-./startBitcoin
-./startEthereum
-./startOneLedger
+
+export CMD=$OLSCRIPT
+
+$CMD/startBitcoin
+$CMD/startEthereum
+$CMD/startOneLedger
 

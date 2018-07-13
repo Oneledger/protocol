@@ -3,7 +3,10 @@
 #
 # One script to start em all.
 #
-./resetBitcoin
-./resetEthereum
-./resetOneLedger
+
+export CMD=$OLSCRIPT
+
+$CMD/resetBitcoin
+$CMD/resetEthereum
+$CMD/resetOneLedger
 
