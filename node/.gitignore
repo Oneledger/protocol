@@ -5,3 +5,4 @@ temp
 testFullnode
 testOlclient
 *.db
+sequence

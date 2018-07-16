@@ -14,7 +14,7 @@ addrBob=`$CMD/lookup Bob RPCAddress tcp://127.0.0.1:`
 addrCarol=`$CMD/lookup Carol RPCAddress tcp://127.0.0.1:`
 
 # List out the account details
-echo "==========check accounts for everyone==========="
+echo "========== Fullnode Accounts ==========="
 olclient account -a $addrDavid
 sleep 1
 olclient account -a $addrAlice

@@ -74,11 +74,13 @@ func CreateSendRequest(args *SendArguments) []byte {
 	conv := convert.NewConvert()
 
 	if args.Party == "" {
-		log.Fatal("Missing Party information")
+		log.Error("Missing Party information")
+		return nil
 	}
 
 	if args.CounterParty == "" {
-		log.Fatal("Missing CounterParty information")
+		log.Error("Missing CounterParty information")
+		return nil
 	}
 
 	// TODO: Can't convert identities to accounts, this way!
@@ -86,7 +88,8 @@ func CreateSendRequest(args *SendArguments) []byte {
 	counterParty := GetAccountKey(args.CounterParty)
 
 	if args.Currency == "" || args.Amount == "" {
-		log.Fatal("Missing an amount")
+		log.Error("Missing an amount")
+		return nil
 	}
 
 	amount := conv.GetCoin(args.Amount, args.Currency)
@@ -94,11 +97,15 @@ func CreateSendRequest(args *SendArguments) []byte {
 	// Build up the Inputs
 	partyBalance := GetBalance(party)
 	counterPartyBalance := GetBalance(counterParty)
+	if partyBalance == nil || counterPartyBalance == nil {
+		log.Error("Missing Balances")
+		return nil
+	}
 
 	inputs := make([]action.SendInput, 0)
 	inputs = append(inputs,
-		action.NewSendInput(party, partyBalance),
-		action.NewSendInput(counterParty, counterPartyBalance))
+		action.NewSendInput(party, *partyBalance),
+		action.NewSendInput(counterParty, *counterPartyBalance))
 
 	// Build up the outputs
 	outputs := make([]action.SendOutput, 0)
@@ -138,7 +145,8 @@ func CreateMintRequest(args *SendArguments) []byte {
 	conv := convert.NewConvert()
 
 	if args.Party == "" {
-		log.Fatal("Missing Party information", "args", args)
+		log.Error("Missing Party information", "args", args)
+		return nil
 	}
 
 	// TODO: Can't convert identities to accounts, this way!
@@ -151,10 +159,15 @@ func CreateMintRequest(args *SendArguments) []byte {
 	zeroBalance := GetBalance(zero)
 	partyBalance := GetBalance(party)
 
+	if zeroBalance == nil || partyBalance == nil {
+		log.Error("Missing Balances")
+		return nil
+	}
+
 	inputs := make([]action.SendInput, 0)
 	inputs = append(inputs,
-		action.NewSendInput(zero, zeroBalance),
-		action.NewSendInput(party, partyBalance))
+		action.NewSendInput(zero, *zeroBalance),
+		action.NewSendInput(party, *partyBalance))
 
 	// Build up the outputs
 	outputs := make([]action.SendOutput, 0)

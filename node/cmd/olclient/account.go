@@ -6,8 +6,6 @@
 package main
 
 import (
-	"fmt"
-
 	"github.com/Oneledger/protocol/node/action"
 	"github.com/Oneledger/protocol/node/app"
 	"github.com/Oneledger/protocol/node/cmd/shared"
@@ -64,22 +62,29 @@ func CheckAccount(cmd *cobra.Command, args []string) {
 func printQuery(accountQuery *app.AccountQuery) {
 	exports := accountQuery.Accounts
 
+	if len(exports) < 1 {
+		return
+	}
+
 	name := "      Name:"
 	balance := "   Balance:"
 	accountType := "      Type:"
-	accountKey := "AccountKey:"
-	nodeName := "  NodeName:"
+	accountKey := "       Key:"
 
-	shared.Console.Info("\nCheckAccount response: \n")
+	first := true
 
 	for _, export := range exports {
-		shared.Console.Info(fmt.Sprintf(nodeName+" %s", export.NodeName))
-		shared.Console.Info(fmt.Sprintf(name+" %s", export.Name))
-		shared.Console.Info(fmt.Sprintf(accountType+" %s", export.Type))
-		shared.Console.Info(fmt.Sprintf(accountKey+" %s", export.AccountKey))
-		if export.Type == "OneLedger" {
-			shared.Console.Info(fmt.Sprintf(balance+" %s", export.Balance))
+		if first {
+			shared.Console.Info("\nAccount(s) on", export.NodeName+":")
+			first = false
 		}
-		shared.Console.Info("\n")
+
+		shared.Console.Info(name, export.Name)
+		shared.Console.Info(accountType, export.Type)
+		shared.Console.Info(accountKey, export.AccountKey)
+		if export.Type == "OneLedger" {
+			shared.Console.Info(balance, export.Balance)
+		}
+		shared.Console.Info()
 	}
 }

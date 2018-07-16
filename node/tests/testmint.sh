@@ -38,9 +38,7 @@ olclient testmint -s $SEQ -a $addrDavid --party David --amount 12004 --currency 
 
 sleep 10
 
-olclient account -a $addrAlice --identity Alice
-olclient account -a $addrBob --identity Bob
-olclient account -a $addrBob --identity Zero
-
+olclient account -a $addrAlice 
+olclient account -a $addrBob 
 
 $CMD/stopOneLedger

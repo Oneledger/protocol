@@ -4,4 +4,6 @@
 # Inside of the monitor, close everything
 #
 
+export LANG="C.UTF-8"
+
 tmux kill-server
