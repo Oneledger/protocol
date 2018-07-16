@@ -102,7 +102,7 @@ func ParseSend(message Message) *Send {
 
 // Parse a swap request
 func ParseSwap(message Message) *Swap {
-	log.Debug("Have a Swap` Request")
+	log.Debug("Have a Swap Request")
 	register := &Swap{
 		Base: Base{Type: SWAP},
 	}

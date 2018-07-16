@@ -133,8 +133,8 @@ func FindMatchingSwap(status *data.Datastore, accountKey id.AccountKey, transact
 	result := FindSwap(status, accountKey)
 	if result != nil {
 		entry := result.(*Swap)
-		if MatchSwap(entry, transaction) {
-			log.Debug("MatchSwap", "transaction", transaction, "entry", entry, "isParty", isParty)
+		if matching := MatchSwap(entry, transaction); matching {
+			log.Debug("MatchSwap", "matching", matching, "transaction", transaction, "entry", entry, "isParty", isParty)
 			var base Swap
 			matched = &base
 			if isParty {
@@ -211,6 +211,7 @@ func ProcessSwap(app interface{}, transaction *Swap) *Swap {
 	if *isParty {
 		matchedSwap := FindMatchingSwap(status, transaction.CounterParty.Key, transaction, *isParty)
 		if matchedSwap != nil {
+		    log.Debug("Swap is ready", "swap", matchedSwap)
 		    if matchedSwap.getRole(*isParty) == PARTICIPANT {
 		        SaveSwap(status,  transaction.CounterParty.Key, matchedSwap)
             }
@@ -464,7 +465,7 @@ func CreateContractBTC(context map[Parameter]FunctionValue) (bool, map[Parameter
     receiverParty := GetParty(context[THEM_ACCOUNT])
     receiver := common.GetBTCAddressFromByteArray(data.BITCOIN, receiverParty.Accounts[data.BITCOIN])
     if receiver == nil {
-        log.Fatal("Failed to get btc address from string", "address", receiverParty.Accounts[data.BITCOIN], "target", reflect.TypeOf(receiver))
+        log.Error("Failed to get btc address from string", "address", receiverParty.Accounts[data.BITCOIN], "target", reflect.TypeOf(receiver))
     }
 
     preimage := GetByte32(context[PREIMAGE])
@@ -472,7 +473,7 @@ func CreateContractBTC(context map[Parameter]FunctionValue) (bool, map[Parameter
         scr := GetByte32(context[PASSWORD])
         scrHash := sha256.Sum256(scr[:])
         if !bytes.Equal(preimage[:], scrHash[:]) {
-            log.Fatal("Secret and Secret Hash doesn't match", "preimage", preimage, "scrHash", scrHash)
+            log.Error("Secret and Secret Hash doesn't match", "preimage", preimage, "scrHash", scrHash)
         }
     }
 
@@ -508,7 +509,7 @@ func CreateContractETH(context map[Parameter]FunctionValue) (bool, map[Parameter
     receiverParty = GetParty(context[THEM_ACCOUNT])
 	receiver := common.GetETHAddressFromByteArray(data.ETHEREUM,receiverParty.Accounts[data.ETHEREUM])
     if receiver == nil {
-        log.Fatal("Failed to get eth address from string", "address", receiverParty.Accounts[data.ETHEREUM], "target", reflect.TypeOf(receiver))
+        log.Error("Failed to get eth address from string", "address", receiverParty.Accounts[data.ETHEREUM], "target", reflect.TypeOf(receiver))
     }
 
 	timeoutSecond := int64(lockPeriod.Seconds())
@@ -555,12 +556,27 @@ func AuditContractETH(context map[Parameter]FunctionValue) (bool, map[Parameter]
 
     value := GetCoin(context[EXCHANGE]).Amount
 
-    log.Debug("Auditing ETH Contract","receiver", receiver, "value", value, "scrHash", scrHash)
-	e = contract.Audit(address, value ,scrHash)
-	if e != nil {
-		log.Fatal("Failed to audit the contract with correct input", "err", e)
-		return false, nil
-	}
+    setVale := contract.Balance()
+    setScrhash := contract.ScrHash()
+    if !bytes.Equal(scrHash[:], setScrhash[:]) {
+        log.Error("Secret Hash doesn't match", "sh", scrHash, "setSh", setScrhash)
+        return false, nil
+    }
+
+    if value.Cmp(setVale) != 0 {
+        log.Error("Value doesn't match", "value", value, "setValue", setVale)
+        return false, nil
+    }
+
+    log.Debug("Auditing ETH Contract","receiver", address, "value", value, "scrHash", scrHash)
+
+
+    log.Debug("Set ETH Contract","receiver", receiver, "value", setVale, "scrHash", setScrhash)
+	//e = contract.Audit(address, value ,scrHash)
+	//if e != nil {
+	//	log.Error("Failed to audit the contract with correct input", "err", e)
+	//	return false, nil
+	//}
 
 	context[PREIMAGE] = scrHash
 	return true, context

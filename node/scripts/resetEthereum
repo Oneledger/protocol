@@ -4,8 +4,11 @@
 # Reset Etheruem chain back to genesis
 #
 
+export CMD=$OLSCRIPT
 export LOG=$OLDATA
 export OLETH=$OLDATA/ethereum
+
+$CMD/stopEthereum
 
 echo "============================================================" >> $LOG/ethereum.log
 echo "Clean all ethereum data"

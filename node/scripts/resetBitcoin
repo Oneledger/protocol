@@ -8,6 +8,8 @@ export CMD=$OLSCRIPT
 
 export LOG=$OLDATA
 
+$CMD/stopBitcoin
+
 echo "============================================================" >> $LOG/bitcoin.log
 echo "Clean all bitcoin data" >> $LOG/bitcoin.log
 echo "Clean all bitcoin data"

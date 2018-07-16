@@ -125,7 +125,7 @@ func (h *HTLContract) HTLContractObject() *htlc.Htlc{
 
 func (h *HTLContract) Funds(value *big.Int) error {
 	auth := GetAuth()
-	auth.Value = ConvertToWei(value)
+	auth.Value = EtherToWei(value)
 	auth.GasLimit = 200000
 	contract := h.HTLContractObject()
 	if contract == nil {
@@ -207,7 +207,7 @@ func (h *HTLContract) Refund(scr []byte) error {
 
 func (h *HTLContract) Audit(receiver common.Address, value *big.Int, scrHash [32]byte) error {
 
-    valueWei := ConvertToWei(value)
+    valueWei := EtherToWei(value)
     log.Debug("audit htlc contract", "wei", valueWei)
 	result, err := h.HTLContractObject().Audit(&bind.CallOpts{Pending: false}, receiver, valueWei, scrHash)
 	if err != nil {
@@ -227,9 +227,33 @@ func (h *HTLContract) Extract() []byte {
     return result
 }
 
-func ConvertToWei(value *big.Int) *big.Int {
+func (h *HTLContract) Balance() *big.Int {
+
+	balance, err := h.HTLContractObject().Balance(&bind.CallOpts{Pending: true})
+	if err != nil {
+		log.Error("Can't get the balance", "err", err)
+	}
+
+	return WeiToEther(balance)
+}
+
+func (h *HTLContract) ScrHash() [32]byte {
+
+    sh, err := h.HTLContractObject().ScrHash(&bind.CallOpts{Pending: true})
+    if err != nil {
+        log.Error("Can't get scrHash", "err", err)
+    }
+    return sh
+}
+
+func EtherToWei(value *big.Int) *big.Int {
 
     return new(big.Int).Mul(value, new(big.Int).Exp(big.NewInt(10), big.NewInt(18), nil))
+}
+
+func WeiToEther(value *big.Int) *big.Int {
+
+	return new(big.Int).Div(value, new(big.Int).Exp(big.NewInt(10), big.NewInt(18), nil))
 }
 
 func GetHTLCFromMessage(message []byte) *HTLContract {

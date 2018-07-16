@@ -81,9 +81,11 @@ func (transaction *Publish) ShouldProcess(app interface{}) bool {
 	account := transaction.GetNodeAccount(app)
 
 	if bytes.Equal(transaction.Target, account.AccountKey()) {
+	    log.Debug("Is publish target", "target", transaction.Target, "me", account.AccountKey())
 		return true
 	}
 
+    log.Debug("Not the publish target", "target", transaction.Target, "me", account.AccountKey() )
 	return false
 }
 

@@ -6,7 +6,6 @@ package action
 
 import (
     "github.com/Oneledger/protocol/node/data"
-    "github.com/Oneledger/protocol/node/log"
 )
 
 type CommandType int
@@ -45,7 +44,6 @@ func (command Command) Execute() (bool, map[Parameter]FunctionValue) {
         return PrepareTransaction(command.Chain, command.Data)
 
 	case SUBMIT_TRANSACTION:
-	    log.Debug("publish sequence", "sequence",command.Data[SEQUENCE])
 		return SubmitTransaction(command.Chain, command.Data)
 
 	case INITIATE:
