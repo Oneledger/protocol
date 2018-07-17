@@ -75,7 +75,7 @@ fulltest: reset install
 swaptest: reset install
 	@./scripts/startMVP
 	@./tests/swap.sh
-	@./scripts/stopMVP
+	@./scripts/stopOneLedger
 
 
 #
