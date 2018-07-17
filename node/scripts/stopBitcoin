@@ -9,8 +9,18 @@ export LOG=$OLDATA
 echo "============================================" >> $LOG/bitcoin.log
 echo "Killing all bitcoin process" >> $LOG/bitcoin.log
 
-pkill bitcoin.*
+pids=`pgrep -f "bitcoind"`
+if [ "$pids" ]
+then
+    pkill bitcoin.*
 
-sleep 10
+    sleep 10
 
-echo "Running Bitcoin process: $(pgrep bitcoin.* | wc -l)"
+    echo "Running Bitcoin process: $(pgrep bitcoin.* | wc -l)"
+
+else
+
+    echo "Running Bitcoin process: $(pgrep bitcoin.* | wc -l)"
+
+fi
+

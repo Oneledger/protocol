@@ -9,8 +9,17 @@ export LOG=$OLDATA
 echo "============================================" >> $LOG/ethereum.log
 echo "Killing all Ethereum process" >> $LOG/ethereum.log
 
-pkill geth.*
+pids=`pgrep -f "geth"`
+if [ -z "$pids" ]
+then
 
-sleep 5
+    pkill geth.*
 
-echo "Running Ethereum process: $(pgrep geth.* | wc -l)"
+    sleep 5
+
+    echo "Running Ethereum process: $(pgrep geth.* | wc -l)"
+
+else
+    echo "Running Ethereum process: $(pgrep geth.* | wc -l)"
+
+fi
