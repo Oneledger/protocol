@@ -73,6 +73,7 @@ fulltest: reset install
 # Full Testing, bring up everything, send a transaction and then stop
 #
 swaptest: reset install
+	@./scripts/startMVP
 	@./tests/swap.sh
 	@./scripts/stopOneLedger
 
