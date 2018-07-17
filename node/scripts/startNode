@@ -77,7 +77,7 @@ then
 		$extra \
 		>> $LOG/fullnode.log 2>&1 &
 
-	echo "$nodeName has been Started"
+	echo "$nodeName has been started"
 else
 	echo "Fullnode $nodeName was already running"
 fi

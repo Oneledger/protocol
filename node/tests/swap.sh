@@ -20,8 +20,8 @@ addrBob=`$CMD/lookup Bob RPCAddress tcp://127.0.0.1:`
 
 # olclient wait --initialized
 #sleep 2 
-echo "==================Test swap between BTC & ETH==================="
 
+echo "================== Test Swap between BTC & ETH ==================="
 
 # Put some money in the user accounts
 SEQ=`$CMD/nextSeq`

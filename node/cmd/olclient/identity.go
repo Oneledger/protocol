@@ -6,8 +6,6 @@
 package main
 
 import (
-	"fmt"
-
 	"github.com/Oneledger/protocol/node/action"
 	"github.com/Oneledger/protocol/node/app"
 	"github.com/Oneledger/protocol/node/cmd/shared"
@@ -61,7 +59,7 @@ func CheckIdentity(cmd *cobra.Command, args []string) {
 }
 
 func printResponse(idQuery *app.IdentityQuery) {
-	shared.Console.Info("\nCheckIdentity Response:\n")
+	shared.Console.Info("\nOneLedger Identities:\n")
 
 	for _, identity := range idQuery.Identities {
 		printIdentity(&identity)
@@ -72,7 +70,7 @@ func printIdentity(export *id.IdentityExport) {
 	// Right-align fieldnames in console
 	name := "      Name:"
 	scope := "     Scope:"
-	accountKey := "AccountKey:"
+	accountKey := "       Key:"
 
 	var scopeOutput string
 	if export.External {
@@ -81,8 +79,8 @@ func printIdentity(export *id.IdentityExport) {
 		scopeOutput = "Local"
 	}
 
-	shared.Console.Info(fmt.Sprintf(name+" %s", export.Name))
-	shared.Console.Info(fmt.Sprintf(scope+" %s", scopeOutput))
-	shared.Console.Info(fmt.Sprintf(accountKey+" %s", export.AccountKey))
+	shared.Console.Info(name, export.Name)
+	shared.Console.Info(scope, scopeOutput)
+	shared.Console.Info(accountKey, export.AccountKey)
 	shared.Console.Info()
 }

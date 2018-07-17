@@ -14,7 +14,7 @@ addrBob=`$CMD/lookup Bob RPCAddress tcp://127.0.0.1:`
 addrCarol=`$CMD/lookup Carol RPCAddress tcp://127.0.0.1:`
 
 # List out the account details
-echo "===============check identity for everyone================"
+echo "====================== Identities ====================="
 olclient identity -a $addrDavid
 sleep 1
 olclient identity -a $addrAlice
