@@ -14,7 +14,7 @@ import (
 
 // Coin is the basic amount, specified in integers, at the smallest increment (i.e. a satoshi, not a bitcoin)
 type Coin struct {
-	Currency Currency   `json:"currency"`
+	Currency Currency `json:"currency"`
 	Amount   *big.Int `json:"amount"` // TODO: Switch to math/big
 	//Amount   int64  `json:"amount"` // TODO: Switch to math/big
 }
@@ -30,9 +30,9 @@ var Currencies map[string]Currency = map[string]Currency{
 }
 
 type Currency struct {
-	Name 	string		`json:"name"`
-	Chain 	ChainType	`json:"chain"`
-	Id		int			`json:"id"`
+	Name  string    `json:"name"`
+	Chain ChainType `json:"chain"`
+	Id    int       `json:"id"`
 }
 
 func NewCoin(amount int64, currency string) Coin {
@@ -144,6 +144,6 @@ func (coin Coin) Plus(value Coin) Coin {
 func (coin Coin) AsString() string {
 	value := new(big.Float).SetInt(coin.Amount)
 	result := value.Quo(value, OLTBase)
-	text := fmt.Sprintf("%f.3", result)
+	text := fmt.Sprintf("%.3f", result)
 	return text
 }

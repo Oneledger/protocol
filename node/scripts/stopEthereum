@@ -13,13 +13,13 @@ pids=`pgrep -f "geth"`
 if [ -z "$pids" ]
 then
 
+    echo "Running Ethereum process: $(pgrep geth.* | wc -l)"
+else
     pkill geth.*
 
     sleep 5
 
     echo "Running Ethereum process: $(pgrep geth.* | wc -l)"
 
-else
-    echo "Running Ethereum process: $(pgrep geth.* | wc -l)"
 
 fi

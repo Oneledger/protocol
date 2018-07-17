@@ -10,14 +10,14 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/Oneledger/protocol/node/chains/common"
 	"github.com/Oneledger/protocol/node/comm"
+	"github.com/Oneledger/protocol/node/convert"
 	"github.com/Oneledger/protocol/node/data"
 	"github.com/Oneledger/protocol/node/err"
 	"github.com/Oneledger/protocol/node/id"
 	"github.com/Oneledger/protocol/node/log"
 	"github.com/Oneledger/protocol/node/version"
-	"github.com/Oneledger/protocol/node/convert"
-	"github.com/Oneledger/protocol/node/chains/common"
 )
 
 // Top-level list of all query types
