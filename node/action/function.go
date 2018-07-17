@@ -21,42 +21,70 @@ var FunctionMapping = [][]Object{
 		INITIATOR,
 		Command{
 			Function: INITIATE,
+			Order:    0,
 		},
 		Command{
-			Function: AUDITCONTRACT,
-		},
-		Command{
-			Function: REDEEM,
-		},
-		Command{
-			Function: WAIT_FOR_CHAIN,
+			Function: SUBMIT_TRANSACTION,
+			Order:    0,
 		},
 	},
 	[]Object{
 		SWAP,
 		PARTICIPANT,
 		Command{
+		    Function: NOOP, //intentionally
+        },
+    },
+	[]Object{
+		PUBLISH,
+		INITIATOR,
+		Command{
 			Function: AUDITCONTRACT,
-		},
-		Command{
-			Function: PARTICIPATE,
-		},
-		Command{
-			Function: EXTRACTSECRET,
+			Order:    1,
 		},
 		Command{
 			Function: REDEEM,
+			Order:    1,
 		},
 		Command{
-			Function: WAIT_FOR_CHAIN,
+			Function: SUBMIT_TRANSACTION,
+            Order:    1,
 		},
 	},
 	[]Object{
+		PUBLISH,
+        PARTICIPANT,
+        Command{
+            Function: AUDITCONTRACT,
+            Order:    0,
+        },
+        Command{
+            Function: PARTICIPATE,
+            Order:    1,
+        },
+        Command{
+            Function: SUBMIT_TRANSACTION,
+            Order:    1,
+        },
+	},
+    []Object{
+        PUBLISH,
+        ALL,
+        Command{
+            Function: EXTRACTSECRET,
+            Order:    1,
+        },
+        Command{
+            Function: REDEEM,
+            Order:    0,
+        },
+    },
+	[]Object{
 		SEND,
 		ALL,
-		Command{
-			Function: SUBMIT_TRANSACTION,
-		},
+        Command{
+            Function: PREPARE_TRANSACTION,
+        },
 	},
 }
 
@@ -81,6 +109,7 @@ func GetCommands(action Type, role Role, chains []data.ChainType) Commands {
 				copy.Function = orig.Function
 				copy.Chain = orig.Chain
 				copy.Data = make(map[Parameter]FunctionValue)
+				copy.Order = orig.Order
 
 				result[j] = copy
 			}

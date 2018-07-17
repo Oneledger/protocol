@@ -10,6 +10,9 @@ import (
 
 	"github.com/Oneledger/protocol/node/log"
 	"github.com/spf13/cobra"
+	"github.com/Oneledger/protocol/node/chains/bitcoin"
+
+	"github.com/btcsuite/btcd/chaincfg"
 )
 
 var waitCmd = &cobra.Command{
@@ -31,6 +34,8 @@ func init() {
 // TODO: Wait for real things to happen...
 func Wait(cmd *cobra.Command, args []string) {
 	log.Debug("Waiting")
-	time.Sleep(10 * time.Second)
-
+	cli := bitcoin.GetBtcClient("127.0.0.1:18833", &chaincfg.RegressionNetParams)
+	stop := bitcoin.ScheduleBlockGeneration(*cli, 10 )
+	time.Sleep(60 * time.Second)
+	bitcoin.StopBlockGeneration(stop)
 }

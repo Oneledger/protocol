@@ -4,13 +4,16 @@
 
 package action
 
-import "github.com/Oneledger/protocol/node/data"
+import (
+    "github.com/Oneledger/protocol/node/data"
+)
 
 type CommandType int
 
 // Set of possible commands that can be driven from a transaction
 const (
 	NOOP CommandType = iota
+	PREPARE_TRANSACTION
 	SUBMIT_TRANSACTION
 	INITIATE
 	PARTICIPATE
@@ -21,23 +24,6 @@ const (
 	WAIT_FOR_CHAIN
 )
 
-type Parameter byte
-
-// TODO: Move to parameter.go
-const (
-	ROLE Parameter = iota
-	INITIATOR_ACCOUNT
-	PARTICIPANT_ACCOUNT
-
-	AMOUNT
-	EXCHANGE
-	NONCE
-	PREIMAGE
-
-	PASSWORD
-	ETHCONTRACT
-	BTCCONTRACT
-)
 
 type FunctionValue interface{}
 
@@ -46,12 +32,16 @@ type Command struct {
 	Function CommandType
 	Chain    data.ChainType
 	Data     map[Parameter]FunctionValue
+	Order    int
 }
 
 func (command Command) Execute() (bool, map[Parameter]FunctionValue) {
 	switch command.Function {
 	case NOOP:
 		return Noop(command.Chain, command.Data)
+
+    case PREPARE_TRANSACTION:
+        return PrepareTransaction(command.Chain, command.Data)
 
 	case SUBMIT_TRANSACTION:
 		return SubmitTransaction(command.Chain, command.Data)

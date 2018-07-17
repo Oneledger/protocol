@@ -12,21 +12,24 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
+	"github.com/Oneledger/protocol/node/comm"
+    "os"
+    "github.com/pkg/errors"
 )
 
 var client *ethclient.Client
-var htlContract = &HtlContract{}
+var htlContract = &HTLContract{}
 
-type HtlContract struct {
-	Contract *htlc.Htlc
-	Address  common.Address
-	Txs      []*types.Transaction
+type HTLContract struct {
+	Address common.Address     `json:"address"`
+	Tx      *types.Transaction `json:"Tx"`
 }
 
 func getEthClient() *ethclient.Client {
+    address := os.Getenv("OLDATA") + "/" + global.Current.ETHAddress
 	if client == nil {
 		for i := 0; i < 3; i++ {
-			cli, err := ethclient.Dial(global.Current.ETHAddress)
+			cli, err := ethclient.Dial(address)
 			if err != nil {
 				log.Fatal("failed to get geth ipc ", "err", err)
 				time.Sleep(3 * time.Second)
@@ -35,7 +38,7 @@ func getEthClient() *ethclient.Client {
 		}
 	} else if id, _ := client.NetworkID(nil); id == big.NewInt(20180229) {
 		for i := 0; i < 3; i++ {
-			cli, err := ethclient.Dial(global.Current.ETHAddress)
+			cli, err := ethclient.Dial(address)
 			if err != nil {
 				log.Fatal("failed to get geth ipc ", "err", err)
 				time.Sleep(3 * time.Second)
@@ -84,90 +87,191 @@ func GetAuth() *bind.TransactOpts {
 	}
 }
 
-func GetHtlContract() *HtlContract {
+func GetHtlContract() *HTLContract {
 	cli := getEthClient()
 
-	if htlContract.Contract == nil {
+	if htlContract.Tx == nil {
 		auth := GetAuth()
 		auth.GasLimit = 2000000
-		address, tx, contract, err := htlc.DeployHtlc(auth, cli, auth.From)
+		address, tx, _, err := htlc.DeployHtlc(auth, cli, auth.From)
 		if err != nil {
 			log.Fatal("Failed to create htlc for the node", "err", err)
 		}
-		htlContract.Contract = contract
+		log.Debug("Htlc contract created", "address", address, "tx", tx)
+        time.Sleep(6 * time.Second)
 		htlContract.Address = address
-		htlContract.Txs = append(htlContract.Txs, tx)
+		htlContract.Tx = tx
 		return htlContract
 
 	} else {
-		balance, err := htlContract.Contract.Balance(&bind.CallOpts{Pending: true})
+		balance, err := htlContract.HTLContractObject().Balance(&bind.CallOpts{Pending: true})
 		if err != nil {
 			log.Fatal("Previous htlc not callable, re-deploy", "err", err, "address", htlContract.Address)
 		}
-		log.Warn("htlc already initialed", "address", htlContract.Address, "Tx", htlContract.Txs[0], "Balance", balance)
+		log.Warn("htlc already initialed", "address", htlContract.Address, "Tx", htlContract.Tx, "Balance", balance)
 		time.Sleep(1 * time.Second)
 	}
 	return htlContract
 }
+func (h *HTLContract) HTLContractObject() *htlc.Htlc{
+    cli := getEthClient()
+    contract, err := htlc.NewHtlc(h.Address, cli)
+    if err != nil {
+        log.Error("Failed to initial htlc contract from address", "address", h.Address)
+        return nil
+    }
+    return contract
+}
 
-func (h *HtlContract) Funds(value *big.Int) error {
+func (h *HTLContract) Funds(value *big.Int) error {
 	auth := GetAuth()
-	auth.Value = value
-	tx, err := h.Contract.Funds(auth)
+	auth.Value = EtherToWei(value)
+	auth.GasLimit = 200000
+	contract := h.HTLContractObject()
+	if contract == nil {
+	    return errors.New("failed to get htlc contract instance")
+    }
+	tx, err := contract.Funds(auth)
 	if err != nil {
 		log.Error("Can't fund the htlc", "err", err, "auth", auth)
 		return err
 	}
-	h.Txs = append(h.Txs, tx)
-	log.Info("Fund htlc", "address", h.Address, "tx", h.Txs[len(h.Txs)], "value", value)
+	h.Tx = tx
+	balance, err := h.HTLContractObject().Balance(&bind.CallOpts{Pending: true})
+	if err != nil {
+	    log.Error("Can't get balance after fund", "err", err)
+    }
+	log.Info("Fund htlc", "address", h.Address, "tx", h.Tx, "value", value, "balance", balance)
+    time.Sleep(6 * time.Second)
 	return nil
 }
 
-func (h *HtlContract) Setup(lockTime *big.Int, receiver common.Address, scrHash [32]byte) error {
+func (h *HTLContract) Setup(lockTime *big.Int, receiver common.Address, scrHash [32]byte) error {
 	auth := GetAuth()
-
-	tx, err := h.Contract.Setup(auth, lockTime, receiver, scrHash)
+    auth.GasLimit = 200000
+    contract := h.HTLContractObject()
+    if contract == nil {
+        return errors.New("failed to get htlc contract instance")
+    }
+    tx, err := contract.Setup(auth, lockTime, receiver, scrHash)
 	if err != nil {
 		log.Error("Can't setup the htlc", "err", err, "auth", auth)
 		return err
 	}
-	h.Txs = append(h.Txs, tx)
-	log.Info("Setup htlc", "address", h.Address, "tx", h.Txs[len(h.Txs)])
+	h.Tx = tx
+    time.Sleep(6 * time.Second)
+	r, _ := contract.Receiver(&bind.CallOpts{Pending: true})
+	balance, _ := contract.Balance(&bind.CallOpts{Pending: true})
+	log.Info("Setup htlc", "address", h.Address, "tx", h.Tx, "receiver", receiver, "r", r, "balance", balance)
 	return nil
 }
 
-func (h *HtlContract) Redeem(scr []byte) error {
+func (h *HTLContract) Redeem(scr []byte) error {
 	auth := GetAuth()
 
-	tx, err := h.Contract.Redeem(auth, scr)
+	balance, _ := h.HTLContractObject().Balance(&bind.CallOpts{Pending: false})
+	log.Debug("balance before redeem", "balance", balance)
+
+    contract := h.HTLContractObject()
+    if contract == nil {
+        return errors.New("failed to get htlc contract instance")
+    }
+    tx, err := contract.Redeem(auth, scr)
 	if err != nil {
 		log.Error("Can't redeem the htlc", "err", err, "auth", auth)
 		return err
 	}
-	h.Txs = append(h.Txs, tx)
-	log.Info("Redeem htlc", "address", h.Address, "tx", h.Txs[len(h.Txs)], "scr", scr, "value", tx.Value())
+	h.Tx = tx
+	time.Sleep(6 * time.Second)
+    balance, err = h.HTLContractObject().Balance(&bind.CallOpts{Pending: false})
+    log.Debug("balance after redeem", "balance", balance, "err", err)
+	log.Info("Redeem htlc", "address", h.Address, "tx", tx, "scr", scr, "txaddress", tx.Hash())
 	return nil
 }
 
-func (h *HtlContract) Refund(scr []byte) error {
+func (h *HTLContract) Refund(scr []byte) error {
 	auth := GetAuth()
-
-	tx, err := h.Contract.Refund(auth, scr)
+    contract := h.HTLContractObject()
+    if contract == nil {
+        return errors.New("failed to get htlc contract instance")
+    }
+    tx, err := contract.Refund(auth, scr)
 	if err != nil {
 		log.Error("Can't refund the htlc", "err", err, "auth", auth)
 		return err
 	}
-	h.Txs = append(h.Txs, tx)
-	log.Info("Refund htlc", "address", h.Address, "tx", h.Txs[len(h.Txs)], "value", tx.Value())
+	h.Tx = tx
+	log.Info("Refund htlc", "address", h.Address, "tx", h.Tx, "value", tx.Value())
 	return nil
 }
 
-func (h *HtlContract) Audit(lockTime *big.Int, receiver common.Address, scrHash [32]byte) error {
-	result, err := h.Contract.Audit(&bind.CallOpts{Pending: true}, receiver, lockTime, scrHash)
+func (h *HTLContract) Audit(receiver common.Address, value *big.Int, scrHash [32]byte) error {
+
+    valueWei := EtherToWei(value)
+    log.Debug("audit htlc contract", "wei", valueWei)
+	result, err := h.HTLContractObject().Audit(&bind.CallOpts{Pending: false}, receiver, valueWei, scrHash)
 	if err != nil {
 		log.Error("Can't audit the htlc", "err", err)
 		return err
 	}
-	log.Info("Audit htlc", "result", result, "tx")
+	log.Info("Audit htlc", "result", result)
 	return nil
+}
+
+func (h *HTLContract) Extract() []byte {
+
+    result, err := h.HTLContractObject().ExtractMsg(&bind.CallOpts{Pending: false})
+    if err != nil {
+        log.Error("Failed to extract secret", "err", err)
+    }
+    return result
+}
+
+func (h *HTLContract) Balance() *big.Int {
+
+	balance, err := h.HTLContractObject().Balance(&bind.CallOpts{Pending: true})
+	if err != nil {
+		log.Error("Can't get the balance", "err", err)
+	}
+
+	return WeiToEther(balance)
+}
+
+func (h *HTLContract) ScrHash() [32]byte {
+
+    sh, err := h.HTLContractObject().ScrHash(&bind.CallOpts{Pending: true})
+    if err != nil {
+        log.Error("Can't get scrHash", "err", err)
+    }
+    return sh
+}
+
+func EtherToWei(value *big.Int) *big.Int {
+
+    return new(big.Int).Mul(value, new(big.Int).Exp(big.NewInt(10), big.NewInt(18), nil))
+}
+
+func WeiToEther(value *big.Int) *big.Int {
+
+	return new(big.Int).Div(value, new(big.Int).Exp(big.NewInt(10), big.NewInt(18), nil))
+}
+
+func GetHTLCFromMessage(message []byte) *HTLContract {
+	log.Debug("Parse message to ETH HTLC")
+	register := &HTLContract{}
+
+	result, err := comm.Deserialize(message, register)
+	if err != nil {
+		log.Error("parse htlc contract failed", "err", err)
+		return nil
+	}
+	return  result.(*HTLContract)
+}
+
+func (h *HTLContract) ToMessage() []byte {
+    msg, err := comm.Serialize(h)
+    if err != nil {
+        log.Error("Failed to serialize htlc", "err", err)
+    }
+    return msg
 }

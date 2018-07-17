@@ -1,0 +1,30 @@
+#!/bin/bash
+
+if [ -z "$1" ]
+then
+    echo "not enough arguments, required: [name]"
+
+else
+
+    if [ $1 = "Alice" ]
+    then
+        echo "User: Alice"
+        echo "$(bitcoin-cli -regtest -rpcuser=oltest01 -rpcpassword=olpass01 -rpcport=18831 getbalance)BTC"
+        echo "$(geth --exec "web3.fromWei(eth.getBalance(eth.coinbase), 'ether')" attach ipc:$OLDATA/ethereum/A/geth.ipc)ETH"
+    elif [ $1 = "Bob" ]
+    then
+        echo "User: Bob"
+        echo "$(bitcoin-cli -regtest -rpcuser=oltest02 -rpcpassword=olpass02 -rpcport=18832 getbalance)BTC"
+        echo "$(geth --exec "web3.fromWei(eth.getBalance(eth.coinbase), 'ether')" attach ipc:$OLDATA/ethereum/B/geth.ipc)ETH"
+    elif [ $1 = "Carol" ]
+    then
+        echo "User: Carol"
+        echo "$(bitcoin-cli -regtest -rpcuser=oltest03 -rpcpassword=olpass03 -rpcport=18833 getbalance)BTC"
+        echo "$(geth --exec "web3.fromWei(eth.getBalance(eth.coinbase), 'ether')" attach ipc:$OLDATA/ethereum/C/geth.ipc)ETH"
+    elif [ $1 = "David" ]
+    then
+        echo "David don't have Bitcoin or ethereum node"
+    else
+        echo "User not supported"
+    fi
+fi

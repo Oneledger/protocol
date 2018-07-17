@@ -49,3 +49,8 @@ func GetUtxo(app interface{}) *data.ChainState {
 	chain := app.(persist.Access).GetUtxo().(*data.ChainState)
 	return chain
 }
+
+func GetChainID(app interface{}) string {
+    id := app.(persist.Access).GetChainID().(string)
+    return id
+}

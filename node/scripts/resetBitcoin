@@ -8,11 +8,11 @@ export CMD=$OLSCRIPT
 
 export LOG=$OLDATA
 
+$CMD/stopBitcoin
+
 echo "============================================================" >> $LOG/bitcoin.log
 echo "Clean all bitcoin data" >> $LOG/bitcoin.log
-echo "Clean all bitcoin data" 
-
-$CMD/stopBitcoin
+echo "Clean all bitcoin data"
 
 rm -rf $OLDATA/bitcoin/*
 
@@ -20,11 +20,10 @@ mkdir -p $OLDATA/bitcoin/A
 mkdir -p $OLDATA/bitcoin/B
 mkdir -p $OLDATA/bitcoin/C
 
-$CMD/startBitcoin
-sleep 5
-
 # Set a minimal block generation to insure that all accounts have balances 
 echo "Preallocating Bitcoin Accounts"
+$CMD/startBitcoin
+sleep 5
 
 bitcoin-cli -regtest -rpcuser=oltest01 -rpcpassword=olpass01 -rpcport=18831 generate 20 > /dev/null
 bitcoin-cli -regtest -rpcuser=oltest02 -rpcpassword=olpass02 -rpcport=18832 generate 20 > /dev/null

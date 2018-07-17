@@ -2,7 +2,6 @@ package htlc
 
 import (
 	"bytes"
-	"crypto/rand"
 	"crypto/sha256"
 	"encoding/hex"
 	"errors"
@@ -40,14 +39,14 @@ const txVersion = 2
 //   cp1 initiates (olt)
 //   cp2 participates with cp1 H(S) (btc)
 //   cp1 redeems btc revealing S
-//     - must verify H(S) in contract is hash of known secret
+//     - must verify H(S) in contract is hash of known Secret
 //   cp2 redeems olt with S
 //
 // Scenerio 2:
 //   cp1 initiates (btc)
 //   cp2 participates with cp1 H(S) (olt)
 //   cp1 redeems olt revealing S
-//     - must verify H(S) in contract is hash of known secret
+//     - must verify H(S) in contract is hash of known Secret
 //   cp2 redeems btc with S
 
 //type Command interface {
@@ -61,15 +60,19 @@ const txVersion = 2
 //}
 
 type InitiateCmd struct {
-	cp2Addr  *btcutil.AddressPubKeyHash
-	amount   btcutil.Amount
-	lockTime int64
+	cp2Addr  	*btcutil.AddressPubKeyHash
+	amount   	btcutil.Amount
+	lockTime 	int64
+	scrHash  	[secretSize]byte
+	Contract 	[]byte
+	ContractTx	*wire.MsgTx
 }
 
 type RedeemCmd struct {
-	contract   []byte
-	contractTx *wire.MsgTx
-	secret     []byte
+	contract   			[]byte
+	contractTx 			*wire.MsgTx
+	secret     			[]byte
+	RedeemContractTx	*wire.MsgTx
 }
 
 type ParticipateCmd struct {
@@ -77,6 +80,8 @@ type ParticipateCmd struct {
 	amount     btcutil.Amount
 	secretHash []byte
 	lockTime   int64
+	Contract 	[]byte
+	ContractTx	*wire.MsgTx
 }
 
 type RefundCmd struct {
@@ -87,11 +92,13 @@ type RefundCmd struct {
 type ExtractSecretCmd struct {
 	redemptionTx *wire.MsgTx
 	secretHash   []byte
+	Secret		 []byte
 }
 
 type AuditContractCmd struct {
 	contract   []byte
 	contractTx *wire.MsgTx
+	SecretHash [secretSize]byte
 }
 
 func normalizeAddress(addr string, defaultPort string) (hostport string, err error) {
@@ -130,58 +137,58 @@ type contractArgs struct {
 // atomicSwapContract returns an output script that may be redeemed by one of
 // two signature scripts:
 //
-//   <their sig> <their pubkey> <initiator secret> 1
+//   <their sig> <their pubkey> <initiator Secret> 1
 //
 //   <my sig> <my pubkey> 0
 //
 // The first signature script is the normal redemption path done by the other
-// party and requires the initiator's secret.  The second signature script is
+// party and requires the initiator's Secret.  The second signature script is
 // the refund path performed by us, but the refund can only be performed after
 // locktime.
 func atomicSwapContract(pkhMe, pkhThem *[ripemd160.Size]byte, locktime int64, secretHash []byte) ([]byte, error) {
 	b := txscript.NewScriptBuilder()
 
-	b.AddOp(txscript.OP_IF) // Normal redeem path
+	b.AddOp(txscript.OP_IF) // Normal redeem path [0]
 	{
-		// Require initiator's secret to be a known length that the redeeming
+		// Require initiator's Secret to be a known length that the redeeming
 		// party can audit.  This is used to prevent fraud attacks between two
 		// currencies that have different maximum data sizes.
-		b.AddOp(txscript.OP_SIZE)
-		b.AddInt64(secretSize)
-		b.AddOp(txscript.OP_EQUALVERIFY)
+		b.AddOp(txscript.OP_SIZE)  					//[1]
+		b.AddInt64(secretSize)						//[2]
+		b.AddOp(txscript.OP_EQUALVERIFY)			//[3]
 
-		// Require initiator's secret to be known to redeem the output.
-		b.AddOp(txscript.OP_SHA256)
-		b.AddData(secretHash)
-		b.AddOp(txscript.OP_EQUALVERIFY)
+		// Require initiator's Secret to be known to redeem the output.
+		b.AddOp(txscript.OP_SHA256)					//[4]
+		b.AddData(secretHash)						//[5]
+		b.AddOp(txscript.OP_EQUALVERIFY)			//[6]
 
 		// Verify their signature is being used to redeem the output.  This
 		// would normally end with OP_EQUALVERIFY OP_CHECKSIG but this has been
 		// moved outside of the branch to save a couple bytes.
-		b.AddOp(txscript.OP_DUP)
-		b.AddOp(txscript.OP_HASH160)
-		b.AddData(pkhThem[:])
+		b.AddOp(txscript.OP_DUP)					//[7]
+		b.AddOp(txscript.OP_HASH160)				//[8]
+		b.AddData(pkhThem[:])						//[9]
 	}
-	b.AddOp(txscript.OP_ELSE) // Refund path
+	b.AddOp(txscript.OP_ELSE) // Refund path		//[10]
 	{
 		// Verify locktime and drop it off the stack (which is not done by
 		// CLTV).
-		b.AddInt64(locktime)
-		b.AddOp(txscript.OP_CHECKLOCKTIMEVERIFY)
-		b.AddOp(txscript.OP_DROP)
+		b.AddInt64(locktime)						//[11]
+		b.AddOp(txscript.OP_CHECKLOCKTIMEVERIFY)	//[12]
+		b.AddOp(txscript.OP_DROP)					//[13]
 
-		// Verify our signature is being used to redeem the output.  This would
+		// Verify our signature is being used to refund the output.  This would
 		// normally end with OP_EQUALVERIFY OP_CHECKSIG but this has been moved
 		// outside of the branch to save a couple bytes.
-		b.AddOp(txscript.OP_DUP)
-		b.AddOp(txscript.OP_HASH160)
-		b.AddData(pkhMe[:])
+		b.AddOp(txscript.OP_DUP)					//[14]
+		b.AddOp(txscript.OP_HASH160)				//[15]
+		b.AddData(pkhMe[:])							//[16]
 	}
-	b.AddOp(txscript.OP_ENDIF)
+	b.AddOp(txscript.OP_ENDIF)						//[17]
 
 	// Complete the signature check.
-	b.AddOp(txscript.OP_EQUALVERIFY)
-	b.AddOp(txscript.OP_CHECKSIG)
+	b.AddOp(txscript.OP_EQUALVERIFY)				//[18]
+	b.AddOp(txscript.OP_CHECKSIG)					//[19]
 
 	return b.Script()
 }
@@ -266,6 +273,7 @@ func buildContract(b *rpc.Bitcoind, args *contractArgs) (*builtContract, error) 
 // pubkey for a transaction input signature.  Due to limitations of the Bitcoin
 // Core RPC API, this requires dumping a private key and signing in the client,
 // rather than letting the wallet sign.
+
 func createSig(b *rpc.Bitcoind, tx *wire.MsgTx, idx int, pkScript []byte, address btcutil.Address) (sig, pubkey []byte, err error) {
 	wif, err := b.DumpPrivKey(address)
 	if err != nil {
@@ -344,6 +352,7 @@ func buildRefund(b *rpc.Bitcoind, contract []byte, contractTx *wire.MsgTx, feePe
 	refundTx.AddTxIn(txIn)
 
 	refundSig, refundPubKey, err := createSig(b, refundTx, 0, contract, refundAddr)
+	log.Debug("createsig refund", "refundaddr", refundAddr, "contract", contract)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -380,9 +389,6 @@ func sha256Hash(x []byte) []byte {
 func calcFeePerKb(absoluteFee btcutil.Amount, serializeSize int) float64 {
 	return float64(absoluteFee) / float64(serializeSize) / 1e5
 }
-
-var LastContract []byte = nil
-var LastContractTx *wire.MsgTx = nil
 
 func copyArray(from []byte) []byte {
 	to := make([]byte, len(from))
@@ -429,12 +435,12 @@ func copyTxOut(from []*wire.TxOut) []*wire.TxOut {
 
 func (cmd *InitiateCmd) RunCommand(c *rpc.Bitcoind) (*chainhash.Hash, error) {
 	log.Debug("About to Initiate")
-	var secret [secretSize]byte
-	_, err := rand.Read(secret[:])
-	if err != nil {
-		return nil, err
-	}
-	secretHash := sha256Hash(secret[:])
+	//var Secret [secretSize]byte
+	//_, err := rand.Read(Secret[:])
+	//if err != nil {
+	//	return nil, err
+	//}
+	secretHash := cmd.scrHash[:]
 
 	log.Debug("About to build contract")
 	b, err := buildContract(c, &contractArgs{
@@ -446,8 +452,8 @@ func (cmd *InitiateCmd) RunCommand(c *rpc.Bitcoind) (*chainhash.Hash, error) {
 	if err != nil {
 		return nil, err
 	}
-	LastContract = copyArray(b.contract)
-	LastContractTx = copyMsgTx(b.contractTx)
+	cmd.Contract = copyArray(b.contract)
+	cmd.ContractTx = copyMsgTx(b.contractTx)
 
 	refundTxHash := b.refundTx.TxHash()
 	contractFeePerKb := calcFeePerKb(b.contractFee, b.contractTx.SerializeSize())
@@ -455,7 +461,7 @@ func (cmd *InitiateCmd) RunCommand(c *rpc.Bitcoind) (*chainhash.Hash, error) {
 
 	log.Debug("About to grow")
 
-	fmt.Printf("Secret:      %x\n", secret)
+	fmt.Printf("Secret:      %x\n", "unknown")
 	fmt.Printf("Secret hash: %x\n\n", secretHash)
 	fmt.Printf("Contract fee: %v (%0.8f BTC/kB)\n", b.contractFee, contractFeePerKb)
 	fmt.Printf("Refund fee:   %v (%0.8f BTC/kB)\n\n", b.refundFee, refundFeePerKb)
@@ -572,6 +578,8 @@ func (cmd *RedeemCmd) RunCommand(c *rpc.Bitcoind) (*chainhash.Hash, error) {
 	fmt.Printf("Redeem transaction (%v):\n", &redeemTxHash)
 	fmt.Printf("%x\n\n", buf.Bytes())
 
+	cmd.RedeemContractTx = copyMsgTx(redeemTx)
+
 	if verify {
 		e, err := txscript.NewEngine(cmd.contractTx.TxOut[contractOutPoint.Index].PkScript,
 			redeemTx, 0, txscript.StandardVerifyFlags, txscript.NewSigCache(10),
@@ -591,7 +599,7 @@ func (cmd *RedeemCmd) RunCommand(c *rpc.Bitcoind) (*chainhash.Hash, error) {
 }
 
 // redeemP2SHContract returns the signature script to redeem a contract output
-// using the redeemer's signature and the initiator's secret.  This function
+// using the redeemer's signature and the initiator's Secret.  This function
 // assumes P2SH and appends the contract as the final data push.
 func redeemP2SHContract(contract, sig, pubkey, secret []byte) ([]byte, error) {
 	b := txscript.NewScriptBuilder()
@@ -613,6 +621,9 @@ func (cmd *ParticipateCmd) RunCommand(c *rpc.Bitcoind) (*chainhash.Hash, error) 
 	if err != nil {
 		return nil, err
 	}
+
+	cmd.Contract = copyArray(b.contract)
+	cmd.ContractTx = copyMsgTx(b.contractTx)
 
 	refundTxHash := b.refundTx.TxHash()
 	contractFeePerKb := calcFeePerKb(b.contractFee, b.contractTx.SerializeSize())
@@ -686,11 +697,12 @@ func (cmd *ExtractSecretCmd) RunOfflineCommand() error {
 		for _, push := range pushes {
 			if bytes.Equal(sha256Hash(push), cmd.secretHash) {
 				fmt.Printf("Secret: %x\n", push)
+				cmd.Secret = copyArray(push)
 				return nil
 			}
 		}
 	}
-	return errors.New("transaction does not contain the secret")
+	return errors.New("transaction does not contain the Secret")
 }
 
 func (cmd *AuditContractCmd) RunCommand(b *rpc.Bitcoind) error {
@@ -724,7 +736,7 @@ func (cmd *AuditContractCmd) RunOfflineCommand(chainParams *chaincfg.Params) err
 		return errors.New("contract is not an atomic swap script recognized by this tool")
 	}
 	if pushes.SecretSize != secretSize {
-		return fmt.Errorf("contract specifies strange secret size %v", pushes.SecretSize)
+		return fmt.Errorf("contract specifies strange Secret size %v", pushes.SecretSize)
 	}
 
 	contractAddr, err := btcutil.NewAddressScriptHash(cmd.contract, chainParams)
@@ -748,7 +760,7 @@ func (cmd *AuditContractCmd) RunOfflineCommand(chainParams *chaincfg.Params) err
 	fmt.Printf("Author's refund address: %v\n\n", refundAddr)
 
 	fmt.Printf("Secret hash: %x\n\n", pushes.SecretHash[:])
-
+	cmd.SecretHash = pushes.SecretHash
 	if pushes.LockTime >= int64(txscript.LockTimeThreshold) {
 		t := time.Unix(pushes.LockTime, 0)
 		fmt.Printf("Locktime: %v\n", t.UTC())

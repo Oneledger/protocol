@@ -18,9 +18,14 @@ func Noop(chain data.ChainType, context map[Parameter]FunctionValue) (bool, map[
 	return true, nil
 }
 
-func SubmitTransaction(chain data.ChainType, context map[Parameter]FunctionValue) (bool, map[Parameter]FunctionValue) {
-	log.Info("Executing SubmitTransaction Command", "chain", chain, "context", context)
+func PrepareTransaction(chain data.ChainType, context map[Parameter]FunctionValue) (bool, map[Parameter]FunctionValue) {
+	log.Info("Executing PrepareTransaction Command", "chain", chain, "context", context)
 	return true, nil
+}
+
+func SubmitTransaction(chain data.ChainType, context map[Parameter]FunctionValue) (bool, map[Parameter]FunctionValue) {
+	log.Info("Executing SubmitTransaction Command", "chain", chain, "context", context, "sequence", context[SEQUENCE])
+	return SubmitTransactionOLT(context, chain)
 }
 
 func Initiate(chain data.ChainType, context map[Parameter]FunctionValue) (bool, map[Parameter]FunctionValue) {
@@ -28,11 +33,11 @@ func Initiate(chain data.ChainType, context map[Parameter]FunctionValue) (bool, 
 	switch chain {
 
 	case data.BITCOIN:
-		return true, nil
+		return CreateContractBTC(context)
 	case data.ETHEREUM:
-		return true, nil
+		return CreateContractETH(context)
 	case data.ONELEDGER:
-		return true, nil
+		return CreateContractOLT(context)
 	default:
 		return false, nil
 	}
@@ -40,27 +45,77 @@ func Initiate(chain data.ChainType, context map[Parameter]FunctionValue) (bool, 
 
 func Participate(chain data.ChainType, context map[Parameter]FunctionValue) (bool, map[Parameter]FunctionValue) {
 	log.Info("Executing Participate Command", "chain", chain, "context", context)
-	return true, nil
+	switch chain {
+
+	case data.BITCOIN:
+		return ParticipateBTC(context)
+	case data.ETHEREUM:
+		return ParticipateETH(context)
+	case data.ONELEDGER:
+		return ParticipateOLT(context)
+	default:
+		return false, nil
+	}
 }
 
 func Redeem(chain data.ChainType, context map[Parameter]FunctionValue) (bool, map[Parameter]FunctionValue) {
 	log.Info("Executing Redeem Command", "chain", chain, "context", context)
-	return true, nil
+	switch chain {
+
+	case data.BITCOIN:
+		return RedeemBTC(context)
+	case data.ETHEREUM:
+		return RedeemETH(context)
+	case data.ONELEDGER:
+		return RedeemOLT(context)
+	default:
+		return false, nil
+	}
 }
 
 func Refund(chain data.ChainType, context map[Parameter]FunctionValue) (bool, map[Parameter]FunctionValue) {
 	log.Info("Executing Refund Command", "chain", chain, "context", context)
-	return true, nil
+	switch chain {
+
+	case data.BITCOIN:
+		return RefundBTC(context)
+	case data.ETHEREUM:
+		return RefundETH(context)
+	case data.ONELEDGER:
+		return RefundOLT(context)
+	default:
+		return false, nil
+	}
 }
 
 func ExtractSecret(chain data.ChainType, context map[Parameter]FunctionValue) (bool, map[Parameter]FunctionValue) {
 	log.Info("Executing ExtractSecret Command", "chain", chain, "context", context)
-	return true, nil
+	switch chain {
+
+	case data.BITCOIN:
+		return ExtractSecretBTC(context)
+	case data.ETHEREUM:
+		return ExtractSecretETH(context)
+	case data.ONELEDGER:
+		return ExtractSecretOLT(context)
+	default:
+		return false, nil
+	}
 }
 
 func AuditContract(chain data.ChainType, context map[Parameter]FunctionValue) (bool, map[Parameter]FunctionValue) {
 	log.Info("Executing AuditContract Command", "chain", chain, "context", context)
-	return true, nil
+	switch chain {
+
+	case data.BITCOIN:
+		return AuditContractBTC(context)
+	case data.ETHEREUM:
+		return AuditContractETH(context)
+	case data.ONELEDGER:
+		return AuditContractOLT(context)
+	default:
+		return false, nil
+	}
 }
 
 func WaitForChain(chain data.ChainType, context map[Parameter]FunctionValue) (bool, map[Parameter]FunctionValue) {

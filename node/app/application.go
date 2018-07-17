@@ -88,6 +88,10 @@ func (app Application) GetUtxo() interface{} {
 	return app.Utxo
 }
 
+func (app Application) GetChainID() interface{} {
+    return ChainId
+}
+
 type BasicState struct {
 	Account string `json:"account"`
 	Amount  int64  `json:"coins"` // TODO: Should be corrected as Amount, not coins
@@ -133,7 +137,7 @@ func (app Application) SetupState(stateBytes []byte) {
 
 // InitChain is called when a new chain is getting created
 func (app Application) InitChain(req RequestInitChain) ResponseInitChain {
-	log.Debug("Message: InitChain", "req", req)
+	log.Debug("Contract: InitChain", "req", req)
 
 	app.SetupState(req.AppStateBytes)
 
@@ -142,7 +146,7 @@ func (app Application) InitChain(req RequestInitChain) ResponseInitChain {
 
 // SetOption changes the underlying options for the ABCi app
 func (app Application) SetOption(req RequestSetOption) ResponseSetOption {
-	log.Debug("Message: SetOption", "key", req.Key, "value", req.Value)
+	log.Debug("Contract: SetOption", "key", req.Key, "value", req.Value)
 
 	SetOption(&app, req.Key, req.Value)
 
@@ -161,7 +165,7 @@ func (app Application) Info(req RequestInfo) ResponseInfo {
 	// TODO: Get the correct height from the last committed tree
 	// lastHeight := app.Utxo.Commit.Height()
 
-	log.Debug("Message: Info", "req", req, "info", info)
+	log.Debug("Contract: Info", "req", req, "info", info)
 
 	return ResponseInfo{
 		Data:            info.JSON(),
@@ -174,7 +178,7 @@ func (app Application) Info(req RequestInfo) ResponseInfo {
 
 // Query returns a transaction or a proof
 func (app Application) Query(req RequestQuery) ResponseQuery {
-	log.Debug("Message: Query", "req", req, "path", req.Path, "data", req.Data)
+	log.Debug("Contract: Query", "req", req, "path", req.Path, "data", req.Data)
 
 	result := HandleQuery(app, req.Path, req.Data)
 
@@ -192,7 +196,7 @@ func (app Application) Query(req RequestQuery) ResponseQuery {
 
 // CheckTx tests to see if a transaction is valid
 func (app Application) CheckTx(tx []byte) ResponseCheckTx {
-	log.Debug("Message: CheckTx", "tx", tx)
+	log.Debug("Contract: CheckTx", "tx", tx)
 
 	result, err := action.Parse(action.Message(tx))
 	if err != 0 || result == nil {
@@ -225,7 +229,7 @@ var chainKey data.DatabaseKey = data.DatabaseKey("chainId")
 
 // BeginBlock is called when a new block is started
 func (app Application) BeginBlock(req RequestBeginBlock) ResponseBeginBlock {
-	log.Debug("Message: BeginBlock", "req", req)
+	log.Debug("Contract: BeginBlock", "req", req)
 
 	newChainId := action.Message(req.Header.ChainID)
 
@@ -243,7 +247,7 @@ func (app Application) BeginBlock(req RequestBeginBlock) ResponseBeginBlock {
 
 // DeliverTx accepts a transaction and updates all relevant data
 func (app Application) DeliverTx(tx []byte) ResponseDeliverTx {
-	log.Debug("Message: DeliverTx", "tx", tx)
+	log.Debug("Contract: DeliverTx", "tx", tx)
 
 	result, err := action.Parse(action.Message(tx))
 	if err != 0 || result == nil {
@@ -255,9 +259,14 @@ func (app Application) DeliverTx(tx []byte) ResponseDeliverTx {
 	}
 
 	if result.ShouldProcess(app) {
-		if err = result.ProcessDeliver(&app); err != 0 {
-			return ResponseDeliverTx{Code: err}
-		}
+	    ttype, _ := action.UnpackMessage(action.Message(tx))
+	    if ttype == action.SWAP || ttype == action.PUBLISH {
+	        go result.ProcessDeliver(&app)
+        } else {
+            if err = result.ProcessDeliver(&app); err != 0 {
+                return ResponseDeliverTx{Code: err}
+            }
+        }
 	}
 
 	return ResponseDeliverTx{
@@ -274,14 +283,14 @@ func (app Application) DeliverTx(tx []byte) ResponseDeliverTx {
 
 // EndBlock is called at the end of all of the transactions
 func (app Application) EndBlock(req RequestEndBlock) ResponseEndBlock {
-	log.Debug("Message: EndBlock", "req", req)
+	log.Debug("Contract: EndBlock", "req", req)
 
 	return ResponseEndBlock{}
 }
 
 // Commit tells the app to make everything persistent
 func (app Application) Commit() ResponseCommit {
-	log.Debug("Message: Commit")
+	log.Debug("Contract: Commit")
 
 	// Commit any pending changes.
 	hash, version := app.Utxo.Commit()

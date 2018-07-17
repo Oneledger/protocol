@@ -413,7 +413,6 @@ func (b *Bitcoind) Generate(blockNumber uint64) (bh []string, err error) {
 func (b *Bitcoind) DumpPrivKey(address btcutil.Address) (*btcutil.WIF, error) {
 	addr := address.EncodeAddress()
 	res, err := b.client.call("dumpprivkey", []string{addr})
-	log.Debug("Call dumpprivkey", "res", res, "err", err, "address", address, "addr", addr)
 
 	// Unmarshal result as a string.
 	var privKeyWIF string

@@ -42,7 +42,7 @@ func (bl *BoxLocker) Sign(preImage []byte, nonce []byte, message Message) (bool,
 	} else if bl.Signature == signature && bl.PubKey == pubkey {
 		return true, nil
 	}
-	return false, errors.New("Sign Error for preImage and nonce not match")
+	return false, errors.New("sign error for preImage and nonce not match")
 }
 
 // Verify the pubKey with the signature for the message got.

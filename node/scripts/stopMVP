@@ -2,8 +2,10 @@
 
 #
 # One script to start em all.
-#
-./stopOneLedger
-./stopEthereum
-./stopBitcoin
+
+export CMD=$OLSCRIPT
+
+$CMD/stopOneLedger
+$CMD/stopEthereum
+$CMD/stopBitcoin
 
