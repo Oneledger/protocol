@@ -450,7 +450,7 @@ func GetPubKeyHash(address string) *btcutil.AddressPubKeyHash {
 }
 
 // TODO: Needs to be configurable
-var lockPeriod = 25 * time.Hour
+var lockPeriod = 5 * time.Minute
 // todo: need to store this in db
 var tokens = make(map[string][32]byte)
 //todo: need to store this in db
