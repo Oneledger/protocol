@@ -8,8 +8,6 @@ then
 
 else
 
-    $CMD/startMVP > /dev/null
-
     if [ $1 = "Alice" ]
     then
         echo "User: Alice"
