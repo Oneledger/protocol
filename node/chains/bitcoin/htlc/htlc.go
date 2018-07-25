@@ -47,10 +47,10 @@ type UpdateAddHTLC struct {
 	// a privacy-preserving manner. The mix header is defined currently to
 	// be parsed as a 4-tuple: (groupElement, routingInfo, headerMAC,
 	// body).  First the receiving node should use the groupElement, and
-	// its current onion key to derive a shared secret with the source.
-	// Once the shared secret has been derived, the headerMAC should be
+	// its current onion key to derive a shared Secret with the source.
+	// Once the shared Secret has been derived, the headerMAC should be
 	// checked FIRST. Note that the MAC only covers the routingInfo field.
-	// If the MAC matches, and the shared secret is fresh, then the node
+	// If the MAC matches, and the shared Secret is fresh, then the node
 	// should strip off a layer of encryption, exposing the next hop to be
 	// used in the subsequent UpdateAddHTLC message.
 	OnionBlob [OnionPacketSize]byte

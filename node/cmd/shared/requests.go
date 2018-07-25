@@ -15,6 +15,7 @@ import (
 	"github.com/Oneledger/protocol/node/data"
 	"github.com/Oneledger/protocol/node/global"
 	"github.com/Oneledger/protocol/node/log"
+    "github.com/ethereum/go-ethereum/common"
 )
 
 // Prepare a transaction to be issued.
@@ -234,14 +235,12 @@ func CreateSwapRequest(args *SwapArguments) []byte {
 		Console.Error(conv.GetErrors())
 		os.Exit(-1)
 	}
-	account := make(map[data.ChainType]string)
-	counterAccount := make(map[data.ChainType]string)
-	//todo: change the correct bitcoin address
-	//account[data.BITCOIN] = string(partyKey)
-	//account[data.ETHEREUM] = ethereum.GetAddress().String()
-	account[data.BITCOIN] = "bitcoin"
-	account[data.ETHEREUM] = "ethereum"
+	account := make(map[data.ChainType][]byte)
+	counterAccount := make(map[data.ChainType][]byte)
 
+	account[conv.GetChain(args.Currency)] = GetSwapAddress(conv.GetCurrency(args.Currency))
+	account[conv.GetChain(args.Excurrency)] = GetSwapAddress(conv.GetCurrency(args.Excurrency))
+    log.Debug("accounts for swap", "accountbtc", account[data.BITCOIN], "accounteth", common.BytesToAddress([]byte(account[data.ETHEREUM])))
 	party := action.Party{Key: partyKey, Accounts: account}
 	counterParty := action.Party{Key: counterPartyKey, Accounts: counterAccount}
 
@@ -263,4 +262,8 @@ func CreateSwapRequest(args *SwapArguments) []byte {
 	}
 
 	return SignAndPack(action.SWAP, action.Transaction(swap))
+}
+
+func CreatePublishRequest() {
+
 }

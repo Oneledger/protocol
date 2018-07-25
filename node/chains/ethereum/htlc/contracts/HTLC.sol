@@ -35,7 +35,7 @@ contract HTLC {
     function setup(uint256 _lockPeriod, address _receiver, bytes32 _scrHash) public returns (bool) {
         require(msg.sender == sender);
         require(_receiver != address(0));
-        require(_lockPeriod >= 24 hours );
+        require(_lockPeriod >= 4 minutes );
         require(balance > 0);
         require(startFromTime + lockPeriod < now );
 
@@ -50,7 +50,7 @@ contract HTLC {
     function audit(address receiver_, uint256 balance_, bytes32 scrHash_) public view returns (bool) {
         require(receiver == receiver_);
         require(balance == balance_);
-        require(lockPeriod+startFromTime > now + 12 hours);
+        require(lockPeriod+startFromTime > now + 2 minutes);
         require(scrHash == scrHash_);
         return true;
     }

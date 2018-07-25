@@ -14,7 +14,7 @@ import (
 
 // Coin is the basic amount, specified in integers, at the smallest increment (i.e. a satoshi, not a bitcoin)
 type Coin struct {
-	Currency string   `json:"currency"`
+	Currency Currency `json:"currency"`
 	Amount   *big.Int `json:"amount"` // TODO: Switch to math/big
 	//Amount   int64  `json:"amount"` // TODO: Switch to math/big
 }
@@ -23,16 +23,22 @@ type Coins []Coin
 
 var OLTBase *big.Float = big.NewFloat(1000000000000000000)
 
-var Currencies map[string]int = map[string]int{
-	"OLT": 0,
-	"BTC": 1,
-	"ETH": 2,
+var Currencies map[string]Currency = map[string]Currency{
+	"OLT": Currency{"OLT", ONELEDGER, 0},
+	"BTC": Currency{"BTC", BITCOIN, 1},
+	"ETH": Currency{"ETH", ETHEREUM, 2},
+}
+
+type Currency struct {
+	Name  string    `json:"name"`
+	Chain ChainType `json:"chain"`
+	Id    int       `json:"id"`
 }
 
 func NewCoin(amount int64, currency string) Coin {
 	value := big.NewInt(amount)
 	coin := Coin{
-		Currency: currency,
+		Currency: Currencies[currency],
 		Amount:   value,
 	}
 	if !coin.IsValid() {
@@ -45,7 +51,7 @@ func NewCoin(amount int64, currency string) Coin {
 func (coin Coin) IsCurrency(currencies ...string) bool {
 	found := false
 	for _, currency := range currencies {
-		if coin.Currency == currency {
+		if coin.Currency.Name == currency {
 			found = true
 			break
 		}
@@ -68,18 +74,22 @@ func (coin Coin) LessThan(value int64) bool {
 }
 
 func (coin Coin) IsValid() bool {
-	if coin.Currency == "" {
+	if coin.Currency.Name == "" {
+		return false
+	}
+
+	if _, ok := Currencies[coin.Currency.Name]; !ok {
 		return false
 	}
 
 	// TODO: Combine this with convert.GetCurrency...
-	if coin.Currency == "OLT" {
+	if coin.Currency.Name == "OLT" {
 		return true
 	}
-	if coin.Currency == "BTC" {
+	if coin.Currency.Name == "BTC" {
 		return true
 	}
-	if coin.Currency == "ETH" {
+	if coin.Currency.Name == "ETH" {
 		return true
 	}
 
@@ -102,7 +112,7 @@ func (coin Coin) EqualsInt64(value int64) bool {
 
 func (coin Coin) Minus(value Coin) Coin {
 
-	if coin.Currency != value.Currency {
+	if coin.Currency.Name != value.Currency.Name {
 		//log.Error("Mismatching Currencies", "coin", coin, "value", value)
 		log.Fatal("Mismatching Currencies", "coin", coin, "value", value)
 		return coin
@@ -117,7 +127,7 @@ func (coin Coin) Minus(value Coin) Coin {
 }
 
 func (coin Coin) Plus(value Coin) Coin {
-	if coin.Currency != value.Currency {
+	if coin.Currency.Name != value.Currency.Name {
 		//log.Error("Mismatching Currencies", "coin", coin, "value", value)
 		log.Fatal("Mismatching Currencies", "coin", coin, "value", value)
 		return coin
@@ -134,6 +144,6 @@ func (coin Coin) Plus(value Coin) Coin {
 func (coin Coin) AsString() string {
 	value := new(big.Float).SetInt(coin.Amount)
 	result := value.Quo(value, OLTBase)
-	text := fmt.Sprintf("%f.3", result)
+	text := fmt.Sprintf("%.3f", result)
 	return text
 }
