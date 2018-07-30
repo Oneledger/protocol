@@ -437,6 +437,7 @@ func Execute(app interface{}, command Command, lastResult map[Parameter]Function
 	if  status {
 		return err.SUCCESS, result
 	}
+
 	return err.NOT_IMPLEMENTED, lastResult
 }
 
@@ -466,6 +467,7 @@ func CreateContractBTC(context map[Parameter]FunctionValue) (bool, map[Parameter
     receiver := common.GetBTCAddressFromByteArray(data.BITCOIN, receiverParty.Accounts[data.BITCOIN])
     if receiver == nil {
         log.Error("Failed to get btc address from string", "address", receiverParty.Accounts[data.BITCOIN], "target", reflect.TypeOf(receiver))
+        return false, nil
     }
 
     preimage := GetByte32(context[PREIMAGE])
@@ -474,6 +476,7 @@ func CreateContractBTC(context map[Parameter]FunctionValue) (bool, map[Parameter
         scrHash := sha256.Sum256(scr[:])
         if !bytes.Equal(preimage[:], scrHash[:]) {
             log.Error("Secret and Secret Hash doesn't match", "preimage", preimage, "scrHash", scrHash)
+            return false, nil
         }
     }
 
@@ -514,8 +517,15 @@ func CreateContractETH(context map[Parameter]FunctionValue) (bool, map[Parameter
 
 	timeoutSecond := int64(lockPeriod.Seconds())
 	log.Debug("Create ETH HTLC", "value", value, "receiver", receiver, "preimage", preimage)
-	contract.Funds(value)
-	contract.Setup(big.NewInt(timeoutSecond), *receiver, preimage)
+	err := contract.Funds(value)
+	if err != nil {
+		return false, nil
+	}
+
+	err = contract.Setup(big.NewInt(timeoutSecond), *receiver, preimage)
+	if err != nil {
+		return false, nil
+	}
 
 	context[ETHCONTRACT] = contract
 	return true, context
@@ -586,6 +596,7 @@ func ParticipateBTC(context map[Parameter]FunctionValue) (bool, map[Parameter]Fu
     success, result := CreateContractBTC(context)
     if success != false {
         log.Error("failed to participate because can't create contract")
+        return false, nil
     }
     return true, result
 }
@@ -608,7 +619,7 @@ func RedeemBTC(context map[Parameter]FunctionValue) (bool, map[Parameter]Functio
     cli := bitcoin.GetBtcClient(global.Current.BTCAddress, &chaincfg.RegressionNetParams) //todo: to make it configurable
     _, e := cmd.RunCommand(cli)
     if e != nil {
-        log.Error("Bitcoin Audit", "err", e)
+        log.Error("Bitcoin redeem htlc", "err", e)
         return false, nil
     }
     context[BTCCONTRACT] = &bitcoin.HTLContract{Contract: contract.Contract, ContractTx: *cmd.RedeemContractTx}
@@ -619,7 +630,11 @@ func RedeemETH(context map[Parameter]FunctionValue) (bool, map[Parameter]Functio
 	contract := GetETHContract(context[ETHCONTRACT])
 	//todo: make it correct scr, by extract or from local storage
 	scr := GetByte32(context[PASSWORD])
-	contract.Redeem(scr[:])
+	err := contract.Redeem(scr[:])
+	if err != nil {
+	    log.Error("Ethereum redeem htlc", "err", err)
+	    return false, nil
+    }
 	context[ETHCONTRACT] = contract
 	return true, context
 }
@@ -632,7 +647,7 @@ func RefundBTC(context map[Parameter]FunctionValue) (bool, map[Parameter]Functio
     cli := bitcoin.GetBtcClient(global.Current.BTCAddress, &chaincfg.RegressionNetParams) //todo: to make it configurable
     _, e := cmd.RunCommand(cli)
     if e != nil {
-        log.Error("Bitcoin Audit", "err", e)
+        log.Error("Bitcoin refund htlc", "err", e)
         return false, nil
     }
     return true, context
@@ -642,7 +657,10 @@ func RefundETH(context map[Parameter]FunctionValue) (bool, map[Parameter]Functio
 	contract := GetETHContract(context[ETHCONTRACT])
 	//todo: make it correct scr, by extract or from local storage
 	scr := GetByte32(context[PASSWORD])
-	contract.Refund(scr[:])
+	err := contract.Refund(scr[:])
+	if err != nil {
+	    return false, nil
+    }
 	context[ETHCONTRACT] = contract
 	return true, context
 }
@@ -654,7 +672,7 @@ func ExtractSecretBTC(context map[Parameter]FunctionValue) (bool, map[Parameter]
     cli := bitcoin.GetBtcClient(global.Current.BTCAddress, &chaincfg.RegressionNetParams) //todo: to make it configurable
     e := cmd.RunCommand(cli)
     if e != nil {
-        log.Error("Bitcoin Audit", "err", e)
+        log.Error("Bitcoin extract hltc", "err", e)
         return false, nil
     }
     var tmpScr [32]byte
@@ -670,6 +688,9 @@ func ExtractSecretETH(context map[Parameter]FunctionValue) (bool, map[Parameter]
     //todo: make it correct scr, by extract or from local storage
 
     scr := contract.Extract()
+    if scr == nil {
+        return false, nil
+    }
     var tmpScr [32]byte
     copy(tmpScr[:], string(scr))
     context[PASSWORD] = tmpScr
