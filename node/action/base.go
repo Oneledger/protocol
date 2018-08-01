@@ -62,3 +62,20 @@ type Base struct {
 	Sequence int64 `json:"sequence"`
 	Delay    int64 `json:"delay"` // Pause the transaction in the mempool
 }
+
+// Execute the function
+func Execute(app interface{}, command Command, lastResult map[Parameter]FunctionValue) (err.Code, map[Parameter]FunctionValue) {
+	//make sure the first execute use the context, and later uses last result. so if command are executed in a row, every executed function should only add
+	//parameters in the context and return instead of create new context every time
+	if len(lastResult) > 0 {
+		for key, value := range lastResult {
+			command.Data[key] = value
+		}
+	}
+	status, result := command.Execute()
+	if  status {
+		return err.SUCCESS, result
+	}
+
+	return err.NOT_IMPLEMENTED, lastResult
+}

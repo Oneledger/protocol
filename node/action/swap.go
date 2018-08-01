@@ -97,13 +97,20 @@ func (transaction *Swap) ProcessDeliver(app interface{}) err.Code {
 
 		//before loop of execute, lastResult is nil
 		var lastResult map[Parameter]FunctionValue
-
+        event := Event{Type: SWAP, Key: matchedSwap.Owner, Nonce: matchedSwap.Nonce }
 		for i := 0; i < commands.Count(); i++ {
+
+            if commands[i].Function == FINISH {
+                SaveEvent(app, event, true)
+                return err.SUCCESS
+            }
 			status, result := Execute(app, commands[i], lastResult)
 			if status != err.SUCCESS {
 				log.Error("Failed to Execute", "command", commands[i])
+				SaveEvent(app, event, false)
 				return err.EXPAND_ERROR
 			}
+
 			lastResult = result
 		}
 	} else {
@@ -111,20 +118,6 @@ func (transaction *Swap) ProcessDeliver(app interface{}) err.Code {
 	}
 
 	return err.SUCCESS
-}
-
-func FindSwap(status *data.Datastore, key id.AccountKey) Transaction {
-	result := status.Load(key)
-	if result == nil {
-		return nil
-	}
-
-	var transaction Swap
-	buffer, err := comm.Deserialize(result, &transaction)
-	if err != nil {
-		return nil
-	}
-	return buffer.(Transaction)
 }
 
 // TODO: Change to return Role as INITIATOR or PARTICIPANT
@@ -138,17 +131,19 @@ func FindMatchingSwap(status *data.Datastore, accountKey id.AccountKey, transact
 			var base Swap
 			matched = &base
 			if isParty {
+                matched.Base = entry.Base //put them as base for easy access the key to store
 				matched.Party = transaction.Party
 				matched.CounterParty = entry.Party
 				matched.Amount = transaction.Amount
 				matched.Exchange = transaction.Exchange
 			} else {
+                matched.Base = transaction.Base //put them as base for easy access the key to store
 				matched.Party = entry.Party
 				matched.CounterParty = transaction.Party
 				matched.Amount = transaction.Exchange
 				matched.Exchange = transaction.Amount
 			}
-			matched.Base = transaction.Base
+
 			matched.Fee = transaction.Fee
 			matched.Nonce = transaction.Nonce
 
@@ -248,6 +243,21 @@ func SaveSwap(status *data.Datastore, accountKey id.AccountKey, transaction *Swa
 	status.Store(accountKey, buffer)
 	status.Commit()
 }
+
+func FindSwap(status *data.Datastore, key id.AccountKey) Transaction {
+	result := status.Load(key)
+	if result == nil {
+		return nil
+	}
+
+	var transaction Swap
+	buffer, err := comm.Deserialize(result, &transaction)
+	if err != nil {
+		return nil
+	}
+	return buffer.(Transaction)
+}
+
 
 // Is this node one of the partipants in the swap
 func (transaction *Swap) ShouldProcess(app interface{}) bool {
@@ -377,11 +387,10 @@ func (swap *Swap) Resolve(app interface{}, commands Commands) {
 
 		side := commands[i].Order
 		if &side == nil {
-			log.Fatal("command need a side to proceed", "command", commands[i])
-		}
-		//log.Debug("commandslist", "command", commands[i])
-
-		commands[i].Chain = chains[side]
+			commands[i].Chain = data.ONELEDGER
+		} else {
+            commands[i].Chain = chains[side]
+        }
 
 		var key id.AccountKey
 
@@ -424,22 +433,6 @@ func (swap *Swap) Resolve(app interface{}, commands Commands) {
 	return
 }
 
-// Execute the function
-func Execute(app interface{}, command Command, lastResult map[Parameter]FunctionValue) (err.Code, map[Parameter]FunctionValue) {
-    //make sure the first execute use the context, and later uses last result. so if command are executed in a row, every executed function should only add
-    //parameters in the context and return instead of create new context every time
-    if len(lastResult) > 0 {
-        for key, value := range lastResult {
-            command.Data[key] = value
-        }
-    }
-    status, result := command.Execute()
-	if  status {
-		return err.SUCCESS, result
-	}
-
-	return err.NOT_IMPLEMENTED, lastResult
-}
 
 func GetPubKeyHash(address string) *btcutil.AddressPubKeyHash {
 
@@ -451,7 +444,7 @@ func GetPubKeyHash(address string) *btcutil.AddressPubKeyHash {
 }
 
 // TODO: Needs to be configurable
-var lockPeriod = 5 * time.Minute
+var lockPeriod = 1 * time.Minute
 // todo: need to store this in db
 var tokens = make(map[string][32]byte)
 //todo: need to store this in db

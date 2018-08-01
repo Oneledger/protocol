@@ -37,6 +37,7 @@ type Application struct {
 	Identities *id.Identities   // Keep a higher-level identity for a given user
 	Accounts   *id.Accounts     // Keep all of the user accounts locally for their node (identity management)
 	Utxo       *data.ChainState // unspent transction output (for each type of coin)
+	Event      *data.Datastore  // Event for any action that need to be tracked
 }
 
 // NewApplicationContext initializes a new application
@@ -47,6 +48,7 @@ func NewApplication() *Application {
 		Identities: id.NewIdentities("identities"),
 		Accounts:   id.NewAccounts("accounts"),
 		Utxo:       data.NewChainState("utxo", data.PERSISTENT),
+		Event:      data.NewDatastore("event", data.PERSISTENT),
 	}
 }
 
@@ -90,6 +92,10 @@ func (app Application) GetUtxo() interface{} {
 
 func (app Application) GetChainID() interface{} {
     return ChainId
+}
+
+func (app Application) GetEvent() interface{} {
+    return app.Event
 }
 
 type BasicState struct {

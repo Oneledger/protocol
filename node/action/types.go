@@ -14,6 +14,7 @@ import (
 	"github.com/Oneledger/protocol/node/data"
 	"github.com/Oneledger/protocol/node/id"
 	"github.com/Oneledger/protocol/node/log"
+	"strconv"
 )
 
 // inputs into a send transaction (similar to Bitcoin)
@@ -129,4 +130,42 @@ func CheckAmounts(app interface{}, inputs []SendInput, outputs []SendOutput) boo
 		return false
 	}
 	return true
+}
+
+type Event struct {
+	Type 	Type			`json:"type"`
+	Key  	id.AccountKey	`json:"key"`
+	Nonce	int64			`json:"result"`
+}
+
+func (e Event) ToKey() []byte {
+	buffer, err := comm.Serialize(e)
+	if err != nil {
+		log.Error("Failed to Serialize SaveSwap transaction")
+	}
+	return buffer
+}
+
+func SaveEvent(app interface{}, eventKey Event, status bool) {
+	events := GetEvent(app)
+
+	log.Debug("SaveStatus", "key", eventKey)
+
+	events.Store(eventKey.ToKey(), []byte(strconv.FormatBool(status)))
+	events.Commit()
+}
+
+func FindEvent(app interface{},  eventKey Event) bool{
+	events := GetEvent(app)
+	result := events.Load(eventKey.ToKey())
+	if result == nil {
+		return false
+	}
+
+	r, err := strconv.ParseBool(string(result))
+	if err != nil {
+		return false
+	}
+
+	return r
 }

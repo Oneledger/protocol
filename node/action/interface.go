@@ -120,7 +120,7 @@ func AuditContract(chain data.ChainType, context map[Parameter]FunctionValue) (b
 
 func WaitForChain(chain data.ChainType, context map[Parameter]FunctionValue) (bool, map[Parameter]FunctionValue) {
 	log.Info("Executing WaitForChain Command", "chain", chain, "context", context)
-
+//todo : make this to check finish status, and then rollback if necessary
 	// Make sure it is pushed forward first...
 	global.Current.Sequence += 32
 

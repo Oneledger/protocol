@@ -20,6 +20,10 @@ var FunctionMapping = [][]Object{
 		SWAP,
 		INITIATOR,
 		Command{
+			Function: WAIT_FOR_CHAIN, //will create a delay transaction
+			Order:    0,
+		},
+		Command{
 			Function: INITIATE,
 			Order:    0,
 		},
@@ -32,7 +36,8 @@ var FunctionMapping = [][]Object{
 		SWAP,
 		PARTICIPANT,
 		Command{
-		    Function: NOOP, //intentionally
+		    Function: WAIT_FOR_CHAIN, //will create a delay transaction
+		    Order:    1,
         },
     },
 	[]Object{
@@ -49,6 +54,9 @@ var FunctionMapping = [][]Object{
 		Command{
 			Function: SUBMIT_TRANSACTION,
             Order:    1,
+		},
+		Command{
+			Function: FINISH,
 		},
 	},
 	[]Object{
@@ -78,6 +86,9 @@ var FunctionMapping = [][]Object{
             Function: REDEEM,
             Order:    0,
         },
+        Command{
+        	Function: FINISH,
+		},
     },
 	[]Object{
 		SEND,
@@ -86,6 +97,13 @@ var FunctionMapping = [][]Object{
             Function: PREPARE_TRANSACTION,
         },
 	},
+    []Object{
+        CHECKFORERROR,
+        ALL,
+        Command{
+            Function: REFUND,
+        },
+    },
 }
 
 // Given an action and a chain, return a list of commands
