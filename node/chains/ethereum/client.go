@@ -189,13 +189,13 @@ func (h *HTLContract) Redeem(scr []byte) error {
 	return nil
 }
 
-func (h *HTLContract) Refund(scr []byte) error {
+func (h *HTLContract) Refund() error {
 	auth := GetAuth()
     contract := h.HTLContractObject()
     if contract == nil {
         return errors.New("failed to get htlc contract instance")
     }
-    tx, err := contract.Refund(auth, scr)
+    tx, err := contract.Refund(auth)
 	if err != nil {
 		log.Error("Can't refund the htlc", "err", err, "auth", auth)
 		return err
@@ -274,4 +274,8 @@ func (h *HTLContract) ToMessage() []byte {
         log.Error("Failed to serialize htlc", "err", err)
     }
     return msg
+}
+
+func (h *HTLContract) ToKey() []byte {
+    return h.Address.Bytes()
 }

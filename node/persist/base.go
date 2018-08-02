@@ -12,4 +12,5 @@ type Access interface {
 	GetUtxo() interface{}
     GetChainID() interface{}
 	GetEvent() interface{}
+	GetContract() interface{}
 }

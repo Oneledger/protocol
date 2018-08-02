@@ -98,7 +98,7 @@ var FunctionMapping = [][]Object{
         },
 	},
     []Object{
-        CHECKFORERROR,
+        VERIFY,
         ALL,
         Command{
             Function: REFUND,

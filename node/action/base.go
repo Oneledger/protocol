@@ -9,6 +9,8 @@ import (
 	"github.com/Oneledger/protocol/node/err"
 	"github.com/Oneledger/protocol/node/id"
 	"github.com/tendermint/go-crypto"
+	"github.com/Oneledger/protocol/node/global"
+	"github.com/Oneledger/protocol/node/log"
 )
 
 type Message = []byte // Contents of a transaction
@@ -25,13 +27,12 @@ const (
 	EXTERNAL_SEND      // Do send on external chain
 	EXTERNAL_LOCK      // Lock some data on external chain
 	SWAP               // Start a swap between chains
-	VERIFY             // Verify that a lockbox is correct
+	VERIFY             // Verify if a transaction finished
 	PUBLISH            // Exchange data on a chain
 	READ               // Read a specific transaction on a chain
 	PREPARE            // Do everything, except commit
 	COMMIT             // Commit to doing the work
 	FORGET             // Rollback and forget that this happened
- 	CHECKFORERROR	   //todo: check something happened(with a delay transaction), otherwise it's an error
 )
 
 const (
@@ -78,4 +79,17 @@ func Execute(app interface{}, command Command, lastResult map[Parameter]Function
 	}
 
 	return err.NOT_IMPLEMENTED, lastResult
+}
+
+func GetNodeAccount(app interface{}) id.Account {
+
+	accounts := GetAccounts(app)
+	account, _ := accounts.FindName(global.Current.NodeAccountName)
+	if account == nil {
+		log.Error("Node does not have account", "name", global.Current.NodeAccountName)
+		accounts.Dump()
+		return nil
+	}
+
+	return account
 }

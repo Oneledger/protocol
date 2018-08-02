@@ -15,7 +15,8 @@ import (
 	"github.com/Oneledger/protocol/node/id"
 	"github.com/Oneledger/protocol/node/log"
 	"strconv"
-)
+    "github.com/Oneledger/protocol/node/chains/common"
+        )
 
 // inputs into a send transaction (similar to Bitcoin)
 type SendInput struct {
@@ -149,13 +150,14 @@ func (e Event) ToKey() []byte {
 func SaveEvent(app interface{}, eventKey Event, status bool) {
 	events := GetEvent(app)
 
-	log.Debug("SaveStatus", "key", eventKey)
+	log.Debug("Save Event", "key", eventKey)
 
 	events.Store(eventKey.ToKey(), []byte(strconv.FormatBool(status)))
 	events.Commit()
 }
 
 func FindEvent(app interface{},  eventKey Event) bool{
+	log.Debug("Load Event", "key", eventKey)
 	events := GetEvent(app)
 	result := events.Load(eventKey.ToKey())
 	if result == nil {
@@ -168,4 +170,24 @@ func FindEvent(app interface{},  eventKey Event) bool{
 	}
 
 	return r
+}
+
+func SaveContract(app interface{}, contractKey []byte, contract common.Contract) {
+    contracts := GetContract(app)
+    log.Debug("Save contract", "key", contractKey)
+
+    contracts.Store(contractKey, contract.ToMessage())
+    contracts.Commit()
+}
+
+func FindContract(app interface{}, contractKey []byte) Message {
+    log.Debug("Load Contract", "key", contractKey)
+
+    contracts := GetContract(app)
+    result := contracts.Load(contractKey)
+    if result == nil {
+        return nil
+    }
+
+    return result
 }

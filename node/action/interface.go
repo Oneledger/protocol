@@ -60,6 +60,9 @@ func Participate(chain data.ChainType, context map[Parameter]FunctionValue) (boo
 
 func Redeem(chain data.ChainType, context map[Parameter]FunctionValue) (bool, map[Parameter]FunctionValue) {
 	log.Info("Executing Redeem Command", "chain", chain, "context", context)
+
+
+
 	switch chain {
 
 	case data.BITCOIN:
@@ -120,21 +123,30 @@ func AuditContract(chain data.ChainType, context map[Parameter]FunctionValue) (b
 
 func WaitForChain(chain data.ChainType, context map[Parameter]FunctionValue) (bool, map[Parameter]FunctionValue) {
 	log.Info("Executing WaitForChain Command", "chain", chain, "context", context)
-//todo : make this to check finish status, and then rollback if necessary
+	//todo : make this to check finish status, and then rollback if necessary
 	// Make sure it is pushed forward first...
 	global.Current.Sequence += 32
 
 	signers := []id.PublicKey(nil)
-
+    owner := GetParty(context[MY_ACCOUNT])
+    target := GetParty(context[THEM_ACCOUNT])
+    eventType := GetType(context[EVENTTYPE])
 	verify := Verify{
 		Base: Base{
 			Type:     VERIFY,
 			ChainId:  "OneLedger-Root",
+			Owner:    owner.Key,
 			Signers:  signers,
 			Sequence: global.Current.Sequence,
 		},
+		Target: owner.Key,
+		Event:  Event{
+		    Type:   eventType,
+		    Key:    target.Key,
+		    Nonce:  global.Current.Sequence,
+        },
 	}
-	BroadcastTransaction(VERIFY, Transaction(verify))
+	DelayedTransaction(VERIFY, Transaction(verify), 3*lockPeriod)
 
 	return true, nil
 }

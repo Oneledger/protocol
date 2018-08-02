@@ -74,7 +74,7 @@ func XTestClient(t *testing.T) {
 func XTestBlockGeneration(t *testing.T) {
 	log.Info("TESTING THE GENERATION")
 
-	testnode1 := GetBtcClient("127.0.0.1:18831", &chaincfg.RegressionNetParams)
+	testnode1 := GetBtcClient("127.0.0.1:18831")
 
 	if testnode1 == nil {
 		log.Fatal("Can't Get Client")
@@ -94,17 +94,17 @@ func Setup(id int) *brpc.Bitcoind {
 
 	switch id {
 	case 1:
-		testnode = GetBtcClient("127.0.0.1:18831", &chaincfg.RegressionNetParams)
+		testnode = GetBtcClient("127.0.0.1:18831")
 	case 2:
-		testnode = GetBtcClient("127.0.0.1:18832", &chaincfg.RegressionNetParams)
+		testnode = GetBtcClient("127.0.0.1:18832")
 	case 3:
-		testnode = GetBtcClient("127.0.0.1:18833", &chaincfg.RegressionNetParams)
+		testnode = GetBtcClient("127.0.0.1:18833")
 	default:
 		log.Fatal("Invalid", "id", id)
 	}
 
 	if testnode == nil {
-		log.Fatal("Can't Get Client", "config", chaincfg.RegressionNetParams)
+		log.Fatal("Can't Get Client")
 	}
 	log.Debug("Have a Bitcoin Client", "testnode", testnode)
 

@@ -97,13 +97,17 @@ func (transaction *Swap) ProcessDeliver(app interface{}) err.Code {
 
 		//before loop of execute, lastResult is nil
 		var lastResult map[Parameter]FunctionValue
-        event := Event{Type: SWAP, Key: matchedSwap.Owner, Nonce: matchedSwap.Nonce }
-		for i := 0; i < commands.Count(); i++ {
 
+		for i := 0; i < commands.Count(); i++ {
+		    them := GetParty(commands[i].Data[THEM_ACCOUNT])
+            event := Event{Type: SWAP, Key: them.Key , Nonce: matchedSwap.Nonce }
+            contract := cachedContract //todo : make it correct with cachedContract
             if commands[i].Function == FINISH {
                 SaveEvent(app, event, true)
+                SaveContract(app, )
                 return err.SUCCESS
             }
+
 			status, result := Execute(app, commands[i], lastResult)
 			if status != err.SUCCESS {
 				log.Error("Failed to Execute", "command", commands[i])
@@ -194,7 +198,7 @@ func MatchSwap(left *Swap, right *Swap) bool {
 
 func ProcessSwap(app interface{}, transaction *Swap) *Swap {
 	status := GetStatus(app)
-	account := transaction.GetNodeAccount(app)
+	account := GetNodeAccount(app)
 
 	isParty := transaction.IsParty(account)
 
@@ -261,7 +265,7 @@ func FindSwap(status *data.Datastore, key id.AccountKey) Transaction {
 
 // Is this node one of the partipants in the swap
 func (transaction *Swap) ShouldProcess(app interface{}) bool {
-	account := transaction.GetNodeAccount(app)
+	account := GetNodeAccount(app)
 
 	if transaction.IsParty(account) != nil {
 		return true
@@ -284,19 +288,6 @@ func GetChainAccount(app interface{}, name string, chain data.ChainType) id.Acco
 
 	identity, _ := identities.FindName(name)
 	account, _ := accounts.FindKey(identity.Chain[chain])
-
-	return account
-}
-
-func (transaction *Swap) GetNodeAccount(app interface{}) id.Account {
-
-	accounts := GetAccounts(app)
-	account, _ := accounts.FindName(global.Current.NodeAccountName)
-	if account == nil {
-		log.Error("Node does not have account", "name", global.Current.NodeAccountName)
-		accounts.Dump()
-		return nil
-	}
 
 	return account
 }
@@ -359,7 +350,7 @@ func (swap *Swap) getRole(isParty bool) Role {
 func (transaction *Swap) Expand(app interface{}) Commands {
 	chains := transaction.getChains()
 
-	account := transaction.GetNodeAccount(app)
+	account := GetNodeAccount(app)
 	isParty := transaction.IsParty(account)
 
 	role := transaction.getRole(*isParty)
@@ -369,7 +360,7 @@ func (transaction *Swap) Expand(app interface{}) Commands {
 
 // Plug in data from the rest of a system into a set of commands
 func (swap *Swap) Resolve(app interface{}, commands Commands) {
-	account := swap.GetNodeAccount(app)
+	account := GetNodeAccount(app)
 
 	identities := GetIdentities(app)
 	_ = identities
@@ -429,6 +420,7 @@ func (swap *Swap) Resolve(app interface{}, commands Commands) {
                 commands[i].Data[PREIMAGE] = sha256.Sum256(secret[:])
             }
 		}
+		commands[i].Data[EVENTTYPE] = SWAP
 	}
 	return
 }
@@ -473,9 +465,7 @@ func CreateContractBTC(context map[Parameter]FunctionValue) (bool, map[Parameter
         }
     }
 
-	config := chaincfg.RegressionNetParams // TODO: should be passed in
-
-	cli := bitcoin.GetBtcClient(global.Current.BTCAddress, &config)
+	cli := bitcoin.GetBtcClient(global.Current.BTCAddress)
 
 	amount := bitcoin.GetAmount(value.String())
 
@@ -530,7 +520,7 @@ func AuditContractBTC(context map[Parameter]FunctionValue) (bool, map[Parameter]
 
 	them := GetParty(context[THEM_ACCOUNT])
 	cmd := htlc.NewAuditContractCmd(contract.Contract, &contract.ContractTx)
-	cli := bitcoin.GetBtcClient(global.Current.BTCAddress, &chaincfg.RegressionNetParams) //todo: to make it configurable
+	cli := bitcoin.GetBtcClient(global.Current.BTCAddress)
 	e := cmd.RunCommand(cli)
 	if e != nil {
 		log.Error("Bitcoin Audit", "err", e)
@@ -609,7 +599,7 @@ func RedeemBTC(context map[Parameter]FunctionValue) (bool, map[Parameter]Functio
     scr := GetByte32(context[PASSWORD])
 
     cmd := htlc.NewRedeemCmd(contract.Contract, &contract.ContractTx, scr[:])
-    cli := bitcoin.GetBtcClient(global.Current.BTCAddress, &chaincfg.RegressionNetParams) //todo: to make it configurable
+    cli := bitcoin.GetBtcClient(global.Current.BTCAddress)
     _, e := cmd.RunCommand(cli)
     if e != nil {
         log.Error("Bitcoin redeem htlc", "err", e)
@@ -637,7 +627,7 @@ func RefundBTC(context map[Parameter]FunctionValue) (bool, map[Parameter]Functio
     //todo: make it correct scr, by extract or from local storage
 
     cmd := htlc.NewRefundCmd(contract.Contract, &contract.ContractTx)
-    cli := bitcoin.GetBtcClient(global.Current.BTCAddress, &chaincfg.RegressionNetParams) //todo: to make it configurable
+    cli := bitcoin.GetBtcClient(global.Current.BTCAddress)
     _, e := cmd.RunCommand(cli)
     if e != nil {
         log.Error("Bitcoin refund htlc", "err", e)
@@ -648,9 +638,8 @@ func RefundBTC(context map[Parameter]FunctionValue) (bool, map[Parameter]Functio
 
 func RefundETH(context map[Parameter]FunctionValue) (bool, map[Parameter]FunctionValue) {
 	contract := GetETHContract(context[ETHCONTRACT])
-	//todo: make it correct scr, by extract or from local storage
-	scr := GetByte32(context[PASSWORD])
-	err := contract.Refund(scr[:])
+
+	err := contract.Refund()
 	if err != nil {
 	    return false, nil
     }
@@ -662,7 +651,7 @@ func ExtractSecretBTC(context map[Parameter]FunctionValue) (bool, map[Parameter]
     contract := GetBTCContract(context[BTCCONTRACT])
     scrHash := GetByte32(context[PREIMAGE])
     cmd := htlc.NewExtractSecretCmd(&contract.ContractTx, scrHash)
-    cli := bitcoin.GetBtcClient(global.Current.BTCAddress, &chaincfg.RegressionNetParams) //todo: to make it configurable
+    cli := bitcoin.GetBtcClient(global.Current.BTCAddress)
     e := cmd.RunCommand(cli)
     if e != nil {
         log.Error("Bitcoin extract hltc", "err", e)

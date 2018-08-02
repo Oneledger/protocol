@@ -34,8 +34,8 @@ func init() {
 // TODO: Wait for real things to happen...
 func Wait(cmd *cobra.Command, args []string) {
 	log.Debug("Waiting")
-	cli := bitcoin.GetBtcClient("127.0.0.1:18833", &chaincfg.RegressionNetParams)
+	cli := bitcoin.GetBtcClient("127.0.0.1:18833")
 	stop := bitcoin.ScheduleBlockGeneration(*cli, 10 )
-	time.Sleep(60 * time.Second)
+	time.Sleep(200 * time.Second)
 	bitcoin.StopBlockGeneration(stop)
 }

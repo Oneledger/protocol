@@ -29,15 +29,15 @@ type Publish struct {
 }
 
 // Ensure that all of the base values are at least reasonable.
-func (transaction *Publish) Validate() err.Code {
+func (publish *Publish) Validate() err.Code {
 	log.Debug("Validating Publish Transaction")
 
-	if transaction.Target == nil {
+	if publish.Target == nil {
 		log.Debug("Missing Target")
 		return err.MISSING_DATA
 	}
 
-	if transaction.Contract == nil {
+	if publish.Contract == nil {
 		log.Debug("Missing Contract")
 		return err.MISSING_DATA
 	}
@@ -46,7 +46,7 @@ func (transaction *Publish) Validate() err.Code {
 	return err.SUCCESS
 }
 
-func (transaction *Publish) ProcessCheck(app interface{}) err.Code {
+func (publish *Publish) ProcessCheck(app interface{}) err.Code {
 	log.Debug("Processing Publish Transaction for CheckTx")
 
 	// TODO: Check all of the data to make sure it is valid.
@@ -55,12 +55,12 @@ func (transaction *Publish) ProcessCheck(app interface{}) err.Code {
 }
 
 // Start the publish
-func (transaction *Publish) ProcessDeliver(app interface{}) err.Code {
+func (publish *Publish) ProcessDeliver(app interface{}) err.Code {
 	log.Debug("Processing Publish Transaction for DeliverTx")
 
-    commands := transaction.Expand(app)
+    commands := publish.Expand(app)
 
-    transaction.Resolve(app, commands)
+    publish.Resolve(app, commands)
 
     //before loop of execute, lastResult is nil
     var lastResult map[Parameter]FunctionValue
@@ -77,49 +77,37 @@ func (transaction *Publish) ProcessDeliver(app interface{}) err.Code {
 }
 
 // Is this node one of the partipants in the publish
-func (transaction *Publish) ShouldProcess(app interface{}) bool {
-	account := transaction.GetNodeAccount(app)
+func (publish *Publish) ShouldProcess(app interface{}) bool {
+	account := GetNodeAccount(app)
 
-	if bytes.Equal(transaction.Target, account.AccountKey()) {
-	    log.Debug("Is publish target", "target", transaction.Target, "me", account.AccountKey())
+    log.Debug("Not the publish target", "target", publish.Target, "me", account.AccountKey() )
+
+	if bytes.Equal(publish.Target, account.AccountKey()) {
 		return true
 	}
 
-    log.Debug("Not the publish target", "target", transaction.Target, "me", account.AccountKey() )
+
 	return false
 }
 
-func (transaction *Publish) GetNodeAccount(app interface{}) id.Account {
-
-	accounts := GetAccounts(app)
-	account, _ := accounts.FindName(global.Current.NodeAccountName)
-	if account == nil {
-		log.Error("Node does not have account", "name", global.Current.NodeAccountName)
-		accounts.Dump()
-		return nil
-	}
-
-	return account
-}
-
 // Given a transaction, expand it into a list of Commands to execute against various chains.
-func (transaction *Publish) Expand(app interface{}) Commands {
-    swap := transaction.FindSwap(app)
-    account := transaction.GetNodeAccount(app)
+func (publish *Publish) Expand(app interface{}) Commands {
+    swap := publish.FindSwap(app)
+    account := GetNodeAccount(app)
     isParty := swap.IsParty(account)
     role := swap.getRole(*isParty)
     chains := swap.getChains()
-    if transaction.Sequence > 1 {
+    if publish.Sequence > 1 {
         role = ALL
         log.Debug("Publish role", "role", role)
     }
 	return GetCommands(PUBLISH, role, chains)
 }
 
-func (transaction *Publish) FindSwap(app interface{}) *Swap {
+func (publish *Publish) FindSwap(app interface{}) *Swap {
 
     status := GetStatus(app)
-    senderKey := transaction.Base.Owner
+    senderKey := publish.Base.Owner
     log.Debug("FindSwap", "key",senderKey)
     swap := FindSwap(status, senderKey).(*Swap)
     return swap
