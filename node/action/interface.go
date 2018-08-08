@@ -13,115 +13,113 @@ import (
 	"github.com/Oneledger/protocol/node/log"
 )
 
-func Noop(chain data.ChainType, context map[Parameter]FunctionValue) (bool, map[Parameter]FunctionValue) {
+func Noop(app interface{}, chain data.ChainType, context map[Parameter]FunctionValue) (bool, map[Parameter]FunctionValue) {
 	log.Info("Executing Noop Command", "chain", chain, "context", context)
 	return true, nil
 }
 
-func PrepareTransaction(chain data.ChainType, context map[Parameter]FunctionValue) (bool, map[Parameter]FunctionValue) {
+func PrepareTransaction(app interface{}, chain data.ChainType, context map[Parameter]FunctionValue) (bool, map[Parameter]FunctionValue) {
 	log.Info("Executing PrepareTransaction Command", "chain", chain, "context", context)
 	return true, nil
 }
 
-func SubmitTransaction(chain data.ChainType, context map[Parameter]FunctionValue) (bool, map[Parameter]FunctionValue) {
-	log.Info("Executing SubmitTransaction Command", "chain", chain, "context", context, "sequence", context[SEQUENCE])
+func SubmitTransaction(app interface{}, chain data.ChainType, context map[Parameter]FunctionValue) (bool, map[Parameter]FunctionValue) {
+	log.Info("Executing SubmitTransaction Command", "chain", chain, "context", context, "sequence", context[COUNT])
 	return SubmitTransactionOLT(context, chain)
 }
 
-func Initiate(chain data.ChainType, context map[Parameter]FunctionValue) (bool, map[Parameter]FunctionValue) {
+func Initiate(app interface{}, chain data.ChainType, context map[Parameter]FunctionValue) (bool, map[Parameter]FunctionValue) {
 	log.Info("Executing Initiate Command", "chain", chain, "context", context)
 	switch chain {
 
 	case data.BITCOIN:
-		return CreateContractBTC(context)
+		return CreateContractBTC(app, context)
 	case data.ETHEREUM:
-		return CreateContractETH(context)
+		return CreateContractETH(app, context)
 	case data.ONELEDGER:
-		return CreateContractOLT(context)
+		return CreateContractOLT(app, context)
 	default:
 		return false, nil
 	}
 }
 
-func Participate(chain data.ChainType, context map[Parameter]FunctionValue) (bool, map[Parameter]FunctionValue) {
+func Participate(app interface{}, chain data.ChainType, context map[Parameter]FunctionValue) (bool, map[Parameter]FunctionValue) {
 	log.Info("Executing Participate Command", "chain", chain, "context", context)
 	switch chain {
 
 	case data.BITCOIN:
-		return ParticipateBTC(context)
+		return ParticipateBTC(app, context)
 	case data.ETHEREUM:
-		return ParticipateETH(context)
+		return ParticipateETH(app, context)
 	case data.ONELEDGER:
-		return ParticipateOLT(context)
+		return ParticipateOLT(app, context)
 	default:
 		return false, nil
 	}
 }
 
-func Redeem(chain data.ChainType, context map[Parameter]FunctionValue) (bool, map[Parameter]FunctionValue) {
+func Redeem(app interface{}, chain data.ChainType, context map[Parameter]FunctionValue) (bool, map[Parameter]FunctionValue) {
 	log.Info("Executing Redeem Command", "chain", chain, "context", context)
-
-
 
 	switch chain {
 
 	case data.BITCOIN:
-		return RedeemBTC(context)
+		return RedeemBTC(app, context)
 	case data.ETHEREUM:
-		return RedeemETH(context)
+		return RedeemETH(app, context)
 	case data.ONELEDGER:
-		return RedeemOLT(context)
+		return RedeemOLT(app, context)
 	default:
 		return false, nil
 	}
 }
 
-func Refund(chain data.ChainType, context map[Parameter]FunctionValue) (bool, map[Parameter]FunctionValue) {
+func Refund(app interface{}, chain data.ChainType, context map[Parameter]FunctionValue) (bool, map[Parameter]FunctionValue) {
 	log.Info("Executing Refund Command", "chain", chain, "context", context)
 	switch chain {
 
 	case data.BITCOIN:
-		return RefundBTC(context)
+		return RefundBTC(app, context)
 	case data.ETHEREUM:
-		return RefundETH(context)
+		return RefundETH(app, context)
 	case data.ONELEDGER:
-		return RefundOLT(context)
+		return RefundOLT(app, context)
 	default:
 		return false, nil
 	}
 }
 
-func ExtractSecret(chain data.ChainType, context map[Parameter]FunctionValue) (bool, map[Parameter]FunctionValue) {
+func ExtractSecret(app interface{}, chain data.ChainType, context map[Parameter]FunctionValue) (bool, map[Parameter]FunctionValue) {
 	log.Info("Executing ExtractSecret Command", "chain", chain, "context", context)
 	switch chain {
 
 	case data.BITCOIN:
-		return ExtractSecretBTC(context)
+		return ExtractSecretBTC(app, context)
 	case data.ETHEREUM:
-		return ExtractSecretETH(context)
+		return ExtractSecretETH(app, context)
 	case data.ONELEDGER:
-		return ExtractSecretOLT(context)
+		return ExtractSecretOLT(app, context)
 	default:
 		return false, nil
 	}
 }
 
-func AuditContract(chain data.ChainType, context map[Parameter]FunctionValue) (bool, map[Parameter]FunctionValue) {
+func AuditContract(app interface{}, chain data.ChainType, context map[Parameter]FunctionValue) (bool, map[Parameter]FunctionValue) {
 	log.Info("Executing AuditContract Command", "chain", chain, "context", context)
 	switch chain {
 
 	case data.BITCOIN:
-		return AuditContractBTC(context)
+		return AuditContractBTC(app, context)
 	case data.ETHEREUM:
-		return AuditContractETH(context)
+		return AuditContractETH(app, context)
 	case data.ONELEDGER:
-		return AuditContractOLT(context)
+		return AuditContractOLT(app, context)
 	default:
 		return false, nil
 	}
 }
 
-func WaitForChain(chain data.ChainType, context map[Parameter]FunctionValue) (bool, map[Parameter]FunctionValue) {
+func WaitForChain(app interface{}, chain data.ChainType, context map[Parameter]FunctionValue) (bool, map[Parameter]FunctionValue) {
 	log.Info("Executing WaitForChain Command", "chain", chain, "context", context)
 	//todo : make this to check finish status, and then rollback if necessary
 	// Make sure it is pushed forward first...
@@ -131,6 +129,7 @@ func WaitForChain(chain data.ChainType, context map[Parameter]FunctionValue) (bo
     owner := GetParty(context[MY_ACCOUNT])
     target := GetParty(context[THEM_ACCOUNT])
     eventType := GetType(context[EVENTTYPE])
+    nonce := GetInt64(context[NONCE])
 	verify := Verify{
 		Base: Base{
 			Type:     VERIFY,
@@ -143,10 +142,10 @@ func WaitForChain(chain data.ChainType, context map[Parameter]FunctionValue) (bo
 		Event:  Event{
 		    Type:   eventType,
 		    Key:    target.Key,
-		    Nonce:  global.Current.Sequence,
+		    Nonce:  nonce,
         },
 	}
-	DelayedTransaction(VERIFY, Transaction(verify), 3*lockPeriod)
+	DelayedTransaction(VERIFY, Transaction(verify), 3 * lockPeriod)
 
 	return true, nil
 }

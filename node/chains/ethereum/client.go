@@ -188,7 +188,7 @@ func (h *HTLContract) Redeem(scr []byte) error {
 	}
 	h.Tx = tx
 	time.Sleep(6 * time.Second)
-    balance, err = h.HTLContractObject().Balance(&bind.CallOpts{Pending: false})
+    balance, err = contract.Balance(&bind.CallOpts{Pending: false})
     log.Debug("balance after redeem", "balance", balance, "err", err)
 	log.Info("Redeem htlc", "address", h.Address, "tx", tx, "scr", scr, "txaddress", tx.Hash())
 	return nil
@@ -196,6 +196,7 @@ func (h *HTLContract) Redeem(scr []byte) error {
 
 func (h *HTLContract) Refund() error {
 	auth := GetAuth()
+	auth.GasLimit = 300000
     contract := h.HTLContractObject()
     if contract == nil {
         return errors.New("failed to get htlc contract instance")
@@ -205,8 +206,19 @@ func (h *HTLContract) Refund() error {
 		log.Error("Can't refund the htlc", "err", err, "auth", auth)
 		return err
 	}
+    time.Sleep(20 * time.Second)
+    cli := getEthClient()
+    ctx := context.Background()
+    receipt, err := cli.TransactionReceipt(ctx, tx.Hash())
+
+    _ = receipt
 	h.Tx = tx
-	log.Info("Refund htlc", "address", h.Address, "tx", h.Tx, "value", tx.Value())
+
+    balance, err := contract.Balance(&bind.CallOpts{Pending: false})
+    log.Debug("balance after refund", "balance", balance)
+	log.Info("Refund htlc", "address", h.Address, "tx", h.Tx.Hash(), "balance", balance)
+
+
 	return nil
 }
 
@@ -284,3 +296,4 @@ func (h *HTLContract) ToMessage() []byte {
 func (h *HTLContract) ToKey() []byte {
     return h.Address.Bytes()
 }
+

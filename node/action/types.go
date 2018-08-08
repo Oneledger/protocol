@@ -16,7 +16,7 @@ import (
 	"github.com/Oneledger/protocol/node/log"
 	"strconv"
     "github.com/Oneledger/protocol/node/chains/common"
-        )
+    )
 
 // inputs into a send transaction (similar to Bitcoin)
 type SendInput struct {
@@ -81,6 +81,13 @@ func CheckBalance(app interface{}, accountKey id.AccountKey, amount data.Coin) b
 		//return false
 	}
 	return true
+}
+
+func GetHeight(app interface{}) int64 {
+    utxo := GetUtxo(app)
+
+    height := int64(utxo.Height)
+    return height
 }
 
 func CheckAmounts(app interface{}, inputs []SendInput, outputs []SendOutput) bool {
@@ -172,17 +179,17 @@ func FindEvent(app interface{},  eventKey Event) bool{
 	return r
 }
 
-func SaveContract(app interface{}, contractKey []byte, contract common.Contract) {
+func SaveContract(app interface{}, contractKey []byte, nonce int64, contract common.Contract) {
+    //todo: add nonce to the key to differentiate swap between same conterparty
     contracts := GetContract(app)
     log.Debug("Save contract", "key", contractKey)
-
     contracts.Store(contractKey, contract.ToMessage())
     contracts.Commit()
 }
 
-func FindContract(app interface{}, contractKey []byte) Message {
+func FindContract(app interface{}, contractKey []byte, nonce int64) Message {
+    //todo: add nonce to the key to differentiate swap between same conterparty
     log.Debug("Load Contract", "key", contractKey)
-
     contracts := GetContract(app)
     result := contracts.Load(contractKey)
     if result == nil {

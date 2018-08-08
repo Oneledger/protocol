@@ -25,7 +25,7 @@ type Publish struct {
 	Target     id.AccountKey `json:"target"`
 	Contract   Message       `json:"message"` //message converted from HTLContract
 	SecretHash [32]byte      `json:"secrethash"`
-	Sequence   int           `json:"sequence"`
+	Count      int           `json:"count"`
 }
 
 // Ensure that all of the base values are at least reasonable.
@@ -97,7 +97,7 @@ func (publish *Publish) Expand(app interface{}) Commands {
     isParty := swap.IsParty(account)
     role := swap.getRole(*isParty)
     chains := swap.getChains()
-    if publish.Sequence > 1 {
+    if publish.Count > 1 {
         role = ALL
         log.Debug("Publish role", "role", role)
     }
@@ -132,10 +132,10 @@ func (publish *Publish) Resolve(app interface{}, commands Commands) {
         }
         commands[i].Data[PREIMAGE] = publish.SecretHash
         if commands[i].Function == SUBMIT_TRANSACTION {
-            commands[i].Data[SEQUENCE] = publish.Sequence + 1
+            commands[i].Data[COUNT] = publish.Count + 1
             commands[i].Data[CHAINID] = GetChainID(app)
         }
-        //log.Debug("resolved command", "command", commands[i], "sequence", commands[i].Data[SEQUENCE])
+        //log.Debug("resolved command", "command", commands[i], "sequence", commands[i].Data[COUNT])
     }
     return
 }
@@ -154,10 +154,11 @@ func SubmitTransactionOLT(context map[Parameter]FunctionValue, chain data.ChainT
         contract = GetETHContract(context[ETHCONTRACT]).ToMessage()
     }
 
-    sequence := GetInt(context[SEQUENCE])
+    count := GetInt(context[COUNT])
     secretHash := GetByte32(context[PREIMAGE])
     chainId := GetString(context[CHAINID])
-    //log.Debug("parsed contract", "contract", contract, "chain", chain, "context", context, "sequence", sequence)
+    global.Current.Sequence+=32
+    //log.Debug("parsed contract", "contract", contract, "chain", chain, "context", context, "count", count)
     publish := &Publish{
        Base: Base{
            Type:     PUBLISH,
@@ -169,7 +170,7 @@ func SubmitTransactionOLT(context map[Parameter]FunctionValue, chain data.ChainT
        Target:     target.Key,
        Contract:   contract,
        SecretHash: secretHash,
-       Sequence:   sequence,
+       Count:      count,
     }
 
     packet := SignAndPack(PUBLISH, Transaction(publish))

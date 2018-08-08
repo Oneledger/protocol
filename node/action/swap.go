@@ -17,8 +17,6 @@ import (
 	"github.com/Oneledger/protocol/node/global"
 	"github.com/Oneledger/protocol/node/id"
 	"github.com/Oneledger/protocol/node/log"
-	"github.com/btcsuite/btcd/chaincfg"
-	"github.com/btcsuite/btcutil"
 
 	"math/big"
 
@@ -101,10 +99,8 @@ func (transaction *Swap) ProcessDeliver(app interface{}) err.Code {
 		for i := 0; i < commands.Count(); i++ {
 		    them := GetParty(commands[i].Data[THEM_ACCOUNT])
             event := Event{Type: SWAP, Key: them.Key , Nonce: matchedSwap.Nonce }
-            contract := cachedContract //todo : make it correct with cachedContract
             if commands[i].Function == FINISH {
                 SaveEvent(app, event, true)
-                SaveContract(app, )
                 return err.SUCCESS
             }
 
@@ -326,7 +322,7 @@ func (swap *Swap) getChains() []data.ChainType {
 		second = data.Currencies[swap.Amount.Currency.Name].Chain
 	}
 
-	return []data.ChainType{first, second}
+	return []data.ChainType{data.ONELEDGER, first, second}
 }
 
 func (swap *Swap) getRole(isParty bool) Role {
@@ -377,6 +373,7 @@ func (swap *Swap) Resolve(app interface{}, commands Commands) {
 	for i := 0; i < len(commands); i++ {
 
 		side := commands[i].Order
+		log.Info("side", "s", side)
 		if &side == nil {
 			commands[i].Chain = data.ONELEDGER
 		} else {
@@ -425,24 +422,12 @@ func (swap *Swap) Resolve(app interface{}, commands Commands) {
 	return
 }
 
-
-func GetPubKeyHash(address string) *btcutil.AddressPubKeyHash {
-
-	// TODO: Needs to be configurable
-	chainParams := &chaincfg.RegressionNetParams
-	hash, _ := btcutil.NewAddressPubKeyHash([]byte(address), chainParams)
-
-	return hash
-}
-
 // TODO: Needs to be configurable
 var lockPeriod = 1 * time.Minute
 // todo: need to store this in db
 var tokens = make(map[string][32]byte)
-//todo: need to store this in db
-var cachedContract = make(map[string]bitcoin.HTLContract)
 
-func CreateContractBTC(context map[Parameter]FunctionValue) (bool, map[Parameter]FunctionValue) {
+func CreateContractBTC(app interface{}, context map[Parameter]FunctionValue) (bool, map[Parameter]FunctionValue) {
 
 	timeout := time.Now().Add(2 * lockPeriod).Unix()
 
@@ -480,13 +465,25 @@ func CreateContractBTC(context map[Parameter]FunctionValue) (bool, map[Parameter
     contract := &bitcoin.HTLContract{Contract: initCmd.Contract, ContractTx: *initCmd.ContractTx}
 
 	context[BTCCONTRACT] = contract
+
+	nonce := GetInt64(context[NONCE])
+	SaveContract(app, receiverParty.Key.Bytes(), nonce , contract)
 	log.Debug("btc contract","contract", context[BTCCONTRACT])
 	return true, context
 }
 
-func CreateContractETH(context map[Parameter]FunctionValue) (bool, map[Parameter]FunctionValue) {
+func CreateContractETH(app interface{}, context map[Parameter]FunctionValue) (bool, map[Parameter]FunctionValue) {
+    me := GetParty(context[MY_ACCOUNT])
 
-	contract := ethereum.GetHtlContract()
+    contractMessage := FindContract(app, me.Key.Bytes(), 0)
+    var contract *ethereum.HTLContract
+    if contractMessage == nil {
+        contract = ethereum.CreateHtlContract()
+        SaveContract(app, me.Key.Bytes(), 0, contract)
+    } else {
+        contract = ethereum.GetHTLCFromMessage(contractMessage)
+    }
+
 	var receiverParty Party
     preimage := GetByte32(context[PREIMAGE])
 
@@ -515,7 +512,7 @@ func CreateContractETH(context map[Parameter]FunctionValue) (bool, map[Parameter
 }
 
 
-func AuditContractBTC(context map[Parameter]FunctionValue) (bool, map[Parameter]FunctionValue) {
+func AuditContractBTC(app interface{}, context map[Parameter]FunctionValue) (bool, map[Parameter]FunctionValue) {
 	contract := GetBTCContract(context[BTCCONTRACT])
 
 	them := GetParty(context[THEM_ACCOUNT])
@@ -526,12 +523,14 @@ func AuditContractBTC(context map[Parameter]FunctionValue) (bool, map[Parameter]
 		log.Error("Bitcoin Audit", "err", e)
 		return false, nil
 	}
-	cachedContract[them.Key.String()] = *contract
+
+	nonce := GetInt64(context[NONCE])
+	SaveContract(app, them.Key.Bytes(), nonce, contract)
 	context[PREIMAGE] = cmd.SecretHash
 	return true, context
 }
 
-func AuditContractETH(context map[Parameter]FunctionValue) (bool, map[Parameter]FunctionValue) {
+func AuditContractETH(app interface{}, context map[Parameter]FunctionValue) (bool, map[Parameter]FunctionValue) {
 	contract := GetETHContract(context[ETHCONTRACT])
 
 	scrHash := GetByte32(context[PREIMAGE])
@@ -572,11 +571,14 @@ func AuditContractETH(context map[Parameter]FunctionValue) (bool, map[Parameter]
 	//}
 
 	context[PREIMAGE] = scrHash
+	them := GetParty(context[THEM_ACCOUNT])
+	nonce := GetInt64(context[NONCE])
+	SaveContract(app, them.Key.Bytes(), nonce, contract)
 	return true, context
 }
 
-func ParticipateBTC(context map[Parameter]FunctionValue) (bool, map[Parameter]FunctionValue) {
-    success, result := CreateContractBTC(context)
+func ParticipateBTC(app interface{}, context map[Parameter]FunctionValue) (bool, map[Parameter]FunctionValue) {
+    success, result := CreateContractBTC(app, context)
     if success != false {
         log.Error("failed to participate because can't create contract")
         return false, nil
@@ -584,8 +586,8 @@ func ParticipateBTC(context map[Parameter]FunctionValue) (bool, map[Parameter]Fu
     return true, result
 }
 
-func ParticipateETH(context map[Parameter]FunctionValue) (bool, map[Parameter]FunctionValue) {
-	success, result := CreateContractETH(context)
+func ParticipateETH(app interface{}, context map[Parameter]FunctionValue) (bool, map[Parameter]FunctionValue) {
+	success, result := CreateContractETH(app, context)
 	if success == false {
 		log.Error("failed to participate because can't create contract")
 		return false, nil
@@ -593,9 +595,19 @@ func ParticipateETH(context map[Parameter]FunctionValue) (bool, map[Parameter]Fu
 	return true, result
 }
 
-func RedeemBTC(context map[Parameter]FunctionValue) (bool, map[Parameter]FunctionValue) {
+func RedeemBTC(app interface{}, context map[Parameter]FunctionValue) (bool, map[Parameter]FunctionValue) {
     them := GetParty(context[THEM_ACCOUNT])
-    contract := cachedContract[them.Key.String()]
+    nonce := GetInt64(context[NONCE])
+    contractMessage := FindContract(app, them.Key.Bytes(), nonce)
+    if contractMessage == nil {
+        return false,nil
+    }
+    contract := bitcoin.GetHTLCFromMessage(contractMessage)
+    if contract == nil {
+        log.Error("BTC Htlc contract not found")
+        return false, nil
+    }
+
     scr := GetByte32(context[PASSWORD])
 
     cmd := htlc.NewRedeemCmd(contract.Contract, &contract.ContractTx, scr[:])
@@ -609,9 +621,18 @@ func RedeemBTC(context map[Parameter]FunctionValue) (bool, map[Parameter]Functio
     return true, context
 }
 
-func RedeemETH(context map[Parameter]FunctionValue) (bool, map[Parameter]FunctionValue) {
-	contract := GetETHContract(context[ETHCONTRACT])
-	//todo: make it correct scr, by extract or from local storage
+func RedeemETH(app interface{}, context map[Parameter]FunctionValue) (bool, map[Parameter]FunctionValue) {
+    them := GetParty(context[THEM_ACCOUNT])
+    nonce := GetInt64(context[NONCE])
+    contractMessage := FindContract(app, them.Key.Bytes(), nonce)
+    if contractMessage == nil {
+        return false, nil
+    }
+    contract := ethereum.GetHTLCFromMessage(contractMessage)
+    if contract == nil {
+        return false, nil
+    }
+
 	scr := GetByte32(context[PASSWORD])
 	err := contract.Redeem(scr[:])
 	if err != nil {
@@ -622,9 +643,20 @@ func RedeemETH(context map[Parameter]FunctionValue) (bool, map[Parameter]Functio
 	return true, context
 }
 
-func RefundBTC(context map[Parameter]FunctionValue) (bool, map[Parameter]FunctionValue) {
-    contract := GetBTCContract(context[BTCCONTRACT])
-    //todo: make it correct scr, by extract or from local storage
+func RefundBTC(app interface{}, context map[Parameter]FunctionValue) (bool, map[Parameter]FunctionValue) {
+
+    them := GetParty(context[THEM_ACCOUNT])
+    nonce := GetInt64(context[NONCE])
+    contractMessage := FindContract(app, them.Key.Bytes(), nonce)
+    if contractMessage == nil {
+        log.Error("BTC Htlc contract not found")
+        return false,nil
+    }
+    contract := bitcoin.GetHTLCFromMessage(contractMessage)
+    if contract == nil {
+        log.Error("BTC Htlc contract can't be parsed")
+        return false, nil
+    }
 
     cmd := htlc.NewRefundCmd(contract.Contract, &contract.ContractTx)
     cli := bitcoin.GetBtcClient(global.Current.BTCAddress)
@@ -636,8 +668,18 @@ func RefundBTC(context map[Parameter]FunctionValue) (bool, map[Parameter]Functio
     return true, context
 }
 
-func RefundETH(context map[Parameter]FunctionValue) (bool, map[Parameter]FunctionValue) {
-	contract := GetETHContract(context[ETHCONTRACT])
+func RefundETH(app interface{}, context map[Parameter]FunctionValue) (bool, map[Parameter]FunctionValue) {
+    me := GetParty(context[MY_ACCOUNT])
+    contractMessage := FindContract(app, me.Key.Bytes(), 0)
+    if contractMessage == nil {
+        log.Error("ETH Htlc contract not found")
+        return false, nil
+    }
+    contract := ethereum.GetHTLCFromMessage(contractMessage)
+    if contract == nil {
+        log.Error("ETH Htlc contract can't be parsed")
+        return false, nil
+    }
 
 	err := contract.Refund()
 	if err != nil {
@@ -647,7 +689,7 @@ func RefundETH(context map[Parameter]FunctionValue) (bool, map[Parameter]Functio
 	return true, context
 }
 
-func ExtractSecretBTC(context map[Parameter]FunctionValue) (bool, map[Parameter]FunctionValue) {
+func ExtractSecretBTC(app interface{}, context map[Parameter]FunctionValue) (bool, map[Parameter]FunctionValue) {
     contract := GetBTCContract(context[BTCCONTRACT])
     scrHash := GetByte32(context[PREIMAGE])
     cmd := htlc.NewExtractSecretCmd(&contract.ContractTx, scrHash)
@@ -665,7 +707,7 @@ func ExtractSecretBTC(context map[Parameter]FunctionValue) (bool, map[Parameter]
 
 }
 
-func ExtractSecretETH(context map[Parameter]FunctionValue) (bool, map[Parameter]FunctionValue) {
+func ExtractSecretETH(app interface{}, context map[Parameter]FunctionValue) (bool, map[Parameter]FunctionValue) {
     contract := GetETHContract(context[ETHCONTRACT])
     //todo: make it correct scr, by extract or from local storage
 
@@ -680,35 +722,35 @@ func ExtractSecretETH(context map[Parameter]FunctionValue) (bool, map[Parameter]
     return true, context
 }
 
-func CreateContractOLT(context map[Parameter]FunctionValue) (bool, map[Parameter]FunctionValue) {
+func CreateContractOLT(app interface{}, context map[Parameter]FunctionValue) (bool, map[Parameter]FunctionValue) {
     log.Warn("Not supported")
     return true, context
 }
 
-func ParticipateOLT(context map[Parameter]FunctionValue) (bool, map[Parameter]FunctionValue) {
+func ParticipateOLT(app interface{}, context map[Parameter]FunctionValue) (bool, map[Parameter]FunctionValue) {
     log.Warn("Not supported")
     return true, context
 }
 
-func AuditContractOLT(context map[Parameter]FunctionValue) (bool, map[Parameter]FunctionValue) {
-    log.Warn("Not supported")
-    return true, context
-}
-
-
-func RedeemOLT(context map[Parameter]FunctionValue) (bool, map[Parameter]FunctionValue) {
+func AuditContractOLT(app interface{}, context map[Parameter]FunctionValue) (bool, map[Parameter]FunctionValue) {
     log.Warn("Not supported")
     return true, context
 }
 
 
-func RefundOLT(context map[Parameter]FunctionValue) (bool, map[Parameter]FunctionValue) {
+func RedeemOLT(app interface{}, context map[Parameter]FunctionValue) (bool, map[Parameter]FunctionValue) {
     log.Warn("Not supported")
     return true, context
 }
 
 
-func ExtractSecretOLT(context map[Parameter]FunctionValue) (bool, map[Parameter]FunctionValue) {
+func RefundOLT(app interface{}, context map[Parameter]FunctionValue) (bool, map[Parameter]FunctionValue) {
+    log.Warn("Not supported")
+    return true, context
+}
+
+
+func ExtractSecretOLT(app interface{}, context map[Parameter]FunctionValue) (bool, map[Parameter]FunctionValue) {
     log.Warn("Not supported")
     return true, context
 }

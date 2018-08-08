@@ -73,7 +73,7 @@ func Execute(app interface{}, command Command, lastResult map[Parameter]Function
 			command.Data[key] = value
 		}
 	}
-	status, result := command.Execute()
+	status, result := command.Execute(app)
 	if  status {
 		return err.SUCCESS, result
 	}

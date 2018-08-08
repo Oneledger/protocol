@@ -21,15 +21,15 @@ var FunctionMapping = [][]Object{
 		INITIATOR,
 		Command{
 			Function: WAIT_FOR_CHAIN, //will create a delay transaction
-			Order:    0,
+			Order:    1,
 		},
 		Command{
 			Function: INITIATE,
-			Order:    0,
+			Order:    1,
 		},
 		Command{
 			Function: SUBMIT_TRANSACTION,
-			Order:    0,
+			Order:    1,
 		},
 	},
 	[]Object{
@@ -37,7 +37,7 @@ var FunctionMapping = [][]Object{
 		PARTICIPANT,
 		Command{
 		    Function: WAIT_FOR_CHAIN, //will create a delay transaction
-		    Order:    1,
+		    Order:    2,
         },
     },
 	[]Object{
@@ -45,15 +45,15 @@ var FunctionMapping = [][]Object{
 		INITIATOR,
 		Command{
 			Function: AUDITCONTRACT,
-			Order:    1,
+			Order:    2,
 		},
 		Command{
 			Function: REDEEM,
-			Order:    1,
+			Order:    2,
 		},
 		Command{
 			Function: SUBMIT_TRANSACTION,
-            Order:    1,
+            Order:    2,
 		},
 		Command{
 			Function: FINISH,
@@ -64,15 +64,15 @@ var FunctionMapping = [][]Object{
         PARTICIPANT,
         Command{
             Function: AUDITCONTRACT,
-            Order:    0,
+            Order:    1,
         },
         Command{
             Function: PARTICIPATE,
-            Order:    1,
+            Order:    2,
         },
         Command{
             Function: SUBMIT_TRANSACTION,
-            Order:    1,
+            Order:    2,
         },
 	},
     []Object{
@@ -80,11 +80,11 @@ var FunctionMapping = [][]Object{
         ALL,
         Command{
             Function: EXTRACTSECRET,
-            Order:    1,
+            Order:    2,
         },
         Command{
             Function: REDEEM,
-            Order:    0,
+            Order:    1,
         },
         Command{
         	Function: FINISH,

@@ -36,7 +36,7 @@ func (transaction Verify) Validate() err.Code {
         return err.MISSING_DATA
     }
 
-    log.Debug("Publish is validated!")
+    log.Debug("Verify is validated!")
 	return err.SUCCESS
 }
 
@@ -48,12 +48,13 @@ func (transaction Verify) ProcessCheck(app interface{}) err.Code {
 
 func (transaction Verify) ShouldProcess(app interface{}) bool {
     account := GetNodeAccount(app)
-    log.Debug("Not the publish target", "target", transaction.Base.Owner, "me", account.AccountKey() )
 
     if bytes.Equal(transaction.Target, account.AccountKey()) {
+        log.Debug("Is verify target", "target", transaction.Base.Owner, "me", account.AccountKey() )
+
         return true
     }
-
+    log.Debug("Not the verify target", "target", transaction.Base.Owner, "me", account.AccountKey() )
     return false
 }
 
@@ -83,7 +84,23 @@ func (transaction Verify) Resolve(app interface{}, commands Commands) {
     if !eventStatus {
         status := GetStatus(app)
         swap := FindSwap(status, transaction.Event.Key)
-        swap.Resolve(app, commands)
+        if swap != nil {
+            entry := swap.(*Swap)
+            account := GetNodeAccount(app)
+            isParty := entry.IsParty(account)
+            role := entry.getRole(*isParty)
+            for i := 0; i < len(commands); i++ {
+                if role == INITIATOR {
+                    commands[i].Order = 1
+                } else if role == PARTICIPANT {
+                    commands[i].Order = 2
+                }
+            }
+            entry.Resolve(app, commands)
+        } else {
+            log.Error("Failed to find stored transaction", "key", transaction.Event.Key)
+        }
+
     } else {
         commands = nil
     }
