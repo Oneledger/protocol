@@ -18,7 +18,8 @@ import (
 	"github.com/btcsuite/btcutil"
 	"encoding/hex"
 	"crypto/rand"
-	"bytes"
+
+    "bytes"
 )
 
 func SetChain() {
@@ -211,6 +212,7 @@ func AliceBobSuccessfulSwap(testnode1 *brpc.Bitcoind, testnode2 *brpc.Bitcoind,
 	// Not threadsafe...
 	aliceContract := initCmd.Contract
 	aliceContractTx := initCmd.ContractTx
+	aliceRefundTx := initCmd.RefundTx
 
 	time.Sleep(3 * time.Second)
 	Generate(testnode3, 10)
@@ -276,6 +278,15 @@ func AliceBobSuccessfulSwap(testnode1 *brpc.Bitcoind, testnode2 *brpc.Bitcoind,
 	log.Debug("Results", "hash", hash)
 	time.Sleep(3 * time.Second)
 	Generate(testnode3, 10)
+
+    hash, err = testnode1.PublishTx(aliceRefundTx, "refund")
+	refundCmd := htlc.NewRefundCmd(aliceContract, aliceContractTx)
+	hash, err = refundCmd.RunCommand(testnode1)
+	if err != nil {
+		log.Error("refund failed", "err", err)
+	}
+	log.Debug("refund tx", "tx", hash, "refundtx", aliceRefundTx)
+	Generate(testnode3, 100)
 }
 
 func GetContractTx(hash *chainhash.Hash) *wire.MsgTx {

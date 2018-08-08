@@ -201,13 +201,12 @@ func testHtlc_ExtractMsg(opt *bind.CallOpts, address common.Address) {
 func testHtlc_Refund(auth *bind.TransactOpts, contract *Htlc) {
 
 	log.Debug("======test refund()======")
-	_, scr := getScrPair()
 
 	balance, err := contract.Balance(&bind.CallOpts{Pending: false})
 
 	log.Debug("balance before refund", "balance", balance)
 
-	tx, err := contract.Refund(auth,scr)
+	tx, err := contract.Refund(auth)
 	if err != nil{
 		log.Error("Failed to call the refund", )
 	}
