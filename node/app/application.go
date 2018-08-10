@@ -272,7 +272,7 @@ func (app Application) DeliverTx(tx []byte) ResponseDeliverTx {
 
 	if result.ShouldProcess(app) {
 	    ttype, _ := action.UnpackMessage(action.Message(tx))
-	    if ttype == action.SWAP || ttype == action.PUBLISH {
+	    if ttype == action.SWAP || ttype == action.PUBLISH || ttype == action.VERIFY {
 	        go result.ProcessDeliver(&app)
         } else {
             if err = result.ProcessDeliver(&app); err != 0 {
