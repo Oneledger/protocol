@@ -423,7 +423,7 @@ func (swap *Swap) Resolve(app interface{}, commands Commands) {
 }
 
 // TODO: Needs to be configurable
-var lockPeriod = 1 * time.Minute
+var lockPeriod = 5 * time.Minute
 // todo: need to store this in db
 var tokens = make(map[string][32]byte)
 
