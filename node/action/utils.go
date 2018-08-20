@@ -51,22 +51,22 @@ func (bl *BoxLocker) Verify(message Message) bool {
 }
 
 type MultiSigBox struct {
-    Message      Message     `json:"message"`
     Lockers      []BoxLocker `json:"lockers"`
     Mparticipant int         `json:"Mparticipant"`
     Nunlock      int         `json:"nunlock"`
+    message      Message     `json:"message"`
 }
 
 func NewMultiSigBox(mparticpant int, nunlock int, message Message) *MultiSigBox {
     return &MultiSigBox{
-        Message:message,
-        Mparticipant:mparticpant,
-        Nunlock:nunlock,
+        message:        message,
+        Mparticipant:   mparticpant,
+        Nunlock:        nunlock,
     }
 }
 
 func (msb MultiSigBox) Sign(locker *BoxLocker) error {
-    if !locker.Verify(msb.Message) {
+    if !locker.Verify(msb.message) {
         return errors.New("signature not match message")
     }
 
@@ -84,15 +84,15 @@ func (msb MultiSigBox) Sign(locker *BoxLocker) error {
     return nil
 }
 
-func (msb MultiSigBox) Unlock(signs []BoxLocker) bool {
+func (msb MultiSigBox) Unlock(signs []BoxLocker) *Message {
     cnt := 0
     for _, locker := range msb.Lockers {
-        if locker.Verify(msb.Message) {
+        if locker.Verify(msb.message) {
             cnt++
         }
     }
     if cnt >= msb.Nunlock {
-        return true
+        return &msb.message
     }
-    return false
+    return nil
 }
