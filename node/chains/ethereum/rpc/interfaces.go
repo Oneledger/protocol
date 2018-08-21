@@ -81,3 +81,7 @@ func (rpc *EthRPCClient) EthGetTransactionByBlockHashAndIndex(blockHash string, 
 func (rpc *EthRPCClient) EthGetTransactionByBlockNumberAndIndex(blockNumber, transactionIndex int) (*Transaction, error) {
 	return rpc.getTransaction("eth_getTransactionByBlockNumberAndIndex", common.IntToHex(blockNumber), common.IntToHex(transactionIndex))
 }
+
+func (rpc *EthRPCClient) EthGetTransactionReceipt(hash string) (*Transaction, error) {
+	return rpc.getTransaction("eth_getTransactionReceipt", hash)
+}

@@ -20,19 +20,24 @@ var FunctionMapping = [][]Object{
 		SWAP,
 		INITIATOR,
 		Command{
+			Function: WAIT_FOR_CHAIN, //will create a delay transaction
+			Order:    1,
+		},
+		Command{
 			Function: INITIATE,
-			Order:    0,
+			Order:    1,
 		},
 		Command{
 			Function: SUBMIT_TRANSACTION,
-			Order:    0,
+			Order:    1,
 		},
 	},
 	[]Object{
 		SWAP,
 		PARTICIPANT,
 		Command{
-		    Function: NOOP, //intentionally
+		    Function: WAIT_FOR_CHAIN, //will create a delay transaction
+		    Order:    2,
         },
     },
 	[]Object{
@@ -40,15 +45,18 @@ var FunctionMapping = [][]Object{
 		INITIATOR,
 		Command{
 			Function: AUDITCONTRACT,
-			Order:    1,
+			Order:    2,
 		},
 		Command{
 			Function: REDEEM,
-			Order:    1,
+			Order:    2,
 		},
 		Command{
 			Function: SUBMIT_TRANSACTION,
-            Order:    1,
+            Order:    2,
+		},
+		Command{
+			Function: FINISH,
 		},
 	},
 	[]Object{
@@ -56,15 +64,15 @@ var FunctionMapping = [][]Object{
         PARTICIPANT,
         Command{
             Function: AUDITCONTRACT,
-            Order:    0,
+            Order:    1,
         },
         Command{
             Function: PARTICIPATE,
-            Order:    1,
+            Order:    2,
         },
         Command{
             Function: SUBMIT_TRANSACTION,
-            Order:    1,
+            Order:    2,
         },
 	},
     []Object{
@@ -72,12 +80,15 @@ var FunctionMapping = [][]Object{
         ALL,
         Command{
             Function: EXTRACTSECRET,
-            Order:    1,
+            Order:    2,
         },
         Command{
             Function: REDEEM,
-            Order:    0,
+            Order:    1,
         },
+        Command{
+        	Function: FINISH,
+		},
     },
 	[]Object{
 		SEND,
@@ -86,6 +97,13 @@ var FunctionMapping = [][]Object{
             Function: PREPARE_TRANSACTION,
         },
 	},
+    []Object{
+        VERIFY,
+        ALL,
+        Command{
+            Function: REFUND,
+        },
+    },
 }
 
 // Given an action and a chain, return a list of commands

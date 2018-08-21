@@ -15,7 +15,7 @@ func GetSwapAddress(chain data.ChainType) []byte {
     switch chain {
 
     case data.BITCOIN:
-        cli := bitcoin.GetBtcClient(global.Current.BTCAddress, &chaincfg.RegressionNetParams )
+        cli := bitcoin.GetBtcClient(global.Current.BTCAddress)
         return []byte(bitcoin.GetRawAddress(cli).String())
     case data.ETHEREUM:
         return ethereum.GetAddress().Bytes()
@@ -58,4 +58,5 @@ func GetETHAddressFromByteArray(chain data.ChainType, address []byte) *common.Ad
 
 type Contract interface {
     ToMessage() []byte
+    ToKey()     []byte
 }
