@@ -25,19 +25,19 @@ type Publish struct {
 	Target     id.AccountKey `json:"target"`
 	Contract   Message       `json:"message"` //message converted from HTLContract
 	SecretHash [32]byte      `json:"secrethash"`
-	Sequence   int           `json:"sequence"`
+	Count      int           `json:"count"`
 }
 
 // Ensure that all of the base values are at least reasonable.
-func (transaction *Publish) Validate() err.Code {
+func (publish *Publish) Validate() err.Code {
 	log.Debug("Validating Publish Transaction")
 
-	if transaction.Target == nil {
+	if publish.Target == nil {
 		log.Debug("Missing Target")
 		return err.MISSING_DATA
 	}
 
-	if transaction.Contract == nil {
+	if publish.Contract == nil {
 		log.Debug("Missing Contract")
 		return err.MISSING_DATA
 	}
@@ -46,7 +46,7 @@ func (transaction *Publish) Validate() err.Code {
 	return err.SUCCESS
 }
 
-func (transaction *Publish) ProcessCheck(app interface{}) err.Code {
+func (publish *Publish) ProcessCheck(app interface{}) err.Code {
 	log.Debug("Processing Publish Transaction for CheckTx")
 
 	// TODO: Check all of the data to make sure it is valid.
@@ -55,12 +55,12 @@ func (transaction *Publish) ProcessCheck(app interface{}) err.Code {
 }
 
 // Start the publish
-func (transaction *Publish) ProcessDeliver(app interface{}) err.Code {
+func (publish *Publish) ProcessDeliver(app interface{}) err.Code {
 	log.Debug("Processing Publish Transaction for DeliverTx")
 
-    commands := transaction.Expand(app)
+    commands := publish.Expand(app)
 
-    transaction.Resolve(app, commands)
+    publish.Resolve(app, commands)
 
     //before loop of execute, lastResult is nil
     var lastResult map[Parameter]FunctionValue
@@ -77,49 +77,37 @@ func (transaction *Publish) ProcessDeliver(app interface{}) err.Code {
 }
 
 // Is this node one of the partipants in the publish
-func (transaction *Publish) ShouldProcess(app interface{}) bool {
-	account := transaction.GetNodeAccount(app)
+func (publish *Publish) ShouldProcess(app interface{}) bool {
+	account := GetNodeAccount(app)
 
-	if bytes.Equal(transaction.Target, account.AccountKey()) {
-	    log.Debug("Is publish target", "target", transaction.Target, "me", account.AccountKey())
+    log.Debug("Not the publish target", "target", publish.Target, "me", account.AccountKey() )
+
+	if bytes.Equal(publish.Target, account.AccountKey()) {
 		return true
 	}
 
-    log.Debug("Not the publish target", "target", transaction.Target, "me", account.AccountKey() )
+
 	return false
 }
 
-func (transaction *Publish) GetNodeAccount(app interface{}) id.Account {
-
-	accounts := GetAccounts(app)
-	account, _ := accounts.FindName(global.Current.NodeAccountName)
-	if account == nil {
-		log.Error("Node does not have account", "name", global.Current.NodeAccountName)
-		accounts.Dump()
-		return nil
-	}
-
-	return account
-}
-
 // Given a transaction, expand it into a list of Commands to execute against various chains.
-func (transaction *Publish) Expand(app interface{}) Commands {
-    swap := transaction.FindSwap(app)
-    account := transaction.GetNodeAccount(app)
+func (publish *Publish) Expand(app interface{}) Commands {
+    swap := publish.FindSwap(app)
+    account := GetNodeAccount(app)
     isParty := swap.IsParty(account)
     role := swap.getRole(*isParty)
     chains := swap.getChains()
-    if transaction.Sequence > 1 {
+    if publish.Count > 1 {
         role = ALL
         log.Debug("Publish role", "role", role)
     }
 	return GetCommands(PUBLISH, role, chains)
 }
 
-func (transaction *Publish) FindSwap(app interface{}) *Swap {
+func (publish *Publish) FindSwap(app interface{}) *Swap {
 
     status := GetStatus(app)
-    senderKey := transaction.Base.Owner
+    senderKey := publish.Base.Owner
     log.Debug("FindSwap", "key",senderKey)
     swap := FindSwap(status, senderKey).(*Swap)
     return swap
@@ -144,10 +132,10 @@ func (publish *Publish) Resolve(app interface{}, commands Commands) {
         }
         commands[i].Data[PREIMAGE] = publish.SecretHash
         if commands[i].Function == SUBMIT_TRANSACTION {
-            commands[i].Data[SEQUENCE] = publish.Sequence + 1
+            commands[i].Data[COUNT] = publish.Count + 1
             commands[i].Data[CHAINID] = GetChainID(app)
         }
-        //log.Debug("resolved command", "command", commands[i], "sequence", commands[i].Data[SEQUENCE])
+        //log.Debug("resolved command", "command", commands[i], "sequence", commands[i].Data[COUNT])
     }
     return
 }
@@ -166,10 +154,11 @@ func SubmitTransactionOLT(context map[Parameter]FunctionValue, chain data.ChainT
         contract = GetETHContract(context[ETHCONTRACT]).ToMessage()
     }
 
-    sequence := GetInt(context[SEQUENCE])
+    count := GetInt(context[COUNT])
     secretHash := GetByte32(context[PREIMAGE])
     chainId := GetString(context[CHAINID])
-    //log.Debug("parsed contract", "contract", contract, "chain", chain, "context", context, "sequence", sequence)
+    global.Current.Sequence+=32
+    //log.Debug("parsed contract", "contract", contract, "chain", chain, "context", context, "count", count)
     publish := &Publish{
        Base: Base{
            Type:     PUBLISH,
@@ -181,7 +170,7 @@ func SubmitTransactionOLT(context map[Parameter]FunctionValue, chain data.ChainT
        Target:     target.Key,
        Contract:   contract,
        SecretHash: secretHash,
-       Sequence:   sequence,
+       Count:      count,
     }
 
     packet := SignAndPack(PUBLISH, Transaction(publish))

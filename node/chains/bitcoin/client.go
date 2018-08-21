@@ -22,7 +22,14 @@ import (
 	"github.com/Oneledger/protocol/node/comm"
 )
 
-func GetBtcClient(address string, chainParams *chaincfg.Params) *brpc.Bitcoind {
+func GetChaincfg() *chaincfg.Params {
+
+	return &chaincfg.RegressionNetParams
+}
+
+func GetBtcClient(address string) *brpc.Bitcoind {
+	chainParams := GetChaincfg()
+
 	addr := strings.Split(address, ":")
 	if len(addr) < 2 {
 		log.Error("address not in correct format", "fullAddress", address)
@@ -131,6 +138,15 @@ func (h *HTLContract) ToMessage() []byte {
 	    log.Error("Failed to serialize htlc", "err", err)
     }
     return msg
+}
+
+func (h *HTLContract) ToKey() []byte {
+	key, err := btcutil.NewAddressScriptHash(h.Contract, GetChaincfg())
+	if err != nil {
+	    log.Error("Failed to get the key for contract", "err", err)
+		return nil
+	}
+	return key.ScriptAddress()
 }
 
 func GetHTLCFromMessage(message []byte) *HTLContract{
