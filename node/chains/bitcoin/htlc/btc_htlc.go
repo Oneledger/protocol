@@ -66,6 +66,7 @@ type InitiateCmd struct {
 	scrHash  	[secretSize]byte
 	Contract 	[]byte
 	ContractTx	*wire.MsgTx
+	RefundTx	*wire.MsgTx
 }
 
 type RedeemCmd struct {
@@ -454,6 +455,7 @@ func (cmd *InitiateCmd) RunCommand(c *rpc.Bitcoind) (*chainhash.Hash, error) {
 	}
 	cmd.Contract = copyArray(b.contract)
 	cmd.ContractTx = copyMsgTx(b.contractTx)
+	cmd.RefundTx = copyMsgTx(b.refundTx)
 
 	refundTxHash := b.refundTx.TxHash()
 	contractFeePerKb := calcFeePerKb(b.contractFee, b.contractTx.SerializeSize())

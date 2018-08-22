@@ -37,6 +37,8 @@ type Application struct {
 	Identities *id.Identities   // Keep a higher-level identity for a given user
 	Accounts   *id.Accounts     // Keep all of the user accounts locally for their node (identity management)
 	Utxo       *data.ChainState // unspent transction output (for each type of coin)
+	Event      *data.Datastore  // Event for any action that need to be tracked
+	Contract	   *data.Datastore  // contract for reuse.
 }
 
 // NewApplicationContext initializes a new application
@@ -47,6 +49,8 @@ func NewApplication() *Application {
 		Identities: id.NewIdentities("identities"),
 		Accounts:   id.NewAccounts("accounts"),
 		Utxo:       data.NewChainState("utxo", data.PERSISTENT),
+		Event:      data.NewDatastore("event", data.PERSISTENT),
+		Contract: 	data.NewDatastore("contract", data.PERSISTENT),
 	}
 }
 
@@ -90,6 +94,14 @@ func (app Application) GetUtxo() interface{} {
 
 func (app Application) GetChainID() interface{} {
     return ChainId
+}
+
+func (app Application) GetEvent() interface{} {
+    return app.Event
+}
+
+func (app Application) GetContract() interface{} {
+	return app.Contract
 }
 
 type BasicState struct {
@@ -260,7 +272,7 @@ func (app Application) DeliverTx(tx []byte) ResponseDeliverTx {
 
 	if result.ShouldProcess(app) {
 	    ttype, _ := action.UnpackMessage(action.Message(tx))
-	    if ttype == action.SWAP || ttype == action.PUBLISH {
+	    if ttype == action.SWAP || ttype == action.PUBLISH || ttype == action.VERIFY {
 	        go result.ProcessDeliver(&app)
         } else {
             if err = result.ProcessDeliver(&app); err != 0 {

@@ -69,10 +69,9 @@ contract HTLC {
         return true;
     }
 
-    function refund(bytes scr_) public returns (bool) {
+    function refund() public returns (bool) {
         require((startFromTime + lockPeriod) > now);
-        validate(scr_);
-
+        require(msg.sender == sender);
 
         address(sender).transfer(balance);
         balance = 0;

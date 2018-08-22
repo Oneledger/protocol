@@ -263,7 +263,3 @@ func CreateSwapRequest(args *SwapArguments) []byte {
 
 	return SignAndPack(action.SWAP, action.Transaction(swap))
 }
-
-func CreatePublishRequest() {
-
-}

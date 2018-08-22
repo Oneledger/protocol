@@ -32,8 +32,10 @@ const (
 	BTCCONTRACT
 
 	LOCKTIME
-    SEQUENCE
+    COUNT
 	CHAINID
+
+	EVENTTYPE
 )
 
 func GetInt(value FunctionValue) int {
@@ -160,4 +162,14 @@ func GetBTCContract(value FunctionValue) *bitcoin.HTLContract {
 		log.Fatal("Bad Type Cast in Function Parameter", "value", value)
 	}
 	return nil
+}
+
+func GetType(value FunctionValue) Type {
+	switch value.(type) {
+	case Type:
+		return value.(Type)
+	default:
+		log.Fatal("Bad Type Cast in FUnction Parameter", "value", value)
+	}
+	return INVALID
 }
