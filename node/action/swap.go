@@ -26,6 +26,8 @@ import (
 	"crypto/rand"
 	"github.com/Oneledger/protocol/node/chains/common"
     "reflect"
+    "github.com/Oneledger/protocol/node/cmd/shared"
+    app2 "github.com/Oneledger/protocol/node/app"
 )
 
 // Synchronize a swap between two users
@@ -61,12 +63,12 @@ func (transaction *Swap) Validate() err.Code {
 		return err.MISSING_DATA
 	}
 
-	if !transaction.Amount.IsCurrency("BTC", "ETH") {
+	if !transaction.Amount.IsCurrency("BTC", "ETH", "OLT") {
 		log.Debug("Swap on Currency isn't implement yet")
 		return err.NOT_IMPLEMENTED
 	}
 
-	if !transaction.Exchange.IsCurrency("BTC", "ETH") {
+	if !transaction.Exchange.IsCurrency("BTC", "ETH", "OLT") {
 		log.Debug("Swap on Currency isn't implement yet")
 		return err.NOT_IMPLEMENTED
 	}
@@ -80,6 +82,11 @@ func (transaction *Swap) ProcessCheck(app interface{}) err.Code {
 
 	// TODO: Check all of the data to make sure it is valid.
 
+	matchedSwap := ProcessSwap(app, transaction)
+	if matchedSwap == nil {
+		log.Debug("Not Involved or Not Ready")
+		return err.INVALID
+	}
 	return err.SUCCESS
 }
 
@@ -207,9 +214,7 @@ func ProcessSwap(app interface{}, transaction *Swap) *Swap {
 		matchedSwap := FindMatchingSwap(status, transaction.CounterParty.Key, transaction, *isParty)
 		if matchedSwap != nil {
 		    log.Debug("Swap is ready", "swap", matchedSwap)
-		    if matchedSwap.getRole(*isParty) == PARTICIPANT {
-		        SaveSwap(status,  transaction.CounterParty.Key, matchedSwap)
-            }
+		    SaveSwap(status,  transaction.CounterParty.Key, matchedSwap)
 			return matchedSwap
 		} else {
 			SaveSwap(status, transaction.CounterParty.Key, transaction)
@@ -219,9 +224,7 @@ func ProcessSwap(app interface{}, transaction *Swap) *Swap {
 	} else {
 		matchedSwap := FindMatchingSwap(status, transaction.Party.Key, transaction, *isParty)
 		if matchedSwap != nil {
-            if matchedSwap.getRole(*isParty) == PARTICIPANT {
-                SaveSwap(status,  matchedSwap.Party.Key, matchedSwap)
-            }
+		    SaveSwap(status,  matchedSwap.Party.Key, matchedSwap)
 			return matchedSwap
 		} else {
 			SaveSwap(status, transaction.Party.Key, transaction)
@@ -724,6 +727,35 @@ func ExtractSecretETH(app interface{}, context map[Parameter]FunctionValue) (boo
 
 func CreateContractOLT(app interface{}, context map[Parameter]FunctionValue) (bool, map[Parameter]FunctionValue) {
     log.Warn("Not supported")
+    party := GetParty(context[MY_ACCOUNT])
+    counterParty := GetParty(context[THEM_ACCOUNT])
+    partyBalance := GetUtxo(app).Find(party.Key).Amount
+    counterPartyBalance := GetUtxo(app).Find(counterParty.Key).Amount
+
+    inputs := make([]SendInput, 0)
+    inputs = append(inputs,
+        NewSendInput(party.Key, partyBalance),
+        NewSendInput(counterParty.Key, counterPartyBalance))
+    amount := GetCoin(context[AMOUNT])
+    // Build up the outputs
+    outputs := make([]SendOutput, 0)
+    outputs = append(outputs,
+        NewSendOutput(party.Key, partyBalance.Minus(amount)),
+        NewSendOutput(counterParty.Key, counterPartyBalance.Plus(amount)))
+    send := &Send{
+        Base: Base{
+            Type:     SEND,
+            ChainId:  GetChainID(app),
+            Signers:  nil,
+            Sequence: global.Current.Sequence,
+        },
+        Inputs:  inputs,
+        Outputs: outputs,
+        Fee:     nil,
+        Gas:     nil,
+    }
+    contract := &MultiSigBox{}
+    _ = contract
     return true, context
 }
 
