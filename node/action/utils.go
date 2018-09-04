@@ -2,8 +2,11 @@ package action
 
 import (
 	"errors"
+    "github.com/Oneledger/protocol/node/data"
+    "github.com/Oneledger/protocol/node/id"
+    "time"
 
-	"github.com/btcsuite/btcd/btcec"
+    "github.com/btcsuite/btcd/btcec"
 	"golang.org/x/crypto/ripemd160"
 )
 
@@ -51,17 +54,17 @@ func (bl *BoxLocker) Verify(message Message) bool {
 }
 
 type MultiSigBox struct {
-    Lockers      []BoxLocker `json:"lockers"`
-    Mparticipant int         `json:"Mparticipant"`
-    Nunlock      int         `json:"nunlock"`
-    message      Message     `json:"message"`
+    Lockers []BoxLocker `json:"lockers"`
+    M       int         `json:"m"`
+    N       int         `json:"n"`
+    message Message     `json:"message"`
 }
 
-func NewMultiSigBox(mparticpant int, nunlock int, message Message) *MultiSigBox {
+func NewMultiSigBox(m int, n int, message Message) *MultiSigBox {
     return &MultiSigBox{
-        message:        message,
-        Mparticipant:   mparticpant,
-        Nunlock:        nunlock,
+        message:    message,
+        M:          m,
+        N:          n,
     }
 }
 
@@ -70,7 +73,7 @@ func (msb MultiSigBox) Sign(locker *BoxLocker) error {
         return errors.New("signature not match message")
     }
 
-    if len(msb.Lockers) == msb.Mparticipant {
+    if len(msb.Lockers) == msb.N {
         return errors.New("box is already locked")
     }
 
@@ -91,8 +94,30 @@ func (msb MultiSigBox) Unlock(signs []BoxLocker) *Message {
             cnt++
         }
     }
-    if cnt >= msb.Nunlock {
+    if cnt >= msb.M {
         return &msb.message
     }
     return nil
 }
+
+
+type HtlContract struct {
+    Transaction     Transaction `json:"transaction"`
+    Secrethash      [32]byte    `json:"secrethash"`
+    LockHeight      int64       `json:"lockheight"`
+    StartFromHeight int64       `json:"startfromheight"`
+}
+
+func CreateHtlContract(app interface{}, transaction Transaction, scrhash [32]byte, lock time.Duration) *HtlContract {
+    height := GetHeight(app)
+    lockHeight := int64(lock.Seconds())
+
+    return &HtlContract{
+        Transaction:     transaction,
+        Secrethash:      scrhash,
+        LockHeight:      lockHeight,
+        StartFromHeight: height,
+    }
+}
+
+func (h HtlContract)

@@ -112,7 +112,7 @@ func (h *HTLContract) HTLContractObject() *htlc.Htlc {
     return contract
 }
 
-func (h *HTLContract) Funds(value *big.Int) error {
+func (h *HTLContract) Funds(value *big.Int, lockTime *big.Int, receiver common.Address, scrHash [32]byte) error {
 	auth := GetAuth()
 	auth.Value = EtherToWei(value)
 	auth.GasLimit = 200000
@@ -120,7 +120,7 @@ func (h *HTLContract) Funds(value *big.Int) error {
 	if contract == nil {
 	    return errors.New("failed to get htlc contract instance")
     }
-	tx, err := contract.Funds(auth)
+	tx, err := contract.Funds(auth, lockTime, receiver, scrHash)
 	if err != nil {
 		log.Error("Can't fund the htlc", "err", err, "auth", auth)
 		return err
@@ -135,14 +135,14 @@ func (h *HTLContract) Funds(value *big.Int) error {
 	return nil
 }
 
-func (h *HTLContract) Setup(lockTime *big.Int, receiver common.Address, scrHash [32]byte) error {
+func (h *HTLContract) Setup() error {
 	auth := GetAuth()
     auth.GasLimit = 300000
     contract := h.HTLContractObject()
     if contract == nil {
         return errors.New("failed to get htlc contract instance")
     }
-    tx, err := contract.Setup(auth, lockTime, receiver, scrHash)
+    tx, err := contract.Setup(auth,)
 	if err != nil {
 		log.Error("Can't setup the htlc", "err", err, "auth", auth)
 		return err

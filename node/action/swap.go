@@ -20,14 +20,12 @@ import (
 
 	"math/big"
 
-	"crypto/sha256"
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-	"time"
 	"crypto/rand"
+	"crypto/sha256"
 	"github.com/Oneledger/protocol/node/chains/common"
-    "reflect"
-    "github.com/Oneledger/protocol/node/cmd/shared"
-    app2 "github.com/Oneledger/protocol/node/app"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"reflect"
+	"time"
 )
 
 // Synchronize a swap between two users
@@ -489,6 +487,14 @@ func CreateContractETH(app interface{}, context map[Parameter]FunctionValue) (bo
 
 	var receiverParty Party
     preimage := GetByte32(context[PREIMAGE])
+	if context[PASSWORD] != nil {
+		scr := GetByte32(context[PASSWORD])
+		scrHash := sha256.Sum256(scr[:])
+		if !bytes.Equal(preimage[:], scrHash[:]) {
+			log.Error("Secret and Secret Hash doesn't match", "preimage", preimage, "scrHash", scrHash)
+			return false, nil
+		}
+	}
 
     value := GetCoin(context[AMOUNT]).Amount
 
@@ -500,12 +506,7 @@ func CreateContractETH(app interface{}, context map[Parameter]FunctionValue) (bo
 
 	timeoutSecond := int64(lockPeriod.Seconds())
 	log.Debug("Create ETH HTLC", "value", value, "receiver", receiver, "preimage", preimage)
-	err := contract.Funds(value)
-	if err != nil {
-		return false, nil
-	}
-
-	err = contract.Setup(big.NewInt(timeoutSecond), *receiver, preimage)
+	err := contract.Funds(value, big.NewInt(timeoutSecond), *receiver, preimage)
 	if err != nil {
 		return false, nil
 	}
@@ -513,7 +514,6 @@ func CreateContractETH(app interface{}, context map[Parameter]FunctionValue) (bo
 	context[ETHCONTRACT] = contract
 	return true, context
 }
-
 
 func AuditContractBTC(app interface{}, context map[Parameter]FunctionValue) (bool, map[Parameter]FunctionValue) {
 	contract := GetBTCContract(context[BTCCONTRACT])
@@ -732,7 +732,17 @@ func CreateContractOLT(app interface{}, context map[Parameter]FunctionValue) (bo
     partyBalance := GetUtxo(app).Find(party.Key).Amount
     counterPartyBalance := GetUtxo(app).Find(counterParty.Key).Amount
 
-    inputs := make([]SendInput, 0)
+	preimage := GetByte32(context[PREIMAGE])
+	if context[PASSWORD] != nil {
+		scr := GetByte32(context[PASSWORD])
+		scrHash := sha256.Sum256(scr[:])
+		if !bytes.Equal(preimage[:], scrHash[:]) {
+			log.Error("Secret and Secret Hash doesn't match", "preimage", preimage, "scrHash", scrHash)
+			return false, nil
+		}
+	}
+
+	inputs := make([]SendInput, 0)
     inputs = append(inputs,
         NewSendInput(party.Key, partyBalance),
         NewSendInput(counterParty.Key, counterPartyBalance))
@@ -754,7 +764,8 @@ func CreateContractOLT(app interface{}, context map[Parameter]FunctionValue) (bo
         Fee:     nil,
         Gas:     nil,
     }
-    contract := &MultiSigBox{}
+    message := SignAndPack(SEND, Transaction(send))
+    contract := NewMultiSigBox(1,1, message)
     _ = contract
     return true, context
 }

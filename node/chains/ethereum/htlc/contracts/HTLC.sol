@@ -15,6 +15,7 @@ contract HTLC {
 
     constructor(
         address _sender
+
     ) public {
         require(_sender != address(0));
         sender = _sender;
@@ -25,27 +26,22 @@ contract HTLC {
     event Release(address sender, address receiver, uint256 value);
     event Rollback(address sender, address receiver, uint256 value);
 
-    function funds() public payable {
+    function funds(uint256 _lockPeriod, address _receiver, bytes32 _scrHash) public payable {
         require(msg.sender == sender);
         require(msg.value > 0);
         require(balance == 0);
-        balance = msg.value;
-    }
-
-    function setup(uint256 _lockPeriod, address _receiver, bytes32 _scrHash) public returns (bool) {
-        require(msg.sender == sender);
         require(_receiver != address(0));
         require(_lockPeriod >= 4 minutes );
-        require(balance > 0);
         require(startFromTime + lockPeriod < now );
 
+        balance = msg.value;
         receiver = _receiver;
         lockPeriod = _lockPeriod;
         scrHash = _scrHash;
 
         startFromTime = now;
-
     }
+
 
     function audit(address receiver_, uint256 balance_, bytes32 scrHash_) public view returns (bool) {
         require(receiver == receiver_);
