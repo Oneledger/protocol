@@ -92,11 +92,10 @@ func GetClient() (client *rpcclient.HTTP) {
 }
 
 // An async Broadcast to the chain
-func Broadcast(packet []byte) *ctypes.ResultBroadcastTx {
+func BroadcastAsync(packet []byte) *ctypes.ResultBroadcastTx {
 
 	client := GetClient()
 
-	//result, err := client.BroadcastTxCommit(packet)
 	result, err := client.BroadcastTxAsync(packet)
 	if err != nil {
 		log.Error("Broadcast Error", "err", err)
@@ -108,7 +107,7 @@ func Broadcast(packet []byte) *ctypes.ResultBroadcastTx {
 }
 
 // A sync'ed broadcast to the chain that waits for the commit to happen
-func BroadcastCommit(packet []byte) *ctypes.ResultBroadcastTxCommit {
+func Broadcast(packet []byte) *ctypes.ResultBroadcastTxCommit {
 	client := GetClient()
 
 	result, err := client.BroadcastTxCommit(packet)

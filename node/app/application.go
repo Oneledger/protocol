@@ -89,7 +89,7 @@ func (app Application) GetUtxo() interface{} {
 }
 
 func (app Application) GetChainID() interface{} {
-    return ChainId
+	return ChainId
 }
 
 type BasicState struct {
@@ -259,14 +259,16 @@ func (app Application) DeliverTx(tx []byte) ResponseDeliverTx {
 	}
 
 	if result.ShouldProcess(app) {
-	    ttype, _ := action.UnpackMessage(action.Message(tx))
-	    if ttype == action.SWAP || ttype == action.PUBLISH {
-	        go result.ProcessDeliver(&app)
-        } else {
-            if err = result.ProcessDeliver(&app); err != 0 {
-                return ResponseDeliverTx{Code: err}
-            }
-        }
+		ttype, _ := action.UnpackMessage(action.Message(tx))
+		if ttype == action.SWAP || ttype == action.PUBLISH {
+
+			// These Transactions will sleep, so they need to execute in a separate goroutine
+			go result.ProcessDeliver(&app)
+		} else {
+			if err = result.ProcessDeliver(&app); err != 0 {
+				return ResponseDeliverTx{Code: err}
+			}
+		}
 	}
 
 	return ResponseDeliverTx{
