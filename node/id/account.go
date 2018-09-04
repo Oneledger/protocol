@@ -16,17 +16,37 @@ import (
 	"github.com/Oneledger/protocol/node/err"
 	"github.com/Oneledger/protocol/node/global"
 	"github.com/Oneledger/protocol/node/log"
-	crypto "github.com/tendermint/go-crypto"
-	wdata "github.com/tendermint/go-wire/data"
+	wire "github.com/tendermint/go-amino"
+	"github.com/tendermint/tendermint/crypto"
 	"golang.org/x/crypto/ripemd160"
 )
 
-// Aliases to hide some of the basic underlying types.
-type AccountKey = wdata.Bytes // OneLedger address, like Tendermint the hash of the associated PubKey
+// wireCodec
+var wireCodec = wire.NewCodec()
 
-type PublicKey = crypto.PubKey
-type PrivateKey = crypto.PrivKey
-type Signature = crypto.Signature
+// Aliases to hide some of the basic underlying types.
+type AccountKey []byte // OneLedger address, like Tendermint the hash of the associated PubKey
+
+func (accountKey AccountKey) String() string {
+	return string(accountKey)
+}
+
+func (accountKey AccountKey) Bytes() []byte {
+	return accountKey
+}
+
+// TODO: Fix this, shouldn't wrap
+type PublicKey struct {
+	Interface crypto.PubKey
+}
+type PrivateKey struct {
+	Interface crypto.PrivKey
+}
+type Signature = []byte
+
+type Key interface {
+	Bytes() []byte
+}
 
 // The persistent collection of all accounts known by this node
 type Accounts struct {
@@ -49,9 +69,9 @@ func (acc *Accounts) Add(account Account) {
 
 	buffer, err := comm.Serialize(account)
 	if err != nil {
-		log.Warn("Failed to Deserialize account: ", err)
+		log.Fatal("Failed to Deserialize account: ", err)
 	}
-
+	log.Debug("Adding Account", "account=", account)
 	acc.data.Store(account.AccountKey(), buffer)
 	acc.data.Commit()
 }
@@ -129,16 +149,20 @@ func (acc *Accounts) FindKey(key AccountKey) (Account, err.Code) {
 }
 
 func (acc *Accounts) FindAll() []Account {
+	log.Debug("Begin Account FindAll")
 	keys := acc.data.List()
 	size := len(keys)
+	log.Debug("keys=", keys)
+	log.Debug("size=", size)
 	results := make([]Account, size, size)
 
 	for i := 0; i < size; i++ {
 		// TODO: This is dangerous...
 		account := &AccountOneLedger{}
+		log.Debug("Before FindAll deserializing account", "key", string(keys[i]))
 		base, err := comm.Deserialize(acc.data.Load(keys[i]), account)
 		if err != nil {
-			log.Warn("Failed to Deserialize Account at index " + string(i))
+			log.Fatal("Failed to Deserialize Account at index ", "i", i)
 			continue
 		}
 		results[i] = base.(Account)
@@ -214,10 +238,12 @@ func NewAccountKey(key PublicKey) AccountKey {
 	hasher := ripemd160.New()
 
 	// TODO: This deosn't seem right?
-	bytes, err := key.MarshalJSON()
+	bytes, err := wireCodec.MarshalJSON(key.Interface)
+
 	if err != nil {
-		panic("Unable to Marshal the key into bytes")
+		log.Fatal("Unable to Marshal the key into bytes")
 	}
+	log.Debug("New AccountKey json0", "key", key, "bytes=", string(bytes))
 
 	hasher.Write(bytes)
 
@@ -260,8 +286,8 @@ func NewAccount(newType data.ChainType, name string, key PublicKey, priv Private
 				Type:       newType,
 				Key:        NewAccountKey(key),
 				Name:       name,
-				PublicKey:  PublicKey{},
-				PrivateKey: PrivateKey{},
+				PublicKey:  key,
+				PrivateKey: priv,
 			},
 			//ethereum.GetAuth(),
 		}

@@ -16,7 +16,7 @@ import (
 	"github.com/Oneledger/protocol/node/global"
 	"github.com/Oneledger/protocol/node/log"
 	"github.com/tendermint/iavl"
-	"github.com/tendermint/tmlibs/db"
+	"github.com/tendermint/tendermint/libs/db"
 )
 
 type Message = []byte
@@ -39,7 +39,7 @@ type Datastore struct {
 	File string
 
 	memory   *db.MemDB
-	tree     *iavl.VersionedTree
+	tree     *iavl.MutableTree
 	database *db.GoLevelDB
 
 	version int64
@@ -64,6 +64,9 @@ func NewDatastore(name string, newType DatastoreType) *Datastore {
 		// TODO: No Merkle tree?
 		return &Datastore{
 			Type:   newType,
+
+
+
 			Name:   name,
 			memory: db.NewMemDB(),
 		}
@@ -83,7 +86,7 @@ func NewDatastore(name string, newType DatastoreType) *Datastore {
 			panic("Can't create a database " + global.Current.RootDir + "/" + fullname)
 		}
 
-		tree := iavl.NewVersionedTree(storage, 100)
+		tree := iavl.NewMutableTree(storage, 100)
 
 		// Note: the tree is empty, until at least one version is loaded
 		tree.LoadVersion(0)
@@ -216,6 +219,7 @@ func (store Datastore) List() (keys []DatabaseKey) {
 
 		for i := 0; i < store.tree.Size(); i++ {
 			key, _ := store.tree.GetByIndex(i)
+			log.Debug("Datastore List")
 			results[i] = DatabaseKey(key)
 		}
 		return results

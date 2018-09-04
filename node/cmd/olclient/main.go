@@ -10,7 +10,7 @@ import (
 
 	"github.com/Oneledger/protocol/node/global"
 	"github.com/Oneledger/protocol/node/log"
-	"github.com/tendermint/tmlibs/common"
+	"github.com/tendermint/tendermint/libs/common"
 )
 
 // Common to all of the sub-commands

@@ -3,9 +3,9 @@ package types
 import (
 	"fmt"
 	"errors"
-	"github.com/tendermint/tmlibs/merkle"
+	"github.com/tendermint/tendermint/crypto/merkle"
 	"strings"
-	cmn "github.com/tendermint/tmlibs/common"
+	cmn "github.com/tendermint/tendermint/libs/common"
 	tps "github.com/tendermint/tendermint/types"
 )
 

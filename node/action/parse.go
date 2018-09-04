@@ -8,17 +8,19 @@
 package action
 
 import (
+	wire "github.com/tendermint/go-amino"
 	"github.com/Oneledger/protocol/node/comm"
 	"github.com/Oneledger/protocol/node/err"
 	"github.com/Oneledger/protocol/node/log"
-	wire "github.com/tendermint/go-wire"
 )
 
 // Pull out the type, so that the message can be deserialized
 func UnpackMessage(message Message) (Type, Message) {
-	value := wire.GetInt32(message)
+	value, _, err := wire.DecodeInt32(message)
+	if err != nil {
+		log.Fatal("UnpackMessage failed", "message=", message)
+	}
 	return Type(value), message[4:]
-
 }
 
 // TODO: Need a better way to handle the polymorphism...

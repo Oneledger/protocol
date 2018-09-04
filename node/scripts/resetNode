@@ -51,6 +51,7 @@ cp $STAGING/config/config.toml $DATA/config/config.toml
 cp $STAGING/$SUBDIR/config/priv_validator.json $DATA/config/priv_validator.json
 #cp $STAGING/$SUBDIR/config/genesis.json $DATA/config/genesis.json
 cat $STAGING/$SUBDIR/config/genesis.json | jq -f $CMD/genesis.jq > $DATA/config/genesis.json
+cp $STAGING/$SUBDIR/config/node_key.json $DATA/config/node_key.json
 
 #ls $DATA/config
 

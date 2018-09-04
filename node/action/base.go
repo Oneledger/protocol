@@ -7,15 +7,12 @@ package action
 
 import (
 	"github.com/Oneledger/protocol/node/err"
-	"github.com/Oneledger/protocol/node/id"
-	"github.com/tendermint/go-crypto"
 	"github.com/Oneledger/protocol/node/global"
+	"github.com/Oneledger/protocol/node/id"
 	"github.com/Oneledger/protocol/node/log"
 )
 
 type Message = []byte // Contents of a transaction
-type PublicKey = crypto.PubKey
-
 // ENUM for type
 type Type byte
 type Role byte
@@ -41,6 +38,8 @@ const (
 	PARTICIPANT      // Do a normal send transaction on local chain
 	NONE
 )
+
+type PublicKey = id.PublicKey
 
 // Polymorphism and Serializable
 type Transaction interface {

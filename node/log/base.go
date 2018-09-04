@@ -10,7 +10,7 @@ import (
 	"os"
 
 	"github.com/Oneledger/protocol/node/global"
-	"github.com/tendermint/tmlibs/log"
+	"github.com/tendermint/tendermint/libs/log"
 )
 
 var current log.Logger

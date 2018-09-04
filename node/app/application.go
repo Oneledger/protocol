@@ -6,9 +6,7 @@
 package app
 
 import (
-	//"fmt"
 	"bytes"
-
 	"github.com/Oneledger/protocol/node/abci"
 	"github.com/Oneledger/protocol/node/action"
 	"github.com/Oneledger/protocol/node/comm"
@@ -17,8 +15,8 @@ import (
 	"github.com/Oneledger/protocol/node/global"
 	"github.com/Oneledger/protocol/node/id"
 	"github.com/Oneledger/protocol/node/log"
-	"github.com/tendermint/abci/types"
-	"github.com/tendermint/tmlibs/common"
+	"github.com/tendermint/tendermint/abci/types"
+	"github.com/tendermint/tendermint/libs/common"
 )
 
 var ChainId string
@@ -231,9 +229,8 @@ func (app Application) CheckTx(tx []byte) ResponseCheckTx {
 		Log:       "Log Data",
 		Info:      "Info Data",
 		GasWanted: 1000,
-		GasUsed:   1000,
+		GasUsed: 1000,
 		Tags:      []common.KVPair(nil),
-		Fee:       common.KI64Pair{},
 	}
 }
 
@@ -289,7 +286,6 @@ func (app Application) DeliverTx(tx []byte) ResponseDeliverTx {
 		GasWanted: 1000,
 		GasUsed:   1000,
 		Tags:      []common.KVPair(nil),
-		Fee:       common.KI64Pair{},
 	}
 }
 

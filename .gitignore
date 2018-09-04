@@ -3,3 +3,4 @@ vendor
 *.sw[op]
 .idea/
 scripts/sequence
+.vscode/
