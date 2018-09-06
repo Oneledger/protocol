@@ -1,13 +1,11 @@
 package action
 
 import (
-	"errors"
-    "github.com/Oneledger/protocol/node/data"
-    "github.com/Oneledger/protocol/node/id"
+    "errors"
     "time"
 
     "github.com/btcsuite/btcd/btcec"
-	"golang.org/x/crypto/ripemd160"
+    "golang.org/x/crypto/ripemd160"
 )
 
 //general hash method for the actions messages
@@ -119,5 +117,3 @@ func CreateHtlContract(app interface{}, transaction Transaction, scrhash [32]byt
         StartFromHeight: height,
     }
 }
-
-func (h HtlContract)

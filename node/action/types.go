@@ -149,7 +149,7 @@ type Event struct {
 func (e Event) ToKey() []byte {
 	buffer, err := comm.Serialize(e)
 	if err != nil {
-		log.Error("Failed to Serialize SaveSwap transaction")
+		log.Error("Failed to Serialize event key")
 	}
 	return buffer
 }

@@ -80,11 +80,6 @@ func (transaction *Swap) ProcessCheck(app interface{}) err.Code {
 
 	// TODO: Check all of the data to make sure it is valid.
 
-	matchedSwap := ProcessSwap(app, transaction)
-	if matchedSwap == nil {
-		log.Debug("Not Involved or Not Ready")
-		return err.INVALID
-	}
 	return err.SUCCESS
 }
 
