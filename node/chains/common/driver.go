@@ -19,7 +19,6 @@ func GetSwapAddress(chain data.ChainType) []byte {
         return []byte(bitcoin.GetRawAddress(cli).String())
     case data.ETHEREUM:
         return ethereum.GetAddress().Bytes()
-
     default:
         return nil
     }

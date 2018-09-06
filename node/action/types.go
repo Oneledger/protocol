@@ -10,13 +10,13 @@ package action
 import (
 	"bytes"
 
+	"github.com/Oneledger/protocol/node/chains/common"
 	"github.com/Oneledger/protocol/node/comm"
 	"github.com/Oneledger/protocol/node/data"
 	"github.com/Oneledger/protocol/node/id"
 	"github.com/Oneledger/protocol/node/log"
 	"strconv"
-    "github.com/Oneledger/protocol/node/chains/common"
-    )
+)
 
 // inputs into a send transaction (similar to Bitcoin)
 type SendInput struct {
@@ -149,7 +149,7 @@ type Event struct {
 func (e Event) ToKey() []byte {
 	buffer, err := comm.Serialize(e)
 	if err != nil {
-		log.Error("Failed to Serialize SaveSwap transaction")
+		log.Error("Failed to Serialize event key")
 	}
 	return buffer
 }
