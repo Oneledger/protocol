@@ -135,42 +135,6 @@ func (h *HTLContract) Funds(value *big.Int, lockTime *big.Int, receiver common.A
 	return nil
 }
 
-func (h *HTLContract) Setup() error {
-	auth := GetAuth()
-    auth.GasLimit = 300000
-    contract := h.HTLContractObject()
-    if contract == nil {
-        return errors.New("failed to get htlc contract instance")
-    }
-    tx, err := contract.Setup(auth,)
-	if err != nil {
-		log.Error("Can't setup the htlc", "err", err, "auth", auth)
-		return err
-	}
-	time.Sleep(30 * time.Second)
-
-
-	r, _ := contract.Receiver(&bind.CallOpts{Pending: true})
-	balance, _ := contract.Balance(&bind.CallOpts{Pending: true})
-	log.Info("Setup htlc", "address", h.Address, "tx", h.Tx, "receiver", receiver, "r", r, "balance", balance)
-
-	cli := getEthClient()
-	ctx := context.Background()
-	receipt, err := cli.TransactionReceipt(ctx, tx.Hash())
-	if err != nil {
-		log.Error("Failed to get the receipt", "err", err)
-		return err
-	}
-	if receipt.Status == 0 {
-		log.Error("setup failure","status", receipt.Status)
-		return errors.New("Setup failure")
-	}
-	log.Info("receipt", "receipt", receipt, "status", receipt.Status)
-	h.Tx = tx
-
-	return nil
-}
-
 func (h *HTLContract) Redeem(scr []byte) error {
 	auth := GetAuth()
 

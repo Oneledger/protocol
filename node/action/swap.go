@@ -756,8 +756,8 @@ func CreateContractOLT(app interface{}, context map[Parameter]FunctionValue) (bo
         },
         Inputs:  inputs,
         Outputs: outputs,
-        Fee:     nil,
-        Gas:     nil,
+        Fee:     data.NewCoin(0, "OLT"),
+        Gas:     data.NewCoin(0, "OLT"),
     }
     message := SignAndPack(SEND, Transaction(send))
     contract := NewMultiSigBox(1,1, message)
