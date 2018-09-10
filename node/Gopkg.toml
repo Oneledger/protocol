@@ -59,6 +59,7 @@
   name = "github.com/tendermint/go-amino"
   version = "=0.10.1"
 
+# TODO: Change this to a constraint, set to override b/c iavl 0.10.0 has a version dependency on tendermint 0.22.0
 [[override]]
   name = "github.com/tendermint/tendermint"
   version = "=0.23.1"

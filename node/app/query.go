@@ -289,9 +289,9 @@ func HandleSwapAddressQuery(app Application, message []byte) []byte {
 		chain = conv.GetChain(parts[1])
 	}
 	//log.Debug("swap address", "chain", chain)
-	return SwapAddres(chain)
+	return SwapAddress(chain)
 }
 
-func SwapAddres(chain data.ChainType) []byte {
+func SwapAddress(chain data.ChainType) []byte {
 	return common.GetSwapAddress(chain)
 }

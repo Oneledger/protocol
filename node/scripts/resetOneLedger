@@ -16,12 +16,10 @@ fi
 export CMD=$OLSCRIPT
 export STAGING=$OLDATA/staging
 
-mkdir -p $STAGING
-
 #
 # Generate the overall genesis and validator information
 #
-tendermint testnet --o $STAGING --v $NODECOUNT
+tendermint testnet --o $STAGING --v $NODECOUNT >> $OLDATA/tendermint.log
 
 # TODO: Set the chain name, and set an initial amount of tokens and that admin owns them all
 

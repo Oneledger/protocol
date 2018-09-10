@@ -127,7 +127,7 @@ func Query(path string, packet []byte) (res *ctypes.ResultABCIQuery) {
 
 	result, err := client.ABCIQuery(path, packet)
 	if err != nil {
-		log.Error("ABCi Query Error", "err", err)
+		log.Error("ABCi Query Error", "path", path, "err", err)
 		return nil
 	}
 

@@ -81,12 +81,12 @@ func (convert *Convert) GetAccountKey(value string) id.AccountKey {
 func (convert *Convert) GetPublicKey(value string) PublicKey {
 	// TODO: Is this a file reference? If so, read in the key
 	// TODO: Is this actionally the key
-	return id.PublicKey{}
+	return id.NilPublicKey()
 }
 
 // TODO: Needs to have real values
 func (convert *Convert) GetPrivateKey(value string) PrivateKey {
-	return id.PrivateKey{}
+	return id.NilPrivateKey()
 }
 
 // TODO: Need to be ripeMd?

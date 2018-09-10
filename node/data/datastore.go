@@ -64,9 +64,6 @@ func NewDatastore(name string, newType DatastoreType) *Datastore {
 		// TODO: No Merkle tree?
 		return &Datastore{
 			Type:   newType,
-
-
-
 			Name:   name,
 			memory: db.NewMemDB(),
 		}
@@ -124,6 +121,7 @@ func (store Datastore) Close() {
 
 // Store inserts or updates a value under a key
 func (store Datastore) Store(key DatabaseKey, value Message) Message {
+	log.Info("Datastore Store", "key", key, "value", value)
 	switch store.Type {
 
 	case MEMORY:
@@ -216,12 +214,11 @@ func (store Datastore) List() (keys []DatabaseKey) {
 		//store.tree.
 		size := store.tree.Size()
 		results := make([]DatabaseKey, size, size)
-
 		for i := 0; i < store.tree.Size(); i++ {
 			key, _ := store.tree.GetByIndex(i)
-			log.Debug("Datastore List")
 			results[i] = DatabaseKey(key)
 		}
+		log.Debug("Datastore List", "results", results)
 		return results
 
 	default:

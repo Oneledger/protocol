@@ -48,13 +48,13 @@ ENV TENDERMINT_VERSION v0.23.1
 ENV BITCOIN_VERSION v0.16.0
 
 # Install tendermint consensus
-#RUN mkdir -p $TENDERMINT_DIR \
-#  && git clone https://github.com/tendermint/tendermint $TENDERMINT_DIR \
-#  && cd $TENDERMINT_DIR \
-#  && git checkout tags/$TENDERMINT_VERSION \
-#  && make get_tools \
-#  && make get_vendor_deps \
-#  && make install
+RUN mkdir -p $TENDERMINT_DIR \
+  && git clone https://github.com/tendermint/tendermint $TENDERMINT_DIR \
+  && cd $TENDERMINT_DIR \
+  && git checkout tags/$TENDERMINT_VERSION \
+  && make get_tools \
+  && make get_vendor_deps \
+  && make install
 
 # Install geth
 RUN mkdir -p $GETH_DIR \
