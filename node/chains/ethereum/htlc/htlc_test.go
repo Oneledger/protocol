@@ -40,7 +40,7 @@ func TestHtlc(t *testing.T) {
 	value := new(big.Int)
 	value.SetString("100000000000000000000", 10)
 	testHtlc_Funds(auth, opt, htlcontract, value)
-	testHtlc_Setup(auth, htlcontract)
+	//testHtlc_Setup(auth, htlcontract)
 	testHtlc_Audit(auth, opt, htlcontract, value)
 	//testHtlc_Redeem(auth, opt, htlcontract)
 	testHtlc_ExtractMsg(opt, address)
@@ -70,7 +70,15 @@ func testHtlc_Funds(auth *bind.TransactOpts, opt *bind.CallOpts, contract *Htlc,
 	log.Debug("auth",  "auth", auth)
 
 	//funds
-	tx, err := contract.Funds(auth)
+
+	receiver := common.HexToAddress("0xd7858005867c3449f6673a91f6e4f719f10e12e5")
+	log.Debug("receiver: ", "address", receiver.Hex())
+
+	scrHash, scr := getScrPair()
+
+	log.Debug("secrets", "scr", scr, "scrHash", scrHash)
+
+	tx, err := contract.Funds(auth, big.NewInt(25*3600), receiver, scrHash)
 	if err != nil {
 		log.Error("fund contract failed")
 	}
@@ -83,39 +91,6 @@ func testHtlc_Funds(auth *bind.TransactOpts, opt *bind.CallOpts, contract *Htlc,
 	}
 	log.Debug("balance:", "balance", balance)
 	auth.Value = big.NewInt(0)
-}
-
-func getScrPair() (scrHash [32]byte, scr []byte) {
-	s := "testswap"
-	scrHash = [32]byte(sha256.Sum256([]byte(s)))
-	scr = []byte(s)
-	return
-}
-
-func testHtlc_Setup(auth *bind.TransactOpts, contract *Htlc) {
-
-	log.Debug("======test setup()======")
-
-	receiver := common.HexToAddress("0xd7858005867c3449f6673a91f6e4f719f10e12e5")
-	log.Debug("receiver: ", "address", receiver.Hex())
-
-
-
-	scrHash, scr := getScrPair()
-
-	log.Debug("secrets", "scr", scr, "scrHash", scrHash)
-
-
-	log.Debug("auth",  "auth", auth)
-
-	//setup
-	tx, err := contract.Setup(auth, big.NewInt(25*3600), receiver, scrHash)
-	if err != nil {
-		log.Error("failed to setup: ","err", err)
-	}
-	log.Debug("Transaction waiting to be mined: ", "transaction", tx.Hash(),"value", tx.Value())
-
-	time.Sleep(15 * time.Second)
 
 	addr, err := contract.Receiver(&bind.CallOpts{Pending: true})
 	if err != nil {
@@ -128,7 +103,13 @@ func testHtlc_Setup(auth *bind.TransactOpts, contract *Htlc) {
 		log.Error("can't get the secret hash", "err", err)
 	}
 	log.Debug("scrHash in contract", "scrhash",sh)
+}
 
+func getScrPair() (scrHash [32]byte, scr []byte) {
+	s := "testswap"
+	scrHash = [32]byte(sha256.Sum256([]byte(s)))
+	scr = []byte(s)
+	return
 }
 
 func testHtlc_Redeem(auth *bind.TransactOpts, opt *bind.CallOpts, contract *Htlc) {

@@ -20,12 +20,12 @@ import (
 
 	"math/big"
 
-	"crypto/sha256"
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-	"time"
 	"crypto/rand"
+	"crypto/sha256"
 	"github.com/Oneledger/protocol/node/chains/common"
-    "reflect"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"reflect"
+	"time"
 )
 
 // Synchronize a swap between two users
@@ -61,12 +61,12 @@ func (transaction *Swap) Validate() err.Code {
 		return err.MISSING_DATA
 	}
 
-	if !transaction.Amount.IsCurrency("BTC", "ETH") {
+	if !transaction.Amount.IsCurrency("BTC", "ETH", "OLT") {
 		log.Debug("Swap on Currency isn't implement yet")
 		return err.NOT_IMPLEMENTED
 	}
 
-	if !transaction.Exchange.IsCurrency("BTC", "ETH") {
+	if !transaction.Exchange.IsCurrency("BTC", "ETH", "OLT") {
 		log.Debug("Swap on Currency isn't implement yet")
 		return err.NOT_IMPLEMENTED
 	}
@@ -207,9 +207,7 @@ func ProcessSwap(app interface{}, transaction *Swap) *Swap {
 		matchedSwap := FindMatchingSwap(status, transaction.CounterParty.Key, transaction, *isParty)
 		if matchedSwap != nil {
 		    log.Debug("Swap is ready", "swap", matchedSwap)
-		    if matchedSwap.getRole(*isParty) == PARTICIPANT {
-		        SaveSwap(status,  transaction.CounterParty.Key, matchedSwap)
-            }
+		    SaveSwap(status,  transaction.CounterParty.Key, matchedSwap)
 			return matchedSwap
 		} else {
 			SaveSwap(status, transaction.CounterParty.Key, transaction)
@@ -219,9 +217,7 @@ func ProcessSwap(app interface{}, transaction *Swap) *Swap {
 	} else {
 		matchedSwap := FindMatchingSwap(status, transaction.Party.Key, transaction, *isParty)
 		if matchedSwap != nil {
-            if matchedSwap.getRole(*isParty) == PARTICIPANT {
-                SaveSwap(status,  matchedSwap.Party.Key, matchedSwap)
-            }
+		    SaveSwap(status,  matchedSwap.Party.Key, matchedSwap)
 			return matchedSwap
 		} else {
 			SaveSwap(status, transaction.Party.Key, transaction)
@@ -486,6 +482,14 @@ func CreateContractETH(app interface{}, context map[Parameter]FunctionValue) (bo
 
 	var receiverParty Party
     preimage := GetByte32(context[PREIMAGE])
+	if context[PASSWORD] != nil {
+		scr := GetByte32(context[PASSWORD])
+		scrHash := sha256.Sum256(scr[:])
+		if !bytes.Equal(preimage[:], scrHash[:]) {
+			log.Error("Secret and Secret Hash doesn't match", "preimage", preimage, "scrHash", scrHash)
+			return false, nil
+		}
+	}
 
     value := GetCoin(context[AMOUNT]).Amount
 
@@ -497,12 +501,7 @@ func CreateContractETH(app interface{}, context map[Parameter]FunctionValue) (bo
 
 	timeoutSecond := int64(lockPeriod.Seconds())
 	log.Debug("Create ETH HTLC", "value", value, "receiver", receiver, "preimage", preimage)
-	err := contract.Funds(value)
-	if err != nil {
-		return false, nil
-	}
-
-	err = contract.Setup(big.NewInt(timeoutSecond), *receiver, preimage)
+	err := contract.Funds(value, big.NewInt(timeoutSecond), *receiver, preimage)
 	if err != nil {
 		return false, nil
 	}
@@ -510,7 +509,6 @@ func CreateContractETH(app interface{}, context map[Parameter]FunctionValue) (bo
 	context[ETHCONTRACT] = contract
 	return true, context
 }
-
 
 func AuditContractBTC(app interface{}, context map[Parameter]FunctionValue) (bool, map[Parameter]FunctionValue) {
 	contract := GetBTCContract(context[BTCCONTRACT])
@@ -724,6 +722,46 @@ func ExtractSecretETH(app interface{}, context map[Parameter]FunctionValue) (boo
 
 func CreateContractOLT(app interface{}, context map[Parameter]FunctionValue) (bool, map[Parameter]FunctionValue) {
     log.Warn("Not supported")
+    party := GetParty(context[MY_ACCOUNT])
+    counterParty := GetParty(context[THEM_ACCOUNT])
+    partyBalance := GetUtxo(app).Find(party.Key).Amount
+    counterPartyBalance := GetUtxo(app).Find(counterParty.Key).Amount
+
+	preimage := GetByte32(context[PREIMAGE])
+	if context[PASSWORD] != nil {
+		scr := GetByte32(context[PASSWORD])
+		scrHash := sha256.Sum256(scr[:])
+		if !bytes.Equal(preimage[:], scrHash[:]) {
+			log.Error("Secret and Secret Hash doesn't match", "preimage", preimage, "scrHash", scrHash)
+			return false, nil
+		}
+	}
+
+	inputs := make([]SendInput, 0)
+    inputs = append(inputs,
+        NewSendInput(party.Key, partyBalance),
+        NewSendInput(counterParty.Key, counterPartyBalance))
+    amount := GetCoin(context[AMOUNT])
+    // Build up the outputs
+    outputs := make([]SendOutput, 0)
+    outputs = append(outputs,
+        NewSendOutput(party.Key, partyBalance.Minus(amount)),
+        NewSendOutput(counterParty.Key, counterPartyBalance.Plus(amount)))
+    send := &Send{
+        Base: Base{
+            Type:     SEND,
+            ChainId:  GetChainID(app),
+            Signers:  nil,
+            Sequence: global.Current.Sequence,
+        },
+        Inputs:  inputs,
+        Outputs: outputs,
+        Fee:     data.NewCoin(0, "OLT"),
+        Gas:     data.NewCoin(0, "OLT"),
+    }
+    message := SignAndPack(SEND, Transaction(send))
+    contract := NewMultiSigBox(1,1, message)
+    _ = contract
     return true, context
 }
 
