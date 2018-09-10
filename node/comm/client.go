@@ -110,12 +110,14 @@ func BroadcastAsync(packet []byte) *ctypes.ResultBroadcastTx {
 func Broadcast(packet []byte) *ctypes.ResultBroadcastTxCommit {
 	client := GetClient()
 
+	log.Debug("Start Synced Broadcast", "packet", packet)
+
 	result, err := client.BroadcastTxCommit(packet)
 	if err != nil {
 		log.Error("Error", "err", err)
 	}
 
-	log.Debug("Broadcast", "packet", packet, "result", result)
+	log.Debug("Synced Broadcast", "packet", packet, "result", result)
 
 	return result
 }

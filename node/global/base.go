@@ -50,8 +50,13 @@ func init() {
 
 // Set the default values for any context variables here (and no where else)
 func NewContext(name string) *Context {
+	var debug = false
+	if os.Getenv("OLDEBUG") == "true" {
+		debug = true
+	}
+
 	return &Context{
-		Debug:            false,
+		Debug:            debug,
 		DisablePasswords: true,
 
 		NodeName:        name,
