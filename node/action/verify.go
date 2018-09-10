@@ -6,11 +6,11 @@
 package action
 
 import (
-	"github.com/Oneledger/protocol/node/err"
-	"github.com/Oneledger/protocol/node/id"
-	"github.com/Oneledger/protocol/node/log"
     "bytes"
-    )
+    "github.com/Oneledger/protocol/node/err"
+    "github.com/Oneledger/protocol/node/id"
+    "github.com/Oneledger/protocol/node/log"
+)
 
 
 // instead of a model for other-chain actions, we make this available by event, when a action (external/internal) is

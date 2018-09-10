@@ -31,15 +31,38 @@ import (
 // Synchronize a swap between two users
 type Swap struct {
 	Base
+    Message
+}
 
-	Party        Party     `json:"party"`
-	CounterParty Party     `json:"counter_party"`
-	Amount       data.Coin `json:"amount"`
-	Exchange     data.Coin `json:"exchange"`
-	Fee          data.Coin `json:"fee"`
-	Gas          data.Coin `json:"fee"`
-	Nonce        int64     `json:"nonce"`
-	Preimage     []byte    `json:"preimage"`
+var stages map[int32]
+
+
+type SwapStage struct {
+    Stage       int32
+    Commands    Commands
+    InTx        interface{}
+    OutTx
+}
+
+
+type SwapInit struct {
+    Party        Party     `json:"party"`
+    CounterParty Party     `json:"counter_party"`
+    Amount       data.Coin `json:"amount"`
+    Exchange     data.Coin `json:"exchange"`
+    Fee          data.Coin `json:"fee"`
+    Gas          data.Coin `json:"fee"`
+    Nonce        int64     `json:"nonce"`
+    Preimage     []byte    `json:"preimage"`
+}
+
+func (si *SwapInit) Marshal() Message {
+
+
+}
+
+func (si *SwapInit) UnMarshal(message Message) {
+
 }
 
 type Party struct {
@@ -338,22 +361,18 @@ func (swap *Swap) getRole(isParty bool) Role {
 	}
 }
 
-// Given a transaction, expand it into a list of Commands to execute against various chains.
-func (transaction *Swap) Expand(app interface{}) Commands {
-	chains := transaction.getChains()
-
-	account := GetNodeAccount(app)
-	isParty := transaction.IsParty(account)
-
-	role := transaction.getRole(*isParty)
-
-	return GetCommands(SWAP, role, chains)
-}
-
 // Plug in data from the rest of a system into a set of commands
-func (swap *Swap) Resolve(app interface{}, commands Commands) {
-	account := GetNodeAccount(app)
+func (swap *Swap) Resolve(app interface{}) Commands {
+	chains := swap.getChains()
 
+	account := GetNodeAccount(app)
+	isParty := swap.IsParty(account)
+
+	role := swap.getRole(*isParty)
+
+	commands := make(Commands, 0)
+
+	append(commands, )
 	identities := GetIdentities(app)
 	_ = identities
 	name := global.Current.NodeIdentity

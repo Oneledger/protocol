@@ -33,7 +33,6 @@ type Command struct {
 	Function CommandType
 	Chain    data.ChainType
 	Data     map[Parameter]FunctionValue
-	Order    int
 }
 
 func (command Command) Execute(app interface{}) (bool, map[Parameter]FunctionValue) {

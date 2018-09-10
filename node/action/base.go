@@ -48,9 +48,15 @@ type Transaction interface {
 	ProcessCheck(interface{}) err.Code
 	ShouldProcess(interface{}) bool
 	ProcessDeliver(interface{}) err.Code
-	Expand(interface{}) Commands
-	Resolve(interface{}, Commands)
+	Resolve(interface{}) Commands
 }
+
+type TransactionSerializer interface {
+    Marshal() Message
+    UnMarshal(Message)
+}
+
+
 
 // Base Data for each type
 type Base struct {
@@ -58,6 +64,8 @@ type Base struct {
 	ChainId string `json:"chain_id"`
 
 	Owner   id.AccountKey `json:"owner"`
+	Target  id.AccountKey `json:"target"`
+
 	Signers []PublicKey   `json:"signers"`
 
 	Sequence int64 `json:"sequence"`
