@@ -63,7 +63,7 @@ func (publish *Publish) ProcessDeliver(app interface{}) err.Code {
     publish.Resolve(app, commands)
 
     //before loop of execute, lastResult is nil
-    var lastResult map[Parameter]FunctionValue
+    var lastResult FunctionValues
 
     for i := 0; i < commands.Count(); i++ {
         status, result := Execute(app, commands[i], lastResult)
@@ -141,7 +141,7 @@ func (publish *Publish) Resolve(app interface{}, commands Commands) {
 }
 
 
-func SubmitTransactionOLT(context map[Parameter]FunctionValue, chain data.ChainType) (bool, map[Parameter]FunctionValue) {
+func SubmitTransactionOLT(context FunctionValues, chain data.ChainType) (bool, FunctionValues) {
     signers := make([]PublicKey, 0)
     owner := GetParty(context[MY_ACCOUNT])
     target := GetParty(context[THEM_ACCOUNT])

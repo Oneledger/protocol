@@ -27,21 +27,85 @@ import (
 	"reflect"
 	"time"
 )
+type swapStageType int32
+
+const (
+    MATCHING  swapStageType = iota
+    INITIATOR_INITIATE
+    PARTICIPANT_PARTICIPATE
+    INITIATOR_REDEEM
+    PARTICIPANT_REDEEM
+    WAIT_FOR_CHAIN
+    REFUND_SWAP
+    FINISH_SWAP
+)
 
 // Synchronize a swap between two users
 type Swap struct {
 	Base
-    Message
+    Message Message `json:"message"`
+	Stage   string   `json:"stage"`
 }
 
-var stages map[int32]
+var swapStageFlow map[swapStageType]SwapStage = map[swapStageType]SwapStage{
+    MATCHING: {
+        Stage:MATCHING,
+        Commands: Commands{Command{opfunc: SaveUnmatchSwap}, Command{opfunc: NextStage}},
+        InStage: nil,
+        OutStage: WAIT_FOR_CHAIN,
+    },
+    INITIATOR_INITIATE: {
+        Stage: INITIATOR_INITIATE,
+        Commands: Commands{Command{opfunc: Initiate}, Command{opfunc: NextStage}},
+        InStage: nil,
+        OutStage: PARTICIPANT_PARTICIPATE,
+    },
+    PARTICIPANT_PARTICIPATE: {
+        Stage: PARTICIPANT_PARTICIPATE,
+        Commands: Commands{Command{opfunc: AuditContract}, Command{opfunc: Participate}, Command{opfunc: NextStage}},
+        InStage: INITIATOR_INITIATE,
+        OutStage: INITIATOR_REDEEM,
+    },
+    INITIATOR_REDEEM: {
+        Stage: INITIATOR_REDEEM,
+        Commands: Commands{Command{opfunc: AuditContract }, Command{opfunc: Redeem}, Command{opfunc: NextStage}},
+        InStage: PARTICIPANT_PARTICIPATE,
+        OutStage: PARTICIPANT_REDEEM,
+    },
+    PARTICIPANT_REDEEM: {
+        Stage: PARTICIPANT_REDEEM,
+        Commands: Commands{Command{opfunc: ExtractSecret}, Command{opfunc: Redeem}, Command{opfunc: NextStage}},
+        InStage: INITIATOR_REDEEM,
+        OutStage: FINISH_SWAP,
+    },
+    FINISH_SWAP: {
+        Stage: FINISH_SWAP,
+        Commands: Commands{Command{opfunc: FinalizeSwap}},
+        InStage: PARTICIPANT_REDEEM,
+        OutStage: nil,
+
+    },
+    WAIT_FOR_CHAIN: {
+      Stage: WAIT_FOR_CHAIN,
+      Commands: Commands{Command{opfunc: VerifySwap}},
+      InStage: MATCHING,
+      OutStage: nil,
+    },
+    REFUND_SWAP: {
+        Stage: REFUND_SWAP,
+        Commands: Commands{Command{opfunc: Refund}},
+        InStage: WAIT_FOR_CHAIN,
+        OutStage: nil,
+    },
+}
 
 
 type SwapStage struct {
-    Stage       int32
+    Stage       swapStageType
     Commands    Commands
-    InTx        interface{}
-    OutTx
+
+    InStage     swapStageType
+    OutStage    swapStageType
 }
 
 
@@ -58,12 +122,24 @@ type SwapInit struct {
 
 func (si *SwapInit) Marshal() Message {
 
-
+    return nil
 }
 
 func (si *SwapInit) UnMarshal(message Message) {
 
 }
+
+type SwapPublish struct {
+    Contract   Message       `json:"message"` //message converted from HTLContract
+    SecretHash [32]byte      `json:"secrethash"`
+    Count      int           `json:"count"`
+}
+
+type SwapVerify struct {
+    Event   Event           `json:"event"`
+    Message Message         `json:"Message"`
+}
+
 
 type Party struct {
 	Key      id.AccountKey				`json:"key"`
@@ -117,7 +193,7 @@ func (transaction *Swap) ProcessDeliver(app interface{}) err.Code {
 		matchedSwap.Resolve(app, commands)
 
 		//before loop of execute, lastResult is nil
-		var lastResult map[Parameter]FunctionValue
+		var lastResult FunctionValues
 
 		for i := 0; i < commands.Count(); i++ {
 		    them := GetParty(commands[i].Data[THEM_ACCOUNT])
@@ -398,16 +474,16 @@ func (swap *Swap) Resolve(app interface{}) Commands {
 		var key id.AccountKey
 
 		if *isParty {
-		    commands[i].Data[MY_ACCOUNT] = swap.Party
-		    commands[i].Data[THEM_ACCOUNT] = swap.CounterParty
-			commands[i].Data[AMOUNT] = swap.Amount
-			commands[i].Data[EXCHANGE] = swap.Exchange
+		    commands[i].data[MY_ACCOUNT] = swap.Party
+		    commands[i].data[THEM_ACCOUNT] = swap.CounterParty
+			commands[i].data[AMOUNT] = swap.Amount
+			commands[i].data[EXCHANGE] = swap.Exchange
             key = swap.CounterParty.Key
 		} else {
-		    commands[i].Data[MY_ACCOUNT] = swap.CounterParty
-		    commands[i].Data[THEM_ACCOUNT] = swap.Party
-			commands[i].Data[AMOUNT] = swap.Exchange
-			commands[i].Data[EXCHANGE] = swap.Amount
+		    commands[i].data[MY_ACCOUNT] = swap.CounterParty
+		    commands[i].data[THEM_ACCOUNT] = swap.Party
+			commands[i].data[AMOUNT] = swap.Exchange
+			commands[i].data[EXCHANGE] = swap.Amount
             key = swap.Party.Key
 		}
 
@@ -442,7 +518,99 @@ var lockPeriod = 5 * time.Minute
 // todo: need to store this in db
 var tokens = make(map[string][32]byte)
 
-func CreateContractBTC(app interface{}, context map[Parameter]FunctionValue) (bool, map[Parameter]FunctionValue) {
+
+func Initiate(app interface{}, chain data.ChainType, context FunctionValues) (bool, FunctionValues) {
+    log.Info("Executing Initiate Command", "chain", chain, "context", context)
+    switch chain {
+
+    case data.BITCOIN:
+        return CreateContractBTC(app, context)
+    case data.ETHEREUM:
+        return CreateContractETH(app, context)
+    case data.ONELEDGER:
+        return CreateContractOLT(app, context)
+    default:
+        return false, nil
+    }
+}
+
+func Participate(app interface{}, chain data.ChainType, context FunctionValues) (bool, FunctionValues) {
+    log.Info("Executing Participate Command", "chain", chain, "context", context)
+    switch chain {
+
+    case data.BITCOIN:
+        return ParticipateBTC(app, context)
+    case data.ETHEREUM:
+        return ParticipateETH(app, context)
+    case data.ONELEDGER:
+        return ParticipateOLT(app, context)
+    default:
+        return false, nil
+    }
+}
+
+func Redeem(app interface{}, chain data.ChainType, context FunctionValues) (bool, FunctionValues) {
+    log.Info("Executing Redeem Command", "chain", chain, "context", context)
+
+    switch chain {
+
+    case data.BITCOIN:
+        return RedeemBTC(app, context)
+    case data.ETHEREUM:
+        return RedeemETH(app, context)
+    case data.ONELEDGER:
+        return RedeemOLT(app, context)
+    default:
+        return false, nil
+    }
+}
+
+func Refund(app interface{}, chain data.ChainType, context FunctionValues) (bool, FunctionValues) {
+    log.Info("Executing Refund Command", "chain", chain, "context", context)
+    switch chain {
+
+    case data.BITCOIN:
+        return RefundBTC(app, context)
+    case data.ETHEREUM:
+        return RefundETH(app, context)
+    case data.ONELEDGER:
+        return RefundOLT(app, context)
+    default:
+        return false, nil
+    }
+}
+
+func ExtractSecret(app interface{}, chain data.ChainType, context FunctionValues) (bool, FunctionValues) {
+    log.Info("Executing ExtractSecret Command", "chain", chain, "context", context)
+    switch chain {
+
+    case data.BITCOIN:
+        return ExtractSecretBTC(app, context)
+    case data.ETHEREUM:
+        return ExtractSecretETH(app, context)
+    case data.ONELEDGER:
+        return ExtractSecretOLT(app, context)
+    default:
+        return false, nil
+    }
+}
+
+func AuditContract(app interface{}, chain data.ChainType, context FunctionValues) (bool, FunctionValues) {
+    log.Info("Executing AuditContract Command", "chain", chain, "context", context)
+    switch chain {
+
+    case data.BITCOIN:
+        return AuditContractBTC(app, context)
+    case data.ETHEREUM:
+        return AuditContractETH(app, context)
+    case data.ONELEDGER:
+        return AuditContractOLT(app, context)
+    default:
+        return false, nil
+    }
+}
+
+func CreateContractBTC(app interface{}, context FunctionValues) (bool, FunctionValues) {
 
 	timeout := time.Now().Add(2 * lockPeriod).Unix()
 
@@ -487,7 +655,7 @@ func CreateContractBTC(app interface{}, context map[Parameter]FunctionValue) (bo
 	return true, context
 }
 
-func CreateContractETH(app interface{}, context map[Parameter]FunctionValue) (bool, map[Parameter]FunctionValue) {
+func CreateContractETH(app interface{}, context FunctionValues) (bool, FunctionValues) {
     me := GetParty(context[MY_ACCOUNT])
 
     contractMessage := FindContract(app, me.Key.Bytes(), 0)
@@ -529,7 +697,7 @@ func CreateContractETH(app interface{}, context map[Parameter]FunctionValue) (bo
 	return true, context
 }
 
-func AuditContractBTC(app interface{}, context map[Parameter]FunctionValue) (bool, map[Parameter]FunctionValue) {
+func AuditContractBTC(app interface{}, context FunctionValues) (bool, FunctionValues) {
 	contract := GetBTCContract(context[BTCCONTRACT])
 
 	them := GetParty(context[THEM_ACCOUNT])
@@ -547,7 +715,7 @@ func AuditContractBTC(app interface{}, context map[Parameter]FunctionValue) (boo
 	return true, context
 }
 
-func AuditContractETH(app interface{}, context map[Parameter]FunctionValue) (bool, map[Parameter]FunctionValue) {
+func AuditContractETH(app interface{}, context FunctionValues) (bool, FunctionValues) {
 	contract := GetETHContract(context[ETHCONTRACT])
 
 	scrHash := GetByte32(context[PREIMAGE])
@@ -594,7 +762,7 @@ func AuditContractETH(app interface{}, context map[Parameter]FunctionValue) (boo
 	return true, context
 }
 
-func ParticipateBTC(app interface{}, context map[Parameter]FunctionValue) (bool, map[Parameter]FunctionValue) {
+func ParticipateBTC(app interface{}, context FunctionValues) (bool, FunctionValues) {
     success, result := CreateContractBTC(app, context)
     if success != false {
         log.Error("failed to participate because can't create contract")
@@ -603,7 +771,7 @@ func ParticipateBTC(app interface{}, context map[Parameter]FunctionValue) (bool,
     return true, result
 }
 
-func ParticipateETH(app interface{}, context map[Parameter]FunctionValue) (bool, map[Parameter]FunctionValue) {
+func ParticipateETH(app interface{}, context FunctionValues) (bool, FunctionValues) {
 	success, result := CreateContractETH(app, context)
 	if success == false {
 		log.Error("failed to participate because can't create contract")
@@ -612,7 +780,7 @@ func ParticipateETH(app interface{}, context map[Parameter]FunctionValue) (bool,
 	return true, result
 }
 
-func RedeemBTC(app interface{}, context map[Parameter]FunctionValue) (bool, map[Parameter]FunctionValue) {
+func RedeemBTC(app interface{}, context FunctionValues) (bool, FunctionValues) {
     them := GetParty(context[THEM_ACCOUNT])
     nonce := GetInt64(context[NONCE])
     contractMessage := FindContract(app, them.Key.Bytes(), nonce)
@@ -638,7 +806,7 @@ func RedeemBTC(app interface{}, context map[Parameter]FunctionValue) (bool, map[
     return true, context
 }
 
-func RedeemETH(app interface{}, context map[Parameter]FunctionValue) (bool, map[Parameter]FunctionValue) {
+func RedeemETH(app interface{}, context FunctionValues) (bool, FunctionValues) {
     them := GetParty(context[THEM_ACCOUNT])
     nonce := GetInt64(context[NONCE])
     contractMessage := FindContract(app, them.Key.Bytes(), nonce)
@@ -660,7 +828,7 @@ func RedeemETH(app interface{}, context map[Parameter]FunctionValue) (bool, map[
 	return true, context
 }
 
-func RefundBTC(app interface{}, context map[Parameter]FunctionValue) (bool, map[Parameter]FunctionValue) {
+func RefundBTC(app interface{}, context FunctionValues) (bool, FunctionValues) {
 
     them := GetParty(context[THEM_ACCOUNT])
     nonce := GetInt64(context[NONCE])
@@ -685,7 +853,7 @@ func RefundBTC(app interface{}, context map[Parameter]FunctionValue) (bool, map[
     return true, context
 }
 
-func RefundETH(app interface{}, context map[Parameter]FunctionValue) (bool, map[Parameter]FunctionValue) {
+func RefundETH(app interface{}, context FunctionValues) (bool, FunctionValues) {
     me := GetParty(context[MY_ACCOUNT])
     contractMessage := FindContract(app, me.Key.Bytes(), 0)
     if contractMessage == nil {
@@ -706,7 +874,7 @@ func RefundETH(app interface{}, context map[Parameter]FunctionValue) (bool, map[
 	return true, context
 }
 
-func ExtractSecretBTC(app interface{}, context map[Parameter]FunctionValue) (bool, map[Parameter]FunctionValue) {
+func ExtractSecretBTC(app interface{}, context FunctionValues) (bool, FunctionValues) {
     contract := GetBTCContract(context[BTCCONTRACT])
     scrHash := GetByte32(context[PREIMAGE])
     cmd := htlc.NewExtractSecretCmd(&contract.ContractTx, scrHash)
@@ -724,7 +892,7 @@ func ExtractSecretBTC(app interface{}, context map[Parameter]FunctionValue) (boo
 
 }
 
-func ExtractSecretETH(app interface{}, context map[Parameter]FunctionValue) (bool, map[Parameter]FunctionValue) {
+func ExtractSecretETH(app interface{}, context FunctionValues) (bool, FunctionValues) {
     contract := GetETHContract(context[ETHCONTRACT])
     //todo: make it correct scr, by extract or from local storage
 
@@ -739,7 +907,7 @@ func ExtractSecretETH(app interface{}, context map[Parameter]FunctionValue) (boo
     return true, context
 }
 
-func CreateContractOLT(app interface{}, context map[Parameter]FunctionValue) (bool, map[Parameter]FunctionValue) {
+func CreateContractOLT(app interface{}, context FunctionValues) (bool, FunctionValues) {
     log.Warn("Not supported")
     party := GetParty(context[MY_ACCOUNT])
     counterParty := GetParty(context[THEM_ACCOUNT])
@@ -784,30 +952,30 @@ func CreateContractOLT(app interface{}, context map[Parameter]FunctionValue) (bo
     return true, context
 }
 
-func ParticipateOLT(app interface{}, context map[Parameter]FunctionValue) (bool, map[Parameter]FunctionValue) {
+func ParticipateOLT(app interface{}, context FunctionValues) (bool, FunctionValues) {
     log.Warn("Not supported")
     return true, context
 }
 
-func AuditContractOLT(app interface{}, context map[Parameter]FunctionValue) (bool, map[Parameter]FunctionValue) {
-    log.Warn("Not supported")
-    return true, context
-}
-
-
-func RedeemOLT(app interface{}, context map[Parameter]FunctionValue) (bool, map[Parameter]FunctionValue) {
+func AuditContractOLT(app interface{}, context FunctionValues) (bool, FunctionValues) {
     log.Warn("Not supported")
     return true, context
 }
 
 
-func RefundOLT(app interface{}, context map[Parameter]FunctionValue) (bool, map[Parameter]FunctionValue) {
+func RedeemOLT(app interface{}, context FunctionValues) (bool, FunctionValues) {
     log.Warn("Not supported")
     return true, context
 }
 
 
-func ExtractSecretOLT(app interface{}, context map[Parameter]FunctionValue) (bool, map[Parameter]FunctionValue) {
+func RefundOLT(app interface{}, context FunctionValues) (bool, FunctionValues) {
+    log.Warn("Not supported")
+    return true, context
+}
+
+
+func ExtractSecretOLT(app interface{}, context FunctionValues) (bool, FunctionValues) {
     log.Warn("Not supported")
     return true, context
 }

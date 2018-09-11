@@ -15,60 +15,22 @@ const (
 	NOOP CommandType = iota
 	PREPARE_TRANSACTION
 	SUBMIT_TRANSACTION
-	INITIATE
-	PARTICIPATE
-	REDEEM
-	REFUND
-	EXTRACTSECRET
-	AUDITCONTRACT
-	WAIT_FOR_CHAIN
 	FINISH
+	STORE
 )
 
 
-type FunctionValue interface{}
+type FunctionValues map[Parameter]interface{}
 
 // A command to execute again a chain, needs to be polymorphic
 type Command struct {
-	Function CommandType
-	Chain    data.ChainType
-	Data     map[Parameter]FunctionValue
+    opfunc func(app interface{}, chain data.ChainType, data FunctionValues) (bool, FunctionValues)
+    chain    data.ChainType
+    data     FunctionValues
 }
 
-func (command Command) Execute(app interface{}) (bool, map[Parameter]FunctionValue) {
-	switch command.Function {
-	case NOOP:
-		return Noop(app, command.Chain, command.Data)
-
-    case PREPARE_TRANSACTION:
-        return PrepareTransaction(app, command.Chain, command.Data)
-
-	case SUBMIT_TRANSACTION:
-		return SubmitTransaction(app, command.Chain, command.Data)
-
-	case INITIATE:
-		return Initiate(app, command.Chain, command.Data)
-
-	case PARTICIPATE:
-		return Participate(app, command.Chain, command.Data)
-
-	case REDEEM:
-		return Redeem(app, command.Chain, command.Data)
-
-	case REFUND:
-		return Refund(app, command.Chain, command.Data)
-
-	case EXTRACTSECRET:
-		return ExtractSecret(app, command.Chain, command.Data)
-
-	case AUDITCONTRACT:
-		return AuditContract(app, command.Chain, command.Data)
-
-	case WAIT_FOR_CHAIN:
-		return WaitForChain(app, command.Chain, command.Data)
-	}
-
-	return true, nil
+func (command Command) Execute(app interface{}) (bool, FunctionValues) {
+    return command.opfunc(app, command.chain, command.data)
 }
 
 type Commands []Command

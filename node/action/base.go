@@ -73,12 +73,12 @@ type Base struct {
 }
 
 // Execute the function
-func Execute(app interface{}, command Command, lastResult map[Parameter]FunctionValue) (err.Code, map[Parameter]FunctionValue) {
+func Execute(app interface{}, command Command, lastResult FunctionValues) (err.Code, FunctionValues) {
 	//make sure the first execute use the context, and later uses last result. so if command are executed in a row, every executed function should only add
 	//parameters in the context and return instead of create new context every time
 	if len(lastResult) > 0 {
 		for key, value := range lastResult {
-			command.Data[key] = value
+			command.data[key] = value
 		}
 	}
 	status, result := command.Execute(app)

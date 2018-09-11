@@ -41,7 +41,7 @@ func (transaction *Commit) ProcessDeliver(app interface{}) err.Code {
 	transaction.Resolve(app, commands)
 
 	//before loop of execute, lastResult is nil
-	var lastResult map[Parameter]FunctionValue
+	var lastResult FunctionValues
 	var status err.Code
 
 	for i := 0; i < commands.Count(); i++ {

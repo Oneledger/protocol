@@ -66,7 +66,7 @@ func (transaction Verify) ProcessDeliver(app interface{}) err.Code {
     transaction.Resolve(app, commands)
 
     //before loop of execute, lastResult is nil
-    var lastResult map[Parameter]FunctionValue
+    var lastResult FunctionValues
 
     for i := 0; i < commands.Count(); i++ {
         status, result := Execute(app, commands[i], lastResult)
