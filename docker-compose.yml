@@ -1,0 +1,75 @@
+version: '3'
+
+services:
+  node0:
+    container_name: David
+    image: "oneledger/fullnode"
+    ports:
+    - "26601:26601"
+    - "26611:26611"
+    - "26621:26621"
+    - "18831:18831"
+    environment:
+    - ID=David
+    volumes:
+    - ./VOLUME:/home/oneledger/go/test
+    networks:
+      localnet:
+        ipv4_address: 192.167.11.1
+
+  node1:
+    container_name: Alice
+    image: "oneledger/fullnode"
+    ports:
+    - "26701:26601"
+    - "26711:26611"
+    - "26721:26621"
+    - "18832:18831"
+    environment:
+    - ID=Alice
+    volumes:
+    - ./VOLUME:/home/oneledger/go/test
+    networks:
+      localnet:
+        ipv4_address: 192.167.11.2
+
+  node2:
+    container_name: Bob
+    image: "oneledger/fullnode"
+    environment:
+    - ID=Bob
+    ports:
+    - "26801:26601"
+    - "26811:26611"
+    - "26821:26621"
+    - "18833:18831"
+    volumes:
+    - ./VOLUME:/home/oneledger/go/test
+    networks:
+      localnet:
+        ipv4_address: 192.167.11.3
+
+  node3:
+    container_name: Carol
+    image: "oneledger/fullnode"
+    environment:
+    - ID=Carol
+    ports:
+    - "26901:26601"
+    - "26911:26611"
+    - "26921:26621"
+    - "18834:18831"
+    volumes:
+    - ./VOLUME:/home/oneledger/go/test
+    networks:
+      localnet:
+        ipv4_address: 192.167.11.4
+
+networks:
+  localnet:
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+      -
+        subnet: 192.167.10.0/16
