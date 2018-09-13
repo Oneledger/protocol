@@ -1,7 +1,7 @@
 /*
 	Copyright 2017-2018 OneLedger
 
-	Cli to interact with a with the chain.
+	Cli to interact with a with the chains.
 */
 package main
 
