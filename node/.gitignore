@@ -6,3 +6,4 @@ testFullnode
 testOlclient
 *.db
 sequence
+.DS_Store
