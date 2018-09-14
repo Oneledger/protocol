@@ -21,7 +21,7 @@ pids=`pgrep -f "tendermint.*--home $DATA.*"`
 if [ -z "$pids" ]
 
 then
-	pids=`pgrep -f "fullnode.*--node $nodeName.*"`
+	pids=`pgrep -f "olfullnode.*--node $nodeName.*"`
 	if [ -z "$pids" ]
 	then
 		exit 0
