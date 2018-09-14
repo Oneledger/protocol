@@ -36,6 +36,7 @@ const (
 	CHAINID
 
 	EVENTTYPE
+	CHECK_EXTERNAL_CHAIN
 )
 
 func GetInt(value FunctionValue) int {

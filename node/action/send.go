@@ -85,7 +85,7 @@ func (transaction *Send) ProcessDeliver(app interface{}) err.Code {
 	return err.SUCCESS
 }
 
-func (transaction *Send) Resolve(app interface{}, commands Commands) {
+func (transaction *Send) Resolve(app interface{}) Commands{
 }
 
 // Given a transaction, expand it into a list of Commands to execute against various chains.

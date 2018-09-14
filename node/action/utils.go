@@ -2,19 +2,25 @@ package action
 
 import (
     "errors"
+    "github.com/tendermint/tendermint/wire"
     "time"
 
     "github.com/btcsuite/btcd/btcec"
     "golang.org/x/crypto/ripemd160"
 )
 
-//general hash method for the actions messages
-func _hash(bytes []byte) []byte {
+//general hash method
+func _hash(item interface{}) []byte {
 
 	hasher := ripemd160.New()
-
-	hasher.Write(bytes)
-
+    bz, err := wire.MarshalBinary(item)
+    if err != nil {
+        panic(err)
+    }
+    _, err = hasher.Write(bz)
+    if err != nil {
+        panic(err)
+    }
 	return hasher.Sum(nil)
 }
 

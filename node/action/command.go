@@ -19,8 +19,9 @@ const (
 	STORE
 )
 
+type FunctionValue interface{}
 
-type FunctionValues map[Parameter]interface{}
+type FunctionValues map[Parameter]FunctionValue
 
 // A command to execute again a chain, needs to be polymorphic
 type Command struct {

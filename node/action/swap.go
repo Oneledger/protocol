@@ -47,7 +47,7 @@ type Swap struct {
 	Stage   string   `json:"stage"`
 }
 
-var swapStageFlow map[swapStageType]SwapStage = map[swapStageType]SwapStage{
+var swapStageFlow = map[swapStageType]SwapStage{
     MATCHING: {
         Stage:MATCHING,
         Commands: Commands{Command{opfunc: SaveUnmatchSwap}, Command{opfunc: NextStage}},
@@ -68,7 +68,7 @@ var swapStageFlow map[swapStageType]SwapStage = map[swapStageType]SwapStage{
     },
     INITIATOR_REDEEM: {
         Stage: INITIATOR_REDEEM,
-        Commands: Commands{Command{opfunc: AuditContract }, Command{opfunc: Redeem}, Command{opfunc: NextStage}},
+        Commands: Commands{Command{opfunc: AuditContract}, Command{opfunc: Redeem}, Command{opfunc: NextStage}},
         InStage: PARTICIPANT_PARTICIPATE,
         OutStage: PARTICIPANT_REDEEM,
     },
@@ -219,7 +219,6 @@ func (transaction *Swap) ProcessDeliver(app interface{}) err.Code {
 	return err.SUCCESS
 }
 
-// TODO: Change to return Role as INITIATOR or PARTICIPANT
 func FindMatchingSwap(status *data.Datastore, accountKey id.AccountKey, transaction *Swap, isParty bool) (matched *Swap) {
 
 	result := FindSwap(status, accountKey)

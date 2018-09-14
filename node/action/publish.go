@@ -114,7 +114,7 @@ func (publish *Publish) FindSwap(app interface{}) *Swap {
 }
 
 // Plug in data from the rest of a system into a set of commands
-func (publish *Publish) Resolve(app interface{}, commands Commands) {
+func (publish *Publish) Resolve(app interface{}) Commands {
 	swap := publish.FindSwap(app)
 	swap.Resolve(app, commands)
 
