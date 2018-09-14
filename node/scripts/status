@@ -3,7 +3,7 @@
 # List of pids if the chain is running
 # No output if the chain isn't running
 
-echo -n "  OLFullnode: "
+echo -n "OLFullnode: "
 pgrep -f "olfullnode.*--node.*" | tr "\n" ","
 echo
 
