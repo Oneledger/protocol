@@ -8,7 +8,8 @@ do
 
 	if [ -z $binaryPath ]
 	then
-		echo "Couldn't find $binaryPath in PATH"
+		echo "Couldn't find $binary in PATH!"
+		exit 1
 	else
 		cp -v $binaryPath $OLROOT/protocol/VOLUME
 	fi

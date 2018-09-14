@@ -61,6 +61,7 @@ services:
     - "18834:18831"
     volumes:
     - ./VOLUME:/home/oneledger/go/test
+
     networks:
       localnet:
         ipv4_address: 192.167.11.4
@@ -72,4 +73,4 @@ networks:
       driver: default
       config:
       -
-        subnet: 192.167.10.0/16
+        subnet: 192.167.11.0/16

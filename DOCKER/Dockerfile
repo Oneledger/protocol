@@ -3,7 +3,9 @@ FROM golang:1.10.3-stretch
 
 USER root
 
-RUN apt-get update && apt-get install -y
+RUN apt-get update && apt-get install -y \
+	curl \
+	jq
 
 # Create oneledger user and its home
 RUN rm -rf /var/lib/apt/lists/* \
@@ -43,3 +45,5 @@ ENV PATH ${PATH}:${OLDATA}
 VOLUME [ "$OLDATA" ]
 
 ENTRYPOINT ["/usr/local/bin/startnode.sh"]
+
+STOPSIGNAL SIGTERM
