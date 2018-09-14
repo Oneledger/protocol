@@ -19,7 +19,7 @@ olclient testmint -s $SEQ -a $addrBob --party Bob --amount 20000 --currency OLT
 olclient testmint -s $SEQ -a $addrCarol --party Carol --amount 3000000 --currency OLT
 olclient testmint -s $SEQ -a $addrDavid --party David --amount 1800000 --currency OLT
 
-# assumes fullnode is in the PATH
+# assumes olfullnode is in the PATH
 olclient send -s $SEQ -a $addrBob --party Bob --counterparty Alice --amount 5000 --currency OLT
 olclient send -s $SEQ -a $addrAlice --party Alice --counterparty David --amount 5001 --currency OLT
 olclient send -s $SEQ -a $addrBob --party Bob --counterparty David --amount 523 --currency OLT

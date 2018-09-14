@@ -35,7 +35,7 @@ olclient testmint -s $SEQ -a $addrBob --party Bob --amount 100000 --currency OLT
 sleep 3
 
 echo "Alice initiate the swap, 5BTC to exchange 100ETH"
-# assumes fullnode is in the PATH
+# assumes olfullnode is in the PATH
 SEQ=`$CMD/nextSeq`
 olclient swap -s $SEQ -a $addrAlice \
 	--party Alice --counterparty Bob --nonce 28 \
