@@ -4,8 +4,11 @@
 
 + [Docker](https://docs.docker.com/engine/installation/)
 + [Docker-Compose](https://docs.docker.com/compose/install/)
++ [jq](https://stedolan.github.io/jq/)
 
 ## Running the local testnet
+
+Before running the make targets, make sure you have your `$GOPATH` environment variable set and source the `setEnvironment` script with `source $GOPATH/src/github.com/Oneledger/protocol/node/scripts/setEnvironment`.
 
 The local testnet starts 4 fullnodes through Docker-Compose.
 
