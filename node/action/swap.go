@@ -43,14 +43,14 @@ const (
 // Synchronize a swap between two users
 type Swap struct {
 	Base
-    Message Message `json:"message"`
-	Stage   string   `json:"stage"`
+    Message Message 		`json:"message"`
+	Stage 	swapStageType 	`json:"stage"`
 }
 
 var swapStageFlow = map[swapStageType]SwapStage{
     MATCHING: {
         Stage:MATCHING,
-        Commands: Commands{Command{opfunc: SaveUnmatchSwap}, Command{opfunc: NextStage}},
+        Commands: Commands{Command{opfunc: ProcessMatch},Command{opfunc: SaveUnmatchSwap}, Command{opfunc: NextStage}},
         InStage: nil,
         OutStage: WAIT_FOR_CHAIN,
     },
@@ -87,7 +87,7 @@ var swapStageFlow = map[swapStageType]SwapStage{
     },
     WAIT_FOR_CHAIN: {
       Stage: WAIT_FOR_CHAIN,
-      Commands: Commands{Command{opfunc: VerifySwap}},
+      Commands: Commands{Command{opfunc: VerifySwap}, Command{opfunc: ClearEvent}},
       InStage: MATCHING,
       OutStage: nil,
     },
@@ -108,6 +108,10 @@ type SwapStage struct {
     OutStage    swapStageType
 }
 
+type swapMessage interface {
+	validate() err.Code
+	//forStage() swapStageType
+}
 
 type SwapInit struct {
     Party        Party     `json:"party"`
@@ -120,6 +124,31 @@ type SwapInit struct {
     Preimage     []byte    `json:"preimage"`
 }
 
+func (swap SwapInit) validate() err.Code {
+	log.Debug("Validating SwapInit")
+	if swap.Party.Key == nil {
+		log.Debug("Missing Party")
+		return err.MISSING_DATA
+	}
+
+	if swap.CounterParty.Key == nil {
+		log.Debug("Missing CounterParty")
+		return err.MISSING_DATA
+	}
+
+	if !swap.Amount.IsCurrency("BTC", "ETH", "OLT") {
+		log.Debug("Swap on Currency isn't implement yet")
+		return err.NOT_IMPLEMENTED
+	}
+
+	if !swap.Exchange.IsCurrency("BTC", "ETH", "OLT") {
+		log.Debug("Swap on Currency isn't implement yet")
+		return err.NOT_IMPLEMENTED
+	}
+
+	return err.SUCCESS
+}
+
 func (si *SwapInit) Marshal() Message {
 
     return nil
@@ -127,12 +156,34 @@ func (si *SwapInit) Marshal() Message {
 
 func (si *SwapInit) UnMarshal(message Message) {
 
+
 }
 
-type SwapPublish struct {
+type SwapExchange struct {
     Contract   Message       `json:"message"` //message converted from HTLContract
     SecretHash [32]byte      `json:"secrethash"`
     Count      int           `json:"count"`
+}
+
+func (se SwapExchange) validate() err.Code {
+	log.Debug("Validating SwapExchange")
+
+	if se.Contract == nil {
+		log.Debug("Missing Contract")
+		return err.MISSING_DATA
+	}
+
+	log.Debug("SwapExchange is validated!")
+	return err.SUCCESS
+}
+
+func (se *SwapExchange) Marshal() Message {
+
+	return nil
+}
+
+func (se *SwapExchange) UnMarshal(message Message) {
+
 }
 
 type SwapVerify struct {
@@ -140,34 +191,64 @@ type SwapVerify struct {
     Message Message         `json:"Message"`
 }
 
+func (sv SwapVerify) validate() err.Code {
+	log.Debug("Validating SwapVerify")
+
+	if &sv.Event == nil {
+		log.Debug("Missing Event")
+		return err.MISSING_DATA
+	}
+
+	log.Debug("SwapVerify is validated!")
+	return err.SUCCESS
+}
+
+func (sv *SwapVerify) Marshaal() Message {
+	return nil
+}
+
+func (se *SwapVerify) UnMarshal(message Message) {
+
+}
 
 type Party struct {
 	Key      id.AccountKey				`json:"key"`
 	Accounts map[data.ChainType][]byte	`json:"accounts"`
 }
 
+func parseSwapMessage(stage swapStageType, message Message) swapMessage {
+	var swap swapMessage
+	switch stage {
+	case MATCHING:
+		swap.(SwapInit).UnMarshal(message)
+	case INITIATOR_INITIATE:
+		swap.(SwapInit).UnMarshal(message)
+	case PARTICIPANT_PARTICIPATE:
+		swap.(SwapExchange).UnMarshal(message)
+	case INITIATOR_REDEEM:
+		swap.(SwapExchange).UnMarshal(message)
+	case PARTICIPANT_REDEEM:
+		swap.(SwapExchange).UnMarshal(message)
+	case WAIT_FOR_CHAIN:
+		swap.(SwapVerify).UnMarshal(message)
+	case REFUND_SWAP:
+		swap.(SwapExchange).UnMarshal(message)
+	case FINISH_SWAP:
+		swap.(SwapVerify).UnMarshal(message)
+	default:
+		log.Debug("Parse swap message stage not exist", "stage", stage)
+		swap = nil
+	}
+	return swap
+}
+
 // Ensure that all of the base values are at least reasonable.
 func (transaction *Swap) Validate() err.Code {
 	log.Debug("Validating Swap Transaction")
 
-	if transaction.Party.Key == nil {
-		log.Debug("Missing Party")
+	if transaction.Message == nil {
+		log.Debug("swap don't contain message")
 		return err.MISSING_DATA
-	}
-
-	if transaction.CounterParty.Key == nil {
-		log.Debug("Missing CounterParty")
-		return err.MISSING_DATA
-	}
-
-	if !transaction.Amount.IsCurrency("BTC", "ETH", "OLT") {
-		log.Debug("Swap on Currency isn't implement yet")
-		return err.NOT_IMPLEMENTED
-	}
-
-	if !transaction.Exchange.IsCurrency("BTC", "ETH", "OLT") {
-		log.Debug("Swap on Currency isn't implement yet")
-		return err.NOT_IMPLEMENTED
 	}
 
 	log.Debug("Swap is validated!")
@@ -182,41 +263,132 @@ func (transaction *Swap) ProcessCheck(app interface{}) err.Code {
 	return err.SUCCESS
 }
 
+// Is this node one of the partipants in the swap
+func (transaction *Swap) ShouldProcess(app interface{}) bool {
+	account := GetNodeAccount(app)
+
+	if transaction.IsParty(account) != nil {
+		return true
+	}
+
+	return false
+}
+
 // Start the swap
 func (transaction *Swap) ProcessDeliver(app interface{}) err.Code {
 	log.Debug("Processing Swap Transaction for DeliverTx")
-	matchedSwap := ProcessSwap(app, transaction)
-	if matchedSwap != nil {
-		log.Debug("Expanding the Transaction into Functions")
-		commands := matchedSwap.Expand(app)
 
-		matchedSwap.Resolve(app, commands)
+	commands := transaction.Resolve(app)
 
-		//before loop of execute, lastResult is nil
-		var lastResult FunctionValues
+	if commands.Count() == 0 {
+		return err.EXPAND_ERROR
+	}
+	//before loop of execute, lastResult is nil
+	var lastResult FunctionValues
 
-		for i := 0; i < commands.Count(); i++ {
-		    them := GetParty(commands[i].Data[THEM_ACCOUNT])
-            event := Event{Type: SWAP, Key: them.Key , Nonce: matchedSwap.Nonce }
-            if commands[i].Function == FINISH {
-                SaveEvent(app, event, true)
-                return err.SUCCESS
-            }
-
-			status, result := Execute(app, commands[i], lastResult)
-			if status != err.SUCCESS {
-				log.Error("Failed to Execute", "command", commands[i])
-				SaveEvent(app, event, false)
-				return err.EXPAND_ERROR
-			}
-
-			lastResult = result
+	for i := 0; i < commands.Count(); i++ {
+		them := GetParty(commands[i].Data[THEM_ACCOUNT])
+		event := Event{Type: SWAP, Key: them.Key , Nonce: matchedSwap.Nonce }
+		if commands[i].Function == FINISH {
+			SaveEvent(app, event, true)
+			return err.SUCCESS
 		}
-	} else {
-		log.Debug("Not Involved or Not Ready")
+
+		status, result := Execute(app, commands[i], lastResult)
+		if status != err.SUCCESS {
+			log.Error("Failed to Execute", "command", commands[i])
+			SaveEvent(app, event, false)
+			return err.EXPAND_ERROR
+		}
+
+		lastResult = result
 	}
 
 	return err.SUCCESS
+}
+
+// Plug in data from the rest of a system into a set of commands
+func (swap *Swap) Resolve(app interface{}) Commands {
+
+	commands := ProcessSwap(app, swap)
+	chains := swap.getChains()
+
+	account := GetNodeAccount(app)
+	isParty := swap.IsParty(account)
+
+	role := swap.getRole(*isParty)
+
+	identities := GetIdentities(app)
+	_ = identities
+	name := global.Current.NodeIdentity
+	_ = name
+
+	utxo := GetUtxo(app)
+	_ = utxo
+
+	chains := swap.getChains()
+	isParty := swap.IsParty(account)
+	role := swap.getRole(*isParty)
+
+	for i := 0; i < len(commands); i++ {
+
+		side := commands[i].Order
+		log.Info("side", "s", side)
+		if &side == nil {
+			commands[i].Chain = data.ONELEDGER
+		} else {
+			commands[i].Chain = chains[side]
+		}
+
+		var key id.AccountKey
+
+		if *isParty {
+			commands[i].data[MY_ACCOUNT] = swap.Party
+			commands[i].data[THEM_ACCOUNT] = swap.CounterParty
+			commands[i].data[AMOUNT] = swap.Amount
+			commands[i].data[EXCHANGE] = swap.Exchange
+			key = swap.CounterParty.Key
+		} else {
+			commands[i].data[MY_ACCOUNT] = swap.CounterParty
+			commands[i].data[THEM_ACCOUNT] = swap.Party
+			commands[i].data[AMOUNT] = swap.Exchange
+			commands[i].data[EXCHANGE] = swap.Amount
+			key = swap.Party.Key
+		}
+
+		commands[i].Data[ROLE] = role
+		commands[i].Data[NONCE] = swap.Nonce
+
+		if role == INITIATOR {
+			if commands[i].Function == INITIATE {
+
+				var secret [32]byte
+				_, err := rand.Read(secret[:])
+				if err != nil {
+					log.Error("failed to get random secret with 32 length", "err", err)
+				}
+				secretHash := sha256.Sum256(secret[:])
+				commands[i].Data[PASSWORD] = secret
+				commands[i].Data[PREIMAGE] = secretHash
+				tokens[key.String()] = secret
+			} else {
+				secret := tokens[key.String()]
+				commands[i].Data[PASSWORD] = secret
+				commands[i].Data[PREIMAGE] = sha256.Sum256(secret[:])
+			}
+		}
+		commands[i].Data[EVENTTYPE] = SWAP
+	}
+	return
+}
+
+func SaveUnmatchSwap(app interface{}, chain data.ChainType, context FunctionValues) (bool, FunctionValues){
+	return false, nil
+}
+
+//get the next stage from the current stage
+func NextStage(app interface{}, chain data.ChainType, context FunctionValues)  (bool, FunctionValues) {
+	return false, nil
 }
 
 func FindMatchingSwap(status *data.Datastore, accountKey id.AccountKey, transaction *Swap, isParty bool) (matched *Swap) {
@@ -328,8 +500,9 @@ func ProcessSwap(app interface{}, transaction *Swap) *Swap {
 	return nil
 }
 
-func SaveSwap(status *data.Datastore, accountKey id.AccountKey, transaction *Swap) {
+func SaveSwap(app interface{}, accountKey id.AccountKey, transaction *Swap) {
 	log.Debug("SaveSwap", "key", accountKey)
+	status := GetStatus(app)
 	buffer, err := comm.Serialize(transaction)
 	if err != nil {
 		log.Error("Failed to Serialize SaveSwap transaction")
@@ -338,7 +511,8 @@ func SaveSwap(status *data.Datastore, accountKey id.AccountKey, transaction *Swa
 	status.Commit()
 }
 
-func FindSwap(status *data.Datastore, key id.AccountKey) Transaction {
+func FindSwap(app interface{}, key id.AccountKey) Transaction {
+	status := GetStatus(app)
 	result := status.Load(key)
 	if result == nil {
 		return nil
@@ -350,18 +524,6 @@ func FindSwap(status *data.Datastore, key id.AccountKey) Transaction {
 		return nil
 	}
 	return buffer.(Transaction)
-}
-
-
-// Is this node one of the partipants in the swap
-func (transaction *Swap) ShouldProcess(app interface{}) bool {
-	account := GetNodeAccount(app)
-
-	if transaction.IsParty(account) != nil {
-		return true
-	}
-
-	return false
 }
 
 func GetAccount(app interface{}, accountKey id.AccountKey) id.Account {
@@ -434,82 +596,6 @@ func (swap *Swap) getRole(isParty bool) Role {
 			return INITIATOR
 		}
 	}
-}
-
-// Plug in data from the rest of a system into a set of commands
-func (swap *Swap) Resolve(app interface{}) Commands {
-	chains := swap.getChains()
-
-	account := GetNodeAccount(app)
-	isParty := swap.IsParty(account)
-
-	role := swap.getRole(*isParty)
-
-	commands := make(Commands, 0)
-
-	append(commands, )
-	identities := GetIdentities(app)
-	_ = identities
-	name := global.Current.NodeIdentity
-	_ = name
-
-	utxo := GetUtxo(app)
-	_ = utxo
-
-	chains := swap.getChains()
-	isParty := swap.IsParty(account)
-	role := swap.getRole(*isParty)
-
-	for i := 0; i < len(commands); i++ {
-
-		side := commands[i].Order
-		log.Info("side", "s", side)
-		if &side == nil {
-			commands[i].Chain = data.ONELEDGER
-		} else {
-            commands[i].Chain = chains[side]
-        }
-
-		var key id.AccountKey
-
-		if *isParty {
-		    commands[i].data[MY_ACCOUNT] = swap.Party
-		    commands[i].data[THEM_ACCOUNT] = swap.CounterParty
-			commands[i].data[AMOUNT] = swap.Amount
-			commands[i].data[EXCHANGE] = swap.Exchange
-            key = swap.CounterParty.Key
-		} else {
-		    commands[i].data[MY_ACCOUNT] = swap.CounterParty
-		    commands[i].data[THEM_ACCOUNT] = swap.Party
-			commands[i].data[AMOUNT] = swap.Exchange
-			commands[i].data[EXCHANGE] = swap.Amount
-            key = swap.Party.Key
-		}
-
-		commands[i].Data[ROLE] = role
-		commands[i].Data[NONCE] = swap.Nonce
-
-		if role == INITIATOR {
-		    if commands[i].Function == INITIATE {
-
-                var secret [32]byte
-                _, err := rand.Read(secret[:])
-                if err != nil {
-                    log.Error("failed to get random secret with 32 length", "err", err)
-                }
-                secretHash := sha256.Sum256(secret[:])
-                commands[i].Data[PASSWORD] = secret
-                commands[i].Data[PREIMAGE] = secretHash
-                tokens[key.String()] = secret
-            } else {
-                secret := tokens[key.String()]
-                commands[i].Data[PASSWORD] = secret
-                commands[i].Data[PREIMAGE] = sha256.Sum256(secret[:])
-            }
-		}
-		commands[i].Data[EVENTTYPE] = SWAP
-	}
-	return
 }
 
 // TODO: Needs to be configurable

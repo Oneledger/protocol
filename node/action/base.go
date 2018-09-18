@@ -51,13 +51,6 @@ type Transaction interface {
 	Resolve(interface{}) Commands
 }
 
-type TransactionSerializer interface {
-    Marshal() Message
-    UnMarshal(Message)
-}
-
-
-
 // Base Data for each type
 type Base struct {
 	Type    Type   `json:"type"`
