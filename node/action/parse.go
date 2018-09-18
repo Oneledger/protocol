@@ -18,7 +18,7 @@ import (
 func UnpackMessage(message Message) (Type, Message) {
 	value, _, err := wire.DecodeInt32(message)
 	if err != nil {
-		log.Fatal("UnpackMessage failed", "message=", message)
+		log.Error("UnpackMessage failed", "message", message)
 	}
 	return Type(value), message[4:]
 }
