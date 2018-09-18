@@ -83,11 +83,6 @@ func (transaction Register) ProcessDeliver(app interface{}) err.Code {
 	return err.SUCCESS
 }
 
-func (transaction Register) Resolve(app interface{}, commands Commands) {
-}
-
-// Given a transaction, expand it into a list of Commands to execute against various chains.
-func (transaction Register) Expand(app interface{}) Commands {
-	// TODO: Table-driven mechanics, probably elsewhere
+func (transaction *Register) Resolve(app interface{}) Commands {
 	return []Command{}
 }

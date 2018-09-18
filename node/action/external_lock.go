@@ -33,20 +33,9 @@ func (transaction *ExternalLock) Validate() err.Code {
 func (transaction *ExternalLock) ProcessCheck(app interface{}) err.Code {
 	log.Debug("Processing ExternalLock Transaction for CheckTx")
 
-	commands := transaction.Expand(app)
-	transaction.Resolve(app, commands)
+	commands := transaction.Resolve(app)
 
-	//before loop of execute, lastResult is nil
-	var lastResult FunctionValues
-	var status err.Code
-
-	for i := 0; i < commands.Count(); i++ {
-		status, lastResult = Execute(app, commands[i], lastResult)
-		if status != err.SUCCESS {
-			return err.EXPAND_ERROR
-		}
-	}
-	return err.SUCCESS
+	return commands.Execute(app)
 }
 
 func (transaction *ExternalLock) ShouldProcess(app interface{}) bool {
@@ -60,11 +49,6 @@ func (transaction *ExternalLock) ProcessDeliver(app interface{}) err.Code {
 	return err.SUCCESS
 }
 
-func (transaction *ExternalLock) Resolve(app interface{}, commands Commands) {
-}
-
-// Given a transaction, expand it into a list of Commands to execute against various chains.
-func (transaction *ExternalLock) Expand(app interface{}) Commands {
-	// TODO: Table-driven mechanics, probably elsewhere
+func (transaction *ExternalLock) Resolve(app interface{} ) Commands{
 	return []Command{}
 }

@@ -9,8 +9,6 @@ import (
 	"github.com/Oneledger/protocol/node/err"
 	"github.com/Oneledger/protocol/node/id"
 	"github.com/tendermint/go-crypto"
-	"github.com/Oneledger/protocol/node/global"
-	"github.com/Oneledger/protocol/node/log"
 )
 
 type Message = []byte // Contents of a transaction
@@ -65,32 +63,3 @@ type Base struct {
 	Delay    int64 `json:"delay"` // Pause the transaction in the mempool
 }
 
-// Execute the function
-func Execute(app interface{}, command Command, lastResult FunctionValues) (err.Code, FunctionValues) {
-	//make sure the first execute use the context, and later uses last result. so if command are executed in a row, every executed function should only add
-	//parameters in the context and return instead of create new context every time
-	if len(lastResult) > 0 {
-		for key, value := range lastResult {
-			command.data[key] = value
-		}
-	}
-	status, result := command.Execute(app)
-	if  status {
-		return err.SUCCESS, result
-	}
-
-	return err.NOT_IMPLEMENTED, lastResult
-}
-
-func GetNodeAccount(app interface{}) id.Account {
-
-	accounts := GetAccounts(app)
-	account, _ := accounts.FindName(global.Current.NodeAccountName)
-	if account == nil {
-		log.Error("Node does not have account", "name", global.Current.NodeAccountName)
-		accounts.Dump()
-		return nil
-	}
-
-	return account
-}

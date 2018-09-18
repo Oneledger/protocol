@@ -2,6 +2,9 @@ package action
 
 import (
     "errors"
+    "github.com/Oneledger/protocol/node/global"
+    "github.com/Oneledger/protocol/node/id"
+    "github.com/Oneledger/protocol/node/log"
     "github.com/tendermint/tendermint/wire"
     "time"
 
@@ -122,4 +125,18 @@ func CreateHtlContract(app interface{}, transaction Transaction, scrhash [32]byt
         LockHeight:      lockHeight,
         StartFromHeight: height,
     }
+}
+
+
+func GetNodeAccount(app interface{}) id.Account {
+
+    accounts := GetAccounts(app)
+    account, _ := accounts.FindName(global.Current.NodeAccountName)
+    if account == nil {
+        log.Error("Node does not have account", "name", global.Current.NodeAccountName)
+        accounts.Dump()
+        return nil
+    }
+
+    return account
 }

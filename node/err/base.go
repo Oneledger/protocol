@@ -17,4 +17,5 @@ const (
 	DUPLICATE       Code = 601
 	MISSING_DATA    Code = 701
 	BAD_VALUE       Code = 801
+	EXECUTE_ERROR	Code = 901
 )

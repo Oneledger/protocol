@@ -30,14 +30,14 @@ import (
 type swapStageType int32
 
 const (
-    MATCHING  swapStageType = iota
+    SWAP_MATCHING  swapStageType = iota
     INITIATOR_INITIATE
     PARTICIPANT_PARTICIPATE
     INITIATOR_REDEEM
     PARTICIPANT_REDEEM
     WAIT_FOR_CHAIN
-    REFUND_SWAP
-    FINISH_SWAP
+    SWAP_REFUND
+    SWAP_FINISH
 )
 
 // Synchronize a swap between two users
@@ -48,9 +48,9 @@ type Swap struct {
 }
 
 var swapStageFlow = map[swapStageType]SwapStage{
-    MATCHING: {
-        Stage:MATCHING,
-        Commands: Commands{Command{opfunc: ProcessMatch},Command{opfunc: SaveUnmatchSwap}, Command{opfunc: NextStage}},
+    SWAP_MATCHING: {
+        Stage:SWAP_MATCHING,
+        Commands: Commands{Command{opfunc:ProcessMatching},Command{opfunc: SaveUnmatchSwap}, Command{opfunc: NextStage}},
         InStage: nil,
         OutStage: WAIT_FOR_CHAIN,
     },
@@ -73,28 +73,28 @@ var swapStageFlow = map[swapStageType]SwapStage{
         OutStage: PARTICIPANT_REDEEM,
     },
     PARTICIPANT_REDEEM: {
-        Stage: PARTICIPANT_REDEEM,
+        Stage:    PARTICIPANT_REDEEM,
         Commands: Commands{Command{opfunc: ExtractSecret}, Command{opfunc: Redeem}, Command{opfunc: NextStage}},
-        InStage: INITIATOR_REDEEM,
-        OutStage: FINISH_SWAP,
+        InStage:  INITIATOR_REDEEM,
+        OutStage: SWAP_FINISH,
     },
-    FINISH_SWAP: {
-        Stage: FINISH_SWAP,
+    SWAP_FINISH: {
+        Stage:    SWAP_FINISH,
         Commands: Commands{Command{opfunc: FinalizeSwap}},
-        InStage: PARTICIPANT_REDEEM,
+        InStage:  PARTICIPANT_REDEEM,
         OutStage: nil,
 
     },
     WAIT_FOR_CHAIN: {
       Stage: WAIT_FOR_CHAIN,
       Commands: Commands{Command{opfunc: VerifySwap}, Command{opfunc: ClearEvent}},
-      InStage: MATCHING,
+      InStage: SWAP_MATCHING,
       OutStage: nil,
     },
-    REFUND_SWAP: {
-        Stage: REFUND_SWAP,
+    SWAP_REFUND: {
+        Stage:    SWAP_REFUND,
         Commands: Commands{Command{opfunc: Refund}},
-        InStage: WAIT_FOR_CHAIN,
+        InStage:  WAIT_FOR_CHAIN,
         OutStage: nil,
     },
 }
@@ -110,7 +110,7 @@ type SwapStage struct {
 
 type swapMessage interface {
 	validate() err.Code
-	//forStage() swapStageType
+	resolve(interface{}, SwapStage)
 }
 
 type SwapInit struct {
@@ -149,6 +149,118 @@ func (swap SwapInit) validate() err.Code {
 	return err.SUCCESS
 }
 
+func (swap SwapInit) resolve(app interface{}, stage SwapStage) Commands{
+    chains := swap.getChains()
+    account := GetNodeAccount(app)
+    isParty := swap.IsParty(account)
+    role := swap.getRole(*isParty)
+
+    commands := stage.Commands
+
+    side := commands.Order
+    log.Info("side", "s", side)
+    if &side == nil {
+        commands.Chain = data.ONELEDGER
+    } else {
+        commands.Chain = chains[side]
+    }
+
+    var key id.AccountKey
+
+    if *isParty {
+        commands.data[MY_ACCOUNT] = swap.Party
+        commands.data[THEM_ACCOUNT] = swap.CounterParty
+        commands.data[AMOUNT] = swap.Amount
+        commands.data[EXCHANGE] = swap.Exchange
+        key = swap.CounterParty.Key
+    } else {
+        commands.data[MY_ACCOUNT] = swap.CounterParty
+        commands.data[THEM_ACCOUNT] = swap.Party
+        commands.data[AMOUNT] = swap.Exchange
+        commands.data[EXCHANGE] = swap.Amount
+        key = swap.Party.Key
+    }
+
+    commands.Data[ROLE] = role
+    commands.Data[NONCE] = swap.Nonce
+
+    if role == INITIATOR {
+        if commands.Function == INITIATE {
+
+            var secret [32]byte
+            _, err := rand.Read(secret[:])
+            if err != nil {
+                log.Error("failed to get random secret with 32 length", "err", err)
+            }
+            secretHash := sha256.Sum256(secret[:])
+            commands.Data[PASSWORD] = secret
+            commands.Data[PREIMAGE] = secretHash
+            tokens[key.String()] = secret
+        } else {
+            secret := tokens[key.String()]
+            commands.Data[PASSWORD] = secret
+            commands.Data[PREIMAGE] = sha256.Sum256(secret[:])
+        }
+    }
+    commands.Data[EVENTTYPE] = SWAP
+
+    return commands
+}
+
+func (transaction *SwapInit) IsParty(account id.Account) *bool {
+
+    if account == nil {
+        log.Debug("Getting Role for empty account")
+        return nil
+    }
+
+    var isParty bool
+    if bytes.Compare(transaction.Party.Key, account.AccountKey()) == 0 {
+        isParty = true
+        return &isParty
+    }
+
+    if bytes.Compare(transaction.CounterParty.Key, account.AccountKey()) == 0 {
+        isParty = false
+        return &isParty
+    }
+
+    // TODO: Shouldn't be in-band this way
+    return nil
+}
+
+// Get the correct chains order for this action
+func (swap *SwapInit) getChains() []data.ChainType {
+
+    var first, second data.ChainType
+    if swap.Amount.Currency.Id < swap.Exchange.Currency.Id {
+        first = data.Currencies[swap.Amount.Currency.Name].Chain
+        second = data.Currencies[swap.Exchange.Currency.Name].Chain
+    } else {
+        first = data.Currencies[swap.Exchange.Currency.Name].Chain
+        second = data.Currencies[swap.Amount.Currency.Name].Chain
+    }
+
+    return []data.ChainType{data.ONELEDGER, first, second}
+}
+
+func (swap *SwapInit) getRole(isParty bool) Role {
+
+    if swap.Amount.Currency.Id < swap.Exchange.Currency.Id {
+        if isParty {
+            return INITIATOR
+        } else {
+            return PARTICIPANT
+        }
+    } else {
+        if isParty {
+            return PARTICIPANT
+        } else {
+            return INITIATOR
+        }
+    }
+}
+
 func (si *SwapInit) Marshal() Message {
 
     return nil
@@ -177,6 +289,10 @@ func (se SwapExchange) validate() err.Code {
 	return err.SUCCESS
 }
 
+func (swap SwapExchange) resolve(app interface{}) Commands {
+
+}
+
 func (se *SwapExchange) Marshal() Message {
 
 	return nil
@@ -203,6 +319,10 @@ func (sv SwapVerify) validate() err.Code {
 	return err.SUCCESS
 }
 
+func (swap SwapVerify) resolve(app interface{}) Commands {
+
+}
+
 func (sv *SwapVerify) Marshaal() Message {
 	return nil
 }
@@ -219,7 +339,7 @@ type Party struct {
 func parseSwapMessage(stage swapStageType, message Message) swapMessage {
 	var swap swapMessage
 	switch stage {
-	case MATCHING:
+	case SWAP_MATCHING:
 		swap.(SwapInit).UnMarshal(message)
 	case INITIATOR_INITIATE:
 		swap.(SwapInit).UnMarshal(message)
@@ -231,9 +351,9 @@ func parseSwapMessage(stage swapStageType, message Message) swapMessage {
 		swap.(SwapExchange).UnMarshal(message)
 	case WAIT_FOR_CHAIN:
 		swap.(SwapVerify).UnMarshal(message)
-	case REFUND_SWAP:
+	case SWAP_REFUND:
 		swap.(SwapExchange).UnMarshal(message)
-	case FINISH_SWAP:
+	case SWAP_FINISH:
 		swap.(SwapVerify).UnMarshal(message)
 	default:
 		log.Debug("Parse swap message stage not exist", "stage", stage)
@@ -267,9 +387,13 @@ func (transaction *Swap) ProcessCheck(app interface{}) err.Code {
 func (transaction *Swap) ShouldProcess(app interface{}) bool {
 	account := GetNodeAccount(app)
 
-	if transaction.IsParty(account) != nil {
+	if bytes.Equal(transaction.Base.Target, account.AccountKey()) {
 		return true
 	}
+
+	if bytes.Equal(transaction.Base.Owner, account.AccountKey()) {
+	    return true
+    }
 
 	return false
 }
@@ -287,17 +411,17 @@ func (transaction *Swap) ProcessDeliver(app interface{}) err.Code {
 	var lastResult FunctionValues
 
 	for i := 0; i < commands.Count(); i++ {
-		them := GetParty(commands[i].Data[THEM_ACCOUNT])
-		event := Event{Type: SWAP, Key: them.Key , Nonce: matchedSwap.Nonce }
-		if commands[i].Function == FINISH {
-			SaveEvent(app, event, true)
-			return err.SUCCESS
-		}
+		//them := GetParty(commands.Data[THEM_ACCOUNT])
+		//event := Event{Type: SWAP, Key: them.Key , Nonce: matchedSwap.Nonce }
+		//if commands.Function == FINISH {
+		//	SaveEvent(app, event, true)
+		//	return err.SUCCESS
+		//}
 
 		status, result := Execute(app, commands[i], lastResult)
 		if status != err.SUCCESS {
 			log.Error("Failed to Execute", "command", commands[i])
-			SaveEvent(app, event, false)
+			//SaveEvent(app, event, false)
 			return err.EXPAND_ERROR
 		}
 
@@ -309,77 +433,9 @@ func (transaction *Swap) ProcessDeliver(app interface{}) err.Code {
 
 // Plug in data from the rest of a system into a set of commands
 func (swap *Swap) Resolve(app interface{}) Commands {
-
-	commands := ProcessSwap(app, swap)
-	chains := swap.getChains()
-
-	account := GetNodeAccount(app)
-	isParty := swap.IsParty(account)
-
-	role := swap.getRole(*isParty)
-
-	identities := GetIdentities(app)
-	_ = identities
-	name := global.Current.NodeIdentity
-	_ = name
-
-	utxo := GetUtxo(app)
-	_ = utxo
-
-	chains := swap.getChains()
-	isParty := swap.IsParty(account)
-	role := swap.getRole(*isParty)
-
-	for i := 0; i < len(commands); i++ {
-
-		side := commands[i].Order
-		log.Info("side", "s", side)
-		if &side == nil {
-			commands[i].Chain = data.ONELEDGER
-		} else {
-			commands[i].Chain = chains[side]
-		}
-
-		var key id.AccountKey
-
-		if *isParty {
-			commands[i].data[MY_ACCOUNT] = swap.Party
-			commands[i].data[THEM_ACCOUNT] = swap.CounterParty
-			commands[i].data[AMOUNT] = swap.Amount
-			commands[i].data[EXCHANGE] = swap.Exchange
-			key = swap.CounterParty.Key
-		} else {
-			commands[i].data[MY_ACCOUNT] = swap.CounterParty
-			commands[i].data[THEM_ACCOUNT] = swap.Party
-			commands[i].data[AMOUNT] = swap.Exchange
-			commands[i].data[EXCHANGE] = swap.Amount
-			key = swap.Party.Key
-		}
-
-		commands[i].Data[ROLE] = role
-		commands[i].Data[NONCE] = swap.Nonce
-
-		if role == INITIATOR {
-			if commands[i].Function == INITIATE {
-
-				var secret [32]byte
-				_, err := rand.Read(secret[:])
-				if err != nil {
-					log.Error("failed to get random secret with 32 length", "err", err)
-				}
-				secretHash := sha256.Sum256(secret[:])
-				commands[i].Data[PASSWORD] = secret
-				commands[i].Data[PREIMAGE] = secretHash
-				tokens[key.String()] = secret
-			} else {
-				secret := tokens[key.String()]
-				commands[i].Data[PASSWORD] = secret
-				commands[i].Data[PREIMAGE] = sha256.Sum256(secret[:])
-			}
-		}
-		commands[i].Data[EVENTTYPE] = SWAP
-	}
-	return
+    parsedSwap := parseSwapMessage(swap.Stage, swap.Message)
+    stage := swapStageFlow[swap.Stage]
+    return parsedSwap.resolve(app, stage)
 }
 
 func SaveUnmatchSwap(app interface{}, chain data.ChainType, context FunctionValues) (bool, FunctionValues){
@@ -462,7 +518,7 @@ func MatchSwap(left *Swap, right *Swap) bool {
 	return true
 }
 
-func ProcessSwap(app interface{}, transaction *Swap) *Swap {
+func ProcessMatching(app interface{}, transaction *Swap) *Swap {
 	status := GetStatus(app)
 	account := GetNodeAccount(app)
 
@@ -542,60 +598,6 @@ func GetChainAccount(app interface{}, name string, chain data.ChainType) id.Acco
 	account, _ := accounts.FindKey(identity.Chain[chain])
 
 	return account
-}
-
-func (transaction *Swap) IsParty(account id.Account) *bool {
-
-	if account == nil {
-		log.Debug("Getting Role for empty account")
-		return nil
-	}
-
-	var isParty bool
-	if bytes.Compare(transaction.Party.Key, account.AccountKey()) == 0 {
-		isParty = true
-		return &isParty
-	}
-
-	if bytes.Compare(transaction.CounterParty.Key, account.AccountKey()) == 0 {
-		isParty = false
-		return &isParty
-	}
-
-	// TODO: Shouldn't be in-band this way
-	return nil
-}
-
-// Get the correct chains order for this action
-func (swap *Swap) getChains() []data.ChainType {
-
-	var first, second data.ChainType
-	if swap.Amount.Currency.Id < swap.Exchange.Currency.Id {
-		first = data.Currencies[swap.Amount.Currency.Name].Chain
-		second = data.Currencies[swap.Exchange.Currency.Name].Chain
-	} else {
-		first = data.Currencies[swap.Exchange.Currency.Name].Chain
-		second = data.Currencies[swap.Amount.Currency.Name].Chain
-	}
-
-	return []data.ChainType{data.ONELEDGER, first, second}
-}
-
-func (swap *Swap) getRole(isParty bool) Role {
-
-	if swap.Amount.Currency.Id < swap.Exchange.Currency.Id {
-		if isParty {
-			return INITIATOR
-		} else {
-			return PARTICIPANT
-		}
-	} else {
-		if isParty {
-			return PARTICIPANT
-		} else {
-			return INITIATOR
-		}
-	}
 }
 
 // TODO: Needs to be configurable

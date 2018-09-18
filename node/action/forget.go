@@ -32,27 +32,13 @@ func (transaction *Forget) ShouldProcess(app interface{}) bool {
 
 func (transaction *Forget) ProcessDeliver(app interface{}) err.Code {
 
-	commands := transaction.Expand(app)
-	transaction.Resolve(app, commands)
+	commands := transaction.Resolve(app)
 
 	//before loop of execute, lastResult is nil
-	var lastResult FunctionValues
-	var status err.Code
-
-	for i := 0; i < commands.Count(); i++ {
-		status, lastResult = Execute(app, commands[i], lastResult)
-		if status != err.SUCCESS {
-			return err.EXPAND_ERROR
-		}
-	}
-	return err.SUCCESS
+	return commands.Execute(app)
 }
 
-func (transaction *Forget) Resolve(app interface{}, commands Commands) {
-}
-
-// Given a transaction, expand it into a list of Commands to execute against various chains.
-func (transaction *Forget) Expand(app interface{}) Commands {
-	// TODO: Table-driven mechanics, probably elsewhere
+func (transaction *Forget) Resolve(app interface{}) Commands {
 	return []Command{}
 }
+
