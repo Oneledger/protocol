@@ -1,6 +1,7 @@
 GOTOOLS = \
 	  github.com/mitchellh/gox \
-	  github.com/Masterminds/glide
+	  github.com/Masterminds/glide \
+	  github.com/golang/dep/cmd/dep
 
 all: test
 
@@ -16,9 +17,9 @@ check:
 setup: check tools
 	./setup/install.sh
 	#dep init
-	@echo "==== Running dep ensure, this may take awhile... ===="
+	echo "==== Running dep ensure, this may take awhile... ===="
 	dep ensure
-	@echo "==== Done setting up dependencies! ===="
+	echo "==== Done setting up dependencies! ===="
 
 #
 # Update the dependencies if they have changed.
