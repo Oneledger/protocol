@@ -7,11 +7,12 @@ package id
 
 import (
 	"errors"
-	"github.com/tendermint/tendermint/crypto"
-	"golang.org/x/crypto/bcrypt"
 
-	//"github.com/tendermint/go-crypto/keys/bcrypt"
+	"golang.org/x/crypto/bcrypt"
+	"golang.org/x/crypto/ripemd160"
+
 	"github.com/Oneledger/protocol/node/log"
+	"github.com/tendermint/tendermint/crypto"
 	"github.com/tendermint/tendermint/crypto/ed25519"
 	"github.com/tendermint/tendermint/crypto/secp256k1"
 )
@@ -32,6 +33,15 @@ func (accountKey AccountKey) String() string {
 
 func (accountKey AccountKey) Bytes() []byte {
 	return accountKey
+}
+
+// NewAccountKey hashes the public key to get a unique hash that can act as a key
+func NewAccountKey(key ED25519PublicKey) AccountKey {
+	hasher := ripemd160.New()
+
+	hasher.Write(key.Bytes())
+
+	return hasher.Sum(nil)
 }
 
 type PublicKey = crypto.PubKey

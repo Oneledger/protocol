@@ -121,7 +121,7 @@ func (store Datastore) Close() {
 
 // Store inserts or updates a value under a key
 func (store Datastore) Store(key DatabaseKey, value Message) Message {
-	log.Info("Datastore Store", "key", key, "value", value)
+	log.Debug("Datastore Store", "key", key, "value", value)
 	switch store.Type {
 
 	case MEMORY:

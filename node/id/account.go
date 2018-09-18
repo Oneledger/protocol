@@ -204,12 +204,6 @@ type AccountBase struct {
 	PrivateKey ED25519PrivateKey `json: "privateKey"`
 }
 
-// Hash the public key to get a unique hash that can act as a key
-func NewAccountKey(key PublicKey) AccountKey {
-	// TODO: This deosn't seem right?
-	return AccountKey(key.Address())
-}
-
 // Create a new account for a given chain
 func NewAccount(newType data.ChainType, name string, key ED25519PublicKey, priv ED25519PrivateKey) Account {
 	switch newType {

@@ -74,7 +74,6 @@ then
 		--address $rpcAddress \
 		--btcrpc $btcAddress \
 		--ethrpc $ethAddress \
-		--debug \
 		$extra \
 		>> $LOG/fullnode.log 2>&1 &
 

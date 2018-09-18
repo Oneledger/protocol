@@ -564,7 +564,7 @@
   version = "v0.10.0"
 
 [[projects]]
-  digest = "1:98514c08c9f6d22c48e5738eec92e20ce68eb65b7445c5aa7cb1659f6d6ba5df"
+  digest = "1:f2dc8b9a0547f37ec62cf3f6d562455c3535965246a2d9dee4ac5c3828d16b47"
   name = "github.com/tendermint/tendermint"
   packages = [
     "abci/client",
@@ -582,7 +582,6 @@
     "crypto/merkle",
     "crypto/secp256k1",
     "crypto/tmhash",
-    "crypto/xsalsa20symmetric",
     "evidence",
     "libs/autofile",
     "libs/clist",
@@ -638,9 +637,11 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:bad16ceca442d9b10082d2e30b4b3838f197c0781c6c3550148087d6be8e5dee"
+  digest = "1:e886da80dbd18a8d3f0e807e7a010efe0559edf16fa4c51a3c6cc544354727fa"
   name = "golang.org/x/crypto"
   packages = [
+    "bcrypt",
+    "blowfish",
     "chacha20poly1305",
     "curve25519",
     "hkdf",
@@ -862,15 +863,14 @@
     "github.com/tendermint/tendermint/abci/types",
     "github.com/tendermint/tendermint/crypto",
     "github.com/tendermint/tendermint/crypto/ed25519",
-    "github.com/tendermint/tendermint/crypto/encoding/amino",
     "github.com/tendermint/tendermint/crypto/secp256k1",
-    "github.com/tendermint/tendermint/crypto/xsalsa20symmetric",
     "github.com/tendermint/tendermint/libs/common",
     "github.com/tendermint/tendermint/libs/db",
     "github.com/tendermint/tendermint/libs/log",
     "github.com/tendermint/tendermint/rpc/client",
     "github.com/tendermint/tendermint/rpc/core/types",
     "github.com/tidwall/gjson",
+    "golang.org/x/crypto/bcrypt",
     "golang.org/x/crypto/ripemd160",
     "gopkg.in/jarcoal/httpmock.v1",
   ]
