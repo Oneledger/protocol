@@ -34,6 +34,7 @@ const (
 	LOCKTIME
     COUNT
 	CHAINID
+	NEXTCHAINNAME
 
 	EVENTTYPE
 	CHECK_EXTERNAL_CHAIN
@@ -173,4 +174,14 @@ func GetType(value FunctionValue) Type {
 		log.Fatal("Bad Type Cast in FUnction Parameter", "value", value)
 	}
 	return INVALID
+}
+
+func GetChain(value FunctionValue) data.ChainType {
+	switch value.(type) {
+	case data.ChainType:
+		return value.(data.ChainType)
+	default:
+		log.Fatal("Bad Type Cast in Function Parameter", "value", value)
+	}
+	return data.UNKNOWN
 }

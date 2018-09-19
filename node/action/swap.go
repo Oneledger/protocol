@@ -7,8 +7,9 @@ package action
 
 import (
 	"bytes"
+    "github.com/tendermint/go-amino"
 
-	"github.com/Oneledger/protocol/node/chains/bitcoin"
+    "github.com/Oneledger/protocol/node/chains/bitcoin"
 	"github.com/Oneledger/protocol/node/chains/bitcoin/htlc"
 	"github.com/Oneledger/protocol/node/chains/ethereum"
 	"github.com/Oneledger/protocol/node/comm"
@@ -110,7 +111,7 @@ type SwapStage struct {
 
 type swapMessage interface {
 	validate() err.Code
-	resolve(interface{}, SwapStage)
+	resolve(interface{}, *SwapStage) Commands
 }
 
 type SwapInit struct {
@@ -149,43 +150,37 @@ func (swap SwapInit) validate() err.Code {
 	return err.SUCCESS
 }
 
-func (swap SwapInit) resolve(app interface{}, stage SwapStage) Commands{
+func (swap SwapInit) resolve(app interface{}, stage *SwapStage) Commands{
     chains := swap.getChains()
     account := GetNodeAccount(app)
     isParty := swap.IsParty(account)
     role := swap.getRole(*isParty)
 
-    commands := stage.Commands
+    commands := amino.DeepCopy(stage.Commands).(Commands)
 
-    side := commands.Order
-    log.Info("side", "s", side)
-    if &side == nil {
-        commands.Chain = data.ONELEDGER
-    } else {
-        commands.Chain = chains[side]
-    }
+    command := commands[0]
 
     var key id.AccountKey
 
     if *isParty {
-        commands.data[MY_ACCOUNT] = swap.Party
-        commands.data[THEM_ACCOUNT] = swap.CounterParty
-        commands.data[AMOUNT] = swap.Amount
-        commands.data[EXCHANGE] = swap.Exchange
+        command.data[MY_ACCOUNT] = swap.Party
+        command.data[THEM_ACCOUNT] = swap.CounterParty
+        command.data[AMOUNT] = swap.Amount
+        command.data[EXCHANGE] = swap.Exchange
         key = swap.CounterParty.Key
     } else {
-        commands.data[MY_ACCOUNT] = swap.CounterParty
-        commands.data[THEM_ACCOUNT] = swap.Party
-        commands.data[AMOUNT] = swap.Exchange
-        commands.data[EXCHANGE] = swap.Amount
+        command.data[MY_ACCOUNT] = swap.CounterParty
+        command.data[THEM_ACCOUNT] = swap.Party
+        command.data[AMOUNT] = swap.Exchange
+        command.data[EXCHANGE] = swap.Amount
         key = swap.Party.Key
     }
 
-    commands.Data[ROLE] = role
-    commands.Data[NONCE] = swap.Nonce
+    command.data[ROLE] = role
+    command.data[NONCE] = swap.Nonce
 
     if role == INITIATOR {
-        if commands.Function == INITIATE {
+        if command.Function == INITIATE {
 
             var secret [32]byte
             _, err := rand.Read(secret[:])
@@ -193,16 +188,16 @@ func (swap SwapInit) resolve(app interface{}, stage SwapStage) Commands{
                 log.Error("failed to get random secret with 32 length", "err", err)
             }
             secretHash := sha256.Sum256(secret[:])
-            commands.Data[PASSWORD] = secret
-            commands.Data[PREIMAGE] = secretHash
+            command.data[PASSWORD] = secret
+            command.data[PREIMAGE] = secretHash
             tokens[key.String()] = secret
         } else {
             secret := tokens[key.String()]
-            commands.Data[PASSWORD] = secret
-            commands.Data[PREIMAGE] = sha256.Sum256(secret[:])
+            command.data[PASSWORD] = secret
+            command.data[PREIMAGE] = sha256.Sum256(secret[:])
         }
     }
-    commands.Data[EVENTTYPE] = SWAP
+    command.data[EVENTTYPE] = SWAP
 
     return commands
 }
@@ -407,25 +402,26 @@ func (transaction *Swap) ProcessDeliver(app interface{}) err.Code {
 	if commands.Count() == 0 {
 		return err.EXPAND_ERROR
 	}
-	//before loop of execute, lastResult is nil
-	var lastResult FunctionValues
 
 	for i := 0; i < commands.Count(); i++ {
-		//them := GetParty(commands.Data[THEM_ACCOUNT])
+		//them := GetParty(commands[i].Data[THEM_ACCOUNT])
 		//event := Event{Type: SWAP, Key: them.Key , Nonce: matchedSwap.Nonce }
-		//if commands.Function == FINISH {
+		//if commands[i].Function == FINISH {
 		//	SaveEvent(app, event, true)
 		//	return err.SUCCESS
 		//}
 
-		status, result := Execute(app, commands[i], lastResult)
-		if status != err.SUCCESS {
+		status, result := commands[i].Execute(app)
+		if !status {
 			log.Error("Failed to Execute", "command", commands[i])
 			//SaveEvent(app, event, false)
 			return err.EXPAND_ERROR
 		}
-
-		lastResult = result
+		if len(result) > 0 {
+		    commands[i+1].data = result
+        }
+		chain := GetChain(result[NEXTCHAINNAME])
+		commands[i+1].chain = chain
 	}
 
 	return err.SUCCESS
@@ -435,7 +431,11 @@ func (transaction *Swap) ProcessDeliver(app interface{}) err.Code {
 func (swap *Swap) Resolve(app interface{}) Commands {
     parsedSwap := parseSwapMessage(swap.Stage, swap.Message)
     stage := swapStageFlow[swap.Stage]
-    return parsedSwap.resolve(app, stage)
+    return parsedSwap.resolve(app, &stage)
+}
+
+func ProcessMatching(app interface{}, chain data.ChainType, context FunctionValues) (bool, FunctionValues) {
+    return false, nil
 }
 
 func SaveUnmatchSwap(app interface{}, chain data.ChainType, context FunctionValues) (bool, FunctionValues){
@@ -452,8 +452,8 @@ func FindMatchingSwap(status *data.Datastore, accountKey id.AccountKey, transact
 	result := FindSwap(status, accountKey)
 	if result != nil {
 		entry := result.(*Swap)
-		if matching := MatchSwap(entry, transaction); matching {
-			log.Debug("MatchSwap", "matching", matching, "transaction", transaction, "entry", entry, "isParty", isParty)
+		if matching := isMatch(entry, transaction); matching {
+			log.Debug("isMatch", "matching", matching, "transaction", transaction, "entry", entry, "isParty", isParty)
 			var base Swap
 			matched = &base
 			if isParty {
@@ -485,7 +485,7 @@ func FindMatchingSwap(status *data.Datastore, accountKey id.AccountKey, transact
 }
 
 // Two matching swap requests from different parties
-func MatchSwap(left *Swap, right *Swap) bool {
+func isMatch(left *Swap, right *Swap) bool {
 	if left.Base.Type != right.Base.Type {
 		log.Debug("Type is wrong")
 		return false
@@ -518,7 +518,7 @@ func MatchSwap(left *Swap, right *Swap) bool {
 	return true
 }
 
-func ProcessMatching(app interface{}, transaction *Swap) *Swap {
+func MatchingSwap(app interface{}, transaction *Swap) *Swap {
 	status := GetStatus(app)
 	account := GetNodeAccount(app)
 
