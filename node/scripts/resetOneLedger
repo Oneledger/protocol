@@ -16,6 +16,7 @@ fi
 export CMD=$OLSCRIPT
 export STAGING=$OLDATA/staging
 
+rm -rf $OLDATA/staging/*
 #
 # Generate the overall genesis and validator information
 #

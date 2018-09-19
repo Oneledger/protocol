@@ -39,4 +39,3 @@ then
 else
     echo "Ethereum network already started"
 fi
- geth --datadir $OLETH/A --networkid 20180229 --port 30301 --rpcport 28101 --nodiscover --verbosity 1 2>> ~/tmp/A/eth.log
