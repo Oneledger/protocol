@@ -78,6 +78,14 @@ func IsStructure(input interface{}) bool {
 	return false
 }
 
+func IsStructurePtr(input interface{}) bool {
+	kind := reflect.TypeOf(input).Kind()
+	if kind == reflect.Ptr {
+		return true
+	}
+	return false
+}
+
 // Difficult data types
 func IsDifficult(input interface{}) bool {
 	if IsContainer(input) || IsSpecial(input) {

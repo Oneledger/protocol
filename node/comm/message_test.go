@@ -33,7 +33,8 @@ func (p ParentStruct1) AFunction(value int) bool {
 type ParentStruct2 struct {
 	ParentName string
 	Count      int
-	Child      OpaqueChild
+	Child1     OpaqueChild
+	Child2     OpaqueChild
 }
 
 func (p ParentStruct2) AFunction(value int) bool {
@@ -42,6 +43,7 @@ func (p ParentStruct2) AFunction(value int) bool {
 
 type ChildStruct1 struct {
 	ChildName string
+	Size      int
 }
 
 func (c ChildStruct1) AnotherFunction(value int) bool {
@@ -51,6 +53,7 @@ func (c ChildStruct1) AnotherFunction(value int) bool {
 type ChildStruct2 struct {
 	ChildName string
 	Size      int
+	Size2     int
 }
 
 func (c ChildStruct2) AnotherFunction(value int) bool {
@@ -65,26 +68,38 @@ func init() {
 	Register(ChildStruct2{})
 }
 
-var child = ChildStruct2{
+var child1 = ChildStruct1{
+	ChildName: "The Child",
+	Size:      1000,
+}
+
+var child2 = ChildStruct2{
 	ChildName: "The Child",
 	Size:      3000,
 }
 
-var opc = OpaqueChild(child)
+var opc1 = OpaqueChild(&child1)
+var opc2 = OpaqueChild(child2)
 
 var parent = ParentStruct2{
 	ParentName: "The Parent",
 	Count:      2000,
-	Child:      opc,
+	Child1:     opc1,
+	Child2:     opc2,
 }
 
-var opp = OpaqueParent(parent)
+var opp = OpaqueParent(&parent)
 
 func TestIteration(t *testing.T) {
 	log.Debug("CloneIt")
 	opp2 := Clone(opp)
 
 	assert.Equal(t, opp, opp2, "These should be equal")
+
+	opp3 := Extend(opp)
+	log.Debug("Extend", "result", opp3)
+
+	assert.Equal(t, opp, opp3, "These should be equal")
 
 	/*
 		log.Debug("ExtendIt")
