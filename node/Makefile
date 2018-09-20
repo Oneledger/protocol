@@ -71,10 +71,12 @@ fulltest: reset install
 	@./tests/full.sh
 
 #
-# Full Testing, bring up everything, send a transaction and then stop
+# Swap Testing, swap BTC with ETH between nodes
 #
 swaptest: reset install
-	@./scripts/startMVP
+	@./scripts/startBitcoin
+	@./scripts/startEthereum
+	@./tests/register.sh
 	@./tests/swap.sh
 	@./scripts/stopOneLedger
 

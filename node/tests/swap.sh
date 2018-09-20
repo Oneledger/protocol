@@ -6,21 +6,8 @@
 CMD=$GOPATH/src/github.com/Oneledger/protocol/node/scripts
 TEST=$GOPATH/src/github.com/Oneledger/protocol/node/tests
 
-# Clear out the existing chains
-$CMD/stopOneLedger
-$CMD/resetOneLedger
-
-# Add in or update users
-$TEST/register.sh
-
-# Startup the chains
-$CMD/startOneLedger
-
 addrAlice=`$CMD/lookup Alice RPCAddress tcp://127.0.0.1:`
 addrBob=`$CMD/lookup Bob RPCAddress tcp://127.0.0.1:`
-
-# olclient wait --initialized
-#sleep 2
 
 echo "================== Test Swap between BTC & ETH ==================="
 
@@ -65,4 +52,7 @@ echo "============================================================="
 #
 #sleep 1
 
-$CMD/stopOneLedger
+#$CMD/stopOneLedger
+$CMD/showBalance Alice
+sleep 1
+$CMD/showBalance Bob
