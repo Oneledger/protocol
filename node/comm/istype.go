@@ -62,6 +62,10 @@ func IsPrimitive(input interface{}) bool {
 }
 
 func IsInterface(input interface{}) bool {
+	if input == nil {
+		return false
+	}
+
 	kind := reflect.TypeOf(input).Kind()
 	log.Debug("Kind", "kind", kind)
 	if kind == reflect.Interface {
@@ -71,6 +75,10 @@ func IsInterface(input interface{}) bool {
 }
 
 func IsStructure(input interface{}) bool {
+	if input == nil {
+		return false
+	}
+
 	kind := reflect.TypeOf(input).Kind()
 	if kind == reflect.Struct {
 		return true
@@ -78,7 +86,11 @@ func IsStructure(input interface{}) bool {
 	return false
 }
 
-func IsStructurePtr(input interface{}) bool {
+func IsPointer(input interface{}) bool {
+	if input == nil {
+		return false
+	}
+
 	kind := reflect.TypeOf(input).Kind()
 	if kind == reflect.Ptr {
 		return true
@@ -88,7 +100,11 @@ func IsStructurePtr(input interface{}) bool {
 
 // Difficult data types
 func IsDifficult(input interface{}) bool {
-	if IsContainer(input) || IsSpecial(input) {
+	if input == nil {
+		return false
+	}
+
+	if IsSpecial(input) {
 		return true
 	}
 	return false
@@ -96,13 +112,22 @@ func IsDifficult(input interface{}) bool {
 
 // Container data types
 func IsContainer(input interface{}) bool {
+	if input == nil {
+		return false
+	}
+
 	kind := reflect.TypeOf(input).Kind()
 
 	switch kind {
+	case reflect.Struct:
+		return true
+
 	case reflect.Array:
 		return true
+
 	case reflect.Slice:
 		return true
+
 	case reflect.Map:
 		return true
 	}
@@ -111,6 +136,10 @@ func IsContainer(input interface{}) bool {
 
 // Special datatypes
 func IsSpecial(input interface{}) bool {
+	if input == nil {
+		return false
+	}
+
 	kind := reflect.TypeOf(input).Kind()
 
 	switch kind {

@@ -30,17 +30,23 @@ type Message = []byte
 // Given any type of input (except Maps), convert it into wire format
 func Serialize(input interface{}, medium Format) (buffer []byte, err error) {
 
+	copy := Extend(input)
+
+	log.Debug("Extended", "input", input, "copy", copy)
+
 	switch medium {
 
 	case PERSISTENT:
-		buffer, err = json.Marshal(Wrap(input))
+		buffer, err = json.Marshal(copy)
 
 	case NETWORK:
-		buffer, err = json.Marshal(Wrap(input))
+		buffer, err = json.Marshal(copy)
 
 	case CLIENT:
-		buffer, err = json.Marshal(Wrap(input))
+		buffer, err = json.Marshal(copy)
 	}
+
+	log.Debug("Serialized", "buffer", buffer, "err", err)
 
 	return buffer, err
 }
@@ -50,9 +56,7 @@ func Serialize(input interface{}, medium Format) (buffer []byte, err error) {
 func Deserialize(input []byte, output interface{}, medium Format) (msg interface{}, err error) {
 
 	//var raw json.RawMessage
-	wrapper := &SerialWrapper{
-		Value: output,
-	}
+	wrapper := &SerialWrapper{}
 
 	switch medium {
 
@@ -68,13 +72,29 @@ func Deserialize(input []byte, output interface{}, medium Format) (msg interface
 
 	log.Debug("Unmarshal", "err", err, "wrapper", wrapper)
 
-	return wrapper.Value, err
+	result := Contract(wrapper)
+
+	return result, err
 }
 
 type SerialWrapper struct {
-	Type      string
-	IsPointer bool
-	Value     interface{}
+	Type   string
+	Fields map[string]interface{}
+}
+
+var prototype = SerialWrapper{}
+
+func IsSerialWrapper(input interface{}) bool {
+	// TODO: Could probably be replaced with a Type comparison, not a string one
+	if reflect.TypeOf(input) == reflect.TypeOf(prototype) {
+		return true
+	}
+	/*
+		if reflect.TypeOf(input).String() == reflect.TypeOf(prototype).String() {
+			return true
+		}
+	*/
+	return false
 }
 
 type PartialWrapper struct {
@@ -91,35 +111,46 @@ type SerialUnwrapper struct {
 
 var structures map[string]reflect.Type
 
+// Register a structure by its name
 func Register(base interface{}) {
+
+	// Allocate on the first call
 	if structures == nil {
 		structures = make(map[string]reflect.Type)
 	}
+
 	structures[reflect.TypeOf(base).String()] = reflect.TypeOf(base)
 }
 
+// Dynamically create a structure from its name
 func NewStruct(name string) interface{} {
 	struct_type := structures[name]
 	if struct_type == nil {
 		log.Debug("Missing structure type", "name", name, "structures", structures)
 		return nil
 	}
-	return reflect.Zero(struct_type)
+	base := reflect.New(struct_type)
+	log.Debug("Create Struct", "name", name, "base", base.Interface())
+
+	return base.Interface()
 }
 
+/*
 func (w SerialWrapper) MarshalJSON() (value []byte, err error) {
 	log.Debug("MarshalJSON for SerialWrapper")
-	buffer, err := json.Marshal(w.Value)
+	//buffer, err := json.Marshal(w.Value)
 
-	wrapper := PartialWrapper{
-		Type:      w.Type,
-		IsPointer: w.IsPointer,
-		Value:     string(buffer),
-	}
+		wrapper := PartialWrapper{
+			Type:      w.Type,
+			IsPointer: w.IsPointer,
+			Value:     string(buffer),
+		}
 
-	return json.Marshal(wrapper)
+	return json.Marshal(value)
 }
+*/
 
+/*
 func (w *SerialWrapper) UnmarshalJSON(value []byte) (err error) {
 	log.Debug("UnmarshalJSON for SerialWrapper")
 
@@ -142,8 +173,10 @@ func (w *SerialWrapper) UnmarshalJSON(value []byte) (err error) {
 
 	return status
 }
+*/
 
 // Wrap an interface and return
+/*
 func Wrap(input interface{}) interface{} {
 	log.Debug("Type is", "type", reflect.TypeOf(input))
 
@@ -153,3 +186,4 @@ func Wrap(input interface{}) interface{} {
 		Value:     input,
 	}
 }
+*/

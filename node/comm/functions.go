@@ -1,7 +1,6 @@
 /*
 	Copyright 2017-2018 OneLedger
 */
-
 package comm
 
 import (
@@ -10,145 +9,124 @@ import (
 	"github.com/Oneledger/protocol/node/log"
 )
 
-type Test struct {
-	Name string
-}
-
-// GetValue returns the underlying value, even if it is a pointer
-func GetValue(base interface{}) reflect.Value {
-	element := reflect.ValueOf(base)
-	if element.Kind() == reflect.Ptr {
-		return element.Elem()
-	}
-	return element
-}
-
-// SetStructure takes a pointer to a structure and sets it.
-func SetStruct(parent interface{}, fieldNum int, child interface{}) bool {
-	// Convert the interfaces to structures
-	element := GetValue(parent)
-
-	if element.Kind() != reflect.Struct {
-		log.Warn("Not a structure", "element", element)
-		return false
-	}
-
-	field := element.Field(fieldNum)
-	if !field.IsValid() {
-		log.Warn("Field is invalid", "field", field)
-		return false
-	}
-
-	if !field.CanSet() {
-		log.Warn("Not Settable", "field", field)
-		return false
-	}
-
-	if field.Kind() != reflect.Interface {
-		log.Warn("Field is not an interface", "kind", field.Kind(), "field", field)
-		return false
-	}
-
-	newValue := GetValue(child)
-
-	field.Set(newValue)
-	return true
-}
-
 func Print(base interface{}) {
 	action := &Action{ProcessField: PrintIt}
-
 	Iterate(base, action)
 }
 
-func PrintIt(action *Action, input interface{}) bool {
-	log.Debug("PrintIt", "action", action, "value", input)
-	return true
-}
-
-// Clone and add in SerialWrapper
-func Extend(base interface{}) interface{} {
-	action := &Action{ProcessField: ExtendIt}
-
-	Iterate(base, action)
-
-	var last interface{}
-	for _, value := range action.Children {
-		last = value
-	}
-	return last
-}
-func ExtendIt(action *Action, input interface{}) bool {
-	if reflect.TypeOf(action.Value).Kind() == reflect.Ptr {
-		var copy interface{}
-
-		if reflect.TypeOf(action.Value).Kind() == reflect.Ptr {
-			copy = action.Value
-		} else {
-			copy = action.Value // Implicit Copy
-		}
-
-		for key, value := range action.Children {
-			SetStruct(copy, key, value)
-			delete(action.Children, key)
-		}
-		wrapper := SerialWrapper{
-			Type:      reflect.TypeOf(copy).Name(),
-			IsPointer: false,
-			Value:     copy,
-		}
-		action.Children[action.Field] = wrapper
-	}
-	return true
-}
-
-// Remove any SerialWrappers
-func Contract(base interface{}) interface{} {
-	action := &Action{ProcessField: ContractIt}
-
-	Iterate(base, action)
-
-	var last interface{}
-	for key, value := range action.Children {
-		log.Debug("Have a Final Child", "key", key)
-		last = value
-	}
-	return last
-}
-func ContractIt(action *Action, input interface{}) bool {
-	log.Debug("ContractIt", "struct", action.Struct, "value", input)
+func PrintIt(action *Action, input interface{}) interface{} {
+	log.Debug("PrintIt", "input", input, "action", action)
 	return true
 }
 
 // Make a deep copy of the data
 func Clone(base interface{}) interface{} {
 	action := &Action{ProcessField: CloneIt}
-
-	Iterate(base, action)
-
-	var last interface{}
-	for _, value := range action.Children {
-		last = value
-	}
-	return last
+	result := Iterate(base, action)
+	return result
 }
 
-func CloneIt(action *Action, input interface{}) bool {
+func CloneIt(action *Action, input interface{}) interface{} {
 
-	if reflect.TypeOf(action.Value).Kind() == reflect.Ptr {
-		var copy interface{}
+	//if reflect.TypeOf(action.Value).Kind() == reflect.Ptr {
+	if IsContainer(input) {
 
-		if reflect.TypeOf(action.Value).Kind() == reflect.Ptr {
-			copy = action.Value
-		} else {
-			copy = action.Value // Implicit Copy
+		copy := reflect.New(reflect.TypeOf(input)).Interface()
+		log.Debug("Copied", "copy", copy, "input", input)
+
+		// Overwrite with children
+		for key, value := range action.Processed[action.Name].Children {
+			log.Debug("Child", key, value)
+			Set(copy, key, value)
 		}
 
-		for key, value := range action.Children {
-			SetStruct(copy, key, value)
-			delete(action.Children, key)
-		}
-		action.Children[action.Field] = copy
+		action.Processed[action.ParentName].Children[action.Name] = copy
+		return copy
+
+	} else if IsPointer(input) {
+		return input
 	}
-	return true
+
+	copy := action.Value
+	action.Processed[action.ParentName].Children[action.Name] = copy
+	return copy
+}
+
+// ConvertMap takes a structure and return a map of its elements
+func ConvertMap(structure interface{}) map[string]interface{} {
+	var result map[string]interface{}
+
+	children := GetChildren(structure)
+	result = make(map[string]interface{}, len(children))
+
+	for _, child := range children {
+		result[child.Name] = child.Value
+	}
+	return result
+}
+
+// Clone and add in SerialWrapper
+func Extend(base interface{}) interface{} {
+	log.Debug("Extend")
+
+	action := &Action{ProcessField: ExtendIt}
+	result := Iterate(base, action)
+	return result
+}
+
+func ExtendIt(action *Action, input interface{}) interface{} {
+	if IsContainer(action.Value) {
+		if !IsStructure(action.Value) {
+			log.Fatal("Can't handle other containers yet", "value", action.Value)
+		}
+
+		mapping := ConvertMap(action.Value)
+
+		// Attach all of the interface children
+		for key, value := range action.Processed[action.Name].Children {
+			mapping[key] = value
+		}
+
+		wrapper := SerialWrapper{
+			Type:   reflect.TypeOf(input).String(),
+			Fields: mapping,
+		}
+
+		action.Processed[action.ParentName].Children[action.Name] = wrapper
+		return wrapper
+	}
+	return input
+}
+
+// Remove any SerialWrappers
+func Contract(base interface{}) interface{} {
+	log.Debug("########## Contract")
+	action := &Action{ProcessField: ContractIt}
+	result := Iterate(base, action)
+	return result
+}
+
+func ContractIt(action *Action, input interface{}) interface{} {
+	log.Debug("ContractIt", "action", action, "input", input)
+
+	if IsSerialWrapper(input) {
+		wrapper := input.(SerialWrapper)
+		result := NewStruct(wrapper.Type)
+
+		// Fill it with the deserialized values
+		for key, value := range wrapper.Fields {
+			Set(result, key, value)
+		}
+
+		// Overwrite with any better children
+		for key, value := range action.Processed[action.Name].Children {
+			Set(result, key, value)
+		}
+
+		//action.Processed[action.ParentName].Children[action.Name] = result
+		return result
+	}
+
+	action.Processed[action.ParentName].Children[action.Name] = input
+	return input
 }
