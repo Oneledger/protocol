@@ -10,6 +10,7 @@ import (
 func Set(parent interface{}, fieldName string, child interface{}) bool {
 	kind := reflect.ValueOf(parent).Kind()
 
+	// TODO: Set should be able to handle points properly
 	switch kind {
 
 	case reflect.Struct:
@@ -32,7 +33,7 @@ func SetStruct(parent interface{}, fieldName string, child interface{}) bool {
 		return false
 	}
 
-	log.Debug("SetStruct", "parent", parent, "fieldName", fieldName)
+	log.Debug("SetStruct", "fieldName", fieldName, "parent", parent, "child", child)
 
 	// Convert the interfaces to structures
 	element := reflect.ValueOf(parent).Elem()
@@ -59,16 +60,17 @@ func SetStruct(parent interface{}, fieldName string, child interface{}) bool {
 		return false
 	}
 
-	/*
-		if field.Kind() != reflect.Interface {
-			log.Warn("Field is not an interface", "kind", field.Kind(), "field", field)
-			return false
-		}
-	*/
+	if field.Type().Kind() == reflect.Interface {
+		log.Debug("Trying to set a pointer", "child", child, "type", reflect.TypeOf(child))
+		value := reflect.ValueOf(child)
+		log.Debug("Trying to set a pointer", "value", value)
 
-	newValue := ConvertValue(child, field.Type())
+		field.Set(value)
 
-	field.Set(newValue)
+	} else {
+		newValue := ConvertValue(child, field.Type())
+		field.Set(newValue)
+	}
 
 	return true
 }
@@ -78,6 +80,7 @@ func ConvertValue(value interface{}, fieldType reflect.Type) reflect.Value {
 	if value == nil {
 		return reflect.ValueOf(nil)
 	}
+	log.Debug("ConvertValue", "value", value)
 
 	typeOf := reflect.TypeOf(value)
 	valueOf := reflect.ValueOf(value)

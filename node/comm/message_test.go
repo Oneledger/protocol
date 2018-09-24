@@ -69,12 +69,12 @@ func init() {
 }
 
 var child1 = ChildStruct1{
-	ChildName: "The Child",
+	ChildName: "The Child 1",
 	Size:      1000,
 }
 
 var child2 = ChildStruct2{
-	ChildName: "The Child",
+	ChildName: "The Child 2",
 	Size:      3000,
 	Size2:     -1,
 }
@@ -83,18 +83,23 @@ var opc1 = OpaqueChild(&child1) // Pointer
 var opc2 = OpaqueChild(child2)  // By Value
 
 var parent = ParentStruct2{
-	ParentName: "The Parent",
+	ParentName: "The Parent 2",
 	Count:      2000,
-	//Child1:     opc1,
-	Child2: opc2,
+	Child1:     opc1,
+	Child2:     opc2,
 }
 
 var opp = OpaqueParent(&parent)
 
-func TestClone(t *testing.T) {
-	log.Debug("Iterate", "opp", opp)
-	opp2 := Clone(opp)
+func TestExtend(t *testing.T) {
+	opp2 := Extend(opp)
+	log.Debug("Extended is", "opp2", opp2, "opp", opp)
 
+	assert.NotEqual(t, opp, opp2, "These should not be equal")
+}
+
+func XTestClone(t *testing.T) {
+	opp2 := Clone(opp)
 	assert.Equal(t, opp, opp2, "These should be equal")
 
 	/*

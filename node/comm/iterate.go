@@ -60,8 +60,8 @@ func GetChildren(input interface{}) []Child {
 
 	case reflect.Slice:
 		return GetChildrenSlice(input)
-
 	}
+
 	return []Child{}
 }
 
@@ -98,6 +98,7 @@ func GetChildrenMap(input interface{}) []Child {
 
 		children = append(children, Child{Name: name, Value: value, Kind: kind})
 	}
+
 	return children
 }
 
@@ -113,6 +114,7 @@ func GetChildrenSlice(input interface{}) []Child {
 		kind := reflect.ValueOf(value).Kind()
 		children = append(children, Child{Name: name, Value: value, Kind: kind})
 	}
+
 	return children
 }
 
@@ -128,6 +130,7 @@ func GetChildrenArray(input interface{}) []Child {
 		kind := reflect.ValueOf(value).Kind()
 		children = append(children, Child{Name: name, Value: value, Kind: kind})
 	}
+
 	return children
 }
 
@@ -145,7 +148,7 @@ func Iterate(input interface{}, action *Action) interface{} {
 		log.Fatal("Can't deal with this", "input", input)
 	}
 
-	log.Debug("Iterate", "input", input)
+	//log.Debug("Iterate", "input", input)
 
 	action.Value = input
 	action.ParentName = action.Name
@@ -156,8 +159,18 @@ func Iterate(input interface{}, action *Action) interface{} {
 
 	if IsPointer(input) {
 		element := reflect.ValueOf(input).Elem().Interface()
-		result := Iterate(element, action)
-		return action.ProcessField(action, result)
+
+		action.ChildName = action.Name
+		action.ChildNumber = 0
+
+		Iterate(element, action)
+
+		// Restore the action values, since they were overwritten
+		action.Value = input
+		action.Name = name
+		action.ParentName = parent
+
+		return action.ProcessField(action, input)
 	}
 
 	// Walk the children first -- post-order traversal
@@ -180,6 +193,7 @@ func Iterate(input interface{}, action *Action) interface{} {
 		}
 	}
 
-	log.Debug("Iterate after Children", "input", input)
-	return action.ProcessField(action, input)
+	//log.Debug("Iterate after Children", "input", input)
+	result := action.ProcessField(action, input)
+	return result
 }

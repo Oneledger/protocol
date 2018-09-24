@@ -27,16 +27,12 @@ func Clone(base interface{}) interface{} {
 }
 
 func CloneIt(action *Action, input interface{}) interface{} {
-
-	//if reflect.TypeOf(action.Value).Kind() == reflect.Ptr {
 	if IsContainer(input) {
 
 		copy := reflect.New(reflect.TypeOf(input)).Interface()
-		log.Debug("Copied", "copy", copy, "input", input)
 
 		// Overwrite with children
 		for key, value := range action.Processed[action.Name].Children {
-			log.Debug("Child", key, value)
 			Set(copy, key, value)
 		}
 
@@ -44,7 +40,10 @@ func CloneIt(action *Action, input interface{}) interface{} {
 		return copy
 
 	} else if IsPointer(input) {
-		return input
+		copy := action.Processed[action.Name].Children[action.Name]
+		element := copy
+		action.Processed[action.ParentName].Children[action.Name] = element
+		return element
 	}
 
 	copy := action.Value
@@ -85,30 +84,35 @@ func ExtendIt(action *Action, input interface{}) interface{} {
 		// Attach all of the interface children
 		for key, value := range action.Processed[action.Name].Children {
 			mapping[key] = value
+			delete(action.Processed[action.Name].Children, key)
 		}
 
+		pre := ""
+		if IsPointer(action.Value) {
+			pre = "*"
+		}
 		wrapper := SerialWrapper{
-			Type:   reflect.TypeOf(input).String(),
+			Type:   pre + reflect.TypeOf(input).String(),
 			Fields: mapping,
 		}
 
 		action.Processed[action.ParentName].Children[action.Name] = wrapper
 		return wrapper
 	}
+	for _, value := range action.Processed[action.ParentName].Children {
+		return value
+	}
 	return input
 }
 
 // Remove any SerialWrappers
 func Contract(base interface{}) interface{} {
-	log.Debug("########## Contract")
 	action := &Action{ProcessField: ContractIt}
 	result := Iterate(base, action)
 	return result
 }
 
 func ContractIt(action *Action, input interface{}) interface{} {
-	log.Debug("ContractIt", "action", action, "input", input)
-
 	if IsSerialWrapper(input) {
 		wrapper := input.(SerialWrapper)
 		result := NewStruct(wrapper.Type)
@@ -122,8 +126,6 @@ func ContractIt(action *Action, input interface{}) interface{} {
 		for key, value := range action.Processed[action.Name].Children {
 			Set(result, key, value)
 		}
-
-		//action.Processed[action.ParentName].Children[action.Name] = result
 		return result
 	}
 
