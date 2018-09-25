@@ -58,9 +58,11 @@ func PackRequest(ttype Type, request Transaction) []byte {
 
 	// Stick a 32 bit integer in front, so that we can identify the struct for deserialization
 	buff := new(bytes.Buffer)
-	n, err := int(0), error(nil)
 	base = int32(ttype)
-	wire.WriteInt32(base, buff, &n, &err)
+	err := wire.EncodeInt32(buff, base)
+	if err != nil {
+		log.Error("Failed to EncodeInt32 during PackRequest", "err", err)
+	}
 	bytes := buff.Bytes()
 
 	packet, err := comm.Serialize(request)

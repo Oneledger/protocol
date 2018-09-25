@@ -12,8 +12,8 @@ import (
 
 	"github.com/Oneledger/protocol/node/global"
 	"github.com/Oneledger/protocol/node/log"
-	client "github.com/tendermint/abci/client"
-	"github.com/tendermint/abci/types"
+	client "github.com/tendermint/tendermint/abci/client"
+	"github.com/tendermint/tendermint/abci/types"
 	rpcclient "github.com/tendermint/tendermint/rpc/client"
 	ctypes "github.com/tendermint/tendermint/rpc/core/types"
 )
@@ -127,7 +127,7 @@ func Query(path string, packet []byte) (res *ctypes.ResultABCIQuery) {
 
 	result, err := client.ABCIQuery(path, packet)
 	if err != nil {
-		log.Error("ABCi Query Error", "err", err)
+		log.Error("ABCi Query Error", "path", path, "err", err)
 		return nil
 	}
 
@@ -136,10 +136,10 @@ func Query(path string, packet []byte) (res *ctypes.ResultABCIQuery) {
 	return result
 }
 
-func Search(query string, prove bool) (res []*ctypes.ResultTx) {
+func Search(query string, prove bool, page, perPage int) (res *ctypes.ResultTxSearch) {
 	client := GetClient()
 
-	result, err := client.TxSearch(query, prove)
+	result, err := client.TxSearch(query, prove, page, perPage)
 	if err != nil {
 		log.Error("TxSearch Error", "err", err)
 	}

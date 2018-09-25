@@ -13,7 +13,6 @@ import (
 	"github.com/Oneledger/protocol/node/data"
 	"github.com/Oneledger/protocol/node/id"
 	"github.com/Oneledger/protocol/node/log"
-	crypto "github.com/tendermint/go-crypto"
 )
 
 const CURRENCY = 0x123
@@ -47,8 +46,8 @@ func NewConvert() *Convert {
 	}
 }
 
-type PublicKey = crypto.PubKey
-type PrivateKey = crypto.PrivKey
+type PublicKey = id.PublicKey
+type PrivateKey = id.PrivateKey
 
 func (convert *Convert) HasErrors() bool {
 	if len(convert.Errors) < 1 {
@@ -82,12 +81,12 @@ func (convert *Convert) GetAccountKey(value string) id.AccountKey {
 func (convert *Convert) GetPublicKey(value string) PublicKey {
 	// TODO: Is this a file reference? If so, read in the key
 	// TODO: Is this actionally the key
-	return PublicKey{}
+	return id.NilPublicKey()
 }
 
 // TODO: Needs to have real values
 func (convert *Convert) GetPrivateKey(value string) PrivateKey {
-	return PrivateKey{}
+	return id.NilPrivateKey()
 }
 
 // TODO: Need to be ripeMd?

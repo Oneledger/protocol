@@ -12,7 +12,7 @@ import (
 // Given an Identity or Account, get the correct associated public key
 func GetPublicKey() id.PublicKey {
 	// TODO: Really not sure about this.
-	return id.PublicKey{}
+	return id.NilPublicKey()
 }
 
 // GetSigners will return the public keys of the signers
