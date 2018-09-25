@@ -94,7 +94,6 @@ func ConvertValue(value interface{}, fieldType reflect.Type) reflect.Value {
 		log.Debug("Converted", "result", result)
 		return reflect.ValueOf(result)
 	}
-
 	return valueOf
 }
 

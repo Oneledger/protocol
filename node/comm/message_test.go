@@ -91,34 +91,33 @@ var parent = ParentStruct2{
 
 var opp = OpaqueParent(&parent)
 
-func TestExtend(t *testing.T) {
+func XTestPrint(t *testing.T) {
+	Print(opp)
+}
+
+func XTestClone(t *testing.T) {
+	opp2 := Clone(opp)
+	assert.Equal(t, opp, opp2, "These should be equal")
+}
+
+func XTestExtend(t *testing.T) {
 	opp2 := Extend(opp)
 	log.Debug("Extended is", "opp2", opp2, "opp", opp)
 
 	assert.NotEqual(t, opp, opp2, "These should not be equal")
 }
 
-func XTestClone(t *testing.T) {
-	opp2 := Clone(opp)
-	assert.Equal(t, opp, opp2, "These should be equal")
+func XTestSerialize(t *testing.T) {
 
-	/*
-		opp3 := Extend(opp)
-		log.Debug("Extend", "result", opp3)
-
-		assert.NotEqual(t, opp, opp3, "These should not be equal")
-	*/
-
-	/*
-		log.Debug("ExtendIt")
-		Iterate(opp, Action{ProcessField: ExtendIt})
-
-		log.Debug("ContractIt")
-		Iterate(opp, Action{ProcessField: ContractIt})
-	*/
+	buffer, err := Serialize(opp, PERSISTENT)
+	if err != nil {
+		log.Debug("Serialized failed", "err", err)
+	} else {
+		log.Debug("Serialized Worked, return is", "buffer", buffer)
+	}
 }
 
-func XTestPolymorphism(t *testing.T) {
+func TestPolymorphism(t *testing.T) {
 
 	buffer, err := Serialize(opp, PERSISTENT)
 

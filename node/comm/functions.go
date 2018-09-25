@@ -5,12 +5,17 @@ package comm
 
 import (
 	"reflect"
+	"strings"
 
 	"github.com/Oneledger/protocol/node/log"
 )
 
 func Print(base interface{}) {
-	action := &Action{ProcessField: PrintIt}
+	action := &Action{
+		ProcessField: PrintIt,
+		ParentName:   "root",
+		Name:         "base",
+	}
 	Iterate(base, action)
 }
 
@@ -26,7 +31,9 @@ func Clone(base interface{}) interface{} {
 	return result
 }
 
+// Clone each element
 func CloneIt(action *Action, input interface{}) interface{} {
+
 	if IsContainer(input) {
 
 		copy := reflect.New(reflect.TypeOf(input)).Interface()
@@ -46,8 +53,9 @@ func CloneIt(action *Action, input interface{}) interface{} {
 		return element
 	}
 
-	copy := action.Value
+	copy := input
 	action.Processed[action.ParentName].Children[action.Name] = copy
+
 	return copy
 }
 
@@ -68,63 +76,125 @@ func ConvertMap(structure interface{}) map[string]interface{} {
 func Extend(base interface{}) interface{} {
 	log.Debug("Extend")
 
-	action := &Action{ProcessField: ExtendIt}
+	action := &Action{
+		ProcessField: ExtendIt,
+		ParentName:   "root",
+		Name:         "base",
+	}
+
 	result := Iterate(base, action)
 	return result
 }
 
 func ExtendIt(action *Action, input interface{}) interface{} {
-	if IsContainer(action.Value) {
-		if !IsStructure(action.Value) {
-			log.Fatal("Can't handle other containers yet", "value", action.Value)
+	log.Debug("ExtendIt", "action", action, "input", input)
+
+	if IsContainer(input) {
+		if !IsStructure(input) {
+			log.Fatal("Can't handle other containers yet", "input", input)
 		}
 
-		mapping := ConvertMap(action.Value)
+		mapping := ConvertMap(input)
+		parent := strings.TrimPrefix(action.ParentName, "*")
 
 		// Attach all of the interface children
 		for key, value := range action.Processed[action.Name].Children {
+			log.Debug("Fixing Children", "name", action.Name, "key", key, "processed", action.Processed)
 			mapping[key] = value
 			delete(action.Processed[action.Name].Children, key)
 		}
 
-		pre := ""
-		if IsPointer(action.Value) {
-			pre = "*"
+		typestr := reflect.TypeOf(input).String()
+
+		if action.IsPointer {
+			typestr = "*" + typestr
 		}
+
+		log.Debug("Wrapping", "Name", action.Name, "typestr", typestr, "Parent", parent)
 		wrapper := SerialWrapper{
-			Type:   pre + reflect.TypeOf(input).String(),
+			Type:   typestr,
 			Fields: mapping,
 		}
 
-		action.Processed[action.ParentName].Children[action.Name] = wrapper
+		action.Processed[parent].Children[action.Name] = wrapper
+
 		return wrapper
 	}
+
+	// In general return a child
 	for _, value := range action.Processed[action.ParentName].Children {
+		log.Debug("Pushing up a child", "parent", action.ParentName)
 		return value
 	}
+
 	return input
 }
 
 // Remove any SerialWrappers
 func Contract(base interface{}) interface{} {
-	action := &Action{ProcessField: ContractIt}
+	action := &Action{
+		VisitPrimitives: true,
+		ProcessField:    ContractIt,
+		ParentName:      "root",
+		Name:            "base",
+	}
 	result := Iterate(base, action)
 	return result
 }
 
+// Replace any incoming SerialWrappers with the correct structure
 func ContractIt(action *Action, input interface{}) interface{} {
+	log.Debug("ContractIt", "input", input, "action", action)
+
 	if IsSerialWrapper(input) {
 		wrapper := input.(SerialWrapper)
 		result := NewStruct(wrapper.Type)
 
 		// Fill it with the deserialized values
-		for key, value := range wrapper.Fields {
+		/*
+			for key, value := range wrapper.Fields {
+				log.Debug("Setting Field", key, value)
+				Set(result, key, value)
+			}
+		*/
+
+		// Overwrite with any better children
+		for key, value := range action.Processed["Fields"].Children {
+			log.Debug("Overwriting Modified Children", key, value)
 			Set(result, key, value)
 		}
 
+		log.Debug("Pushing up", "parent", action.ParentName, "child", action.Name, "result", result)
+		action.Processed[action.ParentName].Children[action.Name] = result
+		return result
+	}
+
+	if IsSerialWrapperMap(input) {
+		wrapper := input.(map[string]interface{})
+		stype := wrapper["Type"].(string)
+		result := NewStruct(stype)
+
+		// Fill it with the deserialized values
+		/*
+			for key, value := range wrapper["Fields"].(map[string]interface{}) {
+				log.Debug("Setting Field", key, value)
+				Set(result, key, value)
+			}
+		*/
+
 		// Overwrite with any better children
-		for key, value := range action.Processed[action.Name].Children {
+		for key, value := range action.Processed["Fields"].Children {
+			log.Debug("Overwriting Modified Children", key, value)
 			Set(result, key, value)
+		}
+
+		log.Debug("Map Pushing up", "parent", action.ParentName, "child", action.Name, "result", result)
+		if strings.HasPrefix(stype, "*") {
+			action.Processed[action.ParentName].Children[action.Name] = result
+		} else {
+			// Get the underlying element
+			element := reflect.ValueOf(result).Elem().Interface()
+			action.Processed[action.ParentName].Children[action.Name] = element
 		}
 		return result
 	}

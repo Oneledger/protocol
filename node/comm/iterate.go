@@ -9,16 +9,19 @@ import (
 
 // Action is the context for the iteration, each ProcessField function gets an updated pointer
 type Action struct {
-	Path  string
-	Name  string
-	Value interface{}
+	// Config Items
+	VisitPrimitives bool
 
+	// Current Values
+	ParentName string
+	Name       string
+	Index      int
+	IsPointer  bool
+
+	// Processing Function
 	ProcessField func(*Action, interface{}) interface{}
 
-	ParentName  string
-	ChildNumber int
-	ChildName   string
-
+	// Kids that have already been processed
 	Processed map[string]Parameters
 }
 
@@ -61,10 +64,10 @@ func GetChildren(input interface{}) []Child {
 	case reflect.Slice:
 		return GetChildrenSlice(input)
 	}
-
 	return []Child{}
 }
 
+// Get Children from a structure
 func GetChildrenStruct(input interface{}) []Child {
 	typeOf := reflect.TypeOf(input)
 	valueOf := GetValue(input)
@@ -81,10 +84,10 @@ func GetChildrenStruct(input interface{}) []Child {
 
 		children[i] = Child{Name: name, Number: i, Value: value, Kind: kind}
 	}
-
 	return children
 }
 
+// Get Children from a Map
 func GetChildrenMap(input interface{}) []Child {
 	valueOf := GetValue(input)
 
@@ -98,10 +101,10 @@ func GetChildrenMap(input interface{}) []Child {
 
 		children = append(children, Child{Name: name, Value: value, Kind: kind})
 	}
-
 	return children
 }
 
+// Get Children from a slice
 func GetChildrenSlice(input interface{}) []Child {
 	valueOf := GetValue(input)
 
@@ -114,10 +117,10 @@ func GetChildrenSlice(input interface{}) []Child {
 		kind := reflect.ValueOf(value).Kind()
 		children = append(children, Child{Name: name, Value: value, Kind: kind})
 	}
-
 	return children
 }
 
+// Get children from an array
 func GetChildrenArray(input interface{}) []Child {
 	valueOf := GetValue(input)
 
@@ -130,7 +133,6 @@ func GetChildrenArray(input interface{}) []Child {
 		kind := reflect.ValueOf(value).Kind()
 		children = append(children, Child{Name: name, Value: value, Kind: kind})
 	}
-
 	return children
 }
 
@@ -141,59 +143,52 @@ func Iterate(input interface{}, action *Action) interface{} {
 	// Initialize on first call
 	if action.Processed == nil {
 		action.Processed = make(map[string]Parameters, 0)
-		action.Processed[""] = Parameters{make(map[string]interface{}, 0)}
 	}
 
+	if action.Processed[action.ParentName].Children == nil {
+		action.Processed[action.ParentName] = Parameters{make(map[string]interface{}, 0)}
+	}
+
+	// Some types of not implemented
 	if IsDifficult(input) {
 		log.Fatal("Can't deal with this", "input", input)
 	}
 
-	//log.Debug("Iterate", "input", input)
-
-	action.Value = input
-	action.ParentName = action.Name
-	action.Name = action.ChildName
+	// Short cut if specified
+	if !action.VisitPrimitives && IsPrimitive(input) {
+		return input
+	}
 
 	parent := action.ParentName
 	name := action.Name
 
 	if IsPointer(input) {
-		element := reflect.ValueOf(input).Elem().Interface()
-
-		action.ChildName = action.Name
-		action.ChildNumber = 0
-
-		Iterate(element, action)
-
-		// Restore the action values, since they were overwritten
-		action.Value = input
-		action.Name = name
-		action.ParentName = parent
-
-		return action.ProcessField(action, input)
+		action.Name = "*" + name
+		action.IsPointer = true
+		input = reflect.ValueOf(input).Elem().Interface()
+	} else {
+		action.IsPointer = false
 	}
+
+	pointer := action.IsPointer
 
 	// Walk the children first -- post-order traversal
 	if IsContainer(input) {
-		action.Processed[action.Name] = Parameters{make(map[string]interface{}, 0)}
-
-		action.Path = reflect.TypeOf(input).Name()
-
 		children := GetChildren(input)
 		for i := 0; i < len(children); i++ {
-			action.ChildName = children[i].Name
-			action.ChildNumber = i
+			action.ParentName = name
+			action.Name = children[i].Name
 
 			Iterate(children[i].Value, action)
 
 			// Restore the action values, since they were overwritten
-			action.Value = input
 			action.Name = name
 			action.ParentName = parent
 		}
 	}
 
 	//log.Debug("Iterate after Children", "input", input)
+	action.IsPointer = pointer
 	result := action.ProcessField(action, input)
 	return result
 }

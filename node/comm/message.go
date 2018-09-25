@@ -13,6 +13,7 @@ package comm
 import (
 	"encoding/json"
 	"reflect"
+	"strings"
 
 	"github.com/Oneledger/protocol/node/log"
 )
@@ -29,10 +30,8 @@ type Message = []byte
 
 // Given any type of input (except Maps), convert it into wire format
 func Serialize(input interface{}, medium Format) (buffer []byte, err error) {
-
 	copy := Extend(input)
-
-	log.Debug("Extended", "input", input, "copy", copy)
+	log.Debug("Extended To Serialize", "input", input, "copy", copy)
 
 	switch medium {
 
@@ -47,7 +46,6 @@ func Serialize(input interface{}, medium Format) (buffer []byte, err error) {
 	}
 
 	log.Debug("Serialized", "buffer", buffer, "err", err)
-
 	return buffer, err
 }
 
@@ -70,9 +68,12 @@ func Deserialize(input []byte, output interface{}, medium Format) (msg interface
 		err = json.Unmarshal(input, wrapper)
 	}
 
-	log.Debug("Unmarshal", "err", err, "wrapper", wrapper)
+	if err != nil {
+		return nil, err
+	}
 
 	result := Contract(wrapper)
+	log.Debug("Contracted for Deserialize", "result", result, "wrapper", wrapper)
 
 	return result, err
 }
@@ -85,18 +86,39 @@ type SerialWrapper struct {
 var prototype = SerialWrapper{}
 
 func IsSerialWrapper(input interface{}) bool {
-	// TODO: Could probably be replaced with a Type comparison, not a string one
 	if reflect.TypeOf(input) == reflect.TypeOf(prototype) {
 		return true
 	}
-	/*
-		if reflect.TypeOf(input).String() == reflect.TypeOf(prototype).String() {
-			return true
-		}
-	*/
 	return false
 }
 
+func IsSerialWrapperMap(input interface{}) bool {
+	if reflect.TypeOf(input).Kind() != reflect.Map {
+		return false
+	}
+
+	smap := input.(map[string]interface{})
+
+	if smap == nil {
+		return false
+	}
+
+	if len(smap) != 2 {
+		return false
+	}
+
+	if _, ok := smap["Type"]; !ok {
+		return false
+	}
+
+	if _, ok := smap["Fields"]; !ok {
+		return false
+	}
+
+	return true
+}
+
+/*
 type PartialWrapper struct {
 	Type      string
 	IsPointer bool
@@ -108,6 +130,7 @@ type SerialUnwrapper struct {
 	IsPointer bool
 	Value     interface{}
 }
+*/
 
 var structures map[string]reflect.Type
 
@@ -124,13 +147,15 @@ func Register(base interface{}) {
 
 // Dynamically create a structure from its name
 func NewStruct(name string) interface{} {
+	name = strings.TrimPrefix(name, "*")
+
 	struct_type := structures[name]
 	if struct_type == nil {
-		log.Debug("Missing structure type", "name", name, "structures", structures)
+		log.Warn("Missing structure type", "name", name, "structures", structures)
 		return nil
 	}
 	base := reflect.New(struct_type)
-	log.Debug("Create Struct", "name", name, "base", base.Interface())
+	log.Debug("Create A Dynamic Struct", "name", name, "base", base.Interface())
 
 	return base.Interface()
 }

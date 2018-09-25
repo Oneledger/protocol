@@ -12,6 +12,10 @@ import (
 
 // Language primitives
 func IsPrimitive(input interface{}) bool {
+	if input == nil {
+		return false
+	}
+
 	switch input.(type) {
 	// Booleans
 	case bool:
@@ -143,10 +147,13 @@ func IsSpecial(input interface{}) bool {
 	kind := reflect.TypeOf(input).Kind()
 
 	switch kind {
+
 	case reflect.Chan:
 		return true
+
 	case reflect.Func:
 		return true
+
 	case reflect.UnsafePointer:
 		return true
 	}
