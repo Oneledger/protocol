@@ -136,10 +136,10 @@ func Query(path string, packet []byte) (res *ctypes.ResultABCIQuery) {
 	return result
 }
 
-func Search(query string, prove bool) (res []*ctypes.ResultTx) {
+func Search(query string, prove bool, page, perPage int) (res *ctypes.ResultTxSearch) {
 	client := GetClient()
 
-	result, err := client.TxSearch(query, prove)
+	result, err := client.TxSearch(query, prove, page, perPage)
 	if err != nil {
 		log.Error("TxSearch Error", "err", err)
 	}
