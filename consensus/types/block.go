@@ -7,9 +7,9 @@ import (
 	"strings"
 	"time"
 
-	wire "github.com/tendermint/go-wire"
-	cmn "github.com/tendermint/tmlibs/common"
-	"github.com/tendermint/tmlibs/merkle"
+	wire "github.com/tendermint/go-amino"
+	cmn "github.com/tendermint/tendermint/libs/common"
+	"github.com/tendermint/tendermint/crypto/merkle"
 	"golang.org/x/crypto/ripemd160"
 	tps "github.com/tendermint/tendermint/types"
 )

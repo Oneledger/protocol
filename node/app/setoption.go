@@ -32,7 +32,7 @@ func SetOption(app *Application, key string, value string) bool {
 			return false
 		}
 		args := result.(*RegisterArguments)
-		publicKey, privateKey := id.GenerateKeys([]byte(args.Identity)) // TODO: Switch with passphrase
+		privateKey, publicKey := id.GenerateKeys([]byte(args.Identity)) // TODO: Switch with passphrase
 		RegisterLocally(app, args.Identity, "OneLedger", id.ParseAccountType(args.Chain),
 			publicKey, privateKey)
 
@@ -41,5 +41,4 @@ func SetOption(app *Application, key string, value string) bool {
 		return false
 	}
 	return true
-
 }

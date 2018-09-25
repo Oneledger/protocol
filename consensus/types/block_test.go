@@ -4,8 +4,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	crypto "github.com/tendermint/go-crypto"
-	cmn "github.com/tendermint/tmlibs/common"
+	"github.com/tendermint/go-crypto"
+	cmn "github.com/tendermint/tendermint/libs/common"
 
 	tps "github.com/tendermint/tendermint/types"
 	"time"

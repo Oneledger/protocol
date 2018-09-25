@@ -297,9 +297,9 @@ func HandleSwapAddressQuery(app Application, message []byte) []byte {
 			return account.AccountKey()
 		}
 	}
-	return SwapAddres(chain)
+	return SwapAddress(chain)
 }
 
-func SwapAddres(chain data.ChainType) []byte {
+func SwapAddress(chain data.ChainType) []byte {
 	return common.GetSwapAddress(chain)
 }
