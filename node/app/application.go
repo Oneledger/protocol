@@ -36,7 +36,7 @@ type Application struct {
 	Accounts   *id.Accounts     // Keep all of the user accounts locally for their node (identity management)
 	Utxo       *data.ChainState // unspent transction output (for each type of coin)
 	Event      *data.Datastore  // Event for any action that need to be tracked
-	Contract	   *data.Datastore  // contract for reuse.
+	Contract   *data.Datastore  // contract for reuse.
 }
 
 // NewApplicationContext initializes a new application

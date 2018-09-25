@@ -18,6 +18,7 @@ import (
 	"github.com/Oneledger/protocol/node/id"
 	"github.com/Oneledger/protocol/node/log"
 	"github.com/Oneledger/protocol/node/version"
+	"github.com/Oneledger/protocol/node/global"
 )
 
 // Top-level list of all query types
@@ -289,6 +290,13 @@ func HandleSwapAddressQuery(app Application, message []byte) []byte {
 		chain = conv.GetChain(parts[1])
 	}
 	//log.Debug("swap address", "chain", chain)
+	//todo: make it general
+	if chain == data.ONELEDGER {
+		account, e := app.Accounts.FindName(global.Current.NodeAccountName)
+		if e == err.SUCCESS {
+			return account.AccountKey()
+		}
+	}
 	return SwapAddress(chain)
 }
 
