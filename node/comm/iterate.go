@@ -13,10 +13,10 @@ type Action struct {
 	VisitPrimitives bool
 
 	// Current Values
-	ParentName string
-	Name       string
-	Index      int
-	IsPointer  bool
+	Path      Stack
+	Name      string
+	Index     int
+	IsPointer bool
 
 	// Processing Function
 	ProcessField func(*Action, interface{}) interface{}
@@ -143,10 +143,8 @@ func Iterate(input interface{}, action *Action) interface{} {
 	// Initialize on first call
 	if action.Processed == nil {
 		action.Processed = make(map[string]Parameters, 0)
-	}
-
-	if action.Processed[action.ParentName].Children == nil {
-		action.Processed[action.ParentName] = Parameters{make(map[string]interface{}, 0)}
+		action.Path = *NewStack()
+		action.Path.Push("root")
 	}
 
 	// Some types of not implemented
@@ -159,36 +157,40 @@ func Iterate(input interface{}, action *Action) interface{} {
 		return input
 	}
 
-	parent := action.ParentName
-	name := action.Name
+	parent := action.Path.StringPeekN(0)
+	action.Path.Push(action.Name)
+	action.Path.Print()
 
 	if IsPointer(input) {
-		action.Name = "*" + name
-		action.IsPointer = true
 		input = reflect.ValueOf(input).Elem().Interface()
+		action.IsPointer = true
 	} else {
 		action.IsPointer = false
 	}
 
-	pointer := action.IsPointer
+	if action.Processed[parent].Children == nil {
+		action.Processed[parent] = Parameters{make(map[string]interface{}, 0)}
+	}
 
 	// Walk the children first -- post-order traversal
 	if IsContainer(input) {
+		name := action.Path.StringPeekN(0)
+		pointer := action.IsPointer
+
 		children := GetChildren(input)
 		for i := 0; i < len(children); i++ {
-			action.ParentName = name
 			action.Name = children[i].Name
 
 			Iterate(children[i].Value, action)
 
 			// Restore the action values, since they were overwritten
 			action.Name = name
-			action.ParentName = parent
+			action.IsPointer = pointer
 		}
 	}
 
-	//log.Debug("Iterate after Children", "input", input)
-	action.IsPointer = pointer
 	result := action.ProcessField(action, input)
+	action.Path.Pop()
+
 	return result
 }

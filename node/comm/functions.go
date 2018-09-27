@@ -13,7 +13,6 @@ import (
 func Print(base interface{}) {
 	action := &Action{
 		ProcessField: PrintIt,
-		ParentName:   "root",
 		Name:         "base",
 	}
 	Iterate(base, action)
@@ -26,7 +25,10 @@ func PrintIt(action *Action, input interface{}) interface{} {
 
 // Make a deep copy of the data
 func Clone(base interface{}) interface{} {
-	action := &Action{ProcessField: CloneIt}
+	action := &Action{
+		ProcessField: CloneIt,
+		Name:         "base",
+	}
 	result := Iterate(base, action)
 	return result
 }
@@ -34,8 +36,16 @@ func Clone(base interface{}) interface{} {
 // Clone each element
 func CloneIt(action *Action, input interface{}) interface{} {
 
-	if IsContainer(input) {
+	parent := action.Path.StringPeekN(1)
 
+	if IsPointer(input) {
+		copy := action.Processed[action.Name].Children[action.Name]
+		element := copy
+		action.Processed[parent].Children[action.Name] = element
+		return element
+	}
+
+	if IsContainer(input) {
 		copy := reflect.New(reflect.TypeOf(input)).Interface()
 
 		// Overwrite with children
@@ -43,18 +53,12 @@ func CloneIt(action *Action, input interface{}) interface{} {
 			Set(copy, key, value)
 		}
 
-		action.Processed[action.ParentName].Children[action.Name] = copy
+		action.Processed[parent].Children[action.Name] = copy
 		return copy
-
-	} else if IsPointer(input) {
-		copy := action.Processed[action.Name].Children[action.Name]
-		element := copy
-		action.Processed[action.ParentName].Children[action.Name] = element
-		return element
 	}
 
 	copy := input
-	action.Processed[action.ParentName].Children[action.Name] = copy
+	action.Processed[parent].Children[action.Name] = copy
 
 	return copy
 }
@@ -78,7 +82,6 @@ func Extend(base interface{}) interface{} {
 
 	action := &Action{
 		ProcessField: ExtendIt,
-		ParentName:   "root",
 		Name:         "base",
 	}
 
@@ -89,13 +92,15 @@ func Extend(base interface{}) interface{} {
 func ExtendIt(action *Action, input interface{}) interface{} {
 	log.Debug("ExtendIt", "action", action, "input", input)
 
+	parent := action.Path.StringPeekN(1)
+
 	if IsContainer(input) {
 		if !IsStructure(input) {
 			log.Fatal("Can't handle other containers yet", "input", input)
 		}
 
 		mapping := ConvertMap(input)
-		parent := strings.TrimPrefix(action.ParentName, "*")
+		//parent = strings.TrimPrefix(parent, "*")
 
 		// Attach all of the interface children
 		for key, value := range action.Processed[action.Name].Children {
@@ -110,23 +115,24 @@ func ExtendIt(action *Action, input interface{}) interface{} {
 			typestr = "*" + typestr
 		}
 
-		log.Debug("Wrapping", "Name", action.Name, "typestr", typestr, "Parent", parent)
 		wrapper := SerialWrapper{
 			Type:   typestr,
 			Fields: mapping,
 		}
 
+		log.Debug("Assigning to", "parent", parent, "name", action.Name, "Processed", action.Processed)
 		action.Processed[parent].Children[action.Name] = wrapper
 
 		return wrapper
 	}
 
 	// In general return a child
-	for _, value := range action.Processed[action.ParentName].Children {
-		log.Debug("Pushing up a child", "parent", action.ParentName)
-		return value
-	}
-
+	/*
+		for _, value := range action.Processed[parent].Children {
+			log.Debug("Pushing up a child", "parent", parent)
+			return value
+		}
+	*/
 	return input
 }
 
@@ -135,10 +141,13 @@ func Contract(base interface{}) interface{} {
 	action := &Action{
 		VisitPrimitives: true,
 		ProcessField:    ContractIt,
-		ParentName:      "root",
 		Name:            "base",
 	}
+
 	result := Iterate(base, action)
+	for _, value := range action.Processed["*base"].Children {
+		return value
+	}
 	return result
 }
 
@@ -146,9 +155,20 @@ func Contract(base interface{}) interface{} {
 func ContractIt(action *Action, input interface{}) interface{} {
 	log.Debug("ContractIt", "input", input, "action", action)
 
+	grandparent := action.Path.StringPeekN(2)
+	if grandparent == "" {
+		grandparent = action.Name
+	}
+
 	if IsSerialWrapper(input) {
 		wrapper := input.(SerialWrapper)
-		result := NewStruct(wrapper.Type)
+		stype := wrapper.Type
+		result := NewStruct(stype)
+
+		// Needs to come from the name
+		if strings.HasPrefix(stype, "*") {
+			action.IsPointer = true
+		}
 
 		// Fill it with the deserialized values
 		/*
@@ -159,13 +179,19 @@ func ContractIt(action *Action, input interface{}) interface{} {
 		*/
 
 		// Overwrite with any better children
-		for key, value := range action.Processed["Fields"].Children {
-			log.Debug("Overwriting Modified Children", key, value)
+		for key, value := range action.Processed[action.Name].Children {
+			log.Debug("Overwriting Modified Children", key, value,
+				"grandparent", grandparent, "name", action.Name, "Processed", action.Processed)
 			Set(result, key, value)
+			//delete(action.Processed["Fields"].Children, key)
 		}
 
-		log.Debug("Pushing up", "parent", action.ParentName, "child", action.Name, "result", result)
-		action.Processed[action.ParentName].Children[action.Name] = result
+		if action.IsPointer {
+			action.Processed[grandparent].Children[action.Name] = result
+		} else {
+			element := reflect.ValueOf(result).Elem().Interface()
+			action.Processed[grandparent].Children[action.Name] = element
+		}
 		return result
 	}
 
@@ -173,6 +199,11 @@ func ContractIt(action *Action, input interface{}) interface{} {
 		wrapper := input.(map[string]interface{})
 		stype := wrapper["Type"].(string)
 		result := NewStruct(stype)
+
+		// Needs to come from the name
+		if strings.HasPrefix(stype, "*") {
+			action.IsPointer = true
+		}
 
 		// Fill it with the deserialized values
 		/*
@@ -183,22 +214,27 @@ func ContractIt(action *Action, input interface{}) interface{} {
 		*/
 
 		// Overwrite with any better children
-		for key, value := range action.Processed["Fields"].Children {
-			log.Debug("Overwriting Modified Children", key, value)
+		for key, value := range action.Processed[action.Name].Children {
+			log.Debug("Map Overwriting Modified Children", key, value,
+				"grandparent", grandparent, "name", action.Name)
+
 			Set(result, key, value)
+			//delete(action.Processed["Fields"].Children, key)
 		}
 
-		log.Debug("Map Pushing up", "parent", action.ParentName, "child", action.Name, "result", result)
-		if strings.HasPrefix(stype, "*") {
-			action.Processed[action.ParentName].Children[action.Name] = result
+		log.Debug("Map Pushing up", "isptr", action.IsPointer, "name", action.Name, "grandparent", grandparent, "result", result)
+		if action.IsPointer {
+			action.Processed[grandparent].Children[action.Name] = result
 		} else {
 			// Get the underlying element
 			element := reflect.ValueOf(result).Elem().Interface()
-			action.Processed[action.ParentName].Children[action.Name] = element
+			action.Processed[grandparent].Children[action.Name] = element
 		}
+
 		return result
 	}
 
-	action.Processed[action.ParentName].Children[action.Name] = input
+	log.Debug("Final Pushing up", "grandparent", grandparent, "child", action.Name, "input", input)
+	action.Processed[grandparent].Children[action.Name] = input
 	return input
 }

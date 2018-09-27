@@ -13,83 +13,98 @@ import (
 	wire "github.com/tendermint/go-wire"
 )
 
-type OpaqueParent interface {
+func XTestStack(t *testing.T) {
+	var stack Stack = *NewStack()
+
+	log.Debug("Current", "stack", stack)
+
+	stack.Push("Bottom")
+	stack.Push("Middle")
+	stack.Push("Top")
+
+	stack.Print()
+	log.Debug("Top", "is", stack.Pop())
+	log.Debug("Middle", "is", stack.Pop())
+	log.Debug("Bottom", "is", stack.Pop())
+}
+
+type OpaqueRoot interface {
 	AFunction(value int) bool
 }
 
-type OpaqueChild interface {
+type OpaqueNode interface {
 	AnotherFunction(value int) bool
 }
 
-type ParentStruct1 struct {
-	ParentName string
-	Child      OpaqueChild
+type RootStruct1 struct {
+	RootName string
+	Node     OpaqueNode
 }
 
-func (p ParentStruct1) AFunction(value int) bool {
+func (p RootStruct1) AFunction(value int) bool {
 	return false
 }
 
-type ParentStruct2 struct {
-	ParentName string
-	Count      int
-	Child1     OpaqueChild
-	Child2     OpaqueChild
+type RootStruct2 struct {
+	RootName string
+	Count    int
+	Node1    OpaqueNode
+	Node2    OpaqueNode
 }
 
-func (p ParentStruct2) AFunction(value int) bool {
+func (p RootStruct2) AFunction(value int) bool {
 	return false
 }
 
-type ChildStruct1 struct {
-	ChildName string
-	Size      int
+type NodeStruct1 struct {
+	NodeName string
+	Size     int
 }
 
-func (c ChildStruct1) AnotherFunction(value int) bool {
+func (c NodeStruct1) AnotherFunction(value int) bool {
 	return false
 }
 
-type ChildStruct2 struct {
-	ChildName string
-	Size      int
-	Size2     int
+type NodeStruct2 struct {
+	NodeName string
+	Size     int
+	Size2    int
 }
 
-func (c ChildStruct2) AnotherFunction(value int) bool {
+func (c NodeStruct2) AnotherFunction(value int) bool {
 	return false
 }
 
 func init() {
 	// Let the deserilization code know how to create these structures
-	Register(ParentStruct1{})
-	Register(ParentStruct2{})
-	Register(ChildStruct1{})
-	Register(ChildStruct2{})
+	Register(RootStruct1{})
+	Register(RootStruct2{})
+	Register(NodeStruct1{})
+	Register(NodeStruct2{})
 }
 
-var child1 = ChildStruct1{
-	ChildName: "The Child 1",
-	Size:      1000,
+var node1 = NodeStruct1{
+	NodeName: "The Node 1",
+	Size:     1000,
 }
 
-var child2 = ChildStruct2{
-	ChildName: "The Child 2",
-	Size:      3000,
-	Size2:     -1,
+var node2 = NodeStruct2{
+	NodeName: "The Child 2",
+	Size:     3000,
+	Size2:    -1,
 }
 
-var opc1 = OpaqueChild(&child1) // Pointer
-var opc2 = OpaqueChild(child2)  // By Value
+var opc1 = OpaqueNode(&node1) // Pointer
+var opc2 = OpaqueNode(node2)  // By Value
 
-var parent = ParentStruct2{
-	ParentName: "The Parent 2",
-	Count:      2000,
-	Child1:     opc1,
-	Child2:     opc2,
+var root = RootStruct2{
+	RootName: "The Root 2",
+	Count:    2000,
+	Node1:    opc1,
+	Node2:    opc2,
 }
 
-var opp = OpaqueParent(&parent)
+var opp = OpaqueRoot(&root)
 
 func XTestPrint(t *testing.T) {
 	Print(opp)
@@ -127,9 +142,9 @@ func TestPolymorphism(t *testing.T) {
 		log.Debug("Serialized Worked, return is", "buffer", buffer)
 	}
 
-	log.Debug("Serialized Worked, now Deserialize")
+	log.Debug("########### Serialized Worked, now Deserialize")
 
-	var opp2 OpaqueParent
+	var opp2 OpaqueRoot
 
 	result, err := Deserialize(buffer, opp2, PERSISTENT)
 

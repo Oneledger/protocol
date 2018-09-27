@@ -31,7 +31,6 @@ type Message = []byte
 // Given any type of input (except Maps), convert it into wire format
 func Serialize(input interface{}, medium Format) (buffer []byte, err error) {
 	copy := Extend(input)
-	log.Debug("Extended To Serialize", "input", input, "copy", copy)
 
 	switch medium {
 
@@ -53,7 +52,6 @@ func Serialize(input interface{}, medium Format) (buffer []byte, err error) {
 // If output is a struct, make sure it is a pointer to a struct
 func Deserialize(input []byte, output interface{}, medium Format) (msg interface{}, err error) {
 
-	//var raw json.RawMessage
 	wrapper := &SerialWrapper{}
 
 	switch medium {
@@ -73,6 +71,7 @@ func Deserialize(input []byte, output interface{}, medium Format) (msg interface
 	}
 
 	result := Contract(wrapper)
+
 	log.Debug("Contracted for Deserialize", "result", result, "wrapper", wrapper)
 
 	return result, err
