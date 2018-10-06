@@ -79,7 +79,7 @@ func (transaction Verify) ProcessDeliver(app interface{}) err.Code {
     return err.SUCCESS
 }
 
-func (transaction Verify) Resolve(app interface{}, commands Commands) {
+func (transaction Verify) Resolve(app interface{}) Commands {
     eventStatus := FindEvent(app, transaction.Event)
     if !eventStatus {
         status := GetStatus(app)
@@ -104,7 +104,7 @@ func (transaction Verify) Resolve(app interface{}, commands Commands) {
     } else {
         commands = nil
     }
-    return
+    return commands
 }
 
 // Given a transaction, expand it into a list of Commands to execute against various chains.

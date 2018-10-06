@@ -258,6 +258,7 @@ func CreateSwapRequest(args *SwapArguments) []byte {
 			ChainId:  app.ChainId,
 			Signers:  signers,
 			Owner:    partyKey,
+			Target:   counterPartyKey,
 			Sequence: global.Current.Sequence,
 		},
 		Message: swapInit.Marshal(),

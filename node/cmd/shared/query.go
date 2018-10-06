@@ -8,6 +8,8 @@ package shared
 import (
 	"bytes"
 	"encoding/hex"
+	"github.com/Oneledger/protocol/node/convert"
+	ctypes "github.com/tendermint/tendermint/rpc/core/types"
 
 	"github.com/Oneledger/protocol/node/action"
 	"github.com/Oneledger/protocol/node/comm"
@@ -91,4 +93,25 @@ func GetBalance(accountKey id.AccountKey) *data.Coin {
 
 	log.Debug("Deserialize", "buffer", buffer, "response", response, "value", value)
 	return &(buffer.(*data.Balance).Amount)
+}
+
+func GetTxByHash(hash []byte) []*ctypes.ResultTx {
+	request := "tx.hash=" + string(hash)
+
+	response := comm.Search(request, true)
+	if response == nil {
+		log.Error("Search tx by hash failed", "request", request)
+		return nil
+	}
+	return response
+}
+
+func GetTxByHeight(height int) []*ctypes.ResultTx {
+	request := "tx.height=" + convert.GetString(height)
+
+	response := comm.Search(request, true)
+	if response == nil {
+		log.Error("Search tx by height failed", "requestion", request)
+	}
+	return response
 }
