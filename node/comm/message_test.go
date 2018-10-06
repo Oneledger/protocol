@@ -10,7 +10,7 @@ import (
 
 	"github.com/Oneledger/protocol/node/log"
 	"github.com/stretchr/testify/assert"
-	wire "github.com/tendermint/go-wire"
+	wire "github.com/tendermint/go-amino"
 )
 
 // Test just an integer

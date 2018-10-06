@@ -28,11 +28,11 @@
 
 [[constraint]]
   name = "golang.org/x/net"
-#  version = "~1.10.0"
+  version = "release-branch.go1.9"
 
-[[constraint]]
-  name = "github.com/golang/protobuf"
-  version = "~1.0.0"
+# [[constraint]]
+#   name = "github.com/golang/protobuf"
+#   version = "~1.0.0"
 
 [[constraint]]
   name = "github.com/mattn/go-isatty"
@@ -46,36 +46,35 @@
   name = "github.com/spf13/cobra"
   version = "~0.0.1"
 #  version = "0.0.2"
-
-[[constraint]]
-  name = "github.com/tendermint/abci"
-  version = "~0.10.2"
-#  version = "0.10.3"
-
-[[constraint]]
-  name = "github.com/tendermint/go-crypto"
-  version = "~0.5.0"
-
-[[constraint]]
-  name = "github.com/tendermint/go-wire"
-  source = "github.com/tendermint/go-amino"
-  version = "~0.7.3"
+#
+#[[constraint]]
+#  name = "github.com/tendermint/abci"
+#  version = "~0.12.0"
 
 #[[constraint]]
-#  name = "github.com/tendermint/iavl"
-#  version = "~0.7.0"
+#  name = "github.com/tendermint/go-crypto"
+#  version = "~0.6.2"
 
 [[constraint]]
+  name = "github.com/tendermint/go-amino"
+  version = "=0.10.1"
+
+# TODO: Change this to a constraint, set to override b/c iavl 0.10.0 has a version dependency on tendermint 0.22.0
+[[override]]
   name = "github.com/tendermint/tendermint"
-  version = "~0.18.0"
-
-#[[constraint]]
-#  name = "github.com/tendermint/tendermint/rpc/client"
-#  version = "~0.18.0"
+  version = "=0.23.1"
 
 [[constraint]]
-  name = "github.com/tendermint/tmlibs"
-  version = "~0.8.1"
+  name = "github.com/tendermint/iavl"
+  version = "=0.10.0"
+
+[[override]]
+  source = "https://github.com/fsnotify/fsnotify/archive/v1.4.7.tar.gz"
+  name = "gopkg.in/fsnotify.v1"
+
+[[override]]
+  name = "google.golang.org/genproto"
+  revision = "7fd901a49ba6a7f87732eb344f6e3c5b19d1b200"
 
 [[prune.project]]
     name = "github.com/ethereum/go-ethereum"

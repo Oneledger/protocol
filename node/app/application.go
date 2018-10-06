@@ -6,9 +6,7 @@
 package app
 
 import (
-	//"fmt"
 	"bytes"
-
 	"github.com/Oneledger/protocol/node/abci"
 	"github.com/Oneledger/protocol/node/action"
 	"github.com/Oneledger/protocol/node/comm"
@@ -17,8 +15,8 @@ import (
 	"github.com/Oneledger/protocol/node/global"
 	"github.com/Oneledger/protocol/node/id"
 	"github.com/Oneledger/protocol/node/log"
-	"github.com/tendermint/abci/types"
-	"github.com/tendermint/tmlibs/common"
+	"github.com/tendermint/tendermint/abci/types"
+	"github.com/tendermint/tendermint/libs/common"
 )
 
 var ChainId string
@@ -119,11 +117,10 @@ func (app Application) SetupState(stateBytes []byte) {
 		log.Fatal("Failed to deserialize stateBytes during SetupState")
 	}
 	state := des.(*BasicState)
-
+	log.Debug("Deserialized State", "state", state, "state.Account", state.Account)
 	// TODO: Can't generate a different key for each node. Needs to be in the genesis? Or ignored?
 	//publicKey, privateKey := id.GenerateKeys([]byte(state.Account)) // TODO: switch with passphrase
-	publicKey, privateKey := id.PublicKey{}, id.PrivateKey{}
-
+	publicKey, privateKey := id.NilPublicKey(), id.NilPrivateKey()
 	// TODO: This should probably only occur on the Admin node, for other nodes how do I know the key?
 	// Register the identity and account first
 	RegisterLocally(&app, state.Account, "OneLedger", data.ONELEDGER, publicKey, privateKey)
@@ -231,9 +228,8 @@ func (app Application) CheckTx(tx []byte) ResponseCheckTx {
 		Log:       "Log Data",
 		Info:      "Info Data",
 		GasWanted: 1000,
-		GasUsed:   1000,
+		GasUsed: 1000,
 		Tags:      []common.KVPair(nil),
-		Fee:       common.KI64Pair{},
 	}
 }
 
@@ -241,7 +237,7 @@ var chainKey data.DatabaseKey = data.DatabaseKey("chainId")
 
 // BeginBlock is called when a new block is started
 func (app Application) BeginBlock(req RequestBeginBlock) ResponseBeginBlock {
-	log.Debug("Contract: BeginBlock", "req", req)
+	//log.Debug("Contract: BeginBlock", "req", req)
 
 	newChainId := action.Message(req.Header.ChainID)
 
@@ -284,7 +280,6 @@ func (app Application) DeliverTx(tx []byte) ResponseDeliverTx {
 		GasWanted: 1000,
 		GasUsed:   1000,
 		Tags:      []common.KVPair(nil),
-		Fee:       common.KI64Pair{},
 	}
 }
 

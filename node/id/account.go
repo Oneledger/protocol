@@ -16,17 +16,9 @@ import (
 	"github.com/Oneledger/protocol/node/err"
 	"github.com/Oneledger/protocol/node/global"
 	"github.com/Oneledger/protocol/node/log"
-	crypto "github.com/tendermint/go-crypto"
-	wdata "github.com/tendermint/go-wire/data"
-	"golang.org/x/crypto/ripemd160"
 )
 
-// Aliases to hide some of the basic underlying types.
-type AccountKey = wdata.Bytes // OneLedger address, like Tendermint the hash of the associated PubKey
-
-type PublicKey = crypto.PubKey
-type PrivateKey = crypto.PrivKey
-type Signature = crypto.Signature
+type Signature = []byte
 
 // The persistent collection of all accounts known by this node
 type Accounts struct {
@@ -42,16 +34,15 @@ func NewAccounts(name string) *Accounts {
 }
 
 func (acc *Accounts) Add(account Account) {
-
 	if value := acc.data.Load(account.AccountKey()); value != nil {
 		log.Debug("Key is being updated", "key", account.AccountKey())
 	}
 
 	buffer, err := comm.Serialize(account)
 	if err != nil {
-		log.Warn("Failed to Deserialize account: ", err)
+		log.Fatal("Failed to Deserialize account: ", err)
 	}
-
+	log.Debug("Adding Account", "account", account)
 	acc.data.Store(account.AccountKey(), buffer)
 	acc.data.Commit()
 }
@@ -60,7 +51,7 @@ func (acc *Accounts) Delete(account Account) {
 }
 
 func (acc *Accounts) Exists(newType data.ChainType, name string) bool {
-	account := NewAccount(newType, name, PublicKey{}, PrivateKey{})
+	account := NewAccount(newType, name, NilPublicKey(), NilPrivateKey())
 
 	if value := acc.data.Load(account.AccountKey()); value != nil {
 		return true
@@ -75,13 +66,13 @@ func (acc *Accounts) Find(account Account) (Account, err.Code) {
 
 func (acc *Accounts) FindIdentity(identity Identity) (Account, err.Code) {
 	// TODO: Should have better name mapping between identities and accounts
-	account := NewAccount(data.ONELEDGER, identity.Name+"-OneLedger", PublicKey{}, PrivateKey{})
+	account := NewAccount(data.ONELEDGER, identity.Name+"-OneLedger", NilPublicKey(), NilPrivateKey())
 	return acc.Find(account)
 
 }
 
 func (acc *Accounts) FindNameOnChain(name string, chain data.ChainType) (Account, err.Code) {
-
+	log.Debug("FindNameOnChain", "name", name, "chain", chain)
 	// TODO: Should be replaced with a real index
 	for _, entry := range acc.FindAll() {
 		if Matches(entry, name, chain) {
@@ -113,11 +104,13 @@ func (acc *Accounts) FindKey(key AccountKey) (Account, err.Code) {
 		if base != nil {
 			return base.(Account), err.SUCCESS
 		}
+
 		accountEthereum := &AccountEthereum{}
 		base, _ = comm.Deserialize(value, accountEthereum)
 		if base != nil {
 			return base.(Account), err.SUCCESS
 		}
+
 		accountBitcoin := &AccountBitcoin{}
 		base, _ = comm.Deserialize(value, accountBitcoin)
 		if base != nil {
@@ -129,19 +122,22 @@ func (acc *Accounts) FindKey(key AccountKey) (Account, err.Code) {
 }
 
 func (acc *Accounts) FindAll() []Account {
+	log.Debug("Begin Account FindAll")
 	keys := acc.data.List()
 	size := len(keys)
+	log.Debug("find all", "keys", keys, "size", size)
 	results := make([]Account, size, size)
 
 	for i := 0; i < size; i++ {
 		// TODO: This is dangerous...
 		account := &AccountOneLedger{}
+
 		base, err := comm.Deserialize(acc.data.Load(keys[i]), account)
 		if err != nil {
-			log.Warn("Failed to Deserialize Account at index " + string(i))
-			continue
+			log.Fatal("Failed to Deserialize Account at index ", "i", i, "err", err)
 		}
 		results[i] = base.(Account)
+		log.Debug("Deserialized account", i, results[i])
 	}
 
 	return results
@@ -200,32 +196,16 @@ func getAccountType(chain data.ChainType) string {
 }
 
 type AccountBase struct {
-	Type data.ChainType
-
-	Key AccountKey
-
-	Name       string
-	PublicKey  PublicKey
-	PrivateKey PrivateKey
-}
-
-// Hash the public key to get a unqiue hash that can act as a key
-func NewAccountKey(key PublicKey) AccountKey {
-	hasher := ripemd160.New()
-
-	// TODO: This deosn't seem right?
-	bytes, err := key.MarshalJSON()
-	if err != nil {
-		panic("Unable to Marshal the key into bytes")
-	}
-
-	hasher.Write(bytes)
-
-	return hasher.Sum(nil)
+	Type data.ChainType `json:"type"`
+	Key AccountKey `json:"key"`
+	Name       string `json: "name"`
+	// TODO: Should handle key polymorphism properly..
+	PublicKey  ED25519PublicKey `json: "publicKey"`
+	PrivateKey ED25519PrivateKey `json: "privateKey"`
 }
 
 // Create a new account for a given chain
-func NewAccount(newType data.ChainType, name string, key PublicKey, priv PrivateKey) Account {
+func NewAccount(newType data.ChainType, name string, key ED25519PublicKey, priv ED25519PrivateKey) Account {
 	switch newType {
 
 	case data.ONELEDGER:
@@ -236,7 +216,7 @@ func NewAccount(newType data.ChainType, name string, key PublicKey, priv Private
 				Name:       name,
 				PublicKey:  key,
 				PrivateKey: priv,
-			},
+ 			},
 			//todo: change to olt wallet auth
 			//NewAccountKey(key),
 		}
@@ -260,8 +240,8 @@ func NewAccount(newType data.ChainType, name string, key PublicKey, priv Private
 				Type:       newType,
 				Key:        NewAccountKey(key),
 				Name:       name,
-				PublicKey:  PublicKey{},
-				PrivateKey: PrivateKey{},
+				PublicKey:  NilPublicKey(),
+				PrivateKey: NilPrivateKey(),
 			},
 			//ethereum.GetAuth(),
 		}
