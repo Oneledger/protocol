@@ -6,8 +6,6 @@ package comm
 
 import (
 	"reflect"
-
-	"github.com/Oneledger/protocol/node/log"
 )
 
 // Language primitives
@@ -71,7 +69,6 @@ func IsInterface(input interface{}) bool {
 	}
 
 	kind := reflect.TypeOf(input).Kind()
-	log.Debug("Kind", "kind", kind)
 	if kind == reflect.Interface {
 		return true
 	}

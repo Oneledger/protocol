@@ -10,7 +10,7 @@ import (
 // Action is the context for the iteration, each ProcessField function gets an updated pointer
 type Action struct {
 	// Config Items
-	VisitPrimitives bool
+	IgnorePrimitives bool
 
 	// Current Values
 	Path      Stack
@@ -33,7 +33,6 @@ type Parameters struct {
 func GetValue(base interface{}) reflect.Value {
 	element := reflect.ValueOf(base)
 	if element.Kind() == reflect.Ptr {
-		log.Warn("Have an unexpected pointer!")
 		return element.Elem()
 	}
 	return element
@@ -153,13 +152,12 @@ func Iterate(input interface{}, action *Action) interface{} {
 	}
 
 	// Short cut if specified
-	if !action.VisitPrimitives && IsPrimitive(input) {
+	if action.IgnorePrimitives && IsPrimitive(input) {
 		return input
 	}
 
 	parent := action.Path.StringPeekN(0)
 	action.Path.Push(action.Name)
-	action.Path.Print()
 
 	if IsPointer(input) {
 		input = reflect.ValueOf(input).Elem().Interface()
@@ -188,7 +186,6 @@ func Iterate(input interface{}, action *Action) interface{} {
 			action.IsPointer = pointer
 		}
 	}
-
 	result := action.ProcessField(action, input)
 	action.Path.Pop()
 

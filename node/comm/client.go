@@ -87,7 +87,6 @@ func GetClient() (client *rpcclient.HTTP) {
 		log.Warn("Retrying RPC Client", "address", global.Current.RpcAddress)
 		time.Sleep(1 * time.Second)
 	}
-
 	return cachedClient
 }
 

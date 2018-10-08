@@ -6,28 +6,42 @@
 package comm
 
 import (
+	"flag"
+	"os"
 	"testing"
 
+	"github.com/Oneledger/protocol/node/global"
 	"github.com/Oneledger/protocol/node/log"
+	"github.com/davecgh/go-spew/spew"
 	"github.com/stretchr/testify/assert"
 	wire "github.com/tendermint/go-wire"
 )
 
-func XTestStack(t *testing.T) {
-	var stack Stack = *NewStack()
+func init() {
+	spew.Config = spew.ConfigState{
+		Indent: "    ",
+	}
+}
 
-	log.Debug("Current", "stack", stack)
+func TestLog(t *testing.T) {
+	log.Dump("Test", opp)
+}
+
+func TestStack(t *testing.T) {
+	var stack Stack = *NewStack()
 
 	stack.Push("Bottom")
 	stack.Push("Middle")
 	stack.Push("Top")
 
 	stack.Print()
+
 	log.Debug("Top", "is", stack.Pop())
 	log.Debug("Middle", "is", stack.Pop())
 	log.Debug("Bottom", "is", stack.Pop())
 }
 
+// Declare a very complex structure
 type OpaqueRoot interface {
 	AFunction(value int) bool
 }
@@ -38,7 +52,29 @@ type OpaqueNode interface {
 
 type RootStruct1 struct {
 	RootName string
-	Node     OpaqueNode
+
+	Node      OpaqueNode
+	Interface interface{}
+	Slice     []int
+	Map       map[string]string
+	Array     []byte
+
+	Boolean     bool
+	Integer     int
+	Int8        int8
+	Int16       int16
+	Int32       int32
+	Int64       int64
+	UnsignedInt uint
+	Uint8       uint8
+	Uint16      uint16
+	Uint32      uint32
+	Uint64      uint64
+	Float32     float32
+	Float64     float64
+	//Complex64   complex64
+	//Complex128  complex128
+	String string
 }
 
 func (p RootStruct1) AFunction(value int) bool {
@@ -48,8 +84,31 @@ func (p RootStruct1) AFunction(value int) bool {
 type RootStruct2 struct {
 	RootName string
 	Count    int
-	Node1    OpaqueNode
-	Node2    OpaqueNode
+
+	Node1 OpaqueNode
+	Node2 OpaqueNode
+
+	Interface interface{}
+	Slice     []int
+	Map       map[string]string
+	Array     []byte
+
+	Boolean     bool
+	Integer     int
+	Int8        int8
+	Int16       int16
+	Int32       int32
+	Int64       int64
+	UnsignedInt uint
+	Uint8       uint8
+	Uint16      uint16
+	Uint32      uint32
+	Uint64      uint64
+	Float32     float32
+	Float64     float64
+	//Complex64   complex64
+	//Complex128  complex128
+	String string
 }
 
 func (p RootStruct2) AFunction(value int) bool {
@@ -59,6 +118,28 @@ func (p RootStruct2) AFunction(value int) bool {
 type NodeStruct1 struct {
 	NodeName string
 	Size     int
+
+	Interface interface{}
+	Slice     []int
+	Map       map[string]string
+	Array     []byte
+
+	Boolean     bool
+	Integer     int
+	Int8        int8
+	Int16       int16
+	Int32       int32
+	Int64       int64
+	UnsignedInt uint
+	Uint8       uint8
+	Uint16      uint16
+	Uint32      uint32
+	Uint64      uint64
+	Float32     float32
+	Float64     float64
+	//Complex64   complex64
+	//Complex128  complex128
+	String string
 }
 
 func (c NodeStruct1) AnotherFunction(value int) bool {
@@ -69,6 +150,28 @@ type NodeStruct2 struct {
 	NodeName string
 	Size     int
 	Size2    int
+
+	Interface interface{}
+	Slice     []int
+	Map       map[string]string
+	Array     []byte
+
+	Boolean     bool
+	Integer     int
+	Int8        int8
+	Int16       int16
+	Int32       int32
+	Int64       int64
+	UnsignedInt uint
+	Uint8       uint8
+	Uint16      uint16
+	Uint32      uint32
+	Uint64      uint64
+	Float32     float32
+	Float64     float64
+	//Complex64   complex64
+	//Complex128  complex128
+	String string
 }
 
 func (c NodeStruct2) AnotherFunction(value int) bool {
@@ -106,23 +209,40 @@ var root = RootStruct2{
 
 var opp = OpaqueRoot(&root)
 
-func XTestPrint(t *testing.T) {
+// Control the execution
+func TestMain(m *testing.M) {
+	flag.Parse()
+
+	// Set the debug flags according to whether the -v flag is set in go test
+	if testing.Verbose() {
+		global.Current.Debug = true
+	} else {
+		global.Current.Debug = false
+	}
+
+	// Run it all.
+	code := m.Run()
+
+	os.Exit(code)
+}
+
+func TestPrint(t *testing.T) {
 	Print(opp)
 }
 
-func XTestClone(t *testing.T) {
+func TestClone(t *testing.T) {
 	opp2 := Clone(opp)
 	assert.Equal(t, opp, opp2, "These should be equal")
 }
 
-func XTestExtend(t *testing.T) {
+func TestExtend(t *testing.T) {
 	opp2 := Extend(opp)
 	log.Debug("Extended is", "opp2", opp2, "opp", opp)
 
 	assert.NotEqual(t, opp, opp2, "These should not be equal")
 }
 
-func XTestSerialize(t *testing.T) {
+func TestSerialize(t *testing.T) {
 
 	buffer, err := Serialize(opp, PERSISTENT)
 	if err != nil {
@@ -134,40 +254,34 @@ func XTestSerialize(t *testing.T) {
 
 func TestPolymorphism(t *testing.T) {
 
+	// Serialize the go data structure
 	buffer, err := Serialize(opp, PERSISTENT)
 
 	if err != nil {
-		log.Debug("Serialized failed", "err", err)
-	} else {
-		log.Debug("Serialized Worked, return is", "buffer", buffer)
+		log.Fatal("Serialized failed", "err", err)
 	}
-
-	log.Debug("########### Serialized Worked, now Deserialize")
 
 	var opp2 OpaqueRoot
 
+	// Deserialize back into a go data structure
 	result, err := Deserialize(buffer, opp2, PERSISTENT)
 
 	if err != nil {
-		log.Debug("Deserialized failed", "err", err)
-	} else {
-		log.Debug("result", "result", result)
+		log.Fatal("Deserialized failed", "err", err)
 	}
 
 	assert.Equal(t, opp, result, "These should be equal")
 }
 
 // Test just an integer
-func XTestInt(t *testing.T) {
+func TestInt(t *testing.T) {
 	log.Info("Testing int")
 	variable := 5
 
 	buffer, err := Serialize(variable, CLIENT)
 
 	if err != nil {
-		log.Debug("Serialized failed", "err", err)
-	} else {
-		log.Debug("buffer", "buffer", buffer)
+		log.Fatal("Serialized failed", "err", err)
 	}
 
 	var integer int
@@ -176,9 +290,7 @@ func XTestInt(t *testing.T) {
 	result, err := Deserialize(buffer, integer, CLIENT)
 
 	if err != nil {
-		log.Debug("Deserialized failed", "err", err)
-	} else {
-		log.Debug("result", "result", result)
+		log.Fatal("Deserialized failed", "err", err)
 	}
 
 	assert.Equal(t, variable, result, "These should be equal")

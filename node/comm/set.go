@@ -93,16 +93,59 @@ func ConvertValue(value interface{}, fieldType reflect.Type) reflect.Value {
 
 	typeOf := reflect.TypeOf(value)
 	valueOf := reflect.ValueOf(value)
+
+	// Remove any pointers, if they exist
 	if typeOf.Kind() == reflect.Ptr {
 		valueOf = valueOf.Elem()
 		typeOf = reflect.TypeOf(valueOf)
 	}
 
-	if typeOf.Kind() == reflect.Float64 && fieldType.Kind() == reflect.Int {
-		result := int(valueOf.Float())
-		return reflect.ValueOf(result)
+	switch typeOf.Kind() {
+	case reflect.Float64:
+		return ConvertNumber(fieldType.Kind(), valueOf)
 	}
+
 	return valueOf
+}
+
+// ConvertNumber handles JSON numbers as they are float64 from the parser
+func ConvertNumber(kind reflect.Kind, value reflect.Value) reflect.Value {
+	switch kind {
+	case reflect.Int8:
+		return reflect.ValueOf(int8(value.Float()))
+
+	case reflect.Int16:
+		return reflect.ValueOf(int16(value.Float()))
+
+	case reflect.Int32:
+		return reflect.ValueOf(int32(value.Float()))
+
+	case reflect.Int64:
+		return reflect.ValueOf(int64(value.Float()))
+
+	case reflect.Int:
+		return reflect.ValueOf(int(value.Float()))
+
+	case reflect.Uint:
+		return reflect.ValueOf(uint(value.Float()))
+
+	case reflect.Uint8:
+		return reflect.ValueOf(uint8(value.Float()))
+
+	case reflect.Uint16:
+		return reflect.ValueOf(uint16(value.Float()))
+
+	case reflect.Uint32:
+		return reflect.ValueOf(uint32(value.Float()))
+
+	case reflect.Uint64:
+		return reflect.ValueOf(uint64(value.Float()))
+
+	case reflect.Float32:
+		return reflect.ValueOf(float32(value.Float()))
+
+	}
+	return value
 }
 
 // SetMap takes a pointer to a structure and sets it.
@@ -129,6 +172,9 @@ func SetMap(parent interface{}, fieldName string, child interface{}) bool {
 	}
 
 	newValue := reflect.ValueOf(child)
+
+	log.Dump("key", key, "newValue", newValue)
+
 	element.SetMapIndex(key, newValue)
 
 	return true
