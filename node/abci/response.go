@@ -33,13 +33,6 @@ func (info *ResponseInfo) JSON() string {
 		panic("JSON conversion failed")
 	}
 	return string(bytes)
-	/*
-		bytes, err := json.Marshal(info)
-		if err != nil {
-			panic("Marshal Failed")
-		}
-		return string(bytes)
-	*/
 }
 
 // Return as a Contract
