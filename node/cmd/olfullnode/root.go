@@ -55,7 +55,7 @@ func init() {
 		global.Current.BTCAddress, "bitcoin rpc address")
 
 	RootCmd.PersistentFlags().StringVar(&global.Current.ETHAddress, "ethrpc",
-		global.Current.ETHAddress, "etherem rpc address")
+		global.Current.ETHAddress, "ethereum rpc address")
 }
 
 // Initialize Viper
