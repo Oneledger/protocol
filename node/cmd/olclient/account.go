@@ -19,7 +19,7 @@ var accountCmd = &cobra.Command{
 	Run:   CheckAccount,
 }
 
-// TODO: typing should be way better, see if cobr can help with this...
+// TODO: typing should be way better, see if cobra can help with this...
 type AccountArguments struct {
 	user string
 }
