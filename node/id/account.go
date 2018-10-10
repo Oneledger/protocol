@@ -13,7 +13,7 @@ import (
 
 	"github.com/Oneledger/protocol/node/comm"
 	"github.com/Oneledger/protocol/node/data"
-	"github.com/Oneledger/protocol/node/err"
+	"github.com/Oneledger/protocol/node/status"
 	"github.com/Oneledger/protocol/node/global"
 	"github.com/Oneledger/protocol/node/log"
 )
@@ -60,29 +60,29 @@ func (acc *Accounts) Exists(newType data.ChainType, name string) bool {
 	return false
 }
 
-func (acc *Accounts) Find(account Account) (Account, err.Code) {
+func (acc *Accounts) Find(account Account) (Account, status.Code) {
 	return acc.FindKey(account.AccountKey())
 }
 
-func (acc *Accounts) FindIdentity(identity Identity) (Account, err.Code) {
+func (acc *Accounts) FindIdentity(identity Identity) (Account, status.Code) {
 	// TODO: Should have better name mapping between identities and accounts
 	account := NewAccount(data.ONELEDGER, identity.Name+"-OneLedger", NilPublicKey(), NilPrivateKey())
 	return acc.Find(account)
 
 }
 
-func (acc *Accounts) FindNameOnChain(name string, chain data.ChainType) (Account, err.Code) {
+func (acc *Accounts) FindNameOnChain(name string, chain data.ChainType) (Account, status.Code) {
 	log.Debug("FindNameOnChain", "name", name, "chain", chain)
 	// TODO: Should be replaced with a real index
 	for _, entry := range acc.FindAll() {
 		if Matches(entry, name, chain) {
-			return entry, err.SUCCESS
+			return entry, status.SUCCESS
 		}
 	}
-	return nil, err.SUCCESS
+	return nil, status.SUCCESS
 }
 
-func (acc *Accounts) FindName(name string) (Account, err.Code) {
+func (acc *Accounts) FindName(name string) (Account, status.Code) {
 	return acc.FindNameOnChain(name, data.ONELEDGER)
 }
 
@@ -95,30 +95,30 @@ func Matches(account Account, name string, chain data.ChainType) bool {
 	return false
 }
 
-func (acc *Accounts) FindKey(key AccountKey) (Account, err.Code) {
+func (acc *Accounts) FindKey(key AccountKey) (Account, status.Code) {
 	value := acc.data.Load(key)
 	if value != nil {
 		// TODO: Should be switchable
 		accountOneLedger := &AccountOneLedger{}
 		base, _ := comm.Deserialize(value, accountOneLedger)
 		if base != nil {
-			return base.(Account), err.SUCCESS
+			return base.(Account), status.SUCCESS
 		}
 
 		accountEthereum := &AccountEthereum{}
 		base, _ = comm.Deserialize(value, accountEthereum)
 		if base != nil {
-			return base.(Account), err.SUCCESS
+			return base.(Account), status.SUCCESS
 		}
 
 		accountBitcoin := &AccountBitcoin{}
 		base, _ = comm.Deserialize(value, accountBitcoin)
 		if base != nil {
-			return base.(Account), err.SUCCESS
+			return base.(Account), status.SUCCESS
 		}
 		log.Fatal("Can't deserialize", "value", value)
 	}
-	return nil, err.SUCCESS
+	return nil, status.SUCCESS
 }
 
 func (acc *Accounts) FindAll() []Account {
@@ -134,7 +134,7 @@ func (acc *Accounts) FindAll() []Account {
 
 		base, err := comm.Deserialize(acc.data.Load(keys[i]), account)
 		if err != nil {
-			log.Fatal("Failed to Deserialize Account at index ", "i", i, "err", err)
+			log.Fatal("Failed to Deserialize Account at index ", "i", i, "status", err)
 		}
 		results[i] = base.(Account)
 		log.Debug("Deserialized account", i, results[i])

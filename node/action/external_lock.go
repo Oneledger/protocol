@@ -7,7 +7,7 @@ package action
 
 import (
 	"github.com/Oneledger/protocol/node/data"
-	"github.com/Oneledger/protocol/node/err"
+	"github.com/Oneledger/protocol/node/status"
 	"github.com/Oneledger/protocol/node/log"
 )
 
@@ -21,16 +21,16 @@ type ExternalLock struct {
 	Outputs []SendOutput `json:"outputs"`
 }
 
-func (transaction *ExternalLock) Validate() err.Code {
+func (transaction *ExternalLock) Validate() status.Code {
 	log.Debug("Validating ExternalLock Transaction")
 
 	if transaction.Fee.LessThan(0) {
-		return err.MISSING_DATA
+		return status.MISSING_DATA
 	}
-	return err.SUCCESS
+	return status.SUCCESS
 }
 
-func (transaction *ExternalLock) ProcessCheck(app interface{}) err.Code {
+func (transaction *ExternalLock) ProcessCheck(app interface{}) status.Code {
 	log.Debug("Processing ExternalLock Transaction for CheckTx")
 
 	commands := transaction.Resolve(app)
@@ -42,11 +42,11 @@ func (transaction *ExternalLock) ShouldProcess(app interface{}) bool {
 	return true
 }
 
-func (transaction *ExternalLock) ProcessDeliver(app interface{}) err.Code {
+func (transaction *ExternalLock) ProcessDeliver(app interface{}) status.Code {
 	log.Debug("Processing ExternalLock Transaction for DeliverTx")
 
 	// TODO: // Update in final copy of Merkle Tree
-	return err.SUCCESS
+	return status.SUCCESS
 }
 
 func (transaction *ExternalLock) Resolve(app interface{} ) Commands{

@@ -10,7 +10,7 @@ import (
 
 	"github.com/Oneledger/protocol/node/comm"
 	"github.com/Oneledger/protocol/node/data"
-	"github.com/Oneledger/protocol/node/err"
+	"github.com/Oneledger/protocol/node/status"
 	"github.com/Oneledger/protocol/node/log"
 )
 
@@ -47,7 +47,7 @@ func (ids *Identities) Add(identity *Identity) {
 
 	buffer, err := comm.Serialize(identity)
 	if err != nil {
-		log.Error("Serialize Failed", "err", err)
+		log.Error("Serialize Failed", "status", err)
 		return
 	}
 
@@ -74,7 +74,7 @@ func (ids *Identities) Exists(name string) bool {
 	return false
 }
 
-func (ids *Identities) FindName(name string) (*Identity, err.Code) {
+func (ids *Identities) FindName(name string) (*Identity, status.Code) {
 	id := NewIdentity(name, "", true, "", nil)
 
 	value := ids.data.Load(id.Key())
@@ -85,10 +85,10 @@ func (ids *Identities) FindName(name string) (*Identity, err.Code) {
 			log.Fatal("Failed to deserialize Identity: ", status)
 		}
 
-		return base.(*Identity), err.SUCCESS
+		return base.(*Identity), status.SUCCESS
 	}
 
-	return nil, err.SUCCESS
+	return nil, status.SUCCESS
 }
 
 func (ids *Identities) FindAll() []*Identity {
@@ -166,12 +166,12 @@ func (id *Identity) Export() IdentityExport {
 }
 
 /*
-func (identity Identity) Format() (string, err.Code) {
-	return identity.Format(), err.SUCCESS
+func (identity Identity) Format() (string, status.Code) {
+	return identity.Format(), status.SUCCESS
 }
 
 // Given an identity, get the account
-func (identity Identity) GetName() (string, err.Code) {
-	return identity.Name(), err.SUCCESS
+func (identity Identity) GetName() (string, status.Code) {
+	return identity.Name(), status.SUCCESS
 }
 */

@@ -6,7 +6,7 @@
 package action
 
 import (
-	"github.com/Oneledger/protocol/node/err"
+	"github.com/Oneledger/protocol/node/status"
 	"github.com/Oneledger/protocol/node/log"
 )
 
@@ -16,21 +16,21 @@ type Forget struct {
 	Target string `json:"target"`
 }
 
-func (transaction *Forget) Validate() err.Code {
+func (transaction *Forget) Validate() status.Code {
 	log.Debug("Validating Forget Transaction")
-	return err.SUCCESS
+	return status.SUCCESS
 }
 
-func (transaction *Forget) ProcessCheck(app interface{}) err.Code {
+func (transaction *Forget) ProcessCheck(app interface{}) status.Code {
 	log.Debug("Processing Forget Transaction for CheckTx")
-	return err.SUCCESS
+	return status.SUCCESS
 }
 
 func (transaction *Forget) ShouldProcess(app interface{}) bool {
 	return true
 }
 
-func (transaction *Forget) ProcessDeliver(app interface{}) err.Code {
+func (transaction *Forget) ProcessDeliver(app interface{}) status.Code {
 
 	commands := transaction.Resolve(app)
 

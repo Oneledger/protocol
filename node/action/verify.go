@@ -7,7 +7,7 @@ package action
 
 import (
     "bytes"
-    "github.com/Oneledger/protocol/node/err"
+    "github.com/Oneledger/protocol/node/status"
     "github.com/Oneledger/protocol/node/id"
     "github.com/Oneledger/protocol/node/log"
 )
@@ -24,26 +24,26 @@ type Verify struct {
 	Message Message         `json:"Message"`
 }
 
-func (transaction Verify) Validate() err.Code {
+func (transaction Verify) Validate() status.Code {
 	log.Debug("Validating Verify Transaction")
     if transaction.Target == nil {
         log.Debug("Missing Target")
-        return err.MISSING_DATA
+        return status.MISSING_DATA
     }
 
     if &transaction.Event == nil {
         log.Debug("Missing Event")
-        return err.MISSING_DATA
+        return status.MISSING_DATA
     }
 
     log.Debug("Verify is validated!")
-	return err.SUCCESS
+	return status.SUCCESS
 }
 
-func (transaction Verify) ProcessCheck(app interface{}) err.Code {
+func (transaction Verify) ProcessCheck(app interface{}) status.Code {
 	log.Debug("Processing Verify Transaction for CheckTx")
 	//todo : check the data ?
-	return err.SUCCESS
+	return status.SUCCESS
 }
 
 func (transaction Verify) ShouldProcess(app interface{}) bool {
@@ -58,7 +58,7 @@ func (transaction Verify) ShouldProcess(app interface{}) bool {
     return false
 }
 
-func (transaction Verify) ProcessDeliver(app interface{}) err.Code {
+func (transaction Verify) ProcessDeliver(app interface{}) status.Code {
 	log.Debug("Processing Verify Transaction for DeliverTx")
 
     commands := transaction.Expand(app)
@@ -70,13 +70,13 @@ func (transaction Verify) ProcessDeliver(app interface{}) err.Code {
 
     for i := 0; i < commands.Count(); i++ {
         status, result := Execute(app, commands[i], lastResult)
-        if status != err.SUCCESS {
+        if status != status.SUCCESS {
             log.Error("Failed to Execute", "command", commands[i])
-            return err.EXPAND_ERROR
+            return status.EXPAND_ERROR
         }
         lastResult = result
     }
-    return err.SUCCESS
+    return status.SUCCESS
 }
 
 func (transaction Verify) Resolve(app interface{}) Commands {

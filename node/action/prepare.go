@@ -6,7 +6,7 @@
 package action
 
 import (
-	"github.com/Oneledger/protocol/node/err"
+	"github.com/Oneledger/protocol/node/status"
 	"github.com/Oneledger/protocol/node/log"
 )
 
@@ -17,21 +17,21 @@ type Prepare struct {
 	Target string `json:"target"`
 }
 
-func (transaction *Prepare) Validate() err.Code {
+func (transaction *Prepare) Validate() status.Code {
 	log.Debug("Validating Prepare Transaction")
-	return err.SUCCESS
+	return status.SUCCESS
 }
 
-func (transaction *Prepare) ProcessCheck(app interface{}) err.Code {
+func (transaction *Prepare) ProcessCheck(app interface{}) status.Code {
 	log.Debug("Processing Prepare Transaction for CheckTx")
-	return err.SUCCESS
+	return status.SUCCESS
 }
 
 func (transaction *Prepare) ShouldProcess(app interface{}) bool {
 	return true
 }
 
-func (transaction *Prepare) ProcessDeliver(app interface{}) err.Code {
+func (transaction *Prepare) ProcessDeliver(app interface{}) status.Code {
 
 	commands := transaction.Resolve(app)
 

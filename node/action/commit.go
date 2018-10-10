@@ -6,7 +6,7 @@
 package action
 
 import (
-	"github.com/Oneledger/protocol/node/err"
+	"github.com/Oneledger/protocol/node/status"
 	"github.com/Oneledger/protocol/node/log"
 )
 
@@ -17,24 +17,24 @@ type Commit struct {
 	Target string `json:"target"`
 }
 
-func (transaction *Commit) Validate() err.Code {
+func (transaction *Commit) Validate() status.Code {
 	log.Debug("Validating Commit Transaction")
 	if transaction.Target == "" {
-		return err.MISSING_DATA
+		return status.MISSING_DATA
 	}
-	return err.SUCCESS
+	return status.SUCCESS
 }
 
-func (transaction *Commit) ProcessCheck(app interface{}) err.Code {
+func (transaction *Commit) ProcessCheck(app interface{}) status.Code {
 	log.Debug("Processing Commit Transaction for CheckTx")
-	return err.SUCCESS
+	return status.SUCCESS
 }
 
 func (transaction *Commit) ShouldProcess(app interface{}) bool {
 	return true
 }
 
-func (transaction *Commit) ProcessDeliver(app interface{}) err.Code {
+func (transaction *Commit) ProcessDeliver(app interface{}) status.Code {
 	log.Debug("Processing Commit Transaction for DeliverTx")
 
 	commands := transaction.Resolve(app)

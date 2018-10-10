@@ -46,7 +46,7 @@ func GetBtcClient(address string) *brpc.Bitcoind {
 
 	cli, err := brpc.New(ip.String(), port, usr, pass, false, chainParams)
 	if err != nil {
-		log.Error("Can't get the btc rpc client at given address", "err", err)
+		log.Error("Can't get the btc rpc client at given address", "status", err)
 		return nil
 	}
 
@@ -117,12 +117,12 @@ func GetRawAddress(client *brpc.Bitcoind) *btcutil.AddressPubKeyHash {
 func GetAmount(value string) btcutil.Amount {
 	number, err := strconv.ParseFloat(value, 64)
 	if err != nil {
-		log.Fatal("failed to decode amount", "err", err, "value", value)
+		log.Fatal("failed to decode amount", "status", err, "value", value)
 	}
 
 	amount, err := btcutil.NewAmount(number)
 	if err != nil {
-		log.Fatal("failed to create Bitcoin amount", "err", err, "number", number)
+		log.Fatal("failed to create Bitcoin amount", "status", err, "number", number)
 	}
 	return amount
 }
@@ -135,7 +135,7 @@ type HTLContract struct {
 func (h *HTLContract) ToMessage() []byte {
 	msg, err := comm.Serialize(h)
 	if err != nil {
-	    log.Error("Failed to serialize htlc", "err", err)
+	    log.Error("Failed to serialize htlc", "status", err)
     }
     return msg
 }
@@ -143,7 +143,7 @@ func (h *HTLContract) ToMessage() []byte {
 func (h *HTLContract) ToKey() []byte {
 	key, err := btcutil.NewAddressScriptHash(h.Contract, GetChaincfg())
 	if err != nil {
-	    log.Error("Failed to get the key for contract", "err", err)
+	    log.Error("Failed to get the key for contract", "status", err)
 		return nil
 	}
 	return key.ScriptAddress()
@@ -155,7 +155,7 @@ func GetHTLCFromMessage(message []byte) *HTLContract{
 
 	result, err := comm.Deserialize(message, register)
 	if err != nil {
-		log.Error("Failed parse htlc contract", "err", err)
+		log.Error("Failed parse htlc contract", "status", err)
 		return nil
 	}
 	return  result.(*HTLContract)

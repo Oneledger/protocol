@@ -6,7 +6,7 @@ package action
 
 import (
     "github.com/Oneledger/protocol/node/data"
-	"github.com/Oneledger/protocol/node/err"
+	"github.com/Oneledger/protocol/node/status"
 )
 
 type CommandType int
@@ -41,19 +41,19 @@ func (commands Commands) Count() int {
 	return len(commands)
 }
 
-func (cs Commands) Execute(app interface{}) err.Code {
+func (cs Commands) Execute(app interface{}) status.Code {
 	var lastResult FunctionValues
 	var status bool
 
 	for i := 0; i < cs.Count(); i++ {
 		status, lastResult = cs[i].Execute(app)
 		if !status {
-			return err.EXECUTE_ERROR
+			return status.EXECUTE_ERROR
 		}
 
 		if len(lastResult) > 0 {
 			cs[i+1].data = lastResult
 		}
 	}
-	return err.SUCCESS
+	return status.SUCCESS
 }

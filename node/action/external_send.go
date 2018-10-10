@@ -7,7 +7,7 @@ package action
 
 import (
 	"github.com/Oneledger/protocol/node/data"
-	"github.com/Oneledger/protocol/node/err"
+	"github.com/Oneledger/protocol/node/status"
 	"github.com/Oneledger/protocol/node/log"
 )
 
@@ -21,27 +21,27 @@ type ExternalSend struct {
 	Outputs []SendOutput `json:"outputs"`
 }
 
-func (transaction *ExternalSend) Validate() err.Code {
+func (transaction *ExternalSend) Validate() status.Code {
 	log.Debug("Validating ExternalSend Transaction")
 
 	// TODO: Make sure all of the parameters are there
 	// TODO: Check all signatures and keys
 	// TODO: Vet that the sender has the values
-	return err.SUCCESS
+	return status.SUCCESS
 }
 
-func (transaction *ExternalSend) ProcessCheck(app interface{}) err.Code {
+func (transaction *ExternalSend) ProcessCheck(app interface{}) status.Code {
 	log.Debug("Processing ExternalSend Transaction for CheckTx")
 
 	// TODO: // Update in memory copy of Merkle Tree
-	return err.SUCCESS
+	return status.SUCCESS
 }
 
 func (transaction *ExternalSend) ShouldProcess(app interface{}) bool {
 	return true
 }
 
-func (transaction *ExternalSend) ProcessDeliver(app interface{}) err.Code {
+func (transaction *ExternalSend) ProcessDeliver(app interface{}) status.Code {
 	log.Debug("Processing ExternalSend Transaction for DeliverTx")
 
 	commands := transaction.Resolve(app)

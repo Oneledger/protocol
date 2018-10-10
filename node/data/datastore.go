@@ -79,7 +79,7 @@ func NewDatastore(name string, newType DatastoreType) *Datastore {
 
 		storage, err := db.NewGoLevelDB(fullname, global.Current.RootDir)
 		if err != nil {
-			log.Error("Database create failed", "err", err)
+			log.Error("Database create failed", "status", err)
 			panic("Can't create a database " + global.Current.RootDir + "/" + fullname)
 		}
 
@@ -180,7 +180,7 @@ func (store Datastore) Commit() {
 	case PERSISTENT:
 		_, version, err := store.tree.SaveVersion()
 		if err != nil {
-			log.Fatal("Database Error", "err", err)
+			log.Fatal("Database Error", "status", err)
 		}
 		store.version = version
 

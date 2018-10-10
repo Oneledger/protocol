@@ -34,8 +34,8 @@ func (info *ResponseInfo) JSON() string {
 	}
 	return string(bytes)
 	/*
-		bytes, err := json.Marshal(info)
-		if err != nil {
+		bytes, status := json.Marshal(info)
+		if status != nil {
 			panic("Marshal Failed")
 		}
 		return string(bytes)

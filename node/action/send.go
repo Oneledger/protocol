@@ -8,7 +8,7 @@ package action
 import (
 	"github.com/Oneledger/protocol/node/comm"
 	"github.com/Oneledger/protocol/node/data"
-	"github.com/Oneledger/protocol/node/err"
+	"github.com/Oneledger/protocol/node/status"
 	"github.com/Oneledger/protocol/node/log"
 )
 
@@ -23,46 +23,46 @@ type Send struct {
 	Fee data.Coin `json:"fee"`
 }
 
-func (transaction *Send) Validate() err.Code {
+func (transaction *Send) Validate() status.Code {
 	log.Debug("Validating Send Transaction")
 
 	if transaction.Fee.LessThan(0) {
 		log.Debug("Missing Fee", "send", transaction)
-		return err.MISSING_DATA
+		return status.MISSING_DATA
 	}
 
 	if transaction.Gas.LessThan(0) {
 		log.Debug("Missing Gas", "send", transaction)
-		return err.MISSING_DATA
+		return status.MISSING_DATA
 	}
 
-	return err.SUCCESS
+	return status.SUCCESS
 }
 
-func (transaction *Send) ProcessCheck(app interface{}) err.Code {
+func (transaction *Send) ProcessCheck(app interface{}) status.Code {
 	log.Debug("Processing Send Transaction for CheckTx")
 
 	if !CheckAmounts(app, transaction.Inputs, transaction.Outputs) {
 		log.Debug("FAILED", "inputs", transaction.Inputs, "outputs", transaction.Outputs)
-		return err.INVALID
+		return status.INVALID
 	}
 
 	// TODO: Validate the transaction against the UTXO database, check tree
 	chain := GetUtxo(app)
 	_ = chain
 
-	return err.SUCCESS
+	return status.SUCCESS
 }
 
 func (transaction *Send) ShouldProcess(app interface{}) bool {
 	return true
 }
 
-func (transaction *Send) ProcessDeliver(app interface{}) err.Code {
+func (transaction *Send) ProcessDeliver(app interface{}) status.Code {
 	log.Debug("Processing Send Transaction for DeliverTx")
 
 	if !CheckAmounts(app, transaction.Inputs, transaction.Outputs) {
-		return err.INVALID
+		return status.INVALID
 	}
 
 	chain := GetUtxo(app)
@@ -76,13 +76,13 @@ func (transaction *Send) ProcessDeliver(app interface{}) err.Code {
 
 		buffer, err := comm.Serialize(balance)
 		if err != nil {
-			log.Fatal("Serialize", "err", err)
+			log.Fatal("Serialize", "status", err)
 		}
 
 		chain.Delivered.Set(entry.AccountKey, buffer)
 	}
 
-	return err.SUCCESS
+	return status.SUCCESS
 }
 
 

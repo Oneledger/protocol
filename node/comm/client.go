@@ -28,7 +28,7 @@ func NewAppClient() client.Client {
 	// TODO: Try multiple times before giving up
 	client, err := client.NewClient(global.Current.AppAddress, global.Current.Transport, true)
 	if err != nil {
-		log.Fatal("Can't start client", "err", err)
+		log.Fatal("Can't start client", "status", err)
 	}
 	log.Debug("Have Client", "client", client)
 
@@ -50,7 +50,7 @@ func SetOption(key string, value string) {
 	log.Debug("Have Set Option")
 
 	if err != nil {
-		log.Error("SetOption Failed", "err", err, "response", response)
+		log.Error("SetOption Failed", "status", err, "response", response)
 	}
 }
 
@@ -96,10 +96,10 @@ func Broadcast(packet []byte) *ctypes.ResultBroadcastTx {
 
 	client := GetClient()
 
-	//result, err := client.BroadcastTxCommit(packet)
+	//result, status := client.BroadcastTxCommit(packet)
 	result, err := client.BroadcastTxAsync(packet)
 	if err != nil {
-		log.Error("Broadcast Error", "err", err)
+		log.Error("Broadcast Error", "status", err)
 	}
 
 	log.Debug("Broadcast", "packet", packet, "result", result)
@@ -113,7 +113,7 @@ func BroadcastCommit(packet []byte) *ctypes.ResultBroadcastTxCommit {
 
 	result, err := client.BroadcastTxCommit(packet)
 	if err != nil {
-		log.Error("Error", "err", err)
+		log.Error("Error", "status", err)
 	}
 
 	log.Debug("Broadcast", "packet", packet, "result", result)
@@ -127,7 +127,7 @@ func Query(path string, packet []byte) (res *ctypes.ResultABCIQuery) {
 
 	result, err := client.ABCIQuery(path, packet)
 	if err != nil {
-		log.Error("ABCi Query Error", "path", path, "err", err)
+		log.Error("ABCi Query Error", "path", path, "status", err)
 		return nil
 	}
 
@@ -141,7 +141,7 @@ func Search(query string, prove bool, page, perPage int) (res *ctypes.ResultTxSe
 
 	result, err := client.TxSearch(query, prove, page, perPage)
 	if err != nil {
-		log.Error("TxSearch Error", "err", err)
+		log.Error("TxSearch Error", "status", err)
 	}
 
 	log.Debug("TxSearch", "query", query, "prove", prove, "result", result)

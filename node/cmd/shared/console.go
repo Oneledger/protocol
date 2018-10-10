@@ -88,7 +88,7 @@ func (tty *Tty) Password() string {
 func (tty *Tty) Read(prompt string) string {
 	input, err := speakeasy.Ask(prompt)
 	if err != nil {
-		log.Fatal("Console Read", "err", err)
+		log.Fatal("Console Read", "status", err)
 	}
 	return input
 }

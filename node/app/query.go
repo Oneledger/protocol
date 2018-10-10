@@ -14,7 +14,7 @@ import (
 	"github.com/Oneledger/protocol/node/comm"
 	"github.com/Oneledger/protocol/node/convert"
 	"github.com/Oneledger/protocol/node/data"
-	"github.com/Oneledger/protocol/node/err"
+	"github.com/Oneledger/protocol/node/status"
 	"github.com/Oneledger/protocol/node/id"
 	"github.com/Oneledger/protocol/node/log"
 	"github.com/Oneledger/protocol/node/version"
@@ -200,8 +200,8 @@ func UtxoInfo(app Application, name string) []byte {
 		entries := app.Utxo.FindAll()
 		for key, value := range entries {
 			account, errs := app.Accounts.FindKey([]byte(key))
-			if errs != err.SUCCESS {
-				log.Fatal("Accounts", "err", errs, "key", key)
+			if errs != status.SUCCESS {
+				log.Fatal("Accounts", "status", errs, "key", key)
 			}
 
 			var name string
@@ -293,7 +293,7 @@ func HandleSwapAddressQuery(app Application, message []byte) []byte {
 	//todo: make it general
 	if chain == data.ONELEDGER {
 		account, e := app.Accounts.FindName(global.Current.NodeAccountName)
-		if e == err.SUCCESS {
+		if e == status.SUCCESS {
 			return account.AccountKey()
 		}
 	}

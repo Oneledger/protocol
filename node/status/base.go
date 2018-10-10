@@ -3,7 +3,7 @@
 
 	Common errors across the entire system
 */
-package err
+package status
 
 type Code = uint32 // Matches Tendermint status
 

@@ -31,7 +31,7 @@ func getEthClient() *ethclient.Client {
 		for i := 0; i < 3; i++ {
 			cli, err := ethclient.Dial(address)
 			if err != nil {
-				log.Fatal("failed to get geth ipc ", "err", err)
+				log.Fatal("failed to get geth ipc ", "status", err)
 				time.Sleep(3 * time.Second)
 			}
 			return cli
@@ -40,7 +40,7 @@ func getEthClient() *ethclient.Client {
 		for i := 0; i < 3; i++ {
 			cli, err := ethclient.Dial(address)
 			if err != nil {
-				log.Fatal("failed to get geth ipc ", "err", err)
+				log.Fatal("failed to get geth ipc ", "status", err)
 				time.Sleep(3 * time.Second)
 			}
 			return cli
@@ -64,21 +64,21 @@ func GetAuth() *bind.TransactOpts {
 		key := `{"address":"d7858005867c3449f6673a91f6e4f719f10e12e5","crypto":{"cipher":"aes-128-ctr","ciphertext":"72f2b4ce4af1ff68f3b8c3d0c5b6b3c55e153441633df9ba5b615134f697c108","cipherparams":{"iv":"7839596b4f84b7b2c4cdf01e841a8cec"},"kdf":"scrypt","kdfparams":{"dklen":32,"n":262144,"p":1,"r":8,"salt":"00750dcae280f52db4950517334e02348488e638f2958dffb625ddead8d626f3"},"mac":"341af04c7105565890aac985d13e46b3362312fc4d488944d17d19f03c100386"},"id":"00888165-5663-4e71-beea-1b6055f91cbe","version":3}`
 		auth, err := bind.NewTransactor(strings.NewReader(key), "1234")
 		if err != nil {
-			log.Fatal("Can't get pre-allocate auth for Alice", "err", err)
+			log.Fatal("Can't get pre-allocate auth for Alice", "status", err)
 		}
 		return auth
 	case "Bob-Node":
 		key := `{"address":"aafa2d8980a730b02195f9c8dfeafeb3e69a69ca","crypto":{"cipher":"aes-128-ctr","ciphertext":"cfc36b7deb503116482371b7d2596aa936758b8247279efce461cf0344ae4b31","cipherparams":{"iv":"fc200b937116258856dd0e5a085e011d"},"kdf":"scrypt","kdfparams":{"dklen":32,"n":262144,"p":1,"r":8,"salt":"7354c4523dfc70372c8c34616c15dc21448ac40617ffc3a7b3a9af7ee32c37e6"},"mac":"1b322fa3c5789cede87144783f2bd8c4588e5094e68f7880640ca9a5458b8aab"},"id":"87363a39-0171-4640-ba12-b5aacad7aed2","version":3}`
 		auth, err := bind.NewTransactor(strings.NewReader(key), "2345")
 		if err != nil {
-			log.Fatal("Can't get pre-allocate auth for Bob", "err", err)
+			log.Fatal("Can't get pre-allocate auth for Bob", "status", err)
 		}
 		return auth
 	case "Carol-Node":
 		key := `{"address":"8a309f95de0e47edb61de8fa0cf8bdd722271789","crypto":{"cipher":"aes-128-ctr","ciphertext":"81becb7ca37be737af147aa0552b1639b770d76ba98fa82069325fe1ce6e1aa1","cipherparams":{"iv":"5be20f263a46d6cca53cb0ae490245fd"},"kdf":"scrypt","kdfparams":{"dklen":32,"n":262144,"p":1,"r":8,"salt":"12456c9a74778a06449596676cc90f2f046e306b5db74688600c04577529b9c2"},"mac":"6737c9dd93f0abc8e102590984790214c2b9dfc36ea6e2b769e80c19eb22e4e8"},"id":"fbaef12b-a667-4c4e-b4c7-7234ef37cbe9","version":3}`
 		auth, err := bind.NewTransactor(strings.NewReader(key), "3456")
 		if err != nil {
-			log.Fatal("Can't get pre-allocate auth for Carol", "err", err)
+			log.Fatal("Can't get pre-allocate auth for Carol", "status", err)
 		}
 		return auth
 	default:
@@ -94,7 +94,7 @@ func CreateHtlContract() *HTLContract {
 	auth.GasLimit = 2000000
 	address, tx, _, err := htlc.DeployHtlc(auth, cli, auth.From)
 	if err != nil {
-		log.Fatal("Failed to create htlc for the node", "err", err)
+		log.Fatal("Failed to create htlc for the node", "status", err)
 	}
 	log.Debug("Htlc contract created", "address", address, "tx", tx)
 	time.Sleep(6 * time.Second)
@@ -122,13 +122,13 @@ func (h *HTLContract) Funds(value *big.Int, lockTime *big.Int, receiver common.A
     }
 	tx, err := contract.Funds(auth, lockTime, receiver, scrHash)
 	if err != nil {
-		log.Error("Can't fund the htlc", "err", err, "auth", auth)
+		log.Error("Can't fund the htlc", "status", err, "auth", auth)
 		return err
 	}
 	h.Tx = tx
 	balance, err := h.HTLContractObject().Balance(&bind.CallOpts{Pending: true})
 	if err != nil {
-	    log.Error("Can't get balance after fund", "err", err)
+	    log.Error("Can't get balance after fund", "status", err)
     }
 	log.Info("Fund htlc", "address", h.Address, "tx", h.Tx, "value", value, "balance", balance)
     time.Sleep(6 * time.Second)
@@ -147,13 +147,13 @@ func (h *HTLContract) Redeem(scr []byte) error {
     }
     tx, err := contract.Redeem(auth, scr)
 	if err != nil {
-		log.Error("Can't redeem the htlc", "err", err, "auth", auth)
+		log.Error("Can't redeem the htlc", "status", err, "auth", auth)
 		return err
 	}
 	h.Tx = tx
 	time.Sleep(6 * time.Second)
     balance, err = contract.Balance(&bind.CallOpts{Pending: false})
-    log.Debug("balance after redeem", "balance", balance, "err", err)
+    log.Debug("balance after redeem", "balance", balance, "status", err)
 	log.Info("Redeem htlc", "address", h.Address, "tx", tx, "scr", scr, "txaddress", tx.Hash())
 	return nil
 }
@@ -167,7 +167,7 @@ func (h *HTLContract) Refund() error {
     }
     tx, err := contract.Refund(auth)
 	if err != nil {
-		log.Error("Can't refund the htlc", "err", err, "auth", auth)
+		log.Error("Can't refund the htlc", "status", err, "auth", auth)
 		return err
 	}
     time.Sleep(20 * time.Second)
@@ -192,7 +192,7 @@ func (h *HTLContract) Audit(receiver common.Address, value *big.Int, scrHash [32
     log.Debug("audit htlc contract", "wei", valueWei)
 	result, err := h.HTLContractObject().Audit(&bind.CallOpts{Pending: false}, receiver, valueWei, scrHash)
 	if err != nil {
-		log.Error("Can't audit the htlc", "err", err)
+		log.Error("Can't audit the htlc", "status", err)
 		return err
 	}
 	log.Info("Audit htlc", "result", result)
@@ -203,7 +203,7 @@ func (h *HTLContract) Extract() []byte {
 
     result, err := h.HTLContractObject().ExtractMsg(&bind.CallOpts{Pending: false})
     if err != nil {
-        log.Error("Failed to extract secret", "err", err)
+        log.Error("Failed to extract secret", "status", err)
     }
     return result
 }
@@ -212,7 +212,7 @@ func (h *HTLContract) Balance() *big.Int {
 
 	balance, err := h.HTLContractObject().Balance(&bind.CallOpts{Pending: true})
 	if err != nil {
-		log.Error("Can't get the balance", "err", err)
+		log.Error("Can't get the balance", "status", err)
 	}
 
 	return WeiToEther(balance)
@@ -222,7 +222,7 @@ func (h *HTLContract) ScrHash() [32]byte {
 
     sh, err := h.HTLContractObject().ScrHash(&bind.CallOpts{Pending: true})
     if err != nil {
-        log.Error("Can't get scrHash", "err", err)
+        log.Error("Can't get scrHash", "status", err)
     }
     return sh
 }
@@ -243,7 +243,7 @@ func GetHTLCFromMessage(message []byte) *HTLContract {
 
 	result, err := comm.Deserialize(message, register)
 	if err != nil {
-		log.Error("parse htlc contract failed", "err", err)
+		log.Error("parse htlc contract failed", "status", err)
 		return nil
 	}
 	return  result.(*HTLContract)
@@ -252,7 +252,7 @@ func GetHTLCFromMessage(message []byte) *HTLContract {
 func (h *HTLContract) ToMessage() []byte {
     msg, err := comm.Serialize(h)
     if err != nil {
-        log.Error("Failed to serialize htlc", "err", err)
+        log.Error("Failed to serialize htlc", "status", err)
     }
     return msg
 }

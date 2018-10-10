@@ -61,7 +61,7 @@ func PackRequest(ttype Type, request Transaction) []byte {
 	base = int32(ttype)
 	err := wire.EncodeInt32(buff, base)
 	if err != nil {
-		log.Error("Failed to EncodeInt32 during PackRequest", "err", err)
+		log.Error("Failed to EncodeInt32 during PackRequest", "status", err)
 	}
 	bytes := buff.Bytes()
 

@@ -6,7 +6,7 @@
 package action
 
 import (
-	"github.com/Oneledger/protocol/node/err"
+	"github.com/Oneledger/protocol/node/status"
 	"github.com/Oneledger/protocol/node/global"
 	"github.com/Oneledger/protocol/node/id"
 	"github.com/Oneledger/protocol/node/log"
@@ -29,33 +29,33 @@ type Publish struct {
 }
 
 // Ensure that all of the base values are at least reasonable.
-func (publish *Publish) Validate() err.Code {
+func (publish *Publish) Validate() status.Code {
 	log.Debug("Validating Publish Transaction")
 
 	if publish.Target == nil {
 		log.Debug("Missing Target")
-		return err.MISSING_DATA
+		return status.MISSING_DATA
 	}
 
 	if publish.Contract == nil {
 		log.Debug("Missing Contract")
-		return err.MISSING_DATA
+		return status.MISSING_DATA
 	}
 
 	log.Debug("Publish is validated!")
-	return err.SUCCESS
+	return status.SUCCESS
 }
 
-func (publish *Publish) ProcessCheck(app interface{}) err.Code {
+func (publish *Publish) ProcessCheck(app interface{}) status.Code {
 	log.Debug("Processing Publish Transaction for CheckTx")
 
 	// TODO: Check all of the data to make sure it is valid.
 
-	return err.SUCCESS
+	return status.SUCCESS
 }
 
 // Start the publish
-func (publish *Publish) ProcessDeliver(app interface{}) err.Code {
+func (publish *Publish) ProcessDeliver(app interface{}) status.Code {
 	log.Debug("Processing Publish Transaction for DeliverTx")
 
     commands := publish.Expand(app)
@@ -67,13 +67,13 @@ func (publish *Publish) ProcessDeliver(app interface{}) err.Code {
 
     for i := 0; i < commands.Count(); i++ {
         status, result := Execute(app, commands[i], lastResult)
-        if status != err.SUCCESS {
+        if status != status.SUCCESS {
             log.Error("Failed to Execute", "command", commands[i])
-            return err.EXPAND_ERROR
+            return status.EXPAND_ERROR
         }
         lastResult = result
     }
-	return err.SUCCESS
+	return status.SUCCESS
 }
 
 // Is this node one of the partipants in the publish

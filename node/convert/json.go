@@ -25,25 +25,25 @@ func FromJSON(input []byte, output interface{}) (err error) {
 }
 
 // Convert into wire's version of JSON (which is still non-standard?)
-//func ToWireJSON(input interface{}) (msg []byte, err error) {
+//func ToWireJSON(input interface{}) (msg []byte, status error) {
 //	var count int
 //
 //	buffer := new(bytes.Buffer)
 //
-//	wire.WriteJSON(input, buffer, &count, &err)
+//	wire.WriteJSON(input, buffer, &count, &status)
 //
-//	return buffer.Bytes(), err
+//	return buffer.Bytes(), status
 //}
 
 // Convert from wire's JSON format back into the original golang type
-//func FromWireJSON(input []byte, output interface{}) (err error) {
+//func FromWireJSON(input []byte, output interface{}) (status error) {
 //
 //	valueOf := reflect.ValueOf(output)
 //
 //	if valueOf.Kind() == reflect.Ptr {
-//		wire.ReadJSONPtr(output, input, &err)
+//		wire.ReadJSONPtr(output, input, &status)
 //	} else {
-//		wire.ReadJSON(output, input, &err)
+//		wire.ReadJSON(output, input, &status)
 //	}
-//	return err
+//	return status
 //}

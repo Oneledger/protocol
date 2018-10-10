@@ -6,7 +6,7 @@
 package action
 
 import (
-	"github.com/Oneledger/protocol/node/err"
+	"github.com/Oneledger/protocol/node/status"
 	"github.com/Oneledger/protocol/node/id"
 )
 
@@ -41,10 +41,10 @@ type PublicKey = id.PublicKey
 
 // Polymorphism and Serializable
 type Transaction interface {
-	Validate() err.Code
-	ProcessCheck(interface{}) err.Code
+	Validate() status.Code
+	ProcessCheck(interface{}) status.Code
 	ShouldProcess(interface{}) bool
-	ProcessDeliver(interface{}) err.Code
+	ProcessDeliver(interface{}) status.Code
 	Resolve(interface{}) Commands
 }
 

@@ -38,6 +38,8 @@ const (
 
 	EVENTTYPE
 	CHECK_EXTERNAL_CHAIN
+	STOREMESSAGE
+	STOREKEY
 )
 
 func GetInt(value FunctionValue) int {
