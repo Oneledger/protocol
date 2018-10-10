@@ -10,12 +10,12 @@ import (
 
 	"github.com/Oneledger/protocol/node/abci"
 	"github.com/Oneledger/protocol/node/action"
-	"github.com/Oneledger/protocol/node/comm"
 	"github.com/Oneledger/protocol/node/convert"
 	"github.com/Oneledger/protocol/node/data"
 	"github.com/Oneledger/protocol/node/global"
 	"github.com/Oneledger/protocol/node/id"
 	"github.com/Oneledger/protocol/node/log"
+	"github.com/Oneledger/protocol/node/serial"
 	"github.com/tendermint/tendermint/abci/types"
 	"github.com/tendermint/tendermint/libs/common"
 )
@@ -58,7 +58,7 @@ func (app Application) Initialize() {
 	param := app.Admin.Load(data.DatabaseKey("NodeAccountName"))
 	if param != nil {
 		var name string
-		buffer, err := comm.Deserialize(param, &name, comm.NETWORK)
+		buffer, err := serial.Deserialize(param, &name, serial.NETWORK)
 		if err != nil {
 			log.Error("Failed to deserialize persistent data")
 		}
@@ -77,7 +77,7 @@ func (app Application) SetupState(stateBytes []byte) {
 
 	var base BasicState
 
-	des, err := comm.Deserialize(stateBytes, &base, comm.JSON)
+	des, err := serial.Deserialize(stateBytes, &base, serial.JSON)
 	if err != nil {
 		log.Fatal("Failed to deserialize stateBytes during SetupState")
 	}
@@ -99,7 +99,7 @@ func (app Application) SetupState(stateBytes []byte) {
 		Amount: data.NewCoin(state.Amount, "OLT"),
 	}
 
-	buffer, err := comm.Serialize(balance, comm.PERSISTENT)
+	buffer, err := serial.Serialize(balance, serial.PERSISTENT)
 	if err != nil {
 		log.Error("Failed to Serialize balance")
 	}

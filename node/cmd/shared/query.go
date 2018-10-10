@@ -14,6 +14,7 @@ import (
 	"github.com/Oneledger/protocol/node/data"
 	"github.com/Oneledger/protocol/node/id"
 	"github.com/Oneledger/protocol/node/log"
+	"github.com/Oneledger/protocol/node/serial"
 )
 
 func GetAccountKey(identity string) []byte {
@@ -79,7 +80,7 @@ func GetBalance(accountKey id.AccountKey) *data.Coin {
 
 	// Convert to a balance
 	var balance data.Balance
-	buffer, status := comm.Deserialize(value, &balance, comm.CLIENT)
+	buffer, status := serial.Deserialize(value, &balance, serial.CLIENT)
 	if status != nil {
 		log.Error("Deserialize", "status", status, "value", value)
 		return nil

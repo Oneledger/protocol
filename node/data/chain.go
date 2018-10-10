@@ -3,7 +3,7 @@
 */
 package data
 
-import "github.com/Oneledger/protocol/node/comm"
+import "github.com/Oneledger/protocol/node/serial"
 
 type ChainType int
 
@@ -30,7 +30,7 @@ type ChainNode struct {
 
 func init() {
 	var chainType ChainType
-	comm.Register(chainType)
-	comm.Register(Chain{})
-	comm.Register(ChainNode{})
+	serial.Register(chainType)
+	serial.Register(Chain{})
+	serial.Register(ChainNode{})
 }

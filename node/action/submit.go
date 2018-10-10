@@ -9,6 +9,7 @@ import (
 
 	"github.com/Oneledger/protocol/node/comm"
 	"github.com/Oneledger/protocol/node/log"
+	"github.com/Oneledger/protocol/node/serial"
 	wire "github.com/tendermint/go-wire"
 )
 
@@ -64,7 +65,7 @@ func PackRequest(ttype Type, request Transaction) []byte {
 	}
 	bytes := buff.Bytes()
 
-	packet, err := comm.Serialize(request, comm.CLIENT)
+	packet, err := serial.Serialize(request, serial.CLIENT)
 	if err != nil {
 		log.Error("Failed to Serialize packet: ", err)
 	} else {

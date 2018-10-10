@@ -11,11 +11,11 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/Oneledger/protocol/node/comm"
 	"github.com/Oneledger/protocol/node/data"
 	"github.com/Oneledger/protocol/node/err"
 	"github.com/Oneledger/protocol/node/global"
 	"github.com/Oneledger/protocol/node/log"
+	"github.com/Oneledger/protocol/node/serial"
 )
 
 // Temporary typing for signatures
@@ -38,7 +38,7 @@ func (acc *Accounts) Add(account Account) {
 		log.Debug("Key is being updated", "key", account.AccountKey())
 	}
 
-	buffer, err := comm.Serialize(account, comm.PERSISTENT)
+	buffer, err := serial.Serialize(account, serial.PERSISTENT)
 	if err != nil {
 		log.Fatal("Failed to Deserialize account: ", err)
 	}
@@ -99,7 +99,7 @@ func (acc *Accounts) FindKey(key AccountKey) (Account, err.Code) {
 	value := acc.data.Load(key)
 	account := Account(nil)
 
-	result, status := comm.Deserialize(value, account, comm.PERSISTENT)
+	result, status := serial.Deserialize(value, account, serial.PERSISTENT)
 
 	if status != nil {
 		log.Fatal("Failed to Deserialize Account", "status", status)
@@ -115,19 +115,19 @@ func (acc *Accounts) FindKey(key AccountKey) (Account, err.Code) {
 
 				// TODO: Should be switchable
 				accountOneLedger := &AccountOneLedger{}
-				base, _ := comm.Deserialize(value, accountOneLedger, comm.PERSISTENT)
+				base, _ := serial.Deserialize(value, accountOneLedger, serial.PERSISTENT)
 				if base != nil {
 					return base.(Account), err.SUCCESS
 				}
 
 				accountEthereum := &AccountEthereum{}
-				base, _ = comm.Deserialize(value, accountEthereum, comm.PERSISTENT)
+				base, _ = serial.Deserialize(value, accountEthereum, serial.PERSISTENT)
 				if base != nil {
 					return base.(Account), err.SUCCESS
 				}
 
 				accountBitcoin := &AccountBitcoin{}
-				base, _ = comm.Deserialize(value, accountBitcoin, comm.PERSISTENT)
+				base, _ = serial.Deserialize(value, accountBitcoin, serial.PERSISTENT)
 				if base != nil {
 					return base.(Account), err.SUCCESS
 				}
@@ -154,7 +154,7 @@ func (acc *Accounts) FindAll() []Account {
 			// TODO: This is dangerous...
 			account := &AccountOneLedger{}
 
-			base, err := comm.Deserialize(acc.data.Load(keys[i]), account, comm.PERSISTENT)
+			base, err := serial.Deserialize(acc.data.Load(keys[i]), account, serial.PERSISTENT)
 			if err != nil {
 				log.Fatal("Failed to Deserialize Account at index ", "i", i, "err", err)
 			}
@@ -228,10 +228,10 @@ type AccountBase struct {
 }
 
 func init() {
-	comm.Register(AccountBase{})
-	comm.Register(AccountOneLedger{})
-	comm.Register(AccountBitcoin{})
-	comm.Register(AccountEthereum{})
+	serial.Register(AccountBase{})
+	serial.Register(AccountOneLedger{})
+	serial.Register(AccountBitcoin{})
+	serial.Register(AccountEthereum{})
 }
 
 // Create a new account for a given chain

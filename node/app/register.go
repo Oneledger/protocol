@@ -6,11 +6,11 @@
 package app
 
 import (
-	"github.com/Oneledger/protocol/node/comm"
 	"github.com/Oneledger/protocol/node/data"
 	"github.com/Oneledger/protocol/node/global"
 	"github.com/Oneledger/protocol/node/id"
 	"github.com/Oneledger/protocol/node/log"
+	"github.com/Oneledger/protocol/node/serial"
 )
 
 // Register Identities and Accounts from the user.
@@ -41,7 +41,7 @@ func RegisterLocally(app *Application, name string, scope string, chain data.Cha
 			log.Debug("Updating NodeAccount", "name", accountName)
 
 			global.Current.NodeAccountName = accountName
-			buffer, err := comm.Serialize(accountName, comm.NETWORK)
+			buffer, err := serial.Serialize(accountName, serial.NETWORK)
 			if err != nil {
 				log.Error("Failed to Serialize accountName")
 			}
@@ -59,7 +59,7 @@ func RegisterLocally(app *Application, name string, scope string, chain data.Cha
 	// Fill in the balance
 	if chain == data.ONELEDGER && !app.Utxo.Exists(account.AccountKey()) {
 		balance := data.NewBalance(0, "OLT")
-		buffer, err := comm.Serialize(balance, comm.NETWORK)
+		buffer, err := serial.Serialize(balance, serial.NETWORK)
 		if err != nil {
 			log.Error("Failed to Serialize balance")
 		}

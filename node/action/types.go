@@ -13,10 +13,10 @@ import (
 	"strconv"
 
 	"github.com/Oneledger/protocol/node/chains/common"
-	"github.com/Oneledger/protocol/node/comm"
 	"github.com/Oneledger/protocol/node/data"
 	"github.com/Oneledger/protocol/node/id"
 	"github.com/Oneledger/protocol/node/log"
+	"github.com/Oneledger/protocol/node/serial"
 )
 
 // inputs into a send transaction (similar to Bitcoin)
@@ -70,7 +70,7 @@ func CheckBalance(app interface{}, accountKey id.AccountKey, amount data.Coin) b
 	}
 
 	var bal data.Balance
-	buffer, err := comm.Deserialize(value, &bal, comm.CLIENT)
+	buffer, err := serial.Deserialize(value, &bal, serial.CLIENT)
 	if err != nil || buffer == nil {
 		log.Error("Failed to Deserialize", "key", accountKey)
 		return false
@@ -148,7 +148,7 @@ type Event struct {
 }
 
 func (e Event) ToKey() []byte {
-	buffer, err := comm.Serialize(e, comm.CLIENT)
+	buffer, err := serial.Serialize(e, serial.CLIENT)
 	if err != nil {
 		log.Error("Failed to Serialize event key")
 	}

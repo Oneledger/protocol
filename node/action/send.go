@@ -6,10 +6,10 @@
 package action
 
 import (
-	"github.com/Oneledger/protocol/node/comm"
 	"github.com/Oneledger/protocol/node/data"
 	"github.com/Oneledger/protocol/node/err"
 	"github.com/Oneledger/protocol/node/log"
+	"github.com/Oneledger/protocol/node/serial"
 )
 
 // Synchronize a swap between two users
@@ -74,7 +74,7 @@ func (transaction *Send) ProcessDeliver(app interface{}) err.Code {
 			Amount: entry.Amount,
 		}
 
-		buffer, err := comm.Serialize(balance, comm.CLIENT)
+		buffer, err := serial.Serialize(balance, serial.CLIENT)
 		if err != nil {
 			log.Fatal("Serialize", "err", err)
 		}

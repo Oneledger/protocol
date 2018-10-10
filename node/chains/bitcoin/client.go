@@ -8,6 +8,7 @@ import (
 	"time"
 
 	brpc "github.com/Oneledger/protocol/node/chains/bitcoin/rpc"
+	"github.com/Oneledger/protocol/node/serial"
 	"github.com/btcsuite/btcd/chaincfg"
 
 	"encoding/base64"
@@ -16,7 +17,6 @@ import (
 
 	"strconv"
 
-	"github.com/Oneledger/protocol/node/comm"
 	"github.com/Oneledger/protocol/node/convert"
 	"github.com/Oneledger/protocol/node/log"
 	"github.com/btcsuite/btcd/wire"
@@ -134,7 +134,7 @@ type HTLContract struct {
 }
 
 func (h *HTLContract) ToMessage() []byte {
-	msg, err := comm.Serialize(h, comm.CLIENT)
+	msg, err := serial.Serialize(h, serial.CLIENT)
 	if err != nil {
 		log.Error("Failed to serialize htlc", "err", err)
 	}
@@ -154,7 +154,7 @@ func GetHTLCFromMessage(message []byte) *HTLContract {
 	log.Debug("Parse message to BTC HTLC")
 	register := &HTLContract{}
 
-	result, err := comm.Deserialize(message, register, comm.CLIENT)
+	result, err := serial.Deserialize(message, register, serial.CLIENT)
 	if err != nil {
 		log.Error("Failed parse htlc contract", "err", err)
 		return nil

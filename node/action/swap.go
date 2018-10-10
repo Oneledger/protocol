@@ -11,12 +11,12 @@ import (
 	"github.com/Oneledger/protocol/node/chains/bitcoin"
 	"github.com/Oneledger/protocol/node/chains/bitcoin/htlc"
 	"github.com/Oneledger/protocol/node/chains/ethereum"
-	"github.com/Oneledger/protocol/node/comm"
 	"github.com/Oneledger/protocol/node/data"
 	"github.com/Oneledger/protocol/node/err"
 	"github.com/Oneledger/protocol/node/global"
 	"github.com/Oneledger/protocol/node/id"
 	"github.com/Oneledger/protocol/node/log"
+	"github.com/Oneledger/protocol/node/serial"
 
 	"math/big"
 
@@ -233,7 +233,7 @@ func ProcessSwap(app interface{}, transaction *Swap) *Swap {
 
 func SaveSwap(status *data.Datastore, accountKey id.AccountKey, transaction *Swap) {
 	log.Debug("SaveSwap", "key", accountKey)
-	buffer, err := comm.Serialize(transaction, comm.CLIENT)
+	buffer, err := serial.Serialize(transaction, serial.CLIENT)
 	if err != nil {
 		log.Error("Failed to Serialize SaveSwap transaction")
 	}
@@ -248,7 +248,7 @@ func FindSwap(status *data.Datastore, key id.AccountKey) Transaction {
 	}
 
 	var transaction Swap
-	buffer, err := comm.Deserialize(result, &transaction, comm.CLIENT)
+	buffer, err := serial.Deserialize(result, &transaction, serial.CLIENT)
 	if err != nil {
 		return nil
 	}

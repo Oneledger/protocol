@@ -9,9 +9,9 @@ import (
 	"os"
 
 	"github.com/Oneledger/protocol/node/chains/ethereum/htlc"
-	"github.com/Oneledger/protocol/node/comm"
 	"github.com/Oneledger/protocol/node/global"
 	"github.com/Oneledger/protocol/node/log"
+	"github.com/Oneledger/protocol/node/serial"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -241,7 +241,7 @@ func GetHTLCFromMessage(message []byte) *HTLContract {
 	log.Debug("Parse message to ETH HTLC")
 	register := &HTLContract{}
 
-	result, err := comm.Deserialize(message, register, comm.NETWORK)
+	result, err := serial.Deserialize(message, register, serial.NETWORK)
 	if err != nil {
 		log.Error("parse htlc contract failed", "err", err)
 		return nil
@@ -250,7 +250,7 @@ func GetHTLCFromMessage(message []byte) *HTLContract {
 }
 
 func (h *HTLContract) ToMessage() []byte {
-	msg, err := comm.Serialize(h, comm.NETWORK)
+	msg, err := serial.Serialize(h, serial.NETWORK)
 	if err != nil {
 		log.Error("Failed to serialize htlc", "err", err)
 	}

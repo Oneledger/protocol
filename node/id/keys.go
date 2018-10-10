@@ -11,8 +11,8 @@ import (
 	"golang.org/x/crypto/bcrypt"
 	"golang.org/x/crypto/ripemd160"
 
-	"github.com/Oneledger/protocol/node/comm"
 	"github.com/Oneledger/protocol/node/log"
+	"github.com/Oneledger/protocol/node/serial"
 	"github.com/tendermint/tendermint/crypto"
 	"github.com/tendermint/tendermint/crypto/ed25519"
 	"github.com/tendermint/tendermint/crypto/secp256k1"
@@ -30,7 +30,7 @@ type AccountKey []byte // OneLedger address, like Tendermint the hash of the ass
 
 func init() {
 	var key AccountKey
-	comm.Register(key)
+	serial.Register(key)
 }
 
 func (accountKey AccountKey) String() string {
