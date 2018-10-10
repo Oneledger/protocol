@@ -15,6 +15,7 @@ import (
 	"github.com/Oneledger/protocol/node/convert"
 	"github.com/Oneledger/protocol/node/data"
 	"github.com/Oneledger/protocol/node/err"
+	"github.com/Oneledger/protocol/node/global"
 	"github.com/Oneledger/protocol/node/id"
 	"github.com/Oneledger/protocol/node/log"
 	"github.com/Oneledger/protocol/node/version"
@@ -111,7 +112,7 @@ func IdentityInfo(app Application, name string) []byte {
 		result.Identities = []id.IdentityExport{identity.Export()}
 	}
 
-	buffer, err := comm.Serialize(result)
+	buffer, err := comm.Serialize(result, comm.NETWORK)
 	if err != nil {
 		log.Debug("Failed to serialize identity query")
 	}
@@ -158,7 +159,7 @@ func AccountInfo(app Application, name string) []byte {
 			result.Accounts = append(result.Accounts, accountExport)
 		}
 
-		buffer, err := comm.Serialize(result)
+		buffer, err := comm.Serialize(result, comm.NETWORK)
 		if err != nil {
 			log.Warn("Failed to Serialize plural AccountInfo query")
 		}
@@ -169,7 +170,7 @@ func AccountInfo(app Application, name string) []byte {
 	accountExport := getAccountExport(app, account)
 	result := &AccountQuery{Accounts: []id.AccountExport{accountExport}}
 
-	buffer, err := comm.Serialize(result)
+	buffer, err := comm.Serialize(result, comm.NETWORK)
 	if err != nil {
 		log.Warn("Failed to Serialize singular AccountInfo query")
 	}
@@ -271,7 +272,7 @@ func Balance(app Application, accountKey []byte) []byte {
 	}
 	//log.Debug("Balance", "key", accountKey, "balance", balance)
 
-	buffer, err := comm.Serialize(balance)
+	buffer, err := comm.Serialize(balance, comm.NETWORK)
 	if err != nil {
 		log.Error("Failed to Serialize balance")
 	}
@@ -289,9 +290,16 @@ func HandleSwapAddressQuery(app Application, message []byte) []byte {
 		chain = conv.GetChain(parts[1])
 	}
 	//log.Debug("swap address", "chain", chain)
-	return SwapAddres(chain)
+	//todo: make it general
+	if chain == data.ONELEDGER {
+		account, e := app.Accounts.FindName(global.Current.NodeAccountName)
+		if e == err.SUCCESS {
+			return account.AccountKey()
+		}
+	}
+	return SwapAddress(chain)
 }
 
-func SwapAddres(chain data.ChainType) []byte {
+func SwapAddress(chain data.ChainType) []byte {
 	return common.GetSwapAddress(chain)
 }

@@ -5,7 +5,7 @@
 
 	TODO: Currently reversed, which is probably not good for performance.
 */
-package comm
+package serial
 
 import "github.com/Oneledger/protocol/node/log"
 

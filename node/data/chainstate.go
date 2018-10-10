@@ -15,7 +15,7 @@ import (
 	"github.com/Oneledger/protocol/node/global"
 	"github.com/Oneledger/protocol/node/log"
 	"github.com/tendermint/iavl"
-	"github.com/tendermint/tmlibs/db"
+	"github.com/tendermint/tendermint/libs/db"
 )
 
 // Number of times we initialized since starting
@@ -25,11 +25,11 @@ type ChainState struct {
 	Name string
 	Type DatastoreType
 
-	Delivered *iavl.VersionedTree // Build us a new set of transactions
+	Delivered *iavl.MutableTree // Build us a new set of transactions
 	database  *db.GoLevelDB
 
-	Checked   *iavl.VersionedTree // Temporary and can be Rolled Back
-	Committed *iavl.VersionedTree // Last Persistent Tree
+	Checked   *iavl.MutableTree // Temporary and can be Rolled Back
+	Committed *iavl.MutableTree // Last Persistent Tree
 
 	// Last committed values
 	Version int64
@@ -53,7 +53,7 @@ func (state *ChainState) Test(key DatabaseKey, balance Balance) bool {
 
 // Do this for the Delivery side
 func (state *ChainState) Set(key DatabaseKey, balance Balance) {
-	buffer, err := comm.Serialize(balance)
+	buffer, err := comm.Serialize(balance, comm.PERSISTENT)
 	if err != nil {
 		log.Error("Failed to Deserialize balance: ", err)
 	}
@@ -69,7 +69,7 @@ func (state *ChainState) FindAll() map[string]*Balance {
 		key, value := state.Delivered.GetByIndex64(i)
 
 		var balance Balance
-		result, err := comm.Deserialize(value, &balance)
+		result, err := comm.Deserialize(value, &balance, comm.PERSISTENT)
 		if err != nil {
 			log.Error("Failed to Deserialize: FindAll", "i", i, "key", string(key))
 			continue
@@ -89,7 +89,7 @@ func (state *ChainState) Find(key DatabaseKey) *Balance {
 
 	if value != nil {
 		var balance Balance
-		result, err := comm.Deserialize(value, &balance)
+		result, err := comm.Deserialize(value, &balance, comm.PERSISTENT)
 		if err != nil {
 			log.Error("Failed to deserialize Balance in chainstate: ", err)
 			return nil
@@ -159,7 +159,7 @@ func (state *ChainState) reset() {
 	state.Height = state.Delivered.Height()
 }
 
-func initializeDatabase(name string, newType DatastoreType) (*iavl.VersionedTree, *db.GoLevelDB) {
+func initializeDatabase(name string, newType DatastoreType) (*iavl.MutableTree, *db.GoLevelDB) {
 	// TODO: Assuming persistence for right now
 	storage, err := db.NewGoLevelDB("OneLedger-"+name, global.Current.RootDir)
 	if err != nil {
@@ -167,8 +167,8 @@ func initializeDatabase(name string, newType DatastoreType) (*iavl.VersionedTree
 		panic("Can't create a database")
 	}
 
-	// TODO: cosmos seems to be using VersionedTree now????
-	tree := iavl.NewVersionedTree(storage, 1000) // Do I need a historic tree here?
+	// TODO: cosmos seems to be using MutableTree now????
+	tree := iavl.NewMutableTree(storage, 1000) // Do I need a historic tree here?
 	tree.LoadVersion(0)
 
 	count = count + 1

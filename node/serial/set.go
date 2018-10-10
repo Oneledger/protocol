@@ -1,4 +1,4 @@
-package comm
+package serial
 
 import (
 	"reflect"
@@ -8,14 +8,21 @@ import (
 )
 
 // Set a structure with a given value, convert as necessary
-func Set(parent interface{}, fieldName string, child interface{}) bool {
+func Set(parent interface{}, fieldName string, child interface{}) (status bool) {
+
+	defer func() {
+		if r := recover(); r != nil {
+			log.Error("Ignoring Set Panic", "r", r)
+			status = false
+		}
+	}()
+
 	kind := reflect.ValueOf(parent).Kind()
 
 	if kind == reflect.Ptr {
 		kind = reflect.ValueOf(parent).Elem().Kind()
 	}
 
-	// TODO: Set should be able to handle points properly
 	switch kind {
 
 	case reflect.Struct:
@@ -103,8 +110,17 @@ func ConvertValue(value interface{}, fieldType reflect.Type) reflect.Value {
 	switch typeOf.Kind() {
 	case reflect.Float64:
 		return ConvertNumber(fieldType.Kind(), valueOf)
-	}
 
+	case reflect.String:
+		if fieldType.Kind() == reflect.Int {
+			log.Debug("CONVERTING STR TO INT")
+			result, err := strconv.ParseInt(valueOf.Elem().String(), 10, 0)
+			if err != nil {
+				log.Fatal("Failed to convert int")
+			}
+			return reflect.ValueOf(result)
+		}
+	}
 	return valueOf
 }
 
@@ -148,6 +164,29 @@ func ConvertNumber(kind reflect.Kind, value reflect.Value) reflect.Value {
 	return value
 }
 
+func AllocMap(parent interface{}, size int) bool {
+	element := GetValue(parent)
+
+	if element.Kind() != reflect.Map {
+		log.Warn("Not a structure", "element", element)
+		return false
+	}
+
+	if !element.IsValid() {
+		log.Warn("Map is invalid", "element", element)
+		return false
+	}
+
+	if !element.CanSet() {
+		log.Warn("Not Settable", "element", element)
+		return false
+	}
+
+	element.Set(reflect.MakeMapWithSize(element.Type(), size))
+
+	return true
+}
+
 // SetMap takes a pointer to a structure and sets it.
 func SetMap(parent interface{}, fieldName string, child interface{}) bool {
 
@@ -176,6 +215,29 @@ func SetMap(parent interface{}, fieldName string, child interface{}) bool {
 	log.Dump("key", key, "newValue", newValue)
 
 	element.SetMapIndex(key, newValue)
+
+	return true
+}
+
+func AllocSlice(parent interface{}, size int) bool {
+	element := GetValue(parent)
+
+	if element.Kind() != reflect.Map {
+		log.Warn("Not a structure", "element", element)
+		return false
+	}
+
+	if !element.IsValid() {
+		log.Warn("Map is invalid", "element", element)
+		return false
+	}
+
+	if !element.CanSet() {
+		log.Warn("Not Settable", "element", element)
+		return false
+	}
+
+	element.Set(reflect.MakeSlice(element.Type(), 0, size))
 
 	return true
 }

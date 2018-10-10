@@ -15,7 +15,6 @@ import (
 	"github.com/Oneledger/protocol/node/data"
 	"github.com/Oneledger/protocol/node/global"
 	"github.com/Oneledger/protocol/node/log"
-    "github.com/ethereum/go-ethereum/common"
 )
 
 // Prepare a transaction to be issued.
@@ -240,7 +239,7 @@ func CreateSwapRequest(args *SwapArguments) []byte {
 
 	account[conv.GetChain(args.Currency)] = GetSwapAddress(conv.GetCurrency(args.Currency))
 	account[conv.GetChain(args.Excurrency)] = GetSwapAddress(conv.GetCurrency(args.Excurrency))
-    log.Debug("accounts for swap", "accountbtc", account[data.BITCOIN], "accounteth", common.BytesToAddress([]byte(account[data.ETHEREUM])))
+    //log.Debug("accounts for swap", "accountbtc", account[data.BITCOIN], "accounteth", common.BytesToAddress([]byte(account[data.ETHEREUM])), "accountolt", account[data.ONELEDGER])
 	party := action.Party{Key: partyKey, Accounts: account}
 	counterParty := action.Party{Key: counterPartyKey, Accounts: counterAccount}
 
@@ -262,8 +261,4 @@ func CreateSwapRequest(args *SwapArguments) []byte {
 	}
 
 	return SignAndPack(action.SWAP, action.Transaction(swap))
-}
-
-func CreatePublishRequest() {
-
 }

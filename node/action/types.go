@@ -10,6 +10,9 @@ package action
 import (
 	"bytes"
 
+	"strconv"
+
+	"github.com/Oneledger/protocol/node/chains/common"
 	"github.com/Oneledger/protocol/node/comm"
 	"github.com/Oneledger/protocol/node/data"
 	"github.com/Oneledger/protocol/node/id"
@@ -67,7 +70,7 @@ func CheckBalance(app interface{}, accountKey id.AccountKey, amount data.Coin) b
 	}
 
 	var bal data.Balance
-	buffer, err := comm.Deserialize(value, &bal)
+	buffer, err := comm.Deserialize(value, &bal, comm.CLIENT)
 	if err != nil || buffer == nil {
 		log.Error("Failed to Deserialize", "key", accountKey)
 		return false
@@ -79,6 +82,13 @@ func CheckBalance(app interface{}, accountKey id.AccountKey, amount data.Coin) b
 		//return false
 	}
 	return true
+}
+
+func GetHeight(app interface{}) int64 {
+	utxo := GetUtxo(app)
+
+	height := int64(utxo.Height)
+	return height
 }
 
 func CheckAmounts(app interface{}, inputs []SendInput, outputs []SendOutput) bool {
@@ -129,4 +139,63 @@ func CheckAmounts(app interface{}, inputs []SendInput, outputs []SendOutput) boo
 		return false
 	}
 	return true
+}
+
+type Event struct {
+	Type  Type          `json:"type"`
+	Key   id.AccountKey `json:"key"`
+	Nonce int64         `json:"result"`
+}
+
+func (e Event) ToKey() []byte {
+	buffer, err := comm.Serialize(e, comm.CLIENT)
+	if err != nil {
+		log.Error("Failed to Serialize event key")
+	}
+	return buffer
+}
+
+func SaveEvent(app interface{}, eventKey Event, status bool) {
+	events := GetEvent(app)
+
+	log.Debug("Save Event", "key", eventKey)
+
+	events.Store(eventKey.ToKey(), []byte(strconv.FormatBool(status)))
+	events.Commit()
+}
+
+func FindEvent(app interface{}, eventKey Event) bool {
+	log.Debug("Load Event", "key", eventKey)
+	events := GetEvent(app)
+	result := events.Load(eventKey.ToKey())
+	if result == nil {
+		return false
+	}
+
+	r, err := strconv.ParseBool(string(result))
+	if err != nil {
+		return false
+	}
+
+	return r
+}
+
+func SaveContract(app interface{}, contractKey []byte, nonce int64, contract common.Contract) {
+	//todo: add nonce to the key to differentiate swap between same conterparty
+	contracts := GetContract(app)
+	log.Debug("Save contract", "key", contractKey)
+	contracts.Store(contractKey, contract.ToMessage())
+	contracts.Commit()
+}
+
+func FindContract(app interface{}, contractKey []byte, nonce int64) Message {
+	//todo: add nonce to the key to differentiate swap between same conterparty
+	log.Debug("Load Contract", "key", contractKey)
+	contracts := GetContract(app)
+	result := contracts.Load(contractKey)
+	if result == nil {
+		return nil
+	}
+
+	return result
 }

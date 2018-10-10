@@ -1,7 +1,7 @@
 /*
 	Copyright 2017-2018 OneLedger
 */
-package comm
+package serial
 
 import (
 	"reflect"
@@ -46,20 +46,17 @@ func CloneIt(action *Action, input interface{}) interface{} {
 	parent := action.Path.StringPeekN(1)
 
 	if IsContainer(input) {
-		log.Debug("Handling Container", "input", input)
 		copy := reflect.New(reflect.TypeOf(input)).Interface()
 
 		// Overwrite with children
 		for key, value := range action.Processed[action.Name].Children {
-			log.Debug("Copying", key, value)
 			Set(copy, key, value)
+			delete(action.Processed[action.Name].Children, key)
 		}
 
 		SetProcessed(action, parent, action.Name, copy)
 		return copy
 	}
-
-	log.Debug("Handling Primitive", "input", input)
 
 	copy := input
 	SetProcessed(action, parent, action.Name, copy)
@@ -82,7 +79,7 @@ func ConvertMap(structure interface{}) map[string]interface{} {
 
 // Clone and add in SerialWrapper
 func Extend(base interface{}) interface{} {
-	log.Debug("Extend")
+	//log.Dump("Extend this", base)
 
 	action := &Action{
 		ProcessField: ExtendIt,
@@ -95,11 +92,11 @@ func Extend(base interface{}) interface{} {
 
 // Extend the input by replacing all structures with a wrapper
 func ExtendIt(action *Action, input interface{}) interface{} {
-	log.Debug("ExtendIt", "action", action, "input", input)
+	//log.Debug("ExtendIt", "input", input)
 
 	parent := action.Path.StringPeekN(1)
 
-	if IsContainer(input) {
+	if IsStructure(input) {
 		mapping := ConvertMap(input)
 
 		// Attach all of the interface children
@@ -109,6 +106,10 @@ func ExtendIt(action *Action, input interface{}) interface{} {
 		}
 
 		typestr := reflect.TypeOf(input).String()
+
+		if typestr == "reflect.Value" {
+			log.Fatal("Have a reflect.Value, bad call")
+		}
 
 		if action.IsPointer {
 			typestr = "*" + typestr
@@ -121,7 +122,12 @@ func ExtendIt(action *Action, input interface{}) interface{} {
 		action.Processed[parent].Children[action.Name] = wrapper
 
 		return wrapper
+
+	} else if IsContainer(input) {
+		return input
+
 	}
+
 	return input
 }
 
@@ -133,6 +139,7 @@ func Contract(base interface{}) interface{} {
 	}
 
 	result := Iterate(base, action)
+
 	for _, value := range action.Processed["*base"].Children {
 		return value
 	}
@@ -141,7 +148,7 @@ func Contract(base interface{}) interface{} {
 
 // Replace any incoming SerialWrappers with the correct structure
 func ContractIt(action *Action, input interface{}) interface{} {
-	log.Debug("ContractIt", "input", input, "action", action)
+	//log.Debug("ContractIt", "input", input)
 
 	grandparent := action.Path.StringPeekN(2)
 	if grandparent == "" {
@@ -160,10 +167,8 @@ func ContractIt(action *Action, input interface{}) interface{} {
 
 		// Overwrite with any better children
 		for key, value := range action.Processed[action.Name].Children {
-			log.Debug("Overwriting Modified Children", key, value,
-				"grandparent", grandparent, "name", action.Name, "Processed", action.Processed)
 			Set(result, key, value)
-			delete(action.Processed["Fields"].Children, key)
+			delete(action.Processed[action.Name].Children, key)
 		}
 
 		SetProcessed(action, grandparent, action.Name, result)
@@ -173,6 +178,7 @@ func ContractIt(action *Action, input interface{}) interface{} {
 	if IsSerialWrapperMap(input) {
 		wrapper := input.(map[string]interface{})
 		stype := wrapper["Type"].(string)
+
 		result := NewStruct(stype)
 
 		// Needs to come from the serialized name
@@ -182,9 +188,6 @@ func ContractIt(action *Action, input interface{}) interface{} {
 
 		// Overwrite with any better children
 		for key, value := range action.Processed[action.Name].Children {
-			log.Debug("Map Overwriting Modified Children", key, value,
-				"grandparent", grandparent, "name", action.Name)
-
 			Set(result, key, value)
 			delete(action.Processed[action.Name].Children, key)
 		}
@@ -197,8 +200,10 @@ func ContractIt(action *Action, input interface{}) interface{} {
 	return input
 }
 
+// Set the as a processed result, and handle pointers nicely.
 func SetProcessed(action *Action, parent string, name string, input interface{}) {
 	if input == nil {
+
 	} else if reflect.TypeOf(input).Kind() != reflect.Ptr {
 		action.Processed[parent].Children[name] = input
 

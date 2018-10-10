@@ -3,6 +3,8 @@
 */
 package data
 
+import "github.com/Oneledger/protocol/node/comm"
+
 type ChainType int
 
 // TODO: These should be in a database
@@ -24,4 +26,11 @@ type ChainNode struct {
 	Location  string
 	// TODO: Causing cycle...
 	//Owner     id.Identity
+}
+
+func init() {
+	var chainType ChainType
+	comm.Register(chainType)
+	comm.Register(Chain{})
+	comm.Register(ChainNode{})
 }

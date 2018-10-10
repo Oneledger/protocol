@@ -11,14 +11,16 @@ import (
 	"github.com/Oneledger/protocol/node/comm"
 	"github.com/Oneledger/protocol/node/err"
 	"github.com/Oneledger/protocol/node/log"
-	wire "github.com/tendermint/go-wire"
+	wire "github.com/tendermint/go-amino"
 )
 
 // Pull out the type, so that the message can be deserialized
 func UnpackMessage(message Message) (Type, Message) {
-	value := wire.GetInt32(message)
+	value, _, err := wire.DecodeInt32(message)
+	if err != nil {
+		log.Error("UnpackMessage failed", "message", message)
+	}
 	return Type(value), message[4:]
-
 }
 
 // TODO: Need a better way to handle the polymorphism...
@@ -92,7 +94,7 @@ func ParseSend(message Message) *Send {
 		Base: Base{Type: SEND},
 	}
 
-	result, err := comm.Deserialize(message, register)
+	result, err := comm.Deserialize(message, register, comm.CLIENT)
 	if err != nil {
 		log.Error("ParseSend", "err", err)
 		return nil
@@ -107,7 +109,7 @@ func ParseSwap(message Message) *Swap {
 		Base: Base{Type: SWAP},
 	}
 
-	result, err := comm.Deserialize(message, register)
+	result, err := comm.Deserialize(message, register, comm.CLIENT)
 	if err != nil {
 		log.Error("ParseSwap", "err", err)
 		return nil
@@ -122,7 +124,7 @@ func ParseExternalSend(message Message) *ExternalSend {
 		Base: Base{Type: EXTERNAL_SEND},
 	}
 
-	result, err := comm.Deserialize(message, register)
+	result, err := comm.Deserialize(message, register, comm.CLIENT)
 	if err != nil {
 		log.Error("ParseExternalSend", "err", err)
 		return nil
@@ -137,7 +139,7 @@ func ParseExternalLock(message Message) *ExternalLock {
 		Base: Base{Type: EXTERNAL_LOCK},
 	}
 
-	result, err := comm.Deserialize(message, register)
+	result, err := comm.Deserialize(message, register, comm.CLIENT)
 	if err != nil {
 		log.Error("ParseExternalLock", "err", err)
 		return nil
@@ -152,7 +154,7 @@ func ParsePrepare(message Message) *Prepare {
 		Base: Base{Type: PREPARE},
 	}
 
-	result, err := comm.Deserialize(message, register)
+	result, err := comm.Deserialize(message, register, comm.CLIENT)
 	if err != nil {
 		log.Error("ParsePrepare", "err", err)
 		return nil
@@ -167,7 +169,7 @@ func ParseCommit(message Message) *Commit {
 		Base: Base{Type: COMMIT},
 	}
 
-	result, err := comm.Deserialize(message, register)
+	result, err := comm.Deserialize(message, register, comm.CLIENT)
 	if err != nil {
 		log.Error("ParseCommit", "err", err)
 		return nil
@@ -182,7 +184,7 @@ func ParseForget(message Message) *Forget {
 		Base: Base{Type: FORGET},
 	}
 
-	result, err := comm.Deserialize(message, register)
+	result, err := comm.Deserialize(message, register, comm.CLIENT)
 	if err != nil {
 		log.Error("ParseForget", "err", err)
 		return nil
@@ -197,7 +199,7 @@ func ParseRegister(message Message) *Register {
 		Base: Base{Type: REGISTER},
 	}
 
-	result, err := comm.Deserialize(message, register)
+	result, err := comm.Deserialize(message, register, comm.CLIENT)
 	if err != nil {
 		log.Error("ParseRegister", "err", err)
 		return nil
@@ -212,7 +214,7 @@ func ParseVerify(message Message) *Verify {
 		Base: Base{Type: VERIFY},
 	}
 
-	result, err := comm.Deserialize(message, register)
+	result, err := comm.Deserialize(message, register, comm.CLIENT)
 	if err != nil {
 		log.Error("ParseVerify", "err", err)
 		return nil
@@ -226,10 +228,10 @@ func ParsePublish(message Message) *Publish {
 		Base: Base{Type: PUBLISH},
 	}
 
-	result, err := comm.Deserialize(message, register)
+	result, err := comm.Deserialize(message, register, comm.CLIENT)
 	if err != nil {
 		log.Error("ParsePublish", "err", err)
 		return nil
 	}
-	return  result.(*Publish)
+	return result.(*Publish)
 }

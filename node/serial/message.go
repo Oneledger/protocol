@@ -8,7 +8,7 @@
 		- queries coming in from http
 
 */
-package comm
+package serial
 
 import (
 	"encoding/json"
@@ -24,6 +24,7 @@ const (
 	PERSISTENT Format = iota
 	NETWORK
 	CLIENT
+	JSON
 )
 
 type Message = []byte
@@ -33,12 +34,16 @@ func Serialize(input interface{}, medium Format) (buffer []byte, err error) {
 
 	var copy interface{}
 
-	if IsPrimitive(input) {
+	if medium == JSON {
+		copy = input
+
+	} else if IsPrimitive(input) {
 		// Manually wrap the primitive
 		typeof := reflect.TypeOf(input).Name()
 		dict := make(map[string]interface{})
 		dict[""] = input
 		copy = SerialWrapper{Type: typeof, Fields: dict}
+
 	} else {
 		// Expand all structs with wrappers
 		copy = Extend(input)
@@ -54,19 +59,20 @@ func Serialize(input interface{}, medium Format) (buffer []byte, err error) {
 
 	case CLIENT:
 		buffer, err = json.Marshal(copy)
+
+	case JSON:
+		buffer, err = json.Marshal(copy)
 	}
 
 	log.Dump("buffer", string(buffer), "err", err)
 	return buffer, err
 }
 
-// Given something in wire format, stick it back into the original golang types
-// If output is a struct, make sure it is a pointer to a struct
+// Given a serialized slice, put it back into the original struct format
 func Deserialize(input []byte, output interface{}, medium Format) (msg interface{}, err error) {
 
 	log.Dump("Deserialize the string", string(input))
 
-	//wrapper := &SerialWrapper{}
 	wrapper := &(map[string]interface{}{})
 
 	switch medium {
@@ -79,6 +85,12 @@ func Deserialize(input []byte, output interface{}, medium Format) (msg interface
 
 	case CLIENT:
 		err = json.Unmarshal(input, wrapper)
+
+	case JSON:
+		err = json.Unmarshal(input, output)
+		if err == nil {
+			return output, err
+		}
 	}
 
 	if err != nil {
@@ -87,7 +99,8 @@ func Deserialize(input []byte, output interface{}, medium Format) (msg interface
 
 	result := Contract(wrapper)
 
-	log.Dump("result", result, "wrapper", wrapper)
+	log.Dump("final result", result)
+	log.Dump("original wrapper", wrapper)
 
 	return result, err
 }
@@ -99,6 +112,7 @@ type SerialWrapper struct {
 
 var prototype = SerialWrapper{}
 
+// Test to see if this a SerialWrapper struct
 func IsSerialWrapper(input interface{}) bool {
 	if reflect.TypeOf(input) == reflect.TypeOf(prototype) {
 		return true
@@ -137,11 +151,6 @@ func IsSerialWrapperMap(input interface{}) bool {
 }
 
 var structures map[string]reflect.Type
-var prototypeMap map[string]interface{}
-
-func init() {
-	Register(prototypeMap)
-}
 
 // Register a structure by its name
 func Register(base interface{}) {
@@ -150,7 +159,6 @@ func Register(base interface{}) {
 	if structures == nil {
 		structures = make(map[string]reflect.Type)
 	}
-
 	structures[reflect.TypeOf(base).String()] = reflect.TypeOf(base)
 }
 
@@ -160,7 +168,8 @@ func NewStruct(name string) interface{} {
 
 	struct_type := structures[name]
 	if struct_type == nil {
-		log.Warn("Missing structure type", "name", name, "structures", structures)
+		log.Dump("structures", structures)
+		log.Fatal("Missing structure type", "name", name)
 		return nil
 	}
 

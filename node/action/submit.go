@@ -28,7 +28,6 @@ func BroadcastTransaction(ttype Type, transaction Transaction) {
 
 	// Don't let the death of a client stop the node from running
 	defer func() {
-		log.Debug("Catching A Panic")
 		if r := recover(); r != nil {
 			log.Error("Ignoring Client Panic", "r", r)
 		}
@@ -58,12 +57,14 @@ func PackRequest(ttype Type, request Transaction) []byte {
 
 	// Stick a 32 bit integer in front, so that we can identify the struct for deserialization
 	buff := new(bytes.Buffer)
-	n, err := int(0), error(nil)
 	base = int32(ttype)
-	wire.WriteInt32(base, buff, &n, &err)
+	err := wire.EncodeInt32(buff, base)
+	if err != nil {
+		log.Error("Failed to EncodeInt32 during PackRequest", "err", err)
+	}
 	bytes := buff.Bytes()
 
-	packet, err := comm.Serialize(request)
+	packet, err := comm.Serialize(request, comm.CLIENT)
 	if err != nil {
 		log.Error("Failed to Serialize packet: ", err)
 	} else {

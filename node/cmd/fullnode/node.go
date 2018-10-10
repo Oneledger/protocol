@@ -19,7 +19,7 @@ import (
 	"github.com/Oneledger/protocol/node/persist"
 
 	"github.com/spf13/cobra"
-	"github.com/tendermint/abci/server"
+	"github.com/tendermint/tendermint/abci/server"
 )
 
 var nodeCmd = &cobra.Command{

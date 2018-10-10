@@ -18,7 +18,8 @@ import (
 	"github.com/btcsuite/btcutil"
 	"encoding/hex"
 	"crypto/rand"
-	"bytes"
+
+    "bytes"
 )
 
 func SetChain() {
@@ -74,7 +75,7 @@ func XTestClient(t *testing.T) {
 func XTestBlockGeneration(t *testing.T) {
 	log.Info("TESTING THE GENERATION")
 
-	testnode1 := GetBtcClient("127.0.0.1:18831", &chaincfg.RegressionNetParams)
+	testnode1 := GetBtcClient("127.0.0.1:18831")
 
 	if testnode1 == nil {
 		log.Fatal("Can't Get Client")
@@ -94,17 +95,17 @@ func Setup(id int) *brpc.Bitcoind {
 
 	switch id {
 	case 1:
-		testnode = GetBtcClient("127.0.0.1:18831", &chaincfg.RegressionNetParams)
+		testnode = GetBtcClient("127.0.0.1:18831")
 	case 2:
-		testnode = GetBtcClient("127.0.0.1:18832", &chaincfg.RegressionNetParams)
+		testnode = GetBtcClient("127.0.0.1:18832")
 	case 3:
-		testnode = GetBtcClient("127.0.0.1:18833", &chaincfg.RegressionNetParams)
+		testnode = GetBtcClient("127.0.0.1:18833")
 	default:
 		log.Fatal("Invalid", "id", id)
 	}
 
 	if testnode == nil {
-		log.Fatal("Can't Get Client", "config", chaincfg.RegressionNetParams)
+		log.Fatal("Can't Get Client")
 	}
 	log.Debug("Have a Bitcoin Client", "testnode", testnode)
 
@@ -211,6 +212,7 @@ func AliceBobSuccessfulSwap(testnode1 *brpc.Bitcoind, testnode2 *brpc.Bitcoind,
 	// Not threadsafe...
 	aliceContract := initCmd.Contract
 	aliceContractTx := initCmd.ContractTx
+	aliceRefundTx := initCmd.RefundTx
 
 	time.Sleep(3 * time.Second)
 	Generate(testnode3, 10)
@@ -276,6 +278,15 @@ func AliceBobSuccessfulSwap(testnode1 *brpc.Bitcoind, testnode2 *brpc.Bitcoind,
 	log.Debug("Results", "hash", hash)
 	time.Sleep(3 * time.Second)
 	Generate(testnode3, 10)
+
+    hash, err = testnode1.PublishTx(aliceRefundTx, "refund")
+	refundCmd := htlc.NewRefundCmd(aliceContract, aliceContractTx)
+	hash, err = refundCmd.RunCommand(testnode1)
+	if err != nil {
+		log.Error("refund failed", "err", err)
+	}
+	log.Debug("refund tx", "tx", hash, "refundtx", aliceRefundTx)
+	Generate(testnode3, 100)
 }
 
 func GetContractTx(hash *chainhash.Hash) *wire.MsgTx {

@@ -9,6 +9,7 @@ package main
 import (
 	"github.com/Oneledger/protocol/node/app"
 	"github.com/Oneledger/protocol/node/id"
+	"github.com/Oneledger/protocol/node/log"
 	"github.com/spf13/cobra"
 )
 
@@ -50,8 +51,8 @@ func RegisterUsers(cmd *cobra.Command, args []string) {
 
 	accountType := id.ParseAccountType(chain)
 
-	publicKey, privateKey := id.GenerateKeys([]byte(name + chain)) // TODO: Switch with passphrase
-
+	privateKey, publicKey := id.GenerateKeys([]byte(name + chain)) // TODO: Switch with passphrase
+	log.Info("RegisterUsers", "name", name, "publicKey", publicKey, "privateKey", privateKey, "chain", chain)
 	app.RegisterLocally(node, name, chain, accountType, publicKey, privateKey)
 
 }

@@ -49,7 +49,7 @@ func Register(cmd *cobra.Command, args []string) {
 		PrivateKey: arguments.privkey,
 	}
 
-	buffer, err := comm.Serialize(cli)
+	buffer, err := comm.Serialize(cli, comm.CLIENT)
 	if err != nil {
 		log.Error("Register Failed", "err", err)
 		return

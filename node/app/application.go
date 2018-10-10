@@ -6,7 +6,6 @@
 package app
 
 import (
-	//"fmt"
 	"bytes"
 
 	"github.com/Oneledger/protocol/node/abci"
@@ -17,8 +16,8 @@ import (
 	"github.com/Oneledger/protocol/node/global"
 	"github.com/Oneledger/protocol/node/id"
 	"github.com/Oneledger/protocol/node/log"
-	"github.com/tendermint/abci/types"
-	"github.com/tendermint/tmlibs/common"
+	"github.com/tendermint/tendermint/abci/types"
+	"github.com/tendermint/tendermint/libs/common"
 )
 
 var ChainId string
@@ -37,6 +36,8 @@ type Application struct {
 	Identities *id.Identities   // Keep a higher-level identity for a given user
 	Accounts   *id.Accounts     // Keep all of the user accounts locally for their node (identity management)
 	Utxo       *data.ChainState // unspent transction output (for each type of coin)
+	Event      *data.Datastore  // Event for any action that need to be tracked
+	Contract   *data.Datastore  // contract for reuse.
 }
 
 // NewApplicationContext initializes a new application
@@ -47,6 +48,8 @@ func NewApplication() *Application {
 		Identities: id.NewIdentities("identities"),
 		Accounts:   id.NewAccounts("accounts"),
 		Utxo:       data.NewChainState("utxo", data.PERSISTENT),
+		Event:      data.NewDatastore("event", data.PERSISTENT),
+		Contract:   data.NewDatastore("contract", data.PERSISTENT),
 	}
 }
 
@@ -55,41 +58,12 @@ func (app Application) Initialize() {
 	param := app.Admin.Load(data.DatabaseKey("NodeAccountName"))
 	if param != nil {
 		var name string
-		buffer, err := comm.Deserialize(param, &name)
+		buffer, err := comm.Deserialize(param, &name, comm.NETWORK)
 		if err != nil {
 			log.Error("Failed to deserialize persistent data")
 		}
 		global.Current.NodeAccountName = *(buffer.(*string))
 	}
-}
-
-// Access to the local persistent databases
-func (app Application) GetAdmin() interface{} {
-	return app.Admin
-}
-
-// Access to the local persistent databases
-func (app Application) GetStatus() interface{} {
-	return app.Status
-}
-
-// Access to the local persistent databases
-func (app Application) GetIdentities() interface{} {
-	return app.Identities
-}
-
-// Access to the local persistent databases
-func (app Application) GetAccounts() interface{} {
-	return app.Accounts
-}
-
-// Access to the local persistent databases
-func (app Application) GetUtxo() interface{} {
-	return app.Utxo
-}
-
-func (app Application) GetChainID() interface{} {
-	return ChainId
 }
 
 type BasicState struct {
@@ -102,15 +76,18 @@ func (app Application) SetupState(stateBytes []byte) {
 	log.Debug("SetupState", "state", string(stateBytes))
 
 	var base BasicState
-	des, err := comm.Deserialize(stateBytes, &base)
+
+	des, err := comm.Deserialize(stateBytes, &base, comm.JSON)
 	if err != nil {
 		log.Fatal("Failed to deserialize stateBytes during SetupState")
 	}
+
 	state := des.(*BasicState)
+	log.Debug("Deserialized State", "state", state, "state.Account", state.Account)
 
 	// TODO: Can't generate a different key for each node. Needs to be in the genesis? Or ignored?
 	//publicKey, privateKey := id.GenerateKeys([]byte(state.Account)) // TODO: switch with passphrase
-	publicKey, privateKey := id.PublicKey{}, id.PrivateKey{}
+	publicKey, privateKey := id.NilPublicKey(), id.NilPrivateKey()
 
 	// TODO: This should probably only occur on the Admin node, for other nodes how do I know the key?
 	// Register the identity and account first
@@ -122,7 +99,7 @@ func (app Application) SetupState(stateBytes []byte) {
 		Amount: data.NewCoin(state.Amount, "OLT"),
 	}
 
-	buffer, err := comm.Serialize(balance)
+	buffer, err := comm.Serialize(balance, comm.PERSISTENT)
 	if err != nil {
 		log.Error("Failed to Serialize balance")
 	}
@@ -221,7 +198,6 @@ func (app Application) CheckTx(tx []byte) ResponseCheckTx {
 		GasWanted: 1000,
 		GasUsed:   1000,
 		Tags:      []common.KVPair(nil),
-		Fee:       common.KI64Pair{},
 	}
 }
 
@@ -229,7 +205,7 @@ var chainKey data.DatabaseKey = data.DatabaseKey("chainId")
 
 // BeginBlock is called when a new block is started
 func (app Application) BeginBlock(req RequestBeginBlock) ResponseBeginBlock {
-	log.Debug("Contract: BeginBlock", "req", req)
+	//log.Debug("Contract: BeginBlock", "req", req)
 
 	newChainId := action.Message(req.Header.ChainID)
 
@@ -260,9 +236,8 @@ func (app Application) DeliverTx(tx []byte) ResponseDeliverTx {
 
 	if result.ShouldProcess(app) {
 		ttype, _ := action.UnpackMessage(action.Message(tx))
-		if ttype == action.SWAP || ttype == action.PUBLISH {
 
-			// These Transactions will sleep, so they need to execute in a separate goroutine
+		if ttype == action.SWAP || ttype == action.PUBLISH || ttype == action.VERIFY {
 			go result.ProcessDeliver(&app)
 		} else {
 			if err = result.ProcessDeliver(&app); err != 0 {
@@ -279,7 +254,6 @@ func (app Application) DeliverTx(tx []byte) ResponseDeliverTx {
 		GasWanted: 1000,
 		GasUsed:   1000,
 		Tags:      []common.KVPair(nil),
-		Fee:       common.KI64Pair{},
 	}
 }
 

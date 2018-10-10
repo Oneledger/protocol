@@ -40,21 +40,21 @@ func TestHtlc(t *testing.T) {
 	value := new(big.Int)
 	value.SetString("100000000000000000000", 10)
 	testHtlc_Funds(auth, opt, htlcontract, value)
-	testHtlc_Setup(auth, htlcontract)
+	//testHtlc_Setup(auth, htlcontract)
 	testHtlc_Audit(auth, opt, htlcontract, value)
-	testHtlc_Redeem(auth, opt, htlcontract)
+	//testHtlc_Redeem(auth, opt, htlcontract)
 	testHtlc_ExtractMsg(opt, address)
 	testHtlc_Refund(auth, htlcontract)
 	log.Debug("Contract: ", "address", address)
 }
 
 func getClientAndAuth() (*ethclient.Client, *bind.TransactOpts, *bind.CallOpts){
-	cli, err := ethclient.Dial("/home/lan/go/test/ethereum/C/geth.ipc")
+	cli, err := ethclient.Dial("/home/lan/go/test/ethereum/B/geth.ipc")
 	if err != nil{
 		log.Error("failed to get geth ipc ", "err", err)
 	}
-	key := `{"address":"8a309f95de0e47edb61de8fa0cf8bdd722271789","crypto":{"cipher":"aes-128-ctr","ciphertext":"81becb7ca37be737af147aa0552b1639b770d76ba98fa82069325fe1ce6e1aa1","cipherparams":{"iv":"5be20f263a46d6cca53cb0ae490245fd"},"kdf":"scrypt","kdfparams":{"dklen":32,"n":262144,"p":1,"r":8,"salt":"12456c9a74778a06449596676cc90f2f046e306b5db74688600c04577529b9c2"},"mac":"6737c9dd93f0abc8e102590984790214c2b9dfc36ea6e2b769e80c19eb22e4e8"},"id":"fbaef12b-a667-4c4e-b4c7-7234ef37cbe9","version":3}`
-	auth, err := bind.NewTransactor(strings.NewReader(key), "3456")
+	key := `{"address":"aafa2d8980a730b02195f9c8dfeafeb3e69a69ca","crypto":{"cipher":"aes-128-ctr","ciphertext":"cfc36b7deb503116482371b7d2596aa936758b8247279efce461cf0344ae4b31","cipherparams":{"iv":"fc200b937116258856dd0e5a085e011d"},"kdf":"scrypt","kdfparams":{"dklen":32,"n":262144,"p":1,"r":8,"salt":"7354c4523dfc70372c8c34616c15dc21448ac40617ffc3a7b3a9af7ee32c37e6"},"mac":"1b322fa3c5789cede87144783f2bd8c4588e5094e68f7880640ca9a5458b8aab"},"id":"87363a39-0171-4640-ba12-b5aacad7aed2","version":3}`
+	auth, err := bind.NewTransactor(strings.NewReader(key), "2345")
 	if err != nil {
 		log.Error("Failed to create authorized transactor: ", "err", err)
 	}
@@ -70,7 +70,15 @@ func testHtlc_Funds(auth *bind.TransactOpts, opt *bind.CallOpts, contract *Htlc,
 	log.Debug("auth",  "auth", auth)
 
 	//funds
-	tx, err := contract.Funds(auth)
+
+	receiver := common.HexToAddress("0xd7858005867c3449f6673a91f6e4f719f10e12e5")
+	log.Debug("receiver: ", "address", receiver.Hex())
+
+	scrHash, scr := getScrPair()
+
+	log.Debug("secrets", "scr", scr, "scrHash", scrHash)
+
+	tx, err := contract.Funds(auth, big.NewInt(25*3600), receiver, scrHash)
 	if err != nil {
 		log.Error("fund contract failed")
 	}
@@ -83,39 +91,6 @@ func testHtlc_Funds(auth *bind.TransactOpts, opt *bind.CallOpts, contract *Htlc,
 	}
 	log.Debug("balance:", "balance", balance)
 	auth.Value = big.NewInt(0)
-}
-
-func getScrPair() (scrHash [32]byte, scr []byte) {
-	s := "testswap"
-	scrHash = [32]byte(sha256.Sum256([]byte(s)))
-	scr = []byte(s)
-	return
-}
-
-func testHtlc_Setup(auth *bind.TransactOpts, contract *Htlc) {
-
-	log.Debug("======test setup()======")
-
-	receiver := common.HexToAddress("0xd7858005867c3449f6673a91f6e4f719f10e12e5")
-	log.Debug("receiver: ", "address", receiver.Hex())
-
-
-
-	scrHash, scr := getScrPair()
-
-	log.Debug("secrets", "scr", scr, "scrHash", scrHash)
-
-
-	log.Debug("auth",  "auth", auth)
-
-	//setup
-	tx, err := contract.Setup(auth, big.NewInt(25*3600), receiver, scrHash)
-	if err != nil {
-		log.Error("failed to setup: ","err", err)
-	}
-	log.Debug("Transaction waiting to be mined: ", "transaction", tx.Hash(),"value", tx.Value())
-
-	time.Sleep(15 * time.Second)
 
 	addr, err := contract.Receiver(&bind.CallOpts{Pending: true})
 	if err != nil {
@@ -128,7 +103,13 @@ func testHtlc_Setup(auth *bind.TransactOpts, contract *Htlc) {
 		log.Error("can't get the secret hash", "err", err)
 	}
 	log.Debug("scrHash in contract", "scrhash",sh)
+}
 
+func getScrPair() (scrHash [32]byte, scr []byte) {
+	s := "testswap"
+	scrHash = [32]byte(sha256.Sum256([]byte(s)))
+	scr = []byte(s)
+	return
 }
 
 func testHtlc_Redeem(auth *bind.TransactOpts, opt *bind.CallOpts, contract *Htlc) {
@@ -201,18 +182,19 @@ func testHtlc_ExtractMsg(opt *bind.CallOpts, address common.Address) {
 func testHtlc_Refund(auth *bind.TransactOpts, contract *Htlc) {
 
 	log.Debug("======test refund()======")
-	_, scr := getScrPair()
 
 	balance, err := contract.Balance(&bind.CallOpts{Pending: false})
 
 	log.Debug("balance before refund", "balance", balance)
 
-	tx, err := contract.Refund(auth,scr)
+	tx, err := contract.Refund(auth)
 	if err != nil{
 		log.Error("Failed to call the refund", )
 	}
 	log.Debug("refund transaction to be mined", "transaction", tx.Hash(), "value", tx.Value())
-
+	time.Sleep(20 * time.Second)
+    balance, err = contract.Balance(&bind.CallOpts{Pending: false})
+    log.Debug("balance after refund", "balance", balance)
 }
 
 func testHtlc_Audit(auth *bind.TransactOpts, opt *bind.CallOpts, contract *Htlc, v *big.Int) {

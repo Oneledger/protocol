@@ -11,7 +11,7 @@ import (
 
 	"github.com/Oneledger/protocol/node/global"
 	"github.com/davecgh/go-spew/spew"
-	"github.com/tendermint/tmlibs/log"
+	"github.com/tendermint/tendermint/libs/log"
 )
 
 var current log.Logger

@@ -79,7 +79,7 @@ func GetBalance(accountKey id.AccountKey) *data.Coin {
 
 	// Convert to a balance
 	var balance data.Balance
-	buffer, status := comm.Deserialize(value, &balance)
+	buffer, status := comm.Deserialize(value, &balance, comm.CLIENT)
 	if status != nil {
 		log.Error("Deserialize", "status", status, "value", value)
 		return nil

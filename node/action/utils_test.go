@@ -23,9 +23,9 @@ func TestBoxLocker_Sign(t *testing.T) {
 	messageHash := chainhash.DoubleHashB([]byte(message))
 
 	locker := BoxLocker{}
-	r, err := locker.Sign(pkBytes[:len(pkBytes)/2], pkBytes[len(pkBytes)/2:], messageHash)
+	err := locker.Sign(pkBytes[:len(pkBytes)/2], pkBytes[len(pkBytes)/2:], messageHash)
 
-	assert.Equal(t, true, r, "Sign with preimage and nonce success")
+	assert.Equal(t, nil, err, "Sign with preimage and nonce success")
 	if err != nil {
 		log.Error(err.Error())
 		return
@@ -39,12 +39,12 @@ func TestBoxLocker_Sign(t *testing.T) {
 	assert.Equal(t, true, verified, "Signature verified with pubKey")
 
 	// Test sign again with wrong nonce
-	r, err = locker.Sign(pkBytes[:len(pkBytes)/2], pkBytes[len(pkBytes)/2-1:], messageHash)
-	assert.Equal(t, false, r, err.Error())
+	err = locker.Sign(pkBytes[:len(pkBytes)/2], pkBytes[len(pkBytes)/2-1:], messageHash)
+	assert.Equal(t, nil, err)
 
 	// Test sign again with wrong preImage
-	r, err = locker.Sign(pkBytes[:len(pkBytes)/2-1], pkBytes[len(pkBytes)/2:], messageHash)
-	assert.Equal(t, false, r, err.Error())
+	err = locker.Sign(pkBytes[:len(pkBytes)/2-1], pkBytes[len(pkBytes)/2:], messageHash)
+	assert.Equal(t, nil, err)
 
 }
 

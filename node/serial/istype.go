@@ -2,7 +2,7 @@
 	Copyright 2017-2018 OneLedger
 */
 
-package comm
+package serial
 
 import (
 	"reflect"
@@ -75,18 +75,6 @@ func IsInterface(input interface{}) bool {
 	return false
 }
 
-func IsStructure(input interface{}) bool {
-	if input == nil {
-		return false
-	}
-
-	kind := reflect.TypeOf(input).Kind()
-	if kind == reflect.Struct {
-		return true
-	}
-	return false
-}
-
 func IsPointer(input interface{}) bool {
 	if input == nil {
 		return false
@@ -106,6 +94,18 @@ func IsDifficult(input interface{}) bool {
 	}
 
 	if IsSpecial(input) {
+		return true
+	}
+	return false
+}
+
+func IsStructure(input interface{}) bool {
+	if input == nil {
+		return false
+	}
+
+	kind := reflect.TypeOf(input).Kind()
+	if kind == reflect.Struct {
 		return true
 	}
 	return false

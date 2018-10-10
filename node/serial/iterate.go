@@ -1,4 +1,4 @@
-package comm
+package serial
 
 import (
 	"fmt"
@@ -77,11 +77,16 @@ func GetChildrenStruct(input interface{}) []Child {
 	children = make([]Child, count)
 
 	for i := 0; i < count; i++ {
-		name := typeOf.Field(i).Name
-		value := valueOf.Field(i).Interface()
-		kind := valueOf.Field(i).Kind()
+		field := typeOf.Field(i)
+		element := valueOf.Field(i)
 
-		children[i] = Child{Name: name, Number: i, Value: value, Kind: kind}
+		if element.IsValid() && element.CanInterface() {
+			name := field.Name
+			value := element.Interface()
+			kind := element.Kind()
+
+			children[i] = Child{Name: name, Number: i, Value: value, Kind: kind}
+		}
 	}
 	return children
 }
@@ -94,10 +99,10 @@ func GetChildrenMap(input interface{}) []Child {
 	children = make([]Child, 0)
 
 	for _, key := range valueOf.MapKeys() {
-		name := key.String()
 		value := valueOf.MapIndex(key).Interface()
 		kind := reflect.ValueOf(value).Kind()
 
+		name := key.String()
 		children = append(children, Child{Name: name, Value: value, Kind: kind})
 	}
 	return children
@@ -105,15 +110,23 @@ func GetChildrenMap(input interface{}) []Child {
 
 // Get Children from a slice
 func GetChildrenSlice(input interface{}) []Child {
+	typeOf := reflect.TypeOf(input)
 	valueOf := GetValue(input)
 
 	var children []Child
 	children = make([]Child, 0)
 
+	if typeOf.String() == "[]byte" {
+		log.Warn("have byte array")
+		return children
+	}
+
 	for i := 0; i < valueOf.Len(); i++ {
-		name := fmt.Sprintf("%d", i)
-		value := valueOf.Index(i)
+		value := valueOf.Index(i).Interface()
 		kind := reflect.ValueOf(value).Kind()
+
+		// Use a string index.
+		name := fmt.Sprintf("%d", i)
 		children = append(children, Child{Name: name, Value: value, Kind: kind})
 	}
 	return children
@@ -127,9 +140,10 @@ func GetChildrenArray(input interface{}) []Child {
 	children = make([]Child, 0)
 
 	for i := 0; i < valueOf.Len(); i++ {
-		name := fmt.Sprintf("%d", i)
-		value := valueOf.Index(i)
+		value := valueOf.Index(i).Interface()
 		kind := reflect.ValueOf(value).Kind()
+
+		name := fmt.Sprintf("%d", i)
 		children = append(children, Child{Name: name, Value: value, Kind: kind})
 	}
 	return children
@@ -186,6 +200,7 @@ func Iterate(input interface{}, action *Action) interface{} {
 			action.IsPointer = pointer
 		}
 	}
+
 	result := action.ProcessField(action, input)
 	action.Path.Pop()
 

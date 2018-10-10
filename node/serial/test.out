@@ -1,0 +1,2592 @@
+=== RUN   TestLog
+Test:
+(*serial.RootStruct2)(0x149f9c0)({
+    RootName: (string) (len=10) "The Root 2",
+    Count: (int) 2000,
+    Node1: (*serial.NodeStruct1)(0x149f540)({
+        NodeName: (string) (len=10) "The Node 1",
+        Size: (int) 1000,
+        Interface: (interface {}) <nil>,
+        Slice: ([]int) <nil>,
+        Map: (map[string]string) <nil>,
+        Array: ([]uint8) <nil>,
+        Boolean: (bool) false,
+        Integer: (int) 0,
+        Int8: (int8) 0,
+        Int16: (int16) 0,
+        Int32: (int32) 0,
+        Int64: (int64) 0,
+        UnsignedInt: (uint) 0,
+        Uint8: (uint8) 0,
+        Uint16: (uint16) 0,
+        Uint32: (uint32) 0,
+        Uint64: (uint64) 0,
+        Float32: (float32) 0,
+        Float64: (float64) 0,
+        String: (string) ""
+    }),
+    Node2: (serial.NodeStruct2) {
+        NodeName: (string) (len=11) "The Child 2",
+        Size: (int) 3000,
+        Size2: (int) -1,
+        Interface: (interface {}) <nil>,
+        Slice: ([]int) <nil>,
+        Map: (map[string]string) <nil>,
+        Array: ([]uint8) <nil>,
+        Boolean: (bool) false,
+        Integer: (int) 0,
+        Int8: (int8) 0,
+        Int16: (int16) 0,
+        Int32: (int32) 0,
+        Int64: (int64) 0,
+        UnsignedInt: (uint) 0,
+        Uint8: (uint8) 0,
+        Uint16: (uint16) 0,
+        Uint32: (uint32) 0,
+        Uint64: (uint64) 0,
+        Float32: (float32) 0,
+        Float64: (float64) 0,
+        String: (string) ""
+    },
+    Interface: (interface {}) <nil>,
+    Slice: ([]int) <nil>,
+    Map: (map[string]string) <nil>,
+    Array: ([]uint8) <nil>,
+    Boolean: (bool) false,
+    Integer: (int) 0,
+    Int8: (int8) 0,
+    Int16: (int16) 0,
+    Int32: (int32) 0,
+    Int64: (int64) 0,
+    UnsignedInt: (uint) 0,
+    Uint8: (uint8) 0,
+    Uint16: (uint16) 0,
+    Uint32: (uint32) 0,
+    Uint64: (uint64) 0,
+    Float32: (float32) 0,
+    Float64: (float64) 0,
+    String: (string) ""
+})
+
+--- PASS: TestLog (0.00s)
+=== RUN   TestStack
+D[10-10|22:13:47.032] Stack                                        index=0 value=Top
+D[10-10|22:13:47.032] Stack                                        index=1 value=Middle
+D[10-10|22:13:47.032] Stack                                        index=2 value=Bottom
+D[10-10|22:13:47.032] Top                                          is=Top
+D[10-10|22:13:47.032] Middle                                       is=Middle
+D[10-10|22:13:47.032] Bottom                                       is=Bottom
+--- PASS: TestStack (0.00s)
+=== RUN   TestPrint
+#### Node:
+(string) (len=10) "The Root 2"
+(*serial.Action)(0xc4200b4370)({
+    IgnorePrimitives: (bool) false,
+    Path: (serial.Stack) {
+        base: ([]interface {}) (len=3 cap=3) {
+            (string) (len=8) "RootName",
+            (string) (len=4) "base",
+            (string) (len=4) "root"
+        }
+    },
+    Name: (string) (len=8) "RootName",
+    Index: (int) 0,
+    IsPointer: (bool) false,
+    ProcessField: (func(*serial.Action, interface {}) interface {}) 0x1260030,
+    Processed: (map[string]serial.Parameters) (len=2) {
+        (string) (len=4) "root": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=4) "base": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        }
+    }
+})
+
+#### Node:
+(int) 2000
+(*serial.Action)(0xc4200b4370)({
+    IgnorePrimitives: (bool) false,
+    Path: (serial.Stack) {
+        base: ([]interface {}) (len=3 cap=3) {
+            (string) (len=5) "Count",
+            (string) (len=4) "base",
+            (string) (len=4) "root"
+        }
+    },
+    Name: (string) (len=5) "Count",
+    Index: (int) 0,
+    IsPointer: (bool) false,
+    ProcessField: (func(*serial.Action, interface {}) interface {}) 0x1260030,
+    Processed: (map[string]serial.Parameters) (len=2) {
+        (string) (len=4) "root": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=4) "base": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        }
+    }
+})
+
+#### Node:
+(string) (len=10) "The Node 1"
+(*serial.Action)(0xc4200b4370)({
+    IgnorePrimitives: (bool) false,
+    Path: (serial.Stack) {
+        base: ([]interface {}) (len=4 cap=4) {
+            (string) (len=8) "NodeName",
+            (string) (len=5) "Node1",
+            (string) (len=4) "base",
+            (string) (len=4) "root"
+        }
+    },
+    Name: (string) (len=8) "NodeName",
+    Index: (int) 0,
+    IsPointer: (bool) false,
+    ProcessField: (func(*serial.Action, interface {}) interface {}) 0x1260030,
+    Processed: (map[string]serial.Parameters) (len=3) {
+        (string) (len=4) "root": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=4) "base": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=5) "Node1": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        }
+    }
+})
+
+#### Node:
+(int) 1000
+(*serial.Action)(0xc4200b4370)({
+    IgnorePrimitives: (bool) false,
+    Path: (serial.Stack) {
+        base: ([]interface {}) (len=4 cap=4) {
+            (string) (len=4) "Size",
+            (string) (len=5) "Node1",
+            (string) (len=4) "base",
+            (string) (len=4) "root"
+        }
+    },
+    Name: (string) (len=4) "Size",
+    Index: (int) 0,
+    IsPointer: (bool) false,
+    ProcessField: (func(*serial.Action, interface {}) interface {}) 0x1260030,
+    Processed: (map[string]serial.Parameters) (len=3) {
+        (string) (len=4) "base": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=5) "Node1": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=4) "root": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        }
+    }
+})
+
+#### Node:
+(interface {}) <nil>
+(*serial.Action)(0xc4200b4370)({
+    IgnorePrimitives: (bool) false,
+    Path: (serial.Stack) {
+        base: ([]interface {}) (len=4 cap=4) {
+            (string) (len=9) "Interface",
+            (string) (len=5) "Node1",
+            (string) (len=4) "base",
+            (string) (len=4) "root"
+        }
+    },
+    Name: (string) (len=9) "Interface",
+    Index: (int) 0,
+    IsPointer: (bool) false,
+    ProcessField: (func(*serial.Action, interface {}) interface {}) 0x1260030,
+    Processed: (map[string]serial.Parameters) (len=3) {
+        (string) (len=4) "root": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=4) "base": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=5) "Node1": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        }
+    }
+})
+
+#### Node:
+([]int) <nil>
+(*serial.Action)(0xc4200b4370)({
+    IgnorePrimitives: (bool) false,
+    Path: (serial.Stack) {
+        base: ([]interface {}) (len=4 cap=4) {
+            (string) (len=5) "Slice",
+            (string) (len=5) "Node1",
+            (string) (len=4) "base",
+            (string) (len=4) "root"
+        }
+    },
+    Name: (string) (len=5) "Slice",
+    Index: (int) 0,
+    IsPointer: (bool) false,
+    ProcessField: (func(*serial.Action, interface {}) interface {}) 0x1260030,
+    Processed: (map[string]serial.Parameters) (len=3) {
+        (string) (len=4) "base": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=5) "Node1": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=4) "root": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        }
+    }
+})
+
+#### Node:
+(map[string]string) <nil>
+(*serial.Action)(0xc4200b4370)({
+    IgnorePrimitives: (bool) false,
+    Path: (serial.Stack) {
+        base: ([]interface {}) (len=4 cap=4) {
+            (string) (len=3) "Map",
+            (string) (len=5) "Node1",
+            (string) (len=4) "base",
+            (string) (len=4) "root"
+        }
+    },
+    Name: (string) (len=3) "Map",
+    Index: (int) 0,
+    IsPointer: (bool) false,
+    ProcessField: (func(*serial.Action, interface {}) interface {}) 0x1260030,
+    Processed: (map[string]serial.Parameters) (len=3) {
+        (string) (len=4) "root": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=4) "base": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=5) "Node1": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        }
+    }
+})
+
+#### Node:
+([]uint8) <nil>
+(*serial.Action)(0xc4200b4370)({
+    IgnorePrimitives: (bool) false,
+    Path: (serial.Stack) {
+        base: ([]interface {}) (len=4 cap=4) {
+            (string) (len=5) "Array",
+            (string) (len=5) "Node1",
+            (string) (len=4) "base",
+            (string) (len=4) "root"
+        }
+    },
+    Name: (string) (len=5) "Array",
+    Index: (int) 0,
+    IsPointer: (bool) false,
+    ProcessField: (func(*serial.Action, interface {}) interface {}) 0x1260030,
+    Processed: (map[string]serial.Parameters) (len=3) {
+        (string) (len=4) "root": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=4) "base": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=5) "Node1": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        }
+    }
+})
+
+#### Node:
+(bool) false
+(*serial.Action)(0xc4200b4370)({
+    IgnorePrimitives: (bool) false,
+    Path: (serial.Stack) {
+        base: ([]interface {}) (len=4 cap=4) {
+            (string) (len=7) "Boolean",
+            (string) (len=5) "Node1",
+            (string) (len=4) "base",
+            (string) (len=4) "root"
+        }
+    },
+    Name: (string) (len=7) "Boolean",
+    Index: (int) 0,
+    IsPointer: (bool) false,
+    ProcessField: (func(*serial.Action, interface {}) interface {}) 0x1260030,
+    Processed: (map[string]serial.Parameters) (len=3) {
+        (string) (len=4) "root": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=4) "base": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=5) "Node1": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        }
+    }
+})
+
+#### Node:
+(int) 0
+(*serial.Action)(0xc4200b4370)({
+    IgnorePrimitives: (bool) false,
+    Path: (serial.Stack) {
+        base: ([]interface {}) (len=4 cap=4) {
+            (string) (len=7) "Integer",
+            (string) (len=5) "Node1",
+            (string) (len=4) "base",
+            (string) (len=4) "root"
+        }
+    },
+    Name: (string) (len=7) "Integer",
+    Index: (int) 0,
+    IsPointer: (bool) false,
+    ProcessField: (func(*serial.Action, interface {}) interface {}) 0x1260030,
+    Processed: (map[string]serial.Parameters) (len=3) {
+        (string) (len=4) "root": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=4) "base": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=5) "Node1": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        }
+    }
+})
+
+#### Node:
+(int8) 0
+(*serial.Action)(0xc4200b4370)({
+    IgnorePrimitives: (bool) false,
+    Path: (serial.Stack) {
+        base: ([]interface {}) (len=4 cap=4) {
+            (string) (len=4) "Int8",
+            (string) (len=5) "Node1",
+            (string) (len=4) "base",
+            (string) (len=4) "root"
+        }
+    },
+    Name: (string) (len=4) "Int8",
+    Index: (int) 0,
+    IsPointer: (bool) false,
+    ProcessField: (func(*serial.Action, interface {}) interface {}) 0x1260030,
+    Processed: (map[string]serial.Parameters) (len=3) {
+        (string) (len=4) "root": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=4) "base": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=5) "Node1": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        }
+    }
+})
+
+#### Node:
+(int16) 0
+(*serial.Action)(0xc4200b4370)({
+    IgnorePrimitives: (bool) false,
+    Path: (serial.Stack) {
+        base: ([]interface {}) (len=4 cap=4) {
+            (string) (len=5) "Int16",
+            (string) (len=5) "Node1",
+            (string) (len=4) "base",
+            (string) (len=4) "root"
+        }
+    },
+    Name: (string) (len=5) "Int16",
+    Index: (int) 0,
+    IsPointer: (bool) false,
+    ProcessField: (func(*serial.Action, interface {}) interface {}) 0x1260030,
+    Processed: (map[string]serial.Parameters) (len=3) {
+        (string) (len=4) "root": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=4) "base": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=5) "Node1": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        }
+    }
+})
+
+#### Node:
+(int32) 0
+(*serial.Action)(0xc4200b4370)({
+    IgnorePrimitives: (bool) false,
+    Path: (serial.Stack) {
+        base: ([]interface {}) (len=4 cap=4) {
+            (string) (len=5) "Int32",
+            (string) (len=5) "Node1",
+            (string) (len=4) "base",
+            (string) (len=4) "root"
+        }
+    },
+    Name: (string) (len=5) "Int32",
+    Index: (int) 0,
+    IsPointer: (bool) false,
+    ProcessField: (func(*serial.Action, interface {}) interface {}) 0x1260030,
+    Processed: (map[string]serial.Parameters) (len=3) {
+        (string) (len=4) "root": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=4) "base": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=5) "Node1": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        }
+    }
+})
+
+#### Node:
+(int64) 0
+(*serial.Action)(0xc4200b4370)({
+    IgnorePrimitives: (bool) false,
+    Path: (serial.Stack) {
+        base: ([]interface {}) (len=4 cap=4) {
+            (string) (len=5) "Int64",
+            (string) (len=5) "Node1",
+            (string) (len=4) "base",
+            (string) (len=4) "root"
+        }
+    },
+    Name: (string) (len=5) "Int64",
+    Index: (int) 0,
+    IsPointer: (bool) false,
+    ProcessField: (func(*serial.Action, interface {}) interface {}) 0x1260030,
+    Processed: (map[string]serial.Parameters) (len=3) {
+        (string) (len=4) "root": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=4) "base": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=5) "Node1": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        }
+    }
+})
+
+#### Node:
+(uint) 0
+(*serial.Action)(0xc4200b4370)({
+    IgnorePrimitives: (bool) false,
+    Path: (serial.Stack) {
+        base: ([]interface {}) (len=4 cap=4) {
+            (string) (len=11) "UnsignedInt",
+            (string) (len=5) "Node1",
+            (string) (len=4) "base",
+            (string) (len=4) "root"
+        }
+    },
+    Name: (string) (len=11) "UnsignedInt",
+    Index: (int) 0,
+    IsPointer: (bool) false,
+    ProcessField: (func(*serial.Action, interface {}) interface {}) 0x1260030,
+    Processed: (map[string]serial.Parameters) (len=3) {
+        (string) (len=4) "root": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=4) "base": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=5) "Node1": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        }
+    }
+})
+
+#### Node:
+(uint8) 0
+(*serial.Action)(0xc4200b4370)({
+    IgnorePrimitives: (bool) false,
+    Path: (serial.Stack) {
+        base: ([]interface {}) (len=4 cap=4) {
+            (string) (len=5) "Uint8",
+            (string) (len=5) "Node1",
+            (string) (len=4) "base",
+            (string) (len=4) "root"
+        }
+    },
+    Name: (string) (len=5) "Uint8",
+    Index: (int) 0,
+    IsPointer: (bool) false,
+    ProcessField: (func(*serial.Action, interface {}) interface {}) 0x1260030,
+    Processed: (map[string]serial.Parameters) (len=3) {
+        (string) (len=4) "base": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=5) "Node1": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=4) "root": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        }
+    }
+})
+
+#### Node:
+(uint16) 0
+(*serial.Action)(0xc4200b4370)({
+    IgnorePrimitives: (bool) false,
+    Path: (serial.Stack) {
+        base: ([]interface {}) (len=4 cap=4) {
+            (string) (len=6) "Uint16",
+            (string) (len=5) "Node1",
+            (string) (len=4) "base",
+            (string) (len=4) "root"
+        }
+    },
+    Name: (string) (len=6) "Uint16",
+    Index: (int) 0,
+    IsPointer: (bool) false,
+    ProcessField: (func(*serial.Action, interface {}) interface {}) 0x1260030,
+    Processed: (map[string]serial.Parameters) (len=3) {
+        (string) (len=4) "root": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=4) "base": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=5) "Node1": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        }
+    }
+})
+
+#### Node:
+(uint32) 0
+(*serial.Action)(0xc4200b4370)({
+    IgnorePrimitives: (bool) false,
+    Path: (serial.Stack) {
+        base: ([]interface {}) (len=4 cap=4) {
+            (string) (len=6) "Uint32",
+            (string) (len=5) "Node1",
+            (string) (len=4) "base",
+            (string) (len=4) "root"
+        }
+    },
+    Name: (string) (len=6) "Uint32",
+    Index: (int) 0,
+    IsPointer: (bool) false,
+    ProcessField: (func(*serial.Action, interface {}) interface {}) 0x1260030,
+    Processed: (map[string]serial.Parameters) (len=3) {
+        (string) (len=4) "root": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=4) "base": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=5) "Node1": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        }
+    }
+})
+
+#### Node:
+(uint64) 0
+(*serial.Action)(0xc4200b4370)({
+    IgnorePrimitives: (bool) false,
+    Path: (serial.Stack) {
+        base: ([]interface {}) (len=4 cap=4) {
+            (string) (len=6) "Uint64",
+            (string) (len=5) "Node1",
+            (string) (len=4) "base",
+            (string) (len=4) "root"
+        }
+    },
+    Name: (string) (len=6) "Uint64",
+    Index: (int) 0,
+    IsPointer: (bool) false,
+    ProcessField: (func(*serial.Action, interface {}) interface {}) 0x1260030,
+    Processed: (map[string]serial.Parameters) (len=3) {
+        (string) (len=4) "root": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=4) "base": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=5) "Node1": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        }
+    }
+})
+
+#### Node:
+(float32) 0
+(*serial.Action)(0xc4200b4370)({
+    IgnorePrimitives: (bool) false,
+    Path: (serial.Stack) {
+        base: ([]interface {}) (len=4 cap=4) {
+            (string) (len=7) "Float32",
+            (string) (len=5) "Node1",
+            (string) (len=4) "base",
+            (string) (len=4) "root"
+        }
+    },
+    Name: (string) (len=7) "Float32",
+    Index: (int) 0,
+    IsPointer: (bool) false,
+    ProcessField: (func(*serial.Action, interface {}) interface {}) 0x1260030,
+    Processed: (map[string]serial.Parameters) (len=3) {
+        (string) (len=4) "root": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=4) "base": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=5) "Node1": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        }
+    }
+})
+
+#### Node:
+(float64) 0
+(*serial.Action)(0xc4200b4370)({
+    IgnorePrimitives: (bool) false,
+    Path: (serial.Stack) {
+        base: ([]interface {}) (len=4 cap=4) {
+            (string) (len=7) "Float64",
+            (string) (len=5) "Node1",
+            (string) (len=4) "base",
+            (string) (len=4) "root"
+        }
+    },
+    Name: (string) (len=7) "Float64",
+    Index: (int) 0,
+    IsPointer: (bool) false,
+    ProcessField: (func(*serial.Action, interface {}) interface {}) 0x1260030,
+    Processed: (map[string]serial.Parameters) (len=3) {
+        (string) (len=4) "root": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=4) "base": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=5) "Node1": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        }
+    }
+})
+
+#### Node:
+(string) ""
+(*serial.Action)(0xc4200b4370)({
+    IgnorePrimitives: (bool) false,
+    Path: (serial.Stack) {
+        base: ([]interface {}) (len=4 cap=4) {
+            (string) (len=6) "String",
+            (string) (len=5) "Node1",
+            (string) (len=4) "base",
+            (string) (len=4) "root"
+        }
+    },
+    Name: (string) (len=6) "String",
+    Index: (int) 0,
+    IsPointer: (bool) false,
+    ProcessField: (func(*serial.Action, interface {}) interface {}) 0x1260030,
+    Processed: (map[string]serial.Parameters) (len=3) {
+        (string) (len=4) "root": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=4) "base": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=5) "Node1": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        }
+    }
+})
+
+#### Node:
+(serial.NodeStruct1) {
+    NodeName: (string) (len=10) "The Node 1",
+    Size: (int) 1000,
+    Interface: (interface {}) <nil>,
+    Slice: ([]int) <nil>,
+    Map: (map[string]string) <nil>,
+    Array: ([]uint8) <nil>,
+    Boolean: (bool) false,
+    Integer: (int) 0,
+    Int8: (int8) 0,
+    Int16: (int16) 0,
+    Int32: (int32) 0,
+    Int64: (int64) 0,
+    UnsignedInt: (uint) 0,
+    Uint8: (uint8) 0,
+    Uint16: (uint16) 0,
+    Uint32: (uint32) 0,
+    Uint64: (uint64) 0,
+    Float32: (float32) 0,
+    Float64: (float64) 0,
+    String: (string) ""
+}
+(*serial.Action)(0xc4200b4370)({
+    IgnorePrimitives: (bool) false,
+    Path: (serial.Stack) {
+        base: ([]interface {}) (len=3 cap=3) {
+            (string) (len=5) "Node1",
+            (string) (len=4) "base",
+            (string) (len=4) "root"
+        }
+    },
+    Name: (string) (len=5) "Node1",
+    Index: (int) 0,
+    IsPointer: (bool) true,
+    ProcessField: (func(*serial.Action, interface {}) interface {}) 0x1260030,
+    Processed: (map[string]serial.Parameters) (len=3) {
+        (string) (len=4) "root": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=4) "base": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=5) "Node1": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        }
+    }
+})
+
+#### Node:
+(string) (len=11) "The Child 2"
+(*serial.Action)(0xc4200b4370)({
+    IgnorePrimitives: (bool) false,
+    Path: (serial.Stack) {
+        base: ([]interface {}) (len=4 cap=4) {
+            (string) (len=8) "NodeName",
+            (string) (len=5) "Node2",
+            (string) (len=4) "base",
+            (string) (len=4) "root"
+        }
+    },
+    Name: (string) (len=8) "NodeName",
+    Index: (int) 0,
+    IsPointer: (bool) false,
+    ProcessField: (func(*serial.Action, interface {}) interface {}) 0x1260030,
+    Processed: (map[string]serial.Parameters) (len=4) {
+        (string) (len=5) "Node2": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=4) "root": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=4) "base": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=5) "Node1": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        }
+    }
+})
+
+#### Node:
+(int) 3000
+(*serial.Action)(0xc4200b4370)({
+    IgnorePrimitives: (bool) false,
+    Path: (serial.Stack) {
+        base: ([]interface {}) (len=4 cap=4) {
+            (string) (len=4) "Size",
+            (string) (len=5) "Node2",
+            (string) (len=4) "base",
+            (string) (len=4) "root"
+        }
+    },
+    Name: (string) (len=4) "Size",
+    Index: (int) 0,
+    IsPointer: (bool) false,
+    ProcessField: (func(*serial.Action, interface {}) interface {}) 0x1260030,
+    Processed: (map[string]serial.Parameters) (len=4) {
+        (string) (len=5) "Node1": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=5) "Node2": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=4) "root": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=4) "base": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        }
+    }
+})
+
+#### Node:
+(int) -1
+(*serial.Action)(0xc4200b4370)({
+    IgnorePrimitives: (bool) false,
+    Path: (serial.Stack) {
+        base: ([]interface {}) (len=4 cap=4) {
+            (string) (len=5) "Size2",
+            (string) (len=5) "Node2",
+            (string) (len=4) "base",
+            (string) (len=4) "root"
+        }
+    },
+    Name: (string) (len=5) "Size2",
+    Index: (int) 0,
+    IsPointer: (bool) false,
+    ProcessField: (func(*serial.Action, interface {}) interface {}) 0x1260030,
+    Processed: (map[string]serial.Parameters) (len=4) {
+        (string) (len=4) "root": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=4) "base": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=5) "Node1": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=5) "Node2": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        }
+    }
+})
+
+#### Node:
+(interface {}) <nil>
+(*serial.Action)(0xc4200b4370)({
+    IgnorePrimitives: (bool) false,
+    Path: (serial.Stack) {
+        base: ([]interface {}) (len=4 cap=4) {
+            (string) (len=9) "Interface",
+            (string) (len=5) "Node2",
+            (string) (len=4) "base",
+            (string) (len=4) "root"
+        }
+    },
+    Name: (string) (len=9) "Interface",
+    Index: (int) 0,
+    IsPointer: (bool) false,
+    ProcessField: (func(*serial.Action, interface {}) interface {}) 0x1260030,
+    Processed: (map[string]serial.Parameters) (len=4) {
+        (string) (len=5) "Node1": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=5) "Node2": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=4) "root": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=4) "base": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        }
+    }
+})
+
+#### Node:
+([]int) <nil>
+(*serial.Action)(0xc4200b4370)({
+    IgnorePrimitives: (bool) false,
+    Path: (serial.Stack) {
+        base: ([]interface {}) (len=4 cap=4) {
+            (string) (len=5) "Slice",
+            (string) (len=5) "Node2",
+            (string) (len=4) "base",
+            (string) (len=4) "root"
+        }
+    },
+    Name: (string) (len=5) "Slice",
+    Index: (int) 0,
+    IsPointer: (bool) false,
+    ProcessField: (func(*serial.Action, interface {}) interface {}) 0x1260030,
+    Processed: (map[string]serial.Parameters) (len=4) {
+        (string) (len=5) "Node1": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=5) "Node2": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=4) "root": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=4) "base": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        }
+    }
+})
+
+#### Node:
+(map[string]string) <nil>
+(*serial.Action)(0xc4200b4370)({
+    IgnorePrimitives: (bool) false,
+    Path: (serial.Stack) {
+        base: ([]interface {}) (len=4 cap=4) {
+            (string) (len=3) "Map",
+            (string) (len=5) "Node2",
+            (string) (len=4) "base",
+            (string) (len=4) "root"
+        }
+    },
+    Name: (string) (len=3) "Map",
+    Index: (int) 0,
+    IsPointer: (bool) false,
+    ProcessField: (func(*serial.Action, interface {}) interface {}) 0x1260030,
+    Processed: (map[string]serial.Parameters) (len=4) {
+        (string) (len=4) "root": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=4) "base": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=5) "Node1": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=5) "Node2": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        }
+    }
+})
+
+#### Node:
+([]uint8) <nil>
+(*serial.Action)(0xc4200b4370)({
+    IgnorePrimitives: (bool) false,
+    Path: (serial.Stack) {
+        base: ([]interface {}) (len=4 cap=4) {
+            (string) (len=5) "Array",
+            (string) (len=5) "Node2",
+            (string) (len=4) "base",
+            (string) (len=4) "root"
+        }
+    },
+    Name: (string) (len=5) "Array",
+    Index: (int) 0,
+    IsPointer: (bool) false,
+    ProcessField: (func(*serial.Action, interface {}) interface {}) 0x1260030,
+    Processed: (map[string]serial.Parameters) (len=4) {
+        (string) (len=4) "root": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=4) "base": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=5) "Node1": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=5) "Node2": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        }
+    }
+})
+
+#### Node:
+(bool) false
+(*serial.Action)(0xc4200b4370)({
+    IgnorePrimitives: (bool) false,
+    Path: (serial.Stack) {
+        base: ([]interface {}) (len=4 cap=4) {
+            (string) (len=7) "Boolean",
+            (string) (len=5) "Node2",
+            (string) (len=4) "base",
+            (string) (len=4) "root"
+        }
+    },
+    Name: (string) (len=7) "Boolean",
+    Index: (int) 0,
+    IsPointer: (bool) false,
+    ProcessField: (func(*serial.Action, interface {}) interface {}) 0x1260030,
+    Processed: (map[string]serial.Parameters) (len=4) {
+        (string) (len=4) "root": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=4) "base": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=5) "Node1": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=5) "Node2": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        }
+    }
+})
+
+#### Node:
+(int) 0
+(*serial.Action)(0xc4200b4370)({
+    IgnorePrimitives: (bool) false,
+    Path: (serial.Stack) {
+        base: ([]interface {}) (len=4 cap=4) {
+            (string) (len=7) "Integer",
+            (string) (len=5) "Node2",
+            (string) (len=4) "base",
+            (string) (len=4) "root"
+        }
+    },
+    Name: (string) (len=7) "Integer",
+    Index: (int) 0,
+    IsPointer: (bool) false,
+    ProcessField: (func(*serial.Action, interface {}) interface {}) 0x1260030,
+    Processed: (map[string]serial.Parameters) (len=4) {
+        (string) (len=4) "base": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=5) "Node1": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=5) "Node2": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=4) "root": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        }
+    }
+})
+
+#### Node:
+(int8) 0
+(*serial.Action)(0xc4200b4370)({
+    IgnorePrimitives: (bool) false,
+    Path: (serial.Stack) {
+        base: ([]interface {}) (len=4 cap=4) {
+            (string) (len=4) "Int8",
+            (string) (len=5) "Node2",
+            (string) (len=4) "base",
+            (string) (len=4) "root"
+        }
+    },
+    Name: (string) (len=4) "Int8",
+    Index: (int) 0,
+    IsPointer: (bool) false,
+    ProcessField: (func(*serial.Action, interface {}) interface {}) 0x1260030,
+    Processed: (map[string]serial.Parameters) (len=4) {
+        (string) (len=4) "root": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=4) "base": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=5) "Node1": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=5) "Node2": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        }
+    }
+})
+
+#### Node:
+(int16) 0
+(*serial.Action)(0xc4200b4370)({
+    IgnorePrimitives: (bool) false,
+    Path: (serial.Stack) {
+        base: ([]interface {}) (len=4 cap=4) {
+            (string) (len=5) "Int16",
+            (string) (len=5) "Node2",
+            (string) (len=4) "base",
+            (string) (len=4) "root"
+        }
+    },
+    Name: (string) (len=5) "Int16",
+    Index: (int) 0,
+    IsPointer: (bool) false,
+    ProcessField: (func(*serial.Action, interface {}) interface {}) 0x1260030,
+    Processed: (map[string]serial.Parameters) (len=4) {
+        (string) (len=4) "base": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=5) "Node1": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=5) "Node2": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=4) "root": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        }
+    }
+})
+
+#### Node:
+(int32) 0
+(*serial.Action)(0xc4200b4370)({
+    IgnorePrimitives: (bool) false,
+    Path: (serial.Stack) {
+        base: ([]interface {}) (len=4 cap=4) {
+            (string) (len=5) "Int32",
+            (string) (len=5) "Node2",
+            (string) (len=4) "base",
+            (string) (len=4) "root"
+        }
+    },
+    Name: (string) (len=5) "Int32",
+    Index: (int) 0,
+    IsPointer: (bool) false,
+    ProcessField: (func(*serial.Action, interface {}) interface {}) 0x1260030,
+    Processed: (map[string]serial.Parameters) (len=4) {
+        (string) (len=4) "base": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=5) "Node1": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=5) "Node2": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=4) "root": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        }
+    }
+})
+
+#### Node:
+(int64) 0
+(*serial.Action)(0xc4200b4370)({
+    IgnorePrimitives: (bool) false,
+    Path: (serial.Stack) {
+        base: ([]interface {}) (len=4 cap=4) {
+            (string) (len=5) "Int64",
+            (string) (len=5) "Node2",
+            (string) (len=4) "base",
+            (string) (len=4) "root"
+        }
+    },
+    Name: (string) (len=5) "Int64",
+    Index: (int) 0,
+    IsPointer: (bool) false,
+    ProcessField: (func(*serial.Action, interface {}) interface {}) 0x1260030,
+    Processed: (map[string]serial.Parameters) (len=4) {
+        (string) (len=4) "root": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=4) "base": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=5) "Node1": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=5) "Node2": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        }
+    }
+})
+
+#### Node:
+(uint) 0
+(*serial.Action)(0xc4200b4370)({
+    IgnorePrimitives: (bool) false,
+    Path: (serial.Stack) {
+        base: ([]interface {}) (len=4 cap=4) {
+            (string) (len=11) "UnsignedInt",
+            (string) (len=5) "Node2",
+            (string) (len=4) "base",
+            (string) (len=4) "root"
+        }
+    },
+    Name: (string) (len=11) "UnsignedInt",
+    Index: (int) 0,
+    IsPointer: (bool) false,
+    ProcessField: (func(*serial.Action, interface {}) interface {}) 0x1260030,
+    Processed: (map[string]serial.Parameters) (len=4) {
+        (string) (len=4) "base": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=5) "Node1": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=5) "Node2": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=4) "root": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        }
+    }
+})
+
+#### Node:
+(uint8) 0
+(*serial.Action)(0xc4200b4370)({
+    IgnorePrimitives: (bool) false,
+    Path: (serial.Stack) {
+        base: ([]interface {}) (len=4 cap=4) {
+            (string) (len=5) "Uint8",
+            (string) (len=5) "Node2",
+            (string) (len=4) "base",
+            (string) (len=4) "root"
+        }
+    },
+    Name: (string) (len=5) "Uint8",
+    Index: (int) 0,
+    IsPointer: (bool) false,
+    ProcessField: (func(*serial.Action, interface {}) interface {}) 0x1260030,
+    Processed: (map[string]serial.Parameters) (len=4) {
+        (string) (len=4) "root": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=4) "base": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=5) "Node1": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=5) "Node2": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        }
+    }
+})
+
+#### Node:
+(uint16) 0
+(*serial.Action)(0xc4200b4370)({
+    IgnorePrimitives: (bool) false,
+    Path: (serial.Stack) {
+        base: ([]interface {}) (len=4 cap=4) {
+            (string) (len=6) "Uint16",
+            (string) (len=5) "Node2",
+            (string) (len=4) "base",
+            (string) (len=4) "root"
+        }
+    },
+    Name: (string) (len=6) "Uint16",
+    Index: (int) 0,
+    IsPointer: (bool) false,
+    ProcessField: (func(*serial.Action, interface {}) interface {}) 0x1260030,
+    Processed: (map[string]serial.Parameters) (len=4) {
+        (string) (len=4) "root": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=4) "base": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=5) "Node1": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=5) "Node2": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        }
+    }
+})
+
+#### Node:
+(uint32) 0
+(*serial.Action)(0xc4200b4370)({
+    IgnorePrimitives: (bool) false,
+    Path: (serial.Stack) {
+        base: ([]interface {}) (len=4 cap=4) {
+            (string) (len=6) "Uint32",
+            (string) (len=5) "Node2",
+            (string) (len=4) "base",
+            (string) (len=4) "root"
+        }
+    },
+    Name: (string) (len=6) "Uint32",
+    Index: (int) 0,
+    IsPointer: (bool) false,
+    ProcessField: (func(*serial.Action, interface {}) interface {}) 0x1260030,
+    Processed: (map[string]serial.Parameters) (len=4) {
+        (string) (len=4) "root": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=4) "base": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=5) "Node1": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=5) "Node2": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        }
+    }
+})
+
+#### Node:
+(uint64) 0
+(*serial.Action)(0xc4200b4370)({
+    IgnorePrimitives: (bool) false,
+    Path: (serial.Stack) {
+        base: ([]interface {}) (len=4 cap=4) {
+            (string) (len=6) "Uint64",
+            (string) (len=5) "Node2",
+            (string) (len=4) "base",
+            (string) (len=4) "root"
+        }
+    },
+    Name: (string) (len=6) "Uint64",
+    Index: (int) 0,
+    IsPointer: (bool) false,
+    ProcessField: (func(*serial.Action, interface {}) interface {}) 0x1260030,
+    Processed: (map[string]serial.Parameters) (len=4) {
+        (string) (len=4) "root": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=4) "base": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=5) "Node1": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=5) "Node2": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        }
+    }
+})
+
+#### Node:
+(float32) 0
+(*serial.Action)(0xc4200b4370)({
+    IgnorePrimitives: (bool) false,
+    Path: (serial.Stack) {
+        base: ([]interface {}) (len=4 cap=4) {
+            (string) (len=7) "Float32",
+            (string) (len=5) "Node2",
+            (string) (len=4) "base",
+            (string) (len=4) "root"
+        }
+    },
+    Name: (string) (len=7) "Float32",
+    Index: (int) 0,
+    IsPointer: (bool) false,
+    ProcessField: (func(*serial.Action, interface {}) interface {}) 0x1260030,
+    Processed: (map[string]serial.Parameters) (len=4) {
+        (string) (len=4) "root": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=4) "base": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=5) "Node1": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=5) "Node2": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        }
+    }
+})
+
+#### Node:
+(float64) 0
+(*serial.Action)(0xc4200b4370)({
+    IgnorePrimitives: (bool) false,
+    Path: (serial.Stack) {
+        base: ([]interface {}) (len=4 cap=4) {
+            (string) (len=7) "Float64",
+            (string) (len=5) "Node2",
+            (string) (len=4) "base",
+            (string) (len=4) "root"
+        }
+    },
+    Name: (string) (len=7) "Float64",
+    Index: (int) 0,
+    IsPointer: (bool) false,
+    ProcessField: (func(*serial.Action, interface {}) interface {}) 0x1260030,
+    Processed: (map[string]serial.Parameters) (len=4) {
+        (string) (len=4) "root": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=4) "base": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=5) "Node1": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=5) "Node2": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        }
+    }
+})
+
+#### Node:
+(string) ""
+(*serial.Action)(0xc4200b4370)({
+    IgnorePrimitives: (bool) false,
+    Path: (serial.Stack) {
+        base: ([]interface {}) (len=4 cap=4) {
+            (string) (len=6) "String",
+            (string) (len=5) "Node2",
+            (string) (len=4) "base",
+            (string) (len=4) "root"
+        }
+    },
+    Name: (string) (len=6) "String",
+    Index: (int) 0,
+    IsPointer: (bool) false,
+    ProcessField: (func(*serial.Action, interface {}) interface {}) 0x1260030,
+    Processed: (map[string]serial.Parameters) (len=4) {
+        (string) (len=4) "root": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=4) "base": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=5) "Node1": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=5) "Node2": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        }
+    }
+})
+
+#### Node:
+(serial.NodeStruct2) {
+    NodeName: (string) (len=11) "The Child 2",
+    Size: (int) 3000,
+    Size2: (int) -1,
+    Interface: (interface {}) <nil>,
+    Slice: ([]int) <nil>,
+    Map: (map[string]string) <nil>,
+    Array: ([]uint8) <nil>,
+    Boolean: (bool) false,
+    Integer: (int) 0,
+    Int8: (int8) 0,
+    Int16: (int16) 0,
+    Int32: (int32) 0,
+    Int64: (int64) 0,
+    UnsignedInt: (uint) 0,
+    Uint8: (uint8) 0,
+    Uint16: (uint16) 0,
+    Uint32: (uint32) 0,
+    Uint64: (uint64) 0,
+    Float32: (float32) 0,
+    Float64: (float64) 0,
+    String: (string) ""
+}
+(*serial.Action)(0xc4200b4370)({
+    IgnorePrimitives: (bool) false,
+    Path: (serial.Stack) {
+        base: ([]interface {}) (len=3 cap=3) {
+            (string) (len=5) "Node2",
+            (string) (len=4) "base",
+            (string) (len=4) "root"
+        }
+    },
+    Name: (string) (len=5) "Node2",
+    Index: (int) 0,
+    IsPointer: (bool) false,
+    ProcessField: (func(*serial.Action, interface {}) interface {}) 0x1260030,
+    Processed: (map[string]serial.Parameters) (len=4) {
+        (string) (len=4) "root": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=4) "base": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=5) "Node1": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=5) "Node2": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        }
+    }
+})
+
+#### Node:
+(interface {}) <nil>
+(*serial.Action)(0xc4200b4370)({
+    IgnorePrimitives: (bool) false,
+    Path: (serial.Stack) {
+        base: ([]interface {}) (len=3 cap=3) {
+            (string) (len=9) "Interface",
+            (string) (len=4) "base",
+            (string) (len=4) "root"
+        }
+    },
+    Name: (string) (len=9) "Interface",
+    Index: (int) 0,
+    IsPointer: (bool) false,
+    ProcessField: (func(*serial.Action, interface {}) interface {}) 0x1260030,
+    Processed: (map[string]serial.Parameters) (len=4) {
+        (string) (len=5) "Node1": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=5) "Node2": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=4) "root": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=4) "base": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        }
+    }
+})
+
+#### Node:
+([]int) <nil>
+(*serial.Action)(0xc4200b4370)({
+    IgnorePrimitives: (bool) false,
+    Path: (serial.Stack) {
+        base: ([]interface {}) (len=3 cap=3) {
+            (string) (len=5) "Slice",
+            (string) (len=4) "base",
+            (string) (len=4) "root"
+        }
+    },
+    Name: (string) (len=5) "Slice",
+    Index: (int) 0,
+    IsPointer: (bool) false,
+    ProcessField: (func(*serial.Action, interface {}) interface {}) 0x1260030,
+    Processed: (map[string]serial.Parameters) (len=4) {
+        (string) (len=4) "root": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=4) "base": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=5) "Node1": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=5) "Node2": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        }
+    }
+})
+
+#### Node:
+(map[string]string) <nil>
+(*serial.Action)(0xc4200b4370)({
+    IgnorePrimitives: (bool) false,
+    Path: (serial.Stack) {
+        base: ([]interface {}) (len=3 cap=3) {
+            (string) (len=3) "Map",
+            (string) (len=4) "base",
+            (string) (len=4) "root"
+        }
+    },
+    Name: (string) (len=3) "Map",
+    Index: (int) 0,
+    IsPointer: (bool) false,
+    ProcessField: (func(*serial.Action, interface {}) interface {}) 0x1260030,
+    Processed: (map[string]serial.Parameters) (len=4) {
+        (string) (len=5) "Node1": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=5) "Node2": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=4) "root": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=4) "base": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        }
+    }
+})
+
+#### Node:
+([]uint8) <nil>
+(*serial.Action)(0xc4200b4370)({
+    IgnorePrimitives: (bool) false,
+    Path: (serial.Stack) {
+        base: ([]interface {}) (len=3 cap=3) {
+            (string) (len=5) "Array",
+            (string) (len=4) "base",
+            (string) (len=4) "root"
+        }
+    },
+    Name: (string) (len=5) "Array",
+    Index: (int) 0,
+    IsPointer: (bool) false,
+    ProcessField: (func(*serial.Action, interface {}) interface {}) 0x1260030,
+    Processed: (map[string]serial.Parameters) (len=4) {
+        (string) (len=5) "Node2": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=4) "root": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=4) "base": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=5) "Node1": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        }
+    }
+})
+
+#### Node:
+(bool) false
+(*serial.Action)(0xc4200b4370)({
+    IgnorePrimitives: (bool) false,
+    Path: (serial.Stack) {
+        base: ([]interface {}) (len=3 cap=3) {
+            (string) (len=7) "Boolean",
+            (string) (len=4) "base",
+            (string) (len=4) "root"
+        }
+    },
+    Name: (string) (len=7) "Boolean",
+    Index: (int) 0,
+    IsPointer: (bool) false,
+    ProcessField: (func(*serial.Action, interface {}) interface {}) 0x1260030,
+    Processed: (map[string]serial.Parameters) (len=4) {
+        (string) (len=5) "Node2": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=4) "root": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=4) "base": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=5) "Node1": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        }
+    }
+})
+
+#### Node:
+(int) 0
+(*serial.Action)(0xc4200b4370)({
+    IgnorePrimitives: (bool) false,
+    Path: (serial.Stack) {
+        base: ([]interface {}) (len=3 cap=3) {
+            (string) (len=7) "Integer",
+            (string) (len=4) "base",
+            (string) (len=4) "root"
+        }
+    },
+    Name: (string) (len=7) "Integer",
+    Index: (int) 0,
+    IsPointer: (bool) false,
+    ProcessField: (func(*serial.Action, interface {}) interface {}) 0x1260030,
+    Processed: (map[string]serial.Parameters) (len=4) {
+        (string) (len=5) "Node1": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=5) "Node2": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=4) "root": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=4) "base": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        }
+    }
+})
+
+#### Node:
+(int8) 0
+(*serial.Action)(0xc4200b4370)({
+    IgnorePrimitives: (bool) false,
+    Path: (serial.Stack) {
+        base: ([]interface {}) (len=3 cap=3) {
+            (string) (len=4) "Int8",
+            (string) (len=4) "base",
+            (string) (len=4) "root"
+        }
+    },
+    Name: (string) (len=4) "Int8",
+    Index: (int) 0,
+    IsPointer: (bool) false,
+    ProcessField: (func(*serial.Action, interface {}) interface {}) 0x1260030,
+    Processed: (map[string]serial.Parameters) (len=4) {
+        (string) (len=5) "Node1": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=5) "Node2": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=4) "root": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=4) "base": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        }
+    }
+})
+
+#### Node:
+(int16) 0
+(*serial.Action)(0xc4200b4370)({
+    IgnorePrimitives: (bool) false,
+    Path: (serial.Stack) {
+        base: ([]interface {}) (len=3 cap=3) {
+            (string) (len=5) "Int16",
+            (string) (len=4) "base",
+            (string) (len=4) "root"
+        }
+    },
+    Name: (string) (len=5) "Int16",
+    Index: (int) 0,
+    IsPointer: (bool) false,
+    ProcessField: (func(*serial.Action, interface {}) interface {}) 0x1260030,
+    Processed: (map[string]serial.Parameters) (len=4) {
+        (string) (len=5) "Node1": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=5) "Node2": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=4) "root": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=4) "base": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        }
+    }
+})
+
+#### Node:
+(int32) 0
+(*serial.Action)(0xc4200b4370)({
+    IgnorePrimitives: (bool) false,
+    Path: (serial.Stack) {
+        base: ([]interface {}) (len=3 cap=3) {
+            (string) (len=5) "Int32",
+            (string) (len=4) "base",
+            (string) (len=4) "root"
+        }
+    },
+    Name: (string) (len=5) "Int32",
+    Index: (int) 0,
+    IsPointer: (bool) false,
+    ProcessField: (func(*serial.Action, interface {}) interface {}) 0x1260030,
+    Processed: (map[string]serial.Parameters) (len=4) {
+        (string) (len=4) "root": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=4) "base": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=5) "Node1": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=5) "Node2": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        }
+    }
+})
+
+#### Node:
+(int64) 0
+(*serial.Action)(0xc4200b4370)({
+    IgnorePrimitives: (bool) false,
+    Path: (serial.Stack) {
+        base: ([]interface {}) (len=3 cap=3) {
+            (string) (len=5) "Int64",
+            (string) (len=4) "base",
+            (string) (len=4) "root"
+        }
+    },
+    Name: (string) (len=5) "Int64",
+    Index: (int) 0,
+    IsPointer: (bool) false,
+    ProcessField: (func(*serial.Action, interface {}) interface {}) 0x1260030,
+    Processed: (map[string]serial.Parameters) (len=4) {
+        (string) (len=4) "root": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=4) "base": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=5) "Node1": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=5) "Node2": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        }
+    }
+})
+
+#### Node:
+(uint) 0
+(*serial.Action)(0xc4200b4370)({
+    IgnorePrimitives: (bool) false,
+    Path: (serial.Stack) {
+        base: ([]interface {}) (len=3 cap=3) {
+            (string) (len=11) "UnsignedInt",
+            (string) (len=4) "base",
+            (string) (len=4) "root"
+        }
+    },
+    Name: (string) (len=11) "UnsignedInt",
+    Index: (int) 0,
+    IsPointer: (bool) false,
+    ProcessField: (func(*serial.Action, interface {}) interface {}) 0x1260030,
+    Processed: (map[string]serial.Parameters) (len=4) {
+        (string) (len=5) "Node1": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=5) "Node2": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=4) "root": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=4) "base": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        }
+    }
+})
+
+#### Node:
+(uint8) 0
+(*serial.Action)(0xc4200b4370)({
+    IgnorePrimitives: (bool) false,
+    Path: (serial.Stack) {
+        base: ([]interface {}) (len=3 cap=3) {
+            (string) (len=5) "Uint8",
+            (string) (len=4) "base",
+            (string) (len=4) "root"
+        }
+    },
+    Name: (string) (len=5) "Uint8",
+    Index: (int) 0,
+    IsPointer: (bool) false,
+    ProcessField: (func(*serial.Action, interface {}) interface {}) 0x1260030,
+    Processed: (map[string]serial.Parameters) (len=4) {
+        (string) (len=4) "base": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=5) "Node1": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=5) "Node2": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=4) "root": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        }
+    }
+})
+
+#### Node:
+(uint16) 0
+(*serial.Action)(0xc4200b4370)({
+    IgnorePrimitives: (bool) false,
+    Path: (serial.Stack) {
+        base: ([]interface {}) (len=3 cap=3) {
+            (string) (len=6) "Uint16",
+            (string) (len=4) "base",
+            (string) (len=4) "root"
+        }
+    },
+    Name: (string) (len=6) "Uint16",
+    Index: (int) 0,
+    IsPointer: (bool) false,
+    ProcessField: (func(*serial.Action, interface {}) interface {}) 0x1260030,
+    Processed: (map[string]serial.Parameters) (len=4) {
+        (string) (len=4) "root": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=4) "base": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=5) "Node1": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=5) "Node2": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        }
+    }
+})
+
+#### Node:
+(uint32) 0
+(*serial.Action)(0xc4200b4370)({
+    IgnorePrimitives: (bool) false,
+    Path: (serial.Stack) {
+        base: ([]interface {}) (len=3 cap=3) {
+            (string) (len=6) "Uint32",
+            (string) (len=4) "base",
+            (string) (len=4) "root"
+        }
+    },
+    Name: (string) (len=6) "Uint32",
+    Index: (int) 0,
+    IsPointer: (bool) false,
+    ProcessField: (func(*serial.Action, interface {}) interface {}) 0x1260030,
+    Processed: (map[string]serial.Parameters) (len=4) {
+        (string) (len=4) "root": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=4) "base": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=5) "Node1": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=5) "Node2": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        }
+    }
+})
+
+#### Node:
+(uint64) 0
+(*serial.Action)(0xc4200b4370)({
+    IgnorePrimitives: (bool) false,
+    Path: (serial.Stack) {
+        base: ([]interface {}) (len=3 cap=3) {
+            (string) (len=6) "Uint64",
+            (string) (len=4) "base",
+            (string) (len=4) "root"
+        }
+    },
+    Name: (string) (len=6) "Uint64",
+    Index: (int) 0,
+    IsPointer: (bool) false,
+    ProcessField: (func(*serial.Action, interface {}) interface {}) 0x1260030,
+    Processed: (map[string]serial.Parameters) (len=4) {
+        (string) (len=4) "root": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=4) "base": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=5) "Node1": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=5) "Node2": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        }
+    }
+})
+
+#### Node:
+(float32) 0
+(*serial.Action)(0xc4200b4370)({
+    IgnorePrimitives: (bool) false,
+    Path: (serial.Stack) {
+        base: ([]interface {}) (len=3 cap=3) {
+            (string) (len=7) "Float32",
+            (string) (len=4) "base",
+            (string) (len=4) "root"
+        }
+    },
+    Name: (string) (len=7) "Float32",
+    Index: (int) 0,
+    IsPointer: (bool) false,
+    ProcessField: (func(*serial.Action, interface {}) interface {}) 0x1260030,
+    Processed: (map[string]serial.Parameters) (len=4) {
+        (string) (len=4) "base": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=5) "Node1": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=5) "Node2": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=4) "root": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        }
+    }
+})
+
+#### Node:
+(float64) 0
+(*serial.Action)(0xc4200b4370)({
+    IgnorePrimitives: (bool) false,
+    Path: (serial.Stack) {
+        base: ([]interface {}) (len=3 cap=3) {
+            (string) (len=7) "Float64",
+            (string) (len=4) "base",
+            (string) (len=4) "root"
+        }
+    },
+    Name: (string) (len=7) "Float64",
+    Index: (int) 0,
+    IsPointer: (bool) false,
+    ProcessField: (func(*serial.Action, interface {}) interface {}) 0x1260030,
+    Processed: (map[string]serial.Parameters) (len=4) {
+        (string) (len=4) "root": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=4) "base": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=5) "Node1": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=5) "Node2": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        }
+    }
+})
+
+#### Node:
+(string) ""
+(*serial.Action)(0xc4200b4370)({
+    IgnorePrimitives: (bool) false,
+    Path: (serial.Stack) {
+        base: ([]interface {}) (len=3 cap=3) {
+            (string) (len=6) "String",
+            (string) (len=4) "base",
+            (string) (len=4) "root"
+        }
+    },
+    Name: (string) (len=6) "String",
+    Index: (int) 0,
+    IsPointer: (bool) false,
+    ProcessField: (func(*serial.Action, interface {}) interface {}) 0x1260030,
+    Processed: (map[string]serial.Parameters) (len=4) {
+        (string) (len=4) "root": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=4) "base": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=5) "Node1": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=5) "Node2": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        }
+    }
+})
+
+#### Node:
+(serial.RootStruct2) {
+    RootName: (string) (len=10) "The Root 2",
+    Count: (int) 2000,
+    Node1: (*serial.NodeStruct1)(0x149f540)({
+        NodeName: (string) (len=10) "The Node 1",
+        Size: (int) 1000,
+        Interface: (interface {}) <nil>,
+        Slice: ([]int) <nil>,
+        Map: (map[string]string) <nil>,
+        Array: ([]uint8) <nil>,
+        Boolean: (bool) false,
+        Integer: (int) 0,
+        Int8: (int8) 0,
+        Int16: (int16) 0,
+        Int32: (int32) 0,
+        Int64: (int64) 0,
+        UnsignedInt: (uint) 0,
+        Uint8: (uint8) 0,
+        Uint16: (uint16) 0,
+        Uint32: (uint32) 0,
+        Uint64: (uint64) 0,
+        Float32: (float32) 0,
+        Float64: (float64) 0,
+        String: (string) ""
+    }),
+    Node2: (serial.NodeStruct2) {
+        NodeName: (string) (len=11) "The Child 2",
+        Size: (int) 3000,
+        Size2: (int) -1,
+        Interface: (interface {}) <nil>,
+        Slice: ([]int) <nil>,
+        Map: (map[string]string) <nil>,
+        Array: ([]uint8) <nil>,
+        Boolean: (bool) false,
+        Integer: (int) 0,
+        Int8: (int8) 0,
+        Int16: (int16) 0,
+        Int32: (int32) 0,
+        Int64: (int64) 0,
+        UnsignedInt: (uint) 0,
+        Uint8: (uint8) 0,
+        Uint16: (uint16) 0,
+        Uint32: (uint32) 0,
+        Uint64: (uint64) 0,
+        Float32: (float32) 0,
+        Float64: (float64) 0,
+        String: (string) ""
+    },
+    Interface: (interface {}) <nil>,
+    Slice: ([]int) <nil>,
+    Map: (map[string]string) <nil>,
+    Array: ([]uint8) <nil>,
+    Boolean: (bool) false,
+    Integer: (int) 0,
+    Int8: (int8) 0,
+    Int16: (int16) 0,
+    Int32: (int32) 0,
+    Int64: (int64) 0,
+    UnsignedInt: (uint) 0,
+    Uint8: (uint8) 0,
+    Uint16: (uint16) 0,
+    Uint32: (uint32) 0,
+    Uint64: (uint64) 0,
+    Float32: (float32) 0,
+    Float64: (float64) 0,
+    String: (string) ""
+}
+(*serial.Action)(0xc4200b4370)({
+    IgnorePrimitives: (bool) false,
+    Path: (serial.Stack) {
+        base: ([]interface {}) (len=2 cap=2) {
+            (string) (len=4) "base",
+            (string) (len=4) "root"
+        }
+    },
+    Name: (string) (len=4) "base",
+    Index: (int) 0,
+    IsPointer: (bool) true,
+    ProcessField: (func(*serial.Action, interface {}) interface {}) 0x1260030,
+    Processed: (map[string]serial.Parameters) (len=4) {
+        (string) (len=4) "root": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=4) "base": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=5) "Node1": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        },
+        (string) (len=5) "Node2": (serial.Parameters) {
+            Children: (map[string]interface {}) {
+            }
+        }
+    }
+})
+
+--- PASS: TestPrint (0.10s)
+=== RUN   TestClone
+D[10-10|22:13:47.130] Trying to set Interface                      child="{NodeName:The Child 2 Size:3000 Size2:-1 Interface:<nil> Slice:[] Map:map[] Array:[] Boolean:false Integer:0 Int8:0 Int16:0 Int32:0 Int64:0 UnsignedInt:0 Uint8:0 Uint16:0 Uint32:0 Uint64:0 Float32:0 Float64:0 String:}" type=serial.NodeStruct2 value="<serial.NodeStruct2 Value>"
+D[10-10|22:13:47.130] Trying to set Interface                      child="&{NodeName:The Node 1 Size:1000 Interface:<nil> Slice:[] Map:map[] Array:[] Boolean:false Integer:0 Int8:0 Int16:0 Int32:0 Int64:0 UnsignedInt:0 Uint8:0 Uint16:0 Uint32:0 Uint64:0 Float32:0 Float64:0 String:}" type=*serial.NodeStruct1 value="<*serial.NodeStruct1 Value>"
+--- PASS: TestClone (0.00s)
+=== RUN   TestExtend
+D[10-10|22:13:47.130] Extended is                                  opp2="{Type:*serial.RootStruct2 Fields:map[UnsignedInt:0 Uint8:0 RootName:The Root 2 Count:2000 Node2:{Type:serial.NodeStruct2 Fields:map[Array:[] Uint8:0 Uint32:0 Float32:0 Interface:<nil> Map:map[] Int64:0 Uint64:0 Size2:-1 Int32:0 Int8:0 Int16:0 UnsignedInt:0 Uint16:0 Slice:[] Integer:0 Boolean:false Float64:0 String: NodeName:The Child 2 Size:3000]} Slice:[] Int64:0 Map:map[] Integer:0 Uint32:0 String: Int16:0 Int32:0 Uint16:0 Uint64:0 Float64:0 Float32:0 Node1:{Type:*serial.NodeStruct1 Fields:map[Uint8:0 Uint16:0 Uint64:0 Float64:0 UnsignedInt:0 NodeName:The Node 1 Interface:<nil> Array:[] Int8:0 Int64:0 Float32:0 String: Size:1000 Map:map[] Integer:0 Int16:0 Slice:[] Boolean:false Int32:0 Uint32:0]} Interface:<nil> Array:[] Boolean:false Int8:0]}" opp="&{RootName:The Root 2 Count:2000 Node1:0x149f540 Node2:{NodeName:The Child 2 Size:3000 Size2:-1 Interface:<nil> Slice:[] Map:map[] Array:[] Boolean:false Integer:0 Int8:0 Int16:0 Int32:0 Int64:0 UnsignedInt:0 Uint8:0 Uint16:0 Uint32:0 Uint64:0 Float32:0 Float64:0 String:} Interface:<nil> Slice:[] Map:map[] Array:[] Boolean:false Integer:0 Int8:0 Int16:0 Int32:0 Int64:0 UnsignedInt:0 Uint8:0 Uint16:0 Uint32:0 Uint64:0 Float32:0 Float64:0 String:}"
+--- PASS: TestExtend (0.00s)
+=== RUN   TestSerialize
+buffer:
+(string) (len=909) "{\"Type\":\"*serial.RootStruct2\",\"Fields\":{\"Array\":null,\"Boolean\":false,\"Count\":2000,\"Float32\":0,\"Float64\":0,\"Int16\":0,\"Int32\":0,\"Int64\":0,\"Int8\":0,\"Integer\":0,\"Interface\":null,\"Map\":null,\"Node1\":{\"Type\":\"*serial.NodeStruct1\",\"Fields\":{\"Array\":null,\"Boolean\":false,\"Float32\":0,\"Float64\":0,\"Int16\":0,\"Int32\":0,\"Int64\":0,\"Int8\":0,\"Integer\":0,\"Interface\":null,\"Map\":null,\"NodeName\":\"The Node 1\",\"Size\":1000,\"Slice\":null,\"String\":\"\",\"Uint16\":0,\"Uint32\":0,\"Uint64\":0,\"Uint8\":0,\"UnsignedInt\":0}},\"Node2\":{\"Type\":\"serial.NodeStruct2\",\"Fields\":{\"Array\":null,\"Boolean\":false,\"Float32\":0,\"Float64\":0,\"Int16\":0,\"Int32\":0,\"Int64\":0,\"Int8\":0,\"Integer\":0,\"Interface\":null,\"Map\":null,\"NodeName\":\"The Child 2\",\"Size\":3000,\"Size2\":-1,\"Slice\":null,\"String\":\"\",\"Uint16\":0,\"Uint32\":0,\"Uint64\":0,\"Uint8\":0,\"UnsignedInt\":0}},\"RootName\":\"The Root 2\",\"Slice\":null,\"String\":\"\",\"Uint16\":0,\"Uint32\":0,\"Uint64\":0,\"Uint8\":0,\"UnsignedInt\":0}}"
+(string) (len=3) "err"
+(interface {}) <nil>
+
+D[10-10|22:13:47.131] Serialized Worked, return is                 buffer="{\"Type\":\"*serial.RootStruct2\",\"Fields\":{\"Array\":null,\"Boolean\":false,\"Count\":2000,\"Float32\":0,\"Float64\":0,\"Int16\":0,\"Int32\":0,\"Int64\":0,\"Int8\":0,\"Integer\":0,\"Interface\":null,\"Map\":null,\"Node1\":{\"Type\":\"*serial.NodeStruct1\",\"Fields\":{\"Array\":null,\"Boolean\":false,\"Float32\":0,\"Float64\":0,\"Int16\":0,\"Int32\":0,\"Int64\":0,\"Int8\":0,\"Integer\":0,\"Interface\":null,\"Map\":null,\"NodeName\":\"The Node 1\",\"Size\":1000,\"Slice\":null,\"String\":\"\",\"Uint16\":0,\"Uint32\":0,\"Uint64\":0,\"Uint8\":0,\"UnsignedInt\":0}},\"Node2\":{\"Type\":\"serial.NodeStruct2\",\"Fields\":{\"Array\":null,\"Boolean\":false,\"Float32\":0,\"Float64\":0,\"Int16\":0,\"Int32\":0,\"Int64\":0,\"Int8\":0,\"Integer\":0,\"Interface\":null,\"Map\":null,\"NodeName\":\"The Child 2\",\"Size\":3000,\"Size2\":-1,\"Slice\":null,\"String\":\"\",\"Uint16\":0,\"Uint32\":0,\"Uint64\":0,\"Uint8\":0,\"UnsignedInt\":0}},\"RootName\":\"The Root 2\",\"Slice\":null,\"String\":\"\",\"Uint16\":0,\"Uint32\":0,\"Uint64\":0,\"Uint8\":0,\"UnsignedInt\":0}}"
+--- PASS: TestSerialize (0.00s)
+=== RUN   TestPolymorphism
+buffer:
+(string) (len=909) "{\"Type\":\"*serial.RootStruct2\",\"Fields\":{\"Array\":null,\"Boolean\":false,\"Count\":2000,\"Float32\":0,\"Float64\":0,\"Int16\":0,\"Int32\":0,\"Int64\":0,\"Int8\":0,\"Integer\":0,\"Interface\":null,\"Map\":null,\"Node1\":{\"Type\":\"*serial.NodeStruct1\",\"Fields\":{\"Array\":null,\"Boolean\":false,\"Float32\":0,\"Float64\":0,\"Int16\":0,\"Int32\":0,\"Int64\":0,\"Int8\":0,\"Integer\":0,\"Interface\":null,\"Map\":null,\"NodeName\":\"The Node 1\",\"Size\":1000,\"Slice\":null,\"String\":\"\",\"Uint16\":0,\"Uint32\":0,\"Uint64\":0,\"Uint8\":0,\"UnsignedInt\":0}},\"Node2\":{\"Type\":\"serial.NodeStruct2\",\"Fields\":{\"Array\":null,\"Boolean\":false,\"Float32\":0,\"Float64\":0,\"Int16\":0,\"Int32\":0,\"Int64\":0,\"Int8\":0,\"Integer\":0,\"Interface\":null,\"Map\":null,\"NodeName\":\"The Child 2\",\"Size\":3000,\"Size2\":-1,\"Slice\":null,\"String\":\"\",\"Uint16\":0,\"Uint32\":0,\"Uint64\":0,\"Uint8\":0,\"UnsignedInt\":0}},\"RootName\":\"The Root 2\",\"Slice\":null,\"String\":\"\",\"Uint16\":0,\"Uint32\":0,\"Uint64\":0,\"Uint8\":0,\"UnsignedInt\":0}}"
+(string) (len=3) "err"
+(interface {}) <nil>
+
+Deserialize the string:
+(string) (len=909) "{\"Type\":\"*serial.RootStruct2\",\"Fields\":{\"Array\":null,\"Boolean\":false,\"Count\":2000,\"Float32\":0,\"Float64\":0,\"Int16\":0,\"Int32\":0,\"Int64\":0,\"Int8\":0,\"Integer\":0,\"Interface\":null,\"Map\":null,\"Node1\":{\"Type\":\"*serial.NodeStruct1\",\"Fields\":{\"Array\":null,\"Boolean\":false,\"Float32\":0,\"Float64\":0,\"Int16\":0,\"Int32\":0,\"Int64\":0,\"Int8\":0,\"Integer\":0,\"Interface\":null,\"Map\":null,\"NodeName\":\"The Node 1\",\"Size\":1000,\"Slice\":null,\"String\":\"\",\"Uint16\":0,\"Uint32\":0,\"Uint64\":0,\"Uint8\":0,\"UnsignedInt\":0}},\"Node2\":{\"Type\":\"serial.NodeStruct2\",\"Fields\":{\"Array\":null,\"Boolean\":false,\"Float32\":0,\"Float64\":0,\"Int16\":0,\"Int32\":0,\"Int64\":0,\"Int8\":0,\"Integer\":0,\"Interface\":null,\"Map\":null,\"NodeName\":\"The Child 2\",\"Size\":3000,\"Size2\":-1,\"Slice\":null,\"String\":\"\",\"Uint16\":0,\"Uint32\":0,\"Uint64\":0,\"Uint8\":0,\"UnsignedInt\":0}},\"RootName\":\"The Root 2\",\"Slice\":null,\"String\":\"\",\"Uint16\":0,\"Uint32\":0,\"Uint64\":0,\"Uint8\":0,\"UnsignedInt\":0}}"
+
+D[10-10|22:13:47.131] Trying to set Interface                      child="&{NodeName:The Node 1 Size:1000 Interface:<nil> Slice:[] Map:map[] Array:[] Boolean:false Integer:0 Int8:0 Int16:0 Int32:0 Int64:0 UnsignedInt:0 Uint8:0 Uint16:0 Uint32:0 Uint64:0 Float32:0 Float64:0 String:}" type=*serial.NodeStruct1 value="<*serial.NodeStruct1 Value>"
+D[10-10|22:13:47.131] Trying to set Interface                      child="{NodeName:The Child 2 Size:3000 Size2:-1 Interface:<nil> Slice:[] Map:map[] Array:[] Boolean:false Integer:0 Int8:0 Int16:0 Int32:0 Int64:0 UnsignedInt:0 Uint8:0 Uint16:0 Uint32:0 Uint64:0 Float32:0 Float64:0 String:}" type=serial.NodeStruct2 value="<serial.NodeStruct2 Value>"
+final result:
+(*serial.RootStruct2)(0xc4201427e0)({
+    RootName: (string) (len=10) "The Root 2",
+    Count: (int) 2000,
+    Node1: (*serial.NodeStruct1)(0xc4200ecd80)({
+        NodeName: (string) (len=10) "The Node 1",
+        Size: (int) 1000,
+        Interface: (interface {}) <nil>,
+        Slice: ([]int) <nil>,
+        Map: (map[string]string) <nil>,
+        Array: ([]uint8) <nil>,
+        Boolean: (bool) false,
+        Integer: (int) 0,
+        Int8: (int8) 0,
+        Int16: (int16) 0,
+        Int32: (int32) 0,
+        Int64: (int64) 0,
+        UnsignedInt: (uint) 0,
+        Uint8: (uint8) 0,
+        Uint16: (uint16) 0,
+        Uint32: (uint32) 0,
+        Uint64: (uint64) 0,
+        Float32: (float32) 0,
+        Float64: (float64) 0,
+        String: (string) ""
+    }),
+    Node2: (serial.NodeStruct2) {
+        NodeName: (string) (len=11) "The Child 2",
+        Size: (int) 3000,
+        Size2: (int) -1,
+        Interface: (interface {}) <nil>,
+        Slice: ([]int) <nil>,
+        Map: (map[string]string) <nil>,
+        Array: ([]uint8) <nil>,
+        Boolean: (bool) false,
+        Integer: (int) 0,
+        Int8: (int8) 0,
+        Int16: (int16) 0,
+        Int32: (int32) 0,
+        Int64: (int64) 0,
+        UnsignedInt: (uint) 0,
+        Uint8: (uint8) 0,
+        Uint16: (uint16) 0,
+        Uint32: (uint32) 0,
+        Uint64: (uint64) 0,
+        Float32: (float32) 0,
+        Float64: (float64) 0,
+        String: (string) ""
+    },
+    Interface: (interface {}) <nil>,
+    Slice: ([]int) <nil>,
+    Map: (map[string]string) <nil>,
+    Array: ([]uint8) <nil>,
+    Boolean: (bool) false,
+    Integer: (int) 0,
+    Int8: (int8) 0,
+    Int16: (int16) 0,
+    Int32: (int32) 0,
+    Int64: (int64) 0,
+    UnsignedInt: (uint) 0,
+    Uint8: (uint8) 0,
+    Uint16: (uint16) 0,
+    Uint32: (uint32) 0,
+    Uint64: (uint64) 0,
+    Float32: (float32) 0,
+    Float64: (float64) 0,
+    String: (string) ""
+})
+
+original wrapper:
+(*map[string]interface {})(0xc4200b21e8)((len=2) {
+    (string) (len=4) "Type": (string) (len=19) "*serial.RootStruct2",
+    (string) (len=6) "Fields": (map[string]interface {}) (len=22) {
+        (string) (len=11) "UnsignedInt": (float64) 0,
+        (string) (len=5) "Array": (interface {}) <nil>,
+        (string) (len=5) "Int16": (float64) 0,
+        (string) (len=5) "Int64": (float64) 0,
+        (string) (len=4) "Int8": (float64) 0,
+        (string) (len=5) "Node2": (map[string]interface {}) (len=2) {
+            (string) (len=4) "Type": (string) (len=18) "serial.NodeStruct2",
+            (string) (len=6) "Fields": (map[string]interface {}) (len=21) {
+                (string) (len=5) "Int64": (float64) 0,
+                (string) (len=8) "NodeName": (string) (len=11) "The Child 2",
+                (string) (len=6) "Uint64": (float64) 0,
+                (string) (len=7) "Boolean": (bool) false,
+                (string) (len=7) "Float64": (float64) 0,
+                (string) (len=9) "Interface": (interface {}) <nil>,
+                (string) (len=3) "Map": (interface {}) <nil>,
+                (string) (len=5) "Size2": (float64) -1,
+                (string) (len=6) "Uint32": (float64) 0,
+                (string) (len=4) "Int8": (float64) 0,
+                (string) (len=7) "Integer": (float64) 0,
+                (string) (len=5) "Slice": (interface {}) <nil>,
+                (string) (len=5) "Uint8": (float64) 0,
+                (string) (len=11) "UnsignedInt": (float64) 0,
+                (string) (len=5) "Array": (interface {}) <nil>,
+                (string) (len=7) "Float32": (float64) 0,
+                (string) (len=5) "Int16": (float64) 0,
+                (string) (len=5) "Int32": (float64) 0,
+                (string) (len=4) "Size": (float64) 3000,
+                (string) (len=6) "String": (string) "",
+                (string) (len=6) "Uint16": (float64) 0
+            }
+        },
+        (string) (len=6) "Uint16": (float64) 0,
+        (string) (len=5) "Int32": (float64) 0,
+        (string) (len=7) "Integer": (float64) 0,
+        (string) (len=3) "Map": (interface {}) <nil>,
+        (string) (len=8) "RootName": (string) (len=10) "The Root 2",
+        (string) (len=5) "Slice": (interface {}) <nil>,
+        (string) (len=6) "String": (string) "",
+        (string) (len=5) "Uint8": (float64) 0,
+        (string) (len=5) "Count": (float64) 2000,
+        (string) (len=7) "Float32": (float64) 0,
+        (string) (len=7) "Float64": (float64) 0,
+        (string) (len=9) "Interface": (interface {}) <nil>,
+        (string) (len=5) "Node1": (map[string]interface {}) (len=2) {
+            (string) (len=4) "Type": (string) (len=19) "*serial.NodeStruct1",
+            (string) (len=6) "Fields": (map[string]interface {}) (len=20) {
+                (string) (len=4) "Int8": (float64) 0,
+                (string) (len=9) "Interface": (interface {}) <nil>,
+                (string) (len=8) "NodeName": (string) (len=10) "The Node 1",
+                (string) (len=6) "Uint16": (float64) 0,
+                (string) (len=5) "Int32": (float64) 0,
+                (string) (len=5) "Int64": (float64) 0,
+                (string) (len=5) "Uint8": (float64) 0,
+                (string) (len=11) "UnsignedInt": (float64) 0,
+                (string) (len=4) "Size": (float64) 1000,
+                (string) (len=5) "Slice": (interface {}) <nil>,
+                (string) (len=6) "String": (string) "",
+                (string) (len=6) "Uint32": (float64) 0,
+                (string) (len=5) "Array": (interface {}) <nil>,
+                (string) (len=7) "Float32": (float64) 0,
+                (string) (len=5) "Int16": (float64) 0,
+                (string) (len=7) "Integer": (float64) 0,
+                (string) (len=3) "Map": (interface {}) <nil>,
+                (string) (len=6) "Uint64": (float64) 0,
+                (string) (len=7) "Boolean": (bool) false,
+                (string) (len=7) "Float64": (float64) 0
+            }
+        },
+        (string) (len=7) "Boolean": (bool) false,
+        (string) (len=6) "Uint32": (float64) 0,
+        (string) (len=6) "Uint64": (float64) 0
+    }
+})
+
+--- PASS: TestPolymorphism (0.01s)
+=== RUN   TestInt
+I[10-10|22:13:47.142] Testing int                                  
+buffer:
+(string) (len=30) "{\"Type\":\"int\",\"Fields\":{\"\":5}}"
+(string) (len=3) "err"
+(interface {}) <nil>
+
+Deserialize the string:
+(string) (len=30) "{\"Type\":\"int\",\"Fields\":{\"\":5}}"
+
+structures:
+(map[string]reflect.Type) (len=4) {
+    (string) (len=18) "serial.RootStruct1": (*reflect.rtype)(0x12fd500)(serial.RootStruct1),
+    (string) (len=18) "serial.RootStruct2": (*reflect.rtype)(0x12fe640)(serial.RootStruct2),
+    (string) (len=18) "serial.NodeStruct1": (*reflect.rtype)(0x12fd2a0)(serial.NodeStruct1),
+    (string) (len=18) "serial.NodeStruct2": (*reflect.rtype)(0x12fdec0)(serial.NodeStruct2)
+}
+
+E[10-10|22:13:47.143] FATAL: Missing structure type                name=int
+--- FAIL: TestInt (0.00s)
+panic: Execution stopped due to Missing structure type [recovered]
+	panic: Execution stopped due to Missing structure type
+
+goroutine 26 [running]:
+testing.tRunner.func1(0xc420144780)
+	/usr/local/Cellar/go/1.10.1/libexec/src/testing/testing.go:742 +0x29d
+panic(0x1299940, 0xc4201c8cd0)
+	/usr/local/Cellar/go/1.10.1/libexec/src/runtime/panic.go:502 +0x229
+github.com/Oneledger/protocol/node/log.Fatal(0x130d6d7, 0x16, 0xc42012d3c0, 0x2, 0x2)
+	/Users/paulwhomer/OneLedger/go/src/github.com/Oneledger/protocol/node/log/base.go:82 +0x137
+github.com/Oneledger/protocol/node/serial.NewStruct(0xc4201cc760, 0x3, 0x13085d3, 0x4)
+	/Users/paulwhomer/OneLedger/go/src/github.com/Oneledger/protocol/node/serial/message.go:172 +0x1b4
+github.com/Oneledger/protocol/node/serial.ContractIt(0xc4200b4d70, 0x12af6e0, 0xc4201a9620, 0x12af6e0, 0xc4201a9650)
+	/Users/paulwhomer/OneLedger/go/src/github.com/Oneledger/protocol/node/serial/functions.go:182 +0x439
+github.com/Oneledger/protocol/node/serial.Iterate(0x12af6e0, 0xc4201a9620, 0xc4200b4d70, 0x16, 0x16)
+	/Users/paulwhomer/OneLedger/go/src/github.com/Oneledger/protocol/node/serial/iterate.go:204 +0x433
+github.com/Oneledger/protocol/node/serial.Contract(0x128dec0, 0xc4200b21f0, 0x40, 0x128dec0)
+	/Users/paulwhomer/OneLedger/go/src/github.com/Oneledger/protocol/node/serial/functions.go:141 +0xae
+github.com/Oneledger/protocol/node/serial.Deserialize(0xc4200c24f0, 0x1e, 0x40, 0x1298ec0, 0x14c2aa0, 0x2, 0x0, 0x0, 0xc4200a6980, 0xf)
+	/Users/paulwhomer/OneLedger/go/src/github.com/Oneledger/protocol/node/serial/message.go:100 +0x193
+github.com/Oneledger/protocol/node/serial.TestInt(0xc420144780)
+	/Users/paulwhomer/OneLedger/go/src/github.com/Oneledger/protocol/node/serial/message_test.go:289 +0x1e2
+testing.tRunner(0xc420144780, 0x131ca40)
+	/usr/local/Cellar/go/1.10.1/libexec/src/testing/testing.go:777 +0xd0
+created by testing.(*T).Run
+	/usr/local/Cellar/go/1.10.1/libexec/src/testing/testing.go:824 +0x2e0
+exit status 2
+FAIL	github.com/Oneledger/protocol/node/serial	0.134s

@@ -3,7 +3,7 @@
 
 	Tests to validate the way wire handles various struct conversions.
 */
-package comm
+package serial
 
 import (
 	"flag"
@@ -14,7 +14,6 @@ import (
 	"github.com/Oneledger/protocol/node/log"
 	"github.com/davecgh/go-spew/spew"
 	"github.com/stretchr/testify/assert"
-	wire "github.com/tendermint/go-wire"
 )
 
 func init() {
@@ -309,20 +308,9 @@ func (Basic) IsBasicType() {}
 
 const typeBasic = 0x88
 
-func WireRegister() {
-
-	// Tell wire how to find the underlying types for a given interface
-	var _ = wire.RegisterInterface(
-		struct{ BasicType }{},
-		wire.ConcreteType{Basic{}, typeBasic},
-	)
-}
-
 // Basic structural conversion
 func XTestStruct(t *testing.T) {
 	log.Info("Testing Struct")
-
-	WireRegister()
 
 	basic := &Basic{Pad: "xxxx", Number: 123456, Name: "A Name"}
 	log.Debug("The basic type", "basic", basic)
@@ -352,8 +340,6 @@ func XTestStruct(t *testing.T) {
 func XTestStruct2(t *testing.T) {
 	log.Info("Testing Struct2")
 
-	WireRegister()
-
 	basic := &Basic{Pad: "xxxx", Number: 123456, Name: "A Name"}
 	log.Debug("The basic type", "basic", basic)
 
@@ -379,8 +365,6 @@ func XTestStruct2(t *testing.T) {
 
 func XTestInterface(t *testing.T) {
 	log.Info("Testing Interface")
-
-	WireRegister()
 
 	var generic BasicType
 

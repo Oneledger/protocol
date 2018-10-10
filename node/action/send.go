@@ -74,7 +74,7 @@ func (transaction *Send) ProcessDeliver(app interface{}) err.Code {
 			Amount: entry.Amount,
 		}
 
-		buffer, err := comm.Serialize(balance)
+		buffer, err := comm.Serialize(balance, comm.CLIENT)
 		if err != nil {
 			log.Fatal("Serialize", "err", err)
 		}

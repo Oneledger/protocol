@@ -34,6 +34,10 @@ type Identity struct {
 	Nodes map[string]data.ChainNode
 }
 
+func init() {
+	comm.Register(Identity{})
+}
+
 // Initialize or reconnect to the database
 func NewIdentities(name string) *Identities {
 	data := data.NewDatastore(name, data.PERSISTENT)
@@ -45,7 +49,7 @@ func NewIdentities(name string) *Identities {
 
 func (ids *Identities) Add(identity *Identity) {
 
-	buffer, err := comm.Serialize(identity)
+	buffer, err := comm.Serialize(identity, comm.PERSISTENT)
 	if err != nil {
 		log.Error("Serialize Failed", "err", err)
 		return
@@ -80,7 +84,7 @@ func (ids *Identities) FindName(name string) (*Identity, err.Code) {
 	value := ids.data.Load(id.Key())
 	if value != nil {
 		identity := &Identity{}
-		base, status := comm.Deserialize(value, identity)
+		base, status := comm.Deserialize(value, identity, comm.PERSISTENT)
 		if status != nil {
 			log.Fatal("Failed to deserialize Identity: ", status)
 		}
@@ -97,7 +101,7 @@ func (ids *Identities) FindAll() []*Identity {
 	results := make([]*Identity, size, size)
 	for i := 0; i < size; i++ {
 		identity := &Identity{}
-		base, err := comm.Deserialize(ids.data.Load(keys[i]), identity)
+		base, err := comm.Deserialize(ids.data.Load(keys[i]), identity, comm.PERSISTENT)
 		if err != nil {
 			log.Fatal("Failed to deserialize Identities: ", err)
 		}

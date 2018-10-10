@@ -22,6 +22,7 @@ const (
 	EXTRACTSECRET
 	AUDITCONTRACT
 	WAIT_FOR_CHAIN
+	FINISH
 )
 
 
@@ -35,37 +36,37 @@ type Command struct {
 	Order    int
 }
 
-func (command Command) Execute() (bool, map[Parameter]FunctionValue) {
+func (command Command) Execute(app interface{}) (bool, map[Parameter]FunctionValue) {
 	switch command.Function {
 	case NOOP:
-		return Noop(command.Chain, command.Data)
+		return Noop(app, command.Chain, command.Data)
 
     case PREPARE_TRANSACTION:
-        return PrepareTransaction(command.Chain, command.Data)
+        return PrepareTransaction(app, command.Chain, command.Data)
 
 	case SUBMIT_TRANSACTION:
-		return SubmitTransaction(command.Chain, command.Data)
+		return SubmitTransaction(app, command.Chain, command.Data)
 
 	case INITIATE:
-		return Initiate(command.Chain, command.Data)
+		return Initiate(app, command.Chain, command.Data)
 
 	case PARTICIPATE:
-		return Participate(command.Chain, command.Data)
+		return Participate(app, command.Chain, command.Data)
 
 	case REDEEM:
-		return Redeem(command.Chain, command.Data)
+		return Redeem(app, command.Chain, command.Data)
 
 	case REFUND:
-		return Refund(command.Chain, command.Data)
+		return Refund(app, command.Chain, command.Data)
 
 	case EXTRACTSECRET:
-		return ExtractSecret(command.Chain, command.Data)
+		return ExtractSecret(app, command.Chain, command.Data)
 
 	case AUDITCONTRACT:
-		return AuditContract(command.Chain, command.Data)
+		return AuditContract(app, command.Chain, command.Data)
 
 	case WAIT_FOR_CHAIN:
-		return WaitForChain(command.Chain, command.Data)
+		return WaitForChain(app, command.Chain, command.Data)
 	}
 
 	return true, nil

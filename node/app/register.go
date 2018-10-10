@@ -15,7 +15,7 @@ import (
 
 // Register Identities and Accounts from the user.
 func RegisterLocally(app *Application, name string, scope string, chain data.ChainType,
-	publicKey id.PublicKey, privateKey id.PrivateKey) bool {
+	publicKey id.ED25519PublicKey, privateKey id.ED25519PrivateKey) bool {
 
 	status := false
 
@@ -26,8 +26,9 @@ func RegisterLocally(app *Application, name string, scope string, chain data.Cha
 	// Accounts are relative to a chain
 	// TODO: Scope is tied to chain for demo purposes?
 	accountName := name + "-" + scope
-
 	account, _ := app.Accounts.FindNameOnChain(accountName, chain)
+
+	//var account id.Account = nil
 	if account == nil {
 		account = id.NewAccount(chain, accountName, publicKey, privateKey)
 		app.Accounts.Add(account)
@@ -40,10 +41,11 @@ func RegisterLocally(app *Application, name string, scope string, chain data.Cha
 			log.Debug("Updating NodeAccount", "name", accountName)
 
 			global.Current.NodeAccountName = accountName
-			buffer, err := comm.Serialize(accountName)
+			buffer, err := comm.Serialize(accountName, comm.NETWORK)
 			if err != nil {
-				log.Warn("Failed to Serialize accountName")
+				log.Error("Failed to Serialize accountName")
 			}
+			log.Debug("Admin store", "data.DatabaseKey", data.DatabaseKey("NodeAccountName"), "buffer", buffer)
 			app.Admin.Store(data.DatabaseKey("NodeAccountName"), buffer)
 			app.Admin.Commit()
 		}
@@ -57,9 +59,9 @@ func RegisterLocally(app *Application, name string, scope string, chain data.Cha
 	// Fill in the balance
 	if chain == data.ONELEDGER && !app.Utxo.Exists(account.AccountKey()) {
 		balance := data.NewBalance(0, "OLT")
-		buffer, err := comm.Serialize(balance)
+		buffer, err := comm.Serialize(balance, comm.NETWORK)
 		if err != nil {
-			log.Warn("Failed to Serialize balance")
+			log.Error("Failed to Serialize balance")
 		}
 
 		app.Utxo.Delivered.Set(account.AccountKey(), buffer)
@@ -88,6 +90,5 @@ func RegisterLocally(app *Application, name string, scope string, chain data.Cha
 		app.Identities.Add(identity)
 		//app.Identities.Commit()
 	}
-
 	return status
 }
