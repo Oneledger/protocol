@@ -40,6 +40,7 @@ const (
 	CHECK_EXTERNAL_CHAIN
 	STOREMESSAGE
 	STOREKEY
+	STAGE
 )
 
 func GetInt(value FunctionValue) int {

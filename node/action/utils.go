@@ -5,7 +5,7 @@ import (
     "github.com/Oneledger/protocol/node/global"
     "github.com/Oneledger/protocol/node/id"
     "github.com/Oneledger/protocol/node/log"
-    "github.com/tendermint/tendermint/wire"
+    wire "github.com/tendermint/go-wire"
     "time"
 
     "github.com/btcsuite/btcd/btcec"

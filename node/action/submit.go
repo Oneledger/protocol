@@ -9,7 +9,7 @@ import (
 
 	"github.com/Oneledger/protocol/node/comm"
 	"github.com/Oneledger/protocol/node/log"
-	wire "github.com/tendermint/go-wire"
+	wire "github.com/tendermint/go-amino"
 )
 
 // Execute a transaction after a specific delay.
