@@ -51,7 +51,7 @@ func Register(cmd *cobra.Command, args []string) {
 
 	buffer, err := comm.Serialize(cli)
 	if err != nil {
-		log.Error("Register Failed", "status", err)
+		log.Error("Register Failed", "err", err)
 		return
 	}
 	comm.SetOption("Register", string(buffer))
@@ -64,8 +64,8 @@ func ConvertPublicKey(keystring string) id.PublicKey {
 
 // TODO: This should be moved out of cmd and into it's own package
 func CreateIdentity() {
-	chainType, status := id.FindIdentityType(arguments.chain)
-	if status != 0 {
+	chainType, err := id.FindIdentityType(arguments.chain)
+	if err != 0 {
 		Console.Error("Invalid Identity Type")
 		return
 	}

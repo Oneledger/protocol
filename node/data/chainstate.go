@@ -117,7 +117,7 @@ func (state *ChainState) Commit() ([]byte, int64) {
 
 	hash, version, err := state.Delivered.SaveVersion()
 	if err != nil {
-		log.Fatal("Saving", "status", err)
+		log.Fatal("Saving", "err", err)
 	}
 
 	// Force the database to completely close, then repoen it.
@@ -164,7 +164,7 @@ func initializeDatabase(name string, newType DatastoreType) (*iavl.MutableTree, 
 	// TODO: Assuming persistence for right now
 	storage, err := db.NewGoLevelDB("OneLedger-"+name, global.Current.RootDir)
 	if err != nil {
-		log.Error("Database create failed", "status", err, "count", count)
+		log.Error("Database create failed", "err", err, "count", count)
 		panic("Can't create a database")
 	}
 

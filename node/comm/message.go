@@ -25,9 +25,9 @@ func Serialize(input interface{}) (msg []byte, err error) {
 
 		buffer := new(bytes.Buffer)
 
-		wire.WriteBinary(input, buffer, &count, &status)
+		wire.WriteBinary(input, buffer, &count, &err)
 
-		return buffer.Bytes(), status
+		return buffer.Bytes(), err
 	*/
 }
 
@@ -46,12 +46,12 @@ func Deserialize(input []byte, output interface{}) (msg interface{}, err error) 
 
 		valueOf := reflect.ValueOf(output)
 		if valueOf.Kind() == reflect.Ptr {
-			msg = wire.ReadBinaryPtr(output, buffer, len(input), &count, &status)
-			//msg = wire.ReadBinaryPtr(output, buffer, 0, &count, &status)
+			msg = wire.ReadBinaryPtr(output, buffer, len(input), &count, &err)
+			//msg = wire.ReadBinaryPtr(output, buffer, 0, &count, &err)
 		} else {
-			msg = wire.ReadBinary(output, buffer, len(input), &count, &status)
-			//msg = wire.ReadBinary(output, buffer, 0, &count, &status)
+			msg = wire.ReadBinary(output, buffer, len(input), &count, &err)
+			//msg = wire.ReadBinary(output, buffer, 0, &count, &err)
 		}
-		return msg, status
+		return msg, err
 	*/
 }

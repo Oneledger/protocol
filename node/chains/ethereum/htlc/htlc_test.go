@@ -23,7 +23,7 @@ func TestHtlc(t *testing.T) {
 	auth.GasLimit = 2000000
 	address, tx, htlcontract, err := DeployHtlc(auth, cli, auth.From)
 	if err != nil {
-		log.Error("Failed to deploy new contract: ", "status", err)
+		log.Error("Failed to deploy new contract: ", "err", err)
 	}
 	log.Debug("Contract pending deploy: ", "address", address)
 	log.Debug("Transaction waiting to be mined: ", "transaction", tx.Hash())
@@ -34,7 +34,7 @@ func TestHtlc(t *testing.T) {
 
 	balance, err := htlcontract.Balance(opt)
 	if err != nil {
-		log.Error("Failed to retrieve balance: ", "status", err)
+		log.Error("Failed to retrieve balance: ", "err", err)
 	}
 	log.Debug("balance:", "balance", balance)
 	value := new(big.Int)
@@ -51,12 +51,12 @@ func TestHtlc(t *testing.T) {
 func getClientAndAuth() (*ethclient.Client, *bind.TransactOpts, *bind.CallOpts){
 	cli, err := ethclient.Dial("/home/lan/go/test/ethereum/B/geth.ipc")
 	if err != nil{
-		log.Error("failed to get geth ipc ", "status", err)
+		log.Error("failed to get geth ipc ", "err", err)
 	}
 	key := `{"address":"aafa2d8980a730b02195f9c8dfeafeb3e69a69ca","crypto":{"cipher":"aes-128-ctr","ciphertext":"cfc36b7deb503116482371b7d2596aa936758b8247279efce461cf0344ae4b31","cipherparams":{"iv":"fc200b937116258856dd0e5a085e011d"},"kdf":"scrypt","kdfparams":{"dklen":32,"n":262144,"p":1,"r":8,"salt":"7354c4523dfc70372c8c34616c15dc21448ac40617ffc3a7b3a9af7ee32c37e6"},"mac":"1b322fa3c5789cede87144783f2bd8c4588e5094e68f7880640ca9a5458b8aab"},"id":"87363a39-0171-4640-ba12-b5aacad7aed2","version":3}`
 	auth, err := bind.NewTransactor(strings.NewReader(key), "2345")
 	if err != nil {
-		log.Error("Failed to create authorized transactor: ", "status", err)
+		log.Error("Failed to create authorized transactor: ", "err", err)
 	}
 	opt := &bind.CallOpts{Pending: true}
 	return cli,auth,opt
@@ -87,20 +87,20 @@ func testHtlc_Funds(auth *bind.TransactOpts, opt *bind.CallOpts, contract *Htlc,
 	time.Sleep(10 * time.Second)
 	balance, err := contract.Balance(opt)
 	if err != nil {
-		log.Error("Failed to retrieve balance: ", "status",  err)
+		log.Error("Failed to retrieve balance: ", "err",  err)
 	}
 	log.Debug("balance:", "balance", balance)
 	auth.Value = big.NewInt(0)
 
 	addr, err := contract.Receiver(&bind.CallOpts{Pending: true})
 	if err != nil {
-		log.Error("failed to get receiver", "status", err)
+		log.Error("failed to get receiver", "err", err)
 	}
 	log.Debug("receiver in contract: ", "address", addr)
 
 	sh, err := contract.ScrHash(&bind.CallOpts{Pending: true})
 	if err != nil {
-		log.Error("can't get the secret hash", "status", err)
+		log.Error("can't get the secret hash", "err", err)
 	}
 	log.Debug("scrHash in contract", "scrhash",sh)
 }
@@ -121,13 +121,13 @@ func testHtlc_Redeem(auth *bind.TransactOpts, opt *bind.CallOpts, contract *Htlc
 
     balance, err := contract.Balance(opt)
     if err != nil {
-        log.Error("Failed to retrieve balance: ", "status",  err)
+        log.Error("Failed to retrieve balance: ", "err",  err)
     }
     log.Debug("balance before redeem", "balance", balance)
 
 	addr, err := contract.Receiver(&bind.CallOpts{Pending: true})
 	if err != nil {
-		log.Error("failed to get receiver", "status", err)
+		log.Error("failed to get receiver", "err", err)
 	}
 	log.Debug("receiver in contract: ", "address", addr)
 
@@ -137,14 +137,14 @@ func testHtlc_Redeem(auth *bind.TransactOpts, opt *bind.CallOpts, contract *Htlc
 	tx, err := contract.Redeem(auth, scr)
 
 	if err != nil {
-		log.Error("redeem failed", "status", err)
+		log.Error("redeem failed", "err", err)
 	}
 	time.Sleep(20 * time.Second)
 	log.Debug("redeem transaction to be mined", "transaction", tx.Hash(), "value", tx.Value())
 
 	balance, err = contract.Balance(opt)
 	if err != nil {
-		log.Error("Failed to retrieve balance: ", "status",  err)
+		log.Error("Failed to retrieve balance: ", "err",  err)
 	}
 	log.Debug("balance after redeem", "balance", balance)
 
@@ -157,23 +157,23 @@ func testHtlc_ExtractMsg(opt *bind.CallOpts, address common.Address) {
 
 	cli, err := ethclient.Dial("/home/lan/go/test/ethereum/A/geth.ipc")
 	if err != nil {
-		log.Error("failed to get geth ipc ", "status", err)
+		log.Error("failed to get geth ipc ", "err", err)
 	}
 
 	contract, err := NewHtlc(address, cli)
 	if err != nil {
-		log.Error("Failed to local the htlc contract at address", "status", err, "address", address)
+		log.Error("Failed to local the htlc contract at address", "err", err, "address", address)
 	}
 
 	balance, err := contract.Balance(opt)
 	if err != nil {
-		log.Error( "Failed to get balance from contract at address", "status", err, "address", address)
+		log.Error( "Failed to get balance from contract at address", "err", err, "address", address)
 	}
 	log.Debug("balance of contract","balance", balance)
 
 	scr, err := contract.ExtractMsg(opt)
 	if err != nil {
-		log.Error("Failed to get the scr", "status", err)
+		log.Error("Failed to get the scr", "err", err)
 	}
 	log.Debug("secret is ", "scr", scr)
 
@@ -207,7 +207,7 @@ func testHtlc_Audit(auth *bind.TransactOpts, opt *bind.CallOpts, contract *Htlc,
 	scrHash, _ := getScrPair()
 	r, err :=contract.Audit(opt, receiver, v, scrHash )
 	if err != nil {
-		log.Error("Failed to audit the contract", "status", err)
+		log.Error("Failed to audit the contract", "err", err)
 	}
 	log.Debug("Correct audit result", "r", r)
 
@@ -217,7 +217,7 @@ func testHtlc_Audit(auth *bind.TransactOpts, opt *bind.CallOpts, contract *Htlc,
 	if err != nil && r == false {
 		log.Debug("Failed to audit the contract as expected because used false secret", "r", r)
 	} else {
-		log.Error("something wrong with audit", "status", err, "r", r)
+		log.Error("something wrong with audit", "err", err, "r", r)
 	}
 
 }

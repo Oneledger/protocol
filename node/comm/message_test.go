@@ -21,7 +21,7 @@ func TestInt(t *testing.T) {
 	buffer, err := Serialize(variable)
 
 	if err != nil {
-		log.Debug("Serialized failed", "status", err)
+		log.Debug("Serialized failed", "err", err)
 	} else {
 		log.Debug("buffer", "buffer", buffer)
 	}
@@ -32,7 +32,7 @@ func TestInt(t *testing.T) {
 	result, err := Deserialize(buffer, integer)
 
 	if err != nil {
-		log.Debug("Deserialized failed", "status", err)
+		log.Debug("Deserialized failed", "err", err)
 	} else {
 		log.Debug("result", "result", result)
 	}

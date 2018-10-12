@@ -65,7 +65,7 @@ func (tty *Tty) Read() string {
 	if inputIsTty(input) {
 		size, err = os.Stdin.Read(buffer)
 		if err != nil {
-			log.Error("Input Error", "status", err)
+			log.Error("Input Error", "err", err)
 			// Go down hard, input is broken.
 			panic(err)
 		}

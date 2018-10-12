@@ -134,7 +134,7 @@ func (acc *Accounts) FindAll() []Account {
 
 		base, err := comm.Deserialize(acc.data.Load(keys[i]), account)
 		if err != nil {
-			log.Fatal("Failed to Deserialize Account at index ", "i", i, "status", err)
+			log.Fatal("Failed to Deserialize Account at index ", "i", i, "err", err)
 		}
 		results[i] = base.(Account)
 		log.Debug("Deserialized account", i, results[i])
