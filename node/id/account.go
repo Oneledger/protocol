@@ -203,6 +203,10 @@ type AccountExport struct {
 	NodeName string
 }
 
+func init() {
+	serial.Register(AccountExport{})
+}
+
 func getAccountType(chain data.ChainType) string {
 	switch chain {
 	case data.ONELEDGER:

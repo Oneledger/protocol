@@ -29,6 +29,15 @@ type Parameters struct {
 	Children map[string]interface{}
 }
 
+// GetType returns the underlying value, even if it is a pointer
+func GetType(base interface{}) reflect.Type {
+	element := reflect.TypeOf(base)
+	if element.Kind() == reflect.Ptr {
+		return element.Elem()
+	}
+	return element
+}
+
 // GetValue returns the underlying value, even if it is a pointer
 func GetValue(base interface{}) reflect.Value {
 	element := reflect.ValueOf(base)
@@ -186,6 +195,8 @@ func Iterate(input interface{}, action *Action) interface{} {
 
 	// Walk the children first -- post-order traversal
 	if IsContainer(input) {
+
+		// Save the original values
 		name := action.Path.StringPeekN(0)
 		pointer := action.IsPointer
 

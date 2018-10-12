@@ -10,6 +10,7 @@ import (
 	"math/big"
 
 	"github.com/Oneledger/protocol/node/log"
+	"github.com/Oneledger/protocol/node/serial"
 )
 
 // Coin is the basic amount, specified in integers, at the smallest increment (i.e. a satoshi, not a bitcoin)
@@ -17,6 +18,11 @@ type Coin struct {
 	Currency Currency `json:"currency"`
 	Amount   *big.Int `json:"amount"` // TODO: Switch to math/big
 	//Amount   int64  `json:"amount"` // TODO: Switch to math/big
+}
+
+func init() {
+	serial.Register(Coin{})
+	serial.Register(Currency{})
 }
 
 type Coins []Coin

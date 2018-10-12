@@ -58,11 +58,15 @@ func (app Application) Initialize() {
 	param := app.Admin.Load(data.DatabaseKey("NodeAccountName"))
 	if param != nil {
 		var name string
+
 		buffer, err := serial.Deserialize(param, &name, serial.NETWORK)
 		if err != nil {
 			log.Error("Failed to deserialize persistent data")
 		}
-		global.Current.NodeAccountName = *(buffer.(*string))
+
+		if buffer != nil {
+			global.Current.NodeAccountName = *(buffer.(*string))
+		}
 	}
 }
 

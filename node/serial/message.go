@@ -13,7 +13,6 @@ package serial
 import (
 	"encoding/json"
 	"reflect"
-	"strings"
 
 	"github.com/Oneledger/protocol/node/log"
 )
@@ -37,13 +36,6 @@ func Serialize(input interface{}, medium Format) (buffer []byte, err error) {
 	if medium == JSON {
 		copy = input
 
-	} else if IsPrimitive(input) {
-		// Manually wrap the primitive
-		typeof := reflect.TypeOf(input).Name()
-		dict := make(map[string]interface{})
-		dict[""] = input
-		copy = SerialWrapper{Type: typeof, Fields: dict}
-
 	} else {
 		// Expand all structs with wrappers
 		copy = Extend(input)
@@ -64,7 +56,8 @@ func Serialize(input interface{}, medium Format) (buffer []byte, err error) {
 		buffer, err = json.Marshal(copy)
 	}
 
-	log.Dump("buffer", string(buffer), "err", err)
+	log.Dump("Serialized format", string(buffer))
+
 	return buffer, err
 }
 
@@ -73,7 +66,8 @@ func Deserialize(input []byte, output interface{}, medium Format) (msg interface
 
 	log.Dump("Deserialize the string", string(input))
 
-	wrapper := &(map[string]interface{}{})
+	//wrapper := &(map[string]interface{}{})
+	wrapper := &SerialWrapper{}
 
 	switch medium {
 
@@ -88,6 +82,8 @@ func Deserialize(input []byte, output interface{}, medium Format) (msg interface
 
 	case JSON:
 		err = json.Unmarshal(input, output)
+
+		// Exit before trying to contract
 		if err == nil {
 			return output, err
 		}
@@ -108,6 +104,7 @@ func Deserialize(input []byte, output interface{}, medium Format) (msg interface
 type SerialWrapper struct {
 	Type   string
 	Fields map[string]interface{}
+	Size   int
 }
 
 var prototype = SerialWrapper{}
@@ -136,7 +133,7 @@ func IsSerialWrapperMap(input interface{}) bool {
 		return false
 	}
 
-	if len(smap) != 2 {
+	if len(smap) != 3 {
 		return false
 	}
 
@@ -147,21 +144,15 @@ func IsSerialWrapperMap(input interface{}) bool {
 	if _, ok := smap["Fields"]; !ok {
 		return false
 	}
+
+	if _, ok := smap["Size"]; !ok {
+		return false
+	}
+
 	return true
 }
 
-var structures map[string]reflect.Type
-
-// Register a structure by its name
-func Register(base interface{}) {
-
-	// Allocate on the first call
-	if structures == nil {
-		structures = make(map[string]reflect.Type)
-	}
-	structures[reflect.TypeOf(base).String()] = reflect.TypeOf(base)
-}
-
+/*
 // Dynamically create a structure from its name
 func NewStruct(name string) interface{} {
 	name = strings.TrimPrefix(name, "*")
@@ -176,3 +167,4 @@ func NewStruct(name string) interface{} {
 	base := reflect.New(struct_type)
 	return base.Interface()
 }
+*/

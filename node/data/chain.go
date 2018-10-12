@@ -24,13 +24,13 @@ type Chain struct {
 type ChainNode struct {
 	ChainType ChainType
 	Location  string
+
 	// TODO: Causing cycle...
 	//Owner     id.Identity
 }
 
 func init() {
-	var chainType ChainType
-	serial.Register(chainType)
+	serial.Register(ChainType(0))
 	serial.Register(Chain{})
 	serial.Register(ChainNode{})
 }

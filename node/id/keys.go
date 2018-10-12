@@ -29,8 +29,7 @@ const (
 type AccountKey []byte // OneLedger address, like Tendermint the hash of the associated PubKey
 
 func init() {
-	var key AccountKey
-	serial.Register(key)
+	serial.Register(AccountKey(""))
 }
 
 func (accountKey AccountKey) String() string {
@@ -57,6 +56,13 @@ type ED25519PrivateKey = ed25519.PrivKeyEd25519
 
 type SECP256K1PublicKey = secp256k1.PubKeySecp256k1
 type SECP256K1PrivateKey = secp256k1.PrivKeySecp256k1
+
+func init() {
+	serial.Register(NilPublicKey())
+	serial.Register(NilPrivateKey())
+	serial.Register(SECP256K1PublicKey{})
+	serial.Register(SECP256K1PrivateKey{})
+}
 
 func NilPublicKey() ED25519PublicKey {
 	return ED25519PublicKey{}

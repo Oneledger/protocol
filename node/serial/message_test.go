@@ -12,14 +12,24 @@ import (
 
 	"github.com/Oneledger/protocol/node/global"
 	"github.com/Oneledger/protocol/node/log"
-	"github.com/davecgh/go-spew/spew"
 	"github.com/stretchr/testify/assert"
 )
 
-func init() {
-	spew.Config = spew.ConfigState{
-		Indent: "    ",
+// Control the execution
+func TestMain(m *testing.M) {
+	flag.Parse()
+
+	// Set the debug flags according to whether the -v flag is set in go test
+	if testing.Verbose() {
+		global.Current.Debug = true
+	} else {
+		global.Current.Debug = false
 	}
+
+	// Run it all.
+	code := m.Run()
+
+	os.Exit(code)
 }
 
 func TestLog(t *testing.T) {
@@ -54,26 +64,9 @@ type RootStruct1 struct {
 
 	Node      OpaqueNode
 	Interface interface{}
-	Slice     []int
-	Map       map[string]string
-	Array     []byte
 
-	Boolean     bool
-	Integer     int
-	Int8        int8
-	Int16       int16
-	Int32       int32
-	Int64       int64
-	UnsignedInt uint
-	Uint8       uint8
-	Uint16      uint16
-	Uint32      uint32
-	Uint64      uint64
-	Float32     float32
-	Float64     float64
-	//Complex64   complex64
-	//Complex128  complex128
-	String string
+	Primitives Primitives
+	Containers Containers
 }
 
 func (p RootStruct1) AFunction(value int) bool {
@@ -88,26 +81,9 @@ type RootStruct2 struct {
 	Node2 OpaqueNode
 
 	Interface interface{}
-	Slice     []int
-	Map       map[string]string
-	Array     []byte
 
-	Boolean     bool
-	Integer     int
-	Int8        int8
-	Int16       int16
-	Int32       int32
-	Int64       int64
-	UnsignedInt uint
-	Uint8       uint8
-	Uint16      uint16
-	Uint32      uint32
-	Uint64      uint64
-	Float32     float32
-	Float64     float64
-	//Complex64   complex64
-	//Complex128  complex128
-	String string
+	Primitives Primitives
+	Containers Containers
 }
 
 func (p RootStruct2) AFunction(value int) bool {
@@ -119,10 +95,16 @@ type NodeStruct1 struct {
 	Size     int
 
 	Interface interface{}
-	Slice     []int
-	Map       map[string]string
-	Array     []byte
 
+	Primitives Primitives
+	Containers Containers
+}
+
+func (c NodeStruct1) AnotherFunction(value int) bool {
+	return false
+}
+
+type Primitives struct {
 	Boolean     bool
 	Integer     int
 	Int8        int8
@@ -141,8 +123,10 @@ type NodeStruct1 struct {
 	String string
 }
 
-func (c NodeStruct1) AnotherFunction(value int) bool {
-	return false
+type Containers struct {
+	Slice []int
+	Map   map[string]string
+	Array []byte
 }
 
 type NodeStruct2 struct {
@@ -151,26 +135,9 @@ type NodeStruct2 struct {
 	Size2    int
 
 	Interface interface{}
-	Slice     []int
-	Map       map[string]string
-	Array     []byte
 
-	Boolean     bool
-	Integer     int
-	Int8        int8
-	Int16       int16
-	Int32       int32
-	Int64       int64
-	UnsignedInt uint
-	Uint8       uint8
-	Uint16      uint16
-	Uint32      uint32
-	Uint64      uint64
-	Float32     float32
-	Float64     float64
-	//Complex64   complex64
-	//Complex128  complex128
-	String string
+	Primitives Primitives
+	Containers Containers
 }
 
 func (c NodeStruct2) AnotherFunction(value int) bool {
@@ -183,6 +150,8 @@ func init() {
 	Register(RootStruct2{})
 	Register(NodeStruct1{})
 	Register(NodeStruct2{})
+	Register(Primitives{})
+	Register(Containers{})
 }
 
 var node1 = NodeStruct1{
@@ -207,23 +176,6 @@ var root = RootStruct2{
 }
 
 var opp = OpaqueRoot(&root)
-
-// Control the execution
-func TestMain(m *testing.M) {
-	flag.Parse()
-
-	// Set the debug flags according to whether the -v flag is set in go test
-	if testing.Verbose() {
-		global.Current.Debug = true
-	} else {
-		global.Current.Debug = false
-	}
-
-	// Run it all.
-	code := m.Run()
-
-	os.Exit(code)
-}
 
 func TestPrint(t *testing.T) {
 	Print(opp)
@@ -273,7 +225,7 @@ func TestPolymorphism(t *testing.T) {
 }
 
 // Test just an integer
-func TestInt(t *testing.T) {
+func XTestInt(t *testing.T) {
 	log.Info("Testing int")
 	variable := 5
 

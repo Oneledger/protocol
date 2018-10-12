@@ -84,6 +84,10 @@ type IdentityQuery struct {
 	Identities []id.IdentityExport
 }
 
+func init() {
+	serial.Register(IdentityQuery{})
+}
+
 // Get the account information for a given user
 func HandleIdentityQuery(app Application, message []byte) []byte {
 	log.Debug("IdentityQuery", "message", message)
@@ -135,6 +139,10 @@ func HandleAccountQuery(app Application, message []byte) []byte {
 
 type AccountQuery struct {
 	Accounts []id.AccountExport
+}
+
+func init() {
+	serial.Register(AccountQuery{})
 }
 
 func getAccountExport(app Application, account id.Account) id.AccountExport {

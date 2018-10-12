@@ -15,44 +15,25 @@ func IsPrimitive(input interface{}) bool {
 	}
 
 	switch input.(type) {
+
 	// Booleans
 	case bool:
 		return true
 
 	// Integers of different sizes
-	case int:
-		return true
-	case int8:
-		return true
-	case int16:
-		return true
-	case int32:
-		return true
-	case int64:
+	case int, int8, int16, int32, int64:
 		return true
 
-	// Unsigned integers
-	case uint:
-		return true
-	case uint8:
-		return true
-	case uint16:
-		return true
-	case uint32:
-		return true
-	case uint64:
+	// Unsigned integers, includes byte
+	case uint, byte, uint16, uint32, uint64:
 		return true
 
 	// Floating point values
-	case float32:
-		return true
-	case float64:
+	case float32, float64:
 		return true
 
 	// Complex numbers
-	case complex64:
-		return true
-	case complex128:
+	case complex64, complex128:
 		return true
 
 	// Strings
@@ -82,18 +63,6 @@ func IsPointer(input interface{}) bool {
 
 	kind := reflect.TypeOf(input).Kind()
 	if kind == reflect.Ptr {
-		return true
-	}
-	return false
-}
-
-// Difficult data types
-func IsDifficult(input interface{}) bool {
-	if input == nil {
-		return false
-	}
-
-	if IsSpecial(input) {
 		return true
 	}
 	return false
@@ -135,7 +104,20 @@ func IsContainer(input interface{}) bool {
 	return false
 }
 
-// Special datatypes
+// Difficult data types
+func IsDifficult(input interface{}) bool {
+	if input == nil {
+		// TODO: Should be true?
+		return false
+	}
+
+	if IsSpecial(input) {
+		return true
+	}
+	return false
+}
+
+// Special datatypes, not to be handled yet.
 func IsSpecial(input interface{}) bool {
 	if input == nil {
 		return false

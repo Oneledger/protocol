@@ -7,6 +7,27 @@ import (
 	"github.com/Oneledger/protocol/node/log"
 )
 
+func Alloc(dataType string, size int) interface{} {
+
+	if dataType == "" {
+		return nil
+	}
+
+	entry := GetTypeEntry(dataType)
+
+	switch entry.Category {
+	case PRIMITIVE:
+		// Don't need to alloc, only containers
+	case STRUCT:
+		return reflect.New(entry.DataType).Interface()
+	case MAP:
+		return reflect.MakeMapWithSize(entry.DataType, size).Interface()
+	case SLICE:
+		return reflect.MakeSlice(entry.DataType, 0, size).Interface()
+	}
+	return nil
+}
+
 // Set a structure with a given value, convert as necessary
 func Set(parent interface{}, fieldName string, child interface{}) (status bool) {
 
@@ -58,37 +79,34 @@ func SetStruct(parent interface{}, fieldName string, child interface{}) bool {
 	element := reflect.ValueOf(parent).Elem()
 
 	if element.Kind() != reflect.Struct {
-		log.Warn("Not a structure", "element", element, "kind", element.Kind())
-		return false
+		log.Fatal("Not a structure", "element", element, "kind", element.Kind())
 	}
 
-	if !element.CanSet() {
-		log.Warn("Structure not settable", "element", element)
+	if !CheckValue(element) {
 		return false
 	}
 
 	field := element.FieldByName(fieldName)
-	if !field.IsValid() {
-		log.Warn("Field not found", "fieldName", fieldName, "field", field,
-			"element", element, "fieldName", fieldName)
+
+	if !CheckValue(field) {
 		return false
 	}
 
-	if !field.CanSet() {
-		log.Warn("Not Settable", "field", field, "fieldName", fieldName)
-		return false
-	}
+	/*
+		if field.Type().Kind() == reflect.Interface {
+			value := reflect.ValueOf(child)
+			log.Debug("Trying to set Interface", "child", child, "type", reflect.TypeOf(child), "value", value)
 
-	if field.Type().Kind() == reflect.Interface {
-		value := reflect.ValueOf(child)
-		log.Debug("Trying to set Interface", "child", child, "type", reflect.TypeOf(child), "value", value)
+			field.Set(value)
 
-		field.Set(value)
+		} else {
+	*/
+	newValue := ConvertValue(child, field.Type())
+	field.Set(newValue)
 
-	} else {
-		newValue := ConvertValue(child, field.Type())
-		field.Set(newValue)
-	}
+	/*
+		}
+	*/
 	return true
 }
 
@@ -108,7 +126,9 @@ func ConvertValue(value interface{}, fieldType reflect.Type) reflect.Value {
 	}
 
 	switch typeOf.Kind() {
+
 	case reflect.Float64:
+		// JSON returns floats for everything :-(
 		return ConvertNumber(fieldType.Kind(), valueOf)
 
 	case reflect.String:
@@ -146,6 +166,7 @@ func ConvertNumber(kind reflect.Kind, value reflect.Value) reflect.Value {
 		return reflect.ValueOf(uint(value.Float()))
 
 	case reflect.Uint8:
+		log.Debug("##### CONVERTING JSON NUMBER TO GO BYTE")
 		return reflect.ValueOf(uint8(value.Float()))
 
 	case reflect.Uint16:
@@ -164,29 +185,6 @@ func ConvertNumber(kind reflect.Kind, value reflect.Value) reflect.Value {
 	return value
 }
 
-func AllocMap(parent interface{}, size int) bool {
-	element := GetValue(parent)
-
-	if element.Kind() != reflect.Map {
-		log.Warn("Not a structure", "element", element)
-		return false
-	}
-
-	if !element.IsValid() {
-		log.Warn("Map is invalid", "element", element)
-		return false
-	}
-
-	if !element.CanSet() {
-		log.Warn("Not Settable", "element", element)
-		return false
-	}
-
-	element.Set(reflect.MakeMapWithSize(element.Type(), size))
-
-	return true
-}
-
 // SetMap takes a pointer to a structure and sets it.
 func SetMap(parent interface{}, fieldName string, child interface{}) bool {
 
@@ -194,50 +192,21 @@ func SetMap(parent interface{}, fieldName string, child interface{}) bool {
 	element := GetValue(parent)
 
 	if element.Kind() != reflect.Map {
-		log.Warn("Not a structure", "element", element)
+		log.Fatal("Not a map", "element", element)
+	}
+
+	if !CheckValue(element) {
 		return false
 	}
 
 	key := reflect.ValueOf(fieldName)
+	fieldType := GetType(parent).Elem()
 
-	if !element.IsValid() {
-		log.Warn("Map is invalid", "element", element)
-		return false
-	}
-
-	if !element.CanSet() {
-		log.Warn("Not Settable", "element", element)
-		return false
-	}
-
-	newValue := reflect.ValueOf(child)
+	newValue := ConvertValue(child, fieldType)
 
 	log.Dump("key", key, "newValue", newValue)
 
 	element.SetMapIndex(key, newValue)
-
-	return true
-}
-
-func AllocSlice(parent interface{}, size int) bool {
-	element := GetValue(parent)
-
-	if element.Kind() != reflect.Map {
-		log.Warn("Not a structure", "element", element)
-		return false
-	}
-
-	if !element.IsValid() {
-		log.Warn("Map is invalid", "element", element)
-		return false
-	}
-
-	if !element.CanSet() {
-		log.Warn("Not Settable", "element", element)
-		return false
-	}
-
-	element.Set(reflect.MakeSlice(element.Type(), 0, size))
 
 	return true
 }
@@ -249,10 +218,20 @@ func SetSlice(parent interface{}, index int, child interface{}) bool {
 	element := GetValue(parent)
 
 	if element.Kind() != reflect.Slice {
-		log.Warn("Not a structure", "element", element)
+		log.Fatal("Not a structure", "element", element)
+	}
+
+	if !CheckValue(element) {
 		return false
 	}
 
+	newValue := ConvertValue(child, element.Index(index).Type())
+	element.Index(index).Set(newValue)
+
+	return true
+}
+
+func CheckValue(element reflect.Value) bool {
 	if !element.IsValid() {
 		log.Warn("Map is invalid", "element", element)
 		return false
@@ -262,10 +241,6 @@ func SetSlice(parent interface{}, index int, child interface{}) bool {
 		log.Warn("Not Settable", "element", element)
 		return false
 	}
-
-	newValue := reflect.ValueOf(child)
-	element.Index(index).Set(newValue)
-
 	return true
 }
 
@@ -276,21 +251,14 @@ func SetArray(parent interface{}, index int, child interface{}) bool {
 	element := GetValue(parent)
 
 	if element.Kind() != reflect.Array {
-		log.Warn("Not a structure", "element", element)
+		log.Fatal("Not a structure", "element", element)
+	}
+
+	if !CheckValue(element) {
 		return false
 	}
 
-	if !element.IsValid() {
-		log.Warn("Map is invalid", "element", element)
-		return false
-	}
-
-	if !element.CanSet() {
-		log.Warn("Not Settable", "element", element)
-		return false
-	}
-
-	newValue := reflect.ValueOf(child)
+	newValue := ConvertValue(child, element.Index(index).Type())
 	element.Index(index).Set(newValue)
 
 	return true

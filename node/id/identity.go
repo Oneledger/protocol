@@ -159,6 +159,10 @@ type IdentityExport struct {
 	AccountKey string
 }
 
+func init() {
+	serial.Register(IdentityExport{})
+}
+
 // Export returns an easily printable struct
 func (id *Identity) Export() IdentityExport {
 	accountKey := hex.EncodeToString(id.AccountKey)
