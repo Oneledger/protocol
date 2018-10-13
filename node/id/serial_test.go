@@ -17,8 +17,10 @@ func TestMain(m *testing.M) {
 
 	// Set the debug flags according to whether the -v flag is set in go test
 	if testing.Verbose() {
+		log.Debug("DEBUG TURNED ON")
 		global.Current.Debug = true
 	} else {
+		log.Debug("DEBUG TURNED OFF")
 		global.Current.Debug = false
 	}
 

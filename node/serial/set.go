@@ -2,29 +2,67 @@ package serial
 
 import (
 	"reflect"
+	"runtime/debug"
 	"strconv"
 
 	"github.com/Oneledger/protocol/node/log"
 )
 
 func Alloc(dataType string, size int) interface{} {
+	log.Debug("Allocating", "dataType", dataType, "size", size)
 
 	if dataType == "" {
+		log.Warn("Missing dataType")
 		return nil
 	}
 
-	entry := GetTypeEntry(dataType)
+	if size == -1 {
+		log.Warn("Size is nil")
+		return nil
+	}
+
+	entry := GetTypeEntry(dataType, size)
+	log.Dump("Found entry", entry)
+
+	var value reflect.Value
+	var result interface{}
 
 	switch entry.Category {
 	case PRIMITIVE:
 		// Don't need to alloc, only containers
+
 	case STRUCT:
-		return reflect.New(entry.DataType).Interface()
+		value = reflect.New(entry.DataType)
+		if !value.IsValid() {
+			log.Debug("Retrying as slice?")
+			value = reflect.MakeSlice(entry.DataType, size, size)
+			if !value.IsValid() {
+				log.Debug("Retrying as byte array")
+				value = reflect.ValueOf(make([]byte, size))
+			}
+		} else {
+			log.Debug("Value isn't nil", "value", value)
+		}
+		log.Dump("Allocated struct", value)
+		return value.Interface()
+
 	case MAP:
-		return reflect.MakeMapWithSize(entry.DataType, size).Interface()
+		result = reflect.MakeMapWithSize(entry.DataType, size).Interface()
+		log.Dump("Allocated map", result)
+		return result
+
 	case SLICE:
-		return reflect.MakeSlice(entry.DataType, 0, size).Interface()
+		log.Debug("Allocating Slice", "size", size)
+		result = reflect.MakeSlice(entry.DataType, size, size).Interface()
+		log.Dump("Allocated slice", result)
+		return result
+
+	case UNKNOWN:
+		log.Fatal("Unknown datatype", "dataType", dataType)
 	}
+
+	log.Dump("Unknown Caetgory", entry)
+
 	return nil
 }
 
@@ -34,6 +72,8 @@ func Set(parent interface{}, fieldName string, child interface{}) (status bool) 
 	defer func() {
 		if r := recover(); r != nil {
 			log.Error("Ignoring Set Panic", "r", r)
+			log.Dump("Parameters", parent, fieldName, child)
+			debug.PrintStack()
 			status = false
 		}
 	}()
@@ -92,21 +132,17 @@ func SetStruct(parent interface{}, fieldName string, child interface{}) bool {
 		return false
 	}
 
-	/*
-		if field.Type().Kind() == reflect.Interface {
-			value := reflect.ValueOf(child)
-			log.Debug("Trying to set Interface", "child", child, "type", reflect.TypeOf(child), "value", value)
+	if field.Type().Kind() == reflect.Interface {
+		value := reflect.ValueOf(child)
+		log.Debug("Trying to set Interface", "child", child, "type", reflect.TypeOf(child), "value", value)
 
-			field.Set(value)
+		field.Set(value)
 
-		} else {
-	*/
-	newValue := ConvertValue(child, field.Type())
-	field.Set(newValue)
+	} else {
+		newValue := ConvertValue(child, field.Type())
+		field.Set(newValue)
 
-	/*
-		}
-	*/
+	}
 	return true
 }
 
@@ -129,7 +165,7 @@ func ConvertValue(value interface{}, fieldType reflect.Type) reflect.Value {
 
 	case reflect.Float64:
 		// JSON returns floats for everything :-(
-		return ConvertNumber(fieldType.Kind(), valueOf)
+		return ConvertNumber(fieldType, valueOf)
 
 	case reflect.String:
 		if fieldType.Kind() == reflect.Int {
@@ -140,13 +176,38 @@ func ConvertValue(value interface{}, fieldType reflect.Type) reflect.Value {
 			}
 			return reflect.ValueOf(result)
 		}
+	case reflect.Int:
+		if fieldType.Kind().String() == "data.ChainType" {
+			log.Debug("GOT YOU!")
+		}
 	}
 	return valueOf
 }
 
 // ConvertNumber handles JSON numbers as they are float64 from the parser
-func ConvertNumber(kind reflect.Kind, value reflect.Value) reflect.Value {
-	switch kind {
+func ConvertNumber(fieldType reflect.Type, value reflect.Value) reflect.Value {
+
+	// TODO: find a better way of handling types that are not structures
+	if fieldType.String() == "data.ChainType" {
+		entry := GetTypeEntry(fieldType.String(), 1)
+		valueof := reflect.New(entry.DataType)
+		var result int64
+		result = int64(value.Float())
+		element := valueof.Elem()
+		element.SetInt(result)
+		return element
+	}
+	if fieldType.String() == "action.Type" {
+		entry := GetTypeEntry(fieldType.String(), 1)
+		valueof := reflect.New(entry.DataType)
+		var result int64
+		result = int64(value.Float())
+		element := valueof.Elem()
+		element.SetInt(result)
+		return element
+	}
+
+	switch fieldType.Kind() {
 	case reflect.Int8:
 		return reflect.ValueOf(int8(value.Float()))
 
@@ -160,13 +221,14 @@ func ConvertNumber(kind reflect.Kind, value reflect.Value) reflect.Value {
 		return reflect.ValueOf(int64(value.Float()))
 
 	case reflect.Int:
+		log.Debug("##### CONVERTING JSON NUMBER TO GO INTEGER")
 		return reflect.ValueOf(int(value.Float()))
 
 	case reflect.Uint:
 		return reflect.ValueOf(uint(value.Float()))
 
 	case reflect.Uint8:
-		log.Debug("##### CONVERTING JSON NUMBER TO GO BYTE")
+		//log.Debug("##### CONVERTING JSON NUMBER TO GO BYTE")
 		return reflect.ValueOf(uint8(value.Float()))
 
 	case reflect.Uint16:
@@ -206,6 +268,13 @@ func SetMap(parent interface{}, fieldName string, child interface{}) bool {
 
 	log.Dump("key", key, "newValue", newValue)
 
+	if element.Len() < 1 {
+		log.Debug("Extending Map", "element", element, "len", element.Len())
+		// TODO: Need to figure out a reasonable size here...
+		entry := GetTypeEntry(element.Type().String(), 100)
+		element = reflect.MakeMapWithSize(entry.DataType, 100)
+	}
+
 	element.SetMapIndex(key, newValue)
 
 	return true
@@ -218,13 +287,19 @@ func SetSlice(parent interface{}, index int, child interface{}) bool {
 	element := GetValue(parent)
 
 	if element.Kind() != reflect.Slice {
-		log.Fatal("Not a structure", "element", element)
+		log.Fatal("Not a slice", "element", element)
 	}
 
 	if !CheckValue(element) {
 		return false
 	}
 
+	log.Dump("Element is", element, element.Len(), element.Cap())
+	if element.Len() < index {
+		log.Debug("Extending Slice", "element", element, "len", element.Len(), "index", index)
+		element = reflect.MakeSlice(element.Index(0).Type(), index+1, index+1)
+		log.Dump("At index", element.Index(index))
+	}
 	newValue := ConvertValue(child, element.Index(index).Type())
 	element.Index(index).Set(newValue)
 

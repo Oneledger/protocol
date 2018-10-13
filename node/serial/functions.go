@@ -71,7 +71,7 @@ func Extend(base interface{}) interface{} {
 		typeof := reflect.TypeOf(base).Name()
 		dict := make(map[string]interface{})
 		dict[""] = base
-		wrapper := SerialWrapper{Type: typeof, Fields: dict}
+		wrapper := SerialWrapper{Type: typeof, Size: 1, Fields: dict}
 		return wrapper
 	}
 
@@ -89,8 +89,8 @@ func ExtendNode(action *Action, input interface{}) interface{} {
 
 	parent := action.Path.StringPeekN(1)
 
-	if IsStructure(input) || IsContainer(input) {
-		mapping := ConvertMap(input)
+	if IsContainer(input) {
+		mapping, size := ConvertMap(input)
 
 		// Attach all of the interface children
 		for key, value := range action.Processed[action.Name].Children {
@@ -111,14 +111,16 @@ func ExtendNode(action *Action, input interface{}) interface{} {
 		wrapper := SerialWrapper{
 			Type:   typestr,
 			Fields: mapping,
+			Size:   size,
 		}
+		log.Dump("Input is", input)
+		log.Dump("Mapping is", mapping, size)
+		log.Dump("Wrapper is", wrapper)
 		action.Processed[parent].Children[action.Name] = wrapper
 
 		return wrapper
-
-	} else if IsContainer(input) {
-		return input
 	}
+
 	return input
 }
 
@@ -127,7 +129,7 @@ func Contract(base interface{}) interface{} {
 
 	if IsSerialWrapper(base) {
 		wrapper := base.(SerialWrapper)
-		typeEntry := GetTypeEntry(wrapper.Type)
+		typeEntry := GetTypeEntry(wrapper.Type, wrapper.Size)
 		if typeEntry.Category == PRIMITIVE {
 			return wrapper.Fields[""]
 		}
@@ -160,8 +162,9 @@ func ContractNode(action *Action, input interface{}) interface{} {
 	if IsSerialWrapper(input) {
 		wrapper := input.(SerialWrapper)
 		stype := wrapper.Type
+		size := wrapper.Size
 
-		result := Alloc(stype, 1)
+		result := Alloc(stype, size)
 
 		// Needs to come from the serialized name
 		if strings.HasPrefix(stype, "*") {
@@ -184,8 +187,11 @@ func ContractNode(action *Action, input interface{}) interface{} {
 	if IsSerialWrapperMap(input) {
 		wrapper := input.(map[string]interface{})
 		stype := wrapper["Type"].(string)
+		sizeFloat := wrapper["Size"].(float64)
+		size := int(sizeFloat)
+		//size, _ := strconv.ParseInt(sizeFloat.String(), 10, 0)
 
-		result := Alloc(stype, 1)
+		result := Alloc(stype, size)
 
 		// Needs to come from the serialized name
 		if strings.HasPrefix(stype, "*") {
@@ -229,7 +235,8 @@ func CleanValue(action *Action, input interface{}) interface{} {
 // Set the as a processed result, and handle pointers nicely.
 func SetProcessed(action *Action, parent string, name string, input interface{}) {
 	if input == nil {
-
+		action.Processed[parent].Children[name] = nil
+	} else {
+		action.Processed[parent].Children[name] = CleanValue(action, input)
 	}
-	action.Processed[parent].Children[name] = CleanValue(action, input)
 }

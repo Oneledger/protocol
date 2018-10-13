@@ -6,6 +6,7 @@ package serial
 import (
 	"reflect"
 	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/Oneledger/protocol/node/log"
@@ -25,6 +26,24 @@ const (
 type TypeEntry struct {
 	Category Category
 	DataType reflect.Type
+}
+
+func (entry TypeEntry) String() string {
+	switch entry.Category {
+	case UNKNOWN:
+		return "UNKNOWN: " + entry.DataType.String()
+	case PRIMITIVE:
+		return "PRIMITIVE: " + entry.DataType.String()
+	case STRUCT:
+		return "STRUCT: " + entry.DataType.String()
+	case MAP:
+		return "MAP: " + entry.DataType.String()
+	case SLICE:
+		return "SLICE: " + entry.DataType.String()
+	case ARRAY:
+		return "ARRAY: " + entry.DataType.String()
+	}
+	return "Invalid!"
 }
 
 var dataTypes map[string]TypeEntry
@@ -49,46 +68,85 @@ func Register(base interface{}) {
 	if dataTypes == nil {
 		dataTypes = make(map[string]TypeEntry)
 	}
-	dataTypes[reflect.TypeOf(base).String()] = TypeEntry{STRUCT, reflect.TypeOf(base)}
+	if IsStructure(base) {
+		dataTypes[reflect.TypeOf(base).String()] = TypeEntry{STRUCT, reflect.TypeOf(base)}
+	} else {
+		dataTypes[reflect.TypeOf(base).String()] = TypeEntry{PRIMITIVE, reflect.TypeOf(base)}
+	}
+}
+
+// TODO: This should be in the convert packahe, but it shares data with this one
+func GetInt(value string, defaultValue int) int {
+	// TODO: Should be ParseInt and should specific 64 or 32
+	result, err := strconv.Atoi(value)
+	if err != nil {
+		return defaultValue
+	}
+	return result
 }
 
 func ParseType(name string, count int) TypeEntry {
-	if strings.HasPrefix(name, "map[") {
-		automata := regexp.MustCompile(regexp.QuoteMeta("map[(.*)](.*)"))
-		groups := automata.FindStringSubmatch(name)
-		keyTypeName := groups[1]
-		valueTypeName := groups[2]
-		keyType := GetTypeEntry(keyTypeName)
-		valueType := GetTypeEntry(valueTypeName)
+	automata := regexp.MustCompile(`(.*)\[(.*)\](.*)`)
+	groups := automata.FindStringSubmatch(name)
+
+	if groups == nil || len(groups) != 4 {
+		log.Dump("Invalid Substring Match for "+name, groups)
+		return TypeEntry{UNKNOWN, nil}
+	}
+
+	if groups[1] == "map" {
+		log.Dump("Allocating a Map", groups)
+
+		keyTypeName := groups[2]
+		valueTypeName := groups[3]
+		keyType := GetTypeEntry(keyTypeName, 1)
+		valueType := GetTypeEntry(valueTypeName, 1)
 		finalType := reflect.MapOf(keyType.DataType, valueType.DataType)
 		return TypeEntry{
 			Category: MAP,
 			DataType: finalType,
 		}
 
-	} else if strings.HasPrefix(name, "[]") {
-		automata := regexp.MustCompile(regexp.QuoteMeta("[](.*)"))
-		groups := automata.FindStringSubmatch(name)
-		arrayTypeName := groups[1]
-		arrayType := GetTypeEntry(arrayTypeName)
+	} else if groups[1] == "" {
+		log.Dump("Allocating a array", groups)
+		size := GetInt(groups[2], 0)
+		arrayTypeName := groups[3]
+		arrayType := GetTypeEntry(arrayTypeName, size)
 		finalType := reflect.ArrayOf(count, arrayType.DataType)
 		return TypeEntry{
 			Category: ARRAY,
 			DataType: finalType,
 		}
+
+	} else {
+		log.Dump("Allocating a slice", groups)
+		size := GetInt(groups[2], 0)
+		sliceTypeName := groups[3]
+		sliceType := GetTypeEntry(sliceTypeName, size)
+		finalType := reflect.SliceOf(sliceType.DataType)
+		return TypeEntry{
+			Category: SLICE,
+			DataType: finalType,
+		}
 	}
+	log.Debug("Don't know what this really is?")
+
 	return TypeEntry{UNKNOWN, nil}
 }
 
-func GetTypeEntry(name string) TypeEntry {
+func GetTypeEntry(name string, size int) TypeEntry {
 	name = strings.TrimPrefix(name, "*")
 
+	// Static data types
+	log.Debug("Searching Statically for a match", "name", name)
 	typeEntry, ok := dataTypes[name]
 	if !ok {
-		log.Dump("structures", dataTypes)
-		log.Fatal("Missing structure type", "name", name)
-		return TypeEntry{UNKNOWN, nil}
+		log.Debug("Searching Dynamically for a match", "name", name)
+		// dynamic data types -- like maps and slices
+		entry := ParseType(name, size)
+		return entry
 	}
 
+	log.Dump("Found Match", typeEntry)
 	return typeEntry
 }

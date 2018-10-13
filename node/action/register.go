@@ -10,6 +10,7 @@ import (
 	"github.com/Oneledger/protocol/node/global"
 	"github.com/Oneledger/protocol/node/id"
 	"github.com/Oneledger/protocol/node/log"
+	"github.com/Oneledger/protocol/node/serial"
 )
 
 // Register an identity with the chain
@@ -19,6 +20,10 @@ type Register struct {
 	Identity   string
 	NodeName   string
 	AccountKey id.AccountKey
+}
+
+func init() {
+	serial.Register(Register{})
 }
 
 // Check the fields to make sure they have valid values.

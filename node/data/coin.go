@@ -23,6 +23,7 @@ type Coin struct {
 func init() {
 	serial.Register(Coin{})
 	serial.Register(Currency{})
+	serial.Register(big.Int{})
 }
 
 type Coins []Coin

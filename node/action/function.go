@@ -36,10 +36,10 @@ var FunctionMapping = [][]Object{
 		SWAP,
 		PARTICIPANT,
 		Command{
-		    Function: WAIT_FOR_CHAIN, //will create a delay transaction
-		    Order:    2,
-        },
-    },
+			Function: WAIT_FOR_CHAIN, //will create a delay transaction
+			Order:    2,
+		},
+	},
 	[]Object{
 		PUBLISH,
 		INITIATOR,
@@ -53,7 +53,7 @@ var FunctionMapping = [][]Object{
 		},
 		Command{
 			Function: SUBMIT_TRANSACTION,
-            Order:    2,
+			Order:    2,
 		},
 		Command{
 			Function: FINISH,
@@ -61,49 +61,49 @@ var FunctionMapping = [][]Object{
 	},
 	[]Object{
 		PUBLISH,
-        PARTICIPANT,
-        Command{
-            Function: AUDITCONTRACT,
-            Order:    1,
-        },
-        Command{
-            Function: PARTICIPATE,
-            Order:    2,
-        },
-        Command{
-            Function: SUBMIT_TRANSACTION,
-            Order:    2,
-        },
-	},
-    []Object{
-        PUBLISH,
-        ALL,
-        Command{
-            Function: EXTRACTSECRET,
-            Order:    2,
-        },
-        Command{
-            Function: REDEEM,
-            Order:    1,
-        },
-        Command{
-        	Function: FINISH,
+		PARTICIPANT,
+		Command{
+			Function: AUDITCONTRACT,
+			Order:    1,
 		},
-    },
+		Command{
+			Function: PARTICIPATE,
+			Order:    2,
+		},
+		Command{
+			Function: SUBMIT_TRANSACTION,
+			Order:    2,
+		},
+	},
+	[]Object{
+		PUBLISH,
+		ALL,
+		Command{
+			Function: EXTRACTSECRET,
+			Order:    2,
+		},
+		Command{
+			Function: REDEEM,
+			Order:    1,
+		},
+		Command{
+			Function: FINISH,
+		},
+	},
 	[]Object{
 		SEND,
 		ALL,
-        Command{
-            Function: PREPARE_TRANSACTION,
-        },
+		Command{
+			Function: PREPARE_TRANSACTION,
+		},
 	},
-    []Object{
-        VERIFY,
-        ALL,
-        Command{
-            Function: REFUND,
-        },
-    },
+	[]Object{
+		VERIFY,
+		ALL,
+		Command{
+			Function: REFUND,
+		},
+	},
 }
 
 // Given an action and a chain, return a list of commands

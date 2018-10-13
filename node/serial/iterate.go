@@ -183,7 +183,9 @@ func Iterate(input interface{}, action *Action) interface{} {
 	action.Path.Push(action.Name)
 
 	if IsPointer(input) {
-		input = reflect.ValueOf(input).Elem().Interface()
+		if input != nil {
+			input = reflect.ValueOf(input).Elem().Interface()
+		}
 		action.IsPointer = true
 	} else {
 		action.IsPointer = false

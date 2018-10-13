@@ -50,16 +50,16 @@ func CheckIdentity(cmd *cobra.Command, args []string) {
 	response := comm.Query("/identity", request)
 	if response != nil {
 		var prototype app.IdentityQuery
-		result, err := serial.Deserialize(response.Response.Value, &prototype, serial.CLIENT)
+		result, err := serial.Deserialize(response.Response.Value, prototype, serial.CLIENT)
 		if err != nil {
 			shared.Console.Error("Failed to deserialize IdentityQuery:")
 			return
 		}
-		printResponse(result.(*app.IdentityQuery))
+		printResponse(result.(app.IdentityQuery))
 	}
 }
 
-func printResponse(idQuery *app.IdentityQuery) {
+func printResponse(idQuery app.IdentityQuery) {
 	shared.Console.Info("\nOneLedger Identities:\n")
 
 	for _, identity := range idQuery.Identities {

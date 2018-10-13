@@ -48,6 +48,11 @@ type Party struct {
 	Accounts map[data.ChainType][]byte `json:"accounts"`
 }
 
+func init() {
+	serial.Register(Swap{})
+	serial.Register(Party{})
+}
+
 // Ensure that all of the base values are at least reasonable.
 func (transaction *Swap) Validate() err.Code {
 	log.Debug("Validating Swap Transaction")

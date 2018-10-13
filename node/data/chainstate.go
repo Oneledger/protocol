@@ -89,12 +89,13 @@ func (state *ChainState) Find(key DatabaseKey) *Balance {
 
 	if value != nil {
 		var balance Balance
-		result, err := serial.Deserialize(value, &balance, serial.PERSISTENT)
+		result, err := serial.Deserialize(value, balance, serial.PERSISTENT)
 		if err != nil {
 			log.Error("Failed to deserialize Balance in chainstate: ", err)
 			return nil
 		}
-		return result.(*Balance)
+		final := result.(Balance)
+		return &final
 	}
 	return nil
 }

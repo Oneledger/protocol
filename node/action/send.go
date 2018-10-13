@@ -23,6 +23,10 @@ type Send struct {
 	Fee data.Coin `json:"fee"`
 }
 
+func init() {
+	serial.Register(Send{})
+}
+
 func (transaction *Send) Validate() err.Code {
 	log.Debug("Validating Send Transaction")
 

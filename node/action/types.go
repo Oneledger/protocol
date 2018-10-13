@@ -31,6 +31,10 @@ type SendInput struct {
 	Sequence int `json:"sequence"`
 }
 
+func init() {
+	serial.Register(SendInput{})
+}
+
 func NewSendInput(accountKey id.AccountKey, amount data.Coin) SendInput {
 	if bytes.Equal(accountKey, []byte("")) {
 		log.Fatal("Missing Account")

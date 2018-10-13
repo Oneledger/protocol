@@ -8,6 +8,7 @@ package action
 import (
 	"github.com/Oneledger/protocol/node/err"
 	"github.com/Oneledger/protocol/node/log"
+	"github.com/Oneledger/protocol/node/serial"
 )
 
 // TODO: This needs to be filled out properly, need a model for other-chain actions...
@@ -15,6 +16,10 @@ type Prepare struct {
 	Base
 
 	Target string `json:"target"`
+}
+
+func init() {
+	serial.Register(Prepare{})
 }
 
 func (transaction *Prepare) Validate() err.Code {
