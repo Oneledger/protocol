@@ -87,7 +87,7 @@ func CreateSendRequest(args *SendArguments) []byte {
 	party := GetAccountKey(args.Party)
 	counterParty := GetAccountKey(args.CounterParty)
 
-	log.Dump("AccountKeys", party, counterParty)
+	//log.Dump("AccountKeys", party, counterParty)
 
 	if args.Currency == "" || args.Amount == "" {
 		log.Error("Missing an amount")
@@ -99,7 +99,7 @@ func CreateSendRequest(args *SendArguments) []byte {
 	// Build up the Inputs
 	partyBalance := GetBalance(party)
 	counterPartyBalance := GetBalance(counterParty)
-	log.Dump("Balances", partyBalance, counterPartyBalance)
+	//log.Dump("Balances", partyBalance, counterPartyBalance)
 
 	if partyBalance == nil || counterPartyBalance == nil {
 		log.Error("Missing Balances")

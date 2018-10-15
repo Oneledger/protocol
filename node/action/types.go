@@ -52,6 +52,10 @@ type SendOutput struct {
 	Amount     data.Coin     `json:"coin"`
 }
 
+func init() {
+	serial.Register(SendOutput{})
+}
+
 func NewSendOutput(accountKey id.AccountKey, amount data.Coin) SendOutput {
 	if bytes.Equal(accountKey, []byte("")) {
 		log.Fatal("Missing AccountKey")
@@ -74,13 +78,13 @@ func CheckBalance(app interface{}, accountKey id.AccountKey, amount data.Coin) b
 	}
 
 	var bal data.Balance
-	buffer, err := serial.Deserialize(value, &bal, serial.CLIENT)
+	buffer, err := serial.Deserialize(value, bal, serial.CLIENT)
 	if err != nil || buffer == nil {
 		log.Error("Failed to Deserialize", "key", accountKey)
 		return false
 	}
 
-	balance := buffer.(*data.Balance)
+	balance := buffer.(data.Balance)
 	if !balance.Amount.Equals(amount) {
 		log.Warn("Mismatch", "key", accountKey, "amount", amount, "balance", balance)
 		//return false

@@ -275,7 +275,7 @@ func Balance(app Application, accountKey []byte) []byte {
 	if balance == nil {
 		//log.Fatal("Balance FAILED", "accountKey", accountKey)
 		log.Warn("Balance FAILED", "accountKey", accountKey)
-		result := data.NewBalance(0, "OLT")
+		result := data.NewBalance(-1, "OLT")
 		balance = &result
 	}
 	//log.Debug("Balance", "key", accountKey, "balance", balance)

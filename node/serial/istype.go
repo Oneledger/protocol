@@ -112,7 +112,6 @@ func IsPrimitiveArray(input interface{}) bool {
 			}
 		}
 	}
-
 	return false
 }
 
@@ -133,7 +132,6 @@ func IsPrimitiveSlice(input interface{}) bool {
 			}
 		}
 	}
-
 	return false
 }
 

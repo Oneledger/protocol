@@ -36,7 +36,7 @@ func TestPersistence(t *testing.T) {
 
 	state := NewChainState("SimpleTest", PERSISTENT)
 	_ = state
-	log.Dump("The chain state", state)
+	//log.Dump("The chain state", state)
 
 	key := "Hello"
 	value := "The Value"

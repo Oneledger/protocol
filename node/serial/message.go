@@ -13,8 +13,6 @@ package serial
 import (
 	"encoding/json"
 	"reflect"
-
-	"github.com/Oneledger/protocol/node/log"
 )
 
 type Format int
@@ -56,7 +54,7 @@ func Serialize(input interface{}, medium Format) (buffer []byte, err error) {
 		buffer, err = json.Marshal(copy)
 	}
 
-	log.Dump("Serialized format", string(buffer))
+	//log.Dump("Serialized format", string(buffer))
 
 	return buffer, err
 }

@@ -19,11 +19,6 @@ func Alloc(dataType string, size int) interface{} {
 	}
 
 	entry := GetTypeEntry(dataType, size)
-	/*
-		if dataType == "ed25519.PubKeyEd25519" {
-			log.Dump("PubKeyEd25519 Entry", size, entry)
-		}
-	*/
 
 	var value reflect.Value
 
@@ -48,9 +43,8 @@ func Alloc(dataType string, size int) interface{} {
 		return value.Interface()
 
 	case MAP:
-		log.Debug("Creating new Map with type", "type", entry.DataType)
-		smap := reflect.MakeMapWithSize(entry.DataType, size)
-		//smap := reflect.MakeMapWithSize(entry.RootType, size)
+		log.Debug("Creating new Map with type", "type", entry.RootType)
+		smap := reflect.MakeMapWithSize(entry.RootType, size)
 		value = reflect.New(smap.Type())
 		value.Elem().Set(smap)
 		return value.Interface()
@@ -63,7 +57,6 @@ func Alloc(dataType string, size int) interface{} {
 		return value.Interface()
 
 	case ARRAY:
-		log.Dump("Entry", entry)
 		array := reflect.ArrayOf(size, entry.ValueType.DataType)
 		value = reflect.New(array)
 		//result.Elem().Set(array)
@@ -179,22 +172,35 @@ func ConvertValue(value interface{}, fieldType reflect.Type) reflect.Value {
 		return ConvertNumber(fieldType, valueOf)
 
 	case reflect.String:
-		if fieldType.Kind() == reflect.Int {
-			result, err := strconv.ParseInt(valueOf.Elem().String(), 10, 0)
+		if fieldType.String() == "data.ChainType" {
+			entry := GetTypeEntry(fieldType.String(), 1)
+			interim, err := strconv.ParseInt(GetString(valueOf), 10, 0)
 			if err != nil {
 				log.Fatal("Failed to convert int")
 			}
+			valueof := reflect.New(entry.RootType)
+			element := valueof.Elem()
+			element.SetInt(interim)
+			return element
+		}
+		if fieldType.Kind() == reflect.Int {
+			var result int
+			interim, err := strconv.ParseInt(GetString(valueOf), 10, 0)
+			if err != nil {
+				log.Fatal("Failed to convert int")
+			}
+			result = int(interim)
 			return reflect.ValueOf(result)
 		}
-		//case reflect.Int:
-		// TODO: What?!
-		/*
-			if fieldType.Kind().String() == "data.ChainType" {
-				log.Debug("GOT YOU!")
-			}
-		*/
 	}
 	return valueOf
+}
+
+func GetString(value reflect.Value) string {
+	if value.Kind() == reflect.String {
+		return value.String()
+	}
+	return value.Elem().String()
 }
 
 // ConvertNumber handles JSON numbers as they are float64 from the parser
@@ -265,7 +271,6 @@ func ConvertNumber(fieldType reflect.Type, value reflect.Value) reflect.Value {
 
 	case reflect.Float32:
 		return reflect.ValueOf(float32(value.Float()))
-
 	}
 	return value
 }
@@ -284,19 +289,26 @@ func SetMap(parent interface{}, fieldName string, child interface{}) bool {
 		return false
 	}
 
-	key := reflect.ValueOf(fieldName)
-	fieldType := GetBaseType(parent).Elem()
+	//key := reflect.ValueOf(fieldName)
+	keyType := GetBaseType(parent).Key()
+	newKey := ConvertValue(fieldName, keyType)
 
+	fieldType := GetBaseType(parent).Elem()
 	newValue := ConvertValue(child, fieldType)
 
-	if element.Len() < 1 {
-		// TODO: Need to figure out a reasonable size here...
-		log.Warn("Reallocating Map", "type", element.Type().String())
-		entry := GetTypeEntry(element.Type().String(), 1)
-		element = reflect.MakeMapWithSize(entry.DataType, 1)
-	}
+	/*
+		if element.Len() < 1 {
+			// TODO: Need to figure out a reasonable size here...
+			log.Warn("Reallocating Map", "type", element.Type().String())
+			entry := GetTypeEntry(element.Type().String(), 100)
+			revised := reflect.MakeMapWithSize(entry.RootType, 100)
+			value := reflect.New(revised.Type())
+			value.Elem().Set(element)
+			element = value.Elem()
+		}
+	*/
 
-	element.SetMapIndex(key, newValue)
+	element.SetMapIndex(newKey, newValue)
 
 	return true
 }

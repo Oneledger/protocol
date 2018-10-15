@@ -94,7 +94,7 @@ start: check install
 # System Testing, bring it all down
 #
 stop: check
-	@./scripts/stopOneLedger
+	@./scripts/stopMVP
 
 #
 # Reset all of the chains, back to genesis

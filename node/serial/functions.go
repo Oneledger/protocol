@@ -95,20 +95,21 @@ func ExtendNode(action *Action, input interface{}) interface{} {
 		return input
 	}
 
+	// TODO: Set this to be ignored types
 	if GetBaseTypeString(input) == "big.Int" {
 		return input
 	}
 
 	if IsContainer(input) {
 		mapping, size := ConvertMap(input)
-		log.Dump("Have Mapping", mapping)
+		//log.Dump("Have Mapping", mapping)
 
 		// Attach all of the interface children
 		for key, value := range action.Processed[action.Name].Children {
 			mapping[key] = value
 			delete(action.Processed[action.Name].Children, key)
 		}
-		log.Dump("Revised Mapping", mapping)
+		//log.Dump("Revised Mapping", mapping)
 
 		typestr := reflect.TypeOf(input).String()
 
@@ -165,18 +166,13 @@ func ContractNode(action *Action, input interface{}) interface{} {
 		grandparent = action.Path.StringPeekN(1)
 	}
 
-	log.Dump("ContractNode", input)
+	//log.Dump("ContractNode", input)
 	if IsSerialWrapper(input) {
 		wrapper := input.(SerialWrapper)
 		stype := wrapper.Type
 		size := wrapper.Size
 
 		result := Alloc(stype, size)
-		/*
-			if stype == "ed25519.PubKeyEd25519" {
-				log.Dump("New ed25519.PubKeyEd25519", result)
-			}
-		*/
 
 		// Needs to come from the serialized name
 		if strings.HasPrefix(stype, "*") {
@@ -191,14 +187,7 @@ func ContractNode(action *Action, input interface{}) interface{} {
 			delete(action.Processed[action.Name].Children, key)
 		}
 
-		/*
-			if stype == "ed25519.PubKeyEd25519" {
-				log.Dump("Set ed25519.PubKeyEd25519", result)
-			}
-		*/
-
 		SetProcessed(action, grandparent, action.Name, result)
-
 		return CleanValue(action, result)
 	}
 
@@ -209,11 +198,6 @@ func ContractNode(action *Action, input interface{}) interface{} {
 		size := int(sizeFloat)
 
 		result := Alloc(stype, size)
-		/*
-			if stype == "id.AccountKey" {
-				log.Dump("New AccountKey", result)
-			}
-		*/
 
 		// Needs to come from the serialized name
 		if strings.HasPrefix(stype, "*") {
@@ -227,12 +211,6 @@ func ContractNode(action *Action, input interface{}) interface{} {
 			Set(result, key, value)
 			delete(action.Processed[action.Name].Children, key)
 		}
-
-		/*
-			if stype == "id.AccountKey" {
-				log.Dump("Set AccountKey", result)
-			}
-		*/
 
 		SetProcessed(action, grandparent, action.Name, result)
 		return CleanValue(action, result)

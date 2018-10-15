@@ -105,7 +105,7 @@ func (acc *Accounts) FindKey(key AccountKey) (Account, err.Code) {
 		log.Fatal("Failed to Deserialize Account", "status", status)
 	}
 
-	log.Dump("Deserialized", value, result, account)
+	//log.Dump("Deserialized", value, result, account)
 
 	return result.(Account), err.SUCCESS
 

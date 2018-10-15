@@ -131,7 +131,7 @@ func Query(path string, packet []byte) (res *ctypes.ResultABCIQuery) {
 		return nil
 	}
 
-	log.Debug("ABCi Query", "path", path, "packet", packet, "result", result)
+	//log.Debug("ABCi Query", "path", path, "packet", packet, "result", result)
 
 	return result
 }

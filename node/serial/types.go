@@ -24,11 +24,13 @@ const (
 type TypeEntry struct {
 	Name      string
 	Category  Category
+	RootType  reflect.Type
 	DataType  reflect.Type
 	KeyType   *TypeEntry
 	ValueType *TypeEntry
 }
 
+/*
 func (entry TypeEntry) String() string {
 	switch entry.Category {
 	case UNKNOWN:
@@ -46,35 +48,47 @@ func (entry TypeEntry) String() string {
 	}
 	return "Invalid!"
 }
+*/
 
 var dataTypes map[string]TypeEntry
 var ignoreTypes map[string]TypeEntry
 
+func NewPrimitiveEntry(name string, category Category, root reflect.Type) *TypeEntry {
+	return &TypeEntry{
+		Name:      name,
+		Category:  category,
+		RootType:  root,
+		DataType:  root,
+		KeyType:   nil,
+		ValueType: nil,
+	}
+}
+
 func init() {
 	// Load in all of the primitives
 	dataTypes = map[string]TypeEntry{
-		"bool": TypeEntry{"boo", PRIMITIVE, reflect.TypeOf(bool(true)), nil, nil},
+		"bool": *NewPrimitiveEntry("boo", PRIMITIVE, reflect.TypeOf(bool(true))),
 
-		"int":   TypeEntry{"int", PRIMITIVE, reflect.TypeOf(int(0)), nil, nil},
-		"int8":  TypeEntry{"int8", PRIMITIVE, reflect.TypeOf(int8(0)), nil, nil},
-		"int16": TypeEntry{"int16", PRIMITIVE, reflect.TypeOf(int16(0)), nil, nil},
-		"int32": TypeEntry{"int32", PRIMITIVE, reflect.TypeOf(int32(0)), nil, nil},
-		"int64": TypeEntry{"int64", PRIMITIVE, reflect.TypeOf(int64(0)), nil, nil},
+		"int":   *NewPrimitiveEntry("int", PRIMITIVE, reflect.TypeOf(int(0))),
+		"int8":  *NewPrimitiveEntry("int8", PRIMITIVE, reflect.TypeOf(int8(0))),
+		"int16": *NewPrimitiveEntry("int16", PRIMITIVE, reflect.TypeOf(int16(0))),
+		"int32": *NewPrimitiveEntry("int32", PRIMITIVE, reflect.TypeOf(int32(0))),
+		"int64": *NewPrimitiveEntry("int64", PRIMITIVE, reflect.TypeOf(int64(0))),
 
-		"uint":   TypeEntry{"uint", PRIMITIVE, reflect.TypeOf(uint(0)), nil, nil},
-		"uint8":  TypeEntry{"uint8", PRIMITIVE, reflect.TypeOf(uint8(0)), nil, nil},
-		"byte":   TypeEntry{"byte", PRIMITIVE, reflect.TypeOf(byte(0)), nil, nil},
-		"uint16": TypeEntry{"uint16", PRIMITIVE, reflect.TypeOf(uint16(0)), nil, nil},
-		"uint32": TypeEntry{"uint32", PRIMITIVE, reflect.TypeOf(uint32(0)), nil, nil},
-		"uint64": TypeEntry{"uint64", PRIMITIVE, reflect.TypeOf(uint64(0)), nil, nil},
+		"uint":   *NewPrimitiveEntry("uint", PRIMITIVE, reflect.TypeOf(uint(0))),
+		"uint8":  *NewPrimitiveEntry("uint8", PRIMITIVE, reflect.TypeOf(uint8(0))),
+		"byte":   *NewPrimitiveEntry("byte", PRIMITIVE, reflect.TypeOf(byte(0))),
+		"uint16": *NewPrimitiveEntry("uint16", PRIMITIVE, reflect.TypeOf(uint16(0))),
+		"uint32": *NewPrimitiveEntry("uint32", PRIMITIVE, reflect.TypeOf(uint32(0))),
+		"uint64": *NewPrimitiveEntry("uint64", PRIMITIVE, reflect.TypeOf(uint64(0))),
 
-		"float32": TypeEntry{"float32", PRIMITIVE, reflect.TypeOf(float32(0)), nil, nil},
-		"float64": TypeEntry{"float64", PRIMITIVE, reflect.TypeOf(float64(0)), nil, nil},
+		"float32": *NewPrimitiveEntry("float32", PRIMITIVE, reflect.TypeOf(float32(0))),
+		"float64": *NewPrimitiveEntry("float64", PRIMITIVE, reflect.TypeOf(float64(0))),
 
-		"complex64":  TypeEntry{"complex64", PRIMITIVE, reflect.TypeOf(complex64(0)), nil, nil},
-		"complex128": TypeEntry{"complex128", PRIMITIVE, reflect.TypeOf(complex128(0)), nil, nil},
+		"complex64":  *NewPrimitiveEntry("complex64", PRIMITIVE, reflect.TypeOf(complex64(0))),
+		"complex128": *NewPrimitiveEntry("complex128", PRIMITIVE, reflect.TypeOf(complex128(0))),
 
-		"string": TypeEntry{"string", PRIMITIVE, reflect.TypeOf(string("")), nil, nil},
+		"string": *NewPrimitiveEntry("string", PRIMITIVE, reflect.TypeOf(string(""))),
 	}
 }
 
@@ -98,7 +112,7 @@ func Register(base interface{}) {
 
 	var category Category = PRIMITIVE
 	if IsStructure(base) {
-		dataTypes[name] = TypeEntry{name, STRUCT, typeOf, nil, nil}
+		dataTypes[name] = TypeEntry{name, STRUCT, typeOf, typeOf, nil, nil}
 		return
 	}
 	if IsPrimitiveContainer(base) {
@@ -106,17 +120,18 @@ func Register(base interface{}) {
 		underType := GetTypeEntry(ubase.String(), 1)
 
 		underType.Name = name
+		underType.RootType = typeOf
 		dataTypes[name] = underType
-		//dataTypes[name] = TypeEntry{name, underType.Category, typeOf, nil, nil}
+		//log.Dump("Full Entry is", dataTypes[name])
 		return
 	}
 
-	dataTypes[name] = TypeEntry{name, category, typeOf, nil, nil}
+	dataTypes[name] = TypeEntry{name, category, typeOf, typeOf, nil, nil}
 }
 
 // Force an entry into the table
 func RegisterForce(name string, category Category, dataType reflect.Type, keyType *TypeEntry, valueType *TypeEntry) {
-	dataTypes[name] = TypeEntry{name, category, dataType, keyType, valueType}
+	dataTypes[name] = TypeEntry{name, category, dataType, dataType, keyType, valueType}
 }
 
 func RegisterIgnore(base interface{}) {
@@ -129,7 +144,7 @@ func RegisterIgnore(base interface{}) {
 	typeOf := reflect.TypeOf(base)
 	var category Category = PRIMITIVE
 	if IsStructure(base) {
-		ignoreTypes[name] = TypeEntry{name, STRUCT, typeOf, nil, nil}
+		ignoreTypes[name] = TypeEntry{name, STRUCT, typeOf, typeOf, nil, nil}
 		return
 	}
 	if IsPrimitiveContainer(base) {
@@ -140,7 +155,7 @@ func RegisterIgnore(base interface{}) {
 		return
 	}
 
-	ignoreTypes[name] = TypeEntry{name, category, typeOf, nil, nil}
+	ignoreTypes[name] = TypeEntry{name, category, typeOf, typeOf, nil, nil}
 }
 
 func GetTypeEntry(name string, size int) TypeEntry {
@@ -165,7 +180,7 @@ func ParseType(name string, count int) TypeEntry {
 	groups := automata.FindStringSubmatch(name)
 
 	if groups == nil || len(groups) != 4 {
-		return TypeEntry{name, UNKNOWN, nil, nil, nil}
+		return TypeEntry{name, UNKNOWN, reflect.Type(nil), reflect.Type(nil), nil, nil}
 	}
 
 	if groups[1] == "map" {
@@ -173,10 +188,11 @@ func ParseType(name string, count int) TypeEntry {
 		valueTypeName := groups[3]
 		keyType := GetTypeEntry(keyTypeName, 1)
 		valueType := GetTypeEntry(valueTypeName, 1)
-		finalType := reflect.MapOf(keyType.DataType, valueType.DataType)
+		finalType := reflect.MapOf(keyType.RootType, valueType.RootType)
 		return TypeEntry{
 			Name:      name,
 			Category:  MAP,
+			RootType:  finalType,
 			DataType:  finalType,
 			KeyType:   &keyType,
 			ValueType: &valueType,
@@ -190,6 +206,7 @@ func ParseType(name string, count int) TypeEntry {
 		return TypeEntry{
 			Name:      name,
 			Category:  SLICE,
+			RootType:  finalType,
 			DataType:  finalType,
 			ValueType: &sliceType,
 		}
@@ -204,11 +221,12 @@ func ParseType(name string, count int) TypeEntry {
 		return TypeEntry{
 			Name:      name,
 			Category:  ARRAY,
+			RootType:  finalType,
 			DataType:  finalType,
 			ValueType: &arrayType,
 		}
 	}
-	return TypeEntry{name, UNKNOWN, reflect.Type(nil), nil, nil}
+	return TypeEntry{name, UNKNOWN, reflect.Type(nil), reflect.Type(nil), nil, nil}
 }
 
 // TODO: This should be in the convert packahe, but it shares data with this one
