@@ -48,7 +48,9 @@ func Alloc(dataType string, size int) interface{} {
 		return value.Interface()
 
 	case MAP:
+		log.Debug("Creating new Map with type", "type", entry.DataType)
 		smap := reflect.MakeMapWithSize(entry.DataType, size)
+		//smap := reflect.MakeMapWithSize(entry.RootType, size)
 		value = reflect.New(smap.Type())
 		value.Elem().Set(smap)
 		return value.Interface()
@@ -61,6 +63,7 @@ func Alloc(dataType string, size int) interface{} {
 		return value.Interface()
 
 	case ARRAY:
+		log.Dump("Entry", entry)
 		array := reflect.ArrayOf(size, entry.ValueType.DataType)
 		value = reflect.New(array)
 		//result.Elem().Set(array)
@@ -288,9 +291,9 @@ func SetMap(parent interface{}, fieldName string, child interface{}) bool {
 
 	if element.Len() < 1 {
 		// TODO: Need to figure out a reasonable size here...
-		log.Warn("Reallocating Map")
-		entry := GetTypeEntry(element.Type().String(), 100)
-		element = reflect.MakeMapWithSize(entry.DataType, 100)
+		log.Warn("Reallocating Map", "type", element.Type().String())
+		entry := GetTypeEntry(element.Type().String(), 1)
+		element = reflect.MakeMapWithSize(entry.DataType, 1)
 	}
 
 	element.SetMapIndex(key, newValue)

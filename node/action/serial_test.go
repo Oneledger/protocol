@@ -5,7 +5,9 @@ import (
 	"os"
 	"testing"
 
+	"github.com/Oneledger/protocol/node/data"
 	"github.com/Oneledger/protocol/node/global"
+	"github.com/Oneledger/protocol/node/id"
 	"github.com/Oneledger/protocol/node/log"
 	"github.com/Oneledger/protocol/node/serial"
 )
@@ -58,6 +60,25 @@ func TestTypeSerial(t *testing.T) {
 		log.Fatal("Have Error", "err", err)
 	}
 	var proto Wrapper
+	result, err := serial.Deserialize(buffer, proto, serial.PERSISTENT)
+	if err != nil {
+		log.Fatal("Have Error", "err", err)
+	}
+	log.Dump("Final", result)
+}
+
+func TestIdentity(t *testing.T) {
+	chain := map[data.ChainType]id.AccountKey{
+		data.ONELEDGER: []byte("xxxx"),
+	}
+	value := id.Identity{
+		Chain: chain,
+	}
+	buffer, err := serial.Serialize(value, serial.PERSISTENT)
+	if err != nil {
+		log.Fatal("Have Error", "err", err)
+	}
+	var proto id.Identity
 	result, err := serial.Deserialize(buffer, proto, serial.PERSISTENT)
 	if err != nil {
 		log.Fatal("Have Error", "err", err)

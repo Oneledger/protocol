@@ -77,7 +77,13 @@ func Extend(base interface{}) interface{} {
 		Name:         "base",
 	}
 
-	return Iterate(base, action)
+	result := Iterate(base, action)
+
+	for _, value := range action.Processed["base"].Children {
+		return value
+	}
+
+	return result
 }
 
 // Extend the input by replacing all structures with a wrapper
@@ -95,12 +101,14 @@ func ExtendNode(action *Action, input interface{}) interface{} {
 
 	if IsContainer(input) {
 		mapping, size := ConvertMap(input)
+		log.Dump("Have Mapping", mapping)
 
 		// Attach all of the interface children
 		for key, value := range action.Processed[action.Name].Children {
 			mapping[key] = value
 			delete(action.Processed[action.Name].Children, key)
 		}
+		log.Dump("Revised Mapping", mapping)
 
 		typestr := reflect.TypeOf(input).String()
 
@@ -157,6 +165,7 @@ func ContractNode(action *Action, input interface{}) interface{} {
 		grandparent = action.Path.StringPeekN(1)
 	}
 
+	log.Dump("ContractNode", input)
 	if IsSerialWrapper(input) {
 		wrapper := input.(SerialWrapper)
 		stype := wrapper.Type

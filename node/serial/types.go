@@ -6,11 +6,8 @@ package serial
 import (
 	"reflect"
 	"regexp"
-	"runtime/debug"
 	"strconv"
 	"strings"
-
-	"github.com/Oneledger/protocol/node/log"
 )
 
 type Category int
@@ -88,9 +85,11 @@ func Register(base interface{}) {
 	name := GetBaseTypeString(base)
 	entry := GetTypeEntry(name, 1)
 	if entry.Category != UNKNOWN {
-		log.Warn("Duplicate Entry", "name", name, "orig", entry.Name)
-		log.Dump("Dup is", base)
-		debug.PrintStack()
+		// Most often caused by byte and uint8 sort of being the same, but not in all cases.
+
+		//log.Warn("Duplicate Entry", "name", name, "orig", entry.Name)
+		//log.Dump("Dup is", base)
+		//debug.PrintStack()
 		//log.Dump("Exists", entry)
 		return
 	}
@@ -104,9 +103,11 @@ func Register(base interface{}) {
 	}
 	if IsPrimitiveContainer(base) {
 		ubase := UnderlyingType(base)
-		dataType := GetTypeEntry(ubase.String(), 1)
-		dataType.Name = name
-		dataTypes[name] = dataType
+		underType := GetTypeEntry(ubase.String(), 1)
+
+		underType.Name = name
+		dataTypes[name] = underType
+		//dataTypes[name] = TypeEntry{name, underType.Category, typeOf, nil, nil}
 		return
 	}
 
@@ -123,13 +124,23 @@ func RegisterIgnore(base interface{}) {
 		ignoreTypes = make(map[string]TypeEntry)
 	}
 
+	name := GetBaseTypeString(base)
+
+	typeOf := reflect.TypeOf(base)
 	var category Category = PRIMITIVE
 	if IsStructure(base) {
-		category = STRUCT
+		ignoreTypes[name] = TypeEntry{name, STRUCT, typeOf, nil, nil}
+		return
+	}
+	if IsPrimitiveContainer(base) {
+		ubase := UnderlyingType(base)
+		ignoreType := GetTypeEntry(ubase.String(), 1)
+		ignoreType.Name = name
+		ignoreTypes[name] = ignoreType
+		return
 	}
 
-	name := reflect.TypeOf(base).String()
-	ignoreTypes[name] = TypeEntry{name, category, reflect.TypeOf(base), nil, nil}
+	ignoreTypes[name] = TypeEntry{name, category, typeOf, nil, nil}
 }
 
 func GetTypeEntry(name string, size int) TypeEntry {

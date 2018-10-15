@@ -3,6 +3,7 @@ package serial
 import (
 	"fmt"
 	"reflect"
+	"strconv"
 	"unsafe"
 
 	"github.com/Oneledger/protocol/node/log"
@@ -134,13 +135,23 @@ func GetChildrenMap(input interface{}) []Child {
 	children = make([]Child, 0)
 
 	for _, key := range valueOf.MapKeys() {
-		value := valueOf.MapIndex(key).Interface()
-		kind := reflect.ValueOf(value).Kind()
+		value := valueOf.MapIndex(key)
+		kind := value.Kind()
 
-		name := key.String()
-		children = append(children, Child{Name: name, Value: value, Kind: kind})
+		name := Value2String(key)
+		children = append(children, Child{Name: name, Value: value.Interface(), Kind: kind})
 	}
 	return children
+}
+
+func Value2String(key reflect.Value) string {
+	switch key.Kind() {
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		return strconv.FormatInt(key.Int(), 10)
+	case reflect.String:
+		return key.String()
+	}
+	return key.String()
 }
 
 // Get Children from a slice
