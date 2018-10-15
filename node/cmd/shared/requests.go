@@ -86,6 +86,7 @@ func CreateSendRequest(args *SendArguments) []byte {
 	// TODO: Can't convert identities to accounts, this way!
 	party := GetAccountKey(args.Party)
 	counterParty := GetAccountKey(args.CounterParty)
+	payment := GetAccountKey("Payment-OneLedger")
 
 	if args.Currency == "" || args.Amount == "" {
 		log.Error("Missing an amount")
@@ -97,24 +98,28 @@ func CreateSendRequest(args *SendArguments) []byte {
 	// Build up the Inputs
 	partyBalance := GetBalance(party)
 	counterPartyBalance := GetBalance(counterParty)
+	paymentBalance := GetBalance(payment)
 	if partyBalance == nil || counterPartyBalance == nil {
 		log.Error("Missing Balances")
 		return nil
 	}
 
+	fee := conv.GetCoin(args.Fee, args.Currency)
+	gas := conv.GetCoin(args.Gas, args.Currency)
+
 	inputs := make([]action.SendInput, 0)
 	inputs = append(inputs,
 		action.NewSendInput(party, *partyBalance),
-		action.NewSendInput(counterParty, *counterPartyBalance))
+		action.NewSendInput(counterParty, *counterPartyBalance),
+		action.NewSendInput(payment, *paymentBalance))
 
 	// Build up the outputs
 	outputs := make([]action.SendOutput, 0)
 	outputs = append(outputs,
-		action.NewSendOutput(party, partyBalance.Minus(amount)),
-		action.NewSendOutput(counterParty, counterPartyBalance.Plus(amount)))
+		action.NewSendOutput(party, partyBalance.Minus(amount).Minus(fee)),
+		action.NewSendOutput(counterParty, counterPartyBalance.Plus(amount)),
+		action.NewSendOutput(payment, paymentBalance.Plus(fee)))
 
-	fee := conv.GetCoin(args.Fee, args.Currency)
-	gas := conv.GetCoin(args.Gas, args.Currency)
 
 	if conv.HasErrors() {
 		Console.Error(conv.GetErrors())

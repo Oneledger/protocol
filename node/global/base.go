@@ -30,6 +30,7 @@ type Context struct {
 
 	NodeName        string // Name of this instance
 	NodeAccountName string // TODO: Should be a list of accounts
+	NodePaymentName string
 	NodeIdentity    string
 	RootDir         string // Working directory for this instance
 
@@ -56,6 +57,7 @@ func NewContext(name string) *Context {
 
 		NodeName:        name,
 		NodeAccountName: "Zero-OneLedger",
+		NodePaymentName: "Payment-OneLedger",
 		RootDir:         os.Getenv("OLDATA") + "/" + name + "/fullnode",
 
 		Sequence: 101,

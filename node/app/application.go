@@ -16,6 +16,7 @@ import (
 	"github.com/Oneledger/protocol/node/id"
 	"github.com/Oneledger/protocol/node/log"
 	"github.com/tendermint/tendermint/abci/types"
+	"github.com/tendermint/tendermint/crypto/ed25519"
 	"github.com/tendermint/tendermint/libs/common"
 )
 
@@ -118,17 +119,27 @@ func (app Application) SetupState(stateBytes []byte) {
 	}
 	state := des.(*BasicState)
 	log.Debug("Deserialized State", "state", state, "state.Account", state.Account)
+
 	// TODO: Can't generate a different key for each node. Needs to be in the genesis? Or ignored?
 	//publicKey, privateKey := id.GenerateKeys([]byte(state.Account)) // TODO: switch with passphrase
 	publicKey, privateKey := id.NilPublicKey(), id.NilPrivateKey()
+
+	CreateAccount(app, state.Account, state.Amount, publicKey, privateKey)
+
+	publicKey, privateKey = id.OnePublicKey(), id.OnePrivateKey()
+	CreateAccount(app, "Payment", 0, publicKey, privateKey)
+}
+
+func CreateAccount(app Application, stateAccount string, stateAmount int64, publicKey ed25519.PubKeyEd25519, privateKey ed25519.PrivKeyEd25519) {
+
 	// TODO: This should probably only occur on the Admin node, for other nodes how do I know the key?
 	// Register the identity and account first
-	RegisterLocally(&app, state.Account, "OneLedger", data.ONELEDGER, publicKey, privateKey)
-	account, _ := app.Accounts.FindName(state.Account + "-OneLedger")
+	RegisterLocally(&app, stateAccount, "OneLedger", data.ONELEDGER, publicKey, privateKey)
+	account, _ := app.Accounts.FindName(stateAccount + "-OneLedger")
 
 	// TODO: Should be more flexible to match genesis block
 	balance := data.Balance{
-		Amount: data.NewCoin(state.Amount, "OLT"),
+		Amount: data.NewCoin(stateAmount, "OLT"),
 	}
 
 	buffer, err := comm.Serialize(balance)

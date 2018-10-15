@@ -61,6 +61,14 @@ func NilPrivateKey() ED25519PrivateKey {
 	return ED25519PrivateKey{}
 }
 
+func OnePublicKey() ED25519PublicKey {
+	return ED25519PublicKey{1}
+}
+
+func OnePrivateKey() ED25519PrivateKey {
+	return ED25519PrivateKey{}
+}
+
 func GenerateKeys(secret []byte) (ED25519PrivateKey, ED25519PublicKey) {
 	// TODO: Should be configurable
 	private, public, err := generateKeys(secret, ED25519)
