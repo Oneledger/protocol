@@ -9,6 +9,7 @@ import (
 	"github.com/Oneledger/protocol/node/log"
 )
 
+// Alloc a new variable of any type
 func Alloc(dataType string, size int) interface{} {
 	if dataType == "" {
 		return nil
@@ -133,9 +134,9 @@ func SetStruct(parent interface{}, fieldName string, child interface{}) bool {
 	}
 
 	if field.Type().Kind() == reflect.Interface {
-		value := reflect.ValueOf(child)
-		log.Warn("Trying to set Interface", "child", child, "type", reflect.TypeOf(child), "value", value)
+		// When setting to a generic interface{}
 
+		value := reflect.ValueOf(child)
 		field.Set(value)
 
 	} else {
@@ -145,7 +146,6 @@ func SetStruct(parent interface{}, fieldName string, child interface{}) bool {
 		} else {
 			field.Set(newValue)
 		}
-
 	}
 	return true
 }
@@ -345,7 +345,6 @@ func CheckValue(element reflect.Value) bool {
 
 	if !element.CanSet() {
 		log.Warn("Element not Settable", "element", element)
-		//log.Dump("The element", element)
 		return false
 	}
 	return true
@@ -372,7 +371,6 @@ func SetArray(parent interface{}, index int, child interface{}) bool {
 	cell := element.Index(index)
 	newValue := ConvertValue(child, cell.Type())
 
-	//log.Dump("Convert", child, newValue, cell.Type())
 	element.Index(index).Set(newValue)
 
 	return true

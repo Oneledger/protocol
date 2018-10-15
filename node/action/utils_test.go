@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestBoxLocker_Sign(t *testing.T) {
+func XTestBoxLocker_Sign(t *testing.T) {
 	pkBytes, err := hex.DecodeString("22a47fa09a223f2aa079edf85a7c2d4f87" +
 		"20ee63e502ee2869afab7de234b80c")
 	if err != nil {
@@ -48,7 +48,7 @@ func TestBoxLocker_Sign(t *testing.T) {
 
 }
 
-func TestBoxLocker_Verify(t *testing.T) {
+func XTestBoxLocker_Verify(t *testing.T) {
 	// Decode hex-encoded serialized public key.
 	pubKeyBytes, err := hex.DecodeString("02a673638cb9587cb68ea08dbef685c" +
 		"6f2d2a751a8b3c6f2a7e9a4999e6e4bfaf5")

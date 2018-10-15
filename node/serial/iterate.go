@@ -51,6 +51,7 @@ func GetBaseValue(base interface{}) reflect.Value {
 
 // Find the type string that matches this variable
 func GetBaseTypeString(base interface{}) string {
+	// Need Value.Type, not TypeOf
 	valueOf := GetBaseValue(base)
 	return valueOf.Type().String()
 }

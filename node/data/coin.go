@@ -24,8 +24,11 @@ func init() {
 	serial.Register(Currency{})
 
 	// TODO: bit.Int is messy because it isn't entirely exportable
+	serial.RegisterIgnore(big.Int{})
+
 	// TODO: Hard coded to ignore big.Int, needs to be fixed...
-	serial.Register(big.Int{})
+	//serial.Register(big.Int{})
+
 	serial.Register(big.Word(0))
 	entry := serial.GetTypeEntry("[]big.Word", 1)
 	serial.RegisterForce("big.nat", serial.ARRAY, entry.DataType, nil, nil)

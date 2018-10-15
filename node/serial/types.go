@@ -4,6 +4,7 @@
 package serial
 
 import (
+	"fmt"
 	"reflect"
 	"regexp"
 	"strconv"
@@ -30,25 +31,24 @@ type TypeEntry struct {
 	ValueType *TypeEntry
 }
 
-/*
 func (entry TypeEntry) String() string {
 	switch entry.Category {
 	case UNKNOWN:
-		return entry.Name + " UNKNOWN: " + entry.DataType.String()
+		return fmt.Sprintf("%s UNKNOWN", entry.Name)
 	case PRIMITIVE:
-		return entry.Name + " PRIMITIVE: " + entry.DataType.String()
+		return fmt.Sprintf("%s PRIMITIVE %s", entry.Name, entry.DataType.String())
 	case STRUCT:
-		return entry.Name + " STRUCT: " + entry.DataType.String()
+		return fmt.Sprintf("%s STRUCT %s", entry.Name, entry.DataType.String())
 	case MAP:
-		return entry.Name + " MAP: " + entry.DataType.String()
+		return fmt.Sprintf("%s MAP %s (%s,%s)", entry.Name, entry.DataType.String(),
+			entry.KeyType.String(), entry.ValueType.String())
 	case SLICE:
-		return entry.Name + " SLICE: " + entry.DataType.String()
+		return fmt.Sprintf("%s SLICE %s (%s)", entry.Name, entry.DataType.String(), entry.ValueType.String())
 	case ARRAY:
-		return entry.Name + " ARRAY: " + entry.DataType.String()
+		return fmt.Sprintf("%s ARRAY %s (%s)", entry.Name, entry.DataType.String(), entry.ValueType.String())
 	}
 	return "Invalid!"
 }
-*/
 
 var dataTypes map[string]TypeEntry
 var ignoreTypes map[string]TypeEntry
@@ -125,7 +125,6 @@ func Register(base interface{}) {
 		//log.Dump("Full Entry is", dataTypes[name])
 		return
 	}
-
 	dataTypes[name] = TypeEntry{name, category, typeOf, typeOf, nil, nil}
 }
 
@@ -138,24 +137,38 @@ func RegisterIgnore(base interface{}) {
 	if ignoreTypes == nil {
 		ignoreTypes = make(map[string]TypeEntry)
 	}
+	Register(base)
 
 	name := GetBaseTypeString(base)
 
 	typeOf := reflect.TypeOf(base)
 	var category Category = PRIMITIVE
-	if IsStructure(base) {
-		ignoreTypes[name] = TypeEntry{name, STRUCT, typeOf, typeOf, nil, nil}
-		return
-	}
-	if IsPrimitiveContainer(base) {
-		ubase := UnderlyingType(base)
-		ignoreType := GetTypeEntry(ubase.String(), 1)
-		ignoreType.Name = name
-		ignoreTypes[name] = ignoreType
-		return
-	}
-
+	/*
+		if IsStructure(base) {
+			ignoreTypes[name] = TypeEntry{name, STRUCT, typeOf, typeOf, nil, nil}
+			return
+		}
+		if IsPrimitiveContainer(base) {
+			ubase := UnderlyingType(base)
+			underType := GetTypeEntry(ubase.String(), 1)
+			underType.Name = name
+			underType.RootType = typeOf
+			ignoreTypes[name] = ignoreType
+			return
+		}
+	*/
 	ignoreTypes[name] = TypeEntry{name, category, typeOf, typeOf, nil, nil}
+}
+
+func IgnoreType(dataType reflect.Type) bool {
+	if _, ok := ignoreTypes[dataType.String()]; ok {
+		return true
+	}
+	return false
+}
+
+func IgnoreVariable(value interface{}) bool {
+	return IgnoreType(GetBaseType(value))
 }
 
 func GetTypeEntry(name string, size int) TypeEntry {

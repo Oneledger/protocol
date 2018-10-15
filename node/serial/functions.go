@@ -82,7 +82,6 @@ func Extend(base interface{}) interface{} {
 	for _, value := range action.Processed["base"].Children {
 		return value
 	}
-
 	return result
 }
 
@@ -95,21 +94,19 @@ func ExtendNode(action *Action, input interface{}) interface{} {
 		return input
 	}
 
-	// TODO: Set this to be ignored types
-	if GetBaseTypeString(input) == "big.Int" {
+	// Ignore this variable because of its type.
+	if IgnoreVariable(input) {
 		return input
 	}
 
 	if IsContainer(input) {
 		mapping, size := ConvertMap(input)
-		//log.Dump("Have Mapping", mapping)
 
 		// Attach all of the interface children
 		for key, value := range action.Processed[action.Name].Children {
 			mapping[key] = value
 			delete(action.Processed[action.Name].Children, key)
 		}
-		//log.Dump("Revised Mapping", mapping)
 
 		typestr := reflect.TypeOf(input).String()
 
