@@ -37,7 +37,7 @@ func init() {
 
 func NewSendInput(accountKey id.AccountKey, amount data.Coin) SendInput {
 	if bytes.Equal(accountKey, []byte("")) {
-		log.Fatal("Missing Account")
+		log.Fatal("Missing AccountKey")
 	}
 
 	return SendInput{
@@ -54,7 +54,7 @@ type SendOutput struct {
 
 func NewSendOutput(accountKey id.AccountKey, amount data.Coin) SendOutput {
 	if bytes.Equal(accountKey, []byte("")) {
-		log.Fatal("Missing Account")
+		log.Fatal("Missing AccountKey")
 	}
 
 	return SendOutput{

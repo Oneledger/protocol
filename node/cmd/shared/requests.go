@@ -87,6 +87,8 @@ func CreateSendRequest(args *SendArguments) []byte {
 	party := GetAccountKey(args.Party)
 	counterParty := GetAccountKey(args.CounterParty)
 
+	log.Dump("AccountKeys", party, counterParty)
+
 	if args.Currency == "" || args.Amount == "" {
 		log.Error("Missing an amount")
 		return nil
@@ -97,6 +99,8 @@ func CreateSendRequest(args *SendArguments) []byte {
 	// Build up the Inputs
 	partyBalance := GetBalance(party)
 	counterPartyBalance := GetBalance(counterParty)
+	log.Dump("Balances", partyBalance, counterPartyBalance)
+
 	if partyBalance == nil || counterPartyBalance == nil {
 		log.Error("Missing Balances")
 		return nil
@@ -239,7 +243,7 @@ func CreateSwapRequest(args *SwapArguments) []byte {
 
 	account[conv.GetChain(args.Currency)] = GetSwapAddress(conv.GetCurrency(args.Currency))
 	account[conv.GetChain(args.Excurrency)] = GetSwapAddress(conv.GetCurrency(args.Excurrency))
-    //log.Debug("accounts for swap", "accountbtc", account[data.BITCOIN], "accounteth", common.BytesToAddress([]byte(account[data.ETHEREUM])), "accountolt", account[data.ONELEDGER])
+	//log.Debug("accounts for swap", "accountbtc", account[data.BITCOIN], "accounteth", common.BytesToAddress([]byte(account[data.ETHEREUM])), "accountolt", account[data.ONELEDGER])
 	party := action.Party{Key: partyKey, Accounts: account}
 	counterParty := action.Party{Key: counterPartyKey, Accounts: counterAccount}
 

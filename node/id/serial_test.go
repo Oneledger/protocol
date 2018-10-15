@@ -5,6 +5,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/Oneledger/protocol/node/data"
 	"github.com/Oneledger/protocol/node/global"
 	"github.com/Oneledger/protocol/node/log"
 	"github.com/Oneledger/protocol/node/serial"
@@ -28,6 +29,20 @@ func TestMain(m *testing.M) {
 	code := m.Run()
 
 	os.Exit(code)
+}
+
+func TestKeyType(t *testing.T) {
+	var key AccountKey
+
+	name := serial.GetBaseTypeString(key)
+	log.Debug("String type", "name", name)
+
+	entry := serial.GetTypeEntry(name, 1)
+	if entry.Category != serial.UNKNOWN {
+		log.Dump("AccountKey entry is", name, entry)
+	} else {
+		log.Fatal("Missing Type Information")
+	}
 }
 
 func TestIdentity(t *testing.T) {
@@ -83,7 +98,15 @@ func TestPublicKey(t *testing.T) {
 }
 
 func TestAccount(t *testing.T) {
-	var account Account = &AccountOneLedger{}
+	//global.Current.RootDir = "./"
+	//accounts := NewAccounts("LocalAccounts")
+
+	chain := data.ONELEDGER
+	accountName := "BaseAccount"
+	publicKey := NilPublicKey()
+	privateKey := NilPrivateKey()
+
+	account := NewAccount(chain, accountName, publicKey, privateKey)
 
 	// Serialize the go data structure
 	buffer, err := serial.Serialize(account, serial.PERSISTENT)

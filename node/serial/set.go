@@ -1,6 +1,7 @@
 package serial
 
 import (
+	"math/big"
 	"reflect"
 	"runtime/debug"
 	"strconv"
@@ -9,60 +10,65 @@ import (
 )
 
 func Alloc(dataType string, size int) interface{} {
-	log.Debug("Allocating", "dataType", dataType, "size", size)
-
 	if dataType == "" {
-		log.Warn("Missing dataType")
 		return nil
 	}
 
 	if size == -1 {
-		log.Warn("Size is nil")
 		return nil
 	}
 
 	entry := GetTypeEntry(dataType, size)
-	log.Dump("Found entry", entry)
+	/*
+		if dataType == "ed25519.PubKeyEd25519" {
+			log.Dump("PubKeyEd25519 Entry", size, entry)
+		}
+	*/
 
 	var value reflect.Value
-	var result interface{}
 
 	switch entry.Category {
+	case UNKNOWN:
+		log.Fatal("Unknown datatype", "dataType", dataType)
+
 	case PRIMITIVE:
 		// Don't need to alloc, only containers
+		return nil
 
 	case STRUCT:
 		value = reflect.New(entry.DataType)
 		if !value.IsValid() {
-			log.Debug("Retrying as slice?")
+			log.Warn("Retrying as slice?")
 			value = reflect.MakeSlice(entry.DataType, size, size)
 			if !value.IsValid() {
-				log.Debug("Retrying as byte array")
+				log.Warn("Retrying as byte array")
 				value = reflect.ValueOf(make([]byte, size))
 			}
-		} else {
-			log.Debug("Value isn't nil", "value", value)
 		}
-		log.Dump("Allocated struct", value)
 		return value.Interface()
 
 	case MAP:
-		result = reflect.MakeMapWithSize(entry.DataType, size).Interface()
-		log.Dump("Allocated map", result)
-		return result
+		smap := reflect.MakeMapWithSize(entry.DataType, size)
+		value = reflect.New(smap.Type())
+		value.Elem().Set(smap)
+		return value.Interface()
 
 	case SLICE:
-		log.Debug("Allocating Slice", "size", size)
-		result = reflect.MakeSlice(entry.DataType, size, size).Interface()
-		log.Dump("Allocated slice", result)
-		return result
+		slice := reflect.MakeSlice(entry.DataType, size, size)
+		value = reflect.New(slice.Type())
+		value.Elem().Set(slice)
+		//log.Dump("New Slice", value)
+		return value.Interface()
 
-	case UNKNOWN:
-		log.Fatal("Unknown datatype", "dataType", dataType)
+	case ARRAY:
+		array := reflect.ArrayOf(size, entry.ValueType.DataType)
+		value = reflect.New(array)
+		//result.Elem().Set(array)
+		//log.Dump("New Array", value)
+		return value.Interface()
 	}
 
-	log.Dump("Unknown Caetgory", entry)
-
+	log.Warn("Unknown Category", "dataType", dataType, "entry", entry)
 	return nil
 }
 
@@ -71,22 +77,19 @@ func Set(parent interface{}, fieldName string, child interface{}) (status bool) 
 
 	defer func() {
 		if r := recover(); r != nil {
+			//log.Dump("Parameters", parent, fieldName, child)
 			log.Error("Ignoring Set Panic", "r", r)
-			log.Dump("Parameters", parent, fieldName, child)
 			debug.PrintStack()
 			status = false
 		}
 	}()
 
-	kind := reflect.ValueOf(parent).Kind()
-
-	if kind == reflect.Ptr {
-		kind = reflect.ValueOf(parent).Elem().Kind()
-	}
+	kind := GetBaseValue(parent).Kind()
 
 	switch kind {
 
 	case reflect.Struct:
+		//log.Dump("The parent", parent, kind)
 		return SetStruct(parent, fieldName, child)
 
 	case reflect.Map:
@@ -116,7 +119,8 @@ func SetStruct(parent interface{}, fieldName string, child interface{}) bool {
 	}
 
 	// Convert the interfaces to structures
-	element := reflect.ValueOf(parent).Elem()
+	//element := reflect.ValueOf(parent).Elem()
+	element := GetBaseValue(parent)
 
 	if element.Kind() != reflect.Struct {
 		log.Fatal("Not a structure", "element", element, "kind", element.Kind())
@@ -134,13 +138,17 @@ func SetStruct(parent interface{}, fieldName string, child interface{}) bool {
 
 	if field.Type().Kind() == reflect.Interface {
 		value := reflect.ValueOf(child)
-		log.Debug("Trying to set Interface", "child", child, "type", reflect.TypeOf(child), "value", value)
+		log.Warn("Trying to set Interface", "child", child, "type", reflect.TypeOf(child), "value", value)
 
 		field.Set(value)
 
 	} else {
 		newValue := ConvertValue(child, field.Type())
-		field.Set(newValue)
+		if newValue.Kind() == reflect.Int {
+			field.SetInt(newValue.Int())
+		} else {
+			field.Set(newValue)
+		}
 
 	}
 	return true
@@ -169,17 +177,19 @@ func ConvertValue(value interface{}, fieldType reflect.Type) reflect.Value {
 
 	case reflect.String:
 		if fieldType.Kind() == reflect.Int {
-			log.Debug("CONVERTING STR TO INT")
 			result, err := strconv.ParseInt(valueOf.Elem().String(), 10, 0)
 			if err != nil {
 				log.Fatal("Failed to convert int")
 			}
 			return reflect.ValueOf(result)
 		}
-	case reflect.Int:
-		if fieldType.Kind().String() == "data.ChainType" {
-			log.Debug("GOT YOU!")
-		}
+		//case reflect.Int:
+		// TODO: What?!
+		/*
+			if fieldType.Kind().String() == "data.ChainType" {
+				log.Debug("GOT YOU!")
+			}
+		*/
 	}
 	return valueOf
 }
@@ -188,26 +198,41 @@ func ConvertValue(value interface{}, fieldType reflect.Type) reflect.Value {
 func ConvertNumber(fieldType reflect.Type, value reflect.Value) reflect.Value {
 
 	// TODO: find a better way of handling types that are not structures
-	if fieldType.String() == "data.ChainType" {
-		entry := GetTypeEntry(fieldType.String(), 1)
-		valueof := reflect.New(entry.DataType)
-		var result int64
-		result = int64(value.Float())
-		element := valueof.Elem()
-		element.SetInt(result)
-		return element
-	}
-	if fieldType.String() == "action.Type" {
-		entry := GetTypeEntry(fieldType.String(), 1)
-		valueof := reflect.New(entry.DataType)
-		var result int64
-		result = int64(value.Float())
-		element := valueof.Elem()
-		element.SetInt(result)
-		return element
+	/*
+		if fieldType.String() == "data.ChainType" {
+			entry := GetTypeEntry(fieldType.String(), 1)
+			valueof := reflect.New(entry.DataType)
+			var result int64
+			result = int64(value.Float())
+			element := valueof.Elem()
+			element.SetInt(result)
+			return element
+		}
+	*/
+	/*
+		if fieldType.String() == "action.Type" {
+			entry := GetTypeEntry(fieldType.String(), 1)
+			valueof := reflect.New(entry.DataType)
+
+			var result int64
+			result = int64(value.Float())
+
+			element := valueof.Elem()
+			element.SetInt(result)
+			return element
+		}
+	*/
+
+	// TODO: shouldn't be manaually creating big ints
+	if fieldType.String() == "*big.Int" {
+		converted := big.NewInt(int64(value.Float()))
+		return reflect.ValueOf(converted)
 	}
 
 	switch fieldType.Kind() {
+	case reflect.Int:
+		return reflect.ValueOf(int(value.Float()))
+
 	case reflect.Int8:
 		return reflect.ValueOf(int8(value.Float()))
 
@@ -220,15 +245,10 @@ func ConvertNumber(fieldType reflect.Type, value reflect.Value) reflect.Value {
 	case reflect.Int64:
 		return reflect.ValueOf(int64(value.Float()))
 
-	case reflect.Int:
-		log.Debug("##### CONVERTING JSON NUMBER TO GO INTEGER")
-		return reflect.ValueOf(int(value.Float()))
-
 	case reflect.Uint:
 		return reflect.ValueOf(uint(value.Float()))
 
 	case reflect.Uint8:
-		//log.Debug("##### CONVERTING JSON NUMBER TO GO BYTE")
 		return reflect.ValueOf(uint8(value.Float()))
 
 	case reflect.Uint16:
@@ -251,7 +271,7 @@ func ConvertNumber(fieldType reflect.Type, value reflect.Value) reflect.Value {
 func SetMap(parent interface{}, fieldName string, child interface{}) bool {
 
 	// Convert the interfaces to structures
-	element := GetValue(parent)
+	element := GetBaseValue(parent)
 
 	if element.Kind() != reflect.Map {
 		log.Fatal("Not a map", "element", element)
@@ -262,15 +282,13 @@ func SetMap(parent interface{}, fieldName string, child interface{}) bool {
 	}
 
 	key := reflect.ValueOf(fieldName)
-	fieldType := GetType(parent).Elem()
+	fieldType := GetBaseType(parent).Elem()
 
 	newValue := ConvertValue(child, fieldType)
 
-	log.Dump("key", key, "newValue", newValue)
-
 	if element.Len() < 1 {
-		log.Debug("Extending Map", "element", element, "len", element.Len())
 		// TODO: Need to figure out a reasonable size here...
+		log.Warn("Reallocating Map")
 		entry := GetTypeEntry(element.Type().String(), 100)
 		element = reflect.MakeMapWithSize(entry.DataType, 100)
 	}
@@ -284,7 +302,7 @@ func SetMap(parent interface{}, fieldName string, child interface{}) bool {
 func SetSlice(parent interface{}, index int, child interface{}) bool {
 
 	// Convert the interfaces to structures
-	element := GetValue(parent)
+	element := GetBaseValue(parent)
 
 	if element.Kind() != reflect.Slice {
 		log.Fatal("Not a slice", "element", element)
@@ -294,11 +312,9 @@ func SetSlice(parent interface{}, index int, child interface{}) bool {
 		return false
 	}
 
-	log.Dump("Element is", element, element.Len(), element.Cap())
 	if element.Len() < index {
-		log.Debug("Extending Slice", "element", element, "len", element.Len(), "index", index)
+		log.Warn("Reallocating Slice")
 		element = reflect.MakeSlice(element.Index(0).Type(), index+1, index+1)
-		log.Dump("At index", element.Index(index))
 	}
 	newValue := ConvertValue(child, element.Index(index).Type())
 	element.Index(index).Set(newValue)
@@ -313,7 +329,8 @@ func CheckValue(element reflect.Value) bool {
 	}
 
 	if !element.CanSet() {
-		log.Warn("Not Settable", "element", element)
+		log.Warn("Element not Settable", "element", element)
+		//log.Dump("The element", element)
 		return false
 	}
 	return true
@@ -323,7 +340,7 @@ func CheckValue(element reflect.Value) bool {
 func SetArray(parent interface{}, index int, child interface{}) bool {
 
 	// Convert the interfaces to structures
-	element := GetValue(parent)
+	element := GetBaseValue(parent)
 
 	if element.Kind() != reflect.Array {
 		log.Fatal("Not a structure", "element", element)
@@ -333,7 +350,14 @@ func SetArray(parent interface{}, index int, child interface{}) bool {
 		return false
 	}
 
-	newValue := ConvertValue(child, element.Index(index).Type())
+	if element.Len() < index {
+		log.Warn("Reallocating Array")
+	}
+
+	cell := element.Index(index)
+	newValue := ConvertValue(child, cell.Type())
+
+	//log.Dump("Convert", child, newValue, cell.Type())
 	element.Index(index).Set(newValue)
 
 	return true

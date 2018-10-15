@@ -6,6 +6,8 @@ package serial
 
 import (
 	"reflect"
+
+	"github.com/Oneledger/protocol/node/log"
 )
 
 // Language primitives
@@ -44,6 +46,97 @@ func IsPrimitive(input interface{}) bool {
 	return false
 }
 
+func UnderlyingType(input interface{}) reflect.Type {
+	//log.Dump("Calling underlyingType", input)
+
+	var proto interface{}
+	if input == nil {
+		return reflect.TypeOf(proto)
+	}
+
+	typeOf := reflect.TypeOf(input)
+	if typeOf == nil {
+		log.Fatal("Invalid type")
+	}
+
+	kind := typeOf.Kind()
+
+	entry := GetTypeEntry(kind.String(), 1)
+	if entry.Category != UNKNOWN {
+		return entry.DataType
+	}
+
+	switch kind {
+	case reflect.Ptr:
+		return UnderlyingType(reflect.ValueOf(input).Elem().Interface())
+
+	case reflect.Struct:
+		return typeOf
+
+	case reflect.Map:
+		keyType := typeOf.Key()
+		keyValue := reflect.New(keyType).Interface()
+		elementType := typeOf.Elem()
+		elementValue := reflect.New(elementType).Interface()
+		return reflect.MapOf(UnderlyingType(keyValue), UnderlyingType(elementValue))
+
+	case reflect.Slice:
+		elementType := typeOf.Elem()
+		elementValue := reflect.New(elementType).Interface()
+		return reflect.SliceOf(UnderlyingType(elementValue))
+
+	case reflect.Array:
+		elementType := typeOf.Elem()
+		elementValue := reflect.New(elementType).Interface()
+		return reflect.ArrayOf(1, UnderlyingType(elementValue))
+	}
+
+	log.Warn("Not sure, so interface{} type")
+	return reflect.TypeOf(proto)
+}
+
+func IsPrimitiveArray(input interface{}) bool {
+	entry := GetTypeEntry(GetBaseTypeString(input), 1)
+	if entry.Category == ARRAY {
+		if entry.ValueType.Category == PRIMITIVE {
+			return true
+		}
+	}
+
+	underlying := UnderlyingType(input)
+	if underlying != nil {
+		entry = GetTypeEntry(underlying.String(), 1)
+		if entry.Category == ARRAY {
+			if entry.ValueType.Category == PRIMITIVE {
+				return true
+			}
+		}
+	}
+
+	return false
+}
+
+func IsPrimitiveSlice(input interface{}) bool {
+	entry := GetTypeEntry(GetBaseTypeString(input), 1)
+	if entry.Category == SLICE {
+		if entry.ValueType.Category == PRIMITIVE {
+			return true
+		}
+	}
+
+	underlying := UnderlyingType(input)
+	if underlying != nil {
+		entry = GetTypeEntry(underlying.String(), 1)
+		if entry.Category == SLICE {
+			if entry.ValueType.Category == PRIMITIVE {
+				return true
+			}
+		}
+	}
+
+	return false
+}
+
 func IsInterface(input interface{}) bool {
 	if input == nil {
 		return false
@@ -52,6 +145,24 @@ func IsInterface(input interface{}) bool {
 	kind := reflect.TypeOf(input).Kind()
 	if kind == reflect.Interface {
 		return true
+	}
+	return false
+}
+
+// See if the underlying Value is nil
+func IsNilValue(input interface{}) bool {
+	if input == nil {
+		return true
+	}
+
+	valueOf := reflect.ValueOf(input)
+	kind := valueOf.Kind()
+
+	switch kind {
+	case reflect.Ptr, reflect.Map, reflect.Slice:
+		if valueOf.IsNil() {
+			return true
+		}
 	}
 	return false
 }
@@ -75,6 +186,22 @@ func IsStructure(input interface{}) bool {
 
 	kind := reflect.TypeOf(input).Kind()
 	if kind == reflect.Struct {
+		return true
+	}
+	return false
+}
+
+// An array or slice that is based around primtives, like []byte
+func IsPrimitiveContainer(input interface{}) bool {
+	if !IsContainer(input) {
+		return false
+	}
+
+	if IsPrimitiveArray(input) {
+		return true
+	}
+
+	if IsPrimitiveSlice(input) {
 		return true
 	}
 	return false

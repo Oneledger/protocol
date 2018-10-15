@@ -23,11 +23,11 @@ func TestBoxLocker_Sign(t *testing.T) {
 	messageHash := chainhash.DoubleHashB([]byte(message))
 
 	locker := BoxLocker{}
-	err := locker.Sign(pkBytes[:len(pkBytes)/2], pkBytes[len(pkBytes)/2:], messageHash)
+	status := locker.Sign(pkBytes[:len(pkBytes)/2], pkBytes[len(pkBytes)/2:], messageHash)
 
-	assert.Equal(t, nil, err, "Sign with preimage and nonce success")
-	if err != nil {
-		log.Error(err.Error())
+	assert.Equal(t, nil, status, "Sign with preimage and nonce success")
+	if status != nil {
+		log.Error(status.Error())
 		return
 	}
 

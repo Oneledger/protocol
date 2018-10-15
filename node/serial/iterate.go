@@ -3,6 +3,7 @@ package serial
 import (
 	"fmt"
 	"reflect"
+	"unsafe"
 
 	"github.com/Oneledger/protocol/node/log"
 )
@@ -29,8 +30,8 @@ type Parameters struct {
 	Children map[string]interface{}
 }
 
-// GetType returns the underlying value, even if it is a pointer
-func GetType(base interface{}) reflect.Type {
+// GetBaseType returns the underlying value, even if it is a pointer
+func GetBaseType(base interface{}) reflect.Type {
 	element := reflect.TypeOf(base)
 	if element.Kind() == reflect.Ptr {
 		return element.Elem()
@@ -38,13 +39,19 @@ func GetType(base interface{}) reflect.Type {
 	return element
 }
 
-// GetValue returns the underlying value, even if it is a pointer
-func GetValue(base interface{}) reflect.Value {
+// GetBaseValue returns the underlying value, even if it is a pointer
+func GetBaseValue(base interface{}) reflect.Value {
 	element := reflect.ValueOf(base)
 	if element.Kind() == reflect.Ptr {
 		return element.Elem()
 	}
 	return element
+}
+
+// Find the type string that matches this variable
+func GetBaseTypeString(base interface{}) string {
+	valueOf := GetBaseValue(base)
+	return valueOf.Type().String()
 }
 
 // Extract this info once, even though it is used in multiple levels of the recursion
@@ -57,7 +64,14 @@ type Child struct {
 
 // Get the Fields from a structure, and return them into a field array
 func GetChildren(input interface{}) []Child {
-	kind := reflect.TypeOf(input).Kind()
+	typeOf := reflect.TypeOf(input)
+
+	// TODO: Shouldn't need to manually ignore recursion
+	if typeOf.String() == "big.Int" {
+		return []Child{}
+	}
+
+	kind := typeOf.Kind()
 
 	switch kind {
 	case reflect.Struct:
@@ -78,7 +92,7 @@ func GetChildren(input interface{}) []Child {
 // Get Children from a structure
 func GetChildrenStruct(input interface{}) []Child {
 	typeOf := reflect.TypeOf(input)
-	valueOf := GetValue(input)
+	valueOf := GetBaseValue(input)
 
 	count := valueOf.NumField()
 
@@ -86,13 +100,25 @@ func GetChildrenStruct(input interface{}) []Child {
 	children = make([]Child, count)
 
 	for i := 0; i < count; i++ {
-		field := typeOf.Field(i)
-		element := valueOf.Field(i)
+		fieldType := typeOf.Field(i)
+		field := valueOf.Field(i)
 
-		if element.IsValid() && element.CanInterface() {
-			name := field.Name
-			value := element.Interface()
-			kind := element.Kind()
+		//if element.IsValid() && element.CanInterface() {
+		if field.CanInterface() {
+			name := fieldType.Name
+			value := field.Interface()
+			kind := field.Kind()
+
+			children[i] = Child{Name: name, Number: i, Value: value, Kind: kind}
+		} else {
+			// Have to recreate the parent, so be able to recreate the child...
+			avalueOf := reflect.New(valueOf.Type()).Elem()
+			avalueOf.Set(valueOf)
+			rfield := avalueOf.Field(i)
+			afield := reflect.NewAt(rfield.Type(), unsafe.Pointer(rfield.UnsafeAddr())).Elem()
+			name := fieldType.Name
+			value := afield.Interface()
+			kind := afield.Kind()
 
 			children[i] = Child{Name: name, Number: i, Value: value, Kind: kind}
 		}
@@ -102,7 +128,7 @@ func GetChildrenStruct(input interface{}) []Child {
 
 // Get Children from a Map
 func GetChildrenMap(input interface{}) []Child {
-	valueOf := GetValue(input)
+	valueOf := GetBaseValue(input)
 
 	var children []Child
 	children = make([]Child, 0)
@@ -120,13 +146,13 @@ func GetChildrenMap(input interface{}) []Child {
 // Get Children from a slice
 func GetChildrenSlice(input interface{}) []Child {
 	typeOf := reflect.TypeOf(input)
-	valueOf := GetValue(input)
+	valueOf := GetBaseValue(input)
 
 	var children []Child
 	children = make([]Child, 0)
 
+	// TODO: Check this, optimization?
 	if typeOf.String() == "[]byte" {
-		log.Warn("have byte array")
 		return children
 	}
 
@@ -143,7 +169,7 @@ func GetChildrenSlice(input interface{}) []Child {
 
 // Get children from an array
 func GetChildrenArray(input interface{}) []Child {
-	valueOf := GetValue(input)
+	valueOf := GetBaseValue(input)
 
 	var children []Child
 	children = make([]Child, 0)
@@ -183,7 +209,7 @@ func Iterate(input interface{}, action *Action) interface{} {
 	action.Path.Push(action.Name)
 
 	if IsPointer(input) {
-		if input != nil {
+		if !IsNilValue(input) {
 			input = reflect.ValueOf(input).Elem().Interface()
 		}
 		action.IsPointer = true

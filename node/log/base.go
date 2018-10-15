@@ -22,11 +22,11 @@ func init() {
 
 	spew.Config = spew.ConfigState{
 		Indent:                  "    ",
-		DisableMethods:          true,
-		DisablePointerMethods:   true,
-		DisablePointerAddresses: true,
-		DisableCapacities:       true,
-		SortKeys:                true,
+		DisableMethods:          false,
+		DisablePointerMethods:   false,
+		DisablePointerAddresses: false,
+		DisableCapacities:       false,
+		SortKeys:                false,
 	}
 }
 

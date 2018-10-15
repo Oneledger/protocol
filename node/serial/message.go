@@ -13,8 +13,6 @@ package serial
 import (
 	"encoding/json"
 	"reflect"
-
-	"github.com/Oneledger/protocol/node/log"
 )
 
 type Format int
@@ -56,7 +54,7 @@ func Serialize(input interface{}, medium Format) (buffer []byte, err error) {
 		buffer, err = json.Marshal(copy)
 	}
 
-	log.Dump("Serialized format", string(buffer))
+	//log.Dump("Serialized format", string(buffer))
 
 	return buffer, err
 }
@@ -64,7 +62,7 @@ func Serialize(input interface{}, medium Format) (buffer []byte, err error) {
 // Given a serialized slice, put it back into the original struct format
 func Deserialize(input []byte, output interface{}, medium Format) (msg interface{}, err error) {
 
-	log.Dump("Deserialize the string", string(input))
+	//log.Dump("Deserialize the string", string(input))
 
 	//wrapper := &(map[string]interface{}{})
 	wrapper := &SerialWrapper{}
@@ -85,6 +83,7 @@ func Deserialize(input []byte, output interface{}, medium Format) (msg interface
 
 		// Exit before trying to contract
 		if err == nil {
+			//log.Dump("JSON Deserialized to", output)
 			return output, err
 		}
 	}
@@ -94,9 +93,7 @@ func Deserialize(input []byte, output interface{}, medium Format) (msg interface
 	}
 
 	result := Contract(wrapper)
-
-	log.Dump("final result", result)
-	log.Dump("original wrapper", wrapper)
+	//log.Dump("Deserialized to", result)
 
 	return result, err
 }
@@ -148,23 +145,5 @@ func IsSerialWrapperMap(input interface{}) bool {
 	if _, ok := smap["Size"]; !ok {
 		return false
 	}
-
 	return true
 }
-
-/*
-// Dynamically create a structure from its name
-func NewStruct(name string) interface{} {
-	name = strings.TrimPrefix(name, "*")
-
-	struct_type := structures[name]
-	if struct_type == nil {
-		log.Dump("structures", structures)
-		log.Fatal("Missing structure type", "name", name)
-		return nil
-	}
-
-	base := reflect.New(struct_type)
-	return base.Interface()
-}
-*/

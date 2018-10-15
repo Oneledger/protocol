@@ -21,7 +21,7 @@ func Print(base interface{}) {
 
 // PrintNode is called for each node
 func PrintNode(action *Action, input interface{}) interface{} {
-	log.Dump("#### Node", input)
+	log.Dump("Node", input)
 	return true
 }
 
@@ -33,8 +33,6 @@ func Clone(base interface{}) interface{} {
 	}
 	result := Iterate(base, action)
 
-	// TODO: check the pointer?
-	//for _, value := range action.Processed["*base"].Children {
 	for _, value := range action.Processed["base"].Children {
 		return value
 	}
@@ -64,7 +62,6 @@ func CloneNode(action *Action, input interface{}) interface{} {
 
 // Clone and add in SerialWrapper
 func Extend(base interface{}) interface{} {
-	//log.Dump("Extend this", base)
 
 	// Don't need to recurse
 	if IsPrimitive(base) {
@@ -85,9 +82,16 @@ func Extend(base interface{}) interface{} {
 
 // Extend the input by replacing all structures with a wrapper
 func ExtendNode(action *Action, input interface{}) interface{} {
-	//log.Debug("ExtendNode", "input", input)
 
 	parent := action.Path.StringPeekN(1)
+
+	if input == nil || IsNilValue(input) {
+		return input
+	}
+
+	if GetBaseTypeString(input) == "big.Int" {
+		return input
+	}
 
 	if IsContainer(input) {
 		mapping, size := ConvertMap(input)
@@ -113,14 +117,10 @@ func ExtendNode(action *Action, input interface{}) interface{} {
 			Fields: mapping,
 			Size:   size,
 		}
-		log.Dump("Input is", input)
-		log.Dump("Mapping is", mapping, size)
-		log.Dump("Wrapper is", wrapper)
 		action.Processed[parent].Children[action.Name] = wrapper
 
 		return wrapper
 	}
-
 	return input
 }
 
@@ -151,8 +151,6 @@ func Contract(base interface{}) interface{} {
 
 // Replace any incoming SerialWrappers with the correct structure
 func ContractNode(action *Action, input interface{}) interface{} {
-	//log.Debug("ContractNode", "input", input)
-
 	grandparent := action.Path.StringPeekN(2)
 	if grandparent == "" {
 		// Top-level, just use the parent
@@ -165,6 +163,11 @@ func ContractNode(action *Action, input interface{}) interface{} {
 		size := wrapper.Size
 
 		result := Alloc(stype, size)
+		/*
+			if stype == "ed25519.PubKeyEd25519" {
+				log.Dump("New ed25519.PubKeyEd25519", result)
+			}
+		*/
 
 		// Needs to come from the serialized name
 		if strings.HasPrefix(stype, "*") {
@@ -178,6 +181,12 @@ func ContractNode(action *Action, input interface{}) interface{} {
 			Set(result, key, value)
 			delete(action.Processed[action.Name].Children, key)
 		}
+
+		/*
+			if stype == "ed25519.PubKeyEd25519" {
+				log.Dump("Set ed25519.PubKeyEd25519", result)
+			}
+		*/
 
 		SetProcessed(action, grandparent, action.Name, result)
 
@@ -189,9 +198,13 @@ func ContractNode(action *Action, input interface{}) interface{} {
 		stype := wrapper["Type"].(string)
 		sizeFloat := wrapper["Size"].(float64)
 		size := int(sizeFloat)
-		//size, _ := strconv.ParseInt(sizeFloat.String(), 10, 0)
 
 		result := Alloc(stype, size)
+		/*
+			if stype == "id.AccountKey" {
+				log.Dump("New AccountKey", result)
+			}
+		*/
 
 		// Needs to come from the serialized name
 		if strings.HasPrefix(stype, "*") {
@@ -206,12 +219,17 @@ func ContractNode(action *Action, input interface{}) interface{} {
 			delete(action.Processed[action.Name].Children, key)
 		}
 
+		/*
+			if stype == "id.AccountKey" {
+				log.Dump("Set AccountKey", result)
+			}
+		*/
+
 		SetProcessed(action, grandparent, action.Name, result)
-		return result
+		return CleanValue(action, result)
 	}
 
 	SetProcessed(action, grandparent, action.Name, input)
-
 	return CleanValue(action, input)
 }
 

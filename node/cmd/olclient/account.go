@@ -48,13 +48,14 @@ func CheckAccount(cmd *cobra.Command, args []string) {
 	if response != nil {
 		// var accountQuery app.AccountQuery
 		var prototype app.AccountQuery
-		result, err := serial.Deserialize(response.Response.Value, &prototype, serial.CLIENT)
+		result, err := serial.Deserialize(response.Response.Value, prototype, serial.CLIENT)
 		if err != nil {
 			shared.Console.Error("Failed to deserialize AccountQuery")
 			shared.Console.Warning("Query failed")
 			return
 		}
-		printQuery(result.(*app.AccountQuery))
+		final := result.(app.AccountQuery)
+		printQuery(&final)
 	} else {
 		shared.Console.Warning("Query Failed")
 	}

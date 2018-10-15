@@ -69,14 +69,15 @@ func (state *ChainState) FindAll() map[string]*Balance {
 		key, value := state.Delivered.GetByIndex64(i)
 
 		var balance Balance
-		result, err := serial.Deserialize(value, &balance, serial.PERSISTENT)
+		result, err := serial.Deserialize(value, balance, serial.PERSISTENT)
 		if err != nil {
 			log.Error("Failed to Deserialize: FindAll", "i", i, "key", string(key))
 			continue
 		}
 
 		log.Debug("FindAll", "i", i, "key", string(key), "value", value, "result", result)
-		mapping[string(key)] = result.(*Balance)
+		final := result.(Balance)
+		mapping[string(key)] = &final
 	}
 	return mapping
 }
@@ -120,10 +121,9 @@ func (state *ChainState) Commit() ([]byte, int64) {
 		log.Fatal("Saving", "err", err)
 	}
 
-	// Force the database to completely close, then repoen it.
+	// TODO: Force the database to completely close, then repoen it.
 	state.database.Close()
 	state.database = nil
-
 	state.reset()
 
 	return hash, version
@@ -167,6 +167,7 @@ func initializeDatabase(name string, newType DatastoreType) (*iavl.MutableTree, 
 		log.Error("Database create failed", "err", err, "count", count)
 		panic("Can't create a database")
 	}
+	log.Dump("Created Database "+global.Current.RootDir+"/"+"OneLedger-"+name, err)
 
 	// TODO: cosmos seems to be using MutableTree now????
 	tree := iavl.NewMutableTree(storage, 1000) // Do I need a historic tree here?

@@ -224,6 +224,7 @@ func TestPolymorphism(t *testing.T) {
 	assert.Equal(t, opp, result, "These should be equal")
 }
 
+// TODO: This should really work...
 // Test just an integer
 func XTestInt(t *testing.T) {
 	log.Info("Testing int")
