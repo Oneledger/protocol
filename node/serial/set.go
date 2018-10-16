@@ -44,7 +44,6 @@ func Alloc(dataType string, size int) interface{} {
 		return value.Interface()
 
 	case MAP:
-		log.Debug("Creating new Map with type", "type", entry.RootType)
 		smap := reflect.MakeMapWithSize(entry.RootType, size)
 		value = reflect.New(smap.Type())
 		value.Elem().Set(smap)
@@ -54,14 +53,11 @@ func Alloc(dataType string, size int) interface{} {
 		slice := reflect.MakeSlice(entry.DataType, size, size)
 		value = reflect.New(slice.Type())
 		value.Elem().Set(slice)
-		//log.Dump("New Slice", value)
 		return value.Interface()
 
 	case ARRAY:
 		array := reflect.ArrayOf(size, entry.ValueType.DataType)
 		value = reflect.New(array)
-		//result.Elem().Set(array)
-		//log.Dump("New Array", value)
 		return value.Interface()
 	}
 
@@ -74,10 +70,9 @@ func Set(parent interface{}, fieldName string, child interface{}) (status bool) 
 
 	defer func() {
 		if r := recover(); r != nil {
-			//log.Dump("Parameters", parent, fieldName, child)
 			log.Error("Ignoring Set Panic", "r", r)
+			log.Dump("Parameters", parent, fieldName, child)
 			debug.PrintStack()
-			status = false
 		}
 	}()
 
@@ -169,7 +164,8 @@ func ConvertValue(value interface{}, fieldType reflect.Type) reflect.Value {
 
 	case reflect.Float64:
 		// JSON returns floats for everything :-(
-		return ConvertNumber(fieldType, valueOf)
+		result := ConvertNumber(fieldType, valueOf)
+		return result
 
 	case reflect.String:
 		if fieldType.String() == "data.ChainType" {

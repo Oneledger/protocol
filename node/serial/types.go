@@ -189,7 +189,7 @@ func GetTypeEntry(name string, size int) TypeEntry {
 
 // Given a data type string, break it down into reflect.Type entries
 func ParseType(name string, count int) TypeEntry {
-	automata := regexp.MustCompile(`(.*)\[(.*)\](.*)`)
+	automata := regexp.MustCompile(`(.*?)\[(.*?)\](.*)`)
 	groups := automata.FindStringSubmatch(name)
 
 	if groups == nil || len(groups) != 4 {

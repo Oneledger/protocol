@@ -78,7 +78,7 @@ swaptest: reset install
 	@./scripts/startEthereum
 	@./tests/register.sh
 	@./tests/swap.sh
-	@./scripts/stopOneLedger
+	@./scripts/stopMVP
 
 
 #

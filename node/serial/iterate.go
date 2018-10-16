@@ -157,16 +157,18 @@ func Value2String(key reflect.Value) string {
 
 // Get Children from a slice
 func GetChildrenSlice(input interface{}) []Child {
-	typeOf := reflect.TypeOf(input)
+	//typeOf := reflect.TypeOf(input)
 	valueOf := GetBaseValue(input)
 
 	var children []Child
 	children = make([]Child, 0)
 
-	// TODO: Check this, optimization?
-	if typeOf.String() == "[]byte" {
-		return children
-	}
+	/*
+		// TODO: Check this, optimization?
+		if typeOf.String() == "[]byte" {
+			return children
+		}
+	*/
 
 	for i := 0; i < valueOf.Len(); i++ {
 		value := valueOf.Index(i).Interface()
