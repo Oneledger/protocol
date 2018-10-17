@@ -6,8 +6,8 @@
 package abci
 
 import (
-	"github.com/Oneledger/protocol/node/comm"
 	"github.com/Oneledger/protocol/node/convert"
+	"github.com/Oneledger/protocol/node/serial"
 )
 
 // Response arguments
@@ -33,16 +33,9 @@ func (info *ResponseInfo) JSON() string {
 		panic("JSON conversion failed")
 	}
 	return string(bytes)
-	/*
-		bytes, status := json.Marshal(info)
-		if status != nil {
-			panic("Marshal Failed")
-		}
-		return string(bytes)
-	*/
 }
 
 // Return as a Contract
-func (info *ResponseInfo) JSONMessage() comm.Message {
-	return comm.Message(info.JSON())
+func (info *ResponseInfo) JSONMessage() serial.Message {
+	return serial.Message(info.JSON())
 }

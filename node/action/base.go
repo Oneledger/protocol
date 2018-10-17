@@ -6,14 +6,22 @@
 package action
 
 import (
-	"github.com/Oneledger/protocol/node/status"
 	"github.com/Oneledger/protocol/node/id"
+	"github.com/Oneledger/protocol/node/log"
+	"github.com/Oneledger/protocol/node/serial"
+	"github.com/Oneledger/protocol/node/status"
 )
 
 type Message = []byte // Contents of a transaction
 // ENUM for type
-type Type byte
-type Role byte
+type Type int
+type Role int
+
+func init() {
+	serial.Register(Type(0))
+	serial.Register(Role(0))
+	serial.Register(Message(""))
+}
 
 const (
 	INVALID       Type = iota
@@ -53,12 +61,15 @@ type Base struct {
 	Type    Type   `json:"type"`
 	ChainId string `json:"chain_id"`
 
-	Owner   id.AccountKey `json:"owner"`
-	Target  id.AccountKey `json:"target"`
+	Owner  id.AccountKey `json:"owner"`
+	Target id.AccountKey `json:"target"`
 
-	Signers []PublicKey   `json:"signers"`
+	Signers []PublicKey `json:"signers"`
 
 	Sequence int64 `json:"sequence"`
 	Delay    int64 `json:"delay"` // Pause the transaction in the mempool
 }
 
+func init() {
+	serial.Register(Base{})
+}

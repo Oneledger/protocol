@@ -10,7 +10,7 @@ type Access interface {
 	GetIdentities() interface{}
 	GetAccounts() interface{}
 	GetUtxo() interface{}
-    GetChainID() interface{}
+	GetChainID() interface{}
 	GetEvent() interface{}
 	GetContract() interface{}
 }

@@ -7,8 +7,9 @@ package action
 
 import (
 	"github.com/Oneledger/protocol/node/data"
-	"github.com/Oneledger/protocol/node/status"
 	"github.com/Oneledger/protocol/node/log"
+	"github.com/Oneledger/protocol/node/serial"
+	"github.com/Oneledger/protocol/node/status"
 )
 
 // Synchronize a swap between two users
@@ -19,6 +20,10 @@ type ExternalSend struct {
 	Fee     data.Coin    `json:"fee"`
 	Inputs  []SendInput  `json:"inputs"`
 	Outputs []SendOutput `json:"outputs"`
+}
+
+func init() {
+	serial.Register(ExternalSend{})
 }
 
 func (transaction *ExternalSend) Validate() status.Code {
@@ -49,6 +54,6 @@ func (transaction *ExternalSend) ProcessDeliver(app interface{}) status.Code {
 	return commands.Execute(app)
 }
 
-func (transaction *ExternalSend) Resolve(app interface{}) Commands{
+func (transaction *ExternalSend) Resolve(app interface{}) Commands {
 	return []Command{}
 }

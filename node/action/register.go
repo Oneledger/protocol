@@ -6,10 +6,11 @@
 package action
 
 import (
-	"github.com/Oneledger/protocol/node/status"
 	"github.com/Oneledger/protocol/node/global"
 	"github.com/Oneledger/protocol/node/id"
 	"github.com/Oneledger/protocol/node/log"
+	"github.com/Oneledger/protocol/node/serial"
+	"github.com/Oneledger/protocol/node/status"
 )
 
 // Register an identity with the chain
@@ -19,6 +20,10 @@ type Register struct {
 	Identity   string
 	NodeName   string
 	AccountKey id.AccountKey
+}
+
+func init() {
+	serial.Register(Register{})
 }
 
 // Check the fields to make sure they have valid values.
@@ -41,10 +46,10 @@ func (transaction Register) ProcessCheck(app interface{}) status.Code {
 	log.Debug("Processing Register Transaction for CheckTx")
 
 	identities := GetIdentities(app)
-	id, status := identities.FindName(transaction.Identity)
+	id, ok := identities.FindName(transaction.Identity)
 
-	if status != status.SUCCESS {
-		return status
+	if ok != status.SUCCESS {
+		return ok
 	}
 
 	if id == nil {
@@ -66,10 +71,10 @@ func (transaction Register) ProcessDeliver(app interface{}) status.Code {
 	log.Debug("Processing Register Transaction for DeliverTx")
 
 	identities := GetIdentities(app)
-	entry, status := identities.FindName(transaction.Identity)
+	entry, ok := identities.FindName(transaction.Identity)
 
-	if status != status.SUCCESS {
-		return status
+	if ok != status.SUCCESS {
+		return ok
 	}
 
 	if entry != nil {

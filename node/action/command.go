@@ -6,6 +6,7 @@ package action
 
 import (
 	"github.com/Oneledger/protocol/node/data"
+	"github.com/Oneledger/protocol/node/serial"
 	"github.com/Oneledger/protocol/node/status"
 )
 
@@ -25,6 +26,10 @@ type Command struct {
 	opfunc func(app interface{}, chain data.ChainType, data FunctionValues) (bool, FunctionValues)
 	chain  data.ChainType
 	data   FunctionValues
+}
+
+func init() {
+	serial.Register(Command{})
 }
 
 func (command Command) Execute(app interface{}) (bool, FunctionValues) {

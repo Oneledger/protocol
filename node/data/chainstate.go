@@ -11,9 +11,9 @@
 package data
 
 import (
-	"github.com/Oneledger/protocol/node/comm"
 	"github.com/Oneledger/protocol/node/global"
 	"github.com/Oneledger/protocol/node/log"
+	"github.com/Oneledger/protocol/node/serial"
 	"github.com/tendermint/iavl"
 	"github.com/tendermint/tendermint/libs/db"
 )
@@ -31,7 +31,6 @@ type ChainState struct {
 	Checked   *iavl.MutableTree // Temporary and can be Rolled Back
 	Committed *iavl.MutableTree // Last Persistent Tree
 
-
 	// Last committed values
 	Version int64
 	Height  int
@@ -47,14 +46,14 @@ func NewChainState(name string, newType DatastoreType) *ChainState {
 
 // Test this against the checked UTXO data to make sure the transaction is legit
 func (state *ChainState) Test(key DatabaseKey, balance Balance) bool {
-	//buffer := comm.Serialize(balance)
+	//buffer := serial.Serialize(balance)
 	//state.Checked.Set(key, buffer)
 	return true
 }
 
 // Do this for the Delivery side
 func (state *ChainState) Set(key DatabaseKey, balance Balance) {
-	buffer, err := comm.Serialize(balance)
+	buffer, err := serial.Serialize(balance, serial.PERSISTENT)
 	if err != nil {
 		log.Error("Failed to Deserialize balance: ", err)
 	}
@@ -70,14 +69,15 @@ func (state *ChainState) FindAll() map[string]*Balance {
 		key, value := state.Delivered.GetByIndex64(i)
 
 		var balance Balance
-		result, err := comm.Deserialize(value, &balance)
+		result, err := serial.Deserialize(value, balance, serial.PERSISTENT)
 		if err != nil {
 			log.Error("Failed to Deserialize: FindAll", "i", i, "key", string(key))
 			continue
 		}
 
 		log.Debug("FindAll", "i", i, "key", string(key), "value", value, "result", result)
-		mapping[string(key)] = result.(*Balance)
+		final := result.(Balance)
+		mapping[string(key)] = &final
 	}
 	return mapping
 }
@@ -90,12 +90,13 @@ func (state *ChainState) Find(key DatabaseKey) *Balance {
 
 	if value != nil {
 		var balance Balance
-		result, err := comm.Deserialize(value, &balance)
+		result, err := serial.Deserialize(value, balance, serial.PERSISTENT)
 		if err != nil {
 			log.Error("Failed to deserialize Balance in chainstate: ", err)
 			return nil
 		}
-		return result.(*Balance)
+		final := result.(Balance)
+		return &final
 	}
 	return nil
 }
@@ -120,10 +121,9 @@ func (state *ChainState) Commit() ([]byte, int64) {
 		log.Fatal("Saving", "err", err)
 	}
 
-	// Force the database to completely close, then repoen it.
+	// TODO: Force the database to completely close, then repoen it.
 	state.database.Close()
 	state.database = nil
-
 	state.reset()
 
 	return hash, version
@@ -167,6 +167,7 @@ func initializeDatabase(name string, newType DatastoreType) (*iavl.MutableTree, 
 		log.Error("Database create failed", "err", err, "count", count)
 		panic("Can't create a database")
 	}
+	log.Dump("Created Database "+global.Current.RootDir+"/"+"OneLedger-"+name, err)
 
 	// TODO: cosmos seems to be using MutableTree now????
 	tree := iavl.NewMutableTree(storage, 1000) // Do I need a historic tree here?

@@ -6,9 +6,9 @@
 package app
 
 import (
-	"github.com/Oneledger/protocol/node/comm"
 	"github.com/Oneledger/protocol/node/id"
 	"github.com/Oneledger/protocol/node/log"
+	"github.com/Oneledger/protocol/node/serial"
 )
 
 // Arguments for registration
@@ -26,7 +26,7 @@ func SetOption(app *Application, key string, value string) bool {
 
 	case "Register":
 		var arguments RegisterArguments
-		result, err := comm.Deserialize([]byte(value), &arguments)
+		result, err := serial.Deserialize([]byte(value), &arguments, serial.NETWORK)
 		if err != nil {
 			log.Error("Can't set options", "status", err)
 			return false

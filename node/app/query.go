@@ -11,14 +11,16 @@ import (
 	"strings"
 
 	"github.com/Oneledger/protocol/node/chains/common"
-	"github.com/Oneledger/protocol/node/comm"
 	"github.com/Oneledger/protocol/node/convert"
 	"github.com/Oneledger/protocol/node/data"
+
+	"github.com/Oneledger/protocol/node/global"
 	"github.com/Oneledger/protocol/node/status"
+
 	"github.com/Oneledger/protocol/node/id"
 	"github.com/Oneledger/protocol/node/log"
+	"github.com/Oneledger/protocol/node/serial"
 	"github.com/Oneledger/protocol/node/version"
-	"github.com/Oneledger/protocol/node/global"
 )
 
 // Top-level list of all query types
@@ -84,6 +86,10 @@ type IdentityQuery struct {
 	Identities []id.IdentityExport
 }
 
+func init() {
+	serial.Register(IdentityQuery{})
+}
+
 // Get the account information for a given user
 func HandleIdentityQuery(app Application, message []byte) []byte {
 	log.Debug("IdentityQuery", "message", message)
@@ -112,7 +118,7 @@ func IdentityInfo(app Application, name string) []byte {
 		result.Identities = []id.IdentityExport{identity.Export()}
 	}
 
-	buffer, err := comm.Serialize(result)
+	buffer, err := serial.Serialize(result, serial.NETWORK)
 	if err != nil {
 		log.Debug("Failed to serialize identity query")
 	}
@@ -137,6 +143,10 @@ type AccountQuery struct {
 	Accounts []id.AccountExport
 }
 
+func init() {
+	serial.Register(AccountQuery{})
+}
+
 func getAccountExport(app Application, account id.Account) id.AccountExport {
 	if account == nil {
 		return id.AccountExport{}
@@ -159,7 +169,7 @@ func AccountInfo(app Application, name string) []byte {
 			result.Accounts = append(result.Accounts, accountExport)
 		}
 
-		buffer, err := comm.Serialize(result)
+		buffer, err := serial.Serialize(result, serial.NETWORK)
 		if err != nil {
 			log.Warn("Failed to Serialize plural AccountInfo query")
 		}
@@ -170,7 +180,7 @@ func AccountInfo(app Application, name string) []byte {
 	accountExport := getAccountExport(app, account)
 	result := &AccountQuery{Accounts: []id.AccountExport{accountExport}}
 
-	buffer, err := comm.Serialize(result)
+	buffer, err := serial.Serialize(result, serial.NETWORK)
 	if err != nil {
 		log.Warn("Failed to Serialize singular AccountInfo query")
 	}
@@ -267,12 +277,12 @@ func Balance(app Application, accountKey []byte) []byte {
 	if balance == nil {
 		//log.Fatal("Balance FAILED", "accountKey", accountKey)
 		log.Warn("Balance FAILED", "accountKey", accountKey)
-		result := data.NewBalance(0, "OLT")
+		result := data.NewBalance(-1, "OLT")
 		balance = &result
 	}
 	//log.Debug("Balance", "key", accountKey, "balance", balance)
 
-	buffer, err := comm.Serialize(balance)
+	buffer, err := serial.Serialize(balance, serial.NETWORK)
 	if err != nil {
 		log.Error("Failed to Serialize balance")
 	}

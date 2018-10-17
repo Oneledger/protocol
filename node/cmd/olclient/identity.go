@@ -12,6 +12,7 @@ import (
 	"github.com/Oneledger/protocol/node/comm"
 	"github.com/Oneledger/protocol/node/id"
 	"github.com/Oneledger/protocol/node/log"
+	"github.com/Oneledger/protocol/node/serial"
 	"github.com/spf13/cobra"
 )
 
@@ -49,16 +50,16 @@ func CheckIdentity(cmd *cobra.Command, args []string) {
 	response := comm.Query("/identity", request)
 	if response != nil {
 		var prototype app.IdentityQuery
-		result, err := comm.Deserialize(response.Response.Value, &prototype)
+		result, err := serial.Deserialize(response.Response.Value, prototype, serial.CLIENT)
 		if err != nil {
 			shared.Console.Error("Failed to deserialize IdentityQuery:")
 			return
 		}
-		printResponse(result.(*app.IdentityQuery))
+		printResponse(result.(app.IdentityQuery))
 	}
 }
 
-func printResponse(idQuery *app.IdentityQuery) {
+func printResponse(idQuery app.IdentityQuery) {
 	shared.Console.Info("\nOneLedger Identities:\n")
 
 	for _, identity := range idQuery.Identities {

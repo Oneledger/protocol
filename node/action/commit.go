@@ -6,8 +6,9 @@
 package action
 
 import (
-	"github.com/Oneledger/protocol/node/status"
 	"github.com/Oneledger/protocol/node/log"
+	"github.com/Oneledger/protocol/node/serial"
+	"github.com/Oneledger/protocol/node/status"
 )
 
 // TODO: This needs to be filled out properly, need a model for other-chain actions...
@@ -17,6 +18,9 @@ type Commit struct {
 	Target string `json:"target"`
 }
 
+func init() {
+	serial.Register(Commit{})
+}
 func (transaction *Commit) Validate() status.Code {
 	log.Debug("Validating Commit Transaction")
 	if transaction.Target == "" {
@@ -45,4 +49,3 @@ func (transaction *Commit) ProcessDeliver(app interface{}) status.Code {
 func (transaction *Commit) Resolve(app interface{}) Commands {
 	return []Command{}
 }
-

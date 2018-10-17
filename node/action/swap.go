@@ -12,21 +12,22 @@ import (
 	"github.com/Oneledger/protocol/node/chains/bitcoin"
 	"github.com/Oneledger/protocol/node/chains/bitcoin/htlc"
 	"github.com/Oneledger/protocol/node/chains/ethereum"
-	"github.com/Oneledger/protocol/node/comm"
 	"github.com/Oneledger/protocol/node/data"
 	"github.com/Oneledger/protocol/node/global"
 	"github.com/Oneledger/protocol/node/id"
 	"github.com/Oneledger/protocol/node/log"
+	"github.com/Oneledger/protocol/node/serial"
 	"github.com/Oneledger/protocol/node/status"
 
 	"math/big"
 
 	"crypto/rand"
 	"crypto/sha256"
-	"github.com/Oneledger/protocol/node/chains/common"
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"reflect"
 	"time"
+
+	"github.com/Oneledger/protocol/node/chains/common"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 )
 
 type swapStageType int
@@ -46,8 +47,8 @@ const (
 // Synchronize a swap between two users
 type Swap struct {
 	Base
-	Message Message       `json:"message"`
-	Stage   swapStageType `json:"stage"`
+	SwapMessage SwapMessage   `json:"message"`
+	Stage       swapStageType `json:"stage"`
 }
 
 var swapStageFlow = map[swapStageType]SwapStage{
@@ -115,7 +116,7 @@ type SwapStage struct {
 	OutStage swapStageType
 }
 
-type swapMessage interface {
+type SwapMessage interface {
 	validate() status.Code
 	resolve(interface{}, swapStageType) Commands
 }
@@ -129,6 +130,14 @@ type SwapInit struct {
 	Gas          data.Coin `json:"fee"`
 	Nonce        int64     `json:"nonce"`
 	Preimage     []byte    `json:"preimage"`
+}
+
+func init() {
+	serial.Register(Swap{})
+	serial.Register(Party{})
+	serial.Register(SwapInit{})
+	serial.Register(SwapExchange{})
+	serial.Register(SwapVerify{})
 }
 
 func (si SwapInit) validate() status.Code {
@@ -452,7 +461,6 @@ func (transaction *Swap) ShouldProcess(app interface{}) bool {
 // Start the swap
 func (transaction *Swap) ProcessDeliver(app interface{}) status.Code {
 	log.Debug("Processing Swap Transaction for DeliverTx")
-
 	commands := transaction.Resolve(app)
 
 	if commands.Count() == 0 {
@@ -613,7 +621,7 @@ func MatchingSwap(app interface{}, transaction *SwapInit) *SwapInit {
 func SaveSwap(app interface{}, swapKey id.AccountKey, transaction interface{}) {
 	log.Debug("SaveSwap", "key", swapKey)
 	storage := GetStatus(app)
-	buffer, err := comm.Serialize(transaction)
+	buffer, err := serial.Serialize(transaction, serial.PERSISTENT)
 	if err != nil {
 		log.Error("Failed to Serialize SaveSwap transaction")
 	}
@@ -629,7 +637,7 @@ func FindSwap(app interface{}, key id.AccountKey) *SwapInit {
 	}
 
 	var transaction Swap
-	buffer, err := comm.Deserialize(result, &transaction)
+	buffer, err := serial.Deserialize(result, &transaction, serial.CLIENT)
 	if err != nil {
 		return nil
 	}
@@ -969,7 +977,6 @@ func RedeemETH(app interface{}, context FunctionValues) (bool, FunctionValues) {
 }
 
 func RefundBTC(app interface{}, context FunctionValues) (bool, FunctionValues) {
-
 	them := GetParty(context[THEM_ACCOUNT])
 	nonce := GetInt64(context[NONCE])
 	contractMessage := FindContract(app, them.Key.Bytes(), nonce)

@@ -6,14 +6,19 @@
 package action
 
 import (
-	"github.com/Oneledger/protocol/node/status"
 	"github.com/Oneledger/protocol/node/log"
+	"github.com/Oneledger/protocol/node/serial"
+	"github.com/Oneledger/protocol/node/status"
 )
 
 type Forget struct {
 	Base
 
 	Target string `json:"target"`
+}
+
+func init() {
+	serial.Register(Forget{})
 }
 
 func (transaction *Forget) Validate() status.Code {
@@ -41,4 +46,3 @@ func (transaction *Forget) ProcessDeliver(app interface{}) status.Code {
 func (transaction *Forget) Resolve(app interface{}) Commands {
 	return []Command{}
 }
-

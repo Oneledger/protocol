@@ -6,10 +6,10 @@
 package action
 
 import (
-	"github.com/Oneledger/protocol/node/comm"
 	"github.com/Oneledger/protocol/node/data"
-	"github.com/Oneledger/protocol/node/status"
 	"github.com/Oneledger/protocol/node/log"
+	"github.com/Oneledger/protocol/node/serial"
+	"github.com/Oneledger/protocol/node/status"
 )
 
 // Synchronize a swap between two users
@@ -21,6 +21,10 @@ type Send struct {
 
 	Gas data.Coin `json:"gas"`
 	Fee data.Coin `json:"fee"`
+}
+
+func init() {
+	serial.Register(Send{})
 }
 
 func (transaction *Send) Validate() status.Code {
@@ -74,7 +78,7 @@ func (transaction *Send) ProcessDeliver(app interface{}) status.Code {
 			Amount: entry.Amount,
 		}
 
-		buffer, err := comm.Serialize(balance)
+		buffer, err := serial.Serialize(balance, serial.CLIENT)
 		if err != nil {
 			log.Fatal("Serialize", "status", err)
 		}
@@ -84,7 +88,6 @@ func (transaction *Send) ProcessDeliver(app interface{}) status.Code {
 
 	return status.SUCCESS
 }
-
 
 func (transaction *Send) Resolve(app interface{}) Commands {
 	return []Command{}

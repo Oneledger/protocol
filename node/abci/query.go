@@ -5,12 +5,12 @@
 */
 package abci
 
-import "github.com/Oneledger/protocol/node/comm"
+import "github.com/Oneledger/protocol/node/serial"
 
 type Query struct {
 	account string
 }
 
-func (query Query) JSON() comm.Message {
+func (query Query) JSON() serial.Message {
 	return nil
 }

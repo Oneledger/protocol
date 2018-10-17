@@ -1,63 +1,82 @@
 # Entity/Relationships
 
-## Notes
+## Notes:
 
-- All keys are numeric (how do we generate these?)
-- Decentralized keys are hard to make unique
-- All entities have a readable string name (or composite), that isn't the key
-- Lists are ordered, sets are not
-- Domain tables are persistent enumerations that are changable at runtime
-- Permissions should be on both code and data, and they should be separated
+	- All keys are numeric? (how do we generate these?)
+	- Decentralized keys are hard to make unique
+	- All entities have a readable string name (or composite), that isn't the key
+	- Lists are ordered, sets are not
+	- Domain tables are persistent enumerations that are changable at runtime
+	- Permissions should be on both code and data, and they should be separated
+	- Single keyed entities are stored in a key/value database.
+	- Multi-keyed entries are similar, but have indicies which map the external key to the main one.
+	- No key entries are not persistent
+	- Domain entries are stored as a list under a constant
 
-## Model
+# Data Model
 
-Identity -- an individual in meatspace
+## Authentication: Users, Identities and Accounts
 
-	- User Id / External Node
-	-------------------------
-
-	- User Id
-	-----------------------
-
-	- User Name (naming collisions?)
-	- Contact Info
-	- default Account
-	- Set of Accounts (Set of Wallets?)
-	- Set of Trusted ChainNodes
+**Relationship**: user <<->> group <-> identity <->> wallet <->> account
 
 
-Group -- a hiearchtical (or graph?) collection, fine-grained
+**Group/User** -- a hiearchtical (or graph?) collection, fine-grained, a group can own a public/private key, and any members of that group can use it.
 
 	- Group Id
 	-----------------------
-
 	- Group Name (naming collisions?)
-	- Public key?
-	- Private key?
+	- Public key
+	- Private key
 
 	- Set of Accessible Roles
 	- Set of Accessible Data
 
 	- Set of Identities and Groups (parents or children?)
 
-Role -- the ability to view or perform an an action
+**Identity** -- an identity that is known across the chains, tied to one public key
+
+	- User Id / Chain
+	-------------------------
+	- User Name (naming collisions?)
+	- Public Key
+	- Contact Info
+	- Default Account (Wallet?)
+	- Set of Accounts (Set of Wallets?)
+	- Set of Trusted ChainNodes
+	- Set of Trusted Channels
+
+
+## Authorization
+
+**Relationship**: identity <->> role, identity <->> data
+
+**Role** -- the ability to view or perform an an action
 
 	- Role Id
 	-----------------------
-
 	- Description
-	- Action
-	- Data?
+	- Actions
+	- Data Access
 
-Address -- Bitcoin temporary random address
-Address -- Tendermint hash of public
-Address -- Ethereum hash of public
+## Low-level accounts and addresses
 
-Account -- information needed to access an account on a chain
+**Address** -- Polymorphic, chain-independent
 
-	- Account Key - Different (OneLedger, Ethereum or Bitcoin)
+	- Bitcoin temporary random address
+	- Bitcoin script address
+	- Tendermint hash of public key
+	- Ethereum hash of public key
+
+**AccountKey**
+
+	- Can be an identity (wrong?)
+	- Can be an account on a chain
+	- Can be an temporary account on a chain
+
+**Account** -- information needed to access an account on a chain
+
+	- AccountKey 
 	-----------------------
-
 	- Name
 	- Chain 
 	- Public key
@@ -65,62 +84,75 @@ Account -- information needed to access an account on a chain
 	- Balance@height
 	- Set of Active HTLC states
 
-Wallet -- a group of accounts
+**Wallet** -- a group of accounts, can be one-offs, includes the file structure and is protected by a passphrase. Needs to be located in a secure place.
 
+	- Wallet Id
 	-----------------------
 	- Description
 	- Set of Accounts
 
-Balance -- the last known balance of an account on a chain (leafs in UTXO)
+**Balance** -- the last known balance of an account on a chain (leafs in UTXO)
 
 	- Account Key
 	-----------------------
-
 	- Coin
+	- Date (?)
 
-Chain -- a decentralized system 
+## External Chains
+
+**Chain** -- a decentralized system that can be driver by the protocol. There can be many instances of the same code-base, like testnets and a mainnet. Forks are possible too.
 
 	- Chain Id (Name?)
 	-----------------------
-
 	- Unique access point (how to get to the chain)
 	-----------------------
-
+	- Chain type
+	- Chain Driver
 	- Set of accessible nodes (not all nodes)
-	- schema?
-	- features?
+	- Schema
+		- Basic Features
+		- Extended Features
 
-ChainNode -- a specific access point in a chain
+**ChainNode** -- a specific trusted node in a chain
 
+	- Node Location
 	-----------------------
-
 	- NodeName
 	- Location
 	- Permissions?
+	- Trust?
 
-AccountKey
-	- Can be an identity
-	- Can be an account on a chain
-	- Can be an temporary account on a chain
+## Transactions (relative, active)
 
-Inputs -- account and existing balance
-
-	-----------------------
-
-
-Outputs -- account and new balance
-
-	-----------------------
-
-
-Transaction -- an action sent to our chain (instruction, statement, expression, transaction)
-
-	-----------------------
+**Transaction** -- an action sent to our chain (instruction, statement, expression, transaction)
 
 	- Transaction Type 
 	- Transaction Data
+	-----------------------
 
-TransactionDomain -- Types of available transactions
+**Payment** -- the cost of doing business
+
+	- Fee
+	- Gas
+
+**Input** -- accounts that go into the transaction
+
+	- Address
+	-----------------------
+	- Amount
+
+**Output** -- accounts after the transaction
+
+	- Address
+	-----------------------
+	- Amount
+
+**Coin** -- a fungible unit of account (so no key)
+
+	- Currency
+	- Count
+
+**TransactionDomain** -- Types of available transactions
 
 	- Send
 	- ExternalSend
@@ -130,14 +162,14 @@ TransactionDomain -- Types of available transactions
 	- Commit
 	- Forget
 
+## Transactions
+
 SwapInstruction -- synchronize two (N?) transactions on different chains
 
 	- List of Send/ExternalSend
 	- Sequence 
 	-----------------------
-
-	- Fee
-	- Gas
+	- Payment
 	
 Send -- a transaction on our chain (we don't need this anymore...)
 
@@ -145,9 +177,7 @@ Send -- a transaction on our chain (we don't need this anymore...)
 	- Set of Outputs
 	- Sequence Number (replay protection)
 	-----------------------
-
-	- Fee
-	- Gas
+	- Payment
 
 ExternalSend -- a transction send to oneledger, bitcoin, ethereum, cosmos, aion, etc. 
 
@@ -155,46 +185,14 @@ ExternalSend -- a transction send to oneledger, bitcoin, ethereum, cosmos, aion,
 	- Set of Outputs
 	- Sequence Number (replay protection)
 	-----------------------
-
-	- Fee
-	- Gas (Ethereum only?)
+	- Payment
 
 ExternalLock -- setup a locked asset on bitcoin, ethereum, cosmos, aion, etc. 
 
 	- Set of Addresses
 	- Sequence Number (replay protection)
 	-----------------------
-
-	- Fee
-	- Gas (Ethereum only?)
-
-Payment -- the cost of doing business
-
-	-----------------------
-
-	- Fee
-	- Gas
-
-Input -- accounts that go into the transaction
-
-	-----------------------
-
-	- Address
-	- Amount
-
-Output -- accounts after the transaction
-
-	-----------------------
-
-	- Address
-	- Amount
-
-Coin -- a fungible unit of account (so no key)
-
-	-----------------------
-
-	- Currency
-	- Count
+	- Payment
 
 CurrencyDomain
 
@@ -204,9 +202,11 @@ CurrencyDomain
 	USD
 	CAD
 
-ExternalSwap Steps:
+### Algorithms
 
-        - test to see if this is me?
+*Algorithm*: **ExternalSwap** Steps:
+
+	- test to see if this is me?
 	- see if both sides of swap are transactions
 	- create lockbox on primary chain
 	- wait for other box to be ready
