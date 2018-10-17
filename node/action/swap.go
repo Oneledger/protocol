@@ -6,114 +6,113 @@
 package action
 
 import (
-    "bytes"
-    "github.com/tendermint/go-amino"
+	"bytes"
+	"github.com/tendermint/go-amino"
 
-    "github.com/Oneledger/protocol/node/chains/bitcoin"
-    "github.com/Oneledger/protocol/node/chains/bitcoin/htlc"
-    "github.com/Oneledger/protocol/node/chains/ethereum"
-    "github.com/Oneledger/protocol/node/comm"
-    "github.com/Oneledger/protocol/node/data"
-    "github.com/Oneledger/protocol/node/global"
-    "github.com/Oneledger/protocol/node/id"
-    "github.com/Oneledger/protocol/node/log"
-    "github.com/Oneledger/protocol/node/status"
+	"github.com/Oneledger/protocol/node/chains/bitcoin"
+	"github.com/Oneledger/protocol/node/chains/bitcoin/htlc"
+	"github.com/Oneledger/protocol/node/chains/ethereum"
+	"github.com/Oneledger/protocol/node/comm"
+	"github.com/Oneledger/protocol/node/data"
+	"github.com/Oneledger/protocol/node/global"
+	"github.com/Oneledger/protocol/node/id"
+	"github.com/Oneledger/protocol/node/log"
+	"github.com/Oneledger/protocol/node/status"
 
-    "math/big"
+	"math/big"
 
-    "crypto/rand"
-    "crypto/sha256"
-    "github.com/Oneledger/protocol/node/chains/common"
-    "github.com/ethereum/go-ethereum/accounts/abi/bind"
-    "reflect"
-    "time"
+	"crypto/rand"
+	"crypto/sha256"
+	"github.com/Oneledger/protocol/node/chains/common"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"reflect"
+	"time"
 )
+
 type swapStageType int
 
 const (
-    SWAP_MATCHING  swapStageType = iota
+	SWAP_MATCHING swapStageType = iota
 	SWAP_MATCHED
-    INITIATOR_INITIATE
-    PARTICIPANT_PARTICIPATE
-    INITIATOR_REDEEM
-    PARTICIPANT_REDEEM
-    WAIT_FOR_CHAIN
-    SWAP_REFUND
-    SWAP_FINISH
+	INITIATOR_INITIATE
+	PARTICIPANT_PARTICIPATE
+	INITIATOR_REDEEM
+	PARTICIPANT_REDEEM
+	WAIT_FOR_CHAIN
+	SWAP_REFUND
+	SWAP_FINISH
 )
 
 // Synchronize a swap between two users
 type Swap struct {
 	Base
-    Message 	Message 		`json:"message"`
-	Stage 		swapStageType 	`json:"stage"`
+	Message Message       `json:"message"`
+	Stage   swapStageType `json:"stage"`
 }
 
 var swapStageFlow = map[swapStageType]SwapStage{
-    SWAP_MATCHING: {
-        Stage:SWAP_MATCHING,
-        Commands: Commands{Command{opfunc: SaveUnmatchSwap}, Command{opfunc: NextStage}},
-        InStage: nil,
-        OutStage: WAIT_FOR_CHAIN,
-    },
-    SWAP_MATCHED: {
-    	Stage: SWAP_MATCHED,
-    	Commands: Commands{Command{opfunc: CreateCheckEvent}, Command{opfunc: NextStage}},
-    	InStage: SWAP_MATCHING,
-    	OutStage: INITIATOR_INITIATE,
+	SWAP_MATCHING: {
+		Stage:    SWAP_MATCHING,
+		Commands: Commands{Command{opfunc: SaveUnmatchSwap}, Command{opfunc: NextStage}},
+		InStage:  nil,
+		OutStage: WAIT_FOR_CHAIN,
 	},
-    INITIATOR_INITIATE: {
-        Stage: INITIATOR_INITIATE,
-        Commands: Commands{Command{opfunc: Initiate}, Command{opfunc: NextStage}},
-        InStage: SWAP_MATCHED,
-        OutStage: PARTICIPANT_PARTICIPATE,
-    },
-    PARTICIPANT_PARTICIPATE: {
-        Stage: PARTICIPANT_PARTICIPATE,
-        Commands: Commands{Command{opfunc: AuditContract}, Command{opfunc: Participate}, Command{opfunc: NextStage}},
-        InStage: INITIATOR_INITIATE,
-        OutStage: INITIATOR_REDEEM,
-    },
-    INITIATOR_REDEEM: {
-        Stage: INITIATOR_REDEEM,
-        Commands: Commands{Command{opfunc: AuditContract}, Command{opfunc: Redeem}, Command{opfunc: NextStage}},
-        InStage: PARTICIPANT_PARTICIPATE,
-        OutStage: PARTICIPANT_REDEEM,
-    },
-    PARTICIPANT_REDEEM: {
-        Stage:    PARTICIPANT_REDEEM,
-        Commands: Commands{Command{opfunc: ExtractSecret}, Command{opfunc: Redeem}, Command{opfunc: NextStage}},
-        InStage:  INITIATOR_REDEEM,
-        OutStage: SWAP_FINISH,
-    },
-    SWAP_FINISH: {
-        Stage:    SWAP_FINISH,
-        Commands: Commands{Command{opfunc: FinalizeSwap}},
-        InStage:  PARTICIPANT_REDEEM,
-        OutStage: nil,
-
-    },
-    WAIT_FOR_CHAIN: {
-      Stage: WAIT_FOR_CHAIN,
-      Commands: Commands{Command{opfunc: VerifySwap}, Command{opfunc: ClearEvent}},
-      InStage: SWAP_MATCHING,
-      OutStage: nil,
-    },
-    SWAP_REFUND: {
-        Stage:    SWAP_REFUND,
-        Commands: Commands{Command{opfunc: Refund}},
-        InStage:  WAIT_FOR_CHAIN,
-        OutStage: nil,
-    },
+	SWAP_MATCHED: {
+		Stage:    SWAP_MATCHED,
+		Commands: Commands{Command{opfunc: CreateCheckEvent}, Command{opfunc: NextStage}},
+		InStage:  SWAP_MATCHING,
+		OutStage: INITIATOR_INITIATE,
+	},
+	INITIATOR_INITIATE: {
+		Stage:    INITIATOR_INITIATE,
+		Commands: Commands{Command{opfunc: Initiate}, Command{opfunc: NextStage}},
+		InStage:  SWAP_MATCHED,
+		OutStage: PARTICIPANT_PARTICIPATE,
+	},
+	PARTICIPANT_PARTICIPATE: {
+		Stage:    PARTICIPANT_PARTICIPATE,
+		Commands: Commands{Command{opfunc: AuditContract}, Command{opfunc: Participate}, Command{opfunc: NextStage}},
+		InStage:  INITIATOR_INITIATE,
+		OutStage: INITIATOR_REDEEM,
+	},
+	INITIATOR_REDEEM: {
+		Stage:    INITIATOR_REDEEM,
+		Commands: Commands{Command{opfunc: AuditContract}, Command{opfunc: Redeem}, Command{opfunc: NextStage}},
+		InStage:  PARTICIPANT_PARTICIPATE,
+		OutStage: PARTICIPANT_REDEEM,
+	},
+	PARTICIPANT_REDEEM: {
+		Stage:    PARTICIPANT_REDEEM,
+		Commands: Commands{Command{opfunc: ExtractSecret}, Command{opfunc: Redeem}, Command{opfunc: NextStage}},
+		InStage:  INITIATOR_REDEEM,
+		OutStage: SWAP_FINISH,
+	},
+	SWAP_FINISH: {
+		Stage:    SWAP_FINISH,
+		Commands: Commands{Command{opfunc: FinalizeSwap}},
+		InStage:  PARTICIPANT_REDEEM,
+		OutStage: nil,
+	},
+	WAIT_FOR_CHAIN: {
+		Stage:    WAIT_FOR_CHAIN,
+		Commands: Commands{Command{opfunc: VerifySwap}, Command{opfunc: ClearEvent}},
+		InStage:  SWAP_MATCHING,
+		OutStage: nil,
+	},
+	SWAP_REFUND: {
+		Stage:    SWAP_REFUND,
+		Commands: Commands{Command{opfunc: Refund}},
+		InStage:  WAIT_FOR_CHAIN,
+		OutStage: nil,
+	},
 }
 
-
 type SwapStage struct {
-    Stage       swapStageType
-    Commands    Commands
+	Stage    swapStageType
+	Commands Commands
 
-    InStage     swapStageType
-    OutStage    swapStageType
+	InStage  swapStageType
+	OutStage swapStageType
 }
 
 type swapMessage interface {
@@ -122,14 +121,14 @@ type swapMessage interface {
 }
 
 type SwapInit struct {
-    Party        Party     `json:"party"`
-    CounterParty Party     `json:"counter_party"`
-    Amount       data.Coin `json:"amount"`
-    Exchange     data.Coin `json:"exchange"`
-    Fee          data.Coin `json:"fee"`
-    Gas          data.Coin `json:"fee"`
-    Nonce        int64     `json:"nonce"`
-    Preimage     []byte    `json:"preimage"`
+	Party        Party     `json:"party"`
+	CounterParty Party     `json:"counter_party"`
+	Amount       data.Coin `json:"amount"`
+	Exchange     data.Coin `json:"exchange"`
+	Fee          data.Coin `json:"fee"`
+	Gas          data.Coin `json:"fee"`
+	Nonce        int64     `json:"nonce"`
+	Preimage     []byte    `json:"preimage"`
 }
 
 func (si SwapInit) validate() status.Code {
@@ -157,131 +156,137 @@ func (si SwapInit) validate() status.Code {
 	return status.SUCCESS
 }
 
-func (si SwapInit) resolve(app interface{}, stageType swapStageType) Commands{
-    chains := si.getChains()
-    account := GetNodeAccount(app)
-    isParty := si.IsParty(account)
-    role := si.getRole(*isParty)
-    stage, ok := swapStageFlow[stageType]
-    if !ok {
-        log.Error("stage not found", "stagetype", stageType)
-        return nil
-    }
+func (si SwapInit) resolve(app interface{}, stageType swapStageType) Commands {
+	chains := si.getChains()
+	account := GetNodeAccount(app)
+	isParty := si.IsParty(account)
+	role := si.getRole(*isParty)
+	stage, ok := swapStageFlow[stageType]
+	if !ok {
+		log.Error("stage not found", "stagetype", stageType)
+		return nil
+	}
 
-    commands :=  amino.DeepCopy(stage.Commands).(Commands)
+	commands := amino.DeepCopy(stage.Commands).(Commands)
 
-    command := &commands[0]
-    command.data[STAGE] = stage.Stage
+	command := &commands[0]
+	command.data[STAGE] = stage.Stage
 	swap := MatchingSwap(app, &si)
 	if swap == nil {
-        if *isParty{
-            command.data[STOREKEY] = si.CounterParty.Key
-        } else {
-            command.data[STOREKEY] = si.Party.Key
-        }
-	    command.data[STOREMESSAGE] = si.Marshal()
+		if *isParty {
+			command.data[STOREKEY] = si.CounterParty.Key
+		} else {
+			command.data[STOREKEY] = si.Party.Key
+		}
+		command.data[STOREMESSAGE] = si.Marshal()
 
-    } else {
-        if *isParty {
-            command.data[MY_ACCOUNT] = swap.Party
-            command.data[THEM_ACCOUNT] = swap.CounterParty
-            command.data[AMOUNT] = swap.Amount
-            command.data[EXCHANGE] = swap.Exchange
-        } else {
-            command.data[MY_ACCOUNT] = swap.CounterParty
-            command.data[THEM_ACCOUNT] = swap.Party
-            command.data[AMOUNT] = swap.Exchange
-            command.data[EXCHANGE] = swap.Amount
-        }
+	} else {
+		if *isParty {
+			command.data[MY_ACCOUNT] = swap.Party
+			command.data[THEM_ACCOUNT] = swap.CounterParty
+			command.data[AMOUNT] = swap.Amount
+			command.data[EXCHANGE] = swap.Exchange
+		} else {
+			command.data[MY_ACCOUNT] = swap.CounterParty
+			command.data[THEM_ACCOUNT] = swap.Party
+			command.data[AMOUNT] = swap.Exchange
+			command.data[EXCHANGE] = swap.Amount
+		}
 
-        command.data[ROLE] = role
-        command.data[NONCE] = swap.Nonce
-        command.data[EVENTTYPE] = SWAP
+		command.data[ROLE] = role
+		command.data[NONCE] = swap.Nonce
+		command.data[EVENTTYPE] = SWAP
 
-        if stage.Stage == INITIATOR_INITIATE {
-            command.chain = chains[1]
+		if stage.Stage == INITIATOR_INITIATE {
+			command.chain = chains[1]
 
-            var secret [32]byte
-            _, err := rand.Read(secret[:])
-            if err != nil {
-                log.Error("failed to get random secret with 32 length", "status", err)
-            }
-            secretHash := sha256.Sum256(secret[:])
-            command.data[PASSWORD] = secret
-            command.data[PREIMAGE] = secretHash
-        }
-    }
-    return commands
+			var secret [32]byte
+			_, err := rand.Read(secret[:])
+			if err != nil {
+				log.Error("failed to get random secret with 32 length", "status", err)
+			}
+			secretHash := sha256.Sum256(secret[:])
+			command.data[PASSWORD] = secret
+			command.data[PREIMAGE] = secretHash
+		}
+	}
+	return commands
 }
 
 func (si SwapInit) IsParty(account id.Account) *bool {
 
-    if account == nil {
-        log.Debug("Getting Role for empty account")
-        return nil
-    }
+	if account == nil {
+		log.Debug("Getting Role for empty account")
+		return nil
+	}
 
-    var isParty bool
-    if bytes.Compare(si.Party.Key, account.AccountKey()) == 0 {
-        isParty = true
-        return &isParty
-    }
+	var isParty bool
+	if bytes.Compare(si.Party.Key, account.AccountKey()) == 0 {
+		isParty = true
+		return &isParty
+	}
 
-    if bytes.Compare(si.CounterParty.Key, account.AccountKey()) == 0 {
-        isParty = false
-        return &isParty
-    }
+	if bytes.Compare(si.CounterParty.Key, account.AccountKey()) == 0 {
+		isParty = false
+		return &isParty
+	}
 
-    // TODO: Shouldn't be in-band this way
-    return nil
+	// TODO: Shouldn't be in-band this way
+	return nil
 }
 
 // Get the correct chains order for this action
 func (si SwapInit) getChains() []data.ChainType {
 
-    var first, second data.ChainType
-    if si.Amount.Currency.Id < si.Exchange.Currency.Id {
-        first = data.Currencies[si.Amount.Currency.Name].Chain
-        second = data.Currencies[si.Exchange.Currency.Name].Chain
-    } else {
-        first = data.Currencies[si.Exchange.Currency.Name].Chain
-        second = data.Currencies[si.Amount.Currency.Name].Chain
-    }
+	var first, second data.ChainType
+	if si.Amount.Currency.Id < si.Exchange.Currency.Id {
+		first = data.Currencies[si.Amount.Currency.Name].Chain
+		second = data.Currencies[si.Exchange.Currency.Name].Chain
+	} else {
+		first = data.Currencies[si.Exchange.Currency.Name].Chain
+		second = data.Currencies[si.Amount.Currency.Name].Chain
+	}
 
-    return []data.ChainType{data.ONELEDGER, first, second}
+	return []data.ChainType{data.ONELEDGER, first, second}
 }
 
 func (si SwapInit) getRole(isParty bool) Role {
 
-    if si.Amount.Currency.Id < si.Exchange.Currency.Id {
-        if isParty {
-            return INITIATOR
-        } else {
-            return PARTICIPANT
-        }
-    } else {
-        if isParty {
-            return PARTICIPANT
-        } else {
-            return INITIATOR
-        }
-    }
+	if si.Amount.Currency.Id < si.Exchange.Currency.Id {
+		if isParty {
+			return INITIATOR
+		} else {
+			return PARTICIPANT
+		}
+	} else {
+		if isParty {
+			return PARTICIPANT
+		} else {
+			return INITIATOR
+		}
+	}
 }
 
 func (si *SwapInit) Marshal() Message {
-
-    return nil
+	message, err := comm.Serialize(si)
+	if err != nil {
+		log.Error("Can't serialize SwapInit", "err", err)
+	}
+	return message
 }
 
 func (si *SwapInit) UnMarshal(message Message) {
-
-
+	output, err := comm.Deserialize(message, si)
+	if err != nil {
+		log.Error("Can't deserialize SwapInit", "err", err)
+	}
+	si = output.(*SwapInit)
 }
 
 type SwapExchange struct {
-    Contract   Message       `json:"message"` //message converted from HTLContract
-    SecretHash [32]byte      `json:"secrethash"`
-    Count      int           `json:"count"`
+	Contract   Message        `json:"message"` //message converted from HTLContract
+	SecretHash [32]byte       `json:"secrethash"`
+	Chain      data.ChainType `json:"chain"`
 }
 
 func (se SwapExchange) validate() status.Code {
@@ -297,42 +302,49 @@ func (se SwapExchange) validate() status.Code {
 }
 
 func (swap SwapExchange) resolve(app interface{}, stageType swapStageType) Commands {
-    swap := FindSwap(app, )
-    swap.Resolve(app, commands)
 
-    for i := 0; i < len(commands); i++ {
+	stage, ok := swapStageFlow[stageType]
+	if !ok {
+		log.Error("stage not found", "stageType", stageType)
+		return nil
+	}
 
-        if commands[i].Function == AUDITCONTRACT || commands[i].Function == EXTRACTSECRET {
-            if commands[i].Chain == data.BITCOIN {
-                contract := bitcoin.GetHTLCFromMessage(publish.Contract)
-                commands[i].Data[BTCCONTRACT] = contract
+	commands := amino.DeepCopy(stage.Commands).(Commands)
 
-            } else if commands[i].Chain == data.ETHEREUM {
-                contract := ethereum.GetHTLCFromMessage(publish.Contract)
-                commands[i].Data[ETHCONTRACT] = contract
-            }
-        }
-        commands[i].Data[PREIMAGE] = publish.SecretHash
-        if commands[i].Function == SUBMIT_TRANSACTION {
-            commands[i].Data[COUNT] = publish.Count + 1
-            commands[i].Data[CHAINID] = GetChainID(app)
-        }
-        //log.Debug("resolved command", "command", commands[i], "sequence", commands[i].Data[COUNT])
-    }
-	return
+	command := &commands[0]
+
+	if swap.Chain == data.BITCOIN {
+		contract := bitcoin.GetHTLCFromMessage(swap.Contract)
+		command.data[BTCCONTRACT] = contract
+
+	} else if swap.Chain == data.ETHEREUM {
+		contract := ethereum.GetHTLCFromMessage(swap.Contract)
+		command.data[ETHCONTRACT] = contract
+	}
+	command.data[PREIMAGE] = swap.SecretHash
+	command.chain = swap.Chain
+	return commands
 }
 
 func (se *SwapExchange) Marshal() Message {
-
-	return nil
+	message, err := comm.Serialize(se)
+	if err != nil {
+		log.Error("Can't serialize SwapExchange", "err", err)
+		return nil
+	}
+	return message
 }
 
 func (se *SwapExchange) UnMarshal(message Message) {
-
+	output, err := comm.Deserialize(message, se)
+	if err != nil {
+		log.Error("Can't deserialize SwapExchange", "err", err)
+	}
+	se = output.(*SwapExchange)
 }
 
 type SwapVerify struct {
-    Event   Event           `json:"event"`
+	Event Event `json:"event"`
 }
 
 func (sv SwapVerify) validate() status.Code {
@@ -349,20 +361,28 @@ func (sv SwapVerify) validate() status.Code {
 
 func (swap SwapVerify) resolve(app interface{}, stageType swapStageType) Commands {
 
-    return nil
-}
-
-func (sv *SwapVerify) Marshal() Message {
 	return nil
 }
 
-func (se *SwapVerify) UnMarshal(message Message) {
+func (sv *SwapVerify) Marshal() Message {
+	message, err := comm.Serialize(sv)
+	if err != nil {
+		log.Error("Can't serialize SwapVerify", "err", err)
+	}
+	return message
+}
 
+func (sv *SwapVerify) UnMarshal(message Message) {
+	output, err := comm.Deserialize(message, sv)
+	if err != nil {
+		log.Error("Can't deserialize SwapVerify", "err", err)
+	}
+	sv = output.(*SwapVerify)
 }
 
 type Party struct {
-	Key      id.AccountKey				`json:"key"`
-	Accounts map[data.ChainType][]byte	`json:"accounts"`
+	Key      id.AccountKey             `json:"key"`
+	Accounts map[data.ChainType][]byte `json:"accounts"`
 }
 
 func parseSwapMessage(stage swapStageType, message Message) swapMessage {
@@ -423,8 +443,8 @@ func (transaction *Swap) ShouldProcess(app interface{}) bool {
 	}
 
 	if bytes.Equal(transaction.Base.Owner, account.AccountKey()) {
-	    return true
-    }
+		return true
+	}
 
 	return false
 }
@@ -454,10 +474,10 @@ func (transaction *Swap) ProcessDeliver(app interface{}) status.Code {
 			return status.EXPAND_ERROR
 		}
 		if len(result) > 0 {
-		    commands[i+1].data = result
+			commands[i+1].data = result
 			chain := GetChain(result[NEXTCHAINNAME])
 			commands[i+1].chain = chain
-        }
+		}
 	}
 
 	return status.SUCCESS
@@ -465,60 +485,60 @@ func (transaction *Swap) ProcessDeliver(app interface{}) status.Code {
 
 // Plug in data from the rest of a system into a set of commands
 func (swap *Swap) Resolve(app interface{}) Commands {
-    parsedSwap := parseSwapMessage(swap.Stage, swap.Message)
-    return parsedSwap.resolve(app, swap.Stage)
+	parsedSwap := parseSwapMessage(swap.Stage, swap.Message)
+	return parsedSwap.resolve(app, swap.Stage)
 }
 
-func SaveUnmatchSwap(app interface{}, chain data.ChainType, context FunctionValues) (bool, FunctionValues){
-    swap := GetBytes(context[STOREMESSAGE])
-    key := GetAccountKey(context[STOREKEY])
-    SaveSwap(app, key, swap)
-    stageType := swapStageType(GetInt(context[STAGE]))
-    stage, ok := swapStageFlow[stageType]
-    if !ok {
-        return false, nil
-    }
-    them := GetParty(context[THEM_ACCOUNT])
-    nonce := GetInt64(context[NONCE])
-    event := Event{Type: SWAP, Key: them.Key, Nonce: nonce}
-    swapVerify := &SwapVerify{
-        Event: event,
-    }
+func SaveUnmatchSwap(app interface{}, chain data.ChainType, context FunctionValues) (bool, FunctionValues) {
+	swap := GetBytes(context[STOREMESSAGE])
+	key := GetAccountKey(context[STOREKEY])
+	SaveSwap(app, key, swap)
+	stageType := swapStageType(GetInt(context[STAGE]))
+	stage, ok := swapStageFlow[stageType]
+	if !ok {
+		return false, nil
+	}
+	them := GetParty(context[THEM_ACCOUNT])
+	nonce := GetInt64(context[NONCE])
+	event := Event{Type: SWAP, Key: them.Key, Nonce: nonce}
+	swapVerify := &SwapVerify{
+		Event: event,
+	}
 
-    context[STOREMESSAGE] = swapVerify.Marshal()
-    context[STAGE] = stage.OutStage
+	context[STOREMESSAGE] = swapVerify.Marshal()
+	context[STAGE] = stage.OutStage
 	return true, context
 }
 
 //get the next stage from the current stage
-func NextStage(app interface{}, chain data.ChainType, context FunctionValues)  (bool, FunctionValues) {
-    message := GetBytes(context[STOREMESSAGE])
-    stage := GetInt(context[STAGE])
+func NextStage(app interface{}, chain data.ChainType, context FunctionValues) (bool, FunctionValues) {
+	message := GetBytes(context[STOREMESSAGE])
+	stage := GetInt(context[STAGE])
 
-    signers := make([]PublicKey, 0)
-    owner := GetParty(context[MY_ACCOUNT])
-    target := GetParty(context[THEM_ACCOUNT])
-    chainId := GetString(context[CHAINID])
-    global.Current.Sequence+=32
-    //log.Debug("parsed contract", "contract", contract, "chain", chain, "context", context, "count", count)
-    swap := &Swap{
-        Base: Base{
-            Type:     SWAP,
-            ChainId:  chainId,
-            Signers:  signers,
-            Owner:    owner.Key,
-            Target:   target.Key,
-            Sequence: global.Current.Sequence,
-        },
-        Message:  message,
-        Stage:    swapStageType(stage),
-    }
+	signers := make([]PublicKey, 0)
+	owner := GetParty(context[MY_ACCOUNT])
+	target := GetParty(context[THEM_ACCOUNT])
+	chainId := GetString(context[CHAINID])
+	global.Current.Sequence += 32
+	//log.Debug("parsed contract", "contract", contract, "chain", chain, "context", context, "count", count)
+	swap := &Swap{
+		Base: Base{
+			Type:     SWAP,
+			ChainId:  chainId,
+			Signers:  signers,
+			Owner:    owner.Key,
+			Target:   target.Key,
+			Sequence: global.Current.Sequence,
+		},
+		Message: message,
+		Stage:   swapStageType(stage),
+	}
 
-    packet := SignAndPack(SWAP, Transaction(swap))
+	packet := SignAndPack(SWAP, Transaction(swap))
 
-    result := comm.Broadcast(packet)
-    log.Debug("Submit Transaction to OLT successfully", "result", result)
-    return true, nil
+	result := comm.Broadcast(packet)
+	log.Debug("Submit Transaction to OLT successfully", "result", result)
+	return true, nil
 }
 
 // Two matching swap requests from different parties
@@ -558,51 +578,51 @@ func MatchingSwap(app interface{}, transaction *SwapInit) *SwapInit {
 		log.Debug("No Account", "account", account)
 		return nil
 	}
-    var matchedSwap *SwapInit
+	var matchedSwap *SwapInit
 
-    storage := GetStatus(app)
-    matchedSwap.Fee = transaction.Fee
-    matchedSwap.Nonce = transaction.Nonce
+	storage := GetStatus(app)
+	matchedSwap.Fee = transaction.Fee
+	matchedSwap.Nonce = transaction.Nonce
 
 	if *isParty {
-        result := FindSwap(storage, transaction.CounterParty.Key)
-        if result != nil {
-            if matching := isMatch(result, transaction); matching {
-                matchedSwap.Party = transaction.Party
-                matchedSwap.CounterParty = result.Party
-                matchedSwap.Amount = transaction.Amount
-                matchedSwap.Exchange = transaction.Exchange
-                return matchedSwap
-            }
-        }
+		result := FindSwap(storage, transaction.CounterParty.Key)
+		if result != nil {
+			if matching := isMatch(result, transaction); matching {
+				matchedSwap.Party = transaction.Party
+				matchedSwap.CounterParty = result.Party
+				matchedSwap.Amount = transaction.Amount
+				matchedSwap.Exchange = transaction.Exchange
+				return matchedSwap
+			}
+		}
 	} else {
-        result := FindSwap(storage, transaction.Party.Key)
-        if result != nil {
-            if matching := isMatch(result, transaction); matching {
-                matchedSwap.Party = result.Party
-                matchedSwap.CounterParty = transaction.Party
-                matchedSwap.Amount = transaction.Exchange
-                matchedSwap.Exchange = transaction.Amount
-                return matchedSwap
-            }
-        }
+		result := FindSwap(storage, transaction.Party.Key)
+		if result != nil {
+			if matching := isMatch(result, transaction); matching {
+				matchedSwap.Party = result.Party
+				matchedSwap.CounterParty = transaction.Party
+				matchedSwap.Amount = transaction.Exchange
+				matchedSwap.Exchange = transaction.Amount
+				return matchedSwap
+			}
+		}
 	}
-    return nil
+	return nil
 }
 
 func SaveSwap(app interface{}, swapKey id.AccountKey, transaction interface{}) {
 	log.Debug("SaveSwap", "key", swapKey)
-    storage := GetStatus(app)
+	storage := GetStatus(app)
 	buffer, err := comm.Serialize(transaction)
 	if err != nil {
 		log.Error("Failed to Serialize SaveSwap transaction")
 	}
-    storage.Store(swapKey, buffer)
-    storage.Commit()
+	storage.Store(swapKey, buffer)
+	storage.Commit()
 }
 
 func FindSwap(app interface{}, key id.AccountKey) *SwapInit {
-    storage := GetStatus(app)
+	storage := GetStatus(app)
 	result := storage.Load(key)
 	if result == nil {
 		return nil
@@ -636,123 +656,123 @@ func GetChainAccount(app interface{}, name string, chain data.ChainType) id.Acco
 
 // TODO: Needs to be configurable
 var lockPeriod = 5 * time.Minute
+
 // todo: need to store this in db
 var tokens = make(map[string][32]byte)
 
-
 func Initiate(app interface{}, chain data.ChainType, context FunctionValues) (bool, FunctionValues) {
-    log.Info("Executing Initiate Command", "chain", chain, "context", context)
-    switch chain {
+	log.Info("Executing Initiate Command", "chain", chain, "context", context)
+	switch chain {
 
-    case data.BITCOIN:
-        return CreateContractBTC(app, context)
-    case data.ETHEREUM:
-        return CreateContractETH(app, context)
-    case data.ONELEDGER:
-        return CreateContractOLT(app, context)
-    default:
-        return false, nil
-    }
+	case data.BITCOIN:
+		return CreateContractBTC(app, context)
+	case data.ETHEREUM:
+		return CreateContractETH(app, context)
+	case data.ONELEDGER:
+		return CreateContractOLT(app, context)
+	default:
+		return false, nil
+	}
 }
 
 func Participate(app interface{}, chain data.ChainType, context FunctionValues) (bool, FunctionValues) {
-    log.Info("Executing Participate Command", "chain", chain, "context", context)
-    switch chain {
+	log.Info("Executing Participate Command", "chain", chain, "context", context)
+	switch chain {
 
-    case data.BITCOIN:
-        return ParticipateBTC(app, context)
-    case data.ETHEREUM:
-        return ParticipateETH(app, context)
-    case data.ONELEDGER:
-        return ParticipateOLT(app, context)
-    default:
-        return false, nil
-    }
+	case data.BITCOIN:
+		return ParticipateBTC(app, context)
+	case data.ETHEREUM:
+		return ParticipateETH(app, context)
+	case data.ONELEDGER:
+		return ParticipateOLT(app, context)
+	default:
+		return false, nil
+	}
 }
 
 func Redeem(app interface{}, chain data.ChainType, context FunctionValues) (bool, FunctionValues) {
-    log.Info("Executing Redeem Command", "chain", chain, "context", context)
+	log.Info("Executing Redeem Command", "chain", chain, "context", context)
 
-    switch chain {
+	switch chain {
 
-    case data.BITCOIN:
-        return RedeemBTC(app, context)
-    case data.ETHEREUM:
-        return RedeemETH(app, context)
-    case data.ONELEDGER:
-        return RedeemOLT(app, context)
-    default:
-        return false, nil
-    }
+	case data.BITCOIN:
+		return RedeemBTC(app, context)
+	case data.ETHEREUM:
+		return RedeemETH(app, context)
+	case data.ONELEDGER:
+		return RedeemOLT(app, context)
+	default:
+		return false, nil
+	}
 }
 
 func Refund(app interface{}, chain data.ChainType, context FunctionValues) (bool, FunctionValues) {
-    log.Info("Executing Refund Command", "chain", chain, "context", context)
-    switch chain {
+	log.Info("Executing Refund Command", "chain", chain, "context", context)
+	switch chain {
 
-    case data.BITCOIN:
-        return RefundBTC(app, context)
-    case data.ETHEREUM:
-        return RefundETH(app, context)
-    case data.ONELEDGER:
-        return RefundOLT(app, context)
-    default:
-        return false, nil
-    }
+	case data.BITCOIN:
+		return RefundBTC(app, context)
+	case data.ETHEREUM:
+		return RefundETH(app, context)
+	case data.ONELEDGER:
+		return RefundOLT(app, context)
+	default:
+		return false, nil
+	}
 }
 
 func ExtractSecret(app interface{}, chain data.ChainType, context FunctionValues) (bool, FunctionValues) {
-    log.Info("Executing ExtractSecret Command", "chain", chain, "context", context)
-    switch chain {
+	log.Info("Executing ExtractSecret Command", "chain", chain, "context", context)
+	switch chain {
 
-    case data.BITCOIN:
-        return ExtractSecretBTC(app, context)
-    case data.ETHEREUM:
-        return ExtractSecretETH(app, context)
-    case data.ONELEDGER:
-        return ExtractSecretOLT(app, context)
-    default:
-        return false, nil
-    }
+	case data.BITCOIN:
+		return ExtractSecretBTC(app, context)
+	case data.ETHEREUM:
+		return ExtractSecretETH(app, context)
+	case data.ONELEDGER:
+		return ExtractSecretOLT(app, context)
+	default:
+		return false, nil
+	}
 }
 
 func AuditContract(app interface{}, chain data.ChainType, context FunctionValues) (bool, FunctionValues) {
-    log.Info("Executing AuditContract Command", "chain", chain, "context", context)
-    switch chain {
+	log.Info("Executing AuditContract Command", "chain", chain, "context", context)
+	switch chain {
 
-    case data.BITCOIN:
-        return AuditContractBTC(app, context)
-    case data.ETHEREUM:
-        return AuditContractETH(app, context)
-    case data.ONELEDGER:
-        return AuditContractOLT(app, context)
-    default:
-        return false, nil
-    }
+	case data.BITCOIN:
+		return AuditContractBTC(app, context)
+	case data.ETHEREUM:
+		return AuditContractETH(app, context)
+	case data.ONELEDGER:
+		return AuditContractOLT(app, context)
+	default:
+		return false, nil
+	}
 }
 
 func CreateContractBTC(app interface{}, context FunctionValues) (bool, FunctionValues) {
 
 	timeout := time.Now().Add(2 * lockPeriod).Unix()
 
-    value := GetCoin(context[AMOUNT]).Amount
+	value := GetCoin(context[AMOUNT]).Amount
 
-    receiverParty := GetParty(context[THEM_ACCOUNT])
-    receiver := common.GetBTCAddressFromByteArray(data.BITCOIN, receiverParty.Accounts[data.BITCOIN])
-    if receiver == nil {
-        log.Error("Failed to get btc address from string", "address", receiverParty.Accounts[data.BITCOIN], "target", reflect.TypeOf(receiver))
-        return false, nil
-    }
+	receiverParty := GetParty(context[THEM_ACCOUNT])
+	receiver := common.GetBTCAddressFromByteArray(data.BITCOIN, receiverParty.Accounts[data.BITCOIN])
+	if receiver == nil {
+		log.Error("Failed to get btc address from string", "address", receiverParty.Accounts[data.BITCOIN], "target", reflect.TypeOf(receiver))
+		return false, nil
+	}
 
-    preimage := GetByte32(context[PREIMAGE])
-    if context[PASSWORD] != nil {
-        scr := GetByte32(context[PASSWORD])
-        scrHash := sha256.Sum256(scr[:])
-        if !bytes.Equal(preimage[:], scrHash[:]) {
-            log.Error("Secret and Secret Hash doesn't match", "preimage", preimage, "scrHash", scrHash)
-            return false, nil
-        }
-    }
+	preimage := GetByte32(context[PREIMAGE])
+	if context[PASSWORD] != nil {
+		scr := GetByte32(context[PASSWORD])
+		scrHash := sha256.Sum256(scr[:])
+		if !bytes.Equal(preimage[:], scrHash[:]) {
+			log.Error("Secret and Secret Hash doesn't match", "preimage", preimage, "scrHash", scrHash)
+			return false, nil
+		}
+	}
 
 	cli := bitcoin.GetBtcClient(global.Current.BTCAddress)
 
@@ -766,30 +786,30 @@ func CreateContractBTC(app interface{}, context FunctionValues) (bool, FunctionV
 		return false, nil
 	}
 
-    contract := &bitcoin.HTLContract{Contract: initCmd.Contract, ContractTx: *initCmd.ContractTx}
+	contract := &bitcoin.HTLContract{Contract: initCmd.Contract, ContractTx: *initCmd.ContractTx}
 
 	context[BTCCONTRACT] = contract
 
 	nonce := GetInt64(context[NONCE])
-	SaveContract(app, receiverParty.Key.Bytes(), nonce , contract)
-	log.Debug("btc contract","contract", context[BTCCONTRACT])
+	SaveContract(app, receiverParty.Key.Bytes(), nonce, contract)
+	log.Debug("btc contract", "contract", context[BTCCONTRACT])
 	return true, context
 }
 
 func CreateContractETH(app interface{}, context FunctionValues) (bool, FunctionValues) {
-    me := GetParty(context[MY_ACCOUNT])
+	me := GetParty(context[MY_ACCOUNT])
 
-    contractMessage := FindContract(app, me.Key.Bytes(), 0)
-    var contract *ethereum.HTLContract
-    if contractMessage == nil {
-        contract = ethereum.CreateHtlContract()
-        SaveContract(app, me.Key.Bytes(), 0, contract)
-    } else {
-        contract = ethereum.GetHTLCFromMessage(contractMessage)
-    }
+	contractMessage := FindContract(app, me.Key.Bytes(), 0)
+	var contract *ethereum.HTLContract
+	if contractMessage == nil {
+		contract = ethereum.CreateHtlContract()
+		SaveContract(app, me.Key.Bytes(), 0, contract)
+	} else {
+		contract = ethereum.GetHTLCFromMessage(contractMessage)
+	}
 
 	var receiverParty Party
-    preimage := GetByte32(context[PREIMAGE])
+	preimage := GetByte32(context[PREIMAGE])
 	if context[PASSWORD] != nil {
 		scr := GetByte32(context[PASSWORD])
 		scrHash := sha256.Sum256(scr[:])
@@ -799,13 +819,13 @@ func CreateContractETH(app interface{}, context FunctionValues) (bool, FunctionV
 		}
 	}
 
-    value := GetCoin(context[AMOUNT]).Amount
+	value := GetCoin(context[AMOUNT]).Amount
 
-    receiverParty = GetParty(context[THEM_ACCOUNT])
-	receiver := common.GetETHAddressFromByteArray(data.ETHEREUM,receiverParty.Accounts[data.ETHEREUM])
-    if receiver == nil {
-        log.Error("Failed to get eth address from string", "address", receiverParty.Accounts[data.ETHEREUM], "target", reflect.TypeOf(receiver))
-    }
+	receiverParty = GetParty(context[THEM_ACCOUNT])
+	receiver := common.GetETHAddressFromByteArray(data.ETHEREUM, receiverParty.Accounts[data.ETHEREUM])
+	if receiver == nil {
+		log.Error("Failed to get eth address from string", "address", receiverParty.Accounts[data.ETHEREUM], "target", reflect.TypeOf(receiver))
+	}
 
 	timeoutSecond := int64(lockPeriod.Seconds())
 	log.Debug("Create ETH HTLC", "value", value, "receiver", receiver, "preimage", preimage)
@@ -848,28 +868,27 @@ func AuditContractETH(app interface{}, context FunctionValues) (bool, FunctionVa
 		return false, nil
 	}
 	if !bytes.Equal(address.Bytes(), receiver.Bytes()) {
-        log.Error("receiver not correct",  "contract", contract.Address, "receiver", receiver, "myAddress", address)
-        return false, nil
-    }
+		log.Error("receiver not correct", "contract", contract.Address, "receiver", receiver, "myAddress", address)
+		return false, nil
+	}
 
-    value := GetCoin(context[EXCHANGE]).Amount
+	value := GetCoin(context[EXCHANGE]).Amount
 
-    setVale := contract.Balance()
-    setScrhash := contract.ScrHash()
-    if !bytes.Equal(scrHash[:], setScrhash[:]) {
-        log.Error("Secret Hash doesn't match", "sh", scrHash, "setSh", setScrhash)
-        return false, nil
-    }
+	setVale := contract.Balance()
+	setScrhash := contract.ScrHash()
+	if !bytes.Equal(scrHash[:], setScrhash[:]) {
+		log.Error("Secret Hash doesn't match", "sh", scrHash, "setSh", setScrhash)
+		return false, nil
+	}
 
-    if value.Cmp(setVale) != 0 {
-        log.Error("Value doesn't match", "value", value, "setValue", setVale)
-        return false, nil
-    }
+	if value.Cmp(setVale) != 0 {
+		log.Error("Value doesn't match", "value", value, "setValue", setVale)
+		return false, nil
+	}
 
-    log.Debug("Auditing ETH Contract","receiver", address, "value", value, "scrHash", scrHash)
+	log.Debug("Auditing ETH Contract", "receiver", address, "value", value, "scrHash", scrHash)
 
-
-    log.Debug("Set ETH Contract","receiver", receiver, "value", setVale, "scrHash", setScrhash)
+	log.Debug("Set ETH Contract", "receiver", receiver, "value", setVale, "scrHash", setScrhash)
 	//e = contract.Audit(address, value ,scrHash)
 	//if e != nil {
 	//	log.Error("Failed to audit the contract with correct input", "status", e)
@@ -884,12 +903,12 @@ func AuditContractETH(app interface{}, context FunctionValues) (bool, FunctionVa
 }
 
 func ParticipateBTC(app interface{}, context FunctionValues) (bool, FunctionValues) {
-    success, result := CreateContractBTC(app, context)
-    if success != false {
-        log.Error("failed to participate because can't create contract")
-        return false, nil
-    }
-    return true, result
+	success, result := CreateContractBTC(app, context)
+	if success != false {
+		log.Error("failed to participate because can't create contract")
+		return false, nil
+	}
+	return true, result
 }
 
 func ParticipateETH(app interface{}, context FunctionValues) (bool, FunctionValues) {
@@ -902,138 +921,138 @@ func ParticipateETH(app interface{}, context FunctionValues) (bool, FunctionValu
 }
 
 func RedeemBTC(app interface{}, context FunctionValues) (bool, FunctionValues) {
-    them := GetParty(context[THEM_ACCOUNT])
-    nonce := GetInt64(context[NONCE])
-    contractMessage := FindContract(app, them.Key.Bytes(), nonce)
-    if contractMessage == nil {
-        return false,nil
-    }
-    contract := bitcoin.GetHTLCFromMessage(contractMessage)
-    if contract == nil {
-        log.Error("BTC Htlc contract not found")
-        return false, nil
-    }
+	them := GetParty(context[THEM_ACCOUNT])
+	nonce := GetInt64(context[NONCE])
+	contractMessage := FindContract(app, them.Key.Bytes(), nonce)
+	if contractMessage == nil {
+		return false, nil
+	}
+	contract := bitcoin.GetHTLCFromMessage(contractMessage)
+	if contract == nil {
+		log.Error("BTC Htlc contract not found")
+		return false, nil
+	}
 
-    scr := GetByte32(context[PASSWORD])
+	scr := GetByte32(context[PASSWORD])
 
-    cmd := htlc.NewRedeemCmd(contract.Contract, &contract.ContractTx, scr[:])
-    cli := bitcoin.GetBtcClient(global.Current.BTCAddress)
-    _, e := cmd.RunCommand(cli)
-    if e != nil {
-        log.Error("Bitcoin redeem htlc", "status", e)
-        return false, nil
-    }
-    context[BTCCONTRACT] = &bitcoin.HTLContract{Contract: contract.Contract, ContractTx: *cmd.RedeemContractTx}
-    return true, context
+	cmd := htlc.NewRedeemCmd(contract.Contract, &contract.ContractTx, scr[:])
+	cli := bitcoin.GetBtcClient(global.Current.BTCAddress)
+	_, e := cmd.RunCommand(cli)
+	if e != nil {
+		log.Error("Bitcoin redeem htlc", "status", e)
+		return false, nil
+	}
+	context[BTCCONTRACT] = &bitcoin.HTLContract{Contract: contract.Contract, ContractTx: *cmd.RedeemContractTx}
+	return true, context
 }
 
 func RedeemETH(app interface{}, context FunctionValues) (bool, FunctionValues) {
-    them := GetParty(context[THEM_ACCOUNT])
-    nonce := GetInt64(context[NONCE])
-    contractMessage := FindContract(app, them.Key.Bytes(), nonce)
-    if contractMessage == nil {
-        return false, nil
-    }
-    contract := ethereum.GetHTLCFromMessage(contractMessage)
-    if contract == nil {
-        return false, nil
-    }
+	them := GetParty(context[THEM_ACCOUNT])
+	nonce := GetInt64(context[NONCE])
+	contractMessage := FindContract(app, them.Key.Bytes(), nonce)
+	if contractMessage == nil {
+		return false, nil
+	}
+	contract := ethereum.GetHTLCFromMessage(contractMessage)
+	if contract == nil {
+		return false, nil
+	}
 
 	scr := GetByte32(context[PASSWORD])
 	err := contract.Redeem(scr[:])
 	if err != nil {
-	    log.Error("Ethereum redeem htlc", "status", err)
-	    return false, nil
-    }
+		log.Error("Ethereum redeem htlc", "status", err)
+		return false, nil
+	}
 	context[ETHCONTRACT] = contract
 	return true, context
 }
 
 func RefundBTC(app interface{}, context FunctionValues) (bool, FunctionValues) {
 
-    them := GetParty(context[THEM_ACCOUNT])
-    nonce := GetInt64(context[NONCE])
-    contractMessage := FindContract(app, them.Key.Bytes(), nonce)
-    if contractMessage == nil {
-        log.Error("BTC Htlc contract not found")
-        return false,nil
-    }
-    contract := bitcoin.GetHTLCFromMessage(contractMessage)
-    if contract == nil {
-        log.Error("BTC Htlc contract can't be parsed")
-        return false, nil
-    }
+	them := GetParty(context[THEM_ACCOUNT])
+	nonce := GetInt64(context[NONCE])
+	contractMessage := FindContract(app, them.Key.Bytes(), nonce)
+	if contractMessage == nil {
+		log.Error("BTC Htlc contract not found")
+		return false, nil
+	}
+	contract := bitcoin.GetHTLCFromMessage(contractMessage)
+	if contract == nil {
+		log.Error("BTC Htlc contract can't be parsed")
+		return false, nil
+	}
 
-    cmd := htlc.NewRefundCmd(contract.Contract, &contract.ContractTx)
-    cli := bitcoin.GetBtcClient(global.Current.BTCAddress)
-    _, e := cmd.RunCommand(cli)
-    if e != nil {
-        log.Error("Bitcoin refund htlc", "status", e)
-        return false, nil
-    }
-    return true, context
+	cmd := htlc.NewRefundCmd(contract.Contract, &contract.ContractTx)
+	cli := bitcoin.GetBtcClient(global.Current.BTCAddress)
+	_, e := cmd.RunCommand(cli)
+	if e != nil {
+		log.Error("Bitcoin refund htlc", "status", e)
+		return false, nil
+	}
+	return true, context
 }
 
 func RefundETH(app interface{}, context FunctionValues) (bool, FunctionValues) {
-    me := GetParty(context[MY_ACCOUNT])
-    contractMessage := FindContract(app, me.Key.Bytes(), 0)
-    if contractMessage == nil {
-        log.Error("ETH Htlc contract not found")
-        return false, nil
-    }
-    contract := ethereum.GetHTLCFromMessage(contractMessage)
-    if contract == nil {
-        log.Error("ETH Htlc contract can't be parsed")
-        return false, nil
-    }
+	me := GetParty(context[MY_ACCOUNT])
+	contractMessage := FindContract(app, me.Key.Bytes(), 0)
+	if contractMessage == nil {
+		log.Error("ETH Htlc contract not found")
+		return false, nil
+	}
+	contract := ethereum.GetHTLCFromMessage(contractMessage)
+	if contract == nil {
+		log.Error("ETH Htlc contract can't be parsed")
+		return false, nil
+	}
 
 	err := contract.Refund()
 	if err != nil {
-	    return false, nil
-    }
+		return false, nil
+	}
 	context[ETHCONTRACT] = contract
 	return true, context
 }
 
 func ExtractSecretBTC(app interface{}, context FunctionValues) (bool, FunctionValues) {
-    contract := GetBTCContract(context[BTCCONTRACT])
-    scrHash := GetByte32(context[PREIMAGE])
-    cmd := htlc.NewExtractSecretCmd(&contract.ContractTx, scrHash)
-    cli := bitcoin.GetBtcClient(global.Current.BTCAddress)
-    e := cmd.RunCommand(cli)
-    if e != nil {
-        log.Error("Bitcoin extract hltc", "status", e)
-        return false, nil
-    }
-    var tmpScr [32]byte
-    copy(tmpScr[:], string(cmd.Secret))
-    context[PASSWORD] = tmpScr
-    log.Debug("extracted secret", "secretbytearray", cmd.Secret, "secretbyte32", tmpScr)
-    return true, context
+	contract := GetBTCContract(context[BTCCONTRACT])
+	scrHash := GetByte32(context[PREIMAGE])
+	cmd := htlc.NewExtractSecretCmd(&contract.ContractTx, scrHash)
+	cli := bitcoin.GetBtcClient(global.Current.BTCAddress)
+	e := cmd.RunCommand(cli)
+	if e != nil {
+		log.Error("Bitcoin extract hltc", "status", e)
+		return false, nil
+	}
+	var tmpScr [32]byte
+	copy(tmpScr[:], string(cmd.Secret))
+	context[PASSWORD] = tmpScr
+	log.Debug("extracted secret", "secretbytearray", cmd.Secret, "secretbyte32", tmpScr)
+	return true, context
 
 }
 
 func ExtractSecretETH(app interface{}, context FunctionValues) (bool, FunctionValues) {
-    contract := GetETHContract(context[ETHCONTRACT])
-    //todo: make it correct scr, by extract or from local storage
+	contract := GetETHContract(context[ETHCONTRACT])
+	//todo: make it correct scr, by extract or from local storage
 
-    scr := contract.Extract()
-    if scr == nil {
-        return false, nil
-    }
-    var tmpScr [32]byte
-    copy(tmpScr[:], string(scr))
-    context[PASSWORD] = tmpScr
-    log.Debug("extracted secret", "secret", scr, "r", tmpScr)
-    return true, context
+	scr := contract.Extract()
+	if scr == nil {
+		return false, nil
+	}
+	var tmpScr [32]byte
+	copy(tmpScr[:], string(scr))
+	context[PASSWORD] = tmpScr
+	log.Debug("extracted secret", "secret", scr, "r", tmpScr)
+	return true, context
 }
 
 func CreateContractOLT(app interface{}, context FunctionValues) (bool, FunctionValues) {
-    log.Warn("Not supported")
-    party := GetParty(context[MY_ACCOUNT])
-    counterParty := GetParty(context[THEM_ACCOUNT])
-    partyBalance := GetUtxo(app).Find(party.Key).Amount
-    counterPartyBalance := GetUtxo(app).Find(counterParty.Key).Amount
+	log.Warn("Not supported")
+	party := GetParty(context[MY_ACCOUNT])
+	counterParty := GetParty(context[THEM_ACCOUNT])
+	partyBalance := GetUtxo(app).Find(party.Key).Amount
+	counterPartyBalance := GetUtxo(app).Find(counterParty.Key).Amount
 
 	preimage := GetByte32(context[PREIMAGE])
 	if context[PASSWORD] != nil {
@@ -1046,57 +1065,54 @@ func CreateContractOLT(app interface{}, context FunctionValues) (bool, FunctionV
 	}
 
 	inputs := make([]SendInput, 0)
-    inputs = append(inputs,
-        NewSendInput(party.Key, partyBalance),
-        NewSendInput(counterParty.Key, counterPartyBalance))
-    amount := GetCoin(context[AMOUNT])
-    // Build up the outputs
-    outputs := make([]SendOutput, 0)
-    outputs = append(outputs,
-        NewSendOutput(party.Key, partyBalance.Minus(amount)),
-        NewSendOutput(counterParty.Key, counterPartyBalance.Plus(amount)))
-    send := &Send{
-        Base: Base{
-            Type:     SEND,
-            ChainId:  GetChainID(app),
-            Signers:  nil,
-            Sequence: global.Current.Sequence,
-        },
-        Inputs:  inputs,
-        Outputs: outputs,
-        Fee:     data.NewCoin(0, "OLT"),
-        Gas:     data.NewCoin(0, "OLT"),
-    }
-    message := SignAndPack(SEND, Transaction(send))
-    contract := NewMultiSigBox(1,1, message)
-    _ = contract
-    return true, context
+	inputs = append(inputs,
+		NewSendInput(party.Key, partyBalance),
+		NewSendInput(counterParty.Key, counterPartyBalance))
+	amount := GetCoin(context[AMOUNT])
+	// Build up the outputs
+	outputs := make([]SendOutput, 0)
+	outputs = append(outputs,
+		NewSendOutput(party.Key, partyBalance.Minus(amount)),
+		NewSendOutput(counterParty.Key, counterPartyBalance.Plus(amount)))
+	send := &Send{
+		Base: Base{
+			Type:     SEND,
+			ChainId:  GetChainID(app),
+			Signers:  nil,
+			Sequence: global.Current.Sequence,
+		},
+		Inputs:  inputs,
+		Outputs: outputs,
+		Fee:     data.NewCoin(0, "OLT"),
+		Gas:     data.NewCoin(0, "OLT"),
+	}
+	message := SignAndPack(SEND, Transaction(send))
+	contract := NewMultiSigBox(1, 1, message)
+	_ = contract
+	return true, context
 }
 
 func ParticipateOLT(app interface{}, context FunctionValues) (bool, FunctionValues) {
-    log.Warn("Not supported")
-    return true, context
+	log.Warn("Not supported")
+	return true, context
 }
 
 func AuditContractOLT(app interface{}, context FunctionValues) (bool, FunctionValues) {
-    log.Warn("Not supported")
-    return true, context
+	log.Warn("Not supported")
+	return true, context
 }
-
 
 func RedeemOLT(app interface{}, context FunctionValues) (bool, FunctionValues) {
-    log.Warn("Not supported")
-    return true, context
+	log.Warn("Not supported")
+	return true, context
 }
-
 
 func RefundOLT(app interface{}, context FunctionValues) (bool, FunctionValues) {
-    log.Warn("Not supported")
-    return true, context
+	log.Warn("Not supported")
+	return true, context
 }
 
-
 func ExtractSecretOLT(app interface{}, context FunctionValues) (bool, FunctionValues) {
-    log.Warn("Not supported")
-    return true, context
+	log.Warn("Not supported")
+	return true, context
 }
