@@ -7,14 +7,15 @@ package app
 
 import (
 	"bytes"
+
 	"github.com/Oneledger/protocol/node/abci"
 	"github.com/Oneledger/protocol/node/action"
-	"github.com/Oneledger/protocol/node/comm"
 	"github.com/Oneledger/protocol/node/convert"
 	"github.com/Oneledger/protocol/node/data"
 	"github.com/Oneledger/protocol/node/global"
 	"github.com/Oneledger/protocol/node/id"
 	"github.com/Oneledger/protocol/node/log"
+	"github.com/Oneledger/protocol/node/serial"
 	"github.com/tendermint/tendermint/abci/types"
 	"github.com/tendermint/tendermint/libs/common"
 )
@@ -48,7 +49,7 @@ func NewApplication() *Application {
 		Accounts:   id.NewAccounts("accounts"),
 		Utxo:       data.NewChainState("utxo", data.PERSISTENT),
 		Event:      data.NewDatastore("event", data.PERSISTENT),
-		Contract: 	data.NewDatastore("contract", data.PERSISTENT),
+		Contract:   data.NewDatastore("contract", data.PERSISTENT),
 	}
 }
 
@@ -57,49 +58,16 @@ func (app Application) Initialize() {
 	param := app.Admin.Load(data.DatabaseKey("NodeAccountName"))
 	if param != nil {
 		var name string
-		buffer, err := comm.Deserialize(param, &name)
+
+		buffer, err := serial.Deserialize(param, &name, serial.NETWORK)
 		if err != nil {
 			log.Error("Failed to deserialize persistent data")
 		}
-		global.Current.NodeAccountName = *(buffer.(*string))
+
+		if buffer != nil {
+			global.Current.NodeAccountName = *(buffer.(*string))
+		}
 	}
-}
-
-// Access to the local persistent databases
-func (app Application) GetAdmin() interface{} {
-	return app.Admin
-}
-
-// Access to the local persistent databases
-func (app Application) GetStatus() interface{} {
-	return app.Status
-}
-
-// Access to the local persistent databases
-func (app Application) GetIdentities() interface{} {
-	return app.Identities
-}
-
-// Access to the local persistent databases
-func (app Application) GetAccounts() interface{} {
-	return app.Accounts
-}
-
-// Access to the local persistent databases
-func (app Application) GetUtxo() interface{} {
-	return app.Utxo
-}
-
-func (app Application) GetChainID() interface{} {
-    return ChainId
-}
-
-func (app Application) GetEvent() interface{} {
-    return app.Event
-}
-
-func (app Application) GetContract() interface{} {
-	return app.Contract
 }
 
 type BasicState struct {
@@ -112,15 +80,19 @@ func (app Application) SetupState(stateBytes []byte) {
 	log.Debug("SetupState", "state", string(stateBytes))
 
 	var base BasicState
-	des, err := comm.Deserialize(stateBytes, &base)
+
+	des, err := serial.Deserialize(stateBytes, &base, serial.JSON)
 	if err != nil {
 		log.Fatal("Failed to deserialize stateBytes during SetupState")
 	}
+
 	state := des.(*BasicState)
 	log.Debug("Deserialized State", "state", state, "state.Account", state.Account)
+
 	// TODO: Can't generate a different key for each node. Needs to be in the genesis? Or ignored?
 	//publicKey, privateKey := id.GenerateKeys([]byte(state.Account)) // TODO: switch with passphrase
 	publicKey, privateKey := id.NilPublicKey(), id.NilPrivateKey()
+
 	// TODO: This should probably only occur on the Admin node, for other nodes how do I know the key?
 	// Register the identity and account first
 	RegisterLocally(&app, state.Account, "OneLedger", data.ONELEDGER, publicKey, privateKey)
@@ -131,7 +103,7 @@ func (app Application) SetupState(stateBytes []byte) {
 		Amount: data.NewCoin(state.Amount, "OLT"),
 	}
 
-	buffer, err := comm.Serialize(balance)
+	buffer, err := serial.Serialize(balance, serial.PERSISTENT)
 	if err != nil {
 		log.Error("Failed to Serialize balance")
 	}
@@ -228,7 +200,7 @@ func (app Application) CheckTx(tx []byte) ResponseCheckTx {
 		Log:       "Log Data",
 		Info:      "Info Data",
 		GasWanted: 1000,
-		GasUsed: 1000,
+		GasUsed:   1000,
 		Tags:      []common.KVPair(nil),
 	}
 }
@@ -267,14 +239,15 @@ func (app Application) DeliverTx(tx []byte) ResponseDeliverTx {
 	}
 
 	if result.ShouldProcess(app) {
-	    ttype, _ := action.UnpackMessage(action.Message(tx))
-	    if ttype == action.SWAP || ttype == action.PUBLISH || ttype == action.VERIFY {
-	        go result.ProcessDeliver(&app)
-        } else {
-            if err = result.ProcessDeliver(&app); err != 0 {
-                return ResponseDeliverTx{Code: err}
-            }
-        }
+		ttype, _ := action.UnpackMessage(action.Message(tx))
+
+		if ttype == action.SWAP || ttype == action.PUBLISH || ttype == action.VERIFY {
+			go result.ProcessDeliver(&app)
+		} else {
+			if err = result.ProcessDeliver(&app); err != 0 {
+				return ResponseDeliverTx{Code: err}
+			}
+		}
 	}
 
 	return ResponseDeliverTx{

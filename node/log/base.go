@@ -10,6 +10,7 @@ import (
 	"os"
 
 	"github.com/Oneledger/protocol/node/global"
+	"github.com/davecgh/go-spew/spew"
 	"github.com/tendermint/tendermint/libs/log"
 )
 
@@ -18,10 +19,29 @@ var current log.Logger
 // init a logger right away
 func init() {
 	current = NewLogger()
+
+	spew.Config = spew.ConfigState{
+		Indent:                  "    ",
+		DisableMethods:          false,
+		DisablePointerMethods:   false,
+		DisablePointerAddresses: false,
+		DisableCapacities:       false,
+		SortKeys:                false,
+	}
+}
+
+// Dump put the arguments
+func Dump(msg string, args ...interface{}) {
+	if global.Current.Debug {
+		Raw(msg + ":\n")
+		spew.Dump(args...)
+		Raw("\n")
+	}
 }
 
 // NewLogger sets in the defaults
 func NewLogger() log.Logger {
+	// TODO: Replace with non-tendermint logger
 	return log.NewTMLogger(log.NewSyncWriter(os.Stdout))
 }
 

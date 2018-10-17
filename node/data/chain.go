@@ -3,6 +3,8 @@
 */
 package data
 
+import "github.com/Oneledger/protocol/node/serial"
+
 type ChainType int
 
 // TODO: These should be in a database
@@ -22,6 +24,13 @@ type Chain struct {
 type ChainNode struct {
 	ChainType ChainType
 	Location  string
+
 	// TODO: Causing cycle...
 	//Owner     id.Identity
+}
+
+func init() {
+	serial.Register(ChainType(0))
+	serial.Register(Chain{})
+	serial.Register(ChainNode{})
 }

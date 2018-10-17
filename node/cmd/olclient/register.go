@@ -9,6 +9,7 @@ import (
 	"github.com/Oneledger/protocol/node/app"
 	"github.com/Oneledger/protocol/node/comm"
 	"github.com/Oneledger/protocol/node/log"
+	"github.com/Oneledger/protocol/node/serial"
 	"github.com/spf13/cobra"
 )
 
@@ -49,7 +50,7 @@ func Register(cmd *cobra.Command, args []string) {
 		PrivateKey: arguments.privkey,
 	}
 
-	buffer, err := comm.Serialize(cli)
+	buffer, err := serial.Serialize(cli, serial.CLIENT)
 	if err != nil {
 		log.Error("Register Failed", "err", err)
 		return

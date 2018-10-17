@@ -9,6 +9,7 @@ import (
 
 	"github.com/Oneledger/protocol/node/comm"
 	"github.com/Oneledger/protocol/node/log"
+	"github.com/Oneledger/protocol/node/serial"
 	wire "github.com/tendermint/go-wire"
 )
 
@@ -28,7 +29,6 @@ func BroadcastTransaction(ttype Type, transaction Transaction) {
 
 	// Don't let the death of a client stop the node from running
 	defer func() {
-		log.Debug("Catching A Panic")
 		if r := recover(); r != nil {
 			log.Error("Ignoring Client Panic", "r", r)
 		}
@@ -65,7 +65,7 @@ func PackRequest(ttype Type, request Transaction) []byte {
 	}
 	bytes := buff.Bytes()
 
-	packet, err := comm.Serialize(request)
+	packet, err := serial.Serialize(request, serial.CLIENT)
 	if err != nil {
 		log.Error("Failed to Serialize packet: ", err)
 	} else {

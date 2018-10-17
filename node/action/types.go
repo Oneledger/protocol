@@ -10,12 +10,13 @@ package action
 import (
 	"bytes"
 
+	"strconv"
+
 	"github.com/Oneledger/protocol/node/chains/common"
-	"github.com/Oneledger/protocol/node/comm"
 	"github.com/Oneledger/protocol/node/data"
 	"github.com/Oneledger/protocol/node/id"
 	"github.com/Oneledger/protocol/node/log"
-	"strconv"
+	"github.com/Oneledger/protocol/node/serial"
 )
 
 // inputs into a send transaction (similar to Bitcoin)
@@ -30,9 +31,13 @@ type SendInput struct {
 	Sequence int `json:"sequence"`
 }
 
+func init() {
+	serial.Register(SendInput{})
+}
+
 func NewSendInput(accountKey id.AccountKey, amount data.Coin) SendInput {
 	if bytes.Equal(accountKey, []byte("")) {
-		log.Fatal("Missing Account")
+		log.Fatal("Missing AccountKey")
 	}
 
 	return SendInput{
@@ -47,9 +52,13 @@ type SendOutput struct {
 	Amount     data.Coin     `json:"coin"`
 }
 
+func init() {
+	serial.Register(SendOutput{})
+}
+
 func NewSendOutput(accountKey id.AccountKey, amount data.Coin) SendOutput {
 	if bytes.Equal(accountKey, []byte("")) {
-		log.Fatal("Missing Account")
+		log.Fatal("Missing AccountKey")
 	}
 
 	return SendOutput{
@@ -69,13 +78,13 @@ func CheckBalance(app interface{}, accountKey id.AccountKey, amount data.Coin) b
 	}
 
 	var bal data.Balance
-	buffer, err := comm.Deserialize(value, &bal)
+	buffer, err := serial.Deserialize(value, bal, serial.CLIENT)
 	if err != nil || buffer == nil {
 		log.Error("Failed to Deserialize", "key", accountKey)
 		return false
 	}
 
-	balance := buffer.(*data.Balance)
+	balance := buffer.(data.Balance)
 	if !balance.Amount.Equals(amount) {
 		log.Warn("Mismatch", "key", accountKey, "amount", amount, "balance", balance)
 		//return false
@@ -84,10 +93,10 @@ func CheckBalance(app interface{}, accountKey id.AccountKey, amount data.Coin) b
 }
 
 func GetHeight(app interface{}) int64 {
-    utxo := GetUtxo(app)
+	utxo := GetUtxo(app)
 
-    height := int64(utxo.Height)
-    return height
+	height := int64(utxo.Height)
+	return height
 }
 
 func CheckAmounts(app interface{}, inputs []SendInput, outputs []SendOutput) bool {
@@ -141,13 +150,13 @@ func CheckAmounts(app interface{}, inputs []SendInput, outputs []SendOutput) boo
 }
 
 type Event struct {
-	Type 	Type			`json:"type"`
-	Key  	id.AccountKey	`json:"key"`
-	Nonce	int64			`json:"result"`
+	Type  Type          `json:"type"`
+	Key   id.AccountKey `json:"key"`
+	Nonce int64         `json:"result"`
 }
 
 func (e Event) ToKey() []byte {
-	buffer, err := comm.Serialize(e)
+	buffer, err := serial.Serialize(e, serial.CLIENT)
 	if err != nil {
 		log.Error("Failed to Serialize event key")
 	}
@@ -163,7 +172,7 @@ func SaveEvent(app interface{}, eventKey Event, status bool) {
 	events.Commit()
 }
 
-func FindEvent(app interface{},  eventKey Event) bool{
+func FindEvent(app interface{}, eventKey Event) bool {
 	log.Debug("Load Event", "key", eventKey)
 	events := GetEvent(app)
 	result := events.Load(eventKey.ToKey())
@@ -180,21 +189,21 @@ func FindEvent(app interface{},  eventKey Event) bool{
 }
 
 func SaveContract(app interface{}, contractKey []byte, nonce int64, contract common.Contract) {
-    //todo: add nonce to the key to differentiate swap between same conterparty
-    contracts := GetContract(app)
-    log.Debug("Save contract", "key", contractKey)
-    contracts.Store(contractKey, contract.ToMessage())
-    contracts.Commit()
+	//todo: add nonce to the key to differentiate swap between same conterparty
+	contracts := GetContract(app)
+	log.Debug("Save contract", "key", contractKey)
+	contracts.Store(contractKey, contract.ToMessage())
+	contracts.Commit()
 }
 
 func FindContract(app interface{}, contractKey []byte, nonce int64) Message {
-    //todo: add nonce to the key to differentiate swap between same conterparty
-    log.Debug("Load Contract", "key", contractKey)
-    contracts := GetContract(app)
-    result := contracts.Load(contractKey)
-    if result == nil {
-        return nil
-    }
+	//todo: add nonce to the key to differentiate swap between same conterparty
+	log.Debug("Load Contract", "key", contractKey)
+	contracts := GetContract(app)
+	result := contracts.Load(contractKey)
+	if result == nil {
+		return nil
+	}
 
-    return result
+	return result
 }

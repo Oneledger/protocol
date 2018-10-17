@@ -10,12 +10,19 @@ import (
 	"github.com/Oneledger/protocol/node/global"
 	"github.com/Oneledger/protocol/node/id"
 	"github.com/Oneledger/protocol/node/log"
+	"github.com/Oneledger/protocol/node/serial"
 )
 
 type Message = []byte // Contents of a transaction
 // ENUM for type
-type Type byte
-type Role byte
+type Type int
+type Role int
+
+func init() {
+	serial.Register(Type(0))
+	serial.Register(Role(0))
+	serial.Register(Message(""))
+}
 
 const (
 	INVALID       Type = iota
@@ -63,6 +70,10 @@ type Base struct {
 	Delay    int64 `json:"delay"` // Pause the transaction in the mempool
 }
 
+func init() {
+	serial.Register(Base{})
+}
+
 // Execute the function
 func Execute(app interface{}, command Command, lastResult map[Parameter]FunctionValue) (err.Code, map[Parameter]FunctionValue) {
 	//make sure the first execute use the context, and later uses last result. so if command are executed in a row, every executed function should only add
@@ -73,7 +84,7 @@ func Execute(app interface{}, command Command, lastResult map[Parameter]Function
 		}
 	}
 	status, result := command.Execute(app)
-	if  status {
+	if status {
 		return err.SUCCESS, result
 	}
 

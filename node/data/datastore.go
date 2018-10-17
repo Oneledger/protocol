@@ -82,6 +82,7 @@ func NewDatastore(name string, newType DatastoreType) *Datastore {
 			log.Error("Database create failed", "err", err)
 			panic("Can't create a database " + global.Current.RootDir + "/" + fullname)
 		}
+		log.Dump("Created Database "+global.Current.RootDir+"/"+fullname, err)
 
 		tree := iavl.NewMutableTree(storage, 100)
 

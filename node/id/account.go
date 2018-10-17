@@ -11,13 +11,14 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/Oneledger/protocol/node/comm"
 	"github.com/Oneledger/protocol/node/data"
 	"github.com/Oneledger/protocol/node/err"
 	"github.com/Oneledger/protocol/node/global"
 	"github.com/Oneledger/protocol/node/log"
+	"github.com/Oneledger/protocol/node/serial"
 )
 
+// Temporary typing for signatures
 type Signature = []byte
 
 // The persistent collection of all accounts known by this node
@@ -27,7 +28,6 @@ type Accounts struct {
 
 func NewAccounts(name string) *Accounts {
 	data := data.NewDatastore(name, data.PERSISTENT)
-
 	return &Accounts{
 		data: data,
 	}
@@ -38,11 +38,11 @@ func (acc *Accounts) Add(account Account) {
 		log.Debug("Key is being updated", "key", account.AccountKey())
 	}
 
-	buffer, err := comm.Serialize(account)
+	buffer, err := serial.Serialize(account, serial.PERSISTENT)
 	if err != nil {
 		log.Fatal("Failed to Deserialize account: ", err)
 	}
-	log.Debug("Adding Account", "account", account)
+
 	acc.data.Store(account.AccountKey(), buffer)
 	acc.data.Commit()
 }
@@ -56,7 +56,6 @@ func (acc *Accounts) Exists(newType data.ChainType, name string) bool {
 	if value := acc.data.Load(account.AccountKey()); value != nil {
 		return true
 	}
-
 	return false
 }
 
@@ -68,11 +67,11 @@ func (acc *Accounts) FindIdentity(identity Identity) (Account, err.Code) {
 	// TODO: Should have better name mapping between identities and accounts
 	account := NewAccount(data.ONELEDGER, identity.Name+"-OneLedger", NilPublicKey(), NilPrivateKey())
 	return acc.Find(account)
-
 }
 
 func (acc *Accounts) FindNameOnChain(name string, chain data.ChainType) (Account, err.Code) {
 	log.Debug("FindNameOnChain", "name", name, "chain", chain)
+
 	// TODO: Should be replaced with a real index
 	for _, entry := range acc.FindAll() {
 		if Matches(entry, name, chain) {
@@ -96,50 +95,73 @@ func Matches(account Account, name string, chain data.ChainType) bool {
 }
 
 func (acc *Accounts) FindKey(key AccountKey) (Account, err.Code) {
+
 	value := acc.data.Load(key)
-	if value != nil {
-		// TODO: Should be switchable
-		accountOneLedger := &AccountOneLedger{}
-		base, _ := comm.Deserialize(value, accountOneLedger)
-		if base != nil {
-			return base.(Account), err.SUCCESS
-		}
+	account := Account(nil)
 
-		accountEthereum := &AccountEthereum{}
-		base, _ = comm.Deserialize(value, accountEthereum)
-		if base != nil {
-			return base.(Account), err.SUCCESS
-		}
+	result, status := serial.Deserialize(value, account, serial.PERSISTENT)
 
-		accountBitcoin := &AccountBitcoin{}
-		base, _ = comm.Deserialize(value, accountBitcoin)
-		if base != nil {
-			return base.(Account), err.SUCCESS
-		}
-		log.Fatal("Can't deserialize", "value", value)
+	if status != nil {
+		log.Fatal("Failed to Deserialize Account", "status", status)
 	}
-	return nil, err.SUCCESS
+
+	//log.Dump("Deserialized", value, result, account)
+
+	return result.(Account), err.SUCCESS
+
+	/*
+
+			if value != nil {
+
+				// TODO: Should be switchable
+				accountOneLedger := &AccountOneLedger{}
+				base, _ := serial.Deserialize(value, accountOneLedger, serial.PERSISTENT)
+				if base != nil {
+					return base.(Account), err.SUCCESS
+				}
+
+				accountEthereum := &AccountEthereum{}
+				base, _ = serial.Deserialize(value, accountEthereum, serial.PERSISTENT)
+				if base != nil {
+					return base.(Account), err.SUCCESS
+				}
+
+				accountBitcoin := &AccountBitcoin{}
+				base, _ = serial.Deserialize(value, accountBitcoin, serial.PERSISTENT)
+				if base != nil {
+					return base.(Account), err.SUCCESS
+				}
+				log.Fatal("Can't deserialize", "value", value)
+			}
+		return nil, err.SUCCESS
+	*/
 }
 
 func (acc *Accounts) FindAll() []Account {
 	log.Debug("Begin Account FindAll")
 	keys := acc.data.List()
+
 	size := len(keys)
-	log.Debug("find all", "keys", keys, "size", size)
 	results := make([]Account, size, size)
 
 	for i := 0; i < size; i++ {
-		// TODO: This is dangerous...
-		account := &AccountOneLedger{}
-
-		base, err := comm.Deserialize(acc.data.Load(keys[i]), account)
-		if err != nil {
-			log.Fatal("Failed to Deserialize Account at index ", "i", i, "err", err)
+		account, status := acc.FindKey(keys[i])
+		if status != err.SUCCESS {
+			log.Fatal("Bad Account", "status", status, "account", account)
 		}
-		results[i] = base.(Account)
-		log.Debug("Deserialized account", i, results[i])
-	}
 
+		/*
+			// TODO: This is dangerous...
+			account := &AccountOneLedger{}
+
+			base, err := serial.Deserialize(acc.data.Load(keys[i]), account, serial.PERSISTENT)
+			if err != nil {
+				log.Fatal("Failed to Deserialize Account at index ", "i", i, "err", err)
+			}
+		*/
+
+		results[i] = account
+	}
 	return results
 }
 
@@ -164,11 +186,10 @@ type Account interface {
 	PrivateKey() PrivateKey
 
 	Export() AccountExport
+	AsString() string
 
 	//AddPublicKey(PublicKey)
 	//AddPrivateKey(PrivateKey)
-
-	AsString() string
 }
 
 // AccountExport struct holds important account info in a
@@ -176,9 +197,14 @@ type AccountExport struct {
 	Type       string
 	AccountKey string
 	Name       string
+
 	// Balance must come from utxo database, fill when needed
 	Balance  string
 	NodeName string
+}
+
+func init() {
+	serial.Register(AccountExport{})
 }
 
 func getAccountType(chain data.ChainType) string {
@@ -197,11 +223,19 @@ func getAccountType(chain data.ChainType) string {
 
 type AccountBase struct {
 	Type data.ChainType `json:"type"`
-	Key AccountKey `json:"key"`
-	Name       string `json: "name"`
+	Key  AccountKey     `json:"key"`
+	Name string         `json:"name"`
+
 	// TODO: Should handle key polymorphism properly..
-	PublicKey  ED25519PublicKey `json: "publicKey"`
-	PrivateKey ED25519PrivateKey `json: "privateKey"`
+	PublicKey  ED25519PublicKey  `json:"publicKey"`
+	PrivateKey ED25519PrivateKey `json:"privateKey"`
+}
+
+func init() {
+	serial.Register(AccountBase{})
+	serial.Register(AccountOneLedger{})
+	serial.Register(AccountBitcoin{})
+	serial.Register(AccountEthereum{})
 }
 
 // Create a new account for a given chain
@@ -216,7 +250,7 @@ func NewAccount(newType data.ChainType, name string, key ED25519PublicKey, priv 
 				Name:       name,
 				PublicKey:  key,
 				PrivateKey: priv,
- 			},
+			},
 			//todo: change to olt wallet auth
 			//NewAccountKey(key),
 		}
