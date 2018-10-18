@@ -94,20 +94,20 @@ func Matches(account Account, name string, chain data.ChainType) bool {
 	return false
 }
 
-func (acc *Accounts) FindKey(key AccountKey) (Account, err.Code) {
+func (acc *Accounts) FindKey(key AccountKey) (Account, status.Code) {
 
 	value := acc.data.Load(key)
 	account := Account(nil)
 
-	result, status := serial.Deserialize(value, account, serial.PERSISTENT)
+	result, ok := serial.Deserialize(value, account, serial.PERSISTENT)
 
-	if status != nil {
-		log.Fatal("Failed to Deserialize Account", "status", status)
+	if ok != nil {
+		log.Fatal("Failed to Deserialize Account", "status", ok)
 	}
 
 	//log.Dump("Deserialized", value, result, account)
 
-	return result.(Account), err.SUCCESS
+	return result.(Account), status.SUCCESS
 
 	/*
 
@@ -145,9 +145,9 @@ func (acc *Accounts) FindAll() []Account {
 	results := make([]Account, size, size)
 
 	for i := 0; i < size; i++ {
-		account, status := acc.FindKey(keys[i])
-		if status != err.SUCCESS {
-			log.Fatal("Bad Account", "status", status, "account", account)
+		account, ok := acc.FindKey(keys[i])
+		if ok != status.SUCCESS {
+			log.Fatal("Bad Account", "status", ok, "account", account)
 		}
 
 		/*

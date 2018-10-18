@@ -7,7 +7,6 @@ package action
 
 import (
 	"github.com/Oneledger/protocol/node/id"
-	"github.com/Oneledger/protocol/node/log"
 	"github.com/Oneledger/protocol/node/serial"
 	"github.com/Oneledger/protocol/node/status"
 )

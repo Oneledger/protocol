@@ -250,7 +250,7 @@ func GetHTLCFromMessage(message []byte) *HTLContract {
 }
 
 func (h *HTLContract) ToMessage() []byte {
-	msg, err := comm.Serialize(h)
+	msg, err := serial.Serialize(h, serial.NETWORK)
 	if err != nil {
 		log.Error("Failed to serialize htlc", "status", err)
 	}

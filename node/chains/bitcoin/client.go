@@ -134,7 +134,7 @@ type HTLContract struct {
 }
 
 func (h *HTLContract) ToMessage() []byte {
-	msg, err := serial.Serialize(h, serial.CLIENT)
+	msg, err := serial.Serialize(h, serial.NETWORK)
 	if err != nil {
 		log.Error("Failed to serialize htlc", "status", err)
 	}
@@ -154,7 +154,7 @@ func GetHTLCFromMessage(message []byte) *HTLContract {
 	log.Debug("Parse message to BTC HTLC")
 	register := &HTLContract{}
 
-	result, err := serial.Deserialize(message, register, serial.CLIENT)
+	result, err := serial.Deserialize(message, register, serial.NETWORK)
 	if err != nil {
 		log.Error("Failed parse htlc contract", "status", err)
 		return nil

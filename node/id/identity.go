@@ -9,9 +9,9 @@ import (
 	"encoding/hex"
 
 	"github.com/Oneledger/protocol/node/data"
-	"github.com/Oneledger/protocol/node/status"
 	"github.com/Oneledger/protocol/node/log"
 	"github.com/Oneledger/protocol/node/serial"
+	"github.com/Oneledger/protocol/node/status"
 )
 
 // The persistent collection of all accounts known by this node
@@ -84,9 +84,9 @@ func (ids *Identities) FindName(name string) (*Identity, status.Code) {
 	value := ids.data.Load(id.Key())
 	if value != nil {
 		identity := &Identity{}
-		base, status := serial.Deserialize(value, identity, serial.PERSISTENT)
-		if status != nil {
-			log.Fatal("Failed to deserialize Identity: ", status)
+		base, ok := serial.Deserialize(value, identity, serial.PERSISTENT)
+		if ok != nil {
+			log.Fatal("Failed to deserialize Identity: ", ok)
 		}
 
 		return base.(*Identity), status.SUCCESS
