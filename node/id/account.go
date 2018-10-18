@@ -78,7 +78,7 @@ func (acc *Accounts) FindNameOnChain(name string, chain data.ChainType) (Account
 			return entry, err.SUCCESS
 		}
 	}
-	return nil, err.SUCCESS
+	return nil, err.MISSING_VALUE
 }
 
 func (acc *Accounts) FindName(name string) (Account, err.Code) {
@@ -106,7 +106,6 @@ func (acc *Accounts) FindKey(key AccountKey) (Account, err.Code) {
 	}
 
 	//log.Dump("Deserialized", value, result, account)
-
 	return result.(Account), err.SUCCESS
 
 	/*
