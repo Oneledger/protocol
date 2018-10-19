@@ -32,36 +32,39 @@ type ChainState struct {
 	Committed *iavl.MutableTree // Last Persistent Tree
 
 	// Last committed values
-	Version int64
-	Height  int
-	Hash    []byte
+	Version    int64
+	TreeHeight int
+	Hash       []byte
 }
 
 func NewChainState(name string, newType DatastoreType) *ChainState {
 	count = 0
-	chain := &ChainState{Name: name}
+	chain := &ChainState{Name: name, Type: newType}
 	chain.reset()
 	return chain
 }
 
+/*
 // Test this against the checked UTXO data to make sure the transaction is legit
 func (state *ChainState) Test(key DatabaseKey, balance Balance) bool {
 	//buffer := serial.Serialize(balance)
 	//state.Checked.Set(key, buffer)
 	return true
 }
+*/
 
 // Do this for the Delivery side
 func (state *ChainState) Set(key DatabaseKey, balance Balance) {
 	buffer, err := serial.Serialize(balance, serial.PERSISTENT)
 	if err != nil {
-		log.Error("Failed to Deserialize balance: ", err)
+		log.Fatal("Failed to Deserialize balance: ", err)
 	}
 
 	// TODO: Get some error handling in here
 	state.Delivered.Set(key, buffer)
 }
 
+// Expensive O(n) search through everything...
 func (state *ChainState) FindAll() map[string]*Balance {
 	mapping := make(map[string]*Balance, 1)
 
@@ -71,11 +74,10 @@ func (state *ChainState) FindAll() map[string]*Balance {
 		var balance Balance
 		result, err := serial.Deserialize(value, balance, serial.PERSISTENT)
 		if err != nil {
-			log.Error("Failed to Deserialize: FindAll", "i", i, "key", string(key))
+			log.Fatal("Failed to Deserialize: FindAll", "i", i, "key", string(key))
 			continue
 		}
 
-		log.Debug("FindAll", "i", i, "key", string(key), "value", value, "result", result)
 		final := result.(Balance)
 		mapping[string(key)] = &final
 	}
@@ -92,7 +94,7 @@ func (state *ChainState) Find(key DatabaseKey) *Balance {
 		var balance Balance
 		result, err := serial.Deserialize(value, balance, serial.PERSISTENT)
 		if err != nil {
-			log.Error("Failed to deserialize Balance in chainstate: ", err)
+			log.Fatal("Failed to deserialize Balance in chainstate: ", err)
 			return nil
 		}
 		final := result.(Balance)
@@ -122,9 +124,11 @@ func (state *ChainState) Commit() ([]byte, int64) {
 	}
 
 	// TODO: Force the database to completely close, then repoen it.
-	state.database.Close()
-	state.database = nil
-	state.reset()
+	/*
+		state.database.Close()
+		state.database = nil
+		state.reset()
+	*/
 
 	return hash, version
 }
@@ -136,14 +140,18 @@ func (state *ChainState) Dump() {
 		log.Debug("Stat", key, value)
 	}
 
-	iter := state.database.Iterator(nil, nil)
-	for ; iter.Valid(); iter.Next() {
-		hash := iter.Key()
-		node := iter.Value()
-		log.Debug("ChainState", hash, node)
-	}
+	// TODO: Need a way to just list out the last changes, not all of them
+	/*
+		iter := state.database.Iterator(nil, nil)
+		for ; iter.Valid(); iter.Next() {
+			hash := iter.Key()
+			node := iter.Value()
+			log.Debug("ChainState", hash, node)
+		}
+	*/
 }
 
+// Reset the chain state from persistence
 func (state *ChainState) reset() {
 	// TODO: I need three copies of the tree, only one is ultimately mutable... (checked changed rollback)
 	// TODO: Close before reopen, better just update...
@@ -157,9 +165,11 @@ func (state *ChainState) reset() {
 	// Essentially, the last commited value...
 	state.Hash = state.Delivered.Hash()
 	state.Version = state.Delivered.Version64()
-	state.Height = state.Delivered.Height()
+	state.TreeHeight = state.Delivered.Height()
+	log.Debug("Initialized Database", "version", state.Version, "tree_height", state.TreeHeight, "hash", state.Hash)
 }
 
+// Create or attach to a database
 func initializeDatabase(name string, newType DatastoreType) (*iavl.MutableTree, *db.GoLevelDB) {
 	// TODO: Assuming persistence for right now
 	storage, err := db.NewGoLevelDB("OneLedger-"+name, global.Current.RootDir)
@@ -167,7 +177,6 @@ func initializeDatabase(name string, newType DatastoreType) (*iavl.MutableTree, 
 		log.Error("Database create failed", "err", err, "count", count)
 		panic("Can't create a database")
 	}
-	log.Dump("Created Database "+global.Current.RootDir+"/"+"OneLedger-"+name, err)
 
 	// TODO: cosmos seems to be using MutableTree now????
 	tree := iavl.NewMutableTree(storage, 1000) // Do I need a historic tree here?

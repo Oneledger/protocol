@@ -22,16 +22,17 @@ func GetAccountKey(identity string) []byte {
 	response := comm.Query("/accountKey", request)
 
 	if response == nil || response.Response.Value == nil {
-		log.Error("No Response from Node", "identity", identity)
+		log.Error("No Response from Fullnode", "identity", identity)
 		return nil
 	}
 
 	value := response.Response.Value
 	if value == nil || len(value) == 0 {
-		log.Error("Key is Missing", "identity", identity)
+		log.Error("Key is not Found", "identity", identity)
 		return nil
 	}
 
+	// TODO: Decoded instead of serialized....
 	key, status := hex.DecodeString(string(value))
 	if status != nil {
 		log.Error("Decode Failed", "identity", identity, "value", value)

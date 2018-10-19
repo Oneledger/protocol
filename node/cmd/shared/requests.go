@@ -149,7 +149,7 @@ func CreateMintRequest(args *SendArguments) []byte {
 	conv := convert.NewConvert()
 
 	if args.Party == "" {
-		log.Error("Missing Party information", "args", args)
+		log.Warn("Missing Party information", "args", args)
 		return nil
 	}
 
@@ -164,7 +164,7 @@ func CreateMintRequest(args *SendArguments) []byte {
 	partyBalance := GetBalance(party)
 
 	if zeroBalance == nil || partyBalance == nil {
-		log.Error("Missing Balances")
+		log.Warn("Missing Balances")
 		return nil
 	}
 

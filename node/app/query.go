@@ -76,7 +76,6 @@ func AccountKey(app Application, name string) []byte {
 	if account != nil {
 		return []byte(hex.EncodeToString(account.AccountKey()))
 	}
-
 	return []byte(nil)
 }
 
@@ -150,9 +149,8 @@ func getAccountExport(app Application, account id.Account) id.AccountExport {
 		return id.AccountExport{}
 	}
 	export := account.Export()
-	if export.Type == "OneLedger" {
-		export.Balance = GetBalance(app, account)
-	}
+	export.Balance = GetBalance(app, account)
+
 	return export
 }
 
@@ -167,10 +165,11 @@ func AccountInfo(app Application, name string) []byte {
 			result.Accounts = append(result.Accounts, accountExport)
 		}
 
-		buffer, err := serial.Serialize(result, serial.NETWORK)
+		buffer, err := serial.Serialize(result, serial.CLIENT)
 		if err != nil {
 			log.Warn("Failed to Serialize plural AccountInfo query")
 		}
+
 		return buffer
 	}
 
@@ -224,13 +223,10 @@ func UtxoInfo(app Application, name string) []byte {
 			} else {
 				buffer += name + ":EMPTY, "
 			}
-
 		}
-
 	} else {
 		value := app.Utxo.Find(data.DatabaseKey(name))
 		buffer += name + ":" + value.AsString()
-
 	}
 	return []byte(buffer)
 }
@@ -239,8 +235,8 @@ func UtxoInfo(app Application, name string) []byte {
 func GetBalance(app Application, account id.Account) string {
 	result := app.Utxo.Find(account.AccountKey())
 	if result == nil {
-		log.Debug("Balance Not Found", "key", account.AccountKey())
-		return " [nil]"
+		log.Warn("Balance Not Found", "key", account.AccountKey())
+		return " [missing]"
 	}
 
 	return result.AsString()
@@ -274,15 +270,14 @@ func Balance(app Application, accountKey []byte) []byte {
 	balance := app.Utxo.Find(accountKey)
 	if balance == nil {
 		//log.Fatal("Balance FAILED", "accountKey", accountKey)
-		log.Warn("Balance FAILED", "accountKey", accountKey)
-		result := data.NewBalance(-1, "OLT")
+		log.Warn("Balance is MISSING, defaulting to 0", "accountKey", accountKey)
+		result := data.NewBalance(0, "OLT")
 		balance = &result
 	}
-	//log.Debug("Balance", "key", accountKey, "balance", balance)
 
 	buffer, err := serial.Serialize(balance, serial.NETWORK)
 	if err != nil {
-		log.Error("Failed to Serialize balance")
+		log.Fatal("Failed to Serialize balance")
 	}
 	return buffer
 }
@@ -297,7 +292,7 @@ func HandleSwapAddressQuery(app Application, message []byte) []byte {
 	if len(parts) > 1 {
 		chain = conv.GetChain(parts[1])
 	}
-	//log.Debug("swap address", "chain", chain)
+
 	//todo: make it general
 	if chain == data.ONELEDGER {
 		account, e := app.Accounts.FindName(global.Current.NodeAccountName)
