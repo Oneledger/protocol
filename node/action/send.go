@@ -77,13 +77,7 @@ func (transaction *Send) ProcessDeliver(app interface{}) err.Code {
 		balance := data.Balance{
 			Amount: entry.Amount,
 		}
-
-		buffer, err := serial.Serialize(balance, serial.CLIENT)
-		if err != nil {
-			log.Fatal("Serialize", "err", err)
-		}
-
-		chain.Delivered.Set(entry.AccountKey, buffer)
+		chain.Set(entry.AccountKey, balance)
 	}
 
 	return err.SUCCESS

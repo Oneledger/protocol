@@ -50,6 +50,7 @@ func Register() {
 		}
 	}()
 
+	time.Sleep(4 * time.Second)
 	if arguments.Identity != "" {
 		log.Debug("Have Register Request", "arguments", arguments)
 

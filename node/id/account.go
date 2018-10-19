@@ -35,6 +35,7 @@ func NewAccounts(name string) *Accounts {
 
 func (acc *Accounts) Add(account Account) {
 	if value := acc.data.Load(account.AccountKey()); value != nil {
+		log.Fatal("Key exists already", "key", account.AccountKey())
 		log.Debug("Key is being updated", "key", account.AccountKey())
 	}
 
@@ -86,6 +87,7 @@ func (acc *Accounts) FindName(name string) (Account, err.Code) {
 }
 
 func Matches(account Account, name string, chain data.ChainType) bool {
+	// TODO: Incorrect, all names for all chains are in the same scope...
 	if strings.EqualFold(account.Name(), name) {
 		if account.Chain() == chain {
 			return true
@@ -146,7 +148,7 @@ func (acc *Accounts) FindAll() []Account {
 	for i := 0; i < size; i++ {
 		account, status := acc.FindKey(keys[i])
 		if status != err.SUCCESS {
-			log.Fatal("Bad Account", "status", status, "account", account)
+			log.Fatal("Missing Account", "status", status, "account", account)
 		}
 
 		/*
@@ -296,7 +298,6 @@ func ParseAccountType(typeName string) data.ChainType {
 	case "Bitcoin":
 		return data.BITCOIN
 	}
-
 	return data.UNKNOWN
 }
 

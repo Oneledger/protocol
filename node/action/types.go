@@ -37,7 +37,9 @@ func init() {
 
 func NewSendInput(accountKey id.AccountKey, amount data.Coin) SendInput {
 	if bytes.Equal(accountKey, []byte("")) {
-		log.Fatal("Missing AccountKey")
+		log.Warn("Missing AccountKey")
+		// TODO: Error handling should be better
+		return SendInput{}
 	}
 
 	return SendInput{
@@ -58,7 +60,9 @@ func init() {
 
 func NewSendOutput(accountKey id.AccountKey, amount data.Coin) SendOutput {
 	if bytes.Equal(accountKey, []byte("")) {
-		log.Fatal("Missing AccountKey")
+		log.Warn("Missing AccountKey")
+		// TODO: Error handling should be better
+		return SendOutput{}
 	}
 
 	return SendOutput{
@@ -70,23 +74,14 @@ func NewSendOutput(accountKey id.AccountKey, amount data.Coin) SendOutput {
 func CheckBalance(app interface{}, accountKey id.AccountKey, amount data.Coin) bool {
 	utxo := GetUtxo(app)
 
-	version := utxo.Delivered.Version64()
-	_, value := utxo.Delivered.GetVersioned(accountKey, version)
-	if value == nil {
-		log.Debug("Key not in database, setting to zero", "key", accountKey)
-		return true
-	}
-
-	var bal data.Balance
-	buffer, err := serial.Deserialize(value, bal, serial.CLIENT)
-	if err != nil || buffer == nil {
-		log.Error("Failed to Deserialize", "key", accountKey)
+	balance := utxo.Find(accountKey)
+	if balance == nil {
+		log.Warn("Balance Missing", "key", accountKey, "amount", amount, "balance", balance)
 		return false
 	}
 
-	balance := buffer.(data.Balance)
 	if !balance.Amount.Equals(amount) {
-		log.Warn("Mismatch", "key", accountKey, "amount", amount, "balance", balance)
+		log.Warn("Balance Mismatch", "key", accountKey, "amount", amount, "balance", balance)
 		//return false
 	}
 	return true
@@ -95,7 +90,7 @@ func CheckBalance(app interface{}, accountKey id.AccountKey, amount data.Coin) b
 func GetHeight(app interface{}) int64 {
 	utxo := GetUtxo(app)
 
-	height := int64(utxo.Height)
+	height := int64(utxo.Version)
 	return height
 }
 
@@ -117,9 +112,7 @@ func CheckAmounts(app interface{}, inputs []SendInput, outputs []SendOutput) boo
 			return false
 		}
 		if !CheckBalance(app, input.AccountKey, input.Amount) {
-			log.Debug("Balance is missing", "input", input)
-
-			// TODO: Temporarily disabled
+			log.Warn("Balance is incorrect", "input", input)
 			//return false
 		}
 		total.Plus(input.Amount)

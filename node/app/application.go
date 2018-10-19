@@ -98,19 +98,9 @@ func (app Application) SetupState(stateBytes []byte) {
 	RegisterLocally(&app, state.Account, "OneLedger", data.ONELEDGER, publicKey, privateKey)
 	account, _ := app.Accounts.FindName(state.Account + "-OneLedger")
 
-	// TODO: Should be more flexible to match genesis block
-	balance := data.Balance{
-		Amount: data.NewCoin(state.Amount, "OLT"),
-	}
-
-	buffer, err := serial.Serialize(balance, serial.PERSISTENT)
-	if err != nil {
-		log.Error("Failed to Serialize balance")
-	}
-
 	// Use the account key in the database.
-	app.Utxo.Delivered.Set(account.AccountKey(), buffer)
-	app.Utxo.Delivered.SaveVersion()
+	balance := data.NewBalance(state.Amount, "OLT")
+	app.Utxo.Set(account.AccountKey(), balance)
 	app.Utxo.Commit()
 
 	log.Info("Genesis State UTXO database", "balance", balance)
@@ -149,9 +139,10 @@ func (app Application) Info(req RequestInfo) ResponseInfo {
 	log.Debug("Contract: Info", "req", req, "info", info)
 
 	return ResponseInfo{
-		Data:            info.JSON(),
-		Version:         convert.GetString64(app.Utxo.Version),
-		LastBlockHeight: int64(app.Utxo.Height),
+		Data:    info.JSON(),
+		Version: convert.GetString64(app.Utxo.Version),
+		//LastBlockHeight: int64(app.Utxo.Version),
+		LastBlockHeight: int64(0),
 		// TODO: Should return a valid AppHash
 		//LastBlockAppHash: app.Utxo.Hash,
 	}
@@ -171,7 +162,7 @@ func (app Application) Query(req RequestQuery) ResponseQuery {
 		Key:    action.Message("result"),
 		Value:  result,
 		Proof:  nil,
-		Height: int64(app.Utxo.Height),
+		Height: int64(app.Utxo.Version),
 	}
 }
 
@@ -221,7 +212,6 @@ func (app Application) BeginBlock(req RequestBeginBlock) ResponseBeginBlock {
 	} else if bytes.Compare(chainId, newChainId) != 0 {
 		log.Warn("Mismatching chains", "chainId", chainId, "newChainId", newChainId)
 	}
-
 	return ResponseBeginBlock{}
 }
 
@@ -274,8 +264,6 @@ func (app Application) Commit() ResponseCommit {
 
 	// Commit any pending changes.
 	hash, version := app.Utxo.Commit()
-
 	log.Debug("Committed", "hash", hash, "version", version)
-
 	return ResponseCommit{}
 }

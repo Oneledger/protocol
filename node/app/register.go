@@ -59,15 +59,8 @@ func RegisterLocally(app *Application, name string, scope string, chain data.Cha
 	// Fill in the balance
 	if chain == data.ONELEDGER && !app.Utxo.Exists(account.AccountKey()) {
 		balance := data.NewBalance(0, "OLT")
-		buffer, err := serial.Serialize(balance, serial.NETWORK)
-		if err != nil {
-			log.Error("Failed to Serialize balance")
-		}
-
-		app.Utxo.Delivered.Set(account.AccountKey(), buffer)
+		app.Utxo.Set(account.AccountKey(), balance)
 		app.Utxo.Commit()
-
-		log.Debug("Adding New Utxo Entry", "key", account.AccountKey(), "balance", balance)
 		status = true
 	}
 
