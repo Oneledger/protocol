@@ -256,6 +256,7 @@ func (si SwapInit) resolve(app interface{}, stageType swapStageType) Commands {
 	account := GetNodeAccount(app)
 	isParty := si.IsParty(account)
 	role := si.getRole(*isParty)
+
 	stage, ok := swapStageFlow[stageType]
 	if !ok {
 		log.Error("stage not found", "stagetype", stageType)
@@ -265,21 +266,36 @@ func (si SwapInit) resolve(app interface{}, stageType swapStageType) Commands {
 	commands := amino.DeepCopy(stage.Commands).(Commands)
 
 	command := &commands[0]
+	if stageType == SWAP_MATCHING {
 
-	swap := MatchingSwap(app, &si)
-	if swap == nil {
-		command.data[STAGE] = WAIT_FOR_CHAIN
-		if *isParty {
-			command.data[STOREKEY] = si.CounterParty.Key
+		swap := MatchingSwap(app, &si)
+
+		var storeInfo SwapInit
+		if swap == nil {
+			command.data[STAGE] = WAIT_FOR_CHAIN
+			if *isParty {
+				command.data[STOREKEY] = si.CounterParty.Key
+			} else {
+				command.data[STOREKEY] = si.Party.Key
+			}
+			storeInfo = si
 		} else {
-			command.data[STOREKEY] = si.Party.Key
+			command.data[STAGE] = SWAP_MATCHED
+			command.data[STOREKEY] = _hash(swap)
+			storeInfo = *swap
 		}
-		buffer, err := serial.Serialize(si, serial.NETWORK)
+		buffer, err := serial.Serialize(storeInfo, serial.NETWORK)
 		if err != nil {
 			log.Error("Serialize swapInit failed", "err", err)
 		}
 		command.data[STOREMESSAGE] = buffer
 	} else {
+		swapKey := _hash(si)
+		swap := FindSwap(app, swapKey, false)
+		if swap == nil {
+			log.Error("SwapInit not find", "key", swapKey)
+			return nil
+		}
 		command.data[STAGE] = SWAP_MATCHED
 		if *isParty {
 			command.data[MY_ACCOUNT] = swap.Party
@@ -287,12 +303,13 @@ func (si SwapInit) resolve(app interface{}, stageType swapStageType) Commands {
 			command.data[AMOUNT] = swap.Amount
 			command.data[EXCHANGE] = swap.Exchange
 		} else {
+			log.Dump("this should never show")
 			command.data[MY_ACCOUNT] = swap.CounterParty
 			command.data[THEM_ACCOUNT] = swap.Party
 			command.data[AMOUNT] = swap.Exchange
 			command.data[EXCHANGE] = swap.Amount
 		}
-
+		command.data[STOREKEY] = swapKey
 		command.data[ROLE] = role
 		command.data[NONCE] = swap.Nonce
 		command.data[EVENTTYPE] = SWAP
@@ -536,7 +553,7 @@ func MatchingSwap(app interface{}, transaction *SwapInit) *SwapInit {
 	matchedSwap.Nonce = transaction.Nonce
 
 	if *isParty {
-		result := FindSwap(storage, transaction.CounterParty.Key)
+		result := FindSwap(storage, transaction.CounterParty.Key, true)
 		if result != nil {
 			if matching := isMatch(result, transaction); matching {
 				matchedSwap.Party = transaction.Party
@@ -547,7 +564,7 @@ func MatchingSwap(app interface{}, transaction *SwapInit) *SwapInit {
 			}
 		}
 	} else {
-		result := FindSwap(storage, transaction.Party.Key)
+		result := FindSwap(storage, transaction.Party.Key, true)
 		if result != nil {
 			if matching := isMatch(result, transaction); matching {
 				matchedSwap.Party = result.Party
@@ -572,11 +589,15 @@ func SaveSwap(app interface{}, swapKey id.AccountKey, transaction interface{}) {
 	storage.Commit()
 }
 
-func FindSwap(app interface{}, key id.AccountKey) *SwapInit {
+func FindSwap(app interface{}, key id.AccountKey, delete bool) *SwapInit {
 	storage := GetStatus(app)
 	result := storage.Load(key)
 	if result == nil {
 		return nil
+	}
+
+	if delete {
+		storage.Delete(key)
 	}
 
 	var transaction Swap
@@ -606,7 +627,15 @@ func GetChainAccount(app interface{}, name string, chain data.ChainType) id.Acco
 }
 
 func CreateCheckEvent(app interface{}, chain data.ChainType, context FunctionValues) (bool, FunctionValues) {
-	//todo:
+	swapKey := GetBytes(context[STOREKEY])
+	si := FindSwap(app, swapKey, false)
+	if si == nil {
+		log.Error("Saved swap not found", "key", swapKey)
+	}
+
+	event := Event{Type: SWAP, Key: si.CounterParty.Key, Nonce: si.Nonce}
+	SaveEvent(app, event, false)
+
 	return true, context
 }
 
@@ -1098,22 +1127,26 @@ func WaitForChain(app interface{}, chain data.ChainType, context FunctionValues)
 	target := GetParty(context[THEM_ACCOUNT])
 	eventType := GetType(context[EVENTTYPE])
 	nonce := GetInt64(context[NONCE])
-	verify := Verify{
-		Base: Base{
-			Type:     VERIFY,
-			ChainId:  "OneLedger-Root",
-			Owner:    owner.Key,
-			Signers:  signers,
-			Sequence: global.Current.Sequence,
-		},
-		Target: owner.Key,
+	stage := GetInt(context[STAGE])
+	verify := SwapVerify{
 		Event: Event{
 			Type:  eventType,
 			Key:   target.Key,
 			Nonce: nonce,
 		},
 	}
-	DelayedTransaction(VERIFY, Transaction(verify), 3*lockPeriod)
+	swap := &Swap{
+		Base: Base{
+			Type:     SWAP,
+			ChainId:  "OneLedger-Root",
+			Owner:    owner.Key,
+			Signers:  signers,
+			Sequence: global.Current.Sequence,
+		},
+		SwapMessage: verify,
+		Stage:       swapStageType(stage),
+	}
+	DelayedTransaction(SWAP, Transaction(swap), 3*lockPeriod)
 
 	return true, nil
 }

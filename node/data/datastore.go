@@ -207,6 +207,22 @@ func (store Datastore) Dump() {
 	}
 }
 
+func (store Datastore) Delete(key DatabaseKey) Message {
+	log.Debug("Datastore Delete", "key", key)
+	switch store.Type {
+
+	case MEMORY:
+		store.memory.Delete(key)
+
+	case PERSISTENT:
+		store.tree.Remove(key)
+
+	default:
+		panic("Unknown Type")
+	}
+	return key
+}
+
 // List all of the keys
 func (store Datastore) List() (keys []DatabaseKey) {
 	switch store.Type {

@@ -265,8 +265,8 @@ func CreateSwapRequest(args *SwapArguments) []byte {
 			Target:   counterPartyKey,
 			Sequence: global.Current.Sequence,
 		},
-		Message: swapInit.Marshal(),
-		Stage: action.SWAP_MATCHING,
+		SwapMessage: swapInit,
+		Stage:       action.SWAP_MATCHING,
 	}
 
 	return SignAndPack(action.SWAP, action.Transaction(swap))
