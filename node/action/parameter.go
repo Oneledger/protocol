@@ -6,21 +6,26 @@
 package action
 
 import (
+	"github.com/Oneledger/protocol/node/chains/bitcoin"
 	"github.com/Oneledger/protocol/node/chains/ethereum"
 	"github.com/Oneledger/protocol/node/data"
 	"github.com/Oneledger/protocol/node/id"
 	"github.com/Oneledger/protocol/node/log"
+	"github.com/Oneledger/protocol/node/serial"
 	"github.com/btcsuite/btcutil"
-	"github.com/Oneledger/protocol/node/chains/bitcoin"
 )
 
 type Parameter byte
 
+func init() {
+	serial.Register(Parameter(0))
+}
+
 // TODO: Move to parameter.go
 const (
 	ROLE Parameter = iota
-    MY_ACCOUNT
-    THEM_ACCOUNT
+	MY_ACCOUNT
+	THEM_ACCOUNT
 
 	AMOUNT
 	EXCHANGE
@@ -32,16 +37,16 @@ const (
 	BTCCONTRACT
 
 	LOCKTIME
-    COUNT
+	COUNT
 	CHAINID
 
 	EVENTTYPE
 )
 
 func GetInt(value FunctionValue) int {
-    if value == nil {
-        return 0
-    }
+	if value == nil {
+		return 0
+	}
 	switch value.(type) {
 	case int:
 		return value.(int)
@@ -82,9 +87,9 @@ func GetRole(value FunctionValue) Role {
 }
 
 func GetString(value FunctionValue) string {
-    if value == nil {
-        return ""
-    }
+	if value == nil {
+		return ""
+	}
 	switch value.(type) {
 	case string:
 		return value.(string)

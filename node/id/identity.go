@@ -8,10 +8,10 @@ package id
 import (
 	"encoding/hex"
 
-	"github.com/Oneledger/protocol/node/comm"
 	"github.com/Oneledger/protocol/node/data"
 	"github.com/Oneledger/protocol/node/err"
 	"github.com/Oneledger/protocol/node/log"
+	"github.com/Oneledger/protocol/node/serial"
 )
 
 // The persistent collection of all accounts known by this node
@@ -34,6 +34,10 @@ type Identity struct {
 	Nodes map[string]data.ChainNode
 }
 
+func init() {
+	serial.Register(Identity{})
+}
+
 // Initialize or reconnect to the database
 func NewIdentities(name string) *Identities {
 	data := data.NewDatastore(name, data.PERSISTENT)
@@ -45,7 +49,7 @@ func NewIdentities(name string) *Identities {
 
 func (ids *Identities) Add(identity *Identity) {
 
-	buffer, err := comm.Serialize(identity)
+	buffer, err := serial.Serialize(identity, serial.PERSISTENT)
 	if err != nil {
 		log.Error("Serialize Failed", "err", err)
 		return
@@ -80,7 +84,7 @@ func (ids *Identities) FindName(name string) (*Identity, err.Code) {
 	value := ids.data.Load(id.Key())
 	if value != nil {
 		identity := &Identity{}
-		base, status := comm.Deserialize(value, identity)
+		base, status := serial.Deserialize(value, identity, serial.PERSISTENT)
 		if status != nil {
 			log.Fatal("Failed to deserialize Identity: ", status)
 		}
@@ -97,7 +101,7 @@ func (ids *Identities) FindAll() []*Identity {
 	results := make([]*Identity, size, size)
 	for i := 0; i < size; i++ {
 		identity := &Identity{}
-		base, err := comm.Deserialize(ids.data.Load(keys[i]), identity)
+		base, err := serial.Deserialize(ids.data.Load(keys[i]), identity, serial.PERSISTENT)
 		if err != nil {
 			log.Fatal("Failed to deserialize Identities: ", err)
 		}
@@ -153,6 +157,10 @@ type IdentityExport struct {
 	Name       string
 	External   bool
 	AccountKey string
+}
+
+func init() {
+	serial.Register(IdentityExport{})
 }
 
 // Export returns an easily printable struct

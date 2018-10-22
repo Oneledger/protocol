@@ -15,6 +15,7 @@ import (
 )
 
 func TestDatabase(t *testing.T) {
+
 	global.Current.RootDir = "./"
 	ds := NewDatastore("localTestingDatabase", PERSISTENT)
 

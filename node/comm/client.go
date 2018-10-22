@@ -87,16 +87,14 @@ func GetClient() (client *rpcclient.HTTP) {
 		log.Warn("Retrying RPC Client", "address", global.Current.RpcAddress)
 		time.Sleep(1 * time.Second)
 	}
-
 	return cachedClient
 }
 
 // An async Broadcast to the chain
-func Broadcast(packet []byte) *ctypes.ResultBroadcastTx {
+func BroadcastAsync(packet []byte) *ctypes.ResultBroadcastTx {
 
 	client := GetClient()
 
-	//result, err := client.BroadcastTxCommit(packet)
 	result, err := client.BroadcastTxAsync(packet)
 	if err != nil {
 		log.Error("Broadcast Error", "err", err)
@@ -108,15 +106,17 @@ func Broadcast(packet []byte) *ctypes.ResultBroadcastTx {
 }
 
 // A sync'ed broadcast to the chain that waits for the commit to happen
-func BroadcastCommit(packet []byte) *ctypes.ResultBroadcastTxCommit {
+func Broadcast(packet []byte) *ctypes.ResultBroadcastTxCommit {
 	client := GetClient()
+
+	log.Debug("Start Synced Broadcast", "packet", packet)
 
 	result, err := client.BroadcastTxCommit(packet)
 	if err != nil {
 		log.Error("Error", "err", err)
 	}
 
-	log.Debug("Broadcast", "packet", packet, "result", result)
+	log.Debug("Synced Broadcast", "packet", packet, "result", result)
 
 	return result
 }
@@ -131,7 +131,7 @@ func Query(path string, packet []byte) (res *ctypes.ResultABCIQuery) {
 		return nil
 	}
 
-	log.Debug("ABCi Query", "path", path, "packet", packet, "result", result)
+	//log.Debug("ABCi Query", "path", path, "packet", packet, "result", result)
 
 	return result
 }

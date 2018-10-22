@@ -9,6 +9,7 @@ import (
 	"github.com/Oneledger/protocol/node/data"
 	"github.com/Oneledger/protocol/node/err"
 	"github.com/Oneledger/protocol/node/log"
+	"github.com/Oneledger/protocol/node/serial"
 )
 
 // Synchronize a swap between two users
@@ -19,6 +20,10 @@ type ExternalLock struct {
 	Fee     data.Coin    `json:"fee"`
 	Inputs  []SendInput  `json:"inputs"`
 	Outputs []SendOutput `json:"outputs"`
+}
+
+func init() {
+	serial.Register(ExternalLock{})
 }
 
 func (transaction *ExternalLock) Validate() err.Code {

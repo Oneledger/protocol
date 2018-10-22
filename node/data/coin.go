@@ -10,13 +10,28 @@ import (
 	"math/big"
 
 	"github.com/Oneledger/protocol/node/log"
+	"github.com/Oneledger/protocol/node/serial"
 )
 
 // Coin is the basic amount, specified in integers, at the smallest increment (i.e. a satoshi, not a bitcoin)
 type Coin struct {
 	Currency Currency `json:"currency"`
-	Amount   *big.Int `json:"amount"` // TODO: Switch to math/big
-	//Amount   int64  `json:"amount"` // TODO: Switch to math/big
+	Amount   *big.Int `json:"amount"`
+}
+
+func init() {
+	serial.Register(Coin{})
+	serial.Register(Currency{})
+
+	// TODO: bit.Int is messy because it isn't entirely exportable
+	serial.RegisterIgnore(big.Int{})
+
+	// TODO: Hard coded to ignore big.Int, needs to be fixed...
+	//serial.Register(big.Int{})
+
+	serial.Register(big.Word(0))
+	entry := serial.GetTypeEntry("[]big.Word", 1)
+	serial.RegisterForce("big.nat", serial.ARRAY, entry.DataType, nil, nil)
 }
 
 type Coins []Coin
@@ -143,7 +158,7 @@ func (coin Coin) Plus(value Coin) Coin {
 
 func (coin Coin) AsString() string {
 	value := new(big.Float).SetInt(coin.Amount)
-	result := value.Quo(value, OLTBase)
-	text := fmt.Sprintf("%.3f", result)
+	//result := value.Quo(value, OLTBase)
+	text := fmt.Sprintf("%.3f", value)
 	return text
 }

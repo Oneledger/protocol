@@ -5,7 +5,11 @@
 */
 package data
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/Oneledger/protocol/node/serial"
+)
 
 /*
 type Chain struct {
@@ -19,6 +23,10 @@ type ChainNode struct {
 type Balance struct {
 	// Address id.Address
 	Amount Coin
+}
+
+func init() {
+	serial.Register(Balance{})
 }
 
 func NewBalance(amount int64, currency string) Balance {

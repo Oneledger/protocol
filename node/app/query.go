@@ -11,14 +11,14 @@ import (
 	"strings"
 
 	"github.com/Oneledger/protocol/node/chains/common"
-	"github.com/Oneledger/protocol/node/comm"
 	"github.com/Oneledger/protocol/node/convert"
 	"github.com/Oneledger/protocol/node/data"
 	"github.com/Oneledger/protocol/node/err"
+	"github.com/Oneledger/protocol/node/global"
 	"github.com/Oneledger/protocol/node/id"
 	"github.com/Oneledger/protocol/node/log"
+	"github.com/Oneledger/protocol/node/serial"
 	"github.com/Oneledger/protocol/node/version"
-	"github.com/Oneledger/protocol/node/global"
 )
 
 // Top-level list of all query types
@@ -76,12 +76,15 @@ func AccountKey(app Application, name string) []byte {
 	if account != nil {
 		return []byte(hex.EncodeToString(account.AccountKey()))
 	}
-
 	return []byte(nil)
 }
 
 type IdentityQuery struct {
 	Identities []id.IdentityExport
+}
+
+func init() {
+	serial.Register(IdentityQuery{})
 }
 
 // Get the account information for a given user
@@ -112,7 +115,7 @@ func IdentityInfo(app Application, name string) []byte {
 		result.Identities = []id.IdentityExport{identity.Export()}
 	}
 
-	buffer, err := comm.Serialize(result)
+	buffer, err := serial.Serialize(result, serial.NETWORK)
 	if err != nil {
 		log.Debug("Failed to serialize identity query")
 	}
@@ -137,14 +140,17 @@ type AccountQuery struct {
 	Accounts []id.AccountExport
 }
 
+func init() {
+	serial.Register(AccountQuery{})
+}
+
 func getAccountExport(app Application, account id.Account) id.AccountExport {
 	if account == nil {
 		return id.AccountExport{}
 	}
 	export := account.Export()
-	if export.Type == "OneLedger" {
-		export.Balance = GetBalance(app, account)
-	}
+	export.Balance = GetBalance(app, account)
+
 	return export
 }
 
@@ -159,10 +165,11 @@ func AccountInfo(app Application, name string) []byte {
 			result.Accounts = append(result.Accounts, accountExport)
 		}
 
-		buffer, err := comm.Serialize(result)
+		buffer, err := serial.Serialize(result, serial.CLIENT)
 		if err != nil {
 			log.Warn("Failed to Serialize plural AccountInfo query")
 		}
+
 		return buffer
 	}
 
@@ -170,7 +177,7 @@ func AccountInfo(app Application, name string) []byte {
 	accountExport := getAccountExport(app, account)
 	result := &AccountQuery{Accounts: []id.AccountExport{accountExport}}
 
-	buffer, err := comm.Serialize(result)
+	buffer, err := serial.Serialize(result, serial.NETWORK)
 	if err != nil {
 		log.Warn("Failed to Serialize singular AccountInfo query")
 	}
@@ -216,13 +223,10 @@ func UtxoInfo(app Application, name string) []byte {
 			} else {
 				buffer += name + ":EMPTY, "
 			}
-
 		}
-
 	} else {
 		value := app.Utxo.Find(data.DatabaseKey(name))
 		buffer += name + ":" + value.AsString()
-
 	}
 	return []byte(buffer)
 }
@@ -231,8 +235,8 @@ func UtxoInfo(app Application, name string) []byte {
 func GetBalance(app Application, account id.Account) string {
 	result := app.Utxo.Find(account.AccountKey())
 	if result == nil {
-		log.Debug("Balance Not Found", "key", account.AccountKey())
-		return " [nil]"
+		log.Warn("Balance Not Found", "key", account.AccountKey())
+		return " [missing]"
 	}
 
 	return result.AsString()
@@ -266,15 +270,14 @@ func Balance(app Application, accountKey []byte) []byte {
 	balance := app.Utxo.Find(accountKey)
 	if balance == nil {
 		//log.Fatal("Balance FAILED", "accountKey", accountKey)
-		log.Warn("Balance FAILED", "accountKey", accountKey)
+		log.Warn("Balance is MISSING, defaulting to 0", "accountKey", accountKey)
 		result := data.NewBalance(0, "OLT")
 		balance = &result
 	}
-	//log.Debug("Balance", "key", accountKey, "balance", balance)
 
-	buffer, err := comm.Serialize(balance)
+	buffer, err := serial.Serialize(balance, serial.NETWORK)
 	if err != nil {
-		log.Error("Failed to Serialize balance")
+		log.Fatal("Failed to Serialize balance")
 	}
 	return buffer
 }
@@ -289,7 +292,7 @@ func HandleSwapAddressQuery(app Application, message []byte) []byte {
 	if len(parts) > 1 {
 		chain = conv.GetChain(parts[1])
 	}
-	//log.Debug("swap address", "chain", chain)
+
 	//todo: make it general
 	if chain == data.ONELEDGER {
 		account, e := app.Accounts.FindName(global.Current.NodeAccountName)

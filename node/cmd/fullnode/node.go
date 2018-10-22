@@ -8,6 +8,7 @@ package main
 import (
 	"os"
 	"os/signal"
+	"runtime/debug"
 	"syscall"
 	"time"
 
@@ -49,6 +50,7 @@ func Register() {
 		}
 	}()
 
+	time.Sleep(4 * time.Second)
 	if arguments.Identity != "" {
 		log.Debug("Have Register Request", "arguments", arguments)
 
@@ -68,7 +70,8 @@ func StartNode(cmd *cobra.Command, args []string) {
 	// Catch any underlying panics, for now just print out the details properly and stop
 	defer func() {
 		if r := recover(); r != nil {
-			log.Error("Fatal Panic, shutting down", "r", r)
+			log.Error("Fullnode Fatal Panic, shutting down", "r", r)
+			debug.PrintStack()
 			if service != nil {
 				service.Stop()
 			}

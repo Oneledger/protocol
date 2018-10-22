@@ -10,6 +10,7 @@ import (
 	"github.com/Oneledger/protocol/node/app"
 	"github.com/Oneledger/protocol/node/cmd/shared"
 	"github.com/Oneledger/protocol/node/comm"
+	"github.com/Oneledger/protocol/node/serial"
 	"github.com/spf13/cobra"
 )
 
@@ -47,13 +48,14 @@ func CheckAccount(cmd *cobra.Command, args []string) {
 	if response != nil {
 		// var accountQuery app.AccountQuery
 		var prototype app.AccountQuery
-		result, err := comm.Deserialize(response.Response.Value, &prototype)
+		result, err := serial.Deserialize(response.Response.Value, prototype, serial.CLIENT)
 		if err != nil {
 			shared.Console.Error("Failed to deserialize AccountQuery")
 			shared.Console.Warning("Query failed")
 			return
 		}
-		printQuery(result.(*app.AccountQuery))
+		final := result.(app.AccountQuery)
+		printQuery(&final)
 	} else {
 		shared.Console.Warning("Query Failed")
 	}

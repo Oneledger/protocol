@@ -5,7 +5,8 @@
 package action
 
 import (
-    "github.com/Oneledger/protocol/node/data"
+	"github.com/Oneledger/protocol/node/data"
+	"github.com/Oneledger/protocol/node/serial"
 )
 
 type CommandType int
@@ -25,7 +26,6 @@ const (
 	FINISH
 )
 
-
 type FunctionValue interface{}
 
 // A command to execute again a chain, needs to be polymorphic
@@ -36,13 +36,17 @@ type Command struct {
 	Order    int
 }
 
+func init() {
+	serial.Register(Command{})
+}
+
 func (command Command) Execute(app interface{}) (bool, map[Parameter]FunctionValue) {
 	switch command.Function {
 	case NOOP:
 		return Noop(app, command.Chain, command.Data)
 
-    case PREPARE_TRANSACTION:
-        return PrepareTransaction(app, command.Chain, command.Data)
+	case PREPARE_TRANSACTION:
+		return PrepareTransaction(app, command.Chain, command.Data)
 
 	case SUBMIT_TRANSACTION:
 		return SubmitTransaction(app, command.Chain, command.Data)
