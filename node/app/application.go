@@ -38,6 +38,7 @@ type Application struct {
 	Utxo       *data.ChainState // unspent transction output (for each type of coin)
 	Event      *data.Datastore  // Event for any action that need to be tracked
 	Contract   *data.Datastore  // contract for reuse.
+	SDK        common.Service
 }
 
 // NewApplicationContext initializes a new application
@@ -54,7 +55,7 @@ func NewApplication() *Application {
 }
 
 // Initial the state of the application from persistent data
-func (app Application) Initialize() {
+func (app *Application) Initialize() {
 	param := app.Admin.Load(data.DatabaseKey("NodeAccountName"))
 	if param != nil {
 		var name string
@@ -68,6 +69,21 @@ func (app Application) Initialize() {
 			global.Current.NodeAccountName = *(buffer.(*string))
 		}
 	}
+
+	// SDK Server should start when the --sdkrpc argument is passed to fullnode
+	sdkPort := global.Current.SDKAddress
+	if sdkPort == 0 {
+		return
+	}
+
+	s, err := NewSDKServer(app, sdkPort)
+	if err != nil {
+		panic(err)
+	} else {
+		app.SDK = s
+		app.SDK.Start()
+	}
+
 }
 
 type BasicState struct {

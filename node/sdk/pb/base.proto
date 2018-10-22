@@ -1,0 +1,36 @@
+// Base types for basic SDK functionality
+
+syntax = "proto3";
+
+package pb;
+
+message CheckAccountRequest {
+    string accountName = 1;
+}
+
+message CheckAccountReply {
+    string accountName = 1;
+    string chain = 2;
+    bytes accountKey = 3;
+    // TODO: Should use Coin message
+    string balance = 4;
+}
+
+//enum Currency {
+//    OLT = 0;
+//    BTC = 1;
+//    ETH = 2;
+//}
+
+// Custom empty message in case we want to add new parameters in the future
+message StatusRequest {}
+
+message StatusReply {
+    bool ok = 1;
+}
+
+service SDK {
+    // Simple health-check to see if the server is OK
+    rpc Status(StatusRequest) returns (StatusReply);
+    rpc CheckAccount(CheckAccountRequest) returns (CheckAccountReply);
+}
