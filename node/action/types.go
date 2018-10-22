@@ -12,7 +12,6 @@ import (
 
 	"strconv"
 
-	"github.com/Oneledger/protocol/node/chains/common"
 	"github.com/Oneledger/protocol/node/data"
 	"github.com/Oneledger/protocol/node/id"
 	"github.com/Oneledger/protocol/node/log"
@@ -188,22 +187,23 @@ func FindEvent(app interface{}, eventKey Event) bool {
 	return r
 }
 
-func SaveContract(app interface{}, contractKey []byte, nonce int64, contract common.Contract) {
+func SaveContract(app interface{}, contractKey []byte, nonce int64, contract []byte) {
 	//todo: add nonce to the key to differentiate swap between same conterparty
 	contracts := GetContract(app)
-	log.Debug("Save contract", "key", contractKey)
-	contracts.Store(contractKey, contract.ToMessage())
+	n := strconv.AppendInt(contractKey, nonce, 10)
+	log.Debug("Save contract", "key", contractKey, "afterNonce", n)
+	contracts.Store(n, contract)
 	contracts.Commit()
 }
 
-func FindContract(app interface{}, contractKey []byte, nonce int64) Message {
+func FindContract(app interface{}, contractKey []byte, nonce int64) []byte {
 	//todo: add nonce to the key to differentiate swap between same conterparty
 	log.Debug("Load Contract", "key", contractKey)
 	contracts := GetContract(app)
-	result := contracts.Load(contractKey)
+	n := strconv.AppendInt(contractKey, nonce, 10)
+	result := contracts.Load(n)
 	if result == nil {
 		return nil
 	}
-
 	return result
 }

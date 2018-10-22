@@ -46,7 +46,8 @@ const (
 	STOREMESSAGE
 	STOREKEY
 	STAGE
-	NEXTSTAGE
+	OWNER
+	TARGET
 )
 
 func GetInt(value FunctionValue) int {

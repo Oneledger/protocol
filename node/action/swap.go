@@ -143,7 +143,7 @@ func (swap *Swap) Resolve(app interface{}) Commands {
 var swapStageFlow = map[swapStageType]swapStage{
 	SWAP_MATCHING: {
 		Stage:    SWAP_MATCHING,
-		Commands: Commands{Command{opfunc: SaveUnmatchSwap}, Command{opfunc: NextStage}},
+		Commands: Commands{Command{opfunc: NextStage}},
 		InStage:  NOSTAGE,
 		OutStage: WAIT_FOR_CHAIN,
 	},
@@ -271,27 +271,42 @@ func (si SwapInit) resolve(app interface{}, stageType swapStageType) Commands {
 		swap := MatchingSwap(app, &si)
 
 		var storeInfo SwapInit
+		var storeKey []byte
 		if swap == nil {
 			command.data[STAGE] = WAIT_FOR_CHAIN
 			if *isParty {
-				command.data[STOREKEY] = si.CounterParty.Key
+				command.data[OWNER] = si.Party
+				command.data[TARGET] = si.Party
+				storeKey = si.CounterParty.Key
 			} else {
-				command.data[STOREKEY] = si.Party.Key
+				command.data[OWNER] = si.CounterParty
+				command.data[TARGET] = si.CounterParty
+				storeKey = si.Party.Key
 			}
 			storeInfo = si
 		} else {
+			command.data[OWNER] = swap.Party
+			command.data[TARGET] = swap.Party
 			command.data[STAGE] = SWAP_MATCHED
-			command.data[STOREKEY] = _hash(swap)
+			storeKey = _hash(swap)
 			storeInfo = *swap
 		}
-		buffer, err := serial.Serialize(storeInfo, serial.NETWORK)
+		SaveSwap(app, storeKey, storeInfo)
+		//After finished the save, then create the transaction will be create for next stage.
+
+		event := Event{Type: SWAP, Key: storeKey, Nonce: si.Nonce}
+		swapVerify := &SwapVerify{
+			Event: event,
+		}
+
+		buffer, err := serial.Serialize(swapVerify, serial.NETWORK)
 		if err != nil {
-			log.Error("Serialize swapInit failed", "err", err)
+			log.Error("Serialize SwapVeify failed", "err", err)
 		}
 		command.data[STOREMESSAGE] = buffer
 	} else {
 		swapKey := _hash(si)
-		swap := FindSwap(app, swapKey, false)
+		swap := FindSwap(app, swapKey)
 		if swap == nil {
 			log.Error("SwapInit not find", "key", swapKey)
 			return nil
@@ -313,7 +328,8 @@ func (si SwapInit) resolve(app interface{}, stageType swapStageType) Commands {
 		command.data[ROLE] = role
 		command.data[NONCE] = swap.Nonce
 		command.data[EVENTTYPE] = SWAP
-
+		command.data[OWNER] = swap.Party
+		command.data[TARGET] = swap.Party
 		if stage.Stage == INITIATOR_INITIATE {
 			command.chain = chains[1]
 
@@ -325,7 +341,9 @@ func (si SwapInit) resolve(app interface{}, stageType swapStageType) Commands {
 			secretHash := sha256.Sum256(secret[:])
 			command.data[PASSWORD] = secret
 			command.data[PREIMAGE] = secretHash
+			SaveContract(app, swapKey, 1, secret[:])
 		}
+
 	}
 	return commands
 }
@@ -448,29 +466,6 @@ func (sv SwapVerify) resolve(app interface{}, stageType swapStageType) Commands 
 	return nil
 }
 
-func SaveUnmatchSwap(app interface{}, chain data.ChainType, context FunctionValues) (bool, FunctionValues) {
-
-	swap := GetBytes(context[STOREMESSAGE])
-	key := GetAccountKey(context[STOREKEY])
-	SaveSwap(app, key, swap)
-
-	//After finished the save, then create the transaction will be create for next stage.
-	them := GetParty(context[THEM_ACCOUNT])
-	nonce := GetInt64(context[NONCE])
-	event := Event{Type: SWAP, Key: them.Key, Nonce: nonce}
-	swapVerify := &SwapVerify{
-		Event: event,
-	}
-
-	buffer, err := serial.Serialize(swapVerify, serial.NETWORK)
-	if err != nil {
-		log.Error("Serialize SwapVeify failed", "err", err)
-	}
-	context[STOREMESSAGE] = buffer
-
-	return true, context
-}
-
 //get the next stage from the current stage
 func NextStage(app interface{}, chain data.ChainType, context FunctionValues) (bool, FunctionValues) {
 	// Make sure it is pushed forward first...
@@ -485,9 +480,9 @@ func NextStage(app interface{}, chain data.ChainType, context FunctionValues) (b
 	stage := GetInt(context[STAGE])
 
 	signers := make([]PublicKey, 0)
-	owner := GetParty(context[MY_ACCOUNT])
-	target := GetParty(context[THEM_ACCOUNT])
-	chainId := GetString(context[CHAINID])
+	owner := GetParty(context[OWNER])
+	target := GetParty(context[TARGET])
+	chainId := GetChainID(app)
 	//log.Debug("parsed contract", "contract", contract, "chain", chain, "context", context, "count", count)
 	swap := &Swap{
 		Base: Base{
@@ -553,7 +548,7 @@ func MatchingSwap(app interface{}, transaction *SwapInit) *SwapInit {
 	matchedSwap.Nonce = transaction.Nonce
 
 	if *isParty {
-		result := FindSwap(storage, transaction.CounterParty.Key, true)
+		result := FindSwap(storage, transaction.CounterParty.Key)
 		if result != nil {
 			if matching := isMatch(result, transaction); matching {
 				matchedSwap.Party = transaction.Party
@@ -564,7 +559,7 @@ func MatchingSwap(app interface{}, transaction *SwapInit) *SwapInit {
 			}
 		}
 	} else {
-		result := FindSwap(storage, transaction.Party.Key, true)
+		result := FindSwap(storage, transaction.Party.Key)
 		if result != nil {
 			if matching := isMatch(result, transaction); matching {
 				matchedSwap.Party = result.Party
@@ -589,15 +584,11 @@ func SaveSwap(app interface{}, swapKey id.AccountKey, transaction interface{}) {
 	storage.Commit()
 }
 
-func FindSwap(app interface{}, key id.AccountKey, delete bool) *SwapInit {
+func FindSwap(app interface{}, key id.AccountKey) *SwapInit {
 	storage := GetStatus(app)
 	result := storage.Load(key)
 	if result == nil {
 		return nil
-	}
-
-	if delete {
-		storage.Delete(key)
 	}
 
 	var transaction Swap
@@ -606,6 +597,14 @@ func FindSwap(app interface{}, key id.AccountKey, delete bool) *SwapInit {
 		return nil
 	}
 	return buffer.(*SwapInit)
+}
+
+func DeleteSwap(app interface{}, key id.AccountKey) {
+	storage := GetStatus(app)
+	result := storage.Delete(key)
+	if result == nil {
+		log.Error("Delete swap failed", "key", key)
+	}
 }
 
 func GetAccount(app interface{}, accountKey id.AccountKey) id.Account {
@@ -628,7 +627,7 @@ func GetChainAccount(app interface{}, name string, chain data.ChainType) id.Acco
 
 func CreateCheckEvent(app interface{}, chain data.ChainType, context FunctionValues) (bool, FunctionValues) {
 	swapKey := GetBytes(context[STOREKEY])
-	si := FindSwap(app, swapKey, false)
+	si := FindSwap(app, swapKey)
 	if si == nil {
 		log.Error("Saved swap not found", "key", swapKey)
 	}
@@ -1125,7 +1124,7 @@ func WaitForChain(app interface{}, chain data.ChainType, context FunctionValues)
 	signers := []id.PublicKey(nil)
 	owner := GetParty(context[MY_ACCOUNT])
 	target := GetParty(context[THEM_ACCOUNT])
-	eventType := GetType(context[EVENTTYPE])
+	eventType := SWAP
 	nonce := GetInt64(context[NONCE])
 	stage := GetInt(context[STAGE])
 	verify := SwapVerify{
