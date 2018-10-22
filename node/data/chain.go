@@ -15,6 +15,18 @@ const (
 	ETHEREUM
 )
 
+func (c ChainType) String() string {
+	switch c {
+	case ONELEDGER:
+		return "OneLedger"
+	case BITCOIN:
+		return "Bitcoin"
+	case ETHEREUM:
+		return "Ethereum"
+	}
+	return "Unknown"
+}
+
 type Chain struct {
 	ChainType   ChainType
 	Description string
