@@ -54,17 +54,15 @@ func TestSDK(t *testing.T) {
 		testAccount := id.NewAccount(testChainType, testName, testPublicKey, testPrivateKey)
 		application.Accounts.Add(testAccount)
 
-		hash1 := id.NewAccountKey(testPublicKey)
-		hash2 := id.NewAccountKey(testPublicKey)
-
-		assert.Equal(t, hash1, hash2, "Hasher should generate identical output")
-
 		in := &pb.CheckAccountRequest{Name: testName}
 		expectedOut := &pb.CheckAccountReply{
 			Name:       testName,
 			Chain:      testChainType.String(),
 			AccountKey: id.NewAccountKey(testPublicKey),
-			Balance:    "",
+			Balance: &pb.Balance{
+				Amount:   0,
+				Currency: pb.Currency_OLT,
+			},
 		}
 		out, err := client.CheckAccount(ctx, in)
 		assert.Equal(t, err, nil)

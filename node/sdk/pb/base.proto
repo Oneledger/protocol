@@ -13,14 +13,20 @@ message CheckAccountReply {
     string chain = 2;
     bytes accountKey = 3;
     // TODO: Should use Coin message
-    string balance = 4;
+    Balance balance = 4;
 }
 
-//enum Currency {
-//    OLT = 0;
-//    BTC = 1;
-//    ETH = 2;
-//}
+enum Currency {
+    OLT = 0;
+    BTC = 1;
+    ETH = 2;
+}
+
+message Balance {
+    int64 amount = 1;
+    Currency currency = 2;
+}
+
 
 // Custom empty message in case we want to add new parameters in the future
 message StatusRequest {}

@@ -40,7 +40,7 @@ func (s SDKServer) Status(ctx context.Context, request *pb.StatusRequest) (*pb.S
 func (s SDKServer) CheckAccount(ctx context.Context, request *pb.CheckAccountRequest) (*pb.CheckAccountReply, error) {
 	accountName := request.Name
 	if accountName == "" {
-		return nil, gstatus.Errorf(codes.InvalidArgument, "accountName can't be empty")
+		return nil, gstatus.Errorf(codes.InvalidArgument, "Account name can't be empty")
 	}
 	account, err := s.App.Accounts.FindName(accountName)
 	if err != status.SUCCESS {
@@ -50,12 +50,14 @@ func (s SDKServer) CheckAccount(ctx context.Context, request *pb.CheckAccountReq
 	// Get balance
 	b := s.App.Utxo.Find(data.DatabaseKey(account.AccountKey()))
 
-	// TODO: Don't return string
-	var balance string
-	if b == nil {
-		balance = ""
+	var balance *pb.Balance
+	if b != nil {
+		balance = &pb.Balance{
+			Amount:   b.Amount.Amount.Int64(),
+			Currency: currencyProtobuf(b.Amount.Currency),
+		}
 	} else {
-		balance = b.AsString()
+		balance = &pb.Balance{Amount: 0, Currency: pb.Currency_OLT}
 	}
 
 	return &pb.CheckAccountReply{
@@ -64,4 +66,19 @@ func (s SDKServer) CheckAccount(ctx context.Context, request *pb.CheckAccountReq
 		AccountKey: account.AccountKey().Bytes(),
 		Balance:    balance,
 	}, nil
+}
+
+func currencyProtobuf(c data.Currency) pb.Currency {
+	switch c.Chain {
+	case data.ONELEDGER:
+		return pb.Currency_OLT
+	case data.BITCOIN:
+		return pb.Currency_BTC
+	case data.ETHEREUM:
+		return pb.Currency_ETH
+	}
+	// Shouldn't ever reach here
+	log.Error("Converting nonexistent currency!!!")
+	return pb.Currency_OLT
+
 }
