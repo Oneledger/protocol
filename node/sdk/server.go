@@ -32,7 +32,7 @@ const (
 func NewServer(port int, sdkServer pb.SDKServer) (*Server, error) {
 	listener, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
 	if err != nil {
-		return nil, fmt.Errorf("Failed to start tcp listener on port :%d", port)
+		return nil, fmt.Errorf("Failed to start tcp listener on port :%d, %v", port, err)
 	}
 
 	server := grpc.NewServer()
@@ -68,7 +68,7 @@ func (s *Server) Start() error {
 		case _, ok := <-s.quit:
 			if !ok {
 				s.logger.Info("Stopping %s", s.String())
-				s.server.GracefulStop()
+				s.server.Stop()
 				return
 			}
 		}

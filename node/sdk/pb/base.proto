@@ -5,11 +5,11 @@ syntax = "proto3";
 package pb;
 
 message CheckAccountRequest {
-    string accountName = 1;
+    string name = 1;
 }
 
 message CheckAccountReply {
-    string accountName = 1;
+    string name = 1;
     string chain = 2;
     bytes accountKey = 3;
     // TODO: Should use Coin message

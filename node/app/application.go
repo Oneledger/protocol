@@ -283,3 +283,18 @@ func (app Application) Commit() ResponseCommit {
 	log.Debug("Committed", "hash", hash, "version", version)
 	return ResponseCommit{}
 }
+
+// Close closes every datastore in app
+func (app Application) Close() {
+	app.Admin.Close()
+	app.Status.Close()
+	app.Identities.Close()
+	app.Accounts.Close()
+	app.Utxo.Close()
+	app.Event.Close()
+	app.Contract.Close()
+
+	if app.SDK != nil {
+		app.SDK.Stop()
+	}
+}

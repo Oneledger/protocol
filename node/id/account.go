@@ -177,6 +177,10 @@ func (acc *Accounts) Dump() {
 	}
 }
 
+func (acc *Accounts) Close() {
+	acc.data.Close()
+}
+
 // Polymorphism
 type Account interface {
 	Name() string

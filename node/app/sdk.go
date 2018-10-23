@@ -38,7 +38,7 @@ func (s SDKServer) Status(ctx context.Context, request *pb.StatusRequest) (*pb.S
 
 // CheckAccount returns the balance of a given account ID
 func (s SDKServer) CheckAccount(ctx context.Context, request *pb.CheckAccountRequest) (*pb.CheckAccountReply, error) {
-	accountName := request.AccountName
+	accountName := request.Name
 	if accountName == "" {
 		return nil, gstatus.Errorf(codes.InvalidArgument, "accountName can't be empty")
 	}
@@ -59,9 +59,9 @@ func (s SDKServer) CheckAccount(ctx context.Context, request *pb.CheckAccountReq
 	}
 
 	return &pb.CheckAccountReply{
-		AccountName: account.Name(),
-		Chain:       account.Chain().String(),
-		AccountKey:  account.AccountKey().Bytes(),
-		Balance:     balance,
+		Name:       account.Name(),
+		Chain:      account.Chain().String(),
+		AccountKey: account.AccountKey().Bytes(),
+		Balance:    balance,
 	}, nil
 }

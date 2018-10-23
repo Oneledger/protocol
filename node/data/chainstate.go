@@ -186,3 +186,7 @@ func initializeDatabase(name string, newType DatastoreType) (*iavl.MutableTree, 
 
 	return tree, storage
 }
+
+func (c *ChainState) Close() {
+	c.database.Close()
+}
