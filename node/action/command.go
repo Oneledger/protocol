@@ -23,9 +23,10 @@ type FunctionValues map[Parameter]FunctionValue
 
 // A command to execute again a chain, needs to be polymorphic
 type Command struct {
-	opfunc func(app interface{}, chain data.ChainType, data FunctionValues) (bool, FunctionValues)
+	opfunc func(app interface{}, chain data.ChainType, context FunctionValues, tx interface{}) (bool, FunctionValues)
 	chain  data.ChainType
 	data   FunctionValues
+	tx     interface{}
 }
 
 func init() {
@@ -33,7 +34,7 @@ func init() {
 }
 
 func (command Command) Execute(app interface{}) (bool, FunctionValues) {
-	return command.opfunc(app, command.chain, command.data)
+	return command.opfunc(app, command.chain, command.data, command.tx)
 }
 
 type Commands []Command
@@ -55,6 +56,7 @@ func (cs Commands) Execute(app interface{}) status.Code {
 		if len(lastResult) > 0 {
 			cs[i+1].data = lastResult
 		}
+		cs[i+1].tx = cs[i].tx
 	}
 	return status.SUCCESS
 }

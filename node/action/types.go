@@ -188,7 +188,6 @@ func FindEvent(app interface{}, eventKey Event) bool {
 }
 
 func SaveContract(app interface{}, contractKey []byte, nonce int64, contract []byte) {
-	//todo: add nonce to the key to differentiate swap between same conterparty
 	contracts := GetContract(app)
 	n := strconv.AppendInt(contractKey, nonce, 10)
 	log.Debug("Save contract", "key", contractKey, "afterNonce", n)
@@ -197,7 +196,6 @@ func SaveContract(app interface{}, contractKey []byte, nonce int64, contract []b
 }
 
 func FindContract(app interface{}, contractKey []byte, nonce int64) []byte {
-	//todo: add nonce to the key to differentiate swap between same conterparty
 	log.Debug("Load Contract", "key", contractKey)
 	contracts := GetContract(app)
 	n := strconv.AppendInt(contractKey, nonce, 10)

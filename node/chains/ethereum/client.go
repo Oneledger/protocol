@@ -1,6 +1,7 @@
 package ethereum
 
 import (
+	"github.com/Oneledger/protocol/node/data"
 	"math/big"
 	"strings"
 	"time"
@@ -18,6 +19,10 @@ import (
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/pkg/errors"
 )
+
+func init() {
+	serial.Register(HTLContract{})
+}
 
 var client *ethclient.Client
 
@@ -237,16 +242,8 @@ func WeiToEther(value *big.Int) *big.Int {
 	return new(big.Int).Div(value, new(big.Int).Exp(big.NewInt(10), big.NewInt(18), nil))
 }
 
-func GetHTLCFromMessage(message []byte) *HTLContract {
-	log.Debug("Parse message to ETH HTLC")
-	register := &HTLContract{}
-
-	result, err := serial.Deserialize(message, register, serial.NETWORK)
-	if err != nil {
-		log.Error("parse htlc contract failed", "status", err)
-		return nil
-	}
-	return result.(*HTLContract)
+func (h *HTLContract) Chain() data.ChainType {
+	return data.ETHEREUM
 }
 
 func (h *HTLContract) ToMessage() []byte {

@@ -5,6 +5,7 @@
 package bitcoin
 
 import (
+	"github.com/Oneledger/protocol/node/data"
 	"time"
 
 	brpc "github.com/Oneledger/protocol/node/chains/bitcoin/rpc"
@@ -22,6 +23,10 @@ import (
 	"github.com/btcsuite/btcd/wire"
 	"github.com/btcsuite/btcutil"
 )
+
+func init() {
+	serial.Register(HTLContract{})
+}
 
 func GetChaincfg() *chaincfg.Params {
 
@@ -133,6 +138,10 @@ type HTLContract struct {
 	ContractTx wire.MsgTx `json:"contractTx"`
 }
 
+func (h *HTLContract) Chain() data.ChainType {
+	return data.BITCOIN
+}
+
 func (h *HTLContract) ToMessage() []byte {
 	msg, err := serial.Serialize(h, serial.NETWORK)
 	if err != nil {
@@ -148,16 +157,4 @@ func (h *HTLContract) ToKey() []byte {
 		return nil
 	}
 	return key.ScriptAddress()
-}
-
-func GetHTLCFromMessage(message []byte) *HTLContract {
-	log.Debug("Parse message to BTC HTLC")
-	register := &HTLContract{}
-
-	result, err := serial.Deserialize(message, register, serial.NETWORK)
-	if err != nil {
-		log.Error("Failed parse htlc contract", "status", err)
-		return nil
-	}
-	return result.(*HTLContract)
 }

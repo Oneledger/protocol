@@ -86,3 +86,7 @@ func XTestBoxLocker_Verify(t *testing.T) {
 	verified := locker.Verify(messageHash)
 	assert.Equal(t, true, verified, "Signature verified")
 }
+
+func TestReflection(t *testing.T) {
+
+}

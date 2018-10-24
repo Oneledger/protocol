@@ -6,8 +6,6 @@
 package action
 
 import (
-	"github.com/Oneledger/protocol/node/chains/bitcoin"
-	"github.com/Oneledger/protocol/node/chains/ethereum"
 	"github.com/Oneledger/protocol/node/data"
 	"github.com/Oneledger/protocol/node/id"
 	"github.com/Oneledger/protocol/node/log"
@@ -31,23 +29,20 @@ const (
 	EXCHANGE
 	NONCE
 	PREIMAGE
-
 	PASSWORD
-	ETHCONTRACT
-	BTCCONTRACT
+	CONTRACT
 
 	LOCKTIME
 	COUNT
-	CHAINID
+	CHAIN
 	NEXTCHAINNAME
 
-	EVENTTYPE
-	CHECK_EXTERNAL_CHAIN
 	STOREMESSAGE
 	STOREKEY
 	STAGE
 	OWNER
 	TARGET
+	PREVIOUS
 )
 
 func GetInt(value FunctionValue) int {
@@ -156,35 +151,35 @@ func GetByte32(value FunctionValue) [32]byte {
 	return [32]byte{}
 }
 
-func GetETHContract(value FunctionValue) *ethereum.HTLContract {
-	switch value.(type) {
-	case *ethereum.HTLContract:
-		return value.(*ethereum.HTLContract)
-	default:
-		log.Fatal("Bad Type Cast in Function Parameter", "value", value)
-	}
-	return nil
-}
-
-func GetBTCContract(value FunctionValue) *bitcoin.HTLContract {
-	switch value.(type) {
-	case *bitcoin.HTLContract:
-		return value.(*bitcoin.HTLContract)
-	default:
-		log.Fatal("Bad Type Cast in Function Parameter", "value", value)
-	}
-	return nil
-}
-
-func GetType(value FunctionValue) Type {
-	switch value.(type) {
-	case Type:
-		return value.(Type)
-	default:
-		log.Fatal("Bad Type Cast in FUnction Parameter", "value", value)
-	}
-	return INVALID
-}
+//func GetETHContract(value FunctionValue) *ethereum.HTLContract {
+//	switch value.(type) {
+//	case *ethereum.HTLContract:
+//		return value.(*ethereum.HTLContract)
+//	default:
+//		log.Fatal("Bad Type Cast in Function Parameter", "value", value)
+//	}
+//	return nil
+//}
+//
+//func GetBTCContract(value FunctionValue) *bitcoin.HTLContract {
+//	switch value.(type) {
+//	case *bitcoin.HTLContract:
+//		return value.(*bitcoin.HTLContract)
+//	default:
+//		log.Fatal("Bad Type Cast in Function Parameter", "value", value)
+//	}
+//	return nil
+//}
+//
+//func GetType(value FunctionValue) Type {
+//	switch value.(type) {
+//	case Type:
+//		return value.(Type)
+//	default:
+//		log.Fatal("Bad Type Cast in FUnction Parameter", "value", value)
+//	}
+//	return INVALID
+//}
 
 func GetChain(value FunctionValue) data.ChainType {
 	switch value.(type) {

@@ -7,7 +7,6 @@ package action
 
 import (
 	"bytes"
-	"github.com/Oneledger/protocol/node/comm"
 	"github.com/tendermint/go-amino"
 
 	"github.com/Oneledger/protocol/node/chains/bitcoin"
@@ -137,7 +136,10 @@ func (transaction *Swap) ProcessDeliver(app interface{}) status.Code {
 
 // Plug in data from the rest of a system into a set of commands
 func (swap *Swap) Resolve(app interface{}) Commands {
-	return swap.SwapMessage.resolve(app, swap.Stage)
+	commands := swap.SwapMessage.resolve(app, swap.Stage)
+	commands[0].data[PREVIOUS] = _hash(swap)
+	commands[0].tx = swap
+	return commands
 }
 
 var swapStageFlow = map[swapStageType]swapStage{
@@ -224,6 +226,7 @@ type SwapInit struct {
 	Gas          data.Coin `json:"fee"`
 	Nonce        int64     `json:"nonce"`
 	Preimage     []byte    `json:"preimage"`
+	PreviousTx   []byte    `json:"previoustx"`
 }
 
 func (si SwapInit) validate() status.Code {
@@ -270,9 +273,9 @@ func (si SwapInit) resolve(app interface{}, stageType swapStageType) Commands {
 
 		swap := MatchingSwap(app, &si)
 
-		var storeInfo SwapInit
 		var storeKey []byte
 		if swap == nil {
+			//wait the other side of swap, will create the verify transaction
 			command.data[STAGE] = WAIT_FOR_CHAIN
 			if *isParty {
 				command.data[OWNER] = si.Party
@@ -283,54 +286,45 @@ func (si SwapInit) resolve(app interface{}, stageType swapStageType) Commands {
 				command.data[TARGET] = si.CounterParty
 				storeKey = si.Party.Key
 			}
-			storeInfo = si
+			SaveSwap(app, storeKey, si)
 		} else {
+			// if Matching swap return non nil, then swap matched
 			command.data[OWNER] = swap.Party
 			command.data[TARGET] = swap.Party
 			command.data[STAGE] = SWAP_MATCHED
 			storeKey = _hash(swap)
-			storeInfo = *swap
+			SaveSwap(app, storeKey, swap)
 		}
-		SaveSwap(app, storeKey, storeInfo)
-		//After finished the save, then create the transaction will be create for next stage.
-
-		event := Event{Type: SWAP, Key: storeKey, Nonce: si.Nonce}
-		swapVerify := &SwapVerify{
-			Event: event,
-		}
-
-		buffer, err := serial.Serialize(swapVerify, serial.NETWORK)
-		if err != nil {
-			log.Error("Serialize SwapVeify failed", "err", err)
-		}
-		command.data[STOREMESSAGE] = buffer
+		command.data[STOREKEY] = storeKey
 	} else {
+		//reach this part means we are now in SWAP_MATCHED or INITIATOR_INITIATE
 		swapKey := _hash(si)
 		swap := FindSwap(app, swapKey)
 		if swap == nil {
 			log.Error("SwapInit not find", "key", swapKey)
 			return nil
 		}
-		command.data[STAGE] = SWAP_MATCHED
 		if *isParty {
+			command.data[OWNER] = swap.Party.Key
+			command.data[TARGET] = swap.CounterParty.Key
 			command.data[MY_ACCOUNT] = swap.Party
 			command.data[THEM_ACCOUNT] = swap.CounterParty
 			command.data[AMOUNT] = swap.Amount
 			command.data[EXCHANGE] = swap.Exchange
 		} else {
 			log.Dump("this should never show")
+			command.data[OWNER] = swap.CounterParty.Key
+			command.data[TARGET] = swap.Party.Key
 			command.data[MY_ACCOUNT] = swap.CounterParty
 			command.data[THEM_ACCOUNT] = swap.Party
 			command.data[AMOUNT] = swap.Exchange
 			command.data[EXCHANGE] = swap.Amount
 		}
 		command.data[STOREKEY] = swapKey
-		command.data[ROLE] = role
-		command.data[NONCE] = swap.Nonce
-		command.data[EVENTTYPE] = SWAP
-		command.data[OWNER] = swap.Party
-		command.data[TARGET] = swap.Party
 		if stage.Stage == INITIATOR_INITIATE {
+			command.data[ROLE] = role
+			command.data[NONCE] = swap.Nonce
+			//only create the secret for swap at INITIATOR_INITIATE stage
 			command.chain = chains[1]
 
 			var secret [32]byte
@@ -341,7 +335,7 @@ func (si SwapInit) resolve(app interface{}, stageType swapStageType) Commands {
 			secretHash := sha256.Sum256(secret[:])
 			command.data[PASSWORD] = secret
 			command.data[PREIMAGE] = secretHash
-			SaveContract(app, swapKey, 1, secret[:])
+			SaveContract(app, swapKey, 0, secret[:])
 		}
 
 	}
@@ -403,9 +397,10 @@ func (si SwapInit) getRole(isParty bool) Role {
 }
 
 type SwapExchange struct {
-	Contract   Message        `json:"message"` //message converted from HTLContract
-	SecretHash [32]byte       `json:"secrethash"`
-	Chain      data.ChainType `json:"chain"`
+	Contract   common.Contract `json:"message"`
+	SecretHash [32]byte        `json:"secrethash"`
+	Chain      data.ChainType  `json:"chain"`
+	PreviousTx []byte          `json:"previoustx"`
 }
 
 func (se SwapExchange) validate() status.Code {
@@ -432,14 +427,7 @@ func (se SwapExchange) resolve(app interface{}, stageType swapStageType) Command
 
 	command := &commands[0]
 
-	if se.Chain == data.BITCOIN {
-		contract := bitcoin.GetHTLCFromMessage(se.Contract)
-		command.data[BTCCONTRACT] = contract
-
-	} else if se.Chain == data.ETHEREUM {
-		contract := ethereum.GetHTLCFromMessage(se.Contract)
-		command.data[ETHCONTRACT] = contract
-	}
+	command.data[CONTRACT] = se.Contract.ToMessage()
 	command.data[PREIMAGE] = se.SecretHash
 	command.chain = se.Chain
 	return commands
@@ -467,21 +455,22 @@ func (sv SwapVerify) resolve(app interface{}, stageType swapStageType) Commands 
 }
 
 //get the next stage from the current stage
-func NextStage(app interface{}, chain data.ChainType, context FunctionValues) (bool, FunctionValues) {
+func NextStage(app interface{}, chain data.ChainType, context FunctionValues, tx interface{}) (bool, FunctionValues) {
 	// Make sure it is pushed forward first...
 	global.Current.Sequence += 32
 
 	message := GetBytes(context[STOREMESSAGE])
-	var proto SwapMessage
-	swapMessage, err := serial.Deserialize(message, proto, serial.NETWORK)
+	var swapMessage SwapMessage
+	buffer, err := serial.Deserialize(message, swapMessage, serial.NETWORK)
 	if err != nil {
 		log.Error("Deserialize SwapMessage failed", "err", err)
 	}
-	stage := GetInt(context[STAGE])
+	swapMessage = buffer.(SwapMessage)
+	stage := swapStageType(GetInt(context[STAGE]))
 
 	signers := make([]PublicKey, 0)
-	owner := GetParty(context[OWNER])
-	target := GetParty(context[TARGET])
+	owner := GetAccountKey(context[OWNER])
+	target := GetAccountKey(context[TARGET])
 	chainId := GetChainID(app)
 	//log.Debug("parsed contract", "contract", contract, "chain", chain, "context", context, "count", count)
 	swap := &Swap{
@@ -489,18 +478,19 @@ func NextStage(app interface{}, chain data.ChainType, context FunctionValues) (b
 			Type:     SWAP,
 			ChainId:  chainId,
 			Signers:  signers,
-			Owner:    owner.Key,
-			Target:   target.Key,
+			Owner:    owner,
+			Target:   target,
 			Sequence: global.Current.Sequence,
 		},
-		SwapMessage: swapMessage.(SwapMessage),
-		Stage:       swapStageType(stage),
+		SwapMessage: swapMessage,
+		Stage:       stage,
 	}
-
-	packet := SignAndPack(SWAP, Transaction(swap))
-
-	result := comm.Broadcast(packet)
-	log.Debug("Submit Transaction to OLT successfully", "result", result)
+	if stage == WAIT_FOR_CHAIN {
+		waitTime := 3 * lockPeriod
+		DelayedTransaction(SWAP, swap, waitTime)
+	} else {
+		BroadcastTransaction(SWAP, swap)
+	}
 	return true, nil
 }
 
@@ -625,30 +615,38 @@ func GetChainAccount(app interface{}, name string, chain data.ChainType) id.Acco
 	return account
 }
 
-func CreateCheckEvent(app interface{}, chain data.ChainType, context FunctionValues) (bool, FunctionValues) {
-	swapKey := GetBytes(context[STOREKEY])
-	si := FindSwap(app, swapKey)
+func CreateCheckEvent(app interface{}, chain data.ChainType, context FunctionValues, tx interface{}) (bool, FunctionValues) {
+	storeKey := GetBytes(context[STOREKEY])
+	si := FindSwap(app, storeKey)
 	if si == nil {
-		log.Error("Saved swap not found", "key", swapKey)
+		log.Error("Saved swap not found", "key", storeKey)
+	}
+	event := Event{Type: SWAP, Key: storeKey, Nonce: si.Nonce}
+	swapVerify := &SwapVerify{
+		Event: event,
 	}
 
-	event := Event{Type: SWAP, Key: si.CounterParty.Key, Nonce: si.Nonce}
+	buffer, err := serial.Serialize(swapVerify, serial.NETWORK)
+	if err != nil {
+		log.Error("Serialize SwapVeify failed", "err", err)
+	}
+	context[STOREMESSAGE] = buffer
 	SaveEvent(app, event, false)
 
 	return true, context
 }
 
-func FinalizeSwap(app interface{}, chain data.ChainType, context FunctionValues) (bool, FunctionValues) {
+func FinalizeSwap(app interface{}, chain data.ChainType, context FunctionValues, tx interface{}) (bool, FunctionValues) {
 	//todo:
 	return true, context
 }
 
-func VerifySwap(app interface{}, chain data.ChainType, context FunctionValues) (bool, FunctionValues) {
+func VerifySwap(app interface{}, chain data.ChainType, context FunctionValues, tx interface{}) (bool, FunctionValues) {
 	//todo:
 	return true, context
 }
 
-func ClearEvent(app interface{}, chain data.ChainType, context FunctionValues) (bool, FunctionValues) {
+func ClearEvent(app interface{}, chain data.ChainType, context FunctionValues, tx interface{}) (bool, FunctionValues) {
 	//todo:
 	return true, context
 }
@@ -659,98 +657,98 @@ var lockPeriod = 5 * time.Minute
 // todo: need to store this in db
 var tokens = make(map[string][32]byte)
 
-func Initiate(app interface{}, chain data.ChainType, context FunctionValues) (bool, FunctionValues) {
+func Initiate(app interface{}, chain data.ChainType, context FunctionValues, tx interface{}) (bool, FunctionValues) {
 	log.Info("Executing Initiate Command", "chain", chain, "context", context)
 	switch chain {
 
 	case data.BITCOIN:
-		return CreateContractBTC(app, context)
+		return CreateContractBTC(app, context, tx)
 	case data.ETHEREUM:
-		return CreateContractETH(app, context)
+		return CreateContractETH(app, context, tx)
 	case data.ONELEDGER:
-		return CreateContractOLT(app, context)
+		return CreateContractOLT(app, context, tx)
 	default:
 		return false, nil
 	}
 }
 
-func Participate(app interface{}, chain data.ChainType, context FunctionValues) (bool, FunctionValues) {
+func Participate(app interface{}, chain data.ChainType, context FunctionValues, tx interface{}) (bool, FunctionValues) {
 	log.Info("Executing Participate Command", "chain", chain, "context", context)
 	switch chain {
 
 	case data.BITCOIN:
-		return ParticipateBTC(app, context)
+		return ParticipateBTC(app, context, tx)
 	case data.ETHEREUM:
-		return ParticipateETH(app, context)
+		return ParticipateETH(app, context, tx)
 	case data.ONELEDGER:
-		return ParticipateOLT(app, context)
+		return ParticipateOLT(app, context, tx)
 	default:
 		return false, nil
 	}
 }
 
-func Redeem(app interface{}, chain data.ChainType, context FunctionValues) (bool, FunctionValues) {
+func Redeem(app interface{}, chain data.ChainType, context FunctionValues, tx interface{}) (bool, FunctionValues) {
 	log.Info("Executing Redeem Command", "chain", chain, "context", context)
 
 	switch chain {
 
 	case data.BITCOIN:
-		return RedeemBTC(app, context)
+		return RedeemBTC(app, context, tx)
 	case data.ETHEREUM:
-		return RedeemETH(app, context)
+		return RedeemETH(app, context, tx)
 	case data.ONELEDGER:
-		return RedeemOLT(app, context)
+		return RedeemOLT(app, context, tx)
 	default:
 		return false, nil
 	}
 }
 
-func Refund(app interface{}, chain data.ChainType, context FunctionValues) (bool, FunctionValues) {
+func Refund(app interface{}, chain data.ChainType, context FunctionValues, tx interface{}) (bool, FunctionValues) {
 	log.Info("Executing Refund Command", "chain", chain, "context", context)
 	switch chain {
 
 	case data.BITCOIN:
-		return RefundBTC(app, context)
+		return RefundBTC(app, context, tx)
 	case data.ETHEREUM:
-		return RefundETH(app, context)
+		return RefundETH(app, context, tx)
 	case data.ONELEDGER:
-		return RefundOLT(app, context)
+		return RefundOLT(app, context, tx)
 	default:
 		return false, nil
 	}
 }
 
-func ExtractSecret(app interface{}, chain data.ChainType, context FunctionValues) (bool, FunctionValues) {
+func ExtractSecret(app interface{}, chain data.ChainType, context FunctionValues, tx interface{}) (bool, FunctionValues) {
 	log.Info("Executing ExtractSecret Command", "chain", chain, "context", context)
 	switch chain {
 
 	case data.BITCOIN:
-		return ExtractSecretBTC(app, context)
+		return ExtractSecretBTC(app, context, tx)
 	case data.ETHEREUM:
-		return ExtractSecretETH(app, context)
+		return ExtractSecretETH(app, context, tx)
 	case data.ONELEDGER:
-		return ExtractSecretOLT(app, context)
+		return ExtractSecretOLT(app, context, tx)
 	default:
 		return false, nil
 	}
 }
 
-func AuditContract(app interface{}, chain data.ChainType, context FunctionValues) (bool, FunctionValues) {
+func AuditContract(app interface{}, chain data.ChainType, context FunctionValues, tx interface{}) (bool, FunctionValues) {
 	log.Info("Executing AuditContract Command", "chain", chain, "context", context)
 	switch chain {
 
 	case data.BITCOIN:
-		return AuditContractBTC(app, context)
+		return AuditContractBTC(app, context, tx)
 	case data.ETHEREUM:
-		return AuditContractETH(app, context)
+		return AuditContractETH(app, context, tx)
 	case data.ONELEDGER:
-		return AuditContractOLT(app, context)
+		return AuditContractOLT(app, context, tx)
 	default:
 		return false, nil
 	}
 }
 
-func CreateContractBTC(app interface{}, context FunctionValues) (bool, FunctionValues) {
+func CreateContractBTC(app interface{}, context FunctionValues, tx interface{}) (bool, FunctionValues) {
 
 	timeout := time.Now().Add(2 * lockPeriod).Unix()
 
@@ -787,24 +785,40 @@ func CreateContractBTC(app interface{}, context FunctionValues) (bool, FunctionV
 
 	contract := &bitcoin.HTLContract{Contract: initCmd.Contract, ContractTx: *initCmd.ContractTx}
 
-	context[BTCCONTRACT] = contract
+	previous := GetBytes(context[PREVIOUS])
+	se := SwapExchange{
+		Contract:   contract,
+		SecretHash: preimage,
+		Chain:      contract.Chain(),
+		PreviousTx: previous,
+	}
 
+	buffer, err := serial.Serialize(se, serial.NETWORK)
+	if err != nil {
+		log.Error("Failed seralize SwapExchange", "se", se)
+	}
+	context[STOREMESSAGE] = buffer
 	nonce := GetInt64(context[NONCE])
-	SaveContract(app, receiverParty.Key.Bytes(), nonce, contract)
-	log.Debug("btc contract", "contract", context[BTCCONTRACT])
+	SaveContract(app, receiverParty.Key.Bytes(), nonce, contract.ToMessage())
+	log.Debug("btc contract", "contract", contract)
+
 	return true, context
 }
 
-func CreateContractETH(app interface{}, context FunctionValues) (bool, FunctionValues) {
+func CreateContractETH(app interface{}, context FunctionValues, tx interface{}) (bool, FunctionValues) {
 	me := GetParty(context[MY_ACCOUNT])
 
-	contractMessage := FindContract(app, me.Key.Bytes(), 0)
+	contractMessage := FindContract(app, me.Key.Bytes(), -1)
 	var contract *ethereum.HTLContract
 	if contractMessage == nil {
 		contract = ethereum.CreateHtlContract()
-		SaveContract(app, me.Key.Bytes(), 0, contract)
+		SaveContract(app, me.Key.Bytes(), 0, contract.ToMessage())
 	} else {
-		contract = ethereum.GetHTLCFromMessage(contractMessage)
+		buffer, err := serial.Deserialize(contractMessage, contract, serial.NETWORK)
+		if err != nil {
+			log.Error("Can't deserialze loaded ETH contract", "buffer", contractMessage)
+		}
+		contract = buffer.(*ethereum.HTLContract)
 	}
 
 	var receiverParty Party
@@ -833,13 +847,30 @@ func CreateContractETH(app interface{}, context FunctionValues) (bool, FunctionV
 		return false, nil
 	}
 
-	context[ETHCONTRACT] = contract
+	previous := GetBytes(context[PREVIOUS])
+	se := SwapExchange{
+		Contract:   contract,
+		SecretHash: preimage,
+		Chain:      contract.Chain(),
+		PreviousTx: previous,
+	}
+
+	buffer, err := serial.Serialize(se, serial.NETWORK)
+	if err != nil {
+		log.Error("Failed seralize SwapExchange", "se", se)
+	}
+	context[STOREMESSAGE] = buffer
 	return true, context
 }
 
-func AuditContractBTC(app interface{}, context FunctionValues) (bool, FunctionValues) {
-	contract := GetBTCContract(context[BTCCONTRACT])
-
+func AuditContractBTC(app interface{}, context FunctionValues, tx interface{}) (bool, FunctionValues) {
+	buffer := GetBytes(context[CONTRACT])
+	var contract *bitcoin.HTLContract
+	tmp, err := serial.Deserialize(buffer, contract, serial.NETWORK)
+	if err != nil {
+		log.Error("Failed deserialize BTC contract", "contract", buffer)
+	}
+	contract = tmp.(*bitcoin.HTLContract)
 	them := GetParty(context[THEM_ACCOUNT])
 	cmd := htlc.NewAuditContractCmd(contract.Contract, &contract.ContractTx)
 	cli := bitcoin.GetBtcClient(global.Current.BTCAddress)
@@ -850,16 +881,21 @@ func AuditContractBTC(app interface{}, context FunctionValues) (bool, FunctionVa
 	}
 
 	nonce := GetInt64(context[NONCE])
-	SaveContract(app, them.Key.Bytes(), nonce, contract)
+	SaveContract(app, them.Key.Bytes(), nonce, contract.ToMessage())
 	context[PREIMAGE] = cmd.SecretHash
 	return true, context
 }
 
-func AuditContractETH(app interface{}, context FunctionValues) (bool, FunctionValues) {
-	contract := GetETHContract(context[ETHCONTRACT])
-
+func AuditContractETH(app interface{}, context FunctionValues, tx interface{}) (bool, FunctionValues) {
+	buffer := GetBytes(context[CONTRACT])
 	scrHash := GetByte32(context[PREIMAGE])
 	address := ethereum.GetAddress()
+	var contract *ethereum.HTLContract
+	tmp, err := serial.Deserialize(buffer, contract, serial.NETWORK)
+	if err != nil {
+		log.Error("Failed deserialize ETH contract", "contract", buffer)
+	}
+	contract = tmp.(*ethereum.HTLContract)
 
 	receiver, e := contract.HTLContractObject().Receiver(&bind.CallOpts{Pending: true})
 	if e != nil {
@@ -897,12 +933,12 @@ func AuditContractETH(app interface{}, context FunctionValues) (bool, FunctionVa
 	context[PREIMAGE] = scrHash
 	them := GetParty(context[THEM_ACCOUNT])
 	nonce := GetInt64(context[NONCE])
-	SaveContract(app, them.Key.Bytes(), nonce, contract)
+	SaveContract(app, them.Key.Bytes(), nonce, contract.ToMessage())
 	return true, context
 }
 
-func ParticipateBTC(app interface{}, context FunctionValues) (bool, FunctionValues) {
-	success, result := CreateContractBTC(app, context)
+func ParticipateBTC(app interface{}, context FunctionValues, tx interface{}) (bool, FunctionValues) {
+	success, result := CreateContractBTC(app, context, tx)
 	if success != false {
 		log.Error("failed to participate because can't create contract")
 		return false, nil
@@ -910,8 +946,8 @@ func ParticipateBTC(app interface{}, context FunctionValues) (bool, FunctionValu
 	return true, result
 }
 
-func ParticipateETH(app interface{}, context FunctionValues) (bool, FunctionValues) {
-	success, result := CreateContractETH(app, context)
+func ParticipateETH(app interface{}, context FunctionValues, tx interface{}) (bool, FunctionValues) {
+	success, result := CreateContractETH(app, context, tx)
 	if success == false {
 		log.Error("failed to participate because can't create contract")
 		return false, nil
@@ -919,14 +955,19 @@ func ParticipateETH(app interface{}, context FunctionValues) (bool, FunctionValu
 	return true, result
 }
 
-func RedeemBTC(app interface{}, context FunctionValues) (bool, FunctionValues) {
+func RedeemBTC(app interface{}, context FunctionValues, tx interface{}) (bool, FunctionValues) {
 	them := GetParty(context[THEM_ACCOUNT])
 	nonce := GetInt64(context[NONCE])
-	contractMessage := FindContract(app, them.Key.Bytes(), nonce)
-	if contractMessage == nil {
+	buffer := FindContract(app, them.Key.Bytes(), nonce)
+	if buffer == nil {
 		return false, nil
 	}
-	contract := bitcoin.GetHTLCFromMessage(contractMessage)
+	var contract *bitcoin.HTLContract
+	tmp, err := serial.Deserialize(buffer, contract, serial.NETWORK)
+	if err != nil {
+		log.Error("Failed deserialize BTC contract", "contract", buffer)
+	}
+	contract = tmp.(*bitcoin.HTLContract)
 	if contract == nil {
 		log.Error("BTC Htlc contract not found")
 		return false, nil
@@ -941,41 +982,75 @@ func RedeemBTC(app interface{}, context FunctionValues) (bool, FunctionValues) {
 		log.Error("Bitcoin redeem htlc", "status", e)
 		return false, nil
 	}
-	context[BTCCONTRACT] = &bitcoin.HTLContract{Contract: contract.Contract, ContractTx: *cmd.RedeemContractTx}
+
+	contract = &bitcoin.HTLContract{Contract: contract.Contract, ContractTx: *cmd.RedeemContractTx}
+
+	previous := GetBytes(context[PREVIOUS])
+	se := SwapExchange{
+		Contract:   contract,
+		SecretHash: nil,
+		Chain:      contract.Chain(),
+		PreviousTx: previous,
+	}
+
+	buffer, err = serial.Serialize(se, serial.NETWORK)
+	if err != nil {
+		log.Error("Failed seralize SwapExchange", "se", se)
+	}
+	context[STOREMESSAGE] = buffer
 	return true, context
 }
 
-func RedeemETH(app interface{}, context FunctionValues) (bool, FunctionValues) {
+func RedeemETH(app interface{}, context FunctionValues, tx interface{}) (bool, FunctionValues) {
 	them := GetParty(context[THEM_ACCOUNT])
 	nonce := GetInt64(context[NONCE])
-	contractMessage := FindContract(app, them.Key.Bytes(), nonce)
-	if contractMessage == nil {
+	buffer := FindContract(app, them.Key.Bytes(), nonce)
+	if buffer == nil {
 		return false, nil
 	}
-	contract := ethereum.GetHTLCFromMessage(contractMessage)
-	if contract == nil {
-		return false, nil
+	var contract *ethereum.HTLContract
+	tmp, err := serial.Deserialize(buffer, contract, serial.NETWORK)
+	if err != nil {
+		log.Error("Failed deserialize ETH contract", "contract", buffer)
 	}
+	contract = tmp.(*ethereum.HTLContract)
 
 	scr := GetByte32(context[PASSWORD])
-	err := contract.Redeem(scr[:])
+	err = contract.Redeem(scr[:])
 	if err != nil {
 		log.Error("Ethereum redeem htlc", "status", err)
 		return false, nil
 	}
-	context[ETHCONTRACT] = contract
+
+	previous := GetBytes(context[PREVIOUS])
+	se := SwapExchange{
+		Contract:   contract,
+		SecretHash: nil,
+		Chain:      contract.Chain(),
+		PreviousTx: previous,
+	}
+
+	buffer, err = serial.Serialize(se, serial.NETWORK)
+	if err != nil {
+		log.Error("Failed seralize SwapExchange", "se", se)
+	}
+	context[STOREMESSAGE] = buffer
 	return true, context
 }
 
-func RefundBTC(app interface{}, context FunctionValues) (bool, FunctionValues) {
+func RefundBTC(app interface{}, context FunctionValues, tx interface{}) (bool, FunctionValues) {
 	them := GetParty(context[THEM_ACCOUNT])
 	nonce := GetInt64(context[NONCE])
-	contractMessage := FindContract(app, them.Key.Bytes(), nonce)
-	if contractMessage == nil {
-		log.Error("BTC Htlc contract not found")
+	buffer := FindContract(app, them.Key.Bytes(), nonce)
+	if buffer == nil {
 		return false, nil
 	}
-	contract := bitcoin.GetHTLCFromMessage(contractMessage)
+	var contract *bitcoin.HTLContract
+	tmp, err := serial.Deserialize(buffer, contract, serial.NETWORK)
+	if err != nil {
+		log.Error("Failed deserialize BTC contract", "contract", buffer)
+	}
+	contract = tmp.(*bitcoin.HTLContract)
 	if contract == nil {
 		log.Error("BTC Htlc contract can't be parsed")
 		return false, nil
@@ -991,29 +1066,46 @@ func RefundBTC(app interface{}, context FunctionValues) (bool, FunctionValues) {
 	return true, context
 }
 
-func RefundETH(app interface{}, context FunctionValues) (bool, FunctionValues) {
+func RefundETH(app interface{}, context FunctionValues, tx interface{}) (bool, FunctionValues) {
 	me := GetParty(context[MY_ACCOUNT])
-	contractMessage := FindContract(app, me.Key.Bytes(), 0)
-	if contractMessage == nil {
-		log.Error("ETH Htlc contract not found")
+	nonce := GetInt64(context[NONCE])
+	buffer := FindContract(app, me.Key.Bytes(), nonce)
+	if buffer == nil {
 		return false, nil
 	}
-	contract := ethereum.GetHTLCFromMessage(contractMessage)
+	var contract *ethereum.HTLContract
+	tmp, err := serial.Deserialize(buffer, contract, serial.NETWORK)
+	if err != nil {
+		log.Error("Failed deserialize ETH contract", "contract", buffer)
+	}
+	contract = tmp.(*ethereum.HTLContract)
 	if contract == nil {
 		log.Error("ETH Htlc contract can't be parsed")
 		return false, nil
 	}
 
-	err := contract.Refund()
+	err = contract.Refund()
 	if err != nil {
 		return false, nil
 	}
-	context[ETHCONTRACT] = contract
+	previous := GetBytes(context[PREVIOUS])
+	se := SwapExchange{
+		Contract:   contract,
+		SecretHash: nil,
+		Chain:      contract.Chain(),
+		PreviousTx: previous,
+	}
+
+	buffer, err = serial.Serialize(se, serial.NETWORK)
+	if err != nil {
+		log.Error("Failed seralize SwapExchange", "se", se)
+	}
+	context[STOREMESSAGE] = buffer
 	return true, context
 }
 
-func ExtractSecretBTC(app interface{}, context FunctionValues) (bool, FunctionValues) {
-	contract := GetBTCContract(context[BTCCONTRACT])
+func ExtractSecretBTC(app interface{}, context FunctionValues, tx interface{}) (bool, FunctionValues) {
+
 	scrHash := GetByte32(context[PREIMAGE])
 	cmd := htlc.NewExtractSecretCmd(&contract.ContractTx, scrHash)
 	cli := bitcoin.GetBtcClient(global.Current.BTCAddress)
@@ -1030,7 +1122,7 @@ func ExtractSecretBTC(app interface{}, context FunctionValues) (bool, FunctionVa
 
 }
 
-func ExtractSecretETH(app interface{}, context FunctionValues) (bool, FunctionValues) {
+func ExtractSecretETH(app interface{}, context FunctionValues, tx interface{}) (bool, FunctionValues) {
 	contract := GetETHContract(context[ETHCONTRACT])
 	//todo: make it correct scr, by extract or from local storage
 
@@ -1045,7 +1137,7 @@ func ExtractSecretETH(app interface{}, context FunctionValues) (bool, FunctionVa
 	return true, context
 }
 
-func CreateContractOLT(app interface{}, context FunctionValues) (bool, FunctionValues) {
+func CreateContractOLT(app interface{}, context FunctionValues, tx interface{}) (bool, FunctionValues) {
 	log.Warn("Not supported")
 	party := GetParty(context[MY_ACCOUNT])
 	counterParty := GetParty(context[THEM_ACCOUNT])
@@ -1090,62 +1182,27 @@ func CreateContractOLT(app interface{}, context FunctionValues) (bool, FunctionV
 	return true, context
 }
 
-func ParticipateOLT(app interface{}, context FunctionValues) (bool, FunctionValues) {
+func ParticipateOLT(app interface{}, context FunctionValues, tx interface{}) (bool, FunctionValues) {
 	log.Warn("Not supported")
 	return true, context
 }
 
-func AuditContractOLT(app interface{}, context FunctionValues) (bool, FunctionValues) {
+func AuditContractOLT(app interface{}, context FunctionValues, tx interface{}) (bool, FunctionValues) {
 	log.Warn("Not supported")
 	return true, context
 }
 
-func RedeemOLT(app interface{}, context FunctionValues) (bool, FunctionValues) {
+func RedeemOLT(app interface{}, context FunctionValues, tx interface{}) (bool, FunctionValues) {
 	log.Warn("Not supported")
 	return true, context
 }
 
-func RefundOLT(app interface{}, context FunctionValues) (bool, FunctionValues) {
+func RefundOLT(app interface{}, context FunctionValues, tx interface{}) (bool, FunctionValues) {
 	log.Warn("Not supported")
 	return true, context
 }
 
-func ExtractSecretOLT(app interface{}, context FunctionValues) (bool, FunctionValues) {
+func ExtractSecretOLT(app interface{}, context FunctionValues, tx interface{}) (bool, FunctionValues) {
 	log.Warn("Not supported")
 	return true, context
-}
-
-func WaitForChain(app interface{}, chain data.ChainType, context FunctionValues) (bool, FunctionValues) {
-	log.Info("Executing WaitForChain Command", "chain", chain, "context", context)
-	//todo : make this to check finish status, and then rollback if necessary
-	// Make sure it is pushed forward first...
-	global.Current.Sequence += 32
-
-	signers := []id.PublicKey(nil)
-	owner := GetParty(context[MY_ACCOUNT])
-	target := GetParty(context[THEM_ACCOUNT])
-	eventType := SWAP
-	nonce := GetInt64(context[NONCE])
-	stage := GetInt(context[STAGE])
-	verify := SwapVerify{
-		Event: Event{
-			Type:  eventType,
-			Key:   target.Key,
-			Nonce: nonce,
-		},
-	}
-	swap := &Swap{
-		Base: Base{
-			Type:     SWAP,
-			ChainId:  "OneLedger-Root",
-			Owner:    owner.Key,
-			Signers:  signers,
-			Sequence: global.Current.Sequence,
-		},
-		SwapMessage: verify,
-		Stage:       swapStageType(stage),
-	}
-	DelayedTransaction(SWAP, Transaction(swap), 3*lockPeriod)
-
-	return true, nil
 }
