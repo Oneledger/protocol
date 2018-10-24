@@ -1105,7 +1105,13 @@ func RefundETH(app interface{}, context FunctionValues, tx interface{}) (bool, F
 }
 
 func ExtractSecretBTC(app interface{}, context FunctionValues, tx interface{}) (bool, FunctionValues) {
-
+	buffer := GetBytes(context[CONTRACT])
+	var contract *bitcoin.HTLContract
+	tmp, err := serial.Deserialize(buffer, contract, serial.NETWORK)
+	if err != nil {
+		log.Error("Failed deserialize BTC contract", "contract", buffer)
+	}
+	contract = tmp.(*bitcoin.HTLContract)
 	scrHash := GetByte32(context[PREIMAGE])
 	cmd := htlc.NewExtractSecretCmd(&contract.ContractTx, scrHash)
 	cli := bitcoin.GetBtcClient(global.Current.BTCAddress)
@@ -1123,7 +1129,13 @@ func ExtractSecretBTC(app interface{}, context FunctionValues, tx interface{}) (
 }
 
 func ExtractSecretETH(app interface{}, context FunctionValues, tx interface{}) (bool, FunctionValues) {
-	contract := GetETHContract(context[ETHCONTRACT])
+	buffer := GetBytes(context[CONTRACT])
+	var contract *ethereum.HTLContract
+	tmp, err := serial.Deserialize(buffer, contract, serial.NETWORK)
+	if err != nil {
+		log.Error("Failed deserialize ETH contract", "contract", buffer)
+	}
+	contract = tmp.(*ethereum.HTLContract)
 	//todo: make it correct scr, by extract or from local storage
 
 	scr := contract.Extract()
