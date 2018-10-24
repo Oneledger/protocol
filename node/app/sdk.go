@@ -3,9 +3,14 @@ package app
 import (
 	"context"
 	"errors"
+	"fmt"
 
+	"github.com/Oneledger/protocol/node/action"
+	"github.com/Oneledger/protocol/node/comm"
 	"github.com/Oneledger/protocol/node/data"
 	status "github.com/Oneledger/protocol/node/err"
+	"github.com/Oneledger/protocol/node/global"
+	"github.com/Oneledger/protocol/node/id"
 	"github.com/Oneledger/protocol/node/log"
 	"github.com/Oneledger/protocol/node/sdk"
 	"github.com/Oneledger/protocol/node/sdk/pb"
@@ -44,7 +49,7 @@ func (s SDKServer) CheckAccount(ctx context.Context, request *pb.CheckAccountReq
 	}
 	account, err := s.App.Accounts.FindName(accountName)
 	if err != status.SUCCESS {
-		return nil, gstatus.Errorf(codes.NotFound, "Account %s not found", accountName)
+		return nil, errAccountNotFound(accountName)
 	}
 
 	// Get balance
@@ -68,6 +73,94 @@ func (s SDKServer) CheckAccount(ctx context.Context, request *pb.CheckAccountReq
 	}, nil
 }
 
+func (s SDKServer) Send(ctx context.Context, request *pb.SendRequest) (*pb.SendReply, error) {
+	findAccount := s.App.Accounts.FindName
+
+	currency := currencyString(request.Currency)
+	fee := data.NewCoin(request.Fee, currency)
+	gas := data.NewCoin(request.Gas, currency)
+	sendAmount := data.NewCoin(request.Amount, currency)
+
+	// Get party & counterparty accounts
+	partyAccount, err := findAccount(request.Party)
+	if err != status.SUCCESS {
+		return nil, errAccountNotFound(request.Party)
+	}
+
+	counterPartyAccount, err := findAccount(request.CounterParty)
+	if err != status.SUCCESS {
+		return nil, errAccountNotFound(request.CounterParty)
+	}
+
+	send, errr := prepareSend(partyAccount, counterPartyAccount, sendAmount, fee, gas, s.App)
+	if errr != nil {
+		return &pb.SendReply{Ok: false, Reason: errr.Error()}, nil
+	}
+
+	packet := action.SignAndPack(action.SEND, send)
+
+	// TODO: Include ResultBroadcastTxCommit in SendReply
+	comm.Broadcast(packet)
+
+	return &pb.SendReply{
+		Ok:     true,
+		Reason: "",
+	}, nil
+}
+
+func prepareSend(
+	party id.Account,
+	counterParty id.Account,
+	sendAmount data.Coin,
+	fee data.Coin,
+	gas data.Coin,
+	app *Application,
+) (*action.Send, error) {
+	findBalance := func(key id.AccountKey) (*data.Balance, error) {
+		balance := app.Utxo.Find(data.DatabaseKey(key))
+		if balance == nil {
+			return nil, fmt.Errorf("Balance not found for key %x", key)
+		}
+		return balance, nil
+	}
+
+	pKey := party.AccountKey()
+	pBalance, errr := findBalance(pKey)
+	if errr != nil {
+		return nil, fmt.Errorf("Account %s has insufficient balance", party.Name())
+	}
+
+	cpKey := counterParty.AccountKey()
+	cpBalance, errr := findBalance(cpKey)
+	if errr != nil {
+		return nil, fmt.Errorf("Account %s has insufficient balance", counterParty.Name())
+	}
+
+	inputs := []action.SendInput{
+		action.NewSendInput(pKey, pBalance.Amount),
+		action.NewSendInput(cpKey, cpBalance.Amount),
+	}
+
+	outputs := []action.SendOutput{
+		action.NewSendOutput(pKey, pBalance.Amount.Minus(sendAmount)),
+		action.NewSendOutput(cpKey, cpBalance.Amount.Plus(sendAmount)),
+	}
+
+	return &action.Send{
+		Base: action.Base{
+			Type:    action.SEND,
+			ChainId: ChainId,
+			// GetSigners not implemneted
+			Signers:  nil,
+			Sequence: global.Current.Sequence,
+		},
+		Inputs:  inputs,
+		Outputs: outputs,
+		Fee:     fee,
+		Gas:     gas,
+	}, nil
+}
+
 func currencyProtobuf(c data.Currency) pb.Currency {
 	switch c.Chain {
 	case data.ONELEDGER:
@@ -80,5 +173,22 @@ func currencyProtobuf(c data.Currency) pb.Currency {
 	// Shouldn't ever reach here
 	log.Error("Converting nonexistent currency!!!")
 	return pb.Currency_OLT
+}
 
+// Functions for returning gRPC errors
+func errAccountNotFound(a string) error {
+	return gstatus.Errorf(codes.NotFound, "Account %s not found")
+}
+
+func currencyString(c pb.Currency) string {
+	switch c {
+	case pb.Currency_OLT:
+		return "OLT"
+	case pb.Currency_ETH:
+		return "ETH"
+	case pb.Currency_BTC:
+		return "BTC"
+	}
+
+	return "OLT"
 }

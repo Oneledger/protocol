@@ -68,4 +68,6 @@ func TestSDK(t *testing.T) {
 		assert.Equal(t, err, nil)
 		assert.Equal(t, out, expectedOut, "Account details should be the same")
 	})
+
+	//t.Run("SDK_Send", func(t *testing.T) {})
 }

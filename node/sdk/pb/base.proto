@@ -35,8 +35,32 @@ message StatusReply {
     bool ok = 1;
 }
 
+message SendRequest {
+    string party = 1;
+    string counterParty = 2;
+    Currency currency = 3;
+    int64 amount = 4;
+    int64 gas = 5;
+    int64 fee = 6;
+}
+
+// Just send an ok back for now
+message SendReply {
+    bool ok = 1;
+    string reason = 2;
+}
+
+message SwapRequest {}
+message SwapReply {}
+
+message RegisterRequest {}
+message RegisterReply {}
+
 service SDK {
     // Simple health-check to see if the server is OK
     rpc Status(StatusRequest) returns (StatusReply);
     rpc CheckAccount(CheckAccountRequest) returns (CheckAccountReply);
+    rpc Send(SendRequest) returns (SendReply);
+//    rpc Register(RegisterRequest) returns (RegisterReply);
+//    rpc Swap(SwapRequest) returns (SwapReply);
 }
