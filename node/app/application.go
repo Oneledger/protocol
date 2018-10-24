@@ -12,6 +12,7 @@ import (
 	"github.com/Oneledger/protocol/node/action"
 	"github.com/Oneledger/protocol/node/convert"
 	"github.com/Oneledger/protocol/node/data"
+	"github.com/Oneledger/protocol/node/err"
 	"github.com/Oneledger/protocol/node/global"
 	"github.com/Oneledger/protocol/node/id"
 	"github.com/Oneledger/protocol/node/log"
@@ -31,13 +32,13 @@ func init() {
 type Application struct {
 	types.BaseApplication
 
-	Admin      *data.Datastore  // any administrative parameters
-	Status     *data.Datastore  // current state of any composite transactions (pending, verified, etc.)
+	Admin      data.Datastore   // any administrative parameters
+	Status     data.Datastore   // current state of any composite transactions (pending, verified, etc.)
 	Identities *id.Identities   // Keep a higher-level identity for a given user
 	Accounts   *id.Accounts     // Keep all of the user accounts locally for their node (identity management)
 	Utxo       *data.ChainState // unspent transction output (for each type of coin)
-	Event      *data.Datastore  // Event for any action that need to be tracked
-	Contract   *data.Datastore  // contract for reuse.
+	Event      data.Datastore   // Event for any action that need to be tracked
+	Contract   data.Datastore   // contract for reuse.
 }
 
 // NewApplicationContext initializes a new application
@@ -55,18 +56,9 @@ func NewApplication() *Application {
 
 // Initial the state of the application from persistent data
 func (app Application) Initialize() {
-	param := app.Admin.Load(data.DatabaseKey("NodeAccountName"))
+	param := app.Admin.Get(data.DatabaseKey("NodeAccountName"))
 	if param != nil {
-		var name string
-
-		buffer, err := serial.Deserialize(param, &name, serial.NETWORK)
-		if err != nil {
-			log.Error("Failed to deserialize persistent data")
-		}
-
-		if buffer != nil {
-			global.Current.NodeAccountName = *(buffer.(*string))
-		}
+		global.Current.NodeAccountName = param.(string)
 	}
 }
 
@@ -81,8 +73,8 @@ func (app Application) SetupState(stateBytes []byte) {
 
 	var base BasicState
 
-	des, err := serial.Deserialize(stateBytes, &base, serial.JSON)
-	if err != nil {
+	des, errx := serial.Deserialize(stateBytes, &base, serial.JSON)
+	if errx != nil {
 		log.Fatal("Failed to deserialize stateBytes during SetupState")
 	}
 
@@ -96,12 +88,19 @@ func (app Application) SetupState(stateBytes []byte) {
 	// TODO: This should probably only occur on the Admin node, for other nodes how do I know the key?
 	// Register the identity and account first
 	RegisterLocally(&app, state.Account, "OneLedger", data.ONELEDGER, publicKey, privateKey)
-	account, _ := app.Accounts.FindName(state.Account + "-OneLedger")
+	account, status := app.Accounts.FindName(state.Account + "-OneLedger")
+	if status != err.SUCCESS {
+		log.Fatal("Recently Added Account is missing", "name", state.Account, "status", status)
+	}
 
 	// Use the account key in the database.
 	balance := data.NewBalance(state.Amount, "OLT")
+	log.Dump("Setting key", account.AccountKey(), balance)
+
 	app.Utxo.Set(account.AccountKey(), balance)
-	app.Utxo.Commit()
+
+	// TODO: Until a block is commited, this data is not persistent
+	//app.Utxo.Commit()
 
 	log.Info("Genesis State UTXO database", "balance", balance)
 }
@@ -141,8 +140,11 @@ func (app Application) Info(req RequestInfo) ResponseInfo {
 	return ResponseInfo{
 		Data:    info.JSON(),
 		Version: convert.GetString64(app.Utxo.Version),
-		//LastBlockHeight: int64(app.Utxo.Version),
-		LastBlockHeight: int64(0),
+
+		// The version of the tree, needs to match the height of the chain
+		//LastBlockHeight: int64(0),
+		LastBlockHeight: int64(app.Utxo.Version),
+
 		// TODO: Should return a valid AppHash
 		//LastBlockAppHash: app.Utxo.Hash,
 	}
@@ -204,12 +206,17 @@ func (app Application) BeginBlock(req RequestBeginBlock) ResponseBeginBlock {
 
 	newChainId := action.Message(req.Header.ChainID)
 
-	chainId := app.Admin.Load(chainKey)
+	chainId := app.Admin.Get(chainKey)
 
 	if chainId == nil {
-		chainId = app.Admin.Store(chainKey, newChainId)
+		session := app.Admin.Begin()
+		session.Set(chainKey, newChainId)
+		// TODO: Need a commit?
 
-	} else if bytes.Compare(chainId, newChainId) != 0 {
+		// TODO: This is questionable?
+		chainId = newChainId
+
+	} else if bytes.Compare(chainId.([]byte), newChainId) != 0 {
 		log.Warn("Mismatching chains", "chainId", chainId, "newChainId", newChainId)
 	}
 	return ResponseBeginBlock{}

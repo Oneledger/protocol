@@ -25,10 +25,6 @@ func init() {
 
 	// TODO: bit.Int is messy because it isn't entirely exportable
 	serial.RegisterIgnore(big.Int{})
-
-	// TODO: Hard coded to ignore big.Int, needs to be fixed...
-	//serial.Register(big.Int{})
-
 	serial.Register(big.Word(0))
 	entry := serial.GetTypeEntry("[]big.Word", 1)
 	serial.RegisterForce("big.nat", serial.ARRAY, entry.DataType, nil, nil)
@@ -36,8 +32,10 @@ func init() {
 
 type Coins []Coin
 
+// TODO: Add in the base for all arithmatic operations (encapsulated)
 var OLTBase *big.Float = big.NewFloat(1000000000000000000)
 
+// TODO: These need to be driven from a domain database, also they are many-to-one with chains
 var Currencies map[string]Currency = map[string]Currency{
 	"OLT": Currency{"OLT", ONELEDGER, 0},
 	"BTC": Currency{"BTC", BITCOIN, 1},

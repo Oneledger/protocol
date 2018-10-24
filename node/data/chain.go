@@ -1,5 +1,7 @@
 /*
 	Copyright 2017 - 2018 OneLedger
+
+	Define chains as they are seen in OneLedher
 */
 package data
 
@@ -7,7 +9,7 @@ import "github.com/Oneledger/protocol/node/serial"
 
 type ChainType int
 
-// TODO: These should be in a database
+// TODO: These should be in a domain database
 const (
 	UNKNOWN ChainType = iota
 	ONELEDGER
@@ -21,6 +23,7 @@ type Chain struct {
 	Features    []string
 }
 
+// A specific node in a chain
 type ChainNode struct {
 	ChainType ChainType
 	Location  string

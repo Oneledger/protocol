@@ -16,7 +16,7 @@ import (
 
 // The persistent collection of all accounts known by this node
 type Identities struct {
-	data *data.Datastore
+	store data.Datastore
 }
 
 // A user of a OneLedger node, but not necessarily the chain itself.
@@ -40,28 +40,23 @@ func init() {
 
 // Initialize or reconnect to the database
 func NewIdentities(name string) *Identities {
-	data := data.NewDatastore(name, data.PERSISTENT)
+	store := data.NewDatastore(name, data.PERSISTENT)
 
 	return &Identities{
-		data: data,
+		store: store,
 	}
 }
 
 func (ids *Identities) Add(identity *Identity) {
-
-	buffer, err := serial.Serialize(identity, serial.PERSISTENT)
-	if err != nil {
-		log.Error("Serialize Failed", "err", err)
-		return
-	}
-
 	key := identity.Key()
-	ids.data.Store(key, buffer)
-	ids.data.Commit()
+
+	session := ids.store.Begin()
+	session.Set(key, identity)
+	session.Commit()
 }
 
 func (ids *Identities) Close() {
-	ids.data.Close()
+	ids.store.Close()
 }
 
 func (ids *Identities) Delete() {
@@ -70,7 +65,7 @@ func (ids *Identities) Delete() {
 func (ids *Identities) Exists(name string) bool {
 	id := NewIdentity(name, "", true, "", nil)
 
-	value := ids.data.Load(id.Key())
+	value := ids.store.Get(id.Key())
 	if value != nil {
 		return true
 	}
@@ -81,31 +76,20 @@ func (ids *Identities) Exists(name string) bool {
 func (ids *Identities) FindName(name string) (*Identity, err.Code) {
 	id := NewIdentity(name, "", true, "", nil)
 
-	value := ids.data.Load(id.Key())
+	value := ids.store.Get(id.Key())
 	if value != nil {
-		identity := &Identity{}
-		base, status := serial.Deserialize(value, identity, serial.PERSISTENT)
-		if status != nil {
-			log.Fatal("Failed to deserialize Identity: ", status)
-		}
-
-		return base.(*Identity), err.SUCCESS
+		return value.(*Identity), err.SUCCESS
 	}
-
-	return nil, err.SUCCESS
+	return nil, err.MISSING_DATA
 }
 
 func (ids *Identities) FindAll() []*Identity {
-	keys := ids.data.List()
+	keys := ids.store.FindAll()
 	size := len(keys)
 	results := make([]*Identity, size, size)
 	for i := 0; i < size; i++ {
-		identity := &Identity{}
-		base, err := serial.Deserialize(ids.data.Load(keys[i]), identity, serial.PERSISTENT)
-		if err != nil {
-			log.Fatal("Failed to deserialize Identities: ", err)
-		}
-		results[i] = base.(*Identity)
+		result := ids.store.Get(keys[i])
+		results[i] = result.(*Identity)
 	}
 	return results
 }

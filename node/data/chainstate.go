@@ -23,7 +23,7 @@ var count int
 
 type ChainState struct {
 	Name string
-	Type DatastoreType
+	Type StorageType
 
 	Delivered *iavl.MutableTree // Build us a new set of transactions
 	database  *db.GoLevelDB
@@ -37,7 +37,7 @@ type ChainState struct {
 	Hash       []byte
 }
 
-func NewChainState(name string, newType DatastoreType) *ChainState {
+func NewChainState(name string, newType StorageType) *ChainState {
 	count = 0
 	chain := &ChainState{Name: name, Type: newType}
 	chain.reset()
@@ -53,7 +53,7 @@ func (state *ChainState) Test(key DatabaseKey, balance Balance) bool {
 }
 */
 
-// Do this for the Delivery side
+// Do this only for the Delivery side
 func (state *ChainState) Set(key DatabaseKey, balance Balance) {
 	buffer, err := serial.Serialize(balance, serial.PERSISTENT)
 	if err != nil {
@@ -170,7 +170,7 @@ func (state *ChainState) reset() {
 }
 
 // Create or attach to a database
-func initializeDatabase(name string, newType DatastoreType) (*iavl.MutableTree, *db.GoLevelDB) {
+func initializeDatabase(name string, newType StorageType) (*iavl.MutableTree, *db.GoLevelDB) {
 	// TODO: Assuming persistence for right now
 	storage, err := db.NewGoLevelDB("OneLedger-"+name, global.Current.RootDir)
 	if err != nil {
