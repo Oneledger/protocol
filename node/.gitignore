@@ -8,3 +8,4 @@ testOlclient
 sequence
 .vscode/
 test.out
+*.out

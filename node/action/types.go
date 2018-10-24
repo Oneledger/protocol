@@ -161,19 +161,20 @@ func SaveEvent(app interface{}, eventKey Event, status bool) {
 
 	log.Debug("Save Event", "key", eventKey)
 
-	events.Store(eventKey.ToKey(), []byte(strconv.FormatBool(status)))
-	events.Commit()
+	session := events.Begin()
+	session.Set(eventKey.ToKey(), []byte(strconv.FormatBool(status)))
+	session.Commit()
 }
 
 func FindEvent(app interface{}, eventKey Event) bool {
 	log.Debug("Load Event", "key", eventKey)
 	events := GetEvent(app)
-	result := events.Load(eventKey.ToKey())
+	result := events.Get(eventKey.ToKey())
 	if result == nil {
 		return false
 	}
 
-	r, err := strconv.ParseBool(string(result))
+	r, err := strconv.ParseBool(result.(string))
 	if err != nil {
 		return false
 	}
@@ -185,18 +186,18 @@ func SaveContract(app interface{}, contractKey []byte, nonce int64, contract com
 	//todo: add nonce to the key to differentiate swap between same conterparty
 	contracts := GetContract(app)
 	log.Debug("Save contract", "key", contractKey)
-	contracts.Store(contractKey, contract.ToMessage())
-	contracts.Commit()
+	session := contracts.Begin()
+	session.Set(contractKey, contract.ToMessage())
+	session.Commit()
 }
 
 func FindContract(app interface{}, contractKey []byte, nonce int64) Message {
 	//todo: add nonce to the key to differentiate swap between same conterparty
 	log.Debug("Load Contract", "key", contractKey)
 	contracts := GetContract(app)
-	result := contracts.Load(contractKey)
+	result := contracts.Get(contractKey)
 	if result == nil {
 		return nil
 	}
-
-	return result
+	return result.([]byte)
 }

@@ -32,7 +32,6 @@ func RegisterLocally(app *Application, name string, scope string, chain data.Cha
 	if account == nil {
 		account = id.NewAccount(chain, accountName, publicKey, privateKey)
 		app.Accounts.Add(account)
-		//app.Accounts.Commit()
 
 		log.Debug("Created New Account", "key", account.AccountKey(), "account", account)
 
@@ -46,8 +45,10 @@ func RegisterLocally(app *Application, name string, scope string, chain data.Cha
 				log.Error("Failed to Serialize accountName")
 			}
 			log.Debug("Admin store", "data.DatabaseKey", data.DatabaseKey("NodeAccountName"), "buffer", buffer)
-			app.Admin.Store(data.DatabaseKey("NodeAccountName"), buffer)
-			app.Admin.Commit()
+
+			session := app.Admin.Begin()
+			session.Set(data.DatabaseKey("NodeAccountName"), buffer)
+			session.Commit()
 		}
 
 		status = true
@@ -60,7 +61,9 @@ func RegisterLocally(app *Application, name string, scope string, chain data.Cha
 	if chain == data.ONELEDGER && !app.Utxo.Exists(account.AccountKey()) {
 		balance := data.NewBalance(0, "OLT")
 		app.Utxo.Set(account.AccountKey(), balance)
-		app.Utxo.Commit()
+
+		// TODO: Nothing is committed until a block is...
+		//app.Utxo.Commit()
 		status = true
 	}
 
@@ -71,6 +74,8 @@ func RegisterLocally(app *Application, name string, scope string, chain data.Cha
 			global.Current.NodeName, account.AccountKey())
 		global.Current.NodeIdentity = name
 		app.Identities.Add(identity)
+
+		// TODO: Not necessary?
 		//app.Identities.Commit()
 
 		log.Debug("Registered a New Identity", "name", name, "identity", identity)
@@ -81,6 +86,8 @@ func RegisterLocally(app *Application, name string, scope string, chain data.Cha
 	if chain != data.ONELEDGER {
 		identity.SetAccount(chain, account)
 		app.Identities.Add(identity)
+
+		// TODO: Not necessary?
 		//app.Identities.Commit()
 	}
 	return status

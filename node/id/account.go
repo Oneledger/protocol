@@ -23,19 +23,19 @@ type Signature = []byte
 
 // The persistent collection of all accounts known by this node
 type Accounts struct {
-	data *data.Datastore
+	store data.Datastore
 }
 
 func NewAccounts(name string) *Accounts {
-	data := data.NewDatastore(name, data.PERSISTENT)
+	store := data.NewDatastore(name, data.PERSISTENT)
 	return &Accounts{
-		data: data,
+		store: store,
 	}
 }
 
 func (acc *Accounts) Add(account Account) {
-	if value := acc.data.Load(account.AccountKey()); value != nil {
-		log.Fatal("Key exists already", "key", account.AccountKey())
+	if value := acc.store.Get(account.AccountKey()); value != nil {
+		//log.Fatal("Key exists already", "key", account.AccountKey())
 		log.Debug("Key is being updated", "key", account.AccountKey())
 	}
 
@@ -44,20 +44,18 @@ func (acc *Accounts) Add(account Account) {
 		log.Fatal("Failed to Deserialize account: ", err)
 	}
 
-	acc.data.Store(account.AccountKey(), buffer)
-	acc.data.Commit()
+	session := acc.store.Begin()
+	session.Set(account.AccountKey(), buffer)
+	session.Commit()
 }
 
 func (acc *Accounts) Delete(account Account) {
 }
 
 func (acc *Accounts) Exists(newType data.ChainType, name string) bool {
+	// TODO: Probably shouldn't need to create a fake account here...
 	account := NewAccount(newType, name, NilPublicKey(), NilPrivateKey())
-
-	if value := acc.data.Load(account.AccountKey()); value != nil {
-		return true
-	}
-	return false
+	return acc.store.Exists(account.AccountKey())
 }
 
 func (acc *Accounts) Find(account Account) (Account, err.Code) {
@@ -75,6 +73,7 @@ func (acc *Accounts) FindNameOnChain(name string, chain data.ChainType) (Account
 
 	// TODO: Should be replaced with a real index
 	for _, entry := range acc.FindAll() {
+		log.Dump("Found ", entry)
 		if Matches(entry, name, chain) {
 			return entry, err.SUCCESS
 		}
@@ -97,50 +96,15 @@ func Matches(account Account, name string, chain data.ChainType) bool {
 }
 
 func (acc *Accounts) FindKey(key AccountKey) (Account, err.Code) {
-
-	value := acc.data.Load(key)
-	account := Account(nil)
-
-	result, status := serial.Deserialize(value, account, serial.PERSISTENT)
-
-	if status != nil {
-		log.Fatal("Failed to Deserialize Account", "status", status)
-	}
-
-	//log.Dump("Deserialized", value, result, account)
+	interim := acc.store.Get(key)
+	log.Dump("The result is", interim)
+	result := interim.(Account)
 	return result.(Account), err.SUCCESS
-
-	/*
-
-			if value != nil {
-
-				// TODO: Should be switchable
-				accountOneLedger := &AccountOneLedger{}
-				base, _ := serial.Deserialize(value, accountOneLedger, serial.PERSISTENT)
-				if base != nil {
-					return base.(Account), err.SUCCESS
-				}
-
-				accountEthereum := &AccountEthereum{}
-				base, _ = serial.Deserialize(value, accountEthereum, serial.PERSISTENT)
-				if base != nil {
-					return base.(Account), err.SUCCESS
-				}
-
-				accountBitcoin := &AccountBitcoin{}
-				base, _ = serial.Deserialize(value, accountBitcoin, serial.PERSISTENT)
-				if base != nil {
-					return base.(Account), err.SUCCESS
-				}
-				log.Fatal("Can't deserialize", "value", value)
-			}
-		return nil, err.SUCCESS
-	*/
 }
 
 func (acc *Accounts) FindAll() []Account {
-	log.Debug("Begin Account FindAll")
-	keys := acc.data.List()
+	keys := acc.store.FindAll()
+	log.Dump("Begin Account FindAll", keys)
 
 	size := len(keys)
 	results := make([]Account, size, size)
@@ -150,17 +114,6 @@ func (acc *Accounts) FindAll() []Account {
 		if status != err.SUCCESS {
 			log.Fatal("Missing Account", "status", status, "account", account)
 		}
-
-		/*
-			// TODO: This is dangerous...
-			account := &AccountOneLedger{}
-
-			base, err := serial.Deserialize(acc.data.Load(keys[i]), account, serial.PERSISTENT)
-			if err != nil {
-				log.Fatal("Failed to Deserialize Account at index ", "i", i, "err", err)
-			}
-		*/
-
 		results[i] = account
 	}
 	return results
