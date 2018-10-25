@@ -232,8 +232,8 @@ type AccountBase struct {
 	Name string         `json:"name"`
 
 	// TODO: Should handle key polymorphism properly..
-	PublicKey  ED25519PublicKey  `json:"publicKey"`
-	PrivateKey ED25519PrivateKey `json:"privateKey"`
+	PublicKey  PublicKeyED25519  `json:"publicKey"`
+	PrivateKey PrivateKeyED25519 `json:"privateKey"`
 }
 
 func init() {
@@ -244,7 +244,7 @@ func init() {
 }
 
 // Create a new account for a given chain
-func NewAccount(newType data.ChainType, name string, key ED25519PublicKey, priv ED25519PrivateKey) Account {
+func NewAccount(newType data.ChainType, name string, key PublicKeyED25519, priv PrivateKeyED25519) Account {
 	switch newType {
 
 	case data.ONELEDGER:
