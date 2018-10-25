@@ -68,7 +68,7 @@ func TestIdentity(t *testing.T) {
 }
 
 type KeyBase struct {
-	Key ED25519PublicKey
+	Key PublicKeyED25519
 }
 
 func init() {

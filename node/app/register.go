@@ -15,7 +15,7 @@ import (
 
 // Register Identities and Accounts from the user.
 func RegisterLocally(app *Application, name string, scope string, chain data.ChainType,
-	publicKey id.ED25519PublicKey, privateKey id.ED25519PrivateKey) bool {
+	publicKey id.PublicKeyED25519, privateKey id.PrivateKeyED25519) bool {
 
 	status := false
 
