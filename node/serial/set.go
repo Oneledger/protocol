@@ -25,7 +25,11 @@ func Alloc(dataType string, size int) interface{} {
 
 	switch entry.Category {
 	case UNKNOWN:
+		DumpTypes()
 		log.Fatal("Unknown datatype", "dataType", dataType)
+
+	case INTERFACE:
+		return nil
 
 	case PRIMITIVE:
 		// Don't need to alloc, only containers
@@ -81,7 +85,6 @@ func Set(parent interface{}, fieldName string, child interface{}) (status bool) 
 	switch kind {
 
 	case reflect.Struct:
-		//log.Dump("The parent", parent, kind)
 		return SetStruct(parent, fieldName, child)
 
 	case reflect.Map:
@@ -130,7 +133,6 @@ func SetStruct(parent interface{}, fieldName string, child interface{}) bool {
 
 	if field.Type().Kind() == reflect.Interface {
 		// When setting to a generic interface{}
-
 		value := reflect.ValueOf(child)
 		field.Set(value)
 
@@ -327,8 +329,17 @@ func SetSlice(parent interface{}, index int, child interface{}) bool {
 		log.Warn("Reallocating Slice")
 		element = reflect.MakeSlice(element.Index(0).Type(), index+1, index+1)
 	}
-	newValue := ConvertValue(child, element.Index(index).Type())
-	element.Index(index).Set(newValue)
+
+	if element.Index(index).Type().Kind() == reflect.Interface {
+		// When setting to a generic interface{}
+
+		value := reflect.ValueOf(child)
+		element.Index(index).Set(value)
+
+	} else {
+		newValue := ConvertValue(child, element.Index(index).Type())
+		element.Index(index).Set(newValue)
+	}
 
 	return true
 }

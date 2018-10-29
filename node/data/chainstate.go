@@ -32,9 +32,11 @@ type ChainState struct {
 	Committed *iavl.MutableTree // Last Persistent Tree
 
 	// Last committed values
-	Version    int64
-	TreeHeight int
-	Hash       []byte
+	LastVersion int64
+	Version     int64
+	LastHash    []byte
+	Hash        []byte
+	TreeHeight  int
 }
 
 func NewChainState(name string, newType StorageType) *ChainState {
@@ -124,11 +126,9 @@ func (state *ChainState) Commit() ([]byte, int64) {
 	}
 
 	// TODO: Force the database to completely close, then repoen it.
-	/*
-		state.database.Close()
-		state.database = nil
-		state.reset()
-	*/
+	state.database.Close()
+	state.database = nil
+	state.reset()
 
 	return hash, version
 }
@@ -163,9 +163,14 @@ func (state *ChainState) reset() {
 	// TODO: Can I stick the delivered database into the checked tree?
 
 	// Essentially, the last commited value...
+	state.LastHash = state.Hash
+	state.LastVersion = state.Version
+
+	// Essentially, the last commited value...
 	state.Hash = state.Delivered.Hash()
 	state.Version = state.Delivered.Version64()
 	state.TreeHeight = state.Delivered.Height()
+
 	log.Debug("Initialized Database", "version", state.Version, "tree_height", state.TreeHeight, "hash", state.Hash)
 }
 

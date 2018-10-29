@@ -36,6 +36,8 @@ olclient testmint -s $SEQ -a $addrCarol --party Carol --amount 25003 --currency 
 SEQ=`$CMD/nextSeq`
 olclient testmint -s $SEQ -a $addrDavid --party David --amount 12004 --currency OLT 
 
+echo "Finished Minting"
+
 sleep 10
 
 olclient account -a $addrAlice 

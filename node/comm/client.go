@@ -12,6 +12,7 @@ import (
 
 	"github.com/Oneledger/protocol/node/global"
 	"github.com/Oneledger/protocol/node/log"
+	"github.com/Oneledger/protocol/node/serial"
 	client "github.com/tendermint/tendermint/abci/client"
 	"github.com/tendermint/tendermint/abci/types"
 	rpcclient "github.com/tendermint/tendermint/rpc/client"
@@ -23,7 +24,7 @@ var _ *client.Client
 
 // Generic Client interface, allows SetOption
 func NewAppClient() client.Client {
-	log.Debug("New Client", "address", global.Current.AppAddress, "transport", global.Current.Transport)
+	//log.Debug("New Client", "address", global.Current.AppAddress, "transport", global.Current.Transport)
 
 	// TODO: Try multiple times before giving up
 	client, err := client.NewClient(global.Current.AppAddress, global.Current.Transport, true)
@@ -45,7 +46,6 @@ func SetOption(key string, value string) {
 		Value: value,
 	}
 
-	// response := client.SetOptionAsync(options)
 	response, err := client.SetOptionSync(options)
 	log.Debug("Have Set Option")
 
@@ -67,26 +67,35 @@ func GetClient() (client *rpcclient.HTTP) {
 		}
 	}()
 
-	/*
-		if cachedClient != nil {
-			log.Debug("Cached RpcClient", "address", global.Current.RpcAddress)
-			return cachedClient
-		}
-	*/
+	if cachedClient != nil {
+		//log.Debug("Cached RpcClient", "address", global.Current.RpcAddress)
+		return cachedClient
+	}
 
 	// TODO: Try multiple times before giving up
 
-	for i := 0; i < 3; i++ {
+	for i := 0; i < 200; i++ {
 		cachedClient = rpcclient.NewHTTP(global.Current.RpcAddress, "/websocket")
 
-		log.Debug("RPC Client", "address", global.Current.RpcAddress, "client", cachedClient)
 		if cachedClient != nil {
+			log.Debug("RPC Client", "address", global.Current.RpcAddress, "client", cachedClient)
 			break
 		}
 
 		log.Warn("Retrying RPC Client", "address", global.Current.RpcAddress)
 		time.Sleep(1 * time.Second)
 	}
+
+	for i := 0; i < 200; i++ {
+		result, err := cachedClient.Status()
+		if err == nil {
+			log.Debug("Connected", "result", result)
+			break
+		}
+		log.Warn("Waiting for RPC Client", "address", global.Current.RpcAddress)
+		time.Sleep(1 * time.Second)
+	}
+
 	return cachedClient
 }
 
@@ -106,32 +115,67 @@ func BroadcastAsync(packet []byte) *ctypes.ResultBroadcastTx {
 }
 
 // A sync'ed broadcast to the chain that waits for the commit to happen
-func Broadcast(packet []byte) *ctypes.ResultBroadcastTxCommit {
+func BroadcastCommit(packet []byte) *ctypes.ResultBroadcastTxCommit {
 	client := GetClient()
 
 	log.Debug("Start Synced Broadcast", "packet", packet)
 
+	// TODO: result, err := client.BroadcastTxSync(packet)
 	result, err := client.BroadcastTxCommit(packet)
 	if err != nil {
 		log.Error("Error", "err", err)
 	}
 
-	log.Debug("Synced Broadcast", "packet", packet, "result", result)
+	log.Debug("Finished Synced Broadcast", "packet", packet, "result", result)
+
+	return result
+}
+
+// A sync'ed broadcast to the chain that waits for the commit to happen
+func Broadcast(packet []byte) *ctypes.ResultBroadcastTx {
+	client := GetClient()
+
+	log.Debug("Start Synced Broadcast", "packet", packet)
+
+	result, err := client.BroadcastTxSync(packet)
+	if err != nil {
+		log.Error("Error", "err", err)
+	}
+
+	log.Debug("Finished Synced Broadcast", "packet", packet, "result", result)
 
 	return result
 }
 
 // Send a very specific query
-func Query(path string, packet []byte) (res *ctypes.ResultABCIQuery) {
-	client := GetClient()
+func Query(path string, packet []byte) interface{} {
 
-	result, err := client.ABCIQuery(path, packet)
-	if err != nil {
-		log.Error("ABCi Query Error", "path", path, "err", err)
-		return nil
+	var response *ctypes.ResultABCIQuery
+	var err error
+
+	for i := 0; i < 20; i++ {
+		client := GetClient()
+		response, err = client.ABCIQuery(path, packet)
+		if err != nil {
+			log.Error("ABCi Query Error", "path", path, "err", err)
+			return nil
+		}
+		if response != nil {
+			break
+		}
+		time.Sleep(2 * time.Second)
 	}
 
-	//log.Debug("ABCi Query", "path", path, "packet", packet, "result", result)
+	if response == nil {
+		return "No results for " + path + " and " + string(packet)
+	}
+
+	var prototype interface{}
+	result, err := serial.Deserialize(response.Response.Value, prototype, serial.CLIENT)
+	if err != nil {
+		log.Error("Failed to deserialize IdentityQuery:")
+		return "Failed"
+	}
 
 	return result
 }

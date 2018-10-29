@@ -73,6 +73,10 @@ func convertData(data interface{}) []byte {
 }
 
 func unconvertData(data []byte) interface{} {
+	if data == nil || string(data) == "" {
+		return nil
+	}
+
 	//log.Dump("Unconvert, The data is", data)
 	//debug.PrintStack()
 	var proto interface{}
@@ -81,7 +85,6 @@ func unconvertData(data []byte) interface{} {
 		//log.Dump("Unconvert later, The data is", data)
 		log.Fatal("Persistent Deserialization Failed", "err", err, "data", data)
 	}
-	log.Dump("The result is", result)
 	return result
 }
 

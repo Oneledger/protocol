@@ -36,10 +36,15 @@ func init() {
 }
 
 func NewSendInput(accountKey id.AccountKey, amount data.Coin) SendInput {
+
 	if bytes.Equal(accountKey, []byte("")) {
-		log.Warn("Missing AccountKey")
+		log.Fatal("Missing AccountKey", "key", accountKey, "amount", amount)
 		// TODO: Error handling should be better
 		return SendInput{}
+	}
+
+	if !amount.IsValid() {
+		log.Fatal("Missing Amount", "key", accountKey, "amount", amount)
 	}
 
 	return SendInput{
@@ -59,10 +64,15 @@ func init() {
 }
 
 func NewSendOutput(accountKey id.AccountKey, amount data.Coin) SendOutput {
+
 	if bytes.Equal(accountKey, []byte("")) {
-		log.Warn("Missing AccountKey")
+		log.Fatal("Missing AccountKey", "key", accountKey, "amount", amount)
 		// TODO: Error handling should be better
 		return SendOutput{}
+	}
+
+	if !amount.IsValid() {
+		log.Fatal("Missing Amount", "key", accountKey, "amount", amount)
 	}
 
 	return SendOutput{
@@ -76,13 +86,19 @@ func CheckBalance(app interface{}, accountKey id.AccountKey, amount data.Coin) b
 
 	balance := utxo.Find(accountKey)
 	if balance == nil {
-		log.Warn("Balance Missing", "key", accountKey, "amount", amount, "balance", balance)
-		return false
+		// New accounts don't have a balance until the first transaction
+		log.Debug("New Balance", "key", accountKey, "amount", amount, "balance", balance)
+		interim := data.NewBalance(0, "OLT")
+		balance = &interim
+		if !balance.Amount.Equals(amount) {
+			return false
+		}
+		return true
 	}
 
 	if !balance.Amount.Equals(amount) {
 		log.Warn("Balance Mismatch", "key", accountKey, "amount", amount, "balance", balance)
-		//return false
+		return false
 	}
 	return true
 }

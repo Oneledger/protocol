@@ -53,6 +53,13 @@ func GetBaseValue(base interface{}) reflect.Value {
 func GetBaseTypeString(base interface{}) string {
 	// Need Value.Type, not TypeOf
 	valueOf := GetBaseValue(base)
+
+	if !valueOf.IsValid() {
+		typeOf := reflect.TypeOf(base)
+		log.Dump("Have an invalid type", base, valueOf, typeOf)
+		return typeOf.String()
+	}
+
 	return valueOf.Type().String()
 }
 

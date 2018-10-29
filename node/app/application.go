@@ -10,10 +10,8 @@ import (
 
 	"github.com/Oneledger/protocol/node/abci"
 	"github.com/Oneledger/protocol/node/action"
-	"github.com/Oneledger/protocol/node/convert"
 	"github.com/Oneledger/protocol/node/data"
 	"github.com/Oneledger/protocol/node/err"
-	"github.com/Oneledger/protocol/node/global"
 	"github.com/Oneledger/protocol/node/id"
 	"github.com/Oneledger/protocol/node/log"
 	"github.com/Oneledger/protocol/node/serial"
@@ -39,6 +37,8 @@ type Application struct {
 	Utxo       *data.ChainState // unspent transction output (for each type of coin)
 	Event      data.Datastore   // Event for any action that need to be tracked
 	Contract   data.Datastore   // contract for reuse.
+
+	LastHeader types.Header // Tendermint last header info
 }
 
 // NewApplicationContext initializes a new application
@@ -58,7 +58,8 @@ func NewApplication() *Application {
 func (app Application) Initialize() {
 	param := app.Admin.Get(data.DatabaseKey("NodeAccountName"))
 	if param != nil {
-		global.Current.NodeAccountName = param.(string)
+		log.Dump("The parameter is", param)
+		//global.Current.NodeAccountName = param.(string)
 	}
 }
 
@@ -95,8 +96,6 @@ func (app Application) SetupState(stateBytes []byte) {
 
 	// Use the account key in the database.
 	balance := data.NewBalance(state.Amount, "OLT")
-	log.Dump("Setting key", account.AccountKey(), balance)
-
 	app.Utxo.Set(account.AccountKey(), balance)
 
 	// TODO: Until a block is commited, this data is not persistent
@@ -107,7 +106,7 @@ func (app Application) SetupState(stateBytes []byte) {
 
 // InitChain is called when a new chain is getting created
 func (app Application) InitChain(req RequestInitChain) ResponseInitChain {
-	log.Debug("Contract: InitChain", "req", req)
+	log.Debug("ABCI: InitChain", "req", req)
 
 	app.SetupState(req.AppStateBytes)
 
@@ -116,7 +115,7 @@ func (app Application) InitChain(req RequestInitChain) ResponseInitChain {
 
 // SetOption changes the underlying options for the ABCi app
 func (app Application) SetOption(req RequestSetOption) ResponseSetOption {
-	log.Debug("Contract: SetOption", "key", req.Key, "value", req.Value)
+	log.Debug("ABCI: SetOption", "key", req.Key, "value", req.Value)
 
 	SetOption(&app, req.Key, req.Value)
 
@@ -135,24 +134,27 @@ func (app Application) Info(req RequestInfo) ResponseInfo {
 	// TODO: Get the correct height from the last committed tree
 	// lastHeight := app.Utxo.Commit.Height()
 
-	log.Debug("Contract: Info", "req", req, "info", info)
+	log.Debug("ABCI: Info", "req", req, "info", info)
 
-	return ResponseInfo{
-		Data:    info.JSON(),
-		Version: convert.GetString64(app.Utxo.Version),
+	result := ResponseInfo{
+		Data: info.JSON(),
+		//Version: convert.GetString64(app.Utxo.Version),
 
 		// The version of the tree, needs to match the height of the chain
 		//LastBlockHeight: int64(0),
 		LastBlockHeight: int64(app.Utxo.Version),
 
 		// TODO: Should return a valid AppHash
-		//LastBlockAppHash: app.Utxo.Hash,
+		LastBlockAppHash: app.Utxo.Hash,
 	}
+
+	log.Dump("Info Response is", result)
+	return result
 }
 
 // Query returns a transaction or a proof
 func (app Application) Query(req RequestQuery) ResponseQuery {
-	log.Debug("Contract: Query", "req", req, "path", req.Path, "data", req.Data)
+	log.Debug("ABCI: Query", "req", req, "path", req.Path, "data", req.Data)
 
 	result := HandleQuery(app, req.Path, req.Data)
 
@@ -170,7 +172,12 @@ func (app Application) Query(req RequestQuery) ResponseQuery {
 
 // CheckTx tests to see if a transaction is valid
 func (app Application) CheckTx(tx []byte) ResponseCheckTx {
-	log.Debug("Contract: CheckTx", "tx", tx)
+	log.Debug("ABCI: CheckTx", "tx", tx)
+
+	if tx == nil {
+		log.Warn("Empty Transaction, Ignoring", "tx", tx)
+		return ResponseCheckTx{Code: err.PARSE_ERROR}
+	}
 
 	result, err := action.Parse(action.Message(tx))
 	if err != 0 || result == nil {
@@ -202,7 +209,8 @@ var chainKey data.DatabaseKey = data.DatabaseKey("chainId")
 
 // BeginBlock is called when a new block is started
 func (app Application) BeginBlock(req RequestBeginBlock) ResponseBeginBlock {
-	//log.Debug("Contract: BeginBlock", "req", req)
+	//log.Debug("ABCI: BeginBlock", "req", req)
+	app.LastHeader = req.Header
 
 	newChainId := action.Message(req.Header.ChainID)
 
@@ -211,7 +219,7 @@ func (app Application) BeginBlock(req RequestBeginBlock) ResponseBeginBlock {
 	if chainId == nil {
 		session := app.Admin.Begin()
 		session.Set(chainKey, newChainId)
-		// TODO: Need a commit?
+		session.Commit()
 
 		// TODO: This is questionable?
 		chainId = newChainId
@@ -219,12 +227,15 @@ func (app Application) BeginBlock(req RequestBeginBlock) ResponseBeginBlock {
 	} else if bytes.Compare(chainId.([]byte), newChainId) != 0 {
 		log.Warn("Mismatching chains", "chainId", chainId, "newChainId", newChainId)
 	}
-	return ResponseBeginBlock{}
+
+	return ResponseBeginBlock{
+		Tags: []common.KVPair(nil),
+	}
 }
 
 // DeliverTx accepts a transaction and updates all relevant data
 func (app Application) DeliverTx(tx []byte) ResponseDeliverTx {
-	log.Debug("Contract: DeliverTx", "tx", tx)
+	log.Debug("ABCI: DeliverTx", "tx", tx)
 
 	result, err := action.Parse(action.Message(tx))
 	if err != 0 || result == nil {
@@ -260,17 +271,23 @@ func (app Application) DeliverTx(tx []byte) ResponseDeliverTx {
 
 // EndBlock is called at the end of all of the transactions
 func (app Application) EndBlock(req RequestEndBlock) ResponseEndBlock {
-	log.Debug("Contract: EndBlock", "req", req)
+	log.Debug("ABCI: EndBlock", "req", req)
 
-	return ResponseEndBlock{}
+	return ResponseEndBlock{
+		Tags: []common.KVPair(nil),
+	}
 }
 
 // Commit tells the app to make everything persistent
 func (app Application) Commit() ResponseCommit {
-	log.Debug("Contract: Commit")
+	log.Debug("ABCI: Commit")
 
 	// Commit any pending changes.
 	hash, version := app.Utxo.Commit()
+
 	log.Debug("Committed", "hash", hash, "version", version)
-	return ResponseCommit{}
+
+	return ResponseCommit{
+		Data: hash,
+	}
 }

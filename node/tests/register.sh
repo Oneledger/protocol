@@ -41,5 +41,7 @@ do
 
 	# Broadtcast it to all of the nodes to make sure it is unique
 	$CMD/startNode $name register
+
+	# Need to let the identity transaction fully broadcast, before letting the next node shutdown.
 	sleep 10
 done

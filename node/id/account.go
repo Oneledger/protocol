@@ -6,14 +6,12 @@
 package id
 
 import (
-	"encoding/hex"
 	"fmt"
 	"reflect"
 	"strings"
 
 	"github.com/Oneledger/protocol/node/data"
 	"github.com/Oneledger/protocol/node/err"
-	"github.com/Oneledger/protocol/node/global"
 	"github.com/Oneledger/protocol/node/log"
 	"github.com/Oneledger/protocol/node/serial"
 )
@@ -39,13 +37,8 @@ func (acc *Accounts) Add(account Account) {
 		log.Debug("Key is being updated", "key", account.AccountKey())
 	}
 
-	buffer, err := serial.Serialize(account, serial.PERSISTENT)
-	if err != nil {
-		log.Fatal("Failed to Deserialize account: ", err)
-	}
-
 	session := acc.store.Begin()
-	session.Set(account.AccountKey(), buffer)
+	session.Set(account.AccountKey(), account)
 	session.Commit()
 }
 
@@ -73,7 +66,6 @@ func (acc *Accounts) FindNameOnChain(name string, chain data.ChainType) (Account
 
 	// TODO: Should be replaced with a real index
 	for _, entry := range acc.FindAll() {
-		log.Dump("Found ", entry)
 		if Matches(entry, name, chain) {
 			return entry, err.SUCCESS
 		}
@@ -97,14 +89,12 @@ func Matches(account Account, name string, chain data.ChainType) bool {
 
 func (acc *Accounts) FindKey(key AccountKey) (Account, err.Code) {
 	interim := acc.store.Get(key)
-	log.Dump("The result is", interim)
 	result := interim.(Account)
 	return result.(Account), err.SUCCESS
 }
 
 func (acc *Accounts) FindAll() []Account {
 	keys := acc.store.FindAll()
-	log.Dump("Begin Account FindAll", keys)
 
 	size := len(keys)
 	results := make([]Account, size, size)
@@ -139,26 +129,15 @@ type Account interface {
 	PublicKey() PublicKey
 	PrivateKey() PrivateKey
 
-	Export() AccountExport
 	AsString() string
 
 	//AddPublicKey(PublicKey)
 	//AddPrivateKey(PrivateKey)
 }
 
-// AccountExport struct holds important account info in a
-type AccountExport struct {
-	Type       string
-	AccountKey string
-	Name       string
-
-	// Balance must come from utxo database, fill when needed
-	Balance  string
-	NodeName string
-}
-
 func init() {
-	serial.Register(AccountExport{})
+	var prototype Account
+	serial.RegisterInterface(&prototype)
 }
 
 func getAccountType(chain data.ChainType) string {
@@ -298,18 +277,6 @@ func (account *AccountOneLedger) Chain() data.ChainType {
 	return data.ONELEDGER
 }
 
-func (account *AccountOneLedger) Export() AccountExport {
-	accountType := getAccountType(account.AccountBase.Type)
-	name := account.Name()
-	key := hex.EncodeToString(account.AccountKey())
-	return AccountExport{
-		Type:       accountType,
-		AccountKey: key,
-		Name:       name,
-		NodeName:   global.Current.NodeName,
-	}
-}
-
 // Bitcoin
 
 // Information we need for a Bitcoin account
@@ -354,18 +321,6 @@ func (account *AccountBitcoin) Chain() data.ChainType {
 	return data.BITCOIN
 }
 
-func (account *AccountBitcoin) Export() AccountExport {
-	accountType := getAccountType(account.AccountBase.Type)
-	name := account.Name()
-	key := hex.EncodeToString(account.AccountKey())
-	return AccountExport{
-		Type:       accountType,
-		AccountKey: key,
-		Name:       name,
-		NodeName:   global.Current.NodeName,
-	}
-}
-
 // Ethereum
 
 // Information we need for an Ethereum account
@@ -408,16 +363,4 @@ func (account *AccountEthereum) AsString() string {
 
 func (account *AccountEthereum) Chain() data.ChainType {
 	return data.ETHEREUM
-}
-
-func (account *AccountEthereum) Export() AccountExport {
-	accountType := getAccountType(account.AccountBase.Type)
-	name := account.Name()
-	key := hex.EncodeToString(account.AccountKey())
-	return AccountExport{
-		Type:       accountType,
-		AccountKey: key,
-		Name:       name,
-		NodeName:   global.Current.NodeName,
-	}
 }
