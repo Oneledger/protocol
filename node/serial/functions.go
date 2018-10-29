@@ -171,12 +171,8 @@ func ContractNode(action *Action, input interface{}) interface{} {
 
 		result := Alloc(stype, size)
 
-		// Needs to come from the serialized name
-		if strings.HasPrefix(stype, "*") {
-			action.IsPointer = true
-		} else {
-			action.IsPointer = false
-		}
+		// Needs to come from the serialized name, not the internal variable
+		action.IsPointer = strings.HasPrefix(stype, "*")
 
 		// Overwrite with any better children
 		for key, value := range action.Processed[action.Name].Children {

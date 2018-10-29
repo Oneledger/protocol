@@ -1,0 +1,41 @@
+#!/bin/bash
+
+export CMD=$OLSCRIPT
+
+
+if [ -z "$1" ]; then
+	name="David"
+else 
+	name=$1
+fi
+shift
+
+#echo "Starting $name"
+
+prefix="tcp://127.0.0.1:"
+nodeName=`$CMD/lookup $name NodeName`
+p2pAddress=`$CMD/lookup $name P2PAddress $prefix`
+rpcAddress=`$CMD/lookup $name RPCAddress $prefix`
+appAddress=`$CMD/lookup $name AppAddress $prefix`
+btcAddress=`$CMD/lookup $name BTCAddress "127.0.0.1:"`
+ethAddress=`$CMD/lookup $name ETHAddress `
+
+export WORK=$OLDATA/$nodeName
+export LOG=$WORK
+export DATA=$WORK/tendermint
+
+SEQ=`$CMD/nextSeq`
+
+exe=$1
+shift
+
+command=$1
+shift
+
+pushd $CMD > /dev/null
+
+$exe $command -s $SEQ -a $rpcAddress $#
+
+popd >> /dev/null
+
+

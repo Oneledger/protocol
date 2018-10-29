@@ -9,12 +9,15 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+
+	"github.com/Oneledger/protocol/node/log"
 )
 
 type Category int
 
 const (
 	UNKNOWN = iota
+	INTERFACE
 	PRIMITIVE
 	STRUCT
 	MAP
@@ -35,7 +38,12 @@ func (entry TypeEntry) String() string {
 	switch entry.Category {
 	case UNKNOWN:
 		return fmt.Sprintf("%s UNKNOWN", entry.Name)
+	case INTERFACE:
+		return fmt.Sprintf("%s INTERFACE", entry.Name)
 	case PRIMITIVE:
+		if entry.DataType == nil {
+			return fmt.Sprintf("%s PRIMITIVE (missing)", entry.Name)
+		}
 		return fmt.Sprintf("%s PRIMITIVE %s", entry.Name, entry.DataType.String())
 	case STRUCT:
 		return fmt.Sprintf("%s STRUCT %s", entry.Name, entry.DataType.String())
@@ -45,6 +53,9 @@ func (entry TypeEntry) String() string {
 	case SLICE:
 		return fmt.Sprintf("%s SLICE %s (%s)", entry.Name, entry.DataType.String(), entry.ValueType.String())
 	case ARRAY:
+		if entry.ValueType == nil {
+			return fmt.Sprintf("%s ARRAY %s (missing)", entry.Name, entry.DataType.String())
+		}
 		return fmt.Sprintf("%s ARRAY %s (%s)", entry.Name, entry.DataType.String(), entry.ValueType.String())
 	}
 	return "Invalid!"
@@ -62,6 +73,10 @@ func NewPrimitiveEntry(name string, category Category, root reflect.Type) *TypeE
 		KeyType:   nil,
 		ValueType: nil,
 	}
+}
+
+func DumpTypes() {
+	log.Dump("Known Data Types are:", dataTypes)
 }
 
 func init() {
@@ -92,29 +107,44 @@ func init() {
 	}
 }
 
-// Register a structure by its name
-func Register(base interface{}) {
+func RegisterInterface(base interface{}) {
+	typeOf := reflect.TypeOf(base)
+	element := typeOf.Elem()
+	name := element.String()
 
-	// TODO: Not necessary?
-	name := GetBaseTypeString(base)
 	entry := GetTypeEntry(name, 1)
 	if entry.Category != UNKNOWN {
-		// Most often caused by byte and uint8 sort of being the same, but not in all cases.
-
-		//log.Warn("Duplicate Entry", "name", name, "orig", entry.Name)
-		//log.Dump("Dup is", base)
-		//debug.PrintStack()
-		//log.Dump("Exists", entry)
+		// Already registered
 		return
 	}
 
-	typeOf := reflect.TypeOf(base)
+	var category Category = INTERFACE
+
+	dataTypes[name] = TypeEntry{name, category, element, element, nil, nil}
+
+	//DumpTypes()
+}
+
+// Register a structure by its name
+func Register(base interface{}) {
+
+	name := GetBaseTypeString(base)
+
+	entry := GetTypeEntry(name, 1)
+	if entry.Category != UNKNOWN {
+		// Already registered
+		return
+	}
 
 	var category Category = PRIMITIVE
+
+	typeOf := reflect.TypeOf(base)
+
 	if IsStructure(base) {
 		dataTypes[name] = TypeEntry{name, STRUCT, typeOf, typeOf, nil, nil}
 		return
 	}
+
 	if IsPrimitiveContainer(base) {
 		ubase := UnderlyingType(base)
 		underType := GetTypeEntry(ubase.String(), 1)
@@ -122,7 +152,16 @@ func Register(base interface{}) {
 		underType.Name = name
 		underType.RootType = typeOf
 		dataTypes[name] = underType
-		//log.Dump("Full Entry is", dataTypes[name])
+		return
+	}
+
+	if IsInterface(base) {
+		ubase := UnderlyingType(base)
+		underType := GetTypeEntry(ubase.String(), 1)
+
+		underType.Name = name
+		underType.RootType = typeOf
+		dataTypes[name] = underType
 		return
 	}
 	dataTypes[name] = TypeEntry{name, category, typeOf, typeOf, nil, nil}
@@ -175,12 +214,9 @@ func GetTypeEntry(name string, size int) TypeEntry {
 	name = strings.TrimPrefix(name, "*")
 
 	// Static data types
-	//log.Debug("Searching Statically for a match", "name", name)
 	typeEntry, ok := dataTypes[name]
 	if !ok {
-		//log.Dump("Not Found in ", reflect.ValueOf(dataTypes).MapKeys())
 		// dynamic data types -- like maps and slices
-		//log.Debug("Searching Dynamically for a match", "name", name)
 		entry := ParseType(name, size)
 		return entry
 	}
@@ -189,6 +225,10 @@ func GetTypeEntry(name string, size int) TypeEntry {
 
 // Given a data type string, break it down into reflect.Type entries
 func ParseType(name string, count int) TypeEntry {
+	if name == "" {
+		return TypeEntry{name, UNKNOWN, reflect.Type(nil), reflect.Type(nil), nil, nil}
+	}
+
 	automata := regexp.MustCompile(`(.*?)\[(.*?)\](.*)`)
 	groups := automata.FindStringSubmatch(name)
 
@@ -215,7 +255,18 @@ func ParseType(name string, count int) TypeEntry {
 		sliceTypeName := groups[3]
 		sliceType := GetTypeEntry(sliceTypeName, count)
 		//log.Dump(name+" has "+sliceTypeName, sliceType, groups)
-		finalType := reflect.SliceOf(sliceType.DataType)
+
+		var finalType reflect.Type
+		if sliceType.Category == UNKNOWN {
+			return TypeEntry{name, UNKNOWN, reflect.Type(nil), reflect.Type(nil), nil, nil}
+			/*
+				var prototype interface{}
+				finalType = reflect.SliceOf(reflect.TypeOf(prototype))
+			*/
+		} else {
+			finalType = reflect.SliceOf(sliceType.DataType)
+		}
+
 		return TypeEntry{
 			Name:      name,
 			Category:  SLICE,
@@ -223,7 +274,6 @@ func ParseType(name string, count int) TypeEntry {
 			DataType:  finalType,
 			ValueType: &sliceType,
 		}
-
 	} else {
 		// TODO: What if this is a variable?
 		//size := GetInt(groups[2], 0)
@@ -242,7 +292,7 @@ func ParseType(name string, count int) TypeEntry {
 	return TypeEntry{name, UNKNOWN, reflect.Type(nil), reflect.Type(nil), nil, nil}
 }
 
-// TODO: This should be in the convert packahe, but it shares data with this one
+// TODO: This should be in the convert package, but it shares data with this one
 func GetInt(value string, defaultValue int) int {
 
 	// TODO: Should be ParseInt and should specific 64 or 32

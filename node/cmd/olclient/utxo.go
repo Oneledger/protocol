@@ -41,8 +41,8 @@ func CheckUtxo(cmd *cobra.Command, args []string) {
 	request := FormatUtxoRequest()
 	response := comm.Query("/utxo", request)
 	if response != nil {
-		log.Debug("Returned Successfully with", "response", string(response.Response.Value))
+		log.Debug("Returned Successfully with", "response", response)
 	} else {
-		log.Debug("Query Failed")
+		log.Debug("No Response from Node", "request", request)
 	}
 }
