@@ -41,6 +41,44 @@ func (s SDKServer) Status(ctx context.Context, request *pb.StatusRequest) (*pb.S
 	return &pb.StatusReply{Ok: s.App.SDK.IsRunning()}, nil
 }
 
+// Given the name of the identity and the chain type, generate new keys and broadcast this new identity
+func (s SDKServer) Register(ctx context.Context, request *pb.RegisterRequest) (*pb.RegisterReply, error) {
+	name := request.Identity
+	chain := parseChainType(request.Chain)
+
+	// First check if this account already exists, return with error if not
+	_, stat := s.App.Accounts.FindNameOnChain(name, chain)
+	// If this account already existsm don't let this go through
+	if stat != status.MISSING_VALUE {
+		return nil, gstatus.Errorf(codes.AlreadyExists, "Identity %s already exists", name)
+	}
+
+	privKey, pubKey := id.GenerateKeys(secret(name + chain.String()))
+	ok := RegisterLocally(s.App, name, chain.String(), chain, pubKey, privKey)
+	if !ok {
+		return nil, gstatus.Errorf(codes.FailedPrecondition, "Local registration failed")
+	}
+
+	packet := action.SignAndPack(
+		action.REGISTER,
+		action.CreateRegisterRequest(
+			name,
+			chain.String(),
+			global.Current.Sequence,
+			global.Current.NodeName,
+			nil,
+			pubKey.Address()))
+	comm.Broadcast(packet)
+
+	// TODO: Use proper secret for key generation
+	return &pb.RegisterReply{
+		Ok:         true,
+		Identity:   name,
+		PublicKey:  pubKey.Bytes(),
+		PrivateKey: privKey.Bytes(),
+	}, nil
+}
+
 // CheckAccount returns the balance of a given account ID
 func (s SDKServer) CheckAccount(ctx context.Context, request *pb.CheckAccountRequest) (*pb.CheckAccountReply, error) {
 	accountName := request.Name
@@ -116,6 +154,7 @@ func prepareSend(
 	gas data.Coin,
 	app *Application,
 ) (*action.Send, error) {
+	// TODO: Use functions in shared package after resolving import cycles
 	findBalance := func(key id.AccountKey) (*data.Balance, error) {
 		balance := app.Utxo.Find(data.DatabaseKey(key))
 		if balance == nil {
@@ -177,7 +216,7 @@ func currencyProtobuf(c data.Currency) pb.Currency {
 
 // Functions for returning gRPC errors
 func errAccountNotFound(a string) error {
-	return gstatus.Errorf(codes.NotFound, "Account %s not found")
+	return gstatus.Errorf(codes.NotFound, "Account %s not found", a)
 }
 
 func currencyString(c pb.Currency) string {
@@ -191,4 +230,21 @@ func currencyString(c pb.Currency) string {
 	}
 
 	return "OLT"
+}
+
+func parseChainType(c pb.ChainType) data.ChainType {
+	switch c {
+	case pb.ChainType_ONELEDGER:
+		return data.ONELEDGER
+	case pb.ChainType_BITCOIN:
+		return data.BITCOIN
+	case pb.ChainType_ETHEREUM:
+		return data.ETHEREUM
+	}
+	return data.UNKNOWN
+}
+
+func secret(s string) []byte {
+	// TODO: proper secret for key generation
+	return []byte(s + global.Current.NodeName)
 }
