@@ -143,7 +143,7 @@ func (coin Coin) Plus(value Coin) Coin {
 
 func (coin Coin) AsString() string {
 	value := new(big.Float).SetInt(coin.Amount)
-	result := value.Quo(value, OLTBase)
-	text := fmt.Sprintf("%.3f", result)
+	//result := value.Quo(value, OLTBase)
+	text := fmt.Sprintf("%.3f", value)
 	return text
 }
