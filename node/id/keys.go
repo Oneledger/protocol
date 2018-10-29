@@ -144,8 +144,8 @@ func (k PrivateKeySECP256K1) Sign(msg []byte) ([]byte, error) {
 }
 
 func (k PrivateKeySECP256K1) PubKey() PublicKey {
-	p := secp256k1.PrivKeySecp256k1(k).PubKey().(ed25519.PubKeyEd25519)
-	return PublicKeyED25519(p)
+	p := secp256k1.PrivKeySecp256k1(k).PubKey().(secp256k1.PubKeySecp256k1)
+	return PublicKeySECP256K1(p)
 }
 
 func (k PrivateKeySECP256K1) Equals(key PrivateKey) bool {
