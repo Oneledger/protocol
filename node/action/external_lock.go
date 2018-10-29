@@ -26,6 +26,10 @@ func init() {
 	serial.Register(ExternalLock{})
 }
 
+func (transaction *ExternalLock) TransactionType() Type {
+	return transaction.Base.Type
+}
+
 func (transaction *ExternalLock) Validate() status.Code {
 	log.Debug("Validating ExternalLock Transaction")
 

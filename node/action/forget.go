@@ -21,6 +21,10 @@ func init() {
 	serial.Register(Forget{})
 }
 
+func (transaction *Forget) TransactionType() Type {
+	return transaction.Base.Type
+}
+
 func (transaction *Forget) Validate() status.Code {
 	log.Debug("Validating Forget Transaction")
 	return status.SUCCESS

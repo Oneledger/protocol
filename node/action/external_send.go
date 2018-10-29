@@ -26,6 +26,10 @@ func init() {
 	serial.Register(ExternalSend{})
 }
 
+func (transaction *ExternalSend) TransactionType() Type {
+	return transaction.Base.Type
+}
+
 func (transaction *ExternalSend) Validate() status.Code {
 	log.Debug("Validating ExternalSend Transaction")
 

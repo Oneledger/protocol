@@ -27,6 +27,10 @@ func init() {
 	serial.Register(Publish{})
 }
 
+func (transaction *Publish) TransactionType() Type {
+	return transaction.Base.Type
+}
+
 // Ensure that all of the base values are at least reasonable.
 func (publish *Publish) Validate() status.Code {
 	log.Debug("Validating Publish Transaction")

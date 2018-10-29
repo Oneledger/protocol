@@ -28,6 +28,10 @@ func init() {
 	serial.Register(Verify{})
 }
 
+func (transaction *Verify) TransactionType() Type {
+	return transaction.Base.Type
+}
+
 func (transaction Verify) Validate() status.Code {
 	log.Debug("Validating Verify Transaction")
 	if transaction.Target == nil {

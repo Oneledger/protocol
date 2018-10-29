@@ -32,6 +32,8 @@ type SendInput struct {
 
 func init() {
 	serial.Register(SendInput{})
+	serial.Register(SendOutput{})
+	serial.Register(Event{})
 }
 
 func NewSendInput(accountKey id.AccountKey, amount data.Coin) SendInput {
@@ -49,10 +51,6 @@ func NewSendInput(accountKey id.AccountKey, amount data.Coin) SendInput {
 type SendOutput struct {
 	AccountKey id.AccountKey `json:"account_key"`
 	Amount     data.Coin     `json:"coin"`
-}
-
-func init() {
-	serial.Register(SendOutput{})
 }
 
 func NewSendOutput(accountKey id.AccountKey, amount data.Coin) SendOutput {
@@ -149,9 +147,9 @@ func CheckAmounts(app interface{}, inputs []SendInput, outputs []SendOutput) boo
 }
 
 type Event struct {
-	Type  Type          `json:"type"`
-	Key   id.AccountKey `json:"key"`
-	Nonce int64         `json:"result"`
+	Type        Type   `json:"type"`
+	SwapKeyHash []byte `json:"swapkeyhash"`
+	Stage       int    `json:"stage"`
 }
 
 func (e Event) ToKey() []byte {
@@ -188,7 +186,7 @@ func FindEvent(app interface{}, eventKey Event) bool {
 }
 
 func SaveContract(app interface{}, contractKey []byte, nonce int64, contract []byte) {
-	contracts := GetContract(app)
+	contracts := GetContracts(app)
 	n := strconv.AppendInt(contractKey, nonce, 10)
 	log.Debug("Save contract", "key", contractKey, "afterNonce", n)
 	contracts.Store(n, contract)
@@ -197,11 +195,19 @@ func SaveContract(app interface{}, contractKey []byte, nonce int64, contract []b
 
 func FindContract(app interface{}, contractKey []byte, nonce int64) []byte {
 	log.Debug("Load Contract", "key", contractKey)
-	contracts := GetContract(app)
+	contracts := GetContracts(app)
 	n := strconv.AppendInt(contractKey, nonce, 10)
 	result := contracts.Load(n)
 	if result == nil {
 		return nil
 	}
 	return result
+}
+
+func DeleteContract(app interface{}, contractKey []byte, nonce int64) {
+	contracts := GetContracts(app)
+	n := strconv.AppendInt(contractKey, nonce, 10)
+	log.Debug("Delete contract", "key", contractKey, "afterNonce", n)
+	contracts.Delete(n)
+	contracts.Commit()
 }

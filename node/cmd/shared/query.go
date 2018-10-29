@@ -96,23 +96,32 @@ func GetBalance(accountKey id.AccountKey) *data.Coin {
 	return &(buffer.(*data.Balance).Amount)
 }
 
-func GetTxByHash(hash []byte) []*ctypes.ResultTx {
-	request := "tx.hash=" + string(hash)
-
-	response := comm.Search(request, true)
+func GetTxByHash(hash []byte) *ctypes.ResultTx {
+	response := comm.Tx(hash, true)
 	if response == nil {
-		log.Error("Search tx by hash failed", "request", request)
+		log.Error("Search tx by hash failed", "hash", hash)
 		return nil
 	}
 	return response
 }
 
-func GetTxByHeight(height int) []*ctypes.ResultTx {
+func GetTxByHeight(height int) *ctypes.ResultTxSearch {
 	request := "tx.height=" + convert.GetString(height)
 
-	response := comm.Search(request, true)
+	response := comm.Search(request, true, 1, 100)
 	if response == nil {
-		log.Error("Search tx by height failed", "requestion", request)
+		log.Error("Search tx by height failed", "request", request)
+	}
+	return response
+}
+
+func GetTxByType(t string) *ctypes.ResultTxSearch {
+	request := "tx.type" + t
+
+	response := comm.Search(request, true, 1, 100)
+	if response == nil {
+		log.Error("Search tx by hash failed", "request", request)
+		return nil
 	}
 	return response
 }

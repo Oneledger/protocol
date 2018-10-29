@@ -27,6 +27,10 @@ func init() {
 	serial.Register(Send{})
 }
 
+func (transaction *Send) TransactionType() Type {
+	return transaction.Base.Type
+}
+
 func (transaction *Send) Validate() status.Code {
 	log.Debug("Validating Send Transaction")
 

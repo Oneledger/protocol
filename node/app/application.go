@@ -7,6 +7,7 @@ package app
 
 import (
 	"bytes"
+	"strconv"
 
 	"github.com/Oneledger/protocol/node/abci"
 	"github.com/Oneledger/protocol/node/action"
@@ -243,7 +244,13 @@ func (app Application) DeliverTx(tx []byte) ResponseDeliverTx {
 			return ResponseDeliverTx{Code: err}
 		}
 	}
-
+	tagType := strconv.FormatInt(int64(result.TransactionType()), 10)
+	tags := make([]common.KVPair, 1)
+	tag := common.KVPair{
+		Key:   []byte("tx.type"),
+		Value: []byte(tagType),
+	}
+	tags = append(tags, tag)
 	return ResponseDeliverTx{
 		Code:      types.CodeTypeOK,
 		Data:      []byte("Data"),
@@ -251,7 +258,7 @@ func (app Application) DeliverTx(tx []byte) ResponseDeliverTx {
 		Info:      "Info Data",
 		GasWanted: 1000,
 		GasUsed:   1000,
-		Tags:      []common.KVPair(nil),
+		Tags:      tags,
 	}
 }
 
