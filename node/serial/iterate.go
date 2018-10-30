@@ -180,9 +180,9 @@ func GetChildrenSlice(input interface{}) []Child {
 	for i := 0; i < valueOf.Len(); i++ {
 		value := valueOf.Index(i).Interface()
 		kind := reflect.ValueOf(value).Kind()
-
 		// Use a string index.
 		name := fmt.Sprintf("%d", i)
+
 		children = append(children, Child{Name: name, Value: value, Kind: kind})
 	}
 	return children
@@ -198,15 +198,15 @@ func GetChildrenArray(input interface{}) []Child {
 	for i := 0; i < valueOf.Len(); i++ {
 		value := valueOf.Index(i).Interface()
 		kind := reflect.ValueOf(value).Kind()
-
 		name := fmt.Sprintf("%d", i)
+
 		children = append(children, Child{Name: name, Value: value, Kind: kind})
 	}
 	return children
 }
 
 // Iterate the variables in memory, executing functions at each node in the traversal
-func Iterate(input interface{}, action *Action) interface{} {
+func Iterate(input interface{}, action *Action, depth int) interface{} {
 	// TODO: add in cycle detection
 
 	// Initialize on first call
@@ -230,6 +230,7 @@ func Iterate(input interface{}, action *Action) interface{} {
 	action.Path.Push(action.Name)
 
 	if IsPointer(input) {
+		// TODO: Needs to be checked.
 		if !IsNilValue(input) {
 			input = reflect.ValueOf(input).Elem().Interface()
 		}
@@ -251,9 +252,9 @@ func Iterate(input interface{}, action *Action) interface{} {
 
 		children := GetChildren(input)
 		for i := 0; i < len(children); i++ {
-			action.Name = children[i].Name
+			action.Name = children[i].Name + fmt.Sprintf("-%d", depth)
 
-			Iterate(children[i].Value, action)
+			Iterate(children[i].Value, action, depth+1)
 
 			// Restore the action values, since they were overwritten
 			action.Name = name

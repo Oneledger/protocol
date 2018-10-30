@@ -16,7 +16,7 @@ func Print(base interface{}) {
 		ProcessField: PrintNode,
 		Name:         "base",
 	}
-	Iterate(base, action)
+	Iterate(base, action, 1)
 }
 
 // PrintNode is called for each node
@@ -31,7 +31,7 @@ func Clone(base interface{}) interface{} {
 		ProcessField: CloneNode,
 		Name:         "base",
 	}
-	result := Iterate(base, action)
+	result := Iterate(base, action, 1)
 
 	for _, value := range action.Processed["base"].Children {
 		return value
@@ -77,7 +77,7 @@ func Extend(base interface{}) interface{} {
 		Name:         "base",
 	}
 
-	result := Iterate(base, action)
+	result := Iterate(base, action, 1)
 
 	for _, value := range action.Processed["base"].Children {
 		return value
@@ -102,9 +102,10 @@ func ExtendNode(action *Action, input interface{}) interface{} {
 	if IsContainer(input) {
 		mapping, size := ConvertMap(input)
 
-		// Attach all of the interface children
+		// Override all of the underlying container items.
 		for key, value := range action.Processed[action.Name].Children {
-			mapping[key] = value
+			// key has the depth included, needs to be removed.
+			mapping[GetFieldName(key)] = value
 			delete(action.Processed[action.Name].Children, key)
 		}
 
@@ -146,7 +147,7 @@ func Contract(base interface{}) interface{} {
 		Name:         "base",
 	}
 
-	result := Iterate(base, action)
+	result := Iterate(base, action, 1)
 
 	for _, value := range action.Processed["base"].Children {
 		return value
@@ -163,7 +164,6 @@ func ContractNode(action *Action, input interface{}) interface{} {
 		grandparent = action.Path.StringPeekN(1)
 	}
 
-	//log.Dump("ContractNode", input)
 	if IsSerialWrapper(input) {
 		wrapper := input.(SerialWrapper)
 		stype := wrapper.Type
@@ -176,6 +176,7 @@ func ContractNode(action *Action, input interface{}) interface{} {
 
 		// Overwrite with any better children
 		for key, value := range action.Processed[action.Name].Children {
+			//log.Dump(action.Name+" Child is "+key, value)
 			Set(result, key, value)
 			delete(action.Processed[action.Name].Children, key)
 		}
@@ -193,14 +194,11 @@ func ContractNode(action *Action, input interface{}) interface{} {
 		result := Alloc(stype, size)
 
 		// Needs to come from the serialized name
-		if strings.HasPrefix(stype, "*") {
-			action.IsPointer = true
-		} else {
-			action.IsPointer = false
-		}
+		action.IsPointer = strings.HasPrefix(stype, "*")
 
 		// Overwrite with any better children
 		for key, value := range action.Processed[action.Name].Children {
+			//log.Dump(action.Name+" Child is "+key, value)
 			Set(result, key, value)
 			delete(action.Processed[action.Name].Children, key)
 		}
