@@ -45,8 +45,8 @@ func ListIdentities(cmd *cobra.Command, args []string) {
 			log.Error("Not a valid identity", "err", err)
 			return
 		}
-		if id != nil {
-			IdentityInfo(node, id)
+		if id.Name != "" {
+			IdentityInfo(node, &id)
 		} else {
 			Console.Print("Unknown Account")
 		}
@@ -55,7 +55,7 @@ func ListIdentities(cmd *cobra.Command, args []string) {
 
 	Console.Print("Listing Account Details for all users")
 	for _, id := range node.Identities.FindAll() {
-		IdentityInfo(node, id)
+		IdentityInfo(node, &id)
 	}
 }
 

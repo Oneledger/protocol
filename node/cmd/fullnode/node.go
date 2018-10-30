@@ -50,19 +50,19 @@ func Register() {
 		}
 	}()
 
-	//time.Sleep(10 * time.Second)
+	//time.Sleep(5 * time.Second)
 	if arguments.Identity != "" {
 		log.Debug("Have Register Request", "arguments", arguments)
 
 		// TODO: Maybe Tendermint isn't ready for transactions...
-		//time.Sleep(5 * time.Second)
+		//time.Sleep(10 * time.Second)
 
 		packet := shared.CreateRegisterRequest(arguments)
 		result := comm.Broadcast(packet)
 
-		log.Debug("Register Broadcast Success", "result", result)
+		log.Debug("######## Register Broadcast", "result", result)
 	} else {
-		log.Warn("Missing Identity for Registration")
+		log.Debug("Nothing to Register")
 	}
 }
 
@@ -103,18 +103,18 @@ func StartNode(cmd *cobra.Command, args []string) {
 	service.SetLogger(log.GetLogger())
 
 	// Set it running
+	err := service.Start()
+	if err != nil {
+		os.Exit(-1)
+	}
+
 	/*
-		err := service.Start()
-		if err != nil {
+		// Wait until it is started
+		if err := service.OnStart(); err != nil {
+			log.Fatal("Startup Failed", "err", err)
 			os.Exit(-1)
 		}
 	*/
-
-	// Wait until it is started
-	if err := service.OnStart(); err != nil {
-		log.Fatal("Startup Failed", "err", err)
-		os.Exit(-1)
-	}
 
 	/*
 		for {

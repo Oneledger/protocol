@@ -253,6 +253,7 @@ func (app Application) DeliverTx(tx []byte) ResponseDeliverTx {
 			go result.ProcessDeliver(&app)
 		} else {
 			if err = result.ProcessDeliver(&app); err != 0 {
+				log.Warn("Processing Failed", "err", err)
 				return ResponseDeliverTx{Code: err}
 			}
 		}
@@ -285,7 +286,7 @@ func (app Application) Commit() ResponseCommit {
 	// Commit any pending changes.
 	hash, version := app.Utxo.Commit()
 
-	log.Debug("Committed", "hash", hash, "version", version)
+	log.Debug("-- Committed New Block", "hash", hash, "version", version)
 
 	return ResponseCommit{
 		Data: hash,

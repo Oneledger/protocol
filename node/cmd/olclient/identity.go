@@ -48,11 +48,14 @@ func CheckIdentity(cmd *cobra.Command, args []string) {
 
 	request := FormatIdentityRequest()
 	response := comm.Query("/identity", request)
-	if response != nil {
-		printResponse(nodeName, response)
-	} else {
-		shared.Console.Error("Node ", nodeName, " unavailable")
+	if response == nil {
+		shared.Console.Error("Node", nodeName, "unavailable")
 	}
+	if str := comm.IsError(response); str != nil {
+		shared.Console.Error("Node", nodeName, str)
+	}
+
+	printResponse(nodeName, response)
 }
 
 func printResponse(nodeName string, idQuery interface{}) {
@@ -61,11 +64,11 @@ func printResponse(nodeName string, idQuery interface{}) {
 	shared.Console.Info("\nOneLedger Identities on", nodeName, ":\n")
 
 	for _, identity := range identities {
-		printIdentity(&identity)
+		printIdentity(identity)
 	}
 }
 
-func printIdentity(identity *id.Identity) {
+func printIdentity(identity id.Identity) {
 	// Right-align fieldnames in console
 	name := "      Name:"
 	scope := "     Scope:"

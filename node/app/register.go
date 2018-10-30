@@ -10,7 +10,6 @@ import (
 	"github.com/Oneledger/protocol/node/global"
 	"github.com/Oneledger/protocol/node/id"
 	"github.com/Oneledger/protocol/node/log"
-	"github.com/Oneledger/protocol/node/serial"
 )
 
 // Register Identities and Accounts from the user.
@@ -20,6 +19,7 @@ func RegisterLocally(app *Application, name string, scope string, chain data.Cha
 	status := false
 
 	if chain == data.UNKNOWN {
+		log.Warn("Can't register, chain UNKNOWN", "name", name)
 		return status
 	}
 
@@ -40,43 +40,40 @@ func RegisterLocally(app *Application, name string, scope string, chain data.Cha
 			log.Debug("Updating NodeAccount", "name", accountName)
 
 			global.Current.NodeAccountName = accountName
-			buffer, err := serial.Serialize(accountName, serial.NETWORK)
-			if err != nil {
-				log.Error("Failed to Serialize accountName")
-			}
-			log.Debug("Admin store", "data.DatabaseKey", data.DatabaseKey("NodeAccountName"), "buffer", buffer)
+			/*
+				buffer, err := serial.Serialize(accountName, serial.NETWORK)
+				if err != nil {
+					log.Error("Failed to Serialize accountName")
+				}
+			*/
+			log.Debug("Admin store", "data.DatabaseKey", data.DatabaseKey("NodeAccountName"),
+				"accountName", accountName)
 
 			session := app.Admin.Begin()
-			session.Set(data.DatabaseKey("NodeAccountName"), buffer)
+			session.Set(data.DatabaseKey("NodeAccountName"), accountName)
 			session.Commit()
 		}
-
 		status = true
-
 	} else {
-		log.Debug("Existing Account, Ignoring", "accountName", accountName)
+		log.Debug("Existing Account", "accountName", accountName)
 	}
 
 	// Fill in the balance
 	if chain == data.ONELEDGER && !app.Utxo.Exists(account.AccountKey()) {
 		balance := data.NewBalance(0, "OLT")
 		app.Utxo.Set(account.AccountKey(), balance)
-
-		// TODO: Nothing is committed until a block is...
-		//app.Utxo.Commit()
 		status = true
 	}
 
 	// Identities are global
 	identity, _ := app.Identities.FindName(name)
-	if identity == nil {
-		identity = id.NewIdentity(name, "Contact Info", false,
+	if identity.Name == "" {
+		interim := id.NewIdentity(name, "Contact Info", false,
 			global.Current.NodeName, account.AccountKey())
-		global.Current.NodeIdentity = name
-		app.Identities.Add(identity)
+		identity = *interim
 
-		// TODO: Not necessary?
-		//app.Identities.Commit()
+		global.Current.NodeIdentity = name
+		app.Identities.Add(&identity)
 
 		log.Debug("Registered a New Identity", "name", name, "identity", identity)
 		status = true
@@ -85,10 +82,7 @@ func RegisterLocally(app *Application, name string, scope string, chain data.Cha
 	// Associate this account with the identity
 	if chain != data.ONELEDGER {
 		identity.SetAccount(chain, account)
-		app.Identities.Add(identity)
-
-		// TODO: Not necessary?
-		//app.Identities.Commit()
+		app.Identities.Add(&identity)
 	}
 	return status
 }

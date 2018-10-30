@@ -61,7 +61,7 @@ func Serialize(input interface{}, medium Format) (buffer []byte, err error) {
 		buffer, err = json.Marshal(copy)
 	}
 
-	//log.Dump("Serialized format", string(buffer))
+	log.Dump("Serialized format", string(buffer))
 
 	return buffer, err
 }
@@ -69,7 +69,7 @@ func Serialize(input interface{}, medium Format) (buffer []byte, err error) {
 // Given a serialized slice, put it back into the original struct format
 func Deserialize(input []byte, output interface{}, medium Format) (msg interface{}, err error) {
 
-	//log.Dump("Deserialize the string", string(input))
+	log.Dump("Deserialize the string", string(input))
 
 	//wrapper := &(map[string]interface{}{})
 	wrapper := &SerialWrapper{}
@@ -100,7 +100,7 @@ func Deserialize(input []byte, output interface{}, medium Format) (msg interface
 	}
 
 	result := Contract(wrapper)
-	//log.Dump("Deserialized to", result)
+	log.Dump("Deserialized to", result)
 
 	return result, err
 }

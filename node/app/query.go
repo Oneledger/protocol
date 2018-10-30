@@ -83,13 +83,13 @@ func HandleAccountKeyQuery(app Application, message []byte) interface{} {
 func AccountKey(app Application, name string) interface{} {
 	identity, status := app.Identities.FindName(name)
 
-	if status == err.SUCCESS && identity != nil {
+	if status == err.SUCCESS && identity.Name != "" {
 		return identity
 	}
 
 	// Maybe this is an AccountName, not an identity
 	account, status := app.Accounts.FindName(name)
-	if status == err.SUCCESS && identity != nil {
+	if status == err.SUCCESS && identity.Name != "" {
 		return account
 	}
 
@@ -118,7 +118,7 @@ func IdentityInfo(app Application, name string) interface{} {
 
 	identity, status := app.Identities.FindName(name)
 	if status == err.SUCCESS {
-		return identity
+		return []id.Identity{identity}
 	}
 
 	return "Identity " + name + " Not Found"
