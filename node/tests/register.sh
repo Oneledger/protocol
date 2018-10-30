@@ -7,6 +7,7 @@
 CMD=$GOPATH/src/github.com/Oneledger/protocol/node/scripts
 
 list="David Alice Bob Carol"
+#list="David"
 
 $CMD/startOneLedger
 
@@ -19,7 +20,7 @@ do
 	LOG=$WORK
 	ROOT=$WORK/fullnode
 
-    echo "Register [$name] "
+	echo "Register [$name] "
 	$CMD/stopNode $name
 
 	# Setup a global Identity and OneLedger account

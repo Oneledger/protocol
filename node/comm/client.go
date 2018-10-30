@@ -8,6 +8,7 @@
 package comm
 
 import (
+	"reflect"
 	"time"
 
 	"github.com/Oneledger/protocol/node/global"
@@ -115,7 +116,7 @@ func BroadcastAsync(packet []byte) *ctypes.ResultBroadcastTx {
 }
 
 // A sync'ed broadcast to the chain that waits for the commit to happen
-func BroadcastCommit(packet []byte) *ctypes.ResultBroadcastTxCommit {
+func Broadcast(packet []byte) *ctypes.ResultBroadcastTxCommit {
 	client := GetClient()
 
 	log.Debug("Start Synced Broadcast", "packet", packet)
@@ -132,7 +133,7 @@ func BroadcastCommit(packet []byte) *ctypes.ResultBroadcastTxCommit {
 }
 
 // A sync'ed broadcast to the chain that waits for the commit to happen
-func Broadcast(packet []byte) *ctypes.ResultBroadcastTx {
+func BroadcastSync(packet []byte) *ctypes.ResultBroadcastTx {
 	client := GetClient()
 
 	log.Debug("Start Synced Broadcast", "packet", packet)
@@ -145,6 +146,14 @@ func Broadcast(packet []byte) *ctypes.ResultBroadcastTx {
 	log.Debug("Finished Synced Broadcast", "packet", packet, "result", result)
 
 	return result
+}
+
+func IsError(result interface{}) *string {
+	if reflect.TypeOf(result).Kind() == reflect.String {
+		final := result.(string)
+		return &final
+	}
+	return nil
 }
 
 // Send a very specific query
@@ -173,7 +182,7 @@ func Query(path string, packet []byte) interface{} {
 	var prototype interface{}
 	result, err := serial.Deserialize(response.Response.Value, prototype, serial.CLIENT)
 	if err != nil {
-		log.Error("Failed to deserialize IdentityQuery:")
+		log.Error("Failed to deserialize Query:", response.Response.Value)
 		return "Failed"
 	}
 

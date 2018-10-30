@@ -73,23 +73,23 @@ func (ids *Identities) Exists(name string) bool {
 	return false
 }
 
-func (ids *Identities) FindName(name string) (*Identity, err.Code) {
+func (ids *Identities) FindName(name string) (Identity, err.Code) {
 	id := NewIdentity(name, "", true, "", nil)
 
 	value := ids.store.Get(id.Key())
 	if value != nil {
-		return value.(*Identity), err.SUCCESS
+		return value.(Identity), err.SUCCESS
 	}
-	return nil, err.MISSING_DATA
+	return Identity{}, err.MISSING_DATA
 }
 
-func (ids *Identities) FindAll() []*Identity {
+func (ids *Identities) FindAll() []Identity {
 	keys := ids.store.FindAll()
 	size := len(keys)
-	results := make([]*Identity, size, size)
+	results := make([]Identity, size, size)
 	for i := 0; i < size; i++ {
 		result := ids.store.Get(keys[i])
-		results[i] = result.(*Identity)
+		results[i] = result.(Identity)
 	}
 	return results
 }

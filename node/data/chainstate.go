@@ -11,6 +11,8 @@
 package data
 
 import (
+	"bytes"
+
 	"github.com/Oneledger/protocol/node/global"
 	"github.com/Oneledger/protocol/node/log"
 	"github.com/Oneledger/protocol/node/serial"
@@ -128,7 +130,12 @@ func (state *ChainState) Commit() ([]byte, int64) {
 	// TODO: Force the database to completely close, then repoen it.
 	state.database.Close()
 	state.database = nil
-	state.reset()
+
+	nhash, nversion := state.reset()
+	if bytes.Compare(hash, nhash) != 0 || version != nversion {
+		log.Fatal("Persistence Failed, difference in hash,version",
+			"version", version, "nversion", nversion, "hash", hash, "nhash", nhash)
+	}
 
 	return hash, version
 }
@@ -152,7 +159,7 @@ func (state *ChainState) Dump() {
 }
 
 // Reset the chain state from persistence
-func (state *ChainState) reset() {
+func (state *ChainState) reset() ([]byte, int64) {
 	// TODO: I need three copies of the tree, only one is ultimately mutable... (checked changed rollback)
 	// TODO: Close before reopen, better just update...
 
@@ -171,7 +178,8 @@ func (state *ChainState) reset() {
 	state.Version = state.Delivered.Version64()
 	state.TreeHeight = state.Delivered.Height()
 
-	log.Debug("Initialized Database", "version", state.Version, "tree_height", state.TreeHeight, "hash", state.Hash)
+	log.Debug("Reinitialized Database", "version", state.Version, "tree_height", state.TreeHeight, "hash", state.Hash)
+	return state.Hash, state.Version
 }
 
 // Create or attach to a database
