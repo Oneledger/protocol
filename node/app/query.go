@@ -84,13 +84,13 @@ func AccountKey(app Application, name string) interface{} {
 	identity, status := app.Identities.FindName(name)
 
 	if status == err.SUCCESS && identity.Name != "" {
-		return identity
+		return identity.AccountKey
 	}
 
 	// Maybe this is an AccountName, not an identity
 	account, status := app.Accounts.FindName(name)
 	if status == err.SUCCESS && identity.Name != "" {
-		return account
+		return account.AccountKey()
 	}
 
 	return "Account " + name + " Not Found"

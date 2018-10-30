@@ -47,6 +47,22 @@ func TestIdentity(t *testing.T) {
 	assert.Equal(t, identity, result, "These should be equal")
 }
 
+func TestIdentities(t *testing.T) {
+	global.Current.RootDir = "./"
+	identities := NewIdentities("TestIdentities")
+
+	identity := Identity{
+		Name:     "Tester",
+		NodeName: "Here",
+	}
+
+	identities.Add(identity)
+
+	result, _ := identities.FindName(identity.Name)
+
+	assert.Equal(t, identity, result, "These should be equal")
+}
+
 type KeyBase struct {
 	Key ED25519PublicKey
 }

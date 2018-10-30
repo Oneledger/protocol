@@ -24,26 +24,8 @@ func GetAccountKey(identity string) []byte {
 		log.Warn("Query returned nothing", "request", request)
 		return nil
 	}
-
-	/*
-		value := response.Response.Value
-		if value == nil || len(value) == 0 {
-			log.Error("Key not Found", "identity", identity)
-			return nil
-		}
-	*/
-
-	/*
-		// TODO: Decoded instead of serialized....
-		key, status := hex.DecodeString(string(value))
-		if status != nil {
-			log.Error("Decode Failed", "identity", identity, "value", value)
-			return nil
-		}
-	*/
-	result := response.(*id.Identity)
-
-	return result.AccountKey
+	result := response.([]uint8)
+	return result
 }
 
 func GetSwapAddress(currencyName string) []byte {

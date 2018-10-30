@@ -6,8 +6,6 @@
 package id
 
 import (
-	"encoding/hex"
-
 	"github.com/Oneledger/protocol/node/data"
 	"github.com/Oneledger/protocol/node/err"
 	"github.com/Oneledger/protocol/node/log"
@@ -47,7 +45,7 @@ func NewIdentities(name string) *Identities {
 	}
 }
 
-func (ids *Identities) Add(identity *Identity) {
+func (ids *Identities) Add(identity Identity) {
 	key := identity.Key()
 
 	session := ids.store.Begin()
@@ -74,6 +72,7 @@ func (ids *Identities) Exists(name string) bool {
 }
 
 func (ids *Identities) FindName(name string) (Identity, err.Code) {
+	// TODO: Find a better way
 	id := NewIdentity(name, "", true, "", nil)
 
 	value := ids.store.Get(id.Key())
@@ -136,34 +135,3 @@ func (id *Identity) AsString() string {
 	}
 	return buffer
 }
-
-type IdentityExport struct {
-	Name       string
-	External   bool
-	AccountKey string
-}
-
-func init() {
-	serial.Register(IdentityExport{})
-}
-
-// Export returns an easily printable struct
-func (id *Identity) Export() IdentityExport {
-	accountKey := hex.EncodeToString(id.AccountKey)
-	return IdentityExport{
-		Name:       id.Name,
-		External:   id.IsExternal(),
-		AccountKey: accountKey,
-	}
-}
-
-/*
-func (identity Identity) Format() (string, err.Code) {
-	return identity.Format(), err.SUCCESS
-}
-
-// Given an identity, get the account
-func (identity Identity) GetName() (string, err.Code) {
-	return identity.Name(), err.SUCCESS
-}
-*/

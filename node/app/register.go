@@ -73,7 +73,7 @@ func RegisterLocally(app *Application, name string, scope string, chain data.Cha
 		identity = *interim
 
 		global.Current.NodeIdentity = name
-		app.Identities.Add(&identity)
+		app.Identities.Add(identity)
 
 		log.Debug("Registered a New Identity", "name", name, "identity", identity)
 		status = true
@@ -82,7 +82,7 @@ func RegisterLocally(app *Application, name string, scope string, chain data.Cha
 	// Associate this account with the identity
 	if chain != data.ONELEDGER {
 		identity.SetAccount(chain, account)
-		app.Identities.Add(&identity)
+		app.Identities.Add(identity)
 	}
 	return status
 }

@@ -79,11 +79,13 @@ func (transaction Register) ProcessDeliver(app interface{}) err.Code {
 		return status
 	}
 
-	if entry.Name == "" {
+	if entry.Name != "" {
 		log.Debug("Ignoring Existing Identity", "identity", transaction.Identity)
 	} else {
-		identities.Add(id.NewIdentity(transaction.Identity, "Contact Information",
-			true, global.Current.NodeName, transaction.AccountKey))
+		identity := id.NewIdentity(transaction.Identity, "Contact Information",
+			true, global.Current.NodeName, transaction.AccountKey)
+
+		identities.Add(*identity)
 		log.Info("Updated External Identity", "id", transaction.Identity, "key", transaction.AccountKey)
 	}
 

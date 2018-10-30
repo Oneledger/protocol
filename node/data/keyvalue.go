@@ -77,12 +77,9 @@ func unconvertData(data []byte) interface{} {
 		return nil
 	}
 
-	//log.Dump("Unconvert, The data is", data)
-	//debug.PrintStack()
 	var proto interface{}
 	result, err := serial.Deserialize(data, proto, serial.PERSISTENT)
 	if err != nil {
-		//log.Dump("Unconvert later, The data is", data)
 		log.Fatal("Persistent Deserialization Failed", "err", err, "data", data)
 	}
 	return result
@@ -140,6 +137,7 @@ func (store KeyValue) Begin() Session {
 }
 
 func (store KeyValue) Dump() {
+	// TODO: Dump out debugging information here
 }
 
 func (store KeyValue) Errors() string {
@@ -185,7 +183,6 @@ func (store KeyValue) Get(key DatabaseKey) interface{} {
 	if index == -1 {
 		return nil
 	}
-	//log.Dump("Readonly Get", value)
 	return unconvertData(value)
 }
 
@@ -202,7 +199,6 @@ func (session KeyValueSession) Set(key DatabaseKey, value interface{}) bool {
 	log.Debug("Datastore Store", "key", key, "value", value)
 
 	buffer := convertData(value)
-	//log.Dump("About to write", buffer)
 	session.store.tree.Set(key, buffer)
 
 	return true
@@ -224,7 +220,6 @@ func (session KeyValueSession) Get(key DatabaseKey) interface{} {
 	if index == -1 {
 		return nil
 	}
-	//log.Dump("Writable Get", value)
 	return unconvertData(value)
 }
 
