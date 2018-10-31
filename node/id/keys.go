@@ -7,6 +7,7 @@ package id
 
 import (
 	"bytes"
+	"encoding/hex"
 	"errors"
 
 	"golang.org/x/crypto/bcrypt"
