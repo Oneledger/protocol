@@ -138,6 +138,17 @@ func (store KeyValue) Begin() Session {
 
 func (store KeyValue) Dump() {
 	// TODO: Dump out debugging information here
+	texts := store.database.Stats()
+	for key, value := range texts {
+		log.Debug("Stat", key, value)
+	}
+
+	iter := store.database.Iterator(nil, nil)
+	for ; iter.Valid(); iter.Next() {
+		hash := iter.Key()
+		node := iter.Value()
+		log.Debug("Row", hash, node)
+	}
 }
 
 func (store KeyValue) Errors() string {
@@ -181,6 +192,7 @@ func (store KeyValue) Get(key DatabaseKey) interface{} {
 	version := store.tree.Version64()
 	index, value := store.tree.GetVersioned(key, version)
 	if index == -1 {
+		log.Warn("Data is missing")
 		return nil
 	}
 	return unconvertData(value)

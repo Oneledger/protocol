@@ -245,6 +245,10 @@ func SaveSwap(status data.Datastore, accountKey id.AccountKey, transaction *Swap
 
 func FindSwap(status data.Datastore, key id.AccountKey) Transaction {
 	result := status.Get(key)
+	if result == nil {
+		return nil
+	}
+
 	return result.(Transaction)
 }
 

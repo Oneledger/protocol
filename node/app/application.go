@@ -12,6 +12,7 @@ import (
 	"github.com/Oneledger/protocol/node/action"
 	"github.com/Oneledger/protocol/node/data"
 	"github.com/Oneledger/protocol/node/err"
+	"github.com/Oneledger/protocol/node/global"
 	"github.com/Oneledger/protocol/node/id"
 	"github.com/Oneledger/protocol/node/log"
 	"github.com/Oneledger/protocol/node/serial"
@@ -54,12 +55,25 @@ func NewApplication() *Application {
 	}
 }
 
+type AdminParameters struct {
+	NodeAccountName string
+}
+
+func init() {
+	serial.Register(AdminParameters{})
+}
+
 // Initial the state of the application from persistent data
 func (app Application) Initialize() {
-	param := app.Admin.Get(data.DatabaseKey("NodeAccountName"))
-	if param != nil {
-		log.Dump("The parameter is", param)
-		//global.Current.NodeAccountName = param.(string)
+	raw := app.Admin.Get(data.DatabaseKey("NodeAccountName"))
+	if raw != nil {
+		params := raw.(AdminParameters)
+		global.Current.NodeAccountName = params.NodeAccountName
+	} else {
+		log.Dump("All entries", app.Admin.FindAll())
+		log.Warn("Unable to persist NodeAccountName, using default")
+		//app.Admin.Dump()
+		log.Dump("The parameter is", raw)
 	}
 }
 
@@ -242,14 +256,17 @@ func (app Application) DeliverTx(tx []byte) ResponseDeliverTx {
 		return ResponseDeliverTx{Code: err}
 	}
 
+	log.Debug("Validating")
 	if err = result.Validate(); err != 0 {
 		return ResponseDeliverTx{Code: err}
 	}
 
+	log.Debug("Starting processing")
 	if result.ShouldProcess(app) {
 		ttype, _ := action.UnpackMessage(action.Message(tx))
 
 		if ttype == action.SWAP || ttype == action.PUBLISH || ttype == action.VERIFY {
+			log.Debug("Starting the swap processing")
 			go result.ProcessDeliver(&app)
 		} else {
 			if err = result.ProcessDeliver(&app); err != 0 {
@@ -259,6 +276,7 @@ func (app Application) DeliverTx(tx []byte) ResponseDeliverTx {
 		}
 	}
 
+	log.Debug("Returning status")
 	return ResponseDeliverTx{
 		Code:      types.CodeTypeOK,
 		Data:      []byte("Data"),

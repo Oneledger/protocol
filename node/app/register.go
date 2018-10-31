@@ -16,6 +16,8 @@ import (
 func RegisterLocally(app *Application, name string, scope string, chain data.ChainType,
 	publicKey id.PublicKeyED25519, privateKey id.PrivateKeyED25519) bool {
 
+	log.Debug("Register Locally", "name", name, "chain", chain)
+
 	status := false
 
 	if chain == data.UNKNOWN {
@@ -36,21 +38,17 @@ func RegisterLocally(app *Application, name string, scope string, chain data.Cha
 		log.Debug("Created New Account", "key", account.AccountKey(), "account", account)
 
 		// TODO: This should add to a list
-		if name != "Zero" && chain == data.ONELEDGER {
+		if name != "Zero" && name != "Zero-OneLedger" && chain == data.ONELEDGER {
 			log.Debug("Updating NodeAccount", "name", accountName)
 
 			global.Current.NodeAccountName = accountName
-			/*
-				buffer, err := serial.Serialize(accountName, serial.NETWORK)
-				if err != nil {
-					log.Error("Failed to Serialize accountName")
-				}
-			*/
+
 			log.Debug("Admin store", "data.DatabaseKey", data.DatabaseKey("NodeAccountName"),
 				"accountName", accountName)
 
+			parameters := AdminParameters{NodeAccountName: accountName}
 			session := app.Admin.Begin()
-			session.Set(data.DatabaseKey("NodeAccountName"), accountName)
+			session.Set(data.DatabaseKey("NodeAccountName"), parameters)
 			session.Commit()
 		}
 		status = true
