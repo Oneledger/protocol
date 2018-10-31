@@ -717,8 +717,9 @@ func CreateContractOLT(app interface{}, context map[Parameter]FunctionValue) (bo
 	log.Warn("Not supported")
 	party := GetParty(context[MY_ACCOUNT])
 	counterParty := GetParty(context[THEM_ACCOUNT])
-	partyBalance := GetUtxo(app).Find(party.Key).Amount
-	counterPartyBalance := GetUtxo(app).Find(counterParty.Key).Amount
+
+	partyBalance := GetUtxo(app).Get(party.Key).Amount
+	counterPartyBalance := GetUtxo(app).Get(counterParty.Key).Amount
 
 	preimage := GetByte32(context[PREIMAGE])
 	if context[PASSWORD] != nil {

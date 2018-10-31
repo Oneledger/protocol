@@ -68,6 +68,17 @@ func (state *ChainState) Set(key DatabaseKey, balance Balance) {
 	state.Delivered.Set(key, buffer)
 }
 
+// Do this only for the Delivery side
+func (state *ChainState) Test(key DatabaseKey, balance Balance) {
+	buffer, err := serial.Serialize(balance, serial.PERSISTENT)
+	if err != nil {
+		log.Fatal("Failed to Deserialize balance: ", err)
+	}
+
+	// TODO: Get some error handling in here
+	state.Checked.Set(key, buffer)
+}
+
 // Expensive O(n) search through everything...
 func (state *ChainState) FindAll() map[string]*Balance {
 	mapping := make(map[string]*Balance, 1)
@@ -89,7 +100,7 @@ func (state *ChainState) FindAll() map[string]*Balance {
 }
 
 // TODO: Should be against the commit tree, not the delivered one!!!
-func (state *ChainState) Find(key DatabaseKey) *Balance {
+func (state *ChainState) Get(key DatabaseKey) *Balance {
 
 	version := state.Delivered.Version64()
 	_, value := state.Delivered.GetVersioned(key, version)
