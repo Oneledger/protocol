@@ -25,30 +25,36 @@ mkdir -p $DATA
 
 pushd $WORK > /dev/null
 
-echo "Stopping $nodeName"
 #
 # Stop Tendermint consensus
 #
 
-echo "============================================================" >> $LOG/tendermint.log
-echo "Stopping Tendermint" >> $LOG/tendermint.log
-echo "============================================================" >> $LOG/tendermint.log
-pkill -f "tendermint.*--home $DATA.*" >> $LOG/tendermint.log
+pids=`pgrep -f "tendermint.*--home $DATA.*"`
+if ! [ -z "$pids" ]
+then
+	echo "============================================================" >> $LOG/tendermint.log
+	echo "Stopping Tendermint" >> $LOG/tendermint.log
+	echo "============================================================" >> $LOG/tendermint.log
+	pkill -f "tendermint.*--home $DATA.*" >> $LOG/tendermint.log
+	killed=true
+fi
 
 #
 # Stop Fullnode
 #
-echo "============================================================" >> $LOG/fullnode.log
-echo "Stopping Fullnode" >> $LOG/fullnode.log
-echo "============================================================" >> $LOG/fullnode.log
-pkill -f "fullnode.*--node $nodeName.*" >> $LOG/fullnode.log
+pids=`pgrep -f "fullnode.*--node $nodeName.*"`
+if ! [ -z "$pids" ]
+then
+	echo "============================================================" >> $LOG/fullnode.log
+	echo "Stopping Fullnode" >> $LOG/fullnode.log
+	echo "============================================================" >> $LOG/fullnode.log
+	pkill -f "fullnode.*--node $nodeName.*" >> $LOG/fullnode.log
+	killed=true
+fi
 
-#
-# Stop Ethereum
-#
-
-#
-# Stop Bitcoin
-#
+if ! [ -z "$killed" ]
+then
+	echo "Stopped $nodeName"
+fi
 
 popd >> /dev/null

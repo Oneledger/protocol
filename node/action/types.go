@@ -84,7 +84,7 @@ func NewSendOutput(accountKey id.AccountKey, amount data.Coin) SendOutput {
 func CheckBalance(app interface{}, accountKey id.AccountKey, amount data.Coin) bool {
 	utxo := GetUtxo(app)
 
-	balance := utxo.Find(accountKey)
+	balance := utxo.Get(accountKey)
 	if balance == nil {
 		// New accounts don't have a balance until the first transaction
 		log.Debug("New Balance", "key", accountKey, "amount", amount, "balance", balance)

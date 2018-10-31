@@ -172,7 +172,7 @@ func UtxoInfo(app Application, name string) interface{} {
 		return entries
 
 	}
-	value := app.Utxo.Find(data.DatabaseKey(name))
+	value := app.Utxo.Get(data.DatabaseKey(name))
 	return value
 }
 
@@ -182,7 +182,7 @@ func GetBalance(app Application, account id.Account) string {
 		return ""
 	}
 
-	result := app.Utxo.Find(account.AccountKey())
+	result := app.Utxo.Get(account.AccountKey())
 	if result == nil {
 		return "[missing]"
 	}
@@ -209,7 +209,7 @@ func HandleBalanceQuery(app Application, message []byte) interface{} {
 
 func Balance(app Application, accountKey []byte) interface{} {
 
-	balance := app.Utxo.Find(accountKey)
+	balance := app.Utxo.Get(accountKey)
 	if balance != nil {
 		return balance
 	}
