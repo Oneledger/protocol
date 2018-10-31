@@ -7,6 +7,7 @@ package app
 
 import (
 	"bytes"
+	"math/big"
 
 	"github.com/Oneledger/protocol/node/abci"
 	"github.com/Oneledger/protocol/node/action"
@@ -79,7 +80,7 @@ func (app Application) Initialize() {
 
 type BasicState struct {
 	Account string `json:"account"`
-	Amount  int64  `json:"coins"` // TODO: Should be corrected as Amount, not coins
+	Amount  string `json:"coins"` // TODO: Should be corrected as Amount, not coins
 }
 
 // Use the Genesis block to initialze the system
@@ -109,13 +110,26 @@ func (app Application) SetupState(stateBytes []byte) {
 	}
 
 	// Use the account key in the database.
-	balance := data.NewBalance(state.Amount, "OLT")
+	balance := NewBalanceFromString(state.Amount, "OLT")
 	app.Utxo.Set(account.AccountKey(), balance)
 
 	// TODO: Until a block is commited, this data is not persistent
 	//app.Utxo.Commit()
 
 	log.Info("Genesis State UTXO database", "balance", balance)
+}
+
+func NewBalanceFromString(amount string, currency string) data.Balance {
+	value := big.NewInt(0)
+	value.SetString(amount, 10)
+	coin := data.Coin{
+		Currency: data.NewCurrency(currency),
+		Amount:   value,
+	}
+	if !coin.IsValid() {
+		log.Fatal("Create Invalid Coin", "coin", coin)
+	}
+	return data.Balance{Amount: coin}
 }
 
 // InitChain is called when a new chain is getting created

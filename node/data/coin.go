@@ -51,6 +51,10 @@ type Currency struct {
 	Id int `json:"id"`
 }
 
+func NewCurrency(currency string) Currency {
+	return Currencies[currency]
+}
+
 func NewCoin(amount int64, currency string) Coin {
 	value := big.NewInt(amount)
 	coin := Coin{
