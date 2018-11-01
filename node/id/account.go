@@ -235,7 +235,7 @@ func ParseAccountType(typeName string) data.ChainType {
 
 // OneLedger
 
-// Information we need about our own fullnode identities
+// Information we need about our own olfullnode identities
 type AccountOneLedger struct {
 	AccountBase
 	//todo: need to be change to the right type

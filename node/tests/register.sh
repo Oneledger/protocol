@@ -18,27 +18,27 @@ do
 	nodeName=`$CMD/lookup $name NodeName`
 	WORK=$OLDATA/$nodeName
 	LOG=$WORK
-	ROOT=$WORK/fullnode
+	ROOT=$WORK/olfullnode
 
 	echo "Register [$name] "
 	$CMD/stopNode $name
 
 	# Setup a global Identity and OneLedger account
-	fullnode register --root $ROOT -a $nodeAddr \
+	olfullnode register --root $ROOT -a $nodeAddr \
 		--node $nodeName \
 		--identity $name \
-		>> $LOG/fullnode.log 2>&1
+		>> $LOG/olfullnode.log 2>&1
 
 	# Fill in the specific chain accounts
-	fullnode register --root $ROOT -a $nodeAddr \
+	olfullnode register --root $ROOT -a $nodeAddr \
 		--node $nodeName \
 		--identity $name --chain Bitcoin \
-		>> $LOG/fullnode.log 2>&1
+		>> $LOG/olfullnode.log 2>&1
 
-	fullnode register --root $ROOT -a $nodeAddr \
+	olfullnode register --root $ROOT -a $nodeAddr \
 		--node $nodeName \
 		--identity $name --chain Ethereum \
-		>> $LOG/fullnode.log 2>&1
+		>> $LOG/olfullnode.log 2>&1
 
 	# Broadtcast it to all of the nodes to make sure it is unique
 	$CMD/startNode $name register

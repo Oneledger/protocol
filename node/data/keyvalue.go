@@ -192,7 +192,6 @@ func (store KeyValue) Get(key DatabaseKey) interface{} {
 	version := store.tree.Version64()
 	index, value := store.tree.GetVersioned(key, version)
 	if index == -1 {
-		log.Warn("Data is missing")
 		return nil
 	}
 	return unconvertData(value)

@@ -71,10 +71,7 @@ func (app Application) Initialize() {
 		params := raw.(AdminParameters)
 		global.Current.NodeAccountName = params.NodeAccountName
 	} else {
-		log.Dump("All entries", app.Admin.FindAll())
-		log.Warn("Unable to persist NodeAccountName, using default")
-		//app.Admin.Dump()
-		log.Dump("The parameter is", raw)
+		log.Debug("NodeAccountName not currently set")
 	}
 }
 

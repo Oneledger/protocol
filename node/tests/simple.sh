@@ -11,7 +11,7 @@ $CMD/startOneLedger
 addrAlice=`$CMD/lookup Alice RPCAddress tcp://127.0.0.1:`
 addrBob=`$CMD/lookup Bob RPCAddress tcp://127.0.0.1:`
 
-# assumes fullnode is in the PATH
+# assumes olfullnode is in the PATH
 olclient send --party Bob --counterparty Alice --address $addrBob
 
 sleep 3

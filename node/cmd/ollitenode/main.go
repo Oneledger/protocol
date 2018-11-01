@@ -1,7 +1,7 @@
 /*
 	Copyright 2017-2018 OneLedger
 
-	A fullnode for the OneLedger chain. Includes cli arguments to initialize, restart, etc.
+	A litenode for the OneLedger chain.
 */
 package main
 
@@ -19,12 +19,12 @@ var service common.Service
 var context *global.Context // Global runtime context
 
 func main() {
-	log.Debug("Starting up a Fullnode", "args", os.Args)
+	log.Debug("ollitenode", "args", os.Args)
 
 	Execute() // Pass control to Cobra
 }
 
 // init starts up right away, so the logging and context is initialized as early as possible
 func init() {
-	context = global.NewContext("Fullnode")
+	context = global.NewContext("ollitenode")
 }

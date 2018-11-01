@@ -10,6 +10,7 @@ import (
 	brpc "github.com/Oneledger/protocol/node/chains/bitcoin/rpc"
 	"github.com/Oneledger/protocol/node/serial"
 	"github.com/btcsuite/btcd/chaincfg"
+	"github.com/btcsuite/btcd/chaincfg/chainhash"
 
 	"encoding/base64"
 	"net"
@@ -22,6 +23,17 @@ import (
 	"github.com/btcsuite/btcd/wire"
 	"github.com/btcsuite/btcutil"
 )
+
+func init() {
+	var hash chainhash.Hash
+	serial.Register(&hash)
+	serial.Register(wire.OutPoint{})
+	serial.Register(wire.TxIn{})
+	serial.Register(wire.TxOut{})
+	serial.Register(wire.TxWitness{})
+	serial.Register(wire.MsgTx{})
+	serial.Register(HTLContract{})
+}
 
 func GetChaincfg() *chaincfg.Params {
 
@@ -134,7 +146,7 @@ type HTLContract struct {
 }
 
 func (h *HTLContract) ToMessage() []byte {
-	msg, err := serial.Serialize(h, serial.CLIENT)
+	msg, err := serial.Serialize(h, serial.JSON)
 	if err != nil {
 		log.Error("Failed to serialize htlc", "err", err)
 	}
@@ -154,7 +166,9 @@ func GetHTLCFromMessage(message []byte) *HTLContract {
 	log.Debug("Parse message to BTC HTLC")
 	register := &HTLContract{}
 
-	result, err := serial.Deserialize(message, register, serial.CLIENT)
+	log.Dump("HTLC Message is", message)
+
+	result, err := serial.Deserialize(message, register, serial.JSON)
 	if err != nil {
 		log.Error("Failed parse htlc contract", "err", err)
 		return nil
