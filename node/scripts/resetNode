@@ -70,8 +70,8 @@ cp $STAGING/$SUBDIR/config/node_key.json $DATA/config/node_key.json
 # Reset our chain
 #
 
-#fullnode unsafe_reset_all > $LOG/fullnode_init.log
-#fullnode init > $LOG/fullnode_init.log
+#olfullnode unsafe_reset_all > $LOG/olfullnode_init.log
+#olfullnode init > $LOG/olfullnode_init.log
 
 #
 # Reset Etheruem's chain

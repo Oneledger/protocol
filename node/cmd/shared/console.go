@@ -75,7 +75,7 @@ func (tty *Tty) Password() string {
 	isValid := false
 
 	for isValid {
-		input = tty.Read("Enter a passpharse")
+		input = tty.Read("Enter a passphrase")
 		if len(input) > 7 {
 			isValid = true
 		}
