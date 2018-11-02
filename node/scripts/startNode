@@ -74,6 +74,7 @@ then
 		--address $rpcAddress \
 		--btcrpc $btcAddress \
 		--ethrpc $ethAddress \
+        --tendermintRoot $DATA \
 		$extra \
 		>> $LOG/fullnode.log 2>&1 &
 

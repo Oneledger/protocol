@@ -7,6 +7,7 @@ package app
 
 import (
 	"bytes"
+	"encoding/hex"
 	"github.com/Oneledger/protocol/node/abci"
 	"github.com/Oneledger/protocol/node/action"
 	"github.com/Oneledger/protocol/node/comm"
@@ -49,7 +50,7 @@ func NewApplication() *Application {
 		Accounts:   id.NewAccounts("accounts"),
 		Utxo:       data.NewChainState("utxo", data.PERSISTENT),
 		Event:      data.NewDatastore("event", data.PERSISTENT),
-		Contract: 	data.NewDatastore("contract", data.PERSISTENT),
+		Contract:   data.NewDatastore("contract", data.PERSISTENT),
 	}
 }
 
@@ -92,11 +93,11 @@ func (app Application) GetUtxo() interface{} {
 }
 
 func (app Application) GetChainID() interface{} {
-    return ChainId
+	return ChainId
 }
 
 func (app Application) GetEvent() interface{} {
-    return app.Event
+	return app.Event
 }
 
 func (app Application) GetContract() interface{} {
@@ -159,6 +160,8 @@ func CreateAccount(app Application, stateAccount string, stateAmount int64, publ
 func (app Application) InitChain(req RequestInitChain) ResponseInitChain {
 	log.Debug("Contract: InitChain", "req", req)
 
+	log.Debug("FeePayment1", "Validators", req.Validators)
+
 	app.SetupState(req.AppStateBytes)
 
 	return ResponseInitChain{}
@@ -167,6 +170,7 @@ func (app Application) InitChain(req RequestInitChain) ResponseInitChain {
 // SetOption changes the underlying options for the ABCi app
 func (app Application) SetOption(req RequestSetOption) ResponseSetOption {
 	log.Debug("Contract: SetOption", "key", req.Key, "value", req.Value)
+	log.Debug("SetOption", "req", req)
 
 	SetOption(&app, req.Key, req.Value)
 
@@ -239,7 +243,7 @@ func (app Application) CheckTx(tx []byte) ResponseCheckTx {
 		Log:       "Log Data",
 		Info:      "Info Data",
 		GasWanted: 1000,
-		GasUsed: 1000,
+		GasUsed:   1000,
 		Tags:      []common.KVPair(nil),
 	}
 }
@@ -248,7 +252,28 @@ var chainKey data.DatabaseKey = data.DatabaseKey("chainId")
 
 // BeginBlock is called when a new block is started
 func (app Application) BeginBlock(req RequestBeginBlock) ResponseBeginBlock {
-	//log.Debug("Contract: BeginBlock", "req", req)
+	log.Debug("Contract: BeginBlock", "req", req)
+
+	log.Debug("FeePayment", "LastCommitInfo", req.LastCommitInfo)
+
+	//log.Debug("FeePayment", "ValidatorsHash", hex.EncodeToString(req.Header.ValidatorsHash))
+	log.Debug("FeePaymentProposer", "ShowMe", req.Header.GetProposer())
+	//log.Debug("Proposer 3", "Get Proposer", req.LastCommitInfo.Validators)
+
+	//var sendArgs shared.SendArguments
+
+	list := req.LastCommitInfo.GetValidators()
+	for _, entry := range list {
+		formatted := hex.EncodeToString(entry.Validator.Address)
+		log.Debug("FeePayment", "Address", formatted)
+		//validator := GetValidatorAccount(formatted)
+		//log.Debug("FeePayment", "Validator", validator)
+		//sendArgs.CounterParty = formatted
+	}
+
+	//packet := shared.CreateSendRequest(&sendArgs)
+
+	//log.Debug("FeePayment", "packet", packet)
 
 	newChainId := action.Message(req.Header.ChainID)
 
@@ -262,6 +287,30 @@ func (app Application) BeginBlock(req RequestBeginBlock) ResponseBeginBlock {
 	}
 
 	return ResponseBeginBlock{}
+}
+
+func GetValidatorAccount(tendermintAddress string) []byte {
+	request := action.Message("TendermintAddress=" + tendermintAddress)
+	response := comm.Query("/accountKey", request)
+
+	if response == nil || response.Response.Value == nil {
+		log.Error("No Response from Node", "tendermintAddress", tendermintAddress)
+		return nil
+	}
+
+	value := response.Response.Value
+	if value == nil || len(value) == 0 {
+		log.Error("Key is Missing", "tendermintAddress", tendermintAddress)
+		return nil
+	}
+
+	key, status := hex.DecodeString(string(value))
+	if status != nil {
+		log.Error("Decode Failed", "tendermintAddress", tendermintAddress, "value", value)
+		return nil
+	}
+
+	return key
 }
 
 // DeliverTx accepts a transaction and updates all relevant data
@@ -278,14 +327,14 @@ func (app Application) DeliverTx(tx []byte) ResponseDeliverTx {
 	}
 
 	if result.ShouldProcess(app) {
-	    ttype, _ := action.UnpackMessage(action.Message(tx))
-	    if ttype == action.SWAP || ttype == action.PUBLISH || ttype == action.VERIFY {
-	        go result.ProcessDeliver(&app)
-        } else {
-            if err = result.ProcessDeliver(&app); err != 0 {
-                return ResponseDeliverTx{Code: err}
-            }
-        }
+		ttype, _ := action.UnpackMessage(action.Message(tx))
+		if ttype == action.SWAP || ttype == action.PUBLISH || ttype == action.VERIFY {
+			go result.ProcessDeliver(&app)
+		} else {
+			if err = result.ProcessDeliver(&app); err != 0 {
+				return ResponseDeliverTx{Code: err}
+			}
+		}
 	}
 
 	return ResponseDeliverTx{

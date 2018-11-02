@@ -7,14 +7,15 @@
 package shared
 
 import (
-	"os"
-
+	"encoding/json"
 	"github.com/Oneledger/protocol/node/action"
 	"github.com/Oneledger/protocol/node/app"
 	"github.com/Oneledger/protocol/node/convert"
 	"github.com/Oneledger/protocol/node/data"
 	"github.com/Oneledger/protocol/node/global"
 	"github.com/Oneledger/protocol/node/log"
+	"io/ioutil"
+	"os"
 )
 
 // Prepare a transaction to be issued.
@@ -30,11 +31,44 @@ type RegisterArguments struct {
 	Identity string
 }
 
+type PrivValidator struct {
+	Address       string    `json:"address"`
+	PubKey        TypeValue `json:"pub_key"`
+	LastHeight    int64     `json:"last_height"`
+	LastRound     int64     `json:"last_round"`
+	LastStep      int64     `json:"last_step"`
+	LastSignature string    `json:"last_signature"`
+	LastSignBytes string    `json:"last_signbytes"`
+	PrivKey       TypeValue `json:"priv_key"`
+}
+
+type TypeValue struct {
+	Type  string `json:"type"`
+	Value string `json:"value"`
+}
+
 // Create a request to register a new identity with the chain
 func CreateRegisterRequest(args *RegisterArguments) []byte {
 	signers := GetSigners()
 
 	accountKey := GetAccountKey(args.Identity)
+
+	filePath := global.Current.TendermintRoot + "/config/priv_validator.json"
+	jsonFile, err := os.Open(filePath)
+	if err != nil {
+		log.Debug("FeePayment", "err", err)
+	}
+	log.Debug("FeePaymentDat", "dat", jsonFile)
+	defer jsonFile.Close()
+
+	byteValue, _ := ioutil.ReadAll(jsonFile)
+
+	var privValidator PrivValidator
+
+	json.Unmarshal(byteValue, &privValidator)
+
+	log.Debug("FeePaymentValAddress", "address", privValidator.Address)
+	log.Debug("FeePaymentValPubKey", "ValPubKey", privValidator.PubKey.Value)
 
 	reg := &action.Register{
 		Base: action.Base{
@@ -43,9 +77,11 @@ func CreateRegisterRequest(args *RegisterArguments) []byte {
 			Signers:  signers,
 			Sequence: global.Current.Sequence,
 		},
-		Identity:   args.Identity,
-		NodeName:   global.Current.NodeName,
-		AccountKey: accountKey,
+		Identity:          args.Identity,
+		NodeName:          global.Current.NodeName,
+		AccountKey:        accountKey,
+		TendermintAddress: privValidator.Address,
+		TendermintPubKey:  privValidator.PubKey.Value,
 	}
 
 	return SignAndPack(action.REGISTER, action.Transaction(reg))
@@ -119,7 +155,6 @@ func CreateSendRequest(args *SendArguments) []byte {
 		action.NewSendOutput(party, partyBalance.Minus(amount).Minus(fee)),
 		action.NewSendOutput(counterParty, counterPartyBalance.Plus(amount)),
 		action.NewSendOutput(payment, paymentBalance.Plus(fee)))
-
 
 	if conv.HasErrors() {
 		Console.Error(conv.GetErrors())
@@ -244,7 +279,7 @@ func CreateSwapRequest(args *SwapArguments) []byte {
 
 	account[conv.GetChain(args.Currency)] = GetSwapAddress(conv.GetCurrency(args.Currency))
 	account[conv.GetChain(args.Excurrency)] = GetSwapAddress(conv.GetCurrency(args.Excurrency))
-    //log.Debug("accounts for swap", "accountbtc", account[data.BITCOIN], "accounteth", common.BytesToAddress([]byte(account[data.ETHEREUM])), "accountolt", account[data.ONELEDGER])
+	//log.Debug("accounts for swap", "accountbtc", account[data.BITCOIN], "accounteth", common.BytesToAddress([]byte(account[data.ETHEREUM])), "accountolt", account[data.ONELEDGER])
 	party := action.Party{Key: partyKey, Accounts: account}
 	counterParty := action.Party{Key: counterPartyKey, Accounts: counterAccount}
 

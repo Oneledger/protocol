@@ -56,6 +56,9 @@ func init() {
 
 	RootCmd.PersistentFlags().StringVar(&global.Current.ETHAddress, "ethrpc",
 		global.Current.ETHAddress, "etherem rpc address")
+
+	RootCmd.PersistentFlags().StringVar(&global.Current.TendermintRoot, "tendermintRoot",
+		global.Current.TendermintRoot, "tendermint root directory")
 }
 
 // Initialize Viper

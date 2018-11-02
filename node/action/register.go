@@ -16,9 +16,11 @@ import (
 type Register struct {
 	Base
 
-	Identity   string
-	NodeName   string
-	AccountKey id.AccountKey
+	Identity          string
+	NodeName          string
+	AccountKey        id.AccountKey
+	TendermintAddress string
+	TendermintPubKey  string
 }
 
 // Check the fields to make sure they have valid values.

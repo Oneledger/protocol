@@ -43,6 +43,10 @@ type Context struct {
 	ETHAddress string // Ethereum node Address port
 
 	Sequence int64 // replay protection
+
+	TendermintRoot    string
+	TendermintAddress string
+	TendermintPubKey  string
 }
 
 func init() {
