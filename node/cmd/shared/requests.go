@@ -122,7 +122,7 @@ func CreateSendRequest(args *SendArguments) []byte {
 	// TODO: Can't convert identities to accounts, this way!
 	party := GetAccountKey(args.Party)
 	counterParty := GetAccountKey(args.CounterParty)
-	payment := GetAccountKey("Payment-OneLedger")
+	payment := GetAccountKey("Payment")
 	if party == nil || counterParty == nil {
 		log.Fatal("System doesn't reconize the parties", "args", args, "party", party, "counterParty", counterParty)
 		return nil

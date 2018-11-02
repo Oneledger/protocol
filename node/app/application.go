@@ -17,7 +17,6 @@ import (
 	"github.com/Oneledger/protocol/node/log"
 	"github.com/Oneledger/protocol/node/serial"
 	"github.com/tendermint/tendermint/abci/types"
-	"github.com/tendermint/tendermint/crypto/ed25519"
 	"github.com/tendermint/tendermint/libs/common"
 	"math/big"
 )
@@ -54,19 +53,6 @@ func NewApplication() *Application {
 		Utxo:       data.NewChainState("utxo", data.PERSISTENT),
 		Event:      data.NewDatastore("event", data.PERSISTENT),
 		Contract:   data.NewDatastore("contract", data.PERSISTENT),
-	}
-}
-
-// Initial the state of the application from persistent data
-func (app Application) Initialize() {
-	param := app.Admin.Load(data.DatabaseKey("NodeAccountName"))
-	if param != nil {
-		var name string
-		buffer, err := comm.Deserialize(param, &name)
-		if err != nil {
-			log.Error("Failed to deserialize persistent data")
-		}
-		global.Current.NodeAccountName = *(buffer.(*string))
 	}
 }
 
@@ -112,20 +98,22 @@ func (app Application) SetupState(stateBytes []byte) {
 	//publicKey, privateKey := id.GenerateKeys([]byte(state.Account)) // TODO: switch with passphrase
 	publicKey, privateKey := id.NilPublicKey(), id.NilPrivateKey()
 
+	CreateAccount(app, state.Account, state.Amount, publicKey, privateKey)
+
+	publicKey, privateKey = id.OnePublicKey(), id.OnePrivateKey()
+	CreateAccount(app, "Payment", "0", publicKey, privateKey)
+}
+
+func CreateAccount(app Application, stateAccount string, stateAmount string, publicKey id.PublicKeyED25519, privateKey id.PrivateKeyED25519) {
+
 	// TODO: This should probably only occur on the Admin node, for other nodes how do I know the key?
 	// Register the identity and account first
-	RegisterLocally(&app, state.Account, "OneLedger", data.ONELEDGER, publicKey, privateKey)
-	account, status := app.Accounts.FindName(state.Account + "-OneLedger")
-	if status != err.SUCCESS {
-		log.Fatal("Recently Added Account is missing", "name", state.Account, "status", status)
-	}
+	RegisterLocally(&app, stateAccount, "OneLedger", data.ONELEDGER, publicKey, privateKey)
+	account, _ := app.Accounts.FindName(stateAccount + "-OneLedger")
 
-	// Use the account key in the database.
-	balance := NewBalanceFromString(state.Amount, "OLT")
+	// Use the account key in the balance
+	balance := NewBalanceFromString(stateAmount, "OLT")
 	app.Utxo.Set(account.AccountKey(), balance)
-
-	// TODO: Until a block is commited, this data is not persistent
-	//app.Utxo.Commit()
 
 	log.Info("Genesis State UTXO database", "balance", balance)
 }
@@ -294,6 +282,7 @@ func (app Application) BeginBlock(req RequestBeginBlock) ResponseBeginBlock {
 	}
 }
 
+/*
 func GetValidatorAccount(tendermintAddress string) []byte {
 	request := action.Message("TendermintAddress=" + tendermintAddress)
 	response := comm.Query("/accountKey", request)
@@ -317,7 +306,7 @@ func GetValidatorAccount(tendermintAddress string) []byte {
 
 	return key
 }
-
+*/
 // DeliverTx accepts a transaction and updates all relevant data
 func (app Application) DeliverTx(tx []byte) ResponseDeliverTx {
 	log.Debug("ABCI: DeliverTx", "tx", tx)
