@@ -10,15 +10,16 @@ import (
 	"encoding/hex"
 	"github.com/Oneledger/protocol/node/abci"
 	"github.com/Oneledger/protocol/node/action"
-	"github.com/Oneledger/protocol/node/comm"
-	"github.com/Oneledger/protocol/node/convert"
 	"github.com/Oneledger/protocol/node/data"
+	"github.com/Oneledger/protocol/node/err"
 	"github.com/Oneledger/protocol/node/global"
 	"github.com/Oneledger/protocol/node/id"
 	"github.com/Oneledger/protocol/node/log"
+	"github.com/Oneledger/protocol/node/serial"
 	"github.com/tendermint/tendermint/abci/types"
 	"github.com/tendermint/tendermint/crypto/ed25519"
 	"github.com/tendermint/tendermint/libs/common"
+	"math/big"
 )
 
 var ChainId string
@@ -32,13 +33,15 @@ func init() {
 type Application struct {
 	types.BaseApplication
 
-	Admin      *data.Datastore  // any administrative parameters
-	Status     *data.Datastore  // current state of any composite transactions (pending, verified, etc.)
+	Admin      data.Datastore   // any administrative parameters
+	Status     data.Datastore   // current state of any composite transactions (pending, verified, etc.)
 	Identities *id.Identities   // Keep a higher-level identity for a given user
 	Accounts   *id.Accounts     // Keep all of the user accounts locally for their node (identity management)
 	Utxo       *data.ChainState // unspent transction output (for each type of coin)
-	Event      *data.Datastore  // Event for any action that need to be tracked
-	Contract   *data.Datastore  // contract for reuse.
+	Event      data.Datastore   // Event for any action that need to be tracked
+	Contract   data.Datastore   // contract for reuse.
+
+	LastHeader types.Header // Tendermint last header info
 }
 
 // NewApplicationContext initializes a new application
@@ -67,46 +70,28 @@ func (app Application) Initialize() {
 	}
 }
 
-// Access to the local persistent databases
-func (app Application) GetAdmin() interface{} {
-	return app.Admin
+type AdminParameters struct {
+	NodeAccountName string
 }
 
-// Access to the local persistent databases
-func (app Application) GetStatus() interface{} {
-	return app.Status
+func init() {
+	serial.Register(AdminParameters{})
 }
 
-// Access to the local persistent databases
-func (app Application) GetIdentities() interface{} {
-	return app.Identities
-}
-
-// Access to the local persistent databases
-func (app Application) GetAccounts() interface{} {
-	return app.Accounts
-}
-
-// Access to the local persistent databases
-func (app Application) GetUtxo() interface{} {
-	return app.Utxo
-}
-
-func (app Application) GetChainID() interface{} {
-	return ChainId
-}
-
-func (app Application) GetEvent() interface{} {
-	return app.Event
-}
-
-func (app Application) GetContract() interface{} {
-	return app.Contract
+// Initial the state of the application from persistent data
+func (app Application) Initialize() {
+	raw := app.Admin.Get(data.DatabaseKey("NodeAccountName"))
+	if raw != nil {
+		params := raw.(AdminParameters)
+		global.Current.NodeAccountName = params.NodeAccountName
+	} else {
+		log.Debug("NodeAccountName not currently set")
+	}
 }
 
 type BasicState struct {
 	Account string `json:"account"`
-	Amount  int64  `json:"coins"` // TODO: Should be corrected as Amount, not coins
+	Amount  string `json:"coins"` // TODO: Should be corrected as Amount, not coins
 }
 
 // Use the Genesis block to initialze the system
@@ -114,10 +99,12 @@ func (app Application) SetupState(stateBytes []byte) {
 	log.Debug("SetupState", "state", string(stateBytes))
 
 	var base BasicState
-	des, err := comm.Deserialize(stateBytes, &base)
-	if err != nil {
+
+	des, errx := serial.Deserialize(stateBytes, &base, serial.JSON)
+	if errx != nil {
 		log.Fatal("Failed to deserialize stateBytes during SetupState")
 	}
+
 	state := des.(*BasicState)
 	log.Debug("Deserialized State", "state", state, "state.Account", state.Account)
 
@@ -125,40 +112,40 @@ func (app Application) SetupState(stateBytes []byte) {
 	//publicKey, privateKey := id.GenerateKeys([]byte(state.Account)) // TODO: switch with passphrase
 	publicKey, privateKey := id.NilPublicKey(), id.NilPrivateKey()
 
-	CreateAccount(app, state.Account, state.Amount, publicKey, privateKey)
-
-	publicKey, privateKey = id.OnePublicKey(), id.OnePrivateKey()
-	CreateAccount(app, "Payment", 0, publicKey, privateKey)
-}
-
-func CreateAccount(app Application, stateAccount string, stateAmount int64, publicKey ed25519.PubKeyEd25519, privateKey ed25519.PrivKeyEd25519) {
-
 	// TODO: This should probably only occur on the Admin node, for other nodes how do I know the key?
 	// Register the identity and account first
-	RegisterLocally(&app, stateAccount, "OneLedger", data.ONELEDGER, publicKey, privateKey)
-	account, _ := app.Accounts.FindName(stateAccount + "-OneLedger")
-
-	// TODO: Should be more flexible to match genesis block
-	balance := data.Balance{
-		Amount: data.NewCoin(stateAmount, "OLT"),
-	}
-
-	buffer, err := comm.Serialize(balance)
-	if err != nil {
-		log.Error("Failed to Serialize balance")
+	RegisterLocally(&app, state.Account, "OneLedger", data.ONELEDGER, publicKey, privateKey)
+	account, status := app.Accounts.FindName(state.Account + "-OneLedger")
+	if status != err.SUCCESS {
+		log.Fatal("Recently Added Account is missing", "name", state.Account, "status", status)
 	}
 
 	// Use the account key in the database.
-	app.Utxo.Delivered.Set(account.AccountKey(), buffer)
-	app.Utxo.Delivered.SaveVersion()
-	app.Utxo.Commit()
+	balance := NewBalanceFromString(state.Amount, "OLT")
+	app.Utxo.Set(account.AccountKey(), balance)
+
+	// TODO: Until a block is commited, this data is not persistent
+	//app.Utxo.Commit()
 
 	log.Info("Genesis State UTXO database", "balance", balance)
 }
 
+func NewBalanceFromString(amount string, currency string) data.Balance {
+	value := big.NewInt(0)
+	value.SetString(amount, 10)
+	coin := data.Coin{
+		Currency: data.NewCurrency(currency),
+		Amount:   value,
+	}
+	if !coin.IsValid() {
+		log.Fatal("Create Invalid Coin", "coin", coin)
+	}
+	return data.Balance{Amount: coin}
+}
+
 // InitChain is called when a new chain is getting created
 func (app Application) InitChain(req RequestInitChain) ResponseInitChain {
-	log.Debug("Contract: InitChain", "req", req)
+	log.Debug("ABCI: InitChain", "req", req)
 
 	log.Debug("FeePayment1", "Validators", req.Validators)
 
@@ -169,8 +156,7 @@ func (app Application) InitChain(req RequestInitChain) ResponseInitChain {
 
 // SetOption changes the underlying options for the ABCi app
 func (app Application) SetOption(req RequestSetOption) ResponseSetOption {
-	log.Debug("Contract: SetOption", "key", req.Key, "value", req.Value)
-	log.Debug("SetOption", "req", req)
+	log.Debug("ABCI: SetOption", "key", req.Key, "value", req.Value)
 
 	SetOption(&app, req.Key, req.Value)
 
@@ -189,20 +175,27 @@ func (app Application) Info(req RequestInfo) ResponseInfo {
 	// TODO: Get the correct height from the last committed tree
 	// lastHeight := app.Utxo.Commit.Height()
 
-	log.Debug("Contract: Info", "req", req, "info", info)
+	log.Debug("ABCI: Info", "req", req, "info", info)
 
-	return ResponseInfo{
-		Data:            info.JSON(),
-		Version:         convert.GetString64(app.Utxo.Version),
-		LastBlockHeight: int64(app.Utxo.Height),
+	result := ResponseInfo{
+		Data: info.JSON(),
+		//Version: convert.GetString64(app.Utxo.Version),
+
+		// The version of the tree, needs to match the height of the chain
+		//LastBlockHeight: int64(0),
+		LastBlockHeight: int64(app.Utxo.Version),
+
 		// TODO: Should return a valid AppHash
-		//LastBlockAppHash: app.Utxo.Hash,
+		LastBlockAppHash: app.Utxo.Hash,
 	}
+
+	log.Dump("Info Response is", result)
+	return result
 }
 
 // Query returns a transaction or a proof
 func (app Application) Query(req RequestQuery) ResponseQuery {
-	log.Debug("Contract: Query", "req", req, "path", req.Path, "data", req.Data)
+	log.Debug("ABCI: Query", "req", req, "path", req.Path, "data", req.Data)
 
 	result := HandleQuery(app, req.Path, req.Data)
 
@@ -214,13 +207,18 @@ func (app Application) Query(req RequestQuery) ResponseQuery {
 		Key:    action.Message("result"),
 		Value:  result,
 		Proof:  nil,
-		Height: int64(app.Utxo.Height),
+		Height: int64(app.Utxo.Version),
 	}
 }
 
 // CheckTx tests to see if a transaction is valid
 func (app Application) CheckTx(tx []byte) ResponseCheckTx {
-	log.Debug("Contract: CheckTx", "tx", tx)
+	log.Debug("ABCI: CheckTx", "tx", tx)
+
+	if tx == nil {
+		log.Warn("Empty Transaction, Ignoring", "tx", tx)
+		return ResponseCheckTx{Code: err.PARSE_ERROR}
+	}
 
 	result, err := action.Parse(action.Message(tx))
 	if err != 0 || result == nil {
@@ -277,16 +275,23 @@ func (app Application) BeginBlock(req RequestBeginBlock) ResponseBeginBlock {
 
 	newChainId := action.Message(req.Header.ChainID)
 
-	chainId := app.Admin.Load(chainKey)
+	chainId := app.Admin.Get(chainKey)
 
 	if chainId == nil {
-		chainId = app.Admin.Store(chainKey, newChainId)
+		session := app.Admin.Begin()
+		session.Set(chainKey, newChainId)
+		session.Commit()
 
-	} else if bytes.Compare(chainId, newChainId) != 0 {
+		// TODO: This is questionable?
+		chainId = newChainId
+
+	} else if bytes.Compare(chainId.([]byte), newChainId) != 0 {
 		log.Warn("Mismatching chains", "chainId", chainId, "newChainId", newChainId)
 	}
 
-	return ResponseBeginBlock{}
+	return ResponseBeginBlock{
+		Tags: []common.KVPair(nil),
+	}
 }
 
 func GetValidatorAccount(tendermintAddress string) []byte {
@@ -315,28 +320,34 @@ func GetValidatorAccount(tendermintAddress string) []byte {
 
 // DeliverTx accepts a transaction and updates all relevant data
 func (app Application) DeliverTx(tx []byte) ResponseDeliverTx {
-	log.Debug("Contract: DeliverTx", "tx", tx)
+	log.Debug("ABCI: DeliverTx", "tx", tx)
 
 	result, err := action.Parse(action.Message(tx))
 	if err != 0 || result == nil {
 		return ResponseDeliverTx{Code: err}
 	}
 
+	log.Debug("Validating")
 	if err = result.Validate(); err != 0 {
 		return ResponseDeliverTx{Code: err}
 	}
 
+	log.Debug("Starting processing")
 	if result.ShouldProcess(app) {
 		ttype, _ := action.UnpackMessage(action.Message(tx))
+
 		if ttype == action.SWAP || ttype == action.PUBLISH || ttype == action.VERIFY {
+			log.Debug("Starting the swap processing")
 			go result.ProcessDeliver(&app)
 		} else {
 			if err = result.ProcessDeliver(&app); err != 0 {
+				log.Warn("Processing Failed", "err", err)
 				return ResponseDeliverTx{Code: err}
 			}
 		}
 	}
 
+	log.Debug("Returning status")
 	return ResponseDeliverTx{
 		Code:      types.CodeTypeOK,
 		Data:      []byte("Data"),
@@ -350,19 +361,23 @@ func (app Application) DeliverTx(tx []byte) ResponseDeliverTx {
 
 // EndBlock is called at the end of all of the transactions
 func (app Application) EndBlock(req RequestEndBlock) ResponseEndBlock {
-	log.Debug("Contract: EndBlock", "req", req)
+	log.Debug("ABCI: EndBlock", "req", req)
 
-	return ResponseEndBlock{}
+	return ResponseEndBlock{
+		Tags: []common.KVPair(nil),
+	}
 }
 
 // Commit tells the app to make everything persistent
 func (app Application) Commit() ResponseCommit {
-	log.Debug("Contract: Commit")
+	log.Debug("ABCI: Commit")
 
 	// Commit any pending changes.
 	hash, version := app.Utxo.Commit()
 
-	log.Debug("Committed", "hash", hash, "version", version)
+	log.Debug("-- Committed New Block", "hash", hash, "version", version)
 
-	return ResponseCommit{}
+	return ResponseCommit{
+		Data: hash,
+	}
 }

@@ -6,17 +6,15 @@
 package id
 
 import (
-	"encoding/hex"
-
-	"github.com/Oneledger/protocol/node/comm"
 	"github.com/Oneledger/protocol/node/data"
 	"github.com/Oneledger/protocol/node/err"
 	"github.com/Oneledger/protocol/node/log"
+	"github.com/Oneledger/protocol/node/serial"
 )
 
 // The persistent collection of all accounts known by this node
 type Identities struct {
-	data *data.Datastore
+	store data.Datastore
 }
 
 // A user of a OneLedger node, but not necessarily the chain itself.
@@ -34,30 +32,29 @@ type Identity struct {
 	Nodes map[string]data.ChainNode
 }
 
+func init() {
+	serial.Register(Identity{})
+}
+
 // Initialize or reconnect to the database
 func NewIdentities(name string) *Identities {
-	data := data.NewDatastore(name, data.PERSISTENT)
+	store := data.NewDatastore(name, data.PERSISTENT)
 
 	return &Identities{
-		data: data,
+		store: store,
 	}
 }
 
-func (ids *Identities) Add(identity *Identity) {
-
-	buffer, err := comm.Serialize(identity)
-	if err != nil {
-		log.Error("Serialize Failed", "err", err)
-		return
-	}
-
+func (ids *Identities) Add(identity Identity) {
 	key := identity.Key()
-	ids.data.Store(key, buffer)
-	ids.data.Commit()
+
+	session := ids.store.Begin()
+	session.Set(key, identity)
+	session.Commit()
 }
 
 func (ids *Identities) Close() {
-	ids.data.Close()
+	ids.store.Close()
 }
 
 func (ids *Identities) Delete() {
@@ -66,7 +63,7 @@ func (ids *Identities) Delete() {
 func (ids *Identities) Exists(name string) bool {
 	id := NewIdentity(name, "", true, "", nil)
 
-	value := ids.data.Load(id.Key())
+	value := ids.store.Get(id.Key())
 	if value != nil {
 		return true
 	}
@@ -74,34 +71,24 @@ func (ids *Identities) Exists(name string) bool {
 	return false
 }
 
-func (ids *Identities) FindName(name string) (*Identity, err.Code) {
+func (ids *Identities) FindName(name string) (Identity, err.Code) {
+	// TODO: Find a better way
 	id := NewIdentity(name, "", true, "", nil)
 
-	value := ids.data.Load(id.Key())
+	value := ids.store.Get(id.Key())
 	if value != nil {
-		identity := &Identity{}
-		base, status := comm.Deserialize(value, identity)
-		if status != nil {
-			log.Fatal("Failed to deserialize Identity: ", status)
-		}
-
-		return base.(*Identity), err.SUCCESS
+		return value.(Identity), err.SUCCESS
 	}
-
-	return nil, err.SUCCESS
+	return Identity{}, err.MISSING_DATA
 }
 
-func (ids *Identities) FindAll() []*Identity {
-	keys := ids.data.List()
+func (ids *Identities) FindAll() []Identity {
+	keys := ids.store.FindAll()
 	size := len(keys)
-	results := make([]*Identity, size, size)
+	results := make([]Identity, size, size)
 	for i := 0; i < size; i++ {
-		identity := &Identity{}
-		base, err := comm.Deserialize(ids.data.Load(keys[i]), identity)
-		if err != nil {
-			log.Fatal("Failed to deserialize Identities: ", err)
-		}
-		results[i] = base.(*Identity)
+		result := ids.store.Get(keys[i])
+		results[i] = result.(Identity)
 	}
 	return results
 }
@@ -148,30 +135,3 @@ func (id *Identity) AsString() string {
 	}
 	return buffer
 }
-
-type IdentityExport struct {
-	Name       string
-	External   bool
-	AccountKey string
-}
-
-// Export returns an easily printable struct
-func (id *Identity) Export() IdentityExport {
-	accountKey := hex.EncodeToString(id.AccountKey)
-	return IdentityExport{
-		Name:       id.Name,
-		External:   id.IsExternal(),
-		AccountKey: accountKey,
-	}
-}
-
-/*
-func (identity Identity) Format() (string, err.Code) {
-	return identity.Format(), err.SUCCESS
-}
-
-// Given an identity, get the account
-func (identity Identity) GetName() (string, err.Code) {
-	return identity.Name(), err.SUCCESS
-}
-*/

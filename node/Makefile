@@ -78,7 +78,7 @@ swaptest: reset install
 	@./scripts/startEthereum
 	@./tests/register.sh
 	@./tests/swap.sh
-	@./scripts/stopOneLedger
+	@./scripts/stopMVP
 
 
 #
@@ -94,13 +94,19 @@ start: check install
 # System Testing, bring it all down
 #
 stop: check
-	@./scripts/stopOneLedger
+	@./scripts/stopMVP
 
 #
 # Reset all of the chains, back to genesis
 #
 reset: check stop
-	@./scripts/resetOneLedger 4
+	@./scripts/resetOneLedger
+
+#
+# Reset all of the chains, back to genesis
+#
+resetMVP: check stop
+	@./scripts/resetMVP
 
 #
 # Startup a tmux monitor

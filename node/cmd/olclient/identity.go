@@ -7,7 +7,6 @@ package main
 
 import (
 	"github.com/Oneledger/protocol/node/action"
-	"github.com/Oneledger/protocol/node/app"
 	"github.com/Oneledger/protocol/node/cmd/shared"
 	"github.com/Oneledger/protocol/node/comm"
 	"github.com/Oneledger/protocol/node/id"
@@ -45,42 +44,45 @@ func FormatIdentityRequest() []byte {
 func CheckIdentity(cmd *cobra.Command, args []string) {
 	log.Debug("Checking Identity", "identity", ident)
 
+	nodeName := shared.GetNodeName()
+
 	request := FormatIdentityRequest()
 	response := comm.Query("/identity", request)
-	if response != nil {
-		var prototype app.IdentityQuery
-		result, err := comm.Deserialize(response.Response.Value, &prototype)
-		if err != nil {
-			shared.Console.Error("Failed to deserialize IdentityQuery:")
-			return
-		}
-		printResponse(result.(*app.IdentityQuery))
+	if response == nil {
+		shared.Console.Error("Node", nodeName, "unavailable")
+	}
+	if str := comm.IsError(response); str != nil {
+		shared.Console.Error("Node", nodeName, str)
+	}
+
+	printResponse(nodeName, response)
+}
+
+func printResponse(nodeName string, idQuery interface{}) {
+	identities := idQuery.([]id.Identity)
+
+	shared.Console.Info("\nOneLedger Identities on", nodeName, ":\n")
+
+	for _, identity := range identities {
+		printIdentity(identity)
 	}
 }
 
-func printResponse(idQuery *app.IdentityQuery) {
-	shared.Console.Info("\nOneLedger Identities:\n")
-
-	for _, identity := range idQuery.Identities {
-		printIdentity(&identity)
-	}
-}
-
-func printIdentity(export *id.IdentityExport) {
+func printIdentity(identity id.Identity) {
 	// Right-align fieldnames in console
 	name := "      Name:"
 	scope := "     Scope:"
 	accountKey := "       Key:"
 
 	var scopeOutput string
-	if export.External {
+	if identity.External {
 		scopeOutput = "External"
 	} else {
 		scopeOutput = "Local"
 	}
 
-	shared.Console.Info(name, export.Name)
+	shared.Console.Info(name, identity.Name)
 	shared.Console.Info(scope, scopeOutput)
-	shared.Console.Info(accountKey, export.AccountKey)
+	shared.Console.Info(accountKey, identity.AccountKey.AsString())
 	shared.Console.Info()
 }

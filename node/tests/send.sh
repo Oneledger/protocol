@@ -21,6 +21,10 @@ olclient testmint -s $SEQ -a $addrBob --party Bob --amount 25000 --currency OLT
 
 sleep 3
 
+echo "Finished Minting"
+
+sleep 10
+
 # assumes fullnode is in the PATH
 olclient send -s $SEQ -a $addrBob --party Bob --counterparty Alice --amount 5000 --currency OLT
 

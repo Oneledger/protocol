@@ -55,14 +55,19 @@ func init() {
 
 // Set the default values for any context variables here (and no where else)
 func NewContext(name string) *Context {
+	var debug = false
+	if os.Getenv("OLDEBUG") == "true" {
+		debug = true
+	}
+
 	return &Context{
-		Debug:            true,
+		Debug:            debug,
 		DisablePasswords: true,
 
 		NodeName:        name,
 		NodeAccountName: "Zero-OneLedger",
 		NodePaymentName: "Payment-OneLedger",
-		RootDir:         os.Getenv("OLDATA") + "/" + name + "/fullnode",
+		RootDir:         os.Getenv("OLDATA") + "/" + name + "/olfullnode",
 
 		Sequence: 101,
 	}

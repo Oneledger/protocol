@@ -6,58 +6,49 @@
 package id
 
 import (
-	"encoding/hex"
 	"fmt"
 	"reflect"
 	"strings"
 
-	"github.com/Oneledger/protocol/node/comm"
 	"github.com/Oneledger/protocol/node/data"
 	"github.com/Oneledger/protocol/node/err"
-	"github.com/Oneledger/protocol/node/global"
 	"github.com/Oneledger/protocol/node/log"
+	"github.com/Oneledger/protocol/node/serial"
 )
 
+// Temporary typing for signatures
 type Signature = []byte
 
 // The persistent collection of all accounts known by this node
 type Accounts struct {
-	data *data.Datastore
+	store data.Datastore
 }
 
 func NewAccounts(name string) *Accounts {
-	data := data.NewDatastore(name, data.PERSISTENT)
-
+	store := data.NewDatastore(name, data.PERSISTENT)
 	return &Accounts{
-		data: data,
+		store: store,
 	}
 }
 
 func (acc *Accounts) Add(account Account) {
-	if value := acc.data.Load(account.AccountKey()); value != nil {
+	if value := acc.store.Get(account.AccountKey()); value != nil {
+		//log.Fatal("Key exists already", "key", account.AccountKey())
 		log.Debug("Key is being updated", "key", account.AccountKey())
 	}
 
-	buffer, err := comm.Serialize(account)
-	if err != nil {
-		log.Fatal("Failed to Deserialize account: ", err)
-	}
-	log.Debug("Adding Account", "account", account)
-	acc.data.Store(account.AccountKey(), buffer)
-	acc.data.Commit()
+	session := acc.store.Begin()
+	session.Set(account.AccountKey(), account)
+	session.Commit()
 }
 
 func (acc *Accounts) Delete(account Account) {
 }
 
 func (acc *Accounts) Exists(newType data.ChainType, name string) bool {
+	// TODO: Probably shouldn't need to create a fake account here...
 	account := NewAccount(newType, name, NilPublicKey(), NilPrivateKey())
-
-	if value := acc.data.Load(account.AccountKey()); value != nil {
-		return true
-	}
-
-	return false
+	return acc.store.Exists(account.AccountKey())
 }
 
 func (acc *Accounts) Find(account Account) (Account, err.Code) {
@@ -68,18 +59,18 @@ func (acc *Accounts) FindIdentity(identity Identity) (Account, err.Code) {
 	// TODO: Should have better name mapping between identities and accounts
 	account := NewAccount(data.ONELEDGER, identity.Name+"-OneLedger", NilPublicKey(), NilPrivateKey())
 	return acc.Find(account)
-
 }
 
 func (acc *Accounts) FindNameOnChain(name string, chain data.ChainType) (Account, err.Code) {
 	log.Debug("FindNameOnChain", "name", name, "chain", chain)
+
 	// TODO: Should be replaced with a real index
 	for _, entry := range acc.FindAll() {
 		if Matches(entry, name, chain) {
 			return entry, err.SUCCESS
 		}
 	}
-	return nil, err.SUCCESS
+	return nil, err.MISSING_VALUE
 }
 
 func (acc *Accounts) FindName(name string) (Account, err.Code) {
@@ -87,6 +78,7 @@ func (acc *Accounts) FindName(name string) (Account, err.Code) {
 }
 
 func Matches(account Account, name string, chain data.ChainType) bool {
+	// TODO: Incorrect, all names for all chains are in the same scope...
 	if strings.EqualFold(account.Name(), name) {
 		if account.Chain() == chain {
 			return true
@@ -96,50 +88,24 @@ func Matches(account Account, name string, chain data.ChainType) bool {
 }
 
 func (acc *Accounts) FindKey(key AccountKey) (Account, err.Code) {
-	value := acc.data.Load(key)
-	if value != nil {
-		// TODO: Should be switchable
-		accountOneLedger := &AccountOneLedger{}
-		base, _ := comm.Deserialize(value, accountOneLedger)
-		if base != nil {
-			return base.(Account), err.SUCCESS
-		}
-
-		accountEthereum := &AccountEthereum{}
-		base, _ = comm.Deserialize(value, accountEthereum)
-		if base != nil {
-			return base.(Account), err.SUCCESS
-		}
-
-		accountBitcoin := &AccountBitcoin{}
-		base, _ = comm.Deserialize(value, accountBitcoin)
-		if base != nil {
-			return base.(Account), err.SUCCESS
-		}
-		log.Fatal("Can't deserialize", "value", value)
-	}
-	return nil, err.SUCCESS
+	interim := acc.store.Get(key)
+	result := interim.(Account)
+	return result.(Account), err.SUCCESS
 }
 
 func (acc *Accounts) FindAll() []Account {
-	log.Debug("Begin Account FindAll")
-	keys := acc.data.List()
+	keys := acc.store.FindAll()
+
 	size := len(keys)
-	log.Debug("find all", "keys", keys, "size", size)
 	results := make([]Account, size, size)
 
 	for i := 0; i < size; i++ {
-		// TODO: This is dangerous...
-		account := &AccountOneLedger{}
-
-		base, err := comm.Deserialize(acc.data.Load(keys[i]), account)
-		if err != nil {
-			log.Fatal("Failed to Deserialize Account at index ", "i", i, "err", err)
+		account, status := acc.FindKey(keys[i])
+		if status != err.SUCCESS {
+			log.Fatal("Missing Account", "status", status, "account", account)
 		}
-		results[i] = base.(Account)
-		log.Debug("Deserialized account", i, results[i])
+		results[i] = account
 	}
-
 	return results
 }
 
@@ -163,22 +129,15 @@ type Account interface {
 	PublicKey() PublicKey
 	PrivateKey() PrivateKey
 
-	Export() AccountExport
+	AsString() string
 
 	//AddPublicKey(PublicKey)
 	//AddPrivateKey(PrivateKey)
-
-	AsString() string
 }
 
-// AccountExport struct holds important account info in a
-type AccountExport struct {
-	Type       string
-	AccountKey string
-	Name       string
-	// Balance must come from utxo database, fill when needed
-	Balance  string
-	NodeName string
+func init() {
+	var prototype Account
+	serial.RegisterInterface(&prototype)
 }
 
 func getAccountType(chain data.ChainType) string {
@@ -197,15 +156,23 @@ func getAccountType(chain data.ChainType) string {
 
 type AccountBase struct {
 	Type data.ChainType `json:"type"`
-	Key AccountKey `json:"key"`
-	Name       string `json: "name"`
+	Key  AccountKey     `json:"key"`
+	Name string         `json:"name"`
+
 	// TODO: Should handle key polymorphism properly..
-	PublicKey  ED25519PublicKey `json: "publicKey"`
-	PrivateKey ED25519PrivateKey `json: "privateKey"`
+	PublicKey  PublicKeyED25519  `json:"publicKey"`
+	PrivateKey PrivateKeyED25519 `json:"privateKey"`
+}
+
+func init() {
+	serial.Register(AccountBase{})
+	serial.Register(AccountOneLedger{})
+	serial.Register(AccountBitcoin{})
+	serial.Register(AccountEthereum{})
 }
 
 // Create a new account for a given chain
-func NewAccount(newType data.ChainType, name string, key ED25519PublicKey, priv ED25519PrivateKey) Account {
+func NewAccount(newType data.ChainType, name string, key PublicKeyED25519, priv PrivateKeyED25519) Account {
 	switch newType {
 
 	case data.ONELEDGER:
@@ -216,7 +183,7 @@ func NewAccount(newType data.ChainType, name string, key ED25519PublicKey, priv 
 				Name:       name,
 				PublicKey:  key,
 				PrivateKey: priv,
- 			},
+			},
 			//todo: change to olt wallet auth
 			//NewAccountKey(key),
 		}
@@ -263,13 +230,12 @@ func ParseAccountType(typeName string) data.ChainType {
 	case "Bitcoin":
 		return data.BITCOIN
 	}
-
 	return data.UNKNOWN
 }
 
 // OneLedger
 
-// Information we need about our own fullnode identities
+// Information we need about our own olfullnode identities
 type AccountOneLedger struct {
 	AccountBase
 	//todo: need to be change to the right type
@@ -309,18 +275,6 @@ func (account *AccountOneLedger) AsString() string {
 
 func (account *AccountOneLedger) Chain() data.ChainType {
 	return data.ONELEDGER
-}
-
-func (account *AccountOneLedger) Export() AccountExport {
-	accountType := getAccountType(account.AccountBase.Type)
-	name := account.Name()
-	key := hex.EncodeToString(account.AccountKey())
-	return AccountExport{
-		Type:       accountType,
-		AccountKey: key,
-		Name:       name,
-		NodeName:   global.Current.NodeName,
-	}
 }
 
 // Bitcoin
@@ -367,18 +321,6 @@ func (account *AccountBitcoin) Chain() data.ChainType {
 	return data.BITCOIN
 }
 
-func (account *AccountBitcoin) Export() AccountExport {
-	accountType := getAccountType(account.AccountBase.Type)
-	name := account.Name()
-	key := hex.EncodeToString(account.AccountKey())
-	return AccountExport{
-		Type:       accountType,
-		AccountKey: key,
-		Name:       name,
-		NodeName:   global.Current.NodeName,
-	}
-}
-
 // Ethereum
 
 // Information we need for an Ethereum account
@@ -421,16 +363,4 @@ func (account *AccountEthereum) AsString() string {
 
 func (account *AccountEthereum) Chain() data.ChainType {
 	return data.ETHEREUM
-}
-
-func (account *AccountEthereum) Export() AccountExport {
-	accountType := getAccountType(account.AccountBase.Type)
-	name := account.Name()
-	key := hex.EncodeToString(account.AccountKey())
-	return AccountExport{
-		Type:       accountType,
-		AccountKey: key,
-		Name:       name,
-		NodeName:   global.Current.NodeName,
-	}
 }

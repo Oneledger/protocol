@@ -39,6 +39,12 @@ func IssueMintRequest(cmd *cobra.Command, args []string) {
 	// Create message
 	packet := shared.CreateMintRequest(mintargs)
 
+	if packet == nil {
+		log.Info("Bad Request", "mintargs", mintargs)
+		return
+	}
+
+	log.Debug("Send Mint Request", "packet", packet)
 	result := comm.Broadcast(packet)
 
 	log.Debug("Returned Successfully", "result", result)

@@ -7,3 +7,6 @@ testOlclient
 *.db
 sequence
 .vscode/
+test.out
+*.out
+.DS_Store

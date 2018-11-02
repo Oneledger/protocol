@@ -15,9 +15,9 @@ import (
 )
 
 var RootCmd = &cobra.Command{
-	Use:   "fullnode",
-	Short: "fullnode",
-	Long:  "OneLedger chain, fullnode",
+	Use:   "olfullnode",
+	Short: "olfullnode",
+	Long:  "OneLedger chain, olfullnode",
 }
 
 func Execute() {

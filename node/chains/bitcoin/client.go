@@ -8,19 +8,32 @@ import (
 	"time"
 
 	brpc "github.com/Oneledger/protocol/node/chains/bitcoin/rpc"
+	"github.com/Oneledger/protocol/node/serial"
 	"github.com/btcsuite/btcd/chaincfg"
+	"github.com/btcsuite/btcd/chaincfg/chainhash"
 
 	"encoding/base64"
 	"net"
 	"strings"
 
+	"strconv"
+
 	"github.com/Oneledger/protocol/node/convert"
 	"github.com/Oneledger/protocol/node/log"
-	"github.com/btcsuite/btcutil"
-	"strconv"
 	"github.com/btcsuite/btcd/wire"
-	"github.com/Oneledger/protocol/node/comm"
+	"github.com/btcsuite/btcutil"
 )
+
+func init() {
+	var hash chainhash.Hash
+	serial.Register(&hash)
+	serial.Register(wire.OutPoint{})
+	serial.Register(wire.TxIn{})
+	serial.Register(wire.TxOut{})
+	serial.Register(wire.TxWitness{})
+	serial.Register(wire.MsgTx{})
+	serial.Register(HTLContract{})
+}
 
 func GetChaincfg() *chaincfg.Params {
 
@@ -57,7 +70,7 @@ func getCredential(port int) (usr string, pass string) {
 
 	var u, p string
 	switch port {
-	case 18831 :
+	case 18831:
 		u = "b2x0ZXN0MDE="
 		p = "b2xwYXNzMDE="
 	case 18832:
@@ -128,35 +141,37 @@ func GetAmount(value string) btcutil.Amount {
 }
 
 type HTLContract struct {
-	Contract 	[]byte		`json:"contract"`
-	ContractTx 	wire.MsgTx	`json:"contractTx"`
+	Contract   []byte     `json:"contract"`
+	ContractTx wire.MsgTx `json:"contractTx"`
 }
 
 func (h *HTLContract) ToMessage() []byte {
-	msg, err := comm.Serialize(h)
+	msg, err := serial.Serialize(h, serial.JSON)
 	if err != nil {
-	    log.Error("Failed to serialize htlc", "err", err)
-    }
-    return msg
+		log.Error("Failed to serialize htlc", "err", err)
+	}
+	return msg
 }
 
 func (h *HTLContract) ToKey() []byte {
 	key, err := btcutil.NewAddressScriptHash(h.Contract, GetChaincfg())
 	if err != nil {
-	    log.Error("Failed to get the key for contract", "err", err)
+		log.Error("Failed to get the key for contract", "err", err)
 		return nil
 	}
 	return key.ScriptAddress()
 }
 
-func GetHTLCFromMessage(message []byte) *HTLContract{
+func GetHTLCFromMessage(message []byte) *HTLContract {
 	log.Debug("Parse message to BTC HTLC")
 	register := &HTLContract{}
 
-	result, err := comm.Deserialize(message, register)
+	log.Dump("HTLC Message is", message)
+
+	result, err := serial.Deserialize(message, register, serial.JSON)
 	if err != nil {
 		log.Error("Failed parse htlc contract", "err", err)
 		return nil
 	}
-	return  result.(*HTLContract)
+	return result.(*HTLContract)
 }

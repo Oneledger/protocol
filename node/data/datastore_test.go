@@ -12,42 +12,65 @@ import (
 
 	"github.com/Oneledger/protocol/node/global"
 	"github.com/Oneledger/protocol/node/log"
+	"github.com/Oneledger/protocol/node/serial"
 )
 
-func TestDatabase(t *testing.T) {
-	global.Current.RootDir = "./"
-	ds := NewDatastore("localTestingDatabase", PERSISTENT)
-
-	key := []byte("TheKey")
-	value := []byte("TheValue")
-
-	ds.Store(key, value)
-	Check("Storage", ds, key, value)
-
-	ds.Commit()
-	Check("Commited", ds, key, value)
-
-	ds.Dump()
-	ds.Close()
-
-	ds = NewDatastore("localTestingDatabase", PERSISTENT)
-	Check("Reopened", ds, key, value)
-
-	ds.Dump()
+type Testing struct {
+	Value []byte
 }
 
-func Check(text string, ds *Datastore, key []byte, value []byte) {
-	log.Debug(text + " Check")
+func init() {
+	serial.Register(Testing{})
+}
 
-	if ds.Exists(key) {
-		result := ds.Load(key)
+func TestDatabase(t *testing.T) {
+
+	global.Current.RootDir = "./"
+	store := NewDatastore("TestDatabase", PERSISTENT)
+
+	key := []byte("TheKey")
+
+	value := Testing{
+		Value: []byte("TheValue"),
+	}
+
+	session := store.Begin()
+
+	log.Dump("The message...", value)
+
+	session.Set(key, value)
+	session.Commit()
+
+	log.Dump("The message...", value)
+	Check("Commited", store, key, value)
+
+	store.Dump()
+	store.Close()
+
+	store = NewDatastore("TestDatabase", PERSISTENT)
+
+	value = store.Get(key).(Testing)
+	Check("Reopened", store, key, value)
+
+	store.Dump()
+}
+
+func Check(text string, store Datastore, key []byte, testing Testing) {
+	log.Debug(text + " Check")
+	log.Dump("Inside of Check", testing)
+
+	value := testing.Value
+
+	if store.Exists(key) {
+		result := store.Get(key).(Testing)
 		text := fmt.Sprintf("[%X]:\t[%X]\n", key, result)
+
 		log.Debug("Found Data", "text", text)
-		if bytes.Compare(result, value) != 0 {
+		if bytes.Compare(result.Value, value) != 0 {
 			log.Debug("but it differs", "value", value, "result", result)
 		}
 
 	} else {
-		log.Debug("Missing key", "key", key)
+		log.Debug("Missing Value for key", "key", key)
 	}
 }

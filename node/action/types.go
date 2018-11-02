@@ -10,12 +10,13 @@ package action
 import (
 	"bytes"
 
+	"strconv"
+
 	"github.com/Oneledger/protocol/node/chains/common"
-	"github.com/Oneledger/protocol/node/comm"
 	"github.com/Oneledger/protocol/node/data"
 	"github.com/Oneledger/protocol/node/id"
 	"github.com/Oneledger/protocol/node/log"
-	"strconv"
+	"github.com/Oneledger/protocol/node/serial"
 )
 
 // inputs into a send transaction (similar to Bitcoin)
@@ -30,9 +31,20 @@ type SendInput struct {
 	Sequence int `json:"sequence"`
 }
 
+func init() {
+	serial.Register(SendInput{})
+}
+
 func NewSendInput(accountKey id.AccountKey, amount data.Coin) SendInput {
+
 	if bytes.Equal(accountKey, []byte("")) {
-		log.Fatal("Missing Account")
+		log.Fatal("Missing AccountKey", "key", accountKey, "amount", amount)
+		// TODO: Error handling should be better
+		return SendInput{}
+	}
+
+	if !amount.IsValid() {
+		log.Fatal("Missing Amount", "key", accountKey, "amount", amount)
 	}
 
 	return SendInput{
@@ -47,9 +59,20 @@ type SendOutput struct {
 	Amount     data.Coin     `json:"coin"`
 }
 
+func init() {
+	serial.Register(SendOutput{})
+}
+
 func NewSendOutput(accountKey id.AccountKey, amount data.Coin) SendOutput {
+
 	if bytes.Equal(accountKey, []byte("")) {
-		log.Fatal("Missing Account")
+		log.Fatal("Missing AccountKey", "key", accountKey, "amount", amount)
+		// TODO: Error handling should be better
+		return SendOutput{}
+	}
+
+	if !amount.IsValid() {
+		log.Fatal("Missing Amount", "key", accountKey, "amount", amount)
 	}
 
 	return SendOutput{
@@ -61,33 +84,30 @@ func NewSendOutput(accountKey id.AccountKey, amount data.Coin) SendOutput {
 func CheckBalance(app interface{}, accountKey id.AccountKey, amount data.Coin) bool {
 	utxo := GetUtxo(app)
 
-	version := utxo.Delivered.Version64()
-	_, value := utxo.Delivered.GetVersioned(accountKey, version)
-	if value == nil {
-		log.Debug("Key not in database, setting to zero", "key", accountKey)
+	balance := utxo.Get(accountKey)
+	if balance == nil {
+		// New accounts don't have a balance until the first transaction
+		log.Debug("New Balance", "key", accountKey, "amount", amount, "balance", balance)
+		interim := data.NewBalance(0, "OLT")
+		balance = &interim
+		if !balance.Amount.Equals(amount) {
+			return false
+		}
 		return true
 	}
 
-	var bal data.Balance
-	buffer, err := comm.Deserialize(value, &bal)
-	if err != nil || buffer == nil {
-		log.Error("Failed to Deserialize", "key", accountKey)
-		return false
-	}
-
-	balance := buffer.(*data.Balance)
 	if !balance.Amount.Equals(amount) {
-		log.Warn("Mismatch", "key", accountKey, "amount", amount, "balance", balance)
-		//return false
+		log.Warn("Balance Mismatch", "key", accountKey, "amount", amount, "balance", balance)
+		return false
 	}
 	return true
 }
 
 func GetHeight(app interface{}) int64 {
-    utxo := GetUtxo(app)
+	utxo := GetUtxo(app)
 
-    height := int64(utxo.Height)
-    return height
+	height := int64(utxo.Version)
+	return height
 }
 
 func CheckAmounts(app interface{}, inputs []SendInput, outputs []SendOutput) bool {
@@ -108,9 +128,7 @@ func CheckAmounts(app interface{}, inputs []SendInput, outputs []SendOutput) boo
 			return false
 		}
 		if !CheckBalance(app, input.AccountKey, input.Amount) {
-			log.Debug("Balance is missing", "input", input)
-
-			// TODO: Temporarily disabled
+			log.Warn("Balance is incorrect", "input", input)
 			//return false
 		}
 		total.Plus(input.Amount)
@@ -141,13 +159,13 @@ func CheckAmounts(app interface{}, inputs []SendInput, outputs []SendOutput) boo
 }
 
 type Event struct {
-	Type 	Type			`json:"type"`
-	Key  	id.AccountKey	`json:"key"`
-	Nonce	int64			`json:"result"`
+	Type  Type          `json:"type"`
+	Key   id.AccountKey `json:"key"`
+	Nonce int64         `json:"result"`
 }
 
 func (e Event) ToKey() []byte {
-	buffer, err := comm.Serialize(e)
+	buffer, err := serial.Serialize(e, serial.CLIENT)
 	if err != nil {
 		log.Error("Failed to Serialize event key")
 	}
@@ -159,19 +177,20 @@ func SaveEvent(app interface{}, eventKey Event, status bool) {
 
 	log.Debug("Save Event", "key", eventKey)
 
-	events.Store(eventKey.ToKey(), []byte(strconv.FormatBool(status)))
-	events.Commit()
+	session := events.Begin()
+	session.Set(eventKey.ToKey(), []byte(strconv.FormatBool(status)))
+	session.Commit()
 }
 
-func FindEvent(app interface{},  eventKey Event) bool{
+func FindEvent(app interface{}, eventKey Event) bool {
 	log.Debug("Load Event", "key", eventKey)
 	events := GetEvent(app)
-	result := events.Load(eventKey.ToKey())
+	result := events.Get(eventKey.ToKey())
 	if result == nil {
 		return false
 	}
 
-	r, err := strconv.ParseBool(string(result))
+	r, err := strconv.ParseBool(result.(string))
 	if err != nil {
 		return false
 	}
@@ -180,21 +199,21 @@ func FindEvent(app interface{},  eventKey Event) bool{
 }
 
 func SaveContract(app interface{}, contractKey []byte, nonce int64, contract common.Contract) {
-    //todo: add nonce to the key to differentiate swap between same conterparty
-    contracts := GetContract(app)
-    log.Debug("Save contract", "key", contractKey)
-    contracts.Store(contractKey, contract.ToMessage())
-    contracts.Commit()
+	//todo: add nonce to the key to differentiate swap between same conterparty
+	contracts := GetContract(app)
+	log.Debug("Save contract", "key", contractKey)
+	session := contracts.Begin()
+	session.Set(contractKey, contract.ToMessage())
+	session.Commit()
 }
 
 func FindContract(app interface{}, contractKey []byte, nonce int64) Message {
-    //todo: add nonce to the key to differentiate swap between same conterparty
-    log.Debug("Load Contract", "key", contractKey)
-    contracts := GetContract(app)
-    result := contracts.Load(contractKey)
-    if result == nil {
-        return nil
-    }
-
-    return result
+	//todo: add nonce to the key to differentiate swap between same conterparty
+	log.Debug("Load Contract", "key", contractKey)
+	contracts := GetContract(app)
+	result := contracts.Get(contractKey)
+	if result == nil {
+		return nil
+	}
+	return result.([]byte)
 }

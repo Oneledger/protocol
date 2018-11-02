@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# This sequence of commands seems to cause the fullnodes to fail if the CPU is low
+# This sequence of commands seems to cause the olfullnodes to fail if the CPU is low
 #
 
 echo "========== Resetting =========="

@@ -1,15 +1,16 @@
 /*
 	Copyright 2017-2018 OneLedger
 
-	Cli to interact with a with the chain.
+	Cli to interact with a with the chains.
 */
 package main
 
 import (
 	"github.com/Oneledger/protocol/node/action"
-	"github.com/Oneledger/protocol/node/app"
 	"github.com/Oneledger/protocol/node/cmd/shared"
 	"github.com/Oneledger/protocol/node/comm"
+	"github.com/Oneledger/protocol/node/data"
+	"github.com/Oneledger/protocol/node/id"
 	"github.com/spf13/cobra"
 )
 
@@ -19,7 +20,7 @@ var accountCmd = &cobra.Command{
 	Run:   CheckAccount,
 }
 
-// TODO: typing should be way better, see if cobr can help with this...
+// TODO: typing should be way better, see if cobra can help with this...
 type AccountArguments struct {
 	user string
 }
@@ -36,6 +37,8 @@ func init() {
 
 // Format the request into a query structure
 func FormatRequest() []byte {
+
+	// Blank user implies all users
 	return action.Message("Account=" + account.user)
 }
 
@@ -45,24 +48,19 @@ func CheckAccount(cmd *cobra.Command, args []string) {
 	request := FormatRequest()
 	response := comm.Query("/account", request)
 	if response != nil {
-		// var accountQuery app.AccountQuery
-		var prototype app.AccountQuery
-		result, err := comm.Deserialize(response.Response.Value, &prototype)
-		if err != nil {
-			shared.Console.Error("Failed to deserialize AccountQuery")
-			shared.Console.Warning("Query failed")
-			return
-		}
-		printQuery(result.(*app.AccountQuery))
+		printQuery(response)
 	} else {
-		shared.Console.Warning("Query Failed")
+		shared.Console.Warning("No Response from Node for:", string(request))
 	}
 }
 
-func printQuery(accountQuery *app.AccountQuery) {
-	exports := accountQuery.Accounts
+func printQuery(accountQuery interface{}) {
+	nodeName := shared.GetNodeName()
 
-	if len(exports) < 1 {
+	accounts := accountQuery.([]id.Account)
+
+	if len(accounts) < 1 {
+		shared.Console.Info("No Accounts on", nodeName)
 		return
 	}
 
@@ -73,18 +71,21 @@ func printQuery(accountQuery *app.AccountQuery) {
 
 	first := true
 
-	for _, export := range exports {
+	for _, account := range accounts {
 		if first {
-			shared.Console.Info("\nAccount(s) on", export.NodeName+":")
+			shared.Console.Info("\nAccount(s) on", nodeName+":")
 			first = false
 		}
 
-		shared.Console.Info(name, export.Name)
-		shared.Console.Info(accountType, export.Type)
-		shared.Console.Info(accountKey, export.AccountKey)
-		if export.Type == "OneLedger" {
-			shared.Console.Info(balance, export.Balance)
+		shared.Console.Info(name, account.Name())
+		shared.Console.Info(accountType, account.Chain().String())
+		shared.Console.Info(accountKey, account.AccountKey().AsString())
+
+		if account.Chain() == data.ONELEDGER {
+			value := shared.GetBalance(account.AccountKey())
+			shared.Console.Info(balance, value.AsString())
 		}
+
 		shared.Console.Info()
 	}
 }
