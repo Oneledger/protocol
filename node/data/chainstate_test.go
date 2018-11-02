@@ -4,39 +4,18 @@
 package data
 
 import (
-	"flag"
-	"os"
 	"testing"
 
 	"github.com/Oneledger/protocol/node/global"
 	"github.com/Oneledger/protocol/node/log"
+	"github.com/stretchr/testify/assert"
 )
-
-// Control the execution
-func TestMain(m *testing.M) {
-	flag.Parse()
-
-	// Set the debug flags according to whether the -v flag is set in go test
-	if testing.Verbose() {
-		global.Current.Debug = true
-	} else {
-		global.Current.Debug = false
-	}
-
-	// Run it all.
-	code := m.Run()
-
-	os.Exit(code)
-}
 
 func TestPersistence(t *testing.T) {
 	log.Debug("Create new chain state")
 
 	global.Current.RootDir = "./"
-
-	state := NewChainState("SimpleTest", PERSISTENT)
-	_ = state
-	//log.Dump("The chain state", state)
+	state := NewChainState("PersistentTest", PERSISTENT)
 
 	key := "Hello"
 	value := "The Value"
@@ -45,20 +24,25 @@ func TestPersistence(t *testing.T) {
 
 	version := state.Delivered.Version64()
 	index, result := state.Delivered.GetVersioned(DatabaseKey(key), version)
-	log.Debug("Fetched", "index", index, "result", string(result))
+	log.Debug("Uncommitted Fetched", "index", index, "version", version, "result", string(result))
 
 	state.Commit()
 
 	version = state.Delivered.Version64()
 	index, result = state.Delivered.GetVersioned(DatabaseKey(key), version)
-	log.Debug("Fetched", "index", index, "result", string(result))
+	log.Debug("Commited Fetched", "index", index, "version", version, "result", string(result))
 
-	state.Dump()
+	assert.Equal(t, []byte(value), result, "These should be equal")
+
+}
+
+func TestChainState(t *testing.T) {
+	state := NewChainState("ChainState", PERSISTENT)
+	balance := NewBalance(10000, "OLT")
+	key := []byte("Ahhhhhhh")
+	state.Set(key, balance)
 	state.Commit()
+	result := state.Find(key)
 
-	version = state.Delivered.Version64()
-	index, result = state.Delivered.GetVersioned(DatabaseKey(key), version)
-	log.Debug("Fetched", "index", index, "result", string(result))
-	state.Dump()
-
+	assert.Equal(t, balance, *result, "These should be equal")
 }

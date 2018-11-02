@@ -50,16 +50,19 @@ func Register() {
 		}
 	}()
 
+	//time.Sleep(5 * time.Second)
 	if arguments.Identity != "" {
 		log.Debug("Have Register Request", "arguments", arguments)
 
 		// TODO: Maybe Tendermint isn't ready for transactions...
-		time.Sleep(5 * time.Second)
+		//time.Sleep(10 * time.Second)
 
 		packet := shared.CreateRegisterRequest(arguments)
 		result := comm.Broadcast(packet)
 
-		log.Debug("Registered Successfully", "result", result)
+		log.Debug("######## Register Broadcast", "result", result)
+	} else {
+		log.Debug("Nothing to Register")
 	}
 }
 
@@ -86,7 +89,7 @@ func StartNode(cmd *cobra.Command, args []string) {
 	if global.Current.NodeAccountName == "" {
 		log.Warn("Missing NodeAccount")
 	} else {
-		log.Info("Node", "account", global.Current.NodeAccountName)
+		log.Info("NodeAccountName", "account", global.Current.NodeAccountName)
 	}
 
 	global.Current.SetApplication(persist.Access(node))
@@ -104,6 +107,34 @@ func StartNode(cmd *cobra.Command, args []string) {
 	if err != nil {
 		os.Exit(-1)
 	}
+
+	/*
+		// Wait until it is started
+		if err := service.OnStart(); err != nil {
+			log.Fatal("Startup Failed", "err", err)
+			os.Exit(-1)
+		}
+	*/
+
+	/*
+		for {
+			if service.IsRunning() {
+				break
+			}
+			log.Debug("Retrying to see if node is up...")
+			time.Sleep(1 * time.Second)
+
+		}
+
+		if !service.IsRunning() {
+			log.Fatal("Startup is not running")
+			os.Exit(-1)
+		}
+	*/
+
+	// TODO: Sleep until the node is connected and running
+	time.Sleep(5 * time.Second)
+	log.Debug("################### STARTED UP ######################")
 
 	// If the register flag is set, do that before waiting
 	Register()

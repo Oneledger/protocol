@@ -565,8 +565,8 @@ func matchingSwap(app interface{}, si *SwapInit) swapStageType {
 	key := si.getKey()
 
 	result := FindSwap(storage, key.toHash())
-	if result != nil {
-		if matching := isMatch(result, si); matching {
+	if &result != nil {
+		if matching := isMatch(&result, si); matching {
 			if ordered {
 				si.CounterParty = result.CounterParty
 			} else {
@@ -586,35 +586,28 @@ func matchingSwap(app interface{}, si *SwapInit) swapStageType {
 func SaveSwap(app interface{}, swapKey []byte, transaction SwapInit) {
 	log.Debug("SaveSwap", "key", swapKey)
 	storage := GetStatus(app)
-	buffer, err := serial.Serialize(transaction, serial.PERSISTENT)
-	if err != nil {
-		log.Error("Failed to Serialize SaveSwap transaction")
-	}
-	storage.Store(swapKey, buffer)
-	storage.Commit()
+	session := storage.Begin()
+	session.Set(swapKey, transaction)
+	session.Commit()
 }
 
-func FindSwap(app interface{}, key []byte) *SwapInit {
+func FindSwap(app interface{}, key id.AccountKey) SwapInit {
 	storage := GetStatus(app)
-	result := storage.Load(key)
-	if result == nil {
-		return nil
-	}
+	result := storage.Get(key)
 
-	var transaction Swap
-	buffer, err := serial.Deserialize(result, &transaction, serial.CLIENT)
-	if err != nil {
-		return nil
-	}
-	return buffer.(*SwapInit)
+	return result.(SwapInit)
 }
 
 func DeleteSwap(app interface{}, key id.AccountKey) {
 	storage := GetStatus(app)
-	result := storage.Delete(key)
-	if result == nil {
+	session := storage.Begin()
+	ok := session.Delete(key)
+	if !ok {
 		log.Error("Delete swap failed", "key", key)
+		session.Rollback()
 	}
+	session.Commit()
+	return
 }
 
 func GetAccount(app interface{}, accountKey id.AccountKey) id.Account {
@@ -638,7 +631,7 @@ func GetChainAccount(app interface{}, name string, chain data.ChainType) id.Acco
 func CreateCheckEvent(app interface{}, chain data.ChainType, context FunctionValues, tx Transaction) (bool, FunctionValues) {
 	storeKey := GetBytes(context[STOREKEY])
 	si := FindSwap(app, storeKey)
-	if si == nil {
+	if &si == nil {
 		log.Error("Saved swap not found", "key", storeKey)
 		return false, nil
 	}
@@ -1266,7 +1259,7 @@ func CreateContractOLT(app interface{}, context FunctionValues, tx Transaction) 
 	//message := SignAndPack(SEND, Transaction(send))
 	//contract := NewMultiSigBox(1, 1, message)
 	//_ = contract
-	return true, context
+	return false, nil
 }
 
 func ParticipateOLT(app interface{}, context FunctionValues, tx Transaction) (bool, FunctionValues) {

@@ -6,10 +6,12 @@
 package shared
 
 import (
-	"bytes"
 	"encoding/hex"
+
 	"github.com/Oneledger/protocol/node/convert"
 	ctypes "github.com/tendermint/tendermint/rpc/core/types"
+
+	"reflect"
 
 	"github.com/Oneledger/protocol/node/action"
 	"github.com/Oneledger/protocol/node/comm"
@@ -22,78 +24,56 @@ import (
 func GetAccountKey(identity string) []byte {
 	request := action.Message("Identity=" + identity)
 	response := comm.Query("/accountKey", request)
-
-	if response == nil || response.Response.Value == nil {
-		log.Error("No Response from Node", "identity", identity)
+	if response == nil {
+		log.Warn("Query returned nothing", "request", request)
 		return nil
 	}
-
-	value := response.Response.Value
-	if value == nil || len(value) == 0 {
-		log.Error("Key is Missing", "identity", identity)
-		return nil
-	}
-
-	key, status := hex.DecodeString(string(value))
-	if status != nil {
-		log.Error("Decode Failed", "identity", identity, "value", value)
-		return nil
-	}
-
-	return key
+	result := response.([]uint8)
+	return result
 }
 
 func GetSwapAddress(currencyName string) []byte {
 	request := action.Message("currency=" + currencyName)
 	response := comm.Query("/swapAddress", request)
-
-	if response == nil || response.Response.Value == nil {
-		log.Fatal("Failed to get address", "chain", currencyName)
+	if response == nil {
+		return nil
 	}
 
-	value := response.Response.Value
-	if value == nil || len(value) == 0 {
-		log.Fatal("Returned address is empty", "chain", currencyName)
-	}
+	/*
+		value := response.Response.Value
+		if value == nil || len(value) == 0 {
+			log.Fatal("Returned address is empty", "chain", currencyName)
+		}
+	*/
 
-	return value
+	return response.([]byte)
 }
 
+func GetNodeName() string {
+	request := action.Message("")
+	response := comm.Query("/nodeName", request)
+	if response == nil {
+		return "Unknown"
+	}
+	return response.(string)
+}
+
+// TODO: Return a balance, not a coin
 func GetBalance(accountKey id.AccountKey) *data.Coin {
 	request := action.Message("accountKey=" + hex.EncodeToString(accountKey))
-
-	// Send out a query
 	response := comm.Query("/balance", request)
 	if response == nil {
-		log.Error("Failed to get Balance", "response", response, "key", accountKey)
+		// New Accounts don't have a balance yet.
+		result := data.NewCoin(0, "OLT")
+		return &result
+	}
+	if serial.GetBaseType(response).Kind() == reflect.String {
+		log.Error("Error:", "response", response)
 		return nil
 	}
+	balance := response.(*data.Balance)
+	return &balance.Amount
 
-	// Check the response
-	value := response.Response.Value
-	if value == nil || len(value) == 0 {
-		log.Error("Failed to return Balance", "response", response, "key", accountKey)
-		return nil
-	}
-	if bytes.Compare(value, []byte("null")) == 0 {
-		log.Error("Null Balance", "response", response, "key", "accountKey")
-		return nil
-	}
-
-	// Convert to a balance
-	var balance data.Balance
-	buffer, status := serial.Deserialize(value, &balance, serial.CLIENT)
-	if status != nil {
-		log.Error("Deserialize", "status", status, "value", value)
-		return nil
-	}
-	if buffer == nil {
-		log.Error("Can't deserialize", "response", response)
-		return nil
-	}
-
-	log.Debug("Deserialize", "buffer", buffer, "response", response, "value", value)
-	return &(buffer.(*data.Balance).Amount)
 }
 
 func GetTxByHash(hash []byte) *ctypes.ResultTx {

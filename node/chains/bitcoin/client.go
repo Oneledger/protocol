@@ -11,6 +11,7 @@ import (
 	brpc "github.com/Oneledger/protocol/node/chains/bitcoin/rpc"
 	"github.com/Oneledger/protocol/node/serial"
 	"github.com/btcsuite/btcd/chaincfg"
+	"github.com/btcsuite/btcd/chaincfg/chainhash"
 
 	"encoding/base64"
 	"net"
@@ -25,6 +26,13 @@ import (
 )
 
 func init() {
+	var hash chainhash.Hash
+	serial.Register(&hash)
+	serial.Register(wire.OutPoint{})
+	serial.Register(wire.TxIn{})
+	serial.Register(wire.TxOut{})
+	serial.Register(wire.TxWitness{})
+	serial.Register(wire.MsgTx{})
 	serial.Register(HTLContract{})
 }
 
@@ -143,7 +151,7 @@ func (h *HTLContract) Chain() data.ChainType {
 }
 
 func (h *HTLContract) ToMessage() []byte {
-	msg, err := serial.Serialize(h, serial.NETWORK)
+	msg, err := serial.Serialize(h, serial.JSON)
 	if err != nil {
 		log.Error("Failed to serialize htlc", "status", err)
 	}

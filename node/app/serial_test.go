@@ -34,6 +34,23 @@ func TestMain(m *testing.M) {
 	os.Exit(code)
 }
 
+func TestAccounts(t *testing.T) {
+	global.Current.RootDir = "./"
+	accounts := id.NewAccounts("MyAccounts")
+
+	priv1, pub1 := id.GenerateKeys([]byte("testAccount1 password"))
+	priv2, pub2 := id.GenerateKeys([]byte("testAccount1 password"))
+
+	user1 := id.NewAccount(data.ONELEDGER, "testAccount1", pub1, priv1)
+	user2 := id.NewAccount(data.ONELEDGER, "testAccount2", pub2, priv2)
+
+	accounts.Add(user1)
+	accounts.Add(user2)
+
+	keys := accounts.FindAll()
+	log.Dump("The accounts are:", keys)
+}
+
 func TestSwap(t *testing.T) {
 	var swap *action.Swap
 

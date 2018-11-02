@@ -4,6 +4,7 @@ import (
 	"github.com/Oneledger/protocol/node/data"
 	"math/big"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	"context"
@@ -54,6 +55,12 @@ func getEthClient() *ethclient.Client {
 	}
 	return client
 
+}
+
+func init() {
+	serial.Register(common.Address{})
+	serial.Register(atomic.Value{})
+	//serial.Register(types.txdata{})
 }
 
 func GetAddress() common.Address {
@@ -247,7 +254,7 @@ func (h *HTLContract) Chain() data.ChainType {
 }
 
 func (h *HTLContract) ToMessage() []byte {
-	msg, err := serial.Serialize(h, serial.NETWORK)
+	msg, err := serial.Serialize(h, serial.JSON)
 	if err != nil {
 		log.Error("Failed to serialize htlc", "status", err)
 	}
