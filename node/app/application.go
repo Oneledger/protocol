@@ -243,11 +243,12 @@ func (app Application) BeginBlock(req RequestBeginBlock) ResponseBeginBlock {
 	log.Debug("FeePayment", "LastCommitInfo", req.LastCommitInfo)
 
 	//log.Debug("FeePayment", "ValidatorsHash", hex.EncodeToString(req.Header.ValidatorsHash))
-	log.Debug("FeePaymentProposer", "ShowMe", req.Header.GetProposer())
+	//log.Debug("FeePaymentProposer", "ShowMe", req.Header.GetProposer())
 	//log.Debug("Proposer 3", "Get Proposer", req.LastCommitInfo.Validators)
 
 	//var sendArgs shared.SendArguments
-
+	log.Info("FeePaymentIdentities")
+	app.Identities.Dump()
 	list := req.LastCommitInfo.GetValidators()
 	for _, entry := range list {
 		formatted := hex.EncodeToString(entry.Validator.Address)

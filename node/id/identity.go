@@ -30,6 +30,9 @@ type Identity struct {
 	Chain    map[data.ChainType]AccountKey // TODO: Should be more than one account per chain
 
 	Nodes map[string]data.ChainNode
+
+	TendermintAddress string
+	TendermintPubKey  string
 }
 
 func init() {
@@ -61,7 +64,7 @@ func (ids *Identities) Delete() {
 }
 
 func (ids *Identities) Exists(name string) bool {
-	id := NewIdentity(name, "", true, "", nil)
+	id := NewIdentity(name, "", true, "", nil, "", "")
 
 	value := ids.store.Get(id.Key())
 	if value != nil {
@@ -73,7 +76,7 @@ func (ids *Identities) Exists(name string) bool {
 
 func (ids *Identities) FindName(name string) (Identity, err.Code) {
 	// TODO: Find a better way
-	id := NewIdentity(name, "", true, "", nil)
+	id := NewIdentity(name, "", true, "", nil, "", "")
 
 	value := ids.store.Get(id.Key())
 	if value != nil {
@@ -98,18 +101,21 @@ func (ids *Identities) Dump() {
 	size := len(list)
 	for i := 0; i < size; i++ {
 		identity := list[i]
-		log.Info("Identity", "Name", identity.Name, "NodeName", identity.NodeName, "AccountKey", identity.AccountKey)
+		log.Info("Identity", "Name", identity.Name, "NodeName", identity.NodeName, "AccountKey", identity.AccountKey,
+			"TendermintAddress", identity.TendermintAddress, "TendermintPubKey", identity.TendermintPubKey)
 	}
 }
 
-func NewIdentity(name string, contactInfo string, external bool, nodeName string, accountKey AccountKey) *Identity {
+func NewIdentity(name string, contactInfo string, external bool, nodeName string, accountKey AccountKey, tendermintAddress string, tendermintPubKey string) *Identity {
 	return &Identity{
-		Name:        name,
-		ContactInfo: contactInfo,
-		External:    external,
-		NodeName:    nodeName,
-		AccountKey:  accountKey,
-		Chain:       make(map[data.ChainType]AccountKey, 2),
+		Name:              name,
+		ContactInfo:       contactInfo,
+		External:          external,
+		NodeName:          nodeName,
+		AccountKey:        accountKey,
+		Chain:             make(map[data.ChainType]AccountKey, 2),
+		TendermintAddress: tendermintAddress,
+		TendermintPubKey:  tendermintPubKey,
 	}
 }
 

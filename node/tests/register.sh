@@ -17,6 +17,7 @@ do
 	nodeAddr=`$CMD/lookup $name RPCAddress tcp://127.0.0.1:`
 	nodeName=`$CMD/lookup $name NodeName`
 	WORK=$OLDATA/$nodeName
+	DATA=$WORK/tendermint
 	LOG=$WORK
 	ROOT=$WORK/olfullnode
 
@@ -27,17 +28,20 @@ do
 	olfullnode register --root $ROOT -a $nodeAddr \
 		--node $nodeName \
 		--identity $name \
+		--tendermintRoot $DATA \
 		>> $LOG/olfullnode.log 2>&1
 
 	# Fill in the specific chain accounts
 	olfullnode register --root $ROOT -a $nodeAddr \
 		--node $nodeName \
 		--identity $name --chain Bitcoin \
+		--tendermintRoot $DATA \
 		>> $LOG/olfullnode.log 2>&1
 
 	olfullnode register --root $ROOT -a $nodeAddr \
 		--node $nodeName \
 		--identity $name --chain Ethereum \
+		--tendermintRoot $DATA \
 		>> $LOG/olfullnode.log 2>&1
 
 	# Broadtcast it to all of the nodes to make sure it is unique

@@ -7,7 +7,6 @@ package action
 
 import (
 	"github.com/Oneledger/protocol/node/err"
-	"github.com/Oneledger/protocol/node/global"
 	"github.com/Oneledger/protocol/node/id"
 	"github.com/Oneledger/protocol/node/log"
 	"github.com/Oneledger/protocol/node/serial"
@@ -85,7 +84,7 @@ func (transaction Register) ProcessDeliver(app interface{}) err.Code {
 		log.Debug("Ignoring Existing Identity", "identity", transaction.Identity)
 	} else {
 		identity := id.NewIdentity(transaction.Identity, "Contact Information",
-			true, global.Current.NodeName, transaction.AccountKey)
+			true, transaction.NodeName, transaction.AccountKey, transaction.TendermintAddress, transaction.TendermintPubKey)
 
 		identities.Add(*identity)
 		log.Info("Updated External Identity", "id", transaction.Identity, "key", transaction.AccountKey)
