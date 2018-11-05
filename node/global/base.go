@@ -67,7 +67,7 @@ func NewContext(name string) *Context {
 		DisablePasswords: true,
 		SDKAddress:       6969,
 		NodeName:         name,
-		NodeAccountName:  "Zero-OneLedger",
+		NodeAccountName:  "",
 		NodePaymentName:  "Payment-OneLedger",
 		RootDir:          os.Getenv("OLDATA") + "/" + name + "/olfullnode",
 		Sequence:         101,
