@@ -81,7 +81,7 @@ func (app Application) Initialize() {
 		return
 	}
 
-	s, err := NewSDKServer(app, sdkPort)
+	s, err := NewSDKServer(&app, sdkPort)
 	if err != nil {
 		panic(err)
 	} else {

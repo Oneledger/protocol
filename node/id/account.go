@@ -121,7 +121,7 @@ func (acc *Accounts) Dump() {
 }
 
 func (acc *Accounts) Close() {
-	acc.data.Close()
+	acc.store.Close()
 }
 
 // Polymorphism
