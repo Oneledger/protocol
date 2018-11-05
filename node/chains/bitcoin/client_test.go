@@ -9,6 +9,8 @@ import (
 	"testing"
 	"time"
 
+	"crypto/rand"
+	"encoding/hex"
 	"github.com/Oneledger/protocol/node/chains/bitcoin/htlc"
 	brpc "github.com/Oneledger/protocol/node/chains/bitcoin/rpc"
 	"github.com/Oneledger/protocol/node/log"
@@ -16,10 +18,8 @@ import (
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/btcsuite/btcd/wire"
 	"github.com/btcsuite/btcutil"
-	"encoding/hex"
-	"crypto/rand"
 
-    "bytes"
+	"bytes"
 )
 
 func SetChain() {
@@ -52,7 +52,7 @@ func TestSwap(t *testing.T) {
 	}
 	secretHash := sha256.Sum256(secret[:])
 
-	log.Debug("secret pair", "secret",hex.EncodeToString(secret[:]), "secretHash", hex.EncodeToString(secretHash[:]))
+	log.Debug("secret pair", "secret", hex.EncodeToString(secret[:]), "secretHash", hex.EncodeToString(secretHash[:]))
 	AliceBobSuccessfulSwap(testnode1, testnode2, testnode3, secret[:], secretHash)
 
 	//TypeAddresses()
@@ -191,8 +191,8 @@ func AliceBobSuccessfulSwap(testnode1 *brpc.Bitcoind, testnode2 *brpc.Bitcoind,
 
 	Generate(testnode3, 6)
 
-	aliceTimeout := time.Now().Add( 2 * time.Minute).Unix()
-	bobTimeout := time.Now().Add( 1 * time.Minute).Unix()
+	aliceTimeout := time.Now().Add(2 * time.Minute).Unix()
+	bobTimeout := time.Now().Add(1 * time.Minute).Unix()
 	aliceAddress := GetRawAddress(testnode1)
 	bobAddress := GetRawAddress(testnode2)
 
@@ -279,7 +279,7 @@ func AliceBobSuccessfulSwap(testnode1 *brpc.Bitcoind, testnode2 *brpc.Bitcoind,
 	time.Sleep(3 * time.Second)
 	Generate(testnode3, 10)
 
-    hash, err = testnode1.PublishTx(aliceRefundTx, "refund")
+	hash, err = testnode1.PublishTx(aliceRefundTx, "refund")
 	refundCmd := htlc.NewRefundCmd(aliceContract, aliceContractTx)
 	hash, err = refundCmd.RunCommand(testnode1)
 	if err != nil {

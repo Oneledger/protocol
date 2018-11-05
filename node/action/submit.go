@@ -20,12 +20,12 @@ import (
 func DelayedTransaction(ttype Type, transaction Transaction, waitTime time.Duration) {
 	go func(ttype Type, transaction Transaction) {
 		time.Sleep(waitTime)
-		BroadcastTransaction(ttype, transaction)
+		BroadcastTransaction(ttype, transaction, false)
 	}(ttype, transaction)
 }
 
 // Send out the transaction as an async broadcast
-func BroadcastTransaction(ttype Type, transaction Transaction) {
+func BroadcastTransaction(ttype Type, transaction Transaction, sync bool) {
 	log.Debug("Broadcast a transaction to the chain")
 
 	// Don't let the death of a client stop the node from running
@@ -36,7 +36,13 @@ func BroadcastTransaction(ttype Type, transaction Transaction) {
 	}()
 
 	packet := SignAndPack(ttype, transaction)
-	result := comm.Broadcast(packet)
+	// todo : fix the broadcast result handling
+	var result interface{}
+	if sync {
+		result = comm.Broadcast(packet)
+	} else {
+		result = comm.BroadcastAsync(packet)
+	}
 
 	log.Debug("Submitted Successfully", "result", result)
 }

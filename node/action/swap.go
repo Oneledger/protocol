@@ -33,6 +33,8 @@ import (
 func init() {
 	serial.Register(Swap{})
 	serial.Register(Party{})
+	var SwapMessage SwapMessage
+	serial.RegisterInterface(&SwapMessage)
 	serial.Register(SwapInit{})
 	serial.Register(SwapExchange{})
 	serial.Register(SwapVerify{})
@@ -121,7 +123,11 @@ func (transaction *Swap) ProcessDeliver(app interface{}) status.Code {
 		//	SaveEvent(app, event, true)
 		//	return status.SUCCESS
 		//}
-
+		context := commands[i].data
+		if v, _ := context[NEXTCHAINNAME]; v != nil {
+			chain := GetChain(v)
+			commands[i].chain = chain
+		}
 		ok, result := commands[i].Execute(app)
 		if !ok {
 			log.Error("Failed to Execute", "command", commands[i])
@@ -130,8 +136,10 @@ func (transaction *Swap) ProcessDeliver(app interface{}) status.Code {
 		}
 		if len(result) > 0 {
 			commands[i+1].data = result
-			chain := GetChain(result[NEXTCHAINNAME])
-			commands[i+1].chain = chain
+			if v, _ := context[NEXTCHAINNAME]; v != nil {
+				chain := GetChain(v)
+				commands[i+1].chain = chain
+			}
 		}
 	}
 
@@ -143,8 +151,8 @@ func (swap *Swap) Resolve(app interface{}) Commands {
 	node := GetNodeAccount(app)
 	var commands Commands
 	if swap.Stage == SWAP_MATCHING {
-		si := swap.SwapMessage.(*SwapInit)
-		stageType := matchingSwap(app, si)
+		si := swap.SwapMessage.(SwapInit)
+		stageType := matchingSwap(app, &si)
 		commands = si.resolve(app, stageType)
 
 	} else {
@@ -289,6 +297,7 @@ func (si SwapInit) validate() status.Code {
 func (si SwapInit) store(app interface{}) []byte {
 	sk := si.getKey()
 	storeKey := sk.toHash()
+	log.Debug("Store SwapInit", "key", storeKey, "si", si)
 	SaveSwap(app, storeKey, si)
 	return storeKey
 }
@@ -307,27 +316,31 @@ func (si SwapInit) getKey() *SwapKey {
 func (si SwapInit) resolve(app interface{}, stageType swapStageType) Commands {
 	var sv SwapVerify
 	stage, _ := swapStageFlow[SWAP_MATCHING]
-	key := si.getKey()
+	key := si.getKey().toHash()
 
 	commands := amino.DeepCopy(stage.Commands).(Commands)
-	if stageType == SWAP_MATCHING {
-
-		commands[0].data[NEXTSTAGE] = WAIT_FOR_CHAIN
-		event := Event{Type: SWAP, SwapKeyHash: key.toHash(), Stage: 0}
+	context := make(FunctionValues)
+	switch stageType {
+	case SWAP_MATCHING:
+		context[NEXTSTAGE] = WAIT_FOR_CHAIN
+		event := Event{Type: SWAP, SwapKeyHash: key, Stage: 0}
 		sv = SwapVerify{
 			Event: event,
 		}
-		commands[0].data[SWAPMESSAGE] = sv
-	} else {
-		commands[0].data[NEXTSTAGE] = SWAP_MATCHED
+		context[SWAPMESSAGE] = sv
+	case SWAP_MATCHED:
+		context[NEXTSTAGE] = SWAP_MATCHED
 		chains := si.getChains()
 		se := SwapExchange{
 			Contract:    nil,
-			SwapKeyHash: key.toHash(),
+			SwapKeyHash: key,
 			Chain:       chains[0],
 		}
-		commands[0].data[SWAPMESSAGE] = se
+		context[SWAPMESSAGE] = se
+	default:
+		log.Warn("Unexpected stage", "stage", stageType)
 	}
+	commands[0].data = context
 	return commands
 }
 
@@ -408,10 +421,10 @@ type SwapExchange struct {
 func (se SwapExchange) validate() status.Code {
 	log.Debug("Validating SwapExchange")
 
-	if se.Contract == nil {
-		log.Debug("Missing Contract")
-		return status.MISSING_DATA
-	}
+	//if se.Contract == nil {
+	//	log.Debug("Missing Contract")
+	//	return status.MISSING_DATA
+	//}
 
 	log.Debug("SwapExchange is validated!")
 	return status.SUCCESS
@@ -427,15 +440,17 @@ func (se SwapExchange) resolve(app interface{}, stageType swapStageType) Command
 
 	commands := amino.DeepCopy(stage.Commands).(Commands)
 
+	context := make(FunctionValues)
 	if se.Contract != nil {
-		commands[0].data[CONTRACT] = se.Contract.ToMessage()
+		context[CONTRACT] = se.Contract.ToMessage()
 	}
 
-	commands[0].data[SWAPMESSAGE] = se
-	commands[0].data[STOREKEY] = se.SwapKeyHash
-	commands[0].data[STAGE] = stage.Stage
-	commands[0].data[NEXTSTAGE] = stage.OutStage
-	if stage.Stage == INITIATOR_INITIATE {
+	context[SWAPMESSAGE] = se
+	context[STOREKEY] = se.SwapKeyHash
+	context[STAGE] = stage.Stage
+	context[NEXTSTAGE] = stage.OutStage
+	switch stage.Stage {
+	case INITIATOR_INITIATE:
 
 		var secret [32]byte
 		_, err := rand.Read(secret[:])
@@ -443,25 +458,31 @@ func (se SwapExchange) resolve(app interface{}, stageType swapStageType) Command
 			log.Error("failed to get random secret with 32 length", "status", err)
 		}
 		secretHash := sha256.Sum256(secret[:])
-		commands[0].data[PASSWORD] = secret
-		commands[0].data[PREIMAGE] = secretHash
+		context[PASSWORD] = secret
+		context[PREIMAGE] = secretHash
 		si := FindSwap(app, se.SwapKeyHash)
 		chains := si.getChains()
-		commands[0].data[NEXTCHAINNAME] = chains[0]
+		context[NEXTCHAINNAME] = chains[0]
 		SaveContract(app, se.SwapKeyHash, 0, secret[:])
-	} else if stage.Stage == INITIATOR_REDEEM {
+	case PARTICIPANT_PARTICIPATE:
+
+	case INITIATOR_REDEEM:
 		scr := FindContract(app, se.SwapKeyHash, 0)
 		_, err := rand.Read(scr[:])
 		if err != nil {
 			log.Error("failed to get random secret with 32 length", "status", err)
 		}
 		secretHash := sha256.Sum256(scr[:])
-		commands[0].data[PASSWORD] = scr
-		commands[0].data[PREIMAGE] = secretHash
-	} else if stage.Stage == PARTICIPANT_REDEEM {
+		context[PASSWORD] = scr
+		context[PREIMAGE] = secretHash
+	case PARTICIPANT_REDEEM:
 		scrHash := FindContract(app, se.SwapKeyHash, 0)
-		commands[0].data[PREIMAGE] = scrHash
+		context[PREIMAGE] = scrHash
+
+	default:
+		log.Warn("Unexpected stage", "stage", stageType)
 	}
+	commands[0].data = context
 	return commands
 }
 
@@ -490,10 +511,13 @@ func (sv SwapVerify) resolve(app interface{}, stageType swapStageType) Commands 
 	}
 
 	commands := amino.DeepCopy(stage.Commands).(Commands)
-	commands[0].data[SWAPMESSAGE] = sv
-	commands[0].data[STOREKEY] = sv.Event.SwapKeyHash
-	commands[0].data[STAGE] = stage.Stage
+	context := make(FunctionValues)
 
+	context[SWAPMESSAGE] = sv
+	context[STOREKEY] = sv.Event.SwapKeyHash
+	context[STAGE] = stage.Stage
+
+	commands[0].data = context
 	return nil
 }
 
@@ -526,7 +550,7 @@ func NextStage(app interface{}, chain data.ChainType, context FunctionValues, tx
 		waitTime := 3 * lockPeriod
 		DelayedTransaction(SWAP, swap, waitTime)
 	} else {
-		BroadcastTransaction(SWAP, swap)
+		BroadcastTransaction(SWAP, swap, false)
 	}
 	return true, nil
 }
@@ -559,14 +583,12 @@ func isMatch(left *SwapInit, right *SwapInit) bool {
 }
 
 func matchingSwap(app interface{}, si *SwapInit) swapStageType {
-
-	storage := GetStatus(app)
 	ordered := si.order()
-	key := si.getKey()
+	key := si.getKey().toHash()
 
-	result := FindSwap(storage, key.toHash())
-	if &result != nil {
-		if matching := isMatch(&result, si); matching {
+	result := FindSwap(app, key)
+	if result != nil {
+		if matching := isMatch(result, si); matching {
 			if ordered {
 				si.CounterParty = result.CounterParty
 			} else {
@@ -578,24 +600,27 @@ func matchingSwap(app interface{}, si *SwapInit) swapStageType {
 			log.Warn("Swap Stored Not matched", "si", si, "result", result)
 		}
 	} else {
-		log.Debug("Swap not found in storage", "si", si)
+		log.Debug("Swap not found in storage", "key", key)
+		si.store(app)
 	}
 	return SWAP_MATCHING
 }
 
 func SaveSwap(app interface{}, swapKey []byte, transaction SwapInit) {
-	log.Debug("SaveSwap", "key", swapKey)
 	storage := GetStatus(app)
 	session := storage.Begin()
 	session.Set(swapKey, transaction)
 	session.Commit()
 }
 
-func FindSwap(app interface{}, key id.AccountKey) SwapInit {
+func FindSwap(app interface{}, key []byte) *SwapInit {
 	storage := GetStatus(app)
-	result := storage.Get(key)
-
-	return result.(SwapInit)
+	buffer := storage.Get(key)
+	if buffer == nil {
+		return nil
+	}
+	result := buffer.(SwapInit)
+	return &result
 }
 
 func DeleteSwap(app interface{}, key id.AccountKey) {
@@ -631,7 +656,7 @@ func GetChainAccount(app interface{}, name string, chain data.ChainType) id.Acco
 func CreateCheckEvent(app interface{}, chain data.ChainType, context FunctionValues, tx Transaction) (bool, FunctionValues) {
 	storeKey := GetBytes(context[STOREKEY])
 	si := FindSwap(app, storeKey)
-	if &si == nil {
+	if si == nil {
 		log.Error("Saved swap not found", "key", storeKey)
 		return false, nil
 	}
@@ -700,6 +725,7 @@ func Initiate(app interface{}, chain data.ChainType, context FunctionValues, tx 
 	case data.ONELEDGER:
 		return CreateContractOLT(app, context, tx)
 	default:
+		log.Warn("Chain not support", "Chain", chain)
 		return false, nil
 	}
 }
@@ -715,6 +741,7 @@ func Participate(app interface{}, chain data.ChainType, context FunctionValues, 
 	case data.ONELEDGER:
 		return ParticipateOLT(app, context, tx)
 	default:
+		log.Warn("Chain not support", "Chain", chain)
 		return false, nil
 	}
 }
@@ -731,6 +758,7 @@ func Redeem(app interface{}, chain data.ChainType, context FunctionValues, tx Tr
 	case data.ONELEDGER:
 		return RedeemOLT(app, context, tx)
 	default:
+		log.Warn("Chain not support", "Chain", chain)
 		return false, nil
 	}
 }
@@ -746,6 +774,7 @@ func Refund(app interface{}, chain data.ChainType, context FunctionValues, tx Tr
 	case data.ONELEDGER:
 		return RefundOLT(app, context, tx)
 	default:
+		log.Warn("Chain not support", "Chain", chain)
 		return false, nil
 	}
 }
@@ -761,6 +790,7 @@ func ExtractSecret(app interface{}, chain data.ChainType, context FunctionValues
 	case data.ONELEDGER:
 		return ExtractSecretOLT(app, context, tx)
 	default:
+		log.Warn("Chain not support", "Chain", chain)
 		return false, nil
 	}
 }
@@ -776,6 +806,7 @@ func AuditContract(app interface{}, chain data.ChainType, context FunctionValues
 	case data.ONELEDGER:
 		return AuditContractOLT(app, context, tx)
 	default:
+		log.Warn("Chain not support", "Chain", chain)
 		return false, nil
 	}
 }

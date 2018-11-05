@@ -5,7 +5,6 @@ import (
 	"github.com/Oneledger/protocol/node/global"
 	"github.com/Oneledger/protocol/node/id"
 	"github.com/Oneledger/protocol/node/log"
-	wire "github.com/tendermint/go-wire"
 	"time"
 
 	"github.com/Oneledger/protocol/node/serial"
@@ -17,13 +16,14 @@ import (
 func _hash(item interface{}) []byte {
 
 	hasher := ripemd160.New()
-	bz, err := wire.MarshalBinary(item)
+
+	buffer, err := serial.Serialize(item, serial.JSON)
 	if err != nil {
-		panic(err)
+		log.Fatal("hash serialize failed", "err", err)
 	}
-	_, err = hasher.Write(bz)
+	_, err = hasher.Write(buffer)
 	if err != nil {
-		panic(err)
+		log.Fatal("hasher failed", "err", err)
 	}
 	return hasher.Sum(nil)
 }
