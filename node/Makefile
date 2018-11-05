@@ -124,7 +124,7 @@ stopmon: check
 # Compile protocol buffers
 #
 protobuf:
-	protoc --proto_path= ../sdk/pb/base.proto --go_out=plugins=grpc:../sdk/pb/
+	protoc ./sdk/pb/base.proto --go_out=plugins=grpc:./
 
 #
 # targets that are not associated with any files
