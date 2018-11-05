@@ -2,6 +2,33 @@
 
 
 [[projects]]
+  name = "github.com/Oneledger/protocol"
+  packages = [
+    "node/abci",
+    "node/action",
+    "node/app",
+    "node/chains/bitcoin",
+    "node/chains/bitcoin/htlc",
+    "node/chains/bitcoin/rpc",
+    "node/chains/common",
+    "node/chains/ethereum",
+    "node/chains/ethereum/htlc",
+    "node/cmd/shared",
+    "node/comm",
+    "node/convert",
+    "node/data",
+    "node/err",
+    "node/global",
+    "node/id",
+    "node/log",
+    "node/persist",
+    "node/serial",
+    "node/version"
+  ]
+  revision = "041913a1c631f7e62f2a6d67f59b42e6e6a2f34f"
+  version = "v0.6.1"
+
+[[projects]]
   branch = "master"
   digest = "1:7d191fd0c54ff370eaf6116a14dafe2a328df487baea280699f597aae858d00d"
   name = "github.com/aristanetworks/goarista"

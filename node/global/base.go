@@ -52,7 +52,7 @@ type Context struct {
 }
 
 func init() {
-	Current = NewContext("OneLedger-Default")
+	Current = NewContext("OneLedger")
 }
 
 // Set the default values for any context variables here (and no where else)

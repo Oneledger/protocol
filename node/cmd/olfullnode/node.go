@@ -81,18 +81,14 @@ func StartNode(cmd *cobra.Command, args []string) {
 		}
 	}()
 
-	log.Debug("Starting", "appAddress", global.Current.AppAddress)
+	log.Debug("Starting", "appAddress", global.Current.AppAddress, "on", global.Current.NodeName)
 
 	node := app.NewApplication()
 	node.Initialize()
 
-	if global.Current.NodeAccountName == "" {
-		log.Warn("Missing NodeAccount")
-	} else {
-		log.Info("NodeAccountName", "account", global.Current.NodeAccountName)
-	}
-
 	global.Current.SetApplication(persist.Access(node))
+	app.SetNodeName(node)
+	LogSettings()
 
 	CatchSigterm()
 
@@ -133,7 +129,7 @@ func StartNode(cmd *cobra.Command, args []string) {
 	*/
 
 	// TODO: Sleep until the node is connected and running
-	time.Sleep(5 * time.Second)
+	time.Sleep(10 * time.Second)
 	log.Debug("################### STARTED UP ######################")
 
 	// If the register flag is set, do that before waiting
@@ -158,4 +154,13 @@ func CatchSigterm() {
 		}
 	}()
 
+}
+
+// Log all of the global settings
+func LogSettings() {
+	log.Info("Diagnostics", "Debug", global.Current.Debug, "DisablePasswords", global.Current.DisablePasswords)
+	log.Info("Ownership", "NodeName", global.Current.NodeName, "NodeAccountName", global.Current.NodeAccountName,
+		"NodeIdentity", global.Current.NodeIdentity)
+	log.Info("Locations", "RootDir", global.Current.RootDir)
+	log.Info("Addresses", "RpcAddress", global.Current.RpcAddress, "AppAddress", global.Current.AppAddress)
 }
