@@ -10,6 +10,7 @@ import (
 	"github.com/Oneledger/protocol/node/err"
 	"github.com/Oneledger/protocol/node/log"
 	"github.com/Oneledger/protocol/node/serial"
+	"strings"
 )
 
 // The persistent collection of all accounts known by this node
@@ -94,6 +95,19 @@ func (ids *Identities) FindAll() []Identity {
 		results[i] = result.(Identity)
 	}
 	return results
+}
+
+func (ids *Identities) FindTendermint(tendermintAddress string) Identity {
+	keys := ids.store.FindAll()
+	size := len(keys)
+	for i := 0; i < size; i++ {
+		identity := ids.store.Get(keys[i]).(Identity)
+		if strings.ToLower(tendermintAddress) == strings.ToLower(identity.TendermintAddress) {
+			log.Debug("FindTendermint", "identity.TendermintAddress", identity.TendermintAddress)
+			return identity
+		}
+	}
+	return Identity{}
 }
 
 func (ids *Identities) Dump() {

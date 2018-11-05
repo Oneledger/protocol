@@ -70,8 +70,14 @@ func RegisterLocally(app *Application, name string, scope string, chain data.Cha
 	log.Debug("RegisterLocally", "global.Current.TendermintAddress", global.Current.TendermintAddress)
 
 	if identity.Name == "" {
+		tendermintAddress := global.Current.TendermintAddress
+		tendermintPubKey := global.Current.TendermintPubKey
+		if name == "Zero" || name == "Payment" {
+			tendermintAddress = ""
+			tendermintPubKey = ""
+		}
 		interim := id.NewIdentity(name, "Contact Info", false,
-			global.Current.NodeName, account.AccountKey(), global.Current.TendermintAddress, global.Current.TendermintPubKey)
+			global.Current.NodeName, account.AccountKey(), tendermintAddress, tendermintPubKey)
 		identity = *interim
 
 		log.Debug("RegisterLocally2", "identity.TendermintAddress", identity.TendermintAddress)

@@ -10,6 +10,7 @@ import (
 	"encoding/hex"
 	"github.com/Oneledger/protocol/node/abci"
 	"github.com/Oneledger/protocol/node/action"
+	"github.com/Oneledger/protocol/node/comm"
 	"github.com/Oneledger/protocol/node/data"
 	"github.com/Oneledger/protocol/node/err"
 	"github.com/Oneledger/protocol/node/global"
@@ -247,15 +248,35 @@ func (app Application) BeginBlock(req RequestBeginBlock) ResponseBeginBlock {
 	//log.Debug("Proposer 3", "Get Proposer", req.LastCommitInfo.Validators)
 
 	//var sendArgs shared.SendArguments
-	log.Info("FeePaymentIdentities")
-	app.Identities.Dump()
-	list := req.LastCommitInfo.GetValidators()
-	for _, entry := range list {
-		formatted := hex.EncodeToString(entry.Validator.Address)
-		log.Debug("FeePayment", "Address", formatted)
-		//validator := GetValidatorAccount(formatted)
-		//log.Debug("FeePayment", "Validator", validator)
-		//sendArgs.CounterParty = formatted
+	//log.Info("FeePaymentIdentities")
+	//app.Identities.Dump()
+	account, status := app.Accounts.FindName("Payment-OneLedger")
+	if status != err.SUCCESS {
+		log.Fatal("dead")
+	}
+	balance := app.Utxo.Get(account.AccountKey())
+	if balance == nil {
+		interimBalance := data.NewBalance(0, "OLT")
+		balance = &interimBalance
+	}
+	log.Debug("PaymentBalance", "balance", balance.Amount)
+	if !balance.Amount.LessThanEqual(0) {
+		list := req.LastCommitInfo.GetValidators()
+		for _, entry := range list {
+			formatted := hex.EncodeToString(entry.Validator.Address)
+			log.Debug("FeePayment", "Address", formatted)
+			identity := app.Identities.FindTendermint(formatted)
+			log.Debug("FeePaymentValIdentity", "name", identity.Name)
+			if identity.Name == "Alice" {
+				result := CreatePaymentRequest(app, identity)
+				log.Debug("PayAlice")
+				if result != nil {
+					// TODO: check this later
+					comm.BroadcastAsync(result)
+				}
+			}
+
+		}
 	}
 
 	//packet := shared.CreateSendRequest(&sendArgs)
