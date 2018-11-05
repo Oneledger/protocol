@@ -20,7 +20,7 @@ func init() {
 	Current = &Version{
 		Major:      0,
 		Minor:      6,
-		Patch:      1,
+		Patch:      2,
 		PreRelease: "",
 		MetaData:   "",
 	}
