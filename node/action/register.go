@@ -31,10 +31,12 @@ func (transaction Register) Validate() err.Code {
 	log.Debug("Validating Register Transaction")
 
 	if transaction.Identity == "" {
+		log.Warn("Missing Identity from Registration", "identity", transaction.Identity)
 		return err.MISSING_DATA
 	}
 
 	if transaction.NodeName == "" {
+		log.Warn("Missing NodeName from Registration", "nodeName", transaction.NodeName)
 		return err.MISSING_DATA
 	}
 
@@ -76,6 +78,7 @@ func (transaction Register) ProcessDeliver(app interface{}) err.Code {
 	entry, status := identities.FindName(transaction.Identity)
 
 	if status != err.SUCCESS && status != err.MISSING_DATA {
+		log.Warn("Can't process Registration", "status", status)
 		return status
 	}
 

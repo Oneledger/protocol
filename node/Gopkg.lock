@@ -2,6 +2,33 @@
 
 
 [[projects]]
+  name = "github.com/Oneledger/protocol"
+  packages = [
+    "node/abci",
+    "node/action",
+    "node/app",
+    "node/chains/bitcoin",
+    "node/chains/bitcoin/htlc",
+    "node/chains/bitcoin/rpc",
+    "node/chains/common",
+    "node/chains/ethereum",
+    "node/chains/ethereum/htlc",
+    "node/cmd/shared",
+    "node/comm",
+    "node/convert",
+    "node/data",
+    "node/err",
+    "node/global",
+    "node/id",
+    "node/log",
+    "node/persist",
+    "node/serial",
+    "node/version"
+  ]
+  revision = "041913a1c631f7e62f2a6d67f59b42e6e6a2f34f"
+  version = "v0.6.1"
+
+[[projects]]
   branch = "master"
   name = "github.com/aristanetworks/goarista"
   packages = ["monotime"]
@@ -691,6 +718,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "b94fb087d342ab68b8e28e88114261d789b01cbeb29ca7e9f6cc8358cdb20276"
+  inputs-digest = "76deeca6a4f5917f4d8904f70125d7b5749ceb15aab7dcbcc849614fba07e958"
   solver-name = "gps-cdcl"
   solver-version = 1

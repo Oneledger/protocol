@@ -185,7 +185,6 @@ func Query(path string, packet []byte) interface{} {
 		log.Error("Failed to deserialize Query:", response.Response.Value)
 		return "Failed"
 	}
-
 	return result
 }
 

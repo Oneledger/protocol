@@ -13,7 +13,6 @@ import (
 	"github.com/Oneledger/protocol/node/action"
 	"github.com/Oneledger/protocol/node/data"
 	"github.com/Oneledger/protocol/node/err"
-	"github.com/Oneledger/protocol/node/global"
 	"github.com/Oneledger/protocol/node/id"
 	"github.com/Oneledger/protocol/node/log"
 	"github.com/Oneledger/protocol/node/serial"
@@ -32,32 +31,38 @@ func init() {
 type Application struct {
 	types.BaseApplication
 
-	Admin      data.Datastore   // any administrative parameters
-	Status     data.Datastore   // current state of any composite transactions (pending, verified, etc.)
-	Identities *id.Identities   // Keep a higher-level identity for a given user
-	Accounts   *id.Accounts     // Keep all of the user accounts locally for their node (identity management)
+	// Global Chain state (data is identical on all nodes in the chain)
 	Utxo       *data.ChainState // unspent transction output (for each type of coin)
-	Event      data.Datastore   // Event for any action that need to be tracked
-	Contract   data.Datastore   // contract for reuse.
+	Identities *id.Identities   // Keep a higher-level identity for a given user
 
+	// Local Node state (data is different for each node)
+	Admin    data.Datastore // any administrative parameters
+	Status   data.Datastore // current state of any composite transactions (pending, verified, etc.)
+	Accounts *id.Accounts   // Keep all of the user accounts locally for their node (identity management)
+	Event    data.Datastore // Event for any action that need to be tracked
+	Contract data.Datastore // contract for reuse.
+
+	// Tendermint's last block information
 	LastHeader types.Header // Tendermint last header info
 }
 
-// NewApplicationContext initializes a new application
+// NewApplicationContext initializes a new application, reconnects to the databases.
 func NewApplication() *Application {
 	return &Application{
-		Admin:      data.NewDatastore("admin", data.PERSISTENT),
-		Status:     data.NewDatastore("status", data.PERSISTENT),
 		Identities: id.NewIdentities("identities"),
-		Accounts:   id.NewAccounts("accounts"),
 		Utxo:       data.NewChainState("utxo", data.PERSISTENT),
-		Event:      data.NewDatastore("event", data.PERSISTENT),
-		Contract:   data.NewDatastore("contract", data.PERSISTENT),
+
+		Admin:    data.NewDatastore("admin", data.PERSISTENT),
+		Status:   data.NewDatastore("status", data.PERSISTENT),
+		Accounts: id.NewAccounts("accounts"),
+		Event:    data.NewDatastore("event", data.PERSISTENT),
+		Contract: data.NewDatastore("contract", data.PERSISTENT),
 	}
 }
 
 type AdminParameters struct {
 	NodeAccountName string
+	NodeName        string
 }
 
 func init() {
@@ -66,13 +71,19 @@ func init() {
 
 // Initial the state of the application from persistent data
 func (app Application) Initialize() {
-	raw := app.Admin.Get(data.DatabaseKey("NodeAccountName"))
-	if raw != nil {
-		params := raw.(AdminParameters)
-		global.Current.NodeAccountName = params.NodeAccountName
-	} else {
-		log.Debug("NodeAccountName not currently set")
-	}
+	/*
+		raw := app.Admin.Get(data.DatabaseKey("AdminParameters"))
+		if raw != nil {
+			params := raw.(AdminParameters)
+
+			log.Dump("Setting Admin Params to", params)
+			global.Current.NodeAccountName = params.NodeAccountName
+			global.Current.NodeName = params.NodeName
+
+		} else {
+			log.Debug("NodeAccountName not currently set")
+		}
+	*/
 }
 
 type BasicState struct {

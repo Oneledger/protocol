@@ -46,9 +46,9 @@ pids=`pgrep -f "fullnode.*--node $nodeName.*"`
 if ! [ -z "$pids" ]
 then
 	echo "============================================================" >> $LOG/fullnode.log
-	echo "Stopping Fullnode" >> $LOG/fullnode.log
+	echo "Stopping Fullnode" >> $LOG/olfullnode.log
 	echo "============================================================" >> $LOG/fullnode.log
-	pkill -f "fullnode.*--node $nodeName.*" >> $LOG/fullnode.log
+	pkill -f "fullnode.*--node $nodeName.*" >> $LOG/olfullnode.log
 	killed=true
 fi
 
