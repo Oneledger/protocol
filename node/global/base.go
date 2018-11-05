@@ -63,7 +63,7 @@ func NewContext(name string) *Context {
 		SDKAddress:       6969,
 		NodeName:         name,
 		NodeAccountName:  "Zero-OneLedger",
-		RootDir:          os.Getenv("OLDATA") + "/" + name + "/fullnode",
+		RootDir:          os.Getenv("OLDATA") + "/" + name + "/olfullnode",
 		Sequence:         101,
 	}
 }

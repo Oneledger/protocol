@@ -71,23 +71,27 @@ func CreateSendRequest(args *SendArguments) []byte {
 	conv := convert.NewConvert()
 
 	if args.Party == "" {
-		log.Error("Missing Party information")
+		log.Error("Missing Party argument")
 		return nil
 	}
 
 	if args.CounterParty == "" {
-		log.Error("Missing CounterParty information")
+		log.Error("Missing CounterParty argument")
 		return nil
 	}
 
 	// TODO: Can't convert identities to accounts, this way!
 	party := GetAccountKey(args.Party)
 	counterParty := GetAccountKey(args.CounterParty)
+	if party == nil || counterParty == nil {
+		log.Fatal("System doesn't reconize the parties", "args", args, "party", party, "counterParty", counterParty)
+		return nil
+	}
 
 	//log.Dump("AccountKeys", party, counterParty)
 
 	if args.Currency == "" || args.Amount == "" {
-		log.Error("Missing an amount")
+		log.Error("Missing an amount argument")
 		return nil
 	}
 
@@ -99,7 +103,7 @@ func CreateSendRequest(args *SendArguments) []byte {
 	//log.Dump("Balances", partyBalance, counterPartyBalance)
 
 	if partyBalance == nil || counterPartyBalance == nil {
-		log.Error("Missing Balances")
+		log.Error("Missing Balance", "party", partyBalance, "counterParty", counterPartyBalance)
 		return nil
 	}
 
@@ -146,22 +150,29 @@ func CreateMintRequest(args *SendArguments) []byte {
 	conv := convert.NewConvert()
 
 	if args.Party == "" {
-		log.Warn("Missing Party information", "args", args)
+		log.Warn("Missing Party arguments", "args", args)
 		return nil
 	}
 
 	// TODO: Can't convert identities to accounts, this way!
+	log.Debug("Getting TestMint Account Keys")
 	party := GetAccountKey(args.Party)
-	zero := GetAccountKey("Zero-OneLedger")
+	zero := GetAccountKey("Zero")
+
+	if party == nil || zero == nil {
+		log.Warn("Missing Party information", "args", args, "party", party, "zero", zero)
+		return nil
+	}
 
 	amount := conv.GetCoin(args.Amount, args.Currency)
 
 	// Build up the Inputs
-	zeroBalance := GetBalance(zero)
+	log.Debug("Getting TestMint Account Balances")
 	partyBalance := GetBalance(party)
+	zeroBalance := GetBalance(zero)
 
 	if zeroBalance == nil || partyBalance == nil {
-		log.Warn("Missing Balances")
+		log.Warn("Missing Balances", "party", party, "zero", zero)
 		return nil
 	}
 
@@ -198,6 +209,8 @@ func CreateMintRequest(args *SendArguments) []byte {
 		Fee:     fee,
 		Gas:     gas,
 	}
+
+	log.Debug("Finished Building Testmint Request")
 
 	return SignAndPack(action.SEND, action.Transaction(send))
 }

@@ -127,7 +127,7 @@ func (transaction *Swap) ProcessDeliver(app interface{}) err.Code {
 }
 
 // TODO: Change to return Role as INITIATOR or PARTICIPANT
-func FindMatchingSwap(status *data.Datastore, accountKey id.AccountKey, transaction *Swap, isParty bool) (matched *Swap) {
+func FindMatchingSwap(status data.Datastore, accountKey id.AccountKey, transaction *Swap, isParty bool) (matched *Swap) {
 
 	result := FindSwap(status, accountKey)
 	if result != nil {
@@ -236,28 +236,20 @@ func ProcessSwap(app interface{}, transaction *Swap) *Swap {
 	return nil
 }
 
-func SaveSwap(status *data.Datastore, accountKey id.AccountKey, transaction *Swap) {
+func SaveSwap(status data.Datastore, accountKey id.AccountKey, transaction *Swap) {
 	log.Debug("SaveSwap", "key", accountKey)
-	buffer, err := serial.Serialize(transaction, serial.CLIENT)
-	if err != nil {
-		log.Error("Failed to Serialize SaveSwap transaction")
-	}
-	status.Store(accountKey, buffer)
-	status.Commit()
+	session := status.Begin()
+	session.Set(accountKey, transaction)
+	session.Commit()
 }
 
-func FindSwap(status *data.Datastore, key id.AccountKey) Transaction {
-	result := status.Load(key)
+func FindSwap(status data.Datastore, key id.AccountKey) Transaction {
+	result := status.Get(key)
 	if result == nil {
 		return nil
 	}
 
-	var transaction Swap
-	buffer, err := serial.Deserialize(result, &transaction, serial.CLIENT)
-	if err != nil {
-		return nil
-	}
-	return buffer.(Transaction)
+	return result.(Transaction)
 }
 
 // Is this node one of the partipants in the swap
@@ -729,8 +721,9 @@ func CreateContractOLT(app interface{}, context map[Parameter]FunctionValue) (bo
 	log.Warn("Not supported")
 	party := GetParty(context[MY_ACCOUNT])
 	counterParty := GetParty(context[THEM_ACCOUNT])
-	partyBalance := GetUtxo(app).Find(party.Key).Amount
-	counterPartyBalance := GetUtxo(app).Find(counterParty.Key).Amount
+
+	partyBalance := GetUtxo(app).Get(party.Key).Amount
+	counterPartyBalance := GetUtxo(app).Get(counterParty.Key).Amount
 
 	preimage := GetByte32(context[PREIMAGE])
 	if context[PASSWORD] != nil {

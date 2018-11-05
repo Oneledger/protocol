@@ -1,8 +1,7 @@
 /*
-	Copyright 2017 - 2018 OneLedger
-
-	Basic datatypes
+	Copyright 2017-2018 OneLedger
 */
+
 package data
 
 import (
@@ -11,15 +10,7 @@ import (
 	"github.com/Oneledger/protocol/node/serial"
 )
 
-/*
-type Chain struct {
-}
-
-type ChainNode struct {
-	// TODO: How to navigate to the node via grpc
-}
-*/
-
+// Wrap the amount with owner information
 type Balance struct {
 	// Address id.Address
 	Amount Coin

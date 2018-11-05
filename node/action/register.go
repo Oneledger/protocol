@@ -52,10 +52,12 @@ func (transaction Register) ProcessCheck(app interface{}) err.Code {
 		return status
 	}
 
-	if id == nil {
-		log.Debug("Success, it is a new Identity", "id", transaction.Identity)
-		return err.SUCCESS
-	}
+	/*
+		if id == nil {
+			log.Debug("Success, it is a new Identity", "id", transaction.Identity)
+			return err.SUCCESS
+		}
+	*/
 
 	// Not necessarily a failure, since this identity might be local
 	log.Debug("Identity already exists", "id", id)
@@ -73,15 +75,17 @@ func (transaction Register) ProcessDeliver(app interface{}) err.Code {
 	identities := GetIdentities(app)
 	entry, status := identities.FindName(transaction.Identity)
 
-	if status != err.SUCCESS {
+	if status != err.SUCCESS && status != err.MISSING_DATA {
 		return status
 	}
 
-	if entry != nil {
-		log.Debug("Ignoring Existin Identity")
+	if entry.Name != "" {
+		log.Debug("Ignoring Existing Identity", "identity", transaction.Identity)
 	} else {
-		identities.Add(id.NewIdentity(transaction.Identity, "Contact Information",
-			true, global.Current.NodeName, transaction.AccountKey))
+		identity := id.NewIdentity(transaction.Identity, "Contact Information",
+			true, global.Current.NodeName, transaction.AccountKey)
+
+		identities.Add(*identity)
 		log.Info("Updated External Identity", "id", transaction.Identity, "key", transaction.AccountKey)
 	}
 

@@ -60,28 +60,28 @@ else
 fi
 
 #
-# Startup Fullnode
+# Startup OLFullnode
 #
-pids=`pgrep -f "fullnode.*--node $nodeName.*"`
+pids=`pgrep -f "olfullnode.*--node $nodeName.*"`
 if [ -z "$pids" ]
 
 then
-	echo "============================================================" >> $LOG/fullnode.log
-	echo "Starting Fullnode" >> $LOG/fullnode.log
-	echo "============================================================" >> $LOG/fullnode.log
-	fullnode node --node $nodeName \
-		--root $WORK/fullnode \
+	echo "============================================================" >> $LOG/olfullnode.log
+	echo "Starting OLFullnode" >> $LOG/olfullnode.log
+	echo "============================================================" >> $LOG/olfullnode.log
+	olfullnode node --node $nodeName \
+		--root $WORK/olfullnode \
 		--app $appAddress \
 		--address $rpcAddress \
 		--btcrpc $btcAddress \
 		--ethrpc $ethAddress \
 		--sdkrpc $sdkAddress \
 		$extra \
-		>> $LOG/fullnode.log 2>&1 &
+		>> $LOG/olfullnode.log 2>&1 &
 
 	echo "$nodeName has been started"
 else
-	echo "Fullnode $nodeName was already running"
+	echo "OLFullnode $nodeName was already running"
 fi
 
 popd >> /dev/null

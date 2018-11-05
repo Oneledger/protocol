@@ -62,6 +62,11 @@ func (accountKey AccountKey) String() string {
 	return hex.EncodeToString(accountKey)
 }
 
+// TODO: Just use String for all presentation variations....
+func (accountKey AccountKey) AsString() string {
+	return hex.EncodeToString(accountKey)
+}
+
 func (accountKey AccountKey) Bytes() []byte {
 	return accountKey
 }
@@ -104,6 +109,10 @@ func init() {
 	serial.Register(NilPrivateKey())
 	serial.Register(PublicKeySECP256K1{})
 	serial.Register(PrivateKeySECP256K1{})
+	var prototypePublicKey PublicKey
+	var prototypePrivateKey PrivateKey
+	serial.RegisterInterface(&prototypePublicKey)
+	serial.RegisterInterface(&prototypePrivateKey)
 }
 
 func NilPublicKey() PublicKeyED25519 {

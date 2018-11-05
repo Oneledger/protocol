@@ -13,16 +13,16 @@ import (
 	"github.com/Oneledger/protocol/node/persist"
 )
 
-func GetAdmin(app interface{}) *data.Datastore {
-	admin := app.(persist.Access).GetAdmin().(*data.Datastore)
+func GetAdmin(app interface{}) data.Datastore {
+	admin := app.(persist.Access).GetAdmin().(data.Datastore)
 	if admin == nil {
 		log.Fatal("Admin Database Missing", "config", global.Current, "app", app)
 	}
 	return admin
 }
 
-func GetStatus(app interface{}) *data.Datastore {
-	status := app.(persist.Access).GetStatus().(*data.Datastore)
+func GetStatus(app interface{}) data.Datastore {
+	status := app.(persist.Access).GetStatus().(data.Datastore)
 	if status == nil {
 		log.Fatal("Status Database Missing", "config", global.Current, "app", app)
 	}
@@ -51,20 +51,20 @@ func GetUtxo(app interface{}) *data.ChainState {
 }
 
 func GetChainID(app interface{}) string {
-    id := app.(persist.Access).GetChainID().(string)
-    return id
+	id := app.(persist.Access).GetChainID().(string)
+	return id
 }
 
-func GetEvent(app interface{}) *data.Datastore {
-    event := app.(persist.Access).GetEvent().(*data.Datastore)
-    if event == nil {
-        log.Fatal("Event Database Missing", "config", global.Current, "app", app)
-    }
-    return event
+func GetEvent(app interface{}) data.Datastore {
+	event := app.(persist.Access).GetEvent().(data.Datastore)
+	if event == nil {
+		log.Fatal("Event Database Missing", "config", global.Current, "app", app)
+	}
+	return event
 }
 
-func GetContract(app interface{}) *data.Datastore {
-	htlcs := app.(persist.Access).GetContract().(*data.Datastore)
+func GetContract(app interface{}) data.Datastore {
+	htlcs := app.(persist.Access).GetContract().(data.Datastore)
 	if htlcs == nil {
 		log.Fatal("Htlc Database Missing", "config", global.Current, "app", app)
 	}

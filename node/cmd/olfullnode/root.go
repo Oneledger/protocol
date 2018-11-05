@@ -15,9 +15,9 @@ import (
 )
 
 var RootCmd = &cobra.Command{
-	Use:   "fullnode",
-	Short: "fullnode",
-	Long:  "OneLedger chain, fullnode",
+	Use:   "olfullnode",
+	Short: "olfullnode",
+	Long:  "OneLedger chain, olfullnode",
 }
 
 func Execute() {
@@ -55,7 +55,7 @@ func init() {
 		global.Current.BTCAddress, "bitcoin rpc address")
 
 	RootCmd.PersistentFlags().StringVar(&global.Current.ETHAddress, "ethrpc",
-		global.Current.ETHAddress, "etherem rpc address")
+		global.Current.ETHAddress, "ethereum rpc address")
 
 	RootCmd.PersistentFlags().IntVar(&global.Current.SDKAddress, "sdkrpc", global.Current.SDKAddress, "Port for SDK RPC Server")
 }
