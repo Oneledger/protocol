@@ -148,7 +148,6 @@ func (transaction *Swap) ProcessDeliver(app interface{}) status.Code {
 
 // Plug in data from the rest of a system into a set of commands
 func (swap *Swap) Resolve(app interface{}) Commands {
-	node := GetNodeAccount(app)
 	var commands Commands
 	if swap.Stage == SWAP_MATCHING {
 		si := swap.SwapMessage.(SwapInit)
@@ -161,12 +160,13 @@ func (swap *Swap) Resolve(app interface{}) Commands {
 
 	}
 	if commands.Count() == 0 {
+		log.Error("Swap resolve no commands", "swap", swap)
 		return nil
 	}
 	//todo: the owner and signer should change when support wallet/light client.
 	// the owner should be the wallet/light client sender not the operation node. so as the signer
-	commands[0].data[OWNER] = node.AccountKey()
-	commands[0].data[TARGET] = node.AccountKey()
+	commands[0].data[OWNER] = swap.Owner
+	commands[0].data[TARGET] = swap.Target
 	commands[0].data[PREVIOUS] = _hash(swap)
 	return commands
 }
@@ -323,7 +323,7 @@ func (si SwapInit) resolve(app interface{}, stageType swapStageType) Commands {
 	switch stageType {
 	case SWAP_MATCHING:
 		context[NEXTSTAGE] = WAIT_FOR_CHAIN
-		event := Event{Type: SWAP, SwapKeyHash: key, Stage: 0}
+		event := Event{Type: SWAP, SwapKeyHash: key, Step: 0}
 		sv = SwapVerify{
 			Event: event,
 		}
@@ -338,7 +338,7 @@ func (si SwapInit) resolve(app interface{}, stageType swapStageType) Commands {
 		}
 		context[SWAPMESSAGE] = se
 	default:
-		log.Warn("Unexpected stage", "stage", stageType)
+		log.Warn("Unexpected stage for SwapInit", "stage", stageType)
 	}
 	commands[0].data = context
 	return commands
@@ -450,6 +450,8 @@ func (se SwapExchange) resolve(app interface{}, stageType swapStageType) Command
 	context[STAGE] = stage.Stage
 	context[NEXTSTAGE] = stage.OutStage
 	switch stage.Stage {
+	case SWAP_MATCHED:
+
 	case INITIATOR_INITIATE:
 
 		var secret [32]byte
@@ -480,7 +482,7 @@ func (se SwapExchange) resolve(app interface{}, stageType swapStageType) Command
 		context[PREIMAGE] = scrHash
 
 	default:
-		log.Warn("Unexpected stage", "stage", stageType)
+		log.Warn("Unexpected stage for SwapExchange", "stage", stageType)
 	}
 	commands[0].data = context
 	return commands
@@ -667,7 +669,7 @@ func CreateCheckEvent(app interface{}, chain data.ChainType, context FunctionVal
 	context[OWNER] = si.Party.Key
 	context[TARGET] = si.Party.Key
 
-	event := Event{Type: SWAP, SwapKeyHash: se.SwapKeyHash, Stage: 0}
+	event := Event{Type: SWAP, SwapKeyHash: se.SwapKeyHash, Step: 0}
 	SaveEvent(app, event, false)
 
 	return true, context
@@ -908,7 +910,7 @@ func CreateContractETH(app interface{}, context FunctionValues, tx Transaction) 
 		contract = ethereum.CreateHtlContract()
 		SaveContract(app, me.AccountKey().Bytes(), int64(data.ETHEREUM), contract.ToMessage())
 	} else {
-		buffer, err := serial.Deserialize(contractMessage, contract, serial.NETWORK)
+		buffer, err := serial.Deserialize(contractMessage, contract, serial.JSON)
 		if err != nil {
 			log.Error("Can't deserialze loaded ETH contract", "buffer", contractMessage)
 		}
@@ -953,7 +955,7 @@ func CreateContractETH(app interface{}, context FunctionValues, tx Transaction) 
 func AuditContractBTC(app interface{}, context FunctionValues, tx Transaction) (bool, FunctionValues) {
 	buffer := GetBytes(context[CONTRACT])
 	var contract *bitcoin.HTLContract
-	tmp, err := serial.Deserialize(buffer, contract, serial.NETWORK)
+	tmp, err := serial.Deserialize(buffer, contract, serial.JSON)
 	if err != nil {
 		log.Error("Failed deserialize BTC contract", "contract", buffer)
 	}
@@ -1016,7 +1018,7 @@ func AuditContractETH(app interface{}, context FunctionValues, tx Transaction) (
 	//todo : when support light client, need to get this address from swapinit
 	address := ethereum.GetAddress()
 	var contract *ethereum.HTLContract
-	tmp, err := serial.Deserialize(buffer, contract, serial.NETWORK)
+	tmp, err := serial.Deserialize(buffer, contract, serial.JSON)
 	if err != nil {
 		log.Error("Failed deserialize ETH contract", "contract", buffer)
 		return false, nil
@@ -1088,7 +1090,7 @@ func RedeemBTC(app interface{}, context FunctionValues, tx Transaction) (bool, F
 		return false, nil
 	}
 	var contract *bitcoin.HTLContract
-	tmp, err := serial.Deserialize(buffer, contract, serial.NETWORK)
+	tmp, err := serial.Deserialize(buffer, contract, serial.JSON)
 	if err != nil {
 		log.Error("Failed deserialize BTC contract", "contract", buffer)
 	}
@@ -1110,7 +1112,7 @@ func RedeemBTC(app interface{}, context FunctionValues, tx Transaction) (bool, F
 
 	contract = &bitcoin.HTLContract{Contract: contract.Contract, ContractTx: *cmd.RedeemContractTx}
 
-	event := Event{Type: SWAP, SwapKeyHash: storeKey, Stage: 0}
+	event := Event{Type: SWAP, SwapKeyHash: storeKey, Step: 0}
 	sv := SwapVerify{
 		Event: event,
 	}
@@ -1127,7 +1129,7 @@ func RedeemETH(app interface{}, context FunctionValues, tx Transaction) (bool, F
 		return false, nil
 	}
 	var contract *ethereum.HTLContract
-	tmp, err := serial.Deserialize(buffer, contract, serial.NETWORK)
+	tmp, err := serial.Deserialize(buffer, contract, serial.JSON)
 	if err != nil {
 		log.Error("Failed deserialize ETH contract", "contract", buffer)
 	}
@@ -1140,7 +1142,7 @@ func RedeemETH(app interface{}, context FunctionValues, tx Transaction) (bool, F
 		return false, nil
 	}
 
-	event := Event{Type: SWAP, SwapKeyHash: storeKey, Stage: 0}
+	event := Event{Type: SWAP, SwapKeyHash: storeKey, Step: 0}
 	sv := SwapVerify{
 		Event: event,
 	}
@@ -1157,7 +1159,7 @@ func RefundBTC(app interface{}, context FunctionValues, tx Transaction) (bool, F
 		return false, nil
 	}
 	var contract *bitcoin.HTLContract
-	tmp, err := serial.Deserialize(buffer, contract, serial.NETWORK)
+	tmp, err := serial.Deserialize(buffer, contract, serial.JSON)
 	if err != nil {
 		log.Error("Failed deserialize BTC contract", "contract", buffer)
 	}
@@ -1185,7 +1187,7 @@ func RefundETH(app interface{}, context FunctionValues, tx Transaction) (bool, F
 		return false, nil
 	}
 	var contract *ethereum.HTLContract
-	tmp, err := serial.Deserialize(buffer, contract, serial.NETWORK)
+	tmp, err := serial.Deserialize(buffer, contract, serial.JSON)
 	if err != nil {
 		log.Error("Failed deserialize ETH contract", "contract", buffer)
 	}
@@ -1205,7 +1207,7 @@ func RefundETH(app interface{}, context FunctionValues, tx Transaction) (bool, F
 func ExtractSecretBTC(app interface{}, context FunctionValues, tx Transaction) (bool, FunctionValues) {
 	buffer := GetBytes(context[CONTRACT])
 	var contract *bitcoin.HTLContract
-	tmp, err := serial.Deserialize(buffer, contract, serial.NETWORK)
+	tmp, err := serial.Deserialize(buffer, contract, serial.JSON)
 	if err != nil {
 		log.Error("Failed deserialize BTC contract", "contract", buffer)
 	}
@@ -1230,7 +1232,7 @@ func ExtractSecretETH(app interface{}, context FunctionValues, tx Transaction) (
 
 	buffer := GetBytes(context[CONTRACT])
 	var contract *ethereum.HTLContract
-	tmp, err := serial.Deserialize(buffer, contract, serial.NETWORK)
+	tmp, err := serial.Deserialize(buffer, contract, serial.JSON)
 	if err != nil {
 		log.Error("Failed deserialize ETH contract", "contract", buffer)
 	}

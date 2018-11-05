@@ -158,7 +158,7 @@ func CheckAmounts(app interface{}, inputs []SendInput, outputs []SendOutput) boo
 type Event struct {
 	Type        Type   `json:"type"`
 	SwapKeyHash []byte `json:"swapkeyhash"`
-	Stage       int    `json:"stage"`
+	Step        int    `json:"step"`
 }
 
 func (e Event) ToKey() []byte {
