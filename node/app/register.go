@@ -42,14 +42,17 @@ func RegisterLocally(app *Application, name string, scope string, chain data.Cha
 			log.Debug("Updating NodeAccount", "name", accountName)
 
 			global.Current.NodeAccountName = accountName
+			SetNodeName(app)
 
-			log.Debug("Admin store", "data.DatabaseKey", data.DatabaseKey("NodeAccountName"),
-				"accountName", accountName)
+			/*
+				log.Debug("Admin store", "data.DatabaseKey", data.DatabaseKey("NodeAccountName"),
+					"accountName", accountName)
 
-			parameters := AdminParameters{NodeAccountName: accountName}
-			session := app.Admin.Begin()
-			session.Set(data.DatabaseKey("NodeAccountName"), parameters)
-			session.Commit()
+				parameters := AdminParameters{NodeAccountName: accountName}
+				session := app.Admin.Begin()
+				session.Set(data.DatabaseKey("NodeAccountName"), parameters)
+				session.Commit()
+			*/
 		}
 		status = true
 	} else {
