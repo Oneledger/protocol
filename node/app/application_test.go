@@ -9,6 +9,7 @@ package app
 import (
 	"testing"
 
+	"github.com/Oneledger/protocol/node/action"
 	"github.com/Oneledger/protocol/node/data"
 	"github.com/Oneledger/protocol/node/id"
 	"github.com/Oneledger/protocol/node/log"
@@ -34,22 +35,20 @@ func register(app *Application, idName string, t *testing.T) {
 	}
 
 	// Create all of the accounts
-	identity := id.NewIdentity(idName, "Contact Info", false, "Alice-Node", id.AccountKey(nil))
+	identity := id.NewIdentity(idName, "Contact Info", false)
 
 	log.Debug("Adding", "name", idName)
 
 	app.Identities.Add(identity)
 
 	for _, set := range chains {
-		//var key action.PublicKey
+		var key action.PublicKey
 
 		name := set[0]
 		chain := set[1]
 		log.Debug("Adding", "name", name, "chain", chain)
 
-		account := id.NewAccount(chain.(data.ChainType), idName+"-"+name.(string),
-			id.NilPublicKey(), id.NilPrivateKey())
-
+		account := id.NewAccount(chain.(data.ChainType), idName+"-"+name.(string), key)
 		app.Accounts.Add(account)
 	}
 
