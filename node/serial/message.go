@@ -13,6 +13,8 @@ package serial
 import (
 	"encoding/json"
 	"reflect"
+
+	"github.com/Oneledger/protocol/node/log"
 )
 
 type Format int
@@ -28,6 +30,11 @@ type Message = []byte
 
 // Given any type of input (except Maps), convert it into wire format
 func Serialize(input interface{}, medium Format) (buffer []byte, err error) {
+
+	if GetBaseType(input).String() == reflect.TypeOf(prototype).String() {
+		// Present serializing already serialized data
+		log.Fatal("Trying to reserialize a SerialWrapper")
+	}
 
 	var copy interface{}
 
@@ -54,7 +61,7 @@ func Serialize(input interface{}, medium Format) (buffer []byte, err error) {
 		buffer, err = json.Marshal(copy)
 	}
 
-	//log.Dump("Serialized format", string(buffer))
+	//log.Dump("Serialized format", medium, string(buffer))
 
 	return buffer, err
 }

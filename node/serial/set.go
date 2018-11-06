@@ -5,6 +5,7 @@ import (
 	"reflect"
 	"runtime/debug"
 	"strconv"
+	"strings"
 
 	"github.com/Oneledger/protocol/node/log"
 )
@@ -25,7 +26,11 @@ func Alloc(dataType string, size int) interface{} {
 
 	switch entry.Category {
 	case UNKNOWN:
+		DumpTypes()
 		log.Fatal("Unknown datatype", "dataType", dataType)
+
+	case INTERFACE:
+		return nil
 
 	case PRIMITIVE:
 		// Don't need to alloc, only containers
@@ -65,6 +70,30 @@ func Alloc(dataType string, size int) interface{} {
 	return nil
 }
 
+func concat(strs ...string) string {
+	var sb strings.Builder
+	for _, str := range strs {
+		sb.WriteString(str)
+	}
+	return sb.String()
+}
+
+func GetFieldName(name string) string {
+	array := strings.Split(name, "-")
+	result := concat(array[0 : len(array)-1]...)
+	return result
+}
+
+func GetFieldIndex(name string) int {
+	array := strings.Split(name, "-")
+	interim := concat(array[0 : len(array)-1]...)
+	index, err := strconv.Atoi(interim)
+	if err != nil {
+		log.Fatal("Invalid Slice Index", "name", name, "interim", interim)
+	}
+	return index
+}
+
 // Set a structure with a given value, convert as necessary
 func Set(parent interface{}, fieldName string, child interface{}) (status bool) {
 
@@ -81,25 +110,16 @@ func Set(parent interface{}, fieldName string, child interface{}) (status bool) 
 	switch kind {
 
 	case reflect.Struct:
-		//log.Dump("The parent", parent, kind)
-		return SetStruct(parent, fieldName, child)
+		return SetStruct(parent, GetFieldName(fieldName), child)
 
 	case reflect.Map:
-		return SetMap(parent, fieldName, child)
+		return SetMap(parent, GetFieldName(fieldName), child)
 
 	case reflect.Slice:
-		index, err := strconv.Atoi(fieldName)
-		if err != nil {
-			log.Fatal("Invalid Index", "fieldName", fieldName)
-		}
-		return SetSlice(parent, index, child)
+		return SetSlice(parent, GetFieldIndex(fieldName), child)
 
 	case reflect.Array:
-		index, err := strconv.Atoi(fieldName)
-		if err != nil {
-			log.Fatal("Invalid Index", "fieldName", fieldName)
-		}
-		return SetArray(parent, index, child)
+		return SetArray(parent, GetFieldIndex(fieldName), child)
 	}
 	return false
 }
@@ -130,7 +150,6 @@ func SetStruct(parent interface{}, fieldName string, child interface{}) bool {
 
 	if field.Type().Kind() == reflect.Interface {
 		// When setting to a generic interface{}
-
 		value := reflect.ValueOf(child)
 		field.Set(value)
 
@@ -327,8 +346,17 @@ func SetSlice(parent interface{}, index int, child interface{}) bool {
 		log.Warn("Reallocating Slice")
 		element = reflect.MakeSlice(element.Index(0).Type(), index+1, index+1)
 	}
-	newValue := ConvertValue(child, element.Index(index).Type())
-	element.Index(index).Set(newValue)
+
+	if element.Index(index).Type().Kind() == reflect.Interface {
+		// When setting to a generic interface{}
+
+		value := reflect.ValueOf(child)
+		element.Index(index).Set(value)
+
+	} else {
+		newValue := ConvertValue(child, element.Index(index).Type())
+		element.Index(index).Set(newValue)
+	}
 
 	return true
 }

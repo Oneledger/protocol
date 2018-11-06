@@ -3,6 +3,7 @@ package ethereum
 import (
 	"math/big"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	"context"
@@ -49,6 +50,12 @@ func getEthClient() *ethclient.Client {
 	}
 	return client
 
+}
+
+func init() {
+	serial.Register(common.Address{})
+	serial.Register(atomic.Value{})
+	//serial.Register(types.txdata{})
 }
 
 func GetAddress() common.Address {
@@ -241,7 +248,7 @@ func GetHTLCFromMessage(message []byte) *HTLContract {
 	log.Debug("Parse message to ETH HTLC")
 	register := &HTLContract{}
 
-	result, err := serial.Deserialize(message, register, serial.NETWORK)
+	result, err := serial.Deserialize(message, register, serial.JSON)
 	if err != nil {
 		log.Error("parse htlc contract failed", "err", err)
 		return nil
@@ -250,7 +257,7 @@ func GetHTLCFromMessage(message []byte) *HTLContract {
 }
 
 func (h *HTLContract) ToMessage() []byte {
-	msg, err := serial.Serialize(h, serial.NETWORK)
+	msg, err := serial.Serialize(h, serial.JSON)
 	if err != nil {
 		log.Error("Failed to serialize htlc", "err", err)
 	}

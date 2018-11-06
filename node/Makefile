@@ -100,7 +100,13 @@ stop: check
 # Reset all of the chains, back to genesis
 #
 reset: check stop
-	@./scripts/resetOneLedger 4
+	@./scripts/resetOneLedger
+
+#
+# Reset all of the chains, back to genesis
+#
+resetMVP: check stop
+	@./scripts/resetMVP
 
 #
 # Startup a tmux monitor
