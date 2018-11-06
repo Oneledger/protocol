@@ -16,7 +16,6 @@ import (
 	"github.com/Oneledger/protocol/node/serial"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/pkg/errors"
 )
@@ -28,8 +27,8 @@ func init() {
 var client *ethclient.Client
 
 type HTLContract struct {
-	Address common.Address     `json:"address"`
-	Tx      *types.Transaction `json:"Tx"`
+	Address common.Address `json:"address"`
+	TxHash  common.Hash    `json:"txhash"`
 }
 
 func getEthClient() *ethclient.Client {
@@ -60,7 +59,7 @@ func getEthClient() *ethclient.Client {
 func init() {
 	serial.Register(common.Address{})
 	serial.Register(atomic.Value{})
-	//serial.Register(types.txdata{})
+	serial.Register(common.Hash{})
 }
 
 func GetAddress() common.Address {
@@ -110,8 +109,8 @@ func CreateHtlContract() *HTLContract {
 		log.Fatal("Failed to create htlc for the node", "status", err)
 	}
 	log.Debug("Htlc contract created", "address", address, "tx", tx)
-	time.Sleep(6 * time.Second)
-	htlContract := &HTLContract{Address: address, Tx: tx}
+	time.Sleep(1 * time.Second)
+	htlContract := &HTLContract{Address: address, TxHash: tx.Hash()}
 
 	return htlContract
 }
@@ -138,13 +137,13 @@ func (h *HTLContract) Funds(value *big.Int, lockTime *big.Int, receiver common.A
 		log.Error("Can't fund the htlc", "status", err, "auth", auth)
 		return err
 	}
-	h.Tx = tx
+	h.TxHash = tx.Hash()
 	balance, err := h.HTLContractObject().Balance(&bind.CallOpts{Pending: true})
 	if err != nil {
 		log.Error("Can't get balance after fund", "status", err)
 	}
-	log.Info("Fund htlc", "address", h.Address, "tx", h.Tx, "value", value, "balance", balance)
-	time.Sleep(6 * time.Second)
+	log.Info("Fund htlc", "address", h.Address, "tx", h.TxHash, "value", value, "balance", balance)
+	time.Sleep(1 * time.Second)
 	return nil
 }
 
@@ -163,11 +162,11 @@ func (h *HTLContract) Redeem(scr []byte) error {
 		log.Error("Can't redeem the htlc", "status", err, "auth", auth)
 		return err
 	}
-	h.Tx = tx
-	time.Sleep(6 * time.Second)
+	h.TxHash = tx.Hash()
+	time.Sleep(1 * time.Second)
 	balance, err = contract.Balance(&bind.CallOpts{Pending: false})
 	log.Debug("balance after redeem", "balance", balance, "status", err)
-	log.Info("Redeem htlc", "address", h.Address, "tx", tx, "scr", scr, "txaddress", tx.Hash())
+	log.Info("Redeem htlc", "address", h.Address, "tx", h.TxHash, "scr", scr, "txaddress", tx.Hash())
 	return nil
 }
 
@@ -183,17 +182,17 @@ func (h *HTLContract) Refund() error {
 		log.Error("Can't refund the htlc", "status", err, "auth", auth)
 		return err
 	}
-	time.Sleep(20 * time.Second)
+	time.Sleep(1 * time.Second)
 	cli := getEthClient()
 	ctx := context.Background()
 	receipt, err := cli.TransactionReceipt(ctx, tx.Hash())
 
 	_ = receipt
-	h.Tx = tx
+	h.TxHash = tx.Hash()
 
 	balance, err := contract.Balance(&bind.CallOpts{Pending: false})
 	log.Debug("balance after refund", "balance", balance)
-	log.Info("Refund htlc", "address", h.Address, "tx", h.Tx.Hash(), "balance", balance)
+	log.Info("Refund htlc", "address", h.Address, "tx", h.TxHash, "balance", balance)
 
 	return nil
 }
@@ -253,14 +252,23 @@ func (h *HTLContract) Chain() data.ChainType {
 	return data.ETHEREUM
 }
 
-func (h *HTLContract) ToMessage() []byte {
+func (h *HTLContract) ToBytes() []byte {
 	msg, err := serial.Serialize(h, serial.JSON)
 	if err != nil {
-		log.Error("Failed to serialize htlc", "status", err)
+		log.Error("Failed to serialize htlc", "err", err)
 	}
 	return msg
 }
 
 func (h *HTLContract) ToKey() []byte {
 	return h.Address.Bytes()
+}
+
+func (h *HTLContract) FromBytes(message []byte) {
+	_, err := serial.Deserialize(message, h, serial.JSON)
+	if err != nil {
+		log.Error("Failed to deserialize htlc", "err", err)
+	}
+
+	return
 }

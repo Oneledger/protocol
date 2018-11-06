@@ -55,6 +55,7 @@ func GetETHAddressFromByteArray(chain data.ChainType, address []byte) *common.Ad
 
 type Contract interface {
 	Chain() data.ChainType
-	ToMessage() []byte
+	ToBytes() []byte
 	ToKey() []byte
+	FromBytes([]byte)
 }

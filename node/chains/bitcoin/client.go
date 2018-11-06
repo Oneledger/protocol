@@ -5,6 +5,7 @@
 package bitcoin
 
 import (
+	"bytes"
 	"github.com/Oneledger/protocol/node/data"
 	"time"
 
@@ -142,15 +143,15 @@ func GetAmount(value string) btcutil.Amount {
 }
 
 type HTLContract struct {
-	Contract   []byte     `json:"contract"`
-	ContractTx wire.MsgTx `json:"contractTx"`
+	Contract   []byte `json:"contract"`
+	ContractTx []byte `json:"contractTx"`
 }
 
 func (h *HTLContract) Chain() data.ChainType {
 	return data.BITCOIN
 }
 
-func (h *HTLContract) ToMessage() []byte {
+func (h *HTLContract) ToBytes() []byte {
 	msg, err := serial.Serialize(h, serial.JSON)
 	if err != nil {
 		log.Error("Failed to serialize htlc", "status", err)
@@ -165,4 +166,36 @@ func (h *HTLContract) ToKey() []byte {
 		return nil
 	}
 	return key.ScriptAddress()
+}
+
+func (h HTLContract) GetMsgTx() *wire.MsgTx {
+	if h.ContractTx == nil {
+		log.Error("GetMsgTx contractTx nil", "contract", h)
+		return nil
+	}
+
+	var output wire.MsgTx
+	if err := output.Deserialize(bytes.NewReader(h.ContractTx)); err != nil {
+		log.Error("GetMsgTx", "err", err)
+		return nil
+	}
+	return &output
+}
+
+func (h *HTLContract) FromMsgTx(contract []byte, contractTx *wire.MsgTx) {
+	h.Contract = contract
+	var contractBuf bytes.Buffer
+	contractBuf.Grow(contractTx.SerializeSize())
+	contractTx.Serialize(&contractBuf)
+	h.ContractTx = contractBuf.Bytes()
+	return
+}
+
+func (h *HTLContract) FromBytes(message []byte) {
+	_, err := serial.Deserialize(message, h, serial.JSON)
+	if err != nil {
+		log.Error("Failed to deserialize htlc", "err", err)
+	}
+
+	return
 }

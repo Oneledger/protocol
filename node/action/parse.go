@@ -94,7 +94,7 @@ func ParseSend(message Message) *Send {
 		Base: Base{Type: SEND},
 	}
 
-	result, err := serial.Deserialize(message, register, serial.JSON)
+	result, err := serial.Deserialize(message, register, serial.CLIENT)
 	if err != nil {
 		log.Error("ParseSend", "status", err)
 		return nil
@@ -109,7 +109,7 @@ func ParseSwap(message Message) *Swap {
 		Base: Base{Type: SWAP},
 	}
 
-	result, err := serial.Deserialize(message, register, serial.JSON)
+	result, err := serial.Deserialize(message, register, serial.CLIENT)
 	if err != nil {
 		log.Error("ParseSwap", "status", err)
 		return nil
@@ -124,7 +124,7 @@ func ParseExternalSend(message Message) *ExternalSend {
 		Base: Base{Type: EXTERNAL_SEND},
 	}
 
-	result, err := serial.Deserialize(message, register, serial.JSON)
+	result, err := serial.Deserialize(message, register, serial.CLIENT)
 	if err != nil {
 		log.Error("ParseExternalSend", "status", err)
 		return nil
@@ -139,7 +139,7 @@ func ParseExternalLock(message Message) *ExternalLock {
 		Base: Base{Type: EXTERNAL_LOCK},
 	}
 
-	result, err := serial.Deserialize(message, register, serial.JSON)
+	result, err := serial.Deserialize(message, register, serial.CLIENT)
 	if err != nil {
 		log.Error("ParseExternalLock", "status", err)
 		return nil
@@ -154,7 +154,7 @@ func ParsePrepare(message Message) *Prepare {
 		Base: Base{Type: PREPARE},
 	}
 
-	result, err := serial.Deserialize(message, register, serial.JSON)
+	result, err := serial.Deserialize(message, register, serial.CLIENT)
 	if err != nil {
 		log.Error("ParsePrepare", "status", err)
 		return nil
@@ -169,7 +169,7 @@ func ParseCommit(message Message) *Commit {
 		Base: Base{Type: COMMIT},
 	}
 
-	result, err := serial.Deserialize(message, register, serial.JSON)
+	result, err := serial.Deserialize(message, register, serial.CLIENT)
 	if err != nil {
 		log.Error("ParseCommit", "status", err)
 		return nil
@@ -184,7 +184,7 @@ func ParseForget(message Message) *Forget {
 		Base: Base{Type: FORGET},
 	}
 
-	result, err := serial.Deserialize(message, register, serial.JSON)
+	result, err := serial.Deserialize(message, register, serial.CLIENT)
 	if err != nil {
 		log.Error("ParseForget", "status", err)
 		return nil
@@ -199,7 +199,7 @@ func ParseRegister(message Message) *Register {
 		Base: Base{Type: REGISTER},
 	}
 
-	result, err := serial.Deserialize(message, register, serial.JSON)
+	result, err := serial.Deserialize(message, register, serial.CLIENT)
 	if err != nil {
 		log.Error("ParseRegister", "status", err)
 		return nil
@@ -214,7 +214,7 @@ func ParseVerify(message Message) *Verify {
 		Base: Base{Type: VERIFY},
 	}
 
-	result, err := serial.Deserialize(message, register, serial.JSON)
+	result, err := serial.Deserialize(message, register, serial.CLIENT)
 	if err != nil {
 		log.Error("ParseVerify", "status", err)
 		return nil
@@ -228,7 +228,7 @@ func ParsePublish(message Message) *Publish {
 		Base: Base{Type: PUBLISH},
 	}
 
-	result, err := serial.Deserialize(message, register, serial.JSON)
+	result, err := serial.Deserialize(message, register, serial.CLIENT)
 	if err != nil {
 		log.Error("ParsePublish", "status", err)
 		return nil

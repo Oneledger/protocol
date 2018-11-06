@@ -6,8 +6,6 @@
 package action
 
 import (
-	"github.com/Oneledger/protocol/node/chains/bitcoin"
-	"github.com/Oneledger/protocol/node/chains/common"
 	"github.com/Oneledger/protocol/node/data"
 	"github.com/Oneledger/protocol/node/id"
 	"github.com/Oneledger/protocol/node/log"
@@ -187,16 +185,18 @@ func GetByte32(value FunctionValue) [32]byte {
 //	}
 //	return INVALID
 //}
-
-func GetContract(value FunctionValue) common.Contract {
-	switch value.(type) {
-	case common.Contract:
-		return value.(*bitcoin.HTLContract)
-	default:
-		log.Fatal("Bad Type Cast in Function Parameter", "value", value)
-	}
-	return nil
-}
+//
+//func GetContract(value FunctionValue) common.Contract {
+//	switch value.(type) {
+//	case bitcoin.HTLContract:
+//		return value.(*bitcoin.HTLContract)
+//	case ethereum.HTLContract:
+//		return value.(*ethereum.HTLContract)
+//	default:
+//		log.Fatal("Bad Type Cast in Function Parameter", "value", value)
+//	}
+//	return nil
+//}
 
 func GetChain(value FunctionValue) data.ChainType {
 	switch value.(type) {
