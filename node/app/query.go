@@ -7,6 +7,7 @@ package app
 
 import (
 	"encoding/hex"
+	"github.com/Oneledger/protocol/node/action"
 	"strings"
 
 	"github.com/Oneledger/protocol/node/chains/common"
@@ -31,6 +32,9 @@ func HandleQuery(app Application, path string, message []byte) (buffer []byte) {
 
 	case "/identity":
 		result = HandleIdentityQuery(app, message)
+
+	case "/signTransaction":
+		result = HandleSignTransaction(app, message)
 
 	case "/accountKey":
 		result = HandleAccountKeyQuery(app, message)
@@ -64,6 +68,51 @@ func HandleQuery(app Application, path string, message []byte) (buffer []byte) {
 
 func HandleNodeNameQuery(app Application, message []byte) interface{} {
 	return global.Current.NodeName
+}
+
+func HandleSignTransaction(app Application, message []byte) interface{} {
+	var tx action.Transaction
+
+	transaction, transactionErr := serial.Deserialize(message, tx, serial.CLIENT)
+
+	signature := []byte{}
+
+	if transactionErr != nil {
+		log.Error("Could not deserialize a transaction", "error",  transactionErr)
+		return signature
+	}
+
+	var accountKey id.AccountKey
+
+	switch v := transaction.(type) {
+	case *action.Swap: accountKey = v.Base.Owner
+	case *action.Send: accountKey = v.Base.Owner
+	case *action.Register: accountKey = v.AccountKey
+	default: log.Error("Unknown transaction type", "transaction", transaction)
+	}
+
+	if accountKey == nil {
+		log.Error("Account key is null", "transaction", transaction)
+		return signature
+	}
+
+	account, accountStatus := app.Accounts.FindKey(accountKey)
+
+	if accountStatus != err.SUCCESS {
+		log.Error("Could not find an account", "status", accountStatus)
+		return signature
+	}
+
+	privateKey := account.PrivateKey()
+
+	signature, signatureError := privateKey.Sign(message)
+
+	if signatureError != nil {
+		log.Error("Could not sign a transaction", "error", signatureError)
+		return signature
+	}
+
+	return signature
 }
 
 // Get the account information for a given user

@@ -58,6 +58,11 @@ type Transaction interface {
 	Resolve(interface{}, Commands)
 }
 
+type SignedTransaction struct {
+	Transaction
+	signature []byte
+}
+
 // Base Data for each type
 type Base struct {
 	Type    Type   `json:"type"`

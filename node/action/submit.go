@@ -48,12 +48,32 @@ func SignAndPack(ttype Type, transaction Transaction) []byte {
 }
 
 // SignTransaction with the local keys
-func SignTransaction(transaction Transaction) Transaction {
-	return transaction
+func SignTransaction(transaction Transaction) SignedTransaction {
+	packet, err := serial.Serialize(transaction, serial.CLIENT)
+
+	signed := SignedTransaction {transaction, nil}
+
+	if err != nil {
+		log.Error("Failed to Serialize packet: ", "error", err)
+	} else {
+		request := Message(packet)
+
+		response := comm.Query("/signTransaction", request)
+
+		if response == nil {
+			log.Warn("Query returned no signature", "request", request)
+		} else {
+			signed.signature = response.([]byte)
+		}
+	}
+
+	log.Debug("Transaction signature", "signature", signed.signature)
+
+	return signed
 }
 
 // Pack a request into a transferable format (wire)
-func PackRequest(ttype Type, request Transaction) []byte {
+func PackRequest(ttype Type, request SignedTransaction) []byte {
 	var base int32
 
 	// Stick a 32 bit integer in front, so that we can identify the struct for deserialization
@@ -65,7 +85,7 @@ func PackRequest(ttype Type, request Transaction) []byte {
 	}
 	bytes := buff.Bytes()
 
-	packet, err := serial.Serialize(request, serial.CLIENT)
+	packet, err := serial.Serialize(request.Transaction, serial.CLIENT)
 	if err != nil {
 		log.Error("Failed to Serialize packet: ", err)
 	} else {
