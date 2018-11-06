@@ -77,6 +77,7 @@ type Base struct {
 
 func init() {
 	serial.Register(Base{})
+	serial.Register(SignedTransaction{})
 }
 
 // Execute the function
