@@ -847,7 +847,6 @@
     "github.com/ethereum/go-ethereum/core/types",
     "github.com/ethereum/go-ethereum/ethclient",
     "github.com/ethereum/go-ethereum/event",
-    "github.com/golang/protobuf/proto",
     "github.com/mattn/go-isatty",
     "github.com/onsi/ginkgo",
     "github.com/onsi/gomega",
@@ -873,10 +872,6 @@
     "github.com/tidwall/gjson",
     "golang.org/x/crypto/bcrypt",
     "golang.org/x/crypto/ripemd160",
-    "golang.org/x/net/context",
-    "google.golang.org/grpc",
-    "google.golang.org/grpc/codes",
-    "google.golang.org/grpc/status",
     "gopkg.in/jarcoal/httpmock.v1",
   ]
   solver-name = "gps-cdcl"

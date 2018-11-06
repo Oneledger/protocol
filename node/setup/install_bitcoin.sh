@@ -45,6 +45,28 @@ move_bitcoind_on_mac () {
 	make
 }
 
+install_dependencies_on_linux () {
+	sudo apt-get install -y build-essential libtool autotools-dev automake pkg-config bsdmainutils python3
+	sudo apt-get install -y libssl-dev libevent-dev libboost-all-dev libboost-system-dev libboost-filesystem-dev libboost-chrono-dev libboost-test-dev libboost-thread-dev
+
+}
+
+build_bitcoin_on_linux () {
+	# Clone source code
+	git clone https://github.com/bitcoin/bitcoin.git
+
+	cd bitcoin
+	git checkout v0.16.0
+    ./contrib/install_db4.sh $BITCOIN_DIR
+    BDB_PREFIX=$BITCOIN_DIR/db4
+	# Build
+	./autogen.sh
+	# Disable the GUI
+	./configure --without-gui BDB_LIBS="-L${BDB_PREFIX}/lib -ldb_cxx-4.8" BDB_CFLAGS="-I${BDB_PREFIX}/include"
+	make
+	sudo make install
+}
+
 current_uname=$(uname);
 case "$current_uname" in
     (*Darwin*)
@@ -76,11 +98,22 @@ case "$current_uname" in
 	# Test if bitcoind installed
 	which bitcoind
 	if [[ $? != 0 ]] ; then
-		# Add bitcoin official PPA repo
-		sudo add-apt-repository -y ppa:bitcoin/bitcoin
-		sudo apt-get update
-		# Install bitcoind from PPA
-		sudo apt-get install bitcoind
+#		# Add bitcoin official PPA repo
+#		sudo add-apt-repository -y ppa:bitcoin/bitcoin
+#		sudo apt-get update
+#		# Install bitcoind from PPA
+#		sudo apt-get install bitcoind
+        echo "Installing Bitcoin"
+        TMPFOLD=/tmp
+        BITCOIN_DIR=$TMPFOLD/bitcoin
+        pushd $TMPFOLD > /dev/null
+        echo 'Install dependencies'
+		install_dependencies_on_linux
+		if [[ $? == 0 ]] ; then
+		    echo 'Building bitcoin'
+		    build_bitcoin_on_linux
+		fi
+		popd > /dev/null
 	fi
 	;;
     (*) echo 'error: unsupported platform.'; exit 2; ;;
