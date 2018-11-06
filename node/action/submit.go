@@ -4,13 +4,11 @@
 package action
 
 import (
-	"bytes"
 	"time"
 
 	"github.com/Oneledger/protocol/node/comm"
 	"github.com/Oneledger/protocol/node/log"
 	"github.com/Oneledger/protocol/node/serial"
-	wire "github.com/tendermint/go-wire"
 )
 
 // Execute a transaction after a specific delay.
@@ -74,22 +72,9 @@ func SignTransaction(transaction Transaction) SignedTransaction {
 
 // Pack a request into a transferable format (wire)
 func PackRequest(ttype Type, request SignedTransaction) []byte {
-	var base int32
-
-	// Stick a 32 bit integer in front, so that we can identify the struct for deserialization
-	buff := new(bytes.Buffer)
-	base = int32(ttype)
-	err := wire.EncodeInt32(buff, base)
-	if err != nil {
-		log.Error("Failed to EncodeInt32 during PackRequest", "err", err)
-	}
-	bytes := buff.Bytes()
-
 	packet, err := serial.Serialize(request.Transaction, serial.CLIENT)
 	if err != nil {
 		log.Error("Failed to Serialize packet: ", err)
-	} else {
-		packet = append(bytes, packet...)
 	}
 
 	return packet
