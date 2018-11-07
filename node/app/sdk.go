@@ -8,12 +8,12 @@ import (
 	"github.com/Oneledger/protocol/node/action"
 	"github.com/Oneledger/protocol/node/comm"
 	"github.com/Oneledger/protocol/node/data"
-	status "github.com/Oneledger/protocol/node/err"
 	"github.com/Oneledger/protocol/node/global"
 	"github.com/Oneledger/protocol/node/id"
 	"github.com/Oneledger/protocol/node/log"
 	"github.com/Oneledger/protocol/node/sdk"
 	"github.com/Oneledger/protocol/node/sdk/pb"
+	"github.com/Oneledger/protocol/node/status"
 	"google.golang.org/grpc/codes"
 	gstatus "google.golang.org/grpc/status"
 )
