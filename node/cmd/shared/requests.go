@@ -260,14 +260,7 @@ func CreateSwapRequest(args *SwapArguments) []byte {
 	party := action.Party{Key: partyKey, Accounts: account}
 	counterParty := action.Party{Key: counterPartyKey, Accounts: counterAccount}
 
-	swap := &action.Swap{
-		Base: action.Base{
-			Type:     action.SWAP,
-			ChainId:  app.ChainId,
-			Signers:  signers,
-			Owner:    partyKey,
-			Sequence: global.Current.Sequence,
-		},
+	swapInit := action.SwapInit{
 		Party:        party,
 		CounterParty: counterParty,
 		Fee:          fee,
@@ -275,6 +268,18 @@ func CreateSwapRequest(args *SwapArguments) []byte {
 		Amount:       amount,
 		Exchange:     exchange,
 		Nonce:        args.Nonce,
+	}
+	swap := &action.Swap{
+		Base: action.Base{
+			Type:     action.SWAP,
+			ChainId:  app.ChainId,
+			Signers:  signers,
+			Owner:    partyKey,
+			Target:   counterPartyKey,
+			Sequence: global.Current.Sequence,
+		},
+		SwapMessage: swapInit,
+		Stage:       action.SWAP_MATCHING,
 	}
 
 	return SignAndPack(action.SWAP, action.Transaction(swap))

@@ -21,23 +21,23 @@ func TestHTLContract_Refund(t *testing.T) {
 
     cli, err := ethclient.Dial("/home/lan/go/test/ethereum/B/geth.ipc")
     if err != nil {
-        log.Error("failed to get geth ipc ", "err", err)
+        log.Error("failed to get geth ipc ", "status", err)
     }
     contract, err := htlc.NewHtlc(address, cli)
     if err != nil {
-        log.Error("can't get new htlc", "err", err)
+        log.Error("can't get new htlc", "status", err)
         return
     }
     tx, err := contract.Refund(auth)
     if err != nil {
-        log.Error("refund failed", "err", err)
+        log.Error("refund failed", "status", err)
         return
     }
 
     ctx := context.Background()
     receipt, err := cli.TransactionReceipt(ctx, tx.Hash())
     if err != nil {
-        log.Error("Failed to get the receipt", "err", err)
+        log.Error("Failed to get the receipt", "status", err)
         return
     }
     if receipt.Status == 0 {

@@ -3,7 +3,7 @@
 
 	Common errors across the entire system
 */
-package err
+package status
 
 type Code = uint32 // Matches Tendermint status
 
@@ -17,4 +17,5 @@ const (
 	DUPLICATE       Code = 601
 	MISSING_DATA    Code = 701
 	BAD_VALUE       Code = 801
+	EXECUTE_ERROR	Code = 901
 )

@@ -6,8 +6,6 @@
 package action
 
 import (
-	"github.com/Oneledger/protocol/node/chains/bitcoin"
-	"github.com/Oneledger/protocol/node/chains/ethereum"
 	"github.com/Oneledger/protocol/node/data"
 	"github.com/Oneledger/protocol/node/id"
 	"github.com/Oneledger/protocol/node/log"
@@ -24,23 +22,22 @@ func init() {
 // TODO: Move to parameter.go
 const (
 	ROLE Parameter = iota
-	MY_ACCOUNT
-	THEM_ACCOUNT
-
-	AMOUNT
-	EXCHANGE
-	NONCE
 	PREIMAGE
-
 	PASSWORD
-	ETHCONTRACT
-	BTCCONTRACT
+	CONTRACT
 
 	LOCKTIME
-	COUNT
-	CHAINID
-
-	EVENTTYPE
+	DELAYTIME
+	CHAIN
+	NEXTCHAINNAME
+	SWAPMESSAGE
+	STOREKEY
+	STAGE
+	NEXTSTAGE
+	OWNER
+	TARGET
+	PREVIOUS
+	FINISHED
 )
 
 func GetInt(value FunctionValue) int {
@@ -64,6 +61,16 @@ func GetInt64(value FunctionValue) int64 {
 		log.Fatal("Bad Type Cast in Function Parameter", "value", value)
 	}
 	return 0
+}
+
+func GetBool(value FunctionValue) *bool {
+	switch value.(type) {
+	case bool:
+		return value.(*bool)
+	default:
+		log.Fatal("Bad Type Cast in Function Parameter", "value", value)
+	}
+	return nil
 }
 
 func GetAmount(value FunctionValue) btcutil.Amount {
@@ -149,32 +156,80 @@ func GetByte32(value FunctionValue) [32]byte {
 	return [32]byte{}
 }
 
-func GetETHContract(value FunctionValue) *ethereum.HTLContract {
+//func GetETHContract(value FunctionValue) *ethereum.HTLContract {
+//	switch value.(type) {
+//	case *ethereum.HTLContract:
+//		return value.(*ethereum.HTLContract)
+//	default:
+//		log.Fatal("Bad Type Cast in Function Parameter", "value", value)
+//	}
+//	return nil
+//}
+//
+//func GetBTCContract(value FunctionValue) *bitcoin.HTLContract {
+//	switch value.(type) {
+//	case *bitcoin.HTLContract:
+//		return value.(*bitcoin.HTLContract)
+//	default:
+//		log.Fatal("Bad Type Cast in Function Parameter", "value", value)
+//	}
+//	return nil
+//}
+//
+//func GetType(value FunctionValue) Type {
+//	switch value.(type) {
+//	case Type:
+//		return value.(Type)
+//	default:
+//		log.Fatal("Bad Type Cast in FUnction Parameter", "value", value)
+//	}
+//	return INVALID
+//}
+//
+//func GetContract(value FunctionValue) common.Contract {
+//	switch value.(type) {
+//	case bitcoin.HTLContract:
+//		return value.(*bitcoin.HTLContract)
+//	case ethereum.HTLContract:
+//		return value.(*ethereum.HTLContract)
+//	default:
+//		log.Fatal("Bad Type Cast in Function Parameter", "value", value)
+//	}
+//	return nil
+//}
+
+func GetChain(value FunctionValue) data.ChainType {
 	switch value.(type) {
-	case *ethereum.HTLContract:
-		return value.(*ethereum.HTLContract)
+	case data.ChainType:
+		return value.(data.ChainType)
+	default:
+		log.Fatal("Bad Type Cast in Function Parameter", "value", value)
+	}
+	return data.UNKNOWN
+}
+
+func GetSwapMessage(value FunctionValue) SwapMessage {
+	switch value.(type) {
+	case SwapInit:
+		return value.(SwapInit)
+	case SwapExchange:
+		return value.(SwapExchange)
+	case SwapVerify:
+		return value.(SwapVerify)
+	case SwapMessage:
+		return value.(SwapMessage)
 	default:
 		log.Fatal("Bad Type Cast in Function Parameter", "value", value)
 	}
 	return nil
 }
 
-func GetBTCContract(value FunctionValue) *bitcoin.HTLContract {
+func getStageType(value FunctionValue) swapStageType {
 	switch value.(type) {
-	case *bitcoin.HTLContract:
-		return value.(*bitcoin.HTLContract)
+	case swapStageType:
+		return value.(swapStageType)
 	default:
 		log.Fatal("Bad Type Cast in Function Parameter", "value", value)
 	}
-	return nil
-}
-
-func GetType(value FunctionValue) Type {
-	switch value.(type) {
-	case Type:
-		return value.(Type)
-	default:
-		log.Fatal("Bad Type Cast in FUnction Parameter", "value", value)
-	}
-	return INVALID
+	return NOSTAGE
 }

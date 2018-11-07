@@ -189,6 +189,19 @@ func Query(path string, packet []byte) interface{} {
 	return result
 }
 
+func Tx(hash []byte, prove bool) (res *ctypes.ResultTx) {
+	client := GetClient()
+
+	result, err := client.Tx(hash, prove)
+	if err != nil {
+		log.Error("TxSearch Error", "err", err)
+	}
+
+	log.Debug("TxSearch", "hash", hash, "prove", prove, "result", result)
+
+	return result
+}
+
 func Search(query string, prove bool, page, perPage int) (res *ctypes.ResultTxSearch) {
 	client := GetClient()
 

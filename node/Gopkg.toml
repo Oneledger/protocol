@@ -26,9 +26,9 @@
 
  required = ["github.com/mattn/go-isatty",  "github.com/pkg/errors" ]
 
-[[constraint]]
-  name = "golang.org/x/net"
-  version = "release-branch.go1.9"
+#[[constraint]]
+#  name = "golang.org/x/net"
+#  version = "release-branch.go1.9"
 
 # [[constraint]]
 #   name = "github.com/golang/protobuf"

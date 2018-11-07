@@ -74,12 +74,15 @@ func TestSwap(t *testing.T) {
 	}
 
 	swap = &action.Swap{
-		Party:        party,
-		CounterParty: party,
-		Amount:       coin,
-		Exchange:     coin,
-		Fee:          coin,
-		Gas:          coin,
+		Base: nil,
+		SwapMessage: action.SwapInit{
+			Party:        party,
+			CounterParty: party,
+			Amount:       coin,
+			Exchange:     coin,
+			Fee:          coin,
+			Gas:          coin,
+		},
 	}
 
 	// Serialize the go data structure

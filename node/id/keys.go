@@ -202,9 +202,9 @@ func hash(k PublicKey) []byte {
 
 //	salt := cytpo.CRandBytes(16)
 //func Armour(privateKey PrivateKey, passphrase string, salt []byte) ([]byte, error) {
-//	key, err := []byte(passphrase), error(nil)
-//	//key, err := bcrypt.GenerateFromPassword(salt, []byte(passphrse), 16)
-//	if err != nil {
+//	key, status := []byte(passphrase), error(nil)
+//	//key, status := bcrypt.GenerateFromPassword(salt, []byte(passphrse), 16)
+//	if status != nil {
 //		return nil, errors.New("Failed Bcrypt")
 //	}
 //	base := crypto.Sha256(key) // Is this necessary?
@@ -214,14 +214,14 @@ func hash(k PublicKey) []byte {
 //}
 
 //func Dearmour(buffer []byte, passphrase string, salt []byte) (PrivateKey, error) {
-//	key, err := []byte(passphrase), error(nil)
-//	//key, err := bcrypt.GenerateFromPassword(salt, []byte(passphrse), 16)
-//	if err != nil {
+//	key, status := []byte(passphrase), error(nil)
+//	//key, status := bcrypt.GenerateFromPassword(salt, []byte(passphrse), 16)
+//	if status != nil {
 //		return PrivateKey{}, errors.New("Failed Bcrypt")
 //	}
 //	base := crypto.Sha256(key) // Is this necessary?
-//	result, err := crypto.DecryptSymmetric(buffer, base)
-//	if err != nil {
+//	result, status := crypto.DecryptSymmetric(buffer, base)
+//	if status != nil {
 //		return PrivateKey{}, errors.New("Failed Symmetric Decrypt")
 //	}
 //	crypto.PrivKeyFromBytes(result)

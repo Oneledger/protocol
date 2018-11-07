@@ -6,11 +6,9 @@
 package action
 
 import (
-	"github.com/Oneledger/protocol/node/err"
-	"github.com/Oneledger/protocol/node/global"
 	"github.com/Oneledger/protocol/node/id"
-	"github.com/Oneledger/protocol/node/log"
 	"github.com/Oneledger/protocol/node/serial"
+	"github.com/Oneledger/protocol/node/status"
 )
 
 type Message = []byte // Contents of a transaction
@@ -50,12 +48,12 @@ type PublicKey = id.PublicKey
 
 // Polymorphism and Serializable
 type Transaction interface {
-	Validate() err.Code
-	ProcessCheck(interface{}) err.Code
+	TransactionType() Type
+	Validate() status.Code
+	ProcessCheck(interface{}) status.Code
 	ShouldProcess(interface{}) bool
-	ProcessDeliver(interface{}) err.Code
-	Expand(interface{}) Commands
-	Resolve(interface{}, Commands)
+	ProcessDeliver(interface{}) status.Code
+	Resolve(interface{}) Commands
 }
 
 // Base Data for each type
@@ -63,8 +61,10 @@ type Base struct {
 	Type    Type   `json:"type"`
 	ChainId string `json:"chain_id"`
 
-	Owner   id.AccountKey `json:"owner"`
-	Signers []PublicKey   `json:"signers"`
+	Owner  id.AccountKey `json:"owner"`
+	Target id.AccountKey `json:"target"`
+
+	Signers []PublicKey `json:"signers"`
 
 	Sequence int64 `json:"sequence"`
 	Delay    int64 `json:"delay"` // Pause the transaction in the mempool
@@ -72,33 +72,4 @@ type Base struct {
 
 func init() {
 	serial.Register(Base{})
-}
-
-// Execute the function
-func Execute(app interface{}, command Command, lastResult map[Parameter]FunctionValue) (err.Code, map[Parameter]FunctionValue) {
-	//make sure the first execute use the context, and later uses last result. so if command are executed in a row, every executed function should only add
-	//parameters in the context and return instead of create new context every time
-	if len(lastResult) > 0 {
-		for key, value := range lastResult {
-			command.Data[key] = value
-		}
-	}
-	status, result := command.Execute(app)
-	if status {
-		return err.SUCCESS, result
-	}
-
-	return err.NOT_IMPLEMENTED, lastResult
-}
-
-func GetNodeAccount(app interface{}) id.Account {
-
-	accounts := GetAccounts(app)
-	account, _ := accounts.FindName(global.Current.NodeAccountName)
-	if account == nil {
-		log.Error("Node does not have account", "name", global.Current.NodeAccountName)
-		return nil
-	}
-
-	return account
 }
