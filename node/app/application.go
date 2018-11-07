@@ -276,12 +276,9 @@ func (app Application) DeliverTx(tx []byte) ResponseDeliverTx {
 	if result.ShouldProcess(app) {
 		transaction, _ := action.Parse(action.Message(tx))
 
-		// TODO: can we improve this?
 		swapProcessing := false
 		switch transaction.(type) {
-		case *action.Swap:    swapProcessing = true
-		case *action.Publish: swapProcessing = true
-		case *action.Verify:  swapProcessing = true
+		case *action.Swap, *action.Publish, *action.Verify: swapProcessing = true
 		}
 
 		if swapProcessing == true {
