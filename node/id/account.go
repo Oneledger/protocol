@@ -11,9 +11,10 @@ import (
 	"strings"
 
 	"github.com/Oneledger/protocol/node/data"
-	"github.com/Oneledger/protocol/node/err"
+
 	"github.com/Oneledger/protocol/node/log"
 	"github.com/Oneledger/protocol/node/serial"
+	"github.com/Oneledger/protocol/node/status"
 )
 
 // Temporary typing for signatures
@@ -51,29 +52,29 @@ func (acc *Accounts) Exists(newType data.ChainType, name string) bool {
 	return acc.store.Exists(account.AccountKey())
 }
 
-func (acc *Accounts) Find(account Account) (Account, err.Code) {
+func (acc *Accounts) Find(account Account) (Account, status.Code) {
 	return acc.FindKey(account.AccountKey())
 }
 
-func (acc *Accounts) FindIdentity(identity Identity) (Account, err.Code) {
+func (acc *Accounts) FindIdentity(identity Identity) (Account, status.Code) {
 	// TODO: Should have better name mapping between identities and accounts
 	account := NewAccount(data.ONELEDGER, identity.Name+"-OneLedger", NilPublicKey(), NilPrivateKey())
 	return acc.Find(account)
 }
 
-func (acc *Accounts) FindNameOnChain(name string, chain data.ChainType) (Account, err.Code) {
+func (acc *Accounts) FindNameOnChain(name string, chain data.ChainType) (Account, status.Code) {
 	log.Debug("FindNameOnChain", "name", name, "chain", chain)
 
 	// TODO: Should be replaced with a real index
 	for _, entry := range acc.FindAll() {
 		if Matches(entry, name, chain) {
-			return entry, err.SUCCESS
+			return entry, status.SUCCESS
 		}
 	}
-	return nil, err.MISSING_VALUE
+	return nil, status.SUCCESS
 }
 
-func (acc *Accounts) FindName(name string) (Account, err.Code) {
+func (acc *Accounts) FindName(name string) (Account, status.Code) {
 	return acc.FindNameOnChain(name, data.ONELEDGER)
 }
 
@@ -87,10 +88,11 @@ func Matches(account Account, name string, chain data.ChainType) bool {
 	return false
 }
 
-func (acc *Accounts) FindKey(key AccountKey) (Account, err.Code) {
+func (acc *Accounts) FindKey(key AccountKey) (Account, status.Code) {
 	interim := acc.store.Get(key)
 	result := interim.(Account)
-	return result.(Account), err.SUCCESS
+	return result.(Account), status.SUCCESS
+
 }
 
 func (acc *Accounts) FindAll() []Account {
@@ -100,9 +102,10 @@ func (acc *Accounts) FindAll() []Account {
 	results := make([]Account, size, size)
 
 	for i := 0; i < size; i++ {
-		account, status := acc.FindKey(keys[i])
-		if status != err.SUCCESS {
-			log.Fatal("Missing Account", "status", status, "account", account)
+
+		account, ok := acc.FindKey(keys[i])
+		if ok != status.SUCCESS {
+			log.Fatal("Missing Account", "status", ok, "account", account)
 		}
 		results[i] = account
 	}

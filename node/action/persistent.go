@@ -22,11 +22,12 @@ func GetAdmin(app interface{}) data.Datastore {
 }
 
 func GetStatus(app interface{}) data.Datastore {
-	status := app.(persist.Access).GetStatus().(data.Datastore)
+	status := app.(persist.Access).GetStatus()
+	result := status.(data.Datastore)
 	if status == nil {
 		log.Fatal("Status Database Missing", "config", global.Current, "app", app)
 	}
-	return status
+	return result
 }
 
 func GetIdentities(app interface{}) *id.Identities {
@@ -63,7 +64,7 @@ func GetEvent(app interface{}) data.Datastore {
 	return event
 }
 
-func GetContract(app interface{}) data.Datastore {
+func GetContracts(app interface{}) data.Datastore {
 	htlcs := app.(persist.Access).GetContract().(data.Datastore)
 	if htlcs == nil {
 		log.Fatal("Htlc Database Missing", "config", global.Current, "app", app)

@@ -6,9 +6,9 @@
 package action
 
 import (
-	"github.com/Oneledger/protocol/node/err"
 	"github.com/Oneledger/protocol/node/log"
 	"github.com/Oneledger/protocol/node/serial"
+	"github.com/Oneledger/protocol/node/status"
 )
 
 type Forget struct {
@@ -21,43 +21,32 @@ func init() {
 	serial.Register(Forget{})
 }
 
-func (transaction *Forget) Validate() err.Code {
-	log.Debug("Validating Forget Transaction")
-	return err.SUCCESS
+func (transaction *Forget) TransactionType() Type {
+	return transaction.Base.Type
 }
 
-func (transaction *Forget) ProcessCheck(app interface{}) err.Code {
+func (transaction *Forget) Validate() status.Code {
+	log.Debug("Validating Forget Transaction")
+	return status.SUCCESS
+}
+
+func (transaction *Forget) ProcessCheck(app interface{}) status.Code {
 	log.Debug("Processing Forget Transaction for CheckTx")
-	return err.SUCCESS
+	return status.SUCCESS
 }
 
 func (transaction *Forget) ShouldProcess(app interface{}) bool {
 	return true
 }
 
-func (transaction *Forget) ProcessDeliver(app interface{}) err.Code {
+func (transaction *Forget) ProcessDeliver(app interface{}) status.Code {
 
-	commands := transaction.Expand(app)
-	transaction.Resolve(app, commands)
+	commands := transaction.Resolve(app)
 
 	//before loop of execute, lastResult is nil
-	var lastResult map[Parameter]FunctionValue
-	var status err.Code
-
-	for i := 0; i < commands.Count(); i++ {
-		status, lastResult = Execute(app, commands[i], lastResult)
-		if status != err.SUCCESS {
-			return err.EXPAND_ERROR
-		}
-	}
-	return err.SUCCESS
+	return commands.Execute(app)
 }
 
-func (transaction *Forget) Resolve(app interface{}, commands Commands) {
-}
-
-// Given a transaction, expand it into a list of Commands to execute against various chains.
-func (transaction *Forget) Expand(app interface{}) Commands {
-	// TODO: Table-driven mechanics, probably elsewhere
+func (transaction *Forget) Resolve(app interface{}) Commands {
 	return []Command{}
 }
