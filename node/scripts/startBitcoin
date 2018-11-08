@@ -15,11 +15,20 @@ if [ -z "$pids" ]
 then
     echo "Start Bitcoin network "
 
-    bitcoind -regtest -datadir=$OLDATA/bitcoin/A -daemon -rpcuser=oltest01 -rpcpassword=olpass01 -server=1 -rpcallowip=127.0.0.1/0 -listen -rpcthreads=300 -rpcworkqueue=128 -rpcport=18831 -port=17631 -connect=localhost:17632 > /dev/null
+    bitcoind -regtest -datadir=$OLDATA/bitcoin/A -daemon \
+    -rpcuser=oltest01 -rpcpassword=olpass01 -server=1 -rpcallowip=127.0.0.1/0 -listen \
+    -rpcthreads=300 -rpcworkqueue=128 -rpcport=18831 \
+    -port=17631 -connect=localhost:17632 > /dev/null
 
-    bitcoind -regtest -datadir=$OLDATA/bitcoin/B -daemon -rpcuser=oltest02 -rpcpassword=olpass02 -server=1 -rpcallowip=127.0.0.1/0 -listen -rpcthreads=300 -rpcworkqueue=128 -rpcport=18832 -port=17632 -connect=localhost:17633 > /dev/null
+    bitcoind -regtest -datadir=$OLDATA/bitcoin/B -daemon \
+    -rpcuser=oltest02 -rpcpassword=olpass02 -server=1 -rpcallowip=127.0.0.1/0 -listen \
+    -rpcthreads=300 -rpcworkqueue=128 -rpcport=18832 \
+    -port=17632 -connect=localhost:17633 > /dev/null
 
-    bitcoind -regtest -datadir=$OLDATA/bitcoin/C -daemon -rpcuser=oltest03 -rpcpassword=olpass03 -server=1 -rpcallowip=127.0.0.1/0 -listen -rpcthreads=300 -rpcworkqueue=128 -rpcport=18833 -port=17633 -connect=localhost:17631 > /dev/null
+    bitcoind -regtest -datadir=$OLDATA/bitcoin/C -daemon \
+    -rpcuser=oltest03 -rpcpassword=olpass03 -server=1 -rpcallowip=127.0.0.1/0 -listen \
+    -rpcthreads=300 -rpcworkqueue=128 -rpcport=18833 \
+    -port=17633 -connect=localhost:17631 > /dev/null
 
 else
     echo "Bitcoin Network already started"

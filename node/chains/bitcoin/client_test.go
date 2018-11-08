@@ -9,6 +9,8 @@ import (
 	"testing"
 	"time"
 
+	"crypto/rand"
+	"encoding/hex"
 	"github.com/Oneledger/protocol/node/chains/bitcoin/htlc"
 	brpc "github.com/Oneledger/protocol/node/chains/bitcoin/rpc"
 	"github.com/Oneledger/protocol/node/log"
@@ -16,10 +18,8 @@ import (
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/btcsuite/btcd/wire"
 	"github.com/btcsuite/btcutil"
-	"encoding/hex"
-	"crypto/rand"
 
-    "bytes"
+	"bytes"
 )
 
 func SetChain() {
@@ -30,9 +30,9 @@ func SetChain() {
 	Generate(testnode2, 101)
 	//Generate(testnode3, 100)
 	hash, err := testnode1.GetBalance("", 0)
-	log.Debug("Balance", "hash", hash, "err", err)
+	log.Debug("Balance", "hash", hash, "status", err)
 	hash, err = testnode2.GetBalance("", 0)
-	log.Debug("Balance", "hash", hash, "err", err)
+	log.Debug("Balance", "hash", hash, "status", err)
 	//testnode3.GetBalance("",0)
 }
 func XTestSetChain(t *testing.T) {
@@ -48,11 +48,11 @@ func TestSwap(t *testing.T) {
 	var secret [32]byte
 	_, err := rand.Read(secret[:])
 	if err != nil {
-		log.Error("failed to get random secret with 32 length", "err", err)
+		log.Error("failed to get random secret with 32 length", "status", err)
 	}
 	secretHash := sha256.Sum256(secret[:])
 
-	log.Debug("secret pair", "secret",hex.EncodeToString(secret[:]), "secretHash", hex.EncodeToString(secretHash[:]))
+	log.Debug("secret pair", "secret", hex.EncodeToString(secret[:]), "secretHash", hex.EncodeToString(secretHash[:]))
 	AliceBobSuccessfulSwap(testnode1, testnode2, testnode3, secret[:], secretHash)
 
 	//TypeAddresses()
@@ -116,7 +116,7 @@ func Generate(testnode *brpc.Bitcoind, count uint64) {
 	log.Debug("About to Generate blocks", "cnt", count)
 	text, err := testnode.Generate(count)
 	if err != nil {
-		log.Fatal("Generate", "err", err)
+		log.Fatal("Generate", "status", err)
 	}
 	log.Debug("Generated", "text", text)
 }
@@ -125,14 +125,14 @@ func Dump(testnode *brpc.Bitcoind) {
 	// The last block hash on the longest chain...
 	hash, err := testnode.GetBestBlockhash()
 	if err != nil {
-		log.Fatal("GetBestBlockhash", "err", err, "testnode", testnode)
+		log.Fatal("GetBestBlockhash", "status", err, "testnode", testnode)
 	}
 	log.Debug("GetBestBlockhash", "hash", hash)
 
 	// Number of blocks in the chain right now
 	count, err := testnode.GetBlockCount()
 	if err != nil {
-		log.Fatal("GetBlockCount", "err", err)
+		log.Fatal("GetBlockCount", "status", err)
 	}
 	log.Debug("GetBlockCount", "count", count)
 
@@ -140,14 +140,14 @@ func Dump(testnode *brpc.Bitcoind) {
 	for i := count - 10; i <= count; i++ {
 		hash, err = testnode.GetBlockHash(i)
 		if err != nil {
-			log.Warn("GetBlockHash", "err", err)
+			log.Warn("GetBlockHash", "status", err)
 		}
 		log.Debug("GetBlockHash", "hash", hash)
 	}
 
 	results, err := testnode.ListAccounts(20)
 	if err != nil {
-		log.Fatal("ListAccounts", "err", err)
+		log.Fatal("ListAccounts", "status", err)
 	}
 	log.Debug("Accounts", "results", results)
 	for key, value := range results {
@@ -175,7 +175,7 @@ func TypeAddresses() {
 		log.Debug("Testing", "address", addresses[i])
 		pubkey, err := btcutil.DecodeAddress(addresses[i], chainParams)
 		if err != nil {
-			log.Warn("Bad value", "err", err)
+			log.Warn("Bad value", "status", err)
 		} else {
 			log.Debug("PublicKey struct", "pubkey", pubkey, "type", reflect.TypeOf(pubkey))
 		}
@@ -191,8 +191,8 @@ func AliceBobSuccessfulSwap(testnode1 *brpc.Bitcoind, testnode2 *brpc.Bitcoind,
 
 	Generate(testnode3, 6)
 
-	aliceTimeout := time.Now().Add( 2 * time.Minute).Unix()
-	bobTimeout := time.Now().Add( 1 * time.Minute).Unix()
+	aliceTimeout := time.Now().Add(2 * time.Minute).Unix()
+	bobTimeout := time.Now().Add(1 * time.Minute).Unix()
 	aliceAddress := GetRawAddress(testnode1)
 	bobAddress := GetRawAddress(testnode2)
 
@@ -206,7 +206,7 @@ func AliceBobSuccessfulSwap(testnode1 *brpc.Bitcoind, testnode2 *brpc.Bitcoind,
 	initCmd := htlc.NewInitiateCmd(bobAddress, amount, aliceTimeout, secretHash)
 	hash, err := initCmd.RunCommand(testnode1)
 	if err != nil {
-		log.Warn("Initiate", "err", err)
+		log.Warn("Initiate", "status", err)
 	}
 
 	// Not threadsafe...
@@ -220,7 +220,7 @@ func AliceBobSuccessfulSwap(testnode1 *brpc.Bitcoind, testnode2 *brpc.Bitcoind,
 	log.Debug("==== BOB AUDIT COMMAND")
 	err = htlc.NewAuditContractCmd(aliceContract, aliceContractTx).RunCommand(testnode2)
 	if err != nil {
-		log.Warn("Audit", "err", err)
+		log.Warn("Audit", "status", err)
 	}
 
 	time.Sleep(3 * time.Second)
@@ -230,7 +230,7 @@ func AliceBobSuccessfulSwap(testnode1 *brpc.Bitcoind, testnode2 *brpc.Bitcoind,
 	partCmd := htlc.NewParticipateCmd(aliceAddress, amount*2, secretHash, bobTimeout)
 	hash, err = partCmd.RunCommand(testnode2)
 	if err != nil {
-		log.Warn("Participate", "err", err)
+		log.Warn("Participate", "status", err)
 	}
 
 	bobContract := partCmd.Contract
@@ -239,7 +239,7 @@ func AliceBobSuccessfulSwap(testnode1 *brpc.Bitcoind, testnode2 *brpc.Bitcoind,
 	log.Debug("==== ALICE AUDIT COMMAND")
 	err = htlc.NewAuditContractCmd(bobContract, bobContractTx).RunCommand(testnode1)
 	if err != nil {
-		log.Warn("Audit", "err", err)
+		log.Warn("Audit", "status", err)
 	}
 
 	time.Sleep(5 * time.Second)
@@ -249,7 +249,7 @@ func AliceBobSuccessfulSwap(testnode1 *brpc.Bitcoind, testnode2 *brpc.Bitcoind,
 	redeemCmd := htlc.NewRedeemCmd(bobContract, bobContractTx, secret)
 	hash, err = redeemCmd.RunCommand(testnode1)
 	if err != nil {
-		log.Warn("Redeem", "err", err)
+		log.Warn("Redeem", "status", err)
 	}
 
 	redemptionContractTx := redeemCmd.RedeemContractTx
@@ -260,7 +260,7 @@ func AliceBobSuccessfulSwap(testnode1 *brpc.Bitcoind, testnode2 *brpc.Bitcoind,
 	err = extractCmd.RunCommand(testnode2)
 
 	if err != nil {
-		log.Warn("Extract", "err", err)
+		log.Warn("Extract", "status", err)
 	}
 	extractSecret := extractCmd.Secret
 
@@ -272,18 +272,18 @@ func AliceBobSuccessfulSwap(testnode1 *brpc.Bitcoind, testnode2 *brpc.Bitcoind,
 	log.Debug("==== BOB REDEEM COMMAND")
 	hash, err = htlc.NewRedeemCmd(aliceContract, aliceContractTx, extractSecret).RunCommand(testnode2)
 	if err != nil {
-		log.Warn("Redeem", "err", err)
+		log.Warn("Redeem", "status", err)
 	}
 
 	log.Debug("Results", "hash", hash)
 	time.Sleep(3 * time.Second)
 	Generate(testnode3, 10)
 
-    hash, err = testnode1.PublishTx(aliceRefundTx, "refund")
+	hash, err = testnode1.PublishTx(aliceRefundTx, "refund")
 	refundCmd := htlc.NewRefundCmd(aliceContract, aliceContractTx)
 	hash, err = refundCmd.RunCommand(testnode1)
 	if err != nil {
-		log.Error("refund failed", "err", err)
+		log.Error("refund failed", "status", err)
 	}
 	log.Debug("refund tx", "tx", hash, "refundtx", aliceRefundTx)
 	Generate(testnode3, 100)
@@ -311,12 +311,12 @@ func GetTestAddress() *btcutil.AddressPubKeyHash {
 
 	//stringAddress := pubkey.EncodeAddress()
 
-	//cp2Addr, err := btcutil.NewAddressPubKeyHash([]byte(stringAddress), chainParams)
+	//cp2Addr, status := btcutil.NewAddressPubKeyHash([]byte(stringAddress), chainParams)
 	//cp2Addr := &btcutil.AddressPubKeyHash{hash: []byte(stringAddress)}
 
-	//cp2Addr, err := btcutil.DecodeAddress("0x0001", chainParams)
-	//if err != nil {
-	//	log.Warn("failed to decode participant address", "err", err, "addr", stringAddress)
+	//cp2Addr, status := btcutil.DecodeAddress("0x0001", chainParams)
+	//if status != nil {
+	//	log.Warn("failed to decode participant address", "status", status, "addr", stringAddress)
 	//}
 	/*
 		if cp2Addr == nil {
@@ -331,7 +331,7 @@ func GetTestAddress() *btcutil.AddressPubKeyHash {
 	/*
 		ok := false
 		if !ok {
-			log.Warn("participant address is not P2PKH", "err", ok, "type",
+			log.Warn("participant address is not P2PKH", "status", ok, "type",
 				reflect.TypeOf(cp2Addr), "cp2Addr", cp2Addr)
 		}
 	*/

@@ -12,14 +12,15 @@ import (
 	"github.com/Oneledger/protocol/node/action"
 	"github.com/Oneledger/protocol/node/comm"
 	"github.com/Oneledger/protocol/node/data"
-	"github.com/Oneledger/protocol/node/err"
 	"github.com/Oneledger/protocol/node/global"
 	"github.com/Oneledger/protocol/node/id"
 	"github.com/Oneledger/protocol/node/log"
 	"github.com/Oneledger/protocol/node/serial"
+	"github.com/Oneledger/protocol/node/status"
 	"github.com/tendermint/tendermint/abci/types"
 	"github.com/tendermint/tendermint/libs/common"
 	"math/big"
+	"strconv"
 )
 
 var ChainId string
@@ -110,7 +111,10 @@ func CreateAccount(app Application, stateAccount string, stateAmount string, pub
 	// TODO: This should probably only occur on the Admin node, for other nodes how do I know the key?
 	// Register the identity and account first
 	RegisterLocally(&app, stateAccount, "OneLedger", data.ONELEDGER, publicKey, privateKey)
-	account, _ := app.Accounts.FindName(stateAccount + "-OneLedger")
+	account, ok := app.Accounts.FindName(stateAccount + "-OneLedger")
+	if ok != status.SUCCESS {
+		log.Fatal("Recently Added Account is missing", "name", stateAccount, "status", ok)
+	}
 
 	// Use the account key in the balance
 	balance := NewBalanceFromString(stateAmount, "OLT")
@@ -206,7 +210,7 @@ func (app Application) CheckTx(tx []byte) ResponseCheckTx {
 
 	if tx == nil {
 		log.Warn("Empty Transaction, Ignoring", "tx", tx)
-		return ResponseCheckTx{Code: err.PARSE_ERROR}
+		return ResponseCheckTx{Code: status.PARSE_ERROR}
 	}
 
 	result, err := action.Parse(action.Message(tx))
@@ -241,9 +245,9 @@ var chainKey data.DatabaseKey = data.DatabaseKey("chainId")
 func (app Application) BeginBlock(req RequestBeginBlock) ResponseBeginBlock {
 	log.Debug("ABCI: BeginBlock", "req", req)
 
-	account, status := app.Accounts.FindName("Payment-OneLedger")
-	if status != err.SUCCESS {
-		log.Fatal("ABCI: BeginBlock Fatal Status", "status", status)
+	account, err := app.Accounts.FindName("Payment-OneLedger")
+	if err != status.SUCCESS {
+		log.Fatal("ABCI: BeginBlock Fatal Status", "status", err)
 	}
 	balance := app.Utxo.Get(account.AccountKey())
 	if balance == nil {
@@ -324,20 +328,18 @@ func (app Application) DeliverTx(tx []byte) ResponseDeliverTx {
 
 	log.Debug("Starting processing")
 	if result.ShouldProcess(app) {
-		ttype, _ := action.UnpackMessage(action.Message(tx))
-
-		if ttype == action.SWAP || ttype == action.PUBLISH || ttype == action.VERIFY {
-			log.Debug("Starting the swap processing")
-			go result.ProcessDeliver(&app)
-		} else {
-			if err = result.ProcessDeliver(&app); err != 0 {
-				log.Warn("Processing Failed", "err", err)
-				return ResponseDeliverTx{Code: err}
-			}
+		if err = result.ProcessDeliver(&app); err != 0 {
+			return ResponseDeliverTx{Code: err}
 		}
 	}
+	tagType := strconv.FormatInt(int64(result.TransactionType()), 10)
+	tags := make([]common.KVPair, 1)
+	tag := common.KVPair{
+		Key:   []byte("tx.type"),
+		Value: []byte(tagType),
+	}
+	tags = append(tags, tag)
 
-	log.Debug("Returning status")
 	return ResponseDeliverTx{
 		Code:      types.CodeTypeOK,
 		Data:      []byte("Data"),
@@ -345,7 +347,7 @@ func (app Application) DeliverTx(tx []byte) ResponseDeliverTx {
 		Info:      "Info Data",
 		GasWanted: 1000,
 		GasUsed:   1000,
-		Tags:      []common.KVPair(nil),
+		Tags:      tags,
 	}
 }
 

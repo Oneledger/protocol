@@ -7,6 +7,7 @@ package action
 import (
 	"github.com/Oneledger/protocol/node/data"
 	"github.com/Oneledger/protocol/node/serial"
+	"github.com/Oneledger/protocol/node/status"
 )
 
 type CommandType int
@@ -14,70 +15,48 @@ type CommandType int
 // Set of possible commands that can be driven from a transaction
 const (
 	NOOP CommandType = iota
-	PREPARE_TRANSACTION
-	SUBMIT_TRANSACTION
-	INITIATE
-	PARTICIPATE
-	REDEEM
-	REFUND
-	EXTRACTSECRET
-	AUDITCONTRACT
-	WAIT_FOR_CHAIN
-	FINISH
 )
 
 type FunctionValue interface{}
 
+type FunctionValues map[Parameter]FunctionValue
+
 // A command to execute again a chain, needs to be polymorphic
 type Command struct {
-	Function CommandType
-	Chain    data.ChainType
-	Data     map[Parameter]FunctionValue
-	Order    int
+	opfunc func(app interface{}, chain data.ChainType, context FunctionValues, tx Transaction) (bool, FunctionValues)
+	chain  data.ChainType
+	data   FunctionValues
+	tx     Transaction
 }
 
 func init() {
 	serial.Register(Command{})
 }
 
-func (command Command) Execute(app interface{}) (bool, map[Parameter]FunctionValue) {
-	switch command.Function {
-	case NOOP:
-		return Noop(app, command.Chain, command.Data)
-
-	case PREPARE_TRANSACTION:
-		return PrepareTransaction(app, command.Chain, command.Data)
-
-	case SUBMIT_TRANSACTION:
-		return SubmitTransaction(app, command.Chain, command.Data)
-
-	case INITIATE:
-		return Initiate(app, command.Chain, command.Data)
-
-	case PARTICIPATE:
-		return Participate(app, command.Chain, command.Data)
-
-	case REDEEM:
-		return Redeem(app, command.Chain, command.Data)
-
-	case REFUND:
-		return Refund(app, command.Chain, command.Data)
-
-	case EXTRACTSECRET:
-		return ExtractSecret(app, command.Chain, command.Data)
-
-	case AUDITCONTRACT:
-		return AuditContract(app, command.Chain, command.Data)
-
-	case WAIT_FOR_CHAIN:
-		return WaitForChain(app, command.Chain, command.Data)
-	}
-
-	return true, nil
+func (command Command) Execute(app interface{}) (bool, FunctionValues) {
+	return command.opfunc(app, command.chain, command.data, command.tx)
 }
 
 type Commands []Command
 
 func (commands Commands) Count() int {
 	return len(commands)
+}
+
+func (cs Commands) Execute(app interface{}) status.Code {
+	var lastResult FunctionValues
+	var ok bool
+
+	for i := 0; i < cs.Count(); i++ {
+		ok, lastResult = cs[i].Execute(app)
+		if !ok {
+			return status.EXECUTE_ERROR
+		}
+
+		if len(lastResult) > 0 {
+			cs[i+1].data = lastResult
+		}
+		cs[i+1].tx = cs[i].tx
+	}
+	return status.SUCCESS
 }

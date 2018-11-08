@@ -7,9 +7,9 @@ package id
 
 import (
 	"github.com/Oneledger/protocol/node/data"
-	"github.com/Oneledger/protocol/node/err"
 	"github.com/Oneledger/protocol/node/log"
 	"github.com/Oneledger/protocol/node/serial"
+	"github.com/Oneledger/protocol/node/status"
 	"strings"
 )
 
@@ -51,7 +51,6 @@ func NewIdentities(name string) *Identities {
 
 func (ids *Identities) Add(identity Identity) {
 	key := identity.Key()
-
 	session := ids.store.Begin()
 	session.Set(key, identity)
 	session.Commit()
@@ -75,15 +74,15 @@ func (ids *Identities) Exists(name string) bool {
 	return false
 }
 
-func (ids *Identities) FindName(name string) (Identity, err.Code) {
+func (ids *Identities) FindName(name string) (Identity, status.Code) {
 	// TODO: Find a better way
 	id := NewIdentity(name, "", true, "", nil, "", "")
 
 	value := ids.store.Get(id.Key())
 	if value != nil {
-		return value.(Identity), err.SUCCESS
+		return value.(Identity), status.SUCCESS
 	}
-	return Identity{}, err.MISSING_DATA
+	return Identity{}, status.MISSING_DATA
 }
 
 func (ids *Identities) FindAll() []Identity {

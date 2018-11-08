@@ -8,9 +8,9 @@
 package action
 
 import (
-	"github.com/Oneledger/protocol/node/err"
 	"github.com/Oneledger/protocol/node/log"
 	"github.com/Oneledger/protocol/node/serial"
+	"github.com/Oneledger/protocol/node/status"
 	wire "github.com/tendermint/go-amino"
 )
 
@@ -25,7 +25,7 @@ func UnpackMessage(message Message) (Type, Message) {
 
 // TODO: Need a better way to handle the polymorphism...
 // Parse a message into the appropriate transaction
-func Parse(message Message) (Transaction, err.Code) {
+func Parse(message Message) (Transaction, status.Code) {
 	command, body := UnpackMessage(message)
 
 	// TODO: Can I do this with deserialize?
@@ -34,57 +34,57 @@ func Parse(message Message) (Transaction, err.Code) {
 	case SEND:
 		action := ParseSend(body)
 
-		return action, err.SUCCESS
+		return action, status.SUCCESS
 
 	case SWAP:
 		action := ParseSwap(body)
 
-		return action, err.SUCCESS
+		return action, status.SUCCESS
 
 	case EXTERNAL_SEND:
 		action := ParseExternalSend(body)
 
-		return action, err.SUCCESS
+		return action, status.SUCCESS
 
 	case EXTERNAL_LOCK:
 		action := ParseExternalLock(body)
 
-		return action, err.SUCCESS
+		return action, status.SUCCESS
 
 	case PREPARE:
 		action := ParsePrepare(body)
 
-		return action, err.SUCCESS
+		return action, status.SUCCESS
 
 	case COMMIT:
 		action := ParseCommit(body)
 
-		return action, err.SUCCESS
+		return action, status.SUCCESS
 
 	case FORGET:
 		action := ParseForget(body)
 
-		return action, err.SUCCESS
+		return action, status.SUCCESS
 
 	case REGISTER:
 		action := ParseRegister(body)
 
-		return action, err.SUCCESS
+		return action, status.SUCCESS
 
 	case VERIFY:
 		action := ParseVerify(body)
 
-		return action, err.SUCCESS
+		return action, status.SUCCESS
 
 	case PUBLISH:
 		action := ParsePublish(body)
 
-		return action, err.SUCCESS
+		return action, status.SUCCESS
 	default:
 		log.Error("Unknown transaction", "command", command)
 	}
 
-	return nil, err.PARSE_ERROR
+	return nil, status.PARSE_ERROR
 }
 
 // Parse a send request
@@ -96,7 +96,7 @@ func ParseSend(message Message) *Send {
 
 	result, err := serial.Deserialize(message, register, serial.CLIENT)
 	if err != nil {
-		log.Error("ParseSend", "err", err)
+		log.Error("ParseSend", "status", err)
 		return nil
 	}
 	return result.(*Send)
@@ -111,7 +111,7 @@ func ParseSwap(message Message) *Swap {
 
 	result, err := serial.Deserialize(message, register, serial.CLIENT)
 	if err != nil {
-		log.Error("ParseSwap", "err", err)
+		log.Error("ParseSwap", "status", err)
 		return nil
 	}
 	return result.(*Swap)
@@ -126,7 +126,7 @@ func ParseExternalSend(message Message) *ExternalSend {
 
 	result, err := serial.Deserialize(message, register, serial.CLIENT)
 	if err != nil {
-		log.Error("ParseExternalSend", "err", err)
+		log.Error("ParseExternalSend", "status", err)
 		return nil
 	}
 	return result.(*ExternalSend)
@@ -141,7 +141,7 @@ func ParseExternalLock(message Message) *ExternalLock {
 
 	result, err := serial.Deserialize(message, register, serial.CLIENT)
 	if err != nil {
-		log.Error("ParseExternalLock", "err", err)
+		log.Error("ParseExternalLock", "status", err)
 		return nil
 	}
 	return result.(*ExternalLock)
@@ -156,7 +156,7 @@ func ParsePrepare(message Message) *Prepare {
 
 	result, err := serial.Deserialize(message, register, serial.CLIENT)
 	if err != nil {
-		log.Error("ParsePrepare", "err", err)
+		log.Error("ParsePrepare", "status", err)
 		return nil
 	}
 	return result.(*Prepare)
@@ -171,7 +171,7 @@ func ParseCommit(message Message) *Commit {
 
 	result, err := serial.Deserialize(message, register, serial.CLIENT)
 	if err != nil {
-		log.Error("ParseCommit", "err", err)
+		log.Error("ParseCommit", "status", err)
 		return nil
 	}
 	return result.(*Commit)
@@ -186,7 +186,7 @@ func ParseForget(message Message) *Forget {
 
 	result, err := serial.Deserialize(message, register, serial.CLIENT)
 	if err != nil {
-		log.Error("ParseForget", "err", err)
+		log.Error("ParseForget", "status", err)
 		return nil
 	}
 	return result.(*Forget)
@@ -201,7 +201,7 @@ func ParseRegister(message Message) *Register {
 
 	result, err := serial.Deserialize(message, register, serial.CLIENT)
 	if err != nil {
-		log.Error("ParseRegister", "err", err)
+		log.Error("ParseRegister", "status", err)
 		return nil
 	}
 	return result.(*Register)
@@ -216,7 +216,7 @@ func ParseVerify(message Message) *Verify {
 
 	result, err := serial.Deserialize(message, register, serial.CLIENT)
 	if err != nil {
-		log.Error("ParseVerify", "err", err)
+		log.Error("ParseVerify", "status", err)
 		return nil
 	}
 	return result.(*Verify)
@@ -230,7 +230,7 @@ func ParsePublish(message Message) *Publish {
 
 	result, err := serial.Deserialize(message, register, serial.CLIENT)
 	if err != nil {
-		log.Error("ParsePublish", "err", err)
+		log.Error("ParsePublish", "status", err)
 		return nil
 	}
 	return result.(*Publish)
