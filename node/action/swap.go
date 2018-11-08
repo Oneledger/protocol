@@ -938,7 +938,7 @@ func CreateContractETH(app interface{}, context FunctionValues, tx Transaction) 
 		context[OWNER] = si.CounterParty.Key
 		context[TARGET] = si.Party.Key
 	}
-
+	//todo : need to have a better key to store ethereum contract.
 	me := GetNodeAccount(app)
 
 	contractMessage := FindContract(app, me.AccountKey().Bytes(), int64(data.ETHEREUM))
@@ -1289,6 +1289,8 @@ func ExtractSecretETH(app interface{}, context FunctionValues, tx Transaction) (
 
 	chains := si.getChains()
 	context[NEXTCHAINNAME] = chains[0]
+
+	//todo : need to have a better key to store ethereum contract.
 	me := GetNodeAccount(app)
 
 	buffer := FindContract(app, me.AccountKey().Bytes(), int64(data.ETHEREUM))
