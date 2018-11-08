@@ -39,8 +39,9 @@ type Application struct {
 	Identities *id.Identities   // Keep a higher-level identity for a given user
 	Accounts   *id.Accounts     // Keep all of the user accounts locally for their node (identity management)
 	Utxo       *data.ChainState // unspent transction output (for each type of coin)
-	Event      data.Datastore   // Event for any action that need to be tracked
-	Contract   data.Datastore   // contract for reuse.
+	SDK        common.Service
+	Event      data.Datastore // Event for any action that need to be tracked
+	Contract   data.Datastore // contract for reuse.
 
 	LastHeader types.Header // Tendermint last header info
 }
@@ -75,6 +76,21 @@ func (app Application) Initialize() {
 	} else {
 		log.Debug("NodeAccountName not currently set")
 	}
+
+	// SDK Server should start when the --sdkrpc argument is passed to fullnode
+	sdkPort := global.Current.SDKAddress
+	if sdkPort == 0 {
+		return
+	}
+
+	s, err := NewSDKServer(&app, sdkPort)
+	if err != nil {
+		panic(err)
+	} else {
+		app.SDK = s
+		app.SDK.Start()
+	}
+
 }
 
 type BasicState struct {
@@ -356,5 +372,20 @@ func (app Application) Commit() ResponseCommit {
 
 	return ResponseCommit{
 		Data: hash,
+	}
+}
+
+// Close closes every datastore in app
+func (app Application) Close() {
+	app.Admin.Close()
+	app.Status.Close()
+	app.Identities.Close()
+	app.Accounts.Close()
+	app.Utxo.Close()
+	app.Event.Close()
+	app.Contract.Close()
+
+	if app.SDK != nil {
+		app.SDK.Stop()
 	}
 }

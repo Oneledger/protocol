@@ -55,10 +55,14 @@ func init() {
 		global.Current.BTCAddress, "bitcoin rpc address")
 
 	RootCmd.PersistentFlags().StringVar(&global.Current.ETHAddress, "ethrpc",
-		global.Current.ETHAddress, "etherem rpc address")
+		global.Current.ETHAddress, "ethereum rpc address")
 
 	RootCmd.PersistentFlags().StringVar(&global.Current.TendermintRoot, "tendermintRoot",
 		global.Current.TendermintRoot, "tendermint root directory")
+
+	RootCmd.PersistentFlags().IntVar(&global.Current.SDKAddress, "sdkrpc",
+		global.Current.SDKAddress, "Port for SDK RPC Server")
+
 }
 
 // Initialize Viper

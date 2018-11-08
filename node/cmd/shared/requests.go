@@ -18,10 +18,7 @@ import (
 
 // Prepare a transaction to be issued.
 func SignAndPack(ttype action.Type, transaction action.Transaction) []byte {
-	signed := action.SignTransaction(transaction)
-	packet := action.PackRequest(ttype, signed)
-
-	return packet
+	return action.SignAndPack(ttype, transaction)
 }
 
 // Registration

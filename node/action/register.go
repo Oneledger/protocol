@@ -100,3 +100,17 @@ func (transaction Register) ProcessDeliver(app interface{}) status.Code {
 func (transaction *Register) Resolve(app interface{}) Commands {
 	return []Command{}
 }
+
+func CreateRegisterRequest(identity string, chainId string, sequence int64, nodeName string, signers []PublicKey, accountKey id.AccountKey) *Register {
+	return &Register{
+		Base: Base{
+			Type:     REGISTER,
+			ChainId:  chainId,
+			Signers:  signers,
+			Sequence: sequence,
+		},
+		Identity:   identity,
+		NodeName:   nodeName,
+		AccountKey: accountKey,
+	}
+}

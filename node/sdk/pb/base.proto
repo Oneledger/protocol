@@ -1,0 +1,81 @@
+// Base types for basic SDK functionality
+
+syntax = "proto3";
+
+package pb;
+
+message CheckAccountRequest {
+    string name = 1;
+}
+
+message CheckAccountReply {
+    string name = 1;
+    string chain = 2;
+    bytes accountKey = 3;
+    // TODO: Should use Coin message
+    Balance balance = 4;
+}
+
+enum Currency {
+    OLT = 0;
+    BTC = 1;
+    ETH = 2;
+}
+
+message Balance {
+    int64 amount = 1;
+    Currency currency = 2;
+}
+
+
+// Custom empty message in case we want to add new parameters in the future
+message StatusRequest {}
+
+message StatusReply {
+    bool ok = 1;
+}
+
+message SendRequest {
+    string party = 1;
+    string counterParty = 2;
+    Currency currency = 3;
+    int64 amount = 4;
+    int64 gas = 5;
+    int64 fee = 6;
+}
+
+// Just send an ok back for now
+message SendReply {
+    bool ok = 1;
+    string reason = 2;
+}
+
+message SwapRequest {}
+message SwapReply {}
+
+message RegisterRequest {
+    string identity = 1;
+    ChainType chain = 2;
+}
+
+enum ChainType {
+    ONELEDGER = 0;
+    BITCOIN = 1;
+    ETHEREUM = 2;
+}
+
+message RegisterReply {
+    bool ok = 1;
+    string identity = 2;
+    bytes publicKey = 3;
+    bytes privateKey = 4;
+}
+
+service SDK {
+    // Simple health-check to see if the server is OK
+    rpc Status(StatusRequest) returns (StatusReply);
+    rpc CheckAccount(CheckAccountRequest) returns (CheckAccountReply);
+    rpc Send(SendRequest) returns (SendReply);
+    rpc Register(RegisterRequest) returns (RegisterReply);
+//    rpc Swap(SwapRequest) returns (SwapReply);
+}
