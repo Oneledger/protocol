@@ -116,7 +116,7 @@ func CreateAccount(app Application, stateAccount string, stateAmount string, pub
 		log.Fatal("Recently Added Account is missing", "name", stateAccount, "status", ok)
 	}
 
-	// Use the account key in the balance
+	// Use the account key in the database
 	balance := NewBalanceFromString(stateAmount, "OLT")
 	app.Utxo.Set(account.AccountKey(), balance)
 
@@ -139,8 +139,6 @@ func NewBalanceFromString(amount string, currency string) data.Balance {
 // InitChain is called when a new chain is getting created
 func (app Application) InitChain(req RequestInitChain) ResponseInitChain {
 	log.Debug("ABCI: InitChain", "req", req)
-
-	log.Debug("FeePayment1", "Validators", req.Validators)
 
 	app.SetupState(req.AppStateBytes)
 
@@ -254,35 +252,22 @@ func (app Application) BeginBlock(req RequestBeginBlock) ResponseBeginBlock {
 		interimBalance := data.NewBalance(0, "OLT")
 		balance = &interimBalance
 	}
-	log.Debug("ABCI: BeginBlock", "PaymentBalance", balance.Amount)
 
 	if !balance.Amount.LessThanEqual(0) {
 		list := req.LastCommitInfo.GetValidators()
-		log.Debug("ABCI: BeginBlock", "ValidatorListLength", len(list))
 
 		numberValidators := data.NewCoin(int64(len(list)), "OLT")
 		quotient := balance.Amount.Quotient(numberValidators)
-
-		log.Debug("Quotient", "quotientBalance", quotient)
 
 		var identities []id.Identity
 
 		if int(quotient.Amount.Int64()) > 0 {
 			for _, entry := range list {
 				formatted := hex.EncodeToString(entry.Validator.Address)
-				log.Debug("ABCI: BeginBlock", "ValidatorAddress", formatted)
 				identity := app.Identities.FindTendermint(formatted)
-				log.Debug("FeePaymentValIdentity", "name", identity.Name)
-
 				identities = append(identities, identity)
-				log.Debug("NodeAccountName", "NodeName", global.Current.NodeName)
-				log.Debug("IdentityNodeName", "IdentityNodeName", identity.NodeName)
-				//if global.Current.NodeName == identity.NodeName {
-
-				//}
 			}
 
-			log.Debug("NamesEqual")
 			result := CreatePaymentRequest(app, identities, quotient)
 			if result != nil {
 				// TODO: check this later
