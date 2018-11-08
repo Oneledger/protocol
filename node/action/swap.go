@@ -988,7 +988,6 @@ func CreateContractETH(app interface{}, context FunctionValues, tx Transaction) 
 	}
 
 	context[SWAPMESSAGE] = se
-	SaveContract(app, storeKey, int64(data.ETHEREUM), contract.ToBytes())
 	return true, context
 }
 
@@ -1286,15 +1285,20 @@ func ExtractSecretETH(app interface{}, context FunctionValues, tx Transaction) (
 	se := GetSwapMessage(context[SWAPMESSAGE]).(SwapExchange)
 	storeKey := se.SwapKeyHash
 
-	buffer := FindContract(app, storeKey, int64(data.BITCOIN))
-
-	contract := &ethereum.HTLContract{}
-	contract.FromBytes(buffer)
-
 	si := FindSwap(app, storeKey)
 
 	chains := si.getChains()
 	context[NEXTCHAINNAME] = chains[0]
+	me := GetNodeAccount(app)
+
+	buffer := FindContract(app, me.AccountKey().Bytes(), int64(data.ETHEREUM))
+	if buffer == nil {
+		log.Error("Failed to find eth local contract")
+		return false, nil
+	}
+
+	contract := &ethereum.HTLContract{}
+	contract.FromBytes(buffer)
 
 	scr := contract.Extract()
 	if scr == nil {
