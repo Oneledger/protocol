@@ -118,32 +118,8 @@ func (transaction *Swap) ProcessDeliver(app interface{}) status.Code {
 		return status.EXPAND_ERROR
 	}
 
-	for i := 0; i < commands.Count(); i++ {
-		//them := GetParty(commands[i].Data[THEM_ACCOUNT])
-		//event := Event{Type: SWAP, Key: them.Key , Nonce: matchedSwap.Nonce }
-		//if commands[i].Function == FINISH {
-		//	SaveEvent(app, event, true)
-		//	return status.SUCCESS
-		//}
-		context := commands[i].data
-		if v, _ := context[NEXTCHAINNAME]; v != nil {
-			chain := GetChain(v)
-			commands[i].chain = chain
-		}
-		ok, result := commands[i].Execute(app)
-		if !ok {
-			log.Error("Failed to Execute", "command", commands[i])
-			//SaveEvent(app, event, false)
-			return status.EXPAND_ERROR
-		}
-		if len(result) > 0 {
-			commands[i+1].data = result
-			if v, _ := context[NEXTCHAINNAME]; v != nil {
-				chain := GetChain(v)
-				commands[i+1].chain = chain
-			}
-		}
-	}
+	c := make(chan status.Code)
+	go transaction.CommandExecute(app, commands, c)
 
 	return status.SUCCESS
 }
@@ -172,6 +148,32 @@ func (swap *Swap) Resolve(app interface{}) Commands {
 	commands[0].data[TARGET] = swap.Target
 	commands[0].data[PREVIOUS] = _hash(swap)
 	return commands
+}
+
+func (swap *Swap) CommandExecute(app interface{}, commands Commands, c chan status.Code) {
+	defer close(c)
+	for i := 0; i < commands.Count(); i++ {
+
+		context := commands[i].data
+		if v, _ := context[NEXTCHAINNAME]; v != nil {
+			chain := GetChain(v)
+			commands[i].chain = chain
+		}
+		ok, result := commands[i].Execute(app)
+		if !ok {
+			log.Error("Failed to Execute", "command", commands[i])
+			//SaveEvent(app, event, false)
+			c <- status.EXPAND_ERROR
+		}
+		if len(result) > 0 {
+			commands[i+1].data = result
+			if v, _ := context[NEXTCHAINNAME]; v != nil {
+				chain := GetChain(v)
+				commands[i+1].chain = chain
+			}
+		}
+	}
+	c <- status.SUCCESS
 }
 
 var swapStageFlow = map[swapStageType]swapStage{
@@ -941,6 +943,9 @@ func CreateContractETH(app interface{}, context FunctionValues, tx Transaction) 
 	var contract *ethereum.HTLContract
 	if contractMessage == nil {
 		contract = ethereum.CreateHtlContract()
+		if contract == nil {
+			return false, nil
+		}
 		SaveContract(app, me.AccountKey().Bytes(), int64(data.ETHEREUM), contract.ToBytes())
 	} else {
 		buffer, err := serial.Deserialize(contractMessage, contract, serial.JSON)
@@ -995,12 +1000,21 @@ func AuditContractBTC(app interface{}, context FunctionValues, tx Transaction) (
 	log.Debug("Contract to audit", "contract", contract)
 
 	stage := getStageType(context[STAGE])
-	if stage == PARTICIPANT_PARTICIPATE {
+	switch stage {
+	case PARTICIPANT_PARTICIPATE:
 		context[OWNER] = si.CounterParty.Key
 		context[TARGET] = si.Party.Key
-	} else {
+	case INITIATOR_REDEEM:
 		context[OWNER] = si.Party.Key
 		context[TARGET] = si.CounterParty.Key
+		scr := FindContract(app, storeKey, 0)
+		if scr == nil {
+			log.Fatal("secret not found", "key", storeKey)
+			return false, nil
+		}
+		var secret [32]byte
+		copy(secret[:], scr)
+		context[PASSWORD] = secret
 	}
 
 	// if audit first chain, then participate on second chain,
@@ -1033,14 +1047,23 @@ func AuditContractETH(app interface{}, context FunctionValues, tx Transaction) (
 	stage := getStageType(context[STAGE])
 
 	var amount data.Coin
-	if stage == PARTICIPANT_PARTICIPATE {
+	switch stage {
+	case PARTICIPANT_PARTICIPATE:
 		amount = si.Amount
 		context[OWNER] = si.CounterParty.Key
 		context[TARGET] = si.Party.Key
-	} else {
+	case INITIATOR_REDEEM:
 		amount = si.Exchange
 		context[OWNER] = si.Party.Key
 		context[TARGET] = si.CounterParty.Key
+		scr := FindContract(app, storeKey, 0)
+		if scr == nil {
+			log.Fatal("secret not found", "key", storeKey)
+			return false, nil
+		}
+		var secret [32]byte
+		copy(secret[:], scr)
+		context[PASSWORD] = secret
 	}
 
 	// if audit first chain, then participate on second chain,
@@ -1113,18 +1136,11 @@ func RedeemBTC(app interface{}, context FunctionValues, tx Transaction) (bool, F
 
 	buffer := FindContract(app, storeKey, int64(data.BITCOIN))
 	if buffer == nil {
+		log.Error("Failed to load the contract to Redeem", "key", storeKey)
 		return false, nil
 	}
-	var contract *bitcoin.HTLContract
-	tmp, err := serial.Deserialize(buffer, contract, serial.JSON)
-	if err != nil {
-		log.Error("Failed deserialize BTC contract", "contract", buffer)
-	}
-	contract = tmp.(*bitcoin.HTLContract)
-	if contract == nil {
-		log.Error("BTC Htlc contract not found")
-		return false, nil
-	}
+	contract := &bitcoin.HTLContract{}
+	contract.FromBytes(buffer)
 
 	scr := GetByte32(context[PASSWORD])
 
@@ -1140,6 +1156,7 @@ func RedeemBTC(app interface{}, context FunctionValues, tx Transaction) (bool, F
 	newcontract.FromMsgTx(contract.Contract, cmd.RedeemContractTx)
 
 	previous := GetBytes(context[PREVIOUS])
+
 	se := SwapExchange{
 		Contract:    contract,
 		SwapKeyHash: storeKey,
@@ -1156,17 +1173,14 @@ func RedeemETH(app interface{}, context FunctionValues, tx Transaction) (bool, F
 
 	buffer := FindContract(app, storeKey, int64(data.ETHEREUM))
 	if buffer == nil {
+		log.Error("Failed to load the contract to Redeem", "key", storeKey)
 		return false, nil
 	}
-	var contract *ethereum.HTLContract
-	tmp, err := serial.Deserialize(buffer, contract, serial.JSON)
-	if err != nil {
-		log.Error("Failed deserialize ETH contract", "contract", buffer)
-	}
-	contract = tmp.(*ethereum.HTLContract)
+	contract := &ethereum.HTLContract{}
+	contract.FromBytes(buffer)
 
 	scr := GetByte32(context[PASSWORD])
-	err = contract.Redeem(scr[:])
+	err := contract.Redeem(scr[:])
 	if err != nil {
 		log.Error("Ethereum redeem htlc", "status", err)
 		return false, nil

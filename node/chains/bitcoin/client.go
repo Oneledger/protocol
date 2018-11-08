@@ -192,10 +192,12 @@ func (h *HTLContract) FromMsgTx(contract []byte, contractTx *wire.MsgTx) {
 }
 
 func (h *HTLContract) FromBytes(message []byte) {
-	_, err := serial.Deserialize(message, h, serial.JSON)
+	var contract HTLContract
+	_, err := serial.Deserialize(message, contract, serial.JSON)
 	if err != nil {
-		log.Error("Failed to deserialize htlc", "err", err)
+		log.Error("Failed deserialize BTC contract", "contract", message)
 	}
-
+	h.Contract = contract.Contract
+	h.ContractTx = contract.ContractTx
 	return
 }

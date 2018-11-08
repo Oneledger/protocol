@@ -200,7 +200,7 @@ func SaveContract(app interface{}, contractKey []byte, nonce int64, contract []b
 	n := strconv.AppendInt(contractKey, nonce, 10)
 	log.Debug("Save contract", "key", contractKey, "afterNonce", n)
 	session := contracts.Begin()
-	session.Set(contractKey, contract)
+	session.Set(n, contract)
 	session.Commit()
 }
 
