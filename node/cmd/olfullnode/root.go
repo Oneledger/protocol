@@ -56,6 +56,8 @@ func init() {
 
 	RootCmd.PersistentFlags().StringVar(&global.Current.ETHAddress, "ethrpc",
 		global.Current.ETHAddress, "ethereum rpc address")
+
+	RootCmd.PersistentFlags().IntVar(&global.Current.SDKAddress, "sdkrpc", global.Current.SDKAddress, "Port for SDK RPC Server")
 }
 
 // Initialize Viper

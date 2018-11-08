@@ -121,6 +121,12 @@ stopmon: check
 	@./scripts/stopmon
 
 #
+# Compile protocol buffers
+#
+protobuf:
+	protoc ./sdk/pb/base.proto --go_out=plugins=grpc:./
+
+#
 # targets that are not associated with any files
 #
 .PHONY: all build install utest test tools update stop start full

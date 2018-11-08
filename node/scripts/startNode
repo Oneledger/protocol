@@ -23,6 +23,7 @@ rpcAddress=`$CMD/lookup $name RPCAddress $prefix`
 appAddress=`$CMD/lookup $name AppAddress $prefix`
 btcAddress=`$CMD/lookup $name BTCAddress "127.0.0.1:"`
 ethAddress=`$CMD/lookup $name ETHAddress `
+sdkAddress=`$CMD/lookup $name SDKAddress `
 
 prefix="127.0.0.1:"
 key=`$CMD/getNodeId $nodeName`
@@ -74,6 +75,7 @@ then
 		--address $rpcAddress \
 		--btcrpc $btcAddress \
 		--ethrpc $ethAddress \
+		--sdkrpc $sdkAddress \
 		$extra \
 		>> $LOG/olfullnode.log 2>&1 &
 

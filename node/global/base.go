@@ -41,6 +41,8 @@ type Context struct {
 	BTCAddress string // Bitcoin node Address port
 	ETHAddress string // Ethereum node Address port
 
+	SDKAddress int // SDK RPC port
+
 	Sequence int64 // replay protection
 }
 
@@ -58,12 +60,11 @@ func NewContext(name string) *Context {
 	return &Context{
 		Debug:            debug,
 		DisablePasswords: true,
-
-		NodeName:        name,
-		NodeAccountName: "Zero-OneLedger",
-		RootDir:         os.Getenv("OLDATA") + "/" + name + "/olfullnode",
-
-		Sequence: 101,
+		SDKAddress:       6969,
+		NodeName:         name,
+		NodeAccountName:  "Zero-OneLedger",
+		RootDir:          os.Getenv("OLDATA") + "/" + name + "/olfullnode",
+		Sequence:         101,
 	}
 }
 

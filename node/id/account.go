@@ -123,6 +123,10 @@ func (acc *Accounts) Dump() {
 	}
 }
 
+func (acc *Accounts) Close() {
+	acc.store.Close()
+}
+
 // Polymorphism
 type Account interface {
 	Name() string
