@@ -136,6 +136,9 @@ func CreateAccount(app Application, stateAccount string, stateAmount string, pub
 	balance := NewBalanceFromString(stateAmount, "OLT")
 	app.Utxo.Set(account.AccountKey(), balance)
 
+	// TODO: Until a block is commited, this data is not persistent
+	//app.Utxo.Commit()
+
 	log.Info("Genesis State UTXO database", "balance", balance)
 }
 
@@ -257,7 +260,7 @@ var chainKey data.DatabaseKey = data.DatabaseKey("chainId")
 
 // BeginBlock is called when a new block is started
 func (app Application) BeginBlock(req RequestBeginBlock) ResponseBeginBlock {
-	log.Debug("ABCI: BeginBlock", "req", req)
+	//log.Debug("ABCI: BeginBlock", "req", req)
 
 	account, err := app.Accounts.FindName("Payment-OneLedger")
 	if err != status.SUCCESS {

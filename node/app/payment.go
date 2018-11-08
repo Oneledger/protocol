@@ -21,40 +21,16 @@ func CreatePaymentRequest(app Application, identities []id.Identity, quotient da
 			return nil
 		}
 
-		// TODO: Can't convert identities to accounts, this way!
-		log.Debug("CreatePaymentRequest", "IdentityName", identity.Name)
-
 		party, err := app.Identities.FindName(identity.Name)
 		if err == status.MISSING_DATA {
-			log.Debug("CreatePaymentAccount1", "MissingDataStatus", err)
+			log.Debug("CreatePaymentRequest", "PartyMissingData", err)
 			return nil
 		}
 
-		//if status != err.SUCCESS {
-		//	log.Fatal("CreatePaymentRequest", "SuccessStatus", status)
-		//}
-
-		partyAccountKey := party.AccountKey
-		log.Debug("CreatePaymentAccountKey", "AccountKey", partyAccountKey)
 		partyBalance := app.Utxo.Get(party.AccountKey)
 		if partyBalance == nil {
 			interimBalance := data.NewBalance(0, "OLT")
 			partyBalance = &interimBalance
-		}
-		log.Warn("CreatePaymentRequest", "UTXOPartyBalance", partyBalance)
-
-		//log.Dump("AccountKeys", party, counterParty)
-
-		//if args.Currency == "" || args.Amount == "" {
-		//	log.Error("Missing an amount argument")
-		//	return nil
-		//}
-
-		//log.Dump("Balances", partyBalance, counterPartyBalance)
-
-		if partyBalance == nil {
-			log.Error("Missing Balance", "party", partyBalance)
-			return nil
 		}
 
 		//fee := conv.GetCoin(args.Fee, args.Currency)
@@ -75,13 +51,13 @@ func CreatePaymentRequest(app Application, identities []id.Identity, quotient da
 	log.Debug("CreatePaymentRequest", "paymentBalance", paymentBalance)
 
 	numberValidators := data.NewCoin(int64(len(identities)), "OLT")
-	fullPayment := quotient.Multiply(numberValidators)
+	totalPayment := quotient.Multiply(numberValidators)
 
 	inputs = append(inputs,
 		action.NewSendInput(payment.AccountKey(), paymentBalance.Amount))
 
 	outputs = append(outputs,
-		action.NewSendOutput(payment.AccountKey(), paymentBalance.Amount.Minus(fullPayment)))
+		action.NewSendOutput(payment.AccountKey(), paymentBalance.Amount.Minus(totalPayment)))
 
 	// Create base transaction
 	send := &action.Send{

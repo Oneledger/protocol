@@ -30,22 +30,17 @@ type TypeValue struct {
 }
 
 func LoadPrivValidatorFile() {
-
-	log.Debug("LoadPrivValidatorFile", "global.Current.TendermintRoot", global.Current.TendermintRoot)
 	filePath := global.Current.TendermintRoot + "/config/priv_validator.json"
 	jsonFile, err := os.Open(filePath)
 	if err != nil {
 		log.Debug("FeePayment", "err", err)
 	}
-	log.Debug("FeePaymentDat", "jsonFile", jsonFile)
 	defer jsonFile.Close()
 
 	byteValue, _ := ioutil.ReadAll(jsonFile)
 	var privValidator PrivValidator
 
 	json.Unmarshal(byteValue, &privValidator)
-	log.Debug("FeePaymentValAddress", "address", privValidator.Address)
-	log.Debug("FeePaymentValPubKey", "ValPubKey", privValidator.PubKey.Value)
 	global.Current.TendermintAddress = privValidator.Address
 	global.Current.TendermintPubKey = privValidator.PubKey.Value
 

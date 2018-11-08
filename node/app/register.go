@@ -67,7 +67,6 @@ func RegisterLocally(app *Application, name string, scope string, chain data.Cha
 	identity, _ := app.Identities.FindName(name)
 
 	LoadPrivValidatorFile()
-	log.Debug("RegisterLocally", "global.Current.TendermintAddress", global.Current.TendermintAddress)
 
 	if identity.Name == "" {
 		tendermintAddress := global.Current.TendermintAddress
@@ -79,8 +78,6 @@ func RegisterLocally(app *Application, name string, scope string, chain data.Cha
 		interim := id.NewIdentity(name, "Contact Info", false,
 			global.Current.NodeName, account.AccountKey(), tendermintAddress, tendermintPubKey)
 		identity = *interim
-
-		log.Debug("RegisterLocally2", "identity.TendermintAddress", identity.TendermintAddress)
 
 		global.Current.NodeIdentity = name
 		app.Identities.Add(identity)
