@@ -23,13 +23,14 @@ mkdir -p $OLDATA/bitcoin/C
 # Set a minimal block generation to insure that all accounts have balances 
 echo "Preallocating Bitcoin Accounts"
 $CMD/startBitcoin
-sleep 4
+sleep 3
 
 bitcoin-cli -regtest -rpcuser=oltest01 -rpcpassword=olpass01 -rpcport=18831 generate 20 > /dev/null
 sleep 1
 bitcoin-cli -regtest -rpcuser=oltest02 -rpcpassword=olpass02 -rpcport=18832 generate 20 > /dev/null
 sleep 1
 bitcoin-cli -regtest -rpcuser=oltest03 -rpcpassword=olpass03 -rpcport=18833 generate 101 > /dev/null
+sleep 1
 
 $CMD/stopBitcoin
 
