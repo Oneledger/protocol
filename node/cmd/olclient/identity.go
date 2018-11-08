@@ -70,11 +70,11 @@ func printResponse(nodeName string, idQuery interface{}) {
 
 func printIdentity(identity id.Identity) {
 	// Right-align fieldnames in console
-	name := "      Name:"
-	scope := "     Scope:"
-	accountKey := "       Key:"
+	name := "             Name:"
+	scope := "            Scope:"
+	accountKey := "              Key:"
 	tendermintAddress := "TendermintAddress:"
-	tendermintPubKey := "TendermintPubKey"
+	tendermintPubKey := " TendermintPubKey:"
 
 	var scopeOutput string
 	if identity.External {

@@ -202,3 +202,41 @@ func (coin Coin) AsString() string {
 	text := fmt.Sprintf("%.3f", value)
 	return text
 }
+
+func (coin Coin) Quotient(value Coin) Coin {
+	if coin.Amount == nil {
+		log.Fatal("Invalid Coin", "coin", coin)
+	}
+
+	if coin.Currency.Name != value.Currency.Name {
+		//log.Error("Mismatching Currencies", "coin", coin, "value", value)
+		log.Fatal("Mismatching Currencies", "coin", coin, "value", value)
+		return coin
+	}
+
+	base := big.NewInt(0)
+	result := Coin{
+		Currency: coin.Currency,
+		Amount:   base.Quo(coin.Amount, value.Amount),
+	}
+	return result
+}
+
+func (coin Coin) Multiply(value Coin) Coin {
+	if coin.Amount == nil {
+		log.Fatal("Invalid Coin", "coin", coin)
+	}
+
+	if coin.Currency.Name != value.Currency.Name {
+		//log.Error("Mismatching Currencies", "coin", coin, "value", value)
+		log.Fatal("Mismatching Currencies", "coin", coin, "value", value)
+		return coin
+	}
+
+	base := big.NewInt(0)
+	result := Coin{
+		Currency: coin.Currency,
+		Amount:   base.Mul(coin.Amount, value.Amount),
+	}
+	return result
+}
