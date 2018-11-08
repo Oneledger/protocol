@@ -1050,13 +1050,6 @@ func AuditContractETH(app interface{}, context FunctionValues, tx Transaction) (
 
 	//todo : when support light client, need to get this address from swapinit
 	address := ethereum.GetAddress()
-	//var contract *ethereum.HTLContract
-	//tmp, err := serial.Deserialize(buffer, contract, serial.JSON)
-	//if err != nil {
-	//	log.Error("Failed deserialize ETH contract", "contract", buffer)
-	//	return false, nil
-	//}
-	//contract := buffer.(*ethereum.HTLContract)
 
 	receiver, e := contract.HTLContractObject().Receiver(&bind.CallOpts{Pending: true})
 	if e != nil {
