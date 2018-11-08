@@ -15,13 +15,13 @@ if [ -z "$pids" ]
 then
     echo "Start Ethereum network"
 
-    geth --datadir $OLETH/A --networkid 20180229 --port 30301 --rpcport 28101 --nodiscover --verbosity 5 2>> $OLETH/A/eth.log &
+    geth --datadir $OLETH/A --networkid 20180229 --port 30301 --rpcport 28101 --nodiscover --verbosity 1 2>> $OLETH/A/eth.log &
     sleep 3
 
-    geth --datadir $OLETH/B --networkid 20180229 --port 30302 --rpcport 28102 --nodiscover --verbosity 5 2>> $OLETH/B/eth.log &
+    geth --datadir $OLETH/B --networkid 20180229 --port 30302 --rpcport 28102 --nodiscover --verbosity 1 2>> $OLETH/B/eth.log &
     sleep 3
 
-    geth --datadir $OLETH/C --networkid 20180229 --port 30303 --rpcport 28103 --nodiscover --verbosity 5 2>> $OLETH/C/eth.log &
+    geth --datadir $OLETH/C --networkid 20180229 --port 30303 --rpcport 28103 --nodiscover --verbosity 1 2>> $OLETH/C/eth.log &
 
     sleep 3
 

@@ -1159,6 +1159,7 @@ func RedeemBTC(app interface{}, context FunctionValues, tx Transaction) (bool, F
 	previous := GetBytes(context[PREVIOUS])
 
 	se := SwapExchange{
+		Contract:    newcontract,
 		SwapKeyHash: storeKey,
 		Chain:       contract.Chain(),
 		PreviousTx:  previous,
@@ -1204,12 +1205,9 @@ func RefundBTC(app interface{}, context FunctionValues, tx Transaction) (bool, F
 	if buffer == nil {
 		return false, nil
 	}
-	var contract *bitcoin.HTLContract
-	tmp, err := serial.Deserialize(buffer, contract, serial.JSON)
-	if err != nil {
-		log.Error("Failed deserialize BTC contract", "contract", buffer)
-	}
-	contract = tmp.(*bitcoin.HTLContract)
+	contract := &bitcoin.HTLContract{}
+	contract.FromBytes(buffer)
+
 	if contract == nil {
 		log.Error("BTC Htlc contract can't be parsed")
 		return false, nil
@@ -1232,18 +1230,15 @@ func RefundETH(app interface{}, context FunctionValues, tx Transaction) (bool, F
 	if buffer == nil {
 		return false, nil
 	}
-	var contract *ethereum.HTLContract
-	tmp, err := serial.Deserialize(buffer, contract, serial.JSON)
-	if err != nil {
-		log.Error("Failed deserialize ETH contract", "contract", buffer)
-	}
-	contract = tmp.(*ethereum.HTLContract)
+	contract := &ethereum.HTLContract{}
+	contract.FromBytes(buffer)
+
 	if contract == nil {
 		log.Error("ETH Htlc contract can't be parsed")
 		return false, nil
 	}
 
-	err = contract.Refund()
+	err := contract.Refund()
 	if err != nil {
 		return false, nil
 	}
@@ -1252,11 +1247,12 @@ func RefundETH(app interface{}, context FunctionValues, tx Transaction) (bool, F
 
 func ExtractSecretBTC(app interface{}, context FunctionValues, tx Transaction) (bool, FunctionValues) {
 	se := GetSwapMessage(context[SWAPMESSAGE]).(SwapExchange)
+	contract := se.Contract.(*bitcoin.HTLContract)
 	storeKey := se.SwapKeyHash
-
-	buffer := FindContract(app, storeKey, int64(data.BITCOIN))
-	contract := &bitcoin.HTLContract{}
-	contract.FromBytes(buffer)
+	//
+	//buffer := FindContract(app, storeKey, int64(data.BITCOIN))
+	//contract := &bitcoin.HTLContract{}
+	//contract.FromBytes(buffer)
 
 	si := FindSwap(app, storeKey)
 
