@@ -108,24 +108,34 @@ func CreateHtlContract() *HTLContract {
 	}
 	log.Debug("Htlc contract created", "address", address, "tx", tx.Hash())
 	htlContract := &HTLContract{Address: address, TxHash: tx.Hash()}
-	WaitForSuccess(cli, tx, 0, 30)
+
+	WaitTxSuccess(cli, tx, 20*time.Second, 1*time.Second)
+
 	return htlContract
 }
 
-func WaitForSuccess(client *ethclient.Client, tx *types.Transaction, init int, maxWait int) {
-	if init > maxWait {
-		return
-	}
-	time.Sleep(1 * time.Second)
-	receipt, err := client.TransactionReceipt(context.Background(), tx.Hash())
-	if err != nil {
-		WaitForSuccess(client, tx, init+1, maxWait)
-	}
-	if receipt.Status == types.ReceiptStatusFailed {
-		WaitForSuccess(client, tx, init+1, maxWait)
-	} else {
-		return
-	}
+func WaitTxSuccess(client *ethclient.Client, tx *types.Transaction, maxWait time.Duration, interval time.Duration) {
+	ticker := time.NewTicker(interval * time.Second)
+	stop := make(chan bool)
+	go func() {
+		for {
+			select {
+			case <-ticker.C:
+				result, err := client.TransactionReceipt(context.Background(), tx.Hash())
+				if err == nil {
+					if result.Status == types.ReceiptStatusSuccessful {
+						ticker.Stop()
+					}
+				}
+			case <-stop:
+				ticker.Stop()
+				return
+			}
+		}
+	}()
+	time.Sleep(maxWait)
+	close(stop)
+	return
 }
 
 func (h *HTLContract) HTLContractObject() *htlc.Htlc {
@@ -157,7 +167,7 @@ func (h *HTLContract) Funds(value *big.Int, lockTime *big.Int, receiver common.A
 		log.Error("Can't get balance after fund", "status", err)
 	}
 	log.Info("Fund htlc", "address", h.Address, "tx", h.TxHash, "value", value, "balance", balance)
-	WaitForSuccess(client, tx, 0, 10)
+	WaitTxSuccess(client, tx, 10*time.Second, 1*time.Second)
 	return nil
 }
 
@@ -177,7 +187,7 @@ func (h *HTLContract) Redeem(scr []byte) error {
 		return err
 	}
 	h.TxHash = tx.Hash()
-	WaitForSuccess(client, tx, 0, 10)
+	WaitTxSuccess(client, tx, 10*time.Second, 1*time.Second)
 	balance, err = contract.Balance(&bind.CallOpts{Pending: false})
 	log.Debug("balance after redeem", "balance", balance, "status", err)
 	log.Info("Redeem htlc", "address", h.Address, "tx", h.TxHash, "scr", scr, "txaddress", tx.Hash())
@@ -196,7 +206,7 @@ func (h *HTLContract) Refund() error {
 		log.Error("Can't refund the htlc", "status", err, "auth", auth)
 		return err
 	}
-	time.Sleep(1 * time.Second)
+	WaitTxSuccess(client, tx, 10*time.Second, 1*time.Second)
 	cli := getEthClient()
 	ctx := context.Background()
 	receipt, err := cli.TransactionReceipt(ctx, tx.Hash())

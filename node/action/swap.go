@@ -97,10 +97,12 @@ func (transaction *Swap) ShouldProcess(app interface{}) bool {
 	account := GetNodeAccount(app)
 
 	if bytes.Equal(transaction.Base.Target, account.AccountKey()) {
+		log.Debug("Swap involved", "swap", transaction.SwapMessage, "stage", transaction.Stage)
 		return true
 	}
 
 	if bytes.Equal(transaction.Base.Owner, account.AccountKey()) && transaction.Stage == SWAP_MATCHING {
+		log.Debug("Swap involved", "swap", transaction.SwapMessage, "stage", transaction.Stage)
 		return true
 	}
 
@@ -585,7 +587,7 @@ func NextStage(app interface{}, chain data.ChainType, context FunctionValues, tx
 		waitTime := 3 * lockPeriod
 		DelayedTransaction(SWAP, swap, waitTime)
 	} else {
-		waitTime := 3 * time.Second
+		waitTime := 1 * time.Second
 		DelayedTransaction(SWAP, swap, waitTime)
 	}
 	return true, nil
@@ -1009,7 +1011,7 @@ func AuditContractBTC(app interface{}, context FunctionValues, tx Transaction) (
 		context[TARGET] = si.CounterParty.Key
 		scr := FindContract(app, storeKey, 0)
 		if scr == nil {
-			log.Fatal("secret not found", "key", storeKey)
+			log.Error("secret not found", "key", storeKey)
 			return false, nil
 		}
 		var secret [32]byte
@@ -1039,7 +1041,7 @@ func AuditContractBTC(app interface{}, context FunctionValues, tx Transaction) (
 func AuditContractETH(app interface{}, context FunctionValues, tx Transaction) (bool, FunctionValues) {
 	se := GetSwapMessage(context[SWAPMESSAGE]).(SwapExchange)
 	contract := se.Contract.(*ethereum.HTLContract)
-	log.Debug("Contract to audit", "contract", contract)
+	log.Debug("Contract to audit", "contract", contract.Address.Hash(), "tx", contract.TxHash.String())
 
 	storeKey := GetBytes(context[STOREKEY])
 	si := FindSwap(app, storeKey)
@@ -1058,7 +1060,7 @@ func AuditContractETH(app interface{}, context FunctionValues, tx Transaction) (
 		context[TARGET] = si.CounterParty.Key
 		scr := FindContract(app, storeKey, 0)
 		if scr == nil {
-			log.Fatal("secret not found", "key", storeKey)
+			log.Error("secret not found", "key", storeKey)
 			return false, nil
 		}
 		var secret [32]byte
@@ -1158,7 +1160,6 @@ func RedeemBTC(app interface{}, context FunctionValues, tx Transaction) (bool, F
 	previous := GetBytes(context[PREVIOUS])
 
 	se := SwapExchange{
-		Contract:    contract,
 		SwapKeyHash: storeKey,
 		Chain:       contract.Chain(),
 		PreviousTx:  previous,
@@ -1188,7 +1189,6 @@ func RedeemETH(app interface{}, context FunctionValues, tx Transaction) (bool, F
 
 	previous := GetBytes(context[PREVIOUS])
 	se := SwapExchange{
-		Contract:    contract,
 		SwapKeyHash: storeKey,
 		Chain:       contract.Chain(),
 		PreviousTx:  previous,
@@ -1253,15 +1253,19 @@ func RefundETH(app interface{}, context FunctionValues, tx Transaction) (bool, F
 
 func ExtractSecretBTC(app interface{}, context FunctionValues, tx Transaction) (bool, FunctionValues) {
 	se := GetSwapMessage(context[SWAPMESSAGE]).(SwapExchange)
-	contract := se.Contract.(*bitcoin.HTLContract)
+	storeKey := se.SwapKeyHash
 
-	//var contract *bitcoin.HTLContract
-	//tmp, err := serial.Deserialize(buffer, contract, serial.JSON)
-	//if err != nil {
-	//	log.Error("Failed deserialize BTC contract", "contract", buffer)
-	//}
-	//contract := buffer.(*bitcoin.HTLContract)
+	buffer := FindContract(app, storeKey, int64(data.BITCOIN))
+	contract := &bitcoin.HTLContract{}
+	contract.FromBytes(buffer)
+
+	si := FindSwap(app, storeKey)
+
+	chains := si.getChains()
+	context[NEXTCHAINNAME] = chains[0]
+
 	scrHash := GetByte32(context[PREIMAGE])
+
 	cmd := htlc.NewExtractSecretCmd(contract.GetMsgTx(), scrHash)
 	cli := bitcoin.GetBtcClient(global.Current.BTCAddress)
 	e := cmd.RunCommand(cli)
@@ -1280,16 +1284,17 @@ func ExtractSecretBTC(app interface{}, context FunctionValues, tx Transaction) (
 func ExtractSecretETH(app interface{}, context FunctionValues, tx Transaction) (bool, FunctionValues) {
 
 	se := GetSwapMessage(context[SWAPMESSAGE]).(SwapExchange)
-	contract := se.Contract.(*ethereum.HTLContract)
+	storeKey := se.SwapKeyHash
 
-	//var contract *ethereum.HTLContract
-	//tmp, err := serial.Deserialize(buffer, contract, serial.JSON)
-	//if err != nil {
-	//	log.Error("Failed deserialize ETH contract", "contract", buffer)
-	//}
-	//contract := buffer.(*ethereum.HTLContract)
+	buffer := FindContract(app, storeKey, int64(data.BITCOIN))
 
-	//todo: make it correct scr, by extract or from local storage
+	contract := &ethereum.HTLContract{}
+	contract.FromBytes(buffer)
+
+	si := FindSwap(app, storeKey)
+
+	chains := si.getChains()
+	context[NEXTCHAINNAME] = chains[0]
 
 	scr := contract.Extract()
 	if scr == nil {
