@@ -38,7 +38,7 @@ func register(app *Application, idName string, t *testing.T) {
 
 	log.Debug("Adding", "name", idName)
 
-	app.Identities.Add(identity)
+	app.Identities.Add(*identity)
 
 	for _, set := range chains {
 		//var key action.PublicKey

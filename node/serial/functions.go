@@ -134,9 +134,11 @@ func ExtendNode(action *Action, input interface{}) interface{} {
 // Remove any SerialWrappers
 func Contract(base interface{}) interface{} {
 
+	var typeEntry TypeEntry
+
 	if IsSerialWrapper(base) {
-		wrapper := base.(SerialWrapper)
-		typeEntry := GetTypeEntry(wrapper.Type, wrapper.Size)
+		wrapper := base.(*SerialWrapper)
+		typeEntry = GetTypeEntry(wrapper.Type, wrapper.Size)
 		if typeEntry.Category == PRIMITIVE {
 			return wrapper.Fields[""]
 		}
@@ -150,10 +152,18 @@ func Contract(base interface{}) interface{} {
 	result := Iterate(base, action, 1)
 
 	for _, value := range action.Processed["base"].Children {
+		result = value
+		break
 		return value
 	}
 
-	return result
+	if typeEntry.Category == SLICE || typeEntry.Category == ARRAY {
+		interim := reflect.New(typeEntry.RootType)
+		interim.Elem().Set(reflect.ValueOf(result))
+		result = interim.Interface()
+	}
+
+	return CleanValue(action, result)
 }
 
 // Replace any incoming SerialWrappers with the correct structure
@@ -211,20 +221,25 @@ func ContractNode(action *Action, input interface{}) interface{} {
 	return CleanValue(action, input)
 }
 
+// Convert from pointers back to their values, if necessary
 func CleanValue(action *Action, input interface{}) interface{} {
 	if input == nil {
 		return nil
 	}
 
+	// Return it directly if is already a value
 	if reflect.TypeOf(input).Kind() != reflect.Ptr {
 		return input
 	}
 
+	// Return it as a pointer, that's what we want
 	if action.IsPointer {
 		return input
 	}
 
+	// Remove the pointer
 	element := reflect.ValueOf(input).Elem().Interface()
+
 	return element
 }
 

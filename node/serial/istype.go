@@ -88,7 +88,7 @@ func UnderlyingType(input interface{}) reflect.Type {
 	case reflect.Array:
 		elementType := typeOf.Elem()
 		elementValue := reflect.New(elementType).Interface()
-		return reflect.ArrayOf(1, UnderlyingType(elementValue))
+		return reflect.ArrayOf(32, UnderlyingType(elementValue))
 	}
 
 	log.Warn("Not sure, so interface{} type")
