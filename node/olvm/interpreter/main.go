@@ -30,6 +30,15 @@ func commit(returnValue string, transaction string) {
 	c.Commit(returnValue, transaction)
 }
 
+func runAsService(m monitor.Monitor, x chan string, y chan string, status_ch chan monitor.Status) {
+	status_ch <- monitor.Status{"Not implemented", monitor.STATUS_ERROR}
+}
+
+func runAsCommand(monitor monitor.Monitor, x chan string, y chan string, status_ch chan monitor.Status, from string, address string, transaction string, olt int) {
+	go monitor.CheckStatus(status_ch)
+	go run(x, y, status_ch, from, address, transaction, olt)
+}
+
 func main() {
 	log.Println("starting OVM")
 
@@ -45,9 +54,10 @@ func main() {
 
 	running_mode := flag.String("mode", "command", "runing as command or service")
 
+
 	flag.Parse()
 
-	log.Printf("\nfrom:\t%s\naddress:\t%s\ntransaction:\t%s\ntype:\t%s\nvalue:\t%x\nmode\t\%s\n",
+	log.Printf("\nfrom:\t%s\naddress:\t%s\ntransaction:\t%s\ntype:\t%s\nvalue:\t%x\nmode\t%s\n",
 		*call_from,
 		*address,
 		*call_transaction,
@@ -82,8 +92,13 @@ func main() {
 
 	os.Create(monitor.GetPidFilePath())
 
-	go monitor.CheckStatus(status_ch)
-	go run(transaction_ch, returnValue_ch, status_ch, *call_from, *address, *call_transaction, *call_value)
+	if *running_mode == "service" {
+		go runAsService(monitor, transaction_ch, returnValue_ch, status_ch)
+	}else{
+		go runAsCommand(monitor, transaction_ch, returnValue_ch, status_ch, *call_from, *address, *call_transaction, *call_value)
+	}
+
+
 	ready := 0
 	var transaction string
 	var returnValue string
