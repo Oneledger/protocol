@@ -38,6 +38,9 @@ func HandleQuery(app Application, path string, message []byte) (buffer []byte) {
 	case "/signTransaction":
 		result = HandleSignTransaction(app, message)
 
+	case "/accountPublicKey":
+		result = HandleAccountPublicKeyQuery(app, message)
+
 	case "/accountKey":
 		result = HandleAccountKeyQuery(app, message)
 
@@ -123,6 +126,26 @@ func HandleSignTransaction(app Application, message []byte) interface{} {
 	signatures = append(signatures, action.TransactionSignature{signature})
 
 	return signatures
+}
+
+func HandleAccountPublicKeyQuery(app Application, message []byte) interface{} {
+	log.Debug("AccountPublicKeyQuery", "message", message)
+
+	account, accountStatus := app.Accounts.FindKey(message)
+
+	if accountStatus != status.SUCCESS {
+		log.Error("Could not find an account", "status", accountStatus)
+		return []byte{}
+	}
+
+	privateKey := account.PrivateKey()
+	publicKey := privateKey.PubKey()
+
+	if publicKey.Equals(account.PublicKey()) == false {
+		log.Warn("Public keys don't match", "derivedPublicKey", publicKey, "accountPublicKey", account.PublicKey())
+	}
+
+	return publicKey
 }
 
 // Get the account information for a given user
