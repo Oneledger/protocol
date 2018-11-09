@@ -24,6 +24,7 @@ func NewBalance(amount int64, currency string) Balance {
 	return Balance{Amount: NewCoin(amount, currency)}
 }
 
-func (balance Balance) AsString() string {
-	return fmt.Sprintf("%s %s", balance.Amount.AsString(), balance.Amount.Currency.Name)
+//String used in fmt and Dump
+func (balance Balance) String() string {
+	return fmt.Sprintf("%s %s", balance.Amount, balance.Amount.Currency.Name)
 }
