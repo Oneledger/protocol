@@ -79,7 +79,7 @@ func SignTransaction(transaction Transaction) SignedTransaction {
 
 // Pack a request into a transferable format (wire)
 func PackRequest(request SignedTransaction) []byte {
-	packet, err := serial.Serialize(request.Transaction, serial.CLIENT)
+	packet, err := serial.Serialize(request, serial.CLIENT)
 	if err != nil {
 		log.Error("Failed to Serialize packet: ", err)
 	}
