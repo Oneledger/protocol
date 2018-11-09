@@ -241,6 +241,10 @@ func (app Application) CheckTx(tx []byte) ResponseCheckTx {
 		return ResponseCheckTx{Code: err}
 	}
 
+	if action.ValidateSignature(signedTransaction) == false {
+		return ResponseCheckTx{Code: status.INVALID_SIGNATURE}
+	}
+
 	transaction := signedTransaction.Transaction
 
 	// Check that this is a valid transaction
@@ -350,6 +354,10 @@ func (app Application) DeliverTx(tx []byte) ResponseDeliverTx {
 	signedTransaction, err := action.Parse(action.Message(tx))
 	if err != 0 {
 		return ResponseDeliverTx{Code: err}
+	}
+
+	if action.ValidateSignature(signedTransaction) == false {
+		return ResponseDeliverTx{Code: status.INVALID_SIGNATURE}
 	}
 
 	transaction := signedTransaction.Transaction
