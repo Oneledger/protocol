@@ -258,8 +258,8 @@ func CreateSwapRequest(args *SwapArguments) []byte {
 	account := make(map[data.ChainType][]byte)
 	counterAccount := make(map[data.ChainType][]byte)
 
-	account[conv.GetChain(args.Currency)] = GetCurrencyAddress(conv.GetCurrency(args.Currency))
-	account[conv.GetChain(args.Excurrency)] = GetCurrencyAddress(conv.GetCurrency(args.Excurrency))
+	account[conv.GetChainFromCurrency(args.Currency)] = GetCurrencyAddress(conv.GetCurrency(args.Currency), args.Party)
+	account[conv.GetChainFromCurrency(args.Excurrency)] = GetCurrencyAddress(conv.GetCurrency(args.Excurrency), args.Party)
 	//log.Debug("accounts for swap", "accountbtc", account[data.BITCOIN], "accounteth", common.BytesToAddress([]byte(account[data.ETHEREUM])), "accountolt", account[data.ONELEDGER])
 	party := action.Party{Key: partyKey, Accounts: account}
 	counterParty := action.Party{Key: counterPartyKey, Accounts: counterAccount}
@@ -312,10 +312,10 @@ func CreateExSendRequest(args *ExSendArguments) []byte {
 	fee := conv.GetCoin(args.Fee, "OLT")
 	gas := conv.GetCoin(args.Gas, "OLT")
 	amount := conv.GetCoin(args.Amount, args.Currency)
-	chain := conv.GetChain(args.Chain)
+	chain := conv.GetChainFromCurrency(args.Chain)
 
-	sender := GetCurrencyAddress(conv.GetCurrency(args.Currency))
-	reciever := GetCurrencyAddress(conv.GetCurrency(args.Currency))
+	sender := GetCurrencyAddress(conv.GetCurrency(args.Currency), args.SenderId)
+	reciever := GetCurrencyAddress(conv.GetCurrency(args.Currency), args.ReceiverId)
 
 	exSend := &action.ExternalSend{
 		Base: action.Base{

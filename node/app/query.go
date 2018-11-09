@@ -223,20 +223,33 @@ func HandleCurrencyAddressQuery(app Application, message []byte) interface{} {
 	text := string(message)
 	conv := convert.NewConvert()
 	var chain data.ChainType
-	parts := strings.Split(text, "=")
-	if len(parts) > 1 {
-		chain = conv.GetChain(parts[1])
-	}
-
-	//todo: make it general
-	if chain == data.ONELEDGER {
-		account, e := app.Accounts.FindName(global.Current.NodeAccountName)
-		if e == status.SUCCESS {
-			return account.AccountKey()
+	var identity id.Identity
+	parts := strings.Split(text, "|")
+	if len(parts) == 2 {
+		currencyString := strings.Split(parts[0], "=")
+		if len(currencyString) > 1 {
+			chain = conv.GetChainFromCurrency(currencyString[1])
+		} else {
+			return nil
 		}
+
+		identityString := strings.Split(parts[1], "=")
+		if len(identityString) > 1 {
+			identity, ok := app.Identities.FindName(identityString[1])
+			if ok == status.SUCCESS {
+				if chain != data.ONELEDGER {
+					//todo : right now, the idenetity.Chain do not contain the address on the other chain
+					// need to fix register to remove this part
+					_ = identity
+					return ChainAddress(chain)
+				}
+
+			}
+		}
+
 	}
 
-	return ChainAddress(chain)
+	return identity.Chain[chain]
 }
 
 func ChainAddress(chain data.ChainType) interface{} {

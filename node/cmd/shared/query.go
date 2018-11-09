@@ -32,8 +32,8 @@ func GetAccountKey(identity string) []byte {
 	return result
 }
 
-func GetCurrencyAddress(currencyName string) []byte {
-	request := action.Message("currency=" + currencyName)
+func GetCurrencyAddress(currencyName string, id string) []byte {
+	request := action.Message("currency=" + currencyName + "|" + "id=" + id)
 	response := comm.Query("/currencyAddress", request)
 	if response == nil {
 		return nil
