@@ -7,11 +7,10 @@ package app
 
 import (
 	"bytes"
-	"math/big"
-	"strconv"
-
+	"encoding/hex"
 	"github.com/Oneledger/protocol/node/abci"
 	"github.com/Oneledger/protocol/node/action"
+	"github.com/Oneledger/protocol/node/comm"
 	"github.com/Oneledger/protocol/node/data"
 	"github.com/Oneledger/protocol/node/global"
 	"github.com/Oneledger/protocol/node/id"
@@ -20,6 +19,8 @@ import (
 	"github.com/Oneledger/protocol/node/status"
 	"github.com/tendermint/tendermint/abci/types"
 	"github.com/tendermint/tendermint/libs/common"
+	"math/big"
+	"strconv"
 )
 
 var ChainId string
@@ -115,16 +116,24 @@ func (app Application) SetupState(stateBytes []byte) {
 	//publicKey, privateKey := id.GenerateKeys([]byte(state.Account)) // TODO: switch with passphrase
 	publicKey, privateKey := id.NilPublicKey(), id.NilPrivateKey()
 
+	CreateAccount(app, state.Account, state.Amount, publicKey, privateKey)
+
+	publicKey, privateKey = id.OnePublicKey(), id.OnePrivateKey()
+	CreateAccount(app, "Payment", "0", publicKey, privateKey)
+}
+
+func CreateAccount(app Application, stateAccount string, stateAmount string, publicKey id.PublicKeyED25519, privateKey id.PrivateKeyED25519) {
+
 	// TODO: This should probably only occur on the Admin node, for other nodes how do I know the key?
 	// Register the identity and account first
-	RegisterLocally(&app, state.Account, "OneLedger", data.ONELEDGER, publicKey, privateKey)
-	account, ok := app.Accounts.FindName(state.Account + "-OneLedger")
+	RegisterLocally(&app, stateAccount, "OneLedger", data.ONELEDGER, publicKey, privateKey)
+	account, ok := app.Accounts.FindName(stateAccount + "-OneLedger")
 	if ok != status.SUCCESS {
-		log.Fatal("Recently Added Account is missing", "name", state.Account, "status", ok)
+		log.Fatal("Recently Added Account is missing", "name", stateAccount, "status", ok)
 	}
 
-	// Use the account key in the database.
-	balance := NewBalanceFromString(state.Amount, "OLT")
+	// Use the account key in the database
+	balance := NewBalanceFromString(stateAmount, "OLT")
 	app.Utxo.Set(account.AccountKey(), balance)
 
 	// TODO: Until a block is commited, this data is not persistent
@@ -252,7 +261,8 @@ var chainKey data.DatabaseKey = data.DatabaseKey("chainId")
 // BeginBlock is called when a new block is started
 func (app Application) BeginBlock(req RequestBeginBlock) ResponseBeginBlock {
 	//log.Debug("ABCI: BeginBlock", "req", req)
-	app.LastHeader = req.Header
+
+	app.MakePayment(req)
 
 	newChainId := action.Message(req.Header.ChainID)
 
@@ -273,6 +283,56 @@ func (app Application) BeginBlock(req RequestBeginBlock) ResponseBeginBlock {
 	return ResponseBeginBlock{
 		Tags: []common.KVPair(nil),
 	}
+}
+
+// EndBlock is called at the end of all of the transactions
+func (app Application) MakePayment(req RequestBeginBlock) {
+	account, err := app.Accounts.FindName("Payment-OneLedger")
+	if err != status.SUCCESS {
+		log.Fatal("ABCI: BeginBlock Fatal Status", "status", err)
+	}
+	balance := app.Utxo.Get(account.AccountKey())
+	if balance == nil {
+		interimBalance := data.NewBalance(0, "OLT")
+		balance = &interimBalance
+	}
+
+	if !balance.Amount.LessThanEqual(0) {
+		list := req.LastCommitInfo.GetValidators()
+		badValidators := req.ByzantineValidators
+
+		numberValidators := data.NewCoin(int64(len(list)), "OLT")
+		quotient := balance.Amount.Quotient(numberValidators)
+
+		var identities []id.Identity
+
+		if int(quotient.Amount.Int64()) > 0 {
+			for _, entry := range list {
+				entryIsBad := IsByzantine(entry.Validator, badValidators)
+				if !entryIsBad {
+					formatted := hex.EncodeToString(entry.Validator.Address)
+					identity := app.Identities.FindTendermint(formatted)
+					identities = append(identities, identity)
+				}
+			}
+
+			result := CreatePaymentRequest(app, identities, quotient)
+			if result != nil {
+				// TODO: check this later
+				comm.BroadcastAsync(result)
+			}
+		}
+	}
+
+}
+
+func IsByzantine(validator types.Validator, badValidators []types.Evidence) (result bool) {
+	for _, entry := range badValidators {
+		if bytes.Equal(validator.Address, entry.Validator.Address) {
+			return true
+		}
+	}
+	return false
 }
 
 // DeliverTx accepts a transaction and updates all relevant data

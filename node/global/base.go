@@ -30,6 +30,7 @@ type Context struct {
 
 	NodeName        string // Name of this instance
 	NodeAccountName string // TODO: Should be a list of accounts
+	NodePaymentName string
 	NodeIdentity    string
 	RootDir         string // Working directory for this instance
 
@@ -44,6 +45,10 @@ type Context struct {
 	SDKAddress int // SDK RPC port
 
 	Sequence int64 // replay protection
+
+	TendermintRoot    string
+	TendermintAddress string
+	TendermintPubKey  string
 }
 
 func init() {
@@ -63,6 +68,7 @@ func NewContext(name string) *Context {
 		SDKAddress:       6969,
 		NodeName:         name,
 		NodeAccountName:  "Zero-OneLedger",
+		NodePaymentName:  "Payment-OneLedger",
 		RootDir:          os.Getenv("OLDATA") + "/" + name + "/olfullnode",
 		Sequence:         101,
 	}

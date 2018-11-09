@@ -163,6 +163,14 @@ func (k PublicKeySECP256K1) Equals(key PublicKey) bool {
 	return bytes.Equal(k.Bytes(), key.Bytes())
 }
 
+func OnePublicKey() PublicKeyED25519 {
+	return PublicKeyED25519{1}
+}
+
+func OnePrivateKey() PrivateKeyED25519 {
+	return PrivateKeyED25519{1}
+}
+
 func (k PublicKeySECP256K1) Hex() string {
 	return hex.EncodeToString(k.Bytes())
 }

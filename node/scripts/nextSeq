@@ -6,6 +6,11 @@
 export CMD=$OLSCRIPT
 
 # Get the next seqeunce
+if [ ! -f $CMD/sequence ]
+then
+    echo "101" > $CMD/sequence
+fi
+
 VAL=`cat $CMD/sequence`
 
 # output it

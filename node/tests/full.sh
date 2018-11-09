@@ -12,6 +12,9 @@ $CMD/resetOneLedger
 
 # Add in or update users
 $TEST/register.sh
+
+sleep 10
+
 $TEST/send.sh
 $TEST/identity.sh
 $TEST/accounts.sh

@@ -7,14 +7,13 @@
 package shared
 
 import (
-	"os"
-
 	"github.com/Oneledger/protocol/node/action"
 	"github.com/Oneledger/protocol/node/app"
 	"github.com/Oneledger/protocol/node/convert"
 	"github.com/Oneledger/protocol/node/data"
 	"github.com/Oneledger/protocol/node/global"
 	"github.com/Oneledger/protocol/node/log"
+	"os"
 )
 
 // Prepare a transaction to be issued.
@@ -33,6 +32,8 @@ func CreateRegisterRequest(args *RegisterArguments) []byte {
 
 	accountKey := GetAccountKey(args.Identity)
 
+	app.LoadPrivValidatorFile()
+
 	reg := &action.Register{
 		Base: action.Base{
 			Type:     action.REGISTER,
@@ -40,9 +41,11 @@ func CreateRegisterRequest(args *RegisterArguments) []byte {
 			Signers:  signers,
 			Sequence: global.Current.Sequence,
 		},
-		Identity:   args.Identity,
-		NodeName:   global.Current.NodeName,
-		AccountKey: accountKey,
+		Identity:          args.Identity,
+		NodeName:          global.Current.NodeName,
+		AccountKey:        accountKey,
+		TendermintAddress: global.Current.TendermintAddress,
+		TendermintPubKey:  global.Current.TendermintPubKey,
 	}
 
 	return SignAndPack(action.REGISTER, action.Transaction(reg))
@@ -83,6 +86,7 @@ func CreateSendRequest(args *SendArguments) []byte {
 	// TODO: Can't convert identities to accounts, this way!
 	party := GetAccountKey(args.Party)
 	counterParty := GetAccountKey(args.CounterParty)
+	payment := GetAccountKey("Payment")
 	if party == nil || counterParty == nil {
 		log.Fatal("System doesn't reconize the parties", "args", args, "party", party, "counterParty", counterParty)
 		return nil
@@ -100,6 +104,8 @@ func CreateSendRequest(args *SendArguments) []byte {
 	// Build up the Inputs
 	partyBalance := GetBalance(party)
 	counterPartyBalance := GetBalance(counterParty)
+	paymentBalance := GetBalance(payment)
+
 	//log.Dump("Balances", partyBalance, counterPartyBalance)
 
 	if partyBalance == nil || counterPartyBalance == nil {
@@ -107,19 +113,21 @@ func CreateSendRequest(args *SendArguments) []byte {
 		return nil
 	}
 
+	fee := conv.GetCoin(args.Fee, args.Currency)
+	gas := conv.GetCoin(args.Gas, args.Currency)
+
 	inputs := make([]action.SendInput, 0)
 	inputs = append(inputs,
 		action.NewSendInput(party, *partyBalance),
-		action.NewSendInput(counterParty, *counterPartyBalance))
+		action.NewSendInput(counterParty, *counterPartyBalance),
+		action.NewSendInput(payment, *paymentBalance))
 
 	// Build up the outputs
 	outputs := make([]action.SendOutput, 0)
 	outputs = append(outputs,
-		action.NewSendOutput(party, partyBalance.Minus(amount)),
-		action.NewSendOutput(counterParty, counterPartyBalance.Plus(amount)))
-
-	fee := conv.GetCoin(args.Fee, args.Currency)
-	gas := conv.GetCoin(args.Gas, args.Currency)
+		action.NewSendOutput(party, partyBalance.Minus(amount).Minus(fee)),
+		action.NewSendOutput(counterParty, counterPartyBalance.Plus(amount)),
+		action.NewSendOutput(payment, paymentBalance.Plus(fee)))
 
 	if conv.HasErrors() {
 		Console.Error(conv.GetErrors())
