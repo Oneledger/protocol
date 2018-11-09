@@ -56,6 +56,15 @@ type Transaction interface {
 	Resolve(interface{}) Commands
 }
 
+type TransactionSignature struct {
+	Signature []byte
+}
+
+type SignedTransaction struct {
+	Transaction
+	Signatures []TransactionSignature
+}
+
 // Base Data for each type
 type Base struct {
 	Type    Type   `json:"type"`
@@ -72,4 +81,6 @@ type Base struct {
 
 func init() {
 	serial.Register(Base{})
+	serial.Register(TransactionSignature{})
+	serial.Register(SignedTransaction{})
 }
