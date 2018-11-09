@@ -262,38 +262,7 @@ var chainKey data.DatabaseKey = data.DatabaseKey("chainId")
 func (app Application) BeginBlock(req RequestBeginBlock) ResponseBeginBlock {
 	//log.Debug("ABCI: BeginBlock", "req", req)
 
-	account, err := app.Accounts.FindName("Payment-OneLedger")
-	if err != status.SUCCESS {
-		log.Fatal("ABCI: BeginBlock Fatal Status", "status", err)
-	}
-	balance := app.Utxo.Get(account.AccountKey())
-	if balance == nil {
-		interimBalance := data.NewBalance(0, "OLT")
-		balance = &interimBalance
-	}
-
-	if !balance.Amount.LessThanEqual(0) {
-		list := req.LastCommitInfo.GetValidators()
-
-		numberValidators := data.NewCoin(int64(len(list)), "OLT")
-		quotient := balance.Amount.Quotient(numberValidators)
-
-		var identities []id.Identity
-
-		if int(quotient.Amount.Int64()) > 0 {
-			for _, entry := range list {
-				formatted := hex.EncodeToString(entry.Validator.Address)
-				identity := app.Identities.FindTendermint(formatted)
-				identities = append(identities, identity)
-			}
-
-			result := CreatePaymentRequest(app, identities, quotient)
-			if result != nil {
-				// TODO: check this later
-				comm.BroadcastAsync(result)
-			}
-		}
-	}
+	app.MakePayment(req)
 
 	newChainId := action.Message(req.Header.ChainID)
 
@@ -314,6 +283,56 @@ func (app Application) BeginBlock(req RequestBeginBlock) ResponseBeginBlock {
 	return ResponseBeginBlock{
 		Tags: []common.KVPair(nil),
 	}
+}
+
+// EndBlock is called at the end of all of the transactions
+func (app Application) MakePayment(req RequestBeginBlock) {
+	account, err := app.Accounts.FindName("Payment-OneLedger")
+	if err != status.SUCCESS {
+		log.Fatal("ABCI: BeginBlock Fatal Status", "status", err)
+	}
+	balance := app.Utxo.Get(account.AccountKey())
+	if balance == nil {
+		interimBalance := data.NewBalance(0, "OLT")
+		balance = &interimBalance
+	}
+
+	if !balance.Amount.LessThanEqual(0) {
+		list := req.LastCommitInfo.GetValidators()
+		badValidators := req.ByzantineValidators
+
+		numberValidators := data.NewCoin(int64(len(list)), "OLT")
+		quotient := balance.Amount.Quotient(numberValidators)
+
+		var identities []id.Identity
+
+		if int(quotient.Amount.Int64()) > 0 {
+			for _, entry := range list {
+				entryIsBad := IsByzantine(entry.Validator, badValidators)
+				if !entryIsBad {
+					formatted := hex.EncodeToString(entry.Validator.Address)
+					identity := app.Identities.FindTendermint(formatted)
+					identities = append(identities, identity)
+				}
+			}
+
+			result := CreatePaymentRequest(app, identities, quotient)
+			if result != nil {
+				// TODO: check this later
+				comm.BroadcastAsync(result)
+			}
+		}
+	}
+
+}
+
+func IsByzantine(validator types.Validator, badValidators []types.Evidence) (result bool) {
+	for _, entry := range badValidators {
+		if bytes.Equal(validator.Address, entry.Validator.Address) {
+			return true
+		}
+	}
+	return false
 }
 
 // DeliverTx accepts a transaction and updates all relevant data
