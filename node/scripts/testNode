@@ -1,0 +1,30 @@
+#!/bin/bash
+
+export CMD=$OLSCRIPT
+
+
+if [ -z "$1" ]; then
+	name="David"
+else 
+	name=$1
+fi
+
+nodeName=`$CMD/lookup $name NodeName`
+export WORK=$OLDATA/$nodeName
+export LOG=$WORK
+export DATA=$WORK/tendermint
+
+#
+# Startup Tendermint consensus
+#
+pids=`pgrep -f "tendermint.*--home $DATA.*"`
+if [ -z "$pids" ]
+
+then
+	pids=`pgrep -f "olfullnode.*--node $nodeName.*"`
+	if [ -z "$pids" ]
+	then
+		exit 0
+	fi
+fi
+exit 1

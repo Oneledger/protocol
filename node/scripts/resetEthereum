@@ -1,0 +1,35 @@
+#!/bin/bash
+
+#
+# Reset Etheruem chain back to genesis
+#
+
+export CMD=$OLSCRIPT
+export LOG=$OLDATA
+export OLETH=$OLDATA/ethereum
+
+$CMD/stopEthereum
+
+echo "============================================================" >> $LOG/ethereum.log
+echo "Clean all ethereum data"
+
+rm -rf $OLDATA/ethereum/*
+
+mkdir -p $OLDATA/ethereum/A
+mkdir -p $OLDATA/ethereum/B
+mkdir -p $OLDATA/ethereum/C
+
+echo "Setup folder with genesis block"
+
+geth --datadir $OLDATA/ethereum/A init $OLSCRIPT/data/ethGenesis.json >> $LOG/ethereum.log 2>&1
+geth --datadir $OLDATA/ethereum/B init $OLSCRIPT/data/ethGenesis.json >> $LOG/ethereum.log 2>&1
+geth --datadir $OLDATA/ethereum/C init $OLSCRIPT/data/ethGenesis.json >> $LOG/ethereum.log 2>&1
+
+echo "Get pre-alloc account"
+# PASS for A: 1234
+# PASS for B: 2345
+# PASS for C: 3456
+cp $OLSCRIPT/data/UTC--2018-05-18T16-53-29.298287713Z--d7858005867c3449f6673a91f6e4f719f10e12e5 $OLDATA/ethereum/A/keystore
+cp $OLSCRIPT/data/UTC--2018-05-18T16-57-17.458488359Z--aafa2d8980a730b02195f9c8dfeafeb3e69a69ca $OLDATA/ethereum/B/keystore
+cp $OLSCRIPT/data/UTC--2018-05-18T18-16-56.182005528Z--8a309f95de0e47edb61de8fa0cf8bdd722271789 $OLDATA/ethereum/C/keystore
+

@@ -1,0 +1,11 @@
+#!/bin/bash
+
+#
+# One script to start em all.
+
+export CMD=$OLSCRIPT
+
+$CMD/stopOneLedger
+$CMD/stopEthereum
+$CMD/stopBitcoin
+

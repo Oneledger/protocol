@@ -1,0 +1,7 @@
+vendor
+.glide
+*.sw[op]
+.idea/
+scripts/sequence
+VOLUME/
+.DS_Store

@@ -1,0 +1,12 @@
+*.log
+temp
+*.old
+*.bk
+testFullnode
+testOlclient
+*.db
+sequence
+.vscode/
+test.out
+*.out
+.DS_Store

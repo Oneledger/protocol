@@ -1,0 +1,17 @@
+#!/bin/bash
+
+#
+# Startup a bunch of nodes to act as a full block chain instance
+#
+export CMD=$OLSCRIPT
+
+nodes="David Alice Bob Carol"
+
+for entry in $nodes
+do
+	$CMD/testNode $entry
+	if [ $? -eq 0 ]; then
+		$CMD/startNode $entry
+		sleep 3
+	fi
+done

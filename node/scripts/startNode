@@ -1,0 +1,85 @@
+#!/bin/bash
+
+export CMD=$OLSCRIPT
+
+
+if [ -z "$1" ]; then
+	name="David"
+else 
+	name=$1
+fi
+
+if [ "$2" = "register" ]; then
+	echo "Adding the Register Flag"
+	extra="--register $name"
+fi
+
+#echo "Starting $name"
+
+prefix="tcp://127.0.0.1:"
+nodeName=`$CMD/lookup $name NodeName`
+p2pAddress=`$CMD/lookup $name P2PAddress $prefix`
+rpcAddress=`$CMD/lookup $name RPCAddress $prefix`
+appAddress=`$CMD/lookup $name AppAddress $prefix`
+btcAddress=`$CMD/lookup $name BTCAddress "127.0.0.1:"`
+ethAddress=`$CMD/lookup $name ETHAddress `
+
+prefix="127.0.0.1:"
+key=`$CMD/getNodeId $nodeName`
+peers=`$CMD/lookup $name Peers $prefix $id`
+
+export WORK=$OLDATA/$nodeName
+export LOG=$WORK
+export DATA=$WORK/tendermint
+
+pushd $WORK > /dev/null
+
+#
+# Startup Tendermint consensus
+#
+pids=`pgrep -f "tendermint.*--home $DATA.*"`
+if [ -z "$pids" ]
+
+then
+	echo "============================================================" >> $LOG/tendermint.log
+	echo "Starting Tendermint" >> $LOG/tendermint.log
+	echo "============================================================" >> $LOG/tendermint.log
+
+	tendermint node --home $DATA \
+		--moniker $nodeName \
+		--rpc.laddr $rpcAddress \
+		--p2p.laddr $p2pAddress \
+		--proxy_app $appAddress \
+		--p2p.persistent_peers $peers \
+		>> $LOG/tendermint.log 2>&1 &
+
+	#echo "Tendermint $nodeName has been started"
+else
+	echo "Tendermint $nodeName was already running"
+fi
+
+#
+# Startup OLFullnode
+#
+pids=`pgrep -f "olfullnode.*--node $nodeName.*"`
+if [ -z "$pids" ]
+
+then
+	echo "============================================================" >> $LOG/olfullnode.log
+	echo "Starting OLFullnode" >> $LOG/olfullnode.log
+	echo "============================================================" >> $LOG/olfullnode.log
+	olfullnode node --node $nodeName \
+		--root $WORK/olfullnode \
+		--app $appAddress \
+		--address $rpcAddress \
+		--btcrpc $btcAddress \
+		--ethrpc $ethAddress \
+		$extra \
+		>> $LOG/olfullnode.log 2>&1 &
+
+	echo "$nodeName has been started"
+else
+	echo "OLFullnode $nodeName was already running"
+fi
+
+popd >> /dev/null
