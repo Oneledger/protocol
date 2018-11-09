@@ -38,6 +38,7 @@ func CreateRegisterRequest(args *RegisterArguments) []byte {
 		Base: action.Base{
 			Type:     action.REGISTER,
 			ChainId:  app.ChainId,
+			Owner:    accountKey,
 			Signers:  signers,
 			Sequence: global.Current.Sequence,
 		},
@@ -139,6 +140,7 @@ func CreateSendRequest(args *SendArguments) []byte {
 		Base: action.Base{
 			Type:     action.SEND,
 			ChainId:  app.ChainId,
+			Owner:    party,
 			Signers:  signers,
 			Sequence: global.Current.Sequence,
 		},
