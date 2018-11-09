@@ -30,9 +30,6 @@ func commit(returnValue string, transaction string) {
 	c.Commit(returnValue, transaction)
 }
 
-func runAsService(m monitor.Monitor, x chan string, y chan string, status_ch chan monitor.Status) {
-	status_ch <- monitor.Status{"Not implemented", monitor.STATUS_ERROR}
-}
 
 func runAsCommand(monitor monitor.Monitor, x chan string, y chan string, status_ch chan monitor.Status, from string, address string, transaction string, olt int) {
 	go monitor.CheckStatus(status_ch)
@@ -52,7 +49,6 @@ func main() {
 
 	call_value := flag.Int("value", 0, "number of OLT put on this call")
 
-	running_mode := flag.String("mode", "command", "runing as command or service")
 
 
 	flag.Parse()
@@ -62,8 +58,7 @@ func main() {
 		*address,
 		*call_transaction,
 		*call_method_type,
-		*call_value,
-		*running_mode)
+		*call_value)
 
 	transaction_ch := make(chan string)
 	returnValue_ch := make(chan string)
@@ -92,11 +87,7 @@ func main() {
 
 	os.Create(monitor.GetPidFilePath())
 
-	if *running_mode == "service" {
-		go runAsService(monitor, transaction_ch, returnValue_ch, status_ch)
-	}else{
-		go runAsCommand(monitor, transaction_ch, returnValue_ch, status_ch, *call_from, *address, *call_transaction, *call_value)
-	}
+	go runAsCommand(monitor, transaction_ch, returnValue_ch, status_ch, *call_from, *address, *call_transaction, *call_value)
 
 
 	ready := 0
