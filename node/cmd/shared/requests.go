@@ -238,7 +238,6 @@ type SwapArguments struct {
 
 // Create a swap request
 func CreateSwapRequest(args *SwapArguments) []byte {
-	log.Debug("swap args", "args", args)
 
 	conv := convert.NewConvert()
 
@@ -259,8 +258,8 @@ func CreateSwapRequest(args *SwapArguments) []byte {
 	account := make(map[data.ChainType][]byte)
 	counterAccount := make(map[data.ChainType][]byte)
 
-	account[conv.GetChain(args.Currency)] = GetSwapAddress(conv.GetCurrency(args.Currency))
-	account[conv.GetChain(args.Excurrency)] = GetSwapAddress(conv.GetCurrency(args.Excurrency))
+	account[conv.GetChain(args.Currency)] = GetCurrencyAddress(conv.GetCurrency(args.Currency))
+	account[conv.GetChain(args.Excurrency)] = GetCurrencyAddress(conv.GetCurrency(args.Excurrency))
 	//log.Debug("accounts for swap", "accountbtc", account[data.BITCOIN], "accounteth", common.BytesToAddress([]byte(account[data.ETHEREUM])), "accountolt", account[data.ONELEDGER])
 	party := action.Party{Key: partyKey, Accounts: account}
 	counterParty := action.Party{Key: counterPartyKey, Accounts: counterAccount}
@@ -288,4 +287,52 @@ func CreateSwapRequest(args *SwapArguments) []byte {
 	}
 
 	return SignAndPack(action.SWAP, action.Transaction(swap))
+}
+
+type ExSendArguments struct {
+	SenderId        string
+	ReceiverId      string
+	SenderAddress   string
+	ReceiverAddress string
+	Currency        string
+	Amount          string
+	Gas             string
+	Fee             string
+	Chain           string
+	ExGas           string
+	ExFee           string
+}
+
+func CreateExSendRequest(args *ExSendArguments) []byte {
+	conv := convert.NewConvert()
+	signers := GetSigners()
+	partyKey := GetAccountKey(args.SenderId)
+	cpartyKey := GetAccountKey(args.ReceiverId)
+
+	fee := conv.GetCoin(args.Fee, "OLT")
+	gas := conv.GetCoin(args.Gas, "OLT")
+	amount := conv.GetCoin(args.Amount, args.Currency)
+	chain := conv.GetChain(args.Chain)
+
+	sender := GetCurrencyAddress(conv.GetCurrency(args.Currency))
+	reciever := GetCurrencyAddress(conv.GetCurrency(args.Currency))
+
+	exSend := &action.ExternalSend{
+		Base: action.Base{
+			Type:     action.EXTERNAL_SEND,
+			ChainId:  app.ChainId,
+			Signers:  signers,
+			Owner:    partyKey,
+			Target:   cpartyKey,
+			Sequence: global.Current.Sequence,
+		},
+		Gas:      gas,
+		Fee:      fee,
+		Chain:    chain,
+		Sender:   string(sender),
+		Receiver: string(reciever),
+		Amount:   amount,
+	}
+
+	return SignAndPack(action.EXTERNAL_SEND, exSend)
 }

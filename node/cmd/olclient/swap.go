@@ -38,7 +38,7 @@ func init() {
 
 // IssueRequest sends out a sendTx to all of the nodes in the chain
 func SwapCurrency(cmd *cobra.Command, args []string) {
-	log.Debug("Swap Request", "tx", swapargs)
+	log.Debug("Swap Request", "swapargs", swapargs)
 
 	// Create message
 	packet := shared.CreateSwapRequest(swapargs)

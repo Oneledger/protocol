@@ -49,8 +49,8 @@ func HandleQuery(app Application, path string, message []byte) (buffer []byte) {
 	case "/version":
 		result = HandleVersionQuery(app, message)
 
-	case "/swapAddress":
-		result = HandleSwapAddressQuery(app, message)
+	case "/currencyAddress":
+		result = HandleCurrencyAddressQuery(app, message)
 
 	default:
 		result = HandleError("Unknown Query", path, message)
@@ -217,8 +217,8 @@ func Balance(app Application, accountKey []byte) interface{} {
 	return "No Balance"
 }
 
-func HandleSwapAddressQuery(app Application, message []byte) interface{} {
-	log.Debug("SwapAddressQuery", "message", message)
+func HandleCurrencyAddressQuery(app Application, message []byte) interface{} {
+	log.Debug("CurrencyAddressQuery", "message", message)
 
 	text := string(message)
 	conv := convert.NewConvert()
@@ -236,11 +236,11 @@ func HandleSwapAddressQuery(app Application, message []byte) interface{} {
 		}
 	}
 
-	return SwapAddress(chain)
+	return ChainAddress(chain)
 }
 
-func SwapAddress(chain data.ChainType) interface{} {
-	return common.GetSwapAddress(chain)
+func ChainAddress(chain data.ChainType) interface{} {
+	return common.GetChainAddress(chain)
 }
 
 // Return a nicely formatted error message

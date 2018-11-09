@@ -32,9 +32,9 @@ func GetAccountKey(identity string) []byte {
 	return result
 }
 
-func GetSwapAddress(currencyName string) []byte {
+func GetCurrencyAddress(currencyName string) []byte {
 	request := action.Message("currency=" + currencyName)
-	response := comm.Query("/swapAddress", request)
+	response := comm.Query("/currencyAddress", request)
 	if response == nil {
 		return nil
 	}
