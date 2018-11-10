@@ -60,7 +60,6 @@ func (s SDKServer) Register(ctx context.Context, request *pb.RegisterRequest) (*
 	}
 
 	packet := action.SignAndPack(
-		action.REGISTER,
 		action.CreateRegisterRequest(
 			name,
 			chain.String(),
@@ -135,7 +134,7 @@ func (s SDKServer) Send(ctx context.Context, request *pb.SendRequest) (*pb.SendR
 		return &pb.SendReply{Ok: false, Reason: errr.Error()}, nil
 	}
 
-	packet := action.SignAndPack(action.SEND, send)
+	packet := action.SignAndPack(send)
 
 	// TODO: Include ResultBroadcastTxCommit in SendReply
 	comm.Broadcast(packet)
