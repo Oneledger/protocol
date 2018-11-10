@@ -6,7 +6,6 @@ import (
 
 	"github.com/Oneledger/protocol/node/action"
 	"github.com/Oneledger/protocol/node/data"
-	"github.com/Oneledger/protocol/node/global"
 	"github.com/Oneledger/protocol/node/id"
 	"github.com/Oneledger/protocol/node/log"
 	"github.com/Oneledger/protocol/node/serial"
@@ -14,8 +13,8 @@ import (
 )
 
 func TestAccounts(t *testing.T) {
-	global.Current.RootDir = "./"
 	accounts := id.NewAccounts("MyAccounts")
+	defer accounts.Close()
 
 	priv1, pub1 := id.GenerateKeys([]byte("testAccount1 password"))
 	priv2, pub2 := id.GenerateKeys([]byte("testAccount1 password"))
@@ -53,12 +52,15 @@ func TestSwap(t *testing.T) {
 	}
 
 	swap = &action.Swap{
-		Party:        party,
-		CounterParty: party,
-		Amount:       coin,
-		Exchange:     coin,
-		Fee:          coin,
-		Gas:          coin,
+		Base: nil,
+		SwapMessage: action.SwapInit{
+			Party:        party,
+			CounterParty: party,
+			Amount:       coin,
+			Exchange:     coin,
+			Fee:          coin,
+			Gas:          coin,
+		},
 	}
 
 	// Serialize the go data structure

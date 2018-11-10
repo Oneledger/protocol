@@ -7,13 +7,15 @@ package app
 
 import (
 	"encoding/hex"
+	"github.com/Oneledger/protocol/node/chains/common"
 	"strings"
 
-	"github.com/Oneledger/protocol/node/chains/common"
 	"github.com/Oneledger/protocol/node/convert"
 	"github.com/Oneledger/protocol/node/data"
-	"github.com/Oneledger/protocol/node/err"
+
 	"github.com/Oneledger/protocol/node/global"
+	"github.com/Oneledger/protocol/node/status"
+
 	"github.com/Oneledger/protocol/node/id"
 	"github.com/Oneledger/protocol/node/log"
 	"github.com/Oneledger/protocol/node/serial"
@@ -81,15 +83,15 @@ func HandleAccountKeyQuery(app Application, message []byte) interface{} {
 }
 
 func AccountKey(app Application, name string) interface{} {
-	identity, status := app.Identities.FindName(name)
+	identity, ok := app.Identities.FindName(name)
 
-	if status == err.SUCCESS && identity.Name != "" {
+	if ok == status.SUCCESS && identity.Name != "" {
 		return identity.AccountKey
 	}
 
 	// Maybe this is an AccountName, not an identity
-	account, status := app.Accounts.FindName(name)
-	if status == err.SUCCESS && identity.Name != "" {
+	account, ok := app.Accounts.FindName(name)
+	if ok == status.SUCCESS && identity.Name != "" {
 		return account.AccountKey()
 	}
 
@@ -116,8 +118,8 @@ func IdentityInfo(app Application, name string) interface{} {
 		return identities
 	}
 
-	identity, status := app.Identities.FindName(name)
-	if status == err.SUCCESS {
+	identity, ok := app.Identities.FindName(name)
+	if ok == status.SUCCESS {
 		return []id.Identity{identity}
 	}
 
@@ -145,8 +147,8 @@ func AccountInfo(app Application, name string) interface{} {
 		return accounts
 	}
 
-	account, status := app.Accounts.FindName(name)
-	if status == err.SUCCESS {
+	account, ok := app.Accounts.FindName(name)
+	if ok == status.SUCCESS {
 		return account
 	}
 
@@ -170,7 +172,6 @@ func UtxoInfo(app Application, name string) interface{} {
 	if name == "" {
 		entries := app.Utxo.FindAll()
 		return entries
-
 	}
 	value := app.Utxo.Get(data.DatabaseKey(name))
 	return value
@@ -213,7 +214,8 @@ func Balance(app Application, accountKey []byte) interface{} {
 	if balance != nil {
 		return balance
 	}
-	return "No Balance"
+	result := data.NewBalance(0, "OLT")
+	return &result
 }
 
 func HandleSwapAddressQuery(app Application, message []byte) interface{} {
@@ -229,8 +231,8 @@ func HandleSwapAddressQuery(app Application, message []byte) interface{} {
 
 	//todo: make it general
 	if chain == data.ONELEDGER {
-		account, status := app.Accounts.FindName(global.Current.NodeAccountName)
-		if status == err.SUCCESS {
+		account, e := app.Accounts.FindName(global.Current.NodeAccountName)
+		if e == status.SUCCESS {
 			return account.AccountKey()
 		}
 	}

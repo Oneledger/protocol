@@ -325,7 +325,7 @@ func buildRefund(b *rpc.Bitcoind, contract []byte, contractTx *wire.MsgTx, feePe
 	log.Debug("About to Extract", "contract", hex.EncodeToString(contract))
 	pushes, err := txscript.ExtractAtomicSwapDataPushes(0, contract)
 	if err != nil {
-		log.Fatal("ExtractAtomicSwapDataPushes", "err", err)
+		log.Fatal("ExtractAtomicSwapDataPushes", "status", err)
 	}
 	if pushes == nil {
 		log.Warn("Not a swap contract")
@@ -437,9 +437,9 @@ func copyTxOut(from []*wire.TxOut) []*wire.TxOut {
 func (cmd *InitiateCmd) RunCommand(c *rpc.Bitcoind) (*chainhash.Hash, error) {
 	log.Debug("About to Initiate")
 	//var Secret [secretSize]byte
-	//_, err := rand.Read(Secret[:])
-	//if err != nil {
-	//	return nil, err
+	//_, status := rand.Read(Secret[:])
+	//if status != nil {
+	//	return nil, status
 	//}
 	secretHash := cmd.scrHash[:]
 
@@ -565,7 +565,7 @@ func (cmd *RedeemCmd) RunCommand(c *rpc.Bitcoind) (*chainhash.Hash, error) {
 	}
 	redeemSigScript, err := redeemP2SHContract(cmd.contract, redeemSig, redeemPubKey, cmd.secret)
 	if err != nil {
-		log.Debug("redeem", "err", err)
+		log.Debug("redeem", "status", err)
 		return nil, err
 	}
 	redeemTx.TxIn[0].SignatureScript = redeemSigScript
@@ -587,12 +587,12 @@ func (cmd *RedeemCmd) RunCommand(c *rpc.Bitcoind) (*chainhash.Hash, error) {
 			redeemTx, 0, txscript.StandardVerifyFlags, txscript.NewSigCache(10),
 			txscript.NewTxSigHashes(redeemTx), cmd.contractTx.TxOut[contractOut].Value)
 		if err != nil {
-			log.Debug("NewEngine", "err", err)
+			log.Debug("NewEngine", "status", err)
 			panic(err)
 		}
 		err = e.Execute()
 		if err != nil {
-			log.Debug("Execute", "err", err)
+			log.Debug("Execute", "status", err)
 			panic(err)
 		}
 	}

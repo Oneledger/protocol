@@ -10,6 +10,9 @@ addrAlice=`$CMD/lookup Alice RPCAddress tcp://127.0.0.1:`
 addrBob=`$CMD/lookup Bob RPCAddress tcp://127.0.0.1:`
 
 echo "================== Test Swap between BTC & ETH ==================="
+$CMD/showBalance Alice
+sleep 1
+$CMD/showBalance Bob
 
 # Put some money in the user accounts
 SEQ=`$CMD/nextSeq`

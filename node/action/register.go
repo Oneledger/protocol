@@ -6,50 +6,57 @@
 package action
 
 import (
-	"github.com/Oneledger/protocol/node/err"
-	"github.com/Oneledger/protocol/node/global"
 	"github.com/Oneledger/protocol/node/id"
 	"github.com/Oneledger/protocol/node/log"
 	"github.com/Oneledger/protocol/node/serial"
+	"github.com/Oneledger/protocol/node/status"
 )
 
 // Register an identity with the chain
 type Register struct {
 	Base
 
-	Identity   string
-	NodeName   string
-	AccountKey id.AccountKey
+	Identity          string
+	NodeName          string
+	AccountKey        id.AccountKey
+	TendermintAddress string
+	TendermintPubKey  string
 }
 
 func init() {
 	serial.Register(Register{})
 }
 
+func (transaction *Register) TransactionType() Type {
+	return transaction.Base.Type
+}
+
 // Check the fields to make sure they have valid values.
-func (transaction Register) Validate() err.Code {
+func (transaction Register) Validate() status.Code {
 	log.Debug("Validating Register Transaction")
 
 	if transaction.Identity == "" {
-		return err.MISSING_DATA
+		log.Warn("Missing Identity from Registration", "identity", transaction.Identity)
+		return status.MISSING_DATA
 	}
 
 	if transaction.NodeName == "" {
-		return err.MISSING_DATA
+		log.Warn("Missing NodeName from Registration", "nodeName", transaction.NodeName)
+		return status.MISSING_DATA
 	}
 
-	return err.SUCCESS
+	return status.SUCCESS
 }
 
 // Test to see if the identity already exists
-func (transaction Register) ProcessCheck(app interface{}) err.Code {
+func (transaction Register) ProcessCheck(app interface{}) status.Code {
 	log.Debug("Processing Register Transaction for CheckTx")
 
 	identities := GetIdentities(app)
-	id, status := identities.FindName(transaction.Identity)
+	id, ok := identities.FindName(transaction.Identity)
 
-	if status != err.SUCCESS {
-		return status
+	if ok != status.SUCCESS {
+		return ok
 	}
 
 	/*
@@ -61,7 +68,7 @@ func (transaction Register) ProcessCheck(app interface{}) err.Code {
 
 	// Not necessarily a failure, since this identity might be local
 	log.Debug("Identity already exists", "id", id)
-	return err.SUCCESS
+	return status.SUCCESS
 }
 
 func (transaction Register) ShouldProcess(app interface{}) bool {
@@ -69,34 +76,44 @@ func (transaction Register) ShouldProcess(app interface{}) bool {
 }
 
 // Add the identity into the database as external, don't overwrite a local identity
-func (transaction Register) ProcessDeliver(app interface{}) err.Code {
+func (transaction Register) ProcessDeliver(app interface{}) status.Code {
 	log.Debug("Processing Register Transaction for DeliverTx")
 
 	identities := GetIdentities(app)
-	entry, status := identities.FindName(transaction.Identity)
+	entry, ok := identities.FindName(transaction.Identity)
 
-	if status != err.SUCCESS && status != err.MISSING_DATA {
-		return status
+	if ok != status.SUCCESS && ok != status.MISSING_DATA {
+		log.Warn("Can't process Registration", "ok", ok)
+		return ok
 	}
 
 	if entry.Name != "" {
 		log.Debug("Ignoring Existing Identity", "identity", transaction.Identity)
 	} else {
 		identity := id.NewIdentity(transaction.Identity, "Contact Information",
-			true, global.Current.NodeName, transaction.AccountKey)
+			true, transaction.NodeName, transaction.AccountKey, transaction.TendermintAddress, transaction.TendermintPubKey)
 
 		identities.Add(*identity)
 		log.Info("Updated External Identity", "id", transaction.Identity, "key", transaction.AccountKey)
 	}
 
-	return err.SUCCESS
+	return status.SUCCESS
 }
 
-func (transaction Register) Resolve(app interface{}, commands Commands) {
-}
-
-// Given a transaction, expand it into a list of Commands to execute against various chains.
-func (transaction Register) Expand(app interface{}) Commands {
-	// TODO: Table-driven mechanics, probably elsewhere
+func (transaction *Register) Resolve(app interface{}) Commands {
 	return []Command{}
+}
+
+func CreateRegisterRequest(identity string, chainId string, sequence int64, nodeName string, signers []PublicKey, accountKey id.AccountKey) *Register {
+	return &Register{
+		Base: Base{
+			Type:     REGISTER,
+			ChainId:  chainId,
+			Signers:  signers,
+			Sequence: sequence,
+		},
+		Identity:   identity,
+		NodeName:   nodeName,
+		AccountKey: accountKey,
+	}
 }

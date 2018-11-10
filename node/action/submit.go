@@ -4,13 +4,12 @@
 package action
 
 import (
-	"bytes"
 	"time"
 
 	"github.com/Oneledger/protocol/node/comm"
 	"github.com/Oneledger/protocol/node/log"
+
 	"github.com/Oneledger/protocol/node/serial"
-	wire "github.com/tendermint/go-wire"
 )
 
 // Execute a transaction after a specific delay.
@@ -19,12 +18,12 @@ import (
 func DelayedTransaction(ttype Type, transaction Transaction, waitTime time.Duration) {
 	go func(ttype Type, transaction Transaction) {
 		time.Sleep(waitTime)
-		BroadcastTransaction(ttype, transaction)
+		BroadcastTransaction(ttype, transaction, false)
 	}(ttype, transaction)
 }
 
 // Send out the transaction as an async broadcast
-func BroadcastTransaction(ttype Type, transaction Transaction) {
+func BroadcastTransaction(ttype Type, transaction Transaction, sync bool) {
 	log.Debug("Broadcast a transaction to the chain")
 
 	// Don't let the death of a client stop the node from running
@@ -34,15 +33,21 @@ func BroadcastTransaction(ttype Type, transaction Transaction) {
 		}
 	}()
 
-	packet := SignAndPack(ttype, transaction)
-	result := comm.Broadcast(packet)
+	packet := SignAndPack(transaction)
+	// todo : fix the broadcast result handling
+	var result interface{}
+	if sync {
+		result = comm.Broadcast(packet)
+	} else {
+		result = comm.BroadcastAsync(packet)
+	}
 
 	log.Debug("Submitted Successfully", "result", result)
 }
 
-func SignAndPack(ttype Type, transaction Transaction) []byte {
+func SignAndPack(transaction Transaction) []byte {
 	signed := SignTransaction(transaction)
-	packet := PackRequest(ttype, signed)
+	packet := PackRequest(signed)
 
 	return packet
 }
@@ -53,23 +58,10 @@ func SignTransaction(transaction Transaction) Transaction {
 }
 
 // Pack a request into a transferable format (wire)
-func PackRequest(ttype Type, request Transaction) []byte {
-	var base int32
-
-	// Stick a 32 bit integer in front, so that we can identify the struct for deserialization
-	buff := new(bytes.Buffer)
-	base = int32(ttype)
-	err := wire.EncodeInt32(buff, base)
-	if err != nil {
-		log.Error("Failed to EncodeInt32 during PackRequest", "err", err)
-	}
-	bytes := buff.Bytes()
-
+func PackRequest(request Transaction) []byte {
 	packet, err := serial.Serialize(request, serial.CLIENT)
 	if err != nil {
 		log.Error("Failed to Serialize packet: ", err)
-	} else {
-		packet = append(bytes, packet...)
 	}
 
 	return packet

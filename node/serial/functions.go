@@ -136,11 +136,14 @@ func Contract(base interface{}) interface{} {
 
 	var typeEntry TypeEntry
 
-	if IsSerialWrapper(base) {
-		wrapper := base.(*SerialWrapper)
+	underlying := GetBaseValue(base).Interface()
+	if IsSerialWrapper(underlying) || IsSerialWrapperMap(underlying) {
+		wrapper := underlying.(SerialWrapper)
 		typeEntry = GetTypeEntry(wrapper.Type, wrapper.Size)
 		if typeEntry.Category == PRIMITIVE {
-			return wrapper.Fields[""]
+			log.Debug("Found Primitive Top-Level Type")
+			value := wrapper.Fields[""]
+			return ConvertValue(value, typeEntry.DataType).Interface()
 		}
 	}
 

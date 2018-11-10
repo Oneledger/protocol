@@ -78,7 +78,7 @@ func unconvertData(data []byte) interface{} {
 	}
 
 	var proto interface{}
-	result, err := serial.Deserialize(data, proto, serial.PERSISTENT)
+	result, err := serial.DumpDeserialize(data, proto, serial.PERSISTENT)
 	if err != nil {
 		log.Fatal("Persistent Deserialization Failed", "err", err, "data", data)
 	}
@@ -207,7 +207,7 @@ func (session KeyValueSession) FindAll() []DatabaseKey {
 
 // Store inserts or updates a value under a key
 func (session KeyValueSession) Set(key DatabaseKey, value interface{}) bool {
-	log.Debug("Datastore Store", "key", key, "value", value)
+	log.Debug("KV Set", "key", key, "value", value)
 
 	buffer := convertData(value)
 	session.store.tree.Set(key, buffer)

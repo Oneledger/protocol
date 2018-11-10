@@ -80,12 +80,14 @@ func concat(strs ...string) string {
 	return sb.String()
 }
 
+// Strip off the depth
 func GetFieldName(name string) string {
 	array := strings.Split(name, "-")
 	result := concat(array[0 : len(array)-1]...)
 	return result
 }
 
+// Slice and Array names are currently strings (associative arrays)
 func GetFieldIndex(name string) int {
 	array := strings.Split(name, "-")
 	interim := concat(array[0 : len(array)-1]...)
@@ -186,19 +188,6 @@ func SetMap(parent interface{}, fieldName string, child interface{}) bool {
 	fieldType := GetBaseType(parent).Elem()
 	newValue := ConvertValue(child, fieldType)
 
-	if element.Len() < 1 {
-		// TODO: Need to figure out a reasonable size here...
-		log.Fatal("Reallocating Map", "type", element.Type().String())
-
-		/*
-			entry := GetTypeEntry(element.Type().String(), 100)
-			revised := reflect.MakeMapWithSize(entry.RootType, 100)
-			value := reflect.New(revised.Type())
-			value.Elem().Set(element)
-			element = value.Elem()
-		*/
-	}
-
 	if element.Type().Kind() == reflect.Interface {
 		element.SetMapIndex(newKey, newValue)
 	} else {
@@ -220,13 +209,6 @@ func SetSlice(parent interface{}, index int, child interface{}) bool {
 
 	if !CheckValue(element) {
 		return false
-	}
-
-	if element.Len() < index {
-		log.Fatal("Reallocating Slice")
-		/*
-			element = reflect.MakeSlice(element.Index(0).Type(), index+1, index+1)
-		*/
 	}
 
 	if element.Index(index).Type().Kind() == reflect.Interface {
@@ -255,10 +237,6 @@ func SetArray(parent interface{}, index int, child interface{}) bool {
 
 	if !CheckValue(element) {
 		return false
-	}
-
-	if element.Len() < index {
-		log.Fatal("Reallocating Array")
 	}
 
 	cell := element.Index(index)

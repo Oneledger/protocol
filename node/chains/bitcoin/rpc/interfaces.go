@@ -459,12 +459,12 @@ func (b *Bitcoind) FundRawTransaction(tx *wire.MsgTx, feePerKb btcutil.Amount) (
 	}
 
 	if err != nil {
-		log.Debug("Failed to Fund", "feePerKb", feePerKb, "params", params, "err", err, "rawResp", rawResp)
+		log.Debug("Failed to Fund", "feePerKb", feePerKb, "params", params, "status", err, "rawResp", rawResp)
 		resp.Hex = hex.EncodeToString(buf.Bytes())
 		resp.Fee = 0.00001
 		resp.ChangePos = -1
 
-		//return nil, 0, err
+		//return nil, 0, status
 	} else {
 		err = json.Unmarshal(rawResp.Result, &resp)
 		if err != nil {
