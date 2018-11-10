@@ -65,12 +65,14 @@ func NewContext(name string) *Context {
 	return &Context{
 		Debug:            debug,
 		DisablePasswords: true,
-		SDKAddress:       6969,
-		NodeName:         name,
-		NodeAccountName:  "",
-		NodePaymentName:  "Payment-OneLedger",
-		RootDir:          os.Getenv("OLDATA") + "/" + name + "/olfullnode",
-		Sequence:         101,
+
+		SDKAddress:      6969,
+		NodeName:        name,
+		NodeAccountName: "",
+		NodePaymentName: "Payment-OneLedger",
+		RootDir:         os.Getenv("OLDATA") + "/" + name + "/olfullnode",
+
+		Sequence: 101,
 	}
 }
 
