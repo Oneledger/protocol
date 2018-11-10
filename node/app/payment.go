@@ -73,8 +73,5 @@ func CreatePaymentRequest(app Application, identities []id.Identity, quotient da
 		Gas:     data.NewCoin(0, "OLT"),
 	}
 
-	signed := action.SignTransaction(send)
-	packet := action.PackRequest(action.SEND, signed)
-
-	return packet
+	return action.SignAndPack(send)
 }

@@ -90,6 +90,11 @@ func Matches(account Account, name string, chain data.ChainType) bool {
 
 func (acc *Accounts) FindKey(key AccountKey) (Account, status.Code) {
 	interim := acc.store.Get(key)
+
+	if interim == nil {
+		return nil, status.MISSING_DATA
+	}
+
 	result := interim.(Account)
 	return result.(Account), status.SUCCESS
 
