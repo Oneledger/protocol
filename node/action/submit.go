@@ -53,13 +53,33 @@ func SignAndPack(transaction Transaction) []byte {
 }
 
 // SignTransaction with the local keys
-func SignTransaction(transaction Transaction) Transaction {
-	return transaction
+func SignTransaction(transaction Transaction) SignedTransaction {
+	packet, err := serial.Serialize(transaction, serial.CLIENT)
+
+	signed := SignedTransaction{transaction, nil}
+
+	if err != nil {
+		log.Error("Failed to Serialize packet: ", "error", err)
+	} else {
+		request := Message(packet)
+
+		response := comm.Query("/signTransaction", request)
+
+		if response == nil {
+			log.Warn("Query returned no signature", "request", request)
+		} else {
+			signed.Signatures = response.([]TransactionSignature)
+		}
+	}
+
+	log.Debug("Transaction signature", "signature", signed.Signatures)
+
+	return signed
 }
 
 // Pack a request into a transferable format (wire)
-func PackRequest(request Transaction) []byte {
-	packet, err := serial.Serialize(request, serial.CLIENT)
+func PackRequest(request SignedTransaction) []byte {
+	packet, err := serial.Serialize(request.Transaction, serial.CLIENT)
 	if err != nil {
 		log.Error("Failed to Serialize packet: ", err)
 	}
