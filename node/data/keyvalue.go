@@ -78,7 +78,7 @@ func unconvertData(data []byte) interface{} {
 	}
 
 	var proto interface{}
-	result, err := serial.DumpDeserialize(data, proto, serial.PERSISTENT)
+	result, err := serial.Deserialize(data, proto, serial.PERSISTENT)
 	if err != nil {
 		log.Fatal("Persistent Deserialization Failed", "err", err, "data", data)
 	}
