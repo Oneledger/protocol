@@ -4,6 +4,7 @@ import (
 	"github.com/Oneledger/protocol/node/global"
 	"github.com/Oneledger/protocol/node/log"
 	client "github.com/tendermint/tendermint/abci/client"
+	"github.com/tendermint/tendermint/abci/types"
 )
 
 // TODO: Why?
@@ -27,20 +28,14 @@ func NewAppClient() client.Client {
 func SetOption(key string, value string) {
 	log.Debug("Setting Option")
 
-	//client := NewAppClient()
-	/*
-		options := types.RequestSetOption{
-			Key:   key,
-			Value: value,
-		}
-	*/
+	client := NewAppClient()
+	options := types.RequestSetOption{
+		Key:   key,
+		Value: value,
+	}
 
-	//response, err := client.SetOptionSync(options)
-	log.Debug("Have Set Option")
-
-	/*
-		if err != nil {
-			log.Error("SetOption Failed", "err", err, "response", response)
-		}
-	*/
+	response, err := client.SetOptionSync(options)
+	if err != nil {
+		log.Error("SetOption Failed", "err", err, "response", response)
+	}
 }
