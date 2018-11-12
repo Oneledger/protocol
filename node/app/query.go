@@ -214,7 +214,8 @@ func Balance(app Application, accountKey []byte) interface{} {
 	if balance != nil {
 		return balance
 	}
-	return "No Balance"
+	result := data.NewBalance(0, "OLT")
+	return &result
 }
 
 func HandleSwapAddressQuery(app Application, message []byte) interface{} {

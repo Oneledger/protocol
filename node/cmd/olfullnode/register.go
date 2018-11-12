@@ -54,6 +54,9 @@ func RegisterUsers(cmd *cobra.Command, args []string) {
 	privateKey, publicKey := id.GenerateKeys([]byte(name + chain)) // TODO: Switch with passphrase
 
 	log.Info("RegisterUsers", "name", name, "publicKey", publicKey, "privateKey", privateKey, "chain", chain)
+	app.SetNodeName(node)
+	LogSettings()
+
 	app.RegisterLocally(node, name, chain, accountType, publicKey, privateKey)
 
 }

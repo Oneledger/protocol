@@ -557,14 +557,6 @@
   version = "0.10.1"
 
 [[projects]]
-  digest = "1:ad9c4c1a4e7875330b1f62906f2830f043a23edb5db997e3a5ac5d3e6eadf80a"
-  name = "github.com/tendermint/go-wire"
-  packages = ["."]
-  pruneopts = "UT"
-  revision = "dc14acf9ef15f85828bfbc561ed9dd9d2a284885"
-  version = "v0.14.1"
-
-[[projects]]
   digest = "1:e99ef92d64f2391efbbfb15310df635f96247532bbac2676ea43e466d706401d"
   name = "github.com/tendermint/iavl"
   packages = ["."]
@@ -847,7 +839,6 @@
     "github.com/stretchr/testify/require",
     "github.com/stretchr/testify/suite",
     "github.com/tendermint/go-amino",
-    "github.com/tendermint/go-wire",
     "github.com/tendermint/iavl",
     "github.com/tendermint/tendermint/abci/client",
     "github.com/tendermint/tendermint/abci/server",
