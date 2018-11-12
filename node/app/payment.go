@@ -27,7 +27,7 @@ func CreatePaymentRequest(app Application, identities []id.Identity, quotient da
 			return nil
 		}
 
-		partyBalance := app.Utxo.Get(party.AccountKey)
+		partyBalance := app.Balances.Get(party.AccountKey)
 		if partyBalance == nil {
 			interimBalance := data.NewBalance(0, "OLT")
 			partyBalance = &interimBalance
@@ -47,7 +47,7 @@ func CreatePaymentRequest(app Application, identities []id.Identity, quotient da
 	if err != status.SUCCESS {
 		log.Fatal("Payment Account not found")
 	}
-	paymentBalance := app.Utxo.Get(payment.AccountKey())
+	paymentBalance := app.Balances.Get(payment.AccountKey())
 	log.Debug("CreatePaymentRequest", "paymentBalance", paymentBalance)
 
 	numberValidators := data.NewCoin(int64(len(identities)), "OLT")

@@ -60,8 +60,8 @@ func init() {
 	RootCmd.PersistentFlags().StringVar(&global.Current.TendermintRoot, "tendermintRoot",
 		global.Current.TendermintRoot, "tendermint root directory")
 
-	RootCmd.PersistentFlags().IntVar(&global.Current.SDKAddress, "sdkrpc",
-		global.Current.SDKAddress, "Port for SDK RPC Server")
+	RootCmd.PersistentFlags().StringVar(&global.Current.SDKAddress, "sdkrpc",
+		global.Current.SDKAddress, "Address for SDK RPC Server")
 
 }
 

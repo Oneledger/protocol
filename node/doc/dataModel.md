@@ -15,10 +15,35 @@
 
 # Data Model
 
-## Authentication: Users, Identities and Accounts
-
 **Relationship**: user <<->> group <-> identity <->> wallet <->> account
 
+
+## Global Chain state
+
+**Identity** -- an identity that is known across the chains, can resolved into usable data
+
+	- User Name (naming collisions? limits?)
+	- Chain (namespace?)
+	-------------------------
+	- Default OneLedger Account (Wallet?)
+	- Default OneLedger Node 
+
+	- Set of Accounts (Set of Wallets?)
+	- Set of Trusted ChainNodes
+	- Set of Trusted Channels
+
+	- Contact Info
+
+**Balances** -- a list of balances for various account keys
+
+	- Account Key
+	- Chain
+	-------------------------
+	- Height
+	- Amount
+
+## Authorization
+## Authentication: Users, Identities and Accounts
 
 **Group/User** -- a hiearchtical (or graph?) collection, fine-grained, a group can own a public/private key, and any members of that group can use it.
 
@@ -32,21 +57,6 @@
 	- Set of Accessible Data
 
 	- Set of Identities and Groups (parents or children?)
-
-**Identity** -- an identity that is known across the chains, tied to one public key
-
-	- User Id / Chain
-	-------------------------
-	- User Name (naming collisions?)
-	- Public Key
-	- Contact Info
-	- Default Account (Wallet?)
-	- Set of Accounts (Set of Wallets?)
-	- Set of Trusted ChainNodes
-	- Set of Trusted Channels
-
-
-## Authorization
 
 **Relationship**: identity <->> role, identity <->> data
 

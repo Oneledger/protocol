@@ -25,8 +25,8 @@ func (app Application) GetAccounts() interface{} {
 }
 
 // Access to the local persistent databases
-func (app Application) GetUtxo() interface{} {
-	return app.Utxo
+func (app Application) GetBalances() interface{} {
+	return app.Balances
 }
 
 func (app Application) GetChainID() interface{} {
