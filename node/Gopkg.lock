@@ -2,33 +2,6 @@
 
 
 [[projects]]
-  name = "github.com/Oneledger/protocol"
-  packages = [
-    "node/abci",
-    "node/action",
-    "node/app",
-    "node/chains/bitcoin",
-    "node/chains/bitcoin/htlc",
-    "node/chains/bitcoin/rpc",
-    "node/chains/common",
-    "node/chains/ethereum",
-    "node/chains/ethereum/htlc",
-    "node/cmd/shared",
-    "node/comm",
-    "node/convert",
-    "node/data",
-    "node/err",
-    "node/global",
-    "node/id",
-    "node/log",
-    "node/persist",
-    "node/serial",
-    "node/version"
-  ]
-  revision = "041913a1c631f7e62f2a6d67f59b42e6e6a2f34f"
-  version = "v0.6.1"
-
-[[projects]]
   branch = "master"
   digest = "1:7d191fd0c54ff370eaf6116a14dafe2a328df487baea280699f597aae858d00d"
   name = "github.com/aristanetworks/goarista"
@@ -584,14 +557,6 @@
   version = "0.10.1"
 
 [[projects]]
-  digest = "1:ad9c4c1a4e7875330b1f62906f2830f043a23edb5db997e3a5ac5d3e6eadf80a"
-  name = "github.com/tendermint/go-wire"
-  packages = ["."]
-  pruneopts = "UT"
-  revision = "dc14acf9ef15f85828bfbc561ed9dd9d2a284885"
-  version = "v0.14.1"
-
-[[projects]]
   digest = "1:e99ef92d64f2391efbbfb15310df635f96247532bbac2676ea43e466d706401d"
   name = "github.com/tendermint/iavl"
   packages = ["."]
@@ -874,7 +839,6 @@
     "github.com/stretchr/testify/require",
     "github.com/stretchr/testify/suite",
     "github.com/tendermint/go-amino",
-    "github.com/tendermint/go-wire",
     "github.com/tendermint/iavl",
     "github.com/tendermint/tendermint/abci/client",
     "github.com/tendermint/tendermint/abci/server",
