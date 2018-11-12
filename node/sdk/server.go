@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"regexp"
 
 	"github.com/Oneledger/protocol/node/log"
 	"github.com/Oneledger/protocol/node/sdk/pb"
@@ -29,11 +30,22 @@ const (
 	ALREADY_STOPPED = "SDK gRPC Server already stopped."
 )
 
+func GetPort(addr string) string {
+	automata := regexp.MustCompile(`.*?:.*?:(.*)`)
+	groups := automata.FindStringSubmatch(addr)
+	log.Dump("Parsed", addr, groups)
+
+	if groups == nil || len(groups) != 2 {
+		log.Fatal("Failed to parse SDK address", "addr", addr)
+	}
+	return groups[1]
+}
+
 func NewServer(addr string, sdkServer pb.SDKServer) (*Server, error) {
 
-	listener, err := net.Listen("tcp", addr)
+	listener, err := net.Listen("tcp", ":"+GetPort(addr))
 	if err != nil {
-		return nil, fmt.Errorf("Failed to start tcp listener on port :%s, %v", addr, err)
+		return nil, fmt.Errorf("Failed to start tcp listener on port %s err=%v", addr, err)
 	}
 
 	server := grpc.NewServer()
