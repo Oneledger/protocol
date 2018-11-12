@@ -28,7 +28,8 @@ func GetAccountKey(identity string) []byte {
 		log.Warn("Query returned nothing", "request", request)
 		return nil
 	}
-	result := response.([]uint8)
+	//result := response.([]uint8)
+	result := response.(id.AccountKey)
 	return result
 }
 
