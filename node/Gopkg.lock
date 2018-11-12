@@ -99,22 +99,41 @@
     "accounts",
     "accounts/abi",
     "accounts/abi/bind",
+    "accounts/abi/bind/backends",
     "accounts/keystore",
+    "accounts/usbwallet",
+    "accounts/usbwallet/internal/trezor",
     "common",
+    "common/bitutil",
     "common/hexutil",
     "common/math",
     "common/mclock",
     "common/prque",
     "core/types",
+    "core/vm",
     "crypto",
+    "crypto/bn256",
+    "crypto/bn256/cloudflare",
+    "crypto/bn256/google",
+    "crypto/ecies",
     "crypto/secp256k1",
     "crypto/sha3",
+    "eth/filters",
     "ethclient",
     "ethdb",
     "event",
+    "internal/debug",
     "log",
+    "log/term",
     "metrics",
+    "metrics/exp",
+    "node",
+    "p2p",
+    "p2p/discover",
+    "p2p/discv5",
+    "p2p/nat",
     "p2p/netutil",
+    "p2p/protocols",
     "params",
     "rlp",
     "rpc",
@@ -184,6 +203,7 @@
   name = "github.com/golang/protobuf"
   packages = [
     "proto",
+    "protoc-gen-go/descriptor",
     "ptypes",
     "ptypes/any",
     "ptypes/duration",
@@ -257,6 +277,14 @@
   pruneopts = "UT"
   revision = "76626ae9c91c4f2a10f34cad8ce83ea42c93bb75"
   version = "v1.0"
+
+[[projects]]
+  digest = "1:32b82e71cf24f8b78323e0d7903c4b90278486283965aa2a19b1ea13763b8f34"
+  name = "github.com/jackpal/go-nat-pmp"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "c9cfead9f2a36ddf3daa40ba269aa7f4bbba6b62"
+  version = "v1.0.1"
 
 [[projects]]
   branch = "master"
@@ -537,6 +565,14 @@
   revision = "f9080354173f192dfc8821931eacf9cfd6819253"
 
 [[projects]]
+  digest = "1:8b7ca9e3745cb049a65364d3adbbab63e98d3c43c83cb101cb450c8dac3c3492"
+  name = "github.com/tendermint/abci"
+  packages = ["types"]
+  pruneopts = "UT"
+  revision = "68592f4d8ee34e97db94b7a7976b1309efdb7eb9"
+  version = "v0.10.0"
+
+[[projects]]
   branch = "master"
   digest = "1:087aaa7920e5d0bf79586feb57ce01c35c830396ab4392798112e8aae8c47722"
   name = "github.com/tendermint/ed25519"
@@ -635,6 +671,40 @@
   packages = ["."]
   pruneopts = "UT"
   revision = "1731857f09b1f38450e2c12409748407822dc6be"
+
+[[projects]]
+  digest = "1:ac6f26e917fd2fb3194a7ebe2baf6fb32de2f2fbfed130c18aac0e758a6e1d22"
+  name = "github.com/uber/jaeger-client-go"
+  packages = [
+    ".",
+    "config",
+    "internal/baggage",
+    "internal/baggage/remote",
+    "internal/spanlog",
+    "internal/throttler",
+    "internal/throttler/remote",
+    "log",
+    "rpcmetrics",
+    "thrift",
+    "thrift-gen/agent",
+    "thrift-gen/baggage",
+    "thrift-gen/jaeger",
+    "thrift-gen/sampling",
+    "thrift-gen/zipkincore",
+    "transport",
+    "utils",
+  ]
+  pruneopts = "UT"
+  revision = "1a782e2da844727691fef1757c72eb190c2909f0"
+  version = "v2.15.0"
+
+[[projects]]
+  digest = "1:0f09db8429e19d57c8346ad76fbbc679341fa86073d3b8fb5ac919f0357d8f4c"
+  name = "github.com/uber/jaeger-lib"
+  packages = ["metrics"]
+  pruneopts = "UT"
+  revision = "ed3a127ec5fef7ae9ea95b01b542c47fbd999ce5"
+  version = "v1.5.0"
 
 [[projects]]
   branch = "master"

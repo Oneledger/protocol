@@ -60,9 +60,9 @@ func RegisterLocally(app *Application, name string, scope string, chain data.Cha
 	}
 
 	// Fill in the balance
-	if chain == data.ONELEDGER && !app.Utxo.Exists(account.AccountKey()) {
+	if chain == data.ONELEDGER && !app.Balances.Exists(account.AccountKey()) {
 		balance := data.NewBalance(0, "OLT")
-		app.Utxo.Set(account.AccountKey(), balance)
+		app.Balances.Set(account.AccountKey(), balance)
 		status = true
 	}
 

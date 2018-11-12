@@ -7,8 +7,9 @@ package app
 
 import (
 	"encoding/hex"
-	"github.com/Oneledger/protocol/node/chains/common"
 	"strings"
+
+	"github.com/Oneledger/protocol/node/chains/common"
 
 	"github.com/Oneledger/protocol/node/convert"
 	"github.com/Oneledger/protocol/node/data"
@@ -42,9 +43,6 @@ func HandleQuery(app Application, path string, message []byte) (buffer []byte) {
 
 	case "/balance":
 		result = HandleBalanceQuery(app, message)
-
-	case "/utxo":
-		result = HandleUtxoQuery(app, message)
 
 	case "/version":
 		result = HandleVersionQuery(app, message)
@@ -155,41 +153,6 @@ func AccountInfo(app Application, name string) interface{} {
 	return "Account " + name + " Not Found"
 }
 
-func HandleUtxoQuery(app Application, message []byte) interface{} {
-	log.Debug("UtxoQuery", "message", message)
-
-	text := string(message)
-
-	name := ""
-	parts := strings.Split(text, "=")
-	if len(parts) > 1 {
-		name = parts[1]
-	}
-	return UtxoInfo(app, name)
-}
-
-func UtxoInfo(app Application, name string) interface{} {
-	if name == "" {
-		entries := app.Utxo.FindAll()
-		return entries
-	}
-	value := app.Utxo.Get(data.DatabaseKey(name))
-	return value
-}
-
-// Get the balancd for an account
-func GetBalance(app Application, account id.Account) string {
-	if account.Chain() != data.ONELEDGER {
-		return ""
-	}
-
-	result := app.Utxo.Get(account.AccountKey())
-	if result == nil {
-		return "[missing]"
-	}
-	return result.AsString()
-}
-
 func HandleVersionQuery(app Application, message []byte) interface{} {
 	return version.Current.String()
 }
@@ -209,8 +172,7 @@ func HandleBalanceQuery(app Application, message []byte) interface{} {
 }
 
 func Balance(app Application, accountKey []byte) interface{} {
-
-	balance := app.Utxo.Get(accountKey)
+	balance := app.Balances.Get(accountKey)
 	if balance != nil {
 		return balance
 	}

@@ -91,6 +91,7 @@ type PrivateKey interface {
 	Equals(PrivateKey) bool
 }
 
+// TODO: Should not be hardcding key type ...
 type PublicKeyED25519 ed25519.PubKeyEd25519
 type PrivateKeyED25519 ed25519.PrivKeyEd25519
 
@@ -109,6 +110,7 @@ func init() {
 	serial.Register(NilPrivateKey())
 	serial.Register(PublicKeySECP256K1{})
 	serial.Register(PrivateKeySECP256K1{})
+
 	var prototypePublicKey PublicKey
 	var prototypePrivateKey PrivateKey
 	serial.RegisterInterface(&prototypePublicKey)

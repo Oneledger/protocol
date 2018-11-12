@@ -79,9 +79,9 @@ func NewSendOutput(accountKey id.AccountKey, amount data.Coin) SendOutput {
 }
 
 func CheckBalance(app interface{}, accountKey id.AccountKey, amount data.Coin) bool {
-	utxo := GetUtxo(app)
+	balances := GetBalances(app)
 
-	balance := utxo.Get(accountKey)
+	balance := balances.Get(accountKey)
 	if balance == nil {
 		// New accounts don't have a balance until the first transaction
 		log.Debug("New Balance", "key", accountKey, "amount", amount, "balance", balance)
@@ -101,9 +101,9 @@ func CheckBalance(app interface{}, accountKey id.AccountKey, amount data.Coin) b
 }
 
 func GetHeight(app interface{}) int64 {
-	utxo := GetUtxo(app)
+	balances := GetBalances(app)
 
-	height := int64(utxo.Version)
+	height := int64(balances.Version)
 	return height
 }
 

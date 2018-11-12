@@ -36,31 +36,29 @@ type Application struct {
 	types.BaseApplication
 
 	// Global Chain state (data is identical on all nodes in the chain)
-	Utxo       *data.ChainState // unspent transction output (for each type of coin)
-	SDK        common.Service
-	Identities *id.Identities // Keep a higher-level identity for a given user
+	Balances   *data.ChainState // unspent transction output (for each type of coin)
+	Identities *id.Identities   // Keep a higher-level identity for a given user
 
 	// Local Node state (data is different for each node)
-	Admin    data.Datastore // any administrative parameters
-	Status   data.Datastore // current state of any composite transactions (pending, verified, etc.)
 	Accounts *id.Accounts   // Keep all of the user accounts locally for their node (identity management)
+	Admin    data.Datastore // any administrative parameters
 	Event    data.Datastore // Event for any action that need to be tracked
+	Status   data.Datastore // current state of any composite transactions (pending, verified, etc.)
 	Contract data.Datastore // contract for reuse.
 
-	// Tendermint's last block information
-	LastHeader types.Header // Tendermint last header info
+	SDK common.Service
 }
 
 // NewApplicationContext initializes a new application, reconnects to the databases.
 func NewApplication() *Application {
 	return &Application{
 		Identities: id.NewIdentities("identities"),
-		Utxo:       data.NewChainState("utxo", data.PERSISTENT),
+		Balances:   data.NewChainState("balances", data.PERSISTENT),
 
-		Admin:    data.NewDatastore("admin", data.PERSISTENT),
-		Status:   data.NewDatastore("status", data.PERSISTENT),
 		Accounts: id.NewAccounts("accounts"),
+		Admin:    data.NewDatastore("admin", data.PERSISTENT),
 		Event:    data.NewDatastore("event", data.PERSISTENT),
+		Status:   data.NewDatastore("status", data.PERSISTENT),
 		Contract: data.NewDatastore("contract", data.PERSISTENT),
 	}
 }
@@ -83,20 +81,22 @@ func (app Application) Initialize() {
 	} else {
 		log.Debug("NodeAccountName not currently set")
 	}
+	app.StartSDK()
+}
+
+// Start up a local server for direct connections from clients
+func (app Application) StartSDK() {
 
 	// SDK Server should start when the --sdkrpc argument is passed to fullnode
-	sdkPort := global.Current.SDKAddress
-	if sdkPort == 0 {
-		return
+	sdkAddress := global.Current.SDKAddress
+
+	sdk, err := NewSDKServer(&app, sdkAddress)
+	if err != nil {
+		log.Fatal("SDK Server Failed", "err", err)
 	}
 
-	s, err := NewSDKServer(&app, sdkPort)
-	if err != nil {
-		panic(err)
-	} else {
-		app.SDK = s
-		app.SDK.Start()
-	}
+	app.SDK = sdk
+	app.SDK.Start()
 }
 
 type BasicState struct {
@@ -140,10 +140,10 @@ func CreateAccount(app Application, stateAccount string, stateAmount string, pub
 
 	// Use the account key in the database
 	balance := NewBalanceFromString(stateAmount, "OLT")
-	app.Utxo.Set(account.AccountKey(), balance)
+	app.Balances.Set(account.AccountKey(), balance)
 
 	// TODO: Until a block is commited, this data is not persistent
-	//app.Utxo.Commit()
+	//app.Balances.Commit()
 
 	log.Info("Genesis State UTXO database", "balance", balance)
 }
@@ -188,21 +188,12 @@ func (app Application) Info(req RequestInfo) ResponseInfo {
 
 	info := abci.NewResponseInfo(0, 0, 0)
 
-	// TODO: Get the correct height from the last committed tree
-	// lastHeight := app.Utxo.Commit.Height()
-
 	log.Debug("ABCI: Info", "req", req, "info", info)
 
 	result := ResponseInfo{
-		Data: info.JSON(),
-		//Version: convert.GetString64(app.Utxo.Version),
-
-		// The version of the tree, needs to match the height of the chain
-		//LastBlockHeight: int64(0),
-		LastBlockHeight: int64(app.Utxo.Version),
-
-		// TODO: Should return a valid AppHash
-		LastBlockAppHash: app.Utxo.Hash,
+		Data:             info.JSON(),
+		LastBlockHeight:  int64(app.Balances.Version),
+		LastBlockAppHash: app.Balances.Hash,
 	}
 
 	log.Dump("Info Response is", result)
@@ -223,7 +214,7 @@ func (app Application) Query(req RequestQuery) ResponseQuery {
 		Key:    action.Message("result"),
 		Value:  result,
 		Proof:  nil,
-		Height: int64(app.Utxo.Version),
+		Height: int64(app.Balances.Version),
 	}
 }
 
@@ -297,7 +288,7 @@ func (app Application) MakePayment(req RequestBeginBlock) {
 	if err != status.SUCCESS {
 		log.Fatal("ABCI: BeginBlock Fatal Status", "status", err)
 	}
-	balance := app.Utxo.Get(account.AccountKey())
+	balance := app.Balances.Get(account.AccountKey())
 	if balance == nil {
 		interimBalance := data.NewBalance(0, "OLT")
 		balance = &interimBalance
@@ -394,7 +385,7 @@ func (app Application) Commit() ResponseCommit {
 	log.Debug("ABCI: Commit")
 
 	// Commit any pending changes.
-	hash, version := app.Utxo.Commit()
+	hash, version := app.Balances.Commit()
 
 	log.Debug("-- Committed New Block", "hash", hash, "version", version)
 
@@ -409,7 +400,7 @@ func (app Application) Close() {
 	app.Status.Close()
 	app.Identities.Close()
 	app.Accounts.Close()
-	app.Utxo.Close()
+	app.Balances.Close()
 	app.Event.Close()
 	app.Contract.Close()
 
