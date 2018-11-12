@@ -93,7 +93,7 @@ case "$current_uname" in
     (*Linux*)
 	current_platform='Linux'
 	sudo apt-get update
-	sudo apt-get install software-properties-common
+	sudo apt-get install -y software-properties-common
 
 	# Test if bitcoind installed
 	which bitcoind
