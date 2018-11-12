@@ -3,8 +3,7 @@ package comm
 import (
 	"github.com/Oneledger/protocol/node/global"
 	"github.com/Oneledger/protocol/node/log"
-	"github.com/ethereum/go-ethereum/swarm/api/client"
-	"github.com/tendermint/abci/types"
+	client "github.com/tendermint/tendermint/abci/client"
 )
 
 // TODO: Why?
@@ -28,16 +27,20 @@ func NewAppClient() client.Client {
 func SetOption(key string, value string) {
 	log.Debug("Setting Option")
 
-	client := NewAppClient()
-	options := types.RequestSetOption{
-		Key:   key,
-		Value: value,
-	}
+	//client := NewAppClient()
+	/*
+		options := types.RequestSetOption{
+			Key:   key,
+			Value: value,
+		}
+	*/
 
-	response, err := client.SetOptionSync(options)
+	//response, err := client.SetOptionSync(options)
 	log.Debug("Have Set Option")
 
-	if err != nil {
-		log.Error("SetOption Failed", "err", err, "response", response)
-	}
+	/*
+		if err != nil {
+			log.Error("SetOption Failed", "err", err, "response", response)
+		}
+	*/
 }
