@@ -119,8 +119,7 @@ func (app Application) SetupState(stateBytes []byte) {
 	log.Debug("Deserialized State", "state", state, "state.Account", state.Account)
 
 	// TODO: Can't generate a different key for each node. Needs to be in the genesis? Or ignored?
-	//publicKey, privateKey := id.GenerateKeys([]byte(state.Account)) // TODO: switch with passphrase
-	publicKey, privateKey := id.NilPublicKey(), id.NilPrivateKey()
+	privateKey, publicKey := id.GenerateKeys([]byte(state.Account), false) // TODO: switch with passphrase
 
 	CreateAccount(app, state.Account, state.Amount, publicKey, privateKey)
 
