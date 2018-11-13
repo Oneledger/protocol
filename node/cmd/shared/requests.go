@@ -17,8 +17,8 @@ import (
 )
 
 // Prepare a transaction to be issued.
-func SignAndPack(ttype action.Type, transaction action.Transaction) []byte {
-	return action.SignAndPack(ttype, transaction)
+func SignAndPack(transaction action.Transaction) []byte {
+	return action.SignAndPack(transaction)
 }
 
 // Registration
@@ -48,7 +48,7 @@ func CreateRegisterRequest(args *RegisterArguments) []byte {
 		TendermintPubKey:  global.Current.TendermintPubKey,
 	}
 
-	return SignAndPack(action.REGISTER, action.Transaction(reg))
+	return SignAndPack(action.Transaction(reg))
 }
 
 type BalanceArguments struct {
@@ -148,7 +148,7 @@ func CreateSendRequest(args *SendArguments) []byte {
 		Gas:     gas,
 	}
 
-	return SignAndPack(action.SEND, action.Transaction(send))
+	return SignAndPack(action.Transaction(send))
 }
 
 // CreateRequest builds and signs the transaction based on the arguments
@@ -220,7 +220,7 @@ func CreateMintRequest(args *SendArguments) []byte {
 
 	log.Debug("Finished Building Testmint Request")
 
-	return SignAndPack(action.SEND, action.Transaction(send))
+	return SignAndPack(action.Transaction(send))
 }
 
 // Arguments to the command
@@ -287,5 +287,5 @@ func CreateSwapRequest(args *SwapArguments) []byte {
 		Stage:       action.SWAP_MATCHING,
 	}
 
-	return SignAndPack(action.SWAP, action.Transaction(swap))
+	return SignAndPack(action.Transaction(swap))
 }

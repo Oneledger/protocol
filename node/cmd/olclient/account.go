@@ -83,7 +83,9 @@ func printQuery(accountQuery interface{}) {
 
 		if account.Chain() == data.ONELEDGER {
 			value := shared.GetBalance(account.AccountKey())
-			shared.Console.Info(balance, value)
+			if value != nil {
+				shared.Console.Info(balance, value)
+			}
 		}
 
 		shared.Console.Info()

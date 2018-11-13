@@ -35,6 +35,15 @@
 #   version = "~1.0.0"
 
 [[constraint]]
+  name = "google.golang.org/grpc"
+  version = "=1.13.0"
+
+# TM 0.23.1 is tied to this version of /x/net
+[[constraint]]
+  name = "golang.org/x/net"
+  revision = "292b43bbf7cb8d35ddf40f8d5100ef3837cced3f"
+
+[[constraint]]
   name = "github.com/mattn/go-isatty"
   version = "~0.0.3"
 
