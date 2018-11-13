@@ -13,13 +13,14 @@ func main () {
   }
 
   args := service.Args{}
+  args.Address = "samples://deadloop"
 
-  var reply int
+  var reply service.Reply
 
-  err = client.Call("OLVMService.Close", &args, &reply)
+  err = client.Call("OLVMService.Exec", &args, &reply)
 
   if err != nil {
     log.Fatal("service error:", err)
   }
-  log.Printf("result: %d", reply)
+  log.Printf("result: %v", reply)
 }
