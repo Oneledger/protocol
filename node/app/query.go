@@ -328,3 +328,37 @@ func SwapAddress(chain data.ChainType) interface{} {
 func HandleError(text string, path string, message []byte) interface{} {
 	return "Unknown Query " + text + " " + path + " " + string(message)
 }
+
+func SignTransaction(transaction action.Transaction, applicaiton Application) action.SignedTransaction {
+	packet, err := serial.Serialize(transaction, serial.CLIENT)
+
+	signed := action.SignedTransaction{transaction, nil}
+
+	if err != nil {
+		log.Error("Failed to Serialize packet: ", "error", err)
+	} else {
+		request := action.Message(packet)
+
+		response := HandleSignTransaction(applicaiton, request)
+
+		if response == nil {
+			log.Warn("Query returned no signature", "request", request)
+		} else {
+			signed.Signatures = response.([]action.TransactionSignature)
+		}
+	}
+
+	return signed
+}
+
+func GetSigners(owner []byte, applicaiton Application) []id.PublicKey {
+	log.Debug("GetSigners", "owner", owner)
+
+	publicKey := HandleAccountPublicKeyQuery(applicaiton, owner)
+
+	if publicKey == nil {
+		return nil
+	}
+
+	return []id.PublicKey{publicKey.(id.PublicKey)}
+}
