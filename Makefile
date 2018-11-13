@@ -3,11 +3,18 @@
 #
 
 # Prepare the base image for docker
-docker-fullnode: prepare-volume
-	docker build -t oneledger/fullnode -f ./DOCKER/Dockerfile --label oneledger --tag="oneledger/fullnode" .
+docker-interactive:
+	docker build -t oneledger/interactive -f ./DOCKER/Dockerfile.interactive .
 
+docker-fullnode: prepare-volume
+	docker build -t oneledger/fullnode -f ./DOCKER/Dockerfile --label oneledger --tag="oneledger:fullnode" .
+
+# Ensure Docker doesn't use its cache, useful for making small edits to scripts
 docker-fullnode-nocache: prepare-volume
-	docker build -t oneledger/fullnode -f ./DOCKER/Dockerfile --no-cache --label oneledger --tag="oneledger-fullnode" .
+	docker build -t oneledger/fullnode -f ./DOCKER/Dockerfile --no-cache --label oneledger --tag="oneledger:fullnode" .
+
+run-interactive:
+	docker run -it oneledger/interactive
 
 run-singlenode:
 	docker run --volume $(CURDIR)/VOLUME:/home/oneledger/go/test --network="protocol_localnet" --env ID=Edwin --env OL_PEERS=192.167.11.1:26611,192.167.11.2:26611,192.167.11.3:26611,192.167.11.4:26611 --rm oneledger/fullnode
