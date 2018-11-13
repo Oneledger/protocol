@@ -221,19 +221,27 @@ func (k PrivateKeySECP256K1) Equals(key PrivateKey) bool {
 	return bytes.Equal(k.Bytes(), key.Bytes())
 }
 
-func GenerateKeys(secret []byte) (PrivateKeyED25519, PublicKeyED25519) {
+func GenerateKeys(secret []byte, random bool) (PrivateKeyED25519, PublicKeyED25519) {
 	// TODO: Should be configurable
-	private, public, err := generateKeys(secret, ED25519)
+	private, public, err := generateKeys(secret, ED25519, random)
 	if err != nil {
 		log.Fatal("Key Generation Failed")
 	}
 	return private.(PrivateKeyED25519), public.(PublicKeyED25519)
 }
 
-func generateKeys(secret []byte, algorithm KeyAlgorithm) (PrivateKey, PublicKey, error) {
-	hash, err := bcrypt.GenerateFromPassword(secret, bcrypt.DefaultCost)
-	if err != nil {
-		log.Fatal("Failed to generate bcrypt hash from secret", "secret", secret)
+func generateKeys(secret []byte, algorithm KeyAlgorithm, random bool) (PrivateKey, PublicKey, error) {
+
+	var hash []byte
+
+	if random {
+		hash_, err := bcrypt.GenerateFromPassword(secret, bcrypt.DefaultCost)
+		if err != nil {
+			log.Fatal("Failed to generate bcrypt hash from secret", "secret", secret)
+		}
+		hash = hash_
+	} else {
+		hash = secret
 	}
 	switch algorithm {
 

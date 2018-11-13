@@ -51,7 +51,7 @@ func RegisterUsers(cmd *cobra.Command, args []string) {
 
 	accountType := id.ParseAccountType(chain)
 
-	privateKey, publicKey := id.GenerateKeys([]byte(name + chain)) // TODO: Switch with passphrase
+	privateKey, publicKey := id.GenerateKeys([]byte(name + chain), true) // TODO: Switch with passphrase
 
 	log.Info("RegisterUsers", "name", name, "publicKey", publicKey, "privateKey", privateKey, "chain", chain)
 	app.SetNodeName(node)
