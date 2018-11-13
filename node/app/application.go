@@ -123,7 +123,7 @@ func (app Application) SetupState(stateBytes []byte) {
 
 	CreateAccount(app, state.Account, state.Amount, publicKey, privateKey)
 
-	publicKey, privateKey = id.OnePublicKey(), id.OnePrivateKey()
+	privateKey, publicKey = id.GenerateKeys([]byte("Payment"), false) // TODO: make a user put a real key actually
 	CreateAccount(app, "Payment", "0", publicKey, privateKey)
 }
 
