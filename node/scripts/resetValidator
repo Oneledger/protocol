@@ -9,7 +9,7 @@ if [ -z "$1" ]; then
 	export SUBDIR="mach0"
 	export STAGING=$OLDATA/staging
 else
- 	export NODENAME=`echo $1 | awk -F# '{ print $1 }'`
+	export NODENAME=`echo $1 | awk -F# '{ print $1 }'`
 	export SUBDIR=`echo $1 | awk -F# '{ print $2 }'`
 	export STAGING="$2"
 fi
@@ -48,9 +48,9 @@ rm $LOG/*.log > /dev/null 2>&1
 # Setup the initial files
 #
 #cp $STAGING/config/config.toml $DATA/config/config.toml
-#cp $STAGING/$SUBDIR/config/priv_validator.json $DATA/config/priv_validator.json
+cp $STAGING/$SUBDIR/config/priv_validator.json $DATA/config/priv_validator.json
 #cp $STAGING/$SUBDIR/config/genesis.json $DATA/config/genesis.json
-cat $STAGING/node0/config/genesis.json | jq -f $CMD/genesis.jq > $DATA/config/genesis.json
+cat $STAGING/$SUBDIR/config/genesis.json | jq -f $CMD/genesis.jq > $DATA/config/genesis.json
 cp $STAGING/$SUBDIR/config/node_key.json $DATA/config/node_key.json
 
 #ls $DATA/config

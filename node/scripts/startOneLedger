@@ -5,7 +5,7 @@
 #
 export CMD=$OLSCRIPT
 
-nodes="David Alice Bob Carol"
+nodes="David Alice Bob Carol Emma"
 
 for entry in $nodes
 do
