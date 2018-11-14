@@ -6,12 +6,21 @@ build:
 	./DOCKER/scripts/build.sh
 
 # Prepare the base image for docker
+docker-interactive:
+	docker build -t oneledger/interactive -f ./DOCKER/Dockerfile.interactive .
+
 docker-fullnode: prepare-volume
-	docker build -t oneledger/fullnode -f ./DOCKER/Dockerfile --label oneledger --tag="oneledger/fullnode" .
+	docker build -t oneledger/fullnode -f ./DOCKER/Dockerfile --label oneledger --tag="oneledger:fullnode" .
+
+# Ensure Docker doesn't use its cache, useful for making small edits to scripts
+docker-fullnode-nocache: prepare-volume
+	docker build -t oneledger/fullnode -f ./DOCKER/Dockerfile --no-cache --label oneledger --tag="oneledger:fullnode" .
+
+run-interactive:
+	docker run -it oneledger/interactive
 
 # Prepare volume for persistence
 prepare-volume: reset-volume
-	./DOCKER/scripts/copy-bin.sh
 	@./DOCKER/scripts/testnet.sh
 
 # Reset the persistent data
