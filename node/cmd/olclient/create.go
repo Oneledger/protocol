@@ -8,37 +8,43 @@ package main
 import (
 	"github.com/Oneledger/protocol/node/cmd/shared"
 	"github.com/Oneledger/protocol/node/comm"
+	"github.com/Oneledger/protocol/node/log"
 	"github.com/spf13/cobra"
 )
 
-var registerCmd = &cobra.Command{
-	Use:   "register",
+var createCmd = &cobra.Command{
+	Use:   "create",
 	Short: "Create or reuse an account",
-	Run:   RegisterIdentity,
+	Run:   CreateAccount,
 }
 
 // Arguments to the command
-type RegistrationArguments struct {
-	identity string
-	pubkey   string
+type CreateArguments struct {
+	name    string
+	chain   string
+	pubkey  string
+	privkey string
 }
 
-var arguments = &RegistrationArguments{}
+var createArgs = &CreateArguments{}
 
 func init() {
-	RootCmd.AddCommand(registerCmd)
+	RootCmd.AddCommand(createCmd)
 
 	// Transaction Parameters
-	registerCmd.Flags().StringVar(&arguments.identity, "identity", "Unknown", "User's Identity")
-	registerCmd.Flags().StringVar(&arguments.pubkey, "pubkey", "0x00000000", "Specify a public key")
+	createCmd.Flags().StringVar(&createArgs.name, "name", "", "Account Name")
+	createCmd.Flags().StringVar(&createArgs.chain, "chain", "OneLedger", "Specify the chain")
+	createCmd.Flags().StringVar(&createArgs.pubkey, "pubkey", "0x00000000", "Specify a public key")
+	createCmd.Flags().StringVar(&createArgs.privkey, "privkey", "0x00000000", "Specify a private key")
 }
 
-func RegisterIdentity(cmd *cobra.Command, args []string) {
-	arguments := &shared.RegisterArguments{}
+func CreateAccount(cmd *cobra.Command, args []string) {
+	request := &shared.AccountArguments{}
 
-	register := shared.CreateRegisterRequest(arguments)
+	register := shared.CreateAccountRequest(request)
 
-	comm.SDKRequest(register)
+	result := comm.SDKRequest(register)
+	log.Dump("The results are", result)
 }
 
 /*

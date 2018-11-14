@@ -12,6 +12,7 @@ import (
 	"github.com/Oneledger/protocol/node/log"
 	"github.com/Oneledger/protocol/node/sdk"
 	"github.com/Oneledger/protocol/node/sdk/pb"
+	"github.com/Oneledger/protocol/node/serial"
 	"github.com/Oneledger/protocol/node/status"
 	"google.golang.org/grpc/codes"
 	gstatus "google.golang.org/grpc/status"
@@ -27,9 +28,49 @@ var _ pb.SDKServer = SDKServer{}
 func NewSDKServer(app *Application, addr string) (*sdk.Server, error) {
 	server, err := sdk.NewServer(addr, &SDKServer{app})
 	if err != nil {
-		log.Fatal(err.Error())
+		log.Fatal("SDK Server failed to start", "err", err.Error())
 	}
 	return server, nil
+}
+
+type SDKQuery struct {
+	Path      string
+	Arguments map[string]string
+}
+
+func init() {
+	serial.Register(SDKQuery{})
+}
+
+func (server SDKServer) Request(ctx context.Context, request *pb.SDKRequest) (*pb.SDKReply, error) {
+	var prototype interface{}
+
+	if string(request.Parameters) == "" {
+		return &pb.SDKReply{Results: []byte("Empty Data")}, nil
+	}
+
+	parameter, err := serial.Deserialize(request.Parameters, prototype, serial.CLIENT)
+	if err != nil {
+		log.Fatal("Deserialized Failed", "err", err, "data", string(request.Parameters))
+	}
+
+	var result interface{}
+	switch base := parameter.(type) {
+	case *SDKQuery:
+		log.Dump("Have SDK Query", parameter)
+		result = HandleQuery(*server.App, base.Path, []byte(""))
+
+	default:
+		log.Dump("Have SDK request for", parameter)
+		result = "We have an error"
+	}
+
+	buffer, err := serial.Serialize(result, serial.CLIENT)
+	reply := &pb.SDKReply{
+		Results: buffer,
+	}
+
+	return reply, nil
 }
 
 func (server SDKServer) Status(ctx context.Context, request *pb.StatusRequest) (*pb.StatusReply, error) {
@@ -49,10 +90,13 @@ func (server SDKServer) Register(ctx context.Context, request *pb.RegisterReques
 	}
 
 	privKey, pubKey := id.GenerateKeys(secret(name + chain.String()))
-	ok := RegisterLocally(server.App, name, chain.String(), chain, pubKey, privKey)
-	if !ok {
-		return nil, gstatus.Errorf(codes.FailedPrecondition, "Local registration failed")
-	}
+
+	/*
+		ok := RegisterLocally(server.App, name, chain.String(), chain, pubKey, privKey)
+		if !ok {
+			return nil, gstatus.Errorf(codes.FailedPrecondition, "Local registration failed")
+		}
+	*/
 
 	packet := action.SignAndPack(
 		action.CreateRegisterRequest(
@@ -105,6 +149,7 @@ func (server SDKServer) CheckAccount(ctx context.Context, request *pb.CheckAccou
 	}, nil
 }
 
+// Issue a send transacgion
 func (server SDKServer) Send(ctx context.Context, request *pb.SendRequest) (*pb.SendReply, error) {
 	findAccount := server.App.Accounts.FindName
 

@@ -12,6 +12,26 @@ import (
 	"github.com/Oneledger/protocol/node/log"
 )
 
+// Create a local account for this fullnode
+func AddAccount(app *Application, name string, chain data.ChainType,
+	publicKey id.PublicKeyED25519, privateKey id.PrivateKeyED25519, nodeAccount bool) {
+
+	account := id.NewAccount(chain, name, publicKey, privateKey)
+	app.Accounts.Add(account)
+
+	// Set this account as the current node account
+	if nodeAccount {
+		global.Current.NodeAccountName = name
+		SetNodeName(app)
+	}
+}
+
+// Broadcast an Indentity to the chain
+func AddIdentity(app *Application, name string, publicKey id.PublicKeyED25519) {
+	// Broadcast Identity to Chain
+	LoadPrivValidatorFile()
+}
+
 // Register Identities and Accounts from the user.
 func RegisterLocally(app *Application, name string, scope string, chain data.ChainType,
 	publicKey id.PublicKeyED25519, privateKey id.PrivateKeyED25519) bool {

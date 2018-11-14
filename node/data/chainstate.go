@@ -48,14 +48,16 @@ func NewChainState(name string, newType StorageType) *ChainState {
 	return chain
 }
 
-/*
-// Test this against the checked UTXO data to make sure the transaction is legit
-func (state *ChainState) Test(key DatabaseKey, balance Balance) bool {
-	//buffer := serial.Serialize(balance)
-	//state.Checked.Set(key, buffer)
-	return true
+// Do this only for the Check side
+func (state *ChainState) Test(key DatabaseKey, balance Balance) {
+	buffer, err := serial.Serialize(balance, serial.PERSISTENT)
+	if err != nil {
+		log.Fatal("Failed to Deserialize balance: ", err)
+	}
+
+	// TODO: Get some error handling in here
+	state.Checked.Set(key, buffer)
 }
-*/
 
 // Do this only for the Delivery side
 func (state *ChainState) Set(key DatabaseKey, balance Balance) {
@@ -66,17 +68,6 @@ func (state *ChainState) Set(key DatabaseKey, balance Balance) {
 
 	// TODO: Get some error handling in here
 	state.Delivered.Set(key, buffer)
-}
-
-// Do this only for the Delivery side
-func (state *ChainState) Test(key DatabaseKey, balance Balance) {
-	buffer, err := serial.Serialize(balance, serial.PERSISTENT)
-	if err != nil {
-		log.Fatal("Failed to Deserialize balance: ", err)
-	}
-
-	// TODO: Get some error handling in here
-	state.Checked.Set(key, buffer)
 }
 
 // Expensive O(n) search through everything...

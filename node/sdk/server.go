@@ -30,6 +30,7 @@ const (
 	ALREADY_STOPPED = "SDK gRPC Server already stopped."
 )
 
+// Pick out the port from a full address
 func GetPort(addr string) string {
 	automata := regexp.MustCompile(`.*?:.*?:(.*)`)
 	groups := automata.FindStringSubmatch(addr)
@@ -41,6 +42,7 @@ func GetPort(addr string) string {
 	return groups[1]
 }
 
+// Start a new SDK Server
 func NewServer(addr string, sdkServer pb.SDKServer) (*Server, error) {
 
 	listener, err := net.Listen("tcp", ":"+GetPort(addr))
@@ -59,6 +61,7 @@ func NewServer(addr string, sdkServer pb.SDKServer) (*Server, error) {
 	}, nil
 }
 
+// Is the server still running
 func (server *Server) IsRunning() bool {
 	return server.quit != nil
 }

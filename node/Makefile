@@ -1,7 +1,9 @@
 GOTOOLS = \
 	  github.com/mitchellh/gox \
 	  github.com/Masterminds/glide \
-	  github.com/golang/dep/cmd/dep
+	  github.com/golang/dep/cmd/dep \
+	  github.com/golang/protobuf/protoc-gen-go \
+	  github.com/protocolbuffers/protobuf
 
 all: test
 

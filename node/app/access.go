@@ -1,5 +1,7 @@
 /*
 	Copyright 2017-2018 OneLedger
+
+	Generic Access to the different database in App, for cross-pkg access
 */
 
 package app

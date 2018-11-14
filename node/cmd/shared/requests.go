@@ -7,18 +7,33 @@
 package shared
 
 import (
+	"os"
+
 	"github.com/Oneledger/protocol/node/action"
 	"github.com/Oneledger/protocol/node/app"
 	"github.com/Oneledger/protocol/node/convert"
 	"github.com/Oneledger/protocol/node/data"
 	"github.com/Oneledger/protocol/node/global"
 	"github.com/Oneledger/protocol/node/log"
-	"os"
 )
 
 // Prepare a transaction to be issued.
 func SignAndPack(transaction action.Transaction) []byte {
 	return action.SignAndPack(transaction)
+}
+
+// Registration
+type AccountArguments struct {
+	Name      string
+	Chain     string
+	PublicKey string
+}
+
+func CreateAccountRequest(args *AccountArguments) interface{} {
+	return &app.SDKQuery{
+		Path:      "/testing",
+		Arguments: map[string]string{"Test": "Answer"},
+	}
 }
 
 // Registration

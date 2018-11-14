@@ -145,7 +145,7 @@ func Query(path string, packet []byte) interface{} {
 	var prototype interface{}
 	result, err := serial.Deserialize(response.Response.Value, prototype, serial.CLIENT)
 	if err != nil {
-		log.Error("Failed to deserialize Query:", response.Response.Value)
+		log.Error("Failed to deserialize Query:", "response", response.Response.Value)
 		return "Failed"
 	}
 	return result

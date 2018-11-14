@@ -19,6 +19,7 @@ type RegisterArguments struct {
 	PrivateKey string
 }
 
+// Handle a SetOption ABCi reqeust
 func SetOption(app *Application, key string, value string) bool {
 	log.Debug("Setting Application Options", "key", key, "value", value)
 
