@@ -183,7 +183,7 @@ func (coin Coin) Plus(value Coin) Coin {
 	return result
 }
 
-func (coin Coin) AsString() string {
+func (coin Coin) String() string {
 	if coin.Amount == nil {
 		log.Fatal("Invalid Coin", "coin", coin)
 	}

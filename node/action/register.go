@@ -51,14 +51,14 @@ func (transaction Register) Validate() status.Code {
 // Test to see if the identity already exists
 func (transaction Register) ProcessCheck(app interface{}) status.Code {
 	log.Debug("Processing Register Transaction for CheckTx")
+	/*
+		identities := GetIdentities(app)
+		id, ok := identities.FindName(transaction.Identity)
 
-	identities := GetIdentities(app)
-	id, ok := identities.FindName(transaction.Identity)
-
-	if ok != status.SUCCESS {
-		return ok
-	}
-
+		if ok != status.SUCCESS {
+			return ok
+		}
+	*/
 	/*
 		if id == nil {
 			log.Debug("Success, it is a new Identity", "id", transaction.Identity)
@@ -67,7 +67,7 @@ func (transaction Register) ProcessCheck(app interface{}) status.Code {
 	*/
 
 	// Not necessarily a failure, since this identity might be local
-	log.Debug("Identity already exists", "id", id)
+	//log.Debug("Identity already exists", "id", id)
 	return status.SUCCESS
 }
 
