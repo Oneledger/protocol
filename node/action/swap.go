@@ -373,16 +373,11 @@ func (si SwapInit) getParty(accountKey id.AccountKey) Party {
 // Get the correct chains order for this action
 func (si SwapInit) getChains() []data.ChainType {
 
-	var first, second data.ChainType
 	if si.Amount.Currency.Id < si.Exchange.Currency.Id {
-		first = data.Currencies[si.Amount.Currency.Name].Chain
-		second = data.Currencies[si.Exchange.Currency.Name].Chain
+		return []data.ChainType{si.Amount.Currency.Chain, si.Exchange.Currency.Chain}
 	} else {
-		first = data.Currencies[si.Exchange.Currency.Name].Chain
-		second = data.Currencies[si.Amount.Currency.Name].Chain
+		return []data.ChainType{si.Exchange.Currency.Chain, si.Amount.Currency.Chain}
 	}
-
-	return []data.ChainType{first, second}
 }
 
 func (si SwapInit) getRole(isParty bool) Role {
@@ -409,12 +404,8 @@ func (si *SwapInit) order() bool {
 		// don't need to switch
 		return true
 	} else {
-		tmpParty := si.Party
-		si.Party = si.CounterParty
-		si.CounterParty = tmpParty
-		tmpAmount := si.Amount
-		si.Amount = si.Exchange
-		si.Exchange = tmpAmount
+		si.Party, si.CounterParty = si.CounterParty, si.Party
+		si.Amount, si.Exchange = si.Exchange, si.Amount
 		return false
 	}
 
@@ -748,9 +739,6 @@ func ClearEvent(app interface{}, chain data.ChainType, context FunctionValues, t
 
 // TODO: Needs to be configurable
 var lockPeriod = 5 * time.Minute
-
-// todo: need to store this in db
-var tokens = make(map[string][32]byte)
 
 func Initiate(app interface{}, chain data.ChainType, context FunctionValues, tx Transaction) (bool, FunctionValues) {
 	log.Info("Executing Initiate Command", "chain", chain, "context", context)
