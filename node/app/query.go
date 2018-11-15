@@ -7,6 +7,7 @@ package app
 
 import (
 	"encoding/hex"
+	"github.com/Oneledger/protocol/node/action"
 	"github.com/Oneledger/protocol/node/chains/common"
 	"strings"
 
@@ -33,6 +34,12 @@ func HandleQuery(app Application, path string, message []byte) (buffer []byte) {
 
 	case "/identity":
 		result = HandleIdentityQuery(app, message)
+
+	case "/signTransaction":
+		result = HandleSignTransaction(app, message)
+
+	case "/accountPublicKey":
+		result = HandleAccountPublicKeyQuery(app, message)
 
 	case "/accountKey":
 		result = HandleAccountKeyQuery(app, message)
@@ -66,6 +73,79 @@ func HandleQuery(app Application, path string, message []byte) (buffer []byte) {
 
 func HandleNodeNameQuery(app Application, message []byte) interface{} {
 	return global.Current.NodeName
+}
+
+func HandleSignTransaction(app Application, message []byte) interface{} {
+	log.Debug("SignTransactionQuery", "message", message)
+
+	var tx action.Transaction
+
+	transaction, transactionErr := serial.Deserialize(message, tx, serial.CLIENT)
+
+	signatures := []action.TransactionSignature{}
+
+	if transactionErr != nil {
+		log.Error("Could not deserialize a transaction", "error", transactionErr)
+		return signatures
+	}
+
+	var accountKey id.AccountKey
+
+	switch v := transaction.(type) {
+	case *action.Swap:
+		accountKey = v.Base.Owner
+	case *action.Send:
+		accountKey = v.Base.Owner
+	case *action.Register:
+		accountKey = v.Base.Owner
+	default:
+		log.Error("Unknown transaction type", "transaction", transaction)
+	}
+
+	if accountKey == nil {
+		log.Error("Account key is null", "transaction", transaction)
+		return signatures
+	}
+
+	account, accountStatus := app.Accounts.FindKey(accountKey)
+
+	if accountStatus != status.SUCCESS {
+		log.Error("Could not find an account", "status", accountStatus)
+		return signatures
+	}
+
+	privateKey := account.PrivateKey()
+
+	signature, signatureError := privateKey.Sign(message)
+
+	if signatureError != nil {
+		log.Error("Could not sign a transaction", "error", signatureError)
+		return signatures
+	}
+
+	signatures = append(signatures, action.TransactionSignature{signature})
+
+	return signatures
+}
+
+func HandleAccountPublicKeyQuery(app Application, message []byte) interface{} {
+	log.Debug("AccountPublicKeyQuery", "message", message)
+
+	account, accountStatus := app.Accounts.FindKey(message)
+
+	if accountStatus != status.SUCCESS {
+		log.Error("Could not find an account", "status", accountStatus)
+		return []byte{}
+	}
+
+	privateKey := account.PrivateKey()
+	publicKey := privateKey.PubKey()
+
+	if publicKey.Equals(account.PublicKey()) == false {
+		log.Warn("Public keys don't match", "derivedPublicKey", publicKey, "accountPublicKey", account.PublicKey())
+	}
+
+	return publicKey
 }
 
 // Get the account information for a given user
@@ -247,4 +327,38 @@ func SwapAddress(chain data.ChainType) interface{} {
 // Return a nicely formatted error message
 func HandleError(text string, path string, message []byte) interface{} {
 	return "Unknown Query " + text + " " + path + " " + string(message)
+}
+
+func SignTransaction(transaction action.Transaction, applicaiton Application) action.SignedTransaction {
+	packet, err := serial.Serialize(transaction, serial.CLIENT)
+
+	signed := action.SignedTransaction{transaction, nil}
+
+	if err != nil {
+		log.Error("Failed to Serialize packet: ", "error", err)
+	} else {
+		request := action.Message(packet)
+
+		response := HandleSignTransaction(applicaiton, request)
+
+		if response == nil {
+			log.Warn("Query returned no signature", "request", request)
+		} else {
+			signed.Signatures = response.([]action.TransactionSignature)
+		}
+	}
+
+	return signed
+}
+
+func GetSigners(owner []byte, applicaiton Application) []id.PublicKey {
+	log.Debug("GetSigners", "owner", owner)
+
+	publicKey := HandleAccountPublicKeyQuery(applicaiton, owner)
+
+	if publicKey == nil {
+		return nil
+	}
+
+	return []id.PublicKey{publicKey.(id.PublicKey)}
 }

@@ -6,7 +6,7 @@ fi
 
 mkdir -p $OLROOT/protocol/VOLUME
 
-for binary in fullnode tendermint olclient
+for binary in olfullnode tendermint olclient
 do
 	binaryPath=`whereis ${binary} | awk '{print $2}'`
 

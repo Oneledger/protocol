@@ -111,6 +111,7 @@ func Deserialize(input []byte, output interface{}, medium Format) (msg interface
 	}
 
 	result := Contract(wrapper)
+	// log.Dump("Deserialized to", result)
 
 	return result, err
 }
@@ -125,7 +126,12 @@ var prototype = SerialWrapper{}
 
 // Test to see if this a SerialWrapper struct
 func IsSerialWrapper(input interface{}) bool {
-	if reflect.TypeOf(input) == reflect.TypeOf(prototype) {
+	if input == nil {
+		return false
+	}
+
+	base := GetBaseType(input)
+	if base == reflect.TypeOf(prototype) {
 		return true
 	}
 	return false

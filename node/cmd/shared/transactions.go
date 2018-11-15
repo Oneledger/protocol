@@ -15,7 +15,3 @@ func GetPublicKey() id.PublicKey {
 	return id.NilPublicKey()
 }
 
-// GetSigners will return the public keys of the signers
-func GetSigners() []id.PublicKey {
-	return nil
-}

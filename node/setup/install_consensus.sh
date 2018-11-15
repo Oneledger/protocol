@@ -5,8 +5,11 @@ go get -u github.com/tendermint/tendermint/cmd/tendermint
 
 pushd $GOPATH/src/github.com/tendermint/tendermint
 git checkout tags/v0.23.1
+
 make get_tools
 make get_vendor_deps
 make install
 #make test
+
+popd
 
