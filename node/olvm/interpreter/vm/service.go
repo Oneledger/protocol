@@ -1,31 +1,20 @@
-package service
+package vm
 
 import (
   "log"
   "net"
   "net/rpc"
   "net/http"
-  "os"
   "../monitor"
   "../runner"
   "errors"
   "fmt"
+  "strconv"
 )
 
-func (ol *OLVMService) Echo(args *Args, reply *int) error {
-  *reply = 200
-  return nil
-}
+var DefaultOLVMService = NewOLVMService("tcp", 1980)
 
-func (ol *OLVMService) Close(args *Args, reply *int) error {
-  defer func() {
-    os.Exit(0)
-  }()
-  *reply = 200
-  return nil
-}
-
-func (ol *OLVMService) Exec(args *Args, reply *Reply) error {
+func (c *Container) Exec(args *Args, reply *Reply) error {
   mo := monitor.CreateMonitor(10, monitor.DEFAULT_MODE, "./ovm.pid")
   status_ch := make(chan monitor.Status)
   runner_ch := make(chan bool)
@@ -51,6 +40,26 @@ func (ol *OLVMService) Exec(args *Args, reply *Reply) error {
   return nil
 }
 
+func (ol OLVMService) Run() {
+  log.Printf("Service is running with protocol %s on the port %d...\n", ol.Protocol, ol.Port)
+  container := new(Container)
+  rpc.Register(container)
+  rpc.HandleHTTP()
+  l, e := net.Listen(ol.Protocol, ":"+ strconv.Itoa(ol.Port))
+  if e!= nil {
+    log.Fatal("listen error:", e)
+  }
+  http.Serve(l, nil)
+}
+
+func NewOLVMService(protocol string, port int) OLVMService {
+  return OLVMService{protocol, port}
+}
+
+func Run() {
+  DefaultOLVMService.Run()
+}
+
 func parseArgs(args *Args) (string, string, string, int){
   from := args.From
   address := args.Address
@@ -66,16 +75,4 @@ func parseArgs(args *Args) (string, string, string, int){
     callString = "default__('hello,world from Oneledger')"
   }
   return from, address, callString, value
-}
-
-func Run() {
-  log.Print("Service is running...")
-  service := new(OLVMService)
-  rpc.Register(service)
-  rpc.HandleHTTP()
-  l, e := net.Listen("tcp", ":1980")
-  if e!= nil {
-    log.Fatal("listen error:", e)
-  }
-  http.Serve(l, nil)
 }

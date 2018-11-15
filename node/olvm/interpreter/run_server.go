@@ -2,10 +2,10 @@ package main
 
 import (
   "log"
-  "./service"
+  "./vm"
 )
 
 func main() {
   log.Print("Up running vm")
-  service.Run()
+  vm.Run()
 }
