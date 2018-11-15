@@ -28,9 +28,16 @@ func GetAccountKey(identity string) []byte {
 		log.Warn("Query returned nothing", "request", request)
 		return nil
 	}
-	//result := response.([]uint8)
-	result := response.(id.AccountKey)
-	return result
+	switch param := response.(type) {
+	case id.AccountKey:
+		return param
+
+	case string:
+		log.Warn("Query Error:", "err", param, "request", request, "response", response)
+		return nil
+	}
+	log.Warn("Query Unknown Type:", "response", response)
+	return nil
 }
 
 func GetSwapAddress(currencyName string) []byte {

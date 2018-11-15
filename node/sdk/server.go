@@ -34,7 +34,6 @@ const (
 func GetPort(addr string) string {
 	automata := regexp.MustCompile(`.*?:.*?:(.*)`)
 	groups := automata.FindStringSubmatch(addr)
-	log.Dump("Parsed", addr, groups)
 
 	if groups == nil || len(groups) != 2 {
 		log.Fatal("Failed to parse SDK address", "addr", addr)

@@ -13,13 +13,15 @@ import (
 
 var registerCmd = &cobra.Command{
 	Use:   "register",
-	Short: "Create or reuse an account",
+	Short: "Register and Identity with the Chain",
 	Run:   RegisterIdentity,
 }
 
 // Arguments to the command
 type RegistrationArguments struct {
 	identity string
+	account  string
+	nodeName string
 	pubkey   string
 }
 
@@ -29,35 +31,21 @@ func init() {
 	RootCmd.AddCommand(registerCmd)
 
 	// Transaction Parameters
-	registerCmd.Flags().StringVar(&arguments.identity, "identity", "Unknown", "User's Identity")
-	registerCmd.Flags().StringVar(&arguments.pubkey, "pubkey", "0x00000000", "Specify a public key")
+	registerCmd.Flags().StringVar(&arguments.identity, "identity", "", "User's Identity")
+	registerCmd.Flags().StringVar(&arguments.account, "account", "", "User's Default Account")
+	registerCmd.Flags().StringVar(&arguments.nodeName, "node", "", "User's Default Node")
+
+	registerCmd.Flags().StringVar(&arguments.pubkey, "pubkey", "", "Specify a public key")
 }
 
 func RegisterIdentity(cmd *cobra.Command, args []string) {
-	arguments := &shared.RegisterArguments{}
+	arguments := &shared.RegisterArguments{
+		Identity: arguments.identity,
+		Account:  arguments.account,
+		NodeName: arguments.nodeName,
+	}
 
-	register := shared.CreateRegisterRequest(arguments)
+	register := shared.RegisterIdentityRequest(arguments)
 
 	comm.SDKRequest(register)
 }
-
-/*
-// IssueRequest sends out a sendTx to all of the nodes in the chain
-func Register(cmd *cobra.Command, args []string) {
-	log.Debug("Client Register Account via SetOption...")
-
-	cli := &app.RegisterArguments{
-		Identity:   arguments.identity,
-		Chain:      arguments.chain,
-		PublicKey:  arguments.pubkey,
-		PrivateKey: arguments.privkey,
-	}
-
-	buffer, err := serial.Serialize(cli, serial.CLIENT)
-	if err != nil {
-		log.Error("Register Failed", "err", err)
-		return
-	}
-	comm.SetOption("Register", string(buffer))
-}
-*/

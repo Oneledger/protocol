@@ -75,7 +75,7 @@ then
 		--address $rpcAddress \
 		--btcrpc $btcAddress \
 		--ethrpc $ethAddress \
-        --tendermintRoot $DATA \
+		--tendermintRoot $DATA \
 		--sdkrpc $sdkAddress \
 		$extra \
 		>> $LOG/olfullnode.log 2>&1 &

@@ -9,9 +9,10 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/Oneledger/protocol/node/config"
 	"github.com/Oneledger/protocol/node/global"
+	"github.com/Oneledger/protocol/node/log"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 )
 
 var RootCmd = &cobra.Command{
@@ -33,6 +34,9 @@ func init() {
 
 	RootCmd.PersistentFlags().StringVar(&global.Current.RootDir, "root",
 		global.Current.RootDir, "Set root directory")
+
+	RootCmd.PersistentFlags().StringVarP(&global.Current.ConfigName, "config", "c",
+		global.Current.ConfigName, "Configuration File Name")
 
 	RootCmd.PersistentFlags().StringVar(&global.Current.NodeName, "node",
 		global.Current.NodeName, "Set a node name")
@@ -67,5 +71,10 @@ func init() {
 
 // Initialize Viper
 func environment() {
-	viper.AutomaticEnv()
+	log.Debug("Loading Environment")
+	config.ServerConfig()
+
+	// TODO: Static variables vs Dynamic variables :-(
+	//global.Current.SDKAddress = viper.Get("SDKAddress").(string)
+	//global.Current.RpcAddress = viper.Get("RpcAddress").(string)
 }

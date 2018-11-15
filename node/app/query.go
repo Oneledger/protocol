@@ -24,34 +24,34 @@ import (
 )
 
 // Top-level list of all query types
-func HandleQuery(app Application, path string, message []byte) (buffer []byte) {
+func HandleQuery(app Application, path string, arguments map[string]string) []byte {
 
 	var result interface{}
 
 	switch path {
 	case "/nodeName":
-		result = HandleNodeNameQuery(app, message)
+		result = HandleNodeNameQuery(app, arguments)
 
 	case "/identity":
-		result = HandleIdentityQuery(app, message)
+		result = HandleIdentityQuery(app, arguments)
 
 	case "/accountKey":
-		result = HandleAccountKeyQuery(app, message)
+		result = HandleAccountKeyQuery(app, arguments)
 
 	case "/account":
-		result = HandleAccountQuery(app, message)
+		result = HandleAccountQuery(app, arguments)
 
 	case "/balance":
-		result = HandleBalanceQuery(app, message)
+		result = HandleBalanceQuery(app, arguments)
 
 	case "/version":
-		result = HandleVersionQuery(app, message)
+		result = HandleVersionQuery(app, arguments)
 
 	case "/swapAddress":
-		result = HandleSwapAddressQuery(app, message)
+		result = HandleSwapAddressQuery(app, arguments)
 
 	default:
-		result = HandleError("Unknown Query", path, message)
+		result = HandleError("Unknown Query", path, arguments)
 	}
 
 	buffer, err := serial.Serialize(result, serial.CLIENT)
@@ -59,18 +59,18 @@ func HandleQuery(app Application, path string, message []byte) (buffer []byte) {
 		log.Debug("Failed to serialize query")
 	}
 
-	return
+	return buffer
 }
 
-func HandleNodeNameQuery(app Application, message []byte) interface{} {
+func HandleNodeNameQuery(app Application, arguments map[string]string) interface{} {
 	return global.Current.NodeName
 }
 
 // Get the account information for a given user
-func HandleAccountKeyQuery(app Application, message []byte) interface{} {
-	log.Debug("AccountKeyQuery", "message", message)
+func HandleAccountKeyQuery(app Application, arguments map[string]string) interface{} {
+	log.Debug("AccountKeyQuery", "arguments", arguments)
 
-	text := string(message)
+	text := arguments["parameters"]
 
 	name := ""
 	parts := strings.Split(text, "=")
@@ -81,26 +81,28 @@ func HandleAccountKeyQuery(app Application, message []byte) interface{} {
 }
 
 func AccountKey(app Application, name string) interface{} {
-	identity, ok := app.Identities.FindName(name)
 
+	// Check Itdentities First
+	identity, ok := app.Identities.FindName(name)
 	if ok == status.SUCCESS && identity.Name != "" {
 		return identity.AccountKey
 	}
 
+	// TODO: This is a bit dangerous (can cause confusion)
 	// Maybe this is an AccountName, not an identity
 	account, ok := app.Accounts.FindName(name)
 	if ok == status.SUCCESS && identity.Name != "" {
 		return account.AccountKey()
 	}
 
-	return "Account " + name + " Not Found"
+	return "Account " + name + " Not Found on " + global.Current.NodeName
 }
 
 // Get the account information for a given user
-func HandleIdentityQuery(app Application, message []byte) interface{} {
-	log.Debug("IdentityQuery", "message", message)
+func HandleIdentityQuery(app Application, arguments map[string]string) interface{} {
+	log.Debug("IdentityQuery", "arguments", arguments)
 
-	text := string(message)
+	text := arguments["parameters"]
 
 	name := ""
 	parts := strings.Split(text, "=")
@@ -121,14 +123,14 @@ func IdentityInfo(app Application, name string) interface{} {
 		return []id.Identity{identity}
 	}
 
-	return "Identity " + name + " Not Found"
+	return "Identity " + name + " Not Found" + global.Current.NodeName
 }
 
 // Get the account information for a given user
-func HandleAccountQuery(app Application, message []byte) interface{} {
-	log.Debug("AccountQuery", "message", message)
+func HandleAccountQuery(app Application, arguments map[string]string) interface{} {
+	log.Debug("AccountQuery", "arguments", arguments)
 
-	text := string(message)
+	text := arguments["parameters"]
 
 	name := ""
 	parts := strings.Split(text, "=")
@@ -150,18 +152,18 @@ func AccountInfo(app Application, name string) interface{} {
 		return account
 	}
 
-	return "Account " + name + " Not Found"
+	return "Account " + name + " Not Found" + global.Current.NodeName
 }
 
-func HandleVersionQuery(app Application, message []byte) interface{} {
+func HandleVersionQuery(app Application, arguments map[string]string) interface{} {
 	return version.Current.String()
 }
 
 // Get the account information for a given user
-func HandleBalanceQuery(app Application, message []byte) interface{} {
-	log.Debug("BalanceQuery", "message", message)
+func HandleBalanceQuery(app Application, arguments map[string]string) interface{} {
+	log.Debug("BalanceQuery", "arguments", arguments)
 
-	text := string(message)
+	text := arguments["parameters"]
 
 	var key []byte
 	parts := strings.Split(text, "=")
@@ -180,10 +182,10 @@ func Balance(app Application, accountKey []byte) interface{} {
 	return &result
 }
 
-func HandleSwapAddressQuery(app Application, message []byte) interface{} {
-	log.Debug("SwapAddressQuery", "message", message)
+func HandleSwapAddressQuery(app Application, arguments map[string]string) interface{} {
+	log.Debug("SwapAddressQuery", "arguments", arguments)
 
-	text := string(message)
+	text := arguments["parameter"]
 	conv := convert.NewConvert()
 	var chain data.ChainType
 	parts := strings.Split(text, "=")
@@ -207,6 +209,7 @@ func SwapAddress(chain data.ChainType) interface{} {
 }
 
 // Return a nicely formatted error message
-func HandleError(text string, path string, message []byte) interface{} {
-	return "Unknown Query " + text + " " + path + " " + string(message)
+func HandleError(text string, path string, arguments map[string]string) interface{} {
+	// TODO: Add in arguments to output
+	return "Unknown Query " + text + " " + path
 }

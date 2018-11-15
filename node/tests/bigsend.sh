@@ -13,11 +13,11 @@ addrCarol=`$OLSCRIPT/lookup Carol RPCAddress tcp://127.0.0.1:`
 addrDavid=`$OLSCRIPT/lookup David RPCAddress tcp://127.0.0.1:`
 
 # Put some money in the user accounts
-SEQ=`$CMD/nextSeq`
-olclient testmint -s $SEQ -a $addrAlice --party Alice --amount 10000 --currency OLT
-olclient testmint -s $SEQ -a $addrBob --party Bob --amount 20000 --currency OLT
-olclient testmint -s $SEQ -a $addrCarol --party Carol --amount 3000000 --currency OLT
-olclient testmint -s $SEQ -a $addrDavid --party David --amount 1800000 --currency OLT
+#SEQ=`$CMD/nextSeq`
+#olclient testmint -s $SEQ -a $addrAlice --party Alice --amount 10000 --currency OLT
+#olclient testmint -s $SEQ -a $addrBob --party Bob --amount 20000 --currency OLT
+#olclient testmint -s $SEQ -a $addrCarol --party Carol --amount 3000000 --currency OLT
+#olclient testmint -s $SEQ -a $addrDavid --party David --amount 1800000 --currency OLT
 
 # assumes olfullnode is in the PATH
 olclient send -s $SEQ -a $addrBob --party Bob --counterparty Alice --amount 5000 --currency OLT
@@ -41,18 +41,23 @@ olclient send -s $SEQ -a $addrDavid --party David --counterparty Carol --amount 
 
 sleep 8
 
+olclient list -c "David"
+olclient list -c "Alice"
+olclient list -c "Bob"
+olclient list -c "Carol"
+
 #olclient utxo -a $addrAlice
 #olclient utxo -a $addrBob
 #olclient utxo -a $addrCarol
 #olclient utxo -a $addrDavid
 
-olclient identity -a $addrAlice
-olclient identity -a $addrBob
-olclient identity -a $addrCarol
-olclient identity -a $addrDavid
+#olclient identity -a $addrAlice
+#olclient identity -a $addrBob
+#olclient identity -a $addrCarol
+#olclient identity -a $addrDavid
 
-olclient account -a $addrAlice
-olclient account -a $addrBob
-olclient account -a $addrCarol
-olclient account -a $addrDavid
+#olclient account -a $addrAlice
+#olclient account -a $addrBob
+#olclient account -a $addrCarol
+#olclient account -a $addrDavid
 

@@ -14,7 +14,6 @@ import (
 
 func NewSDKClient() pb.SDKClient {
 	address := global.Current.SDKAddress
-	log.Dump("Address is", address)
 
 	// TODO: Why is this insecure????
 	connection, err := grpc.Dial(":"+sdk.GetPort(address), grpc.WithInsecure())
@@ -48,8 +47,10 @@ func SDKRequest(base interface{}) interface{} {
 	var prototype interface{}
 	result, err := serial.Deserialize(response.Results, prototype, serial.CLIENT)
 	if err != nil {
+		log.Dump("Results are", response.Results)
 		log.Fatal("Deserialize Failed", "err", err)
 	}
+
 	return result
 }
 

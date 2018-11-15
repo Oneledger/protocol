@@ -12,6 +12,7 @@ import (
 	"github.com/Oneledger/protocol/node/log"
 )
 
+// TODO: NodeAccount flag should not be here!!!
 // Create a local account for this fullnode
 func AddAccount(app *Application, name string, chain data.ChainType,
 	publicKey id.PublicKeyED25519, privateKey id.PrivateKeyED25519, nodeAccount bool) {

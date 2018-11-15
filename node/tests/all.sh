@@ -11,7 +11,7 @@ $TEST/query.sh
 $TEST/register.sh
 $TEST/send.sh
 $TEST/simple.sh
-$TEST/status.sh
+#$TEST/status.sh
 $TEST/swap.sh
 $TEST/testmint.sh
 $TEST/utxo.sh

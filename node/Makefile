@@ -75,12 +75,12 @@ fulltest: reset install
 #
 # Swap Testing, swap BTC with ETH between nodes, do a full reset and rebuild each time
 #
-swaptest: resetMVP install
+swaptest: resetDevnet install
 	@./scripts/startBitcoin
 	@./scripts/startEthereum
 	@./tests/register.sh
 	@./tests/swap.sh
-	@./scripts/stopMVP
+	@./scripts/stopDevnet
 
 
 #
@@ -96,7 +96,7 @@ start: check install
 # System Testing, bring it all down
 #
 stop: check
-	@./scripts/stopMVP
+	@./scripts/stopDevnet
 
 #
 # Reset all of the chains, back to genesis
@@ -107,8 +107,8 @@ reset: check stop
 #
 # Reset all of the chains, back to genesis
 #
-resetMVP: check stop
-	@./scripts/resetMVP
+resetDevnet: check stop
+	@./scripts/resetDevnet
 
 #
 # Startup a tmux monitor

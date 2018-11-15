@@ -110,6 +110,7 @@ func (app Application) SetupState(stateBytes []byte) {
 
 	var base BasicState
 
+	// Tendermint serializes this data, so we have to use raw JSON serialization to read it.
 	des, errx := serial.Deserialize(stateBytes, &base, serial.JSON)
 	if errx != nil {
 		log.Fatal("Failed to deserialize stateBytes during SetupState")
@@ -121,14 +122,14 @@ func (app Application) SetupState(stateBytes []byte) {
 	// TODO: Can't generate a different key for each node. Needs to be in the genesis? Or ignored?
 	//publicKey, privateKey := id.GenerateKeys([]byte(state.Account)) // TODO: switch with passphrase
 	publicKey, privateKey := id.NilPublicKey(), id.NilPrivateKey()
-
 	CreateAccount(app, state.Account, state.Amount, publicKey, privateKey)
 
 	publicKey, privateKey = id.OnePublicKey(), id.OnePrivateKey()
 	CreateAccount(app, "Payment", "0", publicKey, privateKey)
 }
 
-func CreateAccount(app Application, stateAccount string, stateAmount string, publicKey id.PublicKeyED25519, privateKey id.PrivateKeyED25519) {
+func CreateAccount(app Application, stateAccount string, stateAmount string,
+	publicKey id.PublicKeyED25519, privateKey id.PrivateKeyED25519) {
 
 	// TODO: This should probably only occur on the Admin node, for other nodes how do I know the key?
 	// Register the identity and account first
@@ -145,7 +146,7 @@ func CreateAccount(app Application, stateAccount string, stateAmount string, pub
 	// TODO: Until a block is commited, this data is not persistent
 	//app.Balances.Commit()
 
-	log.Info("Genesis State UTXO database", "balance", balance)
+	log.Info("Genesis State Balances database", "balance", balance)
 }
 
 func NewBalanceFromString(amount string, currency string) data.Balance {
@@ -186,6 +187,7 @@ func (app Application) SetOption(req RequestSetOption) ResponseSetOption {
 // Info returns the current block information
 func (app Application) Info(req RequestInfo) ResponseInfo {
 
+	// TODO: Check this...
 	info := abci.NewResponseInfo(0, 0, 0)
 
 	log.Debug("ABCI: Info", "req", req, "info", info)
@@ -200,19 +202,30 @@ func (app Application) Info(req RequestInfo) ResponseInfo {
 	return result
 }
 
-// Query returns a transaction or a proof
+func ParseData(message []byte) map[string]string {
+	result := map[string]string{
+		"parameters": string(message),
+	}
+	return result
+}
+
+// Query comes from tendermint node, and returns data and/or a proof
 func (app Application) Query(req RequestQuery) ResponseQuery {
 	log.Debug("ABCI: Query", "req", req, "path", req.Path, "data", req.Data)
 
-	result := HandleQuery(app, req.Path, req.Data)
+	arguments := ParseData(req.Data)
+	result := HandleQuery(app, req.Path, arguments)
 
 	return ResponseQuery{
-		Code:   2,
-		Log:    "Log Information",
-		Info:   "Info Information",
-		Index:  0,
-		Key:    action.Message("result"),
-		Value:  result,
+		Code:  types.CodeTypeOK,
+		Index: 0, // TODO: What is this for?
+
+		Log:  "Log Information",
+		Info: "Info Information",
+
+		Key:   action.Message("result"),
+		Value: result,
+
 		Proof:  nil,
 		Height: int64(app.Balances.Version),
 	}
@@ -224,7 +237,9 @@ func (app Application) CheckTx(tx []byte) ResponseCheckTx {
 
 	if tx == nil {
 		log.Warn("Empty Transaction, Ignoring", "tx", tx)
-		return ResponseCheckTx{Code: status.PARSE_ERROR}
+		return ResponseCheckTx{
+			Code: status.PARSE_ERROR,
+		}
 	}
 
 	result, err := action.Parse(action.Message(tx))
@@ -243,10 +258,12 @@ func (app Application) CheckTx(tx []byte) ResponseCheckTx {
 	}
 
 	return ResponseCheckTx{
-		Code:      types.CodeTypeOK,
-		Data:      []byte("Data"),
-		Log:       "Log Data",
-		Info:      "Info Data",
+		Code: types.CodeTypeOK,
+		Data: []byte("Data"),
+
+		Log:  "Log Data",
+		Info: "Info Data",
+
 		GasWanted: 1000,
 		GasUsed:   1000,
 		Tags:      []common.KVPair(nil),

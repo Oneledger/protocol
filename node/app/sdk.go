@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"fmt"
+	"reflect"
 
 	"github.com/Oneledger/protocol/node/action"
 	"github.com/Oneledger/protocol/node/comm"
@@ -38,12 +39,20 @@ type SDKQuery struct {
 	Arguments map[string]string
 }
 
+type SDKSet struct {
+	Path      string
+	Arguments map[string]string
+}
+
 func init() {
 	serial.Register(SDKQuery{})
+	serial.Register(SDKSet{})
 }
 
 func (server SDKServer) Request(ctx context.Context, request *pb.SDKRequest) (*pb.SDKReply, error) {
 	var prototype interface{}
+	var err error
+	var result interface{}
 
 	if string(request.Parameters) == "" {
 		return &pb.SDKReply{Results: []byte("Empty Data")}, nil
@@ -54,23 +63,42 @@ func (server SDKServer) Request(ctx context.Context, request *pb.SDKRequest) (*p
 		log.Fatal("Deserialized Failed", "err", err, "data", string(request.Parameters))
 	}
 
-	var result interface{}
 	switch base := parameter.(type) {
 	case *SDKQuery:
-		log.Dump("Have SDK Query", parameter)
-		result = HandleQuery(*server.App, base.Path, []byte(""))
+		log.Dump("Have SDKQuery", base)
+		result = HandleQuery(*server.App, base.Path, base.Arguments)
+
+	case *SDKSet:
+		log.Dump("Have SDKSet", base)
+		result = HandleSet(*server.App, base.Path, base.Arguments)
 
 	default:
-		log.Dump("Have SDK request for", parameter)
-		result = "We have an error"
+		result = HandleTypeError("Unknown Parameter")
 	}
 
-	buffer, err := serial.Serialize(result, serial.CLIENT)
-	reply := &pb.SDKReply{
-		Results: buffer,
+	//buffer, err := serial.Serialize(result, serial.CLIENT)
+	switch base := result.(type) {
+	case []byte:
+		return &pb.SDKReply{
+			Results: base,
+		}, nil
+
+	case string:
+		return &pb.SDKReply{
+			Results: []byte(base),
+		}, nil
 	}
 
-	return reply, nil
+	return nil, fmt.Errorf("Invalid return type: %s", reflect.TypeOf(result).String())
+}
+
+func HandleTypeError(message string) []byte {
+	result, err := serial.Serialize(message, serial.CLIENT)
+	if err != nil {
+		log.Fatal("Failed to Serialize", "err", err)
+	}
+
+	return result
 }
 
 func (server SDKServer) Status(ctx context.Context, request *pb.StatusRequest) (*pb.StatusReply, error) {

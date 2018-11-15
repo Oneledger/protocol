@@ -24,46 +24,68 @@ func SignAndPack(transaction action.Transaction) []byte {
 
 // Registration
 type AccountArguments struct {
-	Name      string
-	Chain     string
-	PublicKey string
+	Account    string
+	Chain      string
+	PublicKey  string
+	PrivateKey string
 }
 
-func CreateAccountRequest(args *AccountArguments) interface{} {
-	return &app.SDKQuery{
-		Path:      "/testing",
-		Arguments: map[string]string{"Test": "Answer"},
+func UpdateAccountRequest(args *AccountArguments) interface{} {
+	return &app.SDKSet{
+		Path: "/account",
+		Arguments: map[string]string{
+			"Account":    args.Account,
+			"Chain":      args.Chain,
+			"PublicKey":  args.PublicKey,
+			"PrivateKey": args.PrivateKey,
+		},
 	}
 }
 
 // Registration
 type RegisterArguments struct {
 	Identity string
+	Account  string
+	NodeName string
 }
 
 // Create a request to register a new identity with the chain
-func CreateRegisterRequest(args *RegisterArguments) []byte {
-	signers := GetSigners()
+func RegisterIdentityRequest(args *RegisterArguments) interface{} {
+	//signers := GetSigners()
 
-	accountKey := GetAccountKey(args.Identity)
+	// TODO: Need to check errors here
+	//accountKey := GetAccountKey(args.Account)
 
 	app.LoadPrivValidatorFile()
 
-	reg := &action.Register{
-		Base: action.Base{
-			Type:     action.REGISTER,
-			ChainId:  app.ChainId,
-			Signers:  signers,
-			Sequence: global.Current.Sequence,
+	return &app.SDKSet{
+		Path: "/register",
+		Arguments: map[string]string{
+			"Identity": args.Identity,
+			"Account":  args.Account,
+			"NodeName": args.NodeName,
 		},
-		Identity:          args.Identity,
-		NodeName:          global.Current.NodeName,
-		AccountKey:        accountKey,
-		TendermintAddress: global.Current.TendermintAddress,
-		TendermintPubKey:  global.Current.TendermintPubKey,
 	}
 
-	return SignAndPack(action.Transaction(reg))
+	/*
+		reg := &action.Register{
+			Base: action.Base{
+				Type:     action.REGISTER,
+				ChainId:  app.ChainId,
+				Signers:  signers,
+				Sequence: global.Current.Sequence,
+			},
+
+			Identity:   args.Identity,
+			NodeName:   args.NodeName,
+			AccountKey: accountKey,
+
+			TendermintAddress: global.Current.TendermintAddress,
+			TendermintPubKey:  global.Current.TendermintPubKey,
+		}
+		return SignAndPack(action.Transaction(reg))
+	*/
+
 }
 
 type BalanceArguments struct {
