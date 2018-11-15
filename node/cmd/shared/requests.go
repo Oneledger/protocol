@@ -28,8 +28,6 @@ type RegisterArguments struct {
 
 // Create a request to register a new identity with the chain
 func CreateRegisterRequest(args *RegisterArguments) []byte {
-	signers := GetSigners()
-
 	accountKey := GetAccountKey(args.Identity)
 
 	app.LoadPrivValidatorFile()
@@ -38,7 +36,8 @@ func CreateRegisterRequest(args *RegisterArguments) []byte {
 		Base: action.Base{
 			Type:     action.REGISTER,
 			ChainId:  app.ChainId,
-			Signers:  signers,
+			Owner:    accountKey,
+			Signers:  action.GetSigners(accountKey),
 			Sequence: global.Current.Sequence,
 		},
 		Identity:          args.Identity,
@@ -69,8 +68,6 @@ type SendArguments struct {
 
 // CreateRequest builds and signs the transaction based on the arguments
 func CreateSendRequest(args *SendArguments) []byte {
-	signers := GetSigners()
-
 	conv := convert.NewConvert()
 
 	if args.Party == "" {
@@ -139,7 +136,8 @@ func CreateSendRequest(args *SendArguments) []byte {
 		Base: action.Base{
 			Type:     action.SEND,
 			ChainId:  app.ChainId,
-			Signers:  signers,
+			Owner:    party,
+			Signers:  action.GetSigners(party),
 			Sequence: global.Current.Sequence,
 		},
 		Inputs:  inputs,
@@ -153,8 +151,6 @@ func CreateSendRequest(args *SendArguments) []byte {
 
 // CreateRequest builds and signs the transaction based on the arguments
 func CreateMintRequest(args *SendArguments) []byte {
-	signers := GetSigners()
-
 	conv := convert.NewConvert()
 
 	if args.Party == "" {
@@ -208,7 +204,7 @@ func CreateMintRequest(args *SendArguments) []byte {
 		Base: action.Base{
 			Type:     action.SEND,
 			ChainId:  app.ChainId,
-			Signers:  signers,
+			Signers:  action.GetSigners(zero),
 			Owner:    zero,
 			Sequence: global.Current.Sequence,
 		},
@@ -245,8 +241,6 @@ func CreateSwapRequest(args *SwapArguments) []byte {
 	partyKey := GetAccountKey(args.Party)
 	counterPartyKey := GetAccountKey(args.CounterParty)
 
-	signers := GetSigners()
-
 	fee := conv.GetCoin(args.Fee, "OLT")
 	gas := conv.GetCoin(args.Gas, "OLT")
 	amount := conv.GetCoin(args.Amount, args.Currency)
@@ -278,7 +272,7 @@ func CreateSwapRequest(args *SwapArguments) []byte {
 		Base: action.Base{
 			Type:     action.SWAP,
 			ChainId:  app.ChainId,
-			Signers:  signers,
+			Signers:  action.GetSigners(partyKey),
 			Owner:    partyKey,
 			Target:   counterPartyKey,
 			Sequence: global.Current.Sequence,

@@ -14,16 +14,16 @@ import (
 )
 
 // Parse a message into the appropriate transaction
-func Parse(message Message) (Transaction, status.Code) {
-	var tx Transaction
+func Parse(message Message) (SignedTransaction, status.Code) {
+	var tx SignedTransaction
 
 	transaction, transactionErr := serial.Deserialize(message, tx, serial.CLIENT)
 
 	if transactionErr == nil {
-		return transaction.(Transaction), status.SUCCESS
+		return transaction.(SignedTransaction), status.SUCCESS
 	}
 
 	log.Error("Could not deserialize a transaction", "error",  transactionErr)
 
-	return nil, status.PARSE_ERROR
+	return SignedTransaction{}, status.PARSE_ERROR
 }
