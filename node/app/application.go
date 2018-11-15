@@ -8,9 +8,6 @@ package app
 import (
 	"bytes"
 	"encoding/hex"
-	"math/big"
-	"strconv"
-
 	"github.com/Oneledger/protocol/node/abci"
 	"github.com/Oneledger/protocol/node/action"
 	"github.com/Oneledger/protocol/node/comm"
@@ -22,6 +19,8 @@ import (
 	"github.com/Oneledger/protocol/node/status"
 	"github.com/tendermint/tendermint/abci/types"
 	"github.com/tendermint/tendermint/libs/common"
+	"math/big"
+	"strconv"
 )
 
 var ChainId string
@@ -266,9 +265,17 @@ var chainKey data.DatabaseKey = data.DatabaseKey("chainId")
 
 // BeginBlock is called when a new block is started
 func (app Application) BeginBlock(req RequestBeginBlock) ResponseBeginBlock {
-	//log.Debug("ABCI: BeginBlock", "req", req)
+	log.Debug("ABCI: BeginBlock", "req", req)
 
-	app.MakePayment(req)
+	raw := app.Admin.Get(data.DatabaseKey("PaymentRecord"))
+	if raw == nil {
+		app.MakePayment(req)
+	} else {
+		params := raw.(action.PaymentRecord)
+		if params.BlockHeight == -1 {
+			app.MakePayment(req)
+		}
+	}
 
 	newChainId := action.Message(req.Header.ChainID)
 
@@ -293,6 +300,7 @@ func (app Application) BeginBlock(req RequestBeginBlock) ResponseBeginBlock {
 
 // EndBlock is called at the end of all of the transactions
 func (app Application) MakePayment(req RequestBeginBlock) {
+	//log.Debug("MakePayment", "req", req)
 	account, err := app.Accounts.FindName("Payment-OneLedger")
 	if err != status.SUCCESS {
 		log.Fatal("ABCI: BeginBlock Fatal Status", "status", err)
@@ -303,8 +311,35 @@ func (app Application) MakePayment(req RequestBeginBlock) {
 		balance = &interimBalance
 	}
 
-	if !balance.Amount.LessThanEqual(0) {
+	paymentRecordBlockHeight := int64(-1)
+	height := int64(req.Header.Height)
+
+	raw := app.Admin.Get(data.DatabaseKey("PaymentRecord"))
+	if raw != nil {
+		params := raw.(action.PaymentRecord)
+		paymentRecordBlockHeight = params.BlockHeight
+
+		if paymentRecordBlockHeight != -1 {
+			numTrans := height - paymentRecordBlockHeight
+			if numTrans > 10 {
+				//store payment record in database (O OLT, -1) because delete doesn't work
+				var paymentRecordKey data.DatabaseKey = data.DatabaseKey("PaymentRecord")
+				var paymentRecord action.PaymentRecord
+				paymentRecord.Amount = data.NewCoin(0, "OLT")
+				paymentRecord.BlockHeight = -1
+
+				session := app.Admin.Begin()
+				session.Set(paymentRecordKey, paymentRecord)
+				session.Commit()
+
+				paymentRecordBlockHeight = -1
+			}
+		}
+	}
+
+	if (!balance.Amount.LessThanEqual(0)) && paymentRecordBlockHeight == -1 {
 		list := req.LastCommitInfo.GetValidators()
+		validatorIndex := ComputeValidatorIndex(req.Header.LastBlockHash, len(list))
 		badValidators := req.ByzantineValidators
 
 		numberValidators := data.NewCoin(int64(len(list)), "OLT")
@@ -322,14 +357,39 @@ func (app Application) MakePayment(req RequestBeginBlock) {
 				}
 			}
 
-			result := CreatePaymentRequest(app, identities, quotient)
-			if result != nil {
-				// TODO: check this later
-				comm.BroadcastAsync(result)
+			//store payment record in database
+			var paymentRecordKey data.DatabaseKey = data.DatabaseKey("PaymentRecord")
+			var paymentRecord action.PaymentRecord
+			totalPayment := quotient.Multiply(numberValidators)
+			paymentRecord.Amount = totalPayment
+			paymentRecord.BlockHeight = height
+
+			session := app.Admin.Begin()
+			session.Set(paymentRecordKey, paymentRecord)
+			session.Commit()
+
+			validatorCreatingPaymentTx := identities[validatorIndex]
+
+			if global.Current.NodeName == validatorCreatingPaymentTx.NodeName {
+				result := CreatePaymentRequest(app, identities, quotient, height)
+				if result != nil {
+					// TODO: check this later
+					comm.BroadcastAsync(result)
+				}
 			}
 		}
 	}
 
+}
+
+func ComputeValidatorIndex(hash []byte, count int) int {
+	hashBigInt := new(big.Int).SetBytes(hash)
+	countBigInt := big.NewInt(int64(count))
+	resultBigInt := new(big.Int)
+	resultBigInt = resultBigInt.Mod(hashBigInt, countBigInt)
+	var resultInt64, _ = new(big.Int).SetString(resultBigInt.String(), 10)
+	result := int(resultInt64.Int64())
+	return result
 }
 
 func IsByzantine(validator types.Validator, badValidators []types.Evidence) (result bool) {

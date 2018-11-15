@@ -26,6 +26,7 @@ const (
 	INVALID       Type = iota
 	REGISTER           // Register a new identity with the chain
 	SEND               // Do a normal send transaction on local chain
+	PAYMENT            // Do a payment transaction on local chain
 	EXTERNAL_SEND      // Do send on external chain
 	EXTERNAL_LOCK      // Lock some data on external chain
 	SWAP               // Start a swap between chains

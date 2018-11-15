@@ -3,13 +3,12 @@ package app
 import (
 	"github.com/Oneledger/protocol/node/action"
 	"github.com/Oneledger/protocol/node/data"
-	"github.com/Oneledger/protocol/node/global"
 	"github.com/Oneledger/protocol/node/id"
 	"github.com/Oneledger/protocol/node/log"
 	"github.com/Oneledger/protocol/node/status"
 )
 
-func CreatePaymentRequest(app Application, identities []id.Identity, quotient data.Coin) []byte {
+func CreatePaymentRequest(app Application, identities []id.Identity, quotient data.Coin, height int64) []byte {
 	var signers []id.PublicKey
 	chainId := app.Admin.Get(chainKey)
 	inputs := make([]action.SendInput, 0)
@@ -60,12 +59,12 @@ func CreatePaymentRequest(app Application, identities []id.Identity, quotient da
 		action.NewSendOutput(payment.AccountKey(), paymentBalance.Amount.Minus(totalPayment)))
 
 	// Create base transaction
-	send := &action.Send{
+	send := &action.Payment{
 		Base: action.Base{
-			Type:     action.SEND,
+			Type:     action.PAYMENT,
 			ChainId:  string(chainId.([]byte)),
 			Signers:  signers,
-			Sequence: global.Current.Sequence,
+			Sequence: height, //global.Current.Sequence,
 		},
 		Inputs:  inputs,
 		Outputs: outputs,
@@ -74,4 +73,5 @@ func CreatePaymentRequest(app Application, identities []id.Identity, quotient da
 	}
 
 	return action.SignAndPack(send)
+
 }
