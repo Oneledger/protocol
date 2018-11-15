@@ -30,6 +30,7 @@ func Alloc(dataType string, size int) interface{} {
 		log.Fatal("Unknown datatype", "dataType", dataType)
 
 	case INTERFACE:
+		// Need to handle this in set
 		return nil
 
 	case PRIMITIVE:
@@ -61,8 +62,9 @@ func Alloc(dataType string, size int) interface{} {
 		return value.Interface()
 
 	case ARRAY:
-		array := reflect.ArrayOf(size, entry.ValueType.DataType)
-		value = reflect.New(array)
+		//array := reflect.ArrayOf(size, entry.ValueType.DataType)
+		//value = reflect.New(array)
+		value = reflect.New(entry.RootType)
 		return value.Interface()
 	}
 
@@ -78,12 +80,14 @@ func concat(strs ...string) string {
 	return sb.String()
 }
 
+// Strip off the depth
 func GetFieldName(name string) string {
 	array := strings.Split(name, "-")
 	result := concat(array[0 : len(array)-1]...)
 	return result
 }
 
+// Slice and Array names are currently strings (associative arrays)
 func GetFieldIndex(name string) int {
 	array := strings.Split(name, "-")
 	interim := concat(array[0 : len(array)-1]...)
@@ -96,7 +100,6 @@ func GetFieldIndex(name string) int {
 
 // Set a structure with a given value, convert as necessary
 func Set(parent interface{}, fieldName string, child interface{}) (status bool) {
-
 	defer func() {
 		if r := recover(); r != nil {
 			log.Error("Ignoring Set Panic", "r", r)
@@ -164,6 +167,103 @@ func SetStruct(parent interface{}, fieldName string, child interface{}) bool {
 	return true
 }
 
+// SetMap takes a pointer to a structure and sets it.
+func SetMap(parent interface{}, fieldName string, child interface{}) bool {
+
+	// Convert the interfaces to structures
+	element := GetBaseValue(parent)
+
+	if element.Kind() != reflect.Map {
+		log.Fatal("Not a map", "element", element)
+	}
+
+	if !CheckValue(element) {
+		return false
+	}
+
+	//key := reflect.ValueOf(fieldName)
+	keyType := GetBaseType(parent).Key()
+	newKey := ConvertValue(fieldName, keyType)
+
+	fieldType := GetBaseType(parent).Elem()
+	newValue := ConvertValue(child, fieldType)
+
+	if element.Type().Kind() == reflect.Interface {
+		element.SetMapIndex(newKey, newValue)
+	} else {
+		element.SetMapIndex(newKey, newValue)
+	}
+
+	return true
+}
+
+// SetSlice takes a pointer to a structure and sets it.
+func SetSlice(parent interface{}, index int, child interface{}) bool {
+
+	// Convert the interfaces to structures
+	element := GetBaseValue(parent)
+
+	if element.Kind() != reflect.Slice {
+		log.Fatal("Not a slice", "element", element)
+	}
+
+	if !CheckValue(element) {
+		return false
+	}
+
+	if element.Index(index).Type().Kind() == reflect.Interface {
+		// When setting to a generic interface{}
+
+		value := reflect.ValueOf(child)
+		element.Index(index).Set(value)
+
+	} else {
+		newValue := ConvertValue(child, element.Index(index).Type())
+		element.Index(index).Set(newValue)
+	}
+
+	return true
+}
+
+// SetSlice takes a pointer to a structure and sets it.
+func SetArray(parent interface{}, index int, child interface{}) bool {
+
+	// Convert the interfaces to structures
+	element := GetBaseValue(parent)
+
+	if element.Kind() != reflect.Array {
+		log.Fatal("Not a structure", "element", element)
+	}
+
+	if !CheckValue(element) {
+		return false
+	}
+
+	cell := element.Index(index)
+	newValue := ConvertValue(child, cell.Type())
+
+	if element.Index(index).Type().Kind() == reflect.Interface {
+		element.Index(index).Set(newValue)
+	} else {
+		element.Index(index).Set(newValue)
+	}
+
+	return true
+}
+
+func CheckValue(element reflect.Value) bool {
+	if !element.IsValid() {
+		log.Warn("Map is invalid", "element", element)
+		return false
+	}
+
+	if !element.CanSet() {
+		log.Warn("Element not Settable", "element", element)
+		return false
+	}
+	return true
+}
+
 // Convert any value to an arbitrary type
 func ConvertValue(value interface{}, fieldType reflect.Type) reflect.Value {
 	if value == nil {
@@ -182,11 +282,12 @@ func ConvertValue(value interface{}, fieldType reflect.Type) reflect.Value {
 	switch typeOf.Kind() {
 
 	case reflect.Float64:
-		// JSON returns floats for everything :-(
+		// JSON returns float64s for everything :-(
 		result := ConvertNumber(fieldType, valueOf)
 		return result
 
 	case reflect.String:
+		// TODO: Is this still necessary? Should be underlying type is an int?
 		if fieldType.String() == "data.ChainType" {
 			entry := GetTypeEntry(fieldType.String(), 1)
 			interim, err := strconv.ParseInt(GetString(valueOf), 10, 0)
@@ -288,114 +389,4 @@ func ConvertNumber(fieldType reflect.Type, value reflect.Value) reflect.Value {
 		return reflect.ValueOf(float32(value.Float()))
 	}
 	return value
-}
-
-// SetMap takes a pointer to a structure and sets it.
-func SetMap(parent interface{}, fieldName string, child interface{}) bool {
-
-	// Convert the interfaces to structures
-	element := GetBaseValue(parent)
-
-	if element.Kind() != reflect.Map {
-		log.Fatal("Not a map", "element", element)
-	}
-
-	if !CheckValue(element) {
-		return false
-	}
-
-	//key := reflect.ValueOf(fieldName)
-	keyType := GetBaseType(parent).Key()
-	newKey := ConvertValue(fieldName, keyType)
-
-	fieldType := GetBaseType(parent).Elem()
-	newValue := ConvertValue(child, fieldType)
-
-	/*
-		if element.Len() < 1 {
-			// TODO: Need to figure out a reasonable size here...
-			log.Warn("Reallocating Map", "type", element.Type().String())
-			entry := GetTypeEntry(element.Type().String(), 100)
-			revised := reflect.MakeMapWithSize(entry.RootType, 100)
-			value := reflect.New(revised.Type())
-			value.Elem().Set(element)
-			element = value.Elem()
-		}
-	*/
-
-	element.SetMapIndex(newKey, newValue)
-
-	return true
-}
-
-// SetSlice takes a pointer to a structure and sets it.
-func SetSlice(parent interface{}, index int, child interface{}) bool {
-
-	// Convert the interfaces to structures
-	element := GetBaseValue(parent)
-
-	if element.Kind() != reflect.Slice {
-		log.Fatal("Not a slice", "element", element)
-	}
-
-	if !CheckValue(element) {
-		return false
-	}
-
-	if element.Len() < index {
-		log.Warn("Reallocating Slice")
-		element = reflect.MakeSlice(element.Index(0).Type(), index+1, index+1)
-	}
-
-	if element.Index(index).Type().Kind() == reflect.Interface {
-		// When setting to a generic interface{}
-
-		value := reflect.ValueOf(child)
-		element.Index(index).Set(value)
-
-	} else {
-		newValue := ConvertValue(child, element.Index(index).Type())
-		element.Index(index).Set(newValue)
-	}
-
-	return true
-}
-
-func CheckValue(element reflect.Value) bool {
-	if !element.IsValid() {
-		log.Warn("Map is invalid", "element", element)
-		return false
-	}
-
-	if !element.CanSet() {
-		log.Warn("Element not Settable", "element", element)
-		return false
-	}
-	return true
-}
-
-// SetSlice takes a pointer to a structure and sets it.
-func SetArray(parent interface{}, index int, child interface{}) bool {
-
-	// Convert the interfaces to structures
-	element := GetBaseValue(parent)
-
-	if element.Kind() != reflect.Array {
-		log.Fatal("Not a structure", "element", element)
-	}
-
-	if !CheckValue(element) {
-		return false
-	}
-
-	if element.Len() < index {
-		log.Warn("Reallocating Array")
-	}
-
-	cell := element.Index(index)
-	newValue := ConvertValue(child, cell.Type())
-
-	element.Index(index).Set(newValue)
-
-	return true
 }
