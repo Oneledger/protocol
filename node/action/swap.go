@@ -581,7 +581,6 @@ func NextStage(app interface{}, chain data.ChainType, context FunctionValues, tx
 		return false, nil
 	}
 
-	signers := make([]PublicKey, 0)
 	owner := GetAccountKey(context[OWNER])
 	target := GetAccountKey(context[TARGET])
 	chainId := GetChainID(app)
@@ -590,7 +589,7 @@ func NextStage(app interface{}, chain data.ChainType, context FunctionValues, tx
 		Base: Base{
 			Type:     SWAP,
 			ChainId:  chainId,
-			Signers:  signers,
+			Signers:  GetSigners(owner),
 			Owner:    owner,
 			Target:   target,
 			Sequence: global.Current.Sequence,
