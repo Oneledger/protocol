@@ -47,7 +47,6 @@ func CreatePaymentRequest(app Application, identities []id.Identity, quotient da
 		log.Fatal("Payment Account not found")
 	}
 	paymentBalance := app.Utxo.Get(payment.AccountKey())
-	log.Debug("CreatePaymentRequest", "paymentBalance", paymentBalance)
 
 	numberValidators := data.NewCoin(int64(len(identities)), "OLT")
 	totalPayment := quotient.Multiply(numberValidators)
