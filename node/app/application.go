@@ -267,14 +267,10 @@ var chainKey data.DatabaseKey = data.DatabaseKey("chainId")
 func (app Application) BeginBlock(req RequestBeginBlock) ResponseBeginBlock {
 	log.Debug("ABCI: BeginBlock", "req", req)
 
-	log.Dump("GetValidators", req.LastCommitInfo.GetValidators())
-	log.Dump("ByzantineValidators", req.ByzantineValidators)
-
 	validators := req.LastCommitInfo.GetValidators()
 	byzantineValidators := req.ByzantineValidators
 
 	app.Validators.Set(validators, byzantineValidators)
-	log.Dump("Validators", app.Validators)
 
 	raw := app.Admin.Get(data.DatabaseKey("PaymentRecord"))
 	if raw == nil {
