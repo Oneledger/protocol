@@ -9,7 +9,6 @@ import (
 )
 
 func CreatePaymentRequest(app Application, identities []id.Identity, quotient data.Coin, height int64) []byte {
-	var signers []id.PublicKey
 	chainId := app.Admin.Get(chainKey)
 	inputs := make([]action.SendInput, 0)
 	outputs := make([]action.SendOutput, 0)
@@ -62,7 +61,8 @@ func CreatePaymentRequest(app Application, identities []id.Identity, quotient da
 		Base: action.Base{
 			Type:     action.PAYMENT,
 			ChainId:  string(chainId.([]byte)),
-			Signers:  signers,
+			Owner:    payment.AccountKey(),
+			Signers:  GetSigners(payment.AccountKey(), app),
 			Sequence: height, //global.Current.Sequence,
 		},
 		Inputs:  inputs,
@@ -71,6 +71,5 @@ func CreatePaymentRequest(app Application, identities []id.Identity, quotient da
 		Gas:     data.NewCoin(0, "OLT"),
 	}
 
-	return action.SignAndPack(send)
-
+	return action.PackRequest(SignTransaction(send, app))
 }

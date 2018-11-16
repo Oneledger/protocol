@@ -118,12 +118,11 @@ func (app Application) SetupState(stateBytes []byte) {
 	log.Debug("Deserialized State", "state", state, "state.Account", state.Account)
 
 	// TODO: Can't generate a different key for each node. Needs to be in the genesis? Or ignored?
-	//publicKey, privateKey := id.GenerateKeys([]byte(state.Account)) // TODO: switch with passphrase
-	publicKey, privateKey := id.NilPublicKey(), id.NilPrivateKey()
+	privateKey, publicKey := id.GenerateKeys([]byte(state.Account), false) // TODO: switch with passphrase
 
 	CreateAccount(app, state.Account, state.Amount, publicKey, privateKey)
 
-	publicKey, privateKey = id.OnePublicKey(), id.OnePrivateKey()
+	privateKey, publicKey = id.GenerateKeys([]byte("Payment"), false) // TODO: make a user put a real key actually
 	CreateAccount(app, "Payment", "0", publicKey, privateKey)
 }
 
@@ -235,18 +234,24 @@ func (app Application) CheckTx(tx []byte) ResponseCheckTx {
 		return ResponseCheckTx{Code: status.PARSE_ERROR}
 	}
 
-	result, err := action.Parse(action.Message(tx))
-	if err != 0 || result == nil {
+	signedTransaction, err := action.Parse(action.Message(tx))
+	if err != 0 {
 		return ResponseCheckTx{Code: err}
 	}
 
+	if action.ValidateSignature(signedTransaction) == false {
+		return ResponseCheckTx{Code: status.INVALID_SIGNATURE}
+	}
+
+	transaction := signedTransaction.Transaction
+
 	// Check that this is a valid transaction
-	if err = result.Validate(); err != 0 {
+	if err = transaction.Validate(); err != 0 {
 		return ResponseCheckTx{Code: err}
 	}
 
 	// Check that this transaction works in the context
-	if err = result.ProcessCheck(&app); err != 0 {
+	if err = transaction.ProcessCheck(&app); err != 0 {
 		return ResponseCheckTx{Code: err}
 	}
 
@@ -373,23 +378,29 @@ func SetPaymentRecord(amount data.Coin, blockHeight int64, app Application) {
 func (app Application) DeliverTx(tx []byte) ResponseDeliverTx {
 	log.Debug("ABCI: DeliverTx", "tx", tx)
 
-	result, err := action.Parse(action.Message(tx))
-	if err != 0 || result == nil {
+	signedTransaction, err := action.Parse(action.Message(tx))
+	if err != 0 {
 		return ResponseDeliverTx{Code: err}
 	}
 
+	if action.ValidateSignature(signedTransaction) == false {
+		return ResponseDeliverTx{Code: status.INVALID_SIGNATURE}
+	}
+
+	transaction := signedTransaction.Transaction
+
 	log.Debug("Validating")
-	if err = result.Validate(); err != 0 {
+	if err = transaction.Validate(); err != 0 {
 		return ResponseDeliverTx{Code: err}
 	}
 
 	log.Debug("Starting processing")
-	if result.ShouldProcess(app) {
-		if err = result.ProcessDeliver(&app); err != 0 {
+	if transaction.ShouldProcess(app) {
+		if err = transaction.ProcessDeliver(&app); err != 0 {
 			return ResponseDeliverTx{Code: err}
 		}
 	}
-	tagType := strconv.FormatInt(int64(result.TransactionType()), 10)
+	tagType := strconv.FormatInt(int64(transaction.TransactionType()), 10)
 	tags := make([]common.KVPair, 1)
 	tag := common.KVPair{
 		Key:   []byte("tx.type"),
