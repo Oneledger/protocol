@@ -16,8 +16,8 @@ func TestAccounts(t *testing.T) {
 	accounts := id.NewAccounts("MyAccounts")
 	defer accounts.Close()
 
-	priv1, pub1 := id.GenerateKeys([]byte("testAccount1 password"))
-	priv2, pub2 := id.GenerateKeys([]byte("testAccount1 password"))
+	priv1, pub1 := id.GenerateKeys([]byte("testAccount1 password"), true)
+	priv2, pub2 := id.GenerateKeys([]byte("testAccount1 password"), true)
 
 	user1 := id.NewAccount(data.ONELEDGER, "testAccount1", pub1, priv1)
 	user2 := id.NewAccount(data.ONELEDGER, "testAccount2", pub2, priv2)

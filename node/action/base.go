@@ -7,6 +7,7 @@ package action
 
 import (
 	"github.com/Oneledger/protocol/node/id"
+	"github.com/Oneledger/protocol/node/log"
 	"github.com/Oneledger/protocol/node/serial"
 	"github.com/Oneledger/protocol/node/status"
 )
@@ -56,6 +57,15 @@ type Transaction interface {
 	Resolve(interface{}) Commands
 }
 
+type TransactionSignature struct {
+	Signature []byte
+}
+
+type SignedTransaction struct {
+	Transaction
+	Signatures []TransactionSignature
+}
+
 // Base Data for each type
 type Base struct {
 	Type    Type   `json:"type"`
@@ -70,6 +80,59 @@ type Base struct {
 	Delay    int64 `json:"delay"` // Pause the transaction in the mempool
 }
 
+func ValidateSignature(transaction SignedTransaction) bool {
+	log.Debug("Signature validation", "transaction", transaction)
+	var signers []id.PublicKey
+
+	// TODO need to simplify it
+	switch v := transaction.Transaction.(type) {
+	case *Swap: signers = v.Base.Signers
+	case *Send: signers = v.Base.Signers
+	case *Register: signers = v.Base.Signers
+	default: log.Warn("Signature validation (unknown transaction type)", "transaction", transaction)
+	}
+
+	if signers == nil {
+		log.Warn("Signature validation (no signers)", "transaction", transaction)
+		return false
+	}
+
+	if transaction.Signatures == nil {
+		log.Warn("Signature validation (no signatures)", "transaction", transaction)
+		return false
+	}
+
+	if len(signers) == 0 {
+		log.Warn("Signature validation (no signers)", "transaction", transaction)
+		return false
+	}
+
+	if len(signers) != len(transaction.Signatures) {
+		log.Warn("Signature validation (wrong number of signatures)", "transaction", transaction)
+		return false
+	}
+
+	message, err := serial.Serialize(transaction.Transaction, serial.CLIENT)
+
+	if err != nil {
+		log.Error("Signature validation (failed to serialize)", "error", err, "transaction", transaction)
+		return false
+	}
+
+	for i := 0; i < len(signers); i++ {
+		if signers[i].VerifyBytes(message, transaction.Signatures[i].Signature) == false {
+			log.Warn("Signature validation (invalid signature)", "index", i, "transaction", transaction)
+			return false
+		}
+	}
+
+	log.Debug("Signature validation", "success", true)
+
+	return true
+}
+
 func init() {
 	serial.Register(Base{})
+	serial.Register(TransactionSignature{})
+	serial.Register(SignedTransaction{})
 }
