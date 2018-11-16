@@ -100,8 +100,14 @@ func (app Application) Initialize() {
 }
 
 type BasicState struct {
+	Native    AccountState `json:"native"`
+	Validator AccountState `json:"validator"`
+}
+
+type AccountState struct {
 	Account string `json:"account"`
-	Amount  string `json:"coins"` // TODO: Should be corrected as Amount, not coins
+	Amount  string `json:"amount"`
+	Coin    string `json:"coin"`
 }
 
 // Use the Genesis block to initialze the system
@@ -116,34 +122,48 @@ func (app Application) SetupState(stateBytes []byte) {
 	}
 
 	state := des.(*BasicState)
-	log.Debug("Deserialized State", "state", state, "state.Account", state.Account)
+	log.Debug("Deserialized State", "state", state)
 
 	// TODO: Can't generate a different key for each node. Needs to be in the genesis? Or ignored?
-	privateKey, publicKey := id.GenerateKeys([]byte(state.Account), false) // TODO: switch with passphrase
+	privateKey, publicKey := id.GenerateKeys([]byte(state.Native.Account), false) // TODO: switch with passphrase
 
-	CreateAccount(app, state.Account, state.Amount, publicKey, privateKey)
+	CreateAccount(app, state.Native, publicKey, privateKey)
+
+	UpdateAccount(app, state.Validator)
 
 	privateKey, publicKey = id.GenerateKeys([]byte("Payment"), false) // TODO: make a user put a real key actually
-	CreateAccount(app, "Payment", "0", publicKey, privateKey)
+	CreateAccount(app, AccountState{"Payment", "0", "OLT"}, publicKey, privateKey)
 }
 
-func CreateAccount(app Application, stateAccount string, stateAmount string, publicKey id.PublicKeyED25519, privateKey id.PrivateKeyED25519) {
+func CreateAccount(app Application, state AccountState, publicKey id.PublicKeyED25519, privateKey id.PrivateKeyED25519) {
 
 	// TODO: This should probably only occur on the Admin node, for other nodes how do I know the key?
 	// Register the identity and account first
-	RegisterLocally(&app, stateAccount, "OneLedger", data.ONELEDGER, publicKey, privateKey)
-	account, ok := app.Accounts.FindName(stateAccount + "-OneLedger")
+	RegisterLocally(&app, state.Account, "OneLedger", data.ONELEDGER, publicKey, privateKey)
+	account, ok := app.Accounts.FindName(state.Account + "-OneLedger")
 	if ok != status.SUCCESS {
-		log.Fatal("Recently Added Account is missing", "name", stateAccount, "status", ok)
+		log.Fatal("Recently Added Account is missing", "name", state.Account, "status", ok)
 	}
 
 	// Use the account key in the database
-	balance := NewBalanceFromString(stateAmount, "OLT")
+	balance := NewBalanceFromString(state.Amount, state.Coin)
 	app.Utxo.Set(account.AccountKey(), balance)
 
 	// TODO: Until a block is commited, this data is not persistent
 	//app.Utxo.Commit()
 
+	log.Info("Genesis State UTXO database", "balance", balance)
+}
+
+func UpdateAccount(app Application, state AccountState) {
+
+	account, ok := app.Accounts.FindName(state.Account + "-OneLedger")
+	if ok != status.SUCCESS {
+		log.Fatal("Recently Added Account is missing", "name", state.Account, "status", ok)
+	}
+	//todo: make the balance to balances
+	balance := NewBalanceFromString(state.Amount, state.Coin)
+	app.Utxo.Set(account.AccountKey(), balance)
 	log.Info("Genesis State UTXO database", "balance", balance)
 }
 
