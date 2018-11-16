@@ -133,14 +133,17 @@ func CreateAccount(app Application, stateAccount string, stateAmount string,
 
 	// TODO: This should probably only occur on the Admin node, for other nodes how do I know the key?
 	// Register the identity and account first
-	RegisterLocally(&app, stateAccount, "OneLedger", data.ONELEDGER, publicKey, privateKey)
-	account, ok := app.Accounts.FindName(stateAccount + "-OneLedger")
+	AddAccount(&app, stateAccount, data.ONELEDGER, publicKey, privateKey, false)
+	//RegisterLocally(&app, stateAccount, "OneLedger", data.ONELEDGER, publicKey, privateKey)
+
+	account, ok := app.Accounts.FindName(stateAccount)
 	if ok != status.SUCCESS {
 		log.Fatal("Recently Added Account is missing", "name", stateAccount, "status", ok)
 	}
 
 	// Use the account key in the database
 	balance := NewBalanceFromString(stateAmount, "OLT")
+
 	app.Balances.Set(account.AccountKey(), balance)
 
 	// TODO: Until a block is commited, this data is not persistent
@@ -301,7 +304,7 @@ func (app Application) BeginBlock(req RequestBeginBlock) ResponseBeginBlock {
 
 // EndBlock is called at the end of all of the transactions
 func (app Application) MakePayment(req RequestBeginBlock) {
-	account, err := app.Accounts.FindName("Payment-OneLedger")
+	account, err := app.Accounts.FindName("Payment")
 	if err != status.SUCCESS {
 		log.Fatal("ABCI: BeginBlock Fatal Status", "status", err)
 	}

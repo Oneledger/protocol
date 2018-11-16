@@ -51,9 +51,7 @@ func UpdateAccount(cmd *cobra.Command, args []string) {
 
 	update := shared.UpdateAccountRequest(request)
 
-	log.Dump("Request params are", update)
-
 	result := comm.SDKRequest(update)
 
-	log.Dump("The results are", result)
+	log.Dump("Results", result)
 }

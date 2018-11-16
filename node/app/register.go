@@ -34,7 +34,7 @@ func AddIdentity(app *Application, name string, publicKey id.PublicKeyED25519) {
 }
 
 // Register Identities and Accounts from the user.
-func RegisterLocally(app *Application, name string, scope string, chain data.ChainType,
+func XRegisterLocally(app *Application, name string, scope string, chain data.ChainType,
 	publicKey id.PublicKeyED25519, privateKey id.PrivateKeyED25519) bool {
 
 	log.Debug("Register Locally", "name", name, "chain", chain)

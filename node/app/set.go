@@ -6,7 +6,9 @@
 package app
 
 import (
+	"github.com/Oneledger/protocol/node/action"
 	"github.com/Oneledger/protocol/node/data"
+	"github.com/Oneledger/protocol/node/global"
 	"github.com/Oneledger/protocol/node/id"
 	"github.com/Oneledger/protocol/node/log"
 	"github.com/Oneledger/protocol/node/serial"
@@ -77,9 +79,44 @@ func HandleSetAccount(app Application, arguments map[string]string) interface{} 
 }
 
 func HandleRegisterIdentity(app Application, arguments map[string]string) interface{} {
-	return "Registering Identity"
 
-	// TODO: Broadcast the transaction
+	identity := arguments["Identity"]
+	accountName := arguments["Account"]
+
+	account, ok := app.Accounts.FindName(accountName)
+	if ok != status.SUCCESS {
+		log.Warn("Missing Registration Account", "name", accountName)
+		return "ERROR: Account Not Found"
+	}
+
+	// TODO Broadcast the transaction
+	transaction := CreateRegisterRequest(identity, account.AccountKey())
+
+	log.Dump("#### BROADCAST ####", transaction)
+
+	action.BroadcastTransaction(action.REGISTER, transaction, false)
+
+	return "Broadcast Identity"
+}
+
+func CreateRegisterRequest(identityName string, accountKey id.AccountKey) action.Transaction {
+	LoadPrivValidatorFile()
+
+	reg := &action.Register{
+		Base: action.Base{
+			Type:    action.REGISTER,
+			ChainId: ChainId,
+			Owner:   accountKey,
+			//Signers:  action.GetSigners(accountKey),
+			Sequence: global.Current.Sequence,
+		},
+		Identity:          identityName,
+		NodeName:          global.Current.NodeName,
+		AccountKey:        accountKey,
+		TendermintAddress: global.Current.TendermintAddress,
+		TendermintPubKey:  global.Current.TendermintPubKey,
+	}
+	return reg
 }
 
 // Handle a SetOption ABCi reqeust
@@ -97,8 +134,11 @@ func SetOption(app *Application, key string, value string) bool {
 		}
 		args := result.(*RegisterArguments)
 		privateKey, publicKey := id.GenerateKeys([]byte(args.Identity)) // TODO: Switch with passphrase
-		RegisterLocally(app, args.Identity, "OneLedger", id.ParseAccountType(args.Chain),
-			publicKey, privateKey)
+		AddAccount(app, args.Identity, id.ParseAccountType(args.Chain), publicKey, privateKey, false)
+		/*
+			RegisterLocally(app, args.Identity, "OneLedger", id.ParseAccountType(args.Chain),
+				publicKey, privateKey)
+		*/
 
 	default:
 		log.Warn("Unknown Option", "key", key)

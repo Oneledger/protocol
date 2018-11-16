@@ -28,19 +28,19 @@ echo "=================== Testmint Transactions =================="
 # Put some money in the user accounts
 #SEQ=`$CMD/nextSeq`
 #olclient testmint -s $SEQ -a $addrAlice --party Alice --amount 100001 --currency OLT 
-olclient testmint -c "Alice" --party Alice --amount 100001 --currency OLT 
+olclient testmint -c Alice --party Alice --amount 100001 --currency OLT 
 
 #SEQ=`$CMD/nextSeq`
 #olclient testmint -s $SEQ -a $addrBob --party Bob --amount 50002 --currency OLT 
-olclient testmint -c "Bob" --party Bob --amount 50002 --currency OLT 
+olclient testmint -c Bob --party Bob --amount 50002 --currency OLT 
 
 #SEQ=`$CMD/nextSeq`
 #olclient testmint -s $SEQ -a $addrCarol --party Carol --amount 25003 --currency OLT 
-olclient testmint -c "Carol" --party Carol --amount 25003 --currency OLT 
+olclient testmint -c Carol --party Carol --amount 25003 --currency OLT 
 
 #SEQ=`$CMD/nextSeq`
 #olclient testmint -s $SEQ -a $addrDavid --party David --amount 12004 --currency OLT 
-olclient testmint -c "David" --party David --amount 12004 --currency OLT 
+olclient testmint -c David --party David --amount 12004 --currency OLT 
 
 echo "Finished Minting"
 
@@ -48,7 +48,8 @@ sleep 10
 
 #olclient account -a $addrAlice 
 #olclient account -a $addrBob 
-olclient list -c "Alice"
-olclient list -c "Bob"
+
+#olclient list -c "Alice"
+#olclient list -c "Bob"
 
 #$CMD/stopOneLedger

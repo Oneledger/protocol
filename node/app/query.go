@@ -6,7 +6,6 @@
 package app
 
 import (
-	"encoding/hex"
 	"strings"
 
 	"github.com/Oneledger/protocol/node/chains/common"
@@ -91,11 +90,11 @@ func AccountKey(app Application, name string) interface{} {
 	// TODO: This is a bit dangerous (can cause confusion)
 	// Maybe this is an AccountName, not an identity
 	account, ok := app.Accounts.FindName(name)
-	if ok == status.SUCCESS && identity.Name != "" {
+	if ok == status.SUCCESS && account.Name() != "" {
 		return account.AccountKey()
 	}
 
-	return "Account " + name + " Not Found on " + global.Current.NodeName
+	return "AccountKey: Identity " + name + " not Found on " + global.Current.NodeName
 }
 
 // Get the account information for a given user
@@ -168,7 +167,8 @@ func HandleBalanceQuery(app Application, arguments map[string]string) interface{
 	var key []byte
 	parts := strings.Split(text, "=")
 	if len(parts) > 1 {
-		key, _ = hex.DecodeString(parts[1])
+		//key, _ = hex.DecodeString(parts[1])
+		key = []byte(parts[1])
 	}
 	return Balance(app, key)
 }
@@ -200,7 +200,6 @@ func HandleSwapAddressQuery(app Application, arguments map[string]string) interf
 			return account.AccountKey()
 		}
 	}
-
 	return SwapAddress(chain)
 }
 

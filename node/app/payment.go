@@ -43,7 +43,7 @@ func CreatePaymentRequest(app Application, identities []id.Identity, quotient da
 			action.NewSendOutput(party.AccountKey, partyBalance.Amount.Plus(quotient)))
 	}
 
-	payment, err := app.Accounts.FindName("Payment-OneLedger")
+	payment, err := app.Accounts.FindName("Payment")
 	if err != status.SUCCESS {
 		log.Fatal("Payment Account not found")
 	}

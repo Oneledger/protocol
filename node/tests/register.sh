@@ -57,3 +57,6 @@ do
 #	# Need to let the identity transaction fully broadcast, before letting the next node shutdown.
 #	sleep 10
 done
+
+# Give it some time to get committed
+sleep 15

@@ -8,6 +8,7 @@ package main
 import (
 	"github.com/Oneledger/protocol/node/cmd/shared"
 	"github.com/Oneledger/protocol/node/comm"
+	"github.com/Oneledger/protocol/node/log"
 	"github.com/spf13/cobra"
 )
 
@@ -47,5 +48,6 @@ func RegisterIdentity(cmd *cobra.Command, args []string) {
 
 	register := shared.RegisterIdentityRequest(arguments)
 
-	comm.SDKRequest(register)
+	result := comm.SDKRequest(register)
+	log.Dump("Have Results", result)
 }

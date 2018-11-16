@@ -61,13 +61,12 @@ func ListNode(cmd *cobra.Command, args []string) {
 		return
 	}
 
-	nodeName := "Unknown"
-	printAccountQuery(accounts)
+	nodeName := shared.GetNodeName()
+	printAccountQuery(nodeName, accounts)
 	printIdentityQuery(nodeName, identities)
 }
 
-func printAccountQuery(accountQuery interface{}) {
-	nodeName := shared.GetNodeName()
+func printAccountQuery(nodeName string, accountQuery interface{}) {
 
 	accounts := accountQuery.([]id.Account)
 
