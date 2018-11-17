@@ -71,7 +71,7 @@ func (balance Balance) String() string {
 	buffer := ""
 	for _, v := range balance.Amounts {
 		if v.Amount.Cmp(big.NewInt(0)) == 1 || v.Currency.Id == 0 {
-			buffer += fmt.Sprintf("%s %s\n", v.Amount.String(), v.Currency.Name)
+			buffer += fmt.Sprintf("%s %s; ", v.Amount.String(), v.Currency.Name)
 		}
 	}
 
