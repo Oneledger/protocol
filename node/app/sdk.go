@@ -53,7 +53,7 @@ func (s SDKServer) Register(ctx context.Context, request *pb.RegisterRequest) (*
 		return nil, gstatus.Errorf(codes.AlreadyExists, "Identity %s already exists", name)
 	}
 
-	privKey, pubKey := id.GenerateKeys(secret(name + chain.String()), true)
+	privKey, pubKey := id.GenerateKeys(secret(name+chain.String()), true)
 	ok := RegisterLocally(s.App, name, chain.String(), chain, pubKey, privKey)
 	if !ok {
 		return nil, gstatus.Errorf(codes.FailedPrecondition, "Local registration failed")
@@ -95,8 +95,8 @@ func (s SDKServer) CheckAccount(ctx context.Context, request *pb.CheckAccountReq
 	var balance *pb.Balance
 	if b != nil {
 		balance = &pb.Balance{
-			Amount:   b.Amount.Amount.Int64(),
-			Currency: currencyProtobuf(b.Amount.Currency),
+			Amount:   b.GetAmountByName("OLT").Amount.Int64(),
+			Currency: currencyProtobuf(b.GetAmountByName("OLT").Currency),
 		}
 	} else {
 		balance = &pb.Balance{Amount: 0, Currency: pb.Currency_OLT}
@@ -175,13 +175,13 @@ func prepareSend(
 	}
 
 	inputs := []action.SendInput{
-		action.NewSendInput(pKey, pBalance.Amount),
-		action.NewSendInput(cpKey, cpBalance.Amount),
+		action.NewSendInput(pKey, pBalance.GetAmountByName("OLT")),
+		action.NewSendInput(cpKey, cpBalance.GetAmountByName("OLT")),
 	}
 
 	outputs := []action.SendOutput{
-		action.NewSendOutput(pKey, pBalance.Amount.Minus(sendAmount)),
-		action.NewSendOutput(cpKey, cpBalance.Amount.Plus(sendAmount)),
+		action.NewSendOutput(pKey, pBalance.GetAmountByName("OLT").Minus(sendAmount)),
+		action.NewSendOutput(cpKey, cpBalance.GetAmountByName("OLT").Plus(sendAmount)),
 	}
 
 	return &action.Send{

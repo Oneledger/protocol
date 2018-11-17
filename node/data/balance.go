@@ -6,26 +6,77 @@ package data
 
 import (
 	"fmt"
-
 	"github.com/Oneledger/protocol/node/serial"
+	"math/big"
 )
 
 // Wrap the amount with owner information
 type Balance struct {
 	// Address id.Address
-	Amount Coin
+	Amounts []Coin
 }
 
 func init() {
 	serial.Register(Balance{})
 }
 
-// TODO: Should return a pointer, as per Go conventions
-func NewBalance(amount int64, currency string) Balance {
-	return Balance{Amount: NewCoin(amount, currency)}
+func NewBalance() Balance {
+	amounts := make([]Coin, len(Currencies))
+	for _, v := range Currencies {
+		amounts[v.Id] = NewCoin(0, v.Name)
+	}
+	result := Balance{
+		Amounts: amounts,
+	}
+	return result
+}
+
+func NewBalanceFromString(amount int64, currency string) Balance {
+	coin := NewCoin(amount, currency)
+	balance := NewBalance()
+	balance.AddAmmount(coin)
+	return balance
+}
+
+func NewBalanceFromCoin(coin Coin) Balance {
+	balance := NewBalance()
+	balance.AddAmmount(coin)
+	return balance
+}
+
+func (b *Balance) FromCoin(coin Coin) {
+	b.Amounts[coin.Currency.Id] = coin
+}
+
+func (b *Balance) GetAmountByCurrency(currency Currency) Coin {
+	return b.Amounts[currency.Id]
+}
+
+func (b *Balance) GetAmountByName(name string) Coin {
+	return b.Amounts[Currencies[name].Id]
+}
+
+func (b *Balance) AddAmmount(coin Coin) {
+	b.Amounts[coin.Currency.Id] = b.Amounts[coin.Currency.Id].Plus(coin)
+	return
+}
+
+func (b *Balance) MinusAmmount(coin Coin) {
+	b.Amounts[coin.Currency.Id] = b.Amounts[coin.Currency.Id].Minus(coin)
+	return
 }
 
 //String used in fmt and Dump
 func (balance Balance) String() string {
-	return fmt.Sprintf("%s %s", balance.Amount, balance.Amount.Currency.Name)
+	buffer := ""
+	for _, v := range balance.Amounts {
+		if v.Amount.Cmp(big.NewInt(0)) == 1 || v.Currency.Id == 0 {
+			buffer += fmt.Sprintf("%s %s\n", v.Amount.String(), v.Currency.Name)
+		}
+	}
+
+	if len(buffer) > 0 {
+		buffer = buffer[:len(buffer)-1]
+	}
+	return buffer
 }

@@ -38,11 +38,11 @@ func TestPersistence(t *testing.T) {
 
 func TestChainState(t *testing.T) {
 	state := NewChainState("ChainState", PERSISTENT)
-	balance := NewBalance(10000, "OLT")
+	balance := NewBalanceFromString(10000, "OLT")
 	key := []byte("Ahhhhhhh")
 	state.Set(key, balance)
 	state.Commit()
-	result := state.Find(key)
+	result := state.Get(key)
 
 	assert.Equal(t, balance, *result, "These should be equal")
 }

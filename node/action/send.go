@@ -78,9 +78,8 @@ func (transaction *Send) ProcessDeliver(app interface{}) status.Code {
 	// Update the database to the final set of entries
 	for _, entry := range transaction.Outputs {
 
-		balance := data.Balance{
-			Amount: entry.Amount,
-		}
+		balance := data.NewBalanceFromCoin(entry.Amount)
+
 		chain.Set(entry.AccountKey, balance)
 	}
 

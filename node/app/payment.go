@@ -28,7 +28,7 @@ func CreatePaymentRequest(app Application, identities []id.Identity, quotient da
 
 		partyBalance := app.Utxo.Get(party.AccountKey)
 		if partyBalance == nil {
-			interimBalance := data.NewBalance(0, "OLT")
+			interimBalance := data.NewBalanceFromString(0, "OLT")
 			partyBalance = &interimBalance
 		}
 
@@ -36,10 +36,10 @@ func CreatePaymentRequest(app Application, identities []id.Identity, quotient da
 		//gas := conv.GetCoin(args.Gas, args.Currency)
 
 		inputs = append(inputs,
-			action.NewSendInput(party.AccountKey, partyBalance.Amount))
+			action.NewSendInput(party.AccountKey, partyBalance.GetAmountByName("OLT")))
 
 		outputs = append(outputs,
-			action.NewSendOutput(party.AccountKey, partyBalance.Amount.Plus(quotient)))
+			action.NewSendOutput(party.AccountKey, partyBalance.GetAmountByName("OLT").Plus(quotient)))
 	}
 
 	payment, err := app.Accounts.FindName("Payment-OneLedger")
@@ -53,10 +53,10 @@ func CreatePaymentRequest(app Application, identities []id.Identity, quotient da
 	totalPayment := quotient.Multiply(numberValidators)
 
 	inputs = append(inputs,
-		action.NewSendInput(payment.AccountKey(), paymentBalance.Amount))
+		action.NewSendInput(payment.AccountKey(), paymentBalance.GetAmountByName("OLT")))
 
 	outputs = append(outputs,
-		action.NewSendOutput(payment.AccountKey(), paymentBalance.Amount.Minus(totalPayment)))
+		action.NewSendOutput(payment.AccountKey(), paymentBalance.GetAmountByName("OLT").Minus(totalPayment)))
 
 	// Create base transaction
 	send := &action.Send{

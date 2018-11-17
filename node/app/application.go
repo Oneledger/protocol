@@ -100,14 +100,13 @@ func (app Application) Initialize() {
 }
 
 type BasicState struct {
-	Native    AccountState `json:"native"`
-	Validator AccountState `json:"validator"`
+	Account string  `json:"account"`
+	States  []State `json:"states"`
 }
 
-type AccountState struct {
-	Account string `json:"account"`
-	Amount  string `json:"amount"`
-	Coin    string `json:"coin"`
+type State struct {
+	Amount string `json:"amount"`
+	Coin   string `json:"coin"`
 }
 
 // Use the Genesis block to initialze the system
@@ -125,17 +124,15 @@ func (app Application) SetupState(stateBytes []byte) {
 	log.Debug("Deserialized State", "state", state)
 
 	// TODO: Can't generate a different key for each node. Needs to be in the genesis? Or ignored?
-	privateKey, publicKey := id.GenerateKeys([]byte(state.Native.Account), false) // TODO: switch with passphrase
+	privateKey, publicKey := id.GenerateKeys([]byte(state.Account), false) // TODO: switch with passphrase
 
-	CreateAccount(app, state.Native, publicKey, privateKey)
-
-	UpdateAccount(app, state.Validator)
+	CreateAccount(app, state, publicKey, privateKey)
 
 	privateKey, publicKey = id.GenerateKeys([]byte("Payment"), false) // TODO: make a user put a real key actually
-	CreateAccount(app, AccountState{"Payment", "0", "OLT"}, publicKey, privateKey)
+	CreateAccount(app, &BasicState{"Payment", []State{State{"0", "OLT"}}}, publicKey, privateKey)
 }
 
-func CreateAccount(app Application, state AccountState, publicKey id.PublicKeyED25519, privateKey id.PrivateKeyED25519) {
+func CreateAccount(app Application, state *BasicState, publicKey id.PublicKeyED25519, privateKey id.PrivateKeyED25519) {
 
 	// TODO: This should probably only occur on the Admin node, for other nodes how do I know the key?
 	// Register the identity and account first
@@ -146,7 +143,7 @@ func CreateAccount(app Application, state AccountState, publicKey id.PublicKeyED
 	}
 
 	// Use the account key in the database
-	balance := NewBalanceFromString(state.Amount, state.Coin)
+	balance := NewBalanceFromStates(state.States)
 	app.Utxo.Set(account.AccountKey(), balance)
 
 	// TODO: Until a block is commited, this data is not persistent
@@ -155,29 +152,22 @@ func CreateAccount(app Application, state AccountState, publicKey id.PublicKeyED
 	log.Info("Genesis State UTXO database", "balance", balance)
 }
 
-func UpdateAccount(app Application, state AccountState) {
+func NewBalanceFromStates(states []State) data.Balance {
+	var balance data.Balance
+	for i, v := range states {
+		if i == 0 {
+			value := big.NewInt(0)
+			value.SetString(v.Amount, 10)
+			balance = data.NewBalanceFromString(value.Int64(), v.Coin)
+		} else {
+			value := big.NewInt(0)
+			value.SetString(v.Amount, 10)
+			coin := data.NewCoin(value.Int64(), v.Coin)
+			balance.AddAmmount(coin)
+		}
+	}
 
-	account, ok := app.Accounts.FindName(state.Account + "-OneLedger")
-	if ok != status.SUCCESS {
-		log.Fatal("Recently Added Account is missing", "name", state.Account, "status", ok)
-	}
-	//todo: make the balance to balances
-	balance := NewBalanceFromString(state.Amount, state.Coin)
-	app.Utxo.Set(account.AccountKey(), balance)
-	log.Info("Genesis State UTXO database", "balance", balance)
-}
-
-func NewBalanceFromString(amount string, currency string) data.Balance {
-	value := big.NewInt(0)
-	value.SetString(amount, 10)
-	coin := data.Coin{
-		Currency: data.NewCurrency(currency),
-		Amount:   value,
-	}
-	if !coin.IsValid() {
-		log.Fatal("Create Invalid Coin", "coin", coin)
-	}
-	return data.Balance{Amount: coin}
+	return balance
 }
 
 // InitChain is called when a new chain is getting created
@@ -324,16 +314,16 @@ func (app Application) MakePayment(req RequestBeginBlock) {
 	}
 	balance := app.Utxo.Get(account.AccountKey())
 	if balance == nil {
-		interimBalance := data.NewBalance(0, "OLT")
+		interimBalance := data.NewBalanceFromString(0, "OLT")
 		balance = &interimBalance
 	}
 
-	if !balance.Amount.LessThanEqual(0) {
+	if !balance.GetAmountByName("OLT").LessThanEqual(0) {
 		list := req.LastCommitInfo.GetValidators()
 		badValidators := req.ByzantineValidators
 
 		numberValidators := data.NewCoin(int64(len(list)), "OLT")
-		quotient := balance.Amount.Quotient(numberValidators)
+		quotient := balance.GetAmountByName("OLT").Quotient(numberValidators)
 
 		var identities []id.Identity
 

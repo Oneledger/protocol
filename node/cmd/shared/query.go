@@ -73,7 +73,8 @@ func GetBalance(accountKey id.AccountKey) *data.Coin {
 		return nil
 	}
 	balance := response.(*data.Balance)
-	return &balance.Amount
+	amount := balance.GetAmountByName("OLT")
+	return &amount
 
 }
 
