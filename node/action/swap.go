@@ -143,17 +143,14 @@ func (swap *Swap) Resolve(app interface{}) Commands {
 	} else {
 		// after the swap_matching, every swapmessage should be swapexchange or swapverify.
 		commands = swap.SwapMessage.resolve(app, swap.Stage)
-
+		if commands.Count() == 0 {
+			log.Error("Swap resolve no commands", "swap", swap)
+			return nil
+		}
+		//todo: the owner and signer should change when support wallet/light client.
+		// the owner should be the wallet/light client sender not the operation node. so as the signer
+		commands[0].data[PREVIOUS] = _hash(swap)
 	}
-	if commands.Count() == 0 {
-		log.Error("Swap resolve no commands", "swap", swap)
-		return nil
-	}
-	//todo: the owner and signer should change when support wallet/light client.
-	// the owner should be the wallet/light client sender not the operation node. so as the signer
-	commands[0].data[OWNER] = swap.Owner
-	commands[0].data[TARGET] = swap.Target
-	commands[0].data[PREVIOUS] = _hash(swap)
 	return commands
 }
 
@@ -174,10 +171,6 @@ func (swap *Swap) CommandExecute(app interface{}, commands Commands, c chan stat
 		}
 		if len(result) > 0 {
 			commands[i+1].data = result
-			if v, _ := context[NEXTCHAINNAME]; v != nil {
-				chain := GetChain(v)
-				commands[i+1].chain = chain
-			}
 		}
 	}
 	c <- status.SUCCESS
@@ -329,6 +322,7 @@ func (si SwapInit) resolve(app interface{}, stageType swapStageType) Commands {
 	var sv SwapVerify
 	stage, _ := swapStageFlow[SWAP_MATCHING]
 	key := si.getKey().toHash()
+	account := GetNodeAccount(app)
 
 	commands := amino.DeepCopy(stage.Commands).(Commands)
 	context := make(FunctionValues)
@@ -354,6 +348,8 @@ func (si SwapInit) resolve(app interface{}, stageType swapStageType) Commands {
 	default:
 		log.Warn("Unexpected stage for SwapInit", "stage", stageType)
 	}
+	context[OWNER] = account.AccountKey()
+	context[TARGET] = account.AccountKey()
 	commands[0].data = context
 	return commands
 }
@@ -463,9 +459,18 @@ func (se SwapExchange) resolve(app interface{}, stageType swapStageType) Command
 
 	si := FindSwap(app, se.SwapKeyHash)
 	chains := si.getChains()
+	account := GetNodeAccount(app)
 
 	switch stage.Stage {
 	case SWAP_MATCHED:
+		if bytes.Equal(si.Party.Key, account.AccountKey()) {
+			context[OWNER] = si.Party.Key
+			context[TARGET] = si.Party.Key
+		} else {
+			context[OWNER] = si.CounterParty.Key
+			context[TARGET] = si.CounterParty.Key
+			context[STAGE] = NOSTAGE
+		}
 
 	case INITIATOR_INITIATE:
 
@@ -480,8 +485,14 @@ func (se SwapExchange) resolve(app interface{}, stageType swapStageType) Command
 
 		context[NEXTCHAINNAME] = chains[0]
 		SaveContract(app, se.SwapKeyHash, 0, secret[:])
+
+		context[OWNER] = si.Party.Key
+		context[TARGET] = si.CounterParty.Key
+
 	case PARTICIPANT_PARTICIPATE:
 		context[NEXTCHAINNAME] = se.Chain
+		context[OWNER] = si.CounterParty.Key
+		context[TARGET] = si.Party.Key
 
 	case INITIATOR_REDEEM:
 		scr := FindContract(app, se.SwapKeyHash, 0)
@@ -493,10 +504,15 @@ func (se SwapExchange) resolve(app interface{}, stageType swapStageType) Command
 		context[PASSWORD] = scr
 		context[PREIMAGE] = secretHash
 		context[NEXTCHAINNAME] = se.Chain
+		context[OWNER] = si.Party.Key
+		context[TARGET] = si.CounterParty.Key
 	case PARTICIPANT_REDEEM:
 		context[NEXTCHAINNAME] = se.Chain
 		scrHash := FindContract(app, se.SwapKeyHash, 0)
 		context[PREIMAGE] = scrHash
+		context[OWNER] = si.CounterParty.Key
+		context[TARGET] = si.Party.Key
+	case SWAP_FINISH:
 
 	default:
 		log.Warn("Unexpected stage for SwapExchange", "stage", stageType)
@@ -570,7 +586,6 @@ func NextStage(app interface{}, chain data.ChainType, context FunctionValues, tx
 		return false, nil
 	}
 
-	signers := make([]PublicKey, 0)
 	owner := GetAccountKey(context[OWNER])
 	target := GetAccountKey(context[TARGET])
 	chainId := GetChainID(app)
@@ -579,7 +594,7 @@ func NextStage(app interface{}, chain data.ChainType, context FunctionValues, tx
 		Base: Base{
 			Type:     SWAP,
 			ChainId:  chainId,
-			Signers:  signers,
+			Signers:  GetSigners(owner),
 			Owner:    owner,
 			Target:   target,
 			Sequence: global.Current.Sequence,
@@ -707,8 +722,6 @@ func CreateCheckEvent(app interface{}, chain data.ChainType, context FunctionVal
 	previous := GetBytes(context[PREVIOUS])
 	se.PreviousTx = previous
 	context[SWAPMESSAGE] = se
-	context[OWNER] = si.Party.Key
-	context[TARGET] = si.Party.Key
 
 	event := Event{Type: SWAP, SwapKeyHash: se.SwapKeyHash, Step: 0}
 	SaveEvent(app, event, false)
@@ -935,13 +948,9 @@ func CreateContractETH(app interface{}, context FunctionValues, tx Transaction) 
 	if stage == INITIATOR_INITIATE {
 		value = si.Amount.Amount
 		receiverParty = si.CounterParty
-		context[OWNER] = si.Party.Key
-		context[TARGET] = si.CounterParty.Key
 	} else {
 		value = si.Exchange.Amount
 		receiverParty = si.Party
-		context[OWNER] = si.CounterParty.Key
-		context[TARGET] = si.Party.Key
 	}
 	//todo : need to have a better key to store ethereum contract.
 	me := GetNodeAccount(app)
@@ -1008,11 +1017,8 @@ func AuditContractBTC(app interface{}, context FunctionValues, tx Transaction) (
 	stage := getStageType(context[STAGE])
 	switch stage {
 	case PARTICIPANT_PARTICIPATE:
-		context[OWNER] = si.CounterParty.Key
-		context[TARGET] = si.Party.Key
+
 	case INITIATOR_REDEEM:
-		context[OWNER] = si.Party.Key
-		context[TARGET] = si.CounterParty.Key
 		scr := FindContract(app, storeKey, 0)
 		if scr == nil {
 			log.Error("secret not found", "key", storeKey)
@@ -1056,12 +1062,8 @@ func AuditContractETH(app interface{}, context FunctionValues, tx Transaction) (
 	switch stage {
 	case PARTICIPANT_PARTICIPATE:
 		amount = si.Amount
-		context[OWNER] = si.CounterParty.Key
-		context[TARGET] = si.Party.Key
 	case INITIATOR_REDEEM:
 		amount = si.Exchange
-		context[OWNER] = si.Party.Key
-		context[TARGET] = si.CounterParty.Key
 		scr := FindContract(app, storeKey, 0)
 		if scr == nil {
 			log.Error("secret not found", "key", storeKey)

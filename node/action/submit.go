@@ -4,6 +4,7 @@
 package action
 
 import (
+	"github.com/Oneledger/protocol/node/id"
 	"time"
 
 	"github.com/Oneledger/protocol/node/comm"
@@ -53,16 +54,49 @@ func SignAndPack(transaction Transaction) []byte {
 }
 
 // SignTransaction with the local keys
-func SignTransaction(transaction Transaction) Transaction {
-	return transaction
+func SignTransaction(transaction Transaction) SignedTransaction {
+	packet, err := serial.Serialize(transaction, serial.CLIENT)
+
+	signed := SignedTransaction{transaction, nil}
+
+	if err != nil {
+		log.Error("Failed to Serialize packet: ", "error", err)
+	} else {
+		request := Message(packet)
+
+		response := comm.Query("/signTransaction", request)
+
+		if response == nil {
+			log.Warn("Query returned no signature", "request", request)
+		} else {
+			signed.Signatures = response.([]TransactionSignature)
+		}
+	}
+
+	log.Debug("Transaction signature", "signature", signed.Signatures)
+
+	return signed
 }
 
 // Pack a request into a transferable format (wire)
-func PackRequest(request Transaction) []byte {
+func PackRequest(request SignedTransaction) []byte {
 	packet, err := serial.Serialize(request, serial.CLIENT)
 	if err != nil {
 		log.Error("Failed to Serialize packet: ", err)
 	}
 
 	return packet
+}
+
+// GetSigners will return the public keys of the signers
+func GetSigners(owner []byte) []id.PublicKey {
+	log.Debug("GetSigners", "owner", owner)
+
+	publicKey := comm.Query("/accountPublicKey", owner)
+
+	if publicKey == nil {
+		return nil
+	}
+
+	return []id.PublicKey{publicKey.(id.PublicKey)}
 }

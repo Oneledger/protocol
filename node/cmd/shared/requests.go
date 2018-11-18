@@ -89,8 +89,6 @@ type SendArguments struct {
 
 // CreateRequest builds and signs the transaction based on the arguments
 func CreateSendRequest(args *SendArguments) []byte {
-	signers := GetSigners()
-
 	conv := convert.NewConvert()
 
 	if args.Party == "" {
@@ -156,7 +154,8 @@ func CreateSendRequest(args *SendArguments) []byte {
 		Base: action.Base{
 			Type:     action.SEND,
 			ChainId:  app.ChainId,
-			Signers:  signers,
+			Owner:    party,
+			Signers:  action.GetSigners(party),
 			Sequence: global.Current.Sequence,
 		},
 		Inputs:  inputs,
@@ -169,8 +168,6 @@ func CreateSendRequest(args *SendArguments) []byte {
 
 // CreateRequest builds and signs the transaction based on the arguments
 func CreateMintRequest(args *SendArguments) []byte {
-	signers := GetSigners()
-
 	conv := convert.NewConvert()
 
 	if args.Party == "" {
@@ -189,8 +186,8 @@ func CreateMintRequest(args *SendArguments) []byte {
 	amount := conv.GetCoin(args.Amount, args.Currency)
 
 	// Build up the Inputs
-	partyBalance := GetBalance(party)
 	zeroBalance := GetBalance(zero)
+	partyBalance := GetBalance(party)
 
 	if zeroBalance == nil || partyBalance == nil {
 		log.Warn("Missing Balances", "party", party, "zero", zero)
@@ -226,7 +223,7 @@ func CreateMintRequest(args *SendArguments) []byte {
 		Base: action.Base{
 			Type:     action.SEND,
 			ChainId:  app.ChainId,
-			Signers:  signers,
+			Signers:  action.GetSigners(zero),
 			Owner:    zero,
 			Sequence: global.Current.Sequence,
 		},
@@ -259,8 +256,6 @@ func CreateSwapRequest(args *SwapArguments) []byte {
 
 	partyKey := GetAccountKey(args.Party)
 	counterPartyKey := GetAccountKey(args.CounterParty)
-
-	signers := GetSigners()
 
 	fee := conv.GetCoin(args.Fee, "OLT")
 	gas := conv.GetCoin(args.Gas, "OLT")
@@ -297,7 +292,7 @@ func CreateSwapRequest(args *SwapArguments) []byte {
 		Base: action.Base{
 			Type:     action.SWAP,
 			ChainId:  app.ChainId,
-			Signers:  signers,
+			Signers:  action.GetSigners(partyKey),
 			Owner:    partyKey,
 			Target:   counterPartyKey,
 			Sequence: global.Current.Sequence,

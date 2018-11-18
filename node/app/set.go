@@ -55,7 +55,7 @@ func GetChain(chainName string) data.ChainType {
 func GetKeys(chain data.ChainType, name string, publicKey string, privateKey string) (id.PublicKeyED25519, id.PrivateKeyED25519) {
 
 	// TODO: Need to push the passphrase back through the CLI
-	priv, public := id.GenerateKeys([]byte(name + "as password"))
+	priv, public := id.GenerateKeys([]byte(name+"as password"), true)
 	return public, priv
 }
 
@@ -113,10 +113,10 @@ func CreateRegisterRequest(identityName string, accountKey id.AccountKey) action
 
 	reg := &action.Register{
 		Base: action.Base{
-			Type:    action.REGISTER,
-			ChainId: ChainId,
-			Owner:   accountKey,
-			//Signers:  action.GetSigners(accountKey),
+			Type:     action.REGISTER,
+			ChainId:  ChainId,
+			Owner:    accountKey,
+			Signers:  action.GetSigners(accountKey),
 			Sequence: global.Current.Sequence,
 		},
 		Identity:          identityName,
@@ -128,6 +128,7 @@ func CreateRegisterRequest(identityName string, accountKey id.AccountKey) action
 	return reg
 }
 
+// TODO: This probably doesn't work. It was replaced by the SDK direct connection
 // Handle a SetOption ABCi reqeust
 func SetOption(app *Application, key string, value string) bool {
 	log.Debug("Setting Application Options", "key", key, "value", value)
@@ -142,7 +143,7 @@ func SetOption(app *Application, key string, value string) bool {
 			return false
 		}
 		args := result.(*RegisterArguments)
-		privateKey, publicKey := id.GenerateKeys([]byte(args.Identity)) // TODO: Switch with passphrase
+		privateKey, publicKey := id.GenerateKeys([]byte(args.Identity), true) // TODO: Switch with passphrase
 		AddAccount(app, args.Identity, id.ParseAccountType(args.Chain), publicKey, privateKey, false)
 
 	default:

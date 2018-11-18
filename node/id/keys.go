@@ -91,11 +91,16 @@ type PrivateKey interface {
 	Equals(PrivateKey) bool
 }
 
-// TODO: Should not be hardcding key type ...
-type PublicKeyED25519 ed25519.PubKeyEd25519
+type PublicKeyED25519 struct {
+	Key ed25519.PubKeyEd25519
+}
+
 type PrivateKeyED25519 ed25519.PrivKeyEd25519
 
-type PublicKeySECP256K1 secp256k1.PubKeySecp256k1
+type PublicKeySECP256K1 struct {
+	Key secp256k1.PubKeySecp256k1
+}
+
 type PrivateKeySECP256K1 secp256k1.PrivKeySecp256k1
 
 // Ensure these key types implement PublicKey and PrivateKey
@@ -108,6 +113,10 @@ var _ PrivateKey = new(PrivateKeySECP256K1)
 func init() {
 	serial.Register(NilPublicKey())
 	serial.Register(NilPrivateKey())
+	serial.Register(ed25519.PubKeyEd25519{})
+	serial.Register(secp256k1.PubKeySecp256k1{})
+	serial.Register(PublicKeyED25519{})
+	serial.Register(PrivateKeyED25519{})
 	serial.Register(PublicKeySECP256K1{})
 	serial.Register(PrivateKeySECP256K1{})
 
@@ -129,7 +138,7 @@ func NilPrivateKey() PrivateKeyED25519 {
 // --------------------------------------------------
 
 func (k PublicKeyED25519) Bytes() []byte {
-	return k[:]
+	return k.Key[:]
 }
 
 // Address hashes the key with a RIPEMD-160 hash
@@ -138,7 +147,7 @@ func (k PublicKeyED25519) Address() []byte {
 }
 
 func (k PublicKeyED25519) VerifyBytes(msg []byte, sig []byte) bool {
-	return ed25519.PubKeyEd25519(k).VerifyBytes(msg, sig)
+	return ed25519.PubKeyEd25519(k.Key).VerifyBytes(msg, sig)
 }
 
 func (k PublicKeyED25519) Equals(key PublicKey) bool {
@@ -150,7 +159,7 @@ func (k PublicKeyED25519) Hex() string {
 }
 
 func (k PublicKeySECP256K1) Bytes() []byte {
-	return k[:]
+	return k.Key[:]
 }
 
 func (k PublicKeySECP256K1) Address() []byte {
@@ -158,7 +167,7 @@ func (k PublicKeySECP256K1) Address() []byte {
 }
 
 func (k PublicKeySECP256K1) VerifyBytes(msg []byte, sig []byte) bool {
-	return secp256k1.PubKeySecp256k1(k).VerifyBytes(msg, sig)
+	return secp256k1.PubKeySecp256k1(k.Key).VerifyBytes(msg, sig)
 }
 
 func (k PublicKeySECP256K1) Equals(key PublicKey) bool {
@@ -166,7 +175,7 @@ func (k PublicKeySECP256K1) Equals(key PublicKey) bool {
 }
 
 func OnePublicKey() PublicKeyED25519 {
-	return PublicKeyED25519{1}
+	return PublicKeyED25519{ed25519.PubKeyEd25519{1}}
 }
 
 func OnePrivateKey() PrivateKeyED25519 {
@@ -189,7 +198,7 @@ func (k PrivateKeyED25519) Sign(msg []byte) ([]byte, error) {
 
 func (k PrivateKeyED25519) PubKey() PublicKey {
 	p := ed25519.PrivKeyEd25519(k).PubKey().(ed25519.PubKeyEd25519)
-	return PublicKeyED25519(p)
+	return PublicKeyED25519{p}
 }
 
 func (k PrivateKeyED25519) Equals(key PrivateKey) bool {
@@ -206,38 +215,46 @@ func (k PrivateKeySECP256K1) Sign(msg []byte) ([]byte, error) {
 
 func (k PrivateKeySECP256K1) PubKey() PublicKey {
 	p := secp256k1.PrivKeySecp256k1(k).PubKey().(secp256k1.PubKeySecp256k1)
-	return PublicKeySECP256K1(p)
+	return PublicKeySECP256K1{p}
 }
 
 func (k PrivateKeySECP256K1) Equals(key PrivateKey) bool {
 	return bytes.Equal(k.Bytes(), key.Bytes())
 }
 
-func GenerateKeys(secret []byte) (PrivateKeyED25519, PublicKeyED25519) {
+func GenerateKeys(secret []byte, random bool) (PrivateKeyED25519, PublicKeyED25519) {
 	// TODO: Should be configurable
-	private, public, err := generateKeys(secret, ED25519)
+	private, public, err := generateKeys(secret, ED25519, random)
 	if err != nil {
 		log.Fatal("Key Generation Failed")
 	}
 	return private.(PrivateKeyED25519), public.(PublicKeyED25519)
 }
 
-func generateKeys(secret []byte, algorithm KeyAlgorithm) (PrivateKey, PublicKey, error) {
-	hash, err := bcrypt.GenerateFromPassword(secret, bcrypt.DefaultCost)
-	if err != nil {
-		log.Fatal("Failed to generate bcrypt hash from secret", "secret", secret)
+func generateKeys(secret []byte, algorithm KeyAlgorithm, random bool) (PrivateKey, PublicKey, error) {
+
+	var hash []byte
+
+	if random {
+		hash_, err := bcrypt.GenerateFromPassword(secret, bcrypt.DefaultCost)
+		if err != nil {
+			log.Fatal("Failed to generate bcrypt hash from secret", "secret", secret)
+		}
+		hash = hash_
+	} else {
+		hash = secret
 	}
 	switch algorithm {
 
 	case ED25519:
 		private := ed25519.GenPrivKeyFromSecret(hash)
 		public := private.PubKey().(ed25519.PubKeyEd25519)
-		return PrivateKeyED25519(private), PublicKeyED25519(public), nil
+		return PrivateKeyED25519(private), PublicKeyED25519{public}, nil
 
 	case SECP256K1:
 		private := secp256k1.GenPrivKeySecp256k1(hash)
 		public := private.PubKey().(secp256k1.PubKeySecp256k1)
-		return PrivateKeySECP256K1(private), PublicKeySECP256K1(public), nil
+		return PrivateKeySECP256K1(private), PublicKeySECP256K1{public}, nil
 	}
 	return NilPrivateKey(), NilPublicKey(), errors.New("Unknown Algorithm: " + string(algorithm))
 }
@@ -273,7 +290,7 @@ func ImportBytesKey(bz []byte, k KeyAlgorithm) (PublicKey, error) {
 		}
 		var key [ED25519_PUB_SIZE]byte
 		copy(key[:], bz)
-		return PublicKeyED25519(key), nil
+		return PublicKeyED25519{key}, nil
 	case SECP256K1:
 		size := SECP256K1_PUB_SIZE
 		if len(bz) != size {
@@ -282,7 +299,7 @@ func ImportBytesKey(bz []byte, k KeyAlgorithm) (PublicKey, error) {
 		}
 		var key [SECP256K1_PUB_SIZE]byte
 		copy(key[:], bz)
-		return PublicKeySECP256K1(key), nil
+		return PublicKeySECP256K1{key}, nil
 	default:
 		// Shouldn't reach here
 		return nil, errors.New("provided invalid key algorithm")

@@ -9,6 +9,7 @@ import (
 	"encoding/hex"
 	"strings"
 
+	"github.com/Oneledger/protocol/node/action"
 	"github.com/Oneledger/protocol/node/chains/common"
 
 	"github.com/Oneledger/protocol/node/convert"
@@ -34,6 +35,12 @@ func HandleQuery(app Application, path string, arguments map[string]string) []by
 
 	case "/identity":
 		result = HandleIdentityQuery(app, arguments)
+
+	case "/signTransaction":
+		result = HandleSignTransaction(app, arguments)
+
+	case "/accountPublicKey":
+		result = HandleAccountPublicKeyQuery(app, arguments)
 
 	case "/accountKey":
 		result = HandleAccountKeyQuery(app, arguments)
@@ -64,6 +71,83 @@ func HandleQuery(app Application, path string, arguments map[string]string) []by
 
 func HandleNodeNameQuery(app Application, arguments map[string]string) interface{} {
 	return global.Current.NodeName
+}
+
+func HandleSignTransaction(app Application, arguments map[string]string) interface{} {
+	log.Debug("SignTransactionQuery", "arguments", arguments)
+
+	var tx action.Transaction
+
+	text := arguments["parameters"]
+	transaction, transactionErr := serial.Deserialize([]byte(text), tx, serial.CLIENT)
+
+	signatures := []action.TransactionSignature{}
+
+	if transactionErr != nil {
+		log.Error("Could not deserialize a transaction", "error", transactionErr)
+		return signatures
+	}
+
+	var accountKey id.AccountKey
+
+	// TODO: Add GetOwner method to clean this up?
+	switch v := transaction.(type) {
+	case *action.Swap:
+		accountKey = v.Base.Owner
+	case *action.Send:
+		accountKey = v.Base.Owner
+	case *action.Register:
+		accountKey = v.Base.Owner
+	default:
+		log.Error("Unknown transaction type", "transaction", transaction)
+	}
+
+	if accountKey == nil {
+		log.Error("Account key is null", "transaction", transaction)
+		return signatures
+	}
+
+	account, accountStatus := app.Accounts.FindKey(accountKey)
+
+	if accountStatus != status.SUCCESS {
+		log.Error("Could not find an account", "status", accountStatus)
+		return signatures
+	}
+
+	privateKey := account.PrivateKey()
+
+	signature, signatureError := privateKey.Sign([]byte(text))
+
+	if signatureError != nil {
+		log.Error("Could not sign a transaction", "error", signatureError)
+		return signatures
+	}
+
+	signatures = append(signatures, action.TransactionSignature{signature})
+
+	return signatures
+}
+
+func HandleAccountPublicKeyQuery(app Application, arguments map[string]string) interface{} {
+	log.Debug("AccountPublicKeyQuery", "arguments", arguments)
+
+	text := arguments["parameters"]
+
+	account, accountStatus := app.Accounts.FindKey([]byte(text))
+
+	if accountStatus != status.SUCCESS {
+		log.Error("Could not find an account", "status", accountStatus)
+		return []byte{}
+	}
+
+	privateKey := account.PrivateKey()
+	publicKey := privateKey.PubKey()
+
+	if publicKey.Equals(account.PublicKey()) == false {
+		log.Warn("Public keys don't match", "derivedPublicKey",
+			publicKey, "accountPublicKey", account.PublicKey())
+	}
+	return publicKey
 }
 
 // Get the account information for a given user
@@ -212,4 +296,44 @@ func SwapAddress(chain data.ChainType) interface{} {
 func HandleError(text string, path string, arguments map[string]string) interface{} {
 	// TODO: Add in arguments to output
 	return "Unknown Query " + text + " " + path
+}
+
+func SignTransaction(transaction action.Transaction, application Application) action.SignedTransaction {
+	packet, err := serial.Serialize(transaction, serial.CLIENT)
+
+	signed := action.SignedTransaction{transaction, nil}
+
+	if err != nil {
+		log.Error("Failed to Serialize packet: ", "error", err)
+	} else {
+		request := action.Message(packet)
+		arguments := map[string]string{
+			"parameters": string(request),
+		}
+
+		response := HandleSignTransaction(application, arguments)
+
+		if response == nil {
+			log.Warn("Query returned no signature", "request", request)
+		} else {
+			signed.Signatures = response.([]action.TransactionSignature)
+		}
+	}
+
+	return signed
+}
+
+func GetSigners(owner []byte, application Application) []id.PublicKey {
+	log.Debug("GetSigners", "owner", owner)
+
+	arguments := map[string]string{
+		"parameters": string(owner),
+	}
+	publicKey := HandleAccountPublicKeyQuery(application, arguments)
+
+	if publicKey == nil {
+		return nil
+	}
+
+	return []id.PublicKey{publicKey.(id.PublicKey)}
 }

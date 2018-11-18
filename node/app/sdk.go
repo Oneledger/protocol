@@ -115,14 +115,7 @@ func (server SDKServer) Register(ctx context.Context, request *pb.RegisterReques
 		return nil, gstatus.Errorf(codes.AlreadyExists, "Identity %s already exists", name)
 	}
 
-	privKey, pubKey := id.GenerateKeys(secret(name + chain.String()))
-
-	/*
-		ok := RegisterLocally(server.App, name, chain.String(), chain, pubKey, privKey)
-		if !ok {
-			return nil, gstatus.Errorf(codes.FailedPrecondition, "Local registration failed")
-		}
-	*/
+	privKey, pubKey := id.GenerateKeys(secret(name+chain.String()), true)
 
 	packet := action.SignAndPack(
 		action.CreateRegisterRequest(

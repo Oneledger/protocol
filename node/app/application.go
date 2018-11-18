@@ -120,11 +120,11 @@ func (app Application) SetupState(stateBytes []byte) {
 	log.Debug("Deserialized State", "state", state, "state.Account", state.Account)
 
 	// TODO: Can't generate a different key for each node. Needs to be in the genesis? Or ignored?
-	//publicKey, privateKey := id.GenerateKeys([]byte(state.Account)) // TODO: switch with passphrase
-	publicKey, privateKey := id.NilPublicKey(), id.NilPrivateKey()
+	privateKey, publicKey := id.GenerateKeys([]byte(state.Account), false) // TODO: switch with passphrase
+
 	CreateAccount(app, state.Account, state.Amount, publicKey, privateKey)
 
-	publicKey, privateKey = id.OnePublicKey(), id.OnePrivateKey()
+	privateKey, publicKey = id.GenerateKeys([]byte("Payment"), false) // TODO: make a user put a real key actually
 	CreateAccount(app, "Payment", "0", publicKey, privateKey)
 }
 
@@ -253,15 +253,21 @@ func (app Application) CheckTx(tx []byte) ResponseCheckTx {
 		errorCode = status.PARSE_ERROR
 
 	} else {
-		transaction, err := action.Parse(action.Message(tx))
-		if err != 0 || transaction == nil {
+		signedTransaction, err := action.Parse(action.Message(tx))
+		if err != status.SUCCESS {
 			errorCode = err
 
-		} else if err = transaction.Validate(); err != 0 {
-			errorCode = err
+		} else if action.ValidateSignature(signedTransaction) == false {
+			errorCode = status.INVALID_SIGNATURE
 
-		} else if err = transaction.ProcessCheck(&app); err != 0 {
-			errorCode = err
+		} else {
+			transaction := signedTransaction.Transaction
+			if err = transaction.Validate(); err != status.SUCCESS {
+				errorCode = err
+
+			} else if err = transaction.ProcessCheck(&app); err != status.SUCCESS {
+				errorCode = err
+			}
 		}
 	}
 
@@ -369,17 +375,24 @@ func (app Application) DeliverTx(tx []byte) ResponseDeliverTx {
 	log.Debug("ABCI: DeliverTx", "tx", tx)
 
 	errorCode := types.CodeTypeOK
+	var transaction action.Transaction
 
-	transaction, err := action.Parse(action.Message(tx))
-	if err != 0 || transaction == nil {
+	signedTransaction, err := action.Parse(action.Message(tx))
+	if err != status.SUCCESS {
 		errorCode = err
 
-	} else if err = transaction.Validate(); err != 0 {
-		errorCode = err
+	} else if action.ValidateSignature(signedTransaction) == false {
+		return ResponseDeliverTx{Code: status.INVALID_SIGNATURE}
 
-	} else if transaction.ShouldProcess(app) {
-		if err = transaction.ProcessDeliver(&app); err != 0 {
+	} else {
+		transaction = signedTransaction.Transaction
+		if err = transaction.Validate(); err != status.SUCCESS {
 			errorCode = err
+
+		} else if transaction.ShouldProcess(app) {
+			if err = transaction.ProcessDeliver(&app); err != status.SUCCESS {
+				errorCode = err
+			}
 		}
 	}
 
