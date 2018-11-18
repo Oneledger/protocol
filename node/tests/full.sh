@@ -16,8 +16,5 @@ $TEST/testmint.sh
 $TEST/send.sh
 $TEST/list.sh
 
-#$TEST/identity.sh
-#$TEST/accounts.sh
-
 $CMD/stopOneLedger
 

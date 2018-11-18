@@ -93,7 +93,6 @@ func (server *Server) Start() error {
 			}
 		}
 	}()
-
 	return nil
 }
 

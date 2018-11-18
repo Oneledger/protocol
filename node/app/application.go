@@ -171,7 +171,9 @@ func (app Application) InitChain(req RequestInitChain) ResponseInitChain {
 
 	app.SetupState(req.AppStateBytes)
 
-	return ResponseInitChain{}
+	result := ResponseInitChain{}
+	log.Debug("ABCI: InitChain Result", "result", result)
+	return result
 }
 
 // SetOption changes the underlying options for the ABCi app
@@ -180,11 +182,14 @@ func (app Application) SetOption(req RequestSetOption) ResponseSetOption {
 
 	SetOption(&app, req.Key, req.Value)
 
-	return ResponseSetOption{
+	result := ResponseSetOption{
 		Code: types.CodeTypeOK,
 		Log:  "Log Data",
 		Info: "Info Data",
 	}
+
+	log.Debug("ABCI: SetOption Result", "result", result)
+	return result
 }
 
 // Info returns the current block information
@@ -201,7 +206,7 @@ func (app Application) Info(req RequestInfo) ResponseInfo {
 		LastBlockAppHash: app.Balances.Hash,
 	}
 
-	log.Dump("Info Response is", result)
+	log.Debug("ABCI: Info Result", "result", result)
 	return result
 }
 
@@ -217,9 +222,9 @@ func (app Application) Query(req RequestQuery) ResponseQuery {
 	log.Debug("ABCI: Query", "req", req, "path", req.Path, "data", req.Data)
 
 	arguments := ParseData(req.Data)
-	result := HandleQuery(app, req.Path, arguments)
+	response := HandleQuery(app, req.Path, arguments)
 
-	return ResponseQuery{
+	result := ResponseQuery{
 		Code:  types.CodeTypeOK,
 		Index: 0, // TODO: What is this for?
 
@@ -227,57 +232,60 @@ func (app Application) Query(req RequestQuery) ResponseQuery {
 		Info: "Info Information",
 
 		Key:   action.Message("result"),
-		Value: result,
+		Value: response,
 
 		Proof:  nil,
 		Height: int64(app.Balances.Version),
 	}
+
+	log.Debug("ABCI: Query Result", "result", result)
+	return result
 }
 
 // CheckTx tests to see if a transaction is valid
 func (app Application) CheckTx(tx []byte) ResponseCheckTx {
 	log.Debug("ABCI: CheckTx", "tx", tx)
 
+	errorCode := types.CodeTypeOK
+
 	if tx == nil {
 		log.Warn("Empty Transaction, Ignoring", "tx", tx)
-		return ResponseCheckTx{
-			Code: status.PARSE_ERROR,
+		errorCode = status.PARSE_ERROR
+
+	} else {
+		transaction, err := action.Parse(action.Message(tx))
+		if err != 0 || transaction == nil {
+			errorCode = err
+
+		} else if err = transaction.Validate(); err != 0 {
+			errorCode = err
+
+		} else if err = transaction.ProcessCheck(&app); err != 0 {
+			errorCode = err
 		}
 	}
 
-	result, err := action.Parse(action.Message(tx))
-	if err != 0 || result == nil {
-		return ResponseCheckTx{Code: err}
-	}
+	result := ResponseCheckTx{
+		Code: errorCode,
 
-	// Check that this is a valid transaction
-	if err = result.Validate(); err != 0 {
-		return ResponseCheckTx{Code: err}
-	}
-
-	// Check that this transaction works in the context
-	if err = result.ProcessCheck(&app); err != 0 {
-		return ResponseCheckTx{Code: err}
-	}
-
-	return ResponseCheckTx{
-		Code: types.CodeTypeOK,
 		Data: []byte("Data"),
-
 		Log:  "Log Data",
 		Info: "Info Data",
 
-		GasWanted: 1000,
-		GasUsed:   1000,
+		GasWanted: 0,
+		GasUsed:   0,
 		Tags:      []common.KVPair(nil),
 	}
+
+	log.Debug("ABCI: CheckTx Result", "result", result)
+	return result
 }
 
 var chainKey data.DatabaseKey = data.DatabaseKey("chainId")
 
 // BeginBlock is called when a new block is started
 func (app Application) BeginBlock(req RequestBeginBlock) ResponseBeginBlock {
-	//log.Debug("ABCI: BeginBlock", "req", req)
+	log.Debug("ABCI: BeginBlock", "req", req)
 
 	app.MakePayment(req)
 
@@ -297,17 +305,22 @@ func (app Application) BeginBlock(req RequestBeginBlock) ResponseBeginBlock {
 		log.Warn("Mismatching chains", "chainId", chainId, "newChainId", newChainId)
 	}
 
-	return ResponseBeginBlock{
+	result := ResponseBeginBlock{
 		Tags: []common.KVPair(nil),
 	}
+
+	log.Debug("ABCI: BeginBlock Result", "result", result)
+	return result
 }
 
 // EndBlock is called at the end of all of the transactions
 func (app Application) MakePayment(req RequestBeginBlock) {
+
 	account, err := app.Accounts.FindName("Payment")
 	if err != status.SUCCESS {
 		log.Fatal("ABCI: BeginBlock Fatal Status", "status", err)
 	}
+
 	balance := app.Balances.Get(account.AccountKey())
 	if balance == nil {
 		interimBalance := data.NewBalance(0, "OLT")
@@ -340,7 +353,6 @@ func (app Application) MakePayment(req RequestBeginBlock) {
 			}
 		}
 	}
-
 }
 
 func IsByzantine(validator types.Validator, badValidators []types.Evidence) (result bool) {
@@ -356,23 +368,22 @@ func IsByzantine(validator types.Validator, badValidators []types.Evidence) (res
 func (app Application) DeliverTx(tx []byte) ResponseDeliverTx {
 	log.Debug("ABCI: DeliverTx", "tx", tx)
 
-	result, err := action.Parse(action.Message(tx))
-	if err != 0 || result == nil {
-		return ResponseDeliverTx{Code: err}
-	}
+	errorCode := types.CodeTypeOK
 
-	log.Debug("Validating")
-	if err = result.Validate(); err != 0 {
-		return ResponseDeliverTx{Code: err}
-	}
+	transaction, err := action.Parse(action.Message(tx))
+	if err != 0 || transaction == nil {
+		errorCode = err
 
-	log.Debug("Starting processing")
-	if result.ShouldProcess(app) {
-		if err = result.ProcessDeliver(&app); err != 0 {
-			return ResponseDeliverTx{Code: err}
+	} else if err = transaction.Validate(); err != 0 {
+		errorCode = err
+
+	} else if transaction.ShouldProcess(app) {
+		if err = transaction.ProcessDeliver(&app); err != 0 {
+			errorCode = err
 		}
 	}
-	tagType := strconv.FormatInt(int64(result.TransactionType()), 10)
+
+	tagType := strconv.FormatInt(int64(transaction.TransactionType()), 10)
 	tags := make([]common.KVPair, 1)
 	tag := common.KVPair{
 		Key:   []byte("tx.type"),
@@ -380,24 +391,30 @@ func (app Application) DeliverTx(tx []byte) ResponseDeliverTx {
 	}
 	tags = append(tags, tag)
 
-	return ResponseDeliverTx{
-		Code:      types.CodeTypeOK,
+	result := ResponseDeliverTx{
+		Code:      errorCode,
 		Data:      []byte("Data"),
 		Log:       "Log Data",
 		Info:      "Info Data",
-		GasWanted: 1000,
-		GasUsed:   1000,
+		GasWanted: 0,
+		GasUsed:   0,
 		Tags:      tags,
 	}
+
+	log.Debug("ABCI: DeliverTx Result", "result", result)
+	return result
 }
 
 // EndBlock is called at the end of all of the transactions
 func (app Application) EndBlock(req RequestEndBlock) ResponseEndBlock {
 	log.Debug("ABCI: EndBlock", "req", req)
 
-	return ResponseEndBlock{
+	result := ResponseEndBlock{
 		Tags: []common.KVPair(nil),
 	}
+
+	log.Debug("ABCI: EndBlock Result", "result", result)
+	return result
 }
 
 // Commit tells the app to make everything persistent
@@ -409,9 +426,12 @@ func (app Application) Commit() ResponseCommit {
 
 	log.Debug("-- Committed New Block", "hash", hash, "version", version)
 
-	return ResponseCommit{
+	result := ResponseCommit{
 		Data: hash,
 	}
+
+	log.Debug("ABCI: EndBlock Result", "result", result)
+	return result
 }
 
 // Close closes every datastore in app

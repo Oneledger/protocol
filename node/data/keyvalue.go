@@ -218,8 +218,6 @@ func (session KeyValueSession) FindAll() []DatabaseKey {
 
 // Store inserts or updates a value under a key
 func (session KeyValueSession) Set(key DatabaseKey, value interface{}) bool {
-	log.Debug("KV Set", "key", key, "value", value)
-
 	buffer := convertData(value)
 	session.store.tree.Set(key, buffer)
 
@@ -299,7 +297,6 @@ func (store KeyValue) list() (keys []DatabaseKey) {
 			key, _ := store.tree.GetByIndex(i)
 			results[i] = DatabaseKey(key)
 		}
-		log.Debug("Datastore List", "results", results)
 		return results
 
 	default:

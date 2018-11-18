@@ -6,6 +6,7 @@
 package app
 
 import (
+	"encoding/hex"
 	"strings"
 
 	"github.com/Oneledger/protocol/node/chains/common"
@@ -93,7 +94,6 @@ func AccountKey(app Application, name string) interface{} {
 	if ok == status.SUCCESS && account.Name() != "" {
 		return account.AccountKey()
 	}
-
 	return "AccountKey: Identity " + name + " not Found on " + global.Current.NodeName
 }
 
@@ -121,7 +121,6 @@ func IdentityInfo(app Application, name string) interface{} {
 	if ok == status.SUCCESS {
 		return []id.Identity{identity}
 	}
-
 	return "Identity " + name + " Not Found" + global.Current.NodeName
 }
 
@@ -150,7 +149,6 @@ func AccountInfo(app Application, name string) interface{} {
 	if ok == status.SUCCESS {
 		return account
 	}
-
 	return "Account " + name + " Not Found" + global.Current.NodeName
 }
 
@@ -167,8 +165,9 @@ func HandleBalanceQuery(app Application, arguments map[string]string) interface{
 	var key []byte
 	parts := strings.Split(text, "=")
 	if len(parts) > 1 {
-		//key, _ = hex.DecodeString(parts[1])
-		key = []byte(parts[1])
+
+		// TODO: Encoded because it is dumped into a string
+		key, _ = hex.DecodeString(parts[1])
 	}
 	return Balance(app, key)
 }
@@ -178,6 +177,8 @@ func Balance(app Application, accountKey []byte) interface{} {
 	if balance != nil {
 		return balance
 	}
+
+	// TODO: By definition the balance is 0 if it is not found
 	result := data.NewBalance(0, "OLT")
 	return &result
 }

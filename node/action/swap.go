@@ -7,6 +7,7 @@ package action
 
 import (
 	"bytes"
+
 	"github.com/tendermint/go-amino"
 
 	"github.com/Oneledger/protocol/node/chains/bitcoin"
@@ -95,6 +96,10 @@ func (transaction *Swap) ProcessCheck(app interface{}) status.Code {
 // Is this node one of the partipants in the swap
 func (transaction *Swap) ShouldProcess(app interface{}) bool {
 	account := GetNodeAccount(app)
+	if account == nil {
+		log.Warn("NodeAccount not setup for processing")
+		return false
+	}
 
 	if bytes.Equal(transaction.Base.Target, account.AccountKey()) {
 		log.Debug("Swap involved", "swap", transaction.SwapMessage, "stage", transaction.Stage)

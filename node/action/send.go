@@ -53,6 +53,7 @@ func (transaction *Send) ProcessCheck(app interface{}) status.Code {
 	if !CheckAmounts(app, transaction.Inputs, transaction.Outputs) {
 		log.Debug("FAILED", "inputs", transaction.Inputs, "outputs", transaction.Outputs)
 		return status.INVALID
+		//return status.SUCCESS
 	}
 
 	// TODO: Validate the transaction against the UTXO database, check tree

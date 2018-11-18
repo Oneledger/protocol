@@ -52,6 +52,10 @@ func UpdateAccount(cmd *cobra.Command, args []string) {
 	update := shared.UpdateAccountRequest(request)
 
 	result := comm.SDKRequest(update)
+	_ = result
 
-	log.Dump("Results", result)
+	shared.Console.Info("Account has been updated")
+
+	// TODO: Print out account details, but priv key should have been blank!
+	//log.Dump("Results", result)
 }

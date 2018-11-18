@@ -8,7 +8,6 @@ package main
 import (
 	"github.com/Oneledger/protocol/node/cmd/shared"
 	"github.com/Oneledger/protocol/node/comm"
-	"github.com/Oneledger/protocol/node/log"
 	"github.com/spf13/cobra"
 )
 
@@ -49,5 +48,10 @@ func RegisterIdentity(cmd *cobra.Command, args []string) {
 	register := shared.RegisterIdentityRequest(arguments)
 
 	result := comm.SDKRequest(register)
-	log.Dump("Have Results", result)
+	_ = result
+
+	shared.Console.Info("Identity has been broadcast to chain")
+
+	// TODO: Need nicer output
+	//log.Dump("Have Results", result)
 }

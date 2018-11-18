@@ -93,6 +93,11 @@ func (state *ChainState) FindAll() map[string]*Balance {
 // TODO: Should be against the commit tree, not the delivered one!!!
 func (state *ChainState) Get(key DatabaseKey) *Balance {
 
+	// TODO: Should not be this hardcoded, but still needs protection
+	if len(key) != 20 {
+		log.Fatal("Not a valid account key")
+	}
+
 	version := state.Delivered.Version64()
 	_, value := state.Delivered.GetVersioned(key, version)
 
@@ -108,8 +113,9 @@ func (state *ChainState) Get(key DatabaseKey) *Balance {
 	}
 
 	// By definition, if a balance doesn't exist, it is zero
-	empty := NewBalance(0, "OLT")
-	return &empty
+	//empty := NewBalance(0, "OLT")
+	//return &empty
+	return nil
 }
 
 // TODO: Should be against the commit tree, not the delivered one!!!
@@ -127,16 +133,20 @@ func (state *ChainState) Exists(key DatabaseKey) bool {
 // TODO: Not sure about this, it seems to be Cosmos-sdk's way of getting arround the immutable copy problem...
 func (state *ChainState) Commit() ([]byte, int64) {
 
+	// Persist the Delivered merkle tree
 	hash, version, err := state.Delivered.SaveVersion()
 	if err != nil {
 		log.Fatal("Saving", "err", err)
 	}
 
-	// TODO: Force the database to completely close, then repoen it.
+	// Force the database to completely close, then repoen it.
 	state.database.Close()
 	state.database = nil
 
+	// Update all of the chain parameters
 	nhash, nversion := state.reset()
+
+	// Check the reset
 	if bytes.Compare(hash, nhash) != 0 || version != nversion {
 		log.Fatal("Persistence Failed, difference in hash,version",
 			"version", version, "nversion", nversion, "hash", hash, "nhash", nhash)

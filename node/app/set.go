@@ -6,6 +6,8 @@
 package app
 
 import (
+	"strings"
+
 	"github.com/Oneledger/protocol/node/action"
 	"github.com/Oneledger/protocol/node/data"
 	"github.com/Oneledger/protocol/node/global"
@@ -24,7 +26,6 @@ type RegisterArguments struct {
 }
 
 func HandleSet(app Application, path string, arguments map[string]string) []byte {
-	log.Dump("Have Set", path, arguments)
 	var result interface{}
 
 	switch path {
@@ -43,7 +44,6 @@ func HandleSet(app Application, path string, arguments map[string]string) []byte
 	if err != nil {
 		log.Fatal("Failed to serialize query", "err", err)
 	}
-
 	return buffer
 }
 
@@ -53,28 +53,40 @@ func GetChain(chainName string) data.ChainType {
 
 // TODO: The datatype for Key, depends on Chain
 func GetKeys(chain data.ChainType, name string, publicKey string, privateKey string) (id.PublicKeyED25519, id.PrivateKeyED25519) {
-	//return id.NilPublicKey(), id.NilPrivateKey()
 
 	// TODO: Need to push the passphrase back through the CLI
 	priv, public := id.GenerateKeys([]byte(name + "as password"))
 	return public, priv
 }
 
+// TODO: Should be in common library
+func GetBool(boolean string) bool {
+	if strings.EqualFold(boolean, "true") {
+		return true
+	}
+	if strings.EqualFold(boolean, "false") {
+		return false
+	}
+
+	// TODO: matches golang?
+	return false
+}
+
 // TODO: Pass in App pointer?
 func HandleSetAccount(app Application, arguments map[string]string) interface{} {
 	chain := GetChain(arguments["Chain"])
 	accountName := arguments["Account"]
+	nodeAccount := GetBool(arguments["NodeAccount"])
 
 	publicKey, privateKey := GetKeys(chain, accountName, arguments["PublicKey"], arguments["PrivateKey"])
 
-	log.Debug("#### Adding Accounts", "chain", chain, "name", accountName)
-
-	AddAccount(&app, accountName, chain, publicKey, privateKey, false)
+	AddAccount(&app, accountName, chain, publicKey, privateKey, nodeAccount)
 
 	account, err := app.Accounts.FindName(accountName)
 	if err == status.SUCCESS {
 		return account
 	}
+
 	return "Error in Setting up Account"
 }
 
@@ -91,9 +103,6 @@ func HandleRegisterIdentity(app Application, arguments map[string]string) interf
 
 	// TODO Broadcast the transaction
 	transaction := CreateRegisterRequest(identity, account.AccountKey())
-
-	log.Dump("#### BROADCAST ####", transaction)
-
 	action.BroadcastTransaction(action.REGISTER, transaction, false)
 
 	return "Broadcast Identity"
@@ -135,10 +144,6 @@ func SetOption(app *Application, key string, value string) bool {
 		args := result.(*RegisterArguments)
 		privateKey, publicKey := id.GenerateKeys([]byte(args.Identity)) // TODO: Switch with passphrase
 		AddAccount(app, args.Identity, id.ParseAccountType(args.Chain), publicKey, privateKey, false)
-		/*
-			RegisterLocally(app, args.Identity, "OneLedger", id.ParseAccountType(args.Chain),
-				publicKey, privateKey)
-		*/
 
 	default:
 		log.Warn("Unknown Option", "key", key)

@@ -65,11 +65,9 @@ func (server SDKServer) Request(ctx context.Context, request *pb.SDKRequest) (*p
 
 	switch base := parameter.(type) {
 	case *SDKQuery:
-		log.Dump("Have SDKQuery", base)
 		result = HandleQuery(*server.App, base.Path, base.Arguments)
 
 	case *SDKSet:
-		log.Dump("Have SDKSet", base)
 		result = HandleSet(*server.App, base.Path, base.Arguments)
 
 	default:

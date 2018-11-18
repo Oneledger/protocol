@@ -68,6 +68,8 @@ func GetNodeName() string {
 
 // TODO: Return a balance, not a coin
 func GetBalance(accountKey id.AccountKey) *data.Coin {
+
+	// TODO: This is wrong, should pass by type, not encode/decode
 	request := action.Message("accountKey=" + hex.EncodeToString(accountKey))
 	response := comm.Query("/balance", request)
 	if response == nil {

@@ -44,7 +44,7 @@ install:
 #
 # List out all of the tendermint processes
 #
-list:
+show:
 	pgrep -lf tendermint
 
 #
@@ -97,6 +97,24 @@ start: check install
 #
 stop: check
 	@./scripts/stopDevnet
+
+#
+# Register the devnet users
+#
+register: check
+	@./tests/register.sh
+
+#
+# Send money to the devnet users
+#
+testmint: check
+	@./tests/testmint.sh
+
+#
+# List out the data for David
+#
+list: check
+	@olclient list -c David
 
 #
 # Reset all of the chains, back to genesis

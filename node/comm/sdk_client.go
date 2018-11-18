@@ -47,7 +47,7 @@ func SDKRequest(base interface{}) interface{} {
 	var prototype interface{}
 	result, err := serial.Deserialize(response.Results, prototype, serial.CLIENT)
 	if err != nil {
-		log.Dump("Results are", response.Results)
+		log.Dump("Response was", response.Results)
 		log.Fatal("Deserialize Failed", "err", err)
 	}
 
