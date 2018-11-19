@@ -52,10 +52,3 @@ func SwapCurrency(cmd *cobra.Command, args []string) {
 func GetCurrency(value string) string {
 	return value
 }
-
-// TODO: Fix this
-/*
-func GetInteger(value string) int64 {
-	return -1
-}
-*/

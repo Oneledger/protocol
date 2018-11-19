@@ -23,7 +23,7 @@ import (
 )
 
 type DatabaseKey = []byte // Database key
-type Message = []byte
+type Message = []byte     // TODO: Maybe replaced by something better named?
 
 // ENUM for datastore type
 type StorageType int
@@ -52,8 +52,8 @@ type KeyValueSession struct {
 	store *KeyValue
 }
 
-// Test to see if this exists already
 // TODO: Should be moved to some common/shared/utils directory
+// Test to see if this exists already
 func FileExists(name string, dir string) bool {
 	dbPath := filepath.Join(dir, name+".db")
 	info, err := os.Stat(dbPath)
@@ -64,6 +64,7 @@ func FileExists(name string, dir string) bool {
 	return true
 }
 
+// Convert Data headed for persistence
 func convertData(data interface{}) []byte {
 	buffer, err := serial.Serialize(data, serial.PERSISTENT)
 	if err != nil {
@@ -72,6 +73,7 @@ func convertData(data interface{}) []byte {
 	return buffer
 }
 
+// Unconvert Data from persistence
 func unconvertData(data []byte) interface{} {
 	if data == nil || string(data) == "" {
 		return nil
@@ -85,7 +87,7 @@ func unconvertData(data []byte) interface{} {
 	return result
 }
 
-// NewApplicationContext initializes a new application
+// NewKeyValue initializes a new application
 func NewKeyValue(name string, newType StorageType) *KeyValue {
 	switch newType {
 
@@ -132,10 +134,12 @@ func NewKeyValue(name string, newType StorageType) *KeyValue {
 	return nil
 }
 
+// Begin a new writable session
 func (store KeyValue) Begin() Session {
 	return NewKeyValueSession(&store)
 }
 
+// Dump out debugging information from the KeyValue datastore
 func (store KeyValue) Dump() {
 	// TODO: Dump out debugging information here
 	texts := store.database.Stats()
@@ -151,6 +155,7 @@ func (store KeyValue) Dump() {
 	}
 }
 
+// Print out the error details
 func (store KeyValue) Errors() string {
 	return ""
 }
@@ -172,13 +177,16 @@ func (store KeyValue) Close() {
 	}
 }
 
+// Close and reopen the datastore
 func (store KeyValue) Reopen() {
 }
 
+// FindAll of the keys in the database
 func (store KeyValue) FindAll() []DatabaseKey {
 	return store.list()
 }
 
+// Test to see if a key exists
 func (store KeyValue) Exists(key DatabaseKey) bool {
 	version := store.tree.Version64()
 	index, _ := store.tree.GetVersioned(key, version)
@@ -188,6 +196,7 @@ func (store KeyValue) Exists(key DatabaseKey) bool {
 	return true
 }
 
+// Get a key from the database
 func (store KeyValue) Get(key DatabaseKey) interface{} {
 	version := store.tree.Version64()
 	index, value := store.tree.GetVersioned(key, version)
@@ -197,24 +206,25 @@ func (store KeyValue) Get(key DatabaseKey) interface{} {
 	return unconvertData(value)
 }
 
+// Create a new session
 func NewKeyValueSession(store *KeyValue) Session {
 	return &KeyValueSession{store: store}
 }
 
+// Find all of the keys in the datastore
 func (session KeyValueSession) FindAll() []DatabaseKey {
 	return session.store.list()
 }
 
 // Store inserts or updates a value under a key
 func (session KeyValueSession) Set(key DatabaseKey, value interface{}) bool {
-	log.Debug("KV Set", "key", key, "value", value)
-
 	buffer := convertData(value)
 	session.store.tree.Set(key, buffer)
 
 	return true
 }
 
+// Test to see if a key exists
 func (session KeyValueSession) Exists(key DatabaseKey) bool {
 	version := session.store.tree.Version64()
 	index, _ := session.store.tree.GetVersioned(key, version)
@@ -234,10 +244,12 @@ func (session KeyValueSession) Get(key DatabaseKey) interface{} {
 	return unconvertData(value)
 }
 
+// Delete a key from the datastore
 func (session KeyValueSession) Delete(key DatabaseKey) bool {
 	return true
 }
 
+// List out the errors
 func (session KeyValueSession) Errors() string {
 	return ""
 }
@@ -253,6 +265,7 @@ func (session KeyValueSession) Commit() bool {
 	return true
 }
 
+// Rollback any changes since the last commit
 func (session KeyValueSession) Rollback() bool {
 	return false
 }
@@ -284,7 +297,6 @@ func (store KeyValue) list() (keys []DatabaseKey) {
 			key, _ := store.tree.GetByIndex(i)
 			results[i] = DatabaseKey(key)
 		}
-		log.Debug("Datastore List", "results", results)
 		return results
 
 	default:

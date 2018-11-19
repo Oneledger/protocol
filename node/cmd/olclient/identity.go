@@ -6,7 +6,6 @@
 package main
 
 import (
-	"github.com/Oneledger/protocol/node/action"
 	"github.com/Oneledger/protocol/node/cmd/shared"
 	"github.com/Oneledger/protocol/node/comm"
 	"github.com/Oneledger/protocol/node/id"
@@ -33,11 +32,6 @@ func init() {
 	// TODO: I want to have a default account?
 	// Transaction Parameters
 	identityCmd.Flags().StringVar(&ident.identity, "identity", "", "identity name")
-}
-
-// Format the request into a query structure
-func FormatIdentityRequest() []byte {
-	return action.Message("Identity=" + ident.identity)
 }
 
 // IssueRequest sends out a sendTx to all of the nodes in the chain

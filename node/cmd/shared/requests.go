@@ -7,13 +7,14 @@
 package shared
 
 import (
+	"os"
+
 	"github.com/Oneledger/protocol/node/action"
 	"github.com/Oneledger/protocol/node/app"
 	"github.com/Oneledger/protocol/node/convert"
 	"github.com/Oneledger/protocol/node/data"
 	"github.com/Oneledger/protocol/node/global"
 	"github.com/Oneledger/protocol/node/log"
-	"os"
 )
 
 // Prepare a transaction to be issued.
@@ -22,32 +23,52 @@ func SignAndPack(transaction action.Transaction) []byte {
 }
 
 // Registration
+type AccountArguments struct {
+	Account     string
+	Chain       string
+	PublicKey   string
+	PrivateKey  string
+	NodeAccount bool
+}
+
+func UpdateAccountRequest(args *AccountArguments) interface{} {
+	return &app.SDKSet{
+		Path: "/account",
+		Arguments: map[string]string{
+			"Account":     args.Account,
+			"Chain":       args.Chain,
+			"PublicKey":   args.PublicKey,
+			"PrivateKey":  args.PrivateKey,
+			"NodeAccount": "true",
+		},
+	}
+}
+
+// Registration
 type RegisterArguments struct {
 	Identity string
+	Account  string
+	NodeName string
 }
 
 // Create a request to register a new identity with the chain
-func CreateRegisterRequest(args *RegisterArguments) []byte {
-	accountKey := GetAccountKey(args.Identity)
+func RegisterIdentityRequest(args *RegisterArguments) interface{} {
+	//signers := GetSigners()
 
-	app.LoadPrivValidatorFile()
+	// TODO: Need to check errors here
+	//accountKey := GetAccountKey(args.Account)
 
-	reg := &action.Register{
-		Base: action.Base{
-			Type:     action.REGISTER,
-			ChainId:  app.ChainId,
-			Owner:    accountKey,
-			Signers:  action.GetSigners(accountKey),
-			Sequence: global.Current.Sequence,
+	// TODO: Need to have access to this data?
+	//app.LoadPrivValidatorFile()
+
+	return &app.SDKSet{
+		Path: "/register",
+		Arguments: map[string]string{
+			"Identity": args.Identity,
+			"Account":  args.Account,
+			"NodeName": args.NodeName,
 		},
-		Identity:          args.Identity,
-		NodeName:          global.Current.NodeName,
-		AccountKey:        accountKey,
-		TendermintAddress: global.Current.TendermintAddress,
-		TendermintPubKey:  global.Current.TendermintPubKey,
 	}
-
-	return SignAndPack(action.Transaction(reg))
 }
 
 type BalanceArguments struct {
@@ -85,11 +106,10 @@ func CreateSendRequest(args *SendArguments) []byte {
 	counterParty := GetAccountKey(args.CounterParty)
 	payment := GetAccountKey("Payment")
 	if party == nil || counterParty == nil {
-		log.Fatal("System doesn't reconize the parties", "args", args, "party", party, "counterParty", counterParty)
-		return nil
+		log.Fatal("System doesn't reconize the parties", "args", args,
+			"party", party, "counterParty", counterParty)
+		//return nil
 	}
-
-	//log.Dump("AccountKeys", party, counterParty)
 
 	if args.Currency == "" || args.Amount == "" {
 		log.Error("Missing an amount argument")
@@ -145,7 +165,6 @@ func CreateSendRequest(args *SendArguments) []byte {
 		Fee:     fee,
 		Gas:     gas,
 	}
-
 	return SignAndPack(action.Transaction(send))
 }
 
@@ -158,10 +177,8 @@ func CreateMintRequest(args *SendArguments) []byte {
 		return nil
 	}
 
-	// TODO: Can't convert identities to accounts, this way!
-	log.Debug("Getting TestMint Account Keys")
-	party := GetAccountKey(args.Party)
 	zero := GetAccountKey("Zero")
+	party := GetAccountKey(args.Party)
 
 	if party == nil || zero == nil {
 		log.Warn("Missing Party information", "args", args, "party", party, "zero", zero)
@@ -177,6 +194,11 @@ func CreateMintRequest(args *SendArguments) []byte {
 
 	if &zeroBalance == nil || &partyBalance == nil {
 		log.Warn("Missing Balances", "party", party, "zero", zero)
+		return nil
+	}
+
+	if zeroBalance.LessThanEqual(0) {
+		log.Warn("No more money left...")
 		return nil
 	}
 
@@ -213,9 +235,6 @@ func CreateMintRequest(args *SendArguments) []byte {
 		Fee:     fee,
 		Gas:     gas,
 	}
-
-	log.Debug("Finished Building Testmint Request")
-
 	return SignAndPack(action.Transaction(send))
 }
 
@@ -242,6 +261,7 @@ func CreateSwapRequest(args *SwapArguments) []byte {
 
 	fee := conv.GetCoin(args.Fee, "OLT")
 	gas := conv.GetCoin(args.Gas, "OLT")
+
 	amount := conv.GetCoin(args.Amount, args.Currency)
 	exchange := conv.GetCoin(args.Exchange, args.Excurrency)
 
@@ -255,6 +275,7 @@ func CreateSwapRequest(args *SwapArguments) []byte {
 	account[conv.GetChainFromCurrency(args.Currency)] = GetCurrencyAddress(conv.GetCurrency(args.Currency), args.Party)
 	account[conv.GetChainFromCurrency(args.Excurrency)] = GetCurrencyAddress(conv.GetCurrency(args.Excurrency), args.Party)
 	//log.Debug("accounts for swap", "accountbtc", account[data.BITCOIN], "accounteth", common.BytesToAddress([]byte(account[data.ETHEREUM])), "accountolt", account[data.ONELEDGER])
+
 	party := action.Party{Key: partyKey, Accounts: account}
 	counterParty := action.Party{Key: counterPartyKey, Accounts: counterAccount}
 
@@ -267,6 +288,7 @@ func CreateSwapRequest(args *SwapArguments) []byte {
 		Exchange:     exchange,
 		Nonce:        args.Nonce,
 	}
+
 	swap := &action.Swap{
 		Base: action.Base{
 			Type:     action.SWAP,
@@ -299,7 +321,7 @@ type ExSendArguments struct {
 
 func CreateExSendRequest(args *ExSendArguments) []byte {
 	conv := convert.NewConvert()
-	signers := GetSigners()
+
 	partyKey := GetAccountKey(args.SenderId)
 	cpartyKey := GetAccountKey(args.ReceiverId)
 
@@ -311,6 +333,7 @@ func CreateExSendRequest(args *ExSendArguments) []byte {
 	sender := GetCurrencyAddress(conv.GetCurrency(args.Currency), args.SenderId)
 	reciever := GetCurrencyAddress(conv.GetCurrency(args.Currency), args.ReceiverId)
 
+	signers := action.GetSigners(sender)
 	exSend := &action.ExternalSend{
 		Base: action.Base{
 			Type:     action.EXTERNAL_SEND,
@@ -328,5 +351,5 @@ func CreateExSendRequest(args *ExSendArguments) []byte {
 		Amount:   amount,
 	}
 
-	return SignAndPack(action.EXTERNAL_SEND, exSend)
+	return SignAndPack(exSend)
 }

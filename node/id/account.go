@@ -71,7 +71,7 @@ func (acc *Accounts) FindNameOnChain(name string, chain data.ChainType) (Account
 			return entry, status.SUCCESS
 		}
 	}
-	return nil, status.SUCCESS
+	return nil, status.MISSING_DATA
 }
 
 func (acc *Accounts) FindName(name string) (Account, status.Code) {

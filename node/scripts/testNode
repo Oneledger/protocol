@@ -19,12 +19,14 @@ export DATA=$WORK/tendermint
 #
 pids=`pgrep -f "tendermint.*--home $DATA.*"`
 if [ -z "$pids" ]
-
 then
+	exit 0
+else
 	pids=`pgrep -f "olfullnode.*--node $nodeName.*"`
 	if [ -z "$pids" ]
 	then
 		exit 0
 	fi
 fi
+
 exit 1
