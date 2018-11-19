@@ -71,9 +71,9 @@ fulltest: reset install
 	@./tests/full.sh
 
 #
-# Swap Testing, swap BTC with ETH between nodes
+# Swap Testing, swap BTC with ETH between nodes, do a full reset and rebuild each time
 #
-swaptest: reset install
+swaptest: resetMVP install
 	@./scripts/startBitcoin
 	@./scripts/startEthereum
 	@./tests/register.sh
@@ -119,6 +119,12 @@ monitor: check
 #
 stopmon: check
 	@./scripts/stopmon
+
+#
+# Compile protocol buffers
+#
+protobuf:
+	protoc ./sdk/pb/base.proto --go_out=plugins=grpc:./
 
 #
 # targets that are not associated with any files

@@ -2,6 +2,9 @@ package action
 
 import (
 	"errors"
+	"github.com/Oneledger/protocol/node/global"
+	"github.com/Oneledger/protocol/node/id"
+	"github.com/Oneledger/protocol/node/log"
 	"time"
 
 	"github.com/Oneledger/protocol/node/serial"
@@ -9,13 +12,19 @@ import (
 	"golang.org/x/crypto/ripemd160"
 )
 
-//general hash method for the actions messages
-func _hash(bytes []byte) []byte {
+//general hash method
+func _hash(item interface{}) []byte {
 
 	hasher := ripemd160.New()
 
-	hasher.Write(bytes)
-
+	buffer, err := serial.Serialize(item, serial.JSON)
+	if err != nil {
+		log.Fatal("hash serialize failed", "err", err)
+	}
+	_, err = hasher.Write(buffer)
+	if err != nil {
+		log.Fatal("hasher failed", "err", err)
+	}
 	return hasher.Sum(nil)
 }
 
@@ -120,4 +129,17 @@ func CreateHtlContract(app interface{}, transaction Transaction, scrhash [32]byt
 		LockHeight:      lockHeight,
 		StartFromHeight: height,
 	}
+}
+
+func GetNodeAccount(app interface{}) id.Account {
+
+	accounts := GetAccounts(app)
+	account, _ := accounts.FindName(global.Current.NodeAccountName)
+	if account == nil {
+		log.Error("Node does not have account", "name", global.Current.NodeAccountName)
+		accounts.Dump()
+		return nil
+	}
+
+	return account
 }

@@ -1,45 +1,23 @@
 package app
 
 import (
-	"flag"
 	"math/big"
-	"os"
 	"testing"
 
 	"github.com/Oneledger/protocol/node/action"
 	"github.com/Oneledger/protocol/node/data"
-	"github.com/Oneledger/protocol/node/global"
 	"github.com/Oneledger/protocol/node/id"
 	"github.com/Oneledger/protocol/node/log"
 	"github.com/Oneledger/protocol/node/serial"
 	"github.com/stretchr/testify/assert"
 )
 
-// Control the execution
-func TestMain(m *testing.M) {
-	flag.Parse()
-
-	// Set the debug flags according to whether the -v flag is set in go test
-	if testing.Verbose() {
-		log.Debug("DEBUG TURNED ON")
-		global.Current.Debug = true
-	} else {
-		log.Debug("DEBUG TURNED OFF")
-		global.Current.Debug = false
-	}
-
-	// Run it all.
-	code := m.Run()
-
-	os.Exit(code)
-}
-
 func TestAccounts(t *testing.T) {
-	global.Current.RootDir = "./"
 	accounts := id.NewAccounts("MyAccounts")
+	defer accounts.Close()
 
-	priv1, pub1 := id.GenerateKeys([]byte("testAccount1 password"))
-	priv2, pub2 := id.GenerateKeys([]byte("testAccount1 password"))
+	priv1, pub1 := id.GenerateKeys([]byte("testAccount1 password"), true)
+	priv2, pub2 := id.GenerateKeys([]byte("testAccount1 password"), true)
 
 	user1 := id.NewAccount(data.ONELEDGER, "testAccount1", pub1, priv1)
 	user2 := id.NewAccount(data.ONELEDGER, "testAccount2", pub2, priv2)
@@ -74,12 +52,15 @@ func TestSwap(t *testing.T) {
 	}
 
 	swap = &action.Swap{
-		Party:        party,
-		CounterParty: party,
-		Amount:       coin,
-		Exchange:     coin,
-		Fee:          coin,
-		Gas:          coin,
+		Base: nil,
+		SwapMessage: action.SwapInit{
+			Party:        party,
+			CounterParty: party,
+			Amount:       coin,
+			Exchange:     coin,
+			Fee:          coin,
+			Gas:          coin,
+		},
 	}
 
 	// Serialize the go data structure

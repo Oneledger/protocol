@@ -115,7 +115,10 @@ func (state *ChainState) Get(key DatabaseKey) *Balance {
 		final := result.(Balance)
 		return &final
 	}
-	return nil
+
+	// By definition, if a balance doesn't exist, it is zero
+	empty := NewBalance(0, "OLT")
+	return &empty
 }
 
 // TODO: Should be against the commit tree, not the delivered one!!!
@@ -209,4 +212,8 @@ func initializeDatabase(name string, newType StorageType) (*iavl.MutableTree, *d
 	count = count + 1
 
 	return tree, storage
+}
+
+func (c *ChainState) Close() {
+	c.database.Close()
 }

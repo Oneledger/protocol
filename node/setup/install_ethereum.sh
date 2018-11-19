@@ -23,7 +23,7 @@ case "$current_uname" in
     (*Linux*)
 	current_platform='Linux'
 	sudo apt-get update
-	sudo apt-get install software-properties-common
+	sudo apt-get install -y software-properties-common
 
 	# Test if geth installed
 	which geth
@@ -31,7 +31,7 @@ case "$current_uname" in
 		# Install geth from PPA
 		sudo add-apt-repository -y ppa:ethereum/ethereum
 		sudo apt-get update
-		sudo apt-get install ethereum
+		sudo apt-get install -y ethereum
 	fi
 	;;
     (*) echo 'error: unsupported platform.'; exit 2; ;;

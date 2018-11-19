@@ -7,16 +7,19 @@ package app
 
 import (
 	"bytes"
+	"encoding/hex"
 	"math/big"
+	"strconv"
 
 	"github.com/Oneledger/protocol/node/abci"
 	"github.com/Oneledger/protocol/node/action"
+	"github.com/Oneledger/protocol/node/comm"
 	"github.com/Oneledger/protocol/node/data"
-	"github.com/Oneledger/protocol/node/err"
 	"github.com/Oneledger/protocol/node/global"
 	"github.com/Oneledger/protocol/node/id"
 	"github.com/Oneledger/protocol/node/log"
 	"github.com/Oneledger/protocol/node/serial"
+	"github.com/Oneledger/protocol/node/status"
 	"github.com/tendermint/tendermint/abci/types"
 	"github.com/tendermint/tendermint/libs/common"
 )
@@ -32,32 +35,39 @@ func init() {
 type Application struct {
 	types.BaseApplication
 
-	Admin      data.Datastore   // any administrative parameters
-	Status     data.Datastore   // current state of any composite transactions (pending, verified, etc.)
-	Identities *id.Identities   // Keep a higher-level identity for a given user
-	Accounts   *id.Accounts     // Keep all of the user accounts locally for their node (identity management)
+	// Global Chain state (data is identical on all nodes in the chain)
 	Utxo       *data.ChainState // unspent transction output (for each type of coin)
-	Event      data.Datastore   // Event for any action that need to be tracked
-	Contract   data.Datastore   // contract for reuse.
+	SDK        common.Service
+	Identities *id.Identities // Keep a higher-level identity for a given user
 
+	// Local Node state (data is different for each node)
+	Admin    data.Datastore // any administrative parameters
+	Status   data.Datastore // current state of any composite transactions (pending, verified, etc.)
+	Accounts *id.Accounts   // Keep all of the user accounts locally for their node (identity management)
+	Event    data.Datastore // Event for any action that need to be tracked
+	Contract data.Datastore // contract for reuse.
+
+	// Tendermint's last block information
 	LastHeader types.Header // Tendermint last header info
 }
 
-// NewApplicationContext initializes a new application
+// NewApplicationContext initializes a new application, reconnects to the databases.
 func NewApplication() *Application {
 	return &Application{
-		Admin:      data.NewDatastore("admin", data.PERSISTENT),
-		Status:     data.NewDatastore("status", data.PERSISTENT),
 		Identities: id.NewIdentities("identities"),
-		Accounts:   id.NewAccounts("accounts"),
 		Utxo:       data.NewChainState("utxo", data.PERSISTENT),
-		Event:      data.NewDatastore("event", data.PERSISTENT),
-		Contract:   data.NewDatastore("contract", data.PERSISTENT),
+
+		Admin:    data.NewDatastore("admin", data.PERSISTENT),
+		Status:   data.NewDatastore("status", data.PERSISTENT),
+		Accounts: id.NewAccounts("accounts"),
+		Event:    data.NewDatastore("event", data.PERSISTENT),
+		Contract: data.NewDatastore("contract", data.PERSISTENT),
 	}
 }
 
 type AdminParameters struct {
 	NodeAccountName string
+	NodeName        string
 }
 
 func init() {
@@ -72,6 +82,20 @@ func (app Application) Initialize() {
 		global.Current.NodeAccountName = params.NodeAccountName
 	} else {
 		log.Debug("NodeAccountName not currently set")
+	}
+
+	// SDK Server should start when the --sdkrpc argument is passed to fullnode
+	sdkPort := global.Current.SDKAddress
+	if sdkPort == 0 {
+		return
+	}
+
+	s, err := NewSDKServer(&app, sdkPort)
+	if err != nil {
+		panic(err)
+	} else {
+		app.SDK = s
+		app.SDK.Start()
 	}
 }
 
@@ -95,19 +119,26 @@ func (app Application) SetupState(stateBytes []byte) {
 	log.Debug("Deserialized State", "state", state, "state.Account", state.Account)
 
 	// TODO: Can't generate a different key for each node. Needs to be in the genesis? Or ignored?
-	//publicKey, privateKey := id.GenerateKeys([]byte(state.Account)) // TODO: switch with passphrase
-	publicKey, privateKey := id.NilPublicKey(), id.NilPrivateKey()
+	privateKey, publicKey := id.GenerateKeys([]byte(state.Account), false) // TODO: switch with passphrase
+
+	CreateAccount(app, state.Account, state.Amount, publicKey, privateKey)
+
+	privateKey, publicKey = id.GenerateKeys([]byte("Payment"), false) // TODO: make a user put a real key actually
+	CreateAccount(app, "Payment", "0", publicKey, privateKey)
+}
+
+func CreateAccount(app Application, stateAccount string, stateAmount string, publicKey id.PublicKeyED25519, privateKey id.PrivateKeyED25519) {
 
 	// TODO: This should probably only occur on the Admin node, for other nodes how do I know the key?
 	// Register the identity and account first
-	RegisterLocally(&app, state.Account, "OneLedger", data.ONELEDGER, publicKey, privateKey)
-	account, status := app.Accounts.FindName(state.Account + "-OneLedger")
-	if status != err.SUCCESS {
-		log.Fatal("Recently Added Account is missing", "name", state.Account, "status", status)
+	RegisterLocally(&app, stateAccount, "OneLedger", data.ONELEDGER, publicKey, privateKey)
+	account, ok := app.Accounts.FindName(stateAccount + "-OneLedger")
+	if ok != status.SUCCESS {
+		log.Fatal("Recently Added Account is missing", "name", stateAccount, "status", ok)
 	}
 
-	// Use the account key in the database.
-	balance := NewBalanceFromString(state.Amount, "OLT")
+	// Use the account key in the database
+	balance := NewBalanceFromString(stateAmount, "OLT")
 	app.Utxo.Set(account.AccountKey(), balance)
 
 	// TODO: Until a block is commited, this data is not persistent
@@ -201,21 +232,27 @@ func (app Application) CheckTx(tx []byte) ResponseCheckTx {
 
 	if tx == nil {
 		log.Warn("Empty Transaction, Ignoring", "tx", tx)
-		return ResponseCheckTx{Code: err.PARSE_ERROR}
+		return ResponseCheckTx{Code: status.PARSE_ERROR}
 	}
 
-	result, err := action.Parse(action.Message(tx))
-	if err != 0 || result == nil {
+	signedTransaction, err := action.Parse(action.Message(tx))
+	if err != 0 {
 		return ResponseCheckTx{Code: err}
 	}
 
+	if action.ValidateSignature(signedTransaction) == false {
+		return ResponseCheckTx{Code: status.INVALID_SIGNATURE}
+	}
+
+	transaction := signedTransaction.Transaction
+
 	// Check that this is a valid transaction
-	if err = result.Validate(); err != 0 {
+	if err = transaction.Validate(); err != 0 {
 		return ResponseCheckTx{Code: err}
 	}
 
 	// Check that this transaction works in the context
-	if err = result.ProcessCheck(&app); err != 0 {
+	if err = transaction.ProcessCheck(&app); err != 0 {
 		return ResponseCheckTx{Code: err}
 	}
 
@@ -235,7 +272,8 @@ var chainKey data.DatabaseKey = data.DatabaseKey("chainId")
 // BeginBlock is called when a new block is started
 func (app Application) BeginBlock(req RequestBeginBlock) ResponseBeginBlock {
 	//log.Debug("ABCI: BeginBlock", "req", req)
-	app.LastHeader = req.Header
+
+	app.MakePayment(req)
 
 	newChainId := action.Message(req.Header.ChainID)
 
@@ -258,36 +296,90 @@ func (app Application) BeginBlock(req RequestBeginBlock) ResponseBeginBlock {
 	}
 }
 
-// DeliverTx accepts a transaction and updates all relevant data
-func (app Application) DeliverTx(tx []byte) ResponseDeliverTx {
-	log.Debug("ABCI: DeliverTx", "tx", tx)
-
-	result, err := action.Parse(action.Message(tx))
-	if err != 0 || result == nil {
-		return ResponseDeliverTx{Code: err}
+// EndBlock is called at the end of all of the transactions
+func (app Application) MakePayment(req RequestBeginBlock) {
+	account, err := app.Accounts.FindName("Payment-OneLedger")
+	if err != status.SUCCESS {
+		log.Fatal("ABCI: BeginBlock Fatal Status", "status", err)
+	}
+	balance := app.Utxo.Get(account.AccountKey())
+	if balance == nil {
+		interimBalance := data.NewBalance(0, "OLT")
+		balance = &interimBalance
 	}
 
-	log.Debug("Validating")
-	if err = result.Validate(); err != 0 {
-		return ResponseDeliverTx{Code: err}
-	}
+	if !balance.Amount.LessThanEqual(0) {
+		list := req.LastCommitInfo.GetValidators()
+		badValidators := req.ByzantineValidators
 
-	log.Debug("Starting processing")
-	if result.ShouldProcess(app) {
-		ttype, _ := action.UnpackMessage(action.Message(tx))
+		numberValidators := data.NewCoin(int64(len(list)), "OLT")
+		quotient := balance.Amount.Quotient(numberValidators)
 
-		if ttype == action.SWAP || ttype == action.PUBLISH || ttype == action.VERIFY {
-			log.Debug("Starting the swap processing")
-			go result.ProcessDeliver(&app)
-		} else {
-			if err = result.ProcessDeliver(&app); err != 0 {
-				log.Warn("Processing Failed", "err", err)
-				return ResponseDeliverTx{Code: err}
+		var identities []id.Identity
+
+		if int(quotient.Amount.Int64()) > 0 {
+			for _, entry := range list {
+				entryIsBad := IsByzantine(entry.Validator, badValidators)
+				if !entryIsBad {
+					formatted := hex.EncodeToString(entry.Validator.Address)
+					identity := app.Identities.FindTendermint(formatted)
+					identities = append(identities, identity)
+				}
+			}
+
+			result := CreatePaymentRequest(app, identities, quotient)
+			if result != nil {
+				// TODO: check this later
+				comm.BroadcastAsync(result)
 			}
 		}
 	}
 
-	log.Debug("Returning status")
+}
+
+func IsByzantine(validator types.Validator, badValidators []types.Evidence) (result bool) {
+	for _, entry := range badValidators {
+		if bytes.Equal(validator.Address, entry.Validator.Address) {
+			return true
+		}
+	}
+	return false
+}
+
+// DeliverTx accepts a transaction and updates all relevant data
+func (app Application) DeliverTx(tx []byte) ResponseDeliverTx {
+	log.Debug("ABCI: DeliverTx", "tx", tx)
+
+	signedTransaction, err := action.Parse(action.Message(tx))
+	if err != 0 {
+		return ResponseDeliverTx{Code: err}
+	}
+
+	if action.ValidateSignature(signedTransaction) == false {
+		return ResponseDeliverTx{Code: status.INVALID_SIGNATURE}
+	}
+
+	transaction := signedTransaction.Transaction
+
+	log.Debug("Validating")
+	if err = transaction.Validate(); err != 0 {
+		return ResponseDeliverTx{Code: err}
+	}
+
+	log.Debug("Starting processing")
+	if transaction.ShouldProcess(app) {
+		if err = transaction.ProcessDeliver(&app); err != 0 {
+			return ResponseDeliverTx{Code: err}
+		}
+	}
+	tagType := strconv.FormatInt(int64(transaction.TransactionType()), 10)
+	tags := make([]common.KVPair, 1)
+	tag := common.KVPair{
+		Key:   []byte("tx.type"),
+		Value: []byte(tagType),
+	}
+	tags = append(tags, tag)
+
 	return ResponseDeliverTx{
 		Code:      types.CodeTypeOK,
 		Data:      []byte("Data"),
@@ -295,7 +387,7 @@ func (app Application) DeliverTx(tx []byte) ResponseDeliverTx {
 		Info:      "Info Data",
 		GasWanted: 1000,
 		GasUsed:   1000,
-		Tags:      []common.KVPair(nil),
+		Tags:      tags,
 	}
 }
 
@@ -319,5 +411,20 @@ func (app Application) Commit() ResponseCommit {
 
 	return ResponseCommit{
 		Data: hash,
+	}
+}
+
+// Close closes every datastore in app
+func (app Application) Close() {
+	app.Admin.Close()
+	app.Status.Close()
+	app.Identities.Close()
+	app.Accounts.Close()
+	app.Utxo.Close()
+	app.Event.Close()
+	app.Contract.Close()
+
+	if app.SDK != nil {
+		app.SDK.Stop()
 	}
 }

@@ -6,11 +6,10 @@
 package action
 
 import (
-	"github.com/Oneledger/protocol/node/err"
-	"github.com/Oneledger/protocol/node/global"
 	"github.com/Oneledger/protocol/node/id"
 	"github.com/Oneledger/protocol/node/log"
 	"github.com/Oneledger/protocol/node/serial"
+	"github.com/Oneledger/protocol/node/status"
 )
 
 type Message = []byte // Contents of a transaction
@@ -50,12 +49,21 @@ type PublicKey = id.PublicKey
 
 // Polymorphism and Serializable
 type Transaction interface {
-	Validate() err.Code
-	ProcessCheck(interface{}) err.Code
+	TransactionType() Type
+	Validate() status.Code
+	ProcessCheck(interface{}) status.Code
 	ShouldProcess(interface{}) bool
-	ProcessDeliver(interface{}) err.Code
-	Expand(interface{}) Commands
-	Resolve(interface{}, Commands)
+	ProcessDeliver(interface{}) status.Code
+	Resolve(interface{}) Commands
+}
+
+type TransactionSignature struct {
+	Signature []byte
+}
+
+type SignedTransaction struct {
+	Transaction
+	Signatures []TransactionSignature
 }
 
 // Base Data for each type
@@ -63,42 +71,68 @@ type Base struct {
 	Type    Type   `json:"type"`
 	ChainId string `json:"chain_id"`
 
-	Owner   id.AccountKey `json:"owner"`
-	Signers []PublicKey   `json:"signers"`
+	Owner  id.AccountKey `json:"owner"`
+	Target id.AccountKey `json:"target"`
+
+	Signers []PublicKey `json:"signers"`
 
 	Sequence int64 `json:"sequence"`
 	Delay    int64 `json:"delay"` // Pause the transaction in the mempool
 }
 
-func init() {
-	serial.Register(Base{})
-}
+func ValidateSignature(transaction SignedTransaction) bool {
+	log.Debug("Signature validation", "transaction", transaction)
+	var signers []id.PublicKey
 
-// Execute the function
-func Execute(app interface{}, command Command, lastResult map[Parameter]FunctionValue) (err.Code, map[Parameter]FunctionValue) {
-	//make sure the first execute use the context, and later uses last result. so if command are executed in a row, every executed function should only add
-	//parameters in the context and return instead of create new context every time
-	if len(lastResult) > 0 {
-		for key, value := range lastResult {
-			command.Data[key] = value
+	// TODO need to simplify it
+	switch v := transaction.Transaction.(type) {
+	case *Swap: signers = v.Base.Signers
+	case *Send: signers = v.Base.Signers
+	case *Register: signers = v.Base.Signers
+	default: log.Warn("Signature validation (unknown transaction type)", "transaction", transaction)
+	}
+
+	if signers == nil {
+		log.Warn("Signature validation (no signers)", "transaction", transaction)
+		return false
+	}
+
+	if transaction.Signatures == nil {
+		log.Warn("Signature validation (no signatures)", "transaction", transaction)
+		return false
+	}
+
+	if len(signers) == 0 {
+		log.Warn("Signature validation (no signers)", "transaction", transaction)
+		return false
+	}
+
+	if len(signers) != len(transaction.Signatures) {
+		log.Warn("Signature validation (wrong number of signatures)", "transaction", transaction)
+		return false
+	}
+
+	message, err := serial.Serialize(transaction.Transaction, serial.CLIENT)
+
+	if err != nil {
+		log.Error("Signature validation (failed to serialize)", "error", err, "transaction", transaction)
+		return false
+	}
+
+	for i := 0; i < len(signers); i++ {
+		if signers[i].VerifyBytes(message, transaction.Signatures[i].Signature) == false {
+			log.Warn("Signature validation (invalid signature)", "index", i, "transaction", transaction)
+			return false
 		}
 	}
-	status, result := command.Execute(app)
-	if status {
-		return err.SUCCESS, result
-	}
 
-	return err.NOT_IMPLEMENTED, lastResult
+	log.Debug("Signature validation", "success", true)
+
+	return true
 }
 
-func GetNodeAccount(app interface{}) id.Account {
-
-	accounts := GetAccounts(app)
-	account, _ := accounts.FindName(global.Current.NodeAccountName)
-	if account == nil {
-		log.Error("Node does not have account", "name", global.Current.NodeAccountName)
-		return nil
-	}
-
-	return account
+func init() {
+	serial.Register(Base{})
+	serial.Register(TransactionSignature{})
+	serial.Register(SignedTransaction{})
 }

@@ -66,12 +66,14 @@ var ignoreTypes map[string]TypeEntry
 
 func NewPrimitiveEntry(name string, category Category, root reflect.Type) *TypeEntry {
 	return &TypeEntry{
-		Name:      name,
-		Category:  category,
-		RootType:  root,
-		DataType:  root,
-		KeyType:   nil,
-		ValueType: nil,
+		Name:     name,     // Name of this type as known to reflect
+		Category: category, // General category
+
+		RootType: root, // Parent datatype
+		DataType: root, // Actual type of the data
+
+		KeyType:   nil, // Key type, if container
+		ValueType: nil, // Value type, if container
 	}
 }
 
@@ -129,7 +131,6 @@ func RegisterInterface(base interface{}) {
 func Register(base interface{}) {
 
 	name := GetBaseTypeString(base)
-
 	entry := GetTypeEntry(name, 1)
 	if entry.Category != UNKNOWN {
 		// Already registered
@@ -151,6 +152,7 @@ func Register(base interface{}) {
 
 		underType.Name = name
 		underType.RootType = typeOf
+
 		dataTypes[name] = underType
 		return
 	}
@@ -225,6 +227,7 @@ func GetTypeEntry(name string, size int) TypeEntry {
 
 // Given a data type string, break it down into reflect.Type entries
 func ParseType(name string, count int) TypeEntry {
+
 	if name == "" {
 		return TypeEntry{name, UNKNOWN, reflect.Type(nil), reflect.Type(nil), nil, nil}
 	}
@@ -241,6 +244,8 @@ func ParseType(name string, count int) TypeEntry {
 		valueTypeName := groups[3]
 		keyType := GetTypeEntry(keyTypeName, 1)
 		valueType := GetTypeEntry(valueTypeName, 1)
+
+		// Needs to be the root types...
 		finalType := reflect.MapOf(keyType.RootType, valueType.RootType)
 		return TypeEntry{
 			Name:      name,
@@ -276,11 +281,11 @@ func ParseType(name string, count int) TypeEntry {
 		}
 	} else {
 		// TODO: What if this is a variable?
-		//size := GetInt(groups[2], 0)
+		size := GetInt(groups[2], 0)
 		arrayTypeName := groups[3]
-		arrayType := GetTypeEntry(arrayTypeName, count)
+		arrayType := GetTypeEntry(arrayTypeName, size)
 		//log.Dump(name+" has "+arrayTypeName, arrayType, size, groups)
-		finalType := reflect.ArrayOf(count, arrayType.DataType)
+		finalType := reflect.ArrayOf(size, arrayType.DataType)
 		return TypeEntry{
 			Name:      name,
 			Category:  ARRAY,

@@ -7,9 +7,10 @@ package id
 
 import (
 	"github.com/Oneledger/protocol/node/data"
-	"github.com/Oneledger/protocol/node/err"
 	"github.com/Oneledger/protocol/node/log"
 	"github.com/Oneledger/protocol/node/serial"
+	"github.com/Oneledger/protocol/node/status"
+	"strings"
 )
 
 // The persistent collection of all accounts known by this node
@@ -30,6 +31,9 @@ type Identity struct {
 	Chain    map[data.ChainType]AccountKey // TODO: Should be more than one account per chain
 
 	Nodes map[string]data.ChainNode
+
+	TendermintAddress string
+	TendermintPubKey  string
 }
 
 func init() {
@@ -47,7 +51,6 @@ func NewIdentities(name string) *Identities {
 
 func (ids *Identities) Add(identity Identity) {
 	key := identity.Key()
-
 	session := ids.store.Begin()
 	session.Set(key, identity)
 	session.Commit()
@@ -61,7 +64,7 @@ func (ids *Identities) Delete() {
 }
 
 func (ids *Identities) Exists(name string) bool {
-	id := NewIdentity(name, "", true, "", nil)
+	id := NewIdentity(name, "", true, "", nil, "", "")
 
 	value := ids.store.Get(id.Key())
 	if value != nil {
@@ -71,15 +74,15 @@ func (ids *Identities) Exists(name string) bool {
 	return false
 }
 
-func (ids *Identities) FindName(name string) (Identity, err.Code) {
+func (ids *Identities) FindName(name string) (Identity, status.Code) {
 	// TODO: Find a better way
-	id := NewIdentity(name, "", true, "", nil)
+	id := NewIdentity(name, "", true, "", nil, "", "")
 
 	value := ids.store.Get(id.Key())
 	if value != nil {
-		return value.(Identity), err.SUCCESS
+		return value.(Identity), status.SUCCESS
 	}
-	return Identity{}, err.MISSING_DATA
+	return Identity{}, status.MISSING_DATA
 }
 
 func (ids *Identities) FindAll() []Identity {
@@ -93,23 +96,39 @@ func (ids *Identities) FindAll() []Identity {
 	return results
 }
 
+func (ids *Identities) FindTendermint(tendermintAddress string) Identity {
+	keys := ids.store.FindAll()
+	size := len(keys)
+	for i := 0; i < size; i++ {
+		identity := ids.store.Get(keys[i]).(Identity)
+		if strings.ToLower(tendermintAddress) == strings.ToLower(identity.TendermintAddress) {
+			log.Debug("FindTendermint", "identity.TendermintAddress", identity.TendermintAddress)
+			return identity
+		}
+	}
+	return Identity{}
+}
+
 func (ids *Identities) Dump() {
 	list := ids.FindAll()
 	size := len(list)
 	for i := 0; i < size; i++ {
 		identity := list[i]
-		log.Info("Identity", "Name", identity.Name, "NodeName", identity.NodeName, "AccountKey", identity.AccountKey)
+		log.Info("Identity", "Name", identity.Name, "NodeName", identity.NodeName, "AccountKey", identity.AccountKey,
+			"TendermintAddress", identity.TendermintAddress, "TendermintPubKey", identity.TendermintPubKey)
 	}
 }
 
-func NewIdentity(name string, contactInfo string, external bool, nodeName string, accountKey AccountKey) *Identity {
+func NewIdentity(name string, contactInfo string, external bool, nodeName string, accountKey AccountKey, tendermintAddress string, tendermintPubKey string) *Identity {
 	return &Identity{
-		Name:        name,
-		ContactInfo: contactInfo,
-		External:    external,
-		NodeName:    nodeName,
-		AccountKey:  accountKey,
-		Chain:       make(map[data.ChainType]AccountKey, 2),
+		Name:              name,
+		ContactInfo:       contactInfo,
+		External:          external,
+		NodeName:          nodeName,
+		AccountKey:        accountKey,
+		Chain:             make(map[data.ChainType]AccountKey, 2),
+		TendermintAddress: tendermintAddress,
+		TendermintPubKey:  tendermintPubKey,
 	}
 }
 

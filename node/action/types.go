@@ -12,7 +12,6 @@ import (
 
 	"strconv"
 
-	"github.com/Oneledger/protocol/node/chains/common"
 	"github.com/Oneledger/protocol/node/data"
 	"github.com/Oneledger/protocol/node/id"
 	"github.com/Oneledger/protocol/node/log"
@@ -33,6 +32,8 @@ type SendInput struct {
 
 func init() {
 	serial.Register(SendInput{})
+	serial.Register(SendOutput{})
+	serial.Register(Event{})
 }
 
 func NewSendInput(accountKey id.AccountKey, amount data.Coin) SendInput {
@@ -57,10 +58,6 @@ func NewSendInput(accountKey id.AccountKey, amount data.Coin) SendInput {
 type SendOutput struct {
 	AccountKey id.AccountKey `json:"account_key"`
 	Amount     data.Coin     `json:"coin"`
-}
-
-func init() {
-	serial.Register(SendOutput{})
 }
 
 func NewSendOutput(accountKey id.AccountKey, amount data.Coin) SendOutput {
@@ -159,9 +156,9 @@ func CheckAmounts(app interface{}, inputs []SendInput, outputs []SendOutput) boo
 }
 
 type Event struct {
-	Type  Type          `json:"type"`
-	Key   id.AccountKey `json:"key"`
-	Nonce int64         `json:"result"`
+	Type        Type   `json:"type"`
+	SwapKeyHash []byte `json:"swapkeyhash"`
+	Step        int    `json:"step"`
 }
 
 func (e Event) ToKey() []byte {
@@ -198,22 +195,31 @@ func FindEvent(app interface{}, eventKey Event) bool {
 	return r
 }
 
-func SaveContract(app interface{}, contractKey []byte, nonce int64, contract common.Contract) {
-	//todo: add nonce to the key to differentiate swap between same conterparty
-	contracts := GetContract(app)
-	log.Debug("Save contract", "key", contractKey)
+func SaveContract(app interface{}, contractKey []byte, nonce int64, contract []byte) {
+	contracts := GetContracts(app)
+	n := strconv.AppendInt(contractKey, nonce, 10)
+	log.Debug("Save contract", "key", contractKey, "afterNonce", n)
 	session := contracts.Begin()
-	session.Set(contractKey, contract.ToMessage())
+	session.Set(n, contract)
 	session.Commit()
 }
 
-func FindContract(app interface{}, contractKey []byte, nonce int64) Message {
-	//todo: add nonce to the key to differentiate swap between same conterparty
+func FindContract(app interface{}, contractKey []byte, nonce int64) []byte {
 	log.Debug("Load Contract", "key", contractKey)
-	contracts := GetContract(app)
-	result := contracts.Get(contractKey)
+	contracts := GetContracts(app)
+	n := strconv.AppendInt(contractKey, nonce, 10)
+	result := contracts.Get(n)
 	if result == nil {
 		return nil
 	}
 	return result.([]byte)
+}
+
+func DeleteContract(app interface{}, contractKey []byte, nonce int64) {
+	contracts := GetContracts(app)
+	n := strconv.AppendInt(contractKey, nonce, 10)
+	log.Debug("Delete contract", "key", contractKey, "afterNonce", n)
+	session := contracts.Begin()
+	session.Delete(n)
+	session.Commit()
 }

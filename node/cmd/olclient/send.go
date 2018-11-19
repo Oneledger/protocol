@@ -29,7 +29,7 @@ func init() {
 	sendCmd.Flags().StringVar(&sendargs.Amount, "amount", "0", "specify an amount")
 	sendCmd.Flags().StringVar(&sendargs.Currency, "currency", "OLT", "the currency")
 
-	sendCmd.Flags().StringVar(&sendargs.Fee, "fee", "1", "include a fee")
+	sendCmd.Flags().StringVar(&sendargs.Fee, "fee", "4", "include a fee")
 	sendCmd.Flags().StringVar(&sendargs.Gas, "gas", "1", "include gas")
 }
 

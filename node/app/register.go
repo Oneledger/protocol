@@ -42,14 +42,17 @@ func RegisterLocally(app *Application, name string, scope string, chain data.Cha
 			log.Debug("Updating NodeAccount", "name", accountName)
 
 			global.Current.NodeAccountName = accountName
+			SetNodeName(app)
 
-			log.Debug("Admin store", "data.DatabaseKey", data.DatabaseKey("NodeAccountName"),
-				"accountName", accountName)
+			/*
+				log.Debug("Admin store", "data.DatabaseKey", data.DatabaseKey("NodeAccountName"),
+					"accountName", accountName)
 
-			parameters := AdminParameters{NodeAccountName: accountName}
-			session := app.Admin.Begin()
-			session.Set(data.DatabaseKey("NodeAccountName"), parameters)
-			session.Commit()
+				parameters := AdminParameters{NodeAccountName: accountName}
+				session := app.Admin.Begin()
+				session.Set(data.DatabaseKey("NodeAccountName"), parameters)
+				session.Commit()
+			*/
 		}
 		status = true
 	} else {
@@ -65,9 +68,18 @@ func RegisterLocally(app *Application, name string, scope string, chain data.Cha
 
 	// Identities are global
 	identity, _ := app.Identities.FindName(name)
+
+	LoadPrivValidatorFile()
+
 	if identity.Name == "" {
+		tendermintAddress := global.Current.TendermintAddress
+		tendermintPubKey := global.Current.TendermintPubKey
+		if name == "Zero" || name == "Payment" {
+			tendermintAddress = ""
+			tendermintPubKey = ""
+		}
 		interim := id.NewIdentity(name, "Contact Info", false,
-			global.Current.NodeName, account.AccountKey())
+			global.Current.NodeName, account.AccountKey(), tendermintAddress, tendermintPubKey)
 		identity = *interim
 
 		global.Current.NodeIdentity = name

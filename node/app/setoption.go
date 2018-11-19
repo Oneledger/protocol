@@ -28,11 +28,11 @@ func SetOption(app *Application, key string, value string) bool {
 		var arguments RegisterArguments
 		result, err := serial.Deserialize([]byte(value), &arguments, serial.NETWORK)
 		if err != nil {
-			log.Error("Can't set options", "err", err)
+			log.Error("Can't set options", "status", err)
 			return false
 		}
 		args := result.(*RegisterArguments)
-		privateKey, publicKey := id.GenerateKeys([]byte(args.Identity)) // TODO: Switch with passphrase
+		privateKey, publicKey := id.GenerateKeys([]byte(args.Identity), true) // TODO: Switch with passphrase
 		RegisterLocally(app, args.Identity, "OneLedger", id.ParseAccountType(args.Chain),
 			publicKey, privateKey)
 

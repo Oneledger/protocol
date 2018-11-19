@@ -4,13 +4,13 @@
 package action
 
 import (
-	"bytes"
+	"github.com/Oneledger/protocol/node/id"
 	"time"
 
 	"github.com/Oneledger/protocol/node/comm"
 	"github.com/Oneledger/protocol/node/log"
+
 	"github.com/Oneledger/protocol/node/serial"
-	wire "github.com/tendermint/go-wire"
 )
 
 // Execute a transaction after a specific delay.
@@ -19,12 +19,12 @@ import (
 func DelayedTransaction(ttype Type, transaction Transaction, waitTime time.Duration) {
 	go func(ttype Type, transaction Transaction) {
 		time.Sleep(waitTime)
-		BroadcastTransaction(ttype, transaction)
+		BroadcastTransaction(ttype, transaction, false)
 	}(ttype, transaction)
 }
 
 // Send out the transaction as an async broadcast
-func BroadcastTransaction(ttype Type, transaction Transaction) {
+func BroadcastTransaction(ttype Type, transaction Transaction, sync bool) {
 	log.Debug("Broadcast a transaction to the chain")
 
 	// Don't let the death of a client stop the node from running
@@ -34,43 +34,69 @@ func BroadcastTransaction(ttype Type, transaction Transaction) {
 		}
 	}()
 
-	packet := SignAndPack(ttype, transaction)
-	result := comm.Broadcast(packet)
+	packet := SignAndPack(transaction)
+	// todo : fix the broadcast result handling
+	var result interface{}
+	if sync {
+		result = comm.Broadcast(packet)
+	} else {
+		result = comm.BroadcastAsync(packet)
+	}
 
 	log.Debug("Submitted Successfully", "result", result)
 }
 
-func SignAndPack(ttype Type, transaction Transaction) []byte {
+func SignAndPack(transaction Transaction) []byte {
 	signed := SignTransaction(transaction)
-	packet := PackRequest(ttype, signed)
+	packet := PackRequest(signed)
 
 	return packet
 }
 
 // SignTransaction with the local keys
-func SignTransaction(transaction Transaction) Transaction {
-	return transaction
+func SignTransaction(transaction Transaction) SignedTransaction {
+	packet, err := serial.Serialize(transaction, serial.CLIENT)
+
+	signed := SignedTransaction{transaction, nil}
+
+	if err != nil {
+		log.Error("Failed to Serialize packet: ", "error", err)
+	} else {
+		request := Message(packet)
+
+		response := comm.Query("/signTransaction", request)
+
+		if response == nil {
+			log.Warn("Query returned no signature", "request", request)
+		} else {
+			signed.Signatures = response.([]TransactionSignature)
+		}
+	}
+
+	log.Debug("Transaction signature", "signature", signed.Signatures)
+
+	return signed
 }
 
 // Pack a request into a transferable format (wire)
-func PackRequest(ttype Type, request Transaction) []byte {
-	var base int32
-
-	// Stick a 32 bit integer in front, so that we can identify the struct for deserialization
-	buff := new(bytes.Buffer)
-	base = int32(ttype)
-	err := wire.EncodeInt32(buff, base)
-	if err != nil {
-		log.Error("Failed to EncodeInt32 during PackRequest", "err", err)
-	}
-	bytes := buff.Bytes()
-
+func PackRequest(request SignedTransaction) []byte {
 	packet, err := serial.Serialize(request, serial.CLIENT)
 	if err != nil {
 		log.Error("Failed to Serialize packet: ", err)
-	} else {
-		packet = append(bytes, packet...)
 	}
 
 	return packet
+}
+
+// GetSigners will return the public keys of the signers
+func GetSigners(owner []byte) []id.PublicKey {
+	log.Debug("GetSigners", "owner", owner)
+
+	publicKey := comm.Query("/accountPublicKey", owner)
+
+	if publicKey == nil {
+		return nil
+	}
+
+	return []id.PublicKey{publicKey.(id.PublicKey)}
 }
