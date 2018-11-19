@@ -16,10 +16,15 @@ import (
 type ExternalSend struct {
 	Base
 
-	Gas     data.Coin    `json:"gas"`
-	Fee     data.Coin    `json:"fee"`
-	Inputs  []SendInput  `json:"inputs"`
-	Outputs []SendOutput `json:"outputs"`
+	Gas data.Coin `json:"gas"`
+	Fee data.Coin `json:"fee"`
+
+	ExGas    data.Coin      `json:"exgas"`
+	ExFee    data.Coin      `json:"exfee"`
+	Chain    data.ChainType `json:"chain"`
+	Sender   string         `json:"sender"`
+	Receiver string         `json:"receiver"`
+	Amount   data.Coin      `json:"amount"`
 }
 
 func init() {

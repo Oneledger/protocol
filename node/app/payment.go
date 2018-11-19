@@ -3,13 +3,12 @@ package app
 import (
 	"github.com/Oneledger/protocol/node/action"
 	"github.com/Oneledger/protocol/node/data"
-	"github.com/Oneledger/protocol/node/global"
 	"github.com/Oneledger/protocol/node/id"
 	"github.com/Oneledger/protocol/node/log"
 	"github.com/Oneledger/protocol/node/status"
 )
 
-func CreatePaymentRequest(app Application, identities []id.Identity, quotient data.Coin) []byte {
+func CreatePaymentRequest(app Application, identities []id.Identity, quotient data.Coin, height int64) []byte {
 	chainId := app.Admin.Get(chainKey)
 	inputs := make([]action.SendInput, 0)
 	outputs := make([]action.SendOutput, 0)
@@ -47,7 +46,6 @@ func CreatePaymentRequest(app Application, identities []id.Identity, quotient da
 		log.Fatal("Payment Account not found")
 	}
 	paymentBalance := app.Utxo.Get(payment.AccountKey())
-	log.Debug("CreatePaymentRequest", "paymentBalance", paymentBalance)
 
 	numberValidators := data.NewCoin(int64(len(identities)), "OLT")
 	totalPayment := quotient.Multiply(numberValidators)
@@ -59,13 +57,13 @@ func CreatePaymentRequest(app Application, identities []id.Identity, quotient da
 		action.NewSendOutput(payment.AccountKey(), paymentBalance.GetAmountByName("OLT").Minus(totalPayment)))
 
 	// Create base transaction
-	send := &action.Send{
+	send := &action.Payment{
 		Base: action.Base{
-			Type:     action.SEND,
+			Type:     action.PAYMENT,
 			ChainId:  string(chainId.([]byte)),
 			Owner:    payment.AccountKey(),
 			Signers:  GetSigners(payment.AccountKey(), app),
-			Sequence: global.Current.Sequence,
+			Sequence: height, //global.Current.Sequence,
 		},
 		Inputs:  inputs,
 		Outputs: outputs,

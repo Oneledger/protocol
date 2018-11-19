@@ -37,10 +37,11 @@ var OLTBase *big.Float = big.NewFloat(1000000000000000000)
 
 // TODO: These need to be driven from a domain database, also they are many-to-one with chains
 var Currencies map[string]Currency = map[string]Currency{
-	"OLT": Currency{"OLT", ONELEDGER, 0},
-	"BTC": Currency{"BTC", BITCOIN, 1},
-	"ETH": Currency{"ETH", ETHEREUM, 2},
-	"VT":  Currency{"VT", ONELEDGER, 3},
+	"UNKNOWN": Currency{"UNKNOWN", ONELEDGER, -1},
+	"OLT":     Currency{"OLT", ONELEDGER, 0},
+	"BTC":     Currency{"BTC", BITCOIN, 1},
+	"ETH":     Currency{"ETH", ETHEREUM, 2},
+  "VT":      Currency{"VT", ONELEDGER, 3},
 }
 
 type Currency struct {
