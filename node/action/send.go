@@ -78,8 +78,13 @@ func (transaction *Send) ProcessDeliver(app interface{}) status.Code {
 
 	// Update the database to the final set of entries
 	for _, entry := range transaction.Outputs {
-
-		balance := balances.Get(entry.AccountKey)
+		var balance *data.Balance
+		result := balances.Get(entry.AccountKey)
+		if result == nil {
+			tmp := data.NewBalance()
+			result = &tmp
+		}
+		balance = result
 		balance.SetAmmount(entry.Amount)
 
 		balances.Set(entry.AccountKey, *balance)
