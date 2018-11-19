@@ -257,19 +257,6 @@ func UtxoInfo(app Application, name string) interface{} {
 	return value
 }
 
-// Get the balancd for an account
-func GetBalance(app Application, account id.Account) string {
-	if account.Chain() != data.ONELEDGER {
-		return ""
-	}
-
-	result := app.Utxo.Get(account.AccountKey())
-	if result == nil {
-		return "[missing]"
-	}
-	return result.AsString()
-}
-
 func HandleVersionQuery(app Application, message []byte) interface{} {
 	return version.Current.String()
 }

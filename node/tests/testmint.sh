@@ -19,6 +19,7 @@ addrAlice=`$CMD/lookup Alice RPCAddress tcp://127.0.0.1:`
 addrBob=`$CMD/lookup Bob RPCAddress tcp://127.0.0.1:`
 addrCarol=`$CMD/lookup Carol RPCAddress tcp://127.0.0.1:`
 addrDavid=`$CMD/lookup David RPCAddress tcp://127.0.0.1:`
+addrEmma=`$CMD/lookup Emma RPCAddress tcp://127.0.0.1:`
 
 # olclient wait --initialized
 #sleep 2 
@@ -34,7 +35,10 @@ SEQ=`$CMD/nextSeq`
 olclient testmint -s $SEQ -a $addrCarol --party Carol --amount 25003 --currency OLT 
 
 SEQ=`$CMD/nextSeq`
-olclient testmint -s $SEQ -a $addrDavid --party David --amount 12004 --currency OLT 
+olclient testmint -s $SEQ -a $addrDavid --party David --amount 12004 --currency OLT
+
+SEQ=`$CMD/nextSeq`
+olclient testmint -s $SEQ -a $addrEmma --party Emma --amount 50005 --currency OLT
 
 echo "Finished Minting"
 

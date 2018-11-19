@@ -85,7 +85,7 @@ func printIdentity(identity id.Identity) {
 
 	shared.Console.Info(name, identity.Name)
 	shared.Console.Info(scope, scopeOutput)
-	shared.Console.Info(accountKey, identity.AccountKey.AsString())
+	shared.Console.Info(accountKey, identity.AccountKey)
 	shared.Console.Info(tendermintAddress, identity.TendermintAddress)
 	shared.Console.Info(tendermintPubKey, identity.TendermintPubKey)
 	shared.Console.Info()
