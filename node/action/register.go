@@ -51,7 +51,6 @@ func (transaction Register) Validate() status.Code {
 // Test to see if the identity already exists
 func (transaction Register) ProcessCheck(app interface{}) status.Code {
 	log.Debug("Processing Register Transaction for CheckTx")
-
 	/*
 		identities := GetIdentities(app)
 		id, ok := identities.FindName(transaction.Identity)

@@ -153,8 +153,8 @@ func (server SDKServer) CheckAccount(ctx context.Context, request *pb.CheckAccou
 	var result *pb.Balance
 	if balance != nil {
 		result = &pb.Balance{
-			Amount:   balance.Amount.Amount.Int64(),
-			Currency: currencyProtobuf(balance.Amount.Currency),
+			Amount:   balance.GetAmountByName("OLT").Amount.Int64(),
+			Currency: currencyProtobuf(balance.GetAmountByName("OLT").Currency),
 		}
 	} else {
 		result = &pb.Balance{Amount: 0, Currency: pb.Currency_OLT}
@@ -234,13 +234,13 @@ func prepareSend(
 	}
 
 	inputs := []action.SendInput{
-		action.NewSendInput(pKey, pBalance.Amount),
-		action.NewSendInput(cpKey, cpBalance.Amount),
+		action.NewSendInput(pKey, pBalance.GetAmountByName("OLT")),
+		action.NewSendInput(cpKey, cpBalance.GetAmountByName("OLT")),
 	}
 
 	outputs := []action.SendOutput{
-		action.NewSendOutput(pKey, pBalance.Amount.Minus(sendAmount)),
-		action.NewSendOutput(cpKey, cpBalance.Amount.Plus(sendAmount)),
+		action.NewSendOutput(pKey, pBalance.GetAmountByName("OLT").Minus(sendAmount)),
+		action.NewSendOutput(cpKey, cpBalance.GetAmountByName("OLT").Plus(sendAmount)),
 	}
 
 	return &action.Send{

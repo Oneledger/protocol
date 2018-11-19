@@ -40,6 +40,7 @@ var Currencies map[string]Currency = map[string]Currency{
 	"OLT": Currency{"OLT", ONELEDGER, 0},
 	"BTC": Currency{"BTC", BITCOIN, 1},
 	"ETH": Currency{"ETH", ETHEREUM, 2},
+	"VT":  Currency{"VT", ONELEDGER, 3},
 }
 
 type Currency struct {
@@ -114,21 +115,11 @@ func (coin Coin) IsValid() bool {
 		return false
 	}
 
-	if _, ok := Currencies[coin.Currency.Name]; !ok {
-		return false
+	if _, ok := Currencies[coin.Currency.Name]; ok {
+		return true
 	}
 
 	// TODO: Combine this with convert.GetCurrency...
-	if coin.Currency.Name == "OLT" {
-		return true
-	}
-	if coin.Currency.Name == "BTC" {
-		return true
-	}
-	if coin.Currency.Name == "ETH" {
-		return true
-	}
-
 	return false
 }
 
@@ -192,7 +183,7 @@ func (coin Coin) Plus(value Coin) Coin {
 	return result
 }
 
-func (coin Coin) AsString() string {
+func (coin Coin) String() string {
 	if coin.Amount == nil {
 		log.Fatal("Invalid Coin", "coin", coin)
 	}

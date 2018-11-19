@@ -119,11 +119,13 @@ func CreateSendRequest(args *SendArguments) []byte {
 	amount := conv.GetCoin(args.Amount, args.Currency)
 
 	// Build up the Inputs
-	partyBalance := GetBalance(party)
-	counterPartyBalance := GetBalance(counterParty)
-	paymentBalance := GetBalance(payment)
+	partyBalance := GetBalance(party).GetAmountByName(args.Currency)
+	counterPartyBalance := GetBalance(counterParty).GetAmountByName(args.Currency)
+	paymentBalance := GetBalance(payment).GetAmountByName(args.Currency)
 
-	if partyBalance == nil || counterPartyBalance == nil {
+	//log.Dump("Balances", partyBalance, counterPartyBalance)
+
+	if &partyBalance == nil || &counterPartyBalance == nil {
 		log.Error("Missing Balance", "party", partyBalance, "counterParty", counterPartyBalance)
 		return nil
 	}
@@ -133,9 +135,9 @@ func CreateSendRequest(args *SendArguments) []byte {
 
 	inputs := make([]action.SendInput, 0)
 	inputs = append(inputs,
-		action.NewSendInput(party, *partyBalance),
-		action.NewSendInput(counterParty, *counterPartyBalance),
-		action.NewSendInput(payment, *paymentBalance))
+		action.NewSendInput(party, partyBalance),
+		action.NewSendInput(counterParty, counterPartyBalance),
+		action.NewSendInput(payment, paymentBalance))
 
 	// Build up the outputs
 	outputs := make([]action.SendOutput, 0)
@@ -186,10 +188,11 @@ func CreateMintRequest(args *SendArguments) []byte {
 	amount := conv.GetCoin(args.Amount, args.Currency)
 
 	// Build up the Inputs
-	zeroBalance := GetBalance(zero)
-	partyBalance := GetBalance(party)
+	log.Debug("Getting TestMint Account Balances")
+	partyBalance := GetBalance(party).GetAmountByName(args.Currency)
+	zeroBalance := GetBalance(zero).GetAmountByName(args.Currency)
 
-	if zeroBalance == nil || partyBalance == nil {
+	if &zeroBalance == nil || &partyBalance == nil {
 		log.Warn("Missing Balances", "party", party, "zero", zero)
 		return nil
 	}
@@ -201,8 +204,8 @@ func CreateMintRequest(args *SendArguments) []byte {
 
 	inputs := make([]action.SendInput, 0)
 	inputs = append(inputs,
-		action.NewSendInput(zero, *zeroBalance),
-		action.NewSendInput(party, *partyBalance))
+		action.NewSendInput(zero, zeroBalance),
+		action.NewSendInput(party, partyBalance))
 
 	// Build up the outputs
 	outputs := make([]action.SendOutput, 0)
@@ -250,7 +253,6 @@ type SwapArguments struct {
 
 // Create a swap request
 func CreateSwapRequest(args *SwapArguments) []byte {
-	log.Debug("swap args", "args", args)
 
 	conv := convert.NewConvert()
 
@@ -270,9 +272,8 @@ func CreateSwapRequest(args *SwapArguments) []byte {
 	account := make(map[data.ChainType][]byte)
 	counterAccount := make(map[data.ChainType][]byte)
 
-	account[conv.GetChain(args.Currency)] = GetSwapAddress(conv.GetCurrency(args.Currency))
-	account[conv.GetChain(args.Excurrency)] = GetSwapAddress(conv.GetCurrency(args.Excurrency))
-
+	account[conv.GetChainFromCurrency(args.Currency)] = GetCurrencyAddress(conv.GetCurrency(args.Currency), args.Party)
+	account[conv.GetChainFromCurrency(args.Excurrency)] = GetCurrencyAddress(conv.GetCurrency(args.Excurrency), args.Party)
 	//log.Debug("accounts for swap", "accountbtc", account[data.BITCOIN], "accounteth", common.BytesToAddress([]byte(account[data.ETHEREUM])), "accountolt", account[data.ONELEDGER])
 
 	party := action.Party{Key: partyKey, Accounts: account}
@@ -302,4 +303,52 @@ func CreateSwapRequest(args *SwapArguments) []byte {
 	}
 
 	return SignAndPack(action.Transaction(swap))
+}
+
+type ExSendArguments struct {
+	SenderId        string
+	ReceiverId      string
+	SenderAddress   string
+	ReceiverAddress string
+	Currency        string
+	Amount          string
+	Gas             string
+	Fee             string
+	Chain           string
+	ExGas           string
+	ExFee           string
+}
+
+func CreateExSendRequest(args *ExSendArguments) []byte {
+	conv := convert.NewConvert()
+
+	partyKey := GetAccountKey(args.SenderId)
+	cpartyKey := GetAccountKey(args.ReceiverId)
+
+	fee := conv.GetCoin(args.Fee, "OLT")
+	gas := conv.GetCoin(args.Gas, "OLT")
+	amount := conv.GetCoin(args.Amount, args.Currency)
+	chain := conv.GetChainFromCurrency(args.Chain)
+
+	sender := GetCurrencyAddress(conv.GetCurrency(args.Currency), args.SenderId)
+	reciever := GetCurrencyAddress(conv.GetCurrency(args.Currency), args.ReceiverId)
+	signers := action.GetSigners(sender)
+	exSend := &action.ExternalSend{
+		Base: action.Base{
+			Type:     action.EXTERNAL_SEND,
+			ChainId:  app.ChainId,
+			Signers:  signers,
+			Owner:    partyKey,
+			Target:   cpartyKey,
+			Sequence: global.Current.Sequence,
+		},
+		Gas:      gas,
+		Fee:      fee,
+		Chain:    chain,
+		Sender:   string(sender),
+		Receiver: string(reciever),
+		Amount:   amount,
+	}
+
+	return SignAndPack(exSend)
 }

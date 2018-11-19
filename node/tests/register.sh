@@ -6,7 +6,7 @@
 #
 CMD=$GOPATH/src/github.com/Oneledger/protocol/node/scripts
 
-list="David Alice Bob Carol"
+list="David Alice Bob Carol Emma"
 #list="David"
 
 $CMD/startOneLedger

@@ -62,11 +62,6 @@ func (accountKey AccountKey) String() string {
 	return hex.EncodeToString(accountKey)
 }
 
-// TODO: Just use String for all presentation variations....
-func (accountKey AccountKey) AsString() string {
-	return hex.EncodeToString(accountKey)
-}
-
 func (accountKey AccountKey) Bytes() []byte {
 	return accountKey
 }

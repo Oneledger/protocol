@@ -90,12 +90,12 @@ func printAccountQuery(nodeName string, accountQuery interface{}) {
 
 		shared.Console.Info(name, account.Name())
 		shared.Console.Info(accountType, account.Chain().String())
-		shared.Console.Info(accountKey, account.AccountKey().AsString())
+		shared.Console.Info(accountKey, account.AccountKey().String())
 
 		if account.Chain() == data.ONELEDGER {
 			value := shared.GetBalance(account.AccountKey())
 			if value != nil {
-				shared.Console.Info(balance, value.AsString())
+				shared.Console.Info(balance, value.String())
 			}
 		}
 		shared.Console.Info()
@@ -129,7 +129,7 @@ func printAnIdentity(identity id.Identity) {
 
 	shared.Console.Info(name, identity.Name)
 	shared.Console.Info(scope, scopeOutput)
-	shared.Console.Info(accountKey, identity.AccountKey.AsString())
+	shared.Console.Info(accountKey, identity.AccountKey.String())
 	shared.Console.Info(tendermintAddress, identity.TendermintAddress)
 	shared.Console.Info(tendermintPubKey, identity.TendermintPubKey)
 	shared.Console.Info()
