@@ -29,6 +29,7 @@ func init() {
 	Domain["olt"] = "OLT"
 	Domain["btc"] = "BTC"
 	Domain["eth"] = "ETH"
+	Domain["vt"] = "VT"
 }
 
 // Build up a list of error messages

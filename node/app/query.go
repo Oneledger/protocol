@@ -283,7 +283,7 @@ func Balance(app Application, accountKey []byte) interface{} {
 	if balance != nil {
 		return balance
 	}
-	result := data.NewBalance(0, "OLT")
+	result := data.NewBalance()
 	return &result
 }
 

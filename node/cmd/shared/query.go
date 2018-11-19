@@ -60,12 +60,12 @@ func GetNodeName() string {
 }
 
 // TODO: Return a balance, not a coin
-func GetBalance(accountKey id.AccountKey) *data.Coin {
+func GetBalance(accountKey id.AccountKey) *data.Balance {
 	request := action.Message("accountKey=" + hex.EncodeToString(accountKey))
 	response := comm.Query("/balance", request)
 	if response == nil {
 		// New Accounts don't have a balance yet.
-		result := data.NewCoin(0, "OLT")
+		result := data.NewBalance()
 		return &result
 	}
 	if serial.GetBaseType(response).Kind() == reflect.String {
@@ -73,7 +73,8 @@ func GetBalance(accountKey id.AccountKey) *data.Coin {
 		return nil
 	}
 	balance := response.(*data.Balance)
-	return &balance.Amount
+
+	return balance
 
 }
 

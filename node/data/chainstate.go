@@ -117,7 +117,7 @@ func (state *ChainState) Get(key DatabaseKey) *Balance {
 	}
 
 	// By definition, if a balance doesn't exist, it is zero
-	empty := NewBalance(0, "OLT")
+	empty := NewBalance()
 	return &empty
 }
 

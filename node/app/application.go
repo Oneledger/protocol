@@ -99,8 +99,13 @@ func (app Application) Initialize() {
 }
 
 type BasicState struct {
-	Account string `json:"account"`
-	Amount  string `json:"coins"` // TODO: Should be corrected as Amount, not coins
+	Account string  `json:"account"`
+	States  []State `json:"states"`
+}
+
+type State struct {
+	Amount string `json:"amount"`
+	Coin   string `json:"coin"`
 }
 
 // Use the Genesis block to initialze the system
@@ -115,29 +120,29 @@ func (app Application) SetupState(stateBytes []byte) {
 	}
 
 	state := des.(*BasicState)
-	log.Debug("Deserialized State", "state", state, "state.Account", state.Account)
+	log.Debug("Deserialized State", "state", state)
 
 	// TODO: Can't generate a different key for each node. Needs to be in the genesis? Or ignored?
 	privateKey, publicKey := id.GenerateKeys([]byte(state.Account), false) // TODO: switch with passphrase
 
-	CreateAccount(app, state.Account, state.Amount, publicKey, privateKey)
+	CreateAccount(app, state, publicKey, privateKey)
 
 	privateKey, publicKey = id.GenerateKeys([]byte("Payment"), false) // TODO: make a user put a real key actually
-	CreateAccount(app, "Payment", "0", publicKey, privateKey)
+	CreateAccount(app, &BasicState{"Payment", []State{State{"0", "OLT"}}}, publicKey, privateKey)
 }
 
-func CreateAccount(app Application, stateAccount string, stateAmount string, publicKey id.PublicKeyED25519, privateKey id.PrivateKeyED25519) {
+func CreateAccount(app Application, state *BasicState, publicKey id.PublicKeyED25519, privateKey id.PrivateKeyED25519) {
 
 	// TODO: This should probably only occur on the Admin node, for other nodes how do I know the key?
 	// Register the identity and account first
-	RegisterLocally(&app, stateAccount, "OneLedger", data.ONELEDGER, publicKey, privateKey)
-	account, ok := app.Accounts.FindName(stateAccount + "-OneLedger")
+	RegisterLocally(&app, state.Account, "OneLedger", data.ONELEDGER, publicKey, privateKey)
+	account, ok := app.Accounts.FindName(state.Account + "-OneLedger")
 	if ok != status.SUCCESS {
-		log.Fatal("Recently Added Account is missing", "name", stateAccount, "status", ok)
+		log.Fatal("Recently Added Account is missing", "name", state.Account, "status", ok)
 	}
 
 	// Use the account key in the database
-	balance := NewBalanceFromString(stateAmount, "OLT")
+	balance := NewBalanceFromStates(state.States)
 	app.Utxo.Set(account.AccountKey(), balance)
 
 	// TODO: Until a block is commited, this data is not persistent
@@ -146,17 +151,22 @@ func CreateAccount(app Application, stateAccount string, stateAmount string, pub
 	log.Info("Genesis State UTXO database", "balance", balance)
 }
 
-func NewBalanceFromString(amount string, currency string) data.Balance {
-	value := big.NewInt(0)
-	value.SetString(amount, 10)
-	coin := data.Coin{
-		Currency: data.NewCurrency(currency),
-		Amount:   value,
+func NewBalanceFromStates(states []State) data.Balance {
+	var balance data.Balance
+	for i, v := range states {
+		if i == 0 {
+			value := big.NewInt(0)
+			value.SetString(v.Amount, 10)
+			balance = data.NewBalanceFromString(value.Int64(), v.Coin)
+		} else {
+			value := big.NewInt(0)
+			value.SetString(v.Amount, 10)
+			coin := data.NewCoin(value.Int64(), v.Coin)
+			balance.AddAmmount(coin)
+		}
 	}
-	if !coin.IsValid() {
-		log.Fatal("Create Invalid Coin", "coin", coin)
-	}
-	return data.Balance{Amount: coin}
+
+	return balance
 }
 
 // InitChain is called when a new chain is getting created
@@ -316,9 +326,10 @@ func (app Application) MakePayment(req RequestBeginBlock) {
 		log.Fatal("ABCI: BeginBlock Fatal Status", "status", err)
 	}
 
+
 	paymentBalance := app.Utxo.Get(account.AccountKey())
 	if paymentBalance == nil {
-		interimBalance := data.NewBalance(0, "OLT")
+		interimBalance := data.NewBalance()
 		paymentBalance = &interimBalance
 	}
 
@@ -341,7 +352,7 @@ func (app Application) MakePayment(req RequestBeginBlock) {
 		}
 	}
 
-	if (!paymentBalance.Amount.LessThanEqual(0)) && paymentRecordBlockHeight == -1 {
+	if (!paymentBalance.GetAmountByName("OLT").LessThanEqual(0)) && paymentRecordBlockHeight == -1 {
 		goodValidatorIdentities := app.Validators.FindGood(app)
 		selectedValidatorIdentity := app.Validators.FindSelectedValidator(app, req.Header.LastBlockHash)
 

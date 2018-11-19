@@ -3,4 +3,5 @@
 .validators[1].name = "Alice-Node" |
 .validators[2].name = "Bob-Node" |
 .validators[3].name = "Carol-Node" |
-. + {app_state: { account: "Zero", coins: "1000000000000" } }
+. + {app_state: { account : "Zero", states : ""} } |
+.app_state.states = [{amount: "1000000000000", coin: "OLT" }, {amount: "10000", coin: "VT"}]
