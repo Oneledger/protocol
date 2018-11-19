@@ -2,6 +2,8 @@ package runner
 
 import (
 	"github.com/robertkrimen/otto"
+	"errors"
+	"fmt"
 )
 
 func (runner Runner) exec(callString string) (string, string) {
@@ -39,11 +41,16 @@ func (runner Runner) exec(callString string) (string, string) {
 	return output, returnValue
 }
 
-func (runner Runner) Call(from string, address string, callString string, olt int) (string, string) {
+func (runner Runner) Call(from string, address string, callString string, olt int) (transaction string, returnValue string, err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			err = errors.New(fmt.Sprintf("Runtime Error: %v", r))
+		}
+	}()
 	runner.initialContext(from, olt)
 	runner.getContract(address)
-	transaction, returnValue := runner.exec(callString)
-	return transaction, returnValue
+	transaction, returnValue = runner.exec(callString)
+	return
 }
 
 func CreateRunner() Runner {

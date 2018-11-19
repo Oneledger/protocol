@@ -10,22 +10,40 @@ import (
   "errors"
   "fmt"
   "strconv"
+  "os"
 )
 
 var DefaultOLVMService = NewOLVMService("tcp", 1980)
+
+func (c *Container) Echo(args *Args, reply *Reply) error {
+  return nil
+}
 
 func (c *Container) Exec(args *Args, reply *Reply) error {
   mo := monitor.CreateMonitor(10, monitor.DEFAULT_MODE, "./ovm.pid")
   status_ch := make(chan monitor.Status)
   runner_ch := make(chan bool)
+
+  defer func() {
+    if r := recover(); r != nil{
+      log.Printf("error happens %v\n", r)
+      os.Exit(1)
+    }
+  }()
+
   go mo.CheckStatus(status_ch)
   go func () {
     runner := runner.CreateRunner()
     from, address, callString, value := parseArgs(args)
-    out, ret := runner.Call(from, address, callString, value)
-    reply.Out = out
-    reply.Ret = ret
-    runner_ch <- true
+    out, ret, error := runner.Call(from, address, callString, value)
+    if error != nil {
+      status_ch <- monitor.Status{"Runtime error", monitor.STATUS_ERROR}
+    } else {
+      reply.Out = out
+      reply.Ret = ret
+      runner_ch <- true
+    }
+
   }()
   for {
     select {
@@ -56,7 +74,7 @@ func NewOLVMService(protocol string, port int) OLVMService {
   return OLVMService{protocol, port}
 }
 
-func Run() {
+func RunService() {
   DefaultOLVMService.Run()
 }
 

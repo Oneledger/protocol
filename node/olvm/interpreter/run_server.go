@@ -7,5 +7,5 @@ import (
 
 func main() {
   log.Print("Up running vm")
-  vm.Run()
+  vm.RunService()
 }
