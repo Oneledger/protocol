@@ -33,7 +33,7 @@ func Run(from string, address string, callString string, value int) (Reply, erro
   return DefaultClient.Run(from, address, callString, value)
 }
 
-func AutoRun(from string, address string, callString string, value int) (reply Reply, err error) {
+func AutoRun(from string, address string, callString string, sourceCode string, value int) (reply Reply, err error) {
   reply, err = DefaultClient.Run(from, address, callString, value)
   if err!= nil && strings.HasSuffix(err.Error(),"connection refused") {
     //try to launch the service
