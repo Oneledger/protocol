@@ -299,7 +299,7 @@ type ExSendArguments struct {
 
 func CreateExSendRequest(args *ExSendArguments) []byte {
 	conv := convert.NewConvert()
-	signers := GetSigners()
+
 	partyKey := GetAccountKey(args.SenderId)
 	cpartyKey := GetAccountKey(args.ReceiverId)
 
@@ -310,7 +310,7 @@ func CreateExSendRequest(args *ExSendArguments) []byte {
 
 	sender := GetCurrencyAddress(conv.GetCurrency(args.Currency), args.SenderId)
 	reciever := GetCurrencyAddress(conv.GetCurrency(args.Currency), args.ReceiverId)
-
+	signers := action.GetSigners(sender)
 	exSend := &action.ExternalSend{
 		Base: action.Base{
 			Type:     action.EXTERNAL_SEND,
@@ -328,5 +328,5 @@ func CreateExSendRequest(args *ExSendArguments) []byte {
 		Amount:   amount,
 	}
 
-	return SignAndPack(action.EXTERNAL_SEND, exSend)
+	return SignAndPack(exSend)
 }
