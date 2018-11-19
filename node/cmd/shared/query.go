@@ -28,8 +28,16 @@ func GetAccountKey(identity string) []byte {
 		log.Warn("Query returned nothing", "request", request)
 		return nil
 	}
-	result := response.([]uint8)
-	return result
+	switch param := response.(type) {
+	case id.AccountKey:
+		return param
+
+	case string:
+		log.Warn("Query Error:", "err", param, "request", request, "response", response)
+		return nil
+	}
+	log.Warn("Query Unknown Type:", "response", response)
+	return nil
 }
 
 func GetSwapAddress(currencyName string) []byte {
@@ -60,6 +68,8 @@ func GetNodeName() string {
 
 // TODO: Return a balance, not a coin
 func GetBalance(accountKey id.AccountKey) *data.Coin {
+
+	// TODO: This is wrong, should pass by type, not encode/decode
 	request := action.Message("accountKey=" + hex.EncodeToString(accountKey))
 	response := comm.Query("/balance", request)
 	if response == nil {

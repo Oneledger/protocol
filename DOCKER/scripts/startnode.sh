@@ -3,17 +3,33 @@
 # Get the node id for each fullnode
 function generate_peers()
 {
-	addrLength=40
-	peers=()
+	local addrLength=40
+	local peers=()
 	for peer in $(tr "," " " <<< $1); do
-		rpcPeer="$(echo $peer | awk -F: '{print $1}'):$OL_PORT_RPC"
-		peerID="$(curl -s $rpcPeer/status | jq ".result.node_info.id" | tr -d '\"')"
-		echo $peerID > $LOG/2peers
+		local rpc_peer="$(echo $peer | awk -F: '{print $1}'):$OL_PORT_RPC"
+		local peerID="$(curl -s $rpc_peer/status | jq ".result.node_info.id" | tr -d '\"')"
 		if [ "${#peerID}" == "$addrLength" ]; then
 			peers+=("$peerID@$peer")
 		fi
 	done
 	echo `tr " " "," <<< "${peers[*]}"`
+}
+
+function dl_genesis()
+{
+	local genesis
+	local peer_address=$1
+	local rpc_peer="$(echo $peer_address | awk -F: '{print $1}'):$OL_PORT_RPC"
+	local genesis=$(curl -s ${rpc_peer}/genesis | jq .result.genesis)
+	if [ -z "$genesis" ]; then
+		echo "Genesis download failed"
+		echo "RPC Peer ${rpc_peer} looks unhealthy"
+		exit 1
+	else
+		echo $genesis
+	fi
+	local status=$?
+	exit $status
 }
 
 nodeName=${ID}-Node
@@ -29,26 +45,32 @@ appAddress="$prefix$OL_PORT_APP"
 
 LOG=$OLDATA/$nodeName
 tmLog=$LOG/tendermint.log
-olLog=$LOG/fullnode.log
+olLog=$LOG/olfullnode.log
 tmData=$LOG/tendermint
 
-## If the PEERS argument exists, get the genesis block from specified peers
-#if [ $OL_PEERS ] && ! [ -f "$tmData/config/genesis.json" ]
-#then
-#	mkdir -p "$tmData/config"
-#	echo
-#	echo "Downloading genesis block from peers..."
-#	try_peer_genesis $OL_PEERS
-#
-##	echo
-##	echo "Copying genesis block to node..."
-##	$genesis > $tmData/config/genesis.json
-#fi
 
+# If we are a fullnode joining an existing network, download the genesis
+# file and get the right node id from each peer ip listed from OL_PEERS
 if [ "$OL_PEERS" ]; then
+	echo
+	echo "Making directory $LOG"
+	echo
+	mkdir -p $tmData/config
 	touch $tmLog
 	touch $olLog
+
+
 	foundPeers=$(generate_peers $OL_PEERS)
+	peer1=$(echo $OL_PEERS | awk -F, '{print $1}')
+	genesis_file=$(dl_genesis $peer1)
+	echo "Genesis: $genesis_file"
+	if [ "$?" != "0" ]; then
+		echo "Genesis download failed"
+		exit 1
+	fi
+
+	echo "Copying genesis file..."
+	echo $genesis_file >> $tmData/config/genesis.json
 	echo
 	echo "Starting node with peers: $foundPeers"
 	echo
@@ -73,8 +95,8 @@ echo "============================================================" >> $olLog
 echo "Starting Fullnode" >> $olLog
 echo "============================================================" >> $olLog
 
-fullnode node \
-	--root $OLDATA/$nodeName/fullnode \
+olfullnode node \
+	--root $OLDATA/$nodeName/olfullnode \
 	--node $nodeName \
 	--app $appAddress \
 	--address $rpcAddress \

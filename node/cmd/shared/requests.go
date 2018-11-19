@@ -18,34 +18,57 @@ import (
 )
 
 // Prepare a transaction to be issued.
-func SignAndPack(ttype action.Type, transaction action.Transaction) []byte {
-	return action.SignAndPack(ttype, transaction)
+func SignAndPack(transaction action.Transaction) []byte {
+	return action.SignAndPack(transaction)
+}
+
+// Registration
+type AccountArguments struct {
+	Account     string
+	Chain       string
+	PublicKey   string
+	PrivateKey  string
+	NodeAccount bool
+}
+
+func UpdateAccountRequest(args *AccountArguments) interface{} {
+	return &app.SDKSet{
+		Path: "/account",
+		Arguments: map[string]string{
+			"Account":     args.Account,
+			"Chain":       args.Chain,
+			"PublicKey":   args.PublicKey,
+			"PrivateKey":  args.PrivateKey,
+			"NodeAccount": "true",
+		},
+	}
 }
 
 // Registration
 type RegisterArguments struct {
 	Identity string
+	Account  string
+	NodeName string
 }
 
 // Create a request to register a new identity with the chain
-func CreateRegisterRequest(args *RegisterArguments) []byte {
-	signers := GetSigners()
+func RegisterIdentityRequest(args *RegisterArguments) interface{} {
+	//signers := GetSigners()
 
-	accountKey := GetAccountKey(args.Identity)
+	// TODO: Need to check errors here
+	//accountKey := GetAccountKey(args.Account)
 
-	reg := &action.Register{
-		Base: action.Base{
-			Type:     action.REGISTER,
-			ChainId:  app.ChainId,
-			Signers:  signers,
-			Sequence: global.Current.Sequence,
+	// TODO: Need to have access to this data?
+	//app.LoadPrivValidatorFile()
+
+	return &app.SDKSet{
+		Path: "/register",
+		Arguments: map[string]string{
+			"Identity": args.Identity,
+			"Account":  args.Account,
+			"NodeName": args.NodeName,
 		},
-		Identity:   args.Identity,
-		NodeName:   global.Current.NodeName,
-		AccountKey: accountKey,
 	}
-
-	return SignAndPack(action.REGISTER, action.Transaction(reg))
 }
 
 type BalanceArguments struct {
@@ -66,8 +89,6 @@ type SendArguments struct {
 
 // CreateRequest builds and signs the transaction based on the arguments
 func CreateSendRequest(args *SendArguments) []byte {
-	signers := GetSigners()
-
 	conv := convert.NewConvert()
 
 	if args.Party == "" {
@@ -83,12 +104,12 @@ func CreateSendRequest(args *SendArguments) []byte {
 	// TODO: Can't convert identities to accounts, this way!
 	party := GetAccountKey(args.Party)
 	counterParty := GetAccountKey(args.CounterParty)
+	payment := GetAccountKey("Payment")
 	if party == nil || counterParty == nil {
-		log.Fatal("System doesn't reconize the parties", "args", args, "party", party, "counterParty", counterParty)
-		return nil
+		log.Fatal("System doesn't reconize the parties", "args", args,
+			"party", party, "counterParty", counterParty)
+		//return nil
 	}
-
-	//log.Dump("AccountKeys", party, counterParty)
 
 	if args.Currency == "" || args.Amount == "" {
 		log.Error("Missing an amount argument")
@@ -100,26 +121,28 @@ func CreateSendRequest(args *SendArguments) []byte {
 	// Build up the Inputs
 	partyBalance := GetBalance(party)
 	counterPartyBalance := GetBalance(counterParty)
-	//log.Dump("Balances", partyBalance, counterPartyBalance)
+	paymentBalance := GetBalance(payment)
 
 	if partyBalance == nil || counterPartyBalance == nil {
 		log.Error("Missing Balance", "party", partyBalance, "counterParty", counterPartyBalance)
 		return nil
 	}
 
+	fee := conv.GetCoin(args.Fee, args.Currency)
+	gas := conv.GetCoin(args.Gas, args.Currency)
+
 	inputs := make([]action.SendInput, 0)
 	inputs = append(inputs,
 		action.NewSendInput(party, *partyBalance),
-		action.NewSendInput(counterParty, *counterPartyBalance))
+		action.NewSendInput(counterParty, *counterPartyBalance),
+		action.NewSendInput(payment, *paymentBalance))
 
 	// Build up the outputs
 	outputs := make([]action.SendOutput, 0)
 	outputs = append(outputs,
-		action.NewSendOutput(party, partyBalance.Minus(amount)),
-		action.NewSendOutput(counterParty, counterPartyBalance.Plus(amount)))
-
-	fee := conv.GetCoin(args.Fee, args.Currency)
-	gas := conv.GetCoin(args.Gas, args.Currency)
+		action.NewSendOutput(party, partyBalance.Minus(amount).Minus(fee)),
+		action.NewSendOutput(counterParty, counterPartyBalance.Plus(amount)),
+		action.NewSendOutput(payment, paymentBalance.Plus(fee)))
 
 	if conv.HasErrors() {
 		Console.Error(conv.GetErrors())
@@ -131,7 +154,8 @@ func CreateSendRequest(args *SendArguments) []byte {
 		Base: action.Base{
 			Type:     action.SEND,
 			ChainId:  app.ChainId,
-			Signers:  signers,
+			Owner:    party,
+			Signers:  action.GetSigners(party),
 			Sequence: global.Current.Sequence,
 		},
 		Inputs:  inputs,
@@ -139,14 +163,11 @@ func CreateSendRequest(args *SendArguments) []byte {
 		Fee:     fee,
 		Gas:     gas,
 	}
-
-	return SignAndPack(action.SEND, action.Transaction(send))
+	return SignAndPack(action.Transaction(send))
 }
 
 // CreateRequest builds and signs the transaction based on the arguments
 func CreateMintRequest(args *SendArguments) []byte {
-	signers := GetSigners()
-
 	conv := convert.NewConvert()
 
 	if args.Party == "" {
@@ -154,10 +175,8 @@ func CreateMintRequest(args *SendArguments) []byte {
 		return nil
 	}
 
-	// TODO: Can't convert identities to accounts, this way!
-	log.Debug("Getting TestMint Account Keys")
-	party := GetAccountKey(args.Party)
 	zero := GetAccountKey("Zero")
+	party := GetAccountKey(args.Party)
 
 	if party == nil || zero == nil {
 		log.Warn("Missing Party information", "args", args, "party", party, "zero", zero)
@@ -167,12 +186,16 @@ func CreateMintRequest(args *SendArguments) []byte {
 	amount := conv.GetCoin(args.Amount, args.Currency)
 
 	// Build up the Inputs
-	log.Debug("Getting TestMint Account Balances")
-	partyBalance := GetBalance(party)
 	zeroBalance := GetBalance(zero)
+	partyBalance := GetBalance(party)
 
 	if zeroBalance == nil || partyBalance == nil {
 		log.Warn("Missing Balances", "party", party, "zero", zero)
+		return nil
+	}
+
+	if zeroBalance.LessThanEqual(0) {
+		log.Warn("No more money left...")
 		return nil
 	}
 
@@ -200,7 +223,7 @@ func CreateMintRequest(args *SendArguments) []byte {
 		Base: action.Base{
 			Type:     action.SEND,
 			ChainId:  app.ChainId,
-			Signers:  signers,
+			Signers:  action.GetSigners(zero),
 			Owner:    zero,
 			Sequence: global.Current.Sequence,
 		},
@@ -209,10 +232,7 @@ func CreateMintRequest(args *SendArguments) []byte {
 		Fee:     fee,
 		Gas:     gas,
 	}
-
-	log.Debug("Finished Building Testmint Request")
-
-	return SignAndPack(action.SEND, action.Transaction(send))
+	return SignAndPack(action.Transaction(send))
 }
 
 // Arguments to the command
@@ -237,10 +257,9 @@ func CreateSwapRequest(args *SwapArguments) []byte {
 	partyKey := GetAccountKey(args.Party)
 	counterPartyKey := GetAccountKey(args.CounterParty)
 
-	signers := GetSigners()
-
 	fee := conv.GetCoin(args.Fee, "OLT")
 	gas := conv.GetCoin(args.Gas, "OLT")
+
 	amount := conv.GetCoin(args.Amount, args.Currency)
 	exchange := conv.GetCoin(args.Exchange, args.Excurrency)
 
@@ -253,7 +272,9 @@ func CreateSwapRequest(args *SwapArguments) []byte {
 
 	account[conv.GetChain(args.Currency)] = GetSwapAddress(conv.GetCurrency(args.Currency))
 	account[conv.GetChain(args.Excurrency)] = GetSwapAddress(conv.GetCurrency(args.Excurrency))
+
 	//log.Debug("accounts for swap", "accountbtc", account[data.BITCOIN], "accounteth", common.BytesToAddress([]byte(account[data.ETHEREUM])), "accountolt", account[data.ONELEDGER])
+
 	party := action.Party{Key: partyKey, Accounts: account}
 	counterParty := action.Party{Key: counterPartyKey, Accounts: counterAccount}
 
@@ -266,11 +287,12 @@ func CreateSwapRequest(args *SwapArguments) []byte {
 		Exchange:     exchange,
 		Nonce:        args.Nonce,
 	}
+
 	swap := &action.Swap{
 		Base: action.Base{
 			Type:     action.SWAP,
 			ChainId:  app.ChainId,
-			Signers:  signers,
+			Signers:  action.GetSigners(partyKey),
 			Owner:    partyKey,
 			Target:   counterPartyKey,
 			Sequence: global.Current.Sequence,
@@ -279,5 +301,5 @@ func CreateSwapRequest(args *SwapArguments) []byte {
 		Stage:       action.SWAP_MATCHING,
 	}
 
-	return SignAndPack(action.SWAP, action.Transaction(swap))
+	return SignAndPack(action.Transaction(swap))
 }

@@ -20,6 +20,7 @@ func init() {
 	serial.Register(Balance{})
 }
 
+// TODO: Should return a pointer, as per Go conventions
 func NewBalance(amount int64, currency string) Balance {
 	return Balance{Amount: NewCoin(amount, currency)}
 }

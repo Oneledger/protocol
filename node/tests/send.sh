@@ -7,28 +7,9 @@ CMD=$GOPATH/src/github.com/Oneledger/protocol/node/scripts
 
 $CMD/startOneLedger
 
-addrAlice=`$OLSCRIPT/lookup Alice RPCAddress tcp://127.0.0.1:`
-addrBob=`$OLSCRIPT/lookup Bob RPCAddress tcp://127.0.0.1:`
 
-echo "=================== Test Send Transaction =================="
-# Put some money in the user accounts
-SEQ=`$CMD/nextSeq`
-olclient testmint -s $SEQ -a $addrAlice --party Alice --amount 10000 --currency OLT
-olclient testmint -s $SEQ -a $addrBob --party Bob --amount 20000 --currency OLT
+echo "=================== Send Transactions =================="
+olclient send -c Bob --party Bob --counterparty Alice --amount 5000 --currency OLT
+olclient send -c Bob --party Bob --counterparty Carol --amount 2000 --currency OLT
 
-echo "Finished Minting"
-
-sleep 10
-
-# assumes fullnode is in the PATH
-olclient send -s $SEQ -a $addrBob --party Bob --counterparty Alice --amount 5000 --currency OLT
-
-sleep 10
-
-olclient account -a $addrBob
-
-sleep 1
-
-olclient account -a $addrAlice
-
-sleep 3
+sleep 6

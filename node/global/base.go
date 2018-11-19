@@ -28,8 +28,10 @@ type Context struct {
 	Debug            bool // DEBUG flag
 	DisablePasswords bool // DEBUG flag
 
+	ConfigName      string // The Name of the config file (without extension)
 	NodeName        string // Name of this instance
 	NodeAccountName string // TODO: Should be a list of accounts
+	NodePaymentName string
 	NodeIdentity    string
 	RootDir         string // Working directory for this instance
 
@@ -41,13 +43,17 @@ type Context struct {
 	BTCAddress string // Bitcoin node Address port
 	ETHAddress string // Ethereum node Address port
 
-	SDKAddress int // SDK RPC port
+	SDKAddress string // SDK RPC address
 
 	Sequence int64 // replay protection
+
+	TendermintRoot    string
+	TendermintAddress string
+	TendermintPubKey  string
 }
 
 func init() {
-	Current = NewContext("OneLedger-Default")
+	Current = NewContext("OneLedger")
 }
 
 // Set the default values for any context variables here (and no where else)
@@ -60,11 +66,14 @@ func NewContext(name string) *Context {
 	return &Context{
 		Debug:            debug,
 		DisablePasswords: true,
-		SDKAddress:       6969,
-		NodeName:         name,
-		NodeAccountName:  "Zero-OneLedger",
-		RootDir:          os.Getenv("OLDATA") + "/" + name + "/olfullnode",
-		Sequence:         101,
+
+		ConfigName:      "olclient", // TODO: needs to deal with client/server
+		NodeName:        name,
+		NodeAccountName: "",
+		NodePaymentName: "Payment-OneLedger",
+		RootDir:         os.Getenv("OLDATA") + "/" + name + "/olfullnode",
+
+		SDKAddress: "http://127.0.01:6900",
 	}
 }
 
