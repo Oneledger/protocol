@@ -75,16 +75,16 @@ func printAccountQuery(nodeName string, accountQuery interface{}) {
 		return
 	}
 
-	name := "      Name:"
-	balance := "   Balance:"
-	accountType := "      Type:"
-	accountKey := "       Key:"
+	name := "             Name:"
+	balance := "          Balance:"
+	accountType := "             Type:"
+	accountKey := "              Key:"
 
 	first := true
 
 	for _, account := range accounts {
 		if first {
-			shared.Console.Info("\nAccount(s) on", nodeName+":")
+			shared.Console.Info("Accounts on", nodeName+":\n")
 			first = false
 		}
 
@@ -106,7 +106,7 @@ func printAccountQuery(nodeName string, accountQuery interface{}) {
 func printIdentityQuery(nodeName string, idQuery interface{}) {
 	identities := idQuery.([]id.Identity)
 
-	shared.Console.Info("\nOneLedger Identities on", nodeName, ":\n")
+	shared.Console.Info("Identities on", nodeName+":\n")
 
 	for _, identity := range identities {
 		printAnIdentity(identity)

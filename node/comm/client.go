@@ -50,14 +50,14 @@ func GetClient() (client *rpcclient.HTTP) {
 		time.Sleep(1 * time.Second)
 	}
 
-	for i := 0; i < 200; i++ {
+	for i := 0; i < 10; i++ {
 		result, err := cachedClient.Status()
 		if err == nil {
 			log.Debug("Connected", "result", result)
 			break
 		}
 		log.Warn("Waiting for RPC Client", "address", global.Current.RpcAddress)
-		time.Sleep(1 * time.Second)
+		time.Sleep(2 * time.Second)
 	}
 
 	return cachedClient
