@@ -98,7 +98,6 @@ func printAccountQuery(nodeName string, accountQuery interface{}) {
 				shared.Console.Info(balance, value.AsString())
 			}
 		}
-
 		shared.Console.Info()
 	}
 }
