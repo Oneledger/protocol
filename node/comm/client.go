@@ -36,7 +36,7 @@ func GetClient() (client *rpcclient.HTTP) {
 		return cachedClient
 	}
 
-	// TODO: Try multiple times before giving upc
+	// TODO: Try multiple times before giving up
 
 	for i := 0; i < 10; i++ {
 		cachedClient = rpcclient.NewHTTP(global.Current.RpcAddress, "/websocket")
