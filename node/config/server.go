@@ -2,7 +2,7 @@ package config
 
 import (
 	"github.com/Oneledger/protocol/node/global"
-	"github.com/prometheus/common/log"
+	"github.com/Oneledger/protocol/node/log"
 	"github.com/spf13/viper"
 )
 
