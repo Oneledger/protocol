@@ -54,8 +54,8 @@ func HandleQuery(app Application, path string, arguments map[string]string) []by
 	case "/version":
 		result = HandleVersionQuery(app, arguments)
 
-	case "/swapAddress":
-		result = HandleSwapAddressQuery(app, arguments)
+	case "/currencyAddress":
+		result = HandleCurrencyAddressQuery(app, arguments)
 
 	default:
 		result = HandleError("Unknown Query", path, arguments)
@@ -97,6 +97,8 @@ func HandleSignTransaction(app Application, arguments map[string]string) interfa
 	case *action.Send:
 		accountKey = v.Base.Owner
 	case *action.Register:
+		accountKey = v.Base.Owner
+	case *action.Payment:
 		accountKey = v.Base.Owner
 	default:
 		log.Error("Unknown transaction type", "transaction", transaction)
@@ -233,7 +235,29 @@ func AccountInfo(app Application, name string) interface{} {
 	if ok == status.SUCCESS {
 		return account
 	}
-	return "Account " + name + " Not Found" + global.Current.NodeName
+	return "Account " + name + " Not Found"
+}
+
+func HandleUtxoQuery(app Application, message []byte) interface{} {
+	log.Debug("UtxoQuery", "message", message)
+
+	text := string(message)
+
+	name := ""
+	parts := strings.Split(text, "=")
+	if len(parts) > 1 {
+		name = parts[1]
+	}
+	return UtxoInfo(app, name)
+}
+
+func UtxoInfo(app Application, name string) interface{} {
+	if name == "" {
+		entries := app.Balances.FindAll()
+		return entries
+	}
+	value := app.Balances.Get(data.DatabaseKey(name))
+	return value
 }
 
 func HandleVersionQuery(app Application, arguments map[string]string) interface{} {
@@ -262,34 +286,46 @@ func Balance(app Application, accountKey []byte) interface{} {
 		return balance
 	}
 
-	// TODO: By definition the balance is 0 if it is not found
-	result := data.NewBalance(0, "OLT")
+	result := data.NewBalance()
 	return &result
 }
 
-func HandleSwapAddressQuery(app Application, arguments map[string]string) interface{} {
+func HandleCurrencyAddressQuery(app Application, arguments map[string]string) interface{} {
 	log.Debug("SwapAddressQuery", "arguments", arguments)
 
 	text := arguments["parameter"]
 	conv := convert.NewConvert()
 	var chain data.ChainType
-	parts := strings.Split(text, "=")
-	if len(parts) > 1 {
-		chain = conv.GetChain(parts[1])
-	}
-
-	//todo: make it general
-	if chain == data.ONELEDGER {
-		account, e := app.Accounts.FindName(global.Current.NodeAccountName)
-		if e == status.SUCCESS {
-			return account.AccountKey()
+	var identity id.Identity
+	parts := strings.Split(text, "|")
+	if len(parts) == 2 {
+		currencyString := strings.Split(parts[0], "=")
+		if len(currencyString) > 1 {
+			chain = conv.GetChainFromCurrency(currencyString[1])
+		} else {
+			return nil
 		}
+
+		identityString := strings.Split(parts[1], "=")
+		if len(identityString) > 1 {
+			identity, ok := app.Identities.FindName(identityString[1])
+			if ok == status.SUCCESS {
+				if chain != data.ONELEDGER {
+					//todo : right now, the idenetity.Chain do not contain the address on the other chain
+					// need to fix register to remove this part
+					_ = identity
+					return ChainAddress(chain)
+				}
+
+			}
+		}
+
 	}
-	return SwapAddress(chain)
+	return identity.Chain[chain]
 }
 
-func SwapAddress(chain data.ChainType) interface{} {
-	return common.GetSwapAddress(chain)
+func ChainAddress(chain data.ChainType) interface{} {
+	return common.GetChainAddress(chain)
 }
 
 // Return a nicely formatted error message

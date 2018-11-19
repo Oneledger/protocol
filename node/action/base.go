@@ -27,6 +27,7 @@ const (
 	INVALID       Type = iota
 	REGISTER           // Register a new identity with the chain
 	SEND               // Do a normal send transaction on local chain
+	PAYMENT            // Do a payment transaction on local chain
 	EXTERNAL_SEND      // Do send on external chain
 	EXTERNAL_LOCK      // Lock some data on external chain
 	SWAP               // Start a swap between chains
@@ -89,6 +90,8 @@ func ValidateSignature(transaction SignedTransaction) bool {
 	case *Swap:
 		signers = v.Base.Signers
 	case *Send:
+		signers = v.Base.Signers
+	case *Payment:
 		signers = v.Base.Signers
 	case *Register:
 		signers = v.Base.Signers
