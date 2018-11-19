@@ -35,7 +35,7 @@ func LoadPrivValidatorFile() {
 	filePath := global.Current.TendermintRoot + "/config/priv_validator.json"
 	jsonFile, err := os.Open(filePath)
 	if err != nil {
-		log.Debug("FeePayment", "err", err)
+		log.Debug("FeePayment", "earr", err)
 	}
 	defer jsonFile.Close()
 

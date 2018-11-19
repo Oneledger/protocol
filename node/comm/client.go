@@ -36,7 +36,7 @@ func GetClient() (client *rpcclient.HTTP) {
 		return cachedClient
 	}
 
-	// TODO: Try multiple times before giving up
+	// TODO: Try multiple times before giving upc
 
 	for i := 0; i < 10; i++ {
 		cachedClient = rpcclient.NewHTTP(global.Current.RpcAddress, "/websocket")
@@ -157,6 +157,7 @@ func Tx(hash []byte, prove bool) (res *ctypes.ResultTx) {
 	result, err := client.Tx(hash, prove)
 	if err != nil {
 		log.Error("TxSearch Error", "err", err)
+		return nil
 	}
 
 	log.Debug("TxSearch", "hash", hash, "prove", prove, "result", result)
@@ -174,5 +175,15 @@ func Search(query string, prove bool, page, perPage int) (res *ctypes.ResultTxSe
 
 	log.Debug("TxSearch", "query", query, "prove", prove, "result", result)
 
+	return result
+}
+
+func Block(height int64) (res *ctypes.ResultBlock) {
+	client := GetClient()
+
+	result, err := client.Block(&height)
+	if err != nil {
+		return nil
+	}
 	return result
 }
