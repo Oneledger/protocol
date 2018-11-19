@@ -4,12 +4,11 @@ import (
 	"errors"
 	"fmt"
 	"net"
-	"regexp"
 
-	"github.com/Oneledger/protocol/node/log"
+	olog "github.com/Oneledger/protocol/node/log"
 	"github.com/Oneledger/protocol/node/sdk/pb"
 	"github.com/tendermint/tendermint/libs/common"
-	tlog "github.com/tendermint/tendermint/libs/log"
+	"github.com/tendermint/tendermint/libs/log"
 	"google.golang.org/grpc"
 )
 
@@ -18,7 +17,7 @@ type Server struct {
 	listener net.Listener
 	server   *grpc.Server
 	quit     chan struct{}
-	logger   tlog.Logger
+	logger   log.Logger
 }
 
 // Ensure sdk.Server implements common.Service
@@ -30,23 +29,10 @@ const (
 	ALREADY_STOPPED = "SDK gRPC Server already stopped."
 )
 
-// Pick out the port from a full address
-func GetPort(addr string) string {
-	automata := regexp.MustCompile(`.*?:.*?:(.*)`)
-	groups := automata.FindStringSubmatch(addr)
-
-	if groups == nil || len(groups) != 2 {
-		log.Fatal("Failed to parse SDK address", "addr", addr)
-	}
-	return groups[1]
-}
-
-// Start a new SDK Server
-func NewServer(addr string, sdkServer pb.SDKServer) (*Server, error) {
-
-	listener, err := net.Listen("tcp", ":"+GetPort(addr))
+func NewServer(port int, sdkServer pb.SDKServer) (*Server, error) {
+	listener, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
 	if err != nil {
-		return nil, fmt.Errorf("Failed to start tcp listener on port %s err=%v", addr, err)
+		return nil, fmt.Errorf("Failed to start tcp listener on port :%d, %v", port, err)
 	}
 
 	server := grpc.NewServer()
@@ -56,91 +42,86 @@ func NewServer(addr string, sdkServer pb.SDKServer) (*Server, error) {
 	return &Server{
 		listener: listener,
 		server:   server,
-		logger:   log.GetLogger(),
+		logger:   olog.GetLogger(),
 	}, nil
 }
 
-// Is the server still running
-func (server *Server) IsRunning() bool {
-	return server.quit != nil
+func (s *Server) IsRunning() bool {
+	return s.quit != nil
 }
 
-func (server *Server) Start() error {
-	if server.IsRunning() {
+func (s *Server) Start() error {
+	if s.IsRunning() {
 		return errors.New(HAS_STARTED)
 	}
-
-	server.quit = make(chan struct{})
-
-	err := server.OnStart()
+	s.quit = make(chan struct{})
+	err := s.OnStart()
 	if err != nil {
-		log.Debug("Server Failed")
 		return errors.New("OnStart method returned an error value")
 	}
 
 	go func() {
-		addr := server.listener.Addr()
-		server.server.Serve(server.listener)
-
-		log.Info("SDK Service listening", "Network", addr.Network(), "Name", addr.String())
-
+		addr := s.listener.Addr()
+		s.logger.Info(fmt.Sprintf("SDK Service listening on %s %s", addr.Network(), addr.String()))
+		s.server.Serve(s.listener)
 		select {
-		case _, ok := <-server.quit:
+		case _, ok := <-s.quit:
 			if !ok {
-				log.Info("Stopping", "Name", server.String())
-				server.server.Stop()
+				s.logger.Info("Stopping %s", s.String())
+				s.server.Stop()
 				return
 			}
 		}
 	}()
+
 	return nil
 }
 
-func (server *Server) OnStart() error {
+func (s *Server) OnStart() error {
 	return nil
 }
 
-func (server *Server) Stop() error {
-	if server.IsRunning() {
+func (s *Server) Stop() error {
+	if s.IsRunning() {
 		return errors.New(ALREADY_STOPPED)
 	}
-	server.Quit()
-	server.OnStop()
-	server.quit = nil
+	s.Quit()
+	s.OnStop()
+	s.quit = nil
 	return nil
 }
 
-func (server *Server) OnStop() {
+func (s *Server) OnStop() {
 	return
 }
 
-func (server *Server) Reset() error {
-	if server.IsRunning() {
-		server.Stop()
+func (s *Server) Reset() error {
+	if s.IsRunning() {
+		s.Stop()
 	}
 
-	err := server.Start()
+	err := s.Start()
 	if err != nil {
 		return err
 	}
-	server.OnReset()
+	s.OnReset()
 	return nil
 }
 
-func (server *Server) OnReset() error {
+func (s *Server) OnReset() error {
 	return nil
 }
 
-func (server *Server) Quit() <-chan struct{} {
-	close(server.quit)
-	return server.quit
+func (s *Server) Quit() <-chan struct{} {
+	close(s.quit)
+	return s.quit
 }
 
-func (server *Server) String() string {
-	addr := server.listener.Addr()
-	return fmt.Sprintf("SDK.gRPC:%s:%s", addr.Network(), addr.String())
+func (s *Server) String() string {
+	a := s.listener.Addr()
+	return fmt.Sprintf("SDK.gRPC:%s:%s", a.Network(), a.String())
 }
 
-func (server *Server) SetLogger(logger tlog.Logger) {
-	server.logger = logger
+func (s *Server) SetLogger(l log.Logger) {
+	s.logger = l
 }

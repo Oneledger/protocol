@@ -34,17 +34,16 @@ type Application struct {
 	types.BaseApplication
 
 	// Global Chain state (data is identical on all nodes in the chain)
-	Balances   *data.ChainState // unspent transction output (for each type of coin)
-	Identities *id.Identities   // Keep a higher-level identity for a given user
+	Utxo       *data.ChainState // unspent transction output (for each type of coin)
+	SDK        common.Service
+	Identities *id.Identities // Keep a higher-level identity for a given user
 
 	// Local Node state (data is different for each node)
-	Accounts *id.Accounts   // Keep all of the user accounts locally for their node (identity management)
 	Admin    data.Datastore // any administrative parameters
-	Event    data.Datastore // Event for any action that need to be tracked
 	Status   data.Datastore // current state of any composite transactions (pending, verified, etc.)
+	Accounts *id.Accounts   // Keep all of the user accounts locally for their node (identity management)
+	Event    data.Datastore // Event for any action that need to be tracked
 	Contract data.Datastore // contract for reuse.
-
-	SDK common.Service
 
 	// Tendermint's last block information
 	LastHeader types.Header // Tendermint last header info
@@ -55,12 +54,12 @@ type Application struct {
 func NewApplication() *Application {
 	return &Application{
 		Identities: id.NewIdentities("identities"),
-		Balances:   data.NewChainState("balances", data.PERSISTENT),
+		Utxo:       data.NewChainState("utxo", data.PERSISTENT),
 
-		Accounts: id.NewAccounts("accounts"),
 		Admin:    data.NewDatastore("admin", data.PERSISTENT),
-		Event:    data.NewDatastore("event", data.PERSISTENT),
 		Status:   data.NewDatastore("status", data.PERSISTENT),
+		Accounts: id.NewAccounts("accounts"),
+		Event:    data.NewDatastore("event", data.PERSISTENT),
 		Contract: data.NewDatastore("contract", data.PERSISTENT),
 	}
 }
@@ -83,22 +82,20 @@ func (app Application) Initialize() {
 	} else {
 		log.Debug("NodeAccountName not currently set")
 	}
-	app.StartSDK()
-}
-
-// Start up a local server for direct connections from clients
-func (app Application) StartSDK() {
 
 	// SDK Server should start when the --sdkrpc argument is passed to fullnode
-	sdkAddress := global.Current.SDKAddress
-
-	sdk, err := NewSDKServer(&app, sdkAddress)
-	if err != nil {
-		log.Fatal("SDK Server Failed", "err", err)
+	sdkPort := global.Current.SDKAddress
+	if sdkPort == 0 {
+		return
 	}
 
-	app.SDK = sdk
-	app.SDK.Start()
+	s, err := NewSDKServer(&app, sdkPort)
+	if err != nil {
+		panic(err)
+	} else {
+		app.SDK = s
+		app.SDK.Start()
+	}
 }
 
 type BasicState struct {
@@ -117,7 +114,6 @@ func (app Application) SetupState(stateBytes []byte) {
 
 	var base BasicState
 
-	// Tendermint serializes this data, so we have to use raw JSON serialization to read it.
 	des, errx := serial.Deserialize(stateBytes, &base, serial.JSON)
 	if errx != nil {
 		log.Fatal("Failed to deserialize stateBytes during SetupState")
@@ -139,8 +135,7 @@ func CreateAccount(app Application, state *BasicState, publicKey id.PublicKeyED2
 
 	// TODO: This should probably only occur on the Admin node, for other nodes how do I know the key?
 	// Register the identity and account first
-	AddAccount(&app, state.Account, data.ONELEDGER, publicKey, privateKey, false)
-	//RegisterLocally(&app, state.Account, "OneLedger", data.ONELEDGER, publicKey, privateKey)
+	RegisterLocally(&app, state.Account, "OneLedger", data.ONELEDGER, publicKey, privateKey)
 	account, ok := app.Accounts.FindName(state.Account + "-OneLedger")
 	if ok != status.SUCCESS {
 		log.Fatal("Recently Added Account is missing", "name", state.Account, "status", ok)
@@ -148,12 +143,12 @@ func CreateAccount(app Application, state *BasicState, publicKey id.PublicKeyED2
 
 	// Use the account key in the database
 	balance := NewBalanceFromStates(state.States)
-	app.Balances.Set(account.AccountKey(), balance)
+	app.Utxo.Set(account.AccountKey(), balance)
 
 	// TODO: Until a block is commited, this data is not persistent
-	//app.Balances.Commit()
+	//app.Utxo.Commit()
 
-	log.Info("Genesis State Balances database", "balance", balance)
+	log.Info("Genesis State UTXO database", "balance", balance)
 }
 
 func NewBalanceFromStates(states []State) data.Balance {
@@ -180,9 +175,7 @@ func (app Application) InitChain(req RequestInitChain) ResponseInitChain {
 
 	app.SetupState(req.AppStateBytes)
 
-	result := ResponseInitChain{}
-	log.Debug("ABCI: InitChain Result", "result", result)
-	return result
+	return ResponseInitChain{}
 }
 
 // SetOption changes the underlying options for the ABCi app
@@ -191,109 +184,96 @@ func (app Application) SetOption(req RequestSetOption) ResponseSetOption {
 
 	SetOption(&app, req.Key, req.Value)
 
-	result := ResponseSetOption{
+	return ResponseSetOption{
 		Code: types.CodeTypeOK,
 		Log:  "Log Data",
 		Info: "Info Data",
 	}
-
-	log.Debug("ABCI: SetOption Result", "result", result)
-	return result
 }
 
 // Info returns the current block information
 func (app Application) Info(req RequestInfo) ResponseInfo {
 
-	// TODO: Check this...
 	info := abci.NewResponseInfo(0, 0, 0)
+
+	// TODO: Get the correct height from the last committed tree
+	// lastHeight := app.Utxo.Commit.Height()
 
 	log.Debug("ABCI: Info", "req", req, "info", info)
 
 	result := ResponseInfo{
-		Data:             info.JSON(),
-		LastBlockHeight:  int64(app.Balances.Version),
-		LastBlockAppHash: app.Balances.Hash,
+		Data: info.JSON(),
+		//Version: convert.GetString64(app.Utxo.Version),
+
+		// The version of the tree, needs to match the height of the chain
+		//LastBlockHeight: int64(0),
+		LastBlockHeight: int64(app.Utxo.Version),
+
+		// TODO: Should return a valid AppHash
+		LastBlockAppHash: app.Utxo.Hash,
 	}
 
-	log.Debug("ABCI: Info Result", "result", result)
+	log.Dump("Info Response is", result)
 	return result
 }
 
-func ParseData(message []byte) map[string]string {
-	result := map[string]string{
-		"parameters": string(message),
-	}
-	return result
-}
-
-// Query comes from tendermint node, and returns data and/or a proof
+// Query returns a transaction or a proof
 func (app Application) Query(req RequestQuery) ResponseQuery {
 	log.Debug("ABCI: Query", "req", req, "path", req.Path, "data", req.Data)
 
-	arguments := ParseData(req.Data)
-	response := HandleQuery(app, req.Path, arguments)
+	result := HandleQuery(app, req.Path, req.Data)
 
-	result := ResponseQuery{
-		Code:  types.CodeTypeOK,
-		Index: 0, // TODO: What is this for?
-
-		Log:  "Log Information",
-		Info: "Info Information",
-
-		Key:   action.Message("result"),
-		Value: response,
-
+	return ResponseQuery{
+		Code:   2,
+		Log:    "Log Information",
+		Info:   "Info Information",
+		Index:  0,
+		Key:    action.Message("result"),
+		Value:  result,
 		Proof:  nil,
-		Height: int64(app.Balances.Version),
+		Height: int64(app.Utxo.Version),
 	}
-
-	log.Debug("ABCI: Query Result", "result", result)
-	return result
 }
 
 // CheckTx tests to see if a transaction is valid
 func (app Application) CheckTx(tx []byte) ResponseCheckTx {
 	log.Debug("ABCI: CheckTx", "tx", tx)
 
-	errorCode := types.CodeTypeOK
-
 	if tx == nil {
 		log.Warn("Empty Transaction, Ignoring", "tx", tx)
-		errorCode = status.PARSE_ERROR
-
-	} else {
-		signedTransaction, err := action.Parse(action.Message(tx))
-		if err != status.SUCCESS {
-			errorCode = err
-
-		} else if action.ValidateSignature(signedTransaction) == false {
-			errorCode = status.INVALID_SIGNATURE
-
-		} else {
-			transaction := signedTransaction.Transaction
-			if err = transaction.Validate(); err != status.SUCCESS {
-				errorCode = err
-
-			} else if err = transaction.ProcessCheck(&app); err != status.SUCCESS {
-				errorCode = err
-			}
-		}
+		return ResponseCheckTx{Code: status.PARSE_ERROR}
 	}
 
-	result := ResponseCheckTx{
-		Code: errorCode,
+	signedTransaction, err := action.Parse(action.Message(tx))
+	if err != 0 {
+		return ResponseCheckTx{Code: err}
+	}
 
-		Data: []byte("Data"),
-		Log:  "Log Data",
-		Info: "Info Data",
+	if action.ValidateSignature(signedTransaction) == false {
+		return ResponseCheckTx{Code: status.INVALID_SIGNATURE}
+	}
 
-		GasWanted: 0,
-		GasUsed:   0,
+	transaction := signedTransaction.Transaction
+
+	// Check that this is a valid transaction
+	if err = transaction.Validate(); err != 0 {
+		return ResponseCheckTx{Code: err}
+	}
+
+	// Check that this transaction works in the context
+	if err = transaction.ProcessCheck(&app); err != 0 {
+		return ResponseCheckTx{Code: err}
+	}
+
+	return ResponseCheckTx{
+		Code:      types.CodeTypeOK,
+		Data:      []byte("Data"),
+		Log:       "Log Data",
+		Info:      "Info Data",
+		GasWanted: 1000,
+		GasUsed:   1000,
 		Tags:      []common.KVPair(nil),
 	}
-
-	log.Debug("ABCI: CheckTx Result", "result", result)
-	return result
 }
 
 var chainKey data.DatabaseKey = data.DatabaseKey("chainId")
@@ -333,29 +313,24 @@ func (app Application) BeginBlock(req RequestBeginBlock) ResponseBeginBlock {
 		log.Warn("Mismatching chains", "chainId", chainId, "newChainId", newChainId)
 	}
 
-	result := ResponseBeginBlock{
+	return ResponseBeginBlock{
 		Tags: []common.KVPair(nil),
 	}
-
-	log.Debug("ABCI: BeginBlock Result", "result", result)
-	return result
 }
 
 // EndBlock is called at the end of all of the transactions
 func (app Application) MakePayment(req RequestBeginBlock) {
-
 	//log.Debug("MakePayment", "req", req)
 	account, err := app.Accounts.FindName("Payment-OneLedger")
-
 	if err != status.SUCCESS {
 		log.Fatal("ABCI: BeginBlock Fatal Status", "status", err)
 	}
 
-	paymentBalance := app.Balances.Get(account.AccountKey())
+
+	paymentBalance := app.Utxo.Get(account.AccountKey())
 	if paymentBalance == nil {
 		interimBalance := data.NewBalance()
 		paymentBalance = &interimBalance
-
 	}
 
 	paymentRecordBlockHeight := int64(-1)
@@ -382,7 +357,7 @@ func (app Application) MakePayment(req RequestBeginBlock) {
 		selectedValidatorIdentity := app.Validators.FindSelectedValidator(app, req.Header.LastBlockHash)
 
 		numberValidators := data.NewCoin(int64(len(goodValidatorIdentities)), "OLT")
-		quotient := paymentBalance.GetAmountByName("OLT").Quotient(numberValidators)
+		quotient := paymentBalance.Amount.Quotient(numberValidators)
 
 		if int(quotient.Amount.Int64()) > 0 {
 			//store payment record in database
@@ -414,28 +389,28 @@ func SetPaymentRecord(amount data.Coin, blockHeight int64, app Application) {
 func (app Application) DeliverTx(tx []byte) ResponseDeliverTx {
 	log.Debug("ABCI: DeliverTx", "tx", tx)
 
-	errorCode := types.CodeTypeOK
-	var transaction action.Transaction
-
 	signedTransaction, err := action.Parse(action.Message(tx))
-	if err != status.SUCCESS {
-		errorCode = err
-
-	} else if action.ValidateSignature(signedTransaction) == false {
-		return ResponseDeliverTx{Code: status.INVALID_SIGNATURE}
-
-	} else {
-		transaction = signedTransaction.Transaction
-		if err = transaction.Validate(); err != status.SUCCESS {
-			errorCode = err
-
-		} else if transaction.ShouldProcess(app) {
-			if err = transaction.ProcessDeliver(&app); err != status.SUCCESS {
-				errorCode = err
-			}
-		}
+	if err != 0 {
+		return ResponseDeliverTx{Code: err}
 	}
 
+	if action.ValidateSignature(signedTransaction) == false {
+		return ResponseDeliverTx{Code: status.INVALID_SIGNATURE}
+	}
+
+	transaction := signedTransaction.Transaction
+
+	log.Debug("Validating")
+	if err = transaction.Validate(); err != 0 {
+		return ResponseDeliverTx{Code: err}
+	}
+
+	log.Debug("Starting processing")
+	if transaction.ShouldProcess(app) {
+		if err = transaction.ProcessDeliver(&app); err != 0 {
+			return ResponseDeliverTx{Code: err}
+		}
+	}
 	tagType := strconv.FormatInt(int64(transaction.TransactionType()), 10)
 	tags := make([]common.KVPair, 1)
 	tag := common.KVPair{
@@ -444,30 +419,24 @@ func (app Application) DeliverTx(tx []byte) ResponseDeliverTx {
 	}
 	tags = append(tags, tag)
 
-	result := ResponseDeliverTx{
-		Code:      errorCode,
+	return ResponseDeliverTx{
+		Code:      types.CodeTypeOK,
 		Data:      []byte("Data"),
 		Log:       "Log Data",
 		Info:      "Info Data",
-		GasWanted: 0,
-		GasUsed:   0,
+		GasWanted: 1000,
+		GasUsed:   1000,
 		Tags:      tags,
 	}
-
-	log.Debug("ABCI: DeliverTx Result", "result", result)
-	return result
 }
 
 // EndBlock is called at the end of all of the transactions
 func (app Application) EndBlock(req RequestEndBlock) ResponseEndBlock {
 	log.Debug("ABCI: EndBlock", "req", req)
 
-	result := ResponseEndBlock{
+	return ResponseEndBlock{
 		Tags: []common.KVPair(nil),
 	}
-
-	log.Debug("ABCI: EndBlock Result", "result", result)
-	return result
 }
 
 // Commit tells the app to make everything persistent
@@ -475,16 +444,13 @@ func (app Application) Commit() ResponseCommit {
 	log.Debug("ABCI: Commit")
 
 	// Commit any pending changes.
-	hash, version := app.Balances.Commit()
+	hash, version := app.Utxo.Commit()
 
 	log.Debug("-- Committed New Block", "hash", hash, "version", version)
 
-	result := ResponseCommit{
+	return ResponseCommit{
 		Data: hash,
 	}
-
-	log.Debug("ABCI: EndBlock Result", "result", result)
-	return result
 }
 
 // Close closes every datastore in app
@@ -493,7 +459,7 @@ func (app Application) Close() {
 	app.Status.Close()
 	app.Identities.Close()
 	app.Accounts.Close()
-	app.Balances.Close()
+	app.Utxo.Close()
 	app.Event.Close()
 	app.Contract.Close()
 

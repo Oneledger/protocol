@@ -1,8 +1,0 @@
-Identity = "Alice"
-NodeName = "Alice-Node"
-RPCAddress = "http://127.0.0.1:26602"
-P2PAddress = "http://127.0.0.1:26612"
-AppAddress = "http://127.0.0.1:26622"
-SDKAddress = "http://127.0.0.1:26632"
-BTCAddress = "18831"
-ETHAddress = "ethereum/A/geth.ipc"

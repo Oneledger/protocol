@@ -1,7 +1,7 @@
 /*
 	Copyright 2017 - 2018 OneLedger
 
-	Easy Access to Persistent App Data, if the data isn't accessible stop immediately
+	Easy Access to Persistent App Data, if the persistent data isn't avoid stop immediately
 */
 package action
 
@@ -41,17 +41,14 @@ func GetIdentities(app interface{}) *id.Identities {
 func GetAccounts(app interface{}) *id.Accounts {
 	accounts := app.(persist.Access).GetAccounts().(*id.Accounts)
 	if accounts == nil {
-		log.Fatal("Accounts Database Missing", "config", global.Current, "app", app)
+		log.Fatal("Account Database Missing", "config", global.Current, "app", app)
 	}
 	return accounts
 }
 
-func GetBalances(app interface{}) *data.ChainState {
-	balances := app.(persist.Access).GetBalances().(*data.ChainState)
-	if balances == nil {
-		log.Fatal("Balances Database Missing", "config", global.Current, "app", app)
-	}
-	return balances
+func GetUtxo(app interface{}) *data.ChainState {
+	chain := app.(persist.Access).GetUtxo().(*data.ChainState)
+	return chain
 }
 
 func GetChainID(app interface{}) string {

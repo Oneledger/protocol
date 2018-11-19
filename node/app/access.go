@@ -1,7 +1,5 @@
 /*
 	Copyright 2017-2018 OneLedger
-
-	Generic Access to the different database in App, for cross-pkg access
 */
 
 package app
@@ -27,8 +25,8 @@ func (app Application) GetAccounts() interface{} {
 }
 
 // Access to the local persistent databases
-func (app Application) GetBalances() interface{} {
-	return app.Balances
+func (app Application) GetUtxo() interface{} {
+	return app.Utxo
 }
 
 func (app Application) GetChainID() interface{} {

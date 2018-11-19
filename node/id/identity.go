@@ -6,12 +6,11 @@
 package id
 
 import (
-	"strings"
-
 	"github.com/Oneledger/protocol/node/data"
 	"github.com/Oneledger/protocol/node/log"
 	"github.com/Oneledger/protocol/node/serial"
 	"github.com/Oneledger/protocol/node/status"
+	"strings"
 )
 
 // The persistent collection of all accounts known by this node
@@ -76,7 +75,10 @@ func (ids *Identities) Exists(name string) bool {
 }
 
 func (ids *Identities) FindName(name string) (Identity, status.Code) {
-	value := ids.store.Get(data.DatabaseKey(name))
+	// TODO: Find a better way
+	id := NewIdentity(name, "", true, "", nil, "", "")
+
+	value := ids.store.Get(id.Key())
 	if value != nil {
 		return value.(Identity), status.SUCCESS
 	}

@@ -114,7 +114,6 @@ func init() {
 	serial.Register(PrivateKeyED25519{})
 	serial.Register(PublicKeySECP256K1{})
 	serial.Register(PrivateKeySECP256K1{})
-
 	var prototypePublicKey PublicKey
 	var prototypePrivateKey PrivateKey
 	serial.RegisterInterface(&prototypePublicKey)

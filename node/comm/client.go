@@ -14,9 +14,46 @@ import (
 	"github.com/Oneledger/protocol/node/global"
 	"github.com/Oneledger/protocol/node/log"
 	"github.com/Oneledger/protocol/node/serial"
+	client "github.com/tendermint/tendermint/abci/client"
+	"github.com/tendermint/tendermint/abci/types"
 	rpcclient "github.com/tendermint/tendermint/rpc/client"
 	ctypes "github.com/tendermint/tendermint/rpc/core/types"
 )
+
+// TODO: Why?
+var _ *client.Client
+
+// Generic Client interface, allows SetOption
+func NewAppClient() client.Client {
+	//log.Debug("New Client", "address", global.Current.AppAddress, "transport", global.Current.Transport)
+
+	// TODO: Try multiple times before giving up
+	client, err := client.NewClient(global.Current.AppAddress, global.Current.Transport, true)
+	if err != nil {
+		log.Fatal("Can't start client", "err", err)
+	}
+	log.Debug("Have Client", "client", client)
+
+	return client
+}
+
+// Set an option in the ABCi app directly
+func SetOption(key string, value string) {
+	log.Debug("Setting Option")
+
+	client := NewAppClient()
+	options := types.RequestSetOption{
+		Key:   key,
+		Value: value,
+	}
+
+	response, err := client.SetOptionSync(options)
+	log.Debug("Have Set Option")
+
+	if err != nil {
+		log.Error("SetOption Failed", "err", err, "response", response)
+	}
+}
 
 var cachedClient *rpcclient.HTTP
 
@@ -50,14 +87,14 @@ func GetClient() (client *rpcclient.HTTP) {
 		time.Sleep(1 * time.Second)
 	}
 
-	for i := 0; i < 10; i++ {
+	for i := 0; i < 200; i++ {
 		result, err := cachedClient.Status()
 		if err == nil {
 			log.Debug("Connected", "result", result)
 			break
 		}
 		log.Warn("Waiting for RPC Client", "address", global.Current.RpcAddress)
-		time.Sleep(2 * time.Second)
+		time.Sleep(1 * time.Second)
 	}
 
 	return cachedClient
@@ -145,7 +182,7 @@ func Query(path string, packet []byte) interface{} {
 	var prototype interface{}
 	result, err := serial.Deserialize(response.Response.Value, prototype, serial.CLIENT)
 	if err != nil {
-		log.Error("Failed to deserialize Query:", "response", response.Response.Value)
+		log.Error("Failed to deserialize Query:", response.Response.Value)
 		return "Failed"
 	}
 	return result

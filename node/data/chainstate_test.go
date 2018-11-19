@@ -38,11 +38,8 @@ func TestPersistence(t *testing.T) {
 
 func TestChainState(t *testing.T) {
 	state := NewChainState("ChainState", PERSISTENT)
-
 	balance := NewBalanceFromString(10000, "OLT")
-	key := make([]byte, 20)
-	key[0] = 0xaf
-
+	key := []byte("Ahhhhhhh")
 	state.Set(key, balance)
 	state.Commit()
 	result := state.Get(key)

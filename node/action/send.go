@@ -53,12 +53,11 @@ func (transaction *Send) ProcessCheck(app interface{}) status.Code {
 	if !CheckAmounts(app, transaction.Inputs, transaction.Outputs) {
 		log.Debug("FAILED", "inputs", transaction.Inputs, "outputs", transaction.Outputs)
 		return status.INVALID
-		//return status.SUCCESS
 	}
 
 	// TODO: Validate the transaction against the UTXO database, check tree
-	balances := GetBalances(app)
-	_ = balances
+	chain := GetUtxo(app)
+	_ = chain
 
 	return status.SUCCESS
 }
@@ -74,15 +73,15 @@ func (transaction *Send) ProcessDeliver(app interface{}) status.Code {
 		return status.INVALID
 	}
 
-	balances := GetBalances(app)
+	chain := GetUtxo(app)
 
 	// Update the database to the final set of entries
 	for _, entry := range transaction.Outputs {
 
-		balance := balances.Get(entry.AccountKey)
-		balance.SetAmmount(entry.Amount)
+		balance := chain.Get(entry.AccountKey)
+		balance.Amounts[entry.Amount.Currency.Id] = entry.Amount
 
-		balances.Set(entry.AccountKey, *balance)
+		chain.Set(entry.AccountKey, *balance)
 	}
 
 	return status.SUCCESS
