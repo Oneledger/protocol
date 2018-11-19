@@ -90,7 +90,7 @@ func (transaction *Payment) ProcessDeliver(app interface{}) status.Code {
 		balance := chain.Get(entry.AccountKey)
 		balance.Amounts[entry.Amount.Currency.Id] = entry.Amount
 
-		chain.Set(entry.AccountKey, balance)
+		chain.Set(entry.AccountKey, *balance)
 	}
 
 	admin := GetAdmin(app)
