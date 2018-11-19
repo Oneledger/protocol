@@ -7,10 +7,6 @@ package app
 
 import (
 	"bytes"
-	"encoding/hex"
-	"math/big"
-	"strconv"
-
 	"github.com/Oneledger/protocol/node/abci"
 	"github.com/Oneledger/protocol/node/action"
 	"github.com/Oneledger/protocol/node/comm"
@@ -22,6 +18,8 @@ import (
 	"github.com/Oneledger/protocol/node/status"
 	"github.com/tendermint/tendermint/abci/types"
 	"github.com/tendermint/tendermint/libs/common"
+	"math/big"
+	"strconv"
 )
 
 var ChainId string
@@ -49,6 +47,7 @@ type Application struct {
 
 	// Tendermint's last block information
 	LastHeader types.Header // Tendermint last header info
+	Validators ValidatorList
 }
 
 // NewApplicationContext initializes a new application, reconnects to the databases.
@@ -271,9 +270,22 @@ var chainKey data.DatabaseKey = data.DatabaseKey("chainId")
 
 // BeginBlock is called when a new block is started
 func (app Application) BeginBlock(req RequestBeginBlock) ResponseBeginBlock {
-	//log.Debug("ABCI: BeginBlock", "req", req)
+	log.Debug("ABCI: BeginBlock", "req", req)
 
-	app.MakePayment(req)
+	validators := req.LastCommitInfo.GetValidators()
+	byzantineValidators := req.ByzantineValidators
+
+	app.Validators.Set(validators, byzantineValidators)
+
+	raw := app.Admin.Get(data.DatabaseKey("PaymentRecord"))
+	if raw == nil {
+		app.MakePayment(req)
+	} else {
+		params := raw.(action.PaymentRecord)
+		if params.BlockHeight == -1 {
+			app.MakePayment(req)
+		}
+	}
 
 	newChainId := action.Message(req.Header.ChainID)
 
@@ -298,52 +310,68 @@ func (app Application) BeginBlock(req RequestBeginBlock) ResponseBeginBlock {
 
 // EndBlock is called at the end of all of the transactions
 func (app Application) MakePayment(req RequestBeginBlock) {
+	//log.Debug("MakePayment", "req", req)
 	account, err := app.Accounts.FindName("Payment-OneLedger")
 	if err != status.SUCCESS {
 		log.Fatal("ABCI: BeginBlock Fatal Status", "status", err)
 	}
-	balance := app.Utxo.Get(account.AccountKey())
-	if balance == nil {
+
+	paymentBalance := app.Utxo.Get(account.AccountKey())
+	if paymentBalance == nil {
 		interimBalance := data.NewBalance(0, "OLT")
-		balance = &interimBalance
+		paymentBalance = &interimBalance
 	}
 
-	if !balance.Amount.LessThanEqual(0) {
-		list := req.LastCommitInfo.GetValidators()
-		badValidators := req.ByzantineValidators
+	paymentRecordBlockHeight := int64(-1)
+	height := int64(req.Header.Height)
 
-		numberValidators := data.NewCoin(int64(len(list)), "OLT")
-		quotient := balance.Amount.Quotient(numberValidators)
+	raw := app.Admin.Get(data.DatabaseKey("PaymentRecord"))
+	if raw != nil {
+		params := raw.(action.PaymentRecord)
+		paymentRecordBlockHeight = params.BlockHeight
 
-		var identities []id.Identity
+		if paymentRecordBlockHeight != -1 {
+			numTrans := height - paymentRecordBlockHeight
+			if numTrans > 10 {
+				//store payment record in database (O OLT, -1) because delete doesn't work
+				amount := data.NewCoin(0, "OLT")
+				SetPaymentRecord(amount, -1, app)
+				paymentRecordBlockHeight = -1
+			}
+		}
+	}
+
+	if (!paymentBalance.Amount.LessThanEqual(0)) && paymentRecordBlockHeight == -1 {
+		goodValidatorIdentities := app.Validators.FindGood(app)
+		selectedValidatorIdentity := app.Validators.FindSelectedValidator(app, req.Header.LastBlockHash)
+
+		numberValidators := data.NewCoin(int64(len(goodValidatorIdentities)), "OLT")
+		quotient := paymentBalance.Amount.Quotient(numberValidators)
 
 		if int(quotient.Amount.Int64()) > 0 {
-			for _, entry := range list {
-				entryIsBad := IsByzantine(entry.Validator, badValidators)
-				if !entryIsBad {
-					formatted := hex.EncodeToString(entry.Validator.Address)
-					identity := app.Identities.FindTendermint(formatted)
-					identities = append(identities, identity)
+			//store payment record in database
+			totalPayment := quotient.Multiply(numberValidators)
+			SetPaymentRecord(totalPayment, height, app)
+
+			if global.Current.NodeName == selectedValidatorIdentity.NodeName {
+				result := CreatePaymentRequest(app, goodValidatorIdentities, quotient, height)
+				if result != nil {
+					// TODO: check this later
+					comm.BroadcastAsync(result)
 				}
 			}
-
-			result := CreatePaymentRequest(app, identities, quotient)
-			if result != nil {
-				// TODO: check this later
-				comm.BroadcastAsync(result)
-			}
 		}
 	}
-
 }
 
-func IsByzantine(validator types.Validator, badValidators []types.Evidence) (result bool) {
-	for _, entry := range badValidators {
-		if bytes.Equal(validator.Address, entry.Validator.Address) {
-			return true
-		}
-	}
-	return false
+func SetPaymentRecord(amount data.Coin, blockHeight int64, app Application) {
+	var paymentRecordKey data.DatabaseKey = data.DatabaseKey("PaymentRecord")
+	var paymentRecord action.PaymentRecord
+	paymentRecord.Amount = amount
+	paymentRecord.BlockHeight = blockHeight
+	session := app.Admin.Begin()
+	session.Set(paymentRecordKey, paymentRecord)
+	session.Commit()
 }
 
 // DeliverTx accepts a transaction and updates all relevant data

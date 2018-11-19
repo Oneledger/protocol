@@ -98,6 +98,8 @@ func HandleSignTransaction(app Application, message []byte) interface{} {
 		accountKey = v.Base.Owner
 	case *action.Register:
 		accountKey = v.Base.Owner
+	case *action.Payment:
+		accountKey = v.Base.Owner
 	default:
 		log.Error("Unknown transaction type", "transaction", transaction)
 	}

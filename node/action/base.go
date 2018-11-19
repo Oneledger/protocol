@@ -27,6 +27,7 @@ const (
 	INVALID       Type = iota
 	REGISTER           // Register a new identity with the chain
 	SEND               // Do a normal send transaction on local chain
+	PAYMENT            // Do a payment transaction on local chain
 	EXTERNAL_SEND      // Do send on external chain
 	EXTERNAL_LOCK      // Lock some data on external chain
 	SWAP               // Start a swap between chains
@@ -86,10 +87,16 @@ func ValidateSignature(transaction SignedTransaction) bool {
 
 	// TODO need to simplify it
 	switch v := transaction.Transaction.(type) {
-	case *Swap: signers = v.Base.Signers
-	case *Send: signers = v.Base.Signers
-	case *Register: signers = v.Base.Signers
-	default: log.Warn("Signature validation (unknown transaction type)", "transaction", transaction)
+	case *Swap:
+		signers = v.Base.Signers
+	case *Send:
+		signers = v.Base.Signers
+	case *Payment:
+		signers = v.Base.Signers
+	case *Register:
+		signers = v.Base.Signers
+	default:
+		log.Warn("Signature validation (unknown transaction type)", "transaction", transaction)
 	}
 
 	if signers == nil {
