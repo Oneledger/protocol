@@ -326,7 +326,6 @@ func (app Application) MakePayment(req RequestBeginBlock) {
 		log.Fatal("ABCI: BeginBlock Fatal Status", "status", err)
 	}
 
-
 	paymentBalance := app.Utxo.Get(account.AccountKey())
 	if paymentBalance == nil {
 		interimBalance := data.NewBalance()
@@ -357,7 +356,7 @@ func (app Application) MakePayment(req RequestBeginBlock) {
 		selectedValidatorIdentity := app.Validators.FindSelectedValidator(app, req.Header.LastBlockHash)
 
 		numberValidators := data.NewCoin(int64(len(goodValidatorIdentities)), "OLT")
-		quotient := paymentBalance.Amount.Quotient(numberValidators)
+		quotient := paymentBalance.GetAmountByName("OLT").Quotient(numberValidators)
 
 		if int(quotient.Amount.Int64()) > 0 {
 			//store payment record in database
