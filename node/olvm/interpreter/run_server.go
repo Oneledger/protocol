@@ -1,11 +1,11 @@
 package main
 
 import (
-  "log"
-  "./vm"
+	"./vm"
+	"log"
 )
 
 func main() {
-  log.Print("Up running vm")
-  vm.RunService()
+	log.Print("Up running vm")
+	vm.RunService()
 }

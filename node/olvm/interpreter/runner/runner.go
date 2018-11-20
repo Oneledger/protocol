@@ -1,9 +1,9 @@
 package runner
 
 import (
-	"github.com/robertkrimen/otto"
 	"errors"
 	"fmt"
+	"github.com/robertkrimen/otto"
 )
 
 func (runner Runner) exec(callString string) (string, string) {
