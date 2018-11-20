@@ -268,9 +268,9 @@ func Balance(app Application, accountKey []byte) interface{} {
 }
 
 func HandleCurrencyAddressQuery(app Application, arguments map[string]string) interface{} {
-	log.Debug("SwapAddressQuery", "arguments", arguments)
+	log.Debug("CurrencyAddressQuery", "arguments", arguments)
 
-	text := arguments["parameter"]
+	text := arguments["parameters"]
 	conv := convert.NewConvert()
 	var chain data.ChainType
 	var identity id.Identity
