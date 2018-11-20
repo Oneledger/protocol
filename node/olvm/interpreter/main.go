@@ -1,12 +1,13 @@
 package main
 
 import (
-	"./committor"
-	"./monitor"
-	"./runner"
 	"flag"
 	"log"
 	"os"
+
+	"github.com/Oneledger/protocol/node/olvm/interpreter/committor"
+	"github.com/Oneledger/protocol/node/olvm/interpreter/monitor"
+	"github.com/Oneledger/protocol/node/olvm/interpreter/runner"
 )
 
 func run(x chan string, y chan string, status_ch chan monitor.Status, from string, address string, transaction string, olt int) {
@@ -30,7 +31,6 @@ func commit(returnValue string, transaction string) {
 	c.Commit(returnValue, transaction)
 }
 
-
 func runAsCommand(monitor monitor.Monitor, x chan string, y chan string, status_ch chan monitor.Status, from string, address string, transaction string, olt int) {
 	go monitor.CheckStatus(status_ch)
 	go run(x, y, status_ch, from, address, transaction, olt)
@@ -48,8 +48,6 @@ func main() {
 	call_from := flag.String("from", "0x0", "the public address of the caller")
 
 	call_value := flag.Int("value", 0, "number of OLT put on this call")
-
-
 
 	flag.Parse()
 
@@ -88,7 +86,6 @@ func main() {
 	os.Create(monitor.GetPidFilePath())
 
 	go runAsCommand(monitor, transaction_ch, returnValue_ch, status_ch, *call_from, *address, *call_transaction, *call_value)
-
 
 	ready := 0
 	var transaction string

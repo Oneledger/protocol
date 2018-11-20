@@ -1,11 +1,12 @@
 package main
 
 import (
-  "log"
-  "./vm"
+	"log"
+
+	"github.com/Oneledger/protocol/node/olvm/interpreter/vm"
 )
 
 func main() {
-  log.Print("Up running vm")
-  vm.RunService()
+	log.Print("Up running vm")
+	vm.RunService()
 }
