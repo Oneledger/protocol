@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"reflect"
 
@@ -202,6 +203,38 @@ func (server SDKServer) Send(ctx context.Context, request *pb.SendRequest) (*pb.
 		Ok:     true,
 		Reason: "",
 	}, nil
+}
+
+func (server SDKServer) Tx(ctx context.Context, request *pb.TxRequest) (*pb.SDKReply, error) {
+	result := comm.Tx(request.Hash, request.Proof)
+	buff, err := serial.Serialize(result, serial.JSON)
+	if err != nil {
+		return nil, gstatus.Error(codes.Internal, err.Error())
+	}
+	return &pb.SDKReply{Results: buff}, nil
+}
+
+func (server SDKServer) TxSearch(ctx context.Context, request *pb.TxSearchRequest) (*pb.SDKReply, error) {
+	result := comm.Search(request.Query, request.Proof, int(request.Page), int(request.PerPage))
+	buff, err := serial.Serialize(result, serial.JSON)
+	if err != nil {
+		return nil, gstatus.Error(codes.Internal, err.Error())
+	}
+	return &pb.SDKReply{Results: buff}, nil
+}
+
+func (server SDKServer) Block(ctx context.Context, request *pb.BlockRequest) (*pb.SDKReply, error) {
+	result := comm.Block(int64(request.Height))
+	if result == nil {
+		return nil, gstatus.Errorf(codes.Internal, "Lookup failed")
+	}
+
+	bz, err := json.Marshal(result)
+	if err != nil {
+		return nil, gstatus.Errorf(codes.Internal, "Serializing result failed %s", err)
+	}
+
+	return &pb.SDKReply{Results: bz}, nil
 }
 
 func prepareSend(
