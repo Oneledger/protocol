@@ -38,7 +38,7 @@ func init() {
 
 // IssueRequest sends out a sendTx to all of the nodes in the chain
 func SwapCurrency(cmd *cobra.Command, args []string) {
-	log.Debug("Swap Request", "tx", swapargs)
+	log.Debug("Swap Request", "swapargs", swapargs)
 
 	// Create message
 	packet := shared.CreateSwapRequest(swapargs)
@@ -52,10 +52,3 @@ func SwapCurrency(cmd *cobra.Command, args []string) {
 func GetCurrency(value string) string {
 	return value
 }
-
-// TODO: Fix this
-/*
-func GetInteger(value string) int64 {
-	return -1
-}
-*/

@@ -71,7 +71,7 @@ func (acc *Accounts) FindNameOnChain(name string, chain data.ChainType) (Account
 			return entry, status.SUCCESS
 		}
 	}
-	return nil, status.SUCCESS
+	return nil, status.MISSING_DATA
 }
 
 func (acc *Accounts) FindName(name string) (Account, status.Code) {
@@ -90,6 +90,11 @@ func Matches(account Account, name string, chain data.ChainType) bool {
 
 func (acc *Accounts) FindKey(key AccountKey) (Account, status.Code) {
 	interim := acc.store.Get(key)
+
+	if interim == nil {
+		return nil, status.MISSING_DATA
+	}
+
 	result := interim.(Account)
 	return result.(Account), status.SUCCESS
 
@@ -136,7 +141,7 @@ type Account interface {
 	PublicKey() PublicKey
 	PrivateKey() PrivateKey
 
-	AsString() string
+	String() string
 
 	//AddPublicKey(PublicKey)
 	//AddPrivateKey(PrivateKey)
@@ -275,7 +280,8 @@ func (account *AccountOneLedger) PrivateKey() PrivateKey {
 	return account.AccountBase.PrivateKey
 }
 
-func (account *AccountOneLedger) AsString() string {
+//String used in fmt and Dump
+func (account *AccountOneLedger) String() string {
 	buffer := fmt.Sprintf("%x", account.AccountKey())
 	return "OneLedger:" + account.AccountBase.Name + ":" + buffer
 }
@@ -319,7 +325,8 @@ func (account *AccountBitcoin) PrivateKey() PrivateKey {
 	return account.AccountBase.PrivateKey
 }
 
-func (account *AccountBitcoin) AsString() string {
+//String used in fmt and Dump
+func (account *AccountBitcoin) String() string {
 	buffer := fmt.Sprintf("%x", account.AccountKey())
 	return "BTC:" + account.AccountBase.Name + ":" + buffer
 }
@@ -363,7 +370,8 @@ func (account *AccountEthereum) PrivateKey() PrivateKey {
 	return account.AccountBase.PrivateKey
 }
 
-func (account *AccountEthereum) AsString() string {
+//String used in fmt and Dump
+func (account *AccountEthereum) String() string {
 	buffer := fmt.Sprintf("%x", account.AccountKey())
 	return "ETH:" + account.AccountBase.Name + ":" + buffer
 }

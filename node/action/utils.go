@@ -137,7 +137,6 @@ func GetNodeAccount(app interface{}) id.Account {
 	account, _ := accounts.FindName(global.Current.NodeAccountName)
 	if account == nil {
 		log.Error("Node does not have account", "name", global.Current.NodeAccountName)
-		accounts.Dump()
 		return nil
 	}
 

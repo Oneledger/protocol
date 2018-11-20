@@ -28,6 +28,10 @@ nodes="David-Node#node0 Alice-Node#node1 Bob-Node#node2 Carol-Node#node3"
 
 for node in $nodes
 do
-	$CMD/resetNode $node $STAGING 
+	$CMD/resetValidator $node $STAGING
 done
+
+tendermint gen_node_key --home $OLDATA/staging/node4 >> $OLDATA/tendermint.log
+
+$CMD/resetNode "Emma-Node#node4" $STAGING
 

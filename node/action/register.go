@@ -6,7 +6,6 @@
 package action
 
 import (
-	"github.com/Oneledger/protocol/node/global"
 	"github.com/Oneledger/protocol/node/id"
 	"github.com/Oneledger/protocol/node/log"
 	"github.com/Oneledger/protocol/node/serial"
@@ -17,9 +16,11 @@ import (
 type Register struct {
 	Base
 
-	Identity   string
-	NodeName   string
-	AccountKey id.AccountKey
+	Identity          string
+	NodeName          string
+	AccountKey        id.AccountKey
+	TendermintAddress string
+	TendermintPubKey  string
 }
 
 func init() {
@@ -35,10 +36,12 @@ func (transaction Register) Validate() status.Code {
 	log.Debug("Validating Register Transaction")
 
 	if transaction.Identity == "" {
+		log.Warn("Missing Identity from Registration", "identity", transaction.Identity)
 		return status.MISSING_DATA
 	}
 
 	if transaction.NodeName == "" {
+		log.Warn("Missing NodeName from Registration", "nodeName", transaction.NodeName)
 		return status.MISSING_DATA
 	}
 
@@ -48,13 +51,14 @@ func (transaction Register) Validate() status.Code {
 // Test to see if the identity already exists
 func (transaction Register) ProcessCheck(app interface{}) status.Code {
 	log.Debug("Processing Register Transaction for CheckTx")
+	/*
+		identities := GetIdentities(app)
+		id, ok := identities.FindName(transaction.Identity)
 
-	identities := GetIdentities(app)
-	id, ok := identities.FindName(transaction.Identity)
-
-	if ok != status.SUCCESS {
-		return ok
-	}
+		if ok != status.SUCCESS {
+			return ok
+		}
+	*/
 
 	/*
 		if id == nil {
@@ -64,7 +68,7 @@ func (transaction Register) ProcessCheck(app interface{}) status.Code {
 	*/
 
 	// Not necessarily a failure, since this identity might be local
-	log.Debug("Identity already exists", "id", id)
+	//log.Debug("Identity already exists", "id", id)
 	return status.SUCCESS
 }
 
@@ -80,6 +84,7 @@ func (transaction Register) ProcessDeliver(app interface{}) status.Code {
 	entry, ok := identities.FindName(transaction.Identity)
 
 	if ok != status.SUCCESS && ok != status.MISSING_DATA {
+		log.Warn("Can't process Registration", "ok", ok)
 		return ok
 	}
 
@@ -87,7 +92,7 @@ func (transaction Register) ProcessDeliver(app interface{}) status.Code {
 		log.Debug("Ignoring Existing Identity", "identity", transaction.Identity)
 	} else {
 		identity := id.NewIdentity(transaction.Identity, "Contact Information",
-			true, global.Current.NodeName, transaction.AccountKey)
+			true, transaction.NodeName, transaction.AccountKey, transaction.TendermintAddress, transaction.TendermintPubKey)
 
 		identities.Add(*identity)
 		log.Info("Updated External Identity", "id", transaction.Identity, "key", transaction.AccountKey)

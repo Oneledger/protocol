@@ -40,6 +40,7 @@ var Currencies map[string]Currency = map[string]Currency{
 	"OLT": Currency{"OLT", ONELEDGER, 0},
 	"BTC": Currency{"BTC", BITCOIN, 1},
 	"ETH": Currency{"ETH", ETHEREUM, 2},
+	"VT":  Currency{"VT", ONELEDGER, 3},
 }
 
 type Currency struct {
@@ -114,21 +115,11 @@ func (coin Coin) IsValid() bool {
 		return false
 	}
 
-	if _, ok := Currencies[coin.Currency.Name]; !ok {
-		return false
+	if _, ok := Currencies[coin.Currency.Name]; ok {
+		return true
 	}
 
 	// TODO: Combine this with convert.GetCurrency...
-	if coin.Currency.Name == "OLT" {
-		return true
-	}
-	if coin.Currency.Name == "BTC" {
-		return true
-	}
-	if coin.Currency.Name == "ETH" {
-		return true
-	}
-
 	return false
 }
 
@@ -192,13 +183,51 @@ func (coin Coin) Plus(value Coin) Coin {
 	return result
 }
 
-func (coin Coin) AsString() string {
+func (coin Coin) String() string {
 	if coin.Amount == nil {
 		log.Fatal("Invalid Coin", "coin", coin)
 	}
 
 	value := new(big.Float).SetInt(coin.Amount)
 	//result := value.Quo(value, OLTBase)
-	text := fmt.Sprintf("%.3f", value)
+	text := fmt.Sprintf("%.3f %s", value, coin.Currency.Name)
 	return text
+}
+
+func (coin Coin) Quotient(value Coin) Coin {
+	if coin.Amount == nil {
+		log.Fatal("Invalid Coin", "coin", coin)
+	}
+
+	if coin.Currency.Name != value.Currency.Name {
+		//log.Error("Mismatching Currencies", "coin", coin, "value", value)
+		log.Fatal("Mismatching Currencies", "coin", coin, "value", value)
+		return coin
+	}
+
+	base := big.NewInt(0)
+	result := Coin{
+		Currency: coin.Currency,
+		Amount:   base.Quo(coin.Amount, value.Amount),
+	}
+	return result
+}
+
+func (coin Coin) Multiply(value Coin) Coin {
+	if coin.Amount == nil {
+		log.Fatal("Invalid Coin", "coin", coin)
+	}
+
+	if coin.Currency.Name != value.Currency.Name {
+		//log.Error("Mismatching Currencies", "coin", coin, "value", value)
+		log.Fatal("Mismatching Currencies", "coin", coin, "value", value)
+		return coin
+	}
+
+	base := big.NewInt(0)
+	result := Coin{
+		Currency: coin.Currency,
+		Amount:   base.Mul(coin.Amount, value.Amount),
+	}
+	return result
 }

@@ -12,8 +12,29 @@ import (
 	"github.com/Oneledger/protocol/node/log"
 )
 
+// TODO: NodeAccount flag should not be here!!!
+// Create a local account for this fullnode
+func AddAccount(app *Application, name string, chain data.ChainType,
+	publicKey id.PublicKeyED25519, privateKey id.PrivateKeyED25519, nodeAccount bool) {
+
+	account := id.NewAccount(chain, name, publicKey, privateKey)
+	app.Accounts.Add(account)
+
+	// Set this account as the current node account
+	if nodeAccount {
+		global.Current.NodeAccountName = name
+		SetNodeName(app)
+	}
+}
+
+// Broadcast an Indentity to the chain
+func AddIdentity(app *Application, name string, publicKey id.PublicKeyED25519) {
+	// Broadcast Identity to Chain
+	LoadPrivValidatorFile()
+}
+
 // Register Identities and Accounts from the user.
-func RegisterLocally(app *Application, name string, scope string, chain data.ChainType,
+func XRegisterLocally(app *Application, name string, scope string, chain data.ChainType,
 	publicKey id.PublicKeyED25519, privateKey id.PrivateKeyED25519) bool {
 
 	log.Debug("Register Locally", "name", name, "chain", chain)
@@ -42,14 +63,17 @@ func RegisterLocally(app *Application, name string, scope string, chain data.Cha
 			log.Debug("Updating NodeAccount", "name", accountName)
 
 			global.Current.NodeAccountName = accountName
+			SetNodeName(app)
 
-			log.Debug("Admin store", "data.DatabaseKey", data.DatabaseKey("NodeAccountName"),
-				"accountName", accountName)
+			/*
+				log.Debug("Admin store", "data.DatabaseKey", data.DatabaseKey("NodeAccountName"),
+					"accountName", accountName)
 
-			parameters := AdminParameters{NodeAccountName: accountName}
-			session := app.Admin.Begin()
-			session.Set(data.DatabaseKey("NodeAccountName"), parameters)
-			session.Commit()
+				parameters := AdminParameters{NodeAccountName: accountName}
+				session := app.Admin.Begin()
+				session.Set(data.DatabaseKey("NodeAccountName"), parameters)
+				session.Commit()
+			*/
 		}
 		status = true
 	} else {
@@ -57,17 +81,27 @@ func RegisterLocally(app *Application, name string, scope string, chain data.Cha
 	}
 
 	// Fill in the balance
-	if chain == data.ONELEDGER && !app.Utxo.Exists(account.AccountKey()) {
-		balance := data.NewBalance(0, "OLT")
-		app.Utxo.Set(account.AccountKey(), balance)
+	if chain == data.ONELEDGER && !app.Balances.Exists(account.AccountKey()) {
+		balance := data.NewBalance()
+		app.Balances.Set(account.AccountKey(), balance)
+
 		status = true
 	}
 
 	// Identities are global
 	identity, _ := app.Identities.FindName(name)
+
+	LoadPrivValidatorFile()
+
 	if identity.Name == "" {
+		tendermintAddress := global.Current.TendermintAddress
+		tendermintPubKey := global.Current.TendermintPubKey
+		if name == "Zero" || name == "Payment" {
+			tendermintAddress = ""
+			tendermintPubKey = ""
+		}
 		interim := id.NewIdentity(name, "Contact Info", false,
-			global.Current.NodeName, account.AccountKey())
+			global.Current.NodeName, account.AccountKey(), tendermintAddress, tendermintPubKey)
 		identity = *interim
 
 		global.Current.NodeIdentity = name

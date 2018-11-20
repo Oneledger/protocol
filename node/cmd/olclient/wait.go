@@ -34,6 +34,6 @@ func Wait(cmd *cobra.Command, args []string) {
 	log.Debug("Waiting")
 	cli := bitcoin.GetBtcClient("127.0.0.1:18833")
 	stop := bitcoin.ScheduleBlockGeneration(*cli, 1)
-	time.Sleep(30 * time.Second)
+	time.Sleep(60 * time.Second)
 	bitcoin.StopBlockGeneration(stop)
 }

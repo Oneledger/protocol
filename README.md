@@ -71,7 +71,7 @@ If everything is set up properly, you can begin testing the OneLedger Protocol w
 | `make monitor` | Start tmux session |
 | `make stopmon` | Stops tmux session |
 
-### Docker
+### Interactive Docker
 
 See [DOCKER/](DOCKER/) for instructions on running a testnet with Docker Compose.
 
@@ -80,12 +80,12 @@ The OneLedger Protocol can be started as a Docker container. This is the easiest
 Build the protocol image:
 ```
 $ git clone https://github.com/Oneledger/protocol.git && cd protocol
-$ docker build -t oneledger/protocol .
+$ make docker-interactive
 ```
 
 Start the protocol container (runs through your shell interactively):
 ```
-$ docker run -it oneledger/protocol
+$ make run-interactive
 ```
 
 See [Make Targets](#make-targets) to see a list of `make` commands you can run to interact with the OneLedger Protocol.

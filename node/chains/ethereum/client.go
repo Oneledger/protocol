@@ -2,6 +2,7 @@ package ethereum
 
 import (
 	"github.com/Oneledger/protocol/node/data"
+	"github.com/ethereum/go-ethereum/core/types"
 	"math/big"
 	"strings"
 	"sync/atomic"
@@ -22,6 +23,9 @@ import (
 
 func init() {
 	serial.Register(HTLContract{})
+	serial.Register(common.Address{})
+	serial.Register(atomic.Value{})
+	serial.Register(common.Hash{})
 }
 
 var client *ethclient.Client
@@ -54,12 +58,6 @@ func getEthClient() *ethclient.Client {
 	}
 	return client
 
-}
-
-func init() {
-	serial.Register(common.Address{})
-	serial.Register(atomic.Value{})
-	serial.Register(common.Hash{})
 }
 
 func GetAddress() common.Address {
@@ -108,12 +106,38 @@ func CreateHtlContract() *HTLContract {
 	if err != nil {
 		log.Fatal("Failed to create htlc for the node", "status", err)
 	}
-	log.Debug("Htlc contract created", "address", address, "tx", tx)
-	time.Sleep(1 * time.Second)
+	log.Debug("Htlc contract created", "address", address, "tx", tx.Hash())
 	htlContract := &HTLContract{Address: address, TxHash: tx.Hash()}
+
+	WaitTxSuccess(cli, tx, 20*time.Second, 1*time.Second)
 
 	return htlContract
 }
+
+func WaitTxSuccess(client *ethclient.Client, tx *types.Transaction, maxWait time.Duration, interval time.Duration) {
+	ticker := time.NewTicker(interval * time.Second)
+	stop := make(chan bool)
+	go func() {
+		for {
+			select {
+			case <-ticker.C:
+				result, err := client.TransactionReceipt(context.Background(), tx.Hash())
+				if err == nil {
+					if result.Status == types.ReceiptStatusSuccessful {
+						ticker.Stop()
+					}
+				}
+			case <-stop:
+				ticker.Stop()
+				return
+			}
+		}
+	}()
+	time.Sleep(maxWait)
+	close(stop)
+	return
+}
+
 func (h *HTLContract) HTLContractObject() *htlc.Htlc {
 	cli := getEthClient()
 	contract, err := htlc.NewHtlc(h.Address, cli)
@@ -127,7 +151,7 @@ func (h *HTLContract) HTLContractObject() *htlc.Htlc {
 func (h *HTLContract) Funds(value *big.Int, lockTime *big.Int, receiver common.Address, scrHash [32]byte) error {
 	auth := GetAuth()
 	auth.Value = EtherToWei(value)
-	auth.GasLimit = 200000
+	auth.GasLimit = 400000
 	contract := h.HTLContractObject()
 	if contract == nil {
 		return errors.New("failed to get htlc contract instance")
@@ -143,7 +167,7 @@ func (h *HTLContract) Funds(value *big.Int, lockTime *big.Int, receiver common.A
 		log.Error("Can't get balance after fund", "status", err)
 	}
 	log.Info("Fund htlc", "address", h.Address, "tx", h.TxHash, "value", value, "balance", balance)
-	time.Sleep(1 * time.Second)
+	WaitTxSuccess(client, tx, 10*time.Second, 1*time.Second)
 	return nil
 }
 
@@ -163,7 +187,7 @@ func (h *HTLContract) Redeem(scr []byte) error {
 		return err
 	}
 	h.TxHash = tx.Hash()
-	time.Sleep(1 * time.Second)
+	WaitTxSuccess(client, tx, 10*time.Second, 1*time.Second)
 	balance, err = contract.Balance(&bind.CallOpts{Pending: false})
 	log.Debug("balance after redeem", "balance", balance, "status", err)
 	log.Info("Redeem htlc", "address", h.Address, "tx", h.TxHash, "scr", scr, "txaddress", tx.Hash())
@@ -182,7 +206,7 @@ func (h *HTLContract) Refund() error {
 		log.Error("Can't refund the htlc", "status", err, "auth", auth)
 		return err
 	}
-	time.Sleep(1 * time.Second)
+	WaitTxSuccess(client, tx, 10*time.Second, 1*time.Second)
 	cli := getEthClient()
 	ctx := context.Background()
 	receipt, err := cli.TransactionReceipt(ctx, tx.Hash())
@@ -267,8 +291,7 @@ func (h *HTLContract) ToKey() []byte {
 func (h *HTLContract) FromBytes(message []byte) {
 	_, err := serial.Deserialize(message, h, serial.JSON)
 	if err != nil {
-		log.Error("Failed to deserialize htlc", "err", err)
+		log.Error("Failed deserialize ETH contract", "contract", message, "err", err)
 	}
-
 	return
 }

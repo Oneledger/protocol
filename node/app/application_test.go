@@ -9,18 +9,14 @@ package app
 import (
 	//"github.com/Oneledger/protocol/node/data"
 	//"github.com/Oneledger/protocol/node/id"
-	"flag"
-	"fmt"
-	"os"
-	"testing"
 
-	"github.com/Oneledger/protocol/node/global"
-	"github.com/Oneledger/protocol/node/log"
+	"testing"
 )
 
 type Object interface{}
 
 // Control the execution
+/*
 func TestMain(m *testing.M) {
 	flag.Parse()
 
@@ -46,6 +42,7 @@ func TestMain(m *testing.M) {
 
 	os.Exit(code)
 }
+*/
 
 // TODO: Remove code that causes this block to panic on duplicate key
 //func TestRegister(t *testing.T) {

@@ -29,7 +29,7 @@ build_bitcoin_on_mac () {
 	./autogen.sh
 	# Disable the GUI
 	./configure --without-gui
-	make
+	make -j$(nproc)
 	make install
 }
 
@@ -42,7 +42,7 @@ move_bitcoind_on_mac () {
 	./autogen.sh
 	# Disable the GUI
 	./configure --without-gui
-	make
+	make -j$(nproc)
 }
 
 install_dependencies_on_linux () {
@@ -63,7 +63,7 @@ build_bitcoin_on_linux () {
 	./autogen.sh
 	# Disable the GUI
 	./configure --without-gui BDB_LIBS="-L${BDB_PREFIX}/lib -ldb_cxx-4.8" BDB_CFLAGS="-I${BDB_PREFIX}/include"
-	make
+	make -j$(nproc)
 	sudo make install
 }
 
@@ -93,7 +93,7 @@ case "$current_uname" in
     (*Linux*)
 	current_platform='Linux'
 	sudo apt-get update
-	sudo apt-get install software-properties-common
+	sudo apt-get install -y software-properties-common
 
 	# Test if bitcoind installed
 	which bitcoind

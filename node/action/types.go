@@ -79,21 +79,21 @@ func NewSendOutput(accountKey id.AccountKey, amount data.Coin) SendOutput {
 }
 
 func CheckBalance(app interface{}, accountKey id.AccountKey, amount data.Coin) bool {
-	utxo := GetUtxo(app)
+	balances := GetBalances(app)
 
-	balance := utxo.Get(accountKey)
+	balance := balances.Get(accountKey)
 	if balance == nil {
 		// New accounts don't have a balance until the first transaction
 		log.Debug("New Balance", "key", accountKey, "amount", amount, "balance", balance)
-		interim := data.NewBalance(0, "OLT")
+		interim := data.NewBalanceFromString(0, amount.Currency.Name)
 		balance = &interim
-		if !balance.Amount.Equals(amount) {
+		if !balance.GetAmountByName(amount.Currency.Name).Equals(amount) {
 			return false
 		}
 		return true
 	}
 
-	if !balance.Amount.Equals(amount) {
+	if !balance.GetAmountByName(amount.Currency.Name).Equals(amount) {
 		log.Warn("Balance Mismatch", "key", accountKey, "amount", amount, "balance", balance)
 		return false
 	}
@@ -101,9 +101,9 @@ func CheckBalance(app interface{}, accountKey id.AccountKey, amount data.Coin) b
 }
 
 func GetHeight(app interface{}) int64 {
-	utxo := GetUtxo(app)
+	balances := GetBalances(app)
 
-	height := int64(utxo.Version)
+	height := int64(balances.Version)
 	return height
 }
 
@@ -111,17 +111,17 @@ func CheckAmounts(app interface{}, inputs []SendInput, outputs []SendOutput) boo
 	total := data.NewCoin(0, "OLT")
 	for _, input := range inputs {
 		if input.Amount.LessThan(0) {
-			log.Debug("Less Than 0", "input", input)
+			log.Debug("FAILED: Less Than 0", "input", input)
 			return false
 		}
 
 		if !input.Amount.IsCurrency("OLT") {
-			log.Debug("Send on Currency isn't implement yet")
+			log.Debug("FAILED: Send on Currency isn't implement yet")
 			return false
 		}
 
 		if bytes.Compare(input.AccountKey, []byte("")) == 0 {
-			log.Debug("Key is Empty", "input", input)
+			log.Debug("FAILED: Key is Empty", "input", input)
 			return false
 		}
 		if !CheckBalance(app, input.AccountKey, input.Amount) {
@@ -133,23 +133,23 @@ func CheckAmounts(app interface{}, inputs []SendInput, outputs []SendOutput) boo
 	for _, output := range outputs {
 
 		if output.Amount.LessThan(0) {
-			log.Debug("Less Than 0", "output", output)
+			log.Debug("FAILED: Less Than 0", "output", output)
 			return false
 		}
 
 		if !output.Amount.IsCurrency("OLT") {
-			log.Debug("Send on Currency isn't implement yet")
+			log.Debug("FAILED: Send on Currency isn't implement yet")
 			return false
 		}
 
 		if bytes.Compare(output.AccountKey, []byte("")) == 0 {
-			log.Debug("Key is Empty", "output", output)
+			log.Debug("FAILED: Key is Empty", "output", output)
 			return false
 		}
 		total.Minus(output.Amount)
 	}
 	if !total.Equals(data.NewCoin(0, "OLT")) {
-		log.Debug("Doesn't add up", "inputs", inputs, "outputs", outputs)
+		log.Debug("FAILED: Doesn't add up", "inputs", inputs, "outputs", outputs)
 		return false
 	}
 	return true
@@ -200,7 +200,7 @@ func SaveContract(app interface{}, contractKey []byte, nonce int64, contract []b
 	n := strconv.AppendInt(contractKey, nonce, 10)
 	log.Debug("Save contract", "key", contractKey, "afterNonce", n)
 	session := contracts.Begin()
-	session.Set(contractKey, contract)
+	session.Set(n, contract)
 	session.Commit()
 }
 
