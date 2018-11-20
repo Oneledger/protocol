@@ -21,6 +21,7 @@ import (
 	"github.com/Oneledger/protocol/node/olvm/interpreter/vm"
 	"github.com/Oneledger/protocol/node/serial"
 	"github.com/Oneledger/protocol/node/status"
+	"github.com/spf13/viper"
 	"github.com/tendermint/tendermint/abci/types"
 	"github.com/tendermint/tendermint/libs/common"
 )
@@ -98,6 +99,13 @@ func (app Application) StartSDK() {
 
 	app.SDK = sdk
 	app.SDK.Start()
+
+	// TODO: Temporary until fullnodes correctly integrate with viper
+	global.Current.OLVMAddress = viper.Get("OLVMAddress").(string)
+	global.Current.OLVMProtocol = viper.Get("OLVMProtocol").(string)
+
+	vm.InitializeService()
+	vm.Initialize()
 
 	// TODO: Take the engine for a test spin
 	reply, err := vm.AutoRun("0x0", "samples://helloworld", "", "", 0)

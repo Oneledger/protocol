@@ -5,12 +5,13 @@ package vm
 
 type OLVMService struct {
 	Protocol string
-	Port     int // TODO: Should be a full address (even if we only need port)
+	//Port     int // TODO: Should be a full address (even if we only need port)
+	Address string
 }
 
 type OLVMClient struct {
 	Protocol    string
-	ServicePath string
+	ServicePath string // TODO: Should be called Address
 }
 
 type Container int

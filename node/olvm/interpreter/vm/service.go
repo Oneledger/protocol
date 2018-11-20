@@ -7,14 +7,21 @@ import (
 	"net/http"
 	"net/rpc"
 	"runtime/debug"
-	"strconv"
 
+	"github.com/Oneledger/protocol/node/global"
 	"github.com/Oneledger/protocol/node/log"
 	"github.com/Oneledger/protocol/node/olvm/interpreter/monitor"
 	"github.com/Oneledger/protocol/node/olvm/interpreter/runner"
+	"github.com/Oneledger/protocol/node/sdk"
 )
 
-var DefaultOLVMService = NewOLVMService("tcp", 1980)
+var DefaultOLVMService *OLVMService
+
+func InitializeService() {
+	protocol := global.Current.OLVMProtocol
+	address := global.Current.OLVMAddress
+	DefaultOLVMService = NewOLVMService(protocol, address)
+}
 
 func (c *Container) Echo(args *Args, reply *Reply) error {
 	return nil
@@ -63,13 +70,13 @@ func (c *Container) Exec(args *Args, reply *Reply) error {
 }
 
 func (ol OLVMService) Run() {
-	log.Debug("Service is running", "protocol", ol.Protocol, "port", ol.Port)
+	log.Debug("Service is running", "protocol", ol.Protocol, "address", ol.Address)
 
 	container := new(Container)
 	rpc.Register(container)
 	rpc.HandleHTTP()
 
-	listen, err := net.Listen(ol.Protocol, ":"+strconv.Itoa(ol.Port))
+	listen, err := net.Listen(ol.Protocol, ":"+sdk.GetPort(ol.Address))
 	if err != nil {
 		log.Fatal("listen error:", "err", err)
 	}
@@ -77,8 +84,12 @@ func (ol OLVMService) Run() {
 	http.Serve(listen, nil)
 }
 
-func NewOLVMService(protocol string, port int) OLVMService {
-	return OLVMService{protocol, port}
+// TODO: Make sure call is not before viper args are handled.
+func NewOLVMService(protocol string, address string) *OLVMService {
+	return &OLVMService{
+		Protocol: protocol,
+		Address:  address,
+	}
 }
 
 func RunService() {
