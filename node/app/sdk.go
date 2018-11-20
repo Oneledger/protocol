@@ -211,7 +211,7 @@ func prepareSend(
 	fee data.Coin,
 	gas data.Coin,
 	app *Application,
-) (*action.Send, error) {
+) (*action.Send_Abusolute, error) {
 	// TODO: Use functions in shared package after resolving import cycles
 	findBalance := func(key id.AccountKey) (*data.Balance, error) {
 		balance := app.Balances.Get(data.DatabaseKey(key))
@@ -243,7 +243,7 @@ func prepareSend(
 		action.NewSendOutput(cpKey, cpBalance.GetAmountByName("OLT").Plus(sendAmount)),
 	}
 
-	return &action.Send{
+	return &action.Send_Abusolute{
 		Base: action.Base{
 			Type:    action.SEND,
 			ChainId: ChainId,

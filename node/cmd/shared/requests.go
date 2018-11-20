@@ -88,6 +88,86 @@ type SendArguments struct {
 }
 
 // CreateRequest builds and signs the transaction based on the arguments
+func CreateSendRequestAbsolute(args *SendArguments) []byte {
+	conv := convert.NewConvert()
+
+	if args.Party == "" {
+		log.Error("Missing Party argument")
+		return nil
+	}
+
+	if args.CounterParty == "" {
+		log.Error("Missing CounterParty argument")
+		return nil
+	}
+
+	// TODO: Can't convert identities to accounts, this way!
+	party := GetAccountKey(args.Party)
+	counterParty := GetAccountKey(args.CounterParty)
+	payment := GetAccountKey("Payment")
+	if party == nil || counterParty == nil {
+		log.Fatal("System doesn't reconize the parties", "args", args,
+			"party", party, "counterParty", counterParty)
+		//return nil
+	}
+
+	if args.Currency == "" || args.Amount == "" {
+		log.Error("Missing an amount argument")
+		return nil
+	}
+
+	amount := conv.GetCoin(args.Amount, args.Currency)
+
+	// Build up the Inputs
+	partyBalance := GetBalance(party).GetAmountByName(args.Currency)
+	counterPartyBalance := GetBalance(counterParty).GetAmountByName(args.Currency)
+	paymentBalance := GetBalance(payment).GetAmountByName(args.Currency)
+
+	//log.Dump("Balances", partyBalance, counterPartyBalance)
+
+	if &partyBalance == nil || &counterPartyBalance == nil {
+		log.Error("Missing Balance", "party", partyBalance, "counterParty", counterPartyBalance)
+		return nil
+	}
+
+	fee := conv.GetCoin(args.Fee, args.Currency)
+	gas := conv.GetCoin(args.Gas, args.Currency)
+
+	inputs := make([]action.SendInput, 0)
+	inputs = append(inputs,
+		action.NewSendInput(party, partyBalance),
+		action.NewSendInput(counterParty, counterPartyBalance),
+		action.NewSendInput(payment, paymentBalance))
+
+	// Build up the outputs
+	outputs := make([]action.SendOutput, 0)
+	outputs = append(outputs,
+		action.NewSendOutput(party, partyBalance.Minus(amount).Minus(fee)),
+		action.NewSendOutput(counterParty, counterPartyBalance.Plus(amount)),
+		action.NewSendOutput(payment, paymentBalance.Plus(fee)))
+
+	if conv.HasErrors() {
+		Console.Error(conv.GetErrors())
+		os.Exit(-1)
+	}
+
+	// Create base transaction
+	send := &action.Send_Abusolute{
+		Base: action.Base{
+			Type:     action.SEND,
+			ChainId:  app.ChainId,
+			Owner:    party,
+			Signers:  action.GetSigners(party),
+			Sequence: global.Current.Sequence,
+		},
+		Inputs:  inputs,
+		Outputs: outputs,
+		Fee:     fee,
+		Gas:     gas,
+	}
+	return SignAndPack(action.Transaction(send))
+}
+
 func CreateSendRequest(args *SendArguments) []byte {
 	conv := convert.NewConvert()
 
@@ -152,7 +232,7 @@ func CreateSendRequest(args *SendArguments) []byte {
 	}
 
 	// Create base transaction
-	send := &action.Send{
+	send := &action.Send_Abusolute{
 		Base: action.Base{
 			Type:     action.SEND,
 			ChainId:  app.ChainId,
@@ -222,7 +302,7 @@ func CreateMintRequest(args *SendArguments) []byte {
 	}
 
 	// Create base transaction
-	send := &action.Send{
+	send := &action.Send_Abusolute{
 		Base: action.Base{
 			Type:     action.SEND,
 			ChainId:  app.ChainId,

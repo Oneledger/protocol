@@ -107,7 +107,7 @@ func GetHeight(app interface{}) int64 {
 	return height
 }
 
-func CheckAmounts(app interface{}, inputs []SendInput, outputs []SendOutput) bool {
+func CheckAmountsAbsolute(app interface{}, inputs []SendInput, outputs []SendOutput) bool {
 	total := data.NewCoin(0, "OLT")
 	for _, input := range inputs {
 		if input.Amount.LessThan(0) {
@@ -116,7 +116,7 @@ func CheckAmounts(app interface{}, inputs []SendInput, outputs []SendOutput) boo
 		}
 
 		if !input.Amount.IsCurrency("OLT") {
-			log.Debug("FAILED: Send on Currency isn't implement yet")
+			log.Debug("FAILED: Send_Abusolute on Currency isn't implement yet")
 			return false
 		}
 
@@ -138,7 +138,7 @@ func CheckAmounts(app interface{}, inputs []SendInput, outputs []SendOutput) boo
 		}
 
 		if !output.Amount.IsCurrency("OLT") {
-			log.Debug("FAILED: Send on Currency isn't implement yet")
+			log.Debug("FAILED: Send_Abusolute on Currency isn't implement yet")
 			return false
 		}
 

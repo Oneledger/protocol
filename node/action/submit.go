@@ -23,7 +23,7 @@ func DelayedTransaction(ttype Type, transaction Transaction, waitTime time.Durat
 	}(ttype, transaction)
 }
 
-// Send out the transaction as an async broadcast
+// Send_Abusolute out the transaction as an async broadcast
 func BroadcastTransaction(ttype Type, transaction Transaction, sync bool) {
 	log.Debug("Broadcast a transaction to the chain")
 

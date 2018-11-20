@@ -50,7 +50,7 @@ func (transaction *Payment) Validate() status.Code {
 func (transaction *Payment) ProcessCheck(app interface{}) status.Code {
 	log.Debug("Processing Payment Transaction for CheckTx")
 
-	if !CheckAmounts(app, transaction.Inputs, transaction.Outputs) {
+	if !CheckAmountsAbsolute(app, transaction.Inputs, transaction.Outputs) {
 		log.Debug("FAILED", "inputs", transaction.Inputs, "outputs", transaction.Outputs)
 		return status.INVALID
 	}
@@ -78,7 +78,7 @@ func init() {
 func (transaction *Payment) ProcessDeliver(app interface{}) status.Code {
 	log.Debug("Processing Payment Transaction for DeliverTx")
 
-	if !CheckAmounts(app, transaction.Inputs, transaction.Outputs) {
+	if !CheckAmountsAbsolute(app, transaction.Inputs, transaction.Outputs) {
 		return status.INVALID
 	}
 

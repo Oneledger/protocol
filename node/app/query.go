@@ -94,7 +94,7 @@ func HandleSignTransaction(app Application, arguments map[string]string) interfa
 	switch v := transaction.(type) {
 	case *action.Swap:
 		accountKey = v.Base.Owner
-	case *action.Send:
+	case *action.Send_Abusolute:
 		accountKey = v.Base.Owner
 	case *action.Register:
 		accountKey = v.Base.Owner

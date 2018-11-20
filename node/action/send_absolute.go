@@ -6,7 +6,6 @@
 package action
 
 import (
-	"bytes"
 	"github.com/Oneledger/protocol/node/data"
 	"github.com/Oneledger/protocol/node/log"
 	"github.com/Oneledger/protocol/node/serial"
@@ -14,7 +13,7 @@ import (
 )
 
 // Synchronize a swap between two users
-type Send struct {
+type Send_Abusolute struct {
 	Base
 
 	Inputs  []SendInput  `json:"inputs"`
@@ -25,14 +24,14 @@ type Send struct {
 }
 
 func init() {
-	serial.Register(Send{})
+	serial.Register(Send_Abusolute{})
 }
 
-func (transaction *Send) TransactionType() Type {
+func (transaction *Send_Abusolute) TransactionType() Type {
 	return transaction.Base.Type
 }
 
-func (transaction *Send) Validate() status.Code {
+func (transaction *Send_Abusolute) Validate() status.Code {
 	log.Debug("Validating Send_Abusolute Transaction")
 
 	if transaction.Fee.LessThan(0) {
@@ -48,10 +47,10 @@ func (transaction *Send) Validate() status.Code {
 	return status.SUCCESS
 }
 
-func (transaction *Send) ProcessCheck(app interface{}) status.Code {
+func (transaction *Send_Abusolute) ProcessCheck(app interface{}) status.Code {
 	log.Debug("Processing Send_Abusolute Transaction for CheckTx")
 
-	if !CheckAmounts(app, transaction.Inputs, transaction.Outputs) {
+	if !CheckAmountsAbsolute(app, transaction.Inputs, transaction.Outputs) {
 		log.Debug("FAILED", "inputs", transaction.Inputs, "outputs", transaction.Outputs)
 		return status.INVALID
 		//return status.SUCCESS
@@ -64,11 +63,11 @@ func (transaction *Send) ProcessCheck(app interface{}) status.Code {
 	return status.SUCCESS
 }
 
-func (transaction *Send) ShouldProcess(app interface{}) bool {
+func (transaction *Send_Abusolute) ShouldProcess(app interface{}) bool {
 	return true
 }
 
-func (transaction *Send) ProcessDeliver(app interface{}) status.Code {
+func (transaction *Send_Abusolute) ProcessDeliver(app interface{}) status.Code {
 	log.Debug("Processing Send_Abusolute Transaction for DeliverTx")
 
 	if !CheckAmountsAbsolute(app, transaction.Inputs, transaction.Outputs) {
@@ -94,42 +93,6 @@ func (transaction *Send) ProcessDeliver(app interface{}) status.Code {
 	return status.SUCCESS
 }
 
-func (transaction *Send) Resolve(app interface{}) Commands {
+func (transaction *Send_Abusolute) Resolve(app interface{}) Commands {
 	return []Command{}
-}
-
-func CheckAmounts(app interface{}, inputs []SendInput, outputs []SendOutput) bool {
-	total := data.NewBalance()
-	for _, input := range inputs {
-		if input.Amount.LessThan(0) {
-			log.Debug("FAILED: Less Than 0", "input", input)
-			return false
-		}
-
-		if bytes.Compare(input.AccountKey, []byte("")) == 0 {
-			log.Debug("FAILED: Key is Empty", "input", input)
-			return false
-		}
-
-		total.AddAmmount(input.Amount)
-	}
-	for _, output := range outputs {
-
-		if output.Amount.LessThan(0) {
-			log.Debug("FAILED: Less Than 0", "output", output)
-			return false
-		}
-
-		if bytes.Compare(output.AccountKey, []byte("")) == 0 {
-			log.Debug("FAILED: Key is Empty", "output", output)
-			return false
-		}
-		total.MinusAmmount(output.Amount)
-	}
-	result := data.NewBalance()
-	if !total.IsEqual(result) {
-		log.Debug("FAILED: Doesn't add up", "inputs", inputs, "outputs", outputs)
-		return false
-	}
-	return true
 }

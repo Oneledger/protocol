@@ -35,3 +35,19 @@ func TestBalance_MinusAmmount(t *testing.T) {
 	b.MinusAmmount(NewCoin(20, "VT"))
 	assert.Equal(t, a.Amounts[3].Amount.Uint64()-20, b.Amounts[3].Amount.Uint64())
 }
+
+func TestBalance_IsEqual(t *testing.T) {
+
+	a := NewBalance()
+	b := NewBalance()
+
+	a.AddAmmount(NewCoin(100, "OLT"))
+	a.AddAmmount(NewCoin(42, "VT"))
+	result1 := a.IsEqual(b)
+	assert.Equal(t, result1, false)
+
+	a.MinusAmmount(NewCoin(100, "OLT"))
+	a.MinusAmmount(NewCoin(42, "VT"))
+	result2 := a.IsEqual(b)
+	assert.Equal(t, result2, true)
+}

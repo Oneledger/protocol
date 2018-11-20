@@ -1331,7 +1331,7 @@ func CreateContractOLT(app interface{}, context FunctionValues, tx Transaction) 
 	//outputs = append(outputs,
 	//	NewSendOutput(party.Key, partyBalance.Minus(amount)),
 	//	NewSendOutput(counterParty.Key, counterPartyBalance.Plus(amount)))
-	//send := &Send{
+	//send := &Send_Abusolute{
 	//	Base: Base{
 	//		Type:     SEND,
 	//		ChainId:  GetChainID(app),

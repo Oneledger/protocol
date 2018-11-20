@@ -89,7 +89,7 @@ func ValidateSignature(transaction SignedTransaction) bool {
 	switch v := transaction.Transaction.(type) {
 	case *Swap:
 		signers = v.Base.Signers
-	case *Send:
+	case *Send_Abusolute:
 		signers = v.Base.Signers
 	case *Payment:
 		signers = v.Base.Signers

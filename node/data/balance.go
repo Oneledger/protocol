@@ -71,10 +71,19 @@ func (b *Balance) MinusAmmount(coin Coin) {
 	return
 }
 
+func (b *Balance) IsEqual(balance Balance) bool {
+	for i, v := range b.Amounts {
+		if !v.Equals(balance.Amounts[i]) {
+			return false
+		}
+	}
+	return true
+}
+
 //String used in fmt and Dump
-func (balance Balance) String() string {
+func (b Balance) String() string {
 	buffer := ""
-	for _, v := range balance.Amounts {
+	for _, v := range b.Amounts {
 		if v.Amount.Cmp(big.NewInt(0)) == 1 || v.Currency.Id == 0 {
 			buffer += fmt.Sprintf("%s %s; ", v.Amount.String(), v.Currency.Name)
 		}
