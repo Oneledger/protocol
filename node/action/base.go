@@ -10,6 +10,8 @@ import (
 	"github.com/Oneledger/protocol/node/log"
 	"github.com/Oneledger/protocol/node/serial"
 	"github.com/Oneledger/protocol/node/status"
+	"github.com/tendermint/tendermint/libs/common"
+	"strconv"
 )
 
 type Message = []byte // Contents of a transaction
@@ -50,7 +52,7 @@ type PublicKey = id.PublicKey
 
 // Polymorphism and Serializable
 type Transaction interface {
-	TransactionType() Type
+	TransactionTags() Tags
 	Validate() status.Code
 	ProcessCheck(interface{}) status.Code
 	ShouldProcess(interface{}) bool
@@ -147,4 +149,27 @@ func init() {
 	serial.Register(Base{})
 	serial.Register(TransactionSignature{})
 	serial.Register(SignedTransaction{})
+}
+
+type Tags common.KVPairs
+
+func (b Base) TransactionTags() Tags {
+	tags := make([]common.KVPair, 2)
+
+	//Add transaction type as a tag
+	tagType := strconv.FormatInt(int64(b.Type), 10)
+	tag1 := common.KVPair{
+		Key:   []byte("tx.type"),
+		Value: []byte(tagType),
+	}
+	tags = append(tags, tag1)
+
+	//Add owner as a tag
+	tagOwner := b.Owner.String()
+	tag2 := common.KVPair{
+		Key:   []byte("tx.owner"),
+		Value: []byte(tagOwner),
+	}
+	tags = append(tags, tag2)
+	return tags
 }

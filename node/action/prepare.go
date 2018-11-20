@@ -22,10 +22,6 @@ func init() {
 	serial.Register(Prepare{})
 }
 
-func (transaction *Prepare) TransactionType() Type {
-	return transaction.Base.Type
-}
-
 func (transaction *Prepare) Validate() status.Code {
 	log.Debug("Validating Prepare Transaction")
 	return status.SUCCESS

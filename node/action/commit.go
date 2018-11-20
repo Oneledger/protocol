@@ -22,10 +22,6 @@ func init() {
 	serial.Register(Commit{})
 }
 
-func (transaction *Commit) TransactionType() Type {
-	return transaction.Base.Type
-}
-
 func (transaction *Commit) Validate() status.Code {
 	log.Debug("Validating Commit Transaction")
 	if transaction.Target == "" {
