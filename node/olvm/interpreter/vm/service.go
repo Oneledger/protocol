@@ -23,11 +23,14 @@ func InitializeService() {
 	DefaultOLVMService = NewOLVMService(protocol, address)
 }
 
-func (c *Container) Echo(args *Args, reply *Reply) error {
+func (c *Container) Echo(request *OLVMRequest, result *OLVMResult) error {
+	// TODO: Do something useful here
 	return nil
 }
 
-func (c *Container) Exec(args *Args, reply *Reply) error {
+func (c *Container) Exec(request *OLVMRequest, result *OLVMResult) error {
+
+	// TODO: Isn't this just a timer?
 	mo := monitor.CreateMonitor(10, monitor.DEFAULT_MODE, "./ovm.pid")
 
 	status_ch := make(chan monitor.Status)
@@ -36,7 +39,7 @@ func (c *Container) Exec(args *Args, reply *Reply) error {
 	defer func() {
 		if r := recover(); r != nil {
 			log.Error("OLVM Panicked", "status", r)
-			log.Dump("Details", "args", args, "reply", reply)
+			log.Dump("Details", "request", request, "result", result)
 			debug.PrintStack()
 		}
 	}()
@@ -44,14 +47,15 @@ func (c *Container) Exec(args *Args, reply *Reply) error {
 	go mo.CheckStatus(status_ch)
 	go func() {
 		runner := runner.CreateRunner()
-		from, address, callString, value := parseArgs(args)
+
+		from, address, callString, value := parseArgs(request)
 
 		out, ret, error := runner.Call(from, address, callString, value)
 		if error != nil {
 			status_ch <- monitor.Status{"Runtime error", monitor.STATUS_ERROR}
 		} else {
-			reply.Out = out
-			reply.Ret = ret
+			result.Out = out
+			result.Ret = ret
 			runner_ch <- true
 		}
 	}()
@@ -96,12 +100,12 @@ func RunService() {
 	DefaultOLVMService.Run()
 }
 
-func parseArgs(args *Args) (string, string, string, int) {
+func parseArgs(request *OLVMRequest) (string, string, string, int) {
 
-	from := args.From
-	address := args.Address
-	callString := args.CallString
-	value := args.Value
+	from := request.From
+	address := request.Address
+	callString := request.CallString
+	value := request.Value
 
 	if from == "" {
 		from = "0x0"

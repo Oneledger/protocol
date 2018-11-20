@@ -33,30 +33,9 @@ func Initialize() {
 	defaultClient = NewClient(protocol, address)
 }
 
-// Run a smart contract
-func (c OLVMClient) Run(from string, address string, callString string, value int) (Reply, error) {
-	args := Args{from, address, callString, value}
+func AutoRun(from string, address string, callString string, sourceCode string, value int) (result *OLVMResult, err error) {
 
-	var reply Reply
-	client, err := rpc.DialHTTP(c.Protocol, ":"+sdk.GetPort(c.ServicePath))
-	if err != nil {
-		return reply, err
-	}
-
-	err = client.Call("Container.Exec", &args, &reply)
-	if err != nil {
-		return reply, err
-	}
-	return reply, nil
-}
-
-func Run(from string, address string, callString string, value int) (Reply, error) {
-	return defaultClient.Run(from, address, callString, value)
-}
-
-func AutoRun(from string, address string, callString string, sourceCode string, value int) (reply Reply, err error) {
-
-	reply, err = defaultClient.Run(from, address, callString, value)
+	result, err = defaultClient.Run(from, address, callString, value)
 
 	// TODO: Should be based on error code, not text...
 	if err != nil && strings.HasSuffix(err.Error(), "connection refused") {
@@ -68,9 +47,38 @@ func AutoRun(from string, address string, callString string, sourceCode string, 
 
 		for err != nil && strings.HasSuffix(err.Error(), "connection refused") {
 			time.Sleep(time.Second)
-			reply, err = defaultClient.Run(from, address, callString, value)
+			result, err = defaultClient.Run(from, address, callString, value)
 		}
 		return
 	}
 	return
+}
+
+// Run a smart contract
+func (c OLVMClient) Run(from string, address string, callString string, value int) (*OLVMResult, error) {
+
+	request := &OLVMRequest{
+		From:       from,
+		Address:    address,
+		CallString: callString,
+		Value:      value,
+	}
+
+	client, err := rpc.DialHTTP(c.Protocol, ":"+sdk.GetPort(c.ServicePath))
+	if err != nil {
+		return nil, err
+	}
+
+	var result OLVMResult
+	// TODO: Shouldn't pass by address for the result
+	err = client.Call("Container.Exec", request, &result)
+	if err != nil {
+		return nil, err
+	}
+
+	return &result, nil
+}
+
+func Run(from string, address string, callString string, value int) (*OLVMResult, error) {
+	return defaultClient.Run(from, address, callString, value)
 }
