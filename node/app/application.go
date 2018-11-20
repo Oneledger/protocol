@@ -18,6 +18,7 @@ import (
 	"github.com/Oneledger/protocol/node/global"
 	"github.com/Oneledger/protocol/node/id"
 	"github.com/Oneledger/protocol/node/log"
+	"github.com/Oneledger/protocol/node/olvm/interpreter/vm"
 	"github.com/Oneledger/protocol/node/serial"
 	"github.com/Oneledger/protocol/node/status"
 	"github.com/tendermint/tendermint/abci/types"
@@ -97,6 +98,13 @@ func (app Application) StartSDK() {
 
 	app.SDK = sdk
 	app.SDK.Start()
+
+	// TODO: Take the engine for a test spin
+	reply, err := vm.AutoRun("0x0", "samples://helloworld", "", "", 0)
+	if err != nil {
+		log.Fatal("Contract Engine Failed to Start", "err", err)
+	}
+	log.Dump("Engine output", reply)
 }
 
 type BasicState struct {
