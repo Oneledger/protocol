@@ -51,9 +51,6 @@ func init() {
 	RootCmd.PersistentFlags().StringVarP(&global.Current.RpcAddress, "address", "a",
 		global.Current.RpcAddress, "full address")
 
-	RootCmd.PersistentFlags().Int64VarP(&global.Current.Sequence, "sequence", "s",
-		global.Current.Sequence, "unique sequence id")
-
 	RootCmd.PersistentFlags().StringVar(&global.Current.SDKAddress, "sdkrpc",
 		global.Current.SDKAddress, "SDK address")
 

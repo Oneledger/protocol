@@ -43,6 +43,7 @@ type Application struct {
 	Event    data.Datastore // Event for any action that need to be tracked
 	Status   data.Datastore // current state of any composite transactions (pending, verified, etc.)
 	Contract data.Datastore // contract for reuse.
+	Sequence data.Datastore // Store sequence number per account
 
 	SDK common.Service
 
@@ -62,6 +63,7 @@ func NewApplication() *Application {
 		Event:    data.NewDatastore("event", data.PERSISTENT),
 		Status:   data.NewDatastore("status", data.PERSISTENT),
 		Contract: data.NewDatastore("contract", data.PERSISTENT),
+		Sequence: data.NewDatastore("sequence", data.PERSISTENT),
 	}
 }
 
@@ -72,6 +74,14 @@ type AdminParameters struct {
 
 func init() {
 	serial.Register(AdminParameters{})
+}
+
+type SequenceRecord struct {
+	Sequence int64
+}
+
+func init() {
+	serial.Register(SequenceRecord{})
 }
 
 // Initial the state of the application from persistent data
@@ -486,6 +496,25 @@ func (app Application) Commit() ResponseCommit {
 	return result
 }
 
+func NextSequence(app *Application, accountkey id.AccountKey) SequenceRecord {
+	sequence := int64(1)
+	raw := app.Sequence.Get(accountkey)
+	if raw != nil {
+		interim := raw.(SequenceRecord)
+		sequence = interim.Sequence + 1
+	}
+
+	sequenceRecord := SequenceRecord{
+		Sequence: sequence,
+	}
+
+	session := app.Sequence.Begin()
+	session.Set(accountkey, sequenceRecord)
+	session.Commit()
+
+	return sequenceRecord
+}
+
 // Close closes every datastore in app
 func (app Application) Close() {
 	app.Admin.Close()
@@ -495,6 +524,7 @@ func (app Application) Close() {
 	app.Balances.Close()
 	app.Event.Close()
 	app.Contract.Close()
+	app.Sequence.Close()
 
 	if app.SDK != nil {
 		app.SDK.Stop()
