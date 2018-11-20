@@ -56,6 +56,11 @@ func (b *Balance) GetAmountByName(name string) Coin {
 	return b.Amounts[Currencies[name].Id]
 }
 
+func (b *Balance) SetAmmount(coin Coin) {
+	b.Amounts[coin.Currency.Id] = coin
+	return
+}
+
 func (b *Balance) AddAmmount(coin Coin) {
 	b.Amounts[coin.Currency.Id] = b.Amounts[coin.Currency.Id].Plus(coin)
 	return

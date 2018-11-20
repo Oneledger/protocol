@@ -59,6 +59,7 @@ func (transaction Register) ProcessCheck(app interface{}) status.Code {
 			return ok
 		}
 	*/
+
 	/*
 		if id == nil {
 			log.Debug("Success, it is a new Identity", "id", transaction.Identity)

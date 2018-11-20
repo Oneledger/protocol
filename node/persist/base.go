@@ -9,7 +9,7 @@ type Access interface {
 	GetStatus() interface{}
 	GetIdentities() interface{}
 	GetAccounts() interface{}
-	GetUtxo() interface{}
+	GetBalances() interface{}
 	GetChainID() interface{}
 	GetEvent() interface{}
 	GetContract() interface{}

@@ -190,7 +190,7 @@ func (coin Coin) String() string {
 
 	value := new(big.Float).SetInt(coin.Amount)
 	//result := value.Quo(value, OLTBase)
-	text := fmt.Sprintf("%.3f", value)
+	text := fmt.Sprintf("%.3f %s", value, coin.Currency.Name)
 	return text
 }
 

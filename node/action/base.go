@@ -101,21 +101,25 @@ func ValidateSignature(transaction SignedTransaction) bool {
 
 	if signers == nil {
 		log.Warn("Signature validation (no signers)", "transaction", transaction)
+		log.Dump("Signed Transaction is", transaction)
 		return false
 	}
 
 	if transaction.Signatures == nil {
 		log.Warn("Signature validation (no signatures)", "transaction", transaction)
+		log.Dump("Signed Transaction is", transaction)
 		return false
 	}
 
 	if len(signers) == 0 {
 		log.Warn("Signature validation (no signers)", "transaction", transaction)
+		log.Dump("Signed Transaction is", transaction)
 		return false
 	}
 
 	if len(signers) != len(transaction.Signatures) {
 		log.Warn("Signature validation (wrong number of signatures)", "transaction", transaction)
+		log.Dump("Signed Transaction is", transaction)
 		return false
 	}
 
@@ -129,6 +133,7 @@ func ValidateSignature(transaction SignedTransaction) bool {
 	for i := 0; i < len(signers); i++ {
 		if signers[i].VerifyBytes(message, transaction.Signatures[i].Signature) == false {
 			log.Warn("Signature validation (invalid signature)", "index", i, "transaction", transaction)
+			log.Dump("Signed Transaction is", transaction)
 			return false
 		}
 	}

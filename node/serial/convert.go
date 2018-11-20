@@ -2,8 +2,6 @@ package serial
 
 import (
 	"reflect"
-
-	"github.com/Oneledger/protocol/node/log"
 )
 
 // ConvertMap takes a structure and return a map of its elements
@@ -21,7 +19,6 @@ func ConvertMap(container interface{}) (map[string]interface{}, int) {
 	}
 
 	children := GetChildren(container)
-	log.Debug("Children", "size", len(children), "container", container)
 
 	result = make(map[string]interface{}, len(children))
 

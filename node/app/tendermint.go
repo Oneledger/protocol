@@ -7,10 +7,11 @@ package app
 
 import (
 	"encoding/json"
-	"github.com/Oneledger/protocol/node/global"
-	"github.com/Oneledger/protocol/node/log"
 	"io/ioutil"
 	"os"
+
+	"github.com/Oneledger/protocol/node/global"
+	"github.com/Oneledger/protocol/node/log"
 )
 
 type PrivValidator struct {
@@ -29,6 +30,7 @@ type TypeValue struct {
 	Value string `json:"value"`
 }
 
+// Load the Priv Validator file directly from the associated Tendermint node
 func LoadPrivValidatorFile() {
 	filePath := global.Current.TendermintRoot + "/config/priv_validator.json"
 	jsonFile, err := os.Open(filePath)

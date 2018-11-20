@@ -7,9 +7,10 @@ package app
 
 import (
 	"encoding/hex"
+	"strings"
+
 	"github.com/Oneledger/protocol/node/action"
 	"github.com/Oneledger/protocol/node/chains/common"
-	"strings"
 
 	"github.com/Oneledger/protocol/node/convert"
 	"github.com/Oneledger/protocol/node/data"
@@ -24,43 +25,40 @@ import (
 )
 
 // Top-level list of all query types
-func HandleQuery(app Application, path string, message []byte) (buffer []byte) {
+func HandleQuery(app Application, path string, arguments map[string]string) []byte {
 
 	var result interface{}
 
 	switch path {
 	case "/nodeName":
-		result = HandleNodeNameQuery(app, message)
+		result = HandleNodeNameQuery(app, arguments)
 
 	case "/identity":
-		result = HandleIdentityQuery(app, message)
+		result = HandleIdentityQuery(app, arguments)
 
 	case "/signTransaction":
-		result = HandleSignTransaction(app, message)
+		result = HandleSignTransaction(app, arguments)
 
 	case "/accountPublicKey":
-		result = HandleAccountPublicKeyQuery(app, message)
+		result = HandleAccountPublicKeyQuery(app, arguments)
 
 	case "/accountKey":
-		result = HandleAccountKeyQuery(app, message)
+		result = HandleAccountKeyQuery(app, arguments)
 
 	case "/account":
-		result = HandleAccountQuery(app, message)
+		result = HandleAccountQuery(app, arguments)
 
 	case "/balance":
-		result = HandleBalanceQuery(app, message)
-
-	case "/utxo":
-		result = HandleUtxoQuery(app, message)
+		result = HandleBalanceQuery(app, arguments)
 
 	case "/version":
-		result = HandleVersionQuery(app, message)
+		result = HandleVersionQuery(app, arguments)
 
 	case "/currencyAddress":
-		result = HandleCurrencyAddressQuery(app, message)
+		result = HandleCurrencyAddressQuery(app, arguments)
 
 	default:
-		result = HandleError("Unknown Query", path, message)
+		result = HandleError("Unknown Query", path, arguments)
 	}
 
 	buffer, err := serial.Serialize(result, serial.CLIENT)
@@ -68,19 +66,20 @@ func HandleQuery(app Application, path string, message []byte) (buffer []byte) {
 		log.Debug("Failed to serialize query")
 	}
 
-	return
+	return buffer
 }
 
-func HandleNodeNameQuery(app Application, message []byte) interface{} {
+func HandleNodeNameQuery(app Application, arguments map[string]string) interface{} {
 	return global.Current.NodeName
 }
 
-func HandleSignTransaction(app Application, message []byte) interface{} {
-	log.Debug("SignTransactionQuery", "message", message)
+func HandleSignTransaction(app Application, arguments map[string]string) interface{} {
+	log.Debug("SignTransactionQuery", "arguments", arguments)
 
 	var tx action.Transaction
 
-	transaction, transactionErr := serial.Deserialize(message, tx, serial.CLIENT)
+	text := arguments["parameters"]
+	transaction, transactionErr := serial.Deserialize([]byte(text), tx, serial.CLIENT)
 
 	signatures := []action.TransactionSignature{}
 
@@ -91,6 +90,7 @@ func HandleSignTransaction(app Application, message []byte) interface{} {
 
 	var accountKey id.AccountKey
 
+	// TODO: Add GetOwner method to clean this up?
 	switch v := transaction.(type) {
 	case *action.Swap:
 		accountKey = v.Base.Owner
@@ -118,7 +118,7 @@ func HandleSignTransaction(app Application, message []byte) interface{} {
 
 	privateKey := account.PrivateKey()
 
-	signature, signatureError := privateKey.Sign(message)
+	signature, signatureError := privateKey.Sign([]byte(text))
 
 	if signatureError != nil {
 		log.Error("Could not sign a transaction", "error", signatureError)
@@ -130,10 +130,12 @@ func HandleSignTransaction(app Application, message []byte) interface{} {
 	return signatures
 }
 
-func HandleAccountPublicKeyQuery(app Application, message []byte) interface{} {
-	log.Debug("AccountPublicKeyQuery", "message", message)
+func HandleAccountPublicKeyQuery(app Application, arguments map[string]string) interface{} {
+	log.Debug("AccountPublicKeyQuery", "arguments", arguments)
 
-	account, accountStatus := app.Accounts.FindKey(message)
+	text := arguments["parameters"]
+
+	account, accountStatus := app.Accounts.FindKey([]byte(text))
 
 	if accountStatus != status.SUCCESS {
 		log.Error("Could not find an account", "status", accountStatus)
@@ -144,17 +146,17 @@ func HandleAccountPublicKeyQuery(app Application, message []byte) interface{} {
 	publicKey := privateKey.PubKey()
 
 	if publicKey.Equals(account.PublicKey()) == false {
-		log.Warn("Public keys don't match", "derivedPublicKey", publicKey, "accountPublicKey", account.PublicKey())
+		log.Warn("Public keys don't match", "derivedPublicKey",
+			publicKey, "accountPublicKey", account.PublicKey())
 	}
-
 	return publicKey
 }
 
 // Get the account information for a given user
-func HandleAccountKeyQuery(app Application, message []byte) interface{} {
-	log.Debug("AccountKeyQuery", "message", message)
+func HandleAccountKeyQuery(app Application, arguments map[string]string) interface{} {
+	log.Debug("AccountKeyQuery", "arguments", arguments)
 
-	text := string(message)
+	text := arguments["parameters"]
 
 	name := ""
 	parts := strings.Split(text, "=")
@@ -165,26 +167,27 @@ func HandleAccountKeyQuery(app Application, message []byte) interface{} {
 }
 
 func AccountKey(app Application, name string) interface{} {
-	identity, ok := app.Identities.FindName(name)
 
+	// Check Itdentities First
+	identity, ok := app.Identities.FindName(name)
 	if ok == status.SUCCESS && identity.Name != "" {
 		return identity.AccountKey
 	}
 
+	// TODO: This is a bit dangerous (can cause confusion)
 	// Maybe this is an AccountName, not an identity
 	account, ok := app.Accounts.FindName(name)
-	if ok == status.SUCCESS && identity.Name != "" {
+	if ok == status.SUCCESS && account.Name() != "" {
 		return account.AccountKey()
 	}
-
-	return "Account " + name + " Not Found"
+	return "AccountKey: Identity " + name + " not Found on " + global.Current.NodeName
 }
 
 // Get the account information for a given user
-func HandleIdentityQuery(app Application, message []byte) interface{} {
-	log.Debug("IdentityQuery", "message", message)
+func HandleIdentityQuery(app Application, arguments map[string]string) interface{} {
+	log.Debug("IdentityQuery", "arguments", arguments)
 
-	text := string(message)
+	text := arguments["parameters"]
 
 	name := ""
 	parts := strings.Split(text, "=")
@@ -204,15 +207,14 @@ func IdentityInfo(app Application, name string) interface{} {
 	if ok == status.SUCCESS {
 		return []id.Identity{identity}
 	}
-
-	return "Identity " + name + " Not Found"
+	return "Identity " + name + " Not Found" + global.Current.NodeName
 }
 
 // Get the account information for a given user
-func HandleAccountQuery(app Application, message []byte) interface{} {
-	log.Debug("AccountQuery", "message", message)
+func HandleAccountQuery(app Application, arguments map[string]string) interface{} {
+	log.Debug("AccountQuery", "arguments", arguments)
 
-	text := string(message)
+	text := arguments["parameters"]
 
 	name := ""
 	parts := strings.Split(text, "=")
@@ -233,53 +235,31 @@ func AccountInfo(app Application, name string) interface{} {
 	if ok == status.SUCCESS {
 		return account
 	}
-
-	return "Account " + name + " Not Found"
+	return "Account " + name + " Not Found" + global.Current.NodeName
 }
 
-func HandleUtxoQuery(app Application, message []byte) interface{} {
-	log.Debug("UtxoQuery", "message", message)
-
-	text := string(message)
-
-	name := ""
-	parts := strings.Split(text, "=")
-	if len(parts) > 1 {
-		name = parts[1]
-	}
-	return UtxoInfo(app, name)
-}
-
-func UtxoInfo(app Application, name string) interface{} {
-	if name == "" {
-		entries := app.Utxo.FindAll()
-		return entries
-	}
-	value := app.Utxo.Get(data.DatabaseKey(name))
-	return value
-}
-
-func HandleVersionQuery(app Application, message []byte) interface{} {
+func HandleVersionQuery(app Application, arguments map[string]string) interface{} {
 	return version.Current.String()
 }
 
 // Get the account information for a given user
-func HandleBalanceQuery(app Application, message []byte) interface{} {
-	log.Debug("BalanceQuery", "message", message)
+func HandleBalanceQuery(app Application, arguments map[string]string) interface{} {
+	log.Debug("BalanceQuery", "arguments", arguments)
 
-	text := string(message)
+	text := arguments["parameters"]
 
 	var key []byte
 	parts := strings.Split(text, "=")
 	if len(parts) > 1 {
+
+		// TODO: Encoded because it is dumped into a string
 		key, _ = hex.DecodeString(parts[1])
 	}
 	return Balance(app, key)
 }
 
 func Balance(app Application, accountKey []byte) interface{} {
-
-	balance := app.Utxo.Get(accountKey)
+	balance := app.Balances.Get(accountKey)
 	if balance != nil {
 		return balance
 	}
@@ -287,10 +267,10 @@ func Balance(app Application, accountKey []byte) interface{} {
 	return &result
 }
 
-func HandleCurrencyAddressQuery(app Application, message []byte) interface{} {
-	log.Debug("CurrencyAddressQuery", "message", message)
+func HandleCurrencyAddressQuery(app Application, arguments map[string]string) interface{} {
+	log.Debug("CurrencyAddressQuery", "arguments", arguments)
 
-	text := string(message)
+	text := arguments["parameters"]
 	conv := convert.NewConvert()
 	var chain data.ChainType
 	var identity id.Identity
@@ -318,7 +298,6 @@ func HandleCurrencyAddressQuery(app Application, message []byte) interface{} {
 		}
 
 	}
-
 	return identity.Chain[chain]
 }
 
@@ -327,11 +306,12 @@ func ChainAddress(chain data.ChainType) interface{} {
 }
 
 // Return a nicely formatted error message
-func HandleError(text string, path string, message []byte) interface{} {
-	return "Unknown Query " + text + " " + path + " " + string(message)
+func HandleError(text string, path string, arguments map[string]string) interface{} {
+	// TODO: Add in arguments to output
+	return "Unknown Query " + text + " " + path
 }
 
-func SignTransaction(transaction action.Transaction, applicaiton Application) action.SignedTransaction {
+func SignTransaction(transaction action.Transaction, application Application) action.SignedTransaction {
 	packet, err := serial.Serialize(transaction, serial.CLIENT)
 
 	signed := action.SignedTransaction{transaction, nil}
@@ -340,8 +320,11 @@ func SignTransaction(transaction action.Transaction, applicaiton Application) ac
 		log.Error("Failed to Serialize packet: ", "error", err)
 	} else {
 		request := action.Message(packet)
+		arguments := map[string]string{
+			"parameters": string(request),
+		}
 
-		response := HandleSignTransaction(applicaiton, request)
+		response := HandleSignTransaction(application, arguments)
 
 		if response == nil {
 			log.Warn("Query returned no signature", "request", request)
@@ -353,10 +336,13 @@ func SignTransaction(transaction action.Transaction, applicaiton Application) ac
 	return signed
 }
 
-func GetSigners(owner []byte, applicaiton Application) []id.PublicKey {
+func GetSigners(owner []byte, application Application) []id.PublicKey {
 	log.Debug("GetSigners", "owner", owner)
 
-	publicKey := HandleAccountPublicKeyQuery(applicaiton, owner)
+	arguments := map[string]string{
+		"parameters": string(owner),
+	}
+	publicKey := HandleAccountPublicKeyQuery(application, arguments)
 
 	if publicKey == nil {
 		return nil

@@ -71,6 +71,15 @@ message RegisterReply {
     bytes privateKey = 4;
 }
 
+message SDKRequest {
+    bytes parameters = 1;
+}
+
+message SDKReply {
+    int64 status = 1;
+    bytes results = 2;
+}
+
 service SDK {
     // Simple health-check to see if the server is OK
     rpc Status(StatusRequest) returns (StatusReply);
@@ -78,4 +87,7 @@ service SDK {
     rpc Send(SendRequest) returns (SendReply);
     rpc Register(RegisterRequest) returns (RegisterReply);
 //    rpc Swap(SwapRequest) returns (SwapReply);
+
+    // Type inspecific requests
+    rpc Request(SDKRequest) returns (SDKReply);
 }
