@@ -1,18 +1,24 @@
+/*
+	Copyright 2017-2018 OneLedger
+*/
 package runner
 
 import (
-	"github.com/robertkrimen/otto"
 	"errors"
 	"fmt"
+
+	"github.com/robertkrimen/otto"
 )
 
 func (runner Runner) exec(callString string) (string, string) {
+
 	_, error := runner.vm.Run(`
     var contract = new module.Contract(context);
     var retValue = contract.` + callString)
 	if error != nil {
 		panic(error)
 	}
+
 	runner.vm.Run(`
     var list = context.getUpdateIndexList();
     var storage = context.getStorage();
@@ -24,10 +30,12 @@ func (runner Runner) exec(callString string) (string, string) {
     transaction.__from__ = __from__;
     transaction.__olt__ = __olt__;
     `)
+
 	runner.vm.Run(`
     transaction = JSON.stringify(transaction);
     retValue = JSON.stringify(retValue);
     `)
+
 	output := ""
 	returnValue := ""
 

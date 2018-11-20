@@ -3,13 +3,13 @@ package vm
 import (
 	"errors"
 	"fmt"
-	"log"
 	"net"
 	"net/http"
 	"net/rpc"
-	"os"
+	"runtime/debug"
 	"strconv"
 
+	"github.com/Oneledger/protocol/node/log"
 	"github.com/Oneledger/protocol/node/olvm/interpreter/monitor"
 	"github.com/Oneledger/protocol/node/olvm/interpreter/runner"
 )
@@ -22,13 +22,15 @@ func (c *Container) Echo(args *Args, reply *Reply) error {
 
 func (c *Container) Exec(args *Args, reply *Reply) error {
 	mo := monitor.CreateMonitor(10, monitor.DEFAULT_MODE, "./ovm.pid")
+
 	status_ch := make(chan monitor.Status)
 	runner_ch := make(chan bool)
 
 	defer func() {
 		if r := recover(); r != nil {
-			log.Printf("error happens %v\n", r)
-			os.Exit(1)
+			log.Error("OLVM Panicked", "status", r)
+			log.Dump("Details", "args", args, "reply", reply)
+			debug.PrintStack()
 		}
 	}()
 
@@ -36,6 +38,7 @@ func (c *Container) Exec(args *Args, reply *Reply) error {
 	go func() {
 		runner := runner.CreateRunner()
 		from, address, callString, value := parseArgs(args)
+
 		out, ret, error := runner.Call(from, address, callString, value)
 		if error != nil {
 			status_ch <- monitor.Status{"Runtime error", monitor.STATUS_ERROR}
@@ -44,31 +47,34 @@ func (c *Container) Exec(args *Args, reply *Reply) error {
 			reply.Ret = ret
 			runner_ch <- true
 		}
-
 	}()
+
 	for {
 		select {
 		case <-runner_ch:
 			return nil
+
 		case status := <-status_ch:
 			panic(status)
 			return errors.New(fmt.Sprintf("%s : %d", status.Details, status.Code))
 		}
 	}
-
 	return nil
 }
 
 func (ol OLVMService) Run() {
-	log.Printf("Service is running with protocol %s on the port %d...\n", ol.Protocol, ol.Port)
+	log.Debug("Service is running", "protocol", ol.Protocol, "port", ol.Port)
+
 	container := new(Container)
 	rpc.Register(container)
 	rpc.HandleHTTP()
-	l, e := net.Listen(ol.Protocol, ":"+strconv.Itoa(ol.Port))
-	if e != nil {
-		log.Fatal("listen error:", e)
+
+	listen, err := net.Listen(ol.Protocol, ":"+strconv.Itoa(ol.Port))
+	if err != nil {
+		log.Fatal("listen error:", "err", err)
 	}
-	http.Serve(l, nil)
+
+	http.Serve(listen, nil)
 }
 
 func NewOLVMService(protocol string, port int) OLVMService {
@@ -80,18 +86,23 @@ func RunService() {
 }
 
 func parseArgs(args *Args) (string, string, string, int) {
+
 	from := args.From
 	address := args.Address
 	callString := args.CallString
 	value := args.Value
+
 	if from == "" {
 		from = "0x0"
 	}
+
 	if address == "" {
 		address = "samples://helloworld"
 	}
+
 	if callString == "" {
 		callString = "default__('hello,world from Oneledger')"
 	}
+
 	return from, address, callString, value
 }

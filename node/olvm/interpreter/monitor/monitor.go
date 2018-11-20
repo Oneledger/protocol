@@ -1,3 +1,6 @@
+/*
+	Copyright 2017-2018 OneLedger
+*/
 package monitor
 
 import (
@@ -18,13 +21,16 @@ func (monitor Monitor) CheckStatus(status_ch chan Status) {
 }
 
 func (monitor Monitor) CheckUnique() (Status, bool) {
+
 	if _, err := os.Stat(monitor.PidFilePath); !os.IsNotExist(err) {
 		switch monitor.RunningMode {
 		case AGGRESIVE_MODE:
 			os.Remove(monitor.PidFilePath)
 			return Status{"ovm.pid file exists, there is another ovm running or exit abnormally, but we can still run a new thread", STATUS_WARNING}, false
+
 		case CONSERVATIVE_MODE:
 			return Status{"ovm.pid file exists, there is another ovm running or exit abnormally", STATUS_ALREADY_RUNNING}, true
+
 		default:
 			return Status{"ovm.pid file exists, there is another ovm running or exit abnormally, but we can still run a new thread", STATUS_WARNING}, false
 		}
