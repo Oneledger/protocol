@@ -10,6 +10,7 @@ import (
 
 	"github.com/Oneledger/protocol/node/global"
 	"github.com/Oneledger/protocol/node/log"
+	"github.com/Oneledger/protocol/node/olvm/interpreter/runner"
 	"github.com/Oneledger/protocol/node/sdk"
 )
 
@@ -33,7 +34,7 @@ func Initialize() {
 	defaultClient = NewClient(protocol, address)
 }
 
-func AutoRun(from string, address string, callString string, sourceCode string, value int) (result *OLVMResult, err error) {
+func AutoRun(from string, address string, callString string, sourceCode string, value int) (result *runner.OLVMResult, err error) {
 
 	result, err = defaultClient.Run(from, address, callString, value)
 
@@ -55,9 +56,9 @@ func AutoRun(from string, address string, callString string, sourceCode string, 
 }
 
 // Run a smart contract
-func (c OLVMClient) Run(from string, address string, callString string, value int) (*OLVMResult, error) {
+func (c OLVMClient) Run(from string, address string, callString string, value int) (*runner.OLVMResult, error) {
 
-	request := &OLVMRequest{
+	request := &runner.OLVMRequest{
 		From:       from,
 		Address:    address,
 		CallString: callString,
@@ -69,7 +70,7 @@ func (c OLVMClient) Run(from string, address string, callString string, value in
 		return nil, err
 	}
 
-	var result OLVMResult
+	var result runner.OLVMResult
 	// TODO: Shouldn't pass by address for the result
 	err = client.Call("Container.Exec", request, &result)
 	if err != nil {
@@ -79,6 +80,6 @@ func (c OLVMClient) Run(from string, address string, callString string, value in
 	return &result, nil
 }
 
-func Run(from string, address string, callString string, value int) (*OLVMResult, error) {
+func Run(from string, address string, callString string, value int) (*runner.OLVMResult, error) {
 	return defaultClient.Run(from, address, callString, value)
 }

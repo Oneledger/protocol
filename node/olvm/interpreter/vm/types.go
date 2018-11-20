@@ -19,6 +19,7 @@ type OLVMClient struct {
 // TODO Still used?
 type Container int
 
+/*
 // All of the input necessary to perform a computation on a transaction
 type OLVMRequest struct {
 	// TODO: Original Transaction
@@ -40,3 +41,4 @@ type OLVMResult struct {
 	Out string
 	Ret string // TODO: Should be a real name
 }
+*/

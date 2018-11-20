@@ -49,16 +49,22 @@ func (runner Runner) exec(callString string) (string, string) {
 	return output, returnValue
 }
 
-func (runner Runner) Call(from string, address string, callString string, olt int) (transaction string, returnValue string, err error) {
+//func (runner Runner) Call(from string, address string, callString string, olt int) (transaction string, returnValue string, err error) {
+func (runner Runner) Call(request *OLVMRequest) (result *OLVMResult, err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			err = errors.New(fmt.Sprintf("Runtime Error: %v", r))
 		}
 	}()
-	runner.initialContext(from, olt)
-	runner.getContract(address)
-	transaction, returnValue = runner.exec(callString)
-	return
+
+	runner.initialContext(request.From, request.Value)
+	runner.getContract(request.Address)
+	transaction, returnValue := runner.exec(request.CallString)
+
+	return &OLVMResult{
+		Out: transaction,
+		Ret: returnValue,
+	}, nil
 }
 
 func CreateRunner() Runner {

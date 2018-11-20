@@ -23,12 +23,12 @@ func InitializeService() {
 	DefaultOLVMService = NewOLVMService(protocol, address)
 }
 
-func (c *Container) Echo(request *OLVMRequest, result *OLVMResult) error {
+func (c *Container) Echo(request *runner.OLVMRequest, result *runner.OLVMResult) error {
 	// TODO: Do something useful here
 	return nil
 }
 
-func (c *Container) Exec(request *OLVMRequest, result *OLVMResult) error {
+func (c *Container) Exec(request *runner.OLVMRequest, result *runner.OLVMResult) error {
 
 	// TODO: Isn't this just a timer?
 	mo := monitor.CreateMonitor(10, monitor.DEFAULT_MODE, "./ovm.pid")
@@ -48,16 +48,13 @@ func (c *Container) Exec(request *OLVMRequest, result *OLVMResult) error {
 	go func() {
 		runner := runner.CreateRunner()
 
-		from, address, callString, value := parseArgs(request)
-
-		out, ret, error := runner.Call(from, address, callString, value)
+		result, error := runner.Call(request)
 		if error != nil {
 			status_ch <- monitor.Status{"Runtime error", monitor.STATUS_ERROR}
 		} else {
-			result.Out = out
-			result.Ret = ret
 			runner_ch <- true
 		}
+		_ = result
 	}()
 
 	for {
@@ -100,7 +97,7 @@ func RunService() {
 	DefaultOLVMService.Run()
 }
 
-func parseArgs(request *OLVMRequest) (string, string, string, int) {
+func parseArgs(request *runner.OLVMRequest) (string, string, string, int) {
 
 	from := request.From
 	address := request.Address
