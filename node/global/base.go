@@ -31,7 +31,7 @@ type Context struct {
 	ConfigName      string // The Name of the config file (without extension)
 	NodeName        string // Name of this instance
 	NodeAccountName string // TODO: Should be a list of accounts
-	NodePaymentName string
+	PaymentAccount  string
 	NodeIdentity    string
 	RootDir         string // Working directory for this instance
 
@@ -73,7 +73,7 @@ func NewContext(name string) *Context {
 		ConfigName:      "olclient", // TODO: needs to deal with client/server
 		NodeName:        name,
 		NodeAccountName: "",
-		NodePaymentName: "Payment-OneLedger",
+		PaymentAccount:  "Payment",
 		RootDir:         os.Getenv("OLDATA") + "/" + name + "/olfullnode",
 
 		SDKAddress: "http://127.0.01:6900",

@@ -13,7 +13,7 @@ import (
 )
 
 // Synchronize a swap between two users
-type Send struct {
+type Payment struct {
 	Base
 
 	Inputs  []SendInput  `json:"inputs"`
@@ -24,62 +24,70 @@ type Send struct {
 }
 
 func init() {
-	serial.Register(Send{})
+	serial.Register(Payment{})
 }
 
-func (transaction *Send) TransactionType() Type {
+func (transaction *Payment) TransactionType() Type {
 	return transaction.Base.Type
 }
 
-func (transaction *Send) Validate() status.Code {
-	log.Debug("Validating Send Transaction")
+func (transaction *Payment) Validate() status.Code {
+	log.Debug("Validating Payment Transaction")
 
 	if transaction.Fee.LessThan(0) {
-		log.Debug("Missing Fee", "send", transaction)
+		log.Debug("Missing Fee", "payment", transaction)
 		return status.MISSING_DATA
 	}
 
 	if transaction.Gas.LessThan(0) {
-		log.Debug("Missing Gas", "send", transaction)
+		log.Debug("Missing Gas", "payment", transaction)
 		return status.MISSING_DATA
 	}
 
 	return status.SUCCESS
 }
 
-func (transaction *Send) ProcessCheck(app interface{}) status.Code {
-	log.Debug("Processing Send Transaction for CheckTx")
+func (transaction *Payment) ProcessCheck(app interface{}) status.Code {
+	log.Debug("Processing Payment Transaction for CheckTx")
 
 	if !CheckAmounts(app, transaction.Inputs, transaction.Outputs) {
 		log.Debug("FAILED", "inputs", transaction.Inputs, "outputs", transaction.Outputs)
 		return status.INVALID
-		//return status.SUCCESS
 	}
 
 	// TODO: Validate the transaction against the UTXO database, check tree
-	balances := GetBalances(app)
-	_ = balances
+	chain := GetBalances(app)
+	_ = chain
 
 	return status.SUCCESS
 }
 
-func (transaction *Send) ShouldProcess(app interface{}) bool {
+func (transaction *Payment) ShouldProcess(app interface{}) bool {
 	return true
 }
 
-func (transaction *Send) ProcessDeliver(app interface{}) status.Code {
-	log.Debug("Processing Send Transaction for DeliverTx")
+type PaymentRecord struct {
+	Amount      data.Coin
+	BlockHeight int64
+}
+
+func init() {
+	serial.Register(PaymentRecord{})
+}
+
+func (transaction *Payment) ProcessDeliver(app interface{}) status.Code {
+	log.Debug("Processing Payment Transaction for DeliverTx")
 
 	if !CheckAmounts(app, transaction.Inputs, transaction.Outputs) {
 		return status.INVALID
 	}
 
-	balances := GetBalances(app)
+	chain := GetBalances(app)
 
 	// Update the database to the final set of entries
 	for _, entry := range transaction.Outputs {
 		var balance *data.Balance
-		result := balances.Get(entry.AccountKey)
+		result := chain.Get(entry.AccountKey)
 		if result == nil {
 			tmp := data.NewBalance()
 			result = &tmp
@@ -87,12 +95,24 @@ func (transaction *Send) ProcessDeliver(app interface{}) status.Code {
 		balance = result
 		balance.SetAmmount(entry.Amount)
 
-		balances.Set(entry.AccountKey, *balance)
+		chain.Set(entry.AccountKey, *balance)
 	}
+
+	admin := GetAdmin(app)
+
+	//store payment record in database (O OLT, -1) because delete doesn't work
+	var paymentRecordKey data.DatabaseKey = data.DatabaseKey("PaymentRecord")
+	var paymentRecord PaymentRecord
+	paymentRecord.Amount = data.NewCoin(0, "OLT")
+	paymentRecord.BlockHeight = -1
+
+	session := admin.Begin()
+	session.Set(paymentRecordKey, paymentRecord)
+	session.Commit()
 
 	return status.SUCCESS
 }
 
-func (transaction *Send) Resolve(app interface{}) Commands {
+func (transaction *Payment) Resolve(app interface{}) Commands {
 	return []Command{}
 }

@@ -40,9 +40,9 @@ func GetAccountKey(identity string) []byte {
 	return nil
 }
 
-func GetSwapAddress(currencyName string) []byte {
-	request := action.Message("currency=" + currencyName)
-	response := comm.Query("/swapAddress", request)
+func GetCurrencyAddress(currencyName string, id string) []byte {
+	request := action.Message("currency=" + currencyName + "|" + "id=" + id)
+	response := comm.Query("/currencyAddress", request)
 	if response == nil {
 		return nil
 	}
@@ -67,14 +67,13 @@ func GetNodeName() string {
 }
 
 // TODO: Return a balance, not a coin
-func GetBalance(accountKey id.AccountKey) *data.Coin {
-
+func GetBalance(accountKey id.AccountKey) *data.Balance {
 	// TODO: This is wrong, should pass by type, not encode/decode
 	request := action.Message("accountKey=" + hex.EncodeToString(accountKey))
 	response := comm.Query("/balance", request)
 	if response == nil {
 		// New Accounts don't have a balance yet.
-		result := data.NewCoin(0, "OLT")
+		result := data.NewBalance()
 		return &result
 	}
 	if serial.GetBaseType(response).Kind() == reflect.String {
@@ -82,7 +81,8 @@ func GetBalance(accountKey id.AccountKey) *data.Coin {
 		return nil
 	}
 	balance := response.(*data.Balance)
-	return &balance.Amount
+
+	return balance
 
 }
 

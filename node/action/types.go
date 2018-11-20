@@ -85,15 +85,15 @@ func CheckBalance(app interface{}, accountKey id.AccountKey, amount data.Coin) b
 	if balance == nil {
 		// New accounts don't have a balance until the first transaction
 		log.Debug("New Balance", "key", accountKey, "amount", amount, "balance", balance)
-		interim := data.NewBalance(0, "OLT")
+		interim := data.NewBalanceFromString(0, amount.Currency.Name)
 		balance = &interim
-		if !balance.Amount.Equals(amount) {
+		if !balance.GetAmountByName(amount.Currency.Name).Equals(amount) {
 			return false
 		}
 		return true
 	}
 
-	if !balance.Amount.Equals(amount) {
+	if !balance.GetAmountByName(amount.Currency.Name).Equals(amount) {
 		log.Warn("Balance Mismatch", "key", accountKey, "amount", amount, "balance", balance)
 		return false
 	}

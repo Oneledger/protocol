@@ -142,7 +142,8 @@ func (id *Identity) Key() data.DatabaseKey {
 	return data.DatabaseKey(id.Name)
 }
 
-func (id *Identity) AsString() string {
+//String used in fmt and Dump
+func (id *Identity) String() string {
 	buffer := ""
 	buffer += id.Name
 	if id.External {

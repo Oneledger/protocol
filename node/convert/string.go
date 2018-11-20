@@ -29,6 +29,7 @@ func init() {
 	Domain["olt"] = "OLT"
 	Domain["btc"] = "BTC"
 	Domain["eth"] = "ETH"
+	Domain["vt"] = "VT"
 }
 
 // Build up a list of error messages
@@ -142,7 +143,7 @@ func (convert *Convert) GetInt(value string) int {
 	return 0
 }
 
-func (convert *Convert) GetChain(value string) data.ChainType{
+func (convert *Convert) GetChainFromCurrency(value string) data.ChainType {
 	currencyName := convert.GetCurrency(value)
 	currency, ok := data.Currencies[currencyName]
 	if ok {

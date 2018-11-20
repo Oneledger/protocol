@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"reflect"
 
@@ -153,8 +154,8 @@ func (server SDKServer) CheckAccount(ctx context.Context, request *pb.CheckAccou
 	var result *pb.Balance
 	if balance != nil {
 		result = &pb.Balance{
-			Amount:   balance.Amount.Amount.Int64(),
-			Currency: currencyProtobuf(balance.Amount.Currency),
+			Amount:   balance.GetAmountByName("OLT").Amount.Int64(),
+			Currency: currencyProtobuf(balance.GetAmountByName("OLT").Currency),
 		}
 	} else {
 		result = &pb.Balance{Amount: 0, Currency: pb.Currency_OLT}
@@ -204,6 +205,38 @@ func (server SDKServer) Send(ctx context.Context, request *pb.SendRequest) (*pb.
 	}, nil
 }
 
+func (server SDKServer) Tx(ctx context.Context, request *pb.TxRequest) (*pb.SDKReply, error) {
+	result := comm.Tx(request.Hash, request.Proof)
+	buff, err := serial.Serialize(result, serial.JSON)
+	if err != nil {
+		return nil, gstatus.Error(codes.Internal, err.Error())
+	}
+	return &pb.SDKReply{Results: buff}, nil
+}
+
+func (server SDKServer) TxSearch(ctx context.Context, request *pb.TxSearchRequest) (*pb.SDKReply, error) {
+	result := comm.Search(request.Query, request.Proof, int(request.Page), int(request.PerPage))
+	buff, err := serial.Serialize(result, serial.JSON)
+	if err != nil {
+		return nil, gstatus.Error(codes.Internal, err.Error())
+	}
+	return &pb.SDKReply{Results: buff}, nil
+}
+
+func (server SDKServer) Block(ctx context.Context, request *pb.BlockRequest) (*pb.SDKReply, error) {
+	result := comm.Block(int64(request.Height))
+	if result == nil {
+		return nil, gstatus.Errorf(codes.Internal, "Lookup failed")
+	}
+
+	bz, err := json.Marshal(result)
+	if err != nil {
+		return nil, gstatus.Errorf(codes.Internal, "Serializing result failed %s", err)
+	}
+
+	return &pb.SDKReply{Results: bz}, nil
+}
+
 func prepareSend(
 	party id.Account,
 	counterParty id.Account,
@@ -234,13 +267,13 @@ func prepareSend(
 	}
 
 	inputs := []action.SendInput{
-		action.NewSendInput(pKey, pBalance.Amount),
-		action.NewSendInput(cpKey, cpBalance.Amount),
+		action.NewSendInput(pKey, pBalance.GetAmountByName("OLT")),
+		action.NewSendInput(cpKey, cpBalance.GetAmountByName("OLT")),
 	}
 
 	outputs := []action.SendOutput{
-		action.NewSendOutput(pKey, pBalance.Amount.Minus(sendAmount)),
-		action.NewSendOutput(cpKey, cpBalance.Amount.Plus(sendAmount)),
+		action.NewSendOutput(pKey, pBalance.GetAmountByName("OLT").Minus(sendAmount)),
+		action.NewSendOutput(cpKey, cpBalance.GetAmountByName("OLT").Plus(sendAmount)),
 	}
 
 	return &action.Send{
