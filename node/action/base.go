@@ -44,6 +44,8 @@ type PublicKey = id.PublicKey
 
 // Polymorphism and Serializable
 type Transaction interface {
+	GetSigners() []id.PublicKey
+	GetOwner() id.AccountKey
 	TransactionTags() Tags
 	Validate() status.Code
 	ProcessCheck(interface{}) status.Code
@@ -75,23 +77,18 @@ type Base struct {
 	Delay    int64 `json:"delay"` // Pause the transaction in the mempool
 }
 
+func (b Base) GetOwner() id.AccountKey {
+	return b.Owner
+}
+
+func (b Base) GetSigners() []id.PublicKey {
+	return b.Signers
+}
+
 func ValidateSignature(transaction SignedTransaction) bool {
 	log.Debug("Signature validation", "transaction", transaction)
-	var signers []id.PublicKey
 
-	// TODO need to simplify it
-	switch v := transaction.Transaction.(type) {
-	case *Swap:
-		signers = v.Base.Signers
-	case *Send:
-		signers = v.Base.Signers
-	case *Payment:
-		signers = v.Base.Signers
-	case *Register:
-		signers = v.Base.Signers
-	default:
-		log.Warn("Signature validation (unknown transaction type)", "transaction", transaction)
-	}
+	signers := transaction.Transaction.GetSigners()
 
 	if signers == nil {
 		log.Warn("Signature validation (no signers)", "transaction", transaction)

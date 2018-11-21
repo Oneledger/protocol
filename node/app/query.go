@@ -91,21 +91,7 @@ func HandleSignTransaction(app Application, arguments map[string]string) interfa
 		return signatures
 	}
 
-	var accountKey id.AccountKey
-
-	// TODO: Add GetOwner method to clean this up?
-	switch v := transaction.(type) {
-	case *action.Swap:
-		accountKey = v.Base.Owner
-	case *action.Send:
-		accountKey = v.Base.Owner
-	case *action.Register:
-		accountKey = v.Base.Owner
-	case *action.Payment:
-		accountKey = v.Base.Owner
-	default:
-		log.Error("Unknown transaction type", "transaction", transaction)
-	}
+	accountKey := transaction.(action.Transaction).GetOwner()
 
 	if accountKey == nil {
 		log.Error("Account key is null", "transaction", transaction)
