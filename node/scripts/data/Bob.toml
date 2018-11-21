@@ -1,6 +1,6 @@
 Identity = "Bob"
 NodeName = "Bob-Node"
-RPCAddress = "http://127.0.0.1:26603"
+RpcAddress = "http://127.0.0.1:26603"
 P2PAddress = "http://127.0.0.1:26613"
 AppAddress = "http://127.0.0.1:26623"
 SDKAddress = "http://127.0.0.1:26633"
