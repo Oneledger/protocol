@@ -27,10 +27,6 @@ func init() {
 	serial.Register(Register{})
 }
 
-func (transaction *Register) TransactionType() Type {
-	return transaction.Base.Type
-}
-
 // Check the fields to make sure they have valid values.
 func (transaction Register) Validate() status.Code {
 	log.Debug("Validating Register Transaction")

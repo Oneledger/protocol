@@ -19,7 +19,6 @@ import (
 	"github.com/tendermint/tendermint/abci/types"
 	"github.com/tendermint/tendermint/libs/common"
 	"math/big"
-	"strconv"
 )
 
 var ChainId string
@@ -445,13 +444,7 @@ func (app Application) DeliverTx(tx []byte) ResponseDeliverTx {
 		}
 	}
 
-	tagType := strconv.FormatInt(int64(transaction.TransactionType()), 10)
-	tags := make([]common.KVPair, 1)
-	tag := common.KVPair{
-		Key:   []byte("tx.type"),
-		Value: []byte(tagType),
-	}
-	tags = append(tags, tag)
+	tags := transaction.TransactionTags()
 
 	result := ResponseDeliverTx{
 		Code:      errorCode,

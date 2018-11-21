@@ -10,6 +10,7 @@ import (
 	"github.com/Oneledger/protocol/node/log"
 	"github.com/Oneledger/protocol/node/serial"
 	"github.com/Oneledger/protocol/node/status"
+	"github.com/tendermint/tendermint/libs/common"
 )
 
 type Message = []byte // Contents of a transaction
@@ -29,14 +30,7 @@ const (
 	SEND               // Do a normal send transaction on local chain
 	PAYMENT            // Do a payment transaction on local chain
 	EXTERNAL_SEND      // Do send on external chain
-	EXTERNAL_LOCK      // Lock some data on external chain
 	SWAP               // Start a swap between chains
-	VERIFY             // Verify if a transaction finished
-	PUBLISH            // Exchange data on a chain
-	READ               // Read a specific transaction on a chain
-	PREPARE            // Do everything, except commit
-	COMMIT             // Commit to doing the work
-	FORGET             // Rollback and forget that this happened
 )
 
 const (
@@ -50,7 +44,7 @@ type PublicKey = id.PublicKey
 
 // Polymorphism and Serializable
 type Transaction interface {
-	TransactionType() Type
+	TransactionTags() Tags
 	Validate() status.Code
 	ProcessCheck(interface{}) status.Code
 	ShouldProcess(interface{}) bool
@@ -147,4 +141,55 @@ func init() {
 	serial.Register(Base{})
 	serial.Register(TransactionSignature{})
 	serial.Register(SignedTransaction{})
+}
+
+func Parse(message Message) (SignedTransaction, status.Code) {
+	var tx SignedTransaction
+
+	transaction, transactionErr := serial.Deserialize(message, tx, serial.CLIENT)
+
+	if transactionErr == nil {
+		return transaction.(SignedTransaction), status.SUCCESS
+	}
+
+	log.Error("Could not deserialize a transaction", "error", transactionErr)
+
+	return SignedTransaction{}, status.PARSE_ERROR
+}
+
+func (t Type) String() string {
+	switch t {
+	case REGISTER:
+		return "REGISTER"
+	case SEND:
+		return "SEND"
+	case PAYMENT:
+		return "PAYMENT"
+	case EXTERNAL_SEND:
+		return "EXTERNAL_SEND"
+	case SWAP:
+		return "SWAP"
+	default:
+		return "INVALID"
+	}
+}
+
+type Tags common.KVPairs
+
+func (b Base) TransactionTags() Tags {
+
+	//Add transaction type as a tag
+	tagType := b.Type.String()
+	tag1 := common.KVPair{
+		Key:   []byte("tx.type"),
+		Value: []byte(tagType),
+	}
+
+	//Add owner as a tag
+	tagOwner := b.Owner.String()
+	tag2 := common.KVPair{
+		Key:   []byte("tx.owner"),
+		Value: []byte(tagOwner),
+	}
+	return Tags{tag1, tag2}
 }
