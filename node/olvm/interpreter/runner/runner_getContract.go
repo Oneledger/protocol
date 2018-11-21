@@ -11,7 +11,21 @@ import (
 	"github.com/Oneledger/protocol/node/log"
 )
 
-func (runner Runner) getContract(address string) bool {
+func (runner Runner) setupContract(request *OLVMRequest) bool {
+	// TODO: Needs better error handling
+	if request.SourceCode == "" {
+		return false
+	}
+
+	_, error := runner.vm.Run(`var module = {};(function(module){` + request.SourceCode + `})(module)`)
+	if error == nil {
+		return true
+	} else {
+		return false
+	}
+}
+
+func (runner Runner) XgetContract(address string) bool {
 	sourceCode := ""
 
 	switch {

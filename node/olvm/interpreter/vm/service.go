@@ -29,6 +29,7 @@ func (c *Container) Echo(request *runner.OLVMRequest, result *runner.OLVMResult)
 }
 
 func (c *Container) Exec(request *runner.OLVMRequest, result *runner.OLVMResult) error {
+	log.Debug("Exec the Contract")
 
 	// TODO: Isn't this just a timer?
 	mo := monitor.CreateMonitor(10, monitor.DEFAULT_MODE, "./ovm.pid")
@@ -95,26 +96,4 @@ func NewOLVMService(protocol string, address string) *OLVMService {
 
 func RunService() {
 	DefaultOLVMService.Run()
-}
-
-func parseArgs(request *runner.OLVMRequest) (string, string, string, int) {
-
-	from := request.From
-	address := request.Address
-	callString := request.CallString
-	value := request.Value
-
-	if from == "" {
-		from = "0x0"
-	}
-
-	if address == "" {
-		address = "samples://helloworld"
-	}
-
-	if callString == "" {
-		callString = "default__('hello,world from Oneledger')"
-	}
-
-	return from, address, callString, value
 }

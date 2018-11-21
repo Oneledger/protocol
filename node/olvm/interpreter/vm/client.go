@@ -27,28 +27,34 @@ func NewClient(protocol string, address string) *OLVMClient {
 }
 
 // Initialize the vm/daemon/etc.
-func Initialize() {
+func InitializeClient() {
 	protocol := global.Current.OLVMProtocol
 	address := global.Current.OLVMAddress
 
 	defaultClient = NewClient(protocol, address)
 }
 
-func AutoRun(from string, address string, callString string, sourceCode string, value int) (result *runner.OLVMResult, err error) {
+func AutoRun(request *runner.OLVMRequest) (result *runner.OLVMResult, err error) {
 
-	result, err = defaultClient.Run(from, address, callString, value)
+	log.Debug("Trying to Run")
+	result, err = defaultClient.Run(request)
 
 	// TODO: Should be based on error code, not text...
-	if err != nil && strings.HasSuffix(err.Error(), "connection refused") {
-		//try to launch the service
-		log.Debug("Launching OLVM")
+	if err != nil {
+		if strings.HasSuffix(err.Error(), "connection refused") {
+			//try to launch the service
 
-		// TODO: Not started the first time?
-		go RunService()
+			// TODO: Not started the first time?
+			log.Debug("Relaunching OLVM")
+			go RunService()
 
-		for err != nil && strings.HasSuffix(err.Error(), "connection refused") {
-			time.Sleep(time.Second)
-			result, err = defaultClient.Run(from, address, callString, value)
+			for err != nil && strings.HasSuffix(err.Error(), "connection refused") {
+				time.Sleep(time.Second)
+				log.Debug("Trying to ReRun")
+				result, err = defaultClient.Run(request)
+			}
+		} else {
+			log.Error("Run Failed", "err", err)
 		}
 		return
 	}
@@ -56,14 +62,16 @@ func AutoRun(from string, address string, callString string, sourceCode string, 
 }
 
 // Run a smart contract
-func (c OLVMClient) Run(from string, address string, callString string, value int) (*runner.OLVMResult, error) {
+func (c OLVMClient) Run(request *runner.OLVMRequest) (*runner.OLVMResult, error) {
 
-	request := &runner.OLVMRequest{
-		From:       from,
-		Address:    address,
-		CallString: callString,
-		Value:      value,
-	}
+	/*
+		request := &runner.OLVMRequest{
+			From:       from,
+			Address:    address,
+			CallString: callString,
+			Value:      value,
+		}
+	*/
 
 	client, err := rpc.DialHTTP(c.Protocol, ":"+sdk.GetPort(c.ServicePath))
 	if err != nil {
@@ -80,6 +88,6 @@ func (c OLVMClient) Run(from string, address string, callString string, value in
 	return &result, nil
 }
 
-func Run(from string, address string, callString string, value int) (*runner.OLVMResult, error) {
-	return defaultClient.Run(from, address, callString, value)
+func Run(request *runner.OLVMRequest) (*runner.OLVMResult, error) {
+	return defaultClient.Run(request)
 }

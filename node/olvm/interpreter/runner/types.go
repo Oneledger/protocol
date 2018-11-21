@@ -19,6 +19,7 @@ type OLVMRequest struct {
 	Address    string
 	CallString string
 	Value      int
+	SourceCode string
 }
 
 // All of the output received from the computation

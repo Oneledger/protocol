@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/Oneledger/protocol/node/log"
 	"github.com/robertkrimen/otto"
 )
 
@@ -51,14 +52,21 @@ func (runner Runner) exec(callString string) (string, string) {
 
 //func (runner Runner) Call(from string, address string, callString string, olt int) (transaction string, returnValue string, err error) {
 func (runner Runner) Call(request *OLVMRequest) (result *OLVMResult, err error) {
+	log.Debug("Calling the Script")
+
 	defer func() {
 		if r := recover(); r != nil {
 			err = errors.New(fmt.Sprintf("Runtime Error: %v", r))
 		}
 	}()
 
+	log.Debug("Setup the Context")
 	runner.initialContext(request.From, request.Value)
-	runner.getContract(request.Address)
+
+	log.Debug("Setup the SourceCode")
+	runner.setupContract(request)
+
+	log.Debug("Exec the Smart Contract")
 	transaction, returnValue := runner.exec(request.CallString)
 
 	return &OLVMResult{
