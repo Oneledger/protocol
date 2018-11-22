@@ -23,10 +23,11 @@ nodeName=`olconfig get -c $name -p NodeName`
 p2pAddress=`olconfig get -c $name -p P2PAddress`
 rpcAddress=`olconfig get -c $name -p RpcAddress`
 appAddress=`olconfig get -c $name -p AppAddress`
+peers=`olconfig get --peers -p Alice -p Bob -p Carol -p David -p Emma`
 
-prefix="127.0.0.1:"
-key=`$CMD/getNodeId $nodeName`
-peers=`$CMD/lookup $name Peers $prefix $id`
+#prefix="127.0.0.1:"
+#key=`$CMD/getNodeId $nodeName`
+#peers=`$CMD/lookup $name Peers $prefix $id`
 
 export WORK=$OLDATA/$nodeName
 export LOG=$WORK

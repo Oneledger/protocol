@@ -70,7 +70,8 @@ func GetPeers(nodes []string) {
 
 		// Pick out a couple of the parameters
 		nodeName := viper.Get("NodeName").(string)
-		p2pAddress := viper.Get("P2PAddress").(string)
+		address := viper.Get("P2PAddress").(string)
+		p2pAddress := strings.TrimPrefix(address, "tcp://")
 
 		// Call Tendermint to get it's node id
 		data := os.Getenv("OLDATA") + "/" + nodeName + "/tendermint"
