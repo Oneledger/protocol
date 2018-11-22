@@ -63,10 +63,6 @@ type Swap struct {
 	Stage       swapStageType `json:"stage"`
 }
 
-func (transaction *Swap) TransactionType() Type {
-	return transaction.Base.Type
-}
-
 // Ensure that all of the base values are at least reasonable.
 func (transaction *Swap) Validate() status.Code {
 	log.Debug("Validating Swap Transaction")

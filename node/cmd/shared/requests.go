@@ -13,7 +13,6 @@ import (
 	"github.com/Oneledger/protocol/node/app"
 	"github.com/Oneledger/protocol/node/convert"
 	"github.com/Oneledger/protocol/node/data"
-	"github.com/Oneledger/protocol/node/global"
 	"github.com/Oneledger/protocol/node/log"
 )
 
@@ -151,6 +150,8 @@ func CreateSendRequest(args *SendArguments) []byte {
 		os.Exit(-1)
 	}
 
+	sequence := GetSequenceNumber(party)
+
 	// Create base transaction
 	send := &action.Send{
 		Base: action.Base{
@@ -158,7 +159,7 @@ func CreateSendRequest(args *SendArguments) []byte {
 			ChainId:  app.ChainId,
 			Owner:    party,
 			Signers:  action.GetSigners(party),
-			Sequence: global.Current.Sequence,
+			Sequence: sequence,
 		},
 		Inputs:  inputs,
 		Outputs: outputs,
@@ -221,6 +222,8 @@ func CreateMintRequest(args *SendArguments) []byte {
 		os.Exit(-1)
 	}
 
+	sequence := GetSequenceNumber(party)
+
 	// Create base transaction
 	send := &action.Send{
 		Base: action.Base{
@@ -228,7 +231,7 @@ func CreateMintRequest(args *SendArguments) []byte {
 			ChainId:  app.ChainId,
 			Signers:  action.GetSigners(zero),
 			Owner:    zero,
-			Sequence: global.Current.Sequence,
+			Sequence: sequence,
 		},
 		Inputs:  inputs,
 		Outputs: outputs,
@@ -289,6 +292,8 @@ func CreateSwapRequest(args *SwapArguments) []byte {
 		Nonce:        args.Nonce,
 	}
 
+	sequence := GetSequenceNumber(partyKey)
+
 	swap := &action.Swap{
 		Base: action.Base{
 			Type:     action.SWAP,
@@ -296,7 +301,7 @@ func CreateSwapRequest(args *SwapArguments) []byte {
 			Signers:  action.GetSigners(partyKey),
 			Owner:    partyKey,
 			Target:   counterPartyKey,
-			Sequence: global.Current.Sequence,
+			Sequence: sequence,
 		},
 		SwapMessage: swapInit,
 		Stage:       action.SWAP_MATCHING,
@@ -333,6 +338,9 @@ func CreateExSendRequest(args *ExSendArguments) []byte {
 	sender := GetCurrencyAddress(conv.GetCurrency(args.Currency), args.SenderId)
 	reciever := GetCurrencyAddress(conv.GetCurrency(args.Currency), args.ReceiverId)
 	signers := action.GetSigners(sender)
+
+	sequence := GetSequenceNumber(partyKey)
+
 	exSend := &action.ExternalSend{
 		Base: action.Base{
 			Type:     action.EXTERNAL_SEND,
@@ -340,7 +348,7 @@ func CreateExSendRequest(args *ExSendArguments) []byte {
 			Signers:  signers,
 			Owner:    partyKey,
 			Target:   cpartyKey,
-			Sequence: global.Current.Sequence,
+			Sequence: sequence,
 		},
 		Gas:      gas,
 		Fee:      fee,

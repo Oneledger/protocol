@@ -7,14 +7,11 @@ package main
 
 import (
 	gcontext "context"
-	"os"
 
 	"github.com/Oneledger/protocol/node/cmd/shared"
 	"github.com/Oneledger/protocol/node/comm"
 	"github.com/Oneledger/protocol/node/sdk/pb"
-	"github.com/Oneledger/protocol/node/serial"
 	"github.com/spf13/cobra"
-	ctypes "github.com/tendermint/tendermint/rpc/core/types"
 )
 
 var blockCmd = &cobra.Command{
@@ -38,16 +35,10 @@ func requestBlock(cmd *cobra.Command, args []string) {
 
 	reply, err := client.Block(ctx, request)
 	if err != nil {
-		shared.Console.Error(err)
-		os.Exit(1)
+		handleError(err)
 	}
 
-	var block ctypes.ResultBlock
-	_, err = serial.Deserialize(reply.Results, &block, serial.JSON)
-	if err != nil {
-		shared.Console.Error(err)
-		os.Exit(1)
-	}
-	shared.Console.Info(block)
+	out := indentJSON(reply.Results)
 
+	shared.Console.Info(out.String())
 }

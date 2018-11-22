@@ -57,6 +57,9 @@ func HandleQuery(app Application, path string, arguments map[string]string) []by
 	case "/currencyAddress":
 		result = HandleCurrencyAddressQuery(app, arguments)
 
+	case "/sequenceNumber":
+		result = HandleSequenceNumberQuery(app, arguments)
+
 	default:
 		result = HandleError("Unknown Query", path, arguments)
 	}
@@ -88,21 +91,7 @@ func HandleSignTransaction(app Application, arguments map[string]string) interfa
 		return signatures
 	}
 
-	var accountKey id.AccountKey
-
-	// TODO: Add GetOwner method to clean this up?
-	switch v := transaction.(type) {
-	case *action.Swap:
-		accountKey = v.Base.Owner
-	case *action.Send:
-		accountKey = v.Base.Owner
-	case *action.Register:
-		accountKey = v.Base.Owner
-	case *action.Payment:
-		accountKey = v.Base.Owner
-	default:
-		log.Error("Unknown transaction type", "transaction", transaction)
-	}
+	accountKey := transaction.(action.Transaction).GetOwner()
 
 	if accountKey == nil {
 		log.Error("Account key is null", "transaction", transaction)
@@ -349,4 +338,25 @@ func GetSigners(owner []byte, application Application) []id.PublicKey {
 	}
 
 	return []id.PublicKey{publicKey.(id.PublicKey)}
+}
+
+// Get the account information for a given user
+func HandleSequenceNumberQuery(app Application, arguments map[string]string) interface{} {
+	log.Debug("SequenceNumberQuery", "arguments", arguments)
+
+	text := arguments["parameters"]
+
+	var key []byte
+	parts := strings.Split(text, "=")
+	if len(parts) > 1 {
+
+		// TODO: Encoded because it is dumped into a string
+		key, _ = hex.DecodeString(parts[1])
+	}
+	return SequenceNumber(app, key)
+}
+
+func SequenceNumber(app Application, accountKey []byte) interface{} {
+	sequenceRecord := NextSequence(&app, accountKey)
+	return sequenceRecord
 }
