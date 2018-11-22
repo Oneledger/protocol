@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/rpc"
 	"runtime/debug"
+	//"time"
 
 	"github.com/Oneledger/protocol/node/global"
 	"github.com/Oneledger/protocol/node/log"
@@ -27,7 +28,7 @@ func (c *Container) Echo(request *runner.OLVMRequest, result *runner.OLVMResult)
 	return nil
 }
 
-func (c *Container) Exec(request *runner.OLVMRequest, result *runner.OLVMResult) error {
+func (c *Container) Exec(request *runner.OLVMRequest, result *runner.OLVMResult) (err error) {
 	log.Debug("Exec the Contract")
 
 	// TODO: Isn't this just a timer?
@@ -38,9 +39,11 @@ func (c *Container) Exec(request *runner.OLVMRequest, result *runner.OLVMResult)
 
 	defer func() {
 		if r := recover(); r != nil {
-			log.Error("OLVM Panicked", "status", r)
-			log.Dump("Details", "request", request, "result", result)
-			debug.PrintStack()
+			go func() {
+				debug.PrintStack()
+				log.Dump("Details", "request", request, "result", result)
+				log.Fatal("OLVM Panicked", "status", r)
+			}()
 		}
 	}()
 
@@ -59,13 +62,14 @@ func (c *Container) Exec(request *runner.OLVMRequest, result *runner.OLVMResult)
 	for {
 		select {
 		case <-runner_ch:
-			return nil
+			err = nil
+			return
 		case status := <-status_ch:
+			err = errors.New(fmt.Sprintf("%s : %d", status.Details, status.Code))
 			panic(status)
-			return errors.New(fmt.Sprintf("%s : %d", status.Details, status.Code))
 		}
 	}
-	return nil
+	return
 }
 
 func (ol OLVMService) Run() {

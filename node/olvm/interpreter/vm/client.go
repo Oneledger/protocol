@@ -7,6 +7,7 @@ import (
 	"net/rpc"
 	"strings"
 	"time"
+	"os/exec"
 
 	"github.com/Oneledger/protocol/node/global"
 	"github.com/Oneledger/protocol/node/log"
@@ -45,7 +46,10 @@ func AutoRun(request *runner.OLVMRequest) (result *runner.OLVMResult, err error)
 
 			// TODO: Not started the first time?
 			log.Debug("Relaunching OLVM")
-			go RunService()
+			// Run service in another process, so it will safer to crash
+			//go RunService()
+			cmd := exec.Command("./bin/server")
+			cmd.Start()
 
 			for err != nil && strings.HasSuffix(err.Error(), "connection refused") {
 				time.Sleep(time.Second)
