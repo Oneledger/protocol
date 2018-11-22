@@ -12,7 +12,10 @@ import (
 )
 
 func (runner Runner) exec(callString string) (string, string) {
-
+	if callString == "" {
+		callString = "default__()"
+		log.Info("callString is empty, use default", "callString", callString)
+	}
 	_, error := runner.vm.Run(`
     var contract = new module.Contract(context);
     var retValue = contract.` + callString)
@@ -33,25 +36,25 @@ func (runner Runner) exec(callString string) (string, string) {
     `)
 
 	runner.vm.Run(`
-    transaction = JSON.stringify(transaction);
-    retValue = JSON.stringify(retValue);
+    out = JSON.stringify(transaction);
+    ret = JSON.stringify(retValue);
     `)
 
 	output := ""
 	returnValue := ""
 
-	if value, err := runner.vm.Get("transaction"); err == nil {
+	if value, err := runner.vm.Get("out"); err == nil {
 		output, _ = value.ToString()
 	}
 
-	if value, err := runner.vm.Get("retValue"); err == nil {
+	if value, err := runner.vm.Get("ret"); err == nil {
 		returnValue, _ = value.ToString()
 	}
 	return output, returnValue
 }
 
 //func (runner Runner) Call(from string, address string, callString string, olt int) (transaction string, returnValue string, err error) {
-func (runner Runner) Call(request *OLVMRequest) (result *OLVMResult, err error) {
+func (runner Runner) Call(request *OLVMRequest, result *OLVMResult) (err error) {
 	log.Debug("Calling the Script")
 
 	defer func() {
@@ -67,12 +70,10 @@ func (runner Runner) Call(request *OLVMRequest) (result *OLVMResult, err error) 
 	runner.setupContract(request)
 
 	log.Debug("Exec the Smart Contract")
-	transaction, returnValue := runner.exec(request.CallString)
-
-	return &OLVMResult{
-		Out: transaction,
-		Ret: returnValue,
-	}, nil
+	out, ret := runner.exec(request.CallString)
+	result.Out = out
+	result.Ret = ret
+	return
 }
 
 func CreateRunner() Runner {
