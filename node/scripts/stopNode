@@ -42,13 +42,13 @@ fi
 #
 # Stop OLFullnode
 #
-pids=`pgrep -f "olfullnode.*--node $nodeName.*"`
+pids=`pgrep -f "olfullnode.*-c $name.*"`
 if ! [ -z "$pids" ]
 then
 	echo "============================================================" >> $LOG/olfullnode.log
 	echo "Stopping Fullnode" >> $LOG/olfullnode.log
 	echo "============================================================" >> $LOG/olfullnode.log
-	pkill -f "olfullnode.*--node $nodeName.*" >> $LOG/olfullnode.log
+	pkill -f "olfullnode.*-c $name.*" >> $LOG/olfullnode.log
 	killed=true
 fi
 

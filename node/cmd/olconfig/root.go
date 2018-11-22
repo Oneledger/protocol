@@ -17,9 +17,9 @@ import (
 )
 
 var RootCmd = &cobra.Command{
-	Use:   "olclient",
-	Short: "OneLedger client",
-	Long:  "Client access to the OneLedger chain",
+	Use:   "olconfig",
+	Short: "OneLedger Config Tool",
+	Long:  "CLI Access to OneLedger's config files",
 }
 
 func Execute() {
