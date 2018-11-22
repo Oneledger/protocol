@@ -1,22 +1,43 @@
 package main
 
 import (
-	"./committor"
-	"./vm"
 	"flag"
 	"log"
+	"os"
+	"github.com/Oneledger/protocol/node/olvm/interpreter/committor"
+	"github.com/Oneledger/protocol/node/olvm/interpreter/monitor"
+	"github.com/Oneledger/protocol/node/olvm/interpreter/runner"
 )
 
-func main() {
-	log.Println("starting OVM")
+func run(x chan string, y chan string, status_ch chan monitor.Status, from string, address string, transaction string, olt int) {
+	defer func() {
+		if r := recover(); r != nil {
+			log.Println(r)
+			status_ch <- monitor.Status{"scripting running error", monitor.STATUS_ERROR}
+		}
+	}()
 
-	address := flag.String("address", "samples://helloworld", "the address of your smart contract")
+	runner := runner.CreateRunner()
+	transaction, returnValue := runner.Call(from, address, transaction, olt)
+	x <- transaction
+	y <- returnValue
+}
 
-	call_string := flag.String("call_string", "default__('hello,world from Oneledger')", "the call string on that contract address")
+func commit(returnValue string, transaction string) {
+	log.Print(returnValue)
+	log.Print(transaction)
+	c := committor.Create()
+	c.Commit(returnValue, transaction)
+}
 
-	call_from := flag.String("from", "0x0", "the public address of the caller")
+func runAsCommand(monitor monitor.Monitor, x chan string, y chan string, status_ch chan monitor.Status, from string, address string, transaction string, olt int) {
+	go monitor.CheckStatus(status_ch)
+	go run(x, y, status_ch, from, address, transaction, olt)
+}
+
 
 	code := flag.String("sourceCode", "", "the source code of the smart contract(optional)")
+
 
 	call_value := flag.Int("value", 0, "number of OLT put on this call")
 

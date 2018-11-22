@@ -45,6 +45,9 @@ type Context struct {
 
 	SDKAddress string // SDK RPC address
 
+	OLVMProtocol string // Config for the OLVM
+	OLVMAddress  string
+
 	Sequence int64 // replay protection
 
 	TendermintRoot    string

@@ -1,8 +1,9 @@
 package main
 
 import (
-	"./vm"
 	"log"
+
+	"github.com/Oneledger/protocol/node/olvm/interpreter/vm"
 )
 
 func main() {

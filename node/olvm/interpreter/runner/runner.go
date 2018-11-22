@@ -1,18 +1,25 @@
+/*
+	Copyright 2017-2018 OneLedger
+*/
 package runner
 
 import (
 	"errors"
 	"fmt"
+
+	"github.com/Oneledger/protocol/node/log"
 	"github.com/robertkrimen/otto"
 )
 
 func (runner Runner) exec(callString string) (string, string) {
+
 	_, error := runner.vm.Run(`
     var contract = new module.Contract(context);
     var retValue = contract.` + callString)
 	if error != nil {
 		panic(error)
 	}
+
 	runner.vm.Run(`
     var list = context.getUpdateIndexList();
     var storage = context.getStorage();
@@ -24,10 +31,12 @@ func (runner Runner) exec(callString string) (string, string) {
     transaction.__from__ = __from__;
     transaction.__olt__ = __olt__;
     `)
+
 	runner.vm.Run(`
     transaction = JSON.stringify(transaction);
     retValue = JSON.stringify(retValue);
     `)
+
 	output := ""
 	returnValue := ""
 
@@ -41,16 +50,29 @@ func (runner Runner) exec(callString string) (string, string) {
 	return output, returnValue
 }
 
-func (runner Runner) Call(from string, address string, callString string, olt int) (transaction string, returnValue string, err error) {
+//func (runner Runner) Call(from string, address string, callString string, olt int) (transaction string, returnValue string, err error) {
+func (runner Runner) Call(request *OLVMRequest) (result *OLVMResult, err error) {
+	log.Debug("Calling the Script")
+
 	defer func() {
 		if r := recover(); r != nil {
 			err = errors.New(fmt.Sprintf("Runtime Error: %v", r))
 		}
 	}()
-	runner.initialContext(from, olt)
-	runner.getContract(address)
-	transaction, returnValue = runner.exec(callString)
-	return
+
+	log.Debug("Setup the Context")
+	runner.initialContext(request.From, request.Value)
+
+	log.Debug("Setup the SourceCode")
+	runner.setupContract(request)
+
+	log.Debug("Exec the Smart Contract")
+	transaction, returnValue := runner.exec(request.CallString)
+
+	return &OLVMResult{
+		Out: transaction,
+		Ret: returnValue,
+	}, nil
 }
 
 func CreateRunner() Runner {

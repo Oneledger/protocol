@@ -1,13 +1,25 @@
-package runner
+/*
+	Copyright 2017-2018 OneLedger
+*/
+package vm
 
-import (
-	"github.com/robertkrimen/otto"
-)
-
-type Runner struct {
-	vm *otto.Otto
+// Static information about the service parameters
+type OLVMService struct {
+	Protocol string
+	//Port     int // TODO: Should be a full address (even if we only need port)
+	Address string
 }
 
+// Static information about the client parameters
+type OLVMClient struct {
+	Protocol    string
+	ServicePath string // TODO: Should be called Address
+}
+
+// TODO Still used?
+type Container int
+
+/*
 // All of the input necessary to perform a computation on a transaction
 type OLVMRequest struct {
 	// TODO: Original Transaction
@@ -19,7 +31,6 @@ type OLVMRequest struct {
 	Address    string
 	CallString string
 	Value      int
-	SourceCode string
 }
 
 // All of the output received from the computation
@@ -30,3 +41,4 @@ type OLVMResult struct {
 	Out string
 	Ret string // TODO: Should be a real name
 }
+*/
