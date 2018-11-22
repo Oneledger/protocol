@@ -13,10 +13,8 @@ fi
 #
 # For now, use local dir but needs to be fixed
 #
+nodeName=`olconfig get -c $name -p NodeName`
 export CMD=$OLSCRIPT
-
-nodeName=`$CMD/lookup $name NodeName`
-
 export WORK=$OLDATA/$nodeName
 export LOG=$WORK
 export DATA=$WORK/tendermint

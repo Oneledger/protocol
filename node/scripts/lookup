@@ -1,8 +1,0 @@
-#!/bin/bash
-
-export CMD=$OLSCRIPT
-
-pushd $CMD > /dev/null
-cat accounts.csv | awk -f lookup.awk -v Identity="$1" -v Attribute="$2" -v Prefix="$3"
-popd > /dev/null
-

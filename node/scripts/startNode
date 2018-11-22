@@ -9,25 +9,11 @@ else
 	name=$1
 fi
 
-#echo "Starting $name"
-
-#prefix="tcp://127.0.0.1:"
-#nodeName=`$CMD/lookup $name NodeName`
-#p2pAddress=`$CMD/lookup $name P2PAddress $prefix`
-#rpcAddress=`$CMD/lookup $name RPCAddress $prefix`
-#appAddress=`$CMD/lookup $name AppAddress $prefix`
-#btcAddress=`$CMD/lookup $name BTCAddress "127.0.0.1:"`
-#ethAddress=`$CMD/lookup $name ETHAddress `
-#sdkAddress=`$CMD/lookup $name SDKAddress $prefix`
 nodeName=`olconfig get -c $name -p NodeName`
 p2pAddress=`olconfig get -c $name -p P2PAddress`
 rpcAddress=`olconfig get -c $name -p RpcAddress`
 appAddress=`olconfig get -c $name -p AppAddress`
 peers=`olconfig get --peers -p Alice -p Bob -p Carol -p David -p Emma`
-
-#prefix="127.0.0.1:"
-#key=`$CMD/getNodeId $nodeName`
-#peers=`$CMD/lookup $name Peers $prefix $id`
 
 export WORK=$OLDATA/$nodeName
 export LOG=$WORK
@@ -53,8 +39,6 @@ then
 		--proxy_app $appAddress \
 		--p2p.persistent_peers $peers \
 		>> $LOG/tendermint.log 2>&1 &
-
-	#echo "Tendermint $nodeName has been started"
 else
 	echo "Tendermint $nodeName was already running"
 fi
@@ -69,12 +53,6 @@ then
 	echo "============================================================" >> $LOG/olfullnode.log
 	echo "Starting OLFullnode" >> $LOG/olfullnode.log
 	echo "============================================================" >> $LOG/olfullnode.log
-		#--node $nodeName \
-		#--app $appAddress \
-		#--address $rpcAddress \
-		#--btcrpc $btcAddress \
-		#--ethrpc $ethAddress \
-		#--sdkrpc $sdkAddress \
 	olfullnode node -c $name\
 		--root $WORK/olfullnode \
 		--tendermintRoot $DATA \

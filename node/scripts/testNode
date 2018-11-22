@@ -9,7 +9,7 @@ else
 	name=$1
 fi
 
-nodeName=`$CMD/lookup $name NodeName`
+nodeName=`olconfig get -c $name -p NodeName`
 export WORK=$OLDATA/$nodeName
 export LOG=$WORK
 export DATA=$WORK/tendermint
