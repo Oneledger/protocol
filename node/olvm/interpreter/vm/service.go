@@ -50,7 +50,7 @@ func (c *Container) Exec(request *runner.OLVMRequest, result *runner.OLVMResult)
 
 		error := runner.Call(request, result)
 		if error != nil {
-			status_ch <- monitor.Status{"Runtime error", monitor.STATUS_ERROR}
+			status_ch <- monitor.Status{error.Error(), monitor.STATUS_ERROR}
 		} else {
 			runner_ch <- true
 		}
