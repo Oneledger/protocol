@@ -7,16 +7,16 @@ import (
 	"net/rpc"
 	"strings"
 	"time"
+	"os/exec"
 
 	"github.com/Oneledger/protocol/node/global"
 	"github.com/Oneledger/protocol/node/log"
 	"github.com/Oneledger/protocol/node/olvm/interpreter/runner"
-	"github.com/Oneledger/protocol/node/sdk"
 )
 
 // TODO: Hardcoded port, needs to come from config
 //var DefaultClient = NewClient("tcp", "localhost:1980")
-var defaultClient *OLVMClient
+var defaultClient = NewClient("tcp", ":1980")
 
 func NewClient(protocol string, address string) *OLVMClient {
 
@@ -46,7 +46,10 @@ func AutoRun(request *runner.OLVMRequest) (result *runner.OLVMResult, err error)
 
 			// TODO: Not started the first time?
 			log.Debug("Relaunching OLVM")
-			go RunService()
+			// Run service in another process, so it will safer to crash
+			//go RunService()
+			cmd := exec.Command("./bin/server")
+			cmd.Start()
 
 			for err != nil && strings.HasSuffix(err.Error(), "connection refused") {
 				time.Sleep(time.Second)
@@ -72,8 +75,9 @@ func (c OLVMClient) Run(request *runner.OLVMRequest) (*runner.OLVMResult, error)
 			Value:      value,
 		}
 	*/
+	log.Info("Dialing service...","protocol", c.Protocol, "service", c.ServicePath)
 
-	client, err := rpc.DialHTTP(c.Protocol, ":"+sdk.GetPort(c.ServicePath))
+	client, err := rpc.DialHTTP(c.Protocol, c.ServicePath)
 	if err != nil {
 		return nil, err
 	}

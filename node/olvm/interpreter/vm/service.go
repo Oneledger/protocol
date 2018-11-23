@@ -7,15 +7,15 @@ import (
 	"net/http"
 	"net/rpc"
 	"runtime/debug"
+	//"time"
 
 	"github.com/Oneledger/protocol/node/global"
 	"github.com/Oneledger/protocol/node/log"
 	"github.com/Oneledger/protocol/node/olvm/interpreter/monitor"
 	"github.com/Oneledger/protocol/node/olvm/interpreter/runner"
-	"github.com/Oneledger/protocol/node/sdk"
 )
 
-var DefaultOLVMService *OLVMService
+var DefaultOLVMService = NewOLVMService("tcp", ":1980")
 
 func InitializeService() {
 	protocol := global.Current.OLVMProtocol
@@ -28,7 +28,7 @@ func (c *Container) Echo(request *runner.OLVMRequest, result *runner.OLVMResult)
 	return nil
 }
 
-func (c *Container) Exec(request *runner.OLVMRequest, result *runner.OLVMResult) error {
+func (c *Container) Exec(request *runner.OLVMRequest, result *runner.OLVMResult) (err error) {
 	log.Debug("Exec the Contract")
 
 	// TODO: Isn't this just a timer?
@@ -39,9 +39,11 @@ func (c *Container) Exec(request *runner.OLVMRequest, result *runner.OLVMResult)
 
 	defer func() {
 		if r := recover(); r != nil {
-			log.Error("OLVM Panicked", "status", r)
-			log.Dump("Details", "request", request, "result", result)
-			debug.PrintStack()
+			go func() {
+				debug.PrintStack()
+				log.Dump("Details", "request", request, "result", result)
+				log.Fatal("OLVM Panicked", "status", r)
+			}()
 		}
 	}()
 
@@ -49,26 +51,25 @@ func (c *Container) Exec(request *runner.OLVMRequest, result *runner.OLVMResult)
 	go func() {
 		runner := runner.CreateRunner()
 
-		result, error := runner.Call(request)
+		error := runner.Call(request, result)
 		if error != nil {
-			status_ch <- monitor.Status{"Runtime error", monitor.STATUS_ERROR}
+			status_ch <- monitor.Status{error.Error(), monitor.STATUS_ERROR}
 		} else {
 			runner_ch <- true
 		}
-		_ = result
 	}()
 
 	for {
 		select {
 		case <-runner_ch:
-			return nil
-
+			err = nil
+			return
 		case status := <-status_ch:
+			err = errors.New(fmt.Sprintf("%s : %d", status.Details, status.Code))
 			panic(status)
-			return errors.New(fmt.Sprintf("%s : %d", status.Details, status.Code))
 		}
 	}
-	return nil
+	return
 }
 
 func (ol OLVMService) Run() {
@@ -78,7 +79,7 @@ func (ol OLVMService) Run() {
 	rpc.Register(container)
 	rpc.HandleHTTP()
 
-	listen, err := net.Listen(ol.Protocol, ":"+sdk.GetPort(ol.Address))
+	listen, err := net.Listen(ol.Protocol, ol.Address)
 	if err != nil {
 		log.Fatal("listen error:", "err", err)
 	}
