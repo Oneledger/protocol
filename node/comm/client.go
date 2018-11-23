@@ -192,3 +192,13 @@ func Block(height int64) (res *ctypes.ResultBlock) {
 	}
 	return result
 }
+
+// TODO Temporary placed it here to test a new Query approach
+type ApplyValidatorArguments struct {
+	Id           string
+	Amount       string
+}
+
+func init() {
+	serial.Register(ApplyValidatorArguments{})
+}

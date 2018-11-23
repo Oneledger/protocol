@@ -18,7 +18,7 @@ var applyvalidatorCmd = &cobra.Command{
 	Run:   ApplyValidator,
 }
 
-var applyValidatorArgs *shared.ApplyValidatorArguments = &shared.ApplyValidatorArguments{}
+var applyValidatorArgs *comm.ApplyValidatorArguments = &comm.ApplyValidatorArguments{}
 
 func init() {
 	RootCmd.AddCommand(applyvalidatorCmd)

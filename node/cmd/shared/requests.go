@@ -7,6 +7,8 @@
 package shared
 
 import (
+	"github.com/Oneledger/protocol/node/comm"
+	"github.com/Oneledger/protocol/node/serial"
 	"os"
 
 	"github.com/Oneledger/protocol/node/action"
@@ -77,54 +79,22 @@ func CreateBalanceRequest(args *BalanceArguments) []byte {
 	return []byte(nil)
 }
 
-type ApplyValidatorArguments struct {
-	Id           string
-	Amount       string
-}
-
 // CreateRequest builds and signs the transaction based on the arguments
-func CreateApplyValidatorRequest(args *ApplyValidatorArguments) []byte {
-	conv := convert.NewConvert()
-
-	party := GetAccountKey(args.Id)
-	if party == nil {
-		log.Fatal("System doesn't recognize the parties", "args", args, "party", party)
+func CreateApplyValidatorRequest(args *comm.ApplyValidatorArguments) []byte {
+	request, err := serial.Serialize(args, serial.CLIENT)
+	if err != nil {
+		log.Error("Failed to Serialize arguments: ", err)
 	}
 
-	if args.Amount == "" {
-		log.Error("Missing an amount argument")
-		return nil
+	response := comm.Query("/applyValidators", request)
+
+	if response == nil {
+		log.Warn("Query returned no response", "request", request)
 	}
 
-	balance := GetBalance(party).GetAmountByName("VT")
+	log.Debug("CreateApplyValidatorRequest", "response", response)
 
-	log.Dump("ValidatorBalance", "balance", balance)
-
-	if &balance == nil {
-		log.Error("Missing Balance", "balance", balance)
-		return nil
-	}
-
-	amount := conv.GetCoin(args.Amount, "VT")
-
-	// Create base transaction
-	// TODO Need to populate all fields correctly
-	validator := &action.ApplyValidator{
-		Base: action.Base{
-			Type:     action.APPLY_VALIDATOR,
-			ChainId:  app.ChainId,
-			Owner:    party,
-			Signers:  action.GetSigners(party),
-			Sequence: GetSequenceNumber(party),
-		},
-
-		AccountKey:         party,
-		TendermintAddress: "SomeAddress",
-		TendermintPubKey:  "SomePubKey",
-		Stake:             amount,
-	}
-
-	return SignAndPack(action.Transaction(validator))
+	return response.([]byte)
 }
 
 type SendArguments struct {
