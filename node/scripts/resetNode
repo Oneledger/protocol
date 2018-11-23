@@ -51,37 +51,8 @@ tmTags="tx.type,tx.owner"
 # Setup the initial files
 #
 cat $STAGING/$SUBDIR/config/config.toml | awk -v var="$tmTags" '{if ($1=="index_tags") print "index_tags = \"" var "\""; else print $0}' > $DATA/config/config.toml
-#cp $STAGING/$SUBDIR/config/priv_validator.json $DATA/config/priv_validator.json
 cat $STAGING/node0/config/genesis.json | jq -f $CMD/genesis.jq > $DATA/config/genesis.json
 cp $STAGING/$SUBDIR/config/node_key.json $DATA/config/node_key.json
-
-#ls $DATA/config
-
-
-#
-# Reset the main tendermint chain
-#
-#tendermint unsafe_reset_all --home $DATA > $LOG/tendermint_init.log
-
-#
-# Do the initialization process
-#
-#tendermint init --home $DATA > $LOG/tendermint_init.log
-
-#
-# Reset our chain
-#
-
-#olfullnode unsafe_reset_all > $LOG/olfullnode_init.log
-#olfullnode init > $LOG/olfullnode_init.log
-
-#
-# Reset Etheruem's chain
-#
-
-#
-# Reset the Bitcoin chain
-#
 
 popd > /dev/null
 

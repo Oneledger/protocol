@@ -13,10 +13,8 @@ fi
 #
 # For now, use local dir but needs to be fixed
 #
+nodeName=`olconfig get -c $name -p NodeName`
 export CMD=$OLSCRIPT
-
-nodeName=`$CMD/lookup $name NodeName`
-
 export WORK=$OLDATA/$nodeName
 export LOG=$WORK
 export DATA=$WORK/tendermint
@@ -42,13 +40,13 @@ fi
 #
 # Stop OLFullnode
 #
-pids=`pgrep -f "olfullnode.*--node $nodeName.*"`
+pids=`pgrep -f "olfullnode.*-c $name.*"`
 if ! [ -z "$pids" ]
 then
 	echo "============================================================" >> $LOG/olfullnode.log
 	echo "Stopping Fullnode" >> $LOG/olfullnode.log
 	echo "============================================================" >> $LOG/olfullnode.log
-	pkill -f "olfullnode.*--node $nodeName.*" >> $LOG/olfullnode.log
+	pkill -f "olfullnode.*-c $name.*" >> $LOG/olfullnode.log
 	killed=true
 fi
 

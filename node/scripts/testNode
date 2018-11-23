@@ -9,7 +9,7 @@ else
 	name=$1
 fi
 
-nodeName=`$CMD/lookup $name NodeName`
+nodeName=`olconfig get -c $name -p NodeName`
 export WORK=$OLDATA/$nodeName
 export LOG=$WORK
 export DATA=$WORK/tendermint
@@ -22,7 +22,7 @@ if [ -z "$pids" ]
 then
 	exit 0
 else
-	pids=`pgrep -f "olfullnode.*--node $nodeName.*"`
+	pids=`pgrep -f "olfullnode.*-c $name.*"`
 	if [ -z "$pids" ]
 	then
 		exit 0

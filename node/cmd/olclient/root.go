@@ -16,7 +16,6 @@ import (
 	"github.com/Oneledger/protocol/node/global"
 	"github.com/Oneledger/protocol/node/log"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 )
 
 var RootCmd = &cobra.Command{
@@ -79,9 +78,11 @@ func environment() {
 	log.Debug("Loading Environment")
 	config.ClientConfig()
 
+	config.UpdateContext()
+
 	// TODO: Static variables vs Dynamic variables :-(
-	global.Current.SDKAddress = viper.Get("SDKAddress").(string)
-	global.Current.RpcAddress = viper.Get("RpcAddress").(string)
+	//global.Current.SDKAddress = viper.Get("SDKAddress").(string)
+	//global.Current.RpcAddress = viper.Get("RpcAddress").(string)
 
 	//viper.AutomaticEnv()
 }
