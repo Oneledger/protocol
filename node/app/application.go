@@ -122,7 +122,7 @@ func GetSourceCode() string {
 
 	// TODO: Just a hardcoded example
 	path := os.Getenv("OLROOT") + "/protocol/node/olvm/interpreter/samples"
-	filePath := path + "/helloworld.js"
+	filePath := path + "/deadloop.js"
 	data, err := ioutil.ReadFile(filePath)
 	if err != nil {
 		log.Fatal("Can get Source File", "err", err)
@@ -131,7 +131,6 @@ func GetSourceCode() string {
 }
 
 func RunVM() {
-
 	log.Debug("Starting up Smart Contract Engine")
 
 	// TODO: Temporary until fullnodes correctly integrate with viper
