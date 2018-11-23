@@ -77,6 +77,56 @@ func CreateBalanceRequest(args *BalanceArguments) []byte {
 	return []byte(nil)
 }
 
+type ApplyValidatorArguments struct {
+	Id           string
+	Amount       string
+}
+
+// CreateRequest builds and signs the transaction based on the arguments
+func CreateApplyValidatorRequest(args *ApplyValidatorArguments) []byte {
+	conv := convert.NewConvert()
+
+	party := GetAccountKey(args.Id)
+	if party == nil {
+		log.Fatal("System doesn't recognize the parties", "args", args, "party", party)
+	}
+
+	if args.Amount == "" {
+		log.Error("Missing an amount argument")
+		return nil
+	}
+
+	balance := GetBalance(party).GetAmountByName("VT")
+
+	log.Dump("ValidatorBalance", "balance", balance)
+
+	if &balance == nil {
+		log.Error("Missing Balance", "balance", balance)
+		return nil
+	}
+
+	amount := conv.GetCoin(args.Amount, "VT")
+
+	// Create base transaction
+	// TODO Need to populate all fields correctly
+	validator := &action.ApplyValidator{
+		Base: action.Base{
+			Type:     action.APPLY_VALIDATOR,
+			ChainId:  app.ChainId,
+			Owner:    party,
+			Signers:  action.GetSigners(party),
+			Sequence: GetSequenceNumber(party),
+		},
+
+		AccountKey:         party,
+		TendermintAddress: "SomeAddress",
+		TendermintPubKey:  "SomePubKey",
+		Stake:             amount,
+	}
+
+	return SignAndPack(action.Transaction(validator))
+}
+
 type SendArguments struct {
 	Party        string
 	CounterParty string
