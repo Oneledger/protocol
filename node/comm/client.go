@@ -181,7 +181,12 @@ func Search(query string, prove bool, page, perPage int) (res *ctypes.ResultTxSe
 func Block(height int64) (res *ctypes.ResultBlock) {
 	client := GetClient()
 
-	result, err := client.Block(&height)
+	// Pass nil if given 0 to return the latest block
+	var h *int64
+	if height != 0 {
+		h = &height
+	}
+	result, err := client.Block(h)
 	if err != nil {
 		return nil
 	}

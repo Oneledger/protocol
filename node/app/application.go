@@ -10,7 +10,6 @@ import (
 	"io/ioutil"
 	"math/big"
 	"os"
-	"strconv"
 
 	"github.com/Oneledger/protocol/node/abci"
 	"github.com/Oneledger/protocol/node/action"
@@ -494,13 +493,7 @@ func (app Application) DeliverTx(tx []byte) ResponseDeliverTx {
 		}
 	}
 
-	tagType := strconv.FormatInt(int64(transaction.TransactionType()), 10)
-	tags := make([]common.KVPair, 1)
-	tag := common.KVPair{
-		Key:   []byte("tx.type"),
-		Value: []byte(tagType),
-	}
-	tags = append(tags, tag)
+	tags := transaction.TransactionTags()
 
 	result := ResponseDeliverTx{
 		Code:      errorCode,

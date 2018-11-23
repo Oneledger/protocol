@@ -45,7 +45,7 @@ pushd $WORK > /dev/null
 rm $LOG/*.log > /dev/null 2>&1
 
 # Define tags to be indexed in tendermint
-tmTags="tx.type"
+tmTags="tx.type,tx.owner"
 
 #
 # Setup the initial files
