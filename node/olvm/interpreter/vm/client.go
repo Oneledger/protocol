@@ -41,15 +41,17 @@ func AutoRun(request *runner.OLVMRequest) (result *runner.OLVMResult, err error)
 
 	// TODO: Should be based on error code, not text...
 	if err != nil {
-		log.Dump("Failed", err, result)
+		log.Dump("Failed to run", err, result)
 		if strings.HasSuffix(err.Error(), "connection refused") {
-			//try to launch the service
+
+			// Pause for a bit, might be a race condition
+			time.Sleep(time.Second)
 
 			// TODO: Not started the first time?
 			log.Debug("Relaunching OLVM")
 
 			// Run service in another process, so it will safer to crash
-			go RunService()
+			//go RunService()
 
 			// TODO: This needs to be setup correctly with the protocol (ie. build, install, docker, etc)
 			//cmd := exec.Command("./bin/server")
@@ -57,7 +59,7 @@ func AutoRun(request *runner.OLVMRequest) (result *runner.OLVMResult, err error)
 
 			for err != nil && strings.HasSuffix(err.Error(), "connection refused") {
 				log.Dump("Failed Again", err, result)
-				time.Sleep(3 * time.Second)
+				time.Sleep(time.Second)
 				log.Debug("Trying to ReRun")
 				result, err = defaultClient.Run(request)
 			}
@@ -84,6 +86,7 @@ func (c OLVMClient) Run(request *runner.OLVMRequest) (*runner.OLVMResult, error)
 
 	client, err := rpc.DialHTTP(c.Protocol, ":"+sdk.GetPort(c.ServicePath))
 	if err != nil {
+		log.Dump("Failded to Connect", err, client)
 		return nil, err
 	}
 
@@ -91,9 +94,11 @@ func (c OLVMClient) Run(request *runner.OLVMRequest) (*runner.OLVMResult, error)
 	// TODO: Shouldn't pass by address for the result
 	err = client.Call("Container.Exec", request, &result)
 	if err != nil {
+		log.Dump("Failded to Exec", err, request)
 		return nil, err
 	}
 
+	log.Dump("Have a Result", result)
 	return &result, nil
 }
 

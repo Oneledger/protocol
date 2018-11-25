@@ -11,7 +11,6 @@ import (
 	"github.com/Oneledger/protocol/node/log"
 )
 
-
 func (runner Runner) setupContract(request *OLVMRequest) bool {
 	address := request.Address
 	sourceCode := ""
@@ -29,7 +28,7 @@ func (runner Runner) setupContract(request *OLVMRequest) bool {
 	if sourceCode == "" {
 		return false
 	}
-	log.Debug("get source code","sourceCode", sourceCode)
+	log.Debug("get source code", "sourceCode", sourceCode)
 	_, error := runner.vm.Run(`var module = {};(function(module){` + sourceCode + `})(module)`)
 	if error == nil {
 		return true
@@ -61,6 +60,6 @@ func getSourceCodeFromSamples(address string) string {
 }
 
 func getSourceCodeFromBlockChain(address string) string {
-	log.Fatal("Unimplemented")
+	log.Fatal("SourceCodeFrom BlockChain is Unimplemented")
 	return ""
 }

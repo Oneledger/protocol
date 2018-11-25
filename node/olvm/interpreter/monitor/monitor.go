@@ -6,12 +6,15 @@ package monitor
 import (
 	"os"
 	"time"
+
+	"github.com/Oneledger/protocol/node/log"
 )
 
 func (monitor Monitor) CheckStatus(status_ch chan Status) {
 	i := 0
 	for {
 		time.Sleep(time.Second)
+		log.Debug("Wake up and check process")
 		i = i + 1
 		if i >= monitor.TickerThreshold {
 			status_ch <- Status{"Reach the ticker threshold, might have a dead loop", STATUS_DEADLOOP}

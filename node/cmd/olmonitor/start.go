@@ -6,6 +6,8 @@
 package main
 
 import (
+	"bytes"
+	"io"
 	"os"
 	"os/exec"
 	"os/signal"
@@ -72,9 +74,8 @@ func StartMonitor(cmd *cobra.Command, args []string) {
 
 	CatchSigterm()
 
-	rerunProcess(arguments.path, arguments.argv)
-
 	log.Debug("Waiting forever...")
+	rerunProcess(arguments.path, arguments.argv)
 }
 
 // Continue to restart the child
@@ -82,11 +83,28 @@ func rerunProcess(path string, argv []string) {
 	count := 10 // TODO: Needs to be bounded, driven by config, reset by time
 	for {
 		log.Debug("Executing command", "path", path)
+		var stdoutBuf, stderrBuf bytes.Buffer
 
 		command := exec.Command(path, argv...)
+		stdoutIn, _ := command.StdoutPipe()
+		stderrIn, _ := command.StderrPipe()
+
+		var errStdout, errStderr error
+		stdout := io.MultiWriter(os.Stdout, &stdoutBuf)
+		stderr := io.MultiWriter(os.Stderr, &stderrBuf)
+
 		if err := command.Start(); err != nil {
 			log.Fatal("Invalid Process", "path", path, "argv", argv)
 		}
+
+		go func() {
+			_, errStdout = io.Copy(stdout, stdoutIn)
+		}()
+
+		go func() {
+			_, errStderr = io.Copy(stderr, stderrIn)
+		}()
+
 		count--
 		command.Wait() // Catches SIGCHILD, reaps process correctly
 		if count < 1 {

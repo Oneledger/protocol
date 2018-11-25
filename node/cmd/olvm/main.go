@@ -6,7 +6,10 @@
 package main
 
 import (
+	"os"
+
 	"github.com/Oneledger/protocol/node/global"
+	"github.com/Oneledger/protocol/node/log"
 	"github.com/tendermint/tendermint/libs/common"
 )
 
@@ -16,6 +19,7 @@ var service common.Service
 var context *global.Context // Global runtime context
 
 func main() {
+	log.Debug("Starting up a OLVM", "args", os.Args)
 	Execute() // Pass control to Cobra
 }
 

@@ -31,7 +31,7 @@ func (c *Container) Echo(request *runner.OLVMRequest, result *runner.OLVMResult)
 }
 
 func (c *Container) Exec(request *runner.OLVMRequest, result *runner.OLVMResult) (err error) {
-	log.Debug("Exec the Contract")
+	log.Dump("Exec a Contract", request)
 
 	// TODO: Isn't this just a timer?
 	mo := monitor.CreateMonitor(10, monitor.DEFAULT_MODE, "./ovm.pid")
@@ -51,8 +51,10 @@ func (c *Container) Exec(request *runner.OLVMRequest, result *runner.OLVMResult)
 
 	go mo.CheckStatus(status_ch)
 	go func() {
+		log.Debug("Creating a Runner")
 		runner := runner.CreateRunner()
 
+		log.Debug("Calling the Runner")
 		error := runner.Call(request, result)
 		if error != nil {
 			status_ch <- monitor.Status{error.Error(), monitor.STATUS_ERROR}
@@ -68,6 +70,7 @@ func (c *Container) Exec(request *runner.OLVMRequest, result *runner.OLVMResult)
 			return
 		case status := <-status_ch:
 			err = errors.New(fmt.Sprintf("%s : %d", status.Details, status.Code))
+			log.Dump("Have an error", err)
 			panic(status)
 		}
 	}
@@ -96,6 +99,7 @@ func (ol OLVMService) Run() {
 		log.Fatal("listen error:", "err", err)
 	}
 
+	log.Debug("Waiting for a request")
 	http.Serve(listen, nil)
 }
 

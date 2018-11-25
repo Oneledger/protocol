@@ -142,7 +142,7 @@ func RunVM() {
 
 	request := &runner.OLVMRequest{
 		From:       "0x0",
-		Address:    "embedded://",
+		Address:    "embed://",
 		CallString: "",
 		Value:      0,
 		SourceCode: GetSourceCode(),
