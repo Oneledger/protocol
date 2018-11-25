@@ -99,6 +99,7 @@ func (app Application) Initialize() {
 		log.Debug("NodeAccountName not currently set")
 	}
 	app.StartSDK()
+	RunVM()
 }
 
 // Start up a local server for direct connections from clients
@@ -115,7 +116,6 @@ func (app Application) StartSDK() {
 	app.SDK = sdk
 	app.SDK.Start()
 
-	RunVM()
 }
 
 func GetSourceCode() string {
@@ -137,12 +137,12 @@ func RunVM() {
 	global.Current.OLVMAddress = viper.Get("OLVMAddress").(string)
 	global.Current.OLVMProtocol = viper.Get("OLVMProtocol").(string)
 
-	vm.InitializeService()
+	//vm.InitializeService()
 	vm.InitializeClient()
 
 	request := &runner.OLVMRequest{
 		From:       "0x0",
-		Address:    "samples://helloworld",
+		Address:    "embedded://",
 		CallString: "",
 		Value:      0,
 		SourceCode: GetSourceCode(),
@@ -153,8 +153,9 @@ func RunVM() {
 	log.Dump("Engine input", request)
 	reply, err := vm.AutoRun(request)
 	if err != nil {
-		log.Fatal("Contract Engine Failed to Start", "err", err)
+		log.Warn("Contract Engine Failed to Start", "err", err)
 	}
+
 	log.Dump("Engine output", reply)
 }
 

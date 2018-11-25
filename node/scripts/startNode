@@ -69,6 +69,8 @@ then
 	echo "============================================================" >> $LOG/olfullnode.log
 	echo "Starting OLFullnode" >> $LOG/olfullnode.log
 	echo "============================================================" >> $LOG/olfullnode.log
+	olmonitor start olvm execute -c $name >>$LOG/olvm.log 2>&1 &
+
 	olfullnode node --node $nodeName \
 		--root $WORK/olfullnode \
 		--app $appAddress \

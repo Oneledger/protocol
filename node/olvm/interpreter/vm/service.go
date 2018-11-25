@@ -13,11 +13,13 @@ import (
 	"github.com/Oneledger/protocol/node/log"
 	"github.com/Oneledger/protocol/node/olvm/interpreter/monitor"
 	"github.com/Oneledger/protocol/node/olvm/interpreter/runner"
+	"github.com/Oneledger/protocol/node/sdk"
 )
 
-var DefaultOLVMService = NewOLVMService("tcp", ":1980")
+var DefaultOLVMService *OLVMService
 
 func InitializeService() {
+	log.Debug("Initialize Service")
 	protocol := global.Current.OLVMProtocol
 	address := global.Current.OLVMAddress
 	DefaultOLVMService = NewOLVMService(protocol, address)
@@ -42,7 +44,7 @@ func (c *Container) Exec(request *runner.OLVMRequest, result *runner.OLVMResult)
 			go func() {
 				debug.PrintStack()
 				log.Dump("Details", "request", request, "result", result)
-				log.Fatal("OLVM Panicked", "status", r)
+				log.Warn("OLVM Panicked", "status", r)
 			}()
 		}
 	}()
@@ -73,13 +75,23 @@ func (c *Container) Exec(request *runner.OLVMRequest, result *runner.OLVMResult)
 }
 
 func (ol OLVMService) Run() {
-	log.Debug("Service is running", "protocol", ol.Protocol, "address", ol.Address)
+	defer func() {
+		if r := recover(); r != nil {
+			go func() {
+				debug.PrintStack()
+				log.Warn("OLVM Panicked", "status", r)
+			}()
+		}
+	}()
+
+	log.Debug("Starting Service", "protocol", ol.Protocol, "address", ol.Address)
 
 	container := new(Container)
 	rpc.Register(container)
 	rpc.HandleHTTP()
 
-	listen, err := net.Listen(ol.Protocol, ol.Address)
+	log.Debug("Listening on the port")
+	listen, err := net.Listen(ol.Protocol, ":"+sdk.GetPort(ol.Address))
 	if err != nil {
 		log.Fatal("listen error:", "err", err)
 	}

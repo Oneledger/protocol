@@ -28,14 +28,13 @@ pushd $WORK > /dev/null
 #
 # Stop Tendermint consensus
 #
-
 pids=`pgrep -f "tendermint.*--home $DATA.*"`
 if ! [ -z "$pids" ]
 then
 	echo "============================================================" >> $LOG/tendermint.log
 	echo "Stopping Tendermint" >> $LOG/tendermint.log
 	echo "============================================================" >> $LOG/tendermint.log
-	pkill -f "tendermint.*--home $DATA.*" >> $LOG/tendermint.log
+	pkill -9 -f "tendermint.*--home $DATA.*" >> $LOG/tendermint.log
 	killed=true
 fi
 
@@ -48,7 +47,21 @@ then
 	echo "============================================================" >> $LOG/olfullnode.log
 	echo "Stopping Fullnode" >> $LOG/olfullnode.log
 	echo "============================================================" >> $LOG/olfullnode.log
-	pkill -f "olfullnode.*--node $nodeName.*" >> $LOG/olfullnode.log
+	pkill -9 -f "olfullnode.*--node $nodeName.*" >> $LOG/olfullnode.log
+	killed=true
+fi
+
+pids=`pgrep -f "olmonitor start.*-c $name"`
+if ! [ -z "$pids" ]
+then
+	pkill -9 -f "olmonitor start.*-c $name" >> $LOG/olvm.log
+	killed=true
+fi
+
+pids=`pgrep -f "olvm execute -c $name"`
+if ! [ -z "$pids" ]
+then
+	pkill -9 -f "olvm execute -c $name" >> $LOG/olvm.log
 	killed=true
 fi
 
