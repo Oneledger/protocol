@@ -44,6 +44,8 @@ func GetPort(addr string) string {
 // Start a new SDK Server
 func NewServer(addr string, sdkServer pb.SDKServer) (*Server, error) {
 
+	log.Debug("SDK listens on", "addr", addr)
+
 	listener, err := net.Listen("tcp", ":"+GetPort(addr))
 	if err != nil {
 		return nil, fmt.Errorf("Failed to start tcp listener on port %s err=%v", addr, err)

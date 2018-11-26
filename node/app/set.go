@@ -108,6 +108,7 @@ func HandleRegisterIdentity(app Application, arguments map[string]string) interf
 	return "Broadcast Identity"
 }
 
+// TODO: Called by olfullnode, not olclient?
 func CreateRegisterRequest(identityName string, accountKey id.AccountKey) action.Transaction {
 	LoadPrivValidatorFile()
 
@@ -116,7 +117,7 @@ func CreateRegisterRequest(identityName string, accountKey id.AccountKey) action
 			Type:     action.REGISTER,
 			ChainId:  ChainId,
 			Owner:    accountKey,
-			Signers:  action.GetSigners(accountKey),
+			Signers:  action.GetSigners(accountKey), // TODO: Server-side? Then this is wrong
 			Sequence: global.Current.Sequence,
 		},
 		Identity:          identityName,

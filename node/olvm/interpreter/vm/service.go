@@ -34,8 +34,8 @@ func (c *Container) Echo(request *runner.OLVMRequest, result *runner.OLVMResult)
 func (c *Container) Exec(request *runner.OLVMRequest, result *runner.OLVMResult) (err error) {
 	log.Dump("Exec a Contract", request)
 
-	// TODO: Isn't this just a timer?
-	mo := monitor.CreateMonitor(2, monitor.DEFAULT_MODE, "./ovm.pid")
+	// TODO: Isn't this just a timer? There is an otto based timer as well, that is nicer
+	mo := monitor.CreateMonitor(4, monitor.DEFAULT_MODE, "./ovm.pid")
 
 	status_ch := make(chan monitor.Status)
 	runner_ch := make(chan bool)
@@ -76,9 +76,16 @@ func (c *Container) Exec(request *runner.OLVMRequest, result *runner.OLVMResult)
 
 		case status := <-status_ch:
 			err = errors.New(fmt.Sprintf("%s : %d", status.Details, status.Code))
-			log.Dump("Have an error", err)
-			//panic(status) // TODO: the panic is caught elsewhere, so this doesn't work
-			os.Exit(0)
+			log.Dump("Have an error, exiting process", err, request, result)
+			if result.Ret == "HALT" {
+				// SOFT EXIT
+				log.Debug("Picked up a Soft Exit")
+				break
+			} else {
+				// HARD EXIT
+				//panic(status) // TODO: the panic is caught elsewhere, so this doesn't work
+				os.Exit(0)
+			}
 		}
 		log.Debug("Redoing Select")
 	}

@@ -98,6 +98,7 @@ func (c OLVMClient) Run(request *runner.OLVMRequest) (*runner.OLVMResult, error)
 		return nil, err
 	}
 
+	client.Close()
 	log.Dump("Have a Result", result)
 	return &result, nil
 }

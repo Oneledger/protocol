@@ -9,6 +9,7 @@ package comm
 
 import (
 	"reflect"
+	"runtime/debug"
 	"time"
 
 	"github.com/Oneledger/protocol/node/global"
@@ -46,18 +47,15 @@ func GetClient() (client *rpcclient.HTTP) {
 			break
 		}
 
-		log.Warn("Retrying RPC Client", "address", global.Current.RpcAddress)
-		time.Sleep(1 * time.Second)
-	}
-
-	for i := 0; i < 10; i++ {
 		result, err := cachedClient.Status()
 		if err == nil {
 			log.Debug("Connected", "result", result)
 			break
 		}
-		log.Warn("Waiting for RPC Client", "address", global.Current.RpcAddress)
-		time.Sleep(2 * time.Second)
+
+		log.Warn("Retrying RPC Client", "err", err, "address", global.Current.RpcAddress)
+		debug.PrintStack()
+		time.Sleep(1 * time.Second)
 	}
 
 	return cachedClient
@@ -130,9 +128,8 @@ func Query(path string, packet []byte) interface{} {
 		response, err = client.ABCIQuery(path, packet)
 		if err != nil {
 			log.Error("ABCi Query Error", "path", path, "err", err)
-			return nil
-		}
-		if response != nil {
+
+		} else if response != nil {
 			break
 		}
 		time.Sleep(2 * time.Second)

@@ -33,7 +33,6 @@ func RunVM() {
 	global.Current.OLVMAddress = viper.Get("OLVMAddress").(string)
 	global.Current.OLVMProtocol = viper.Get("OLVMProtocol").(string)
 
-	//vm.InitializeService()
 	vm.InitializeClient()
 
 	request := &runner.OLVMRequest{
@@ -47,10 +46,12 @@ func RunVM() {
 	// TODO: Take the engine for a test spin
 
 	log.Dump("Engine input", request)
-	reply, err := vm.AutoRun(request)
-	if err != nil {
-		log.Warn("Contract Engine Failed to Start", "err", err)
-	}
 
-	log.Dump("Engine output", reply)
+	/*
+		reply, err := vm.AutoRun(request)
+		if err != nil {
+			log.Warn("Contract Engine Failed to Start", "err", err)
+		}
+		log.Dump("Engine output", reply)
+	*/
 }

@@ -95,6 +95,7 @@ func (app Application) Initialize() {
 	}
 	app.StartSDK()
 	log.Debug("SDK is started")
+
 	RunVM()
 }
 

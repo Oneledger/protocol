@@ -6,6 +6,7 @@ package runner
 import (
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/Oneledger/protocol/node/log"
 	"github.com/robertkrimen/otto"
@@ -16,6 +17,7 @@ func (runner Runner) exec(callString string) (string, string) {
 		callString = "default__()"
 		log.Info("callString is empty, use default", "callString", callString)
 	}
+
 	_, error := runner.vm.Run(`
     var contract = new module.Contract(context);
     var retValue = contract.` + callString)
@@ -50,6 +52,7 @@ func (runner Runner) exec(callString string) (string, string) {
 	if value, err := runner.vm.Get("ret"); err == nil {
 		returnValue, _ = value.ToString()
 	}
+
 	return output, returnValue
 }
 
@@ -60,6 +63,8 @@ func (runner Runner) Call(request *OLVMRequest, result *OLVMResult) (err error) 
 	defer func() {
 		if r := recover(); r != nil {
 			err = errors.New(fmt.Sprintf("Runtime Error: %v", r))
+			result.Out = r.(error).Error()
+			result.Ret = "HALT"
 		}
 	}()
 
@@ -69,8 +74,18 @@ func (runner Runner) Call(request *OLVMRequest, result *OLVMResult) (err error) 
 	log.Debug("Setup the SourceCode")
 	runner.setupContract(request)
 
+	// Setup a go routine to timeout and interrup processing in otto
+	runner.vm.Interrupt = make(chan func(), 1) // The buffer prevents blocking
+	go func() {
+		time.Sleep(2 * time.Second) // Stop after two seconds
+		runner.vm.Interrupt <- func() {
+			panic(errors.New("Halting Execution"))
+		}
+	}()
+
 	log.Debug("Exec the Smart Contract")
 	out, ret := runner.exec(request.CallString)
+
 	result.Out = out
 	result.Ret = ret
 	return
