@@ -7,9 +7,7 @@ package app
 
 import (
 	"bytes"
-	"io/ioutil"
 	"math/big"
-	"os"
 
 	"github.com/Oneledger/protocol/node/abci"
 	"github.com/Oneledger/protocol/node/action"
@@ -18,11 +16,8 @@ import (
 	"github.com/Oneledger/protocol/node/global"
 	"github.com/Oneledger/protocol/node/id"
 	"github.com/Oneledger/protocol/node/log"
-	"github.com/Oneledger/protocol/node/olvm/interpreter/runner"
-	"github.com/Oneledger/protocol/node/olvm/interpreter/vm"
 	"github.com/Oneledger/protocol/node/serial"
 	"github.com/Oneledger/protocol/node/status"
-	"github.com/spf13/viper"
 	"github.com/tendermint/tendermint/abci/types"
 	"github.com/tendermint/tendermint/libs/common"
 )
@@ -99,6 +94,7 @@ func (app Application) Initialize() {
 		log.Debug("NodeAccountName not currently set")
 	}
 	app.StartSDK()
+	log.Debug("SDK is started")
 	RunVM()
 }
 
@@ -116,47 +112,6 @@ func (app Application) StartSDK() {
 	app.SDK = sdk
 	app.SDK.Start()
 
-}
-
-func GetSourceCode() string {
-
-	// TODO: Just a hardcoded example
-	path := os.Getenv("OLROOT") + "/protocol/node/olvm/interpreter/samples"
-	filePath := path + "/deadloop.js"
-	data, err := ioutil.ReadFile(filePath)
-	if err != nil {
-		log.Fatal("Can get Source File", "err", err)
-	}
-	return string(data)
-}
-
-func RunVM() {
-	log.Debug("Starting up Smart Contract Engine")
-
-	// TODO: Temporary until fullnodes correctly integrate with viper
-	global.Current.OLVMAddress = viper.Get("OLVMAddress").(string)
-	global.Current.OLVMProtocol = viper.Get("OLVMProtocol").(string)
-
-	//vm.InitializeService()
-	vm.InitializeClient()
-
-	request := &runner.OLVMRequest{
-		From:       "0x0",
-		Address:    "embed://",
-		CallString: "",
-		Value:      0,
-		SourceCode: GetSourceCode(),
-	}
-
-	// TODO: Take the engine for a test spin
-
-	log.Dump("Engine input", request)
-	reply, err := vm.AutoRun(request)
-	if err != nil {
-		log.Warn("Contract Engine Failed to Start", "err", err)
-	}
-
-	log.Dump("Engine output", reply)
 }
 
 type BasicState struct {

@@ -73,8 +73,5 @@ func init() {
 func environment() {
 	log.Debug("Loading Environment")
 	config.ServerConfig()
-
-	// TODO: Static variables vs Dynamic variables :-(
-	//global.Current.SDKAddress = viper.Get("SDKAddress").(string)
-	//global.Current.RpcAddress = viper.Get("RpcAddress").(string)
+	config.UpdateContext()
 }

@@ -6,6 +6,7 @@ import (
 	"net"
 	"net/http"
 	"net/rpc"
+	"os"
 	"runtime/debug"
 	//"time"
 
@@ -34,7 +35,7 @@ func (c *Container) Exec(request *runner.OLVMRequest, result *runner.OLVMResult)
 	log.Dump("Exec a Contract", request)
 
 	// TODO: Isn't this just a timer?
-	mo := monitor.CreateMonitor(10, monitor.DEFAULT_MODE, "./ovm.pid")
+	mo := monitor.CreateMonitor(2, monitor.DEFAULT_MODE, "./ovm.pid")
 
 	status_ch := make(chan monitor.Status)
 	runner_ch := make(chan bool)
@@ -50,6 +51,7 @@ func (c *Container) Exec(request *runner.OLVMRequest, result *runner.OLVMResult)
 	}()
 
 	go mo.CheckStatus(status_ch)
+
 	go func() {
 		log.Debug("Creating a Runner")
 		runner := runner.CreateRunner()
@@ -64,15 +66,21 @@ func (c *Container) Exec(request *runner.OLVMRequest, result *runner.OLVMResult)
 	}()
 
 	for {
+		log.Debug("Checking Status")
 		select {
+
 		case <-runner_ch:
+			log.Debug("Finished Processing Normally")
 			err = nil
 			return
+
 		case status := <-status_ch:
 			err = errors.New(fmt.Sprintf("%s : %d", status.Details, status.Code))
 			log.Dump("Have an error", err)
-			panic(status)
+			//panic(status) // TODO: the panic is caught elsewhere, so this doesn't work
+			os.Exit(0)
 		}
+		log.Debug("Redoing Select")
 	}
 	return
 }

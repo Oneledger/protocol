@@ -1,6 +1,0 @@
-Identity,NodeName,RPCAddress,P2PAddress,AppAddress,BTCAddress,ETHAddress,SDKAddress
-David,David-Node,26601,26611,26621,NONE,NONE,26631
-Alice,Alice-Node,26602,26612,26622,18831,ethereum/A/geth.ipc,26632
-Bob,Bob-Node,26603,26613,26623,18832,ethereum/B/geth.ipc,26633
-Carol,Carol-Node,26604,26614,26624,18833,ethereum/C/geth.ipc,26634
-Emma,Emma-Node,26605,26615,26625,NONE,NONE,26635

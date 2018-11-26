@@ -22,8 +22,9 @@ rm -rf $OLDATA/staging/*
 #
 tendermint testnet --o $STAGING --v $NODECOUNT >> $OLDATA/tendermint.log
 
-# TODO: Set the chain name, and set an initial amount of tokens and that admin owns them all
-
+#
+# Process the validators first
+#
 nodes="David-Node#node0 Alice-Node#node1 Bob-Node#node2 Carol-Node#node3"
 
 for node in $nodes
@@ -31,6 +32,9 @@ do
 	$CMD/resetValidator $node $STAGING
 done
 
+#
+# Process any fullnodes that are watching
+#
 tendermint gen_node_key --home $OLDATA/staging/node4 >> $OLDATA/tendermint.log
 
 $CMD/resetNode "Emma-Node#node4" $STAGING

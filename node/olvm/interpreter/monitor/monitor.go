@@ -11,12 +11,14 @@ import (
 )
 
 func (monitor Monitor) CheckStatus(status_ch chan Status) {
+	log.Debug("Setting up a timer")
 	i := 0
 	for {
 		time.Sleep(time.Second)
-		log.Debug("Wake up and check process")
+		log.Debug("Wake up and check process", "i", i, "threshold", monitor.TickerThreshold)
 		i = i + 1
 		if i >= monitor.TickerThreshold {
+			log.Debug("OUT OF TIME!!!!")
 			status_ch <- Status{"Reach the ticker threshold, might have a dead loop", STATUS_DEADLOOP}
 			return
 		}
