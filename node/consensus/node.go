@@ -1,15 +1,17 @@
 package consensus
 
 import (
-	"github.com/Oneledger/protocol/node/app"
+	abcitypes "github.com/tendermint/tendermint/abci/types"
 	tmconfig "github.com/tendermint/tendermint/config"
 	tmnode "github.com/tendermint/tendermint/node"
 	"github.com/tendermint/tendermint/proxy"
 	"github.com/tendermint/tendermint/types"
 )
 
+type Node = tmnode.Node
+
 func NewNode(
-	application app.Application,
+	application abcitypes.Application,
 	configuration Config,
 	privValidator types.PrivValidator,
 	genesisDoc *types.GenesisDoc,

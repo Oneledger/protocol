@@ -19,6 +19,7 @@ import (
 	"path/filepath"
 
 	"github.com/Oneledger/protocol/node/persist"
+	tmnode "github.com/tendermint/tendermint/node"
 )
 
 var Current *Context
@@ -54,6 +55,8 @@ type Context struct {
 
 	PersistentPeers string
 	P2PAddress      string
+
+	ConsensusNode *tmnode.Node
 }
 
 func init() {
@@ -84,6 +87,10 @@ func NewContext(name string) *Context {
 func (context *Context) SetApplication(app persist.Access) persist.Access {
 	context.Application = app
 	return app
+}
+
+func (context *Context) SetConsensusNode(node *tmnode.Node) {
+	context.ConsensusNode = node
 }
 
 func (context *Context) GetApplication() persist.Access {

@@ -131,6 +131,8 @@ func StartNode(cmd *cobra.Command, args []string) {
 		os.Exit(-1)
 	}
 
+	global.Current.SetConsensusNode(service)
+
 	// TODO: Sleep until the node is connected and running
 	time.Sleep(10 * time.Second)
 	log.Debug("################### STARTED UP ######################")

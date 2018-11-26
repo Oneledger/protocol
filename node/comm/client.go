@@ -18,11 +18,11 @@ import (
 	ctypes "github.com/tendermint/tendermint/rpc/core/types"
 )
 
-var cachedClient *rpcclient.HTTP
+var cachedClient rpcclient.Client
 
 // HTTP interface, allows Broadcast?
 // TODO: Want to switch client type, based on config or cli args.
-func GetClient() (client *rpcclient.HTTP) {
+func GetClient() (client rpcclient.Client) {
 
 	defer func() {
 		if r := recover(); r != nil {
@@ -30,6 +30,11 @@ func GetClient() (client *rpcclient.HTTP) {
 			client = nil
 		}
 	}()
+
+	if global.Current.ConsensusNode != nil {
+		log.Info("Using local ConsensusNode ABCI Client")
+		return rpcclient.NewLocal(global.Current.ConsensusNode)
+	}
 
 	if cachedClient != nil {
 		//log.Debug("Cached RpcClient", "address", global.Current.RpcAddress)
