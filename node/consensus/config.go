@@ -6,7 +6,7 @@ import (
 	"github.com/tendermint/tendermint/config"
 )
 
-// Parameters to configure a tendermint node
+// Config is a OneLedger-specific configuration struct used to create a tendermint configuration
 type Config struct {
 	Moniker         string
 	RootDirectory   string
@@ -16,6 +16,7 @@ type Config struct {
 	PersistentPeers string
 }
 
+// NewConfig returns a ready-to-go tendermint configuration
 func NewConfig(olcfg Config) *config.Config {
 	rootDir := olcfg.RootDirectory
 
@@ -23,6 +24,7 @@ func NewConfig(olcfg Config) *config.Config {
 	cfg.BaseConfig.Moniker = olcfg.Moniker
 	cfg.BaseConfig.ProxyApp = "OneLedger"
 	cfg.BaseConfig.LogLevel = "main:info,state:info,consensus:info,*:error"
+
 	cfg.RPC.ListenAddress = olcfg.RPCAddress
 	cfg.P2P.ListenAddress = olcfg.P2PAddress
 	cfg.P2P.PersistentPeers = olcfg.PersistentPeers

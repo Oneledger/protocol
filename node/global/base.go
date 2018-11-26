@@ -16,6 +16,7 @@ package global
 
 import (
 	"os"
+	"path/filepath"
 
 	"github.com/Oneledger/protocol/node/persist"
 )
@@ -87,4 +88,9 @@ func (context *Context) SetApplication(app persist.Access) persist.Access {
 
 func (context *Context) GetApplication() persist.Access {
 	return context.Application
+}
+
+func ConsensusDir() string {
+	result, _ := filepath.Abs(filepath.Join(Current.RootDir, "..", "consensus"))
+	return result
 }

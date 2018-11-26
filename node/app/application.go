@@ -119,7 +119,7 @@ type BasicState struct {
 
 type State struct {
 	Amount string `json:"amount"`
-	Coin   string `json:"coin"`
+	Coin   string `json:"currency"`
 }
 
 // Use the Genesis block to initialze the system

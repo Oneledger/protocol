@@ -61,4 +61,4 @@ func (a AppState) MarshalJSON() ([]byte, error) {
 	return json.Marshal(jsOn)
 }
 
-// TODO: func (a AppState) UnmarshalJSON() ()
+// func (a AppState) UnmarshalJSON() (()

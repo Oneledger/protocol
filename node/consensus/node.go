@@ -1,8 +1,6 @@
 package consensus
 
 import (
-	"path/filepath"
-
 	"github.com/Oneledger/protocol/node/app"
 	tmconfig "github.com/tendermint/tendermint/config"
 	tmnode "github.com/tendermint/tendermint/node"
@@ -26,7 +24,7 @@ func NewNode(
 		return genesisDoc, nil
 	}
 
-	logger := NewLogger(filepath.Join(tmConfig.RootDir, "consensus.log"), *tmConfig)
+	logger := NewLogger(tmConfig.RootDir+".log", *tmConfig)
 
 	return tmnode.NewNode(
 		tmConfig,

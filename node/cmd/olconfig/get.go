@@ -76,7 +76,7 @@ func GetPeers(nodes []string) {
 		p2pAddress := strings.TrimPrefix(address, "tcp://")
 
 		// Call Tendermint to get it's node id
-		data := filepath.Join(os.Getenv("OLDATA"), nodeName, "tendermint", "config", "node_key.json")
+		data := filepath.Join(os.Getenv("OLDATA"), nodeName, "consensus", "config", "node_key.json")
 		nodeKey, err := p2p.LoadNodeKey(data)
 		if err != nil {
 			shared.Console.Error(err)

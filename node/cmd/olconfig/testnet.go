@@ -77,29 +77,22 @@ func runTestnet(cmd *cobra.Command, _ []string) error {
 	// Create the GenesisValidator list and its key files priv_validator.json and node_key.json
 	for i := 0; i < args.numValidators+args.numNonValidators; i++ {
 		isValidator := i < args.numValidators
-
 		nodeName := nodeNames[i]
 		nodeDir := filepath.Join(args.outputDir, nodeName+"-Node")
-
-		err := os.MkdirAll(filepath.Join(nodeDir, "consensus"), 0755)
+		configDir := filepath.Join(nodeDir, "consensus", "config")
+		err := os.MkdirAll(configDir, 0755)
 		if err != nil {
 			return err
 		}
 
 		// Make node key
-		nodeKey, err := p2p.LoadOrGenNodeKey(filepath.Join(nodeDir, "consensus", "node_key.json"))
+		_, err = p2p.LoadOrGenNodeKey(filepath.Join(configDir, "node_key.json"))
 		if err != nil {
 			return err
 		}
 
 		// Make private validator file
-		priv := nodeKey.PrivKey
-
-		pvFile := privval.GenFilePV(filepath.Join(nodeDir, "consensus", "priv_validator.json"))
-		pvFile.Address = priv.PubKey().Address()
-		pvFile.PubKey = priv.PubKey()
-		pvFile.PrivKey = priv
-
+		pvFile := privval.GenFilePV(filepath.Join(configDir, "priv_validator.json"))
 		pvFile.Save()
 
 		if isValidator {
@@ -121,7 +114,8 @@ func runTestnet(cmd *cobra.Command, _ []string) error {
 	for i := 0; i < args.numValidators+args.numNonValidators; i++ {
 		nodeName := nodeNames[i]
 		nodeDir := filepath.Join(args.outputDir, nodeName+"-Node")
-		err := genesisDoc.SaveAs(filepath.Join(nodeDir, "consensus", "genesis.json"))
+		configDir := filepath.Join(nodeDir, "consensus", "config")
+		err := genesisDoc.SaveAs(filepath.Join(configDir, "genesis.json"))
 		if err != nil {
 			return err
 		}
