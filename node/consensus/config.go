@@ -22,7 +22,7 @@ func NewConfig(olcfg Config) *config.Config {
 	cfg := config.DefaultConfig()
 	cfg.BaseConfig.Moniker = olcfg.Moniker
 	cfg.BaseConfig.ProxyApp = "OneLedger"
-
+	cfg.BaseConfig.LogLevel = "main:info,state:info,consensus:info,*:error"
 	cfg.RPC.ListenAddress = olcfg.RPCAddress
 	cfg.P2P.ListenAddress = olcfg.P2PAddress
 	cfg.P2P.PersistentPeers = olcfg.PersistentPeers

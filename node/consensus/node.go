@@ -10,9 +10,6 @@ import (
 	"github.com/tendermint/tendermint/types"
 )
 
-type genesisProvider tmnode.GenesisDocProvider
-type node tmnode.DBProvider
-
 func NewNode(
 	application app.Application,
 	configuration Config,
@@ -29,7 +26,7 @@ func NewNode(
 		return genesisDoc, nil
 	}
 
-	logger := NewLogger(filepath.Join(tmConfig.RootDir, "consensus.log"))
+	logger := NewLogger(filepath.Join(tmConfig.RootDir, "consensus.log"), *tmConfig)
 
 	return tmnode.NewNode(
 		tmConfig,
@@ -40,11 +37,3 @@ func NewNode(
 		noopMetrics,
 		logger)
 }
-
-// func NewNode(config *cfg.Config,
-// 	privValidator types.PrivValidator,
-// 	clientCreator proxy.ClientCreator,
-// 	genesisDocProvider GenesisDocProvider,
-// 	dbProvider DBProvider,
-// 	metricsProvider MetricsProvider,
-// 	logger log.Logger) (*Node, error) {
