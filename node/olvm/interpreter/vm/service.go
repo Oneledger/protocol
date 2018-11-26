@@ -80,14 +80,15 @@ func (c *Container) Exec(request *runner.OLVMRequest, result *runner.OLVMResult)
 			if result.Ret == "HALT" {
 				// SOFT EXIT
 				log.Debug("Picked up a Soft Exit")
-				break
+				err = nil
+				return
 			} else {
 				// HARD EXIT
 				//panic(status) // TODO: the panic is caught elsewhere, so this doesn't work
 				os.Exit(0)
 			}
 		}
-		log.Debug("Redoing Select")
+		log.Debug("Redoing Select Loop?")
 	}
 	return
 }

@@ -60,6 +60,9 @@ func HandleQuery(app Application, path string, arguments map[string]string) []by
 	case "/sequenceNumber":
 		result = HandleSequenceNumberQuery(app, arguments)
 
+	case "/testScript":
+		result = HandleTestScript(app, arguments)
+
 	default:
 		result = HandleError("Unknown Query", path, arguments)
 	}
@@ -359,4 +362,10 @@ func HandleSequenceNumberQuery(app Application, arguments map[string]string) int
 func SequenceNumber(app Application, accountKey []byte) interface{} {
 	sequenceRecord := NextSequence(&app, accountKey)
 	return sequenceRecord
+}
+
+func HandleTestScript(app Application, arguments map[string]string) interface{} {
+	log.Debug("TestScript", "arguments", arguments)
+	RunTestScript()
+	return "Ran the test"
 }

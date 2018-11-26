@@ -96,7 +96,7 @@ func (app Application) Initialize() {
 	app.StartSDK()
 	log.Debug("SDK is started")
 
-	RunVM()
+	StartVM()
 }
 
 // Start up a local server for direct connections from clients
