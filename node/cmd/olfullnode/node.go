@@ -115,7 +115,7 @@ func StartNode(cmd *cobra.Command, args []string) {
 		RootDirectory:   tmDir,
 		RPCAddress:      global.Current.RpcAddress,
 		P2PAddress:      global.Current.P2PAddress,
-		IndexTags:       []string{"tx.owner, tx.type"},
+		IndexTags:       []string{"tx.owner", "tx.type"},
 		PersistentPeers: global.Current.PersistentPeers,
 	}
 
