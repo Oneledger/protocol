@@ -21,6 +21,8 @@ import (
 	"math/big"
 )
 
+var _ types.Application = Application{}
+
 var ChainId string
 
 func init() {
