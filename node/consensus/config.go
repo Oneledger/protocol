@@ -8,29 +8,35 @@ import (
 
 // Parameters to configure a tendermint node
 type Config struct {
-	Moniker       string
-	RootDirectory string
-	RPCAddress    string
-	P2PAddress    string
-	ProxyAddress  string
-	IndexTags     []string
+	Moniker         string
+	RootDirectory   string
+	RPCAddress      string
+	P2PAddress      string
+	IndexTags       []string
+	PersistentPeers string
 }
 
-func NewConfig(olConfig *Config) *config.Config {
+func NewConfig(olcfg Config) *config.Config {
+	rootDir := olcfg.RootDirectory
+
 	cfg := config.DefaultConfig()
-	cfg.BaseConfig.Moniker = olConfig.Moniker
+	cfg.BaseConfig.Moniker = olcfg.Moniker
 	cfg.BaseConfig.ProxyApp = "OneLedger"
 
-	cfg.RPC.ListenAddress = olConfig.RPCAddress
-	cfg.P2P.ListenAddress = olConfig.P2PAddress
+	cfg.RPC.ListenAddress = olcfg.RPCAddress
+	cfg.P2P.ListenAddress = olcfg.P2PAddress
+	cfg.P2P.PersistentPeers = olcfg.PersistentPeers
 
-	cfg.TxIndex.IndexTags = strings.Join(olConfig.IndexTags, ",") // TODO: Put this in global
+	// TODO: Turn this off for production
+	cfg.P2P.AddrBookStrict = false
 
-	cfg.BaseConfig.RootDir = olConfig.RootDirectory
-	cfg.RPC.RootDir = olConfig.RootDirectory
-	cfg.P2P.RootDir = olConfig.RootDirectory
-	cfg.Mempool.RootDir = olConfig.RootDirectory
-	cfg.Consensus.RootDir = olConfig.RootDirectory
+	cfg.TxIndex.IndexTags = strings.Join(olcfg.IndexTags, ",") // TODO: Put this in global
+
+	cfg.BaseConfig.RootDir = rootDir
+	cfg.RPC.RootDir = rootDir
+	cfg.P2P.RootDir = rootDir
+	cfg.Mempool.RootDir = rootDir
+	cfg.Consensus.RootDir = rootDir
 
 	return cfg
 }

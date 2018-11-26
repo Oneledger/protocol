@@ -1,8 +1,10 @@
 package consensus
 
 import (
+	"path/filepath"
+
 	"github.com/Oneledger/protocol/node/app"
-	tmlog "github.com/tendermint/tendermint/libs/log"
+	tmconfig "github.com/tendermint/tendermint/config"
 	tmnode "github.com/tendermint/tendermint/node"
 	"github.com/tendermint/tendermint/proxy"
 	"github.com/tendermint/tendermint/types"
@@ -13,19 +15,21 @@ type node tmnode.DBProvider
 
 func NewNode(
 	application app.Application,
-	configuration *Config,
+	configuration Config,
 	privValidator types.PrivValidator,
 	genesisDoc *types.GenesisDoc,
-	logger tmlog.Logger,
 ) (*tmnode.Node, error) {
 	tmConfig := NewConfig(configuration)
 
 	clientCreator := proxy.NewLocalClientCreator(application)
-	noopMetrics := tmnode.DefaultMetricsProvider(nil)
+	nilMetricsConfig := tmconfig.InstrumentationConfig{false, "", 0}
+	noopMetrics := tmnode.DefaultMetricsProvider(&nilMetricsConfig)
 
 	genesisProvider := func() (*types.GenesisDoc, error) {
 		return genesisDoc, nil
 	}
+
+	logger := NewLogger(filepath.Join(tmConfig.RootDir, "consensus.log"))
 
 	return tmnode.NewNode(
 		tmConfig,
@@ -34,7 +38,6 @@ func NewNode(
 		genesisProvider,
 		tmnode.DefaultDBProvider,
 		noopMetrics,
-		// TODO: Separate logging
 		logger)
 }
 

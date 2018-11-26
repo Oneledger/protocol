@@ -50,6 +50,9 @@ type Context struct {
 	TendermintRoot    string
 	TendermintAddress string
 	TendermintPubKey  string
+
+	PersistentPeers string
+	P2PAddress      string
 }
 
 func init() {

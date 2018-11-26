@@ -21,27 +21,27 @@ export DATA=$WORK/tendermint
 
 pushd $WORK > /dev/null
 
+##
+## Startup Tendermint consensus
+##
+#pids=`pgrep -f "tendermint.*--home $DATA.*"`
+#if [ -z "$pids" ]
 #
-# Startup Tendermint consensus
+#then
+#	echo "============================================================" >> $LOG/tendermint.log
+#	echo "Starting Tendermint" >> $LOG/tendermint.log
+#	echo "============================================================" >> $LOG/tendermint.log
 #
-pids=`pgrep -f "tendermint.*--home $DATA.*"`
-if [ -z "$pids" ]
-
-then
-	echo "============================================================" >> $LOG/tendermint.log
-	echo "Starting Tendermint" >> $LOG/tendermint.log
-	echo "============================================================" >> $LOG/tendermint.log
-
-	tendermint node --home $DATA \
-		--moniker $nodeName \
-		--rpc.laddr $rpcAddress \
-		--p2p.laddr $p2pAddress \
-		--proxy_app $appAddress \
-		--p2p.persistent_peers $peers \
-		>> $LOG/tendermint.log 2>&1 &
-else
-	echo "Tendermint $nodeName was already running"
-fi
+#	tendermint node --home $DATA \
+#		--moniker $nodeName \
+#		--rpc.laddr $rpcAddress \
+#		--p2p.laddr $p2pAddress \
+#		--proxy_app $appAddress \
+#		--p2p.persistent_peers $peers \
+#		>> $LOG/tendermint.log 2>&1 &
+#else
+#	echo "Tendermint $nodeName was already running"
+#fi
 
 #
 # Startup OLFullnode
@@ -56,6 +56,9 @@ then
 	olfullnode node -c $name\
 		--root $WORK/olfullnode \
 		--tendermintRoot $DATA \
+		--address $rpcAddress \
+		--p2p $p2pAddress \
+		--persistent_peers $peers \
 		>> $LOG/olfullnode.log 2>&1 &
 
 	echo "$nodeName has been started"

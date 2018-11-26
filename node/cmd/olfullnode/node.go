@@ -8,18 +8,21 @@ package main
 import (
 	"os"
 	"os/signal"
+	"path/filepath"
 	"runtime/debug"
 	"syscall"
 	"time"
 
 	"github.com/Oneledger/protocol/node/app" // Import namespace
 	"github.com/Oneledger/protocol/node/cmd/shared"
+	"github.com/Oneledger/protocol/node/consensus"
 	"github.com/Oneledger/protocol/node/global"
 	"github.com/Oneledger/protocol/node/log"
 	"github.com/Oneledger/protocol/node/persist"
+	"github.com/tendermint/tendermint/privval"
+	"github.com/tendermint/tendermint/types"
 
 	"github.com/spf13/cobra"
-	"github.com/tendermint/tendermint/abci/server"
 )
 
 var nodeCmd = &cobra.Command{
@@ -96,12 +99,38 @@ func StartNode(cmd *cobra.Command, args []string) {
 	// TODO: Switch on config
 	//service = server.NewGRPCServer("unix://data.sock", types.NewGRPCApplication(*node))
 	//service = server.NewSocketServer("tcp://127.0.0.1:46658", *node)
-	service = server.NewSocketServer(global.Current.AppAddress, *node)
-	service.SetLogger(log.GetLogger())
 
-	// Set it running
-	err := service.Start()
+	tmDir, err := filepath.Abs(filepath.Join(global.Current.RootDir, "..", "tendermint"))
 	if err != nil {
+		log.Fatal("Wrong tmdir", "err", err)
+	}
+	privValidator := privval.LoadFilePV(filepath.Join(tmDir, "config", "priv_validator.json"))
+	genesisDoc, err := types.GenesisDocFromFile(filepath.Join(tmDir, "config", "genesis.json"))
+	if err != nil {
+		log.Fatal("Couldn't read genesis file", "location", filepath.Join(tmDir, "genesis.json"))
+	}
+	// Make consensus config
+	tmConfig := consensus.Config{
+		Moniker:         global.Current.NodeName,
+		RootDirectory:   tmDir,
+		RPCAddress:      global.Current.RpcAddress,
+		P2PAddress:      global.Current.P2PAddress,
+		IndexTags:       []string{"tx.owner, tx.type"},
+		PersistentPeers: global.Current.PersistentPeers,
+	}
+
+	// TODO: change the the priv_validator locaiton
+	service, err := consensus.NewNode(*node, tmConfig, privValidator, genesisDoc)
+	if err != nil {
+		log.Error("Can't start new node", "err", err)
+		os.Exit(1)
+	}
+
+	// service = server.NewSocketServer(global.Current.AppAddress, *node)
+	// Set it running
+	err = service.Start()
+	if err != nil {
+		log.Error("Can't start up node", "err", err)
 		os.Exit(-1)
 	}
 
