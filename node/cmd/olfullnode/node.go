@@ -8,7 +8,6 @@ package main
 import (
 	"os"
 	"runtime/debug"
-	"time"
 
 	"github.com/Oneledger/protocol/node/app" // Import namespace
 	"github.com/Oneledger/protocol/node/cmd/shared"
@@ -131,13 +130,6 @@ func StartNode(cmd *cobra.Command, args []string) {
 			os.Exit(-1)
 		}
 	*/
-
-	// TODO: Sleep until the node is connected and running
-	time.Sleep(10 * time.Second)
-	log.Debug("################### STARTED UP ######################")
-
-	// If the register flag is set, do that before waiting
-	Register()
 
 	log.Debug("Waiting forever...")
 	select {}
