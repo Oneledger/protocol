@@ -31,6 +31,7 @@ const (
 	PAYMENT            // Do a payment transaction on local chain
 	EXTERNAL_SEND      // Do send on external chain
 	SWAP               // Start a swap between chains
+	APPLY_VALIDATOR    // Apply a dynamic validator
 )
 
 const (
@@ -166,6 +167,8 @@ func (t Type) String() string {
 		return "EXTERNAL_SEND"
 	case SWAP:
 		return "SWAP"
+	case APPLY_VALIDATOR:
+		return "APPLY_VALIDATOR"
 	default:
 		return "INVALID"
 	}
