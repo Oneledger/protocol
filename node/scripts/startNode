@@ -37,6 +37,7 @@ then
 		>> $LOG/olfullnode.log 2>&1 &
 
 	echo "$nodeName has been started"
+	sleep 3
 else
 	echo "OLFullnode $nodeName was already running"
 fi

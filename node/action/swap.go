@@ -592,10 +592,10 @@ func NextStage(app interface{}, chain data.ChainType, context FunctionValues, tx
 	log.Debug("NextStage Swap", "swap", swap)
 	if nextStage == WAIT_FOR_CHAIN {
 		waitTime := 3 * lockPeriod
-		DelayedTransaction(SWAP, swap, waitTime)
+		DelayedTransaction(swap, waitTime)
 	} else {
 		waitTime := 1 * time.Second
-		DelayedTransaction(SWAP, swap, waitTime)
+		DelayedTransaction(swap, waitTime)
 	}
 	return true, nil
 }

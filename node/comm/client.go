@@ -8,14 +8,12 @@
 package comm
 
 import (
-	"reflect"
-	"time"
-
 	"github.com/Oneledger/protocol/node/global"
 	"github.com/Oneledger/protocol/node/log"
 	"github.com/Oneledger/protocol/node/serial"
 	rpcclient "github.com/tendermint/tendermint/rpc/client"
 	ctypes "github.com/tendermint/tendermint/rpc/core/types"
+	"reflect"
 )
 
 var cachedClient rpcclient.Client
@@ -32,6 +30,7 @@ func GetClient() (client rpcclient.Client) {
 	}()
 
 	if cachedClient != nil {
+
 		return cachedClient
 	}
 
@@ -43,7 +42,7 @@ func GetClient() (client rpcclient.Client) {
 		cachedClient = rpcclient.NewHTTP(global.Current.RpcAddress, "/websocket")
 	}
 
-	if cachedClient.IsRunning() {
+	if _, err := cachedClient.Status(); err == nil {
 		log.Debug("Client is running")
 		return cachedClient
 	}
@@ -141,28 +140,30 @@ func Query(path string, packet []byte) interface{} {
 	var response *ctypes.ResultABCIQuery
 	var err error
 
-	for i := 0; i < 20; i++ {
-		client := GetClient()
-		response, err = client.ABCIQuery(path, packet)
-		if err != nil {
-			log.Error("ABCi Query Error", "path", path, "err", err)
-			return nil
-		}
-		if response != nil {
-			break
-		}
-		time.Sleep(2 * time.Second)
+	//for i := 0; i < 20; i++ {
+	client := GetClient()
+	response, err = client.ABCIQuery(path, packet)
+	if err != nil {
+		log.Error("ABCi Query Error", "path", path, "err", err)
+		return nil
 	}
+	//if response != nil {
+	//	break
+	//}
+	//time.Sleep(2 * time.Second)
+	//}
 
 	if response == nil {
-		return "No results for " + path + " and " + string(packet)
+		//return "No results for " + path + " and " + string(packet)
+		log.Debug("response is empty")
+		return nil
 	}
 
 	var prototype interface{}
 	result, err := serial.Deserialize(response.Response.Value, prototype, serial.CLIENT)
 	if err != nil {
 		log.Error("Failed to deserialize Query:", "response", response.Response.Value)
-		return "Failed"
+		return nil
 	}
 	return result
 }
