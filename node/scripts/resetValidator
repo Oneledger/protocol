@@ -50,7 +50,7 @@ tmTags="tx.type,tx.owner"
 #
 # Setup the initial files
 #
-cat $STAGING/$SUBDIR/config/config.toml | awk -v var="$tmTags" '{if ($1=="index_tags") print "index_tags = \"" var "\""; else print $0}' > $DATA/config/config.toml
+cat $STAGING/$SUBDIR/config/config.toml | awk -v var="$tmTags" '{if ($1=="index_tags") print "index_tags = \"" var "\""; else print $0}' | awk '{if ($1=="create_empty_blocks") print $1 "= false"; else print $0}'> $DATA/config/config.toml
 cp $STAGING/$SUBDIR/config/priv_validator.json $DATA/config/priv_validator.json
 cat $STAGING/$SUBDIR/config/genesis.json | jq -f $CMD/genesis.jq > $DATA/config/genesis.json
 cp $STAGING/$SUBDIR/config/node_key.json $DATA/config/node_key.json

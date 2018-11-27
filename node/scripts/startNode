@@ -38,6 +38,7 @@ then
 		--p2p.laddr $p2pAddress \
 		--proxy_app $appAddress \
 		--p2p.persistent_peers $peers \
+		--log_level="state:error,mempool:error,*:error" \
 		>> $LOG/tendermint.log 2>&1 &
 else
 	echo "Tendermint $nodeName was already running"
