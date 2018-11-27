@@ -74,14 +74,6 @@ func AutoRun(request *runner.OLVMRequest) (result *runner.OLVMResult, err error)
 // Run a smart contract
 func (c OLVMClient) Run(request *runner.OLVMRequest) (*runner.OLVMResult, error) {
 
-	/*
-		request := &runner.OLVMRequest{
-			From:       from,
-			Address:    address,
-			CallString: callString,
-			Value:      value,
-		}
-	*/
 	log.Info("Dialing service...", "protocol", c.Protocol, "service", c.ServicePath)
 
 	client, err := rpc.DialHTTP(c.Protocol, ":"+sdk.GetPort(c.ServicePath))
@@ -91,6 +83,7 @@ func (c OLVMClient) Run(request *runner.OLVMRequest) (*runner.OLVMResult, error)
 	}
 
 	var result runner.OLVMResult
+
 	// TODO: Shouldn't pass by address for the result
 	err = client.Call("Container.Exec", request, &result)
 	if err != nil {

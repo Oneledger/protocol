@@ -7,7 +7,9 @@ package main
 
 import (
 	"os"
+	"os/signal"
 	"runtime/debug"
+	"syscall"
 
 	// Import namespace
 
@@ -50,9 +52,9 @@ func StartEngine(cmd *cobra.Command, args []string) {
 	}()
 
 	log.Debug("Starting", "appAddress", global.Current.AppAddress, "on", global.Current.NodeName)
-	//LogSettings()
+	LogSettings()
+	CatchSigterm()
 
-	//CatchSigterm()
 	vm.InitializeService()
 	vm.RunService()
 
@@ -61,7 +63,6 @@ func StartEngine(cmd *cobra.Command, args []string) {
 	select {}
 }
 
-/*
 // A polite way of bring down the service on a SIGTERM
 func CatchSigterm() {
 	// Catch a SIGTERM and stop
@@ -78,9 +79,7 @@ func CatchSigterm() {
 	}()
 
 }
-*/
 
-/*
 // Log all of the global settings
 func LogSettings() {
 	log.Info("Diagnostics", "Debug", global.Current.Debug, "DisablePasswords", global.Current.DisablePasswords)
@@ -89,4 +88,3 @@ func LogSettings() {
 	log.Info("Locations", "RootDir", global.Current.RootDir)
 	log.Info("Addresses", "RpcAddress", global.Current.RpcAddress, "AppAddress", global.Current.AppAddress)
 }
-*/
