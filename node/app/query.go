@@ -300,30 +300,31 @@ func HandleError(text string, path string, arguments map[string]string) interfac
 	return "Unknown Query " + text + " " + path
 }
 
-func SignTransaction(transaction action.Transaction, application Application) action.SignedTransaction {
-	packet, err := serial.Serialize(transaction, serial.CLIENT)
-
-	signed := action.SignedTransaction{transaction, nil}
-
-	if err != nil {
-		log.Error("Failed to Serialize packet: ", "error", err)
-	} else {
-		request := action.Message(packet)
-		arguments := map[string]string{
-			"parameters": string(request),
-		}
-
-		response := HandleSignTransaction(application, arguments)
-
-		if response == nil {
-			log.Warn("Query returned no signature", "request", request)
-		} else {
-			signed.Signatures = response.([]action.TransactionSignature)
-		}
-	}
-
-	return signed
-}
+//
+//func SignTransaction(transaction action.Transaction, application Application) action.SignedTransaction {
+//	packet, err := serial.Serialize(transaction, serial.CLIENT)
+//
+//	signed := action.SignedTransaction{transaction, nil}
+//
+//	if err != nil {
+//		log.Error("Failed to Serialize packet: ", "error", err)
+//	} else {
+//		request := action.Message(packet)
+//		arguments := map[string]string{
+//			"parameters": string(request),
+//		}
+//
+//		response := HandleSignTransaction(application, arguments)
+//
+//		if response == nil {
+//			log.Warn("Query returned no signature", "request", request)
+//		} else {
+//			signed.Signatures = response.([]action.TransactionSignature)
+//		}
+//	}
+//
+//	return signed
+//}
 
 func GetSigners(owner []byte, application Application) []id.PublicKey {
 	log.Debug("GetSigners", "owner", owner)
