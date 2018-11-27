@@ -7,13 +7,12 @@ package main
 
 import (
 	"os"
-	"os/signal"
 	"runtime/debug"
-	"syscall"
 	"time"
 
 	"github.com/Oneledger/protocol/node/app" // Import namespace
 	"github.com/Oneledger/protocol/node/cmd/shared"
+	"github.com/Oneledger/protocol/node/config"
 	"github.com/Oneledger/protocol/node/global"
 	"github.com/Oneledger/protocol/node/log"
 	"github.com/Oneledger/protocol/node/persist"
@@ -89,9 +88,13 @@ func StartNode(cmd *cobra.Command, args []string) {
 
 	global.Current.SetApplication(persist.Access(node))
 	app.SetNodeName(node)
-	LogSettings()
+	config.LogSettings()
 
-	CatchSigterm()
+	shared.CatchSigterm(func() {
+		if service != nil {
+			service.Stop()
+		}
+	})
 
 	// TODO: Switch on config
 	//service = server.NewGRPCServer("unix://data.sock", types.NewGRPCApplication(*node))
@@ -138,30 +141,4 @@ func StartNode(cmd *cobra.Command, args []string) {
 
 	log.Debug("Waiting forever...")
 	select {}
-}
-
-// A polite way of bring down the service on a SIGTERM
-func CatchSigterm() {
-	// Catch a SIGTERM and stop
-	sigs := make(chan os.Signal, 1)
-	signal.Notify(sigs, os.Interrupt, syscall.SIGTERM)
-	go func() {
-		for sig := range sigs {
-			log.Info("Shutting down from Signal", "signal", sig)
-			if service != nil {
-				service.Stop()
-			}
-			os.Exit(-1)
-		}
-	}()
-
-}
-
-// Log all of the global settings
-func LogSettings() {
-	log.Info("Diagnostics", "Debug", global.Current.Debug, "DisablePasswords", global.Current.DisablePasswords)
-	log.Info("Ownership", "NodeName", global.Current.NodeName, "NodeAccountName", global.Current.NodeAccountName,
-		"NodeIdentity", global.Current.NodeIdentity)
-	log.Info("Locations", "RootDir", global.Current.RootDir)
-	log.Info("Addresses", "RpcAddress", global.Current.RpcAddress, "AppAddress", global.Current.AppAddress)
 }
