@@ -31,39 +31,50 @@ func GetClient() (client rpcclient.Client) {
 		}
 	}()
 
-	if global.Current.ConsensusNode != nil {
-		log.Info("Using local ConsensusNode ABCI Client")
-		return rpcclient.NewLocal(global.Current.ConsensusNode)
-	}
-
 	if cachedClient != nil {
-		//log.Debug("Cached RpcClient", "address", global.Current.RpcAddress)
 		return cachedClient
 	}
 
+	if global.Current.ConsensusNode != nil {
+		log.Debug("Using local ConsensusNode ABCI Client")
+		cachedClient = rpcclient.NewLocal(global.Current.ConsensusNode)
+	} else {
+		log.Debug("Using HTTP ABCI Client")
+		cachedClient = rpcclient.NewHTTP(global.Current.RpcAddress, "/websocket")
+	}
+
+	if cachedClient.IsRunning() {
+		log.Debug("Client is running")
+		return cachedClient
+	}
+
+	if err := cachedClient.Start(); err != nil {
+		log.Fatal("Client is unavailable", "address", global.Current.RpcAddress)
+		client = nil
+	}
 	// TODO: Try multiple times before giving up
 
-	for i := 0; i < 10; i++ {
-		cachedClient = rpcclient.NewHTTP(global.Current.RpcAddress, "/websocket")
-
-		if cachedClient != nil {
-			log.Debug("RPC Client", "address", global.Current.RpcAddress, "client", cachedClient)
-			break
-		}
-
-		log.Warn("Retrying RPC Client", "address", global.Current.RpcAddress)
-		time.Sleep(1 * time.Second)
-	}
-
-	for i := 0; i < 10; i++ {
-		result, err := cachedClient.Status()
-		if err == nil {
-			log.Debug("Connected", "result", result)
-			break
-		}
-		log.Warn("Waiting for RPC Client", "address", global.Current.RpcAddress)
-		time.Sleep(2 * time.Second)
-	}
+	//for i := 0; i < 10; i++ {
+	//	cachedClient = rpcclient.NewHTTP(global.Current.RpcAddress, "/websocket")
+	//
+	//	if cachedClient != nil {
+	//		log.Debug("RPC Client", "address", global.Current.RpcAddress, "client", cachedClient)
+	//		break
+	//	}
+	//
+	//	log.Warn("Retrying RPC Client", "address", global.Current.RpcAddress)
+	//	time.Sleep(1 * time.Second)
+	//}
+	//
+	//for i := 0; i < 10; i++ {
+	//	result, err := cachedClient.Status()
+	//	if err == nil {
+	//		log.Debug("Connected", "result", result)
+	//		break
+	//	}
+	//	log.Warn("Waiting for RPC Client", "address", global.Current.RpcAddress)
+	//	time.Sleep(2 * time.Second)
+	//}
 
 	return cachedClient
 }
