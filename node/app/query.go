@@ -366,6 +366,9 @@ func SequenceNumber(app Application, accountKey []byte) interface{} {
 
 func HandleTestScript(app Application, arguments map[string]string) interface{} {
 	log.Debug("TestScript", "arguments", arguments)
-	RunTestScript()
-	return "Ran the test"
+	text := arguments["parameters"]
+
+	results := RunTestScript(text)
+
+	return results
 }

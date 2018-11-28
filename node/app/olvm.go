@@ -12,15 +12,29 @@ import (
 	"github.com/Oneledger/protocol/node/olvm/interpreter/vm"
 )
 
-func GetSourceCode() string {
+func GetSourceCode(name string) string {
 
-	// TODO: Just a hardcoded example
 	path := os.Getenv("OLROOT") + "/protocol/node/olvm/interpreter/samples"
-	filePath := path + "/deadloop.js"
+
+	var filePath string
+
+	// TODO: Just a few hardcoded examples
+	switch name {
+	case "deadloop":
+		filePath = path + "/deadloop.js"
+	case "hello":
+		filePath = path + "/helloworld.js"
+	default:
+		filePath = path + "/helloworld.js"
+	}
+
+	log.Debug("Loading Contract Script", "filePath", filePath)
+
 	data, err := ioutil.ReadFile(filePath)
 	if err != nil {
 		log.Fatal("Can get Source File", "err", err)
 	}
+
 	return string(data)
 }
 
@@ -30,7 +44,7 @@ func StartVM() {
 }
 
 // Take the engine for a test spin
-func RunTestScript() {
+func RunTestScript(name string) interface{} {
 	log.Debug("########### TESTING OLVM EXECUTION ###########")
 
 	request := &runner.OLVMRequest{
@@ -38,7 +52,7 @@ func RunTestScript() {
 		Address:    "embed://",
 		CallString: "",
 		Value:      0,
-		SourceCode: GetSourceCode(),
+		SourceCode: GetSourceCode(name),
 	}
 
 	log.Dump("Engine input", request)
@@ -49,4 +63,6 @@ func RunTestScript() {
 	}
 
 	log.Dump("Engine output", reply)
+
+	return reply
 }

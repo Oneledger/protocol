@@ -1,6 +1,7 @@
 package runner
 
 import (
+	"github.com/Oneledger/protocol/node/serial"
 	"github.com/robertkrimen/otto"
 )
 
@@ -29,4 +30,9 @@ type OLVMResult struct {
 
 	Out string
 	Ret string // TODO: Should be a real name
+}
+
+func init() {
+	serial.Register(OLVMRequest{})
+	serial.Register(OLVMResult{})
 }

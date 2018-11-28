@@ -17,12 +17,22 @@ var exeCmd = &cobra.Command{
 	Run:   ExecuteTest,
 }
 
+type ExeArgs struct {
+	Test string
+}
+
+var exeargs ExeArgs = ExeArgs{}
+
 func init() {
+	exeCmd.Flags().StringVar(&exeargs.Test, "test", "", "test name")
+
 	RootCmd.AddCommand(exeCmd)
 }
 
 // IssueRequest sends out a sendTx to all of the nodes in the chain
 func ExecuteTest(cmd *cobra.Command, args []string) {
-	result := comm.Query("/testScript", []byte(""))
+
+	result := comm.Query("/testScript", []byte(exeargs.Test))
+
 	log.Dump("Test Results", result)
 }
