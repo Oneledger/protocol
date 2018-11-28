@@ -18,7 +18,7 @@ echo "Installing Ethereum" | tee -a $SETUP/install.log
 $SETUP/install_ethereum.sh | tee -a $SETUP/install.log
 echo "===== Ethereum finished =====" | tee -a $SETUP/install.log
 
-#Install Consensus
-echo "Installing consensus" | tee -a $SETUP/install.log
-$SETUP/install_consensus.sh | tee -a $SETUP/install.log
-echo "===== Install finished =====" | tee -a $SETUP/install.log
+##Install Consensus
+#echo "Installing consensus" | tee -a $SETUP/install.log
+#$SETUP/install_consensus.sh | tee -a $SETUP/install.log
+#echo "===== Install finished =====" | tee -a $SETUP/install.log

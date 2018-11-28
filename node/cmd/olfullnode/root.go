@@ -67,6 +67,10 @@ func init() {
 	RootCmd.PersistentFlags().StringVar(&global.Current.SDKAddress, "sdkrpc",
 		global.Current.SDKAddress, "Address for SDK RPC Server")
 
+	RootCmd.PersistentFlags().StringVar(&global.Current.PersistentPeers, "persistent_peers", "", "List of persistent peers to connect to")
+
+	RootCmd.PersistentFlags().StringVar(&global.Current.P2PAddress, "p2p", "", "Address to use in P2P network")
+
 }
 
 // Initialize Viper

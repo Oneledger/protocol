@@ -17,7 +17,7 @@ nodeName=`olconfig get -c $name -p NodeName`
 export CMD=$OLSCRIPT
 export WORK=$OLDATA/$nodeName
 export LOG=$WORK
-export DATA=$WORK/tendermint
+export DATA=$WORK/consensus
 
 mkdir -p $DATA
 

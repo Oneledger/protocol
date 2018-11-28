@@ -9,7 +9,6 @@ import (
 	"bytes"
 	"github.com/Oneledger/protocol/node/abci"
 	"github.com/Oneledger/protocol/node/action"
-	"github.com/Oneledger/protocol/node/comm"
 	"github.com/Oneledger/protocol/node/data"
 	"github.com/Oneledger/protocol/node/global"
 	"github.com/Oneledger/protocol/node/id"
@@ -19,7 +18,10 @@ import (
 	"github.com/tendermint/tendermint/abci/types"
 	"github.com/tendermint/tendermint/libs/common"
 	"math/big"
+	"time"
 )
+
+var _ types.Application = Application{}
 
 var ChainId string
 
@@ -117,7 +119,7 @@ type BasicState struct {
 
 type State struct {
 	Amount string `json:"amount"`
-	Coin   string `json:"coin"`
+	Coin   string `json:"currency"`
 }
 
 // Use the Genesis block to initialze the system
@@ -401,7 +403,7 @@ func (app Application) MakePayment(req RequestBeginBlock) {
 				result := CreatePaymentRequest(app, goodValidatorIdentities, quotient, height)
 				if result != nil {
 					// TODO: check this later
-					comm.BroadcastAsync(result)
+					action.DelayedTransaction(result, 3*time.Second)
 				}
 			}
 		}

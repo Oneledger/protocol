@@ -7,10 +7,6 @@ echo -n "OLFullnode: "
 pgrep -f "olfullnode.*-c.*" | tr "\n" ","
 echo
 
-echo -n "Tendermint: "
-pgrep -f "tendermint.*--home.*" | tr "\n" ","
-echo
-
 echo -n "  Ethereum: "
 pgrep -f "geth.*--datadir.*" | tr "\n" ","
 echo

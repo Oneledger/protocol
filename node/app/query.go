@@ -95,7 +95,7 @@ func HandleApplyValidatorQuery(application Application, arguments map[string]str
 	}
 
 	amount := args.(*comm.ApplyValidatorArguments).Amount
-	idName:= args.(*comm.ApplyValidatorArguments).Id
+	idName := args.(*comm.ApplyValidatorArguments).Id
 
 	identities := IdentityInfo(application, idName)
 	identity := identities.([]id.Identity)[0]

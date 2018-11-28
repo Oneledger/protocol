@@ -8,16 +8,19 @@ package main
 import (
 	"os"
 	"os/signal"
+	"path/filepath"
 	"runtime/debug"
 	"syscall"
 
 	"github.com/Oneledger/protocol/node/app" // Import namespace
+	"github.com/Oneledger/protocol/node/consensus"
 	"github.com/Oneledger/protocol/node/global"
 	"github.com/Oneledger/protocol/node/log"
 	"github.com/Oneledger/protocol/node/persist"
+	"github.com/tendermint/tendermint/privval"
+	"github.com/tendermint/tendermint/types"
 
 	"github.com/spf13/cobra"
-	"github.com/tendermint/tendermint/abci/server"
 )
 
 var nodeCmd = &cobra.Command{
@@ -60,38 +63,39 @@ func StartNode(cmd *cobra.Command, args []string) {
 	// TODO: Switch on config
 	//service = server.NewGRPCServer("unix://data.sock", types.NewGRPCApplication(*node))
 	//service = server.NewSocketServer("tcp://127.0.0.1:46658", *node)
-	service = server.NewSocketServer(global.Current.AppAddress, *node)
-	service.SetLogger(log.GetLogger())
+
+	tmDir := global.ConsensusDir()
+	privValidator := privval.LoadFilePV(filepath.Join(tmDir, "config", "priv_validator.json"))
+	genesisDoc, err := types.GenesisDocFromFile(filepath.Join(tmDir, "config", "genesis.json"))
+	if err != nil {
+		log.Fatal("Couldn't read genesis file", "location", filepath.Join(tmDir, "genesis.json"))
+	}
+
+	// TODO: Source this from static file
+	tmConfig := consensus.Config{
+		Moniker:         global.Current.NodeName,
+		RootDirectory:   tmDir,
+		RPCAddress:      global.Current.RpcAddress,
+		P2PAddress:      global.Current.P2PAddress,
+		IndexTags:       []string{"tx.owner", "tx.type"},
+		PersistentPeers: global.Current.PersistentPeers,
+	}
+
+	// TODO: change the the priv_validator locaiton
+	service, err := consensus.NewNode(*node, tmConfig, privValidator, genesisDoc)
+	if err != nil {
+		log.Error("Failed to create NewNode", "err", err)
+		os.Exit(1)
+	}
 
 	// Set it running
-	err := service.Start()
+	err = service.Start()
 	if err != nil {
+		log.Error("Can't start up node", "err", err)
 		os.Exit(-1)
 	}
 
-	/*
-		// Wait until it is started
-		if err := service.OnStart(); err != nil {
-			log.Fatal("Startup Failed", "err", err)
-			os.Exit(-1)
-		}
-	*/
-
-	/*
-		for {
-			if service.IsRunning() {
-				break
-			}
-			log.Debug("Retrying to see if node is up...")
-			time.Sleep(1 * time.Second)
-
-		}
-
-		if !service.IsRunning() {
-			log.Fatal("Startup is not running")
-			os.Exit(-1)
-		}
-	*/
+	global.Current.SetConsensusNode(service)
 
 	log.Debug("Waiting forever...")
 	select {}

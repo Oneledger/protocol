@@ -8,13 +8,15 @@ package main
 import (
 	"fmt"
 	"os"
-	"os/exec"
+	"path/filepath"
 	"strings"
 
+	"github.com/Oneledger/protocol/node/cmd/shared"
 	"github.com/Oneledger/protocol/node/config"
 	"github.com/Oneledger/protocol/node/global"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"github.com/tendermint/tendermint/p2p"
 )
 
 var getCmd = &cobra.Command{
@@ -74,16 +76,15 @@ func GetPeers(nodes []string) {
 		p2pAddress := strings.TrimPrefix(address, "tcp://")
 
 		// Call Tendermint to get it's node id
-		data := os.Getenv("OLDATA") + "/" + nodeName + "/tendermint"
-		command := exec.Command("tendermint", "show_node_id", "--home", data)
-		result, err := command.Output()
+		data := filepath.Join(os.Getenv("OLDATA"), nodeName, "consensus", "config", "node_key.json")
+		nodeKey, err := p2p.LoadNodeKey(data)
 		if err != nil {
+			shared.Console.Error(err)
 			return
 		}
-		id := strings.TrimSuffix(string(result), "\n")
 
 		// Assemble
-		entry := id + "@" + p2pAddress
+		entry := string(nodeKey.ID()) + "@" + p2pAddress
 		if buffer == "" {
 			buffer = entry
 		} else {
