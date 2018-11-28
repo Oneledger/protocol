@@ -9,4 +9,3 @@ export CMD=$OLSCRIPT
 $CMD/startBitcoin
 $CMD/startEthereum
 $CMD/startOneLedger
-
