@@ -7,6 +7,7 @@ package app
 
 import (
 	"encoding/hex"
+	"github.com/Oneledger/protocol/node/comm"
 	"strings"
 
 	"github.com/Oneledger/protocol/node/action"
@@ -30,6 +31,9 @@ func HandleQuery(app Application, path string, arguments map[string]string) []by
 	var result interface{}
 
 	switch path {
+	case "/applyValidators":
+		result = HandleApplyValidatorQuery(app, arguments)
+
 	case "/nodeName":
 		result = HandleNodeNameQuery(app, arguments)
 
@@ -70,6 +74,68 @@ func HandleQuery(app Application, path string, arguments map[string]string) []by
 	}
 
 	return buffer
+}
+
+func HandleApplyValidatorQuery(application Application, arguments map[string]string) interface{} {
+	log.Debug("HandleApplyValidatorQuery", "arguments", arguments)
+
+	conv := convert.NewConvert()
+
+	result := make([]byte, 0)
+
+	var argsHolder comm.ApplyValidatorArguments
+
+	text := arguments["parameters"]
+
+	args, err := serial.Deserialize([]byte(text), argsHolder, serial.CLIENT)
+
+	if err != nil {
+		log.Error("Could not deserialize ApplyValidatorArguments", "error", err)
+		return result
+	}
+
+	amount := args.(*comm.ApplyValidatorArguments).Amount
+	idName := args.(*comm.ApplyValidatorArguments).Id
+
+	identities := IdentityInfo(application, idName)
+	identity := identities.([]id.Identity)[0]
+
+	if amount == "" {
+		log.Error("Missing an amount argument")
+		return result
+	}
+
+	balance := Balance(application, identity.AccountKey).(*data.Balance).GetAmountByName("VT")
+
+	log.Debug("HandleApplyValidatorQuery", "balance", balance)
+
+	if &balance == nil {
+		log.Error("Missing Balance")
+		return result
+	}
+
+	stake := conv.GetCoin(amount, "VT")
+	sequence := SequenceNumber(application, identity.AccountKey.Bytes())
+
+	validator := &action.ApplyValidator{
+		Base: action.Base{
+			Type:     action.APPLY_VALIDATOR,
+			ChainId:  ChainId,
+			Owner:    identity.AccountKey,
+			Signers:  GetSigners(identity.AccountKey, application),
+			Sequence: sequence.(SequenceRecord).Sequence,
+		},
+
+		AccountKey:        identity.AccountKey,
+		TendermintAddress: identity.TendermintAddress,
+		TendermintPubKey:  identity.TendermintPubKey,
+		Stake:             stake,
+	}
+
+	signed := SignTransaction(action.Transaction(validator), application)
+	packet := action.PackRequest(signed)
+
+	return packet
 }
 
 func HandleNodeNameQuery(app Application, arguments map[string]string) interface{} {

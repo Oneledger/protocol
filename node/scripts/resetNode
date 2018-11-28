@@ -9,8 +9,8 @@ if [ -z "$1" ]; then
 	export SUBDIR="mach0"
 	export STAGING=$OLDATA/staging
 else
- 	export NODENAME=`echo $1 | awk -F# '{ print $1 }'`
-	export SUBDIR=`echo $1 | awk -F# '{ print $2 }'`
+ 	export NODENAME="$1"
+	export SUBDIR="$1"
 	export STAGING="$2"
 fi
 
@@ -21,7 +21,7 @@ echo "Resetting $NODENAME"
 #
 export WORK=$OLDATA/$NODENAME
 export LOG=$WORK
-export DATA=$WORK/tendermint
+export DATA=$WORK/consensus
 
 # Force the directories to exist to handled recreating the directories
 mkdir -p $DATA/config
@@ -43,16 +43,6 @@ pushd $WORK > /dev/null
 # Cleanout any of the old database files
 #
 rm $LOG/*.log > /dev/null 2>&1
-
-# Define tags to be indexed in tendermint
-tmTags="tx.type,tx.owner"
-
-#
-# Setup the initial files
-#
-cat $STAGING/$SUBDIR/config/config.toml | awk -v var="$tmTags" '{if ($1=="index_tags") print "index_tags = \"" var "\""; else print $0}' > $DATA/config/config.toml
-cat $STAGING/node0/config/genesis.json | jq -f $CMD/genesis.jq > $DATA/config/genesis.json
-cp $STAGING/$SUBDIR/config/node_key.json $DATA/config/node_key.json
 
 popd > /dev/null
 

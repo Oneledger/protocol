@@ -103,7 +103,7 @@ func HandleRegisterIdentity(app Application, arguments map[string]string) interf
 
 	// TODO Broadcast the transaction
 	transaction := CreateRegisterRequest(identity, account.AccountKey())
-	action.BroadcastTransaction(action.REGISTER, transaction, false)
+	action.BroadcastTransaction(transaction, false)
 
 	return "Broadcast Identity"
 }

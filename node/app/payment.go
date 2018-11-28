@@ -8,7 +8,7 @@ import (
 	"github.com/Oneledger/protocol/node/status"
 )
 
-func CreatePaymentRequest(app Application, identities []id.Identity, quotient data.Coin, height int64) []byte {
+func CreatePaymentRequest(app Application, identities []id.Identity, quotient data.Coin, height int64) action.Transaction {
 	chainId := app.Admin.Get(chainKey)
 	inputs := make([]action.SendInput, 0)
 	outputs := make([]action.SendOutput, 0)
@@ -72,5 +72,5 @@ func CreatePaymentRequest(app Application, identities []id.Identity, quotient da
 		Gas:     data.NewCoin(0, "OLT"),
 	}
 
-	return action.PackRequest(SignTransaction(send, app))
+	return send
 }

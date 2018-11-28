@@ -8,21 +8,19 @@
 package comm
 
 import (
-	"reflect"
-	"time"
-
 	"github.com/Oneledger/protocol/node/global"
 	"github.com/Oneledger/protocol/node/log"
 	"github.com/Oneledger/protocol/node/serial"
 	rpcclient "github.com/tendermint/tendermint/rpc/client"
 	ctypes "github.com/tendermint/tendermint/rpc/core/types"
+	"reflect"
 )
 
-var cachedClient *rpcclient.HTTP
+var cachedClient rpcclient.Client
 
 // HTTP interface, allows Broadcast?
 // TODO: Want to switch client type, based on config or cli args.
-func GetClient() (client *rpcclient.HTTP) {
+func GetClient() (client rpcclient.Client) {
 
 	defer func() {
 		if r := recover(); r != nil {
@@ -32,33 +30,50 @@ func GetClient() (client *rpcclient.HTTP) {
 	}()
 
 	if cachedClient != nil {
-		//log.Debug("Cached RpcClient", "address", global.Current.RpcAddress)
+
 		return cachedClient
 	}
 
+	if global.Current.ConsensusNode != nil {
+		log.Debug("Using local ConsensusNode ABCI Client")
+		cachedClient = rpcclient.NewLocal(global.Current.ConsensusNode)
+	} else {
+		log.Debug("Using HTTP ABCI Client")
+		cachedClient = rpcclient.NewHTTP(global.Current.RpcAddress, "/websocket")
+	}
+
+	if _, err := cachedClient.Status(); err == nil {
+		log.Debug("Client is running")
+		return cachedClient
+	}
+
+	if err := cachedClient.Start(); err != nil {
+		log.Fatal("Client is unavailable", "address", global.Current.RpcAddress)
+		client = nil
+	}
 	// TODO: Try multiple times before giving up
 
-	for i := 0; i < 10; i++ {
-		cachedClient = rpcclient.NewHTTP(global.Current.RpcAddress, "/websocket")
-
-		if cachedClient != nil {
-			log.Debug("RPC Client", "address", global.Current.RpcAddress, "client", cachedClient)
-			break
-		}
-
-		log.Warn("Retrying RPC Client", "address", global.Current.RpcAddress)
-		time.Sleep(1 * time.Second)
-	}
-
-	for i := 0; i < 10; i++ {
-		result, err := cachedClient.Status()
-		if err == nil {
-			log.Debug("Connected", "result", result)
-			break
-		}
-		log.Warn("Waiting for RPC Client", "address", global.Current.RpcAddress)
-		time.Sleep(2 * time.Second)
-	}
+	//for i := 0; i < 10; i++ {
+	//	cachedClient = rpcclient.NewHTTP(global.Current.RpcAddress, "/websocket")
+	//
+	//	if cachedClient != nil {
+	//		log.Debug("RPC Client", "address", global.Current.RpcAddress, "client", cachedClient)
+	//		break
+	//	}
+	//
+	//	log.Warn("Retrying RPC Client", "address", global.Current.RpcAddress)
+	//	time.Sleep(1 * time.Second)
+	//}
+	//
+	//for i := 0; i < 10; i++ {
+	//	result, err := cachedClient.Status()
+	//	if err == nil {
+	//		log.Debug("Connected", "result", result)
+	//		break
+	//	}
+	//	log.Warn("Waiting for RPC Client", "address", global.Current.RpcAddress)
+	//	time.Sleep(2 * time.Second)
+	//}
 
 	return cachedClient
 }
@@ -125,28 +140,30 @@ func Query(path string, packet []byte) interface{} {
 	var response *ctypes.ResultABCIQuery
 	var err error
 
-	for i := 0; i < 20; i++ {
-		client := GetClient()
-		response, err = client.ABCIQuery(path, packet)
-		if err != nil {
-			log.Error("ABCi Query Error", "path", path, "err", err)
-			return nil
-		}
-		if response != nil {
-			break
-		}
-		time.Sleep(2 * time.Second)
+	//for i := 0; i < 20; i++ {
+	client := GetClient()
+	response, err = client.ABCIQuery(path, packet)
+	if err != nil {
+		log.Error("ABCi Query Error", "path", path, "err", err)
+		return nil
 	}
+	//if response != nil {
+	//	break
+	//}
+	//time.Sleep(2 * time.Second)
+	//}
 
 	if response == nil {
-		return "No results for " + path + " and " + string(packet)
+		//return "No results for " + path + " and " + string(packet)
+		log.Debug("response is empty")
+		return nil
 	}
 
 	var prototype interface{}
 	result, err := serial.Deserialize(response.Response.Value, prototype, serial.CLIENT)
 	if err != nil {
 		log.Error("Failed to deserialize Query:", "response", response.Response.Value)
-		return "Failed"
+		return nil
 	}
 	return result
 }
@@ -191,4 +208,14 @@ func Block(height int64) (res *ctypes.ResultBlock) {
 		return nil
 	}
 	return result
+}
+
+// TODO Temporary placed it here to test a new Query approach
+type ApplyValidatorArguments struct {
+	Id           string
+	Amount       string
+}
+
+func init() {
+	serial.Register(ApplyValidatorArguments{})
 }

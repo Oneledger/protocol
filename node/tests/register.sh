@@ -16,6 +16,7 @@ for name in $list
 do
 	# Add the accounts, keys are generated internally
 	olclient update -c $name --account "$name-OneLedger"
+
 	# todo: need to flag to set node account for the node.
 #	olclient update -c $name --account "$name-BitCoin" --chain "BitCoin"
 #	olclient update -c $name --account "$name-Ethereum" --chain "Ethereum"
@@ -24,4 +25,5 @@ do
 done
 
 # Give it some time to get committed
-sleep 20
+#sleep 20
+olclient wait --completed identity --identity $list
