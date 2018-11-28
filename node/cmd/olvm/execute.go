@@ -52,11 +52,16 @@ func StartEngine(cmd *cobra.Command, args []string) {
 	}()
 
 	log.Debug("Starting", "appAddress", global.Current.AppAddress, "on", global.Current.NodeName)
+
+	// TODO: Switch with config and shared versions
 	LogSettings()
 	CatchSigterm()
 
-	vm.InitializeService()
-	vm.RunService()
+	//vm.InitializeService()
+	//vm.RunService()
+
+	service := vm.NewOLVMService()
+	service.StartService()
 
 	log.Debug("Waiting forever...")
 

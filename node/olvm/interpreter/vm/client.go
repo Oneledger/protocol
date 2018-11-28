@@ -38,6 +38,7 @@ func AutoRun(request *runner.OLVMRequest) (result *runner.OLVMResult, err error)
 
 	log.Debug("Trying to Run")
 	result, err = defaultClient.Run(request)
+	var count int = 10
 
 	// TODO: Should be based on error code, not text...
 	if err != nil {
@@ -47,21 +48,18 @@ func AutoRun(request *runner.OLVMRequest) (result *runner.OLVMResult, err error)
 			// Pause for a bit, might be a race condition
 			time.Sleep(time.Second)
 
-			// TODO: Not started the first time?
-			log.Debug("Relaunching OLVM")
-
-			// Run service in another process, so it will safer to crash
-			//go RunService()
-
-			// TODO: This needs to be setup correctly with the protocol (ie. build, install, docker, etc)
-			//cmd := exec.Command("./bin/server")
-			//cmd.Start()
-
 			for err != nil && strings.HasSuffix(err.Error(), "connection refused") {
+
+				// Always bound loops with a fixed count
+				if count < 0 {
+					log.Fatal("Can't connect", "err", err)
+				}
+
 				log.Dump("Failed Again", err, result)
 				time.Sleep(time.Second)
 				log.Debug("Trying to ReRun")
 				result, err = defaultClient.Run(request)
+				count--
 			}
 		} else {
 			log.Error("Run Failed", "err", err)
@@ -92,6 +90,7 @@ func (c OLVMClient) Run(request *runner.OLVMRequest) (*runner.OLVMResult, error)
 	}
 
 	client.Close()
+
 	log.Dump("Have a Result", result)
 	return &result, nil
 }

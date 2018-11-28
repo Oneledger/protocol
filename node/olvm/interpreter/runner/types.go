@@ -1,6 +1,7 @@
 package runner
 
 import (
+	"github.com/Oneledger/protocol/node/action"
 	"github.com/Oneledger/protocol/node/serial"
 	"github.com/robertkrimen/otto"
 )
@@ -9,35 +10,39 @@ type Runner struct {
 	vm *otto.Otto
 }
 
+type OLVMContext struct {
+	Data interface{}
+}
+
 // All of the input necessary to perform a computation on a transaction
 type OLVMRequest struct {
-	// TODO: Original Transaction
-	// TODO: Last execution context
-	// TODO: Scripts (if we can follow the includes and get all of them)
-	// TODO: Data Handle (some way to call out for large data requests)
+	From        string
+	Address     string
+	CallString  string
+	Value       int
+	SourceCode  string
+	Transaction action.Transaction
+	Context     OLVMContext
 
-	From       string
-	Address    string
-	CallString string
-	Value      int
-	SourceCode string
+	// TODO: Data Handle (some way to call out for large data requests)
 }
 
 // All of the output received from the computation
 type OLVMResult struct {
-	// TODO: Any subseqeunce transaction that needs to be broadcasted
-	// TODO: Last execution context
-
 	Out     string
 	Ret     string // TODO: Should be a real name
 	Elapsed string
+
+	Transactions []action.Transaction
+	Context      OLVMContext
 }
 
 func init() {
 	serial.Register(OLVMRequest{})
 	serial.Register(OLVMResult{})
+	serial.Register(OLVMContext{})
 
-	// Doesn't work in serial?
+	// TODO: Doesn't work in serial?
 	//var prototype time.Time
 	//serial.Register(prototype)
 	//var prototype2 time.Duration

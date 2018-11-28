@@ -17,26 +17,19 @@ import (
 	"github.com/Oneledger/protocol/node/sdk"
 )
 
-var DefaultOLVMService *OLVMService
-
-func InitializeService() {
-	log.Debug("Initialize Service")
-	protocol := global.Current.OLVMProtocol
-	address := global.Current.OLVMAddress
-	DefaultOLVMService = NewOLVMService(protocol, address)
-}
-
 func (c *Container) Echo(request *runner.OLVMRequest, result *runner.OLVMResult) error {
 	// TODO: Do something useful here
 	return nil
 }
 
 func (c *Container) Exec(request *runner.OLVMRequest, result *runner.OLVMResult) error {
+	log.Dump("Exec a Contract", request)
 	runner := runner.CreateRunner()
 	err := runner.Call(request, result)
 	return err
 }
 
+// Depreciated
 func (c *Container) Exec2(request *runner.OLVMRequest, result *runner.OLVMResult) (err error) {
 	log.Dump("Exec a Contract", request)
 
@@ -99,7 +92,8 @@ func (c *Container) Exec2(request *runner.OLVMRequest, result *runner.OLVMResult
 	return
 }
 
-func (ol OLVMService) Run() {
+// Start up teh service
+func (ol OLVMService) StartService() {
 	defer func() {
 		if r := recover(); r != nil {
 			go func() {
@@ -126,13 +120,9 @@ func (ol OLVMService) Run() {
 }
 
 // TODO: Make sure call is not before viper args are handled.
-func NewOLVMService(protocol string, address string) *OLVMService {
+func NewOLVMService() *OLVMService {
 	return &OLVMService{
-		Protocol: protocol,
-		Address:  address,
+		Protocol: global.Current.OLVMProtocol,
+		Address:  global.Current.OLVMAddress,
 	}
-}
-
-func RunService() {
-	DefaultOLVMService.Run()
 }

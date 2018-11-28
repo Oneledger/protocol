@@ -18,13 +18,15 @@ func (runner Runner) exec(callString string) (string, string) {
 		log.Info("callString is empty, use default", "callString", callString)
 	}
 
-	_, error := runner.vm.Run(`
+	// Pretext to set up the execution
+	_, err := runner.vm.Run(`
     var contract = new module.Contract(context);
     var retValue = contract.` + callString)
-	if error != nil {
-		panic(error)
+	if err != nil {
+		panic(err)
 	}
 
+	// Set the transaction parameters
 	runner.vm.Run(`
     var list = context.getUpdateIndexList();
     var storage = context.getStorage();
@@ -37,6 +39,7 @@ func (runner Runner) exec(callString string) (string, string) {
     transaction.__olt__ = __olt__;
     `)
 
+	// Set the results
 	runner.vm.Run(`
     out = JSON.stringify(transaction);
     ret = JSON.stringify(retValue);
@@ -66,6 +69,7 @@ func (runner Runner) Call(request *OLVMRequest, result *OLVMResult) (err error) 
 			err = errors.New(fmt.Sprintf("Runtime Error: %v", r))
 			result.Out = r.(error).Error()
 			result.Ret = "HALT"
+			result.Elapsed = "Timed out after 3 secs"
 		}
 	}()
 
@@ -107,11 +111,13 @@ func (runner Runner) Call(request *OLVMRequest, result *OLVMResult) (err error) 
 	result.Out = out
 	result.Ret = ret
 	result.Elapsed = elapsed.String()
+
 	return
 }
 
 func CreateRunner() Runner {
 	vm := otto.New()
-	vm.Set("version", "OVM 0.1 TEST")
+	vm.Set("version", "OVM v0.1.0 TEST")
+
 	return Runner{vm}
 }
