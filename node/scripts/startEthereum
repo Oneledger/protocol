@@ -34,7 +34,7 @@ then
 
     echo "Start Ethereum miner" >> $LOG/ethereum.log
     echo "Start Ethereum miner"
-    geth --exec "miner.start(1)" attach ipc:$OLETH/C/geth.ipc 2>> $OLETH/C/eth.log
+    geth --exec "miner.start(1)" attach ipc:$OLETH/C/geth.ipc 2>> $OLETH/C/eth.log 2>&1
 
 else
     echo "Ethereum network already started"
