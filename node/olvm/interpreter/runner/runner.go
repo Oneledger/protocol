@@ -62,6 +62,7 @@ func (runner Runner) Call(request *OLVMRequest, result *OLVMResult) (err error) 
 
 	defer func() {
 		if r := recover(); r != nil {
+			log.Debug("HALTING")
 			err = errors.New(fmt.Sprintf("Runtime Error: %v", r))
 			result.Out = r.(error).Error()
 			result.Ret = "HALT"
@@ -74,20 +75,38 @@ func (runner Runner) Call(request *OLVMRequest, result *OLVMResult) (err error) 
 	log.Debug("Setup the SourceCode")
 	runner.setupContract(request)
 
+	done := make(chan string, 1) // The buffer prevents blocking
+
 	// Setup a go routine to timeout and interrup processing in otto
 	runner.vm.Interrupt = make(chan func(), 1) // The buffer prevents blocking
 	go func() {
-		time.Sleep(2 * time.Second) // Stop after two seconds
-		runner.vm.Interrupt <- func() {
-			panic(errors.New("Halting Execution"))
+		for {
+			select {
+			case <-time.After(3 * time.Second):
+				runner.vm.Interrupt <- func() {
+					log.Debug("Halting due to timeout")
+					panic(errors.New("Halting Execution"))
+				}
+			case status := <-done:
+				log.Debug("Finished timer Cleanly", "status", status)
+				return
+			}
 		}
 	}()
 
 	log.Debug("Exec the Smart Contract")
+
+	start := time.Now()
 	out, ret := runner.exec(request.CallString)
+	elapsed := time.Since(start)
+
+	done <- "Finished"
+
+	log.Debug("Smart Contract is finished")
 
 	result.Out = out
 	result.Ret = ret
+	result.Elapsed = elapsed.String()
 	return
 }
 

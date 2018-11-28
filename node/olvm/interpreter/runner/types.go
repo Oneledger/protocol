@@ -28,11 +28,18 @@ type OLVMResult struct {
 	// TODO: Any subseqeunce transaction that needs to be broadcasted
 	// TODO: Last execution context
 
-	Out string
-	Ret string // TODO: Should be a real name
+	Out     string
+	Ret     string // TODO: Should be a real name
+	Elapsed string
 }
 
 func init() {
 	serial.Register(OLVMRequest{})
 	serial.Register(OLVMResult{})
+
+	// Doesn't work in serial?
+	//var prototype time.Time
+	//serial.Register(prototype)
+	//var prototype2 time.Duration
+	//serial.Register(prototype2)
 }

@@ -6,6 +6,8 @@
 package main
 
 import (
+	"time"
+
 	"github.com/Oneledger/protocol/node/comm"
 	"github.com/Oneledger/protocol/node/log"
 	"github.com/spf13/cobra"
@@ -32,7 +34,10 @@ func init() {
 // IssueRequest sends out a sendTx to all of the nodes in the chain
 func ExecuteTest(cmd *cobra.Command, args []string) {
 
+	start := time.Now()
 	result := comm.Query("/testScript", []byte(exeargs.Test))
+	elapsed := time.Since(start)
 
 	log.Dump("Test Results", result)
+	log.Dump("Query Time", elapsed)
 }

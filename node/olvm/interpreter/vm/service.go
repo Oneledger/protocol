@@ -31,7 +31,13 @@ func (c *Container) Echo(request *runner.OLVMRequest, result *runner.OLVMResult)
 	return nil
 }
 
-func (c *Container) Exec(request *runner.OLVMRequest, result *runner.OLVMResult) (err error) {
+func (c *Container) Exec(request *runner.OLVMRequest, result *runner.OLVMResult) error {
+	runner := runner.CreateRunner()
+	err := runner.Call(request, result)
+	return err
+}
+
+func (c *Container) Exec2(request *runner.OLVMRequest, result *runner.OLVMResult) (err error) {
 	log.Dump("Exec a Contract", request)
 
 	// TODO: Isn't this just a timer? There is an otto based timer as well, that is nicer
