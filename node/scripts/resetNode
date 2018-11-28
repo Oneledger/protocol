@@ -55,4 +55,3 @@ cat $STAGING/node0/config/genesis.json | jq -f $CMD/genesis.jq > $DATA/config/ge
 cp $STAGING/$SUBDIR/config/node_key.json $DATA/config/node_key.json
 
 popd > /dev/null
-

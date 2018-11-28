@@ -8,4 +8,3 @@ export OLSETUP=$OLROOT/protocol/node/setup
 export OLDATA=$GOPATH/test
 
 export OLDEBUG=true
-

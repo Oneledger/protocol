@@ -38,4 +38,3 @@ done
 tendermint gen_node_key --home $OLDATA/staging/node4 >> $OLDATA/tendermint.log
 
 $CMD/resetNode "Emma-Node#node4" $STAGING
-

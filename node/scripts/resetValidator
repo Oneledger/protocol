@@ -84,4 +84,3 @@ cp $STAGING/$SUBDIR/config/node_key.json $DATA/config/node_key.json
 #
 
 popd > /dev/null
-
