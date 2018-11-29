@@ -12,7 +12,7 @@ fi
 nodeName=`olconfig get -c $name -p NodeName`
 export WORK=$OLDATA/$nodeName
 export LOG=$WORK
-export DATA=$WORK/tendermint
+export DATA=$WORK/consensus
 
 #
 # Startup Tendermint consensus

@@ -3,6 +3,42 @@
 
 [[projects]]
   branch = "master"
+  digest = "1:94e9caf404409a2990cfd22aca37d758494c098eff3e2c37fda1abed862e74dd"
+  name = "bazil.org/fuse"
+  packages = [
+    ".",
+    "fs",
+    "fuseutil",
+  ]
+  pruneopts = "UT"
+  revision = "65cc252bf6691cb3c7014bcb2c8dc29de91e3a7e"
+
+[[projects]]
+  digest = "1:d2ccb697dc13c8fbffafa37baae97594d5592ae8f7e113471084137315536e2b"
+  name = "github.com/Azure/azure-pipeline-go"
+  packages = ["pipeline"]
+  pruneopts = "UT"
+  revision = "b8e3409182fd52e74f7d7bdfbff5833591b3b655"
+  version = "v0.1.8"
+
+[[projects]]
+  digest = "1:be02190f99b731d813f70310d536ed106d3f863823b092c5302ebc6c27e6304d"
+  name = "github.com/Azure/azure-storage-blob-go"
+  packages = ["2018-03-28/azblob"]
+  pruneopts = "UT"
+  revision = "bb46532f68b79e9e1baca8fb19a382ef5d40ed33"
+  version = "0.2.0"
+
+[[projects]]
+  digest = "1:e92f5581902c345eb4ceffdcd4a854fb8f73cf436d47d837d1ec98ef1fe0a214"
+  name = "github.com/StackExchange/wmi"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "5d049714c4a64225c3c79a7cf7d02f7fb5b96338"
+  version = "1.0.0"
+
+[[projects]]
+  branch = "master"
   digest = "1:7d191fd0c54ff370eaf6116a14dafe2a328df487baea280699f597aae858d00d"
   name = "github.com/aristanetworks/goarista"
   packages = ["monotime"]
@@ -69,6 +105,14 @@
   revision = "9eec895db8ffa3574bb96f132c5d6eaa22bea3cf"
 
 [[projects]]
+  branch = "master"
+  digest = "1:4c4c33075b704791d6a7f09dfb55c66769e8a1dc6adf87026292d274fe8ad113"
+  name = "github.com/codahale/hdrhistogram"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "3a0bb77429bd3a61596f5e8a3172445844342120"
+
+[[projects]]
   digest = "1:ffe9824d294da03b391f44e1ae8281281b4afc1bdaa9588c9097785e3af10cec"
   name = "github.com/davecgh/go-spew"
   packages = ["spew"]
@@ -85,11 +129,38 @@
   version = "v1.7.1"
 
 [[projects]]
+  digest = "1:1401f85b97c5cb4807f3f84a616d9be14d6915780b9821c41a40347e9562dda5"
+  name = "github.com/docker/docker"
+  packages = ["pkg/reexec"]
+  pruneopts = "UT"
+  revision = "092cba3727bb9b4a2f0e922cd6c0f93ea270e363"
+  version = "v1.13.1"
+
+[[projects]]
   digest = "1:c7644c73a3d23741fdba8a99b1464e021a224b7e205be497271a8003a15ca41b"
   name = "github.com/ebuchman/fail-test"
   packages = ["."]
   pruneopts = "UT"
   revision = "95f809107225be108efcf10a3509e4ea6ceef3c4"
+
+[[projects]]
+  branch = "master"
+  digest = "1:67d0b50be0549e610017cb91e0b0b745ec0cad7c613bc8e18ff2d1c1fc8825a7"
+  name = "github.com/edsrzf/mmap-go"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "0bce6a6887123b67a60366d2c9fe2dfb74289d2e"
+
+[[projects]]
+  digest = "1:a41f91a9a8e71137d204d048dfab9c61c37fd181a802ee666e5ddcb94dd49a9a"
+  name = "github.com/elastic/gosigar"
+  packages = [
+    ".",
+    "sys/windows",
+  ]
+  pruneopts = "UT"
+  revision = "237dff72b4ba95da2cd985f96a9c0ede4aefc760"
+  version = "v0.9.0"
 
 [[projects]]
   digest = "1:08af77c41dc6a9ab5dd123ce76356fa4068d57287c060cdc934e1131973dd037"
@@ -99,30 +170,148 @@
     "accounts",
     "accounts/abi",
     "accounts/abi/bind",
+    "accounts/abi/bind/backends",
     "accounts/keystore",
+    "accounts/usbwallet",
+    "accounts/usbwallet/internal/trezor",
+    "cmd/evm/internal/compiler",
+    "cmd/internal/browser",
+    "cmd/utils",
     "common",
+    "common/bitutil",
+    "common/compiler",
+    "common/fdlimit",
     "common/hexutil",
     "common/math",
     "common/mclock",
     "common/prque",
+    "consensus",
+    "consensus/clique",
+    "consensus/ethash",
+    "consensus/misc",
+    "console",
+    "contracts/chequebook",
+    "contracts/chequebook/contract",
+    "contracts/ens",
+    "contracts/ens/contract",
+    "core",
+    "core/asm",
+    "core/bloombits",
+    "core/rawdb",
+    "core/state",
     "core/types",
+    "core/vm",
+    "core/vm/runtime",
     "crypto",
+    "crypto/bn256",
+    "crypto/bn256/cloudflare",
+    "crypto/bn256/google",
+    "crypto/ecies",
     "crypto/secp256k1",
     "crypto/sha3",
+    "dashboard",
+    "eth",
+    "eth/downloader",
+    "eth/fetcher",
+    "eth/filters",
+    "eth/gasprice",
+    "eth/tracers",
+    "eth/tracers/internal/tracers",
     "ethclient",
     "ethdb",
+    "ethstats",
     "event",
+    "internal/build",
+    "internal/debug",
+    "internal/ethapi",
+    "internal/jsre",
+    "internal/jsre/deps",
+    "internal/web3ext",
+    "les",
+    "les/flowcontrol",
+    "light",
     "log",
     "metrics",
+    "metrics/exp",
+    "metrics/influxdb",
+    "miner",
+    "node",
+    "p2p",
+    "p2p/discover",
+    "p2p/discv5",
+    "p2p/enode",
+    "p2p/enr",
+    "p2p/nat",
     "p2p/netutil",
+    "p2p/protocols",
+    "p2p/simulations",
+    "p2p/simulations/adapters",
+    "p2p/simulations/pipes",
     "params",
     "rlp",
     "rpc",
+    "signer/core",
+    "signer/rules",
+    "signer/rules/deps",
+    "signer/storage",
+    "swarm",
+    "swarm/api",
+    "swarm/api/client",
+    "swarm/api/http",
+    "swarm/bmt",
+    "swarm/chunk",
+    "swarm/fuse",
+    "swarm/log",
+    "swarm/metrics",
+    "swarm/multihash",
+    "swarm/network",
+    "swarm/network/bitvector",
+    "swarm/network/priorityqueue",
+    "swarm/network/stream",
+    "swarm/network/stream/intervals",
+    "swarm/pot",
+    "swarm/pss",
+    "swarm/sctx",
+    "swarm/services/swap",
+    "swarm/services/swap/swap",
+    "swarm/spancontext",
+    "swarm/state",
+    "swarm/storage",
+    "swarm/storage/encryption",
+    "swarm/storage/feed",
+    "swarm/storage/feed/lookup",
+    "swarm/storage/mock",
+    "swarm/tracing",
+    "swarm/version",
+    "tests",
     "trie",
+    "whisper/mailserver",
+    "whisper/shhclient",
+    "whisper/whisperv5",
+    "whisper/whisperv6",
   ]
   pruneopts = "T"
   revision = "8bbe72075e4e16442c4e28d999edee12e294329e"
   version = "v1.8.17"
+
+[[projects]]
+  digest = "1:865079840386857c809b72ce300be7580cb50d3d3129ce11bf9aa6ca2bc1934a"
+  name = "github.com/fatih/color"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "5b77d2a35fb0ede96d138fc9a99f5c9b6aef11b4"
+  version = "v1.7.0"
+
+[[projects]]
+  branch = "master"
+  digest = "1:6071114d7c08ebdd6bc697113cfb1634c8c29d506457ef90e7fb703841cb2828"
+  name = "github.com/fjl/memsize"
+  packages = [
+    ".",
+    "memsizeui",
+  ]
+  pruneopts = "UT"
+  revision = "2a09253e352a56f419bd88effab0483f52da4c7d"
 
 [[projects]]
   digest = "1:abeb38ade3f32a92943e5be54f55ed6d6e3b6602761d74b4aab4c9dd45c18abd"
@@ -131,6 +320,14 @@
   pruneopts = "UT"
   revision = "c2828203cd70a50dcccfb2761f8b1f8ceef9a8e9"
   version = "v1.4.7"
+
+[[projects]]
+  digest = "1:0b98586be892040d424cdd4fb7e047f71ddfcdbfca59f975a4b4eb14b56ae33c"
+  name = "github.com/gizak/termui"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "bf53c5cbea3f372f745e1d8e4660e29f73d41517"
+  version = "v2.3.0"
 
 [[projects]]
   digest = "1:fdf5169073fb0ad6dc12a70c249145e30f4058647bea25f0abd48b6d9f228a11"
@@ -157,6 +354,17 @@
   version = "v0.3.0"
 
 [[projects]]
+  digest = "1:64a5a67c69b70c2420e607a8545d674a23778ed9c3e80607bfd17b77c6c87f6a"
+  name = "github.com/go-ole/go-ole"
+  packages = [
+    ".",
+    "oleutil",
+  ]
+  pruneopts = "UT"
+  revision = "a41e3c4b706f6ae8dfbff342b06e40fa4d2d0506"
+  version = "v1.2.1"
+
+[[projects]]
   digest = "1:586ea76dbd0374d6fb649a91d70d652b7fe0ccffb8910a77468e7702e7901f3d"
   name = "github.com/go-stack/stack"
   packages = ["."]
@@ -180,10 +388,11 @@
   version = "v1.1.1"
 
 [[projects]]
-  digest = "1:17fe264ee908afc795734e8c4e63db2accabaf57326dbf21763a7d6b86096260"
+  digest = "1:14834e04828af9e53954f1be45ea7f190c4c26d746009c2ab07c5828595539e9"
   name = "github.com/golang/protobuf"
   packages = [
     "proto",
+    "protoc-gen-go/descriptor",
     "ptypes",
     "ptypes/any",
     "ptypes/duration",
@@ -216,6 +425,17 @@
   pruneopts = "UT"
   revision = "ea4d1f681babbce9545c9c5f3d5194a789c89f5b"
   version = "v1.2.0"
+
+[[projects]]
+  digest = "1:8ec8d88c248041a6df5f6574b87bc00e7e0b493881dad2e7ef47b11dc69093b5"
+  name = "github.com/hashicorp/golang-lru"
+  packages = [
+    ".",
+    "simplelru",
+  ]
+  pruneopts = "UT"
+  revision = "20f1fb78b0740ba8c3cb143a61e86ba5c8669768"
+  version = "v0.5.0"
 
 [[projects]]
   digest = "1:c0d19ab64b32ce9fe5cf4ddceba78d5bc9807f0016db6b1183599da3dcc24d10"
@@ -251,6 +471,22 @@
   version = "v1.0.0"
 
 [[projects]]
+  digest = "1:c00cc6d95a674b4b923ac069d364445043bc67836e9bd8aeff8440cfbe6a2cc7"
+  name = "github.com/huin/goupnp"
+  packages = [
+    ".",
+    "dcps/internetgateway1",
+    "dcps/internetgateway2",
+    "httpu",
+    "scpd",
+    "soap",
+    "ssdp",
+  ]
+  pruneopts = "UT"
+  revision = "656e61dfadd241c7cbdd22a023fa81ecb6860ea8"
+  version = "v1.0.0"
+
+[[projects]]
   digest = "1:870d441fe217b8e689d7949fef6e43efbc787e50f200cb1e70dbca9204a1d6be"
   name = "github.com/inconshreveable/mousetrap"
   packages = ["."]
@@ -259,12 +495,59 @@
   version = "v1.0"
 
 [[projects]]
+  digest = "1:39a822d90fa24d0cc92e1c9b64d32054a4e408f0b664c97d0c21acad8ea07299"
+  name = "github.com/influxdata/influxdb"
+  packages = [
+    "client",
+    "models",
+    "pkg/escape",
+  ]
+  pruneopts = "UT"
+  revision = "cb03c542a4054f0f4d3dc13919d31c456bdb5c39"
+  version = "v1.7.1"
+
+[[projects]]
+  branch = "master"
+  digest = "1:2c584d8971881e9f9a7dd2e0a712e83cb5ded51c5173eef1615ce3f047dbded3"
+  name = "github.com/influxdata/platform"
+  packages = [
+    "models",
+    "pkg/escape",
+  ]
+  pruneopts = "UT"
+  revision = "98d24f7e3cac712237615edf57ff1d8aba41e02f"
+
+[[projects]]
+  digest = "1:32b82e71cf24f8b78323e0d7903c4b90278486283965aa2a19b1ea13763b8f34"
+  name = "github.com/jackpal/go-nat-pmp"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "c9cfead9f2a36ddf3daa40ba269aa7f4bbba6b62"
+  version = "v1.0.1"
+
+[[projects]]
   branch = "master"
   digest = "1:39b27d1381a30421f9813967a5866fba35dc1d4df43a6eefe3b7a5444cb07214"
   name = "github.com/jmhodges/levigo"
   packages = ["."]
   pruneopts = "UT"
   revision = "c42d9e0ca023e2198120196f842701bb4c55d7b9"
+
+[[projects]]
+  digest = "1:f97285a3b0a496dcf8801072622230d513f69175665d94de60eb042d03387f6c"
+  name = "github.com/julienschmidt/httprouter"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "348b672cd90d8190f8240323e372ecd1e66b59dc"
+  version = "v1.2.0"
+
+[[projects]]
+  branch = "master"
+  digest = "1:6addadad21c95f83b592099496bb250a30aa8882faff9f8bd22aa9a15b6d8db1"
+  name = "github.com/karalabe/hid"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "d815e0c1a2e2082a287a2806bc90bc8fc7b276a9"
 
 [[projects]]
   branch = "master"
@@ -286,12 +569,36 @@
   version = "v1.8.0"
 
 [[projects]]
+  branch = "master"
+  digest = "1:2eeeebccad4f052e6037527e86b8114c6bfd184a97f84d4449a5ea6ad202c216"
+  name = "github.com/maruel/panicparse"
+  packages = ["stack"]
+  pruneopts = "UT"
+  revision = "f20d4c4d746f810c9110e21928d4135e1f2a3efa"
+
+[[projects]]
+  digest = "1:c658e84ad3916da105a761660dcaeb01e63416c8ec7bc62256a9b411a05fcd67"
+  name = "github.com/mattn/go-colorable"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "167de6bfdfba052fa6b2d3664c8f5272e23c9072"
+  version = "v0.0.9"
+
+[[projects]]
   digest = "1:0981502f9816113c9c8c4ac301583841855c8cf4da8c72f696b3ebedf6d0e4e5"
   name = "github.com/mattn/go-isatty"
   packages = ["."]
   pruneopts = "UT"
   revision = "6ca4dbf54d38eea1a992b3c722a76a5d1c4cb25c"
   version = "v0.0.4"
+
+[[projects]]
+  digest = "1:cdb899c199f907ac9fb50495ec71212c95cb5b0e0a8ee0800da0238036091033"
+  name = "github.com/mattn/go-runewidth"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "ce7b0b5c7b45a81508558cd1dba6bb1e4ddb51bb"
+  version = "v0.0.3"
 
 [[projects]]
   digest = "1:ff5ebae34cfbf047d505ee150de27e60570e8c394b3b8fdbb720ff6ac71985fc"
@@ -302,12 +609,63 @@
   version = "v1.0.1"
 
 [[projects]]
+  branch = "master"
+  digest = "1:abf08734a6527df70ed361d7c369fb580e6840d8f7a6012e5f609fdfd93b4e48"
+  name = "github.com/mitchellh/go-wordwrap"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "9e67c67572bc5dd02aef930e2b0ae3c02a4b5a5c"
+
+[[projects]]
   digest = "1:53bc4cd4914cd7cd52139990d5170d6dc99067ae31c56530621b18b35fc30318"
   name = "github.com/mitchellh/mapstructure"
   packages = ["."]
   pruneopts = "UT"
   revision = "3536a929edddb9a5b34bd6861dc4a9647cb459fe"
   version = "v1.1.2"
+
+[[projects]]
+  branch = "master"
+  digest = "1:84bd7f8a2e0bcd53ddc33c3b47c34c1fe340c8632cbe928f7f8ae10ec6ecdd62"
+  name = "github.com/mohae/deepcopy"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "c48cc78d482608239f6c4c92a4abd87eb8761c90"
+
+[[projects]]
+  digest = "1:b56c589214f01a5601e0821387db484617392d0042f26234bf2da853a2f498a1"
+  name = "github.com/naoina/go-stringutil"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "6b638e95a32d0c1131db0e7fe83775cbea4a0d0b"
+  version = "v0.1.0"
+
+[[projects]]
+  digest = "1:f58c3d0e46b64878d00652fedba24ee879725191ab919dca7b62586859281c04"
+  name = "github.com/naoina/toml"
+  packages = [
+    ".",
+    "ast",
+  ]
+  pruneopts = "UT"
+  revision = "e6f5723bf2a66af014955e0888881314cf294129"
+  version = "v0.1.1"
+
+[[projects]]
+  branch = "master"
+  digest = "1:01d9e47830ef6077fb6f91033b0e83f324ad5966d11ed3daa4a5822ace876dab"
+  name = "github.com/nsf/termbox-go"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "60ab7e3d12ed91bc1b2486559c4b3a6b62297577"
+
+[[projects]]
+  digest = "1:abcdbf03ca6ca13d3697e2186edc1f33863bbdac2b3a44dfa39015e8903f7409"
+  name = "github.com/olekukonko/tablewriter"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "e6d60cf7ba1f42d86d54cdf5508611c4aafb3970"
+  version = "v0.0.1"
 
 [[projects]]
   digest = "1:42e29deef12327a69123b9cb2cb45fee4af5c12c2a23c6e477338279a052703f"
@@ -358,6 +716,18 @@
   version = "v1.4.2"
 
 [[projects]]
+  digest = "1:450b7623b185031f3a456801155c8320209f75d0d4c4e633c6b1e59d44d6e392"
+  name = "github.com/opentracing/opentracing-go"
+  packages = [
+    ".",
+    "ext",
+    "log",
+  ]
+  pruneopts = "UT"
+  revision = "1949ddbfd147afd4d964a9f00b24eb291e0e7c38"
+  version = "v1.0.2"
+
+[[projects]]
   digest = "1:e5d0bd87abc2781d14e274807a470acd180f0499f8bf5bb18606e9ec22ad9de9"
   name = "github.com/pborman/uuid"
   packages = ["."]
@@ -372,6 +742,14 @@
   pruneopts = "UT"
   revision = "c01d1270ff3e442a8a57cddc1c92dc1138598194"
   version = "v1.2.0"
+
+[[projects]]
+  digest = "1:3adb9a64324d242301833d0b8b3bb51b4f31f928d5a05224256121dc5b8895c7"
+  name = "github.com/peterh/liner"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "5a0dfa99e2aa1d433a9642e863da51402e609376"
+  version = "v1.1.0"
 
 [[projects]]
   digest = "1:40e195917a951a8bf867cd05de2a46aaf1806c50cf92eebf4c16f78cd196f747"
@@ -431,6 +809,14 @@
   ]
   pruneopts = "UT"
   revision = "185b4288413d2a0dd0806f78c90dde719829e5ae"
+
+[[projects]]
+  digest = "1:9ffc0db15d8de463144fdc52af75a21b9d6ffc9af2a91e3ed294758ac19c734e"
+  name = "github.com/prometheus/prometheus"
+  packages = ["util/flock"]
+  pruneopts = "UT"
+  revision = "85f23d82a045d103ea7f3c89a91fba4a93e6367a"
+  version = "v2.1.0"
 
 [[projects]]
   digest = "1:c4556a44e350b50a490544d9b06e9fba9c286c21d6c0e47f54f3a9214597298c"
@@ -584,13 +970,12 @@
   version = "v0.10.0"
 
 [[projects]]
-  digest = "1:f2dc8b9a0547f37ec62cf3f6d562455c3535965246a2d9dee4ac5c3828d16b47"
+  digest = "1:aeef81c8d4647b6779e022b6efcba4764990d8de9eaee0f01da3de636954e34c"
   name = "github.com/tendermint/tendermint"
   packages = [
     "abci/client",
     "abci/example/code",
     "abci/example/kvstore",
-    "abci/server",
     "abci/types",
     "blockchain",
     "config",
@@ -604,6 +989,7 @@
     "crypto/tmhash",
     "evidence",
     "libs/autofile",
+    "libs/cli/flags",
     "libs/clist",
     "libs/common",
     "libs/db",
@@ -656,24 +1042,69 @@
   revision = "1731857f09b1f38450e2c12409748407822dc6be"
 
 [[projects]]
+  digest = "1:ac6f26e917fd2fb3194a7ebe2baf6fb32de2f2fbfed130c18aac0e758a6e1d22"
+  name = "github.com/uber/jaeger-client-go"
+  packages = [
+    ".",
+    "config",
+    "internal/baggage",
+    "internal/baggage/remote",
+    "internal/spanlog",
+    "internal/throttler",
+    "internal/throttler/remote",
+    "log",
+    "rpcmetrics",
+    "thrift",
+    "thrift-gen/agent",
+    "thrift-gen/baggage",
+    "thrift-gen/jaeger",
+    "thrift-gen/sampling",
+    "thrift-gen/zipkincore",
+    "transport",
+    "utils",
+  ]
+  pruneopts = "UT"
+  revision = "1a782e2da844727691fef1757c72eb190c2909f0"
+  version = "v2.15.0"
+
+[[projects]]
+  digest = "1:0f09db8429e19d57c8346ad76fbbc679341fa86073d3b8fb5ac919f0357d8f4c"
+  name = "github.com/uber/jaeger-lib"
+  packages = ["metrics"]
+  pruneopts = "UT"
+  revision = "ed3a127ec5fef7ae9ea95b01b542c47fbd999ce5"
+  version = "v1.5.0"
+
+[[projects]]
   branch = "master"
-  digest = "1:5e5ed29350b41ca6cfebede4a1cccb3e4d9da7fcdf689b7feab51720b63f7619"
+  digest = "1:00ac34d220ee3905d988ba05ed04f6b0f1d001f93c9f8a260d9123a68386b66e"
   name = "golang.org/x/crypto"
   packages = [
     "bcrypt",
     "blowfish",
+    "cast5",
     "chacha20poly1305",
     "curve25519",
+    "ed25519",
+    "ed25519/internal/edwards25519",
     "hkdf",
     "internal/chacha20",
     "internal/subtle",
     "nacl/box",
     "nacl/secretbox",
+    "openpgp",
+    "openpgp/armor",
+    "openpgp/elgamal",
+    "openpgp/errors",
+    "openpgp/packet",
+    "openpgp/s2k",
     "pbkdf2",
     "poly1305",
     "ripemd160",
     "salsa20/salsa",
     "scrypt",
+    "ssh",
+    "ssh/terminal",
   ]
   pruneopts = "UT"
   revision = "e4dc69e5b2fd71dcaf8bd5d054eb936deb78d1fa"
@@ -700,11 +1131,20 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:e9609f7e36a3fecb7dc9e3a15f9881011f9d8c42f94c9d5da231eb0c07826dc8"
+  digest = "1:9f303486d623f840492bfeb48eb906a94e9d3fe638a761639b72ce64bf7bfcc3"
+  name = "golang.org/x/sync"
+  packages = ["syncmap"]
+  pruneopts = "UT"
+  revision = "42b317875d0fa942474b76e1b46a6060d720ae6e"
+
+[[projects]]
+  branch = "master"
+  digest = "1:8f32f0ccb71f71d4780147c6e6fac5bcec522f148e7a0d6d4543770081e8884d"
   name = "golang.org/x/sys"
   packages = [
     "cpu",
     "unix",
+    "windows",
   ]
   pruneopts = "UT"
   revision = "66b7b1311ac80bbafcd2daeef9a5e6e2cd1e2399"
@@ -811,6 +1251,14 @@
   revision = "c1b8fa8bdccecb0b8db834ee0b92fdbcfa606dd6"
 
 [[projects]]
+  branch = "v3"
+  digest = "1:47360765b64ba68cc23420ec2967c7cca5b1d8a438493ac55945ef58e7560bc2"
+  name = "gopkg.in/olebedev/go-duktape.v3"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "ccb656ba24c2a193e5650299767e2df1554725fd"
+
+[[projects]]
   digest = "1:9935525a8c49b8434a0b0a54e1980e94a6fae73aaff45c5d33ba8dff69de123e"
   name = "gopkg.in/sourcemap.v1"
   packages = [
@@ -830,6 +1278,14 @@
   revision = "dd632973f1e7218eb1089048e0798ec9ae7dceb8"
 
 [[projects]]
+  digest = "1:b24d38b282bacf9791408a080f606370efa3d364e4b5fd9ba0f7b87786d3b679"
+  name = "gopkg.in/urfave/cli.v1"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "cfb38830724cc34fedffe9a2a29fb54fa9169cd1"
+  version = "v1.20.0"
+
+[[projects]]
   digest = "1:342378ac4dcb378a5448dd723f0784ae519383532f5e70ade24132c4c8693202"
   name = "gopkg.in/yaml.v2"
   packages = ["."]
@@ -841,6 +1297,11 @@
   analyzer-name = "dep"
   analyzer-version = 1
   input-imports = [
+    "bazil.org/fuse",
+    "bazil.org/fuse/fs",
+    "github.com/Azure/azure-storage-blob-go/2018-03-28/azblob",
+    "github.com/aristanetworks/goarista/monotime",
+    "github.com/beorn7/perks/quantile",
     "github.com/bgentry/speakeasy",
     "github.com/btcsuite/btcd/btcec",
     "github.com/btcsuite/btcd/btcjson",
@@ -848,44 +1309,253 @@
     "github.com/btcsuite/btcd/chaincfg/chainhash",
     "github.com/btcsuite/btcd/txscript",
     "github.com/btcsuite/btcd/wire",
+    "github.com/btcsuite/btclog",
     "github.com/btcsuite/btcutil",
+    "github.com/btcsuite/btcutil/base58",
+    "github.com/btcsuite/btcutil/bech32",
     "github.com/btcsuite/btcwallet/wallet/txrules",
     "github.com/davecgh/go-spew/spew",
+    "github.com/deckarep/golang-set",
+    "github.com/docker/docker/pkg/reexec",
     "github.com/ebuchman/fail-test",
+    "github.com/edsrzf/mmap-go",
+    "github.com/elastic/gosigar",
     "github.com/ethereum/go-ethereum",
+    "github.com/ethereum/go-ethereum/accounts",
     "github.com/ethereum/go-ethereum/accounts/abi",
     "github.com/ethereum/go-ethereum/accounts/abi/bind",
+    "github.com/ethereum/go-ethereum/accounts/abi/bind/backends",
+    "github.com/ethereum/go-ethereum/accounts/keystore",
+    "github.com/ethereum/go-ethereum/accounts/usbwallet",
+    "github.com/ethereum/go-ethereum/accounts/usbwallet/internal/trezor",
+    "github.com/ethereum/go-ethereum/cmd/evm/internal/compiler",
+    "github.com/ethereum/go-ethereum/cmd/internal/browser",
+    "github.com/ethereum/go-ethereum/cmd/utils",
     "github.com/ethereum/go-ethereum/common",
+    "github.com/ethereum/go-ethereum/common/bitutil",
+    "github.com/ethereum/go-ethereum/common/compiler",
+    "github.com/ethereum/go-ethereum/common/fdlimit",
+    "github.com/ethereum/go-ethereum/common/hexutil",
+    "github.com/ethereum/go-ethereum/common/math",
+    "github.com/ethereum/go-ethereum/common/mclock",
+    "github.com/ethereum/go-ethereum/common/prque",
+    "github.com/ethereum/go-ethereum/consensus",
+    "github.com/ethereum/go-ethereum/consensus/clique",
+    "github.com/ethereum/go-ethereum/consensus/ethash",
+    "github.com/ethereum/go-ethereum/consensus/misc",
+    "github.com/ethereum/go-ethereum/console",
+    "github.com/ethereum/go-ethereum/contracts/chequebook",
+    "github.com/ethereum/go-ethereum/contracts/chequebook/contract",
+    "github.com/ethereum/go-ethereum/contracts/ens",
+    "github.com/ethereum/go-ethereum/contracts/ens/contract",
+    "github.com/ethereum/go-ethereum/core",
+    "github.com/ethereum/go-ethereum/core/asm",
+    "github.com/ethereum/go-ethereum/core/bloombits",
+    "github.com/ethereum/go-ethereum/core/rawdb",
+    "github.com/ethereum/go-ethereum/core/state",
     "github.com/ethereum/go-ethereum/core/types",
+    "github.com/ethereum/go-ethereum/core/vm",
+    "github.com/ethereum/go-ethereum/core/vm/runtime",
+    "github.com/ethereum/go-ethereum/crypto",
+    "github.com/ethereum/go-ethereum/crypto/bn256",
+    "github.com/ethereum/go-ethereum/crypto/bn256/cloudflare",
+    "github.com/ethereum/go-ethereum/crypto/bn256/google",
+    "github.com/ethereum/go-ethereum/crypto/ecies",
+    "github.com/ethereum/go-ethereum/crypto/secp256k1",
+    "github.com/ethereum/go-ethereum/crypto/sha3",
+    "github.com/ethereum/go-ethereum/dashboard",
+    "github.com/ethereum/go-ethereum/eth",
+    "github.com/ethereum/go-ethereum/eth/downloader",
+    "github.com/ethereum/go-ethereum/eth/fetcher",
+    "github.com/ethereum/go-ethereum/eth/filters",
+    "github.com/ethereum/go-ethereum/eth/gasprice",
+    "github.com/ethereum/go-ethereum/eth/tracers",
+    "github.com/ethereum/go-ethereum/eth/tracers/internal/tracers",
     "github.com/ethereum/go-ethereum/ethclient",
+    "github.com/ethereum/go-ethereum/ethdb",
+    "github.com/ethereum/go-ethereum/ethstats",
     "github.com/ethereum/go-ethereum/event",
+    "github.com/ethereum/go-ethereum/internal/build",
+    "github.com/ethereum/go-ethereum/internal/debug",
+    "github.com/ethereum/go-ethereum/internal/ethapi",
+    "github.com/ethereum/go-ethereum/internal/jsre",
+    "github.com/ethereum/go-ethereum/internal/jsre/deps",
+    "github.com/ethereum/go-ethereum/internal/web3ext",
+    "github.com/ethereum/go-ethereum/les",
+    "github.com/ethereum/go-ethereum/les/flowcontrol",
+    "github.com/ethereum/go-ethereum/light",
+    "github.com/ethereum/go-ethereum/log",
+    "github.com/ethereum/go-ethereum/metrics",
+    "github.com/ethereum/go-ethereum/metrics/exp",
+    "github.com/ethereum/go-ethereum/metrics/influxdb",
+    "github.com/ethereum/go-ethereum/miner",
+    "github.com/ethereum/go-ethereum/node",
+    "github.com/ethereum/go-ethereum/p2p",
+    "github.com/ethereum/go-ethereum/p2p/discover",
+    "github.com/ethereum/go-ethereum/p2p/discv5",
+    "github.com/ethereum/go-ethereum/p2p/enode",
+    "github.com/ethereum/go-ethereum/p2p/enr",
+    "github.com/ethereum/go-ethereum/p2p/nat",
+    "github.com/ethereum/go-ethereum/p2p/netutil",
+    "github.com/ethereum/go-ethereum/p2p/protocols",
+    "github.com/ethereum/go-ethereum/p2p/simulations",
+    "github.com/ethereum/go-ethereum/p2p/simulations/adapters",
+    "github.com/ethereum/go-ethereum/p2p/simulations/pipes",
+    "github.com/ethereum/go-ethereum/params",
+    "github.com/ethereum/go-ethereum/rlp",
+    "github.com/ethereum/go-ethereum/rpc",
+    "github.com/ethereum/go-ethereum/signer/core",
+    "github.com/ethereum/go-ethereum/signer/rules",
+    "github.com/ethereum/go-ethereum/signer/rules/deps",
+    "github.com/ethereum/go-ethereum/signer/storage",
+    "github.com/ethereum/go-ethereum/swarm",
+    "github.com/ethereum/go-ethereum/swarm/api",
+    "github.com/ethereum/go-ethereum/swarm/api/client",
+    "github.com/ethereum/go-ethereum/swarm/api/http",
+    "github.com/ethereum/go-ethereum/swarm/bmt",
+    "github.com/ethereum/go-ethereum/swarm/chunk",
+    "github.com/ethereum/go-ethereum/swarm/fuse",
+    "github.com/ethereum/go-ethereum/swarm/log",
+    "github.com/ethereum/go-ethereum/swarm/metrics",
+    "github.com/ethereum/go-ethereum/swarm/multihash",
+    "github.com/ethereum/go-ethereum/swarm/network",
+    "github.com/ethereum/go-ethereum/swarm/network/bitvector",
+    "github.com/ethereum/go-ethereum/swarm/network/priorityqueue",
+    "github.com/ethereum/go-ethereum/swarm/network/stream",
+    "github.com/ethereum/go-ethereum/swarm/network/stream/intervals",
+    "github.com/ethereum/go-ethereum/swarm/pot",
+    "github.com/ethereum/go-ethereum/swarm/pss",
+    "github.com/ethereum/go-ethereum/swarm/sctx",
+    "github.com/ethereum/go-ethereum/swarm/services/swap",
+    "github.com/ethereum/go-ethereum/swarm/services/swap/swap",
+    "github.com/ethereum/go-ethereum/swarm/spancontext",
+    "github.com/ethereum/go-ethereum/swarm/state",
+    "github.com/ethereum/go-ethereum/swarm/storage",
+    "github.com/ethereum/go-ethereum/swarm/storage/encryption",
+    "github.com/ethereum/go-ethereum/swarm/storage/feed",
+    "github.com/ethereum/go-ethereum/swarm/storage/feed/lookup",
+    "github.com/ethereum/go-ethereum/swarm/storage/mock",
+    "github.com/ethereum/go-ethereum/swarm/tracing",
+    "github.com/ethereum/go-ethereum/swarm/version",
+    "github.com/ethereum/go-ethereum/tests",
+    "github.com/ethereum/go-ethereum/trie",
+    "github.com/ethereum/go-ethereum/whisper/mailserver",
+    "github.com/ethereum/go-ethereum/whisper/shhclient",
+    "github.com/ethereum/go-ethereum/whisper/whisperv5",
+    "github.com/ethereum/go-ethereum/whisper/whisperv6",
+    "github.com/fatih/color",
+    "github.com/fjl/memsize/memsizeui",
+    "github.com/fsnotify/fsnotify",
+    "github.com/gizak/termui",
     "github.com/go-kit/kit/log",
     "github.com/go-kit/kit/log/level",
     "github.com/go-kit/kit/log/term",
     "github.com/go-kit/kit/metrics",
     "github.com/go-kit/kit/metrics/discard",
+    "github.com/go-kit/kit/metrics/internal/lv",
     "github.com/go-kit/kit/metrics/prometheus",
     "github.com/go-logfmt/logfmt",
+    "github.com/go-stack/stack",
     "github.com/gogo/protobuf/gogoproto",
     "github.com/gogo/protobuf/jsonpb",
     "github.com/gogo/protobuf/proto",
+    "github.com/gogo/protobuf/sortkeys",
     "github.com/gogo/protobuf/types",
     "github.com/golang/protobuf/proto",
+    "github.com/golang/protobuf/protoc-gen-go/descriptor",
+    "github.com/golang/protobuf/ptypes",
+    "github.com/golang/protobuf/ptypes/any",
+    "github.com/golang/protobuf/ptypes/duration",
     "github.com/golang/protobuf/ptypes/timestamp",
+    "github.com/golang/snappy",
+    "github.com/google/uuid",
     "github.com/gorilla/websocket",
+    "github.com/hashicorp/golang-lru",
+    "github.com/hashicorp/golang-lru/simplelru",
+    "github.com/hashicorp/hcl",
+    "github.com/hashicorp/hcl/hcl/ast",
+    "github.com/hashicorp/hcl/hcl/parser",
+    "github.com/hashicorp/hcl/hcl/printer",
+    "github.com/hashicorp/hcl/hcl/scanner",
+    "github.com/hashicorp/hcl/hcl/strconv",
+    "github.com/hashicorp/hcl/hcl/token",
+    "github.com/hashicorp/hcl/json/parser",
+    "github.com/hashicorp/hcl/json/scanner",
+    "github.com/hashicorp/hcl/json/token",
+    "github.com/hpcloud/tail",
+    "github.com/hpcloud/tail/ratelimiter",
+    "github.com/hpcloud/tail/util",
+    "github.com/hpcloud/tail/watch",
+    "github.com/hpcloud/tail/winfile",
+    "github.com/huin/goupnp",
+    "github.com/huin/goupnp/dcps/internetgateway1",
+    "github.com/huin/goupnp/dcps/internetgateway2",
+    "github.com/inconshreveable/mousetrap",
+    "github.com/influxdata/influxdb/client",
+    "github.com/jackpal/go-nat-pmp",
     "github.com/jmhodges/levigo",
+    "github.com/julienschmidt/httprouter",
+    "github.com/karalabe/hid",
+    "github.com/kr/logfmt",
+    "github.com/magiconair/properties",
     "github.com/magiconair/properties/assert",
+    "github.com/mattn/go-colorable",
     "github.com/mattn/go-isatty",
     "github.com/matttproud/golang_protobuf_extensions/pbutil",
+    "github.com/mitchellh/mapstructure",
+    "github.com/mohae/deepcopy",
+    "github.com/naoina/toml",
+    "github.com/olekukonko/tablewriter",
     "github.com/onsi/ginkgo",
+    "github.com/onsi/ginkgo/config",
+    "github.com/onsi/ginkgo/internal/codelocation",
+    "github.com/onsi/ginkgo/internal/containernode",
+    "github.com/onsi/ginkgo/internal/failer",
+    "github.com/onsi/ginkgo/internal/leafnodes",
+    "github.com/onsi/ginkgo/internal/remote",
+    "github.com/onsi/ginkgo/internal/spec",
+    "github.com/onsi/ginkgo/internal/spec_iterator",
+    "github.com/onsi/ginkgo/internal/specrunner",
+    "github.com/onsi/ginkgo/internal/suite",
+    "github.com/onsi/ginkgo/internal/testingtproxy",
+    "github.com/onsi/ginkgo/internal/writer",
+    "github.com/onsi/ginkgo/reporters",
+    "github.com/onsi/ginkgo/reporters/stenographer",
+    "github.com/onsi/ginkgo/reporters/stenographer/support/go-colorable",
+    "github.com/onsi/ginkgo/reporters/stenographer/support/go-isatty",
+    "github.com/onsi/ginkgo/types",
     "github.com/onsi/gomega",
+    "github.com/onsi/gomega/format",
+    "github.com/onsi/gomega/internal/assertion",
+    "github.com/onsi/gomega/internal/asyncassertion",
+    "github.com/onsi/gomega/internal/oraclematcher",
+    "github.com/onsi/gomega/internal/testingtsupport",
+    "github.com/onsi/gomega/matchers",
+    "github.com/onsi/gomega/matchers/support/goraph/bipartitegraph",
+    "github.com/onsi/gomega/matchers/support/goraph/edge",
+    "github.com/onsi/gomega/matchers/support/goraph/node",
+    "github.com/onsi/gomega/matchers/support/goraph/util",
+    "github.com/onsi/gomega/types",
+    "github.com/opentracing/opentracing-go",
+    "github.com/opentracing/opentracing-go/log",
+    "github.com/pborman/uuid",
+    "github.com/pelletier/go-toml",
+    "github.com/peterh/liner",
     "github.com/pkg/errors",
+    "github.com/pmezard/go-difflib/difflib",
     "github.com/prometheus/client_golang/prometheus",
     "github.com/prometheus/client_golang/prometheus/promhttp",
     "github.com/prometheus/client_model/go",
+    "github.com/prometheus/common/expfmt",
     "github.com/prometheus/common/internal/bitbucket.org/ww/goautoneg",
     "github.com/prometheus/common/model",
+    "github.com/prometheus/procfs",
+    "github.com/prometheus/procfs/internal/util",
+    "github.com/prometheus/procfs/nfs",
+    "github.com/prometheus/procfs/xfs",
+    "github.com/prometheus/prometheus/util/flock",
     "github.com/rcrowley/go-metrics",
+    "github.com/rjeczalik/notify",
     "github.com/robertkrimen/otto",
     "github.com/robertkrimen/otto/ast",
     "github.com/robertkrimen/otto/dbg",
@@ -893,23 +1563,37 @@
     "github.com/robertkrimen/otto/parser",
     "github.com/robertkrimen/otto/registry",
     "github.com/robertkrimen/otto/token",
+    "github.com/rs/cors",
+    "github.com/spf13/afero",
+    "github.com/spf13/afero/mem",
+    "github.com/spf13/cast",
     "github.com/spf13/cobra",
+    "github.com/spf13/jwalterweatherman",
+    "github.com/spf13/pflag",
     "github.com/spf13/viper",
     "github.com/stretchr/testify/assert",
     "github.com/stretchr/testify/require",
     "github.com/stretchr/testify/suite",
     "github.com/syndtr/goleveldb/leveldb",
+    "github.com/syndtr/goleveldb/leveldb/cache",
+    "github.com/syndtr/goleveldb/leveldb/comparer",
     "github.com/syndtr/goleveldb/leveldb/errors",
+    "github.com/syndtr/goleveldb/leveldb/filter",
     "github.com/syndtr/goleveldb/leveldb/iterator",
+    "github.com/syndtr/goleveldb/leveldb/journal",
+    "github.com/syndtr/goleveldb/leveldb/memdb",
     "github.com/syndtr/goleveldb/leveldb/opt",
+    "github.com/syndtr/goleveldb/leveldb/storage",
+    "github.com/syndtr/goleveldb/leveldb/table",
+    "github.com/syndtr/goleveldb/leveldb/util",
     "github.com/tendermint/ed25519",
+    "github.com/tendermint/ed25519/edwards25519",
     "github.com/tendermint/ed25519/extra25519",
     "github.com/tendermint/go-amino",
     "github.com/tendermint/iavl",
     "github.com/tendermint/tendermint/abci/client",
     "github.com/tendermint/tendermint/abci/example/code",
     "github.com/tendermint/tendermint/abci/example/kvstore",
-    "github.com/tendermint/tendermint/abci/server",
     "github.com/tendermint/tendermint/abci/types",
     "github.com/tendermint/tendermint/blockchain",
     "github.com/tendermint/tendermint/config",
@@ -923,6 +1607,7 @@
     "github.com/tendermint/tendermint/crypto/tmhash",
     "github.com/tendermint/tendermint/evidence",
     "github.com/tendermint/tendermint/libs/autofile",
+    "github.com/tendermint/tendermint/libs/cli/flags",
     "github.com/tendermint/tendermint/libs/clist",
     "github.com/tendermint/tendermint/libs/common",
     "github.com/tendermint/tendermint/libs/db",
@@ -954,20 +1639,74 @@
     "github.com/tendermint/tendermint/types",
     "github.com/tendermint/tendermint/version",
     "github.com/tidwall/gjson",
+    "github.com/tidwall/match",
+    "github.com/uber/jaeger-client-go",
+    "github.com/uber/jaeger-client-go/config",
+    "github.com/uber/jaeger-client-go/log",
     "golang.org/x/crypto/bcrypt",
     "golang.org/x/crypto/chacha20poly1305",
     "golang.org/x/crypto/curve25519",
     "golang.org/x/crypto/hkdf",
     "golang.org/x/crypto/internal/subtle",
     "golang.org/x/crypto/nacl/box",
+    "golang.org/x/crypto/openpgp",
+    "golang.org/x/crypto/pbkdf2",
     "golang.org/x/crypto/ripemd160",
+    "golang.org/x/crypto/scrypt",
+    "golang.org/x/crypto/ssh",
+    "golang.org/x/crypto/ssh/terminal",
     "golang.org/x/net/context",
+    "golang.org/x/net/html/charset",
+    "golang.org/x/net/http2",
+    "golang.org/x/net/http2/hpack",
+    "golang.org/x/net/idna",
     "golang.org/x/net/netutil",
+    "golang.org/x/net/websocket",
+    "golang.org/x/sync/syncmap",
+    "golang.org/x/sys/cpu",
+    "golang.org/x/sys/unix",
+    "golang.org/x/text/collate",
+    "golang.org/x/text/encoding",
+    "golang.org/x/text/encoding/charmap",
+    "golang.org/x/text/encoding/internal/identifier",
+    "golang.org/x/text/encoding/japanese",
+    "golang.org/x/text/encoding/korean",
+    "golang.org/x/text/encoding/simplifiedchinese",
+    "golang.org/x/text/encoding/traditionalchinese",
+    "golang.org/x/text/encoding/unicode",
+    "golang.org/x/text/internal/gen",
+    "golang.org/x/text/internal/ucd",
+    "golang.org/x/text/language",
+    "golang.org/x/text/transform",
+    "golang.org/x/text/unicode/bidi",
+    "golang.org/x/text/unicode/norm",
+    "golang.org/x/text/unicode/rangetable",
+    "google.golang.org/genproto/googleapis/rpc/status",
     "google.golang.org/grpc",
+    "google.golang.org/grpc/balancer",
+    "google.golang.org/grpc/balancer/base",
     "google.golang.org/grpc/codes",
+    "google.golang.org/grpc/connectivity",
+    "google.golang.org/grpc/credentials",
+    "google.golang.org/grpc/encoding",
+    "google.golang.org/grpc/grpclog",
+    "google.golang.org/grpc/internal/channelz",
+    "google.golang.org/grpc/internal/grpcrand",
+    "google.golang.org/grpc/keepalive",
+    "google.golang.org/grpc/metadata",
+    "google.golang.org/grpc/peer",
+    "google.golang.org/grpc/resolver",
+    "google.golang.org/grpc/stats",
     "google.golang.org/grpc/status",
+    "google.golang.org/grpc/tap",
+    "gopkg.in/fsnotify.v1",
     "gopkg.in/jarcoal/httpmock.v1",
+    "gopkg.in/natefinch/npipe.v2",
+    "gopkg.in/olebedev/go-duktape.v3",
     "gopkg.in/sourcemap.v1",
+    "gopkg.in/tomb.v1",
+    "gopkg.in/urfave/cli.v1",
+    "gopkg.in/yaml.v2",
   ]
   solver-name = "gps-cdcl"
   solver-version = 1

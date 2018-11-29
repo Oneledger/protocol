@@ -4,25 +4,21 @@
 # No output if the chain isn't running
 
 echo -n "OLFullnode: "
-pgrep -f "^olfullnode.*-c.*" | tr "\n" ","
+pgrep -f "^olfullnode.*-c.*" | tr "\n" " "
 echo
 
 echo -n " OLMonitor: "
-pgrep -f "^olmonitor start.*" | tr "\n" ","
+pgrep -f "^olmonitor start.*" | tr "\n" " "
 echo
 
 echo -n "      OLVM: "
-pgrep -f "^olvm execute -c.*" | tr "\n" ","
-echo
-
-echo -n "Tendermint: "
-pgrep -f "^tendermint.*--home.*" | tr "\n" ","
+pgrep -f "^olvm execute -c.*" | tr "\n" " "
 echo
 
 echo -n "  Ethereum: "
-pgrep -f "geth.*--datadir.*" | tr "\n" ","
+pgrep -f "^geth.*--datadir.*" | tr "\n" ","
 echo
 
 echo -n "   Bitcoin: "
-pgrep -f "bitcoind.*-regtest.*" | tr "\n" ","
+pgrep -f "^bitcoind.*-regtest.*" | tr "\n" ","
 echo

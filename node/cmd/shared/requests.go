@@ -7,6 +7,8 @@
 package shared
 
 import (
+	"github.com/Oneledger/protocol/node/comm"
+	"github.com/Oneledger/protocol/node/serial"
 	"os"
 
 	"github.com/Oneledger/protocol/node/action"
@@ -75,6 +77,24 @@ type BalanceArguments struct {
 
 func CreateBalanceRequest(args *BalanceArguments) []byte {
 	return []byte(nil)
+}
+
+// CreateRequest builds and signs the transaction based on the arguments
+func CreateApplyValidatorRequest(args *comm.ApplyValidatorArguments) []byte {
+	request, err := serial.Serialize(args, serial.CLIENT)
+	if err != nil {
+		log.Error("Failed to Serialize arguments: ", err)
+	}
+
+	response := comm.Query("/applyValidators", request)
+
+	if response == nil {
+		log.Warn("Query returned no response", "request", request)
+	}
+
+	log.Debug("CreateApplyValidatorRequest", "response", response)
+
+	return response.([]byte)
 }
 
 type SendArguments struct {

@@ -72,6 +72,12 @@ fulltest: reset install
 	@./tests/full.sh
 
 #
+# Test validator, bring up everything, send a validator token and then stop
+#
+validatortest: reset install
+	@./tests/validator.sh
+
+#
 # Swap Testing, swap BTC with ETH between nodes, do a full reset and rebuild each time
 #
 swaptest: resetDevnet install

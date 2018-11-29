@@ -16,8 +16,10 @@ package global
 
 import (
 	"os"
+	"path/filepath"
 
 	"github.com/Oneledger/protocol/node/persist"
+	tmnode "github.com/tendermint/tendermint/node"
 )
 
 var Current *Context
@@ -53,6 +55,11 @@ type Context struct {
 	TendermintRoot    string
 	TendermintAddress string
 	TendermintPubKey  string
+
+	PersistentPeers string
+	P2PAddress      string
+
+	ConsensusNode *tmnode.Node
 }
 
 func init() {
@@ -85,6 +92,15 @@ func (context *Context) SetApplication(app persist.Access) persist.Access {
 	return app
 }
 
+func (context *Context) SetConsensusNode(node *tmnode.Node) {
+	context.ConsensusNode = node
+}
+
 func (context *Context) GetApplication() persist.Access {
 	return context.Application
+}
+
+func ConsensusDir() string {
+	result, _ := filepath.Abs(filepath.Join(Current.RootDir, "..", "consensus"))
+	return result
 }

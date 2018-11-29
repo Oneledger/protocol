@@ -7,7 +7,7 @@ CMD=$GOPATH/src/github.com/Oneledger/protocol/node/scripts
 TEST=$GOPATH/src/github.com/Oneledger/protocol/node/tests
 
 # Startup the chains
-$CMD/startOneLedger
+#$CMD/startOneLedger
 
 echo "=================== Testmint Transactions =================="
 
