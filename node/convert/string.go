@@ -98,6 +98,7 @@ func (convert *Convert) HashKey(key PublicKey) []byte {
 func (convert *Convert) GetHash(value string) []byte {
 	result := convert.GetPublicKey(value)
 	if convert.HasErrors() {
+		convert.AddError(value, errors.New("Public Key has errors"))
 		return nil
 	}
 	return convert.HashKey(result)
@@ -106,6 +107,9 @@ func (convert *Convert) GetHash(value string) []byte {
 func (convert *Convert) GetCoin(amountStr string, currencyStr string) data.Coin {
 	currency := convert.GetCurrency(currencyStr)
 	amountInt64 := convert.GetInt64(amountStr)
+	if convert.HasErrors() {
+		convert.AddError(amountStr, errors.New("GetCurrency has errors"))
+	}
 	return data.NewCoin(amountInt64, currency)
 }
 
@@ -150,6 +154,6 @@ func (convert *Convert) GetChainFromCurrency(value string) data.ChainType {
 		return currency.Chain
 	}
 	log.Error("Can't find the currency", "value", value)
-
+	convert.AddError(value, errors.New("Can't find the currency"))
 	return data.UNKNOWN
 }

@@ -3,12 +3,11 @@
 
 	Easy Access to Persistent App Data, if the data isn't accessible stop immediately
 */
-package action
+package id
 
 import (
 	"github.com/Oneledger/protocol/node/data"
 	"github.com/Oneledger/protocol/node/global"
-	"github.com/Oneledger/protocol/node/id"
 	"github.com/Oneledger/protocol/node/log"
 	"github.com/Oneledger/protocol/node/persist"
 )
@@ -30,16 +29,16 @@ func GetStatus(app interface{}) data.Datastore {
 	return result
 }
 
-func GetIdentities(app interface{}) *id.Identities {
-	identities := app.(persist.Access).GetIdentities().(*id.Identities)
+func GetIdentities(app interface{}) *Identities {
+	identities := app.(persist.Access).GetIdentities().(*Identities)
 	if identities == nil {
 		log.Fatal("Identity Database Missing", "config", global.Current, "app", app)
 	}
 	return identities
 }
 
-func GetAccounts(app interface{}) *id.Accounts {
-	accounts := app.(persist.Access).GetAccounts().(*id.Accounts)
+func GetAccounts(app interface{}) *Accounts {
+	accounts := app.(persist.Access).GetAccounts().(*Accounts)
 	if accounts == nil {
 		log.Fatal("Accounts Database Missing", "config", global.Current, "app", app)
 	}
@@ -81,4 +80,20 @@ func GetSmartContracts(app interface{}) data.Datastore {
 		log.Fatal("SmartContract Database Missing", "config", global.Current, "app", app)
 	}
 	return smartContracts
+}
+
+func GetValidators(app interface{}) *Validators {
+	validators := app.(persist.Access).GetValidators().(*Validators)
+	//if validators == nil {
+	//	log.Fatal("Validators Missing", "validators", validators, "app", app)
+	//}
+	return validators
+}
+
+func GetSequence(app interface{}) data.Datastore {
+	sequenceDb := app.(persist.Access).GetSequence().(data.Datastore)
+	if sequenceDb == nil {
+		log.Fatal("Sequence Database Missing", "config", global.Current, "app", app)
+	}
+	return sequenceDb
 }

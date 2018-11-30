@@ -126,7 +126,7 @@ func HandleApplyValidatorQuery(application Application, arguments map[string]str
 			ChainId:  ChainId,
 			Owner:    identity.AccountKey,
 			Signers:  GetSigners(identity.AccountKey, application),
-			Sequence: sequence.(SequenceRecord).Sequence,
+			Sequence: sequence.(id.SequenceRecord).Sequence,
 		},
 
 		AccountKey:        identity.AccountKey,
@@ -426,7 +426,7 @@ func HandleSequenceNumberQuery(app Application, arguments map[string]string) int
 }
 
 func SequenceNumber(app Application, accountKey []byte) interface{} {
-	sequenceRecord := NextSequence(&app, accountKey)
+	sequenceRecord := id.NextSequence(&app, accountKey)
 	return sequenceRecord
 }
 

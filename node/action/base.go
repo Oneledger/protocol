@@ -31,6 +31,7 @@ const (
 	PAYMENT              // Do a payment transaction on local chain
 	EXTERNAL_SEND        // Do send on external chain
 	SWAP                 // Start a swap between chains
+	SMART_CONTRACT       // Install and Execute smart contracts
 	APPLY_VALIDATOR      // Apply a dynamic validator
 )
 
@@ -167,6 +168,8 @@ func (t Type) String() string {
 		return "EXTERNAL_SEND"
 	case SWAP:
 		return "SWAP"
+	case SMART_CONTRACT:
+		return "SMART_CONTRACT"
 	case APPLY_VALIDATOR:
 		return "APPLY_VALIDATOR"
 	default:
