@@ -39,6 +39,6 @@ func NewConfig(olcfg Config) *config.Config {
 	cfg.P2P.RootDir = rootDir
 	cfg.Mempool.RootDir = rootDir
 	cfg.Consensus.RootDir = rootDir
-
+	cfg.Consensus.CreateEmptyBlocks = false
 	return cfg
 }
