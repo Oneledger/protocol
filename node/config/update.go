@@ -34,11 +34,14 @@ func UpdateContext() {
 	for _, parameter := range updateParameters {
 		switch parameter.DataType {
 		case "string":
-			param := viper.Get(parameter.Name).(string)
-			if param != "" {
-				field := valueOf.FieldByName(parameter.Name)
-				if field.IsValid() {
-					field.SetString(param)
+			value := viper.Get(parameter.Name)
+			if value != nil {
+				param := viper.Get(parameter.Name).(string)
+				if param != "" {
+					field := valueOf.FieldByName(parameter.Name)
+					if field.IsValid() {
+						field.SetString(param)
+					}
 				}
 			}
 		default:
