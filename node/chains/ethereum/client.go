@@ -207,16 +207,12 @@ func (h *HTLContract) Refund() error {
 		return err
 	}
 	WaitTxSuccess(client, tx, 10*time.Second, 1*time.Second)
-	cli := getEthClient()
-	ctx := context.Background()
-	receipt, err := cli.TransactionReceipt(ctx, tx.Hash())
 
-	_ = receipt
 	h.TxHash = tx.Hash()
 
 	balance, err := contract.Balance(&bind.CallOpts{Pending: false})
-	log.Debug("balance after refund", "balance", balance)
-	log.Info("Refund htlc", "address", h.Address, "tx", h.TxHash, "balance", balance)
+
+	log.Debug("Refund htlc", "address", h.Address, "tx", h.TxHash, "balance", balance)
 
 	return nil
 }
