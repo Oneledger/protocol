@@ -27,10 +27,6 @@ func init() {
 	serial.Register(Register{})
 }
 
-func (transaction *Register) TransactionType() Type {
-	return transaction.Base.Type
-}
-
 // Check the fields to make sure they have valid values.
 func (transaction Register) Validate() status.Code {
 	log.Debug("Validating Register Transaction")
@@ -51,13 +47,14 @@ func (transaction Register) Validate() status.Code {
 // Test to see if the identity already exists
 func (transaction Register) ProcessCheck(app interface{}) status.Code {
 	log.Debug("Processing Register Transaction for CheckTx")
+	/*
+		identities := GetIdentities(app)
+		id, ok := identities.FindName(transaction.Identity)
 
-	identities := GetIdentities(app)
-	id, ok := identities.FindName(transaction.Identity)
-
-	if ok != status.SUCCESS {
-		return ok
-	}
+		if ok != status.SUCCESS {
+			return ok
+		}
+	*/
 
 	/*
 		if id == nil {
@@ -67,7 +64,7 @@ func (transaction Register) ProcessCheck(app interface{}) status.Code {
 	*/
 
 	// Not necessarily a failure, since this identity might be local
-	log.Debug("Identity already exists", "id", id)
+	//log.Debug("Identity already exists", "id", id)
 	return status.SUCCESS
 }
 

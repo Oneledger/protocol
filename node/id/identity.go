@@ -6,11 +6,12 @@
 package id
 
 import (
+	"strings"
+
 	"github.com/Oneledger/protocol/node/data"
 	"github.com/Oneledger/protocol/node/log"
 	"github.com/Oneledger/protocol/node/serial"
 	"github.com/Oneledger/protocol/node/status"
-	"strings"
 )
 
 // The persistent collection of all accounts known by this node
@@ -75,10 +76,7 @@ func (ids *Identities) Exists(name string) bool {
 }
 
 func (ids *Identities) FindName(name string) (Identity, status.Code) {
-	// TODO: Find a better way
-	id := NewIdentity(name, "", true, "", nil, "", "")
-
-	value := ids.store.Get(id.Key())
+	value := ids.store.Get(data.DatabaseKey(name))
 	if value != nil {
 		return value.(Identity), status.SUCCESS
 	}
@@ -144,7 +142,8 @@ func (id *Identity) Key() data.DatabaseKey {
 	return data.DatabaseKey(id.Name)
 }
 
-func (id *Identity) AsString() string {
+//String used in fmt and Dump
+func (id *Identity) String() string {
 	buffer := ""
 	buffer += id.Name
 	if id.External {

@@ -6,12 +6,16 @@
 package main
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
 	"os"
 
+	"github.com/Oneledger/protocol/node/cmd/shared"
+	"github.com/Oneledger/protocol/node/config"
 	"github.com/Oneledger/protocol/node/global"
+	"github.com/Oneledger/protocol/node/log"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 )
 
 var RootCmd = &cobra.Command{
@@ -34,6 +38,9 @@ func init() {
 	RootCmd.PersistentFlags().StringVar(&global.Current.RootDir, "root",
 		global.Current.RootDir, "Set root directory")
 
+	RootCmd.PersistentFlags().StringVarP(&global.Current.ConfigName, "config", "c",
+		global.Current.ConfigName, "Configuration File Name")
+
 	RootCmd.PersistentFlags().StringVar(&global.Current.NodeName, "node",
 		global.Current.NodeName, "Set a node name")
 
@@ -46,11 +53,36 @@ func init() {
 	RootCmd.PersistentFlags().StringVarP(&global.Current.RpcAddress, "address", "a",
 		global.Current.RpcAddress, "full address")
 
-	RootCmd.PersistentFlags().Int64VarP(&global.Current.Sequence, "sequence", "s",
-		global.Current.Sequence, "unique sequence id")
+	RootCmd.PersistentFlags().StringVar(&global.Current.SDKAddress, "sdkrpc",
+		global.Current.SDKAddress, "SDK address")
+
+}
+
+func handleError(err error) {
+	shared.Console.Error(err)
+	os.Exit(1)
+}
+
+func indentJSON(in []byte) bytes.Buffer {
+	var out bytes.Buffer
+	err := json.Indent(&out, in, "-", "  ")
+	if err != nil {
+		handleError(err)
+	}
+
+	return out
 }
 
 // Initialize Viper
 func environment() {
-	viper.AutomaticEnv()
+	log.Debug("Loading Environment")
+	config.ClientConfig()
+
+	config.UpdateContext()
+
+	// TODO: Static variables vs Dynamic variables :-(
+	//global.Current.SDKAddress = viper.Get("SDKAddress").(string)
+	//global.Current.RpcAddress = viper.Get("RpcAddress").(string)
+
+	//viper.AutomaticEnv()
 }

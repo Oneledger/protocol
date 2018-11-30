@@ -13,7 +13,8 @@ type Version struct {
 	MetaData   string
 }
 
-var Current *Version
+var Current *Version  // Version of the source code
+var Protocol *Version // Version of the protocol
 
 // This should be the only copy of the version numbers, anywhere in the code.
 func init() {
@@ -24,6 +25,9 @@ func init() {
 		PreRelease: "",
 		MetaData:   "",
 	}
+
+	// The code vs. the underlying protocol version. They will drift at some point...
+	Protocol = Current
 }
 
 func (v *Version) String() string {

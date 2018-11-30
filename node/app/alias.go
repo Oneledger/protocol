@@ -1,7 +1,7 @@
 /*
 	Copyright 2017-2018 OneLedger
 
-	Define aliases to enhance readability of the code
+	Define aliases to hide Tendermint types and enhance readability of the code
 */
 package app
 

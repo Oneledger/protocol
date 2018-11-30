@@ -9,22 +9,24 @@ else
 	name=$1
 fi
 
-nodeName=`$CMD/lookup $name NodeName`
+nodeName=`olconfig get -c $name -p NodeName`
 export WORK=$OLDATA/$nodeName
 export LOG=$WORK
-export DATA=$WORK/tendermint
+export DATA=$WORK/consensus
 
 #
 # Startup Tendermint consensus
 #
 pids=`pgrep -f "tendermint.*--home $DATA.*"`
 if [ -z "$pids" ]
-
 then
-	pids=`pgrep -f "olfullnode.*--node $nodeName.*"`
+	exit 0
+else
+	pids=`pgrep -f "olfullnode.*-c $name.*"`
 	if [ -z "$pids" ]
 	then
 		exit 0
 	fi
 fi
+
 exit 1

@@ -24,7 +24,7 @@ func init() {
 	RootCmd.AddCommand(sendCmd)
 
 	// Transaction Parameters
-	sendCmd.Flags().StringVar(&sendargs.Party, "party", "", "send recipient")
+	sendCmd.Flags().StringVar(&sendargs.Party, "party", "", "send sender")
 	sendCmd.Flags().StringVar(&sendargs.CounterParty, "counterparty", "", "send recipient")
 	sendCmd.Flags().StringVar(&sendargs.Amount, "amount", "0", "specify an amount")
 	sendCmd.Flags().StringVar(&sendargs.Currency, "currency", "OLT", "the currency")

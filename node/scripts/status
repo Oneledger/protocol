@@ -4,11 +4,7 @@
 # No output if the chain isn't running
 
 echo -n "OLFullnode: "
-pgrep -f "olfullnode.*--node.*" | tr "\n" ","
-echo
-
-echo -n "Tendermint: "
-pgrep -f "tendermint.*--home.*" | tr "\n" ","
+pgrep -f "olfullnode.*-c.*" | tr "\n" ","
 echo
 
 echo -n "  Ethereum: "
