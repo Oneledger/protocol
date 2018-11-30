@@ -311,6 +311,7 @@ func (app Application) CheckTx(tx []byte) ResponseCheckTx {
 }
 
 var chainKey data.DatabaseKey = data.DatabaseKey("chainId")
+var validatorList ValidatorList
 
 // BeginBlock is called when a new block is started
 func (app Application) BeginBlock(req RequestBeginBlock) ResponseBeginBlock {
@@ -320,6 +321,8 @@ func (app Application) BeginBlock(req RequestBeginBlock) ResponseBeginBlock {
 	byzantineValidators := req.ByzantineValidators
 
 	app.Validators.Set(validators, byzantineValidators)
+
+	validatorList = ValidatorList{}
 
 	raw := app.Admin.Get(data.DatabaseKey("PaymentRecord"))
 	if raw == nil {
@@ -442,6 +445,18 @@ func (app Application) DeliverTx(tx []byte) ResponseDeliverTx {
 		} else if transaction.ShouldProcess(app) {
 			if err = transaction.ProcessDeliver(&app); err != status.SUCCESS {
 				errorCode = err
+			} else {
+				switch t := transaction.(type) {
+				case *action.ApplyValidator:
+					{
+						var validator types.SigningValidator
+
+						validator.Validator.Address = []byte(t.TendermintAddress)
+						validator.Validator.Power = 1
+
+						validatorList.Signers = append(validatorList.Signers, validator)
+					}
+				}
 			}
 		}
 	}
@@ -466,7 +481,14 @@ func (app Application) DeliverTx(tx []byte) ResponseDeliverTx {
 func (app Application) EndBlock(req RequestEndBlock) ResponseEndBlock {
 	log.Debug("ABCI: EndBlock", "req", req)
 
+	var validatorUpdates []types.Validator
+
+	for _, element := range validatorList.Signers {
+		validatorUpdates = append(validatorUpdates, element.Validator)
+	}
+
 	result := ResponseEndBlock{
+		ValidatorUpdates: validatorUpdates,
 		Tags: []common.KVPair(nil),
 	}
 
