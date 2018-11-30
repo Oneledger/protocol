@@ -17,6 +17,41 @@ import (
 	"github.com/Oneledger/protocol/node/sdk"
 )
 
+// TODO: Make sure call is not before viper args are handled.
+func NewOLVMService() *OLVMService {
+	return &OLVMService{
+		Protocol: global.Current.OLVMProtocol,
+		Address:  global.Current.OLVMAddress,
+	}
+}
+
+// Start up the service
+func (ol OLVMService) StartService() {
+	defer func() {
+		if r := recover(); r != nil {
+			go func() {
+				debug.PrintStack()
+				log.Warn("OLVM Panicked", "status", r)
+			}()
+		}
+	}()
+
+	log.Debug("Starting Service", "protocol", ol.Protocol, "address", ol.Address)
+
+	container := new(Container)
+	rpc.Register(container)
+	rpc.HandleHTTP()
+
+	log.Debug("Listening on the port")
+	listen, err := net.Listen(ol.Protocol, ":"+sdk.GetPort(ol.Address))
+	if err != nil {
+		log.Fatal("listen error:", "err", err)
+	}
+
+	log.Debug("Waiting for a request")
+	http.Serve(listen, nil)
+}
+
 func (c *Container) Echo(request *runner.OLVMRequest, result *runner.OLVMResult) error {
 	// TODO: Do something useful here
 	return nil
@@ -90,39 +125,4 @@ func (c *Container) Exec2(request *runner.OLVMRequest, result *runner.OLVMResult
 		log.Debug("Redoing Select Loop?")
 	}
 	return
-}
-
-// Start up teh service
-func (ol OLVMService) StartService() {
-	defer func() {
-		if r := recover(); r != nil {
-			go func() {
-				debug.PrintStack()
-				log.Warn("OLVM Panicked", "status", r)
-			}()
-		}
-	}()
-
-	log.Debug("Starting Service", "protocol", ol.Protocol, "address", ol.Address)
-
-	container := new(Container)
-	rpc.Register(container)
-	rpc.HandleHTTP()
-
-	log.Debug("Listening on the port")
-	listen, err := net.Listen(ol.Protocol, ":"+sdk.GetPort(ol.Address))
-	if err != nil {
-		log.Fatal("listen error:", "err", err)
-	}
-
-	log.Debug("Waiting for a request")
-	http.Serve(listen, nil)
-}
-
-// TODO: Make sure call is not before viper args are handled.
-func NewOLVMService() *OLVMService {
-	return &OLVMService{
-		Protocol: global.Current.OLVMProtocol,
-		Address:  global.Current.OLVMAddress,
-	}
 }
