@@ -13,6 +13,12 @@ import (
 	"github.com/Oneledger/protocol/node/persist"
 )
 
+func RunScript(app interface{}, script []byte) string {
+	result := app.(persist.Access).RunScript(string(script))
+
+	return result.(string)
+}
+
 func GetAdmin(app interface{}) data.Datastore {
 	admin := app.(persist.Access).GetAdmin().(data.Datastore)
 	if admin == nil {

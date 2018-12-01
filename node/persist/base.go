@@ -5,6 +5,10 @@
 package persist
 
 type Access interface {
+	// Run a smart contract
+	RunScript(script string) interface{}
+
+	// Access the databases
 	GetAdmin() interface{}
 	GetStatus() interface{}
 	GetIdentities() interface{}

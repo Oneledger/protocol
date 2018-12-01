@@ -43,8 +43,16 @@ func StartVM() {
 	vm.InitializeClient()
 }
 
+func (app Application) RunScript(script string) interface{} {
+	return RunTestScript(script)
+}
+
+func RunTestScriptName(name string) interface{} {
+	return RunTestScript(GetSourceCode(name))
+}
+
 // Take the engine for a test spin
-func RunTestScript(name string) interface{} {
+func RunTestScript(script string) interface{} {
 	log.Debug("########### TESTING OLVM EXECUTION ###########")
 
 	request := &runner.OLVMRequest{
@@ -52,7 +60,7 @@ func RunTestScript(name string) interface{} {
 		Address:    "embed://",
 		CallString: "",
 		Value:      0,
-		SourceCode: GetSourceCode(name),
+		SourceCode: script,
 	}
 
 	log.Dump("Engine input", request)
@@ -64,5 +72,5 @@ func RunTestScript(name string) interface{} {
 
 	log.Dump("Engine output", reply)
 
-	return reply
+	return reply.Out
 }

@@ -199,15 +199,18 @@ func (transaction *Contract) Install(app interface{}) {
 func (transaction *Contract) Execute(app interface{}) Transaction {
 	validatorList := id.GetValidators(app)
 	selectedValidatorIdentity := validatorList.SelectedValidator
+
 	if global.Current.NodeName == selectedValidatorIdentity.NodeName {
 		executeData := transaction.Data.(Execute)
 		smartContracts := GetSmartContracts(app)
+
 		raw := smartContracts.Get(executeData.Owner)
 		if raw != nil {
 			scriptRecords := raw.(*data.ScriptRecords)
 			versions := scriptRecords.Name[executeData.Name]
 			script := versions.Version[executeData.Version.String()]
-			result := RunScript(script.Script)
+
+			result := RunScript(app, script.Script)
 			if result != "" {
 				resultCompare := transaction.CreateCompareRequest(app, executeData.Owner, executeData.Name, executeData.Version, result)
 				if resultCompare != nil {
@@ -224,12 +227,16 @@ func (transaction *Contract) Execute(app interface{}) Transaction {
 func (transaction *Contract) Compare(app interface{}) status.Code {
 	compareData := transaction.Data.(Compare)
 	smartContracts := GetSmartContracts(app)
+
 	raw := smartContracts.Get(compareData.Owner)
 	if raw != nil {
 		scriptRecords := raw.(*data.ScriptRecords)
 		versions := scriptRecords.Name[compareData.Name]
 		script := versions.Version[compareData.Version.String()]
-		result := RunScript(script.Script)
+
+		result := RunScript(app, script.Script)
+
+		// TODO: Comparison should be on the structure, not a string
 		if result == compareData.Results {
 			return status.SUCCESS
 		}
@@ -237,10 +244,18 @@ func (transaction *Contract) Compare(app interface{}) status.Code {
 	return status.INVALID
 }
 
-func RunScript(script []byte) string {
+/*
+func RunScript(app interface{}, script []byte) string {
 	log.Debug("Smart Contract Execute script", "script", string(script))
-	return "Ta-dah"
+
+	reply := app.RunTestScript(script)
+
+	// TODO: Need to return the full structure here
+	//return reply.Out
+
+	return ""
 }
+*/
 
 func (transaction *Contract) CreateCompareRequest(app interface{}, owner id.AccountKey, name string, version version.Version, resultRunScript string) []byte {
 

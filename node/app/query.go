@@ -7,8 +7,9 @@ package app
 
 import (
 	"encoding/hex"
-	"github.com/Oneledger/protocol/node/comm"
 	"strings"
+
+	"github.com/Oneledger/protocol/node/comm"
 
 	"github.com/Oneledger/protocol/node/action"
 	"github.com/Oneledger/protocol/node/chains/common"
