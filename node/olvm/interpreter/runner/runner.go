@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/Oneledger/protocol/node/action"
 	"github.com/Oneledger/protocol/node/log"
 	"github.com/robertkrimen/otto"
 )
@@ -60,8 +61,10 @@ func (runner Runner) exec(callString string) (string, string) {
 }
 
 //func (runner Runner) Call(from string, address string, callString string, olt int) (transaction string, returnValue string, err error) {
-func (runner Runner) Call(request *OLVMRequest, result *OLVMResult) (err error) {
+func (runner Runner) Call(request *action.OLVMRequest) (result *action.OLVMResult, err error) {
 	log.Debug("Calling the Script")
+
+	result = &action.OLVMResult{}
 
 	defer func() {
 		if r := recover(); r != nil {
@@ -112,7 +115,7 @@ func (runner Runner) Call(request *OLVMRequest, result *OLVMResult) (err error) 
 	result.Ret = ret
 	result.Elapsed = elapsed.String()
 
-	return
+	return result, nil
 }
 
 func CreateRunner() Runner {

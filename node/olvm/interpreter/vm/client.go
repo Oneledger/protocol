@@ -8,9 +8,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Oneledger/protocol/node/action"
 	"github.com/Oneledger/protocol/node/global"
 	"github.com/Oneledger/protocol/node/log"
-	"github.com/Oneledger/protocol/node/olvm/interpreter/runner"
 	"github.com/Oneledger/protocol/node/sdk"
 )
 
@@ -34,7 +34,7 @@ func InitializeClient() {
 	defaultClient = NewClient(protocol, address)
 }
 
-func AutoRun(request *runner.OLVMRequest) (result *runner.OLVMResult, err error) {
+func AutoRun(request *action.OLVMRequest) (result *action.OLVMResult, err error) {
 
 	log.Debug("Trying to Run")
 	result, err = defaultClient.Run(request)
@@ -70,7 +70,7 @@ func AutoRun(request *runner.OLVMRequest) (result *runner.OLVMResult, err error)
 }
 
 // Run a smart contract
-func (c OLVMClient) Run(request *runner.OLVMRequest) (*runner.OLVMResult, error) {
+func (c OLVMClient) Run(request *action.OLVMRequest) (*action.OLVMResult, error) {
 
 	log.Info("Dialing service...", "protocol", c.Protocol, "service", c.ServicePath)
 
@@ -80,21 +80,20 @@ func (c OLVMClient) Run(request *runner.OLVMRequest) (*runner.OLVMResult, error)
 		return nil, err
 	}
 
-	var result runner.OLVMResult
-
 	// TODO: Shouldn't pass by address for the result
-	err = client.Call("Container.Exec", request, &result)
+	result := &action.OLVMResult{}
+	err = client.Call("Container.Exec", request, result)
 	if err != nil {
-		log.Dump("Failded to Exec", err, request)
+		log.Dump("Failded to Exec", err, result)
 		return nil, err
 	}
 
 	client.Close()
 
 	log.Dump("Have a Result", result)
-	return &result, nil
+	return result, nil
 }
 
-func Run(request *runner.OLVMRequest) (*runner.OLVMResult, error) {
+func Run(request *action.OLVMRequest) (*action.OLVMResult, error) {
 	return defaultClient.Run(request)
 }

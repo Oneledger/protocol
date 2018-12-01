@@ -18,6 +18,7 @@ type Access interface {
 	GetEvent() interface{}
 	GetContract() interface{}
 	GetSmartContract() interface{}
+	GetExecutionContext() interface{}
 	GetValidators() interface{}
 	GetSequence() interface{}
 }

@@ -8,10 +8,11 @@ import (
 	"os"
 	"strings"
 
+	"github.com/Oneledger/protocol/node/action"
 	"github.com/Oneledger/protocol/node/log"
 )
 
-func (runner Runner) setupContract(request *OLVMRequest) bool {
+func (runner Runner) setupContract(request *action.OLVMRequest) bool {
 	address := request.Address
 	sourceCode := ""
 

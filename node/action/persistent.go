@@ -13,10 +13,9 @@ import (
 	"github.com/Oneledger/protocol/node/persist"
 )
 
-func RunScript(app interface{}, script []byte) string {
+func RunScript(app interface{}, script []byte) interface{} {
 	result := app.(persist.Access).RunScript(string(script))
-
-	return result.(string)
+	return result
 }
 
 func GetAdmin(app interface{}) data.Datastore {
@@ -87,4 +86,12 @@ func GetSmartContracts(app interface{}) data.Datastore {
 		log.Fatal("SmartContract Database Missing", "config", global.Current, "app", app)
 	}
 	return smartContracts
+}
+
+func GetExecutionContext(app interface{}) data.Datastore {
+	context := app.(persist.Access).GetExecutionContext().(data.Datastore)
+	if context == nil {
+		log.Fatal("ExecutionContext Database Missing", "config", global.Current, "app", app)
+	}
+	return context
 }

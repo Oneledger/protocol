@@ -56,7 +56,7 @@ type Compare struct {
 	Owner   id.AccountKey
 	Name    string
 	Version version.Version
-	Results string
+	Result  OLVMResult
 }
 
 func init() {
@@ -157,12 +157,15 @@ func (transaction *Contract) ProcessDeliver(app interface{}) status.Code {
 	switch transaction.Function {
 	case INSTALL:
 		transaction.Install(app)
+
 	case EXECUTE:
 		//TODO: Need to fix this after
 		go transaction.Execute(app)
+
 	case COMPARE:
 		status := transaction.Compare(app)
 		return status
+
 	default:
 		return status.INVALID
 	}
@@ -182,12 +185,14 @@ func (transaction *Contract) Install(app interface{}) {
 
 	smartContracts := GetSmartContracts(app)
 	var scriptRecords *data.ScriptRecords
+
 	raw := smartContracts.Get(owner)
 	if raw == nil {
 		scriptRecords = data.NewScriptRecords()
 	} else {
 		scriptRecords = raw.(*data.ScriptRecords)
 	}
+
 	scriptRecords.Set(name, version, script)
 	session := smartContracts.Begin()
 	session.Set(owner, scriptRecords)
@@ -210,8 +215,8 @@ func (transaction *Contract) Execute(app interface{}) Transaction {
 			versions := scriptRecords.Name[executeData.Name]
 			script := versions.Version[executeData.Version.String()]
 
-			result := RunScript(app, script.Script)
-			if result != "" {
+			result := RunScript(app, script.Script).(OLVMResult)
+			if result.Status == status.SUCCESS {
 				resultCompare := transaction.CreateCompareRequest(app, executeData.Owner, executeData.Name, executeData.Version, result)
 				if resultCompare != nil {
 					//TODO: check this later
@@ -234,33 +239,27 @@ func (transaction *Contract) Compare(app interface{}) status.Code {
 		versions := scriptRecords.Name[compareData.Name]
 		script := versions.Version[compareData.Version.String()]
 
-		result := RunScript(app, script.Script)
+		result := RunScript(app, script.Script).(OLVMResult)
 
 		// TODO: Comparison should be on the structure, not a string
-		if result == compareData.Results {
+		if CompareResults(result, compareData.Result) {
 			return status.SUCCESS
 		}
 	}
 	return status.INVALID
 }
 
-/*
-func RunScript(app interface{}, script []byte) string {
-	log.Debug("Smart Contract Execute script", "script", string(script))
-
-	reply := app.RunTestScript(script)
-
-	// TODO: Need to return the full structure here
-	//return reply.Out
-
-	return ""
+func CompareResults(recent OLVMResult, original OLVMResult) bool {
+	return true
 }
-*/
 
-func (transaction *Contract) CreateCompareRequest(app interface{}, owner id.AccountKey, name string, version version.Version, resultRunScript string) []byte {
+// Create a comparison request
+func (transaction *Contract) CreateCompareRequest(app interface{}, owner id.AccountKey, name string,
+	version version.Version, result OLVMResult) []byte {
 
 	chainId := GetChainID(app)
 
+	// Costs have been taken care of already
 	fee := data.NewCoin(0, "OLT")
 	gas := data.NewCoin(0, "OLT")
 
@@ -270,7 +269,7 @@ func (transaction *Contract) CreateCompareRequest(app interface{}, owner id.Acco
 		Owner:   owner,
 		Name:    name,
 		Version: version,
-		Results: resultRunScript,
+		Result:  result,
 	}
 
 	account := GetNodeAccount(app)
@@ -289,6 +288,7 @@ func (transaction *Contract) CreateCompareRequest(app interface{}, owner id.Acco
 		Fee:      fee,
 		Gas:      gas,
 	}
-	result := SignAndPack(Transaction(compare))
-	return result
+
+	signed := SignAndPack(Transaction(compare))
+	return signed
 }
