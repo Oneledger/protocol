@@ -12,7 +12,7 @@ import (
 	"github.com/Oneledger/protocol/node/olvm/interpreter/vm"
 )
 
-func GetSourceCode(name string) string {
+func GetSourceCode(name string) []byte {
 
 	path := os.Getenv("OLROOT") + "/protocol/node/olvm/interpreter/samples"
 
@@ -35,7 +35,7 @@ func GetSourceCode(name string) string {
 		log.Fatal("Can get Source File", "err", err)
 	}
 
-	return string(data)
+	return data
 }
 
 func StartOLVM() {
@@ -43,7 +43,8 @@ func StartOLVM() {
 	vm.InitializeClient()
 }
 
-func (app Application) RunScript(script string) interface{} {
+/*
+func NewOLVMRequest(script []byte) {
 	request := &action.OLVMRequest{
 		From:       "0x0",
 		Address:    "embed://",
@@ -51,7 +52,21 @@ func (app Application) RunScript(script string) interface{} {
 		Value:      0,
 		SourceCode: script,
 	}
-	return RunTestScript(request)
+	return request
+}
+*/
+
+func (app Application) RunScript(request interface{}) interface{} {
+	/*
+		request := &action.OLVMRequest{
+			From:       "0x0",
+			Address:    "embed://",
+			CallString: "",
+			Value:      0,
+			SourceCode: script,
+		}
+	*/
+	return RunTestScript(request.(*action.OLVMRequest))
 }
 
 func RunTestScriptName(name string) interface{} {

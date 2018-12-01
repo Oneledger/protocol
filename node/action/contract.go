@@ -215,7 +215,10 @@ func (transaction *Contract) Execute(app interface{}) Transaction {
 			versions := scriptRecords.Name[executeData.Name]
 			script := versions.Version[executeData.Version.String()]
 
-			result := RunScript(app, script.Script).(OLVMResult)
+			last := GetContext(app, executeData.Owner, executeData.Name, executeData.Version)
+			request := NewOLVMRequest(script.Script, last.Context)
+			result := RunScript(app, request).(OLVMResult)
+
 			if result.Status == status.SUCCESS {
 				resultCompare := transaction.CreateCompareRequest(app, executeData.Owner, executeData.Name, executeData.Version, result)
 				if resultCompare != nil {
@@ -229,6 +232,7 @@ func (transaction *Contract) Execute(app interface{}) Transaction {
 }
 
 //Execute calls this and compare the results
+// TODO: Maybe the compare should be in CheckTx, so that it can fail?
 func (transaction *Contract) Compare(app interface{}) status.Code {
 	compareData := transaction.Data.(Compare)
 	smartContracts := GetSmartContracts(app)
@@ -239,14 +243,53 @@ func (transaction *Contract) Compare(app interface{}) status.Code {
 		versions := scriptRecords.Name[compareData.Name]
 		script := versions.Version[compareData.Version.String()]
 
-		result := RunScript(app, script.Script).(OLVMResult)
+		last := GetContext(app, compareData.Owner, compareData.Name, compareData.Version)
+		request := NewOLVMRequest(script.Script, last.Context)
+		result := RunScript(app, request).(OLVMResult)
 
 		// TODO: Comparison should be on the structure, not a string
 		if CompareResults(result, compareData.Result) {
+			SaveContext(app, compareData.Owner, compareData.Name, compareData.Version, result)
+
 			return status.SUCCESS
 		}
 	}
 	return status.INVALID
+}
+
+func GetContext(app interface{}, owner id.AccountKey, name string, version version.Version) OLVMResult {
+	context := GetExecutionContext(app)
+	raw := context.Get(owner)
+	if raw == nil {
+		// TODO: Should be a NewOLVMResult to initialize properly
+		return OLVMResult{}
+	}
+	mmap := raw.(*data.MultiMap)
+	entry := mmap.Get(name, version)
+	if entry.Value == nil {
+		return OLVMResult{}
+	}
+	return entry.Value.(OLVMResult)
+}
+
+func SaveContext(app interface{}, owner id.AccountKey, name string, version version.Version, result OLVMResult) {
+	context := GetExecutionContext(app)
+
+	var mmap *data.MultiMap
+	raw := context.Get(owner)
+	if raw == nil {
+		mmap = data.NewMultiMap()
+	} else {
+		mmap = raw.(*data.MultiMap)
+	}
+	mmap.Set(name, version, result)
+
+	session := context.Begin()
+	session.Set(owner, mmap)
+
+	// TODO: Wrong, should only commit on block commit, but it is this way now
+	// so that inter-block executions work correctly
+	session.Commit()
 }
 
 func CompareResults(recent OLVMResult, original OLVMResult) bool {

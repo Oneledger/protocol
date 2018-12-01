@@ -13,8 +13,8 @@ import (
 	"github.com/Oneledger/protocol/node/persist"
 )
 
-func RunScript(app interface{}, script []byte) interface{} {
-	result := app.(persist.Access).RunScript(string(script))
+func RunScript(app interface{}, request *OLVMRequest) interface{} {
+	result := app.(persist.Access).RunScript(request)
 	return result
 }
 

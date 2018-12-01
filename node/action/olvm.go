@@ -19,7 +19,7 @@ type OLVMRequest struct {
 	Address     string
 	CallString  string
 	Value       int
-	SourceCode  string
+	SourceCode  []byte
 	Transaction Transaction
 	Context     OLVMContext
 
@@ -47,4 +47,23 @@ func init() {
 	//serial.Register(prototype)
 	//var prototype2 time.Duration
 	//serial.Register(prototype2)
+}
+
+func NewOLVMRequest(script []byte, context OLVMContext) *OLVMRequest {
+	request := &OLVMRequest{
+		From:       "0x0",
+		Address:    "embed://",
+		CallString: "",
+		Value:      0,
+		SourceCode: script,
+		Context:    context,
+	}
+	return request
+}
+
+func NewOLVMResult() *OLVMResult {
+	result := &OLVMResult{
+		Status: status.MISSING_DATA,
+	}
+	return result
 }

@@ -20,7 +20,8 @@ func (runner Runner) setupContract(request *action.OLVMRequest) bool {
 	case strings.HasPrefix(address, "samples://"):
 		sourceCode = getSourceCodeFromSamples(address)
 	case address == "embed://":
-		sourceCode = request.SourceCode
+		// TODO: Should preserve byte array, to support UTF8?
+		sourceCode = string(request.SourceCode)
 	default:
 		sourceCode = getSourceCodeFromBlockChain(address)
 	}
