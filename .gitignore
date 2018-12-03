@@ -1,4 +1,5 @@
 vendor
+/node/.vendor-new/*
 .glide
 *.sw[op]
 .idea/
