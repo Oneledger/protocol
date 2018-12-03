@@ -84,6 +84,8 @@ func StartNode(cmd *cobra.Command, args []string) {
 		P2PAddress:      global.Current.P2PAddress,
 		IndexTags:       []string{"tx.owner", "tx.type"},
 		PersistentPeers: global.Current.PersistentPeers,
+		Seeds:           global.Current.Seeds,
+		SeedMode:        global.Current.SeedMode,
 	}
 
 	// TODO: change the the priv_validator locaiton

@@ -2,6 +2,7 @@ Identity = "Emma"
 NodeName = "Emma-Node"
 RpcAddress = "tcp://127.0.0.1:26605"
 P2PAddress = "tcp://127.0.0.1:26615"
+SeedMode = true
 AppAddress = "tcp://127.0.0.1:26625"
 SDKAddress = "tcp://127.0.0.1:26635"
 BTCAddress = "127.0.0.1:NONE"

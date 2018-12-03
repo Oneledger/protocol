@@ -29,6 +29,7 @@ var getCmd = &cobra.Command{
 type GetArguments struct {
 	names []string
 	peers bool
+	seeds bool
 }
 
 var arguments *GetArguments = &GetArguments{}
@@ -40,6 +41,7 @@ func init() {
 	// Transaction Parameters
 	getCmd.Flags().StringArrayP("parameter", "p", arguments.names, "account name")
 	getCmd.Flags().Bool("peers", false, "handle peers")
+	getCmd.Flags().Bool("seeds", false, "handle seeds")
 
 }
 
@@ -51,19 +53,25 @@ func HandleArguments(cmd *cobra.Command, args []string) {
 	}
 
 	peers, err := cmd.Flags().GetBool("peers")
-	if err != nil {
-		return
+	if err == nil {
+		if peers {
+			GetPeers("P2PAddress", names)
+		}
 	}
 
-	if peers {
-		GetPeers(names)
-	} else {
-		GetParams(names)
+	// TODO: Seeds addresses were different from peers, but now they are the same
+	seeds, err := cmd.Flags().GetBool("seeds")
+	if err == nil {
+		if seeds {
+			GetPeers("P2PAddress", names)
+		}
 	}
+
+	GetParams(names)
 }
 
 // Get the set of static peers
-func GetPeers(nodes []string) {
+func GetPeers(parameter string, nodes []string) {
 	buffer := ""
 	for _, name := range nodes {
 		// Reset the config name, and load the relevant config file
@@ -72,7 +80,7 @@ func GetPeers(nodes []string) {
 
 		// Pick out a couple of the parameters
 		nodeName := viper.Get("NodeName").(string)
-		address := viper.Get("P2PAddress").(string)
+		address := viper.Get(parameter).(string)
 		p2pAddress := strings.TrimPrefix(address, "tcp://")
 
 		// Call Tendermint to get it's node id
