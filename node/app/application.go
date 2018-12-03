@@ -36,39 +36,42 @@ type Application struct {
 	types.BaseApplication
 
 	// Global Chain state (data is identical on all nodes in the chain)
-	Balances   *data.ChainState // unspent transction output (for each type of coin)
-	Identities *id.Identities   // Keep a higher-level identity for a given user
+	Balances         *data.ChainState // unspent transction output (for each type of coin)
+	Identities       *id.Identities   // Keep a higher-level identity for a given user
+	SmartContract    data.Datastore   //Store olvm smart contracts
+	ExecutionContext data.Datastore   //Store last olvm execution
 
 	// Local Node state (data is different for each node)
-	Accounts      *id.Accounts   // Keep all of the user accounts locally for their node (identity management)
-	Admin         data.Datastore // any administrative parameters
-	Event         data.Datastore // Event for any action that need to be tracked
-	Status        data.Datastore // current state of any composite transactions (pending, verified, etc.)
-	Contract      data.Datastore // contract for reuse.
-	Sequence      data.Datastore // Store sequence number per account
-	SmartContract data.Datastore //Store olvm smart contracts
+	Admin    data.Datastore // any administrative parameters
+	Accounts *id.Accounts   // Keep all of the user accounts locally for their node (identity management)
+	Sequence data.Datastore // Store sequence number per account
+	Status   data.Datastore // current state of any composite transactions (pending, verified, etc.)
+	Contract data.Datastore // contract for reuse.
+	Event    data.Datastore // Event for any action that need to be tracked
 
 	SDK common.Service
 
 	// Tendermint's last block information
-	Header     types.Header // Tendermint last header info
-	Validators *id.Validators
+	Header     types.Header   // Tendermint last header info
+	Validators *id.Validators // List of vlidators for this block
 }
 
 // NewApplicationContext initializes a new application, reconnects to the databases.
 func NewApplication() *Application {
 	return &Application{
-		Identities: id.NewIdentities("identities"),
-		Balances:   data.NewChainState("balances", data.PERSISTENT),
+		Balances:         data.NewChainState("balances", data.PERSISTENT),
+		Identities:       id.NewIdentities("identities"),
+		SmartContract:    data.NewDatastore("smartContract", data.PERSISTENT),
+		ExecutionContext: data.NewDatastore("executionContext", data.PERSISTENT),
 
-		Accounts:      id.NewAccounts("accounts"),
-		Admin:         data.NewDatastore("admin", data.PERSISTENT),
-		Event:         data.NewDatastore("event", data.PERSISTENT),
-		Status:        data.NewDatastore("status", data.PERSISTENT),
-		Contract:      data.NewDatastore("contract", data.PERSISTENT),
-		Sequence:      data.NewDatastore("sequence", data.PERSISTENT),
-		SmartContract: data.NewDatastore("smartContract", data.PERSISTENT),
-		Validators:    id.NewValidatorList(),
+		Admin:    data.NewDatastore("admin", data.PERSISTENT),
+		Accounts: id.NewAccounts("accounts"),
+		Sequence: data.NewDatastore("sequence", data.PERSISTENT),
+		Status:   data.NewDatastore("status", data.PERSISTENT),
+		Contract: data.NewDatastore("contract", data.PERSISTENT),
+		Event:    data.NewDatastore("event", data.PERSISTENT),
+
+		Validators: id.NewValidatorList(),
 	}
 }
 
@@ -90,10 +93,12 @@ func (app Application) Initialize() {
 	} else {
 		log.Debug("NodeAccountName not currently set")
 	}
+
 	app.StartSDK()
 	log.Debug("SDK is started")
 
-	StartVM()
+	StartOLVM()
+	log.Debug("OLVM is started")
 }
 
 // Start up a local server for direct connections from clients
@@ -119,7 +124,7 @@ type BasicState struct {
 
 type State struct {
 	Amount string `json:"amount"`
-	Coin   string `json:"currency"`
+	Coin   string `json:"currency"` // TODO: Misnamed?
 }
 
 // Use the Genesis block to initialze the system
@@ -164,7 +169,7 @@ func CreateAccount(app Application, state *BasicState, publicKey id.PublicKeyED2
 
 	app.Balances.Set(account.AccountKey(), balance)
 
-	// TODO: Until a block is commited, this data is not persistent
+	// TODO: Until a block is commited, this data should not be persistent
 	//app.Balances.Commit()
 
 	log.Info("Genesis State Balances database", "balance", balance)
@@ -177,6 +182,7 @@ func NewBalanceFromStates(states []State) data.Balance {
 			value := big.NewInt(0)
 			value.SetString(v.Amount, 10)
 			balance = data.NewBalanceFromString(value.Int64(), v.Coin)
+
 		} else {
 			value := big.NewInt(0)
 			value.SetString(v.Amount, 10)
@@ -184,7 +190,6 @@ func NewBalanceFromStates(states []State) data.Balance {
 			balance.AddAmmount(coin)
 		}
 	}
-
 	return balance
 }
 

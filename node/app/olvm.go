@@ -7,12 +7,12 @@ import (
 	"io/ioutil"
 	"os"
 
+	"github.com/Oneledger/protocol/node/action"
 	"github.com/Oneledger/protocol/node/log"
-	"github.com/Oneledger/protocol/node/olvm/interpreter/runner"
 	"github.com/Oneledger/protocol/node/olvm/interpreter/vm"
 )
 
-func GetSourceCode(name string) string {
+func GetSourceCode(name string) []byte {
 
 	path := os.Getenv("OLROOT") + "/protocol/node/olvm/interpreter/samples"
 
@@ -35,25 +35,53 @@ func GetSourceCode(name string) string {
 		log.Fatal("Can get Source File", "err", err)
 	}
 
-	return string(data)
+	return data
 }
 
-func StartVM() {
+func StartOLVM() {
 	log.Debug("Starting up Smart Contract Engine")
 	vm.InitializeClient()
 }
 
-// Take the engine for a test spin
-func RunTestScript(name string) interface{} {
-	log.Debug("########### TESTING OLVM EXECUTION ###########")
+/*
+func NewOLVMRequest(script []byte) {
+	request := &action.OLVMRequest{
+		From:       "0x0",
+		Address:    "embed://",
+		CallString: "",
+		Value:      0,
+		SourceCode: script,
+	}
+	return request
+}
+*/
 
-	request := &runner.OLVMRequest{
+func (app Application) RunScript(request interface{}) interface{} {
+	/*
+		request := &action.OLVMRequest{
+			From:       "0x0",
+			Address:    "embed://",
+			CallString: "",
+			Value:      0,
+			SourceCode: script,
+		}
+	*/
+	return RunTestScript(request.(*action.OLVMRequest))
+}
+
+func RunTestScriptName(name string) interface{} {
+	request := &action.OLVMRequest{
 		From:       "0x0",
 		Address:    "embed://",
 		CallString: "",
 		Value:      0,
 		SourceCode: GetSourceCode(name),
 	}
+	return RunTestScript(request)
+}
+
+// Take the engine for a test spin
+func RunTestScript(request *action.OLVMRequest) interface{} {
 
 	log.Dump("Engine input", request)
 
@@ -64,5 +92,5 @@ func RunTestScript(name string) interface{} {
 
 	log.Dump("Engine output", reply)
 
-	return reply
+	return *reply
 }

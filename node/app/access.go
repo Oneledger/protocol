@@ -47,6 +47,10 @@ func (app Application) GetSmartContract() interface{} {
 	return app.SmartContract
 }
 
+func (app Application) GetExecutionContext() interface{} {
+	return app.ExecutionContext
+}
+
 func (app Application) GetValidators() interface{} {
 	return app.Validators
 }

@@ -8,10 +8,11 @@ import (
 	"os"
 	"strings"
 
+	"github.com/Oneledger/protocol/node/action"
 	"github.com/Oneledger/protocol/node/log"
 )
 
-func (runner Runner) setupContract(request *OLVMRequest) bool {
+func (runner Runner) setupContract(request *action.OLVMRequest) bool {
 	address := request.Address
 	sourceCode := ""
 
@@ -19,7 +20,8 @@ func (runner Runner) setupContract(request *OLVMRequest) bool {
 	case strings.HasPrefix(address, "samples://"):
 		sourceCode = getSourceCodeFromSamples(address)
 	case address == "embed://":
-		sourceCode = request.SourceCode
+		// TODO: Should preserve byte array, to support UTF8?
+		sourceCode = string(request.SourceCode)
 	default:
 		sourceCode = getSourceCodeFromBlockChain(address)
 	}
