@@ -34,6 +34,9 @@ func HandleQuery(app Application, path string, arguments map[string]string) []by
 	case "/applyValidators":
 		result = HandleApplyValidatorQuery(app, arguments)
 
+	case "/createSendRequest":
+		result = HandleCreateSendRequest(app, arguments)
+
 	case "/nodeName":
 		result = HandleNodeNameQuery(app, arguments)
 
@@ -138,6 +141,103 @@ func HandleApplyValidatorQuery(application Application, arguments map[string]str
 	return packet
 }
 
+func HandleCreateSendRequest(application Application, arguments map[string]string) interface{} {
+	conv := convert.NewConvert()
+
+	result := make([]byte, 0)
+
+	var argsHolder comm.SendArguments
+
+	text := arguments["parameters"]
+
+	argsDeserialized, err := serial.Deserialize([]byte(text), argsHolder, serial.CLIENT)
+
+	if err != nil {
+		log.Error("Could not deserialize ApplyValidatorArguments", "error", err)
+		return result
+	}
+
+	args := argsDeserialized.(*comm.SendArguments)
+
+	if args.Party == "" {
+		log.Error("Missing Party argument")
+		return result
+	}
+
+	if args.CounterParty == "" {
+		log.Error("Missing CounterParty argument")
+		return result
+	}
+
+	// TODO: Can't convert identities to accounts, this way!
+	party := AccountKey(application, args.Party)
+	counterParty := AccountKey(application, args.CounterParty)
+	payment := AccountKey(application, "Payment")
+
+	if party == nil || counterParty == nil {
+		log.Fatal("System doesn't recognize the parties", "args", args,
+			"party", party, "counterParty", counterParty)
+	}
+
+	if args.Currency == "" || args.Amount == "" {
+		log.Error("Missing an amount argument")
+		return result
+	}
+
+	amount := conv.GetCoin(args.Amount, args.Currency)
+
+	partyBalance := Balance(application, party).(*data.Balance).GetAmountByName(args.Currency)
+	counterPartyBalance := Balance(application, counterParty).(*data.Balance).GetAmountByName(args.Currency)
+	paymentBalance := Balance(application, payment).(*data.Balance).GetAmountByName(args.Currency)
+
+	if &partyBalance == nil || &counterPartyBalance == nil {
+		log.Error("Missing Balance", "party", partyBalance, "counterParty", counterPartyBalance)
+		return result
+	}
+
+	fee := conv.GetCoin(args.Fee, args.Currency)
+	gas := conv.GetCoin(args.Gas, args.Currency)
+
+	inputs := make([]action.SendInput, 0)
+	inputs = append(inputs,
+		action.NewSendInput(party, partyBalance),
+		action.NewSendInput(counterParty, counterPartyBalance),
+		action.NewSendInput(payment, paymentBalance))
+
+	// Build up the outputs
+	outputs := make([]action.SendOutput, 0)
+	outputs = append(outputs,
+		action.NewSendOutput(party, partyBalance.Minus(amount).Minus(fee)),
+		action.NewSendOutput(counterParty, counterPartyBalance.Plus(amount)),
+		action.NewSendOutput(payment, paymentBalance.Plus(fee)))
+
+	if conv.HasErrors() {
+		log.Error("Conversion error", "error", conv.GetErrors())
+		return result
+	}
+
+	sequence := SequenceNumber(application, party.Bytes())
+
+	send := &action.Send{
+		Base: action.Base{
+			Type:     action.SEND,
+			ChainId:  ChainId,
+			Owner:    party,
+			Signers:  GetSigners(party, application),
+			Sequence: sequence.(SequenceRecord).Sequence,
+		},
+		Inputs:  inputs,
+		Outputs: outputs,
+		Fee:     fee,
+		Gas:     gas,
+	}
+
+	signed := SignTransaction(action.Transaction(send), application)
+	packet := action.PackRequest(signed)
+
+	return packet
+}
+
 func HandleNodeNameQuery(app Application, arguments map[string]string) interface{} {
 	return global.Current.NodeName
 }
@@ -221,7 +321,7 @@ func HandleAccountKeyQuery(app Application, arguments map[string]string) interfa
 	return AccountKey(app, name)
 }
 
-func AccountKey(app Application, name string) interface{} {
+func AccountKey(app Application, name string) id.AccountKey {
 
 	// Check Itdentities First
 	identity, ok := app.Identities.FindName(name)
@@ -235,7 +335,7 @@ func AccountKey(app Application, name string) interface{} {
 	if ok == status.SUCCESS && account.Name() != "" {
 		return account.AccountKey()
 	}
-	return "AccountKey: Identity " + name + " not Found on " + global.Current.NodeName
+	return nil
 }
 
 // Get the account information for a given user
