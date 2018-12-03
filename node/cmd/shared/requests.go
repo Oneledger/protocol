@@ -142,6 +142,20 @@ func CreateSendRequest(args *comm.SendArguments) []byte {
 
 // CreateRequest builds and signs the transaction based on the arguments
 func CreateMintRequest(args *comm.SendArguments) []byte {
+	request, err := serial.Serialize(args, serial.CLIENT)
+
+	if err != nil {
+		log.Error("Failed to Serialize arguments: ", err)
+	}
+
+	response := comm.Query("/createMintRequest", request)
+
+	if response == nil {
+		log.Warn("Query returned no response", "request", request)
+	}
+
+	return response.([]byte)
+
 	conv := convert.NewConvert()
 
 	if args.Party == "" {
