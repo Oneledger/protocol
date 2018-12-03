@@ -38,6 +38,9 @@ func HandleQuery(app Application, path string, arguments map[string]string) []by
 	case "/createSendRequest":
 		result = HandleCreateSendRequest(app, arguments)
 
+	case "/createMintRequest":
+		result = HandleCreateMintRequest(app, arguments)
+
 	case "/nodeName":
 		result = HandleNodeNameQuery(app, arguments)
 
@@ -228,6 +231,93 @@ func HandleCreateSendRequest(application Application, arguments map[string]strin
 			ChainId:  ChainId,
 			Owner:    party,
 			Signers:  GetSigners(party, application),
+			Sequence: sequence.(SequenceRecord).Sequence,
+		},
+		Inputs:  inputs,
+		Outputs: outputs,
+		Fee:     fee,
+		Gas:     gas,
+	}
+
+	signed := SignTransaction(action.Transaction(send), application)
+	packet := action.PackRequest(signed)
+
+	return packet
+}
+
+func HandleCreateMintRequest(application Application, arguments map[string]string) interface{} {
+	result := make([]byte, 0)
+
+	var argsHolder comm.SendArguments
+
+	text := arguments["parameters"]
+
+	argsDeserialized, err := serial.Deserialize([]byte(text), argsHolder, serial.CLIENT)
+
+	if err != nil {
+		log.Error("Could not deserialize SendArguments", "error", err)
+		return result
+	}
+
+	args := argsDeserialized.(*comm.SendArguments)
+
+	conv := convert.NewConvert()
+
+	if args.Party == "" {
+		log.Warn("Missing Party arguments", "args", args)
+		return result
+	}
+
+	zero := AccountKey(application, "Zero")
+	party := AccountKey(application, args.Party)
+
+	if party == nil || zero == nil {
+		log.Warn("Missing Party information", "args", args, "party", party, "zero", zero)
+		return result
+	}
+
+	amount := conv.GetCoin(args.Amount, args.Currency)
+
+	log.Debug("Getting TestMint Account Balances")
+	partyBalance := Balance(application, party).(*data.Balance).GetAmountByName(args.Currency)
+	zeroBalance := Balance(application, zero).(*data.Balance).GetAmountByName(args.Currency)
+
+	if &zeroBalance == nil || &partyBalance == nil {
+		log.Warn("Missing Balances", "party", party, "zero", zero)
+		return result
+	}
+
+	if zeroBalance.LessThanEqual(0) {
+		log.Warn("No more money left...")
+		return result
+	}
+
+	inputs := make([]action.SendInput, 0)
+	inputs = append(inputs,
+		action.NewSendInput(zero, zeroBalance),
+		action.NewSendInput(party, partyBalance))
+
+	outputs := make([]action.SendOutput, 0)
+	outputs = append(outputs,
+		action.NewSendOutput(zero, zeroBalance.Minus(amount)),
+		action.NewSendOutput(party, partyBalance.Plus(amount)))
+
+	gas := conv.GetCoin(args.Gas, args.Currency)
+	fee := conv.GetCoin(args.Fee, args.Currency)
+
+	if conv.HasErrors() {
+		log.Error("Conversion error", "error", conv.GetErrors())
+		return result
+	}
+
+	sequence := SequenceNumber(application, party)
+
+	send := &action.Send{
+		Base: action.Base{
+			Type:     action.SEND,
+			ChainId:  ChainId,
+			Signers:  GetSigners(zero, application),
+			Owner:    zero,
 			Sequence: sequence.(SequenceRecord).Sequence,
 		},
 		Inputs:  inputs,
