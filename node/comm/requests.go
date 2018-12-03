@@ -12,6 +12,16 @@ type ApplyValidatorArguments struct {
 	Amount       string
 }
 
+type SendArguments struct {
+	Party        string
+	CounterParty string
+	Currency     string
+	Amount       string
+	Gas          string
+	Fee          string
+}
+
 func init() {
 	serial.Register(ApplyValidatorArguments{})
+	serial.Register(SendArguments{})
 }

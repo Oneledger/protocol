@@ -102,15 +102,6 @@ func CreateApplyValidatorRequest(args *comm.ApplyValidatorArguments) []byte {
 	return response.([]byte)
 }
 
-type SendArguments struct {
-	Party        string
-	CounterParty string
-	Currency     string
-	Amount       string
-	Gas          string
-	Fee          string
-}
-
 type InstallArguments struct {
 	Owner    string
 	Name     string
@@ -131,7 +122,7 @@ type ExecuteArguments struct {
 }
 
 // CreateRequest builds and signs the transaction based on the arguments
-func CreateSendRequest(args *SendArguments) []byte {
+func CreateSendRequest(args *comm.SendArguments) []byte {
 	conv := convert.NewConvert()
 
 	if args.Party == "" {
@@ -214,7 +205,7 @@ func CreateSendRequest(args *SendArguments) []byte {
 }
 
 // CreateRequest builds and signs the transaction based on the arguments
-func CreateMintRequest(args *SendArguments) []byte {
+func CreateMintRequest(args *comm.SendArguments) []byte {
 	conv := convert.NewConvert()
 
 	if args.Party == "" {
