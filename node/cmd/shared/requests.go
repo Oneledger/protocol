@@ -99,6 +99,22 @@ func CreateApplyValidatorRequest(args *comm.ApplyValidatorArguments) []byte {
 
 // CreateRequest builds and signs the transaction based on the arguments
 func CreateSendRequest(args *comm.SendArguments) []byte {
+	request, err := serial.Serialize(args, serial.CLIENT)
+
+	if err != nil {
+		log.Error("Failed to Serialize arguments: ", err)
+	}
+
+	response := comm.Query("/createSendRequest", request)
+
+	if response == nil {
+		log.Warn("Query returned no response", "request", request)
+	}
+
+	log.Debug("CreateSendRequest", "response", response)
+
+	return response.([]byte)
+
 	conv := convert.NewConvert()
 
 	if args.Party == "" {
