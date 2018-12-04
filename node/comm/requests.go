@@ -33,8 +33,23 @@ type SwapArguments struct {
 	Nonce        int64
 }
 
+type ExSendArguments struct {
+	SenderId        string
+	ReceiverId      string
+	SenderAddress   string
+	ReceiverAddress string
+	Currency        string
+	Amount          string
+	Gas             string
+	Fee             string
+	Chain           string
+	ExGas           string
+	ExFee           string
+}
+
 func init() {
 	serial.Register(ApplyValidatorArguments{})
+	serial.Register(ExSendArguments{})
 	serial.Register(SendArguments{})
 	serial.Register(SwapArguments{})
 }

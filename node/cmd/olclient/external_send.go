@@ -18,7 +18,7 @@ var exSendCmd = &cobra.Command{
 	Run:   IssueRequest,
 }
 
-var exsendargs *shared.ExSendArguments = &shared.ExSendArguments{}
+var exsendargs *comm.ExSendArguments = &comm.ExSendArguments{}
 
 func init() {
 	RootCmd.AddCommand(exSendCmd)

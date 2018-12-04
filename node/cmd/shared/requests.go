@@ -174,21 +174,23 @@ func CreateSwapRequest(args *comm.SwapArguments) []byte {
 	return response.([]byte)
 }
 
-type ExSendArguments struct {
-	SenderId        string
-	ReceiverId      string
-	SenderAddress   string
-	ReceiverAddress string
-	Currency        string
-	Amount          string
-	Gas             string
-	Fee             string
-	Chain           string
-	ExGas           string
-	ExFee           string
-}
+func CreateExSendRequest(args *comm.ExSendArguments) []byte {
+	request, err := serial.Serialize(args, serial.CLIENT)
 
-func CreateExSendRequest(args *ExSendArguments) []byte {
+	if err != nil {
+		log.Error("Failed to Serialize arguments: ", err)
+		return nil
+	}
+
+	response := comm.Query("/createExSendRequest", request)
+
+	if response == nil {
+		log.Warn("Query returned no response", "request", request)
+		return nil
+	}
+
+	return response.([]byte)
+
 	conv := convert.NewConvert()
 
 	partyKey := GetAccountKey(args.SenderId)

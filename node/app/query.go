@@ -35,6 +35,9 @@ func HandleQuery(app Application, path string, arguments map[string]string) []by
 	case "/applyValidators":
 		result = HandleApplyValidatorQuery(app, arguments)
 
+	case "/createExSendRequest":
+		result = HandleCreateExSendRequest(app, arguments)
+
 	case "/createSendRequest":
 		result = HandleCreateSendRequest(app, arguments)
 
@@ -146,6 +149,60 @@ func HandleApplyValidatorQuery(application Application, arguments map[string]str
 	}
 
 	signed := SignTransaction(action.Transaction(validator), application)
+	packet := action.PackRequest(signed)
+
+	return packet
+}
+
+func HandleCreateExSendRequest(application Application, arguments map[string]string) interface{} {
+	conv := convert.NewConvert()
+
+	result := make([]byte, 0)
+
+	var argsHolder comm.ExSendArguments
+
+	text := arguments["parameters"]
+
+	argsDeserialized, err := serial.Deserialize([]byte(text), argsHolder, serial.CLIENT)
+
+	if err != nil {
+		log.Error("Could not deserialize ExSendArguments", "error", err)
+		return result
+	}
+
+	args := argsDeserialized.(*comm.ExSendArguments)
+
+	partyKey := AccountKey(application, args.SenderId)
+	cpartyKey := AccountKey(application, args.ReceiverId)
+
+	fee := conv.GetCoin(args.Fee, "OLT")
+	gas := conv.GetCoin(args.Gas, "OLT")
+	amount := conv.GetCoin(args.Amount, args.Currency)
+	chain := conv.GetChainFromCurrency(args.Chain)
+
+	sender := CurrencyAddress(application, conv.GetCurrency(args.Currency), args.SenderId)
+	reciever := CurrencyAddress(application, conv.GetCurrency(args.Currency), args.ReceiverId)
+
+	sequence := SequenceNumber(application, partyKey)
+
+	exSend := &action.ExternalSend{
+		Base: action.Base{
+			Type:     action.EXTERNAL_SEND,
+			ChainId:  ChainId,
+			Signers:  GetSigners(sender, application),
+			Owner:    partyKey,
+			Target:   cpartyKey,
+			Sequence: sequence.Sequence,
+		},
+		Gas:      gas,
+		Fee:      fee,
+		Chain:    chain,
+		Sender:   string(sender),
+		Receiver: string(reciever),
+		Amount:   amount,
+	}
+
+	signed := SignTransaction(action.Transaction(exSend), application)
 	packet := action.PackRequest(signed)
 
 	return packet
