@@ -159,6 +159,19 @@ func CreateMintRequest(args *comm.SendArguments) []byte {
 
 // Create a swap request
 func CreateSwapRequest(args *comm.SwapArguments) []byte {
+	request, err := serial.Serialize(args, serial.CLIENT)
+
+	if err != nil {
+		log.Error("Failed to Serialize arguments: ", err)
+	}
+
+	response := comm.Query("/createSwapRequest", request)
+
+	if response == nil {
+		log.Warn("Query returned no response", "request", request)
+	}
+
+	return response.([]byte)
 
 	conv := convert.NewConvert()
 
