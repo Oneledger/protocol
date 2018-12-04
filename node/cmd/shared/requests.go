@@ -157,21 +157,8 @@ func CreateMintRequest(args *comm.SendArguments) []byte {
 	return response.([]byte)
 }
 
-// Arguments to the command
-type SwapArguments struct {
-	Party        string
-	CounterParty string
-	Amount       string
-	Currency     string
-	Fee          string
-	Gas          string // TODO: Not sure this is necessary, unless the chain is like Ethereum
-	Exchange     string
-	Excurrency   string
-	Nonce        int64
-}
-
 // Create a swap request
-func CreateSwapRequest(args *SwapArguments) []byte {
+func CreateSwapRequest(args *comm.SwapArguments) []byte {
 
 	conv := convert.NewConvert()
 

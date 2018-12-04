@@ -18,7 +18,7 @@ var swapCmd = &cobra.Command{
 	Run:   SwapCurrency,
 }
 
-var swapargs = &shared.SwapArguments{}
+var swapargs = &comm.SwapArguments{}
 
 func init() {
 	RootCmd.AddCommand(swapCmd)
