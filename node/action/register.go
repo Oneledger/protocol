@@ -38,12 +38,27 @@ func (transaction Register) Validate() status.Code {
 	}
 
 	if transaction.Identity == "" {
-		log.Warn("Missing Identity from Registration", "identity", transaction.Identity)
+		log.Debug("Missing Identity", "transaction", transaction)
 		return status.MISSING_DATA
 	}
 
 	if transaction.NodeName == "" {
-		log.Warn("Missing NodeName from Registration", "nodeName", transaction.NodeName)
+		log.Debug("Missing NodeName", "transaction", transaction)
+		return status.MISSING_DATA
+	}
+
+	if transaction.AccountKey == nil || len(transaction.AccountKey) == 0 {
+		log.Debug("Missing AccountKey", "transaction", transaction)
+		return status.MISSING_DATA
+	}
+
+	if transaction.TendermintAddress == "" {
+		log.Debug("Missing TendermintAddress", "transaction", transaction)
+		return status.MISSING_DATA
+	}
+
+	if transaction.TendermintAddress == "" {
+		log.Debug("Missing TendermintPubKey", "transaction", transaction)
 		return status.MISSING_DATA
 	}
 
