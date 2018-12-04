@@ -3,7 +3,10 @@
 */
 package version
 
-import "fmt"
+import (
+	"fmt"
+	"github.com/Oneledger/protocol/node/serial"
+)
 
 type Version struct {
 	Major      int
@@ -11,6 +14,10 @@ type Version struct {
 	Patch      int
 	PreRelease string
 	MetaData   string
+}
+
+func init() {
+	serial.Register(Version{})
 }
 
 var Current *Version  // Version of the source code

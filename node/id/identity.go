@@ -100,7 +100,6 @@ func (ids *Identities) FindTendermint(tendermintAddress string) Identity {
 	for i := 0; i < size; i++ {
 		identity := ids.store.Get(keys[i]).(Identity)
 		if strings.ToLower(tendermintAddress) == strings.ToLower(identity.TendermintAddress) {
-			log.Debug("FindTendermint", "identity.TendermintAddress", identity.TendermintAddress)
 			return identity
 		}
 	}

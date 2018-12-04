@@ -7,8 +7,6 @@ package shared
 
 import (
 	"encoding/hex"
-	"github.com/Oneledger/protocol/node/app"
-
 	"github.com/Oneledger/protocol/node/convert"
 	ctypes "github.com/tendermint/tendermint/rpc/core/types"
 
@@ -125,6 +123,6 @@ func GetSequenceNumber(accountKey id.AccountKey) int64 {
 		return -1
 	}
 
-	result := response.(app.SequenceRecord)
+	result := response.(id.SequenceRecord)
 	return result.Sequence
 }

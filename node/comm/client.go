@@ -8,12 +8,13 @@
 package comm
 
 import (
+	"reflect"
+
 	"github.com/Oneledger/protocol/node/global"
 	"github.com/Oneledger/protocol/node/log"
 	"github.com/Oneledger/protocol/node/serial"
 	rpcclient "github.com/tendermint/tendermint/rpc/client"
 	ctypes "github.com/tendermint/tendermint/rpc/core/types"
-	"reflect"
 )
 
 var cachedClient rpcclient.Client
@@ -212,8 +213,8 @@ func Block(height int64) (res *ctypes.ResultBlock) {
 
 // TODO Temporary placed it here to test a new Query approach
 type ApplyValidatorArguments struct {
-	Id           string
-	Amount       string
+	Id     string
+	Amount string
 }
 
 func init() {

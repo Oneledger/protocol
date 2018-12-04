@@ -22,4 +22,3 @@ else
     echo "Running Bitcoin process: $(pgrep bitcoin.* | wc -l)"
 
 fi
-

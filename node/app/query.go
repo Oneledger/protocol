@@ -7,8 +7,9 @@ package app
 
 import (
 	"encoding/hex"
-	"github.com/Oneledger/protocol/node/comm"
 	"strings"
+
+	"github.com/Oneledger/protocol/node/comm"
 
 	"github.com/Oneledger/protocol/node/action"
 	"github.com/Oneledger/protocol/node/chains/common"
@@ -63,6 +64,9 @@ func HandleQuery(app Application, path string, arguments map[string]string) []by
 
 	case "/sequenceNumber":
 		result = HandleSequenceNumberQuery(app, arguments)
+
+	case "/testScript":
+		result = HandleTestScript(app, arguments)
 
 	default:
 		result = HandleError("Unknown Query", path, arguments)
@@ -123,7 +127,7 @@ func HandleApplyValidatorQuery(application Application, arguments map[string]str
 			ChainId:  ChainId,
 			Owner:    identity.AccountKey,
 			Signers:  GetSigners(identity.AccountKey, application),
-			Sequence: sequence.(SequenceRecord).Sequence,
+			Sequence: sequence.(id.SequenceRecord).Sequence,
 		},
 
 		AccountKey:        identity.AccountKey,
@@ -423,6 +427,15 @@ func HandleSequenceNumberQuery(app Application, arguments map[string]string) int
 }
 
 func SequenceNumber(app Application, accountKey []byte) interface{} {
-	sequenceRecord := NextSequence(&app, accountKey)
+	sequenceRecord := id.NextSequence(&app, accountKey)
 	return sequenceRecord
+}
+
+func HandleTestScript(app Application, arguments map[string]string) interface{} {
+	log.Debug("TestScript", "arguments", arguments)
+	text := arguments["parameters"]
+
+	results := RunTestScriptName(text)
+
+	return results
 }
