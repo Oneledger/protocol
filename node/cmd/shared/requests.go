@@ -123,12 +123,14 @@ func CreateSendRequest(args *comm.SendArguments) []byte {
 
 	if err != nil {
 		log.Error("Failed to Serialize arguments: ", err)
+		return nil
 	}
 
 	response := comm.Query("/createSendRequest", request)
 
 	if response == nil {
 		log.Warn("Query returned no response", "request", request)
+		return nil
 	}
 
 	log.Debug("CreateSendRequest", "response", response)
@@ -142,12 +144,14 @@ func CreateMintRequest(args *comm.SendArguments) []byte {
 
 	if err != nil {
 		log.Error("Failed to Serialize arguments: ", err)
+		return nil
 	}
 
 	response := comm.Query("/createMintRequest", request)
 
 	if response == nil {
 		log.Warn("Query returned no response", "request", request)
+		return nil
 	}
 
 	return response.([]byte)
@@ -159,12 +163,14 @@ func CreateSwapRequest(args *comm.SwapArguments) []byte {
 
 	if err != nil {
 		log.Error("Failed to Serialize arguments: ", err)
+		return nil
 	}
 
 	response := comm.Query("/createSwapRequest", request)
 
 	if response == nil {
 		log.Warn("Query returned no response", "request", request)
+		return nil
 	}
 
 	return response.([]byte)
