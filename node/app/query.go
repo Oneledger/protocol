@@ -136,7 +136,7 @@ func HandleApplyValidatorQuery(application Application, arguments map[string]str
 			ChainId:  ChainId,
 			Owner:    identity.AccountKey,
 			Signers:  GetSigners(identity.AccountKey, application),
-			Sequence: sequence.(id.SequenceRecord).Sequence,
+			Sequence: sequence.Sequence,
 		},
 
 		AccountKey:        identity.AccountKey,
@@ -234,7 +234,7 @@ func HandleCreateSendRequest(application Application, arguments map[string]strin
 			ChainId:  ChainId,
 			Owner:    party,
 			Signers:  GetSigners(party, application),
-			Sequence: sequence.(SequenceRecord).Sequence,
+			Sequence: sequence.Sequence,
 		},
 		Inputs:  inputs,
 		Outputs: outputs,
@@ -321,7 +321,7 @@ func HandleCreateMintRequest(application Application, arguments map[string]strin
 			ChainId:  ChainId,
 			Signers:  GetSigners(zero, application),
 			Owner:    zero,
-			Sequence: sequence.(SequenceRecord).Sequence,
+			Sequence: sequence.Sequence,
 		},
 		Inputs:  inputs,
 		Outputs: outputs,
@@ -395,7 +395,7 @@ func HandleSwapRequest(application Application, arguments map[string]string) int
 			Signers:  GetSigners(partyKey, application),
 			Owner:    partyKey,
 			Target:   counterPartyKey,
-			Sequence: sequence.(SequenceRecord).Sequence,
+			Sequence: sequence.Sequence,
 		},
 		SwapMessage: swapInit,
 		Stage:       action.SWAP_MATCHING,
@@ -709,7 +709,7 @@ func HandleSequenceNumberQuery(app Application, arguments map[string]string) int
 	return SequenceNumber(app, key)
 }
 
-func SequenceNumber(app Application, accountKey []byte) interface{} {
+func SequenceNumber(app Application, accountKey []byte) id.SequenceRecord {
 	sequenceRecord := id.NextSequence(&app, accountKey)
 	return sequenceRecord
 }
