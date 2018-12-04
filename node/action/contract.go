@@ -84,52 +84,42 @@ func (transaction *Contract) Validate() status.Code {
 
 	//check that the data supplied is valid and no security problems
 	if transaction.Function == INSTALL {
-		if transaction.Owner == nil {
-			log.Error("Smart Contract Missing Data", "transaction owner", transaction.Owner)
-			return status.MISSING_DATA
-		}
-
 		if transaction.Data == nil {
-			log.Error("Smart Contract Missing Data", "transaction data", transaction)
+			log.Debug("Smart Contract Missing Data", "transaction data", transaction)
 			return status.MISSING_DATA
 		}
 
 		installData := transaction.Data.(Install)
 		if installData.Name == "" {
-			log.Error("Smart Contract Missing Data", "name", installData.Name)
+			log.Debug("Smart Contract Missing Data", "name", installData.Name)
 			return status.MISSING_DATA
 		}
 
 		if installData.Version.String() == "" {
-			log.Error("Smart Contract Missing Data", "version", installData.Version)
+			log.Debug("Smart Contract Missing Data", "version", installData.Version)
 			return status.MISSING_DATA
 		}
 
 		if installData.Script == nil {
-			log.Error("Smart Contract Missing Data", "script", installData.Script)
+			log.Debug("Smart Contract Missing Data", "script", installData.Script)
 			return status.MISSING_DATA
 		}
 	}
 
 	if transaction.Function == EXECUTE {
-		if transaction.Owner == nil {
-			log.Error("Smart Contract Missing Data", "transaction owner", transaction.Owner)
-			return status.MISSING_DATA
-		}
-
 		if transaction.Data == nil {
-			log.Error("Smart Contract Missing Data", "transaction data", transaction)
+			log.Debug("Smart Contract Missing Data", "transaction data", transaction)
 			return status.MISSING_DATA
 		}
 
 		executeData := transaction.Data.(Execute)
 		if executeData.Name == "" {
-			log.Error("Smart Contract Missing Data", "name", executeData.Name)
+			log.Debug("Smart Contract Missing Data", "name", executeData.Name)
 			return status.MISSING_DATA
 		}
 
 		if executeData.Version.String() == "" {
-			log.Error("Smart Contract Missing Data", "version", executeData.Version)
+			log.Debug("Smart Contract Missing Data", "version", executeData.Version)
 			return status.MISSING_DATA
 		}
 	}
