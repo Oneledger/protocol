@@ -8,19 +8,15 @@ package shared
 
 import (
 	"github.com/Oneledger/protocol/node/version"
-
-	"github.com/Oneledger/protocol/node/comm"
-	"github.com/Oneledger/protocol/node/serial"
-
 	"os"
 	"regexp"
 	"strconv"
-
 	"github.com/Oneledger/protocol/node/action"
 	"github.com/Oneledger/protocol/node/app"
+	"github.com/Oneledger/protocol/node/comm"
 	"github.com/Oneledger/protocol/node/convert"
-	"github.com/Oneledger/protocol/node/data"
 	"github.com/Oneledger/protocol/node/log"
+	"github.com/Oneledger/protocol/node/serial"
 )
 
 // Prepare a transaction to be issued.
@@ -172,58 +168,6 @@ func CreateSwapRequest(args *comm.SwapArguments) []byte {
 	}
 
 	return response.([]byte)
-
-	conv := convert.NewConvert()
-
-	partyKey := GetAccountKey(args.Party)
-	counterPartyKey := GetAccountKey(args.CounterParty)
-
-	fee := conv.GetCoin(args.Fee, "OLT")
-	gas := conv.GetCoin(args.Gas, "OLT")
-
-	amount := conv.GetCoin(args.Amount, args.Currency)
-	exchange := conv.GetCoin(args.Exchange, args.Excurrency)
-
-	if conv.HasErrors() {
-		Console.Error(conv.GetErrors())
-		os.Exit(-1)
-	}
-	account := make(map[data.ChainType][]byte)
-	counterAccount := make(map[data.ChainType][]byte)
-
-	account[conv.GetChainFromCurrency(args.Currency)] = GetCurrencyAddress(conv.GetCurrency(args.Currency), args.Party)
-	account[conv.GetChainFromCurrency(args.Excurrency)] = GetCurrencyAddress(conv.GetCurrency(args.Excurrency), args.Party)
-	//log.Debug("accounts for swap", "accountbtc", account[data.BITCOIN], "accounteth", common.BytesToAddress([]byte(account[data.ETHEREUM])), "accountolt", account[data.ONELEDGER])
-
-	party := action.Party{Key: partyKey, Accounts: account}
-	counterParty := action.Party{Key: counterPartyKey, Accounts: counterAccount}
-
-	swapInit := action.SwapInit{
-		Party:        party,
-		CounterParty: counterParty,
-		Fee:          fee,
-		Gas:          gas,
-		Amount:       amount,
-		Exchange:     exchange,
-		Nonce:        args.Nonce,
-	}
-
-	sequence := GetSequenceNumber(partyKey)
-
-	swap := &action.Swap{
-		Base: action.Base{
-			Type:     action.SWAP,
-			ChainId:  app.ChainId,
-			Signers:  action.GetSigners(partyKey),
-			Owner:    partyKey,
-			Target:   counterPartyKey,
-			Sequence: sequence,
-		},
-		SwapMessage: swapInit,
-		Stage:       action.SWAP_MATCHING,
-	}
-
-	return SignAndPack(action.Transaction(swap))
 }
 
 type ExSendArguments struct {
