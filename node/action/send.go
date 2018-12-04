@@ -30,6 +30,12 @@ func init() {
 func (transaction *Send) Validate() status.Code {
 	log.Debug("Validating Send Transaction")
 
+	baseValidate := transaction.Base.Validate()
+
+	if baseValidate != status.SUCCESS {
+		return baseValidate
+	}
+
 	if transaction.Fee.LessThan(0) {
 		log.Debug("Missing Fee", "send", transaction)
 		return status.MISSING_DATA

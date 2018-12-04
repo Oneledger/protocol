@@ -76,6 +76,12 @@ func (transaction *Contract) TransactionType() Type {
 func (transaction *Contract) Validate() status.Code {
 	log.Debug("Validating Smart Contract Transaction")
 
+	baseValidate := transaction.Base.Validate()
+
+	if baseValidate != status.SUCCESS {
+		return baseValidate
+	}
+
 	//check that the data supplied is valid and no security problems
 	if transaction.Function == INSTALL {
 		if transaction.Owner == nil {

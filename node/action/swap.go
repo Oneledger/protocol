@@ -67,6 +67,12 @@ type Swap struct {
 func (transaction *Swap) Validate() status.Code {
 	log.Debug("Validating Swap Transaction")
 
+	baseValidate := transaction.Base.Validate()
+
+	if baseValidate != status.SUCCESS {
+		return baseValidate
+	}
+
 	if transaction.SwapMessage == nil {
 		log.Error("swap don't contain message")
 		return status.MISSING_DATA

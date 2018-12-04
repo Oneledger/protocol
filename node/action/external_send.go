@@ -34,6 +34,12 @@ func init() {
 func (transaction *ExternalSend) Validate() status.Code {
 	log.Debug("Validating ExternalSend Transaction")
 
+	baseValidate := transaction.Base.Validate()
+
+	if baseValidate != status.SUCCESS {
+		return baseValidate
+	}
+
 	// TODO: Make sure all of the parameters are there
 	// TODO: Check all signatures and keys
 	// TODO: Vet that the sender has the values

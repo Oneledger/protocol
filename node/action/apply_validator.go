@@ -32,6 +32,12 @@ func init() {
 func (transaction *ApplyValidator) Validate() status.Code {
 	log.Debug("Validating ApplyValidator Transaction")
 
+	baseValidate := transaction.Base.Validate()
+
+	if baseValidate != status.SUCCESS {
+		return baseValidate
+	}
+
 	if transaction.Stake.LessThan(0) {
 		log.Debug("Missing Stake", "ApplyValidator", transaction)
 		return status.MISSING_DATA

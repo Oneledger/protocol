@@ -31,6 +31,12 @@ func init() {
 func (transaction Register) Validate() status.Code {
 	log.Debug("Validating Register Transaction")
 
+	baseValidate := transaction.Base.Validate()
+
+	if baseValidate != status.SUCCESS {
+		return baseValidate
+	}
+
 	if transaction.Identity == "" {
 		log.Warn("Missing Identity from Registration", "identity", transaction.Identity)
 		return status.MISSING_DATA
