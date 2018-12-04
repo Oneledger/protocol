@@ -10,10 +10,12 @@ else
 fi
 
 nodeName=`olconfig get -c $name -p NodeName`
-p2pAddress=`olconfig get -c $name -p P2PAddress`
-rpcAddress=`olconfig get -c $name -p RpcAddress`
-appAddress=`olconfig get -c $name -p AppAddress`
-peers=`olconfig get --peers -p Alice -p Bob -p Carol -p David -p Emma`
+#p2pAddress=`olconfig get -c $name -p P2PAddress`
+#rpcAddress=`olconfig get -c $name -p RpcAddress`
+#appAddress=`olconfig get -c $name -p AppAddress`
+#peers=`olconfig get --peers -p Alice -p Bob`
+peers=`olconfig get --peers -p Emma`
+seeds=`olconfig get --seeds -p Emma`
 
 export WORK=$OLDATA/$nodeName
 export LOG=$WORK
@@ -21,20 +23,22 @@ export DATA=$WORK/consensus
 
 pushd $WORK > /dev/null
 
-pids=`pgrep -f "olfullnode node -c $name.*"`
+pids=`pgrep -f "^olfullnode node -c $name.*"`
+
 if [ -z "$pids" ]
 
 then
 	echo "============================================================" >> $LOG/olfullnode.log
 	echo "Starting OLFullnode" >> $LOG/olfullnode.log
 	echo "============================================================" >> $LOG/olfullnode.log
-	olmonitor start olvm execute -c $name >>$LOG/olvm.log 2>&1 &
 
-	olfullnode node -c $name\
+
+  olmonitor start olvm execute -c $name >>$LOG/olvm.log 2>&1 &
+  
+  olfullnode node -c $name\
 		--root $WORK/olfullnode \
 		--tendermintRoot $DATA \
-		--address $rpcAddress \
-		--p2p $p2pAddress \
+		--seeds $seeds \
 		--persistent_peers $peers \
 		>> $LOG/olfullnode.log 2>&1 &
 

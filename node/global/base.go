@@ -57,6 +57,8 @@ type Context struct {
 	TendermintPubKey  string
 
 	PersistentPeers string
+	Seeds           string
+	SeedMode        bool
 	P2PAddress      string
 
 	ConsensusNode *tmnode.Node

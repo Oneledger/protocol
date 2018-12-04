@@ -27,8 +27,8 @@ var Protocol *Version // Version of the protocol
 func init() {
 	Current = &Version{
 		Major:      0,
-		Minor:      6,
-		Patch:      2,
+		Minor:      7,
+		Patch:      1,
 		PreRelease: "",
 		MetaData:   "",
 	}
