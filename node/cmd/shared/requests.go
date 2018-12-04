@@ -85,15 +85,15 @@ func CreateApplyValidatorRequest(args *comm.ApplyValidatorArguments) []byte {
 	request, err := serial.Serialize(args, serial.CLIENT)
 	if err != nil {
 		log.Error("Failed to Serialize arguments: ", err)
+		return nil
 	}
 
 	response := comm.Query("/applyValidators", request)
 
 	if response == nil {
 		log.Warn("Query returned no response", "request", request)
+		return nil
 	}
-
-	log.Debug("CreateApplyValidatorRequest", "response", response)
 
 	return response.([]byte)
 }
@@ -132,8 +132,6 @@ func CreateSendRequest(args *comm.SendArguments) []byte {
 		log.Warn("Query returned no response", "request", request)
 		return nil
 	}
-
-	log.Debug("CreateSendRequest", "response", response)
 
 	return response.([]byte)
 }
