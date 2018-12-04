@@ -41,6 +41,9 @@ func HandleQuery(app Application, path string, arguments map[string]string) []by
 	case "/createMintRequest":
 		result = HandleCreateMintRequest(app, arguments)
 
+	case "/createSwapRequest":
+		result = HandleSwapRequest(app, arguments)
+
 	case "/nodeName":
 		result = HandleNodeNameQuery(app, arguments)
 
@@ -332,6 +335,78 @@ func HandleCreateMintRequest(application Application, arguments map[string]strin
 	return packet
 }
 
+func HandleSwapRequest(application Application, arguments map[string]string) interface{} {
+	result := make([]byte, 0)
+
+	var argsHolder comm.SwapArguments
+
+	text := arguments["parameters"]
+
+	argsDeserialized, err := serial.Deserialize([]byte(text), argsHolder, serial.CLIENT)
+
+	if err != nil {
+		log.Error("Could not deserialize SwapArgumentsArguments", "error", err)
+		return result
+	}
+
+	args := argsDeserialized.(*comm.SwapArguments)
+
+	conv := convert.NewConvert()
+
+	partyKey := AccountKey(application, args.Party)
+	counterPartyKey := AccountKey(application, args.CounterParty)
+
+	fee := conv.GetCoin(args.Fee, "OLT")
+	gas := conv.GetCoin(args.Gas, "OLT")
+
+	amount := conv.GetCoin(args.Amount, args.Currency)
+	exchange := conv.GetCoin(args.Exchange, args.Excurrency)
+
+	if conv.HasErrors() {
+		log.Error("Conversion error", "error", conv.GetErrors())
+		return result
+	}
+
+	account := make(map[data.ChainType][]byte)
+	counterAccount := make(map[data.ChainType][]byte)
+
+	account[conv.GetChainFromCurrency(args.Currency)] = CurrencyAddress(application, conv.GetCurrency(args.Currency), args.Party)
+	account[conv.GetChainFromCurrency(args.Excurrency)] = CurrencyAddress(application, conv.GetCurrency(args.Excurrency), args.Party)
+
+	party := action.Party{Key: partyKey, Accounts: account}
+	counterParty := action.Party{Key: counterPartyKey, Accounts: counterAccount}
+
+	swapInit := action.SwapInit{
+		Party:        party,
+		CounterParty: counterParty,
+		Fee:          fee,
+		Gas:          gas,
+		Amount:       amount,
+		Exchange:     exchange,
+		Nonce:        args.Nonce,
+	}
+
+	sequence :=  SequenceNumber(application, partyKey.Bytes())
+
+	swap := &action.Swap{
+		Base: action.Base{
+			Type:     action.SWAP,
+			ChainId:  ChainId,
+			Signers:  GetSigners(partyKey, application),
+			Owner:    partyKey,
+			Target:   counterPartyKey,
+			Sequence: sequence.(SequenceRecord).Sequence,
+		},
+		SwapMessage: swapInit,
+		Stage:       action.SWAP_MATCHING,
+	}
+
+	signed := SignTransaction(action.Transaction(swap), application)
+	packet := action.PackRequest(signed)
+
+	return packet
+}
+
 func HandleNodeNameQuery(app Application, arguments map[string]string) interface{} {
 	return global.Current.NodeName
 }
@@ -547,6 +622,24 @@ func HandleCurrencyAddressQuery(app Application, arguments map[string]string) in
 		}
 
 	}
+	return identity.Chain[chain]
+}
+
+func CurrencyAddress(application Application, currency string, identityName string) []byte{
+	conv := convert.NewConvert()
+
+	chain := conv.GetChainFromCurrency(currency)
+
+	identity, ok := application.Identities.FindName(identityName)
+
+	if ok == status.SUCCESS {
+		if chain != data.ONELEDGER {
+			//todo : right now, the idenetity.Chain do not contain the address on the other chain, need to fix register to remove this part
+			_ = identity
+			return ChainAddress(chain).([]byte)
+		}
+	}
+
 	return identity.Chain[chain]
 }
 
