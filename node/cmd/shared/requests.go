@@ -190,41 +190,6 @@ func CreateExSendRequest(args *comm.ExSendArguments) []byte {
 	}
 
 	return response.([]byte)
-
-	conv := convert.NewConvert()
-
-	partyKey := GetAccountKey(args.SenderId)
-	cpartyKey := GetAccountKey(args.ReceiverId)
-
-	fee := conv.GetCoin(args.Fee, "OLT")
-	gas := conv.GetCoin(args.Gas, "OLT")
-	amount := conv.GetCoin(args.Amount, args.Currency)
-	chain := conv.GetChainFromCurrency(args.Chain)
-
-	sender := GetCurrencyAddress(conv.GetCurrency(args.Currency), args.SenderId)
-	reciever := GetCurrencyAddress(conv.GetCurrency(args.Currency), args.ReceiverId)
-	signers := action.GetSigners(sender)
-
-	sequence := GetSequenceNumber(partyKey)
-
-	exSend := &action.ExternalSend{
-		Base: action.Base{
-			Type:     action.EXTERNAL_SEND,
-			ChainId:  app.ChainId,
-			Signers:  signers,
-			Owner:    partyKey,
-			Target:   cpartyKey,
-			Sequence: sequence,
-		},
-		Gas:      gas,
-		Fee:      fee,
-		Chain:    chain,
-		Sender:   string(sender),
-		Receiver: string(reciever),
-		Amount:   amount,
-	}
-
-	return SignAndPack(exSend)
 }
 
 // CreateRequest builds and signs the transaction based on the arguments
