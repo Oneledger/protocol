@@ -28,7 +28,7 @@ build_bitcoin_on_mac () {
 	# Build
 	./autogen.sh
 	# Disable the GUI
-	./configure --without-gui
+	./configure --without-gui --disable-tests
 	make -j$(nproc)
 	make install
 }
@@ -41,7 +41,7 @@ move_bitcoind_on_mac () {
 	# Build
 	./autogen.sh
 	# Disable the GUI
-	./configure --without-gui
+	./configure --without-gui --disable-tests
 	make -j$(nproc)
 }
 
@@ -62,7 +62,7 @@ build_bitcoin_on_linux () {
 	# Build
 	./autogen.sh
 	# Disable the GUI
-	./configure --without-gui BDB_LIBS="-L${BDB_PREFIX}/lib -ldb_cxx-4.8" BDB_CFLAGS="-I${BDB_PREFIX}/include"
+	./configure --without-gui --disable-tests BDB_LIBS="-L${BDB_PREFIX}/lib -ldb_cxx-4.8" BDB_CFLAGS="-I${BDB_PREFIX}/include"
 	make -j$(nproc)
 	sudo make install
 }

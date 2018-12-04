@@ -14,24 +14,20 @@ fi
 # Startup a bunch of nodes to act as a full block chain instance
 #
 export CMD=$OLSCRIPT
-export STAGING=$OLDATA/staging
 
 rm -rf $OLDATA/staging/*
 #
 # Generate the overall genesis and validator information
 #
-tendermint testnet --o $STAGING --v $NODECOUNT >> $OLDATA/tendermint.log
 
-# TODO: Set the chain name, and set an initial amount of tokens and that admin owns them all
-
-nodes="David-Node#node0 Alice-Node#node1 Bob-Node#node2 Carol-Node#node3"
+#
+# Process the validators first
+#
+nodes="David-Node Alice-Node Bob-Node Carol-Node Emma-Node"
 
 for node in $nodes
 do
-	$CMD/resetValidator $node $STAGING
+	$CMD/resetNode $node
 done
 
-tendermint gen_node_key --home $OLDATA/staging/node4 >> $OLDATA/tendermint.log
-
-$CMD/resetNode "Emma-Node#node4" $STAGING
-
+olconfig testnet --dir $OLDATA --nonvalidators 1 >> $OLDATA/olcfg.log

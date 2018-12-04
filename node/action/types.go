@@ -171,11 +171,14 @@ func (e Event) ToKey() []byte {
 
 func SaveEvent(app interface{}, eventKey Event, status bool) {
 	events := GetEvent(app)
-
+	s := "0"
+	if status {
+		s = "1"
+	}
 	log.Debug("Save Event", "key", eventKey)
 
 	session := events.Begin()
-	session.Set(eventKey.ToKey(), []byte(strconv.FormatBool(status)))
+	session.Set(eventKey.ToKey(), []byte(s))
 	session.Commit()
 }
 
@@ -187,12 +190,11 @@ func FindEvent(app interface{}, eventKey Event) bool {
 		return false
 	}
 
-	r, err := strconv.ParseBool(result.(string))
-	if err != nil {
-		return false
+	if bytes.Equal(result.([]byte), []byte("1")) {
+		return true
 	}
 
-	return r
+	return false
 }
 
 func SaveContract(app interface{}, contractKey []byte, nonce int64, contract []byte) {

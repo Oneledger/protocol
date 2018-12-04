@@ -80,14 +80,31 @@ message SDKReply {
     bytes results = 2;
 }
 
+message BlockRequest {
+    int64 height = 1;
+}
+
+message TxRequest {
+    bytes hash = 1;
+    bool proof = 2;
+}
+
+message TxSearchRequest {
+    string query = 1;
+    bool proof = 2;
+    int32 page = 3;
+    int32 perPage = 4;
+}
+
 service SDK {
     // Simple health-check to see if the server is OK
     rpc Status(StatusRequest) returns (StatusReply);
     rpc CheckAccount(CheckAccountRequest) returns (CheckAccountReply);
     rpc Send(SendRequest) returns (SendReply);
     rpc Register(RegisterRequest) returns (RegisterReply);
-//    rpc Swap(SwapRequest) returns (SwapReply);
-
-    // Type inspecific requests
+    rpc Block(BlockRequest) returns (SDKReply);
+    rpc Tx(TxRequest) returns (SDKReply);
+    rpc TxSearch(TxSearchRequest) returns (SDKReply);
     rpc Request(SDKRequest) returns (SDKReply);
+
 }

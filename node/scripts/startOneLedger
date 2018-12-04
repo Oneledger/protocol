@@ -5,13 +5,12 @@
 #
 export CMD=$OLSCRIPT
 
-nodes="David Alice Bob Carol Emma"
+nodes="Emma David Alice Bob Carol"
 
 for entry in $nodes
 do
-	$CMD/testNode $entry
-	if [ $? -eq 0 ]; then
+#	$CMD/testNode $entry
+#	if [ $? -eq 0 ]; then
 		$CMD/startNode $entry
-		sleep 3
-	fi
+#	fi
 done

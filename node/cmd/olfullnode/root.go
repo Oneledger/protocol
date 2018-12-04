@@ -67,14 +67,18 @@ func init() {
 	RootCmd.PersistentFlags().StringVar(&global.Current.SDKAddress, "sdkrpc",
 		global.Current.SDKAddress, "Address for SDK RPC Server")
 
+	RootCmd.PersistentFlags().StringVar(&global.Current.PersistentPeers, "persistent_peers", "", "List of persistent peers to connect to")
+
+	RootCmd.PersistentFlags().StringVar(&global.Current.P2PAddress, "p2p", "", "Address to use in P2P network")
+
+	RootCmd.PersistentFlags().StringVar(&global.Current.Seeds, "seeds", "", "List of seeds to connect to")
+
+	RootCmd.PersistentFlags().BoolVar(&global.Current.SeedMode, "seed_mode", false, "List of seeds to connect to")
 }
 
 // Initialize Viper
 func environment() {
 	log.Debug("Loading Environment")
 	config.ServerConfig()
-
-	// TODO: Static variables vs Dynamic variables :-(
-	//global.Current.SDKAddress = viper.Get("SDKAddress").(string)
-	//global.Current.RpcAddress = viper.Get("RpcAddress").(string)
+	config.UpdateContext()
 }

@@ -9,6 +9,8 @@ import (
 	"encoding/hex"
 	"strings"
 
+	"github.com/Oneledger/protocol/node/comm"
+
 	"github.com/Oneledger/protocol/node/action"
 	"github.com/Oneledger/protocol/node/chains/common"
 
@@ -30,6 +32,9 @@ func HandleQuery(app Application, path string, arguments map[string]string) []by
 	var result interface{}
 
 	switch path {
+	case "/applyValidators":
+		result = HandleApplyValidatorQuery(app, arguments)
+
 	case "/nodeName":
 		result = HandleNodeNameQuery(app, arguments)
 
@@ -57,6 +62,12 @@ func HandleQuery(app Application, path string, arguments map[string]string) []by
 	case "/currencyAddress":
 		result = HandleCurrencyAddressQuery(app, arguments)
 
+	case "/sequenceNumber":
+		result = HandleSequenceNumberQuery(app, arguments)
+
+	case "/testScript":
+		result = HandleTestScript(app, arguments)
+
 	default:
 		result = HandleError("Unknown Query", path, arguments)
 	}
@@ -67,6 +78,68 @@ func HandleQuery(app Application, path string, arguments map[string]string) []by
 	}
 
 	return buffer
+}
+
+func HandleApplyValidatorQuery(application Application, arguments map[string]string) interface{} {
+	log.Debug("HandleApplyValidatorQuery", "arguments", arguments)
+
+	conv := convert.NewConvert()
+
+	result := make([]byte, 0)
+
+	var argsHolder comm.ApplyValidatorArguments
+
+	text := arguments["parameters"]
+
+	args, err := serial.Deserialize([]byte(text), argsHolder, serial.CLIENT)
+
+	if err != nil {
+		log.Error("Could not deserialize ApplyValidatorArguments", "error", err)
+		return result
+	}
+
+	amount := args.(*comm.ApplyValidatorArguments).Amount
+	idName := args.(*comm.ApplyValidatorArguments).Id
+
+	identities := IdentityInfo(application, idName)
+	identity := identities.([]id.Identity)[0]
+
+	if amount == "" {
+		log.Error("Missing an amount argument")
+		return result
+	}
+
+	balance := Balance(application, identity.AccountKey).(*data.Balance).GetAmountByName("VT")
+
+	log.Debug("HandleApplyValidatorQuery", "balance", balance)
+
+	if &balance == nil {
+		log.Error("Missing Balance")
+		return result
+	}
+
+	stake := conv.GetCoin(amount, "VT")
+	sequence := SequenceNumber(application, identity.AccountKey.Bytes())
+
+	validator := &action.ApplyValidator{
+		Base: action.Base{
+			Type:     action.APPLY_VALIDATOR,
+			ChainId:  ChainId,
+			Owner:    identity.AccountKey,
+			Signers:  GetSigners(identity.AccountKey, application),
+			Sequence: sequence.(id.SequenceRecord).Sequence,
+		},
+
+		AccountKey:        identity.AccountKey,
+		TendermintAddress: identity.TendermintAddress,
+		TendermintPubKey:  identity.TendermintPubKey,
+		Stake:             stake,
+	}
+
+	signed := SignTransaction(action.Transaction(validator), application)
+	packet := action.PackRequest(signed)
+
+	return packet
 }
 
 func HandleNodeNameQuery(app Application, arguments map[string]string) interface{} {
@@ -88,21 +161,7 @@ func HandleSignTransaction(app Application, arguments map[string]string) interfa
 		return signatures
 	}
 
-	var accountKey id.AccountKey
-
-	// TODO: Add GetOwner method to clean this up?
-	switch v := transaction.(type) {
-	case *action.Swap:
-		accountKey = v.Base.Owner
-	case *action.Send_Abusolute:
-		accountKey = v.Base.Owner
-	case *action.Register:
-		accountKey = v.Base.Owner
-	case *action.Payment:
-		accountKey = v.Base.Owner
-	default:
-		log.Error("Unknown transaction type", "transaction", transaction)
-	}
+	accountKey := transaction.(action.Transaction).GetOwner()
 
 	if accountKey == nil {
 		log.Error("Account key is null", "transaction", transaction)
@@ -349,4 +408,34 @@ func GetSigners(owner []byte, application Application) []id.PublicKey {
 	}
 
 	return []id.PublicKey{publicKey.(id.PublicKey)}
+}
+
+// Get the account information for a given user
+func HandleSequenceNumberQuery(app Application, arguments map[string]string) interface{} {
+	log.Debug("SequenceNumberQuery", "arguments", arguments)
+
+	text := arguments["parameters"]
+
+	var key []byte
+	parts := strings.Split(text, "=")
+	if len(parts) > 1 {
+
+		// TODO: Encoded because it is dumped into a string
+		key, _ = hex.DecodeString(parts[1])
+	}
+	return SequenceNumber(app, key)
+}
+
+func SequenceNumber(app Application, accountKey []byte) interface{} {
+	sequenceRecord := id.NextSequence(&app, accountKey)
+	return sequenceRecord
+}
+
+func HandleTestScript(app Application, arguments map[string]string) interface{} {
+	log.Debug("TestScript", "arguments", arguments)
+	text := arguments["parameters"]
+
+	results := RunTestScriptName(text)
+
+	return results
 }

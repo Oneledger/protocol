@@ -27,10 +27,6 @@ func init() {
 	serial.Register(Payment{})
 }
 
-func (transaction *Payment) TransactionType() Type {
-	return transaction.Base.Type
-}
-
 func (transaction *Payment) Validate() status.Code {
 	log.Debug("Validating Payment Transaction")
 

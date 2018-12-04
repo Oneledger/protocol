@@ -10,7 +10,7 @@ CMD=$OLSCRIPT
 
 WORK=$OLDATA/$nodeName
 LOG=$WORK
-DATA=$WORK/tendermint
+DATA=$WORK/consensus
 
 pushd $WORK > /dev/null
 

@@ -11,4 +11,3 @@ for entry in $nodes
 do
 	$CMD/stopNode $entry
 done
-

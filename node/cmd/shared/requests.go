@@ -7,13 +7,20 @@
 package shared
 
 import (
+	"github.com/Oneledger/protocol/node/global"
+	"github.com/Oneledger/protocol/node/version"
+
+	"github.com/Oneledger/protocol/node/comm"
+	"github.com/Oneledger/protocol/node/serial"
+
 	"os"
+	"regexp"
+	"strconv"
 
 	"github.com/Oneledger/protocol/node/action"
 	"github.com/Oneledger/protocol/node/app"
 	"github.com/Oneledger/protocol/node/convert"
 	"github.com/Oneledger/protocol/node/data"
-	"github.com/Oneledger/protocol/node/global"
 	"github.com/Oneledger/protocol/node/log"
 )
 
@@ -78,6 +85,24 @@ func CreateBalanceRequest(args *BalanceArguments) []byte {
 	return []byte(nil)
 }
 
+// CreateRequest builds and signs the transaction based on the arguments
+func CreateApplyValidatorRequest(args *comm.ApplyValidatorArguments) []byte {
+	request, err := serial.Serialize(args, serial.CLIENT)
+	if err != nil {
+		log.Error("Failed to Serialize arguments: ", err)
+	}
+
+	response := comm.Query("/applyValidators", request)
+
+	if response == nil {
+		log.Warn("Query returned no response", "request", request)
+	}
+
+	log.Debug("CreateApplyValidatorRequest", "response", response)
+
+	return response.([]byte)
+}
+
 type SendArguments struct {
 	Party        string
 	CounterParty string
@@ -85,6 +110,25 @@ type SendArguments struct {
 	Amount       string
 	Gas          string
 	Fee          string
+}
+
+type InstallArguments struct {
+	Owner    string
+	Name     string
+	Version  string
+	File     string
+	Currency string
+	Gas      string
+	Fee      string
+}
+
+type ExecuteArguments struct {
+	Owner    string
+	Name     string
+	Version  string
+	Currency string
+	Gas      string
+	Fee      string
 }
 
 // CreateRequest builds and signs the transaction based on the arguments
@@ -231,6 +275,8 @@ func CreateSendRequest(args *SendArguments) []byte {
 		os.Exit(-1)
 	}
 
+	sequence := GetSequenceNumber(party)
+
 	// Create base transaction
 	send := &action.Send_Abusolute{
 		Base: action.Base{
@@ -238,7 +284,7 @@ func CreateSendRequest(args *SendArguments) []byte {
 			ChainId:  app.ChainId,
 			Owner:    party,
 			Signers:  action.GetSigners(party),
-			Sequence: global.Current.Sequence,
+			Sequence: sequence,
 		},
 		Inputs:  inputs,
 		Outputs: outputs,
@@ -301,6 +347,8 @@ func CreateMintRequest(args *SendArguments) []byte {
 		os.Exit(-1)
 	}
 
+	sequence := GetSequenceNumber(party)
+
 	// Create base transaction
 	send := &action.Send_Abusolute{
 		Base: action.Base{
@@ -308,7 +356,7 @@ func CreateMintRequest(args *SendArguments) []byte {
 			ChainId:  app.ChainId,
 			Signers:  action.GetSigners(zero),
 			Owner:    zero,
-			Sequence: global.Current.Sequence,
+			Sequence: sequence,
 		},
 		Inputs:  inputs,
 		Outputs: outputs,
@@ -369,6 +417,8 @@ func CreateSwapRequest(args *SwapArguments) []byte {
 		Nonce:        args.Nonce,
 	}
 
+	sequence := GetSequenceNumber(partyKey)
+
 	swap := &action.Swap{
 		Base: action.Base{
 			Type:     action.SWAP,
@@ -376,7 +426,7 @@ func CreateSwapRequest(args *SwapArguments) []byte {
 			Signers:  action.GetSigners(partyKey),
 			Owner:    partyKey,
 			Target:   counterPartyKey,
-			Sequence: global.Current.Sequence,
+			Sequence: sequence,
 		},
 		SwapMessage: swapInit,
 		Stage:       action.SWAP_MATCHING,
@@ -413,6 +463,9 @@ func CreateExSendRequest(args *ExSendArguments) []byte {
 	sender := GetCurrencyAddress(conv.GetCurrency(args.Currency), args.SenderId)
 	reciever := GetCurrencyAddress(conv.GetCurrency(args.Currency), args.ReceiverId)
 	signers := action.GetSigners(sender)
+
+	sequence := GetSequenceNumber(partyKey)
+
 	exSend := &action.ExternalSend{
 		Base: action.Base{
 			Type:     action.EXTERNAL_SEND,
@@ -420,7 +473,7 @@ func CreateExSendRequest(args *ExSendArguments) []byte {
 			Signers:  signers,
 			Owner:    partyKey,
 			Target:   cpartyKey,
-			Sequence: global.Current.Sequence,
+			Sequence: sequence,
 		},
 		Gas:      gas,
 		Fee:      fee,
@@ -431,4 +484,178 @@ func CreateExSendRequest(args *ExSendArguments) []byte {
 	}
 
 	return SignAndPack(exSend)
+}
+
+// CreateRequest builds and signs the transaction based on the arguments
+func CreateInstallRequest(args *InstallArguments, script []byte) []byte {
+	conv := convert.NewConvert()
+
+	if args.Owner == "" {
+		log.Error("Missing Owner argument")
+		return nil
+	}
+
+	if args.Name == "" {
+		log.Error("Missing Name argument")
+		return nil
+	}
+
+	if args.Version == "" {
+		log.Error("Missing Version argument")
+		return nil
+	}
+
+	if script == nil {
+		log.Error("Missing Script")
+		return nil
+	}
+
+	owner := GetAccountKey(args.Owner)
+	if owner == nil {
+		log.Fatal("System doesn't recognize the owner", "args", args,
+			"owner", owner)
+		return nil
+	}
+
+	version := ParseVersion(args.Version)
+	if version == nil {
+		log.Debug("Version error", "version", args.Version)
+		return nil
+	}
+
+	fee := conv.GetCoin(args.Fee, args.Currency)
+	gas := conv.GetCoin(args.Gas, args.Currency)
+
+	sequence := GetSequenceNumber(owner)
+
+	inputs := action.Install{
+		Owner:   owner,
+		Name:    args.Name,
+		Version: *version,
+		Script:  script,
+	}
+
+	if conv.HasErrors() {
+		Console.Error(conv.GetErrors())
+		os.Exit(-1)
+	}
+
+	signers := action.GetSigners(owner)
+	if signers == nil {
+		log.Debug("Missing Signers")
+		return nil
+	}
+
+	// Create base transaction
+	install := &action.Contract{
+		Base: action.Base{
+			Type:     action.SMART_CONTRACT,
+			ChainId:  app.ChainId,
+			Owner:    owner,
+			Signers:  signers, //action.GetSigners(owner),
+			Sequence: sequence,
+		},
+		Data:     inputs,
+		Function: action.INSTALL,
+		Fee:      fee,
+		Gas:      gas,
+	}
+	return SignAndPack(action.Transaction(install))
+}
+
+func ParseVersion(argsVersion string) *version.Version {
+	automata := regexp.MustCompile(`v([0-9]*)\.([0-9]*)\.([0-9]*)`)
+	groups := automata.FindStringSubmatch(argsVersion)
+
+	//log.Dump("VersionGroups", groups)
+	if groups == nil || len(groups) != 4 {
+		log.Debug("ParseVersion", "groups", groups, "groupsLen", len(groups))
+		return nil
+	}
+
+	major, err := strconv.Atoi(groups[1])
+	if err != nil {
+		log.Debug("ParseVersion", "major", major, "err", err)
+	}
+
+	minor, err := strconv.Atoi(groups[2])
+	if err != nil {
+		log.Debug("ParseVersion", "minor", minor, "err", err)
+	}
+
+	patch, err := strconv.Atoi(groups[3])
+	if err != nil {
+		log.Debug("ParseVersion", "patch", patch, "err", err)
+	}
+
+	return &version.Version{
+		Major: major,
+		Minor: minor,
+		Patch: patch,
+	}
+}
+
+// CreateRequest builds and signs the transaction based on the arguments
+func CreateExecuteRequest(args *ExecuteArguments) []byte {
+	conv := convert.NewConvert()
+
+	if args.Owner == "" {
+		log.Error("Missing Owner argument")
+		return nil
+	}
+
+	if args.Name == "" {
+		log.Error("Missing Name argument")
+		return nil
+	}
+
+	if args.Version == "" {
+		log.Error("Missing Version argument")
+		return nil
+	}
+
+	owner := GetAccountKey(args.Owner)
+	if owner == nil {
+		log.Fatal("System doesn't recognize the owner", "args", args,
+			"owner", owner)
+		return nil
+	}
+
+	version := ParseVersion(args.Version)
+	if version == nil {
+		log.Debug("Version error", "version", args.Version)
+		return nil
+	}
+
+	fee := conv.GetCoin(args.Fee, args.Currency)
+	gas := conv.GetCoin(args.Gas, args.Currency)
+
+	sequence := GetSequenceNumber(owner)
+
+	inputs := action.Execute{
+		Owner:   owner,
+		Name:    args.Name,
+		Version: *version,
+	}
+
+	if conv.HasErrors() {
+		Console.Error(conv.GetErrors())
+		os.Exit(-1)
+	}
+
+	// Create base transaction
+	execute := &action.Contract{
+		Base: action.Base{
+			Type:     action.SMART_CONTRACT,
+			ChainId:  app.ChainId,
+			Owner:    owner,
+			Signers:  action.GetSigners(owner),
+			Sequence: sequence,
+		},
+		Data:     inputs,
+		Function: action.EXECUTE,
+		Fee:      fee,
+		Gas:      gas,
+	}
+	return SignAndPack(action.Transaction(execute))
 }

@@ -7,7 +7,6 @@ package shared
 
 import (
 	"encoding/hex"
-
 	"github.com/Oneledger/protocol/node/convert"
 	ctypes "github.com/tendermint/tendermint/rpc/core/types"
 
@@ -114,4 +113,16 @@ func GetTxByType(t string) *ctypes.ResultTxSearch {
 		return nil
 	}
 	return response
+}
+
+func GetSequenceNumber(accountKey id.AccountKey) int64 {
+	request := action.Message("AccountKey=" + hex.EncodeToString(accountKey))
+	response := comm.Query("/sequenceNumber", request)
+	if response == nil {
+		log.Warn("Query returned nothing", "request", request)
+		return -1
+	}
+
+	result := response.(id.SequenceRecord)
+	return result.Sequence
 }

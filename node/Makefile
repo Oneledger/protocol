@@ -2,8 +2,7 @@ GOTOOLS = \
 	  github.com/mitchellh/gox \
 	  github.com/Masterminds/glide \
 	  github.com/golang/dep/cmd/dep \
-	  github.com/golang/protobuf/protoc-gen-go \
-	  github.com/protocolbuffers/protobuf
+	  github.com/golang/protobuf/protoc-gen-go
 
 all: test
 
@@ -73,6 +72,12 @@ fulltest: reset install
 	@./tests/full.sh
 
 #
+# Test validator, bring up everything, send a validator token and then stop
+#
+validatortest: reset install
+	@./tests/validator.sh
+
+#
 # Swap Testing, swap BTC with ETH between nodes, do a full reset and rebuild each time
 #
 swaptest: resetDevnet install
@@ -81,6 +86,12 @@ swaptest: resetDevnet install
 	@./tests/register.sh
 	@./tests/swap.sh
 	@./scripts/stopDevnet
+
+#
+# Smart Contract Testing, install and execute smart contracts
+#
+exectest: stop reset start register
+	@./tests/contract.sh
 
 
 #
@@ -150,3 +161,4 @@ protobuf:
 # targets that are not associated with any files
 #
 .PHONY: all build install utest test tools update stop start full
+

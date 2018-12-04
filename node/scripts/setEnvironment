@@ -6,6 +6,4 @@ export OLSCRIPT=$OLROOT/protocol/node/scripts
 export OLSETUP=$OLROOT/protocol/node/setup
 
 export OLDATA=$GOPATH/test
-
-export OLDEBUG=true
-
+export OLDEBUG=false
