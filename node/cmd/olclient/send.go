@@ -18,7 +18,7 @@ var sendCmd = &cobra.Command{
 	Run:   IssueRequest,
 }
 
-var sendargs *shared.SendArguments = &shared.SendArguments{}
+var sendargs *comm.SendArguments = &comm.SendArguments{}
 
 func init() {
 	RootCmd.AddCommand(sendCmd)
