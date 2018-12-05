@@ -51,3 +51,18 @@ func TestBalance_IsEqual(t *testing.T) {
 	result2 := a.IsEqual(b)
 	assert.Equal(t, result2, true)
 }
+
+func TestBalance_IsEnough(t *testing.T) {
+	a := NewBalance()
+
+	a.AddAmmount(NewCoin(100, "OLT"))
+
+	c := NewCoin(101, "OLT")
+	d := NewCoin(99, "OLT")
+
+	result1 := a.IsEnough(c)
+	result2 := a.IsEnough(d)
+	assert.Equal(t, result1, false)
+
+	assert.Equal(t, result2, true)
+}

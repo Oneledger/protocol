@@ -71,9 +71,22 @@ func (b *Balance) MinusAmmount(coin Coin) {
 	return
 }
 
-func (b *Balance) IsEqual(balance Balance) bool {
+func (b Balance) IsEqual(balance Balance) bool {
 	for i, v := range b.Amounts {
 		if !v.Equals(balance.Amounts[i]) {
+			return false
+		}
+	}
+	return true
+}
+
+func (b Balance) IsEnough(coins ...Coin) bool {
+	for _, coin := range coins {
+		b.MinusAmmount(coin)
+	}
+
+	for _, coin := range b.Amounts {
+		if !coin.LessThan(0) {
 			return false
 		}
 	}

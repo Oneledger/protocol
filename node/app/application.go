@@ -365,7 +365,7 @@ func (app Application) BeginBlock(req RequestBeginBlock) ResponseBeginBlock {
 
 // EndBlock is called at the end of all of the transactions
 func (app *Application) MakePayment(req RequestBeginBlock) {
-	account, err := app.Accounts.FindName("Payment")
+	account, err := app.Accounts.FindName(global.Current.PaymentAccount)
 	if err != status.SUCCESS {
 		log.Fatal("ABCI: BeginBlock Fatal Status", "status", err)
 	}
@@ -494,7 +494,7 @@ func (app Application) EndBlock(req RequestEndBlock) ResponseEndBlock {
 
 	result := ResponseEndBlock{
 		ValidatorUpdates: validatorUpdates,
-		Tags: []common.KVPair(nil),
+		Tags:             []common.KVPair(nil),
 	}
 
 	log.Debug("ABCI: EndBlock Result", "result", result)

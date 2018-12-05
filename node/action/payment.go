@@ -7,6 +7,7 @@ package action
 
 import (
 	"github.com/Oneledger/protocol/node/data"
+	"github.com/Oneledger/protocol/node/global"
 	"github.com/Oneledger/protocol/node/log"
 	"github.com/Oneledger/protocol/node/serial"
 	"github.com/Oneledger/protocol/node/status"
@@ -16,8 +17,7 @@ import (
 type Payment struct {
 	Base
 
-	Inputs  []SendInput  `json:"inputs"`
-	Outputs []SendOutput `json:"outputs"`
+	PayTo []SendTo `json:"payto"`
 
 	Gas data.Coin `json:"gas"`
 	Fee data.Coin `json:"fee"`
@@ -45,15 +45,10 @@ func (transaction *Payment) Validate() status.Code {
 
 func (transaction *Payment) ProcessCheck(app interface{}) status.Code {
 	log.Debug("Processing Payment Transaction for CheckTx")
-
-	if !CheckAmountsAbsolute(app, transaction.Inputs, transaction.Outputs) {
-		log.Debug("FAILED", "inputs", transaction.Inputs, "outputs", transaction.Outputs)
+	if !CheckPayTo(app, transaction.PayTo) {
+		log.Debug("FAILED to ", "payto", transaction.PayTo)
 		return status.INVALID
 	}
-
-	// TODO: Validate the transaction against the UTXO database, check tree
-	chain := GetBalances(app)
-	_ = chain
 
 	return status.SUCCESS
 }
@@ -74,14 +69,14 @@ func init() {
 func (transaction *Payment) ProcessDeliver(app interface{}) status.Code {
 	log.Debug("Processing Payment Transaction for DeliverTx")
 
-	if !CheckAmountsAbsolute(app, transaction.Inputs, transaction.Outputs) {
+	if !CheckPayTo(app, transaction.PayTo) {
 		return status.INVALID
 	}
 
 	chain := GetBalances(app)
 
 	// Update the database to the final set of entries
-	for _, entry := range transaction.Outputs {
+	for _, entry := range transaction.PayTo {
 		var balance *data.Balance
 		result := chain.Get(entry.AccountKey)
 		if result == nil {
@@ -111,4 +106,24 @@ func (transaction *Payment) ProcessDeliver(app interface{}) status.Code {
 
 func (transaction *Payment) Resolve(app interface{}) Commands {
 	return []Command{}
+}
+
+func CheckPayTo(app interface{}, pay []SendTo) bool {
+	balances := GetBalances(app)
+	accounts := GetAccounts(app)
+
+	payment, ok := accounts.FindName(global.Current.PaymentAccount)
+	if ok != status.SUCCESS {
+		log.Error("Failed to get payment account", "status", ok)
+		return false
+	}
+
+	balance := balances.Get(payment.AccountKey())
+	for _, v := range pay {
+		if !balance.IsEnough(v.Amount) {
+			return false
+		}
+		balance.MinusAmmount(v.Amount)
+	}
+	return true
 }
