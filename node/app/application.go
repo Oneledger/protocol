@@ -176,14 +176,14 @@ func CreateAccount(app Application, state *BasicState, publicKey id.PublicKeyED2
 }
 
 func NewBalanceFromStates(states []State) data.Balance {
-	var balance data.Balance
+	balance := data.NewBalance()
 	for _, v := range states {
 		value := big.NewInt(0)
 		value.SetString(v.Amount, 10)
 		coin := data.NewCoin(value.Int64(), v.Coin)
 		balance.AddAmount(coin)
 	}
-	return balance
+	return *balance
 }
 
 // InitChain is called when a new chain is getting created
@@ -356,7 +356,7 @@ func (app Application) BeginBlock(req RequestBeginBlock) ResponseBeginBlock {
 	return result
 }
 
-// EndBlock is called at the end of all of the transactions
+// make payment to validators
 func (app *Application) MakePayment(req RequestBeginBlock) {
 	account, err := app.Accounts.FindName(global.Current.PaymentAccount)
 	if err != status.SUCCESS {
@@ -400,7 +400,7 @@ func (app *Application) MakePayment(req RequestBeginBlock) {
 			app.SetPaymentRecord(totalPayment, height)
 
 			if global.Current.NodeName == selectedValidatorIdentity.NodeName {
-				result := CreatePaymentRequest(*app, approvedValidatorIdentities, quotient, height)
+				result := CreatePaymentRequest(*app, quotient, height)
 				if result != nil {
 					// TODO: check this later
 					action.DelayedTransaction(result, 0*time.Second)

@@ -95,3 +95,11 @@ func GetExecutionContext(app interface{}) data.Datastore {
 	}
 	return context
 }
+
+func GetValidators(app interface{}) *id.Validators {
+	validators := app.(persist.Access).GetValidators().(*id.Validators)
+	if validators == nil {
+		log.Fatal("Validators list mission", "config", global.Current, "app", app)
+	}
+	return validators
+}

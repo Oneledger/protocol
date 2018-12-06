@@ -18,9 +18,6 @@ type Payment struct {
 	Base
 
 	PayTo []SendTo `json:"payto"`
-
-	Gas data.Coin `json:"gas"`
-	Fee data.Coin `json:"fee"`
 }
 
 func init() {
@@ -30,21 +27,19 @@ func init() {
 func (transaction *Payment) Validate() status.Code {
 	log.Debug("Validating Payment Transaction")
 
-	if transaction.Fee.LessThan(0) {
-		log.Debug("Missing Fee", "payment", transaction)
-		return status.MISSING_DATA
+	if len(transaction.PayTo) < 3 {
+		return status.INVALID
 	}
-
-	if transaction.Gas.LessThan(0) {
-		log.Debug("Missing Gas", "payment", transaction)
-		return status.MISSING_DATA
-	}
-
 	return status.SUCCESS
 }
 
 func (transaction *Payment) ProcessCheck(app interface{}) status.Code {
 	log.Debug("Processing Payment Transaction for CheckTx")
+
+	if !CheckValidatorList(app, transaction.PayTo) {
+		return status.INVALID
+	}
+
 	if !CheckPayTo(app, transaction.PayTo) {
 		log.Debug("FAILED to ", "payto", transaction.PayTo)
 		return status.INVALID
@@ -69,11 +64,22 @@ func init() {
 func (transaction *Payment) ProcessDeliver(app interface{}) status.Code {
 	log.Debug("Processing Payment Transaction for DeliverTx")
 
+	if !CheckValidatorList(app, transaction.PayTo) {
+		return status.INVALID
+	}
+
 	if !CheckPayTo(app, transaction.PayTo) {
 		return status.INVALID
 	}
 
 	chain := GetBalances(app)
+	accounts := GetAccounts(app)
+	payment, err := accounts.FindName(global.Current.PaymentAccount)
+	if err != status.SUCCESS {
+		log.Error("Failed to get payment account", "status", err)
+		return err
+	}
+	paymentBalance := chain.Get(payment.AccountKey())
 
 	// Update the database to the final set of entries
 	for _, entry := range transaction.PayTo {
@@ -86,7 +92,10 @@ func (transaction *Payment) ProcessDeliver(app interface{}) status.Code {
 		balance.AddAmount(entry.Amount)
 
 		chain.Set(entry.AccountKey, *balance)
+		paymentBalance.MinusAmount(entry.Amount)
 	}
+
+	chain.Set(payment.AccountKey(), *paymentBalance)
 
 	admin := GetAdmin(app)
 
@@ -120,10 +129,25 @@ func CheckPayTo(app interface{}, pay []SendTo) bool {
 	balance := balances.Get(payment.AccountKey())
 	total := data.NewBalance()
 	for _, v := range pay {
+		if v.Amount.LessThan(0) {
+			return false
+		}
 		total.AddAmount(v.Amount)
 	}
 	if !balance.IsEnoughBalance(*total) {
 		return false
 	}
+	return true
+}
+
+func CheckValidatorList(app interface{}, payTo []SendTo) bool {
+	validators := GetValidators(app)
+
+	for i, v := range payTo {
+		if !validators.IsValidAccountKey(v.AccountKey, i) {
+			return false
+		}
+	}
+
 	return true
 }

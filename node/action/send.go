@@ -42,7 +42,7 @@ func (transaction *Send) Validate() status.Code {
 		return status.MISSING_DATA
 	}
 
-	if transaction.Fee.IsCurrency("OLT") {
+	if !transaction.Fee.IsCurrency("OLT") {
 		log.Debug("Wrong Fee token", "fee", transaction.Fee)
 		return status.INVALID
 	}
@@ -98,6 +98,9 @@ func (transaction *Send) ProcessDeliver(app interface{}) status.Code {
 
 	//change receiver balance
 	receiverBalance := balances.Get(transaction.SendTo.AccountKey)
+	if receiverBalance == nil {
+		receiverBalance = data.NewBalance()
+	}
 	receiverBalance.AddAmount(transaction.SendTo.Amount)
 
 	accounts := GetAccounts(app)
@@ -166,6 +169,7 @@ func CheckSendTo(balance data.Balance, sendTo SendTo, fee data.Coin) bool {
 	total := data.NewBalance()
 	total.AddAmount(sendTo.Amount)
 	total.AddAmount(fee)
+	log.Debug("send check", "balance", balance, "total", total)
 	if !balance.IsEnoughBalance(*total) {
 		log.Debug("FAILED: Balance not enough for the send", "balance", balance, "sendTo", sendTo)
 		return false
