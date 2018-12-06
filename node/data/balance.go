@@ -20,24 +20,24 @@ func init() {
 	serial.Register(Balance{})
 }
 
-func NewBalance() Balance {
+func NewBalance() *Balance {
 	amounts := make(map[string]Coin)
 	coin := NewCoin(0, "OLT")
 	amounts[string(coin.Currency.Key())] = coin
-	result := Balance{
+	result := &Balance{
 		Amounts: amounts,
 	}
 	return result
 }
 
-func NewBalanceFromString(amount int64, currency string) Balance {
+func NewBalanceFromString(amount int64, currency string) *Balance {
 	coin := NewCoin(amount, currency)
 	balance := NewBalance()
 	balance.AddAmount(coin)
 	return balance
 }
 
-func NewBalanceFromCoin(coin Coin) Balance {
+func NewBalanceFromCoin(coin Coin) *Balance {
 	balance := NewBalance()
 	balance.AddAmount(coin)
 	return balance

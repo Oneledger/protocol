@@ -177,18 +177,11 @@ func CreateAccount(app Application, state *BasicState, publicKey id.PublicKeyED2
 
 func NewBalanceFromStates(states []State) data.Balance {
 	var balance data.Balance
-	for i, v := range states {
-		if i == 0 {
-			value := big.NewInt(0)
-			value.SetString(v.Amount, 10)
-			balance = data.NewBalanceFromString(value.Int64(), v.Coin)
-
-		} else {
-			value := big.NewInt(0)
-			value.SetString(v.Amount, 10)
-			coin := data.NewCoin(value.Int64(), v.Coin)
-			balance.AddAmmount(coin)
-		}
+	for _, v := range states {
+		value := big.NewInt(0)
+		value.SetString(v.Amount, 10)
+		coin := data.NewCoin(value.Int64(), v.Coin)
+		balance.AddAmount(coin)
 	}
 	return balance
 }
@@ -372,8 +365,7 @@ func (app *Application) MakePayment(req RequestBeginBlock) {
 
 	paymentBalance := app.Balances.Get(account.AccountKey())
 	if paymentBalance == nil {
-		interimBalance := data.NewBalance()
-		paymentBalance = &interimBalance
+		paymentBalance = data.NewBalance()
 	}
 
 	paymentRecordBlockHeight := int64(-1)

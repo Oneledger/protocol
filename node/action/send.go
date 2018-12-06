@@ -93,12 +93,12 @@ func (transaction *Send) ProcessDeliver(app interface{}) status.Code {
 	}
 
 	//change owner balance
-	ownerBalance.MinusAmmount(transaction.SendTo.Amount)
-	ownerBalance.MinusAmmount(transaction.Fee)
+	ownerBalance.MinusAmount(transaction.SendTo.Amount)
+	ownerBalance.MinusAmount(transaction.Fee)
 
 	//change receiver balance
 	receiverBalance := balances.Get(transaction.SendTo.AccountKey)
-	receiverBalance.AddAmmount(transaction.SendTo.Amount)
+	receiverBalance.AddAmount(transaction.SendTo.Amount)
 
 	accounts := GetAccounts(app)
 	payment, err := accounts.FindName(global.Current.PaymentAccount)
@@ -108,7 +108,7 @@ func (transaction *Send) ProcessDeliver(app interface{}) status.Code {
 	}
 
 	paymentBalance := balances.Get(payment.AccountKey())
-	paymentBalance.AddAmmount(transaction.Fee)
+	paymentBalance.AddAmount(transaction.Fee)
 
 	balances.Set(transaction.Base.Owner, *ownerBalance)
 	balances.Set(transaction.SendTo.AccountKey, *receiverBalance)
@@ -163,7 +163,10 @@ func CheckSendTo(balance data.Balance, sendTo SendTo, fee data.Coin) bool {
 		return false
 	}
 
-	if !balance.IsEnough(sendTo.Amount, fee) {
+	total := data.NewBalance()
+	total.AddAmount(sendTo.Amount)
+	total.AddAmount(fee)
+	if !balance.IsEnoughBalance(*total) {
 		log.Debug("FAILED: Balance not enough for the send", "balance", balance, "sendTo", sendTo)
 		return false
 	}

@@ -80,11 +80,10 @@ func (transaction *Payment) ProcessDeliver(app interface{}) status.Code {
 		var balance *data.Balance
 		result := chain.Get(entry.AccountKey)
 		if result == nil {
-			tmp := data.NewBalance()
-			result = &tmp
+			result = data.NewBalance()
 		}
 		balance = result
-		balance.SetAmmount(entry.Amount)
+		balance.AddAmount(entry.Amount)
 
 		chain.Set(entry.AccountKey, *balance)
 	}
@@ -119,11 +118,12 @@ func CheckPayTo(app interface{}, pay []SendTo) bool {
 	}
 
 	balance := balances.Get(payment.AccountKey())
+	total := data.NewBalance()
 	for _, v := range pay {
-		if !balance.IsEnough(v.Amount) {
-			return false
-		}
-		balance.MinusAmmount(v.Amount)
+		total.AddAmount(v.Amount)
+	}
+	if !balance.IsEnoughBalance(*total) {
+		return false
 	}
 	return true
 }

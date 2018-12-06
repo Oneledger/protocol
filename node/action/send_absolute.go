@@ -85,11 +85,10 @@ func (transaction *Send_Abusolute) ProcessDeliver(app interface{}) status.Code {
 		var balance *data.Balance
 		result := balances.Get(entry.AccountKey)
 		if result == nil {
-			tmp := data.NewBalance()
-			result = &tmp
+			result = data.NewBalance()
 		}
 		balance = result
-		balance.SetAmmount(entry.Amount)
+		balance.SetAmount(entry.Amount)
 
 		balances.Set(entry.AccountKey, *balance)
 	}
@@ -212,8 +211,7 @@ func CheckBalance(app interface{}, accountKey id.AccountKey, amount data.Coin) b
 	if balance == nil {
 		// New accounts don't have a balance until the first transaction
 		log.Debug("New Balance", "key", accountKey, "amount", amount, "balance", balance)
-		interim := data.NewBalanceFromString(0, amount.Currency.Name)
-		balance = &interim
+		balance = data.NewBalanceFromString(0, amount.Currency.Name)
 		if !balance.GetAmountByName(amount.Currency.Name).Equals(amount) {
 			return false
 		}

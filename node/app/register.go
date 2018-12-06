@@ -83,7 +83,7 @@ func XRegisterLocally(app *Application, name string, scope string, chain data.Ch
 	// Fill in the balance
 	if chain == data.ONELEDGER && !app.Balances.Exists(account.AccountKey()) {
 		balance := data.NewBalance()
-		app.Balances.Set(account.AccountKey(), balance)
+		app.Balances.Set(account.AccountKey(), *balance)
 
 		status = true
 	}
