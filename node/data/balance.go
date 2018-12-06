@@ -13,7 +13,7 @@ import (
 // Wrap the amount with owner information
 type Balance struct {
 	// Address id.Address
-	Amounts []Coin
+	Amounts map[string]Coin
 }
 
 func init() {
@@ -21,10 +21,9 @@ func init() {
 }
 
 func NewBalance() Balance {
-	amounts := make([]Coin, len(Currencies))
-	for _, v := range Currencies {
-		amounts[v.Id] = NewCoin(0, v.Name)
-	}
+	amounts := make(map[string]Coin)
+	coin := NewCoin(0, "OLT")
+	amounts[string(coin.Currency.Key())] = coin
 	result := Balance{
 		Amounts: amounts,
 	}
@@ -34,59 +33,69 @@ func NewBalance() Balance {
 func NewBalanceFromString(amount int64, currency string) Balance {
 	coin := NewCoin(amount, currency)
 	balance := NewBalance()
-	balance.AddAmmount(coin)
+	balance.AddAmount(coin)
 	return balance
 }
 
 func NewBalanceFromCoin(coin Coin) Balance {
 	balance := NewBalance()
-	balance.AddAmmount(coin)
+	balance.AddAmount(coin)
 	return balance
 }
 
 func (b *Balance) FromCoin(coin Coin) {
-	b.Amounts[coin.Currency.Id] = coin
+	b.Amounts[string(coin.Currency.Key())] = coin
 }
 
 func (b *Balance) GetAmountByCurrency(currency Currency) Coin {
-	return b.Amounts[currency.Id]
+	v, ok := b.Amounts[currency.Key()]
+	if !ok {
+		return NewCoin(0, currency.Name)
+	}
+	return v
 }
 
 func (b *Balance) GetAmountByName(name string) Coin {
-	return b.Amounts[Currencies[name].Id]
+	v, ok := b.Amounts[Currencies[name].Key()]
+	if !ok {
+		return NewCoin(0, name)
+	}
+	return v
 }
 
-func (b *Balance) SetAmmount(coin Coin) {
-	b.Amounts[coin.Currency.Id] = coin
+func (b *Balance) SetAmount(coin Coin) {
+	b.Amounts[coin.Currency.Key()] = coin
 	return
 }
 
-func (b *Balance) AddAmmount(coin Coin) {
-	b.Amounts[coin.Currency.Id] = b.Amounts[coin.Currency.Id].Plus(coin)
+func (b *Balance) AddAmount(coin Coin) {
+	key := coin.Currency.Key()
+	v, ok := b.Amounts[key]
+	if ok {
+		coin = v.Plus(coin)
+	}
+	b.Amounts[key] = coin
 	return
 }
 
-func (b *Balance) MinusAmmount(coin Coin) {
-	b.Amounts[coin.Currency.Id] = b.Amounts[coin.Currency.Id].Minus(coin)
+func (b *Balance) MinusAmount(coin Coin) {
+	key := coin.Currency.Key()
+	v, ok := b.Amounts[key]
+	if ok {
+		coin = v.Minus(coin)
+	}
+	b.Amounts[key] = coin
 	return
 }
 
-func (b Balance) IsEqual(balance Balance) bool {
-	for i, v := range b.Amounts {
-		if !v.Equals(balance.Amounts[i]) {
-			return false
+func (b Balance) IsEnoughBalance(balance Balance) bool {
+	for i, coin := range balance.Amounts {
+		v, ok := b.Amounts[i]
+		if !ok {
+			v = NewCoin(0, coin.Currency.Name)
 		}
-	}
-	return true
-}
 
-func (b Balance) IsEnough(coins ...Coin) bool {
-	for _, coin := range coins {
-		b.MinusAmmount(coin)
-	}
-
-	for _, coin := range b.Amounts {
-		if !coin.LessThan(0) {
+		if v.Minus(coin).LessThan(0) {
 			return false
 		}
 	}
