@@ -42,8 +42,8 @@ func (runner Runner) exec(callString string) (string, string) {
 
 	// Set the results
 	runner.vm.Run(`
-    out = JSON.stringify(transaction);
-    ret = JSON.stringify(retValue);
+    var out = JSON.stringify(transaction);
+    var ret = JSON.stringify(retValue);
     `)
 
 	output := ""
@@ -56,16 +56,12 @@ func (runner Runner) exec(callString string) (string, string) {
 	if value, err := runner.vm.Get("ret"); err == nil {
 		returnValue, _ = value.ToString()
 	}
-
 	return output, returnValue
 }
 
 //func (runner Runner) Call(from string, address string, callString string, olt int) (transaction string, returnValue string, err error) {
-func (runner Runner) Call(request *action.OLVMRequest) (result *action.OLVMResult, err error) {
+func (runner Runner) Call(request *action.OLVMRequest, result *action.OLVMResult) (err error) {
 	log.Debug("Calling the Script")
-
-	result = &action.OLVMResult{}
-
 	defer func() {
 		if r := recover(); r != nil {
 			log.Debug("HALTING")
@@ -114,8 +110,7 @@ func (runner Runner) Call(request *action.OLVMRequest) (result *action.OLVMResul
 	result.Out = out
 	result.Ret = ret
 	result.Elapsed = elapsed.String()
-
-	return result, nil
+	return
 }
 
 func CreateRunner() Runner {
