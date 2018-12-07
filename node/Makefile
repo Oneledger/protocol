@@ -1,7 +1,8 @@
 GOTOOLS = \
 	  github.com/mitchellh/gox \
 	  github.com/Masterminds/glide \
-	  github.com/golang/dep/cmd/dep
+	  github.com/golang/dep/cmd/dep \
+	  github.com/golang/protobuf/protoc-gen-go
 
 all: test
 
@@ -42,7 +43,7 @@ install:
 #
 # List out all of the tendermint processes
 #
-list:
+show:
 	pgrep -lf tendermint
 
 #
@@ -71,14 +72,20 @@ fulltest: reset install
 	@./tests/full.sh
 
 #
+# Test validator, bring up everything, send a validator token and then stop
+#
+validatortest: reset install
+	@./tests/validator.sh
+
+#
 # Swap Testing, swap BTC with ETH between nodes, do a full reset and rebuild each time
 #
-swaptest: resetMVP install
+swaptest: resetDevnet install
 	@./scripts/startBitcoin
 	@./scripts/startEthereum
 	@./tests/register.sh
 	@./tests/swap.sh
-	@./scripts/stopMVP
+	@./scripts/stopDevnet
 
 
 #
@@ -94,7 +101,25 @@ start: check install
 # System Testing, bring it all down
 #
 stop: check
-	@./scripts/stopMVP
+	@./scripts/stopDevnet
+
+#
+# Register the devnet users
+#
+register: check
+	@./tests/register.sh
+
+#
+# Send money to the devnet users
+#
+testmint: check
+	@./tests/testmint.sh
+
+#
+# List out the data for David
+#
+list: check
+	@olclient list -c David
 
 #
 # Reset all of the chains, back to genesis
@@ -105,8 +130,8 @@ reset: check stop
 #
 # Reset all of the chains, back to genesis
 #
-resetMVP: check stop
-	@./scripts/resetMVP
+resetDevnet: check stop
+	@./scripts/resetDevnet
 
 #
 # Startup a tmux monitor

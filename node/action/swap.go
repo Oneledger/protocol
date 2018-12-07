@@ -7,6 +7,7 @@ package action
 
 import (
 	"bytes"
+
 	"github.com/tendermint/go-amino"
 
 	"github.com/Oneledger/protocol/node/chains/bitcoin"
@@ -62,10 +63,6 @@ type Swap struct {
 	Stage       swapStageType `json:"stage"`
 }
 
-func (transaction *Swap) TransactionType() Type {
-	return transaction.Base.Type
-}
-
 // Ensure that all of the base values are at least reasonable.
 func (transaction *Swap) Validate() status.Code {
 	log.Debug("Validating Swap Transaction")
@@ -95,18 +92,22 @@ func (transaction *Swap) ProcessCheck(app interface{}) status.Code {
 // Is this node one of the partipants in the swap
 func (transaction *Swap) ShouldProcess(app interface{}) bool {
 	account := GetNodeAccount(app)
+	if account == nil {
+		log.Warn("NodeAccount not setup for processing")
+		return false
+	}
 
 	if bytes.Equal(transaction.Base.Target, account.AccountKey()) {
 		log.Debug("Swap involved", "swap", transaction.SwapMessage, "stage", transaction.Stage)
 		return true
 	}
 
-	if bytes.Equal(transaction.Base.Owner, account.AccountKey()) && transaction.Stage == SWAP_MATCHING {
+	if bytes.Equal(transaction.Base.Owner, account.AccountKey()) && (transaction.Stage == SWAP_MATCHING || transaction.Stage == SWAP_FINISH) {
 		log.Debug("Swap involved", "swap", transaction.SwapMessage, "stage", transaction.Stage)
 		return true
 	}
 
-	log.Debug("Swap not involved", "me", account, "owner", transaction.Base.Owner, "target", transaction.Base.Target, "stage", transaction.Stage)
+	log.Debug("Swap not involved", "me", account.AccountKey(), "owner", transaction.Base.Owner, "target", transaction.Base.Target, "stage", transaction.Stage)
 
 	return false
 }
@@ -161,8 +162,7 @@ func (swap *Swap) CommandExecute(app interface{}, commands Commands, c chan stat
 		ok, result := commands[i].Execute(app)
 		if !ok {
 			log.Error("Failed to Execute", "command", commands[i])
-			//SaveEvent(app, event, false)
-			c <- status.EXPAND_ERROR
+			c <- status.EXECUTE_ERROR
 		}
 		if len(result) > 0 {
 			commands[i+1].data = result
@@ -210,19 +210,19 @@ var swapStageFlow = map[swapStageType]swapStage{
 	},
 	SWAP_FINISH: {
 		Stage:    SWAP_FINISH,
-		Commands: Commands{Command{opfunc: FinalizeSwap}},
+		Commands: Commands{Command{opfunc: FinalizeSwap}, Command{opfunc: NextStage}},
 		InStage:  PARTICIPANT_REDEEM,
 		OutStage: NOSTAGE,
 	},
 	WAIT_FOR_CHAIN: {
 		Stage:    WAIT_FOR_CHAIN,
-		Commands: Commands{Command{opfunc: VerifySwap}, Command{opfunc: ClearEvent}},
+		Commands: Commands{Command{opfunc: VerifySwap}, Command{opfunc: NextStage}},
 		InStage:  SWAP_MATCHING,
 		OutStage: NOSTAGE,
 	},
 	SWAP_REFUND: {
 		Stage:    SWAP_REFUND,
-		Commands: Commands{Command{opfunc: Refund}},
+		Commands: Commands{Command{opfunc: Refund}, Command{opfunc: NextStage}},
 		InStage:  WAIT_FOR_CHAIN,
 		OutStage: NOSTAGE,
 	},
@@ -369,16 +369,11 @@ func (si SwapInit) getParty(accountKey id.AccountKey) Party {
 // Get the correct chains order for this action
 func (si SwapInit) getChains() []data.ChainType {
 
-	var first, second data.ChainType
 	if si.Amount.Currency.Id < si.Exchange.Currency.Id {
-		first = data.Currencies[si.Amount.Currency.Name].Chain
-		second = data.Currencies[si.Exchange.Currency.Name].Chain
+		return []data.ChainType{si.Amount.Currency.Chain, si.Exchange.Currency.Chain}
 	} else {
-		first = data.Currencies[si.Exchange.Currency.Name].Chain
-		second = data.Currencies[si.Amount.Currency.Name].Chain
+		return []data.ChainType{si.Exchange.Currency.Chain, si.Amount.Currency.Chain}
 	}
-
-	return []data.ChainType{first, second}
 }
 
 func (si SwapInit) getRole(isParty bool) Role {
@@ -405,12 +400,8 @@ func (si *SwapInit) order() bool {
 		// don't need to switch
 		return true
 	} else {
-		tmpParty := si.Party
-		si.Party = si.CounterParty
-		si.CounterParty = tmpParty
-		tmpAmount := si.Amount
-		si.Amount = si.Exchange
-		si.Exchange = tmpAmount
+		si.Party, si.CounterParty = si.CounterParty, si.Party
+		si.Amount, si.Exchange = si.Exchange, si.Amount
 		return false
 	}
 
@@ -507,7 +498,13 @@ func (se SwapExchange) resolve(app interface{}, stageType swapStageType) Command
 		context[PREIMAGE] = scrHash
 		context[OWNER] = si.CounterParty.Key
 		context[TARGET] = si.Party.Key
-	case SWAP_FINISH:
+
+	case SWAP_REFUND:
+		if bytes.Equal(si.Party.Key, account.AccountKey()) {
+			context[NEXTCHAINNAME] = si.Amount.Currency.Chain
+		} else {
+			context[NEXTCHAINNAME] = si.Exchange.Currency.Chain
+		}
 
 	default:
 		log.Warn("Unexpected stage for SwapExchange", "stage", stageType)
@@ -548,7 +545,7 @@ func (sv SwapVerify) resolve(app interface{}, stageType swapStageType) Commands 
 	context[STAGE] = stage.Stage
 
 	commands[0].data = context
-	return nil
+	return commands
 }
 
 //get the next stage from the current stage
@@ -577,8 +574,10 @@ func NextStage(app interface{}, chain data.ChainType, context FunctionValues, tx
 		message = SwapVerify{
 			Event: event,
 		}
+	case WAIT_FOR_CHAIN:
+
 	default:
-		return false, nil
+		return true, nil
 	}
 
 	owner := GetAccountKey(context[OWNER])
@@ -600,10 +599,10 @@ func NextStage(app interface{}, chain data.ChainType, context FunctionValues, tx
 	log.Debug("NextStage Swap", "swap", swap)
 	if nextStage == WAIT_FOR_CHAIN {
 		waitTime := 3 * lockPeriod
-		DelayedTransaction(SWAP, swap, waitTime)
+		DelayedTransaction(swap, waitTime)
 	} else {
 		waitTime := 1 * time.Second
-		DelayedTransaction(SWAP, swap, waitTime)
+		DelayedTransaction(swap, waitTime)
 	}
 	return true, nil
 }
@@ -728,6 +727,7 @@ func FinalizeSwap(app interface{}, chain data.ChainType, context FunctionValues,
 
 	sv := GetSwapMessage(context[SWAPMESSAGE]).(SwapVerify)
 	SaveEvent(app, sv.Event, true)
+	context[NEXTSTAGE] = NOSTAGE
 	return true, context
 }
 
@@ -736,16 +736,7 @@ func VerifySwap(app interface{}, chain data.ChainType, context FunctionValues, t
 	sv := GetSwapMessage(context[SWAPMESSAGE]).(SwapVerify)
 
 	finish := FindEvent(app, sv.Event)
-	context[FINISHED] = finish
-	return true, context
-}
-
-func ClearEvent(app interface{}, chain data.ChainType, context FunctionValues, tx Transaction) (bool, FunctionValues) {
-	finish := GetBool(context[FINISHED])
-	if finish == nil {
-		log.Error("Failed to detected the event result")
-		return false, nil
-	} else if *finish == true {
+	if finish == true {
 		storeKey := GetBytes(context[STOREKEY])
 		si := FindSwap(app, storeKey)
 		chains := si.getChains()
@@ -753,17 +744,24 @@ func ClearEvent(app interface{}, chain data.ChainType, context FunctionValues, t
 		DeleteContract(app, storeKey, 0)
 		DeleteContract(app, storeKey, int64(chains[0]))
 		DeleteContract(app, storeKey, int64(chains[1]))
-		return true, nil
+		context[NEXTSTAGE] = NOSTAGE
+		return true, context
 	} else {
-		return false, nil
+		log.Warn("Swap not finished, reverting")
+		account := GetNodeAccount(app)
+		context[NEXTSTAGE] = SWAP_REFUND
+		context[OWNER] = account.AccountKey()
+		context[TARGET] = account.AccountKey()
+		se := SwapExchange{
+			SwapKeyHash: sv.Event.SwapKeyHash,
+		}
+		context[SWAPMESSAGE] = se
+		return true, context
 	}
 }
 
 // TODO: Needs to be configurable
 var lockPeriod = 5 * time.Minute
-
-// todo: need to store this in db
-var tokens = make(map[string][32]byte)
 
 func Initiate(app interface{}, chain data.ChainType, context FunctionValues, tx Transaction) (bool, FunctionValues) {
 	log.Info("Executing Initiate Command", "chain", chain, "context", context)

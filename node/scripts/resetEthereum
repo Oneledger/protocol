@@ -26,6 +26,7 @@ geth --datadir $OLDATA/ethereum/B init $OLSCRIPT/data/ethGenesis.json >> $LOG/et
 geth --datadir $OLDATA/ethereum/C init $OLSCRIPT/data/ethGenesis.json >> $LOG/ethereum.log 2>&1
 
 echo "Get pre-alloc account"
+
 # PASS for A: 1234
 # PASS for B: 2345
 # PASS for C: 3456

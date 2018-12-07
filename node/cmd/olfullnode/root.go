@@ -9,9 +9,10 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/Oneledger/protocol/node/config"
 	"github.com/Oneledger/protocol/node/global"
+	"github.com/Oneledger/protocol/node/log"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 )
 
 var RootCmd = &cobra.Command{
@@ -33,6 +34,9 @@ func init() {
 
 	RootCmd.PersistentFlags().StringVar(&global.Current.RootDir, "root",
 		global.Current.RootDir, "Set root directory")
+
+	RootCmd.PersistentFlags().StringVarP(&global.Current.ConfigName, "config", "c",
+		global.Current.ConfigName, "Configuration File Name")
 
 	RootCmd.PersistentFlags().StringVar(&global.Current.NodeName, "node",
 		global.Current.NodeName, "Set a node name")
@@ -60,12 +64,18 @@ func init() {
 	RootCmd.PersistentFlags().StringVar(&global.Current.TendermintRoot, "tendermintRoot",
 		global.Current.TendermintRoot, "tendermint root directory")
 
-	RootCmd.PersistentFlags().IntVar(&global.Current.SDKAddress, "sdkrpc",
-		global.Current.SDKAddress, "Port for SDK RPC Server")
+	RootCmd.PersistentFlags().StringVar(&global.Current.SDKAddress, "sdkrpc",
+		global.Current.SDKAddress, "Address for SDK RPC Server")
+
+	RootCmd.PersistentFlags().StringVar(&global.Current.PersistentPeers, "persistent_peers", "", "List of persistent peers to connect to")
+
+	RootCmd.PersistentFlags().StringVar(&global.Current.P2PAddress, "p2p", "", "Address to use in P2P network")
 
 }
 
 // Initialize Viper
 func environment() {
-	viper.AutomaticEnv()
+	log.Debug("Loading Environment")
+	config.ServerConfig()
+	config.UpdateContext()
 }

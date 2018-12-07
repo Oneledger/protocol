@@ -24,11 +24,7 @@ echo "========== Swap =========="
 ./swap.sh
 sleep 6
 
-echo "========== Identity =========="
-./identity.sh
-sleep 6
-
-echo "========== Account =========="
-./accounts.sh
+echo "========== Accounts and Identities =========="
+./list.sh
 sleep 6
 

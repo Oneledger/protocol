@@ -16,9 +16,9 @@ type Datastore interface {
 	Begin() Session
 
 	// Readonly, not in a session
+	FindAll() []DatabaseKey
 	Exists(key DatabaseKey) bool
 	Get(key DatabaseKey) interface{}
-	FindAll() []DatabaseKey
 
 	// Give out a listof errors
 	Errors() string
@@ -28,11 +28,11 @@ type Datastore interface {
 // Open a session (transaction in the database sense, not blockchain).
 type Session interface {
 	// Primary operations
-	Exists(key DatabaseKey) bool
-	Set(key DatabaseKey, value interface{}) bool
-	Get(key DatabaseKey) interface{}
-	Delete(key DatabaseKey) bool
 	FindAll() []DatabaseKey
+	Exists(key DatabaseKey) bool
+	Get(key DatabaseKey) interface{}
+	Set(key DatabaseKey, value interface{}) bool
+	Delete(key DatabaseKey) bool
 
 	// Finish the sessions
 	Commit() bool

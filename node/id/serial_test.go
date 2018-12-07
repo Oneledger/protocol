@@ -97,7 +97,7 @@ func TestAccount(t *testing.T) {
 	//accounts := NewAccounts("LocalAccounts")
 
 	chain := data.ONELEDGER
-	accountName := "Zero-OneLedger"
+	accountName := "Zero"
 	publicKey := NilPublicKey()
 	privateKey := NilPrivateKey()
 
@@ -127,7 +127,7 @@ func TestAccountArray(t *testing.T) {
 	//accounts := NewAccounts("LocalAccounts")
 
 	chain := data.ONELEDGER
-	accountName := "Zero-OneLedger"
+	accountName := "Zero"
 	publicKey := NilPublicKey()
 	privateKey := NilPrivateKey()
 
@@ -160,7 +160,7 @@ func TestAccountPersistence(t *testing.T) {
 	accounts := NewAccounts("LocalAccounts")
 
 	chain := data.ONELEDGER
-	accountName := "Zero-OneLedger"
+	accountName := "Zero"
 	publicKey := NilPublicKey()
 	privateKey := NilPrivateKey()
 

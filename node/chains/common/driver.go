@@ -11,7 +11,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
-func GetSwapAddress(chain data.ChainType) []byte {
+func GetChainAddress(chain data.ChainType) []byte {
 	switch chain {
 
 	case data.BITCOIN:

@@ -141,7 +141,6 @@ func Contract(base interface{}) interface{} {
 		wrapper := underlying.(SerialWrapper)
 		typeEntry = GetTypeEntry(wrapper.Type, wrapper.Size)
 		if typeEntry.Category == PRIMITIVE {
-			log.Debug("Found Primitive Top-Level Type")
 			value := wrapper.Fields[""]
 			return ConvertValue(value, typeEntry.DataType).Interface()
 		}

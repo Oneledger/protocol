@@ -6,25 +6,23 @@
 package main
 
 import (
-	"github.com/Oneledger/protocol/node/app"
+	"github.com/Oneledger/protocol/node/cmd/shared"
 	"github.com/Oneledger/protocol/node/comm"
-	"github.com/Oneledger/protocol/node/log"
-	"github.com/Oneledger/protocol/node/serial"
 	"github.com/spf13/cobra"
 )
 
 var registerCmd = &cobra.Command{
 	Use:   "register",
-	Short: "Create or reuse an account",
-	Run:   Register,
+	Short: "Register and Identity with the Chain",
+	Run:   RegisterIdentity,
 }
 
 // Arguments to the command
 type RegistrationArguments struct {
 	identity string
-	chain    string
+	account  string
+	nodeName string
 	pubkey   string
-	privkey  string
 }
 
 var arguments = &RegistrationArguments{}
@@ -33,58 +31,27 @@ func init() {
 	RootCmd.AddCommand(registerCmd)
 
 	// Transaction Parameters
-	registerCmd.Flags().StringVar(&arguments.identity, "identity", "Unknown", "User's Identity")
-	registerCmd.Flags().StringVar(&arguments.chain, "chain", "OneLedger", "Specify the chain")
-	registerCmd.Flags().StringVar(&arguments.pubkey, "pubkey", "0x00000000", "Specify a public key")
-	registerCmd.Flags().StringVar(&arguments.privkey, "privkey", "0x00000000", "Specify a private key")
+	registerCmd.Flags().StringVar(&arguments.identity, "identity", "", "User's Identity")
+	registerCmd.Flags().StringVar(&arguments.account, "account", "", "User's Default Account")
+	registerCmd.Flags().StringVar(&arguments.nodeName, "node", "", "User's Default Node")
+
+	registerCmd.Flags().StringVar(&arguments.pubkey, "pubkey", "", "Specify a public key")
 }
 
-// IssueRequest sends out a sendTx to all of the nodes in the chain
-func Register(cmd *cobra.Command, args []string) {
-	log.Debug("Client Register Account via SetOption...")
-
-	cli := &app.RegisterArguments{
-		Identity:   arguments.identity,
-		Chain:      arguments.chain,
-		PublicKey:  arguments.pubkey,
-		PrivateKey: arguments.privkey,
+func RegisterIdentity(cmd *cobra.Command, args []string) {
+	arguments := &shared.RegisterArguments{
+		Identity: arguments.identity,
+		Account:  arguments.account,
+		NodeName: arguments.nodeName,
 	}
 
-	buffer, err := serial.Serialize(cli, serial.CLIENT)
-	if err != nil {
-		log.Error("Register Failed", "err", err)
-		return
-	}
-	comm.SetOption("Register", string(buffer))
+	register := shared.RegisterIdentityRequest(arguments)
+
+	result := comm.SDKRequest(register)
+	_ = result
+
+	shared.Console.Info("Identity has been broadcast to chain")
+
+	// TODO: Need nicer output
+	//log.Dump("Have Results", result)
 }
-
-/*
-func ConvertPublicKey(keystring string) id.PublicKey {
-	return id.PublicKey{}
-}
-
-// TODO: This should be moved out of cmd and into it's own package
-func CreateIdentity() {
-	chainType, err := id.FindIdentityType(arguments.chain)
-	if err != 0 {
-		Console.Error("Invalid Identity Type")
-		return
-	}
-
-	pubkey := ConvertPublicKey(arguments.pubkey)
-
-	identity := id.NewIdentity(chainType, arguments.name, pubkey)
-
-	// TODO: Need to convert the input...
-	//identity.AddPrivateKey(id.PrivateKey{}) //arguments.privkey)
-
-	Console.Info("New Account has been created")
-}
-
-func UpdateIdentity(identity id.Identity) {
-	// TODO: Need to convert the input...
-	//identity.AddPrivateKey(id.PrivateKey{}) //arguments.privkey)
-
-	Console.Info("New Account has been updated")
-}
-*/

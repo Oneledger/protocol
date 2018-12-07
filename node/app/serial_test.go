@@ -52,7 +52,6 @@ func TestSwap(t *testing.T) {
 	}
 
 	swap = &action.Swap{
-		Base: nil,
 		SwapMessage: action.SwapInit{
 			Party:        party,
 			CounterParty: party,

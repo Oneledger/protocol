@@ -16,15 +16,15 @@ import (
 // Execute a transaction after a specific delay.
 // TODO: The node delays in a separate goroutine, but this should really be handled by the consensus engine,
 // so that the delay is in the mempool.
-func DelayedTransaction(ttype Type, transaction Transaction, waitTime time.Duration) {
-	go func(ttype Type, transaction Transaction) {
+func DelayedTransaction(transaction Transaction, waitTime time.Duration) {
+	go func() {
 		time.Sleep(waitTime)
-		BroadcastTransaction(ttype, transaction, false)
-	}(ttype, transaction)
+		BroadcastTransaction(transaction, false)
+	}()
 }
 
 // Send out the transaction as an async broadcast
-func BroadcastTransaction(ttype Type, transaction Transaction, sync bool) {
+func BroadcastTransaction(transaction Transaction, sync bool) {
 	log.Debug("Broadcast a transaction to the chain")
 
 	// Don't let the death of a client stop the node from running
