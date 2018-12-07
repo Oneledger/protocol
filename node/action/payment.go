@@ -17,7 +17,7 @@ import (
 type Payment struct {
 	Base
 
-	PayTo []SendTo `json:"payto"`
+	SendTo []SendTo `json:"payto"`
 }
 
 func init() {
@@ -27,7 +27,13 @@ func init() {
 func (transaction *Payment) Validate() status.Code {
 	log.Debug("Validating Payment Transaction")
 
-	if len(transaction.PayTo) < 3 {
+	baseValidate := transaction.Base.Validate()
+
+	if baseValidate != status.SUCCESS {
+		return baseValidate
+	}
+
+	if len(transaction.SendTo) < 3 {
 		return status.INVALID
 	}
 	return status.SUCCESS
@@ -36,12 +42,12 @@ func (transaction *Payment) Validate() status.Code {
 func (transaction *Payment) ProcessCheck(app interface{}) status.Code {
 	log.Debug("Processing Payment Transaction for CheckTx")
 
-	if !CheckValidatorList(app, transaction.PayTo) {
+	if !CheckValidatorList(app, transaction.SendTo) {
 		return status.INVALID
 	}
 
-	if !CheckPayTo(app, transaction.PayTo) {
-		log.Debug("FAILED to ", "payto", transaction.PayTo)
+	if !CheckPayTo(app, transaction.SendTo) {
+		log.Debug("FAILED to ", "payto", transaction.SendTo)
 		return status.INVALID
 	}
 
@@ -64,11 +70,11 @@ func init() {
 func (transaction *Payment) ProcessDeliver(app interface{}) status.Code {
 	log.Debug("Processing Payment Transaction for DeliverTx")
 
-	if !CheckValidatorList(app, transaction.PayTo) {
+	if !CheckValidatorList(app, transaction.SendTo) {
 		return status.INVALID
 	}
 
-	if !CheckPayTo(app, transaction.PayTo) {
+	if !CheckPayTo(app, transaction.SendTo) {
 		return status.INVALID
 	}
 
@@ -82,7 +88,7 @@ func (transaction *Payment) ProcessDeliver(app interface{}) status.Code {
 	paymentBalance := chain.Get(payment.AccountKey())
 
 	// Update the database to the final set of entries
-	for _, entry := range transaction.PayTo {
+	for _, entry := range transaction.SendTo {
 		var balance *data.Balance
 		result := chain.Get(entry.AccountKey)
 		if result == nil {
@@ -140,10 +146,10 @@ func CheckPayTo(app interface{}, pay []SendTo) bool {
 	return true
 }
 
-func CheckValidatorList(app interface{}, payTo []SendTo) bool {
+func CheckValidatorList(app interface{}, SendTo []SendTo) bool {
 	validators := GetValidators(app)
 
-	for i, v := range payTo {
+	for i, v := range SendTo {
 		if !validators.IsValidAccountKey(v.AccountKey, i) {
 			return false
 		}

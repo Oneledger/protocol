@@ -15,7 +15,7 @@ import (
 )
 
 // Synchronize a swap between two users
-type Send_Abusolute struct {
+type Send_Absolute struct {
 	Base
 
 	Inputs  []SendInput  `json:"inputs"`
@@ -26,17 +26,17 @@ type Send_Abusolute struct {
 }
 
 func init() {
-	serial.Register(Send_Abusolute{})
+	serial.Register(Send_Absolute{})
 	serial.Register(SendInput{})
 	serial.Register(SendOutput{})
 }
 
-func (transaction *Send_Abusolute) TransactionType() Type {
+func (transaction *Send_Absolute) TransactionType() Type {
 	return transaction.Base.Type
 }
 
-func (transaction *Send_Abusolute) Validate() status.Code {
-	log.Debug("Validating Send_Abusolute Transaction")
+func (transaction *Send_Absolute) Validate() status.Code {
+	log.Debug("Validating Send_Absolute Transaction")
 
 	if transaction.Fee.LessThan(0) {
 		log.Debug("Missing Fee", "send", transaction)
@@ -51,8 +51,8 @@ func (transaction *Send_Abusolute) Validate() status.Code {
 	return status.SUCCESS
 }
 
-func (transaction *Send_Abusolute) ProcessCheck(app interface{}) status.Code {
-	log.Debug("Processing Send_Abusolute Transaction for CheckTx")
+func (transaction *Send_Absolute) ProcessCheck(app interface{}) status.Code {
+	log.Debug("Processing Send_Absolute Transaction for CheckTx")
 
 	if !CheckAmountsAbsolute(app, transaction.Inputs, transaction.Outputs) {
 		log.Debug("FAILED", "inputs", transaction.Inputs, "outputs", transaction.Outputs)
@@ -67,12 +67,12 @@ func (transaction *Send_Abusolute) ProcessCheck(app interface{}) status.Code {
 	return status.SUCCESS
 }
 
-func (transaction *Send_Abusolute) ShouldProcess(app interface{}) bool {
+func (transaction *Send_Absolute) ShouldProcess(app interface{}) bool {
 	return true
 }
 
-func (transaction *Send_Abusolute) ProcessDeliver(app interface{}) status.Code {
-	log.Debug("Processing Send_Abusolute Transaction for DeliverTx")
+func (transaction *Send_Absolute) ProcessDeliver(app interface{}) status.Code {
+	log.Debug("Processing Send_Absolute Transaction for DeliverTx")
 
 	if !CheckAmountsAbsolute(app, transaction.Inputs, transaction.Outputs) {
 		return status.INVALID
@@ -96,7 +96,7 @@ func (transaction *Send_Abusolute) ProcessDeliver(app interface{}) status.Code {
 	return status.SUCCESS
 }
 
-func (transaction *Send_Abusolute) Resolve(app interface{}) Commands {
+func (transaction *Send_Absolute) Resolve(app interface{}) Commands {
 	return []Command{}
 }
 
@@ -165,7 +165,7 @@ func CheckAmountsAbsolute(app interface{}, inputs []SendInput, outputs []SendOut
 		}
 
 		if !input.Amount.IsCurrency("OLT") {
-			log.Debug("FAILED: Send_Abusolute on Currency isn't implement yet")
+			log.Debug("FAILED: Send_Absolute on Currency isn't implement yet")
 			return false
 		}
 
@@ -187,7 +187,7 @@ func CheckAmountsAbsolute(app interface{}, inputs []SendInput, outputs []SendOut
 		}
 
 		if !output.Amount.IsCurrency("OLT") {
-			log.Debug("FAILED: Send_Abusolute on Currency isn't implement yet")
+			log.Debug("FAILED: Send_Absolute on Currency isn't implement yet")
 			return false
 		}
 

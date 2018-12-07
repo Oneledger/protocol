@@ -32,6 +32,12 @@ func init() {
 func (transaction *Send) Validate() status.Code {
 	log.Debug("Validating Send Transaction")
 
+	baseValidate := transaction.Base.Validate()
+
+	if baseValidate != status.SUCCESS {
+		return baseValidate
+	}
+
 	if !transaction.SendTo.IsValid() {
 		log.Debug("the send to is not valid", "sendTo", transaction.SendTo)
 		return status.MISSING_VALUE

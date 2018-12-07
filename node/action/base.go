@@ -83,6 +83,41 @@ func (b Base) GetOwner() id.AccountKey {
 	return b.Owner
 }
 
+func (b Base) Validate() status.Code {
+
+	if b.ChainId == "" {
+		log.Debug("Missing ChainId", "transaction", b)
+		return status.MISSING_DATA
+	}
+
+	if b.Owner == nil {
+		log.Debug("Missing Owner", "transaction", b)
+		return status.MISSING_DATA
+	}
+
+	// @todo so far Target can be nil, but it can change in future
+	if b.Target == nil {
+		log.Warn("Missing Target", "base.Target", b.Target)
+	}
+
+	if b.Signers == nil || len(b.Signers) == 0 {
+		log.Debug("Missing Signers", "transaction", b)
+		return status.MISSING_DATA
+	}
+
+	if b.Sequence < 0 {
+		log.Debug("Sequence can't be negative", "transaction", b)
+		return status.BAD_VALUE
+	}
+
+	if b.Delay < 0 {
+		log.Debug("Delay can't be negative", "transaction", b)
+		return status.BAD_VALUE
+	}
+
+	return status.SUCCESS
+}
+
 func (b Base) GetSigners() []id.PublicKey {
 	return b.Signers
 }

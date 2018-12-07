@@ -11,7 +11,7 @@ import (
 func CreatePaymentRequest(app Application, quotient data.Coin, height int64) action.Transaction {
 	chainId := app.Admin.Get(chainKey)
 	identities := app.Validators.Approved
-	payto := make([]action.SendTo, len(identities))
+	sendto := make([]action.SendTo, len(identities))
 
 	for i, identity := range identities {
 		if identity.Name == "" {
@@ -27,7 +27,7 @@ func CreatePaymentRequest(app Application, quotient data.Coin, height int64) act
 		//todo : here we use index of the approved identity in the
 		// Validators.approved to simplify the verification of validators in payment
 		// need to makes this more secure.
-		payto[i] = action.SendTo{
+		sendto[i] = action.SendTo{
 			AccountKey: party.AccountKey,
 			Amount:     quotient,
 		}
@@ -47,7 +47,7 @@ func CreatePaymentRequest(app Application, quotient data.Coin, height int64) act
 			Signers:  GetSigners(payment.AccountKey(), app),
 			Sequence: height, //global.Current.Sequence,
 		},
-		PayTo: payto,
+		SendTo: sendto,
 	}
 
 	return send
