@@ -38,7 +38,7 @@ func (transaction *ApplyValidator) Validate() status.Code {
 		return baseValidate
 	}
 
-	if transaction.AccountKey == nil ||  len(transaction.AccountKey) == 0{
+	if transaction.AccountKey == nil || len(transaction.AccountKey) == 0 {
 		log.Debug("Missing AccountKey", "transaction", transaction)
 		return status.MISSING_DATA
 	}
@@ -48,7 +48,7 @@ func (transaction *ApplyValidator) Validate() status.Code {
 		return status.MISSING_DATA
 	}
 
-	if transaction.TendermintAddress == "" {
+	if transaction.TendermintPubKey == "" {
 		log.Debug("Missing TendermintPubKey", "transaction", transaction)
 		return status.MISSING_DATA
 	}

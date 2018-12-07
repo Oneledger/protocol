@@ -57,7 +57,7 @@ func (transaction Register) Validate() status.Code {
 		return status.MISSING_DATA
 	}
 
-	if transaction.TendermintAddress == "" {
+	if transaction.TendermintPubKey == "" {
 		log.Debug("Missing TendermintPubKey", "transaction", transaction)
 		return status.MISSING_DATA
 	}
