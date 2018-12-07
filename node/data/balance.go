@@ -13,7 +13,7 @@ import (
 // Wrap the amount with owner information
 type Balance struct {
 	// Address id.Address
-	Amounts []Coin
+	Amounts map[int]Coin
 }
 
 func init() {
@@ -21,13 +21,7 @@ func init() {
 }
 
 func NewBalance() Balance {
-	amounts := make([]Coin, 0)
-
-	/*
-		for _, value := range Currencies {
-			amounts[value.Id] = NewCoinFromInt(0, value.Name)
-		}
-	*/
+	amounts := make(map[int]Coin, 0)
 	result := Balance{
 		Amounts: amounts,
 	}
@@ -55,10 +49,8 @@ func NewBalanceFromCoin(coin Coin) Balance {
 }
 
 func (b *Balance) FindCoin(currency Currency) *Coin {
-	for _, next := range b.Amounts {
-		if next.Currency == currency {
-			return &next
-		}
+	if coin, ok := b.Amounts[currency.Id]; ok {
+		return &coin
 	}
 	return nil
 }
@@ -67,7 +59,7 @@ func (b *Balance) FindCoin(currency Currency) *Coin {
 func (b *Balance) AddCoin(coin Coin) {
 	result := b.FindCoin(coin.Currency)
 	if result == nil {
-		b.Amounts = append(b.Amounts, coin)
+		b.Amounts[coin.Currency.Id] = coin
 		return
 	}
 	result.Plus(coin)
@@ -77,9 +69,9 @@ func (b *Balance) AddCoin(coin Coin) {
 func (b *Balance) MinusCoin(coin Coin) {
 	result := b.FindCoin(coin.Currency)
 	if result == nil {
-		// TODO: This results in a negative coin
+		// TODO: This results in a negative coin, which is what was asked for...
 		base := NewCoinFromInt(0, coin.Currency.Name)
-		b.Amounts = append(b.Amounts, base.Minus(coin))
+		b.Amounts[coin.Currency.Id] = base.Minus(coin)
 		return
 	}
 	result.Minus(coin)
@@ -95,7 +87,7 @@ func (b *Balance) FromCoin(coin Coin) {
 func (b *Balance) GetCoin(currency Currency) Coin {
 	result := b.FindCoin(currency)
 	if result == nil {
-		// Missing coins are actually zero value coins.
+		// NOTE: Missing coins are actually zero value coins.
 		return NewCoinFromInt(0, currency.Name)
 	}
 	return b.Amounts[currency.Id]
@@ -106,7 +98,7 @@ func (b *Balance) GetAmountByName(name string) Coin {
 	currency := NewCurrency(name)
 	result := b.FindCoin(currency)
 	if result == nil {
-		// Missing coins are actually zero value coins.
+		// NOTE: Missing coins are actually zero value coins.
 		return NewCoinFromInt(0, name)
 	}
 	return b.Amounts[Currencies[name].Id]
