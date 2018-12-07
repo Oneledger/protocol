@@ -105,8 +105,7 @@ func (convert *Convert) GetHash(value string) []byte {
 
 func (convert *Convert) GetCoin(amountStr string, currencyStr string) data.Coin {
 	currency := convert.GetCurrency(currencyStr)
-	amountInt64 := convert.GetInt64(amountStr)
-	return data.NewCoin(amountInt64, currency)
+	return data.NewCoinFromString(amountStr, currency)
 }
 
 func (convert *Convert) GetCurrency(value string) string {

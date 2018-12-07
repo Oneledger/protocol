@@ -81,7 +81,7 @@ func (transaction *Send) ProcessDeliver(app interface{}) status.Code {
 			result = &tmp
 		}
 		balance = result
-		balance.SetAmmount(entry.Amount)
+		balance.SetAmount(entry.Amount)
 
 		balances.Set(entry.AccountKey, *balance)
 	}

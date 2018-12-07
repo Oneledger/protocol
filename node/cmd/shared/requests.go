@@ -7,9 +7,10 @@
 package shared
 
 import (
+	"os"
+
 	"github.com/Oneledger/protocol/node/comm"
 	"github.com/Oneledger/protocol/node/serial"
-	"os"
 
 	"github.com/Oneledger/protocol/node/action"
 	"github.com/Oneledger/protocol/node/app"
@@ -219,7 +220,7 @@ func CreateMintRequest(args *SendArguments) []byte {
 	}
 
 	if zeroBalance.LessThanEqual(0) {
-		log.Warn("No more money left...")
+		log.Warn("No more money left...", "balance", zeroBalance)
 		return nil
 	}
 

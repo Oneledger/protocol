@@ -1,7 +1,6 @@
 package serial
 
 import (
-	"math/big"
 	"reflect"
 	"runtime/debug"
 	"strconv"
@@ -349,10 +348,13 @@ func ConvertNumber(fieldType reflect.Type, value reflect.Value) reflect.Value {
 	*/
 
 	// TODO: shouldn't be manaually creating big ints
-	if fieldType.String() == "*big.Int" {
-		converted := big.NewInt(int64(value.Float()))
-		return reflect.ValueOf(converted)
-	}
+	/*
+		if fieldType.String() == "*big.Int" {
+			log.Debug("Converting pointer to big.Int", "value", value, "fieldType", fieldType)
+			converted := big.NewInt(int64(value.Float()))
+			return reflect.ValueOf(converted)
+		}
+	*/
 
 	switch fieldType.Kind() {
 	case reflect.Int:

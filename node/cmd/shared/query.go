@@ -7,6 +7,7 @@ package shared
 
 import (
 	"encoding/hex"
+
 	"github.com/Oneledger/protocol/node/app"
 
 	"github.com/Oneledger/protocol/node/convert"
@@ -82,9 +83,7 @@ func GetBalance(accountKey id.AccountKey) *data.Balance {
 		return nil
 	}
 	balance := response.(*data.Balance)
-
 	return balance
-
 }
 
 func GetTxByHash(hash []byte) *ctypes.ResultTx {

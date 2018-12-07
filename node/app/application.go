@@ -7,6 +7,8 @@ package app
 
 import (
 	"bytes"
+	"time"
+
 	"github.com/Oneledger/protocol/node/abci"
 	"github.com/Oneledger/protocol/node/action"
 	"github.com/Oneledger/protocol/node/data"
@@ -17,8 +19,6 @@ import (
 	"github.com/Oneledger/protocol/node/status"
 	"github.com/tendermint/tendermint/abci/types"
 	"github.com/tendermint/tendermint/libs/common"
-	"math/big"
-	"time"
 )
 
 var _ types.Application = Application{}
@@ -87,6 +87,8 @@ func init() {
 
 // Initial the state of the application from persistent data
 func (app Application) Initialize() {
+
+	// This config parameter is driven from the database, not the file or cli
 	raw := app.Admin.Get(data.DatabaseKey("NodeAccountName"))
 	if raw != nil {
 		params := raw.(AdminParameters)
@@ -94,6 +96,7 @@ func (app Application) Initialize() {
 	} else {
 		log.Debug("NodeAccountName not currently set")
 	}
+
 	app.StartSDK()
 }
 
@@ -142,16 +145,20 @@ func (app Application) SetupState(stateBytes []byte) {
 
 	CreateAccount(app, state, publicKey, privateKey)
 
-	privateKey, publicKey = id.GenerateKeys([]byte(global.Current.PaymentAccount), false) // TODO: make a user put a real key actually
+	// TODO: Make a user put in a real key
+	privateKey, publicKey = id.GenerateKeys([]byte(global.Current.PaymentAccount), false)
+
 	CreateAccount(app, &BasicState{global.Current.PaymentAccount, []State{State{"0", "OLT"}}}, publicKey, privateKey)
 }
+
+// TODO: DEBUG
+var ZeroAccountKey id.AccountKey
 
 func CreateAccount(app Application, state *BasicState, publicKey id.PublicKeyED25519, privateKey id.PrivateKeyED25519) {
 
 	// TODO: This should probably only occur on the Admin node, for other nodes how do I know the key?
 	// Register the identity and account first
 	AddAccount(&app, state.Account, data.ONELEDGER, publicKey, privateKey, false)
-	//RegisterLocally(&app, stateAccount, "OneLedger", data.ONELEDGER, publicKey, privateKey)
 
 	account, ok := app.Accounts.FindName(state.Account)
 
@@ -163,28 +170,27 @@ func CreateAccount(app Application, state *BasicState, publicKey id.PublicKeyED2
 	balance := NewBalanceFromStates(state.States)
 
 	app.Balances.Set(account.AccountKey(), balance)
+	if account.Name() == "Zero" {
+		ZeroAccountKey = account.AccountKey()
+	}
 
 	// TODO: Until a block is commited, this data is not persistent
 	//app.Balances.Commit()
 
-	log.Info("Genesis State Balances database", "balance", balance)
+	log.Info("Genesis State Balances database", "name", state.Account, "balance", balance)
 }
 
 func NewBalanceFromStates(states []State) data.Balance {
 	var balance data.Balance
 	for i, v := range states {
 		if i == 0 {
-			value := big.NewInt(0)
-			value.SetString(v.Amount, 10)
-			balance = data.NewBalanceFromString(value.Int64(), v.Coin)
+			balance = data.NewBalanceFromString(v.Amount, v.Coin)
 		} else {
-			value := big.NewInt(0)
-			value.SetString(v.Amount, 10)
-			coin := data.NewCoin(value.Int64(), v.Coin)
-			balance.AddAmmount(coin)
+			coin := data.NewCoinFromString(v.Amount, v.Coin)
+			balance.AddAmount(coin)
 		}
 	}
-
+	log.Dump("##### NEW STATE BALANCE #####", balance)
 	return balance
 }
 
@@ -383,7 +389,7 @@ func (app Application) MakePayment(req RequestBeginBlock) {
 			numTrans := height - paymentRecordBlockHeight
 			if numTrans > 10 {
 				//store payment record in database (O OLT, -1) because delete doesn't work
-				amount := data.NewCoin(0, "OLT")
+				amount := data.NewCoinFromInt(0, "OLT")
 				SetPaymentRecord(amount, -1, app)
 				paymentRecordBlockHeight = -1
 			}
@@ -394,7 +400,7 @@ func (app Application) MakePayment(req RequestBeginBlock) {
 		goodValidatorIdentities := app.Validators.FindGood(app)
 		selectedValidatorIdentity := app.Validators.FindSelectedValidator(app, req.Header.LastBlockHash)
 
-		numberValidators := data.NewCoin(int64(len(goodValidatorIdentities)), "OLT")
+		numberValidators := data.NewCoinFromInt(int64(len(goodValidatorIdentities)), "OLT")
 		quotient := paymentBalance.GetAmountByName("OLT").Quotient(numberValidators)
 
 		if int(quotient.Amount.Int64()) > 0 {
@@ -489,7 +495,7 @@ func (app Application) EndBlock(req RequestEndBlock) ResponseEndBlock {
 
 	result := ResponseEndBlock{
 		ValidatorUpdates: validatorUpdates,
-		Tags: []common.KVPair(nil),
+		Tags:             []common.KVPair(nil),
 	}
 
 	log.Debug("ABCI: EndBlock Result", "result", result)
@@ -502,6 +508,7 @@ func (app Application) Commit() ResponseCommit {
 
 	// Commit any pending changes.
 	hash, version := app.Balances.Commit()
+	log.Dump("ZERO IS NOW", app.Balances.Get(ZeroAccountKey))
 
 	log.Debug("-- Committed New Block", "hash", hash, "version", version)
 

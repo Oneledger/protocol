@@ -27,7 +27,7 @@ func CreatePaymentRequest(app Application, identities []id.Identity, quotient da
 
 		partyBalance := app.Balances.Get(party.AccountKey)
 		if partyBalance == nil {
-			interimBalance := data.NewBalanceFromString(0, "OLT")
+			interimBalance := data.NewBalanceFromInt(0, "OLT")
 			partyBalance = &interimBalance
 		}
 
@@ -48,7 +48,7 @@ func CreatePaymentRequest(app Application, identities []id.Identity, quotient da
 	paymentBalance := app.Balances.Get(payment.AccountKey())
 	log.Debug("CreatePaymentRequest", "paymentBalance", paymentBalance)
 
-	numberValidators := data.NewCoin(int64(len(identities)), "OLT")
+	numberValidators := data.NewCoinFromInt(int64(len(identities)), "OLT")
 	totalPayment := quotient.Multiply(numberValidators)
 
 	inputs = append(inputs,
@@ -68,8 +68,8 @@ func CreatePaymentRequest(app Application, identities []id.Identity, quotient da
 		},
 		Inputs:  inputs,
 		Outputs: outputs,
-		Fee:     data.NewCoin(0, "OLT"),
-		Gas:     data.NewCoin(0, "OLT"),
+		Fee:     data.NewCoinFromInt(0, "OLT"),
+		Gas:     data.NewCoinFromInt(0, "OLT"),
 	}
 
 	return send

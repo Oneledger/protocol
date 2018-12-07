@@ -85,7 +85,7 @@ func CheckBalance(app interface{}, accountKey id.AccountKey, amount data.Coin) b
 	if balance == nil {
 		// New accounts don't have a balance until the first transaction
 		log.Debug("New Balance", "key", accountKey, "amount", amount, "balance", balance)
-		interim := data.NewBalanceFromString(0, amount.Currency.Name)
+		interim := data.NewBalanceFromInt(0, amount.Currency.Name)
 		balance = &interim
 		if !balance.GetAmountByName(amount.Currency.Name).Equals(amount) {
 			return false
@@ -108,7 +108,7 @@ func GetHeight(app interface{}) int64 {
 }
 
 func CheckAmounts(app interface{}, inputs []SendInput, outputs []SendOutput) bool {
-	total := data.NewCoin(0, "OLT")
+	total := data.NewCoinFromInt(0, "OLT")
 	for _, input := range inputs {
 		if input.Amount.LessThan(0) {
 			log.Debug("FAILED: Less Than 0", "input", input)
@@ -148,7 +148,7 @@ func CheckAmounts(app interface{}, inputs []SendInput, outputs []SendOutput) boo
 		}
 		total.Minus(output.Amount)
 	}
-	if !total.Equals(data.NewCoin(0, "OLT")) {
+	if !total.Equals(data.NewCoinFromInt(0, "OLT")) {
 		log.Debug("FAILED: Doesn't add up", "inputs", inputs, "outputs", outputs)
 		return false
 	}

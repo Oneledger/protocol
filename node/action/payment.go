@@ -89,7 +89,7 @@ func (transaction *Payment) ProcessDeliver(app interface{}) status.Code {
 			result = &tmp
 		}
 		balance = result
-		balance.SetAmmount(entry.Amount)
+		balance.SetAmount(entry.Amount)
 
 		chain.Set(entry.AccountKey, *balance)
 	}
@@ -99,7 +99,7 @@ func (transaction *Payment) ProcessDeliver(app interface{}) status.Code {
 	//store payment record in database (O OLT, -1) because delete doesn't work
 	var paymentRecordKey data.DatabaseKey = data.DatabaseKey("PaymentRecord")
 	var paymentRecord PaymentRecord
-	paymentRecord.Amount = data.NewCoin(0, "OLT")
+	paymentRecord.Amount = data.NewCoinFromInt(0, "OLT")
 	paymentRecord.BlockHeight = -1
 
 	session := admin.Begin()
