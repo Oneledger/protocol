@@ -3,17 +3,17 @@ package app
 import (
 	"github.com/Oneledger/protocol/node/action"
 	"github.com/Oneledger/protocol/node/data"
-	"github.com/Oneledger/protocol/node/id"
+	"github.com/Oneledger/protocol/node/global"
 	"github.com/Oneledger/protocol/node/log"
 	"github.com/Oneledger/protocol/node/status"
 )
 
-func CreatePaymentRequest(app Application, identities []id.Identity, quotient data.Coin, height int64) action.Transaction {
+func CreatePaymentRequest(app Application, quotient data.Coin, height int64) action.Transaction {
 	chainId := app.Admin.Get(chainKey)
-	inputs := make([]action.SendInput, 0)
-	outputs := make([]action.SendOutput, 0)
+	identities := app.Validators.Approved
+	sendto := make([]action.SendTo, len(identities))
 
-	for _, identity := range identities {
+	for i, identity := range identities {
 		if identity.Name == "" {
 			log.Error("Missing Party argument")
 			return nil
@@ -24,38 +24,19 @@ func CreatePaymentRequest(app Application, identities []id.Identity, quotient da
 			log.Debug("CreatePaymentRequest", "PartyMissingData", err)
 			return nil
 		}
-
-		partyBalance := app.Balances.Get(party.AccountKey)
-		if partyBalance == nil {
-			interimBalance := data.NewBalanceFromString(0, "OLT")
-			partyBalance = &interimBalance
+		//todo : here we use index of the approved identity in the
+		// Validators.approved to simplify the verification of validators in payment
+		// need to makes this more secure.
+		sendto[i] = action.SendTo{
+			AccountKey: party.AccountKey,
+			Amount:     quotient,
 		}
-
-		//fee := conv.GetCoin(args.Fee, args.Currency)
-		//gas := conv.GetCoin(args.Gas, args.Currency)
-
-		inputs = append(inputs,
-			action.NewSendInput(party.AccountKey, partyBalance.GetAmountByName("OLT")))
-
-		outputs = append(outputs,
-			action.NewSendOutput(party.AccountKey, partyBalance.GetAmountByName("OLT").Plus(quotient)))
 	}
 
-	payment, err := app.Accounts.FindName("Payment")
+	payment, err := app.Accounts.FindName(global.Current.PaymentAccount)
 	if err != status.SUCCESS {
 		log.Fatal("Payment Account not found")
 	}
-	paymentBalance := app.Balances.Get(payment.AccountKey())
-	log.Debug("CreatePaymentRequest", "paymentBalance", paymentBalance)
-
-	numberValidators := data.NewCoin(int64(len(identities)), "OLT")
-	totalPayment := quotient.Multiply(numberValidators)
-
-	inputs = append(inputs,
-		action.NewSendInput(payment.AccountKey(), paymentBalance.GetAmountByName("OLT")))
-
-	outputs = append(outputs,
-		action.NewSendOutput(payment.AccountKey(), paymentBalance.GetAmountByName("OLT").Minus(totalPayment)))
 
 	// Create base transaction
 	send := &action.Payment{
@@ -66,10 +47,7 @@ func CreatePaymentRequest(app Application, identities []id.Identity, quotient da
 			Signers:  GetSigners(payment.AccountKey(), app),
 			Sequence: height, //global.Current.Sequence,
 		},
-		Inputs:  inputs,
-		Outputs: outputs,
-		Fee:     data.NewCoin(0, "OLT"),
-		Gas:     data.NewCoin(0, "OLT"),
+		SendTo: sendto,
 	}
 
 	return send

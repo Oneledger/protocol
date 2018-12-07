@@ -7,16 +7,16 @@
 package shared
 
 import (
-	"github.com/Oneledger/protocol/node/version"
-	"os"
-	"regexp"
-	"strconv"
 	"github.com/Oneledger/protocol/node/action"
 	"github.com/Oneledger/protocol/node/app"
 	"github.com/Oneledger/protocol/node/comm"
 	"github.com/Oneledger/protocol/node/convert"
 	"github.com/Oneledger/protocol/node/log"
 	"github.com/Oneledger/protocol/node/serial"
+	"github.com/Oneledger/protocol/node/version"
+	"os"
+	"regexp"
+	"strconv"
 )
 
 // Prepare a transaction to be issued.
