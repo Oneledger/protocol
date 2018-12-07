@@ -130,6 +130,14 @@ type ExecuteArguments struct {
 	Fee      string
 }
 
+type ContractArguments struct {
+    Address string
+    CallString string
+    CallFrom string
+    SourceCode string
+    Value int
+}
+
 // CreateRequest builds and signs the transaction based on the arguments
 func CreateSendRequest(args *SendArguments) []byte {
 	conv := convert.NewConvert()
