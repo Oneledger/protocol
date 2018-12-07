@@ -113,17 +113,18 @@ func HandleApplyValidatorQuery(application Application, arguments map[string]str
 	amount := args.(*comm.ApplyValidatorArguments).Amount
 	idName := args.(*comm.ApplyValidatorArguments).Id
 
-	identities := IdentityInfo(application, idName)
-	identity := identities.([]id.Identity)[0]
+	identity, ok := application.Identities.FindName(idName)
+	if ok != status.SUCCESS {
+		log.Error("The identity is not found", "id", idName)
+		return result
+	}
 
 	if amount == "" {
 		log.Error("Missing an amount argument")
 		return result
 	}
 
-	balance := Balance(application, identity.AccountKey).(*data.Balance).GetAmountByName("VT")
-
-	log.Debug("HandleApplyValidatorQuery", "balance", balance)
+	balance := application.Balances.Get(data.DatabaseKey(identity.AccountKey))
 
 	if &balance == nil {
 		log.Error("Missing Balance")
@@ -131,6 +132,12 @@ func HandleApplyValidatorQuery(application Application, arguments map[string]str
 	}
 
 	stake := conv.GetCoin(amount, "VT")
+
+	if balance.GetAmountByName("VT").LessThan(stake.Amount.Int64()) {
+		log.Error("Validator token is not enough")
+		return result
+	}
+
 	sequence := SequenceNumber(application, identity.AccountKey.Bytes())
 
 	validator := &action.ApplyValidator{
@@ -143,6 +150,8 @@ func HandleApplyValidatorQuery(application Application, arguments map[string]str
 		},
 
 		AccountKey:        identity.AccountKey,
+		Identity:          identity.Name,
+		NodeName:          global.Current.NodeName,
 		TendermintAddress: identity.TendermintAddress,
 		TendermintPubKey:  identity.TendermintPubKey,
 		Stake:             stake,
@@ -252,8 +261,8 @@ func HandleCreateSendRequest(application Application, arguments map[string]strin
 
 	amount := conv.GetCoin(args.Amount, args.Currency)
 
-	fee := conv.GetCoin(args.Fee, args.Currency)
-	gas := conv.GetCoin(args.Gas, args.Currency)
+	fee := conv.GetCoin(args.Fee, "OLT")
+	gas := conv.GetCoin(args.Gas, "OLT")
 
 	sendTo := action.SendTo{
 		AccountKey: counterParty,
@@ -337,8 +346,8 @@ func HandleCreateMintRequest(application Application, arguments map[string]strin
 		Amount:     amount,
 	}
 
-	gas := conv.GetCoin(args.Gas, args.Currency)
-	fee := conv.GetCoin(args.Fee, args.Currency)
+	gas := conv.GetCoin(args.Gas, "OLT")
+	fee := conv.GetCoin(args.Fee, "OLT")
 
 	if conv.HasErrors() {
 		log.Error("Conversion error", "error", conv.GetErrors())
