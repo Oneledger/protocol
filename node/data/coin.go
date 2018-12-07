@@ -6,7 +6,9 @@
 package data
 
 import (
+	"encoding/hex"
 	"fmt"
+	"golang.org/x/crypto/ripemd160"
 	"math/big"
 
 	"github.com/Oneledger/protocol/node/log"
@@ -50,6 +52,22 @@ type Currency struct {
 
 	// TODO: Is this the specific instance of the chain?
 	Id int `json:"id"`
+}
+
+func (c Currency) Key() string {
+	hasher := ripemd160.New()
+
+	buffer, err := serial.Serialize(c, serial.JSON)
+	if err != nil {
+		log.Fatal("hash serialize failed", "err", err)
+	}
+	_, err = hasher.Write(buffer)
+	if err != nil {
+		log.Fatal("hasher failed", "err", err)
+	}
+	buffer = hasher.Sum(nil)
+
+	return hex.EncodeToString(buffer)
 }
 
 func NewCurrency(currency string) Currency {

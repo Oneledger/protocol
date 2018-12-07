@@ -34,9 +34,47 @@ func init() {
 func (transaction *ExternalSend) Validate() status.Code {
 	log.Debug("Validating ExternalSend Transaction")
 
-	// TODO: Make sure all of the parameters are there
-	// TODO: Check all signatures and keys
-	// TODO: Vet that the sender has the values
+	baseValidate := transaction.Base.Validate()
+
+	if baseValidate != status.SUCCESS {
+		return baseValidate
+	}
+
+	if transaction.Fee.LessThan(0) {
+		log.Debug("Invalid Fee", "transaction", transaction)
+		return status.BAD_VALUE
+	}
+
+	if transaction.Gas.LessThan(0) {
+		log.Debug("Invalid Gas", "transaction", transaction)
+		return status.BAD_VALUE
+	}
+
+	if transaction.ExGas.LessThan(0) {
+		log.Debug("Invalid ExGas", "transaction", transaction)
+		return status.BAD_VALUE
+	}
+
+	if transaction.ExFee.LessThan(0) {
+		log.Debug("Invalid ExFee", "transaction", transaction)
+		return status.BAD_VALUE
+	}
+
+	if transaction.Sender == "" {
+		log.Debug("Missing Sender", "transaction", transaction)
+		return status.MISSING_DATA
+	}
+
+	if transaction.Receiver == "" {
+		log.Debug("Missing Receiver", "transaction", transaction)
+		return status.MISSING_DATA
+	}
+
+	if transaction.Amount.LessThan(0) {
+		log.Debug("Invalid Amount", "transaction", transaction)
+		return status.BAD_VALUE
+	}
+
 	return status.SUCCESS
 }
 

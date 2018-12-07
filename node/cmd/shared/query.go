@@ -73,7 +73,7 @@ func GetBalance(accountKey id.AccountKey) *data.Balance {
 	if response == nil {
 		// New Accounts don't have a balance yet.
 		result := data.NewBalance()
-		return &result
+		return result
 	}
 	if serial.GetBaseType(response).Kind() == reflect.String {
 		log.Error("Error:", "response", response)

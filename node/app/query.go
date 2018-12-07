@@ -239,7 +239,6 @@ func HandleCreateSendRequest(application Application, arguments map[string]strin
 	// TODO: Can't convert identities to accounts, this way!
 	party := AccountKey(application, args.Party)
 	counterParty := AccountKey(application, args.CounterParty)
-	payment := AccountKey(application, "Payment")
 
 	if party == nil || counterParty == nil {
 		log.Fatal("System doesn't recognize the parties", "args", args,
@@ -253,30 +252,13 @@ func HandleCreateSendRequest(application Application, arguments map[string]strin
 
 	amount := conv.GetCoin(args.Amount, args.Currency)
 
-	partyBalance := Balance(application, party).(*data.Balance).GetAmountByName(args.Currency)
-	counterPartyBalance := Balance(application, counterParty).(*data.Balance).GetAmountByName(args.Currency)
-	paymentBalance := Balance(application, payment).(*data.Balance).GetAmountByName(args.Currency)
-
-	if &partyBalance == nil || &counterPartyBalance == nil {
-		log.Error("Missing Balance", "party", partyBalance, "counterParty", counterPartyBalance)
-		return result
-	}
-
 	fee := conv.GetCoin(args.Fee, args.Currency)
 	gas := conv.GetCoin(args.Gas, args.Currency)
 
-	inputs := make([]action.SendInput, 0)
-	inputs = append(inputs,
-		action.NewSendInput(party, partyBalance),
-		action.NewSendInput(counterParty, counterPartyBalance),
-		action.NewSendInput(payment, paymentBalance))
-
-	// Build up the outputs
-	outputs := make([]action.SendOutput, 0)
-	outputs = append(outputs,
-		action.NewSendOutput(party, partyBalance.Minus(amount).Minus(fee)),
-		action.NewSendOutput(counterParty, counterPartyBalance.Plus(amount)),
-		action.NewSendOutput(payment, paymentBalance.Plus(fee)))
+	sendTo := action.SendTo{
+		AccountKey: counterParty,
+		Amount:     amount,
+	}
 
 	if conv.HasErrors() {
 		log.Error("Conversion error", "error", conv.GetErrors())
@@ -293,10 +275,9 @@ func HandleCreateSendRequest(application Application, arguments map[string]strin
 			Signers:  GetSigners(party, application),
 			Sequence: sequence.Sequence,
 		},
-		Inputs:  inputs,
-		Outputs: outputs,
-		Fee:     fee,
-		Gas:     gas,
+		SendTo: sendTo,
+		Fee:    fee,
+		Gas:    gas,
 	}
 
 	signed := SignTransaction(action.Transaction(send), application)
@@ -339,11 +320,10 @@ func HandleCreateMintRequest(application Application, arguments map[string]strin
 	amount := conv.GetCoin(args.Amount, args.Currency)
 
 	log.Debug("Getting TestMint Account Balances")
-	partyBalance := Balance(application, party).(*data.Balance).GetAmountByName(args.Currency)
 	zeroBalance := Balance(application, zero).(*data.Balance).GetAmountByName(args.Currency)
 
-	if &zeroBalance == nil || &partyBalance == nil {
-		log.Warn("Missing Balances", "party", party, "zero", zero)
+	if &zeroBalance == nil {
+		log.Warn("Missing Balances", "zero", zero)
 		return result
 	}
 
@@ -352,15 +332,10 @@ func HandleCreateMintRequest(application Application, arguments map[string]strin
 		return result
 	}
 
-	inputs := make([]action.SendInput, 0)
-	inputs = append(inputs,
-		action.NewSendInput(zero, zeroBalance),
-		action.NewSendInput(party, partyBalance))
-
-	outputs := make([]action.SendOutput, 0)
-	outputs = append(outputs,
-		action.NewSendOutput(zero, zeroBalance.Minus(amount)),
-		action.NewSendOutput(party, partyBalance.Plus(amount)))
+	sendTo := action.SendTo{
+		AccountKey: party,
+		Amount:     amount,
+	}
 
 	gas := conv.GetCoin(args.Gas, args.Currency)
 	fee := conv.GetCoin(args.Fee, args.Currency)
@@ -380,10 +355,9 @@ func HandleCreateMintRequest(application Application, arguments map[string]strin
 			Owner:    zero,
 			Sequence: sequence.Sequence,
 		},
-		Inputs:  inputs,
-		Outputs: outputs,
-		Fee:     fee,
-		Gas:     gas,
+		SendTo: sendTo,
+		Fee:    fee,
+		Gas:    gas,
 	}
 
 	signed := SignTransaction(action.Transaction(send), application)
@@ -443,7 +417,7 @@ func HandleSwapRequest(application Application, arguments map[string]string) int
 		Nonce:        args.Nonce,
 	}
 
-	sequence :=  SequenceNumber(application, partyKey.Bytes())
+	sequence := SequenceNumber(application, partyKey.Bytes())
 
 	swap := &action.Swap{
 		Base: action.Base{
@@ -682,7 +656,7 @@ func HandleCurrencyAddressQuery(app Application, arguments map[string]string) in
 	return identity.Chain[chain]
 }
 
-func CurrencyAddress(application Application, currency string, identityName string) []byte{
+func CurrencyAddress(application Application, currency string, identityName string) []byte {
 	conv := convert.NewConvert()
 
 	chain := conv.GetChainFromCurrency(currency)

@@ -68,3 +68,16 @@ func IsByzantine(validator types.Validator, badValidators []types.Evidence) (res
 	}
 	return false
 }
+
+func (list Validators) IsValidAccountKey(key AccountKey, index int) bool {
+	if index >= len(list.Approved) || index < 0 {
+		return false
+	}
+
+	id := list.Approved[index]
+	if bytes.Equal(id.AccountKey.Bytes(), key.Bytes()) {
+		return true
+	}
+
+	return false
+}

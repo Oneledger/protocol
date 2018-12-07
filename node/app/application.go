@@ -176,21 +176,14 @@ func CreateAccount(app Application, state *BasicState, publicKey id.PublicKeyED2
 }
 
 func NewBalanceFromStates(states []State) data.Balance {
-	var balance data.Balance
-	for i, v := range states {
-		if i == 0 {
-			value := big.NewInt(0)
-			value.SetString(v.Amount, 10)
-			balance = data.NewBalanceFromString(value.Int64(), v.Coin)
-
-		} else {
-			value := big.NewInt(0)
-			value.SetString(v.Amount, 10)
-			coin := data.NewCoin(value.Int64(), v.Coin)
-			balance.AddAmmount(coin)
-		}
+	balance := data.NewBalance()
+	for _, v := range states {
+		value := big.NewInt(0)
+		value.SetString(v.Amount, 10)
+		coin := data.NewCoin(value.Int64(), v.Coin)
+		balance.AddAmount(coin)
 	}
-	return balance
+	return *balance
 }
 
 // InitChain is called when a new chain is getting created
@@ -363,17 +356,16 @@ func (app Application) BeginBlock(req RequestBeginBlock) ResponseBeginBlock {
 	return result
 }
 
-// EndBlock is called at the end of all of the transactions
+// make payment to validators
 func (app *Application) MakePayment(req RequestBeginBlock) {
-	account, err := app.Accounts.FindName("Payment")
+	account, err := app.Accounts.FindName(global.Current.PaymentAccount)
 	if err != status.SUCCESS {
 		log.Fatal("ABCI: BeginBlock Fatal Status", "status", err)
 	}
 
 	paymentBalance := app.Balances.Get(account.AccountKey())
 	if paymentBalance == nil {
-		interimBalance := data.NewBalance()
-		paymentBalance = &interimBalance
+		paymentBalance = data.NewBalance()
 	}
 
 	paymentRecordBlockHeight := int64(-1)
@@ -408,7 +400,7 @@ func (app *Application) MakePayment(req RequestBeginBlock) {
 			app.SetPaymentRecord(totalPayment, height)
 
 			if global.Current.NodeName == selectedValidatorIdentity.NodeName {
-				result := CreatePaymentRequest(*app, approvedValidatorIdentities, quotient, height)
+				result := CreatePaymentRequest(*app, quotient, height)
 				if result != nil {
 					// TODO: check this later
 					action.DelayedTransaction(result, 0*time.Second)
@@ -494,7 +486,7 @@ func (app Application) EndBlock(req RequestEndBlock) ResponseEndBlock {
 
 	result := ResponseEndBlock{
 		ValidatorUpdates: validatorUpdates,
-		Tags: []common.KVPair(nil),
+		Tags:             []common.KVPair(nil),
 	}
 
 	log.Debug("ABCI: EndBlock Result", "result", result)
