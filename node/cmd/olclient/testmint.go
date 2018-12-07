@@ -18,7 +18,7 @@ var mintCmd = &cobra.Command{
 	Run:   IssueMintRequest,
 }
 
-var mintargs *shared.SendArguments = &shared.SendArguments{}
+var mintargs *comm.SendArguments = &comm.SendArguments{}
 
 func init() {
 	RootCmd.AddCommand(mintCmd)
