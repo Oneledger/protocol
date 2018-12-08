@@ -13,29 +13,15 @@ import (
 	"strconv"
 
 	"github.com/Oneledger/protocol/node/data"
-	"github.com/Oneledger/protocol/node/id"
 	"github.com/Oneledger/protocol/node/log"
 	"github.com/Oneledger/protocol/node/serial"
 )
 
-// inputs into a send transaction (similar to Bitcoin)
-type SendInput struct {
-	AccountKey id.AccountKey `json:"account_key"`
-	PubKey     PublicKey     `json:"pub_key"`
-	Signature  id.Signature  `json:"signature"`
-
-	Amount data.Coin `json:"coin"`
-
-	// TODO: Is sequence needed per input?
-	Sequence int `json:"sequence"`
-}
-
 func init() {
-	serial.Register(SendInput{})
-	serial.Register(SendOutput{})
 	serial.Register(Event{})
 }
 
+/*
 func NewSendInput(accountKey id.AccountKey, amount data.Coin) SendInput {
 
 	if bytes.Equal(accountKey, []byte("")) {
@@ -53,13 +39,17 @@ func NewSendInput(accountKey id.AccountKey, amount data.Coin) SendInput {
 		Amount:     amount,
 	}
 }
+*/
 
+/*
 // outputs for a send transaction (similar to Bitcoin)
 type SendOutput struct {
 	AccountKey id.AccountKey `json:"account_key"`
 	Amount     data.Coin     `json:"coin"`
 }
+*/
 
+/*
 func NewSendOutput(accountKey id.AccountKey, amount data.Coin) SendOutput {
 
 	if bytes.Equal(accountKey, []byte("")) {
@@ -77,7 +67,9 @@ func NewSendOutput(accountKey id.AccountKey, amount data.Coin) SendOutput {
 		Amount:     amount,
 	}
 }
+*/
 
+/*
 func CheckBalance(app interface{}, accountKey id.AccountKey, amount data.Coin) bool {
 	balances := GetBalances(app)
 
@@ -86,7 +78,7 @@ func CheckBalance(app interface{}, accountKey id.AccountKey, amount data.Coin) b
 		// New accounts don't have a balance until the first transaction
 		log.Debug("New Balance", "key", accountKey, "amount", amount, "balance", balance)
 		interim := data.NewBalanceFromInt(0, amount.Currency.Name)
-		balance = &interim
+		balance = interim
 		if !balance.GetAmountByName(amount.Currency.Name).Equals(amount) {
 			return false
 		}
@@ -99,6 +91,7 @@ func CheckBalance(app interface{}, accountKey id.AccountKey, amount data.Coin) b
 	}
 	return true
 }
+*/
 
 func GetHeight(app interface{}) int64 {
 	balances := GetBalances(app)

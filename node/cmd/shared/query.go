@@ -8,8 +8,6 @@ package shared
 import (
 	"encoding/hex"
 
-	"github.com/Oneledger/protocol/node/app"
-
 	"github.com/Oneledger/protocol/node/convert"
 	ctypes "github.com/tendermint/tendermint/rpc/core/types"
 
@@ -76,7 +74,7 @@ func GetBalance(accountKey id.AccountKey) *data.Balance {
 	if response == nil {
 		// New Accounts don't have a balance yet.
 		result := data.NewBalance()
-		return &result
+		return result
 	}
 	if serial.GetBaseType(response).Kind() == reflect.String {
 		log.Error("Error:", "response", response)
@@ -124,6 +122,6 @@ func GetSequenceNumber(accountKey id.AccountKey) int64 {
 		return -1
 	}
 
-	result := response.(app.SequenceRecord)
+	result := response.(id.SequenceRecord)
 	return result.Sequence
 }

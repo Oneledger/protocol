@@ -32,6 +32,27 @@ func init() {
 func (transaction *ApplyValidator) Validate() status.Code {
 	log.Debug("Validating ApplyValidator Transaction")
 
+	baseValidate := transaction.Base.Validate()
+
+	if baseValidate != status.SUCCESS {
+		return baseValidate
+	}
+
+	if transaction.AccountKey == nil || len(transaction.AccountKey) == 0 {
+		log.Debug("Missing AccountKey", "transaction", transaction)
+		return status.MISSING_DATA
+	}
+
+	if transaction.TendermintAddress == "" {
+		log.Debug("Missing TendermintAddress", "transaction", transaction)
+		return status.MISSING_DATA
+	}
+
+	if transaction.TendermintPubKey == "" {
+		log.Debug("Missing TendermintPubKey", "transaction", transaction)
+		return status.MISSING_DATA
+	}
+
 	if transaction.Stake.LessThan(0) {
 		log.Debug("Missing Stake", "ApplyValidator", transaction)
 		return status.MISSING_DATA

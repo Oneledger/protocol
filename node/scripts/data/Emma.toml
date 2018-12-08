@@ -5,5 +5,7 @@ P2PAddress = "tcp://127.0.0.1:26615"
 SeedMode = true
 AppAddress = "tcp://127.0.0.1:26625"
 SDKAddress = "tcp://127.0.0.1:26635"
+OLVMAddress = "tcp://127.0.0.1:26645"
+OLVMProtocol = "tcp"
 BTCAddress = "127.0.0.1:NONE"
 ETHAddress = "NONE"

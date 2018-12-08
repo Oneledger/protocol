@@ -25,6 +25,8 @@ var updateParameters = []Parameter{
 	Parameter{"SDKAddress", "string"},
 	Parameter{"BTCAddress", "string"},
 	Parameter{"ETHAddress", "string"},
+	Parameter{"OLVMAddress", "string"},
+	Parameter{"OLVMProtocol", "string"},
 }
 
 func UpdateContext() {

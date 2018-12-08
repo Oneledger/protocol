@@ -7,6 +7,7 @@ package action
 
 import (
 	"github.com/Oneledger/protocol/node/data"
+	"github.com/Oneledger/protocol/node/global"
 	"github.com/Oneledger/protocol/node/log"
 	"github.com/Oneledger/protocol/node/serial"
 	"github.com/Oneledger/protocol/node/status"
@@ -16,11 +17,7 @@ import (
 type Payment struct {
 	Base
 
-	Inputs  []SendInput  `json:"inputs"`
-	Outputs []SendOutput `json:"outputs"`
-
-	Gas data.Coin `json:"gas"`
-	Fee data.Coin `json:"fee"`
+	SendTo []SendTo `json:"payto"`
 }
 
 func init() {
@@ -30,30 +27,29 @@ func init() {
 func (transaction *Payment) Validate() status.Code {
 	log.Debug("Validating Payment Transaction")
 
-	if transaction.Fee.LessThan(0) {
-		log.Debug("Missing Fee", "payment", transaction)
-		return status.MISSING_DATA
+	baseValidate := transaction.Base.Validate()
+
+	if baseValidate != status.SUCCESS {
+		return baseValidate
 	}
 
-	if transaction.Gas.LessThan(0) {
-		log.Debug("Missing Gas", "payment", transaction)
-		return status.MISSING_DATA
+	if len(transaction.SendTo) < 3 {
+		return status.INVALID
 	}
-
 	return status.SUCCESS
 }
 
 func (transaction *Payment) ProcessCheck(app interface{}) status.Code {
 	log.Debug("Processing Payment Transaction for CheckTx")
 
-	if !CheckAmounts(app, transaction.Inputs, transaction.Outputs) {
-		log.Debug("FAILED", "inputs", transaction.Inputs, "outputs", transaction.Outputs)
+	if !CheckValidatorList(app, transaction.SendTo) {
 		return status.INVALID
 	}
 
-	// TODO: Validate the transaction against the UTXO database, check tree
-	chain := GetBalances(app)
-	_ = chain
+	if !CheckPayTo(app, transaction.SendTo) {
+		log.Debug("FAILED to ", "payto", transaction.SendTo)
+		return status.INVALID
+	}
 
 	return status.SUCCESS
 }
@@ -74,25 +70,38 @@ func init() {
 func (transaction *Payment) ProcessDeliver(app interface{}) status.Code {
 	log.Debug("Processing Payment Transaction for DeliverTx")
 
-	if !CheckAmounts(app, transaction.Inputs, transaction.Outputs) {
+	if !CheckValidatorList(app, transaction.SendTo) {
+		return status.INVALID
+	}
+
+	if !CheckPayTo(app, transaction.SendTo) {
 		return status.INVALID
 	}
 
 	chain := GetBalances(app)
+	accounts := GetAccounts(app)
+	payment, err := accounts.FindName(global.Current.PaymentAccount)
+	if err != status.SUCCESS {
+		log.Error("Failed to get payment account", "status", err)
+		return err
+	}
+	paymentBalance := chain.Get(payment.AccountKey())
 
 	// Update the database to the final set of entries
-	for _, entry := range transaction.Outputs {
+	for _, entry := range transaction.SendTo {
 		var balance *data.Balance
 		result := chain.Get(entry.AccountKey)
 		if result == nil {
-			tmp := data.NewBalance()
-			result = &tmp
+			result = data.NewBalance()
 		}
 		balance = result
-		balance.SetAmount(entry.Amount)
+		balance.AddAmount(entry.Amount)
 
-		chain.Set(entry.AccountKey, *balance)
+		chain.Set(entry.AccountKey, balance)
+		paymentBalance.MinusAmount(entry.Amount)
 	}
+
+	chain.Set(payment.AccountKey(), paymentBalance)
 
 	admin := GetAdmin(app)
 
@@ -111,4 +120,40 @@ func (transaction *Payment) ProcessDeliver(app interface{}) status.Code {
 
 func (transaction *Payment) Resolve(app interface{}) Commands {
 	return []Command{}
+}
+
+func CheckPayTo(app interface{}, pay []SendTo) bool {
+	balances := GetBalances(app)
+	accounts := GetAccounts(app)
+
+	payment, ok := accounts.FindName(global.Current.PaymentAccount)
+	if ok != status.SUCCESS {
+		log.Error("Failed to get payment account", "status", ok)
+		return false
+	}
+
+	balance := balances.Get(payment.AccountKey())
+	total := data.NewBalance()
+	for _, v := range pay {
+		if v.Amount.LessThan(0) {
+			return false
+		}
+		total.AddAmount(v.Amount)
+	}
+	if !balance.IsEnoughBalance(*total) {
+		return false
+	}
+	return true
+}
+
+func CheckValidatorList(app interface{}, SendTo []SendTo) bool {
+	validators := GetValidators(app)
+
+	for i, v := range SendTo {
+		if !validators.IsValidAccountKey(v.AccountKey, i) {
+			return false
+		}
+	}
+
+	return true
 }

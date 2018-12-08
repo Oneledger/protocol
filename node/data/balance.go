@@ -20,29 +20,29 @@ func init() {
 	serial.Register(Balance{})
 }
 
-func NewBalance() Balance {
+func NewBalance() *Balance {
 	amounts := make(map[int]Coin, 0)
-	result := Balance{
+	result := &Balance{
 		Amounts: amounts,
 	}
 	return result
 }
 
-func NewBalanceFromString(amount string, currency string) Balance {
+func NewBalanceFromString(amount string, currency string) *Balance {
 	coin := NewCoinFromString(amount, currency)
 	balance := NewBalance()
 	balance.AddCoin(coin)
 	return balance
 }
 
-func NewBalanceFromInt(amount int64, currency string) Balance {
+func NewBalanceFromInt(amount int64, currency string) *Balance {
 	coin := NewCoinFromInt(amount, currency)
 	balance := NewBalance()
 	balance.AddCoin(coin)
 	return balance
 }
 
-func NewBalanceFromCoin(coin Coin) Balance {
+func NewBalanceFromCoin(coin Coin) *Balance {
 	balance := NewBalance()
 	balance.AddCoin(coin)
 	return balance
@@ -80,7 +80,7 @@ func (b *Balance) MinusCoin(coin Coin) {
 
 /*
 func (b *Balance) FromCoin(coin Coin) {
-	b.Amounts[coin.Currency.Id] = coin
+	b.Amounts[string(coin.Currency.Key())] = coin
 }
 */
 
@@ -105,7 +105,7 @@ func (b *Balance) GetAmountByName(name string) Coin {
 }
 
 func (b *Balance) SetAmount(coin Coin) {
-	b.AddCoin(coin)
+	b.Amounts[coin.Currency.Id] = coin
 	return
 }
 
@@ -117,6 +117,20 @@ func (b *Balance) AddAmount(coin Coin) {
 func (b *Balance) MinusAmount(coin Coin) {
 	b.MinusCoin(coin)
 	return
+}
+
+func (b Balance) IsEnoughBalance(balance Balance) bool {
+	for i, coin := range balance.Amounts {
+		v, ok := b.Amounts[i]
+		if !ok {
+			v = NewCoinFromInt(0, coin.Currency.Name)
+		}
+
+		if v.Minus(coin).LessThan(0) {
+			return false
+		}
+	}
+	return true
 }
 
 //String used in fmt and Dump
@@ -131,11 +145,5 @@ func (balance Balance) String() string {
 			buffer += coin.String()
 		}
 	}
-
-	/*
-		if len(buffer) > 0 {
-			buffer = buffer[:len(buffer)]
-		}
-	*/
 	return buffer
 }

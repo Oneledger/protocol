@@ -67,17 +67,27 @@ type Swap struct {
 func (transaction *Swap) Validate() status.Code {
 	log.Debug("Validating Swap Transaction")
 
+	baseValidate := transaction.Base.Validate()
+
+	if baseValidate != status.SUCCESS {
+		return baseValidate
+	}
+
 	if transaction.SwapMessage == nil {
-		log.Error("swap don't contain message")
+		log.Debug("Missing SwapMessage", "transaction", transaction)
 		return status.MISSING_DATA
 	}
 
 	if transaction.SwapMessage.validate() != status.SUCCESS {
-		log.Debug("SwapMessage not validate")
+		log.Debug("SwapMessage not valid", "transaction.SwapMessage", transaction.SwapMessage)
 		return status.INVALID
 	}
 
-	log.Debug("Swap is validated!")
+	if transaction.Stage < NOSTAGE || transaction.Stage > SWAP_FINISH {
+		log.Debug("Unsupported Stage", "transaction", transaction)
+		return status.BAD_VALUE
+	}
+
 	return status.SUCCESS
 }
 
@@ -1336,7 +1346,7 @@ func CreateContractOLT(app interface{}, context FunctionValues, tx Transaction) 
 	//outputs = append(outputs,
 	//	NewSendOutput(party.Key, partyBalance.Minus(amount)),
 	//	NewSendOutput(counterParty.Key, counterPartyBalance.Plus(amount)))
-	//send := &Send{
+	//send := &Send_Absolute{
 	//	Base: Base{
 	//		Type:     SEND,
 	//		ChainId:  GetChainID(app),

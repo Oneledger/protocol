@@ -5,7 +5,7 @@ export CMD=$OLSCRIPT
 
 if [ -z "$1" ]; then
 	name="David"
-else 
+else
 	name=$1
 fi
 
@@ -24,17 +24,18 @@ export DATA=$WORK/consensus
 pushd $WORK > /dev/null
 
 pids=`pgrep -f "^olfullnode node -c $name.*"`
+
 if [ -z "$pids" ]
 
 then
 	echo "============================================================" >> $LOG/olfullnode.log
 	echo "Starting OLFullnode" >> $LOG/olfullnode.log
 	echo "============================================================" >> $LOG/olfullnode.log
-		#--seed_mode true \
-		#--seedAddress $seedAddress \
-		#--address $rpcAddress \
-		#--p2p $p2pAddress \
-	olfullnode node -c $name\
+
+
+  olmonitor start olvm execute -c $name >>$LOG/olvm.log 2>&1 &
+  
+  olfullnode node -c $name\
 		--root $WORK/olfullnode \
 		--tendermintRoot $DATA \
 		--seeds $seeds \

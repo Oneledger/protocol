@@ -35,36 +35,42 @@ type Application struct {
 	types.BaseApplication
 
 	// Global Chain state (data is identical on all nodes in the chain)
-	Balances   *data.ChainState // unspent transction output (for each type of coin)
-	Identities *id.Identities   // Keep a higher-level identity for a given user
+	Balances         *data.ChainState // unspent transction output (for each type of coin)
+	Identities       *id.Identities   // Keep a higher-level identity for a given user
+	SmartContract    data.Datastore   //Store olvm smart contracts
+	ExecutionContext data.Datastore   //Store last olvm execution
 
 	// Local Node state (data is different for each node)
-	Accounts *id.Accounts   // Keep all of the user accounts locally for their node (identity management)
 	Admin    data.Datastore // any administrative parameters
-	Event    data.Datastore // Event for any action that need to be tracked
+	Accounts *id.Accounts   // Keep all of the user accounts locally for their node (identity management)
+	Sequence data.Datastore // Store sequence number per account
 	Status   data.Datastore // current state of any composite transactions (pending, verified, etc.)
 	Contract data.Datastore // contract for reuse.
-	Sequence data.Datastore // Store sequence number per account
+	Event    data.Datastore // Event for any action that need to be tracked
 
 	SDK common.Service
 
 	// Tendermint's last block information
-	LastHeader types.Header // Tendermint last header info
-	Validators ValidatorList
+	Header     types.Header   // Tendermint last header info
+	Validators *id.Validators // List of vlidators for this block
 }
 
 // NewApplicationContext initializes a new application, reconnects to the databases.
 func NewApplication() *Application {
 	return &Application{
-		Identities: id.NewIdentities("identities"),
-		Balances:   data.NewChainState("balances", data.PERSISTENT),
+		Balances:         data.NewChainState("balances", data.PERSISTENT),
+		Identities:       id.NewIdentities("identities"),
+		SmartContract:    data.NewDatastore("smartContract", data.PERSISTENT),
+		ExecutionContext: data.NewDatastore("executionContext", data.PERSISTENT),
 
-		Accounts: id.NewAccounts("accounts"),
 		Admin:    data.NewDatastore("admin", data.PERSISTENT),
-		Event:    data.NewDatastore("event", data.PERSISTENT),
+		Accounts: id.NewAccounts("accounts"),
+		Sequence: data.NewDatastore("sequence", data.PERSISTENT),
 		Status:   data.NewDatastore("status", data.PERSISTENT),
 		Contract: data.NewDatastore("contract", data.PERSISTENT),
-		Sequence: data.NewDatastore("sequence", data.PERSISTENT),
+		Event:    data.NewDatastore("event", data.PERSISTENT),
+
+		Validators: id.NewValidatorList(),
 	}
 }
 
@@ -75,14 +81,6 @@ type AdminParameters struct {
 
 func init() {
 	serial.Register(AdminParameters{})
-}
-
-type SequenceRecord struct {
-	Sequence int64
-}
-
-func init() {
-	serial.Register(SequenceRecord{})
 }
 
 // Initial the state of the application from persistent data
@@ -98,6 +96,10 @@ func (app Application) Initialize() {
 	}
 
 	app.StartSDK()
+	log.Debug("SDK is started")
+
+	StartOLVM()
+	log.Debug("OLVM is started")
 }
 
 // Start up a local server for direct connections from clients
@@ -113,6 +115,7 @@ func (app Application) StartSDK() {
 
 	app.SDK = sdk
 	app.SDK.Start()
+
 }
 
 type BasicState struct {
@@ -122,7 +125,7 @@ type BasicState struct {
 
 type State struct {
 	Amount string `json:"amount"`
-	Coin   string `json:"currency"`
+	Coin   string `json:"currency"` // TODO: Misnamed?
 }
 
 // Use the Genesis block to initialze the system
@@ -174,14 +177,14 @@ func CreateAccount(app Application, state *BasicState, publicKey id.PublicKeyED2
 		ZeroAccountKey = account.AccountKey()
 	}
 
-	// TODO: Until a block is commited, this data is not persistent
+	// TODO: Until a block is commited, this data should not be persistent
 	//app.Balances.Commit()
 
 	log.Info("Genesis State Balances database", "name", state.Account, "balance", balance)
 }
 
-func NewBalanceFromStates(states []State) data.Balance {
-	var balance data.Balance
+func NewBalanceFromStates(states []State) *data.Balance {
+	var balance *data.Balance
 	for i, v := range states {
 		if i == 0 {
 			balance = data.NewBalanceFromString(v.Amount, v.Coin)
@@ -190,7 +193,6 @@ func NewBalanceFromStates(states []State) data.Balance {
 			balance.AddAmount(coin)
 		}
 	}
-	log.Dump("##### NEW STATE BALANCE #####", balance)
 	return balance
 }
 
@@ -326,7 +328,7 @@ func (app Application) BeginBlock(req RequestBeginBlock) ResponseBeginBlock {
 	validators := req.LastCommitInfo.GetValidators()
 	byzantineValidators := req.ByzantineValidators
 
-	app.Validators.Set(validators, byzantineValidators)
+	app.Validators.Set(app, validators, byzantineValidators, req.Header.LastBlockHash)
 
 	validatorList = ValidatorList{}
 
@@ -364,17 +366,16 @@ func (app Application) BeginBlock(req RequestBeginBlock) ResponseBeginBlock {
 	return result
 }
 
-// EndBlock is called at the end of all of the transactions
-func (app Application) MakePayment(req RequestBeginBlock) {
-	account, err := app.Accounts.FindName("Payment")
+// make payment to validators
+func (app *Application) MakePayment(req RequestBeginBlock) {
+	account, err := app.Accounts.FindName(global.Current.PaymentAccount)
 	if err != status.SUCCESS {
 		log.Fatal("ABCI: BeginBlock Fatal Status", "status", err)
 	}
 
 	paymentBalance := app.Balances.Get(account.AccountKey())
 	if paymentBalance == nil {
-		interimBalance := data.NewBalance()
-		paymentBalance = &interimBalance
+		paymentBalance = data.NewBalance()
 	}
 
 	paymentRecordBlockHeight := int64(-1)
@@ -390,36 +391,36 @@ func (app Application) MakePayment(req RequestBeginBlock) {
 			if numTrans > 10 {
 				//store payment record in database (O OLT, -1) because delete doesn't work
 				amount := data.NewCoinFromInt(0, "OLT")
-				SetPaymentRecord(amount, -1, app)
+				app.SetPaymentRecord(amount, -1)
 				paymentRecordBlockHeight = -1
 			}
 		}
 	}
 
 	if (!paymentBalance.GetAmountByName("OLT").LessThanEqual(0)) && paymentRecordBlockHeight == -1 {
-		goodValidatorIdentities := app.Validators.FindGood(app)
-		selectedValidatorIdentity := app.Validators.FindSelectedValidator(app, req.Header.LastBlockHash)
+		approvedValidatorIdentities := app.Validators.Approved
+		selectedValidatorIdentity := app.Validators.SelectedValidator
 
-		numberValidators := data.NewCoinFromInt(int64(len(goodValidatorIdentities)), "OLT")
+		numberValidators := data.NewCoinFromInt(int64(len(approvedValidatorIdentities)), "OLT")
 		quotient := paymentBalance.GetAmountByName("OLT").Quotient(numberValidators)
 
 		if int(quotient.Amount.Int64()) > 0 {
 			//store payment record in database
 			totalPayment := quotient.Multiply(numberValidators)
-			SetPaymentRecord(totalPayment, height, app)
+			app.SetPaymentRecord(totalPayment, height)
 
 			if global.Current.NodeName == selectedValidatorIdentity.NodeName {
-				result := CreatePaymentRequest(app, goodValidatorIdentities, quotient, height)
+				result := CreatePaymentRequest(*app, quotient, height)
 				if result != nil {
 					// TODO: check this later
-					action.DelayedTransaction(result, 3*time.Second)
+					action.DelayedTransaction(result, 0*time.Second)
 				}
 			}
 		}
 	}
 }
 
-func SetPaymentRecord(amount data.Coin, blockHeight int64, app Application) {
+func (app *Application) SetPaymentRecord(amount data.Coin, blockHeight int64) {
 	var paymentRecordKey data.DatabaseKey = data.DatabaseKey("PaymentRecord")
 	var paymentRecord action.PaymentRecord
 	paymentRecord.Amount = amount
@@ -520,25 +521,6 @@ func (app Application) Commit() ResponseCommit {
 	return result
 }
 
-func NextSequence(app *Application, accountkey id.AccountKey) SequenceRecord {
-	sequence := int64(1)
-	raw := app.Sequence.Get(accountkey)
-	if raw != nil {
-		interim := raw.(SequenceRecord)
-		sequence = interim.Sequence + 1
-	}
-
-	sequenceRecord := SequenceRecord{
-		Sequence: sequence,
-	}
-
-	session := app.Sequence.Begin()
-	session.Set(accountkey, sequenceRecord)
-	session.Commit()
-
-	return sequenceRecord
-}
-
 // Close closes every datastore in app
 func (app Application) Close() {
 	app.Admin.Close()
@@ -549,6 +531,7 @@ func (app Application) Close() {
 	app.Event.Close()
 	app.Contract.Close()
 	app.Sequence.Close()
+	app.SmartContract.Close()
 
 	if app.SDK != nil {
 		app.SDK.Stop()

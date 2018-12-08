@@ -19,7 +19,7 @@ echo "Alice initiate the swap, 5BTC to exchange 100ETH"
 olclient swap -c Alice \
 	--party Alice --counterparty Bob --nonce 28 \
 	--amount 5.2 --currency BTC --exchange 100.1 --excurrency ETH \
-	--fee 0.2 --gas 0.3
+	--fee 0.02 
 
 sleep 3
 
@@ -27,7 +27,7 @@ echo "Bob participate the swap 100ETH to exchange 5BTC"
 olclient swap -c Bob \
 	--party Bob --counterparty Alice --nonce 28 \
 	--amount 100.1 --currency ETH --exchange 5.2 --excurrency BTC \
-	--fee 0.2 --gas 0.3
+	--fee 0.02 
 
 echo "Wait for chain to finish"
 olclient wait --completed swap --party Alice --party Bob 

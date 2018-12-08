@@ -6,8 +6,11 @@
 package data
 
 import (
+	"encoding/hex"
 	"fmt"
 	"math/big"
+
+	"golang.org/x/crypto/ripemd160"
 
 	"github.com/Oneledger/protocol/node/log"
 	"github.com/Oneledger/protocol/node/serial"
@@ -22,14 +25,6 @@ type Coin struct {
 func init() {
 	serial.Register(Coin{})
 	serial.Register(Currency{})
-
-	// TODO: bit.Int is messy because it isn't entirely exportable
-	//serial.Register(big.Int{})
-	//serial.RegisterIgnore(big.Int{})
-
-	//serial.Register(big.Word(0))
-	//entry := serial.GetTypeEntry("[]big.Word", 1)
-	//serial.RegisterForce("big.nat", serial.ARRAY, entry.DataType, nil, nil)
 }
 
 type Coins []Coin
@@ -72,6 +67,23 @@ type Currency struct {
 	Name  string    `json:"name"`
 	Chain ChainType `json:"chain"`
 	Id    int       `json:"id"`
+}
+
+// Key sets a encodable key for the currency entry, we may end up using currencyCodes instead.
+func (c Currency) Key() string {
+	hasher := ripemd160.New()
+
+	buffer, err := serial.Serialize(c, serial.JSON)
+	if err != nil {
+		log.Fatal("hash serialize failed", "err", err)
+	}
+	_, err = hasher.Write(buffer)
+	if err != nil {
+		log.Fatal("hasher failed", "err", err)
+	}
+	buffer = hasher.Sum(nil)
+
+	return hex.EncodeToString(buffer)
 }
 
 // Look up the currency

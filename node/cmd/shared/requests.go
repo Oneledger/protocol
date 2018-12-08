@@ -12,11 +12,14 @@ import (
 	"github.com/Oneledger/protocol/node/comm"
 	"github.com/Oneledger/protocol/node/serial"
 
+	"regexp"
+	"strconv"
+
 	"github.com/Oneledger/protocol/node/action"
 	"github.com/Oneledger/protocol/node/app"
 	"github.com/Oneledger/protocol/node/convert"
-	"github.com/Oneledger/protocol/node/data"
 	"github.com/Oneledger/protocol/node/log"
+	"github.com/Oneledger/protocol/node/version"
 )
 
 // Prepare a transaction to be issued.
@@ -85,299 +88,290 @@ func CreateApplyValidatorRequest(args *comm.ApplyValidatorArguments) []byte {
 	request, err := serial.Serialize(args, serial.CLIENT)
 	if err != nil {
 		log.Error("Failed to Serialize arguments: ", err)
+		return nil
 	}
 
 	response := comm.Query("/applyValidators", request)
 
 	if response == nil {
 		log.Warn("Query returned no response", "request", request)
+		return nil
 	}
-
-	log.Debug("CreateApplyValidatorRequest", "response", response)
 
 	return response.([]byte)
 }
 
-type SendArguments struct {
-	Party        string
-	CounterParty string
-	Currency     string
-	Amount       string
-	Gas          string
-	Fee          string
+type InstallArguments struct {
+	Owner    string
+	Name     string
+	Version  string
+	File     string
+	Currency string
+	Gas      string
+	Fee      string
+}
+
+type ExecuteArguments struct {
+	Owner    string
+	Name     string
+	Version  string
+	Currency string
+	Gas      string
+	Fee      string
 }
 
 // CreateRequest builds and signs the transaction based on the arguments
-func CreateSendRequest(args *SendArguments) []byte {
-	conv := convert.NewConvert()
+func CreateSendRequest(args *comm.SendArguments) []byte {
+	request, err := serial.Serialize(args, serial.CLIENT)
 
-	if args.Party == "" {
-		log.Error("Missing Party argument")
+	if err != nil {
+		log.Error("Failed to Serialize arguments: ", err)
 		return nil
 	}
 
-	if args.CounterParty == "" {
-		log.Error("Missing CounterParty argument")
+	response := comm.Query("/createSendRequest", request)
+
+	if response == nil {
+		log.Warn("Query returned no response", "request", request)
 		return nil
 	}
 
-	// TODO: Can't convert identities to accounts, this way!
-	party := GetAccountKey(args.Party)
-	counterParty := GetAccountKey(args.CounterParty)
-	payment := GetAccountKey("Payment")
-	if party == nil || counterParty == nil {
-		log.Fatal("System doesn't reconize the parties", "args", args,
-			"party", party, "counterParty", counterParty)
-		//return nil
-	}
-
-	if args.Currency == "" || args.Amount == "" {
-		log.Error("Missing an amount argument")
-		return nil
-	}
-
-	amount := conv.GetCoin(args.Amount, args.Currency)
-
-	// Build up the Inputs
-	partyBalance := GetBalance(party).GetAmountByName(args.Currency)
-	counterPartyBalance := GetBalance(counterParty).GetAmountByName(args.Currency)
-	paymentBalance := GetBalance(payment).GetAmountByName(args.Currency)
-
-	//log.Dump("Balances", partyBalance, counterPartyBalance)
-
-	if &partyBalance == nil || &counterPartyBalance == nil {
-		log.Error("Missing Balance", "party", partyBalance, "counterParty", counterPartyBalance)
-		return nil
-	}
-
-	fee := conv.GetCoin(args.Fee, args.Currency)
-	gas := conv.GetCoin(args.Gas, args.Currency)
-
-	inputs := make([]action.SendInput, 0)
-	inputs = append(inputs,
-		action.NewSendInput(party, partyBalance),
-		action.NewSendInput(counterParty, counterPartyBalance),
-		action.NewSendInput(payment, paymentBalance))
-
-	// Build up the outputs
-	outputs := make([]action.SendOutput, 0)
-	outputs = append(outputs,
-		action.NewSendOutput(party, partyBalance.Minus(amount).Minus(fee)),
-		action.NewSendOutput(counterParty, counterPartyBalance.Plus(amount)),
-		action.NewSendOutput(payment, paymentBalance.Plus(fee)))
-
-	if conv.HasErrors() {
-		Console.Error(conv.GetErrors())
-		os.Exit(-1)
-	}
-
-	sequence := GetSequenceNumber(party)
-
-	// Create base transaction
-	send := &action.Send{
-		Base: action.Base{
-			Type:     action.SEND,
-			ChainId:  app.ChainId,
-			Owner:    party,
-			Signers:  action.GetSigners(party),
-			Sequence: sequence,
-		},
-		Inputs:  inputs,
-		Outputs: outputs,
-		Fee:     fee,
-		Gas:     gas,
-	}
-	return SignAndPack(action.Transaction(send))
+	return response.([]byte)
 }
 
 // CreateRequest builds and signs the transaction based on the arguments
-func CreateMintRequest(args *SendArguments) []byte {
-	conv := convert.NewConvert()
+func CreateMintRequest(args *comm.SendArguments) []byte {
+	request, err := serial.Serialize(args, serial.CLIENT)
 
-	if args.Party == "" {
-		log.Warn("Missing Party arguments", "args", args)
+	if err != nil {
+		log.Error("Failed to Serialize arguments: ", err)
 		return nil
 	}
 
-	zero := GetAccountKey("Zero")
-	party := GetAccountKey(args.Party)
+	response := comm.Query("/createMintRequest", request)
 
-	if party == nil || zero == nil {
-		log.Warn("Missing Party information", "args", args, "party", party, "zero", zero)
+	if response == nil {
+		log.Warn("Query returned no response", "request", request)
 		return nil
 	}
 
-	amount := conv.GetCoin(args.Amount, args.Currency)
-
-	// Build up the Inputs
-	log.Debug("Getting TestMint Account Balances")
-	partyBalance := GetBalance(party).GetAmountByName(args.Currency)
-	zeroBalance := GetBalance(zero).GetAmountByName(args.Currency)
-
-	if &zeroBalance == nil || &partyBalance == nil {
-		log.Warn("Missing Balances", "party", party, "zero", zero)
-		return nil
-	}
-
-	if zeroBalance.LessThanEqual(0) {
-		log.Warn("No more money left...", "balance", zeroBalance)
-		return nil
-	}
-
-	inputs := make([]action.SendInput, 0)
-	inputs = append(inputs,
-		action.NewSendInput(zero, zeroBalance),
-		action.NewSendInput(party, partyBalance))
-
-	// Build up the outputs
-	outputs := make([]action.SendOutput, 0)
-	outputs = append(outputs,
-		action.NewSendOutput(zero, zeroBalance.Minus(amount)),
-		action.NewSendOutput(party, partyBalance.Plus(amount)))
-
-	gas := conv.GetCoin(args.Gas, args.Currency)
-	fee := conv.GetCoin(args.Fee, args.Currency)
-
-	if conv.HasErrors() {
-		Console.Error(conv.GetErrors())
-		os.Exit(-1)
-	}
-
-	sequence := GetSequenceNumber(party)
-
-	// Create base transaction
-	send := &action.Send{
-		Base: action.Base{
-			Type:     action.SEND,
-			ChainId:  app.ChainId,
-			Signers:  action.GetSigners(zero),
-			Owner:    zero,
-			Sequence: sequence,
-		},
-		Inputs:  inputs,
-		Outputs: outputs,
-		Fee:     fee,
-		Gas:     gas,
-	}
-	return SignAndPack(action.Transaction(send))
-}
-
-// Arguments to the command
-type SwapArguments struct {
-	Party        string
-	CounterParty string
-	Amount       string
-	Currency     string
-	Fee          string
-	Gas          string // TODO: Not sure this is necessary, unless the chain is like Ethereum
-	Exchange     string
-	Excurrency   string
-	Nonce        int64
+	return response.([]byte)
 }
 
 // Create a swap request
-func CreateSwapRequest(args *SwapArguments) []byte {
+func CreateSwapRequest(args *comm.SwapArguments) []byte {
+	request, err := serial.Serialize(args, serial.CLIENT)
 
+	if err != nil {
+		log.Error("Failed to Serialize arguments: ", err)
+		return nil
+	}
+
+	response := comm.Query("/createSwapRequest", request)
+
+	if response == nil {
+		log.Warn("Query returned no response", "request", request)
+		return nil
+	}
+
+	return response.([]byte)
+}
+
+func CreateExSendRequest(args *comm.ExSendArguments) []byte {
+	request, err := serial.Serialize(args, serial.CLIENT)
+
+	if err != nil {
+		log.Error("Failed to Serialize arguments: ", err)
+		return nil
+	}
+
+	response := comm.Query("/createExSendRequest", request)
+
+	if response == nil {
+		log.Warn("Query returned no response", "request", request)
+		return nil
+	}
+
+	return response.([]byte)
+}
+
+// CreateRequest builds and signs the transaction based on the arguments
+func CreateInstallRequest(args *InstallArguments, script []byte) []byte {
 	conv := convert.NewConvert()
 
-	partyKey := GetAccountKey(args.Party)
-	counterPartyKey := GetAccountKey(args.CounterParty)
+	if args.Owner == "" {
+		log.Error("Missing Owner argument")
+		return nil
+	}
 
-	fee := conv.GetCoin(args.Fee, "OLT")
-	gas := conv.GetCoin(args.Gas, "OLT")
+	if args.Name == "" {
+		log.Error("Missing Name argument")
+		return nil
+	}
 
-	amount := conv.GetCoin(args.Amount, args.Currency)
-	exchange := conv.GetCoin(args.Exchange, args.Excurrency)
+	if args.Version == "" {
+		log.Error("Missing Version argument")
+		return nil
+	}
+
+	if script == nil {
+		log.Error("Missing Script")
+		return nil
+	}
+
+	owner := GetAccountKey(args.Owner)
+	if owner == nil {
+		log.Fatal("System doesn't recognize the owner", "args", args,
+			"owner", owner)
+		return nil
+	}
+
+	/*
+		if zeroBalance.LessThanEqual(0) {
+			log.Warn("No more money left...", "balance", zeroBalance)
+			return nil
+		}
+	*/
+
+	version := ParseVersion(args.Version)
+	if version == nil {
+		log.Debug("Version error", "version", args.Version)
+		return nil
+	}
+
+	fee := conv.GetCoin(args.Fee, args.Currency)
+	gas := conv.GetCoin(args.Gas, args.Currency)
+
+	sequence := GetSequenceNumber(owner)
+
+	inputs := action.Install{
+		Owner:   owner,
+		Name:    args.Name,
+		Version: *version,
+		Script:  script,
+	}
 
 	if conv.HasErrors() {
 		Console.Error(conv.GetErrors())
 		os.Exit(-1)
 	}
-	account := make(map[data.ChainType][]byte)
-	counterAccount := make(map[data.ChainType][]byte)
 
-	account[conv.GetChainFromCurrency(args.Currency)] = GetCurrencyAddress(conv.GetCurrency(args.Currency), args.Party)
-	account[conv.GetChainFromCurrency(args.Excurrency)] = GetCurrencyAddress(conv.GetCurrency(args.Excurrency), args.Party)
-	//log.Debug("accounts for swap", "accountbtc", account[data.BITCOIN], "accounteth", common.BytesToAddress([]byte(account[data.ETHEREUM])), "accountolt", account[data.ONELEDGER])
-
-	party := action.Party{Key: partyKey, Accounts: account}
-	counterParty := action.Party{Key: counterPartyKey, Accounts: counterAccount}
-
-	swapInit := action.SwapInit{
-		Party:        party,
-		CounterParty: counterParty,
-		Fee:          fee,
-		Gas:          gas,
-		Amount:       amount,
-		Exchange:     exchange,
-		Nonce:        args.Nonce,
+	signers := action.GetSigners(owner)
+	if signers == nil {
+		log.Debug("Missing Signers")
+		return nil
 	}
 
-	sequence := GetSequenceNumber(partyKey)
-
-	swap := &action.Swap{
+	// Create base transaction
+	install := &action.Contract{
 		Base: action.Base{
-			Type:     action.SWAP,
+			Type:     action.SMART_CONTRACT,
 			ChainId:  app.ChainId,
-			Signers:  action.GetSigners(partyKey),
-			Owner:    partyKey,
-			Target:   counterPartyKey,
+			Owner:    owner,
+			Signers:  signers, //action.GetSigners(owner),
 			Sequence: sequence,
 		},
-		SwapMessage: swapInit,
-		Stage:       action.SWAP_MATCHING,
+		Data:     inputs,
+		Function: action.INSTALL,
+		Fee:      fee,
+		Gas:      gas,
+	}
+	return SignAndPack(action.Transaction(install))
+}
+
+func ParseVersion(argsVersion string) *version.Version {
+	automata := regexp.MustCompile(`v([0-9]*)\.([0-9]*)\.([0-9]*)`)
+	groups := automata.FindStringSubmatch(argsVersion)
+
+	//log.Dump("VersionGroups", groups)
+	if groups == nil || len(groups) != 4 {
+		log.Debug("ParseVersion", "groups", groups, "groupsLen", len(groups))
+		return nil
 	}
 
-	return SignAndPack(action.Transaction(swap))
+	major, err := strconv.Atoi(groups[1])
+	if err != nil {
+		log.Debug("ParseVersion", "major", major, "err", err)
+	}
+
+	minor, err := strconv.Atoi(groups[2])
+	if err != nil {
+		log.Debug("ParseVersion", "minor", minor, "err", err)
+	}
+
+	patch, err := strconv.Atoi(groups[3])
+	if err != nil {
+		log.Debug("ParseVersion", "patch", patch, "err", err)
+	}
+
+	return &version.Version{
+		Major: major,
+		Minor: minor,
+		Patch: patch,
+	}
 }
 
-type ExSendArguments struct {
-	SenderId        string
-	ReceiverId      string
-	SenderAddress   string
-	ReceiverAddress string
-	Currency        string
-	Amount          string
-	Gas             string
-	Fee             string
-	Chain           string
-	ExGas           string
-	ExFee           string
-}
-
-func CreateExSendRequest(args *ExSendArguments) []byte {
+// CreateRequest builds and signs the transaction based on the arguments
+func CreateExecuteRequest(args *ExecuteArguments) []byte {
 	conv := convert.NewConvert()
 
-	partyKey := GetAccountKey(args.SenderId)
-	cpartyKey := GetAccountKey(args.ReceiverId)
-
-	fee := conv.GetCoin(args.Fee, "OLT")
-	gas := conv.GetCoin(args.Gas, "OLT")
-	amount := conv.GetCoin(args.Amount, args.Currency)
-	chain := conv.GetChainFromCurrency(args.Chain)
-
-	sender := GetCurrencyAddress(conv.GetCurrency(args.Currency), args.SenderId)
-	reciever := GetCurrencyAddress(conv.GetCurrency(args.Currency), args.ReceiverId)
-	signers := action.GetSigners(sender)
-
-	sequence := GetSequenceNumber(partyKey)
-
-	exSend := &action.ExternalSend{
-		Base: action.Base{
-			Type:     action.EXTERNAL_SEND,
-			ChainId:  app.ChainId,
-			Signers:  signers,
-			Owner:    partyKey,
-			Target:   cpartyKey,
-			Sequence: sequence,
-		},
-		Gas:      gas,
-		Fee:      fee,
-		Chain:    chain,
-		Sender:   string(sender),
-		Receiver: string(reciever),
-		Amount:   amount,
+	if args.Owner == "" {
+		log.Error("Missing Owner argument")
+		return nil
 	}
 
-	return SignAndPack(exSend)
+	if args.Name == "" {
+		log.Error("Missing Name argument")
+		return nil
+	}
+
+	if args.Version == "" {
+		log.Error("Missing Version argument")
+		return nil
+	}
+
+	owner := GetAccountKey(args.Owner)
+	if owner == nil {
+		log.Fatal("System doesn't recognize the owner", "args", args,
+			"owner", owner)
+		return nil
+	}
+
+	version := ParseVersion(args.Version)
+	if version == nil {
+		log.Debug("Version error", "version", args.Version)
+		return nil
+	}
+
+	fee := conv.GetCoin(args.Fee, args.Currency)
+	gas := conv.GetCoin(args.Gas, args.Currency)
+
+	sequence := GetSequenceNumber(owner)
+
+	inputs := action.Execute{
+		Owner:   owner,
+		Name:    args.Name,
+		Version: *version,
+	}
+
+	if conv.HasErrors() {
+		Console.Error(conv.GetErrors())
+		os.Exit(-1)
+	}
+
+	// Create base transaction
+	execute := &action.Contract{
+		Base: action.Base{
+			Type:     action.SMART_CONTRACT,
+			ChainId:  app.ChainId,
+			Owner:    owner,
+			Signers:  action.GetSigners(owner),
+			Sequence: sequence,
+		},
+		Data:     inputs,
+		Function: action.EXECUTE,
+		Fee:      fee,
+		Gas:      gas,
+	}
+	return SignAndPack(action.Transaction(execute))
 }

@@ -35,6 +35,18 @@ func HandleQuery(app Application, path string, arguments map[string]string) []by
 	case "/applyValidators":
 		result = HandleApplyValidatorQuery(app, arguments)
 
+	case "/createExSendRequest":
+		result = HandleCreateExSendRequest(app, arguments)
+
+	case "/createSendRequest":
+		result = HandleCreateSendRequest(app, arguments)
+
+	case "/createMintRequest":
+		result = HandleCreateMintRequest(app, arguments)
+
+	case "/createSwapRequest":
+		result = HandleSwapRequest(app, arguments)
+
 	case "/nodeName":
 		result = HandleNodeNameQuery(app, arguments)
 
@@ -64,6 +76,9 @@ func HandleQuery(app Application, path string, arguments map[string]string) []by
 
 	case "/sequenceNumber":
 		result = HandleSequenceNumberQuery(app, arguments)
+
+	case "/testScript":
+		result = HandleTestScript(app, arguments)
 
 	default:
 		result = HandleError("Unknown Query", path, arguments)
@@ -124,7 +139,7 @@ func HandleApplyValidatorQuery(application Application, arguments map[string]str
 			ChainId:  ChainId,
 			Owner:    identity.AccountKey,
 			Signers:  GetSigners(identity.AccountKey, application),
-			Sequence: sequence.(SequenceRecord).Sequence,
+			Sequence: sequence.Sequence,
 		},
 
 		AccountKey:        identity.AccountKey,
@@ -134,6 +149,290 @@ func HandleApplyValidatorQuery(application Application, arguments map[string]str
 	}
 
 	signed := SignTransaction(action.Transaction(validator), application)
+	packet := action.PackRequest(signed)
+
+	return packet
+}
+
+func HandleCreateExSendRequest(application Application, arguments map[string]string) interface{} {
+	conv := convert.NewConvert()
+
+	result := make([]byte, 0)
+
+	var argsHolder comm.ExSendArguments
+
+	text := arguments["parameters"]
+
+	argsDeserialized, err := serial.Deserialize([]byte(text), argsHolder, serial.CLIENT)
+
+	if err != nil {
+		log.Error("Could not deserialize ExSendArguments", "error", err)
+		return result
+	}
+
+	args := argsDeserialized.(*comm.ExSendArguments)
+
+	partyKey := AccountKey(application, args.SenderId)
+	cpartyKey := AccountKey(application, args.ReceiverId)
+
+	fee := conv.GetCoin(args.Fee, "OLT")
+	gas := conv.GetCoin(args.Gas, "OLT")
+	amount := conv.GetCoin(args.Amount, args.Currency)
+	chain := conv.GetChainFromCurrency(args.Chain)
+
+	sender := CurrencyAddress(application, conv.GetCurrency(args.Currency), args.SenderId)
+	reciever := CurrencyAddress(application, conv.GetCurrency(args.Currency), args.ReceiverId)
+
+	sequence := SequenceNumber(application, partyKey)
+
+	exSend := &action.ExternalSend{
+		Base: action.Base{
+			Type:     action.EXTERNAL_SEND,
+			ChainId:  ChainId,
+			Signers:  GetSigners(sender, application),
+			Owner:    partyKey,
+			Target:   cpartyKey,
+			Sequence: sequence.Sequence,
+		},
+		Gas:      gas,
+		Fee:      fee,
+		Chain:    chain,
+		Sender:   string(sender),
+		Receiver: string(reciever),
+		Amount:   amount,
+	}
+
+	signed := SignTransaction(action.Transaction(exSend), application)
+	packet := action.PackRequest(signed)
+
+	return packet
+}
+
+func HandleCreateSendRequest(application Application, arguments map[string]string) interface{} {
+	conv := convert.NewConvert()
+
+	result := make([]byte, 0)
+
+	var argsHolder comm.SendArguments
+
+	text := arguments["parameters"]
+
+	argsDeserialized, err := serial.Deserialize([]byte(text), argsHolder, serial.CLIENT)
+
+	if err != nil {
+		log.Error("Could not deserialize SendArguments", "error", err)
+		return result
+	}
+
+	args := argsDeserialized.(*comm.SendArguments)
+
+	if args.Party == "" {
+		log.Error("Missing Party argument")
+		return result
+	}
+
+	if args.CounterParty == "" {
+		log.Error("Missing CounterParty argument")
+		return result
+	}
+
+	// TODO: Can't convert identities to accounts, this way!
+	party := AccountKey(application, args.Party)
+	counterParty := AccountKey(application, args.CounterParty)
+
+	if party == nil || counterParty == nil {
+		log.Fatal("System doesn't recognize the parties", "args", args,
+			"party", party, "counterParty", counterParty)
+	}
+
+	if args.Currency == "" || args.Amount == "" {
+		log.Error("Missing an amount argument")
+		return result
+	}
+
+	amount := conv.GetCoin(args.Amount, args.Currency)
+
+	fee := conv.GetCoin(args.Fee, args.Currency)
+	gas := conv.GetCoin(args.Gas, args.Currency)
+
+	sendTo := action.SendTo{
+		AccountKey: counterParty,
+		Amount:     amount,
+	}
+
+	if conv.HasErrors() {
+		log.Error("Conversion error", "error", conv.GetErrors())
+		return result
+	}
+
+	sequence := SequenceNumber(application, party.Bytes())
+
+	send := &action.Send{
+		Base: action.Base{
+			Type:     action.SEND,
+			ChainId:  ChainId,
+			Owner:    party,
+			Signers:  GetSigners(party, application),
+			Sequence: sequence.Sequence,
+		},
+		SendTo: sendTo,
+		Fee:    fee,
+		Gas:    gas,
+	}
+
+	signed := SignTransaction(action.Transaction(send), application)
+	packet := action.PackRequest(signed)
+
+	return packet
+}
+
+func HandleCreateMintRequest(application Application, arguments map[string]string) interface{} {
+	result := make([]byte, 0)
+
+	var argsHolder comm.SendArguments
+
+	text := arguments["parameters"]
+
+	argsDeserialized, err := serial.Deserialize([]byte(text), argsHolder, serial.CLIENT)
+
+	if err != nil {
+		log.Error("Could not deserialize SendArguments", "error", err)
+		return result
+	}
+
+	args := argsDeserialized.(*comm.SendArguments)
+
+	conv := convert.NewConvert()
+
+	if args.Party == "" {
+		log.Warn("Missing Party arguments", "args", args)
+		return result
+	}
+
+	zero := AccountKey(application, "Zero")
+	party := AccountKey(application, args.Party)
+
+	if party == nil || zero == nil {
+		log.Warn("Missing Party information", "args", args, "party", party, "zero", zero)
+		return result
+	}
+
+	amount := conv.GetCoin(args.Amount, args.Currency)
+
+	log.Debug("Getting TestMint Account Balances")
+	zeroBalance := Balance(application, zero).(*data.Balance).GetAmountByName(args.Currency)
+
+	if &zeroBalance == nil {
+		log.Warn("Missing Balances", "zero", zero)
+		return result
+	}
+
+	if zeroBalance.LessThanEqual(0) {
+		log.Warn("No more money left...")
+		return result
+	}
+
+	sendTo := action.SendTo{
+		AccountKey: party,
+		Amount:     amount,
+	}
+
+	gas := conv.GetCoin(args.Gas, args.Currency)
+	fee := conv.GetCoin(args.Fee, args.Currency)
+
+	if conv.HasErrors() {
+		log.Error("Conversion error", "error", conv.GetErrors())
+		return result
+	}
+
+	sequence := SequenceNumber(application, party)
+
+	send := &action.Send{
+		Base: action.Base{
+			Type:     action.SEND,
+			ChainId:  ChainId,
+			Signers:  GetSigners(zero, application),
+			Owner:    zero,
+			Sequence: sequence.Sequence,
+		},
+		SendTo: sendTo,
+		Fee:    fee,
+		Gas:    gas,
+	}
+
+	signed := SignTransaction(action.Transaction(send), application)
+	packet := action.PackRequest(signed)
+
+	return packet
+}
+
+func HandleSwapRequest(application Application, arguments map[string]string) interface{} {
+	result := make([]byte, 0)
+
+	var argsHolder comm.SwapArguments
+
+	text := arguments["parameters"]
+
+	argsDeserialized, err := serial.Deserialize([]byte(text), argsHolder, serial.CLIENT)
+
+	if err != nil {
+		log.Error("Could not deserialize SwapArgumentsArguments", "error", err)
+		return result
+	}
+
+	args := argsDeserialized.(*comm.SwapArguments)
+
+	conv := convert.NewConvert()
+
+	partyKey := AccountKey(application, args.Party)
+	counterPartyKey := AccountKey(application, args.CounterParty)
+
+	fee := conv.GetCoin(args.Fee, "OLT")
+	gas := conv.GetCoin(args.Gas, "OLT")
+
+	amount := conv.GetCoin(args.Amount, args.Currency)
+	exchange := conv.GetCoin(args.Exchange, args.Excurrency)
+
+	if conv.HasErrors() {
+		log.Error("Conversion error", "error", conv.GetErrors())
+		return result
+	}
+
+	account := make(map[data.ChainType][]byte)
+	counterAccount := make(map[data.ChainType][]byte)
+
+	account[conv.GetChainFromCurrency(args.Currency)] = CurrencyAddress(application, conv.GetCurrency(args.Currency), args.Party)
+	account[conv.GetChainFromCurrency(args.Excurrency)] = CurrencyAddress(application, conv.GetCurrency(args.Excurrency), args.Party)
+
+	party := action.Party{Key: partyKey, Accounts: account}
+	counterParty := action.Party{Key: counterPartyKey, Accounts: counterAccount}
+
+	swapInit := action.SwapInit{
+		Party:        party,
+		CounterParty: counterParty,
+		Fee:          fee,
+		Gas:          gas,
+		Amount:       amount,
+		Exchange:     exchange,
+		Nonce:        args.Nonce,
+	}
+
+	sequence := SequenceNumber(application, partyKey.Bytes())
+
+	swap := &action.Swap{
+		Base: action.Base{
+			Type:     action.SWAP,
+			ChainId:  ChainId,
+			Signers:  GetSigners(partyKey, application),
+			Owner:    partyKey,
+			Target:   counterPartyKey,
+			Sequence: sequence.Sequence,
+		},
+		SwapMessage: swapInit,
+		Stage:       action.SWAP_MATCHING,
+	}
+
+	signed := SignTransaction(action.Transaction(swap), application)
 	packet := action.PackRequest(signed)
 
 	return packet
@@ -222,7 +521,7 @@ func HandleAccountKeyQuery(app Application, arguments map[string]string) interfa
 	return AccountKey(app, name)
 }
 
-func AccountKey(app Application, name string) interface{} {
+func AccountKey(app Application, name string) id.AccountKey {
 
 	// Check Itdentities First
 	identity, ok := app.Identities.FindName(name)
@@ -236,7 +535,7 @@ func AccountKey(app Application, name string) interface{} {
 	if ok == status.SUCCESS && account.Name() != "" {
 		return account.AccountKey()
 	}
-	return "AccountKey: Identity " + name + " not Found on " + global.Current.NodeName
+	return nil
 }
 
 // Get the account information for a given user
@@ -360,6 +659,24 @@ func HandleCurrencyAddressQuery(app Application, arguments map[string]string) in
 	return identity.Chain[chain]
 }
 
+func CurrencyAddress(application Application, currency string, identityName string) []byte {
+	conv := convert.NewConvert()
+
+	chain := conv.GetChainFromCurrency(currency)
+
+	identity, ok := application.Identities.FindName(identityName)
+
+	if ok == status.SUCCESS {
+		if chain != data.ONELEDGER {
+			//todo : right now, the idenetity.Chain do not contain the address on the other chain, need to fix register to remove this part
+			_ = identity
+			return ChainAddress(chain).([]byte)
+		}
+	}
+
+	return identity.Chain[chain]
+}
+
 func ChainAddress(chain data.ChainType) interface{} {
 	return common.GetChainAddress(chain)
 }
@@ -426,7 +743,16 @@ func HandleSequenceNumberQuery(app Application, arguments map[string]string) int
 	return SequenceNumber(app, key)
 }
 
-func SequenceNumber(app Application, accountKey []byte) interface{} {
-	sequenceRecord := NextSequence(&app, accountKey)
+func SequenceNumber(app Application, accountKey []byte) id.SequenceRecord {
+	sequenceRecord := id.NextSequence(&app, accountKey)
 	return sequenceRecord
+}
+
+func HandleTestScript(app Application, arguments map[string]string) interface{} {
+	log.Debug("TestScript", "arguments", arguments)
+	text := arguments["parameters"]
+
+	results := RunTestScriptName(text)
+
+	return results
 }

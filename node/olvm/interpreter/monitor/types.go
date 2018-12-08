@@ -1,5 +1,9 @@
+/*
+	Copyright 2017-2018 OneLedger
+*/
 package monitor
 
+// TODO: Conflicts with the protocol's status code
 type StatusCode int
 
 const (
