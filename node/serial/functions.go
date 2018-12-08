@@ -77,7 +77,7 @@ func ExtendBigint(base interface{}) interface{} {
 
 	dict := make(map[string]interface{})
 	convert := base.(big.Int)
-	dict["string"] = convert.String()
+	dict["bigIntString"] = convert.String()
 	wrapper := SerialWrapper{Type: typeOf, Size: 1, Fields: dict}
 
 	return wrapper
@@ -225,7 +225,11 @@ func ContractNode(action *Action, input interface{}) interface{} {
 		size := wrapper.Size
 
 		if stype == "*big.Int" {
-			result := ContractBigint(wrapper.Fields["string"].(string), size)
+			result := ContractBigint(wrapper.Fields["bigIntString"].(string), size)
+			for key, _ := range action.Processed[action.Name].Children {
+				delete(action.Processed[action.Name].Children, key)
+			}
+
 			action.IsPointer = true // TODO: Should be handled correctly
 			SetProcessed(action, grandparent, action.Name, result)
 			return CleanValue(action, result)
@@ -255,7 +259,10 @@ func ContractNode(action *Action, input interface{}) interface{} {
 
 		if stype == "*big.Int" {
 			fields := wrapper["Fields"].(map[string]interface{})
-			result := ContractBigint(fields["string"].(string), size)
+			result := ContractBigint(fields["bigIntString"].(string), size)
+			for key, _ := range action.Processed[action.Name].Children {
+				delete(action.Processed[action.Name].Children, key)
+			}
 			action.IsPointer = true // TODO: Should be handled correctly
 			SetProcessed(action, grandparent, action.Name, result)
 			return CleanValue(action, result)
