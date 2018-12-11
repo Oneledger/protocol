@@ -24,6 +24,12 @@ func CreatePaymentRequest(app Application, quotient data.Coin, height int64) act
 			log.Debug("CreatePaymentRequest", "PartyMissingData", err)
 			return nil
 		}
+
+		partyBalance := app.Balances.Get(party.AccountKey)
+		if partyBalance == nil {
+			partyBalance = data.NewBalanceFromInt(0, "OLT")
+		}
+
 		//todo : here we use index of the approved identity in the
 		// Validators.approved to simplify the verification of validators in payment
 		// need to makes this more secure.
@@ -37,6 +43,20 @@ func CreatePaymentRequest(app Application, quotient data.Coin, height int64) act
 	if err != status.SUCCESS {
 		log.Fatal("Payment Account not found")
 	}
+
+	paymentBalance := app.Balances.Get(payment.AccountKey())
+	log.Debug("CreatePaymentRequest", "paymentBalance", paymentBalance)
+
+	//numberValidators := data.NewCoinFromInt(int64(len(identities)), "OLT")
+	//totalPayment := quotient.Multiply(numberValidators)
+
+	/*
+		inputs = append(inputs,
+			action.NewSendInput(payment.AccountKey(), paymentBalance.GetAmountByName("OLT")))
+
+		outputs = append(outputs,
+			action.NewSendOutput(payment.AccountKey(), paymentBalance.GetAmountByName("OLT").Minus(totalPayment)))
+	*/
 
 	// Create base transaction
 	send := &action.Payment{

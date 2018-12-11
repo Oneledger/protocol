@@ -11,7 +11,7 @@ import (
 func TestCoin(t *testing.T) {
 	var coin Coin
 
-	coin = NewCoin(100000, "BTC")
+	coin = NewCoinFromInt(100000, "BTC")
 
 	// Serialize the go data structure
 	buffer, err := serial.Serialize(coin, serial.PERSISTENT)
@@ -23,7 +23,7 @@ func TestCoin(t *testing.T) {
 	var opp2 Coin
 
 	// Deserialize back into a go data structure
-	result, err := serial.Deserialize(buffer, opp2, serial.PERSISTENT)
+	result, err := serial.DumpDeserialize(buffer, opp2, serial.PERSISTENT)
 
 	if err != nil {
 		log.Fatal("Deserialized failed", "err", err)
@@ -45,7 +45,7 @@ func TestBalance(t *testing.T) {
 	var opp2 Balance
 
 	// Deserialize back into a go data structure
-	result, err := serial.Deserialize(buffer, opp2, serial.PERSISTENT)
+	result, err := serial.DumpDeserialize(buffer, opp2, serial.PERSISTENT)
 
 	if err != nil {
 		log.Fatal("Deserialized failed", "err", err)

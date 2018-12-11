@@ -625,9 +625,12 @@ func HandleBalanceQuery(app Application, arguments map[string]string) interface{
 func Balance(app Application, accountKey []byte) interface{} {
 	balance := app.Balances.Get(accountKey)
 	if balance != nil {
+		log.Dump("###### FOUND BALANCE #########", balance)
 		return balance
 	}
 	result := data.NewBalance()
+	log.Dump("###### NEW BALANCE #########", result)
+
 	return &result
 }
 
