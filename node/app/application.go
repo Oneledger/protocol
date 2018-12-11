@@ -509,7 +509,7 @@ func (app Application) Commit() ResponseCommit {
 
 	// Commit any pending changes.
 	hash, version := app.Balances.Commit()
-	log.Dump("ZERO IS NOW", app.Balances.Get(ZeroAccountKey))
+	//log.Dump("ZERO IS NOW", app.Balances.Get(ZeroAccountKey))
 
 	log.Debug("-- Committed New Block", "hash", hash, "version", version)
 

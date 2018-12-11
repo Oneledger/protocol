@@ -44,7 +44,7 @@ type Extra struct {
 
 // TODO: Separated from Currency to avoid serializing big floats and giving out this info
 var CurrenciesExtra map[string]Extra = map[string]Extra{
-	"OLT": Extra{big.NewFloat(1000000000000000000), "%G"},
+	"OLT": Extra{big.NewFloat(1000000000000000000), "%.6G"},
 	"BTC": Extra{big.NewFloat(1), "%.0f"}, // TODO: This needs to be set correctly
 	"ETH": Extra{big.NewFloat(1), "%.0f"}, // TODO: This needs to be set correctly
 	"VT":  Extra{big.NewFloat(1), "%.0f"},
@@ -212,7 +212,7 @@ func (coin Coin) LessThanEqual(value float64) bool {
 	}
 
 	compare := float2bint(value, GetBase("OLT"))
-	log.Dump("LessThanEqual", value, compare)
+	//log.Dump("LessThanEqual", value, compare)
 
 	if coin.Amount.Cmp(compare) <= 0 {
 		return true
@@ -227,7 +227,7 @@ func (coin Coin) LessThan(value float64) bool {
 	}
 
 	compare := float2bint(value, GetBase("OLT"))
-	log.Dump("LessThanEqual", value, compare)
+	//log.Dump("LessThanEqual", value, compare)
 
 	if coin.Amount.Cmp(compare) < 0 {
 		return true

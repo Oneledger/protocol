@@ -103,7 +103,7 @@ func (state *ChainState) Get(key DatabaseKey) *Balance {
 
 	if value != nil {
 		var balance *Balance
-		result, err := serial.DumpDeserialize(value, balance, serial.PERSISTENT)
+		result, err := serial.Deserialize(value, balance, serial.PERSISTENT)
 		if err != nil {
 			log.Fatal("Failed to deserialize Balance in chainstate: ", err)
 			return nil

@@ -137,8 +137,7 @@ func (b Balance) IsEnoughBalance(balance Balance) bool {
 func (balance Balance) String() string {
 	buffer := ""
 	for _, coin := range balance.Amounts {
-		// TODO: Why?
-		if coin.Amount.Cmp(big.NewInt(0)) == 1 || coin.Currency.Id == 0 {
+		if coin.Amount.Cmp(big.NewInt(0)) != 0 || coin.Currency.Id == 0 {
 			if buffer != "" {
 				buffer += ", "
 			}
