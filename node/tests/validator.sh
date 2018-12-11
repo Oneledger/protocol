@@ -6,9 +6,11 @@
 CMD=$GOPATH/src/github.com/Oneledger/protocol/node/scripts
 TEST=$GOPATH/src/github.com/Oneledger/protocol/node/tests
 
-echo "================== Test dynamic validator ==================="
+
 $TEST/register.sh
 $TEST/testmint.sh
+
+echo "================== Test dynamic validator ==================="
 
 olclient testmint -c Emma --party Emma --amount 10 --currency VT
 # Let the money get processed
@@ -28,5 +30,14 @@ olclient send -c David --party David --counterparty Bob --amount 6 --currency VT
 echo "============================================================="
 olclient list -c Emma
 olclient list -c Bob
+
+num=`pgrep -f "^olfullnode node -c *.*" | wc -l `
+
+if [[ $num < 5 ]]; then
+    echo "Validator test failed"
+    exit  -1
+fi
+
+echo "Validator test succeed"
 
 $CMD/stopOneLedger
