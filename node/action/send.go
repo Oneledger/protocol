@@ -7,6 +7,7 @@ package action
 
 import (
 	"bytes"
+
 	"github.com/Oneledger/protocol/node/data"
 	"github.com/Oneledger/protocol/node/global"
 	"github.com/Oneledger/protocol/node/id"
@@ -119,9 +120,9 @@ func (transaction *Send) ProcessDeliver(app interface{}) status.Code {
 	paymentBalance := balances.Get(payment.AccountKey())
 	paymentBalance.AddAmount(transaction.Fee)
 
-	balances.Set(transaction.Base.Owner, *ownerBalance)
-	balances.Set(transaction.SendTo.AccountKey, *receiverBalance)
-	balances.Set(payment.AccountKey(), *paymentBalance)
+	balances.Set(transaction.Base.Owner, ownerBalance)
+	balances.Set(transaction.SendTo.AccountKey, receiverBalance)
+	balances.Set(payment.AccountKey(), paymentBalance)
 
 	return status.SUCCESS
 }

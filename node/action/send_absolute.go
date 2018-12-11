@@ -7,6 +7,7 @@ package action
 
 import (
 	"bytes"
+
 	"github.com/Oneledger/protocol/node/data"
 	"github.com/Oneledger/protocol/node/id"
 	"github.com/Oneledger/protocol/node/log"
@@ -90,7 +91,7 @@ func (transaction *Send_Absolute) ProcessDeliver(app interface{}) status.Code {
 		balance = result
 		balance.SetAmount(entry.Amount)
 
-		balances.Set(entry.AccountKey, *balance)
+		balances.Set(entry.AccountKey, balance)
 	}
 
 	return status.SUCCESS
@@ -157,7 +158,7 @@ func NewSendOutput(accountKey id.AccountKey, amount data.Coin) SendOutput {
 }
 
 func CheckAmountsAbsolute(app interface{}, inputs []SendInput, outputs []SendOutput) bool {
-	total := data.NewCoin(0, "OLT")
+	total := data.NewCoinFromInt(0, "OLT")
 	for _, input := range inputs {
 		if input.Amount.LessThan(0) {
 			log.Debug("FAILED: Less Than 0", "input", input)
@@ -197,7 +198,7 @@ func CheckAmountsAbsolute(app interface{}, inputs []SendInput, outputs []SendOut
 		}
 		total.Minus(output.Amount)
 	}
-	if !total.Equals(data.NewCoin(0, "OLT")) {
+	if !total.Equals(data.NewCoinFromInt(0, "OLT")) {
 		log.Debug("FAILED: Doesn't add up", "inputs", inputs, "outputs", outputs)
 		return false
 	}
@@ -211,7 +212,7 @@ func CheckBalance(app interface{}, accountKey id.AccountKey, amount data.Coin) b
 	if balance == nil {
 		// New accounts don't have a balance until the first transaction
 		log.Debug("New Balance", "key", accountKey, "amount", amount, "balance", balance)
-		balance = data.NewBalanceFromString(0, amount.Currency.Name)
+		balance = data.NewBalanceFromInt(0, amount.Currency.Name)
 		if !balance.GetAmountByName(amount.Currency.Name).Equals(amount) {
 			return false
 		}

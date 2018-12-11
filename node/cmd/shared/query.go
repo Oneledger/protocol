@@ -7,6 +7,7 @@ package shared
 
 import (
 	"encoding/hex"
+
 	"github.com/Oneledger/protocol/node/convert"
 	ctypes "github.com/tendermint/tendermint/rpc/core/types"
 
@@ -80,9 +81,7 @@ func GetBalance(accountKey id.AccountKey) *data.Balance {
 		return nil
 	}
 	balance := response.(*data.Balance)
-
 	return balance
-
 }
 
 func GetTxByHash(hash []byte) *ctypes.ResultTx {

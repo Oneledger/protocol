@@ -39,7 +39,7 @@ message SendRequest {
     string party = 1;
     string counterParty = 2;
     Currency currency = 3;
-    int64 amount = 4;
+    double amount = 4;
     int64 gas = 5;
     int64 fee = 6;
 }

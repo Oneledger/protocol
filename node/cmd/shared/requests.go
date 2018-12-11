@@ -7,16 +7,19 @@
 package shared
 
 import (
-	"github.com/Oneledger/protocol/node/action"
-	"github.com/Oneledger/protocol/node/app"
-	"github.com/Oneledger/protocol/node/comm"
-	"github.com/Oneledger/protocol/node/convert"
-	"github.com/Oneledger/protocol/node/log"
-	"github.com/Oneledger/protocol/node/serial"
-	"github.com/Oneledger/protocol/node/version"
 	"os"
+
+	"github.com/Oneledger/protocol/node/comm"
+	"github.com/Oneledger/protocol/node/serial"
+
 	"regexp"
 	"strconv"
+
+	"github.com/Oneledger/protocol/node/action"
+	"github.com/Oneledger/protocol/node/app"
+	"github.com/Oneledger/protocol/node/convert"
+	"github.com/Oneledger/protocol/node/log"
+	"github.com/Oneledger/protocol/node/version"
 )
 
 // Prepare a transaction to be issued.
@@ -222,6 +225,13 @@ func CreateInstallRequest(args *InstallArguments, script []byte) []byte {
 			"owner", owner)
 		return nil
 	}
+
+	/*
+		if zeroBalance.LessThanEqual(0) {
+			log.Warn("No more money left...", "balance", zeroBalance)
+			return nil
+		}
+	*/
 
 	version := ParseVersion(args.Version)
 	if version == nil {
