@@ -2,7 +2,6 @@ package id
 
 import (
 	"bytes"
-	"encoding/base64"
 	"encoding/hex"
 	"github.com/Oneledger/protocol/node/log"
 	"github.com/Oneledger/protocol/node/serial"
@@ -15,6 +14,7 @@ type Validators struct {
 	Signers           []types.SigningValidator
 	Byzantines        []types.Evidence
 	Approved          []Identity
+	ApprovedValidator []types.Validator
 	SelectedValidator Identity
 	NewValidators     []types.Validator
 }
@@ -33,11 +33,13 @@ func (list *Validators) Set(app interface{}, validators []types.SigningValidator
 	}
 	list.Signers = validators
 	list.Byzantines = badValidators
+	list.ApprovedValidator = make([]types.Validator, 0)
 	list.Approved = list.FindApproved(app)
+	list.NewValidators = make([]types.Validator, 0)
 	if hash != nil {
 		list.SelectedValidator = list.FindSelectedValidator(app, hash)
 	}
-	list.NewValidators = make([]types.Validator, 0)
+
 }
 
 func (list *Validators) FindSelectedValidator(app interface{}, hash []byte) Identity {
@@ -60,6 +62,14 @@ func (list *Validators) FindApproved(app interface{}) []Identity {
 			identities := GetIdentities(app)
 			identity := identities.FindTendermint(formatted)
 			approvedIdentities = append(approvedIdentities, identity)
+
+			//add the approved validators to the NewValidators list to be used in the EndBlock call
+			tmp := entry.Validator
+			validator := GetTendermintValidator(identity.TendermintAddress, identity.TendermintPubKey, entry.Validator.Power)
+			if validator != nil {
+				tmp = *validator
+			}
+			list.ApprovedValidator = append(list.ApprovedValidator, tmp)
 		}
 	}
 	return approvedIdentities
@@ -87,27 +97,36 @@ func (list Validators) IsValidAccountKey(key AccountKey, index int) bool {
 	return false
 }
 
-func (list *Validators) AddNewValidator(address string, pubkey string, power int64) bool {
-	var validator types.Validator
-	validator.Address = []byte(address)
-	buffer, err := base64.StdEncoding.DecodeString(pubkey)
+func GetTendermintValidator(address string, pubkey string, power int64) *types.Validator {
+	buffer, err := hex.DecodeString(pubkey)
 	if err != nil {
-		log.Debug("Failed to decode the pubkey", "pubkey", pubkey)
-		return false
+		log.Debug("Failed to decode the pubkey", "pubkey", pubkey, "err", err)
+		return nil
 	}
-	buffer = buffer[4:]
+
+	if len([]byte(buffer)) != ED25519.Size() {
+		log.Debug("Wrong PubKey string length", "buffer", buffer, "size", ED25519.Size())
+		return nil
+	}
+
 	key, err := ImportBytesKey(buffer, ED25519)
 	if err != nil {
-		log.Debug("Failed to convert the pubkey", "buffer", buffer)
-		return false
+		log.Debug("Failed to convert the pubkey", "buffer", pubkey, "err", err)
+		return nil
 	}
 	tpubkey := types.PubKey{
 		Type: strings.ToLower(ED25519.String()),
 		Data: key.Bytes(),
 	}
-	validator.PubKey = tpubkey
-	validator.Power = power
 
-	list.NewValidators = append(list.NewValidators, validator)
-	return true
+	addr, err := hex.DecodeString(address)
+	if err != nil {
+		log.Debug("Failed to decode address", "addres", address)
+		return nil
+	}
+	return &types.Validator{
+		Address: addr,
+		PubKey:  tpubkey,
+		Power:   power,
+	}
 }
