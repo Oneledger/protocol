@@ -17,8 +17,9 @@ import (
 type ApplyValidator struct {
 	Base
 
-	AccountKey id.AccountKey
-
+	AccountKey        id.AccountKey
+	Identity          string
+	NodeName          string
 	TendermintAddress string
 	TendermintPubKey  string
 
@@ -73,6 +74,30 @@ func (transaction *ApplyValidator) ShouldProcess(app interface{}) bool {
 
 func (transaction *ApplyValidator) ProcessDeliver(app interface{}) status.Code {
 	log.Debug("Processing ApplyValidator Transaction for DeliverTx")
+	identities := GetIdentities(app)
+	entry, ok := identities.FindName(transaction.Identity)
+
+	if ok != status.SUCCESS && ok != status.MISSING_DATA {
+		log.Warn("Can't process Registration", "ok", ok)
+		return ok
+	}
+
+	if entry.Name != "" {
+		log.Debug("Ignoring Existing Identity", "identity", transaction.Identity)
+	} else {
+		identity := id.NewIdentity(transaction.Identity, "Contact Information",
+			true, transaction.NodeName, transaction.AccountKey, transaction.TendermintAddress, transaction.TendermintPubKey)
+
+		identities.Add(*identity)
+		log.Info("Updated External Identity", "id", transaction.Identity, "key", transaction.AccountKey)
+	}
+
+	validators := GetValidators(app)
+	validator := id.GetTendermintValidator(transaction.TendermintAddress, transaction.TendermintPubKey, 1)
+	if validator == nil {
+		return status.EXECUTE_ERROR
+	}
+	validators.NewValidators = append(validators.NewValidators, *validator)
 
 	return status.SUCCESS
 }

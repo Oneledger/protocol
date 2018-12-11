@@ -239,8 +239,8 @@ func CreateInstallRequest(args *InstallArguments, script []byte) []byte {
 		return nil
 	}
 
-	fee := conv.GetCoin(args.Fee, args.Currency)
-	gas := conv.GetCoin(args.Gas, args.Currency)
+	fee := conv.GetCoin(args.Fee, "OLT")
+	gas := conv.GetCoin(args.Gas, "OLT")
 
 	sequence := GetSequenceNumber(owner)
 
@@ -343,8 +343,8 @@ func CreateExecuteRequest(args *ExecuteArguments) []byte {
 		return nil
 	}
 
-	fee := conv.GetCoin(args.Fee, args.Currency)
-	gas := conv.GetCoin(args.Gas, args.Currency)
+	fee := conv.GetCoin(args.Fee, "OLT")
+	gas := conv.GetCoin(args.Gas, "OLT")
 
 	sequence := GetSequenceNumber(owner)
 
