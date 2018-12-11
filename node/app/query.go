@@ -133,7 +133,7 @@ func HandleApplyValidatorQuery(application Application, arguments map[string]str
 
 	stake := conv.GetCoin(amount, "VT")
 
-	if balance.GetAmountByName("VT").LessThan(stake.Amount.Int64()) {
+	if balance.GetAmountByName("VT").LessThanCoin(stake) {
 		log.Error("Validator token is not enough")
 		return result
 	}

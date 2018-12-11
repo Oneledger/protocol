@@ -235,6 +235,42 @@ func (coin Coin) LessThan(value float64) bool {
 	return false
 }
 
+// LessThan, for coins...
+func (coin Coin) LessThanCoin(value Coin) bool {
+	if coin.Amount == nil || value.Amount == nil {
+		log.Fatal("Invalid Coin", "coin", coin)
+	}
+
+	if coin.Currency.Id != value.Currency.Id {
+		log.Fatal("Compare two different coin", "coin", coin, "value", value)
+	}
+
+	//log.Dump("LessThanCoin", value, coin)
+
+	if coin.Amount.Cmp(value.Amount) < 0 {
+		return true
+	}
+	return false
+}
+
+// LessThanEqual, for coins...
+func (coin Coin) LessThanEqualCoin(value Coin) bool {
+	if coin.Amount == nil || value.Amount == nil {
+		log.Fatal("Invalid Coin", "coin", coin)
+	}
+
+	if coin.Currency.Id != value.Currency.Id {
+		log.Fatal("Compare two different coin", "coin", coin, "value", value)
+	}
+
+	//log.Dump("LessThanEqualCoin", value, coin)
+
+	if coin.Amount.Cmp(value.Amount) <= 0 {
+		return true
+	}
+	return false
+}
+
 /*
 func (coin Coin) EqualsInt64(value int64) bool {
 	if coin.Amount == nil {
@@ -272,6 +308,9 @@ func (coin Coin) Equals(value Coin) bool {
 		log.Fatal("Invalid Coin", "coin", coin)
 	}
 
+	if coin.Currency.Id != value.Currency.Id {
+		return false
+	}
 	if coin.Amount.Cmp(value.Amount) == 0 {
 		return true
 	}
