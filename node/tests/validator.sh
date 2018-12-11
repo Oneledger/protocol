@@ -17,10 +17,16 @@ sleep 3
 echo "Emma sending validator token with 5 coins"
 olclient applyvalidator -c Emma --id Emma --amount 5
 
-sleep 6
+sleep 4
+
+olclient testmint -c David --party David --amount 10 --currency VT
+
+sleep 4
+
+olclient send -c David --party David --counterparty Bob --amount 6 --currency VT
 
 echo "============================================================="
 olclient list -c Emma
-
+olclient list -c Bob
 
 $CMD/stopOneLedger
