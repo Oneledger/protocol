@@ -56,7 +56,7 @@ func (runner Runner) Call(request *action.OLVMRequest, result *action.OLVMResult
 	}()
 
 	log.Debug("Setup the Context")
-	runner.initialContext(request.From, request.Value)
+	runner.initialContext(request.From, request.Value, request.Context)
 
 	log.Debug("Setup the SourceCode")
 	runner.setupContract(request)

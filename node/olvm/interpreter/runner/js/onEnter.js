@@ -40,7 +40,12 @@ var Context = function () {
 }
 
 Context.prototype.get = function (key) {
-  return this.storage[key];
+  var val = this.storage[key];
+  if (typeof val === 'undefined') {
+    //try get val from context object
+    val = __GetContextValue__(key);
+  }
+  return val;
 }
 
 Context.prototype.set = function (key, val) {
