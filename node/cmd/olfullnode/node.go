@@ -53,6 +53,11 @@ func StartNode(cmd *cobra.Command, args []string) {
 	log.Debug("Starting", "appAddress", global.Current.AppAddress, "on", global.Current.NodeName)
 
 	node := app.NewApplication()
+
+	if node.CheckIfInitialized() == false {
+		log.Fatal("Node was not properly initialized")
+	}
+
 	node.Initialize()
 
 	global.Current.SetApplication(persist.Access(node))
