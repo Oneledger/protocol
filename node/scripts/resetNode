@@ -9,8 +9,8 @@ if [ -z "$1" ]; then
 	export SUBDIR="mach0"
 	export STAGING=$OLDATA/staging
 else
- 	export NODENAME="$1"
-	export SUBDIR="$1"
+ 	export NODENAME="$1"-Node
+	export SUBDIR="$1"-Node
 	export STAGING="$2"
 fi
 
