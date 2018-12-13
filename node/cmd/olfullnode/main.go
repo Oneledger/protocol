@@ -19,7 +19,7 @@ var service common.Service
 var context *global.Context // Global runtime context
 
 func main() {
-	log.Debug("Starting up a OLFullnode", "args", os.Args)
+	log.Debug("Executing an OLFullnode command", "args", os.Args)
 	Execute() // Pass control to Cobra
 }
 
