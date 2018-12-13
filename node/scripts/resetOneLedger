@@ -28,6 +28,7 @@ nodes="David Alice Bob Carol Emma"
 for node in $nodes
 do
 	$CMD/resetNode $node
+	$CMD/initNode $node --newpassword password
 done
 
 olconfig testnet --dir $OLDATA --nonvalidators 1 >> $OLDATA/olcfg.log
