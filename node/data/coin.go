@@ -44,7 +44,7 @@ type Extra struct {
 
 // TODO: Separated from Currency to avoid serializing big floats and giving out this info
 var CurrenciesExtra map[string]Extra = map[string]Extra{
-	"OLT": Extra{big.NewFloat(1000000000000000000), "%.2f"},
+	"OLT": Extra{big.NewFloat(1000000000000000000), "%.6f"},
 	"BTC": Extra{big.NewFloat(1), "%.0f"}, // TODO: This needs to be set correctly
 	"ETH": Extra{big.NewFloat(1), "%.0f"}, // TODO: This needs to be set correctly
 	"VT":  Extra{big.NewFloat(1), "%.0f"},
