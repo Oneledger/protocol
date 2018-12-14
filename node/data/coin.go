@@ -44,7 +44,7 @@ type Extra struct {
 
 // TODO: Separated from Currency to avoid serializing big floats and giving out this info
 var CurrenciesExtra map[string]Extra = map[string]Extra{
-	"OLT": Extra{big.NewFloat(1000000000000000000), "%.6G"},
+	"OLT": Extra{big.NewFloat(1000000000000000000), "%.6f"},
 	"BTC": Extra{big.NewFloat(1), "%.0f"}, // TODO: This needs to be set correctly
 	"ETH": Extra{big.NewFloat(1), "%.0f"}, // TODO: This needs to be set correctly
 	"VT":  Extra{big.NewFloat(1), "%.0f"},
@@ -405,8 +405,9 @@ func (coin Coin) String() string {
 
 	currency := coin.Currency.Name
 	extra := GetExtra(currency)
-	value := bint2float(coin.Amount, extra.Units)
-	text := fmt.Sprintf(extra.Format, value) + " " + currency
+	float := new(big.Float).SetInt(coin.Amount)
+	value := float.Quo(float, extra.Units)
+	text := value.Text('f', 6) + " " + currency
 
 	return text
 }
