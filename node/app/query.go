@@ -603,7 +603,7 @@ func AccountInfo(app Application, name string) interface{} {
 }
 
 func HandleVersionQuery(app Application, arguments map[string]string) interface{} {
-	return version.Current.String()
+	return version.Fullnode.String()
 }
 
 // Get the account information for a given user
