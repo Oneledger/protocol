@@ -7,7 +7,6 @@ package app
 
 import (
 	"bytes"
-	"math/big"
 	"time"
 
 	"github.com/Oneledger/protocol/node/abci"
@@ -86,6 +85,8 @@ func init() {
 
 // Initial the state of the application from persistent data
 func (app Application) Initialize() {
+
+	// This config parameter is driven from the database, not the file or cli
 	raw := app.Admin.Get(data.DatabaseKey("NodeAccountName"))
 	if raw != nil {
 		params := raw.(AdminParameters)
@@ -147,16 +148,20 @@ func (app Application) SetupState(stateBytes []byte) {
 
 	CreateAccount(app, state, publicKey, privateKey)
 
-	privateKey, publicKey = id.GenerateKeys([]byte(global.Current.PaymentAccount), false) // TODO: make a user put a real key actually
+	// TODO: Make a user put in a real key
+	privateKey, publicKey = id.GenerateKeys([]byte(global.Current.PaymentAccount), false)
+
 	CreateAccount(app, &BasicState{global.Current.PaymentAccount, []State{State{"0", "OLT"}}}, publicKey, privateKey)
 }
+
+// TODO: DEBUG
+var ZeroAccountKey id.AccountKey
 
 func CreateAccount(app Application, state *BasicState, publicKey id.PublicKeyED25519, privateKey id.PrivateKeyED25519) {
 
 	// TODO: This should probably only occur on the Admin node, for other nodes how do I know the key?
 	// Register the identity and account first
 	AddAccount(&app, state.Account, data.ONELEDGER, publicKey, privateKey, false)
-	//RegisterLocally(&app, stateAccount, "OneLedger", data.ONELEDGER, publicKey, privateKey)
 
 	account, ok := app.Accounts.FindName(state.Account)
 
@@ -168,22 +173,27 @@ func CreateAccount(app Application, state *BasicState, publicKey id.PublicKeyED2
 	balance := NewBalanceFromStates(state.States)
 
 	app.Balances.Set(account.AccountKey(), balance)
+	if account.Name() == "Zero" {
+		ZeroAccountKey = account.AccountKey()
+	}
 
 	// TODO: Until a block is commited, this data should not be persistent
 	//app.Balances.Commit()
 
-	log.Info("Genesis State Balances database", "balance", balance)
+	log.Info("Genesis State Balances database", "name", state.Account, "balance", balance)
 }
 
-func NewBalanceFromStates(states []State) data.Balance {
-	balance := data.NewBalance()
-	for _, v := range states {
-		value := big.NewInt(0)
-		value.SetString(v.Amount, 10)
-		coin := data.NewCoin(value.Int64(), v.Coin)
-		balance.AddAmount(coin)
+func NewBalanceFromStates(states []State) *data.Balance {
+	var balance *data.Balance
+	for i, v := range states {
+		if i == 0 {
+			balance = data.NewBalanceFromString(v.Amount, v.Coin)
+		} else {
+			coin := data.NewCoinFromString(v.Amount, v.Coin)
+			balance.AddAmount(coin)
+		}
 	}
-	return *balance
+	return balance
 }
 
 // InitChain is called when a new chain is getting created
@@ -309,7 +319,6 @@ func (app Application) CheckTx(tx []byte) ResponseCheckTx {
 }
 
 var chainKey data.DatabaseKey = data.DatabaseKey("chainId")
-var validatorList ValidatorList
 
 // BeginBlock is called when a new block is started
 func (app Application) BeginBlock(req RequestBeginBlock) ResponseBeginBlock {
@@ -319,8 +328,6 @@ func (app Application) BeginBlock(req RequestBeginBlock) ResponseBeginBlock {
 	byzantineValidators := req.ByzantineValidators
 
 	app.Validators.Set(app, validators, byzantineValidators, req.Header.LastBlockHash)
-
-	validatorList = ValidatorList{}
 
 	raw := app.Admin.Get(data.DatabaseKey("PaymentRecord"))
 	if raw == nil {
@@ -380,7 +387,7 @@ func (app *Application) MakePayment(req RequestBeginBlock) {
 			numTrans := height - paymentRecordBlockHeight
 			if numTrans > 10 {
 				//store payment record in database (O OLT, -1) because delete doesn't work
-				amount := data.NewCoin(0, "OLT")
+				amount := data.NewCoinFromInt(0, "OLT")
 				app.SetPaymentRecord(amount, -1)
 				paymentRecordBlockHeight = -1
 			}
@@ -391,7 +398,7 @@ func (app *Application) MakePayment(req RequestBeginBlock) {
 		approvedValidatorIdentities := app.Validators.Approved
 		selectedValidatorIdentity := app.Validators.SelectedValidator
 
-		numberValidators := data.NewCoin(int64(len(approvedValidatorIdentities)), "OLT")
+		numberValidators := data.NewCoinFromInt(int64(len(approvedValidatorIdentities)), "OLT")
 		quotient := paymentBalance.GetAmountByName("OLT").Quotient(numberValidators)
 
 		if int(quotient.Amount.Int64()) > 0 {
@@ -442,18 +449,6 @@ func (app Application) DeliverTx(tx []byte) ResponseDeliverTx {
 		} else if transaction.ShouldProcess(app) {
 			if err = transaction.ProcessDeliver(&app); err != status.SUCCESS {
 				errorCode = err
-			} else {
-				switch t := transaction.(type) {
-				case *action.ApplyValidator:
-					{
-						var validator types.SigningValidator
-
-						validator.Validator.Address = []byte(t.TendermintAddress)
-						validator.Validator.Power = 1
-
-						validatorList.Signers = append(validatorList.Signers, validator)
-					}
-				}
 			}
 		}
 	}
@@ -477,11 +472,17 @@ func (app Application) DeliverTx(tx []byte) ResponseDeliverTx {
 // EndBlock is called at the end of all of the transactions
 func (app Application) EndBlock(req RequestEndBlock) ResponseEndBlock {
 	log.Debug("ABCI: EndBlock", "req", req)
+	validatorUpdates := make([]types.Validator, 0)
+	if req.Height > 1 && len(app.Validators.NewValidators) > 0 {
 
-	var validatorUpdates []types.Validator
+		for _, validator := range app.Validators.ApprovedValidator {
+			validatorUpdates = append(validatorUpdates, validator)
+		}
 
-	for _, element := range validatorList.Signers {
-		validatorUpdates = append(validatorUpdates, element.Validator)
+		for _, validator := range app.Validators.NewValidators {
+			validatorUpdates = append(validatorUpdates, validator)
+		}
+		log.Debug("validators to update", "update", validatorUpdates)
 	}
 
 	result := ResponseEndBlock{
@@ -499,6 +500,7 @@ func (app Application) Commit() ResponseCommit {
 
 	// Commit any pending changes.
 	hash, version := app.Balances.Commit()
+	//log.Dump("ZERO IS NOW", app.Balances.Get(ZeroAccountKey))
 
 	log.Debug("-- Committed New Block", "hash", hash, "version", version)
 

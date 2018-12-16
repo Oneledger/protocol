@@ -5,15 +5,15 @@
 package data
 
 import (
-	"fmt"
-	"github.com/Oneledger/protocol/node/serial"
 	"math/big"
+
+	"github.com/Oneledger/protocol/node/serial"
 )
 
 // Wrap the amount with owner information
 type Balance struct {
 	// Address id.Address
-	Amounts map[string]Coin
+	Amounts map[int]Coin
 }
 
 func init() {
@@ -21,70 +21,101 @@ func init() {
 }
 
 func NewBalance() *Balance {
-	amounts := make(map[string]Coin)
-	coin := NewCoin(0, "OLT")
-	amounts[string(coin.Currency.Key())] = coin
+	amounts := make(map[int]Coin, 0)
 	result := &Balance{
 		Amounts: amounts,
 	}
 	return result
 }
 
-func NewBalanceFromString(amount int64, currency string) *Balance {
-	coin := NewCoin(amount, currency)
+func NewBalanceFromString(amount string, currency string) *Balance {
+	coin := NewCoinFromString(amount, currency)
 	balance := NewBalance()
-	balance.AddAmount(coin)
+	balance.AddCoin(coin)
+	return balance
+}
+
+func NewBalanceFromInt(amount int64, currency string) *Balance {
+	coin := NewCoinFromInt(amount, currency)
+	balance := NewBalance()
+	balance.AddCoin(coin)
 	return balance
 }
 
 func NewBalanceFromCoin(coin Coin) *Balance {
 	balance := NewBalance()
-	balance.AddAmount(coin)
+	balance.AddCoin(coin)
 	return balance
 }
 
+func (b *Balance) FindCoin(currency Currency) *Coin {
+	if coin, ok := b.Amounts[currency.Id]; ok {
+		return &coin
+	}
+	return nil
+}
+
+// Add a new or existing coin
+func (b *Balance) AddCoin(coin Coin) {
+	result := b.FindCoin(coin.Currency)
+	if result == nil {
+		b.Amounts[coin.Currency.Id] = coin
+		return
+	}
+	result.Plus(coin)
+	return
+}
+
+func (b *Balance) MinusCoin(coin Coin) {
+	result := b.FindCoin(coin.Currency)
+	if result == nil {
+		// TODO: This results in a negative coin, which is what was asked for...
+		base := NewCoinFromInt(0, coin.Currency.Name)
+		b.Amounts[coin.Currency.Id] = base.Minus(coin)
+		return
+	}
+	result.Minus(coin)
+	return
+}
+
+/*
 func (b *Balance) FromCoin(coin Coin) {
 	b.Amounts[string(coin.Currency.Key())] = coin
 }
+*/
 
-func (b *Balance) GetAmountByCurrency(currency Currency) Coin {
-	v, ok := b.Amounts[currency.Key()]
-	if !ok {
-		return NewCoin(0, currency.Name)
+func (b *Balance) GetCoin(currency Currency) Coin {
+	result := b.FindCoin(currency)
+	if result == nil {
+		// NOTE: Missing coins are actually zero value coins.
+		return NewCoinFromInt(0, currency.Name)
 	}
-	return v
+	return b.Amounts[currency.Id]
 }
 
+// TODO: GetCoinByName?
 func (b *Balance) GetAmountByName(name string) Coin {
-	v, ok := b.Amounts[Currencies[name].Key()]
-	if !ok {
-		return NewCoin(0, name)
+	currency := NewCurrency(name)
+	result := b.FindCoin(currency)
+	if result == nil {
+		// NOTE: Missing coins are actually zero value coins.
+		return NewCoinFromInt(0, name)
 	}
-	return v
+	return b.Amounts[Currencies[name].Id]
 }
 
 func (b *Balance) SetAmount(coin Coin) {
-	b.Amounts[coin.Currency.Key()] = coin
+	b.Amounts[coin.Currency.Id] = coin
 	return
 }
 
 func (b *Balance) AddAmount(coin Coin) {
-	key := coin.Currency.Key()
-	v, ok := b.Amounts[key]
-	if ok {
-		coin = v.Plus(coin)
-	}
-	b.Amounts[key] = coin
+	b.AddCoin(coin)
 	return
 }
 
 func (b *Balance) MinusAmount(coin Coin) {
-	key := coin.Currency.Key()
-	v, ok := b.Amounts[key]
-	if ok {
-		coin = v.Minus(coin)
-	}
-	b.Amounts[key] = coin
+	b.MinusCoin(coin)
 	return
 }
 
@@ -92,7 +123,7 @@ func (b Balance) IsEnoughBalance(balance Balance) bool {
 	for i, coin := range balance.Amounts {
 		v, ok := b.Amounts[i]
 		if !ok {
-			v = NewCoin(0, coin.Currency.Name)
+			v = NewCoinFromInt(0, coin.Currency.Name)
 		}
 
 		if v.Minus(coin).LessThan(0) {
@@ -103,16 +134,15 @@ func (b Balance) IsEnoughBalance(balance Balance) bool {
 }
 
 //String used in fmt and Dump
-func (b Balance) String() string {
+func (balance Balance) String() string {
 	buffer := ""
-	for _, v := range b.Amounts {
-		if v.Amount.Cmp(big.NewInt(0)) == 1 || v.Currency.Id == 0 {
-			buffer += fmt.Sprintf("%s %s; ", v.Amount.String(), v.Currency.Name)
+	for _, coin := range balance.Amounts {
+		if coin.Amount.Cmp(big.NewInt(0)) != 0 || coin.Currency.Id == 0 {
+			if buffer != "" {
+				buffer += ", "
+			}
+			buffer += coin.String()
 		}
-	}
-
-	if len(buffer) > 0 {
-		buffer = buffer[:len(buffer)-1]
 	}
 	return buffer
 }

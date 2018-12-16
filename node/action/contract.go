@@ -299,8 +299,8 @@ func (transaction *Contract) CreateCompareRequest(app interface{}, owner id.Acco
 	chainId := GetChainID(app)
 
 	// Costs have been taken care of already
-	fee := data.NewCoin(0, "OLT")
-	gas := data.NewCoin(0, "OLT")
+	fee := data.NewCoinFromInt(0, "OLT")
+	gas := data.NewCoinFromInt(0, "OLT")
 
 	next := id.NextSequence(app, transaction.Owner)
 

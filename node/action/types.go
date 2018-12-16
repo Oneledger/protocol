@@ -12,6 +12,7 @@ import (
 
 	"strconv"
 
+	"github.com/Oneledger/protocol/node/data"
 	"github.com/Oneledger/protocol/node/log"
 	"github.com/Oneledger/protocol/node/serial"
 )
@@ -20,11 +21,131 @@ func init() {
 	serial.Register(Event{})
 }
 
+/*
+func NewSendInput(accountKey id.AccountKey, amount data.Coin) SendInput {
+
+	if bytes.Equal(accountKey, []byte("")) {
+		log.Fatal("Missing AccountKey", "key", accountKey, "amount", amount)
+		// TODO: Error handling should be better
+		return SendInput{}
+	}
+
+	if !amount.IsValid() {
+		log.Fatal("Missing Amount", "key", accountKey, "amount", amount)
+	}
+
+	return SendInput{
+		AccountKey: accountKey,
+		Amount:     amount,
+	}
+}
+*/
+
+/*
+// outputs for a send transaction (similar to Bitcoin)
+type SendOutput struct {
+	AccountKey id.AccountKey `json:"account_key"`
+	Amount     data.Coin     `json:"coin"`
+}
+*/
+
+/*
+func NewSendOutput(accountKey id.AccountKey, amount data.Coin) SendOutput {
+
+	if bytes.Equal(accountKey, []byte("")) {
+		log.Fatal("Missing AccountKey", "key", accountKey, "amount", amount)
+		// TODO: Error handling should be better
+		return SendOutput{}
+	}
+
+	if !amount.IsValid() {
+		log.Fatal("Missing Amount", "key", accountKey, "amount", amount)
+	}
+
+	return SendOutput{
+		AccountKey: accountKey,
+		Amount:     amount,
+	}
+}
+*/
+
+/*
+func CheckBalance(app interface{}, accountKey id.AccountKey, amount data.Coin) bool {
+	balances := GetBalances(app)
+
+	balance := balances.Get(accountKey)
+	if balance == nil {
+		// New accounts don't have a balance until the first transaction
+		log.Debug("New Balance", "key", accountKey, "amount", amount, "balance", balance)
+		interim := data.NewBalanceFromInt(0, amount.Currency.Name)
+		balance = interim
+		if !balance.GetAmountByName(amount.Currency.Name).Equals(amount) {
+			return false
+		}
+		return true
+	}
+
+	if !balance.GetAmountByName(amount.Currency.Name).Equals(amount) {
+		log.Warn("Balance Mismatch", "key", accountKey, "amount", amount, "balance", balance)
+		return false
+	}
+	return true
+}
+*/
+
 func GetHeight(app interface{}) int64 {
 	balances := GetBalances(app)
 
 	height := int64(balances.Version)
 	return height
+}
+
+func CheckAmounts(app interface{}, inputs []SendInput, outputs []SendOutput) bool {
+	total := data.NewCoinFromInt(0, "OLT")
+	for _, input := range inputs {
+		if input.Amount.LessThan(0) {
+			log.Debug("FAILED: Less Than 0", "input", input)
+			return false
+		}
+
+		if !input.Amount.IsCurrency("OLT") {
+			log.Debug("FAILED: Send on Currency isn't implement yet")
+			return false
+		}
+
+		if bytes.Compare(input.AccountKey, []byte("")) == 0 {
+			log.Debug("FAILED: Key is Empty", "input", input)
+			return false
+		}
+		if !CheckBalance(app, input.AccountKey, input.Amount) {
+			log.Warn("Balance is incorrect", "input", input)
+			//return false
+		}
+		total.Plus(input.Amount)
+	}
+	for _, output := range outputs {
+
+		if output.Amount.LessThan(0) {
+			log.Debug("FAILED: Less Than 0", "output", output)
+			return false
+		}
+
+		if !output.Amount.IsCurrency("OLT") {
+			log.Debug("FAILED: Send on Currency isn't implement yet")
+			return false
+		}
+
+		if bytes.Compare(output.AccountKey, []byte("")) == 0 {
+			log.Debug("FAILED: Key is Empty", "output", output)
+			return false
+		}
+		total.Minus(output.Amount)
+	}
+	if !total.Equals(data.NewCoinFromInt(0, "OLT")) {
+		log.Debug("FAILED: Doesn't add up", "inputs", inputs, "outputs", outputs)
+		return false
+	}
+	return true
 }
 
 type Event struct {

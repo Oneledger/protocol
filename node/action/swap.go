@@ -264,7 +264,7 @@ type SwapKey struct {
 	Nonce       int64         `json:"nonce"`
 }
 
-func (sk SwapKey) toHash() []byte {
+func (sk SwapKey) Hash() []byte {
 	return _hash(sk)
 }
 
@@ -305,14 +305,14 @@ func (si SwapInit) validate() status.Code {
 }
 
 func (si SwapInit) store(app interface{}) []byte {
-	sk := si.getKey()
-	storeKey := sk.toHash()
+	sk := si.GetKey()
+	storeKey := sk.Hash()
 	log.Debug("Store SwapInit", "key", storeKey, "si", si)
 	SaveSwap(app, storeKey, si)
 	return storeKey
 }
 
-func (si SwapInit) getKey() *SwapKey {
+func (si SwapInit) GetKey() *SwapKey {
 	sk := &SwapKey{
 		Initiator:   si.Party.Key,
 		Participant: si.CounterParty.Key,
@@ -326,7 +326,7 @@ func (si SwapInit) getKey() *SwapKey {
 func (si SwapInit) resolve(app interface{}, stageType swapStageType) Commands {
 	var sv SwapVerify
 	stage, _ := swapStageFlow[SWAP_MATCHING]
-	key := si.getKey().toHash()
+	key := si.GetKey().Hash()
 	account := GetNodeAccount(app)
 
 	commands := amino.DeepCopy(stage.Commands).(Commands)
@@ -646,7 +646,7 @@ func isMatch(left *SwapInit, right *SwapInit) bool {
 
 func matchingSwap(app interface{}, si *SwapInit) swapStageType {
 	ordered := si.order()
-	key := si.getKey().toHash()
+	key := si.GetKey().Hash()
 
 	result := FindSwap(app, key)
 	if result != nil {

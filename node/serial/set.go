@@ -1,7 +1,7 @@
 package serial
 
 import (
-	"math/big"
+	"fmt"
 	"reflect"
 	"runtime/debug"
 	"strconv"
@@ -141,13 +141,13 @@ func SetStruct(parent interface{}, fieldName string, child interface{}) bool {
 		log.Fatal("Not a structure", "element", element, "kind", element.Kind())
 	}
 
-	if !CheckValue(element) {
+	if !CheckValue(element, fieldName) {
 		return false
 	}
 
 	field := element.FieldByName(fieldName)
 
-	if !CheckValue(field) {
+	if !CheckValue(field, fieldName) {
 		return false
 	}
 
@@ -177,7 +177,7 @@ func SetMap(parent interface{}, fieldName string, child interface{}) bool {
 		log.Fatal("Not a map", "element", element)
 	}
 
-	if !CheckValue(element) {
+	if !CheckValue(element, fieldName) {
 		return false
 	}
 
@@ -207,7 +207,8 @@ func SetSlice(parent interface{}, index int, child interface{}) bool {
 		log.Fatal("Not a slice", "element", element)
 	}
 
-	if !CheckValue(element) {
+	fieldName := fmt.Sprintf("%s@%d", reflect.TypeOf(parent).Name, index)
+	if !CheckValue(element, fieldName) {
 		return false
 	}
 
@@ -235,7 +236,8 @@ func SetArray(parent interface{}, index int, child interface{}) bool {
 		log.Fatal("Not a structure", "element", element)
 	}
 
-	if !CheckValue(element) {
+	fieldName := fmt.Sprintf("%s@%d", reflect.TypeOf(parent).Name, index)
+	if !CheckValue(element, fieldName) {
 		return false
 	}
 
@@ -251,9 +253,10 @@ func SetArray(parent interface{}, index int, child interface{}) bool {
 	return true
 }
 
-func CheckValue(element reflect.Value) bool {
+func CheckValue(element reflect.Value, fieldName string) bool {
 	if !element.IsValid() {
-		log.Warn("Map is invalid", "element", element)
+		log.Warn("Map is invalid (not writable)", "fieldName", fieldName, "element", element)
+		debug.PrintStack()
 		return false
 	}
 
@@ -349,10 +352,13 @@ func ConvertNumber(fieldType reflect.Type, value reflect.Value) reflect.Value {
 	*/
 
 	// TODO: shouldn't be manaually creating big ints
-	if fieldType.String() == "*big.Int" {
-		converted := big.NewInt(int64(value.Float()))
-		return reflect.ValueOf(converted)
-	}
+	/*
+		if fieldType.String() == "*big.Int" {
+			log.Debug("Converting pointer to big.Int", "value", value, "fieldType", fieldType)
+			converted := big.NewInt(int64(value.Float()))
+			return reflect.ValueOf(converted)
+		}
+	*/
 
 	switch fieldType.Kind() {
 	case reflect.Int:

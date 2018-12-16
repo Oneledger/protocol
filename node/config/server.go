@@ -9,9 +9,9 @@ import (
 func ServerConfig() {
 	viper.SetConfigName(global.Current.ConfigName)
 
-	viper.AddConfigPath("$OLSCRIPT/data/") // Common script configs
-	viper.AddConfigPath("~/.olfullnode")   // Special user overrides
 	viper.AddConfigPath(".")               // Local directory override
+	viper.AddConfigPath("~/.olfullnode")   // Special user overrides
+	viper.AddConfigPath("$OLSCRIPT/data/") // Common script configs
 
 	err := viper.ReadInConfig()
 	if err != nil {

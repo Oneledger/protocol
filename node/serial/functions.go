@@ -4,6 +4,8 @@
 package serial
 
 import (
+	"fmt"
+	"math/big"
 	"reflect"
 	"strings"
 
@@ -60,6 +62,27 @@ func CloneNode(action *Action, input interface{}) interface{} {
 	return copy
 }
 
+func IsBigint(base interface{}) bool {
+	typeOf := GetBaseType(base)
+
+	if typeOf.String() == "big.Int" {
+		return true
+	}
+	return false
+}
+
+// Special case to handle big ints, forces it to always be a pointer
+func ExtendBigint(base interface{}) interface{} {
+	typeOf := "*big.Int"
+
+	dict := make(map[string]interface{})
+	convert := base.(big.Int)
+	dict["bigIntString"] = convert.String()
+	wrapper := SerialWrapper{Type: typeOf, Size: 1, Fields: dict}
+
+	return wrapper
+}
+
 // Clone and add in SerialWrapper
 func Extend(base interface{}) interface{} {
 
@@ -70,6 +93,10 @@ func Extend(base interface{}) interface{} {
 		dict[""] = base
 		wrapper := SerialWrapper{Type: typeof, Size: 1, Fields: dict}
 		return wrapper
+	}
+
+	if IsBigint(base) {
+		return ExtendBigint(base)
 	}
 
 	action := &Action{
@@ -92,6 +119,13 @@ func ExtendNode(action *Action, input interface{}) interface{} {
 
 	if input == nil || IsNilValue(input) {
 		return input
+	}
+
+	// Special case to handle big.Int's inability to marshal properly
+	if IsBigint(input) {
+		wrapper := ExtendBigint(input)
+		action.Processed[parent].Children[action.Name] = wrapper
+		return wrapper
 	}
 
 	// Ignore this variable because of its type.
@@ -168,6 +202,15 @@ func Contract(base interface{}) interface{} {
 	return CleanValue(action, result)
 }
 
+func ContractBigint(value string, size int) interface{} {
+	number := new(big.Int)
+	_, err := fmt.Sscan(value, number)
+	if err != nil {
+		log.Fatal("Invalid integer string", "err", err, "value", value)
+	}
+	return &number
+}
+
 // Replace any incoming SerialWrappers with the correct structure
 func ContractNode(action *Action, input interface{}) interface{} {
 	grandparent := action.Path.StringPeekN(2)
@@ -180,6 +223,17 @@ func ContractNode(action *Action, input interface{}) interface{} {
 		wrapper := input.(SerialWrapper)
 		stype := wrapper.Type
 		size := wrapper.Size
+
+		if stype == "*big.Int" {
+			result := ContractBigint(wrapper.Fields["bigIntString"].(string), size)
+			for key, _ := range action.Processed[action.Name].Children {
+				delete(action.Processed[action.Name].Children, key)
+			}
+
+			action.IsPointer = true // TODO: Should be handled correctly
+			SetProcessed(action, grandparent, action.Name, result)
+			return CleanValue(action, result)
+		}
 
 		result := Alloc(stype, size)
 
@@ -202,6 +256,17 @@ func ContractNode(action *Action, input interface{}) interface{} {
 		stype := wrapper["Type"].(string)
 		sizeFloat := wrapper["Size"].(float64)
 		size := int(sizeFloat)
+
+		if stype == "*big.Int" {
+			fields := wrapper["Fields"].(map[string]interface{})
+			result := ContractBigint(fields["bigIntString"].(string), size)
+			for key, _ := range action.Processed[action.Name].Children {
+				delete(action.Processed[action.Name].Children, key)
+			}
+			action.IsPointer = true // TODO: Should be handled correctly
+			SetProcessed(action, grandparent, action.Name, result)
+			return CleanValue(action, result)
+		}
 
 		result := Alloc(stype, size)
 
