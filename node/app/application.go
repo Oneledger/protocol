@@ -83,6 +83,18 @@ func init() {
 	serial.Register(AdminParameters{})
 }
 
+func (app Application) CheckIfInitialized() bool {
+	if app.GetPassword() == nil {
+		return false
+	}
+
+	return true
+}
+
+func (app Application) GetPassword() interface{} {
+	return app.Admin.Get(data.DatabaseKey("Password"))
+}
+
 // Initial the state of the application from persistent data
 func (app Application) Initialize() {
 

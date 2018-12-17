@@ -23,11 +23,12 @@ rm -rf $OLDATA/staging/*
 #
 # Process the validators first
 #
-nodes="David-Node Alice-Node Bob-Node Carol-Node Emma-Node"
+nodes="David Alice Bob Carol Emma"
 
 for node in $nodes
 do
 	$CMD/resetNode $node
+	$CMD/initNode $node --newpassword password
 done
 
 olconfig testnet --dir $OLDATA --nonvalidators 1 >> $OLDATA/olcfg.log
