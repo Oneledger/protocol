@@ -7,6 +7,7 @@ package action
 
 import (
 	"bytes"
+	"encoding/hex"
 
 	"github.com/Oneledger/protocol/node/data"
 	"github.com/Oneledger/protocol/node/global"
@@ -139,7 +140,16 @@ func (transaction Send) TransactionTags(app interface{}) Tags {
 		Key:   []byte("tx.receiver"),
 		Value: []byte(tagReceiver),
 	}
+
+	participants := hex.EncodeToString(transaction.Owner) + "," + hex.EncodeToString(transaction.Target)
+
+	tag2 := common.KVPair{
+		Key:   []byte("tx.participants"),
+		Value: []byte(participants),
+	}
+
 	tags = append(tags, tag1)
+	tags = append(tags, tag2)
 
 	return tags
 }
