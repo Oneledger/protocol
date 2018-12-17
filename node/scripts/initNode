@@ -29,7 +29,7 @@ then
 	echo "============================================================" >> $LOG/olfullnode.log
 
 
-  olmonitor start olvm execute -c $name >>$LOG/olvm.log 2>&1 &
+  #olmonitor start olvm execute -c $name >>$LOG/olvm.log 2>&1 &
   
   olfullnode init -c $name\
 		--root $WORK/olfullnode \
