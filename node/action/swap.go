@@ -251,7 +251,7 @@ type swapStage struct {
 type SwapMessage interface {
 	validate() status.Code
 	resolve(interface{}, swapStageType) Commands
-	GetKeyHash(interface{}) string
+	GetKeyHash(interface{}) (string, string)
 }
 
 type Party struct {
@@ -285,13 +285,20 @@ type SwapInit struct {
 func (transaction Swap) TransactionTags(app interface{}) Tags {
 	tags := transaction.Base.TransactionTags(app)
 
-	key := transaction.SwapMessage.GetKeyHash(app)
+	key, participants := transaction.SwapMessage.GetKeyHash(app)
 
 	tag1 := tendermintcommon.KVPair{
 		Key:   []byte("tx.swapkey"),
 		Value: []byte(key),
 	}
+
+	tag2 := tendermintcommon.KVPair{
+		Key:   []byte("tx.participants"),
+		Value: []byte(participants),
+	}
+
 	tags = append(tags, tag1)
+	tags = append(tags, tag2)
 
 	return tags
 }
@@ -340,10 +347,11 @@ func (si SwapInit) GetKey() *SwapKey {
 	return sk
 }
 
-func (si SwapInit) GetKeyHash(app interface{}) string {
-	key := hex.EncodeToString(si.GetKey().Hash()) + "," + hex.EncodeToString(si.Party.Key) + "," + hex.EncodeToString(si.CounterParty.Key)
+func (si SwapInit) GetKeyHash(app interface{}) (string, string) {
+	key := hex.EncodeToString(si.GetKey().Hash())
+	participants := hex.EncodeToString(si.Party.Key) + "," + hex.EncodeToString(si.CounterParty.Key)
 
-	return key
+	return key, participants
 }
 
 func (si SwapInit) resolve(app interface{}, stageType swapStageType) Commands {
@@ -447,12 +455,13 @@ type SwapExchange struct {
 	PreviousTx  []byte          `json:"previoustx"`
 }
 
-func (se SwapExchange) GetKeyHash(app interface{}) string {
+func (se SwapExchange) GetKeyHash(app interface{}) (string, string) {
 	si := FindSwap(app, se.SwapKeyHash)
 
-	key := hex.EncodeToString(se.SwapKeyHash) + "," + hex.EncodeToString(si.Party.Key) + "," + hex.EncodeToString(si.CounterParty.Key)
+	key := hex.EncodeToString(se.SwapKeyHash)
+	participants := hex.EncodeToString(si.Party.Key) + "," + hex.EncodeToString(si.CounterParty.Key)
 
-	return key
+	return key, participants
 }
 
 func (se SwapExchange) validate() status.Code {
@@ -558,12 +567,13 @@ type SwapVerify struct {
 	Event Event `json:"event"`
 }
 
-func (sv SwapVerify) GetKeyHash(app interface{}) string {
+func (sv SwapVerify) GetKeyHash(app interface{}) (string, string) {
 	si := FindSwap(app, sv.Event.SwapKeyHash)
 
-	key := hex.EncodeToString(sv.Event.SwapKeyHash) + "," + hex.EncodeToString(si.Party.Key) + "," + hex.EncodeToString(si.CounterParty.Key)
+	key := hex.EncodeToString(sv.Event.SwapKeyHash)
+	participants := hex.EncodeToString(si.Party.Key) + "," + hex.EncodeToString(si.CounterParty.Key)
 
-	return key
+	return key, participants
 }
 
 func (sv SwapVerify) validate() status.Code {
