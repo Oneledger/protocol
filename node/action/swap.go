@@ -341,7 +341,7 @@ func (si SwapInit) GetKey() *SwapKey {
 }
 
 func (si SwapInit) GetKeyHash(app interface{}) string {
-	key := hex.EncodeToString(si.GetKey().Hash()) + "," + hex.EncodeToString(si.Party.Key)
+	key := hex.EncodeToString(si.GetKey().Hash()) + "," + hex.EncodeToString(si.Party.Key) + "," + hex.EncodeToString(si.CounterParty.Key)
 
 	return key
 }
@@ -450,7 +450,7 @@ type SwapExchange struct {
 func (se SwapExchange) GetKeyHash(app interface{}) string {
 	si := FindSwap(app, se.SwapKeyHash)
 
-	key := hex.EncodeToString(se.SwapKeyHash) + "," + hex.EncodeToString(si.Party.Key)
+	key := hex.EncodeToString(se.SwapKeyHash) + "," + hex.EncodeToString(si.Party.Key) + "," + hex.EncodeToString(si.CounterParty.Key)
 
 	return key
 }
@@ -561,7 +561,7 @@ type SwapVerify struct {
 func (sv SwapVerify) GetKeyHash(app interface{}) string {
 	si := FindSwap(app, sv.Event.SwapKeyHash)
 
-	key := hex.EncodeToString(sv.Event.SwapKeyHash) + "," + hex.EncodeToString(si.Party.Key)
+	key := hex.EncodeToString(sv.Event.SwapKeyHash) + "," + hex.EncodeToString(si.Party.Key) + "," + hex.EncodeToString(si.CounterParty.Key)
 
 	return key
 }
