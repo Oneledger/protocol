@@ -22,6 +22,5 @@ func init() {
 }
 
 func Version(cmd *cobra.Command, args []string) {
-	shared.Console.Info("Olclient version is " + version.Client.String())
-	shared.Console.Info("Protocol version is " + version.Protocol.String())
+	shared.Console.Info("OLVM version is " + version.NewVersion(0, 1, 0, "test", "OLVM").String())
 }

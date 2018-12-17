@@ -5,6 +5,7 @@ package version
 
 import (
 	"fmt"
+
 	"github.com/Oneledger/protocol/node/serial"
 )
 
@@ -20,21 +21,43 @@ func init() {
 	serial.Register(Version{})
 }
 
-var Current *Version  // Version of the source code
+var Fullnode *Version // Version of the source code
 var Protocol *Version // Version of the protocol
+var Client *Version   // Version of the client
 
 // This should be the only copy of the version numbers, anywhere in the code.
 func init() {
-	Current = &Version{
-		Major:      0,
-		Minor:      7,
-		Patch:      1,
-		PreRelease: "",
-		MetaData:   "",
-	}
+	// The protocol
+	Protocol = NewVersion(0, 1, 0, "testnet", "Protocol")
 
-	// The code vs. the underlying protocol version. They will drift at some point...
-	Protocol = Current
+	// The backend server (node) code
+	Fullnode = NewVersion(0, 8, 0, "", "Fullnode")
+
+	// Any of the clients used to connect
+	Client = NewVersion(0, 8, 0, "", "Client")
+}
+
+func NewVersion(major, minor, patch int, release, meta string) *Version {
+	return &Version{
+		Major:      major,
+		Minor:      minor,
+		Patch:      patch,
+		PreRelease: release,
+		MetaData:   meta,
+	}
+}
+
+// Check for compatability, exact major, close to minor, bug fixes don't matter
+func IsCompatible(base *Version, current *Version) bool {
+	if base.Major != current.Major {
+		return false
+	}
+	// Keep everyone within a couple of releases
+	diff := base.Minor - current.Minor
+	if diff < -2 || diff > 2 {
+		return false
+	}
+	return true
 }
 
 func (v *Version) String() string {
