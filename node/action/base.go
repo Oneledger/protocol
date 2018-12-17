@@ -97,7 +97,7 @@ func (b Base) Validate() status.Code {
 
 	// @todo so far Target can be nil, but it can change in future
 	if b.Target == nil {
-		log.Warn("Missing Target", "base.Target", b.Target)
+		log.Debug("Missing Target", "base.Target", b.Target)
 	}
 
 	if b.Signers == nil || len(b.Signers) == 0 {
