@@ -47,6 +47,19 @@ func NewVersion(major, minor, patch int, release, meta string) *Version {
 	}
 }
 
+// Check for compatability, exact major, close to minor, bug fixes don't matter
+func IsCompatible(base *Version, current *Version) bool {
+	if base.Major != current.Major {
+		return false
+	}
+	// Keep everyone within a couple of releases
+	diff := base.Minor - current.Minor
+	if diff < -2 || diff > 2 {
+		return false
+	}
+	return true
+}
+
 func (v *Version) String() string {
 	buffer := fmt.Sprintf("v%d.%d.%d", v.Major, v.Minor, v.Patch)
 	if v.PreRelease != "" {
