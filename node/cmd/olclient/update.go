@@ -8,8 +8,10 @@ package main
 import (
 	"github.com/Oneledger/protocol/node/cmd/shared"
 	"github.com/Oneledger/protocol/node/comm"
+	"github.com/Oneledger/protocol/node/id"
 	"github.com/Oneledger/protocol/node/log"
 	"github.com/spf13/cobra"
+	"reflect"
 )
 
 var updateCmd = &cobra.Command{
@@ -52,10 +54,13 @@ func UpdateAccount(cmd *cobra.Command, args []string) {
 	update := shared.UpdateAccountRequest(request)
 
 	result := comm.SDKRequest(update)
-	_ = result
 
-	shared.Console.Info("Account has been updated")
-
-	// TODO: Print out account details, but priv key should have been blank!
-	//log.Dump("Results", result)
+	switch value := result.(type) {
+	case string:
+		shared.Console.Info(value)
+	case id.Account:
+		shared.Console.Info("Created account: ", value.Name())
+	default:
+		shared.Console.Info("Invalid type: ", reflect.TypeOf(value).String())
+	}
 }
