@@ -7,6 +7,7 @@ package action
 
 import (
 	"bytes"
+	"encoding/hex"
 	tendermintcommon "github.com/tendermint/tendermint/libs/common"
 
 	"github.com/tendermint/go-amino"
@@ -250,7 +251,7 @@ type swapStage struct {
 type SwapMessage interface {
 	validate() status.Code
 	resolve(interface{}, swapStageType) Commands
-	GetKeyHash() []byte
+	GetKeyHash(interface{}) string
 }
 
 type Party struct {
@@ -281,14 +282,14 @@ type SwapInit struct {
 	Preimage     []byte    `json:"preimage"`
 }
 
-func (transaction Swap) TransactionTags() Tags {
-	tags := transaction.Base.TransactionTags()
+func (transaction Swap) TransactionTags(app interface{}) Tags {
+	tags := transaction.Base.TransactionTags(app)
 
-	keyhash := transaction.SwapMessage.GetKeyHash()
+	key := transaction.SwapMessage.GetKeyHash(app)
 
 	tag1 := tendermintcommon.KVPair{
 		Key:   []byte("tx.swapkey"),
-		Value: []byte(keyhash),
+		Value: []byte(key),
 	}
 	tags = append(tags, tag1)
 
@@ -339,8 +340,8 @@ func (si SwapInit) GetKey() *SwapKey {
 	return sk
 }
 
-func (si SwapInit) GetKeyHash() []byte {
-	key := si.GetKey().Hash()
+func (si SwapInit) GetKeyHash(app interface{}) string {
+	key := hex.EncodeToString(si.GetKey().Hash()) + "," + hex.EncodeToString(si.Party.Key)
 
 	return key
 }
@@ -446,8 +447,12 @@ type SwapExchange struct {
 	PreviousTx  []byte          `json:"previoustx"`
 }
 
-func (si SwapExchange) GetKeyHash() []byte {
-	return si.SwapKeyHash
+func (se SwapExchange) GetKeyHash(app interface{}) string {
+	si := FindSwap(app, se.SwapKeyHash)
+
+	key := hex.EncodeToString(se.SwapKeyHash) + "," + hex.EncodeToString(si.Party.Key)
+
+	return key
 }
 
 func (se SwapExchange) validate() status.Code {
@@ -553,8 +558,12 @@ type SwapVerify struct {
 	Event Event `json:"event"`
 }
 
-func (si SwapVerify) GetKeyHash() []byte {
-	return si.Event.SwapKeyHash
+func (sv SwapVerify) GetKeyHash(app interface{}) string {
+	si := FindSwap(app, sv.Event.SwapKeyHash)
+
+	key := hex.EncodeToString(sv.Event.SwapKeyHash) + "," + hex.EncodeToString(si.Party.Key)
+
+	return key
 }
 
 func (sv SwapVerify) validate() status.Code {

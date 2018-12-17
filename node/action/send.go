@@ -131,8 +131,8 @@ func (transaction *Send) Resolve(app interface{}) Commands {
 	return []Command{}
 }
 
-func (transaction Send) TransactionTags() Tags {
-	tags := transaction.Base.TransactionTags()
+func (transaction Send) TransactionTags(app interface{}) Tags {
+	tags := transaction.Base.TransactionTags(app)
 
 	tagReceiver := transaction.SendTo.AccountKey.String()
 	tag1 := common.KVPair{

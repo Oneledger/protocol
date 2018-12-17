@@ -48,7 +48,7 @@ type PublicKey = id.PublicKey
 type Transaction interface {
 	GetSigners() []id.PublicKey
 	GetOwner() id.AccountKey
-	TransactionTags() Tags
+	TransactionTags(interface{}) Tags
 	Validate() status.Code
 	ProcessCheck(interface{}) status.Code
 	ShouldProcess(interface{}) bool
@@ -214,7 +214,7 @@ func (t Type) String() string {
 
 type Tags common.KVPairs
 
-func (b Base) TransactionTags() Tags {
+func (b Base) TransactionTags(app interface{}) Tags {
 
 	//Add transaction type as a tag
 	tagType := b.Type.String()
