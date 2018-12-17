@@ -7,6 +7,7 @@ package action
 
 import (
 	"bytes"
+	tendermintcommon "github.com/tendermint/tendermint/libs/common"
 
 	"github.com/tendermint/go-amino"
 
@@ -249,6 +250,7 @@ type swapStage struct {
 type SwapMessage interface {
 	validate() status.Code
 	resolve(interface{}, swapStageType) Commands
+	GetKeyHash() []byte
 }
 
 type Party struct {
@@ -277,6 +279,20 @@ type SwapInit struct {
 	Gas          data.Coin `json:"fee"`
 	Nonce        int64     `json:"nonce"`
 	Preimage     []byte    `json:"preimage"`
+}
+
+func (transaction Swap) TransactionTags() Tags {
+	tags := transaction.Base.TransactionTags()
+
+	keyhash := transaction.SwapMessage.GetKeyHash()
+
+	tag1 := tendermintcommon.KVPair{
+		Key:   []byte("tx.swapkey"),
+		Value: []byte(keyhash),
+	}
+	tags = append(tags, tag1)
+
+	return tags
 }
 
 func (si SwapInit) validate() status.Code {
@@ -321,6 +337,12 @@ func (si SwapInit) GetKey() *SwapKey {
 		Nonce:       si.Nonce,
 	}
 	return sk
+}
+
+func (si SwapInit) GetKeyHash() []byte {
+	key := si.GetKey().Hash()
+
+	return key
 }
 
 func (si SwapInit) resolve(app interface{}, stageType swapStageType) Commands {
@@ -424,6 +446,10 @@ type SwapExchange struct {
 	PreviousTx  []byte          `json:"previoustx"`
 }
 
+func (si SwapExchange) GetKeyHash() []byte {
+	return si.SwapKeyHash
+}
+
 func (se SwapExchange) validate() status.Code {
 	log.Debug("Validating SwapExchange")
 
@@ -525,6 +551,10 @@ func (se SwapExchange) resolve(app interface{}, stageType swapStageType) Command
 
 type SwapVerify struct {
 	Event Event `json:"event"`
+}
+
+func (si SwapVerify) GetKeyHash() []byte {
+	return si.Event.SwapKeyHash
 }
 
 func (sv SwapVerify) validate() status.Code {
