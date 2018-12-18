@@ -252,6 +252,7 @@ func HandleCreateSendRequest(application Application, arguments map[string]strin
 	if party == nil || counterParty == nil {
 		log.Fatal("System doesn't recognize the parties", "args", args,
 			"party", party, "counterParty", counterParty)
+		return result
 	}
 
 	if args.Currency == "" || args.Amount == "" {
@@ -543,6 +544,16 @@ func AccountKey(app Application, name string) id.AccountKey {
 	account, ok := app.Accounts.FindName(name)
 	if ok == status.SUCCESS && account.Name() != "" {
 		return account.AccountKey()
+	}
+
+	accountKey, err := hex.DecodeString(name)
+	if err != nil {
+		return nil
+	}
+
+	identity = app.Identities.FindKey(accountKey)
+	if identity.Name != "" {
+		return identity.AccountKey
 	}
 	return nil
 }
