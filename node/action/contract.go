@@ -6,6 +6,8 @@
 package action
 
 import (
+	"bytes"
+
 	"github.com/Oneledger/protocol/node/comm"
 	"github.com/Oneledger/protocol/node/data"
 	"github.com/Oneledger/protocol/node/global"
@@ -201,7 +203,15 @@ func (transaction *Contract) Execute(app interface{}) Transaction {
 	validatorList := id.GetValidators(app)
 	selectedValidatorIdentity := validatorList.SelectedValidator
 
-	if global.Current.NodeName == selectedValidatorIdentity.NodeName {
+	//if global.Current.NodeName == selectedValidatorIdentity.NodeName {
+	accounts := GetAccounts(app)
+	nodeAccount, err := accounts.FindName(global.Current.NodeAccountName)
+	if err != status.SUCCESS {
+		log.Warn("Missing NodeAccount for Contracts", "name", global.Current.NodeAccountName)
+		return nil
+	}
+
+	if bytes.Compare(nodeAccount.AccountKey(), selectedValidatorIdentity.AccountKey) == 0 {
 		executeData := transaction.Data.(Execute)
 		smartContracts := GetSmartContracts(app)
 
