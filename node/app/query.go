@@ -608,7 +608,7 @@ func AccountInfo(app Application, name string) interface{} {
 
 	account, ok := app.Accounts.FindName(name)
 	if ok == status.SUCCESS {
-		return account
+		return []id.Account{account}
 	}
 	return "Account " + name + " Not Found" + global.Current.NodeName
 }
@@ -627,7 +627,6 @@ func HandleBalanceQuery(app Application, arguments map[string]string) interface{
 	parts := strings.Split(text, "=")
 	if len(parts) > 1 {
 
-		// TODO: Encoded because it is dumped into a string
 		key, _ = hex.DecodeString(parts[1])
 	}
 	return Balance(app, key)
@@ -636,11 +635,9 @@ func HandleBalanceQuery(app Application, arguments map[string]string) interface{
 func Balance(app Application, accountKey []byte) interface{} {
 	balance := app.Balances.Get(accountKey)
 	if balance != nil {
-		log.Dump("###### FOUND BALANCE #########", balance)
 		return balance
 	}
 	result := data.NewBalance()
-	log.Dump("###### NEW BALANCE #########", result)
 
 	return &result
 }

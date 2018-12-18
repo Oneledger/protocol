@@ -53,6 +53,7 @@ func ListNode(cmd *cobra.Command, args []string) {
 	//log.Debug("Checking Account", "account", account)
 	accountRequest := FormatAccountRequest()
 	identityRequest := FormatIdentityRequest()
+
 	accounts := comm.Query("/account", accountRequest)
 	identities := comm.Query("/identity", identityRequest)
 
