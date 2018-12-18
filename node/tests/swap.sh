@@ -30,7 +30,7 @@ olclient swap --root $OLDATA/Bob-Node  \
 	--fee 0.02 
 
 echo "Wait for chain to finish"
-olclient wait --completed swap --party Alice --party Bob 
+olclient --root $OLDATA/Emma-Node --completed swap --party Alice --party Bob
 
 sleep 5
 echo "============================================================="

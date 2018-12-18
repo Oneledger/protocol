@@ -203,7 +203,7 @@ func initializeDatabase(name string, newType StorageType) (*iavl.MutableTree, *d
 	storage, err := db.NewGoLevelDB("OneLedger-"+name, global.DatabaseDir())
 	if err != nil {
 		log.Error("Database create failed", "err", err, "count", count)
-		panic("Can't create a database")
+		panic("Can't create a database: " + global.DatabaseDir() + "/OneLedger-" + name)
 	}
 
 	// TODO: cosmos seems to be using MutableTree now????

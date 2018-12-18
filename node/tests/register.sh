@@ -26,4 +26,4 @@ done
 
 # Give it some time to get committed
 #sleep 20
-olclient wait --completed identity --identity $list
+olclient --root $OLDATA/Emma-Node wait --completed identity --identity $list
