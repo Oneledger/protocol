@@ -16,7 +16,7 @@ $TEST/testmint.sh
 sleep 3
 
 echo "Alice initiate the swap, 5BTC to exchange 100ETH"
-olclient swap -c Alice \
+olclient swap --root $OLDATA/Alice-Node \
 	--party Alice --counterparty Bob --nonce 28 \
 	--amount 5.2 --currency BTC --exchange 100.1 --excurrency ETH \
 	--fee 0.02 
@@ -24,7 +24,7 @@ olclient swap -c Alice \
 sleep 3
 
 echo "Bob participate the swap 100ETH to exchange 5BTC"
-olclient swap -c Bob \
+olclient swap --root $OLDATA/Bob-Node  \
 	--party Bob --counterparty Alice --nonce 28 \
 	--amount 100.1 --currency ETH --exchange 5.2 --excurrency BTC \
 	--fee 0.02 

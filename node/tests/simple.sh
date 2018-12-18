@@ -8,7 +8,7 @@ CMD=$GOPATH/src/github.com/Oneledger/protocol/node/scripts
 $CMD/resetOneLedger
 $CMD/startOneLedger
 
-olclient send -c Bob --party Bob --counterparty Alice --amount 1000 --currency OLT
+olclient send --root $OLDATA/Bob-Node --party Bob --counterparty Alice --amount 1000 --currency OLT
 
 sleep 3
 

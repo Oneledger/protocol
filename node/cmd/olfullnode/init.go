@@ -66,7 +66,7 @@ func initNode(cmd *cobra.Command, _ []string) error {
 	if err != nil {
 		return err
 	}
-	dir := filepath.Join(args.folder, global.Current.ConfigName+"-Node", "consensus", "config")
+	dir := filepath.Join(args.folder, "consensus", "config")
 	err = os.MkdirAll(dir, 0755)
 	if err != nil {
 		return err
@@ -84,6 +84,11 @@ func initNode(cmd *cobra.Command, _ []string) error {
 	pvFile := privval.GenFilePV(filepath.Join(dir, "priv_validator.json"))
 	pvFile.Save()
 
+	return nil
+}
+
+func setupPasswod() {
+
 	log.Debug("Setup Password")
 	shouldReplacePassword := false
 
@@ -91,6 +96,7 @@ func initNode(cmd *cobra.Command, _ []string) error {
 	currentPlainPassword := initCmdArguments.password
 
 	node := app.NewApplication()
+	node.Initialize()
 
 	adminPassword := node.GetPassword()
 
@@ -109,11 +115,11 @@ func initNode(cmd *cobra.Command, _ []string) error {
 
 		if err != nil {
 			log.Fatal("Wrong password", "error", err)
-			return err
+			return
 		}
 
 		// TODO were already initialized, nothing to do now?
-		return nil
+		return
 	}
 
 	if shouldReplacePassword {
@@ -149,12 +155,11 @@ func initNode(cmd *cobra.Command, _ []string) error {
 
 		if err != nil {
 			log.Fatal("Can't encrypt password", "error", err)
-			return err
+			return
 		}
 
 		session := node.Admin.Begin()
 		session.Set(data.DatabaseKey("Password"), passwordEncrypted)
 		session.Commit()
 	}
-	return nil
 }

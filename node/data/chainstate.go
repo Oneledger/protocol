@@ -200,7 +200,7 @@ func (state *ChainState) reset() ([]byte, int64) {
 // Create or attach to a database
 func initializeDatabase(name string, newType StorageType) (*iavl.MutableTree, *db.GoLevelDB) {
 	// TODO: Assuming persistence for right now
-	storage, err := db.NewGoLevelDB("OneLedger-"+name, global.Current.RootDir)
+	storage, err := db.NewGoLevelDB("OneLedger-"+name, global.DatabaseDir())
 	if err != nil {
 		log.Error("Database create failed", "err", err, "count", count)
 		panic("Can't create a database")

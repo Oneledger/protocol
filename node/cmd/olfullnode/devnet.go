@@ -46,26 +46,25 @@ type testnetConfig struct {
 	numNonValidators int
 	outputDir        string
 	p2pPort          int
-	genesis          string
 }
 
 var testnetArgs = &testnetConfig{}
 
 var testnetCmd = &cobra.Command{
-	Use:   "testnet",
-	Short: "Initializes files for a testnet",
-	RunE:  runTestnet,
+	Use:   "devnet",
+	Short: "Initializes files for a devnet",
+	RunE:  runDevnet,
 }
 
 func init() {
 	initCmd.AddCommand(testnetCmd)
 
-	testnetCmd.Flags().IntVar(&testnetArgs.numValidators, "validators", 4, "Number of validators to initialize testnet with")
-	testnetCmd.Flags().IntVar(&testnetArgs.numNonValidators, "nonvalidators", 0, "Number of non-validators to initialize the testnet with")
-	testnetCmd.Flags().StringVar(&testnetArgs.outputDir, "dir", "./", "Directory to store initialization files for the testnet, default current folder")
+	testnetCmd.Flags().IntVar(&testnetArgs.numValidators, "validators", 4, "Number of validators to initialize devnet with")
+	testnetCmd.Flags().IntVar(&testnetArgs.numNonValidators, "nonvalidators", 0, "Number of non-validators to initialize the devnet with")
+	testnetCmd.Flags().StringVar(&testnetArgs.outputDir, "dir", "./", "Directory to store initialization files for the devnet, default current folder")
 }
 
-func runTestnet(cmd *cobra.Command, _ []string) error {
+func runDevnet(cmd *cobra.Command, _ []string) error {
 	args := testnetArgs
 
 	if args.numValidators+args.numNonValidators > len(nodeNames) {
