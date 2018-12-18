@@ -2,8 +2,6 @@ package main
 
 import (
 	"fmt"
-	"github.com/Oneledger/protocol/node/global"
-	"github.com/tendermint/tendermint/types"
 	"os"
 	"path/filepath"
 
@@ -60,13 +58,11 @@ var testnetCmd = &cobra.Command{
 }
 
 func init() {
-	RootCmd.AddCommand(testnetCmd)
+	initCmd.AddCommand(testnetCmd)
 
 	testnetCmd.Flags().IntVar(&testnetArgs.numValidators, "validators", 4, "Number of validators to initialize testnet with")
 	testnetCmd.Flags().IntVar(&testnetArgs.numNonValidators, "nonvalidators", 0, "Number of non-validators to initialize the testnet with")
-	testnetCmd.Flags().StringVar(&testnetArgs.outputDir, "dir", "./oltestnet", "Directory to store initialization files for the testnet")
-	testnetCmd.Flags().StringVar(&testnetArgs.genesis, "genesis", "", "Gensis file to use to generate new node key file")
-	// TODO: Implement populate persistent peers
+	testnetCmd.Flags().StringVar(&testnetArgs.outputDir, "dir", "./", "Directory to store initialization files for the testnet, default current folder")
 }
 
 func runTestnet(cmd *cobra.Command, _ []string) error {
@@ -74,31 +70,6 @@ func runTestnet(cmd *cobra.Command, _ []string) error {
 
 	if args.numValidators+args.numNonValidators > len(nodeNames) {
 		return fmt.Errorf("Don't have enough node names, can't specify more than %d nodes", len(nodeNames))
-	}
-
-	if args.genesis != "" {
-		genesisdoc, err := types.GenesisDocFromFile(filepath.Join(args.outputDir, args.genesis))
-		if err != nil {
-			return err
-		}
-		dir := filepath.Join(args.outputDir, global.Current.ConfigName+"-Node", "consensus", "config")
-		err = os.MkdirAll(dir, 0755)
-		if err != nil {
-			return err
-		}
-		err = genesisdoc.SaveAs(filepath.Join(dir, "genesis.json"))
-		if err != nil {
-			return err
-		}
-		// Make node key
-		_, err = p2p.LoadOrGenNodeKey(filepath.Join(dir, "node_key.json"))
-		if err != nil {
-			return err
-		}
-		// Make private validator file
-		pvFile := privval.GenFilePV(filepath.Join(dir, "priv_validator.json"))
-		pvFile.Save()
-		return nil
 	}
 
 	validatorList := make([]consensus.GenesisValidator, testnetArgs.numValidators)

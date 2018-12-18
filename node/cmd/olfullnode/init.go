@@ -13,20 +13,26 @@ import (
 	"github.com/Oneledger/protocol/node/global"
 	"github.com/Oneledger/protocol/node/log"
 	"github.com/spf13/cobra"
+	"github.com/tendermint/tendermint/p2p"
+	"github.com/tendermint/tendermint/privval"
+	"github.com/tendermint/tendermint/types"
 	"golang.org/x/crypto/bcrypt"
 	"os"
+	"path/filepath"
 	"runtime/debug"
 )
 
 var initCmd = &cobra.Command{
 	Use:   "init",
 	Short: "Initialize node (server)",
-	Run:   InitNode,
+	RunE:  initNode,
 }
 
 type InitCmdArguments struct {
-	Password string
-	NewPassword string
+	password    string
+	newPassword string
+	genesis     string
+	folder      string
 }
 
 var initCmdArguments *InitCmdArguments = &InitCmdArguments{}
@@ -34,12 +40,14 @@ var initCmdArguments *InitCmdArguments = &InitCmdArguments{}
 func init() {
 	RootCmd.AddCommand(initCmd)
 
-	initCmd.Flags().StringVar(&initCmdArguments.Password, "password", "", "existing node password")
-	initCmd.Flags().StringVar(&initCmdArguments.NewPassword, "newpassword", "", "new node password")
+	initCmd.Flags().StringVar(&initCmdArguments.password, "password", "", "existing node password")
+	initCmd.Flags().StringVar(&initCmdArguments.newPassword, "newpassword", "", "new node password")
+	initCmd.Flags().StringVar(&initCmdArguments.genesis, "genesis", "", "Gensis file to use to generate new node key file")
+	initCmd.Flags().StringVar(&testnetArgs.outputDir, "dir", "./", "Directory to store initialization files for the node, default current folder")
 }
 
-func InitNode(cmd *cobra.Command, args []string) {
-
+func initNode(cmd *cobra.Command, _ []string) error {
+	args := initCmdArguments
 	// Catch any underlying panics, for now just print out the details properly and stop
 	defer func() {
 		if r := recover(); r != nil {
@@ -54,10 +62,33 @@ func InitNode(cmd *cobra.Command, args []string) {
 
 	log.Debug("Initializing", "appAddress", global.Current.AppAddress, "on", global.Current.NodeName)
 
+	genesisdoc, err := types.GenesisDocFromFile(filepath.Join(args.folder, args.genesis))
+	if err != nil {
+		return err
+	}
+	dir := filepath.Join(args.folder, global.Current.ConfigName+"-Node", "consensus", "config")
+	err = os.MkdirAll(dir, 0755)
+	if err != nil {
+		return err
+	}
+	err = genesisdoc.SaveAs(filepath.Join(dir, "genesis.json"))
+	if err != nil {
+		return err
+	}
+	// Make node key
+	_, err = p2p.LoadOrGenNodeKey(filepath.Join(dir, "node_key.json"))
+	if err != nil {
+		return err
+	}
+	// Make private validator file
+	pvFile := privval.GenFilePV(filepath.Join(dir, "priv_validator.json"))
+	pvFile.Save()
+
+	log.Debug("Setup Password")
 	shouldReplacePassword := false
 
-	newPlainPassword := initCmdArguments.NewPassword
-	currentPlainPassword := initCmdArguments.Password
+	newPlainPassword := initCmdArguments.newPassword
+	currentPlainPassword := initCmdArguments.password
 
 	node := app.NewApplication()
 
@@ -78,11 +109,11 @@ func InitNode(cmd *cobra.Command, args []string) {
 
 		if err != nil {
 			log.Fatal("Wrong password", "error", err)
-			return
+			return err
 		}
 
 		// TODO were already initialized, nothing to do now?
-		return
+		return nil
 	}
 
 	if shouldReplacePassword {
@@ -111,7 +142,6 @@ func InitNode(cmd *cobra.Command, args []string) {
 			// @TODO need some actual password policy rules here or maybe in another place
 			if len(newPlainPassword) < 4 {
 				log.Fatal("Password should be longer than 4 characters")
-				return
 			}
 		}
 
@@ -119,10 +149,12 @@ func InitNode(cmd *cobra.Command, args []string) {
 
 		if err != nil {
 			log.Fatal("Can't encrypt password", "error", err)
+			return err
 		}
 
 		session := node.Admin.Begin()
 		session.Set(data.DatabaseKey("Password"), passwordEncrypted)
 		session.Commit()
 	}
+	return nil
 }
