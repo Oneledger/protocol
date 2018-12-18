@@ -465,7 +465,7 @@ func (app Application) DeliverTx(tx []byte) ResponseDeliverTx {
 		}
 	}
 
-	tags := transaction.TransactionTags()
+	tags := transaction.TransactionTags(app)
 
 	result := ResponseDeliverTx{
 		Code:      errorCode,
