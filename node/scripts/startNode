@@ -24,7 +24,7 @@ export DATA=$WORK/consensus
 
 pushd $WORK > /dev/null
 
-pids=`pgrep -f "^olfullnode node -c $name.*"`
+pids=`pgrep -f "^olfullnode node --root $WORK.*"`
 
 if [ -z "$pids" ]
 
@@ -34,7 +34,7 @@ then
 	echo "============================================================" >> $LOG/olfullnode.log
 
 
-  olmonitor start olvm execute -c $name >>$LOG/olvm.log 2>&1 &
+  olmonitor start olvm execute --root $WORK >>$LOG/olvm.log 2>&1 &
   
   olfullnode node --root $WORK \
 		--tendermintRoot $DATA \
