@@ -57,7 +57,7 @@
     "account": "Zero",
     "states": [
       {
-        "amount": "1000000000000000000000000000",
+        "amount": "1000000000",
         "currency": "OLT"
       },
       {
