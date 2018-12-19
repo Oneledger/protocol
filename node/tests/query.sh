@@ -8,7 +8,7 @@ CMD=$GOPATH/src/github.com/Oneledger/protocol/node/scripts
 # Startup the chains
 $CMD/startOneLedger
 
-olclient list -c Alice 
-olclient list -c Bob 
+olclient list --root $OLDATA/Bob-Node
+olclient list --root $OLDATA/Alice-Node
 
 $CMD/stopOneLedger

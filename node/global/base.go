@@ -47,6 +47,9 @@ type Context struct {
 
 	SDKAddress string // SDK RPC address
 
+	OLVMProtocol string // Config for the OLVM
+	OLVMAddress  string
+
 	Sequence int64 // replay protection
 
 	TendermintRoot    string
@@ -54,6 +57,8 @@ type Context struct {
 	TendermintPubKey  string
 
 	PersistentPeers string
+	Seeds           string
+	SeedMode        bool
 	P2PAddress      string
 
 	ConsensusNode *tmnode.Node
@@ -74,11 +79,11 @@ func NewContext(name string) *Context {
 		Debug:            debug,
 		DisablePasswords: true,
 
-		ConfigName:      "olclient", // TODO: needs to deal with client/server
+		ConfigName:      "config", // TODO: needs to deal with client/server
 		NodeName:        name,
 		NodeAccountName: "",
 		PaymentAccount:  "Payment",
-		RootDir:         os.Getenv("OLDATA") + "/" + name + "/olfullnode",
+		RootDir:         os.Getenv("OLDATA") + "/" + name,
 
 		SDKAddress: "http://127.0.01:6900",
 	}
@@ -98,6 +103,11 @@ func (context *Context) GetApplication() persist.Access {
 }
 
 func ConsensusDir() string {
-	result, _ := filepath.Abs(filepath.Join(Current.RootDir, "..", "consensus"))
+	result, _ := filepath.Abs(filepath.Join(Current.RootDir, "consensus"))
+	return result
+}
+
+func DatabaseDir() string {
+	result, _ := filepath.Abs(filepath.Join(Current.RootDir, "nodedata"))
 	return result
 }

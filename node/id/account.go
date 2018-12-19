@@ -63,8 +63,6 @@ func (acc *Accounts) FindIdentity(identity Identity) (Account, status.Code) {
 }
 
 func (acc *Accounts) FindNameOnChain(name string, chain data.ChainType) (Account, status.Code) {
-	log.Debug("FindNameOnChain", "name", name, "chain", chain)
-
 	// TODO: Should be replaced with a real index
 	for _, entry := range acc.FindAll() {
 		if Matches(entry, name, chain) {

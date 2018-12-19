@@ -20,7 +20,7 @@ mkdir -p $OLDATA/bitcoin/A
 mkdir -p $OLDATA/bitcoin/B
 mkdir -p $OLDATA/bitcoin/C
 
-# Set a minimal block generation to insure that all accounts have balances 
+# Set a minimal block generation to insure that all accounts have balances
 echo "Preallocating Bitcoin Accounts"
 $CMD/startBitcoin
 sleep 3

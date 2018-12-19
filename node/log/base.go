@@ -6,6 +6,7 @@
 package log
 
 import (
+	"errors"
 	"fmt"
 	"os"
 
@@ -79,5 +80,5 @@ func Error(msg string, args ...interface{}) {
 
 func Fatal(msg string, args ...interface{}) {
 	current.Error("FATAL: "+msg, args...)
-	panic("Execution stopped due to " + msg)
+	panic(errors.New("Execution stopped due to " + msg))
 }

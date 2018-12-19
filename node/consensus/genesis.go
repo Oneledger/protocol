@@ -14,7 +14,7 @@ type GenesisValidator = types.GenesisValidator
 
 func DefaultGenesisDoc() *GenesisDoc {
 	validators := make([]GenesisValidator, 0)
-	appStateBytes, err := DefaultAppState().MarshalJSON()
+	appStateBytes, err := NewAppState().MarshalJSON()
 	if err != nil {
 		log.Fatal("Failed to marshal DefaultAppState")
 	}
@@ -33,12 +33,12 @@ type AppState struct {
 	States  []data.Coin `json:"states"`
 }
 
-func DefaultAppState() *AppState {
+func NewAppState() *AppState {
 	return &AppState{
 		Account: "Zero",
 		States: []data.Coin{
-			data.NewCoin(1000000000000, "OLT"),
-			data.NewCoin(10000, "VT"),
+			data.NewCoinFromInt(1000000000001, "OLT"),
+			data.NewCoinFromInt(10001, "VT"),
 		},
 	}
 }

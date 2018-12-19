@@ -25,13 +25,14 @@ func init() {
 }
 
 const (
-	INVALID       Type = iota
-	REGISTER           // Register a new identity with the chain
-	SEND               // Do a normal send transaction on local chain
-	PAYMENT            // Do a payment transaction on local chain
-	EXTERNAL_SEND      // Do send on external chain
-	SWAP               // Start a swap between chains
-	APPLY_VALIDATOR    // Apply a dynamic validator
+	INVALID         Type = iota
+	REGISTER             // Register a new identity with the chain
+	SEND                 // Do a normal send transaction on local chain
+	PAYMENT              // Do a payment transaction on local chain
+	EXTERNAL_SEND        // Do send on external chain
+	SWAP                 // Start a swap between chains
+	SMART_CONTRACT       // Install and Execute smart contracts
+	APPLY_VALIDATOR      // Apply a dynamic validator
 )
 
 const (
@@ -47,7 +48,7 @@ type PublicKey = id.PublicKey
 type Transaction interface {
 	GetSigners() []id.PublicKey
 	GetOwner() id.AccountKey
-	TransactionTags() Tags
+	TransactionTags(interface{}) Tags
 	Validate() status.Code
 	ProcessCheck(interface{}) status.Code
 	ShouldProcess(interface{}) bool
@@ -80,6 +81,41 @@ type Base struct {
 
 func (b Base) GetOwner() id.AccountKey {
 	return b.Owner
+}
+
+func (b Base) Validate() status.Code {
+
+	if b.ChainId == "" {
+		log.Debug("Missing ChainId", "transaction", b)
+		return status.MISSING_DATA
+	}
+
+	if b.Owner == nil {
+		log.Debug("Missing Owner", "transaction", b)
+		return status.MISSING_DATA
+	}
+
+	// @todo so far Target can be nil, but it can change in future
+	if b.Target == nil {
+		log.Debug("Missing Target", "base.Target", b.Target)
+	}
+
+	if b.Signers == nil || len(b.Signers) == 0 {
+		log.Debug("Missing Signers", "transaction", b)
+		return status.MISSING_DATA
+	}
+
+	if b.Sequence < 0 {
+		log.Debug("Sequence can't be negative", "transaction", b)
+		return status.BAD_VALUE
+	}
+
+	if b.Delay < 0 {
+		log.Debug("Delay can't be negative", "transaction", b)
+		return status.BAD_VALUE
+	}
+
+	return status.SUCCESS
 }
 
 func (b Base) GetSigners() []id.PublicKey {
@@ -167,6 +203,8 @@ func (t Type) String() string {
 		return "EXTERNAL_SEND"
 	case SWAP:
 		return "SWAP"
+	case SMART_CONTRACT:
+		return "SMART_CONTRACT"
 	case APPLY_VALIDATOR:
 		return "APPLY_VALIDATOR"
 	default:
@@ -176,7 +214,7 @@ func (t Type) String() string {
 
 type Tags common.KVPairs
 
-func (b Base) TransactionTags() Tags {
+func (b Base) TransactionTags(app interface{}) Tags {
 
 	//Add transaction type as a tag
 	tagType := b.Type.String()

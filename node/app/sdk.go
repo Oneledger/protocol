@@ -174,9 +174,9 @@ func (server SDKServer) Send(ctx context.Context, request *pb.SendRequest) (*pb.
 	findAccount := server.App.Accounts.FindName
 
 	currency := currencyString(request.Currency)
-	fee := data.NewCoin(request.Fee, currency)
-	gas := data.NewCoin(request.Gas, currency)
-	sendAmount := data.NewCoin(request.Amount, currency)
+	fee := data.NewCoinFromInt(request.Fee, currency)
+	gas := data.NewCoinFromInt(request.Gas, currency)
+	sendAmount := data.NewCoinFromFloat(request.Amount, currency)
 
 	// Get party & counterparty accounts
 	partyAccount, err := findAccount(request.Party)
@@ -244,7 +244,7 @@ func prepareSend(
 	fee data.Coin,
 	gas data.Coin,
 	app *Application,
-) (*action.Send, error) {
+) (*action.Send_Absolute, error) {
 	// TODO: Use functions in shared package after resolving import cycles
 	findBalance := func(key id.AccountKey) (*data.Balance, error) {
 		balance := app.Balances.Get(data.DatabaseKey(key))
@@ -276,7 +276,7 @@ func prepareSend(
 		action.NewSendOutput(cpKey, cpBalance.GetAmountByName("OLT").Plus(sendAmount)),
 	}
 
-	return &action.Send{
+	return &action.Send_Absolute{
 		Base: action.Base{
 			Type:    action.SEND,
 			ChainId: ChainId,

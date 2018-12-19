@@ -53,8 +53,10 @@ func ListNode(cmd *cobra.Command, args []string) {
 	//log.Debug("Checking Account", "account", account)
 	accountRequest := FormatAccountRequest()
 	identityRequest := FormatIdentityRequest()
+
 	accounts := comm.Query("/account", accountRequest)
 	identities := comm.Query("/identity", identityRequest)
+	//validators := comm.Query("/validator", []byte(""))
 
 	if accounts == nil || identities == nil {
 		shared.Console.Warning("No Response from Node for:", string(accountRequest), string(identityRequest))
@@ -64,6 +66,7 @@ func ListNode(cmd *cobra.Command, args []string) {
 	nodeName := shared.GetNodeName()
 	printAccountQuery(nodeName, accounts)
 	printIdentityQuery(nodeName, identities)
+	//printValidatorQuery(nodeName, validators)
 }
 
 func printAccountQuery(nodeName string, accountQuery interface{}) {
@@ -132,5 +135,26 @@ func printAnIdentity(identity id.Identity) {
 	shared.Console.Info(accountKey, identity.AccountKey.String())
 	shared.Console.Info(tendermintAddress, identity.TendermintAddress)
 	shared.Console.Info(tendermintPubKey, identity.TendermintPubKey)
+	shared.Console.Info()
+}
+
+func printValidatorQuery(nodeName string, validatorQuery interface{}) {
+	//validators := validatorQuery.([]id.ValidatorInfo)
+	validators := validatorQuery.([]id.Identity)
+	shared.Console.Info("Validators on", nodeName+":\n")
+
+	for _, validator := range validators {
+		//printAValidator(validator)
+		printAnIdentity(validator)
+	}
+}
+
+func printAValidator(validator id.ValidatorInfo) {
+	// Right-align fieldnames in console
+	address := " Address:"
+	pubkey := "  PubKey:"
+
+	shared.Console.Info(address, validator.Address)
+	shared.Console.Info(pubkey, validator.PubKey)
 	shared.Console.Info()
 }

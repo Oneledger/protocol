@@ -12,4 +12,3 @@ make install
 #make test
 
 popd
-

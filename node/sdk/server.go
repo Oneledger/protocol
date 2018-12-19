@@ -36,13 +36,15 @@ func GetPort(addr string) string {
 	groups := automata.FindStringSubmatch(addr)
 
 	if groups == nil || len(groups) != 2 {
-		log.Fatal("Failed to parse SDK address", "addr", addr)
+		log.Fatal("Failed to parse Network Address", "addr", addr)
 	}
 	return groups[1]
 }
 
 // Start a new SDK Server
 func NewServer(addr string, sdkServer pb.SDKServer) (*Server, error) {
+
+	log.Debug("SDK listens on", "addr", addr)
 
 	listener, err := net.Listen("tcp", ":"+GetPort(addr))
 	if err != nil {

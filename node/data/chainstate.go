@@ -49,7 +49,7 @@ func NewChainState(name string, newType StorageType) *ChainState {
 }
 
 // Do this only for the Check side
-func (state *ChainState) Test(key DatabaseKey, balance Balance) {
+func (state *ChainState) Test(key DatabaseKey, balance *Balance) {
 	buffer, err := serial.Serialize(balance, serial.PERSISTENT)
 	if err != nil {
 		log.Fatal("Failed to Deserialize balance: ", err)
@@ -60,7 +60,7 @@ func (state *ChainState) Test(key DatabaseKey, balance Balance) {
 }
 
 // Do this only for the Delivery side
-func (state *ChainState) Set(key DatabaseKey, balance Balance) {
+func (state *ChainState) Set(key DatabaseKey, balance *Balance) {
 	buffer, err := serial.Serialize(balance, serial.PERSISTENT)
 	if err != nil {
 		log.Fatal("Failed to Deserialize balance: ", err)
@@ -102,14 +102,14 @@ func (state *ChainState) Get(key DatabaseKey) *Balance {
 	_, value := state.Delivered.GetVersioned(key, version)
 
 	if value != nil {
-		var balance Balance
+		var balance *Balance
 		result, err := serial.Deserialize(value, balance, serial.PERSISTENT)
 		if err != nil {
 			log.Fatal("Failed to deserialize Balance in chainstate: ", err)
 			return nil
 		}
-		final := result.(Balance)
-		return &final
+		final := result.(*Balance)
+		return final
 	}
 
 	// By definition, if a balance doesn't exist, it is zero
@@ -200,10 +200,10 @@ func (state *ChainState) reset() ([]byte, int64) {
 // Create or attach to a database
 func initializeDatabase(name string, newType StorageType) (*iavl.MutableTree, *db.GoLevelDB) {
 	// TODO: Assuming persistence for right now
-	storage, err := db.NewGoLevelDB("OneLedger-"+name, global.Current.RootDir)
+	storage, err := db.NewGoLevelDB("OneLedger-"+name, global.DatabaseDir())
 	if err != nil {
 		log.Error("Database create failed", "err", err, "count", count)
-		panic("Can't create a database")
+		panic("Can't create a database: " + global.DatabaseDir() + "/OneLedger-" + name)
 	}
 
 	// TODO: cosmos seems to be using MutableTree now????

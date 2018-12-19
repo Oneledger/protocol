@@ -1,7 +1,9 @@
 vendor
+/node/.vendor-new/*
 .glide
 *.sw[op]
 .idea/
 scripts/sequence
 VOLUME/
 .DS_Store
+node/olvm/interpreter/bin/

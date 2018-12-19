@@ -76,9 +76,11 @@ func GetChildren(input interface{}) []Child {
 	typeOf := reflect.TypeOf(input)
 
 	// TODO: Shouldn't need to manually ignore recursion
-	if typeOf.String() == "big.Int" {
-		return []Child{}
-	}
+	/*
+		if typeOf.String() == "big.Int" {
+			return []Child{}
+		}
+	*/
 
 	kind := typeOf.Kind()
 

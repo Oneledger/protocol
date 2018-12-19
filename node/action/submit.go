@@ -98,5 +98,10 @@ func GetSigners(owner []byte) []id.PublicKey {
 		return nil
 	}
 
+	switch publicKey.(type) {
+	case []byte:
+		return nil
+	}
+
 	return []id.PublicKey{publicKey.(id.PublicKey)}
 }
