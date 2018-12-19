@@ -8,7 +8,8 @@ CMD=$GOPATH/src/github.com/Oneledger/protocol/node/scripts
 $CMD/startOneLedger
 
 echo "=================== Send Transactions =================="
-olclient send --root $OLDATA/Bob-Node --party Bob --counterparty Alice --amount 5000.112 --currency OLT --fee 0.01
-olclient send --root $OLDATA/Bob-Node --party Bob --counterparty Carol --amount 2000.234 --currency OLT --fee 0.03
+
+olclient send --root $OLDATA/Bob-Node --party Bob --counterparty Alice --amount 5000.112 --currency OLT --fee 1.01
+olclient send --root $OLDATA/Bob-Node --party Bob --counterparty Carol --amount 2000.234 --currency OLT --fee 5.03
 
 sleep 6
