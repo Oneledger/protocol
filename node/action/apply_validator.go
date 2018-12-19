@@ -17,12 +17,14 @@ import (
 type ApplyValidator struct {
 	Base
 
-	AccountKey id.AccountKey
-
+	AccountKey        id.AccountKey
+	Identity          string
+	NodeName          string
 	TendermintAddress string
 	TendermintPubKey  string
 
 	Stake data.Coin
+	Purge bool
 }
 
 func init() {
@@ -31,6 +33,27 @@ func init() {
 
 func (transaction *ApplyValidator) Validate() status.Code {
 	log.Debug("Validating ApplyValidator Transaction")
+
+	baseValidate := transaction.Base.Validate()
+
+	if baseValidate != status.SUCCESS {
+		return baseValidate
+	}
+
+	if transaction.AccountKey == nil || len(transaction.AccountKey) == 0 {
+		log.Debug("Missing AccountKey", "transaction", transaction)
+		return status.MISSING_DATA
+	}
+
+	if transaction.TendermintAddress == "" {
+		log.Debug("Missing TendermintAddress", "transaction", transaction)
+		return status.MISSING_DATA
+	}
+
+	if transaction.TendermintPubKey == "" {
+		log.Debug("Missing TendermintPubKey", "transaction", transaction)
+		return status.MISSING_DATA
+	}
 
 	if transaction.Stake.LessThan(0) {
 		log.Debug("Missing Stake", "ApplyValidator", transaction)
@@ -52,6 +75,35 @@ func (transaction *ApplyValidator) ShouldProcess(app interface{}) bool {
 
 func (transaction *ApplyValidator) ProcessDeliver(app interface{}) status.Code {
 	log.Debug("Processing ApplyValidator Transaction for DeliverTx")
+	identities := GetIdentities(app)
+	entry, ok := identities.FindName(transaction.Identity)
+
+	if ok != status.SUCCESS && ok != status.MISSING_DATA {
+		log.Warn("Can't process Registration", "ok", ok)
+		return ok
+	}
+
+	if entry.Name != "" {
+		log.Debug("Ignoring Existing Identity", "identity", transaction.Identity)
+	} else {
+		identity := id.NewIdentity(transaction.Identity, "Contact Information",
+			true, transaction.NodeName, transaction.AccountKey, transaction.TendermintAddress, transaction.TendermintPubKey)
+
+		identities.Add(*identity)
+		log.Info("Updated External Identity", "id", transaction.Identity, "key", transaction.AccountKey)
+	}
+
+	validators := GetValidators(app)
+	validator := id.GetTendermintValidator(transaction.TendermintAddress, transaction.TendermintPubKey, 1)
+	if validator == nil {
+		return status.EXECUTE_ERROR
+	}
+
+	if transaction.Purge == true {
+		validators.ToBeRemoved = append(validators.ToBeRemoved, *validator)
+	} else {
+		validators.NewValidators = append(validators.NewValidators, *validator)
+	}
 
 	return status.SUCCESS
 }

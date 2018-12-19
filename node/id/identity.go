@@ -6,6 +6,7 @@
 package id
 
 import (
+	"bytes"
 	"strings"
 
 	"github.com/Oneledger/protocol/node/data"
@@ -94,13 +95,24 @@ func (ids *Identities) FindAll() []Identity {
 	return results
 }
 
+func (ids *Identities) FindKey(accountKey AccountKey) Identity {
+	keys := ids.store.FindAll()
+	size := len(keys)
+	for i := 0; i < size; i++ {
+		identity := ids.store.Get(keys[i]).(Identity)
+		if bytes.Compare(accountKey, identity.AccountKey) == 0 {
+			return identity
+		}
+	}
+	return Identity{}
+}
+
 func (ids *Identities) FindTendermint(tendermintAddress string) Identity {
 	keys := ids.store.FindAll()
 	size := len(keys)
 	for i := 0; i < size; i++ {
 		identity := ids.store.Get(keys[i]).(Identity)
 		if strings.ToLower(tendermintAddress) == strings.ToLower(identity.TendermintAddress) {
-			log.Debug("FindTendermint", "identity.TendermintAddress", identity.TendermintAddress)
 			return identity
 		}
 	}

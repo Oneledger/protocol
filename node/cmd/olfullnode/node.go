@@ -53,6 +53,11 @@ func StartNode(cmd *cobra.Command, args []string) {
 	log.Debug("Starting", "appAddress", global.Current.AppAddress, "on", global.Current.NodeName)
 
 	node := app.NewApplication()
+
+	//if node.CheckIfInitialized() == false {
+	//	log.Fatal("Node was not properly initialized")
+	//}
+
 	node.Initialize()
 
 	global.Current.SetApplication(persist.Access(node))
@@ -82,8 +87,10 @@ func StartNode(cmd *cobra.Command, args []string) {
 		RootDirectory:   tmDir,
 		RPCAddress:      global.Current.RpcAddress,
 		P2PAddress:      global.Current.P2PAddress,
-		IndexTags:       []string{"tx.owner", "tx.type"},
+		IndexTags:       []string{"tx.owner", "tx.type", "tx.swapkey", "tx.participants"},
 		PersistentPeers: global.Current.PersistentPeers,
+		Seeds:           global.Current.Seeds,
+		SeedMode:        global.Current.SeedMode,
 	}
 
 	// TODO: change the the priv_validator locaiton

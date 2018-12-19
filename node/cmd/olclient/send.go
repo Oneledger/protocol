@@ -10,6 +10,7 @@ import (
 	"github.com/Oneledger/protocol/node/comm"
 	"github.com/Oneledger/protocol/node/log"
 	"github.com/spf13/cobra"
+	"os"
 )
 
 var sendCmd = &cobra.Command{
@@ -18,7 +19,7 @@ var sendCmd = &cobra.Command{
 	Run:   IssueRequest,
 }
 
-var sendargs *shared.SendArguments = &shared.SendArguments{}
+var sendargs *comm.SendArguments = &comm.SendArguments{}
 
 func init() {
 	RootCmd.AddCommand(sendCmd)
@@ -37,10 +38,16 @@ func init() {
 func IssueRequest(cmd *cobra.Command, args []string) {
 	log.Debug("Have Send Request", "sendargs", sendargs)
 
+	shared.Console.Info(sendargs)
 	// Create message
 	packet := shared.CreateSendRequest(sendargs)
 
+	if packet == nil {
+		shared.Console.Error("Error in sending request")
+		os.Exit(-1)
+	}
+
 	result := comm.Broadcast(packet)
 
-	log.Debug("Returned Successfully", "result", result)
+	shared.Console.Info("Returned Successfully", result)
 }

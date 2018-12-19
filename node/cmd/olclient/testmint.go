@@ -18,7 +18,7 @@ var mintCmd = &cobra.Command{
 	Run:   IssueMintRequest,
 }
 
-var mintargs *shared.SendArguments = &shared.SendArguments{}
+var mintargs *comm.SendArguments = &comm.SendArguments{}
 
 func init() {
 	RootCmd.AddCommand(mintCmd)
@@ -28,7 +28,7 @@ func init() {
 	mintCmd.Flags().StringVar(&mintargs.Amount, "amount", "0", "specify an amount")
 	mintCmd.Flags().StringVar(&mintargs.Currency, "currency", "OLT", "the currency")
 
-	mintCmd.Flags().StringVar(&mintargs.Fee, "fee", "1", "include a fee")
+	mintCmd.Flags().StringVar(&mintargs.Fee, "fee", "0", "include a fee")
 	mintCmd.Flags().StringVar(&mintargs.Gas, "gas", "1", "include gas")
 }
 

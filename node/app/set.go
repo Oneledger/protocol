@@ -80,9 +80,14 @@ func HandleSetAccount(app Application, arguments map[string]string) interface{} 
 
 	publicKey, privateKey := GetKeys(chain, accountName, arguments["PublicKey"], arguments["PrivateKey"])
 
+	account, err := app.Accounts.FindName(accountName)
+	if err == status.SUCCESS {
+		return "Account has already been set up."
+	}
+
 	AddAccount(&app, accountName, chain, publicKey, privateKey, nodeAccount)
 
-	account, err := app.Accounts.FindName(accountName)
+	account, err = app.Accounts.FindName(accountName)
 	if err == status.SUCCESS {
 		return account
 	}
@@ -108,6 +113,7 @@ func HandleRegisterIdentity(app Application, arguments map[string]string) interf
 	return "Broadcast Identity"
 }
 
+// TODO: Called by olfullnode, not olclient?
 func CreateRegisterRequest(identityName string, accountKey id.AccountKey) action.Transaction {
 	LoadPrivValidatorFile()
 
@@ -116,7 +122,7 @@ func CreateRegisterRequest(identityName string, accountKey id.AccountKey) action
 			Type:     action.REGISTER,
 			ChainId:  ChainId,
 			Owner:    accountKey,
-			Signers:  action.GetSigners(accountKey),
+			Signers:  action.GetSigners(accountKey), // TODO: Server-side? Then this is wrong
 			Sequence: global.Current.Sequence,
 		},
 		Identity:          identityName,

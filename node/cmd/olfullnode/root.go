@@ -71,6 +71,9 @@ func init() {
 
 	RootCmd.PersistentFlags().StringVar(&global.Current.P2PAddress, "p2p", "", "Address to use in P2P network")
 
+	RootCmd.PersistentFlags().StringVar(&global.Current.Seeds, "seeds", "", "List of seeds to connect to")
+
+	RootCmd.PersistentFlags().BoolVar(&global.Current.SeedMode, "seed_mode", false, "List of seeds to connect to")
 }
 
 // Initialize Viper

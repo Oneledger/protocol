@@ -87,6 +87,12 @@ swaptest: resetDevnet install
 	@./tests/swap.sh
 	@./scripts/stopDevnet
 
+#
+# Smart Contract Testing, install and execute smart contracts
+#
+exectest: stop reset start register
+	@./tests/contract.sh
+
 
 #
 # Start up a node, make sure it is stopped first
@@ -119,7 +125,7 @@ testmint: check
 # List out the data for David
 #
 list: check
-	@olclient list -c David
+	@olclient list --root $OLDATA/David-Node
 
 #
 # Reset all of the chains, back to genesis
@@ -155,3 +161,4 @@ protobuf:
 # targets that are not associated with any files
 #
 .PHONY: all build install utest test tools update stop start full
+

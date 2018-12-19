@@ -7,6 +7,8 @@ package app
 
 import (
 	"bytes"
+	"time"
+
 	"github.com/Oneledger/protocol/node/abci"
 	"github.com/Oneledger/protocol/node/action"
 	"github.com/Oneledger/protocol/node/data"
@@ -17,8 +19,6 @@ import (
 	"github.com/Oneledger/protocol/node/status"
 	"github.com/tendermint/tendermint/abci/types"
 	"github.com/tendermint/tendermint/libs/common"
-	"math/big"
-	"time"
 )
 
 var _ types.Application = Application{}
@@ -35,36 +35,42 @@ type Application struct {
 	types.BaseApplication
 
 	// Global Chain state (data is identical on all nodes in the chain)
-	Balances   *data.ChainState // unspent transction output (for each type of coin)
-	Identities *id.Identities   // Keep a higher-level identity for a given user
+	Balances         *data.ChainState // unspent transction output (for each type of coin)
+	Identities       *id.Identities   // Keep a higher-level identity for a given user
+	SmartContract    data.Datastore   //Store olvm smart contracts
+	ExecutionContext data.Datastore   //Store last olvm execution
 
 	// Local Node state (data is different for each node)
-	Accounts *id.Accounts   // Keep all of the user accounts locally for their node (identity management)
 	Admin    data.Datastore // any administrative parameters
-	Event    data.Datastore // Event for any action that need to be tracked
+	Accounts *id.Accounts   // Keep all of the user accounts locally for their node (identity management)
+	Sequence data.Datastore // Store sequence number per account
 	Status   data.Datastore // current state of any composite transactions (pending, verified, etc.)
 	Contract data.Datastore // contract for reuse.
-	Sequence data.Datastore // Store sequence number per account
+	Event    data.Datastore // Event for any action that need to be tracked
 
 	SDK common.Service
 
 	// Tendermint's last block information
-	LastHeader types.Header // Tendermint last header info
-	Validators ValidatorList
+	Header     types.Header   // Tendermint last header info
+	Validators *id.Validators // List of validators for this block
 }
 
 // NewApplicationContext initializes a new application, reconnects to the databases.
 func NewApplication() *Application {
 	return &Application{
-		Identities: id.NewIdentities("identities"),
-		Balances:   data.NewChainState("balances", data.PERSISTENT),
+		Balances:         data.NewChainState("balances", data.PERSISTENT),
+		Identities:       id.NewIdentities("identities"),
+		SmartContract:    data.NewDatastore("smartContract", data.PERSISTENT),
+		ExecutionContext: data.NewDatastore("executionContext", data.PERSISTENT),
 
-		Accounts: id.NewAccounts("accounts"),
 		Admin:    data.NewDatastore("admin", data.PERSISTENT),
-		Event:    data.NewDatastore("event", data.PERSISTENT),
+		Accounts: id.NewAccounts("accounts"),
+		Sequence: data.NewDatastore("sequence", data.PERSISTENT),
 		Status:   data.NewDatastore("status", data.PERSISTENT),
 		Contract: data.NewDatastore("contract", data.PERSISTENT),
-		Sequence: data.NewDatastore("sequence", data.PERSISTENT),
+		Event:    data.NewDatastore("event", data.PERSISTENT),
+
+		Validators: id.NewValidatorList(),
 	}
 }
 
@@ -77,16 +83,22 @@ func init() {
 	serial.Register(AdminParameters{})
 }
 
-type SequenceRecord struct {
-	Sequence int64
+func (app Application) CheckIfInitialized() bool {
+	if app.GetPassword() == nil {
+		return false
+	}
+
+	return true
 }
 
-func init() {
-	serial.Register(SequenceRecord{})
+func (app Application) GetPassword() interface{} {
+	return app.Admin.Get(data.DatabaseKey("Password"))
 }
 
 // Initial the state of the application from persistent data
 func (app Application) Initialize() {
+
+	// This config parameter is driven from the database, not the file or cli
 	raw := app.Admin.Get(data.DatabaseKey("NodeAccountName"))
 	if raw != nil {
 		params := raw.(AdminParameters)
@@ -94,7 +106,12 @@ func (app Application) Initialize() {
 	} else {
 		log.Debug("NodeAccountName not currently set")
 	}
+
 	app.StartSDK()
+	log.Debug("SDK is started")
+
+	StartOLVM()
+	log.Debug("OLVM is started")
 }
 
 // Start up a local server for direct connections from clients
@@ -110,6 +127,7 @@ func (app Application) StartSDK() {
 
 	app.SDK = sdk
 	app.SDK.Start()
+
 }
 
 type BasicState struct {
@@ -119,7 +137,7 @@ type BasicState struct {
 
 type State struct {
 	Amount string `json:"amount"`
-	Coin   string `json:"currency"`
+	Coin   string `json:"currency"` // TODO: Misnamed?
 }
 
 // Use the Genesis block to initialze the system
@@ -142,16 +160,20 @@ func (app Application) SetupState(stateBytes []byte) {
 
 	CreateAccount(app, state, publicKey, privateKey)
 
-	privateKey, publicKey = id.GenerateKeys([]byte(global.Current.PaymentAccount), false) // TODO: make a user put a real key actually
+	// TODO: Make a user put in a real key
+	privateKey, publicKey = id.GenerateKeys([]byte(global.Current.PaymentAccount), false)
+
 	CreateAccount(app, &BasicState{global.Current.PaymentAccount, []State{State{"0", "OLT"}}}, publicKey, privateKey)
 }
+
+// TODO: DEBUG
+var ZeroAccountKey id.AccountKey
 
 func CreateAccount(app Application, state *BasicState, publicKey id.PublicKeyED25519, privateKey id.PrivateKeyED25519) {
 
 	// TODO: This should probably only occur on the Admin node, for other nodes how do I know the key?
 	// Register the identity and account first
 	AddAccount(&app, state.Account, data.ONELEDGER, publicKey, privateKey, false)
-	//RegisterLocally(&app, stateAccount, "OneLedger", data.ONELEDGER, publicKey, privateKey)
 
 	account, ok := app.Accounts.FindName(state.Account)
 
@@ -163,28 +185,26 @@ func CreateAccount(app Application, state *BasicState, publicKey id.PublicKeyED2
 	balance := NewBalanceFromStates(state.States)
 
 	app.Balances.Set(account.AccountKey(), balance)
-
-	// TODO: Until a block is commited, this data is not persistent
-	//app.Balances.Commit()
-
-	log.Info("Genesis State Balances database", "balance", balance)
-}
-
-func NewBalanceFromStates(states []State) data.Balance {
-	var balance data.Balance
-	for i, v := range states {
-		if i == 0 {
-			value := big.NewInt(0)
-			value.SetString(v.Amount, 10)
-			balance = data.NewBalanceFromString(value.Int64(), v.Coin)
-		} else {
-			value := big.NewInt(0)
-			value.SetString(v.Amount, 10)
-			coin := data.NewCoin(value.Int64(), v.Coin)
-			balance.AddAmmount(coin)
-		}
+	if account.Name() == "Zero" {
+		ZeroAccountKey = account.AccountKey()
 	}
 
+	// TODO: Until a block is commited, this data should not be persistent
+	//app.Balances.Commit()
+
+	log.Info("Genesis State Balances database", "name", state.Account, "balance", balance)
+}
+
+func NewBalanceFromStates(states []State) *data.Balance {
+	var balance *data.Balance
+	for i, v := range states {
+		if i == 0 {
+			balance = data.NewBalanceFromString(v.Amount, v.Coin)
+		} else {
+			coin := data.NewCoinFromString(v.Amount, v.Coin)
+			balance.AddAmount(coin)
+		}
+	}
 	return balance
 }
 
@@ -319,7 +339,7 @@ func (app Application) BeginBlock(req RequestBeginBlock) ResponseBeginBlock {
 	validators := req.LastCommitInfo.GetValidators()
 	byzantineValidators := req.ByzantineValidators
 
-	app.Validators.Set(validators, byzantineValidators)
+	app.Validators.Set(app, validators, byzantineValidators, req.Header.LastBlockHash)
 
 	raw := app.Admin.Get(data.DatabaseKey("PaymentRecord"))
 	if raw == nil {
@@ -355,17 +375,16 @@ func (app Application) BeginBlock(req RequestBeginBlock) ResponseBeginBlock {
 	return result
 }
 
-// EndBlock is called at the end of all of the transactions
-func (app Application) MakePayment(req RequestBeginBlock) {
-	account, err := app.Accounts.FindName("Payment")
+// make payment to validators
+func (app *Application) MakePayment(req RequestBeginBlock) {
+	account, err := app.Accounts.FindName(global.Current.PaymentAccount)
 	if err != status.SUCCESS {
 		log.Fatal("ABCI: BeginBlock Fatal Status", "status", err)
 	}
 
 	paymentBalance := app.Balances.Get(account.AccountKey())
 	if paymentBalance == nil {
-		interimBalance := data.NewBalance()
-		paymentBalance = &interimBalance
+		paymentBalance = data.NewBalance()
 	}
 
 	paymentRecordBlockHeight := int64(-1)
@@ -380,37 +399,42 @@ func (app Application) MakePayment(req RequestBeginBlock) {
 			numTrans := height - paymentRecordBlockHeight
 			if numTrans > 10 {
 				//store payment record in database (O OLT, -1) because delete doesn't work
-				amount := data.NewCoin(0, "OLT")
-				SetPaymentRecord(amount, -1, app)
+				amount := data.NewCoinFromInt(0, "OLT")
+				app.SetPaymentRecord(amount, -1)
 				paymentRecordBlockHeight = -1
 			}
 		}
 	}
 
 	if (!paymentBalance.GetAmountByName("OLT").LessThanEqual(0)) && paymentRecordBlockHeight == -1 {
-		goodValidatorIdentities := app.Validators.FindGood(app)
-		selectedValidatorIdentity := app.Validators.FindSelectedValidator(app, req.Header.LastBlockHash)
+		approvedValidatorIdentities := app.Validators.Approved
+		selectedValidatorIdentity := app.Validators.SelectedValidator
 
-		numberValidators := data.NewCoin(int64(len(goodValidatorIdentities)), "OLT")
-		quotient := paymentBalance.GetAmountByName("OLT").Quotient(numberValidators)
+		numberValidators := len(approvedValidatorIdentities)
+		quotient := paymentBalance.GetAmountByName("OLT").Divide(numberValidators)
 
 		if int(quotient.Amount.Int64()) > 0 {
 			//store payment record in database
-			totalPayment := quotient.Multiply(numberValidators)
-			SetPaymentRecord(totalPayment, height, app)
+			totalPayment := quotient.MultiplyInt(numberValidators)
+			app.SetPaymentRecord(totalPayment, height)
 
-			if global.Current.NodeName == selectedValidatorIdentity.NodeName {
-				result := CreatePaymentRequest(app, goodValidatorIdentities, quotient, height)
-				if result != nil {
-					// TODO: check this later
-					action.DelayedTransaction(result, 3*time.Second)
+			// if global.Current.NodeName == selectedValidatorIdentity.NodeName {
+			nodeAccount, err := app.Accounts.FindName(global.Current.NodeAccountName)
+
+			if err == status.SUCCESS {
+				if bytes.Compare(nodeAccount.AccountKey(), selectedValidatorIdentity.AccountKey) == 0 {
+					result := CreatePaymentRequest(*app, quotient, height)
+					if result != nil {
+						// TODO: check this later
+						action.DelayedTransaction(result, 0*time.Second)
+					}
 				}
 			}
 		}
 	}
 }
 
-func SetPaymentRecord(amount data.Coin, blockHeight int64, app Application) {
+func (app *Application) SetPaymentRecord(amount data.Coin, blockHeight int64) {
 	var paymentRecordKey data.DatabaseKey = data.DatabaseKey("PaymentRecord")
 	var paymentRecord action.PaymentRecord
 	paymentRecord.Amount = amount
@@ -446,7 +470,7 @@ func (app Application) DeliverTx(tx []byte) ResponseDeliverTx {
 		}
 	}
 
-	tags := transaction.TransactionTags()
+	tags := transaction.TransactionTags(app)
 
 	result := ResponseDeliverTx{
 		Code:      errorCode,
@@ -465,9 +489,38 @@ func (app Application) DeliverTx(tx []byte) ResponseDeliverTx {
 // EndBlock is called at the end of all of the transactions
 func (app Application) EndBlock(req RequestEndBlock) ResponseEndBlock {
 	log.Debug("ABCI: EndBlock", "req", req)
+	validatorUpdates := make([]types.Validator, 0)
+	if req.Height > 1 && (len(app.Validators.NewValidators) > 0 || len(app.Validators.ToBeRemoved) > 0) {
+
+		for _, validator := range app.Validators.ApprovedValidators {
+			found := false
+			//TODO: as of today, can not remove validators in tendermint
+			//pass 4 in validatorUpdates, in BeginBlock, I still get 5
+			for _, validatorToBePurged := range app.Validators.ToBeRemoved {
+				if bytes.Compare(validator.PubKey.Data, validatorToBePurged.PubKey.Data) == 0 {
+					found = true
+					break
+				}
+			}
+			if found == false {
+				validatorUpdates = append(validatorUpdates, validator)
+			}
+		}
+
+		for _, validator := range app.Validators.NewValidators {
+			if id.HasValidatorToken(app, validator) {
+				validatorUpdates = append(validatorUpdates, validator)
+			} else {
+				log.Info("Reject validator", "validatorPubKey", validator.PubKey)
+			}
+
+		}
+		log.Debug("validators to update", "update", validatorUpdates)
+	}
 
 	result := ResponseEndBlock{
-		Tags: []common.KVPair(nil),
+		ValidatorUpdates: validatorUpdates,
+		Tags:             []common.KVPair(nil),
 	}
 
 	log.Debug("ABCI: EndBlock Result", "result", result)
@@ -480,6 +533,7 @@ func (app Application) Commit() ResponseCommit {
 
 	// Commit any pending changes.
 	hash, version := app.Balances.Commit()
+	//log.Dump("ZERO IS NOW", app.Balances.Get(ZeroAccountKey))
 
 	log.Debug("-- Committed New Block", "hash", hash, "version", version)
 
@@ -489,25 +543,6 @@ func (app Application) Commit() ResponseCommit {
 
 	log.Debug("ABCI: EndBlock Result", "result", result)
 	return result
-}
-
-func NextSequence(app *Application, accountkey id.AccountKey) SequenceRecord {
-	sequence := int64(1)
-	raw := app.Sequence.Get(accountkey)
-	if raw != nil {
-		interim := raw.(SequenceRecord)
-		sequence = interim.Sequence + 1
-	}
-
-	sequenceRecord := SequenceRecord{
-		Sequence: sequence,
-	}
-
-	session := app.Sequence.Begin()
-	session.Set(accountkey, sequenceRecord)
-	session.Commit()
-
-	return sequenceRecord
 }
 
 // Close closes every datastore in app
@@ -520,6 +555,7 @@ func (app Application) Close() {
 	app.Event.Close()
 	app.Contract.Close()
 	app.Sequence.Close()
+	app.SmartContract.Close()
 
 	if app.SDK != nil {
 		app.SDK.Stop()
