@@ -65,6 +65,9 @@ func HandleQuery(app Application, path string, arguments map[string]string) []by
 	case "/account":
 		result = HandleAccountQuery(app, arguments)
 
+	case "/validator":
+		result = HandleValidatorQuery(app, arguments)
+
 	case "/balance":
 		result = HandleBalanceQuery(app, arguments)
 
@@ -112,6 +115,7 @@ func HandleApplyValidatorQuery(application Application, arguments map[string]str
 
 	amount := args.(*comm.ApplyValidatorArguments).Amount
 	idName := args.(*comm.ApplyValidatorArguments).Id
+	purge := args.(*comm.ApplyValidatorArguments).Purge
 
 	identity, ok := application.Identities.FindName(idName)
 	if ok != status.SUCCESS {
@@ -155,6 +159,7 @@ func HandleApplyValidatorQuery(application Application, arguments map[string]str
 		TendermintAddress: identity.TendermintAddress,
 		TendermintPubKey:  identity.TendermintPubKey,
 		Stake:             stake,
+		Purge:             purge,
 	}
 
 	signed := SignTransaction(action.Transaction(validator), application)
@@ -583,6 +588,29 @@ func IdentityInfo(app Application, name string) interface{} {
 		return []id.Identity{identity}
 	}
 	return "Identity " + name + " Not Found" + global.Current.NodeName
+}
+
+// Get the validator information for a given user
+func HandleValidatorQuery(app Application, arguments map[string]string) interface{} {
+	log.Debug("ValidatorQuery", "arguments", arguments)
+
+	text := arguments["parameters"]
+
+	name := ""
+	parts := strings.Split(text, "=")
+	if len(parts) > 1 {
+		name = parts[1]
+	}
+	return ValidatorInfo(app, name)
+}
+
+func ValidatorInfo(app Application, name string) interface{} {
+	if name == "" {
+		validators := app.Validators.Approved
+		return validators
+	}
+
+	return "Validator " + name + " Not Found" + global.Current.NodeName
 }
 
 // Get the account information for a given user

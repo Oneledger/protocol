@@ -5,11 +5,14 @@
 */
 package comm
 
-import "github.com/Oneledger/protocol/node/serial"
+import (
+	"github.com/Oneledger/protocol/node/serial"
+)
 
 type ApplyValidatorArguments struct {
-	Id           string
-	Amount       string
+	Id     string
+	Amount string
+	Purge  bool
 }
 
 type SendArguments struct {
