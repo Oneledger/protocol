@@ -17,6 +17,7 @@ echo
 
 echo -n "  olclient: "
 pgrep -f "^olclient --root.*" | tr "\n" " "
+echo
 
 echo -n "  Ethereum: "
 pgrep -f "^geth.*--datadir.*" | tr "\n" ","
