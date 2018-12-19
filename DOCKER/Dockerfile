@@ -24,23 +24,20 @@ ENV OLTEST $OLROOT/protocol/node/tests
 ENV OLSCRIPT $OLROOT/protocol/node/scripts
 ENV OLSETUP $OLROOT/protocol/node/setup
 ENV OLDATA /home/oneledger/.olfullnode
-#ENV OLVERSION v0.8.0
+ENV OLVERSION v0.8.0
 ENV PATH $PATH:$GOPATH/bin
-
-ENV NODE_NAME New
 
 USER oneledger
 
 RUN git clone https://github.com/Oneledger/protocol $OLROOT/protocol
 RUN chown -R oneledger:oneledger $OLROOT/protocol
-WORKDIR $OLROOT/protocol
-RUN git checkout develop
-# RUN git checkout $OLVERSION
 
-# If using develop, need to build the image with -nocache to update to latest changes
+WORKDIR $OLROOT/protocol
+
+RUN git checkout $OLVERSION
 
 WORKDIR $OLROOT/protocol/node
 
-RUN make tools && make update && make install
+RUN make tools update install
 
 VOLUME [ "$OLDATA" ]
