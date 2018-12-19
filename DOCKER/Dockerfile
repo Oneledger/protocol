@@ -34,7 +34,7 @@ RUN chown -R oneledger:oneledger $OLROOT/protocol
 
 WORKDIR $OLROOT/protocol
 
-RUN git checkout OLVERSION
+RUN git checkout $OLVERSION
 
 USER root
 RUN cp $OLROOT/protocol/DOCKER/chronos/bootstrapNode /usr/local/bin \
