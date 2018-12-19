@@ -165,7 +165,7 @@ func (server SDKServer) CheckAccount(ctx context.Context, request *pb.CheckAccou
 	var result *pb.Balance
 	if balance != nil {
 		result = &pb.Balance{
-			Amount:   balance.GetAmountByName("OLT").Amount.Int64(),
+			Amount:   balance.GetAmountByName("OLT").Float64(),
 			Currency: currencyProtobuf(balance.GetAmountByName("OLT").Currency),
 		}
 	} else {
@@ -185,8 +185,8 @@ func (server SDKServer) Send(ctx context.Context, request *pb.SendRequest) (*pb.
 	findAccount := server.App.Accounts.FindName
 
 	currency := currencyString(request.Currency)
-	fee := data.NewCoinFromInt(request.Fee, currency)
-	gas := data.NewCoinFromInt(request.Gas, currency)
+	fee := data.NewCoinFromFloat(request.Fee, currency)
+	gas := data.NewCoinFromUnits(request.Gas, currency)
 	sendAmount := data.NewCoinFromFloat(request.Amount, currency)
 
 	// Get party & counterparty accounts

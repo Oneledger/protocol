@@ -93,6 +93,18 @@ func NewCurrency(currency string) Currency {
 	return Currencies[currency]
 }
 
+func NewCoinFromUnits(amount int64, currency string) Coin {
+	value := units2bint(amount, GetBase(currency))
+	coin := Coin{
+		Currency: Currencies[currency],
+		Amount:   value,
+	}
+	if !coin.IsValid() {
+		log.Warn("Create Invalid Coin", "coin", coin)
+	}
+	return coin
+}
+
 // Create a coin from integer (not fractional)
 func NewCoinFromInt(amount int64, currency string) Coin {
 
@@ -139,12 +151,16 @@ func parseString(amount string, base *big.Float) *big.Int {
 	_, err := fmt.Sscan(amount, value)
 	if err != nil {
 		//log.Warn("Invalid Float String", "err", err)
-		log.Fatal("Invalid Float String", "err", err)
+		log.Fatal("Invalid Float String", "err", err, "amount", amount)
 	}
 	result := bfloat2bint(value, base)
 
-	//log.Dump("parseString", amount, result)
 	return result
+}
+
+func units2bint(amount int64, base *big.Float) *big.Int {
+	value := new(big.Int).SetInt64(amount)
+	return value
 }
 
 // Handle an incoming int (often used for comaparisons)
@@ -154,7 +170,6 @@ func int2bint(amount int64, base *big.Float) *big.Int {
 	interim := value.Mul(value, base)
 	result, _ := interim.Int(nil)
 
-	log.Dump("int2bint", amount, result)
 	return result
 }
 
@@ -165,18 +180,14 @@ func float2bint(amount float64, base *big.Float) *big.Int {
 	interim := value.Mul(value, base)
 	result, _ := interim.Int(nil)
 
-	//log.Dump("float2bint", amount, result)
 	return result
 }
 
 // Handle an big float to big int conversion
 func bfloat2bint(value *big.Float, base *big.Float) *big.Int {
-	//accuracy := big.Exact
-
 	interim := value.Mul(value, base)
 	result, _ := interim.Int(nil)
 
-	//log.Dump("bfloat2bint", value, result)
 	return result
 }
 
@@ -187,8 +198,11 @@ func bint2float(amount *big.Int, base *big.Float) float64 {
 	interim := value.Quo(value, base)
 	result, _ := interim.Float64()
 
-	//log.Dump("bint2float", amount, result)
 	return result
+}
+
+func (coin Coin) Float64() float64 {
+	return bint2float(coin.Amount, GetBase(coin.Currency.Name))
 }
 
 // See if the coin is one of a list of currencies

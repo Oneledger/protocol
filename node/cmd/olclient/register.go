@@ -37,10 +37,18 @@ func init() {
 	registerCmd.Flags().StringVar(&arguments.nodeName, "node", "", "User's Default Node")
 
 	registerCmd.Flags().StringVar(&arguments.pubkey, "pubkey", "", "Specify a public key")
-	registerCmd.Flags().StringVar(&arguments.fee, "fee", "0.01", "Transaction Fee")
+	registerCmd.Flags().StringVar(&arguments.fee, "fee", "", "Transaction Fee")
 }
 
 func RegisterIdentity(cmd *cobra.Command, args []string) {
+	if arguments.identity == "" && arguments.account == "" {
+		shared.Console.Fatal("Registration missing an identity or an account argument")
+	}
+
+	if arguments.fee == "" {
+		shared.Console.Fatal("Registration must include a fee")
+	}
+
 	arguments := &shared.RegisterArguments{
 		Identity: arguments.identity,
 		Account:  arguments.account,
@@ -50,11 +58,12 @@ func RegisterIdentity(cmd *cobra.Command, args []string) {
 
 	register := shared.RegisterIdentityRequest(arguments)
 
+	if register == nil {
+		shared.Console.Fatal("Invalid Registration arguments")
+	}
+
 	result := comm.SDKRequest(register)
 	_ = result
 
 	shared.Console.Info("Identity has been broadcast to chain")
-
-	// TODO: Need nicer output
-	//log.Dump("Have Results", result)
 }

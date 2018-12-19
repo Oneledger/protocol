@@ -8,7 +8,6 @@ TEST=$GOPATH/src/github.com/Oneledger/protocol/node/tests
 
 
 $TEST/register.sh
-$TEST/testmint.sh
 
 echo "================== Test dynamic validator ==================="
 

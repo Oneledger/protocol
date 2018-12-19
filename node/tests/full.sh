@@ -12,7 +12,6 @@ $CMD/resetOneLedger
 
 # Add in or update users
 $TEST/register.sh
-$TEST/testmint.sh
 $TEST/send.sh
 $TEST/list.sh
 

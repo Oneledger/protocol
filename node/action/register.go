@@ -65,14 +65,14 @@ func (transaction Register) Validate() status.Code {
 		return status.MISSING_DATA
 	}
 
-	if transaction.Fee.LessThan(0) {
-		log.Debug("Missing Fee", "fee", transaction.Fee)
-		return status.MISSING_DATA
-	}
-
 	if !transaction.Fee.IsCurrency("OLT") {
 		log.Debug("Wrong Fee token", "fee", transaction.Fee)
 		return status.INVALID
+	}
+
+	if transaction.Fee.LessThan(0) {
+		log.Debug("Missing Fee", "fee", transaction.Fee)
+		return status.MISSING_DATA
 	}
 
 	return status.SUCCESS

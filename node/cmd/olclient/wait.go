@@ -6,6 +6,7 @@
 package main
 
 import (
+	"os"
 	"time"
 
 	"github.com/Oneledger/protocol/node/action"
@@ -77,6 +78,7 @@ func WaitForIdentity(args []string) {
 
 	log.Debug("Waiting for", "identities", waitargs.identities)
 
+	limit := 20 // Stop after about 20 secs
 	for {
 		count := 0
 		for i := 0; i < size; i++ {
@@ -92,6 +94,13 @@ func WaitForIdentity(args []string) {
 			log.Info("All Identities have been created")
 			return
 		}
+
+		// Limit the number of times this loops
+		limit--
+		if limit < 0 {
+			os.Exit(-1)
+		}
+
 		time.Sleep(time.Second)
 	}
 }

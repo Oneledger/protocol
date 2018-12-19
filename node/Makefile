@@ -116,7 +116,7 @@ register: check
 	@./tests/register.sh
 
 #
-# Send money to the devnet users
+# Add more money to the users
 #
 testmint: check
 	@./tests/testmint.sh

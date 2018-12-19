@@ -82,6 +82,10 @@ func GetClient() (client rpcclient.Client) {
 // An async Broadcast to the chain
 func BroadcastAsync(packet []byte) *ctypes.ResultBroadcastTx {
 
+	if len(packet) < 1 {
+		log.Fatal("Empty Transaction")
+	}
+
 	client := GetClient()
 
 	result, err := client.BroadcastTxAsync(packet)
@@ -96,6 +100,10 @@ func BroadcastAsync(packet []byte) *ctypes.ResultBroadcastTx {
 
 // A sync'ed broadcast to the chain that waits for the commit to happen
 func Broadcast(packet []byte) *ctypes.ResultBroadcastTxCommit {
+	if len(packet) < 1 {
+		log.Fatal("Empty Transaction")
+	}
+
 	client := GetClient()
 
 	log.Debug("Start Synced Broadcast", "packet", packet)
@@ -113,6 +121,10 @@ func Broadcast(packet []byte) *ctypes.ResultBroadcastTxCommit {
 
 // A sync'ed broadcast to the chain that waits for the commit to happen
 func BroadcastSync(packet []byte) *ctypes.ResultBroadcastTx {
+	if len(packet) < 1 {
+		log.Fatal("Empty Transaction")
+	}
+
 	client := GetClient()
 
 	log.Debug("Start Synced Broadcast", "packet", packet)
@@ -137,6 +149,9 @@ func IsError(result interface{}) *string {
 
 // Send a very specific query
 func Query(path string, packet []byte) interface{} {
+	if len(path) < 1 {
+		log.Fatal("Empty Query Path")
+	}
 
 	var response *ctypes.ResultABCIQuery
 	var err error
