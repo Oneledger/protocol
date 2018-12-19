@@ -6,12 +6,13 @@
 CMD=$GOPATH/src/github.com/Oneledger/protocol/node/scripts
 TEST=$GOPATH/src/github.com/Oneledger/protocol/node/tests
 
+$TEST/testmint.sh
+
 echo "================== Test Swap between BTC & ETH ==================="
 $CMD/showBalance Alice
 sleep 1
 $CMD/showBalance Bob
 
-$TEST/testmint.sh
 # Let the money get processed
 sleep 3
 
