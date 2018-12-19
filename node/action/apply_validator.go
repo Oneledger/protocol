@@ -24,6 +24,7 @@ type ApplyValidator struct {
 	TendermintPubKey  string
 
 	Stake data.Coin
+	Purge bool
 }
 
 func init() {
@@ -97,7 +98,12 @@ func (transaction *ApplyValidator) ProcessDeliver(app interface{}) status.Code {
 	if validator == nil {
 		return status.EXECUTE_ERROR
 	}
-	validators.NewValidators = append(validators.NewValidators, *validator)
+
+	if transaction.Purge == true {
+		validators.ToBeRemoved = append(validators.ToBeRemoved, *validator)
+	} else {
+		validators.NewValidators = append(validators.NewValidators, *validator)
+	}
 
 	return status.SUCCESS
 }

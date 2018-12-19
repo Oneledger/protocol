@@ -378,6 +378,21 @@ func (coin Coin) Quotient(value Coin) Coin {
 	return result
 }
 
+func (coin Coin) Divide(value int) Coin {
+	if coin.Amount == nil {
+		log.Fatal("Invalid Coin", "coin", coin)
+	}
+
+	base := big.NewInt(0)
+	divisor := big.NewInt(int64(value))
+	result := Coin{
+		Currency: coin.Currency,
+		Amount:   base.Div(coin.Amount, divisor),
+	}
+	return result
+
+}
+
 // Multiply one coin by another
 func (coin Coin) Multiply(value Coin) Coin {
 	if coin.Amount == nil {
@@ -394,6 +409,21 @@ func (coin Coin) Multiply(value Coin) Coin {
 	result := Coin{
 		Currency: coin.Currency,
 		Amount:   base.Mul(coin.Amount, value.Amount),
+	}
+	return result
+}
+
+// Multiply one coin by another
+func (coin Coin) MultiplyInt(value int) Coin {
+	if coin.Amount == nil {
+		log.Fatal("Invalid Coin", "coin", coin)
+	}
+
+	multiplier := big.NewInt(int64(value))
+	base := big.NewInt(0)
+	result := Coin{
+		Currency: coin.Currency,
+		Amount:   base.Mul(coin.Amount, multiplier),
 	}
 	return result
 }
