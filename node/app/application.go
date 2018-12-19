@@ -509,6 +509,10 @@ func (app Application) EndBlock(req RequestEndBlock) ResponseEndBlock {
 		for _, validator := range app.Validators.NewValidators {
 			if id.HasValidatorToken(app, validator) {
 				validatorUpdates = append(validatorUpdates, validator)
+				err := action.TransferVT(app, validator)
+				if err != status.SUCCESS {
+					log.Info("New Validator - error in transfer of VT")
+				}
 			} else {
 				log.Info("Reject validator", "validatorPubKey", validator.PubKey)
 			}

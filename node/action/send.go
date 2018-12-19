@@ -15,6 +15,7 @@ import (
 	"github.com/Oneledger/protocol/node/log"
 	"github.com/Oneledger/protocol/node/serial"
 	"github.com/Oneledger/protocol/node/status"
+	"github.com/tendermint/tendermint/abci/types"
 	"github.com/tendermint/tendermint/libs/common"
 )
 
@@ -193,4 +194,46 @@ func CheckSendTo(balance data.Balance, sendTo SendTo, fee data.Coin) bool {
 	}
 
 	return true
+}
+
+func TransferVT(app interface{}, validator types.Validator) status.Code {
+	log.Debug("Processing Transfer of VT to Zero Account")
+
+	balances := GetBalances(app)
+	identities := GetIdentities(app)
+	accounts := GetAccounts(app)
+
+	validatorId := identities.FindTendermint(hex.EncodeToString(validator.Address))
+
+	if validatorId.Name == "" {
+		log.Error("Missing validator identity argument")
+		return status.MISSING_DATA
+	}
+
+	validatorBalance := balances.Get(validatorId.AccountKey)
+	if validatorBalance == nil {
+		log.Debug("Failed to get the balance of the validator", "validatorAccountKey", validatorId.AccountKey)
+		return status.MISSING_VALUE
+	}
+
+	amount := validatorBalance.GetAmountByName("VT")
+	validatorBalance.MinusAmount(amount)
+
+	zeroId, err := accounts.FindName("Zero")
+
+	if err != status.SUCCESS {
+		log.Error("Failed to get Zero account", "status", err)
+		return err
+	}
+
+	zeroBalance := balances.Get(zeroId.AccountKey())
+	if zeroBalance == nil {
+		zeroBalance = data.NewBalance()
+	}
+	zeroBalance.AddAmount(amount)
+
+	balances.Set(validatorId.AccountKey, validatorBalance)
+	balances.Set(zeroId.AccountKey(), zeroBalance)
+
+	return status.SUCCESS
 }
