@@ -107,6 +107,7 @@ func (server SDKServer) Status(ctx context.Context, request *pb.StatusRequest) (
 // Given the name of the identity and the chain type, generate new keys and broadcast this new identity
 func (server SDKServer) Register(ctx context.Context, request *pb.RegisterRequest) (*pb.RegisterReply, error) {
 	name := request.Identity
+	fee := request.Fee
 	chain := parseChainType(request.Chain)
 
 	// First check if this account already exists, return with error if not
@@ -125,7 +126,8 @@ func (server SDKServer) Register(ctx context.Context, request *pb.RegisterReques
 			global.Current.Sequence,
 			global.Current.NodeName,
 			nil,
-			pubKey.Address()))
+			pubKey.Address(),
+			fee))
 	comm.Broadcast(packet)
 
 	// TODO: Use proper secret for key generation

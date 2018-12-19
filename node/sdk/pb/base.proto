@@ -56,6 +56,7 @@ message SwapReply {}
 message RegisterRequest {
     string identity = 1;
     ChainType chain = 2;
+    int64 fee = 3;
 }
 
 enum ChainType {
