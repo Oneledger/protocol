@@ -3,6 +3,7 @@ package id
 import (
 	"bytes"
 	"encoding/hex"
+	"github.com/Oneledger/protocol/node/data"
 	"github.com/Oneledger/protocol/node/log"
 	"github.com/Oneledger/protocol/node/serial"
 	"github.com/tendermint/tendermint/abci/types"
@@ -11,20 +12,34 @@ import (
 )
 
 type Validators struct {
-	Signers           []types.SigningValidator
-	Byzantines        []types.Evidence
-	Approved          []Identity
-	ApprovedValidator []types.Validator
-	SelectedValidator Identity
-	NewValidators     []types.Validator
+	Signers            []types.SigningValidator
+	Byzantines         []types.Evidence
+	Approved           []Identity
+	ApprovedValidators []types.Validator
+	SelectedValidator  Identity
+	NewValidators      []types.Validator
+	ToBeRemoved        []types.Validator
+}
+
+type ValidatorInfo struct {
+	Address string
+	PubKey  string
 }
 
 func init() {
 	serial.Register(Validators{})
+	serial.Register(ValidatorInfo{})
 }
 
 func NewValidatorList() *Validators {
 	return &Validators{}
+}
+
+func NewValidatorInfo(address []byte, pubkey types.PubKey) *ValidatorInfo {
+	return &ValidatorInfo{
+		Address: hex.EncodeToString(address),
+		PubKey:  hex.EncodeToString(pubkey.Data),
+	}
 }
 
 func (list *Validators) Set(app interface{}, validators []types.SigningValidator, badValidators []types.Evidence, hash []byte) {
@@ -33,9 +48,10 @@ func (list *Validators) Set(app interface{}, validators []types.SigningValidator
 	}
 	list.Signers = validators
 	list.Byzantines = badValidators
-	list.ApprovedValidator = make([]types.Validator, 0)
+	list.ApprovedValidators = make([]types.Validator, 0)
 	list.Approved = list.FindApproved(app)
 	list.NewValidators = make([]types.Validator, 0)
+	list.ToBeRemoved = make([]types.Validator, 0)
 	if hash != nil {
 		list.SelectedValidator = list.FindSelectedValidator(app, hash)
 	}
@@ -69,7 +85,7 @@ func (list *Validators) FindApproved(app interface{}) []Identity {
 			if validator != nil {
 				tmp = *validator
 			}
-			list.ApprovedValidator = append(list.ApprovedValidator, tmp)
+			list.ApprovedValidators = append(list.ApprovedValidators, tmp)
 		}
 	}
 	return approvedIdentities
@@ -129,4 +145,20 @@ func GetTendermintValidator(address string, pubkey string, power int64) *types.V
 		PubKey:  tpubkey,
 		Power:   power,
 	}
+}
+
+func HasValidatorToken(app interface{}, validator types.Validator) bool {
+	identities := GetIdentities(app)
+	balances := GetBalances(app)
+
+	formatted := hex.EncodeToString(validator.Address)
+	identity := identities.FindTendermint(formatted)
+
+	validatorBalance := balances.Get(identity.AccountKey)
+	coin := validatorBalance.FindCoin(data.NewCurrency("VT"))
+	if coin.LessThanEqual(0) {
+		return false
+	}
+
+	return true
 }

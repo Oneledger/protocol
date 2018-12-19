@@ -26,6 +26,7 @@ func init() {
 	// Transaction Parameters
 	applyvalidatorCmd.Flags().StringVar(&applyValidatorArgs.Id, "id", "", "specify identity by name")
 	applyvalidatorCmd.Flags().StringVar(&applyValidatorArgs.Amount, "amount", "0", "specify an amount")
+	applyvalidatorCmd.Flags().BoolVar(&applyValidatorArgs.Purge, "purge", false, "remove the validator")
 }
 
 // IssueRequest sends out a sendTx to all of the nodes in the chain

@@ -52,7 +52,7 @@ type Application struct {
 
 	// Tendermint's last block information
 	Header     types.Header   // Tendermint last header info
-	Validators *id.Validators // List of vlidators for this block
+	Validators *id.Validators // List of validators for this block
 }
 
 // NewApplicationContext initializes a new application, reconnects to the databases.
@@ -410,19 +410,24 @@ func (app *Application) MakePayment(req RequestBeginBlock) {
 		approvedValidatorIdentities := app.Validators.Approved
 		selectedValidatorIdentity := app.Validators.SelectedValidator
 
-		numberValidators := data.NewCoinFromInt(int64(len(approvedValidatorIdentities)), "OLT")
-		quotient := paymentBalance.GetAmountByName("OLT").Quotient(numberValidators)
+		numberValidators := len(approvedValidatorIdentities)
+		quotient := paymentBalance.GetAmountByName("OLT").Divide(numberValidators)
 
 		if int(quotient.Amount.Int64()) > 0 {
 			//store payment record in database
-			totalPayment := quotient.Multiply(numberValidators)
+			totalPayment := quotient.MultiplyInt(numberValidators)
 			app.SetPaymentRecord(totalPayment, height)
 
-			if global.Current.NodeName == selectedValidatorIdentity.NodeName {
-				result := CreatePaymentRequest(*app, quotient, height)
-				if result != nil {
-					// TODO: check this later
-					action.DelayedTransaction(result, 0*time.Second)
+			// if global.Current.NodeName == selectedValidatorIdentity.NodeName {
+			nodeAccount, err := app.Accounts.FindName(global.Current.NodeAccountName)
+
+			if err == status.SUCCESS {
+				if bytes.Compare(nodeAccount.AccountKey(), selectedValidatorIdentity.AccountKey) == 0 {
+					result := CreatePaymentRequest(*app, quotient, height)
+					if result != nil {
+						// TODO: check this later
+						action.DelayedTransaction(result, 0*time.Second)
+					}
 				}
 			}
 		}
@@ -485,14 +490,30 @@ func (app Application) DeliverTx(tx []byte) ResponseDeliverTx {
 func (app Application) EndBlock(req RequestEndBlock) ResponseEndBlock {
 	log.Debug("ABCI: EndBlock", "req", req)
 	validatorUpdates := make([]types.Validator, 0)
-	if req.Height > 1 && len(app.Validators.NewValidators) > 0 {
+	if req.Height > 1 && (len(app.Validators.NewValidators) > 0 || len(app.Validators.ToBeRemoved) > 0) {
 
-		for _, validator := range app.Validators.ApprovedValidator {
-			validatorUpdates = append(validatorUpdates, validator)
+		for _, validator := range app.Validators.ApprovedValidators {
+			found := false
+			//TODO: as of today, can not remove validators in tendermint
+			//pass 4 in validatorUpdates, in BeginBlock, I still get 5
+			for _, validatorToBePurged := range app.Validators.ToBeRemoved {
+				if bytes.Compare(validator.PubKey.Data, validatorToBePurged.PubKey.Data) == 0 {
+					found = true
+					break
+				}
+			}
+			if found == false {
+				validatorUpdates = append(validatorUpdates, validator)
+			}
 		}
 
 		for _, validator := range app.Validators.NewValidators {
-			validatorUpdates = append(validatorUpdates, validator)
+			if id.HasValidatorToken(app, validator) {
+				validatorUpdates = append(validatorUpdates, validator)
+			} else {
+				log.Info("Reject validator", "validatorPubKey", validator.PubKey)
+			}
+
 		}
 		log.Debug("validators to update", "update", validatorUpdates)
 	}
