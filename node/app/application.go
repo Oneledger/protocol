@@ -489,17 +489,16 @@ func (app Application) EndBlock(req RequestEndBlock) ResponseEndBlock {
 
 		for _, validator := range app.Validators.ApprovedValidators {
 			found := false
-			//TODO: as of today, can not remove validators in tendermint
-			//pass 4 in validatorUpdates, in BeginBlock, I still get 5
 			for _, validatorToBePurged := range app.Validators.ToBeRemoved {
 				if bytes.Compare(validator.PubKey.Data, validatorToBePurged.PubKey.Data) == 0 {
 					found = true
 					break
 				}
 			}
-			if found == false {
-				validatorUpdates = append(validatorUpdates, validator)
+			if found == true {
+				validator.Power = 0
 			}
+			validatorUpdates = append(validatorUpdates, validator)
 		}
 
 		for _, validator := range app.Validators.NewValidators {
@@ -510,7 +509,7 @@ func (app Application) EndBlock(req RequestEndBlock) ResponseEndBlock {
 			}
 
 		}
-		log.Debug("validators to update", "update", validatorUpdates)
+
 	}
 
 	result := ResponseEndBlock{
