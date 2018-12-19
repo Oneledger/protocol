@@ -60,6 +60,11 @@ func (transaction *ApplyValidator) Validate() status.Code {
 		return status.MISSING_DATA
 	}
 
+	if transaction.Stake.Currency.Name != "VT" {
+		log.Debug("Wrong token used for apply validator", "token", transaction.Stake)
+		return status.INVALID
+	}
+
 	return status.SUCCESS
 }
 
