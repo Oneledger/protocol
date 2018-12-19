@@ -37,8 +37,8 @@ func NewAppState() *AppState {
 	return &AppState{
 		Account: "Zero",
 		States: []data.Coin{
-			data.NewCoinFromInt(1000000000001, "OLT"),
-			data.NewCoinFromInt(10001, "VT"),
+			data.NewCoinFromString("1000000000", "OLT"),
+			data.NewCoinFromString("10000", "VT"),
 		},
 	}
 }
