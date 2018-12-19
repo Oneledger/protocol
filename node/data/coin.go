@@ -153,7 +153,7 @@ func int2bint(amount int64, base *big.Float) *big.Int {
 	interim := value.Mul(value, base)
 	result, _ := interim.Int(nil)
 
-	log.Dump("int2bint", amount, result)
+	//log.Dump("int2bint", amount, result)
 	return result
 }
 
