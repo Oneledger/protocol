@@ -159,7 +159,7 @@ func (transaction *Register) Resolve(app interface{}) Commands {
 }
 
 func CreateRegisterRequest(identity string, chainId string, sequence int64, nodeName string,
-	signers []PublicKey, accountKey id.AccountKey, fee int64) *Register {
+	signers []PublicKey, accountKey id.AccountKey, fee float64) *Register {
 	return &Register{
 		Base: Base{
 			Type:     REGISTER,
@@ -170,6 +170,6 @@ func CreateRegisterRequest(identity string, chainId string, sequence int64, node
 		Identity:   identity,
 		NodeName:   nodeName,
 		AccountKey: accountKey,
-		Fee:        data.NewCoinFromInt(fee, "OLT"),
+		Fee:        data.NewCoinFromFloat(fee, "OLT"),
 	}
 }

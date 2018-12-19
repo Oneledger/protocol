@@ -9,6 +9,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"math/big"
+	"runtime/debug"
 
 	"golang.org/x/crypto/ripemd160"
 
@@ -114,7 +115,7 @@ func NewCoinFromFloat(amount float64, currency string) Coin {
 		Amount:   value,
 	}
 	if !coin.IsValid() {
-		log.Warn("Create Invalid Coin", "coin", coin)
+		log.Warn("Create Invalid Coin", "amount", amount, "coin", coin)
 	}
 	return coin
 }
@@ -193,6 +194,7 @@ func bint2float(amount *big.Int, base *big.Float) float64 {
 // See if the coin is one of a list of currencies
 func (coin Coin) IsCurrency(currencies ...string) bool {
 	if coin.Amount == nil {
+		debug.PrintStack()
 		log.Fatal("Invalid Coin", "coin", coin)
 	}
 
@@ -209,6 +211,7 @@ func (coin Coin) IsCurrency(currencies ...string) bool {
 // LessThanEqual, just for OLTs...
 func (coin Coin) LessThanEqual(value float64) bool {
 	if coin.Amount == nil {
+		debug.PrintStack()
 		log.Fatal("Invalid Coin", "coin", coin)
 	}
 
@@ -224,6 +227,7 @@ func (coin Coin) LessThanEqual(value float64) bool {
 // LessThan, just for OLTs...
 func (coin Coin) LessThan(value float64) bool {
 	if coin.Amount == nil {
+		debug.PrintStack()
 		log.Fatal("Invalid Coin", "coin", coin)
 	}
 
@@ -239,6 +243,7 @@ func (coin Coin) LessThan(value float64) bool {
 // LessThan, for coins...
 func (coin Coin) LessThanCoin(value Coin) bool {
 	if coin.Amount == nil || value.Amount == nil {
+		debug.PrintStack()
 		log.Fatal("Invalid Coin", "coin", coin)
 	}
 
@@ -257,6 +262,7 @@ func (coin Coin) LessThanCoin(value Coin) bool {
 // LessThanEqual, for coins...
 func (coin Coin) LessThanEqualCoin(value Coin) bool {
 	if coin.Amount == nil || value.Amount == nil {
+		debug.PrintStack()
 		log.Fatal("Invalid Coin", "coin", coin)
 	}
 
@@ -288,6 +294,7 @@ func (coin Coin) EqualsInt64(value int64) bool {
 // IsValid coin or is it broken
 func (coin Coin) IsValid() bool {
 	if coin.Amount == nil {
+		debug.PrintStack()
 		log.Fatal("Invalid Coin", "coin", coin)
 	}
 
@@ -306,6 +313,7 @@ func (coin Coin) IsValid() bool {
 // Equals another coin
 func (coin Coin) Equals(value Coin) bool {
 	if coin.Amount == nil {
+		debug.PrintStack()
 		log.Fatal("Invalid Coin", "coin", coin)
 	}
 
@@ -321,6 +329,7 @@ func (coin Coin) Equals(value Coin) bool {
 // Minus two coins
 func (coin Coin) Minus(value Coin) Coin {
 	if coin.Amount == nil {
+		debug.PrintStack()
 		log.Fatal("Invalid Coin", "coin", coin)
 	}
 
@@ -341,6 +350,7 @@ func (coin Coin) Minus(value Coin) Coin {
 // Plus two coins
 func (coin Coin) Plus(value Coin) Coin {
 	if coin.Amount == nil {
+		debug.PrintStack()
 		log.Fatal("Invalid Coin", "coin", coin)
 	}
 
@@ -361,6 +371,7 @@ func (coin Coin) Plus(value Coin) Coin {
 // Quotient of one coin by another (divide without remainder, modulus, etc)
 func (coin Coin) Quotient(value Coin) Coin {
 	if coin.Amount == nil {
+		debug.PrintStack()
 		log.Fatal("Invalid Coin", "coin", coin)
 	}
 
@@ -380,6 +391,7 @@ func (coin Coin) Quotient(value Coin) Coin {
 
 func (coin Coin) Divide(value int) Coin {
 	if coin.Amount == nil {
+		debug.PrintStack()
 		log.Fatal("Invalid Coin", "coin", coin)
 	}
 
@@ -396,6 +408,7 @@ func (coin Coin) Divide(value int) Coin {
 // Multiply one coin by another
 func (coin Coin) Multiply(value Coin) Coin {
 	if coin.Amount == nil {
+		debug.PrintStack()
 		log.Fatal("Invalid Coin", "coin", coin)
 	}
 
@@ -416,6 +429,7 @@ func (coin Coin) Multiply(value Coin) Coin {
 // Multiply one coin by another
 func (coin Coin) MultiplyInt(value int) Coin {
 	if coin.Amount == nil {
+		debug.PrintStack()
 		log.Fatal("Invalid Coin", "coin", coin)
 	}
 
@@ -431,6 +445,7 @@ func (coin Coin) MultiplyInt(value int) Coin {
 // Turn a coin into a readable, floating point string with the currency
 func (coin Coin) String() string {
 	if coin.Amount == nil {
+		debug.PrintStack()
 		log.Fatal("Invalid Coin", "err", "Amount is nil")
 	}
 

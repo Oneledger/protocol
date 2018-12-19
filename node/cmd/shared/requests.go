@@ -54,6 +54,7 @@ type RegisterArguments struct {
 	Identity string
 	Account  string
 	NodeName string
+	Fee      string
 }
 
 // Create a request to register a new identity with the chain
@@ -72,6 +73,7 @@ func RegisterIdentityRequest(args *RegisterArguments) interface{} {
 			"Identity": args.Identity,
 			"Account":  args.Account,
 			"NodeName": args.NodeName,
+			"Fee":      args.Fee,
 		},
 	}
 }

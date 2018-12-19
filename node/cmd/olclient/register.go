@@ -23,6 +23,7 @@ type RegistrationArguments struct {
 	account  string
 	nodeName string
 	pubkey   string
+	fee      string
 }
 
 var arguments = &RegistrationArguments{}
@@ -36,6 +37,7 @@ func init() {
 	registerCmd.Flags().StringVar(&arguments.nodeName, "node", "", "User's Default Node")
 
 	registerCmd.Flags().StringVar(&arguments.pubkey, "pubkey", "", "Specify a public key")
+	registerCmd.Flags().StringVar(&arguments.fee, "fee", "0.01", "Transaction Fee")
 }
 
 func RegisterIdentity(cmd *cobra.Command, args []string) {
@@ -43,6 +45,7 @@ func RegisterIdentity(cmd *cobra.Command, args []string) {
 		Identity: arguments.identity,
 		Account:  arguments.account,
 		NodeName: arguments.nodeName,
+		Fee:      arguments.fee,
 	}
 
 	register := shared.RegisterIdentityRequest(arguments)

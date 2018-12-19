@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"reflect"
+	"strconv"
 
 	"github.com/Oneledger/protocol/node/action"
 	"github.com/Oneledger/protocol/node/comm"
@@ -107,7 +108,15 @@ func (server SDKServer) Status(ctx context.Context, request *pb.StatusRequest) (
 // Given the name of the identity and the chain type, generate new keys and broadcast this new identity
 func (server SDKServer) Register(ctx context.Context, request *pb.RegisterRequest) (*pb.RegisterReply, error) {
 	name := request.Identity
-	fee := request.Fee
+
+	//fee := request.Fee
+	var fee float64
+	var err error
+	if fee, err = strconv.ParseFloat("0.01", 64); err == nil {
+		// TODO: Minimum fee
+		fee = 0.01
+	}
+
 	chain := parseChainType(request.Chain)
 
 	// First check if this account already exists, return with error if not

@@ -99,6 +99,7 @@ func HandleRegisterIdentity(app Application, arguments map[string]string) interf
 
 	identity := arguments["Identity"]
 	accountName := arguments["Account"]
+	fee := arguments["Fee"]
 
 	account, ok := app.Accounts.FindName(accountName)
 	if ok != status.SUCCESS {
@@ -107,14 +108,14 @@ func HandleRegisterIdentity(app Application, arguments map[string]string) interf
 	}
 
 	// TODO Broadcast the transaction
-	transaction := CreateRegisterRequest(identity, account.AccountKey())
+	transaction := CreateRegisterRequest(identity, account.AccountKey(), fee)
 	action.BroadcastTransaction(transaction, false)
 
 	return "Broadcast Identity"
 }
 
 // TODO: Called by olfullnode, not olclient?
-func CreateRegisterRequest(identityName string, accountKey id.AccountKey) action.Transaction {
+func CreateRegisterRequest(identityName string, accountKey id.AccountKey, fee string) action.Transaction {
 	LoadPrivValidatorFile()
 
 	reg := &action.Register{
@@ -130,6 +131,7 @@ func CreateRegisterRequest(identityName string, accountKey id.AccountKey) action
 		AccountKey:        accountKey,
 		TendermintAddress: global.Current.TendermintAddress,
 		TendermintPubKey:  global.Current.TendermintPubKey,
+		Fee:               data.NewCoinFromString(fee, "OLT"),
 	}
 	return reg
 }
