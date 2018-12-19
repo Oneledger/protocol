@@ -24,7 +24,7 @@ ENV OLTEST $OLROOT/protocol/node/tests
 ENV OLSCRIPT $OLROOT/protocol/node/scripts
 ENV OLSETUP $OLROOT/protocol/node/setup
 ENV OLDATA /home/oneledger/.olfullnode
-ENV OLVERSION v0.8.1
+ENV OLVERSION v0.8.0
 ENV PATH $PATH:$GOPATH/bin
 
 USER oneledger
@@ -34,7 +34,14 @@ RUN chown -R oneledger:oneledger $OLROOT/protocol
 
 WORKDIR $OLROOT/protocol
 
-RUN git checkout $OLVERSION
+RUN git checkout docker
+
+USER root
+COPY $OLROOT/protocol/DOCKER/chronos/bootstrapNode /usr/local/bin
+COPY $OLROOT/protocol/DOCKER/chronos/startNode /usr/local/bin
+COPY $OLROOT/protocol/DOCKER/chronos/ /usr/local/bin
+COPY $OLROOT/protocol/DOCKER/chronos/cleanNode /usr/local/bin
+USER oneledger
 
 WORKDIR $OLROOT/protocol/node
 
