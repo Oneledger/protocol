@@ -10,9 +10,9 @@ func ClientConfig() {
 	viper.SetConfigName(global.Current.ConfigName)
 
 	// NOTE: Directories need the trailing slash
-	viper.AddConfigPath(".")               // Local directory override
-	viper.AddConfigPath("$HOME/.olclient") // Special user overrides
-	viper.AddConfigPath("$OLSCRIPT/data/") // Common script configs
+
+	viper.AddConfigPath(global.Current.RootDir) // Special user overrides
+	viper.AddConfigPath(".")                    // Local directory override
 
 	err := viper.ReadInConfig()
 	if err != nil {

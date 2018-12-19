@@ -1002,9 +1002,9 @@ func CreateContractETH(app interface{}, context FunctionValues, tx Transaction) 
 	}
 	//todo : need to have a better key to store ethereum contract.
 	me := GetNodeAccount(app)
-
+	//log.Dump("node account", "me", me, "global", global.Current.NodeAccountName)
 	contractMessage := FindContract(app, me.AccountKey().Bytes(), int64(data.ETHEREUM))
-	var contract *ethereum.HTLContract
+	contract := &ethereum.HTLContract{}
 	if contractMessage == nil {
 		contract = ethereum.CreateHtlContract()
 		if contract == nil {
@@ -1012,11 +1012,7 @@ func CreateContractETH(app interface{}, context FunctionValues, tx Transaction) 
 		}
 		SaveContract(app, me.AccountKey().Bytes(), int64(data.ETHEREUM), contract.ToBytes())
 	} else {
-		buffer, err := serial.Deserialize(contractMessage, contract, serial.JSON)
-		if err != nil {
-			log.Error("Can't deserialze loaded ETH contract", "buffer", contractMessage)
-		}
-		contract = buffer.(*ethereum.HTLContract)
+		contract.FromBytes(contractMessage)
 	}
 
 	preimage := GetByte32(context[PREIMAGE])

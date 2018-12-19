@@ -9,8 +9,8 @@ $CMD/startOneLedger
 
 # List out the account details
 echo "========== Fullnode Accounts ==========="
-olclient list -c "David"
-olclient list -c "Alice"
-olclient list -c "Bob"
-olclient list -c "Carol"
-olclient list -c "Emma"
+olclient list --root $OLDATA/David-Node
+olclient list --root $OLDATA/Alice-Node
+olclient list --root $OLDATA/Bob-Node
+olclient list --root $OLDATA/Carol-Node
+olclient list --root $OLDATA/Emma-Node

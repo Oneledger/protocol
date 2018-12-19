@@ -54,9 +54,9 @@ func StartNode(cmd *cobra.Command, args []string) {
 
 	node := app.NewApplication()
 
-	if node.CheckIfInitialized() == false {
-		log.Fatal("Node was not properly initialized")
-	}
+	//if node.CheckIfInitialized() == false {
+	//	log.Fatal("Node was not properly initialized")
+	//}
 
 	node.Initialize()
 

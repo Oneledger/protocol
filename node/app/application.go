@@ -418,11 +418,16 @@ func (app *Application) MakePayment(req RequestBeginBlock) {
 			totalPayment := quotient.MultiplyInt(numberValidators)
 			app.SetPaymentRecord(totalPayment, height)
 
-			if global.Current.NodeName == selectedValidatorIdentity.NodeName {
-				result := CreatePaymentRequest(*app, quotient, height)
-				if result != nil {
-					// TODO: check this later
-					action.DelayedTransaction(result, 0*time.Second)
+			// if global.Current.NodeName == selectedValidatorIdentity.NodeName {
+			nodeAccount, err := app.Accounts.FindName(global.Current.NodeAccountName)
+
+			if err == status.SUCCESS {
+				if bytes.Compare(nodeAccount.AccountKey(), selectedValidatorIdentity.AccountKey) == 0 {
+					result := CreatePaymentRequest(*app, quotient, height)
+					if result != nil {
+						// TODO: check this later
+						action.DelayedTransaction(result, 0*time.Second)
+					}
 				}
 			}
 		}
