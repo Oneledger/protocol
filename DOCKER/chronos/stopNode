@@ -1,0 +1,34 @@
+#!/usr/bin/env bash
+
+export WORK=$OLDATA
+export LOG=$WORK
+export DATA=$WORK/consensus
+
+pids=`pgrep -f "olfullnode.*--root $WORK.*"`
+if ! [ -z "$pids" ]
+then
+	echo "============================================================" >> $LOG/olfullnode.log
+	echo "Stopping Fullnode" >> $LOG/olfullnode.log
+	echo "============================================================" >> $LOG/olfullnode.log
+	pkill -f "^olfullnode.*--root $WORK.*" >> $LOG/olfullnode.log
+	killed=true
+fi
+
+pids=`pgrep -f "olmonitor start.*--root $WORK"`
+if ! [ -z "$pids" ]
+then
+	pkill -f "olmonitor start.*--root $WORK" >> $LOG/olvm.log
+	killed=true
+fi
+
+pids=`pgrep -f "olvm execute --root $WORK"`
+if ! [ -z "$pids" ]
+then
+	pkill -f "olvm execute --root $WORK" >> $LOG/olvm.log
+	killed=true
+fi
+
+if ! [ -z "$killed" ]
+then
+	echo "Stopped $nodeName"
+fi

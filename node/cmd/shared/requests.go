@@ -242,7 +242,7 @@ func CreateInstallRequest(args *InstallArguments, script []byte) []byte {
 	}
 
 	fee := conv.GetCoin(args.Fee, "OLT")
-	gas := conv.GetCoin(args.Gas, "OLT")
+	//gas := conv.GetCoin(args.Gas, "OLT")
 
 	sequence := GetSequenceNumber(owner)
 
@@ -276,7 +276,7 @@ func CreateInstallRequest(args *InstallArguments, script []byte) []byte {
 		Data:     inputs,
 		Function: action.INSTALL,
 		Fee:      fee,
-		Gas:      gas,
+		//Gas:      gas,
 	}
 	return SignAndPack(action.Transaction(install))
 }

@@ -125,7 +125,7 @@ testmint: check
 # List out the data for David
 #
 list: check
-	@olclient list --root $OLDATA/David-Node
+	@olclient list --root $(OLDATA)/David-Node
 
 #
 # Reset all of the chains, back to genesis

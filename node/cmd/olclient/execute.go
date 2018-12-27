@@ -29,8 +29,8 @@ func init() {
 	executeCmd.Flags().StringVar(&executeArgs.Version, "version", "", "script version")
 	executeCmd.Flags().StringVar(&executeArgs.Currency, "currency", "OLT", "currency")
 
-	executeCmd.Flags().StringVar(&executeArgs.Fee, "fee", "4", "include a fee")
-	executeCmd.Flags().StringVar(&executeArgs.Gas, "gas", "1", "include gas")
+	executeCmd.Flags().StringVar(&executeArgs.Fee, "fee", "", "include a fee")
+	executeCmd.Flags().StringVar(&executeArgs.Gas, "gas", "", "include gas")
 }
 
 // IssueRequest sends out a sendTx to all of the nodes in the chain

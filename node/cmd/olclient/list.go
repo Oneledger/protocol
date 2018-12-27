@@ -24,6 +24,7 @@ var listCmd = &cobra.Command{
 type ListArguments struct {
 	identityName string
 	accountName  string
+	validators   bool
 }
 
 var list *ListArguments = &ListArguments{}
@@ -35,6 +36,7 @@ func init() {
 	// Transaction Parameters
 	listCmd.Flags().StringVar(&list.identityName, "identity", "", "identity name")
 	listCmd.Flags().StringVar(&list.accountName, "account", "", "account name")
+	listCmd.Flags().BoolVar(&list.validators, "validators", false, "include validators")
 }
 
 // Format the request into a query structure
@@ -56,7 +58,6 @@ func ListNode(cmd *cobra.Command, args []string) {
 
 	accounts := comm.Query("/account", accountRequest)
 	identities := comm.Query("/identity", identityRequest)
-	//validators := comm.Query("/validator", []byte(""))
 
 	if accounts == nil || identities == nil {
 		shared.Console.Warning("No Response from Node for:", string(accountRequest), string(identityRequest))
@@ -66,7 +67,11 @@ func ListNode(cmd *cobra.Command, args []string) {
 	nodeName := shared.GetNodeName()
 	printAccountQuery(nodeName, accounts)
 	printIdentityQuery(nodeName, identities)
-	//printValidatorQuery(nodeName, validators)
+
+	if list.validators == true {
+		validators := comm.Query("/validator", []byte(""))
+		printValidatorQuery(nodeName, validators)
+	}
 }
 
 func printAccountQuery(nodeName string, accountQuery interface{}) {

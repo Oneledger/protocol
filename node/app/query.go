@@ -268,7 +268,7 @@ func HandleCreateSendRequest(application Application, arguments map[string]strin
 	amount := conv.GetCoin(args.Amount, args.Currency)
 
 	fee := conv.GetCoin(args.Fee, "OLT")
-	gas := conv.GetCoin(args.Gas, "OLT")
+	//gas := conv.GetCoin(args.Gas, "OLT")
 
 	sendTo := action.SendTo{
 		AccountKey: counterParty,
@@ -292,7 +292,7 @@ func HandleCreateSendRequest(application Application, arguments map[string]strin
 		},
 		SendTo: sendTo,
 		Fee:    fee,
-		Gas:    gas,
+		//Gas:    gas,
 	}
 
 	signed := SignTransaction(action.Transaction(send), application)
@@ -352,8 +352,10 @@ func HandleCreateMintRequest(application Application, arguments map[string]strin
 		Amount:     amount,
 	}
 
-	gas := conv.GetCoin(args.Gas, "OLT")
-	fee := conv.GetCoin(args.Fee, "OLT")
+	//gas := conv.GetCoin(args.Gas, "OLT")
+	//fee := conv.GetCoin(args.Fee, "OLT")
+	// Fixed fees for minting
+	fee := data.NewCoinFromFloat(1, args.Currency)
 
 	if conv.HasErrors() {
 		log.Error("Conversion error", "error", conv.GetErrors())
@@ -372,7 +374,7 @@ func HandleCreateMintRequest(application Application, arguments map[string]strin
 		},
 		SendTo: sendTo,
 		Fee:    fee,
-		Gas:    gas,
+		//Gas:    gas,
 	}
 
 	signed := SignTransaction(action.Transaction(send), application)
@@ -667,7 +669,7 @@ func Balance(app Application, accountKey []byte) interface{} {
 	}
 	result := data.NewBalance()
 
-	return &result
+	return result
 }
 
 func HandleCurrencyAddressQuery(app Application, arguments map[string]string) interface{} {

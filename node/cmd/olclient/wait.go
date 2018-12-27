@@ -11,6 +11,7 @@ import (
 
 	"github.com/Oneledger/protocol/node/action"
 	"github.com/Oneledger/protocol/node/chains/bitcoin"
+	"github.com/Oneledger/protocol/node/cmd/shared"
 	"github.com/Oneledger/protocol/node/comm"
 	"github.com/Oneledger/protocol/node/id"
 	"github.com/Oneledger/protocol/node/log"
@@ -35,6 +36,7 @@ func init() {
 	RootCmd.AddCommand(waitCmd)
 
 	waitCmd.Flags().StringVar(&waitargs.completed, "completed", "", "wait for completion")
+
 	waitCmd.Flags().StringArrayVarP(&waitargs.parties, "party", "p", waitargs.parties, "recipient")
 	waitCmd.Flags().StringArrayVarP(&waitargs.identities, "identity", "i", waitargs.identities, "recipient")
 }
@@ -76,9 +78,9 @@ func WaitForIdentity(args []string) {
 	var found []bool
 	found = make([]bool, size)
 
-	log.Debug("Waiting for", "identities", waitargs.identities)
+	shared.Console.Info("Waiting for", waitargs.identities)
 
-	limit := 20 // Stop after about 20 secs
+	limit := 5 // Stop after about 5 secs
 	for {
 		count := 0
 		for i := 0; i < size; i++ {
@@ -91,7 +93,7 @@ func WaitForIdentity(args []string) {
 			}
 		}
 		if count == size {
-			log.Info("All Identities have been created")
+			shared.Console.Info("All Identities exist")
 			return
 		}
 
@@ -101,7 +103,9 @@ func WaitForIdentity(args []string) {
 			os.Exit(-1)
 		}
 
+		shared.Console.Info("Waiting...")
 		time.Sleep(time.Second)
+		shared.Console.Info("Retrying Identity Check")
 	}
 }
 

@@ -147,12 +147,18 @@ func NewCoinFromString(amount string, currency string) Coin {
 
 // Handle an incoming string
 func parseString(amount string, base *big.Float) *big.Int {
+	if amount == "" {
+		log.Error("Empty Amount String", "amount", amount)
+		return nil
+	}
+
 	value := new(big.Float)
 	_, err := fmt.Sscan(amount, value)
 	if err != nil {
-		//log.Warn("Invalid Float String", "err", err)
-		log.Fatal("Invalid Float String", "err", err, "amount", amount)
+		log.Error("Invalid Float String", "err", err, "amount", amount)
+		return nil
 	}
+
 	result := bfloat2bint(value, base)
 
 	return result
@@ -170,6 +176,7 @@ func int2bint(amount int64, base *big.Float) *big.Int {
 	interim := value.Mul(value, base)
 	result, _ := interim.Int(nil)
 
+	//log.Dump("int2bint", amount, result)
 	return result
 }
 

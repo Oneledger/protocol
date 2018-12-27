@@ -6,11 +6,12 @@
 package main
 
 import (
+	"os"
+
 	"github.com/Oneledger/protocol/node/cmd/shared"
 	"github.com/Oneledger/protocol/node/comm"
 	"github.com/Oneledger/protocol/node/log"
 	"github.com/spf13/cobra"
-	"os"
 )
 
 var sendCmd = &cobra.Command{
@@ -30,8 +31,7 @@ func init() {
 	sendCmd.Flags().StringVar(&sendargs.Amount, "amount", "0", "specify an amount")
 	sendCmd.Flags().StringVar(&sendargs.Currency, "currency", "OLT", "the currency")
 
-	sendCmd.Flags().StringVar(&sendargs.Fee, "fee", "4", "include a fee")
-	sendCmd.Flags().StringVar(&sendargs.Gas, "gas", "1", "include gas")
+	sendCmd.Flags().StringVar(&sendargs.Fee, "fee", "", "include a fee")
 }
 
 // IssueRequest sends out a sendTx to all of the nodes in the chain

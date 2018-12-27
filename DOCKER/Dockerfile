@@ -1,20 +1,20 @@
-# Use golang Debian-9 image
 FROM golang:1.10.3-stretch
 
 USER root
 
 RUN apt-get update && apt-get install -y \
-	curl \
-	git \
-	jq
+  apt-utils \
+  build-essential \
+  git \
+  nano \
+  tmux \
+  vim
 
 RUN rm -rf /var/lib/apt/lists/* \
   && useradd -ms /bin/bash oneledger \
   && mkdir -p /home/oneledger/go/src/github.com/Oneledger/protocol \
+  && mkdir -p /home/oneledger/testnet \
   && chown -R oneledger:oneledger /home/oneledger
-
-COPY ./DOCKER/scripts/startnode.sh /usr/local/bin/
-RUN chmod 755 /usr/local/bin/startnode.sh
 
 USER oneledger
 
@@ -23,42 +23,28 @@ ENV OLROOT $GOPATH/src/github.com/Oneledger
 ENV OLTEST $OLROOT/protocol/node/tests
 ENV OLSCRIPT $OLROOT/protocol/node/scripts
 ENV OLSETUP $OLROOT/protocol/node/setup
-ENV OLDATA $GOPATH/test
+ENV OLDATA /home/oneledger/.olfullnode
+ENV OLVERSION v0.8.0
+ENV PATH $PATH:$GOPATH/bin
 
-ENV OL_PORT_RPC 26601
-ENV OL_PORT_P2P 26611
-ENV OL_PORT_APP 26621
-ENV OL_PORT_BTC 18831
+USER oneledger
 
-EXPOSE ${OL_PORT_RPC}
-EXPOSE ${OL_PORT_P2P}
-EXPOSE ${OL_PORT_APP}
+RUN git clone https://github.com/Oneledger/protocol $OLROOT/protocol
+RUN chown -R oneledger:oneledger $OLROOT/protocol
 
-ENV PATH ${PATH}:${GOPATH}/bin
+WORKDIR $OLROOT/protocol
 
-ENV ID Edwin
+RUN git checkout OLVERSION
 
-ENV TENDERMINT_VERSION v0.23.1
-ENV TENDERMINT_DIR $GOPATH/src/github.com/tendermint/tendermint
-RUN mkdir -p $TENDERMINT_DIR \
-	&& git clone https://github.com/tendermint/tendermint $TENDERMINT_DIR \
-	&& cd $TENDERMINT_DIR \
-	&& git checkout tags/$TENDERMINT_VERSION \
-	&& make get_tools \
-	&& make get_vendor_deps \
-	&& make install
+USER root
+RUN cp $OLROOT/protocol/DOCKER/chronos/bootstrapNode /usr/local/bin \
+	&& cp $OLROOT/protocol/DOCKER/chronos/startNode /usr/local/bin \
+	&& cp $OLROOT/protocol/DOCKER/chronos/stopNode /usr/local/bin \
+	&& cp $OLROOT/protocol/DOCKER/chronos/cleanNode /usr/local/bin
+USER oneledger
 
-RUN mkdir -p $OLROOT \
-	&& git clone https://github.com/Oneledger/protocol $OLROOT/protocol \
-	&& cd $OLROOT/protocol/node \
-	&& make update \
-	&& make install
+WORKDIR $OLROOT/protocol/node
 
-WORKDIR /home/oneledger
-
+RUN make tools update install
 
 VOLUME [ "$OLDATA" ]
-
-ENTRYPOINT ["/usr/local/bin/startnode.sh"]
-
-STOPSIGNAL SIGTERM

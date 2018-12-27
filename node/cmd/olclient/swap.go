@@ -24,16 +24,19 @@ func init() {
 	RootCmd.AddCommand(swapCmd)
 
 	// Transaction Parameters
-	swapCmd.Flags().StringVar(&swapargs.Party, "party", "unknown", "base address")
-	swapCmd.Flags().StringVar(&swapargs.CounterParty, "counterparty", "unknown", "target address")
-	swapCmd.Flags().StringVar(&swapargs.Amount, "amount", "0", "the coins to exchange")
-	swapCmd.Flags().StringVar(&swapargs.Currency, "currency", "OLT", "currency of amount")
-	swapCmd.Flags().StringVar(&swapargs.Exchange, "exchange", "0", "the value to trade for")
-	swapCmd.Flags().StringVar(&swapargs.Excurrency, "excurrency", "ETH", "the currency")
-	swapCmd.Flags().Int64Var(&swapargs.Nonce, "nonce", 1001, "number used once")
+	swapCmd.Flags().StringVar(&swapargs.Party, "party", "", "base address")
+	swapCmd.Flags().StringVar(&swapargs.CounterParty, "counterparty", "", "target address")
 
-	swapCmd.Flags().StringVar(&swapargs.Fee, "fee", "1", "fees in coins")
-	swapCmd.Flags().StringVar(&swapargs.Gas, "gas", "1", "gas, if necessary")
+	swapCmd.Flags().StringVar(&swapargs.Amount, "amount", "", "the coins to exchange")
+	swapCmd.Flags().StringVar(&swapargs.Currency, "currency", "OLT", "currency of amount")
+
+	swapCmd.Flags().StringVar(&swapargs.Exchange, "exchange", "", "the value to trade for")
+	swapCmd.Flags().StringVar(&swapargs.Excurrency, "excurrency", "ETH", "the currency")
+
+	swapCmd.Flags().Int64Var(&swapargs.Nonce, "nonce", 0, "number used once")
+
+	swapCmd.Flags().StringVar(&swapargs.Fee, "fee", "", "fees in coins")
+	swapCmd.Flags().StringVar(&swapargs.Gas, "gas", "", "gas, if necessary")
 }
 
 // IssueRequest sends out a sendTx to all of the nodes in the chain

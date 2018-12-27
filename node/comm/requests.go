@@ -20,7 +20,7 @@ type SendArguments struct {
 	CounterParty string
 	Currency     string
 	Amount       string
-	Gas          string
+	Gas          string // TODO: Remove
 	Fee          string
 }
 

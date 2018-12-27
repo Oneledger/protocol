@@ -55,10 +55,12 @@ func (transaction *Send) Validate() status.Code {
 		return status.INVALID
 	}
 
-	if transaction.Gas.LessThan(0) {
-		log.Debug("Missing Gas", "gas", transaction.Gas)
-		return status.MISSING_DATA
-	}
+	/*
+		if transaction.Gas.LessThan(0) {
+			log.Debug("Missing Gas", "gas", transaction.Gas)
+			return status.MISSING_DATA
+		}
+	*/
 
 	return status.SUCCESS
 }

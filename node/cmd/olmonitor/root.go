@@ -9,11 +9,9 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/Oneledger/protocol/node/config"
 	"github.com/Oneledger/protocol/node/global"
 	"github.com/Oneledger/protocol/node/log"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 )
 
 var RootCmd = &cobra.Command{
@@ -67,16 +65,9 @@ func init() {
 
 	RootCmd.PersistentFlags().StringVar(&global.Current.SDKAddress, "sdkrpc",
 		global.Current.SDKAddress, "Address for SDK RPC Server")
-
 }
 
 // Initialize Viper
 func environment() {
 	log.Debug("Loading Environment")
-	config.ServerConfig()
-
-	// TODO: These need to be integrated into the context loading
-	global.Current.OLVMAddress = viper.Get("OLVMAddress").(string)
-	global.Current.OLVMProtocol = viper.Get("OLVMProtocol").(string)
-	//config.LoadContext()
 }
