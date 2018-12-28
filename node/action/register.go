@@ -70,7 +70,7 @@ func (transaction Register) Validate() status.Code {
 		return status.INVALID
 	}
 
-	if transaction.Fee.LessThan(0) {
+	if transaction.Fee.LessThan(global.Current.MinRegisterFee) {
 		log.Debug("Missing Fee", "fee", transaction.Fee)
 		return status.MISSING_DATA
 	}
