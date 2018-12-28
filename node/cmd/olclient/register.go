@@ -23,7 +23,7 @@ type RegistrationArguments struct {
 	account  string
 	nodeName string
 	pubkey   string
-	fee      string
+	fee      float64
 }
 
 var arguments = &RegistrationArguments{}
@@ -37,7 +37,7 @@ func init() {
 	registerCmd.Flags().StringVar(&arguments.nodeName, "node", "", "User's Default Node")
 
 	registerCmd.Flags().StringVar(&arguments.pubkey, "pubkey", "", "Specify a public key")
-	registerCmd.Flags().StringVar(&arguments.fee, "fee", "", "Transaction Fee")
+	registerCmd.Flags().Float64Var(&arguments.fee, "fee", 0.0, "Transaction Fee in OLT")
 }
 
 func RegisterIdentity(cmd *cobra.Command, args []string) {
@@ -45,7 +45,7 @@ func RegisterIdentity(cmd *cobra.Command, args []string) {
 		shared.Console.Fatal("Registration missing an identity or an account argument")
 	}
 
-	if arguments.fee == "" {
+	if arguments.fee == 0.0 {
 		shared.Console.Fatal("Registration must include a fee")
 	}
 

@@ -38,12 +38,12 @@ func NewSDKServer(app *Application, addr string) (*sdk.Server, error) {
 
 type SDKQuery struct {
 	Path      string
-	Arguments map[string]string
+	Arguments map[string]interface{}
 }
 
 type SDKSet struct {
 	Path      string
-	Arguments map[string]string
+	Arguments map[string]interface{}
 }
 
 func init() {

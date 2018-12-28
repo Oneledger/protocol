@@ -25,12 +25,12 @@ func init() {
 
 	// Transaction Parameters
 	executeCmd.Flags().StringVar(&executeArgs.Owner, "owner", "", "script owner")
-	executeCmd.Flags().StringVar(&executeArgs.Name, "name", "0", "script name")
+	executeCmd.Flags().StringVar(&executeArgs.Name, "name", "", "script name")
 	executeCmd.Flags().StringVar(&executeArgs.Version, "version", "", "script version")
 	executeCmd.Flags().StringVar(&executeArgs.Currency, "currency", "OLT", "currency")
 
-	executeCmd.Flags().StringVar(&executeArgs.Fee, "fee", "", "include a fee")
-	executeCmd.Flags().StringVar(&executeArgs.Gas, "gas", "", "include gas")
+	executeCmd.Flags().Float64Var(&executeArgs.Fee, "fee", 0.0, "include a fee")
+	executeCmd.Flags().Int64Var(&executeArgs.Gas, "gas", 0, "include gas")
 }
 
 // IssueRequest sends out a sendTx to all of the nodes in the chain

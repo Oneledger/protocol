@@ -7,9 +7,9 @@ package data
 
 import (
 	"encoding/hex"
-	"fmt"
 	"math/big"
 	"runtime/debug"
+	"strconv"
 
 	"golang.org/x/crypto/ripemd160"
 
@@ -147,19 +147,30 @@ func NewCoinFromString(amount string, currency string) Coin {
 
 // Handle an incoming string
 func parseString(amount string, base *big.Float) *big.Int {
+	log.Dump("Parsing Amount", amount)
 	if amount == "" {
 		log.Error("Empty Amount String", "amount", amount)
 		return nil
 	}
 
-	value := new(big.Float)
-	_, err := fmt.Sscan(amount, value)
+	/*
+		value := new(big.Float)
+
+		_, err := fmt.Sscan(amount, value)
+		if err != nil {
+			log.Error("Invalid Float String", "err", err, "amount", amount)
+			return nil
+		}
+		result := bfloat2bint(value, base)
+	*/
+
+	value, err := strconv.ParseFloat(amount, 64)
 	if err != nil {
 		log.Error("Invalid Float String", "err", err, "amount", amount)
 		return nil
 	}
 
-	result := bfloat2bint(value, base)
+	result := float2bint(value, base)
 
 	return result
 }

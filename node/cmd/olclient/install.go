@@ -30,8 +30,8 @@ func init() {
 	installCmd.Flags().StringVarP(&installArgs.File, "file", "f", "", "script")
 	installCmd.Flags().StringVar(&installArgs.Currency, "currency", "OLT", "currency")
 
-	installCmd.Flags().StringVar(&installArgs.Fee, "fee", "", "include a fee")
-	installCmd.Flags().StringVar(&installArgs.Gas, "gas", "", "include gas")
+	installCmd.Flags().Float64Var(&installArgs.Fee, "fee", 0.0, "include a fee")
+	installCmd.Flags().Int64Var(&installArgs.Gas, "gas", 0, "include gas")
 }
 
 // IssueRequest sends out a sendTx to all of the nodes in the chain

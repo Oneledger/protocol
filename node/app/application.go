@@ -135,9 +135,10 @@ type BasicState struct {
 	States  []State `json:"states"`
 }
 
+// TODO: Not used anymore
 type State struct {
-	Amount string `json:"amount"`
-	Coin   string `json:"currency"` // TODO: Misnamed?
+	Amount   string `json:"amount"`
+	Currency string `json:"currency"`
 }
 
 // Use the Genesis block to initialze the system
@@ -163,7 +164,10 @@ func (app Application) SetupState(stateBytes []byte) {
 	// TODO: Make a user put in a real key
 	privateKey, publicKey = id.GenerateKeys([]byte(global.Current.PaymentAccount), false)
 
-	CreateAccount(app, &BasicState{global.Current.PaymentAccount, []State{State{"0", "OLT"}}}, publicKey, privateKey)
+	states := []State{
+		State{Amount: "0", Currency: "OLT"},
+	}
+	CreateAccount(app, &BasicState{global.Current.PaymentAccount, states}, publicKey, privateKey)
 }
 
 // TODO: DEBUG
@@ -197,11 +201,11 @@ func CreateAccount(app Application, state *BasicState, publicKey id.PublicKeyED2
 
 func NewBalanceFromStates(states []State) *data.Balance {
 	var balance *data.Balance
-	for i, v := range states {
+	for i, value := range states {
 		if i == 0 {
-			balance = data.NewBalanceFromString(v.Amount, v.Coin)
+			balance = data.NewBalanceFromString(value.Amount, value.Currency)
 		} else {
-			coin := data.NewCoinFromString(v.Amount, v.Coin)
+			coin := data.NewCoinFromString(value.Amount, value.Currency)
 			balance.AddAmount(coin)
 		}
 	}
@@ -253,9 +257,9 @@ func (app Application) Info(req RequestInfo) ResponseInfo {
 	return result
 }
 
-func ParseData(message []byte) map[string]string {
-	result := map[string]string{
-		"parameters": string(message),
+func ParseData(message []byte) map[string]interface{} {
+	result := map[string]interface{}{
+		"parameters": message,
 	}
 	return result
 }

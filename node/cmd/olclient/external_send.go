@@ -28,11 +28,12 @@ func init() {
 	exSendCmd.Flags().StringVar(&exsendargs.ReceiverId, "receiverid", "", "external recipient identity")
 	exSendCmd.Flags().StringVar(&exsendargs.SenderAddress, "senderaddress", "", "external sender address")
 	exSendCmd.Flags().StringVar(&exsendargs.ReceiverAddress, "receiveraddress", "", "external recipient address")
-	exSendCmd.Flags().StringVar(&exsendargs.Amount, "amount", "", "specify an amount")
+
+	exSendCmd.Flags().Float64Var(&exsendargs.Amount, "amount", 0.0, "specify an amount")
 	exSendCmd.Flags().StringVar(&exsendargs.Currency, "currency", "-1", "the currency")
 
-	exSendCmd.Flags().StringVar(&exsendargs.Fee, "fee", "", "include a fee")
-	exSendCmd.Flags().StringVar(&exsendargs.Gas, "gas", "", "include gas")
+	exSendCmd.Flags().Float64Var(&exsendargs.Fee, "fee", 0.0, "include a fee in OLT")
+	exSendCmd.Flags().Int64Var(&exsendargs.Gas, "gas", 0, "include gas in units")
 
 	exSendCmd.Flags().StringVar(&exsendargs.Chain, "chain", "", "destination chain")
 	exSendCmd.Flags().StringVar(&exsendargs.ExFee, "exfee", "", "include a external fee")

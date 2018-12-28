@@ -28,10 +28,10 @@ func init() {
 	// Transaction Parameters
 	sendCmd.Flags().StringVar(&sendargs.Party, "party", "", "send sender")
 	sendCmd.Flags().StringVar(&sendargs.CounterParty, "counterparty", "", "send recipient")
-	sendCmd.Flags().StringVar(&sendargs.Amount, "amount", "0", "specify an amount")
+	sendCmd.Flags().Float64Var(&sendargs.Amount, "amount", 0.0, "specify an amount")
 	sendCmd.Flags().StringVar(&sendargs.Currency, "currency", "OLT", "the currency")
 
-	sendCmd.Flags().StringVar(&sendargs.Fee, "fee", "", "include a fee")
+	sendCmd.Flags().Float64Var(&sendargs.Fee, "fee", 0.0, "include a fee in OLT")
 }
 
 // IssueRequest sends out a sendTx to all of the nodes in the chain

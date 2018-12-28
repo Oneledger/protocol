@@ -39,12 +39,12 @@ type AccountArguments struct {
 func UpdateAccountRequest(args *AccountArguments) interface{} {
 	return &app.SDKSet{
 		Path: "/account",
-		Arguments: map[string]string{
+		Arguments: map[string]interface{}{
 			"Account":     args.Account,
 			"Chain":       args.Chain,
 			"PublicKey":   args.PublicKey,
 			"PrivateKey":  args.PrivateKey,
-			"NodeAccount": "true",
+			"NodeAccount": true,
 		},
 	}
 }
@@ -54,7 +54,7 @@ type RegisterArguments struct {
 	Identity string
 	Account  string
 	NodeName string
-	Fee      string
+	Fee      float64
 }
 
 // Create a request to register a new identity with the chain
@@ -69,7 +69,7 @@ func RegisterIdentityRequest(args *RegisterArguments) interface{} {
 
 	return &app.SDKSet{
 		Path: "/register",
-		Arguments: map[string]string{
+		Arguments: map[string]interface{}{
 			"Identity": args.Identity,
 			"Account":  args.Account,
 			"NodeName": args.NodeName,
@@ -96,7 +96,7 @@ func CreateApplyValidatorRequest(args *comm.ApplyValidatorArguments) []byte {
 	response := comm.Query("/applyValidators", request)
 
 	if response == nil {
-		log.Warn("Query returned no response", "request", request)
+		log.Debug("Query returned no response", "request", request)
 		return nil
 	}
 
@@ -109,8 +109,8 @@ type InstallArguments struct {
 	Version  string
 	File     string
 	Currency string
-	Gas      string
-	Fee      string
+	Fee      float64
+	Gas      int64
 }
 
 type ExecuteArguments struct {
@@ -118,8 +118,8 @@ type ExecuteArguments struct {
 	Name     string
 	Version  string
 	Currency string
-	Gas      string
-	Fee      string
+	Fee      float64
+	Gas      int64
 }
 
 // CreateRequest builds and signs the transaction based on the arguments
@@ -134,7 +134,7 @@ func CreateSendRequest(args *comm.SendArguments) []byte {
 	response := comm.Query("/createSendRequest", request)
 
 	if response == nil {
-		log.Warn("Query returned no response", "request", request)
+		log.Debug("Query returned no response", "request", request)
 		return nil
 	}
 
@@ -153,7 +153,7 @@ func CreateMintRequest(args *comm.SendArguments) []byte {
 	response := comm.Query("/createMintRequest", request)
 
 	if response == nil {
-		log.Warn("Query returned no response", "request", request)
+		log.Debug("Query returned no response", "request", request)
 		return nil
 	}
 
@@ -172,7 +172,7 @@ func CreateSwapRequest(args *comm.SwapArguments) []byte {
 	response := comm.Query("/createSwapRequest", request)
 
 	if response == nil {
-		log.Warn("Query returned no response", "request", request)
+		log.Debug("Query returned no response", "request", request)
 		return nil
 	}
 
@@ -190,7 +190,7 @@ func CreateExSendRequest(args *comm.ExSendArguments) []byte {
 	response := comm.Query("/createExSendRequest", request)
 
 	if response == nil {
-		log.Warn("Query returned no response", "request", request)
+		log.Debug("Query returned no response", "request", request)
 		return nil
 	}
 
@@ -241,9 +241,7 @@ func CreateInstallRequest(args *InstallArguments, script []byte) []byte {
 		return nil
 	}
 
-	fee := conv.GetCoin(args.Fee, "OLT")
-	//gas := conv.GetCoin(args.Gas, "OLT")
-
+	fee := conv.GetCoinFromFloat(args.Fee, "OLT")
 	sequence := GetSequenceNumber(owner)
 
 	inputs := action.Install{
@@ -276,7 +274,6 @@ func CreateInstallRequest(args *InstallArguments, script []byte) []byte {
 		Data:     inputs,
 		Function: action.INSTALL,
 		Fee:      fee,
-		//Gas:      gas,
 	}
 	return SignAndPack(action.Transaction(install))
 }
@@ -345,8 +342,8 @@ func CreateExecuteRequest(args *ExecuteArguments) []byte {
 		return nil
 	}
 
-	fee := conv.GetCoin(args.Fee, "OLT")
-	gas := conv.GetCoin(args.Gas, "OLT")
+	fee := conv.GetCoinFromFloat(args.Fee, "OLT")
+	gas := conv.GetCoinFromUnits(args.Gas, "OLT")
 
 	sequence := GetSequenceNumber(owner)
 
