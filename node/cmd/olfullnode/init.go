@@ -43,7 +43,7 @@ func init() {
 	initCmd.Flags().StringVar(&initCmdArguments.password, "password", "", "existing node password")
 	initCmd.Flags().StringVar(&initCmdArguments.newPassword, "newpassword", "", "new node password")
 	initCmd.Flags().StringVar(&initCmdArguments.genesis, "genesis", "", "Gensis file to use to generate new node key file")
-	initCmd.Flags().StringVar(&testnetArgs.outputDir, "dir", "./", "Directory to store initialization files for the node, default current folder")
+	initCmd.Flags().StringVar(&initCmdArguments.folder, "dir", "./", "Directory to store initialization files for the node, default current folder")
 }
 
 func initNode(cmd *cobra.Command, _ []string) error {

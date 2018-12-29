@@ -1,5 +1,5 @@
 {
-  "genesis_time": "2018-12-03T22:33:02.077813708Z",
+  "genesis_time": "2018-12-19T18:35:43.775497299Z",
   "chain_id": "OneLedger",
   "consensus_params": {
     "block_size_params": {
@@ -22,7 +22,7 @@
     {
       "pub_key": {
         "type": "tendermint/PubKeyEd25519",
-        "value": "D7kJdOxLZSA70eAgsZY6KfBkkkS+mrlcnmm0pikDYY0="
+        "value": "FNUCYtE5RwmwES41bde2nso8aZ8UyLQGcSjRTGLVh0c="
       },
       "power": "1",
       "name": "David"
@@ -30,7 +30,7 @@
     {
       "pub_key": {
         "type": "tendermint/PubKeyEd25519",
-        "value": "98ezYh4mK81creofFv3H4ZeWJHi88YoD7LmnPV39f3Y="
+        "value": "BUVqVsnG0Mn6YQE3mBEt+rEJNNaomrt1Sap3vjCy8uM="
       },
       "power": "1",
       "name": "Alice"
@@ -38,7 +38,7 @@
     {
       "pub_key": {
         "type": "tendermint/PubKeyEd25519",
-        "value": "lAnJumZpTfFnAP2sWTk2lABBRNDlsWMFJvf5vSJu19E="
+        "value": "mJ2dMF97Iz8GYbRi+DFxqLJEiNRROqZgibC3ZFVl2PI="
       },
       "power": "1",
       "name": "Bob"
@@ -46,7 +46,7 @@
     {
       "pub_key": {
         "type": "tendermint/PubKeyEd25519",
-        "value": "pzmkvu/lB9AloSNg7BjtirETGBiaq5Hf7cIuvEqmmsc="
+        "value": "O0qDgt1Ylwg9QkTd/yKyyEWN+gQ4napHUej2xHSNq64="
       },
       "power": "1",
       "name": "Carol"
@@ -57,7 +57,7 @@
     "account": "Zero",
     "states": [
       {
-        "amount": "1000000000000",
+        "amount": "1000000000000000000000000000",
         "currency": "OLT"
       },
       {
@@ -67,4 +67,3 @@
     ]
   }
 }
-
