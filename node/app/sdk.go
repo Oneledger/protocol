@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"reflect"
+	"strconv"
 
 	"github.com/Oneledger/protocol/node/action"
 	"github.com/Oneledger/protocol/node/comm"
@@ -37,12 +38,12 @@ func NewSDKServer(app *Application, addr string) (*sdk.Server, error) {
 
 type SDKQuery struct {
 	Path      string
-	Arguments map[string]string
+	Arguments map[string]interface{}
 }
 
 type SDKSet struct {
 	Path      string
-	Arguments map[string]string
+	Arguments map[string]interface{}
 }
 
 func init() {
@@ -107,6 +108,15 @@ func (server SDKServer) Status(ctx context.Context, request *pb.StatusRequest) (
 // Given the name of the identity and the chain type, generate new keys and broadcast this new identity
 func (server SDKServer) Register(ctx context.Context, request *pb.RegisterRequest) (*pb.RegisterReply, error) {
 	name := request.Identity
+
+	//fee := request.Fee
+	var fee float64
+	var err error
+	if fee, err = strconv.ParseFloat("0.01", 64); err == nil {
+		// TODO: Minimum fee
+		fee = 0.01
+	}
+
 	chain := parseChainType(request.Chain)
 
 	// First check if this account already exists, return with error if not
@@ -125,7 +135,8 @@ func (server SDKServer) Register(ctx context.Context, request *pb.RegisterReques
 			global.Current.Sequence,
 			global.Current.NodeName,
 			nil,
-			pubKey.Address()))
+			pubKey.Address(),
+			fee))
 	comm.Broadcast(packet)
 
 	// TODO: Use proper secret for key generation
@@ -154,7 +165,7 @@ func (server SDKServer) CheckAccount(ctx context.Context, request *pb.CheckAccou
 	var result *pb.Balance
 	if balance != nil {
 		result = &pb.Balance{
-			Amount:   balance.GetAmountByName("OLT").Amount.Int64(),
+			Amount:   balance.GetAmountByName("OLT").Float64(),
 			Currency: currencyProtobuf(balance.GetAmountByName("OLT").Currency),
 		}
 	} else {
@@ -174,8 +185,8 @@ func (server SDKServer) Send(ctx context.Context, request *pb.SendRequest) (*pb.
 	findAccount := server.App.Accounts.FindName
 
 	currency := currencyString(request.Currency)
-	fee := data.NewCoinFromInt(request.Fee, currency)
-	gas := data.NewCoinFromInt(request.Gas, currency)
+	fee := data.NewCoinFromFloat(request.Fee, currency)
+	gas := data.NewCoinFromUnits(request.Gas, currency)
 	sendAmount := data.NewCoinFromFloat(request.Amount, currency)
 
 	// Get party & counterparty accounts

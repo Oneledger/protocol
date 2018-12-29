@@ -62,6 +62,12 @@ type Context struct {
 	P2PAddress      string
 
 	ConsensusNode *tmnode.Node
+
+	//Minimum Fees
+	MinSendFee     float64
+	MinSwapFee     float64
+	MinContractFee float64
+	MinRegisterFee float64
 }
 
 func init() {
@@ -86,6 +92,12 @@ func NewContext(name string) *Context {
 		RootDir:         os.Getenv("OLDATA") + "/" + name,
 
 		SDKAddress: "http://127.0.01:6900",
+
+		// TODO: Should be params in the chain
+		MinSendFee:     0.1,
+		MinSwapFee:     0.1,
+		MinContractFee: 0.1,
+		MinRegisterFee: 0.1,
 	}
 }
 

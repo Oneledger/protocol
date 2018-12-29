@@ -9,6 +9,7 @@ package shared
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/Oneledger/protocol/node/global"
 	"github.com/Oneledger/protocol/node/log"
@@ -25,6 +26,7 @@ type Terminal interface {
 	Info(text ...interface{})
 	Warning(text ...interface{})
 	Error(text ...interface{})
+	Fatal(text ...interface{})
 
 	// Input
 	Read(string) string
@@ -56,11 +58,19 @@ func (tty *Tty) Info(text ...interface{}) {
 }
 
 func (tty *Tty) Warning(text ...interface{}) {
+	fmt.Print("WARNING: ")
 	fmt.Println(text...)
 }
 
 func (tty *Tty) Error(text ...interface{}) {
+	fmt.Print("ERROR: ")
 	fmt.Println(text...)
+}
+
+func (tty *Tty) Fatal(text ...interface{}) {
+	fmt.Print("FATAL: ")
+	fmt.Println(text...)
+	os.Exit(-1)
 }
 
 // Get a password from the console, needs to be attached to work correctly

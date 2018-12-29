@@ -25,7 +25,7 @@ func init() {
 
 	// Transaction Parameters
 	applyvalidatorCmd.Flags().StringVar(&applyValidatorArgs.Id, "id", "", "specify identity by name")
-	applyvalidatorCmd.Flags().StringVar(&applyValidatorArgs.Amount, "amount", "0", "specify an amount")
+	applyvalidatorCmd.Flags().Float64Var(&applyValidatorArgs.Amount, "amount", 0.0, "specify an amount")
 	applyvalidatorCmd.Flags().BoolVar(&applyValidatorArgs.Purge, "purge", false, "remove the validator")
 }
 

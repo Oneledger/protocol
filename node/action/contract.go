@@ -106,6 +106,16 @@ func (transaction *Contract) Validate() status.Code {
 			log.Debug("Smart Contract Missing Data", "script", installData.Script)
 			return status.MISSING_DATA
 		}
+
+		if !transaction.Fee.IsCurrency("OLT") {
+			log.Debug("Wrong Fee token", "fee", transaction.Fee)
+			return status.INVALID
+		}
+
+		if transaction.Fee.LessThan(global.Current.MinSendFee) {
+			log.Debug("Missing Fee", "fee", transaction.Fee)
+			return status.MISSING_DATA
+		}
 	}
 
 	if transaction.Function == EXECUTE {
@@ -122,6 +132,16 @@ func (transaction *Contract) Validate() status.Code {
 
 		if executeData.Version.String() == "" {
 			log.Debug("Smart Contract Missing Data", "version", executeData.Version)
+			return status.MISSING_DATA
+		}
+
+		if !transaction.Fee.IsCurrency("OLT") {
+			log.Debug("Wrong Fee token", "fee", transaction.Fee)
+			return status.INVALID
+		}
+
+		if transaction.Fee.LessThan(global.Current.MinSendFee) {
+			log.Debug("Missing Fee", "fee", transaction.Fee)
 			return status.MISSING_DATA
 		}
 	}

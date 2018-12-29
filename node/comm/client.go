@@ -25,19 +25,19 @@ func GetClient() (client rpcclient.Client) {
 
 	defer func() {
 		if r := recover(); r != nil {
-			log.Error("Ignoring Client Panic", "r", r)
+			log.Debug("Ignoring Client Panic", "r", r)
 			client = nil
 		}
 	}()
 
 	if cachedClient != nil {
-
 		return cachedClient
 	}
 
 	if global.Current.ConsensusNode != nil {
 		log.Debug("Using local ConsensusNode ABCI Client")
 		cachedClient = rpcclient.NewLocal(global.Current.ConsensusNode)
+
 	} else {
 		log.Debug("Using HTTP ABCI Client")
 		cachedClient = rpcclient.NewHTTP(global.Current.RpcAddress, "/websocket")
@@ -82,6 +82,11 @@ func GetClient() (client rpcclient.Client) {
 // An async Broadcast to the chain
 func BroadcastAsync(packet []byte) *ctypes.ResultBroadcastTx {
 
+	if len(packet) < 1 {
+		log.Debug("Empty Transaction")
+		return nil
+	}
+
 	client := GetClient()
 
 	result, err := client.BroadcastTxAsync(packet)
@@ -96,6 +101,11 @@ func BroadcastAsync(packet []byte) *ctypes.ResultBroadcastTx {
 
 // A sync'ed broadcast to the chain that waits for the commit to happen
 func Broadcast(packet []byte) *ctypes.ResultBroadcastTxCommit {
+	if len(packet) < 1 {
+		log.Debug("Empty Transaction")
+		return nil
+	}
+
 	client := GetClient()
 
 	log.Debug("Start Synced Broadcast", "packet", packet)
@@ -113,6 +123,11 @@ func Broadcast(packet []byte) *ctypes.ResultBroadcastTxCommit {
 
 // A sync'ed broadcast to the chain that waits for the commit to happen
 func BroadcastSync(packet []byte) *ctypes.ResultBroadcastTx {
+	if len(packet) < 1 {
+		log.Debug("Empty Transaction")
+		return nil
+	}
+
 	client := GetClient()
 
 	log.Debug("Start Synced Broadcast", "packet", packet)
@@ -137,6 +152,10 @@ func IsError(result interface{}) *string {
 
 // Send a very specific query
 func Query(path string, packet []byte) interface{} {
+	if len(path) < 1 {
+		log.Debug("Empty Query Path")
+		return nil
+	}
 
 	var response *ctypes.ResultABCIQuery
 	var err error
@@ -145,7 +164,7 @@ func Query(path string, packet []byte) interface{} {
 	client := GetClient()
 	response, err = client.ABCIQuery(path, packet)
 	if err != nil {
-		log.Error("ABCi Query Error", "path", path, "err", err)
+		log.Debug("ABCi Query Error", "path", path, "err", err)
 		return nil
 	}
 	//if response != nil {
@@ -166,6 +185,7 @@ func Query(path string, packet []byte) interface{} {
 		log.Error("Failed to deserialize Query:", "response", response.Response.Value)
 		return nil
 	}
+
 	return result
 }
 
@@ -189,6 +209,7 @@ func Search(query string, prove bool, page, perPage int) (res *ctypes.ResultTxSe
 	result, err := client.TxSearch(query, prove, page, perPage)
 	if err != nil {
 		log.Error("TxSearch Error", "err", err)
+		return nil
 	}
 
 	log.Debug("TxSearch", "query", query, "prove", prove, "result", result)
