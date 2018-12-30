@@ -795,10 +795,10 @@ func GetSigners(owner []byte, application Application) []id.PublicKey {
 func HandleSequenceNumberQuery(app Application, arguments map[string]interface{}) interface{} {
 	log.Debug("SequenceNumberQuery", "arguments", arguments)
 
-	text := arguments["parameters"].(string)
+	text := arguments["parameters"].([]byte)
 
 	var key []byte
-	parts := strings.Split(text, "=")
+	parts := strings.Split(string(text), "=")
 	if len(parts) > 1 {
 
 		// TODO: Encoded because it is dumped into a string

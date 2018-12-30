@@ -3,12 +3,13 @@ package id
 import (
 	"bytes"
 	"encoding/hex"
+	"math/big"
+	"strings"
+
 	"github.com/Oneledger/protocol/node/data"
 	"github.com/Oneledger/protocol/node/log"
 	"github.com/Oneledger/protocol/node/serial"
 	"github.com/tendermint/tendermint/abci/types"
-	"math/big"
-	"strings"
 )
 
 type Validators struct {
@@ -59,13 +60,29 @@ func (list *Validators) Set(app interface{}, validators []types.SigningValidator
 }
 
 func (list *Validators) FindSelectedValidator(app interface{}, hash []byte) Identity {
+	log.Debug("FindSelectedValidator", "hash", hash, "approved", len(list.Approved))
+
+	if len(list.Approved) < 1 {
+		return Identity{}
+	}
+
 	countBigInt := big.NewInt(int64(len(list.Approved)))
+
 	hashBigInt := new(big.Int).SetBytes(hash)
+
 	indexBigInt := new(big.Int)
 	indexBigInt = indexBigInt.Mod(hashBigInt, countBigInt)
+
 	var indexInt64, _ = new(big.Int).SetString(indexBigInt.String(), 10)
 	index := int(indexInt64.Int64())
+
+	log.Dump("Calcs", countBigInt, indexBigInt, index, len(list.Approved))
+
 	selectedValidator := list.Approved[index]
+
+	log.Dump("Approved", list.Approved)
+
+	log.Debug("Selected", "validator", selectedValidator)
 	return selectedValidator
 }
 
@@ -74,9 +91,16 @@ func (list *Validators) FindApproved(app interface{}) []Identity {
 	for _, entry := range list.Signers {
 		entryIsBad := IsByzantine(entry.Validator, list.Byzantines)
 		if !entryIsBad {
-			formatted := hex.EncodeToString(entry.Validator.Address)
 			identities := GetIdentities(app)
+
+			formatted := hex.EncodeToString(entry.Validator.Address)
 			identity := identities.FindTendermint(formatted)
+			if identity.Name == "" {
+				log.Debug("Unable to Find Tendermint identity", "formatted", formatted,
+					"raw", entry.Validator.Address)
+				continue
+			}
+
 			approvedIdentities = append(approvedIdentities, identity)
 
 			//add the approved validators to the NewValidators list to be used in the EndBlock call
