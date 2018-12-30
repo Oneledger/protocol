@@ -72,6 +72,8 @@ func ListNode(cmd *cobra.Command, args []string) {
 		validators := comm.Query("/validator", []byte(""))
 		if validators != nil {
 			printValidatorQuery(nodeName, validators)
+		} else {
+			shared.Console.Info("Failed to get validator list. Please wait for the next block before running this command.")
 		}
 	}
 }
