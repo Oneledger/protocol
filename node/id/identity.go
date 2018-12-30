@@ -116,6 +116,8 @@ func (ids *Identities) FindTendermint(tendermintAddress string) Identity {
 			return identity
 		}
 	}
+	log.Debug("Missing identity", "name", tendermintAddress, "size", size, "keys", keys)
+
 	return Identity{}
 }
 

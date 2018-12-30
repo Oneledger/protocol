@@ -11,6 +11,9 @@ import (
 func CreatePaymentRequest(app Application, quotient data.Coin, height int64) action.Transaction {
 	chainId := app.Admin.Get(chainKey)
 	identities := app.Validators.Approved
+
+	log.Debug("Paying to", "len", len(identities), "identities", identities)
+
 	sendto := make([]action.SendTo, len(identities))
 
 	for i, identity := range identities {

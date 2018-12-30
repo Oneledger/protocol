@@ -135,9 +135,10 @@ type BasicState struct {
 	States  []State `json:"states"`
 }
 
+// TODO: Not used anymore
 type State struct {
-	Amount string `json:"amount"`
-	Coin   string `json:"currency"` // TODO: Misnamed?
+	Amount   string `json:"amount"`
+	Currency string `json:"currency"`
 }
 
 // Use the Genesis block to initialze the system
@@ -163,7 +164,10 @@ func (app Application) SetupState(stateBytes []byte) {
 	// TODO: Make a user put in a real key
 	privateKey, publicKey = id.GenerateKeys([]byte(global.Current.PaymentAccount), false)
 
-	CreateAccount(app, &BasicState{global.Current.PaymentAccount, []State{State{"0", "OLT"}}}, publicKey, privateKey)
+	states := []State{
+		State{Amount: "0", Currency: "OLT"},
+	}
+	CreateAccount(app, &BasicState{global.Current.PaymentAccount, states}, publicKey, privateKey)
 }
 
 // TODO: DEBUG
@@ -197,11 +201,11 @@ func CreateAccount(app Application, state *BasicState, publicKey id.PublicKeyED2
 
 func NewBalanceFromStates(states []State) *data.Balance {
 	var balance *data.Balance
-	for i, v := range states {
+	for i, value := range states {
 		if i == 0 {
-			balance = data.NewBalanceFromString(v.Amount, v.Coin)
+			balance = data.NewBalanceFromString(value.Amount, value.Currency)
 		} else {
-			coin := data.NewCoinFromString(v.Amount, v.Coin)
+			coin := data.NewCoinFromString(value.Amount, value.Currency)
 			balance.AddAmount(coin)
 		}
 	}
@@ -253,9 +257,9 @@ func (app Application) Info(req RequestInfo) ResponseInfo {
 	return result
 }
 
-func ParseData(message []byte) map[string]string {
-	result := map[string]string{
-		"parameters": string(message),
+func ParseData(message []byte) map[string]interface{} {
+	result := map[string]interface{}{
+		"parameters": message,
 	}
 	return result
 }
@@ -341,15 +345,19 @@ func (app Application) BeginBlock(req RequestBeginBlock) ResponseBeginBlock {
 
 	app.Validators.Set(app, validators, byzantineValidators, req.Header.LastBlockHash)
 
-	raw := app.Admin.Get(data.DatabaseKey("PaymentRecord"))
-	if raw == nil {
-		app.MakePayment(req)
-	} else {
-		params := raw.(action.PaymentRecord)
-		if params.BlockHeight == -1 {
+	app.MakePayment(req)
+
+	/*
+		raw := app.Admin.Get(data.DatabaseKey("PaymentRecord"))
+		if raw == nil {
 			app.MakePayment(req)
+		} else {
+			params := raw.(action.PaymentRecord)
+			if params.BlockHeight == -1 {
+				app.MakePayment(req)
+			}
 		}
-	}
+	*/
 
 	newChainId := action.Message(req.Header.ChainID)
 
@@ -377,6 +385,8 @@ func (app Application) BeginBlock(req RequestBeginBlock) ResponseBeginBlock {
 
 // make payment to validators
 func (app *Application) MakePayment(req RequestBeginBlock) {
+	log.Debug("MakePayment")
+
 	account, err := app.Accounts.FindName(global.Current.PaymentAccount)
 	if err != status.SUCCESS {
 		log.Fatal("ABCI: BeginBlock Fatal Status", "status", err)
@@ -395,6 +405,7 @@ func (app *Application) MakePayment(req RequestBeginBlock) {
 		params := raw.(action.PaymentRecord)
 		paymentRecordBlockHeight = params.BlockHeight
 
+		log.Debug("Checking for stall", "height", height, "recHeight", paymentRecordBlockHeight)
 		if paymentRecordBlockHeight != -1 {
 			numTrans := height - paymentRecordBlockHeight
 			if numTrans > 10 {
@@ -404,9 +415,16 @@ func (app *Application) MakePayment(req RequestBeginBlock) {
 				paymentRecordBlockHeight = -1
 			}
 		}
+	} else {
+		log.Debug("Database uninitialized", "height", height, "recHeight", paymentRecordBlockHeight)
 	}
 
 	if (!paymentBalance.GetAmountByName("OLT").LessThanEqual(0)) && paymentRecordBlockHeight == -1 {
+		if len(app.Validators.Approved) < 1 || app.Validators.SelectedValidator.Name == "" {
+			log.Debug("Missing Validator Information")
+			return
+		}
+
 		approvedValidatorIdentities := app.Validators.Approved
 		selectedValidatorIdentity := app.Validators.SelectedValidator
 
@@ -426,11 +444,21 @@ func (app *Application) MakePayment(req RequestBeginBlock) {
 					result := CreatePaymentRequest(*app, quotient, height)
 					if result != nil {
 						// TODO: check this later
+						log.Debug("Issuing Payment", "result", result)
 						action.DelayedTransaction(result, 0*time.Second)
 					}
+				} else {
+					log.Debug("Payment happens on a different node", "node",
+						selectedValidatorIdentity.Name, "validator", selectedValidatorIdentity)
 				}
+			} else {
+				log.Debug("Missing Node Account")
 			}
+		} else {
+			log.Debug("Nothing to Pay")
 		}
+	} else {
+		log.Debug("Not ready for Payment")
 	}
 }
 

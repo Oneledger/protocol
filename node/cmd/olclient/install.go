@@ -6,6 +6,8 @@
 package main
 
 import (
+	"os"
+
 	"github.com/Oneledger/protocol/node/cmd/shared"
 	"github.com/Oneledger/protocol/node/comm"
 	"github.com/Oneledger/protocol/node/log"
@@ -30,8 +32,8 @@ func init() {
 	installCmd.Flags().StringVarP(&installArgs.File, "file", "f", "", "script")
 	installCmd.Flags().StringVar(&installArgs.Currency, "currency", "OLT", "currency")
 
-	installCmd.Flags().StringVar(&installArgs.Fee, "fee", "4", "include a fee")
-	installCmd.Flags().StringVar(&installArgs.Gas, "gas", "1", "include gas")
+	installCmd.Flags().Float64Var(&installArgs.Fee, "fee", 0.0, "include a fee")
+	installCmd.Flags().Int64Var(&installArgs.Gas, "gas", 0, "include gas")
 }
 
 // IssueRequest sends out a sendTx to all of the nodes in the chain
@@ -46,11 +48,10 @@ func IssueInstallRequest(cmd *cobra.Command, args []string) {
 	// Create message
 	packet := shared.CreateInstallRequest(installArgs, script)
 	if packet == nil {
-		shared.Console.Info("CreateInstallRequest bad arguments", installArgs)
-		return
+		shared.Console.Error("CreateInstallRequest bad arguments", installArgs)
+		os.Exit(-1)
 	}
 
 	result := comm.Broadcast(packet)
-
-	log.Debug("Returned Successfully", "result", result)
+	BroadcastStatus(result)
 }

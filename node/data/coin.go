@@ -7,8 +7,9 @@ package data
 
 import (
 	"encoding/hex"
-	"fmt"
 	"math/big"
+	"runtime/debug"
+	"strconv"
 
 	"golang.org/x/crypto/ripemd160"
 
@@ -92,6 +93,18 @@ func NewCurrency(currency string) Currency {
 	return Currencies[currency]
 }
 
+func NewCoinFromUnits(amount int64, currency string) Coin {
+	value := units2bint(amount, GetBase(currency))
+	coin := Coin{
+		Currency: Currencies[currency],
+		Amount:   value,
+	}
+	if !coin.IsValid() {
+		log.Warn("Create Invalid Coin", "coin", coin)
+	}
+	return coin
+}
+
 // Create a coin from integer (not fractional)
 func NewCoinFromInt(amount int64, currency string) Coin {
 
@@ -114,7 +127,7 @@ func NewCoinFromFloat(amount float64, currency string) Coin {
 		Amount:   value,
 	}
 	if !coin.IsValid() {
-		log.Warn("Create Invalid Coin", "coin", coin)
+		log.Warn("Create Invalid Coin", "amount", amount, "coin", coin)
 	}
 	return coin
 }
@@ -134,16 +147,37 @@ func NewCoinFromString(amount string, currency string) Coin {
 
 // Handle an incoming string
 func parseString(amount string, base *big.Float) *big.Int {
-	value := new(big.Float)
-	_, err := fmt.Sscan(amount, value)
-	if err != nil {
-		//log.Warn("Invalid Float String", "err", err)
-		log.Fatal("Invalid Float String", "err", err)
+	//log.Dump("Parsing Amount", amount)
+	if amount == "" {
+		log.Error("Empty Amount String", "amount", amount)
+		return nil
 	}
-	result := bfloat2bint(value, base)
 
-	//log.Dump("parseString", amount, result)
+	/*
+		value := new(big.Float)
+
+		_, err := fmt.Sscan(amount, value)
+		if err != nil {
+			log.Error("Invalid Float String", "err", err, "amount", amount)
+			return nil
+		}
+		result := bfloat2bint(value, base)
+	*/
+
+	value, err := strconv.ParseFloat(amount, 64)
+	if err != nil {
+		log.Error("Invalid Float String", "err", err, "amount", amount)
+		return nil
+	}
+
+	result := float2bint(value, base)
+
 	return result
+}
+
+func units2bint(amount int64, base *big.Float) *big.Int {
+	value := new(big.Int).SetInt64(amount)
+	return value
 }
 
 // Handle an incoming int (often used for comaparisons)
@@ -164,18 +198,14 @@ func float2bint(amount float64, base *big.Float) *big.Int {
 	interim := value.Mul(value, base)
 	result, _ := interim.Int(nil)
 
-	//log.Dump("float2bint", amount, result)
 	return result
 }
 
 // Handle an big float to big int conversion
 func bfloat2bint(value *big.Float, base *big.Float) *big.Int {
-	//accuracy := big.Exact
-
 	interim := value.Mul(value, base)
 	result, _ := interim.Int(nil)
 
-	//log.Dump("bfloat2bint", value, result)
 	return result
 }
 
@@ -186,13 +216,17 @@ func bint2float(amount *big.Int, base *big.Float) float64 {
 	interim := value.Quo(value, base)
 	result, _ := interim.Float64()
 
-	//log.Dump("bint2float", amount, result)
 	return result
+}
+
+func (coin Coin) Float64() float64 {
+	return bint2float(coin.Amount, GetBase(coin.Currency.Name))
 }
 
 // See if the coin is one of a list of currencies
 func (coin Coin) IsCurrency(currencies ...string) bool {
 	if coin.Amount == nil {
+		debug.PrintStack()
 		log.Fatal("Invalid Coin", "coin", coin)
 	}
 
@@ -209,6 +243,7 @@ func (coin Coin) IsCurrency(currencies ...string) bool {
 // LessThanEqual, just for OLTs...
 func (coin Coin) LessThanEqual(value float64) bool {
 	if coin.Amount == nil {
+		debug.PrintStack()
 		log.Fatal("Invalid Coin", "coin", coin)
 	}
 
@@ -224,6 +259,7 @@ func (coin Coin) LessThanEqual(value float64) bool {
 // LessThan, just for OLTs...
 func (coin Coin) LessThan(value float64) bool {
 	if coin.Amount == nil {
+		debug.PrintStack()
 		log.Fatal("Invalid Coin", "coin", coin)
 	}
 
@@ -239,6 +275,7 @@ func (coin Coin) LessThan(value float64) bool {
 // LessThan, for coins...
 func (coin Coin) LessThanCoin(value Coin) bool {
 	if coin.Amount == nil || value.Amount == nil {
+		debug.PrintStack()
 		log.Fatal("Invalid Coin", "coin", coin)
 	}
 
@@ -257,6 +294,7 @@ func (coin Coin) LessThanCoin(value Coin) bool {
 // LessThanEqual, for coins...
 func (coin Coin) LessThanEqualCoin(value Coin) bool {
 	if coin.Amount == nil || value.Amount == nil {
+		debug.PrintStack()
 		log.Fatal("Invalid Coin", "coin", coin)
 	}
 
@@ -288,6 +326,7 @@ func (coin Coin) EqualsInt64(value int64) bool {
 // IsValid coin or is it broken
 func (coin Coin) IsValid() bool {
 	if coin.Amount == nil {
+		debug.PrintStack()
 		log.Fatal("Invalid Coin", "coin", coin)
 	}
 
@@ -306,6 +345,7 @@ func (coin Coin) IsValid() bool {
 // Equals another coin
 func (coin Coin) Equals(value Coin) bool {
 	if coin.Amount == nil {
+		debug.PrintStack()
 		log.Fatal("Invalid Coin", "coin", coin)
 	}
 
@@ -321,6 +361,7 @@ func (coin Coin) Equals(value Coin) bool {
 // Minus two coins
 func (coin Coin) Minus(value Coin) Coin {
 	if coin.Amount == nil {
+		debug.PrintStack()
 		log.Fatal("Invalid Coin", "coin", coin)
 	}
 
@@ -341,6 +382,7 @@ func (coin Coin) Minus(value Coin) Coin {
 // Plus two coins
 func (coin Coin) Plus(value Coin) Coin {
 	if coin.Amount == nil {
+		debug.PrintStack()
 		log.Fatal("Invalid Coin", "coin", coin)
 	}
 
@@ -361,6 +403,7 @@ func (coin Coin) Plus(value Coin) Coin {
 // Quotient of one coin by another (divide without remainder, modulus, etc)
 func (coin Coin) Quotient(value Coin) Coin {
 	if coin.Amount == nil {
+		debug.PrintStack()
 		log.Fatal("Invalid Coin", "coin", coin)
 	}
 
@@ -380,6 +423,7 @@ func (coin Coin) Quotient(value Coin) Coin {
 
 func (coin Coin) Divide(value int) Coin {
 	if coin.Amount == nil {
+		debug.PrintStack()
 		log.Fatal("Invalid Coin", "coin", coin)
 	}
 
@@ -396,6 +440,7 @@ func (coin Coin) Divide(value int) Coin {
 // Multiply one coin by another
 func (coin Coin) Multiply(value Coin) Coin {
 	if coin.Amount == nil {
+		debug.PrintStack()
 		log.Fatal("Invalid Coin", "coin", coin)
 	}
 
@@ -416,6 +461,7 @@ func (coin Coin) Multiply(value Coin) Coin {
 // Multiply one coin by another
 func (coin Coin) MultiplyInt(value int) Coin {
 	if coin.Amount == nil {
+		debug.PrintStack()
 		log.Fatal("Invalid Coin", "coin", coin)
 	}
 
@@ -431,6 +477,7 @@ func (coin Coin) MultiplyInt(value int) Coin {
 // Turn a coin into a readable, floating point string with the currency
 func (coin Coin) String() string {
 	if coin.Amount == nil {
+		debug.PrintStack()
 		log.Fatal("Invalid Coin", "err", "Amount is nil")
 	}
 

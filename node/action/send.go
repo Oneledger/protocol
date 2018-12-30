@@ -22,8 +22,8 @@ import (
 type Send struct {
 	Base
 	SendTo SendTo    `json:"SendTo"`
-	Gas    data.Coin `json:"gas"`
 	Fee    data.Coin `json:"fee"`
+	//Gas    data.Coin `json:"gas"`
 }
 
 func init() {
@@ -45,18 +45,13 @@ func (transaction *Send) Validate() status.Code {
 		return status.MISSING_VALUE
 	}
 
-	if transaction.Fee.LessThan(0) {
-		log.Debug("Missing Fee", "fee", transaction.Fee)
-		return status.MISSING_DATA
-	}
-
 	if !transaction.Fee.IsCurrency("OLT") {
 		log.Debug("Wrong Fee token", "fee", transaction.Fee)
 		return status.INVALID
 	}
 
-	if transaction.Gas.LessThan(0) {
-		log.Debug("Missing Gas", "gas", transaction.Gas)
+	if transaction.Fee.LessThan(global.Current.MinSendFee) {
+		log.Debug("Missing Fee", "fee", transaction.Fee)
 		return status.MISSING_DATA
 	}
 

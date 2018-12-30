@@ -6,6 +6,8 @@
 package main
 
 import (
+	"os"
+
 	"github.com/Oneledger/protocol/node/cmd/shared"
 	"github.com/Oneledger/protocol/node/comm"
 	"github.com/Oneledger/protocol/node/log"
@@ -25,7 +27,7 @@ func init() {
 
 	// Transaction Parameters
 	applyvalidatorCmd.Flags().StringVar(&applyValidatorArgs.Id, "id", "", "specify identity by name")
-	applyvalidatorCmd.Flags().StringVar(&applyValidatorArgs.Amount, "amount", "0", "specify an amount")
+	applyvalidatorCmd.Flags().Float64Var(&applyValidatorArgs.Amount, "amount", 0.0, "specify an amount")
 	applyvalidatorCmd.Flags().BoolVar(&applyValidatorArgs.Purge, "purge", false, "remove the validator")
 }
 
@@ -36,7 +38,12 @@ func ApplyValidator(cmd *cobra.Command, args []string) {
 	// Create message
 	packet := shared.CreateApplyValidatorRequest(applyValidatorArgs)
 
+	if packet == nil {
+		shared.Console.Error("Error in sending request")
+		os.Exit(-1)
+	}
+
 	result := comm.Broadcast(packet)
 
-	log.Debug("Returned Successfully", "result", result)
+	BroadcastStatus(result)
 }

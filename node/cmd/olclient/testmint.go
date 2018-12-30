@@ -25,11 +25,11 @@ func init() {
 
 	// Transaction Parameters
 	mintCmd.Flags().StringVar(&mintargs.Party, "party", "", "send recipient")
-	mintCmd.Flags().StringVar(&mintargs.Amount, "amount", "0", "specify an amount")
+	mintCmd.Flags().Float64Var(&mintargs.Amount, "amount", 0.0, "specify an amount")
 	mintCmd.Flags().StringVar(&mintargs.Currency, "currency", "OLT", "the currency")
 
-	mintCmd.Flags().StringVar(&mintargs.Fee, "fee", "0", "include a fee")
-	mintCmd.Flags().StringVar(&mintargs.Gas, "gas", "1", "include gas")
+	mintCmd.Flags().Float64Var(&mintargs.Fee, "fee", 0.0, "include a fee in OLT")
+	//mintCmd.Flags().Int64Var(&mintargs.Gas, "gas", 0, "include gas in units")
 }
 
 // IssueRequest sends out a sendTx to all of the nodes in the chain
@@ -44,8 +44,6 @@ func IssueMintRequest(cmd *cobra.Command, args []string) {
 		return
 	}
 
-	log.Debug("Send Mint Request", "packet", packet)
 	result := comm.Broadcast(packet)
-
-	log.Debug("Returned Successfully", "result", result)
+	BroadcastStatus(result)
 }
