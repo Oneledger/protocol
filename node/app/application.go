@@ -525,6 +525,10 @@ func (app Application) EndBlock(req RequestEndBlock) ResponseEndBlock {
 			for _, validatorToBePurged := range app.Validators.ToBeRemoved {
 				if bytes.Compare(validator.PubKey.Data, validatorToBePurged.Validator.PubKey.Data) == 0 {
 					found = true
+					err := action.TransferVT(app, validatorToBePurged)
+					if err != status.SUCCESS {
+						log.Info("Remove Validator - error in transfer of VT")
+					}
 					break
 				}
 			}

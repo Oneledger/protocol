@@ -191,7 +191,7 @@ func CheckSendTo(balance data.Balance, sendTo SendTo, fee data.Coin) bool {
 }
 
 func TransferVT(app interface{}, applyValidator id.ApplyValidator) status.Code {
-	log.Debug("Processing Transfer of VT to Zero Account")
+	log.Debug("Processing Transfer of VT to Payment Account")
 
 	balances := GetBalances(app)
 	identities := GetIdentities(app)
@@ -216,7 +216,7 @@ func TransferVT(app interface{}, applyValidator id.ApplyValidator) status.Code {
 	paymentId, err := accounts.FindName("Payment")
 
 	if err != status.SUCCESS {
-		log.Error("Failed to get Zero account", "status", err)
+		log.Error("Failed to get Payment account", "status", err)
 		return err
 	}
 

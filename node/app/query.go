@@ -127,52 +127,63 @@ func HandleApplyValidatorQuery(application Application, arguments map[string]int
 		return "Node account is not found."
 	}
 
+	nodeAccountBalance := application.Balances.Get(data.DatabaseKey(nodeAccount.AccountKey()))
+
+	if &nodeAccountBalance == nil {
+		return "Missing balance for node account."
+	}
+
 	identity, ok := application.Identities.FindName(idName)
 	if ok != status.SUCCESS {
 		return "The identity is not found." + " id:" + idName
 	}
 
-	nodeBalance := application.Balances.Get(data.DatabaseKey(nodeAccount.AccountKey()))
+	identityBalance := application.Balances.Get(data.DatabaseKey(identity.AccountKey))
 
-	if &nodeBalance == nil {
-		return "Missing balance for node."
+	if &identityBalance == nil {
+		return "Missing balance for identity."
 	}
 
 	//check who is running the applyValidator command, if 10 VTs or more, then it's an administrator
 	tenVT := data.NewCoinFromFloat(10.0, "VT")
 	oneVT := data.NewCoinFromFloat(1.0, "VT")
+
 	stake := data.NewCoinFromFloat(amount, "VT")
 
-	if nodeBalance.GetAmountByName("VT").LessThanCoin(tenVT) {
-		_, ok := application.Accounts.FindKey(identity.AccountKey)
-
-		if ok != status.SUCCESS {
+	if identity.AccountKey.String() != nodeAccount.AccountKey().String() {
+		if nodeAccountBalance.GetAmountByName("VT").LessThanCoin(tenVT) {
 			return "Node account has less than 10 VTs. It can not run applyValidator for other identities."
 		}
+	}
 
-		//when removing validator, the node account doesn't have to have a VT
-		if purge == false {
-			if amount == 0.0 {
-				return "Missing an amount argument."
-			}
+	//when removing validator, the node account doesn't have to have a VT
+	if purge == true {
 
-			if nodeBalance.GetAmountByName("VT").LessThanCoin(stake) {
-				return "Validator Token is not enough."
+		found := false
+		for _, validator := range application.Validators.Approved {
+			if validator.AccountKey.String() == identity.AccountKey.String() {
+				found = true
 			}
+		}
 
-			if stake.LessThanCoin(oneVT) {
-				return "Validator Token amount can not be less than 1."
-			}
-		} else {
-			found := false
-			for _, validator := range application.Validators.Approved {
-				if validator.AccountKey.String() == nodeAccount.AccountKey().String() {
-					found = true
-				}
-			}
-			if found == false {
-				return "Node account is not a validator."
-			}
+		if found == false {
+			return "Node account is not a validator."
+		}
+
+		stake = identityBalance.GetAmountByName("VT")
+
+	} else {
+
+		if amount == 0.0 {
+			return "Missing an amount argument."
+		}
+
+		if identityBalance.GetAmountByName("VT").LessThanCoin(stake) {
+			return "Validator Token is not enough."
+		}
+
+		if stake.LessThanCoin(oneVT) {
+			return "Validator Token amount can not be less than 1."
 		}
 
 	}

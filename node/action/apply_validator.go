@@ -6,6 +6,7 @@
 package action
 
 import (
+	"bytes"
 	"github.com/Oneledger/protocol/node/data"
 	"github.com/Oneledger/protocol/node/id"
 	"github.com/Oneledger/protocol/node/log"
@@ -71,7 +72,33 @@ func (transaction *ApplyValidator) Validate() status.Code {
 func (transaction *ApplyValidator) ProcessCheck(app interface{}) status.Code {
 	log.Debug("Processing ApplyValidator Transaction for CheckTx")
 
-	return status.SUCCESS
+	result := CheckBalances(app, transaction.Owner, transaction.AccountKey, transaction.Stake)
+	if result == true {
+		return status.SUCCESS
+	} else {
+		return status.INVALID
+	}
+}
+
+func CheckBalances(app interface{}, owner id.AccountKey, identityAccountKey id.AccountKey, stake data.Coin) bool {
+
+	balances := GetBalances(app)
+
+	//check identity's VT is equal to the stake
+	identityBalance := balances.Get(identityAccountKey)
+	if identityBalance.GetAmountByName("VT").LessThanCoin(stake) {
+		return false
+	}
+
+	//check administrator's VT is greater than 10
+	if bytes.Compare(owner, identityAccountKey) != 0 {
+		ownerBalance := balances.Get(owner)
+		if ownerBalance.GetAmountByName("VT").LessThanCoin(data.NewCoinFromFloat(10.0, "VT")) {
+			return false
+		}
+	}
+
+	return true
 }
 
 func (transaction *ApplyValidator) ShouldProcess(app interface{}) bool {
@@ -80,6 +107,12 @@ func (transaction *ApplyValidator) ShouldProcess(app interface{}) bool {
 
 func (transaction *ApplyValidator) ProcessDeliver(app interface{}) status.Code {
 	log.Debug("Processing ApplyValidator Transaction for DeliverTx")
+
+	result := CheckBalances(app, transaction.Owner, transaction.AccountKey, transaction.Stake)
+	if result == false {
+		return status.INVALID
+	}
+
 	identities := GetIdentities(app)
 	entry, ok := identities.FindName(transaction.Identity)
 
