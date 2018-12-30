@@ -10,6 +10,7 @@ import (
 	"github.com/Oneledger/protocol/node/comm"
 	"github.com/Oneledger/protocol/node/log"
 	"github.com/spf13/cobra"
+	"os"
 )
 
 var applyvalidatorCmd = &cobra.Command{
@@ -35,8 +36,19 @@ func ApplyValidator(cmd *cobra.Command, args []string) {
 
 	// Create message
 	packet := shared.CreateApplyValidatorRequest(applyValidatorArgs)
+	if packet == nil {
+		os.Exit(-1)
+	}
 
 	result := comm.Broadcast(packet)
 
-	log.Debug("Returned Successfully", "result", result)
+	if result == nil {
+		shared.Console.Error("Invalid Transaction")
+	} else if result.CheckTx.Code != 0 {
+		shared.Console.Error("Syntax, CheckTx Failed", result)
+	} else if result.DeliverTx.Code != 0 {
+		shared.Console.Error("Transaction, DeliverTx Failed", result)
+	} else {
+		shared.Console.Info("Returned Successfully", result)
+	}
 }

@@ -104,10 +104,15 @@ func (transaction *ApplyValidator) ProcessDeliver(app interface{}) status.Code {
 		return status.EXECUTE_ERROR
 	}
 
+	apply := id.ApplyValidator{
+		Validator: *validator,
+		Stake:     transaction.Stake,
+	}
+
 	if transaction.Purge == true {
-		validators.ToBeRemoved = append(validators.ToBeRemoved, *validator)
+		validators.ToBeRemoved = append(validators.ToBeRemoved, apply)
 	} else {
-		validators.NewValidators = append(validators.NewValidators, *validator)
+		validators.NewValidators = append(validators.NewValidators, apply)
 	}
 
 	return status.SUCCESS

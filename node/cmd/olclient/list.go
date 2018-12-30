@@ -70,7 +70,9 @@ func ListNode(cmd *cobra.Command, args []string) {
 
 	if list.validators == true {
 		validators := comm.Query("/validator", []byte(""))
-		printValidatorQuery(nodeName, validators)
+		if validators != nil {
+			printValidatorQuery(nodeName, validators)
+		}
 	}
 }
 
@@ -150,7 +152,9 @@ func printValidatorQuery(nodeName string, validatorQuery interface{}) {
 
 	for _, validator := range validators {
 		//printAValidator(validator)
-		printAnIdentity(validator)
+		if validator.Name != "" {
+			printAnIdentity(validator)
+		}
 	}
 }
 

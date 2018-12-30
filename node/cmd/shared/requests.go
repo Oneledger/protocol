@@ -100,7 +100,16 @@ func CreateApplyValidatorRequest(args *comm.ApplyValidatorArguments) []byte {
 		return nil
 	}
 
-	return response.([]byte)
+	switch value := response.(type) {
+	case []byte:
+		return value
+	case string:
+		Console.Error(value)
+	default:
+		Console.Error("Unknown reponse type", value)
+	}
+
+	return nil
 }
 
 type InstallArguments struct {

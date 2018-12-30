@@ -100,8 +100,6 @@ func HandleApplyValidatorQuery(application Application, arguments map[string]int
 
 	conv := convert.NewConvert()
 
-	result := make([]byte, 0)
-
 	var argsHolder comm.ApplyValidatorArguments
 
 	text := arguments["parameters"].([]byte)
@@ -110,7 +108,7 @@ func HandleApplyValidatorQuery(application Application, arguments map[string]int
 
 	if err != nil {
 		log.Error("Could not deserialize ApplyValidatorArguments", "error", err)
-		return result
+		return "Could not deserialize ApplyValidatorArguments" + " error=" + err.Error()
 	}
 
 	amount := args.(*comm.ApplyValidatorArguments).Amount
@@ -119,27 +117,27 @@ func HandleApplyValidatorQuery(application Application, arguments map[string]int
 
 	identity, ok := application.Identities.FindName(idName)
 	if ok != status.SUCCESS {
-		log.Error("The identity is not found", "id", idName)
-		return result
+		return "The identity is not found." + " id:" + idName
 	}
 
 	if amount == 0.0 {
-		log.Error("Missing an amount argument")
-		return result
+		return "Missing an amount argument"
 	}
 
 	balance := application.Balances.Get(data.DatabaseKey(identity.AccountKey))
 
 	if &balance == nil {
-		log.Error("Missing Balance")
-		return result
+		return "Missing Balance"
 	}
 
 	stake := conv.GetCoinFromFloat(amount, "VT")
 
 	if balance.GetAmountByName("VT").LessThanCoin(stake) {
-		log.Error("Validator token is not enough")
-		return result
+		return "Validator Token is not enough"
+	}
+
+	if stake.LessThanCurrency(1, "VT") {
+		return "Validator Token amount can not be less than 1"
 	}
 
 	sequence := SequenceNumber(application, identity.AccountKey.Bytes())
@@ -352,7 +350,7 @@ func HandleCreateMintRequest(application Application, arguments map[string]inter
 	}
 
 	// Fixed price for fees for minting
-	fee := data.NewCoinFromFloat(1, args.Currency)
+	fee := data.NewCoinFromFloat(1, "OLT")
 
 	if conv.HasErrors() {
 		log.Error("Conversion error", "error", conv.GetErrors())
@@ -592,10 +590,10 @@ func IdentityInfo(app Application, name string) interface{} {
 func HandleValidatorQuery(app Application, arguments map[string]interface{}) interface{} {
 	log.Debug("ValidatorQuery", "arguments", arguments)
 
-	text := arguments["parameters"].(string)
+	text := arguments["parameters"].([]byte)
 
 	name := ""
-	parts := strings.Split(text, "=")
+	parts := strings.Split(string(text), "=")
 	if len(parts) > 1 {
 		name = parts[1]
 	}

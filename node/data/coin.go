@@ -272,6 +272,22 @@ func (coin Coin) LessThan(value float64) bool {
 	return false
 }
 
+// LessThan, specify currency...
+func (coin Coin) LessThanCurrency(value float64, currency string) bool {
+	if coin.Amount == nil {
+		debug.PrintStack()
+		log.Fatal("Invalid Coin", "coin", coin)
+	}
+
+	compare := float2bint(value, GetBase(currency))
+	//log.Dump("LessThanEqual", value, compare)
+
+	if coin.Amount.Cmp(compare) < 0 {
+		return true
+	}
+	return false
+}
+
 // LessThan, for coins...
 func (coin Coin) LessThanCoin(value Coin) bool {
 	if coin.Amount == nil || value.Amount == nil {
