@@ -174,6 +174,11 @@ func Query(path string, packet []byte) interface{} {
 
 	//for i := 0; i < 20; i++ {
 	client := GetClient()
+	if client == nil {
+		log.Debug("Client Unavailable")
+		return nil
+	}
+
 	response, err = client.ABCIQuery(path, packet)
 	StopClient()
 

@@ -44,8 +44,6 @@ func IssueMintRequest(cmd *cobra.Command, args []string) {
 		return
 	}
 
-	log.Debug("Send Mint Request", "packet", packet)
 	result := comm.Broadcast(packet)
-
-	log.Debug("Returned Successfully", "result", result)
+	BroadcastStatus(result)
 }

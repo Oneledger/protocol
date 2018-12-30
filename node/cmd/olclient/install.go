@@ -6,6 +6,8 @@
 package main
 
 import (
+	"os"
+
 	"github.com/Oneledger/protocol/node/cmd/shared"
 	"github.com/Oneledger/protocol/node/comm"
 	"github.com/Oneledger/protocol/node/log"
@@ -46,11 +48,10 @@ func IssueInstallRequest(cmd *cobra.Command, args []string) {
 	// Create message
 	packet := shared.CreateInstallRequest(installArgs, script)
 	if packet == nil {
-		shared.Console.Info("CreateInstallRequest bad arguments", installArgs)
-		return
+		shared.Console.Error("CreateInstallRequest bad arguments", installArgs)
+		os.Exit(-1)
 	}
 
 	result := comm.Broadcast(packet)
-
-	log.Debug("Returned Successfully", "result", result)
+	BroadcastStatus(result)
 }
