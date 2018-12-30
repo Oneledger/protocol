@@ -60,8 +60,6 @@ func (list *Validators) Set(app interface{}, validators []types.SigningValidator
 }
 
 func (list *Validators) FindSelectedValidator(app interface{}, hash []byte) Identity {
-	log.Debug("FindSelectedValidator", "hash", hash, "approved", len(list.Approved))
-
 	if len(list.Approved) < 1 {
 		return Identity{}
 	}
@@ -76,13 +74,10 @@ func (list *Validators) FindSelectedValidator(app interface{}, hash []byte) Iden
 	var indexInt64, _ = new(big.Int).SetString(indexBigInt.String(), 10)
 	index := int(indexInt64.Int64())
 
-	log.Dump("Calcs", countBigInt, indexBigInt, index, len(list.Approved))
-
 	selectedValidator := list.Approved[index]
 
-	log.Dump("Approved", list.Approved)
-
 	log.Debug("Selected", "validator", selectedValidator)
+
 	return selectedValidator
 }
 
