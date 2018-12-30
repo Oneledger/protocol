@@ -18,5 +18,7 @@ do
 
 done
 
-olclient swap --root $OLDATA/Alice-Node --party Bob --counterparty Alice --amount 2.5
-olclient swap --root $OLDATA/Bob-Node --party Alice --counterparty Bob --amount 2.5
+olclient send --root $OLDATA/Alice-Node --party Alice --counterparty Bob --amount 2.5 --fee 0.001
+
+#olclient swap --root $OLDATA/Alice-Node --party Bob --counterparty Alice --amount 2.5
+#olclient swap --root $OLDATA/Bob-Node --party Alice --counterparty Bob --amount 2.5

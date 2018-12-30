@@ -185,7 +185,15 @@ func CreateSwapRequest(args *comm.SwapArguments) []byte {
 		return nil
 	}
 
-	return response.([]byte)
+	switch value := response.(type) {
+	case []byte:
+		return value
+	case string:
+		Console.Error(value)
+	default:
+		Console.Error("Unknown response type", value)
+	}
+	return nil
 }
 
 func CreateExSendRequest(args *comm.ExSendArguments) []byte {
@@ -266,7 +274,7 @@ func CreateInstallRequest(args *InstallArguments, script []byte) []byte {
 	}
 
 	signers := action.GetSigners(owner)
-	if signers == nil {
+	if signers == nil || len(signers) == 0 {
 		log.Debug("Missing Signers")
 		return nil
 	}
@@ -367,13 +375,19 @@ func CreateExecuteRequest(args *ExecuteArguments) []byte {
 		os.Exit(-1)
 	}
 
+	signers := action.GetSigners(owner)
+	if signers == nil || len(signers) == 0 {
+		Console.Error("Missing Signers")
+		os.Exit(-1)
+	}
+
 	// Create base transaction
 	execute := &action.Contract{
 		Base: action.Base{
 			Type:     action.SMART_CONTRACT,
 			ChainId:  app.ChainId,
 			Owner:    owner,
-			Signers:  action.GetSigners(owner),
+			Signers:  signers,
 			Sequence: sequence,
 		},
 		Data:     inputs,

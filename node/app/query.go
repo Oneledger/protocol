@@ -7,6 +7,7 @@ package app
 
 import (
 	"encoding/hex"
+	"runtime/debug"
 	"strings"
 
 	"github.com/Oneledger/protocol/node/comm"
@@ -27,7 +28,15 @@ import (
 )
 
 // Top-level list of all query types
-func HandleQuery(app Application, path string, arguments map[string]interface{}) []byte {
+func HandleQuery(app Application, path string, arguments map[string]interface{}) (buffer []byte) {
+
+	defer func() {
+		if r := recover(); r != nil {
+			log.Error("Query Panic", "status", r)
+			debug.PrintStack()
+			buffer, _ = serial.Serialize("Internal Query Error", serial.CLIENT)
+		}
+	}()
 
 	var result interface{}
 
@@ -430,11 +439,16 @@ func HandleSwapRequest(application Application, arguments map[string]interface{}
 
 	sequence := SequenceNumber(application, partyKey.Bytes())
 
+	signers := GetSigners(partyKey, application)
+	if signers == nil || len(signers) == 0 {
+		return result
+	}
+
 	swap := &action.Swap{
 		Base: action.Base{
 			Type:     action.SWAP,
 			ChainId:  ChainId,
-			Signers:  GetSigners(partyKey, application),
+			Signers:  signers,
 			Owner:    partyKey,
 			Target:   counterPartyKey,
 			Sequence: sequence.Sequence,
@@ -505,7 +519,7 @@ func HandleAccountPublicKeyQuery(app Application, arguments map[string]interface
 
 	if accountStatus != status.SUCCESS {
 		log.Error("Could not find an account", "status", accountStatus)
-		return []byte{}
+		return "Missing Account: " + string(text)
 	}
 
 	privateKey := account.PrivateKey()
@@ -759,13 +773,20 @@ func GetSigners(owner []byte, application Application) []id.PublicKey {
 	arguments := map[string]interface{}{
 		"parameters": owner,
 	}
-	publicKey := HandleAccountPublicKeyQuery(application, arguments)
+	result := HandleAccountPublicKeyQuery(application, arguments)
 
-	if publicKey == nil {
+	if result == nil {
 		return nil
 	}
 
-	return []id.PublicKey{publicKey.(id.PublicKey)}
+	switch value := result.(type) {
+	case id.PublicKey:
+		return []id.PublicKey{value}
+	}
+
+	log.Debug("Missing Signers", "owner", owner)
+
+	return []id.PublicKey{}
 }
 
 // Get the account information for a given user
