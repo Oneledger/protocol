@@ -81,7 +81,7 @@ func GetClient() (client rpcclient.Client) {
 
 func StopClient() {
 	if cachedClient != nil && cachedClient.IsRunning() {
-		cachedClient.Stop()
+		//cachedClient.Stop()
 	}
 }
 

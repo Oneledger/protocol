@@ -147,7 +147,7 @@ func NewCoinFromString(amount string, currency string) Coin {
 
 // Handle an incoming string
 func parseString(amount string, base *big.Float) *big.Int {
-	log.Dump("Parsing Amount", amount)
+	//log.Dump("Parsing Amount", amount)
 	if amount == "" {
 		log.Error("Empty Amount String", "amount", amount)
 		return nil
