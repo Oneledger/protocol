@@ -8,6 +8,6 @@ CMD=$GOPATH/src/github.com/Oneledger/protocol/node/scripts
 $CMD/startOneLedger
 
 echo "=================== Execute Script =================="
-oltest execute --root $OLDATA/David-Node --test hello --fee 0.01 --gas 0.10
-oltest execute --root $OLDATA/Alice-Node --test deadloop --fee 0.01 --gas 0.10
+oltest execute --root $OLDATA/David-Node --test hello --fee 0.101 --gas 100
+oltest execute --root $OLDATA/Alice-Node --test deadloop --fee 0.101 --gas 100
 

@@ -12,6 +12,7 @@ import (
 	"github.com/Oneledger/protocol/node/comm"
 	"github.com/Oneledger/protocol/node/log"
 	"github.com/spf13/cobra"
+	ctypes "github.com/tendermint/tendermint/rpc/core/types"
 )
 
 var sendCmd = &cobra.Command{
@@ -48,7 +49,10 @@ func IssueRequest(cmd *cobra.Command, args []string) {
 	}
 
 	result := comm.Broadcast(packet)
+	BroadcastStatus(result)
+}
 
+func BroadcastStatus(result *ctypes.ResultBroadcastTxCommit) {
 	if result == nil {
 		shared.Console.Error("Invalid Transacation")
 

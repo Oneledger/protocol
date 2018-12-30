@@ -6,6 +6,8 @@
 package main
 
 import (
+	"os"
+
 	"github.com/Oneledger/protocol/node/cmd/shared"
 	"github.com/Oneledger/protocol/node/comm"
 	"github.com/Oneledger/protocol/node/log"
@@ -40,15 +42,11 @@ func ApplyValidator(cmd *cobra.Command, args []string) {
 		os.Exit(-1)
 	}
 
-	result := comm.Broadcast(packet)
-
-	if result == nil {
-		shared.Console.Error("Invalid Transaction")
-	} else if result.CheckTx.Code != 0 {
-		shared.Console.Error("Syntax, CheckTx Failed", result)
-	} else if result.DeliverTx.Code != 0 {
-		shared.Console.Error("Transaction, DeliverTx Failed", result)
-	} else {
-		shared.Console.Info("Returned Successfully", result)
+	if packet == nil {
+		shared.Console.Error("Error in sending request")
+		os.Exit(-1)
 	}
+
+	result := comm.Broadcast(packet)
+	BroadcastStatus(result)
 }

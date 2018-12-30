@@ -6,6 +6,8 @@
 package main
 
 import (
+	"os"
+
 	"github.com/Oneledger/protocol/node/cmd/shared"
 	"github.com/Oneledger/protocol/node/comm"
 	"github.com/Oneledger/protocol/node/log"
@@ -45,10 +47,13 @@ func SwapCurrency(cmd *cobra.Command, args []string) {
 
 	// Create message
 	packet := shared.CreateSwapRequest(swapargs)
+	if packet == nil {
+		shared.Console.Error("Error in sending request")
+		os.Exit(-1)
+	}
 
 	result := comm.Broadcast(packet)
-
-	log.Debug("Returned Successfully", "result", result)
+	BroadcastStatus(result)
 }
 
 // TODO: Check to see that this is a valid currency

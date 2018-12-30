@@ -345,15 +345,19 @@ func (app Application) BeginBlock(req RequestBeginBlock) ResponseBeginBlock {
 
 	app.Validators.Set(app, validators, byzantineValidators, req.Header.LastBlockHash)
 
-	raw := app.Admin.Get(data.DatabaseKey("PaymentRecord"))
-	if raw == nil {
-		app.MakePayment(req)
-	} else {
-		params := raw.(action.PaymentRecord)
-		if params.BlockHeight == -1 {
+	app.MakePayment(req)
+
+	/*
+		raw := app.Admin.Get(data.DatabaseKey("PaymentRecord"))
+		if raw == nil {
 			app.MakePayment(req)
+		} else {
+			params := raw.(action.PaymentRecord)
+			if params.BlockHeight == -1 {
+				app.MakePayment(req)
+			}
 		}
-	}
+	*/
 
 	newChainId := action.Message(req.Header.ChainID)
 
@@ -381,6 +385,8 @@ func (app Application) BeginBlock(req RequestBeginBlock) ResponseBeginBlock {
 
 // make payment to validators
 func (app *Application) MakePayment(req RequestBeginBlock) {
+	log.Debug("MakePayment")
+
 	account, err := app.Accounts.FindName(global.Current.PaymentAccount)
 	if err != status.SUCCESS {
 		log.Fatal("ABCI: BeginBlock Fatal Status", "status", err)
@@ -399,6 +405,7 @@ func (app *Application) MakePayment(req RequestBeginBlock) {
 		params := raw.(action.PaymentRecord)
 		paymentRecordBlockHeight = params.BlockHeight
 
+		log.Debug("Checking for stall", "height", height, "recHeight", paymentRecordBlockHeight)
 		if paymentRecordBlockHeight != -1 {
 			numTrans := height - paymentRecordBlockHeight
 			if numTrans > 10 {
@@ -408,9 +415,16 @@ func (app *Application) MakePayment(req RequestBeginBlock) {
 				paymentRecordBlockHeight = -1
 			}
 		}
+	} else {
+		log.Debug("Database uninitialized", "height", height, "recHeight", paymentRecordBlockHeight)
 	}
 
 	if (!paymentBalance.GetAmountByName("OLT").LessThanEqual(0)) && paymentRecordBlockHeight == -1 {
+		if len(app.Validators.Approved) < 1 || app.Validators.SelectedValidator.Name == "" {
+			log.Debug("Missing Validator Information")
+			return
+		}
+
 		approvedValidatorIdentities := app.Validators.Approved
 		selectedValidatorIdentity := app.Validators.SelectedValidator
 
@@ -430,11 +444,21 @@ func (app *Application) MakePayment(req RequestBeginBlock) {
 					result := CreatePaymentRequest(*app, quotient, height)
 					if result != nil {
 						// TODO: check this later
+						log.Debug("Issuing Payment", "result", result)
 						action.DelayedTransaction(result, 0*time.Second)
 					}
+				} else {
+					log.Debug("Payment happens on a different node", "node",
+						selectedValidatorIdentity.Name, "validator", selectedValidatorIdentity)
 				}
+			} else {
+				log.Debug("Missing Node Account")
 			}
+		} else {
+			log.Debug("Nothing to Pay")
 		}
+	} else {
+		log.Debug("Not ready for Payment")
 	}
 }
 

@@ -45,6 +45,5 @@ func IssueExecuteRequest(cmd *cobra.Command, args []string) {
 	}
 
 	result := comm.Broadcast(packet)
-
-	log.Debug("Returned Successfully", "result", result)
+	BroadcastStatus(result)
 }
