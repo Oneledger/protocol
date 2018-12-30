@@ -18,13 +18,18 @@ type Validators struct {
 	Approved           []Identity
 	ApprovedValidators []types.Validator
 	SelectedValidator  Identity
-	NewValidators      []types.Validator
-	ToBeRemoved        []types.Validator
+	NewValidators      []ApplyValidator
+	ToBeRemoved        []ApplyValidator
 }
 
 type ValidatorInfo struct {
 	Address string
 	PubKey  string
+}
+
+type ApplyValidator struct {
+	Validator types.Validator
+	Stake     data.Coin
 }
 
 func init() {
@@ -51,8 +56,8 @@ func (list *Validators) Set(app interface{}, validators []types.SigningValidator
 	list.Byzantines = badValidators
 	list.ApprovedValidators = make([]types.Validator, 0)
 	list.Approved = list.FindApproved(app)
-	list.NewValidators = make([]types.Validator, 0)
-	list.ToBeRemoved = make([]types.Validator, 0)
+	list.NewValidators = make([]ApplyValidator, 0)
+	list.ToBeRemoved = make([]ApplyValidator, 0)
 	if hash != nil {
 		list.SelectedValidator = list.FindSelectedValidator(app, hash)
 	}

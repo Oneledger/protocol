@@ -70,7 +70,11 @@ func ListNode(cmd *cobra.Command, args []string) {
 
 	if list.validators == true {
 		validators := comm.Query("/validator", []byte(""))
-		printValidatorQuery(nodeName, validators)
+		if validators != nil {
+			printValidatorQuery(nodeName, validators)
+		} else {
+			shared.Console.Info("Failed to get validator list. Please wait for the next block before running this command.")
+		}
 	}
 }
 
@@ -150,7 +154,9 @@ func printValidatorQuery(nodeName string, validatorQuery interface{}) {
 
 	for _, validator := range validators {
 		//printAValidator(validator)
-		printAnIdentity(validator)
+		if validator.Name != "" {
+			printAnIdentity(validator)
+		}
 	}
 }
 

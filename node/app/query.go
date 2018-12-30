@@ -107,10 +107,6 @@ func HandleQuery(app Application, path string, arguments map[string]interface{})
 func HandleApplyValidatorQuery(application Application, arguments map[string]interface{}) interface{} {
 	log.Debug("HandleApplyValidatorQuery", "arguments", arguments)
 
-	conv := convert.NewConvert()
-
-	result := make([]byte, 0)
-
 	var argsHolder comm.ApplyValidatorArguments
 
 	text := arguments["parameters"].([]byte)
@@ -119,46 +115,76 @@ func HandleApplyValidatorQuery(application Application, arguments map[string]int
 
 	if err != nil {
 		log.Error("Could not deserialize ApplyValidatorArguments", "error", err)
-		return result
+		return "Could not deserialize ApplyValidatorArguments" + " error=" + err.Error()
 	}
 
 	amount := args.(*comm.ApplyValidatorArguments).Amount
 	idName := args.(*comm.ApplyValidatorArguments).Id
 	purge := args.(*comm.ApplyValidatorArguments).Purge
 
+	nodeAccount := action.GetNodeAccount(application)
+	if nodeAccount == nil {
+		return "Node account is not found."
+	}
+
 	identity, ok := application.Identities.FindName(idName)
 	if ok != status.SUCCESS {
-		log.Error("The identity is not found", "id", idName)
-		return result
+		return "The identity is not found." + " id:" + idName
 	}
 
-	if amount == 0.0 {
-		log.Error("Missing an amount argument")
-		return result
+	nodeBalance := application.Balances.Get(data.DatabaseKey(nodeAccount.AccountKey()))
+
+	if &nodeBalance == nil {
+		return "Missing balance for node."
 	}
 
-	balance := application.Balances.Get(data.DatabaseKey(identity.AccountKey))
+	//check who is running the applyValidator command, if 10 VTs or more, then it's an administrator
+	tenVT := data.NewCoinFromFloat(10.0, "VT")
+	oneVT := data.NewCoinFromFloat(1.0, "VT")
+	stake := data.NewCoinFromFloat(amount, "VT")
 
-	if &balance == nil {
-		log.Error("Missing Balance")
-		return result
+	if nodeBalance.GetAmountByName("VT").LessThanCoin(tenVT) {
+		_, ok := application.Accounts.FindKey(identity.AccountKey)
+
+		if ok != status.SUCCESS {
+			return "Node account has less than 10 VTs. It can not run applyValidator for other identities."
+		}
+
+		//when removing validator, the node account doesn't have to have a VT
+		if purge == false {
+			if amount == 0.0 {
+				return "Missing an amount argument."
+			}
+
+			if nodeBalance.GetAmountByName("VT").LessThanCoin(stake) {
+				return "Validator Token is not enough."
+			}
+
+			if stake.LessThanCoin(oneVT) {
+				return "Validator Token amount can not be less than 1."
+			}
+		} else {
+			found := false
+			for _, validator := range application.Validators.Approved {
+				if validator.AccountKey.String() == nodeAccount.AccountKey().String() {
+					found = true
+				}
+			}
+			if found == false {
+				return "Node account is not a validator."
+			}
+		}
+
 	}
 
-	stake := conv.GetCoinFromFloat(amount, "VT")
-
-	if balance.GetAmountByName("VT").LessThanCoin(stake) {
-		log.Error("Validator token is not enough")
-		return result
-	}
-
-	sequence := SequenceNumber(application, identity.AccountKey.Bytes())
+	sequence := SequenceNumber(application, nodeAccount.AccountKey().Bytes())
 
 	validator := &action.ApplyValidator{
 		Base: action.Base{
 			Type:     action.APPLY_VALIDATOR,
 			ChainId:  ChainId,
-			Owner:    identity.AccountKey,
-			Signers:  GetSigners(identity.AccountKey, application),
+			Owner:    nodeAccount.AccountKey(),
+			Signers:  GetSigners(nodeAccount.AccountKey(), application),
 			Sequence: sequence.Sequence,
 		},
 
@@ -361,7 +387,7 @@ func HandleCreateMintRequest(application Application, arguments map[string]inter
 	}
 
 	// Fixed price for fees for minting
-	fee := data.NewCoinFromFloat(1, args.Currency)
+	fee := data.NewCoinFromFloat(1, "OLT")
 
 	if conv.HasErrors() {
 		log.Error("Conversion error", "error", conv.GetErrors())

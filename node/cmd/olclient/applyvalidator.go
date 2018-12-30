@@ -12,6 +12,7 @@ import (
 	"github.com/Oneledger/protocol/node/comm"
 	"github.com/Oneledger/protocol/node/log"
 	"github.com/spf13/cobra"
+	"os"
 )
 
 var applyvalidatorCmd = &cobra.Command{
@@ -37,6 +38,9 @@ func ApplyValidator(cmd *cobra.Command, args []string) {
 
 	// Create message
 	packet := shared.CreateApplyValidatorRequest(applyValidatorArgs)
+	if packet == nil {
+		os.Exit(-1)
+	}
 
 	if packet == nil {
 		shared.Console.Error("Error in sending request")
@@ -44,6 +48,5 @@ func ApplyValidator(cmd *cobra.Command, args []string) {
 	}
 
 	result := comm.Broadcast(packet)
-
 	BroadcastStatus(result)
 }

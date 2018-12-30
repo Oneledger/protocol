@@ -523,7 +523,7 @@ func (app Application) EndBlock(req RequestEndBlock) ResponseEndBlock {
 		for _, validator := range app.Validators.ApprovedValidators {
 			found := false
 			for _, validatorToBePurged := range app.Validators.ToBeRemoved {
-				if bytes.Compare(validator.PubKey.Data, validatorToBePurged.PubKey.Data) == 0 {
+				if bytes.Compare(validator.PubKey.Data, validatorToBePurged.Validator.PubKey.Data) == 0 {
 					found = true
 					break
 				}
@@ -534,11 +534,15 @@ func (app Application) EndBlock(req RequestEndBlock) ResponseEndBlock {
 			validatorUpdates = append(validatorUpdates, validator)
 		}
 
-		for _, validator := range app.Validators.NewValidators {
-			if id.HasValidatorToken(app, validator) {
-				validatorUpdates = append(validatorUpdates, validator)
+		for _, applyValidator := range app.Validators.NewValidators {
+			if id.HasValidatorToken(app, applyValidator.Validator) {
+				validatorUpdates = append(validatorUpdates, applyValidator.Validator)
+				err := action.TransferVT(app, applyValidator)
+				if err != status.SUCCESS {
+					log.Info("New Validator - error in transfer of VT")
+				}
 			} else {
-				log.Info("Reject validator", "validatorPubKey", validator.PubKey)
+				log.Info("Reject validator", "validatorPubKey", applyValidator.Validator.PubKey)
 			}
 
 		}
