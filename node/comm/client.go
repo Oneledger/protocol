@@ -39,7 +39,7 @@ func GetClient() (client rpcclient.Client) {
 		cachedClient = rpcclient.NewLocal(global.Current.ConsensusNode)
 
 	} else {
-		log.Debug("Using HTTP ABCI Client")
+		log.Debug("Using new HTTP ABCI Client")
 		cachedClient = rpcclient.NewHTTP(global.Current.RpcAddress, "/websocket")
 	}
 
@@ -79,6 +79,12 @@ func GetClient() (client rpcclient.Client) {
 	return cachedClient
 }
 
+func StopClient() {
+	if cachedClient != nil && cachedClient.IsRunning() {
+		cachedClient.Stop()
+	}
+}
+
 // An async Broadcast to the chain
 func BroadcastAsync(packet []byte) *ctypes.ResultBroadcastTx {
 
@@ -90,6 +96,8 @@ func BroadcastAsync(packet []byte) *ctypes.ResultBroadcastTx {
 	client := GetClient()
 
 	result, err := client.BroadcastTxAsync(packet)
+	StopClient()
+
 	if err != nil {
 		log.Error("Broadcast Error", "err", err)
 	}
@@ -112,6 +120,8 @@ func Broadcast(packet []byte) *ctypes.ResultBroadcastTxCommit {
 
 	// TODO: result, err := client.BroadcastTxSync(packet)
 	result, err := client.BroadcastTxCommit(packet)
+	StopClient()
+
 	if err != nil {
 		log.Error("Error", "err", err)
 	}
@@ -133,6 +143,8 @@ func BroadcastSync(packet []byte) *ctypes.ResultBroadcastTx {
 	log.Debug("Start Synced Broadcast", "packet", packet)
 
 	result, err := client.BroadcastTxSync(packet)
+	StopClient()
+
 	if err != nil {
 		log.Error("Error", "err", err)
 	}
@@ -163,6 +175,8 @@ func Query(path string, packet []byte) interface{} {
 	//for i := 0; i < 20; i++ {
 	client := GetClient()
 	response, err = client.ABCIQuery(path, packet)
+	StopClient()
+
 	if err != nil {
 		log.Debug("ABCi Query Error", "path", path, "err", err)
 		return nil

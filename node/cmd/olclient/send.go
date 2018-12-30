@@ -49,5 +49,16 @@ func IssueRequest(cmd *cobra.Command, args []string) {
 
 	result := comm.Broadcast(packet)
 
-	shared.Console.Info("Returned Successfully", result)
+	if result == nil {
+		shared.Console.Error("Invalid Transacation")
+
+	} else if result.CheckTx.Code != 0 {
+		shared.Console.Error("Syntax, CheckTx Failed", result)
+
+	} else if result.DeliverTx.Code != 0 {
+		shared.Console.Error("Transaction, DeliverTx Failed", result)
+
+	} else {
+		shared.Console.Info("Returned Successfully", result)
+	}
 }

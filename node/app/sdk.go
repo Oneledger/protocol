@@ -185,8 +185,8 @@ func (server SDKServer) Send(ctx context.Context, request *pb.SendRequest) (*pb.
 	findAccount := server.App.Accounts.FindName
 
 	currency := currencyString(request.Currency)
-	fee := data.NewCoinFromFloat(request.Fee, currency)
-	gas := data.NewCoinFromUnits(request.Gas, currency)
+	fee := data.NewCoinFromFloat(request.Fee, "OLT")
+	gas := data.NewCoinFromUnits(request.Gas, "OLT")
 	sendAmount := data.NewCoinFromFloat(request.Amount, currency)
 
 	// Get party & counterparty accounts
