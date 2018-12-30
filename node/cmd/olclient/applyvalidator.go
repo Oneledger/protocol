@@ -12,7 +12,6 @@ import (
 	"github.com/Oneledger/protocol/node/comm"
 	"github.com/Oneledger/protocol/node/log"
 	"github.com/spf13/cobra"
-	"os"
 )
 
 var applyvalidatorCmd = &cobra.Command{
