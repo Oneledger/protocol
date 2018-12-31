@@ -609,7 +609,7 @@ func AccountKey(app Application, name string) id.AccountKey {
 	if identity.Name != "" {
 		return identity.AccountKey
 	}
-	return nil
+	return accountKey
 }
 
 // Get the account information for a given user
