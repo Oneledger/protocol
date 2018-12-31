@@ -188,6 +188,9 @@ func CheckRegisterFee(app interface{}, owner id.AccountKey, fee data.Coin) bool 
 
 	//check identity's VT is equal to the stake
 	ownerBalance := balances.Get(owner)
+	if ownerBalance == nil {
+		return false
+	}
 	if ownerBalance.GetAmountByName("OLT").LessThanCoin(fee) {
 		return false
 	}
