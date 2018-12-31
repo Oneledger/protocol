@@ -7,7 +7,6 @@
 CMD=$GOPATH/src/github.com/Oneledger/protocol/node/scripts
 
 list="David Alice Bob Carol Emma"
-#list="David"
 
 $CMD/startOneLedger
 
@@ -17,13 +16,17 @@ do
 	# Add the accounts, keys are generated internally
 	olclient update --root $OLDATA/$name-Node --account "$name-OneLedger"
 
-	# todo: need to flag to set node account for the node.
-#	olclient update -c $name --account "$name-BitCoin" --chain "BitCoin"
-#	olclient update -c $name --account "$name-Ethereum" --chain "Ethereum"
+	#TODO: Need flag to set node account for the each external chain.
+	#olclient update --root $OLDATA/$name-Node --account "$name-BitCoin" --chain "BitCoin"
+	#olclient update --root $OLDATA/$name-Node --account "$name-Ethereum" --chain "Ethereum"
 
-	olclient register --root $OLDATA/$name-Node --identity "$name" --account "$name-OneLedger" --node "$name-Node"
+	# Account must have money in order to pay the registration fee
+	olclient testmint --root $OLDATA/$name-Node --party "$name-OneLedger" --amount 100000.1 --currency OLT
+
+	# Register the identity across the chain
+	olclient register --root $OLDATA/$name-Node --identity "$name" \
+		--account "$name-OneLedger" --node "$name-Node" --fee 0.1
 done
 
 # Give it some time to get committed
-#sleep 20
 olclient --root $OLDATA/Emma-Node wait --completed identity --identity $list

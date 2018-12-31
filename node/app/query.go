@@ -7,6 +7,7 @@ package app
 
 import (
 	"encoding/hex"
+	"runtime/debug"
 	"strings"
 
 	"github.com/Oneledger/protocol/node/comm"
@@ -27,7 +28,15 @@ import (
 )
 
 // Top-level list of all query types
-func HandleQuery(app Application, path string, arguments map[string]string) []byte {
+func HandleQuery(app Application, path string, arguments map[string]interface{}) (buffer []byte) {
+
+	defer func() {
+		if r := recover(); r != nil {
+			log.Error("Query Panic", "status", r)
+			debug.PrintStack()
+			buffer, _ = serial.Serialize("Internal Query Error", serial.CLIENT)
+		}
+	}()
 
 	var result interface{}
 
@@ -95,61 +104,98 @@ func HandleQuery(app Application, path string, arguments map[string]string) []by
 	return buffer
 }
 
-func HandleApplyValidatorQuery(application Application, arguments map[string]string) interface{} {
+func HandleApplyValidatorQuery(application Application, arguments map[string]interface{}) interface{} {
 	log.Debug("HandleApplyValidatorQuery", "arguments", arguments)
-
-	conv := convert.NewConvert()
-
-	result := make([]byte, 0)
 
 	var argsHolder comm.ApplyValidatorArguments
 
-	text := arguments["parameters"]
+	text := arguments["parameters"].([]byte)
 
-	args, err := serial.Deserialize([]byte(text), argsHolder, serial.CLIENT)
+	args, err := serial.Deserialize(text, argsHolder, serial.CLIENT)
 
 	if err != nil {
 		log.Error("Could not deserialize ApplyValidatorArguments", "error", err)
-		return result
+		return "Could not deserialize ApplyValidatorArguments" + " error=" + err.Error()
 	}
 
 	amount := args.(*comm.ApplyValidatorArguments).Amount
 	idName := args.(*comm.ApplyValidatorArguments).Id
 	purge := args.(*comm.ApplyValidatorArguments).Purge
 
+	nodeAccount := action.GetNodeAccount(application)
+	if nodeAccount == nil {
+		return "Node account is not found."
+	}
+
+	nodeAccountBalance := application.Balances.Get(data.DatabaseKey(nodeAccount.AccountKey()))
+
+	if &nodeAccountBalance == nil {
+		return "Missing balance for node account."
+	}
+
 	identity, ok := application.Identities.FindName(idName)
 	if ok != status.SUCCESS {
-		log.Error("The identity is not found", "id", idName)
-		return result
+		return "The identity is not found." + " id:" + idName
 	}
 
-	if amount == "" {
-		log.Error("Missing an amount argument")
-		return result
+	identityBalance := application.Balances.Get(data.DatabaseKey(identity.AccountKey))
+
+	if &identityBalance == nil {
+		return "Missing balance for identity."
 	}
 
-	balance := application.Balances.Get(data.DatabaseKey(identity.AccountKey))
+	//check who is running the applyValidator command, if 10 VTs or more, then it's an administrator
+	tenVT := data.NewCoinFromFloat(10.0, "VT")
+	oneVT := data.NewCoinFromFloat(1.0, "VT")
 
-	if &balance == nil {
-		log.Error("Missing Balance")
-		return result
+	stake := data.NewCoinFromFloat(amount, "VT")
+
+	if identity.AccountKey.String() != nodeAccount.AccountKey().String() {
+		if nodeAccountBalance.GetAmountByName("VT").LessThanCoin(tenVT) {
+			return "Node account has less than 10 VTs. It can not run applyValidator for other identities."
+		}
 	}
 
-	stake := conv.GetCoin(amount, "VT")
+	//when removing validator, the node account doesn't have to have a VT
+	if purge == true {
 
-	if balance.GetAmountByName("VT").LessThanCoin(stake) {
-		log.Error("Validator token is not enough")
-		return result
+		found := false
+		for _, validator := range application.Validators.Approved {
+			if validator.AccountKey.String() == identity.AccountKey.String() {
+				found = true
+			}
+		}
+
+		if found == false {
+			return "Node account is not a validator."
+		}
+
+		stake = identityBalance.GetAmountByName("VT")
+
+	} else {
+
+		if amount == 0.0 {
+			return "Missing an amount argument."
+		}
+
+		if identityBalance.GetAmountByName("VT").LessThanCoin(stake) {
+			return "Validator Token is not enough."
+		}
+
+		if stake.LessThanCoin(oneVT) {
+			return "Validator Token amount can not be less than 1."
+		}
+
 	}
 
-	sequence := SequenceNumber(application, identity.AccountKey.Bytes())
+	sequence := SequenceNumber(application, nodeAccount.AccountKey().Bytes())
 
 	validator := &action.ApplyValidator{
 		Base: action.Base{
 			Type:     action.APPLY_VALIDATOR,
 			ChainId:  ChainId,
-			Owner:    identity.AccountKey,
-			Signers:  GetSigners(identity.AccountKey, application),
+			Owner:    nodeAccount.AccountKey(),
+			Signers:  GetSigners(nodeAccount.AccountKey(), application),
 			Sequence: sequence.Sequence,
 		},
 
@@ -168,16 +214,16 @@ func HandleApplyValidatorQuery(application Application, arguments map[string]str
 	return packet
 }
 
-func HandleCreateExSendRequest(application Application, arguments map[string]string) interface{} {
+func HandleCreateExSendRequest(application Application, arguments map[string]interface{}) interface{} {
 	conv := convert.NewConvert()
 
 	result := make([]byte, 0)
 
 	var argsHolder comm.ExSendArguments
 
-	text := arguments["parameters"]
+	text := arguments["parameters"].([]byte)
 
-	argsDeserialized, err := serial.Deserialize([]byte(text), argsHolder, serial.CLIENT)
+	argsDeserialized, err := serial.Deserialize(text, argsHolder, serial.CLIENT)
 
 	if err != nil {
 		log.Error("Could not deserialize ExSendArguments", "error", err)
@@ -189,9 +235,10 @@ func HandleCreateExSendRequest(application Application, arguments map[string]str
 	partyKey := AccountKey(application, args.SenderId)
 	cpartyKey := AccountKey(application, args.ReceiverId)
 
-	fee := conv.GetCoin(args.Fee, "OLT")
-	gas := conv.GetCoin(args.Gas, "OLT")
-	amount := conv.GetCoin(args.Amount, args.Currency)
+	fee := conv.GetCoinFromFloat(args.Fee, "OLT")
+	gas := conv.GetCoinFromUnits(args.Gas, "OLT")
+
+	amount := conv.GetCoinFromFloat(args.Amount, args.Currency)
 	chain := conv.GetChainFromCurrency(args.Chain)
 
 	sender := CurrencyAddress(application, conv.GetCurrency(args.Currency), args.SenderId)
@@ -222,16 +269,16 @@ func HandleCreateExSendRequest(application Application, arguments map[string]str
 	return packet
 }
 
-func HandleCreateSendRequest(application Application, arguments map[string]string) interface{} {
+func HandleCreateSendRequest(application Application, arguments map[string]interface{}) interface{} {
 	conv := convert.NewConvert()
 
 	result := make([]byte, 0)
 
 	var argsHolder comm.SendArguments
 
-	text := arguments["parameters"]
+	text := arguments["parameters"].([]byte)
 
-	argsDeserialized, err := serial.Deserialize([]byte(text), argsHolder, serial.CLIENT)
+	argsDeserialized, err := serial.Deserialize(text, argsHolder, serial.CLIENT)
 
 	if err != nil {
 		log.Error("Could not deserialize SendArguments", "error", err)
@@ -255,20 +302,19 @@ func HandleCreateSendRequest(application Application, arguments map[string]strin
 	counterParty := AccountKey(application, args.CounterParty)
 
 	if party == nil || counterParty == nil {
-		log.Fatal("System doesn't recognize the parties", "args", args,
+		log.Error("System doesn't recognize the parties", "args", args,
 			"party", party, "counterParty", counterParty)
 		return result
 	}
 
-	if args.Currency == "" || args.Amount == "" {
+	if args.Currency == "" || args.Amount == 0.0 {
 		log.Error("Missing an amount argument")
 		return result
 	}
 
-	amount := conv.GetCoin(args.Amount, args.Currency)
+	amount := conv.GetCoinFromFloat(args.Amount, args.Currency)
 
-	fee := conv.GetCoin(args.Fee, "OLT")
-	gas := conv.GetCoin(args.Gas, "OLT")
+	fee := conv.GetCoinFromFloat(args.Fee, "OLT")
 
 	sendTo := action.SendTo{
 		AccountKey: counterParty,
@@ -292,7 +338,6 @@ func HandleCreateSendRequest(application Application, arguments map[string]strin
 		},
 		SendTo: sendTo,
 		Fee:    fee,
-		Gas:    gas,
 	}
 
 	signed := SignTransaction(action.Transaction(send), application)
@@ -301,14 +346,14 @@ func HandleCreateSendRequest(application Application, arguments map[string]strin
 	return packet
 }
 
-func HandleCreateMintRequest(application Application, arguments map[string]string) interface{} {
+func HandleCreateMintRequest(application Application, arguments map[string]interface{}) interface{} {
 	result := make([]byte, 0)
 
 	var argsHolder comm.SendArguments
 
-	text := arguments["parameters"]
+	text := arguments["parameters"].([]byte)
 
-	argsDeserialized, err := serial.Deserialize([]byte(text), argsHolder, serial.CLIENT)
+	argsDeserialized, err := serial.Deserialize(text, argsHolder, serial.CLIENT)
 
 	if err != nil {
 		log.Error("Could not deserialize SendArguments", "error", err)
@@ -332,7 +377,7 @@ func HandleCreateMintRequest(application Application, arguments map[string]strin
 		return result
 	}
 
-	amount := conv.GetCoin(args.Amount, args.Currency)
+	amount := conv.GetCoinFromFloat(args.Amount, args.Currency)
 
 	log.Debug("Getting TestMint Account Balances")
 	zeroBalance := Balance(application, zero).(*data.Balance).GetAmountByName(args.Currency)
@@ -352,8 +397,8 @@ func HandleCreateMintRequest(application Application, arguments map[string]strin
 		Amount:     amount,
 	}
 
-	gas := conv.GetCoin(args.Gas, "OLT")
-	fee := conv.GetCoin(args.Fee, "OLT")
+	// Fixed price for fees for minting
+	fee := data.NewCoinFromFloat(1, "OLT")
 
 	if conv.HasErrors() {
 		log.Error("Conversion error", "error", conv.GetErrors())
@@ -372,7 +417,6 @@ func HandleCreateMintRequest(application Application, arguments map[string]strin
 		},
 		SendTo: sendTo,
 		Fee:    fee,
-		Gas:    gas,
 	}
 
 	signed := SignTransaction(action.Transaction(send), application)
@@ -381,14 +425,14 @@ func HandleCreateMintRequest(application Application, arguments map[string]strin
 	return packet
 }
 
-func HandleSwapRequest(application Application, arguments map[string]string) interface{} {
+func HandleSwapRequest(application Application, arguments map[string]interface{}) interface{} {
 	result := make([]byte, 0)
 
 	var argsHolder comm.SwapArguments
 
-	text := arguments["parameters"]
+	text := arguments["parameters"].([]byte)
 
-	argsDeserialized, err := serial.Deserialize([]byte(text), argsHolder, serial.CLIENT)
+	argsDeserialized, err := serial.Deserialize(text, argsHolder, serial.CLIENT)
 
 	if err != nil {
 		log.Error("Could not deserialize SwapArgumentsArguments", "error", err)
@@ -402,11 +446,11 @@ func HandleSwapRequest(application Application, arguments map[string]string) int
 	partyKey := AccountKey(application, args.Party)
 	counterPartyKey := AccountKey(application, args.CounterParty)
 
-	fee := conv.GetCoin(args.Fee, "OLT")
-	gas := conv.GetCoin(args.Gas, "OLT")
+	fee := conv.GetCoinFromFloat(args.Fee, "OLT")
+	gas := conv.GetCoinFromUnits(args.Gas, "OLT")
 
-	amount := conv.GetCoin(args.Amount, args.Currency)
-	exchange := conv.GetCoin(args.Exchange, args.Excurrency)
+	amount := conv.GetCoinFromFloat(args.Amount, args.Currency)
+	exchange := conv.GetCoinFromFloat(args.Exchange, args.Excurrency)
 
 	if conv.HasErrors() {
 		log.Error("Conversion error", "error", conv.GetErrors())
@@ -434,11 +478,16 @@ func HandleSwapRequest(application Application, arguments map[string]string) int
 
 	sequence := SequenceNumber(application, partyKey.Bytes())
 
+	signers := GetSigners(partyKey, application)
+	if signers == nil || len(signers) == 0 {
+		return result
+	}
+
 	swap := &action.Swap{
 		Base: action.Base{
 			Type:     action.SWAP,
 			ChainId:  ChainId,
-			Signers:  GetSigners(partyKey, application),
+			Signers:  signers,
 			Owner:    partyKey,
 			Target:   counterPartyKey,
 			Sequence: sequence.Sequence,
@@ -453,17 +502,17 @@ func HandleSwapRequest(application Application, arguments map[string]string) int
 	return packet
 }
 
-func HandleNodeNameQuery(app Application, arguments map[string]string) interface{} {
+func HandleNodeNameQuery(app Application, arguments map[string]interface{}) interface{} {
 	return global.Current.NodeName
 }
 
-func HandleSignTransaction(app Application, arguments map[string]string) interface{} {
+func HandleSignTransaction(app Application, arguments map[string]interface{}) interface{} {
 	log.Debug("SignTransactionQuery", "arguments", arguments)
 
 	var tx action.Transaction
 
-	text := arguments["parameters"]
-	transaction, transactionErr := serial.Deserialize([]byte(text), tx, serial.CLIENT)
+	text := arguments["parameters"].([]byte)
+	transaction, transactionErr := serial.Deserialize(text, tx, serial.CLIENT)
 
 	signatures := []action.TransactionSignature{}
 
@@ -488,7 +537,7 @@ func HandleSignTransaction(app Application, arguments map[string]string) interfa
 
 	privateKey := account.PrivateKey()
 
-	signature, signatureError := privateKey.Sign([]byte(text))
+	signature, signatureError := privateKey.Sign(text)
 
 	if signatureError != nil {
 		log.Error("Could not sign a transaction", "error", signatureError)
@@ -500,16 +549,16 @@ func HandleSignTransaction(app Application, arguments map[string]string) interfa
 	return signatures
 }
 
-func HandleAccountPublicKeyQuery(app Application, arguments map[string]string) interface{} {
+func HandleAccountPublicKeyQuery(app Application, arguments map[string]interface{}) interface{} {
 	log.Debug("AccountPublicKeyQuery", "arguments", arguments)
 
-	text := arguments["parameters"]
+	text := arguments["parameters"].([]byte)
 
-	account, accountStatus := app.Accounts.FindKey([]byte(text))
+	account, accountStatus := app.Accounts.FindKey(text)
 
 	if accountStatus != status.SUCCESS {
 		log.Error("Could not find an account", "status", accountStatus)
-		return []byte{}
+		return "Missing Account: " + string(text)
 	}
 
 	privateKey := account.PrivateKey()
@@ -523,13 +572,13 @@ func HandleAccountPublicKeyQuery(app Application, arguments map[string]string) i
 }
 
 // Get the account information for a given user
-func HandleAccountKeyQuery(app Application, arguments map[string]string) interface{} {
+func HandleAccountKeyQuery(app Application, arguments map[string]interface{}) interface{} {
 	log.Debug("AccountKeyQuery", "arguments", arguments)
 
-	text := arguments["parameters"]
+	text := arguments["parameters"].([]byte)
 
 	name := ""
-	parts := strings.Split(text, "=")
+	parts := strings.Split(string(text), "=")
 	if len(parts) > 1 {
 		name = parts[1]
 	}
@@ -564,13 +613,13 @@ func AccountKey(app Application, name string) id.AccountKey {
 }
 
 // Get the account information for a given user
-func HandleIdentityQuery(app Application, arguments map[string]string) interface{} {
+func HandleIdentityQuery(app Application, arguments map[string]interface{}) interface{} {
 	log.Debug("IdentityQuery", "arguments", arguments)
 
-	text := arguments["parameters"]
+	text := arguments["parameters"].([]byte)
 
 	name := ""
-	parts := strings.Split(text, "=")
+	parts := strings.Split(string(text), "=")
 	if len(parts) > 1 {
 		name = parts[1]
 	}
@@ -591,13 +640,13 @@ func IdentityInfo(app Application, name string) interface{} {
 }
 
 // Get the validator information for a given user
-func HandleValidatorQuery(app Application, arguments map[string]string) interface{} {
+func HandleValidatorQuery(app Application, arguments map[string]interface{}) interface{} {
 	log.Debug("ValidatorQuery", "arguments", arguments)
 
-	text := arguments["parameters"]
+	text := arguments["parameters"].([]byte)
 
 	name := ""
-	parts := strings.Split(text, "=")
+	parts := strings.Split(string(text), "=")
 	if len(parts) > 1 {
 		name = parts[1]
 	}
@@ -614,13 +663,13 @@ func ValidatorInfo(app Application, name string) interface{} {
 }
 
 // Get the account information for a given user
-func HandleAccountQuery(app Application, arguments map[string]string) interface{} {
+func HandleAccountQuery(app Application, arguments map[string]interface{}) interface{} {
 	log.Debug("AccountQuery", "arguments", arguments)
 
-	text := arguments["parameters"]
+	text := arguments["parameters"].([]byte)
 
 	name := ""
-	parts := strings.Split(text, "=")
+	parts := strings.Split(string(text), "=")
 	if len(parts) > 1 {
 		name = parts[1]
 	}
@@ -641,18 +690,18 @@ func AccountInfo(app Application, name string) interface{} {
 	return "Account " + name + " Not Found" + global.Current.NodeName
 }
 
-func HandleVersionQuery(app Application, arguments map[string]string) interface{} {
+func HandleVersionQuery(app Application, arguments map[string]interface{}) interface{} {
 	return version.Fullnode.String()
 }
 
 // Get the account information for a given user
-func HandleBalanceQuery(app Application, arguments map[string]string) interface{} {
+func HandleBalanceQuery(app Application, arguments map[string]interface{}) interface{} {
 	log.Debug("BalanceQuery", "arguments", arguments)
 
-	text := arguments["parameters"]
+	text := arguments["parameters"].([]byte)
 
 	var key []byte
-	parts := strings.Split(text, "=")
+	parts := strings.Split(string(text), "=")
 	if len(parts) > 1 {
 
 		key, _ = hex.DecodeString(parts[1])
@@ -667,13 +716,13 @@ func Balance(app Application, accountKey []byte) interface{} {
 	}
 	result := data.NewBalance()
 
-	return &result
+	return result
 }
 
-func HandleCurrencyAddressQuery(app Application, arguments map[string]string) interface{} {
+func HandleCurrencyAddressQuery(app Application, arguments map[string]interface{}) interface{} {
 	log.Debug("CurrencyAddressQuery", "arguments", arguments)
 
-	text := arguments["parameters"]
+	text := arguments["parameters"].(string)
 	conv := convert.NewConvert()
 	var chain data.ChainType
 	var identity id.Identity
@@ -727,7 +776,7 @@ func ChainAddress(chain data.ChainType) interface{} {
 }
 
 // Return a nicely formatted error message
-func HandleError(text string, path string, arguments map[string]string) interface{} {
+func HandleError(text string, path string, arguments map[string]interface{}) interface{} {
 	// TODO: Add in arguments to output
 	return "Unknown Query " + text + " " + path
 }
@@ -741,8 +790,8 @@ func SignTransaction(transaction action.Transaction, application Application) ac
 		log.Error("Failed to Serialize packet: ", "error", err)
 	} else {
 		request := action.Message(packet)
-		arguments := map[string]string{
-			"parameters": string(request),
+		arguments := map[string]interface{}{
+			"parameters": request,
 		}
 
 		response := HandleSignTransaction(application, arguments)
@@ -760,26 +809,33 @@ func SignTransaction(transaction action.Transaction, application Application) ac
 func GetSigners(owner []byte, application Application) []id.PublicKey {
 	log.Debug("GetSigners", "owner", owner)
 
-	arguments := map[string]string{
-		"parameters": string(owner),
+	arguments := map[string]interface{}{
+		"parameters": owner,
 	}
-	publicKey := HandleAccountPublicKeyQuery(application, arguments)
+	result := HandleAccountPublicKeyQuery(application, arguments)
 
-	if publicKey == nil {
+	if result == nil {
 		return nil
 	}
 
-	return []id.PublicKey{publicKey.(id.PublicKey)}
+	switch value := result.(type) {
+	case id.PublicKey:
+		return []id.PublicKey{value}
+	}
+
+	log.Debug("Missing Signers", "owner", owner)
+
+	return []id.PublicKey{}
 }
 
 // Get the account information for a given user
-func HandleSequenceNumberQuery(app Application, arguments map[string]string) interface{} {
+func HandleSequenceNumberQuery(app Application, arguments map[string]interface{}) interface{} {
 	log.Debug("SequenceNumberQuery", "arguments", arguments)
 
-	text := arguments["parameters"]
+	text := arguments["parameters"].([]byte)
 
 	var key []byte
-	parts := strings.Split(text, "=")
+	parts := strings.Split(string(text), "=")
 	if len(parts) > 1 {
 
 		// TODO: Encoded because it is dumped into a string
@@ -793,9 +849,9 @@ func SequenceNumber(app Application, accountKey []byte) id.SequenceRecord {
 	return sequenceRecord
 }
 
-func HandleTestScript(app Application, arguments map[string]string) interface{} {
+func HandleTestScript(app Application, arguments map[string]interface{}) interface{} {
 	log.Debug("TestScript", "arguments", arguments)
-	text := arguments["parameters"]
+	text := arguments["parameters"].(string)
 
 	results := RunTestScriptName(text)
 
