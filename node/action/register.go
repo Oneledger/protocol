@@ -6,6 +6,8 @@
 package action
 
 import (
+	"github.com/Oneledger/protocol/node/data"
+	"github.com/Oneledger/protocol/node/global"
 	"github.com/Oneledger/protocol/node/id"
 	"github.com/Oneledger/protocol/node/log"
 	"github.com/Oneledger/protocol/node/serial"
@@ -21,6 +23,7 @@ type Register struct {
 	AccountKey        id.AccountKey
 	TendermintAddress string
 	TendermintPubKey  string
+	Fee               data.Coin `json:"fee"`
 }
 
 func init() {
@@ -59,6 +62,16 @@ func (transaction Register) Validate() status.Code {
 
 	if transaction.TendermintPubKey == "" {
 		log.Debug("Missing TendermintPubKey", "transaction", transaction)
+		return status.MISSING_DATA
+	}
+
+	if !transaction.Fee.IsCurrency("OLT") {
+		log.Debug("Wrong Fee token", "fee", transaction.Fee)
+		return status.INVALID
+	}
+
+	if transaction.Fee.LessThan(global.Current.MinRegisterFee) {
+		log.Debug("Missing Fee", "fee", transaction.Fee)
 		return status.MISSING_DATA
 	}
 
@@ -107,13 +120,36 @@ func (transaction Register) ProcessDeliver(app interface{}) status.Code {
 
 	if entry.Name != "" {
 		log.Debug("Ignoring Existing Identity", "identity", transaction.Identity)
+		return status.SUCCESS
 	} else {
 		identity := id.NewIdentity(transaction.Identity, "Contact Information",
-			true, transaction.NodeName, transaction.AccountKey, transaction.TendermintAddress, transaction.TendermintPubKey)
+			true, transaction.NodeName, transaction.AccountKey,
+			transaction.TendermintAddress, transaction.TendermintPubKey)
 
 		identities.Add(*identity)
 		log.Info("Updated External Identity", "id", transaction.Identity, "key", transaction.AccountKey)
 	}
+
+	balances := GetBalances(app)
+	ownerBalance := balances.Get(transaction.Base.Owner)
+	if ownerBalance == nil {
+		log.Debug("Failed to get the balance of the owner", "owner", transaction.Base.Owner)
+		return status.MISSING_VALUE
+	}
+
+	ownerBalance.MinusAmount(transaction.Fee)
+
+	accounts := GetAccounts(app)
+	payment, err := accounts.FindName(global.Current.PaymentAccount)
+	if err != status.SUCCESS {
+		log.Error("Failed to get payment account", "status", err)
+		return err
+	}
+
+	paymentBalance := balances.Get(payment.AccountKey())
+
+	balances.Set(transaction.Base.Owner, ownerBalance)
+	balances.Set(payment.AccountKey(), paymentBalance)
 
 	return status.SUCCESS
 }
@@ -122,7 +158,8 @@ func (transaction *Register) Resolve(app interface{}) Commands {
 	return []Command{}
 }
 
-func CreateRegisterRequest(identity string, chainId string, sequence int64, nodeName string, signers []PublicKey, accountKey id.AccountKey) *Register {
+func CreateRegisterRequest(identity string, chainId string, sequence int64, nodeName string,
+	signers []PublicKey, accountKey id.AccountKey, fee float64) *Register {
 	return &Register{
 		Base: Base{
 			Type:     REGISTER,
@@ -133,5 +170,6 @@ func CreateRegisterRequest(identity string, chainId string, sequence int64, node
 		Identity:   identity,
 		NodeName:   nodeName,
 		AccountKey: accountKey,
+		Fee:        data.NewCoinFromFloat(fee, "OLT"),
 	}
 }

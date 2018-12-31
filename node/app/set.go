@@ -25,7 +25,7 @@ type RegisterArguments struct {
 	PrivateKey string
 }
 
-func HandleSet(app Application, path string, arguments map[string]string) []byte {
+func HandleSet(app Application, path string, arguments map[string]interface{}) []byte {
 	var result interface{}
 
 	switch path {
@@ -73,12 +73,13 @@ func GetBool(boolean string) bool {
 }
 
 // TODO: Pass in App pointer?
-func HandleSetAccount(app Application, arguments map[string]string) interface{} {
-	chain := GetChain(arguments["Chain"])
-	accountName := arguments["Account"]
-	nodeAccount := GetBool(arguments["NodeAccount"])
+func HandleSetAccount(app Application, arguments map[string]interface{}) interface{} {
+	chain := GetChain(arguments["Chain"].(string))
+	accountName := arguments["Account"].(string)
+	nodeAccount := arguments["NodeAccount"].(bool)
 
-	publicKey, privateKey := GetKeys(chain, accountName, arguments["PublicKey"], arguments["PrivateKey"])
+	publicKey, privateKey := GetKeys(chain, accountName,
+		arguments["PublicKey"].(string), arguments["PrivateKey"].(string))
 
 	account, err := app.Accounts.FindName(accountName)
 	if err == status.SUCCESS {
@@ -95,10 +96,11 @@ func HandleSetAccount(app Application, arguments map[string]string) interface{} 
 	return "Error in Setting up Account"
 }
 
-func HandleRegisterIdentity(app Application, arguments map[string]string) interface{} {
+func HandleRegisterIdentity(app Application, arguments map[string]interface{}) interface{} {
 
-	identity := arguments["Identity"]
-	accountName := arguments["Account"]
+	identity := arguments["Identity"].(string)
+	accountName := arguments["Account"].(string)
+	fee := arguments["Fee"].(float64)
 
 	account, ok := app.Accounts.FindName(accountName)
 	if ok != status.SUCCESS {
@@ -107,14 +109,14 @@ func HandleRegisterIdentity(app Application, arguments map[string]string) interf
 	}
 
 	// TODO Broadcast the transaction
-	transaction := CreateRegisterRequest(identity, account.AccountKey())
+	transaction := CreateRegisterRequest(identity, account.AccountKey(), fee)
 	action.BroadcastTransaction(transaction, false)
 
 	return "Broadcast Identity"
 }
 
 // TODO: Called by olfullnode, not olclient?
-func CreateRegisterRequest(identityName string, accountKey id.AccountKey) action.Transaction {
+func CreateRegisterRequest(identityName string, accountKey id.AccountKey, fee float64) action.Transaction {
 	LoadPrivValidatorFile()
 
 	reg := &action.Register{
@@ -130,6 +132,7 @@ func CreateRegisterRequest(identityName string, accountKey id.AccountKey) action
 		AccountKey:        accountKey,
 		TendermintAddress: global.Current.TendermintAddress,
 		TendermintPubKey:  global.Current.TendermintPubKey,
+		Fee:               data.NewCoinFromFloat(fee, "OLT"),
 	}
 	return reg
 }

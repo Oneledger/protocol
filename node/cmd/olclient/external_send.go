@@ -6,6 +6,8 @@
 package main
 
 import (
+	"os"
+
 	"github.com/Oneledger/protocol/node/cmd/shared"
 	"github.com/Oneledger/protocol/node/comm"
 	"github.com/Oneledger/protocol/node/log"
@@ -28,15 +30,16 @@ func init() {
 	exSendCmd.Flags().StringVar(&exsendargs.ReceiverId, "receiverid", "", "external recipient identity")
 	exSendCmd.Flags().StringVar(&exsendargs.SenderAddress, "senderaddress", "", "external sender address")
 	exSendCmd.Flags().StringVar(&exsendargs.ReceiverAddress, "receiveraddress", "", "external recipient address")
-	exSendCmd.Flags().StringVar(&exsendargs.Amount, "amount", "0", "specify an amount")
+
+	exSendCmd.Flags().Float64Var(&exsendargs.Amount, "amount", 0.0, "specify an amount")
 	exSendCmd.Flags().StringVar(&exsendargs.Currency, "currency", "-1", "the currency")
 
-	exSendCmd.Flags().StringVar(&exsendargs.Fee, "fee", "4", "include a fee")
-	exSendCmd.Flags().StringVar(&exsendargs.Gas, "gas", "1", "include gas")
+	exSendCmd.Flags().Float64Var(&exsendargs.Fee, "fee", 0.0, "include a fee in OLT")
+	exSendCmd.Flags().Int64Var(&exsendargs.Gas, "gas", 0, "include gas in units")
 
-	exSendCmd.Flags().StringVar(&exsendargs.Chain, "chain", "0", "destination chain")
-	exSendCmd.Flags().StringVar(&exsendargs.ExFee, "exfee", "0", "include a external fee")
-	exSendCmd.Flags().StringVar(&exsendargs.ExGas, "exgas", "0", "include external gas")
+	exSendCmd.Flags().StringVar(&exsendargs.Chain, "chain", "", "destination chain")
+	exSendCmd.Flags().StringVar(&exsendargs.ExFee, "exfee", "", "include a external fee")
+	exSendCmd.Flags().StringVar(&exsendargs.ExGas, "exgas", "", "include external gas")
 }
 
 // IssueRequest sends out a sendTx to all of the nodes in the chain
@@ -45,8 +48,11 @@ func IssueExSend(cmd *cobra.Command, args []string) {
 
 	// Create message
 	packet := shared.CreateExSendRequest(exsendargs)
+	if packet == nil {
+		shared.Console.Error("Error in sending request")
+		os.Exit(-1)
+	}
 
 	result := comm.Broadcast(packet)
-
-	log.Debug("Returned Successfully", "result", result)
+	BroadcastStatus(result)
 }

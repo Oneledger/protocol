@@ -6,12 +6,13 @@
 package main
 
 import (
+	"reflect"
+
 	"github.com/Oneledger/protocol/node/cmd/shared"
 	"github.com/Oneledger/protocol/node/comm"
 	"github.com/Oneledger/protocol/node/id"
 	"github.com/Oneledger/protocol/node/log"
 	"github.com/spf13/cobra"
-	"reflect"
 )
 
 var updateCmd = &cobra.Command{
@@ -36,6 +37,7 @@ func init() {
 	// Transaction Parameters
 	updateCmd.Flags().StringVar(&updateArgs.account, "account", "", "Account Name")
 	updateCmd.Flags().StringVar(&updateArgs.chain, "chain", "OneLedger", "Specify the chain")
+
 	updateCmd.Flags().StringVar(&updateArgs.pubkey, "pubkey", "0x00000000", "Specify a public key")
 	updateCmd.Flags().StringVar(&updateArgs.privkey, "privkey", "0x00000000", "Specify a private key")
 }
@@ -57,10 +59,10 @@ func UpdateAccount(cmd *cobra.Command, args []string) {
 
 	switch value := result.(type) {
 	case string:
-		shared.Console.Info(value)
+		shared.Console.Error(value)
 	case id.Account:
 		shared.Console.Info("Created account: ", value.Name())
 	default:
-		shared.Console.Info("Invalid type: ", reflect.TypeOf(value).String())
+		shared.Console.Error("Invalid type: ", reflect.TypeOf(value).String())
 	}
 }

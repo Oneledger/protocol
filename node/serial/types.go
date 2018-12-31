@@ -106,6 +106,7 @@ func init() {
 		"complex128": *NewPrimitiveEntry("complex128", PRIMITIVE, reflect.TypeOf(complex128(0))),
 
 		"string": *NewPrimitiveEntry("string", PRIMITIVE, reflect.TypeOf(string(""))),
+		//"interface{}": *NewPrimitiveEntry("interface{}", PRIMITIVE, reflect.TypeOf(proto)),
 	}
 }
 
@@ -243,7 +244,11 @@ func ParseType(name string, count int) TypeEntry {
 		keyTypeName := groups[2]
 		valueTypeName := groups[3]
 		keyType := GetTypeEntry(keyTypeName, 1)
+
 		valueType := GetTypeEntry(valueTypeName, 1)
+		if valueType.Category == UNKNOWN {
+			valueType.RootType = reflect.TypeOf((*interface{})(nil)).Elem()
+		}
 
 		// Needs to be the root types...
 		finalType := reflect.MapOf(keyType.RootType, valueType.RootType)
