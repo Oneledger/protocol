@@ -99,6 +99,10 @@ func (transaction Register) ProcessCheck(app interface{}) status.Code {
 
 	// Not necessarily a failure, since this identity might be local
 	//log.Debug("Identity already exists", "id", id)
+	result := CheckRegisterFee(app, transaction.Owner, transaction.Fee)
+	if result != true {
+		return status.INVALID
+	}
 	return status.SUCCESS
 }
 
@@ -109,6 +113,10 @@ func (transaction Register) ShouldProcess(app interface{}) bool {
 // Add the identity into the database as external, don't overwrite a local identity
 func (transaction Register) ProcessDeliver(app interface{}) status.Code {
 	log.Debug("Processing Register Transaction for DeliverTx")
+	result := CheckRegisterFee(app, transaction.Owner, transaction.Fee)
+	if result != true {
+		return status.INVALID
+	}
 
 	identities := GetIdentities(app)
 	entry, ok := identities.FindName(transaction.Identity)
@@ -172,4 +180,17 @@ func CreateRegisterRequest(identity string, chainId string, sequence int64, node
 		AccountKey: accountKey,
 		Fee:        data.NewCoinFromFloat(fee, "OLT"),
 	}
+}
+
+func CheckRegisterFee(app interface{}, owner id.AccountKey, fee data.Coin) bool {
+
+	balances := GetBalances(app)
+
+	//check identity's VT is equal to the stake
+	ownerBalance := balances.Get(owner)
+	if ownerBalance.GetAmountByName("OLT").LessThanCoin(fee) {
+		return false
+	}
+
+	return true
 }
