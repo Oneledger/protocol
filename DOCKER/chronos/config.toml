@@ -1,5 +1,5 @@
-Identity = "Newton"
-NodeName = "Newton-Node"
+Identity = "Chronos1"
+NodeName = "Chronos1-Node"
 RpcAddress = "tcp://127.0.0.1:26601"
 P2PAddress = "tcp://127.0.0.1:26611"
 AppAddress = "tcp://127.0.0.1:26621"
