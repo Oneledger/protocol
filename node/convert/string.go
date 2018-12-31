@@ -109,6 +109,16 @@ func (convert *Convert) GetCoin(amountStr string, currencyStr string) data.Coin 
 	return data.NewCoinFromString(amountStr, currency)
 }
 
+func (convert *Convert) GetCoinFromFloat(amount float64, currencyStr string) data.Coin {
+	currency := convert.GetCurrency(currencyStr)
+	return data.NewCoinFromFloat(amount, currency)
+}
+
+func (convert *Convert) GetCoinFromUnits(amount int64, currencyStr string) data.Coin {
+	currency := convert.GetCurrency(currencyStr)
+	return data.NewCoinFromUnits(amount, currency)
+}
+
 func (convert *Convert) GetCurrency(value string) string {
 	key := strings.ToLower(value)
 	if result, ok := Domain[key]; ok {

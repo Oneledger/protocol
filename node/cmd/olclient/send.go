@@ -6,11 +6,13 @@
 package main
 
 import (
+	"os"
+
 	"github.com/Oneledger/protocol/node/cmd/shared"
 	"github.com/Oneledger/protocol/node/comm"
 	"github.com/Oneledger/protocol/node/log"
 	"github.com/spf13/cobra"
-	"os"
+	ctypes "github.com/tendermint/tendermint/rpc/core/types"
 )
 
 var sendCmd = &cobra.Command{
@@ -27,11 +29,10 @@ func init() {
 	// Transaction Parameters
 	sendCmd.Flags().StringVar(&sendargs.Party, "party", "", "send sender")
 	sendCmd.Flags().StringVar(&sendargs.CounterParty, "counterparty", "", "send recipient")
-	sendCmd.Flags().StringVar(&sendargs.Amount, "amount", "0", "specify an amount")
+	sendCmd.Flags().Float64Var(&sendargs.Amount, "amount", 0.0, "specify an amount")
 	sendCmd.Flags().StringVar(&sendargs.Currency, "currency", "OLT", "the currency")
 
-	sendCmd.Flags().StringVar(&sendargs.Fee, "fee", "4", "include a fee")
-	sendCmd.Flags().StringVar(&sendargs.Gas, "gas", "1", "include gas")
+	sendCmd.Flags().Float64Var(&sendargs.Fee, "fee", 0.0, "include a fee in OLT")
 }
 
 // IssueRequest sends out a sendTx to all of the nodes in the chain
@@ -48,6 +49,20 @@ func IssueRequest(cmd *cobra.Command, args []string) {
 	}
 
 	result := comm.Broadcast(packet)
+	BroadcastStatus(result)
+}
 
-	shared.Console.Info("Returned Successfully", result)
+func BroadcastStatus(result *ctypes.ResultBroadcastTxCommit) {
+	if result == nil {
+		shared.Console.Error("Invalid Transacation")
+
+	} else if result.CheckTx.Code != 0 {
+		shared.Console.Error("Syntax, CheckTx Failed", result)
+
+	} else if result.DeliverTx.Code != 0 {
+		shared.Console.Error("Transaction, DeliverTx Failed", result)
+
+	} else {
+		shared.Console.Info("Returned Successfully", result)
+	}
 }

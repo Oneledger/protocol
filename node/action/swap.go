@@ -8,6 +8,7 @@ package action
 import (
 	"bytes"
 	"encoding/hex"
+
 	tendermintcommon "github.com/tendermint/tendermint/libs/common"
 
 	"github.com/tendermint/go-amino"
@@ -89,6 +90,8 @@ func (transaction *Swap) Validate() status.Code {
 		log.Debug("Unsupported Stage", "transaction", transaction)
 		return status.BAD_VALUE
 	}
+
+	// TODO: Swaps need to check for fees
 
 	return status.SUCCESS
 }

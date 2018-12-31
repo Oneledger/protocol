@@ -121,7 +121,12 @@ func GetSequenceNumber(accountKey id.AccountKey) int64 {
 		log.Warn("Query returned nothing", "request", request)
 		return -1
 	}
+	switch value := response.(type) {
+	case id.SequenceRecord:
+		return value.Sequence
+	case string:
+		Console.Error(value)
+	}
 
-	result := response.(id.SequenceRecord)
-	return result.Sequence
+	return 0
 }
