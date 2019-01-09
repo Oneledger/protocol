@@ -1,3 +1,47 @@
+function should(condition, errorObj) {
+  if (condition) {
+    return;
+  }
+  if(typeof errorObj == 'undefined') {
+    errorObj = new Error('General Error');
+  }
+  throw errorObj;
+}
+var SafeMath = {
+  NUMBER_IS_TOO_BIG: 1,
+  NUMBER_IS_TOO_SMALL: 2,
+  max: function() {
+    return 1.157920892373162e+77;//2 ** 256
+  },
+  min: function() {
+    return -1.157920892373162e+77;//- 2 ** 256
+  },
+  add: function(a, b) {
+    var c = a + b
+    should(c <= this.max(), new Error(this.NUMBER_IS_TOO_BIG));
+    should(c >= this.min(),new Error(this.NUMBER_IS_TOO_SMALL));
+    return c;
+  },
+  sub: function(a, b) {
+    var c = a - b;
+    should(c <= this.max(), new Error(this.NUMBER_IS_TOO_BIG));
+    should(c >= this.min(),new Error(this.NUMBER_IS_TOO_SMALL));
+    return c;
+  },
+  mul: function (a, b) {
+    var c = a * b;
+    should(c <= this.max(), new Error(this.NUMBER_IS_TOO_BIG));
+    should(c >= this.min(),new Error(this.NUMBER_IS_TOO_SMALL));
+    return c;
+  },
+  div: function (a, b) {
+    var c = a / b;
+    should(c <= this.max(), new Error(this.NUMBER_IS_TOO_BIG));
+    should(c >= this.min(),new Error(this.NUMBER_IS_TOO_SMALL));
+    return c;
+  }
+}
+
 var IndexSet = function () { ///this is a simple porting for the set which lacks from ES5
   this._innerArray = [];
 }
@@ -36,6 +80,7 @@ IndexSet.prototype.list = function () {
 
 var Context = function () {
   this.storage = {};
+  this.line_data = [];//line data will be used to add the command execution steps for blockchain
   this.updateIndexSet = new IndexSet();
 }
 
@@ -60,4 +105,11 @@ Context.prototype.getStorage = function () {
 Context.prototype.getUpdateIndexList = function () {
   return this.updateIndexSet.list();
 }
+Context.prototype.execute =  function(action, parameters) {
+  this.line_data.push({action: action, parameters: parameters});
+}
+Context.prototype.getLineData = function () {
+  return this.line_data;
+}
+
 var context = new Context();
