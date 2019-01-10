@@ -9,6 +9,7 @@ package shared
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/Oneledger/protocol/node/global"
 	"github.com/Oneledger/protocol/node/log"
@@ -25,10 +26,11 @@ type Terminal interface {
 	Info(text ...interface{})
 	Warning(text ...interface{})
 	Error(text ...interface{})
+	Fatal(text ...interface{})
 
 	// Input
 	Read(string) string
-	Password() string
+	Password(string) string
 }
 
 // A globally accessable terminal called Console
@@ -56,15 +58,23 @@ func (tty *Tty) Info(text ...interface{}) {
 }
 
 func (tty *Tty) Warning(text ...interface{}) {
+	fmt.Print("WARNING: ")
 	fmt.Println(text...)
 }
 
 func (tty *Tty) Error(text ...interface{}) {
+	fmt.Print("ERROR: ")
 	fmt.Println(text...)
 }
 
+func (tty *Tty) Fatal(text ...interface{}) {
+	fmt.Print("FATAL: ")
+	fmt.Println(text...)
+	os.Exit(-1)
+}
+
 // Get a password from the console, needs to be attached to work correctly
-func (tty *Tty) Password() string {
+func (tty *Tty) Password(prompt string) string {
 
 	// Debugging option to make like easier.
 	if global.Current.DisablePasswords {
@@ -72,14 +82,15 @@ func (tty *Tty) Password() string {
 	}
 
 	input := ""
-	isValid := false
 
-	for isValid {
-		input = tty.Read("Enter a passphrase")
-		if len(input) > 7 {
-			isValid = true
-		}
+	if prompt == "" {
+		prompt = "Enter a passphrase:"
 	}
+
+	input = tty.Read(prompt)
+
+	// TODO we can add some password policy rules here, but so far we do it at the places where we call this method
+
 	return input
 }
 

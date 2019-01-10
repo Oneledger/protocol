@@ -62,6 +62,12 @@ type Context struct {
 	P2PAddress      string
 
 	ConsensusNode *tmnode.Node
+
+	//Minimum Fees
+	MinSendFee     float64
+	MinSwapFee     float64
+	MinContractFee float64
+	MinRegisterFee float64
 }
 
 func init() {
@@ -79,13 +85,19 @@ func NewContext(name string) *Context {
 		Debug:            debug,
 		DisablePasswords: true,
 
-		ConfigName:      "olclient", // TODO: needs to deal with client/server
+		ConfigName:      "config", // TODO: needs to deal with client/server
 		NodeName:        name,
 		NodeAccountName: "",
 		PaymentAccount:  "Payment",
-		RootDir:         os.Getenv("OLDATA") + "/" + name + "/olfullnode",
+		RootDir:         os.Getenv("OLDATA") + "/" + name,
 
 		SDKAddress: "http://127.0.01:6900",
+
+		// TODO: Should be params in the chain
+		MinSendFee:     0.1,
+		MinSwapFee:     0.1,
+		MinContractFee: 0.1,
+		MinRegisterFee: 0.1,
 	}
 }
 
@@ -103,6 +115,11 @@ func (context *Context) GetApplication() persist.Access {
 }
 
 func ConsensusDir() string {
-	result, _ := filepath.Abs(filepath.Join(Current.RootDir, "..", "consensus"))
+	result, _ := filepath.Abs(filepath.Join(Current.RootDir, "consensus"))
+	return result
+}
+
+func DatabaseDir() string {
+	result, _ := filepath.Abs(filepath.Join(Current.RootDir, "nodedata"))
 	return result
 }

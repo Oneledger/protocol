@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+
+olmonitor start olvm execute --root $OLDATA >> $OLDATA/olvm.log 2>&1 &
+
+olfullnode node --root $OLDATA \
+	--tendermintRoot $OLDATA/consensus \
+	--seeds 69cbb82a35f621b7a07cfdf9b30b42b943424daa@seed1.chronos.oneledger.network:26615,008a082847ac0d631c174fc23dfd5c2adbe422fa@seed2.chronos.oneledger.network:26615,74fae3565f3d542d0833b7d5cde02d095d6c979f@seed3.chronos.oneledger.network:26615,b36da7eeeff531bb8cac995d8b818b28ea4594e5@seed4.chronos.oneledger.network:26615 \
+	--persistent_peers 69cbb82a35f621b7a07cfdf9b30b42b943424daa@seed1.chronos.oneledger.network:26615,008a082847ac0d631c174fc23dfd5c2adbe422fa@seed2.chronos.oneledger.network:26615,74fae3565f3d542d0833b7d5cde02d095d6c979f@seed3.chronos.oneledger.network:26615,b36da7eeeff531bb8cac995d8b818b28ea4594e5@seed4.chronos.oneledger.network:26615 \
+	>> $OLDATA/olfullnode.log 2>&1 &

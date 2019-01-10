@@ -1,0 +1,69 @@
+{
+  "genesis_time": "2018-12-19T18:35:43.775497299Z",
+  "chain_id": "chronos1",
+  "consensus_params": {
+    "block_size_params": {
+      "max_bytes": "22020096",
+      "max_txs": "10000",
+      "max_gas": "-1"
+    },
+    "tx_size_params": {
+      "max_bytes": "10240",
+      "max_gas": "-1"
+    },
+    "block_gossip_params": {
+      "block_part_size_bytes": "65536"
+    },
+    "evidence_params": {
+      "max_age": "100000"
+    }
+  },
+  "validators": [
+    {
+      "pub_key": {
+        "type": "tendermint/PubKeyEd25519",
+        "value": "FNUCYtE5RwmwES41bde2nso8aZ8UyLQGcSjRTGLVh0c="
+      },
+      "power": "1",
+      "name": "David"
+    },
+    {
+      "pub_key": {
+        "type": "tendermint/PubKeyEd25519",
+        "value": "BUVqVsnG0Mn6YQE3mBEt+rEJNNaomrt1Sap3vjCy8uM="
+      },
+      "power": "1",
+      "name": "Alice"
+    },
+    {
+      "pub_key": {
+        "type": "tendermint/PubKeyEd25519",
+        "value": "mJ2dMF97Iz8GYbRi+DFxqLJEiNRROqZgibC3ZFVl2PI="
+      },
+      "power": "1",
+      "name": "Bob"
+    },
+    {
+      "pub_key": {
+        "type": "tendermint/PubKeyEd25519",
+        "value": "O0qDgt1Ylwg9QkTd/yKyyEWN+gQ4napHUej2xHSNq64="
+      },
+      "power": "1",
+      "name": "Carol"
+    }
+  ],
+  "app_hash": "",
+  "app_state": {
+    "account": "Zero",
+    "states": [
+      {
+        "amount": "1000000000",
+        "currency": "OLT"
+      },
+      {
+        "amount": "10000",
+        "currency": "VT"
+      }
+    ]
+  }
+}

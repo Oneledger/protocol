@@ -24,6 +24,7 @@ var listCmd = &cobra.Command{
 type ListArguments struct {
 	identityName string
 	accountName  string
+	validators   bool
 }
 
 var list *ListArguments = &ListArguments{}
@@ -35,6 +36,7 @@ func init() {
 	// Transaction Parameters
 	listCmd.Flags().StringVar(&list.identityName, "identity", "", "identity name")
 	listCmd.Flags().StringVar(&list.accountName, "account", "", "account name")
+	listCmd.Flags().BoolVar(&list.validators, "validators", false, "include validators")
 }
 
 // Format the request into a query structure
@@ -53,6 +55,7 @@ func ListNode(cmd *cobra.Command, args []string) {
 	//log.Debug("Checking Account", "account", account)
 	accountRequest := FormatAccountRequest()
 	identityRequest := FormatIdentityRequest()
+
 	accounts := comm.Query("/account", accountRequest)
 	identities := comm.Query("/identity", identityRequest)
 
@@ -64,6 +67,15 @@ func ListNode(cmd *cobra.Command, args []string) {
 	nodeName := shared.GetNodeName()
 	printAccountQuery(nodeName, accounts)
 	printIdentityQuery(nodeName, identities)
+
+	if list.validators == true {
+		validators := comm.Query("/validator", []byte(""))
+		if validators != nil {
+			printValidatorQuery(nodeName, validators)
+		} else {
+			shared.Console.Info("Failed to get validator list. Please wait for the next block before running this command.")
+		}
+	}
 }
 
 func printAccountQuery(nodeName string, accountQuery interface{}) {
@@ -132,5 +144,28 @@ func printAnIdentity(identity id.Identity) {
 	shared.Console.Info(accountKey, identity.AccountKey.String())
 	shared.Console.Info(tendermintAddress, identity.TendermintAddress)
 	shared.Console.Info(tendermintPubKey, identity.TendermintPubKey)
+	shared.Console.Info()
+}
+
+func printValidatorQuery(nodeName string, validatorQuery interface{}) {
+	//validators := validatorQuery.([]id.ValidatorInfo)
+	validators := validatorQuery.([]id.Identity)
+	shared.Console.Info("Validators on", nodeName+":\n")
+
+	for _, validator := range validators {
+		//printAValidator(validator)
+		if validator.Name != "" {
+			printAnIdentity(validator)
+		}
+	}
+}
+
+func printAValidator(validator id.ValidatorInfo) {
+	// Right-align fieldnames in console
+	address := " Address:"
+	pubkey := "  PubKey:"
+
+	shared.Console.Info(address, validator.Address)
+	shared.Console.Info(pubkey, validator.PubKey)
 	shared.Console.Info()
 }

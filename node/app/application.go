@@ -52,7 +52,7 @@ type Application struct {
 
 	// Tendermint's last block information
 	Header     types.Header   // Tendermint last header info
-	Validators *id.Validators // List of vlidators for this block
+	Validators *id.Validators // List of validators for this block
 }
 
 // NewApplicationContext initializes a new application, reconnects to the databases.
@@ -81,6 +81,18 @@ type AdminParameters struct {
 
 func init() {
 	serial.Register(AdminParameters{})
+}
+
+func (app Application) CheckIfInitialized() bool {
+	if app.GetPassword() == nil {
+		return false
+	}
+
+	return true
+}
+
+func (app Application) GetPassword() interface{} {
+	return app.Admin.Get(data.DatabaseKey("Password"))
 }
 
 // Initial the state of the application from persistent data
@@ -123,9 +135,10 @@ type BasicState struct {
 	States  []State `json:"states"`
 }
 
+// TODO: Not used anymore
 type State struct {
-	Amount string `json:"amount"`
-	Coin   string `json:"currency"` // TODO: Misnamed?
+	Amount   string `json:"amount"`
+	Currency string `json:"currency"`
 }
 
 // Use the Genesis block to initialze the system
@@ -151,7 +164,10 @@ func (app Application) SetupState(stateBytes []byte) {
 	// TODO: Make a user put in a real key
 	privateKey, publicKey = id.GenerateKeys([]byte(global.Current.PaymentAccount), false)
 
-	CreateAccount(app, &BasicState{global.Current.PaymentAccount, []State{State{"0", "OLT"}}}, publicKey, privateKey)
+	states := []State{
+		State{Amount: "0", Currency: "OLT"},
+	}
+	CreateAccount(app, &BasicState{global.Current.PaymentAccount, states}, publicKey, privateKey)
 }
 
 // TODO: DEBUG
@@ -185,11 +201,11 @@ func CreateAccount(app Application, state *BasicState, publicKey id.PublicKeyED2
 
 func NewBalanceFromStates(states []State) *data.Balance {
 	var balance *data.Balance
-	for i, v := range states {
+	for i, value := range states {
 		if i == 0 {
-			balance = data.NewBalanceFromString(v.Amount, v.Coin)
+			balance = data.NewBalanceFromString(value.Amount, value.Currency)
 		} else {
-			coin := data.NewCoinFromString(v.Amount, v.Coin)
+			coin := data.NewCoinFromString(value.Amount, value.Currency)
 			balance.AddAmount(coin)
 		}
 	}
@@ -241,9 +257,9 @@ func (app Application) Info(req RequestInfo) ResponseInfo {
 	return result
 }
 
-func ParseData(message []byte) map[string]string {
-	result := map[string]string{
-		"parameters": string(message),
+func ParseData(message []byte) map[string]interface{} {
+	result := map[string]interface{}{
+		"parameters": message,
 	}
 	return result
 }
@@ -329,15 +345,19 @@ func (app Application) BeginBlock(req RequestBeginBlock) ResponseBeginBlock {
 
 	app.Validators.Set(app, validators, byzantineValidators, req.Header.LastBlockHash)
 
-	raw := app.Admin.Get(data.DatabaseKey("PaymentRecord"))
-	if raw == nil {
-		app.MakePayment(req)
-	} else {
-		params := raw.(action.PaymentRecord)
-		if params.BlockHeight == -1 {
+	app.MakePayment(req)
+
+	/*
+		raw := app.Admin.Get(data.DatabaseKey("PaymentRecord"))
+		if raw == nil {
 			app.MakePayment(req)
+		} else {
+			params := raw.(action.PaymentRecord)
+			if params.BlockHeight == -1 {
+				app.MakePayment(req)
+			}
 		}
-	}
+	*/
 
 	newChainId := action.Message(req.Header.ChainID)
 
@@ -365,6 +385,8 @@ func (app Application) BeginBlock(req RequestBeginBlock) ResponseBeginBlock {
 
 // make payment to validators
 func (app *Application) MakePayment(req RequestBeginBlock) {
+	log.Debug("MakePayment")
+
 	account, err := app.Accounts.FindName(global.Current.PaymentAccount)
 	if err != status.SUCCESS {
 		log.Fatal("ABCI: BeginBlock Fatal Status", "status", err)
@@ -383,6 +405,7 @@ func (app *Application) MakePayment(req RequestBeginBlock) {
 		params := raw.(action.PaymentRecord)
 		paymentRecordBlockHeight = params.BlockHeight
 
+		log.Debug("Checking for stall", "height", height, "recHeight", paymentRecordBlockHeight)
 		if paymentRecordBlockHeight != -1 {
 			numTrans := height - paymentRecordBlockHeight
 			if numTrans > 10 {
@@ -392,28 +415,50 @@ func (app *Application) MakePayment(req RequestBeginBlock) {
 				paymentRecordBlockHeight = -1
 			}
 		}
+	} else {
+		log.Debug("Database uninitialized", "height", height, "recHeight", paymentRecordBlockHeight)
 	}
 
 	if (!paymentBalance.GetAmountByName("OLT").LessThanEqual(0)) && paymentRecordBlockHeight == -1 {
+		if len(app.Validators.Approved) < 1 || app.Validators.SelectedValidator.Name == "" {
+			log.Debug("Missing Validator Information")
+			return
+		}
+
 		approvedValidatorIdentities := app.Validators.Approved
 		selectedValidatorIdentity := app.Validators.SelectedValidator
 
-		numberValidators := data.NewCoinFromInt(int64(len(approvedValidatorIdentities)), "OLT")
-		quotient := paymentBalance.GetAmountByName("OLT").Quotient(numberValidators)
+		numberValidators := len(approvedValidatorIdentities)
+		quotient := paymentBalance.GetAmountByName("OLT").Divide(numberValidators)
 
 		if int(quotient.Amount.Int64()) > 0 {
 			//store payment record in database
-			totalPayment := quotient.Multiply(numberValidators)
+			totalPayment := quotient.MultiplyInt(numberValidators)
 			app.SetPaymentRecord(totalPayment, height)
 
-			if global.Current.NodeName == selectedValidatorIdentity.NodeName {
-				result := CreatePaymentRequest(*app, quotient, height)
-				if result != nil {
-					// TODO: check this later
-					action.DelayedTransaction(result, 0*time.Second)
+			// if global.Current.NodeName == selectedValidatorIdentity.NodeName {
+			nodeAccount, err := app.Accounts.FindName(global.Current.NodeAccountName)
+
+			if err == status.SUCCESS {
+				if bytes.Compare(nodeAccount.AccountKey(), selectedValidatorIdentity.AccountKey) == 0 {
+					result := CreatePaymentRequest(*app, quotient, height)
+					if result != nil {
+						// TODO: check this later
+						log.Debug("Issuing Payment", "result", result)
+						action.DelayedTransaction(result, 0*time.Second)
+					}
+				} else {
+					log.Debug("Payment happens on a different node", "node",
+						selectedValidatorIdentity.Name, "validator", selectedValidatorIdentity)
 				}
+			} else {
+				log.Debug("Missing Node Account")
 			}
+		} else {
+			log.Debug("Nothing to Pay")
 		}
+	} else {
+		log.Debug("Not ready for Payment")
 	}
 }
 
@@ -453,7 +498,7 @@ func (app Application) DeliverTx(tx []byte) ResponseDeliverTx {
 		}
 	}
 
-	tags := transaction.TransactionTags()
+	tags := transaction.TransactionTags(app)
 
 	result := ResponseDeliverTx{
 		Code:      errorCode,
@@ -473,16 +518,39 @@ func (app Application) DeliverTx(tx []byte) ResponseDeliverTx {
 func (app Application) EndBlock(req RequestEndBlock) ResponseEndBlock {
 	log.Debug("ABCI: EndBlock", "req", req)
 	validatorUpdates := make([]types.Validator, 0)
-	if req.Height > 1 && len(app.Validators.NewValidators) > 0 {
+	if req.Height > 1 && (len(app.Validators.NewValidators) > 0 || len(app.Validators.ToBeRemoved) > 0) {
 
-		for _, validator := range app.Validators.ApprovedValidator {
+		for _, validator := range app.Validators.ApprovedValidators {
+			found := false
+			for _, validatorToBePurged := range app.Validators.ToBeRemoved {
+				if bytes.Compare(validator.PubKey.Data, validatorToBePurged.Validator.PubKey.Data) == 0 {
+					found = true
+					err := action.TransferVT(app, validatorToBePurged)
+					if err != status.SUCCESS {
+						log.Info("Remove Validator - error in transfer of VT")
+					}
+					break
+				}
+			}
+			if found == true {
+				validator.Power = 0
+			}
 			validatorUpdates = append(validatorUpdates, validator)
 		}
 
-		for _, validator := range app.Validators.NewValidators {
-			validatorUpdates = append(validatorUpdates, validator)
+		for _, applyValidator := range app.Validators.NewValidators {
+			if id.HasValidatorToken(app, applyValidator.Validator) {
+				validatorUpdates = append(validatorUpdates, applyValidator.Validator)
+				err := action.TransferVT(app, applyValidator)
+				if err != status.SUCCESS {
+					log.Info("New Validator - error in transfer of VT")
+				}
+			} else {
+				log.Info("Reject validator", "validatorPubKey", applyValidator.Validator.PubKey)
+			}
+
 		}
-		log.Debug("validators to update", "update", validatorUpdates)
+
 	}
 
 	result := ResponseEndBlock{

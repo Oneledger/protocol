@@ -7,6 +7,7 @@ package action
 
 import (
 	"bytes"
+	"encoding/hex"
 
 	"github.com/Oneledger/protocol/node/data"
 	"github.com/Oneledger/protocol/node/global"
@@ -21,8 +22,8 @@ import (
 type Send struct {
 	Base
 	SendTo SendTo    `json:"SendTo"`
-	Gas    data.Coin `json:"gas"`
 	Fee    data.Coin `json:"fee"`
+	//Gas    data.Coin `json:"gas"`
 }
 
 func init() {
@@ -44,18 +45,13 @@ func (transaction *Send) Validate() status.Code {
 		return status.MISSING_VALUE
 	}
 
-	if transaction.Fee.LessThan(0) {
-		log.Debug("Missing Fee", "fee", transaction.Fee)
-		return status.MISSING_DATA
-	}
-
 	if !transaction.Fee.IsCurrency("OLT") {
 		log.Debug("Wrong Fee token", "fee", transaction.Fee)
 		return status.INVALID
 	}
 
-	if transaction.Gas.LessThan(0) {
-		log.Debug("Missing Gas", "gas", transaction.Gas)
+	if transaction.Fee.LessThan(global.Current.MinSendFee) {
+		log.Debug("Missing Fee", "fee", transaction.Fee)
 		return status.MISSING_DATA
 	}
 
@@ -131,15 +127,24 @@ func (transaction *Send) Resolve(app interface{}) Commands {
 	return []Command{}
 }
 
-func (transaction Send) TransactionTags() Tags {
-	tags := transaction.Base.TransactionTags()
+func (transaction Send) TransactionTags(app interface{}) Tags {
+	tags := transaction.Base.TransactionTags(app)
 
 	tagReceiver := transaction.SendTo.AccountKey.String()
 	tag1 := common.KVPair{
 		Key:   []byte("tx.receiver"),
 		Value: []byte(tagReceiver),
 	}
+
+	participants := hex.EncodeToString(transaction.Owner) + "," + hex.EncodeToString(transaction.Target)
+
+	tag2 := common.KVPair{
+		Key:   []byte("tx.participants"),
+		Value: []byte(participants),
+	}
+
 	tags = append(tags, tag1)
+	tags = append(tags, tag2)
 
 	return tags
 }
@@ -183,4 +188,46 @@ func CheckSendTo(balance data.Balance, sendTo SendTo, fee data.Coin) bool {
 	}
 
 	return true
+}
+
+func TransferVT(app interface{}, applyValidator id.ApplyValidator) status.Code {
+	log.Debug("Processing Transfer of VT to Payment Account")
+
+	balances := GetBalances(app)
+	identities := GetIdentities(app)
+	accounts := GetAccounts(app)
+
+	validatorId := identities.FindTendermint(hex.EncodeToString(applyValidator.Validator.Address))
+
+	if validatorId.Name == "" {
+		log.Error("Missing validator identity argument")
+		return status.MISSING_DATA
+	}
+
+	validatorBalance := balances.Get(validatorId.AccountKey)
+	if validatorBalance == nil {
+		log.Debug("Failed to get the balance of the validator", "validatorAccountKey", validatorId.AccountKey)
+		return status.MISSING_VALUE
+	}
+
+	amount := applyValidator.Stake
+	validatorBalance.MinusAmount(amount)
+
+	paymentId, err := accounts.FindName("Payment")
+
+	if err != status.SUCCESS {
+		log.Error("Failed to get Payment account", "status", err)
+		return err
+	}
+
+	paymentBalance := balances.Get(paymentId.AccountKey())
+	if paymentBalance == nil {
+		paymentBalance = data.NewBalance()
+	}
+	paymentBalance.AddAmount(amount)
+
+	balances.Set(validatorId.AccountKey, validatorBalance)
+	balances.Set(paymentId.AccountKey(), paymentBalance)
+
+	return status.SUCCESS
 }

@@ -1,6 +1,4 @@
 GOTOOLS = \
-	  github.com/mitchellh/gox \
-	  github.com/Masterminds/glide \
 	  github.com/golang/dep/cmd/dep \
 	  github.com/golang/protobuf/protoc-gen-go
 
@@ -116,7 +114,7 @@ register: check
 	@./tests/register.sh
 
 #
-# Send money to the devnet users
+# Add more money to the users
 #
 testmint: check
 	@./tests/testmint.sh
@@ -125,7 +123,7 @@ testmint: check
 # List out the data for David
 #
 list: check
-	@olclient list -c David
+	@olclient list --root $(OLDATA)/David-Node
 
 #
 # Reset all of the chains, back to genesis

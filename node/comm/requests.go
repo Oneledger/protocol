@@ -5,32 +5,35 @@
 */
 package comm
 
-import "github.com/Oneledger/protocol/node/serial"
+import (
+	"github.com/Oneledger/protocol/node/serial"
+)
 
 type ApplyValidatorArguments struct {
-	Id           string
-	Amount       string
+	Id     string
+	Amount float64
+	Purge  bool
 }
 
 type SendArguments struct {
 	Party        string
 	CounterParty string
 	Currency     string
-	Amount       string
-	Gas          string
-	Fee          string
+	Amount       float64
+	Fee          float64
 }
 
 type SwapArguments struct {
 	Party        string
 	CounterParty string
-	Amount       string
+	Amount       float64
 	Currency     string
-	Fee          string
-	Gas          string // TODO: Not sure this is necessary, unless the chain is like Ethereum
-	Exchange     string
+	Exchange     float64
 	Excurrency   string
 	Nonce        int64
+
+	Fee float64
+	Gas int64
 }
 
 type ExSendArguments struct {
@@ -39,12 +42,14 @@ type ExSendArguments struct {
 	SenderAddress   string
 	ReceiverAddress string
 	Currency        string
-	Amount          string
-	Gas             string
-	Fee             string
-	Chain           string
-	ExGas           string
-	ExFee           string
+	Amount          float64
+
+	Gas int64
+	Fee float64
+
+	Chain string
+	ExGas string
+	ExFee string
 }
 
 func init() {

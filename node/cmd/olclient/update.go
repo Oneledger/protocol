@@ -6,8 +6,11 @@
 package main
 
 import (
+	"reflect"
+
 	"github.com/Oneledger/protocol/node/cmd/shared"
 	"github.com/Oneledger/protocol/node/comm"
+	"github.com/Oneledger/protocol/node/id"
 	"github.com/Oneledger/protocol/node/log"
 	"github.com/spf13/cobra"
 )
@@ -34,6 +37,7 @@ func init() {
 	// Transaction Parameters
 	updateCmd.Flags().StringVar(&updateArgs.account, "account", "", "Account Name")
 	updateCmd.Flags().StringVar(&updateArgs.chain, "chain", "OneLedger", "Specify the chain")
+
 	updateCmd.Flags().StringVar(&updateArgs.pubkey, "pubkey", "0x00000000", "Specify a public key")
 	updateCmd.Flags().StringVar(&updateArgs.privkey, "privkey", "0x00000000", "Specify a private key")
 }
@@ -52,10 +56,13 @@ func UpdateAccount(cmd *cobra.Command, args []string) {
 	update := shared.UpdateAccountRequest(request)
 
 	result := comm.SDKRequest(update)
-	_ = result
 
-	shared.Console.Info("Account has been updated")
-
-	// TODO: Print out account details, but priv key should have been blank!
-	//log.Dump("Results", result)
+	switch value := result.(type) {
+	case string:
+		shared.Console.Error(value)
+	case id.Account:
+		shared.Console.Info("Created account: ", value.Name())
+	default:
+		shared.Console.Error("Invalid type: ", reflect.TypeOf(value).String())
+	}
 }

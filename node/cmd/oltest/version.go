@@ -22,9 +22,6 @@ func init() {
 }
 
 func Version(cmd *cobra.Command, args []string) {
-	version := version.Current
-	shared.Console.Info("Olclient version is " + version.String())
-
-	// TODO: Query the fullnode, get it's version number
-	shared.Console.Info("Olfullnode version is " + version.String())
+	shared.Console.Info("Olclient version is " + version.Client.String())
+	shared.Console.Info("Protocol version is " + version.Protocol.String())
 }

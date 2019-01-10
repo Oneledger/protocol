@@ -6,6 +6,8 @@
 package main
 
 import (
+	"os"
+
 	"github.com/Oneledger/protocol/node/cmd/shared"
 	"github.com/Oneledger/protocol/node/comm"
 	"github.com/Oneledger/protocol/node/log"
@@ -24,16 +26,19 @@ func init() {
 	RootCmd.AddCommand(swapCmd)
 
 	// Transaction Parameters
-	swapCmd.Flags().StringVar(&swapargs.Party, "party", "unknown", "base address")
-	swapCmd.Flags().StringVar(&swapargs.CounterParty, "counterparty", "unknown", "target address")
-	swapCmd.Flags().StringVar(&swapargs.Amount, "amount", "0", "the coins to exchange")
-	swapCmd.Flags().StringVar(&swapargs.Currency, "currency", "OLT", "currency of amount")
-	swapCmd.Flags().StringVar(&swapargs.Exchange, "exchange", "0", "the value to trade for")
-	swapCmd.Flags().StringVar(&swapargs.Excurrency, "excurrency", "ETH", "the currency")
-	swapCmd.Flags().Int64Var(&swapargs.Nonce, "nonce", 1001, "number used once")
+	swapCmd.Flags().StringVar(&swapargs.Party, "party", "", "base address")
+	swapCmd.Flags().StringVar(&swapargs.CounterParty, "counterparty", "", "target address")
 
-	swapCmd.Flags().StringVar(&swapargs.Fee, "fee", "1", "fees in coins")
-	swapCmd.Flags().StringVar(&swapargs.Gas, "gas", "1", "gas, if necessary")
+	swapCmd.Flags().Float64Var(&swapargs.Amount, "amount", 0.0, "the coins to exchange")
+	swapCmd.Flags().StringVar(&swapargs.Currency, "currency", "OLT", "currency of amount")
+
+	swapCmd.Flags().Float64Var(&swapargs.Exchange, "exchange", 0.0, "the value to trade for")
+	swapCmd.Flags().StringVar(&swapargs.Excurrency, "excurrency", "ETH", "the currency")
+
+	swapCmd.Flags().Int64Var(&swapargs.Nonce, "nonce", 0, "number used once")
+
+	swapCmd.Flags().Float64Var(&swapargs.Fee, "fee", 0.0, "include a fee in OLT")
+	swapCmd.Flags().Int64Var(&swapargs.Gas, "gas", 0, "gas in units")
 }
 
 // IssueRequest sends out a sendTx to all of the nodes in the chain
@@ -42,10 +47,13 @@ func SwapCurrency(cmd *cobra.Command, args []string) {
 
 	// Create message
 	packet := shared.CreateSwapRequest(swapargs)
+	if packet == nil {
+		shared.Console.Error("Error in sending request")
+		os.Exit(-1)
+	}
 
 	result := comm.Broadcast(packet)
-
-	log.Debug("Returned Successfully", "result", result)
+	BroadcastStatus(result)
 }
 
 // TODO: Check to see that this is a valid currency

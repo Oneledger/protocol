@@ -75,7 +75,7 @@ func GetPeers(parameter string, nodes []string) {
 	buffer := ""
 	for _, name := range nodes {
 		// Reset the config name, and load the relevant config file
-		global.Current.ConfigName = name
+		global.Current.RootDir = name + "-Node"
 		config.ServerConfig()
 
 		// Pick out a couple of the parameters

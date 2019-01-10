@@ -62,7 +62,7 @@ func (b *Balance) AddCoin(coin Coin) {
 		b.Amounts[coin.Currency.Id] = coin
 		return
 	}
-	result.Plus(coin)
+	b.Amounts[coin.Currency.Id] = result.Plus(coin)
 	return
 }
 
@@ -74,7 +74,7 @@ func (b *Balance) MinusCoin(coin Coin) {
 		b.Amounts[coin.Currency.Id] = base.Minus(coin)
 		return
 	}
-	result.Minus(coin)
+	b.Amounts[coin.Currency.Id] = result.Minus(coin)
 	return
 }
 

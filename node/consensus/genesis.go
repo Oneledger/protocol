@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"time"
 
-	"github.com/Oneledger/protocol/node/data"
+	"github.com/Oneledger/protocol/node/app"
 	"github.com/Oneledger/protocol/node/log"
 	"github.com/tendermint/tendermint/types"
 )
@@ -30,15 +30,15 @@ func DefaultGenesisDoc() *GenesisDoc {
 type AppState struct {
 	// Name of the account
 	Account string      `json:"account"`
-	States  []data.Coin `json:"states"`
+	States  []app.State `json:"states"`
 }
 
 func NewAppState() *AppState {
 	return &AppState{
 		Account: "Zero",
-		States: []data.Coin{
-			data.NewCoinFromInt(1000000000001, "OLT"),
-			data.NewCoinFromInt(10001, "VT"),
+		States: []app.State{
+			app.State{Amount: "1000000000", Currency: "OLT"},
+			app.State{Amount: "10000", Currency: "VT"},
 		},
 	}
 }
@@ -48,8 +48,8 @@ func (a AppState) MarshalJSON() ([]byte, error) {
 	for i := 0; i < len(a.States); i++ {
 		coin := a.States[i]
 		states[i] = map[string]interface{}{
-			"amount":   coin.Amount.String(),
-			"currency": coin.Currency.Name,
+			"amount":   coin.Amount,
+			"currency": coin.Currency,
 		}
 	}
 

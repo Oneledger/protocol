@@ -48,7 +48,7 @@ type PublicKey = id.PublicKey
 type Transaction interface {
 	GetSigners() []id.PublicKey
 	GetOwner() id.AccountKey
-	TransactionTags() Tags
+	TransactionTags(interface{}) Tags
 	Validate() status.Code
 	ProcessCheck(interface{}) status.Code
 	ShouldProcess(interface{}) bool
@@ -97,7 +97,7 @@ func (b Base) Validate() status.Code {
 
 	// @todo so far Target can be nil, but it can change in future
 	if b.Target == nil {
-		log.Warn("Missing Target", "base.Target", b.Target)
+		log.Debug("Missing Target", "base.Target", b.Target)
 	}
 
 	if b.Signers == nil || len(b.Signers) == 0 {
@@ -214,7 +214,7 @@ func (t Type) String() string {
 
 type Tags common.KVPairs
 
-func (b Base) TransactionTags() Tags {
+func (b Base) TransactionTags(app interface{}) Tags {
 
 	//Add transaction type as a tag
 	tagType := b.Type.String()

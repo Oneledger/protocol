@@ -23,7 +23,7 @@ enum Currency {
 }
 
 message Balance {
-    int64 amount = 1;
+    double amount = 1;
     Currency currency = 2;
 }
 
@@ -40,8 +40,8 @@ message SendRequest {
     string counterParty = 2;
     Currency currency = 3;
     double amount = 4;
-    int64 gas = 5;
-    int64 fee = 6;
+    double fee = 5;
+    int64 gas = 6;    // In units
 }
 
 // Just send an ok back for now
@@ -56,6 +56,7 @@ message SwapReply {}
 message RegisterRequest {
     string identity = 1;
     ChainType chain = 2;
+    double fee = 3;
 }
 
 enum ChainType {

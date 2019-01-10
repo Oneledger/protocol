@@ -7,6 +7,9 @@ package action
 
 import (
 	"bytes"
+	"encoding/hex"
+
+	tendermintcommon "github.com/tendermint/tendermint/libs/common"
 
 	"github.com/tendermint/go-amino"
 
@@ -87,6 +90,8 @@ func (transaction *Swap) Validate() status.Code {
 		log.Debug("Unsupported Stage", "transaction", transaction)
 		return status.BAD_VALUE
 	}
+
+	// TODO: Swaps need to check for fees
 
 	return status.SUCCESS
 }
@@ -249,6 +254,7 @@ type swapStage struct {
 type SwapMessage interface {
 	validate() status.Code
 	resolve(interface{}, swapStageType) Commands
+	GetKeyHash(interface{}) string
 }
 
 type Party struct {
@@ -277,6 +283,30 @@ type SwapInit struct {
 	Gas          data.Coin `json:"fee"`
 	Nonce        int64     `json:"nonce"`
 	Preimage     []byte    `json:"preimage"`
+}
+
+func (transaction Swap) TransactionTags(app interface{}) Tags {
+	tags := transaction.Base.TransactionTags(app)
+
+	key := transaction.SwapMessage.GetKeyHash(app)
+
+	tag1 := tendermintcommon.KVPair{
+		Key:   []byte("tx.swapkey"),
+		Value: []byte(key),
+	}
+
+	// @TODO Had to temporarily switch to using owner/target as participants because SwapMessage may not have party/counterparty available on all nodes, need to make bigger changes to swaps
+	participants := hex.EncodeToString(transaction.Owner) + "," + hex.EncodeToString(transaction.Target)
+
+	tag2 := tendermintcommon.KVPair{
+		Key:   []byte("tx.participants"),
+		Value: []byte(participants),
+	}
+
+	tags = append(tags, tag1)
+	tags = append(tags, tag2)
+
+	return tags
 }
 
 func (si SwapInit) validate() status.Code {
@@ -321,6 +351,12 @@ func (si SwapInit) GetKey() *SwapKey {
 		Nonce:       si.Nonce,
 	}
 	return sk
+}
+
+func (si SwapInit) GetKeyHash(app interface{}) string {
+	key := hex.EncodeToString(si.GetKey().Hash())
+
+	return key
 }
 
 func (si SwapInit) resolve(app interface{}, stageType swapStageType) Commands {
@@ -424,6 +460,12 @@ type SwapExchange struct {
 	PreviousTx  []byte          `json:"previoustx"`
 }
 
+func (se SwapExchange) GetKeyHash(app interface{}) string {
+	key := hex.EncodeToString(se.SwapKeyHash)
+
+	return key
+}
+
 func (se SwapExchange) validate() status.Code {
 	log.Debug("Validating SwapExchange")
 
@@ -525,6 +567,12 @@ func (se SwapExchange) resolve(app interface{}, stageType swapStageType) Command
 
 type SwapVerify struct {
 	Event Event `json:"event"`
+}
+
+func (sv SwapVerify) GetKeyHash(app interface{}) string {
+	key := hex.EncodeToString(sv.Event.SwapKeyHash)
+
+	return key
 }
 
 func (sv SwapVerify) validate() status.Code {
@@ -957,9 +1005,9 @@ func CreateContractETH(app interface{}, context FunctionValues, tx Transaction) 
 	}
 	//todo : need to have a better key to store ethereum contract.
 	me := GetNodeAccount(app)
-
+	//log.Dump("node account", "me", me, "global", global.Current.NodeAccountName)
 	contractMessage := FindContract(app, me.AccountKey().Bytes(), int64(data.ETHEREUM))
-	var contract *ethereum.HTLContract
+	contract := &ethereum.HTLContract{}
 	if contractMessage == nil {
 		contract = ethereum.CreateHtlContract()
 		if contract == nil {
@@ -967,11 +1015,7 @@ func CreateContractETH(app interface{}, context FunctionValues, tx Transaction) 
 		}
 		SaveContract(app, me.AccountKey().Bytes(), int64(data.ETHEREUM), contract.ToBytes())
 	} else {
-		buffer, err := serial.Deserialize(contractMessage, contract, serial.JSON)
-		if err != nil {
-			log.Error("Can't deserialze loaded ETH contract", "buffer", contractMessage)
-		}
-		contract = buffer.(*ethereum.HTLContract)
+		contract.FromBytes(contractMessage)
 	}
 
 	preimage := GetByte32(context[PREIMAGE])
