@@ -10,8 +10,13 @@ import (
 )
 
 type OLVMContext struct {
-	Data interface{}
+	Data map[string]interface{}
 }
+
+func (context OLVMContext) GetValue(key string) interface{} {
+  return context.Data[key]
+}
+
 
 // All of the input necessary to perform a computation on a transaction
 type OLVMRequest struct {
