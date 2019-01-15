@@ -9,6 +9,8 @@ package action
 
 import (
 	"bytes"
+	"github.com/Oneledger/protocol/node/comm"
+	"github.com/pkg/errors"
 
 	"strconv"
 
@@ -217,4 +219,37 @@ func DeleteContract(app interface{}, contractKey []byte, nonce int64) {
 	session := contracts.Begin()
 	session.Delete(n)
 	session.Commit()
+}
+
+func FindContractCode(hash []byte, proof bool) (script data.Script, err error) {
+	result := comm.Tx(hash, false)
+	if result == nil {
+		err = errors.New("Failed to find the result from hash")
+		return
+	}
+	var signedTx SignedTransaction
+	out, err := serial.Deserialize(result.Tx, signedTx, serial.CLIENT)
+	if err != nil {
+		err = errors.New("Unable to serialize transaction")
+		return
+	}
+	// This includes the signature
+	// tx := out.(SignedTransaction)
+	// This returns the wrapped Transaction
+	tx := out.(SignedTransaction).Transaction
+
+	if tx.GetType() != SMART_CONTRACT {
+		err = errors.New("The transaction is not for the Contract Type")
+		return
+	}
+	contractTx := tx.(*Contract)
+
+	if contractTx.Function != INSTALL {
+		err = errors.New("The contract doesn't have scripts")
+		return
+	}
+
+	_, _, _, script = Convert(contractTx.Data.(Install))
+
+	return script, nil
 }
