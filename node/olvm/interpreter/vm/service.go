@@ -59,6 +59,5 @@ func (c *Container) Echo(request *action.OLVMRequest, result *action.OLVMResult)
 func (c *Container) Exec(request *action.OLVMRequest, result *action.OLVMResult) error {
 	log.Dump("Exec a Contract", request)
 	runner := runner.CreateRunner()
-	result, err := runner.Call(request)
-	return err
+	return runner.Call(request, result)
 }

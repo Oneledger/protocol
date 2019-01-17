@@ -131,6 +131,14 @@ type ExecuteArguments struct {
 	Gas      int64
 }
 
+type ContractArguments struct {
+    Address string
+    CallString string
+    CallFrom string
+    SourceCode string
+    Value int
+}
+
 // CreateRequest builds and signs the transaction based on the arguments
 func CreateSendRequest(args *comm.SendArguments) []byte {
 	request, err := serial.Serialize(args, serial.CLIENT)
