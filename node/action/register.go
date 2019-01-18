@@ -139,7 +139,7 @@ func (transaction Register) ProcessDeliver(app interface{}) status.Code {
 	}
 
 	balances := GetBalances(app)
-	ownerBalance := balances.Get(transaction.Base.Owner)
+	ownerBalance := balances.Get(transaction.Base.Owner, false)
 	if ownerBalance == nil {
 		log.Debug("Failed to get the balance of the owner", "owner", transaction.Base.Owner)
 		return status.MISSING_VALUE
@@ -154,7 +154,7 @@ func (transaction Register) ProcessDeliver(app interface{}) status.Code {
 		return err
 	}
 
-	paymentBalance := balances.Get(payment.AccountKey())
+	paymentBalance := balances.Get(payment.AccountKey(), false)
 
 	balances.Set(transaction.Base.Owner, ownerBalance)
 	balances.Set(payment.AccountKey(), paymentBalance)
@@ -187,7 +187,7 @@ func CheckRegisterFee(app interface{}, owner id.AccountKey, fee data.Coin) bool 
 	balances := GetBalances(app)
 
 	//check identity's VT is equal to the stake
-	ownerBalance := balances.Get(owner)
+	ownerBalance := balances.Get(owner, false)
 	if ownerBalance == nil {
 		return false
 	}
