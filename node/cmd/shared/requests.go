@@ -125,6 +125,8 @@ type InstallArguments struct {
 type ExecuteArguments struct {
 	Owner    string
 	Name     string
+  Address   string
+  CallString  string
 	Version  string
 	Currency string
 	Fee      float64
@@ -344,8 +346,8 @@ func CreateExecuteRequest(args *ExecuteArguments) []byte {
 		return nil
 	}
 
-	if args.Name == "" {
-		log.Error("Missing Name argument")
+	if args.Name == "" && args.Address == "" {
+		log.Error("Missing Name or Address argument")
 		return nil
 	}
 
@@ -375,6 +377,8 @@ func CreateExecuteRequest(args *ExecuteArguments) []byte {
 	inputs := action.Execute{
 		Owner:   owner,
 		Name:    args.Name,
+    Address: args.Address,
+    CallString: args.CallString,
 		Version: *version,
 	}
 

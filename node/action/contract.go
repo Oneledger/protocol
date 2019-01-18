@@ -7,6 +7,8 @@ package action
 
 import (
 	"bytes"
+  "encoding/hex"
+  "errors"
 
 	"github.com/Oneledger/protocol/node/comm"
 	"github.com/Oneledger/protocol/node/data"
@@ -50,6 +52,8 @@ type Execute struct {
 	//ToDo: all the data you need to execute contract
 	Owner   id.AccountKey
 	Name    string
+  Address string
+  CallString string
 	Version version.Version
 }
 
@@ -57,6 +61,8 @@ type Compare struct {
 	//ToDo: all the data you need to compare contract
 	Owner   id.AccountKey
 	Name    string
+  Address string
+  CallString string
 	Version version.Version
 	Result  OLVMResult
 }
@@ -69,6 +75,37 @@ func init() {
 
 	var prototype ContractData
 	serial.RegisterInterface(&prototype)
+}
+
+func getSmartContractCode(app interface{}, address string, owner []byte, name string,version version.Version) (scriptBytes []byte, err error) {
+  if address != "" {
+    addressBytes, err_ := hex.DecodeString(address)
+    if err_ != nil {
+      log.Warn("Failed to decode address", "err", err_)
+      err = err_
+      return
+    }
+    script, err_ := FindContractCode(addressBytes, false) //TODO: support proof to true?
+    if err_ != nil {
+      log.Warn("Failed to decode smart contract", "err", err_)
+      err = err_
+      return
+    }
+    scriptBytes =  script.Script
+  }else{
+    smartContracts := GetSmartContracts(app)
+    raw := smartContracts.Get(owner)
+    if raw == nil {
+      log.Warn("Failed to get smart contract record", "owner", owner)
+      err = errors.New("Failed to get smart contract rcord")
+      return
+    }
+    scriptRecords := raw.(*data.ScriptRecords)
+		versions := scriptRecords.Name[name]
+		script := versions.Version[version.String()]
+    scriptBytes = script.Script
+  }
+  return
 }
 
 func (transaction *Contract) TransactionType() Type {
@@ -230,28 +267,23 @@ func (transaction *Contract) Execute(app interface{}) Transaction {
 		log.Warn("Missing NodeAccount for Contracts", "name", global.Current.NodeAccountName)
 		return nil
 	}
-
 	if bytes.Compare(nodeAccount.AccountKey(), selectedValidatorIdentity.AccountKey) == 0 {
 		executeData := transaction.Data.(Execute)
-		smartContracts := GetSmartContracts(app)
+    scriptBytes, err := getSmartContractCode(app, executeData.Address, executeData.Owner, executeData.Name, executeData.Version)
+    if err != nil {
+      log.Warn("Error when try to fetch the smart contract code", "err", err)
+      return nil
+    }
+    last := GetContext(app, executeData.Owner, executeData.Name, executeData.Version)
+    request := NewOLVMResultWithCallString(scriptBytes, executeData.CallString, last.Context)
+    result := RunScript(app, request).(OLVMResult)
 
-		raw := smartContracts.Get(executeData.Owner)
-		if raw != nil {
-			scriptRecords := raw.(*data.ScriptRecords)
-			versions := scriptRecords.Name[executeData.Name]
-			script := versions.Version[executeData.Version.String()]
-
-			last := GetContext(app, executeData.Owner, executeData.Name, executeData.Version)
-			request := NewOLVMRequest(script.Script, last.Context)
-			result := RunScript(app, request).(OLVMResult)
-
-			if result.Status == status.SUCCESS {
-				resultCompare := transaction.CreateCompareRequest(app, executeData.Owner, executeData.Name, executeData.Version, result)
-				if resultCompare != nil {
-					//TODO: check this later
-					comm.Broadcast(resultCompare)
-				}
-			}
+    if result.Status == status.SUCCESS {
+      resultCompare := transaction.CreateCompareRequest(app, executeData.Owner, executeData.Name, executeData.Version, result)
+      if resultCompare != nil {
+        //TODO: check this later
+        comm.Broadcast(resultCompare)
+      }
 		}
 	}
 	return nil
@@ -261,25 +293,23 @@ func (transaction *Contract) Execute(app interface{}) Transaction {
 // TODO: Maybe the compare should be in CheckTx, so that it can fail?
 func (transaction *Contract) Compare(app interface{}) status.Code {
 	compareData := transaction.Data.(Compare)
-	smartContracts := GetSmartContracts(app)
+  scriptBytes, err := getSmartContractCode(app, compareData.Address, compareData.Owner, compareData.Name, compareData.Version)
+  if err != nil {
+    log.Warn("Error when try to fetch the smart contract code", "err", err)
+    return status.INVALID
+  }
 
-	raw := smartContracts.Get(compareData.Owner)
-	if raw != nil {
-		scriptRecords := raw.(*data.ScriptRecords)
-		versions := scriptRecords.Name[compareData.Name]
-		script := versions.Version[compareData.Version.String()]
+  last := GetContext(app, compareData.Owner, compareData.Name, compareData.Version)
+  request := NewOLVMResultWithCallString(scriptBytes,compareData.CallString, last.Context)
+  result := RunScript(app, request).(OLVMResult)
 
-		last := GetContext(app, compareData.Owner, compareData.Name, compareData.Version)
-		request := NewOLVMRequest(script.Script, last.Context)
-		result := RunScript(app, request).(OLVMResult)
+  // TODO: Comparison should be on the structure, not a string
+  if CompareResults(result, compareData.Result) {
+    SaveContext(app, compareData.Owner, compareData.Name, compareData.Version, result)
 
-		// TODO: Comparison should be on the structure, not a string
-		if CompareResults(result, compareData.Result) {
-			SaveContext(app, compareData.Owner, compareData.Name, compareData.Version, result)
+    return status.SUCCESS
+  }
 
-			return status.SUCCESS
-		}
-	}
 	return status.INVALID
 }
 

@@ -54,16 +54,20 @@ func init() {
 	//serial.Register(prototype2)
 }
 
-func NewOLVMRequest(script []byte, context OLVMContext) *OLVMRequest {
-	request := &OLVMRequest{
+func NewOLVMResultWithCallString(script []byte, callString string, context OLVMContext) *OLVMRequest {
+  request := &OLVMRequest{
 		From:       "0x0",
 		Address:    "embed://",
-		CallString: "",
+		CallString: callString,
 		Value:      0,
 		SourceCode: script,
 		Context:    context,
 	}
 	return request
+}
+
+func NewOLVMRequest(script []byte, context OLVMContext) *OLVMRequest {
+	return NewOLVMResultWithCallString(script, "", context)
 }
 
 func NewOLVMResult() *OLVMResult {
