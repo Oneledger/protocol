@@ -63,13 +63,13 @@ func (transaction *Send) ProcessCheck(app interface{}) status.Code {
 
 	balances := GetBalances(app)
 
-	balance := balances.Get(transaction.Base.Owner)
+	balance := balances.Get(transaction.Base.Owner, false)
 	if balance == nil {
 		log.Debug("Failed to get the balance of the owner", "owner", transaction.Base.Owner)
 		return status.MISSING_VALUE
 	}
 
-	if !CheckSendTo(*balance, transaction.SendTo, transaction.Fee) {
+	if !IsEnoughBalance(*balance, transaction.SendTo.Amount, transaction.Fee) {
 		return status.INVALID
 	}
 
@@ -85,39 +85,38 @@ func (transaction *Send) ProcessDeliver(app interface{}) status.Code {
 
 	balances := GetBalances(app)
 
-	ownerBalance := balances.Get(transaction.Base.Owner)
+	ownerBalance := balances.Get(transaction.Base.Owner, false)
 	if ownerBalance == nil {
 		log.Debug("Failed to get the balance of the owner", "owner", transaction.Base.Owner)
 		return status.MISSING_VALUE
 	}
 
-	if !CheckSendTo(*ownerBalance, transaction.SendTo, transaction.Fee) {
+	if !IsEnoughBalance(*ownerBalance, transaction.SendTo.Amount, transaction.Fee) {
+		log.Debug("Owner balance is not enough", "balance", ownerBalance, "amount", transaction.SendTo.Amount, "fee", transaction.Fee)
 		return status.INVALID
 	}
 
 	//change owner balance
 	ownerBalance.MinusAmount(transaction.SendTo.Amount)
 	ownerBalance.MinusAmount(transaction.Fee)
+	balances.Set(transaction.Base.Owner, ownerBalance)
 
 	//change receiver balance
-	receiverBalance := balances.Get(transaction.SendTo.AccountKey)
+	receiverBalance := balances.Get(transaction.SendTo.AccountKey, false)
 	if receiverBalance == nil {
 		receiverBalance = data.NewBalance()
 	}
 	receiverBalance.AddAmount(transaction.SendTo.Amount)
+	balances.Set(transaction.SendTo.AccountKey, receiverBalance)
 
 	accounts := GetAccounts(app)
 	payment, err := accounts.FindName(global.Current.PaymentAccount)
 	if err != status.SUCCESS {
-		log.Error("Failed to get payment account", "status", err)
+		log.Fatal("Failed to get payment account", "status", err)
 		return err
 	}
-
-	paymentBalance := balances.Get(payment.AccountKey())
+	paymentBalance := balances.Get(payment.AccountKey(), false)
 	paymentBalance.AddAmount(transaction.Fee)
-
-	balances.Set(transaction.Base.Owner, ownerBalance)
-	balances.Set(transaction.SendTo.AccountKey, receiverBalance)
 	balances.Set(payment.AccountKey(), paymentBalance)
 
 	return status.SUCCESS
@@ -165,25 +164,25 @@ func (st SendTo) IsValid() bool {
 	return true
 }
 
-func CheckSendTo(balance data.Balance, sendTo SendTo, fee data.Coin) bool {
+func IsEnoughBalance(balance data.Balance, value data.Coin, fee data.Coin) bool {
 
 	//todo: the lessthan check and is valid check should be move into the Coin.IsValid() function together
-	if sendTo.Amount.LessThan(0) {
-		log.Debug("FAILED: Less Than 0", "out", sendTo)
+	if value.LessThan(0) {
+		log.Debug("FAILED: Less Than 0", "value", value)
 		return false
 	}
 
-	if !sendTo.Amount.IsValid() {
+	if !value.IsValid() {
 		log.Debug("FAILED: sent amount on Currency is not valid")
 		return false
 	}
 
 	total := data.NewBalance()
-	total.AddAmount(sendTo.Amount)
+	total.AddAmount(value)
 	total.AddAmount(fee)
 	log.Debug("send check", "balance", balance, "total", total)
 	if !balance.IsEnoughBalance(*total) {
-		log.Debug("FAILED: Balance not enough for the send", "balance", balance, "sendTo", sendTo)
+		log.Debug("FAILED: Balance not enough for the send", "balance", balance, "value", value, "fee", fee)
 		return false
 	}
 
@@ -204,7 +203,7 @@ func TransferVT(app interface{}, applyValidator id.ApplyValidator) status.Code {
 		return status.MISSING_DATA
 	}
 
-	validatorBalance := balances.Get(validatorId.AccountKey)
+	validatorBalance := balances.Get(validatorId.AccountKey, false)
 	if validatorBalance == nil {
 		log.Debug("Failed to get the balance of the validator", "validatorAccountKey", validatorId.AccountKey)
 		return status.MISSING_VALUE
@@ -220,7 +219,7 @@ func TransferVT(app interface{}, applyValidator id.ApplyValidator) status.Code {
 		return err
 	}
 
-	paymentBalance := balances.Get(paymentId.AccountKey())
+	paymentBalance := balances.Get(paymentId.AccountKey(), false)
 	if paymentBalance == nil {
 		paymentBalance = data.NewBalance()
 	}
