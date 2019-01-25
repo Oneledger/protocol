@@ -70,7 +70,12 @@ func BalanceNode(cmd *cobra.Command, args []string) {
 	accountKeyRequest := AccountKeyRequest(name)
 	accountKey := comm.Query("/accountKey", accountKeyRequest)
 
-	balanceRequest := BalanceRequest(hex.EncodeToString(accountKey.(id.AccountKey)))
+	var balanceRequest []byte
+	if accountKey == nil {
+		balanceRequest = BalanceRequest(hex.EncodeToString([]byte(name)))
+	} else {
+		balanceRequest = BalanceRequest(hex.EncodeToString(accountKey.(id.AccountKey)))
+	}
 
 	balance := comm.Query("/balance", balanceRequest)
 

@@ -392,7 +392,7 @@ func (app *Application) MakePayment(req RequestBeginBlock) {
 		log.Fatal("ABCI: BeginBlock Fatal Status", "status", err)
 	}
 
-	paymentBalance := app.Balances.Get(account.AccountKey())
+	paymentBalance := app.Balances.Get(account.AccountKey(), true)
 	if paymentBalance == nil {
 		paymentBalance = data.NewBalance()
 	}

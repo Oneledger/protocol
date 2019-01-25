@@ -26,26 +26,9 @@ func (runner Runner) exec(callString string) (string, string) {
 	if err != nil {
 		panic(err)
 	}
-
+  sourceCode := getCodeFromJsLibs("onExit")
 	// Set the transaction parameters
-	runner.vm.Run(`
-    var list = context.getUpdateIndexList();
-    var storage = context.getStorage();
-    var transaction = {};
-    for (var i = 0; i< list.length; i ++) {
-      var key = list[i];
-      transaction[key] = storage[key];
-    }
-    transaction.__from__ = __from__;
-    transaction.__olt__ = __olt__;
-    `)
-
-	// Set the results
-	runner.vm.Run(`
-    out = JSON.stringify(transaction);
-    ret = JSON.stringify(retValue);
-    `)
-
+	runner.vm.Run(sourceCode)
 	output := ""
 	returnValue := ""
 
@@ -56,16 +39,12 @@ func (runner Runner) exec(callString string) (string, string) {
 	if value, err := runner.vm.Get("ret"); err == nil {
 		returnValue, _ = value.ToString()
 	}
-
 	return output, returnValue
 }
 
 //func (runner Runner) Call(from string, address string, callString string, olt int) (transaction string, returnValue string, err error) {
-func (runner Runner) Call(request *action.OLVMRequest) (result *action.OLVMResult, err error) {
+func (runner Runner) Call(request *action.OLVMRequest, result *action.OLVMResult) (err error) {
 	log.Debug("Calling the Script")
-
-	result = &action.OLVMResult{}
-
 	defer func() {
 		if r := recover(); r != nil {
 			log.Debug("HALTING")
@@ -77,7 +56,7 @@ func (runner Runner) Call(request *action.OLVMRequest) (result *action.OLVMResul
 	}()
 
 	log.Debug("Setup the Context")
-	runner.initialContext(request.From, request.Value)
+	runner.initialContext(request.From, request.Value, request.Context)
 
 	log.Debug("Setup the SourceCode")
 	runner.setupContract(request)
@@ -114,8 +93,7 @@ func (runner Runner) Call(request *action.OLVMRequest) (result *action.OLVMResul
 	result.Out = out
 	result.Ret = ret
 	result.Elapsed = elapsed.String()
-
-	return result, nil
+	return
 }
 
 func CreateRunner() Runner {

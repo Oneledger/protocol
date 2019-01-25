@@ -127,7 +127,7 @@ func HandleApplyValidatorQuery(application Application, arguments map[string]int
 		return "Node account is not found."
 	}
 
-	nodeAccountBalance := application.Balances.Get(data.DatabaseKey(nodeAccount.AccountKey()))
+	nodeAccountBalance := application.Balances.Get(data.DatabaseKey(nodeAccount.AccountKey()), false)
 
 	if &nodeAccountBalance == nil {
 		return "Missing balance for node account."
@@ -138,7 +138,7 @@ func HandleApplyValidatorQuery(application Application, arguments map[string]int
 		return "The identity is not found." + " id:" + idName
 	}
 
-	identityBalance := application.Balances.Get(data.DatabaseKey(identity.AccountKey))
+	identityBalance := application.Balances.Get(data.DatabaseKey(identity.AccountKey), false)
 
 	if &identityBalance == nil {
 		return "Missing balance for identity."
@@ -710,7 +710,7 @@ func HandleBalanceQuery(app Application, arguments map[string]interface{}) inter
 }
 
 func Balance(app Application, accountKey []byte) interface{} {
-	balance := app.Balances.Get(accountKey)
+	balance := app.Balances.Get(accountKey, true)
 	if balance != nil {
 		return balance
 	}

@@ -20,7 +20,7 @@ func NewLogger(logPath string, cfg tmconfig.Config) tmlog.Logger {
 			log.Fatal("Failed to create logging file", "location", logPath, "err", err)
 		}
 	} else {
-		file, err = os.Open(logPath)
+		file, err = os.OpenFile(logPath, os.O_RDWR|os.O_APPEND, 0666)
 		if err != nil {
 			log.Fatal("Failed to open logging file", "location", logPath, "err", err)
 		}

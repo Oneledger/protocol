@@ -160,7 +160,7 @@ func (server SDKServer) CheckAccount(ctx context.Context, request *pb.CheckAccou
 	}
 
 	// Get balance
-	balance := server.App.Balances.Get(data.DatabaseKey(account.AccountKey()))
+	balance := server.App.Balances.Get(data.DatabaseKey(account.AccountKey()), false)
 
 	var result *pb.Balance
 	if balance != nil {
@@ -258,7 +258,7 @@ func prepareSend(
 ) (*action.Send_Absolute, error) {
 	// TODO: Use functions in shared package after resolving import cycles
 	findBalance := func(key id.AccountKey) (*data.Balance, error) {
-		balance := app.Balances.Get(data.DatabaseKey(key))
+		balance := app.Balances.Get(data.DatabaseKey(key), false)
 		if balance == nil {
 			return nil, fmt.Errorf("Balance not found for key %x", key)
 		}

@@ -178,7 +178,7 @@ func HasValidatorToken(app interface{}, validator types.Validator) bool {
 	formatted := hex.EncodeToString(validator.Address)
 	identity := identities.FindTendermint(formatted)
 
-	validatorBalance := balances.Get(identity.AccountKey)
+	validatorBalance := balances.Get(identity.AccountKey, false)
 	coin := validatorBalance.FindCoin(data.NewCurrency("VT"))
 	if coin.LessThanEqual(0) {
 		return false
