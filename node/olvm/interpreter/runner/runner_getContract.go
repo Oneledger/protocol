@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"os"
 	"strings"
+  "path/filepath"
 
 	"github.com/Oneledger/protocol/node/action"
 	"github.com/Oneledger/protocol/node/log"
@@ -43,11 +44,13 @@ func getSourceCodeFromSamples(address string) string {
 
 	prefix := "samples://"
 	sampleCodeName := address[len(prefix):]
-
-	file, err := os.Open("./samples/" + sampleCodeName + ".js")
+  jsFilePath := filepath.Join(os.Getenv("OLROOT"), "/protocol/node/olvm/interpreter/samples/", sampleCodeName + ".js")
+  log.Debug("get source code from local file system", "path", jsFilePath)
+  file, err := os.Open(jsFilePath)
 	if err != nil {
 
 		// TODO: Needs better error handling
+    log.Debug("cannot get source code", "err", err)
 		return ""
 		//log.Fatal(err)
 	}

@@ -85,12 +85,12 @@ func (transaction *Payment) ProcessDeliver(app interface{}) status.Code {
 		log.Error("Failed to get payment account", "status", err)
 		return err
 	}
-	paymentBalance := chain.Get(payment.AccountKey())
+	paymentBalance := chain.Get(payment.AccountKey(), false)
 
 	// Update the database to the final set of entries
 	for _, entry := range transaction.SendTo {
 		var balance *data.Balance
-		result := chain.Get(entry.AccountKey)
+		result := chain.Get(entry.AccountKey, false)
 		if result == nil {
 			result = data.NewBalance()
 		}
@@ -132,7 +132,7 @@ func CheckPayTo(app interface{}, pay []SendTo) bool {
 		return false
 	}
 
-	balance := balances.Get(payment.AccountKey())
+	balance := balances.Get(payment.AccountKey(), false)
 	total := data.NewBalance()
 	for _, v := range pay {
 		if v.Amount.LessThan(0) {

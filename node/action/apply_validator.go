@@ -85,14 +85,14 @@ func CheckBalances(app interface{}, owner id.AccountKey, identityAccountKey id.A
 	balances := GetBalances(app)
 
 	//check identity's VT is equal to the stake
-	identityBalance := balances.Get(identityAccountKey)
+	identityBalance := balances.Get(identityAccountKey, false)
 	if identityBalance.GetAmountByName("VT").LessThanCoin(stake) {
 		return false
 	}
 
 	//check administrator's VT is greater than 10
 	if bytes.Compare(owner, identityAccountKey) != 0 {
-		ownerBalance := balances.Get(owner)
+		ownerBalance := balances.Get(owner, false)
 		if ownerBalance.GetAmountByName("VT").LessThanCoin(data.NewCoinFromFloat(10.0, "VT")) {
 			return false
 		}

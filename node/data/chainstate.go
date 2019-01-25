@@ -91,15 +91,22 @@ func (state *ChainState) FindAll() map[string]*Balance {
 }
 
 // TODO: Should be against the commit tree, not the delivered one!!!
-func (state *ChainState) Get(key DatabaseKey) *Balance {
+func (state *ChainState) Get(key DatabaseKey, lastCommit bool) *Balance {
 
 	// TODO: Should not be this hardcoded, but still needs protection
 	if len(key) != 20 {
 		log.Fatal("Not a valid account key")
 	}
 
-	version := state.Delivered.Version64()
-	_, value := state.Delivered.GetVersioned(key, version)
+	var value []byte
+	if lastCommit {
+		// get the value of last commit version
+		version := state.Delivered.Version64()
+		_, value = state.Delivered.GetVersioned(key, version)
+	} else {
+		// get the value of currently working tree. it's temporary value that is not persistent yet.
+		_, value = state.Delivered.ImmutableTree.Get(key)
+	}
 
 	if value != nil {
 		var balance *Balance

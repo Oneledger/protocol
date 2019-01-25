@@ -84,7 +84,7 @@ func (transaction *Send_Absolute) ProcessDeliver(app interface{}) status.Code {
 	// Update the database to the final set of entries
 	for _, entry := range transaction.Outputs {
 		var balance *data.Balance
-		result := balances.Get(entry.AccountKey)
+		result := balances.Get(entry.AccountKey, false)
 		if result == nil {
 			result = data.NewBalance()
 		}
@@ -208,7 +208,7 @@ func CheckAmountsAbsolute(app interface{}, inputs []SendInput, outputs []SendOut
 func CheckBalance(app interface{}, accountKey id.AccountKey, amount data.Coin) bool {
 	balances := GetBalances(app)
 
-	balance := balances.Get(accountKey)
+	balance := balances.Get(accountKey, false)
 	if balance == nil {
 		// New accounts don't have a balance until the first transaction
 		log.Debug("New Balance", "key", accountKey, "amount", amount, "balance", balance)
