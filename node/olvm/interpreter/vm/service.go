@@ -61,3 +61,10 @@ func (c *Container) Exec(request *action.OLVMRequest, result *action.OLVMResult)
 	runner := runner.CreateRunner()
 	return runner.Call(request, result)
 }
+
+// Exec as defined by RPC
+func (c *Container) Analyze(request *action.OLVMRequest, result *action.OLVMResult) error {
+	log.Dump("Analyze a Contract", request)
+	runner := runner.CreateRunner()
+	return runner.Analyze(request, result)
+}

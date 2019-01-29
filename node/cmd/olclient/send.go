@@ -64,5 +64,6 @@ func BroadcastStatus(result *ctypes.ResultBroadcastTxCommit) {
 
 	} else {
 		shared.Console.Info("Returned Successfully", result)
+    shared.Console.Info("Result Data", "data", string(result.DeliverTx.Data))
 	}
 }

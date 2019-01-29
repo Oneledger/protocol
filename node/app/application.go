@@ -8,6 +8,7 @@ package app
 import (
 	"bytes"
 	"time"
+  "encoding/json"
 
 	"github.com/Oneledger/protocol/node/abci"
 	"github.com/Oneledger/protocol/node/action"
@@ -500,9 +501,23 @@ func (app Application) DeliverTx(tx []byte) ResponseDeliverTx {
 
 	tags := transaction.TransactionTags(app)
 
+  data, error := json.Marshal(transaction.GetData())
+
+  outputData := ""
+
+  if error != nil {
+    log.Warn("transaction get data error", "error", error)
+  } else {
+    outputData = string(data)
+  }
+
+  log.Debug("transaction type", "type", transaction.GetType())
+  log.Debug("transaction data", "data", data)
+  log.Debug("transaction output data", "output", outputData)
+
 	result := ResponseDeliverTx{
 		Code:      errorCode,
-		Data:      []byte("Data"),
+		Data:      []byte(outputData),
 		Log:       "Log Data",
 		Info:      "Info Data",
 		GasWanted: 0,

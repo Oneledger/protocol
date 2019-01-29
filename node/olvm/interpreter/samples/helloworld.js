@@ -11,6 +11,7 @@ HellowWorldContract.prototype.setWord = function(word) {
   this.context.set('word', word);
   return word;
 }
+HellowWorldContract.prototype.setWord.func_type = "write";
 
 HellowWorldContract.prototype.getWord = function () {
   return this.context.get('word');

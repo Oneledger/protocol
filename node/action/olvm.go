@@ -27,7 +27,6 @@ type OLVMRequest struct {
 	SourceCode  []byte
 	Transaction Transaction
 	Context     OLVMContext
-
 	// TODO: Data Handle (some way to call out for large data requests)
 }
 

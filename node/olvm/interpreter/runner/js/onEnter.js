@@ -112,4 +112,8 @@ Context.prototype.getLineData = function () {
   return this.line_data;
 }
 
+if (__callString__ == '') {
+  __callString__ = "default__()";
+}
+
 var context = new Context();

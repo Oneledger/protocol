@@ -38,6 +38,13 @@ type Contract struct {
 }
 
 type ContractData interface {
+
+}
+
+type ContractReturnData struct {
+  Status  status.Code
+	Out     string
+  Ret     string
 }
 
 type Install struct {
@@ -106,6 +113,16 @@ func getSmartContractCode(app interface{}, address string, owner []byte, name st
     scriptBytes = script.Script
   }
   return
+}
+
+func (transaction *Contract) GetData() interface{} {
+  return transaction.Data
+}
+
+func (transaction *Contract) SetData(data interface{}) bool {
+  olvmData := data.(OLVMResult)
+  transaction.Data = ContractReturnData{olvmData.Status, olvmData.Out, olvmData.Ret}
+  return true
 }
 
 func (transaction *Contract) TransactionType() Type {
@@ -215,7 +232,7 @@ func (transaction *Contract) ProcessDeliver(app interface{}) status.Code {
 
 	case EXECUTE:
 		//TODO: Need to fix this after
-		go transaction.Execute(app)
+	   transaction.Execute(app)
 
 	case COMPARE:
 		status := transaction.Compare(app)
@@ -262,29 +279,36 @@ func (transaction *Contract) Execute(app interface{}) Transaction {
 
 	//if global.Current.NodeName == selectedValidatorIdentity.NodeName {
 	accounts := GetAccounts(app)
-	nodeAccount, err := accounts.FindName(global.Current.NodeAccountName)
-	if err != status.SUCCESS {
+	nodeAccount, error := accounts.FindName(global.Current.NodeAccountName)
+	if error != status.SUCCESS {
 		log.Warn("Missing NodeAccount for Contracts", "name", global.Current.NodeAccountName)
 		return nil
 	}
-	if bytes.Compare(nodeAccount.AccountKey(), selectedValidatorIdentity.AccountKey) == 0 {
-		executeData := transaction.Data.(Execute)
-    scriptBytes, err := getSmartContractCode(app, executeData.Address, executeData.Owner, executeData.Name, executeData.Version)
-    if err != nil {
-      log.Warn("Error when try to fetch the smart contract code", "err", err)
-      return nil
-    }
-    last := GetContext(app, executeData.Owner, executeData.Name, executeData.Version)
-    request := NewOLVMResultWithCallString(scriptBytes, executeData.CallString, last.Context)
+  //analyze the smart contract code
+  executeData := transaction.Data.(Execute)
+  scriptBytes, err := getSmartContractCode(app, executeData.Address, executeData.Owner, executeData.Name, executeData.Version)
+  if err != nil {
+    log.Warn("Error when try to fetch the smart contract code", "err", err)
+    return nil
+  }
+  last := GetContext(app, executeData.Owner, executeData.Name, executeData.Version)
+  request := NewOLVMResultWithCallString(scriptBytes, executeData.CallString, last.Context)
+  analyzeResult := AnalyzeScript(app, request).(OLVMResult)
+  if analyzeResult.Out == "__NO_ACTION__" {
     result := RunScript(app, request).(OLVMResult)
+    transaction.SetData(result)
+    return nil
+  }
 
+	if bytes.Compare(nodeAccount.AccountKey(), selectedValidatorIdentity.AccountKey) == 0 {
+    result := RunScript(app, request).(OLVMResult)
     if result.Status == status.SUCCESS {
-      resultCompare := transaction.CreateCompareRequest(app, executeData.Owner, executeData.Name, executeData.Version, result)
+      resultCompare := transaction.CreateCompareRequest(app, executeData.Owner, executeData.Name, executeData.Address, executeData.Version, executeData.CallString, result)
       if resultCompare != nil {
         //TODO: check this later
         comm.Broadcast(resultCompare)
       }
-		}
+    }
 	}
 	return nil
 }
@@ -302,7 +326,7 @@ func (transaction *Contract) Compare(app interface{}) status.Code {
   last := GetContext(app, compareData.Owner, compareData.Name, compareData.Version)
   request := NewOLVMResultWithCallString(scriptBytes,compareData.CallString, last.Context)
   result := RunScript(app, request).(OLVMResult)
-
+  transaction.SetData(result)
   // TODO: Comparison should be on the structure, not a string
   if CompareResults(result, compareData.Result) {
     SaveContext(app, compareData.Owner, compareData.Name, compareData.Version, result)
@@ -353,8 +377,8 @@ func CompareResults(recent OLVMResult, original OLVMResult) bool {
 }
 
 // Create a comparison request
-func (transaction *Contract) CreateCompareRequest(app interface{}, owner id.AccountKey, name string,
-	version version.Version, result OLVMResult) []byte {
+func (transaction *Contract) CreateCompareRequest(app interface{}, owner id.AccountKey, name string, address string,
+	version version.Version, callString string, result OLVMResult) []byte {
 
 	chainId := GetChainID(app)
 
@@ -367,6 +391,8 @@ func (transaction *Contract) CreateCompareRequest(app interface{}, owner id.Acco
 	inputs := Compare{
 		Owner:   owner,
 		Name:    name,
+    Address: address,
+    CallString: callString,
 		Version: version,
 		Result:  result,
 	}
