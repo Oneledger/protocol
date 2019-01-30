@@ -7,6 +7,7 @@
 package shared
 
 import (
+	uuid2 "github.com/google/uuid"
 	"os"
 
 	"github.com/Oneledger/protocol/node/comm"
@@ -132,11 +133,11 @@ type ExecuteArguments struct {
 }
 
 type ContractArguments struct {
-    Address string
-    CallString string
-    CallFrom string
-    SourceCode string
-    Value int
+	Address    string
+	CallString string
+	CallFrom   string
+	SourceCode string
+	Value      int
 }
 
 // CreateRequest builds and signs the transaction based on the arguments
@@ -371,11 +372,12 @@ func CreateExecuteRequest(args *ExecuteArguments) []byte {
 	gas := conv.GetCoinFromUnits(args.Gas, "OLT")
 
 	sequence := GetSequenceNumber(owner)
-
+	uuid := uuid2.New()
 	inputs := action.Execute{
 		Owner:   owner,
 		Name:    args.Name,
 		Version: *version,
+		UUID:    uuid,
 	}
 
 	if conv.HasErrors() {

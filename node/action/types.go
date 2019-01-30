@@ -218,3 +218,7 @@ func DeleteContract(app interface{}, contractKey []byte, nonce int64) {
 	session.Delete(n)
 	session.Commit()
 }
+
+func SaveContractRef(app interface{}, key []byte, value []byte) {
+
+}

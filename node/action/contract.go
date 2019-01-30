@@ -7,6 +7,8 @@ package action
 
 import (
 	"bytes"
+	"github.com/google/uuid"
+	"github.com/tendermint/tendermint/libs/common"
 
 	"github.com/Oneledger/protocol/node/comm"
 	"github.com/Oneledger/protocol/node/data"
@@ -36,6 +38,7 @@ type Contract struct {
 }
 
 type ContractData interface {
+	GetReference() []byte
 }
 
 type Install struct {
@@ -44,6 +47,11 @@ type Install struct {
 	Name    string
 	Version version.Version
 	Script  []byte
+	UUID    uuid.UUID
+}
+
+func (i Install) GetReference() []byte {
+	return _hash(i)
 }
 
 type Execute struct {
@@ -51,14 +59,24 @@ type Execute struct {
 	Owner   id.AccountKey
 	Name    string
 	Version version.Version
+	UUID    uuid.UUID
+}
+
+func (e Execute) GetReference() []byte {
+	return _hash(e)
 }
 
 type Compare struct {
 	//ToDo: all the data you need to compare contract
-	Owner   id.AccountKey
-	Name    string
-	Version version.Version
-	Result  OLVMResult
+	Owner     id.AccountKey
+	Name      string
+	Version   version.Version
+	Result    OLVMResult
+	Reference []byte
+}
+
+func (c Compare) GetReference() []byte {
+	return c.Reference
 }
 
 func init() {
@@ -71,8 +89,18 @@ func init() {
 	serial.RegisterInterface(&prototype)
 }
 
-func (transaction *Contract) TransactionType() Type {
-	return transaction.Base.Type
+func (transaction Contract) TransactionTags(app interface{}) Tags {
+	tags := transaction.Base.TransactionTags(app)
+
+	tagReference := transaction.Data.GetReference()
+	tag1 := common.KVPair{
+		Key:   []byte("tx.contract"),
+		Value: []byte(tagReference),
+	}
+
+	tags = append(tags, tag1)
+
+	return tags
 }
 
 func (transaction *Contract) Validate() status.Code {
@@ -160,13 +188,13 @@ func (transaction *Contract) ShouldProcess(app interface{}) bool {
 }
 
 func Convert(installData Install) (id.AccountKey, string, version.Version, data.Script) {
-	owner := installData.Owner
+	ref := installData.GetReference()
 	name := installData.Name
 	version := installData.Version
 	script := data.Script{
 		Script: installData.Script,
 	}
-	return owner, name, version, script
+	return ref, name, version, script
 }
 
 func (transaction *Contract) ProcessDeliver(app interface{}) status.Code {
@@ -199,12 +227,12 @@ func (transaction *Contract) Resolve(app interface{}) Commands {
 func (transaction *Contract) Install(app interface{}) {
 
 	installData := transaction.Data.(Install)
-	owner, name, version, script := Convert(installData)
+	ref, name, version, script := Convert(installData)
 
 	smartContracts := GetSmartContracts(app)
 	var scriptRecords *data.ScriptRecords
 
-	raw := smartContracts.Get(owner)
+	raw := smartContracts.Get(ref)
 	if raw == nil {
 		scriptRecords = data.NewScriptRecords()
 	} else {
@@ -213,7 +241,7 @@ func (transaction *Contract) Install(app interface{}) {
 
 	scriptRecords.Set(name, version, script)
 	session := smartContracts.Begin()
-	session.Set(owner, scriptRecords)
+	session.Set(ref, scriptRecords)
 	session.Commit()
 }
 
@@ -235,7 +263,7 @@ func (transaction *Contract) Execute(app interface{}) Transaction {
 		executeData := transaction.Data.(Execute)
 		smartContracts := GetSmartContracts(app)
 
-		raw := smartContracts.Get(executeData.Owner)
+		raw := smartContracts.Get(executeData.GetReference())
 		if raw != nil {
 			scriptRecords := raw.(*data.ScriptRecords)
 			versions := scriptRecords.Name[executeData.Name]
@@ -244,9 +272,10 @@ func (transaction *Contract) Execute(app interface{}) Transaction {
 			last := GetContext(app, executeData.Owner, executeData.Name, executeData.Version)
 			request := NewOLVMRequest(script.Script, last.Context)
 			result := RunScript(app, request).(OLVMResult)
+			reference := executeData.GetReference()
 
 			if result.Status == status.SUCCESS {
-				resultCompare := transaction.CreateCompareRequest(app, executeData.Owner, executeData.Name, executeData.Version, result)
+				resultCompare := transaction.CreateCompareRequest(app, executeData.Owner, executeData.Name, executeData.Version, result, reference)
 				if resultCompare != nil {
 					//TODO: check this later
 					comm.Broadcast(resultCompare)
@@ -324,7 +353,7 @@ func CompareResults(recent OLVMResult, original OLVMResult) bool {
 
 // Create a comparison request
 func (transaction *Contract) CreateCompareRequest(app interface{}, owner id.AccountKey, name string,
-	version version.Version, result OLVMResult) []byte {
+	version version.Version, result OLVMResult, reference []byte) []byte {
 
 	chainId := GetChainID(app)
 
@@ -335,10 +364,11 @@ func (transaction *Contract) CreateCompareRequest(app interface{}, owner id.Acco
 	next := id.NextSequence(app, transaction.Owner)
 
 	inputs := Compare{
-		Owner:   owner,
-		Name:    name,
-		Version: version,
-		Result:  result,
+		Owner:     owner,
+		Name:      name,
+		Version:   version,
+		Result:    result,
+		Reference: reference,
 	}
 
 	account := GetNodeAccount(app)
