@@ -291,8 +291,8 @@ func (transaction *Contract) Execute(app interface{}) Transaction {
     log.Warn("Error when try to fetch the smart contract code", "err", err)
     return nil
   }
-  last := GetContext(app, executeData.Owner, executeData.Name, executeData.Version)
-  request := NewOLVMResultWithCallString(scriptBytes, executeData.CallString, last.Context)
+  last := GetContext(app, executeData.Address)
+  request := NewOLVMResultWithCallString(scriptBytes, executeData.CallString, last)
   analyzeResult := AnalyzeScript(app, request).(OLVMResult)
   if analyzeResult.Out == "__NO_ACTION__" {
     result := RunScript(app, request).(OLVMResult)
@@ -323,13 +323,13 @@ func (transaction *Contract) Compare(app interface{}) status.Code {
     return status.INVALID
   }
 
-  last := GetContext(app, compareData.Owner, compareData.Name, compareData.Version)
-  request := NewOLVMResultWithCallString(scriptBytes,compareData.CallString, last.Context)
+  last := GetContext(app, compareData.Address)
+  request := NewOLVMResultWithCallString(scriptBytes,compareData.CallString, last)
   result := RunScript(app, request).(OLVMResult)
   transaction.SetData(result)
   // TODO: Comparison should be on the structure, not a string
   if CompareResults(result, compareData.Result) {
-    SaveContext(app, compareData.Owner, compareData.Name, compareData.Version, result)
+    SaveContext(app, compareData.Address, []byte(result.Out))
 
     return status.SUCCESS
   }
@@ -337,39 +337,33 @@ func (transaction *Contract) Compare(app interface{}) status.Code {
 	return status.INVALID
 }
 
-func GetContext(app interface{}, owner id.AccountKey, name string, version version.Version) OLVMResult {
+func GetContext(app interface{}, address string) OLVMContext {
+  addressBytes, _ :=  hex.DecodeString(address)
+  var olvmContext OLVMContext
 	context := GetExecutionContext(app)
-	raw := context.Get(owner)
+	raw := context.Get(addressBytes)
 	if raw == nil {
-		// TODO: Should be a NewOLVMResult to initialize properly
-		return OLVMResult{}
+		return olvmContext
 	}
-	mmap := raw.(*data.MultiMap)
-	entry := mmap.Get(name, version)
-	if entry.Value == nil {
-		return OLVMResult{}
-	}
-	return entry.Value.(OLVMResult)
+	contractData := raw.(*data.ContractData)
+  olvmContext.Data = contractData.Data
+	return olvmContext
 }
 
-func SaveContext(app interface{}, owner id.AccountKey, name string, version version.Version, result OLVMResult) {
-	context := GetExecutionContext(app)
-
-	var mmap *data.MultiMap
-	raw := context.Get(owner)
+func SaveContext(app interface{}, address string, resultOut []byte) {
+  addressBytes, _ :=  hex.DecodeString(address)
+  context := GetExecutionContext(app)
+  var contractData *data.ContractData
+	raw := context.Get(addressBytes)
 	if raw == nil {
-		mmap = data.NewMultiMap()
+		contractData = data.NewContractData(addressBytes)
 	} else {
-		mmap = raw.(*data.MultiMap)
+		contractData = raw.(*data.ContractData)
 	}
-	mmap.Set(name, version, result)
-
-	session := context.Begin()
-	session.Set(owner, mmap)
-
-	// TODO: Wrong, should only commit on block commit, but it is this way now
-	// so that inter-block executions work correctly
-	session.Commit()
+  contractData.UpdateByJSONData(resultOut)
+  session := context.Begin()
+  session.Set(addressBytes, contractData)
+  session.Commit()
 }
 
 func CompareResults(recent OLVMResult, original OLVMResult) bool {
