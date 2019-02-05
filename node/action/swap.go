@@ -8,6 +8,7 @@ package action
 import (
 	"bytes"
 	"encoding/hex"
+	"github.com/Oneledger/protocol/node/chains/driver"
 
 	tendermintcommon "github.com/tendermint/tendermint/libs/common"
 
@@ -941,7 +942,7 @@ func CreateContractBTC(app interface{}, context FunctionValues, tx Transaction) 
 		context[TARGET] = si.Party.Key
 	}
 
-	receiver := common.GetBTCAddressFromByteArray(data.BITCOIN, receiverParty.Accounts[data.BITCOIN])
+	receiver := chaindriver.GetDriver(data.BITCOIN).GetAddressFromByteArray(receiverParty.Accounts[data.BITCOIN])
 	if receiver == nil {
 		log.Error("Failed to get btc address from string", "address", receiverParty.Accounts[data.BITCOIN], "target", reflect.TypeOf(receiver))
 		return false, nil
@@ -1028,14 +1029,14 @@ func CreateContractETH(app interface{}, context FunctionValues, tx Transaction) 
 	//	}
 	//}
 
-	receiver := common.GetETHAddressFromByteArray(data.ETHEREUM, receiverParty.Accounts[data.ETHEREUM])
+	receiver := chaindriver.GetDriver(data.ETHEREUM).GetAddressFromByteArray(receiverParty.Accounts[data.ETHEREUM])
 	if receiver == nil {
 		log.Error("Failed to get eth address from string", "address", receiverParty.Accounts[data.ETHEREUM], "target", reflect.TypeOf(receiver))
 	}
 
 	timeoutSecond := int64(lockPeriod.Seconds())
 	log.Debug("Create ETH HTLC", "value", value, "receiver", receiver, "preimage", preimage)
-	err := contract.Funds(value, big.NewInt(timeoutSecond), *receiver, preimage)
+	err := contract.Funds(value, big.NewInt(timeoutSecond), receiver, preimage)
 	if err != nil {
 		return false, nil
 	}

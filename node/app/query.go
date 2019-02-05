@@ -13,7 +13,7 @@ import (
 	"github.com/Oneledger/protocol/node/comm"
 
 	"github.com/Oneledger/protocol/node/action"
-	"github.com/Oneledger/protocol/node/chains/common"
+	"github.com/Oneledger/protocol/node/chains/driver"
 
 	"github.com/Oneledger/protocol/node/convert"
 	"github.com/Oneledger/protocol/node/data"
@@ -772,7 +772,7 @@ func CurrencyAddress(application Application, currency string, identityName stri
 }
 
 func ChainAddress(chain data.ChainType) interface{} {
-	return common.GetChainAddress(chain)
+	return chaindriver.GetDriver(chain).GetChainAddress()
 }
 
 // Return a nicely formatted error message
