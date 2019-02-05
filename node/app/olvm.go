@@ -80,7 +80,7 @@ func RunAnalyze(request *action.OLVMRequest)  interface{} {
 	if err != nil {
 		log.Warn("Contract Engine Failed to Start", "err", err)
 	}
-	log.Dump("Engine output", reply)
+	log.Dump("Engine Analyze output", reply)
 	return *reply
 }
 

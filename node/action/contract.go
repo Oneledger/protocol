@@ -18,6 +18,8 @@ import (
 	"github.com/Oneledger/protocol/node/serial"
 	"github.com/Oneledger/protocol/node/status"
 	"github.com/Oneledger/protocol/node/version"
+
+
 )
 
 type ContractFunction int
@@ -40,6 +42,8 @@ type Contract struct {
 type ContractData interface {
 
 }
+
+type PersistContractData = data.ContractData
 
 type ContractReturnData struct {
   Status  status.Code
@@ -82,6 +86,9 @@ func init() {
 
 	var prototype ContractData
 	serial.RegisterInterface(&prototype)
+
+  var pcd PersistContractData
+  serial.RegisterInterface(&pcd)
 }
 
 func getSmartContractCode(app interface{}, address string, owner []byte, name string,version version.Version) (scriptBytes []byte, err error) {
@@ -303,11 +310,13 @@ func (transaction *Contract) Execute(app interface{}) Transaction {
 	if bytes.Compare(nodeAccount.AccountKey(), selectedValidatorIdentity.AccountKey) == 0 {
     result := RunScript(app, request).(OLVMResult)
     if result.Status == status.SUCCESS {
-      resultCompare := transaction.CreateCompareRequest(app, executeData.Owner, executeData.Name, executeData.Address, executeData.Version, executeData.CallString, result)
-      if resultCompare != nil {
-        //TODO: check this later
-        comm.Broadcast(resultCompare)
-      }
+      go func() {
+        resultCompare := transaction.CreateCompareRequest(app, executeData.Owner, executeData.Name, executeData.Address, executeData.Version, executeData.CallString, result)
+        if resultCompare != nil {
+          //TODO: check this later
+          comm.Broadcast(resultCompare)
+        }
+      }()
     }
 	}
 	return nil
@@ -338,14 +347,16 @@ func (transaction *Contract) Compare(app interface{}) status.Code {
 }
 
 func GetContext(app interface{}, address string) OLVMContext {
-  addressBytes, _ :=  hex.DecodeString(address)
+  log.Debug("========== LOAD DATA ===============", "address", address)
   var olvmContext OLVMContext
 	context := GetExecutionContext(app)
-	raw := context.Get(addressBytes)
+	raw := context.Get([]byte(address))
 	if raw == nil {
+    log.Debug("========== LOAD DATA GET NULL===============")
 		return olvmContext
 	}
-	contractData := raw.(*data.ContractData)
+	contractData := raw.(*PersistContractData)
+  log.Debug("========== LOAD DATA FINISHED===============")
   olvmContext.Data = contractData.Data
 	return olvmContext
 }
@@ -354,15 +365,18 @@ func SaveContext(app interface{}, address string, resultOut []byte) {
   addressBytes, _ :=  hex.DecodeString(address)
   context := GetExecutionContext(app)
   var contractData *data.ContractData
-	raw := context.Get(addressBytes)
+	raw := context.Get([]byte(address))
 	if raw == nil {
 		contractData = data.NewContractData(addressBytes)
 	} else {
-		contractData = raw.(*data.ContractData)
+		contractData = raw.(*PersistContractData)
 	}
+  log.Debug("========== UPDATE DATA ===============")
+  log.Debug(string(resultOut))
   contractData.UpdateByJSONData(resultOut)
   session := context.Begin()
-  session.Set(addressBytes, contractData)
+  session.Set([]byte(address), contractData)
+  log.Debug("========== UPDATE DATA FINISHED===============", "address", address)
   session.Commit()
 }
 
@@ -394,6 +408,8 @@ func (transaction *Contract) CreateCompareRequest(app interface{}, owner id.Acco
 	account := GetNodeAccount(app)
 
 	// Create base transaction
+  log.Debug("create compare transaction")
+  log.Debug("accountkey", "account.AccountKey", account.AccountKey())
 	compare := &Contract{
 		Base: Base{
 			Type:     SMART_CONTRACT,
@@ -407,7 +423,8 @@ func (transaction *Contract) CreateCompareRequest(app interface{}, owner id.Acco
 		Fee:      fee,
 		Gas:      gas,
 	}
-
+  log.Debug("end create compare transaction")
 	signed := SignAndPack(Transaction(compare))
+  log.Debug("get transaction signed")
 	return signed
 }
