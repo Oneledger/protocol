@@ -350,7 +350,7 @@ func GetContext(app interface{}, address string) OLVMContext {
   log.Debug("========== LOAD DATA ===============", "address", address)
   var olvmContext OLVMContext
 	context := GetExecutionContext(app)
-	raw := context.Get([]byte(address))
+	raw := context.Get(data.DatabaseKey(address))
 	if raw == nil {
     log.Debug("========== LOAD DATA GET NULL===============")
 		return olvmContext
@@ -362,20 +362,21 @@ func GetContext(app interface{}, address string) OLVMContext {
 }
 
 func SaveContext(app interface{}, address string, resultOut []byte) {
-  addressBytes, _ :=  hex.DecodeString(address)
-  context := GetExecutionContext(app)
+  log.Debug("========== UPDATE DATA ===============")
+  addressBytes :=  []byte(address)
+  context := GetStatus(app)
   var contractData *data.ContractData
-	raw := context.Get([]byte(address))
+	raw := context.Get(data.DatabaseKey(address))
 	if raw == nil {
+    log.Debug("No data create new data into the database")
 		contractData = data.NewContractData(addressBytes)
 	} else {
 		contractData = raw.(*PersistContractData)
 	}
-  log.Debug("========== UPDATE DATA ===============")
   log.Debug(string(resultOut))
   contractData.UpdateByJSONData(resultOut)
   session := context.Begin()
-  session.Set([]byte(address), contractData)
+  session.Set(data.DatabaseKey(address), contractData)
   log.Debug("========== UPDATE DATA FINISHED===============", "address", address)
   session.Commit()
 }
