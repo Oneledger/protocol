@@ -83,12 +83,11 @@ func init() {
 	serial.Register(Install{})
 	serial.Register(Execute{})
 	serial.Register(Compare{})
+  serial.Register(PersistContractData{})
 
 	var prototype ContractData
 	serial.RegisterInterface(&prototype)
 
-  var pcd PersistContractData
-  serial.RegisterInterface(&pcd)
 }
 
 func getSmartContractCode(app interface{}, address string, owner []byte, name string,version version.Version) (scriptBytes []byte, err error) {
@@ -347,24 +346,39 @@ func (transaction *Contract) Compare(app interface{}) status.Code {
 }
 
 func GetContext(app interface{}, address string) OLVMContext {
-  log.Debug("========== LOAD DATA ===============", "address", address)
   var olvmContext OLVMContext
 	context := GetExecutionContext(app)
 	raw := context.Get(data.DatabaseKey(address))
 	if raw == nil {
-    log.Debug("========== LOAD DATA GET NULL===============")
 		return olvmContext
 	}
 	contractData := raw.(*PersistContractData)
-  log.Debug("========== LOAD DATA FINISHED===============")
   olvmContext.Data = contractData.Data
 	return olvmContext
 }
 
+// func SaveContext(app interface{}, address string, resultOut []byte) {
+//   log.Debug("========== UPDATE DATA ===============")
+//   addressBytes :=  data.DatabaseKey(address)
+//   storage := GetStatus(app)
+//   raw := storage.Get(addressBytes)
+//   if raw == nil {
+//        log.Debug("No data create new data into the database")
+//   } else {
+//       log.Debug("Get data")
+//   }
+//   contractData := data.NewContractData(addressBytes)
+//   contractData.UpdateByJSONData(resultOut)
+//
+// 	session := storage.Begin()
+// 	session.Set(addressBytes, contractData)
+// 	session.Commit()
+//   log.Debug("========== UPDATE DATA FINISHED===============")
+// }
+
 func SaveContext(app interface{}, address string, resultOut []byte) {
-  log.Debug("========== UPDATE DATA ===============")
   addressBytes :=  []byte(address)
-  context := GetStatus(app)
+  context := GetExecutionContext(app)
   var contractData *data.ContractData
 	raw := context.Get(data.DatabaseKey(address))
 	if raw == nil {
@@ -373,11 +387,9 @@ func SaveContext(app interface{}, address string, resultOut []byte) {
 	} else {
 		contractData = raw.(*PersistContractData)
 	}
-  log.Debug(string(resultOut))
   contractData.UpdateByJSONData(resultOut)
   session := context.Begin()
   session.Set(data.DatabaseKey(address), contractData)
-  log.Debug("========== UPDATE DATA FINISHED===============", "address", address)
   session.Commit()
 }
 

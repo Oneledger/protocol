@@ -89,6 +89,10 @@ Context.prototype.get = function (key) {
   if (typeof val === 'undefined') {
     //try get val from context object
     val = __GetContextValue__(key);
+    if (typeof val === undefined || val == null){
+      return undefined;
+    }
+    val = JSON.parse(val);
   }
   return val;
 }

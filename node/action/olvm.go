@@ -14,7 +14,12 @@ type OLVMContext struct {
 }
 
 func (context OLVMContext) GetValue(key string) interface{} {
-  return context.Data[key]
+  ret := context.Data[key]
+  if ret == nil {
+    return nil
+  } else {
+    return string(ret.([]byte))
+  }
 }
 
 
