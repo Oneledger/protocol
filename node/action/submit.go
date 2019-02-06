@@ -90,10 +90,7 @@ func PackRequest(request SignedTransaction) []byte {
 
 // GetSigners will return the public keys of the signers
 func GetSigners(owner []byte) []id.PublicKey {
-	log.Debug("GetSigners", "owner", owner)
-
 	publicKey := comm.Query("/accountPublicKey", owner)
-
 	if publicKey == nil {
 		return nil
 	}

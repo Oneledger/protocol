@@ -57,16 +57,11 @@ func NewOLVMRequest(script []byte) {
 */
 
 func (app Application) RunScript(request interface{}) interface{} {
-	/*
-		request := &action.OLVMRequest{
-			From:       "0x0",
-			Address:    "embed://",
-			CallString: "",
-			Value:      0,
-			SourceCode: script,
-		}
-	*/
 	return RunTestScript(request.(*action.OLVMRequest))
+}
+
+func (app Application) AnalyzeScript(request interface{}) interface{} {
+	return RunAnalyze(request.(*action.OLVMRequest))
 }
 
 func RunTestScriptName(name string) interface{} {
@@ -80,17 +75,22 @@ func RunTestScriptName(name string) interface{} {
 	return RunTestScript(request)
 }
 
+func RunAnalyze(request *action.OLVMRequest)  interface{} {
+  reply, err := vm.Analyze(request)
+	if err != nil {
+		log.Warn("Contract Engine Failed to Start", "err", err)
+	}
+	log.Dump("Engine Analyze output", reply)
+	return *reply
+}
+
 // Take the engine for a test spin
 func RunTestScript(request *action.OLVMRequest) interface{} {
-
 	log.Dump("Engine input", request)
-
 	reply, err := vm.AutoRun(request)
 	if err != nil {
 		log.Warn("Contract Engine Failed to Start", "err", err)
 	}
-
 	log.Dump("Engine output", reply)
-
 	return *reply
 }
