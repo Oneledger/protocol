@@ -86,12 +86,14 @@ func HandleSetAccount(app Application, arguments map[string]interface{}) interfa
 	publicKey, privateKey := GetKeys(chain, accountName,
 		arguments["PublicKey"].(string), arguments["PrivateKey"].(string))
 
+	chainKey := arguments["ChainKey"].(string)
+
 	account, err := app.Accounts.FindName(accountName)
 	if err == status.SUCCESS {
 		return "Account has already been set up."
 	}
 
-	AddAccount(&app, accountName, chain, publicKey, privateKey, nil, nodeAccount)
+	AddAccount(&app, accountName, chain, publicKey, privateKey, chainKey, nodeAccount)
 
 	account, err = app.Accounts.FindName(accountName)
 	if err == status.SUCCESS {

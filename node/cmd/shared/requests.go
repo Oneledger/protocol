@@ -33,6 +33,7 @@ type AccountArguments struct {
 	Chain       string
 	PublicKey   string
 	PrivateKey  string
+	ChainKey    string
 	NodeAccount bool
 }
 
@@ -44,6 +45,7 @@ func UpdateAccountRequest(args *AccountArguments) interface{} {
 			"Chain":       args.Chain,
 			"PublicKey":   args.PublicKey,
 			"PrivateKey":  args.PrivateKey,
+			"ChainKey":    args.ChainKey,
 			"NodeAccount": true,
 		},
 	}
