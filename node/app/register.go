@@ -15,9 +15,9 @@ import (
 // TODO: NodeAccount flag should not be here!!!
 // Create a local account for this fullnode
 func AddAccount(app *Application, name string, chain data.ChainType,
-	publicKey id.PublicKeyED25519, privateKey id.PrivateKeyED25519, nodeAccount bool) {
+	publicKey id.PublicKeyED25519, privateKey id.PrivateKeyED25519, chainkey interface{}, nodeAccount bool) {
 
-	account := id.NewAccount(chain, name, publicKey, privateKey)
+	account := id.NewAccount(chain, name, publicKey, privateKey, chainkey)
 	app.Accounts.Add(account)
 
 	// Set this account as the current node account
@@ -35,7 +35,7 @@ func AddIdentity(app *Application, name string, publicKey id.PublicKeyED25519) {
 
 // Register Identities and Accounts from the user.
 func XRegisterLocally(app *Application, name string, scope string, chain data.ChainType,
-	publicKey id.PublicKeyED25519, privateKey id.PrivateKeyED25519) bool {
+	publicKey id.PublicKeyED25519, privateKey id.PrivateKeyED25519, chainkey interface{}) bool {
 
 	log.Debug("Register Locally", "name", name, "chain", chain)
 
@@ -53,7 +53,7 @@ func XRegisterLocally(app *Application, name string, scope string, chain data.Ch
 
 	//var account id.Account = nil
 	if account == nil {
-		account = id.NewAccount(chain, accountName, publicKey, privateKey)
+		account = id.NewAccount(chain, accountName, publicKey, privateKey, chainkey)
 		app.Accounts.Add(account)
 
 		log.Debug("Created New Account", "key", account.AccountKey(), "account", account)

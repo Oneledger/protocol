@@ -86,7 +86,7 @@ func HandleSetAccount(app Application, arguments map[string]interface{}) interfa
 		return "Account has already been set up."
 	}
 
-	AddAccount(&app, accountName, chain, publicKey, privateKey, nodeAccount)
+	AddAccount(&app, accountName, chain, publicKey, privateKey, nil, nodeAccount)
 
 	account, err = app.Accounts.FindName(accountName)
 	if err == status.SUCCESS {
@@ -153,7 +153,7 @@ func SetOption(app *Application, key string, value string) bool {
 		}
 		args := result.(*RegisterArguments)
 		privateKey, publicKey := id.GenerateKeys([]byte(args.Identity), true) // TODO: Switch with passphrase
-		AddAccount(app, args.Identity, id.ParseAccountType(args.Chain), publicKey, privateKey, false)
+		AddAccount(app, args.Identity, id.ParseAccountType(args.Chain), publicKey, privateKey, nil, false)
 
 	default:
 		log.Warn("Unknown Option", "key", key)
