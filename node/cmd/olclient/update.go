@@ -28,6 +28,7 @@ type UpdateArguments struct {
 	pubkey  string
 	privkey string
 	chainkey string
+	nodeaccount bool
 }
 
 var updateArgs = &UpdateArguments{}
@@ -42,6 +43,7 @@ func init() {
 	updateCmd.Flags().StringVar(&updateArgs.pubkey, "pubkey", "0x00000000", "Specify a public key")
 	updateCmd.Flags().StringVar(&updateArgs.privkey, "privkey", "0x00000000", "Specify a private key")
 	updateCmd.Flags().StringVar(&updateArgs.chainkey, "chainkey", "<empty>", "Specify the chain key")
+	updateCmd.Flags().BoolVar(&updateArgs.nodeaccount, "nodeaccount", false, "Specify whether it's a node account or not")
 }
 
 func UpdateAccount(cmd *cobra.Command, args []string) {
@@ -54,6 +56,7 @@ func UpdateAccount(cmd *cobra.Command, args []string) {
 		PublicKey:  updateArgs.pubkey,
 		PrivateKey: updateArgs.privkey,
 		ChainKey:   updateArgs.chainkey,
+		NodeAccount: updateArgs.nodeaccount,
 	}
 
 	update := shared.UpdateAccountRequest(request)

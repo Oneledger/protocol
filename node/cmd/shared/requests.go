@@ -46,7 +46,7 @@ func UpdateAccountRequest(args *AccountArguments) interface{} {
 			"PublicKey":   args.PublicKey,
 			"PrivateKey":  args.PrivateKey,
 			"ChainKey":    args.ChainKey,
-			"NodeAccount": true,
+			"NodeAccount": args.NodeAccount,
 		},
 	}
 }

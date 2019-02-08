@@ -40,7 +40,7 @@ do
    fi
 
 	# Add the accounts, keys are generated internally
-	olclient update --root $OLDATA/$name-Node --account "$name-OneLedger"
+	olclient update --root $OLDATA/$name-Node --account "$name-OneLedger" --nodeaccount true
 
 	#TODO: Need flag to set node account for the each external chain.
 	olclient update --root $OLDATA/$name-Node --account "$name-BitCoin"  --chain "BitCoin"  --chainkey "$bkey/$bpass"
