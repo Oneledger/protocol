@@ -17,8 +17,8 @@ do
 	olclient update --root $OLDATA/$name-Node --account "$name-OneLedger"
 
 	#TODO: Need flag to set node account for the each external chain.
-	#olclient update --root $OLDATA/$name-Node --account "$name-BitCoin" --chain "BitCoin"
-	#olclient update --root $OLDATA/$name-Node --account "$name-Ethereum" --chain "Ethereum"
+	olclient update --root $OLDATA/$name-Node --account "$name-BitCoin" --chain "BitCoin"
+	olclient update --root $OLDATA/$name-Node --account "$name-Ethereum" --chain "Ethereum"
 
 	# Account must have money in order to pay the registration fee
 	olclient testmint --root $OLDATA/$name-Node --party "$name-OneLedger" --amount 100000.1 --currency OLT

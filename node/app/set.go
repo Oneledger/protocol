@@ -48,7 +48,12 @@ func HandleSet(app Application, path string, arguments map[string]interface{}) [
 }
 
 func GetChain(chainName string) data.ChainType {
-	return data.ONELEDGER
+	switch chainName {
+	case "OneLedger" : return data.ONELEDGER
+	case "BitCoin" : return data.BITCOIN
+	case "Ethereum" : return data.ETHEREUM
+	}
+	return data.UNKNOWN
 }
 
 // TODO: The datatype for Key, depends on Chain
