@@ -853,7 +853,7 @@ func HandleTestScript(app Application, arguments map[string]interface{}) interfa
 	log.Debug("TestScript", "arguments", arguments)
 	text := arguments["parameters"].(string)
 
-	results := RunTestScriptName(text)
+	results, _ := RunTestScriptName(text)
 
 	return results
 }

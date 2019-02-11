@@ -48,7 +48,7 @@ func AutoRun(request *action.OLVMRequest) (result *action.OLVMResult, err error)
 			// Pause for a bit, might be a race condition
 			time.Sleep(time.Second)
 
-			for err != nil && strings.HasSuffix(err.Error(), "connection refused") {
+			for strings.HasSuffix(err.Error(), "connection refused") {
 
 				// Always bound loops with a fixed count
 				if count < 0 {
@@ -83,7 +83,7 @@ func Analyze(request *action.OLVMRequest) (result *action.OLVMResult, err error)
 			// Pause for a bit, might be a race condition
 			time.Sleep(time.Second)
 
-			for err != nil && strings.HasSuffix(err.Error(), "connection refused") {
+			for strings.HasSuffix(err.Error(), "connection refused") {
 
 				// Always bound loops with a fixed count
 				if count < 0 {
@@ -145,7 +145,7 @@ func (c OLVMClient) Run(request *action.OLVMRequest) (*action.OLVMResult, error)
 	err = client.Call("Container.Exec", request, result)
 	if err != nil {
 		log.Dump("Failded to Exec", err, result)
-		return nil, err
+		return result, err
 	}
 
 	client.Close()

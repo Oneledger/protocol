@@ -18,9 +18,8 @@ func AnalyzeScript(app interface{}, request *OLVMRequest) interface{} {
 	return result
 }
 
-func RunScript(app interface{}, request *OLVMRequest) interface{} {
-	result := app.(persist.Access).RunScript(request)
-	return result
+func RunScript(app interface{}, request *OLVMRequest) (interface{}, error) {
+	return app.(persist.Access).RunScript(request)
 }
 
 func GetAdmin(app interface{}) data.Datastore {

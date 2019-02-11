@@ -49,7 +49,7 @@ type Install struct {
 	Name    string
 	Version version.Version
 	Script  []byte
-	UUID    uuid.UUID
+	UUID    uuid.UUID //This will be part of the contract address stored into the database
 }
 
 func (i Install) GetReference() []byte {
@@ -63,7 +63,7 @@ type Execute struct {
 	Address    string
 	CallString string
 	Version    version.Version
-	UUID       uuid.UUID
+	UUID       uuid.UUID //This will be the UUID for one execution
 }
 
 func (e Execute) GetReference() []byte {
@@ -141,13 +141,12 @@ func getSmartContractCode(app interface{}, address string, owner []byte, name st
 	return
 }
 
-func (transaction *Contract) GetData() ContractData {
+func (transaction *Contract) GetData() interface{} {
 	return transaction.Data
 }
 
 func (transaction *Contract) SetData(data interface{}) bool {
-	contractData := data.(OLVMResult)
-	transaction.Data = ContractReturnData{contractData.Status, contractData.Out, contractData.Ret, contractData.Reference}
+	transaction.data = data
 	return true
 }
 
@@ -267,12 +266,11 @@ func (transaction *Contract) ProcessDeliver(app interface{}) status.Code {
 		transaction.Install(app)
 
 	case EXECUTE:
-		//TODO: Need to fix this after
-		transaction.Execute(app)
+
+		return transaction.Execute(app)
 
 	case COMPARE:
-		status := transaction.Compare(app)
-		return status
+		return transaction.Compare(app)
 
 	default:
 		return status.INVALID
@@ -305,11 +303,12 @@ func (transaction *Contract) Install(app interface{}) {
 	session := smartContracts.Begin()
 	session.Set(ref, scriptRecords)
 	session.Commit()
+  contract.SetData(ContractReturnData{Status: status.SUCCESS, Out: string(ref), Reference:ref}) //Send the reference back to the commandline
 }
 
 //Execute find the selected validator - who runs the script and keeps the result,
 //then creates a Compare transaction then broadcast, get the results, check the results if they're the same
-func (transaction *Contract) Execute(app interface{}) Transaction {
+func (transaction *Contract) Execute(app interface{}) status.Code {
 	validatorList := id.GetValidators(app)
 	selectedValidatorIdentity := validatorList.SelectedValidator
 
@@ -318,22 +317,26 @@ func (transaction *Contract) Execute(app interface{}) Transaction {
 	nodeAccount, error := accounts.FindName(global.Current.NodeAccountName)
 	if error != status.SUCCESS {
 		log.Warn("Missing NodeAccount for Contracts", "name", global.Current.NodeAccountName)
-		return nil
+		return status.INVALID_SIGNATURE
 	}
 	//analyze the smart contract code
 	executeData := transaction.Data.(Execute)
 	scriptBytes, err := getSmartContractCode(app, executeData.Address, executeData.Owner, executeData.Name, executeData.Version)
 	if err != nil {
 		log.Warn("Error when try to fetch the smart contract code", "err", err)
-		return nil
+		return status.MISSING_DATA
 	}
 	last := GetContext(app, executeData.Address)
 	request := NewOLVMResultWithCallString(scriptBytes, executeData.CallString, last)
 	analyzeResult := AnalyzeScript(app, request).(OLVMResult)
 	if analyzeResult.Out == "__NO_ACTION__" {
-		result := RunScript(app, request).(OLVMResult)
-		transaction.SetData(result)
-		return nil
+		result, err := RunScript(app, request)
+		transaction.SetData(GenerateContractReturnData(result))
+    if err == nil {
+      return status.SUCCESS
+    } else {
+      return status.EXECUTE_ERROR
+    }
 	}
 
 	if bytes.Compare(nodeAccount.AccountKey(), selectedValidatorIdentity.AccountKey) == 0 {
@@ -348,21 +351,22 @@ func (transaction *Contract) Execute(app interface{}) Transaction {
 
 			last := GetContext(app, executeData.Owner, executeData.Name, executeData.Version)
 			request := NewOLVMRequest(script.Script, last.Context)
-			result := RunScript(app, request).(OLVMResult)
+			ret, err := RunScript(app, request)
+      if err != nil {
+        return status.EXECUTE_ERROR
+      }
+      result := ret.(OLVMResult)
+
 			reference := executeData.GetReference()
 
 			if result.Status == status.SUCCESS {
-				result := RunScript(app, request).(OLVMResult)
-				if result.Status == status.SUCCESS {
 					go func() {
 						resultCompare := transaction.CreateCompareRequest(app, executeData.Owner, executeData.Name,
 							executeData.Address, executeData.Version, reference, executeData.CallString, result)
 						if resultCompare != nil {
-							//TODO: check this later
 							comm.Broadcast(resultCompare)
 						}
 					}()
-				}
 			}
 		}
 	} else {
@@ -386,8 +390,12 @@ func (transaction *Contract) Compare(app interface{}) status.Code {
 
 	last := GetContext(app, compareData.Address)
 	request := NewOLVMResultWithCallString(scriptBytes, compareData.CallString, last)
-	result := RunScript(app, request).(OLVMResult)
-	transaction.SetData(result)
+	ret, err := RunScript(app, request)
+  if err != nil {
+    return status.EXECUTE_ERROR
+  }
+  result := ret.(OLVMResult)
+	transaction.SetData(GenerateContractReturnData(result))
 	// TODO: Comparison should be on the structure, not a string
 	if CompareResults(result, compareData.Result) {
 		SaveContext(app, compareData.Address, []byte(result.Out))
@@ -410,27 +418,15 @@ func GetContext(app interface{}, address string) OLVMContext {
 	return olvmContext
 }
 
-// func SaveContext(app interface{}, address string, resultOut []byte) {
-//   log.Debug("========== UPDATE DATA ===============")
-//   addressBytes :=  data.DatabaseKey(address)
-//   storage := GetStatus(app)
-//   raw := storage.Get(addressBytes)
-//   if raw == nil {
-//        log.Debug("No data create new data into the database")
-//   } else {
-//       log.Debug("Get data")
-//   }
-//   contractData := data.NewContractData(addressBytes)
-//   contractData.UpdateByJSONData(resultOut)
-//
-// 	session := storage.Begin()
-// 	session.Set(addressBytes, contractData)
-// 	session.Commit()
-//   log.Debug("========== UPDATE DATA FINISHED===============")
-// }
+func GenerateContractReturnData(data interface{}) ContractReturnData{
+  contractData := data.(OLVMResult)
+  return ContractReturnData{contractData.Status, contractData.Out, contractData.Ret, contractData.Reference}
+}
+
 
 func SaveContext(app interface{}, address string, resultOut []byte) {
-	addressBytes := []byte(address)
+  log.Debug("Save Context Data")
+  addressBytes := []byte(address)
 	context := GetExecutionContext(app)
 	var contractData *data.ContractData
 	raw := context.Get(data.DatabaseKey(address))
