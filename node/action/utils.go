@@ -2,6 +2,7 @@ package action
 
 import (
 	"errors"
+  "encoding/hex"
 	"github.com/Oneledger/protocol/node/global"
 	"github.com/Oneledger/protocol/node/id"
 	"github.com/Oneledger/protocol/node/log"
@@ -10,9 +11,16 @@ import (
 	"github.com/Oneledger/protocol/node/serial"
 	"github.com/btcsuite/btcd/btcec"
 	"golang.org/x/crypto/ripemd160"
+
 )
 
 //general hash method
+func _hashToStringBytes(item interface{}) []byte {
+  sum := _hash(item)
+  sumStr := hex.EncodeToString(sum[:])
+  return []byte(sumStr)
+}
+
 func _hash(item interface{}) []byte {
 
 	hasher := ripemd160.New()

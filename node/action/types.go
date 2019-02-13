@@ -21,6 +21,7 @@ import (
 
 func init() {
 	serial.Register(Event{})
+  serial.Register(data.Script{})
 }
 
 /*
@@ -223,7 +224,40 @@ func DeleteContract(app interface{}, contractKey []byte, nonce int64) {
 
 func SaveContractRef(app interface{}, key []byte, value []byte) {
 
-	SaveContract(app, key, data.ONELEDGER, value)
+	SaveContract(app, key, data.GetNetworkID(), value)
+}
+
+func SaveSmartContractCode (app interface{}, installData Install) ([]byte){
+  ref, name, version, script := Convert(installData)
+  smartContracts := GetSmartContracts(app)
+	var scriptRecords *data.ScriptRecords
+
+	raw := smartContracts.Get(ref)
+	if raw == nil {
+		scriptRecords = data.NewScriptRecords()
+	} else {
+		scriptRecords = raw.(*data.ScriptRecords)
+	}
+
+	scriptRecords.Set(name, version, script)
+	session := smartContracts.Begin()
+	session.Set(ref, scriptRecords)
+	session.Commit()
+  log.Debug("save the smart contract with key", "key", string(ref))
+  return ref
+}
+
+func GetSmartContractCode(app interface{}, ref []byte) (script data.Script, err error) {
+  log.Debug("load the smart contract with key", "key", ref)
+  smartContracts := GetSmartContracts(app)
+  raw := smartContracts.Get(ref)
+  if raw == nil {
+    err = errors.New("Not code found")
+    return
+  }
+  scriptRecords := raw.(*data.ScriptRecords)
+  script = scriptRecords.Script
+  return
 }
 
 func FindContractCode(hash []byte, proof bool) (script data.Script, err error) {
