@@ -1,0 +1,222 @@
+---
+- hosts: 35.203.52.149:35.203.106.138:35.203.102.115:35.203.114.25:35.203.120.202:35.203.59.66
+  remote_user: steven
+  become: true
+  become_user: root
+  tasks:
+  - name: copy binary executables to remote servers
+    copy:
+      src: ../{{item}}
+      dest: /usr/local/bin
+      mode: 0777
+    with_items:
+      ["bin/olfullnode","bin/olconfig","bin/olmonitor", "bin/olvm"]
+#Seed1 Node Config ==============================================
+- hosts: 35.203.120.202
+  remote_user: steven
+  tasks:
+  - name: copy configuration file over to fullnodes
+    copy:
+      src: ../{{item}}
+      dest: ~/
+      mode: 0644
+    with_items:
+      ["consensus"]
+  - name: find out internal ip
+    shell: ifconfig | grep "inet " | grep -v "127\.0\.0\.1" | awk -F' ' '{print $2}'
+    register: internal_ip
+  - name: create config.toml file with content
+    copy:
+      dest: "~/config.toml"
+      content: |
+        Identity = "Seed1"
+        NodeName = ""
+        RpcAddress = "tcp://127.0.0.1:26601"
+        P2PAddress = "tcp://{{internal_ip.stdout}}:26611"
+        AppAddress = "tcp://127.0.0.1:26621"
+        SDKAddress = "tcp://127.0.0.1:26631"
+        OLVMAddress = "tcp://127.0.0.1:26641"
+        OLVMProtocol = "tcp"
+        BTCAddress = "127.0.0.1:NONE"
+        ETHAddress = "NONE"
+  - name: get p2p address
+    shell: chdir=~/ olconfig get --peers -p Seed1
+    register: command_output
+  - set_fact: p2pAddress="{{command_output.stdout}}"
+#Seed2 Node Config ===========================================
+- hosts: 35.203.59.66
+  remote_user: steven
+  tasks:
+  - name: copy configuration file over to fullnodes
+    copy:
+      src: ../{{item}}
+      dest: ~/
+      mode: 0644
+    with_items:
+      ["consensus"]
+  - name: find out internal ip
+    shell: ifconfig | grep "inet " | grep -v "127\.0\.0\.1" | awk -F' ' '{print $2}'
+    register: internal_ip
+  - name: create config.toml file with content
+    copy:
+      dest: "~/config.toml"
+      content: |
+        Identity = "Seed2"
+        NodeName = ""
+        RpcAddress = "tcp://127.0.0.1:26601"
+        P2PAddress = "tcp://{{internal_ip.stdout}}:26611"
+        AppAddress = "tcp://127.0.0.1:26621"
+        SDKAddress = "tcp://127.0.0.1:26631"
+        OLVMAddress = "tcp://127.0.0.1:26641"
+        OLVMProtocol = "tcp"
+        BTCAddress = "127.0.0.1:NONE"
+        ETHAddress = "NONE"
+  - name: get p2p address
+    command: chdir=~/ olconfig get --peers -p Seed2
+    register: command_output
+  - set_fact: p2pAddress="{{hostvars['35.203.120.202']['p2pAddress']}},{{command_output.stdout}}"
+#Validator Node Configs
+- hosts: 35.203.52.149
+  remote_user: steven
+  tasks:
+  - debug: msg={{hostvars['35.203.59.66']['p2pAddress']}}
+  - name: copy configuration file over to fullnodes
+    copy:
+      src: ../{{item}}
+      dest: ~/
+      mode: 0644
+    with_items:
+      ["Alice-Node"]
+  - name: find out internal ip
+    shell: ifconfig | grep "inet " | grep -v "127\.0\.0\.1" | awk -F' ' '{print $2}'
+    register: internal_ip
+  - name: create config.toml file with content
+    copy:
+      dest: "~/Alice-Node/config.toml"
+      content: |
+        Identity = "Alice"
+        NodeName = "Alice-Node"
+        RpcAddress = "tcp://127.0.0.1:26601"
+        P2PAddress = "tcp://{{internal_ip.stdout}}:26611"
+        AppAddress = "tcp://127.0.0.1:26621"
+        SDKAddress = "tcp://127.0.0.1:26631"
+        OLVMAddress = "tcp://127.0.0.1:26641"
+        OLVMProtocol = "tcp"
+        BTCAddress = "127.0.0.1:NONE"
+        ETHAddress = "NONE"
+
+- hosts: 35.203.106.138
+  remote_user: steven
+  tasks:
+  - name: copy configuration file over to fullnodes
+    copy:
+      src: ../{{item}}
+      dest: ~/
+      mode: 0644
+    with_items:
+      ["Bob-Node"]
+  - name: find out internal ip
+    shell: ifconfig | grep "inet " | grep -v "127\.0\.0\.1" | awk -F' ' '{print $2}'
+    register: internal_ip
+  - name: create config.toml file with content
+    copy:
+      dest: "~/Bob-Node/config.toml"
+      content: |
+        Identity = "Bob"
+        NodeName = "Bob-Node"
+        RpcAddress = "tcp://127.0.0.1:26601"
+        P2PAddress = "tcp://{{internal_ip.stdout}}:26611"
+        AppAddress = "tcp://127.0.0.1:26621"
+        SDKAddress = "tcp://127.0.0.1:26631"
+        OLVMAddress = "tcp://127.0.0.1:26641"
+        OLVMProtocol = "tcp"
+        BTCAddress = "127.0.0.1:NONE"
+        ETHAddress = "NONE"
+
+- hosts: 35.203.102.115
+  remote_user: steven
+  tasks:
+  - name: copy configuration file over to fullnodes
+    copy:
+      src: ../{{item}}
+      dest: ~/
+      mode: 0644
+    with_items:
+      ["Carol-Node"]
+  - name: find out internal ip
+    shell: ifconfig | grep "inet " | grep -v "127\.0\.0\.1" | awk -F' ' '{print $2}'
+    register: internal_ip
+  - name: create config.toml file with content
+    copy:
+      dest: "~/Carol-Node/config.toml"
+      content: |
+        Identity = "Carol"
+        NodeName = "Carol-Node"
+        RpcAddress = "tcp://127.0.0.1:26601"
+        P2PAddress = "tcp://{{internal_ip.stdout}}:26611"
+        AppAddress = "tcp://127.0.0.1:26621"
+        SDKAddress = "tcp://127.0.0.1:26631"
+        OLVMAddress = "tcp://127.0.0.1:26641"
+        OLVMProtocol = "tcp"
+        BTCAddress = "127.0.0.1:NONE"
+        ETHAddress = "NONE"
+
+- hosts: 35.203.114.25
+  remote_user: steven
+  tasks:
+  - name: copy configuration file over to fullnodes
+    copy:
+      src: ../{{item}}
+      dest: ~/
+      mode: 0644
+    with_items:
+      ["David-Node"]
+  - name: find out internal ip
+    shell: ifconfig | grep "inet " | grep -v "127\.0\.0\.1" | awk -F' ' '{print $2}'
+    register: internal_ip
+  - name: create config.toml file with content
+    copy:
+      dest: "~/David-Node/config.toml"
+      content: |
+        Identity = "David"
+        NodeName = "David-Node"
+        RpcAddress = "tcp://127.0.0.1:26601"
+        P2PAddress = "tcp://{{internal_ip.stdout}}:26611"
+        AppAddress = "tcp://127.0.0.1:26621"
+        SDKAddress = "tcp://127.0.0.1:26631"
+        OLVMAddress = "tcp://127.0.0.1:26641"
+        OLVMProtocol = "tcp"
+        BTCAddress = "127.0.0.1:NONE"
+        ETHAddress = "NONE"
+
+#Start seed & validator Nodes
+- hosts: 35.203.120.202:35.203.59.66
+  remote_user: steven
+  become: true
+  become_user: root
+  tasks:
+  - shell: if pgrep olfullnode; then pkill olfullnode; fi
+  - shell: if pgrep olmonitor; then pkill olmonitor; fi
+  - shell: if pgrep olvm; then pkill olvm; fi
+  - name: start monitor app
+    shell: olmonitor start olvm execute --root ~ >> ~/olvm.log 2>&1 &
+  - name: start fullnode
+    shell: olfullnode node --root ~ --tendermintRoot ~/consensus --seeds {{hostvars['35.203.59.66']['p2pAddress']}} --persistent_peers {{hostvars['35.203.59.66']['p2pAddress']}} >> ~/olfullnode.log 2>&1 &
+  - shell: pgrep olfullnode
+    register: fullnode_process
+  - debug: "msg={{fullnode_process.stdout}}"
+- hosts: 35.203.52.149:35.203.106.138:35.203.102.115:35.203.114.25
+  remote_user: steven
+  become: true
+  become_user: root
+  tasks:
+  - shell: if pgrep olfullnode; then pkill olfullnode; fi
+  - shell: if pgrep olmonitor; then pkill olmonitor; fi
+  - shell: if pgrep olvm; then pkill olvm; fi
+  - name: start monitor app
+    shell: olmonitor start olvm execute --root ~/*-Node >> ~/olvm.log 2>&1 &
+  - name: start fullnode
+    shell: >
+      olfullnode node --root ~ --tendermintRoot ~/consensus --seeds {{hostvars['35.203.59.66']['p2pAddress']}}
+      --persistent_peers {{hostvars['35.203.59.66']['p2pAddress']}} >>
+      ~/olfullnode.log 2>&1 &
