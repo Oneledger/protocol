@@ -4,6 +4,8 @@
   become: true
   become_user: root
   tasks:
+  - name: clean go path / home directory
+    shell: /bin/rm -rf ~/ warn=False
   - name: copy binary executables to remote servers
     copy:
       src: ../{{item}}
@@ -192,31 +194,19 @@
 #Start seed & validator Nodes
 - hosts: 35.203.120.202:35.203.59.66
   remote_user: steven
-  become: true
-  become_user: root
   tasks:
-  - shell: if pgrep olfullnode; then pkill olfullnode; fi
-  - shell: if pgrep olmonitor; then pkill olmonitor; fi
-  - shell: if pgrep olvm; then pkill olvm; fi
   - name: start monitor app
-    shell: olmonitor start olvm execute --root ~ >> ~/olvm.log 2>&1 &
-  - name: start fullnode
-    shell: olfullnode node --root ~ --tendermintRoot ~/consensus --seeds {{hostvars['35.203.59.66']['p2pAddress']}} --persistent_peers {{hostvars['35.203.59.66']['p2pAddress']}} >> ~/olfullnode.log 2>&1 &
-  - shell: pgrep olfullnode
+    shell: chdir=~ olmonitor start olvm execute --root ~ >> /home/steven/olvm.log 2>&1 &
+  - shell: pgrep olmonitor
     register: fullnode_process
   - debug: "msg={{fullnode_process.stdout}}"
 - hosts: 35.203.52.149:35.203.106.138:35.203.102.115:35.203.114.25
   remote_user: steven
-  become: true
-  become_user: root
   tasks:
-  - shell: if pgrep olfullnode; then pkill olfullnode; fi
-  - shell: if pgrep olmonitor; then pkill olmonitor; fi
-  - shell: if pgrep olvm; then pkill olvm; fi
   - name: start monitor app
-    shell: olmonitor start olvm execute --root ~/*-Node >> ~/olvm.log 2>&1 &
+    shell: chdir=/home/steven/*-Node olmonitor start olvm execute --root ~/*-Node >> ~/olvm.log 2>&1 &
   - name: start fullnode
-    shell: >
-      olfullnode node --root ~ --tendermintRoot ~/consensus --seeds {{hostvars['35.203.59.66']['p2pAddress']}}
+    shell: |
+      olfullnode node --root ~/*-Node --tendermintRoot ~/*-Node/consensus --seeds {{hostvars['35.203.59.66']['p2pAddress']}}
       --persistent_peers {{hostvars['35.203.59.66']['p2pAddress']}} >>
-      ~/olfullnode.log 2>&1 &
+      ~/*-Node/olfullnode.log 2>&1 &
