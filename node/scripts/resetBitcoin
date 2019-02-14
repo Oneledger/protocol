@@ -25,12 +25,21 @@ echo "Preallocating Bitcoin Accounts"
 $CMD/startBitcoin
 sleep 3
 
-bitcoin-cli -regtest -rpcuser=oltest01 -rpcpassword=olpass01 -rpcport=18831 generate 20 > /dev/null
-sleep 1
-bitcoin-cli -regtest -rpcuser=oltest02 -rpcpassword=olpass02 -rpcport=18832 generate 20 > /dev/null
-sleep 1
-bitcoin-cli -regtest -rpcuser=oltest03 -rpcpassword=olpass03 -rpcport=18833 generate 101 > /dev/null
-sleep 1
+# generate some coins for tests (can use just one node)
+bitcoin-cli -regtest -rpcuser=oltest01 -rpcpassword=olpass01 -rpcport=18831 generatetoaddress 20 2NAgRwk2nmmjm8E5cV5N6tvSvqkZyVBafGH > /dev/null
+bitcoin-cli -regtest -rpcuser=oltest01 -rpcpassword=olpass01 -rpcport=18831 generatetoaddress 20 2N5imegqDEY5phporaaYQqUD93WLfGJTj9Q > /dev/null
+bitcoin-cli -regtest -rpcuser=oltest01 -rpcpassword=olpass01 -rpcport=18831 generatetoaddress 20 2NFTYWJL5T6tK5GfWZbyCmcoaMKArzxWFju > /dev/null
+
+# just make previous mined coins available
+bitcoin-cli -regtest -rpcuser=oltest01 -rpcpassword=olpass01 -rpcport=18831 generatetoaddress 100 2NCoaw5ZePJr2YtT2wywvf8KaAEiWAot5CS > /dev/null
+
+# TODO Once the functionality for signing transactions in chain-drivers is completed need to move these keys to corresponding accounts and delete it from here
+bitcoin-cli -regtest -rpcuser=oltest01 -rpcpassword=olpass01 -rpcport=18831 importprivkey cT3VSLEa2YxbPnb7hDAHrewXf3ny4LZ7wFpg78jpe8f5BG7GWHwj > /dev/null
+bitcoin-cli -regtest -rpcuser=oltest02 -rpcpassword=olpass02 -rpcport=18832 importprivkey cVjv47Jt6L96Ar6VRaA3FZF2XbsCSBu3erM7jaB7XEdrCPqWDiC6 > /dev/null
+bitcoin-cli -regtest -rpcuser=oltest03 -rpcpassword=olpass03 -rpcport=18833 importprivkey cVFiWDz298XxzMGEYG7wjUvbUwMWZgkZBJMv9o992oefKxpjzTvq > /dev/null
+
+# Give time to propagate all blocks among Bitcoin nodes
+sleep 2
 
 $CMD/stopBitcoin
 
