@@ -11,13 +11,13 @@
     file:
       state: absent
       path: "{{config.GOPATH}}"
-    when: reset_network == true
+    when: reset_network == 'true'
   - name: ansible create a directory for go application
     file:
       path: "{{config.GOPATH}}"
       state: directory
       mode: 0777
-    when: reset_network == true
+    when: reset_network == 'true'
   - name: copy binary executables to remote servers
     copy:
       src: ../{{item}}
