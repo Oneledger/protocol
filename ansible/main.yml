@@ -1,0 +1,6 @@
+---
+# - import_playbook: upload_artifact.yml
+# - import_playbook: configure_node.yml
+#   when: reset_network == true
+# - import_playbook: start_node.yml
+- import_playbook: account_setup.yml

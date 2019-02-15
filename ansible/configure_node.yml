@@ -1,0 +1,37 @@
+- hosts: all
+  remote_user: steven
+  tasks:
+  - name: Include global variables
+    include_vars:
+      file: variables.yml
+      name: config
+  - name: copy configuration file over to each validator and fullnode
+    copy:
+      src: "{{item.node_label}}"
+      dest: "{{config.GOPATH}}"
+      mode: 0644
+    when: inventory_hostname == item.node_ip
+    loop:
+      - { node_label: '../Alice-Node/consensus', node_ip: '35.203.52.149' }
+      - { node_label: '../Bob-Node/consensus', node_ip: '35.203.106.138' }
+      - { node_label: '../Carol-Node/consensus', node_ip: '35.203.102.115' }
+      - { node_label: '../David-Node/consensus', node_ip: '35.203.114.25' }
+      - { node_label: '../consensus', node_ip: '35.203.120.202' }
+      - { node_label: '../consensus', node_ip: '35.203.59.66' }
+  - name: find out internal ip
+    shell: ifconfig | grep "inet " | grep -v "127\.0\.0\.1" | awk -F' ' '{print $2}'
+    register: internal_ip
+  - name: create config.toml file with content
+    copy:
+      dest: "{{config.GOPATH}}/config.toml"
+      content: |
+        Identity = ""
+        NodeName = ""
+        RpcAddress = "tcp://127.0.0.1:26601"
+        P2PAddress = "tcp://{{internal_ip.stdout}}:26611"
+        AppAddress = "tcp://127.0.0.1:26621"
+        SDKAddress = "tcp://127.0.0.1:26631"
+        OLVMAddress = "tcp://127.0.0.1:26641"
+        OLVMProtocol = "tcp"
+        BTCAddress = "127.0.0.1:NONE"
+        ETHAddress = "NONE"
