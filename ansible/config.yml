@@ -21,7 +21,7 @@
       dest: /usr/local/bin
       mode: 0777
     with_items:
-      ["bin/olfullnode","bin/olconfig","bin/olmonitor", "bin/olvm"]
+      ["bin/olfullnode","bin/olconfig","bin/olmonitor", "bin/olvm", "bin/olclient"]
   - set_fact: app_directory={{app_home}}
 #Seed1 Node Config ==============================================
 - hosts: 35.203.120.202
@@ -95,32 +95,15 @@
   tasks:
   - name: copy configuration file over to Alice fullnodes
     copy:
-      src: ../Alice-Node/consensus
+      src: "{{item.node_label}}"
       dest: "{{app_home}}"
       mode: 0644
-    when: inventory_hostname == '35.203.52.149'
-
-  - name: copy configuration file over to Bob fullnodes
-    copy:
-      src: ../Bob-Node/consensus
-      dest: "{{app_home}}"
-      mode: 0644
-    when: inventory_hostname == '35.203.106.138'
-
-  - name: copy configuration file over to Carol fullnodes
-    copy:
-      src: ../Carol-Node/consensus
-      dest: "{{app_home}}"
-      mode: 0644
-    when: inventory_hostname == '35.203.102.115'
-
-  - name: copy configuration file over to David fullnodes
-    copy:
-      src: ../David-Node/consensus
-      dest: "{{app_home}}"
-      mode: 0644
-    when: inventory_hostname == '35.203.114.25'
-  
+    when: inventory_hostname == item.node_ip
+    loop:
+      - { node_label: '../Alice-Node/consensus', node_ip: '35.203.52.149' }
+      - { node_label: '../Bob-Node/consensus', node_ip: '35.203.106.138' }
+      - { node_label: '../Carol-Node/consensus', node_ip: '35.203.102.115' }
+      - { node_label: '../David-Node/consensus', node_ip: '35.203.114.25' }
   - name: find out internal ip
     shell: ifconfig | grep "inet " | grep -v "127\.0\.0\.1" | awk -F' ' '{print $2}'
     register: internal_ip
@@ -143,62 +126,13 @@
   become: true
   become_user: root
   tasks:
-    - name: Get running processes
-      shell: "ps -ef | grep -v grep | grep -w olvm | awk '{print $2}'"
-      register: running_processes
-
-    - name: Kill running processes
-      shell: "kill {{ item }}"
-      with_items: "{{ running_processes.stdout_lines }}"
-
-    - wait_for:
-        path: "/proc/{{ item }}/status"
-        state: absent
-      with_items: "{{ running_processes.stdout_lines }}"
-      ignore_errors: yes
-      register: killed_processes
-    
-    - name: Force kill stuck processes
-      shell: "kill -9 {{ item }}"
-      with_items: "{{ killed_processes.results | select('failed') | map(attribute='item') | list }}"
-    
-    - name: Get running processes
-      shell: "ps -ef | grep -v grep | grep -w olmonitor | awk '{print $2}'"
-      register: running_processes
-
-    - name: Kill running processes
-      shell: "kill {{ item }}"
-      with_items: "{{ running_processes.stdout_lines }}"
-
-    - wait_for:
-        path: "/proc/{{ item }}/status"
-        state: absent
-      with_items: "{{ running_processes.stdout_lines }}"
-      ignore_errors: yes
-      register: killed_processes1
-
-    - name: Force kill stuck processes
-      shell: "kill -9 {{ item }}"
-      with_items: "{{ killed_processes1.results | select('failed') | map(attribute='item') | list }}"
-    
-    - name: Get running processes
-      shell: "ps -ef | grep -v grep | grep -w olfullnode | awk '{print $2}'"
-      register: running_processes
-
-    - name: Kill running processes
-      shell: "kill {{ item }}"
-      with_items: "{{ running_processes.stdout_lines }}"
-
-    - wait_for:
-        path: "/proc/{{ item }}/status"
-        state: absent
-      with_items: "{{ running_processes.stdout_lines }}"
-      ignore_errors: yes
-      register: killed_processes1
-
-    - name: Force kill stuck processes
-      shell: "kill -9 {{ item }}"
-      with_items: "{{ killed_processes1.results | select('failed') | map(attribute='item') | list }}"
+    - include: killLinuxProcess.yml
+      with_items:
+        - olvm
+        - olmonitor
+        - olfullnode
+      loop_control:
+        loop_var: process
 
 #Start seed & validator Nodes
 - hosts: all
@@ -217,10 +151,10 @@
   - debug: "msg={{monitor_process.stdout}}"
   - name: start fullnode
     shell: >
-      (chdir={{app_home}} olfullnode node --root {{app_home}} 
-      --tendermintRoot {{app_home}}/consensus 
-      --seeds {{p2p_address}} 
-      --persistent_peers {{p2p_address}} >> 
+      (chdir={{app_home}} olfullnode node --root {{app_home}}
+      --tendermintRoot {{app_home}}/consensus
+      --seeds {{p2p_address}}
+      --persistent_peers {{p2p_address}} >>
       "{{app_home}}"/olfullnode.log 2>&1 &)
     async: 45
     poll: 0
