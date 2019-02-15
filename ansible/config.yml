@@ -10,11 +10,13 @@
     file:
       state: absent
       path: "{{app_home}}"
+    when: reset == true
   - name: ansible create a directory for go application
     file:
       path: "{{app_home}}"
       state: directory
       mode: 0777
+    when: reset == true
   - name: copy binary executables to remote servers
     copy:
       src: ../{{item}}
@@ -23,77 +25,13 @@
     with_items:
       ["bin/olfullnode","bin/olconfig","bin/olmonitor", "bin/olvm", "bin/olclient"]
   - set_fact: app_directory={{app_home}}
-#Seed1 Node Config ==============================================
-- hosts: 35.203.120.202
-  remote_user: steven
-  tasks:
-  - name: copy configuration file over to fullnodes
-    copy:
-      src: ../{{item}}
-      dest: "{{hostvars['35.203.120.202']['app_directory']}}"
-      mode: 0666
-    with_items:
-      ["consensus"]
-  - name: find out internal ip
-    shell: ifconfig | grep "inet " | grep -v "127\.0\.0\.1" | awk -F' ' '{print $2}'
-    register: internal_ip
-  - name: create config.toml file with content
-    copy:
-      dest: "{{hostvars['35.203.120.202']['app_directory']}}/config.toml"
-      content: |
-        Identity = "Seed1"
-        NodeName = ""
-        RpcAddress = "tcp://127.0.0.1:26601"
-        P2PAddress = "tcp://{{internal_ip.stdout}}:26611"
-        AppAddress = "tcp://127.0.0.1:26621"
-        SDKAddress = "tcp://127.0.0.1:26631"
-        OLVMAddress = "tcp://127.0.0.1:26641"
-        OLVMProtocol = "tcp"
-        BTCAddress = "127.0.0.1:NONE"
-        ETHAddress = "NONE"
-  - name: get p2p address
-    shell: chdir={{hostvars['35.203.120.202']['app_directory']}} olconfig get --peers -p Seed1
-    register: command_output
-  - set_fact: p2pAddress="{{command_output.stdout}}"
-#Seed2 Node Config ===========================================
-- hosts: 35.203.59.66
-  remote_user: steven
-  tasks:
-  - name: copy configuration file over to fullnodes
-    copy:
-      src: ../{{item}}
-      dest: "{{hostvars['35.203.120.202']['app_directory']}}"
-      mode: 0644
-    with_items:
-      ["consensus"]
-  - name: find out internal ip
-    shell: ifconfig | grep "inet " | grep -v "127\.0\.0\.1" | awk -F' ' '{print $2}'
-    register: internal_ip
-  - name: create config.toml file with content
-    copy:
-      dest: "{{hostvars['35.203.120.202']['app_directory']}}/config.toml"
-      content: |
-        Identity = "Seed2"
-        NodeName = ""
-        RpcAddress = "tcp://127.0.0.1:26601"
-        P2PAddress = "tcp://{{internal_ip.stdout}}:26611"
-        AppAddress = "tcp://127.0.0.1:26621"
-        SDKAddress = "tcp://127.0.0.1:26631"
-        OLVMAddress = "tcp://127.0.0.1:26641"
-        OLVMProtocol = "tcp"
-        BTCAddress = "127.0.0.1:NONE"
-        ETHAddress = "NONE"
-  - name: get p2p address
-    command: chdir={{hostvars['35.203.120.202']['app_directory']}} olconfig get --peers -p Seed2
-    register: command_output
-  - set_fact: p2pAddress="{{hostvars['35.203.120.202']['p2pAddress']}},{{command_output.stdout}}"
-#Validator Node Configs
-- hosts: 35.203.52.149:35.203.106.138:35.203.102.115:35.203.114.25
+# Node Configurations
+- hosts: all
   vars:
     app_home: "{{hostvars['35.203.120.202']['app_directory']}}"
   remote_user: steven
   tasks:
-  - name: copy configuration file over to Alice fullnodes
+  - name: copy configuration file over to each validator and fullnode
     copy:
       src: "{{item.node_label}}"
       dest: "{{app_home}}"
@@ -104,6 +42,8 @@
       - { node_label: '../Bob-Node/consensus', node_ip: '35.203.106.138' }
       - { node_label: '../Carol-Node/consensus', node_ip: '35.203.102.115' }
       - { node_label: '../David-Node/consensus', node_ip: '35.203.114.25' }
+      - { node_label: '../consensus', node_ip: '35.203.120.202' }
+      - { node_label: '../consensus', node_ip: '35.203.59.66' }
   - name: find out internal ip
     shell: ifconfig | grep "inet " | grep -v "127\.0\.0\.1" | awk -F' ' '{print $2}'
     register: internal_ip
@@ -121,6 +61,20 @@
         OLVMProtocol = "tcp"
         BTCAddress = "127.0.0.1:NONE"
         ETHAddress = "NONE"
+
+# get p2p address with private key
+- hosts: 35.203.120.202:35.203.59.66
+  remote_user: steven
+  tasks:
+  - name: get p2p address
+    command: chdir={{hostvars['35.203.120.202']['app_directory']}} olconfig get --peers -p Seed
+    register: command_output
+  - set_fact: p2pAddress="{{command_output.stdout}}"
+    when: inventory_hostname == '35.203.120.202'
+  - set_fact: p2pAddress="{{hostvars['35.203.120.202']['p2pAddress']}},{{command_output.stdout}}"
+    when: inventory_hostname == '35.203.59.66'
+
+# stop app processess running on validator and seed nodes
 - hosts: all
   remote_user: steven
   become: true
@@ -146,7 +100,8 @@
     shell: "(olmonitor start olvm execute --root {{app_home}} >> {{app_home}}/olvm.log 2>&1 &)"
     async: 45
     poll: 0
-  - shell: pgrep olmonitor
+  - name: get olmonitor process id
+    shell: pgrep olmonitor
     register: monitor_process
   - debug: "msg={{monitor_process.stdout}}"
   - name: start fullnode
@@ -158,6 +113,7 @@
       "{{app_home}}"/olfullnode.log 2>&1 &)
     async: 45
     poll: 0
-  - shell: pgrep olfullnode
+  - name: get olfullnode process id
+    shell: pgrep olfullnode
     register: fullnode_process
   - debug: "msg={{fullnode_process.stdout}}"
