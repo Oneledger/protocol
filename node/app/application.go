@@ -295,6 +295,7 @@ func (app Application) CheckTx(tx []byte) ResponseCheckTx {
 	log.Debug("ABCI: CheckTx", "tx", tx)
 
 	errorCode := types.CodeTypeOK
+  var transaction action.Transaction
 
 	if tx == nil {
 		log.Warn("Empty Transaction, Ignoring", "tx", tx)
@@ -309,7 +310,7 @@ func (app Application) CheckTx(tx []byte) ResponseCheckTx {
 			errorCode = status.INVALID_SIGNATURE
 
 		} else {
-			transaction := signedTransaction.Transaction
+			transaction = signedTransaction.Transaction
 			if err = transaction.Validate(); err != status.SUCCESS {
 				errorCode = err
 
@@ -319,10 +320,23 @@ func (app Application) CheckTx(tx []byte) ResponseCheckTx {
 		}
 	}
 
+  outputData := ""
+
+  if transaction != nil {
+    data, error := json.Marshal(transaction.GetData())
+    if error != nil {
+      log.Warn("transaction get data error", "error", error)
+    } else {
+      outputData = string(data)
+    }
+  }
+
+
+
 	result := ResponseCheckTx{
 		Code: errorCode,
 
-		Data: []byte("Data"),
+		Data: []byte(outputData),
 		Log:  "Log Data",
 		Info: "Info Data",
 

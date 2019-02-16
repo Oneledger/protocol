@@ -222,9 +222,28 @@ func DeleteContract(app interface{}, contractKey []byte, nonce int64) {
 	session.Commit()
 }
 
-func SaveContractRef(app interface{}, key []byte, value []byte) {
+func SaveContractRef(app interface{}, key []byte, contractRefStatus data.ContractRefStatus) {
+  datastore := GetContracts(app)
+  session := datastore.Begin()
+  session.Set(key, data.ContractRefRecord{contractRefStatus})
+  session.Commit()
+}
 
-	SaveContract(app, key, data.GetNetworkID(), value)
+
+
+func GetContractRef(app interface{}, key []byte) data.ContractRefStatus {
+  datastore := GetContracts(app)
+  log.Debug("getdatastore")
+  raw := datastore.Get(key)
+  log.Debug("get raw", "raw", raw)
+  if raw == nil {
+    return data.NOT_FOUND
+  } else {
+    contractRefRecord := raw.(data.ContractRefRecord)
+    log.Debug("contractRefRecord", "contractRefRecord", contractRefRecord)
+    log.Debug("status", "contractRefRecord.Status", contractRefRecord.Status)
+    return contractRefRecord.Status
+  }
 }
 
 func SaveSmartContractCode (app interface{}, installData Install) ([]byte){
