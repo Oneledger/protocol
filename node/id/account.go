@@ -138,6 +138,7 @@ type Account interface {
 	AccountKey() AccountKey
 	PublicKey() PublicKey
 	PrivateKey() PrivateKey
+	GetChainKey() interface {}
 
 	String() string
 
@@ -267,6 +268,10 @@ func (account *AccountOneLedger) AddPrivateKey(key PrivateKey) {
 	account.PrivateKey = key
 }
 */
+
+func (account *AccountBase) GetChainKey() interface {} {
+	return account.ChainKey
+}
 
 func (account *AccountOneLedger) Name() string {
 	return account.AccountBase.Name
