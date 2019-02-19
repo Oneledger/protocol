@@ -22,8 +22,8 @@
   tasks:
     - include: killLinuxProcess.yml
       with_items:
-        - olvm
         - olmonitor
+        - olvm
         - olfullnode
       loop_control:
         loop_var: process

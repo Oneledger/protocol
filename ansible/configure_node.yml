@@ -12,12 +12,12 @@
       mode: 0644
     when: inventory_hostname == item.node_ip
     loop:
-      - { node_label: '../Alice-Node/consensus', node_ip: '35.203.52.149' }
-      - { node_label: '../Bob-Node/consensus', node_ip: '35.203.106.138' }
-      - { node_label: '../Carol-Node/consensus', node_ip: '35.203.102.115' }
-      - { node_label: '../David-Node/consensus', node_ip: '35.203.114.25' }
-      - { node_label: '../consensus', node_ip: '35.203.120.202' }
-      - { node_label: '../consensus', node_ip: '35.203.59.66' }
+      - { node_label: '../Alice-Node/consensus', node_ip: "{{config.Node1}}" }
+      - { node_label: '../Bob-Node/consensus', node_ip: "{{config.Node2}}" }
+      - { node_label: '../Carol-Node/consensus', node_ip: "{{config.Node3}}" }
+      - { node_label: '../David-Node/consensus', node_ip: "{{config.Node4}}" }
+      - { node_label: '../consensus', node_ip: "{{config.Seed1}}" }
+      - { node_label: '../consensus', node_ip: "{{config.Seed2}}" }
   - name: find out internal ip
     shell: ifconfig | grep "inet " | grep -v "127\.0\.0\.1" | awk -F' ' '{print $2}'
     register: internal_ip
