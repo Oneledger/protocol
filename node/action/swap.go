@@ -970,7 +970,11 @@ func CreateContractBTC(app interface{}, context FunctionValues, tx Transaction) 
 	//	}
 	//}
 
-	cli := bitcoin.GetBtcClient(global.Current.BTCAddress)
+	// @todo: need a better way of determining an account (probably an account ID needs to be a part of the contract)
+	accountName := global.Current.NodeName[:len(global.Current.NodeName) - 5] + "-" + data.BITCOIN.String()
+	chainAccount := GetAccountOnChain(app, accountName, data.BITCOIN)
+
+	cli := bitcoin.GetBtcClient(global.Current.BTCAddress, chainAccount.GetChainKey())
 
 	amount := bitcoin.GetAmount(value.String())
 
@@ -1098,9 +1102,13 @@ func AuditContractBTC(app interface{}, context FunctionValues, tx Transaction) (
 	chains := si.getChains()
 	context[NEXTCHAINNAME] = chains[1]
 
+	// @todo: need a better way of determining an account (probably an account ID needs to be a part of the contract)
+	accountName := global.Current.NodeName[:len(global.Current.NodeName) - 5] + "-" + data.BITCOIN.String()
+	chainAccount := GetAccountOnChain(app, accountName, data.BITCOIN)
+
 	msgTx := contract.GetMsgTx()
 	cmd := htlc.NewAuditContractCmd(contract.Contract, msgTx)
-	cli := bitcoin.GetBtcClient(global.Current.BTCAddress)
+	cli := bitcoin.GetBtcClient(global.Current.BTCAddress, chainAccount.GetChainKey())
 	e := cmd.RunCommand(cli)
 	if e != nil {
 		log.Error("Bitcoin Audit", "status", e)
@@ -1220,8 +1228,12 @@ func RedeemBTC(app interface{}, context FunctionValues, tx Transaction) (bool, F
 
 	scr := GetByte32(context[PASSWORD])
 
+	// @todo: need a better way of determining an account (probably an account ID needs to be a part of the contract)
+	accountName := global.Current.NodeName[:len(global.Current.NodeName) - 5] + "-" + data.BITCOIN.String()
+	chainAccount := GetAccountOnChain(app, accountName, data.BITCOIN)
+
 	cmd := htlc.NewRedeemCmd(contract.Contract, contract.GetMsgTx(), scr[:])
-	cli := bitcoin.GetBtcClient(global.Current.BTCAddress)
+	cli := bitcoin.GetBtcClient(global.Current.BTCAddress, chainAccount.GetChainKey())
 	_, e := cmd.RunCommand(cli)
 	if e != nil {
 		log.Error("Bitcoin redeem htlc", "status", e)
@@ -1292,8 +1304,12 @@ func RefundBTC(app interface{}, context FunctionValues, tx Transaction) (bool, F
 		return false, nil
 	}
 
+	// @todo: need a better way of determining an account (probably an account ID needs to be a part of the contract)
+	accountName := global.Current.NodeName[:len(global.Current.NodeName) - 5] + "-" + data.BITCOIN.String()
+	chainAccount := GetAccountOnChain(app, accountName, data.BITCOIN)
+
 	cmd := htlc.NewRefundCmd(contract.Contract, contract.GetMsgTx())
-	cli := bitcoin.GetBtcClient(global.Current.BTCAddress)
+	cli := bitcoin.GetBtcClient(global.Current.BTCAddress, chainAccount.GetChainKey())
 	_, e := cmd.RunCommand(cli)
 	if e != nil {
 		log.Error("Bitcoin refund htlc", "status", e)
@@ -1344,8 +1360,12 @@ func ExtractSecretBTC(app interface{}, context FunctionValues, tx Transaction) (
 
 	scrHash := GetByte32(context[PREIMAGE])
 
+	// @todo: need a better way of determining an account (probably an account ID needs to be a part of the contract)
+	accountName := global.Current.NodeName[:len(global.Current.NodeName) - 5] + "-" + data.BITCOIN.String()
+	chainAccount := GetAccountOnChain(app, accountName, data.BITCOIN)
+
 	cmd := htlc.NewExtractSecretCmd(contract.GetMsgTx(), scrHash)
-	cli := bitcoin.GetBtcClient(global.Current.BTCAddress)
+	cli := bitcoin.GetBtcClient(global.Current.BTCAddress, chainAccount.GetChainKey())
 	e := cmd.RunCommand(cli)
 	if e != nil {
 		log.Error("Bitcoin extract hltc", "status", e)
