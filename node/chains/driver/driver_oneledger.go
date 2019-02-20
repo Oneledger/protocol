@@ -18,7 +18,7 @@ func (driver OneledgerDriver) GetURL() string {
 	return global.Current.AppAddress
 }
 
-func (driver OneledgerDriver) GetChainAddress() []byte{
+func (driver OneledgerDriver) GetChainAddress(chainKey interface{}) []byte{
 	return nil
 }
 

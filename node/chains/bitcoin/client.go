@@ -6,6 +6,7 @@ package bitcoin
 
 import (
 	"bytes"
+	"encoding/json"
 	"github.com/Oneledger/protocol/node/data"
 	"time"
 
@@ -42,7 +43,7 @@ func GetChaincfg() *chaincfg.Params {
 	return &chaincfg.RegressionNetParams
 }
 
-func GetBtcClient(address string) *brpc.Bitcoind {
+func GetBtcClient(address string, chainKey interface {}) *brpc.Bitcoind {
 	chainParams := GetChaincfg()
 
 	addr := strings.Split(address, ":")
@@ -57,7 +58,7 @@ func GetBtcClient(address string) *brpc.Bitcoind {
 
 	port := convert.GetInt(addr[1], 46688)
 
-	usr, pass := getCredential(port)
+	usr, pass := getCredential(chainKey)
 
 	cli, err := brpc.New(ip.String(), port, usr, pass, false, chainParams)
 	if err != nil {
@@ -68,35 +69,44 @@ func GetBtcClient(address string) *brpc.Bitcoind {
 	return cli
 }
 
-func getCredential(port int) (usr string, pass string) {
+func getCredential(chainKey interface {}) (usr string, pass string) {
+	usr = ""
+	pass = ""
 
-	var u, p string
-	switch port {
-	case 18831:
-		u = "b2x0ZXN0MDE="
-		p = "b2xwYXNzMDE="
-	case 18832:
-		u = "b2x0ZXN0MDI="
-		p = "b2xwYXNzMDI="
-	case 18833:
-		u = "b2x0ZXN0MDM="
-		p = "b2xwYXNzMDM="
-	default:
-		log.Fatal("Invalid", "port", port)
+	if chainKey == nil {
+		return
 	}
-	//todo: getCredential from database which should be randomly generated when register or import if user already has bitcoin node
+
+	chainKeyJson, err := base64.StdEncoding.DecodeString(chainKey.(string))
+
+	if err != nil {
+		return
+	}
+
+	var chainKeyMap map[string]interface{}
+
+	json.Unmarshal(chainKeyJson, &chainKeyMap)
+
+	u := chainKeyMap["key"].(string)
+	p := chainKeyMap["pass"].(string)
+
 	usrBytes, err := base64.StdEncoding.DecodeString(u)
+
 	if err != nil {
 		log.Error(err.Error())
 		usr = ""
 	}
+
 	usr = string(usrBytes)
 	passBytes, err := base64.StdEncoding.DecodeString(p)
+
 	if err != nil {
 		log.Error(err.Error())
 		pass = ""
 	}
+
 	pass = string(passBytes)
+
 	return
 }
 

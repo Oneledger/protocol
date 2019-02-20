@@ -113,7 +113,8 @@ func WaitForIdentity(args []string) {
 func WaitForSwap() {
 	log.Debug("Waiting")
 
-	cli := bitcoin.GetBtcClient("127.0.0.1:18833")
+	// @todo Is it just for a test? Shouldn't we implement it in a different way?
+	cli := bitcoin.GetBtcClient("127.0.0.1:18833", "eyJrZXkiOiJiMngwWlhOME1ETT0iLCJwYXNzIjoiYjJ4d1lYTnpNRE09IiwiYWRkcmVzcyI6IjJORlRZV0pMNVQ2dEs1R2ZXWmJ5Q21jb2FNS0FyenhXRmp1IiwicHJpdmtleSI6ImNWRmlXRHoyOThYeHpNR0VZRzd3alV2YlV3TVdaZ2taQkpNdjlvOTkyb2VmS3hwanpUdnEifQ==")
 
 	stop := bitcoin.ScheduleBlockGeneration(*cli, 1)
 	time.Sleep(60 * time.Second)

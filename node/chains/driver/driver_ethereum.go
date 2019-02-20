@@ -23,8 +23,8 @@ func (driver EthereumDriver) GetURL() string {
 	return global.Current.ETHAddress
 }
 
-func (driver EthereumDriver) GetChainAddress() []byte{
-	return ethereum.GetAddress().Bytes()
+func (driver EthereumDriver) GetChainAddress(chainKey interface{}) []byte{
+	return ethereum.GetAddress(chainKey).Bytes()
 }
 
 func (driver EthereumDriver) GetMethodsList() []string {
