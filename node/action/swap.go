@@ -1018,11 +1018,15 @@ func CreateContractETH(app interface{}, context FunctionValues, tx Transaction) 
 	}
 	//todo : need to have a better key to store ethereum contract.
 	me := GetNodeAccount(app)
+	// @todo: need a better way of determining an account (probably needs to be an input parameter of the swap)
+	accountName := me.Name()[:len(me.Name()) - 10] + "-" + data.ETHEREUM.String()
+	chainAccount := GetAccountOnChain(app, accountName, data.ETHEREUM)
+
 	//log.Dump("node account", "me", me, "global", global.Current.NodeAccountName)
 	contractMessage := FindContract(app, me.AccountKey().Bytes(), int64(data.ETHEREUM))
 	contract := &ethereum.HTLContract{}
 	if contractMessage == nil {
-		contract = ethereum.CreateHtlContract()
+		contract = ethereum.CreateHtlContract(chainAccount.GetChainKey())
 		if contract == nil {
 			return false, nil
 		}
@@ -1048,7 +1052,7 @@ func CreateContractETH(app interface{}, context FunctionValues, tx Transaction) 
 
 	timeoutSecond := int64(lockPeriod.Seconds())
 	log.Debug("Create ETH HTLC", "value", value, "receiver", receiver, "preimage", preimage)
-	err := contract.Funds(value, big.NewInt(timeoutSecond), receiver, preimage)
+	err := contract.Funds(chainAccount.GetChainKey(), value, big.NewInt(timeoutSecond), receiver, preimage)
 	if err != nil {
 		return false, nil
 	}
@@ -1139,8 +1143,12 @@ func AuditContractETH(app interface{}, context FunctionValues, tx Transaction) (
 	chains := si.getChains()
 	context[NEXTCHAINNAME] = chains[1]
 
+	// @todo: need a better way of determining an account (probably an account ID needs to be a part of the contract)
+	accountName := global.Current.NodeName[:len(global.Current.NodeName) - 5] + "-" + data.ETHEREUM.String()
+	chainAccount := GetAccountOnChain(app, accountName, data.ETHEREUM)
+
 	//todo : when support light client, need to get this address from swapinit
-	address := ethereum.GetAddress()
+	address := ethereum.GetAddress(chainAccount.GetChainKey())
 
 	receiver, e := contract.HTLContractObject().Receiver(&bind.CallOpts{Pending: true})
 	if e != nil {
@@ -1247,8 +1255,12 @@ func RedeemETH(app interface{}, context FunctionValues, tx Transaction) (bool, F
 	contract := &ethereum.HTLContract{}
 	contract.FromBytes(buffer)
 
+	// @todo: need a better way of determining an account (probably an account ID needs to be a part of the contract)
+	accountName := global.Current.NodeName[:len(global.Current.NodeName) - 5] + "-" + data.ETHEREUM.String()
+	chainAccount := GetAccountOnChain(app, accountName, data.ETHEREUM)
+
 	scr := GetByte32(context[PASSWORD])
-	err := contract.Redeem(scr[:])
+	err := contract.Redeem(chainAccount.GetChainKey(), scr[:])
 	if err != nil {
 		log.Error("Ethereum redeem htlc", "status", err)
 		return false, nil
@@ -1305,7 +1317,11 @@ func RefundETH(app interface{}, context FunctionValues, tx Transaction) (bool, F
 		return false, nil
 	}
 
-	err := contract.Refund()
+	// @todo: need a better way of determining an account (probably an account ID needs to be a part of the contract)
+	accountName := global.Current.NodeName[:len(global.Current.NodeName) - 5] + "-" + data.ETHEREUM.String()
+	chainAccount := GetAccountOnChain(app, accountName, data.ETHEREUM)
+
+	err := contract.Refund(chainAccount.GetChainKey())
 	if err != nil {
 		return false, nil
 	}

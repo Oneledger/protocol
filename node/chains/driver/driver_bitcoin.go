@@ -22,7 +22,7 @@ func (driver BitcoinDriver) GetURL() string {
 	return global.Current.BTCAddress
 }
 
-func (driver BitcoinDriver) GetChainAddress() []byte{
+func (driver BitcoinDriver) GetChainAddress(chainKey interface{}) []byte{
 	cli := bitcoin.GetBtcClient(global.Current.BTCAddress)
 	return []byte(bitcoin.GetRawAddress(cli).String())
 }

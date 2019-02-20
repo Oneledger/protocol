@@ -8,7 +8,7 @@ import (
 
 type ChainDriver interface {
 	GetURL() string
-	GetChainAddress() []byte
+	GetChainAddress(chainKey interface{}) []byte
 	GetMethodsList() []string                   // @TODO return as strings now, but probably need to replace them with callback methods?
 	ExecuteMethod(string, []byte) status.Code   // @TODO should the execute method return anything else?
 	GetAddressFromByteArray([]byte) interface{}
