@@ -764,6 +764,18 @@ func GetChainAccount(app interface{}, name string, chain data.ChainType) id.Acco
 	return account
 }
 
+func GetAccountOnChain(app interface{}, name string, chain data.ChainType) id.Account {
+	accounts := GetAccounts(app)
+
+	account, stat := accounts.FindNameOnChain(name, chain)
+
+	if stat != status.SUCCESS {
+		return nil
+	}
+
+	return account
+}
+
 func CreateCheckEvent(app interface{}, chain data.ChainType, context FunctionValues, tx Transaction) (bool, FunctionValues) {
 	storeKey := GetBytes(context[STOREKEY])
 	si := FindSwap(app, storeKey)
