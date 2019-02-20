@@ -1,10 +1,8 @@
 package types
 
-
 type Proposal struct {
-
 }
 
-func NewProposal () *Proposal {
+func NewProposal() *Proposal {
 	return &Proposal{}
 }

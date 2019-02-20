@@ -1,7 +1,6 @@
 package types
 
 import (
-
 	"errors"
 	"fmt"
 	"io"
@@ -12,8 +11,7 @@ import (
 )
 
 var (
-	ErrVoteChannelNotMatch			 = errors.New("Invalid Channel")
-
+	ErrVoteChannelNotMatch = errors.New("Invalid Channel")
 )
 
 type ErrVoteConflictingVotes struct {
@@ -52,11 +50,10 @@ func IsVoteTypeValid(type_ byte) bool {
 	}
 }
 
-
 // Represents a prevote, precommit, or commit vote from validators for consensus.
 type Vote struct {
-	Vote types.Vote `json:"vote"`
-	Channel int `json:"channel"`
+	Vote    types.Vote `json:"vote"`
+	Channel int        `json:"channel"`
 }
 
 func (vote *Vote) WriteSignBytes(chainID string, w io.Writer, n *int, err *error) {
@@ -72,12 +69,12 @@ func (vote *Vote) Copy() *Vote {
 }
 
 func (vote *Vote) String() string {
-	return fmt.Sprintf("channel: %s, vote: %q",vote.Channel,vote.Vote.String())
+	return fmt.Sprintf("channel: %s, vote: %q", vote.Channel, vote.Vote.String())
 }
 
 func (vote *Vote) Verify(chainID string, pubKey crypto.PubKey, channel int) error {
-	if channel != vote.Channel{
+	if channel != vote.Channel {
 		return ErrVoteChannelNotMatch
 	}
-	return vote.Vote.Verify(chainID,pubKey)
+	return vote.Vote.Verify(chainID, pubKey)
 }

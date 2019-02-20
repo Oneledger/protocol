@@ -54,6 +54,9 @@ type Transaction interface {
 	ShouldProcess(interface{}) bool
 	ProcessDeliver(interface{}) status.Code
 	Resolve(interface{}) Commands
+	GetType() Type
+	GetData() interface{}
+	SetData(interface{}) bool
 }
 
 type TransactionSignature struct {
@@ -230,4 +233,16 @@ func (b Base) TransactionTags(app interface{}) Tags {
 		Value: []byte(tagOwner),
 	}
 	return Tags{tag1, tag2}
+}
+
+func (b Base) GetType() Type {
+	return b.Type
+}
+
+func (b Base) SetData(data interface{}) bool {
+	return true
+}
+
+func (b Base) GetData() interface{} {
+	return nil
 }

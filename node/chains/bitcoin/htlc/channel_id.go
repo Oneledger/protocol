@@ -10,9 +10,9 @@ import (
 	"encoding/hex"
 	"math"
 
+	"fmt"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/btcsuite/btcd/wire"
-	"fmt"
 )
 
 const (
@@ -128,7 +128,7 @@ func NewShortChanIDFromInt(chanID uint64) ShortChannelID {
 
 // ToUint64 converts the ShortChannelID into a compact format encoded within a uint64 (8 bytes).
 func (c ShortChannelID) ToUint64() uint64 {
-	return ((uint64(c.BlockHeight) << 40) | (uint64(c.TxIndex) << 16) |	(uint64(c.TxPosition)))
+	return ((uint64(c.BlockHeight) << 40) | (uint64(c.TxIndex) << 16) | (uint64(c.TxPosition)))
 }
 
 // String generates a human-readable representation of the channel ID.

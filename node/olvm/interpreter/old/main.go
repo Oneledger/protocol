@@ -2,10 +2,10 @@ package main
 
 import (
 	"flag"
-	"log"
 	"github.com/Oneledger/protocol/node/olvm/interpreter/committor"
 	"github.com/Oneledger/protocol/node/olvm/interpreter/runner"
 	"github.com/Oneledger/protocol/node/olvm/interpreter/vm"
+	"log"
 )
 
 func main() {

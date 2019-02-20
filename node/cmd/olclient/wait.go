@@ -80,7 +80,7 @@ func WaitForIdentity(args []string) {
 
 	shared.Console.Info("Waiting for", waitargs.identities)
 
-	limit := 5 // Stop after about 5 secs
+	limit := 10 // Stop after about 5 secs
 	for {
 		count := 0
 		for i := 0; i < size; i++ {

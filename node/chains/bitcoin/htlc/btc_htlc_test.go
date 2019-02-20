@@ -1,7 +1,5 @@
 package htlc
 
-
-
 // There are two directions that the atomic swap can be performed, as the
 // initiator can be on either chain.  This tool only deals with creating the
 // Bitcoin transactions for these swaps.  A second tool should be used for the
@@ -23,5 +21,3 @@ package htlc
 //   cp1 redeems olt revealing S
 //     - must verify H(S) in contract is hash of known Secret
 //   cp2 redeems btc with S
-
-

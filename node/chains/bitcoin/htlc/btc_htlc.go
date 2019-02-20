@@ -60,20 +60,20 @@ const txVersion = 2
 //}
 
 type InitiateCmd struct {
-	cp2Addr  	*btcutil.AddressPubKeyHash
-	amount   	btcutil.Amount
-	lockTime 	int64
-	scrHash  	[secretSize]byte
-	Contract 	[]byte
-	ContractTx	*wire.MsgTx
-	RefundTx	*wire.MsgTx
+	cp2Addr    *btcutil.AddressPubKeyHash
+	amount     btcutil.Amount
+	lockTime   int64
+	scrHash    [secretSize]byte
+	Contract   []byte
+	ContractTx *wire.MsgTx
+	RefundTx   *wire.MsgTx
 }
 
 type RedeemCmd struct {
-	contract   			[]byte
-	contractTx 			*wire.MsgTx
-	secret     			[]byte
-	RedeemContractTx	*wire.MsgTx
+	contract         []byte
+	contractTx       *wire.MsgTx
+	secret           []byte
+	RedeemContractTx *wire.MsgTx
 }
 
 type ParticipateCmd struct {
@@ -81,8 +81,8 @@ type ParticipateCmd struct {
 	amount     btcutil.Amount
 	secretHash []byte
 	lockTime   int64
-	Contract 	[]byte
-	ContractTx	*wire.MsgTx
+	Contract   []byte
+	ContractTx *wire.MsgTx
 }
 
 type RefundCmd struct {
@@ -93,7 +93,7 @@ type RefundCmd struct {
 type ExtractSecretCmd struct {
 	redemptionTx *wire.MsgTx
 	secretHash   []byte
-	Secret		 []byte
+	Secret       []byte
 }
 
 type AuditContractCmd struct {
@@ -154,42 +154,42 @@ func atomicSwapContract(pkhMe, pkhThem *[ripemd160.Size]byte, locktime int64, se
 		// Require initiator's Secret to be a known length that the redeeming
 		// party can audit.  This is used to prevent fraud attacks between two
 		// currencies that have different maximum data sizes.
-		b.AddOp(txscript.OP_SIZE)  					//[1]
-		b.AddInt64(secretSize)						//[2]
-		b.AddOp(txscript.OP_EQUALVERIFY)			//[3]
+		b.AddOp(txscript.OP_SIZE)        //[1]
+		b.AddInt64(secretSize)           //[2]
+		b.AddOp(txscript.OP_EQUALVERIFY) //[3]
 
 		// Require initiator's Secret to be known to redeem the output.
-		b.AddOp(txscript.OP_SHA256)					//[4]
-		b.AddData(secretHash)						//[5]
-		b.AddOp(txscript.OP_EQUALVERIFY)			//[6]
+		b.AddOp(txscript.OP_SHA256)      //[4]
+		b.AddData(secretHash)            //[5]
+		b.AddOp(txscript.OP_EQUALVERIFY) //[6]
 
 		// Verify their signature is being used to redeem the output.  This
 		// would normally end with OP_EQUALVERIFY OP_CHECKSIG but this has been
 		// moved outside of the branch to save a couple bytes.
-		b.AddOp(txscript.OP_DUP)					//[7]
-		b.AddOp(txscript.OP_HASH160)				//[8]
-		b.AddData(pkhThem[:])						//[9]
+		b.AddOp(txscript.OP_DUP)     //[7]
+		b.AddOp(txscript.OP_HASH160) //[8]
+		b.AddData(pkhThem[:])        //[9]
 	}
 	b.AddOp(txscript.OP_ELSE) // Refund path		//[10]
 	{
 		// Verify locktime and drop it off the stack (which is not done by
 		// CLTV).
-		b.AddInt64(locktime)						//[11]
-		b.AddOp(txscript.OP_CHECKLOCKTIMEVERIFY)	//[12]
-		b.AddOp(txscript.OP_DROP)					//[13]
+		b.AddInt64(locktime)                     //[11]
+		b.AddOp(txscript.OP_CHECKLOCKTIMEVERIFY) //[12]
+		b.AddOp(txscript.OP_DROP)                //[13]
 
 		// Verify our signature is being used to refund the output.  This would
 		// normally end with OP_EQUALVERIFY OP_CHECKSIG but this has been moved
 		// outside of the branch to save a couple bytes.
-		b.AddOp(txscript.OP_DUP)					//[14]
-		b.AddOp(txscript.OP_HASH160)				//[15]
-		b.AddData(pkhMe[:])							//[16]
+		b.AddOp(txscript.OP_DUP)     //[14]
+		b.AddOp(txscript.OP_HASH160) //[15]
+		b.AddData(pkhMe[:])          //[16]
 	}
-	b.AddOp(txscript.OP_ENDIF)						//[17]
+	b.AddOp(txscript.OP_ENDIF) //[17]
 
 	// Complete the signature check.
-	b.AddOp(txscript.OP_EQUALVERIFY)				//[18]
-	b.AddOp(txscript.OP_CHECKSIG)					//[19]
+	b.AddOp(txscript.OP_EQUALVERIFY) //[18]
+	b.AddOp(txscript.OP_CHECKSIG)    //[19]
 
 	return b.Script()
 }

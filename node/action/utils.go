@@ -1,6 +1,7 @@
 package action
 
 import (
+	"encoding/hex"
 	"errors"
 	"github.com/Oneledger/protocol/node/global"
 	"github.com/Oneledger/protocol/node/id"
@@ -13,6 +14,12 @@ import (
 )
 
 //general hash method
+func _hashToStringBytes(item interface{}) []byte {
+	sum := _hash(item)
+	sumStr := hex.EncodeToString(sum[:])
+	return []byte(sumStr)
+}
+
 func _hash(item interface{}) []byte {
 
 	hasher := ripemd160.New()

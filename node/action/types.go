@@ -9,6 +9,8 @@ package action
 
 import (
 	"bytes"
+	"github.com/Oneledger/protocol/node/comm"
+	"github.com/pkg/errors"
 
 	"strconv"
 
@@ -19,6 +21,7 @@ import (
 
 func init() {
 	serial.Register(Event{})
+	serial.Register(data.Script{})
 }
 
 /*
@@ -217,4 +220,93 @@ func DeleteContract(app interface{}, contractKey []byte, nonce int64) {
 	session := contracts.Begin()
 	session.Delete(n)
 	session.Commit()
+}
+
+func SaveContractRef(app interface{}, key []byte, contractRefStatus data.ContractRefStatus) {
+	datastore := GetContracts(app)
+	session := datastore.Begin()
+	session.Set(key, data.ContractRefRecord{contractRefStatus})
+	session.Commit()
+}
+
+func GetContractRef(app interface{}, key []byte) data.ContractRefStatus {
+	datastore := GetContracts(app)
+	log.Debug("getdatastore")
+	raw := datastore.Get(key)
+	log.Debug("get raw", "raw", raw)
+	if raw == nil {
+		return data.NOT_FOUND
+	} else {
+		contractRefRecord := raw.(data.ContractRefRecord)
+		log.Debug("contractRefRecord", "contractRefRecord", contractRefRecord)
+		log.Debug("status", "contractRefRecord.Status", contractRefRecord.Status)
+		return contractRefRecord.Status
+	}
+}
+
+func SaveSmartContractCode(app interface{}, installData Install) []byte {
+	ref, name, version, script := Convert(installData)
+	smartContracts := GetSmartContracts(app)
+	var scriptRecords *data.ScriptRecords
+
+	raw := smartContracts.Get(ref)
+	if raw == nil {
+		scriptRecords = data.NewScriptRecords()
+	} else {
+		scriptRecords = raw.(*data.ScriptRecords)
+	}
+
+	scriptRecords.Set(name, version, script)
+	session := smartContracts.Begin()
+	session.Set(ref, scriptRecords)
+	session.Commit()
+	log.Debug("save the smart contract with key", "key", string(ref))
+	return ref
+}
+
+func GetSmartContractCode(app interface{}, ref []byte) (script data.Script, err error) {
+	log.Debug("load the smart contract with key", "key", ref)
+	smartContracts := GetSmartContracts(app)
+	raw := smartContracts.Get(ref)
+	if raw == nil {
+		err = errors.New("Not code found")
+		return
+	}
+	scriptRecords := raw.(*data.ScriptRecords)
+	script = scriptRecords.Script
+	return
+}
+
+func FindContractCode(hash []byte, proof bool) (script data.Script, err error) {
+	result := comm.Tx(hash, false)
+	if result == nil {
+		err = errors.New("Failed to find the result from hash")
+		return
+	}
+	var signedTx SignedTransaction
+	out, err := serial.Deserialize(result.Tx, signedTx, serial.CLIENT)
+	if err != nil {
+		err = errors.New("Unable to serialize transaction")
+		return
+	}
+	// This includes the signature
+	// tx := out.(SignedTransaction)
+	// This returns the wrapped Transaction
+	tx := out.(SignedTransaction).Transaction
+
+	if tx.GetType() != SMART_CONTRACT {
+		err = errors.New("The transaction is not for the Contract Type")
+		return
+	}
+	contractTx := tx.(*Contract)
+
+	if contractTx.Function != INSTALL {
+		err = errors.New("The contract doesn't have scripts")
+		return
+	}
+
+	_, _, _, script = Convert(contractTx.Data.(Install))
+
+	return script, nil
+
 }

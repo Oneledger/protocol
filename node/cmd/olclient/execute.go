@@ -26,6 +26,8 @@ func init() {
 	// Transaction Parameters
 	executeCmd.Flags().StringVar(&executeArgs.Owner, "owner", "", "script owner")
 	executeCmd.Flags().StringVar(&executeArgs.Name, "name", "", "script name")
+	executeCmd.Flags().StringVar(&executeArgs.Address, "address", "", "deployed script address")
+	executeCmd.Flags().StringVar(&executeArgs.CallString, "callString", "", "call string on the script")
 	executeCmd.Flags().StringVar(&executeArgs.Version, "version", "", "script version")
 	executeCmd.Flags().StringVar(&executeArgs.Currency, "currency", "OLT", "currency")
 

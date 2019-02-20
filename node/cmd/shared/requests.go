@@ -7,6 +7,7 @@
 package shared
 
 import (
+	uuid2 "github.com/google/uuid"
 	"os"
 
 	"github.com/Oneledger/protocol/node/comm"
@@ -125,20 +126,22 @@ type InstallArguments struct {
 }
 
 type ExecuteArguments struct {
-	Owner    string
-	Name     string
-	Version  string
-	Currency string
-	Fee      float64
-	Gas      int64
+	Owner      string
+	Name       string
+	Address    string
+	CallString string
+	Version    string
+	Currency   string
+	Fee        float64
+	Gas        int64
 }
 
 type ContractArguments struct {
-    Address string
-    CallString string
-    CallFrom string
-    SourceCode string
-    Value int
+	Address    string
+	CallString string
+	CallFrom   string
+	SourceCode string
+	Value      int
 }
 
 // CreateRequest builds and signs the transaction based on the arguments
@@ -346,8 +349,8 @@ func CreateExecuteRequest(args *ExecuteArguments) []byte {
 		return nil
 	}
 
-	if args.Name == "" {
-		log.Error("Missing Name argument")
+	if args.Name == "" && args.Address == "" {
+		log.Error("Missing Name or Address argument")
 		return nil
 	}
 
@@ -373,11 +376,14 @@ func CreateExecuteRequest(args *ExecuteArguments) []byte {
 	gas := conv.GetCoinFromUnits(args.Gas, "OLT")
 
 	sequence := GetSequenceNumber(owner)
-
+	uuid := uuid2.New()
 	inputs := action.Execute{
-		Owner:   owner,
-		Name:    args.Name,
-		Version: *version,
+		Owner:      owner,
+		Name:       args.Name,
+		Address:    args.Address,
+		CallString: args.CallString,
+		Version:    *version,
+		UUID:       uuid,
 	}
 
 	if conv.HasErrors() {

@@ -23,7 +23,7 @@ then
 
     geth --datadir $OLETH/C --networkid 20180229 --port 30303 --rpcport 28103 --nodiscover --verbosity 1 2>> $OLETH/C/eth.log &
 
-    sleep 3
+    sleep 6
 
     geth --exec "admin.addPeer($(geth --exec "admin.nodeInfo.enode" attach ipc:$OLETH/A/geth.ipc))" attach ipc:$OLETH/B/geth.ipc 2>> $LOG/ethereum.log
     geth --exec "admin.addPeer($(geth --exec "admin.nodeInfo.enode" attach ipc:$OLETH/B/geth.ipc))" attach ipc:$OLETH/C/geth.ipc 2>> $LOG/ethereum.log

@@ -10,11 +10,11 @@ import (
 	tps "github.com/tendermint/tendermint/types"
 	"time"
 )
+
 func randVoteSet(height int64, round int, type_ byte, numValidators int, votingPower int64) (*tps.VoteSet, *tps.ValidatorSet, []*tps.PrivValidatorFS) {
 	valSet, privValidators := tps.RandValidatorSet(numValidators, votingPower)
 	return tps.NewVoteSet("test_chain_id", height, round, type_, valSet), valSet, privValidators
 }
-
 
 func TestValidateBlock(t *testing.T) {
 	txs := []tps.Tx{tps.Tx("foo"), tps.Tx("bar")}
@@ -84,8 +84,8 @@ func makeBlockID(hash string, partSetSize int, partSetHash string) BlockID {
 
 func MakeCommit(blockID tps.BlockID, height int64, round int,
 	voteSet *tps.VoteSet,
-	validators []*tps.PrivValidatorFS, ) (*Commit, error) {
-	return &Commit{ BlockID: blockID,height}
+	validators []*tps.PrivValidatorFS) (*Commit, error) {
+	return &Commit{BlockID: blockID, height}
 }
 
 func signAddVote(privVal *tps.PrivValidatorFS, vote *Vote, voteSet *tps.VoteSet) (signed bool, err error) {

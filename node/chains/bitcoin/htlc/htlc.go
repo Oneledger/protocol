@@ -5,7 +5,6 @@ import (
 	"crypto/sha256"
 )
 
-
 // OnionPacketSize is the size of the serialized Sphinx onion packet included
 // in each UpdateAddHTLC message. The breakdown of the onion packet is as
 // follows: 1-byte version, 33-byte ephemeral public key (for ECDH), 1300-bytes
@@ -76,5 +75,3 @@ func createHTLC(id int, amount uint64) (*UpdateAddHTLC, [32]byte) {
 		Expiry:      uint32(5),
 	}, returnPreimage
 }
-
-

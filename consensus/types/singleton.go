@@ -1,10 +1,9 @@
 package types
 
 import (
-	"sync/atomic"
 	"sync"
+	"sync/atomic"
 )
-
 
 // Once is an object that will perform exactly one action.
 type Once struct {
@@ -35,9 +34,9 @@ func (o *Once) Do(f func()) {
 		return
 	}
 	// Slow-path.
-	o.m.Lock()                           // <-- Lock
+	o.m.Lock() // <-- Lock
 	defer o.m.Unlock()
-	if o.done == 0 {                     // <-- Check
+	if o.done == 0 { // <-- Check
 		defer atomic.StoreUint32(&o.done, 1)
 		f()
 	}
