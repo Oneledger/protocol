@@ -7,7 +7,7 @@ package persist
 type Access interface {
 	// Run a smart contract
 	RunScript(request interface{}) (interface{}, error)
-  AnalyzeScript(request interface{}) interface{}
+	AnalyzeScript(request interface{}) interface{}
 
 	// Access the databases
 	GetAdmin() interface{}

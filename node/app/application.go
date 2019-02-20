@@ -7,8 +7,8 @@ package app
 
 import (
 	"bytes"
+	"encoding/json"
 	"time"
-  "encoding/json"
 
 	"github.com/Oneledger/protocol/node/abci"
 	"github.com/Oneledger/protocol/node/action"
@@ -295,7 +295,7 @@ func (app Application) CheckTx(tx []byte) ResponseCheckTx {
 	log.Debug("ABCI: CheckTx", "tx", tx)
 
 	errorCode := types.CodeTypeOK
-  var transaction action.Transaction
+	var transaction action.Transaction
 
 	if tx == nil {
 		log.Warn("Empty Transaction, Ignoring", "tx", tx)
@@ -320,18 +320,16 @@ func (app Application) CheckTx(tx []byte) ResponseCheckTx {
 		}
 	}
 
-  outputData := ""
+	outputData := ""
 
-  if transaction != nil {
-    data, error := json.Marshal(transaction.GetData())
-    if error != nil {
-      log.Warn("transaction get data error", "error", error)
-    } else {
-      outputData = string(data)
-    }
-  }
-
-
+	if transaction != nil {
+		data, error := json.Marshal(transaction.GetData())
+		if error != nil {
+			log.Warn("transaction get data error", "error", error)
+		} else {
+			outputData = string(data)
+		}
+	}
 
 	result := ResponseCheckTx{
 		Code: errorCode,
@@ -515,19 +513,19 @@ func (app Application) DeliverTx(tx []byte) ResponseDeliverTx {
 
 	tags := transaction.TransactionTags(app)
 
-  data, error := json.Marshal(transaction.GetData())
+	data, error := json.Marshal(transaction.GetData())
 
-  outputData := ""
+	outputData := ""
 
-  if error != nil {
-    log.Warn("transaction get data error", "error", error)
-  } else {
-    outputData = string(data)
-  }
+	if error != nil {
+		log.Warn("transaction get data error", "error", error)
+	} else {
+		outputData = string(data)
+	}
 
-  log.Debug("transaction type", "type", transaction.GetType())
-  log.Debug("transaction data", "data", data)
-  log.Debug("transaction output data", "output", outputData)
+	log.Debug("transaction type", "type", transaction.GetType())
+	log.Debug("transaction data", "data", data)
+	log.Debug("transaction output data", "output", outputData)
 
 	result := ResponseDeliverTx{
 		Code:      errorCode,

@@ -124,14 +124,14 @@ type InstallArguments struct {
 }
 
 type ExecuteArguments struct {
-	Owner    string
-	Name     string
-  Address   string
-  CallString  string
-	Version  string
-	Currency string
-	Fee      float64
-	Gas      int64
+	Owner      string
+	Name       string
+	Address    string
+	CallString string
+	Version    string
+	Currency   string
+	Fee        float64
+	Gas        int64
 }
 
 type ContractArguments struct {
@@ -376,12 +376,12 @@ func CreateExecuteRequest(args *ExecuteArguments) []byte {
 	sequence := GetSequenceNumber(owner)
 	uuid := uuid2.New()
 	inputs := action.Execute{
-		Owner:   owner,
-		Name:    args.Name,
-    Address: args.Address,
-    CallString: args.CallString,
-		Version: *version,
-		UUID:    uuid,
+		Owner:      owner,
+		Name:       args.Name,
+		Address:    args.Address,
+		CallString: args.CallString,
+		Version:    *version,
+		UUID:       uuid,
 	}
 
 	if conv.HasErrors() {

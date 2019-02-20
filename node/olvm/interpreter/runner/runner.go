@@ -26,7 +26,7 @@ func (runner Runner) analyze(callString string) (string, string) {
 	if err != nil {
 		panic(err)
 	}
-  sourceCode := getCodeFromJsLibs("onAnalyzeExit")
+	sourceCode := getCodeFromJsLibs("onAnalyzeExit")
 	// Set the transaction parameters
 	runner.vm.Run(sourceCode)
 	output := ""
@@ -55,7 +55,7 @@ func (runner Runner) exec(callString string) (string, string) {
 	if err != nil {
 		panic(err)
 	}
-  sourceCode := getCodeFromJsLibs("onExit")
+	sourceCode := getCodeFromJsLibs("onExit")
 	// Set the transaction parameters
 	runner.vm.Run(sourceCode)
 	output := ""

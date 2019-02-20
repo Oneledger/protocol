@@ -6,22 +6,22 @@ import (
 )
 
 type ScriptRecords struct {
-  Name string  //Preserved, not used
-  Version version.Version //PReserved, not used
-  Script Script
+	Name    string          //Preserved, not used
+	Version version.Version //PReserved, not used
+	Script  Script
 }
 
 type ContractRefRecord struct {
-  Status ContractRefStatus
+	Status ContractRefStatus
 }
 
 type ContractRefStatus = uint32 //smart contract ref status
 
 const (
-  PENDING       ContractRefStatus = 100
-  COMPLETED     ContractRefStatus = 200
-  NOT_FOUND     ContractRefStatus = 404
-  ERROR         ContractRefStatus = 500
+	PENDING   ContractRefStatus = 100
+	COMPLETED ContractRefStatus = 200
+	NOT_FOUND ContractRefStatus = 404
+	ERROR     ContractRefStatus = 500
 )
 
 type Script struct { ///code script for smart contract
@@ -31,7 +31,7 @@ type Script struct { ///code script for smart contract
 func init() {
 	serial.Register(ScriptRecords{})
 	serial.Register(Script{})
-  serial.Register(ContractRefRecord{})
+	serial.Register(ContractRefRecord{})
 }
 
 func NewScriptRecords() *ScriptRecords {
@@ -40,6 +40,6 @@ func NewScriptRecords() *ScriptRecords {
 
 func (scriptRecords *ScriptRecords) Set(name string, version version.Version, script Script) {
 	scriptRecords.Name = name
-  scriptRecords.Version = version
-  scriptRecords.Script = script
+	scriptRecords.Version = version
+	scriptRecords.Script = script
 }

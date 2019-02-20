@@ -1,21 +1,19 @@
 package htlc
 
 import (
-	"testing"
 	"github.com/Oneledger/protocol/node/log"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"testing"
 	"time"
 
 	"github.com/ethereum/go-ethereum/ethclient"
 	"strings"
 
-	"math/big"
 	"github.com/ethereum/go-ethereum/common"
+	"math/big"
 
 	"crypto/sha256"
 )
-
-
 
 func TestHtlc(t *testing.T) {
 
@@ -30,7 +28,6 @@ func TestHtlc(t *testing.T) {
 
 	// Don't even wait, check its presence in the local pending state
 	time.Sleep(10 * time.Second) // Allow it to be processed by the local node :P
-
 
 	balance, err := htlcontract.Balance(opt)
 	if err != nil {
@@ -48,9 +45,9 @@ func TestHtlc(t *testing.T) {
 	log.Debug("Contract: ", "address", address)
 }
 
-func getClientAndAuth() (*ethclient.Client, *bind.TransactOpts, *bind.CallOpts){
+func getClientAndAuth() (*ethclient.Client, *bind.TransactOpts, *bind.CallOpts) {
 	cli, err := ethclient.Dial("/home/lan/go/test/ethereum/B/geth.ipc")
-	if err != nil{
+	if err != nil {
 		log.Error("failed to get geth ipc ", "err", err)
 	}
 	key := `{"address":"aafa2d8980a730b02195f9c8dfeafeb3e69a69ca","crypto":{"cipher":"aes-128-ctr","ciphertext":"cfc36b7deb503116482371b7d2596aa936758b8247279efce461cf0344ae4b31","cipherparams":{"iv":"fc200b937116258856dd0e5a085e011d"},"kdf":"scrypt","kdfparams":{"dklen":32,"n":262144,"p":1,"r":8,"salt":"7354c4523dfc70372c8c34616c15dc21448ac40617ffc3a7b3a9af7ee32c37e6"},"mac":"1b322fa3c5789cede87144783f2bd8c4588e5094e68f7880640ca9a5458b8aab"},"id":"87363a39-0171-4640-ba12-b5aacad7aed2","version":3}`
@@ -59,7 +56,7 @@ func getClientAndAuth() (*ethclient.Client, *bind.TransactOpts, *bind.CallOpts){
 		log.Error("Failed to create authorized transactor: ", "err", err)
 	}
 	opt := &bind.CallOpts{Pending: true}
-	return cli,auth,opt
+	return cli, auth, opt
 }
 
 func testHtlc_Funds(auth *bind.TransactOpts, opt *bind.CallOpts, contract *Htlc, v *big.Int) {
@@ -67,7 +64,7 @@ func testHtlc_Funds(auth *bind.TransactOpts, opt *bind.CallOpts, contract *Htlc,
 	auth.GasLimit = 2000000
 	auth.Value = v
 
-	log.Debug("auth",  "auth", auth)
+	log.Debug("auth", "auth", auth)
 
 	//funds
 
@@ -82,12 +79,12 @@ func testHtlc_Funds(auth *bind.TransactOpts, opt *bind.CallOpts, contract *Htlc,
 	if err != nil {
 		log.Error("fund contract failed")
 	}
-	log.Debug("Transaction waiting to be mined: ", "transaction", tx.Hash(),"value", tx.Value())
+	log.Debug("Transaction waiting to be mined: ", "transaction", tx.Hash(), "value", tx.Value())
 
 	time.Sleep(10 * time.Second)
 	balance, err := contract.Balance(opt)
 	if err != nil {
-		log.Error("Failed to retrieve balance: ", "err",  err)
+		log.Error("Failed to retrieve balance: ", "err", err)
 	}
 	log.Debug("balance:", "balance", balance)
 	auth.Value = big.NewInt(0)
@@ -102,7 +99,7 @@ func testHtlc_Funds(auth *bind.TransactOpts, opt *bind.CallOpts, contract *Htlc,
 	if err != nil {
 		log.Error("can't get the secret hash", "err", err)
 	}
-	log.Debug("scrHash in contract", "scrhash",sh)
+	log.Debug("scrHash in contract", "scrhash", sh)
 }
 
 func getScrPair() (scrHash [32]byte, scr []byte) {
@@ -119,18 +116,17 @@ func testHtlc_Redeem(auth *bind.TransactOpts, opt *bind.CallOpts, contract *Htlc
 	receiver := common.HexToAddress("0xd7858005867c3449f6673a91f6e4f719f10e12e5")
 	log.Debug("receiver: ", "address", receiver.String())
 
-    balance, err := contract.Balance(opt)
-    if err != nil {
-        log.Error("Failed to retrieve balance: ", "err",  err)
-    }
-    log.Debug("balance before redeem", "balance", balance)
+	balance, err := contract.Balance(opt)
+	if err != nil {
+		log.Error("Failed to retrieve balance: ", "err", err)
+	}
+	log.Debug("balance before redeem", "balance", balance)
 
 	addr, err := contract.Receiver(&bind.CallOpts{Pending: true})
 	if err != nil {
 		log.Error("failed to get receiver", "err", err)
 	}
 	log.Debug("receiver in contract: ", "address", addr)
-
 
 	_, scr := getScrPair()
 
@@ -144,12 +140,11 @@ func testHtlc_Redeem(auth *bind.TransactOpts, opt *bind.CallOpts, contract *Htlc
 
 	balance, err = contract.Balance(opt)
 	if err != nil {
-		log.Error("Failed to retrieve balance: ", "err",  err)
+		log.Error("Failed to retrieve balance: ", "err", err)
 	}
 	log.Debug("balance after redeem", "balance", balance)
 
 }
-
 
 func testHtlc_ExtractMsg(opt *bind.CallOpts, address common.Address) {
 
@@ -167,9 +162,9 @@ func testHtlc_ExtractMsg(opt *bind.CallOpts, address common.Address) {
 
 	balance, err := contract.Balance(opt)
 	if err != nil {
-		log.Error( "Failed to get balance from contract at address", "err", err, "address", address)
+		log.Error("Failed to get balance from contract at address", "err", err, "address", address)
 	}
-	log.Debug("balance of contract","balance", balance)
+	log.Debug("balance of contract", "balance", balance)
 
 	scr, err := contract.ExtractMsg(opt)
 	if err != nil {
@@ -188,13 +183,13 @@ func testHtlc_Refund(auth *bind.TransactOpts, contract *Htlc) {
 	log.Debug("balance before refund", "balance", balance)
 
 	tx, err := contract.Refund(auth)
-	if err != nil{
-		log.Error("Failed to call the refund", )
+	if err != nil {
+		log.Error("Failed to call the refund")
 	}
 	log.Debug("refund transaction to be mined", "transaction", tx.Hash(), "value", tx.Value())
 	time.Sleep(20 * time.Second)
-    balance, err = contract.Balance(&bind.CallOpts{Pending: false})
-    log.Debug("balance after refund", "balance", balance)
+	balance, err = contract.Balance(&bind.CallOpts{Pending: false})
+	log.Debug("balance after refund", "balance", balance)
 }
 
 func testHtlc_Audit(auth *bind.TransactOpts, opt *bind.CallOpts, contract *Htlc, v *big.Int) {
@@ -205,7 +200,7 @@ func testHtlc_Audit(auth *bind.TransactOpts, opt *bind.CallOpts, contract *Htlc,
 	log.Debug("receiver: ", "address", receiver.String())
 
 	scrHash, _ := getScrPair()
-	r, err :=contract.Audit(opt, receiver, v, scrHash )
+	r, err := contract.Audit(opt, receiver, v, scrHash)
 	if err != nil {
 		log.Error("Failed to audit the contract", "err", err)
 	}
@@ -213,7 +208,7 @@ func testHtlc_Audit(auth *bind.TransactOpts, opt *bind.CallOpts, contract *Htlc,
 
 	var falseScrHash [32]byte
 	copy(falseScrHash[:], "falsetest")
-	r, err =contract.Audit(opt, receiver, big.NewInt(10), falseScrHash )
+	r, err = contract.Audit(opt, receiver, big.NewInt(10), falseScrHash)
 	if err != nil && r == false {
 		log.Debug("Failed to audit the contract as expected because used false secret", "r", r)
 	} else {

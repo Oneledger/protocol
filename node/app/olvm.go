@@ -75,8 +75,8 @@ func RunTestScriptName(name string) (interface{}, error) {
 	return RunScript(request)
 }
 
-func RunAnalyze(request *action.OLVMRequest)  interface{} {
-  reply, err := vm.Analyze(request)
+func RunAnalyze(request *action.OLVMRequest) interface{} {
+	reply, err := vm.Analyze(request)
 	if err != nil {
 		log.Warn("Contract Engine Failed to Start", "err", err)
 	}

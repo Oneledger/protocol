@@ -14,4 +14,3 @@ func GetPublicKey() id.PublicKey {
 	// TODO: Really not sure about this.
 	return id.NilPublicKey()
 }
-

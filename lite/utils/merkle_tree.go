@@ -1,7 +1,7 @@
 package utils
 
 import (
-  "crypto/sha256"
+	"crypto/sha256"
 )
 
 // MerkleTree represent a Merkle tree
