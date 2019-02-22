@@ -26,3 +26,15 @@
     with_items:
       ["bin/olfullnode","bin/olconfig","bin/olmonitor", "bin/olvm", "bin/olclient"]
   - set_fact: app_directory={{config.GOPATH}}
+  - name: set nofile soft limit
+    pam_limits:
+      domain: "steven"
+      limit_type: soft
+      limit_item: nofile
+      value: 100
+  - name: set nofile hard limit
+    pam_limits:
+      domain: "steven"
+      limit_type: hard
+      limit_item: nofile
+      value: 100
