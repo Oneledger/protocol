@@ -1,0 +1,111 @@
+
+
+- hosts: localhost
+  tasks:
+  - name: add host to group 'just_created' with variable foo=42
+    add_host:
+      name: "{{ ip }}"
+      foo: 42
+
+- hosts: "{{ip}}"
+  remote_user: steven
+  become: true
+  become_user: root
+  tasks:
+  - name: Include global variables
+    include_vars:
+      file: variables.yml
+      name: config
+  - name: Clean artifact path
+    file:
+      state: absent
+      path: "{{config.GOPATH}}"
+    when: reset_network == 'true'
+  - name: ansible create a directory for go application
+    file:
+      path: "{{config.GOPATH}}"
+      state: directory
+      mode: 0777
+    when: reset_network == 'true'
+  - name: copy binary executables to remote servers
+    copy:
+      src: ../{{item}}
+      dest: /usr/local/bin
+      mode: 0777
+    with_items:
+      ["bin/olfullnode","bin/olconfig","bin/olmonitor", "bin/olvm", "bin/olclient"]
+  - set_fact: app_directory={{config.GOPATH}}
+  - name: set nofile soft limit
+    pam_limits:
+      domain: "steven"
+      limit_type: soft
+      limit_item: nofile
+      value: 1000000
+  - name: set nofile hard limit
+    pam_limits:
+      domain: "steven"
+      limit_type: hard
+      limit_item: nofile
+      value: 1000000
+
+  - name: Include global variables
+    include_vars:
+      file: variables.yml
+      name: config
+  - name: copy configuration file over to each validator and fullnode
+    copy:
+      src: "../consensus"
+      dest: "{{config.GOPATH}}"
+      mode: 0644
+
+  - name: find out internal ip
+    shell: ifconfig | grep "inet " | grep -v "127\.0\.0\.1" | awk -F' ' '{print $2}' | awk -F':' '{print $2}'
+    register: internal_ip
+  - name: create config.toml file with content
+    copy:
+      dest: "{{config.GOPATH}}/config.toml"
+      content: |
+        Identity = ""
+        NodeName = ""
+        RpcAddress = "tcp://{{internal_ip.stdout}}:26601"
+        P2PAddress = "tcp://{{internal_ip.stdout}}:26611"
+        AppAddress = "tcp://127.0.0.1:26621"
+        SDKAddress = "tcp://{{internal_ip.stdout}}:26631"
+        OLVMAddress = "tcp://127.0.0.1:26641"
+        OLVMProtocol = "tcp"
+        BTCAddress = "127.0.0.1:NONE"
+        ETHAddress = "NONE"
+
+  - include: killLinuxProcess.yml
+    with_items:
+      - olmonitor
+      - olvm
+      - olfullnode
+    loop_control:
+      loop_var: process
+
+  - name: Include global variables
+    include_vars:
+      file: variables.yml
+      name: config
+  - name: start monitor app
+    shell: "(olmonitor start olvm execute --root {{config.GOPATH}} >> {{config.GOPATH}}/olvm.log 2>&1 &)"
+    async: 45
+    poll: 0
+  - name: get olmonitor process id
+    shell: pgrep olmonitor
+    register: monitor_process
+  - debug: "msg={{monitor_process.stdout}}"
+  - name: start fullnode
+    shell: >
+      (chdir={{config.GOPATH}} olfullnode node --root {{config.GOPATH}}
+      --tendermintRoot {{config.GOPATH}}/consensus
+      --seeds 69cbb82a35f621b7a07cfdf9b30b42b943424daa@seed1.chronos.oneledger.network:26615,008a082847ac0d631c174fc23dfd5c2adbe422fa@seed2.chronos.oneledger.network:26615,74fae3565f3d542d0833b7d5cde02d095d6c979f@seed3.chronos.oneledger.network:26615,b36da7eeeff531bb8cac995d8b818b28ea4594e5@seed4.chronos.oneledger.network:26615
+      --persistent_peers 69cbb82a35f621b7a07cfdf9b30b42b943424daa@seed1.chronos.oneledger.network:26615,008a082847ac0d631c174fc23dfd5c2adbe422fa@seed2.chronos.oneledger.network:26615,74fae3565f3d542d0833b7d5cde02d095d6c979f@seed3.chronos.oneledger.network:26615,b36da7eeeff531bb8cac995d8b818b28ea4594e5@seed4.chronos.oneledger.network:26615 >>
+      "{{config.GOPATH}}"/olfullnode.log 2>&1 &)
+    async: 45
+    poll: 0
+  - name: get olfullnode process id
+    shell: pgrep olfullnode
+    register: fullnode_process
+  - debug: "msg={{fullnode_process.stdout}}"

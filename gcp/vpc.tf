@@ -1,26 +1,26 @@
-provider "google" {
-  credentials = "${file("DevNet.json")}"
-  project     = "atomic-land-223022"
-  region      = "northamerica-northeast1"
+provider "google-beta" {
+  alias = "test-region"
+  credentials = "${file("Chronos.json")}"
+  project     = "chronos-225820"
+  region      = "us-east1"
+  zone = "us-east1-b"
 }
 
-resource "google_compute_instance" "default" {
-  name         = "test"
-  machine_type = "n1-standard-1"
-  zone         = "northamerica-northeast1-a"
+provider "google" {
+  alias = "test-region2"
+  credentials = "${file("DevNet.json")}"
+  project     = "atomic-land-223022"
+  region      = "us-west1"
+  zone = "us-west1-b"
+}
 
-  boot_disk {
-    initialize_params {
-      image = "debian-cloud/debian-9"
-    }
+module "node" {
+  source  = "./nfs"
+  providers = {
+    google = "google-beta.test-region"
   }
+}
 
-  network_interface {
-    network = "default"
-
-    access_config {
-      // Ephemeral IP
-    }
-  }
-
+output "public_ip" {
+  value = "${module.node.public_ip}"
 }
