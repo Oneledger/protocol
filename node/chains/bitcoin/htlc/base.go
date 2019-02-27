@@ -11,9 +11,9 @@ import (
 )
 
 // Initiate a new swpa between parties
-func NewInitiateCmd(cp2Addr *btcutil.AddressPubKeyHash, amount btcutil.Amount, lockTime int64, scrHash [32]byte) *InitiateCmd {
+func NewInitiateCmd(cp2Addr interface{}, amount btcutil.Amount, lockTime int64, scrHash [32]byte) *InitiateCmd {
 	return &InitiateCmd{
-		cp2Addr:  cp2Addr,
+		cp2Addr:  cp2Addr.(*btcutil.AddressPubKeyHash),
 		amount:   amount,
 		lockTime: lockTime,
 		scrHash:  scrHash,

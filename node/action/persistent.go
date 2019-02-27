@@ -13,9 +13,13 @@ import (
 	"github.com/Oneledger/protocol/node/persist"
 )
 
-func RunScript(app interface{}, request *OLVMRequest) interface{} {
-	result := app.(persist.Access).RunScript(request)
+func AnalyzeScript(app interface{}, request *OLVMRequest) interface{} {
+	result := app.(persist.Access).AnalyzeScript(request)
 	return result
+}
+
+func RunScript(app interface{}, request *OLVMRequest) (interface{}, error) {
+	return app.(persist.Access).RunScript(request)
 }
 
 func GetAdmin(app interface{}) data.Datastore {

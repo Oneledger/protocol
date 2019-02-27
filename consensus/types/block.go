@@ -8,10 +8,10 @@ import (
 	"time"
 
 	wire "github.com/tendermint/go-amino"
-	cmn "github.com/tendermint/tendermint/libs/common"
 	"github.com/tendermint/tendermint/crypto/merkle"
-	"golang.org/x/crypto/ripemd160"
+	cmn "github.com/tendermint/tendermint/libs/common"
 	tps "github.com/tendermint/tendermint/types"
+	"golang.org/x/crypto/ripemd160"
 )
 
 // Block defines the atomic unit of a oneledger blockchain.
@@ -157,7 +157,7 @@ type Header struct {
 
 	// prev block info
 	LastBlockID tps.BlockID `json:"last_block_id"`
-	TotalTxs    int64   `json:"total_txs"`
+	TotalTxs    int64       `json:"total_txs"`
 
 	// hashes of block data
 	LastCommitHash cmn.HexBytes `json:"last_commit_hash"` // commit from validators from the last block
@@ -233,7 +233,6 @@ func (h *Header) StringIndented(indent string) string {
 }
 
 //-------------------------------------
-
 
 //-----------------------------------------------------------------------------
 

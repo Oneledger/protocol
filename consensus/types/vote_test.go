@@ -56,5 +56,3 @@ func TestVoteString(t *testing.T) {
 		})
 	}
 }
-
-

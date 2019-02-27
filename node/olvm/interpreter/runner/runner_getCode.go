@@ -1,17 +1,18 @@
 package runner
+
 import (
-  "bytes"
+	"bytes"
+	"github.com/Oneledger/protocol/node/log"
 	"os"
-  "path/filepath"
-  "github.com/Oneledger/protocol/node/log"
+	"path/filepath"
 )
 
 func getCodeFromJsLibs(address string) string {
-  jsFilePath := filepath.Join(os.Getenv("OLROOT"), "/protocol/node/olvm/interpreter/runner/js", address + ".js")
-  log.Debug("get source code from local file system", "path", jsFilePath)
-  file, err := os.Open(jsFilePath)
+	jsFilePath := filepath.Join(os.Getenv("OLROOT"), "/protocol/node/olvm/interpreter/runner/js", address+".js")
+	log.Debug("get source code from local file system", "path", jsFilePath)
+	file, err := os.Open(jsFilePath)
 	if err != nil {
-    log.Fatal("cannot get source code", "err", err)
+		log.Fatal("cannot get source code", "err", err)
 		return ""
 	}
 

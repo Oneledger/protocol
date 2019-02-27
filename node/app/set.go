@@ -48,7 +48,12 @@ func HandleSet(app Application, path string, arguments map[string]interface{}) [
 }
 
 func GetChain(chainName string) data.ChainType {
-	return data.ONELEDGER
+	switch chainName {
+	case "OneLedger" : return data.ONELEDGER
+	case "BitCoin" : return data.BITCOIN
+	case "Ethereum" : return data.ETHEREUM
+	}
+	return data.UNKNOWN
 }
 
 // TODO: The datatype for Key, depends on Chain
@@ -81,14 +86,16 @@ func HandleSetAccount(app Application, arguments map[string]interface{}) interfa
 	publicKey, privateKey := GetKeys(chain, accountName,
 		arguments["PublicKey"].(string), arguments["PrivateKey"].(string))
 
-	account, err := app.Accounts.FindName(accountName)
+	chainKey := arguments["ChainKey"].(string)
+
+	account, err := app.Accounts.FindNameOnChain(accountName, chain)
 	if err == status.SUCCESS {
 		return "Account has already been set up."
 	}
 
-	AddAccount(&app, accountName, chain, publicKey, privateKey, nodeAccount)
+	AddAccount(&app, accountName, chain, publicKey, privateKey, chainKey, nodeAccount)
 
-	account, err = app.Accounts.FindName(accountName)
+	account, err = app.Accounts.FindNameOnChain(accountName, chain)
 	if err == status.SUCCESS {
 		return account
 	}
@@ -153,7 +160,7 @@ func SetOption(app *Application, key string, value string) bool {
 		}
 		args := result.(*RegisterArguments)
 		privateKey, publicKey := id.GenerateKeys([]byte(args.Identity), true) // TODO: Switch with passphrase
-		AddAccount(app, args.Identity, id.ParseAccountType(args.Chain), publicKey, privateKey, false)
+		AddAccount(app, args.Identity, id.ParseAccountType(args.Chain), publicKey, privateKey, nil, false)
 
 	default:
 		log.Warn("Unknown Option", "key", key)

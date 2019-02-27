@@ -7,6 +7,7 @@ package app
 
 import (
 	"bytes"
+	"encoding/json"
 	"time"
 
 	"github.com/Oneledger/protocol/node/abci"
@@ -159,7 +160,7 @@ func (app Application) SetupState(stateBytes []byte) {
 	// TODO: Can't generate a different key for each node. Needs to be in the genesis? Or ignored?
 	privateKey, publicKey := id.GenerateKeys([]byte(state.Account), false) // TODO: switch with passphrase
 
-	CreateAccount(app, state, publicKey, privateKey)
+	CreateAccount(app, state, publicKey, privateKey, nil)
 
 	// TODO: Make a user put in a real key
 	privateKey, publicKey = id.GenerateKeys([]byte(global.Current.PaymentAccount), false)
@@ -167,17 +168,17 @@ func (app Application) SetupState(stateBytes []byte) {
 	states := []State{
 		State{Amount: "0", Currency: "OLT"},
 	}
-	CreateAccount(app, &BasicState{global.Current.PaymentAccount, states}, publicKey, privateKey)
+	CreateAccount(app, &BasicState{global.Current.PaymentAccount, states}, publicKey, privateKey, nil)
 }
 
 // TODO: DEBUG
 var ZeroAccountKey id.AccountKey
 
-func CreateAccount(app Application, state *BasicState, publicKey id.PublicKeyED25519, privateKey id.PrivateKeyED25519) {
+func CreateAccount(app Application, state *BasicState, publicKey id.PublicKeyED25519, privateKey id.PrivateKeyED25519, chainkey interface{}) {
 
 	// TODO: This should probably only occur on the Admin node, for other nodes how do I know the key?
 	// Register the identity and account first
-	AddAccount(&app, state.Account, data.ONELEDGER, publicKey, privateKey, false)
+	AddAccount(&app, state.Account, data.ONELEDGER, publicKey, privateKey, chainkey, false)
 
 	account, ok := app.Accounts.FindName(state.Account)
 
@@ -294,6 +295,7 @@ func (app Application) CheckTx(tx []byte) ResponseCheckTx {
 	log.Debug("ABCI: CheckTx", "tx", tx)
 
 	errorCode := types.CodeTypeOK
+	var transaction action.Transaction
 
 	if tx == nil {
 		log.Warn("Empty Transaction, Ignoring", "tx", tx)
@@ -308,7 +310,7 @@ func (app Application) CheckTx(tx []byte) ResponseCheckTx {
 			errorCode = status.INVALID_SIGNATURE
 
 		} else {
-			transaction := signedTransaction.Transaction
+			transaction = signedTransaction.Transaction
 			if err = transaction.Validate(); err != status.SUCCESS {
 				errorCode = err
 
@@ -318,10 +320,21 @@ func (app Application) CheckTx(tx []byte) ResponseCheckTx {
 		}
 	}
 
+	outputData := ""
+
+	if transaction != nil {
+		data, error := json.Marshal(transaction.GetData())
+		if error != nil {
+			log.Warn("transaction get data error", "error", error)
+		} else {
+			outputData = string(data)
+		}
+	}
+
 	result := ResponseCheckTx{
 		Code: errorCode,
 
-		Data: []byte("Data"),
+		Data: []byte(outputData),
 		Log:  "Log Data",
 		Info: "Info Data",
 
@@ -500,9 +513,23 @@ func (app Application) DeliverTx(tx []byte) ResponseDeliverTx {
 
 	tags := transaction.TransactionTags(app)
 
+	data, error := json.Marshal(transaction.GetData())
+
+	outputData := ""
+
+	if error != nil {
+		log.Warn("transaction get data error", "error", error)
+	} else {
+		outputData = string(data)
+	}
+
+	log.Debug("transaction type", "type", transaction.GetType())
+	log.Debug("transaction data", "data", data)
+	log.Debug("transaction output data", "output", outputData)
+
 	result := ResponseDeliverTx{
 		Code:      errorCode,
-		Data:      []byte("Data"),
+		Data:      []byte(outputData),
 		Log:       "Log Data",
 		Info:      "Info Data",
 		GasWanted: 0,
