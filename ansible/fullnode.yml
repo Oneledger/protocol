@@ -58,19 +58,18 @@
       dest: "{{config.GOPATH}}"
       mode: 0644
 
-  - name: find out internal ip
-    shell: ifconfig | grep "inet " | grep -v "127\.0\.0\.1" | awk -F' ' '{print $2}' | awk -F':' '{print $2}'
-    register: internal_ip
   - name: create config.toml file with content
+    vars:
+      internal_ip: "{{ ansible_all_ipv4_addresses | ipaddr('private') | first }}"
     copy:
       dest: "{{config.GOPATH}}/config.toml"
       content: |
         Identity = ""
         NodeName = ""
-        RpcAddress = "tcp://{{internal_ip.stdout}}:26601"
-        P2PAddress = "tcp://{{internal_ip.stdout}}:26611"
+        RpcAddress = "tcp://{{internal_ip}}:26601"
+        P2PAddress = "tcp://{{internal_ip}}:26611"
         AppAddress = "tcp://127.0.0.1:26621"
-        SDKAddress = "tcp://{{internal_ip.stdout}}:26631"
+        SDKAddress = "tcp://{{internal_ip}}:26631"
         OLVMAddress = "tcp://127.0.0.1:26641"
         OLVMProtocol = "tcp"
         BTCAddress = "127.0.0.1:NONE"
