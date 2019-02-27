@@ -1,17 +1,15 @@
 package rpc
 
 import (
-	"math/big"
-	"fmt"
 	"errors"
-	"github.com/tidwall/gjson"
-	"io/ioutil"
-	"net/http"
-	"gopkg.in/jarcoal/httpmock.v1"
+	"fmt"
 	"github.com/stretchr/testify/suite"
+	"github.com/tidwall/gjson"
+	"gopkg.in/jarcoal/httpmock.v1"
+	"io/ioutil"
+	"math/big"
+	"net/http"
 )
-
-
 
 type EthRPCTestSuite struct {
 	suite.Suite

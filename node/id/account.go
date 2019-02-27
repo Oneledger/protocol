@@ -48,7 +48,7 @@ func (acc *Accounts) Delete(account Account) {
 
 func (acc *Accounts) Exists(newType data.ChainType, name string) bool {
 	// TODO: Probably shouldn't need to create a fake account here...
-	account := NewAccount(newType, name, NilPublicKey(), NilPrivateKey())
+	account := NewAccount(newType, name, NilPublicKey(), NilPrivateKey(), nil)
 	return acc.store.Exists(account.AccountKey())
 }
 
@@ -58,7 +58,7 @@ func (acc *Accounts) Find(account Account) (Account, status.Code) {
 
 func (acc *Accounts) FindIdentity(identity Identity) (Account, status.Code) {
 	// TODO: Should have better name mapping between identities and accounts
-	account := NewAccount(data.ONELEDGER, identity.Name+"-OneLedger", NilPublicKey(), NilPrivateKey())
+	account := NewAccount(data.ONELEDGER, identity.Name+"-OneLedger", NilPublicKey(), NilPrivateKey(), nil)
 	return acc.Find(account)
 }
 
@@ -138,6 +138,7 @@ type Account interface {
 	AccountKey() AccountKey
 	PublicKey() PublicKey
 	PrivateKey() PrivateKey
+	GetChainKey() interface {}
 
 	String() string
 
@@ -172,6 +173,9 @@ type AccountBase struct {
 	// TODO: Should handle key polymorphism properly..
 	PublicKey  PublicKeyED25519  `json:"publicKey"`
 	PrivateKey PrivateKeyED25519 `json:"privateKey"`
+
+	// TODO: This is to store keys for different chains, need to provide proper key polymorphism
+	ChainKey interface {}
 }
 
 func init() {
@@ -182,7 +186,7 @@ func init() {
 }
 
 // Create a new account for a given chain
-func NewAccount(newType data.ChainType, name string, key PublicKeyED25519, priv PrivateKeyED25519) Account {
+func NewAccount(newType data.ChainType, name string, key PublicKeyED25519, priv PrivateKeyED25519, chainKey interface{}) Account {
 	switch newType {
 
 	case data.ONELEDGER:
@@ -193,6 +197,7 @@ func NewAccount(newType data.ChainType, name string, key PublicKeyED25519, priv 
 				Name:       name,
 				PublicKey:  key,
 				PrivateKey: priv,
+				ChainKey:   chainKey,
 			},
 			//todo: change to olt wallet auth
 			//NewAccountKey(key),
@@ -206,6 +211,7 @@ func NewAccount(newType data.ChainType, name string, key PublicKeyED25519, priv 
 				Name:       name,
 				PublicKey:  key,
 				PrivateKey: priv,
+				ChainKey:   chainKey,
 			},
 			//todo: change to bitcoin auth
 			//NewAccountKey(key),
@@ -219,6 +225,7 @@ func NewAccount(newType data.ChainType, name string, key PublicKeyED25519, priv 
 				Name:       name,
 				PublicKey:  NilPublicKey(),
 				PrivateKey: NilPrivateKey(),
+				ChainKey:   chainKey,
 			},
 			//ethereum.GetAuth(),
 		}
@@ -261,6 +268,10 @@ func (account *AccountOneLedger) AddPrivateKey(key PrivateKey) {
 	account.PrivateKey = key
 }
 */
+
+func (account *AccountBase) GetChainKey() interface {} {
+	return account.ChainKey
+}
 
 func (account *AccountOneLedger) Name() string {
 	return account.AccountBase.Name

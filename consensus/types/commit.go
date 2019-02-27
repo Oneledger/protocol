@@ -1,12 +1,12 @@
 package types
 
 import (
-	"fmt"
 	"errors"
+	"fmt"
 	"github.com/tendermint/tendermint/crypto/merkle"
-	"strings"
 	cmn "github.com/tendermint/tendermint/libs/common"
 	tps "github.com/tendermint/tendermint/types"
+	"strings"
 )
 
 // Commit contains the evidence that a block was committed by a set of validators.
@@ -16,7 +16,7 @@ type Commit struct {
 	// Any peer with a block can gossip precommits by index with a peer without recalculating the
 	// active ValidatorSet.
 	BlockID    tps.BlockID `json:"blockID"`
-	Precommits []*Vote `json:"precommits"`
+	Precommits []*Vote     `json:"precommits"`
 
 	// Volatile
 	firstPrecommit *Vote
@@ -157,5 +157,3 @@ func (commit *Commit) StringIndented(indent string) string {
 		indent, strings.Join(precommitStrings, "\n"+indent+"  "),
 		indent, commit.hash)
 }
-
-

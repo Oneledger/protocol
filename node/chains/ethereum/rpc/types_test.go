@@ -114,7 +114,7 @@ func TestBlockWithoutTransactionsUnmarshal(t *testing.T) {
 		"transactions": ["0xfc7dcd42eb0b7898af2f52f7c5af3bd03cdf71ab8b3ed5b3d3a3ff0d91343cbe","0xecd8a21609fa852c08249f6c767b7097481da34b9f8d2aae70067918955b4e69"],
 		"uncles": ["0x1606e5", "0xd5145a9"]
 	}`)
-	
+
 	pb := new(JsonBlockWithoutTransactions)
 	err = json.Unmarshal(data, &pb)
 	blockOne := pb.toBlock()

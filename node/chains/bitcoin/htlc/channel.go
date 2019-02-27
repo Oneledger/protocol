@@ -5,7 +5,6 @@
 */
 package htlc
 
-
 import (
 	"crypto/sha256"
 	"github.com/btcsuite/btcd/btcec"
@@ -14,7 +13,6 @@ import (
 
 // OneLedgerChannel implements the state machine which corresponds to the current commitment protocol wire spec.
 type OneLedgerChannel struct {
-
 }
 
 // PaymentHash represents the sha256 of a random value. This hash is used to

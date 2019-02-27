@@ -14,9 +14,13 @@ type OLVMContext struct {
 }
 
 func (context OLVMContext) GetValue(key string) interface{} {
-  return context.Data[key]
+	ret := context.Data[key]
+	if ret == nil {
+		return nil
+	} else {
+		return string(ret.([]byte))
+	}
 }
-
 
 // All of the input necessary to perform a computation on a transaction
 type OLVMRequest struct {
@@ -25,19 +29,19 @@ type OLVMRequest struct {
 	CallString  string
 	Value       int
 	SourceCode  []byte
+	Reference   []byte
 	Transaction Transaction
 	Context     OLVMContext
-
 	// TODO: Data Handle (some way to call out for large data requests)
 }
 
 // All of the output received from the computation
 type OLVMResult struct {
-	Status  status.Code
-	Out     string
-	Ret     string // TODO: Should be a real name
-	Elapsed string
-
+	Status       status.Code
+	Out          string
+	Ret          string // TODO: Should be a real name
+	Elapsed      string
+	Reference    []byte
 	Transactions []Transaction
 	Context      OLVMContext
 }
@@ -54,16 +58,20 @@ func init() {
 	//serial.Register(prototype2)
 }
 
-func NewOLVMRequest(script []byte, context OLVMContext) *OLVMRequest {
+func NewOLVMResultWithCallString(script []byte, callString string, context OLVMContext) *OLVMRequest {
 	request := &OLVMRequest{
 		From:       "0x0",
 		Address:    "embed://",
-		CallString: "",
+		CallString: callString,
 		Value:      0,
 		SourceCode: script,
 		Context:    context,
 	}
 	return request
+}
+
+func NewOLVMRequest(script []byte, context OLVMContext) *OLVMRequest {
+	return NewOLVMResultWithCallString(script, "", context)
 }
 
 func NewOLVMResult() *OLVMResult {

@@ -5,26 +5,25 @@ import (
 
 	"bytes"
 	"errors"
-	cmn "github.com/tendermint/tendermint/libs/common"
 	"github.com/tendermint/tendermint/crypto/merkle"
+	cmn "github.com/tendermint/tendermint/libs/common"
 )
 
 var (
-	ErrRefInvalidType	            = errors.New("Invalid Reference Type")
-	ErrRefInvalidHash			    = errors.New("Invalid Reference Hash")
+	ErrRefInvalidType = errors.New("Invalid Reference Type")
+	ErrRefInvalidHash = errors.New("Invalid Reference Hash")
 )
 
-
 type Reference struct {
-	Type string `json:"type"`
-	Url url.URL `json:"url"`
+	Type          string       `json:"type"`
+	Url           url.URL      `json:"url"`
 	ReferenceHash cmn.HexBytes `json:"referenceHash"`
 }
 
 func (reference *Reference) verify(referenceType string, hash cmn.HexBytes) error {
-	if reference.Type != referenceType{
+	if reference.Type != referenceType {
 		return ErrRefInvalidType
-	}else if bytes.Equal(reference.ReferenceHash.Bytes(), hash.Bytes()){
+	} else if bytes.Equal(reference.ReferenceHash.Bytes(), hash.Bytes()) {
 		return ErrRefInvalidHash
 	}
 	return nil

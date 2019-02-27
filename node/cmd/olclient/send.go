@@ -57,12 +57,18 @@ func BroadcastStatus(result *ctypes.ResultBroadcastTxCommit) {
 		shared.Console.Error("Invalid Transacation")
 
 	} else if result.CheckTx.Code != 0 {
-		shared.Console.Error("Syntax, CheckTx Failed", result)
+		if result.CheckTx.Code == 200 {
+			shared.Console.Info("Returned Successfully(fullnode query)", result)
+			shared.Console.Info("Result Data", "data", string(result.CheckTx.Data))
+		} else {
+			shared.Console.Error("Syntax, CheckTx Failed", result)
+		}
 
 	} else if result.DeliverTx.Code != 0 {
 		shared.Console.Error("Transaction, DeliverTx Failed", result)
 
 	} else {
 		shared.Console.Info("Returned Successfully", result)
+		shared.Console.Info("Result Data", "data", string(result.DeliverTx.Data))
 	}
 }

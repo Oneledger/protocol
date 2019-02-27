@@ -6,42 +6,40 @@ import (
 )
 
 type ScriptRecords struct {
-	Name map[string]Versions
+	Name    string          //Preserved, not used
+	Version version.Version //PReserved, not used
+	Script  Script
 }
 
-type Versions struct {
-	Version map[string]Script
+type ContractRefRecord struct {
+	Status ContractRefStatus
 }
 
-type Script struct {
+type ContractRefStatus = uint32 //smart contract ref status
+
+const (
+	PENDING   ContractRefStatus = 100
+	COMPLETED ContractRefStatus = 200
+	NOT_FOUND ContractRefStatus = 404
+	ERROR     ContractRefStatus = 500
+)
+
+type Script struct { ///code script for smart contract
 	Script []byte
 }
 
 func init() {
 	serial.Register(ScriptRecords{})
-	serial.Register(Versions{})
 	serial.Register(Script{})
+	serial.Register(ContractRefRecord{})
 }
 
 func NewScriptRecords() *ScriptRecords {
-	return &ScriptRecords{
-		Name: make(map[string]Versions, 0),
-	}
+	return &ScriptRecords{}
 }
 
 func (scriptRecords *ScriptRecords) Set(name string, version version.Version, script Script) {
-	var versions Versions
-	var ok bool
-
-	if versions, ok = scriptRecords.Name[name]; !ok {
-		scriptRecords.Name[name] = *NewVersions()
-		versions = scriptRecords.Name[name]
-	}
-	versions.Version[version.String()] = script
-}
-
-func NewVersions() *Versions {
-	return &Versions{
-		Version: make(map[string]Script, 0),
-	}
+	scriptRecords.Name = name
+	scriptRecords.Version = version
+	scriptRecords.Script = script
 }

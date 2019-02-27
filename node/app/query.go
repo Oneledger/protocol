@@ -13,7 +13,7 @@ import (
 	"github.com/Oneledger/protocol/node/comm"
 
 	"github.com/Oneledger/protocol/node/action"
-	"github.com/Oneledger/protocol/node/chains/common"
+	"github.com/Oneledger/protocol/node/chains/driver"
 
 	"github.com/Oneledger/protocol/node/convert"
 	"github.com/Oneledger/protocol/node/data"
@@ -743,7 +743,7 @@ func HandleCurrencyAddressQuery(app Application, arguments map[string]interface{
 					//todo : right now, the idenetity.Chain do not contain the address on the other chain
 					// need to fix register to remove this part
 					_ = identity
-					return ChainAddress(chain)
+					return ChainAddress(app, identityString[1], chain)
 				}
 
 			}
@@ -764,15 +764,23 @@ func CurrencyAddress(application Application, currency string, identityName stri
 		if chain != data.ONELEDGER {
 			//todo : right now, the idenetity.Chain do not contain the address on the other chain, need to fix register to remove this part
 			_ = identity
-			return ChainAddress(chain).([]byte)
+			return ChainAddress(application, identityName, chain).([]byte)
 		}
 	}
 
 	return identity.Chain[chain]
 }
 
-func ChainAddress(chain data.ChainType) interface{} {
-	return common.GetChainAddress(chain)
+func ChainAddress(application Application, name string, chain data.ChainType) interface{} {
+	accountName := name + "-" + chain.String()
+
+	account, stat := application.Accounts.FindNameOnChain(accountName, chain)
+
+	if stat != status.SUCCESS {
+		return nil
+	}
+
+	return chaindriver.GetDriver(chain).GetChainAddress(account.GetChainKey())
 }
 
 // Return a nicely formatted error message
@@ -853,7 +861,7 @@ func HandleTestScript(app Application, arguments map[string]interface{}) interfa
 	log.Debug("TestScript", "arguments", arguments)
 	text := arguments["parameters"].(string)
 
-	results := RunTestScriptName(text)
+	results, _ := RunTestScriptName(text)
 
 	return results
 }

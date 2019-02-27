@@ -30,7 +30,7 @@ echo "============================================================="
 olclient list --root $OLDATA/Emma-Node
 olclient list --root $OLDATA/David-Node
 
-num=`pgrep -f "^olfullnode node -c *.*" | wc -l `
+num=`pgrep -f "^olfullnode node" | wc -l `
 
 if [[ $num < 5 ]]; then
     echo "Validator test failed"

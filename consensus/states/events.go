@@ -1,9 +1,8 @@
 package states
 
-
 /*
 	Event to drive the change of states
- */
+*/
 type BasicEvent interface {
 	New()
 }
@@ -31,4 +30,3 @@ type EventActionCommit struct {
 type EventActionDriveChain struct {
 	DriveChain *DriveChain `json:"drive chain"`
 }
-

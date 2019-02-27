@@ -1,8 +1,6 @@
 package types
 
-
 type Event interface {
-
 }
 
 type EventDataNewBlock struct {

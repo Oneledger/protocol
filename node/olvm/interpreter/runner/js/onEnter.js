@@ -89,6 +89,10 @@ Context.prototype.get = function (key) {
   if (typeof val === 'undefined') {
     //try get val from context object
     val = __GetContextValue__(key);
+    if (typeof val === undefined || val == null){
+      return undefined;
+    }
+    val = JSON.parse(val);
   }
   return val;
 }
@@ -110,6 +114,10 @@ Context.prototype.execute =  function(action, parameters) {
 }
 Context.prototype.getLineData = function () {
   return this.line_data;
+}
+
+if (__callString__ == '') {
+  __callString__ = "default__()";
 }
 
 var context = new Context();

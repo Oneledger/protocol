@@ -9,6 +9,7 @@ type Code = uint32 // Alias to match Tendermint status
 
 const (
 	SUCCESS           Code = 0
+	QUERY_COMPLETED   Code = 200
 	INVALID           Code = 101
 	INVALID_SIGNATURE Code = 102
 	PARSE_ERROR       Code = 201
@@ -27,6 +28,8 @@ func String(code Code) string {
 	switch code {
 	case SUCCESS:
 		return "SUCCESS"
+	case QUERY_COMPLETED:
+		return "QUERY COMPLETED"
 	case INVALID:
 		return "INVALID"
 	case PARSE_ERROR:

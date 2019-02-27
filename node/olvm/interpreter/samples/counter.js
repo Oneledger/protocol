@@ -3,7 +3,12 @@ var CounterContract = function (context) {
 }
 
 CounterContract.prototype.default__ = function() {
-  return this.context.get('counter');
+  var counter = this.context.get('counter');
+  if(counter === undefined) {
+    return 0
+  }else{
+    return counter
+  }
 }
 
 CounterContract.prototype.increase = function() {
@@ -15,5 +20,6 @@ CounterContract.prototype.increase = function() {
   this.context.set('counter', counter);
   return counter;
 }
+CounterContract.prototype.increase.func_type = "write";
 
 module.Contract = CounterContract;

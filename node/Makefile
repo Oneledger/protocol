@@ -91,6 +91,12 @@ swaptest: resetDevnet install
 exectest: stop reset start register
 	@./tests/contract.sh
 
+dummyInstall: stop reset start register
+	@./tests/dummyInstall.sh
+
+exec:
+	@./tests/exec.sh
+
 
 #
 # Start up a node, make sure it is stopped first
@@ -159,4 +165,3 @@ protobuf:
 # targets that are not associated with any files
 #
 .PHONY: all build install utest test tools update stop start full
-
