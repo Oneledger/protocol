@@ -4,9 +4,9 @@ This repo is the OneLedger blockchain full-node, which is currently an ABCi app 
 
 ## Table of Contents
 
-* [Getting Started](#Getting Started)
+* [Getting Started](#getting-started)
     * [Development](#Development)
-    * [Join OneLedger Testnet](#Join OneLedger Testnet)
+    * [Join OneLedger Testnet](#join-oneledger-testnet)
 * [License](#license)
 
 ## Getting Started
@@ -66,9 +66,9 @@ See [Make Targets](#make-targets) to see a list of `make` commands you can run t
 
 ### Join OneLedger Testnet 
 
-* [Setup a node](https://github.com/Oneledger/protocol/wiki/Chronos-Set-Up-Instructions-(v0.8.1\))
+* [Setup a node](https://github.com/Oneledger/protocol/wiki/Chronos-Set-Up-Instructions-v0.8.1)
 
-* [Become Validator](https://github.com/Oneledger/protocol/wiki/Chronos-Validator-Instructions-(v0.8.1\))
+* [Become Validator](https://github.com/Oneledger/protocol/wiki/Chronos-Validator-Instructions-v0.8.1)
 
 * [Check the explorer](https://oneledger.network)
 
