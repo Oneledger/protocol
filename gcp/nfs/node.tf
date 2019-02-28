@@ -1,3 +1,10 @@
+provider "google" {
+  credentials = "${file("../Chronos.json")}"
+  project     = "chronos-225820"
+  region      = "us-east1"
+  zone = "us-east1-b"
+}
+
 resource "google_compute_instance" "default" {
   name         = "explorer-fullnode"
   machine_type = "n1-standard-1"
