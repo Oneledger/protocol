@@ -5,6 +5,9 @@
   environment:
     GOPATH: "{{lookup('env','HOME')}}/go"
     OLROOT: "{{lookup('env','GOPATH')}}/src/github.com/Oneledger"
+    OLDATA: "{{lookup('env','GOPATH')}}/test"
+    OLSCRIPT: "{{lookup('env','OLROOT')}}/protocol/node/scripts"
+    OLSETUP: "{{lookup('env','OLROOT')}}/protocol/node/setup"
     PATH: "{{lookup('env','PATH')}}:{{lookup('env','GOPATH')}}/bin"
   tasks:
   - name: checkout release tag
