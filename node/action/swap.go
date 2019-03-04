@@ -954,14 +954,6 @@ func CreateContractBTC(app interface{}, context FunctionValues, tx Transaction) 
 	}
 
 	preimage := GetByte32(context[PREIMAGE])
-	//if context[PASSWORD] != nil {
-	//	scr := GetByte32(context[PASSWORD])
-	//	scrHash := sha256.Sum256(scr[:])
-	//	if !bytes.Equal(preimage[:], scrHash[:]) {
-	//		log.Error("Secret and Secret Hash doesn't match", "preimage", preimage, "scrHash", scrHash)
-	//		return false, nil
-	//	}
-	//}
 
 	// @todo: need a better way of determining an account (probably an account ID needs to be a part of the contract)
 	accountName := global.Current.NodeName[:len(global.Current.NodeName) - 5] + "-" + data.BITCOIN.String()
@@ -1006,18 +998,9 @@ func CreateContractETH(app interface{}, context FunctionValues, tx Transaction) 
 	accountName := me.Name()[:len(me.Name()) - 10] + "-" + data.ETHEREUM.String()
 	chainAccount := GetAccountOnChain(app, accountName, data.ETHEREUM)
 
-	//log.Dump("node account", "me", me, "global", global.Current.NodeAccountName)
 	contractMessage := FindContract(app, me.AccountKey().Bytes(), int64(data.ETHEREUM))
 
 	preimage := GetByte32(context[PREIMAGE])
-	//if context[PASSWORD] != nil {
-	//	scr := GetByte32(context[PASSWORD])
-	//	scrHash := sha256.Sum256(scr[:])
-	//	if !bytes.Equal(preimage[:], scrHash[:]) {
-	//		log.Error("Secret and Secret Hash doesn't match", "preimage", preimage, "scrHash", scrHash)
-	//		return false, nil
-	//	}
-	//}
 
 	timeoutSecond := int64(lockPeriod.Seconds())
 
