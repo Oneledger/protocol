@@ -7,7 +7,6 @@ go:
 before_install:
   - export GOPATH="${HOME}/go:$GOPATH"
   - export PATH="${HOME}/go/bin:$PATH"
-  - sudo add-apt-repository ppa:jonathonf/python-3.6
   - sudo apt-get update && sudo apt-get install python3.6
   - pip3 install ipaddr
   - sudo apt-get install software-properties-common
