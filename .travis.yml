@@ -16,4 +16,4 @@ before_install:
   - sudo pip3 install ipaddr
 install:
   - cd $TRAVIS_BUILD_DIR/ansible
-  - ansible-playbook main.yml -i '$TRAVIS_BUILD_DIR/ansible' --extra-vars "ip=35.190.178.102 reset_network=true"
+  - ansible-playbook main.yml -i $TRAVIS_BUILD_DIR/ansible/host --extra-vars "ip=35.190.178.102 reset_network=true"
