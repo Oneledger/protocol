@@ -837,11 +837,11 @@ func Initiate(app interface{}, chain data.ChainType, context FunctionValues, tx 
 	switch chain {
 
 	case data.BITCOIN:
-		return CreateContractBTC(app, context, tx)
+		return CreateContractBTC(app, context, tx, chain)
 	case data.ETHEREUM:
-		return CreateContractETH(app, context, tx)
+		return CreateContractETH(app, context, tx, chain)
 	case data.ONELEDGER:
-		return CreateContractOLT(app, context, tx)
+		return CreateContractOLT(app, context, tx, chain)
 	default:
 		log.Warn("Chain not support", "Chain", chain)
 		return false, nil
@@ -853,11 +853,11 @@ func Participate(app interface{}, chain data.ChainType, context FunctionValues, 
 	switch chain {
 
 	case data.BITCOIN:
-		return ParticipateBTC(app, context, tx)
+		return ParticipateBTC(app, context, tx, chain)
 	case data.ETHEREUM:
-		return ParticipateETH(app, context, tx)
+		return ParticipateETH(app, context, tx, chain)
 	case data.ONELEDGER:
-		return ParticipateOLT(app, context, tx)
+		return ParticipateOLT(app, context, tx, chain)
 	default:
 		log.Warn("Chain not support", "Chain", chain)
 		return false, nil
@@ -870,11 +870,11 @@ func Redeem(app interface{}, chain data.ChainType, context FunctionValues, tx Tr
 	switch chain {
 
 	case data.BITCOIN:
-		return RedeemBTC(app, context, tx)
+		return RedeemBTC(app, context, tx, chain)
 	case data.ETHEREUM:
-		return RedeemETH(app, context, tx)
+		return RedeemETH(app, context, tx, chain)
 	case data.ONELEDGER:
-		return RedeemOLT(app, context, tx)
+		return RedeemOLT(app, context, tx, chain)
 	default:
 		log.Warn("Chain not support", "Chain", chain)
 		return false, nil
@@ -886,11 +886,11 @@ func Refund(app interface{}, chain data.ChainType, context FunctionValues, tx Tr
 	switch chain {
 
 	case data.BITCOIN:
-		return RefundBTC(app, context, tx)
+		return RefundBTC(app, context, tx, chain)
 	case data.ETHEREUM:
-		return RefundETH(app, context, tx)
+		return RefundETH(app, context, tx, chain)
 	case data.ONELEDGER:
-		return RefundOLT(app, context, tx)
+		return RefundOLT(app, context, tx, chain)
 	default:
 		log.Warn("Chain not support", "Chain", chain)
 		return false, nil
@@ -902,11 +902,11 @@ func ExtractSecret(app interface{}, chain data.ChainType, context FunctionValues
 	switch chain {
 
 	case data.BITCOIN:
-		return ExtractSecretBTC(app, context, tx)
+		return ExtractSecretBTC(app, context, tx, chain)
 	case data.ETHEREUM:
-		return ExtractSecretETH(app, context, tx)
+		return ExtractSecretETH(app, context, tx, chain)
 	case data.ONELEDGER:
-		return ExtractSecretOLT(app, context, tx)
+		return ExtractSecretOLT(app, context, tx, chain)
 	default:
 		log.Warn("Chain not support", "Chain", chain)
 		return false, nil
@@ -918,20 +918,18 @@ func AuditContract(app interface{}, chain data.ChainType, context FunctionValues
 	switch chain {
 
 	case data.BITCOIN:
-		return AuditContractBTC(app, context, tx)
+		return AuditContractBTC(app, context, tx, chain)
 	case data.ETHEREUM:
-		return AuditContractETH(app, context, tx)
+		return AuditContractETH(app, context, tx, chain)
 	case data.ONELEDGER:
-		return AuditContractOLT(app, context, tx)
+		return AuditContractOLT(app, context, tx, chain)
 	default:
 		log.Warn("Chain not support", "Chain", chain)
 		return false, nil
 	}
 }
 
-func CreateContractBTC(app interface{}, context FunctionValues, tx Transaction) (bool, FunctionValues) {
-	chainId := data.BITCOIN
-
+func CreateContractBTC(app interface{}, context FunctionValues, tx Transaction, chain data.ChainType) (bool, FunctionValues) {
 	timeout := time.Now().Add(2 * lockPeriod).Unix()
 
 	storeKey := GetBytes(context[STOREKEY])
@@ -956,10 +954,10 @@ func CreateContractBTC(app interface{}, context FunctionValues, tx Transaction) 
 	preimage := GetByte32(context[PREIMAGE])
 
 	// @todo: need a better way of determining an account (probably an account ID needs to be a part of the contract)
-	accountName := global.Current.NodeName[:len(global.Current.NodeName) - 5] + "-" + chainId.String()
-	chainAccount := GetAccountOnChain(app, accountName, chainId)
+	accountName := global.Current.NodeName[:len(global.Current.NodeName) - 5] + "-" + chain.String()
+	chainAccount := GetAccountOnChain(app, accountName, chain)
 
-	contract := chaindriver.GetDriver(chainId).CreateSwapContract(receiverParty.Accounts[chainId], chainAccount, *value, timeout, preimage)
+	contract := chaindriver.GetDriver(chain).CreateSwapContract(receiverParty.Accounts[chain], chainAccount, *value, timeout, preimage)
 
 	previous := GetBytes(context[PREVIOUS])
 	se := SwapExchange{
@@ -971,15 +969,13 @@ func CreateContractBTC(app interface{}, context FunctionValues, tx Transaction) 
 
 	context[SWAPMESSAGE] = se
 
-	SaveContract(app, storeKey, int64(chainId), contract.ToBytes())
+	SaveContract(app, storeKey, int64(chain), contract.ToBytes())
 	log.Debug("btc contract", "contract", contract)
 
 	return true, context
 }
 
-func CreateContractETH(app interface{}, context FunctionValues, tx Transaction) (bool, FunctionValues) {
-	chainId := data.ETHEREUM
-
+func CreateContractETH(app interface{}, context FunctionValues, tx Transaction, chain data.ChainType) (bool, FunctionValues) {
 	storeKey := GetBytes(context[STOREKEY])
 	si := FindSwap(app, storeKey)
 
@@ -997,10 +993,10 @@ func CreateContractETH(app interface{}, context FunctionValues, tx Transaction) 
 	//todo : need to have a better key to store ethereum contract.
 	me := GetNodeAccount(app)
 	// @todo: need a better way of determining an account (probably needs to be an input parameter of the swap)
-	accountName := me.Name()[:len(me.Name()) - 10] + "-" + chainId.String()
-	chainAccount := GetAccountOnChain(app, accountName, chainId)
+	accountName := me.Name()[:len(me.Name()) - 10] + "-" + chain.String()
+	chainAccount := GetAccountOnChain(app, accountName, chain)
 
-	contractMessage := FindContract(app, me.AccountKey().Bytes(), int64(chainId))
+	contractMessage := FindContract(app, me.AccountKey().Bytes(), int64(chain))
 
 	preimage := GetByte32(context[PREIMAGE])
 
@@ -1009,10 +1005,10 @@ func CreateContractETH(app interface{}, context FunctionValues, tx Transaction) 
 	var contract chaindriver.Contract
 
 	if contractMessage == nil {
-		contract = chaindriver.GetDriver(chainId).CreateSwapContract(receiverParty.Accounts[chainId], chainAccount, *value, timeoutSecond, preimage)
-		SaveContract(app, me.AccountKey().Bytes(), int64(chainId), contract.ToBytes())
+		contract = chaindriver.GetDriver(chain).CreateSwapContract(receiverParty.Accounts[chain], chainAccount, *value, timeoutSecond, preimage)
+		SaveContract(app, me.AccountKey().Bytes(), int64(chain), contract.ToBytes())
 	} else {
-		contract = chaindriver.GetDriver(chainId).CreateSwapContractFromMessage(contractMessage)
+		contract = chaindriver.GetDriver(chain).CreateSwapContractFromMessage(contractMessage)
 	}
 
 	previous := GetBytes(context[PREVIOUS])
@@ -1027,8 +1023,7 @@ func CreateContractETH(app interface{}, context FunctionValues, tx Transaction) 
 	return true, context
 }
 
-func AuditContractBTC(app interface{}, context FunctionValues, tx Transaction) (bool, FunctionValues) {
-
+func AuditContractBTC(app interface{}, context FunctionValues, tx Transaction, chain data.ChainType) (bool, FunctionValues) {
 	storeKey := GetBytes(context[STOREKEY])
 	si := FindSwap(app, storeKey)
 
@@ -1057,8 +1052,8 @@ func AuditContractBTC(app interface{}, context FunctionValues, tx Transaction) (
 	context[NEXTCHAINNAME] = chains[1]
 
 	// @todo: need a better way of determining an account (probably an account ID needs to be a part of the contract)
-	accountName := global.Current.NodeName[:len(global.Current.NodeName) - 5] + "-" + data.BITCOIN.String()
-	chainAccount := GetAccountOnChain(app, accountName, data.BITCOIN)
+	accountName := global.Current.NodeName[:len(global.Current.NodeName) - 5] + "-" + chain.String()
+	chainAccount := GetAccountOnChain(app, accountName, chain)
 
 	msgTx := contract.GetMsgTx()
 	cmd := htlc.NewAuditContractCmd(contract.Contract, msgTx)
@@ -1069,12 +1064,12 @@ func AuditContractBTC(app interface{}, context FunctionValues, tx Transaction) (
 		return false, nil
 	}
 
-	SaveContract(app, storeKey, int64(data.BITCOIN), contract.ToBytes())
+	SaveContract(app, storeKey, int64(chain), contract.ToBytes())
 	context[PREIMAGE] = cmd.SecretHash
 	return true, context
 }
 
-func AuditContractETH(app interface{}, context FunctionValues, tx Transaction) (bool, FunctionValues) {
+func AuditContractETH(app interface{}, context FunctionValues, tx Transaction, chain data.ChainType) (bool, FunctionValues) {
 	se := GetSwapMessage(context[SWAPMESSAGE]).(SwapExchange)
 	contract := se.Contract.(*ethereum.HTLContract)
 	log.Debug("Contract to audit", "contract", contract.Address.Hash(), "tx", contract.TxHash.String())
@@ -1106,8 +1101,8 @@ func AuditContractETH(app interface{}, context FunctionValues, tx Transaction) (
 	context[NEXTCHAINNAME] = chains[1]
 
 	// @todo: need a better way of determining an account (probably an account ID needs to be a part of the contract)
-	accountName := global.Current.NodeName[:len(global.Current.NodeName) - 5] + "-" + data.ETHEREUM.String()
-	chainAccount := GetAccountOnChain(app, accountName, data.ETHEREUM)
+	accountName := global.Current.NodeName[:len(global.Current.NodeName) - 5] + "-" + chain.String()
+	chainAccount := GetAccountOnChain(app, accountName, chain)
 
 	//todo : when support light client, need to get this address from swapinit
 	address := ethereum.GetAddress(chainAccount.GetChainKey())
@@ -1146,12 +1141,12 @@ func AuditContractETH(app interface{}, context FunctionValues, tx Transaction) (
 	//}
 
 	context[PREIMAGE] = setScrhash
-	SaveContract(app, storeKey, int64(data.ETHEREUM), contract.ToBytes())
+	SaveContract(app, storeKey, int64(chain), contract.ToBytes())
 	return true, context
 }
 
-func ParticipateBTC(app interface{}, context FunctionValues, tx Transaction) (bool, FunctionValues) {
-	success, result := CreateContractBTC(app, context, tx)
+func ParticipateBTC(app interface{}, context FunctionValues, tx Transaction, chain data.ChainType) (bool, FunctionValues) {
+	success, result := CreateContractBTC(app, context, tx, chain)
 	if success != false {
 		log.Error("failed to participate because can't create contract")
 		return false, nil
@@ -1159,8 +1154,8 @@ func ParticipateBTC(app interface{}, context FunctionValues, tx Transaction) (bo
 	return true, result
 }
 
-func ParticipateETH(app interface{}, context FunctionValues, tx Transaction) (bool, FunctionValues) {
-	success, result := CreateContractETH(app, context, tx)
+func ParticipateETH(app interface{}, context FunctionValues, tx Transaction, chain data.ChainType) (bool, FunctionValues) {
+	success, result := CreateContractETH(app, context, tx, chain)
 	if success == false {
 		log.Error("failed to participate because can't create contract")
 		return false, nil
@@ -1168,11 +1163,10 @@ func ParticipateETH(app interface{}, context FunctionValues, tx Transaction) (bo
 	return true, result
 }
 
-func RedeemBTC(app interface{}, context FunctionValues, tx Transaction) (bool, FunctionValues) {
-
+func RedeemBTC(app interface{}, context FunctionValues, tx Transaction, chain data.ChainType) (bool, FunctionValues) {
 	storeKey := GetBytes(context[STOREKEY])
 
-	buffer := FindContract(app, storeKey, int64(data.BITCOIN))
+	buffer := FindContract(app, storeKey, int64(chain))
 	if buffer == nil {
 		log.Error("Failed to load the contract to Redeem", "key", storeKey)
 		return false, nil
@@ -1183,8 +1177,8 @@ func RedeemBTC(app interface{}, context FunctionValues, tx Transaction) (bool, F
 	scr := GetByte32(context[PASSWORD])
 
 	// @todo: need a better way of determining an account (probably an account ID needs to be a part of the contract)
-	accountName := global.Current.NodeName[:len(global.Current.NodeName) - 5] + "-" + data.BITCOIN.String()
-	chainAccount := GetAccountOnChain(app, accountName, data.BITCOIN)
+	accountName := global.Current.NodeName[:len(global.Current.NodeName) - 5] + "-" + chain.String()
+	chainAccount := GetAccountOnChain(app, accountName, chain)
 
 	cmd := htlc.NewRedeemCmd(contract.Contract, contract.GetMsgTx(), scr[:])
 	cli := bitcoin.GetBtcClient(global.Current.BTCAddress, chainAccount.GetChainKey())
@@ -1210,10 +1204,10 @@ func RedeemBTC(app interface{}, context FunctionValues, tx Transaction) (bool, F
 	return true, context
 }
 
-func RedeemETH(app interface{}, context FunctionValues, tx Transaction) (bool, FunctionValues) {
+func RedeemETH(app interface{}, context FunctionValues, tx Transaction, chain data.ChainType) (bool, FunctionValues) {
 	storeKey := GetBytes(context[STOREKEY])
 
-	buffer := FindContract(app, storeKey, int64(data.ETHEREUM))
+	buffer := FindContract(app, storeKey, int64(chain))
 	if buffer == nil {
 		log.Error("Failed to load the contract to Redeem", "key", storeKey)
 		return false, nil
@@ -1222,8 +1216,8 @@ func RedeemETH(app interface{}, context FunctionValues, tx Transaction) (bool, F
 	contract.FromBytes(buffer)
 
 	// @todo: need a better way of determining an account (probably an account ID needs to be a part of the contract)
-	accountName := global.Current.NodeName[:len(global.Current.NodeName) - 5] + "-" + data.ETHEREUM.String()
-	chainAccount := GetAccountOnChain(app, accountName, data.ETHEREUM)
+	accountName := global.Current.NodeName[:len(global.Current.NodeName) - 5] + "-" + chain.String()
+	chainAccount := GetAccountOnChain(app, accountName, chain)
 
 	scr := GetByte32(context[PASSWORD])
 	err := contract.Redeem(chainAccount.GetChainKey(), scr[:])
@@ -1243,10 +1237,10 @@ func RedeemETH(app interface{}, context FunctionValues, tx Transaction) (bool, F
 	return true, context
 }
 
-func RefundBTC(app interface{}, context FunctionValues, tx Transaction) (bool, FunctionValues) {
+func RefundBTC(app interface{}, context FunctionValues, tx Transaction, chain data.ChainType) (bool, FunctionValues) {
 	storeKey := GetBytes(context[STOREKEY])
 
-	buffer := FindContract(app, storeKey, int64(data.BITCOIN))
+	buffer := FindContract(app, storeKey, int64(chain))
 	if buffer == nil {
 		return false, nil
 	}
@@ -1259,8 +1253,8 @@ func RefundBTC(app interface{}, context FunctionValues, tx Transaction) (bool, F
 	}
 
 	// @todo: need a better way of determining an account (probably an account ID needs to be a part of the contract)
-	accountName := global.Current.NodeName[:len(global.Current.NodeName) - 5] + "-" + data.BITCOIN.String()
-	chainAccount := GetAccountOnChain(app, accountName, data.BITCOIN)
+	accountName := global.Current.NodeName[:len(global.Current.NodeName) - 5] + "-" + chain.String()
+	chainAccount := GetAccountOnChain(app, accountName, chain)
 
 	cmd := htlc.NewRefundCmd(contract.Contract, contract.GetMsgTx())
 	cli := bitcoin.GetBtcClient(global.Current.BTCAddress, chainAccount.GetChainKey())
@@ -1272,10 +1266,10 @@ func RefundBTC(app interface{}, context FunctionValues, tx Transaction) (bool, F
 	return true, context
 }
 
-func RefundETH(app interface{}, context FunctionValues, tx Transaction) (bool, FunctionValues) {
+func RefundETH(app interface{}, context FunctionValues, tx Transaction, chain data.ChainType) (bool, FunctionValues) {
 	storeKey := GetBytes(context[STOREKEY])
 
-	buffer := FindContract(app, storeKey, int64(data.ETHEREUM))
+	buffer := FindContract(app, storeKey, int64(chain))
 	if buffer == nil {
 		return false, nil
 	}
@@ -1288,8 +1282,8 @@ func RefundETH(app interface{}, context FunctionValues, tx Transaction) (bool, F
 	}
 
 	// @todo: need a better way of determining an account (probably an account ID needs to be a part of the contract)
-	accountName := global.Current.NodeName[:len(global.Current.NodeName) - 5] + "-" + data.ETHEREUM.String()
-	chainAccount := GetAccountOnChain(app, accountName, data.ETHEREUM)
+	accountName := global.Current.NodeName[:len(global.Current.NodeName) - 5] + "-" + chain.String()
+	chainAccount := GetAccountOnChain(app, accountName, chain)
 
 	err := contract.Refund(chainAccount.GetChainKey())
 	if err != nil {
@@ -1298,7 +1292,7 @@ func RefundETH(app interface{}, context FunctionValues, tx Transaction) (bool, F
 	return true, context
 }
 
-func ExtractSecretBTC(app interface{}, context FunctionValues, tx Transaction) (bool, FunctionValues) {
+func ExtractSecretBTC(app interface{}, context FunctionValues, tx Transaction, chain data.ChainType) (bool, FunctionValues) {
 	se := GetSwapMessage(context[SWAPMESSAGE]).(SwapExchange)
 	contract := se.Contract.(*bitcoin.HTLContract)
 	storeKey := se.SwapKeyHash
@@ -1315,8 +1309,8 @@ func ExtractSecretBTC(app interface{}, context FunctionValues, tx Transaction) (
 	scrHash := GetByte32(context[PREIMAGE])
 
 	// @todo: need a better way of determining an account (probably an account ID needs to be a part of the contract)
-	accountName := global.Current.NodeName[:len(global.Current.NodeName) - 5] + "-" + data.BITCOIN.String()
-	chainAccount := GetAccountOnChain(app, accountName, data.BITCOIN)
+	accountName := global.Current.NodeName[:len(global.Current.NodeName) - 5] + "-" + chain.String()
+	chainAccount := GetAccountOnChain(app, accountName, chain)
 
 	cmd := htlc.NewExtractSecretCmd(contract.GetMsgTx(), scrHash)
 	cli := bitcoin.GetBtcClient(global.Current.BTCAddress, chainAccount.GetChainKey())
@@ -1333,8 +1327,7 @@ func ExtractSecretBTC(app interface{}, context FunctionValues, tx Transaction) (
 
 }
 
-func ExtractSecretETH(app interface{}, context FunctionValues, tx Transaction) (bool, FunctionValues) {
-
+func ExtractSecretETH(app interface{}, context FunctionValues, tx Transaction, chain data.ChainType) (bool, FunctionValues) {
 	se := GetSwapMessage(context[SWAPMESSAGE]).(SwapExchange)
 	storeKey := se.SwapKeyHash
 
@@ -1346,7 +1339,7 @@ func ExtractSecretETH(app interface{}, context FunctionValues, tx Transaction) (
 	//todo : need to have a better key to store ethereum contract.
 	me := GetNodeAccount(app)
 
-	buffer := FindContract(app, me.AccountKey().Bytes(), int64(data.ETHEREUM))
+	buffer := FindContract(app, me.AccountKey().Bytes(), int64(chain))
 	if buffer == nil {
 		log.Error("Failed to find eth local contract")
 		return false, nil
@@ -1366,7 +1359,7 @@ func ExtractSecretETH(app interface{}, context FunctionValues, tx Transaction) (
 	return true, context
 }
 
-func CreateContractOLT(app interface{}, context FunctionValues, tx Transaction) (bool, FunctionValues) {
+func CreateContractOLT(app interface{}, context FunctionValues, tx Transaction, chain data.ChainType) (bool, FunctionValues) {
 	log.Warn("Not supported")
 	//party := GetParty(context[MY_ACCOUNT])
 	//counterParty := GetParty(context[THEM_ACCOUNT])
@@ -1411,27 +1404,27 @@ func CreateContractOLT(app interface{}, context FunctionValues, tx Transaction) 
 	return false, nil
 }
 
-func ParticipateOLT(app interface{}, context FunctionValues, tx Transaction) (bool, FunctionValues) {
+func ParticipateOLT(app interface{}, context FunctionValues, tx Transaction, chain data.ChainType) (bool, FunctionValues) {
 	log.Warn("Not supported")
 	return true, context
 }
 
-func AuditContractOLT(app interface{}, context FunctionValues, tx Transaction) (bool, FunctionValues) {
+func AuditContractOLT(app interface{}, context FunctionValues, tx Transaction, chain data.ChainType) (bool, FunctionValues) {
 	log.Warn("Not supported")
 	return true, context
 }
 
-func RedeemOLT(app interface{}, context FunctionValues, tx Transaction) (bool, FunctionValues) {
+func RedeemOLT(app interface{}, context FunctionValues, tx Transaction, chain data.ChainType) (bool, FunctionValues) {
 	log.Warn("Not supported")
 	return true, context
 }
 
-func RefundOLT(app interface{}, context FunctionValues, tx Transaction) (bool, FunctionValues) {
+func RefundOLT(app interface{}, context FunctionValues, tx Transaction, chain data.ChainType) (bool, FunctionValues) {
 	log.Warn("Not supported")
 	return true, context
 }
 
-func ExtractSecretOLT(app interface{}, context FunctionValues, tx Transaction) (bool, FunctionValues) {
+func ExtractSecretOLT(app interface{}, context FunctionValues, tx Transaction, chain data.ChainType) (bool, FunctionValues) {
 	log.Warn("Not supported")
 	return true, context
 }
