@@ -9,10 +9,11 @@ addons:
     packages:
       - "python3"
       - "python3-pip"
-      - "ansible"
 before_install:
   - export GOPATH="$HOME/go:$GOPATH"
   - export PATH="$HOME/go/bin:$PATH"
   - sudo pip3 install ipaddr
+  - sudo pip3 install ansible
+
 install:
   - cd $TRAVIS_BUILD_DIR/ansible && ansible-playbook main.yml -i 'host' --extra-vars "ip=35.190.178.102 reset_network=true"
