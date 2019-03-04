@@ -2,12 +2,16 @@ package chaindriver
 
 import (
 	"github.com/Oneledger/protocol/node/chains/bitcoin"
+	"github.com/Oneledger/protocol/node/chains/bitcoin/htlc"
+	"github.com/Oneledger/protocol/node/chains/common"
 	"github.com/Oneledger/protocol/node/global"
+	"github.com/Oneledger/protocol/node/id"
 	"github.com/Oneledger/protocol/node/log"
 	"github.com/Oneledger/protocol/node/serial"
 	"github.com/Oneledger/protocol/node/status"
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcutil"
+	"math/big"
 )
 
 type BitcoinDriver struct {
@@ -46,4 +50,32 @@ func (driver BitcoinDriver) GetAddressFromByteArray(address []byte) interface{} 
 	}
 
 	return result.(*btcutil.AddressPubKeyHash)
+}
+
+func (driver BitcoinDriver) CreateSwapContract(receiver interface{}, account id.Account, value big.Int, timeout int64, hash [32]byte) common.Contract {
+
+	cli := bitcoin.GetBtcClient(global.Current.BTCAddress, account.GetChainKey())
+
+	amount := bitcoin.GetAmount(value.String())
+
+	initCmd := htlc.NewInitiateCmd(receiver, amount, timeout, hash)
+
+	_, err := initCmd.RunCommand(cli)
+	if err != nil {
+		log.Error("Bitcoin Initiate", "status", err)
+		return nil
+	}
+
+	contract := &bitcoin.HTLContract{}
+	contract.FromMsgTx(initCmd.Contract, initCmd.ContractTx)
+
+	return contract
+}
+
+func (driver BitcoinDriver) CreateSwapContractFromMessage(message []byte) common.Contract{
+	contract := &bitcoin.HTLContract{}
+
+	contract.FromBytes(message)
+
+	return contract
 }

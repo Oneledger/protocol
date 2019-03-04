@@ -974,20 +974,7 @@ func CreateContractBTC(app interface{}, context FunctionValues, tx Transaction) 
 	accountName := global.Current.NodeName[:len(global.Current.NodeName) - 5] + "-" + data.BITCOIN.String()
 	chainAccount := GetAccountOnChain(app, accountName, data.BITCOIN)
 
-	cli := bitcoin.GetBtcClient(global.Current.BTCAddress, chainAccount.GetChainKey())
-
-	amount := bitcoin.GetAmount(value.String())
-
-	initCmd := htlc.NewInitiateCmd(receiver, amount, timeout, preimage)
-
-	_, err := initCmd.RunCommand(cli)
-	if err != nil {
-		log.Error("Bitcoin Initiate", "status", err, "context", context)
-		return false, nil
-	}
-
-	contract := &bitcoin.HTLContract{}
-	contract.FromMsgTx(initCmd.Contract, initCmd.ContractTx)
+	contract := chaindriver.GetDriver(data.BITCOIN).CreateSwapContract(receiver, chainAccount, *value, timeout, preimage)
 
 	previous := GetBytes(context[PREVIOUS])
 	se := SwapExchange{
@@ -1028,16 +1015,6 @@ func CreateContractETH(app interface{}, context FunctionValues, tx Transaction) 
 
 	//log.Dump("node account", "me", me, "global", global.Current.NodeAccountName)
 	contractMessage := FindContract(app, me.AccountKey().Bytes(), int64(data.ETHEREUM))
-	contract := &ethereum.HTLContract{}
-	if contractMessage == nil {
-		contract = ethereum.CreateHtlContract(chainAccount.GetChainKey())
-		if contract == nil {
-			return false, nil
-		}
-		SaveContract(app, me.AccountKey().Bytes(), int64(data.ETHEREUM), contract.ToBytes())
-	} else {
-		contract.FromBytes(contractMessage)
-	}
 
 	preimage := GetByte32(context[PREIMAGE])
 	//if context[PASSWORD] != nil {
@@ -1055,10 +1032,14 @@ func CreateContractETH(app interface{}, context FunctionValues, tx Transaction) 
 	}
 
 	timeoutSecond := int64(lockPeriod.Seconds())
-	log.Debug("Create ETH HTLC", "value", value, "receiver", receiver, "preimage", preimage)
-	err := contract.Funds(chainAccount.GetChainKey(), value, big.NewInt(timeoutSecond), receiver, preimage)
-	if err != nil {
-		return false, nil
+
+	var contract common.Contract
+
+	if contractMessage == nil {
+		contract = chaindriver.GetDriver(data.ETHEREUM).CreateSwapContract(receiver, chainAccount, *value, timeoutSecond, preimage)
+		SaveContract(app, me.AccountKey().Bytes(), int64(data.ETHEREUM), contract.ToBytes())
+	} else {
+		contract = chaindriver.GetDriver(data.ETHEREUM).CreateSwapContractFromMessage(contractMessage)
 	}
 
 	previous := GetBytes(context[PREVIOUS])

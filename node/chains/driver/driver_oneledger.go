@@ -1,9 +1,12 @@
 package chaindriver
 
 import (
+	"github.com/Oneledger/protocol/node/chains/common"
 	"github.com/Oneledger/protocol/node/global"
+	"github.com/Oneledger/protocol/node/id"
 	"github.com/Oneledger/protocol/node/serial"
 	"github.com/Oneledger/protocol/node/status"
+	"math/big"
 )
 
 type OneledgerDriver struct {
@@ -31,5 +34,13 @@ func (driver OneledgerDriver) ExecuteMethod(method string, params []byte) status
 }
 
 func (driver OneledgerDriver) GetAddressFromByteArray(address []byte) interface{} {
+	return nil
+}
+
+func (driver OneledgerDriver) CreateSwapContract(receiver interface{}, account id.Account, value big.Int, timeout int64, hash [32]byte) common.Contract {
+	return nil
+}
+
+func (driver OneledgerDriver) CreateSwapContractFromMessage(message []byte) common.Contract{
 	return nil
 }
