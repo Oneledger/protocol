@@ -9,11 +9,11 @@ addons:
     packages:
       - "python3"
       - "python3-pip"
-      - "virtualenv"
 before_install:
   - export GOPATH="$HOME/go:$GOPATH"
   - export PATH="$HOME/go/bin:$PATH"
   - sudo pip3 install ipaddr
+  - sudo pip3 install virtualenv
   - virtualenv py3-ansible
   - source ./bin/activate
   - pip3 install ansible
