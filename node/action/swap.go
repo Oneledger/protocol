@@ -1239,8 +1239,7 @@ func RefundBTC(app interface{}, context FunctionValues, tx Transaction, chain da
 	if buffer == nil {
 		return false, nil
 	}
-	contract := &bitcoin.HTLContract{}
-	contract.FromBytes(buffer)
+	contract := chaindriver.GetDriver(chain).CreateSwapContractFromMessage(buffer)
 
 	if contract == nil {
 		log.Error("BTC Htlc contract can't be parsed")
@@ -1251,13 +1250,12 @@ func RefundBTC(app interface{}, context FunctionValues, tx Transaction, chain da
 	accountName := global.Current.NodeName[:len(global.Current.NodeName) - 5] + "-" + chain.String()
 	chainAccount := GetAccountOnChain(app, accountName, chain)
 
-	cmd := htlc.NewRefundCmd(contract.Contract, contract.GetMsgTx())
-	cli := bitcoin.GetBtcClient(global.Current.BTCAddress, chainAccount.GetChainKey())
-	_, e := cmd.RunCommand(cli)
-	if e != nil {
-		log.Error("Bitcoin refund htlc", "status", e)
+	refundedcontract := chaindriver.GetDriver(chain).CreateRefundContract(contract, chainAccount)
+
+	if refundedcontract == nil {
 		return false, nil
 	}
+
 	return true, context
 }
 
@@ -1268,8 +1266,7 @@ func RefundETH(app interface{}, context FunctionValues, tx Transaction, chain da
 	if buffer == nil {
 		return false, nil
 	}
-	contract := &ethereum.HTLContract{}
-	contract.FromBytes(buffer)
+	contract := chaindriver.GetDriver(chain).CreateSwapContractFromMessage(buffer)
 
 	if contract == nil {
 		log.Error("ETH Htlc contract can't be parsed")
@@ -1280,10 +1277,12 @@ func RefundETH(app interface{}, context FunctionValues, tx Transaction, chain da
 	accountName := global.Current.NodeName[:len(global.Current.NodeName) - 5] + "-" + chain.String()
 	chainAccount := GetAccountOnChain(app, accountName, chain)
 
-	err := contract.Refund(chainAccount.GetChainKey())
-	if err != nil {
+	refundedcontract := chaindriver.GetDriver(chain).CreateRefundContract(contract, chainAccount)
+
+	if refundedcontract == nil {
 		return false, nil
 	}
+
 	return true, context
 }
 

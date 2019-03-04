@@ -22,6 +22,7 @@ type ChainDriver interface {
 	ExecuteMethod(string, []byte) status.Code   // @TODO should the execute method return anything else?
 	CreateSwapContract(receiver []byte, account id.Account, value big.Int, timeout int64, hash [32]byte) Contract
 	CreateRedeemContract(contract Contract, account id.Account, hash [32]byte) Contract
+	CreateRefundContract(contract Contract, account id.Account) Contract
 	CreateSwapContractFromMessage(message []byte) Contract
 }
 

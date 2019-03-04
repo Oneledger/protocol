@@ -85,6 +85,21 @@ func (driver BitcoinDriver) CreateRedeemContract(contract Contract, account id.A
 	return redeemcontract
 }
 
+func (driver BitcoinDriver) CreateRefundContract(contract Contract, account id.Account) Contract {
+	contractBTC := contract.(*bitcoin.HTLContract)
+
+	cmd := htlc.NewRefundCmd(contractBTC.Contract, contractBTC.GetMsgTx())
+	cli := bitcoin.GetBtcClient(global.Current.BTCAddress, account.GetChainKey())
+
+	_, e := cmd.RunCommand(cli)
+	if e != nil {
+		log.Error("Bitcoin refund htlc", "status", e)
+		return nil
+	}
+
+	return contract
+}
+
 func (driver BitcoinDriver) CreateSwapContractFromMessage(message []byte) Contract{
 	contract := &bitcoin.HTLContract{}
 

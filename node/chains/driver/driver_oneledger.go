@@ -40,6 +40,10 @@ func (driver OneledgerDriver) CreateRedeemContract(contract Contract, account id
 	return nil
 }
 
+func (driver OneledgerDriver) CreateRefundContract(contract Contract, account id.Account) Contract {
+	return nil
+}
+
 func (driver OneledgerDriver) CreateSwapContractFromMessage(message []byte) Contract{
 	return nil
 }
