@@ -931,6 +931,7 @@ func AuditContract(app interface{}, chain data.ChainType, context FunctionValues
 }
 
 func CreateContractBTC(app interface{}, context FunctionValues, tx Transaction) (bool, FunctionValues) {
+	chainId := data.BITCOIN
 
 	timeout := time.Now().Add(2 * lockPeriod).Unix()
 
@@ -956,10 +957,10 @@ func CreateContractBTC(app interface{}, context FunctionValues, tx Transaction) 
 	preimage := GetByte32(context[PREIMAGE])
 
 	// @todo: need a better way of determining an account (probably an account ID needs to be a part of the contract)
-	accountName := global.Current.NodeName[:len(global.Current.NodeName) - 5] + "-" + data.BITCOIN.String()
-	chainAccount := GetAccountOnChain(app, accountName, data.BITCOIN)
+	accountName := global.Current.NodeName[:len(global.Current.NodeName) - 5] + "-" + chainId.String()
+	chainAccount := GetAccountOnChain(app, accountName, chainId)
 
-	contract := chaindriver.GetDriver(data.BITCOIN).CreateSwapContract(receiverParty.Accounts[data.BITCOIN], chainAccount, *value, timeout, preimage)
+	contract := chaindriver.GetDriver(chainId).CreateSwapContract(receiverParty.Accounts[chainId], chainAccount, *value, timeout, preimage)
 
 	previous := GetBytes(context[PREVIOUS])
 	se := SwapExchange{
@@ -971,13 +972,15 @@ func CreateContractBTC(app interface{}, context FunctionValues, tx Transaction) 
 
 	context[SWAPMESSAGE] = se
 
-	SaveContract(app, storeKey, int64(data.BITCOIN), contract.ToBytes())
+	SaveContract(app, storeKey, int64(chainId), contract.ToBytes())
 	log.Debug("btc contract", "contract", contract)
 
 	return true, context
 }
 
 func CreateContractETH(app interface{}, context FunctionValues, tx Transaction) (bool, FunctionValues) {
+	chainId := data.ETHEREUM
+
 	storeKey := GetBytes(context[STOREKEY])
 	si := FindSwap(app, storeKey)
 
@@ -995,10 +998,10 @@ func CreateContractETH(app interface{}, context FunctionValues, tx Transaction) 
 	//todo : need to have a better key to store ethereum contract.
 	me := GetNodeAccount(app)
 	// @todo: need a better way of determining an account (probably needs to be an input parameter of the swap)
-	accountName := me.Name()[:len(me.Name()) - 10] + "-" + data.ETHEREUM.String()
-	chainAccount := GetAccountOnChain(app, accountName, data.ETHEREUM)
+	accountName := me.Name()[:len(me.Name()) - 10] + "-" + chainId.String()
+	chainAccount := GetAccountOnChain(app, accountName, chainId)
 
-	contractMessage := FindContract(app, me.AccountKey().Bytes(), int64(data.ETHEREUM))
+	contractMessage := FindContract(app, me.AccountKey().Bytes(), int64(chainId))
 
 	preimage := GetByte32(context[PREIMAGE])
 
@@ -1007,10 +1010,10 @@ func CreateContractETH(app interface{}, context FunctionValues, tx Transaction) 
 	var contract common.Contract
 
 	if contractMessage == nil {
-		contract = chaindriver.GetDriver(data.ETHEREUM).CreateSwapContract(receiverParty.Accounts[data.ETHEREUM], chainAccount, *value, timeoutSecond, preimage)
-		SaveContract(app, me.AccountKey().Bytes(), int64(data.ETHEREUM), contract.ToBytes())
+		contract = chaindriver.GetDriver(chainId).CreateSwapContract(receiverParty.Accounts[chainId], chainAccount, *value, timeoutSecond, preimage)
+		SaveContract(app, me.AccountKey().Bytes(), int64(chainId), contract.ToBytes())
 	} else {
-		contract = chaindriver.GetDriver(data.ETHEREUM).CreateSwapContractFromMessage(contractMessage)
+		contract = chaindriver.GetDriver(chainId).CreateSwapContractFromMessage(contractMessage)
 	}
 
 	previous := GetBytes(context[PREVIOUS])
