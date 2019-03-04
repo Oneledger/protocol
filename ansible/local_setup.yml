@@ -1,0 +1,27 @@
+- hosts: localhost
+  connection: local
+  vars:
+    code_change: "{{recompile | default('true')}}"
+  environment:
+    GOPATH: "{{lookup('env','HOME')}}/go"
+    OLROOT: "{{lookup('env','GOPATH')}}/src/github.com/Oneledger"
+    PATH: "{{lookup('env','PATH')}}:{{lookup('env','GOPATH')}}/bin"
+  tasks:
+  - name: checkout release tag
+    git:
+      repo: 'https://github.com/Oneledger/protocol.git'
+      dest: "{{lookup('env','OLROOT')}}/protocol"
+      version: v0.8.1
+  - name: add host
+    add_host:
+      name: "{{ ip }}"
+      groups: fullnode
+      app_user: "{{user | default('node') }}"
+  - name: setup the dependencies
+    command: chdir={{lookup('env','OLROOT')}}/protocol/node make setup
+    when: code_change == 'true'
+  - name: compile the app binary artifact
+    command: chdir={{lookup('env','OLROOT')}}/protocol/node make install
+    when: code_change == 'true'
+  - name: create consensus folder
+    command: chdir=../ olfullnode init --genesis genesis.json

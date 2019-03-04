@@ -1,0 +1,2 @@
+- import_playbook: local_setup.yml
+- import_playbook: fullnode.yml
