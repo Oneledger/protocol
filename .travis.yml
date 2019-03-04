@@ -13,7 +13,7 @@ before_install:
   - export GOPATH="$HOME/go:$GOPATH"
   - export PATH="$HOME/go/bin:$PATH"
   - sudo pip3 install ipaddr
-  - sudo pip3 install virtualenv
+  - sudo pip3 install virtualenv --upgrade
   - virtualenv py3-ansible
   - sudo pip3 install ansible
 
