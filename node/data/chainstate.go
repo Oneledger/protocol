@@ -38,7 +38,7 @@ type ChainState struct {
 	Version     int64
 	LastHash    []byte
 	Hash        []byte
-	TreeHeight  int
+	TreeHeight  int8
 }
 
 func NewChainState(name string, newType StorageType) *ChainState {
@@ -74,8 +74,8 @@ func (state *ChainState) Set(key DatabaseKey, balance *Balance) {
 func (state *ChainState) FindAll() map[string]*Balance {
 	mapping := make(map[string]*Balance, 1)
 
-	for i := int64(0); i < state.Delivered.Size64(); i++ {
-		key, value := state.Delivered.GetByIndex64(i)
+	for i := int64(0); i < state.Delivered.Size(); i++ {
+		key, value := state.Delivered.GetByIndex(i)
 
 		var balance Balance
 		result, err := serial.Deserialize(value, balance, serial.PERSISTENT)
@@ -101,7 +101,7 @@ func (state *ChainState) Get(key DatabaseKey, lastCommit bool) *Balance {
 	var value []byte
 	if lastCommit {
 		// get the value of last commit version
-		version := state.Delivered.Version64()
+		version := state.Delivered.Version()
 		_, value = state.Delivered.GetVersioned(key, version)
 	} else {
 		// get the value of currently working tree. it's temporary value that is not persistent yet.
@@ -128,7 +128,7 @@ func (state *ChainState) Get(key DatabaseKey, lastCommit bool) *Balance {
 // TODO: Should be against the commit tree, not the delivered one!!!
 func (state *ChainState) Exists(key DatabaseKey) bool {
 
-	version := state.Delivered.Version64()
+	version := state.Delivered.Version()
 	_, value := state.Delivered.GetVersioned([]byte(key), version)
 
 	if value != nil {
@@ -197,7 +197,7 @@ func (state *ChainState) reset() ([]byte, int64) {
 
 	// Essentially, the last commited value...
 	state.Hash = state.Delivered.Hash()
-	state.Version = state.Delivered.Version64()
+	state.Version = state.Delivered.Version()
 	state.TreeHeight = state.Delivered.Height()
 
 	log.Debug("Reinitialized Database", "version", state.Version, "tree_height", state.TreeHeight, "hash", state.Hash)

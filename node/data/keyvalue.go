@@ -125,7 +125,7 @@ func NewKeyValue(name string, newType StorageType) *KeyValue {
 			File:     fullname,
 			tree:     tree,
 			database: storage,
-			version:  tree.Version64(),
+			version:  tree.Version(),
 		}
 	default:
 		panic("Unknown Type")
@@ -188,7 +188,7 @@ func (store KeyValue) FindAll() []DatabaseKey {
 
 // Test to see if a key exists
 func (store KeyValue) Exists(key DatabaseKey) bool {
-	version := store.tree.Version64()
+	version := store.tree.Version()
 	index, _ := store.tree.GetVersioned(key, version)
 	if index == -1 {
 		return false
@@ -198,7 +198,7 @@ func (store KeyValue) Exists(key DatabaseKey) bool {
 
 // Get a key from the database
 func (store KeyValue) Get(key DatabaseKey) interface{} {
-	version := store.tree.Version64()
+	version := store.tree.Version()
 	index, value := store.tree.GetVersioned(key, version)
 	if index == -1 {
 		return nil
@@ -226,7 +226,7 @@ func (session KeyValueSession) Set(key DatabaseKey, value interface{}) bool {
 
 // Test to see if a key exists
 func (session KeyValueSession) Exists(key DatabaseKey) bool {
-	version := session.store.tree.Version64()
+	version := session.store.tree.Version()
 	index, _ := session.store.tree.GetVersioned(key, version)
 	if index == -1 {
 		return false
@@ -236,7 +236,7 @@ func (session KeyValueSession) Exists(key DatabaseKey) bool {
 
 // Load return the stored value
 func (session KeyValueSession) Get(key DatabaseKey) interface{} {
-	version := session.store.tree.Version64()
+	version := session.store.tree.Version()
 	index, value := session.store.tree.GetVersioned(key, version)
 	if index == -1 {
 		return nil
@@ -293,7 +293,7 @@ func (store KeyValue) list() (keys []DatabaseKey) {
 		//store.tree.
 		size := store.tree.Size()
 		results := make([]DatabaseKey, size, size)
-		for i := 0; i < store.tree.Size(); i++ {
+		for i := int64(0); i < store.tree.Size(); i++ {
 			key, _ := store.tree.GetByIndex(i)
 			results[i] = DatabaseKey(key)
 		}
