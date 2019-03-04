@@ -36,6 +36,10 @@ func (driver OneledgerDriver) CreateSwapContract(receiver []byte, account id.Acc
 	return nil
 }
 
+func (driver OneledgerDriver) CreateRedeemContract(contract Contract, account id.Account, hash [32]byte) Contract {
+	return nil
+}
+
 func (driver OneledgerDriver) CreateSwapContractFromMessage(message []byte) Contract{
 	return nil
 }

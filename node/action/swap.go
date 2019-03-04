@@ -1171,8 +1171,8 @@ func RedeemBTC(app interface{}, context FunctionValues, tx Transaction, chain da
 		log.Error("Failed to load the contract to Redeem", "key", storeKey)
 		return false, nil
 	}
-	contract := &bitcoin.HTLContract{}
-	contract.FromBytes(buffer)
+
+	contract := chaindriver.GetDriver(chain).CreateSwapContractFromMessage(buffer)
 
 	scr := GetByte32(context[PASSWORD])
 
@@ -1180,16 +1180,11 @@ func RedeemBTC(app interface{}, context FunctionValues, tx Transaction, chain da
 	accountName := global.Current.NodeName[:len(global.Current.NodeName) - 5] + "-" + chain.String()
 	chainAccount := GetAccountOnChain(app, accountName, chain)
 
-	cmd := htlc.NewRedeemCmd(contract.Contract, contract.GetMsgTx(), scr[:])
-	cli := bitcoin.GetBtcClient(global.Current.BTCAddress, chainAccount.GetChainKey())
-	_, e := cmd.RunCommand(cli)
-	if e != nil {
-		log.Error("Bitcoin redeem htlc", "status", e)
+	newcontract := chaindriver.GetDriver(chain).CreateRedeemContract(contract, chainAccount, scr)
+
+	if newcontract == nil {
 		return false, nil
 	}
-
-	newcontract := &bitcoin.HTLContract{}
-	newcontract.FromMsgTx(contract.Contract, cmd.RedeemContractTx)
 
 	previous := GetBytes(context[PREVIOUS])
 
@@ -1212,17 +1207,17 @@ func RedeemETH(app interface{}, context FunctionValues, tx Transaction, chain da
 		log.Error("Failed to load the contract to Redeem", "key", storeKey)
 		return false, nil
 	}
-	contract := &ethereum.HTLContract{}
-	contract.FromBytes(buffer)
+	contract := chaindriver.GetDriver(chain).CreateSwapContractFromMessage(buffer)
 
 	// @todo: need a better way of determining an account (probably an account ID needs to be a part of the contract)
 	accountName := global.Current.NodeName[:len(global.Current.NodeName) - 5] + "-" + chain.String()
 	chainAccount := GetAccountOnChain(app, accountName, chain)
 
 	scr := GetByte32(context[PASSWORD])
-	err := contract.Redeem(chainAccount.GetChainKey(), scr[:])
-	if err != nil {
-		log.Error("Ethereum redeem htlc", "status", err)
+
+	redeemedcontract := chaindriver.GetDriver(chain).CreateRedeemContract(contract, chainAccount, scr)
+
+	if redeemedcontract == nil {
 		return false, nil
 	}
 
