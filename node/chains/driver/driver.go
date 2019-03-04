@@ -1,7 +1,6 @@
 package chaindriver
 
 import (
-	"github.com/Oneledger/protocol/node/chains/common"
 	"github.com/Oneledger/protocol/node/data"
 	"github.com/Oneledger/protocol/node/id"
 	"github.com/Oneledger/protocol/node/serial"
@@ -9,13 +8,20 @@ import (
 	"math/big"
 )
 
+type Contract interface {
+	Chain() data.ChainType
+	ToBytes() []byte
+	ToKey() []byte
+	FromBytes([]byte)
+}
+
 type ChainDriver interface {
 	GetURL() string
 	GetChainAddress(chainKey interface{}) []byte
 	GetMethodsList() []string                   // @TODO return as strings now, but probably need to replace them with callback methods?
 	ExecuteMethod(string, []byte) status.Code   // @TODO should the execute method return anything else?
-	CreateSwapContract(receiver []byte, account id.Account, value big.Int, timeout int64, hash [32]byte) common.Contract
-	CreateSwapContractFromMessage(message []byte) common.Contract
+	CreateSwapContract(receiver []byte, account id.Account, value big.Int, timeout int64, hash [32]byte) Contract
+	CreateSwapContractFromMessage(message []byte) Contract
 }
 
 type ChainDriverBase struct {

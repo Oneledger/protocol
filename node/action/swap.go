@@ -30,7 +30,6 @@ import (
 	"crypto/sha256"
 	"time"
 
-	"github.com/Oneledger/protocol/node/chains/common"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 )
 
@@ -454,7 +453,7 @@ func (si *SwapInit) order() bool {
 }
 
 type SwapExchange struct {
-	Contract    common.Contract `json:"message"`
+	Contract    chaindriver.Contract `json:"message"`
 	SwapKeyHash []byte          `json:"swapkeyhash"`
 	Chain       data.ChainType  `json:"chain"`
 	PreviousTx  []byte          `json:"previoustx"`
@@ -1007,7 +1006,7 @@ func CreateContractETH(app interface{}, context FunctionValues, tx Transaction) 
 
 	timeoutSecond := int64(lockPeriod.Seconds())
 
-	var contract common.Contract
+	var contract chaindriver.Contract
 
 	if contractMessage == nil {
 		contract = chaindriver.GetDriver(chainId).CreateSwapContract(receiverParty.Accounts[chainId], chainAccount, *value, timeoutSecond, preimage)

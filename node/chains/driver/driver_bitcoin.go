@@ -3,7 +3,6 @@ package chaindriver
 import (
 	"github.com/Oneledger/protocol/node/chains/bitcoin"
 	"github.com/Oneledger/protocol/node/chains/bitcoin/htlc"
-	"github.com/Oneledger/protocol/node/chains/common"
 	"github.com/Oneledger/protocol/node/global"
 	"github.com/Oneledger/protocol/node/id"
 	"github.com/Oneledger/protocol/node/log"
@@ -41,7 +40,7 @@ func (driver BitcoinDriver) ExecuteMethod(method string, params []byte) status.C
 	return status.NOT_IMPLEMENTED
 }
 
-func (driver BitcoinDriver) CreateSwapContract(receiver []byte, account id.Account, value big.Int, timeout int64, hash [32]byte) common.Contract {
+func (driver BitcoinDriver) CreateSwapContract(receiver []byte, account id.Account, value big.Int, timeout int64, hash [32]byte) Contract {
 	address, err := btcutil.DecodeAddress(string(receiver), &chaincfg.RegressionNetParams)
 
 	if err != nil {
@@ -67,7 +66,7 @@ func (driver BitcoinDriver) CreateSwapContract(receiver []byte, account id.Accou
 	return contract
 }
 
-func (driver BitcoinDriver) CreateSwapContractFromMessage(message []byte) common.Contract{
+func (driver BitcoinDriver) CreateSwapContractFromMessage(message []byte) Contract{
 	contract := &bitcoin.HTLContract{}
 
 	contract.FromBytes(message)

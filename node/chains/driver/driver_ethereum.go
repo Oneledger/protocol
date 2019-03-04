@@ -1,7 +1,6 @@
 package chaindriver
 
 import (
-	oneledger_common "github.com/Oneledger/protocol/node/chains/common"
 	"github.com/Oneledger/protocol/node/chains/ethereum"
 	"github.com/Oneledger/protocol/node/global"
 	"github.com/Oneledger/protocol/node/id"
@@ -40,7 +39,7 @@ func (driver EthereumDriver) ExecuteMethod(method string, params []byte) status.
 	return status.NOT_IMPLEMENTED
 }
 
-func (driver EthereumDriver) CreateSwapContract(receiver []byte, account id.Account, value big.Int, timeout int64, hash [32]byte) oneledger_common.Contract {
+func (driver EthereumDriver) CreateSwapContract(receiver []byte, account id.Account, value big.Int, timeout int64, hash [32]byte) Contract {
 	address := common.BytesToAddress(receiver)
 
 	contract := ethereum.CreateHtlContract(account.GetChainKey())
@@ -59,7 +58,7 @@ func (driver EthereumDriver) CreateSwapContract(receiver []byte, account id.Acco
 	return contract
 }
 
-func (driver EthereumDriver) CreateSwapContractFromMessage(message []byte) oneledger_common.Contract{
+func (driver EthereumDriver) CreateSwapContractFromMessage(message []byte) Contract{
 	contract := &ethereum.HTLContract{}
 
 	contract.FromBytes(message)

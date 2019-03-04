@@ -1,7 +1,6 @@
 package chaindriver
 
 import (
-	"github.com/Oneledger/protocol/node/chains/common"
 	"github.com/Oneledger/protocol/node/global"
 	"github.com/Oneledger/protocol/node/id"
 	"github.com/Oneledger/protocol/node/serial"
@@ -33,10 +32,10 @@ func (driver OneledgerDriver) ExecuteMethod(method string, params []byte) status
 	return status.NOT_IMPLEMENTED
 }
 
-func (driver OneledgerDriver) CreateSwapContract(receiver []byte, account id.Account, value big.Int, timeout int64, hash [32]byte) common.Contract {
+func (driver OneledgerDriver) CreateSwapContract(receiver []byte, account id.Account, value big.Int, timeout int64, hash [32]byte) Contract {
 	return nil
 }
 
-func (driver OneledgerDriver) CreateSwapContractFromMessage(message []byte) common.Contract{
+func (driver OneledgerDriver) CreateSwapContractFromMessage(message []byte) Contract{
 	return nil
 }
