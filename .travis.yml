@@ -13,7 +13,7 @@ addons:
 before_install:
   - export GOPATH="${HOME}/go:$GOPATH"
   - export PATH="${HOME}/go/bin:$PATH"
-  - sudo pip3 install -y ipaddr
+  - sudo pip3 install ipaddr
   - sudo apt-get install -y ansible
 install:
   - cd {TRAVIS_BUILD_DIR}/ansible
