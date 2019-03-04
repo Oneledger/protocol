@@ -10,7 +10,7 @@ addons:
       - "python"
       - "python-pip"
 before_install:
-  - export GOPATH="$HOME/go:$GOPATH"
+  - export GOPATH="$HOME/go"
   - export PATH="$HOME/go/bin:$PATH"
   - sudo pip install ipaddr
   - sudo pip install virtualenv --upgrade
