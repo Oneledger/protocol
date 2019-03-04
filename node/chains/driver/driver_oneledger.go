@@ -33,11 +33,7 @@ func (driver OneledgerDriver) ExecuteMethod(method string, params []byte) status
 	return status.NOT_IMPLEMENTED
 }
 
-func (driver OneledgerDriver) GetAddressFromByteArray(address []byte) interface{} {
-	return nil
-}
-
-func (driver OneledgerDriver) CreateSwapContract(receiver interface{}, account id.Account, value big.Int, timeout int64, hash [32]byte) common.Contract {
+func (driver OneledgerDriver) CreateSwapContract(receiver []byte, account id.Account, value big.Int, timeout int64, hash [32]byte) common.Contract {
 	return nil
 }
 

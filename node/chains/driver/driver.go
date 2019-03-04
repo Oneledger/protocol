@@ -14,8 +14,7 @@ type ChainDriver interface {
 	GetChainAddress(chainKey interface{}) []byte
 	GetMethodsList() []string                   // @TODO return as strings now, but probably need to replace them with callback methods?
 	ExecuteMethod(string, []byte) status.Code   // @TODO should the execute method return anything else?
-	GetAddressFromByteArray([]byte) interface{}
-	CreateSwapContract(receiver interface{}, account id.Account, value big.Int, timeout int64, hash [32]byte) common.Contract
+	CreateSwapContract(receiver []byte, account id.Account, value big.Int, timeout int64, hash [32]byte) common.Contract
 	CreateSwapContractFromMessage(message []byte) common.Contract
 }
 

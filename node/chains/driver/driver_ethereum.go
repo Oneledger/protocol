@@ -40,13 +40,9 @@ func (driver EthereumDriver) ExecuteMethod(method string, params []byte) status.
 	return status.NOT_IMPLEMENTED
 }
 
-func (driver EthereumDriver) GetAddressFromByteArray(address []byte) interface{} {
-	result := common.BytesToAddress(address)
-	log.Debug("ethereum address", "address", address, "resuslt", result)
-	return result
-}
+func (driver EthereumDriver) CreateSwapContract(receiver []byte, account id.Account, value big.Int, timeout int64, hash [32]byte) oneledger_common.Contract {
+	address := common.BytesToAddress(receiver)
 
-func (driver EthereumDriver) CreateSwapContract(receiver interface{}, account id.Account, value big.Int, timeout int64, hash [32]byte) oneledger_common.Contract {
 	contract := ethereum.CreateHtlContract(account.GetChainKey())
 
 	if contract == nil {
@@ -55,7 +51,7 @@ func (driver EthereumDriver) CreateSwapContract(receiver interface{}, account id
 
 	log.Debug("Create ETH HTLC", "value", value, "receiver", receiver, "hash", hash)
 
-	err := contract.Funds(account.GetChainKey(), &value, big.NewInt(timeout), receiver, hash)
+	err := contract.Funds(account.GetChainKey(), &value, big.NewInt(timeout), address, hash)
 	if err != nil {
 		return nil
 	}

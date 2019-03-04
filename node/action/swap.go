@@ -28,7 +28,6 @@ import (
 
 	"crypto/rand"
 	"crypto/sha256"
-	"reflect"
 	"time"
 
 	"github.com/Oneledger/protocol/node/chains/common"
@@ -954,12 +953,6 @@ func CreateContractBTC(app interface{}, context FunctionValues, tx Transaction) 
 		context[TARGET] = si.Party.Key
 	}
 
-	receiver := chaindriver.GetDriver(data.BITCOIN).GetAddressFromByteArray(receiverParty.Accounts[data.BITCOIN])
-	if receiver == nil {
-		log.Error("Failed to get btc address from string", "address", receiverParty.Accounts[data.BITCOIN], "target", reflect.TypeOf(receiver))
-		return false, nil
-	}
-
 	preimage := GetByte32(context[PREIMAGE])
 	//if context[PASSWORD] != nil {
 	//	scr := GetByte32(context[PASSWORD])
@@ -974,7 +967,7 @@ func CreateContractBTC(app interface{}, context FunctionValues, tx Transaction) 
 	accountName := global.Current.NodeName[:len(global.Current.NodeName) - 5] + "-" + data.BITCOIN.String()
 	chainAccount := GetAccountOnChain(app, accountName, data.BITCOIN)
 
-	contract := chaindriver.GetDriver(data.BITCOIN).CreateSwapContract(receiver, chainAccount, *value, timeout, preimage)
+	contract := chaindriver.GetDriver(data.BITCOIN).CreateSwapContract(receiverParty.Accounts[data.BITCOIN], chainAccount, *value, timeout, preimage)
 
 	previous := GetBytes(context[PREVIOUS])
 	se := SwapExchange{
@@ -1026,17 +1019,12 @@ func CreateContractETH(app interface{}, context FunctionValues, tx Transaction) 
 	//	}
 	//}
 
-	receiver := chaindriver.GetDriver(data.ETHEREUM).GetAddressFromByteArray(receiverParty.Accounts[data.ETHEREUM])
-	if receiver == nil {
-		log.Error("Failed to get eth address from string", "address", receiverParty.Accounts[data.ETHEREUM], "target", reflect.TypeOf(receiver))
-	}
-
 	timeoutSecond := int64(lockPeriod.Seconds())
 
 	var contract common.Contract
 
 	if contractMessage == nil {
-		contract = chaindriver.GetDriver(data.ETHEREUM).CreateSwapContract(receiver, chainAccount, *value, timeoutSecond, preimage)
+		contract = chaindriver.GetDriver(data.ETHEREUM).CreateSwapContract(receiverParty.Accounts[data.ETHEREUM], chainAccount, *value, timeoutSecond, preimage)
 		SaveContract(app, me.AccountKey().Bytes(), int64(data.ETHEREUM), contract.ToBytes())
 	} else {
 		contract = chaindriver.GetDriver(data.ETHEREUM).CreateSwapContractFromMessage(contractMessage)

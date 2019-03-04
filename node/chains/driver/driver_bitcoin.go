@@ -41,26 +41,21 @@ func (driver BitcoinDriver) ExecuteMethod(method string, params []byte) status.C
 	return status.NOT_IMPLEMENTED
 }
 
-func (driver BitcoinDriver) GetAddressFromByteArray(address []byte) interface{} {
-	result, err := btcutil.DecodeAddress(string(address), &chaincfg.RegressionNetParams)
+func (driver BitcoinDriver) CreateSwapContract(receiver []byte, account id.Account, value big.Int, timeout int64, hash [32]byte) common.Contract {
+	address, err := btcutil.DecodeAddress(string(receiver), &chaincfg.RegressionNetParams)
 
 	if err != nil {
 		log.Error("failed to get addressPubKeyHash")
 		return nil
 	}
 
-	return result.(*btcutil.AddressPubKeyHash)
-}
-
-func (driver BitcoinDriver) CreateSwapContract(receiver interface{}, account id.Account, value big.Int, timeout int64, hash [32]byte) common.Contract {
-
 	cli := bitcoin.GetBtcClient(global.Current.BTCAddress, account.GetChainKey())
 
 	amount := bitcoin.GetAmount(value.String())
 
-	initCmd := htlc.NewInitiateCmd(receiver, amount, timeout, hash)
+	initCmd := htlc.NewInitiateCmd(address.(*btcutil.AddressPubKeyHash), amount, timeout, hash)
 
-	_, err := initCmd.RunCommand(cli)
+	_, err = initCmd.RunCommand(cli)
 	if err != nil {
 		log.Error("Bitcoin Initiate", "status", err)
 		return nil
