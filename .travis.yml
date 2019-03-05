@@ -1,6 +1,11 @@
 language: python
 python:
   - "3.6"
+addons:
+  apt:
+    update: true
+    package:
+    - python3-pip
 before_install:
   - sudo pip3 install ansible
 
