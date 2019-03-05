@@ -17,7 +17,7 @@ setup: check tools
 	./setup/install.sh
 	#dep init
 	echo "==== Running dep ensure, this may take awhile... ===="
-	dep ensure
+	dep ensure -v
 	echo "==== Done setting up dependencies! ===="
 
 #
