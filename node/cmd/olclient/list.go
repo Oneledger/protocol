@@ -6,6 +6,7 @@
 package main
 
 import (
+	"encoding/hex"
 	"github.com/Oneledger/protocol/node/action"
 	"github.com/Oneledger/protocol/node/cmd/shared"
 	"github.com/Oneledger/protocol/node/comm"
@@ -160,12 +161,12 @@ func printValidatorQuery(nodeName string, validatorQuery interface{}) {
 	}
 }
 
-func printAValidator(validator id.ValidatorInfo) {
+func printAValidator(validator id.Validator) {
 	// Right-align fieldnames in console
 	address := " Address:"
 	pubkey := "  PubKey:"
 
-	shared.Console.Info(address, validator.Address)
-	shared.Console.Info(pubkey, validator.PubKey)
+	shared.Console.Info(address, hex.EncodeToString(validator.Address))
+	shared.Console.Info(pubkey, validator.PubKey.String())
 	shared.Console.Info()
 }
