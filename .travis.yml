@@ -12,5 +12,6 @@ before_install:
   - sudo pip install ansible
 
 install:
-  - cd $TRAVIS_BUILD_DIR/ansible && ls -la
+  - mv TRAVIS_BUILD_DIR/* $OLROOT/protocol 
+  - cd $OLROOT/protocol/ansible
   - ansible-playbook main.yml -i 'host' --extra-vars "ip=35.190.178.102 reset_network=true"
