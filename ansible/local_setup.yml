@@ -2,12 +2,6 @@
   connection: local
   vars:
     code_change: "{{recompile | default('true')}}"
-  environment:
-    OLROOT: "{{lookup('env','GOPATH')}}/src/github.com/Oneledger"
-    OLDATA: "{{lookup('env','GOPATH')}}/test"
-    OLSCRIPT: "{{lookup('env','OLROOT')}}/protocol/node/scripts"
-    OLSETUP: "{{lookup('env','OLROOT')}}/protocol/node/setup"
-    PATH: "{{lookup('env','PATH')}}:{{lookup('env','GOPATH')}}/bin"
   tasks:
   - name: checkout release tag
     git:
@@ -20,7 +14,7 @@
       groups: fullnode
       app_user: "{{user | default('node') }}"
   - name: setup the dependencies
-    command: chdir={{lookup('env','OLROOT')}}/protocol/node make update
+    command: chdir={{lookup('env','OLROOT')}}/protocol/node make setup
     when: code_change == 'true'
   - name: compile the app binary artifact
     command: chdir={{lookup('env','OLROOT')}}/protocol/node make install
