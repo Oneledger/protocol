@@ -2,7 +2,7 @@ language: python
 python:
   - "3.6"
 before_install:
-  - sudo pip install ansible
+  - sudo pip3 install ansible
 
 install:
   - cd $TRAVIS_BUILD_DIR
