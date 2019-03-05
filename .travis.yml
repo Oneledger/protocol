@@ -13,5 +13,5 @@ before_install:
 
 install:
   - mv $TRAVIS_BUILD_DIR/* $OLROOT/protocol 
-  - cd $OLROOT/protocol/ansible
+  - cd $OLROOT/protocol/ansible && pwd
   - ansible-playbook main.yml -i 'host' --extra-vars "ip=35.190.178.102 reset_network=true"
