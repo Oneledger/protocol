@@ -1,16 +1,17 @@
-language: python
-python:
-  - "3.6"
+language: go
+go:
+  - 1.11.x
 addons:
   apt:
     update: true
     package:
-    - python3-pip
+    - python
+    - python-pip
 before_install:
-  - sudo pip3 install ansible
-
+  - sudo pip install ipaddr
+  - sudo pip install ansible
 install:
-  - cd $TRAVIS_BUILD_DIR
+  - cd $TRAVIS_BUILD_DIR/ansible
   - pwd
   - ls -la
   - ansible-playbook main.yml -i 'host' --extra-vars "ip=35.190.178.102 reset_network=true"
