@@ -10,7 +10,6 @@ addons:
       - "python"
       - "python-pip"
 before_install:
-  - export GOPATH=$HOME/go
   - sudo pip install ipaddr
   - sudo pip install virtualenv --upgrade
   - sudo pip install ansible
