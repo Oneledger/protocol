@@ -12,4 +12,9 @@ before_install:
   - sudo pip install ansible
 
 install:
-  - cd $TRAVIS_BUILD_DIR/ansible && ansible-playbook main.yml -i 'host' --extra-vars "ip=35.190.178.102 reset_network=true"
+  - export GOPATH=$HOME/gopath
+  - export TRAVIS_BUILD_DIR=$HOME/gopath/src/protocol
+  - cd $HOME/gopath/src
+  - mv github.com/Oneledger/protocol ./
+  - cd $TRAVIS_BUILD_DIR/ansible
+  - ansible-playbook main.yml -i 'host' --extra-vars "ip=35.190.178.102 reset_network=true"
