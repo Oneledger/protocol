@@ -5,12 +5,13 @@ addons:
   apt:
     update: true
     packages:
-      - "python2.7.x"
-      - "python-pip"
+      - "python3"
 before_install:
-  - sudo pip install ipaddr
-  - sudo pip install ansible
+  - sudo pip3 install ipaddr
+  - sudo pip3 install ansible
 
 install:
-  - cd $TRAVIS_BUILD_DIR && pwd
+  - cd $TRAVIS_BUILD_DIR
+  - pwd
+  - ls -la
   - ansible-playbook main.yml -i 'host' --extra-vars "ip=35.190.178.102 reset_network=true"
