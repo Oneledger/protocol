@@ -7,9 +7,9 @@ addons:
     package:
     - python
     - python-pip
+    - ansible
 before_install:
   - sudo pip install ipaddr
-  - sudo pip install ansible
 install:
   - export GOPATH=$HOME/gopath
   - export OLDATA=$GOPATH/test
