@@ -9,10 +9,7 @@
       groups: fullnode
       app_user: "{{user | default('node') }}"
   - name: setup the dependencies
-    command: chdir={{lookup('env','OLROOT')}}/protocol/node make tool
-    when: code_change == 'true'
-  - name: setup the dependencies
-    command: chdir={{lookup('env','OLROOT')}}/protocol/node make update
+    command: chdir={{lookup('env','OLROOT')}}/protocol/node make tool update
     when: code_change == 'true'
   - name: compile the app binary artifact
     command: chdir={{lookup('env','OLROOT')}}/protocol/node make install
