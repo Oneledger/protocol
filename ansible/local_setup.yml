@@ -3,11 +3,6 @@
   vars:
     code_change: "{{recompile | default('true')}}"
   tasks:
-  - name: checkout release tag
-    git:
-      repo: 'https://github.com/Oneledger/protocol.git'
-      dest: "{{lookup('env','OLROOT')}}/protocol"
-      version: v0.8.1
   - name: add host
     add_host:
       name: "{{ ip }}"
