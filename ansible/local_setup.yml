@@ -15,4 +15,4 @@
     command: chdir={{lookup('env','OLROOT')}}/protocol/node make install
     when: code_change == 'true'
   - name: create consensus folder
-    command: chdir=../ olfullnode init --genesis genesis.json
+    command: chdir={{lookup('env','OLROOT')}}/protocol olfullnode init --genesis genesis.json
