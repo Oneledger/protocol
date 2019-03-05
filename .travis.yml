@@ -11,7 +11,15 @@ before_install:
   - sudo pip install ipaddr
   - sudo pip install ansible
 install:
+  - export GOPATH=$HOME/gopath
+  - export OLDATA=$GOPATH/test
+  - export OLROOT=$GOPATH/src/github.com/Oneledger
+  - export OLSCRIPT=$OLROOT/protocol/node/scripts
+  - export OLSETUP=$OLROOT/protocol/node/setup
+  - export OLTEST=$OLROOT/protocol/node/scripts
+  - export PATH=$PATH:$GOPATH/bin
+  - echo $GOPATH
+  - echo $TRAVIS_BUILD_DIR
+  - echo $OLROOT
   - cd $TRAVIS_BUILD_DIR/ansible
-  - pwd
-  - ls -la
   - ansible-playbook main.yml -i 'host' --extra-vars "ip=35.190.178.102 reset_network=true"
