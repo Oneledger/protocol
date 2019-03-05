@@ -30,11 +30,12 @@ import (
 
 // Load the Priv Validator file directly from the associated Tendermint node
 func LoadPrivValidatorFile() {
-	filePath := global.Current.TendermintRoot + "/config/priv_validator.json"
-	filepv := privval.LoadFilePV(filePath)
+	keyfilePath := global.Current.TendermintRoot + "/config/priv_validator_key.json"
+	statefilePath := global.Current.TendermintRoot + "/data/priv_validator_state.json"
+	filepv := privval.LoadFilePV(keyfilePath, statefilePath)
 	address := filepv.GetAddress()
 	global.Current.TendermintAddress = address.String()
-	pubkey := filepv.PubKey.(ed25519.PubKeyEd25519)
+	pubkey := filepv.GetPubKey().(ed25519.PubKeyEd25519)
 	global.Current.TendermintPubKey = hex.EncodeToString(pubkey[:])
 
 }
