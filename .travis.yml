@@ -1,9 +1,6 @@
----
 language: go
-env:
-  - GO111MODULE=on
 go:
-  - "1.10.x"
+  - "1.11.x"
 addons:
   apt:
     update: true
@@ -13,7 +10,3 @@ addons:
 before_install:
   - sudo pip install ipaddr
   - sudo pip install ansible
-  - sudo apt-get install go-dep
-
-install:
-  - cd $TRAVIS_BUILD_DIR/ansible && ansible-playbook main.yml -i 'host' --extra-vars "ip=35.190.178.102 reset_network=true"
