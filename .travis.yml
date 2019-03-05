@@ -1,15 +1,8 @@
-language: go
-go:
-  - "1.11.x"
-addons:
-  apt:
-    update: true
-    packages:
-      - "python3"
-      - "python3-pip"
+language: python
+python:
+  - "2.7.x"
 before_install:
-  - sudo pip3 install ipaddr
-  - sudo pip3 install ansible
+  - sudo pip install ansible
 
 install:
   - cd $TRAVIS_BUILD_DIR
