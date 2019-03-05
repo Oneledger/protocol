@@ -7,11 +7,11 @@ addons:
     package:
     - python
     - python-pip
-    - ansible
 before_install:
   - sudo pip install ipaddr
+  - sudo pip install ansible
 install:
-  - export GOPATH=$HOME/gopath
+  - export GOPATH=$HOME/go
   - export OLDATA=$GOPATH/test
   - export OLROOT=$GOPATH/src/github.com/Oneledger
   - export OLSCRIPT=$OLROOT/protocol/node/scripts
@@ -21,5 +21,4 @@ install:
   - echo $GOPATH
   - echo $TRAVIS_BUILD_DIR
   - echo $OLROOT
-  - cd $TRAVIS_BUILD_DIR/ansible
-  - ansible-playbook main.yml -i 'host' --extra-vars "ip=35.190.178.102 reset_network=true"
+  - cd $TRAVIS_BUILD_DIR/ansible && ansible-playbook main.yml -i 'host' --extra-vars "ip=35.190.178.102 reset_network=true"
