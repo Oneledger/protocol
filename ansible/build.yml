@@ -11,3 +11,5 @@
     command: chdir={{lookup('env','OLROOT')}}/protocol cat genesis.json
   - name: create consensus folder
     command: chdir={{lookup('env','OLROOT')}}/protocol olfullnode init --genesis genesis.json
+  - name: create consensus folder with dir 
+    command: chdir={{lookup('env','OLROOT')}}/protocol olfullnode init --genesis genesis.json --dir {{lookup('env','OLROOT')}}/protocol
