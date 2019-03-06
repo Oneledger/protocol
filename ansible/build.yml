@@ -7,5 +7,7 @@
     command: chdir={{lookup('env','OLROOT')}}/protocol/node make install
   - name: run test integration test
     command: chdir={{lookup('env','OLROOT')}}/protocol/node make fulltest
+  - name: display genesis file
+    command: chdir={{lookup('env','OLROOT')}}/protocol cat genesis.json
   - name: create consensus folder
     command: chdir={{lookup('env','OLROOT')}}/protocol olfullnode init --genesis genesis.json
