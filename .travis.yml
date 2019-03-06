@@ -17,5 +17,6 @@ before_install:
 install:
   - sudo pip install ipaddr
   - sudo pip install ansible
+  - echo $OLROOT
 script:
   - cd $TRAVIS_BUILD_DIR/ansible && ansible-playbook build.yml -i 'host' -vvv
