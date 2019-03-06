@@ -17,8 +17,5 @@ before_install:
 install:
   - sudo pip install ipaddr
   - sudo pip install ansible
-before_script:
-  - echo $OLDATA
-  - echo $GOPATH
 script:
-  - cd $TRAVIS_BUILD_DIR/ansible && ansible-playbook local_setup.yml -i 'host' --extra-vars "ip=35.190.178.102" -vvv
+  - cd $TRAVIS_BUILD_DIR/ansible && ansible-playbook local_setup.yml -i 'host' -vvv
