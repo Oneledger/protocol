@@ -58,7 +58,7 @@ func (driver EthereumDriver) CreateSwapContract(receiver []byte, account id.Acco
 	return contract
 }
 
-func (driver EthereumDriver) CreateRedeemContract(contract Contract, account id.Account, hash [32]byte) Contract {
+func (driver EthereumDriver) RedeemContract(contract Contract, account id.Account, hash [32]byte) Contract {
 	contractETH := contract.(*ethereum.HTLContract)
 
 	err := contractETH.Redeem(account.GetChainKey(), hash[:])
@@ -70,11 +70,12 @@ func (driver EthereumDriver) CreateRedeemContract(contract Contract, account id.
 	return contract
 }
 
-func (driver EthereumDriver) CreateRefundContract(contract Contract, account id.Account) Contract {
+func (driver EthereumDriver) RefundContract(contract Contract, account id.Account) Contract {
 	contractETH := contract.(*ethereum.HTLContract)
 
 	err := contractETH.Refund(account.GetChainKey())
 	if err != nil {
+		log.Error("Ethereum refund htlc", "status", err)
 		return nil
 	}
 

@@ -1180,7 +1180,7 @@ func RedeemBTC(app interface{}, context FunctionValues, tx Transaction, chain da
 	accountName := global.Current.NodeName[:len(global.Current.NodeName) - 5] + "-" + chain.String()
 	chainAccount := GetAccountOnChain(app, accountName, chain)
 
-	newcontract := chaindriver.GetDriver(chain).CreateRedeemContract(contract, chainAccount, scr)
+	newcontract := chaindriver.GetDriver(chain).RedeemContract(contract, chainAccount, scr)
 
 	if newcontract == nil {
 		return false, nil
@@ -1215,7 +1215,7 @@ func RedeemETH(app interface{}, context FunctionValues, tx Transaction, chain da
 
 	scr := GetByte32(context[PASSWORD])
 
-	redeemedcontract := chaindriver.GetDriver(chain).CreateRedeemContract(contract, chainAccount, scr)
+	redeemedcontract := chaindriver.GetDriver(chain).RedeemContract(contract, chainAccount, scr)
 
 	if redeemedcontract == nil {
 		return false, nil
@@ -1250,7 +1250,7 @@ func RefundBTC(app interface{}, context FunctionValues, tx Transaction, chain da
 	accountName := global.Current.NodeName[:len(global.Current.NodeName) - 5] + "-" + chain.String()
 	chainAccount := GetAccountOnChain(app, accountName, chain)
 
-	refundedcontract := chaindriver.GetDriver(chain).CreateRefundContract(contract, chainAccount)
+	refundedcontract := chaindriver.GetDriver(chain).RefundContract(contract, chainAccount)
 
 	if refundedcontract == nil {
 		return false, nil
@@ -1277,7 +1277,7 @@ func RefundETH(app interface{}, context FunctionValues, tx Transaction, chain da
 	accountName := global.Current.NodeName[:len(global.Current.NodeName) - 5] + "-" + chain.String()
 	chainAccount := GetAccountOnChain(app, accountName, chain)
 
-	refundedcontract := chaindriver.GetDriver(chain).CreateRefundContract(contract, chainAccount)
+	refundedcontract := chaindriver.GetDriver(chain).RefundContract(contract, chainAccount)
 
 	if refundedcontract == nil {
 		return false, nil

@@ -66,7 +66,7 @@ func (driver BitcoinDriver) CreateSwapContract(receiver []byte, account id.Accou
 	return contract
 }
 
-func (driver BitcoinDriver) CreateRedeemContract(contract Contract, account id.Account, hash [32]byte) Contract {
+func (driver BitcoinDriver) RedeemContract(contract Contract, account id.Account, hash [32]byte) Contract {
 	contractBTC := contract.(*bitcoin.HTLContract)
 
 	cmd := htlc.NewRedeemCmd(contractBTC.Contract, contractBTC.GetMsgTx(), hash[:])
@@ -85,7 +85,7 @@ func (driver BitcoinDriver) CreateRedeemContract(contract Contract, account id.A
 	return redeemcontract
 }
 
-func (driver BitcoinDriver) CreateRefundContract(contract Contract, account id.Account) Contract {
+func (driver BitcoinDriver) RefundContract(contract Contract, account id.Account) Contract {
 	contractBTC := contract.(*bitcoin.HTLContract)
 
 	cmd := htlc.NewRefundCmd(contractBTC.Contract, contractBTC.GetMsgTx())

@@ -36,11 +36,11 @@ func (driver OneledgerDriver) CreateSwapContract(receiver []byte, account id.Acc
 	return nil
 }
 
-func (driver OneledgerDriver) CreateRedeemContract(contract Contract, account id.Account, hash [32]byte) Contract {
+func (driver OneledgerDriver) RedeemContract(contract Contract, account id.Account, hash [32]byte) Contract {
 	return nil
 }
 
-func (driver OneledgerDriver) CreateRefundContract(contract Contract, account id.Account) Contract {
+func (driver OneledgerDriver) RefundContract(contract Contract, account id.Account) Contract {
 	return nil
 }
 
