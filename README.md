@@ -1,5 +1,6 @@
 [![Build Status](https://travis-ci.org/Oneledger/protocol.svg?branch=master)](https://travis-ci.org/Oneledger/protocol)
-[![Build Status](https://travis-ci.org/Oneledger/protocol.svg?branch=travis-ci-integration)](https://travis-ci.org/Oneledger/protocol)
+[![Build Status](https://travis-ci.org/Oneledger/protocol.svg?branch=release)](https://travis-ci.org/Oneledger/protocol)
+[![Build Status](https://travis-ci.org/Oneledger/protocol.svg?branch=develop)](https://travis-ci.org/Oneledger/protocol)
 # OneLedger Protocol (MVP)
 
 Initial version for the OneLedger Protocol, focusing on cross-chain transactions and identity management for the two different chains, Ethereum and Bitcoin.
