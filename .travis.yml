@@ -20,4 +20,4 @@ install:
   - echo $GOPATH
   - echo $TRAVIS_BUILD_DIR
   - echo $OLROOT
-  - cd $TRAVIS_BUILD_DIR/ansible && ansible-playbook local_setup.yml -i 'host' --extra-vars "ip=35.190.178.102"
+  - cd $TRAVIS_BUILD_DIR/ansible && ansible-playbook local_setup.yml -i 'host' --extra-vars "ip=35.190.178.102" -vvv
