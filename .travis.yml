@@ -13,7 +13,7 @@ before_install:
 - export OLSCRIPT=$OLROOT/protocol/node/scripts
 - export OLSETUP=$OLROOT/protocol/node/setup
 - export OLTEST=$OLROOT/protocol/node/scripts
-- export GO111MODULE="on"
+- export GO111MODULE="off"
 - export PATH=$PATH:$GOPATH/bin
 install:
 - sudo pip install ipaddr
