@@ -1,6 +1,7 @@
 GOTOOLS = \
-	  github.com/golang/dep/cmd/dep \
 	  github.com/golang/protobuf/protoc-gen-go
+
+GO111MODULE = on
 
 all: test
 
@@ -13,18 +14,14 @@ check:
 #
 # Initialize the dependencies
 #
-setup: check tools
+setup: check tools update
 	./setup/install.sh
-	#dep init
-	echo "==== Running dep ensure, this may take awhile... ===="
-	dep ensure -v
-	echo "==== Done setting up dependencies! ===="
 
 #
 # Update the dependencies if they have changed.
 #
 update: check
-	dep ensure
+	go mod vendor
 
 #
 # Get the tools if they are missing
@@ -37,12 +34,6 @@ tools:
 #
 install:
 	go install github.com/Oneledger/protocol/node/cmd/...
-
-#
-# List out all of the tendermint processes
-#
-show:
-	pgrep -lf tendermint
 
 #
 # Check out the running status
@@ -96,7 +87,6 @@ dummyInstall: stop reset start register
 
 exec:
 	@./tests/exec.sh
-
 
 #
 # Start up a node, make sure it is stopped first
