@@ -353,12 +353,24 @@ var chainKey data.DatabaseKey = data.DatabaseKey("chainId")
 func (app Application) BeginBlock(req RequestBeginBlock) ResponseBeginBlock {
 	log.Debug("ABCI: BeginBlock", "req", req)
 
-	votes := req.LastCommitInfo.GetVotes()
+	validators := req.LastCommitInfo.GetValidators()
 	byzantineValidators := req.ByzantineValidators
 
-	app.Validators.Set(app, votes, byzantineValidators, req.Header.LastBlockId.Hash)
+	app.Validators.Set(app, validators, byzantineValidators, req.Header.LastBlockHash)
 
 	app.MakePayment(req)
+
+	/*
+		raw := app.Admin.Get(data.DatabaseKey("PaymentRecord"))
+		if raw == nil {
+			app.MakePayment(req)
+		} else {
+			params := raw.(action.PaymentRecord)
+			if params.BlockHeight == -1 {
+				app.MakePayment(req)
+			}
+		}
+	*/
 
 	newChainId := action.Message(req.Header.ChainID)
 
@@ -532,13 +544,13 @@ func (app Application) DeliverTx(tx []byte) ResponseDeliverTx {
 // EndBlock is called at the end of all of the transactions
 func (app Application) EndBlock(req RequestEndBlock) ResponseEndBlock {
 	log.Debug("ABCI: EndBlock", "req", req)
-	updates := make([]id.Validator, 0)
+	validatorUpdates := make([]types.Validator, 0)
 	if req.Height > 1 && (len(app.Validators.NewValidators) > 0 || len(app.Validators.ToBeRemoved) > 0) {
 
 		for _, validator := range app.Validators.ApprovedValidators {
 			found := false
 			for _, validatorToBePurged := range app.Validators.ToBeRemoved {
-				if bytes.Compare(validator.Address, validatorToBePurged.Validator.Address) == 0 {
+				if bytes.Compare(validator.PubKey.Data, validatorToBePurged.Validator.PubKey.Data) == 0 {
 					found = true
 					err := action.TransferVT(app, validatorToBePurged)
 					if err != status.SUCCESS {
@@ -550,34 +562,26 @@ func (app Application) EndBlock(req RequestEndBlock) ResponseEndBlock {
 			if found == true {
 				validator.Power = 0
 			}
-			updates = append(updates, validator)
+			validatorUpdates = append(validatorUpdates, validator)
 		}
 
 		for _, applyValidator := range app.Validators.NewValidators {
 			if id.HasValidatorToken(app, applyValidator.Validator) {
-				updates = append(updates, applyValidator.Validator)
+				validatorUpdates = append(validatorUpdates, applyValidator.Validator)
 				err := action.TransferVT(app, applyValidator)
 				if err != status.SUCCESS {
 					log.Info("New Validator - error in transfer of VT")
 				}
 			} else {
-				log.Info("Reject validator", "validatorPubKey", applyValidator.Validator)
+				log.Info("Reject validator", "validatorPubKey", applyValidator.Validator.PubKey)
 			}
 
 		}
 
 	}
 
-	validatorFinalUpdates := make([]types.ValidatorUpdate, 0)
-	for _, validator := range updates {
-		validatorUpdate := types.ValidatorUpdate{
-			PubKey: validator.PubKey,
-			Power:  validator.Power,
-		}
-		validatorFinalUpdates = append(validatorFinalUpdates, validatorUpdate)
-	}
 	result := ResponseEndBlock{
-		ValidatorUpdates: validatorFinalUpdates,
+		ValidatorUpdates: validatorUpdates,
 		Tags:             []common.KVPair(nil),
 	}
 

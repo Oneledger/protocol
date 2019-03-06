@@ -73,7 +73,7 @@ func runDevnet(cmd *cobra.Command, _ []string) error {
 
 	validatorList := make([]consensus.GenesisValidator, testnetArgs.numValidators)
 
-	// Create the GenesisValidator list and its key files priv_validator_key.json and node_key.json
+	// Create the GenesisValidator list and its key files priv_validator.json and node_key.json
 	for i := 0; i < args.numValidators+args.numNonValidators; i++ {
 		isValidator := i < args.numValidators
 		nodeName := nodeNames[i]
@@ -91,7 +91,7 @@ func runDevnet(cmd *cobra.Command, _ []string) error {
 		}
 
 		// Make private validator file
-		pvFile := privval.GenFilePV(filepath.Join(configDir, "priv_validator_key.json"), filepath.Join(configDir, "../data/priv_validator_state.json"))
+		pvFile := privval.GenFilePV(filepath.Join(configDir, "priv_validator.json"))
 		pvFile.Save()
 
 		if isValidator {

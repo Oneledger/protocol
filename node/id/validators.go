@@ -3,56 +3,58 @@ package id
 import (
 	"bytes"
 	"encoding/hex"
+	"math/big"
+	"strings"
+
 	"github.com/Oneledger/protocol/node/data"
 	"github.com/Oneledger/protocol/node/log"
 	"github.com/Oneledger/protocol/node/serial"
 	"github.com/tendermint/tendermint/abci/types"
-	"math/big"
-	"strings"
 )
 
 type Validators struct {
-	Signers            []types.VoteInfo
+	Signers            []types.SigningValidator
 	Byzantines         []types.Evidence
 	Approved           []Identity
-	ApprovedValidators []Validator
+	ApprovedValidators []types.Validator
 	SelectedValidator  Identity
 	NewValidators      []ApplyValidator
 	ToBeRemoved        []ApplyValidator
 }
 
-type Validator struct {
-	AccountKey AccountKey
-	Address    []byte
-	PubKey     types.PubKey
-	Power      int64
+type ValidatorInfo struct {
+	Address string
+	PubKey  string
 }
 
 type ApplyValidator struct {
-	Validator Validator
+	Validator types.Validator
 	Stake     data.Coin
 }
 
 func init() {
 	serial.Register(Validators{})
-	serial.Register(Validator{})
+	serial.Register(ValidatorInfo{})
 }
 
 func NewValidatorList() *Validators {
 	return &Validators{}
 }
 
-func (validator Validator) String() {
-
+func NewValidatorInfo(address []byte, pubkey types.PubKey) *ValidatorInfo {
+	return &ValidatorInfo{
+		Address: hex.EncodeToString(address),
+		PubKey:  hex.EncodeToString(pubkey.Data),
+	}
 }
 
-func (list *Validators) Set(app interface{}, validators []types.VoteInfo, badValidators []types.Evidence, hash []byte) {
+func (list *Validators) Set(app interface{}, validators []types.SigningValidator, badValidators []types.Evidence, hash []byte) {
 	if validators == nil {
 		return
 	}
 	list.Signers = validators
 	list.Byzantines = badValidators
-	list.ApprovedValidators = make([]Validator, 0)
+	list.ApprovedValidators = make([]types.Validator, 0)
 	list.Approved = list.FindApproved(app)
 	list.NewValidators = make([]ApplyValidator, 0)
 	list.ToBeRemoved = make([]ApplyValidator, 0)
@@ -102,11 +104,8 @@ func (list *Validators) FindApproved(app interface{}) []Identity {
 			approvedIdentities = append(approvedIdentities, identity)
 
 			//add the approved validators to the NewValidators list to be used in the EndBlock call
-			tmp := Validator{
-				Address: entry.GetValidator().Address,
-				Power:   entry.GetValidator().Power,
-			}
-			validator := GetValidator(identity.TendermintAddress, identity.TendermintPubKey, entry.Validator.Power)
+			tmp := entry.Validator
+			validator := GetTendermintValidator(identity.TendermintAddress, identity.TendermintPubKey, entry.Validator.Power)
 			if validator != nil {
 				tmp = *validator
 			}
@@ -138,7 +137,7 @@ func (list Validators) IsValidAccountKey(key AccountKey, index int) bool {
 	return false
 }
 
-func GetValidator(address string, pubkey string, power int64) *Validator {
+func GetTendermintValidator(address string, pubkey string, power int64) *types.Validator {
 	buffer, err := hex.DecodeString(pubkey)
 	if err != nil {
 		log.Debug("Failed to decode the pubkey", "pubkey", pubkey, "err", err)
@@ -165,14 +164,14 @@ func GetValidator(address string, pubkey string, power int64) *Validator {
 		log.Debug("Failed to decode address", "addres", address)
 		return nil
 	}
-	return &Validator{
+	return &types.Validator{
 		Address: addr,
 		PubKey:  tpubkey,
 		Power:   power,
 	}
 }
 
-func HasValidatorToken(app interface{}, validator Validator) bool {
+func HasValidatorToken(app interface{}, validator types.Validator) bool {
 	identities := GetIdentities(app)
 	balances := GetBalances(app)
 

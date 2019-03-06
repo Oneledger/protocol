@@ -66,16 +66,16 @@
 
 [[constraint]]
   name = "github.com/tendermint/go-amino"
-  version = "=0.14.1"
+  version = "=0.10.1"
 
 # TODO: Change this to a constraint, set to override b/c iavl 0.10.0 has a version dependency on tendermint 0.22.0
 [[override]]
   name = "github.com/tendermint/tendermint"
-  version = "=0.30.1"
+  version = "=0.23.1"
 
 [[constraint]]
   name = "github.com/tendermint/iavl"
-  version = "=0.12.0"
+  version = "=0.10.0"
 
 [[override]]
   source = "https://github.com/fsnotify/fsnotify/archive/v1.4.7.tar.gz"
