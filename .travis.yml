@@ -1,6 +1,6 @@
 language: go
 go:
-  - 1.11.x
+- 1.11.x
 addons:
   apt:
     update: true
@@ -8,15 +8,24 @@ addons:
     - python
     - python-pip
 before_install:
-  - export OLDATA=$GOPATH/test
-  - export OLROOT=$GOPATH/src/github.com/Oneledger
-  - export OLSCRIPT=$OLROOT/protocol/node/scripts
-  - export OLSETUP=$OLROOT/protocol/node/setup
-  - export OLTEST=$OLROOT/protocol/node/scripts
-  - export PATH=$PATH:$GOPATH/bin
+- export OLDATA=$GOPATH/test
+- export OLROOT=$GOPATH/src/github.com/Oneledger
+- export OLSCRIPT=$OLROOT/protocol/node/scripts
+- export OLSETUP=$OLROOT/protocol/node/setup
+- export OLTEST=$OLROOT/protocol/node/scripts
+- export PATH=$PATH:$GOPATH/bin
 install:
-  - sudo pip install ipaddr
-  - sudo pip install ansible
-  - echo $OLROOT
+- sudo pip install ipaddr
+- sudo pip install ansible
 script:
-  - cd $TRAVIS_BUILD_DIR/ansible && ansible-playbook build.yml -i 'host' -vvv
+- cd $TRAVIS_BUILD_DIR/ansible && ansible-playbook build.yml -i 'host' -vvv
+deploy:
+  provider: releases
+  api_key:
+    secure: 2bnCcsdf5wf6zOYTJoYhunhzilLVFHL0ToSoVo8hXpaCsBtGGbO74uA3lustVSIbfrcKfE6XNMB0rOqUujEZiUtL2YvowTOFi/XuhNYO3IC9G+jdo5miCvh6PRo0O/eSsz2gluTIKPp8MPTvqfeWExgPvtUDYp9XDbRn8Pi2DPrdJ5JHmAusVVzYnVfulUjlah8yHsgLEkGlLFS0m/E1QudvlM8bqEIOnDKY4E+PdXANaWQSqNwj2rYlC2OqMSAUucvCsPENLtAuaWOo8/GJXlJqGTJr4cQNgZs+cA0CGicgnlmkmMtV7p3Cxtdactj7I5irkNCdL0YIRHwL8THo1xuWjTtqugxeDqcOHMPnGVKaCtbh0mzVzGuQTS3B5B3Ihp03JeZVq6rjGIKrYyTSjV2nD0HiCpKWb4rm4MQc2OFPoMqmmMWX4eKGp2sa04pF0v1NXK98B0qtUHgt2u/Zd+HjT8X4LoMiuh1g+6+DkGzSaQK8gSRd3B1rW/bx7ucJtQV+nb/nnfKvd2zLT6Z8WUuycJwkt+lA3jxDhiXm5apq8UN8zw/9JhAwjU04ID+gKNkjp3CALf5QlvBATT5PHSW+HrqLeS8wBwdjOVRBR8i1Rn0tFjsFhfQRFKhPSoVm3l1BfI23B2vLfN047pGtUceCzq55t2yD4IaSa+67go0=
+  skip_cleanup: true
+  file: "$GOPATH/bin"
+  draft: true
+  on:
+    repo: Oneledger/protocol
+    branch: travis-ci-integration
