@@ -7,7 +7,6 @@ package main
 
 import (
 	"os"
-	"path/filepath"
 	"runtime/debug"
 
 	"github.com/Oneledger/protocol/node/app" // Import namespace
@@ -18,9 +17,6 @@ import (
 	"github.com/Oneledger/protocol/node/global"
 	"github.com/Oneledger/protocol/node/log"
 	"github.com/Oneledger/protocol/node/persist"
-	"github.com/tendermint/tendermint/privval"
-	"github.com/tendermint/tendermint/types"
-
 	"github.com/spf13/cobra"
 )
 
@@ -75,12 +71,6 @@ func StartNode(cmd *cobra.Command, args []string) {
 	//service = server.NewSocketServer("tcp://127.0.0.1:46658", *node)
 
 	tmDir := global.ConsensusDir()
-	privValidator := privval.LoadFilePV(filepath.Join(tmDir, "config", "priv_validator.json"))
-	genesisDoc, err := types.GenesisDocFromFile(filepath.Join(tmDir, "config", "genesis.json"))
-	if err != nil {
-		log.Fatal("Couldn't read genesis file", "location", filepath.Join(tmDir, "genesis.json"))
-	}
-
 	// TODO: Source this from static file
 	tmConfig := consensus.Config{
 		Moniker:         global.Current.NodeName,
@@ -94,7 +84,7 @@ func StartNode(cmd *cobra.Command, args []string) {
 	}
 
 	// TODO: change the the priv_validator locaiton
-	service, err := consensus.NewNode(*node, tmConfig, privValidator, genesisDoc)
+	service, err := consensus.NewNode(*node, tmConfig)
 	if err != nil {
 		log.Error("Failed to create NewNode", "err", err)
 		os.Exit(1)

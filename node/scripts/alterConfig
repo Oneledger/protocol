@@ -25,5 +25,5 @@ export LOG=$WORK
 export DATA=$WORK/consensus
 
 #cp $STAGING/config/config.toml $DATA/config/config.toml
-#cp $STAGING/$SUBDIR/config/priv_validator.json $DATA/config/priv_validator.json
+#cp $STAGING/$SUBDIR/config/priv_validator_key.json $DATA/config/priv_validator_key.json
 cat $STAGING/$SUBDIR/config/genesis.json | jq -f $CMD/genesis.jq

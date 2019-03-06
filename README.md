@@ -1,31 +1,22 @@
 [![Build Status](https://travis-ci.org/Oneledger/protocol.svg?branch=master)](https://travis-ci.org/Oneledger/protocol)
 [![Build Status](https://travis-ci.org/Oneledger/protocol.svg?branch=release)](https://travis-ci.org/Oneledger/protocol)
 [![Build Status](https://travis-ci.org/Oneledger/protocol.svg?branch=develop)](https://travis-ci.org/Oneledger/protocol)
-# OneLedger Protocol (MVP)
+# OneLedger Protocol 
 
-Initial version for the OneLedger Protocol, focusing on cross-chain transactions and identity management for the two different chains, Ethereum and Bitcoin.
-
-The main part of the system is the blockchain full-node, which is currently an ABCi app based on low-level parts of the Tendermint consensus library. As development continues we will replace the Tendermint components with our own multi-level consensus engine, in order to achieve the advanced functionality we have outlined in our Whitepaper.
+This repo is the OneLedger blockchain full-node, which is currently an ABCi app based on low-level parts of the Tendermint consensus library
 
 ## Table of Contents
 
 * [Getting Started](#getting-started)
-  * [Manual Compilation](#manual-compilation)
-    * [System Requirements](#system-requirements)
-    * [Install](#install)
-  * [Make Targets](#make-targets)
-  * [Docker](#docker)
-* [Components](#components)
-  * [Node](#node)
-  * [Consensus](#consensus)
-  * [Lite Chain](#lite-chain)
+    * [Development](#Development)
+    * [Join OneLedger Testnet](#join-oneledger-testnet)
 * [License](#license)
 
 ## Getting Started
 
-These instructions will get a copy of the OneLedger Protocol up and running on your local machine.
+### Development
 
-### Manual Compilation
+   These instructions will get a copy of the OneLedger Protocol up and running on your local machine.
 
 #### System Requirements
 
@@ -74,46 +65,16 @@ If everything is set up properly, you can begin testing the OneLedger Protocol w
 | `make monitor` | Start tmux session |
 | `make stopmon` | Stops tmux session |
 
-### Interactive Docker
-
-See [DOCKER/](DOCKER/) for instructions on running a testnet with Docker Compose.
-
-The OneLedger Protocol can be started as a Docker container. This is the easiest way to set up the OneLedger Protocol on your computer. You'll need to install [Docker CE](https://docs.docker.com/install/) on your computer to use this method.
-
-Build the protocol image:
-```
-$ git clone https://github.com/Oneledger/protocol.git && cd protocol
-$ make docker-interactive
-```
-
-Start the protocol container (runs through your shell interactively):
-```
-$ make run-interactive
-```
-
 See [Make Targets](#make-targets) to see a list of `make` commands you can run to interact with the OneLedger Protocol.
 
+### Join OneLedger Testnet 
 
-## Components
+* [Setup a node](https://github.com/Oneledger/protocol/wiki/Chronos-Set-Up-Instructions-v0.8.1)
 
-### Node
+* [Become Validator](https://github.com/Oneledger/protocol/wiki/Chronos-Validator-Instructions-v0.8.1)
 
-* Implements a fullnode with Tendermint consensus PoS (Proof-of-Stake)
-* Supports cross-chain transactions (as synchronized swaps on Hashed Timelocks)
-  * Etheruem
-  * Bitcoin
-* Supports Identity Management for OneLedger, Ethereum and Bitcoin
-* See the `node` README at [node/README.md](node/README.md) for more details
+* [Check the explorer](https://oneledger.network)
 
-### Consensus
-
-* Preliminary PoS consensus engine, single-layer
-* Post-MVP core development
-
-### Lite Chain
-
-* Simple chain and protocol for internal testing
-* Implements a miner with Satoshi consensus PoW (Proof-of-Work)
 
 ## License
 

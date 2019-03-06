@@ -81,7 +81,7 @@ func initNode(cmd *cobra.Command, _ []string) error {
 		return err
 	}
 	// Make private validator file
-	pvFile := privval.GenFilePV(filepath.Join(dir, "priv_validator.json"))
+	pvFile := privval.GenFilePV(filepath.Join(dir, "priv_validator_key.json"), filepath.Join(dir, "../data/priv_validator_state.json"))
 	pvFile.Save()
 
 	return nil

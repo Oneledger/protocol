@@ -132,7 +132,7 @@ func (transaction *ApplyValidator) ProcessDeliver(app interface{}) status.Code {
 	}
 
 	validators := GetValidators(app)
-	validator := id.GetTendermintValidator(transaction.TendermintAddress, transaction.TendermintPubKey, 1)
+	validator := id.GetValidator(transaction.TendermintAddress, transaction.TendermintPubKey, 1)
 	if validator == nil {
 		return status.EXECUTE_ERROR
 	}

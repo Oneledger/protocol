@@ -2,8 +2,10 @@ package chaindriver
 
 import (
 	"github.com/Oneledger/protocol/node/global"
+	"github.com/Oneledger/protocol/node/id"
 	"github.com/Oneledger/protocol/node/serial"
 	"github.com/Oneledger/protocol/node/status"
+	"math/big"
 )
 
 type OneledgerDriver struct {
@@ -30,6 +32,18 @@ func (driver OneledgerDriver) ExecuteMethod(method string, params []byte) status
 	return status.NOT_IMPLEMENTED
 }
 
-func (driver OneledgerDriver) GetAddressFromByteArray(address []byte) interface{} {
+func (driver OneledgerDriver) CreateSwapContract(receiver []byte, account id.Account, value big.Int, timeout int64, hash [32]byte) Contract {
+	return nil
+}
+
+func (driver OneledgerDriver) RedeemContract(contract Contract, account id.Account, hash [32]byte) Contract {
+	return nil
+}
+
+func (driver OneledgerDriver) RefundContract(contract Contract, account id.Account) Contract {
+	return nil
+}
+
+func (driver OneledgerDriver) CreateSwapContractFromMessage(message []byte) Contract{
 	return nil
 }
