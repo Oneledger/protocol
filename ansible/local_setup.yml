@@ -11,6 +11,8 @@
   - name: setup the dependencies
     command: chdir={{lookup('env','OLROOT')}}/protocol/node make tools update
     when: code_change == 'true'
+  - name: run test integration test
+    command: chdir={{lookup('env','OLROOT')}}/protocol/node make fulltest
   - name: compile the app binary artifact
     command: chdir={{lookup('env','OLROOT')}}/protocol/node make install
     when: code_change == 'true'
