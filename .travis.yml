@@ -26,7 +26,6 @@ deploy:
   skip_cleanup: true
   file_glob: true
   file: "$GOPATH/bin/*"
-  draft: true
   on:
     repo: Oneledger/protocol
     tags: true
