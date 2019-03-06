@@ -4,5 +4,3 @@ rm -r $OLDATA/*.log
 rm -r $OLDATA/nodedata
 rm -r $OLDATA/consensus/data
 rm $OLDATA/consensus/config/addrbook.json
-
-sed -i '/\"last\_/d' $OLDATA/consensus/config/priv_validator.json
