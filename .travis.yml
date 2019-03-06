@@ -18,4 +18,4 @@ install:
   - sudo pip install ipaddr
   - sudo pip install ansible
 script:
-  - cd $TRAVIS_BUILD_DIR/ansible && ansible-playbook local_setup.yml -i 'host' -vvv
+  - cd $TRAVIS_BUILD_DIR/ansible && ansible-playbook build.yml -i 'host' -vvv
