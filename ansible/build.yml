@@ -9,5 +9,10 @@
     command: chdir={{lookup('env','OLROOT')}}/protocol/node make fulltest
   - name: display genesis file
     command: chdir={{lookup('env','GOPATH')}}/test cat ./Alice-Node/consensus/config/genesis.json
+  - name: create temp config.toml file
+    file:
+      path: "{{lookup('env','GOPATH')}}/test"
+      state: touch
+      mode: 0644
   - name: create consensus folder with dir
     command: olfullnode init --genesis ./Alice-Node/consensus/config/genesis.json --dir {{lookup('env','GOPATH')}}/test
