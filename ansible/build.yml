@@ -14,9 +14,5 @@
       path: "{{lookup('env','GOPATH')}}/test"
       state: touch
       mode: 0644
-  - name: change genesis file permission
-    file:
-      path: "{{lookup('env','GOPATH')}}/test/Alice-Node/consensus/config/genesis.json"
-      mode: 0644
   - name: create consensus folder with dir
     command: chdir={{lookup('env','GOPATH')}}/test olfullnode init --genesis ./Alice-Node/consensus/config/genesis.json --dir {{lookup('env','GOPATH')}}/test
