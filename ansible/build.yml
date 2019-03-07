@@ -19,7 +19,7 @@
       path: "{{lookup('env','GOPATH')}}/test"
       mode: 0644
       recurse: yes
-      become: true
-      become_user: root
+    become: true
+    become_user: root
   - name: create consensus folder with dir
     command: chdir={{lookup('env','GOPATH')}}/test olfullnode init --genesis ./Alice-Node/consensus/config/genesis.json --dir {{lookup('env','GOPATH')}}/test
