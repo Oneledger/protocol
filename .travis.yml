@@ -12,7 +12,7 @@ before_install:
 - export OLROOT=$GOPATH/src/github.com/Oneledger
 - export OLSCRIPT=$OLROOT/protocol/node/scripts
 - export OLSETUP=$OLROOT/protocol/node/setup
-- export OLTEST=$OLROOT/protocol/node/scripts
+- export OLTEST=$OLROOT/protocol/node/tests
 - export GO111MODULE="on"
 - export PATH=$PATH:$GOPATH/bin
 install:

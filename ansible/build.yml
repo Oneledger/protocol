@@ -8,15 +8,15 @@
   - name: run test integration test
     command: chdir={{lookup('env','OLROOT')}}/protocol/node make fulltest
   - name: display genesis file
-    command: chdir={{lookup('env','GOPATH')}}/test cat ./Alice-Node/consensus/config/genesis.json
+    command: chdir={{lookup('env','OLTEST')}} cat ./Alice-Node/consensus/config/genesis.json
   - name: create temp config.toml file
     file:
-      path: "{{lookup('env','GOPATH')}}/test"
+      path: "{{lookup('env','OLTEST')}}"
       state: touch
       mode: 0644
   - name: change genesis file permission
     file:
-      path: "{{lookup('env','GOPATH')}}/test/Alice-Node/consensus/config/genesis.json"
+      path: "{{lookup('env','OLTEST')}}/Alice-Node/consensus/config/genesis.json"
       mode: 0644
   - name: create consensus folder with dir
-    command: chdir={{lookup('env','GOPATH')}}/test olfullnode init --genesis ./Alice-Node/consensus/config/genesis.json --dir {{lookup('env','GOPATH')}}/test
+    command: chdir={{lookup('env','OLTEST')}} olfullnode init --genesis ./Alice-Node/consensus/config/genesis.json --dir {{lookup('env','GOPATH')}}/test
