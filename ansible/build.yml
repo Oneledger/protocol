@@ -8,6 +8,6 @@
   - name: run test integration test
     command: chdir={{lookup('env','OLROOT')}}/protocol/node make fulltest
   - name: display genesis file
-    command: chdir={{lookup('env','OLROOT')}}/protocol cat genesis.json
+    command: chdir={{lookup('env','GOPATH')}}/test cat ./Alice-Node/consensus/config/genesis.json
   - name: create consensus folder with dir
-    command: chdir={{lookup('env','OLROOT')}}/protocol olfullnode init --genesis genesis.json --dir {{lookup('env','OLROOT')}}/protocol
+    command: olfullnode init --genesis ./Alice-Node/consensus/config/genesis.json --dir {{lookup('env','GOPATH')}}/test
