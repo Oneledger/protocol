@@ -23,3 +23,5 @@
     become_user: root
   - name: create consensus folder with dir
     command: chdir={{lookup('env','GOPATH')}}/test olfullnode init --genesis ./Alice-Node/consensus/config/genesis.json --dir {{lookup('env','GOPATH')}}/test
+    become: true
+    become_user: root
