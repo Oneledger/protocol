@@ -66,22 +66,29 @@ func initNode(cmd *cobra.Command, _ []string) error {
 	if err != nil {
 		return err
 	}
-	dir := filepath.Join(args.folder, "consensus", "config")
-	err = os.MkdirAll(dir, 0755)
+	configDir := filepath.Join(args.folder, "consensus", "config")
+	dataDir := filepath.Join(args.folder, "consensus", "data")
+
+	err = os.MkdirAll(configDir, 0755)
 	if err != nil {
 		return err
 	}
-	err = genesisdoc.SaveAs(filepath.Join(dir, "genesis.json"))
+
+	err = os.MkdirAll(dataDir, 0755)
+	if err != nil {
+		return err
+	}
+	err = genesisdoc.SaveAs(filepath.Join(configDir, "genesis.json"))
 	if err != nil {
 		return err
 	}
 	// Make node key
-	_, err = p2p.LoadOrGenNodeKey(filepath.Join(dir, "node_key.json"))
+	_, err = p2p.LoadOrGenNodeKey(filepath.Join(configDir, "node_key.json"))
 	if err != nil {
 		return err
 	}
 	// Make private validator file
-	pvFile := privval.GenFilePV(filepath.Join(dir, "priv_validator_key.json"), filepath.Join(dir, "../data/priv_validator_state.json"))
+	pvFile := privval.GenFilePV(filepath.Join(configDir, "priv_validator_key.json"), filepath.Join(configDir, "../data/priv_validator_state.json"))
 	pvFile.Save()
 
 	return nil
