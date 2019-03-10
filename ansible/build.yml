@@ -6,22 +6,12 @@
   - name: compile the app binary artifact
     command: chdir={{lookup('env','OLROOT')}}/protocol/node make install
   - name: run test integration test
-    command: chdir={{lookup('env','OLROOT')}}/protocol/node make fulltest
-  - name: display genesis file
-    command: chdir={{lookup('env','GOPATH')}}/test cat ./Alice-Node/consensus/config/genesis.json
+    shell: chdir={{lookup('env','OLROOT')}}/protocol/node make fulltest
   - name: create temp config.toml file
-    file:
-      path: "{{lookup('env','GOPATH')}}/test"
-      state: touch
+    copy:
+      content: ""
+      dest: "{{lookup('env','GOPATH')}}/test/config.toml"
+      force: yes
       mode: 0644
-  - name: set test permission
-    file:
-      path: "{{lookup('env','GOPATH')}}/test"
-      mode: 0644
-      recurse: yes
-    become: true
-    become_user: root
   - name: create consensus folder with dir
     command: chdir={{lookup('env','GOPATH')}}/test olfullnode init --genesis ./Alice-Node/consensus/config/genesis.json --dir {{lookup('env','GOPATH')}}/test
-    become: true
-    become_user: root
