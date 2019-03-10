@@ -7,7 +7,17 @@ addons:
     package:
     - python
     - python-pip
+  ssh_known_hosts:
+  - 35.203.59.66
+  - 35.203.120.202
+  - 35.203.52.149
+  - 35.203.102.115
+  - 35.203.106.138
+  - 35.203.114.25
 before_install:
+- openssl aes-256-cbc -K $encrypted_64046c0b275a_key -iv $encrypted_64046c0b275a_iv
+  -in id_rsa.enc -out /tmp/id_rsa -d
+- chmod 600 /tmp/id_rsa
 - export OLDATA=$GOPATH/test
 - export OLROOT=$GOPATH/src/github.com/Oneledger
 - export OLSCRIPT=$OLROOT/protocol/node/scripts
@@ -20,7 +30,8 @@ install:
 - sudo pip install cryptography==2.2.2
 - sudo pip install ansible
 script:
-- cd $TRAVIS_BUILD_DIR/ansible && ansible-playbook build.yml -i 'host' -vvv
+- cd $TRAVIS_BUILD_DIR/ansible && ansible-playbook build.yml -i 'host.yml' -vvv
+- cd $TRAVIS_BUILD_DIR/ansible && ansible-playbook transaction_test.yml -i 'host.yml' --private-key /tmp/id_rsa -vvvv
 deploy:
   provider: releases
   prerelease: true
