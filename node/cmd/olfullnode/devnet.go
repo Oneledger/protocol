@@ -79,11 +79,17 @@ func runDevnet(cmd *cobra.Command, _ []string) error {
 		nodeName := nodeNames[i]
 		nodeDir := filepath.Join(args.outputDir, nodeName+"-Node")
 		configDir := filepath.Join(nodeDir, "consensus", "config")
+		dataDir := filepath.Join(nodeDir, "consensus", "data")
+
 		err := os.MkdirAll(configDir, 0755)
 		if err != nil {
 			return err
 		}
 
+		err = os.MkdirAll(dataDir, 0755)
+		if err != nil {
+			return err
+		}
 		// Make node key
 		_, err = p2p.LoadOrGenNodeKey(filepath.Join(configDir, "node_key.json"))
 		if err != nil {
