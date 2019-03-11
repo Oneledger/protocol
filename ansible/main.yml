@@ -1,4 +1,3 @@
-- import_playbook: build.yml 
 - import_playbook: fullnode.yml 
   vars:
     reset_network: "{{reset_network || default('false')}}"
