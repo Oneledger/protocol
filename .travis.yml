@@ -30,7 +30,7 @@ script:
 - cd $TRAVIS_BUILD_DIR/ansible && ansible-playbook build.yml -i 'host.yml' -vvv
 before_deploy:
 - openssl aes-256-cbc -K $encrypted_64046c0b275a_key -iv $encrypted_64046c0b275a_iv
-  -in id_rsa.enc -out /tmp/id_rsa -d
+  -in $TRAVIS_BUILD_DIR/id_rsa.enc -out /tmp/id_rsa -d
 - chmod 600 /tmp/id_rsa
 deploy:
   - provider: releases
