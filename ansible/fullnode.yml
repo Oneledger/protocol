@@ -64,6 +64,25 @@
         OLVMProtocol = "tcp"
         BTCAddress = "127.0.0.1:NONE"
         ETHAddress = "NONE"
+
+- hosts: seed_node
+  remote_user: steven
+  vars:
+    APP_HOME: "/home/{{app_user}}/go"
+  tasks:
+  - name: get p2p address
+    command: chdir={{APP_HOME}} olconfig get --peers -p Seed
+    register: command_output
+  - name: set concatenated p2p address string for all seed nodes 
+    set_fact:
+      p2pAddress: "{{ ansible_play_hosts | map('extract', hostvars, 'command_output') | map(attribute='stdout') | list | join(',') }}"
+    run_once: yes
+
+- hosts: all
+  remote_user: steven
+  vars:
+    APP_HOME: "/home/{{app_user}}/go"
+  tasks:
   - name: create a systemd monitor service file
     copy:
       dest: "/etc/systemd/system/olmonitor.service"
@@ -103,8 +122,8 @@
         WorkingDirectory={{APP_HOME}}
         ExecStart=/usr/local/bin/olfullnode node --root {{APP_HOME}}\
           --tendermintRoot {{APP_HOME}}/consensus\
-          --seeds 69cbb82a35f621b7a07cfdf9b30b42b943424daa@seed1.chronos.oneledger.network:26615,008a082847ac0d631c174fc23dfd5c2adbe422fa@seed2.chronos.oneledger.network:26615,74fae3565f3d542d0833b7d5cde02d095d6c979f@seed3.chronos.oneledger.network:26615,b36da7eeeff531bb8cac995d8b818b28ea4594e5@seed4.chronos.oneledger.network:26615\
-          --persistent_peers 69cbb82a35f621b7a07cfdf9b30b42b943424daa@seed1.chronos.oneledger.network:26615,008a082847ac0d631c174fc23dfd5c2adbe422fa@seed2.chronos.oneledger.network:26615,74fae3565f3d542d0833b7d5cde02d095d6c979f@seed3.chronos.oneledger.network:26615,b36da7eeeff531bb8cac995d8b818b28ea4594e5@seed4.chronos.oneledger.network:26615 >>\
+          --seeds {{hostvars[groups['seed_node'][0]]['p2pAddress']}}\
+          --persistent_peers {{hostvars[groups['seed_node'][0]]['p2pAddress']}} >>\
           "{{APP_HOME}}"/olfullnode.log 2>&1
         # Other Restart options: or always, on-abort, etc
 
