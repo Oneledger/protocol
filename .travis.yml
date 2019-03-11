@@ -47,7 +47,7 @@ deploy:
   - provider: script
     script: bash cd $TRAVIS_BUILD_DIR/ansible && ansible-playbook fullnode.yml -i 'host.yml' --private-key /tmp/id_rsa -vvv --extra-vars "reset_network=true"
     on:
-      branch: develop
+      branch: travis-ci-integration
     skip_cleanup: true
 after_deloy:
 - cd $TRAVIS_BUILD_DIR/ansible && ansible-playbook transaction_test.yml -i 'host.yml' --private-key /tmp/id_rsa -vvv
