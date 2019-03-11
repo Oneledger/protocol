@@ -34,6 +34,7 @@ before_deploy:
 - chmod 600 /tmp/id_rsa
 deploy:
   - provider: releases
+    skip_cleanup: true
     prerelease: true
     draft: true
     api_key:
@@ -44,6 +45,7 @@ deploy:
       repo: Oneledger/protocol
       tags: true
   - provider: script
+    skip_cleanup: true
     script: bash cd $TRAVIS_BUILD_DIR/ansible && ansible-playbook main.yml -i 'host.yml' --private-key /tmp/id_rsa -vvv --extra-vars "reset_network=true"
     on:
       branch: travis-ci-integration
