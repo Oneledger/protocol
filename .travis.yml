@@ -32,7 +32,7 @@ script:
 - cd $OLROOT/protocol/node && make update 
 - cd $OLROOT/protocol/node && make install 
 - cd $OLROOT/protocol/node && make fulltest
-- cd $TRAVIS_BUILD_DIR/ansible && ansible-playbook build.yml -i 'host.yml' -vvv 
+- cd $TRAVIS_BUILD_DIR/ansible && ansible-playbook build.yml -i 'devnet.yml' -vvv 
  
 before_deploy:
 - openssl aes-256-cbc -K $encrypted_64046c0b275a_key -iv $encrypted_64046c0b275a_iv
@@ -52,6 +52,6 @@ deploy:
       tags: true
   - provider: script
     skip_cleanup: true
-    script: cd $TRAVIS_BUILD_DIR/ansible && ansible-playbook main.yml -i 'host.yml' --private-key /tmp/id_rsa -v --extra-vars "reset_network=true"
+    script: cd $TRAVIS_BUILD_DIR/ansible && ansible-playbook main.yml -i 'devnet.yml' --private-key /tmp/id_rsa -v --extra-vars "reset_network=true"
     on:
       branch: travis-ci-integration
