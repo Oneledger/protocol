@@ -2,7 +2,7 @@
   connection: local
   tasks:
   - name: setup the dependencies
-    command: chdir={{lookup('env','OLROOT')}}/protocol/node make tools update
+    command: chdir={{lookup('env','OLROOT')}}/protocol/node make update
   - name: compile the app binary artifact
     command: chdir={{lookup('env','OLROOT')}}/protocol/node make install
   - name: run test integration test
