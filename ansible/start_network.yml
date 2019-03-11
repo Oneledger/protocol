@@ -1,17 +1,3 @@
-# stop app processess running on validator and seed nodes
-- hosts: all
-  remote_user: steven
-  become: true
-  become_user: root
-  tasks:
-    - include: TerminateProcess.yml
-      with_items:
-        - olmonitor
-        - olvm
-        - olfullnode
-      loop_control:
-        loop_var: process
-
 - hosts: all
   remote_user: steven
   become: true
