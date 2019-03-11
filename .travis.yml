@@ -15,9 +15,6 @@ addons:
   - 35.203.106.138
   - 35.203.114.25
 before_install:
-- openssl aes-256-cbc -K $encrypted_64046c0b275a_key -iv $encrypted_64046c0b275a_iv
-  -in id_rsa.enc -out /tmp/id_rsa -d
-- chmod 600 /tmp/id_rsa
 - export OLDATA=$GOPATH/test
 - export OLROOT=$GOPATH/src/github.com/Oneledger
 - export OLSCRIPT=$OLROOT/protocol/node/scripts
@@ -31,16 +28,26 @@ install:
 - sudo pip install ansible
 script:
 - cd $TRAVIS_BUILD_DIR/ansible && ansible-playbook build.yml -i 'host.yml' -vvv
-- cd $TRAVIS_BUILD_DIR/ansible && ansible-playbook transaction_test.yml -i 'host.yml' --private-key /tmp/id_rsa -vvvv
+before_deploy:
+- openssl aes-256-cbc -K $encrypted_64046c0b275a_key -iv $encrypted_64046c0b275a_iv
+  -in id_rsa.enc -out /tmp/id_rsa -d
+- chmod 600 /tmp/id_rsa
 deploy:
-  provider: releases
-  prerelease: true
-  draft: true
-  api_key:
-    secure: 2bnCcsdf5wf6zOYTJoYhunhzilLVFHL0ToSoVo8hXpaCsBtGGbO74uA3lustVSIbfrcKfE6XNMB0rOqUujEZiUtL2YvowTOFi/XuhNYO3IC9G+jdo5miCvh6PRo0O/eSsz2gluTIKPp8MPTvqfeWExgPvtUDYp9XDbRn8Pi2DPrdJ5JHmAusVVzYnVfulUjlah8yHsgLEkGlLFS0m/E1QudvlM8bqEIOnDKY4E+PdXANaWQSqNwj2rYlC2OqMSAUucvCsPENLtAuaWOo8/GJXlJqGTJr4cQNgZs+cA0CGicgnlmkmMtV7p3Cxtdactj7I5irkNCdL0YIRHwL8THo1xuWjTtqugxeDqcOHMPnGVKaCtbh0mzVzGuQTS3B5B3Ihp03JeZVq6rjGIKrYyTSjV2nD0HiCpKWb4rm4MQc2OFPoMqmmMWX4eKGp2sa04pF0v1NXK98B0qtUHgt2u/Zd+HjT8X4LoMiuh1g+6+DkGzSaQK8gSRd3B1rW/bx7ucJtQV+nb/nnfKvd2zLT6Z8WUuycJwkt+lA3jxDhiXm5apq8UN8zw/9JhAwjU04ID+gKNkjp3CALf5QlvBATT5PHSW+HrqLeS8wBwdjOVRBR8i1Rn0tFjsFhfQRFKhPSoVm3l1BfI23B2vLfN047pGtUceCzq55t2yD4IaSa+67go0=
-  skip_cleanup: true
-  file_glob: true
-  file: "$GOPATH/bin/*"
-  on:
-    repo: Oneledger/protocol
-    tags: true
+  - provider: releases
+    prerelease: true
+    draft: true
+    api_key:
+      secure: 2bnCcsdf5wf6zOYTJoYhunhzilLVFHL0ToSoVo8hXpaCsBtGGbO74uA3lustVSIbfrcKfE6XNMB0rOqUujEZiUtL2YvowTOFi/XuhNYO3IC9G+jdo5miCvh6PRo0O/eSsz2gluTIKPp8MPTvqfeWExgPvtUDYp9XDbRn8Pi2DPrdJ5JHmAusVVzYnVfulUjlah8yHsgLEkGlLFS0m/E1QudvlM8bqEIOnDKY4E+PdXANaWQSqNwj2rYlC2OqMSAUucvCsPENLtAuaWOo8/GJXlJqGTJr4cQNgZs+cA0CGicgnlmkmMtV7p3Cxtdactj7I5irkNCdL0YIRHwL8THo1xuWjTtqugxeDqcOHMPnGVKaCtbh0mzVzGuQTS3B5B3Ihp03JeZVq6rjGIKrYyTSjV2nD0HiCpKWb4rm4MQc2OFPoMqmmMWX4eKGp2sa04pF0v1NXK98B0qtUHgt2u/Zd+HjT8X4LoMiuh1g+6+DkGzSaQK8gSRd3B1rW/bx7ucJtQV+nb/nnfKvd2zLT6Z8WUuycJwkt+lA3jxDhiXm5apq8UN8zw/9JhAwjU04ID+gKNkjp3CALf5QlvBATT5PHSW+HrqLeS8wBwdjOVRBR8i1Rn0tFjsFhfQRFKhPSoVm3l1BfI23B2vLfN047pGtUceCzq55t2yD4IaSa+67go0=
+    skip_cleanup: true
+    file_glob: true
+    file: "$GOPATH/bin/*"
+    on:
+      repo: Oneledger/protocol
+      tags: true
+  - provider: script
+    script: bash cd $TRAVIS_BUILD_DIR/ansible && ansible-playbook fullnode.yml -i 'host.yml' --private-key /tmp/id_rsa -vvv --extra-vars "reset_network=true"
+    on:
+      branch: develop
+    skip_cleanup: true
+after_deloy:
+- cd $TRAVIS_BUILD_DIR/ansible && ansible-playbook transaction_test.yml -i 'host.yml' --private-key /tmp/id_rsa -vvv
