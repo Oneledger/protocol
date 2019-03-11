@@ -23,7 +23,7 @@ before_install:
 - export GO111MODULE="on"
 - export PATH=$PATH:$GOPATH/bin
 install:
-- sudo pip install python-netaddr
+- sudo pip install netaddr
 - sudo pip install ipaddr
 - sudo pip install cryptography==2.2.2
 - sudo pip install ansible
