@@ -80,13 +80,6 @@
   vars:
     APP_HOME: "/home/{{app_user}}/go"
   tasks:
-  - name: get p2p address
-    command: chdir={{APP_HOME}} olconfig get --peers -p Seed
-    register: command_output
-  - name: set concatenated p2p address string for all seed nodes 
-    set_fact:
-      p2pAddress: "{{ ansible_play_hosts | map('extract', hostvars, 'command_output') | map(attribute='stdout') | list | join(',') }}"
-    run_once: yes
   - name: copy genesis file to seed node 
     copy:
       src: "{{lookup('env','GOPATH')}}/test/Alice-Node/consensus/config/genesis.json"
@@ -96,6 +89,13 @@
       group: "{{app_user}}"
   - name: generate consensus file for seed node 
     shell: chdir={{APP_HOME}} olfullnode init --genesis genesis.json 
+  - name: get p2p address
+    command: chdir={{APP_HOME}} olconfig get --peers -p Seed
+    register: command_output
+  - name: set concatenated p2p address string for all seed nodes 
+    set_fact:
+      p2pAddress: "{{ ansible_play_hosts | map('extract', hostvars, 'command_output') | map(attribute='stdout') | list | join(',') }}"
+    run_once: yes
 
 - hosts: all
   remote_user: steven
