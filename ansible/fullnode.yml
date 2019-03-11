@@ -80,6 +80,8 @@
 
 - hosts: all
   remote_user: steven
+  become: true
+  become_user: root
   vars:
     APP_HOME: "/home/{{app_user}}/go"
   tasks:
