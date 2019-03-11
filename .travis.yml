@@ -29,9 +29,9 @@ install:
 - sudo pip install cryptography==2.2.2
 - sudo pip install ansible
 script:
-- cd $OLROOT/protocol/node make update 
-- cd $OLROOT/protocol/node make install 
-- cd $OLROOT/protocol/node make fulltest
+- cd $OLROOT/protocol/node && make update 
+- cd $OLROOT/protocol/node && make install 
+- cd $OLROOT/protocol/node && make fulltest
 - cd $TRAVIS_BUILD_DIR/ansible && ansible-playbook build.yml -i 'host.yml' -vvv 
  
 before_deploy:
