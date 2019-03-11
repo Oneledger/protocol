@@ -39,13 +39,6 @@
       limit_type: hard
       limit_item: nofile
       value: 1000000
-  - name: copy configuration file over to each validator and fullnode
-    copy:
-      src: "{{lookup('env','GOPATH')}}/test/{{consensus}}"
-      dest: "{{APP_HOME}}"
-      mode: 0644
-      owner: "{{app_user}}"
-      group: "{{app_user}}"
   - name: create config.toml file with content
     vars:
       internal_ip: "{{ ansible_all_ipv4_addresses | ipaddr('private') | first }}"
@@ -65,8 +58,25 @@
         BTCAddress = "127.0.0.1:NONE"
         ETHAddress = "NONE"
 
+- hosts: validator_node
+  remote_user: steven
+  become: true
+  become_user: root
+  vars:
+    APP_HOME: "/home/{{app_user}}/go"
+  tasks:
+  - name: copy configuration file over to each validator and fullnode
+    copy:
+      src: "{{lookup('env','GOPATH')}}/test/{{consensus}}"
+      dest: "{{APP_HOME}}"
+      mode: 0644
+      owner: "{{app_user}}"
+      group: "{{app_user}}"
+
 - hosts: seed_node
   remote_user: steven
+  become: true
+  become_user: root
   vars:
     APP_HOME: "/home/{{app_user}}/go"
   tasks:
@@ -77,6 +87,15 @@
     set_fact:
       p2pAddress: "{{ ansible_play_hosts | map('extract', hostvars, 'command_output') | map(attribute='stdout') | list | join(',') }}"
     run_once: yes
+  - name: copy genesis file to seed node 
+    copy:
+      src: "{{lookup('env','GOPATH')}}/test/Alice-Node/consensus/config/genesis.json"
+      dest: "{{APP_HOME}}"
+      mode: 0644
+      owner: "{{app_user}}"
+      group: "{{app_user}}"
+  - name: generate consensus file for seed node 
+    shell: chdir={{APP_HOME}} olfullnode init --genesis genesis.json 
 
 - hosts: all
   remote_user: steven
