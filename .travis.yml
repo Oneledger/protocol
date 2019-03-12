@@ -54,4 +54,4 @@ deploy:
     skip_cleanup: true
     script: cd $TRAVIS_BUILD_DIR/ansible && ansible-playbook main.yml -i 'devnet.yml' --private-key /tmp/id_rsa -v --extra-vars "reset_network=true"
     on:
-      branch: travis-ci-integration
+      branch: develop
