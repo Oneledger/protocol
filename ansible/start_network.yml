@@ -1,0 +1,59 @@
+- hosts: all
+  remote_user: steven
+  become: true
+  become_user: root
+  vars:
+    APP_HOME: "/home/{{app_user}}/go"
+  tasks:
+  - name: create a systemd monitor service file
+    copy:
+      dest: "/etc/systemd/system/olmonitor.service"
+      owner: "root"
+      group: "root"
+      mode: 0644
+      content: |
+        [Unit]
+        Description=montor
+        After=network.target
+
+        [Service]
+        WorkingDirectory={{APP_HOME}}
+        ExecStart=/usr/local/bin/olmonitor start olvm execute --root {{APP_HOME}} >> {{APP_HOME}}/olvm.log 2>&1
+        # Other Restart options: or always, on-abort, etc
+
+        [Install]
+        WantedBy=multi-user.target
+  - name: start systemd olmonitor service
+    systemd:
+      name: olmonitor.service
+      scope: system
+      state: restarted
+      daemon_reload: yes
+  - name: create a systemd olfullnode service file
+    copy:
+      dest: "/etc/systemd/system/olfullnode.service"
+      owner: "root"
+      group: "root"
+      mode: 0644
+      content: |
+        [Unit]
+        Description=fullnode server
+        After=network.target
+
+        [Service]
+        WorkingDirectory={{APP_HOME}}
+        ExecStart=/usr/local/bin/olfullnode node --root {{APP_HOME}}\
+          --tendermintRoot {{APP_HOME}}/consensus\
+          --seeds {{hostvars[groups['seed_node'][0]]['p2pAddress']}}\
+          --persistent_peers {{hostvars[groups['seed_node'][0]]['p2pAddress']}} >>\
+          "{{APP_HOME}}"/olfullnode.log 2>&1
+        # Other Restart options: or always, on-abort, etc
+
+        [Install]
+        WantedBy=multi-user.target
+  - name: start systemd olfullnode service
+    systemd:
+      name: olfullnode.service
+      scope: system
+      state: restarted
+      daemon_reload: yes

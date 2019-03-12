@@ -1,6 +1,6 @@
 ---
-- import_playbook: upload_artifact.yml
-- import_playbook: configure_node.yml
-  when: reset_network == 'true'
-- import_playbook: start_node.yml
-- import_playbook: account_setup.yml
+- import_playbook: node_setup.yml 
+  vars:
+    reset_network: "{{reset_network || default('false')}}"
+- import_playbook: start_network.yml
+- import_playbook: transaction_test.yml 

@@ -1,0 +1,24 @@
+all:
+  children:
+    seed_node:
+      hosts:
+        seed1.chronos.oneledger.network:
+          consensus: consensus 
+        seed2.chronos.oneledger.network:
+          consensus: consensus 
+        seed3.chronos.oneledger.network:
+          consensus: consensus 
+        seed4.chronos.oneledger.network:
+          consensus: consensus 
+    validator_node:
+      hosts:
+        35.185.89.206:
+          consensus: Alice-Node/consensus 
+        35.203.103.105:
+          consensus: Bob-Node/consensus 
+        35.240.174.26:
+          consensus: David-Node/consensus 
+        35.204.210.66:
+          consensus: Emma-Node/consensus 
+  vars:
+    app_user: node

@@ -1,0 +1,11 @@
+- hosts: localhost
+  connection: local
+  tasks:
+  - name: create temp config.toml file
+    copy:
+      content: ""
+      dest: "{{lookup('env','GOPATH')}}/test/config.toml"
+      force: yes
+      mode: 0644
+  - name: create consensus folder with dir
+    command: chdir={{lookup('env','GOPATH')}}/test olfullnode init --genesis ./Alice-Node/consensus/config/genesis.json --dir {{lookup('env','GOPATH')}}/test
