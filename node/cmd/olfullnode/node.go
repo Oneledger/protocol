@@ -6,9 +6,6 @@
 package main
 
 import (
-	"os"
-	"runtime/debug"
-
 	"github.com/Oneledger/protocol/node/app" // Import namespace
 	"github.com/Oneledger/protocol/node/cmd/shared"
 	"github.com/Oneledger/protocol/node/config"
@@ -23,33 +20,55 @@ import (
 var nodeCmd = &cobra.Command{
 	Use:   "node",
 	Short: "Start up node (server)",
-	Run:   StartNode,
+	RunE:  StartNode,
 }
 
 // Setup the command and flags in Cobra
 func init() {
 	RootCmd.AddCommand(nodeCmd)
+	// Get information to connect to a my tendermint node
+	nodeCmd.Flags().StringVarP(&global.Current.RpcAddress, "address", "a",
+		global.Current.RpcAddress, "consensus address")
+
+	// DELETEME:
+	nodeCmd.Flags().StringVarP(&global.Current.Transport, "transport", "t",
+		global.Current.Transport, "transport (socket | grpc)")
+
+	nodeCmd.Flags().BoolVarP(&global.Current.Debug, "debug", "d",
+		global.Current.Debug, "Set DEBUG mode")
+
+	nodeCmd.Flags().StringVar(&global.Current.BTCAddress, "btcrpc",
+		global.Current.BTCAddress, "bitcoin rpc address")
+
+	nodeCmd.Flags().StringVar(&global.Current.ETHAddress, "ethrpc",
+		global.Current.ETHAddress, "ethereum rpc address")
+
+	// DELETEME: Should be consistent, always derived from specified RootDir
+	nodeCmd.Flags().StringVar(&global.Current.TendermintRoot, "tendermintRoot",
+		global.Current.TendermintRoot, "tendermint root directory")
+
+	nodeCmd.Flags().StringVar(&global.Current.SDKAddress, "sdkrpc",
+		global.Current.SDKAddress, "Address for SDK RPC Server")
+
+	// TODO: Put this in configuration file
+	nodeCmd.Flags().StringArrayVar(&global.Current.PersistentPeers, "persistent_peers", []string{}, "List of persistent peers to connect to")
+
+	// These could be moved to node persistent flags
+	nodeCmd.Flags().StringVar(&global.Current.P2PAddress, "p2p", "", "Address to use in P2P network")
+
+	// TODO: Add external listening address address
+
+	nodeCmd.Flags().StringVar(&global.Current.Seeds, "seeds", "", "List of seeds to connect to")
+
+	nodeCmd.Flags().BoolVar(&global.Current.SeedMode, "seed_mode", false, "List of seeds to connect to")
 }
 
 // Start a node to run continously
-func StartNode(cmd *cobra.Command, args []string) {
+func StartNode(cmd *cobra.Command, args []string) error {
 
-	// Catch any underlying panics, for now just print out the details properly and stop
-	defer func() {
-		if r := recover(); r != nil {
-			log.Error("Fullnode Fatal Panic, shutting down", "r", r)
-			debug.PrintStack()
-			if service != nil {
-				service.Stop()
-			}
-			os.Exit(-1)
-		}
-	}()
-
-	log.Debug("Starting", "appAddress", global.Current.AppAddress, "on", global.Current.NodeName)
+	log.Debug("Starting", "p2pAddress", global.Current.P2PAddress, "on", global.Current.NodeName)
 
 	node := app.NewApplication()
-
 	//if node.CheckIfInitialized() == false {
 	//	log.Fatal("Node was not properly initialized")
 	//}
@@ -66,12 +85,7 @@ func StartNode(cmd *cobra.Command, args []string) {
 		}
 	})
 
-	// TODO: Switch on config
-	//service = server.NewGRPCServer("unix://data.sock", types.NewGRPCApplication(*node))
-	//service = server.NewSocketServer("tcp://127.0.0.1:46658", *node)
-
 	tmDir := global.ConsensusDir()
-	// TODO: Source this from static file
 	tmConfig := consensus.Config{
 		Moniker:            global.Current.NodeName,
 		RootDirectory:      tmDir,
@@ -88,14 +102,14 @@ func StartNode(cmd *cobra.Command, args []string) {
 	service, err := consensus.NewNode(*node, tmConfig)
 	if err != nil {
 		log.Error("Failed to create NewNode", "err", err)
-		os.Exit(1)
+		return err
 	}
 
 	// Set it running
 	err = service.Start()
 	if err != nil {
 		log.Error("Can't start up node", "err", err)
-		os.Exit(-1)
+		return err
 	}
 
 	global.Current.SetConsensusNode(service)

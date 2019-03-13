@@ -35,50 +35,18 @@ func init() {
 	RootCmd.PersistentFlags().StringVar(&global.Current.RootDir, "root",
 		global.Current.RootDir, "Set root directory")
 
+	// DELETEME: This should be removed
 	RootCmd.PersistentFlags().StringVarP(&global.Current.ConfigName, "config", "c",
 		global.Current.ConfigName, "Configuration File Name")
 
 	RootCmd.PersistentFlags().StringVar(&global.Current.NodeName, "node",
 		global.Current.NodeName, "Set a node name")
 
-	// Get information to connect to an ABCI app (myself)
-	RootCmd.PersistentFlags().StringVar(&global.Current.AppAddress, "app",
-		global.Current.AppAddress, "app address")
-
-	// Get information to connect to a my tendermint node
-	RootCmd.PersistentFlags().StringVarP(&global.Current.RpcAddress, "address", "a",
-		global.Current.RpcAddress, "consensus address")
-
-	RootCmd.PersistentFlags().StringVarP(&global.Current.Transport, "transport", "t",
-		global.Current.Transport, "transport (socket | grpc)")
-
-	RootCmd.PersistentFlags().BoolVarP(&global.Current.Debug, "debug", "d",
-		global.Current.Debug, "Set DEBUG mode")
-
-	RootCmd.PersistentFlags().StringVar(&global.Current.BTCAddress, "btcrpc",
-		global.Current.BTCAddress, "bitcoin rpc address")
-
-	RootCmd.PersistentFlags().StringVar(&global.Current.ETHAddress, "ethrpc",
-		global.Current.ETHAddress, "ethereum rpc address")
-
-	RootCmd.PersistentFlags().StringVar(&global.Current.TendermintRoot, "tendermintRoot",
-		global.Current.TendermintRoot, "tendermint root directory")
-
-	RootCmd.PersistentFlags().StringVar(&global.Current.SDKAddress, "sdkrpc",
-		global.Current.SDKAddress, "Address for SDK RPC Server")
-
-	RootCmd.PersistentFlags().StringVar(&global.Current.PersistentPeers, "persistent_peers", "", "List of persistent peers to connect to")
-
-	RootCmd.PersistentFlags().StringVar(&global.Current.P2PAddress, "p2p", "", "Address to use in P2P network")
-
-	RootCmd.PersistentFlags().StringVar(&global.Current.Seeds, "seeds", "", "List of seeds to connect to")
-
-	RootCmd.PersistentFlags().BoolVar(&global.Current.SeedMode, "seed_mode", false, "List of seeds to connect to")
 }
 
 // Initialize Viper
 func environment() {
 	log.Debug("Loading Environment")
-	config.ServerConfig()
+	config.ConfigureServer()
 	config.UpdateContext()
 }

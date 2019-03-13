@@ -42,10 +42,6 @@ func init() {
 	RootCmd.PersistentFlags().StringVar(&global.Current.NodeName, "node",
 		global.Current.NodeName, "Set a node name")
 
-	// Get information to connect to an ABCI app (myself)
-	RootCmd.PersistentFlags().StringVar(&global.Current.AppAddress, "app",
-		global.Current.AppAddress, "app address")
-
 	// Get information to connect to a my tendermint node
 	RootCmd.PersistentFlags().StringVarP(&global.Current.RpcAddress, "address", "a",
 		global.Current.RpcAddress, "consensus address")
@@ -73,10 +69,9 @@ func init() {
 // Initialize Viper
 func environment() {
 	log.Debug("Loading Environment")
-	config.ServerConfig()
+	config.ConfigureServer()
 
 	// TODO: These need to be integrated into the context loading
 	global.Current.OLVMAddress = viper.Get("OLVMAddress").(string)
 	global.Current.OLVMProtocol = viper.Get("OLVMProtocol").(string)
-	//config.LoadContext()
 }

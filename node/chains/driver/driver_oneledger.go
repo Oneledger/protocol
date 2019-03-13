@@ -17,10 +17,12 @@ func init() {
 }
 
 func (driver OneledgerDriver) GetURL() string {
-	return global.Current.AppAddress
+	// What's the purpose of this? What URL are we advertising?
+	// Removed due to removing global.Current.AppAddress
+	return global.Current.P2PAddress
 }
 
-func (driver OneledgerDriver) GetChainAddress(chainKey interface{}) []byte{
+func (driver OneledgerDriver) GetChainAddress(chainKey interface{}) []byte {
 	return nil
 }
 
@@ -44,6 +46,6 @@ func (driver OneledgerDriver) RefundContract(contract Contract, account id.Accou
 	return nil
 }
 
-func (driver OneledgerDriver) CreateSwapContractFromMessage(message []byte) Contract{
+func (driver OneledgerDriver) CreateSwapContractFromMessage(message []byte) Contract {
 	return nil
 }

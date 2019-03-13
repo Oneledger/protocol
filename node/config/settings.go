@@ -17,7 +17,7 @@ func LogSettings() {
 		"NodeIdentity", global.Current.NodeIdentity)
 
 	log.Info("Locations", "RootDir", global.Current.RootDir)
-	log.Info("Addresses", "RpcAddress", global.Current.RpcAddress, "AppAddress", global.Current.AppAddress)
+	log.Info("Addresses", "RpcAddress", global.Current.RpcAddress)
 
 	log.Info("Tendermint", "TendermintAddress", global.Current.TendermintAddress,
 		"TendermintPubKey", global.Current.TendermintPubKey)

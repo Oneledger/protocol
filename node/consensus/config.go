@@ -10,15 +10,14 @@ import (
 
 // Config is a OneLedger-specific configuration struct used to create a tendermint configuration
 type Config struct {
-	Moniker            string
-	RootDirectory      string
-	RPCAddress         string
-	P2PAddress         string
-	ExternalP2PAddress string
-	IndexTags          []string
-	PersistentPeers    string
-	Seeds              string
-	SeedMode           bool
+	Moniker         string
+	RootDirectory   string
+	RPCAddress      string
+	P2PAddress      string
+	IndexTags       []string
+	PersistentPeers []string
+	Seeds           string
+	SeedMode        bool
 }
 
 // NewConfig returns a ready-to-go tendermint configuration
@@ -40,9 +39,8 @@ func NewConfig(olcfg Config) *config.Config {
 
 	cfg.RPC.ListenAddress = olcfg.RPCAddress
 	cfg.P2P.ListenAddress = olcfg.P2PAddress
-	cfg.P2P.ExternalAddress = olcfg.ExternalP2PAddress
 
-	cfg.P2P.PersistentPeers = olcfg.PersistentPeers
+	cfg.P2P.PersistentPeers = strings.Join(olcfg.PersistentPeers, ",")
 	cfg.P2P.Seeds = olcfg.Seeds
 	cfg.P2P.SeedMode = olcfg.SeedMode
 	cfg.P2P.PexReactor = true

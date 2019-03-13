@@ -7,19 +7,18 @@ package main
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
+
 	"github.com/Oneledger/protocol/node/app"
 	"github.com/Oneledger/protocol/node/cmd/shared"
 	"github.com/Oneledger/protocol/node/data"
-	"github.com/Oneledger/protocol/node/global"
 	"github.com/Oneledger/protocol/node/log"
 	"github.com/spf13/cobra"
 	"github.com/tendermint/tendermint/p2p"
 	"github.com/tendermint/tendermint/privval"
 	"github.com/tendermint/tendermint/types"
 	"golang.org/x/crypto/bcrypt"
-	"os"
-	"path/filepath"
-	"runtime/debug"
 )
 
 var initCmd = &cobra.Command{
@@ -35,6 +34,9 @@ type InitCmdArguments struct {
 	folder      string
 }
 
+// TODO: This command should generate the default config.toml for olfullnode
+// TODO: Condense
+
 var initCmdArguments *InitCmdArguments = &InitCmdArguments{}
 
 func init() {
@@ -42,25 +44,12 @@ func init() {
 
 	initCmd.Flags().StringVar(&initCmdArguments.password, "password", "", "existing node password")
 	initCmd.Flags().StringVar(&initCmdArguments.newPassword, "newpassword", "", "new node password")
-	initCmd.Flags().StringVar(&initCmdArguments.genesis, "genesis", "", "Gensis file to use to generate new node key file")
+	initCmd.Flags().StringVar(&initCmdArguments.genesis, "genesis", "", "Genesis file to use to generate new node key file")
 	initCmd.Flags().StringVar(&initCmdArguments.folder, "dir", "./", "Directory to store initialization files for the node, default current folder")
 }
 
 func initNode(cmd *cobra.Command, _ []string) error {
 	args := initCmdArguments
-	// Catch any underlying panics, for now just print out the details properly and stop
-	defer func() {
-		if r := recover(); r != nil {
-			log.Error("Fullnode Fatal Panic, shutting down", "r", r)
-			debug.PrintStack()
-			if service != nil {
-				service.Stop()
-			}
-			os.Exit(-1)
-		}
-	}()
-
-	log.Debug("Initializing", "appAddress", global.Current.AppAddress, "on", global.Current.NodeName)
 
 	genesisdoc, err := types.GenesisDocFromFile(filepath.Join(args.folder, args.genesis))
 	if err != nil {
@@ -88,7 +77,7 @@ func initNode(cmd *cobra.Command, _ []string) error {
 		return err
 	}
 	// Make private validator file
-	pvFile := privval.GenFilePV(filepath.Join(configDir, "priv_validator_key.json"), filepath.Join(configDir, "../data/priv_validator_state.json"))
+	pvFile := privval.GenFilePV(filepath.Join(configDir, "priv_validator_key.json"), filepath.Join(dataDir, "priv_validator_state.json"))
 	pvFile.Save()
 
 	return nil

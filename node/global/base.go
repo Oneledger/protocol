@@ -40,8 +40,6 @@ type Context struct {
 	RpcAddress string // rpc address
 	Transport  string // socket vs grpc
 
-	AppAddress string // app address
-
 	BTCAddress string // Bitcoin node Address port
 	ETHAddress string // Ethereum node Address port
 
@@ -56,11 +54,10 @@ type Context struct {
 	TendermintAddress string
 	TendermintPubKey  string
 
-	PersistentPeers    string
-	Seeds              string
-	SeedMode           bool
-	P2PAddress         string
-	ExternalP2PAddress string
+	PersistentPeers []string
+	Seeds           string
+	SeedMode        bool
+	P2PAddress      string
 
 	ConsensusNode *tmnode.Node
 
@@ -92,7 +89,7 @@ func NewContext(name string) *Context {
 		PaymentAccount:  "Payment",
 		RootDir:         os.Getenv("OLDATA") + "/" + name,
 
-		SDKAddress: "http://127.0.01:6900",
+		SDKAddress: "http://127.0.0.1:6900",
 
 		// TODO: Should be params in the chain
 		MinSendFee:     0.1,

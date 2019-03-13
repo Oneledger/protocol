@@ -40,10 +40,6 @@ func init() {
 	RootCmd.PersistentFlags().StringVar(&global.Current.NodeName, "node",
 		global.Current.NodeName, "Set a node name")
 
-	// Get information to connect to an ABCI app (myself)
-	RootCmd.PersistentFlags().StringVar(&global.Current.AppAddress, "app",
-		global.Current.AppAddress, "app address")
-
 	// Get information to connect to a my tendermint node
 	RootCmd.PersistentFlags().StringVarP(&global.Current.RpcAddress, "address", "a",
 		global.Current.RpcAddress, "consensus address")
