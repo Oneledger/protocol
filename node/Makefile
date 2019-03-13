@@ -16,6 +16,7 @@ check:
 #
 setup: check tools update
 	./setup/install.sh
+
 #
 # Update the dependencies if they have changed.
 #

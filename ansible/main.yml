@@ -1,0 +1,6 @@
+---
+- import_playbook: node_setup.yml 
+  vars:
+    reset_network: "{{reset_network || default('false')}}"
+- import_playbook: start_network.yml
+- import_playbook: transaction_test.yml 
