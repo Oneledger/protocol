@@ -22,6 +22,7 @@ var updateParameters = []Parameter{
 	Parameter{"RpcAddress", "string"},
 	Parameter{"AppAddress", "string"},
 	Parameter{"P2PAddress", "string"},
+	Parameter{"ExternalP2PAddress", "string"},
 	Parameter{"SDKAddress", "string"},
 	Parameter{"BTCAddress", "string"},
 	Parameter{"ETHAddress", "string"},
