@@ -14,7 +14,7 @@
   - set_fact: remote_hosts={{vm_data.outputs.public_ip.value}}
   - name: add host to inventory file in memory 
     add_host:
-      hostname: "{{item.1}}"
+      hostname: "{{item}}"
     loop: "{{remote_hosts}}"
   - name: add first 4 hosts to validator_node group 
     add_host:
