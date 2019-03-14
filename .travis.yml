@@ -21,7 +21,7 @@ addons:
   - 35.245.204.124
 
 before_install:
-- export OLDATA=  
+- export OLDATA=$GOPATH/test
 - export OLROOT=$GOPATH/src/github.com/Oneledger
 - export OLSCRIPT=$OLROOT/protocol/node/scripts
 - export OLSETUP=$OLROOT/protocol/node/setup
