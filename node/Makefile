@@ -27,7 +27,7 @@ update: check
 # Get the tools if they are missing
 #
 tools:
-	go get -u -v $(GOTOOLS)
+	go get -v $(GOTOOLS)
 
 #
 # Build and install a copy into bin
@@ -154,4 +154,4 @@ protobuf:
 #
 # targets that are not associated with any files
 #
-.PHONY: all build install utest test tools update stop start full
+.PHONY: all build install utest test tools update stop start full reset
