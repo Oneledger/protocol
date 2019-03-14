@@ -3,14 +3,20 @@ package config
 import (
 	"bytes"
 	"io/ioutil"
+	"path/filepath"
 	"time"
 
 	"github.com/BurntSushi/toml"
 	"github.com/Oneledger/protocol/node/cmd/shared"
 	"github.com/Oneledger/protocol/node/global"
 	"github.com/Oneledger/protocol/node/log"
+	"github.com/mitchellh/go-homedir"
 	"github.com/spf13/viper"
+	tmconfig "github.com/tendermint/tendermint/config"
 )
+
+const ConfigFileName = "config.toml"
+const DefaultConfigDirName = ".olfullnode"
 
 // Going to abandon servers
 // Configure Server sets viper to use the specified configuration filename
@@ -26,8 +32,49 @@ func ConfigureServer() {
 	}
 }
 
+// Alternate implementation of ConfigureServer which doesn't rely on global cariables
+// ConfigureServer handles the reading of the configuration file, returns an error
+// if it fails to find any file
+func ConfigureServer2(directory string) error {
+	getConfigData := ioutil.ReadFile
+	givenPath := filepath.Join(directory, ConfigFileName)
+
+	// (1) Check the given path
+	// (2) If that fails, try home
+	home, err := homedir.Dir()
+	if err != nil {
+		// How to handle this err?
+		return err
+	}
+
+	var sc *Server
+	// Search given directory
+	bz, err := getConfigData(givenPath)
+	if err == nil {
+		// Return here
+		err = sc.Unmarshal(bz)
+		return err
+	}
+	defaultPath := filepath.Join(home, DefaultConfigDirName)
+
+	bz, err = getConfigData(defaultPath)
+	if err == nil {
+		err = sc.Unmarshal(bz)
+		return err
+	}
+
+	bz, err = getConfigData(filepath.Clean("./" + ConfigFileName))
+	if err != nil {
+		return err
+	}
+	err = sc.Unmarshal(bz)
+	if err != nil {
+		// 	TODO: modify the global context with the configuration struct
+	}
+}
+
 // Struct for holding the configuration details for the node
-type ServerConfig struct {
+type Server struct {
 	Node      *NodeConfig      `toml:"node"`
 	Network   *NetworkConfig   `toml:"network"`
 	P2P       *P2PConfig       `toml:"p2p"`
@@ -35,47 +82,52 @@ type ServerConfig struct {
 	Consensus *ConsensusConfig `toml:"consensus"`
 }
 
-func (sc *ServerConfig) ReadFile(filepath string) error {
+// ReadFile accepts a filepath and returns the
+func (cfg *Server) ReadFile(filepath string) error {
 	bz, err := shared.ReadFile(filepath)
 	if err != nil {
 		return err
 	}
-	return sc.Unmarshal(bz)
+	return cfg.Unmarshal(bz)
 }
 
-func (sc *ServerConfig) Unmarshal(text []byte) error {
-	_, err := toml.Decode(string(text), sc)
+// Marshal accepts the text form of a TOML configuration file and fills Server with its values
+func (cfg *Server) Unmarshal(text []byte) error {
+	_, err := toml.Decode(string(text), cfg)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (sc *ServerConfig) Marshal() (text []byte, err error) {
+// Marshal returns the text form of Server as TOML
+func (cfg *Server) Marshal() (text []byte, err error) {
 	var buf bytes.Buffer
-	err = toml.NewEncoder(&buf).Encode(sc)
+	err = toml.NewEncoder(&buf).Encode(cfg)
 	text = buf.Bytes()
 	return
 }
 
-func (sc *ServerConfig) SaveFile(filepath string) error {
-	bz, err := sc.Marshal()
+// SaveFile saves the current config to a file at the specified path
+func (cfg *Server) SaveFile(filepath string) error {
+	bz, err := cfg.Marshal()
 	if err != nil {
 		return err
 	}
 	return ioutil.WriteFile(filepath, bz, 0644)
 }
 
-func (sc *ServerConfig) OpenFile(filepath string) error {
+// OpenFile opens the file at a given path and injects the
+func (cfg *Server) OpenFile(filepath string) error {
 	bz, err := ioutil.ReadFile(filepath)
 	if err != nil {
 		return err
 	}
-	return sc.Unmarshal(bz)
+	return cfg.Unmarshal(bz)
 }
 
-func DefaultServerConfig() *ServerConfig {
-	return &ServerConfig{
+func DefaultServerConfig() *Server {
+	return &Server{
 		Node:      DefaultNodeConfig(),
 		Network:   DefaultNetworkConfig(),
 		P2P:       DefaultP2PConfig(),
@@ -131,8 +183,16 @@ type NetworkConfig struct {
 }
 
 func DefaultNetworkConfig() *NetworkConfig {
-	// TODO: Fill in default values
-	return &NetworkConfig{}
+	return &NetworkConfig{
+		RPCAddress:         "tcp://127.0.0.1:26601",
+		P2PAddress:         "tcp://127.0.0.1:26611",
+		ExternalP2PAddress: "",
+		SDKAddress:         "tcp://127.0.0.1:26631",
+		OLVMAddress:        "tcp://127.0.0.1:26641",
+		OLVMProtocol:       "tcp",
+		BTCAddress:         "127.0.0.1:NONE",
+		ETHAddress:         "NONE",
+	}
 }
 
 // P2PConfig defines the options for P2P networking layer
@@ -187,8 +247,22 @@ type P2PConfig struct {
 }
 
 func DefaultP2PConfig() *P2PConfig {
-	// TODO: Fill in default values
-	return &P2PConfig{}
+	var cfg P2PConfig
+	tmDefaults := tmconfig.DefaultP2PConfig()
+	cfg.UPNP = tmDefaults.UPNP
+	cfg.AddrBookStrict = tmDefaults.AddrBookStrict
+	cfg.MaxNumInboundPeers = tmDefaults.MaxNumInboundPeers
+	cfg.MaxNumOutboundPeers = tmDefaults.MaxNumOutboundPeers
+	cfg.FlushThrottleTimeout = tmDefaults.FlushThrottleTimeout
+	cfg.MaxPacketMsgPayloadSize = tmDefaults.MaxPacketMsgPayloadSize
+	cfg.SendRate = tmDefaults.SendRate
+	cfg.RecvRate = tmDefaults.RecvRate
+	cfg.PexReactor = tmDefaults.PexReactor
+	cfg.SeedMode = tmDefaults.SeedMode
+	cfg.AllowDuplicateIP = tmDefaults.AllowDuplicateIP
+	cfg.HandshakeTimeout = tmDefaults.HandshakeTimeout
+	cfg.DialTimeout = tmDefaults.DialTimeout
+	return &cfg
 }
 
 // MempoolConfig defines configuration options for the mempool
@@ -200,7 +274,13 @@ type MempoolConfig struct {
 }
 
 func DefaultMempoolConfig() *MempoolConfig {
-	return &MempoolConfig{}
+	var cfg MempoolConfig
+	tmDefault := tmconfig.DefaultMempoolConfig()
+	cfg.Recheck = tmDefault.Recheck
+	cfg.Broadcast = tmDefault.Broadcast
+	cfg.Size = tmDefault.Size
+	cfg.CacheSize = tmDefault.CacheSize
+	return &cfg
 }
 
 // ConsensusConfig handles consensus-specific options
@@ -229,5 +309,20 @@ type ConsensusConfig struct {
 }
 
 func DefaultConsensusConfig() *ConsensusConfig {
-	return &ConsensusConfig{}
+	var cfg ConsensusConfig
+	tmDefault := tmconfig.DefaultConsensusConfig()
+	cfg.TimeoutPropose = tmDefault.TimeoutPropose
+	cfg.TimeoutProposeDelta = tmDefault.TimeoutProposeDelta
+	cfg.TimeoutPrevote = tmDefault.TimeoutPrevote
+	cfg.TimeoutPrevoteDelta = tmDefault.TimeoutPrevoteDelta
+	cfg.TimeoutPrecommit = tmDefault.TimeoutPrecommit
+	cfg.TimeoutPrecommitDelta = tmDefault.TimeoutPrecommitDelta
+	cfg.TimeoutCommit = tmDefault.TimeoutCommit
+	cfg.SkipTimeoutCommit = tmDefault.SkipTimeoutCommit
+	cfg.CreateEmptyBlocks = tmDefault.CreateEmptyBlocks
+	cfg.CreateEmptyBlocksInterval = tmDefault.CreateEmptyBlocksInterval
+	cfg.PeerGossipSleepDuration = tmDefault.PeerGossipSleepDuration
+	cfg.PeerQueryMaj23SleepDuration = tmDefault.PeerQueryMaj23SleepDuration
+	cfg.BlockTimeIota = tmDefault.BlockTimeIota
+	return &cfg
 }
