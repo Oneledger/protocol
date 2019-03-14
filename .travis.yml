@@ -8,7 +8,7 @@ addons:
     - python
     - python-pip
   ssh_known_hosts:
- - 35.203.59.66
+  - 35.203.59.66
   - 35.203.120.202
   - 35.203.52.149
   - 35.203.102.115
@@ -51,7 +51,7 @@ script:
 - cd $OLROOT/protocol/node && make update
 - cd $OLROOT/protocol/node && make install
 - cd $OLROOT/protocol/node && make fulltest
-- cd $TRAVIS_BUILD_DIR/infrastructure/ansible && ansible-playbook main.yml --extra-vars "reset_network=true"
+- cd $TRAVIS_BUILD_DIR/infrastructure/ansible && ansible-playbook main.yml -v --extra-vars "reset_network=true"
 deploy:
 - provider: releases
   skip_cleanup: true
