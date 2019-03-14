@@ -22,13 +22,13 @@ func TestPersistence(t *testing.T) {
 
 	state.Delivered.Set(DatabaseKey(key), []byte(value))
 
-	version := state.Delivered.Version64()
+	version := state.Delivered.Version()
 	index, result := state.Delivered.GetVersioned(DatabaseKey(key), version)
 	log.Debug("Uncommitted Fetched", "index", index, "version", version, "result", string(result))
 
 	state.Commit()
 
-	version = state.Delivered.Version64()
+	version = state.Delivered.Version()
 	index, result = state.Delivered.GetVersioned(DatabaseKey(key), version)
 	log.Debug("Commited Fetched", "index", index, "version", version, "result", string(result))
 
