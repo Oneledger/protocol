@@ -28,33 +28,43 @@ before_install:
 - chmod 600 /tmp/id_rsa
 - eval $(ssh-agent -s)
 - ssh-add /tmp/id_rsa
-- cd $TRAVIS_BUILD_DIR && git clone git@github.com:Oneledger/infrastructure.git --branch master
-- cd $TRAVIS_BUILD_DIR && ls -la 
+- cd $TRAVIS_BUILD_DIR && git clone git@github.com:Oneledger/infrastructure.git --branch
+  master
+- sudo apt-get install unzip
+- wget https://releases.hashicorp.com/terraform/0.11.11/terraform_0.11.11_linux_amd64.zip
+- unzip terraform_0.11.11_linux_amd64.zip
+- sudo mv terraform /usr/local/bin/
+
 install:
 - sudo pip install netaddr
 - sudo pip install ipaddr
 - sudo pip install cryptography==2.2.2
 - sudo pip install ansible
 script:
-- cd $OLROOT/protocol/node && make update 
-- cd $OLROOT/protocol/node && make install 
+- cd $OLROOT/protocol/node && make update
+- cd $OLROOT/protocol/node && make install
 - cd $OLROOT/protocol/node && make fulltest
-- cd $TRAVIS_BUILD_DIR/ansible && ansible-playbook build.yml -i 'devnet.yml' -vvv 
-
+- cd $TRAVIS_BUILD_DIR/infrastructure/ansible && ansible-playbook main.yml -vvv --extra-vars "reset_network=true"
 deploy:
-  - provider: releases
-    skip_cleanup: true
-    prerelease: true
-    draft: true
-    api_key:
-      secure: 2bnCcsdf5wf6zOYTJoYhunhzilLVFHL0ToSoVo8hXpaCsBtGGbO74uA3lustVSIbfrcKfE6XNMB0rOqUujEZiUtL2YvowTOFi/XuhNYO3IC9G+jdo5miCvh6PRo0O/eSsz2gluTIKPp8MPTvqfeWExgPvtUDYp9XDbRn8Pi2DPrdJ5JHmAusVVzYnVfulUjlah8yHsgLEkGlLFS0m/E1QudvlM8bqEIOnDKY4E+PdXANaWQSqNwj2rYlC2OqMSAUucvCsPENLtAuaWOo8/GJXlJqGTJr4cQNgZs+cA0CGicgnlmkmMtV7p3Cxtdactj7I5irkNCdL0YIRHwL8THo1xuWjTtqugxeDqcOHMPnGVKaCtbh0mzVzGuQTS3B5B3Ihp03JeZVq6rjGIKrYyTSjV2nD0HiCpKWb4rm4MQc2OFPoMqmmMWX4eKGp2sa04pF0v1NXK98B0qtUHgt2u/Zd+HjT8X4LoMiuh1g+6+DkGzSaQK8gSRd3B1rW/bx7ucJtQV+nb/nnfKvd2zLT6Z8WUuycJwkt+lA3jxDhiXm5apq8UN8zw/9JhAwjU04ID+gKNkjp3CALf5QlvBATT5PHSW+HrqLeS8wBwdjOVRBR8i1Rn0tFjsFhfQRFKhPSoVm3l1BfI23B2vLfN047pGtUceCzq55t2yD4IaSa+67go0=
-    file_glob: true
-    file: "$GOPATH/bin/*"
-    on:
-      repo: Oneledger/protocol
-      tags: true
-  - provider: script
-    skip_cleanup: true
-    script: cd $TRAVIS_BUILD_DIR/ansible && ansible-playbook main.yml -i 'devnet.yml' --private-key /tmp/id_rsa -v --extra-vars "reset_network=true"
-    on:
-      branch: develop
+- provider: releases
+  skip_cleanup: true
+  prerelease: true
+  draft: true
+  api_key:
+    secure: 2bnCcsdf5wf6zOYTJoYhunhzilLVFHL0ToSoVo8hXpaCsBtGGbO74uA3lustVSIbfrcKfE6XNMB0rOqUujEZiUtL2YvowTOFi/XuhNYO3IC9G+jdo5miCvh6PRo0O/eSsz2gluTIKPp8MPTvqfeWExgPvtUDYp9XDbRn8Pi2DPrdJ5JHmAusVVzYnVfulUjlah8yHsgLEkGlLFS0m/E1QudvlM8bqEIOnDKY4E+PdXANaWQSqNwj2rYlC2OqMSAUucvCsPENLtAuaWOo8/GJXlJqGTJr4cQNgZs+cA0CGicgnlmkmMtV7p3Cxtdactj7I5irkNCdL0YIRHwL8THo1xuWjTtqugxeDqcOHMPnGVKaCtbh0mzVzGuQTS3B5B3Ihp03JeZVq6rjGIKrYyTSjV2nD0HiCpKWb4rm4MQc2OFPoMqmmMWX4eKGp2sa04pF0v1NXK98B0qtUHgt2u/Zd+HjT8X4LoMiuh1g+6+DkGzSaQK8gSRd3B1rW/bx7ucJtQV+nb/nnfKvd2zLT6Z8WUuycJwkt+lA3jxDhiXm5apq8UN8zw/9JhAwjU04ID+gKNkjp3CALf5QlvBATT5PHSW+HrqLeS8wBwdjOVRBR8i1Rn0tFjsFhfQRFKhPSoVm3l1BfI23B2vLfN047pGtUceCzq55t2yD4IaSa+67go0=
+  file_glob: true
+  file: "$GOPATH/bin/*"
+  on:
+    repo: Oneledger/protocol
+    tags: true
+- provider: script
+  skip_cleanup: true
+  script: cd $TRAVIS_BUILD_DIR/ansible && ansible-playbook main.yml -i 'devnet.yml'
+    --private-key /tmp/id_rsa -v --extra-vars "reset_network=true"
+  on:
+    branch: develop
+env:
+  global:
+  - secure: OlMvgZRitZeaBGKmKr+D4BT/p8zSvR3I1xbCEE8HLmosOxd6n+C00wgUvnBed83dojeeN1uR/PYuJfHvqvNCEimO9+uhOZ/Y6cL7/97xku968GbOKrvSJa5AuutPEpbw9Ilnh1TJhN5x8Esoda8AG93OZG2IqafmZkBVwlIWGqKO6cm1AHLjZXHMUhOGGDPE2d8lMq3X/yhQLqWtFBboDWUZlcDoK5iNR8vDCAoQpD2BBJMv1X7wMkJTucnxOZkhoq/bFcWGO+qLzVfeEWwGIAwpFMEtbVRoE9sKIvLLd20jwPgMdRoEbKsFJRhGARYkBaVFDcSSeppHVlCYXmHdl33WCuQXnv+DtCLchtqO5C/KvFq1Bcvx3dGuhEjv3SJbJsq0s2MXiTUY/mDiian7ytaDe9BacEveIzkNK3VKggYMaoeLW8SyQE7Mvbe0ZM8L15/WG5ognhJg54knxiePgL5qhBVvxtbwtEGQzM6O/ELC80vnsIZdp7OmFNItRKgKO2vWUGaxzYpTbOdYn7bBOzeS+mtlkRletoEWh2YhQgqxBs4duZPvgzV2AzEclIK5jwx35Ec35BaB9fOB3scff4Km21Sv4OO51DOdhWi5Sp/V1Idjo4z3Hhtyn45RgBY2J7OPNYA9JQAdgH53Hth1GD1oF64tZ47BWleAUAu17Xs=
+  - secure: uiTQJs6ZINBl2aGjtYImp4oMzf5SRPqwoE9CsRzexnhj3HMi3iDe7xcrJ69PQI///lrGNmfa/wU2YWmsuiWZynJ41dsN6xTPmbubLBlxMzqeeLIbkSkvZ5ttwAkr3aJ3zf4I1VaeFdE6t0dHDtQil2sEZ0VpaBv/YtYGcNDFuiq0v+4aqqooJeEVDI72MxBY4L7z4tc69axHMyp6Yl5/TLkJIaii4LWTrRjfjmaxGUQc8M0J8erdyTN/3MPOu8sQ9zVeUULchHxtdaxjGiCBWXwKngDPx+3nN3M+4rCsVeeZVKgajag9GcixHiNErvzpZ9eV5i4j3496/2vh5VJGAdTe/rGMWc3V4YP0byqVHdDu9aZhnqj2Mp6rOJOsBZ0G3kHoLKc274m7crhBZAOc02yzpv7pdmclRtkM/YoyjYzfVsdDdpLJruRXpOuAfCqUYmKYTEuP7RiS9AvSd+TK9UtACsMAQ/+FIlYtCFQ/eBkaEfQ5rtGBuMwpCGrs0/edNhXCkMB1LhWUO+gYLKOyS+/p0wkHONOE5s43i8r2f3It2lYaoe17TVqEjsnajEHeV2SapNtyQQOsP3VhoEE7w1K8ThF4ESDt11LWAt7KsJOfqP/5H/wev9xXkzOZxnBB6WLex56Vy/rgl4NpjSKHp6jI+5e+ZKfpvEacu08/Kis=
+ 
