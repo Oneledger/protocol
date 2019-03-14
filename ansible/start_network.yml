@@ -1,4 +1,4 @@
-- hosts: all
+- hosts: validator_node:seed_node
   remote_user: steven
   become: true
   become_user: root
