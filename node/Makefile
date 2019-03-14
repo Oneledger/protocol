@@ -1,7 +1,7 @@
 GOTOOLS = \
 	  github.com/golang/protobuf/protoc-gen-go
 
-GO111MODULE = on
+export GO111MODULE=on
 
 all: test
 
