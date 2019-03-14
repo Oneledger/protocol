@@ -1,6 +1,62 @@
 - hosts: localhost
   connection: local
   tasks:
+  - name: run terraform apply 
+    terraform:
+      project_path: '../gcp'
+      lock : true
+      force_init: true
+      backend_config:
+        region: "us-east-1"
+        bucket: "terraform-oneledger"
+        key: "devnet"
+    register: vm_data
+  - set_fact: remote_hosts={{vm_data.outputs.public_ip.value}}
+  - name: add host to inventory file in memory 
+    add_host:
+      hostname: "{{item.1}}"
+    loop: "{{remote_hosts}}"
+  - name: add first 4 hosts to validator_node group 
+    add_host:
+      name: "{{item.1}}"
+      group: "validator_node" 
+      app_user: node
+    with_indexed_items: "{{remote_hosts}}"
+    when: item.0 < 4
+  - name: add hosts after 4th host to seed_node group 
+    add_host:
+      name: "{{item.1}}"
+      group: "seed_node"
+      consensus: consensus  
+      app_user: node
+    with_indexed_items: "{{remote_hosts}}"
+    when: item.0 >= 4 
+
+  - name: specify alice-node 
+    add_host: 
+      name: "{{item.1}}"
+      consensus: Alice-Node/consensus 
+    with_indexed_items: "{{remote_hosts}}"
+    when: item.0 == 0 
+  - name: specify Bob-node 
+    add_host: 
+      name: "{{item.1}}"
+      consensus: Bob-Node/consensus 
+    with_indexed_items: "{{remote_hosts}}"
+    when: item.0 == 1
+  - name: specify David-node 
+    add_host: 
+      name: "{{item.1}}"
+      consensus: David-Node/consensus 
+    with_indexed_items: "{{remote_hosts}}"
+    when: item.0 == 2 
+  - name: specify Emma-node 
+    add_host: 
+      name: "{{item.1}}"
+      consensus: Emma-Node/consensus 
+    with_indexed_items: "{{remote_hosts}}"
+    when: item.0 == 3 
+
   - name: create temp config.toml file
     copy:
       content: ""

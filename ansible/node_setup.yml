@@ -1,4 +1,4 @@
-- hosts: all
+- hosts: validator_node:seed_node
   vars:
     APP_HOME: "/home/{{app_user}}/go"
   remote_user: steven
