@@ -51,7 +51,7 @@ script:
 - cd $OLROOT/protocol/node && make update
 - cd $OLROOT/protocol/node && make install
 - cd $OLROOT/protocol/node && make fulltest
-- cd $TRAVIS_BUILD_DIR/infrastructure/ansible && ansible-playbook main.yml -v --extra-vars "reset_network=true"
+- cd $TRAVIS_BUILD_DIR/infrastructure/ansible && ansible-playbook main.yml --extra-vars "reset_network=true"
 deploy:
 - provider: releases
   skip_cleanup: true
