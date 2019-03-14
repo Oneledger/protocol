@@ -73,14 +73,15 @@ func StartNode(cmd *cobra.Command, args []string) {
 	tmDir := global.ConsensusDir()
 	// TODO: Source this from static file
 	tmConfig := consensus.Config{
-		Moniker:         global.Current.NodeName,
-		RootDirectory:   tmDir,
-		RPCAddress:      global.Current.RpcAddress,
-		P2PAddress:      global.Current.P2PAddress,
-		IndexTags:       []string{"tx.owner", "tx.type", "tx.swapkey", "tx.participants"},
-		PersistentPeers: global.Current.PersistentPeers,
-		Seeds:           global.Current.Seeds,
-		SeedMode:        global.Current.SeedMode,
+		Moniker:            global.Current.NodeName,
+		RootDirectory:      tmDir,
+		RPCAddress:         global.Current.RpcAddress,
+		P2PAddress:         global.Current.P2PAddress,
+		ExternalP2PAddress: global.Current.ExternalP2PAddress,
+		IndexTags:          []string{"tx.owner", "tx.type", "tx.swapkey", "tx.participants"},
+		PersistentPeers:    global.Current.PersistentPeers,
+		Seeds:              global.Current.Seeds,
+		SeedMode:           global.Current.SeedMode,
 	}
 
 	// TODO: change the the priv_validator locaiton
