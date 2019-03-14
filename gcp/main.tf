@@ -1,3 +1,11 @@
+terraform {
+  backend "s3" {
+    region =  "us-east-1"
+    bucket = "terraform-oneledger"
+    key =  "devnet"
+  }
+}
+
 provider "google-beta" {
   alias = "chronos"
   credentials = "${file("Chronos.json")}"
@@ -8,7 +16,7 @@ provider "google-beta" {
 
 provider "google" {
   alias = "devnet"
-  credentials = "${file("DevNet.json")}"
+  credentials = "${file("/home/steven/git/infrastructure/gcp/DevNet.json")}"
   project     = "atomic-land-223022"
   region      = "us-west1"
   zone = "us-west1-b"
@@ -26,7 +34,6 @@ module "network"{
 module "explorer"{
   source = "./fullnode"
   name = "${var.name}"
-  vpc_network = "${module.network.vpc_network}"
   subnet = "${module.network.subnet}"
   providers = {
     google = "google.devnet"

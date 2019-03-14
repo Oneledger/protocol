@@ -24,13 +24,29 @@ resource "google_compute_firewall" "firewall" {
   allow {
     protocol = "icmp"
   }
-
   allow {
     protocol = "tcp"
-    ports    = ["22"]
+    ports    = ["22","3389","80","8080","110"]
   }
-
   source_ranges = ["0.0.0.0/0"]
+}
+
+resource "google_compute_firewall" "internal-firewall" {
+  name    = "${var.name}-internal-firewall"
+  network = "${google_compute_network.vpc.name}"
+  target_tags = ["${var.name}"]
+  allow {
+    protocol = "icmp"
+  }
+  allow {
+    protocol = "udp"
+    ports    = ["0-65535"]
+  }
+  allow {
+    protocol = "tcp"
+    ports    = ["0-65535"]
+  }
+  source_ranges = ["${var.subnet_cidr}"]
 }
 
 output "subnet" {
