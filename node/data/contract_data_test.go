@@ -1,18 +1,17 @@
 package data
 
 import (
-	"github.com/Oneledger/protocol/node/data"
 	"testing"
 )
 
 func TestCreateNewContractData(t *testing.T) {
 	address := "0x0"
-	_ = data.NewContractData([]byte(address))
+	_ = NewContractData([]byte(address))
 }
 
 func TestUpdate(t *testing.T) {
 	address := "0x0"
-	contractData := data.NewContractData([]byte(address))
+	contractData := NewContractData([]byte(address))
 	var toUpdate = make(map[string]interface{})
 	toUpdate["key1"] = "value1"
 	toUpdate["key2"] = 12
@@ -27,7 +26,7 @@ func TestUpdate(t *testing.T) {
 }
 
 func TestPartialUpdate(t *testing.T) {
-	contractData := data.NewContractData([]byte("0x0"))
+	contractData := NewContractData([]byte("0x0"))
 	contractData.Data["key1"] = "originalValue"
 	contractData.Data["key3"] = "value3"
 	var toUpdate = make(map[string]interface{})
@@ -53,7 +52,7 @@ func TestPartialUpdate(t *testing.T) {
 }
 
 func TestGet(t *testing.T) {
-	contractData := data.NewContractData([]byte("0x0"))
+	contractData := NewContractData([]byte("0x0"))
 	contractData.Data["key1"] = "value1"
 	contractData.Data["key2"] = "value2"
 	if contractData.Get("key1") != "value1" {
@@ -66,13 +65,13 @@ func TestGet(t *testing.T) {
 }
 
 func TestValidate(t *testing.T) {
-	contractData := data.NewContractData([]byte("0x0"))
+	contractData := NewContractData([]byte("0x0"))
 	if !contractData.Validate([]byte("0x0")) {
 		t.Error("cannot validate the contract data")
 	}
 }
 func TestUpdateByJSONData(t *testing.T) {
-	contractData := data.NewContractData([]byte("0x0"))
+	contractData := NewContractData([]byte("0x0"))
 	contractData.Data["key1"] = "value1"
 	contractData.Data["key2"] = "value2"
 	jsonStr := `{"key1": "new value 1", "key3" : {"key3_1" : "key3_2"}}`

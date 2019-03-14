@@ -56,10 +56,11 @@ type Context struct {
 	TendermintAddress string
 	TendermintPubKey  string
 
-	PersistentPeers string
-	Seeds           string
-	SeedMode        bool
-	P2PAddress      string
+	PersistentPeers    string
+	Seeds              string
+	SeedMode           bool
+	P2PAddress         string
+	ExternalP2PAddress string
 
 	ConsensusNode *tmnode.Node
 
