@@ -32,11 +32,12 @@ Ensure your system meets the following requirements:
 
 #### Install
 
-Before running any install scripts, ensure your GOPATH is set up explicitly on your user account. Visit the [Setting up the GOPATH](https://github.com/Oneledger/protocol/wiki/Environment-Variables#setting-up-the-gopath) page on the wiki for more help.
+Before running any install scripts, ensure your GOPATH and the necessary environment variables are set up on your account. Visit the [Setting up the GOPATH](https://github.com/Oneledger/protocol/wiki/Environment-Variables#setting-up-the-gopath) page on the wiki for more help.
 
 First clone the repository for the OneLedger Protocol:
 
 ```
+$ mkdir -p $OLROOT
 $ cd $OLROOT
 $ git clone github.com/Oneledger/protocol
 ```
