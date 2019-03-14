@@ -12,6 +12,8 @@ import (
 	"github.com/spf13/viper"
 )
 
+// TODO: Need to statically type the config
+
 type Parameter struct {
 	Name     string
 	DataType string

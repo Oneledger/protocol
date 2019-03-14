@@ -1,6 +1,7 @@
 module github.com/Oneledger/protocol/node
 
 require (
+	github.com/BurntSushi/toml v0.3.1
 	github.com/aristanetworks/goarista v0.0.0-20181101003910-5bb443fba8e0 // indirect
 	github.com/beorn7/perks v0.0.0-20180321164747-3a771d992973 // indirect
 	github.com/bgentry/speakeasy v0.1.0
@@ -16,7 +17,7 @@ require (
 	github.com/go-logfmt/logfmt v0.3.0 // indirect
 	github.com/go-stack/stack v1.8.0 // indirect
 	github.com/gogo/protobuf v1.1.1 // indirect
-	github.com/golang/protobuf v1.2.0
+	github.com/golang/protobuf v1.3.0
 	github.com/golang/snappy v0.0.0-20180518054509-2e65f85255db // indirect
 	github.com/google/uuid v1.0.0
 	github.com/gorilla/websocket v1.2.0 // indirect
@@ -53,7 +54,6 @@ require (
 	golang.org/x/crypto v0.0.0-20181106171534-e4dc69e5b2fd
 	golang.org/x/net v0.0.0-20180906233101-161cd47e91fd
 	golang.org/x/sys v0.0.0-20181107165924-66b7b1311ac8 // indirect
-	google.golang.org/genproto v0.0.0-20180413175816-7fd901a49ba6 // indirect
 	google.golang.org/grpc v1.13.0
 	gopkg.in/jarcoal/httpmock.v1 v1.0.0-20181110093347-3be5f16b70eb
 	gopkg.in/natefinch/npipe.v2 v2.0.0-20160621034901-c1b8fa8bdcce // indirect

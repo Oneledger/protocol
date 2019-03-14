@@ -76,7 +76,7 @@ func GetPeers(parameter string, nodes []string) {
 	for _, name := range nodes {
 		// Reset the config name, and load the relevant config file
 		global.Current.RootDir = name + "-Node"
-		config.ServerConfig()
+		config.ConfigureServer()
 
 		// Pick out a couple of the parameters
 		nodeName := viper.Get("NodeName").(string)
@@ -104,7 +104,7 @@ func GetPeers(parameter string, nodes []string) {
 }
 
 func GetParams(names []string) {
-	config.ServerConfig()
+	config.ConfigureServer()
 
 	// Don't check it, if it is empty, return empty string
 	first := true
