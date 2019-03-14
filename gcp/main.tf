@@ -19,27 +19,29 @@ provider "google" {
   credentials = "${file("/home/steven/git/infrastructure/gcp/DevNet.json")}"
   project     = "atomic-land-223022"
   region      = "us-west1"
-  zone = "us-west1-b"
 }
 
 module "network"{
   source = "./network"
-  subnet_cidr = "${var.subnet_cidr}"
+  vpc_ip_range = "${var.vpc_ip_range}"
   name = "${var.name}"
+  regions = "${var.regions}"
   providers = {
     google = "google.devnet"
   }
 }
 
-module "explorer"{
+module "node"{
   source = "./fullnode"
   name = "${var.name}"
-  subnet = "${module.network.subnet}"
+  vmcount = "${var.vmcount}"
+  subnets = "${module.network.subnets}"
+  regions = "${var.regions}"
   providers = {
     google = "google.devnet"
   }
 }
 
 output "public_ip" {
-  value = "${module.explorer.public_ip}"
+  value = "${module.node.public_ip}"
 }
