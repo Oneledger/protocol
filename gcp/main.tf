@@ -16,7 +16,7 @@ provider "google-beta" {
 
 provider "google" {
   alias = "devnet"
-  credentials = "${file("/home/steven/git/infrastructure/gcp/DevNet.json")}"
+  credentials = "${file("DevNet.json")}"
   project     = "atomic-land-223022"
   region      = "us-west1"
 }
