@@ -26,7 +26,7 @@ resource "google_compute_route" "internet-route" {
   network     = "${google_compute_network.vpc.self_link}"
   priority    = 100
   tags = ["${var.name}"]
-  next_hop_gateway = "global/gateways/default-internet-gateway"
+  next_hop_gateway = "default-internet-gateway"
 }
 
 // VPC firewall configuration
