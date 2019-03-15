@@ -49,10 +49,6 @@ func init() {
 	RootCmd.PersistentFlags().BoolVarP(&global.Current.Debug, "debug", "d",
 		global.Current.Debug, "Set DEBUG mode")
 
-	// Is this even relevant?
-	RootCmd.PersistentFlags().StringVarP(&global.Current.Transport, "transport", "t",
-		global.Current.Transport, "transport (socket | grpc)")
-
 	RootCmd.PersistentFlags().StringVarP(&global.Current.Config.Network.RPCAddress, "address", "a",
 		global.Current.Config.Network.RPCAddress, "full address")
 

@@ -102,16 +102,16 @@ func NewKeyValue(name string, newType StorageType) *KeyValue {
 	case PERSISTENT:
 		fullname := "OneLedger-" + name
 
-		if FileExists(fullname, global.global.Current.DatabaseDir()) {
+		if FileExists(fullname, global.Current.DatabaseDir()) {
 			//log.Debug("Appending to database", "name", fullname)
 		} else {
 			log.Info("Creating new database", "name", fullname)
 		}
 
-		storage, err := db.NewGoLevelDB(fullname, global.global.Current.DatabaseDir())
+		storage, err := db.NewGoLevelDB(fullname, global.Current.DatabaseDir())
 		if err != nil {
 			log.Error("Database create failed", "err", err)
-			panic("Can't create a database " + global.global.Current.DatabaseDir() + "/" + fullname)
+			panic("Can't create a database " + global.Current.DatabaseDir() + "/" + fullname)
 		}
 
 		tree := iavl.NewMutableTree(storage, 100)

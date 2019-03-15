@@ -20,6 +20,7 @@ import (
 
 	"github.com/Oneledger/protocol/node/config"
 	"github.com/Oneledger/protocol/node/persist"
+	"github.com/mitchellh/go-homedir"
 	tmnode "github.com/tendermint/tendermint/node"
 )
 
@@ -39,11 +40,9 @@ type Context struct {
 	RootDir         string // Working directory for this instance
 
 	// Do we really need this?
-	Transport string // socket vs grpc
-	Sequence  int64  // replay protection
+	Sequence int64 // replay protection
 
 	// This should be set to a function, shouldn't be specifiable
-	TendermintRoot    string
 	TendermintAddress string
 	TendermintPubKey  string
 
@@ -67,11 +66,17 @@ func init() {
 	Current = NewContext("OneLedger")
 }
 
-// Set the default values for any context variables here (and no where else)
+// Set the default values for any context variables here
 func NewContext(name string) *Context {
 	var debug = false
 	if os.Getenv("OLDEBUG") == "true" {
 		debug = true
+	}
+
+	defaultRootDir := os.Getenv("OLDATA")
+	if defaultRootDir == "" {
+		home, _ := homedir.Dir()
+		defaultRootDir = filepath.Join(home, ".olfullnode")
 	}
 
 	return &Context{
@@ -82,7 +87,7 @@ func NewContext(name string) *Context {
 		NodeName:        name,
 		NodeAccountName: "",
 		PaymentAccount:  "Payment",
-		RootDir:         os.Getenv("OLDATA") + "/" + name,
+		RootDir:         defaultRootDir,
 
 		// TODO: Should be params in the chain
 		MinSendFee:     0.1,

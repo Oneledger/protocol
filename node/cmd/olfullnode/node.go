@@ -29,10 +29,6 @@ func init() {
 	nodeCmd.Flags().StringVarP(&global.Current.Config.Network.RPCAddress, "address", "a",
 		global.Current.Config.Network.RPCAddress, "consensus address")
 
-	// DELETEME:
-	nodeCmd.Flags().StringVarP(&global.Current.Transport, "transport", "t",
-		global.Current.Transport, "transport (socket | grpc)")
-
 	nodeCmd.Flags().BoolVarP(&global.Current.Debug, "debug", "d",
 		global.Current.Debug, "Set DEBUG mode")
 
@@ -41,10 +37,6 @@ func init() {
 
 	nodeCmd.Flags().StringVar(&global.Current.Config.Network.ETHAddress, "ethrpc",
 		global.Current.Config.Network.ETHAddress, "ethereum rpc address")
-
-	// DELETEME: Should be consistent, always derived from specified RootDir
-	nodeCmd.Flags().StringVar(&global.Current.ConsensusDir(), "tendermintRoot",
-		global.Current.ConsensusDir(), "tendermint root directory")
 
 	nodeCmd.Flags().StringVar(&global.Current.Config.Network.SDKAddress, "sdkrpc",
 		global.Current.Config.Network.SDKAddress, "Address for SDK RPC Server")
