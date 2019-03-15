@@ -43,8 +43,8 @@ func init() {
 		global.Current.Config.Network.ETHAddress, "ethereum rpc address")
 
 	// DELETEME: Should be consistent, always derived from specified RootDir
-	nodeCmd.Flags().StringVar(&global.Current.TendermintRoot, "tendermintRoot",
-		global.Current.TendermintRoot, "tendermint root directory")
+	nodeCmd.Flags().StringVar(&global.Current.ConsensusDir(), "tendermintRoot",
+		global.Current.ConsensusDir(), "tendermint root directory")
 
 	nodeCmd.Flags().StringVar(&global.Current.Config.Network.SDKAddress, "sdkrpc",
 		global.Current.Config.Network.SDKAddress, "Address for SDK RPC Server")
@@ -81,7 +81,7 @@ func StartNode(cmd *cobra.Command, args []string) error {
 		}
 	})
 
-	tmDir := global.ConsensusDir()
+	tmDir := global.Current.ConsensusDir()
 	tmConfig := consensus.Config{
 		Moniker:         global.Current.NodeName,
 		RootDirectory:   tmDir,

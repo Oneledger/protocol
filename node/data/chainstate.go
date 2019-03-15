@@ -207,10 +207,10 @@ func (state *ChainState) reset() ([]byte, int64) {
 // Create or attach to a database
 func initializeDatabase(name string, newType StorageType) (*iavl.MutableTree, *db.GoLevelDB) {
 	// TODO: Assuming persistence for right now
-	storage, err := db.NewGoLevelDB("OneLedger-"+name, global.DatabaseDir())
+	storage, err := db.NewGoLevelDB("OneLedger-"+name, global.global.Current.DatabaseDir())
 	if err != nil {
 		log.Error("Database create failed", "err", err, "count", count)
-		panic("Can't create a database: " + global.DatabaseDir() + "/OneLedger-" + name)
+		panic("Can't create a database: " + global.global.Current.DatabaseDir() + "/OneLedger-" + name)
 	}
 
 	// TODO: cosmos seems to be using MutableTree now????

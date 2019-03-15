@@ -106,12 +106,12 @@ func (ctx *Context) GetApplication() persist.Access {
 	return ctx.Application
 }
 
-func ConsensusDir() string {
+func (ctx *Context) ConsensusDir() string {
 	result, _ := filepath.Abs(filepath.Join(Current.RootDir, "consensus"))
 	return result
 }
 
-func DatabaseDir() string {
+func (ctx *Context) DatabaseDir() string {
 	result, _ := filepath.Abs(filepath.Join(Current.RootDir, "nodedata"))
 	return result
 }

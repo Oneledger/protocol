@@ -56,8 +56,8 @@ func init() {
 	RootCmd.PersistentFlags().StringVar(&global.Current.Config.Network.ETHAddress, "ethrpc",
 		global.Current.Config.Network.ETHAddress, "ethereum rpc address")
 
-	RootCmd.PersistentFlags().StringVar(&global.Current.TendermintRoot, "tendermintRoot",
-		global.Current.TendermintRoot, "tendermint root directory")
+	RootCmd.PersistentFlags().StringVar(&global.Current.ConsensusDir(), "tendermintRoot",
+		global.Current.ConsensusDir(), "tendermint root directory")
 
 	RootCmd.PersistentFlags().StringVar(&global.Current.Config.Network.SDKAddress, "sdkrpc",
 		global.Current.Config.Network.SDKAddress, "Address for SDK RPC Server")
