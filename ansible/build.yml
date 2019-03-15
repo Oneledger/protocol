@@ -12,6 +12,9 @@
         key: "devnet"
     register: vm_data
   - set_fact: remote_hosts={{vm_data.outputs.public_ip.value}}
+  - name: add knowm hosts 
+    shell: ssh-keyscan -H {{item}} >> ~/.ssh/known_hosts
+    loop: "{{remote_hosts}}"
   - name: add host to inventory file in memory 
     add_host:
       hostname: "{{item}}"
