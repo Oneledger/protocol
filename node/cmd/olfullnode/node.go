@@ -8,7 +8,6 @@ package main
 import (
 	"github.com/Oneledger/protocol/node/app" // Import namespace
 	"github.com/Oneledger/protocol/node/cmd/shared"
-	"github.com/Oneledger/protocol/node/config"
 	"github.com/Oneledger/protocol/node/consensus"
 
 	"github.com/Oneledger/protocol/node/global"
@@ -27,8 +26,8 @@ var nodeCmd = &cobra.Command{
 func init() {
 	RootCmd.AddCommand(nodeCmd)
 	// Get information to connect to a my tendermint node
-	nodeCmd.Flags().StringVarP(&global.Current.RpcAddress, "address", "a",
-		global.Current.RpcAddress, "consensus address")
+	nodeCmd.Flags().StringVarP(&global.Current.Config.Network.RPCAddress, "address", "a",
+		global.Current.Config.Network.RPCAddress, "consensus address")
 
 	// DELETEME:
 	nodeCmd.Flags().StringVarP(&global.Current.Transport, "transport", "t",
@@ -37,26 +36,23 @@ func init() {
 	nodeCmd.Flags().BoolVarP(&global.Current.Debug, "debug", "d",
 		global.Current.Debug, "Set DEBUG mode")
 
-	nodeCmd.Flags().StringVar(&global.Current.BTCAddress, "btcrpc",
-		global.Current.BTCAddress, "bitcoin rpc address")
+	nodeCmd.Flags().StringVar(&global.Current.Config.Network.BTCAddress, "btcrpc",
+		global.Current.Config.Network.BTCAddress, "bitcoin rpc address")
 
-	nodeCmd.Flags().StringVar(&global.Current.ETHAddress, "ethrpc",
-		global.Current.ETHAddress, "ethereum rpc address")
+	nodeCmd.Flags().StringVar(&global.Current.Config.Network.ETHAddress, "ethrpc",
+		global.Current.Config.Network.ETHAddress, "ethereum rpc address")
 
 	// DELETEME: Should be consistent, always derived from specified RootDir
 	nodeCmd.Flags().StringVar(&global.Current.TendermintRoot, "tendermintRoot",
 		global.Current.TendermintRoot, "tendermint root directory")
 
-	nodeCmd.Flags().StringVar(&global.Current.SDKAddress, "sdkrpc",
-		global.Current.SDKAddress, "Address for SDK RPC Server")
+	nodeCmd.Flags().StringVar(&global.Current.Config.Network.SDKAddress, "sdkrpc",
+		global.Current.Config.Network.SDKAddress, "Address for SDK RPC Server")
 
-	// TODO: Put this in configuration file
 	nodeCmd.Flags().StringArrayVar(&global.Current.PersistentPeers, "persistent_peers", []string{}, "List of persistent peers to connect to")
 
 	// These could be moved to node persistent flags
-	nodeCmd.Flags().StringVar(&global.Current.P2PAddress, "p2p", "", "Address to use in P2P network")
-
-	// TODO: Add external listening address address
+	nodeCmd.Flags().StringVar(&global.Current.Config.Network.P2PAddress, "p2p", "", "Address to use in P2P network")
 
 	nodeCmd.Flags().StringVar(&global.Current.Seeds, "seeds", "", "List of seeds to connect to")
 
@@ -66,7 +62,7 @@ func init() {
 // Start a node to run continously
 func StartNode(cmd *cobra.Command, args []string) error {
 
-	log.Debug("Starting", "p2pAddress", global.Current.P2PAddress, "on", global.Current.NodeName)
+	log.Debug("Starting", "p2pAddress", global.Current.Config.Network.P2PAddress, "on", global.Current.NodeName)
 
 	node := app.NewApplication()
 	//if node.CheckIfInitialized() == false {
@@ -77,7 +73,7 @@ func StartNode(cmd *cobra.Command, args []string) error {
 
 	global.Current.SetApplication(persist.Access(node))
 	app.SetNodeName(node)
-	config.LogSettings()
+	log.Settings()
 
 	shared.CatchSigterm(func() {
 		if service != nil {
@@ -87,15 +83,14 @@ func StartNode(cmd *cobra.Command, args []string) error {
 
 	tmDir := global.ConsensusDir()
 	tmConfig := consensus.Config{
-		Moniker:            global.Current.NodeName,
-		RootDirectory:      tmDir,
-		RPCAddress:         global.Current.RpcAddress,
-		P2PAddress:         global.Current.P2PAddress,
-		ExternalP2PAddress: global.Current.ExternalP2PAddress,
-		IndexTags:          []string{"tx.owner", "tx.type", "tx.swapkey", "tx.participants"},
-		PersistentPeers:    global.Current.PersistentPeers,
-		Seeds:              global.Current.Seeds,
-		SeedMode:           global.Current.SeedMode,
+		Moniker:         global.Current.NodeName,
+		RootDirectory:   tmDir,
+		RPCAddress:      global.Current.Config.Network.RPCAddress,
+		P2PAddress:      global.Current.Config.Network.P2PAddress,
+		IndexTags:       []string{"tx.owner", "tx.type", "tx.swapkey", "tx.participants"},
+		PersistentPeers: global.Current.PersistentPeers,
+		Seeds:           global.Current.Seeds,
+		SeedMode:        global.Current.SeedMode,
 	}
 
 	// TODO: change the the priv_validator locaiton

@@ -50,11 +50,11 @@ func init() {
 	RootCmd.PersistentFlags().StringVarP(&global.Current.Transport, "transport", "t",
 		global.Current.Transport, "transport (socket | grpc)")
 
-	RootCmd.PersistentFlags().StringVarP(&global.Current.RpcAddress, "address", "a",
-		global.Current.RpcAddress, "full address")
+	RootCmd.PersistentFlags().StringVarP(&global.Current.Config.Network.RPCAddress, "address", "a",
+		global.Current.Config.Network.RPCAddress, "full address")
 
-	RootCmd.PersistentFlags().StringVar(&global.Current.SDKAddress, "sdkrpc",
-		global.Current.SDKAddress, "SDK address")
+	RootCmd.PersistentFlags().StringVar(&global.Current.Config.Network.SDKAddress, "sdkrpc",
+		global.Current.Config.Network.SDKAddress, "SDK address")
 
 }
 
@@ -81,8 +81,8 @@ func environment() {
 	config.UpdateContext()
 
 	// TODO: Static variables vs Dynamic variables :-(
-	//global.Current.SDKAddress = viper.Get("SDKAddress").(string)
-	//global.Current.RpcAddress = viper.Get("RpcAddress").(string)
+	//global.Current.Config.Network.SDKAddress = viper.Get("SDKAddress").(string)
+	//global.Current.Config.Network.RPCAddress = viper.Get("RpcAddress").(string)
 
 	//viper.AutomaticEnv()
 }

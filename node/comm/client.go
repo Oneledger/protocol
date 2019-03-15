@@ -40,7 +40,7 @@ func GetClient() (client rpcclient.Client) {
 
 	} else {
 		log.Debug("Using new HTTP ABCI Client")
-		cachedClient = rpcclient.NewHTTP(global.Current.RpcAddress, "/websocket")
+		cachedClient = rpcclient.NewHTTP(global.Current.Config.Network.RPCAddress, "/websocket")
 	}
 
 	if _, err := cachedClient.Status(); err == nil {
@@ -49,20 +49,20 @@ func GetClient() (client rpcclient.Client) {
 	}
 
 	if err := cachedClient.Start(); err != nil {
-		log.Fatal("Client is unavailable", "address", global.Current.RpcAddress)
+		log.Fatal("Client is unavailable", "address", global.Current.Config.Network.RPCAddress)
 		client = nil
 	}
 	// TODO: Try multiple times before giving up
 
 	//for i := 0; i < 10; i++ {
-	//	cachedClient = rpcclient.NewHTTP(global.Current.RpcAddress, "/websocket")
+	//	cachedClient = rpcclient.NewHTTP(global.Current.Config.Network.RPCAddress, "/websocket")
 	//
 	//	if cachedClient != nil {
-	//		log.Debug("RPC Client", "address", global.Current.RpcAddress, "client", cachedClient)
+	//		log.Debug("RPC Client", "address", global.Current.Config.Network.RPCAddress, "client", cachedClient)
 	//		break
 	//	}
 	//
-	//	log.Warn("Retrying RPC Client", "address", global.Current.RpcAddress)
+	//	log.Warn("Retrying RPC Client", "address", global.Current.Config.Network.RPCAddress)
 	//	time.Sleep(1 * time.Second)
 	//}
 	//
@@ -72,7 +72,7 @@ func GetClient() (client rpcclient.Client) {
 	//		log.Debug("Connected", "result", result)
 	//		break
 	//	}
-	//	log.Warn("Waiting for RPC Client", "address", global.Current.RpcAddress)
+	//	log.Warn("Waiting for RPC Client", "address", global.Current.Config.Network.RPCAddress)
 	//	time.Sleep(2 * time.Second)
 	//}
 

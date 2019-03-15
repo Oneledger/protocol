@@ -19,7 +19,7 @@ func init() {
 func (driver OneledgerDriver) GetURL() string {
 	// What's the purpose of this? What URL are we advertising?
 	// Removed due to removing global.Current.AppAddress
-	return global.Current.P2PAddress
+	return global.Current.Config.Network.P2PAddress
 }
 
 func (driver OneledgerDriver) GetChainAddress(chainKey interface{}) []byte {

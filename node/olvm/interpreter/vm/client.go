@@ -28,8 +28,8 @@ func NewClient(protocol string, address string) *OLVMClient {
 
 // Initialize the vm/daemon/etc.
 func InitializeClient() {
-	protocol := global.Current.OLVMProtocol
-	address := global.Current.OLVMAddress
+	protocol := global.Current.Config.Network.OLVMProtocol
+	address := global.Current.Config.Network.OLVMAddress
 
 	defaultClient = NewClient(protocol, address)
 }

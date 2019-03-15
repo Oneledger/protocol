@@ -119,7 +119,7 @@ func (app Application) Initialize() {
 func (app Application) StartSDK() {
 
 	// SDK Server should start when the --sdkrpc argument is passed to fullnode
-	sdkAddress := global.Current.SDKAddress
+	sdkAddress := global.Current.Config.Network.SDKAddress
 
 	sdk, err := NewSDKServer(&app, sdkAddress)
 	if err != nil {

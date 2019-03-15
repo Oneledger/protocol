@@ -7,9 +7,6 @@ import (
 	"time"
 
 	"github.com/BurntSushi/toml"
-	"github.com/Oneledger/protocol/node/cmd/shared"
-	"github.com/Oneledger/protocol/node/global"
-	"github.com/Oneledger/protocol/node/log"
 	"github.com/mitchellh/go-homedir"
 	"github.com/spf13/viper"
 	tmconfig "github.com/tendermint/tendermint/config"
@@ -21,21 +18,20 @@ const DefaultConfigDirName = ".olfullnode"
 // Going to abandon servers
 // Configure Server sets viper to use the specified configuration filename
 func ConfigureServer() {
-	viper.SetConfigName(global.Current.ConfigName)
-
-	viper.AddConfigPath(global.Current.RootDir) // Special user overrides
-	viper.AddConfigPath(".")                    // Local directory override
+	// viper.SetConfigName(global.Current.ConfigName)
+	//
+	// viper.AddConfigPath(global.Current.RootDir) // Special user overrides
+	viper.AddConfigPath(".") // Local directory override
 
 	err := viper.ReadInConfig()
 	if err != nil {
-		log.Info("Not using config file", "err", err)
 	}
 }
 
 // Alternate implementation of ConfigureServer which doesn't rely on global cariables
 // ConfigureServer handles the reading of the configuration file, returns an error
 // if it fails to find any file
-func ConfigureServer2(directory string) error {
+func ConfigureServer2(directory string) (*Server, error) {
 	getConfigData := ioutil.ReadFile
 	givenPath := filepath.Join(directory, ConfigFileName)
 
@@ -44,7 +40,7 @@ func ConfigureServer2(directory string) error {
 	home, err := homedir.Dir()
 	if err != nil {
 		// How to handle this err?
-		return err
+		return nil, err
 	}
 
 	var sc *Server
@@ -53,24 +49,27 @@ func ConfigureServer2(directory string) error {
 	if err == nil {
 		// Return here
 		err = sc.Unmarshal(bz)
-		return err
+		return sc, nil
 	}
 	defaultPath := filepath.Join(home, DefaultConfigDirName)
 
+	// Search the default path
 	bz, err = getConfigData(defaultPath)
 	if err == nil {
 		err = sc.Unmarshal(bz)
-		return err
+		return sc, nil
 	}
 
 	bz, err = getConfigData(filepath.Clean("./" + ConfigFileName))
 	if err != nil {
-		return err
+		return nil, err
 	}
 	err = sc.Unmarshal(bz)
 	if err != nil {
 		// 	TODO: modify the global context with the configuration struct
+		return nil, err
 	}
+	return sc, nil
 }
 
 // Struct for holding the configuration details for the node
@@ -84,7 +83,7 @@ type Server struct {
 
 // ReadFile accepts a filepath and returns the
 func (cfg *Server) ReadFile(filepath string) error {
-	bz, err := shared.ReadFile(filepath)
+	bz, err := ioutil.ReadFile(filepath)
 	if err != nil {
 		return err
 	}

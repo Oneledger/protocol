@@ -13,7 +13,6 @@ import (
 
 	// Import namespace
 
-	"github.com/Oneledger/protocol/node/config"
 	"github.com/Oneledger/protocol/node/global"
 	"github.com/Oneledger/protocol/node/log"
 	"github.com/Oneledger/protocol/node/olvm/interpreter/vm"
@@ -47,10 +46,10 @@ func StartEngine(cmd *cobra.Command, args []string) {
 		}
 	}()
 
-	log.Debug("Starting", "p2p address", global.Current.P2PAddress, "on", global.Current.NodeName)
+	log.Debug("Starting", "p2p address", global.Current.Config.Network.P2PAddress, "on", global.Current.NodeName)
 
 	// TODO: Switch with config and shared versions
-	LogSettings()
+	log.Settings()
 	CatchSigterm()
 
 	service := vm.NewOLVMService()
@@ -79,4 +78,3 @@ func CatchSigterm() {
 }
 
 // Log all of the global settings
-var LogSettings = config.LogSettings

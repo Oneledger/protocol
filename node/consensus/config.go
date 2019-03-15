@@ -5,7 +5,7 @@ import (
 
 	"github.com/Oneledger/protocol/node/global"
 	"github.com/Oneledger/protocol/node/log"
-	"github.com/tendermint/tendermint/config"
+	tmconfig "github.com/tendermint/tendermint/config"
 )
 
 // Config is a OneLedger-specific configuration struct used to create a tendermint configuration
@@ -21,12 +21,12 @@ type Config struct {
 }
 
 // NewConfig returns a ready-to-go tendermint configuration
-func NewConfig(olcfg Config) *config.Config {
+func NewConfig(olcfg Config) *tmconfig.Config {
 	rootDir := olcfg.RootDirectory
 
 	log.Dump("Initial Config", olcfg)
 
-	cfg := config.DefaultConfig()
+	cfg := tmconfig.DefaultConfig()
 	cfg.BaseConfig.Moniker = olcfg.Moniker
 	cfg.BaseConfig.ProxyApp = "OneLedger"
 

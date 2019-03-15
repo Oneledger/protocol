@@ -82,3 +82,7 @@ func Fatal(msg string, args ...interface{}) {
 	current.Error("FATAL: "+msg, args...)
 	panic(errors.New("Execution stopped due to " + msg))
 }
+
+func Settings() {
+	Dump("Configuration settings", global.Current.Config)
+}

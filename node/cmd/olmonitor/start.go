@@ -170,6 +170,6 @@ func LogSettings() {
 	log.Info("Ownership", "NodeName", global.Current.NodeName, "NodeAccountName", global.Current.NodeAccountName,
 		"NodeIdentity", global.Current.NodeIdentity)
 	log.Info("Locations", "RootDir", global.Current.RootDir)
-	log.Info("Addresses", "RpcAddress", global.Current.RpcAddress, "AppAddress", global.Current.AppAddress)
+	log.Info("Addresses", "RpcAddress", global.Current.Config.Network.RPCAddress, "AppAddress", global.Current.AppAddress)
 }
 */

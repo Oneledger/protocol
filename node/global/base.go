@@ -18,6 +18,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/Oneledger/protocol/node/config"
 	"github.com/Oneledger/protocol/node/persist"
 	tmnode "github.com/tendermint/tendermint/node"
 )
@@ -37,19 +38,11 @@ type Context struct {
 	NodeIdentity    string
 	RootDir         string // Working directory for this instance
 
-	RpcAddress string // rpc address
-	Transport  string // socket vs grpc
+	// Do we really need this?
+	Transport string // socket vs grpc
+	Sequence  int64  // replay protection
 
-	BTCAddress string // Bitcoin node Address port
-	ETHAddress string // Ethereum node Address port
-
-	SDKAddress string // SDK RPC address
-
-	OLVMProtocol string // Config for the OLVM
-	OLVMAddress  string
-
-	Sequence int64 // replay protection
-
+	// This should be set to a function, shouldn't be specifiable
 	TendermintRoot    string
 	TendermintAddress string
 	TendermintPubKey  string
@@ -66,6 +59,8 @@ type Context struct {
 	MinSwapFee     float64
 	MinContractFee float64
 	MinRegisterFee float64
+
+	Config *config.Server
 }
 
 func init() {
@@ -89,27 +84,26 @@ func NewContext(name string) *Context {
 		PaymentAccount:  "Payment",
 		RootDir:         os.Getenv("OLDATA") + "/" + name,
 
-		SDKAddress: "http://127.0.0.1:6900",
-
 		// TODO: Should be params in the chain
 		MinSendFee:     0.1,
 		MinSwapFee:     0.1,
 		MinContractFee: 0.1,
 		MinRegisterFee: 0.1,
+		Config:         config.DefaultServerConfig(),
 	}
 }
 
-func (context *Context) SetApplication(app persist.Access) persist.Access {
-	context.Application = app
+func (ctx *Context) SetApplication(app persist.Access) persist.Access {
+	ctx.Application = app
 	return app
 }
 
-func (context *Context) SetConsensusNode(node *tmnode.Node) {
-	context.ConsensusNode = node
+func (ctx *Context) SetConsensusNode(node *tmnode.Node) {
+	ctx.ConsensusNode = node
 }
 
-func (context *Context) GetApplication() persist.Access {
-	return context.Application
+func (ctx *Context) GetApplication() persist.Access {
+	return ctx.Application
 }
 
 func ConsensusDir() string {
