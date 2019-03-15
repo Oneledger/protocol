@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/BurntSushi/toml"
+	"github.com/jbsmith7741/toml"
 	"github.com/mitchellh/go-homedir"
 	"github.com/spf13/viper"
 	tmconfig "github.com/tendermint/tendermint/config"
@@ -284,6 +284,8 @@ func DefaultMempoolConfig() *MempoolConfig {
 
 // ConsensusConfig handles consensus-specific options
 type ConsensusConfig struct {
+	LogOutput             string        `toml:"log_output" desc:"Determines where consensus is logged (stdout|<filename>)"`
+	LogLevel              string        `toml:"log_level"`
 	TimeoutPropose        time.Duration `toml:"timeout_propose"`
 	TimeoutProposeDelta   time.Duration `toml:"timeout_propose_delta"`
 	TimeoutPrevote        time.Duration `toml:"timeout_prevote"`
@@ -310,6 +312,8 @@ type ConsensusConfig struct {
 func DefaultConsensusConfig() *ConsensusConfig {
 	var cfg ConsensusConfig
 	tmDefault := tmconfig.DefaultConsensusConfig()
+	cfg.LogOutput = "consensus.log"
+	cfg.LogLevel = tmconfig.DefaultPackageLogLevels()
 	cfg.TimeoutPropose = tmDefault.TimeoutPropose
 	cfg.TimeoutProposeDelta = tmDefault.TimeoutProposeDelta
 	cfg.TimeoutPrevote = tmDefault.TimeoutPrevote

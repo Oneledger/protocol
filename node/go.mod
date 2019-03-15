@@ -1,7 +1,6 @@
 module github.com/Oneledger/protocol/node
 
 require (
-	github.com/BurntSushi/toml v0.3.1
 	github.com/aristanetworks/goarista v0.0.0-20181101003910-5bb443fba8e0 // indirect
 	github.com/beorn7/perks v0.0.0-20180321164747-3a771d992973 // indirect
 	github.com/bgentry/speakeasy v0.1.0
@@ -22,6 +21,7 @@ require (
 	github.com/google/uuid v1.0.0
 	github.com/gorilla/websocket v1.2.0 // indirect
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
+	github.com/jbsmith7741/toml v0.3.1-0.20171003150610-484e047de162
 	github.com/jmhodges/levigo v0.0.0-20161115193449-c42d9e0ca023 // indirect
 	github.com/kr/logfmt v0.0.0-20140226030751-b84e30acd515 // indirect
 	github.com/mattn/go-isatty v0.0.4
