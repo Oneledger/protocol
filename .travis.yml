@@ -7,13 +7,6 @@ addons:
     package:
     - python
     - python-pip
-  ssh_known_hosts:
-  - 35.203.59.66
-  - 35.203.120.202
-  - 35.203.52.149
-  - 35.203.102.115
-  - 35.203.106.138
-  - 35.203.114.25
 
 before_install:
 - export OLDATA=$GOPATH/test
