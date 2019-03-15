@@ -11,7 +11,7 @@
       dest: "{{APP_HOME}}/init.sh"
       content: |
         #!/bin/bash
-        olclient testmint --amount 100 --currency OLT --party Alice
+        olclient testmint --amount 100 --currency OLT --party Alice --root {{APP_HOME}}
       mode: 511
       owner: "{{app_user}}"
       group: "{{app_user}}"
