@@ -96,6 +96,7 @@ func (cfg *Server) Unmarshal(text []byte) error {
 	if err != nil {
 		return err
 	}
+	// TODO: Some basic validation for string fields, should return an error for invalid values
 	return nil
 }
 
@@ -245,6 +246,24 @@ type P2PConfig struct {
 	DialTimeout      time.Duration `toml:"dial_timeout"`
 }
 
+func (cfg *P2PConfig) TMConfig() *tmconfig.P2PConfig {
+	return &tmconfig.P2PConfig{
+		UPNP:                    cfg.UPNP,
+		AddrBookStrict:          cfg.AddrBookStrict,
+		MaxNumInboundPeers:      cfg.MaxNumInboundPeers,
+		MaxNumOutboundPeers:     cfg.MaxNumOutboundPeers,
+		FlushThrottleTimeout:    cfg.FlushThrottleTimeout,
+		MaxPacketMsgPayloadSize: cfg.MaxPacketMsgPayloadSize,
+		SendRate:                cfg.SendRate,
+		RecvRate:                cfg.RecvRate,
+		PexReactor:              cfg.PexReactor,
+		SeedMode:                cfg.SeedMode,
+		AllowDuplicateIP:        cfg.AllowDuplicateIP,
+		HandshakeTimeout:        cfg.HandshakeTimeout,
+		DialTimeout:             cfg.DialTimeout,
+	}
+}
+
 func DefaultP2PConfig() *P2PConfig {
 	var cfg P2PConfig
 	tmDefaults := tmconfig.DefaultP2PConfig()
@@ -270,6 +289,15 @@ type MempoolConfig struct {
 	Broadcast bool `toml:"broadcast"`
 	Size      int  `toml:"size"`
 	CacheSize int  `toml:"cache_size"`
+}
+
+func (cfg *MempoolConfig) TMConfig() *tmconfig.MempoolConfig {
+	return &tmconfig.MempoolConfig{
+		Recheck:   cfg.Recheck,
+		Broadcast: cfg.Broadcast,
+		Size:      cfg.Size,
+		CacheSize: cfg.CacheSize,
+	}
 }
 
 func DefaultMempoolConfig() *MempoolConfig {
@@ -307,6 +335,25 @@ type ConsensusConfig struct {
 
 	// Block time parameters. Corresponds to the minimum time increment between consecutive blocks.
 	BlockTimeIota time.Duration `toml:"blocktime_iota"`
+}
+
+func (cfg *ConsensusConfig) TMConfig() *tmconfig.ConsensusConfig {
+	return &tmconfig.ConsensusConfig{
+		TimeoutPropose:              cfg.TimeoutPropose,
+		TimeoutProposeDelta:         cfg.TimeoutProposeDelta,
+		TimeoutPrevote:              cfg.TimeoutPrevote,
+		TimeoutPrevoteDelta:         cfg.TimeoutPrevoteDelta,
+		TimeoutPrecommit:            cfg.TimeoutPrecommit,
+		TimeoutPrecommitDelta:       cfg.TimeoutPrecommitDelta,
+		TimeoutCommit:               cfg.TimeoutCommit,
+		SkipTimeoutCommit:           cfg.SkipTimeoutCommit,
+		CreateEmptyBlocks:           cfg.CreateEmptyBlocks,
+		CreateEmptyBlocksInterval:   cfg.CreateEmptyBlocksInterval,
+		PeerGossipSleepDuration:     cfg.PeerGossipSleepDuration,
+		PeerQueryMaj23SleepDuration: cfg.PeerQueryMaj23SleepDuration,
+		BlockTimeIota:               cfg.BlockTimeIota,
+	}
+
 }
 
 func DefaultConsensusConfig() *ConsensusConfig {

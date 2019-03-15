@@ -73,20 +73,7 @@ func StartNode(cmd *cobra.Command, args []string) error {
 		}
 	})
 
-	tmDir := global.Current.ConsensusDir()
-	tmConfig := consensus.Config{
-		Moniker:         global.Current.NodeName,
-		RootDirectory:   tmDir,
-		RPCAddress:      global.Current.Config.Network.RPCAddress,
-		P2PAddress:      global.Current.Config.Network.P2PAddress,
-		IndexTags:       []string{"tx.owner", "tx.type", "tx.swapkey", "tx.participants"},
-		PersistentPeers: global.Current.PersistentPeers,
-		Seeds:           global.Current.Seeds,
-		SeedMode:        global.Current.SeedMode,
-	}
-
-	// TODO: change the the priv_validator locaiton
-	service, err := consensus.NewNode(*node, tmConfig)
+	service, err := consensus.NewNode(*node, global.Current.Config)
 	if err != nil {
 		log.Error("Failed to create NewNode", "err", err)
 		return err

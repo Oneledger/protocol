@@ -1,6 +1,7 @@
 package consensus
 
 import (
+	"io"
 	"os"
 
 	"github.com/Oneledger/protocol/node/log"
@@ -10,25 +11,29 @@ import (
 	tmlog "github.com/tendermint/tendermint/libs/log"
 )
 
-func NewLogger(logPath string, cfg tmconfig.Config) tmlog.Logger {
+func newLogger(w io.Writer, cfg tmconfig.Config) (tmlog.Logger, error) {
+	tmLogger := tmlog.NewTMLogger(w)
+	return tmflags.ParseLogLevel(cfg.LogLevel, tmLogger, tmconfig.DefaultLogLevel())
+}
+
+func newStdOutLogger(cfg tmconfig.Config) (tmlog.Logger, error) {
+	return newLogger(os.Stdout, cfg)
+}
+
+func newFileLogger(logPath string, cfg tmconfig.Config) (tmlog.Logger, error) {
 	var file *os.File
 	var err error
 	if !common.FileExists(logPath) {
 		log.Info("Creating consensus log file at", "path", logPath)
 		file, err = os.Create(logPath)
 		if err != nil {
-			log.Fatal("Failed to create logging file", "location", logPath, "err", err)
+			return nil, err
 		}
 	} else {
 		file, err = os.OpenFile(logPath, os.O_RDWR|os.O_APPEND, 0666)
 		if err != nil {
-			log.Fatal("Failed to open logging file", "location", logPath, "err", err)
+			return nil, err
 		}
 	}
-	tmLogger := tmlog.NewTMLogger(tmlog.NewSyncWriter(file))
-	logger, err := tmflags.ParseLogLevel(cfg.LogLevel, tmLogger, tmconfig.DefaultLogLevel())
-	if err != nil {
-		log.Fatal("Failed to configure loglevel for logger", "loglevel", cfg.LogLevel)
-	}
-	return logger
+	return newLogger(file, cfg)
 }
