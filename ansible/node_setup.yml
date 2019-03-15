@@ -57,7 +57,7 @@
         OLVMProtocol = "tcp"
         BTCAddress = "127.0.0.1:NONE"
         ETHAddress = "NONE"
-        ExternalP2PAddress = "tcp://{{inventory_hostname}}:26651"
+        ExternalP2PAddress = "tcp://{{inventory_hostname}}:26611"
 
 - hosts: validator_node
   remote_user: steven
