@@ -5,11 +5,7 @@
     terraform:
       project_path: '../gcp'
       lock : true
-      force_init: true
-      backend_config:
-        region: "us-east-1"
-        bucket: "terraform-oneledger"
-        key: "devnet"
+      force_init: true  
     register: vm_data
   - set_fact: remote_hosts={{vm_data.outputs.public_ip.value}}
   - name: add knowm hosts 
@@ -53,10 +49,10 @@
       consensus: David-Node/consensus 
     with_indexed_items: "{{remote_hosts}}"
     when: item.0 == 2 
-  - name: specify Emma-node 
+  - name: specify Carol-node 
     add_host: 
       name: "{{item.1}}"
-      consensus: Emma-Node/consensus 
+      consensus: Carol-Node/consensus 
     with_indexed_items: "{{remote_hosts}}"
     when: item.0 == 3 
 
