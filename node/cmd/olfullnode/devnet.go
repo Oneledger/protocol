@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/Oneledger/protocol/node/config"
 	"github.com/Oneledger/protocol/node/consensus"
 	"github.com/spf13/cobra"
 	"github.com/tendermint/tendermint/p2p"
@@ -81,12 +82,12 @@ func runDevnet(cmd *cobra.Command, _ []string) error {
 		configDir := filepath.Join(nodeDir, "consensus", "config")
 		dataDir := filepath.Join(nodeDir, "consensus", "data")
 
-		err := os.MkdirAll(configDir, 0755)
+		err := os.MkdirAll(configDir, config.DirPerms)
 		if err != nil {
 			return err
 		}
 
-		err = os.MkdirAll(dataDir, 0755)
+		err = os.MkdirAll(dataDir, config.DirPerms)
 		if err != nil {
 			return err
 		}

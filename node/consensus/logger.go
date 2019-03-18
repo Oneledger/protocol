@@ -4,6 +4,7 @@ import (
 	"io"
 	"os"
 
+	"github.com/Oneledger/protocol/node/config"
 	"github.com/Oneledger/protocol/node/log"
 	tmconfig "github.com/tendermint/tendermint/config"
 	tmflags "github.com/tendermint/tendermint/libs/cli/flags"
@@ -30,7 +31,7 @@ func newFileLogger(logPath string, cfg tmconfig.Config) (tmlog.Logger, error) {
 			return nil, err
 		}
 	} else {
-		file, err = os.OpenFile(logPath, os.O_RDWR|os.O_APPEND, 0666)
+		file, err = os.OpenFile(logPath, os.O_RDWR|os.O_APPEND, config.FilePerms)
 		if err != nil {
 			return nil, err
 		}

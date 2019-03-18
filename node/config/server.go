@@ -3,74 +3,21 @@ package config
 import (
 	"bytes"
 	"io/ioutil"
-	"path/filepath"
 	"time"
 
 	"github.com/jbsmith7741/toml"
-	"github.com/mitchellh/go-homedir"
-	"github.com/spf13/viper"
 	tmconfig "github.com/tendermint/tendermint/config"
 )
 
-const ConfigFileName = "config.toml"
-const DefaultConfigDirName = ".olfullnode"
+// Default permissions for writing files
+// These are based on default umask settings
+// User+Group: rw, Other: r
+const FilePerms = 0664
 
-// Going to abandon servers
-// Configure Server sets viper to use the specified configuration filename
-func ConfigureServer() {
-	// viper.SetConfigName(global.Current.ConfigName)
-	//
-	// viper.AddConfigPath(global.Current.RootDir) // Special user overrides
-	viper.AddConfigPath(".") // Local directory override
-
-	err := viper.ReadInConfig()
-	if err != nil {
-	}
-}
-
-// Alternate implementation of ConfigureServer which doesn't rely on global cariables
-// ConfigureServer handles the reading of the configuration file, returns an error
-// if it fails to find any file
-func ConfigureServer2(directory string) (*Server, error) {
-	getConfigData := ioutil.ReadFile
-	givenPath := filepath.Join(directory, ConfigFileName)
-
-	// (1) Check the given path
-	// (2) If that fails, try home
-	home, err := homedir.Dir()
-	if err != nil {
-		// How to handle this err?
-		return nil, err
-	}
-
-	var sc *Server
-	// Search given directory
-	bz, err := getConfigData(givenPath)
-	if err == nil {
-		// Return here
-		err = sc.Unmarshal(bz)
-		return sc, nil
-	}
-	defaultPath := filepath.Join(home, DefaultConfigDirName)
-
-	// Search the default path
-	bz, err = getConfigData(defaultPath)
-	if err == nil {
-		err = sc.Unmarshal(bz)
-		return sc, nil
-	}
-
-	bz, err = getConfigData(filepath.Clean("./" + ConfigFileName))
-	if err != nil {
-		return nil, err
-	}
-	err = sc.Unmarshal(bz)
-	if err != nil {
-		// 	TODO: modify the global context with the configuration struct
-		return nil, err
-	}
-	return sc, nil
-}
+// User+Group: rwx, Other: rx
+const DirPerms = 0775
+const FileName = "config.toml"
+const DefaultDir = ".olfullnode"
 
 // Struct for holding the configuration details for the node
 type Server struct {
@@ -114,7 +61,7 @@ func (cfg *Server) SaveFile(filepath string) error {
 	if err != nil {
 		return err
 	}
-	return ioutil.WriteFile(filepath, bz, 0644)
+	return ioutil.WriteFile(filepath, bz, FilePerms)
 }
 
 // OpenFile opens the file at a given path and injects the

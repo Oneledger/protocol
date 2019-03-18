@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/Oneledger/protocol/node/config"
 	"github.com/Oneledger/protocol/node/global"
 	"github.com/Oneledger/protocol/node/log"
 	"github.com/spf13/cobra"
@@ -47,6 +46,6 @@ func init() {
 // Initialize Viper
 func environment() {
 	log.Debug("Loading Environment")
-	config.ConfigureServer()
-	config.UpdateContext()
+	// Ignore error so olfullnode init doesn't fail
+	global.Current.ReadConfig()
 }

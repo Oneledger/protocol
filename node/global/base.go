@@ -120,3 +120,14 @@ func (ctx *Context) DatabaseDir() string {
 	result, _ := filepath.Abs(filepath.Join(Current.RootDir, "nodedata"))
 	return result
 }
+
+// ReadConfig looks for a configuration file in the rootdir
+func (ctx *Context) ReadConfig() error {
+	var cfg config.Server
+	err := cfg.ReadFile(filepath.Join(ctx.RootDir, config.FileName))
+	if err != nil {
+		return err
+	}
+	ctx.Config = &cfg
+	return nil
+}

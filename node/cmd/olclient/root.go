@@ -12,7 +12,6 @@ import (
 	"os"
 
 	"github.com/Oneledger/protocol/node/cmd/shared"
-	"github.com/Oneledger/protocol/node/config"
 	"github.com/Oneledger/protocol/node/global"
 	"github.com/Oneledger/protocol/node/log"
 	"github.com/spf13/cobra"
@@ -42,7 +41,6 @@ func init() {
 	RootCmd.PersistentFlags().StringVarP(&global.Current.ConfigName, "config", "c",
 		global.Current.ConfigName, "Configuration File Name")
 
-	// Does this even work?
 	RootCmd.PersistentFlags().StringVar(&global.Current.NodeName, "node",
 		global.Current.NodeName, "Set a node name")
 
@@ -75,13 +73,8 @@ func indentJSON(in []byte) bytes.Buffer {
 // Initialize Viper
 func environment() {
 	log.Debug("Loading Environment")
-	config.ClientConfig()
-
-	config.UpdateContext()
-
-	// TODO: Static variables vs Dynamic variables :-(
-	//global.Current.Config.Network.SDKAddress = viper.Get("SDKAddress").(string)
-	//global.Current.Config.Network.RPCAddress = viper.Get("RpcAddress").(string)
-
-	//viper.AutomaticEnv()
+	err := global.Current.ReadConfig()
+	if err != nil {
+		log.Fatal("Failed to read config", "err", err)
+	}
 }

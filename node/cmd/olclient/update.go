@@ -23,11 +23,11 @@ var updateCmd = &cobra.Command{
 
 // Arguments to the command
 type UpdateArguments struct {
-	account string
-	chain   string
-	pubkey  string
-	privkey string
-	chainkey string
+	account     string
+	chain       string
+	pubkey      string
+	privkey     string
+	chainkey    string
 	nodeaccount bool
 }
 
@@ -51,11 +51,11 @@ func UpdateAccount(cmd *cobra.Command, args []string) {
 
 	// TODO: Don't need two levels of structures here
 	request := &shared.AccountArguments{
-		Account:    updateArgs.account,
-		Chain:      updateArgs.chain,
-		PublicKey:  updateArgs.pubkey,
-		PrivateKey: updateArgs.privkey,
-		ChainKey:   updateArgs.chainkey,
+		Account:     updateArgs.account,
+		Chain:       updateArgs.chain,
+		PublicKey:   updateArgs.pubkey,
+		PrivateKey:  updateArgs.privkey,
+		ChainKey:    updateArgs.chainkey,
 		NodeAccount: updateArgs.nodeaccount,
 	}
 

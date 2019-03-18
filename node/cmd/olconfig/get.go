@@ -12,8 +12,8 @@ import (
 	"strings"
 
 	"github.com/Oneledger/protocol/node/cmd/shared"
-	"github.com/Oneledger/protocol/node/config"
 	"github.com/Oneledger/protocol/node/global"
+	"github.com/Oneledger/protocol/node/log"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/tendermint/tendermint/p2p"
@@ -76,7 +76,10 @@ func GetPeers(parameter string, nodes []string) {
 	for _, name := range nodes {
 		// Reset the config name, and load the relevant config file
 		global.Current.RootDir = name + "-Node"
-		config.ConfigureServer()
+		err := global.Current.ReadConfig()
+		if err != nil {
+			log.Fatal("Failed to read config", "err", err)
+		}
 
 		// Pick out a couple of the parameters
 		nodeName := viper.Get("NodeName").(string)
@@ -104,7 +107,10 @@ func GetPeers(parameter string, nodes []string) {
 }
 
 func GetParams(names []string) {
-	config.ConfigureServer()
+	err := global.Current.ReadConfig()
+	if err != nil {
+		log.Fatal("Failed to read config", "err", err)
+	}
 
 	// Don't check it, if it is empty, return empty string
 	first := true
