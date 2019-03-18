@@ -15,7 +15,7 @@ resource "google_compute_address" "static-ips"{
 resource "google_compute_instance" "default" {
   count = "${var.vmcount}"
   name = "${var.name}-vm-${count.index}"
-  machine_type = "n1-highcpu-8"
+  machine_type = "n1-highcpu-4"
   tags = ["${var.name}"]
   zone = "${element(var.regions,count.index % length(var.regions))}-b"
   boot_disk {
