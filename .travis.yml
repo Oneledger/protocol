@@ -52,13 +52,18 @@ deploy:
   file: "$GOPATH/bin/*"
   on:
     repo: Oneledger/protocol
+    branch: master
     tags: true
 - provider: script
   skip_cleanup: true
-  script: cd $TRAVIS_BUILD_DIR/ansible && ansible-playbook main.yml -i 'devnet.yml'
-    --private-key /tmp/id_rsa -v --extra-vars "reset_network=true"
+  script: cd $TRAVIS_BUILD_DIR/infrastructure/ansible && ansible-playbook main.yml -v --extra-vars "reset_network=true"
   on:
     branch: develop
+- provider: script
+  skip_cleanup: true
+  script: cd $TRAVIS_BUILD_DIR/infrastructure/ansible && ansible-playbook main.yml -v --extra-vars "reset_network=true"
+  on:
+    tags: true
 env:
   global:
   - secure: OlMvgZRitZeaBGKmKr+D4BT/p8zSvR3I1xbCEE8HLmosOxd6n+C00wgUvnBed83dojeeN1uR/PYuJfHvqvNCEimO9+uhOZ/Y6cL7/97xku968GbOKrvSJa5AuutPEpbw9Ilnh1TJhN5x8Esoda8AG93OZG2IqafmZkBVwlIWGqKO6cm1AHLjZXHMUhOGGDPE2d8lMq3X/yhQLqWtFBboDWUZlcDoK5iNR8vDCAoQpD2BBJMv1X7wMkJTucnxOZkhoq/bFcWGO+qLzVfeEWwGIAwpFMEtbVRoE9sKIvLLd20jwPgMdRoEbKsFJRhGARYkBaVFDcSSeppHVlCYXmHdl33WCuQXnv+DtCLchtqO5C/KvFq1Bcvx3dGuhEjv3SJbJsq0s2MXiTUY/mDiian7ytaDe9BacEveIzkNK3VKggYMaoeLW8SyQE7Mvbe0ZM8L15/WG5ognhJg54knxiePgL5qhBVvxtbwtEGQzM6O/ELC80vnsIZdp7OmFNItRKgKO2vWUGaxzYpTbOdYn7bBOzeS+mtlkRletoEWh2YhQgqxBs4duZPvgzV2AzEclIK5jwx35Ec35BaB9fOB3scff4Km21Sv4OO51DOdhWi5Sp/V1Idjo4z3Hhtyn45RgBY2J7OPNYA9JQAdgH53Hth1GD1oF64tZ47BWleAUAu17Xs=
