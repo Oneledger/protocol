@@ -11,8 +11,6 @@ import (
 	"time"
 
 	"context"
-	"os"
-
 	"github.com/Oneledger/protocol/node/chains/ethereum/htlc"
 	"github.com/Oneledger/protocol/node/global"
 	"github.com/Oneledger/protocol/node/log"
@@ -38,12 +36,12 @@ type HTLContract struct {
 }
 
 func getEthClient() *ethclient.Client {
-	address := os.Getenv("OLDATA") + "/" + global.Current.ETHAddress
+	address := global.Current.ETHAddress
 	if client == nil {
 		for i := 0; i < 3; i++ {
 			cli, err := ethclient.Dial(address)
 			if err != nil {
-				log.Fatal("failed to get geth ipc ", "status", err)
+				log.Fatal("failed to get geth ", "status", err)
 				time.Sleep(3 * time.Second)
 			}
 			return cli
@@ -52,7 +50,7 @@ func getEthClient() *ethclient.Client {
 		for i := 0; i < 3; i++ {
 			cli, err := ethclient.Dial(address)
 			if err != nil {
-				log.Fatal("failed to get geth ipc ", "status", err)
+				log.Fatal("failed to get geth ", "status", err)
 				time.Sleep(3 * time.Second)
 			}
 			return cli
