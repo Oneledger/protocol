@@ -22,6 +22,7 @@ before_install:
 - chmod 600 DevNet.json id_rsa
 - eval $(ssh-agent -s)
 - ssh-add $TRAVIS_BUILD_DIR/id_rsa
+- cd $TRAVIS_BUILD_DIR && git clone git@github.com:Oneledger/infrastructure.git --branch master
 install:
 - sudo pip install netaddr
 - sudo pip install ipaddr
@@ -32,8 +33,6 @@ script:
 - cd $OLROOT/protocol/node && make install
 - cd $OLROOT/protocol/node && make fulltest
 before_deploy:
-- cd $TRAVIS_BUILD_DIR && git clone git@github.com:Oneledger/infrastructure.git --branch
-  master
 - sudo apt-get install unzip
 - wget https://releases.hashicorp.com/terraform/0.11.13/terraform_0.11.13_linux_amd64.zip
 - unzip terraform_0.11.13_linux_amd64.zip
@@ -51,7 +50,6 @@ deploy:
   on:
     repo: Oneledger/protocol
     branch: master
-    tags: true
 - provider: script
   skip_cleanup: true
   script: cd $TRAVIS_BUILD_DIR/infrastructure/ansible && ansible-playbook main.yml -v --extra-vars "reset_network=true"
