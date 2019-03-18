@@ -68,7 +68,7 @@
   tasks:
   - name: copy consensus folder over to each validator node
     copy:
-      src: "{{lookup('env','GOPATH')}}/test/{{consensus}}"
+      src: "{{lookup('env','OLDATA')}}/{{consensus}}"
       dest: "{{APP_HOME}}"
       mode: 0644
       owner: "{{app_user}}"
@@ -83,7 +83,7 @@
   tasks:
   - name: copy genesis file to seed node 
     copy:
-      src: "{{lookup('env','GOPATH')}}/test/Alice-Node/consensus/config/genesis.json"
+      src: "{{lookup('env','OLDATA')}}/Alice-Node/consensus/config/genesis.json"
       dest: "{{APP_HOME}}"
       mode: 0644
       owner: "{{app_user}}"

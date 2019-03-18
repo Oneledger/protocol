@@ -56,11 +56,13 @@
     with_indexed_items: "{{remote_hosts}}"
     when: item.0 == 3 
 
+  - name: clean fulltest directory 
+    command: chdir={{lookup('env','OLDATA')}} rm -rf *
   - name: create temp config.toml file
     copy:
       content: ""
-      dest: "{{lookup('env','GOPATH')}}/test/config.toml"
+      dest: "{{lookup('env','OLDATA')}}/config.toml"
       force: yes
       mode: 0644
   - name: create consensus/ initialized network with dir
-    command: chdir={{lookup('env','GOPATH')}}/test olfullnode init devnet --dir {{lookup('env','GOPATH')}}/test
+    shell: chdir={{lookup('env','OLDATA')}} olfullnode init devnet --dir {{lookup('env','OLDATA')}}
