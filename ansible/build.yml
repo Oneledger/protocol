@@ -6,6 +6,12 @@
       project_path: '../gcp'
       lock : true
       force_init: true  
+      backend_config:
+        key: "{{ stage | default('devnet') }}"
+      variables: 
+        name: "{{ stage | default('devnet') }}"
+        vpc_ip_range: "{{ ip_range | default('10.10.0.0/20') }}"
+        vmcount: "{{ node_count | default(5) }}"
     register: vm_data
   - set_fact: remote_hosts={{vm_data.outputs.public_ip.value}}
   - name: add knowm hosts 

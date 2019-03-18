@@ -8,7 +8,7 @@ variable "regions" {
 }
 resource "google_compute_address" "static-ips"{
   count = "${var.vmcount}"
-  name = "static-ip-${count.index}"
+  name = "${var.name}-static-ip-${count.index}"
   region = "${element(var.regions,count.index % length(var.regions))}"
 }
 
