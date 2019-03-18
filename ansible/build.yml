@@ -55,9 +55,19 @@
       consensus: Carol-Node/consensus 
     with_indexed_items: "{{remote_hosts}}"
     when: item.0 == 3 
+    
+  - name: find Node data files to be deleted
+    find:
+      paths: "{{lookup('env','OLDATA')}}"
+      patterns: '*-Node'
+      file_type: directory
+    register: files_to_delete
+  - name: delete data files generated during fulltest
+    file:
+      path: "{{ item.path }}"
+      state: absent
+    with_items: "{{ files_to_delete.files }}"
 
-  - name: clean fulltest directory 
-    command: chdir={{lookup('env','OLDATA')}} rm -rf *
   - name: create temp config.toml file
     copy:
       content: ""
