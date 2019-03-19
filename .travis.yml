@@ -1,6 +1,9 @@
 language: go
 go:
 - 1.11.x
+cache:
+- python
+- python-pip
 addons:
   apt:
     update: true
