@@ -1,4 +1,4 @@
-GOTOOLS = \
+GOTOOLS=\
 	  github.com/golang/protobuf/protoc-gen-go
 
 export GO111MODULE=on
@@ -35,6 +35,9 @@ tools:
 install:
 	go install github.com/Oneledger/protocol/node/cmd/...
 
+install_c:
+	CGO_ENABLED=1 CGO_LDFLAGS="-lsnappy" go install -tags "gcc" github.com/Oneledger/protocol/node/cmd/...
+
 #
 # Check out the running status
 #
@@ -53,6 +56,9 @@ utest:
 test: check reset install start
 	@echo "OneLedger Initialize"
 	@./scripts/stopOneLedger
+
+test_cleveldb:
+	CGO_ENABLED=1 CGO_LDFLAGS="-lsnappy" go test -tags="gcc" github.com/Oneledger/protocol/node/data
 
 #
 # Full Testing, bring up everything, send a transaction and then stop

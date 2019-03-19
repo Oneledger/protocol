@@ -10,7 +10,6 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/Oneledger/protocol/node/global"
 	"github.com/Oneledger/protocol/node/log"
 	"github.com/Oneledger/protocol/node/serial"
 )
@@ -25,7 +24,6 @@ func init() {
 
 func TestDatabase(t *testing.T) {
 
-	global.Current.RootDir = "./"
 	store := NewDatastore("TestDatabase", PERSISTENT)
 
 	key := []byte("TheKey")

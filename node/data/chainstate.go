@@ -28,7 +28,7 @@ type ChainState struct {
 	Type StorageType
 
 	Delivered *iavl.MutableTree // Build us a new set of transactions
-	database  *db.GoLevelDB
+	database  db.DB
 
 	Checked   *iavl.MutableTree // Temporary and can be Rolled Back
 	Committed *iavl.MutableTree // Last Persistent Tree
@@ -205,9 +205,9 @@ func (state *ChainState) reset() ([]byte, int64) {
 }
 
 // Create or attach to a database
-func initializeDatabase(name string, newType StorageType) (*iavl.MutableTree, *db.GoLevelDB) {
+func initializeDatabase(name string, newType StorageType) (*iavl.MutableTree, db.DB) {
 	// TODO: Assuming persistence for right now
-	storage, err := db.NewGoLevelDB("OneLedger-"+name, global.Current.DatabaseDir())
+	storage, err := getDatabase(name)
 	if err != nil {
 		log.Error("Database create failed", "err", err, "count", count)
 		panic("Can't create a database: " + global.Current.DatabaseDir() + "/OneLedger-" + name)

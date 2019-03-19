@@ -6,7 +6,6 @@ package data
 import (
 	"testing"
 
-	"github.com/Oneledger/protocol/node/global"
 	"github.com/Oneledger/protocol/node/log"
 	"github.com/stretchr/testify/assert"
 )
@@ -14,7 +13,6 @@ import (
 func TestPersistence(t *testing.T) {
 	log.Debug("Create new chain state")
 
-	global.Current.RootDir = "./"
 	state := NewChainState("PersistentTest", PERSISTENT)
 
 	key := "Hello"

@@ -43,7 +43,7 @@ type KeyValue struct {
 
 	memory   *db.MemDB
 	tree     *iavl.MutableTree
-	database *db.GoLevelDB
+	database db.DB
 
 	version int64
 }
@@ -54,7 +54,7 @@ type KeyValueSession struct {
 
 // TODO: Should be moved to some common/shared/utils directory
 // Test to see if this exists already
-func FileExists(name string, dir string) bool {
+func fileExists(name string, dir string) bool {
 	dbPath := filepath.Join(dir, name+".db")
 	info, err := os.Stat(dbPath)
 	if err != nil {
@@ -100,18 +100,10 @@ func NewKeyValue(name string, newType StorageType) *KeyValue {
 		}
 
 	case PERSISTENT:
-		fullname := "OneLedger-" + name
-
-		if FileExists(fullname, global.Current.DatabaseDir()) {
-			//log.Debug("Appending to database", "name", fullname)
-		} else {
-			log.Info("Creating new database", "name", fullname)
-		}
-
-		storage, err := db.NewGoLevelDB(fullname, global.Current.DatabaseDir())
+		storage, err := getDatabase(name)
 		if err != nil {
 			log.Error("Database create failed", "err", err)
-			panic("Can't create a database " + global.Current.DatabaseDir() + "/" + fullname)
+			panic("Can't create a database " + global.Current.DatabaseDir() + "/" + name)
 		}
 
 		tree := iavl.NewMutableTree(storage, 100)
@@ -122,7 +114,7 @@ func NewKeyValue(name string, newType StorageType) *KeyValue {
 		return &KeyValue{
 			Type:     newType,
 			Name:     name,
-			File:     fullname,
+			File:     name,
 			tree:     tree,
 			database: storage,
 			version:  tree.Version(),
