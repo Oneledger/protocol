@@ -131,3 +131,8 @@ func (ctx *Context) ReadConfig() error {
 	ctx.Config = &cfg
 	return nil
 }
+
+// SaveConfig writes the currently loaded configuration onto a config.toml file in the root directory
+func (ctx *Context) SaveConfig() error {
+	return ctx.Config.SaveFile(ctx.RootDir)
+}

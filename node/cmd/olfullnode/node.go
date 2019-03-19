@@ -22,6 +22,8 @@ var nodeCmd = &cobra.Command{
 	RunE:  StartNode,
 }
 
+var shouldWriteConfig bool
+
 // Setup the command and flags in Cobra
 func init() {
 	RootCmd.AddCommand(nodeCmd)
@@ -49,6 +51,8 @@ func init() {
 	nodeCmd.Flags().StringVar(&global.Current.Seeds, "seeds", "", "List of seeds to connect to")
 
 	nodeCmd.Flags().BoolVar(&global.Current.SeedMode, "seed_mode", false, "List of seeds to connect to")
+
+	nodeCmd.Flags().BoolVarP(&shouldWriteConfig, "write-config", "w", shouldWriteConfig, "Write all specified flags to configuration file")
 }
 
 // Start a node to run continously
@@ -77,6 +81,14 @@ func StartNode(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		log.Error("Failed to create NewNode", "err", err)
 		return err
+	}
+
+	if shouldWriteConfig {
+		err := global.Current.SaveConfig()
+		if err != nil {
+			log.Error("Failed to write command-line flags to configuration file", "err", err)
+			log.Error("Continuing...")
+		}
 	}
 
 	// Set it running
