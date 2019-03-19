@@ -103,7 +103,7 @@ func DefaultNodeConfig() *NodeConfig {
 		NodeName:     "Newton-Node",
 		FastSync:     true,
 		DB:           "goleveldb",
-		IndexTags:    []string{"foo", "bar", "baz"},
+		IndexTags:    []string{"tx.owner", "tx.type", "tx.swapkey"},
 		IndexAllTags: false,
 	}
 }
@@ -214,8 +214,10 @@ func (cfg *P2PConfig) TMConfig() *tmconfig.P2PConfig {
 func DefaultP2PConfig() *P2PConfig {
 	var cfg P2PConfig
 	tmDefaults := tmconfig.DefaultP2PConfig()
+	cfg.PersistentPeers = make([]string, 0)
 	cfg.UPNP = tmDefaults.UPNP
 	cfg.AddrBookStrict = tmDefaults.AddrBookStrict
+	cfg.AllowDuplicateIP = tmDefaults.AllowDuplicateIP
 	cfg.MaxNumInboundPeers = tmDefaults.MaxNumInboundPeers
 	cfg.MaxNumOutboundPeers = tmDefaults.MaxNumOutboundPeers
 	cfg.FlushThrottleTimeout = tmDefaults.FlushThrottleTimeout
@@ -224,7 +226,6 @@ func DefaultP2PConfig() *P2PConfig {
 	cfg.RecvRate = tmDefaults.RecvRate
 	cfg.PexReactor = tmDefaults.PexReactor
 	cfg.SeedMode = tmDefaults.SeedMode
-	cfg.AllowDuplicateIP = tmDefaults.AllowDuplicateIP
 	cfg.HandshakeTimeout = tmDefaults.HandshakeTimeout
 	cfg.DialTimeout = tmDefaults.DialTimeout
 	return &cfg
