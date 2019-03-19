@@ -11,8 +11,6 @@
 package data
 
 import (
-	"bytes"
-
 	"github.com/Oneledger/protocol/node/global"
 	"github.com/Oneledger/protocol/node/log"
 	"github.com/Oneledger/protocol/node/serial"
@@ -30,9 +28,6 @@ type ChainState struct {
 	Delivered *iavl.MutableTree // Build us a new set of transactions
 	database  db.DB
 
-	Checked   *iavl.MutableTree // Temporary and can be Rolled Back
-	Committed *iavl.MutableTree // Last Persistent Tree
-
 	// Last committed values
 	LastVersion int64
 	Version     int64
@@ -43,20 +38,9 @@ type ChainState struct {
 
 func NewChainState(name string, newType StorageType) *ChainState {
 	count = 0
-	chain := &ChainState{Name: name, Type: newType}
+	chain := &ChainState{Name: name, Type: newType, Version: 0}
 	chain.reset()
 	return chain
-}
-
-// Do this only for the Check side
-func (state *ChainState) Test(key DatabaseKey, balance *Balance) {
-	buffer, err := serial.Serialize(balance, serial.PERSISTENT)
-	if err != nil {
-		log.Fatal("Failed to Deserialize balance: ", err)
-	}
-
-	// TODO: Get some error handling in here
-	state.Checked.Set(key, buffer)
 }
 
 // Do this only for the Delivery side
@@ -146,17 +130,14 @@ func (state *ChainState) Commit() ([]byte, int64) {
 		log.Fatal("Saving", "err", err)
 	}
 
-	// Force the database to completely close, then repoen it.
-	state.database.Close()
-	state.database = nil
+	state.LastVersion, state.Version = state.Version, version
+	state.LastHash, state.Hash = state.Hash, hash
 
-	// Update all of the chain parameters
-	nhash, nversion := state.reset()
-
-	// Check the reset
-	if bytes.Compare(hash, nhash) != 0 || version != nversion {
-		log.Fatal("Persistence Failed, difference in hash,version",
-			"version", version, "nversion", nversion, "hash", hash, "nhash", nhash)
+	if state.LastVersion-1 > 0 {
+		err := state.Delivered.DeleteVersion(state.LastVersion - 1)
+		if err != nil {
+			log.Fatal("Failed to delete old version of chainstate", "err", err)
+		}
 	}
 
 	return hash, version
@@ -169,27 +150,12 @@ func (state *ChainState) Dump() {
 		log.Debug("Stat", key, value)
 	}
 
-	// TODO: Need a way to just list out the last changes, not all of them
-	/*
-		iter := state.database.Iterator(nil, nil)
-		for ; iter.Valid(); iter.Next() {
-			hash := iter.Key()
-			node := iter.Value()
-			log.Debug("ChainState", hash, node)
-		}
-	*/
 }
 
 // Reset the chain state from persistence
 func (state *ChainState) reset() ([]byte, int64) {
-	// TODO: I need three copies of the tree, only one is ultimately mutable... (checked changed rollback)
-	// TODO: Close before reopen, better just update...
 
-	//state.Checked = createDatabase(state.Name, state.Type)
-	state.Delivered, state.database = initializeDatabase(state.Name, state.Type)
-	//state.Committed = createDatabase(state.Name, state.Type)
-
-	// TODO: Can I stick the delivered database into the checked tree?
+	state.Delivered, state.database = initializeDatabase(state.Name, state.Type, state.Version)
 
 	// Essentially, the last commited value...
 	state.LastHash = state.Hash
@@ -205,7 +171,7 @@ func (state *ChainState) reset() ([]byte, int64) {
 }
 
 // Create or attach to a database
-func initializeDatabase(name string, newType StorageType) (*iavl.MutableTree, db.DB) {
+func initializeDatabase(name string, newType StorageType, version int64) (*iavl.MutableTree, db.DB) {
 	// TODO: Assuming persistence for right now
 	storage, err := getDatabase(name)
 	if err != nil {
@@ -213,10 +179,10 @@ func initializeDatabase(name string, newType StorageType) (*iavl.MutableTree, db
 		panic("Can't create a database: " + global.Current.DatabaseDir() + "/OneLedger-" + name)
 	}
 
-	// TODO: cosmos seems to be using MutableTree now????
-	tree := iavl.NewMutableTree(storage, 1000) // Do I need a historic tree here?
-	tree.LoadVersion(0)
+	tree := iavl.NewMutableTree(storage, 10000) // Do I need a historic tree here?
+	loadedVersion, err := tree.LoadVersion(version)
 
+	_ = loadedVersion
 	count = count + 1
 
 	return tree, storage

@@ -4,6 +4,7 @@
 package data
 
 import (
+	"bytes"
 	"testing"
 
 	"github.com/Oneledger/protocol/node/log"
@@ -76,4 +77,29 @@ func TestChainStateContinueUpdate(t *testing.T) {
 
 	assert.Equal(t, true, newbalance.GetAmountByName("OLT").Equals(b2.GetAmountByName("OLT")), "balance not eqaul without commit", b2)
 
+}
+
+func TestChainState_Commit(t *testing.T) {
+
+	state := NewChainState("commit", PERSISTENT)
+
+	key := make([]byte, 20)
+	key[0] = 0x05
+	balance := NewBalanceFromInt(10, "OLT")
+
+	state.Set(key, balance)
+
+	hash, version := state.Commit()
+
+	// Force the database to completely close, then repoen it.
+	state.database.Close()
+	state.database = nil
+
+	// Update all of the chain parameters
+	nhash, nversion := state.reset()
+
+	// Check the reset
+	assert.Equal(t, 0, bytes.Compare(hash, nhash), "hash of persistent after commit not match")
+
+	assert.Equal(t, version, nversion, "version of persistent after commit not match")
 }

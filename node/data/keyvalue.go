@@ -143,7 +143,7 @@ func (store KeyValue) Dump() {
 	for ; iter.Valid(); iter.Next() {
 		hash := iter.Key()
 		node := iter.Value()
-		log.Debug("Row", hash, node)
+		log.Debug("Row", "hash", hash, "node", node)
 	}
 }
 
@@ -180,18 +180,14 @@ func (store KeyValue) FindAll() []DatabaseKey {
 
 // Test to see if a key exists
 func (store KeyValue) Exists(key DatabaseKey) bool {
-	version := store.tree.Version()
-	index, _ := store.tree.GetVersioned(key, version)
-	if index == -1 {
-		return false
-	}
-	return true
+	return store.tree.Has(key)
+
 }
 
 // Get a key from the database
 func (store KeyValue) Get(key DatabaseKey) interface{} {
-	version := store.tree.Version()
-	index, value := store.tree.GetVersioned(key, version)
+
+	index, value := store.tree.Get(key)
 	if index == -1 {
 		return nil
 	}
@@ -273,7 +269,7 @@ func (session KeyValueSession) Dump() {
 	for ; iter.Valid(); iter.Next() {
 		hash := iter.Key()
 		node := iter.Value()
-		log.Debug("Row", hash, node)
+		log.Debug("Row", "hash", hash, "node", node)
 	}
 }
 
