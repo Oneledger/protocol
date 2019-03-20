@@ -3,6 +3,7 @@ package config
 import (
 	"bytes"
 	"io/ioutil"
+	"strings"
 	"time"
 
 	"github.com/jbsmith7741/toml"
@@ -195,6 +196,8 @@ type P2PConfig struct {
 
 func (cfg *P2PConfig) TMConfig() *tmconfig.P2PConfig {
 	return &tmconfig.P2PConfig{
+		Seeds:                   strings.Join(cfg.Seeds, ","),
+		PersistentPeers:         strings.Join(cfg.PersistentPeers, ","),
 		UPNP:                    cfg.UPNP,
 		AddrBookStrict:          cfg.AddrBookStrict,
 		MaxNumInboundPeers:      cfg.MaxNumInboundPeers,
@@ -214,10 +217,11 @@ func (cfg *P2PConfig) TMConfig() *tmconfig.P2PConfig {
 func DefaultP2PConfig() *P2PConfig {
 	var cfg P2PConfig
 	tmDefaults := tmconfig.DefaultP2PConfig()
+	cfg.Seeds = make([]string, 0)
 	cfg.PersistentPeers = make([]string, 0)
 	cfg.UPNP = tmDefaults.UPNP
-	cfg.AddrBookStrict = tmDefaults.AddrBookStrict
-	cfg.AllowDuplicateIP = tmDefaults.AllowDuplicateIP
+	cfg.AddrBookStrict = false
+	cfg.AllowDuplicateIP = true
 	cfg.MaxNumInboundPeers = tmDefaults.MaxNumInboundPeers
 	cfg.MaxNumOutboundPeers = tmDefaults.MaxNumOutboundPeers
 	cfg.FlushThrottleTimeout = tmDefaults.FlushThrottleTimeout
@@ -240,12 +244,12 @@ type MempoolConfig struct {
 }
 
 func (cfg *MempoolConfig) TMConfig() *tmconfig.MempoolConfig {
-	return &tmconfig.MempoolConfig{
-		Recheck:   cfg.Recheck,
-		Broadcast: cfg.Broadcast,
-		Size:      cfg.Size,
-		CacheSize: cfg.CacheSize,
-	}
+	c := tmconfig.DefaultMempoolConfig()
+	c.Recheck = cfg.Recheck
+	c.Broadcast = cfg.Broadcast
+	c.Size = cfg.Size
+	c.CacheSize = cfg.CacheSize
+	return c
 }
 
 func DefaultMempoolConfig() *MempoolConfig {
@@ -286,22 +290,21 @@ type ConsensusConfig struct {
 }
 
 func (cfg *ConsensusConfig) TMConfig() *tmconfig.ConsensusConfig {
-	return &tmconfig.ConsensusConfig{
-		TimeoutPropose:              cfg.TimeoutPropose,
-		TimeoutProposeDelta:         cfg.TimeoutProposeDelta,
-		TimeoutPrevote:              cfg.TimeoutPrevote,
-		TimeoutPrevoteDelta:         cfg.TimeoutPrevoteDelta,
-		TimeoutPrecommit:            cfg.TimeoutPrecommit,
-		TimeoutPrecommitDelta:       cfg.TimeoutPrecommitDelta,
-		TimeoutCommit:               cfg.TimeoutCommit,
-		SkipTimeoutCommit:           cfg.SkipTimeoutCommit,
-		CreateEmptyBlocks:           cfg.CreateEmptyBlocks,
-		CreateEmptyBlocksInterval:   cfg.CreateEmptyBlocksInterval,
-		PeerGossipSleepDuration:     cfg.PeerGossipSleepDuration,
-		PeerQueryMaj23SleepDuration: cfg.PeerQueryMaj23SleepDuration,
-		BlockTimeIota:               cfg.BlockTimeIota,
-	}
-
+	c := tmconfig.DefaultConsensusConfig()
+	c.TimeoutPropose = cfg.TimeoutPropose
+	c.TimeoutProposeDelta = cfg.TimeoutProposeDelta
+	c.TimeoutPrevote = cfg.TimeoutPrevote
+	c.TimeoutPrevoteDelta = cfg.TimeoutPrevoteDelta
+	c.TimeoutPrecommit = cfg.TimeoutPrecommit
+	c.TimeoutPrecommitDelta = cfg.TimeoutPrecommitDelta
+	c.TimeoutCommit = cfg.TimeoutCommit
+	c.SkipTimeoutCommit = cfg.SkipTimeoutCommit
+	c.CreateEmptyBlocks = cfg.CreateEmptyBlocks
+	c.CreateEmptyBlocksInterval = cfg.CreateEmptyBlocksInterval
+	c.PeerGossipSleepDuration = cfg.PeerGossipSleepDuration
+	c.PeerQueryMaj23SleepDuration = cfg.PeerQueryMaj23SleepDuration
+	c.BlockTimeIota = cfg.BlockTimeIota
+	return c
 }
 
 func DefaultConsensusConfig() *ConsensusConfig {
