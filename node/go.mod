@@ -43,7 +43,7 @@ require (
 	github.com/spf13/cast v1.3.0 // indirect
 	github.com/spf13/cobra v0.0.3
 	github.com/spf13/pflag v1.0.3 // indirect
-	github.com/spf13/viper v1.2.1
+	github.com/spf13/viper v1.2.1 // indirect
 	github.com/stretchr/testify v1.2.2
 	github.com/syndtr/goleveldb v0.0.0-20181105012736-f9080354173f // indirect
 	github.com/tendermint/ed25519 v0.0.0-20171027050219-d8387025d2b9 // indirect
