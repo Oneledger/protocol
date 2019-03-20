@@ -32,7 +32,6 @@ type Context struct {
 	Debug            bool // DEBUG flag
 	DisablePasswords bool // DEBUG flag
 
-	ConfigName      string // The Name of the config file (without extension)
 	NodeName        string // Name of this instance
 	NodeAccountName string // TODO: Should be a list of accounts
 	PaymentAccount  string
@@ -83,7 +82,6 @@ func NewContext(name string) *Context {
 		Debug:            debug,
 		DisablePasswords: true,
 
-		ConfigName:      "config", // TODO: needs to deal with client/server
 		NodeName:        name,
 		NodeAccountName: "",
 		PaymentAccount:  "Payment",

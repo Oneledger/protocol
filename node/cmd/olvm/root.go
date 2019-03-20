@@ -34,9 +34,6 @@ func init() {
 	RootCmd.PersistentFlags().StringVar(&global.Current.RootDir, "root",
 		global.Current.RootDir, "Set root directory")
 
-	RootCmd.PersistentFlags().StringVarP(&global.Current.ConfigName, "config", "c",
-		global.Current.ConfigName, "Configuration File Name")
-
 	RootCmd.PersistentFlags().StringVar(&global.Current.NodeName, "node",
 		global.Current.NodeName, "Set a node name")
 
