@@ -3,6 +3,7 @@ package config
 import (
 	"bytes"
 	"io/ioutil"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -199,6 +200,7 @@ func (cfg *P2PConfig) TMConfig() *tmconfig.P2PConfig {
 		Seeds:                   strings.Join(cfg.Seeds, ","),
 		PersistentPeers:         strings.Join(cfg.PersistentPeers, ","),
 		UPNP:                    cfg.UPNP,
+		AddrBook:                filepath.Join("config", "addrbook.json"),
 		AddrBookStrict:          cfg.AddrBookStrict,
 		MaxNumInboundPeers:      cfg.MaxNumInboundPeers,
 		MaxNumOutboundPeers:     cfg.MaxNumOutboundPeers,
