@@ -7,12 +7,11 @@ import (
 	"errors"
 
 	"github.com/Oneledger/protocol/node/global"
-	"github.com/Oneledger/protocol/node/log"
 	"github.com/tendermint/tendermint/libs/db"
 )
 
 func init() {
-	log.Info("Compiled without GCC, no cleveldb support...")
+	// log.Info("Compiled without GCC, no cleveldb support...")
 }
 
 func getDatabase(name string) (db.DB, error) {

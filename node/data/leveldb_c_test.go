@@ -10,7 +10,7 @@ import (
 	"testing"
 )
 
-// TestCLevelDB is just a basic test
+// TestCLevelDB is just a basic test to see if cleveldb is being used properly
 func TestCLevelDB(t *testing.T) {
 	storage, err := db.NewCLevelDB("test123", global.Current.DatabaseDir())
 	if err != nil {

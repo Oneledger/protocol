@@ -11,7 +11,7 @@ import (
 )
 
 func init() {
-	log.Info("Node running with cleveldb support...")
+	// log.Info("Node running with cleveldb support...")
 }
 
 func getDatabase(name string) (db.DB, error) {
@@ -21,5 +21,4 @@ func getDatabase(name string) (db.DB, error) {
 	}
 	log.Info("Getting goleveldb...")
 	return db.NewGoLevelDB(name, global.Current.DatabaseDir())
-	// panic("nogo")
 }

@@ -12,7 +12,6 @@ import (
 	"os"
 
 	"github.com/Oneledger/protocol/node/cmd/shared"
-	"github.com/Oneledger/protocol/node/config"
 	"github.com/Oneledger/protocol/node/global"
 	"github.com/Oneledger/protocol/node/log"
 	"github.com/spf13/cobra"
@@ -73,13 +72,5 @@ func indentJSON(in []byte) bytes.Buffer {
 // Initialize Viper
 func environment() {
 	log.Debug("Loading Environment")
-	config.ClientConfig()
-
-	config.UpdateContext()
-
-	// TODO: Static variables vs Dynamic variables :-(
-	//global.Current.Config.Network.SDKAddress = viper.Get("SDKAddress").(string)
-	//global.Current.Config.Network.RPCAddress = viper.Get("RpcAddress").(string)
-
-	//viper.AutomaticEnv()
+	global.Current.ReadConfig()
 }

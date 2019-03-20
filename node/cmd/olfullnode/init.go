@@ -24,14 +24,15 @@ var initCmd = &cobra.Command{
 }
 
 type InitCmdArguments struct {
-	genesis string
+	genesis  string
+	nodeName string
 }
 
 var initCmdArguments = &InitCmdArguments{}
 
 func init() {
 	RootCmd.AddCommand(initCmd)
-
+	initCmd.Flags().StringVar(&initCmdArguments.nodeName, "nodeName", "Newton-Node", "Name of the node")
 	initCmd.Flags().StringVar(&initCmdArguments.genesis, "genesis", "", "Genesis file to use to generate new node key file")
 }
 
@@ -46,6 +47,7 @@ func initNode(cmd *cobra.Command, _ []string) error {
 	}
 	// Generate new configuration file
 	cfg := config.DefaultServerConfig()
+	cfg.Node.NodeName = args.nodeName
 	err := cfg.SaveFile(filepath.Join(global.Current.RootDir, config.FileName))
 	if err != nil {
 		return err
@@ -84,6 +86,7 @@ func initNode(cmd *cobra.Command, _ []string) error {
 	if err != nil {
 		return err
 	}
+
 	// Make private validator file
 	pvFile := privval.GenFilePV(filepath.Join(configDir, "priv_validator_key.json"), filepath.Join(dataDir, "priv_validator_state.json"))
 	pvFile.Save()

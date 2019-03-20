@@ -8,7 +8,6 @@ import (
 	"github.com/Oneledger/protocol/node/log"
 	tmconfig "github.com/tendermint/tendermint/config"
 	tmflags "github.com/tendermint/tendermint/libs/cli/flags"
-	"github.com/tendermint/tendermint/libs/common"
 	tmlog "github.com/tendermint/tendermint/libs/log"
 )
 
@@ -24,17 +23,10 @@ func newStdOutLogger(cfg tmconfig.Config) (tmlog.Logger, error) {
 func newFileLogger(logPath string, cfg tmconfig.Config) (tmlog.Logger, error) {
 	var file *os.File
 	var err error
-	if !common.FileExists(logPath) {
-		log.Info("Creating consensus log file at", "path", logPath)
-		file, err = os.Create(logPath)
-		if err != nil {
-			return nil, err
-		}
-	} else {
-		file, err = os.OpenFile(logPath, os.O_RDWR|os.O_APPEND, config.FilePerms)
-		if err != nil {
-			return nil, err
-		}
+	file, err = os.OpenFile(logPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, config.FilePerms)
+	if err != nil {
+		log.Info("Failed to open new file", "err", err)
+		return nil, err
 	}
 	return newLogger(file, cfg)
 }

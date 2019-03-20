@@ -15,8 +15,8 @@ import (
 )
 
 // config is used to provider the right arguments for spinning up a new consensus.Node
-type nodeConfig struct {
-	cfg             tmconfig.Config
+type NodeConfig struct {
+	CFG             tmconfig.Config
 	genesisProvider node.GenesisDocProvider
 	privValidator   types.PrivValidator
 	nodeKey         *p2p.NodeKey
@@ -28,45 +28,54 @@ type nodeConfig struct {
 // TMConfig returns a ready to go config for starting a new tendermint node,
 // fields like logging and metrics still need to be handled before starting the new node
 
+func ParseConfig(cfg *config.Server) (NodeConfig, error) {
+	return parseConfig(cfg)
+}
+
 // ParseConfig reads Tendermint level config and return as
-func parseConfig(cfg *config.Server) (nodeConfig, error) {
+func parseConfig(cfg *config.Server) (NodeConfig, error) {
 	var leveldb string
 	if cfg.Node.DB == "goleveldb" {
 		leveldb = "leveldb"
 	} else {
 		leveldb = cfg.Node.DB
 	}
-
 	nilMetricsConfig := tmconfig.InstrumentationConfig{Namespace: "metrics"}
 	nilMetricsProvider := node.DefaultMetricsProvider(&nilMetricsConfig)
-	baseConfig := tmconfig.BaseConfig{
-		RootDir:   global.Current.ConsensusDir(),
-		ProxyApp:  "OneLedgerProtocol",
-		Moniker:   cfg.Node.NodeName,
-		FastSync:  cfg.Node.FastSync,
-		DBBackend: leveldb,
-		DBPath:    "data",
-		LogLevel:  cfg.Consensus.LogLevel,
-	}
+
+	baseConfig := tmconfig.DefaultBaseConfig()
+	baseConfig.RootDir = global.Current.ConsensusDir()
+	baseConfig.ProxyApp = "OneLedgerProtocol"
+	baseConfig.Moniker = cfg.Node.NodeName
+	baseConfig.FastSync = cfg.Node.FastSync
+	baseConfig.DBBackend = leveldb
+	baseConfig.DBPath = "data"
+	baseConfig.LogLevel = cfg.Consensus.LogLevel
 
 	p2pConfig := cfg.P2P.TMConfig()
 	p2pConfig.ListenAddress = cfg.Network.P2PAddress
-	p2pConfig.ExternalAddress = cfg.Network.ExternalP2PAddress
+	if cfg.Network.ExternalP2PAddress == "" {
+		p2pConfig.ExternalAddress = cfg.Network.P2PAddress
+	} else {
+		p2pConfig.ExternalAddress = cfg.Network.ExternalP2PAddress
+	}
 
 	genesisProvider := func() (*types.GenesisDoc, error) {
 		return types.GenesisDocFromFile(filepath.Join(global.Current.ConsensusDir(), "config", "genesis.json"))
 	}
-
 	privValidator := privval.LoadFilePV(baseConfig.PrivValidatorKeyFile(), baseConfig.PrivValidatorStateFile())
 
 	nodeKey, err := p2p.LoadNodeKey(baseConfig.NodeKeyFile())
 	if err != nil {
-		return nodeConfig{}, err
+		return NodeConfig{}, err
 	}
+
+	rpcConfig := tmconfig.DefaultRPCConfig()
+	rpcConfig.ListenAddress = global.Current.Config.Network.RPCAddress
 
 	tmcfg := tmconfig.Config{
 		BaseConfig: baseConfig,
-		RPC:        tmconfig.DefaultRPCConfig(),
+		RPC:        rpcConfig,
 		P2P:        p2pConfig,
 		Mempool:    cfg.Mempool.TMConfig(),
 		Consensus:  cfg.Consensus.TMConfig(),
@@ -87,17 +96,18 @@ func parseConfig(cfg *config.Server) (nodeConfig, error) {
 		logger, err = newFileLogger(logOutput, tmcfg)
 	}
 	if err != nil {
-		return nodeConfig{}, err
+		return NodeConfig{}, err
 	}
 	//for testing propose, we should change it for production
 	cfg.P2P.AddrBookStrict = false
 	cfg.P2P.AllowDuplicateIP = true
 
-	dbProvider := node.DefaultDBProvider
+	var dbProvider node.DBProvider
+	dbProvider = node.DefaultDBProvider
 
-	// TODO: Switch DB provider depending on the value of cfg.Node.DB
-	return nodeConfig{
-		cfg:             tmcfg,
+	// TODO: Switch DB provider depending on the value of CFG.Node.DB
+	return NodeConfig{
+		CFG:             tmcfg,
 		genesisProvider: genesisProvider,
 		metricsProvider: nilMetricsProvider,
 		privValidator:   privValidator,
