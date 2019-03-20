@@ -17,11 +17,71 @@ import (
 	ctypes "github.com/tendermint/tendermint/rpc/core/types"
 )
 
-var cachedClient rpcclient.Client
+type ClientContext struct {
+	Client rpcclient.Client
+	Async bool
+}
+
+type ClientInterface interface {
+	BroadcastTxSync(packet []byte) (*ctypes.ResultBroadcastTx, error)
+	BroadcastTxAsync(packet []byte) (*ctypes.ResultBroadcastTx, error)
+	BroadcastTxCommit(packet []byte) (*ctypes.ResultBroadcastTxCommit, error)
+	ABCIQuery(path string, packet []byte) (*ctypes.ResultABCIQuery, error)
+	Tx(hash []byte, prove bool) (*ctypes.ResultTx, error)
+	TxSearch(query string, prove bool, page, perPage int) (*ctypes.ResultTxSearch, error)
+	Block(height *int64) (*ctypes.ResultBlock, error)
+	Status() (*ctypes.ResultStatus, error)
+	Start() error
+	IsRunning() bool
+}
+
+func (client ClientContext) BroadcastTxSync(packet []byte) (*ctypes.ResultBroadcastTx, error) {
+	return client.Client.BroadcastTxSync(packet)
+}
+
+func (client ClientContext) BroadcastTxAsync(packet []byte) (*ctypes.ResultBroadcastTx, error) {
+	return client.Client.BroadcastTxAsync(packet)
+}
+
+func (client ClientContext) BroadcastTxCommit(packet []byte) (*ctypes.ResultBroadcastTxCommit, error) {
+	return client.Client.BroadcastTxCommit(packet)
+}
+
+func (client ClientContext) ABCIQuery(path string, packet []byte) (*ctypes.ResultABCIQuery, error) {
+	return client.Client.ABCIQuery(path, packet)
+}
+
+func (client ClientContext) Tx(hash []byte, prove bool) (*ctypes.ResultTx, error) {
+	return client.Client.Tx(hash, prove)
+}
+
+func (client ClientContext) TxSearch(query string, prove bool, page, perPage int) (*ctypes.ResultTxSearch, error) {
+	return client.Client.TxSearch(query, prove, page, perPage)
+}
+
+func (client ClientContext) Block(height *int64) (*ctypes.ResultBlock, error) {
+	return client.Client.Block(height)
+}
+
+func (client ClientContext) Status() (*ctypes.ResultStatus, error) {
+	return client.Client.Status()
+}
+
+func (client ClientContext) Start() error {
+	return client.Client.Start()
+}
+
+func (client ClientContext) IsRunning() bool {
+	return client.Client.IsRunning()
+}
+
+var cachedClient ClientInterface
 
 // HTTP interface, allows Broadcast?
 // TODO: Want to switch client type, based on config or cli args.
-func GetClient() (client rpcclient.Client) {
+func GetClient() (client ClientInterface) {
+
+	var rpc rpcclient.Client
 
 	defer func() {
 		if r := recover(); r != nil {
@@ -36,22 +96,30 @@ func GetClient() (client rpcclient.Client) {
 
 	if global.Current.ConsensusNode != nil {
 		log.Debug("Using local ConsensusNode ABCI Client")
-		cachedClient = rpcclient.NewLocal(global.Current.ConsensusNode)
+		rpc = rpcclient.NewLocal(global.Current.ConsensusNode)
 
 	} else {
 		log.Debug("Using new HTTP ABCI Client")
-		cachedClient = rpcclient.NewHTTP(global.Current.RpcAddress, "/websocket")
+		rpc = rpcclient.NewHTTP(global.Current.RpcAddress, "/websocket")
 	}
 
-	if _, err := cachedClient.Status(); err == nil {
+	client = ClientContext {
+		Client: rpc,
+		Async:  false,
+	}
+
+	if _, err := client.Status(); err == nil {
 		log.Debug("Client is running")
-		return cachedClient
+		cachedClient = client
+		return
 	}
 
-	if err := cachedClient.Start(); err != nil {
+	if err := client.Start(); err != nil {
 		log.Fatal("Client is unavailable", "address", global.Current.RpcAddress)
 		client = nil
+		return
 	}
+
 	// TODO: Try multiple times before giving up
 
 	//for i := 0; i < 10; i++ {
@@ -76,7 +144,7 @@ func GetClient() (client rpcclient.Client) {
 	//	time.Sleep(2 * time.Second)
 	//}
 
-	return cachedClient
+	return
 }
 
 func StopClient() {
