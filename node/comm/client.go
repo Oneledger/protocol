@@ -8,6 +8,7 @@
 package comm
 
 import (
+	"github.com/Oneledger/protocol/node/status"
 	"reflect"
 
 	"github.com/Oneledger/protocol/node/global"
@@ -23,9 +24,9 @@ type ClientContext struct {
 }
 
 type ClientInterface interface {
-	BroadcastTxSync(packet []byte) (*ctypes.ResultBroadcastTx, error)
-	BroadcastTxAsync(packet []byte) (*ctypes.ResultBroadcastTx, error)
-	BroadcastTxCommit(packet []byte) (*ctypes.ResultBroadcastTxCommit, error)
+	BroadcastTxSync(packet []byte) (*ctypes.ResultBroadcastTx, status.Code)
+	BroadcastTxAsync(packet []byte) (*ctypes.ResultBroadcastTx, status.Code)
+	BroadcastTxCommit(packet []byte) (*ctypes.ResultBroadcastTxCommit, status.Code)
 	ABCIQuery(path string, packet []byte) (*ctypes.ResultABCIQuery, error)
 	Tx(hash []byte, prove bool) (*ctypes.ResultTx, error)
 	TxSearch(query string, prove bool, page, perPage int) (*ctypes.ResultTxSearch, error)
@@ -35,16 +36,71 @@ type ClientInterface interface {
 	IsRunning() bool
 }
 
-func (client ClientContext) BroadcastTxSync(packet []byte) (*ctypes.ResultBroadcastTx, error) {
-	return client.Client.BroadcastTxSync(packet)
+func (client ClientContext) BroadcastTxSync(packet []byte) (*ctypes.ResultBroadcastTx, status.Code) {
+
+	if len(packet) < 1 {
+		log.Debug("Empty Transaction")
+		return nil, status.MISSING_DATA
+	}
+
+	log.Debug("Start Synced Broadcast", "packet", packet)
+
+	result, err := client.Client.BroadcastTxSync(packet)
+
+	StopClient()
+
+	if err != nil {
+		log.Error("Error", "err", err)
+		return nil, status.EXECUTE_ERROR
+	}
+
+	log.Debug("Finished Synced Broadcast", "packet", packet, "result", result)
+
+	return result, status.SUCCESS
 }
 
-func (client ClientContext) BroadcastTxAsync(packet []byte) (*ctypes.ResultBroadcastTx, error) {
-	return client.Client.BroadcastTxAsync(packet)
+func (client ClientContext) BroadcastTxAsync(packet []byte) (*ctypes.ResultBroadcastTx, status.Code) {
+	if len(packet) < 1 {
+		log.Debug("Empty Transaction")
+		return nil, status.MISSING_DATA
+	}
+
+	result, err := client.Client.BroadcastTxAsync(packet)
+
+	// @todo Do we need to stop Client?
+	StopClient()
+
+	if err != nil {
+		log.Error("Broadcast Error", "err", err)
+		return nil, status.EXECUTE_ERROR
+	}
+
+	log.Debug("Broadcast", "packet", packet, "result", result)
+
+	return result, status.SUCCESS
 }
 
-func (client ClientContext) BroadcastTxCommit(packet []byte) (*ctypes.ResultBroadcastTxCommit, error) {
-	return client.Client.BroadcastTxCommit(packet)
+func (client ClientContext) BroadcastTxCommit(packet []byte) (*ctypes.ResultBroadcastTxCommit, status.Code) {
+	if len(packet) < 1 {
+		log.Debug("Empty Transaction")
+		return nil, status.MISSING_DATA
+	}
+
+	log.Debug("Start Synced Broadcast", "packet", packet)
+
+	result, err := client.Client.BroadcastTxCommit(packet)
+
+	// @todo Do we need to stop Client?
+	StopClient()
+
+	if err != nil {
+		log.Error("Error", "err", err)
+		return nil, status.EXECUTE_ERROR
+	}
+
+	log.Debug("Finished Synced Broadcast", "packet", packet, "result", result)
+
+	return result, status.SUCCESS
 }
 
 func (client ClientContext) ABCIQuery(path string, packet []byte) (*ctypes.ResultABCIQuery, error) {
@@ -156,68 +212,29 @@ func StopClient() {
 // An async Broadcast to the chain
 func BroadcastAsync(packet []byte) *ctypes.ResultBroadcastTx {
 
-	if len(packet) < 1 {
-		log.Debug("Empty Transaction")
-		return nil
-	}
-
 	client := GetClient()
 
-	result, err := client.BroadcastTxAsync(packet)
-	StopClient()
-
-	if err != nil {
-		log.Error("Broadcast Error", "err", err)
-	}
-
-	log.Debug("Broadcast", "packet", packet, "result", result)
+	result, _ := client.BroadcastTxAsync(packet)
 
 	return result
 }
 
 // A sync'ed broadcast to the chain that waits for the commit to happen
 func Broadcast(packet []byte) *ctypes.ResultBroadcastTxCommit {
-	if len(packet) < 1 {
-		log.Debug("Empty Transaction")
-		return nil
-	}
 
 	client := GetClient()
 
-	log.Debug("Start Synced Broadcast", "packet", packet)
-
-	// TODO: result, err := client.BroadcastTxSync(packet)
-	result, err := client.BroadcastTxCommit(packet)
-	StopClient()
-
-	if err != nil {
-		log.Error("Error", "err", err)
-	}
-
-	log.Debug("Finished Synced Broadcast", "packet", packet, "result", result)
+	result, _ := client.BroadcastTxCommit(packet)
 
 	return result
 }
 
 // A sync'ed broadcast to the chain that waits for the commit to happen
 func BroadcastSync(packet []byte) *ctypes.ResultBroadcastTx {
-	if len(packet) < 1 {
-		log.Debug("Empty Transaction")
-		return nil
-	}
 
 	client := GetClient()
 
-	log.Debug("Start Synced Broadcast", "packet", packet)
-
-	result, err := client.BroadcastTxSync(packet)
-	StopClient()
-
-	if err != nil {
-		log.Error("Error", "err", err)
-	}
-
-	log.Debug("Finished Synced Broadcast", "packet", packet, "result", result)
+	result, _ := client.BroadcastTxSync(packet)
 
 	return result
 }
