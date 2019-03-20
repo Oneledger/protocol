@@ -1,6 +1,6 @@
 # stop app processess running on validator and seed nodes
 - hosts: all
-  remote_user: steven
+  remote_user: lan
   become: true
   become_user: root
   tasks:

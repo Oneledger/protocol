@@ -15,13 +15,13 @@ resource "google_compute_address" "static-ips"{
 resource "google_compute_instance" "default" {
   count = "${var.vmcount}"
   name = "${var.name}-vm-${count.index}"
-  machine_type = "n1-highcpu-4"
+  machine_type = "n1-highcpu-2"
   tags = ["${var.name}"]
   zone = "${element(var.regions,count.index % length(var.regions))}-b"
   boot_disk {
     initialize_params {
-      image = "debian-cloud/debian-9"
-      size = 25
+      image = "ubuntu-os-cloud/ubuntu-1604-lts"
+      size = 100
     }
   }
   allow_stopping_for_update = true

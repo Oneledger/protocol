@@ -10,7 +10,7 @@
         key: "{{ stage | default('devnet') }}"
       variables: 
         name: "{{ stage | default('devnet') }}"
-        vpc_ip_range: "{{ ip_range | default('10.10.0.0/20') }}"
+        vpc_ip_range: "{{ jielanjielanip_range | default('10.10.0.0/20') }}"
         vmcount: "{{ node_count | default(5) }}"
     register: vm_data
   - set_fact: remote_hosts={{vm_data.outputs.public_ip.value}}
@@ -32,7 +32,7 @@
     add_host:
       name: "{{item.1}}"
       group: "seed_node"
-      consensus: consensus  
+      node_name: consensus
       app_user: node
     with_indexed_items: "{{remote_hosts}}"
     when: item.0 >= 4 
@@ -40,25 +40,25 @@
   - name: specify alice-node 
     add_host: 
       name: "{{item.1}}"
-      consensus: Alice-Node/consensus 
+      node_name: Alice-Node
     with_indexed_items: "{{remote_hosts}}"
     when: item.0 == 0 
   - name: specify Bob-node 
     add_host: 
       name: "{{item.1}}"
-      consensus: Bob-Node/consensus 
+      node_name: Bob-Node
     with_indexed_items: "{{remote_hosts}}"
     when: item.0 == 1
   - name: specify David-node 
     add_host: 
       name: "{{item.1}}"
-      consensus: David-Node/consensus 
+      node_name: David-Node
     with_indexed_items: "{{remote_hosts}}"
     when: item.0 == 2 
   - name: specify Carol-node 
     add_host: 
       name: "{{item.1}}"
-      consensus: Carol-Node/consensus 
+      node_name: Carol-Node
     with_indexed_items: "{{remote_hosts}}"
     when: item.0 == 3 
     
@@ -81,4 +81,4 @@
       force: yes
       mode: 0644
   - name: create consensus/ initialized network with dir
-    shell: chdir={{lookup('env','OLDATA')}} olfullnode init devnet --dir {{lookup('env','OLDATA')}}
+    shell: chdir={{lookup('env','OLDATA')}} olfullnode init devnet --root {{lookup('env','OLDATA')}}

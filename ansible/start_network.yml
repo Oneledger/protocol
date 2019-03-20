@@ -1,5 +1,5 @@
 - hosts: validator_node:seed_node
-  remote_user: steven
+  remote_user: lan
   become: true
   become_user: root
   vars:
@@ -18,7 +18,7 @@
 
         [Service]
         WorkingDirectory={{APP_HOME}}
-        ExecStart=/usr/local/bin/olmonitor start olvm execute --root {{APP_HOME}} >> {{APP_HOME}}/olvm.log 2>&1
+        ExecStart=/usr/local/bin/olmonitor start olvm execute --root {{APP_HOME}}
         # Other Restart options: or always, on-abort, etc
 
         [Install]
@@ -43,10 +43,8 @@
         [Service]
         WorkingDirectory={{APP_HOME}}
         ExecStart=/usr/local/bin/olfullnode node --root {{APP_HOME}}\
-          --tendermintRoot {{APP_HOME}}/consensus\
           --seeds {{hostvars[groups['seed_node'][0]]['p2pAddress']}}\
-          --persistent_peers {{hostvars[groups['seed_node'][0]]['p2pAddress']}} >>\
-          "{{APP_HOME}}"/olfullnode.log 2>&1
+          --persistent_peers {{hostvars[groups['seed_node'][0]]['p2pAddress']}}
         # Other Restart options: or always, on-abort, etc
 
         [Install]

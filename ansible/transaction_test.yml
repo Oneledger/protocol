@@ -2,7 +2,7 @@
   vars:
     uuid: "{{ ansible_date_time.iso8601_micro | to_uuid }}"
     APP_HOME: "/home/{{app_user}}/go"
-  remote_user: steven
+  remote_user: lan
   become: true
   become_user: root
   tasks:
