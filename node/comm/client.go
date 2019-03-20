@@ -27,7 +27,7 @@ type ClientInterface interface {
 	BroadcastTxSync(packet []byte) (*ctypes.ResultBroadcastTx, status.Code)
 	BroadcastTxAsync(packet []byte) (*ctypes.ResultBroadcastTx, status.Code)
 	BroadcastTxCommit(packet []byte) (*ctypes.ResultBroadcastTxCommit, status.Code)
-	ABCIQuery(path string, packet []byte) (*ctypes.ResultABCIQuery, error)
+	ABCIQuery(path string, packet []byte) (interface {}, status.Code)
 	Tx(hash []byte, prove bool) (*ctypes.ResultTx, error)
 	TxSearch(query string, prove bool, page, perPage int) (*ctypes.ResultTxSearch, error)
 	Block(height *int64) (*ctypes.ResultBlock, error)
@@ -103,8 +103,41 @@ func (client ClientContext) BroadcastTxCommit(packet []byte) (*ctypes.ResultBroa
 	return result, status.SUCCESS
 }
 
-func (client ClientContext) ABCIQuery(path string, packet []byte) (*ctypes.ResultABCIQuery, error) {
-	return client.Client.ABCIQuery(path, packet)
+func (client ClientContext) ABCIQuery(path string, packet []byte) (interface {}, status.Code) {
+
+	if len(path) < 1 {
+		log.Debug("Empty Query Path")
+		return nil, status.MISSING_DATA
+	}
+
+	var response *ctypes.ResultABCIQuery
+	var err error
+
+	response, err = client.Client.ABCIQuery(path, packet)
+
+	// @todo Do we need to stop Client?
+	StopClient()
+
+	if err != nil {
+		log.Debug("ABCi Query Error", "path", path, "err", err)
+		return nil, status.EXECUTE_ERROR
+	}
+
+	if response == nil {
+		log.Debug("response is empty")
+		return nil, status.EXECUTE_ERROR
+	}
+
+	var prototype interface{}
+
+	result, err := serial.Deserialize(response.Response.Value, prototype, serial.CLIENT)
+
+	if err != nil {
+		log.Error("Failed to deserialize Query:", "response", response.Response.Value)
+		return nil, status.BAD_VALUE
+	}
+
+	return result, status.SUCCESS
 }
 
 func (client ClientContext) Tx(hash []byte, prove bool) (*ctypes.ResultTx, error) {
@@ -249,46 +282,9 @@ func IsError(result interface{}) *string {
 
 // Send a very specific query
 func Query(path string, packet []byte) interface{} {
-	if len(path) < 1 {
-		log.Debug("Empty Query Path")
-		return nil
-	}
-
-	var response *ctypes.ResultABCIQuery
-	var err error
-
-	//for i := 0; i < 20; i++ {
 	client := GetClient()
-	if client == nil {
-		log.Debug("Client Unavailable")
-		return nil
-	}
 
-	response, err = client.ABCIQuery(path, packet)
-	StopClient()
-
-	if err != nil {
-		log.Debug("ABCi Query Error", "path", path, "err", err)
-		return nil
-	}
-	//if response != nil {
-	//	break
-	//}
-	//time.Sleep(2 * time.Second)
-	//}
-
-	if response == nil {
-		//return "No results for " + path + " and " + string(packet)
-		log.Debug("response is empty")
-		return nil
-	}
-
-	var prototype interface{}
-	result, err := serial.Deserialize(response.Response.Value, prototype, serial.CLIENT)
-	if err != nil {
-		log.Error("Failed to deserialize Query:", "response", response.Response.Value)
-		return nil
-	}
+	result, _ := client.ABCIQuery(path, packet)
 
 	return result
 }
