@@ -132,6 +132,7 @@ func runDevnet(cmd *cobra.Command, _ []string) error {
 		nodeDir := filepath.Join(args.outputDir, nodeName+"-Node")
 		configDir := filepath.Join(nodeDir, "consensus", "config")
 		dataDir := filepath.Join(nodeDir, "consensus", "data")
+		nodeDataDir := filepath.Join(nodeDir, "nodedata")
 
 		// Generate new configuration file
 		cfg := config.DefaultServerConfig()
@@ -150,6 +151,12 @@ func runDevnet(cmd *cobra.Command, _ []string) error {
 		if err != nil {
 			return err
 		}
+
+		err = os.MkdirAll(nodeDataDir, config.DirPerms)
+		if err != nil {
+			return err
+		}
+
 		// Make node key
 		nodeKey, err := p2p.LoadOrGenNodeKey(filepath.Join(configDir, "node_key.json"))
 		if err != nil {

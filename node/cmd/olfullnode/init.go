@@ -67,6 +67,7 @@ func initNode(cmd *cobra.Command, _ []string) error {
 	}
 	configDir := filepath.Join(global.Current.RootDir, "consensus", "config")
 	dataDir := filepath.Join(global.Current.RootDir, "consensus", "data")
+	nodeDataDir := filepath.Join(global.Current.RootDir, "nodedata")
 
 	err = os.MkdirAll(configDir, config.DirPerms)
 	if err != nil {
@@ -77,6 +78,12 @@ func initNode(cmd *cobra.Command, _ []string) error {
 	if err != nil {
 		return err
 	}
+
+	err = os.MkdirAll(nodeDataDir, config.DirPerms)
+	if err != nil {
+		return err
+	}
+
 	err = genesisdoc.SaveAs(filepath.Join(configDir, "genesis.json"))
 	if err != nil {
 		return err
