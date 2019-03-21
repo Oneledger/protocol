@@ -40,7 +40,7 @@ do
 
 	# Account must have money in order to pay the registration fee
 	olclient testmint --root $OLDATA/$name-Node --party "$name-OneLedger" --amount 100000.1 --currency OLT
-
+	sleep 3
 	# Register the identity across the chain
 	olclient register --root $OLDATA/$name-Node --identity "$name" \
 		--account "$name-OneLedger" --node "$name-Node" --fee 0.1

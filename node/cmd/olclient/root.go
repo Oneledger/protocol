@@ -12,7 +12,6 @@ import (
 	"os"
 
 	"github.com/Oneledger/protocol/node/cmd/shared"
-	"github.com/Oneledger/protocol/node/config"
 	"github.com/Oneledger/protocol/node/global"
 	"github.com/Oneledger/protocol/node/log"
 	"github.com/spf13/cobra"
@@ -38,23 +37,17 @@ func init() {
 	RootCmd.PersistentFlags().StringVar(&global.Current.RootDir, "root",
 		global.Current.RootDir, "Set root directory")
 
-	RootCmd.PersistentFlags().StringVarP(&global.Current.ConfigName, "config", "c",
-		global.Current.ConfigName, "Configuration File Name")
-
 	RootCmd.PersistentFlags().StringVar(&global.Current.NodeName, "node",
 		global.Current.NodeName, "Set a node name")
 
 	RootCmd.PersistentFlags().BoolVarP(&global.Current.Debug, "debug", "d",
 		global.Current.Debug, "Set DEBUG mode")
 
-	RootCmd.PersistentFlags().StringVarP(&global.Current.Transport, "transport", "t",
-		global.Current.Transport, "transport (socket | grpc)")
+	RootCmd.PersistentFlags().StringVarP(&global.Current.Config.Network.RPCAddress, "address", "a",
+		global.Current.Config.Network.RPCAddress, "full address")
 
-	RootCmd.PersistentFlags().StringVarP(&global.Current.RpcAddress, "address", "a",
-		global.Current.RpcAddress, "full address")
-
-	RootCmd.PersistentFlags().StringVar(&global.Current.SDKAddress, "sdkrpc",
-		global.Current.SDKAddress, "SDK address")
+	RootCmd.PersistentFlags().StringVar(&global.Current.Config.Network.SDKAddress, "sdkrpc",
+		global.Current.Config.Network.SDKAddress, "SDK address")
 
 }
 
@@ -76,13 +69,8 @@ func indentJSON(in []byte) bytes.Buffer {
 // Initialize Viper
 func environment() {
 	log.Debug("Loading Environment")
-	config.ClientConfig()
-
-	config.UpdateContext()
-
-	// TODO: Static variables vs Dynamic variables :-(
-	//global.Current.SDKAddress = viper.Get("SDKAddress").(string)
-	//global.Current.RpcAddress = viper.Get("RpcAddress").(string)
-
-	//viper.AutomaticEnv()
+	err := global.Current.ReadConfig()
+	if err != nil {
+		log.Fatal("Failed to read config", "err", err)
+	}
 }

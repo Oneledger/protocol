@@ -1,21 +1,28 @@
 package shared
 
 import (
-	"github.com/Oneledger/protocol/node/log"
 	"io/ioutil"
 	"os"
+
+	"github.com/Oneledger/protocol/node/log"
 )
 
-func ReadFile(filePath string) []byte {
-	textFile, err := os.Open(filePath)
+func MustReadFile(filePath string) []byte {
+	bz, err := ReadFile(filePath)
 	if err != nil {
-		log.Debug("ReadFile", "err", err)
-		defer textFile.Close()
+		log.Error("Failed to ReadFile", "filepath", filePath)
 		return nil
 	}
-	defer textFile.Close()
 
-	byteValue, _ := ioutil.ReadAll(textFile)
+	return bz
+}
 
-	return byteValue
+func ReadFile(filePath string) ([]byte, error) {
+	file, err := os.Open(filePath)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+
+	return ioutil.ReadAll(file)
 }

@@ -7,3 +7,4 @@ scripts/sequence
 VOLUME/
 .DS_Store
 node/olvm/interpreter/bin/
+build/

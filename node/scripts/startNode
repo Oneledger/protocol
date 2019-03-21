@@ -9,13 +9,6 @@ else
 	name=$1
 fi
 
-#p2pAddress=`olconfig get -c $name -p P2PAddress`
-#rpcAddress=`olconfig get -c $name -p RpcAddress`
-#appAddress=`olconfig get -c $name -p AppAddress`
-#peers=`olconfig get --peers -p Alice -p Bob`
-peers=`olconfig get --peers -p Emma --root $OLDATA/Emma-Node`
-seeds=`olconfig get --seeds -p Emma --root $OLDATA/Emma-Node`
-
 nodeName="$name-Node"
 
 export WORK=$OLDATA/$nodeName
@@ -36,11 +29,7 @@ then
 
   olmonitor start olvm execute --root $WORK >>$LOG/olvm.log 2>&1 &
   
-  olfullnode node --root $WORK \
-		--tendermintRoot $DATA \
-		--seeds $seeds \
-		--persistent_peers $peers \
-		>> $LOG/olfullnode.log 2>&1 &
+  olfullnode node --root $WORK >> $LOG/olfullnode.log 2>&1 &
 
 	echo "$nodeName has been started"
 	sleep 3

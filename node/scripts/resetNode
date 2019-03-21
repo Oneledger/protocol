@@ -39,7 +39,6 @@ find $WORK -type f -exec rm -f {} \;
 #
 pushd $WORK > /dev/null
 
-cp $OLSCRIPT/data/$1.toml $OLDATA/$1-Node/config.toml
 #
 # Cleanout any of the old database files
 #

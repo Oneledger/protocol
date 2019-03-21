@@ -18,7 +18,9 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/Oneledger/protocol/node/config"
 	"github.com/Oneledger/protocol/node/persist"
+	"github.com/mitchellh/go-homedir"
 	tmnode "github.com/tendermint/tendermint/node"
 )
 
@@ -30,37 +32,23 @@ type Context struct {
 	Debug            bool // DEBUG flag
 	DisablePasswords bool // DEBUG flag
 
-	ConfigName      string // The Name of the config file (without extension)
 	NodeName        string // Name of this instance
 	NodeAccountName string // TODO: Should be a list of accounts
 	PaymentAccount  string
 	NodeIdentity    string
 	RootDir         string // Working directory for this instance
 
-	RpcAddress string // rpc address
-	Transport  string // socket vs grpc
-
-	AppAddress string // app address
-
-	BTCAddress string // Bitcoin node Address port
-	ETHAddress string // Ethereum node Address port
-
-	SDKAddress string // SDK RPC address
-
-	OLVMProtocol string // Config for the OLVM
-	OLVMAddress  string
-
+	// Do we really need this?
 	Sequence int64 // replay protection
 
-	TendermintRoot    string
+	// This should be set to a function, shouldn't be specifiable
 	TendermintAddress string
 	TendermintPubKey  string
 
-	PersistentPeers    string
-	Seeds              string
-	SeedMode           bool
-	P2PAddress         string
-	ExternalP2PAddress string
+	PersistentPeers []string
+	Seeds           string
+	SeedMode        bool
+	P2PAddress      string
 
 	ConsensusNode *tmnode.Node
 
@@ -69,58 +57,80 @@ type Context struct {
 	MinSwapFee     float64
 	MinContractFee float64
 	MinRegisterFee float64
+
+	Config *config.Server
 }
 
 func init() {
 	Current = NewContext("OneLedger")
 }
 
-// Set the default values for any context variables here (and no where else)
+// Set the default values for any context variables here
 func NewContext(name string) *Context {
 	var debug = false
 	if os.Getenv("OLDEBUG") == "true" {
 		debug = true
 	}
 
+	defaultRootDir := os.Getenv("OLDATA")
+	if defaultRootDir == "" {
+		home, _ := homedir.Dir()
+		defaultRootDir = filepath.Join(home, ".olfullnode")
+	}
+
 	return &Context{
 		Debug:            debug,
 		DisablePasswords: true,
 
-		ConfigName:      "config", // TODO: needs to deal with client/server
 		NodeName:        name,
 		NodeAccountName: "",
 		PaymentAccount:  "Payment",
-		RootDir:         os.Getenv("OLDATA") + "/" + name,
-
-		SDKAddress: "http://127.0.01:6900",
+		RootDir:         defaultRootDir,
 
 		// TODO: Should be params in the chain
 		MinSendFee:     0.1,
 		MinSwapFee:     0.1,
 		MinContractFee: 0.1,
 		MinRegisterFee: 0.1,
+		Config:         config.DefaultServerConfig(),
 	}
 }
 
-func (context *Context) SetApplication(app persist.Access) persist.Access {
-	context.Application = app
+func (ctx *Context) SetApplication(app persist.Access) persist.Access {
+	ctx.Application = app
 	return app
 }
 
-func (context *Context) SetConsensusNode(node *tmnode.Node) {
-	context.ConsensusNode = node
+func (ctx *Context) SetConsensusNode(node *tmnode.Node) {
+	ctx.ConsensusNode = node
 }
 
-func (context *Context) GetApplication() persist.Access {
-	return context.Application
+func (ctx *Context) GetApplication() persist.Access {
+	return ctx.Application
 }
 
-func ConsensusDir() string {
+func (ctx *Context) ConsensusDir() string {
 	result, _ := filepath.Abs(filepath.Join(Current.RootDir, "consensus"))
 	return result
 }
 
-func DatabaseDir() string {
+func (ctx *Context) DatabaseDir() string {
 	result, _ := filepath.Abs(filepath.Join(Current.RootDir, "nodedata"))
 	return result
+}
+
+// ReadConfig looks for a configuration file in the rootdir
+func (ctx *Context) ReadConfig() error {
+	var cfg config.Server
+	err := cfg.ReadFile(filepath.Join(ctx.RootDir, config.FileName))
+	if err != nil {
+		return err
+	}
+	ctx.Config = &cfg
+	return nil
+}
+
+// SaveConfig writes the currently loaded configuration onto a config.toml file in the root directory
+func (ctx *Context) SaveConfig() error {
+	return ctx.Config.SaveFile(ctx.RootDir)
 }

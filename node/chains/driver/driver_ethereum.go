@@ -22,10 +22,10 @@ func init() {
 }
 
 func (driver EthereumDriver) GetURL() string {
-	return global.Current.ETHAddress
+	return global.Current.Config.Network.ETHAddress
 }
 
-func (driver EthereumDriver) GetChainAddress(chainKey interface{}) []byte{
+func (driver EthereumDriver) GetChainAddress(chainKey interface{}) []byte {
 	return ethereum.GetAddress(chainKey).Bytes()
 }
 
@@ -82,7 +82,7 @@ func (driver EthereumDriver) RefundContract(contract Contract, account id.Accoun
 	return contract
 }
 
-func (driver EthereumDriver) CreateSwapContractFromMessage(message []byte) Contract{
+func (driver EthereumDriver) CreateSwapContractFromMessage(message []byte) Contract {
 	contract := &ethereum.HTLContract{}
 
 	contract.FromBytes(message)

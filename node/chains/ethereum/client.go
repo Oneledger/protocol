@@ -36,7 +36,7 @@ type HTLContract struct {
 }
 
 func getEthClient() *ethclient.Client {
-	address := global.Current.ETHAddress
+	address := global.Current.Config.Network.ETHAddress
 	if client == nil {
 		for i := 0; i < 3; i++ {
 			cli, err := ethclient.Dial(address)
@@ -60,14 +60,14 @@ func getEthClient() *ethclient.Client {
 
 }
 
-func GetAddress(chainKey interface {}) common.Address {
+func GetAddress(chainKey interface{}) common.Address {
 	auth := GetAuth(chainKey)
 	return auth.From
 }
 
-func GetAuth(chainKey interface {}) *bind.TransactOpts {
+func GetAuth(chainKey interface{}) *bind.TransactOpts {
 
-	if (chainKey == nil) {
+	if chainKey == nil {
 		return nil
 	}
 
@@ -99,7 +99,7 @@ func GetAuth(chainKey interface {}) *bind.TransactOpts {
 	return auth
 }
 
-func CreateHtlContract(chainKey interface {}) *HTLContract {
+func CreateHtlContract(chainKey interface{}) *HTLContract {
 	cli := getEthClient()
 
 	auth := GetAuth(chainKey)
@@ -150,7 +150,7 @@ func (h *HTLContract) HTLContractObject() *htlc.Htlc {
 	return contract
 }
 
-func (h *HTLContract) Funds(chainKey interface {}, value *big.Int, lockTime *big.Int, receiver common.Address, scrHash [32]byte) error {
+func (h *HTLContract) Funds(chainKey interface{}, value *big.Int, lockTime *big.Int, receiver common.Address, scrHash [32]byte) error {
 	auth := GetAuth(chainKey)
 	auth.Value = EtherToWei(value)
 	auth.GasLimit = 400000

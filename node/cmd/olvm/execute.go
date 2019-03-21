@@ -26,14 +26,9 @@ var exeCmd = &cobra.Command{
 	Run:   StartEngine,
 }
 
-// Declare a shared arguments struct
-//var arguments = &shared.RegisterArguments{}
-
 // Setup the command and flags in Cobra
 func init() {
 	RootCmd.AddCommand(exeCmd)
-
-	//nodeCmd.Flags().StringVar(&arguments.Identity, "register", "", "Register this identity")
 }
 
 // Start a node to run continously
@@ -42,7 +37,7 @@ func StartEngine(cmd *cobra.Command, args []string) {
 	// Catch any underlying panics, for now just print out the details properly and stop
 	defer func() {
 		if r := recover(); r != nil {
-			log.Error("Fullnode Fatal Panic, shutting down", "r", r)
+			log.Error("OLVM Fatal Panic, shutting down", "r", r)
 			debug.PrintStack()
 			if service != nil {
 				service.Stop()
@@ -51,14 +46,11 @@ func StartEngine(cmd *cobra.Command, args []string) {
 		}
 	}()
 
-	log.Debug("Starting", "appAddress", global.Current.AppAddress, "on", global.Current.NodeName)
+	log.Debug("Starting", "p2p address", global.Current.Config.Network.P2PAddress, "on", global.Current.NodeName)
 
 	// TODO: Switch with config and shared versions
-	LogSettings()
+	log.Settings()
 	CatchSigterm()
-
-	//vm.InitializeService()
-	//vm.RunService()
 
 	service := vm.NewOLVMService()
 	service.StartService()
@@ -86,10 +78,3 @@ func CatchSigterm() {
 }
 
 // Log all of the global settings
-func LogSettings() {
-	log.Info("Diagnostics", "Debug", global.Current.Debug, "DisablePasswords", global.Current.DisablePasswords)
-	log.Info("Ownership", "NodeName", global.Current.NodeName, "NodeAccountName", global.Current.NodeAccountName,
-		"NodeIdentity", global.Current.NodeIdentity)
-	log.Info("Locations", "RootDir", global.Current.RootDir)
-	log.Info("Addresses", "RpcAddress", global.Current.RpcAddress, "AppAddress", global.Current.AppAddress)
-}

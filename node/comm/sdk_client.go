@@ -13,7 +13,7 @@ import (
 )
 
 func NewSDKClient() pb.SDKClient {
-	address := global.Current.SDKAddress
+	address := global.Current.Config.Network.SDKAddress
 
 	// TODO: Why is this insecure????
 	connection, err := grpc.Dial(":"+sdk.GetPort(address), grpc.WithInsecure())
