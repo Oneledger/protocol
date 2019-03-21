@@ -1,7 +1,7 @@
 - hosts: validator_node:seed_node
   vars:
     APP_HOME: "/home/{{app_user}}/go"
-  remote_user: lan
+  remote_user: "{{remote_user}}"
   become: true
   become_user: root
   tasks:
@@ -18,6 +18,16 @@
       path: "{{APP_HOME}}"
       state: directory
       mode: 0755
+      owner: "{{app_user}}"
+      group: "{{app_user}}"
+    when: reset_network == 'true'
+  - name: ansible create a directory for nodedata
+    file:
+      path: "{{APP_HOME}}/nodedata"
+      state: directory
+      mode: 0755
+      owner: "{{app_user}}"
+      group: "{{app_user}}"
     when: reset_network == 'true'
   - name: copy binary executables to remote servers
     copy:
@@ -46,6 +56,49 @@
       packages:
         - libleveldb-dev
         - libsnappy-dev
+
+- hosts: validator_node
+  remote_user: "{{remote_user}}"
+  become: true
+  become_user: root
+  vars:
+    APP_HOME: "/home/{{app_user}}/go"
+  tasks:
+  - name: copy consensus folder over to each validator node
+    copy:
+      src: "{{lookup('env','OLDATA')}}/{{node_name}}/{{item}}"
+      dest: "{{APP_HOME}}"
+      mode: 0644
+      owner: "{{app_user}}"
+      group: "{{app_user}}"
+      directory_mode: true
+    with_items:
+      - consensus
+
+- hosts: seed_node
+  remote_user: "{{remote_user}}"
+  become: true
+  become_user: root
+  vars:
+    APP_HOME: "/home/{{app_user}}/go"
+  tasks:
+  - name: copy genesis file to seed node
+    copy:
+      src: "{{lookup('env','OLDATA')}}/Alice-Node/consensus/config/genesis.json"
+      dest: "{{APP_HOME}}"
+      mode: 0644
+      owner: "{{app_user}}"
+      group: "{{app_user}}"
+  - name: generate consensus file for seed node 
+    shell: chdir={{APP_HOME}} olfullnode init --root {{APP_HOME}} --genesis {{APP_HOME}}/genesis.json
+
+- hosts: validator_node:seed_node
+  remote_user: "{{remote_user}}"
+  become: true
+  become_user: root
+  vars:
+    APP_HOME: "/home/{{app_user}}/go"
+  tasks:
   - name: create config.toml file with content
     vars:
       internal_ip: "{{ ansible_all_ipv4_addresses | ipaddr('private') | first }}"
@@ -97,7 +150,7 @@
 
         [consensus]
           # Determines where consensus is logged (stdout|<filename>)
-          log_output = "stdout"
+          log_output = "consensus.log"
           log_level = "main:info,state:info,*:error"
           timeout_propose = 3000000000
           timeout_propose_delta = 500000000
@@ -113,41 +166,36 @@
           peer_query_maj23_sleep_duration = 2000000000
           blocktime_iota = 1000000000
 
-- hosts: validator_node
-  remote_user: lan
-  become: true
-  become_user: root
-  vars:
-    APP_HOME: "/home/{{app_user}}/go"
-  tasks:
-  - name: copy consensus folder over to each validator node
-    copy:
-      src: "{{lookup('env','OLDATA')}}/{{node_name}}/consensus"
-      dest: "{{APP_HOME}}"
-      mode: 0644
-      owner: "{{app_user}}"
-      group: "{{app_user}}"
-
 - hosts: seed_node
-  remote_user: lan
+  remote_user: "{{remote_user}}"
   become: true
   become_user: root
   vars:
     APP_HOME: "/home/{{app_user}}/go"
   tasks:
-  - name: copy genesis file to seed node
-    copy:
-      src: "{{lookup('env','OLDATA')}}/Alice-Node/consensus/config/genesis.json"
-      dest: "{{APP_HOME}}"
-      mode: 0644
-      owner: "{{app_user}}"
-      group: "{{app_user}}"
-  - name: generate consensus file for seed node 
-    shell: chdir={{APP_HOME}} olfullnode init --root {{APP_HOME}} --genesis {{APP_HOME}}/genesis.json
   - name: get p2p address
     command: chdir={{APP_HOME}} olclient show_node_id --root {{APP_HOME}} --show-ip
     register: command_output
   - name: set concatenated p2p address string for all seed nodes {{APP_HOME}}
     set_fact:
+      p2pAddressList: "{{ ansible_play_hosts | map('extract', hostvars, 'command_output') | map(attribute='stdout') | list}}"
       p2pAddress: "{{ ansible_play_hosts | map('extract', hostvars, 'command_output') | map(attribute='stdout') | list | join(',') }}"
     run_once: yes
+  - name: set seed node specific configuration 
+    lineinfile:
+      path: "{{APP_HOME}}/config.toml"
+      regexp: 'seed_mode'
+      line: "  seed_mode = true"
+- hosts: validator_node
+  remote_user: "{{remote_user}}"
+  become: true
+  become_user: root
+  vars:
+    APP_HOME: "/home/{{app_user}}/go"
+  tasks:
+  - name: set validator node specific configuration 
+    lineinfile:
+      path: "{{APP_HOME}}/config.toml"
+      regexp: 'seeds'
+      line: "  seeds = {{hostvars[groups['seed_node'][0]]['p2pAddressList'] | to_json }}"
+    

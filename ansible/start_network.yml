@@ -1,5 +1,5 @@
 - hosts: validator_node:seed_node
-  remote_user: lan
+  remote_user: "{{remote_user}}"
   become: true
   become_user: root
   vars:

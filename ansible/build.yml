@@ -10,7 +10,7 @@
         key: "{{ stage | default('devnet') }}"
       variables: 
         name: "{{ stage | default('devnet') }}"
-        vpc_ip_range: "{{ jielanjielanip_range | default('10.10.0.0/20') }}"
+        vpc_ip_range: "{{ vpc_ip_range | default('10.10.0.0/20') }}"
         vmcount: "{{ node_count | default(5) }}"
     register: vm_data
   - set_fact: remote_hosts={{vm_data.outputs.public_ip.value}}
@@ -26,6 +26,7 @@
       name: "{{item.1}}"
       group: "validator_node" 
       app_user: node
+      remote_user: "{{ remote_user | default('steven') }}"
     with_indexed_items: "{{remote_hosts}}"
     when: item.0 < 4
   - name: add hosts after 4th host to seed_node group 
@@ -34,6 +35,7 @@
       group: "seed_node"
       node_name: consensus
       app_user: node
+      remote_user: "{{ remote_user | default('steven') }}"
     with_indexed_items: "{{remote_hosts}}"
     when: item.0 >= 4 
 
