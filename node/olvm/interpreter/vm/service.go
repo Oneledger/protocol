@@ -17,8 +17,8 @@ import (
 // TODO: Make sure call is not before viper args are handled.
 func NewOLVMService() *OLVMService {
 	return &OLVMService{
-		Protocol: global.Current.OLVMProtocol,
-		Address:  global.Current.OLVMAddress,
+		Protocol: global.Current.Config.Network.OLVMProtocol,
+		Address:  global.Current.Config.Network.OLVMAddress,
 	}
 }
 

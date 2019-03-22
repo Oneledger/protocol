@@ -1,29 +1,25 @@
 package data
 
 import (
-	"flag"
 	"os"
 	"testing"
 
+	"github.com/Oneledger/protocol/node/config"
 	"github.com/Oneledger/protocol/node/global"
-	"github.com/Oneledger/protocol/node/log"
 )
 
-// Control the execution
+func setup() {
+	global.Current.RootDir = "./"
+	global.Current.Config = config.DefaultServerConfig()
+}
+
+func teardown() {
+	os.RemoveAll(global.Current.DatabaseDir())
+}
+
 func TestMain(m *testing.M) {
-	flag.Parse()
-
-	// Set the debug flags according to whether the -v flag is set in go test
-	if testing.Verbose() {
-		log.Debug("DEBUG TURNED ON")
-		global.Current.Debug = true
-	} else {
-		log.Debug("DEBUG TURNED OFF")
-		global.Current.Debug = false
-	}
-
-	// Run it all.
+	setup()
 	code := m.Run()
-
+	teardown()
 	os.Exit(code)
 }

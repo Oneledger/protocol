@@ -1,7 +1,7 @@
-GOTOOLS = \
+GOTOOLS=\
 	  github.com/golang/protobuf/protoc-gen-go
 
-GO111MODULE = on
+export GO111MODULE=on
 
 all: test
 
@@ -16,6 +16,7 @@ check:
 #
 setup: check tools update
 	./setup/install.sh
+
 #
 # Update the dependencies if they have changed.
 #
@@ -26,13 +27,16 @@ update: check
 # Get the tools if they are missing
 #
 tools:
-	go get -u -v $(GOTOOLS)
+	go get -v $(GOTOOLS)
 
 #
 # Build and install a copy into bin
 #
 install:
 	go install github.com/Oneledger/protocol/node/cmd/...
+
+install_c:
+	CGO_ENABLED=1 CGO_LDFLAGS="-lsnappy" go install -tags "gcc" github.com/Oneledger/protocol/node/cmd/...
 
 #
 # Check out the running status
@@ -52,6 +56,9 @@ utest:
 test: check reset install start
 	@echo "OneLedger Initialize"
 	@./scripts/stopOneLedger
+
+test_cleveldb:
+	CGO_ENABLED=1 CGO_LDFLAGS="-lsnappy" go test -tags="gcc" github.com/Oneledger/protocol/node/data
 
 #
 # Full Testing, bring up everything, send a transaction and then stop
@@ -153,4 +160,4 @@ protobuf:
 #
 # targets that are not associated with any files
 #
-.PHONY: all build install utest test tools update stop start full
+.PHONY: all build install utest test tools update stop start full reset

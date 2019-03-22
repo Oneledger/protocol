@@ -1,3 +1,6 @@
+[![Build Status](https://travis-ci.org/Oneledger/protocol.svg?branch=master)](https://travis-ci.org/Oneledger/protocol)
+[![Build Status](https://travis-ci.org/Oneledger/protocol.svg?branch=release)](https://travis-ci.org/Oneledger/protocol)
+[![Build Status](https://travis-ci.org/Oneledger/protocol.svg?branch=develop)](https://travis-ci.org/Oneledger/protocol)
 # OneLedger Protocol 
 
 This repo is the OneLedger blockchain full-node, which is currently an ABCi app based on low-level parts of the Tendermint consensus library
@@ -24,18 +27,19 @@ Ensure your system meets the following requirements:
     * Ensure [Xcode Developer Tools](https://developer.apple.com/xcode/) is installed
   * A Debian-based Linux distribution
     * *Ubuntu* is recommended for the smoothest install, otherwise you will have to set up your distribution for installing PPAs
-* [Go](https://golang.org/) version 1.7 or higher
-  * Need an explicit [GOPATH](https://github.com/Oneledger/protocol/wiki/Environment-Variables#setting-up-the-gopath) environment variable set
+* [Go](https://golang.org/) version 1.11 or higher
 * [git](https://git-scm.com/)
 
 #### Install
 
-Before running any install scripts, ensure your GOPATH is set up explicitly on your user account. Visit the [Setting up the GOPATH](https://github.com/Oneledger/protocol/wiki/Environment-Variables#setting-up-the-gopath) page on the wiki for more help.
+Before running any install scripts, ensure your GOPATH and the necessary environment variables are set up on your account. Visit the [Setting up the GOPATH](https://github.com/Oneledger/protocol/wiki/Environment-Variables#setting-up-the-gopath) page on the wiki for more help.
 
-First clone the repository for the OneLedger Protocol with `go get`:
+First clone the repository for the OneLedger Protocol:
 
 ```
-$ go get github.com/Oneledger/protocol
+$ mkdir -p $OLROOT
+$ cd $OLROOT
+$ git clone github.com/Oneledger/protocol
 ```
 
 Before running any scripts, you'll need to set up the required [environment variables](https://github.com/Oneledger/protocol/wiki/Environment-Variables) properly.

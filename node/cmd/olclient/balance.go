@@ -23,7 +23,6 @@ var balanceCmd = &cobra.Command{
 	Run:   BalanceNode,
 }
 
-// TODO: typing should be way better, see if cobra can help with this...
 type Balance struct {
 	identityName string
 	accountName  string
@@ -34,7 +33,6 @@ var balance *Balance = &Balance{}
 func init() {
 	RootCmd.AddCommand(balanceCmd)
 
-	// TODO: I want to have a default account?
 	// Transaction Parameters
 	balanceCmd.Flags().StringVar(&balance.identityName, "identity", "", "identity name")
 	balanceCmd.Flags().StringVar(&balance.accountName, "account", "", "account name")

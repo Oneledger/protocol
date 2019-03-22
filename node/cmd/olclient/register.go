@@ -34,6 +34,7 @@ func init() {
 	// Transaction Parameters
 	registerCmd.Flags().StringVar(&arguments.identity, "identity", "", "User's Identity")
 	registerCmd.Flags().StringVar(&arguments.account, "account", "", "User's Default Account")
+	// This should be set to the global version of this
 	registerCmd.Flags().StringVar(&arguments.nodeName, "node", "", "User's Default Node")
 
 	registerCmd.Flags().StringVar(&arguments.pubkey, "pubkey", "", "Specify a public key")
