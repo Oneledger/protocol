@@ -34,7 +34,7 @@
       dest: /usr/local/bin
       mode: 0755
     with_items:
-      ["bin/olfullnode","bin/olconfig","bin/olmonitor", "bin/olvm", "bin/olclient"]
+      ["bin/olfullnode","bin/olmonitor", "bin/olvm", "bin/olclient"]
   - set_fact: app_directory={{APP_HOME}}
   - name: set nofile soft limit
     pam_limits:
