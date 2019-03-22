@@ -1,6 +1,5 @@
+#setting up global source 
 - hosts: validator_node:seed_node
-  vars:
-    APP_HOME: "/home/{{app_user}}/go"
   remote_user: "{{remote_user}}"
   become: true
   become_user: root
@@ -56,13 +55,11 @@
       packages:
         - libleveldb-dev
         - libsnappy-dev
-
+# move validator node consensus folder with private keys 
 - hosts: validator_node
   remote_user: "{{remote_user}}"
   become: true
   become_user: root
-  vars:
-    APP_HOME: "/home/{{app_user}}/go"
   tasks:
   - name: copy consensus folder over to each validator node
     copy:
@@ -71,16 +68,13 @@
       mode: 0644
       owner: "{{app_user}}"
       group: "{{app_user}}"
-      directory_mode: true
-    with_items:
+    with_items: 
       - consensus
-
+# generate consensus folder for seed nodes 
 - hosts: seed_node
   remote_user: "{{remote_user}}"
   become: true
   become_user: root
-  vars:
-    APP_HOME: "/home/{{app_user}}/go"
   tasks:
   - name: copy genesis file to seed node
     copy:
@@ -91,13 +85,11 @@
       group: "{{app_user}}"
   - name: generate consensus file for seed node 
     shell: chdir={{APP_HOME}} olfullnode init --root {{APP_HOME}} --genesis {{APP_HOME}}/genesis.json
-
+# generate configuration file for fullnodes 
 - hosts: validator_node:seed_node
   remote_user: "{{remote_user}}"
   become: true
   become_user: root
-  vars:
-    APP_HOME: "/home/{{app_user}}/go"
   tasks:
   - name: create config.toml file with content
     vars:
@@ -160,18 +152,16 @@
           timeout_precommit_delta = 500000000
           timeout_commit = 1000000000
           skip_timeout_commit = false
-          create_empty_blocks = true
+          create_empty_blocks = false
           create_empty_blocks_interval = 0
           peer_gossip_sleep_duration = 100000000
           peer_query_maj23_sleep_duration = 2000000000
           blocktime_iota = 1000000000
-
+# set up seed node config.toml
 - hosts: seed_node
   remote_user: "{{remote_user}}"
   become: true
   become_user: root
-  vars:
-    APP_HOME: "/home/{{app_user}}/go"
   tasks:
   - name: get p2p address
     command: chdir={{APP_HOME}} olclient show_node_id --root {{APP_HOME}} --show-ip
@@ -186,12 +176,16 @@
       path: "{{APP_HOME}}/config.toml"
       regexp: 'seed_mode'
       line: "  seed_mode = true"
+  - name: set validator node specific configuration 
+    lineinfile:
+      path: "{{APP_HOME}}/config.toml"
+      regexp: 'persistent_peers'
+      line: "  persistent_peers = {{hostvars[groups['seed_node'][0]]['p2pAddressList'] | to_json }}"
+# set up validator node config.toml
 - hosts: validator_node
   remote_user: "{{remote_user}}"
   become: true
   become_user: root
-  vars:
-    APP_HOME: "/home/{{app_user}}/go"
   tasks:
   - name: set validator node specific configuration 
     lineinfile:

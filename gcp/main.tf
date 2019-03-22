@@ -5,7 +5,7 @@ terraform {
   }
 }
 
-provider "google-beta" {
+provider "google" {
   alias = "chronos"
   credentials = "${file("Chronos.json")}"
   project     = "chronos-225820"

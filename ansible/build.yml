@@ -1,5 +1,7 @@
 - hosts: localhost
   connection: local
+  vars:
+    new_app_user: node
   tasks:
   - name: run terraform apply 
     terraform:
@@ -25,7 +27,8 @@
     add_host:
       name: "{{item.1}}"
       group: "validator_node" 
-      app_user: node
+      app_user: "{{new_app_user}}"
+      APP_HOME: "/home/{{new_app_user}}/.olfullnode"
       remote_user: "{{ remote_user | default('steven') }}"
     with_indexed_items: "{{remote_hosts}}"
     when: item.0 < 4
@@ -34,7 +37,8 @@
       name: "{{item.1}}"
       group: "seed_node"
       node_name: consensus
-      app_user: node
+      app_user: "{{new_app_user}}"
+      APP_HOME: "/home/{{new_app_user}}/.olfullnode"
       remote_user: "{{ remote_user | default('steven') }}"
     with_indexed_items: "{{remote_hosts}}"
     when: item.0 >= 4 

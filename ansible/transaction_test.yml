@@ -1,7 +1,6 @@
 - hosts: validator_node
   vars:
     uuid: "{{ ansible_date_time.iso8601_micro | to_uuid }}"
-    APP_HOME: "/home/{{app_user}}/go"
   remote_user: "{{remote_user}}"
   become: true
   become_user: root
@@ -12,8 +11,9 @@
       content: |
         #!/bin/bash
         olclient update --root {{APP_HOME}} --account "{{uuid}}-Oneledger" 
+        sleep 1
         olclient testmint --root {{APP_HOME}} --party "{{uuid}}-Oneledger" --amount "14210.23" --currency OLT 
-        sleep 1 
+        sleep 1
         olclient register --root {{APP_HOME}} --identity "{{uuid}}" --account "{{uuid}}-Oneledger" --node "{{uuid}}-Node" --fee 0.1
       mode: 511
       owner: "{{app_user}}"

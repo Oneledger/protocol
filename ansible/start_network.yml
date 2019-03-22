@@ -2,8 +2,6 @@
   remote_user: "{{remote_user}}"
   become: true
   become_user: root
-  vars:
-    APP_HOME: "/home/{{app_user}}/go"
   tasks:
   - name: create a systemd monitor service file
     copy:
@@ -42,9 +40,7 @@
 
         [Service]
         WorkingDirectory={{APP_HOME}}
-        ExecStart=/usr/local/bin/olfullnode node --root {{APP_HOME}}\
-          --seeds {{hostvars[groups['seed_node'][0]]['p2pAddress']}}\
-          --persistent_peers {{hostvars[groups['seed_node'][0]]['p2pAddress']}}
+        ExecStart=/usr/local/bin/olfullnode node --root {{APP_HOME}}
         # Other Restart options: or always, on-abort, etc
 
         [Install]
