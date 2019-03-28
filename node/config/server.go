@@ -31,11 +31,9 @@ type Server struct {
 }
 
 func (cfg *Server) TMConfig() tmconfig.Config {
-	var leveldb string
+	leveldb := cfg.Node.DB
 	if cfg.Node.DB == "goleveldb" {
 		leveldb = "leveldb"
-	} else {
-		leveldb = cfg.Node.DB
 	}
 
 	baseConfig := tmconfig.DefaultBaseConfig()
@@ -48,10 +46,9 @@ func (cfg *Server) TMConfig() tmconfig.Config {
 
 	p2pConfig := cfg.P2P.TMConfig()
 	p2pConfig.ListenAddress = cfg.Network.P2PAddress
+	p2pConfig.ExternalAddress = cfg.Network.ExternalP2PAddress
 	if cfg.Network.ExternalP2PAddress == "" {
 		p2pConfig.ExternalAddress = cfg.Network.P2PAddress
-	} else {
-		p2pConfig.ExternalAddress = cfg.Network.ExternalP2PAddress
 	}
 
 	rpcConfig := tmconfig.DefaultRPCConfig()
