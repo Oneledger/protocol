@@ -200,7 +200,7 @@ func (cfg *P2PConfig) TMConfig() *tmconfig.P2PConfig {
 		Seeds:                   strings.Join(cfg.Seeds, ","),
 		PersistentPeers:         strings.Join(cfg.PersistentPeers, ","),
 		UPNP:                    cfg.UPNP,
-		AddrBook:                filepath.Join("config", "addrbook.json"),
+		AddrBook:                filepath.Join("consensus", "config", "addrbook.json"),
 		AddrBookStrict:          cfg.AddrBookStrict,
 		MaxNumInboundPeers:      cfg.MaxNumInboundPeers,
 		MaxNumOutboundPeers:     cfg.MaxNumOutboundPeers,
