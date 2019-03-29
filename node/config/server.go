@@ -30,6 +30,47 @@ type Server struct {
 	Consensus *ConsensusConfig `toml:"consensus"`
 }
 
+func (cfg *Server) TMConfig() tmconfig.Config {
+	leveldb := cfg.Node.DB
+	if cfg.Node.DB == "goleveldb" {
+		leveldb = "leveldb"
+	}
+
+	baseConfig := tmconfig.DefaultBaseConfig()
+	baseConfig.ProxyApp = "OneLedgerProtocol"
+	baseConfig.Moniker = cfg.Node.NodeName
+	baseConfig.FastSync = cfg.Node.FastSync
+	baseConfig.DBBackend = leveldb
+	baseConfig.DBPath = "data"
+	baseConfig.LogLevel = cfg.Consensus.LogLevel
+
+	p2pConfig := cfg.P2P.TMConfig()
+	p2pConfig.ListenAddress = cfg.Network.P2PAddress
+	p2pConfig.ExternalAddress = cfg.Network.ExternalP2PAddress
+	if cfg.Network.ExternalP2PAddress == "" {
+		p2pConfig.ExternalAddress = cfg.Network.P2PAddress
+	}
+
+	rpcConfig := tmconfig.DefaultRPCConfig()
+	rpcConfig.ListenAddress = cfg.Network.RPCAddress
+
+	nilMetricsConfig := tmconfig.InstrumentationConfig{Namespace: "metrics"}
+
+	return tmconfig.Config{
+		BaseConfig: baseConfig,
+		RPC:        rpcConfig,
+		P2P:        p2pConfig,
+		Mempool:    cfg.Mempool.TMConfig(),
+		Consensus:  cfg.Consensus.TMConfig(),
+		TxIndex: &tmconfig.TxIndexConfig{
+			Indexer:      "kv",
+			IndexTags:    strings.Join(cfg.Node.IndexTags, ","),
+			IndexAllTags: cfg.Node.IndexAllTags,
+		},
+		Instrumentation: &nilMetricsConfig,
+	}
+}
+
 // ReadFile accepts a filepath and returns the
 func (cfg *Server) ReadFile(filepath string) error {
 	bz, err := ioutil.ReadFile(filepath)
@@ -200,7 +241,7 @@ func (cfg *P2PConfig) TMConfig() *tmconfig.P2PConfig {
 		Seeds:                   strings.Join(cfg.Seeds, ","),
 		PersistentPeers:         strings.Join(cfg.PersistentPeers, ","),
 		UPNP:                    cfg.UPNP,
-		AddrBook:                filepath.Join("config", "addrbook.json"),
+		AddrBook:                filepath.Join("consensus", "config", "addrbook.json"),
 		AddrBookStrict:          cfg.AddrBookStrict,
 		MaxNumInboundPeers:      cfg.MaxNumInboundPeers,
 		MaxNumOutboundPeers:     cfg.MaxNumOutboundPeers,
