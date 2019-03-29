@@ -1,6 +1,8 @@
 package main
 
 import (
+	"crypto/rand"
+	"encoding/hex"
 	"fmt"
 	"net/url"
 	"os"
@@ -50,6 +52,7 @@ type testnetConfig struct {
 	outputDir        string
 	p2pPort          int
 	allowSwap        bool
+	chainID          string
 }
 
 var testnetArgs = &testnetConfig{}
@@ -66,7 +69,18 @@ func init() {
 	testnetCmd.Flags().IntVar(&testnetArgs.numValidators, "validators", 4, "Number of validators to initialize devnet with")
 	testnetCmd.Flags().IntVar(&testnetArgs.numNonValidators, "nonvalidators", 0, "Number of non-validators to initialize the devnet with")
 	testnetCmd.Flags().StringVarP(&testnetArgs.outputDir, "dir", "o", "./", "Directory to store initialization files for the devnet, default current folder")
-	testnetCmd.Flags().BoolVar(&testnetArgs.allowSwap, "enable-swaps", false, "Allow swaps")
+	testnetCmd.Flags().BoolVar(&testnetArgs.allowSwap, "enable_swaps", false, "Allow swaps")
+	testnetCmd.Flags().StringVar(&testnetArgs.chainID, "chain_id", "", "Specify a chain ID, a random one is generated if not given")
+}
+
+func randStr(size int) string {
+	bz := make([]byte, size)
+	_, err := rand.Read(bz)
+	if err != nil {
+		log.Error("Random source not available", "err", err)
+		return "deadbeef"
+	}
+	return hex.EncodeToString(bz)
 }
 
 // Need to maintain a list of nodes and be able to:
@@ -116,6 +130,7 @@ func generateAddress(port int, hasProtocol bool) string {
 
 func runDevnet(cmd *cobra.Command, _ []string) error {
 	args := testnetArgs
+
 	if args.numValidators+args.numNonValidators > len(nodeNames) {
 		return fmt.Errorf("Don't have enough node names, can't specify more than %d nodes", len(nodeNames))
 	}
@@ -186,7 +201,12 @@ func runDevnet(cmd *cobra.Command, _ []string) error {
 	// Create the non validator nodes
 
 	// Create the genesis file
-	genesisDoc := consensus.DefaultGenesisDoc()
+	chainID := "OneLedger-" + randStr(2)
+	if args.chainID == "" {
+		chainID = args.chainID
+	}
+
+	genesisDoc := consensus.NewGenesisDoc(chainID)
 	genesisDoc.Validators = validatorList
 
 	for i := 0; i < args.numValidators+args.numNonValidators; i++ {
