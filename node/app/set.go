@@ -117,7 +117,7 @@ func HandleRegisterIdentity(app Application, arguments map[string]interface{}) i
 
 	// TODO Broadcast the transaction
 	transaction := CreateRegisterRequest(identity, account.AccountKey(), fee)
-	action.BroadcastTransaction(transaction, false)
+	action.BroadcastTransaction(app.RPCClient, transaction, false)
 
 	return "Broadcast Identity"
 }
