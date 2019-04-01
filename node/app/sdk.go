@@ -137,7 +137,7 @@ func (server SDKServer) Register(ctx context.Context, request *pb.RegisterReques
 			nil,
 			pubKey.Address(),
 			fee))
-	comm.Broadcast(packet)
+	server.App.RPCClient.BroadcastTxCommit(packet)
 
 	// TODO: Use proper secret for key generation
 	return &pb.RegisterReply{
@@ -208,7 +208,7 @@ func (server SDKServer) Send(ctx context.Context, request *pb.SendRequest) (*pb.
 	packet := action.SignAndPack(send)
 
 	// TODO: Include ResultBroadcastTxCommit in SendReply
-	comm.Broadcast(packet)
+	server.App.RPCClient.BroadcastTxCommit(packet)
 
 	return &pb.SendReply{
 		Ok:     true,
