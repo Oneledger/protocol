@@ -73,7 +73,6 @@ func NewApplication() *Application {
 		Status:   data.NewDatastore("status", data.PERSISTENT),
 		Contract: data.NewDatastore("contract", data.PERSISTENT),
 		Event:    data.NewDatastore("event", data.PERSISTENT),
-		RPCClient:comm.GetClient(),
 
 		Validators: id.NewValidatorList(),
 	}

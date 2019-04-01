@@ -6,6 +6,7 @@
 package main
 
 import (
+	"github.com/Oneledger/protocol/node/comm"
 	"os"
 	"runtime/debug"
 
@@ -99,6 +100,9 @@ func StartNode(cmd *cobra.Command, args []string) {
 	}
 
 	global.Current.SetConsensusNode(service)
+
+	node.RPCClient = comm.GetClient()
+
 	log.Debug("Waiting forever...")
 	select {}
 }
