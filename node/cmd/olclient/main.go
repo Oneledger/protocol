@@ -6,7 +6,6 @@
 package main
 
 import (
-	"github.com/Oneledger/protocol/node/comm"
 	"os"
 
 	"github.com/Oneledger/protocol/node/global"
@@ -19,12 +18,8 @@ var service common.Service
 
 var context *global.Context // Global runtime context
 
-var rpcclient comm.ClientInterface
-
 func main() {
 	log.Debug("olclient", "args", os.Args)
-
-	rpcclient = comm.GetClient()
 
 	Execute() // Pass control to Cobra
 }
