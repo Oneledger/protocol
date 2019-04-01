@@ -242,16 +242,6 @@ func StopClient() {
 	}
 }
 
-// An async Broadcast to the chain
-func BroadcastAsync(packet []byte) *ctypes.ResultBroadcastTx {
-
-	client := GetClient()
-
-	result, _ := client.BroadcastTxAsync(packet)
-
-	return result
-}
-
 // A sync'ed broadcast to the chain that waits for the commit to happen
 func Broadcast(packet []byte) *ctypes.ResultBroadcastTxCommit {
 
