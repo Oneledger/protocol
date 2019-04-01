@@ -242,16 +242,6 @@ func StopClient() {
 	}
 }
 
-// A sync'ed broadcast to the chain that waits for the commit to happen
-func Broadcast(packet []byte) *ctypes.ResultBroadcastTxCommit {
-
-	client := GetClient()
-
-	result, _ := client.BroadcastTxCommit(packet)
-
-	return result
-}
-
 func IsError(result interface{}) *string {
 	if reflect.TypeOf(result).Kind() == reflect.String {
 		final := result.(string)
