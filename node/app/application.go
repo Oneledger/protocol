@@ -24,13 +24,6 @@ import (
 
 var _ types.Application = Application{}
 
-var ChainId string
-
-func init() {
-	// TODO: Should be driven from config
-	ChainId = "OneLedger-Root"
-}
-
 // ApplicationContext keeps all of the upper level global values.
 type Application struct {
 	types.BaseApplication
