@@ -40,7 +40,7 @@ func HandleSet(app Application, path string, arguments map[string]interface{}) [
 		return nil
 	}
 
-	buffer, err := serial.Serialize(result, serial.CLIENT)
+	buffer, err := clSerializer.Serialize(result)
 	if err != nil {
 		log.Fatal("Failed to serialize query", "err", err)
 	}

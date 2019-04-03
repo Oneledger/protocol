@@ -50,6 +50,9 @@ type SDKSet struct {
 func init() {
 	serial.Register(SDKQuery{})
 	serial.Register(SDKSet{})
+
+	serialize.RegisterConcrete(new(SDKQuery), "app_sdk_query")
+	serialize.RegisterConcrete(new(SDKSet), "app_sdk_set")
 }
 
 func (server SDKServer) Request(ctx context.Context, request *pb.SDKRequest) (*pb.SDKReply, error) {
@@ -61,12 +64,12 @@ func (server SDKServer) Request(ctx context.Context, request *pb.SDKRequest) (*p
 		return &pb.SDKReply{Results: []byte("Empty Data")}, nil
 	}
 
-	parameter, err := serial.Deserialize(request.Parameters, prototype, serial.CLIENT)
+	err = clSerializer.Deserialize(request.Parameters, &prototype)
 	if err != nil {
 		log.Fatal("Deserialized Failed", "err", err, "data", string(request.Parameters))
 	}
 
-	switch base := parameter.(type) {
+	switch base := prototype.(type) {
 	case *SDKQuery:
 		result = HandleQuery(*server.App, base.Path, base.Arguments)
 

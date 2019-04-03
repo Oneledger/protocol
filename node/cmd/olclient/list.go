@@ -122,9 +122,9 @@ func printAccountQuery(nodeName string, accountQuery interface{}) {
 
 func printIdentityQuery(nodeName string, idQuery interface{}) {
 	identitiesI := idQuery.([]interface{})
-	identities := make([]id.Identity, len(identitiesI))
+	identities := make([]*(id.Identity), len(identitiesI))
 	for i := range identitiesI {
-		identities[i] = identitiesI[i].(id.Identity)
+		identities[i] = identitiesI[i].(*(id.Identity))
 	}
 
 	shared.Console.Info("Identities on", nodeName+":\n")
@@ -134,7 +134,7 @@ func printIdentityQuery(nodeName string, idQuery interface{}) {
 	}
 }
 
-func printAnIdentity(identity id.Identity) {
+func printAnIdentity(identity *id.Identity) {
 	// Right-align fieldnames in console
 	name := "             Name:"
 	scope := "            Scope:"
@@ -165,7 +165,7 @@ func printValidatorQuery(nodeName string, validatorQuery interface{}) {
 	for _, validator := range validators {
 		//printAValidator(validator)
 		if validator.Name != "" {
-			printAnIdentity(validator)
+			printAnIdentity(&validator)
 		}
 	}
 }

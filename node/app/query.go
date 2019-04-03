@@ -52,11 +52,11 @@ func HandleQuery(app Application, path string, arguments map[string]interface{})
 		oldSerialFlag = true
 
 	case "/createSendRequest":
-		result = HandleCreateSendRequest(app, arguments)  //old serialization
+		result = HandleCreateSendRequest(app, arguments) //old serialization
 		oldSerialFlag = true
 
 	case "/createMintRequest":
-		result = HandleCreateMintRequest(app, arguments)  //old serialization
+		result = HandleCreateMintRequest(app, arguments) //old serialization
 		oldSerialFlag = true
 
 	case "/createSwapRequest":
@@ -64,7 +64,7 @@ func HandleQuery(app Application, path string, arguments map[string]interface{})
 		oldSerialFlag = true
 
 	case "/nodeName":
-		result = HandleNodeNameQuery(app, arguments)  // old
+		result = HandleNodeNameQuery(app, arguments) // old
 		oldSerialFlag = true
 
 	case "/identity":
@@ -121,20 +121,19 @@ func HandleQuery(app Application, path string, arguments map[string]interface{})
 func HandleApplyValidatorQuery(application Application, arguments map[string]interface{}) interface{} {
 	log.Debug("HandleApplyValidatorQuery", "arguments", arguments)
 
-	var argsHolder comm.ApplyValidatorArguments
+	var args = &comm.ApplyValidatorArguments{}
 
 	text := arguments["parameters"].([]byte)
 
-	args, err := serial.Deserialize(text, argsHolder, serial.CLIENT)
-
+	err := clSerializer.Deserialize(text, args)
 	if err != nil {
 		log.Error("Could not deserialize ApplyValidatorArguments", "error", err)
 		return "Could not deserialize ApplyValidatorArguments" + " error=" + err.Error()
 	}
 
-	amount := args.(*comm.ApplyValidatorArguments).Amount
-	idName := args.(*comm.ApplyValidatorArguments).Id
-	purge := args.(*comm.ApplyValidatorArguments).Purge
+	amount := args.Amount
+	idName := args.Id
+	purge := args.Purge
 
 	nodeAccount := action.GetNodeAccount(application)
 	if nodeAccount == nil {
@@ -233,18 +232,15 @@ func HandleCreateExSendRequest(application Application, arguments map[string]int
 
 	result := make([]byte, 0)
 
-	var argsHolder comm.ExSendArguments
+	var args = &comm.ExSendArguments{}
 
 	text := arguments["parameters"].([]byte)
 
-	argsDeserialized, err := serial.Deserialize(text, argsHolder, serial.CLIENT)
-
+	err := clSerializer.Deserialize(text, args)
 	if err != nil {
 		log.Error("Could not deserialize ExSendArguments", "error", err)
 		return result
 	}
-
-	args := argsDeserialized.(*comm.ExSendArguments)
 
 	partyKey := AccountKey(application, args.SenderId)
 	cpartyKey := AccountKey(application, args.ReceiverId)
@@ -288,18 +284,14 @@ func HandleCreateSendRequest(application Application, arguments map[string]inter
 
 	result := make([]byte, 0)
 
-	var argsHolder comm.SendArguments
-
+	var args = &comm.SendArguments{}
 	text := arguments["parameters"].([]byte)
 
-	argsDeserialized, err := serial.Deserialize(text, argsHolder, serial.CLIENT)
-
+	err := clSerializer.Deserialize(text, args)
 	if err != nil {
 		log.Error("Could not deserialize SendArguments", "error", err)
 		return result
 	}
-
-	args := argsDeserialized.(*comm.SendArguments)
 
 	if args.Party == "" {
 		log.Error("Missing Party argument")
@@ -363,18 +355,14 @@ func HandleCreateSendRequest(application Application, arguments map[string]inter
 func HandleCreateMintRequest(application Application, arguments map[string]interface{}) interface{} {
 	result := make([]byte, 0)
 
-	var argsHolder comm.SendArguments
-
+	var args = &comm.SendArguments{}
 	text := arguments["parameters"].([]byte)
 
-	argsDeserialized, err := serial.Deserialize(text, argsHolder, serial.CLIENT)
-
+	err := clSerializer.Deserialize(text, args)
 	if err != nil {
 		log.Error("Could not deserialize SendArguments", "error", err)
 		return result
 	}
-
-	args := argsDeserialized.(*comm.SendArguments)
 
 	conv := convert.NewConvert()
 
@@ -393,6 +381,9 @@ func HandleCreateMintRequest(application Application, arguments map[string]inter
 
 	amount := conv.GetCoinFromFloat(args.Amount, args.Currency)
 	log.Warn(fmt.Sprintf("mint args %+v", args))
+	log.Warn(fmt.Sprintf("app args %+v", application))
+
+	log.Warn(fmt.Sprintf("app args %+v", application.Balances))
 
 	log.Debug("Getting TestMint Account Balances")
 	zeroBalance := Balance(application, zero).(*data.Balance).GetAmountByName(args.Currency)
@@ -443,18 +434,14 @@ func HandleCreateMintRequest(application Application, arguments map[string]inter
 func HandleSwapRequest(application Application, arguments map[string]interface{}) interface{} {
 	result := make([]byte, 0)
 
-	var argsHolder comm.SwapArguments
-
+	var args = &comm.SwapArguments{}
 	text := arguments["parameters"].([]byte)
 
-	argsDeserialized, err := serial.Deserialize(text, argsHolder, serial.CLIENT)
-
+	err := clSerializer.Deserialize(text, args)
 	if err != nil {
 		log.Error("Could not deserialize SwapArgumentsArguments", "error", err)
 		return result
 	}
-
-	args := argsDeserialized.(*comm.SwapArguments)
 
 	conv := convert.NewConvert()
 
