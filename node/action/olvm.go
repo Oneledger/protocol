@@ -6,6 +6,7 @@ package action
 
 import (
 	"github.com/Oneledger/protocol/node/serial"
+	"github.com/Oneledger/protocol/node/serialize"
 	"github.com/Oneledger/protocol/node/status"
 )
 
@@ -56,6 +57,8 @@ func init() {
 	//serial.Register(prototype)
 	//var prototype2 time.Duration
 	//serial.Register(prototype2)
+
+	serialize.RegisterConcrete(new(OLVMResult), "action_olvmresult")
 }
 
 func NewOLVMResultWithCallString(script []byte, callString string, context OLVMContext) *OLVMRequest {

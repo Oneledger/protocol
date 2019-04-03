@@ -7,6 +7,7 @@ package app
 
 import (
 	"encoding/hex"
+	"fmt"
 	"runtime/debug"
 	"strings"
 
@@ -34,36 +35,44 @@ func HandleQuery(app Application, path string, arguments map[string]interface{})
 		if r := recover(); r != nil {
 			log.Error("Query Panic", "status", r)
 			debug.PrintStack()
-			buffer, _ = serial.Serialize("Internal Query Error", serial.CLIENT)
+			buffer, _ = clSerializer.Serialize("Internal Query Error")
 		}
 	}()
 
 	var result interface{}
 
+	oldSerialFlag := false
 	switch path {
 	case "/applyValidators":
-		result = HandleApplyValidatorQuery(app, arguments)
+		result = HandleApplyValidatorQuery(app, arguments) // old serialization
+		oldSerialFlag = true
 
 	case "/createExSendRequest":
-		result = HandleCreateExSendRequest(app, arguments)
+		result = HandleCreateExSendRequest(app, arguments) //old serialization
+		oldSerialFlag = true
 
 	case "/createSendRequest":
-		result = HandleCreateSendRequest(app, arguments)
+		result = HandleCreateSendRequest(app, arguments)  //old serialization
+		oldSerialFlag = true
 
 	case "/createMintRequest":
-		result = HandleCreateMintRequest(app, arguments)
+		result = HandleCreateMintRequest(app, arguments)  //old serialization
+		oldSerialFlag = true
 
 	case "/createSwapRequest":
-		result = HandleSwapRequest(app, arguments)
+		result = HandleSwapRequest(app, arguments) // old
+		oldSerialFlag = true
 
 	case "/nodeName":
-		result = HandleNodeNameQuery(app, arguments)
+		result = HandleNodeNameQuery(app, arguments)  // old
+		oldSerialFlag = true
 
 	case "/identity":
 		result = HandleIdentityQuery(app, arguments)
 
 	case "/signTransaction":
-		result = HandleSignTransaction(app, arguments)
+		result = HandleSignTransaction(app, arguments) // old
+		oldSerialFlag = true
 
 	case "/accountPublicKey":
 		result = HandleAccountPublicKeyQuery(app, arguments)
@@ -96,7 +105,12 @@ func HandleQuery(app Application, path string, arguments map[string]interface{})
 		result = HandleError("Unknown Query", path, arguments)
 	}
 
-	buffer, err := serial.Serialize(result, serial.CLIENT)
+	var err error
+	if oldSerialFlag {
+		buffer, err = serial.Serialize(result, serial.CLIENT)
+	} else {
+		buffer, err = clSerializer.Serialize(result)
+	}
 	if err != nil {
 		log.Debug("Failed to serialize query")
 	}
@@ -378,6 +392,7 @@ func HandleCreateMintRequest(application Application, arguments map[string]inter
 	}
 
 	amount := conv.GetCoinFromFloat(args.Amount, args.Currency)
+	log.Warn(fmt.Sprintf("mint args %+v", args))
 
 	log.Debug("Getting TestMint Account Balances")
 	zeroBalance := Balance(application, zero).(*data.Balance).GetAmountByName(args.Currency)

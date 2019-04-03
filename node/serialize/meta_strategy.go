@@ -32,6 +32,10 @@ func (m *metaStrategy) wrapDataAdapter(src []byte, dest interface{},
 	return nil
 }
 
-func (m *metaStrategy) serializeString(obj interface{}) {
-	return
+func (m *metaStrategy) serializeString(obj interface{}) []byte {
+	s, ok := obj.(string)
+	if !ok {
+		return []byte{}
+	}
+	return []byte(s)
 }

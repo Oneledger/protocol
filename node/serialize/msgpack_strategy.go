@@ -10,6 +10,11 @@ type msgpackStrategy struct {
 
 func (m *msgpackStrategy) Serialize(obj interface{}) ([]byte, error) {
 
+	b := m.serializeString(obj)
+	if len(b) > 0 {
+		return b, nil
+	}
+
 	if apr, ok := obj.(DataAdapter); ok {
 		obj = apr.Data()
 	}

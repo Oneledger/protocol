@@ -19,6 +19,11 @@ func NewAminoStrategy(cdc *amino.Codec) *aminoStrategy {
 
 func (a *aminoStrategy) Serialize(obj interface{}) ([]byte, error) {
 
+	b := a.serializeString(obj)
+	if len(b) > 0 {
+		return b, nil
+	}
+
 	if _, ok := obj.(DataAdapter); ok {
 
 		log.Warn("amino strategy does not support adapters")

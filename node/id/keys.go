@@ -10,6 +10,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"github.com/Oneledger/protocol/node/serialize"
 
 	"golang.org/x/crypto/bcrypt"
 	"golang.org/x/crypto/ripemd160"
@@ -53,6 +54,8 @@ func (algo KeyAlgorithm) Size() int {
 
 func init() {
 	serial.Register(AccountKey(""))
+
+	serialize.RegisterConcrete(new(AccountKey), "id_accountkey")
 }
 
 // Aliases to hide some of the basic underlying types.
@@ -119,6 +122,11 @@ func init() {
 	var prototypePrivateKey PrivateKey
 	serial.RegisterInterface(&prototypePublicKey)
 	serial.RegisterInterface(&prototypePrivateKey)
+
+	serialize.RegisterInterface(new(PublicKey))
+	serialize.RegisterConcrete(new(PublicKeyED25519), "id_pked25519")
+	serialize.RegisterConcrete(new(PublicKeySECP256K1), "id_pkSECP256K1")
+
 }
 
 func NilPublicKey() PublicKeyED25519 {

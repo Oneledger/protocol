@@ -6,6 +6,7 @@ package data
 
 import (
 	"github.com/Oneledger/protocol/node/serial"
+	"github.com/Oneledger/protocol/node/serialize"
 )
 
 // Wrap the amount with owner information
@@ -16,6 +17,8 @@ type Balance struct {
 
 func init() {
 	serial.Register(Balance{})
+
+	serialize.RegisterConcrete(new(Balance), "data_balance")
 }
 
 func NewBalance() *Balance {

@@ -8,11 +8,11 @@
 package comm
 
 import (
+	"github.com/Oneledger/protocol/node/serial"
 	"reflect"
 
 	"github.com/Oneledger/protocol/node/global"
 	"github.com/Oneledger/protocol/node/log"
-	"github.com/Oneledger/protocol/node/serial"
 	rpcclient "github.com/tendermint/tendermint/rpc/client"
 	ctypes "github.com/tendermint/tendermint/rpc/core/types"
 )
@@ -198,8 +198,21 @@ func Query(path string, packet []byte) interface{} {
 		return nil
 	}
 
-	var prototype interface{}
-	result, err := serial.Deserialize(response.Response.Value, prototype, serial.CLIENT)
+	var result interface{}
+
+	if path == "/applyValidators" ||
+		path == "/createExSendRequest"||
+		path == "/createSendRequest" ||
+		path == "/createMintRequest" ||
+		path == "/createSwapRequest" ||
+		path == "/nodeName" ||
+		path == "/signTransaction" {
+
+		var proto interface{}
+		result, err = serial.Deserialize(response.Response.Value, proto, serial.CLIENT)
+	} else {
+		err = clSerializer.Deserialize(response.Response.Value, &result)
+	}
 	if err != nil {
 		log.Error("Failed to deserialize Query:", "response", response.Response.Value)
 		return nil

@@ -11,6 +11,11 @@ type jsonStrategy struct {
 // Serialize
 func (j *jsonStrategy) Serialize(obj interface{}) ([]byte, error) {
 
+	b := j.serializeString(obj)
+	if len(b) > 0 {
+		return b, nil
+	}
+
 	//check if data adapter
 	if apr, ok := obj.(DataAdapter); ok {
 		obj = apr.Data()

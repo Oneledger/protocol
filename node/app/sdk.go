@@ -94,7 +94,7 @@ func (server SDKServer) Request(ctx context.Context, request *pb.SDKRequest) (*p
 }
 
 func HandleTypeError(message string) []byte {
-	result, err := serial.Serialize(message, serial.CLIENT)
+	result, err := clSerializer.Serialize(message)
 	if err != nil {
 		log.Fatal("Failed to Serialize", "err", err)
 	}
