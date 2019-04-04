@@ -41,7 +41,7 @@ type Identity struct {
 
 func init() {
 	serial.Register(Identity{})
-	serialize.RegisterConcrete(new(Identity), "id_identity")
+	serialize.RegisterConcrete(new(Identity), TagIdentity)
 }
 
 // Initialize or reconnect to the database

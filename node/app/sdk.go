@@ -51,8 +51,8 @@ func init() {
 	serial.Register(SDKQuery{})
 	serial.Register(SDKSet{})
 
-	serialize.RegisterConcrete(new(SDKQuery), "app_sdk_query")
-	serialize.RegisterConcrete(new(SDKSet), "app_sdk_set")
+	serialize.RegisterConcrete(new(SDKQuery), TagSDKQuery)
+	serialize.RegisterConcrete(new(SDKSet), TagSDKSet)
 }
 
 func (server SDKServer) Request(ctx context.Context, request *pb.SDKRequest) (*pb.SDKReply, error) {

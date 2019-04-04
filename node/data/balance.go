@@ -20,7 +20,7 @@ type Balance struct {
 func init() {
 	serial.Register(Balance{})
 
-	serialize.RegisterConcrete(new(Balance), "data_balance")
+	serialize.RegisterConcrete(new(Balance), TagBalance)
 }
 
 func NewBalance() *Balance {

@@ -152,10 +152,10 @@ func init() {
 	serial.RegisterInterface(&prototype)
 
 	serialize.RegisterInterface(new(Account))
-	serialize.RegisterConcrete(new(AccountBase), "id_accountbase")
-	serialize.RegisterConcrete(new(AccountEthereum), "id_accountethereum")
-	serialize.RegisterConcrete(new(AccountBitcoin), "id_accountbitcoin")
-	serialize.RegisterConcrete(new(AccountOneLedger), "id_accountOneledger")
+	serialize.RegisterConcrete(new(AccountBase), TagAccountBase)
+	serialize.RegisterConcrete(new(AccountEthereum), TagAccountEthereum)
+	serialize.RegisterConcrete(new(AccountBitcoin), TagAccountBitcoin)
+	serialize.RegisterConcrete(new(AccountOneLedger), TagAccountOneLedger)
 }
 
 func getAccountType(chain data.ChainType) string {

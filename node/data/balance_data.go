@@ -13,7 +13,7 @@ var (
 )
 
 func init() {
-	serialize.RegisterConcrete(new(BalanceData), "data_balance_data")
+	serialize.RegisterConcrete(new(BalanceData), TagBalanceData)
 }
 
 // BalanceData is an easy to serialize representation of a Balance object. A full Balance object can be recostructed

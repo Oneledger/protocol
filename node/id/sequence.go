@@ -12,7 +12,7 @@ type SequenceRecord struct {
 func init() {
 	serial.Register(SequenceRecord{})
 
-	serialize.RegisterConcrete(new(SequenceRecord), "id_sequence_record")
+	serialize.RegisterConcrete(new(SequenceRecord), TagSequenceRecord)
 }
 
 func NextSequence(app interface{}, accountkey AccountKey) SequenceRecord {

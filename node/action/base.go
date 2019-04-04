@@ -24,7 +24,7 @@ func init() {
 	serial.Register(Role(0))
 	serial.Register(Message(""))
 
-	serialize.RegisterConcrete(new(Message), "action_message")
+	serialize.RegisterConcrete(new(Message), TagMessage)
 }
 
 const (

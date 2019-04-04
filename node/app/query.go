@@ -106,6 +106,9 @@ func HandleQuery(app Application, path string, arguments map[string]interface{})
 
 	var err error
 	if oldSerialFlag {
+		// we use old serializer for transaction interface implementers
+		// because we have not yet moved transactions to the new serializer
+		// this should go away later
 		buffer, err = serial.Serialize(result, serial.CLIENT)
 	} else {
 		buffer, err = clSerializer.Serialize(result)

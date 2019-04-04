@@ -55,7 +55,7 @@ func (algo KeyAlgorithm) Size() int {
 func init() {
 	serial.Register(AccountKey(""))
 
-	serialize.RegisterConcrete(new(AccountKey), "id_accountkey")
+	serialize.RegisterConcrete(new(AccountKey), TagAccountKey)
 }
 
 // Aliases to hide some of the basic underlying types.
@@ -124,8 +124,8 @@ func init() {
 	serial.RegisterInterface(&prototypePrivateKey)
 
 	serialize.RegisterInterface(new(PublicKey))
-	serialize.RegisterConcrete(new(PublicKeyED25519), "id_pked25519")
-	serialize.RegisterConcrete(new(PublicKeySECP256K1), "id_pkSECP256K1")
+	serialize.RegisterConcrete(new(PublicKeyED25519), TagPublicKeyEd25519)
+	serialize.RegisterConcrete(new(PublicKeySECP256K1), TagPublicKeySECP256K1)
 
 }
 
