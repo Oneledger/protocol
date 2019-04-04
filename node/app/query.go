@@ -7,7 +7,6 @@ package app
 
 import (
 	"encoding/hex"
-	"fmt"
 	"runtime/debug"
 	"strings"
 
@@ -380,10 +379,6 @@ func HandleCreateMintRequest(application Application, arguments map[string]inter
 	}
 
 	amount := conv.GetCoinFromFloat(args.Amount, args.Currency)
-	log.Warn(fmt.Sprintf("mint args %+v", args))
-	log.Warn(fmt.Sprintf("app args %+v", application))
-
-	log.Warn(fmt.Sprintf("app args %+v", application.Balances))
 
 	log.Debug("Getting TestMint Account Balances")
 	zeroBalance := Balance(application, zero).(*data.Balance).GetAmountByName(args.Currency)
