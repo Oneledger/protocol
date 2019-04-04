@@ -36,14 +36,6 @@ func (a *aminoStrategy) Serialize(obj interface{}) ([]byte, error) {
 //Deserialize
 func (a *aminoStrategy) Deserialize(src []byte, dest interface{}) error {
 
-	/*
-	if apr, ok := dest.(adapter.DataAdapter); ok {
-		return a.wrapDataAdapter(src, dest, a.deserialize, apr)
-	}
-
-	return a.deserialize(src, dest)
-	*/
-
 	err := a.deserialize(src, dest)
 	return err
 }

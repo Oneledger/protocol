@@ -52,11 +52,6 @@ func init() {
 	serial.Register(OLVMResult{})
 	serial.Register(OLVMContext{})
 
-	// TODO: Doesn't work in serial?
-	//var prototype time.Time
-	//serial.Register(prototype)
-	//var prototype2 time.Duration
-	//serial.Register(prototype2)
 
 	serialize.RegisterConcrete(new(OLVMResult), "action_olvmresult")
 }

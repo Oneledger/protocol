@@ -19,6 +19,16 @@ import (
 
 var cachedClient rpcclient.Client
 
+var transactionPathsMap = map[string]bool{
+	"/applyValidators":     true,
+	"/createExSendRequest": true,
+	"/createSendRequest":   true,
+	"/createMintRequest":   true,
+	"/createSwapRequest":   true,
+	"/nodeName":            true,
+	"/signTransaction":     true,
+}
+
 // HTTP interface, allows Broadcast?
 // TODO: Want to switch client type, based on config or cli args.
 func GetClient() (client rpcclient.Client) {
@@ -200,19 +210,18 @@ func Query(path string, packet []byte) interface{} {
 
 	var result interface{}
 
-	if path == "/applyValidators" ||
-		path == "/createExSendRequest"||
-		path == "/createSendRequest" ||
-		path == "/createMintRequest" ||
-		path == "/createSwapRequest" ||
-		path == "/nodeName" ||
-		path == "/signTransaction" {
-
+	_, isTransactionPath := transactionPathsMap[path]
+	if isTransactionPath {
+		// we continue to use old serializer for query handlers who
+		// return transaction interface, which is yet to be moved to
+		// the new serializer
 		var proto interface{}
 		result, err = serial.Deserialize(response.Response.Value, proto, serial.CLIENT)
 	} else {
+
 		err = clSerializer.Deserialize(response.Response.Value, &result)
 	}
+
 	if err != nil {
 		log.Error("Failed to deserialize Query:", "response", response.Response.Value)
 		return nil
