@@ -1,0 +1,79 @@
+{
+    "variables": {
+        "app_user": "node",
+        "version": "develop",
+        "tag": "develop"
+    },
+    "builders": [
+        {
+            "type": "docker",
+            "name": "docker-image",
+            "image": "golang:1.11.6-stretch",
+            "commit": true,
+            "changes": [
+                "USER root",
+                "ENTRYPOINT [\"/usr/local/bin/startup\"]",
+                "VOLUME /home/{{user `app_user`}}/go"
+            ]
+        },
+        {
+            "type": "googlecompute",
+            "name": "gcp-vm-image",
+            "account_file": "./gcp/DevNet.json",
+            "project_id": "atomic-land-223022",
+            "source_image_family": "ubuntu-1604-lts",
+            "ssh_username": "steven",
+            "zone": "us-east1-b",
+            "machine_type": "n1-highcpu-8",
+            "disk_size": "50",
+            "use_internal_ip": false,
+            "metadata": {
+                "startup-script": "startup"
+            }
+        }
+    ],
+  
+    "provisioners": [
+        {
+            "type": "shell",
+            "inline_shebang": "/bin/bash",
+            "inline": [
+                "source /etc/os-release",
+                "if [[ \"$NAME\" = \"Debian GNU/Linux\" ]];then",
+                "   apt update -y && apt install -y python-pip",
+                "   pip install ansible",
+                "else",
+                "   sudo apt update -y && sudo apt install -y python-pip",
+                "   curl -sSO https://dl.google.com/cloudagents/install-logging-agent.sh",
+                "   sudo bash install-logging-agent.sh",
+                "   wget https://dl.google.com/go/go1.11.4.linux-amd64.tar.gz",
+                "   sudo tar -xvf go1.11.4.linux-amd64.tar.gz && sudo mv go /usr/local",
+                "   sudo pip install ansible",
+                "fi"
+            ]
+        },
+        {
+            "type": "ansible-local",
+            "playbook_file": "ansible/fullnode.yml",
+            "extra_arguments": ["--extra-vars \"app_user={{user `app_user`}} app_version={{user `version`}}\""]
+        }
+    ],
+    "post-processors": [
+        {
+            "type": "docker-tag",
+            "repository": "oneledger/chronos",
+            "tag": "{{user `tag`}}",
+            "only": ["docker-image"]
+        },
+        {
+            "type": "googlecompute-export",
+            "machine_type": "n1-highcpu-8",
+            "zone": "us-east1-b",
+            "paths": [
+                "gs://oneledger-fullnode-images/{{user `tag`}}.tar.gz"
+            ],
+            "keep_input_artifact": true,
+            "only": ["gcp-vm-image"]
+        }
+    ]
+  }
