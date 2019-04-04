@@ -59,7 +59,7 @@ func IdentityExists(name string) bool {
 		return false
 	}
 	switch response.(type) {
-	case id.AccountKey:
+	case *(id.AccountKey):
 		return true
 
 	case string:
