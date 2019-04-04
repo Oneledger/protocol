@@ -202,7 +202,7 @@ func runDevnet(cmd *cobra.Command, _ []string) error {
 
 	// Create the genesis file
 	chainID := "OneLedger-" + randStr(2)
-	if args.chainID == "" {
+	if args.chainID != "" {
 		chainID = args.chainID
 	}
 

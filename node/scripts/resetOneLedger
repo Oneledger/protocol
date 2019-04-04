@@ -31,4 +31,4 @@ do
 #	$CMD/initNode $node --newpassword password
 done
 
-olfullnode init devnet --dir $OLDATA --nonvalidators 1 --enable-swaps >> $OLDATA/olcfg.log
+olfullnode init devnet --dir $OLDATA --nonvalidators 1 --enable_swaps >> $OLDATA/olcfg.log
