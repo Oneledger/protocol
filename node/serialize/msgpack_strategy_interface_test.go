@@ -1,6 +1,7 @@
 package serialize
 
 import (
+	"fmt"
 	"github.com/stretchr/testify/assert"
 	"github.com/vmihailenco/msgpack"
 	"testing"
@@ -48,4 +49,38 @@ func TestMsgpackStrategy_SerializeInterface2(t *testing.T) {
 	assert.False(t, ok)
 
 	assert.NotEqual(t, fnn, f)
+}
+
+type Executer interface {
+	 Execute()
+}
+
+type printTask struct {
+	Payload string
+}
+
+func (p *printTask) Execute() {
+	fmt.Println(p.Payload)
+}
+
+// unregistered concrete type should not be deserialized through interfaces
+func TestMsgpackStrategy_SerializeInterface3(t *testing.T) {
+	RegisterInterface(new(Executer))
+	RegisterConcrete(new(printTask), "print_task")
+
+	f := &printTask{"string to print"}
+	fb, err := ms.Serialize(f)
+
+	assert.Nil(t, err)
+	eb, err := msgpack.Marshal(f)
+	assert.Equal(t, eb, fb)
+
+	var fn Executer
+	err = ms.Deserialize(fb, &fn)
+
+	fnn, ok := fn.(*printTask)
+	assert.True(t, ok)
+
+	assert.Nil(t, err)
+	assert.Equal(t, fnn, f)
 }
