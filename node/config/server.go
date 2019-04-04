@@ -263,9 +263,9 @@ func DefaultP2PConfig() *P2PConfig {
 	cfg.RecvRate = tmDefaults.RecvRate
 	cfg.PexReactor = tmDefaults.PexReactor
 	cfg.SeedMode = tmDefaults.SeedMode
-	cfg.FlushThrottleTimeout = Duration(tmDefaults.FlushThrottleTimeout)
-	cfg.HandshakeTimeout = Duration(tmDefaults.HandshakeTimeout)
-	cfg.DialTimeout = Duration(tmDefaults.DialTimeout)
+	cfg.FlushThrottleTimeout = toConfigDuration(tmDefaults.FlushThrottleTimeout)
+	cfg.HandshakeTimeout = toConfigDuration(tmDefaults.HandshakeTimeout)
+	cfg.DialTimeout = toConfigDuration(tmDefaults.DialTimeout)
 	return &cfg
 }
 
@@ -299,7 +299,7 @@ func DefaultMempoolConfig() *MempoolConfig {
 // ConsensusConfig handles consensus-specific options
 type ConsensusConfig struct {
 	LogOutput             string   `toml:"log_output" desc:"Determines where consensus is logged (stdout|<filename>)"`
-	LogLevel              string   `toml:"log_level" desc:"Determines the verbosity of consensus logs"'`
+	LogLevel              string   `toml:"log_level" desc:"Determines the verbosity of consensus logs"`
 	TimeoutPropose        Duration `toml:"timeout_propose" desc:"All timeouts are in milliseconds"`
 	TimeoutProposeDelta   Duration `toml:"timeout_propose_delta"`
 	TimeoutPrevote        Duration `toml:"timeout_prevote"`
