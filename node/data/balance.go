@@ -13,7 +13,8 @@ import (
 type Balance struct {
 	// Address id.Address
 	Amounts map[int]Coin
-	coinOrder []int
+	coinOrder []int // this field helps to maintain order during serialization
+					// so that all the nodes have the same hash of account balances
 }
 
 func init() {

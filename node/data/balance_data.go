@@ -2,7 +2,6 @@ package data
 
 import (
 	"errors"
-	"fmt"
 	"github.com/Oneledger/protocol/node/serialize"
 	"math/big"
 
@@ -10,7 +9,6 @@ import (
 )
 
 var (
-	ErrParsingBigInt       = errors.New("error parsing big int from fmt.Sscan")
 	ErrWrongBalanceAdapter = errors.New("error in asserting to BalanceAdapter")
 )
 
@@ -35,7 +33,7 @@ type CoinData struct {
 	CurName  string    `json:"curr_name"`
 	CurChain ChainType `json:"curr_chain"`
 
-	Amount string `json:"amt"`
+	Amount []byte `json:"amt"`
 }
 
 //
@@ -63,7 +61,7 @@ func (b *Balance) Data() serialize.Data {
 			CurId:    id,
 			CurName:  coin.Currency.Name,
 			CurChain: coin.Currency.Chain,
-			Amount:   coin.Amount.String(),
+			Amount:   coin.Amount.Bytes(),
 		}
 
 		bd.Coins = append(bd.Coins, cd)
@@ -97,12 +95,7 @@ func (ba *BalanceData) extract(b *Balance) error {
 
 		//convert string representation to big int
 		amt := new(big.Int)
-		_, err := fmt.Sscan(d[i].Amount, amt)
-		if err != nil {
-			fmt.Println(err)
-			log.Error("error in parsing bigint for balance ", err)
-			return ErrParsingBigInt
-		}
+		amt = amt.SetBytes(d[i].Amount)
 
 		coin := Coin{Amount: amt}
 		coin.Currency.Id = curID
