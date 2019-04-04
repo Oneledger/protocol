@@ -23,6 +23,8 @@ var lockRegisteredConcretes sync.Mutex
 func init() {
 	aminoCodec = amino.NewCodec()
 	JSONSzr = GetSerializer(JSON)
+
+	RegisterConcrete(new(string), "std_string")
 }
 
 type Serializer interface {
