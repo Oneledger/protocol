@@ -37,7 +37,7 @@ func TestJsonStrategy_SerializeForAdapter(t *testing.T) {
 	fb, err := js.Serialize(f)
 	assert.Nil(t, err)
 
-	temp := testStuffAdData{"asdf", 1, 123123, []byte("4983h4tsdof"), 56.77867342}
+	temp := testStuffAdData{"asdf", 1, 123123, []byte("4983h4tsdof"), "56.77867342"}
 	eb, err := json.Marshal(temp)
 	assert.Nil(t, err)
 	assert.Equal(t, eb, fb)

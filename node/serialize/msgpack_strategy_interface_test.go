@@ -9,7 +9,7 @@ import (
 
 // registered concrete type should be deserialized through interfaces
 func TestMsgpackStrategy_SerializeInterface(t *testing.T) {
-	msgpack.RegisterExt(1, new(testStuff))
+	msgpack.RegisterExt(14, new(testStuff))
 
 
 	f := &testStuff{"asdf", 1, 123123, []byte("4983h4tsdof"), 56.77867342}
@@ -32,7 +32,7 @@ func TestMsgpackStrategy_SerializeInterface(t *testing.T) {
 // unregistered concrete type should not be deserialized through interfaces
 func TestMsgpackStrategy_SerializeInterface2(t *testing.T) {
 
-	f := &testStuffAdData{"asdf", 1, 123123, []byte("4983h4tsdof"), 56.77867342}
+	f := &testStuffAdData{"asdf", 1, 123123, []byte("4983h4tsdof"), "56.77867342"}
 	fb, err := ms.Serialize(f)
 	assert.Nil(t, err)
 

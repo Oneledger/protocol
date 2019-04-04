@@ -18,6 +18,11 @@ func NewAminoStrategy(cdc *amino.Codec) *aminoStrategy {
 
 
 func (a *aminoStrategy) Serialize(obj interface{}) ([]byte, error) {
+	defer func() {
+		if r := recover(); r != nil {
+			log.Error("panic in amino", r)
+		}
+	}()
 
 	b := a.serializeString(obj)
 	if len(b) > 0 {
@@ -25,7 +30,6 @@ func (a *aminoStrategy) Serialize(obj interface{}) ([]byte, error) {
 	}
 
 	if _, ok := obj.(DataAdapter); ok {
-
 		log.Warn("amino strategy does not support adapters")
 	}
 	bz, err := a.codec.MarshalBinaryLengthPrefixed(obj)

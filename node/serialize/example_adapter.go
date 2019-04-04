@@ -2,6 +2,7 @@ package serialize
 
 import (
 	"errors"
+	"strconv"
 )
 
 type testStuffAd struct {
@@ -17,7 +18,7 @@ type testStuffAdData struct {
 	Y int
 	Z int64
 	J []byte
-	K float64
+	K string
 }
 
 func (t *testStuffAd) NewDataInstance() Data {
@@ -25,7 +26,7 @@ func (t *testStuffAd) NewDataInstance() Data {
 }
 
 func (t *testStuffAd) Data() Data {
-	return &testStuffAdData{t.F, t.A, t.B, t.C, t.H}
+	return &testStuffAdData{t.F, t.A, t.B, t.C, strconv.FormatFloat(t.H, 'f', -1, 64)}
 }
 
 func (t *testStuffAd) SetData(a interface{}) error {
@@ -34,13 +35,14 @@ func (t *testStuffAd) SetData(a interface{}) error {
 		return errors.New("Wrong data")
 	}
 
+	var e error
 	t.F = ad.X
 	t.A = ad.Y
 	t.B = ad.Z
 	t.C = ad.J
-	t.H = ad.K
+	t.H, e = strconv.ParseFloat(ad.K, 64)
 
-	return nil
+	return e
 }
 
 func (ad *testStuffAdData) SerialTag() string {
@@ -49,11 +51,12 @@ func (ad *testStuffAdData) SerialTag() string {
 
 func (ad *testStuffAdData) Primitive() DataAdapter {
 	t := &testStuffAd{}
+
 	t.F = ad.X
 	t.A = ad.Y
 	t.B = ad.Z
 	t.C = ad.J
-	t.H = ad.K
+	t.H, _ = strconv.ParseFloat(ad.K, 64)
 
 	return t
 }
