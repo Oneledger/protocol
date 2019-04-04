@@ -39,7 +39,7 @@ func GetSerializer(channel Channel, args ...interface{}) Serializer {
 		return &msgpackStrategy{}
 
 	case PERSISTENT:
-		return &persistentStrategy{}
+		return &msgpackStrategy{}
 
 	case NETWORK:
 		return &msgpackStrategy{}
