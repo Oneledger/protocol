@@ -241,9 +241,9 @@ func (cfg *P2PConfig) TMConfig() *tmconfig.P2PConfig {
 		SeedMode:                cfg.SeedMode,
 		PrivatePeerIDs:          strings.Join(cfg.PrivatePeerIDs, ","),
 		AllowDuplicateIP:        cfg.AllowDuplicateIP,
-		FlushThrottleTimeout:    time.Duration(cfg.FlushThrottleTimeout),
-		HandshakeTimeout:        time.Duration(cfg.HandshakeTimeout),
-		DialTimeout:             time.Duration(cfg.DialTimeout),
+		FlushThrottleTimeout:    cfg.FlushThrottleTimeout.Nanoseconds(),
+		HandshakeTimeout:        cfg.HandshakeTimeout.Nanoseconds(),
+		DialTimeout:             cfg.DialTimeout.Nanoseconds(),
 	}
 }
 
@@ -310,13 +310,11 @@ type ConsensusConfig struct {
 
 	SkipTimeoutCommit bool `toml:"skip_timeout_commit" desc:"Make progress as soon as we have all precommits (as if TimeoutCommit = 0)"`
 
-	CreateEmptyBlocks         bool     `toml:"create_empty_blocks" desc:"Should this node create empty blocks"`
-	CreateEmptyBlocksInterval Duration `toml:"create_empty_blocks_interval" desc:"Interval between empty block creation in milliseconds"`
-
+	CreateEmptyBlocks           bool     `toml:"create_empty_blocks" desc:"Should this node create empty blocks"`
+	CreateEmptyBlocksInterval   Duration `toml:"create_empty_blocks_interval" desc:"Interval between empty block creation in milliseconds"`
 	PeerGossipSleepDuration     Duration `toml:"peer_gossip_sleep_duration" desc:"Duration values in milliseconds"`
 	PeerQueryMaj23SleepDuration Duration `toml:"peer_query_maj23_sleep_duration"`
-
-	BlockTimeIota Duration `toml:"blocktime_iota" desc:"Block time parameter, corresponds to the minimum time increment between consecutive blocks"`
+	BlockTimeIota               Duration `toml:"blocktime_iota" desc:"Block time parameter, corresponds to the minimum time increment between consecutive blocks"`
 }
 
 func (cfg *ConsensusConfig) TMConfig() *tmconfig.ConsensusConfig {
