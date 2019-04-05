@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/jbsmith7741/toml"
+	"github.com/Oneledger/toml"
 	tmconfig "github.com/tendermint/tendermint/config"
 )
 
