@@ -13,7 +13,7 @@ func TestCoin(t *testing.T) {
 	coin = NewCoinFromInt(100000, "BTC")
 
 	// Serialize the go data structure
-	buffer, err := pSzlr.Serialize(coin)
+	buffer, err := pSzlr.Serialize(&coin)
 
 	if err != nil {
 		log.Fatal("Serialized failed", "err", err)
@@ -27,11 +27,11 @@ func TestCoin(t *testing.T) {
 		log.Fatal("Deserialized failed", "err", err)
 	}
 
-	assert.Equal(t, coin, result, "These should be equal")
+	assert.Equal(t, &coin, result, "These should be equal")
 }
 
 func TestBalance(t *testing.T) {
-	var balance Balance
+	var balance = NewBalance()
 
 	// Serialize the go data structure
 	buffer, err := pSzlr.Serialize(balance)

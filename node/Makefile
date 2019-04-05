@@ -49,7 +49,7 @@ status: check
 #
 utest:
 	go test -v ./serialize
-
+	go test -v ./data
 #
 # System Testing, bring up everything
 #
