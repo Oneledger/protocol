@@ -10,7 +10,6 @@ import (
 	"os"
 
 	"github.com/Oneledger/protocol/node/global"
-	"github.com/Oneledger/protocol/node/log"
 	"github.com/spf13/cobra"
 )
 
@@ -34,15 +33,4 @@ func init() {
 
 	RootCmd.PersistentFlags().StringVar(&global.Current.NodeName, "node",
 		global.Current.NodeName, "Set a node name")
-
-}
-
-// Initialize Viper
-func environment() {
-	log.Debug("Loading Environment")
-	// Ignore error so olfullnode init doesn't fail
-	err := global.Current.ReadConfig()
-	if err != nil {
-		log.Fatal("Failed to read config", "err", err)
-	}
 }

@@ -53,7 +53,7 @@ func (cfg *Server) TMConfig() tmconfig.Config {
 	baseConfig.Moniker = cfg.Node.NodeName
 	baseConfig.FastSync = cfg.Node.FastSync
 	baseConfig.DBBackend = leveldb
-	baseConfig.DBPath = "data"
+	baseConfig.DBPath = filepath.Join("consensus", "data")
 	baseConfig.LogLevel = cfg.Consensus.LogLevel
 
 	p2pConfig := cfg.P2P.TMConfig()

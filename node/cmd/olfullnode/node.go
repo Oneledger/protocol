@@ -26,7 +26,6 @@ var shouldWriteConfig bool
 
 // Setup the command and flags in Cobra
 func init() {
-	cobra.OnInitialize(environment)
 	RootCmd.AddCommand(nodeCmd)
 	// Get information to connect to a my tendermint node
 	nodeCmd.Flags().StringVarP(&global.Current.Config.Network.RPCAddress, "address", "a",
@@ -58,13 +57,15 @@ func init() {
 
 // Start a node to run continously
 func StartNode(cmd *cobra.Command, args []string) error {
+	err := global.Current.ReadConfig()
+	if err != nil {
+		log.Error("Failed to read config")
+		return err
+	}
 
 	log.Debug("Starting", "p2pAddress", global.Current.Config.Network.P2PAddress, "on", global.Current.NodeName)
 
 	node := app.NewApplication()
-	//if node.CheckIfInitialized() == false {
-	//	log.Fatal("Node was not properly initialized")
-	//}
 
 	node.Initialize()
 
