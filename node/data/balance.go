@@ -5,8 +5,6 @@
 package data
 
 import (
-	"math/big"
-
 	"github.com/Oneledger/protocol/node/serial"
 )
 
@@ -137,12 +135,10 @@ func (b Balance) IsEnoughBalance(balance Balance) bool {
 func (balance Balance) String() string {
 	buffer := ""
 	for _, coin := range balance.Amounts {
-		if coin.Amount.Cmp(big.NewInt(0)) != 0 || coin.Currency.Id == 0 {
-			if buffer != "" {
-				buffer += ", "
-			}
-			buffer += coin.String()
+		if buffer != "" {
+			buffer += ", "
 		}
+		buffer += coin.String()
 	}
 	return buffer
 }

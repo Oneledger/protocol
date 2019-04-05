@@ -6,12 +6,8 @@
 package main
 
 import (
-	"os"
-	"runtime/debug"
-
 	"github.com/Oneledger/protocol/node/app" // Import namespace
 	"github.com/Oneledger/protocol/node/cmd/shared"
-	"github.com/Oneledger/protocol/node/config"
 	"github.com/Oneledger/protocol/node/consensus"
 
 	"github.com/Oneledger/protocol/node/global"
@@ -23,33 +19,48 @@ import (
 var nodeCmd = &cobra.Command{
 	Use:   "node",
 	Short: "Start up node (server)",
-	Run:   StartNode,
+	RunE:  StartNode,
 }
+
+var shouldWriteConfig bool
 
 // Setup the command and flags in Cobra
 func init() {
 	RootCmd.AddCommand(nodeCmd)
+	// Get information to connect to a my tendermint node
+	nodeCmd.Flags().StringVarP(&global.Current.Config.Network.RPCAddress, "address", "a",
+		global.Current.Config.Network.RPCAddress, "consensus address")
+
+	nodeCmd.Flags().BoolVarP(&global.Current.Debug, "debug", "d",
+		global.Current.Debug, "Set DEBUG mode")
+
+	nodeCmd.Flags().StringVar(&global.Current.Config.Network.BTCAddress, "btcrpc",
+		global.Current.Config.Network.BTCAddress, "bitcoin rpc address")
+
+	nodeCmd.Flags().StringVar(&global.Current.Config.Network.ETHAddress, "ethrpc",
+		global.Current.Config.Network.ETHAddress, "ethereum rpc address")
+
+	nodeCmd.Flags().StringVar(&global.Current.Config.Network.SDKAddress, "sdkrpc",
+		global.Current.Config.Network.SDKAddress, "Address for SDK RPC Server")
+
+	nodeCmd.Flags().StringArrayVar(&global.Current.PersistentPeers, "persistent_peers", []string{}, "List of persistent peers to connect to")
+
+	// These could be moved to node persistent flags
+	nodeCmd.Flags().StringVar(&global.Current.Config.Network.P2PAddress, "p2p", "", "Address to use in P2P network")
+
+	nodeCmd.Flags().StringVar(&global.Current.Seeds, "seeds", "", "List of seeds to connect to")
+
+	nodeCmd.Flags().BoolVar(&global.Current.SeedMode, "seed_mode", false, "List of seeds to connect to")
+
+	nodeCmd.Flags().BoolVarP(&shouldWriteConfig, "write-config", "w", shouldWriteConfig, "Write all specified flags to configuration file")
 }
 
 // Start a node to run continously
-func StartNode(cmd *cobra.Command, args []string) {
+func StartNode(cmd *cobra.Command, args []string) error {
 
-	// Catch any underlying panics, for now just print out the details properly and stop
-	defer func() {
-		if r := recover(); r != nil {
-			log.Error("Fullnode Fatal Panic, shutting down", "r", r)
-			debug.PrintStack()
-			if service != nil {
-				service.Stop()
-			}
-			os.Exit(-1)
-		}
-	}()
-
-	log.Debug("Starting", "appAddress", global.Current.AppAddress, "on", global.Current.NodeName)
+	log.Debug("Starting", "p2pAddress", global.Current.Config.Network.P2PAddress, "on", global.Current.NodeName)
 
 	node := app.NewApplication()
-
 	//if node.CheckIfInitialized() == false {
 	//	log.Fatal("Node was not properly initialized")
 	//}
@@ -58,7 +69,7 @@ func StartNode(cmd *cobra.Command, args []string) {
 
 	global.Current.SetApplication(persist.Access(node))
 	app.SetNodeName(node)
-	config.LogSettings()
+	log.Settings()
 
 	shared.CatchSigterm(func() {
 		if service != nil {
@@ -66,35 +77,25 @@ func StartNode(cmd *cobra.Command, args []string) {
 		}
 	})
 
-	// TODO: Switch on config
-	//service = server.NewGRPCServer("unix://data.sock", types.NewGRPCApplication(*node))
-	//service = server.NewSocketServer("tcp://127.0.0.1:46658", *node)
-
-	tmDir := global.ConsensusDir()
-	// TODO: Source this from static file
-	tmConfig := consensus.Config{
-		Moniker:         global.Current.NodeName,
-		RootDirectory:   tmDir,
-		RPCAddress:      global.Current.RpcAddress,
-		P2PAddress:      global.Current.P2PAddress,
-		IndexTags:       []string{"tx.owner", "tx.type", "tx.swapkey", "tx.participants"},
-		PersistentPeers: global.Current.PersistentPeers,
-		Seeds:           global.Current.Seeds,
-		SeedMode:        global.Current.SeedMode,
-	}
-
-	// TODO: change the the priv_validator locaiton
-	service, err := consensus.NewNode(*node, tmConfig)
+	service, err := consensus.NewNode(*node, global.Current.Config)
 	if err != nil {
 		log.Error("Failed to create NewNode", "err", err)
-		os.Exit(1)
+		return err
+	}
+
+	if shouldWriteConfig {
+		err := global.Current.SaveConfig()
+		if err != nil {
+			log.Error("Failed to write command-line flags to configuration file", "err", err)
+			log.Error("Continuing...")
+		}
 	}
 
 	// Set it running
 	err = service.Start()
 	if err != nil {
 		log.Error("Can't start up node", "err", err)
-		os.Exit(-1)
+		return err
 	}
 
 	global.Current.SetConsensusNode(service)

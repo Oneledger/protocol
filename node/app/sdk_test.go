@@ -18,12 +18,12 @@ import (
 )
 
 func setupRPC() (a *Application, client pb.SDKClient, ctx context.Context, tearDown func()) {
-	global.Current.SDKAddress = "http://127.0.0.1:6900"
+	global.Current.Config.Network.SDKAddress = "http://127.0.0.1:6900"
 
 	a = NewApplication()
 	a.Initialize()
 
-	conn, _ := grpc.Dial(global.Current.SDKAddress, grpc.WithInsecure())
+	conn, _ := grpc.Dial(global.Current.Config.Network.SDKAddress, grpc.WithInsecure())
 	client = pb.NewSDKClient(conn)
 
 	ctx = context.Background()

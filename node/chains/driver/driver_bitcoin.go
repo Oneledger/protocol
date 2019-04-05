@@ -22,11 +22,11 @@ func init() {
 }
 
 func (driver BitcoinDriver) GetURL() string {
-	return global.Current.BTCAddress
+	return global.Current.Config.Network.BTCAddress
 }
 
-func (driver BitcoinDriver) GetChainAddress(chainKey interface{}) []byte{
-	cli := bitcoin.GetBtcClient(global.Current.BTCAddress, chainKey)
+func (driver BitcoinDriver) GetChainAddress(chainKey interface{}) []byte {
+	cli := bitcoin.GetBtcClient(global.Current.Config.Network.BTCAddress, chainKey)
 	return []byte(bitcoin.GetRawAddress(cli).String())
 }
 
@@ -48,7 +48,7 @@ func (driver BitcoinDriver) CreateSwapContract(receiver []byte, account id.Accou
 		return nil
 	}
 
-	cli := bitcoin.GetBtcClient(global.Current.BTCAddress, account.GetChainKey())
+	cli := bitcoin.GetBtcClient(global.Current.Config.Network.BTCAddress, account.GetChainKey())
 
 	amount := bitcoin.GetAmount(value.String())
 
@@ -71,7 +71,7 @@ func (driver BitcoinDriver) RedeemContract(contract Contract, account id.Account
 
 	cmd := htlc.NewRedeemCmd(contractBTC.Contract, contractBTC.GetMsgTx(), hash[:])
 
-	cli := bitcoin.GetBtcClient(global.Current.BTCAddress, account.GetChainKey())
+	cli := bitcoin.GetBtcClient(global.Current.Config.Network.BTCAddress, account.GetChainKey())
 
 	_, e := cmd.RunCommand(cli)
 	if e != nil {
@@ -89,7 +89,7 @@ func (driver BitcoinDriver) RefundContract(contract Contract, account id.Account
 	contractBTC := contract.(*bitcoin.HTLContract)
 
 	cmd := htlc.NewRefundCmd(contractBTC.Contract, contractBTC.GetMsgTx())
-	cli := bitcoin.GetBtcClient(global.Current.BTCAddress, account.GetChainKey())
+	cli := bitcoin.GetBtcClient(global.Current.Config.Network.BTCAddress, account.GetChainKey())
 
 	_, e := cmd.RunCommand(cli)
 	if e != nil {
@@ -100,7 +100,7 @@ func (driver BitcoinDriver) RefundContract(contract Contract, account id.Account
 	return contract
 }
 
-func (driver BitcoinDriver) CreateSwapContractFromMessage(message []byte) Contract{
+func (driver BitcoinDriver) CreateSwapContractFromMessage(message []byte) Contract {
 	contract := &bitcoin.HTLContract{}
 
 	contract.FromBytes(message)

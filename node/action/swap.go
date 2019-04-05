@@ -454,9 +454,9 @@ func (si *SwapInit) order() bool {
 
 type SwapExchange struct {
 	Contract    chaindriver.Contract `json:"message"`
-	SwapKeyHash []byte          `json:"swapkeyhash"`
-	Chain       data.ChainType  `json:"chain"`
-	PreviousTx  []byte          `json:"previoustx"`
+	SwapKeyHash []byte               `json:"swapkeyhash"`
+	Chain       data.ChainType       `json:"chain"`
+	PreviousTx  []byte               `json:"previoustx"`
 }
 
 func (se SwapExchange) GetKeyHash(app interface{}) string {
@@ -954,7 +954,7 @@ func CreateContractBTC(app interface{}, context FunctionValues, tx Transaction, 
 	preimage := GetByte32(context[PREIMAGE])
 
 	// @todo: need a better way of determining an account (probably an account ID needs to be a part of the contract)
-	accountName := global.Current.NodeName[:len(global.Current.NodeName) - 5] + "-" + chain.String()
+	accountName := global.Current.NodeName[:len(global.Current.NodeName)-5] + "-" + chain.String()
 	chainAccount := GetAccountOnChain(app, accountName, chain)
 
 	contract := chaindriver.GetDriver(chain).CreateSwapContract(receiverParty.Accounts[chain], chainAccount, *value, timeout, preimage)
@@ -993,7 +993,7 @@ func CreateContractETH(app interface{}, context FunctionValues, tx Transaction, 
 	//todo : need to have a better key to store ethereum contract.
 	me := GetNodeAccount(app)
 	// @todo: need a better way of determining an account (probably needs to be an input parameter of the swap)
-	accountName := me.Name()[:len(me.Name()) - 10] + "-" + chain.String()
+	accountName := me.Name()[:len(me.Name())-10] + "-" + chain.String()
 	chainAccount := GetAccountOnChain(app, accountName, chain)
 
 	contractMessage := FindContract(app, me.AccountKey().Bytes(), int64(chain))
@@ -1052,12 +1052,12 @@ func AuditContractBTC(app interface{}, context FunctionValues, tx Transaction, c
 	context[NEXTCHAINNAME] = chains[1]
 
 	// @todo: need a better way of determining an account (probably an account ID needs to be a part of the contract)
-	accountName := global.Current.NodeName[:len(global.Current.NodeName) - 5] + "-" + chain.String()
+	accountName := global.Current.NodeName[:len(global.Current.NodeName)-5] + "-" + chain.String()
 	chainAccount := GetAccountOnChain(app, accountName, chain)
 
 	msgTx := contract.GetMsgTx()
 	cmd := htlc.NewAuditContractCmd(contract.Contract, msgTx)
-	cli := bitcoin.GetBtcClient(global.Current.BTCAddress, chainAccount.GetChainKey())
+	cli := bitcoin.GetBtcClient(global.Current.Config.Network.BTCAddress, chainAccount.GetChainKey())
 	e := cmd.RunCommand(cli)
 	if e != nil {
 		log.Error("Bitcoin Audit", "status", e)
@@ -1101,7 +1101,7 @@ func AuditContractETH(app interface{}, context FunctionValues, tx Transaction, c
 	context[NEXTCHAINNAME] = chains[1]
 
 	// @todo: need a better way of determining an account (probably an account ID needs to be a part of the contract)
-	accountName := global.Current.NodeName[:len(global.Current.NodeName) - 5] + "-" + chain.String()
+	accountName := global.Current.NodeName[:len(global.Current.NodeName)-5] + "-" + chain.String()
 	chainAccount := GetAccountOnChain(app, accountName, chain)
 
 	//todo : when support light client, need to get this address from swapinit
@@ -1177,7 +1177,7 @@ func RedeemBTC(app interface{}, context FunctionValues, tx Transaction, chain da
 	scr := GetByte32(context[PASSWORD])
 
 	// @todo: need a better way of determining an account (probably an account ID needs to be a part of the contract)
-	accountName := global.Current.NodeName[:len(global.Current.NodeName) - 5] + "-" + chain.String()
+	accountName := global.Current.NodeName[:len(global.Current.NodeName)-5] + "-" + chain.String()
 	chainAccount := GetAccountOnChain(app, accountName, chain)
 
 	newcontract := chaindriver.GetDriver(chain).RedeemContract(contract, chainAccount, scr)
@@ -1210,7 +1210,7 @@ func RedeemETH(app interface{}, context FunctionValues, tx Transaction, chain da
 	contract := chaindriver.GetDriver(chain).CreateSwapContractFromMessage(buffer)
 
 	// @todo: need a better way of determining an account (probably an account ID needs to be a part of the contract)
-	accountName := global.Current.NodeName[:len(global.Current.NodeName) - 5] + "-" + chain.String()
+	accountName := global.Current.NodeName[:len(global.Current.NodeName)-5] + "-" + chain.String()
 	chainAccount := GetAccountOnChain(app, accountName, chain)
 
 	scr := GetByte32(context[PASSWORD])
@@ -1247,7 +1247,7 @@ func RefundBTC(app interface{}, context FunctionValues, tx Transaction, chain da
 	}
 
 	// @todo: need a better way of determining an account (probably an account ID needs to be a part of the contract)
-	accountName := global.Current.NodeName[:len(global.Current.NodeName) - 5] + "-" + chain.String()
+	accountName := global.Current.NodeName[:len(global.Current.NodeName)-5] + "-" + chain.String()
 	chainAccount := GetAccountOnChain(app, accountName, chain)
 
 	refundedcontract := chaindriver.GetDriver(chain).RefundContract(contract, chainAccount)
@@ -1274,7 +1274,7 @@ func RefundETH(app interface{}, context FunctionValues, tx Transaction, chain da
 	}
 
 	// @todo: need a better way of determining an account (probably an account ID needs to be a part of the contract)
-	accountName := global.Current.NodeName[:len(global.Current.NodeName) - 5] + "-" + chain.String()
+	accountName := global.Current.NodeName[:len(global.Current.NodeName)-5] + "-" + chain.String()
 	chainAccount := GetAccountOnChain(app, accountName, chain)
 
 	refundedcontract := chaindriver.GetDriver(chain).RefundContract(contract, chainAccount)
@@ -1303,11 +1303,11 @@ func ExtractSecretBTC(app interface{}, context FunctionValues, tx Transaction, c
 	scrHash := GetByte32(context[PREIMAGE])
 
 	// @todo: need a better way of determining an account (probably an account ID needs to be a part of the contract)
-	accountName := global.Current.NodeName[:len(global.Current.NodeName) - 5] + "-" + chain.String()
+	accountName := global.Current.NodeName[:len(global.Current.NodeName)-5] + "-" + chain.String()
 	chainAccount := GetAccountOnChain(app, accountName, chain)
 
 	cmd := htlc.NewExtractSecretCmd(contract.GetMsgTx(), scrHash)
-	cli := bitcoin.GetBtcClient(global.Current.BTCAddress, chainAccount.GetChainKey())
+	cli := bitcoin.GetBtcClient(global.Current.Config.Network.BTCAddress, chainAccount.GetChainKey())
 	e := cmd.RunCommand(cli)
 	if e != nil {
 		log.Error("Bitcoin extract hltc", "status", e)

@@ -40,7 +40,7 @@ func init() {
 func IssueInstallRequest(cmd *cobra.Command, args []string) {
 	log.Debug("Have Install Request", "installArgs", installArgs)
 
-	script := shared.ReadFile(installArgs.File)
+	script := shared.MustReadFile(installArgs.File)
 	if script == nil {
 		shared.Console.Info("CreateInstallRequest no script file", installArgs.File)
 	}
