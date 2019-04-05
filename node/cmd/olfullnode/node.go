@@ -26,6 +26,7 @@ var shouldWriteConfig bool
 
 // Setup the command and flags in Cobra
 func init() {
+	cobra.OnInitialize(environment)
 	RootCmd.AddCommand(nodeCmd)
 	// Get information to connect to a my tendermint node
 	nodeCmd.Flags().StringVarP(&global.Current.Config.Network.RPCAddress, "address", "a",
