@@ -78,7 +78,7 @@
       OLROOT: "{{GOPATH}}/src/github.com/Oneledger"
       PATH: "{{lookup('env', 'PATH')}}:/{{GOPATH}}/bin:{{GOLANG_INSTALL_DIR}}/bin"
   - name: move app binary artifact to user bin directory
-    shell: cp -R {{GOPATH}}/bin/* /usr/local/bin/     
+    shell: mv {{GOPATH}}/bin/* /usr/local/bin/     
   - name: create temp genesis
     copy:
       dest: "{{OLDATA}}/genesis.json"
