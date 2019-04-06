@@ -54,7 +54,7 @@
         },
         {
             "type": "ansible-local",
-            "playbook_file": "$ANSIBLE_SOURCE_PATH/ansible/fullnode.yml",
+            "playbook_file": "ansible/fullnode.yml",
             "extra_arguments": ["--extra-vars \"app_user={{user `app_user`}} app_version={{user `version`}}\""]
         }
     ],
