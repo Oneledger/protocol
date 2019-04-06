@@ -19,6 +19,7 @@ before_install:
 - export GO111MODULE="on"
 - export PATH=$PATH:$GOPATH/bin
 - export OLDEBUG=true
+- export ANSIBLE_SOURCE_PATH=$TRAVIS_BUILD_DIR/infrastructure
 - openssl aes-256-cbc -K $encrypted_64046c0b275a_key -iv $encrypted_64046c0b275a_iv
   -in $TRAVIS_BUILD_DIR/.secrets.tar.enc -out $TRAVIS_BUILD_DIR/secrets.tar -d
 - cd $TRAVIS_BUILD_DIR && tar xvf secrets.tar
