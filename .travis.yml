@@ -32,7 +32,7 @@ before_install:
 - unzip packer_1.3.5_linux_386.zip
 - sudo mv packer /usr/local/bin/
 install:
-- packer build -only=docker-image $TRAVIS_BUILD_DIR/infrastructure/packer.json
+- cd $TRAVIS_BUILD_DIR/infrastructure && packer build -only=docker-image $TRAVIS_BUILD_DIR/infrastructure/packer.json
 script:
 - docker run -it -d -v $GOPATH:/home/node/go oneledger/chronos:develop /bin/bash
 before_deploy:
