@@ -5,7 +5,14 @@
   vars:
     GOPATH: /home/{{app_user}}/go
     OLROOT: "{{GOPATH}}/src/github.com/Oneledger"
-    OLDATA: "{{GOPATH}}/test"
+    OLDATA: "{{GOPATH}}/data"
+    GOLANG_INSTALL_DIR: /usr/local/go
+    compress_image: "{{ compress | default('false')}}"
+  roles:
+  - role: gantsign.golang
+    golang_gopath: "{{GOPATH}}"
+    golang_version: 1.11.6
+    golang_install_dir: "{{GOLANG_INSTALL_DIR}}"
   tasks:
   - name: create a new user for app to run
     user:
@@ -18,7 +25,11 @@
       packages:
       - libleveldb-dev
       - libsnappy-dev
+      - procps
+      - git
       - nano
+      - vim
+      - curl
   - name: create directory for source code & app data
     file:
       path: "{{OLROOT}}/protocol"
@@ -51,7 +62,7 @@
       - "export OLSETUP={{OLROOT}}/protocol/node/setup"
       - "export OLTEST={{OLROOT}}/protocol/node/tests"
       - "export GO111MODULE=on"
-      - "export PATH=$PATH:{{GOPATH}}/bin:/usr/local/go/bin"
+      - "export PATH=$PATH:{{GOPATH}}/bin:{{GOLANG_INSTALL_DIR}}/bin"
   - name: source bashrc 
     shell: . ~/.bashrc
   - name: compile binary
@@ -63,7 +74,9 @@
       OLSETUP: "{{OLROOT}}/protocol/node/setup"
       OLSCRIPT: "{{OLROOT}}/protocol/node/scripts"
       OLROOT: "{{GOPATH}}/src/github.com/Oneledger"
-      PATH: "{{lookup('env', 'PATH')}}:/{{GOPATH}}/bin:/usr/local/go/bin"    
+      PATH: "{{lookup('env', 'PATH')}}:/{{GOPATH}}/bin:{{GOLANG_INSTALL_DIR}}/bin"
+  - name: move app binary artifact to user bin directory
+    shell: mv {{GOPATH}}/bin/* /usr/local/bin/     
   - name: create temp genesis
     copy:
       dest: "{{OLDATA}}/genesis.json"
@@ -141,12 +154,12 @@
             ]
           }
         }    
-  - name: create start script
-    copy:
-      dest: "/usr/local/bin/startup"
+  - name: fullnode configuration setup
+    copy:  
+      dest: "/usr/local/bin/fullnodeSetup"
       owner: "{{app_user}}"
       group: "{{app_user}}"
-      mode: 0744
+      mode: 0744      
       content: |
         #!/usr/bin/env bash
         source ~/.profile
@@ -166,6 +179,15 @@
         sed -i "s/seed_mode.*/seed_mode = false/" {{OLDATA}}/config.toml
         sed -i "s/persistent_peers.*/persistent_peers = $persistent_peers/" {{OLDATA}}/config.toml
         sed -i "s/seeds.*/seeds = $seeds/" {{OLDATA}}/config.toml
+  - name: create start script
+    copy:
+      dest: "/usr/local/bin/fullnodeStartup"
+      owner: "{{app_user}}"
+      group: "{{app_user}}"
+      mode: 0744
+      content: |
+        #!/usr/bin/env bash
+        fullnodeSetup
         olmonitor start olvm execute --root {{OLDATA}} >> {{OLDATA}}/olvm.log 2>&1 &
         olfullnode node --root {{OLDATA}} >> {{OLDATA}}/olfullnode.log 2>&1 &
         exec "$@"
@@ -190,4 +212,57 @@
         pkill olfullnode
         pkill olmonitor
         pkill olvm
+  - name: create a systemd monitor service file
+    copy:
+      dest: "/etc/systemd/system/olmonitor.service"
+      owner: "root"
+      group: "root"
+      mode: 0644
+      content: |
+        [Unit]
+        Description=montor
+        After=network.target
+
+        [Service]
+        WorkingDirectory={{OLDATA}}
+        ExecStart=/usr/local/bin/olmonitor start olvm execute --root {{OLDATA}}
+        # Other Restart options: or always, on-abort, etc
+        Restart=on-failure
+
+        [Install]
+        WantedBy=multi-user.target
+  - name: create a systemd olfullnode service file
+    copy:
+      dest: "/etc/systemd/system/olfullnode.service"
+      owner: "root"
+      group: "root"
+      mode: 0644
+      content: |
+        [Unit]
+        Description=fullnode server
+        After=network.target
+
+        [Service]
+        WorkingDirectory={{OLDATA}}
+        ExecStart=/usr/local/bin/olfullnode node --root {{OLDATA}}
+        # Other Restart options: or always, on-abort, etc
+        Restart=on-failure
+
+        [Install]
+        WantedBy=multi-user.target
+  - name: compress image size by remove developer dependencies
+    file:
+      path: "{{ item }}"
+      state: absent
+    with_items:
+    - "{{GOLANG_INSTALL_DIR}}"
+    - "{{GOPATH}}/src"
+    - "{{GOPATH}}/pkg"
+    - "{{GOPATH}}/bin"
+    when: compress_image == "true"
+  - name: remove unused apt packages to reduce image size 
+    apt:
+      name: ["nano","git","vim"]
+      state: absent
+    when: compress_image == "true"
       
