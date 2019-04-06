@@ -2,13 +2,14 @@
     "variables": {
         "app_user": "node",
         "version": "develop",
-        "tag": "develop"
+        "tag": "develop",
+        "compress" : "false"
     },
     "builders": [
         {
             "type": "docker",
             "name": "docker-image",
-            "image": "golang:1.11.6-stretch",
+            "image": "debian",
             "commit": true,
             "changes": [
                 "USER root",
@@ -42,20 +43,18 @@
                 "if [[ \"$NAME\" = \"Debian GNU/Linux\" ]];then",
                 "   apt update -y && apt install -y python-pip",
                 "   pip install ansible",
+                "   ansible-galaxy install gantsign.golang",
                 "else",
                 "   sudo apt update -y && sudo apt install -y python-pip",
-                "   curl -sSO https://dl.google.com/cloudagents/install-logging-agent.sh",
-                "   sudo bash install-logging-agent.sh",
-                "   wget https://dl.google.com/go/go1.11.4.linux-amd64.tar.gz",
-                "   sudo tar -xvf go1.11.4.linux-amd64.tar.gz && sudo mv go /usr/local",
                 "   sudo pip install ansible",
+                "   ansible-galaxy install gantsign.golang",
                 "fi"
             ]
         },
         {
             "type": "ansible-local",
             "playbook_file": "ansible/fullnode.yml",
-            "extra_arguments": ["--extra-vars \"app_user={{user `app_user`}} app_version={{user `version`}}\""]
+            "extra_arguments": ["--extra-vars \"compress={{user `compress`}} app_user={{user `app_user`}} app_version={{user `version`}}\""]
         }
     ],
     "post-processors": [
