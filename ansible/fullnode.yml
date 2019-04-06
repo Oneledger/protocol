@@ -154,12 +154,12 @@
             ]
           }
         }    
-  - name: create start script
-    copy:
-      dest: "/usr/local/bin/startup"
+  - name: fullnode configuration setup
+    copy:  
+      dest: "/usr/local/bin/fullnodeSetup"
       owner: "{{app_user}}"
       group: "{{app_user}}"
-      mode: 0744
+      mode: 0744      
       content: |
         #!/usr/bin/env bash
         source ~/.profile
@@ -179,6 +179,15 @@
         sed -i "s/seed_mode.*/seed_mode = false/" {{OLDATA}}/config.toml
         sed -i "s/persistent_peers.*/persistent_peers = $persistent_peers/" {{OLDATA}}/config.toml
         sed -i "s/seeds.*/seeds = $seeds/" {{OLDATA}}/config.toml
+  - name: create start script
+    copy:
+      dest: "/usr/local/bin/fullnodeStartup"
+      owner: "{{app_user}}"
+      group: "{{app_user}}"
+      mode: 0744
+      content: |
+        #!/usr/bin/env bash
+        fullnodeSetup
         olmonitor start olvm execute --root {{OLDATA}} >> {{OLDATA}}/olvm.log 2>&1 &
         olfullnode node --root {{OLDATA}} >> {{OLDATA}}/olfullnode.log 2>&1 &
         exec "$@"

@@ -13,13 +13,14 @@
             "commit": true,
             "changes": [
                 "USER root",
-                "ENTRYPOINT [\"/usr/local/bin/startup\"]",
+                "ENTRYPOINT [\"/usr/local/bin/fullnodeStartup\"]",
                 "VOLUME /home/{{user `app_user`}}/go"
             ]
         },
         {
             "type": "googlecompute",
             "name": "gcp-vm-image",
+            "image_name": "fullnode-{{user `tag`}}",
             "account_file": "./gcp/DevNet.json",
             "project_id": "atomic-land-223022",
             "source_image_family": "ubuntu-1604-lts",
@@ -27,10 +28,7 @@
             "zone": "us-east1-b",
             "machine_type": "n1-highcpu-8",
             "disk_size": "50",
-            "use_internal_ip": false,
-            "metadata": {
-                "startup-script": "startup"
-            }
+            "use_internal_ip": false
         }
     ],
   
