@@ -83,3 +83,5 @@
     become_user: root
   - name: create consensus/ initialized network with dir
     shell: chdir={{lookup('env','OLDATA')}} olfullnode init devnet --root {{lookup('env','OLDATA')}}
+    become: yes
+    become_user: root
