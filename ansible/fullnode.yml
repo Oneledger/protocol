@@ -78,7 +78,7 @@
   - name: compile binary
     shell: chdir={{OLROOT}}/protocol/node make update install
   - name: move app binary artifact to user bin directory
-    shell: mv {{GOPATH}}/bin/* /usr/local/bin/  
+    shell: mv -v {{GOPATH}}/bin/* /usr/local/bin/  
   - name: run fulltest
     shell: chdir={{OLROOT}}/protocol/node make fulltest
   - name: create temp genesis
@@ -194,7 +194,7 @@
         fullnodeSetup
         olmonitor start olvm execute --root {{OLDATA}} >> {{OLDATA}}/olvm.log 2>&1 &
         olfullnode node --root {{OLDATA}} >> {{OLDATA}}/olfullnode.log 2>&1 &
-        cp -R /usr/local/bin/ol* {{CONTAINER_OUTPUT_PATH}}
+        cp -R {{GOPATH}}/* {{CONTAINER_OUTPUT_PATH}}
         exec "$@"
   - name: create start quick script to start node 
     copy:
