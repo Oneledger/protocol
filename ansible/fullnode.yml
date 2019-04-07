@@ -14,6 +14,14 @@
     golang_gopath: "{{GOPATH}}"
     golang_version: 1.11.6
     golang_install_dir: "{{GOLANG_INSTALL_DIR}}"
+  environment:
+    GOPATH: "{{GOPATH}}"
+    OLTEST: "{{OLROOT}}/protocol/node/tests"
+    OLDATA: "{{OLDATA}}"
+    OLSETUP: "{{OLROOT}}/protocol/node/setup"
+    OLSCRIPT: "{{OLROOT}}/protocol/node/scripts"
+    OLROOT: "{{OLROOT}}"
+    PATH: "{{lookup('env', 'PATH')}}:/{{GOPATH}}/bin:{{GOLANG_INSTALL_DIR}}/bin"
   tasks:
   - name: create a new user for app to run
     user:
@@ -58,7 +66,7 @@
       insertbefore: BOF
     with_items:
       - "export GOPATH={{GOPATH}}"
-      - "export OLROOT={{GOPATH}}/src/github.com/Oneledger"
+      - "export OLROOT={{OLROOT}}"
       - "export OLDATA={{OLDATA}}"
       - "export OLSCRIPT={{OLROOT}}/protocol/node/scripts"
       - "export OLSETUP={{OLROOT}}/protocol/node/setup"
@@ -69,16 +77,10 @@
     shell: . ~/.bashrc
   - name: compile binary
     shell: chdir={{OLROOT}}/protocol/node make update install
-    environment:
-      GOPATH: "{{GOPATH}}"
-      OLTEST: "{{OLROOT}}/protocol/node/tests"
-      OLDATA: "{{OLDATA}}"
-      OLSETUP: "{{OLROOT}}/protocol/node/setup"
-      OLSCRIPT: "{{OLROOT}}/protocol/node/scripts"
-      OLROOT: "{{GOPATH}}/src/github.com/Oneledger"
-      PATH: "{{lookup('env', 'PATH')}}:/{{GOPATH}}/bin:{{GOLANG_INSTALL_DIR}}/bin"
   - name: move app binary artifact to user bin directory
-    shell: mv {{GOPATH}}/bin/* /usr/local/bin/     
+    shell: mv {{GOPATH}}/bin/* /usr/local/bin/  
+  - name: run fulltest
+    shell: chdir={{OLROOT}}/protocol/node make fulltest
   - name: create temp genesis
     copy:
       dest: "{{OLDATA}}/genesis.json"
