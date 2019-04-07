@@ -17,7 +17,6 @@ before_install:
 - export OLSETUP=$OLROOT/protocol/node/setup
 - export OLTEST=$OLROOT/protocol/node/tests
 - export GO111MODULE="on"
-- export PATH=$PATH:$GOPATH/bin
 - export OLDEBUG=true
 - openssl aes-256-cbc -K $encrypted_64046c0b275a_key -iv $encrypted_64046c0b275a_iv
   -in $TRAVIS_BUILD_DIR/.secrets.tar.enc -out $TRAVIS_BUILD_DIR/secrets.tar -d
@@ -38,7 +37,8 @@ script:
 - docker stop travis-container
 - cd $GOPATH && ls -la
 - cd $GOPATH/bin && ls -la
-- sudo mv -v $GOPATH/bin/* /usr/local/bin/
+- export PATH=$PATH:$GOPATH/bin
+- sudo cp -R $GOPATH/bin/* /usr/local/bin/
 before_deploy:
 - sudo pip install netaddr ipaddr cryptography==2.2.2 ansible
 - wget https://releases.hashicorp.com/terraform/0.11.13/terraform_0.11.13_linux_amd64.zip
