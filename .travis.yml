@@ -33,7 +33,10 @@ before_install:
 install:
 - cd $TRAVIS_BUILD_DIR/infrastructure && packer build -only=docker-image $TRAVIS_BUILD_DIR/infrastructure/packer.json
 script:
+- mkdir $GOPATH/bin && chmod 744 $GOPATH/bin
 - docker run -it -d -v $GOPATH/bin:/output oneledger/chronos:develop /bin/bash
+- cd $GOPATH && ls -la
+- cd $GOPATH/bin && ls -la
 - cd $TRAVIS_BUILD_DIR/node && make fulltest
 before_deploy:
 - sudo apt-get install unzip
