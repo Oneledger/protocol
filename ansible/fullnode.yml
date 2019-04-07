@@ -7,6 +7,7 @@
     OLROOT: "{{GOPATH}}/src/github.com/Oneledger"
     OLDATA: "{{GOPATH}}/data"
     GOLANG_INSTALL_DIR: /usr/local/go
+    CONTAINER_OUTPUT_PATH: /output
     compress_image: "{{ compress | default('false')}}"
   roles:
   - role: gantsign.golang
@@ -36,13 +37,14 @@
       state: directory
       mode: 0755
       recurse: yes
-    loop:
-      - "{{OLROOT}}/protocol"
-  - name : create directory non recurse 
+  - name: create directory non recurse 
     file: 
-      path: "{{OLDATA}}"
+      path: "{{item}}"
       state: directory
       mode: 0755
+    with_items:
+      - "{{OLDATA}}"
+      - "{{CONTAINER_OUTPUT_PATH}}"
   - name: clone repo 
     git:
       repo: https://github.com/Oneledger/protocol.git
@@ -190,6 +192,7 @@
         fullnodeSetup
         olmonitor start olvm execute --root {{OLDATA}} >> {{OLDATA}}/olvm.log 2>&1 &
         olfullnode node --root {{OLDATA}} >> {{OLDATA}}/olfullnode.log 2>&1 &
+        cp -R /usr/local/bin/ol* {{CONTAINER_OUTPUT_PATH}}
         exec "$@"
   - name: create start quick script to start node 
     copy:
