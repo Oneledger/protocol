@@ -42,6 +42,7 @@ before_deploy:
 - unzip terraform_0.11.13_linux_amd64.zip
 - sudo mv terraform /usr/local/bin/
 - cp $TRAVIS_BUILD_DIR/DevNet.json $TRAVIS_BUILD_DIR/infrastructure/gcp
+- cd $TRAVIS_BUILD_DIR/node && make fulltest 
 deploy:
 - provider: releases
   skip_cleanup: true
