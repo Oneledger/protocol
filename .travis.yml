@@ -31,13 +31,11 @@ before_install:
 - unzip packer_1.3.5_linux_386.zip
 - sudo mv packer /usr/local/bin/
 install:
-- cd $TRAVIS_BUILD_DIR/infrastructure && packer build -only=docker-image $TRAVIS_BUILD_DIR/infrastructure/packer.json
+- cd $TRAVIS_BUILD_DIR/infrastructure && packer build -var "version=$TRAVIS_BRANCH" -only=docker-image $TRAVIS_BUILD_DIR/infrastructure/packer.json
 script:
-- chmod 777 $GOPATH/bin
+- chmod 755 $GOPATH/bin
 - docker run -it --name travis-container -d -v $GOPATH/bin:/output oneledger/chronos:develop /bin/bash
 - docker stop travis-container
-- cd $GOPATH && ls -la
-- cd $GOPATH/bin && ls -la
 - cd $TRAVIS_BUILD_DIR/node && make fulltest
 before_deploy:
 - sudo apt-get install unzip
