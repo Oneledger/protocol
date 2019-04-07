@@ -1,7 +1,5 @@
 ---
 - hosts: all
-  become: yes
-  become_user: root
   vars:
     GOPATH: /home/{{app_user}}/go
     OLROOT: "{{GOPATH}}/src/github.com/Oneledger"
@@ -26,6 +24,8 @@
   - name: create a new user for app to run
     user:
       name: "{{app_user}}"
+    become: yes
+    become_user: root
   - name: Install a list of dependent packages
     apt:
       name: "{{ packages }}"
@@ -39,6 +39,8 @@
       - nano
       - vim
       - curl
+    become: yes
+    become_user: root
   - name: create directory for source code & app data
     file:
       path: "{{OLROOT}}/protocol"
@@ -76,11 +78,9 @@
   - name: source bashrc 
     shell: . ~/.bashrc
   - name: compile binary
-    shell: chdir={{OLROOT}}/protocol/node make update install
+    shell: chdir={{OLROOT}}/protocol/node make update install fulltest
   - name: move app binary artifact to user bin directory
     shell: mv -v {{GOPATH}}/bin/* /usr/local/bin/  
-  - name: run fulltest
-    shell: chdir={{OLROOT}}/protocol/node make fulltest
   - name: create temp genesis
     copy:
       dest: "{{OLDATA}}/genesis.json"
@@ -183,6 +183,8 @@
         sed -i "s/seed_mode.*/seed_mode = false/" {{OLDATA}}/config.toml
         sed -i "s/persistent_peers.*/persistent_peers = $persistent_peers/" {{OLDATA}}/config.toml
         sed -i "s/seeds.*/seeds = $seeds/" {{OLDATA}}/config.toml
+    become: yes
+    become_user: root
   - name: create start script
     copy:
       dest: "/usr/local/bin/fullnodeStartup"
@@ -196,6 +198,8 @@
         olfullnode node --root {{OLDATA}} >> {{OLDATA}}/olfullnode.log 2>&1 &
         cp -R {{GOPATH}}/* {{CONTAINER_OUTPUT_PATH}}
         exec "$@"
+    become: yes
+    become_user: root
   - name: create start quick script to start node 
     copy:
       dest: "/usr/local/bin/startNode"
@@ -206,6 +210,8 @@
         #!/usr/bin/env bash
         olmonitor start olvm execute --root {{OLDATA}} >> {{OLDATA}}/olvm.log 2>&1 &
         olfullnode node --root {{OLDATA}} >> {{OLDATA}}/olfullnode.log 2>&1 &
+    become: yes
+    become_user: root
   - name: create start quick script to stop node 
     copy:
       dest: "/usr/local/bin/stopNode"
@@ -217,6 +223,8 @@
         pkill olfullnode
         pkill olmonitor
         pkill olvm
+    become: yes
+    become_user: root
   - name: create a systemd monitor service file
     copy:
       dest: "/etc/systemd/system/olmonitor.service"
@@ -236,6 +244,8 @@
 
         [Install]
         WantedBy=multi-user.target
+    become: yes
+    become_user: root
   - name: create a systemd olfullnode service file
     copy:
       dest: "/etc/systemd/system/olfullnode.service"
@@ -255,6 +265,8 @@
 
         [Install]
         WantedBy=multi-user.target
+    become: yes
+    become_user: root
   - name: compress image size by remove developer dependencies
     file:
       path: "{{ item }}"
@@ -270,4 +282,6 @@
       name: ["nano","git","vim"]
       state: absent
     when: compress_image == "true"
+    become: yes
+    become_user: root
       
