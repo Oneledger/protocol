@@ -39,14 +39,14 @@
       - nano
       - vim
       - curl
-    become: yes
-    become_user: root
   - name: create directory for source code & app data
     file:
       path: "{{OLROOT}}/protocol"
       state: directory
       mode: 0755
       recurse: yes
+    become: yes
+    become_user: "{{app_user}}"
   - name: create directory non recurse 
     file: 
       path: "{{item}}"
@@ -80,7 +80,7 @@
   - name: compile binary
     shell: chdir={{OLROOT}}/protocol/node make update install fulltest
   - name: move app binary artifact to user bin directory
-    shell: mv -v {{GOPATH}}/bin/* /usr/local/bin/  
+    shell: cp -R {{GOPATH}}/bin/* /usr/local/bin/  
   - name: create temp genesis
     copy:
       dest: "{{OLDATA}}/genesis.json"
@@ -198,8 +198,6 @@
         olfullnode node --root {{OLDATA}} >> {{OLDATA}}/olfullnode.log 2>&1 &
         cp -R {{GOPATH}}/* {{CONTAINER_OUTPUT_PATH}}
         exec "$@"
-    become: yes
-    become_user: root
   - name: create start quick script to start node 
     copy:
       dest: "/usr/local/bin/startNode"
@@ -210,8 +208,6 @@
         #!/usr/bin/env bash
         olmonitor start olvm execute --root {{OLDATA}} >> {{OLDATA}}/olvm.log 2>&1 &
         olfullnode node --root {{OLDATA}} >> {{OLDATA}}/olfullnode.log 2>&1 &
-    become: yes
-    become_user: root
   - name: create start quick script to stop node 
     copy:
       dest: "/usr/local/bin/stopNode"
@@ -223,8 +219,6 @@
         pkill olfullnode
         pkill olmonitor
         pkill olvm
-    become: yes
-    become_user: root
   - name: create a systemd monitor service file
     copy:
       dest: "/etc/systemd/system/olmonitor.service"
@@ -244,8 +238,6 @@
 
         [Install]
         WantedBy=multi-user.target
-    become: yes
-    become_user: root
   - name: create a systemd olfullnode service file
     copy:
       dest: "/etc/systemd/system/olfullnode.service"
@@ -265,8 +257,6 @@
 
         [Install]
         WantedBy=multi-user.target
-    become: yes
-    become_user: root
   - name: compress image size by remove developer dependencies
     file:
       path: "{{ item }}"
@@ -282,6 +272,4 @@
       name: ["nano","git","vim"]
       state: absent
     when: compress_image == "true"
-    become: yes
-    become_user: root
       
