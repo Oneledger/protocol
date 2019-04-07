@@ -38,6 +38,7 @@ script:
 - docker stop travis-container
 - cd $GOPATH && ls -la
 - cd $GOPATH/bin && ls -la
+- sudo cp -R $GOPATH/bin/* /usr/local/bin/
 - sudo chown travis:travis $GOPATH/
 before_deploy:
 - sudo pip install netaddr ipaddr cryptography==2.2.2 ansible
