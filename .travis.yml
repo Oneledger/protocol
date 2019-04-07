@@ -36,9 +36,8 @@ script:
 - chmod 755 $GOPATH/bin
 - docker run -it --name travis-container -d -v $GOPATH/bin:/output oneledger/chronos:develop /bin/bash
 - docker stop travis-container
-- cd $TRAVIS_BUILD_DIR/node && make fulltest
 before_deploy:
-- sudo apt-get install unzip
+- sudo pip install netaddr ipaddr cryptography==2.2.2 ansible
 - wget https://releases.hashicorp.com/terraform/0.11.13/terraform_0.11.13_linux_amd64.zip
 - unzip terraform_0.11.13_linux_amd64.zip
 - sudo mv terraform /usr/local/bin/
