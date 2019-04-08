@@ -86,6 +86,39 @@
       group: "{{app_user}}"
   - name: generate consensus file for seed node 
     shell: chdir={{APP_HOME}} olfullnode init --root {{APP_HOME}} --genesis {{APP_HOME}}/genesis.json
+# set up validator node config.toml
+- hosts: validator_node
+  remote_user: "{{remote_user}}"
+  become: true
+  become_user: root
+  tasks:
+  - name: get persistent peer address
+    command: chdir={{APP_HOME}} olclient show_node_id --root {{APP_HOME}} --show-ip
+    register: persistent_peers
+  - name: set concatenated p2p address string for all seed nodes
+    set_fact:
+      persistentAddressList: "{{ ansible_play_hosts | map('extract', hostvars, 'persistent_peers') | map(attribute='stdout') | list}}"
+      persistentAddress: "{{ ansible_play_hosts | map('extract', hostvars, 'persistent_peers') | map(attribute='stdout') | list | join(',') }}"
+    run_once: yes
+  # set up seed node config.toml
+- hosts: seed_node
+  remote_user: "{{remote_user}}"
+  become: true
+  become_user: root
+  tasks:
+  - name: get seed address
+    command: chdir={{APP_HOME}} olclient show_node_id --root {{APP_HOME}} --show-ip
+    register: command_output
+  - name: set concatenated p2p address string for all seed nodes
+    set_fact:
+      seedAddressList: "{{ ansible_play_hosts | map('extract', hostvars, 'command_output') | map(attribute='stdout') | list}}"
+      seedAddress: "{{ ansible_play_hosts | map('extract', hostvars, 'command_output') | map(attribute='stdout') | list | join(',') }}"
+    run_once: yes
+  - name: set seed node specific configuration 
+    lineinfile:
+      path: "{{APP_HOME}}/config.toml"
+      regexp: 'seed_mode'
+      line: "  seed_mode = true"
 # modify configuration file for fullnodes 
 - hosts: seed_node:validator_node
   remote_user: "{{remote_user}}"
@@ -103,40 +136,14 @@
     - { name: "rpc_address", value: "rpc_address = \"tcp://{{internal_ip}}:26604\""}
     - { name: "p2p_address = \"tcp://", value: "p2p_address = \"tcp://{{internal_ip}}:26605\""}
     - { name: "node_name", value: "node_name = \"{{node_name}}\""}
-    - { name: "external_p2p_address = \"tcp://", value: "external_p2p_address = \"tcp://{{inventory_hostname}}:26605\""}
-# set up seed node config.toml
-- hosts: seed_node
-  remote_user: "{{remote_user}}"
-  become: true
-  become_user: root
-  tasks:
-  - name: get p2p address
-    command: chdir={{APP_HOME}} olclient show_node_id --root {{APP_HOME}} --show-ip
-    register: command_output
-  - name: set concatenated p2p address string for all seed nodes {{APP_HOME}}
-    set_fact:
-      p2pAddressList: "{{ ansible_play_hosts | map('extract', hostvars, 'command_output') | map(attribute='stdout') | list}}"
-      p2pAddress: "{{ ansible_play_hosts | map('extract', hostvars, 'command_output') | map(attribute='stdout') | list | join(',') }}"
-    run_once: yes
-  - name: set seed node specific configuration 
-    lineinfile:
-      path: "{{APP_HOME}}/config.toml"
-      regexp: 'seed_mode'
-      line: "  seed_mode = true"
-  - name: set validator node specific configuration 
+    - { name: "external_p2p_address", value: "external_p2p_address = \"tcp://{{inventory_hostname}}:26605\""}
+  - name: set persistent peers
     lineinfile:
       path: "{{APP_HOME}}/config.toml"
       regexp: 'persistent_peers'
-      line: "  persistent_peers = {{hostvars[groups['seed_node'][0]]['p2pAddressList'] | to_json }}"
-# set up validator node config.toml
-- hosts: validator_node
-  remote_user: "{{remote_user}}"
-  become: true
-  become_user: root
-  tasks:
-  - name: set validator node specific configuration 
+      line: "  persistent_peers = {{hostvars[groups['validator_node'][0]]['persistentAddressList'] | to_json }}"
+  - name: set seed nodes 
     lineinfile:
       path: "{{APP_HOME}}/config.toml"
       regexp: 'seeds'
-      line: "  seeds = {{hostvars[groups['seed_node'][0]]['p2pAddressList'] | to_json }}"
-    
+      line: "  seeds = {{hostvars[groups['seed_node'][0]]['seedAddressList'] | to_json }}"
