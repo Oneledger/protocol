@@ -70,6 +70,7 @@
       group: "{{app_user}}"
     with_items: 
       - consensus
+      - config.toml
 # generate consensus folder for seed nodes 
 - hosts: seed_node
   remote_user: "{{remote_user}}"
@@ -85,78 +86,24 @@
       group: "{{app_user}}"
   - name: generate consensus file for seed node 
     shell: chdir={{APP_HOME}} olfullnode init --root {{APP_HOME}} --genesis {{APP_HOME}}/genesis.json
-# generate configuration file for fullnodes 
-- hosts: validator_node:seed_node
+# modify configuration file for fullnodes 
+- hosts: seed_node:validator_node
   remote_user: "{{remote_user}}"
   become: true
-  become_user: root
+  become_user: root  
+  vars:
+    internal_ip: "{{ ansible_all_ipv4_addresses | ipaddr('private') | first }}"
   tasks:
-  - name: create config.toml file with content
-    vars:
-      internal_ip: "{{ ansible_all_ipv4_addresses | ipaddr('private') | first }}"
-    copy:
-      dest: "{{APP_HOME}}/config.toml"
-      owner: "{{app_user}}"
-      group: "{{app_user}}"
-      content: |
-        [node]
-          node_name = "{{node_name}}"
-          fast_sync = true
-          db = "cleveldb"
-          index_tags = ["tx.owner", "tx.type", "tx.swapkey"]
-          index_all_tags = false
-
-        [network]
-          rpc_address = "tcp://{{internal_ip}}:26604"
-          p2p_address = "tcp://{{internal_ip}}:26605"
-          external_p2p_address = "tcp://{{inventory_hostname}}:26605"
-          sdk_address = "tcp://{{internal_ip}}:26606"
-          btc_address = "127.0.0.1:18831"
-          eth_address = "127.0.0.1:28101"
-          olvm_address = "tcp://127.0.0.1:26607"
-          olvm_protocol = "tcp"
-
-        [p2p]
-          seeds = []
-          seed_mode = false
-          persistent_peers = []
-          upnp = false
-          addr_book_strict = false
-          max_num_inbound_peers = 40
-          max_num_outbound_peers = 10
-          flush_throttle_timeout = 100000000
-          max_packet_msg_payload_size = 1024
-          send_rate = 5120000
-          recv_rate = 5120000
-          pex = true
-          private_peer_ids = ""
-          allow_duplicate_ip = true
-          handshake_timeout = 20000000000
-          dial_timeout = 3000000000
-
-        [mempool]
-          recheck = true
-          broadcast = true
-          size = 5000
-          cache_size = 10000
-
-        [consensus]
-          # Determines where consensus is logged (stdout|<filename>)
-          log_output = "consensus.log"
-          log_level = "main:info,state:info,*:error"
-          timeout_propose = 3000000000
-          timeout_propose_delta = 500000000
-          timeout_prevote = 1000000000
-          timeout_prevote_delta = 500000000
-          timeout_precommit = 1000000000
-          timeout_precommit_delta = 500000000
-          timeout_commit = 1000000000
-          skip_timeout_commit = false
-          create_empty_blocks = false
-          create_empty_blocks_interval = 0
-          peer_gossip_sleep_duration = 100000000
-          peer_query_maj23_sleep_duration = 2000000000
-          blocktime_iota = 1000000000
+  - name: set fullnode specific configuration 
+    lineinfile:
+      path: "{{APP_HOME}}/config.toml"
+      regexp: '{{item.name}}'
+      line: "  {{item.value}}"
+    with_items:
+    - { name: "rpc_address", value: "rpc_address = \"tcp://{{internal_ip}}:26604\""}
+    - { name: "p2p_address = \"tcp://", value: "p2p_address = \"tcp://{{internal_ip}}:26605\""}
+    - { name: "node_name", value: "node_name = \"{{node_name}}\""}
+    - { name: "external_p2p_address = \"tcp://", value: "external_p2p_address = \"tcp://{{inventory_hostname}}:26605\""}
 # set up seed node config.toml
 - hosts: seed_node
   remote_user: "{{remote_user}}"
