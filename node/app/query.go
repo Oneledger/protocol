@@ -193,7 +193,7 @@ func HandleApplyValidatorQuery(application Application, arguments map[string]int
 	validator := &action.ApplyValidator{
 		Base: action.Base{
 			Type:     action.APPLY_VALIDATOR,
-			ChainId:  global.Current.ChainID(),
+			ChainId:  ChainId,
 			Owner:    nodeAccount.AccountKey(),
 			Signers:  GetSigners(nodeAccount.AccountKey(), application),
 			Sequence: sequence.Sequence,
@@ -249,7 +249,7 @@ func HandleCreateExSendRequest(application Application, arguments map[string]int
 	exSend := &action.ExternalSend{
 		Base: action.Base{
 			Type:     action.EXTERNAL_SEND,
-			ChainId:  global.Current.ChainID(),
+			ChainId:  ChainId,
 			Signers:  GetSigners(sender, application),
 			Owner:    partyKey,
 			Target:   cpartyKey,
@@ -331,7 +331,7 @@ func HandleCreateSendRequest(application Application, arguments map[string]inter
 	send := &action.Send{
 		Base: action.Base{
 			Type:     action.SEND,
-			ChainId:  global.Current.ChainID(),
+			ChainId:  ChainId,
 			Owner:    party,
 			Signers:  GetSigners(party, application),
 			Sequence: sequence.Sequence,
@@ -410,7 +410,7 @@ func HandleCreateMintRequest(application Application, arguments map[string]inter
 	send := &action.Send{
 		Base: action.Base{
 			Type:     action.SEND,
-			ChainId:  global.Current.ChainID(),
+			ChainId:  ChainId,
 			Signers:  GetSigners(zero, application),
 			Owner:    zero,
 			Sequence: sequence.Sequence,
@@ -486,7 +486,7 @@ func HandleSwapRequest(application Application, arguments map[string]interface{}
 	swap := &action.Swap{
 		Base: action.Base{
 			Type:     action.SWAP,
-			ChainId:  global.Current.ChainID(),
+			ChainId:  ChainId,
 			Signers:  signers,
 			Owner:    partyKey,
 			Target:   counterPartyKey,

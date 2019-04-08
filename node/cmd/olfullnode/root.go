@@ -10,6 +10,7 @@ import (
 	"os"
 
 	"github.com/Oneledger/protocol/node/global"
+	"github.com/Oneledger/protocol/node/log"
 	"github.com/spf13/cobra"
 )
 
@@ -28,9 +29,19 @@ func Execute() {
 
 // Initialize Cobra, config global arguments
 func init() {
+	cobra.OnInitialize(environment)
+
 	RootCmd.PersistentFlags().StringVar(&global.Current.RootDir, "root",
 		global.Current.RootDir, "Set root directory")
 
 	RootCmd.PersistentFlags().StringVar(&global.Current.NodeName, "node",
 		global.Current.NodeName, "Set a node name")
+
+}
+
+// Initialize Viper
+func environment() {
+	log.Debug("Loading Environment")
+	// Ignore error so olfullnode init doesn't fail
+	global.Current.ReadConfig()
 }

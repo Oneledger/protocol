@@ -32,7 +32,7 @@ var initCmdArguments = &InitCmdArguments{}
 
 func init() {
 	RootCmd.AddCommand(initCmd)
-	initCmd.Flags().StringVar(&initCmdArguments.nodeName, "node_name", "Newton-Node", "Name of the node")
+	initCmd.Flags().StringVar(&initCmdArguments.nodeName, "nodeName", "Newton-Node", "Name of the node")
 	initCmd.Flags().StringVar(&initCmdArguments.genesis, "genesis", "", "Genesis file to use to generate new node key file")
 }
 

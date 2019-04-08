@@ -53,7 +53,7 @@ utest:
 #
 # System Testing, bring up everything
 #
-test: check reset start
+test: check reset install start
 	@echo "OneLedger Initialize"
 	@./scripts/stopOneLedger
 
@@ -63,19 +63,19 @@ test_cleveldb:
 #
 # Full Testing, bring up everything, send a transaction and then stop
 #
-fulltest: reset
+fulltest: reset install
 	@./tests/full.sh
 
 #
 # Test validator, bring up everything, send a validator token and then stop
 #
-validatortest: reset
+validatortest: reset install
 	@./tests/validator.sh
 
 #
 # Swap Testing, swap BTC with ETH between nodes, do a full reset and rebuild each time
 #
-swaptest: resetDevnet
+swaptest: resetDevnet install
 	@./scripts/startBitcoin
 	@./scripts/startEthereum
 	@./tests/register.sh
@@ -97,10 +97,10 @@ exec:
 #
 # Start up a node, make sure it is stopped first
 #
-restart: reset
+restart: reset install
 	@./scripts/startOneLedger
 
-start: check
+start: check install
 	@./scripts/startOneLedger
 
 #
