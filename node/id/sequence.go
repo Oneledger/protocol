@@ -2,6 +2,7 @@ package id
 
 import (
 	"github.com/Oneledger/protocol/node/serial"
+	"github.com/Oneledger/protocol/node/serialize"
 )
 
 type SequenceRecord struct {
@@ -10,6 +11,8 @@ type SequenceRecord struct {
 
 func init() {
 	serial.Register(SequenceRecord{})
+
+	serialize.RegisterConcrete(new(SequenceRecord), TagSequenceRecord)
 }
 
 func NextSequence(app interface{}, accountkey AccountKey) SequenceRecord {

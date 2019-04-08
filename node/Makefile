@@ -48,8 +48,8 @@ status: check
 # Run any of the unit tests
 #
 utest:
-	go test -v `glide novendor`
-
+	go test -v ./serialize
+	go test -v ./data
 #
 # System Testing, bring up everything
 #

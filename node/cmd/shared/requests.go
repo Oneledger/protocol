@@ -12,8 +12,6 @@ import (
 	"os"
 
 	"github.com/Oneledger/protocol/node/comm"
-	"github.com/Oneledger/protocol/node/serial"
-
 	"regexp"
 	"strconv"
 
@@ -91,7 +89,7 @@ func CreateBalanceRequest(args *BalanceArguments) []byte {
 
 // CreateRequest builds and signs the transaction based on the arguments
 func CreateApplyValidatorRequest(args *comm.ApplyValidatorArguments) []byte {
-	request, err := serial.Serialize(args, serial.CLIENT)
+	request, err := clSerializer.Serialize(args)
 	if err != nil {
 		log.Error("Failed to Serialize arguments: ", err)
 		return nil
@@ -147,8 +145,8 @@ type ContractArguments struct {
 
 // CreateRequest builds and signs the transaction based on the arguments
 func CreateSendRequest(args *comm.SendArguments) []byte {
-	request, err := serial.Serialize(args, serial.CLIENT)
 
+	request, err := clSerializer.Serialize(args)
 	if err != nil {
 		log.Error("Failed to Serialize arguments: ", err)
 		return nil
@@ -166,8 +164,8 @@ func CreateSendRequest(args *comm.SendArguments) []byte {
 
 // CreateRequest builds and signs the transaction based on the arguments
 func CreateMintRequest(args *comm.SendArguments) []byte {
-	request, err := serial.Serialize(args, serial.CLIENT)
 
+	request, err := clSerializer.Serialize(args)
 	if err != nil {
 		log.Error("Failed to Serialize arguments: ", err)
 		return nil
@@ -185,8 +183,7 @@ func CreateMintRequest(args *comm.SendArguments) []byte {
 
 // Create a swap request
 func CreateSwapRequest(args *comm.SwapArguments) []byte {
-	request, err := serial.Serialize(args, serial.CLIENT)
-
+	request, err := clSerializer.Serialize(args)
 	if err != nil {
 		log.Error("Failed to Serialize arguments: ", err)
 		return nil
@@ -211,8 +208,8 @@ func CreateSwapRequest(args *comm.SwapArguments) []byte {
 }
 
 func CreateExSendRequest(args *comm.ExSendArguments) []byte {
-	request, err := serial.Serialize(args, serial.CLIENT)
 
+	request, err := clSerializer.Serialize(args)
 	if err != nil {
 		log.Error("Failed to Serialize arguments: ", err)
 		return nil

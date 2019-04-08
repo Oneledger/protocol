@@ -34,36 +34,44 @@ func HandleQuery(app Application, path string, arguments map[string]interface{})
 		if r := recover(); r != nil {
 			log.Error("Query Panic", "status", r)
 			debug.PrintStack()
-			buffer, _ = serial.Serialize("Internal Query Error", serial.CLIENT)
+			buffer, _ = clSerializer.Serialize("Internal Query Error")
 		}
 	}()
 
 	var result interface{}
 
+	oldSerialFlag := false
 	switch path {
 	case "/applyValidators":
-		result = HandleApplyValidatorQuery(app, arguments)
+		result = HandleApplyValidatorQuery(app, arguments) // old serialization
+		oldSerialFlag = true
 
 	case "/createExSendRequest":
-		result = HandleCreateExSendRequest(app, arguments)
+		result = HandleCreateExSendRequest(app, arguments) //old serialization
+		oldSerialFlag = true
 
 	case "/createSendRequest":
-		result = HandleCreateSendRequest(app, arguments)
+		result = HandleCreateSendRequest(app, arguments) //old serialization
+		oldSerialFlag = true
 
 	case "/createMintRequest":
-		result = HandleCreateMintRequest(app, arguments)
+		result = HandleCreateMintRequest(app, arguments) //old serialization
+		oldSerialFlag = true
 
 	case "/createSwapRequest":
-		result = HandleSwapRequest(app, arguments)
+		result = HandleSwapRequest(app, arguments) // old
+		oldSerialFlag = true
 
 	case "/nodeName":
-		result = HandleNodeNameQuery(app, arguments)
+		result = HandleNodeNameQuery(app, arguments) // old
+		oldSerialFlag = true
 
 	case "/identity":
 		result = HandleIdentityQuery(app, arguments)
 
 	case "/signTransaction":
-		result = HandleSignTransaction(app, arguments)
+		result = HandleSignTransaction(app, arguments) // old
+		oldSerialFlag = true
 
 	case "/accountPublicKey":
 		result = HandleAccountPublicKeyQuery(app, arguments)
@@ -96,7 +104,15 @@ func HandleQuery(app Application, path string, arguments map[string]interface{})
 		result = HandleError("Unknown Query", path, arguments)
 	}
 
-	buffer, err := serial.Serialize(result, serial.CLIENT)
+	var err error
+	if oldSerialFlag {
+		// we use old serializer for transaction interface implementers
+		// because we have not yet moved transactions to the new serializer
+		// this should go away later
+		buffer, err = serial.Serialize(result, serial.CLIENT)
+	} else {
+		buffer, err = clSerializer.Serialize(result)
+	}
 	if err != nil {
 		log.Debug("Failed to serialize query")
 	}
@@ -107,20 +123,19 @@ func HandleQuery(app Application, path string, arguments map[string]interface{})
 func HandleApplyValidatorQuery(application Application, arguments map[string]interface{}) interface{} {
 	log.Debug("HandleApplyValidatorQuery", "arguments", arguments)
 
-	var argsHolder comm.ApplyValidatorArguments
+	var args = &comm.ApplyValidatorArguments{}
 
 	text := arguments["parameters"].([]byte)
 
-	args, err := serial.Deserialize(text, argsHolder, serial.CLIENT)
-
+	err := clSerializer.Deserialize(text, args)
 	if err != nil {
 		log.Error("Could not deserialize ApplyValidatorArguments", "error", err)
 		return "Could not deserialize ApplyValidatorArguments" + " error=" + err.Error()
 	}
 
-	amount := args.(*comm.ApplyValidatorArguments).Amount
-	idName := args.(*comm.ApplyValidatorArguments).Id
-	purge := args.(*comm.ApplyValidatorArguments).Purge
+	amount := args.Amount
+	idName := args.Id
+	purge := args.Purge
 
 	nodeAccount := action.GetNodeAccount(application)
 	if nodeAccount == nil {
@@ -219,18 +234,15 @@ func HandleCreateExSendRequest(application Application, arguments map[string]int
 
 	result := make([]byte, 0)
 
-	var argsHolder comm.ExSendArguments
+	var args = &comm.ExSendArguments{}
 
 	text := arguments["parameters"].([]byte)
 
-	argsDeserialized, err := serial.Deserialize(text, argsHolder, serial.CLIENT)
-
+	err := clSerializer.Deserialize(text, args)
 	if err != nil {
 		log.Error("Could not deserialize ExSendArguments", "error", err)
 		return result
 	}
-
-	args := argsDeserialized.(*comm.ExSendArguments)
 
 	partyKey := AccountKey(application, args.SenderId)
 	cpartyKey := AccountKey(application, args.ReceiverId)
@@ -274,18 +286,14 @@ func HandleCreateSendRequest(application Application, arguments map[string]inter
 
 	result := make([]byte, 0)
 
-	var argsHolder comm.SendArguments
-
+	var args = &comm.SendArguments{}
 	text := arguments["parameters"].([]byte)
 
-	argsDeserialized, err := serial.Deserialize(text, argsHolder, serial.CLIENT)
-
+	err := clSerializer.Deserialize(text, args)
 	if err != nil {
 		log.Error("Could not deserialize SendArguments", "error", err)
 		return result
 	}
-
-	args := argsDeserialized.(*comm.SendArguments)
 
 	if args.Party == "" {
 		log.Error("Missing Party argument")
@@ -349,18 +357,14 @@ func HandleCreateSendRequest(application Application, arguments map[string]inter
 func HandleCreateMintRequest(application Application, arguments map[string]interface{}) interface{} {
 	result := make([]byte, 0)
 
-	var argsHolder comm.SendArguments
-
+	var args = &comm.SendArguments{}
 	text := arguments["parameters"].([]byte)
 
-	argsDeserialized, err := serial.Deserialize(text, argsHolder, serial.CLIENT)
-
+	err := clSerializer.Deserialize(text, args)
 	if err != nil {
 		log.Error("Could not deserialize SendArguments", "error", err)
 		return result
 	}
-
-	args := argsDeserialized.(*comm.SendArguments)
 
 	conv := convert.NewConvert()
 
@@ -428,18 +432,14 @@ func HandleCreateMintRequest(application Application, arguments map[string]inter
 func HandleSwapRequest(application Application, arguments map[string]interface{}) interface{} {
 	result := make([]byte, 0)
 
-	var argsHolder comm.SwapArguments
-
+	var args = &comm.SwapArguments{}
 	text := arguments["parameters"].([]byte)
 
-	argsDeserialized, err := serial.Deserialize(text, argsHolder, serial.CLIENT)
-
+	err := clSerializer.Deserialize(text, args)
 	if err != nil {
 		log.Error("Could not deserialize SwapArgumentsArguments", "error", err)
 		return result
 	}
-
-	args := argsDeserialized.(*comm.SwapArguments)
 
 	conv := convert.NewConvert()
 

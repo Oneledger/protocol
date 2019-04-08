@@ -51,6 +51,7 @@ require (
 	github.com/tendermint/tendermint v0.30.1
 	github.com/tidwall/gjson v1.1.3
 	github.com/tidwall/match v1.0.0 // indirect
+	github.com/vmihailenco/msgpack v4.0.4+incompatible
 	golang.org/x/crypto v0.0.0-20181106171534-e4dc69e5b2fd
 	golang.org/x/net v0.0.0-20180906233101-161cd47e91fd
 	golang.org/x/sys v0.0.0-20181107165924-66b7b1311ac8 // indirect
