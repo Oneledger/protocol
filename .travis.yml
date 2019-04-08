@@ -33,7 +33,6 @@ before_install:
 install:
 - cd $GOPATH/infrastructure && packer build -var "app_user=travis" -var "version=$TRAVIS_BRANCH" -only=docker-image $GOPATH/infrastructure/packer.json
 script:
-- sudo rm -rf $GOPATH/bin $GOPATH/src
 - docker run -it --name travis-container -d -v $GOPATH:/home/travis/output oneledger/chronos:develop /bin/bash
 - docker stop travis-container
 - cd $GOPATH && ls -la
