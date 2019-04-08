@@ -21,11 +21,6 @@
     OLROOT: "{{OLROOT}}"
     PATH: "{{lookup('env', 'PATH')}}:/{{GOPATH}}/bin:{{GOLANG_INSTALL_DIR}}/bin"
   tasks:
-  - name: create a new user for app to run
-    user:
-      name: "{{app_user}}"
-    become: yes
-    become_user: root
   - name: Install a list of dependent packages
     apt:
       name: "{{ packages }}"
@@ -39,19 +34,29 @@
       - nano
       - vim
       - curl
+  - name: add user group for the app
+    group:
+      name: "{{app_user}}"
+  - name: add user to run the app 
+    user:
+      name: "{{app_user}}"
+      group: "{{app_user}}"
+      append: yes
   - name: create directory for source code & app data
     file:
       path: "{{OLROOT}}/protocol"
       state: directory
       mode: 0755
       recurse: yes
-    become: yes
-    become_user: "{{app_user}}"
+      owner: "{{app_user}}"
+      group: "{{app_user}}"
   - name: create directory non recurse 
     file: 
       path: "{{item}}"
       state: directory
       mode: 0755
+      owner: "{{app_user}}"
+      group: "{{app_user}}"
     with_items:
       - "{{OLDATA}}"
       - "{{CONTAINER_OUTPUT_PATH}}"
@@ -81,6 +86,12 @@
     shell: chdir={{OLROOT}}/protocol/node make update install fulltest
   - name: move app binary artifact to user bin directory
     shell: cp -R {{GOPATH}}/bin/* /usr/local/bin/  
+  - name: change ownership of artifact to app user
+    file:
+      dest: "{{GOPATH}}"
+      owner: "{{app_user}}"
+      group: "{{app_user}}"
+      recurse: true
   - name: create temp genesis
     copy:
       dest: "{{OLDATA}}/genesis.json"
@@ -183,8 +194,6 @@
         sed -i "s/seed_mode.*/seed_mode = false/" {{OLDATA}}/config.toml
         sed -i "s/persistent_peers.*/persistent_peers = $persistent_peers/" {{OLDATA}}/config.toml
         sed -i "s/seeds.*/seeds = $seeds/" {{OLDATA}}/config.toml
-    become: yes
-    become_user: root
   - name: create start script
     copy:
       dest: "/usr/local/bin/fullnodeStartup"
