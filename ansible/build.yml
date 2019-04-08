@@ -79,12 +79,5 @@
       path: "{{ item.path }}"
       state: absent
     with_items: "{{ files_to_delete.files }}"
-
-  - name: create temp config.toml file
-    copy:
-      content: ""
-      dest: "{{lookup('env','OLDATA')}}/config.toml"
-      force: yes
-      mode: 0644
   - name: create consensus/ initialized network with dir
     shell: chdir={{lookup('env','OLDATA')}} olfullnode init devnet --root {{lookup('env','OLDATA')}}
