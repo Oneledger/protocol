@@ -31,7 +31,7 @@ before_install:
 - unzip packer_1.3.5_linux_386.zip
 - sudo mv packer /usr/local/bin/
 install:
-- cd $TRAVIS_BUILD_DIR/infrastructure && packer build -var "version=$TRAVIS_BRANCH" -only=docker-image $TRAVIS_BUILD_DIR/infrastructure/packer.json
+- cd $TRAVIS_BUILD_DIR/infrastructure && packer build -var "app_user=travis" -var "version=$TRAVIS_BRANCH" -only=docker-image $TRAVIS_BUILD_DIR/infrastructure/packer.json
 script:
 - chmod 755 $GOPATH/bin
 - docker run -it --name travis-container -d -v $GOPATH:/output oneledger/chronos:develop /bin/bash
@@ -39,7 +39,6 @@ script:
 - cd $GOPATH && ls -la
 - cd $GOPATH/bin && ls -la
 - sudo cp -R $GOPATH/bin/* /usr/local/bin/
-- sudo chown -R travis:travis $GOPATH/
 before_deploy:
 - sudo pip install netaddr ipaddr cryptography==2.2.2 ansible
 - wget https://releases.hashicorp.com/terraform/0.11.13/terraform_0.11.13_linux_amd64.zip
