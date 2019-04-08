@@ -11,7 +11,7 @@ addons:
     - python-pip
     - unzip
 before_install:
-- export OLDATA=$GOPATH/data
+- export OLDATA=$GOPATH/test
 - export OLROOT=$GOPATH/src/github.com/Oneledger
 - export OLSCRIPT=$OLROOT/protocol/node/scripts
 - export OLSETUP=$OLROOT/protocol/node/setup
@@ -39,10 +39,10 @@ script:
 - docker exec travis-container ls -la /home/travis
 - docker stop travis-container
 - cd $GOPATH && cd .. && ls -la 
-- cd $GOPATH && ls -la
 - cd $GOPATH/bin && ls -la
 - sudo cp -R $GOPATH/bin/* /usr/local/bin/
 - cd $TRAVIS_BUILD_DIR/node && make fulltest 
+- cd $GOPATH && ls -la
 before_deploy:
 - sudo pip install netaddr ipaddr cryptography==2.2.2 ansible
 - wget https://releases.hashicorp.com/terraform/0.11.13/terraform_0.11.13_linux_amd64.zip
