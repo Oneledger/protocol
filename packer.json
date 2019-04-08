@@ -12,7 +12,7 @@
             "image": "debian",
             "commit": true,
             "changes": [
-                "USER root",
+                "USER {{user `app_user`}}",
                 "ENTRYPOINT [\"/usr/local/bin/fullnodeStartup\"]",
                 "VOLUME /home/{{user `app_user`}}/go"
             ]
