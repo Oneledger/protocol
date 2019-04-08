@@ -13,13 +13,18 @@ package data
 import (
 	"github.com/Oneledger/protocol/node/global"
 	"github.com/Oneledger/protocol/node/log"
-	"github.com/Oneledger/protocol/node/serial"
+	"github.com/Oneledger/protocol/node/serialize"
 	"github.com/tendermint/iavl"
 	"github.com/tendermint/tendermint/libs/db"
 )
 
 // Number of times we initialized since starting
 var count int
+var pSzlr serialize.Serializer // a serializer for persistent channel
+
+func init() {
+	pSzlr = serialize.GetSerializer(serialize.PERSISTENT)
+}
 
 type ChainState struct {
 	Name string
@@ -45,7 +50,8 @@ func NewChainState(name string, newType StorageType) *ChainState {
 
 // Do this only for the Delivery side
 func (state *ChainState) Set(key DatabaseKey, balance *Balance) {
-	buffer, err := serial.Serialize(balance, serial.PERSISTENT)
+
+	buffer, err := pSzlr.Serialize(balance)
 	if err != nil {
 		log.Fatal("Failed to Deserialize balance: ", err)
 	}
@@ -61,15 +67,14 @@ func (state *ChainState) FindAll() map[string]*Balance {
 	for i := int64(0); i < state.Delivered.Size(); i++ {
 		key, value := state.Delivered.GetByIndex(i)
 
-		var balance Balance
-		result, err := serial.Deserialize(value, balance, serial.PERSISTENT)
+		var balance = &Balance{}
+		err := pSzlr.Deserialize(value, balance)
 		if err != nil {
 			log.Fatal("Failed to Deserialize: FindAll", "i", i, "key", string(key))
 			continue
 		}
 
-		final := result.(Balance)
-		mapping[string(key)] = &final
+		mapping[string(key)] = balance
 	}
 	return mapping
 }
@@ -93,14 +98,14 @@ func (state *ChainState) Get(key DatabaseKey, lastCommit bool) *Balance {
 	}
 
 	if value != nil {
-		var balance *Balance
-		result, err := serial.Deserialize(value, balance, serial.PERSISTENT)
+		var balance = &Balance{}
+		err := pSzlr.Deserialize(value, balance)
 		if err != nil {
 			log.Fatal("Failed to deserialize Balance in chainstate: ", err)
 			return nil
 		}
-		final := result.(*Balance)
-		return final
+
+		return balance
 	}
 
 	// By definition, if a balance doesn't exist, it is zero

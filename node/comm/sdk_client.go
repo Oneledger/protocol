@@ -9,7 +9,6 @@ import (
 	"github.com/Oneledger/protocol/node/log"
 	"github.com/Oneledger/protocol/node/sdk"
 	"github.com/Oneledger/protocol/node/sdk/pb"
-	"github.com/Oneledger/protocol/node/serial"
 )
 
 func NewSDKClient() pb.SDKClient {
@@ -28,7 +27,7 @@ func NewSDKClient() pb.SDKClient {
 
 // Register the request
 func SDKRequest(base interface{}) interface{} {
-	buffer, err := serial.Serialize(base, serial.CLIENT)
+	buffer, err := clSerializer.Serialize(base)
 	if err != nil {
 		log.Fatal("Serialize Failed", "err", err)
 	}
@@ -45,13 +44,13 @@ func SDKRequest(base interface{}) interface{} {
 	}
 
 	var prototype interface{}
-	result, err := serial.Deserialize(response.Results, prototype, serial.CLIENT)
+	err = clSerializer.Deserialize(response.Results, &prototype)
 	if err != nil {
 		log.Dump("Response was", response.Results)
 		log.Fatal("Deserialize Failed", "err", err)
 	}
 
-	return result
+	return prototype
 }
 
 // Register the request

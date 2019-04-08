@@ -54,7 +54,7 @@ func IssueRequest(cmd *cobra.Command, args []string) {
 
 func BroadcastStatus(result *ctypes.ResultBroadcastTxCommit) {
 	if result == nil {
-		shared.Console.Error("Invalid Transacation")
+		shared.Console.Error("Invalid Transaction")
 
 	} else if result.CheckTx.Code != 0 {
 		if result.CheckTx.Code == 200 {

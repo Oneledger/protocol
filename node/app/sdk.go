@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/Oneledger/protocol/node/serialize"
 	"reflect"
 	"strconv"
 
@@ -49,6 +50,9 @@ type SDKSet struct {
 func init() {
 	serial.Register(SDKQuery{})
 	serial.Register(SDKSet{})
+
+	serialize.RegisterConcrete(new(SDKQuery), TagSDKQuery)
+	serialize.RegisterConcrete(new(SDKSet), TagSDKSet)
 }
 
 func (server SDKServer) Request(ctx context.Context, request *pb.SDKRequest) (*pb.SDKReply, error) {
@@ -60,12 +64,12 @@ func (server SDKServer) Request(ctx context.Context, request *pb.SDKRequest) (*p
 		return &pb.SDKReply{Results: []byte("Empty Data")}, nil
 	}
 
-	parameter, err := serial.Deserialize(request.Parameters, prototype, serial.CLIENT)
+	err = clSerializer.Deserialize(request.Parameters, &prototype)
 	if err != nil {
 		log.Fatal("Deserialized Failed", "err", err, "data", string(request.Parameters))
 	}
 
-	switch base := parameter.(type) {
+	switch base := prototype.(type) {
 	case *SDKQuery:
 		result = HandleQuery(*server.App, base.Path, base.Arguments)
 
@@ -93,7 +97,7 @@ func (server SDKServer) Request(ctx context.Context, request *pb.SDKRequest) (*p
 }
 
 func HandleTypeError(message string) []byte {
-	result, err := serial.Serialize(message, serial.CLIENT)
+	result, err := clSerializer.Serialize(message)
 	if err != nil {
 		log.Fatal("Failed to Serialize", "err", err)
 	}
@@ -218,19 +222,23 @@ func (server SDKServer) Send(ctx context.Context, request *pb.SendRequest) (*pb.
 
 func (server SDKServer) Tx(ctx context.Context, request *pb.TxRequest) (*pb.SDKReply, error) {
 	result := comm.Tx(request.Hash, request.Proof)
-	buff, err := serial.Serialize(result, serial.JSON)
+
+	buff, err := serialize.JSONSzr.Serialize(result)
 	if err != nil {
 		return nil, gstatus.Error(codes.Internal, err.Error())
 	}
+
 	return &pb.SDKReply{Results: buff}, nil
 }
 
 func (server SDKServer) TxSearch(ctx context.Context, request *pb.TxSearchRequest) (*pb.SDKReply, error) {
 	result := comm.Search(request.Query, request.Proof, int(request.Page), int(request.PerPage))
-	buff, err := serial.Serialize(result, serial.JSON)
+
+	buff, err := serialize.JSONSzr.Serialize(result)
 	if err != nil {
 		return nil, gstatus.Error(codes.Internal, err.Error())
 	}
+
 	return &pb.SDKReply{Results: buff}, nil
 }
 

@@ -8,16 +8,26 @@
 package comm
 
 import (
+	"github.com/Oneledger/protocol/node/serial"
 	"reflect"
 
 	"github.com/Oneledger/protocol/node/global"
 	"github.com/Oneledger/protocol/node/log"
-	"github.com/Oneledger/protocol/node/serial"
 	rpcclient "github.com/tendermint/tendermint/rpc/client"
 	ctypes "github.com/tendermint/tendermint/rpc/core/types"
 )
 
 var cachedClient rpcclient.Client
+
+var transactionPathsMap = map[string]bool{
+	"/applyValidators":     true,
+	"/createExSendRequest": true,
+	"/createSendRequest":   true,
+	"/createMintRequest":   true,
+	"/createSwapRequest":   true,
+	"/nodeName":            true,
+	"/signTransaction":     true,
+}
 
 // HTTP interface, allows Broadcast?
 // TODO: Want to switch client type, based on config or cli args.
@@ -198,8 +208,20 @@ func Query(path string, packet []byte) interface{} {
 		return nil
 	}
 
-	var prototype interface{}
-	result, err := serial.Deserialize(response.Response.Value, prototype, serial.CLIENT)
+	var result interface{}
+
+	_, isTransactionPath := transactionPathsMap[path]
+	if isTransactionPath {
+		// we continue to use old serializer for query handlers who
+		// return transaction interface, which is yet to be moved to
+		// the new serializer
+		var proto interface{}
+		result, err = serial.Deserialize(response.Response.Value, proto, serial.CLIENT)
+	} else {
+
+		err = clSerializer.Deserialize(response.Response.Value, &result)
+	}
+
 	if err != nil {
 		log.Error("Failed to deserialize Query:", "response", response.Response.Value)
 		return nil
