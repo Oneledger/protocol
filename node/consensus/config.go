@@ -34,8 +34,7 @@ func ParseConfig(cfg *config.Server) (NodeConfig, error) {
 
 // ParseConfig reads Tendermint level config and return as
 func parseConfig(cfg *config.Server) (NodeConfig, error) {
-	tmcfg := cfg.TMConfig()
-	tmcfg.RootDir = global.Current.ConsensusDir()
+	tmcfg := cfg.TMConfig(global.Current.ConsensusDir())
 	genesisProvider := func() (*types.GenesisDoc, error) {
 		return types.GenesisDocFromFile(filepath.Join(global.Current.ConsensusDir(), "config", "genesis.json"))
 	}

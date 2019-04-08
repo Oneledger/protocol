@@ -42,7 +42,7 @@ type Server struct {
 	Consensus *ConsensusConfig `toml:"consensus"`
 }
 
-func (cfg *Server) TMConfig() tmconfig.Config {
+func (cfg *Server) TMConfig(rootDir string) tmconfig.Config {
 	leveldb := cfg.Node.DB
 	if cfg.Node.DB == "goleveldb" {
 		leveldb = "leveldb"
@@ -53,7 +53,7 @@ func (cfg *Server) TMConfig() tmconfig.Config {
 	baseConfig.Moniker = cfg.Node.NodeName
 	baseConfig.FastSync = cfg.Node.FastSync
 	baseConfig.DBBackend = leveldb
-	baseConfig.DBPath = filepath.Join("consensus", "data")
+	baseConfig.DBPath = "data"
 	baseConfig.LogLevel = cfg.Consensus.LogLevel
 
 	p2pConfig := cfg.P2P.TMConfig()
@@ -63,17 +63,20 @@ func (cfg *Server) TMConfig() tmconfig.Config {
 		p2pConfig.ExternalAddress = cfg.Network.P2PAddress
 	}
 
+	csConfig := cfg.Consensus.TMConfig()
+	csConfig.WalPath = filepath.Join(baseConfig.DBPath, "cs.wal", "wal")
+
 	rpcConfig := tmconfig.DefaultRPCConfig()
 	rpcConfig.ListenAddress = cfg.Network.RPCAddress
 
 	nilMetricsConfig := tmconfig.InstrumentationConfig{Namespace: "metrics"}
 
-	return tmconfig.Config{
+	tmcfg := &tmconfig.Config{
 		BaseConfig: baseConfig,
 		RPC:        rpcConfig,
 		P2P:        p2pConfig,
 		Mempool:    cfg.Mempool.TMConfig(),
-		Consensus:  cfg.Consensus.TMConfig(),
+		Consensus:  csConfig,
 		TxIndex: &tmconfig.TxIndexConfig{
 			Indexer:      "kv",
 			IndexTags:    strings.Join(cfg.Node.IndexTags, ","),
@@ -81,6 +84,9 @@ func (cfg *Server) TMConfig() tmconfig.Config {
 		},
 		Instrumentation: &nilMetricsConfig,
 	}
+
+	tmcfg.SetRoot(rootDir)
+	return *tmcfg
 }
 
 // ReadFile accepts a filepath and returns the

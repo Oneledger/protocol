@@ -76,7 +76,7 @@ func TestServer_FileHandling(t *testing.T) {
 
 func TestTMConfig_Durations(t *testing.T) {
 	cfg := DefaultServerConfig()
-	tmcfg := cfg.TMConfig()
+	tmcfg := cfg.TMConfig("foobar")
 	tmcfgDefault := tmconfig.DefaultConfig()
 
 	int3Array := func(d Duration, td time.Duration, tdDefault time.Duration) [3]int64 {
