@@ -68,7 +68,7 @@
       accept_hostkey: yes 
   - name: set environment variable 
     lineinfile:
-      path: ~/.bashrc
+      path: /home/{{app_user}}/.bashrc
       line: "{{item}}"
       insertbefore: BOF
     with_items:
@@ -81,7 +81,7 @@
       - "export GO111MODULE=on"
       - "export PATH=$PATH:{{GOPATH}}/bin:{{GOLANG_INSTALL_DIR}}/bin"
   - name: source bashrc 
-    shell: . ~/.bashrc
+    shell: . /home/{{app_user}}/.bashrc
   - name: compile binary
     shell: chdir={{OLROOT}}/protocol/node make update install fulltest
   - name: move app binary artifact to user bin directory
