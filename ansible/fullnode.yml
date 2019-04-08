@@ -83,7 +83,7 @@
   - name: source bashrc 
     shell: . /home/{{app_user}}/.bashrc
   - name: compile binary
-    shell: chdir={{OLROOT}}/protocol/node make update install fulltest
+    shell: chdir={{OLROOT}}/protocol/node make update install
   - name: move app binary artifact to user bin directory
     shell: cp -R {{GOPATH}}/bin/* /usr/local/bin/  
   - name: change ownership of artifact to app user
