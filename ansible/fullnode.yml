@@ -5,7 +5,7 @@
     OLROOT: "{{GOPATH}}/src/github.com/Oneledger"
     OLDATA: "{{GOPATH}}/data"
     GOLANG_INSTALL_DIR: /usr/local/go
-    CONTAINER_OUTPUT_PATH: /output
+    CONTAINER_OUTPUT_PATH: "/home/{{app_user}}/output"
     compress_image: "{{ compress | default('false')}}"
   roles:
   - role: gantsign.golang
