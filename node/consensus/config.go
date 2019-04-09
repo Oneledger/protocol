@@ -5,6 +5,7 @@ import (
 
 	"github.com/Oneledger/protocol/node/config"
 	"github.com/Oneledger/protocol/node/global"
+	"github.com/Oneledger/protocol/node/log"
 	tmconfig "github.com/tendermint/tendermint/config"
 	tmlog "github.com/tendermint/tendermint/libs/log"
 	"github.com/tendermint/tendermint/node"
@@ -33,11 +34,18 @@ func ParseConfig(cfg *config.Server) (NodeConfig, error) {
 
 // ParseConfig reads Tendermint level config and return as
 func parseConfig(cfg *config.Server) (NodeConfig, error) {
-	tmcfg := cfg.TMConfig()
-	tmcfg.RootDir = global.Current.ConsensusDir()
+	tmcfg := cfg.TMConfig(global.Current.ConsensusDir())
 	genesisProvider := func() (*types.GenesisDoc, error) {
 		return types.GenesisDocFromFile(filepath.Join(global.Current.ConsensusDir(), "config", "genesis.json"))
 	}
+	// Pass the chainID to the application
+	doc, err := genesisProvider()
+	if err != nil {
+		log.Error("Failed to read genesis file", "err", err)
+		return NodeConfig{}, err
+	}
+	global.Current.SetChainID(doc)
+
 	privValidator := privval.LoadFilePV(tmcfg.PrivValidatorKeyFile(), tmcfg.PrivValidatorStateFile())
 
 	nodeKey, err := p2p.LoadNodeKey(tmcfg.NodeKeyFile())

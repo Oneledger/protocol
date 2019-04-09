@@ -298,7 +298,7 @@ func prepareSend(
 	return &action.Send_Absolute{
 		Base: action.Base{
 			Type:    action.SEND,
-			ChainId: ChainId,
+			ChainId: global.Current.ChainID(),
 			// GetSigners not implemneted
 			Signers:  nil,
 			Sequence: global.Current.Sequence,
