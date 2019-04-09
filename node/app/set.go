@@ -48,12 +48,9 @@ func HandleSet(app Application, path string, arguments map[string]interface{}) [
 
 func GetChain(chainName string) data.ChainType {
 	switch chainName {
-	case "OneLedger":
-		return data.ONELEDGER
-	case "BitCoin":
-		return data.BITCOIN
-	case "Ethereum":
-		return data.ETHEREUM
+	case "OneLedger" : return data.ONELEDGER
+	case "BitCoin" : return data.BITCOIN
+	case "Ethereum" : return data.ETHEREUM
 	}
 	return data.UNKNOWN
 }
@@ -131,7 +128,7 @@ func CreateRegisterRequest(identityName string, accountKey id.AccountKey, fee fl
 	reg := &action.Register{
 		Base: action.Base{
 			Type:     action.REGISTER,
-			ChainId:  global.Current.ChainID(),
+			ChainId:  ChainId,
 			Owner:    accountKey,
 			Signers:  action.GetSigners(accountKey), // TODO: Server-side? Then this is wrong
 			Sequence: global.Current.Sequence,
