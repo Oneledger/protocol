@@ -10,7 +10,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/tendermint/tendermint/libs/common"
 
-	"github.com/Oneledger/protocol/node/comm"
 	"github.com/Oneledger/protocol/node/data"
 	"github.com/Oneledger/protocol/node/global"
 	"github.com/Oneledger/protocol/node/id"
@@ -304,7 +303,8 @@ func (transaction *Contract) Execute(app interface{}) status.Code {
 				resultCompare := transaction.CreateCompareRequest(app, executeData.Owner, executeData.Name,
 					executeData.Address, executeData.Version, executeData.GetReference(), executeData.CallString, result)
 				if resultCompare != nil {
-					comm.Broadcast(resultCompare)
+					rpcclient := GetRPCClient(app)
+					rpcclient.BroadcastTxCommit(resultCompare)
 				}
 			}()
 		}

@@ -7,7 +7,6 @@ package main
 
 import (
 	"github.com/Oneledger/protocol/node/cmd/shared"
-	"github.com/Oneledger/protocol/node/comm"
 	"github.com/Oneledger/protocol/node/log"
 	"github.com/spf13/cobra"
 )
@@ -46,6 +45,6 @@ func IssueExecuteRequest(cmd *cobra.Command, args []string) {
 		return
 	}
 
-	result := comm.Broadcast(packet)
+	result, _ := rpcclient.BroadcastTxCommit(packet)
 	BroadcastStatus(result)
 }

@@ -654,12 +654,15 @@ func NextStage(app interface{}, chain data.ChainType, context FunctionValues, tx
 		Stage:       nextStage,
 	}
 	log.Debug("NextStage Swap", "swap", swap)
+
+	rpcclient := GetRPCClient(app)
+
 	if nextStage == WAIT_FOR_CHAIN {
 		waitTime := 3 * lockPeriod
-		DelayedTransaction(swap, waitTime)
+		DelayedTransaction(rpcclient, swap, waitTime)
 	} else {
 		waitTime := 1 * time.Second
-		DelayedTransaction(swap, waitTime)
+		DelayedTransaction(rpcclient, swap, waitTime)
 	}
 	return true, nil
 }

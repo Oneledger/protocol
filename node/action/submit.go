@@ -16,15 +16,15 @@ import (
 // Execute a transaction after a specific delay.
 // TODO: The node delays in a separate goroutine, but this should really be handled by the consensus engine,
 // so that the delay is in the mempool.
-func DelayedTransaction(transaction Transaction, waitTime time.Duration) {
+func DelayedTransaction(rpcclient comm.ClientInterface, transaction Transaction, waitTime time.Duration) {
 	go func() {
 		time.Sleep(waitTime)
-		BroadcastTransaction(transaction, false)
+		BroadcastTransaction(rpcclient, transaction, false)
 	}()
 }
 
 // Send out the transaction as an async broadcast
-func BroadcastTransaction(transaction Transaction, sync bool) {
+func BroadcastTransaction(rpcclient comm.ClientInterface, transaction Transaction, sync bool) {
 	log.Debug("Broadcast a transaction to the chain")
 
 	// Don't let the death of a client stop the node from running
@@ -38,9 +38,9 @@ func BroadcastTransaction(transaction Transaction, sync bool) {
 	// todo : fix the broadcast result handling
 	var result interface{}
 	if sync {
-		result = comm.Broadcast(packet)
+		result, _ = rpcclient.BroadcastTxCommit(packet)
 	} else {
-		result = comm.BroadcastAsync(packet)
+		result, _ = rpcclient.BroadcastTxAsync(packet)
 	}
 
 	log.Debug("Submitted Successfully", "result", result)

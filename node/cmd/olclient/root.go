@@ -9,6 +9,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/Oneledger/protocol/node/comm"
 	"os"
 
 	"github.com/Oneledger/protocol/node/cmd/shared"
@@ -22,6 +23,8 @@ var RootCmd = &cobra.Command{
 	Short: "OneLedger client",
 	Long:  "Client access to the OneLedger chain",
 }
+
+var rpcclient comm.ClientInterface
 
 func Execute() {
 	if err := RootCmd.Execute(); err != nil {
@@ -73,4 +76,6 @@ func environment() {
 	if err != nil {
 		log.Fatal("Failed to read config", "err", err)
 	}
+
+	rpcclient = comm.GetClient()
 }

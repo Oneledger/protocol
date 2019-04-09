@@ -9,7 +9,6 @@ import (
 	"os"
 
 	"github.com/Oneledger/protocol/node/cmd/shared"
-	"github.com/Oneledger/protocol/node/comm"
 	"github.com/Oneledger/protocol/node/log"
 	"github.com/spf13/cobra"
 )
@@ -52,6 +51,6 @@ func IssueInstallRequest(cmd *cobra.Command, args []string) {
 		os.Exit(-1)
 	}
 
-	result := comm.Broadcast(packet)
+	result, _ := rpcclient.BroadcastTxCommit(packet)
 	BroadcastStatus(result)
 }

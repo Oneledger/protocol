@@ -8,6 +8,7 @@ package app
 import (
 	"bytes"
 	"encoding/json"
+	"github.com/Oneledger/protocol/node/comm"
 	"time"
 
 	"github.com/Oneledger/protocol/node/abci"
@@ -48,6 +49,8 @@ type Application struct {
 	Status   data.Datastore // current state of any composite transactions (pending, verified, etc.)
 	Contract data.Datastore // contract for reuse.
 	Event    data.Datastore // Event for any action that need to be tracked
+
+	RPCClient comm.ClientInterface
 
 	SDK common.Service
 
@@ -446,7 +449,7 @@ func (app *Application) MakePayment(req RequestBeginBlock) {
 					if result != nil {
 						// TODO: check this later
 						log.Debug("Issuing Payment", "result", result)
-						action.DelayedTransaction(result, 0*time.Second)
+						action.DelayedTransaction(app.RPCClient, result, 0*time.Second)
 					}
 				} else {
 					log.Debug("Payment happens on a different node", "node",

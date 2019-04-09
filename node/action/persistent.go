@@ -6,6 +6,7 @@
 package action
 
 import (
+	"github.com/Oneledger/protocol/node/comm"
 	"github.com/Oneledger/protocol/node/data"
 	"github.com/Oneledger/protocol/node/global"
 	"github.com/Oneledger/protocol/node/id"
@@ -66,6 +67,11 @@ func GetBalances(app interface{}) *data.ChainState {
 func GetChainID(app interface{}) string {
 	id := app.(persist.Access).GetChainID().(string)
 	return id
+}
+
+func GetRPCClient(app interface{}) comm.ClientInterface {
+	rpcclient := app.(persist.Access).GetRPCClient().(comm.ClientInterface)
+	return rpcclient
 }
 
 func GetEvent(app interface{}) data.Datastore {

@@ -8,6 +8,7 @@ package main
 import (
 	"github.com/Oneledger/protocol/node/app" // Import namespace
 	"github.com/Oneledger/protocol/node/cmd/shared"
+	"github.com/Oneledger/protocol/node/comm"
 	"github.com/Oneledger/protocol/node/consensus"
 
 	"github.com/Oneledger/protocol/node/global"
@@ -99,6 +100,9 @@ func StartNode(cmd *cobra.Command, args []string) error {
 	}
 
 	global.Current.SetConsensusNode(service)
+
+	node.RPCClient = comm.GetClient()
+
 	log.Debug("Waiting forever...")
 	select {}
 }

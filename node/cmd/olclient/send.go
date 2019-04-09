@@ -48,7 +48,7 @@ func IssueRequest(cmd *cobra.Command, args []string) {
 		os.Exit(-1)
 	}
 
-	result := comm.Broadcast(packet)
+	result, _ := rpcclient.BroadcastTxCommit(packet)
 	BroadcastStatus(result)
 }
 
