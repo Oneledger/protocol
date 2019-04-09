@@ -1,22 +1,26 @@
 ---
 - hosts: all
-  become: yes
-  become_user: root
   vars:
     GOPATH: /home/{{app_user}}/go
     OLROOT: "{{GOPATH}}/src/github.com/Oneledger"
     OLDATA: "{{GOPATH}}/data"
     GOLANG_INSTALL_DIR: /usr/local/go
+    CONTAINER_OUTPUT_PATH: "/home/{{app_user}}/output"
     compress_image: "{{ compress | default('false')}}"
   roles:
   - role: gantsign.golang
     golang_gopath: "{{GOPATH}}"
     golang_version: 1.11.6
     golang_install_dir: "{{GOLANG_INSTALL_DIR}}"
+  environment:
+    GOPATH: "{{GOPATH}}"
+    OLTEST: "{{OLROOT}}/protocol/node/tests"
+    OLDATA: "{{OLDATA}}"
+    OLSETUP: "{{OLROOT}}/protocol/node/setup"
+    OLSCRIPT: "{{OLROOT}}/protocol/node/scripts"
+    OLROOT: "{{OLROOT}}"
+    PATH: "{{lookup('env', 'PATH')}}:/{{GOPATH}}/bin:{{GOLANG_INSTALL_DIR}}/bin"
   tasks:
-  - name: create a new user for app to run
-    user:
-      name: "{{app_user}}"
   - name: Install a list of dependent packages
     apt:
       name: "{{ packages }}"
@@ -30,19 +34,32 @@
       - nano
       - vim
       - curl
+  - name: add user group for the app
+    group:
+      name: "{{app_user}}"
+  - name: add user to run the app 
+    user:
+      name: "{{app_user}}"
+      group: "{{app_user}}"
+      append: yes
   - name: create directory for source code & app data
     file:
       path: "{{OLROOT}}/protocol"
       state: directory
       mode: 0755
       recurse: yes
-    loop:
-      - "{{OLROOT}}/protocol"
-  - name : create directory non recurse 
+      owner: "{{app_user}}"
+      group: "{{app_user}}"
+  - name: create directory non recurse 
     file: 
-      path: "{{OLDATA}}"
+      path: "{{item}}"
       state: directory
       mode: 0755
+      owner: "{{app_user}}"
+      group: "{{app_user}}"
+    with_items:
+      - "{{OLDATA}}"
+      - "{{CONTAINER_OUTPUT_PATH}}"
   - name: clone repo 
     git:
       repo: https://github.com/Oneledger/protocol.git
@@ -51,12 +68,12 @@
       accept_hostkey: yes 
   - name: set environment variable 
     lineinfile:
-      path: ~/.bashrc
+      path: /home/{{app_user}}/.bashrc
       line: "{{item}}"
       insertbefore: BOF
     with_items:
       - "export GOPATH={{GOPATH}}"
-      - "export OLROOT={{GOPATH}}/src/github.com/Oneledger"
+      - "export OLROOT={{OLROOT}}"
       - "export OLDATA={{OLDATA}}"
       - "export OLSCRIPT={{OLROOT}}/protocol/node/scripts"
       - "export OLSETUP={{OLROOT}}/protocol/node/setup"
@@ -64,19 +81,17 @@
       - "export GO111MODULE=on"
       - "export PATH=$PATH:{{GOPATH}}/bin:{{GOLANG_INSTALL_DIR}}/bin"
   - name: source bashrc 
-    shell: . ~/.bashrc
+    shell: . /home/{{app_user}}/.bashrc
   - name: compile binary
     shell: chdir={{OLROOT}}/protocol/node make update install
-    environment:
-      GOPATH: "{{GOPATH}}"
-      OLTEST: "{{OLROOT}}/protocol/node/tests"
-      OLDATA: "{{OLDATA}}"
-      OLSETUP: "{{OLROOT}}/protocol/node/setup"
-      OLSCRIPT: "{{OLROOT}}/protocol/node/scripts"
-      OLROOT: "{{GOPATH}}/src/github.com/Oneledger"
-      PATH: "{{lookup('env', 'PATH')}}:/{{GOPATH}}/bin:{{GOLANG_INSTALL_DIR}}/bin"
   - name: move app binary artifact to user bin directory
-    shell: mv {{GOPATH}}/bin/* /usr/local/bin/     
+    shell: cp -R {{GOPATH}}/bin/* /usr/local/bin/  
+  - name: change ownership of artifact to app user
+    file:
+      dest: "{{GOPATH}}"
+      owner: "{{app_user}}"
+      group: "{{app_user}}"
+      recurse: true
   - name: create temp genesis
     copy:
       dest: "{{OLDATA}}/genesis.json"
@@ -190,6 +205,7 @@
         fullnodeSetup
         olmonitor start olvm execute --root {{OLDATA}} >> {{OLDATA}}/olvm.log 2>&1 &
         olfullnode node --root {{OLDATA}} >> {{OLDATA}}/olfullnode.log 2>&1 &
+        cp -R {{GOPATH}}/* {{CONTAINER_OUTPUT_PATH}}
         exec "$@"
   - name: create start quick script to start node 
     copy:
