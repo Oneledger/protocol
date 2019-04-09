@@ -7,6 +7,7 @@ package data
 
 import (
 	"encoding/hex"
+	"github.com/Oneledger/protocol/node/serialize"
 	"math/big"
 	"runtime/debug"
 	"strconv"
@@ -75,7 +76,7 @@ type Currency struct {
 func (c Currency) Key() string {
 	hasher := ripemd160.New()
 
-	buffer, err := serial.Serialize(c, serial.JSON)
+	buffer, err := serialize.JSONSzr.Serialize(c)
 	if err != nil {
 		log.Fatal("hash serialize failed", "err", err)
 	}

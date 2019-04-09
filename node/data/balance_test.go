@@ -2,14 +2,17 @@ package data
 
 import (
 	"fmt"
+	"github.com/Oneledger/protocol/node/serialize"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 
 	"github.com/Oneledger/protocol/node/log"
-	"github.com/Oneledger/protocol/node/serial"
 )
 
+func init(){
+	pSzlr = serialize.GetSerializer(serialize.PERSISTENT)
+}
 func xTestNewBalance(t *testing.T) {
 
 	a := NewBalanceFromInt(100, "VT")
@@ -24,13 +27,13 @@ func xTestNewBalance(t *testing.T) {
 
 func TestSerialize(t *testing.T) {
 	a := NewBalanceFromString("10", "OLT")
-	buffer, err := serial.Serialize(a, serial.PERSISTENT)
+	buffer, err := pSzlr.Serialize(a)
 	if err != nil {
 		log.Fatal("Serialization Failed", "err", err)
 	}
-	var proto Balance
+	var result = &Balance{}
 
-	result, err := serial.DumpDeserialize(buffer, proto, serial.PERSISTENT)
+	err = pSzlr.Deserialize(buffer, result)
 	if err != nil {
 		log.Fatal("Deserialized failed", "err", err)
 	}

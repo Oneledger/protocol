@@ -6,22 +6,28 @@ package data
 
 import (
 	"github.com/Oneledger/protocol/node/serial"
+	"github.com/Oneledger/protocol/node/serialize"
 )
 
 // Wrap the amount with owner information
 type Balance struct {
 	// Address id.Address
 	Amounts map[int]Coin
+	coinOrder []int // this field helps to maintain order during serialization
+					// so that all the nodes have the same hash of account balances
 }
 
 func init() {
 	serial.Register(Balance{})
+
+	serialize.RegisterConcrete(new(Balance), TagBalance)
 }
 
 func NewBalance() *Balance {
 	amounts := make(map[int]Coin, 0)
 	result := &Balance{
 		Amounts: amounts,
+		coinOrder: []int{},
 	}
 	return result
 }
@@ -58,6 +64,7 @@ func (b *Balance) AddCoin(coin Coin) {
 	result := b.FindCoin(coin.Currency)
 	if result == nil {
 		b.Amounts[coin.Currency.Id] = coin
+		b.coinOrder = append(b.coinOrder, coin.Currency.Id)
 		return
 	}
 	b.Amounts[coin.Currency.Id] = result.Plus(coin)
@@ -70,6 +77,7 @@ func (b *Balance) MinusCoin(coin Coin) {
 		// TODO: This results in a negative coin, which is what was asked for...
 		base := NewCoinFromInt(0, coin.Currency.Name)
 		b.Amounts[coin.Currency.Id] = base.Minus(coin)
+		b.coinOrder = append(b.coinOrder, coin.Currency.Id)
 		return
 	}
 	b.Amounts[coin.Currency.Id] = result.Minus(coin)

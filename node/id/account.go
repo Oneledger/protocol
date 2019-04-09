@@ -7,6 +7,7 @@ package id
 
 import (
 	"fmt"
+	"github.com/Oneledger/protocol/node/serialize"
 	"reflect"
 	"strings"
 
@@ -149,6 +150,12 @@ type Account interface {
 func init() {
 	var prototype Account
 	serial.RegisterInterface(&prototype)
+
+	serialize.RegisterInterface(new(Account))
+	serialize.RegisterConcrete(new(AccountBase), TagAccountBase)
+	serialize.RegisterConcrete(new(AccountEthereum), TagAccountEthereum)
+	serialize.RegisterConcrete(new(AccountBitcoin), TagAccountBitcoin)
+	serialize.RegisterConcrete(new(AccountOneLedger), TagAccountOneLedger)
 }
 
 func getAccountType(chain data.ChainType) string {

@@ -7,6 +7,7 @@ package id
 
 import (
 	"bytes"
+	"github.com/Oneledger/protocol/node/serialize"
 	"strings"
 
 	"github.com/Oneledger/protocol/node/data"
@@ -40,6 +41,7 @@ type Identity struct {
 
 func init() {
 	serial.Register(Identity{})
+	serialize.RegisterConcrete(new(Identity), TagIdentity)
 }
 
 // Initialize or reconnect to the database
