@@ -151,7 +151,7 @@ type NodeConfig struct {
 	DB       string `toml:"db" desc:"Specify what backend database to use (goleveldb|cleveldb)"`
 	// List of transaction tags to index in the db, allows them to be searched
 	// by this parameter
-	IndexTags []string `toml:"index_tags" desc:"List of transaction tags to index in the database, allowsx them to be searched by the specified tags"`
+	IndexTags []string `toml:"index_tags" desc:"List of transaction tags to index in the database, allows them to be searched by the specified tags"`
 	// Tells the indexer to index all available tags, IndexTags has precedence
 	// over IndexAllTAgs
 	IndexAllTags bool `toml:"index_all_tags" desc:"Tells the indexer to index all available tags, IndexTags has precedence over IndexAllTags"`
