@@ -1,2 +1,4 @@
 gcp/.terraform
 ansible/*.retry
+
+protocol/
