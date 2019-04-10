@@ -7,10 +7,11 @@ package data
 
 import (
 	"encoding/hex"
-	"github.com/Oneledger/protocol/node/serialize"
 	"math/big"
 	"runtime/debug"
 	"strconv"
+
+	"github.com/Oneledger/protocol/node/serialize"
 
 	"golang.org/x/crypto/ripemd160"
 
@@ -32,11 +33,11 @@ func init() {
 type Coins []Coin
 
 // TODO: These need to be driven from a domain database, also they are many-to-one with chains
-var Currencies map[string]Currency = map[string]Currency{
-	"OLT": Currency{"OLT", ONELEDGER, 0},
-	"BTC": Currency{"BTC", BITCOIN, 1},
-	"ETH": Currency{"ETH", ETHEREUM, 2},
-	"VT":  Currency{"VT", ONELEDGER, 3},
+var currencies map[string]Currency = map[string]Currency{
+	OLT: Currency{OLT, ONELEDGER, 0},
+	BTC: Currency{BTC, BITCOIN, 1},
+	ETH: Currency{ETH, ETHEREUM, 2},
+	VT:  Currency{VT, ONELEDGER, 3},
 }
 
 type Extra struct {
@@ -47,13 +48,13 @@ type Extra struct {
 
 // TODO: Separated from Currency to avoid serializing big floats and giving out this info
 var CurrenciesExtra map[string]Extra = map[string]Extra{
-	"OLT": Extra{big.NewFloat(1000000000000000000), 6, 'f'},
-	"BTC": Extra{big.NewFloat(1), 0, 'f'}, // TODO: This needs to be set correctly
-	"ETH": Extra{big.NewFloat(1), 0, 'f'}, // TODO: This needs to be set correctly
-	"VT":  Extra{big.NewFloat(1), 0, 'f'},
+	OLT: Extra{big.NewFloat(1000000000000000000), 6, 'f'},
+	BTC: Extra{big.NewFloat(1), 0, 'f'}, // TODO: This needs to be set correctly
+	ETH: Extra{big.NewFloat(1), 0, 'f'}, // TODO: This needs to be set correctly
+	VT:  Extra{big.NewFloat(1), 0, 'f'},
 }
 
-var defaultBase *big.Float = big.NewFloat(1)
+var defaultBase = big.NewFloat(1)
 
 func GetBase(currency string) *big.Float {
 	return GetExtra(currency).Units
@@ -66,6 +67,10 @@ func GetExtra(currency string) Extra {
 	return CurrenciesExtra["OLT"]
 }
 
+func GetCurrencies() map[string]Currency {
+	return currencies
+}
+
 type Currency struct {
 	Name  string    `json:"name"`
 	Chain ChainType `json:"chain"`
@@ -73,36 +78,40 @@ type Currency struct {
 }
 
 // Key sets a encodable key for the currency entry, we may end up using currencyCodes instead.
-func (c Currency) Key() string {
+func (c Currency) Key() (string, error) {
 	hasher := ripemd160.New()
 
 	buffer, err := serialize.JSONSzr.Serialize(c)
 	if err != nil {
 		log.Fatal("hash serialize failed", "err", err)
 	}
+
 	_, err = hasher.Write(buffer)
 	if err != nil {
 		log.Fatal("hasher failed", "err", err)
 	}
+
 	buffer = hasher.Sum(nil)
 
-	return hex.EncodeToString(buffer)
+	return hex.EncodeToString(buffer), nil
 }
 
 // Look up the currency
 func NewCurrency(currency string) Currency {
-	return Currencies[currency]
+	return currencies[currency]
 }
 
 func NewCoinFromUnits(amount int64, currency string) Coin {
 	value := units2bint(amount, GetBase(currency))
+
 	coin := Coin{
-		Currency: Currencies[currency],
+		Currency: currencies[currency],
 		Amount:   value,
 	}
 	if !coin.IsValid() {
 		log.Warn("Create Invalid Coin", "coin", coin)
 	}
+
 	return coin
 }
 
@@ -110,39 +119,45 @@ func NewCoinFromUnits(amount int64, currency string) Coin {
 func NewCoinFromInt(amount int64, currency string) Coin {
 
 	value := int2bint(amount, GetBase(currency))
+
 	coin := Coin{
-		Currency: Currencies[currency],
+		Currency: currencies[currency],
 		Amount:   value,
 	}
 	if !coin.IsValid() {
 		log.Warn("Create Invalid Coin", "coin", coin)
 	}
+
 	return coin
 }
 
 // Create a coin from floating point
 func NewCoinFromFloat(amount float64, currency string) Coin {
 	value := float2bint(amount, GetBase(currency))
+
 	coin := Coin{
-		Currency: Currencies[currency],
+		Currency: currencies[currency],
 		Amount:   value,
 	}
 	if !coin.IsValid() {
 		log.Warn("Create Invalid Coin", "amount", amount, "coin", coin)
 	}
+
 	return coin
 }
 
 // Create a coin from string
 func NewCoinFromString(amount string, currency string) Coin {
 	value := parseString(amount, GetBase(currency))
+
 	coin := Coin{
-		Currency: Currencies[currency],
+		Currency: currencies[currency],
 		Amount:   value,
 	}
 	if !coin.IsValid() {
 		log.Warn("Create Invalid Coin", "coin", coin)
 	}
+
 	return coin
 }
 
@@ -335,7 +350,7 @@ func (coin Coin) IsValid() bool {
 		return false
 	}
 
-	if _, ok := Currencies[coin.Currency.Name]; ok {
+	if _, ok := currencies[coin.Currency.Name]; ok {
 		return true
 	}
 
@@ -367,8 +382,8 @@ func (coin Coin) Minus(value Coin) Coin {
 	}
 
 	if coin.Currency.Name != value.Currency.Name {
-		//log.Error("Mismatching Currencies", "coin", coin, "value", value)
-		log.Fatal("Mismatching Currencies", "coin", coin, "value", value)
+		//log.Error("Mismatching currencies", "coin", coin, "value", value)
+		log.Fatal("Mismatching currencies", "coin", coin, "value", value)
 		return coin
 	}
 
@@ -388,8 +403,8 @@ func (coin Coin) Plus(value Coin) Coin {
 	}
 
 	if coin.Currency.Name != value.Currency.Name {
-		//log.Error("Mismatching Currencies", "coin", coin, "value", value)
-		log.Fatal("Mismatching Currencies", "coin", coin, "value", value)
+		//log.Error("Mismatching currencies", "coin", coin, "value", value)
+		log.Fatal("Mismatching currencies", "coin", coin, "value", value)
 		return coin
 	}
 
@@ -409,8 +424,8 @@ func (coin Coin) Quotient(value Coin) Coin {
 	}
 
 	if coin.Currency.Name != value.Currency.Name {
-		//log.Error("Mismatching Currencies", "coin", coin, "value", value)
-		log.Fatal("Mismatching Currencies", "coin", coin, "value", value)
+		//log.Error("Mismatching currencies", "coin", coin, "value", value)
+		log.Fatal("Mismatching currencies", "coin", coin, "value", value)
 		return coin
 	}
 
@@ -446,8 +461,8 @@ func (coin Coin) Multiply(value Coin) Coin {
 	}
 
 	if coin.Currency.Name != value.Currency.Name {
-		//log.Error("Mismatching Currencies", "coin", coin, "value", value)
-		log.Fatal("Mismatching Currencies", "coin", coin, "value", value)
+		//log.Error("Mismatching currencies", "coin", coin, "value", value)
+		log.Fatal("Mismatching currencies", "coin", coin, "value", value)
 		return coin
 	}
 

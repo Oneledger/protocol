@@ -50,10 +50,10 @@ func CreatePaymentRequest(app Application, quotient data.Coin, height int64) act
 
 	/*
 		inputs = append(inputs,
-			action.NewSendInput(payment.AccountKey(), paymentBalance.GetAmountByName("OLT")))
+			action.NewSendInput(payment.AccountKey(), paymentBalance.GetCoinByName("OLT")))
 
 		outputs = append(outputs,
-			action.NewSendOutput(payment.AccountKey(), paymentBalance.GetAmountByName("OLT").Minus(totalPayment)))
+			action.NewSendOutput(payment.AccountKey(), paymentBalance.GetCoinByName("OLT").Minus(totalPayment)))
 	*/
 
 	// Create base transaction

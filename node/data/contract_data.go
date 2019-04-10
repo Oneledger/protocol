@@ -36,7 +36,12 @@ func (data *ContractData) Validate(address []byte) bool {
 
 func (data *ContractData) UpdateByJSONData(in []byte) error {
 	var raw map[string]*json.RawMessage
-	json.Unmarshal(in, &raw)
+
+	err := json.Unmarshal(in, &raw)
+	if err != nil {
+		return err
+	}
+
 	for k, v := range raw {
 		value, _ := json.Marshal(v)
 		data.Data[k] = value
@@ -48,6 +53,7 @@ func (data *ContractData) UpdateByJSONData(in []byte) error {
 func isMap(jsonMessage *json.RawMessage) bool {
 	in, _ := json.Marshal(jsonMessage)
 	var raw map[string]*json.RawMessage
+
 	json.Unmarshal(in, &raw)
 	return len(raw) != 0
 }

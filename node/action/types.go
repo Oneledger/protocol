@@ -9,6 +9,7 @@ package action
 
 import (
 	"bytes"
+
 	"github.com/Oneledger/protocol/node/comm"
 	"github.com/Oneledger/protocol/node/serialize"
 	"github.com/pkg/errors"
@@ -87,13 +88,13 @@ func CheckBalance(app interface{}, accountKey id.AccountKey, amount data.Coin) b
 		log.Debug("New Balance", "key", accountKey, "amount", amount, "balance", balance)
 		interim := data.NewBalanceFromInt(0, amount.Currency.Name)
 		balance = interim
-		if !balance.GetAmountByName(amount.Currency.Name).Equals(amount) {
+		if !balance.GetCoinByName(amount.Currency.Name).Equals(amount) {
 			return false
 		}
 		return true
 	}
 
-	if !balance.GetAmountByName(amount.Currency.Name).Equals(amount) {
+	if !balance.GetCoinByName(amount.Currency.Name).Equals(amount) {
 		log.Warn("Balance Mismatch", "key", accountKey, "amount", amount, "balance", balance)
 		return false
 	}

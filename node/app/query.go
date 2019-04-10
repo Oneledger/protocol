@@ -13,7 +13,7 @@ import (
 	"github.com/Oneledger/protocol/node/comm"
 
 	"github.com/Oneledger/protocol/node/action"
-	"github.com/Oneledger/protocol/node/chains/driver"
+	chaindriver "github.com/Oneledger/protocol/node/chains/driver"
 
 	"github.com/Oneledger/protocol/node/convert"
 	"github.com/Oneledger/protocol/node/data"
@@ -166,7 +166,7 @@ func HandleApplyValidatorQuery(application Application, arguments map[string]int
 	stake := data.NewCoinFromFloat(amount, "VT")
 
 	if identity.AccountKey.String() != nodeAccount.AccountKey().String() {
-		if nodeAccountBalance.GetAmountByName("VT").LessThanCoin(tenVT) {
+		if nodeAccountBalance.GetCoinByName("VT").LessThanCoin(tenVT) {
 			return "Node account has less than 10 VTs. It can not run applyValidator for other identities."
 		}
 	}
@@ -185,7 +185,7 @@ func HandleApplyValidatorQuery(application Application, arguments map[string]int
 			return "Node account is not a validator."
 		}
 
-		stake = identityBalance.GetAmountByName("VT")
+		stake = identityBalance.GetCoinByName("VT")
 
 	} else {
 
@@ -193,7 +193,7 @@ func HandleApplyValidatorQuery(application Application, arguments map[string]int
 			return "Missing an amount argument."
 		}
 
-		if identityBalance.GetAmountByName("VT").LessThanCoin(stake) {
+		if identityBalance.GetCoinByName("VT").LessThanCoin(stake) {
 			return "Validator Token is not enough."
 		}
 
@@ -384,7 +384,7 @@ func HandleCreateMintRequest(application Application, arguments map[string]inter
 	amount := conv.GetCoinFromFloat(args.Amount, args.Currency)
 
 	log.Debug("Getting TestMint Account Balances")
-	zeroBalance := Balance(application, zero).(*data.Balance).GetAmountByName(args.Currency)
+	zeroBalance := Balance(application, zero).(*data.Balance).GetCoinByName(args.Currency)
 
 	if &zeroBalance == nil {
 		log.Warn("Missing Balances", "zero", zero)

@@ -155,7 +155,7 @@ func (convert *Convert) GetInt(value string) int {
 
 func (convert *Convert) GetChainFromCurrency(value string) data.ChainType {
 	currencyName := convert.GetCurrency(value)
-	currency, ok := data.Currencies[currencyName]
+	currency, ok := data.GetCurrencies()[currencyName]
 	if ok {
 		return currency.Chain
 	}

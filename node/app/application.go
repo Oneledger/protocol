@@ -420,7 +420,7 @@ func (app *Application) MakePayment(req RequestBeginBlock) {
 		log.Debug("Database uninitialized", "height", height, "recHeight", paymentRecordBlockHeight)
 	}
 
-	if (!paymentBalance.GetAmountByName("OLT").LessThanEqual(0)) && paymentRecordBlockHeight == -1 {
+	if (!paymentBalance.GetCoinByName("OLT").LessThanEqual(0)) && paymentRecordBlockHeight == -1 {
 		if len(app.Validators.Approved) < 1 || app.Validators.SelectedValidator.Name == "" {
 			log.Debug("Missing Validator Information")
 			return
@@ -430,7 +430,7 @@ func (app *Application) MakePayment(req RequestBeginBlock) {
 		selectedValidatorIdentity := app.Validators.SelectedValidator
 
 		numberValidators := len(approvedValidatorIdentities)
-		quotient := paymentBalance.GetAmountByName("OLT").Divide(numberValidators)
+		quotient := paymentBalance.GetCoinByName("OLT").Divide(numberValidators)
 
 		if int(quotient.Amount.Int64()) > 0 {
 			//store payment record in database
