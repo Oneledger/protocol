@@ -50,6 +50,7 @@ status: check
 utest:
 	go test github.com/Oneledger/protocol/node/serialize -coverprofile a.out
 	go test github.com/Oneledger/protocol/node/data -coverprofile a.out
+	go test github.com/Oneledger/protocol/node/convert -coverprofile a.out
 #
 # System Testing, bring up everything
 #
