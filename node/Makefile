@@ -48,8 +48,8 @@ status: check
 # Run any of the unit tests
 #
 utest:
-	go test -v ./serialize
-	go test -v ./data
+	go test github.com/Oneledger/protocol/node/serialize -coverprofile a.out
+	go test github.com/Oneledger/protocol/node/data -coverprofile a.out
 #
 # System Testing, bring up everything
 #
