@@ -3,6 +3,8 @@
   remote_user: "{{remote_user}}"
   become: true
   become_user: root
+  roles:
+  - logstash 
   tasks:
   - name: create a new user for app to run
     user:

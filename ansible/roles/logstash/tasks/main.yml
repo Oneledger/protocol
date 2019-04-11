@@ -1,0 +1,54 @@
+---
+# tasks file for logstash
+- name: add java repo into source list 
+  apt_repository:
+    repo: ppa:openjdk-r/ppa
+    state: present
+- name: install java and other dependency for logstash
+  apt:
+    name: ["openjdk-8-jdk", "apt-transport-https"] 
+    update_cache: yes
+- name: install and download public signing key for logstash
+  shell: wget -qO - https://artifacts.elastic.co/GPG-KEY-elasticsearch | sudo apt-key add -
+- name: Save the repository definition to /etc/apt/sources.list.d/elastic-7.x.list
+  shell: echo "deb https://artifacts.elastic.co/packages/7.x/apt stable main" | sudo tee -a /etc/apt/sources.list.d/elastic-7.x.list
+- name: install logstash
+  apt:
+    name: logstash
+    update_cache: yes
+- name: install logstash journald plugin
+  shell: /usr/share/logstash/bin/logstash-plugin install logstash-input-journald
+  become: true
+  become_user: root
+- name: add logstash configuration file
+  copy:
+    dest: /etc/logstash/conf.d/journald_filter.conf
+    mode: 0744
+    owner: "root"
+    group: "root" 
+    content: |
+        input {
+            journald {
+                lowercase => true
+                seekto => "tail"
+                thisboot => true
+                type => "systemd"
+                path => "/var/run/log/journal"
+            }
+        }
+
+        filter {
+            mutate {
+                rename => ["_uid","id"]
+            }
+        }
+
+        output {
+            elasticsearch { 
+                hosts => ["https://search-oneledger-loading-testing-vla6ox4imspr4dhxmdjqet5j74.us-east-1.es.amazonaws.com:443"] 
+            }
+        }    
+- name: restart logstash
+  service:
+    name: logstash
+    state: restarted
