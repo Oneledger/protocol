@@ -86,6 +86,25 @@
       group: "{{app_user}}"
   - name: generate consensus file for seed node 
     shell: chdir={{APP_HOME}} olfullnode init --root {{APP_HOME}} --genesis {{APP_HOME}}/genesis.json
+# replace application ports and address
+- hosts: seed_node:validator_node
+  remote_user: "{{remote_user}}"
+  become: true
+  become_user: root  
+  vars:
+    internal_ip: "{{ ansible_all_ipv4_addresses | ipaddr('private') | first }}"
+  tasks:
+  - name: set fullnode specific configuration 
+    lineinfile:
+      path: "{{APP_HOME}}/config.toml"
+      regexp: '{{item.regexp}}'
+      line: "  {{item.line}}"
+    with_items:
+    - { regexp: "rpc_address", line: "rpc_address = \"tcp://{{internal_ip}}:26604\""}
+    - { regexp: "p2p_address = \"tcp://", line: "p2p_address = \"tcp://{{internal_ip}}:26605\""}
+    - { regexp: "node_name", line: "node_name = \"{{node_name}}\""}
+    - { regexp: "external_p2p_address", line: "external_p2p_address = \"tcp://{{inventory_hostname}}:26605\""}
+    - { regexp: "log_output", line: "log_output = \"stdout\""}
 # set up validator node config.toml
 - hosts: validator_node
   remote_user: "{{remote_user}}"
@@ -124,19 +143,7 @@
   remote_user: "{{remote_user}}"
   become: true
   become_user: root  
-  vars:
-    internal_ip: "{{ ansible_all_ipv4_addresses | ipaddr('private') | first }}"
   tasks:
-  - name: set fullnode specific configuration 
-    lineinfile:
-      path: "{{APP_HOME}}/config.toml"
-      regexp: '{{item.name}}'
-      line: "  {{item.value}}"
-    with_items:
-    - { name: "rpc_address", value: "rpc_address = \"tcp://{{internal_ip}}:26604\""}
-    - { name: "p2p_address = \"tcp://", value: "p2p_address = \"tcp://{{internal_ip}}:26605\""}
-    - { name: "node_name", value: "node_name = \"{{node_name}}\""}
-    - { name: "external_p2p_address", value: "external_p2p_address = \"tcp://{{inventory_hostname}}:26605\""}
   - name: set persistent peers
     lineinfile:
       path: "{{APP_HOME}}/config.toml"
