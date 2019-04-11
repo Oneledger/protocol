@@ -48,6 +48,23 @@
                 hosts => ["https://search-oneledger-loading-testing-vla6ox4imspr4dhxmdjqet5j74.us-east-1.es.amazonaws.com:443"] 
             }
         }    
+- name: create serviced file for logstash
+  copy:
+    dest: /etc/systemd/system/logstash.service
+    mode: 0744
+    owner: "root"
+    group: "root" 
+    content: |
+        [Unit]
+        Description=logstash
+        After=network.target
+
+        [Service]
+        User=root
+        ExecStart=/usr/share/logstash/bin/logstash "--path.settings" "/etc/logstash"
+        Restart=always
+        [Install]
+        WantedBy=multi-user.target
 - name: restart logstash
   service:
     name: logstash
