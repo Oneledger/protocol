@@ -3,8 +3,11 @@
   remote_user: "{{remote_user}}"
   become: true
   become_user: root
+  vars:
+    logging: "{{ enable_logging | default('false')}}"
   roles:
-  - logstash 
+  - role: logstash 
+    when: logging == true
   tasks:
   - name: create a new user for app to run
     user:

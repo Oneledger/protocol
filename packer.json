@@ -53,6 +53,7 @@
             "type": "ansible-local",
             "playbook_file": "ansible/fullnode.yml",
             "command": "ansible-playbook -vvv",
+            "role_paths": ["ansible/roles/logstash"],
             "extra_arguments": ["--extra-vars \"compress={{user `compress`}} app_user={{user `app_user`}} app_version={{user `version`}}\""]
         }
     ],

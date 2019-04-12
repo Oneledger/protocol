@@ -1,5 +1,7 @@
 ---
 - hosts: all
+  become: true
+  become_user: root
   vars:
     GOPATH: /home/{{app_user}}/go
     OLROOT: "{{GOPATH}}/src/github.com/Oneledger"
@@ -7,7 +9,9 @@
     GOLANG_INSTALL_DIR: /usr/local/go
     CONTAINER_OUTPUT_PATH: "/home/{{app_user}}/output"
     compress_image: "{{ compress | default('false')}}"
+    logging: "{{ enable_logging | default('false')}}"
   roles:
+  - logstash 
   - role: gantsign.golang
     golang_gopath: "{{GOPATH}}"
     golang_version: 1.11.6
