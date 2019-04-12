@@ -11,7 +11,8 @@
     compress_image: "{{ compress | default('false')}}"
     logging: "{{ enable_logging | default('false')}}"
   roles:
-  - logstash 
+  - role: logstash
+    when: logging == "true" 
   - role: gantsign.golang
     golang_gopath: "{{GOPATH}}"
     golang_version: 1.11.6

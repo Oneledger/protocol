@@ -1,23 +1,27 @@
 ---
 # tasks file for logstash
-
 - name: install java and other dependency for logstash
   apt:
-    name: ["default-jre", "apt-transport-https", "wget"] 
+    name: ["default-jre", "apt-transport-https"] 
     update_cache: yes
-- name: install and download public signing key for logstash
-  shell: wget -qO - https://artifacts.elastic.co/GPG-KEY-elasticsearch | apt-key add -
+- name: download public signing key for logstash
+  apt_key:
+    url: https://artifacts.elastic.co/GPG-KEY-elasticsearch
+    state: present
 - name: Save the repository definition to /etc/apt/sources.list.d/elastic-7.x.list
-  shell: echo "deb https://artifacts.elastic.co/packages/7.x/apt stable main" | tee -a /etc/apt/sources.list.d/elastic-7.x.list
+  apt_repository: 
+    repo: 'deb https://artifacts.elastic.co/packages/7.x/apt stable main' 
+    state: present 
+    filename: /etc/apt/sources.list.d/elastic-7.x.list 
+    update_cache: yes
 - name: install logstash
   apt:
     name: logstash
     update_cache: yes
 - name: install logstash journald plugin
   shell: /usr/share/logstash/bin/logstash-plugin install logstash-input-journald
-  become: true
-  become_user: root
 - name: add logstash configuration file
+  notify: restart logstash
   copy:
     dest: /etc/logstash/conf.d/journald_filter.conf
     mode: 0744
@@ -33,19 +37,18 @@
                 path => "/var/run/log/journal"
             }
         }
-
         filter {
             mutate {
                 rename => ["_uid","id"]
             }
         }
-
         output {
             elasticsearch { 
                 hosts => ["https://search-oneledger-loading-testing-vla6ox4imspr4dhxmdjqet5j74.us-east-1.es.amazonaws.com:443"] 
             }
         }    
 - name: create serviced file for logstash
+  notify: restart logstash
   copy:
     dest: /etc/systemd/system/logstash.service
     mode: 0744
@@ -62,7 +65,3 @@
         Restart=always
         [Install]
         WantedBy=multi-user.target
-- name: restart logstash
-  service:
-    name: logstash
-    state: restarted

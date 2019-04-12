@@ -6,8 +6,8 @@
   vars:
     logging: "{{ enable_logging | default('false')}}"
   roles:
-  - role: logstash 
-    when: logging == true
+  - role: logstash
+    when: logging == "true" 
   tasks:
   - name: create a new user for app to run
     user:
