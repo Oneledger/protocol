@@ -1,0 +1,39 @@
+---
+- hosts: 35.231.162.154
+  become: yes
+  become_user: root
+  vars:
+    EXPLORE_DATABASE_NAME: explorer_chronos
+    USER: postgres
+    PASSWORD: postgres
+  roles:
+  - role: geerlingguy.postgresql
+    postgresql_databases:
+    - name: "{{EXPLORE_DATABASE_NAME}}"
+    postgresql_users:
+    - name: "{{USER}}"
+  tasks:
+  - name: install apt module to run postgress with ansible
+    apt:
+      name: ["libpq-dev","python-psycopg2"]
+      update_cache: yes
+  - name: create blockchain.blocks table 
+    postgresql_table:
+      db: "{{EXPLORE_DATABASE_NAME}}"
+      table: blockchain.blocks
+      ssl_mode: allow
+      columns: 
+      - height integer PRIMARY KEY
+      - block_id bytea NOT NULL
+      - parent_block_id bytea NOT NULL
+      - chain_id varchar(20) NOT NULL
+      - block_size integer NOT NULL
+      - precommits bytea[] NOT NULL
+      - time timestamp with time zone NOT NULL
+  - name: create index time on blockchain.blocks
+    postgresql_idx:
+      db: "{{EXPLORE_DATABASE_NAME}}"
+      table: blockchain.blocks
+      idxtype: btree
+      idxname: time
+      columns: time
