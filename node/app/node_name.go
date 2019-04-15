@@ -24,7 +24,7 @@ func SetNodeName(app interface{}) {
 		existing.NodeName = global.Current.NodeName
 		existing.NodeAccountName = global.Current.NodeAccountName
 	} else {
-		existing = interim.(AdminParameters)
+		existing = *(interim.(*AdminParameters))
 
 		// TODO: Denormalized, should need to check against a default to see if it changed...
 		if global.Current.NodeAccountName != "" {

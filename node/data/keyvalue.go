@@ -12,12 +12,12 @@
 package data
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 
 	"github.com/Oneledger/protocol/node/global"
 	"github.com/Oneledger/protocol/node/log"
-	"github.com/Oneledger/protocol/node/serial"
 	"github.com/tendermint/iavl"
 	"github.com/tendermint/tendermint/libs/db"
 )
@@ -33,6 +33,8 @@ const (
 	MEMORY StorageType = iota
 	PERSISTENT
 )
+
+var ErrNilData = errors.New("data is nil")
 
 // Wrap the underlying usage
 type KeyValue struct {
@@ -65,26 +67,26 @@ func fileExists(name string, dir string) bool {
 }
 
 // Convert Data headed for persistence
-func convertData(data interface{}) []byte {
-	buffer, err := serial.Serialize(data, serial.PERSISTENT)
+func convertData(data interface{}) ([]byte, error) {
+	buffer, err := pSzlr.Serialize(data)
 	if err != nil {
-		log.Fatal("Persistent Serialization Failed", "err", err, "data", data)
+		return nil, err
 	}
-	return buffer
+	return buffer, nil
 }
 
 // Unconvert Data from persistence
-func unconvertData(data []byte) interface{} {
+func unconvertData(data []byte) (interface{}, error) {
 	if data == nil || string(data) == "" {
-		return nil
+		return nil, ErrNilData
 	}
 
-	var proto interface{}
-	result, err := serial.Deserialize(data, proto, serial.PERSISTENT)
+	var result interface{}
+	err := pSzlr.Deserialize(data, &result)
 	if err != nil {
-		log.Fatal("Persistent Deserialization Failed", "err", err, "data", data)
+		return nil, err
 	}
-	return result
+	return result, nil
 }
 
 // NewKeyValue initializes a new application
@@ -191,7 +193,12 @@ func (store KeyValue) Get(key DatabaseKey) interface{} {
 	if index == -1 {
 		return nil
 	}
-	return unconvertData(value)
+	result, err := unconvertData(value)
+	if err != nil {
+		log.Error("error in deserializing persistent data", "err", err.Error())
+		panic("error in deserializing persistent data")
+	}
+	return result
 }
 
 // Create a new session
@@ -206,10 +213,13 @@ func (session KeyValueSession) FindAll() []DatabaseKey {
 
 // Store inserts or updates a value under a key
 func (session KeyValueSession) Set(key DatabaseKey, value interface{}) bool {
-	buffer := convertData(value)
-	session.store.tree.Set(key, buffer)
+	buffer, err := convertData(value)
+	if err != nil {
+		log.Error("error in serializing data in keyvalue", "data", value)
+		panic("error in serializing persistent data")
+	}
 
-	return true
+	return session.store.tree.Set(key, buffer)
 }
 
 // Test to see if a key exists
@@ -229,7 +239,12 @@ func (session KeyValueSession) Get(key DatabaseKey) interface{} {
 	if index == -1 {
 		return nil
 	}
-	return unconvertData(value)
+	result, err := unconvertData(value)
+	if err != nil {
+		log.Error("error in deserializing persistent data", "err", err.Error())
+		panic("error in deserializing persistent data")
+	}
+	return result
 }
 
 // Delete a key from the datastore

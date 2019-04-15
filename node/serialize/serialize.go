@@ -3,6 +3,8 @@ package serialize
 import (
 	"sync"
 
+	"github.com/google/uuid"
+
 	"github.com/tendermint/go-amino"
 	"github.com/vmihailenco/msgpack"
 )
@@ -26,6 +28,8 @@ func init() {
 	JSONSzr = GetSerializer(JSON)
 
 	RegisterConcrete(new(string), "std_string")
+	RegisterConcrete(new([]byte), "std_byte_arr")
+	RegisterConcrete(new(uuid.UUID), "google_uuid_UUID")
 }
 
 type Serializer interface {

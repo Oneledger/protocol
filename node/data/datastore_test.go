@@ -10,9 +10,13 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/Oneledger/protocol/node/serialize"
+
 	"github.com/Oneledger/protocol/node/log"
 	"github.com/Oneledger/protocol/node/serial"
 )
+
+const TagTesting = "data_testing"
 
 type Testing struct {
 	Value []byte
@@ -20,6 +24,7 @@ type Testing struct {
 
 func init() {
 	serial.Register(Testing{})
+	serialize.RegisterConcrete(new(Testing), TagTesting)
 }
 
 func TestDatabase(t *testing.T) {
@@ -47,7 +52,7 @@ func TestDatabase(t *testing.T) {
 
 	store = NewDatastore("TestDatabase", PERSISTENT)
 
-	value = store.Get(key).(Testing)
+	value = *(store.Get(key).(*Testing))
 	Check("Reopened", store, key, value)
 
 	store.Dump()
@@ -60,7 +65,7 @@ func Check(text string, store Datastore, key []byte, testing Testing) {
 	value := testing.Value
 
 	if store.Exists(key) {
-		result := store.Get(key).(Testing)
+		result := store.Get(key).(*Testing)
 		text := fmt.Sprintf("[%X]:\t[%X]\n", key, result)
 
 		log.Debug("Found Data", "text", text)

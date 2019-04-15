@@ -7,6 +7,8 @@ package action
 
 import (
 	"bytes"
+
+	"github.com/Oneledger/protocol/node/serialize"
 	"github.com/google/uuid"
 	"github.com/tendermint/tendermint/libs/common"
 
@@ -107,6 +109,13 @@ func init() {
 	serial.RegisterInterface(&prototype)
 
 	serial.Register(uuid.UUID{})
+
+	serialize.RegisterInterface(new(ContractData))
+	serialize.RegisterConcrete(new(Contract), TagContract)
+	serialize.RegisterConcrete(new(Install), TagInstall)
+	serialize.RegisterConcrete(new(Execute), TagExecute)
+	serialize.RegisterConcrete(new(Compare), TagCompare)
+	serialize.RegisterConcrete(new(PersistContractData), TagPersistContractData)
 
 }
 

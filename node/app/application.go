@@ -10,6 +10,8 @@ import (
 	"encoding/json"
 	"time"
 
+	"github.com/Oneledger/protocol/node/serialize"
+
 	"github.com/Oneledger/protocol/node/abci"
 	"github.com/Oneledger/protocol/node/action"
 	"github.com/Oneledger/protocol/node/data"
@@ -82,6 +84,7 @@ type AdminParameters struct {
 
 func init() {
 	serial.Register(AdminParameters{})
+	serialize.RegisterConcrete(new(AdminParameters), TagAdminParameters)
 }
 
 func (app Application) CheckIfInitialized() bool {
@@ -102,7 +105,7 @@ func (app Application) Initialize() {
 	// This config parameter is driven from the database, not the file or cli
 	raw := app.Admin.Get(data.DatabaseKey("NodeAccountName"))
 	if raw != nil {
-		params := raw.(AdminParameters)
+		params := raw.(*AdminParameters)
 		global.Current.NodeAccountName = params.NodeAccountName
 	} else {
 		log.Debug("NodeAccountName not currently set")
@@ -403,7 +406,7 @@ func (app *Application) MakePayment(req RequestBeginBlock) {
 
 	raw := app.Admin.Get(data.DatabaseKey("PaymentRecord"))
 	if raw != nil {
-		params := raw.(action.PaymentRecord)
+		params := raw.(*action.PaymentRecord)
 		paymentRecordBlockHeight = params.BlockHeight
 
 		log.Debug("Checking for stall", "height", height, "recHeight", paymentRecordBlockHeight)
