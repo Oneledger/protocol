@@ -1,0 +1,38 @@
+---
+- hosts: all 
+  user: steven
+  become: true
+  become_user: root
+  roles:
+    - role: elastic.elasticsearch
+      vars:
+        es_instance_name: "node1"
+        es_version: 6.7.1
+        es_api_basic_auth_username: elastic
+        es_api_basic_auth_password: changeme
+  tasks:
+  - name: download public signing key for elastic
+    apt_key:
+      url: https://artifacts.elastic.co/GPG-KEY-elasticsearch
+      state: present
+  - name: Save the repository definition to /etc/apt/sources.list.d/elastic-6.x.list
+    apt_repository: 
+      repo: 'deb https://artifacts.elastic.co/packages/6.x/apt stable main' 
+      state: present 
+      filename: /etc/apt/sources.list.d/elastic-6.x.list 
+      update_cache: yes
+  - name: install kibana 
+    apt:
+      name: ["apt-transport-https","kibana"]
+      update_cache: yes 
+  - name: create configuration file to start kibana 
+    copy:
+      dest: /etc/kibana/kibana.yml
+      mode: 0744
+      content: | 
+        server.port: 5601
+        server.host: "0.0.0.0"
+  - name: restart kibana
+    service: 
+      name: kibana
+      state: restarted
