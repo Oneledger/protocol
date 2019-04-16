@@ -35,7 +35,7 @@ func (app Application) GetChainID() interface{} {
 	return ChainId
 }
 
-func (app Application) GetRPCClient() interface{} {
+func (app Application) GetClientContext() interface{} {
 	return app.ClientContext
 }
 

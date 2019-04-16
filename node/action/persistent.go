@@ -70,7 +70,7 @@ func GetChainID(app interface{}) string {
 }
 
 func GetClientContext(app interface{}) comm.ClientContext {
-	rpcclient := app.(persist.Access).GetRPCClient().(comm.ClientContext)
+	rpcclient := app.(persist.Access).GetClientContext().(comm.ClientContext)
 	return rpcclient
 }
 

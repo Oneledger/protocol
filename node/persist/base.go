@@ -9,7 +9,7 @@ type Access interface {
 	RunScript(request interface{}) (interface{}, error)
 	AnalyzeScript(request interface{}) interface{}
 
-	GetRPCClient () interface{}
+	GetClientContext() interface{}
 
 	// Access the databases
 	GetAdmin() interface{}
