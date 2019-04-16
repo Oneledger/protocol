@@ -69,8 +69,8 @@ func GetChainID(app interface{}) string {
 	return id
 }
 
-func GetRPCClient(app interface{}) comm.ClientInterface {
-	rpcclient := app.(persist.Access).GetRPCClient().(comm.ClientInterface)
+func GetClientContext(app interface{}) comm.ClientContext {
+	rpcclient := app.(persist.Access).GetRPCClient().(comm.ClientContext)
 	return rpcclient
 }
 

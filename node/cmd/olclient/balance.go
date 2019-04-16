@@ -62,11 +62,13 @@ func BalanceRequest(accountKey string) []byte {
 
 // IssueRequest sends out a sendTx to all of the nodes in the chain
 func BalanceNode(cmd *cobra.Command, args []string) {
-	nodeName := shared.GetNodeName()
+
+	ctx := comm.NewClientContext()
+	nodeName := shared.GetNodeName(ctx)
 	name := GetName()
 
 	accountKeyRequest := AccountKeyRequest(name)
-	accountKey := comm.Query("/accountKey", accountKeyRequest)
+	accountKey := ctx.Query("/accountKey", accountKeyRequest)
 
 	var balanceRequest []byte
 	if accountKey == nil {
@@ -75,7 +77,7 @@ func BalanceNode(cmd *cobra.Command, args []string) {
 		balanceRequest = BalanceRequest(hex.EncodeToString(accountKey.(id.AccountKey)))
 	}
 
-	balance := comm.Query("/balance", balanceRequest)
+	balance := ctx.Query("/balance", balanceRequest)
 
 	if balance == nil {
 		shared.Console.Warning("No Response from Node for:", string(balanceRequest))

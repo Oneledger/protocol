@@ -7,6 +7,7 @@ package main
 
 import (
 	"github.com/Oneledger/protocol/node/cmd/shared"
+	"github.com/Oneledger/protocol/node/comm"
 	"github.com/Oneledger/protocol/node/log"
 	"github.com/spf13/cobra"
 )
@@ -38,13 +39,14 @@ func init() {
 func IssueExecuteRequest(cmd *cobra.Command, args []string) {
 	log.Debug("Have Execute Request", "executeArgs", executeArgs)
 
+	ctx := comm.NewClientContext()
 	// Create message
-	packet := shared.CreateExecuteRequest(executeArgs)
+	packet := shared.CreateExecuteRequest(ctx, executeArgs)
 	if packet == nil {
 		shared.Console.Info("CreateExecuteRequest bad arguments", executeArgs)
 		return
 	}
 
-	result, _ := rpcclient.BroadcastTxCommit(packet)
+	result, _ := ctx.BroadcastTxCommit(packet)
 	BroadcastStatus(result)
 }

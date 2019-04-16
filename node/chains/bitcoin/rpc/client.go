@@ -15,11 +15,11 @@ const (
 	// VERSION - represents bitcoind package version
 	VERSION = 0.1
 
-	// RPCCLIENT_TIMEOUT - represent http timeout for rcp client
+	// RPCCLIENT_TIMEOUT - represent http timeout for rcp comm
 	RPCCLIENT_TIMEOUT = 30
 )
 
-// BTCRpcClient - represents a JSON RPC client (over HTTP(s)).
+// BTCRpcClient - represents a JSON RPC comm (over HTTP(s)).
 type BTCRpcClient struct {
 	serverAddr string
 	user       string
@@ -35,7 +35,7 @@ type rpcRequest struct {
 	Params  interface{} `json:"params"`
 }
 
-// handleError - handle error returned by client.call
+// handleError - handle error returned by comm.call
 func handleError(err error, r *rpcResponse) error {
 	if err != nil {
 		return err

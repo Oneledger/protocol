@@ -21,7 +21,6 @@ import (
 	"github.com/Oneledger/protocol/node/config"
 	"github.com/Oneledger/protocol/node/persist"
 	"github.com/mitchellh/go-homedir"
-	tmnode "github.com/tendermint/tendermint/node"
 )
 
 var Current *Context
@@ -50,15 +49,14 @@ type Context struct {
 	SeedMode        bool
 	P2PAddress      string
 
-	ConsensusNode *tmnode.Node
-
 	//Minimum Fees
 	MinSendFee     float64
 	MinSwapFee     float64
 	MinContractFee float64
 	MinRegisterFee float64
 
-	Config *config.Server
+	Config       *config.Server
+	ClientConfig *config.Client
 }
 
 func init() {
@@ -99,10 +97,6 @@ func NewContext(name string) *Context {
 func (ctx *Context) SetApplication(app persist.Access) persist.Access {
 	ctx.Application = app
 	return app
-}
-
-func (ctx *Context) SetConsensusNode(node *tmnode.Node) {
-	ctx.ConsensusNode = node
 }
 
 func (ctx *Context) GetApplication() persist.Access {

@@ -6,6 +6,7 @@
 package app
 
 import (
+	"github.com/Oneledger/protocol/node/comm"
 	"strings"
 
 	"github.com/Oneledger/protocol/node/action"
@@ -48,9 +49,12 @@ func HandleSet(app Application, path string, arguments map[string]interface{}) [
 
 func GetChain(chainName string) data.ChainType {
 	switch chainName {
-	case "OneLedger" : return data.ONELEDGER
-	case "BitCoin" : return data.BITCOIN
-	case "Ethereum" : return data.ETHEREUM
+	case "OneLedger":
+		return data.ONELEDGER
+	case "BitCoin":
+		return data.BITCOIN
+	case "Ethereum":
+		return data.ETHEREUM
 	}
 	return data.UNKNOWN
 }
@@ -115,14 +119,14 @@ func HandleRegisterIdentity(app Application, arguments map[string]interface{}) i
 	}
 
 	// TODO Broadcast the transaction
-	transaction := CreateRegisterRequest(identity, account.AccountKey(), fee)
-	action.BroadcastTransaction(app.RPCClient, transaction, false)
+	transaction := CreateRegisterRequest(app.ClientContext, identity, account.AccountKey(), fee)
+	action.BroadcastTransaction(app.ClientContext, transaction, false)
 
 	return "Broadcast Identity"
 }
 
 // TODO: Called by olfullnode, not olclient?
-func CreateRegisterRequest(identityName string, accountKey id.AccountKey, fee float64) action.Transaction {
+func CreateRegisterRequest(ctx comm.ClientContext, identityName string, accountKey id.AccountKey, fee float64) action.Transaction {
 	LoadPrivValidatorFile()
 
 	reg := &action.Register{
@@ -130,7 +134,7 @@ func CreateRegisterRequest(identityName string, accountKey id.AccountKey, fee fl
 			Type:     action.REGISTER,
 			ChainId:  ChainId,
 			Owner:    accountKey,
-			Signers:  action.GetSigners(accountKey), // TODO: Server-side? Then this is wrong
+			Signers:  action.GetSigners(ctx, accountKey), // TODO: Server-side? Then this is wrong
 			Sequence: global.Current.Sequence,
 		},
 		Identity:          identityName,
@@ -152,7 +156,7 @@ func SetOption(app *Application, key string, value string) bool {
 
 	case "Register":
 		var args = &RegisterArguments{}
-		// I am not sure where this comes from; doing client deser for now
+		// I am not sure where this comes from; doing comm deser for now
 		err := clSerializer.Deserialize([]byte(value), args)
 		//result, err := serial.Deserialize([]byte(value), &arguments, serial.NETWORK)
 

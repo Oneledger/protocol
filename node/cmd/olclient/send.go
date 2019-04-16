@@ -41,14 +41,16 @@ func IssueRequest(cmd *cobra.Command, args []string) {
 
 	shared.Console.Info(sendargs)
 	// Create message
-	packet := shared.CreateSendRequest(sendargs)
+
+	ctx := comm.NewClientContext()
+	packet := shared.CreateSendRequest(ctx, sendargs)
 
 	if packet == nil {
 		shared.Console.Error("Error in sending request")
 		os.Exit(-1)
 	}
 
-	result, _ := rpcclient.BroadcastTxCommit(packet)
+	result, _ := ctx.BroadcastTxCommit(packet)
 	BroadcastStatus(result)
 }
 

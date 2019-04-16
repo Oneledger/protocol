@@ -35,7 +35,7 @@ func setupRPC() (a *Application, client pb.SDKClient, ctx context.Context, tearD
 	return
 }
 
-// TestSDK tests some basic client -> server interaction for each of the methods available
+// TestSDK tests some basic comm -> server interaction for each of the methods available
 func TestSDK(t *testing.T) {
 	application, client, ctx, tearDown := setupRPC()
 	defer tearDown()
@@ -51,7 +51,7 @@ func TestSDK(t *testing.T) {
 		testName := "bart"
 		testPrivateKey, testPublicKey := id.GenerateKeys([]byte(testName), true)
 		testChainType := data.ONELEDGER
-		testAccount := id.NewAccount(testChainType, testName, testPublicKey, testPrivateKey)
+		testAccount := id.NewAccount(testChainType, testName, testPublicKey, testPrivateKey, "")
 		application.Accounts.Add(testAccount)
 
 		in := &pb.CheckAccountRequest{Name: testName}

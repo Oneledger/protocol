@@ -54,23 +54,26 @@ func FormatIdentityRequest() []byte {
 // IssueRequest sends out a sendTx to all of the nodes in the chain
 func ListNode(cmd *cobra.Command, args []string) {
 	//log.Debug("Checking Account", "account", account)
+
+	ctx := comm.NewClientContext()
+
 	accountRequest := FormatAccountRequest()
 	identityRequest := FormatIdentityRequest()
 
-	accounts := comm.Query("/account", accountRequest)
-	identities := comm.Query("/identity", identityRequest)
+	accounts := ctx.Query("/account", accountRequest)
+	identities := ctx.Query("/identity", identityRequest)
 
 	if accounts == nil || identities == nil {
 		shared.Console.Warning("No Response from Node for:", string(accountRequest), string(identityRequest))
 		return
 	}
 
-	nodeName := shared.GetNodeName()
-	printAccountQuery(nodeName, accounts)
-	printIdentityQuery(nodeName, identities)
+	nodeName := shared.GetNodeName(ctx)
+	printAccountQuery(ctx, nodeName, accounts)
+	printIdentityQuery(ctx, nodeName, identities)
 
 	if list.validators == true {
-		validators := comm.Query("/validator", []byte(""))
+		validators := ctx.Query("/validator", []byte(""))
 		if validators != nil {
 			printValidatorQuery(nodeName, validators)
 		} else {
@@ -79,7 +82,7 @@ func ListNode(cmd *cobra.Command, args []string) {
 	}
 }
 
-func printAccountQuery(nodeName string, accountQuery interface{}) {
+func printAccountQuery(ctx comm.ClientContext, nodeName string, accountQuery interface{}) {
 
 	accountsI := accountQuery.([]interface{})
 	accounts := make([]id.Account, len(accountsI))
@@ -111,7 +114,7 @@ func printAccountQuery(nodeName string, accountQuery interface{}) {
 		shared.Console.Info(accountKey, account.AccountKey().String())
 
 		if account.Chain() == data.ONELEDGER {
-			value := shared.GetBalance(account.AccountKey())
+			value := shared.GetBalance(ctx, account.AccountKey())
 			if value != nil {
 				shared.Console.Info(balance, value.String())
 			}
@@ -120,7 +123,7 @@ func printAccountQuery(nodeName string, accountQuery interface{}) {
 	}
 }
 
-func printIdentityQuery(nodeName string, idQuery interface{}) {
+func printIdentityQuery(ctx comm.ClientContext, nodeName string, idQuery interface{}) {
 	identitiesI := idQuery.([]interface{})
 	identities := make([]*(id.Identity), len(identitiesI))
 	for i := range identitiesI {

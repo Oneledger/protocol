@@ -9,7 +9,6 @@ import (
 	"strconv"
 
 	"github.com/Oneledger/protocol/node/action"
-	"github.com/Oneledger/protocol/node/comm"
 	"github.com/Oneledger/protocol/node/data"
 	"github.com/Oneledger/protocol/node/global"
 	"github.com/Oneledger/protocol/node/id"
@@ -132,7 +131,8 @@ func (server SDKServer) Register(ctx context.Context, request *pb.RegisterReques
 
 	privKey, pubKey := id.GenerateKeys(secret(name+chain.String()), true)
 
-	packet := action.SignAndPack(
+	cliCtx := server.App.ClientContext
+	packet := action.SignAndPack(cliCtx,
 		action.CreateRegisterRequest(
 			name,
 			chain.String(),
@@ -141,7 +141,7 @@ func (server SDKServer) Register(ctx context.Context, request *pb.RegisterReques
 			nil,
 			pubKey.Address(),
 			fee))
-	server.App.RPCClient.BroadcastTxCommit(packet)
+	cliCtx.BroadcastTxCommit(packet)
 
 	// TODO: Use proper secret for key generation
 	return &pb.RegisterReply{
@@ -208,11 +208,11 @@ func (server SDKServer) Send(ctx context.Context, request *pb.SendRequest) (*pb.
 	if errr != nil {
 		return &pb.SendReply{Ok: false, Reason: errr.Error()}, nil
 	}
-
-	packet := action.SignAndPack(send)
+	cliCtx := server.App.ClientContext
+	packet := action.SignAndPack(cliCtx, send)
 
 	// TODO: Include ResultBroadcastTxCommit in SendReply
-	server.App.RPCClient.BroadcastTxCommit(packet)
+	cliCtx.BroadcastTxCommit(packet)
 
 	return &pb.SendReply{
 		Ok:     true,
@@ -221,7 +221,8 @@ func (server SDKServer) Send(ctx context.Context, request *pb.SendRequest) (*pb.
 }
 
 func (server SDKServer) Tx(ctx context.Context, request *pb.TxRequest) (*pb.SDKReply, error) {
-	result := comm.Tx(request.Hash, request.Proof)
+	cliCtx := server.App.ClientContext
+	result := cliCtx.Tx(request.Hash, request.Proof)
 
 	buff, err := serialize.JSONSzr.Serialize(result)
 	if err != nil {
@@ -232,7 +233,8 @@ func (server SDKServer) Tx(ctx context.Context, request *pb.TxRequest) (*pb.SDKR
 }
 
 func (server SDKServer) TxSearch(ctx context.Context, request *pb.TxSearchRequest) (*pb.SDKReply, error) {
-	result := comm.Search(request.Query, request.Proof, int(request.Page), int(request.PerPage))
+	cliCtx := server.App.ClientContext
+	result := cliCtx.Search(request.Query, request.Proof, int(request.Page), int(request.PerPage))
 
 	buff, err := serialize.JSONSzr.Serialize(result)
 	if err != nil {
@@ -243,7 +245,8 @@ func (server SDKServer) TxSearch(ctx context.Context, request *pb.TxSearchReques
 }
 
 func (server SDKServer) Block(ctx context.Context, request *pb.BlockRequest) (*pb.SDKReply, error) {
-	result := comm.Block(int64(request.Height))
+	cliCtx := server.App.ClientContext
+	result := cliCtx.Block(int64(request.Height))
 	if result == nil {
 		return nil, gstatus.Errorf(codes.Internal, "Lookup failed")
 	}

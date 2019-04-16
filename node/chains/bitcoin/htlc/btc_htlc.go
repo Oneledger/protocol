@@ -272,7 +272,7 @@ func buildContract(b *rpc.Bitcoind, args *contractArgs) (*builtContract, error) 
 
 // createSig creates and returns the serialized raw signature and compressed
 // pubkey for a transaction input signature.  Due to limitations of the Bitcoin
-// Core RPC API, this requires dumping a private key and signing in the client,
+// Core RPC API, this requires dumping a private key and signing in the comm,
 // rather than letting the wallet sign.
 
 func createSig(b *rpc.Bitcoind, tx *wire.MsgTx, idx int, pkScript []byte, address btcutil.Address) (sig, pubkey []byte, err error) {
