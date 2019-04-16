@@ -194,7 +194,7 @@ func (store KeyValue) Get(key DatabaseKey) interface{} {
 		return nil
 	}
 	result, err := unconvertData(value)
-	if err != nil {
+	if err != nil && err != ErrNilData {
 		log.Error("error in deserializing persistent data", "err", err.Error())
 		panic("error in deserializing persistent data")
 	}

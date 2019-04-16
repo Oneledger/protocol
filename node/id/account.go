@@ -95,8 +95,8 @@ func (acc *Accounts) FindKey(key AccountKey) (Account, status.Code) {
 		return nil, status.MISSING_DATA
 	}
 
-	result := interim.(*Account)
-	return *result, status.SUCCESS
+	result := interim.(Account)
+	return result, status.SUCCESS
 
 }
 

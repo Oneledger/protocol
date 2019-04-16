@@ -22,6 +22,9 @@ func (m *msgpackStrategy) Serialize(obj interface{}) ([]byte, error) {
 }
 
 func (m *msgpackStrategy) Deserialize(src []byte, dest interface{}) error {
+	if dest == nil {
+		return ErrIncorrectWrapper
+	}
 
 	if apr, ok := dest.(DataAdapter); ok {
 		err := m.wrapDataAdapter(src, dest, m.deserialize, apr)

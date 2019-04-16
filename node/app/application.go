@@ -18,20 +18,17 @@ import (
 	"github.com/Oneledger/protocol/node/global"
 	"github.com/Oneledger/protocol/node/id"
 	"github.com/Oneledger/protocol/node/log"
-	"github.com/Oneledger/protocol/node/serial"
 	"github.com/Oneledger/protocol/node/status"
 	"github.com/tendermint/tendermint/abci/types"
 	"github.com/tendermint/tendermint/libs/common"
 )
 
 var _ types.Application = Application{}
-
 var ChainId string
+var chainKey = data.DatabaseKey("chainId")
 
-func init() {
-	// TODO: Should be driven from config
-	ChainId = "OneLedger-Root"
-}
+// TODO: DEBUG
+var ZeroAccountKey id.AccountKey
 
 // ApplicationContext keeps all of the upper level global values.
 type Application struct {
@@ -58,6 +55,12 @@ type Application struct {
 	Validators *id.Validators // List of validators for this block
 }
 
+//AdminParameters
+type AdminParameters struct {
+	NodeAccountName string
+	NodeName        string
+}
+
 // NewApplicationContext initializes a new application, reconnects to the databases.
 func NewApplication() *Application {
 	return &Application{
@@ -77,26 +80,12 @@ func NewApplication() *Application {
 	}
 }
 
-type AdminParameters struct {
-	NodeAccountName string
-	NodeName        string
-}
-
-func init() {
-	serial.Register(AdminParameters{})
-	serialize.RegisterConcrete(new(AdminParameters), TagAdminParameters)
-}
-
 func (app Application) CheckIfInitialized() bool {
-	if app.GetPassword() == nil {
+	if app.getPassword() == nil {
 		return false
 	}
 
 	return true
-}
-
-func (app Application) GetPassword() interface{} {
-	return app.Admin.Get(data.DatabaseKey("Password"))
 }
 
 // Initial the state of the application from persistent data
@@ -134,6 +123,10 @@ func (app Application) StartSDK() {
 
 }
 
+func (app Application) getPassword() interface{} {
+	return app.Admin.Get(data.DatabaseKey("Password"))
+}
+
 type BasicState struct {
 	Account string  `json:"account"`
 	States  []State `json:"states"`
@@ -149,21 +142,19 @@ type State struct {
 func (app Application) SetupState(stateBytes []byte) {
 	log.Debug("SetupState", "state", string(stateBytes))
 
-	var base BasicState
-
 	// Tendermint serializes this data, so we have to use raw JSON serialization to read it.
-	des, errx := serial.Deserialize(stateBytes, &base, serial.JSON)
+	var state = &BasicState{}
+	errx := serialize.JSONSzr.Deserialize(stateBytes, state)
 	if errx != nil {
 		log.Fatal("Failed to deserialize stateBytes during SetupState")
 	}
 
-	state := des.(*BasicState)
 	log.Debug("Deserialized State", "state", state)
 
 	// TODO: Can't generate a different key for each node. Needs to be in the genesis? Or ignored?
 	privateKey, publicKey := id.GenerateKeys([]byte(state.Account), false) // TODO: switch with passphrase
 
-	CreateAccount(app, state, publicKey, privateKey, nil)
+	createAccount(app, state, publicKey, privateKey, nil)
 
 	// TODO: Make a user put in a real key
 	privateKey, publicKey = id.GenerateKeys([]byte(global.Current.PaymentAccount), false)
@@ -171,13 +162,10 @@ func (app Application) SetupState(stateBytes []byte) {
 	states := []State{
 		State{Amount: "0", Currency: "OLT"},
 	}
-	CreateAccount(app, &BasicState{global.Current.PaymentAccount, states}, publicKey, privateKey, nil)
+	createAccount(app, &BasicState{global.Current.PaymentAccount, states}, publicKey, privateKey, nil)
 }
 
-// TODO: DEBUG
-var ZeroAccountKey id.AccountKey
-
-func CreateAccount(app Application, state *BasicState, publicKey id.PublicKeyED25519, privateKey id.PrivateKeyED25519, chainkey interface{}) {
+func createAccount(app Application, state *BasicState, publicKey id.PublicKeyED25519, privateKey id.PrivateKeyED25519, chainkey interface{}) {
 
 	// TODO: This should probably only occur on the Admin node, for other nodes how do I know the key?
 	// Register the identity and account first
@@ -298,46 +286,46 @@ func (app Application) CheckTx(tx []byte) ResponseCheckTx {
 	log.Debug("ABCI: CheckTx", "tx", tx)
 
 	errorCode := types.CodeTypeOK
-	var transaction action.Transaction
+	var txn action.Transaction
 
 	if tx == nil {
 		log.Warn("Empty Transaction, Ignoring", "tx", tx)
 		errorCode = status.PARSE_ERROR
 
 	} else {
-		signedTransaction, err := action.Parse(action.Message(tx))
-		if err != status.SUCCESS {
-			errorCode = err
+		msg := action.Message(tx)
+		signedTransaction, code := action.Parse(msg)
+		if code != status.SUCCESS {
+			errorCode = code
 
-		} else if action.ValidateSignature(signedTransaction) == false {
+		} else if !action.ValidateSignature(signedTransaction) { // signature not valid
 			errorCode = status.INVALID_SIGNATURE
 
 		} else {
-			transaction = signedTransaction.Transaction
-			if err = transaction.Validate(); err != status.SUCCESS {
-				errorCode = err
+			txn = signedTransaction.Transaction
+			if code = txn.Validate(); code != status.SUCCESS { // transaction not valid
+				errorCode = code
 
-			} else if err = transaction.ProcessCheck(&app); err != status.SUCCESS {
-				errorCode = err
+			} else if code = txn.ProcessCheck(&app); code != status.SUCCESS { // process check failed
+				errorCode = code
 			}
 		}
 	}
 
-	outputData := ""
-
-	if transaction != nil {
-		data, error := json.Marshal(transaction.GetData())
-		if error != nil {
-			log.Warn("transaction get data error", "error", error)
-		} else {
-			outputData = string(data)
+	// get data from txn
+	var dat = []byte{}
+	if txn != nil {
+		var err error
+		dat, err = json.Marshal(txn.GetData())
+		if err != nil {
+			log.Warn("txn get data error", "error", err)
 		}
 	}
 
+	// prepare response
 	result := ResponseCheckTx{
 		Code: errorCode,
-
-		Data: []byte(outputData),
+		Data: dat,
 		Log:  "Log Data",
 		Info: "Info Data",
 
@@ -350,23 +338,22 @@ func (app Application) CheckTx(tx []byte) ResponseCheckTx {
 	return result
 }
 
-var chainKey data.DatabaseKey = data.DatabaseKey("chainId")
-
 // BeginBlock is called when a new block is started
 func (app Application) BeginBlock(req RequestBeginBlock) ResponseBeginBlock {
 	log.Debug("ABCI: BeginBlock", "req", req)
 
+	// get votes and validators from request
 	votes := req.LastCommitInfo.GetVotes()
 	byzantineValidators := req.ByzantineValidators
 
+	// set validators
 	app.Validators.Set(app, votes, byzantineValidators, req.Header.LastBlockId.Hash)
 
+	// make payment to validators
 	app.MakePayment(req)
 
 	newChainId := action.Message(req.Header.ChainID)
-
 	chainId := app.Admin.Get(chainKey)
-
 	if chainId == nil {
 		session := app.Admin.Begin()
 		session.Set(chainKey, newChainId)
@@ -391,9 +378,9 @@ func (app Application) BeginBlock(req RequestBeginBlock) ResponseBeginBlock {
 func (app *Application) MakePayment(req RequestBeginBlock) {
 	log.Debug("MakePayment")
 
-	account, err := app.Accounts.FindName(global.Current.PaymentAccount)
-	if err != status.SUCCESS {
-		log.Fatal("ABCI: BeginBlock Fatal Status", "status", err)
+	account, code := app.Accounts.FindName(global.Current.PaymentAccount)
+	if code != status.SUCCESS {
+		log.Fatal("ABCI: BeginBlock Fatal Status", "status", code)
 	}
 
 	paymentBalance := app.Balances.Get(account.AccountKey(), true)
@@ -406,7 +393,10 @@ func (app *Application) MakePayment(req RequestBeginBlock) {
 
 	raw := app.Admin.Get(data.DatabaseKey("PaymentRecord"))
 	if raw != nil {
-		params := raw.(*action.PaymentRecord)
+		params, ok := raw.(*action.PaymentRecord)
+		if !ok {
+			log.Error("error getting payment record ")
+		}
 		paymentRecordBlockHeight = params.BlockHeight
 
 		log.Debug("Checking for stall", "height", height, "recHeight", paymentRecordBlockHeight)
@@ -424,6 +414,7 @@ func (app *Application) MakePayment(req RequestBeginBlock) {
 	}
 
 	if (!paymentBalance.GetCoinByName("OLT").LessThanEqual(0)) && paymentRecordBlockHeight == -1 {
+
 		if len(app.Validators.Approved) < 1 || app.Validators.SelectedValidator.Name == "" {
 			log.Debug("Missing Validator Information")
 			return
@@ -435,42 +426,46 @@ func (app *Application) MakePayment(req RequestBeginBlock) {
 		numberValidators := len(approvedValidatorIdentities)
 		quotient := paymentBalance.GetCoinByName("OLT").Divide(numberValidators)
 
-		if int(quotient.Amount.Int64()) > 0 {
-			//store payment record in database
-			totalPayment := quotient.MultiplyInt(numberValidators)
-			app.SetPaymentRecord(totalPayment, height)
+		if int(quotient.Amount.Int64()) < 0 {
+			log.Debug("Nothing to Pay")
+			return
+		}
+		//store payment record in database
+		totalPayment := quotient.MultiplyInt(numberValidators)
+		app.SetPaymentRecord(totalPayment, height)
 
-			// if global.Current.NodeName == selectedValidatorIdentity.NodeName {
-			nodeAccount, err := app.Accounts.FindName(global.Current.NodeAccountName)
+		// if global.Current.NodeName == selectedValidatorIdentity.NodeName {
+		nodeAccount, code := app.Accounts.FindName(global.Current.NodeAccountName)
+		if code != status.SUCCESS {
+			log.Debug("Missing Node Account")
+			return
+		}
 
-			if err == status.SUCCESS {
-				if bytes.Compare(nodeAccount.AccountKey(), selectedValidatorIdentity.AccountKey) == 0 {
-					result := CreatePaymentRequest(*app, quotient, height)
-					if result != nil {
-						// TODO: check this later
-						log.Debug("Issuing Payment", "result", result)
-						action.DelayedTransaction(result, 0*time.Second)
-					}
-				} else {
-					log.Debug("Payment happens on a different node", "node",
-						selectedValidatorIdentity.Name, "validator", selectedValidatorIdentity)
-				}
-			} else {
-				log.Debug("Missing Node Account")
+		if bytes.Compare(nodeAccount.AccountKey(), selectedValidatorIdentity.AccountKey) == 0 {
+			result := CreatePaymentRequest(*app, quotient, height)
+			if result != nil {
+				// TODO: check this later
+				log.Debug("Issuing Payment", "result", result)
+				action.DelayedTransaction(result, 0*time.Second)
 			}
 		} else {
-			log.Debug("Nothing to Pay")
+			log.Debug("Payment happens on a different node", "node",
+				selectedValidatorIdentity.Name, "validator", selectedValidatorIdentity)
 		}
+
 	} else {
 		log.Debug("Not ready for Payment")
 	}
 }
 
 func (app *Application) SetPaymentRecord(amount data.Coin, blockHeight int64) {
-	var paymentRecordKey data.DatabaseKey = data.DatabaseKey("PaymentRecord")
+	var paymentRecordKey = data.DatabaseKey("PaymentRecord")
 	var paymentRecord action.PaymentRecord
+
 	paymentRecord.Amount = amount
 	paymentRecord.BlockHeight = blockHeight
+
+	// commit payment record
 	session := app.Admin.Begin()
 	session.Set(paymentRecordKey, paymentRecord)
 	session.Commit()
@@ -480,46 +475,46 @@ func (app *Application) SetPaymentRecord(amount data.Coin, blockHeight int64) {
 func (app Application) DeliverTx(tx []byte) ResponseDeliverTx {
 	log.Debug("ABCI: DeliverTx", "tx", tx)
 
-	errorCode := types.CodeTypeOK
-	var transaction action.Transaction
+	statusCode := types.CodeTypeOK
+	var txn action.Transaction
 
-	signedTransaction, err := action.Parse(action.Message(tx))
-	if err != status.SUCCESS {
-		errorCode = err
+	signedTransaction, code := action.Parse(action.Message(tx))
+	if code != status.SUCCESS {
+		statusCode = code
 
 	} else if action.ValidateSignature(signedTransaction) == false {
 		return ResponseDeliverTx{Code: status.INVALID_SIGNATURE}
 
 	} else {
-		transaction = signedTransaction.Transaction
-		if err = transaction.Validate(); err != status.SUCCESS {
-			errorCode = err
+		txn = signedTransaction.Transaction
+		if code = txn.Validate(); code != status.SUCCESS {
+			statusCode = code
 
-		} else if transaction.ShouldProcess(app) {
-			if err = transaction.ProcessDeliver(&app); err != status.SUCCESS {
-				errorCode = err
+		} else if txn.ShouldProcess(app) {
+			if code = txn.ProcessDeliver(&app); code != status.SUCCESS {
+				statusCode = code
 			}
 		}
 	}
 
-	tags := transaction.TransactionTags(app)
+	tags := txn.TransactionTags(app)
 
-	data, error := json.Marshal(transaction.GetData())
+	dat, err := json.Marshal(txn.GetData())
 
 	outputData := ""
 
-	if error != nil {
-		log.Warn("transaction get data error", "error", error)
+	if err != nil {
+		log.Warn("txn get dat err", "err", err)
 	} else {
-		outputData = string(data)
+		outputData = string(dat)
 	}
 
-	log.Debug("transaction type", "type", transaction.GetType())
-	log.Debug("transaction data", "data", data)
-	log.Debug("transaction output data", "output", outputData)
+	log.Debug("txn type", "type", txn.GetType())
+	log.Debug("txn dat", "dat", dat)
+	log.Debug("txn output dat", "output", outputData)
 
 	result := ResponseDeliverTx{
-		Code:      errorCode,
+		Code:      statusCode,
 		Data:      []byte(outputData),
 		Log:       "Log Data",
 		Info:      "Info Data",
@@ -535,10 +530,12 @@ func (app Application) DeliverTx(tx []byte) ResponseDeliverTx {
 // EndBlock is called at the end of all of the transactions
 func (app Application) EndBlock(req RequestEndBlock) ResponseEndBlock {
 	log.Debug("ABCI: EndBlock", "req", req)
+
 	updates := make([]id.Validator, 0)
 	if req.Height > 1 && (len(app.Validators.NewValidators) > 0 || len(app.Validators.ToBeRemoved) > 0) {
 
 		for _, validator := range app.Validators.ApprovedValidators {
+
 			found := false
 			for _, validatorToBePurged := range app.Validators.ToBeRemoved {
 				if bytes.Compare(validator.Address, validatorToBePurged.Validator.Address) == 0 {
@@ -550,6 +547,7 @@ func (app Application) EndBlock(req RequestEndBlock) ResponseEndBlock {
 					break
 				}
 			}
+
 			if found == true {
 				validator.Power = 0
 			}
@@ -557,21 +555,21 @@ func (app Application) EndBlock(req RequestEndBlock) ResponseEndBlock {
 		}
 
 		for _, applyValidator := range app.Validators.NewValidators {
-			if id.HasValidatorToken(app, applyValidator.Validator) {
-				updates = append(updates, applyValidator.Validator)
-				err := action.TransferVT(app, applyValidator)
-				if err != status.SUCCESS {
-					log.Info("New Validator - error in transfer of VT")
-				}
-			} else {
+			if !id.HasValidatorToken(app, applyValidator.Validator) {
 				log.Info("Reject validator", "validatorPubKey", applyValidator.Validator)
+				continue
+			}
+			updates = append(updates, applyValidator.Validator)
+			code := action.TransferVT(app, applyValidator)
+			if code != status.SUCCESS {
+				log.Info("New Validator - error in transfer of VT")
 			}
 
 		}
 
 	}
 
-	validatorFinalUpdates := make([]types.ValidatorUpdate, 0)
+	validatorFinalUpdates := make([]types.ValidatorUpdate, len(updates))
 	for _, validator := range updates {
 		validatorUpdate := types.ValidatorUpdate{
 			PubKey: validator.PubKey,
@@ -579,6 +577,7 @@ func (app Application) EndBlock(req RequestEndBlock) ResponseEndBlock {
 		}
 		validatorFinalUpdates = append(validatorFinalUpdates, validatorUpdate)
 	}
+
 	result := ResponseEndBlock{
 		ValidatorUpdates: validatorFinalUpdates,
 		Tags:             []common.KVPair(nil),

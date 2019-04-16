@@ -15,7 +15,8 @@ import (
 // TODO: NodeAccount flag should not be here!!!
 // Create a local account for this fullnode
 func AddAccount(app *Application, name string, chain data.ChainType,
-	publicKey id.PublicKeyED25519, privateKey id.PrivateKeyED25519, chainkey interface{}, nodeAccount bool) {
+	publicKey id.PublicKeyED25519, privateKey id.PrivateKeyED25519,
+	chainkey interface{}, nodeAccount bool) {
 
 	account := id.NewAccount(chain, name, publicKey, privateKey, chainkey)
 	app.Accounts.Add(account)

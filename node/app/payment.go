@@ -15,16 +15,15 @@ func CreatePaymentRequest(app Application, quotient data.Coin, height int64) act
 	log.Debug("Paying to", "len", len(identities), "identities", identities)
 
 	sendto := make([]action.SendTo, len(identities))
-
 	for i, identity := range identities {
 		if identity.Name == "" {
 			log.Error("Missing Party argument")
 			return nil
 		}
 
-		party, err := app.Identities.FindName(identity.Name)
-		if err == status.MISSING_DATA {
-			log.Debug("CreatePaymentRequest", "PartyMissingData", err)
+		party, code := app.Identities.FindName(identity.Name)
+		if code == status.MISSING_DATA {
+			log.Debug("CreatePaymentRequest", "PartyMissingData", code)
 			return nil
 		}
 
@@ -37,8 +36,8 @@ func CreatePaymentRequest(app Application, quotient data.Coin, height int64) act
 		}
 	}
 
-	payment, err := app.Accounts.FindName(global.Current.PaymentAccount)
-	if err != status.SUCCESS {
+	payment, code := app.Accounts.FindName(global.Current.PaymentAccount)
+	if code != status.SUCCESS {
 		log.Fatal("Payment Account not found")
 	}
 

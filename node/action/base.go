@@ -9,7 +9,6 @@ import (
 	"github.com/Oneledger/protocol/node/id"
 	"github.com/Oneledger/protocol/node/log"
 	"github.com/Oneledger/protocol/node/serial"
-	"github.com/Oneledger/protocol/node/serialize"
 	"github.com/Oneledger/protocol/node/status"
 	"github.com/tendermint/tendermint/libs/common"
 )
@@ -24,7 +23,7 @@ func init() {
 	serial.Register(Role(0))
 	serial.Register(Message(""))
 
-	serialize.RegisterConcrete(new(Message), TagMessage)
+	//serialize.RegisterConcrete(new(Message), TagMessage)
 }
 
 const (

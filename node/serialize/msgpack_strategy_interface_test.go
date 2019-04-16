@@ -2,16 +2,15 @@ package serialize
 
 import (
 	"fmt"
+	"testing"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/vmihailenco/msgpack"
-	"testing"
 )
-
 
 // registered concrete type should be deserialized through interfaces
 func TestMsgpackStrategy_SerializeInterface(t *testing.T) {
 	msgpack.RegisterExt(14, new(testStuff))
-
 
 	f := &testStuff{"asdf", 1, 123123, []byte("4983h4tsdof"), 56.77867342}
 	fb, err := ms.Serialize(f)
@@ -52,7 +51,7 @@ func TestMsgpackStrategy_SerializeInterface2(t *testing.T) {
 }
 
 type Executer interface {
-	 Execute()
+	Execute()
 }
 
 type printTask struct {
@@ -81,6 +80,11 @@ func TestMsgpackStrategy_SerializeInterface3(t *testing.T) {
 	fnn, ok := fn.(*printTask)
 	assert.True(t, ok)
 
+	var i interface{}
+	err = ms.Deserialize(fb, i)
+	assert.Equal(t, err, ErrIncorrectWrapper)
+
+	err = ms.Deserialize(fb, &i)
 	assert.Nil(t, err)
-	assert.Equal(t, fnn, f)
+	assert.Equal(t, fnn, i)
 }
