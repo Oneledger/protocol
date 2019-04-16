@@ -6,7 +6,7 @@ import (
 	"github.com/Oneledger/protocol/node/chains/common"
 )
 
-// Web3ClientVersion returns the current comm version.
+// Web3ClientVersion returns the current client version.
 func (rpc *EthRPCClient) Web3ClientVersion() (string, error) {
 	var clientVersion string
 

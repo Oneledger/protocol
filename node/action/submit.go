@@ -27,7 +27,7 @@ func DelayedTransaction(ctx comm.ClientContext, transaction Transaction, waitTim
 func BroadcastTransaction(ctx comm.ClientContext, transaction Transaction, sync bool) {
 	log.Debug("Broadcast a transaction to the chain")
 
-	// Don't let the death of a comm stop the node from running
+	// Don't let the death of a client stop the node from running
 	defer func() {
 		if r := recover(); r != nil {
 			log.Error("Ignoring Client Panic", "r", r)

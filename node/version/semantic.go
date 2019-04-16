@@ -23,7 +23,7 @@ func init() {
 
 var Fullnode *Version // Version of the source code
 var Protocol *Version // Version of the protocol
-var Client *Version   // Version of the comm
+var Client *Version   // Version of the client
 
 // This should be the only copy of the version numbers, anywhere in the code.
 func init() {

@@ -54,7 +54,7 @@ func (s *EthRPCTestSuite) paramsEqual(body []byte, expected string) {
 }
 
 func (s *EthRPCTestSuite) TestWeb3ClientVersion() {
-	response := `{"jsonrpc":"2.0", "id":1, "result": "test comm"}`
+	response := `{"jsonrpc":"2.0", "id":1, "result": "test client"}`
 
 	httpmock.RegisterResponder("POST", s.rpc.url, func(request *http.Request) (*http.Response, error) {
 		body := s.getBody(request)
@@ -66,7 +66,7 @@ func (s *EthRPCTestSuite) TestWeb3ClientVersion() {
 
 	v, err := s.rpc.Web3ClientVersion()
 	s.Require().Nil(err)
-	s.Require().Equal("test comm", v)
+	s.Require().Equal("test client", v)
 }
 
 func (s *EthRPCTestSuite) registerResponse(result string, callback func([]byte)) {

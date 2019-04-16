@@ -1,7 +1,7 @@
 /*
 	Copyright 2017-2018 OneLedger
 
-	Cover over the Tendermint comm handling.
+	Cover over the Tendermint client handling.
 
 	TODO: Make this generic to handle HTTP and local clients
 */

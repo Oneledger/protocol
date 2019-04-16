@@ -95,7 +95,7 @@ func (tty *Tty) Password(prompt string) string {
 }
 
 // TODO: Catch a disconnected terminal, maybe read input from files?
-// TODO: Will need this to handled getting secure passwords at the comm...
+// TODO: Will need this to handled getting secure passwords at the client...
 func (tty *Tty) Read(prompt string) string {
 	input, err := speakeasy.Ask(prompt)
 	if err != nil {

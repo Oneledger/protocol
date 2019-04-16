@@ -17,7 +17,7 @@ func NewSDKClient() pb.SDKClient {
 	// TODO: Why is this insecure????
 	connection, err := grpc.Dial(":"+sdk.GetPort(address), grpc.WithInsecure())
 	if err != nil {
-		log.Fatal("SDK Cannot create comm", "err", err)
+		log.Fatal("SDK Cannot create client", "err", err)
 	}
 
 	client := pb.NewSDKClient(connection)

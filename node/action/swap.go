@@ -157,8 +157,8 @@ func (swap *Swap) Resolve(app interface{}) Commands {
 			log.Error("Swap resolve no commands", "swap", swap)
 			return nil
 		}
-		//todo: the owner and signer should change when support wallet/light comm.
-		// the owner should be the wallet/light comm sender not the operation node. so as the signer
+		//todo: the owner and signer should change when support wallet/light client.
+		// the owner should be the wallet/light client sender not the operation node. so as the signer
 		commands[0].data[PREVIOUS] = _hash(swap)
 	}
 	return commands

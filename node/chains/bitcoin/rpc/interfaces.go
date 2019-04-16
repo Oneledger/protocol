@@ -16,7 +16,7 @@ import (
 	"github.com/btcsuite/btcutil"
 )
 
-// Bitcoind - represents a Bitcoind comm
+// Bitcoind - represents a Bitcoind client
 type Bitcoind struct {
 	client      *BTCRpcClient
 	ChainParams *chaincfg.Params

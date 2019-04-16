@@ -10,7 +10,7 @@ type OLVMService struct {
 	Address string
 }
 
-// Static information about the comm parameters
+// Static information about the client parameters
 type OLVMClient struct {
 	Protocol    string
 	ServicePath string // TODO: Should be called Address

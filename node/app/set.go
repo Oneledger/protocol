@@ -156,7 +156,7 @@ func SetOption(app *Application, key string, value string) bool {
 
 	case "Register":
 		var args = &RegisterArguments{}
-		// I am not sure where this comes from; doing comm deser for now
+		// I am not sure where this comes from; doing client deser for now
 		err := clSerializer.Deserialize([]byte(value), args)
 		//result, err := serial.Deserialize([]byte(value), &arguments, serial.NETWORK)
 
