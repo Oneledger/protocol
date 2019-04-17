@@ -44,7 +44,7 @@
         }
         output {
             elasticsearch { 
-                hosts => ["https://search-oneledger-loading-testing-vla6ox4imspr4dhxmdjqet5j74.us-east-1.es.amazonaws.com:443"] 
+                hosts => {{ elasticsearch_hosts | to_json }}
             }
         }    
 - name: create serviced file for logstash
