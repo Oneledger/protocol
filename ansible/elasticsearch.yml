@@ -10,6 +10,12 @@
         es_version: 6.7.1
         es_api_basic_auth_username: elastic
         es_api_basic_auth_password: changeme
+        es_api_host: 35.231.73.116
+        es_config:
+          network.host: 35.231.73.116
+          http.port: 9200
+          es_log_dir: "/opt/elasticsearch/logs"
+          discovery.zen.ping.unicast.hosts: "35.231.73.116:9200"
   tasks:
   - name: download public signing key for elastic
     apt_key:
@@ -32,6 +38,7 @@
       content: | 
         server.port: 5601
         server.host: "0.0.0.0"
+        elasticsearch.hosts: "35.231.73.116:9200"
   - name: restart kibana
     service: 
       name: kibana
