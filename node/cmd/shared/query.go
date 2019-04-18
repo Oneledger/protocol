@@ -80,8 +80,8 @@ func GetBalance(accountKey id.AccountKey) *data.Balance {
 		log.Error("Error:", "response", response)
 		return nil
 	}
-	balance := response.(*data.Balance)
-	return balance
+	balance := response.(*data.BalanceData).Primitive()
+	return balance.(*data.Balance)
 }
 
 func GetTxByHash(hash []byte) *ctypes.ResultTx {

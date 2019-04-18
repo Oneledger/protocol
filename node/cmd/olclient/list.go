@@ -81,7 +81,12 @@ func ListNode(cmd *cobra.Command, args []string) {
 
 func printAccountQuery(nodeName string, accountQuery interface{}) {
 
-	accounts := accountQuery.([]id.Account)
+	accountsI := accountQuery.([]interface{})
+	accounts := make([]id.Account, len(accountsI))
+	for i := range accountsI {
+		a := accountsI[i].(id.Account)
+		accounts[i] = a
+	}
 
 	if len(accounts) < 1 {
 		shared.Console.Info("No Accounts on", nodeName)
@@ -116,7 +121,11 @@ func printAccountQuery(nodeName string, accountQuery interface{}) {
 }
 
 func printIdentityQuery(nodeName string, idQuery interface{}) {
-	identities := idQuery.([]id.Identity)
+	identitiesI := idQuery.([]interface{})
+	identities := make([]*(id.Identity), len(identitiesI))
+	for i := range identitiesI {
+		identities[i] = identitiesI[i].(*(id.Identity))
+	}
 
 	shared.Console.Info("Identities on", nodeName+":\n")
 
@@ -125,7 +134,7 @@ func printIdentityQuery(nodeName string, idQuery interface{}) {
 	}
 }
 
-func printAnIdentity(identity id.Identity) {
+func printAnIdentity(identity *id.Identity) {
 	// Right-align fieldnames in console
 	name := "             Name:"
 	scope := "            Scope:"
@@ -156,7 +165,7 @@ func printValidatorQuery(nodeName string, validatorQuery interface{}) {
 	for _, validator := range validators {
 		//printAValidator(validator)
 		if validator.Name != "" {
-			printAnIdentity(validator)
+			printAnIdentity(&validator)
 		}
 	}
 }

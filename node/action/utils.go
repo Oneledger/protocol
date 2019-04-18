@@ -6,6 +6,7 @@ import (
 	"github.com/Oneledger/protocol/node/global"
 	"github.com/Oneledger/protocol/node/id"
 	"github.com/Oneledger/protocol/node/log"
+	"github.com/Oneledger/protocol/node/serialize"
 	"time"
 
 	"github.com/Oneledger/protocol/node/serial"
@@ -24,7 +25,7 @@ func _hash(item interface{}) []byte {
 
 	hasher := ripemd160.New()
 
-	buffer, err := serial.Serialize(item, serial.JSON)
+	buffer, err := serialize.JSONSzr.Serialize(item)
 	if err != nil {
 		log.Fatal("hash serialize failed", "err", err)
 	}
