@@ -3,6 +3,7 @@
         "app_user": "node",
         "version": "develop",
         "tag": "develop",
+        "enable_logging":"false",
         "compress" : "false"
     },
     "builders": [
@@ -20,7 +21,7 @@
         {
             "type": "googlecompute",
             "name": "gcp-vm-image",
-            "image_name": "fullnode-{{user `tag`}}",
+            "image_name": "fullnode-{{user `tag` | clean_image_name }}",
             "account_file": "./gcp/DevNet.json",
             "project_id": "atomic-land-223022",
             "source_image_family": "ubuntu-1604-lts",
@@ -53,7 +54,8 @@
             "type": "ansible-local",
             "playbook_file": "ansible/fullnode.yml",
             "command": "ansible-playbook -vvv",
-            "extra_arguments": ["--extra-vars \"compress={{user `compress`}} app_user={{user `app_user`}} app_version={{user `version`}}\""]
+            "role_paths": ["ansible/roles/logstash"],
+            "extra_arguments": ["--extra-vars \"enable_logging={{user `enable_logging`}} compress={{user `compress`}} app_user={{user `app_user`}} app_version={{user `version`}}\""]
         }
     ],
     "post-processors": [

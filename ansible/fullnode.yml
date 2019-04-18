@@ -1,5 +1,7 @@
 ---
 - hosts: all
+  become: true
+  become_user: root
   vars:
     GOPATH: /home/{{app_user}}/go
     OLROOT: "{{GOPATH}}/src/github.com/Oneledger"
@@ -7,7 +9,10 @@
     GOLANG_INSTALL_DIR: /usr/local/go
     CONTAINER_OUTPUT_PATH: "/home/{{app_user}}/output"
     compress_image: "{{ compress | default('false')}}"
+    logging: "{{ enable_logging | default('false')}}"
   roles:
+  - role: logstash
+    when: logging == "true" 
   - role: gantsign.golang
     golang_gopath: "{{GOPATH}}"
     golang_version: 1.11.6
@@ -194,6 +199,7 @@
         sed -i "s/seed_mode.*/seed_mode = false/" {{OLDATA}}/config.toml
         sed -i "s/persistent_peers.*/persistent_peers = $persistent_peers/" {{OLDATA}}/config.toml
         sed -i "s/seeds.*/seeds = $seeds/" {{OLDATA}}/config.toml
+        sed -i "s/log_output.*/log_output = \"stdout\"/" {{OLDATA}}/config.toml
   - name: create start script
     copy:
       dest: "/usr/local/bin/fullnodeStartup"

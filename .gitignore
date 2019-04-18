@@ -1,4 +1,4 @@
 gcp/.terraform
 ansible/*.retry
-
+gcp/DevNet.json
 protocol/

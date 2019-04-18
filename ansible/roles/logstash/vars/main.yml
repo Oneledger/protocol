@@ -1,0 +1,3 @@
+---
+# vars file for logstash
+elasticsearch_hosts: ["http://35.231.73.116:9200"] 
