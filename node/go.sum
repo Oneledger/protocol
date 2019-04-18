@@ -1,3 +1,8 @@
+
+github.com/Oneledger/toml v0.4.0 h1:sGOxCg4QTAct23zbopoO3h8PEjIshTn2YveDt1Vz/S4=
+github.com/Oneledger/toml v0.4.0/go.mod h1:2jh4gaY9vuiKnQRDUvFIhsuY1JKBZBGl6+YAyX6sWpk=
+github.com/Oneledger/toml v0.4.1 h1:CojBO0C04q1L+nr2sNXWT1y/FMZfjIyZg7oUtXVpzLM=
+github.com/Oneledger/toml v0.4.1/go.mod h1:2jh4gaY9vuiKnQRDUvFIhsuY1JKBZBGl6+YAyX6sWpk=
 github.com/Oneledger/protocol v0.9.0 h1:82SkHPrPoUhbGxUfsseeAL0tVITbu40R9pC4Wb7RX8w=
 github.com/Oneledger/toml v0.4.0 h1:sGOxCg4QTAct23zbopoO3h8PEjIshTn2YveDt1Vz/S4=
 github.com/Oneledger/toml v0.4.0/go.mod h1:2jh4gaY9vuiKnQRDUvFIhsuY1JKBZBGl6+YAyX6sWpk=

@@ -24,11 +24,6 @@ import (
 )
 
 var _ types.Application = Application{}
-var ChainId string
-var chainKey = data.DatabaseKey("chainId")
-
-// TODO: DEBUG
-var ZeroAccountKey id.AccountKey
 
 // ApplicationContext keeps all of the upper level global values.
 type Application struct {
