@@ -9,6 +9,7 @@ package action
 
 import (
 	"bytes"
+
 	"github.com/Oneledger/protocol/node/serialize"
 	"github.com/pkg/errors"
 
@@ -170,7 +171,7 @@ func GetContractRef(app interface{}, key []byte) data.ContractRefStatus {
 	if raw == nil {
 		return data.NOT_FOUND
 	} else {
-		contractRefRecord := raw.(data.ContractRefRecord)
+		contractRefRecord := raw.(*data.ContractRefRecord)
 		log.Debug("contractRefRecord", "contractRefRecord", contractRefRecord)
 		log.Debug("status", "contractRefRecord.Status", contractRefRecord.Status)
 		return contractRefRecord.Status

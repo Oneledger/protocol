@@ -15,16 +15,15 @@ import (
 func SetNodeName(app interface{}) {
 	admin := action.GetAdmin(app)
 
-	var existing AdminParameters
+	var existing = &AdminParameters{}
 
 	interim := admin.Get(data.DatabaseKey("AdminParameters"))
 	if interim == nil {
 		log.Debug("Admin Parameters not found")
-		existing = AdminParameters{}
 		existing.NodeName = global.Current.NodeName
 		existing.NodeAccountName = global.Current.NodeAccountName
 	} else {
-		existing = interim.(AdminParameters)
+		existing = interim.(*AdminParameters)
 
 		// TODO: Denormalized, should need to check against a default to see if it changed...
 		if global.Current.NodeAccountName != "" {

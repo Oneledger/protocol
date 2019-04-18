@@ -7,8 +7,9 @@ package id
 
 import (
 	"bytes"
-	"github.com/Oneledger/protocol/node/serialize"
 	"strings"
+
+	"github.com/Oneledger/protocol/node/serialize"
 
 	"github.com/Oneledger/protocol/node/data"
 	"github.com/Oneledger/protocol/node/log"
@@ -81,7 +82,7 @@ func (ids *Identities) Exists(name string) bool {
 func (ids *Identities) FindName(name string) (Identity, status.Code) {
 	value := ids.store.Get(data.DatabaseKey(name))
 	if value != nil {
-		return value.(Identity), status.SUCCESS
+		return *(value.(*Identity)), status.SUCCESS
 	}
 	return Identity{}, status.MISSING_DATA
 }
@@ -92,7 +93,7 @@ func (ids *Identities) FindAll() []Identity {
 	results := make([]Identity, size, size)
 	for i := 0; i < size; i++ {
 		result := ids.store.Get(keys[i])
-		results[i] = result.(Identity)
+		results[i] = *(result.(*Identity))
 	}
 	return results
 }
@@ -101,9 +102,9 @@ func (ids *Identities) FindKey(accountKey AccountKey) Identity {
 	keys := ids.store.FindAll()
 	size := len(keys)
 	for i := 0; i < size; i++ {
-		identity := ids.store.Get(keys[i]).(Identity)
+		identity := ids.store.Get(keys[i]).(*Identity)
 		if bytes.Compare(accountKey, identity.AccountKey) == 0 {
-			return identity
+			return *identity
 		}
 	}
 	return Identity{}
@@ -113,9 +114,9 @@ func (ids *Identities) FindTendermint(tendermintAddress string) Identity {
 	keys := ids.store.FindAll()
 	size := len(keys)
 	for i := 0; i < size; i++ {
-		identity := ids.store.Get(keys[i]).(Identity)
+		identity := ids.store.Get(keys[i]).(*Identity)
 		if strings.ToLower(tendermintAddress) == strings.ToLower(identity.TendermintAddress) {
-			return identity
+			return *identity
 		}
 	}
 	log.Debug("Missing identity", "name", tendermintAddress, "size", size, "keys", keys)

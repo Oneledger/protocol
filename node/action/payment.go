@@ -10,6 +10,7 @@ import (
 	"github.com/Oneledger/protocol/node/global"
 	"github.com/Oneledger/protocol/node/log"
 	"github.com/Oneledger/protocol/node/serial"
+	"github.com/Oneledger/protocol/node/serialize"
 	"github.com/Oneledger/protocol/node/status"
 )
 
@@ -65,6 +66,7 @@ type PaymentRecord struct {
 
 func init() {
 	serial.Register(PaymentRecord{})
+	serialize.RegisterConcrete(new(PaymentRecord), TagPaymentRecord)
 }
 
 func (transaction *Payment) ProcessDeliver(app interface{}) status.Code {

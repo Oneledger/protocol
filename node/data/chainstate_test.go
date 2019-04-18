@@ -65,7 +65,7 @@ func TestChainStateContinueUpdate(t *testing.T) {
 	b1 := state.Get(key, false)
 	log.Debug("with commit", "balance", b1)
 
-	assert.Equal(t, true, balance.GetAmountByName("OLT").Equals(b1.GetAmountByName("OLT")), "balance not eqaul after commit", b1)
+	assert.Equal(t, true, balance.GetCoinByName("OLT").Equals(b1.GetCoinByName("OLT")), "balance not eqaul after commit", b1)
 
 	newbalance := NewBalanceFromInt(14, "OLT")
 
@@ -75,7 +75,7 @@ func TestChainStateContinueUpdate(t *testing.T) {
 	//_, b2 := state.Delivered.ImmutableTree.Get(key)
 	log.Debug("without commit", "balance", b2)
 
-	assert.Equal(t, true, newbalance.GetAmountByName("OLT").Equals(b2.GetAmountByName("OLT")), "balance not eqaul without commit", b2)
+	assert.Equal(t, true, newbalance.GetCoinByName("OLT").Equals(b2.GetCoinByName("OLT")), "balance not eqaul without commit", b2)
 
 }
 

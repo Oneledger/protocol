@@ -4,29 +4,18 @@
 
 package data
 
-import (
-	"github.com/Oneledger/protocol/node/serial"
-	"github.com/Oneledger/protocol/node/serialize"
-)
-
 // Wrap the amount with owner information
 type Balance struct {
 	// Address id.Address
-	Amounts map[int]Coin
+	Amounts   map[int]Coin
 	coinOrder []int // this field helps to maintain order during serialization
-					// so that all the nodes have the same hash of account balances
-}
-
-func init() {
-	serial.Register(Balance{})
-
-	serialize.RegisterConcrete(new(Balance), TagBalance)
+	// so that all the nodes have the same hash of account balances
 }
 
 func NewBalance() *Balance {
 	amounts := make(map[int]Coin, 0)
 	result := &Balance{
-		Amounts: amounts,
+		Amounts:   amounts,
 		coinOrder: []int{},
 	}
 	return result
@@ -84,12 +73,6 @@ func (b *Balance) MinusCoin(coin Coin) {
 	return
 }
 
-/*
-func (b *Balance) FromCoin(coin Coin) {
-	b.Amounts[string(coin.Currency.Key())] = coin
-}
-*/
-
 func (b *Balance) GetCoin(currency Currency) Coin {
 	result := b.FindCoin(currency)
 	if result == nil {
@@ -99,15 +82,15 @@ func (b *Balance) GetCoin(currency Currency) Coin {
 	return b.Amounts[currency.Id]
 }
 
-// TODO: GetCoinByName?
-func (b *Balance) GetAmountByName(name string) Coin {
+// GetCoinByName
+func (b *Balance) GetCoinByName(name string) Coin {
 	currency := NewCurrency(name)
 	result := b.FindCoin(currency)
 	if result == nil {
 		// NOTE: Missing coins are actually zero value coins.
 		return NewCoinFromInt(0, name)
 	}
-	return b.Amounts[Currencies[name].Id]
+	return b.Amounts[currencies[name].Id]
 }
 
 func (b *Balance) SetAmount(coin Coin) {

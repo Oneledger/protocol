@@ -8,7 +8,9 @@ package action
 import (
 	"bytes"
 	"encoding/hex"
-	"github.com/Oneledger/protocol/node/chains/driver"
+
+	chaindriver "github.com/Oneledger/protocol/node/chains/driver"
+	"github.com/Oneledger/protocol/node/serialize"
 
 	tendermintcommon "github.com/tendermint/tendermint/libs/common"
 
@@ -36,11 +38,19 @@ import (
 func init() {
 	serial.Register(Swap{})
 	serial.Register(Party{})
-	var SwapMessage SwapMessage
-	serial.RegisterInterface(&SwapMessage)
+	var SwapMessageT SwapMessage
+	serial.RegisterInterface(&SwapMessageT)
 	serial.Register(SwapInit{})
 	serial.Register(SwapExchange{})
 	serial.Register(SwapVerify{})
+
+	serialize.RegisterInterface(new(SwapMessage))
+	serialize.RegisterConcrete(new(Swap), "action_swap")
+	serialize.RegisterConcrete(new(Party), "action_party")
+	serialize.RegisterConcrete(new(SwapInit), "action_swap_init")
+	serialize.RegisterConcrete(new(SwapExchange), "action_swap_exchange")
+	serialize.RegisterConcrete(new(SwapVerify), "action_swap_verify")
+
 }
 
 type swapStageType int
@@ -732,8 +742,8 @@ func FindSwap(app interface{}, key []byte) *SwapInit {
 	if buffer == nil {
 		return nil
 	}
-	result := buffer.(SwapInit)
-	return &result
+	result := buffer.(*SwapInit)
+	return result
 }
 
 func DeleteSwap(app interface{}, key id.AccountKey) {

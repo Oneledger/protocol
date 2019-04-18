@@ -7,6 +7,7 @@ package action
 
 import (
 	"bytes"
+
 	"github.com/Oneledger/protocol/node/data"
 	"github.com/Oneledger/protocol/node/id"
 	"github.com/Oneledger/protocol/node/log"
@@ -86,14 +87,14 @@ func CheckBalances(app interface{}, owner id.AccountKey, identityAccountKey id.A
 
 	//check identity's VT is equal to the stake
 	identityBalance := balances.Get(identityAccountKey, false)
-	if identityBalance.GetAmountByName("VT").LessThanCoin(stake) {
+	if identityBalance.GetCoinByName("VT").LessThanCoin(stake) {
 		return false
 	}
 
 	//check administrator's VT is greater than 10
 	if bytes.Compare(owner, identityAccountKey) != 0 {
 		ownerBalance := balances.Get(owner, false)
-		if ownerBalance.GetAmountByName("VT").LessThanCoin(data.NewCoinFromFloat(10.0, "VT")) {
+		if ownerBalance.GetCoinByName("VT").LessThanCoin(data.NewCoinFromFloat(10.0, "VT")) {
 			return false
 		}
 	}
