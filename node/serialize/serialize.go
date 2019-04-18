@@ -1,9 +1,12 @@
 package serialize
 
 import (
+	"sync"
+
+	"github.com/google/uuid"
+
 	"github.com/tendermint/go-amino"
 	"github.com/vmihailenco/msgpack"
-	"sync"
 )
 
 type Channel int
@@ -17,7 +20,7 @@ const (
 
 var aminoCodec *amino.Codec
 var JSONSzr Serializer
-var registeredConcretes = []string{}
+var registeredConcretes = make([]string, 0, 100)
 var lockRegisteredConcretes sync.Mutex
 
 func init() {
@@ -25,6 +28,8 @@ func init() {
 	JSONSzr = GetSerializer(JSON)
 
 	RegisterConcrete(new(string), "std_string")
+	RegisterConcrete(new([]byte), "std_byte_arr")
+	RegisterConcrete(new(uuid.UUID), "google_uuid_UUID")
 }
 
 type Serializer interface {
@@ -53,7 +58,6 @@ func GetSerializer(channel Channel, args ...interface{}) Serializer {
 		return &jsonStrategy{}
 	}
 }
-
 
 // functions to register types
 func RegisterInterface(obj interface{}) {

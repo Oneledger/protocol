@@ -7,9 +7,10 @@ package id
 
 import (
 	"fmt"
-	"github.com/Oneledger/protocol/node/serialize"
 	"reflect"
 	"strings"
+
+	"github.com/Oneledger/protocol/node/serialize"
 
 	"github.com/Oneledger/protocol/node/data"
 
@@ -95,7 +96,7 @@ func (acc *Accounts) FindKey(key AccountKey) (Account, status.Code) {
 	}
 
 	result := interim.(Account)
-	return result.(Account), status.SUCCESS
+	return result, status.SUCCESS
 
 }
 
@@ -139,7 +140,7 @@ type Account interface {
 	AccountKey() AccountKey
 	PublicKey() PublicKey
 	PrivateKey() PrivateKey
-	GetChainKey() interface {}
+	GetChainKey() interface{}
 
 	String() string
 
@@ -182,7 +183,7 @@ type AccountBase struct {
 	PrivateKey PrivateKeyED25519 `json:"privateKey"`
 
 	// TODO: This is to store keys for different chains, need to provide proper key polymorphism
-	ChainKey interface {}
+	ChainKey interface{}
 }
 
 func init() {
@@ -276,7 +277,7 @@ func (account *AccountOneLedger) AddPrivateKey(key PrivateKey) {
 }
 */
 
-func (account *AccountBase) GetChainKey() interface {} {
+func (account *AccountBase) GetChainKey() interface{} {
 	return account.ChainKey
 }
 

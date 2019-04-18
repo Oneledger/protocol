@@ -52,8 +52,9 @@ func init() {
 	serial.Register(OLVMResult{})
 	serial.Register(OLVMContext{})
 
-
+	serialize.RegisterConcrete(new(OLVMRequest), TagOLVMRequest)
 	serialize.RegisterConcrete(new(OLVMResult), TagOLVMResult)
+	serialize.RegisterConcrete(new(OLVMContext), TagOLVMContext)
 }
 
 func NewOLVMResultWithCallString(script []byte, callString string, context OLVMContext) *OLVMRequest {

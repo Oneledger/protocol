@@ -48,9 +48,12 @@ func HandleSet(app Application, path string, arguments map[string]interface{}) [
 
 func GetChain(chainName string) data.ChainType {
 	switch chainName {
-	case "OneLedger" : return data.ONELEDGER
-	case "BitCoin" : return data.BITCOIN
-	case "Ethereum" : return data.ETHEREUM
+	case "OneLedger":
+		return data.ONELEDGER
+	case "BitCoin":
+		return data.BITCOIN
+	case "Ethereum":
+		return data.ETHEREUM
 	}
 	return data.UNKNOWN
 }
@@ -87,15 +90,15 @@ func HandleSetAccount(app Application, arguments map[string]interface{}) interfa
 
 	chainKey := arguments["ChainKey"].(string)
 
-	account, err := app.Accounts.FindNameOnChain(accountName, chain)
-	if err == status.SUCCESS {
+	account, code := app.Accounts.FindNameOnChain(accountName, chain)
+	if code == status.SUCCESS {
 		return "Account has already been set up."
 	}
 
 	AddAccount(&app, accountName, chain, publicKey, privateKey, chainKey, nodeAccount)
 
-	account, err = app.Accounts.FindNameOnChain(accountName, chain)
-	if err == status.SUCCESS {
+	account, code = app.Accounts.FindNameOnChain(accountName, chain)
+	if code == status.SUCCESS {
 		return account
 	}
 

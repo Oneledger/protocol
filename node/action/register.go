@@ -191,7 +191,7 @@ func CheckRegisterFee(app interface{}, owner id.AccountKey, fee data.Coin) bool 
 	if ownerBalance == nil {
 		return false
 	}
-	if ownerBalance.GetAmountByName("OLT").LessThanCoin(fee) {
+	if ownerBalance.GetCoinByName("OLT").LessThanCoin(fee) {
 		return false
 	}
 

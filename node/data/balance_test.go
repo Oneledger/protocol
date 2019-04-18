@@ -2,15 +2,16 @@ package data
 
 import (
 	"fmt"
-	"github.com/Oneledger/protocol/node/serialize"
 	"testing"
+
+	"github.com/Oneledger/protocol/node/serialize"
 
 	"github.com/stretchr/testify/assert"
 
 	"github.com/Oneledger/protocol/node/log"
 )
 
-func init(){
+func init() {
 	pSzlr = serialize.GetSerializer(serialize.PERSISTENT)
 }
 func xTestNewBalance(t *testing.T) {
@@ -46,7 +47,7 @@ func TestBalance_AddAmmount(t *testing.T) {
 	b := NewBalanceFromInt(100, "VT")
 	b.AddAmount(NewCoinFromInt(10, "VT"))
 
-	assert.Equal(t, a.GetAmountByName("VT").Amount.Uint64()+10, b.GetAmountByName("VT").Amount.Uint64())
+	assert.Equal(t, a.GetCoinByName("VT").Amount.Uint64()+10, b.GetCoinByName("VT").Amount.Uint64())
 
 }
 
@@ -56,7 +57,7 @@ func TestBalance_MinusAmmount(t *testing.T) {
 
 	b.MinusAmount(NewCoinFromInt(20, "VT"))
 	//assert.Equal(t, a.Amounts[3].Amount.Uint64()-20, b.Amounts[3].Amount.Uint64())
-	assert.Equal(t, a.GetAmountByName("VT").Amount.Uint64()-20, b.GetAmountByName("VT").Amount.Uint64())
+	assert.Equal(t, a.GetCoinByName("VT").Amount.Uint64()-20, b.GetCoinByName("VT").Amount.Uint64())
 }
 
 func TestBalance_IsEnoughBalance(t *testing.T) {

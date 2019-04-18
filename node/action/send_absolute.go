@@ -213,13 +213,13 @@ func CheckBalance(app interface{}, accountKey id.AccountKey, amount data.Coin) b
 		// New accounts don't have a balance until the first transaction
 		log.Debug("New Balance", "key", accountKey, "amount", amount, "balance", balance)
 		balance = data.NewBalanceFromInt(0, amount.Currency.Name)
-		if !balance.GetAmountByName(amount.Currency.Name).Equals(amount) {
+		if !balance.GetCoinByName(amount.Currency.Name).Equals(amount) {
 			return false
 		}
 		return true
 	}
 
-	if !balance.GetAmountByName(amount.Currency.Name).Equals(amount) {
+	if !balance.GetCoinByName(amount.Currency.Name).Equals(amount) {
 		log.Warn("Balance Mismatch", "key", accountKey, "amount", amount, "balance", balance)
 		return false
 	}

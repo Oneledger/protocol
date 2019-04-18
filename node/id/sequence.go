@@ -20,7 +20,7 @@ func NextSequence(app interface{}, accountkey AccountKey) SequenceRecord {
 	sequenceDb := GetSequence(app)
 	raw := sequenceDb.Get(accountkey)
 	if raw != nil {
-		interim := raw.(SequenceRecord)
+		interim := raw.(*SequenceRecord)
 		sequence = interim.Sequence + 1
 	}
 

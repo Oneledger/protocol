@@ -4,9 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/Oneledger/protocol/node/serialize"
 	"reflect"
 	"strconv"
+
+	"github.com/Oneledger/protocol/node/serialize"
 
 	"github.com/Oneledger/protocol/node/action"
 	"github.com/Oneledger/protocol/node/comm"
@@ -169,8 +170,8 @@ func (server SDKServer) CheckAccount(ctx context.Context, request *pb.CheckAccou
 	var result *pb.Balance
 	if balance != nil {
 		result = &pb.Balance{
-			Amount:   balance.GetAmountByName("OLT").Float64(),
-			Currency: currencyProtobuf(balance.GetAmountByName("OLT").Currency),
+			Amount:   balance.GetCoinByName("OLT").Float64(),
+			Currency: currencyProtobuf(balance.GetCoinByName("OLT").Currency),
 		}
 	} else {
 		result = &pb.Balance{Amount: 0, Currency: pb.Currency_OLT}
@@ -286,13 +287,13 @@ func prepareSend(
 	}
 
 	inputs := []action.SendInput{
-		action.NewSendInput(pKey, pBalance.GetAmountByName("OLT")),
-		action.NewSendInput(cpKey, cpBalance.GetAmountByName("OLT")),
+		action.NewSendInput(pKey, pBalance.GetCoinByName("OLT")),
+		action.NewSendInput(cpKey, cpBalance.GetCoinByName("OLT")),
 	}
 
 	outputs := []action.SendOutput{
-		action.NewSendOutput(pKey, pBalance.GetAmountByName("OLT").Minus(sendAmount)),
-		action.NewSendOutput(cpKey, cpBalance.GetAmountByName("OLT").Plus(sendAmount)),
+		action.NewSendOutput(pKey, pBalance.GetCoinByName("OLT").Minus(sendAmount)),
+		action.NewSendOutput(cpKey, cpBalance.GetCoinByName("OLT").Plus(sendAmount)),
 	}
 
 	return &action.Send_Absolute{
