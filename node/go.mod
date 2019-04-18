@@ -1,7 +1,6 @@
 module github.com/Oneledger/protocol/node
 
 require (
-	github.com/Oneledger/toml v0.4.1
 	github.com/aristanetworks/goarista v0.0.0-20181101003910-5bb443fba8e0 // indirect
 	github.com/beorn7/perks v0.0.0-20180321164747-3a771d992973 // indirect
 	github.com/bgentry/speakeasy v0.1.0
@@ -22,6 +21,7 @@ require (
 	github.com/google/uuid v1.0.0
 	github.com/gorilla/websocket v1.2.0 // indirect
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
+	github.com/jbsmith7741/toml v0.3.1-0.20171003150610-484e047de162
 	github.com/jmhodges/levigo v0.0.0-20161115193449-c42d9e0ca023 // indirect
 	github.com/kr/logfmt v0.0.0-20140226030751-b84e30acd515 // indirect
 	github.com/mattn/go-isatty v0.0.4
@@ -43,6 +43,7 @@ require (
 	github.com/spf13/cast v1.3.0 // indirect
 	github.com/spf13/cobra v0.0.3
 	github.com/spf13/pflag v1.0.3 // indirect
+	github.com/spf13/viper v1.2.1 // indirect
 	github.com/stretchr/testify v1.2.2
 	github.com/syndtr/goleveldb v0.0.0-20181105012736-f9080354173f // indirect
 	github.com/tendermint/ed25519 v0.0.0-20171027050219-d8387025d2b9 // indirect
@@ -55,7 +56,6 @@ require (
 	golang.org/x/crypto v0.0.0-20181106171534-e4dc69e5b2fd
 	golang.org/x/net v0.0.0-20180906233101-161cd47e91fd
 	golang.org/x/sys v0.0.0-20181107165924-66b7b1311ac8 // indirect
-	google.golang.org/appengine v1.5.0 // indirect
 	google.golang.org/grpc v1.13.0
 	gopkg.in/jarcoal/httpmock.v1 v1.0.0-20181110093347-3be5f16b70eb
 	gopkg.in/natefinch/npipe.v2 v2.0.0-20160621034901-c1b8fa8bdcce // indirect

@@ -22,15 +22,12 @@ import (
 	"github.com/Oneledger/protocol/node/persist"
 	"github.com/mitchellh/go-homedir"
 	tmnode "github.com/tendermint/tendermint/node"
-	"github.com/tendermint/tendermint/types"
 )
 
 var Current *Context
 
 type Context struct {
 	Application persist.Access // Global Access to the application when it is running
-
-	chainID string
 
 	Debug            bool // DEBUG flag
 	DisablePasswords bool // DEBUG flag
@@ -97,16 +94,6 @@ func NewContext(name string) *Context {
 		MinRegisterFee: 0.1,
 		Config:         config.DefaultServerConfig(),
 	}
-}
-
-// ChainID returns the chainID
-func (ctx *Context) ChainID() string {
-	return ctx.chainID
-}
-
-// SetChainID sets the current chain ID, its value should always come from the genesis file
-func (ctx *Context) SetChainID(doc *types.GenesisDoc) {
-	ctx.chainID = doc.ChainID
 }
 
 func (ctx *Context) SetApplication(app persist.Access) persist.Access {

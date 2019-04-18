@@ -131,7 +131,7 @@ func CreateRegisterRequest(identityName string, accountKey id.AccountKey, fee fl
 	reg := &action.Register{
 		Base: action.Base{
 			Type:     action.REGISTER,
-			ChainId:  global.Current.ChainID(),
+			ChainId:  ChainId,
 			Owner:    accountKey,
 			Signers:  action.GetSigners(accountKey), // TODO: Server-side? Then this is wrong
 			Sequence: global.Current.Sequence,
