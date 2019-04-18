@@ -83,14 +83,6 @@ func NewApplication() *Application {
 	}
 }
 
-func (app Application) CheckIfInitialized() bool {
-	if app.getPassword() == nil {
-		return false
-	}
-
-	return true
-}
-
 // Initial the state of the application from persistent data
 func (app Application) Initialize() {
 
@@ -143,15 +135,14 @@ func (app Application) StartSDK() {
 func (app Application) SetupState(stateBytes []byte) {
 	log.Debug("SetupState", "state", string(stateBytes))
 
-	var base consensus.AppState
+	var state = &consensus.AppState{}
 	// Tendermint serializes this data, so we have to use raw JSON serialization to read it.
-	var state = &BasicState{}
 	errx := serialize.JSONSzr.Deserialize(stateBytes, state)
 	if errx != nil {
-		log.Fatal("Failed to deserialize stateBytes during SetupState")
+		log.Fatal("Failed to deserialize stateBytes during SetupState", "err", errx)
 	}
 
-	state := des.(*consensus.AppState)
+	//state := base.(*consensus.AppState)
 	log.Debug("Deserialized State", "state", state)
 
 	// TODO: Can't generate a different key for each node. Needs to be in the genesis? Or ignored?
@@ -165,13 +156,10 @@ func (app Application) SetupState(stateBytes []byte) {
 	states := []consensus.State{
 		consensus.State{Amount: "0", Currency: "OLT"},
 	}
-	CreateAccount(app, &consensus.AppState{global.Current.PaymentAccount, states}, publicKey, privateKey, nil)
+	createAccount(app, &consensus.AppState{global.Current.PaymentAccount, states}, publicKey, privateKey, nil)
 }
 
-// TODO: DEBUG
-var ZeroAccountKey id.AccountKey
-
-func CreateAccount(app Application, state *consensus.AppState, publicKey id.PublicKeyED25519, privateKey id.PrivateKeyED25519, chainkey interface{}) {
+func createAccount(app Application, state *consensus.AppState, publicKey id.PublicKeyED25519, privateKey id.PrivateKeyED25519, chainkey interface{}) {
 	// TODO: This should probably only occur on the Admin node, for other nodes how do I know the key?
 	// Register the identity and account first
 	AddAccount(&app, state.Account, data.ONELEDGER, publicKey, privateKey, chainkey, false)
@@ -452,7 +440,7 @@ func (app *Application) MakePayment(req RequestBeginBlock) {
 			if result != nil {
 				// TODO: check this later
 				log.Debug("Issuing Payment", "result", result)
-				action.DelayedTransaction(result, 0*time.Second)
+				action.DelayedTransaction(app.ClientContext, result, 0*time.Second)
 			}
 		} else {
 			log.Debug("Payment happens on a different node", "node",
