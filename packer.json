@@ -21,7 +21,7 @@
         {
             "type": "googlecompute",
             "name": "gcp-vm-image",
-            "image_name": "fullnode-{{user `tag`}}",
+            "image_name": "fullnode-{{user `tag` | clean_image_name }}",
             "account_file": "./gcp/DevNet.json",
             "project_id": "atomic-land-223022",
             "source_image_family": "ubuntu-1604-lts",

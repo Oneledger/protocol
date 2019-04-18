@@ -199,6 +199,7 @@
         sed -i "s/seed_mode.*/seed_mode = false/" {{OLDATA}}/config.toml
         sed -i "s/persistent_peers.*/persistent_peers = $persistent_peers/" {{OLDATA}}/config.toml
         sed -i "s/seeds.*/seeds = $seeds/" {{OLDATA}}/config.toml
+        sed -i "s/log_output.*/log_output = \"stdout\"/" {{OLDATA}}/config.toml
   - name: create start script
     copy:
       dest: "/usr/local/bin/fullnodeStartup"
