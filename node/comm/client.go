@@ -54,7 +54,7 @@ func NewClientContext() (cliCtx ClientContext) {
 
 		cliCtx = ClientContext{
 			Client:        rpc,
-			BroadcastMode: global.Current.ClientConfig.BroadcastMode,
+			BroadcastMode: BroadcastCommit,
 		}
 		return
 	}
