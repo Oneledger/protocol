@@ -103,3 +103,84 @@
       - {index: "recipients",col: "recipients"}
       - {index: "party",col: "party"}
       - {index: "counter_party",col: "counter_party"}
+  - name: move over binary from local to remote  
+    copy:
+      src: "{{item}}"
+      dest: /usr/local/bin
+      mode: 0755
+    with_items:
+      ["./explorer"]
+  - name: get internal ip 
+    shell: hostname -I | awk '{$1=$1};1'
+    register: hostname
+  - name: set private ip for the node 
+    set_fact: 
+      private_ip: "{{hostname.stdout}}"
+  - name: Initialize all the blocks from the blockchain to the postgres
+    shell: |
+      explorer init --db "localhost/{{EXPLORE_DATABASE_NAME}}" \      
+      --dbuser "{{USER}}" --dbpassword "{{PASSWORD}}" \
+      --tendermint "{{private_ip}}:26604" --sdk "{{private_ip}}:26606"
+  - name: create systemd service file for explorer watcher 
+    copy:
+      dest: "/etc/systemd/system/explorer-watcher.service"
+      owner: "root"
+      group: "root"
+      mode: 0644
+      content: |
+        # systemd service file for watching for new changes to the blockchain
+        [Unit]
+        Description=OneExplorer-Watcher
+        Requires=network.target
+        After=multi-user.target
+        
+        [Service]
+        Environment="OL_SDK_ADDR={{private_ip}}:26606"
+        Environment="OL_TM_ADDR={{private_ip}}:26604"
+        Environment="SQL_ADDR=localhost/explorer_chronos"
+        Environment="SQL_USER={{USER}}"
+        Environment="SQL_PASSWORD={{PASSWORD}}"
+        ExecStart=/usr/local/bin/explorer watch
+        Restart=always
+        RestartSec=10
+        
+        [Install]
+        WantedBy=multi-user.target
+  - name: create systemd service file for explorer 
+    copy:
+      dest: "/etc/systemd/system/explorer.service"
+      owner: "root"
+      group: "root"
+      mode: 0644
+      content: |
+        # systemd service file for watching for new changes to the blockchain
+        [Unit]
+        Description=OneExplorer
+        Requires=network.target
+        After=multi-user.target
+        
+        [Service]
+        Environment="OL_SDK_ADDR={{private_ip}}:26606"
+        Environment="OL_TM_ADDR={{private_ip}}:26604"
+        Environment="SQL_ADDR=localhost/explorer_chronos"
+        Environment="SQL_USER={{USER}}"
+        Environment="SQL_PASSWORD={{PASSWORD}}"
+        ExecStart=/usr/local/bin/explorer serve
+        Restart=always
+        RestartSec=10
+        KillMode=process
+        
+        [Install]
+        WantedBy=multi-user.target
+  - name: start explorer watcher service 
+    systemd:
+      name: explorer-watcher.service
+      scope: system
+      state: restarted
+      daemon_reload: yes
+  - name: start explorer watcher service 
+    systemd:
+      name: explorer.service
+      scope: system
+      state: restarted
+      daemon_reload: yes 
