@@ -162,13 +162,17 @@ func printAnIdentity(identity *id.Identity) {
 
 func printValidatorQuery(nodeName string, validatorQuery interface{}) {
 	//validators := validatorQuery.([]id.ValidatorInfo)
-	validators := validatorQuery.([]id.Identity)
+	validatorsI := validatorQuery.([]interface{})
+	validators := make([]*(id.Identity), len(validatorsI))
+	for i := range validatorsI {
+		validators[i] = validatorsI[i].(*id.Identity)
+	}
 	shared.Console.Info("Validators on", nodeName+":\n")
 
 	for _, validator := range validators {
 		//printAValidator(validator)
 		if validator.Name != "" {
-			printAnIdentity(&validator)
+			printAnIdentity(validator)
 		}
 	}
 }

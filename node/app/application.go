@@ -564,12 +564,12 @@ func (app Application) EndBlock(req RequestEndBlock) ResponseEndBlock {
 	}
 
 	validatorFinalUpdates := make([]types.ValidatorUpdate, len(updates))
-	for _, validator := range updates {
+	for i, validator := range updates {
 		validatorUpdate := types.ValidatorUpdate{
 			PubKey: validator.PubKey,
 			Power:  validator.Power,
 		}
-		validatorFinalUpdates = append(validatorFinalUpdates, validatorUpdate)
+		validatorFinalUpdates[i] = validatorUpdate
 	}
 
 	result := ResponseEndBlock{
