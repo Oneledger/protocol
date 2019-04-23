@@ -1,0 +1,13 @@
+#!/bin/bash
+fullnodeSetup
+sudo systemctl start olfullnode 
+internal_ip="$(hostname -I | awk '{$1=$1};1')"
+public_ip="$(curl ifconfig.me | awk '{$1=$1};1')"
+account=$internal_ip-Oneledger
+identity=$internal_ip-loadtester
+app_path="/home/node/go/data"
+node_name="$internal_ip-Node"
+olclient update --root "$app_path" --account "$account"
+olclient register --root "$app_path" --identity "$identity" --account "$account" --node "$node_name" --fee 0.1
+olclient applyvalidator --root "$app_path" --id "$identity" --purge true --node "$node_name"
+sudo systemctl start logstash

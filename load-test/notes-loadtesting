@@ -1,0 +1,7 @@
+# for fullnode testing 
+create_empty_blocks = false 
+persistent_peers = []
+seeds = ["1","3"]
+node_name = "ip"
+db = "cleveldb"
+

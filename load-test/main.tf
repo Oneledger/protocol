@@ -30,17 +30,6 @@ module "network"{
   }
 }
 
-# module "node"{
-#   source = "../gcp/fullnode"
-#   name = "${var.name}"
-#   vmcount = "${var.vmcount}"
-#   gcp-vm-image= "${var.gcp-vm-image}"
-#   subnets = "${module.network.subnets}"
-#   regions = "${var.regions}"
-#   providers = {
-#     google = "google.devnet"
-#   }
-# }
 resource "google_compute_instance" "default" {
   provider = "google.devnet"
   count = "${var.vmcount}"
@@ -48,6 +37,7 @@ resource "google_compute_instance" "default" {
   machine_type = "n1-standard-1"
   tags = ["${var.name}"]
   zone = "${element(var.regions,count.index % length(var.regions))}-b"
+  allow_stopping_for_update = true
   boot_disk {
     initialize_params {
       image = "${var.gcp-vm-image}"
@@ -58,5 +48,11 @@ resource "google_compute_instance" "default" {
   network_interface {
     subnetwork = "${element(module.network.subnets,count.index % length(module.network.subnets))}"
     access_config {}
+  }
+  metadata {
+    startup-script-url = "gs://oneledger-fullnode-images/fullnode.init"
+  }
+  service_account {
+    scopes = ["storage-ro"]
   }
 }
