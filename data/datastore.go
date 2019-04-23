@@ -16,7 +16,12 @@ package data
 
 type DatastoreKey []byte
 
-type Datastore interface {
+type ChainState interface {
+	GetSetter
+
+	// TODO add state funcs
+	Begin()
+	Commit()
 
 }
 

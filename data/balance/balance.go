@@ -52,14 +52,16 @@ func NewBalanceFromInt(amount int64, currency string) *Balance {
 	return b
 }
 
+// GetBalanceFromDb takes a datastore with GetSetter interface and initializes a new Balance
+// from the data.
 func GetBalanceFromDb(db data.GetSetter, accountKey data.DatastoreKey) (*Balance, error) {
-	data, err := db.Get(accountKey)
+	dat, err := db.Get(accountKey)
 	if err != nil {
 		return nil, err
 	}
 
 	var b = &Balance{}
-	err = pSzlr.Deserialize(data, b)
+	err = pSzlr.Deserialize(dat, b)
 	if err != nil {
 		return nil, err
 	}
