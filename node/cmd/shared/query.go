@@ -21,16 +21,16 @@ import (
 	"github.com/Oneledger/protocol/node/serial"
 )
 
-func GetAccountKey(identity string) []byte {
+func GetAccountKey(ctx comm.ClientContext, identity string) id.AccountKey {
 	request := action.Message("Identity=" + identity)
-	response := comm.Query("/accountKey", request)
+	response := ctx.Query("/accountKey", request)
 	if response == nil {
 		log.Warn("Query returned nothing", "request", request)
 		return nil
 	}
 	switch param := response.(type) {
-	case id.AccountKey:
-		return param
+	case *id.AccountKey:
+		return *param
 
 	case string:
 		log.Warn("Query Error:", "err", param, "request", request, "response", response)
@@ -40,9 +40,9 @@ func GetAccountKey(identity string) []byte {
 	return nil
 }
 
-func GetCurrencyAddress(currencyName string, id string) []byte {
+func GetCurrencyAddress(ctx comm.ClientContext, currencyName string, id string) []byte {
 	request := action.Message("currency=" + currencyName + "|" + "id=" + id)
-	response := comm.Query("/currencyAddress", request)
+	response := ctx.Query("/currencyAddress", request)
 	if response == nil {
 		return nil
 	}
@@ -57,9 +57,9 @@ func GetCurrencyAddress(currencyName string, id string) []byte {
 	return response.([]byte)
 }
 
-func GetNodeName() string {
+func GetNodeName(ctx comm.ClientContext) string {
 	request := action.Message("")
-	response := comm.Query("/nodeName", request)
+	response := ctx.Query("/nodeName", request)
 	if response == nil {
 		return "Unknown"
 	}
@@ -67,10 +67,10 @@ func GetNodeName() string {
 }
 
 // TODO: Return a balance, not a coin
-func GetBalance(accountKey id.AccountKey) *data.Balance {
+func GetBalance(ctx comm.ClientContext, accountKey id.AccountKey) *data.Balance {
 	// TODO: This is wrong, should pass by type, not encode/decode
 	request := action.Message("accountKey=" + hex.EncodeToString(accountKey))
-	response := comm.Query("/balance", request)
+	response := ctx.Query("/balance", request)
 	if response == nil {
 		// New Accounts don't have a balance yet.
 		result := data.NewBalance()
@@ -84,8 +84,8 @@ func GetBalance(accountKey id.AccountKey) *data.Balance {
 	return balance.(*data.Balance)
 }
 
-func GetTxByHash(hash []byte) *ctypes.ResultTx {
-	response := comm.Tx(hash, true)
+func GetTxByHash(ctx comm.ClientContext, hash []byte) *ctypes.ResultTx {
+	response := ctx.Tx(hash, true)
 	if response == nil {
 		log.Error("Search tx by hash failed", "hash", hash)
 		return nil
@@ -93,20 +93,20 @@ func GetTxByHash(hash []byte) *ctypes.ResultTx {
 	return response
 }
 
-func GetTxByHeight(height int) *ctypes.ResultTxSearch {
+func GetTxByHeight(ctx comm.ClientContext, height int) *ctypes.ResultTxSearch {
 	request := "tx.height=" + convert.GetString(height)
 
-	response := comm.Search(request, true, 1, 100)
+	response := ctx.Search(request, true, 1, 100)
 	if response == nil {
 		log.Error("Search tx by height failed", "request", request)
 	}
 	return response
 }
 
-func GetTxByType(t string) *ctypes.ResultTxSearch {
-	request := "tx.type" + t
+func GetTxByType(ctx comm.ClientContext, txType string) *ctypes.ResultTxSearch {
+	request := "tx.type" + txType
 
-	response := comm.Search(request, true, 1, 100)
+	response := ctx.Search(request, true, 1, 100)
 	if response == nil {
 		log.Error("Search tx by hash failed", "request", request)
 		return nil
@@ -114,9 +114,9 @@ func GetTxByType(t string) *ctypes.ResultTxSearch {
 	return response
 }
 
-func GetSequenceNumber(accountKey id.AccountKey) int64 {
+func GetSequenceNumber(ctx comm.ClientContext, accountKey id.AccountKey) int64 {
 	request := action.Message("AccountKey=" + hex.EncodeToString(accountKey))
-	response := comm.Query("/sequenceNumber", request)
+	response := ctx.Query("/sequenceNumber", request)
 	if response == nil {
 		log.Warn("Query returned nothing", "request", request)
 		return -1

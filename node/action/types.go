@@ -10,7 +10,6 @@ package action
 import (
 	"bytes"
 
-	"github.com/Oneledger/protocol/node/comm"
 	"github.com/Oneledger/protocol/node/serialize"
 	"github.com/pkg/errors"
 
@@ -29,78 +28,6 @@ func init() {
 }
 
 var clSerializer serialize.Serializer
-
-/*
-func NewSendInput(accountKey id.AccountKey, amount data.Coin) SendInput {
-
-	if bytes.Equal(accountKey, []byte("")) {
-		log.Fatal("Missing AccountKey", "key", accountKey, "amount", amount)
-		// TODO: Error handling should be better
-		return SendInput{}
-	}
-
-	if !amount.IsValid() {
-		log.Fatal("Missing Amount", "key", accountKey, "amount", amount)
-	}
-
-	return SendInput{
-		AccountKey: accountKey,
-		Amount:     amount,
-	}
-}
-*/
-
-/*
-// outputs for a send transaction (similar to Bitcoin)
-type SendOutput struct {
-	AccountKey id.AccountKey `json:"account_key"`
-	Amount     data.Coin     `json:"coin"`
-}
-*/
-
-/*
-func NewSendOutput(accountKey id.AccountKey, amount data.Coin) SendOutput {
-
-	if bytes.Equal(accountKey, []byte("")) {
-		log.Fatal("Missing AccountKey", "key", accountKey, "amount", amount)
-		// TODO: Error handling should be better
-		return SendOutput{}
-	}
-
-	if !amount.IsValid() {
-		log.Fatal("Missing Amount", "key", accountKey, "amount", amount)
-	}
-
-	return SendOutput{
-		AccountKey: accountKey,
-		Amount:     amount,
-	}
-}
-*/
-
-/*
-func CheckBalance(app interface{}, accountKey id.AccountKey, amount data.Coin) bool {
-	balances := GetBalances(app)
-
-	balance := balances.Get(accountKey)
-	if balance == nil {
-		// New accounts don't have a balance until the first transaction
-		log.Debug("New Balance", "key", accountKey, "amount", amount, "balance", balance)
-		interim := data.NewBalanceFromInt(0, amount.Currency.Name)
-		balance = interim
-		if !balance.GetCoinByName(amount.Currency.Name).Equals(amount) {
-			return false
-		}
-		return true
-	}
-
-	if !balance.GetCoinByName(amount.Currency.Name).Equals(amount) {
-		log.Warn("Balance Mismatch", "key", accountKey, "amount", amount, "balance", balance)
-		return false
-	}
-	return true
-}
-*/
 
 func GetHeight(app interface{}) int64 {
 	balances := GetBalances(app)
@@ -282,38 +209,4 @@ func GetSmartContractCode(app interface{}, ref []byte) (script data.Script, err 
 	scriptRecords := raw.(*data.ScriptRecords)
 	script = scriptRecords.Script
 	return
-}
-
-func FindContractCode(hash []byte, proof bool) (script data.Script, err error) {
-	result := comm.Tx(hash, false)
-	if result == nil {
-		err = errors.New("Failed to find the result from hash")
-		return
-	}
-	var signedTx SignedTransaction
-	out, err := serial.Deserialize(result.Tx, signedTx, serial.CLIENT)
-	if err != nil {
-		err = errors.New("Unable to serialize transaction")
-		return
-	}
-	// This includes the signature
-	// tx := out.(SignedTransaction)
-	// This returns the wrapped Transaction
-	tx := out.(SignedTransaction).Transaction
-
-	if tx.GetType() != SMART_CONTRACT {
-		err = errors.New("The transaction is not for the Contract Type")
-		return
-	}
-	contractTx := tx.(*Contract)
-
-	if contractTx.Function != INSTALL {
-		err = errors.New("The contract doesn't have scripts")
-		return
-	}
-
-	_, _, _, script = Convert(contractTx.Data.(Install))
-
-	return script, nil
-
 }

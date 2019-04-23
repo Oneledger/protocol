@@ -27,8 +27,8 @@ sleep 4
 olclient send --root $OLDATA/David-Node --party David --counterparty Bob --amount 6 --currency VT
 
 echo "============================================================="
-olclient list --root $OLDATA/Emma-Node
-olclient list --root $OLDATA/David-Node
+olclient list --root $OLDATA/Emma-Node --validators
+olclient list --root $OLDATA/David-Node --validators
 
 num=`pgrep -f "^olfullnode node" | wc -l `
 

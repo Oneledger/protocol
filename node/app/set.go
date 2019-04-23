@@ -6,6 +6,7 @@
 package app
 
 import (
+	"github.com/Oneledger/protocol/node/comm"
 	"strings"
 
 	"github.com/Oneledger/protocol/node/action"
@@ -118,14 +119,14 @@ func HandleRegisterIdentity(app Application, arguments map[string]interface{}) i
 	}
 
 	// TODO Broadcast the transaction
-	transaction := CreateRegisterRequest(identity, account.AccountKey(), fee)
-	action.BroadcastTransaction(transaction, false)
+	transaction := CreateRegisterRequest(app.ClientContext, identity, account.AccountKey(), fee)
+	action.BroadcastTransaction(app.ClientContext, transaction, false)
 
 	return "Broadcast Identity"
 }
 
 // TODO: Called by olfullnode, not olclient?
-func CreateRegisterRequest(identityName string, accountKey id.AccountKey, fee float64) action.Transaction {
+func CreateRegisterRequest(ctx comm.ClientContext, identityName string, accountKey id.AccountKey, fee float64) action.Transaction {
 	LoadPrivValidatorFile()
 
 	reg := &action.Register{
@@ -133,7 +134,7 @@ func CreateRegisterRequest(identityName string, accountKey id.AccountKey, fee fl
 			Type:     action.REGISTER,
 			ChainId:  ChainId,
 			Owner:    accountKey,
-			Signers:  action.GetSigners(accountKey), // TODO: Server-side? Then this is wrong
+			Signers:  action.GetSigners(ctx, accountKey), // TODO: Server-side? Then this is wrong
 			Sequence: global.Current.Sequence,
 		},
 		Identity:          identityName,

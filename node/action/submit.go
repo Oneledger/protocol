@@ -16,15 +16,15 @@ import (
 // Execute a transaction after a specific delay.
 // TODO: The node delays in a separate goroutine, but this should really be handled by the consensus engine,
 // so that the delay is in the mempool.
-func DelayedTransaction(transaction Transaction, waitTime time.Duration) {
+func DelayedTransaction(ctx comm.ClientContext, transaction Transaction, waitTime time.Duration) {
 	go func() {
 		time.Sleep(waitTime)
-		BroadcastTransaction(transaction, false)
+		BroadcastTransaction(ctx, transaction, false)
 	}()
 }
 
 // Send out the transaction as an async broadcast
-func BroadcastTransaction(transaction Transaction, sync bool) {
+func BroadcastTransaction(ctx comm.ClientContext, transaction Transaction, sync bool) {
 	log.Debug("Broadcast a transaction to the chain")
 
 	// Don't let the death of a client stop the node from running
@@ -34,27 +34,27 @@ func BroadcastTransaction(transaction Transaction, sync bool) {
 		}
 	}()
 
-	packet := SignAndPack(transaction)
+	packet := SignAndPack(ctx, transaction)
 	// todo : fix the broadcast result handling
 	var result interface{}
 	if sync {
-		result = comm.Broadcast(packet)
+		result, _ = ctx.BroadcastTxCommit(packet)
 	} else {
-		result = comm.BroadcastAsync(packet)
+		result, _ = ctx.BroadcastTxAsync(packet)
 	}
 
 	log.Debug("Submitted Successfully", "result", result)
 }
 
-func SignAndPack(transaction Transaction) []byte {
-	signed := SignTransaction(transaction)
+func SignAndPack(ctx comm.ClientContext, transaction Transaction) []byte {
+	signed := SignTransaction(ctx, transaction)
 	packet := PackRequest(signed)
 
 	return packet
 }
 
 // SignTransaction with the local keys
-func SignTransaction(transaction Transaction) SignedTransaction {
+func SignTransaction(ctx comm.ClientContext, transaction Transaction) SignedTransaction {
 	packet, err := serial.Serialize(transaction, serial.CLIENT)
 
 	signed := SignedTransaction{transaction, nil}
@@ -64,7 +64,7 @@ func SignTransaction(transaction Transaction) SignedTransaction {
 	} else {
 		request := Message(packet)
 
-		response := comm.Query("/signTransaction", request)
+		response := ctx.Query("/signTransaction", request)
 
 		if response == nil {
 			log.Warn("Query returned no signature", "request", request)
@@ -89,8 +89,9 @@ func PackRequest(request SignedTransaction) []byte {
 }
 
 // GetSigners will return the public keys of the signers
-func GetSigners(owner []byte) []id.PublicKey {
-	publicKey := comm.Query("/accountPublicKey", owner)
+func GetSigners(ctx comm.ClientContext, owner []byte) []id.PublicKey {
+	publicKey := ctx.Query("/accountPublicKey", owner)
+
 	if publicKey == nil {
 		return nil
 	}

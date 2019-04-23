@@ -22,8 +22,8 @@ import (
 )
 
 // Prepare a transaction to be issued.
-func SignAndPack(transaction action.Transaction) []byte {
-	return action.SignAndPack(transaction)
+func SignAndPack(ctx comm.ClientContext, transaction action.Transaction) []byte {
+	return action.SignAndPack(ctx, transaction)
 }
 
 // Registration
@@ -87,14 +87,14 @@ func CreateBalanceRequest(args *BalanceArguments) []byte {
 }
 
 // CreateRequest builds and signs the transaction based on the arguments
-func CreateApplyValidatorRequest(args *comm.ApplyValidatorArguments) []byte {
+func CreateApplyValidatorRequest(ctx comm.ClientContext, args *comm.ApplyValidatorArguments) []byte {
 	request, err := clSerializer.Serialize(args)
 	if err != nil {
 		log.Error("Failed to Serialize arguments: ", err)
 		return nil
 	}
 
-	response := comm.Query("/applyValidators", request)
+	response := ctx.Query("/applyValidators", request)
 
 	if response == nil {
 		log.Debug("Query returned no response", "request", request)
@@ -143,7 +143,7 @@ type ContractArguments struct {
 }
 
 // CreateRequest builds and signs the transaction based on the arguments
-func CreateSendRequest(args *comm.SendArguments) []byte {
+func CreateSendRequest(ctx comm.ClientContext, args *comm.SendArguments) []byte {
 
 	request, err := clSerializer.Serialize(args)
 	if err != nil {
@@ -151,7 +151,7 @@ func CreateSendRequest(args *comm.SendArguments) []byte {
 		return nil
 	}
 
-	response := comm.Query("/createSendRequest", request)
+	response := ctx.Query("/createSendRequest", request)
 
 	if response == nil {
 		log.Debug("Query returned no response", "request", request)
@@ -162,7 +162,7 @@ func CreateSendRequest(args *comm.SendArguments) []byte {
 }
 
 // CreateRequest builds and signs the transaction based on the arguments
-func CreateMintRequest(args *comm.SendArguments) []byte {
+func CreateMintRequest(ctx comm.ClientContext, args *comm.SendArguments) []byte {
 
 	request, err := clSerializer.Serialize(args)
 	if err != nil {
@@ -170,7 +170,7 @@ func CreateMintRequest(args *comm.SendArguments) []byte {
 		return nil
 	}
 
-	response := comm.Query("/createMintRequest", request)
+	response := ctx.Query("/createMintRequest", request)
 
 	if response == nil {
 		log.Debug("Query returned no response", "request", request)
@@ -181,14 +181,14 @@ func CreateMintRequest(args *comm.SendArguments) []byte {
 }
 
 // Create a swap request
-func CreateSwapRequest(args *comm.SwapArguments) []byte {
+func CreateSwapRequest(ctx comm.ClientContext, args *comm.SwapArguments) []byte {
 	request, err := clSerializer.Serialize(args)
 	if err != nil {
 		log.Error("Failed to Serialize arguments: ", err)
 		return nil
 	}
 
-	response := comm.Query("/createSwapRequest", request)
+	response := ctx.Query("/createSwapRequest", request)
 
 	if response == nil {
 		log.Debug("Query returned no response", "request", request)
@@ -206,7 +206,7 @@ func CreateSwapRequest(args *comm.SwapArguments) []byte {
 	return nil
 }
 
-func CreateExSendRequest(args *comm.ExSendArguments) []byte {
+func CreateExSendRequest(ctx comm.ClientContext, args *comm.ExSendArguments) []byte {
 
 	request, err := clSerializer.Serialize(args)
 	if err != nil {
@@ -214,7 +214,7 @@ func CreateExSendRequest(args *comm.ExSendArguments) []byte {
 		return nil
 	}
 
-	response := comm.Query("/createExSendRequest", request)
+	response := ctx.Query("/createExSendRequest", request)
 
 	if response == nil {
 		log.Debug("Query returned no response", "request", request)
@@ -225,7 +225,7 @@ func CreateExSendRequest(args *comm.ExSendArguments) []byte {
 }
 
 // CreateRequest builds and signs the transaction based on the arguments
-func CreateInstallRequest(args *InstallArguments, script []byte) []byte {
+func CreateInstallRequest(ctx comm.ClientContext, args *InstallArguments, script []byte) []byte {
 	conv := convert.NewConvert()
 
 	if args.Owner == "" {
@@ -248,7 +248,7 @@ func CreateInstallRequest(args *InstallArguments, script []byte) []byte {
 		return nil
 	}
 
-	owner := GetAccountKey(args.Owner)
+	owner := GetAccountKey(ctx, args.Owner)
 	if owner == nil {
 		log.Fatal("System doesn't recognize the owner", "args", args,
 			"owner", owner)
@@ -269,7 +269,7 @@ func CreateInstallRequest(args *InstallArguments, script []byte) []byte {
 	}
 
 	fee := conv.GetCoinFromFloat(args.Fee, "OLT")
-	sequence := GetSequenceNumber(owner)
+	sequence := GetSequenceNumber(ctx, owner)
 
 	inputs := action.Install{
 		Owner:   owner,
@@ -283,7 +283,7 @@ func CreateInstallRequest(args *InstallArguments, script []byte) []byte {
 		os.Exit(-1)
 	}
 
-	signers := action.GetSigners(owner)
+	signers := action.GetSigners(ctx, owner)
 	if signers == nil || len(signers) == 0 {
 		log.Debug("Missing Signers")
 		return nil
@@ -302,7 +302,7 @@ func CreateInstallRequest(args *InstallArguments, script []byte) []byte {
 		Function: action.INSTALL,
 		Fee:      fee,
 	}
-	return SignAndPack(action.Transaction(install))
+	return SignAndPack(ctx, action.Transaction(install))
 }
 
 func ParseVersion(argsVersion string) *version.Version {
@@ -338,7 +338,7 @@ func ParseVersion(argsVersion string) *version.Version {
 }
 
 // CreateRequest builds and signs the transaction based on the arguments
-func CreateExecuteRequest(args *ExecuteArguments) []byte {
+func CreateExecuteRequest(ctx comm.ClientContext, args *ExecuteArguments) []byte {
 	conv := convert.NewConvert()
 
 	if args.Owner == "" {
@@ -356,7 +356,7 @@ func CreateExecuteRequest(args *ExecuteArguments) []byte {
 		return nil
 	}
 
-	owner := GetAccountKey(args.Owner)
+	owner := GetAccountKey(ctx, args.Owner)
 	if owner == nil {
 		log.Fatal("System doesn't recognize the owner", "args", args,
 			"owner", owner)
@@ -372,7 +372,7 @@ func CreateExecuteRequest(args *ExecuteArguments) []byte {
 	fee := conv.GetCoinFromFloat(args.Fee, "OLT")
 	gas := conv.GetCoinFromUnits(args.Gas, "OLT")
 
-	sequence := GetSequenceNumber(owner)
+	sequence := GetSequenceNumber(ctx, owner)
 	uuid := uuid2.New()
 	inputs := action.Execute{
 		Owner:      owner,
@@ -388,7 +388,7 @@ func CreateExecuteRequest(args *ExecuteArguments) []byte {
 		os.Exit(-1)
 	}
 
-	signers := action.GetSigners(owner)
+	signers := action.GetSigners(ctx, owner)
 	if signers == nil || len(signers) == 0 {
 		Console.Error("Missing Signers")
 		os.Exit(-1)
@@ -408,5 +408,5 @@ func CreateExecuteRequest(args *ExecuteArguments) []byte {
 		Fee:      fee,
 		Gas:      gas,
 	}
-	return SignAndPack(action.Transaction(execute))
+	return SignAndPack(ctx, action.Transaction(execute))
 }

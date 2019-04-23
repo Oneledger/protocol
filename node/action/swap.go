@@ -647,6 +647,7 @@ func NextStage(app interface{}, chain data.ChainType, context FunctionValues, tx
 		return true, nil
 	}
 
+	ctx := GetClientContext(app)
 	owner := GetAccountKey(context[OWNER])
 	target := GetAccountKey(context[TARGET])
 	chainId := GetChainID(app)
@@ -655,7 +656,7 @@ func NextStage(app interface{}, chain data.ChainType, context FunctionValues, tx
 		Base: Base{
 			Type:     SWAP,
 			ChainId:  chainId,
-			Signers:  GetSigners(owner),
+			Signers:  GetSigners(ctx, owner),
 			Owner:    owner,
 			Target:   target,
 			Sequence: global.Current.Sequence,
@@ -664,12 +665,15 @@ func NextStage(app interface{}, chain data.ChainType, context FunctionValues, tx
 		Stage:       nextStage,
 	}
 	log.Debug("NextStage Swap", "swap", swap)
+
+	rpcclient := GetClientContext(app)
+
 	if nextStage == WAIT_FOR_CHAIN {
 		waitTime := 3 * lockPeriod
-		DelayedTransaction(swap, waitTime)
+		DelayedTransaction(rpcclient, swap, waitTime)
 	} else {
 		waitTime := 1 * time.Second
-		DelayedTransaction(swap, waitTime)
+		DelayedTransaction(rpcclient, swap, waitTime)
 	}
 	return true, nil
 }
@@ -1114,7 +1118,7 @@ func AuditContractETH(app interface{}, context FunctionValues, tx Transaction, c
 	accountName := global.Current.NodeName[:len(global.Current.NodeName)-5] + "-" + chain.String()
 	chainAccount := GetAccountOnChain(app, accountName, chain)
 
-	//todo : when support light client, need to get this address from swapinit
+	//todo : when support light comm, need to get this address from swapinit
 	address := ethereum.GetAddress(chainAccount.GetChainKey())
 
 	receiver, e := contract.HTLContractObject().Receiver(&bind.CallOpts{Pending: true})

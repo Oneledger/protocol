@@ -35,8 +35,9 @@ func init() {
 func ApplyValidator(cmd *cobra.Command, args []string) {
 	log.Debug("Have ApplyValidator Request", "applyValidatorArgs", applyValidatorArgs)
 
+	ctx := comm.NewClientContext()
 	// Create message
-	packet := shared.CreateApplyValidatorRequest(applyValidatorArgs)
+	packet := shared.CreateApplyValidatorRequest(ctx, applyValidatorArgs)
 	if packet == nil {
 		os.Exit(-1)
 	}
@@ -46,6 +47,6 @@ func ApplyValidator(cmd *cobra.Command, args []string) {
 		os.Exit(-1)
 	}
 
-	result := comm.Broadcast(packet)
+	result, _ := ctx.BroadcastTxCommit(packet)
 	BroadcastStatus(result)
 }

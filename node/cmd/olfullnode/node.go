@@ -8,8 +8,6 @@ package main
 import (
 	"github.com/Oneledger/protocol/node/app" // Import namespace
 	"github.com/Oneledger/protocol/node/cmd/shared"
-	"github.com/Oneledger/protocol/node/consensus"
-
 	"github.com/Oneledger/protocol/node/global"
 	"github.com/Oneledger/protocol/node/log"
 	"github.com/Oneledger/protocol/node/persist"
@@ -77,12 +75,6 @@ func StartNode(cmd *cobra.Command, args []string) error {
 		}
 	})
 
-	service, err := consensus.NewNode(*node, global.Current.Config)
-	if err != nil {
-		log.Error("Failed to create NewNode", "err", err)
-		return err
-	}
-
 	if shouldWriteConfig {
 		err := global.Current.SaveConfig()
 		if err != nil {
@@ -91,14 +83,6 @@ func StartNode(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	// Set it running
-	err = service.Start()
-	if err != nil {
-		log.Error("Can't start up node", "err", err)
-		return err
-	}
-
-	global.Current.SetConsensusNode(service)
 	log.Debug("Waiting forever...")
 	select {}
 }

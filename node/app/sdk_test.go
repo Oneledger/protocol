@@ -51,7 +51,7 @@ func TestSDK(t *testing.T) {
 		testName := "bart"
 		testPrivateKey, testPublicKey := id.GenerateKeys([]byte(testName), true)
 		testChainType := data.ONELEDGER
-		testAccount := id.NewAccount(testChainType, testName, testPublicKey, testPrivateKey)
+		testAccount := id.NewAccount(testChainType, testName, testPublicKey, testPrivateKey, "")
 		application.Accounts.Add(testAccount)
 
 		in := &pb.CheckAccountRequest{Name: testName}

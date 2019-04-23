@@ -8,6 +8,8 @@ package app
 import (
 	"bytes"
 	"encoding/json"
+	"github.com/Oneledger/protocol/node/comm"
+	"github.com/Oneledger/protocol/node/consensus"
 	"time"
 
 	"github.com/Oneledger/protocol/node/serialize"
@@ -48,7 +50,8 @@ type Application struct {
 	Contract data.Datastore // contract for reuse.
 	Event    data.Datastore // Event for any action that need to be tracked
 
-	SDK common.Service
+	SDK           common.Service
+	ClientContext comm.ClientContext
 
 	// Tendermint's last block information
 	Header     types.Header   // Tendermint last header info
@@ -80,14 +83,6 @@ func NewApplication() *Application {
 	}
 }
 
-func (app Application) CheckIfInitialized() bool {
-	if app.getPassword() == nil {
-		return false
-	}
-
-	return true
-}
-
 // Initial the state of the application from persistent data
 func (app Application) Initialize() {
 
@@ -99,6 +94,19 @@ func (app Application) Initialize() {
 	} else {
 		log.Debug("NodeAccountName not currently set")
 	}
+
+	service, err := consensus.NewNode(app, global.Current.Config)
+	if err != nil {
+		log.Fatal("Failed to create NewNode", "err", err)
+	}
+
+	// Set it running
+	err = service.Start()
+	if err != nil {
+		log.Fatal("Can't start up node", "err", err)
+	}
+
+	app.ClientContext = comm.NewLocalClientContext(service)
 
 	app.StartSDK()
 	log.Debug("SDK is started")
@@ -123,32 +131,18 @@ func (app Application) StartSDK() {
 
 }
 
-func (app Application) getPassword() interface{} {
-	return app.Admin.Get(data.DatabaseKey("Password"))
-}
-
-type BasicState struct {
-	Account string  `json:"account"`
-	States  []State `json:"states"`
-}
-
-// TODO: Not used anymore
-type State struct {
-	Amount   string `json:"amount"`
-	Currency string `json:"currency"`
-}
-
 // Use the Genesis block to initialze the system
 func (app Application) SetupState(stateBytes []byte) {
 	log.Debug("SetupState", "state", string(stateBytes))
 
+	var state = &consensus.AppState{}
 	// Tendermint serializes this data, so we have to use raw JSON serialization to read it.
-	var state = &BasicState{}
 	errx := serialize.JSONSzr.Deserialize(stateBytes, state)
 	if errx != nil {
-		log.Fatal("Failed to deserialize stateBytes during SetupState")
+		log.Fatal("Failed to deserialize stateBytes during SetupState", "err", errx)
 	}
 
+	//state := base.(*consensus.AppState)
 	log.Debug("Deserialized State", "state", state)
 
 	// TODO: Can't generate a different key for each node. Needs to be in the genesis? Or ignored?
@@ -159,14 +153,13 @@ func (app Application) SetupState(stateBytes []byte) {
 	// TODO: Make a user put in a real key
 	privateKey, publicKey = id.GenerateKeys([]byte(global.Current.PaymentAccount), false)
 
-	states := []State{
-		State{Amount: "0", Currency: "OLT"},
+	states := []consensus.State{
+		consensus.State{Amount: "0", Currency: "OLT"},
 	}
-	createAccount(app, &BasicState{global.Current.PaymentAccount, states}, publicKey, privateKey, nil)
+	createAccount(app, &consensus.AppState{global.Current.PaymentAccount, states}, publicKey, privateKey, nil)
 }
 
-func createAccount(app Application, state *BasicState, publicKey id.PublicKeyED25519, privateKey id.PrivateKeyED25519, chainkey interface{}) {
-
+func createAccount(app Application, state *consensus.AppState, publicKey id.PublicKeyED25519, privateKey id.PrivateKeyED25519, chainkey interface{}) {
 	// TODO: This should probably only occur on the Admin node, for other nodes how do I know the key?
 	// Register the identity and account first
 	AddAccount(&app, state.Account, data.ONELEDGER, publicKey, privateKey, chainkey, false)
@@ -191,7 +184,7 @@ func createAccount(app Application, state *BasicState, publicKey id.PublicKeyED2
 	log.Info("Genesis State Balances database", "name", state.Account, "balance", balance)
 }
 
-func NewBalanceFromStates(states []State) *data.Balance {
+func NewBalanceFromStates(states []consensus.State) *data.Balance {
 	var balance *data.Balance
 	for i, value := range states {
 		if i == 0 {
@@ -424,6 +417,7 @@ func (app *Application) MakePayment(req RequestBeginBlock) {
 		selectedValidatorIdentity := app.Validators.SelectedValidator
 
 		numberValidators := len(approvedValidatorIdentities)
+
 		quotient := paymentBalance.GetCoinByName("OLT").Divide(numberValidators)
 
 		if int(quotient.Amount.Int64()) < 0 {
@@ -446,7 +440,7 @@ func (app *Application) MakePayment(req RequestBeginBlock) {
 			if result != nil {
 				// TODO: check this later
 				log.Debug("Issuing Payment", "result", result)
-				action.DelayedTransaction(result, 0*time.Second)
+				action.DelayedTransaction(app.ClientContext, result, 0*time.Second)
 			}
 		} else {
 			log.Debug("Payment happens on a different node", "node",
@@ -570,12 +564,12 @@ func (app Application) EndBlock(req RequestEndBlock) ResponseEndBlock {
 	}
 
 	validatorFinalUpdates := make([]types.ValidatorUpdate, len(updates))
-	for _, validator := range updates {
+	for i, validator := range updates {
 		validatorUpdate := types.ValidatorUpdate{
 			PubKey: validator.PubKey,
 			Power:  validator.Power,
 		}
-		validatorFinalUpdates = append(validatorFinalUpdates, validatorUpdate)
+		validatorFinalUpdates[i] = validatorUpdate
 	}
 
 	result := ResponseEndBlock{
