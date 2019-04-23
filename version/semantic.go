@@ -5,8 +5,6 @@ package version
 
 import (
 	"fmt"
-
-	"github.com/Oneledger/protocol/node/serial"
 )
 
 type Version struct {
@@ -15,10 +13,6 @@ type Version struct {
 	Patch      int
 	PreRelease string
 	MetaData   string
-}
-
-func init() {
-	serial.Register(Version{})
 }
 
 var Fullnode *Version // Version of the source code
