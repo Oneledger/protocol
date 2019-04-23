@@ -1,0 +1,186 @@
+---
+- hosts: all
+  become: yes
+  become_user: root
+  vars:
+    EXPLORE_DATABASE_NAME: explorer_chronos
+    APP_SCHEMA: blockchain
+    BLOCKCHAIN_TABLE_NAME: blocks
+    TXNs_TABLE_NAME: txns
+    USER: explore
+    PASSWORD: postgres
+  roles:
+  - role: geerlingguy.postgresql
+    postgresql_databases:
+    - name: "{{EXPLORE_DATABASE_NAME}}"
+  tasks:
+  - name: install apt module to run postgress with ansible
+    apt:
+      name: ["libpq-dev","python-psycopg2"]
+      update_cache: yes
+  - name: create app user to have access to postgres database 
+    become: yes
+    become_user: postgres
+    postgresql_user:
+      db: "{{EXPLORE_DATABASE_NAME}}"
+      name: "{{USER}}"
+      password: "{{PASSWORD}}"
+      priv: ALL
+  - name: Ensure we have access from the new user
+    become: yes
+    become_user: postgres
+    postgresql_privs:
+      db: "{{EXPLORE_DATABASE_NAME}}"
+      role: "{{USER}}"
+      objs: ALL_IN_SCHEMA
+      privs: ALL
+  - name: create schema for blockchain app 
+    postgresql_schema:
+      name: "{{APP_SCHEMA}}"
+      database: "{{EXPLORE_DATABASE_NAME}}" 
+      login_host: localhost
+      login_user: "{{USER}}"
+      login_password: "{{PASSWORD}}"  
+      owner: "{{USER}}" 
+  - name: create blockchain.blocks table 
+    postgresql_table:
+      db: "{{EXPLORE_DATABASE_NAME}}"
+      table: "{{APP_SCHEMA}}.{{BLOCKCHAIN_TABLE_NAME}}"
+      login_host: localhost
+      login_user: "{{USER}}"
+      login_password: "{{PASSWORD}}"
+      columns: 
+      - height integer PRIMARY KEY
+      - block_id bytea NOT NULL
+      - parent_block_id bytea NOT NULL
+      - chain_id varchar(20) NOT NULL
+      - block_size integer NOT NULL
+      - precommits bytea[] NOT NULL
+      - time timestamp with time zone NOT NULL
+  - name: create index time on blockchain.blocks
+    postgresql_idx:
+      idxname: "time"
+      db: "{{EXPLORE_DATABASE_NAME}}"
+      schema: "{{APP_SCHEMA}}"
+      table: "{{BLOCKCHAIN_TABLE_NAME}}"
+      login_host: localhost
+      login_user: "{{USER}}"
+      login_password: "{{PASSWORD}}"
+      columns: time
+  - name: create blockchain.txn table 
+    postgresql_table:
+      db: "{{EXPLORE_DATABASE_NAME}}"
+      table: "{{APP_SCHEMA}}.{{TXNs_TABLE_NAME}}"
+      login_host: localhost
+      login_user: "{{USER}}"
+      login_password: "{{PASSWORD}}"
+      columns: 
+      - insert_seq SERIAL PRIMARY KEY
+      - hash bytea NOT NULL
+      - height integer REFERENCES blockchain.blocks (height) ON DELETE CASCADE
+      - owner bytea NOT NULL
+      - type varchar(15) NOT NULL
+      - chain_id varchar(15) NOT NULL
+      - fields jsonb NOT NULL
+      - swap_key_hash bytea
+      - party bytea
+      - counter_party bytea
+      - recipients bytea[]
+  - name: create indexs for blockchain.txn 
+    postgresql_idx:
+      idxname: "{{item.index}}"
+      db: "{{EXPLORE_DATABASE_NAME}}"
+      schema: "{{APP_SCHEMA}}"
+      table: "{{TXNs_TABLE_NAME}}"
+      login_host: localhost
+      login_user: "{{USER}}"
+      login_password: "{{PASSWORD}}"
+      columns: "{{item.col}}"
+    with_items:
+      - {index: "hash",col: "hash"}
+      - {index: "swap_key_hash",col: "swap_key_hash"}
+      - {index: "owner",col: "owner"}
+      - {index: "recipients",col: "recipients"}
+      - {index: "party",col: "party"}
+      - {index: "counter_party",col: "counter_party"}
+  - name: move over binary from local to remote  
+    copy:
+      src: "{{item}}"
+      dest: /usr/local/bin
+      mode: 0755
+    with_items:
+      ["./explorer"]
+  - name: get internal ip 
+    shell: hostname -I | awk '{$1=$1};1'
+    register: hostname
+  - name: set private ip for the node 
+    set_fact: 
+      private_ip: "{{hostname.stdout}}"
+  - name: Initialize all the blocks from the blockchain to the postgres
+    shell: |
+      explorer init --db "localhost/{{EXPLORE_DATABASE_NAME}}" \      
+      --dbuser "{{USER}}" --dbpassword "{{PASSWORD}}" \
+      --tendermint "{{private_ip}}:26604" --sdk "{{private_ip}}:26606"
+  - name: create systemd service file for explorer watcher 
+    copy:
+      dest: "/etc/systemd/system/explorer-watcher.service"
+      owner: "root"
+      group: "root"
+      mode: 0644
+      content: |
+        # systemd service file for watching for new changes to the blockchain
+        [Unit]
+        Description=OneExplorer-Watcher
+        Requires=network.target
+        After=multi-user.target
+        
+        [Service]
+        Environment="OL_SDK_ADDR={{private_ip}}:26606"
+        Environment="OL_TM_ADDR={{private_ip}}:26604"
+        Environment="SQL_ADDR=localhost/explorer_chronos"
+        Environment="SQL_USER={{USER}}"
+        Environment="SQL_PASSWORD={{PASSWORD}}"
+        ExecStart=/usr/local/bin/explorer watch
+        Restart=always
+        RestartSec=10
+        
+        [Install]
+        WantedBy=multi-user.target
+  - name: create systemd service file for explorer 
+    copy:
+      dest: "/etc/systemd/system/explorer.service"
+      owner: "root"
+      group: "root"
+      mode: 0644
+      content: |
+        # systemd service file for watching for new changes to the blockchain
+        [Unit]
+        Description=OneExplorer
+        Requires=network.target
+        After=multi-user.target
+        
+        [Service]
+        Environment="OL_SDK_ADDR={{private_ip}}:26606"
+        Environment="OL_TM_ADDR={{private_ip}}:26604"
+        Environment="SQL_ADDR=localhost/explorer_chronos"
+        Environment="SQL_USER={{USER}}"
+        Environment="SQL_PASSWORD={{PASSWORD}}"
+        ExecStart=/usr/local/bin/explorer serve
+        Restart=always
+        RestartSec=10
+        KillMode=process
+        
+        [Install]
+        WantedBy=multi-user.target
+  - name: start explorer watcher service 
+    systemd:
+      name: explorer-watcher.service
+      scope: system
+      state: restarted
+      daemon_reload: yes
+  - name: start explorer watcher service 
+    systemd:
+      name: explorer.service
+      scope: system
+      state: restarted
+      daemon_reload: yes 
