@@ -39,6 +39,10 @@ func (app Application) GetChainID() interface{} {
 	return global.Current.ChainID()
 }
 
+func (app Application) GetClientContext() interface{} {
+	return app.ClientContext
+}
+
 func (app Application) GetEvent() interface{} {
 	return app.Event
 }

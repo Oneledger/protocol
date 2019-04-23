@@ -6,10 +6,10 @@
 package main
 
 import (
+	"github.com/Oneledger/protocol/node/comm"
 	"os"
 
 	"github.com/Oneledger/protocol/node/cmd/shared"
-	"github.com/Oneledger/protocol/node/comm"
 	"github.com/Oneledger/protocol/node/log"
 	"github.com/spf13/cobra"
 )
@@ -39,19 +39,19 @@ func init() {
 // IssueRequest sends out a sendTx to all of the nodes in the chain
 func IssueInstallRequest(cmd *cobra.Command, args []string) {
 	log.Debug("Have Install Request", "installArgs", installArgs)
-
+	ctx := comm.NewClientContext()
 	script := shared.MustReadFile(installArgs.File)
 	if script == nil {
 		shared.Console.Info("CreateInstallRequest no script file", installArgs.File)
 	}
 
 	// Create message
-	packet := shared.CreateInstallRequest(installArgs, script)
+	packet := shared.CreateInstallRequest(ctx, installArgs, script)
 	if packet == nil {
 		shared.Console.Error("CreateInstallRequest bad arguments", installArgs)
 		os.Exit(-1)
 	}
 
-	result := comm.Broadcast(packet)
+	result, _ := ctx.BroadcastTxCommit(packet)
 	BroadcastStatus(result)
 }

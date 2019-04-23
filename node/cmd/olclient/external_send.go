@@ -17,7 +17,7 @@ import (
 var exSendCmd = &cobra.Command{
 	Use:   "external send",
 	Short: "Issue send transaction to external chain",
-	Run:   IssueRequest,
+	Run:   IssueExSend,
 }
 
 var exsendargs *comm.ExSendArguments = &comm.ExSendArguments{}
@@ -46,13 +46,14 @@ func init() {
 func IssueExSend(cmd *cobra.Command, args []string) {
 	log.Debug("Have External Send Request", "exsendargs", exsendargs)
 
+	ctx := comm.NewClientContext()
 	// Create message
-	packet := shared.CreateExSendRequest(exsendargs)
+	packet := shared.CreateExSendRequest(ctx, exsendargs)
 	if packet == nil {
 		shared.Console.Error("Error in sending request")
 		os.Exit(-1)
 	}
 
-	result := comm.Broadcast(packet)
+	result, _ := ctx.BroadcastTxCommit(packet)
 	BroadcastStatus(result)
 }

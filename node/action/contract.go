@@ -12,7 +12,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/tendermint/tendermint/libs/common"
 
-	"github.com/Oneledger/protocol/node/comm"
 	"github.com/Oneledger/protocol/node/data"
 	"github.com/Oneledger/protocol/node/global"
 	"github.com/Oneledger/protocol/node/id"
@@ -313,7 +312,8 @@ func (transaction *Contract) Execute(app interface{}) status.Code {
 				resultCompare := transaction.CreateCompareRequest(app, executeData.Owner, executeData.Name,
 					executeData.Address, executeData.Version, executeData.GetReference(), executeData.CallString, result)
 				if resultCompare != nil {
-					comm.Broadcast(resultCompare)
+					rpcclient := GetClientContext(app)
+					rpcclient.BroadcastTxCommit(resultCompare)
 				}
 			}()
 		}
@@ -417,7 +417,7 @@ func CompareResults(recent OLVMResult, original OLVMResult) bool {
 func (transaction *Contract) CreateCompareRequest(app interface{}, owner id.AccountKey, name string, address string,
 	version version.Version, reference []byte, callString string, result OLVMResult) []byte {
 	chainId := GetChainID(app)
-
+	ctx := GetClientContext(app)
 	// Costs have been taken care of already
 	fee := data.NewCoinFromInt(0, "OLT")
 	gas := data.NewCoinFromInt(0, "OLT")
@@ -444,7 +444,7 @@ func (transaction *Contract) CreateCompareRequest(app interface{}, owner id.Acco
 			Type:     SMART_CONTRACT,
 			ChainId:  chainId,
 			Owner:    account.AccountKey(),
-			Signers:  GetSigners(account.AccountKey()),
+			Signers:  GetSigners(ctx, account.AccountKey()),
 			Sequence: next.Sequence,
 		},
 		Data:     inputs,
@@ -453,7 +453,7 @@ func (transaction *Contract) CreateCompareRequest(app interface{}, owner id.Acco
 		Gas:      gas,
 	}
 	log.Debug("end create compare transaction")
-	signed := SignAndPack(Transaction(compare))
+	signed := SignAndPack(ctx, Transaction(compare))
 	log.Debug("get transaction signed")
 	return signed
 }

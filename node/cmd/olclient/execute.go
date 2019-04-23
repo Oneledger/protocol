@@ -39,13 +39,14 @@ func init() {
 func IssueExecuteRequest(cmd *cobra.Command, args []string) {
 	log.Debug("Have Execute Request", "executeArgs", executeArgs)
 
+	ctx := comm.NewClientContext()
 	// Create message
-	packet := shared.CreateExecuteRequest(executeArgs)
+	packet := shared.CreateExecuteRequest(ctx, executeArgs)
 	if packet == nil {
 		shared.Console.Info("CreateExecuteRequest bad arguments", executeArgs)
 		return
 	}
 
-	result := comm.Broadcast(packet)
+	result, _ := ctx.BroadcastTxCommit(packet)
 	BroadcastStatus(result)
 }

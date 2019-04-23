@@ -53,8 +53,10 @@ func Wait(cmd *cobra.Command, args []string) {
 }
 
 func IdentityExists(name string) bool {
+	ctx := comm.NewClientContext()
+
 	request := action.Message("Identity=" + name)
-	response := comm.Query("/accountKey", request)
+	response := ctx.Query("/accountKey", request)
 	if response == nil {
 		return false
 	}

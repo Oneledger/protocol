@@ -36,14 +36,16 @@ func init() {
 func IssueMintRequest(cmd *cobra.Command, args []string) {
 	log.Debug("Have Testmint Request", "mintargs", mintargs)
 
+	ctx := comm.NewClientContext()
+
 	// Create message
-	packet := shared.CreateMintRequest(mintargs)
+	packet := shared.CreateMintRequest(ctx, mintargs)
 
 	if packet == nil {
 		log.Info("Bad Request", "mintargs", mintargs)
 		return
 	}
 
-	result := comm.Broadcast(packet)
+	result, _ := ctx.BroadcastTxCommit(packet)
 	BroadcastStatus(result)
 }

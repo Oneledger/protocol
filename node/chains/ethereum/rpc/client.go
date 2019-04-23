@@ -36,7 +36,7 @@ type ethRequest struct {
 	Params  []interface{} `json:"params"`
 }
 
-// EthRPC - Ethereum rpc client
+// EthRPC - Ethereum rpc comm
 type EthRPCClient struct {
 	url    string
 	client common.HttpClient
@@ -44,7 +44,7 @@ type EthRPCClient struct {
 	Debug  bool
 }
 
-// NewEthRPC create new rpc client with given url
+// NewEthRPC create new rpc comm with given url
 func NewEthRPCClient(url string, options ...func(rpc *EthRPCClient)) *EthRPCClient {
 	rpc := &EthRPCClient{
 		url:    url,

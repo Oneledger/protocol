@@ -44,7 +44,7 @@ func GetChaincfg() *chaincfg.Params {
 	return &chaincfg.RegressionNetParams
 }
 
-func GetBtcClient(address string, chainKey interface {}) *brpc.Bitcoind {
+func GetBtcClient(address string, chainKey interface{}) *brpc.Bitcoind {
 	chainParams := GetChaincfg()
 
 	addr := strings.Split(address, ":")
@@ -63,14 +63,14 @@ func GetBtcClient(address string, chainKey interface {}) *brpc.Bitcoind {
 
 	cli, err := brpc.New(ip.String(), port, usr, pass, false, chainParams)
 	if err != nil {
-		log.Error("Can't get the btc rpc client at given address", "status", err)
+		log.Error("Can't get the btc rpc comm at given address", "status", err)
 		return nil
 	}
 
 	return cli
 }
 
-func getCredential(chainKey interface {}) (usr string, pass string) {
+func getCredential(chainKey interface{}) (usr string, pass string) {
 	usr = ""
 	pass = ""
 

@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"time"
 
-	"github.com/Oneledger/protocol/node/app"
 	"github.com/Oneledger/protocol/node/log"
 	"github.com/tendermint/tendermint/types"
 )
@@ -27,18 +26,24 @@ func NewGenesisDoc(chainID string) *GenesisDoc {
 	}
 }
 
+// TODO: Not used anymore
+type State struct {
+	Amount   string `json:"amount"`
+	Currency string `json:"currency"`
+}
+
 type AppState struct {
 	// Name of the account
-	Account string      `json:"account"`
-	States  []app.State `json:"states"`
+	Account string  `json:"account"`
+	States  []State `json:"states"`
 }
 
 func NewAppState() *AppState {
 	return &AppState{
 		Account: "Zero",
-		States: []app.State{
-			app.State{Amount: "1000000000", Currency: "OLT"},
-			app.State{Amount: "10000", Currency: "VT"},
+		States: []State{
+			State{Amount: "1000000000", Currency: "OLT"},
+			State{Amount: "10000", Currency: "VT"},
 		},
 	}
 }

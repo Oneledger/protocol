@@ -45,14 +45,15 @@ func init() {
 func SwapCurrency(cmd *cobra.Command, args []string) {
 	log.Debug("Swap Request", "swapargs", swapargs)
 
+	ctx := comm.NewClientContext()
 	// Create message
-	packet := shared.CreateSwapRequest(swapargs)
+	packet := shared.CreateSwapRequest(ctx, swapargs)
 	if packet == nil {
 		shared.Console.Error("Error in sending request")
 		os.Exit(-1)
 	}
 
-	result := comm.Broadcast(packet)
+	result, _ := ctx.BroadcastTxCommit(packet)
 	BroadcastStatus(result)
 }
 
