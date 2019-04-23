@@ -1,1 +1,1 @@
-module github.com/Oneledger/protocol-temp
+module github.com/Oneledger/protocol
