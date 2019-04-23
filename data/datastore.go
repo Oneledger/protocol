@@ -17,7 +17,7 @@ package data
 type DatastoreKey []byte
 
 type ChainState interface {
-	GetSetter
+	DataStore
 
 	// TODO add state funcs
 	Begin()
@@ -26,7 +26,7 @@ type ChainState interface {
 }
 
 
-type GetSetter interface {
+type DataStore interface {
 	Get(DatastoreKey) ([]byte, error)
 	Set(DatastoreKey, []byte) error
 	Exists(DatastoreKey) (bool, error)

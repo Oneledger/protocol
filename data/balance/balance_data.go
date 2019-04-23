@@ -29,8 +29,6 @@ type BalanceData struct {
 	// will be useful in future
 }
 
-//
-
 // CoinData is a flattening of coin map in a balance data type
 type CoinData struct {
 	CurId    int       `json:"curr_id"`
