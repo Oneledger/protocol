@@ -29,76 +29,7 @@
   - name: install kibana 
     apt:
       name: ["apt-transport-https","kibana"]
-      update_cache: yes 
-  - name: place ssl cert to server
-    copy:
-      dest: /etc/ssl/certs/kibana.crt
-      mode: 0400
-      owner: root
-      group: root
-      content: |
-        -----BEGIN CERTIFICATE-----
-        MIIEmzCCA4OgAwIBAgIUCDnHYaYBv/qniMReCXpwA8Q5hNswDQYJKoZIhvcNAQEL
-        BQAwgYsxCzAJBgNVBAYTAlVTMRkwFwYDVQQKExBDbG91ZEZsYXJlLCBJbmMuMTQw
-        MgYDVQQLEytDbG91ZEZsYXJlIE9yaWdpbiBTU0wgQ2VydGlmaWNhdGUgQXV0aG9y
-        aXR5MRYwFAYDVQQHEw1TYW4gRnJhbmNpc2NvMRMwEQYDVQQIEwpDYWxpZm9ybmlh
-        MB4XDTE5MDQyMjE1NDgwMFoXDTIyMDQyMTE1NDgwMFowYjEZMBcGA1UEChMQQ2xv
-        dWRGbGFyZSwgSW5jLjEdMBsGA1UECxMUQ2xvdWRGbGFyZSBPcmlnaW4gQ0ExJjAk
-        BgNVBAMTHUNsb3VkRmxhcmUgT3JpZ2luIENlcnRpZmljYXRlMIIBIjANBgkqhkiG
-        9w0BAQEFAAOCAQ8AMIIBCgKCAQEA0sJd14co6LDcItuTFK2pET/Talwd4zBYY+jO
-        n8hNAG3eyip34LTukw58c/rIZtchJXXtz6tzq+m1GcjG1XH790GA77yWM7p6PFsj
-        DXCX0b1jDB0b31pmSFsc1C2aqvSJYv+girZi+7S0EIQybL6d8leqpYrBp4ucLuIA
-        f/5rXNRiTfc4Wa2/EtR/8BpvAGdFhD/cStbiB90q0VzNZFj9JMzXWawu74Ikn08M
-        HEXanwcAvmjSfDnlCkh0fB17BJhpoJxvOLaYefev9vbjEjvgm9s+rRG0vNiBAOED
-        +2YLdLmyJmJ990dW8o/mVKJrffaRdSznrPxd4ZF4ZuR0+QM11wIDAQABo4IBHTCC
-        ARkwDgYDVR0PAQH/BAQDAgWgMB0GA1UdJQQWMBQGCCsGAQUFBwMCBggrBgEFBQcD
-        ATAMBgNVHRMBAf8EAjAAMB0GA1UdDgQWBBQRm4lS6rtjJNyx1pGt0du7hRbxZzAf
-        BgNVHSMEGDAWgBQk6FNXXXw0QIep65TbuuEWePwppDBABggrBgEFBQcBAQQ0MDIw
-        MAYIKwYBBQUHMAGGJGh0dHA6Ly9vY3NwLmNsb3VkZmxhcmUuY29tL29yaWdpbl9j
-        YTAeBgNVHREEFzAVghMqLm9uZWxlZGdlci5uZXR3b3JrMDgGA1UdHwQxMC8wLaAr
-        oCmGJ2h0dHA6Ly9jcmwuY2xvdWRmbGFyZS5jb20vb3JpZ2luX2NhLmNybDANBgkq
-        hkiG9w0BAQsFAAOCAQEATlAH8rZ4XscPF1NRaU7SiGAfmQmQndZcQe+AODG6TEhd
-        AwFBf97gHomc2hA6Uovzq+VqIBupZC9OGFK+5Sah3L+jWOrp05q2sb3OfWwRB394
-        5otQx+Q1cJSsxbIJ3Nmq6CtgpfJ7JYErygzQw6ESBnsN7dSo9FG03sgyIOlzg3xm
-        uVv8AnpZ89ms5H0sdbyvq5tpP8xTk9eK/FT2PDYJToyXW8m9VtKNFOvbBgtK896G
-        cPJs0OoachNlmIZqls2YFUyZ79i433RLqLtyrHCTwTXp7yc9V+MOVk2vPWJhF8Ah
-        WfUQIEaLBgQN0lajSic47EsqV+6mCO5r/0OLPl1Tyw==
-        -----END CERTIFICATE-----
-  - name: put private key 
-    copy: 
-      dest: /etc/ssl/private/kibana-private.key
-      mode: 0400
-      owner: root
-      group: root
-      content: |
-        -----BEGIN PRIVATE KEY-----
-        MIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQDSwl3XhyjosNwi
-        25MUrakRP9NqXB3jMFhj6M6fyE0Abd7KKnfgtO6TDnxz+shm1yElde3Pq3Or6bUZ
-        yMbVcfv3QYDvvJYzuno8WyMNcJfRvWMMHRvfWmZIWxzULZqq9Ili/6CKtmL7tLQQ
-        hDJsvp3yV6qlisGni5wu4gB//mtc1GJN9zhZrb8S1H/wGm8AZ0WEP9xK1uIH3SrR
-        XM1kWP0kzNdZrC7vgiSfTwwcRdqfBwC+aNJ8OeUKSHR8HXsEmGmgnG84tph596/2
-        9uMSO+Cb2z6tEbS82IEA4QP7Zgt0ubImYn33R1byj+ZUomt99pF1LOes/F3hkXhm
-        5HT5AzXXAgMBAAECggEAEgvBdEBm8NGf774kUFt0Q/1WkV9U0cykbN2Uv5qreTNv
-        JZlQTWXAncfaQSYCfcfC103LMIJqM5idwJjv6XvKisfJjf10UPaRG9Tj4fU3kqZo
-        MjPV3KCFbIGcrNBA041/rAHeUbI/NHUrC9T96lDB/muiOW1xmnJ6S4tfZpY2xCpl
-        fsSqq+pbRe/V+pQ6tpsHEdNfvujjl+vxya5sBATa3aQF+t0ep7IdiOgSiEb1JPN1
-        73kqNuKIts3XaXS9y7ywIeOKqgkIv3Yv8RSSrjf0aerYi63Rqv2VF2FI8+YMfc1+
-        TnW25HbuNGIM3rRRZ0+UlxVXYmmP/TNhrShpMpme7QKBgQDqnd/XOlApTLM5pT7k
-        yhDPgkGdkvWJBeRnZs2e9NlPU2WBl/4L55wblEmo1WLbxzJHzJzYLhYubLDpkxRn
-        cfomZ4qt1zGX+HsIkIIB+I0HeY/3qEdOohoFiERXsAiDUhzRrabDjJtq7/tZo/RN
-        bZfdtuIcVpLsVmPAjxTXOy25iwKBgQDl99hbdjnVLFaEhdXkdRPwKeQUDNHWJ1VR
-        Z5Wa2whLjSkI2GrkJrnLrq4Yd0pl7VA+0jkGdfpO4blKwRCXpTWXkmjMDXozJRXa
-        L8G89Jwu7ejl9bJFxKWGK783J7Z5Yjs+aBSx8iZnz2HgWMK7p4jWVs4RrEW0TCMG
-        lRY+U1dGZQKBgQDPSo3ra+pHky0HUakwHBieP0gaIS4v0rTrZzllqJAYNmcJCXG8
-        svaKp4otUdv2sxkJtw8dMhsHCaGFvh3ZCCsso280CV4YF8Mc3hEADMsOP6mj91qJ
-        b0/uc2du0mmzHWm5GOSvAhyPb1l06heAEcSMcHl28Eb/6ZRZHhIb2H2d4QKBgDNT
-        bLuFGIVGfwzW3hU+ODP69YewEMlOQBGKH+7PAfvyxnzN6JWBOyiFlR+qyDUVkTpk
-        KwwRGsuuP2+6xVxDKEHrEG6yd1qg5U6sJ/5nTdB/kuJ4QtClghf+/Y9u0qAm13gn
-        PK82j3HN7FdpGBVP4A+OkjGJlIkYER0v+yXv7eOtAoGBAKJUMBCCDuCmgHIg1NBw
-        h3OpJkYQhP7MsMv3lhV7/1nmz5ZI+eAFp3fTIbGbuogef32b312IseeQH9qx8lWB
-        SQRMx/XyizP+DoZQAefq7pQXrqwncTCoS6VrjLWd0P8EbA/phCcthOeOJZSbH3JZ
-        uzjU8wehSngEt+aIlIVygFxC
-        -----END PRIVATE KEY-----     
+      update_cache: yes  
   - name: get private ip for the vm 
     shell: hostname -I | awk '{$1=$1};1'
     register: private_ip
@@ -107,12 +38,8 @@
       dest: /etc/kibana/kibana.yml
       mode: 0644
       content: | 
-        server.port: 443
+        server.port: 80
         server.host: "0.0.0.0"
-        server.ssl.enabled: true
-        server.ssl.redirectHttpFromPort: 80
-        server.ssl.certificate: /etc/ssl/certs/kibana.crt
-        server.ssl.key: /etc/ssl/private/kibana-private.key
         elasticsearch.hosts: "http://{{ private_ip.stdout }}:9200"
   - name: create systemd service file for kibana
     copy:
