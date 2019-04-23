@@ -11,7 +11,7 @@ import (
 type GenesisDoc = types.GenesisDoc
 type GenesisValidator = types.GenesisValidator
 
-func DefaultGenesisDoc() *GenesisDoc {
+func NewGenesisDoc(chainID string) *GenesisDoc {
 	validators := make([]GenesisValidator, 0)
 	appStateBytes, err := NewAppState().MarshalJSON()
 	if err != nil {
@@ -19,7 +19,7 @@ func DefaultGenesisDoc() *GenesisDoc {
 	}
 	return &GenesisDoc{
 		GenesisTime:     time.Now(),
-		ChainID:         "OneLedger",
+		ChainID:         chainID,
 		ConsensusParams: types.DefaultConsensusParams(),
 		Validators:      validators,
 		AppState:        json.RawMessage(appStateBytes),

@@ -7,6 +7,7 @@
 package shared
 
 import (
+	"github.com/Oneledger/protocol/node/global"
 	uuid2 "github.com/google/uuid"
 	"os"
 
@@ -293,7 +294,7 @@ func CreateInstallRequest(ctx comm.ClientContext, args *InstallArguments, script
 	install := &action.Contract{
 		Base: action.Base{
 			Type:     action.SMART_CONTRACT,
-			ChainId:  app.ChainId,
+			ChainId:  global.Current.ChainID(),
 			Owner:    owner,
 			Signers:  signers, //action.GetSigners(owner),
 			Sequence: sequence,
@@ -398,7 +399,7 @@ func CreateExecuteRequest(ctx comm.ClientContext, args *ExecuteArguments) []byte
 	execute := &action.Contract{
 		Base: action.Base{
 			Type:     action.SMART_CONTRACT,
-			ChainId:  app.ChainId,
+			ChainId:  global.Current.ChainID(),
 			Owner:    owner,
 			Signers:  signers,
 			Sequence: sequence,

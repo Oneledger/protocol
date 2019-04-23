@@ -6,6 +6,10 @@
 
 package app
 
+import (
+	"github.com/Oneledger/protocol/node/global"
+)
+
 // Access to the local persistent databases
 func (app Application) GetAdmin() interface{} {
 	return app.Admin
@@ -32,7 +36,7 @@ func (app Application) GetBalances() interface{} {
 }
 
 func (app Application) GetChainID() interface{} {
-	return ChainId
+	return global.Current.ChainID()
 }
 
 func (app Application) GetClientContext() interface{} {
