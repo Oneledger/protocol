@@ -12,7 +12,7 @@
         es_api_basic_auth_password: changeme
         es_log_dir: "/run/log/journal"
         es_config:
-          network.host: "127.0.0.1"
+          network.host: "0.0.0.0"
           http.port: 9200
           transport.tcp.port: 9300
   tasks:
@@ -99,6 +99,9 @@
         SQRMx/XyizP+DoZQAefq7pQXrqwncTCoS6VrjLWd0P8EbA/phCcthOeOJZSbH3JZ
         uzjU8wehSngEt+aIlIVygFxC
         -----END PRIVATE KEY-----     
+  - name: get private ip for the vm 
+    shell: hostname -I | awk '{$1=$1};1'
+    register: private_ip
   - name: create configuration file to start kibana 
     copy:
       dest: /etc/kibana/kibana.yml
@@ -110,7 +113,7 @@
         server.ssl.redirectHttpFromPort: 80
         server.ssl.certificate: /etc/ssl/certs/kibana.crt
         server.ssl.key: /etc/ssl/private/kibana-private.key
-        elasticsearch.hosts: "http://127.0.0.1:9200"
+        elasticsearch.hosts: "http://{{ private_ip.stdout }}:9200"
   - name: create systemd service file for kibana
     copy:
       dest: /etc/systemd/system/kibana.service
