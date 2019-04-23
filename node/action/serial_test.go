@@ -18,6 +18,7 @@ var pSzlr serialize.Serializer
 func init() {
 	pSzlr = serialize.GetSerializer(serialize.PERSISTENT)
 }
+
 // Control the execution
 func TestMain(m *testing.M) {
 	flag.Parse()

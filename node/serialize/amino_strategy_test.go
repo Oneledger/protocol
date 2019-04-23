@@ -12,13 +12,11 @@ type testStuff2 struct {
 	C []byte
 }
 
-
 var as *aminoStrategy
 
 func init() {
 	as = NewAminoStrategy(aminoCodec)
 }
-
 
 func TestAminoStrategy_Serialize(t *testing.T) {
 

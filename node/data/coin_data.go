@@ -28,7 +28,7 @@ func (c *Coin) SetData(a interface{}) error {
 
 	amt := new(big.Int)
 	c.Currency = cd.Currency
-	c.Amount   = amt.SetBytes(cd.Amount)
+	c.Amount = amt.SetBytes(cd.Amount)
 	return nil
 }
 
@@ -44,4 +44,3 @@ func (cd *coinData) Primitive() serialize.DataAdapter {
 
 	return c
 }
-

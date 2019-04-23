@@ -10,12 +10,10 @@ type aminoStrategy struct {
 	codec *amino.Codec
 }
 
-
 //NewAminoStrategy generates a new object for amino serialization with amino codec
 func NewAminoStrategy(cdc *amino.Codec) *aminoStrategy {
 	return &aminoStrategy{codec: cdc}
 }
-
 
 func (a *aminoStrategy) Serialize(obj interface{}) ([]byte, error) {
 	defer func() {
@@ -47,8 +45,7 @@ func (a *aminoStrategy) Deserialize(src []byte, dest interface{}) error {
 //deserialize
 func (a *aminoStrategy) deserialize(src []byte, dest interface{}) error {
 
-	err :=  a.codec.UnmarshalBinaryLengthPrefixed(src, dest)
+	err := a.codec.UnmarshalBinaryLengthPrefixed(src, dest)
 
 	return err
 }
-
