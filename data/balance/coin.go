@@ -16,19 +16,15 @@
 package balance
 
 import (
-	"encoding/hex"
 	"math/big"
 	"runtime/debug"
 
 	"github.com/Oneledger/protocol/node/log"
-	"github.com/Oneledger/protocol/serialize"
-	"github.com/Oneledger/protocol/data/chain"
-	"golang.org/x/crypto/ripemd160"
 )
 
 /*
-		Coin starts here
- */
+	Coin starts here
+*/
 // Coin is the basic amount, specified in integers, at the smallest increment (i.e. a satoshi, not a bitcoin)
 type Coin struct {
 	Currency Currency `json:"currency"`

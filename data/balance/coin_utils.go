@@ -18,6 +18,8 @@ package balance
 import (
 	"math/big"
 	"strconv"
+
+	"github.com/Oneledger/protocol/node/log"
 )
 
 // Handle an incoming string
