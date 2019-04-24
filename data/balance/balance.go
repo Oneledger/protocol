@@ -54,7 +54,7 @@ func NewBalanceFromInt(amount int64, currency string) *Balance {
 
 // GetBalanceFromDb takes a datastore with GetSetter interface and initializes a new Balance
 // from the data.
-func GetBalanceFromDb(db data.DataStore, accountKey data.DatastoreKey) (*Balance, error) {
+func GetBalanceFromDb(db data.Store, accountKey data.StoreKey) (*Balance, error) {
 	dat, err := db.Get(accountKey)
 	if err != nil {
 		return nil, err

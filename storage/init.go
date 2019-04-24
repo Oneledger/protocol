@@ -12,23 +12,12 @@
 Copyright 2017 - 2019 OneLedger
 */
 
-package data
+package storage
 
-type StoreKey []byte
+import "github.com/Oneledger/protocol/serialize"
 
-type ChainState interface {
-	Store
+var pSzlr serialize.Serializer
 
-	// TODO add state funcs
-	Begin()
-	Commit()
-
-}
-
-
-type Store interface {
-	Get(StoreKey) ([]byte, error)
-	Set(StoreKey, []byte) error
-	Exists(StoreKey) (bool, error)
-	Delete(StoreKey) (bool, error)
+func init() {
+	pSzlr = serialize.GetSerializer(serialize.PERSISTENT)
 }

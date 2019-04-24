@@ -1,3 +1,4 @@
+// +build gcc
 /*
    ____             _              _                      _____           _                  _
   / __ \           | |            | |                    |  __ \         | |                | |
@@ -12,23 +13,35 @@
 Copyright 2017 - 2019 OneLedger
 */
 
-package data
+package storage
 
-type StoreKey []byte
+import (
+	"github.com/Oneledger/protocol/node/global"
+	"github.com/stretchr/testify/assert"
+	"github.com/tendermint/tendermint/libs/db"
+	"os"
+	"path/filepath"
 
-type ChainState interface {
-	Store
+	"testing"
+)
 
-	// TODO add state funcs
-	Begin()
-	Commit()
-
+func dbDir() string {
+	rootDir := os.Getenv("OLDATA")
+	result, _ := filepath.Abs(filepath.Join(rootDir, "nodedata"))
+	return result
 }
 
+// TestCLevelDB is just a basic test to see if cleveldb is being used properly
+func TestCLevelDB(t *testing.T) {
+	storage, err := db.NewCLevelDB("test123", dbDir())
+	if err != nil {
+		panic(err)
+	}
+	want := []byte("world")
+	storage.Set([]byte("hello"), want)
 
-type Store interface {
-	Get(StoreKey) ([]byte, error)
-	Set(StoreKey, []byte) error
-	Exists(StoreKey) (bool, error)
-	Delete(StoreKey) (bool, error)
+	got := storage.Get([]byte("hello"))
+
+	assert.Equal(t, got, want, "Get and set should be the same")
 }
+

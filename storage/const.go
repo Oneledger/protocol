@@ -8,27 +8,17 @@
                                       __/ |
                                      |___/
 
+	Copyright 2017 - 2019 OneLedger
 
-Copyright 2017 - 2019 OneLedger
 */
 
-package data
+package storage
 
-type StoreKey []byte
+// ENUM for datastore type
+type StorageType int
 
-type ChainState interface {
-	Store
-
-	// TODO add state funcs
-	Begin()
-	Commit()
-
-}
-
-
-type Store interface {
-	Get(StoreKey) ([]byte, error)
-	Set(StoreKey, []byte) error
-	Exists(StoreKey) (bool, error)
-	Delete(StoreKey) (bool, error)
-}
+// Different types
+const (
+	MEMORY StorageType = iota
+	PERSISTENT
+)

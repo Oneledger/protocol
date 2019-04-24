@@ -12,23 +12,11 @@
 Copyright 2017 - 2019 OneLedger
 */
 
-package data
+package storage
 
-type StoreKey []byte
+import "errors"
 
-type ChainState interface {
-	Store
-
-	// TODO add state funcs
-	Begin()
-	Commit()
-
-}
-
-
-type Store interface {
-	Get(StoreKey) ([]byte, error)
-	Set(StoreKey, []byte) error
-	Exists(StoreKey) (bool, error)
-	Delete(StoreKey) (bool, error)
-}
+var (
+	ErrNotFound = errors.New("key not found")
+	ErrSetFailed = errors.New("failed to set data")
+)

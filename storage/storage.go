@@ -12,23 +12,39 @@
 Copyright 2017 - 2019 OneLedger
 */
 
-package data
+package storage
 
-type StoreKey []byte
+import (
+	"fmt"
+	"github.com/Oneledger/protocol/data"
+)
 
-type ChainState interface {
-	Store
+type Storage interface {
+	Get(data.StoreKey) ([]byte, error)
+	Set(data.StoreKey, []byte) error
+	Exists(data.StoreKey) (bool, error)
+	Delete(data.StoreKey) (bool, error)
 
-	// TODO add state funcs
-	Begin()
-	Commit()
-
+	Begin() StorageSession
+	Close()
 }
 
+type StorageSession interface {
+	data.Store
+	Commit() bool
+}
 
-type Store interface {
-	Get(StoreKey) ([]byte, error)
-	Set(StoreKey, []byte) error
-	Exists(StoreKey) (bool, error)
-	Delete(StoreKey) (bool, error)
+type Context struct {
+	DbDir string
+	ConfigDB string
+}
+
+func NewStorage(flavor, name string, ctx Context) Storage {
+
+	fmt.Println(flavor)
+	switch flavor {
+	case "keyvalue":
+		return NewKeyValue(name, ctx.DbDir, ctx.ConfigDB, PERSISTENT)
+	case "cache":
+	}
 }
