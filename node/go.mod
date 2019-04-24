@@ -1,7 +1,7 @@
 module github.com/Oneledger/protocol/node
 
 require (
-	github.com/Oneledger/toml v0.4.1
+	github.com/Oneledger/toml v0.4.1 // indirect
 	github.com/aristanetworks/goarista v0.0.0-20181101003910-5bb443fba8e0 // indirect
 	github.com/beorn7/perks v0.0.0-20180321164747-3a771d992973 // indirect
 	github.com/bgentry/speakeasy v0.1.0
