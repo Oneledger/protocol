@@ -83,7 +83,7 @@ func (privkey PrivateKey) GetHandler() (PrivateKeyHandler, error) {
 		size := SECP256K1_PUB_SIZE
 		if len(privkey.data) != size {
 			return new(PrivateKeySECP256K1),
-				fmt.Errorf("given key doesn't match the size of the key algorithm %s", privkey.Type)
+				fmt.Errorf("given key doesn't match the size of the key algorithm %s", privkey.keytype)
 		}
 		var key [32]byte
 		copy(key[:], privkey.data)
