@@ -41,7 +41,7 @@ resource "google_compute_instance" "default" {
   boot_disk {
     initialize_params {
       image = "${var.gcp-vm-image}"
-      size = 100
+      size = 50
     }
   }
   allow_stopping_for_update = true

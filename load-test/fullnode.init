@@ -7,7 +7,9 @@ account=$internal_ip-Oneledger
 identity=$internal_ip-loadtester
 app_path="/home/node/go/data"
 node_name="$internal_ip-Node"
+sleep 600
 olclient update --root "$app_path" --account "$account"
+olclient testmint --root "$app_path" --party "$account" --amount "0.1" --currency OLT 
 olclient register --root "$app_path" --identity "$identity" --account "$account" --node "$node_name" --fee 0.1
 olclient applyvalidator --root "$app_path" --id "$identity" --purge true --node "$node_name"
 sudo systemctl start logstash

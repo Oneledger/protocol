@@ -88,7 +88,7 @@
   - name: source bashrc 
     shell: . /home/{{app_user}}/.bashrc
   - name: compile binary
-    shell: chdir={{OLROOT}}/protocol/node make update install
+    shell: chdir={{OLROOT}}/protocol/node make update install_c
   - name: move app binary artifact to user bin directory
     shell: cp -R {{GOPATH}}/bin/* /usr/local/bin/  
   - name: change ownership of artifact to app user
@@ -200,6 +200,9 @@
         sed -i "s/persistent_peers.*/persistent_peers = $persistent_peers/" {{OLDATA}}/config.toml
         sed -i "s/seeds.*/seeds = $seeds/" {{OLDATA}}/config.toml
         sed -i "s/log_output.*/log_output = \"stdout\"/" {{OLDATA}}/config.toml
+        sed -i "s/create_empty_blocks.=.*/create_empty_blocks = false/" {{OLDATA}}/config.toml
+        sed -i "s/db.*/db = \"cleveldb\"/" {{OLDATA}}/config.toml
+        sed -i "s/node_name.*/node_name = \"$public_ip\"/" {{OLDATA}}/config.toml
   - name: create start script
     copy:
       dest: "/usr/local/bin/fullnodeStartup"
