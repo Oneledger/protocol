@@ -8,8 +8,8 @@
                                       __/ |
                                      |___/
 
+	Copyright 2017 - 2019 OneLedger
 
-Copyright 2017 - 2019 OneLedger
 */
 
 package storage
@@ -19,12 +19,19 @@ import (
 	"sync"
 )
 
-
+/* cache is a simple in-memory keyvalue store, to store binary data. This is not thread safe and
+	any concurrent read/write might throw panics.
+ */
 type cache struct {
 	name string
 	store map[string][]byte
 }
 
+func NewCache(name string) *cache {
+	return &cache{name, map[string][]byte{}}
+}
+
+// Get retrieves data for a key.
 func (c *cache) Get(key data.StoreKey) ([]byte, error) {
 
 	d, ok := c.store[string(key)]
@@ -35,6 +42,7 @@ func (c *cache) Get(key data.StoreKey) ([]byte, error) {
 	return d, nil
 }
 
+// Exists checks if a key exists in the database.
 func (c *cache) Exists(key data.StoreKey) (bool, error) {
 
 	_, ok := c.store[string(key)]
@@ -42,6 +50,7 @@ func (c *cache) Exists(key data.StoreKey) (bool, error) {
 	return ok, nil
 }
 
+// Set is used to store or update some data with a key
 func (c *cache) Set(key data.StoreKey, dat []byte) (error) {
 
 	c.store[string(key)] = dat
@@ -49,6 +58,7 @@ func (c *cache) Set(key data.StoreKey, dat []byte) (error) {
 	return nil
 }
 
+// Delete removes any data stored against a key
 func (c *cache) Delete(key data.StoreKey) (bool, error) {
 
 	delete(c.store, string(key))
@@ -58,18 +68,24 @@ func (c *cache) Delete(key data.StoreKey) (bool, error) {
 
 /*
 	CacheSafe starts here
- */
+*/
 
-
+// cacheSafe is a thread safe implementation of above cache
 type cacheSafe struct {
+	sync.RWMutex
+
 	name string
 	store map[string][]byte
-	lock sync.RWMutex
 }
 
+func NewCacheSafe(name string) *cacheSafe {
+	return &cacheSafe{name, map[string][]byte{}}
+}
+
+// Get retrieves data for a key.
 func (c *cacheSafe) Get(key data.StoreKey) ([]byte, error) {
-	c.lock.RLock()
-	defer c.lock.RUnlock()
+	c.RLock()
+	defer c.RUnlock()
 
 	d, ok := c.store[string(key)]
 	if !ok {
@@ -79,27 +95,30 @@ func (c *cacheSafe) Get(key data.StoreKey) ([]byte, error) {
 	return d, nil
 }
 
+// Exists checks if a key exists in the database.
 func (c *cacheSafe) Exists(key data.StoreKey) (bool, error) {
-	c.lock.RLock()
-	defer c.lock.RUnlock()
+	c.RLock()
+	defer c.RUnlock()
 
 	_, ok := c.store[string(key)]
 
 	return ok, nil
 }
 
+// Set is used to store or update some data with a key
 func (c *cacheSafe) Set(key data.StoreKey, dat []byte) (error) {
-	c.lock.Lock()
-	defer c.lock.Unlock()
+	c.Lock()
+	defer c.Unlock()
 
 	c.store[string(key)] = dat
 
 	return nil
 }
 
+// Delete removes any data stored against a key
 func (c *cacheSafe) Delete(key data.StoreKey) (bool, error) {
-	c.lock.Lock()
-	defer c.lock.Unlock()
+	c.Lock()
+	defer c.Unlock()
 
 	delete(c.store, string(key))
 	return true, nil

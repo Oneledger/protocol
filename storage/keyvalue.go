@@ -28,7 +28,6 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/Oneledger/protocol/node/log"
 	"github.com/tendermint/iavl"
 	"github.com/tendermint/tendermint/libs/db"
 )

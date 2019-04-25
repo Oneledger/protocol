@@ -39,17 +39,22 @@ type Context struct {
 func NewSessionStorage(flavor, name string, ctx Context) Storage {
 
 	switch flavor {
-	case "keyvalue":
+	case KEYVALUE:
 		return NewKeyValue(name, ctx.DbDir, ctx.ConfigDB, PERSISTENT)
+	default:
+		log.Error("incorrect session storage: ", flavor)
 	}
 	return nil
 }
 
 func NewStorage(flavor, name string) data.Store {
 	switch flavor {
-	case "cache":
-		return &cache{name}
-	case "cache_safe":
-		return &cacheSafe{name}
+	case CACHE:
+		return NewCache(name)
+	case CACHE_SAFE:
+		return NewCacheSafe(name)
+	default:
+		log.Error("incorrect storage: ", flavor)
 	}
+	return nil
 }
