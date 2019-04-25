@@ -185,10 +185,6 @@
         source ~/.profile
         public_ip="$(curl ifconfig.me | awk '{$1=$1};1')" 
         internal_ip="$(hostname -I | awk '{$1=$1};1')"
-        persistent_peers="[\"e6edf32f3e3484dd6dc310bdfd790b82efd7bacb@35.243.138.139:26605\""
-        persistent_peers+=",\"781079e294e565ab5103137ce59589d4d2fb81ce@35.221.2.67:26605\""
-        persistent_peers+=",\"bf74913a9808c2fd529d03963f7ffff0eb77194c@35.202.153.53:26605\""
-        persistent_peers+=",\"073fe394a98d4c270b482b50827af259a5aa5d0c@35.185.26.138:26605\"]"
         seeds="[\"a1d3dad8e625edf9061d8aa6894fcfa4c68522d7@35.222.28.220:26605\""
         seeds+=",\"7e34c6ce8c820105d9dfd460f10b8e580d248ded@35.245.156.174:26605\"]"
         olfullnode init --genesis {{OLDATA}}/genesis.json --root {{OLDATA}}
@@ -197,7 +193,6 @@
         sed -i "s/sdk_address.*/sdk_address = \"tcp:\/\/$internal_ip:26606\"/" {{OLDATA}}/config.toml
         sed -i "s/external_p2p_address.*/external_p2p_address = \"tcp:\/\/$public_ip:26605\"/" {{OLDATA}}/config.toml
         sed -i "s/seed_mode.*/seed_mode = false/" {{OLDATA}}/config.toml
-        sed -i "s/persistent_peers.*/persistent_peers = $persistent_peers/" {{OLDATA}}/config.toml
         sed -i "s/seeds.*/seeds = $seeds/" {{OLDATA}}/config.toml
         sed -i "s/log_output.*/log_output = \"stdout\"/" {{OLDATA}}/config.toml
         sed -i "s/create_empty_blocks.=.*/create_empty_blocks = false/" {{OLDATA}}/config.toml

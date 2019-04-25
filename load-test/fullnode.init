@@ -1,4 +1,5 @@
 #!/bin/bash
+sudo systemctl start logstash
 fullnodeSetup
 sudo systemctl start olfullnode 
 internal_ip="$(hostname -I | awk '{$1=$1};1')"
@@ -12,4 +13,3 @@ olclient update --root "$app_path" --account "$account"
 olclient testmint --root "$app_path" --party "$account" --amount "0.1" --currency OLT 
 olclient register --root "$app_path" --identity "$identity" --account "$account" --node "$node_name" --fee 0.1
 olclient applyvalidator --root "$app_path" --id "$identity" --purge true --node "$node_name"
-sudo systemctl start logstash
