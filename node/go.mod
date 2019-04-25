@@ -1,4 +1,4 @@
-module github.com/Oneledger/protocol/node
+module github.com/Oneledger/protocol
 
 require (
 	github.com/Oneledger/toml v0.4.1 // indirect
