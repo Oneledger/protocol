@@ -12,20 +12,8 @@
 
 */
 
-package storage
+package log
 
-// ENUM for datastore type
-type StorageType int
-
-// Different types
 const (
-	MEMORY StorageType = iota
-	PERSISTENT
-
-	CACHE = "cache"
-	CACHE_SAFE = "cache_safe"
-	KEYVALUE = "keyvalue"
-
-	CHAINKEY_MAXLEN = 20
-	CHAINSTATE_CACHE_SIZE = 10000
+	FormatStruct = " %#v %s \n"
 )

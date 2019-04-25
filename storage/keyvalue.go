@@ -32,16 +32,13 @@ import (
 	"github.com/tendermint/tendermint/libs/db"
 )
 
-type DatabaseKey = []byte // Database key
-type Message = []byte     // TODO: Maybe replaced by something better named?
-
-
 var k Storage = KeyValue{}
-
-
 var ErrNilData = errors.New("data is nil")
 
-// Wrap the underlying usage
+/*
+		KeyValue begins here
+ */
+// KeyValue Wrap the underlying usage
 type KeyValue struct {
 	Type StorageType
 
@@ -55,44 +52,6 @@ type KeyValue struct {
 	version int64
 }
 
-type KeyValueSession struct {
-	store *KeyValue
-}
-
-// TODO: Should be moved to some common/shared/utils directory
-// Test to see if this exists already
-func fileExists(name string, dir string) bool {
-	dbPath := filepath.Join(dir, name+".db")
-	info, err := os.Stat(dbPath)
-	if err != nil {
-		return false
-	}
-	_ = info
-	return true
-}
-
-// Convert Data headed for persistence
-func convertData(data interface{}) ([]byte, error) {
-	buffer, err := pSzlr.Serialize(data)
-	if err != nil {
-		return nil, err
-	}
-	return buffer, nil
-}
-
-// Unconvert Data from persistence
-func unconvertData(data []byte) (interface{}, error) {
-	if data == nil || string(data) == "" {
-		return nil, ErrNilData
-	}
-
-	var result interface{}
-	err := pSzlr.Deserialize(data, &result)
-	if err != nil {
-		return nil, err
-	}
-	return result, nil
-}
 
 // NewKeyValue initializes a new application
 func NewKeyValue(name, dbDir, configDB string, newType StorageType) *KeyValue {
@@ -237,6 +196,10 @@ func (store KeyValue) empty() {
 /*
 		KeyValueSession begins here
  */
+type KeyValueSession struct {
+	store *KeyValue
+}
+
 // Create a new session
 func NewKeyValueSession(store *KeyValue) StorageSession {
 	return &KeyValueSession{store: store}
@@ -318,3 +281,41 @@ func (session KeyValueSession) Dump() {
 	}
 }
 
+
+/*
+		Some utils
+ */
+// TODO: Should be moved to some common/shared/utils directory
+// Test to see if this exists already
+func fileExists(name string, dir string) bool {
+	dbPath := filepath.Join(dir, name+".db")
+	info, err := os.Stat(dbPath)
+	if err != nil {
+		return false
+	}
+	_ = info
+	return true
+}
+
+// Convert Data headed for persistence
+func convertData(data interface{}) ([]byte, error) {
+	buffer, err := pSzlr.Serialize(data)
+	if err != nil {
+		return nil, err
+	}
+	return buffer, nil
+}
+
+// Unconvert Data from persistence
+func unconvertData(data []byte) (interface{}, error) {
+	if data == nil || string(data) == "" {
+		return nil, ErrNilData
+	}
+
+	var result interface{}
+	err := pSzlr.Deserialize(data, &result)
+	if err != nil {
+		return nil, err
+	}
+	return result, nil
+}

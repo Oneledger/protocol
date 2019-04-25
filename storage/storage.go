@@ -8,8 +8,8 @@
                                       __/ |
                                      |___/
 
+	Copyright 2017 - 2019 OneLedger
 
-Copyright 2017 - 2019 OneLedger
 */
 
 package storage
@@ -18,33 +18,13 @@ import (
 	"github.com/Oneledger/protocol/data"
 )
 
+// Storage
 type Storage interface {
 	Get(data.StoreKey) ([]byte, error)
 	Exists(data.StoreKey) (bool, error)
 
 	Begin() StorageSession
 	Close()
-}
-
-type StorageSession interface {
-	data.Store
-	Commit() bool
-}
-
-type Context struct {
-	DbDir string
-	ConfigDB string
-}
-
-func NewSessionStorage(flavor, name string, ctx Context) Storage {
-
-	switch flavor {
-	case KEYVALUE:
-		return NewKeyValue(name, ctx.DbDir, ctx.ConfigDB, PERSISTENT)
-	default:
-		log.Error("incorrect session storage: ", flavor)
-	}
-	return nil
 }
 
 func NewStorage(flavor, name string) data.Store {
@@ -58,3 +38,36 @@ func NewStorage(flavor, name string) data.Store {
 	}
 	return nil
 }
+
+/*
+		StorageSession
+ */
+
+// StorageSession defines a session-ed storage object of your choice
+type StorageSession interface {
+	data.Store
+	Commit() bool
+	FindAll() []data.StoreKey
+	Close()
+}
+
+// NewStorageSession creates a new SessionStorage
+func NewSessionStorage(flavor, name string, ctx Context) Storage {
+
+	switch flavor {
+	case KEYVALUE:
+		return NewKeyValue(name, ctx.DbDir, ctx.ConfigDB, PERSISTENT)
+	default:
+		log.Error("incorrect session storage: ", flavor)
+	}
+	return nil
+}
+
+
+
+type Context struct {
+	DbDir string
+	ConfigDB string
+}
+
+
