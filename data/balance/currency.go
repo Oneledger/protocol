@@ -22,7 +22,6 @@ import (
 	"golang.org/x/crypto/ripemd160"
 
 	"github.com/Oneledger/protocol/data/chain"
-	"github.com/Oneledger/protocol/node/log"
 	"github.com/Oneledger/protocol/serialize"
 )
 
@@ -56,12 +55,12 @@ func (c Currency) Key() (string, error) {
 
 	buffer, err := serialize.JSONSzr.Serialize(c)
 	if err != nil {
-		log.Fatal("hash serialize failed", "err", err)
+		logger.Fatal("hash serialize failed", "err", err)
 	}
 
 	_, err = hasher.Write(buffer)
 	if err != nil {
-		log.Fatal("hasher failed", "err", err)
+		logger.Fatal("hasher failed", "err", err)
 	}
 
 	buffer = hasher.Sum(nil)

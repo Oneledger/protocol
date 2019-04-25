@@ -17,7 +17,6 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/Oneledger/protocol/node/log"
 	"github.com/Oneledger/protocol/node/serialize"
 	"github.com/stretchr/testify/assert"
 )
@@ -42,13 +41,13 @@ func TestSerialize(t *testing.T) {
 	a := NewBalanceFromString("10", "OLT")
 	buffer, err := pSzlr.Serialize(a)
 	if err != nil {
-		log.Fatal("Serialization Failed", "err", err)
+		logger.Fatal("Serialization Failed", "err", err)
 	}
 	var result = &Balance{}
 
 	err = pSzlr.Deserialize(buffer, result)
 	if err != nil {
-		log.Fatal("Deserialized failed", "err", err)
+		logger.Fatal("Deserialized failed", "err", err)
 	}
 	assert.Equal(t, result, a, "These should be equal")
 }

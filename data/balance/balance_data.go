@@ -14,10 +14,9 @@
 package balance
 
 import (
+	"github.com/Oneledger/protocol/data/chain"
 	"github.com/Oneledger/protocol/node/serialize"
 	"math/big"
-
-	"github.com/Oneledger/protocol/node/log"
 )
 
 // BalanceData is an easy to serialize representation of a Balance object. A full Balance object can be recostructed
@@ -33,7 +32,7 @@ type BalanceData struct {
 type CoinData struct {
 	CurId    int       `json:"curr_id"`
 	CurName  string    `json:"curr_name"`
-	CurChain ChainType `json:"curr_chain"`
+	CurChain chain.Type `json:"curr_chain"`
 
 	Amount []byte `json:"amt"`
 }
@@ -117,7 +116,7 @@ func (bd *BalanceData) Primitive() serialize.DataAdapter {
 	b := &Balance{}
 	err := bd.extract(b)
 	if err != nil {
-		log.Error("error in get primitive of balance data", err)
+		logger.Error("error in get primitive of balance data", err)
 		return nil
 	}
 	return b

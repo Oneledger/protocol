@@ -19,14 +19,13 @@ import (
 	"math/big"
 	"strconv"
 
-	"github.com/Oneledger/protocol/node/log"
 )
 
 // Handle an incoming string
 func parseString(amount string, base *big.Float) *big.Int {
-	//log.Dump("Parsing Amount", amount)
+	//logger.Dump("Parsing Amount", amount)
 	if amount == "" {
-		log.Error("Empty Amount String", "amount", amount)
+		logger.Error("Empty Amount String", "amount", amount)
 		return nil
 	}
 
@@ -35,7 +34,7 @@ func parseString(amount string, base *big.Float) *big.Int {
 
 		_, err := fmt.Sscan(amount, value)
 		if err != nil {
-			log.Error("Invalid Float String", "err", err, "amount", amount)
+			logger.Error("Invalid Float String", "err", err, "amount", amount)
 			return nil
 		}
 		result := bfloat2bint(value, base)
@@ -43,7 +42,7 @@ func parseString(amount string, base *big.Float) *big.Int {
 
 	value, err := strconv.ParseFloat(amount, 64)
 	if err != nil {
-		log.Error("Invalid Float String", "err", err, "amount", amount)
+		logger.Error("Invalid Float String", "err", err, "amount", amount)
 		return nil
 	}
 
@@ -64,7 +63,7 @@ func int2bint(amount int64, base *big.Float) *big.Int {
 	interim := value.Mul(value, base)
 	result, _ := interim.Int(nil)
 
-	//log.Dump("int2bint", amount, result)
+	//logger.Dump("int2bint", amount, result)
 	return result
 }
 
