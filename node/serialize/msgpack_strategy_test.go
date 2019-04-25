@@ -6,7 +6,6 @@ import (
 	"testing"
 )
 
-
 var ms = msgpackStrategy{}
 
 func TestMsgpackStrategy_Serialize(t *testing.T) {

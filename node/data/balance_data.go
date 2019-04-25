@@ -21,7 +21,7 @@ func init() {
 // There is a map flattening of course for Coins
 type BalanceData struct {
 	Coins []CoinData `json:"pl"`
-	Tag  string     `json:"tag"` // Tag is a field used to identify the type after ser/deser
+	Tag   string     `json:"tag"` // Tag is a field used to identify the type after ser/deser
 	// will be useful in future
 }
 
@@ -53,7 +53,6 @@ func (b *Balance) Data() serialize.Data {
 	// this allows to reserve capacity so the process of adding
 	// items to the list
 	bd.Coins = make([]CoinData, 0, len(b.Amounts))
-
 
 	for _, id := range b.coinOrder {
 		coin := b.Amounts[id]
@@ -120,7 +119,6 @@ func (bd *BalanceData) Primitive() serialize.DataAdapter {
 	}
 	return b
 }
-
 
 func (bd *BalanceData) SerialTag() string {
 	return bd.Tag

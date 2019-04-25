@@ -3,7 +3,6 @@ package serialize
 // metastrategy has some common methods which is used to compose
 // encoding strategies
 type metaStrategy struct {
-
 }
 
 // a function type which resembles json.Unmarshal

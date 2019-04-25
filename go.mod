@@ -1,5 +1,4 @@
 module github.com/Oneledger/protocol
-
 require (
 	github.com/Oneledger/toml v0.4.1
 	github.com/go-kit/kit v0.8.0
