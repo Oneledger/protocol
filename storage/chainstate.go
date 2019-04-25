@@ -52,11 +52,11 @@ type ChainState struct {
 }
 
 // NewChainState generates a new ChainState object
-func NewChainState(name, dbDir, configDB string, newType StorageType) *ChainState {
+func NewChainState(name, configDB string, newType StorageType) *ChainState {
 	count = 0
 
 	chain := &ChainState{Name: name, Type: newType, Version: 0}
-	chain.dbDir = dbDir
+	chain.dbDir = dbDir()
 	chain.configDB = configDB
 
 	chain.reset()

@@ -13,3 +13,14 @@ Copyright 2017 - 2019 OneLedger
 */
 
 package storage
+
+import (
+	"os"
+	"path/filepath"
+)
+
+func dbDir() string {
+	rootDir := os.Getenv("OLDATA")
+	result, _ := filepath.Abs(filepath.Join(rootDir, "nodedata"))
+	return result
+}

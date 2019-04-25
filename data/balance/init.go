@@ -19,7 +19,7 @@ package balance
 import (
 	"github.com/Oneledger/protocol/data/chain"
 	"github.com/Oneledger/protocol/node/serial"
-	"github.com/Oneledger/protocol/node/serialize"
+	"github.com/Oneledger/protocol/serialize"
 	"math/big"
 )
 
