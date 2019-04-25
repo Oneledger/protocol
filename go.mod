@@ -19,4 +19,6 @@ require (
 	golang.org/x/crypto v0.0.0-20190422183909-d864b10871cd
 	google.golang.org/appengine v1.5.0 // indirect
 	google.golang.org/genproto v0.0.0-20190418145605-e7d98fc518a7 // indirect
+	github.com/stretchr/testify v1.3.0
+	github.com/tendermint/tendermint v0.31.5
 )
