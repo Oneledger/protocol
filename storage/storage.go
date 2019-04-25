@@ -15,15 +15,12 @@ Copyright 2017 - 2019 OneLedger
 package storage
 
 import (
-	"fmt"
 	"github.com/Oneledger/protocol/data"
 )
 
 type Storage interface {
 	Get(data.StoreKey) ([]byte, error)
-	Set(data.StoreKey, []byte) error
 	Exists(data.StoreKey) (bool, error)
-	Delete(data.StoreKey) (bool, error)
 
 	Begin() StorageSession
 	Close()
@@ -39,12 +36,20 @@ type Context struct {
 	ConfigDB string
 }
 
-func NewStorage(flavor, name string, ctx Context) Storage {
+func NewSessionStorage(flavor, name string, ctx Context) Storage {
 
-	fmt.Println(flavor)
 	switch flavor {
 	case "keyvalue":
 		return NewKeyValue(name, ctx.DbDir, ctx.ConfigDB, PERSISTENT)
+	}
+	return nil
+}
+
+func NewStorage(flavor, name string) data.Store {
+	switch flavor {
 	case "cache":
+		return &cache{name}
+	case "cache_safe":
+		return &cacheSafe{name}
 	}
 }

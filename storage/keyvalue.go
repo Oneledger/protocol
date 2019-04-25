@@ -204,22 +204,6 @@ func (store KeyValue) Get(key data.StoreKey) ([]byte, error) {
 
 }
 
-// Store inserts or updates a value under a key
-func (store KeyValue) Set(key data.StoreKey, dat []byte) error {
-	ok := store.tree.Set(key, dat)
-	if !ok {
-		return ErrSetFailed
-	}
-	return nil
-}
-
-
-// Delete a key from the datastore
-func (store KeyValue) Delete(key data.StoreKey) (bool, error) {
-	_, deleted := store.tree.Remove(key)
-	return deleted, nil
-}
-
 
 // List all of the keys
 func (store KeyValue) list() (keys []data.StoreKey) {
