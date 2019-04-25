@@ -7,8 +7,6 @@ import (
 
 type Algorithm int
 
-type AddressType int
-
 const (
 	ED25519 Algorithm = iota
 	SECP256K1

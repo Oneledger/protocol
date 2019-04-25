@@ -32,10 +32,6 @@ type PublicKey struct {
 	Data []byte
 }
 
-type Address struct {
-	Type AddressType
-}
-
 func NewPrivateKeyFromBytes(k []byte, algorithm Algorithm) PrivateKey{
 	return PrivateKey{algorithm, k}
 }
