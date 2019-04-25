@@ -1,3 +1,4 @@
+github.com/Oneledger/protocol v0.9.2 h1:CfTdv65JpKQ15TSfpxNYnW2ffspiW0rTy6DeGX+7XYM=
 github.com/Oneledger/toml v0.4.0 h1:sGOxCg4QTAct23zbopoO3h8PEjIshTn2YveDt1Vz/S4=
 github.com/Oneledger/toml v0.4.0/go.mod h1:2jh4gaY9vuiKnQRDUvFIhsuY1JKBZBGl6+YAyX6sWpk=
 github.com/Oneledger/toml v0.4.1 h1:CojBO0C04q1L+nr2sNXWT1y/FMZfjIyZg7oUtXVpzLM=
@@ -120,6 +121,7 @@ golang.org/x/sys v0.0.0-20181107165924-66b7b1311ac8 h1:YoY1wS6JYVRpIfFngRf2HHo9R
 golang.org/x/sys v0.0.0-20181107165924-66b7b1311ac8/go.mod h1:STP8DvDyc/dI5b8T5hshtkjS+E42TnysNCUPdjciGhY=
 golang.org/x/text v0.3.0 h1:g61tztE5qeGQ89tm6NTjjM9VPIm088od1l6aSorWRWg=
 golang.org/x/text v0.3.0/go.mod h1:NqM8EUOU14njkJ3fqMW+pc6Ldnwhi/IjpwHt7yyuwOQ=
+google.golang.org/appengine v1.5.0 h1:KxkO13IPW4Lslp2bz+KHP2E3gtFlrIGNThxkZQ3g+4c=
 google.golang.org/appengine v1.5.0/go.mod h1:xpcJRLb0r/rnEns0DIKYYv+WjYCduHsrkT7/EB5XEv4=
 google.golang.org/genproto v0.0.0-20180831171423-11092d34479b h1:lohp5blsw53GBXtLyLNaTXPXS9pJ1tiTw61ZHUoE9Qw=
 google.golang.org/genproto v0.0.0-20180831171423-11092d34479b/go.mod h1:JiN7NxoALGmiZfu7CAH4rXhgtRTLTxftemlI0sWmxmc=
