@@ -27,6 +27,7 @@ import (
 	"github.com/Oneledger/protocol/data"
 	"os"
 	"path/filepath"
+	"sync"
 
 	"github.com/tendermint/iavl"
 	"github.com/tendermint/tendermint/libs/db"
@@ -50,6 +51,8 @@ type KeyValue struct {
 	database db.DB
 
 	version int64
+
+	sync.RWMutex
 }
 
 
@@ -212,6 +215,9 @@ func (session KeyValueSession) FindAll() []data.StoreKey {
 
 // Store inserts or updates a value under a key
 func (session KeyValueSession) Set(key data.StoreKey, dat []byte) error {
+	session.store.Lock()
+	defer session.store.Unlock()
+
 	ok := session.store.tree.Set(key, dat)
 	if !ok {
 		return ErrSetFailed
@@ -241,6 +247,9 @@ func (session KeyValueSession) Get(key data.StoreKey) ([]byte, error) {
 
 // Delete a key from the datastore
 func (session KeyValueSession) Delete(key data.StoreKey) (bool, error) {
+	session.store.Lock()
+	defer session.store.Unlock()
+
 	_, deleted := session.store.tree.Remove(key)
 	return deleted, nil
 }
@@ -252,6 +261,9 @@ func (session KeyValueSession) Errors() string {
 
 // Commit the changes to persistence
 func (session KeyValueSession) Commit() bool {
+	session.store.RLock()
+	defer session.store.RUnlock()
+
 	_, version, err := session.store.tree.SaveVersion()
 	if err != nil {
 		log.Fatal("Database Error", "err", err)

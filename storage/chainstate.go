@@ -27,6 +27,7 @@ import (
 	b "github.com/Oneledger/protocol/data/balance"
 	"github.com/tendermint/iavl"
 	"github.com/tendermint/tendermint/libs/db"
+	"sync"
 )
 
 
@@ -49,6 +50,8 @@ type ChainState struct {
 	TreeHeight  int8
 	configDB string
 	dbDir string
+
+	sync.RWMutex
 }
 
 // NewChainState generates a new ChainState object
@@ -66,6 +69,8 @@ func NewChainState(name, configDB string, newType StorageType) *ChainState {
 
 // Do this only for the Delivery side
 func (state *ChainState) Set(key data.StoreKey, bal *b.Balance) {
+	state.Lock()
+	defer state.Unlock()
 
 	buffer, err := pSzlr.Serialize(bal)
 	if err != nil {
@@ -149,11 +154,13 @@ func (state *ChainState) Exists(key data.StoreKey) bool {
 // TODO: Not sure about this, it seems to be Cosmos-sdk's way of getting arround the immutable copy problem...
 func (state *ChainState) Commit() ([]byte, int64) {
 
+	state.RLock()
 	// Persist the Delivered merkle tree
 	hash, version, err := state.Delivered.SaveVersion()
 	if err != nil {
 		log.Fatal("Saving", "err", err)
 	}
+	state.RUnlock()
 
 	state.LastVersion, state.Version = state.Version, version
 	state.LastHash, state.Hash = state.Hash, hash
