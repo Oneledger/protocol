@@ -1,5 +1,3 @@
-// +build gcc
-
 /*
    ____             _              _                      _____           _                  _
   / __ \           | |            | |                    |  __ \         | |                | |
@@ -11,30 +9,18 @@
                                      |___/
 
 
-	Copyright 2017 - 2019 OneLedger
-
-   This file is for grabbing a leveldb instance WITH cleveldb support
-   It is only loaded if the code is compiled with CGO_ENABLED=1 and the "gcc" tag added
-
+Copyright 2017 - 2019 OneLedger
 */
 
 package storage
 
 import (
-	"github.com/tendermint/tendermint/libs/db"
+	"os"
+	"path/filepath"
 )
 
-func init() {
-	// log.Info("Node running with cleveldb support...")
-}
-
-func getDatabase(name, dbDir, configDB string) (db.DB, error) {
-
-	if configDB == "cleveldb" {
-		log.Info("Getting cleveldb...")
-		return db.NewCLevelDB(name, dbDir)
-	}
-
-	log.Info("Getting goleveldb...")
-	return db.NewGoLevelDB(name, dbDir)
+func dbDir() string {
+	rootDir := os.Getenv("OLDATA")
+	result, _ := filepath.Abs(filepath.Join(rootDir, "nodedata"))
+	return result
 }

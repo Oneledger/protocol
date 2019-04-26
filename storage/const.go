@@ -21,4 +21,11 @@ type StorageType int
 const (
 	MEMORY StorageType = iota
 	PERSISTENT
+
+	CACHE = "cache"
+	CACHE_SAFE = "cache_safe"
+	KEYVALUE = "keyvalue"
+
+	CHAINKEY_MAXLEN = 20
+	CHAINSTATE_CACHE_SIZE = 10000
 )

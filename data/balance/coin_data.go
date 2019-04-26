@@ -19,7 +19,7 @@ import (
 	"errors"
 	"math/big"
 
-	"github.com/Oneledger/protocol/node/serialize"
+	"github.com/Oneledger/protocol/serialize"
 )
 
 type coinData struct {

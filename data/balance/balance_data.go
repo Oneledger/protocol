@@ -14,8 +14,8 @@
 package balance
 
 import (
+	"github.com/Oneledger/protocol/serialize"
 	"github.com/Oneledger/protocol/data/chain"
-	"github.com/Oneledger/protocol/node/serialize"
 	"math/big"
 )
 

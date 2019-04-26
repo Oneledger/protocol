@@ -1,5 +1,3 @@
-// +build gcc
-
 /*
    ____             _              _                      _____           _                  _
   / __ \           | |            | |                    |  __ \         | |                | |
@@ -11,30 +9,26 @@
                                      |___/
 
 
-	Copyright 2017 - 2019 OneLedger
-
-   This file is for grabbing a leveldb instance WITH cleveldb support
-   It is only loaded if the code is compiled with CGO_ENABLED=1 and the "gcc" tag added
-
+Copyright 2017 - 2019 OneLedger
 */
 
-package storage
+package utils
 
 import (
-	"github.com/tendermint/tendermint/libs/db"
+	"errors"
+	"regexp"
 )
 
-func init() {
-	// log.Info("Node running with cleveldb support...")
-}
+var ErrParsingAddress =  errors.New("failed to parse network address")
 
-func getDatabase(name, dbDir, configDB string) (db.DB, error) {
+// Pick out the port from a full address
+func GetPort(addr string) (string, error) {
+	automata := regexp.MustCompile(`.*?:.*?:(.*)`)
+	groups := automata.FindStringSubmatch(addr)
 
-	if configDB == "cleveldb" {
-		log.Info("Getting cleveldb...")
-		return db.NewCLevelDB(name, dbDir)
+	if groups == nil || len(groups) != 2 {
+		return "", ErrParsingAddress
 	}
-
-	log.Info("Getting goleveldb...")
-	return db.NewGoLevelDB(name, dbDir)
+	return groups[1], nil
 }
+

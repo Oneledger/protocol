@@ -25,12 +25,6 @@ import (
 	"testing"
 )
 
-func dbDir() string {
-	rootDir := os.Getenv("OLDATA")
-	result, _ := filepath.Abs(filepath.Join(rootDir, "nodedata"))
-	return result
-}
-
 // TestCLevelDB is just a basic test to see if cleveldb is being used properly
 func TestCLevelDB(t *testing.T) {
 	storage, err := db.NewCLevelDB("test123", dbDir())

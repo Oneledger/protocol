@@ -15,10 +15,12 @@ package balance
 
 import (
 	"fmt"
+	"os"
 	"testing"
 
 	"github.com/Oneledger/protocol/node/serialize"
 	"github.com/stretchr/testify/assert"
+	logger "github.com/Oneledger/protocol/log"
 )
 
 func init() {
@@ -38,6 +40,10 @@ func xTestNewBalance(t *testing.T) {
 }
 
 func TestSerialize(t *testing.T) {
+
+	// temp; remove this logger later
+	var log = logger.NewDefaultLogger(os.Stdout)
+
 	a := NewBalanceFromString("10", "OLT")
 	buffer, err := pSzlr.Serialize(a)
 	if err != nil {
