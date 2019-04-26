@@ -4,8 +4,7 @@ import (
 	"io"
 	"os"
 
-	"github.com/Oneledger/protocol/node/config"
-	"github.com/Oneledger/protocol/node/log"
+	"github.com/Oneledger/protocol/config"
 	tmconfig "github.com/tendermint/tendermint/config"
 	tmflags "github.com/tendermint/tendermint/libs/cli/flags"
 	tmlog "github.com/tendermint/tendermint/libs/log"
@@ -25,7 +24,7 @@ func newFileLogger(logPath string, cfg tmconfig.Config) (tmlog.Logger, error) {
 	var err error
 	file, err = os.OpenFile(logPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, config.FilePerms)
 	if err != nil {
-		log.Info("Failed to open new file", "err", err)
+		logger.Info("Failed to open new file", "err", err)
 		return nil, err
 	}
 	return newLogger(file, cfg)

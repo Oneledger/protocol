@@ -18,19 +18,22 @@ package balance
 
 import (
 	"github.com/Oneledger/protocol/data/chain"
+	"github.com/Oneledger/protocol/log"
 	"github.com/Oneledger/protocol/node/serial"
 	"github.com/Oneledger/protocol/serialize"
 	"math/big"
+	"os"
 )
 
 var pSzlr serialize.Serializer
-
+var logger *log.Logger
 
 var currencies map[string]Currency
 var currenciesExtra map[string]Extra
 
 func init() {
 
+	logger = log.NewDefaultLogger(os.Stdout).WithPrefix("balance")
 	serial.Register(Balance{})
 	serial.Register(Coin{})
 	serial.Register(Currency{})

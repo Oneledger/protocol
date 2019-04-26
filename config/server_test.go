@@ -1,12 +1,12 @@
 package config
 
 import (
-	"github.com/Oneledger/protocol-temp"
 	"os"
 	"path/filepath"
 	"testing"
 	"time"
 
+	"github.com/Oneledger/protocol/config"
 	"github.com/stretchr/testify/assert"
 	tmconfig "github.com/tendermint/tendermint/config"
 )
@@ -28,7 +28,7 @@ func init() {
 }
 
 func setup() {
-	err := os.MkdirAll(path, protocol_temp.DirPerms)
+	err := os.MkdirAll(path, config.DirPerms)
 	if err != nil {
 		handleErr(err)
 	}
@@ -46,8 +46,8 @@ func TestMain(m *testing.M) {
 }
 
 func TestServer_FileHandling(t *testing.T) {
-	cfg := protocol_temp.DefaultServerConfig()
-	cfgPath := filepath.Join(path, protocol_temp.FileName)
+	cfg := config.DefaultServerConfig()
+	cfgPath := filepath.Join(path, config.FileName)
 
 	t.Run("SaveFile should fail on saving to a nonexistent path", func(t *testing.T) {
 		nonexistingPath := filepath.Join("nonexistent", "path", "file")
@@ -67,8 +67,8 @@ func TestServer_FileHandling(t *testing.T) {
 	})
 
 	t.Run("ReadFile should correctly read an existing file", func(t *testing.T) {
-		cfg := new(protocol_temp.Server)
-		defaultCFG := protocol_temp.DefaultServerConfig()
+		cfg := new(config.Server)
+		defaultCFG := config.DefaultServerConfig()
 		err := cfg.ReadFile(cfgPath)
 		assert.Nil(t, err)
 		assert.Equal(t, *cfg, *defaultCFG, "Should read the default config")
@@ -76,11 +76,11 @@ func TestServer_FileHandling(t *testing.T) {
 }
 
 func TestTMConfig_Durations(t *testing.T) {
-	cfg := protocol_temp.DefaultServerConfig()
+	cfg := config.DefaultServerConfig()
 	tmcfg := cfg.TMConfig("foobar")
 	tmcfgDefault := tmconfig.DefaultConfig()
 
-	int3Array := func(d protocol_temp.Duration, td time.Duration, tdDefault time.Duration) [3]int64 {
+	int3Array := func(d config.Duration, td time.Duration, tdDefault time.Duration) [3]int64 {
 		return [3]int64{int64(d), int64(td), int64(tdDefault)}
 	}
 
