@@ -1,6 +1,7 @@
 package id
 
 import (
+	"github.com/Oneledger/protocol/node/serialize"
 	"testing"
 
 	"github.com/Oneledger/protocol/node/data"
@@ -10,6 +11,11 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+var pSzlr serialize.Serializer
+
+func init() {
+	pSzlr = serialize.GetSerializer(serialize.PERSISTENT)
+}
 func TestKeyType(t *testing.T) {
 	var key AccountKey
 
@@ -28,17 +34,15 @@ func TestIdentity(t *testing.T) {
 	var identity Identity
 
 	// Serialize the go data structure
-	buffer, err := serial.Serialize(identity, serial.PERSISTENT)
-
+	buffer, err := pSzlr.Serialize(identity)
 	if err != nil {
 		log.Fatal("Serialized failed", "err", err)
 	}
 
-	var opp2 Identity
+	var result = &Identity{}
 
 	// Deserialize back into a go data structure
-	result, err := serial.Deserialize(buffer, opp2, serial.PERSISTENT)
-
+	err = pSzlr.Deserialize(buffer, result)
 	if err != nil {
 		log.Fatal("Deserialized failed", "err", err)
 	}
@@ -74,17 +78,15 @@ func TestPublicKey(t *testing.T) {
 	var key KeyBase
 
 	// Serialize the go data structure
-	buffer, err := serial.Serialize(key, serial.PERSISTENT)
-
+	buffer, err := pSzlr.Serialize(key)
 	if err != nil {
 		log.Fatal("Serialized failed", "err", err)
 	}
 
-	var opp2 KeyBase
+	var result = &KeyBase{}
 
 	// Deserialize back into a go data structure
-	result, err := serial.Deserialize(buffer, opp2, serial.PERSISTENT)
-
+	err = pSzlr.Deserialize(buffer, result)
 	if err != nil {
 		log.Fatal("Deserialized failed", "err", err)
 	}
@@ -101,20 +103,18 @@ func TestAccount(t *testing.T) {
 	publicKey := NilPublicKey()
 	privateKey := NilPrivateKey()
 
-	account := NewAccount(chain, accountName, publicKey, privateKey)
+	account := NewAccount(chain, accountName, publicKey, privateKey, nil)
 
 	// Serialize the go data structure
-	buffer, err := serial.Serialize(account, serial.PERSISTENT)
-
+	buffer, err := pSzlr.Serialize(account)
 	if err != nil {
 		log.Fatal("Serialized failed", "err", err)
 	}
 
-	var opp2 interface{}
+	var result interface{}
 
 	// Deserialize back into a go data structure
-	result, err := serial.Deserialize(buffer, opp2, serial.PERSISTENT)
-
+	err = pSzlr.Deserialize(buffer, &result)
 	if err != nil {
 		log.Fatal("Deserialized failed", "err", err)
 	}
@@ -132,27 +132,27 @@ func TestAccountArray(t *testing.T) {
 	privateKey := NilPrivateKey()
 
 	accounts := make([]Account, 3)
-	accounts[0] = NewAccount(chain, accountName, publicKey, privateKey)
-	accounts[1] = NewAccount(chain, accountName, publicKey, privateKey)
-	accounts[2] = NewAccount(chain, accountName, publicKey, privateKey)
+	accounts[0] = NewAccount(chain, accountName, publicKey, privateKey, nil)
+	accounts[1] = NewAccount(chain, accountName, publicKey, privateKey, nil)
+	accounts[2] = NewAccount(chain, accountName, publicKey, privateKey, nil)
 
 	// Serialize the go data structure
-	buffer, err := serial.Serialize(accounts, serial.PERSISTENT)
-
+	buffer, err := pSzlr.Serialize(accounts)
 	if err != nil {
 		log.Fatal("Serialized failed", "err", err)
 	}
 
-	var opp2 interface{}
+	var result interface{}
 
 	// Deserialize back into a go data structure
-	result, err := serial.Deserialize(buffer, opp2, serial.PERSISTENT)
-
+	err = pSzlr.Deserialize(buffer, &result)
 	if err != nil {
 		log.Fatal("Deserialized failed", "err", err)
 	}
-
-	assert.Equal(t, accounts, result, "These should be equal")
+	results := result.([]interface{})
+	for i := range accounts {
+		assert.Equal(t, accounts[i], results[i].(Account), "These should be equal")
+	}
 }
 
 func TestAccountPersistence(t *testing.T) {

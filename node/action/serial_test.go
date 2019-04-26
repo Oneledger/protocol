@@ -2,6 +2,7 @@ package action
 
 import (
 	"flag"
+	"github.com/Oneledger/protocol/node/serialize"
 	"os"
 	"testing"
 
@@ -12,6 +13,11 @@ import (
 	"github.com/Oneledger/protocol/node/serial"
 )
 
+var pSzlr serialize.Serializer
+
+func init() {
+	pSzlr = serialize.GetSerializer(serialize.PERSISTENT)
+}
 // Control the execution
 func TestMain(m *testing.M) {
 	flag.Parse()
@@ -74,12 +80,13 @@ func TestIdentity(t *testing.T) {
 	value := id.Identity{
 		Chain: chain,
 	}
-	buffer, err := serial.Serialize(value, serial.PERSISTENT)
+
+	buffer, err := pSzlr.Serialize(value)
 	if err != nil {
 		log.Fatal("Have Error", "err", err)
 	}
-	var proto id.Identity
-	result, err := serial.Deserialize(buffer, proto, serial.PERSISTENT)
+	var result = &id.Identity{}
+	err = pSzlr.Deserialize(buffer, result)
 	if err != nil {
 		log.Fatal("Have Error", "err", err)
 	}
