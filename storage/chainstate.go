@@ -205,9 +205,11 @@ func initializeDatabase(name, dbDir, configDB string, newType StorageType, versi
 	}
 
 	tree := iavl.NewMutableTree(storage, CHAINSTATE_CACHE_SIZE) // Do I need a historic tree here?
-	loadedVersion, err := tree.LoadVersion(version)
+	_, err = tree.LoadVersion(version)
+	if err != nil {
+		log.Error("error in loading tree version", "version", version, "err", err)
+	}
 
-	_ = loadedVersion
 	count = count + 1
 
 	return tree, storage

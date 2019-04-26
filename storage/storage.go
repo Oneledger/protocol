@@ -18,7 +18,7 @@ import (
 	"github.com/Oneledger/protocol/data"
 )
 
-// Storage
+// Storage wraps objects with option to start a session(db transaction)
 type Storage interface {
 	Get(data.StoreKey) ([]byte, error)
 	Exists(data.StoreKey) (bool, error)
