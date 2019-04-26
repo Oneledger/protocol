@@ -9,10 +9,10 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/Oneledger/protocol/node/action"
+	"github.com/Oneledger/protocol/data"
 )
 
-func (runner Runner) setupContract(request *action.OLVMRequest) bool {
+func (runner Runner) setupContract(request *data.OLVMRequest) bool {
 	address := request.Address
 	sourceCode := ""
 

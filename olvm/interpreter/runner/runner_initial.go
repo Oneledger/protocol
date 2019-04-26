@@ -1,11 +1,11 @@
 package runner
 
 import (
-	"github.com/Oneledger/protocol/node/action"
+	"github.com/Oneledger/protocol/data"
 	"github.com/robertkrimen/otto"
 )
 
-func (runner Runner) initialContext(from string, olt int, callString string, context action.OLVMContext) {
+func (runner Runner) initialContext(from string, olt int, callString string, context data.OLVMContext) {
 
 	err := runner.vm.Set("__GetContextValue__", func(call otto.FunctionCall) otto.Value {
 		key := call.Argument(0).String()
@@ -25,7 +25,7 @@ func (runner Runner) initialContext(from string, olt int, callString string, con
 	runner.vm.Set("__olt__", olt)
 }
 
-func (runner Runner) initialAnalyzeContext(from string, olt int, callString string, context action.OLVMContext) {
+func (runner Runner) initialAnalyzeContext(from string, olt int, callString string, context data.OLVMContext) {
 
 	sourceCode := getCodeFromJsLibs("onAnalyzeEnter")
 	runner.vm.Set("__callString__", callString)

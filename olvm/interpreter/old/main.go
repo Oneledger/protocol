@@ -5,9 +5,9 @@ import (
 	"os"
 
 	logger "github.com/Oneledger/protocol/log"
-	"github.com/Oneledger/protocol/node/olvm/interpreter/committor"
-	"github.com/Oneledger/protocol/node/olvm/interpreter/runner"
-	"github.com/Oneledger/protocol/node/olvm/interpreter/vm"
+	"github.com/Oneledger/protocol/olvm/interpreter/committor"
+	"github.com/Oneledger/protocol/olvm/interpreter/runner"
+	"github.com/Oneledger/protocol/olvm/interpreter/vm"
 )
 
 var log = logger.NewDefaultLogger(os.Stdout).WithPrefix("olvm/interpreter/old")

@@ -8,8 +8,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/Oneledger/protocol/node/action"
-	"github.com/Oneledger/protocol/node/log"
+	"github.com/Oneledger/protocol/data"
 	"github.com/robertkrimen/otto"
 )
 
@@ -71,7 +70,7 @@ func (runner Runner) exec(callString string) (string, string) {
 	return output, returnValue
 }
 
-func (runner Runner) Analyze(request *action.OLVMRequest, result *action.OLVMResult) (err error) {
+func (runner Runner) Analyze(request *data.OLVMRequest, result *data.OLVMResult) (err error) {
 	log.Debug("Analyzing the Script")
 	defer func() {
 		if r := recover(); r != nil {
@@ -125,7 +124,7 @@ func (runner Runner) Analyze(request *action.OLVMRequest, result *action.OLVMRes
 }
 
 //func (runner Runner) Call(from string, address string, callString string, olt int) (transaction string, returnValue string, err error) {
-func (runner Runner) Call(request *action.OLVMRequest, result *action.OLVMResult) (err error) {
+func (runner Runner) Call(request *data.OLVMRequest, result *data.OLVMResult) (err error) {
 	log.Debug("Calling the Script")
 	defer func() {
 		if r := recover(); r != nil {

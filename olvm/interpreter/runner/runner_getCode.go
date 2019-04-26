@@ -2,7 +2,6 @@ package runner
 
 import (
 	"bytes"
-	"github.com/Oneledger/protocol/node/log"
 	"os"
 	"path/filepath"
 )

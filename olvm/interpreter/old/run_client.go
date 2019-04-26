@@ -1,10 +1,8 @@
 package main
 
 import (
-	"github.com/Oneledger/protocol/node/log"
-
-	"github.com/Oneledger/protocol/node/olvm/interpreter/runner"
-	"github.com/Oneledger/protocol/node/olvm/interpreter/vm"
+	"github.com/Oneledger/protocol/olvm/interpreter/runner"
+	"github.com/Oneledger/protocol/olvm/interpreter/vm"
 )
 
 var sourceCode = `var HellowWorldContract = function (context) {

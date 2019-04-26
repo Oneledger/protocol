@@ -8,10 +8,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Oneledger/protocol/node/action"
-	"github.com/Oneledger/protocol/node/global"
-	"github.com/Oneledger/protocol/node/log"
 	"github.com/Oneledger/protocol/node/sdk"
+	"github.com/Oneledger/protocol/data"
 )
 
 // TODO: Hardcoded port, needs to come from config
@@ -27,14 +25,12 @@ func NewClient(protocol string, address string) *OLVMClient {
 }
 
 // Initialize the vm/daemon/etc.
-func InitializeClient() {
-	protocol := global.Current.Config.Network.OLVMProtocol
-	address := global.Current.Config.Network.OLVMAddress
+func InitializeClient(protocol, address string) {
 
 	defaultClient = NewClient(protocol, address)
 }
 
-func AutoRun(request *action.OLVMRequest) (result *action.OLVMResult, err error) {
+func AutoRun(request *data.OLVMRequest) (result *data.OLVMResult, err error) {
 
 	log.Debug("Trying to Run")
 	result, err = defaultClient.Run(request)
@@ -42,7 +38,7 @@ func AutoRun(request *action.OLVMRequest) (result *action.OLVMResult, err error)
 
 	// TODO: Should be based on error code, not text...
 	if err != nil {
-		log.Dump("Failed to run", err, result)
+		log.Errorf("Failed to run %s %#v", err, *result)
 		if strings.HasSuffix(err.Error(), "connection refused") {
 
 			// Pause for a bit, might be a race condition
@@ -55,7 +51,7 @@ func AutoRun(request *action.OLVMRequest) (result *action.OLVMResult, err error)
 					log.Fatal("Can't connect", "err", err)
 				}
 
-				log.Dump("Failed Again", err, result)
+				log.Errorf("Failed Again %s %#v", err, result)
 				time.Sleep(time.Second)
 				log.Debug("Trying to ReRun")
 				result, err = defaultClient.Run(request)
@@ -69,7 +65,7 @@ func AutoRun(request *action.OLVMRequest) (result *action.OLVMResult, err error)
 	return
 }
 
-func Analyze(request *action.OLVMRequest) (result *action.OLVMResult, err error) {
+func Analyze(request *data.OLVMRequest) (result *data.OLVMResult, err error) {
 
 	log.Debug("Analyze the smart contract")
 	result, err = defaultClient.RunAnalyze(request)
@@ -77,7 +73,7 @@ func Analyze(request *action.OLVMRequest) (result *action.OLVMResult, err error)
 
 	// TODO: Should be based on error code, not text...
 	if err != nil {
-		log.Dump("Failed to run", err, result)
+		log.Errorf("Failed to run %s %#v", err, result)
 		if strings.HasSuffix(err.Error(), "connection refused") {
 
 			// Pause for a bit, might be a race condition
@@ -90,7 +86,7 @@ func Analyze(request *action.OLVMRequest) (result *action.OLVMResult, err error)
 					log.Fatal("Can't connect", "err", err)
 				}
 
-				log.Dump("Failed Again", err, result)
+				log.Error("Failed Again", err, *result)
 				time.Sleep(time.Second)
 				log.Debug("Trying to ReRun")
 				result, err = defaultClient.RunAnalyze(request)
@@ -105,55 +101,55 @@ func Analyze(request *action.OLVMRequest) (result *action.OLVMResult, err error)
 }
 
 // Run a smart contract
-func (c OLVMClient) RunAnalyze(request *action.OLVMRequest) (*action.OLVMResult, error) {
+func (c OLVMClient) RunAnalyze(request *data.OLVMRequest) (*data.OLVMResult, error) {
 
 	log.Info("Dialing service...", "protocol", c.Protocol, "service", c.ServicePath)
 
 	client, err := rpc.DialHTTP(c.Protocol, ":"+sdk.GetPort(c.ServicePath))
 	if err != nil {
-		log.Dump("Failded to Connect", err, client)
+		log.Errorf("Failded to Connect error:%s %#v ", err, client)
 		return nil, err
 	}
 
 	// TODO: Shouldn't pass by address for the result
-	result := &action.OLVMResult{}
+	result := &data.OLVMResult{}
 	err = client.Call("Container.Analyze", request, result)
 	if err != nil {
-		log.Dump("Failded to Exec", err, result)
+		log.Errorf("Failded to Exec error:%s result:%#v", err, result)
 		return nil, err
 	}
 
 	client.Close()
 
-	log.Dump("Have a Result", result)
+	log.Error("Have a Result", result)
 	return result, nil
 }
 
 // Run a smart contract
-func (c OLVMClient) Run(request *action.OLVMRequest) (*action.OLVMResult, error) {
+func (c OLVMClient) Run(request *data.OLVMRequest) (*data.OLVMResult, error) {
 
 	log.Info("Dialing service...", "protocol", c.Protocol, "service", c.ServicePath)
 
 	client, err := rpc.DialHTTP(c.Protocol, ":"+sdk.GetPort(c.ServicePath))
 	if err != nil {
-		log.Dump("Failded to Connect", err, client)
+		log.Errorf("Failed to Connect error:%s result:%#v", err, client)
 		return nil, err
 	}
 
 	// TODO: Shouldn't pass by address for the result
-	result := &action.OLVMResult{}
+	result := &data.OLVMResult{}
 	err = client.Call("Container.Exec", request, result)
 	if err != nil {
-		log.Dump("Failded to Exec", err, result)
+		log.Errorf("Failed to Exec error:%s result:%#v", err, result)
 		return result, err
 	}
 
 	client.Close()
 
-	log.Dump("Have a Result", result)
+	log.Error("Have a Result", *result)
 	return result, nil
 }
 
-func Run(request *action.OLVMRequest) (*action.OLVMResult, error) {
+func Run(request *data.OLVMRequest) (*data.OLVMResult, error) {
 	return defaultClient.Run(request)
 }

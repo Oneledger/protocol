@@ -7,18 +7,16 @@ import (
 	"runtime/debug"
 	//"time"
 
-	"github.com/Oneledger/protocol/node/action"
-	"github.com/Oneledger/protocol/node/global"
-	"github.com/Oneledger/protocol/node/log"
-	"github.com/Oneledger/protocol/node/olvm/interpreter/runner"
+	"github.com/Oneledger/protocol/olvm/interpreter/runner"
 	"github.com/Oneledger/protocol/node/sdk"
+	"github.com/Oneledger/protocol/data"
 )
 
 // TODO: Make sure call is not before viper args are handled.
-func NewOLVMService() *OLVMService {
+func NewOLVMService(protocol, address string) *OLVMService {
 	return &OLVMService{
-		Protocol: global.Current.Config.Network.OLVMProtocol,
-		Address:  global.Current.Config.Network.OLVMAddress,
+		Protocol: protocol,
+		Address:  address,
 	}
 }
 
@@ -28,7 +26,7 @@ func (ol OLVMService) StartService() {
 		if r := recover(); r != nil {
 			go func() {
 				debug.PrintStack()
-				log.Warn("OLVM Panicked", "status", r)
+				log.Error("OLVM Panicked", "status", r)
 			}()
 		}
 	}()
@@ -50,21 +48,21 @@ func (ol OLVMService) StartService() {
 }
 
 // Echo as defined by RPC
-func (c *Container) Echo(request *action.OLVMRequest, result *action.OLVMResult) error {
+func (c *Container) Echo(request *data.OLVMRequest, result *data.OLVMResult) error {
 	// TODO: Do something useful here
 	return nil
 }
 
 // Exec as defined by RPC
-func (c *Container) Exec(request *action.OLVMRequest, result *action.OLVMResult) error {
-	log.Dump("Exec a Contract", request)
+func (c *Container) Exec(request *data.OLVMRequest, result *data.OLVMResult) error {
+	log.Info("Exec a Contract", *request)
 	runner := runner.CreateRunner()
 	return runner.Call(request, result)
 }
 
 // Exec as defined by RPC
-func (c *Container) Analyze(request *action.OLVMRequest, result *action.OLVMResult) error {
-	log.Dump("Analyze a Contract", request)
+func (c *Container) Analyze(request *data.OLVMRequest, result *data.OLVMResult) error {
+	log.Info("Analyze a Contract", *request)
 	runner := runner.CreateRunner()
 	return runner.Analyze(request, result)
 }
