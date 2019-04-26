@@ -3,9 +3,7 @@ package consensus
 import (
 	"path/filepath"
 
-	"github.com/Oneledger/protocol/node/config"
-	"github.com/Oneledger/protocol/node/global"
-	"github.com/Oneledger/protocol/node/log"
+	"github.com/Oneledger/protocol/config"
 	tmconfig "github.com/tendermint/tendermint/config"
 	tmlog "github.com/tendermint/tendermint/libs/log"
 	"github.com/tendermint/tendermint/node"
@@ -13,6 +11,9 @@ import (
 	"github.com/tendermint/tendermint/privval"
 	"github.com/tendermint/tendermint/types"
 )
+
+// TODO: placeholder
+const RootDir = "./"
 
 // config is used to provider the right arguments for spinning up a new consensus.Node
 type NodeConfig struct {
@@ -34,17 +35,20 @@ func ParseConfig(cfg *config.Server) (NodeConfig, error) {
 
 // ParseConfig reads Tendermint level config and return as
 func parseConfig(cfg *config.Server) (NodeConfig, error) {
-	tmcfg := cfg.TMConfig(global.Current.ConsensusDir())
+	// Proper consensus dir
+	tmcfg := cfg.TMConfig(RootDir)
 	genesisProvider := func() (*types.GenesisDoc, error) {
-		return types.GenesisDocFromFile(filepath.Join(global.Current.ConsensusDir(), "config", "genesis.json"))
+		// TODO: Get the right consensus dir
+		return types.GenesisDocFromFile(filepath.Join("config", "genesis.json"))
+		// return types.GenesisDocFromFile(filepath.Join(global.Current.ConsensusDir(), "config", "genesis.json"))
 	}
-	// Pass the chainID to the application
-	doc, err := genesisProvider()
-	if err != nil {
-		log.Error("Failed to read genesis file", "err", err)
-		return NodeConfig{}, err
-	}
-	global.Current.SetChainID(doc)
+	// TODO: Pass the chainID to the application
+	// doc, err := genesisProvider()
+	// if err != nil {
+	// 	logger.Error("Failed to read genesis file", "err", err)
+	// 	return NodeConfig{}, err
+	// }
+	// // global.Current.SetChainID(doc)
 
 	privValidator := privval.LoadFilePV(tmcfg.PrivValidatorKeyFile(), tmcfg.PrivValidatorStateFile())
 
@@ -58,7 +62,7 @@ func parseConfig(cfg *config.Server) (NodeConfig, error) {
 	if cfg.Consensus.LogOutput == "stdout" {
 		logger, err = newStdOutLogger(tmcfg)
 	} else {
-		logOutput := filepath.Join(global.Current.RootDir, cfg.Consensus.LogOutput)
+		logOutput := filepath.Join(RootDir, cfg.Consensus.LogOutput)
 		logger, err = newFileLogger(logOutput, tmcfg)
 	}
 	if err != nil {

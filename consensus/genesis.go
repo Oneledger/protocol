@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"time"
 
-	"github.com/Oneledger/protocol/node/log"
 	"github.com/tendermint/tendermint/types"
 )
 
@@ -15,7 +14,7 @@ func NewGenesisDoc(chainID string) *GenesisDoc {
 	validators := make([]GenesisValidator, 0)
 	appStateBytes, err := NewAppState().MarshalJSON()
 	if err != nil {
-		log.Fatal("Failed to marshal DefaultAppState")
+		logger.Fatal("Failed to marshal DefaultAppState")
 	}
 	return &GenesisDoc{
 		GenesisTime:     time.Now(),

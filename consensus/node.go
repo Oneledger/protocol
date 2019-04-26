@@ -1,8 +1,7 @@
 package consensus
 
 import (
-	"github.com/Oneledger/protocol/node/config"
-	"github.com/Oneledger/protocol/node/log"
+	"github.com/Oneledger/protocol/config"
 	abcitypes "github.com/tendermint/tendermint/abci/types"
 	tmnode "github.com/tendermint/tendermint/node"
 	"github.com/tendermint/tendermint/proxy"
@@ -15,7 +14,7 @@ func NewNode(application abcitypes.Application, cfg *config.Server) (*tmnode.Nod
 	if err != nil {
 		return nil, err
 	}
-	log.Dump("TM Node settings", nodecfg.CFG)
+	// log.Dump("TM Node settings", nodecfg.CFG)
 	clientCreator := proxy.NewLocalClientCreator(application)
 	return tmnode.NewNode(
 		&nodecfg.CFG,
