@@ -13,6 +13,7 @@ import (
 )
 
 func (runner Runner) analyze(callString string) (string, string) {
+
 	if callString == "" {
 		callString = "default__()"
 		log.Info("callString is empty, use default", "callString", callString)
@@ -25,6 +26,7 @@ func (runner Runner) analyze(callString string) (string, string) {
 	if err != nil {
 		panic(err)
 	}
+
 	sourceCode := getCodeFromJsLibs("onAnalyzeExit")
 	// Set the transaction parameters
 	runner.vm.Run(sourceCode)
@@ -38,10 +40,12 @@ func (runner Runner) analyze(callString string) (string, string) {
 	if value, err := runner.vm.Get("ret"); err == nil {
 		returnValue, _ = value.ToString()
 	}
+
 	return output, returnValue
 }
 
 func (runner Runner) exec(callString string) (string, string) {
+
 	if callString == "" {
 		callString = "default__()"
 		log.Info("callString is empty, use default", "callString", callString)
@@ -54,9 +58,14 @@ func (runner Runner) exec(callString string) (string, string) {
 	if err != nil {
 		panic(err)
 	}
+
 	sourceCode := getCodeFromJsLibs("onExit")
 	// Set the transaction parameters
-	runner.vm.Run(sourceCode)
+	err := runner.vm.Run(sourceCode)
+	if err != nil {
+		log.Error("error in running vm", "err", err)
+	}
+
 	output := ""
 	returnValue := ""
 
@@ -67,11 +76,13 @@ func (runner Runner) exec(callString string) (string, string) {
 	if value, err := runner.vm.Get("ret"); err == nil {
 		returnValue, _ = value.ToString()
 	}
+
 	return output, returnValue
 }
 
 func (runner Runner) Analyze(request *data.OLVMRequest, result *data.OLVMResult) (err error) {
 	log.Debug("Analyzing the Script")
+
 	defer func() {
 		if r := recover(); r != nil {
 			log.Debug("HALTING")
@@ -179,7 +190,9 @@ func (runner Runner) Call(request *data.OLVMRequest, result *data.OLVMResult) (e
 
 func CreateRunner() Runner {
 	vm := otto.New()
-	vm.Set("version", "OVM v0.1.0 TEST")
-
+	err := vm.Set("version", "OVM v0.1.0 TEST")
+	if err != nil {
+		log.Errorf("error in setting version", "err", err)
+	}
 	return Runner{vm}
 }

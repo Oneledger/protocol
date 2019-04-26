@@ -14,22 +14,34 @@ func (runner Runner) initialContext(from string, olt int, callString string, con
 
 		return value
 	})
-	if err != nil {
-		log.Error(err)
-	}
+	logIfError("error in setting context", err)
 
 	sourceCode := getCodeFromJsLibs("onEnter")
-	runner.vm.Set("__callString__", callString)
-	runner.vm.Run(sourceCode)
-	runner.vm.Set("__from__", from)
-	runner.vm.Set("__olt__", olt)
+	err = runner.vm.Set("__callString__", callString)
+	logIfError("error in setting callstring ", err)
+
+	_, err = runner.vm.Run(sourceCode)
+	logIfError("error in running sourceCode ", err)
+
+	err = runner.vm.Set("__from__", from)
+	logIfError("error in setting __from__ ", err)
+
+	err = runner.vm.Set("__olt__", olt)
+	logIfError("error in setting __olt__ ", err)
 }
 
 func (runner Runner) initialAnalyzeContext(from string, olt int, callString string, context data.OLVMContext) {
 
 	sourceCode := getCodeFromJsLibs("onAnalyzeEnter")
-	runner.vm.Set("__callString__", callString)
-	runner.vm.Run(sourceCode)
-	runner.vm.Set("__from__", from)
-	runner.vm.Set("__olt__", olt)
+	err := runner.vm.Set("__callString__", callString)
+	logIfError("error in setting callstring ", err)
+
+	_, err = runner.vm.Run(sourceCode)
+	logIfError("error in running sourceCode ", err)
+
+	err = runner.vm.Set("__from__", from)
+	logIfError("error in setting __from__ ", err)
+
+	err = runner.vm.Set("__olt__", olt)
+	logIfError("error in setting __olt__ ", err)
 }

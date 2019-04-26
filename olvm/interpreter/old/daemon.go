@@ -7,12 +7,15 @@ import (
 )
 
 func getProgressWheel(i int) (string, int) {
+
 	wheels := []string{"-", "\\", "|", "/"}
 	wheel_str := wheels[i]
+
 	i = i + 1
 	if i > 3 {
 		i = 0
 	}
+
 	return wheel_str, i
 }
 
@@ -28,11 +31,12 @@ func checkRunningStatus(progressWheel string) {
 
 func main() {
 	fmt.Println("starting daemon")
+
 	i := 0
 	for {
 		time.Sleep(time.Second)
-		progressWheel, i_ := getProgressWheel(i)
+		progressWheel, newI := getProgressWheel(i)
 		checkRunningStatus(progressWheel)
-		i = i_
+		i = newI
 	}
 }

@@ -10,11 +10,13 @@ import (
 
 func (monitor Monitor) CheckStatus(status_ch chan Status) {
 	log.Debug("Setting up a timer")
+
 	i := 0
 	for {
 		time.Sleep(time.Second)
 		log.Debug("Wake up and check process", "i", i, "threshold", monitor.TickerThreshold)
 		i = i + 1
+
 		if i >= monitor.TickerThreshold {
 			log.Debug("OUT OF TIME!!!!")
 			status_ch <- Status{"Reach the ticker threshold, might have a dead loop", STATUS_DEADLOOP}
@@ -26,6 +28,7 @@ func (monitor Monitor) CheckStatus(status_ch chan Status) {
 func (monitor Monitor) CheckUnique() (Status, bool) {
 
 	if _, err := os.Stat(monitor.PidFilePath); !os.IsNotExist(err) {
+
 		switch monitor.RunningMode {
 		case AGGRESIVE_MODE:
 			os.Remove(monitor.PidFilePath)
@@ -38,6 +41,7 @@ func (monitor Monitor) CheckUnique() (Status, bool) {
 			return Status{"ovm.pid file exists, there is another ovm running or exit abnormally, but we can still run a new thread", STATUS_WARNING}, false
 		}
 	}
+
 	return Status{"OK", STATUS_OK}, false
 }
 

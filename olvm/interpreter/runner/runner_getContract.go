@@ -28,28 +28,31 @@ func (runner Runner) setupContract(request *data.OLVMRequest) bool {
 
 	// TODO: Needs better error handling
 	if sourceCode == "" {
+		log.Error("error in getting source code of contract")
 		return false
 	}
 	log.Debug("get source code", "sourceCode", sourceCode)
-	_, error := runner.vm.Run(`var module = {};(function(module){` + sourceCode + `})(module)`)
-	if error == nil {
+
+	_, err := runner.vm.Run(`var module = {};(function(module){` + sourceCode + `})(module)`)
+	if err == nil {
 		return true
-	} else {
-		return false
 	}
+
+	return false
 }
 
 func getSourceCodeFromSamples(address string) string {
 
 	prefix := "samples://"
 	sampleCodeName := address[len(prefix):]
+
 	jsFilePath := filepath.Join(os.Getenv("OLROOT"), "/protocol/node/olvm/interpreter/samples/", sampleCodeName+".js")
 	log.Debug("get source code from local file system", "path", jsFilePath)
+
 	file, err := os.Open(jsFilePath)
 	if err != nil {
-
 		// TODO: Needs better error handling
-		log.Debug("cannot get source code", "err", err)
+		log.Error("cannot get source code of contract", "err", err)
 		return ""
 		//log.Fatal(err)
 	}
@@ -57,7 +60,10 @@ func getSourceCodeFromSamples(address string) string {
 	defer file.Close()
 
 	buf := new(bytes.Buffer)
-	buf.ReadFrom(file)
+	_, err = buf.ReadFrom(file)
+	if err != nil {
+		log.Error("error reading file in getSourceCodeFromSamples", "err", err)
+	}
 	contents := buf.String()
 
 	return contents

@@ -8,8 +8,8 @@ import (
 	//"time"
 
 	"github.com/Oneledger/protocol/olvm/interpreter/runner"
-	"github.com/Oneledger/protocol/node/sdk"
 	"github.com/Oneledger/protocol/data"
+	"github.com/Oneledger/protocol/utils"
 )
 
 // TODO: Make sure call is not before viper args are handled.
@@ -34,17 +34,28 @@ func (ol OLVMService) StartService() {
 	log.Debug("Starting Service", "protocol", ol.Protocol, "address", ol.Address)
 
 	container := new(Container)
-	rpc.Register(container)
+	err := rpc.Register(container)
+	if err != nil {
+		log.Error("error in registering container", "err", err)
+	}
 	rpc.HandleHTTP()
 
+	port, err := utils.GetPort(ol.Address)
+	if err != nil {
+		log.Fatal("parsing error", "err", err, "address:", ol.Address)
+	}
+
 	log.Debug("Listening on the port")
-	listen, err := net.Listen(ol.Protocol, ":"+sdk.GetPort(ol.Address))
+	listen, err := net.Listen(ol.Protocol, ":"+port)
 	if err != nil {
 		log.Fatal("listen error:", "err", err)
 	}
 
 	log.Debug("Waiting for a request")
-	http.Serve(listen, nil)
+	err = http.Serve(listen, nil)
+	if err != nil {
+		log.Error("error in running http server", "err", err)
+	}
 }
 
 // Echo as defined by RPC
@@ -56,13 +67,13 @@ func (c *Container) Echo(request *data.OLVMRequest, result *data.OLVMResult) err
 // Exec as defined by RPC
 func (c *Container) Exec(request *data.OLVMRequest, result *data.OLVMResult) error {
 	log.Info("Exec a Contract", *request)
-	runner := runner.CreateRunner()
-	return runner.Call(request, result)
+	rnr := runner.CreateRunner()
+	return rnr.Call(request, result)
 }
 
 // Exec as defined by RPC
 func (c *Container) Analyze(request *data.OLVMRequest, result *data.OLVMResult) error {
 	log.Info("Analyze a Contract", *request)
-	runner := runner.CreateRunner()
-	return runner.Analyze(request, result)
+	rnr := runner.CreateRunner()
+	return rnr.Analyze(request, result)
 }

@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Oneledger/protocol/node/sdk"
+	"github.com/Oneledger/protocol/utils"
 	"github.com/Oneledger/protocol/data"
 )
 
@@ -73,6 +73,7 @@ func Analyze(request *data.OLVMRequest) (result *data.OLVMResult, err error) {
 
 	// TODO: Should be based on error code, not text...
 	if err != nil {
+
 		log.Errorf("Failed to run %s %#v", err, result)
 		if strings.HasSuffix(err.Error(), "connection refused") {
 
@@ -105,7 +106,12 @@ func (c OLVMClient) RunAnalyze(request *data.OLVMRequest) (*data.OLVMResult, err
 
 	log.Info("Dialing service...", "protocol", c.Protocol, "service", c.ServicePath)
 
-	client, err := rpc.DialHTTP(c.Protocol, ":"+sdk.GetPort(c.ServicePath))
+	port, err := utils.GetPort(c.ServicePath)
+	if err != nil {
+		log.Fatal("parsing error", "err", err, "address:", c.ServicePath)
+	}
+
+	client, err := rpc.DialHTTP(c.Protocol, ":"+port)
 	if err != nil {
 		log.Errorf("Failded to Connect error:%s %#v ", err, client)
 		return nil, err
@@ -130,7 +136,12 @@ func (c OLVMClient) Run(request *data.OLVMRequest) (*data.OLVMResult, error) {
 
 	log.Info("Dialing service...", "protocol", c.Protocol, "service", c.ServicePath)
 
-	client, err := rpc.DialHTTP(c.Protocol, ":"+sdk.GetPort(c.ServicePath))
+	port, err := utils.GetPort(c.ServicePath)
+	if err != nil {
+		log.Fatal("parsing error", "err", err, "address:", c.ServicePath)
+	}
+
+	client, err := rpc.DialHTTP(c.Protocol, ":"+port)
 	if err != nil {
 		log.Errorf("Failed to Connect error:%s result:%#v", err, client)
 		return nil, err
@@ -146,7 +157,7 @@ func (c OLVMClient) Run(request *data.OLVMRequest) (*data.OLVMResult, error) {
 
 	client.Close()
 
-	log.Error("Have a Result", *result)
+	log. Debug("Have a Result", *result)
 	return result, nil
 }
 

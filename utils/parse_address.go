@@ -8,21 +8,27 @@
                                       __/ |
                                      |___/
 
-	Copyright 2017 - 2019 OneLedger
 
+Copyright 2017 - 2019 OneLedger
 */
 
-package runner
+package utils
 
 import (
-	logger "github.com/Oneledger/protocol/log"
-	"os"
+	"errors"
+	"regexp"
 )
 
-var log = logger.NewDefaultLogger(os.Stdout).WithPrefix("olvm/interpreter/runner")
+var ErrParsingAddress =  errors.New("failed to parse network address")
 
-func logIfError(msg string, err error) {
-	if err != nil {
-		log.Error(msg, "err", err)
+// Pick out the port from a full address
+func GetPort(addr string) (string, error) {
+	automata := regexp.MustCompile(`.*?:.*?:(.*)`)
+	groups := automata.FindStringSubmatch(addr)
+
+	if groups == nil || len(groups) != 2 {
+		return "", ErrParsingAddress
 	}
+	return groups[1], nil
 }
+
