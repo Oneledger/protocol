@@ -26,14 +26,6 @@ func (sk StoreKey) String() string {
 	return hex.EncodeToString(sk)
 }
 
-type ChainState interface {
-	Store
-
-	// TODO add state funcs
-	Begin()
-	Commit()
-
-}
 
 
 type Store interface {

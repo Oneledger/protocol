@@ -18,6 +18,13 @@ import (
 	"github.com/Oneledger/protocol/data"
 )
 
+
+var _ Storage = &KeyValue{}
+var _ StorageSession = &KeyValueSession{}
+var _ data.Store = &cacheSafe{}
+var _ data.Store = &cache{}
+
+
 // Storage wraps objects with option to start a session(db transaction)
 type Storage interface {
 	Get(data.StoreKey) ([]byte, error)
@@ -27,6 +34,7 @@ type Storage interface {
 	Close()
 }
 
+// NewStorage initializes a non sessioned storage
 func NewStorage(flavor, name string) data.Store {
 	switch flavor {
 	case CACHE:
@@ -48,15 +56,14 @@ type StorageSession interface {
 	data.Store
 	Commit() bool
 	FindAll() []data.StoreKey
-	Close()
 }
 
 // NewStorageSession creates a new SessionStorage
-func NewSessionStorage(flavor, name string, ctx Context) Storage {
+func NewSessionStorageDB(flavor, name string, ctx Context) Storage {
 
 	switch flavor {
 	case KEYVALUE:
-		return NewKeyValue(name, ctx.DbDir, ctx.ConfigDB, PERSISTENT)
+		return newKeyValue(name, ctx.DbDir, ctx.ConfigDB, PERSISTENT)
 	default:
 		log.Error("incorrect session storage: ", flavor)
 	}

@@ -3,10 +3,18 @@ package log
 import (
 	"fmt"
 	"io"
+	"os"
 	"strings"
 	"time"
+	"github.com/davecgh/go-spew/spew"
 	kitlog "github.com/go-kit/kit/log"
 )
+
+func init() {
+	spew.Config = spew.ConfigState{
+		Indent: "\t",
+	}
+}
 
 type Level int
 
@@ -42,7 +50,7 @@ type Options struct {
 func DefaultOptions() Options {
 	return Options{
 		Prefix: "",
-		Sync: false,
+		Sync: true,
 		Levels: map[Level]bool{Info: true, Warning: true, Error: true},
 	}
 }
@@ -62,6 +70,13 @@ func NewLoggerWithOpts(w io.Writer, opts Options) *Logger {
 		w = newSyncWriter(w)
 	}
 	return &Logger{w, opts.Prefix, opts.Levels}
+}
+
+// NewLoggerWithPrefix returns a brand new Logger with the prefix attached
+func NewLoggerWithPrefix(w io.Writer, prefix string) *Logger {
+	opts := DefaultOptions()
+	opts.Prefix = prefix
+	return NewLoggerWithOpts(w, opts)
 }
 
 // WithPrefix returns a new logger with the prefix appended to the current logger's prefix
@@ -107,13 +122,19 @@ func (l *Logger) Errorf(format string, args...interface{}) {
 }
 
 func (l *Logger) Fatal(args ...interface{}) {
-	msg := l.completePrefix(Fatal, time.Now()) + " " + fmt.Sprint(args...)
-	panic(msg)
+	l.fprintln(Fatal, time.Now(), args...)
+	os.Exit(1)
 }
 
 func (l *Logger) Fatalf(format string, args...interface{}) {
-	 msg := l.completePrefix(Fatal, time.Now()) + " " + fmt.Sprintf(format, args...)
-	 panic(msg)
+	l.fprintf(Fatal, time.Now(), format, args...)
+	os.Exit(1)
+}
+
+// Dump calls Debug on msg and pretty prints the types passed to args
+func (l *Logger) Dump(msg string, args ...interface{}) {
+	l.Debug(msg)
+	spew.Dump(args...)
 }
 
 func (l *Logger) fprintln(level Level, now time.Time, args ...interface{}) {
