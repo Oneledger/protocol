@@ -32,3 +32,6 @@ type ResponseCommit = abci.ResponseCommit
 
 type Header = abci.Header
 
+type Validator = abci.Validator
+
+type ABCIApp = abci.Application

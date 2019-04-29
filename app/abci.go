@@ -3,7 +3,7 @@ package app
 // ABCI methods
 type infoServer func(RequestInfo) ResponseInfo
 type optionSetter func(RequestSetOption) ResponseSetOption
-type queryer func(RequestQuery) RequestQuery
+type queryer func(RequestQuery) ResponseQuery
 type txChecker func([]byte) ResponseCheckTx
 type chainInitializer func(RequestInitChain) ResponseInitChain
 type blockBeginner func(RequestBeginBlock) ResponseBeginBlock
@@ -24,7 +24,9 @@ type abciController interface {
 	commitor() commitor
 }
 
-// Type ABCI
+var _ ABCIApp = &ABCI{}
+
+// ABCI is used as an input for creating a new node
 type ABCI struct {
 	infoServer infoServer
 	optionSetter     optionSetter
@@ -45,7 +47,7 @@ func (app *ABCI) SetOption(request RequestSetOption) ResponseSetOption {
 	return ResponseSetOption{}
 }
 
-func (app *ABCI) Query(request RequestQuery) RequestQuery {
+func (app *ABCI) Query(request RequestQuery) ResponseQuery {
 	return app.queryer(request)
 }
 
