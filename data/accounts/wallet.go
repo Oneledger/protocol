@@ -1,8 +1,11 @@
 package accounts
 
 import (
+	"fmt"
 	"github.com/Oneledger/protocol/config"
+	"github.com/Oneledger/protocol/data"
 	"github.com/Oneledger/protocol/data/keys"
+	"github.com/Oneledger/protocol/serialize"
 	"github.com/Oneledger/protocol/storage"
 
 )
@@ -11,34 +14,95 @@ type Wallet interface {
 	//returns the account that the wallet holds
 	Accounts() []Account
 
-	Add(Account) bool
+	Add(Account) error
 
-	Delete(Account) bool
+	Delete(Account) error
 
-	Sign ([]byte, Account) []byte
+	SignWithAccountIndex ([]byte, int) ([]byte, error)
+
+	SignWithAddress ([]byte, keys.Address) ([]byte, error)
 }
 
 
 type WalletStore struct {
 	store storage.Storage
 
-	accounts []keys.Address
+	accounts []data.StoreKey
 }
 
-func (WalletStore) Accounts() []Account {
-	panic("implement me")
+func (ws WalletStore) Accounts() []Account {
+	accounts := make([]Account, len(ws.accounts))
+	for i, key := range ws.accounts {
+		acc, err := ws.store.Get(key)
+		if err != nil {
+			logger.Error("account not exist anymore")
+		}
+		var account Account
+		err = serialize.GetSerializer(serialize.PERSISTENT).Deserialize(acc, account)
+		if err != nil {
+			logger.Error("failed to deserialize account")
+		}
+		accounts[i] = account
+	}
+	return accounts
+
 }
 
-func (WalletStore) Add(Account) bool {
-	panic("implement me")
+func (ws *WalletStore) Add(account Account) error {
+	session := ws.store.Begin()
+	exist, err := session.Exists(account.Address().Bytes())
+	if err != nil {
+		return fmt.Errorf("failed to verify existence of account: %s", err)
+	}
+	if exist {
+		return fmt.Errorf("account already exist: %s", err)
+	}
+	value, err := serialize.GetSerializer(serialize.PERSISTENT).Serialize(account)
+	if err != nil {
+		return fmt.Errorf("failed to serialize the account: %s", err)
+	}
+	err = session.Set(account.Address().Bytes(), value)
+	if err != nil {
+		return fmt.Errorf("failed to set the new account: %s", err)
+	}
+	session.Commit()
+	ws.accounts = append(ws.accounts, account.Address().Bytes())
+	return nil
 }
 
-func (WalletStore) Delete(Account) bool {
-	panic("implement me")
+func (ws *WalletStore) Delete(account Account) error {
+	session := ws.store.Begin()
+	exist, err := session.Exists(account.Address().Bytes())
+	if err != nil {
+		return fmt.Errorf("failed to verify existence of account: %s", err)
+	}
+	if !exist {
+		return fmt.Errorf("account not exist: %s", err)
+	}
+	_, err = session.Delete(account.Address().Bytes())
+	return err
 }
 
-func (WalletStore) Sign([]byte, Account) []byte {
-	panic("implement me")
+func (ws WalletStore) SignWithAccountIndex(msg []byte, index int) ([]byte, error) {
+	if index > len(ws.accounts) {
+		return nil, fmt.Errorf("account index out of range")
+	}
+	return ws.SignWithAddress(msg, ws.accounts[index].Bytes())
+}
+
+
+func (ws WalletStore) SignWithAddress(msg []byte, address keys.Address) ([]byte, error) {
+	account, err := ws.store.Get(address.Bytes())
+	if err != nil {
+		return nil, fmt.Errorf("failed to get account by address: %s", err)
+	}
+	var acc Account
+	err = serialize.GetSerializer(serialize.PERSISTENT).Deserialize(account, acc)
+	if err != nil {
+		return nil, fmt.Errorf("failed to serialize the account: %s", err)
+	}
+	return acc.Sign(msg)
+
 }
 
 func NewWallet(config config.Server) WalletStore {
@@ -48,13 +112,13 @@ func NewWallet(config config.Server) WalletStore {
 		ConfigDB: config.Node.DB,
 	}
 
-	store := storage.NewSessionStorage(storage.KEYVALUE, "accounts", ctx)
+	store := storage.NewSessionStorageDB(storage.KEYVALUE, "accounts", ctx)
 
 	accountKeys := store.Begin().FindAll()
 
-	accounts := make([]keys.Address, len(accountKeys))
+	accounts := make([]data.StoreKey, len(accountKeys))
 	for i, key := range accountKeys {
-		accounts[i] = key.Bytes()
+		accounts[i] = key
 	}
 
 	return WalletStore{

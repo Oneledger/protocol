@@ -1,6 +1,7 @@
 package accounts
 
 import (
+	"fmt"
 	"github.com/Oneledger/protocol/data/chain"
 	"github.com/Oneledger/protocol/data/keys"
 )
@@ -23,6 +24,18 @@ func (acc Account) Address() keys.Address {
 	return keys.Address(handler.Address())
 }
 
+
+func (acc Account) Sign(msg []byte) ([]byte, error) {
+	signer, err := acc.PrivateKey.GetHandler()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get the signer: %s ", err)
+	}
+	signed, err := signer.Sign(msg)
+	if err != nil {
+		return nil, fmt.Errorf("failed to sign the msg: %s", err)
+	}
+	return signed, nil
+}
 
 
 
