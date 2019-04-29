@@ -16,15 +16,6 @@ package data
 
 type StoreKey []byte
 
-type ChainState interface {
-	Store
-
-	// TODO add state funcs
-	Begin()
-	Commit()
-
-}
-
 
 type Store interface {
 	Get(StoreKey) ([]byte, error)
