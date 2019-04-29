@@ -15,6 +15,23 @@ type Account struct {
 	PrivateKey keys.PrivateKey `json:"privateKey"`
 }
 
+func NewAccount(t chain.Type, name string, privkey keys.PrivateKey, pubkey keys.PublicKey) (Account, error) {
+	acc := Account{
+		Type: t,
+		Name: name,
+		PrivateKey: privkey,
+		PublicKey: pubkey,
+	}
+
+	if _, err := acc.PublicKey.GetHandler(); err != nil {
+		return Account{}, err
+	}
+	if _, err := acc.PrivateKey.GetHandler(); err != nil {
+		return Account{}, err
+	}
+	return acc, nil
+}
+
 func (acc Account) Address() keys.Address {
 	handler, err := acc.PublicKey.GetHandler()
 	if err != nil {
@@ -36,6 +53,5 @@ func (acc Account) Sign(msg []byte) ([]byte, error) {
 	}
 	return signed, nil
 }
-
 
 
