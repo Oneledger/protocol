@@ -56,8 +56,9 @@ type KeyValue struct {
 }
 
 
-// NewKeyValue initializes a new application
-func NewKeyValue(name, dbDir, configDB string, newType StorageType) *KeyValue {
+// newKeyValue initializes a new  key value store backed by persistent or a memory store which implements a session
+// interface for db transactions
+func newKeyValue(name, dbDir, configDB string, newType StorageType) *KeyValue {
 	switch newType {
 
 	case MEMORY:
