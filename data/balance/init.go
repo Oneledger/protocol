@@ -61,7 +61,7 @@ func init() {
 }
 
 
-func RegisterCurrency(name string, ct chain.ChainType, id int,
+func RegisterCurrency(name string, ct chain.Type, id int,
 						units *big.Float, decimal int, format uint8) {
 
 	currencies[name] = Currency{name, ct, id}

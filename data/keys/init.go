@@ -1,4 +1,4 @@
-package key
+package keys
 
 import (
 	"github.com/tendermint/tendermint/crypto/ed25519"
