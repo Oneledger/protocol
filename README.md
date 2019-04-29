@@ -1,5 +1,5 @@
 # infrastructure
-
+Deployment Scripts Using Ansible, Terraform and Packer.  
 ## Requirements
 
 - ansible >= 2.7.9
@@ -56,5 +56,3 @@ The following are the configurations the packer script can take in as input thro
 * `tag`: the gcp image name or docker tag name. Note: don't confuse this with `version`. Default: `develop`
 * `app_user`: the linux user that will execute the application. Default: `node`
 * `enable_logging`: expecting boolean value. If true, this will install **logstash**. Default: `false`
-
-
