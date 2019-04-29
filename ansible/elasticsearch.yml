@@ -15,6 +15,7 @@
           network.host: "0.0.0.0"
           http.port: 9200
           transport.tcp.port: 9300
+          xpack.monitoring.collection.enabled: true
   tasks:
   - name: download public signing key for elastic
     apt_key:
