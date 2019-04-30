@@ -8,9 +8,11 @@ account=$internal_ip-Oneledger
 identity=$internal_ip-loadtester
 app_path="/home/node/go/data"
 node_name="$internal_ip-Node"
-sleep 1200
+sleep 10
 olclient update --root "$app_path" --account "$account" --nodeaccount true
 olclient testmint --root "$app_path" --party "$account" --amount "10.0" --currency OLT 
 olclient testmint --root "$app_path" --party "$account" --amount "3" --currency VT 
 olclient register --root "$app_path" --identity "$identity" --account "$account" --node "$node_name" --fee 0.1
+sleep 5
 olclient applyvalidator --root "$app_path" --id "$identity" --amount 1
+olclient testmint --root "$app_path" --party "$account" --amount "1" --currency VT 
