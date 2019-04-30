@@ -15,7 +15,9 @@ Copyright 2017 - 2019 OneLedger
 package monitor
 
 import (
+	"os"
+
 	logger "github.com/Oneledger/protocol/log"
 )
 
-var log = logger.NewDefaultLogger().WithPrefix("olvm/interpreter/monitor")
+var log = logger.NewDefaultLogger(os.Stdout).WithPrefix("olvm/interpreter/monitor")

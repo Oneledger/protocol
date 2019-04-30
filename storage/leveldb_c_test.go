@@ -16,13 +16,10 @@ Copyright 2017 - 2019 OneLedger
 package storage
 
 import (
-	"github.com/Oneledger/protocol/node/global"
+	"testing"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/tendermint/tendermint/libs/db"
-	"os"
-	"path/filepath"
-
-	"testing"
 )
 
 // TestCLevelDB is just a basic test to see if cleveldb is being used properly
@@ -38,4 +35,3 @@ func TestCLevelDB(t *testing.T) {
 
 	assert.Equal(t, got, want, "Get and set should be the same")
 }
-

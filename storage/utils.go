@@ -19,8 +19,15 @@ import (
 	"path/filepath"
 )
 
+const (
+	OLDATA   = "OLDATA"
+	NODEDATA = "nodedata"
+)
+
 func dbDir() string {
-	rootDir := os.Getenv("OLDATA")
-	result, _ := filepath.Abs(filepath.Join(rootDir, "nodedata"))
+
+	rootDir := os.Getenv(OLDATA)
+	result, _ := filepath.Abs(filepath.Join(rootDir, NODEDATA))
+
 	return result
 }

@@ -24,11 +24,11 @@ package storage
 
 import (
 	"errors"
-	"github.com/Oneledger/protocol/data"
 	"os"
 	"path/filepath"
 	"sync"
 
+	"github.com/Oneledger/protocol/data"
 	"github.com/tendermint/iavl"
 	"github.com/tendermint/tendermint/libs/db"
 )
@@ -37,8 +37,8 @@ var k Storage = KeyValue{}
 var ErrNilData = errors.New("data is nil")
 
 /*
-		KeyValue begins here
- */
+	KeyValue begins here
+*/
 // KeyValue Wrap the underlying usage
 type KeyValue struct {
 	Type StorageType
@@ -54,7 +54,6 @@ type KeyValue struct {
 
 	sync.RWMutex
 }
-
 
 // newKeyValue initializes a new  key value store backed by persistent or a memory store which implements a session
 // interface for db transactions
@@ -157,7 +156,7 @@ func (store KeyValue) Exists(key data.StoreKey) (bool, error) {
 // Get a key from the database
 func (store KeyValue) Get(key data.StoreKey) ([]byte, error) {
 
-	version :=  store.tree.Version()
+	version := store.tree.Version()
 	index, value := store.tree.GetVersioned(key, version)
 	if index == -1 {
 		return nil, ErrNotFound
@@ -165,7 +164,6 @@ func (store KeyValue) Get(key data.StoreKey) ([]byte, error) {
 	return value, nil
 
 }
-
 
 // List all of the keys
 func (store KeyValue) list() (keys []data.StoreKey) {
@@ -196,10 +194,9 @@ func (store KeyValue) empty() {
 	}
 }
 
-
 /*
-		KeyValueSession begins here
- */
+	KeyValueSession begins here
+*/
 type KeyValueSession struct {
 	store *KeyValue
 }
@@ -294,10 +291,9 @@ func (session KeyValueSession) Dump() {
 	}
 }
 
-
 /*
-		Some utils
- */
+	Some utils
+*/
 // TODO: Should be moved to some common/shared/utils directory
 // Test to see if this exists already
 func fileExists(name string, dir string) bool {

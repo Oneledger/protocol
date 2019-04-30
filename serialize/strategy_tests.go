@@ -2,9 +2,10 @@ package serialize
 
 import (
 	"encoding/json"
+	"testing"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/vmihailenco/msgpack"
-	"testing"
 )
 
 type testStuff struct {
@@ -51,8 +52,6 @@ func TestJsonStrategy_SerializeForAdapter(t *testing.T) {
 
 }
 
-
-
 var ms = msgpackStrategy{}
 
 func TestMsgpackStrategy_Serialize(t *testing.T) {
@@ -89,8 +88,6 @@ func TestMsgpackStrategy_SerializeForAdapters(t *testing.T) {
 
 }
 
-
-
 type testStuff2 struct {
 	F string
 	A int
@@ -120,4 +117,3 @@ func TestAminoStrategy_Serialize(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, fn, f)
 }
-

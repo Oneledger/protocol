@@ -26,7 +26,6 @@ func (runner Runner) setupContract(request *data.OLVMRequest) bool {
 		sourceCode = getSourceCodeFromBlockChain(address)
 	}
 
-	// TODO: Needs better error handling
 	if sourceCode == "" {
 		log.Error("error in getting source code of contract")
 		return false
@@ -51,7 +50,6 @@ func getSourceCodeFromSamples(address string) string {
 
 	file, err := os.Open(jsFilePath)
 	if err != nil {
-		// TODO: Needs better error handling
 		log.Error("cannot get source code of contract", "err", err)
 		return ""
 		//log.Fatal(err)
@@ -60,6 +58,7 @@ func getSourceCodeFromSamples(address string) string {
 	defer file.Close()
 
 	buf := new(bytes.Buffer)
+
 	_, err = buf.ReadFrom(file)
 	if err != nil {
 		log.Error("error reading file in getSourceCodeFromSamples", "err", err)
@@ -70,6 +69,7 @@ func getSourceCodeFromSamples(address string) string {
 }
 
 func getSourceCodeFromBlockChain(address string) string {
+
 	log.Fatal("SourceCodeFrom BlockChain is Unimplemented")
 	return ""
 }

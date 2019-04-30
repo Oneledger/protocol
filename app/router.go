@@ -62,10 +62,10 @@ func (r *router) Handle(req Request, resp *Response) {
 
 
 /*
-			Example
+
+	Example
+
  */
-
-
 func RunExample() {
 
 	r := NewRouter()

@@ -61,7 +61,8 @@ func (runner Runner) exec(callString string) (string, string) {
 
 	sourceCode := getCodeFromJsLibs("onExit")
 	// Set the transaction parameters
-	err := runner.vm.Run(sourceCode)
+	// TODO: use value returned below
+	_, err = runner.vm.Run(sourceCode)
 	if err != nil {
 		log.Error("error in running vm", "err", err)
 	}

@@ -22,10 +22,10 @@ const (
 	MEMORY StorageType = iota
 	PERSISTENT
 
-	CACHE = "cache"
+	CACHE      = "cache"
 	CACHE_SAFE = "cache_safe"
-	KEYVALUE = "keyvalue"
+	KEYVALUE   = "keyvalue"
 
-	CHAINKEY_MAXLEN = 20
+	CHAINKEY_MAXLEN       = 20
 	CHAINSTATE_CACHE_SIZE = 10000
 )
