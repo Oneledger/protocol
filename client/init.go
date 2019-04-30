@@ -1,11 +1,17 @@
-package comm
+package client
 
-import "github.com/Oneledger/protocol/node/serialize"
+import (
+	"github.com/Oneledger/protocol/log"
+	"github.com/Oneledger/protocol/node/serialize"
+	"os"
+)
 
 var clSerializer serialize.Serializer
+var logger *log.Logger
 
 func init() {
 	clSerializer = serialize.GetSerializer(serialize.CLIENT)
+	logger = log.NewLoggerWithPrefix(os.Stdout, "client")
 }
 
 const (

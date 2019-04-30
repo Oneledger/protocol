@@ -3,11 +3,8 @@
 
 	Cover over the arguments of client requests
 */
-package comm
+package client
 
-import (
-	"github.com/Oneledger/protocol/node/serial"
-)
 
 type ApplyValidatorArguments struct {
 	Id     string
@@ -52,9 +49,3 @@ type ExSendArguments struct {
 	ExFee string
 }
 
-func init() {
-	serial.Register(ApplyValidatorArguments{})
-	serial.Register(ExSendArguments{})
-	serial.Register(SendArguments{})
-	serial.Register(SwapArguments{})
-}
