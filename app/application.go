@@ -1,6 +1,7 @@
 package app
 
 import (
+	"github.com/Oneledger/protocol/storage"
 	"os"
 
 	"github.com/Oneledger/protocol/config"
@@ -21,7 +22,7 @@ var _ abciController = &App{}
 type context struct {
 	chainID string
 
-	balances         *data.ChainState
+	balances         *storage.ChainState
 	identities       data.Store
 	smartContract    data.Store
 	executionContext data.Store
@@ -81,7 +82,7 @@ func (app *App) Header() Header {
 }
 
 // Getters
-func (app *App) Balances() *data.ChainState {
+func (app *App) Balances() *storage.ChainState {
 	return app.Context.balances
 }
 func (app *App) Identities() data.Store {
