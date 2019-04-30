@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/Oneledger/protocol/data/chain"
 	"github.com/Oneledger/protocol/data/keys"
+	"github.com/Oneledger/protocol/serialize"
 )
 
 
@@ -54,4 +55,20 @@ func (acc Account) Sign(msg []byte) ([]byte, error) {
 	return signed, nil
 }
 
+func (acc Account) Bytes() []byte {
+	value, err := serialize.GetSerializer(serialize.PERSISTENT).Serialize(acc)
+	if err != nil {
+		logger.Fatal("account not serializable")
+		return nil
+	}
+	return value
+}
 
+func (acc *Account) FromBytes(msg []byte) *Account {
+	err := serialize.GetSerializer(serialize.PERSISTENT).Deserialize(msg, acc)
+	if err != nil {
+		logger.Fatal("failed to deserialize account from bytes")
+		return &Account{}
+	}
+	return acc
+}

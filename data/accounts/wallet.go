@@ -57,10 +57,7 @@ func (ws *WalletStore) Add(account Account) error {
 	if exist {
 		return fmt.Errorf("account already exist: %s", err)
 	}
-	value, err := serialize.GetSerializer(serialize.PERSISTENT).Serialize(account)
-	if err != nil {
-		return fmt.Errorf("failed to serialize the account: %s", err)
-	}
+	value := account.Bytes()
 	err = session.Set(account.Address().Bytes(), value)
 	if err != nil {
 		return fmt.Errorf("failed to set the new account: %s", err)
@@ -92,17 +89,13 @@ func (ws WalletStore) SignWithAccountIndex(msg []byte, index int) ([]byte, error
 
 
 func (ws WalletStore) SignWithAddress(msg []byte, address keys.Address) ([]byte, error) {
-	account, err := ws.store.Get(address.Bytes())
+	value, err := ws.store.Get(address.Bytes())
 	if err != nil {
 		return nil, fmt.Errorf("failed to get account by address: %s", err)
 	}
-	var acc Account
-	err = serialize.GetSerializer(serialize.PERSISTENT).Deserialize(account, acc)
-	if err != nil {
-		return nil, fmt.Errorf("failed to serialize the account: %s", err)
-	}
-	return acc.Sign(msg)
-
+	var account = &Account{}
+	account = account.FromBytes(value)
+	return account.Sign(msg)
 }
 
 func NewWallet(config config.Server) WalletStore {
