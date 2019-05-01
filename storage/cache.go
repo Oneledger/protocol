@@ -27,6 +27,8 @@ type cache struct {
 	name  string
 	store map[string][]byte
 }
+// cache satisfies data.Store interface
+var _ data.Store = &cache{}
 
 func NewCache(name string) *cache {
 	return &cache{name, map[string][]byte{}}
@@ -44,11 +46,11 @@ func (c *cache) Get(key data.StoreKey) ([]byte, error) {
 }
 
 // Exists checks if a key exists in the database.
-func (c *cache) Exists(key data.StoreKey) (bool, error) {
+func (c *cache) Exists(key data.StoreKey) (bool) {
 
 	_, ok := c.store[string(key)]
 
-	return ok, nil
+	return ok
 }
 
 // Set is used to store or update some data with a key
@@ -77,9 +79,11 @@ type cacheSafe struct {
 	name  string
 	store map[string][]byte
 }
+// cacheSafe pointer satisfies data.Store interface
+var _ data.Store = &cacheSafe{}
 
 func NewCacheSafe(name string) *cacheSafe {
-	return &cacheSafe{name, map[string][]byte{}}
+	return &cacheSafe{sync.RWMutex{}, name, map[string][]byte{}}
 }
 
 // Get retrieves data for a key.
@@ -96,13 +100,13 @@ func (c *cacheSafe) Get(key data.StoreKey) ([]byte, error) {
 }
 
 // Exists checks if a key exists in the database.
-func (c *cacheSafe) Exists(key data.StoreKey) (bool, error) {
+func (c *cacheSafe) Exists(key data.StoreKey) (bool) {
 	c.RLock()
 	defer c.RUnlock()
 
 	_, ok := c.store[string(key)]
 
-	return ok, nil
+	return ok
 }
 
 // Set is used to store or update some data with a key
