@@ -18,7 +18,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/Oneledger/protocol/node/serialize"
+	"github.com/Oneledger/protocol/serialize"
 	"github.com/stretchr/testify/assert"
 	logger "github.com/Oneledger/protocol/log"
 )

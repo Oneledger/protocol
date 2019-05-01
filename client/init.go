@@ -2,7 +2,7 @@ package client
 
 import (
 	"github.com/Oneledger/protocol/log"
-	"github.com/Oneledger/protocol/node/serialize"
+	"github.com/Oneledger/protocol/serialize"
 	"os"
 )
 

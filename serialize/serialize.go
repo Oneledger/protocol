@@ -1,6 +1,8 @@
 package serialize
 
 import (
+	"github.com/Oneledger/protocol/log"
+	"os"
 	"sync"
 
 	"github.com/google/uuid"
@@ -22,10 +24,12 @@ var aminoCodec *amino.Codec
 var JSONSzr Serializer
 var registeredConcretes = make([]string, 0, 100)
 var lockRegisteredConcretes sync.Mutex
+var logger *log.Logger
 
 func init() {
 	aminoCodec = amino.NewCodec()
 	JSONSzr = GetSerializer(JSON)
+	logger = log.NewLoggerWithPrefix(os.Stdout, "serialize")
 
 	RegisterConcrete(new(string), "std_string")
 	RegisterConcrete(new([]byte), "std_byte_arr")

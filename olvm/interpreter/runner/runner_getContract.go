@@ -45,7 +45,7 @@ func getSourceCodeFromSamples(address string) string {
 	prefix := "samples://"
 	sampleCodeName := address[len(prefix):]
 
-	jsFilePath := filepath.Join(os.Getenv("OLROOT"), "/protocol/node/olvm/interpreter/samples/", sampleCodeName+".js")
+	jsFilePath := filepath.Join(os.Getenv("OLROOT"), "/protocol/olvm/interpreter/samples/", sampleCodeName+".js")
 	log.Debug("get source code from local file system", "path", jsFilePath)
 
 	file, err := os.Open(jsFilePath)
