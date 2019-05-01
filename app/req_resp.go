@@ -19,25 +19,30 @@ import (
 )
 
 var (
-	ErrParamNotFound = errors.New("param not found")
+	ErrParamNotFound  = errors.New("param not found")
 	ErrWrongParamType = errors.New("wrong param type")
 )
 
 /*
-		Request
- */
+	Request
+*/
+// Request generic request object for query handling
 type Request struct {
-	Query string
+	Query  string
 	Params map[string]interface{}
-	Ctx context
+	Ctx    context
 }
 
+// NewRequest creates a new request with given params.
 func NewRequest(query string, params map[string]interface{}) *Request {
-	req := &Request{Query:query, Params:params}
+	req := &Request{Query: query, Params: params}
 
 	return req
 }
 
+// NewRequestFromObj creates a new request object from an arguments struct passed.
+// It serializes the argument struct object for a client channel and sets it against an argname.
+// You can check example argument structs in client/request.
 func NewRequestFromObj(query, argName string, obj interface{}) (*Request, error) {
 	req := &Request{Query: query}
 
@@ -50,7 +55,9 @@ func NewRequestFromObj(query, argName string, obj interface{}) (*Request, error)
 	return req, nil
 }
 
-
+// GetString retrieves a string parameter saved in a request object. If a string parameter
+// is not set or the object type of the parameter is not string an empty string is returned. All calling instances are required to check and handle empty
+// string.
 func (r *Request) GetString(key string) string {
 	s, ok := r.Params[key]
 	if !ok {
@@ -121,7 +128,6 @@ func (r *Request) GetBool(key string) (bool, error) {
 	return i, nil
 }
 
-
 func (r *Request) ClientDeserialize(name string, obj interface{}) error {
 	d := r.GetBytes(name)
 	if len(d) == 0 {
@@ -135,16 +141,14 @@ func (r *Request) ClientDeserialize(name string, obj interface{}) error {
 	return nil
 }
 
-
 /*
-		Response
- */
+	Response
+*/
 type Response struct {
-	Data []byte			`json:"data"`
-	ErrorMsg string		`json:"error_msg,omitempty"`
-	Success bool		`json:"success"`
+	Data     []byte `json:"data"`
+	ErrorMsg string `json:"error_msg,omitempty"`
+	Success  bool   `json:"success"`
 }
-
 
 func (r *Response) JSON(a interface{}) (err error) {
 

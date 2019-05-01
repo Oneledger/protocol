@@ -15,7 +15,6 @@ Copyright 2017 - 2019 OneLedger
 package client
 
 import (
-	"github.com/Oneledger/protocol/node/log"
 	"github.com/pkg/errors"
 	"github.com/tendermint/tendermint/node"
 	rpcclient "github.com/tendermint/tendermint/rpc/client"
@@ -61,7 +60,7 @@ func NewContext(rpcAddress string) (cliCtx Context, err error) {
 	// check status of rpc; return client if everything fine
 	_, err = rpc.Status()
 	if err == nil {
-		log.Debug("rpcClient is running")
+		logger.Debug("rpcClient is running")
 
 		cliCtx = Context{
 			rpcClient:     rpc,
@@ -73,7 +72,7 @@ func NewContext(rpcAddress string) (cliCtx Context, err error) {
 	// try starting rpc client
 	err = rpc.Start()
 	if err != nil {
-		log.Fatal("rpcClient is unavailable", "address", rpcAddress)
+		logger.Fatal("rpcClient is unavailable", "address", rpcAddress)
 		return
 	}
 
@@ -95,7 +94,7 @@ func (ctx Context) Query(path string, packet []byte) ([]byte, error) {
 	response, err := ctx.abciQuery(path, packet)
 	if err != nil {
 
-		log.Debug("error running abci query", "request", packet, "err", err)
+		logger.Debug("error running abci query", "request", packet, "err", err)
 		return nil, errors.Wrap(err, "error running abci query on rpc client")
 	}
 
@@ -106,11 +105,11 @@ func (ctx Context) Tx(hash []byte, prove bool) (res *ctypes.ResultTx) {
 
 	result, err := ctx.rpcClient.Tx(hash, prove)
 	if err != nil {
-		log.Error("TxSearch Error", "err", err)
+		logger.Error("TxSearch Error", "err", err)
 		return nil
 	}
 
-	log.Debug("TxSearch", "hash", hash, "prove", prove, "result", result)
+	logger.Debug("TxSearch", "hash", hash, "prove", prove, "result", result)
 	return result
 }
 
@@ -121,7 +120,7 @@ func (ctx Context) Block(height int64) (res *ctypes.ResultBlock) {
 
 	result, err := ctx.rpcClient.Block(h)
 	if err != nil {
-		log.Error("error in getting a block at height", "height", height, "err", err)
+		logger.Error("error in getting a block at height", "height", height, "err", err)
 		return nil
 	}
 
@@ -132,11 +131,11 @@ func (ctx Context) Search(query string, prove bool, page, perPage int) (res *cty
 
 	result, err := ctx.rpcClient.TxSearch(query, prove, page, perPage)
 	if err != nil {
-		log.Error("TxSearch Error", "err", err)
+		logger.Error("TxSearch Error", "err", err)
 		return nil
 	}
 
-	log.Debug("TxSearch", "query", query, "prove", prove, "result", result)
+	logger.Debug("TxSearch", "query", query, "prove", prove, "result", result)
 
 	return result
 }

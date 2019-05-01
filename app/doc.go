@@ -14,14 +14,4 @@ Copyright 2017 - 2019 OneLedger
 
 package app
 
-import (
-	"github.com/Oneledger/protocol/serialize"
-)
-
-var clSzlr serialize.Serializer
-var jsonSerializer serialize.Serializer
-
-func init() {
-	clSzlr = serialize.GetSerializer(serialize.CLIENT)
-	jsonSerializer = serialize.GetSerializer(serialize.JSON)
-}
+// TODO: main app documentation; very important
