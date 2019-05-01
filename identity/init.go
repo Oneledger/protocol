@@ -1,4 +1,4 @@
-package accounts
+package identity
 
 import (
 	"github.com/Oneledger/protocol/log"
@@ -9,6 +9,6 @@ var logger *log.Logger
 
 func init() {
 
-	logger = log.NewDefaultLogger(os.Stdout).WithPrefix("accounts")
+	logger = log.NewDefaultLogger(os.Stdout).WithPrefix("identity")
 
 }

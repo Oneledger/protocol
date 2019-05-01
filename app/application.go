@@ -6,15 +6,14 @@ import (
 	"github.com/Oneledger/protocol/config"
 	"github.com/Oneledger/protocol/consensus"
 	"github.com/Oneledger/protocol/data"
-	"github.com/Oneledger/protocol/serialize"
 	"github.com/Oneledger/protocol/log"
+	"github.com/Oneledger/protocol/serialize"
 	"github.com/pkg/errors"
 	"github.com/tendermint/tendermint/libs/common"
 )
 
 // Ensure this App struct can control the underlying ABCI app
 var _ abciController = &App{}
-
 
 // The base context for the application, holds databases and other stateful information contained by the app.
 // Used to derive other package-level Contexts
@@ -51,22 +50,22 @@ func (ctx *context) Action() *action.Context {
 		accounts,
 	}
 }
- */
-func (ctx *context) Action() {}
-func (ctx *context) ID() {}
+*/
+func (ctx *context) Action()  {}
+func (ctx *context) ID()      {}
 func (ctx *context) Account() {}
 
 type App struct {
 	Context context
 
 	logger *log.Logger
-	sdk           common.Service // Probably needs to be changed
+	sdk    common.Service // Probably needs to be changed
 
-	header     Header   // Tendermint last header info
+	header Header // Tendermint last header info
 	// ? Should this be in Context?
 	validators interface{} // Set of validators currently active
-	abci *ABCI
-	chainID string // Signed with every transaction
+	abci       *ABCI
+	chainID    string // Signed with every transaction
 }
 
 func NewApp(cfg config.Server) *App {
@@ -125,15 +124,15 @@ func (app *App) Validators() interface{} {
 // setNewABCI returns a new ABCI struct with the current context-values set in App
 func (app *App) setNewABCI() {
 	app.abci = &ABCI{
-		infoServer: app.infoServer(),
-		optionSetter: app.optionSetter(),
-		queryer: app.queryer(),
-		txChecker: app.txChecker(),
+		infoServer:       app.infoServer(),
+		optionSetter:     app.optionSetter(),
+		queryer:          app.queryer(),
+		txChecker:        app.txChecker(),
 		chainInitializer: app.chainInitializer(),
-		blockBeginner: app.blockBeginner(),
-		txDeliverer: app.txDeliverer(),
-		blockEnder: app.blockEnder(),
-		commitor: app.commitor(),
+		blockBeginner:    app.blockBeginner(),
+		txDeliverer:      app.txDeliverer(),
+		blockEnder:       app.blockEnder(),
+		commitor:         app.commitor(),
 	}
 }
 
@@ -149,7 +148,7 @@ func (app *App) infoServer() infoServer {
 	}
 }
 
-func(app *App) queryer() queryer {
+func (app *App) queryer() queryer {
 	return func(RequestQuery) ResponseQuery {
 		// Do stuff
 		return ResponseQuery{}
@@ -157,14 +156,14 @@ func(app *App) queryer() queryer {
 }
 
 // consensus methods: for executing transactions that have been committed. Message sequence is -for every block
-func(app *App) optionSetter() optionSetter {
+func (app *App) optionSetter() optionSetter {
 	return func(RequestSetOption) ResponseSetOption {
 		// Do stuff
 		return ResponseSetOption{}
 	}
 }
 
-func(app *App) chainInitializer() chainInitializer {
+func (app *App) chainInitializer() chainInitializer {
 	return func(req RequestInitChain) ResponseInitChain {
 		// Do stuff
 		err := app.setupState(req.AppStateBytes)
@@ -175,21 +174,21 @@ func(app *App) chainInitializer() chainInitializer {
 	}
 }
 
-func(app *App) blockBeginner() blockBeginner {
+func (app *App) blockBeginner() blockBeginner {
 	return func(RequestBeginBlock) ResponseBeginBlock {
 		// Do stuff
 		return ResponseBeginBlock{}
 	}
 }
 
-func(app *App) txDeliverer() txDeliverer {
+func (app *App) txDeliverer() txDeliverer {
 	return func([]byte) ResponseDeliverTx {
 		// Do stuff
 		return ResponseDeliverTx{}
 	}
 }
 
-func(app *App) blockEnder() blockEnder {
+func (app *App) blockEnder() blockEnder {
 	return func(RequestEndBlock) ResponseEndBlock {
 		// Do stuff
 		return ResponseEndBlock{}
@@ -203,7 +202,7 @@ func (app *App) commitor() commitor {
 }
 
 // mempool connection: for checking if transactions should be relayed before they are committed
-func(app *App) txChecker() txChecker {
+func (app *App) txChecker() txChecker {
 	return func([]byte) ResponseCheckTx {
 		// Do stuff
 		return ResponseCheckTx{}

@@ -20,8 +20,6 @@
 
 package storage
 
-
-
 import (
 	"github.com/Oneledger/protocol/data"
 	b "github.com/Oneledger/protocol/data/balance"
@@ -29,7 +27,6 @@ import (
 	"github.com/tendermint/tendermint/libs/db"
 	"sync"
 )
-
 
 // Number of times we initialized since starting
 var count int
@@ -48,8 +45,8 @@ type ChainState struct {
 	LastHash    []byte
 	Hash        []byte
 	TreeHeight  int8
-	configDB string
-	dbDir string
+	configDB    string
+	dbDir       string
 
 	sync.RWMutex
 }

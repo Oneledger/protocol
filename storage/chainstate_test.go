@@ -14,7 +14,6 @@ Copyright 2017 - 2019 OneLedger
 
 package storage
 
-
 import (
 	"bytes"
 	"github.com/Oneledger/protocol/data"
@@ -63,7 +62,7 @@ func TestChainState(t *testing.T) {
 
 func TestChainStateContinueUpdate(t *testing.T) {
 
-	state := NewChainState("Continue","goleveldb", PERSISTENT)
+	state := NewChainState("Continue", "goleveldb", PERSISTENT)
 
 	key := make([]byte, 20)
 	key[0] = 0x03
@@ -116,4 +115,3 @@ func TestChainState_Commit(t *testing.T) {
 
 	assert.Equal(t, version, nversion, "version of persistent after commit not match")
 }
-

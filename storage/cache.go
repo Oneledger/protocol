@@ -20,10 +20,10 @@ import (
 )
 
 /* cache is a simple in-memory keyvalue store, to store binary data. This is not thread safe and
-	any concurrent read/write might throw panics.
- */
+any concurrent read/write might throw panics.
+*/
 type cache struct {
-	name string
+	name  string
 	store map[string][]byte
 }
 
@@ -51,7 +51,7 @@ func (c *cache) Exists(key data.StoreKey) (bool, error) {
 }
 
 // Set is used to store or update some data with a key
-func (c *cache) Set(key data.StoreKey, dat []byte) (error) {
+func (c *cache) Set(key data.StoreKey, dat []byte) error {
 
 	c.store[string(key)] = dat
 
@@ -65,7 +65,6 @@ func (c *cache) Delete(key data.StoreKey) (bool, error) {
 	return true, nil
 }
 
-
 /*
 	CacheSafe starts here
 */
@@ -74,7 +73,7 @@ func (c *cache) Delete(key data.StoreKey) (bool, error) {
 type cacheSafe struct {
 	sync.RWMutex
 
-	name string
+	name  string
 	store map[string][]byte
 }
 
@@ -106,7 +105,7 @@ func (c *cacheSafe) Exists(key data.StoreKey) (bool, error) {
 }
 
 // Set is used to store or update some data with a key
-func (c *cacheSafe) Set(key data.StoreKey, dat []byte) (error) {
+func (c *cacheSafe) Set(key data.StoreKey, dat []byte) error {
 	c.Lock()
 	defer c.Unlock()
 

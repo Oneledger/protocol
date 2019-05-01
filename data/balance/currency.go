@@ -29,7 +29,6 @@ import (
  Currency starts here
 */
 
-
 func GetCurrencies() map[string]Currency {
 	return currencies
 }
@@ -78,7 +77,6 @@ type Extra struct {
 }
 
 // TODO: Separated from Currency to avoid serializing big floats and giving out this info
-
 
 func GetExtra(currency string) Extra {
 	if value, ok := currenciesExtra[currency]; ok {

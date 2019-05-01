@@ -7,8 +7,8 @@ import (
 	"runtime/debug"
 	//"time"
 
-	"github.com/Oneledger/protocol/olvm/interpreter/runner"
 	"github.com/Oneledger/protocol/data"
+	"github.com/Oneledger/protocol/olvm/interpreter/runner"
 	"github.com/Oneledger/protocol/utils"
 )
 

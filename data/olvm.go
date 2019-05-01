@@ -14,11 +14,10 @@ Copyright 2017 - 2019 OneLedger
 
 package data
 
-
 import (
 	"github.com/Oneledger/protocol/node/serial"
-	"github.com/Oneledger/protocol/serialize"
 	"github.com/Oneledger/protocol/node/status"
+	"github.com/Oneledger/protocol/serialize"
 )
 
 const (
@@ -42,7 +41,6 @@ func (context OLVMContext) GetValue(key string) interface{} {
 
 	return string(ret.([]byte))
 }
-
 
 // All of the input necessary to perform a computation on a transaction
 type OLVMRequest struct {
@@ -100,4 +98,3 @@ func NewOLVMResult() *OLVMResult {
 	}
 	return result
 }
-

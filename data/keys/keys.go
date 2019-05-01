@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"github.com/tendermint/tendermint/abci/types"
 	"github.com/tendermint/tendermint/crypto/ed25519"
 	"github.com/tendermint/tendermint/crypto/secp256k1"
 )
@@ -24,16 +25,15 @@ type PrivateKeyHandler interface {
 
 type PrivateKey struct {
 	keytype Algorithm
-	data []byte
+	data    []byte
 }
-
 
 type PublicKey struct {
 	keytype Algorithm
-	data []byte
+	data    []byte
 }
 
-func GetPrivateKeyFromBytes(k []byte, algorithm Algorithm) (PrivateKey, error){
+func GetPrivateKeyFromBytes(k []byte, algorithm Algorithm) (PrivateKey, error) {
 	key := PrivateKey{algorithm, k}
 
 	if _, err := key.GetHandler(); err != nil {
@@ -43,7 +43,7 @@ func GetPrivateKeyFromBytes(k []byte, algorithm Algorithm) (PrivateKey, error){
 	return key, nil
 }
 
-func GetPublicKeyFromBytes(k []byte, algorithm Algorithm) (PublicKey, error){
+func GetPublicKeyFromBytes(k []byte, algorithm Algorithm) (PublicKey, error) {
 	key := PublicKey{algorithm, k}
 
 	if _, err := key.GetHandler(); err != nil {
@@ -53,6 +53,12 @@ func GetPublicKeyFromBytes(k []byte, algorithm Algorithm) (PublicKey, error){
 	return key, nil
 }
 
+func (pubkey PublicKey) GetABCIPubKey() types.PubKey {
+	return types.PubKey{
+		Type: pubkey.keytype.Name(),
+		Data: pubkey.data,
+	}
+}
 
 // Get the public key handler
 func (pubkey PublicKey) GetHandler() (PublicKeyHandler, error) {
@@ -108,12 +114,10 @@ func (privkey PrivateKey) GetHandler() (PrivateKeyHandler, error) {
 	}
 }
 
-
-
 //====================== ED25519 ======================
 
-var _  PublicKeyHandler = PublicKeyED25519{}
-var _  PrivateKeyHandler = PrivateKeyED25519{}
+var _ PublicKeyHandler = PublicKeyED25519{}
+var _ PrivateKeyHandler = PrivateKeyED25519{}
 
 type PublicKeyED25519 struct {
 	key ed25519.PubKeyEd25519
@@ -154,7 +158,7 @@ func (k PrivateKeyED25519) PubKey() PublicKey {
 	p := ed25519.PrivKeyEd25519(k).PubKey()
 	return PublicKey{
 		keytype: ED25519,
-		data:   p.Bytes(),
+		data:    p.Bytes(),
 	}
 }
 
@@ -164,11 +168,9 @@ func (k PrivateKeyED25519) Equals(privkey PrivateKey) bool {
 
 //====================== ED25519 ======================
 
-
-
 //====================== SECP256K1 ======================
-var _  PublicKeyHandler = PublicKeySECP256K1{}
-var _  PrivateKeyHandler = PrivateKeySECP256K1{}
+var _ PublicKeyHandler = PublicKeySECP256K1{}
+var _ PrivateKeyHandler = PrivateKeySECP256K1{}
 
 type PublicKeySECP256K1 struct {
 	key secp256k1.PubKeySecp256k1
@@ -195,7 +197,6 @@ func (k PublicKeySECP256K1) String() string {
 	return k.key.String()
 }
 
-
 type PrivateKeySECP256K1 secp256k1.PrivKeySecp256k1
 
 func (k PrivateKeySECP256K1) Bytes() []byte {
@@ -209,14 +210,13 @@ func (k PrivateKeySECP256K1) Sign(msg []byte) ([]byte, error) {
 func (k PrivateKeySECP256K1) PubKey() PublicKey {
 	p := secp256k1.PrivKeySecp256k1(k).PubKey()
 	return PublicKey{
-		keytype:   SECP256K1,
-		data:   p.Bytes(),
+		keytype: SECP256K1,
+		data:    p.Bytes(),
 	}
 }
 
 func (k PrivateKeySECP256K1) Equals(privkey PrivateKey) bool {
 	return privkey.keytype == SECP256K1 && bytes.Equal(k.Bytes(), privkey.data)
 }
-
 
 //====================== SECP256K1 ======================

@@ -26,8 +26,6 @@ func (sk StoreKey) String() string {
 	return hex.EncodeToString(sk)
 }
 
-
-
 type Store interface {
 	Get(StoreKey) ([]byte, error)
 	Set(StoreKey, []byte) error

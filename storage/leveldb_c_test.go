@@ -38,4 +38,3 @@ func TestCLevelDB(t *testing.T) {
 
 	assert.Equal(t, got, want, "Get and set should be the same")
 }
-

@@ -7,10 +7,9 @@ import (
 	"github.com/Oneledger/protocol/serialize"
 )
 
-
 type Account struct {
 	Type chain.Type `json:"type"`
-	Name string      `json:"name"`
+	Name string     `json:"name"`
 
 	PublicKey  keys.PublicKey  `json:"publicKey"`
 	PrivateKey keys.PrivateKey `json:"privateKey"`
@@ -18,10 +17,10 @@ type Account struct {
 
 func NewAccount(t chain.Type, name string, privkey keys.PrivateKey, pubkey keys.PublicKey) (Account, error) {
 	acc := Account{
-		Type: t,
-		Name: name,
+		Type:       t,
+		Name:       name,
 		PrivateKey: privkey,
-		PublicKey: pubkey,
+		PublicKey:  pubkey,
 	}
 
 	if _, err := acc.PublicKey.GetHandler(); err != nil {
@@ -41,7 +40,6 @@ func (acc Account) Address() keys.Address {
 
 	return keys.Address(handler.Address())
 }
-
 
 func (acc Account) Sign(msg []byte) ([]byte, error) {
 	signer, err := acc.PrivateKey.GetHandler()

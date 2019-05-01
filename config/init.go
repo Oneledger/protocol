@@ -15,8 +15,8 @@ Copyright 2017 - 2019 OneLedger
 package config
 
 import (
-	"github.com/Oneledger/protocol/data/chain"
 	"github.com/Oneledger/protocol/data/balance"
+	"github.com/Oneledger/protocol/data/chain"
 	"math/big"
 )
 

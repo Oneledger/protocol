@@ -7,7 +7,6 @@ import (
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/serialize"
 	"github.com/Oneledger/protocol/storage"
-
 )
 
 type Wallet interface {
@@ -18,11 +17,10 @@ type Wallet interface {
 
 	Delete(Account) error
 
-	SignWithAccountIndex ([]byte, int) ([]byte, error)
+	SignWithAccountIndex([]byte, int) ([]byte, error)
 
-	SignWithAddress ([]byte, keys.Address) ([]byte, error)
+	SignWithAddress([]byte, keys.Address) ([]byte, error)
 }
-
 
 type WalletStore struct {
 	store storage.Storage
@@ -87,7 +85,6 @@ func (ws WalletStore) SignWithAccountIndex(msg []byte, index int) ([]byte, error
 	return ws.SignWithAddress(msg, ws.accounts[index].Bytes())
 }
 
-
 func (ws WalletStore) SignWithAddress(msg []byte, address keys.Address) ([]byte, error) {
 	value, err := ws.store.Get(address.Bytes())
 	if err != nil {
@@ -101,7 +98,7 @@ func (ws WalletStore) SignWithAddress(msg []byte, address keys.Address) ([]byte,
 func NewWallet(config config.Server) WalletStore {
 	ctx := storage.Context{
 		//todo: get the database path
-		DbDir: "dbpath",
+		DbDir:    "dbpath",
 		ConfigDB: config.Node.DB,
 	}
 
@@ -119,7 +116,3 @@ func NewWallet(config config.Server) WalletStore {
 		accounts,
 	}
 }
-
-
-
-
