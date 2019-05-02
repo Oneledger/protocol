@@ -1,6 +1,7 @@
 package accounts
 
 import (
+	"errors"
 	"fmt"
 	"github.com/Oneledger/protocol/config"
 	"github.com/Oneledger/protocol/data"
@@ -48,15 +49,12 @@ func (ws WalletStore) Accounts() []Account {
 
 func (ws *WalletStore) Add(account Account) error {
 	session := ws.store.Begin()
-	exist, err := session.Exists(account.Address().Bytes())
-	if err != nil {
-		return fmt.Errorf("failed to verify existence of account: %s", err)
-	}
+	exist := session.Exists(account.Address().Bytes())
 	if exist {
-		return fmt.Errorf("account already exist: %s", err)
+		return errors.New("account already exist: " + string(account.Address()))
 	}
 	value := account.Bytes()
-	err = session.Set(account.Address().Bytes(), value)
+	err := session.Set(account.Address().Bytes(), value)
 	if err != nil {
 		return fmt.Errorf("failed to set the new account: %s", err)
 	}
@@ -67,14 +65,11 @@ func (ws *WalletStore) Add(account Account) error {
 
 func (ws *WalletStore) Delete(account Account) error {
 	session := ws.store.Begin()
-	exist, err := session.Exists(account.Address().Bytes())
-	if err != nil {
-		return fmt.Errorf("failed to verify existence of account: %s", err)
-	}
+	exist := session.Exists(account.Address().Bytes())
 	if !exist {
-		return fmt.Errorf("account not exist: %s", err)
+		return errors.New("account already exist: " + string(account.Address()))
 	}
-	_, err = session.Delete(account.Address().Bytes())
+	_, err := session.Delete(account.Address().Bytes())
 	return err
 }
 
