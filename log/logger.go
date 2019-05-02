@@ -2,12 +2,12 @@ package log
 
 import (
 	"fmt"
-	"github.com/davecgh/go-spew/spew"
-	kitlog "github.com/go-kit/kit/log"
 	"io"
 	"os"
 	"strings"
 	"time"
+	"github.com/davecgh/go-spew/spew"
+	kitlog "github.com/go-kit/kit/log"
 )
 
 func init() {
@@ -50,19 +50,23 @@ type Options struct {
 	Sync bool
 	// Defines a filter for each log filter
 	Levels map[Level]bool
+	// Include timestamp?
+	IncludeTimestamp bool
 }
 
 func DefaultOptions() Options {
 	return Options{
 		Prefix: "",
 		Sync:   true,
-		Levels: map[Level]bool{Info: true, Warning: true, Error: true},
+		Levels: map[Level]bool{Info: true, Warning: true, Error: true, Debug: true},
+		IncludeTimestamp: true,
 	}
 }
 
 type Logger struct {
 	w      io.Writer
 	prefix string
+	// Basic log-level filtering
 	levels map[Level]bool
 }
 
@@ -110,11 +114,11 @@ func (l *Logger) Debugf(format string, args ...interface{}) {
 	l.fprintf(Debug, time.Now(), format, args...)
 }
 
-func (l *Logger) Warning(args ...interface{}) {
+func (l *Logger) Warn(args ...interface{}) {
 	l.fprintln(Warning, time.Now(), args...)
 }
 
-func (l *Logger) Warningf(format string, args ...interface{}) {
+func (l *Logger) Warnf(format string, args ...interface{}) {
 	l.fprintf(Warning, time.Now(), format, args...)
 }
 
@@ -139,7 +143,7 @@ func (l *Logger) Fatalf(format string, args ...interface{}) {
 // Dump calls Debug on msg and pretty prints the types passed to args
 func (l *Logger) Dump(msg string, args ...interface{}) {
 	l.Debug(msg)
-	spew.Dump(args...)
+	spew.Fdump(l.w, args...)
 }
 
 func (l *Logger) fprintln(level Level, now time.Time, args ...interface{}) {
@@ -159,7 +163,7 @@ func (l *Logger) fprintf(level Level, now time.Time, format string, args ...inte
 }
 
 func (l *Logger) completePrefix(level Level, now time.Time) string {
-	return fmt.Sprintf("%s[%s]%s", level, now.Format(time.RFC3339), l.prefix)
+	return fmt.Sprintf("%s[%s] %s:", level, now.Format(time.RFC3339), l.prefix)
 }
 
 // newSyncWriter takes an existing io.Writer and wraps a mutex around it to make it safe for use by concurrent goroutines
