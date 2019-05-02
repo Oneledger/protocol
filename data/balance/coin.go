@@ -18,7 +18,6 @@ package balance
 import (
 	"math/big"
 	"runtime/debug"
-
 )
 
 /*

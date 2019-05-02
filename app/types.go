@@ -1,7 +1,7 @@
 package app
 
 import (
-	abci"github.com/tendermint/tendermint/abci/types"
+	abci "github.com/tendermint/tendermint/abci/types"
 )
 
 type RequestInitChain = abci.RequestInitChain

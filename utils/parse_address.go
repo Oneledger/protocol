@@ -19,7 +19,7 @@ import (
 	"regexp"
 )
 
-var ErrParsingAddress =  errors.New("failed to parse network address")
+var ErrParsingAddress = errors.New("failed to parse network address")
 
 // Pick out the port from a full address
 func GetPort(addr string) (string, error) {
@@ -31,4 +31,3 @@ func GetPort(addr string) (string, error) {
 	}
 	return groups[1], nil
 }
-

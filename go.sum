@@ -5,6 +5,8 @@ github.com/Oneledger/protocol-temp v0.0.0-20190425155715-ba5a32728663 h1:qiYEIdp
 github.com/Oneledger/protocol-temp v0.0.0-20190425155905-90c9e559481f h1:2LQIo9i4z0mBvODXuIY77xNtc2K147fhGqwirq8S5LA=
 github.com/Oneledger/protocol/node v0.0.0-20190405155847-4d3a44fb0152 h1:x55F3k29WUl7U2BSptsmr36UytH0J4MXv7D727bYjoA=
 github.com/Oneledger/protocol/node v0.0.0-20190405155847-4d3a44fb0152/go.mod h1:MEokuvsK52fLmUF76r7qQGbqq5SD2e/TiwdgWkf6HnQ=
+github.com/Oneledger/protocol/node v0.0.0-20190426023333-6611418cc338 h1:9q6vxUKXhy1AOJl3tmpaNzJypEvyKM3ly5AVekvkmp0=
+github.com/Oneledger/protocol/node v0.0.0-20190426023333-6611418cc338/go.mod h1:pj176nUkBUgXd5VOPPW6CD9eBd8IFvmkVsJkpFA6+u4=
 github.com/Oneledger/toml v0.4.1 h1:CojBO0C04q1L+nr2sNXWT1y/FMZfjIyZg7oUtXVpzLM=
 github.com/Oneledger/toml v0.4.1/go.mod h1:2jh4gaY9vuiKnQRDUvFIhsuY1JKBZBGl6+YAyX6sWpk=
 github.com/VividCortex/gohistogram v1.0.0/go.mod h1:Pf5mBqqDxYaXu3hDrrU+w6nw50o/4+TcAqDqk/vUH7g=
@@ -272,6 +274,7 @@ gopkg.in/fsnotify.v1 v1.4.7/go.mod h1:Tz8NjZHkW78fSQdbUxIjBTcgA1z1m8ZHf0WmKUhAMy
 gopkg.in/jarcoal/httpmock.v1 v1.0.0-20181110093347-3be5f16b70eb/go.mod h1:d3R+NllX3X5e0zlG1Rful3uLvsGC/Q3OHut5464DEQw=
 gopkg.in/natefinch/npipe.v2 v2.0.0-20160621034901-c1b8fa8bdcce h1:+JknDZhAj8YMt7GC73Ei8pv4MzjDUNPHgQWJdtMAaDU=
 gopkg.in/natefinch/npipe.v2 v2.0.0-20160621034901-c1b8fa8bdcce/go.mod h1:5AcXVHNjg+BDxry382+8OKon8SEWiKktQR07RKPsv1c=
+gopkg.in/sourcemap.v1 v1.0.5 h1:inv58fC9f9J3TK2Y2R1NPntXEn3/wjWHkonhIUODNTI=
 gopkg.in/sourcemap.v1 v1.0.5/go.mod h1:2RlvNNSMglmRrcvhfuzp4hQHwOtjxlbjX7UPY/GXb78=
 gopkg.in/tomb.v1 v1.0.0-20141024135613-dd632973f1e7 h1:uRGJdciOHaEIrze2W8Q3AKkepLTh2hOroT7a+7czfdQ=
 gopkg.in/tomb.v1 v1.0.0-20141024135613-dd632973f1e7/go.mod h1:dt/ZhP58zS4L8KSrWDmTeBkI65Dw0HsyUHuEVlX15mw=

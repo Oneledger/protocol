@@ -18,9 +18,9 @@ import (
 	"os"
 	"testing"
 
+	logger "github.com/Oneledger/protocol/log"
 	"github.com/Oneledger/protocol/node/serialize"
 	"github.com/stretchr/testify/assert"
-	logger "github.com/Oneledger/protocol/log"
 )
 
 func init() {

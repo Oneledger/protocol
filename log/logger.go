@@ -2,12 +2,12 @@ package log
 
 import (
 	"fmt"
+	"github.com/davecgh/go-spew/spew"
+	kitlog "github.com/go-kit/kit/log"
 	"io"
 	"os"
 	"strings"
 	"time"
-	"github.com/davecgh/go-spew/spew"
-	kitlog "github.com/go-kit/kit/log"
 )
 
 func init() {
@@ -28,15 +28,20 @@ const (
 
 func (l Level) String() string {
 	switch l {
-	case Info: return "I"
-	case Warning: return "W"
-	case Debug: return "D"
-	case Error: return "E"
-	case Fatal: return "FATAL"
-	default: return "UNKNOWN"
+	case Info:
+		return "I"
+	case Warning:
+		return "W"
+	case Debug:
+		return "D"
+	case Error:
+		return "E"
+	case Fatal:
+		return "FATAL"
+	default:
+		return "UNKNOWN"
 	}
 }
-
 
 type Options struct {
 	// Set of levels to log
@@ -50,13 +55,13 @@ type Options struct {
 func DefaultOptions() Options {
 	return Options{
 		Prefix: "",
-		Sync: true,
+		Sync:   true,
 		Levels: map[Level]bool{Info: true, Warning: true, Error: true},
 	}
 }
 
 type Logger struct {
-	w io.Writer
+	w      io.Writer
 	prefix string
 	levels map[Level]bool
 }
@@ -80,28 +85,28 @@ func NewLoggerWithPrefix(w io.Writer, prefix string) *Logger {
 }
 
 // WithPrefix returns a new logger with the prefix appended to the current logger's prefix
-func (l Logger) WithPrefix(prefix string) *Logger{
-	nextPrefix := strings.Trim(l.prefix + " " + prefix, " ")
+func (l Logger) WithPrefix(prefix string) *Logger {
+	nextPrefix := strings.Trim(l.prefix+" "+prefix, " ")
 	return NewLoggerWithOpts(l.w, Options{
 		Prefix: nextPrefix,
-		Sync: false,
+		Sync:   false,
 		Levels: l.levels,
 	})
 }
 
-func (l *Logger) Info(args...interface{}) {
+func (l *Logger) Info(args ...interface{}) {
 	l.fprintln(Info, time.Now(), args...)
 }
 
-func (l *Logger) Infof(format string, args...interface{}) {
+func (l *Logger) Infof(format string, args ...interface{}) {
 	l.fprintf(Info, time.Now(), format, args...)
 }
 
-func (l *Logger) Debug(args...interface{}) {
+func (l *Logger) Debug(args ...interface{}) {
 	l.fprintln(Debug, time.Now(), args...)
 }
 
-func (l *Logger) Debugf(format string, args...interface{}) {
+func (l *Logger) Debugf(format string, args ...interface{}) {
 	l.fprintf(Debug, time.Now(), format, args...)
 }
 
@@ -109,7 +114,7 @@ func (l *Logger) Warning(args ...interface{}) {
 	l.fprintln(Warning, time.Now(), args...)
 }
 
-func (l *Logger) Warningf(format string, args...interface{}) {
+func (l *Logger) Warningf(format string, args ...interface{}) {
 	l.fprintf(Warning, time.Now(), format, args...)
 }
 
@@ -117,7 +122,7 @@ func (l *Logger) Error(args ...interface{}) {
 	l.fprintln(Error, time.Now(), args...)
 }
 
-func (l *Logger) Errorf(format string, args...interface{}) {
+func (l *Logger) Errorf(format string, args ...interface{}) {
 	l.fprintf(Error, time.Now(), format, args...)
 }
 
@@ -126,7 +131,7 @@ func (l *Logger) Fatal(args ...interface{}) {
 	os.Exit(1)
 }
 
-func (l *Logger) Fatalf(format string, args...interface{}) {
+func (l *Logger) Fatalf(format string, args ...interface{}) {
 	l.fprintf(Fatal, time.Now(), format, args...)
 	os.Exit(1)
 }

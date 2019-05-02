@@ -18,7 +18,6 @@ package balance
 import (
 	"math/big"
 	"strconv"
-
 )
 
 // Handle an incoming string
@@ -94,4 +93,3 @@ func bint2float(amount *big.Int, base *big.Float) float64 {
 
 	return result
 }
-

@@ -14,8 +14,17 @@ Copyright 2017 - 2019 OneLedger
 
 package data
 
+import "encoding/hex"
+
 type StoreKey []byte
 
+func (sk StoreKey) Bytes() []byte {
+	return sk
+}
+
+func (sk StoreKey) String() string {
+	return hex.EncodeToString(sk)
+}
 
 type Store interface {
 	Get(StoreKey) ([]byte, error)

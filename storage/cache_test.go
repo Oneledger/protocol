@@ -58,7 +58,4 @@ func TestCache_SetGet(t *testing.T) {
 	assert.True(t, exists)
 	assert.NoError(t, err)
 
-
-
 }
-

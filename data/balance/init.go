@@ -13,7 +13,6 @@
 
 */
 
-
 package balance
 
 import (
@@ -41,28 +40,12 @@ func init() {
 	serialize.RegisterConcrete(new(Balance), TagBalance)
 	serialize.RegisterConcrete(new(BalanceData), TagBalanceData)
 
-	/*
-	currencies = map[string]Currency{
-		OLT: {OLT, ONELEDGER, 0},
-		BTC: {BTC, BITCOIN, 1},
-		ETH: {ETH, ETHEREUM, 2},
-		VT:  {VT, ONELEDGER, 3},
-	}
-
-	currenciesExtra = map[string]Extra{
-		OLT: {big.NewFloat(1000000000000000000), 6, 'f'},
-		BTC: {big.NewFloat(1), 0, 'f'}, // TODO: This needs to be set correctly
-		ETH: {big.NewFloat(1), 0, 'f'}, // TODO: This needs to be set correctly
-		VT:  {big.NewFloat(1), 0, 'f'},
-	}
-	*/
 	pSzlr = serialize.GetSerializer(serialize.PERSISTENT)
 
 }
 
-
-func RegisterCurrency(name string, ct chain.ChainType, id int,
-						units *big.Float, decimal int, format uint8) {
+func RegisterCurrency(name string, ct chain.Type, id int,
+	units *big.Float, decimal int, format uint8) {
 
 	currencies[name] = Currency{name, ct, id}
 	currenciesExtra[name] = Extra{units, decimal, format}

@@ -14,8 +14,8 @@
 package balance
 
 import (
-	"github.com/Oneledger/protocol/serialize"
 	"github.com/Oneledger/protocol/data/chain"
+	"github.com/Oneledger/protocol/serialize"
 	"math/big"
 )
 
@@ -24,14 +24,14 @@ import (
 // There is a map flattening of course for Coins
 type BalanceData struct {
 	Coins []CoinData `json:"pl"`
-	Tag  string     `json:"tag"` // Tag is a field used to identify the type after ser/deser
+	Tag   string     `json:"tag"` // Tag is a field used to identify the type after ser/deser
 	// will be useful in future
 }
 
 // CoinData is a flattening of coin map in a balance data type
 type CoinData struct {
-	CurId    int       `json:"curr_id"`
-	CurName  string    `json:"curr_name"`
+	CurId    int        `json:"curr_id"`
+	CurName  string     `json:"curr_name"`
 	CurChain chain.Type `json:"curr_chain"`
 
 	Amount []byte `json:"amt"`
@@ -54,7 +54,6 @@ func (b *Balance) Data() serialize.Data {
 	// this allows to reserve capacity so the process of adding
 	// items to the list
 	bd.Coins = make([]CoinData, 0, len(b.Amounts))
-
 
 	for _, id := range b.coinOrder {
 		coin := b.Amounts[id]
@@ -121,7 +120,6 @@ func (bd *BalanceData) Primitive() serialize.DataAdapter {
 	}
 	return b
 }
-
 
 func (bd *BalanceData) SerialTag() string {
 	return bd.Tag
