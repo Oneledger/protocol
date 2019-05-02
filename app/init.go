@@ -12,12 +12,16 @@
 Copyright 2017 - 2019 OneLedger
 */
 
-package monitor
+package app
 
 import (
-	"os"
-
-	logger "github.com/Oneledger/protocol/log"
+	"github.com/Oneledger/protocol/serialize"
 )
 
-var log = logger.NewDefaultLogger(os.Stdout).WithPrefix("olvm/interpreter/monitor")
+var clSzlr serialize.Serializer
+var jsonSerializer serialize.Serializer
+
+func init() {
+	clSzlr = serialize.GetSerializer(serialize.CLIENT)
+	jsonSerializer = serialize.GetSerializer(serialize.JSON)
+}

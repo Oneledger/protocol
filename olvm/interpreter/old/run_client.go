@@ -27,9 +27,11 @@ module.Contract = HellowWorldContract;
 
 func main() {
 	request := runner.OLVMRequest{"0x0", "embed://", "", 0, sourceCode}
+
 	reply, err := vm.AutoRun(&request)
 	if err != nil {
 		log.Fatal("Failed", err)
 	}
+
 	log.Info("get the result", "reply", reply)
 }

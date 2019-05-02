@@ -2,9 +2,10 @@ package serialize
 
 import (
 	"encoding/json"
+	"testing"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/vmihailenco/msgpack"
-	"testing"
 )
 
 type testStuff struct {

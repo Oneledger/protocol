@@ -15,9 +15,10 @@ Copyright 2017 - 2019 OneLedger
 package utils_test
 
 import (
+	"testing"
+
 	"github.com/Oneledger/protocol/utils"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 func TestGetPort(t *testing.T) {
@@ -28,4 +29,8 @@ func TestGetPort(t *testing.T) {
 	port, err = utils.GetPort("http://google.com:1234")
 	assert.Equal(t, port, "1234")
 	assert.NoError(t, err)
+
+	port, err = utils.GetPort("google.com:1234")
+	assert.Equal(t, port, "")
+	assert.Equal(t, err, utils.ErrParsingAddress)
 }

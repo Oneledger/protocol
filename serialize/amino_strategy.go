@@ -1,7 +1,6 @@
 package serialize
 
 import (
-	"github.com/Oneledger/protocol/node/log"
 	"github.com/tendermint/go-amino"
 )
 
@@ -18,7 +17,7 @@ func NewAminoStrategy(cdc *amino.Codec) *aminoStrategy {
 func (a *aminoStrategy) Serialize(obj interface{}) ([]byte, error) {
 	defer func() {
 		if r := recover(); r != nil {
-			log.Error("panic in amino", r)
+			logger.Error("panic in amino", r)
 		}
 	}()
 
@@ -28,7 +27,7 @@ func (a *aminoStrategy) Serialize(obj interface{}) ([]byte, error) {
 	}
 
 	if _, ok := obj.(DataAdapter); ok {
-		log.Warn("amino strategy does not support adapters")
+		logger.Warning("amino strategy does not support adapters")
 	}
 	bz, err := a.codec.MarshalBinaryLengthPrefixed(obj)
 

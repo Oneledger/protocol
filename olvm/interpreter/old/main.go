@@ -38,9 +38,15 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+
 	c := committor.Create()
 	log.Info("return value:", reply.Ret)
 	log.Info("transaction out:", reply.Out)
-	s, _ := c.Commit(reply.Ret, reply.Out)
+
+	s, err := c.Commit(reply.Ret, reply.Out)
+	if err != nil {
+		log.Error("error in committing transaction", err)
+	}
+
 	log.Info(s)
 }

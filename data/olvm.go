@@ -15,8 +15,6 @@ Copyright 2017 - 2019 OneLedger
 package data
 
 import (
-	"github.com/Oneledger/protocol/node/serial"
-	"github.com/Oneledger/protocol/node/status"
 	"github.com/Oneledger/protocol/serialize"
 )
 
@@ -57,7 +55,7 @@ type OLVMRequest struct {
 
 // All of the output received from the computation
 type OLVMResult struct {
-	Status       status.Code
+	Status       string
 	Out          string
 	Ret          string // TODO: Should be a real name
 	Elapsed      string
@@ -67,9 +65,6 @@ type OLVMResult struct {
 }
 
 func init() {
-	serial.Register(OLVMRequest{})
-	serial.Register(OLVMResult{})
-	serial.Register(OLVMContext{})
 
 	serialize.RegisterConcrete(new(OLVMRequest), TagOLVMRequest)
 	serialize.RegisterConcrete(new(OLVMResult), TagOLVMResult)
@@ -94,7 +89,7 @@ func NewOLVMRequest(script []byte, context OLVMContext) *OLVMRequest {
 
 func NewOLVMResult() *OLVMResult {
 	result := &OLVMResult{
-		Status: status.MISSING_DATA,
+		Status: "MISSING DATA",
 	}
 	return result
 }

@@ -1,4 +1,5 @@
 /*
+
    ____             _              _                      _____           _                  _
   / __ \           | |            | |                    |  __ \         | |                | |
  | |  | |_ __   ___| |     ___  __| | __ _  ___ _ __     | |__) | __ ___ | |_ ___   ___ ___ | |
@@ -12,12 +13,4 @@
 Copyright 2017 - 2019 OneLedger
 */
 
-package monitor
-
-import (
-	"os"
-
-	logger "github.com/Oneledger/protocol/log"
-)
-
-var log = logger.NewDefaultLogger(os.Stdout).WithPrefix("olvm/interpreter/monitor")
+package app

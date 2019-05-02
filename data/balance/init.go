@@ -18,7 +18,6 @@ package balance
 import (
 	"github.com/Oneledger/protocol/data/chain"
 	"github.com/Oneledger/protocol/log"
-	"github.com/Oneledger/protocol/node/serial"
 	"github.com/Oneledger/protocol/serialize"
 	"math/big"
 	"os"
@@ -33,9 +32,6 @@ var currenciesExtra map[string]Extra
 func init() {
 
 	logger = log.NewDefaultLogger(os.Stdout).WithPrefix("balance")
-	serial.Register(Balance{})
-	serial.Register(Coin{})
-	serial.Register(Currency{})
 
 	serialize.RegisterConcrete(new(Balance), TagBalance)
 	serialize.RegisterConcrete(new(BalanceData), TagBalanceData)

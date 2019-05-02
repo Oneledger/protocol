@@ -24,11 +24,11 @@ package storage
 
 import (
 	"errors"
-	"github.com/Oneledger/protocol/data"
 	"os"
 	"path/filepath"
 	"sync"
 
+	"github.com/Oneledger/protocol/data"
 	"github.com/tendermint/iavl"
 	"github.com/tendermint/tendermint/libs/db"
 )

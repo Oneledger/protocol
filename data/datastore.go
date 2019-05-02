@@ -29,6 +29,6 @@ func (sk StoreKey) String() string {
 type Store interface {
 	Get(StoreKey) ([]byte, error)
 	Set(StoreKey, []byte) error
-	Exists(StoreKey) (bool, error)
+	Exists(StoreKey) (bool)
 	Delete(StoreKey) (bool, error)
 }

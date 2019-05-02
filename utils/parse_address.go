@@ -23,11 +23,13 @@ var ErrParsingAddress = errors.New("failed to parse network address")
 
 // Pick out the port from a full address
 func GetPort(addr string) (string, error) {
-	automata := regexp.MustCompile(`.*?:.*?:(.*)`)
-	groups := automata.FindStringSubmatch(addr)
 
+	automata := regexp.MustCompile(`.*?:.*?:(.*)`)
+
+	groups := automata.FindStringSubmatch(addr)
 	if groups == nil || len(groups) != 2 {
 		return "", ErrParsingAddress
 	}
+
 	return groups[1], nil
 }

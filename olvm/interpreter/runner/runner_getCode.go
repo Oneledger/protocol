@@ -8,7 +8,7 @@ import (
 
 func getCodeFromJsLibs(address string) string {
 
-	jsFilePath := filepath.Join(os.Getenv("OLROOT"), "/protocol/node/olvm/interpreter/runner/js", address+".js")
+	jsFilePath := filepath.Join(os.Getenv("OLROOT"), "/protocol/olvm/interpreter/runner/js", address+".js")
 	log.Debug("get source code from local file system", "path", jsFilePath)
 
 	file, err := os.Open(jsFilePath)

@@ -15,9 +15,10 @@
 package storage
 
 import (
+	"testing"
+
 	"github.com/Oneledger/protocol/data"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 func TestNewCache(t *testing.T) {
@@ -59,3 +60,4 @@ func TestCache_SetGet(t *testing.T) {
 	assert.NoError(t, err)
 
 }
+

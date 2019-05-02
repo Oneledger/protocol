@@ -21,11 +21,12 @@
 package storage
 
 import (
+	"sync"
+
 	"github.com/Oneledger/protocol/data"
 	b "github.com/Oneledger/protocol/data/balance"
 	"github.com/tendermint/iavl"
 	"github.com/tendermint/tendermint/libs/db"
-	"sync"
 )
 
 // Number of times we initialized since starting

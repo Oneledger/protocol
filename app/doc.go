@@ -12,12 +12,6 @@
 Copyright 2017 - 2019 OneLedger
 */
 
-package monitor
+package app
 
-import (
-	"os"
-
-	logger "github.com/Oneledger/protocol/log"
-)
-
-var log = logger.NewDefaultLogger(os.Stdout).WithPrefix("olvm/interpreter/monitor")
+// TODO: main app documentation; very important

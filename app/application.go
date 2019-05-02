@@ -3,11 +3,15 @@ package app
 import (
 	"os"
 
+	"github.com/pkg/errors"
+	"github.com/tendermint/tendermint/libs/common"
+
 	"github.com/Oneledger/protocol/config"
 	"github.com/Oneledger/protocol/consensus"
 	"github.com/Oneledger/protocol/data"
 	"github.com/Oneledger/protocol/log"
 	"github.com/Oneledger/protocol/serialize"
+	"github.com/Oneledger/protocol/storage"
 	"github.com/pkg/errors"
 	"github.com/tendermint/tendermint/libs/common"
 )
@@ -20,7 +24,7 @@ var _ abciController = &App{}
 type context struct {
 	chainID string
 
-	balances         *data.ChainState
+	balances         *storage.ChainState
 	identities       data.Store
 	smartContract    data.Store
 	executionContext data.Store
@@ -80,7 +84,7 @@ func (app *App) Header() Header {
 }
 
 // Getters
-func (app *App) Balances() *data.ChainState {
+func (app *App) Balances() *storage.ChainState {
 	return app.Context.balances
 }
 func (app *App) Identities() data.Store {

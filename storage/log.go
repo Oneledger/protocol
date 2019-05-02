@@ -15,8 +15,9 @@ Copyright 2017 - 2019 OneLedger
 package storage
 
 import (
-	logger "github.com/Oneledger/protocol/log"
 	"os"
+
+	logger "github.com/Oneledger/protocol/log"
 )
 
 var log = logger.NewDefaultLogger(os.Stdout).WithPrefix("storage")

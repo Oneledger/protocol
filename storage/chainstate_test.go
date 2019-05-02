@@ -16,10 +16,10 @@ package storage
 
 import (
 	"bytes"
-	"github.com/Oneledger/protocol/data"
-	"github.com/Oneledger/protocol/data/balance"
 	"testing"
 
+	"github.com/Oneledger/protocol/data"
+	"github.com/Oneledger/protocol/data/balance"
 	"github.com/stretchr/testify/assert"
 )
 
