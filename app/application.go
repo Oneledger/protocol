@@ -70,12 +70,15 @@ type App struct {
 	validators interface{} // Set of validators currently active
 	abci       *ABCI
 	chainID    string // Signed with every transaction
+
+	r			Router
 }
 
 func NewApp(cfg config.Server) *App {
 	return &App{
 		// sdk:
 		logger: log.NewLoggerWithPrefix(os.Stdout, "app:"),
+		r : NewABCIRouter(),
 	}
 }
 
