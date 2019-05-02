@@ -14,23 +14,23 @@
 
 package chain
 
-type ChainType int
+type Type int
 
 type Chain struct {
-	ChainType   ChainType
+	ChainType   Type
 	Description string
 	Features    []string
 }
 
-var chainTypes = map[string]ChainType{}
-var chainTypeNames = map[ChainType]string{}
+var chainTypes = map[string]Type{}
+var chainTypeNames = map[Type]string{}
 
 func RegisterChainType(name string, id int) {
-	chainTypes[name] = ChainType(id)
-	chainTypeNames[ChainType(id)] = name
+	chainTypes[name] = Type(id)
+	chainTypeNames[Type(id)] = name
 }
 
-func (ctype ChainType) String() string {
+func (ctype Type) String() string {
 
 	name, ok := chainTypeNames[ctype]
 	if !ok {

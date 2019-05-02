@@ -61,38 +61,3 @@ func TestCache_SetGet(t *testing.T) {
 
 }
 
-func TestCacheSafe_SetGet(t *testing.T) {
-	c := NewCacheSafe("test")
-
-	key := data.StoreKey("key")
-	dat := []byte("data")
-	assert.NoError(t, c.Set(key, dat))
-
-	dat2, err := c.Get(key)
-	assert.Equal(t, dat, dat2)
-	assert.NoError(t, err)
-
-	exists, err := c.Exists(key)
-	assert.True(t, exists)
-	assert.NoError(t, err)
-
-	deleted, err := c.Delete(key)
-	assert.True(t, deleted)
-	assert.NoError(t, err)
-
-	exists, err = c.Exists(key)
-	assert.False(t, exists)
-	assert.NoError(t, err)
-
-	key2 := data.StoreKey("key2")
-	assert.NoError(t, c.Set(key2, dat))
-
-	exists, err = c.Exists(key)
-	assert.False(t, exists)
-	assert.NoError(t, err)
-
-	exists, err = c.Exists(key2)
-	assert.True(t, exists)
-	assert.NoError(t, err)
-
-}

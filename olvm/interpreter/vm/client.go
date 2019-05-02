@@ -8,8 +8,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Oneledger/protocol/utils"
 	"github.com/Oneledger/protocol/data"
+	"github.com/Oneledger/protocol/utils"
 )
 
 // TODO: Hardcoded port, needs to come from config
@@ -157,7 +157,7 @@ func (c OLVMClient) Run(request *data.OLVMRequest) (*data.OLVMResult, error) {
 
 	client.Close()
 
-	log. Debug("Have a Result", *result)
+	log.Debug("Have a Result", *result)
 	return result, nil
 }
 

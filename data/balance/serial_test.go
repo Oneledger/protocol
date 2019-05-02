@@ -15,10 +15,10 @@ Copyright 2017 - 2019 OneLedger
 package balance
 
 import (
+	logger "github.com/Oneledger/protocol/log"
 	"github.com/stretchr/testify/assert"
 	"os"
 	"testing"
-	logger "github.com/Oneledger/protocol/log"
 )
 
 var log = logger.NewDefaultLogger(os.Stdout)
@@ -71,4 +71,3 @@ func TestBalance(t *testing.T) {
 
 	assert.Equal(t, balance, result, "These should be equal")
 }
-

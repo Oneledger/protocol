@@ -40,7 +40,6 @@ func (context OLVMContext) GetValue(key string) interface{} {
 	return string(ret.([]byte))
 }
 
-
 // All of the input necessary to perform a computation on a transaction
 type OLVMRequest struct {
 	From        string
@@ -94,4 +93,3 @@ func NewOLVMResult() *OLVMResult {
 	}
 	return result
 }
-

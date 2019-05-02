@@ -29,15 +29,14 @@ import (
  Currency starts here
 */
 
-
 func GetCurrencies() map[string]Currency {
 	return currencies
 }
 
 type Currency struct {
-	Name  string          `json:"name"`
-	Chain chain.ChainType `json:"chain"`
-	Id    int             `json:"id"`
+	Name  string     `json:"name"`
+	Chain chain.Type `json:"chain"`
+	Id    int        `json:"id"`
 }
 
 // Look up the currency
@@ -78,7 +77,6 @@ type Extra struct {
 }
 
 // TODO: Separated from Currency to avoid serializing big floats and giving out this info
-
 
 func GetExtra(currency string) Extra {
 	if value, ok := currenciesExtra[currency]; ok {

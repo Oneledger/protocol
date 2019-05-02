@@ -1,12 +1,14 @@
 module github.com/Oneledger/protocol
 
 require (
+	github.com/Oneledger/protocol/node v0.0.0-20190426023333-6611418cc338 // indirect
 	github.com/Oneledger/toml v0.4.1
 	github.com/VividCortex/gohistogram v1.0.0 // indirect
 	github.com/allegro/bigcache v1.2.0 // indirect
 	github.com/aristanetworks/goarista v0.0.0-20190409235741-55bc7be9dd31 // indirect
 	github.com/btcsuite/btcd v0.0.0-20190424234938-150379531efe // indirect
 	github.com/btcsuite/btcwallet v0.0.0-20190424224017-9d95f76e99a7 // indirect
+	github.com/davecgh/go-spew v1.1.1
 	github.com/ethereum/go-ethereum v1.8.27 // indirect
 	github.com/fortytw2/leaktest v1.3.0 // indirect
 	github.com/go-kit/kit v0.8.0
@@ -19,9 +21,10 @@ require (
 	github.com/jmhodges/levigo v1.0.0 // indirect
 	github.com/mattn/go-isatty v0.0.7 // indirect
 	github.com/pborman/uuid v1.2.0 // indirect
-	github.com/pkg/errors v0.8.1 // indirect
+	github.com/pkg/errors v0.8.1
 	github.com/prometheus/client_golang v0.9.2 // indirect
 	github.com/rcrowley/go-metrics v0.0.0-20181016184325-3113b8401b8a // indirect
+	github.com/robertkrimen/otto v0.0.0-20180617131154-15f95af6e78d
 	github.com/stretchr/testify v1.3.0
 	github.com/syndtr/goleveldb v1.0.0 // indirect
 	github.com/tendermint/go-amino v0.14.1

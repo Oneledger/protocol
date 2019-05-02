@@ -20,4 +20,3 @@ import "errors"
 var (
 	ErrWrongBalanceAdapter = errors.New("error in asserting to BalanceAdapter")
 )
-

@@ -28,7 +28,7 @@ var _ ABCIApp = &ABCI{}
 
 // ABCI is used as an input for creating a new node
 type ABCI struct {
-	infoServer infoServer
+	infoServer       infoServer
 	optionSetter     optionSetter
 	queryer          queryer
 	txChecker        txChecker
@@ -36,7 +36,7 @@ type ABCI struct {
 	blockBeginner    blockBeginner
 	txDeliverer      txDeliverer
 	blockEnder       blockEnder
-	commitor commitor
+	commitor         commitor
 }
 
 func (app *ABCI) Info(request RequestInfo) ResponseInfo {

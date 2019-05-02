@@ -12,6 +12,8 @@ import (
 	"github.com/Oneledger/protocol/log"
 	"github.com/Oneledger/protocol/serialize"
 	"github.com/Oneledger/protocol/storage"
+	"github.com/pkg/errors"
+	"github.com/tendermint/tendermint/libs/common"
 )
 
 // Ensure this App struct can control the underlying ABCI app

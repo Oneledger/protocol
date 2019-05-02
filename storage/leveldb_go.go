@@ -16,8 +16,6 @@ Copyright 2017 - 2019 OneLedger
 // This file is for grabbing a leveldb instance without cleveldb support
 package storage
 
-
-
 import (
 	"errors"
 
@@ -34,4 +32,3 @@ func getDatabase(name, dbDir, configDB string) (db.DB, error) {
 	}
 	return db.NewGoLevelDB("OneLedger-"+name, dbDir)
 }
-

@@ -18,12 +18,10 @@ import (
 	"github.com/Oneledger/protocol/data"
 )
 
-
 var _ Storage = &KeyValue{}
 var _ StorageSession = &KeyValueSession{}
 var _ data.Store = &cacheSafe{}
 var _ data.Store = &cache{}
-
 
 // Storage wraps objects with option to start a session(db transaction)
 type Storage interface {
@@ -48,8 +46,8 @@ func NewStorage(flavor, name string) data.Store {
 }
 
 /*
-		StorageSession
- */
+	StorageSession
+*/
 
 // StorageSession defines a session-ed storage object of your choice
 type StorageSession interface {
@@ -70,11 +68,7 @@ func NewSessionStorageDB(flavor, name string, ctx Context) Storage {
 	return nil
 }
 
-
-
 type Context struct {
-	DbDir string
+	DbDir    string
 	ConfigDB string
 }
-
-

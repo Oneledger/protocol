@@ -28,7 +28,7 @@ type Balance struct {
 
 /*
 	balance Generators start here
- */
+*/
 func NewBalance() *Balance {
 	amounts := make(map[int]Coin, 0)
 	result := &Balance{
@@ -71,7 +71,7 @@ func GetBalanceFromDb(db data.Store, accountKey data.StoreKey) (*Balance, error)
 
 /*
 	methods for balance start here
- */
+*/
 func (b *Balance) FindCoin(currency Currency) *Coin {
 	if coin, ok := b.Amounts[currency.Id]; ok {
 		return &coin

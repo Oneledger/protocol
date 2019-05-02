@@ -72,4 +72,3 @@ func isMap(jsonMessage *json.RawMessage) bool {
 	json.Unmarshal(in, &raw)
 	return len(raw) != 0
 }
-
