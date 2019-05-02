@@ -27,6 +27,7 @@ type cache struct {
 	name  string
 	store map[string][]byte
 }
+
 // cache satisfies data.Store interface
 var _ data.Store = &cache{}
 
@@ -46,7 +47,7 @@ func (c *cache) Get(key data.StoreKey) ([]byte, error) {
 }
 
 // Exists checks if a key exists in the database.
-func (c *cache) Exists(key data.StoreKey) (bool) {
+func (c *cache) Exists(key data.StoreKey) bool {
 
 	_, ok := c.store[string(key)]
 
@@ -79,6 +80,7 @@ type cacheSafe struct {
 	name  string
 	store map[string][]byte
 }
+
 // cacheSafe pointer satisfies data.Store interface
 var _ data.Store = &cacheSafe{}
 
@@ -100,7 +102,7 @@ func (c *cacheSafe) Get(key data.StoreKey) ([]byte, error) {
 }
 
 // Exists checks if a key exists in the database.
-func (c *cacheSafe) Exists(key data.StoreKey) (bool) {
+func (c *cacheSafe) Exists(key data.StoreKey) bool {
 	c.RLock()
 	defer c.RUnlock()
 

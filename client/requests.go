@@ -5,7 +5,6 @@
 */
 package client
 
-
 type ApplyValidatorArguments struct {
 	Id     string
 	Amount float64
@@ -48,4 +47,3 @@ type ExSendArguments struct {
 	ExGas string
 	ExFee string
 }
-

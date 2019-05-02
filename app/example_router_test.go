@@ -54,4 +54,3 @@ func exec(req Request, resp *Response) {
 		// log.Error("error marshalling response", err)
 	}
 }
-
