@@ -113,7 +113,6 @@ func (ctx Context) Tx(hash []byte, prove bool) (res *ctypes.ResultTx) {
 	return result
 }
 
-
 func (ctx Context) Block(height int64) (res *ctypes.ResultBlock) {
 
 	h := blockHeightConvert(height)

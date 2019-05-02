@@ -2,11 +2,9 @@ package identity
 
 import (
 	"bytes"
-	"encoding/hex"
 	"github.com/Oneledger/protocol/data"
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/keys"
-	"github.com/Oneledger/protocol/node/status"
 	"github.com/Oneledger/protocol/serialize"
 	"github.com/Oneledger/protocol/storage"
 	"github.com/tendermint/tendermint/abci/types"
@@ -81,8 +79,8 @@ func updateValidiatorSet(cached data.Store, votes []types.VoteInfo) error {
 	//todo:
 	for _, v := range votes {
 		addr := v.Validator.GetAddress()
-		if ok, err := cached.Exists(addr); !ok {
-			logger.Error("validator set not match to last commit", err)
+		if cached.Exists(addr) {
+			logger.Error("validator set not match to last commit", addr)
 		}
 	}
 	return nil
@@ -94,7 +92,7 @@ func (vs *Validators) HandleStake(apply Stake) *Validators {
 	}
 
 	validator := &Validator{}
-	if ok, _ := vs.cached.Exists(apply.Address.Bytes()); !ok {
+	if vs.cached.Exists(apply.Address.Bytes()) {
 
 		validator = &Validator{
 			Address: apply.Address,
@@ -136,7 +134,7 @@ func checkPubkeyAddress(pubkey keys.PublicKey, address keys.Address) bool {
 func makingslash(vs *Validators, evidences []types.Evidence) []Validator {
 	remove := make([]Validator, 0)
 	for _, evidence := range evidences {
-		if ok, _ := vs.cached.Exists(evidence.Validator.Address); ok {
+		if vs.cached.Exists(evidence.Validator.Address) {
 			value, err := vs.cached.Get(evidence.Validator.GetAddress())
 			if err != nil {
 				logger.Error("failed to get validator from cache even it exist", err)
@@ -151,7 +149,7 @@ func makingslash(vs *Validators, evidences []types.Evidence) []Validator {
 
 func (vs *Validators) HandleUnstake(purge Unstake) *Validators {
 
-	if ok, _ := vs.cached.Exists(purge.Address.Bytes()); !ok {
+	if vs.cached.Exists(purge.Address.Bytes()) {
 		return vs
 	}
 	value, err := vs.cached.Get(purge.Address.Bytes())
@@ -185,7 +183,6 @@ func (vs *Validators) GetEndBlockUpdate(ctx ValidatorContext, req types.RequestE
 
 	}
 
-
 	//todo : get the final updates from vs.cached
 	return validatorUpdates
 }
@@ -202,7 +199,7 @@ type ValidatorContext struct {
 func transferVT(ctx ValidatorContext, validator Validator) bool {
 	logger.Debug("Processing Transfer of VT to Payment Account")
 
-//todo: implement transfer vt from account balance to some where else
+	//todo: implement transfer vt from account balance to some where else
 
 	return true
 }

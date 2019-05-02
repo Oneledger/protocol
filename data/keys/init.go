@@ -15,7 +15,6 @@ const (
 	SECP256K1_PUB_SIZE int = secp256k1.PubKeySecp256k1Size
 )
 
-
 func (a Algorithm) Name() string {
 	switch a {
 	case ED25519:

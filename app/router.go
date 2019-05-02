@@ -31,10 +31,11 @@ type Router interface {
 
 // router is an implementation of a Router interface, currently all routes are stored in a map
 type router struct {
-	name string
+	name   string
 	routes map[string]handler
 	logger *log.Logger
 }
+
 // router implements Router
 var _ Router = &router{}
 
@@ -68,4 +69,3 @@ func (r *router) Handle(req Request, resp *Response) {
 
 	h(req, resp)
 }
-
