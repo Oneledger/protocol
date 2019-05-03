@@ -15,6 +15,7 @@
 package storage
 
 import (
+	"bytes"
 	"sync"
 
 	"github.com/Oneledger/protocol/data"
@@ -67,6 +68,29 @@ func (c *cache) Delete(key data.StoreKey) (bool, error) {
 
 	delete(c.store, string(key))
 	return true, nil
+}
+
+func (c *cache) GetIterator() *Iterator {
+	items := make([]iteratorItem, 0)
+
+	for k, v := range c.store {
+		items = append(items, iteratorItem{[]byte(k), v})
+	}
+
+	return newIterator(items)
+}
+
+
+func (c *cache) GetRangeIterator(start, end []byte) *Iterator {
+	items := make([]iteratorItem, 0)
+
+	for k, v := range c.store {
+		key := []byte(k)
+		if isKeyInDomain(key, start, end) {
+			items = append(items, iteratorItem{key, v})
+		}
+	}
+	return newIterator(items)
 }
 
 /*
@@ -128,4 +152,46 @@ func (c *cacheSafe) Delete(key data.StoreKey) (bool, error) {
 
 	delete(c.store, string(key))
 	return true, nil
+}
+
+func (c *cacheSafe) GetIterator() *Iterator {
+	items := make([]iteratorItem, 0)
+
+	c.RLock()
+	defer c.RUnlock()
+	for k, v := range c.store {
+		items = append(items, iteratorItem{[]byte(k), v})
+	}
+
+	return newIterator(items)
+}
+
+
+func (c *cacheSafe) GetRangeIterator(start, end []byte) *Iterator {
+	items := make([]iteratorItem, 0)
+
+	c.RLock()
+	defer c.RUnlock()
+	for k, v := range c.store {
+		key := []byte(k)
+		if isKeyInDomain(key, start, end) {
+			items = append(items, iteratorItem{key, v})
+		}
+	}
+	return newIterator(items)
+}
+
+/*
+	utils
+*/
+func  isKeyInDomain(key, start, end []byte) bool {
+	if bytes.Compare(key, start) < 0 {
+		return false
+	}
+
+	if bytes.Compare(end, key) <= 0 {
+		return false
+	}
+
+	return true
 }
