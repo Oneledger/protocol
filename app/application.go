@@ -1,19 +1,22 @@
 package app
 
 import (
+	"net"
+	"net/http"
+	"net/rpc"
 	"os"
 
 	"github.com/pkg/errors"
 	"github.com/tendermint/tendermint/libs/common"
 
+	"github.com/Oneledger/protocol/client"
 	"github.com/Oneledger/protocol/config"
 	"github.com/Oneledger/protocol/consensus"
 	"github.com/Oneledger/protocol/data"
+	"github.com/Oneledger/protocol/data/accounts"
 	"github.com/Oneledger/protocol/log"
 	"github.com/Oneledger/protocol/serialize"
 	"github.com/Oneledger/protocol/storage"
-	"github.com/pkg/errors"
-	"github.com/tendermint/tendermint/libs/common"
 )
 
 // Ensure this App struct can control the underlying ABCI app
@@ -34,6 +37,7 @@ type context struct {
 	status           data.Store
 	contract         data.Store
 	event            data.Store
+	wallet           accounts.WalletStore
 }
 
 // TODO: Fill in these context creators, these should return package-specific Contexts
@@ -71,15 +75,21 @@ type App struct {
 	abci       *ABCI
 	chainID    string // Signed with every transaction
 
-	r			Router
+	r         Router
+	rpcServer *rpc.Server
 }
 
 func NewApp(cfg config.Server) *App {
-	return &App{
+	app := &App{
 		// sdk:
 		logger: log.NewLoggerWithPrefix(os.Stdout, "app:"),
-		r : NewABCIRouter(),
+		r:      NewABCIRouter(),
 	}
+
+	app.Context.wallet = accounts.NewWallet(cfg)
+	// TODO add other data stores
+
+	return app
 }
 
 func (app *App) Header() Header {
@@ -104,6 +114,9 @@ func (app *App) Admin() data.Store {
 }
 func (app *App) Accounts() data.Store {
 	return app.Context.accounts
+}
+func (app *App) WalletStore() accounts.WalletStore {
+	return app.Context.wallet
 }
 func (app *App) Sequence() data.Store {
 	return app.Context.sequence
@@ -232,4 +245,22 @@ func (app *App) setupState(stateBytes []byte) error {
 	// createAccount(app, &consensus.AppState{global.Current.PaymentAccount, states}, publicKey, privateKey, nil)
 	return nil
 
+}
+
+func (app *App) startRPCServer() {
+
+	handlers := client.NewClientHandler(app.Balances(), app.Accounts(), app.WalletStore())
+	err := rpc.Register(handlers)
+	if err != nil {
+		app.logger.Fatal("error registering rpc handlers", "err", err)
+	}
+
+	rpc.HandleHTTP()
+
+	l, e := net.Listen("tcp", client.RPC_ADDRESS)
+	if e != nil {
+		app.logger.Fatal("listen error:", e)
+	}
+
+	go http.Serve(l, nil)
 }

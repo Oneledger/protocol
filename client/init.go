@@ -25,4 +25,8 @@ const (
 
 	// Broadcast a tax and return immediately
 	BroadcastAsync = "async"
+
+
+
+	RPC_ADDRESS = ":6019"
 )

@@ -12,7 +12,7 @@
 Copyright 2017 - 2019 OneLedger
 */
 
-package app
+package data
 
 import (
 	"github.com/pkg/errors"
@@ -31,7 +31,6 @@ type Request struct {
 	Query  string
 	Data   []byte
 	Params map[string]interface{}
-	Ctx    context
 }
 
 // NewRequest creates a new request with given params.
@@ -176,7 +175,7 @@ type Response struct {
 
 func (r *Response) JSON(a interface{}) (err error) {
 
-	r.Data, err = jsonSerializer.Serialize(a)
+	r.Data, err = jsonSzlr.Serialize(a)
 	r.Success = true
 	return
 }
@@ -189,4 +188,14 @@ func (r *Response) Error(msg string) {
 func (r *Response) SetData(dat []byte) {
 	r.Data = dat
 	r.Success = true
+}
+
+func (r *Response) SetDataObj(obj interface{}) {
+	d, err := clSzlr.Serialize(obj)
+	if err != nil {
+		// TODO
+		// log err
+	}
+
+	r.SetData(d)
 }

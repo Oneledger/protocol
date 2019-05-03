@@ -18,6 +18,7 @@ package app
 import (
 	"github.com/Oneledger/protocol/node/action"
 	"github.com/tendermint/tendermint/abci/types"
+	"os"
 )
 
 func (app *App) Query(req RequestQuery) ResponseQuery {
@@ -50,7 +51,13 @@ func (app *App) Query(req RequestQuery) ResponseQuery {
 
 func NewABCIRouter() Router {
 	r := NewRouter("abci")
-	r.AddHandler("/query/balance", GetBalance)
+
+	fatalIfError(r.AddHandler("/account/list", GetAccount))
+	fatalIfError(r.AddHandler("/account/add", GetAccount))
+	fatalIfError(r.AddHandler("/account/delete", GetAccount))
+
+	fatalIfError(r.AddHandler("/query/balance", GetBalance))
+
 }
 
 /*
@@ -58,10 +65,38 @@ func NewABCIRouter() Router {
  */
 func GetBalance(req Request, resp *Response) {
 	req.Parse()
+
 	key := req.GetBytes("key")
 	if len(key) == 0 {
-		resp.Error("required parameter key")
+		resp.Error("parameter key missing")
+		return
 	}
 
+	accBalance := req.Ctx.balances.Get(key, true)
+	resp.SetDataObj(accBalance)
+}
 
+// GetAccount by the name
+func GetAccount(req Request, resp *Response) {
+	req.Parse()
+
+	name := req.GetString("name")
+	if name == "" {
+		resp.Error("parameter name missing")
+		return
+	}
+
+	// TODO get account by name
+
+}
+
+
+/*
+		utils
+ */
+func fatalIfError(err error) {
+	if err != nil {
+		// log.Fatal(err)
+		os.Exit(1)
+	}
 }

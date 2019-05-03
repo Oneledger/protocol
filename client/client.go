@@ -19,6 +19,7 @@ import (
 	"github.com/tendermint/tendermint/node"
 	rpcclient "github.com/tendermint/tendermint/rpc/client"
 	ctypes "github.com/tendermint/tendermint/rpc/core/types"
+	"net/rpc"
 )
 
 var (
@@ -30,18 +31,26 @@ type Context struct {
 	rpcClient     rpcclient.Client
 	broadcastMode string
 	proof         bool
+	oltClient  *rpc.Client
 }
 
 /*
 	Generators
 */
 func NewLocalContext(node *node.Node) (cliCtx Context) {
-	rpc := rpcclient.NewLocal(node)
+	tmClient := rpcclient.NewLocal(node)
+
+
+	oltClient, err := rpc.DialHTTP("tcp",  RPC_ADDRESS)
+	if err != nil {
+		logger.Fatal("dialing:", err)
+	}
 
 	cliCtx = Context{
-		rpcClient:     rpc,
+		rpcClient:     tmClient,
 		broadcastMode: BroadcastAsync,
 		proof:         false,
+		oltClient:     oltClient,
 	}
 	return
 }
@@ -88,17 +97,14 @@ func NewContext(rpcAddress string) (cliCtx Context, err error) {
 */
 
 // Send a very specific query to return parse response.value
-func (ctx Context) Query(path string, packet []byte) ([]byte, error) {
+func (ctx Context) Query(serviceMethod string, args interface{}, response interface{})  error {
 
-	// response *ctypes.ResultABCIQuery
-	response, err := ctx.abciQuery(path, packet)
+	err := ctx.oltClient.Call(serviceMethod, args, response)
 	if err != nil {
-
-		logger.Debug("error running abci query", "request", packet, "err", err)
-		return nil, errors.Wrap(err, "error running abci query on rpc client")
+		logger.Error("error while calling client server", "err", err)
 	}
 
-	return response.Response.GetValue(), nil
+	return err
 }
 
 func (ctx Context) Tx(hash []byte, prove bool) (res *ctypes.ResultTx) {
