@@ -75,7 +75,6 @@ type App struct {
 	abci       *ABCI
 	chainID    string // Signed with every transaction
 
-	r         Router
 	rpcServer *rpc.Server
 }
 
@@ -83,7 +82,6 @@ func NewApp(cfg config.Server) *App {
 	app := &App{
 		// sdk:
 		logger: log.NewLoggerWithPrefix(os.Stdout, "app:"),
-		r:      NewABCIRouter(),
 	}
 
 	app.Context.wallet = accounts.NewWallet(cfg)

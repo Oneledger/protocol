@@ -16,17 +16,18 @@ package app
 
 import (
 	"errors"
+	"github.com/Oneledger/protocol/data"
 	"github.com/Oneledger/protocol/log"
 	"os"
 )
 
-type handler func(Request, *Response)
+type handler func(data.Request, *data.Response)
 
 // Router interface supplies functionality to add a handler function and
 // Handle a request.
 type Router interface {
 	AddHandler(query string, h handler) error
-	Handle(req Request, resp *Response)
+	Handle(req data.Request, resp *data.Response)
 }
 
 // router is an implementation of a Router interface, currently all routes are stored in a map
@@ -56,7 +57,7 @@ func (r *router) AddHandler(path string, h handler) error {
 }
 
 // Handle
-func (r *router) Handle(req Request, resp *Response) {
+func (r *router) Handle(req data.Request, resp *data.Response) {
 
 	h, ok := r.routes[req.Query]
 	if !ok {
