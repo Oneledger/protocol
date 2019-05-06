@@ -16,9 +16,10 @@ package app
 
 import (
 	"errors"
+	"os"
+
 	"github.com/Oneledger/protocol/data"
 	"github.com/Oneledger/protocol/log"
-	"os"
 )
 
 type handler func(data.Request, *data.Response)

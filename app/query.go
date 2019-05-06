@@ -16,18 +16,20 @@ Copyright 2017 - 2019 OneLedger
 package app
 
 import (
+	"os"
+
+	"github.com/Oneledger/protocol/data"
 	"github.com/Oneledger/protocol/node/action"
 	"github.com/tendermint/tendermint/abci/types"
-	"os"
 )
 
 func (app *App) Query(req RequestQuery) ResponseQuery {
 	app.logger.Debug("ABCI: Query", "req", req, "path", req.Path, "data", req.Data)
 
-	routerReq := NewRequestFromData(req.Path, req.Data)
+	routerReq := data.NewRequestFromData(req.Path, req.Data)
 	routerReq.Ctx = app.Context
 
-	resp := &Response{}
+	resp := &data.Response{}
 	app.r.Handle(*routerReq, resp)
 
 	// TODO proper response error handling
@@ -61,9 +63,9 @@ func NewABCIRouter() Router {
 }
 
 /*
-		Handlers start here
- */
-func GetBalance(req Request, resp *Response) {
+	Handlers start here
+*/
+func GetBalance(req data.Request, resp *data.Response) {
 	req.Parse()
 
 	key := req.GetBytes("key")
@@ -77,7 +79,7 @@ func GetBalance(req Request, resp *Response) {
 }
 
 // GetAccount by the name
-func GetAccount(req Request, resp *Response) {
+func GetAccount(req data.Request, resp *data.Response) {
 	req.Parse()
 
 	name := req.GetString("name")
@@ -90,10 +92,9 @@ func GetAccount(req Request, resp *Response) {
 
 }
 
-
 /*
-		utils
- */
+	utils
+*/
 func fatalIfError(err error) {
 	if err != nil {
 		// log.Fatal(err)
