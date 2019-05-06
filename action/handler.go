@@ -27,5 +27,3 @@ type Response struct {
 	GasUsed   int64
 	Tags      []common.KVPair
 }
-
-

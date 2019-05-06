@@ -6,7 +6,6 @@ import (
 	"os"
 )
 
-
 type Type int
 
 const (

@@ -10,8 +10,8 @@ import (
 var _ Msg = Send{}
 
 type Send struct {
-	From Address
-	To   Address
+	From   Address
+	To     Address
 	Amount Coin
 }
 
@@ -35,7 +35,6 @@ func (s Send) Bytes() []byte {
 var _ Tx = sendTx{}
 
 type sendTx struct {
-
 }
 
 func (sendTx) Validate(msg Msg, fee Fee, signatures []Signature) (bool, error) {
@@ -46,7 +45,7 @@ func (sendTx) Validate(msg Msg, fee Fee, signatures []Signature) (bool, error) {
 	if !send.Amount.IsValid() {
 		return false, errors.Wrap(ErrInvalidAmount, send.Amount.String())
 	}
-	if send.From == nil || send.To == nil{
+	if send.From == nil || send.To == nil {
 		return false, ErrMissingData
 	}
 
@@ -113,7 +112,6 @@ func (sendTx) ProcessFee(ctx Context, fee Fee) (bool, Response) {
 	return true, Response{GasWanted: 0, GasUsed: 0}
 }
 
-
 func enoughBalance(b Balance, value Coin) bool {
 
 	if !value.IsValid() {
@@ -133,15 +131,15 @@ func (s Send) Tags() common.KVPairs {
 	tags := make([]common.KVPair, 0)
 
 	tag := common.KVPair{
-		Key: []byte("tx.type"),
+		Key:   []byte("tx.type"),
 		Value: []byte(SEND.String()),
 	}
 	tag2 := common.KVPair{
-		Key: []byte("tx.from"),
+		Key:   []byte("tx.from"),
 		Value: s.From.Bytes(),
 	}
 	tag3 := common.KVPair{
-		Key: []byte("tx.to"),
+		Key:   []byte("tx.to"),
 		Value: s.To.Bytes(),
 	}
 

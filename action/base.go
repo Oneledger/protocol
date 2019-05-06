@@ -11,7 +11,6 @@ import (
 	"github.com/Oneledger/protocol/storage"
 )
 
-
 type Context struct {
 	Accounts data.Store
 	Balances storage.ChainState
@@ -24,7 +23,6 @@ type Msg interface {
 	Type() Type
 
 	Bytes() []byte
-
 }
 
 type Fee struct {
@@ -45,12 +43,11 @@ func (s Signature) Verify(msg []byte) bool {
 	return handler.VerifyBytes(msg, s.Signed)
 }
 
-
 type BaseTx struct {
-	Data Msg    `json:"tx_data"`
-	Fee Fee     `json:"fee"`
-	Signatures  []Signature `json:"signatures"`
-	Memo        string  `json:"memo"`
+	Data       Msg         `json:"tx_data"`
+	Fee        Fee         `json:"fee"`
+	Signatures []Signature `json:"signatures"`
+	Memo       string      `json:"memo"`
 }
 
 func (t *BaseTx) Bytes() []byte {
@@ -78,7 +75,6 @@ func (t *BaseTx) Sign(ctx Context) error {
 	return nil
 }
 
-
 func (t *BaseTx) SignWithAddress(ctx Context, address Address) error {
 	addrs := t.Data.Signers()
 
@@ -88,7 +84,7 @@ func (t *BaseTx) SignWithAddress(ctx Context, address Address) error {
 
 	for i, addr := range addrs {
 
-		if !bytes.Equal(addr, address ) {
+		if !bytes.Equal(addr, address) {
 			continue
 		}
 
@@ -144,4 +140,3 @@ func verifyMinimumFee(fee Fee) bool {
 	//todo: implement minimum fee check
 	return true
 }
-
