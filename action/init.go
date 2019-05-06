@@ -15,3 +15,12 @@ func init() {
 	serialize.RegisterConcrete(new(Send), "action_send")
 
 }
+
+func (t Type) String() string {
+	switch t {
+	case SEND:
+		return "SEND"
+	default:
+		return "UNKNOWN"
+	}
+}

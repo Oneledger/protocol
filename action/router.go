@@ -12,7 +12,7 @@
 Copyright 2017 - 2019 OneLedger
 */
 
-package app
+package action
 
 import (
 	"errors"
@@ -20,19 +20,17 @@ import (
 	"os"
 )
 
-type handler func(Request, *Response)
-
 // Router interface supplies functionality to add a handler function and
 // Handle a request.
 type Router interface {
-	AddHandler(query string, h handler) error
-	Handle(req Request, resp *Response)
+	AddHandler(Type, TxHandler) error
+	Handler(Type) TxHandler
 }
 
 // router is an implementation of a Router interface, currently all routes are stored in a map
 type router struct {
 	name   string
-	routes map[string]handler
+	routes map[Type]TxHandler
 	logger *log.Logger
 }
 
@@ -41,31 +39,27 @@ var _ Router = &router{}
 
 // NewRouter creates a new router object with given name.
 func NewRouter(name string) Router {
-	return &router{name, map[string]handler{}, log.NewLoggerWithPrefix(os.Stdout, "app/router")}
+	return &router{name, map[Type]TxHandler{}, log.NewLoggerWithPrefix(os.Stdout, "action/router")}
 }
 
 // AddHandler adds a new path to the router alongwith its Handler function
-func (r *router) AddHandler(path string, h handler) error {
+func (r *router) AddHandler(t Type, h TxHandler) error {
 
-	if _, ok := r.routes[path]; ok {
+	if _, ok := r.routes[t]; ok {
 		return errors.New("duplicate path")
 	}
 
-	r.routes[path] = h
+	r.routes[t] = h
 	return nil
 }
 
 // Handle
-func (r *router) Handle(req Request, resp *Response) {
+func (r *router) Handler(t Type) TxHandler {
 
-	h, ok := r.routes[req.Query]
+	h, ok := r.routes[t]
 	if !ok {
-		resp.Data = []byte{}
-		resp.ErrorMsg = "path not found"
-		resp.Success = false
-
-		r.logger.Error("path not found", "path", req.Query)
+		r.logger.Error("handler not found", t)
 	}
 
-	h(req, resp)
+	return h
 }

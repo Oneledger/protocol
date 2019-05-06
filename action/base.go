@@ -21,12 +21,11 @@ type Context struct {
 
 type Msg interface {
 	// return the necessary signers for the message, should have consistent order across the network
-	GetSigners() []Address
+	Signers() []Address
 
 	Type() string
 
-	GetBytes() []byte
-
+	Bytes() []byte
 
 }
 
@@ -50,38 +49,33 @@ func (s Signature) Verify(msg []byte) bool {
 
 
 type BaseTx struct {
-	Data Msg
-	Fee Fee
-	Signatures  []Signature
-	Memo        string
+	Data Msg    `json:"tx_data"`
+	Fee Fee     `json:"fee"`
+	Signatures  []Signature `json:"signature"`
+	Memo        string  `json:"memo"`
 }
 
 
 func (t *BaseTx) Sign(ctx Context) error {
-	addrs := t.Data.GetSigners()
+	addrs := t.Data.Signers()
 
 	if t.Signatures == nil {
 		t.Signatures = make([]Signature, len(addrs))
 	}
 
 	for i, addr := range addrs {
-		value, err := ctx.Accounts.Get(addr.Bytes())
+		signed, err := sign(ctx, addr, t.Data.Bytes())
 		if err != nil {
-			return fmt.Errorf("failed to get account for sign: %s", err)
+			return err
 		}
-		account := (&accounts.Account{}).FromBytes(value)
-		signed, err := account.Sign(t.Data.GetBytes())
-		if err != nil {
-			return fmt.Errorf("failed to sign: %s", err)
-		}
-		t.Signatures[i] = Signature{account.PublicKey, signed}
+		t.Signatures[i] = signed
 	}
 	return nil
 }
 
 
 func (t *BaseTx) SignWithAddress(ctx Context, address Address) error {
-	addrs := t.Data.GetSigners()
+	addrs := t.Data.Signers()
 
 	if t.Signatures == nil {
 		t.Signatures = make([]Signature, len(addrs))
@@ -93,18 +87,26 @@ func (t *BaseTx) SignWithAddress(ctx Context, address Address) error {
 			continue
 		}
 
-		value, err := ctx.Accounts.Get(addr.Bytes())
+		signed, err := sign(ctx, addr, t.Data.Bytes())
 		if err != nil {
-			return fmt.Errorf("failed to get account for sign: %s", err)
+			return err
 		}
-
-		account := (&accounts.Account{}).FromBytes(value)
-		signed, err := account.Sign(t.Data.GetBytes())
-		if err != nil {
-			return fmt.Errorf("failed to sign: %s", err)
-		}
-		t.Signatures[i] = Signature{account.PublicKey, signed}
+		t.Signatures[i] = signed
 	}
 	return nil
+}
+
+func sign(ctx Context, address Address, msg []byte) (Signature, error) {
+	value, err := ctx.Accounts.Get(address.Bytes())
+	if err != nil {
+		return Signature{}, fmt.Errorf("failed to get account for sign: %s", err)
+	}
+
+	account := (&accounts.Account{}).FromBytes(value)
+	signed, err := account.Sign(msg)
+	if err != nil {
+		return Signature{}, fmt.Errorf("failed to sign: %s", err)
+	}
+	return Signature{account.PublicKey, signed}, nil
 }
 
