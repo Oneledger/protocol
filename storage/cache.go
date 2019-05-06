@@ -101,15 +101,14 @@ func (c *cache) GetRangeIterator(start, end []byte) *Iterator {
 type cacheSafe struct {
 	sync.RWMutex
 
-	name  string
-	store map[string][]byte
+	cache
 }
 
 // cacheSafe pointer satisfies data.Store interface
 var _ data.Store = &cacheSafe{}
 
 func NewCacheSafe(name string) *cacheSafe {
-	return &cacheSafe{sync.RWMutex{}, name, map[string][]byte{}}
+	return &cacheSafe{sync.RWMutex{}, cache{name, map[string][]byte{}}}
 }
 
 // Get retrieves data for a key.
@@ -117,12 +116,7 @@ func (c *cacheSafe) Get(key data.StoreKey) ([]byte, error) {
 	c.RLock()
 	defer c.RUnlock()
 
-	d, ok := c.store[string(key)]
-	if !ok {
-		return nil, ErrNotFound
-	}
-
-	return d, nil
+	return c.cache.Get(key)
 }
 
 // Exists checks if a key exists in the database.
@@ -130,9 +124,7 @@ func (c *cacheSafe) Exists(key data.StoreKey) bool {
 	c.RLock()
 	defer c.RUnlock()
 
-	_, ok := c.store[string(key)]
-
-	return ok
+	return c.Exists(key)
 }
 
 // Set is used to store or update some data with a key
@@ -140,9 +132,7 @@ func (c *cacheSafe) Set(key data.StoreKey, dat []byte) error {
 	c.Lock()
 	defer c.Unlock()
 
-	c.store[string(key)] = dat
-
-	return nil
+	return c.cache.Set(key, dat)
 }
 
 // Delete removes any data stored against a key
@@ -150,35 +140,22 @@ func (c *cacheSafe) Delete(key data.StoreKey) (bool, error) {
 	c.Lock()
 	defer c.Unlock()
 
-	delete(c.store, string(key))
-	return true, nil
+	return c.cache.Delete(key)
 }
 
 func (c *cacheSafe) GetIterator() *Iterator {
-	items := make([]iteratorItem, 0)
-
 	c.RLock()
 	defer c.RUnlock()
-	for k, v := range c.store {
-		items = append(items, iteratorItem{[]byte(k), v})
-	}
 
-	return newIterator(items)
+	return c.cache.GetIterator()
 }
 
 
 func (c *cacheSafe) GetRangeIterator(start, end []byte) *Iterator {
-	items := make([]iteratorItem, 0)
-
 	c.RLock()
 	defer c.RUnlock()
-	for k, v := range c.store {
-		key := []byte(k)
-		if isKeyInDomain(key, start, end) {
-			items = append(items, iteratorItem{key, v})
-		}
-	}
-	return newIterator(items)
+
+	return c.cache.GetRangeIterator(start, end)
 }
 
 /*
