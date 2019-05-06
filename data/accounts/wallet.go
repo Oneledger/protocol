@@ -10,6 +10,8 @@ import (
 	"github.com/Oneledger/protocol/storage"
 )
 
+var _ Wallet = &WalletStore{}
+
 type Wallet interface {
 	//returns the account that the wallet holds
 	Accounts() []Account
