@@ -17,20 +17,21 @@ package action
 import (
 	"errors"
 	"github.com/Oneledger/protocol/log"
+	"github.com/Oneledger/protocol/serialize"
 	"os"
 )
 
 // Router interface supplies functionality to add a handler function and
 // Handle a request.
 type Router interface {
-	AddHandler(Type, TxHandler) error
-	Handler(Type) TxHandler
+	AddHandler(Type, Tx) error
+	Handler([]byte) Tx
 }
 
 // router is an implementation of a Router interface, currently all routes are stored in a map
 type router struct {
 	name   string
-	routes map[Type]TxHandler
+	routes map[Type]Tx
 	logger *log.Logger
 }
 
@@ -39,11 +40,11 @@ var _ Router = &router{}
 
 // NewRouter creates a new router object with given name.
 func NewRouter(name string) Router {
-	return &router{name, map[Type]TxHandler{}, log.NewLoggerWithPrefix(os.Stdout, "action/router")}
+	return &router{name, map[Type]Tx{}, log.NewLoggerWithPrefix(os.Stdout, "action/router")}
 }
 
 // AddHandler adds a new path to the router alongwith its Handler function
-func (r *router) AddHandler(t Type, h TxHandler) error {
+func (r *router) AddHandler(t Type, h Tx) error {
 
 	if _, ok := r.routes[t]; ok {
 		return errors.New("duplicate path")
@@ -54,11 +55,19 @@ func (r *router) AddHandler(t Type, h TxHandler) error {
 }
 
 // Handle
-func (r *router) Handler(t Type) TxHandler {
+func (r *router) Handler(msg []byte) Tx {
+	var tx BaseTx
 
-	h, ok := r.routes[t]
+	err := serialize.GetSerializer(serialize.PERSISTENT).Deserialize(msg, tx)
+	if err != nil {
+		r.logger.Errorf("failed to deserialize msg: %s, error: %s ", msg, err)
+	}
+
+	data := tx.Data
+
+	h, ok := r.routes[data.Type()]
 	if !ok {
-		r.logger.Error("handler not found", t)
+		r.logger.Error("handler not found", tx)
 	}
 
 	return h

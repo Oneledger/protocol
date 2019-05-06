@@ -1,6 +1,7 @@
 package keys
 
 import (
+	"bytes"
 	"encoding/hex"
 	"fmt"
 )
@@ -14,4 +15,8 @@ func (a Address) String() string {
 
 func (a Address) Bytes() []byte {
 	return a
+}
+
+func (a Address) Equal(b Address) bool {
+	return bytes.Equal(a, b)
 }
