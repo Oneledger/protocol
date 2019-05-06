@@ -58,7 +58,7 @@ func (r *router) AddHandler(t Type, h Tx) error {
 func (r *router) Handler(msg []byte) Tx {
 	var tx BaseTx
 
-	err := serialize.GetSerializer(serialize.PERSISTENT).Deserialize(msg, tx)
+	err := serialize.GetSerializer(serialize.NETWORK).Deserialize(msg, tx)
 	if err != nil {
 		r.logger.Errorf("failed to deserialize msg: %s, error: %s ", msg, err)
 	}

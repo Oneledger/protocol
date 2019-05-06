@@ -25,7 +25,7 @@ func (s Send) Type() Type {
 
 func (s Send) Bytes() []byte {
 
-	result, err := serialize.GetSerializer(serialize.PERSISTENT).Serialize(s)
+	result, err := serialize.GetSerializer(serialize.NETWORK).Serialize(s)
 	if err != nil {
 		logger.Error("send bytes convert failed: ", err)
 	}

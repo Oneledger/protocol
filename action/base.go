@@ -54,7 +54,7 @@ type BaseTx struct {
 }
 
 func (t *BaseTx) Bytes() []byte {
-	value, err := serialize.GetSerializer(serialize.PERSISTENT).Serialize(t)
+	value, err := serialize.GetSerializer(serialize.NETWORK).Serialize(t)
 	if err != nil {
 		logger.Error("failed to serialize tx: ", t)
 	}
