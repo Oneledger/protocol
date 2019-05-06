@@ -36,7 +36,6 @@ func GetCurrencies() map[string]Currency {
 type Currency struct {
 	Name  string     `json:"name"`
 	Chain chain.Type `json:"chain"`
-	Id    int        `json:"id"`
 }
 
 // Look up the currency

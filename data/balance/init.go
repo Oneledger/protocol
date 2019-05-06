@@ -16,11 +16,12 @@
 package balance
 
 import (
+	"math/big"
+	"os"
+
 	"github.com/Oneledger/protocol/data/chain"
 	"github.com/Oneledger/protocol/log"
 	"github.com/Oneledger/protocol/serialize"
-	"math/big"
-	"os"
 )
 
 var pSzlr serialize.Serializer
@@ -38,9 +39,7 @@ func init() {
 	pSzlr = serialize.GetSerializer(serialize.PERSISTENT)
 }
 
-func RegisterCurrency(name string, ct chain.Type, id int,
-	units *big.Float, decimal int, format uint8) {
-
-	currencies[name] = Currency{name, ct, id}
+func RegisterCurrency(name string, ct chain.Type, units *big.Float, decimal int, format uint8) {
+	currencies[name] = Currency{name, ct}
 	currenciesExtra[name] = Extra{units, decimal, format}
 }
