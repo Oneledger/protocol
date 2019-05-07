@@ -6,6 +6,7 @@ import (
 	"net/rpc"
 	"os"
 
+
 	"github.com/pkg/errors"
 	"github.com/tendermint/tendermint/libs/common"
 
@@ -26,13 +27,15 @@ var _ abciController = &App{}
 // Used to derive other package-level Contexts
 type context struct {
 	chainID string
+	cfg config.Server
+	rootDir string
 
 	balances         *storage.ChainState
 	identities       data.Store
 	smartContract    data.Store
 	executionContext data.Store
 	admin            data.Store
-	accounts         data.Store
+	accounts         *accounts.WalletStore
 	sequence         data.Store
 	status           data.Store
 	contract         data.Store
@@ -61,7 +64,7 @@ func (ctx *context) Action() *action.Context {
 */
 func (ctx *context) Action()  {}
 func (ctx *context) ID()      {}
-func (ctx *context) Account() {}
+func (ctx *context) Accounts() {}
 
 type App struct {
 	Context context
@@ -70,7 +73,6 @@ type App struct {
 	sdk    common.Service // Probably needs to be changed
 
 	header Header // Tendermint last header info
-	// ? Should this be in Context?
 	validators interface{} // Set of validators currently active
 	abci       *ABCI
 	chainID    string // Signed with every transaction
@@ -110,7 +112,7 @@ func (app *App) ExecutionContext() data.Store {
 func (app *App) Admin() data.Store {
 	return app.Context.admin
 }
-func (app *App) Accounts() data.Store {
+func (app *App) Accounts() *accounts.WalletStore {
 	return app.Context.accounts
 }
 func (app *App) WalletStore() accounts.WalletStore {

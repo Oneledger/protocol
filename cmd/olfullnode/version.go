@@ -1,0 +1,26 @@
+// /*
+// 	Copyright 2017-2018 OneLedger
+//
+// 	Cli to interact with a with the chain.
+// */
+package main
+//
+// import (
+// 	"github.com/Oneledger/protocol/node/version"
+// 	"github.com/spf13/cobra"
+// )
+//
+// var versionCmd = &cobra.Command{
+// 	Use:   "version",
+// 	Short: "List out the version numbers",
+// 	Run:   Version,
+// }
+//
+// func init() {
+// 	RootCmd.AddCommand(versionCmd)
+// }
+//
+// func Version(cmd *cobra.Command, args []string) {
+// 	logger.Info("Protocol version is " + version.Protocol.String())
+// 	logger.Info("Olfullnode version is " + version.Fullnode.String())
+// }
