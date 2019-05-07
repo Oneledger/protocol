@@ -32,7 +32,7 @@ import (
 	"github.com/tendermint/tendermint/libs/db"
 )
 
-var k Storage = KeyValue{}
+var k SessionedStorage = KeyValue{}
 var ErrNilData = errors.New("data is nil")
 
 /*
@@ -94,8 +94,8 @@ func newKeyValue(name, dbDir, configDB string, newType StorageType) *KeyValue {
 	return nil
 }
 
-// Begin a new writable session
-func (store KeyValue) Begin() StorageSession {
+// BeginSession a new writable session
+func (store KeyValue) BeginSession() Session {
 	return NewKeyValueSession(&store)
 }
 
@@ -201,7 +201,7 @@ type KeyValueSession struct {
 }
 
 // Create a new session
-func NewKeyValueSession(store *KeyValue) StorageSession {
+func NewKeyValueSession(store *KeyValue) Session {
 	return &KeyValueSession{store: store}
 }
 
