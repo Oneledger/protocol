@@ -15,25 +15,25 @@
 package storage
 
 import (
-	"github.com/Oneledger/protocol/data"
+	"encoding/hex"
 )
 
 var _ Storage = &KeyValue{}
 var _ StorageSession = &KeyValueSession{}
-var _ data.Store = &cacheSafe{}
-var _ data.Store = &cache{}
+var _ Store = &cacheSafe{}
+var _ Store = &cache{}
 
 // Storage wraps objects with option to start a session(db transaction)
 type Storage interface {
-	Get(data.StoreKey) ([]byte, error)
-	Exists(data.StoreKey) (bool, error)
+	Get(StoreKey) ([]byte, error)
+	Exists(StoreKey) (bool, error)
 
 	Begin() StorageSession
 	Close()
 }
 
 // NewStorage initializes a non sessioned storage
-func NewStorage(flavor, name string) data.Store {
+func NewStorage(flavor, name string) Store {
 	switch flavor {
 	case CACHE:
 		return NewCache(name)
@@ -51,9 +51,9 @@ func NewStorage(flavor, name string) data.Store {
 
 // StorageSession defines a session-ed storage object of your choice
 type StorageSession interface {
-	data.Store
+	Store
 	Commit() bool
-	FindAll() []data.StoreKey
+	FindAll() []StoreKey
 }
 
 // NewStorageSession creates a new SessionStorage
@@ -71,4 +71,26 @@ func NewSessionStorageDB(flavor, name string, ctx Context) Storage {
 type Context struct {
 	DbDir    string
 	ConfigDB string
+}
+
+
+/*
+		Base interfaces
+ */
+
+type StoreKey []byte
+
+func (sk StoreKey) Bytes() []byte {
+	return sk
+}
+
+func (sk StoreKey) String() string {
+	return hex.EncodeToString(sk)
+}
+
+type Store interface {
+	Get(StoreKey) ([]byte, error)
+	Set(StoreKey, []byte) error
+	Exists(StoreKey) bool
+	Delete(StoreKey) (bool, error)
 }

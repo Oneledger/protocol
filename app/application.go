@@ -16,7 +16,6 @@ import (
 	"github.com/Oneledger/protocol/client"
 	"github.com/Oneledger/protocol/config"
 	"github.com/Oneledger/protocol/consensus"
-	"github.com/Oneledger/protocol/data"
 	"github.com/Oneledger/protocol/data/accounts"
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/log"
@@ -108,7 +107,7 @@ func (app *App) setupState(stateBytes []byte) error {
 			return errors.Wrapf(err, "failed to decode address %s", si.Address)
 		}
 
-		key := data.StoreKey(addrBytes)
+		key := storage.StoreKey(addrBytes)
 		err = balanceCtx.Store().Set(key, &si.Balance)
 		if err != nil {
 			return errors.Wrap(err, "failed to set balance")
@@ -138,7 +137,6 @@ type context struct {
 	accounts *accounts.WalletStore
 
 	currencies      map[string]balance.Currency
-	currenciesExtra map[string]balance.Extra
 
 	logWriter io.Writer
 }

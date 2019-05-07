@@ -2,7 +2,6 @@ package balance
 
 import (
 	"errors"
-	"math/big"
 
 	"github.com/Oneledger/protocol/log"
 	"github.com/Oneledger/protocol/storage"
@@ -15,7 +14,6 @@ var (
 type Context struct {
 	balances        *storage.ChainState
 	currencies      map[string]Currency
-	currenciesExtra map[string]Extra
 
 	logger *log.Logger
 }
@@ -28,12 +26,11 @@ func (ctx *Context) Currencies() map[string]Currency {
 	return ctx.currencies
 }
 
-func NewContext(logger *log.Logger, balances *storage.ChainState, currencies map[string]Currency, currenciesExtra map[string]Extra) *Context {
+func NewContext(logger *log.Logger, balances *storage.ChainState, currencies map[string]Currency) *Context {
 	return &Context{
 		logger:          logger,
 		balances:        balances,
 		currencies:      currencies,
-		currenciesExtra: currenciesExtra,
 	}
 }
 
@@ -44,11 +41,6 @@ func (ctx *Context) RegisterCurrency(currency Currency) error {
 		return ErrDuplicateCurrency
 	}
 	ctx.currencies[currency.Name] = currency
-	// TODO: redesign how balance.Extra works
-	ctx.currenciesExtra[currency.Name] = Extra{
-		Units:   big.NewFloat(1000000000000000000),
-		Decimal: 6,
-		Format:  'f',
-	}
 	return nil
 }
+

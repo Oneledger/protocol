@@ -24,9 +24,6 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/Oneledger/protocol/data"
-	b "github.com/Oneledger/protocol/data/balance"
-	"github.com/pkg/errors"
 	"github.com/tendermint/iavl"
 	"github.com/tendermint/tendermint/libs/db"
 )
@@ -68,43 +65,30 @@ func NewChainState(name, dbDir, configDB string, newType StorageType) *ChainStat
 }
 
 // Do this only for the Delivery side
-func (state *ChainState) Set(key data.StoreKey, bal *b.Balance) error {
+func (state *ChainState) Set(key StoreKey, val []byte) error {
 	state.Lock()
 	defer state.Unlock()
 
-	buffer, err := pSzlr.Serialize(bal)
-	if err != nil {
-		return errors.Wrap(err, "failed to serialize balance")
-	}
-
-	setOk := state.Delivered.Set(key, buffer)
+	setOk := state.Delivered.Set(key, val)
 	if !setOk {
-		return fmt.Errorf("%s %#v \n", "failed to set bal", bal)
+		return fmt.Errorf("%s %#v \n", "failed to set bal", val)
 	}
 }
 
 // Expensive O(n) search through everything...
-func (state *ChainState) FindAll() map[string]*b.Balance {
-	mapping := make(map[string]*b.Balance, 1)
+func (state *ChainState) FindAll() map[string][]byte {
+	mapping := make(map[string][]byte, 1)
 
 	for i := int64(0); i < state.Delivered.Size(); i++ {
 		key, value := state.Delivered.GetByIndex(i)
-
-		var balance = &b.Balance{}
-		err := pSzlr.Deserialize(value, balance)
-		if err != nil {
-			log.Fatal("Failed to Deserialize: FindAll", "i", i, "key", string(key))
-			continue
-		}
-
-		mapping[string(key)] = balance
+		mapping[string(key)] = value
 	}
 
 	return mapping
 }
 
 // TODO: Should be against the commit tree, not the delivered one!!!
-func (state *ChainState) Get(key data.StoreKey, lastCommit bool) *b.Balance {
+func (state *ChainState) Get(key StoreKey, lastCommit bool) []byte {
 
 	// TODO: Should not be this hardcoded, but still needs protection
 	if len(key) != CHAINKEY_MAXLEN {
@@ -121,26 +105,11 @@ func (state *ChainState) Get(key data.StoreKey, lastCommit bool) *b.Balance {
 		_, value = state.Delivered.ImmutableTree.Get(key)
 	}
 
-	if value == nil {
-		// By definition, if a balance doesn't exist, it is zero
-		//empty := NewBalance(0, "OLT")
-		//return &empty
-		return nil
-	}
-
-	var balance = &b.Balance{}
-	err := pSzlr.Deserialize(value, balance)
-	if err != nil {
-		log.Fatal("Failed to deserialize Balance in chainstate: ", err)
-		return nil
-	}
-
-	return balance
-
+	return value
 }
 
 // TODO: Should be against the commit tree, not the delivered one!!!
-func (state *ChainState) Exists(key data.StoreKey) bool {
+func (state *ChainState) Exists(key StoreKey) bool {
 
 	version := state.Delivered.Version()
 	_, value := state.Delivered.GetVersioned([]byte(key), version)

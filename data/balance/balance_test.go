@@ -26,6 +26,7 @@ func init() {
 	pSzlr = serialize.GetSerializer(serialize.PERSISTENT)
 }
 
+/*
 func xTestNewBalance(t *testing.T) {
 
 	a := NewBalanceFromInt(100, "VT")
@@ -88,3 +89,4 @@ func TestBalance_IsEnoughBalance(t *testing.T) {
 	assert.Equal(t, false, result3, a.String(), b.String())
 	//fmt.Println("third", a, b)
 }
+ */

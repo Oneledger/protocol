@@ -28,7 +28,6 @@ import (
 	"path/filepath"
 	"sync"
 
-	"github.com/Oneledger/protocol/data"
 	"github.com/tendermint/iavl"
 	"github.com/tendermint/tendermint/libs/db"
 )
@@ -143,18 +142,18 @@ func (store KeyValue) Reopen() {
 }
 
 // FindAll of the keys in the database
-func (store KeyValue) FindAll() []data.StoreKey {
+func (store KeyValue) FindAll() []StoreKey {
 	return store.list()
 }
 
 // Test to see if a key exists
-func (store KeyValue) Exists(key data.StoreKey) (bool, error) {
+func (store KeyValue) Exists(key StoreKey) (bool, error) {
 	return store.tree.Has(key), nil
 
 }
 
 // Get a key from the database
-func (store KeyValue) Get(key data.StoreKey) ([]byte, error) {
+func (store KeyValue) Get(key StoreKey) ([]byte, error) {
 
 	version := store.tree.Version()
 	index, value := store.tree.GetVersioned(key, version)
@@ -166,16 +165,16 @@ func (store KeyValue) Get(key data.StoreKey) ([]byte, error) {
 }
 
 // List all of the keys
-func (store KeyValue) list() (keys []data.StoreKey) {
+func (store KeyValue) list() (keys []StoreKey) {
 	switch store.Type {
 
 	case PERSISTENT:
 		//store.tree.
 		size := store.tree.Size()
-		results := make([]data.StoreKey, size, size)
+		results := make([]StoreKey, size, size)
 		for i := int64(0); i < store.tree.Size(); i++ {
 			key, _ := store.tree.GetByIndex(i)
-			results[i] = data.StoreKey(key)
+			results[i] = StoreKey(key)
 		}
 		return results
 
@@ -207,12 +206,12 @@ func NewKeyValueSession(store *KeyValue) StorageSession {
 }
 
 // Find all of the keys in the datastore
-func (session KeyValueSession) FindAll() []data.StoreKey {
+func (session KeyValueSession) FindAll() []StoreKey {
 	return session.store.list()
 }
 
 // Store inserts or updates a value under a key
-func (session KeyValueSession) Set(key data.StoreKey, dat []byte) error {
+func (session KeyValueSession) Set(key StoreKey, dat []byte) error {
 	session.store.Lock()
 	defer session.store.Unlock()
 
@@ -224,7 +223,7 @@ func (session KeyValueSession) Set(key data.StoreKey, dat []byte) error {
 }
 
 // Test to see if a key exists
-func (session KeyValueSession) Exists(key data.StoreKey) (bool) {
+func (session KeyValueSession) Exists(key StoreKey) (bool) {
 	version := session.store.tree.Version()
 	index, _ := session.store.tree.GetVersioned(key, version)
 	if index == -1 {
@@ -234,7 +233,7 @@ func (session KeyValueSession) Exists(key data.StoreKey) (bool) {
 }
 
 // Load return the stored value
-func (session KeyValueSession) Get(key data.StoreKey) ([]byte, error) {
+func (session KeyValueSession) Get(key StoreKey) ([]byte, error) {
 	version := session.store.tree.Version()
 	index, value := session.store.tree.GetVersioned(key, version)
 	if index == -1 {
@@ -244,7 +243,7 @@ func (session KeyValueSession) Get(key data.StoreKey) ([]byte, error) {
 }
 
 // Delete a key from the datastore
-func (session KeyValueSession) Delete(key data.StoreKey) (bool, error) {
+func (session KeyValueSession) Delete(key StoreKey) (bool, error) {
 	session.store.Lock()
 	defer session.store.Unlock()
 
