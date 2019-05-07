@@ -71,10 +71,10 @@ func (c *cache) Delete(key data.StoreKey) (bool, error) {
 }
 
 func (c *cache) GetIterator() *Iterator {
-	items := make([]iteratorItem, 0)
+	items := make([]IterItem, 0)
 
 	for k, v := range c.store {
-		items = append(items, iteratorItem{[]byte(k), v})
+		items = append(items, IterItem{[]byte(k), v})
 	}
 
 	return newIterator(items)
@@ -82,12 +82,12 @@ func (c *cache) GetIterator() *Iterator {
 
 
 func (c *cache) GetRangeIterator(start, end []byte) *Iterator {
-	items := make([]iteratorItem, 0)
+	items := make([]IterItem, 0)
 
 	for k, v := range c.store {
 		key := []byte(k)
 		if isKeyInDomain(key, start, end) {
-			items = append(items, iteratorItem{key, v})
+			items = append(items, IterItem{key, v})
 		}
 	}
 	return newIterator(items)

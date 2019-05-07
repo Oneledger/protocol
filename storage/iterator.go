@@ -14,16 +14,16 @@ Copyright 2017 - 2019 OneLedger
 
 package storage
 
-type iteratorItem struct {
+type IterItem struct {
 	key []byte
 	value []byte
 }
 
 type Iterator struct {
-	items []iteratorItem
+	items []IterItem
 }
 
-func newIterator(items []iteratorItem) *Iterator {
+func newIterator(items []IterItem) *Iterator {
 	return &Iterator{items: items}
 }
 

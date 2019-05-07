@@ -164,6 +164,20 @@ func (store KeyValue) Get(key StoreKey) ([]byte, error) {
 
 }
 
+
+func (store KeyValue) ReadAll() []IterItem {
+	a := make([]IterItem, 0, 100)
+
+	for stopped := true; stopped; {
+		stopped = store.tree.Iterate(func(key []byte, value []byte) bool {
+			a = append(a, IterItem{key, value})
+			return true
+		})
+	}
+
+	return a
+}
+
 // List all of the keys
 func (store KeyValue) list() (keys []StoreKey) {
 	switch store.Type {

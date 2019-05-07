@@ -30,6 +30,7 @@ type SessionedStorage interface {
 
 	BeginSession() Session
 	Close()
+	Iterate(fn func(key []byte, value []byte) bool) (stopped bool)
 }
 
 // Session defines a session-ed storage object of your choice
