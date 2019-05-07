@@ -1,5 +1,3 @@
-// +build !gcc
-
 /*
    ____             _              _                      _____           _                  _
   / __ \           | |            | |                    |  __ \         | |                | |
@@ -14,22 +12,16 @@
 Copyright 2017 - 2019 OneLedger
 */
 
-// This file is for grabbing a leveldb instance without cleveldb support
-package storage
+package data
 
-import (
-	"errors"
+import "github.com/Oneledger/protocol/serialize"
 
-	"github.com/tendermint/tendermint/libs/db"
-)
+var clSzlr serialize.Serializer
+var jsonSzlr serialize.Serializer
+
 
 func init() {
-	// log.Info("Compiled without GCC, no cleveldb support...")
-}
 
-func getDatabase(name, dbDir, configDB string) (db.DB, error) {
-	if configDB == "cleveldb" {
-		return nil, errors.New("Binary compiled without cleveldb support. Failed because \"cleveldb\" was specified in config")
-	}
-	return db.NewGoLevelDB("OneLedger-"+name, dbDir)
+	clSzlr = serialize.GetSerializer(serialize.CLIENT)
+	jsonSzlr = serialize.GetSerializer(serialize.JSON)
 }

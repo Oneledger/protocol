@@ -37,7 +37,7 @@ func NewCoinFromUnits(amount int64, currency string) Coin {
 		Amount:   value,
 	}
 	if !coin.IsValid() {
-		logger.Warning("Create Invalid Coin", coin)
+		logger.Warn("Create Invalid Coin", coin)
 	}
 
 	return coin
@@ -53,7 +53,7 @@ func NewCoinFromInt(amount int64, currency string) Coin {
 		Amount:   value,
 	}
 	if !coin.IsValid() {
-		logger.Warning("Create Invalid Coin", coin)
+		logger.Warn("Create Invalid Coin", coin)
 	}
 
 	return coin
@@ -68,7 +68,7 @@ func NewCoinFromFloat(amount float64, currency string) Coin {
 		Amount:   value,
 	}
 	if !coin.IsValid() {
-		logger.Warning("Create Invalid Coin", amount, coin)
+		logger.Warn("Create Invalid Coin", amount, coin)
 	}
 
 	return coin
@@ -83,7 +83,7 @@ func NewCoinFromString(amount string, currency string) Coin {
 		Amount:   value,
 	}
 	if !coin.IsValid() {
-		logger.Warning("Create Invalid Coin", coin)
+		logger.Warn("Create Invalid Coin", coin)
 	}
 
 	return coin

@@ -1,14 +1,20 @@
 package app
 
 import (
+	"net"
+	"net/http"
+	"net/rpc"
 	"os"
+
 
 	"github.com/pkg/errors"
 	"github.com/tendermint/tendermint/libs/common"
 
+	"github.com/Oneledger/protocol/client"
 	"github.com/Oneledger/protocol/config"
 	"github.com/Oneledger/protocol/consensus"
 	"github.com/Oneledger/protocol/data"
+	"github.com/Oneledger/protocol/data/accounts"
 	"github.com/Oneledger/protocol/log"
 	"github.com/Oneledger/protocol/serialize"
 	"github.com/Oneledger/protocol/storage"
@@ -21,17 +27,20 @@ var _ abciController = &App{}
 // Used to derive other package-level Contexts
 type context struct {
 	chainID string
+	cfg config.Server
+	rootDir string
 
 	balances         *storage.ChainState
 	identities       data.Store
 	smartContract    data.Store
 	executionContext data.Store
 	admin            data.Store
-	accounts         data.Store
+	accounts         *accounts.WalletStore
 	sequence         data.Store
 	status           data.Store
 	contract         data.Store
 	event            data.Store
+	wallet           accounts.WalletStore
 }
 
 // TODO: Fill in these context creators, these should return package-specific Contexts
@@ -55,7 +64,7 @@ func (ctx *context) Action() *action.Context {
 */
 func (ctx *context) Action()  {}
 func (ctx *context) ID()      {}
-func (ctx *context) Account() {}
+func (ctx *context) Accounts() {}
 
 type App struct {
 	Context context
@@ -64,17 +73,23 @@ type App struct {
 	sdk    common.Service // Probably needs to be changed
 
 	header Header // Tendermint last header info
-	// ? Should this be in Context?
 	validators interface{} // Set of validators currently active
 	abci       *ABCI
 	chainID    string // Signed with every transaction
+
+	rpcServer *rpc.Server
 }
 
 func NewApp(cfg config.Server) *App {
-	return &App{
+	app := &App{
 		// sdk:
 		logger: log.NewLoggerWithPrefix(os.Stdout, "app:"),
 	}
+
+	app.Context.wallet = accounts.NewWallet(cfg)
+	// TODO add other data stores
+
+	return app
 }
 
 func (app *App) Header() Header {
@@ -97,8 +112,11 @@ func (app *App) ExecutionContext() data.Store {
 func (app *App) Admin() data.Store {
 	return app.Context.admin
 }
-func (app *App) Accounts() data.Store {
+func (app *App) Accounts() *accounts.WalletStore {
 	return app.Context.accounts
+}
+func (app *App) WalletStore() accounts.WalletStore {
+	return app.Context.wallet
 }
 func (app *App) Sequence() data.Store {
 	return app.Context.sequence
@@ -227,4 +245,22 @@ func (app *App) setupState(stateBytes []byte) error {
 	// createAccount(app, &consensus.AppState{global.Current.PaymentAccount, states}, publicKey, privateKey, nil)
 	return nil
 
+}
+
+func (app *App) startRPCServer() {
+
+	handlers := client.NewClientHandler(app.Balances(), app.Accounts(), app.WalletStore())
+	err := rpc.Register(handlers)
+	if err != nil {
+		app.logger.Fatal("error registering rpc handlers", "err", err)
+	}
+
+	rpc.HandleHTTP()
+
+	l, e := net.Listen("tcp", client.RPC_ADDRESS)
+	if e != nil {
+		app.logger.Fatal("listen error:", e)
+	}
+
+	go http.Serve(l, nil)
 }
