@@ -1,5 +1,4 @@
 /*
-
    ____             _              _                      _____           _                  _
   / __ \           | |            | |                    |  __ \         | |                | |
  | |  | |_ __   ___| |     ___  __| | __ _  ___ _ __     | |__) | __ ___ | |_ ___   ___ ___ | |
@@ -13,4 +12,6 @@
 Copyright 2017 - 2019 OneLedger
 */
 
-package app
+package action
+
+//todo: action package document, handle transactions

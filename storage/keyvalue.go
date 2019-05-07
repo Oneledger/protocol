@@ -224,13 +224,13 @@ func (session KeyValueSession) Set(key data.StoreKey, dat []byte) error {
 }
 
 // Test to see if a key exists
-func (session KeyValueSession) Exists(key data.StoreKey) (bool, error) {
+func (session KeyValueSession) Exists(key data.StoreKey) (bool) {
 	version := session.store.tree.Version()
 	index, _ := session.store.tree.GetVersioned(key, version)
 	if index == -1 {
-		return false, nil
+		return false
 	}
-	return true, nil
+	return true
 }
 
 // Load return the stored value

@@ -1,5 +1,3 @@
-// +build !gcc
-
 /*
    ____             _              _                      _____           _                  _
   / __ \           | |            | |                    |  __ \         | |                | |
@@ -14,22 +12,35 @@
 Copyright 2017 - 2019 OneLedger
 */
 
-// This file is for grabbing a leveldb instance without cleveldb support
 package storage
 
-import (
-	"errors"
-
-	"github.com/tendermint/tendermint/libs/db"
-)
-
-func init() {
-	// log.Info("Compiled without GCC, no cleveldb support...")
+type iteratorItem struct {
+	key []byte
+	value []byte
 }
 
-func getDatabase(name, dbDir, configDB string) (db.DB, error) {
-	if configDB == "cleveldb" {
-		return nil, errors.New("Binary compiled without cleveldb support. Failed because \"cleveldb\" was specified in config")
+type Iterator struct {
+	items []iteratorItem
+}
+
+func newIterator(items []iteratorItem) *Iterator {
+	return &Iterator{items: items}
+}
+
+
+func (i *Iterator) Key() []byte {
+	return i.items[0].key
+}
+
+func (i *Iterator) Value() []byte {
+	return i.items[0].value
+}
+
+func (i *Iterator) Next() bool {
+
+	if len(i.items) <= 1 {
+		return false
 	}
-	return db.NewGoLevelDB("OneLedger-"+name, dbDir)
+	i.items = i.items[1:]
+	return true
 }

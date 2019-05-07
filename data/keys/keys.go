@@ -33,6 +33,16 @@ type PublicKey struct {
 	data    []byte
 }
 
+func (pubkey PublicKey) Equal(pkey PublicKey) bool {
+	if pubkey.keytype != pkey.keytype {
+		return false
+	}
+	if !bytes.Equal(pubkey.data, pkey.data) {
+		return false
+	}
+	return true
+}
+
 func GetPrivateKeyFromBytes(k []byte, algorithm Algorithm) (PrivateKey, error) {
 	key := PrivateKey{algorithm, k}
 

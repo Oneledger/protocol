@@ -190,6 +190,10 @@ func (coin Coin) IsValid() bool {
 	if coin.Currency.Name == "" {
 		return false
 	}
+	// there should not exist minus coin
+	if coin.Amount.Cmp(big.NewInt(0)) < 0 {
+		return false
+	}
 
 	if _, ok := currencies[coin.Currency.Name]; ok {
 		return true

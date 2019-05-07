@@ -12,27 +12,26 @@
 Copyright 2017 - 2019 OneLedger
 */
 
-package app
+package action
 
 import (
 	"errors"
 	"github.com/Oneledger/protocol/log"
+	"github.com/Oneledger/protocol/serialize"
 	"os"
 )
-
-type handler func(Request, *Response)
 
 // Router interface supplies functionality to add a handler function and
 // Handle a request.
 type Router interface {
-	AddHandler(query string, h handler) error
-	Handle(req Request, resp *Response)
+	AddHandler(Type, Tx) error
+	Handler([]byte) Tx
 }
 
 // router is an implementation of a Router interface, currently all routes are stored in a map
 type router struct {
 	name   string
-	routes map[string]handler
+	routes map[Type]Tx
 	logger *log.Logger
 }
 
@@ -41,31 +40,35 @@ var _ Router = &router{}
 
 // NewRouter creates a new router object with given name.
 func NewRouter(name string) Router {
-	return &router{name, map[string]handler{}, log.NewLoggerWithPrefix(os.Stdout, "app/router")}
+	return &router{name, map[Type]Tx{}, log.NewLoggerWithPrefix(os.Stdout, "action/router")}
 }
 
 // AddHandler adds a new path to the router alongwith its Handler function
-func (r *router) AddHandler(path string, h handler) error {
+func (r *router) AddHandler(t Type, h Tx) error {
 
-	if _, ok := r.routes[path]; ok {
+	if _, ok := r.routes[t]; ok {
 		return errors.New("duplicate path")
 	}
 
-	r.routes[path] = h
+	r.routes[t] = h
 	return nil
 }
 
 // Handle
-func (r *router) Handle(req Request, resp *Response) {
+func (r *router) Handler(msg []byte) Tx {
+	var tx BaseTx
 
-	h, ok := r.routes[req.Query]
-	if !ok {
-		resp.Data = []byte{}
-		resp.ErrorMsg = "path not found"
-		resp.Success = false
-
-		r.logger.Error("path not found", "path", req.Query)
+	err := serialize.GetSerializer(serialize.NETWORK).Deserialize(msg, tx)
+	if err != nil {
+		r.logger.Errorf("failed to deserialize msg: %s, error: %s ", msg, err)
 	}
 
-	h(req, resp)
+	data := tx.Data
+
+	h, ok := r.routes[data.Type()]
+	if !ok {
+		r.logger.Error("handler not found", tx)
+	}
+
+	return h
 }

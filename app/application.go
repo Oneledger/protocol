@@ -3,9 +3,17 @@ package app
 import (
 	"encoding/hex"
 	"io"
+	"net"
+	"net/http"
+	"net/rpc"
 	"os"
 	"path/filepath"
 
+
+	"github.com/pkg/errors"
+	"github.com/tendermint/tendermint/libs/common"
+
+	"github.com/Oneledger/protocol/client"
 	"github.com/Oneledger/protocol/config"
 	"github.com/Oneledger/protocol/consensus"
 	"github.com/Oneledger/protocol/data"
@@ -14,8 +22,6 @@ import (
 	"github.com/Oneledger/protocol/log"
 	"github.com/Oneledger/protocol/serialize"
 	"github.com/Oneledger/protocol/storage"
-	"github.com/pkg/errors"
-	"github.com/tendermint/tendermint/libs/common"
 )
 
 // Ensure this App struct can control the underlying ABCI app
@@ -164,4 +170,22 @@ func (ctx *context) Balances() *balance.Context {
 		ctx.balances,
 		ctx.currencies,
 		ctx.currenciesExtra)
+}
+
+func (app *App) startRPCServer() {
+
+	handlers := client.NewClientHandler(app.Balances(), app.Accounts(), app.WalletStore())
+	err := rpc.Register(handlers)
+	if err != nil {
+		app.logger.Fatal("error registering rpc handlers", "err", err)
+	}
+
+	rpc.HandleHTTP()
+
+	l, e := net.Listen("tcp", client.RPC_ADDRESS)
+	if e != nil {
+		app.logger.Fatal("listen error:", e)
+	}
+
+	go http.Serve(l, nil)
 }
