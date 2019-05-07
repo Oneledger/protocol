@@ -87,22 +87,14 @@ func (coin Coin) LessThanEqualCoin(value Coin) bool {
 
 // IsValid coin or is it broken
 func (coin Coin) IsValid() bool {
-	if coin.Amount == nil {
-		debug.PrintStack()
-		logger.Fatal("Invalid Coin", coin)
-	}
-
-	if coin.Currency.Name == "" {
+	switch {
+	case coin.Amount == nil:
 		return false
-	}
-	// there should not exist minus coin
-	if coin.Amount.Cmp(big.NewInt(0)) < 0 {
+	case coin.Currency.Name == "":
 		return false
+	default:
+		return coin.Amount.Cmp(big.NewInt(0)) >= 0
 	}
-
-
-	// TODO: Combine this with convert.GetCurrency...
-	return false
 }
 
 // Equals another coin
