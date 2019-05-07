@@ -13,23 +13,3 @@ Copyright 2017 - 2019 OneLedger
 */
 
 package config
-
-import (
-	"math/big"
-
-	"github.com/Oneledger/protocol/data/balance"
-	"github.com/Oneledger/protocol/data/chain"
-)
-
-func init() {
-	// reblws: This should be moved up to app.setupState
-	chain.RegisterChainType("UNKNOWN", 0)
-	chain.RegisterChainType("OneLedger", 1)
-	chain.RegisterChainType("Bitcoin", 2)
-	chain.RegisterChainType("Ethereum", 3)
-
-	balance.RegisterCurrency("OLT", chain.Type(1), big.NewFloat(1000000000000000000), 6, 'f')
-	balance.RegisterCurrency("BTC", chain.Type(2), big.NewFloat(1), 0, 'f')
-	balance.RegisterCurrency("ETH", chain.Type(3), big.NewFloat(1), 0, 'f')
-	balance.RegisterCurrency("VT", chain.Type(1), big.NewFloat(1), 0, 'f')
-}
