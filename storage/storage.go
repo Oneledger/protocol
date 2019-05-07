@@ -30,6 +30,7 @@ type SessionedStorage interface {
 
 	BeginSession() Session
 	Close()
+	ReadAll() []IterItem
 	Iterate(fn func(key []byte, value []byte) bool) (stopped bool)
 }
 
@@ -72,6 +73,7 @@ type Store interface {
 	Set(StoreKey, []byte) error
 	Exists(StoreKey) bool
 	Delete(StoreKey) (bool, error)
+	GetIterator() *Iterator
 }
 
 

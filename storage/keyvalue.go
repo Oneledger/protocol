@@ -164,16 +164,18 @@ func (store KeyValue) Get(key StoreKey) ([]byte, error) {
 
 }
 
+func (store KeyValue) Iterate(fn func(key []byte, value []byte) bool) (stopped bool) {
+	return store.tree.Iterate(fn)
+}
 
 func (store KeyValue) ReadAll() []IterItem {
 	a := make([]IterItem, 0, 100)
 
-	for stopped := true; stopped; {
-		stopped = store.tree.Iterate(func(key []byte, value []byte) bool {
-			a = append(a, IterItem{key, value})
-			return true
-		})
-	}
+	store.tree.Iterate(func(key []byte, value []byte) bool {
+		a = append(a, IterItem{key, value})
+		return false
+	})
+
 
 	return a
 }
@@ -282,6 +284,11 @@ func (session KeyValueSession) Commit() bool {
 	session.store.version = version
 
 	return true
+}
+
+// GetIterator dummy iterator
+func (session KeyValueSession) GetIterator() *Iterator {
+	return nil
 }
 
 // Rollback any changes since the last commit
