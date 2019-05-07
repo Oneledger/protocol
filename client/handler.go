@@ -22,42 +22,54 @@ import (
 	"github.com/Oneledger/protocol/storage"
 	"github.com/pkg/errors"
 	"os"
+	"runtime/debug"
 )
 
 type Handler struct {
-	balances         *storage.ChainState
-	accounts         data.Store
+	nodeName string
+	balances         *balance.Store
+	accounts         storage.Store
 	wallet           accounts.WalletStore
 
 	logger 			*log.Logger
 }
 
-func NewClientHandler(balances *storage.ChainState, accounts data.Store, wallet accounts.WalletStore) *Handler {
-	return &Handler{balances, accounts, wallet,
+func NewClientHandler(nodeName string, balances *balance.Store, accounts storage.Store, wallet accounts.WalletStore) *Handler {
+
+	return &Handler{nodeName,balances, accounts, wallet,
 					log.NewLoggerWithPrefix(os.Stdout, "client_Handler")}
 }
 
-func (r *Handler) GetBalance(key []byte, bal *balance.Balance) {
-
-	bal  = r.balances.Get(key, true)
+func (h *Handler) NodeName(req data.Request, resp *data.Response) error {
+	resp.SetData([]byte(h.nodeName))
+	return nil
 }
 
-func (r *Handler) GetAccount(key []byte, acc *accounts.Account) error {
+func (h *Handler) GetBalance(key []byte, bal *balance.Balance) error {
+	defer h.recoverPanic()
+
+	bal, err := h.balances.Get(key)
+	return err
+}
+
+func (h *Handler) GetAccount(key []byte, acc *accounts.Account) error {
+	defer h.recoverPanic()
 
 	// TODO get account by name
-	d, err := r.accounts.Get(key)
+	d, err := h.accounts.Get(key)
 	if err != nil {
 		return err
 	}
 
-	acc.FromBytes(d)
+	acc = acc.FromBytes(d)
 
 	return nil
 }
 
-func (r *Handler) AddAccount(acc accounts.Account, resp *data.Response) error {
+func (h *Handler) AddAccount(acc accounts.Account, resp *data.Response) error {
+	defer h.recoverPanic()
 
-	err := r.wallet.Add(acc)
+	err := h.wallet.Add(acc)
 	if err != nil {
 		return errors.Wrap(err, "error in adding account to walletstore")
 	}
@@ -65,14 +77,31 @@ func (r *Handler) AddAccount(acc accounts.Account, resp *data.Response) error {
 	return nil
 }
 
-func (r *Handler) DeleteAccount(acc accounts.Account, resp *data.Response) error {
+func (h *Handler) DeleteAccount(acc accounts.Account, resp *data.Response) error {
+	defer h.recoverPanic()
 
-	err := r.wallet.Delete(acc)
+	err := h.wallet.Delete(acc)
 	if err != nil {
 		return errors.Wrap(err, "error in deleting account from walletstore")
 	}
 
 	return nil
+}
+
+func (h *Handler) ListAccounts(req data.Request, resp *data.Response) error {
+	defer h.recoverPanic()
+
+	accs := h.wallet.Accounts()
+	resp.SetDataObj(accs)
+
+	return nil
+}
+
+func (h *Handler) recoverPanic() {
+	if r := recover(); r != nil {
+		h.logger.Error("recovering a panic")
+		debug.PrintStack()
+	}
 }
 
 /*

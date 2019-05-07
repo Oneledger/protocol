@@ -30,6 +30,7 @@ type App struct {
 	Context context
 
 	name   string
+	nodeName string
 	logger *log.Logger
 	sdk    common.Service // Probably needs to be changed
 
@@ -44,6 +45,7 @@ func NewApp(cfg config.Server, rootDir string) (*App, error) {
 		name:   "OneLedger",
 		logger: log.NewLoggerWithPrefix(os.Stdout, "app"),
 	}
+	app.nodeName = cfg.Node.NodeName
 
 	ctx, err := newContext(cfg, rootDir)
 	if err != nil {
@@ -52,6 +54,8 @@ func NewApp(cfg config.Server, rootDir string) (*App, error) {
 
 	app.Context = ctx
 	app.setNewABCI()
+
+	go app.startRPCServer()
 	return app, nil
 }
 
@@ -172,7 +176,7 @@ func (ctx *context) Balances() *balance.Context {
 
 func (app *App) startRPCServer() {
 
-	handlers := client.NewClientHandler(app.Balances(), app.Accounts(), app.WalletStore())
+	handlers := client.NewClientHandler(app.nodeName, app.Context.balances, app.Accounts(), app.WalletStore())
 	err := rpc.Register(handlers)
 	if err != nil {
 		app.logger.Fatal("error registering rpc handlers", "err", err)
@@ -185,5 +189,8 @@ func (app *App) startRPCServer() {
 		app.logger.Fatal("listen error:", e)
 	}
 
-	go http.Serve(l, nil)
+	err =  http.Serve(l, nil)
+	if err != nil {
+		app.logger.Fatal("error while starting the RPC server", "err", err)
+	}
 }
