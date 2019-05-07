@@ -8,18 +8,21 @@ import (
 	"time"
 
 	"github.com/Oneledger/toml"
+	"github.com/pkg/errors"
 	tmconfig "github.com/tendermint/tendermint/config"
 )
 
-// Default permissions for writing files
-// These are based on default umask settings
-// User+Group: rw, Other: r
-const FilePerms = 0664
 
-// User+Group: rwx, Other: rx
-const DirPerms = 0775
-const FileName = "config.toml"
-const DefaultDir = ".olfullnode"
+const (
+	// Default permissions for writing files
+	// These are based on default umask settings
+	// User+Group: rw, Other: r
+	FilePerms = 0664
+	// User+Group: rwx, Other: rx
+	DirPerms = 0775
+	FileName = "config.toml"
+	DefaultDir = ".olfullnode"
+)
 
 // Duration is a time.Duration that marshals and unmarshals with millisecond values
 type Duration int64
@@ -40,6 +43,16 @@ type Server struct {
 	P2P       *P2PConfig       `toml:"p2p"`
 	Mempool   *MempoolConfig   `toml:"mempool"`
 	Consensus *ConsensusConfig `toml:"consensus"`
+
+	chainID string
+}
+
+func (cfg *Server) ChainID() string {
+	return cfg.chainID
+}
+
+func (cfg *Server) setChainID(doc GenesisDoc) {
+	cfg.chainID = doc.ChainID
 }
 
 func (cfg *Server) TMConfig(rootDir string) tmconfig.Config {
@@ -93,9 +106,14 @@ func (cfg *Server) TMConfig(rootDir string) tmconfig.Config {
 func (cfg *Server) ReadFile(filepath string) error {
 	bz, err := ioutil.ReadFile(filepath)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "cfg.ReadFile error")
 	}
-	return cfg.Unmarshal(bz)
+	err = cfg.Unmarshal(bz)
+	if err != nil {
+		return errors.Wrap(err, "cfg.ReadFile error unmarshaling JSON")
+	}
+
+	return nil
 }
 
 // Marshal accepts the text form of a TOML configuration file and fills Server with its values
@@ -149,6 +167,7 @@ type NodeConfig struct {
 	NodeName string `toml:"node_name"`
 	FastSync bool   `toml:"fast_sync" desc:"Fast sync allows a block to catch up quickly to the chain by downloading blocks in parallel and verifying their commits"`
 	DB       string `toml:"db" desc:"Specify what backend database to use (goleveldb|cleveldb)"`
+	DBDir string `toml: ""`
 	// List of transaction tags to index in the db, allows them to be searched
 	// by this parameter
 	IndexTags []string `toml:"index_tags" desc:"List of transaction tags to index in the database, allows them to be searched by the specified tags"`
@@ -337,7 +356,6 @@ func (cfg *ConsensusConfig) TMConfig() *tmconfig.ConsensusConfig {
 	c.CreateEmptyBlocksInterval = cfg.CreateEmptyBlocksInterval.Nanoseconds()
 	c.PeerGossipSleepDuration = cfg.PeerGossipSleepDuration.Nanoseconds()
 	c.PeerQueryMaj23SleepDuration = cfg.PeerQueryMaj23SleepDuration.Nanoseconds()
-	c.BlockTimeIota = cfg.BlockTimeIota.Nanoseconds()
 	return c
 }
 
@@ -358,6 +376,5 @@ func DefaultConsensusConfig() *ConsensusConfig {
 	cfg.CreateEmptyBlocksInterval = toConfigDuration(tmDefault.CreateEmptyBlocksInterval)
 	cfg.PeerGossipSleepDuration = toConfigDuration(tmDefault.PeerGossipSleepDuration)
 	cfg.PeerQueryMaj23SleepDuration = toConfigDuration(tmDefault.PeerQueryMaj23SleepDuration)
-	cfg.BlockTimeIota = toConfigDuration(tmDefault.BlockTimeIota)
 	return &cfg
 }

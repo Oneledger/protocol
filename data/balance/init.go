@@ -26,18 +26,16 @@ import (
 var pSzlr serialize.Serializer
 var logger *log.Logger
 
-var currencies map[string]Currency
-var currenciesExtra map[string]Extra
+var currencies = make(map[string]Currency)
+var currenciesExtra = make(map[string]Extra)
 
 func init() {
-
 	logger = log.NewDefaultLogger(os.Stdout).WithPrefix("balance")
 
 	serialize.RegisterConcrete(new(Balance), TagBalance)
 	serialize.RegisterConcrete(new(BalanceData), TagBalanceData)
 
 	pSzlr = serialize.GetSerializer(serialize.PERSISTENT)
-
 }
 
 func RegisterCurrency(name string, ct chain.Type, id int,

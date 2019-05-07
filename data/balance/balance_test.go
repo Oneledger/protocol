@@ -11,11 +11,11 @@
 Copyright 2017 - 2019 OneLedger
 */
 
+
 package balance
 
 import (
 	"fmt"
-	"os"
 	"testing"
 
 	"github.com/Oneledger/protocol/serialize"
@@ -39,21 +39,13 @@ func xTestNewBalance(t *testing.T) {
 }
 
 func TestSerialize(t *testing.T) {
-
-	// temp; remove this logger later
-	var log = logger.NewDefaultLogger(os.Stdout)
-
 	a := NewBalanceFromString("10", "OLT")
 	buffer, err := pSzlr.Serialize(a)
-	if err != nil {
-		logger.Fatal("Serialization Failed", "err", err)
-	}
+	assert.Nil(t, err)
 	var result = &Balance{}
 
 	err = pSzlr.Deserialize(buffer, result)
-	if err != nil {
-		logger.Fatal("Deserialized failed", "err", err)
-	}
+	assert.Nil(t, err)
 	assert.Equal(t, result, a, "These should be equal")
 }
 
