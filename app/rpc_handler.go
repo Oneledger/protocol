@@ -12,47 +12,55 @@
 Copyright 2017 - 2019 OneLedger
 */
 
-package client
+package app
 
 import (
+	"os"
+	"runtime/debug"
+
 	"github.com/Oneledger/protocol/data"
 	"github.com/Oneledger/protocol/data/accounts"
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/log"
 	"github.com/Oneledger/protocol/storage"
 	"github.com/pkg/errors"
-	"os"
-	"runtime/debug"
 )
 
-type Handler struct {
+type RPCServerCtx struct {
 	nodeName string
-	balances         *balance.Store
-	accounts         storage.Store
-	wallet           accounts.WalletStore
+	balances *balance.Store
+	accounts storage.Store
+	wallet   accounts.WalletStore
 
-	logger 			*log.Logger
+	logger *log.Logger
 }
 
-func NewClientHandler(nodeName string, balances *balance.Store, accounts storage.Store, wallet accounts.WalletStore) *Handler {
+func NewClientHandler(nodeName string, balances *balance.Store, accounts storage.Store, wallet accounts.WalletStore) *RPCServerCtx {
 
-	return &Handler{nodeName,balances, accounts, wallet,
-					log.NewLoggerWithPrefix(os.Stdout, "client_Handler")}
+	return &RPCServerCtx{nodeName, balances, accounts, wallet,
+		log.NewLoggerWithPrefix(os.Stdout, "client_Handler")}
 }
 
-func (h *Handler) NodeName(req data.Request, resp *data.Response) error {
+// NodeName returns the name of a node. This is useful for displaying it at cmdline.
+func (h *RPCServerCtx) NodeName(req data.Request, resp *data.Response) error {
 	resp.SetData([]byte(h.nodeName))
 	return nil
 }
 
-func (h *Handler) GetBalance(key []byte, bal *balance.Balance) error {
+// GetBalance gets the balance of an address
+// TODO make it more generic to handle account name and identity
+func (h *RPCServerCtx) GetBalance(key []byte, bal *balance.Balance) error {
 	defer h.recoverPanic()
 
 	bal, err := h.balances.Get(key)
 	return err
 }
 
-func (h *Handler) GetAccount(key []byte, acc *accounts.Account) error {
+/*
+	Account Handlers start here
+*/
+// GetAccount gets an account for an address
+func (h *RPCServerCtx) GetAccount(key []byte, acc *accounts.Account) error {
 	defer h.recoverPanic()
 
 	// TODO get account by name
@@ -66,7 +74,8 @@ func (h *Handler) GetAccount(key []byte, acc *accounts.Account) error {
 	return nil
 }
 
-func (h *Handler) AddAccount(acc accounts.Account, resp *data.Response) error {
+// AddAccount adds an account to wallet store of the node
+func (h *RPCServerCtx) AddAccount(acc accounts.Account, resp *data.Response) error {
 	defer h.recoverPanic()
 
 	err := h.wallet.Add(acc)
@@ -77,7 +86,8 @@ func (h *Handler) AddAccount(acc accounts.Account, resp *data.Response) error {
 	return nil
 }
 
-func (h *Handler) DeleteAccount(acc accounts.Account, resp *data.Response) error {
+// DeleteAccount deletes an account from the wallet store of node
+func (h *RPCServerCtx) DeleteAccount(acc accounts.Account, resp *data.Response) error {
 	defer h.recoverPanic()
 
 	err := h.wallet.Delete(acc)
@@ -88,7 +98,8 @@ func (h *Handler) DeleteAccount(acc accounts.Account, resp *data.Response) error
 	return nil
 }
 
-func (h *Handler) ListAccounts(req data.Request, resp *data.Response) error {
+// ListAccounts returns a list of all accounts in the wallet store of node
+func (h *RPCServerCtx) ListAccounts(req data.Request, resp *data.Response) error {
 	defer h.recoverPanic()
 
 	accs := h.wallet.Accounts()
@@ -97,7 +108,11 @@ func (h *Handler) ListAccounts(req data.Request, resp *data.Response) error {
 	return nil
 }
 
-func (h *Handler) recoverPanic() {
+/*
+	Client handler util methods
+*/
+// recoverPanic common method to recover from any handler panic
+func (h *RPCServerCtx) recoverPanic() {
 	if r := recover(); r != nil {
 		h.logger.Error("recovering a panic")
 		debug.PrintStack()
@@ -105,7 +120,7 @@ func (h *Handler) recoverPanic() {
 }
 
 /*
-func (r *Handler) CreateSend(args SendArguments, resp *app.Response) error {
+func (r *RPCServerCtx) CreateSend(args SendArguments, resp *app.Response) error {
 	if args.Party == "" {
 		logger.Error("Missing Party argument")
 		return errors.New("Missing Party arguments")
@@ -135,5 +150,4 @@ func (r *Handler) CreateSend(args SendArguments, resp *app.Response) error {
 	return nil
 
 }
- */
-
+*/
