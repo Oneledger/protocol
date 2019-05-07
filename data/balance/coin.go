@@ -149,7 +149,7 @@ func (coin Coin) LessThanCoin(value Coin) bool {
 		logger.Fatal("Invalid Coin", coin)
 	}
 
-	if coin.Currency.Id != value.Currency.Id {
+	if coin.Currency.Chain != value.Currency.Chain {
 		logger.Fatal("Compare two different coin", coin, value)
 	}
 
@@ -168,7 +168,7 @@ func (coin Coin) LessThanEqualCoin(value Coin) bool {
 		logger.Fatal("Invalid Coin", coin)
 	}
 
-	if coin.Currency.Id != value.Currency.Id {
+	if coin.Currency.Chain != value.Currency.Chain {
 		logger.Fatal("Compare two different coin", coin, value)
 	}
 
@@ -210,7 +210,7 @@ func (coin Coin) Equals(value Coin) bool {
 		logger.Fatal("Invalid Coin", coin)
 	}
 
-	if coin.Currency.Id != value.Currency.Id {
+	if coin.Currency.Chain != value.Currency.Chain {
 		return false
 	}
 	if coin.Amount.Cmp(value.Amount) == 0 {

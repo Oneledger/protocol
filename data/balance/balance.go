@@ -21,8 +21,8 @@ import (
 
 // Wrap the amount with owner information
 type Balance struct {
-	Amounts   map[int]Coin
-	coinOrder []int // this field helps to maintain order during serialization ;
+	Amounts   map[int]Coin `json:"amounts"`
+	coinOrder []int        // this field helps to maintain order during serialization ;
 	// so that all the nodes have the same hash of account balances
 }
 
@@ -73,7 +73,7 @@ func GetBalanceFromDb(db data.Store, accountKey data.StoreKey) (*Balance, error)
 	methods for balance start here
 */
 func (b *Balance) FindCoin(currency Currency) *Coin {
-	if coin, ok := b.Amounts[currency.Id]; ok {
+	if coin, ok := b.Amounts[int(currency.Chain)]; ok {
 		return &coin
 	}
 	return nil
@@ -83,11 +83,11 @@ func (b *Balance) FindCoin(currency Currency) *Coin {
 func (b *Balance) AddCoin(coin Coin) {
 	result := b.FindCoin(coin.Currency)
 	if result == nil {
-		b.Amounts[coin.Currency.Id] = coin
-		b.coinOrder = append(b.coinOrder, coin.Currency.Id)
+		b.Amounts[int(coin.Currency.Chain)] = coin
+		b.coinOrder = append(b.coinOrder, int(coin.Currency.Chain))
 		return
 	}
-	b.Amounts[coin.Currency.Id] = result.Plus(coin)
+	b.Amounts[int(coin.Currency.Chain)] = result.Plus(coin)
 	return
 }
 
@@ -96,11 +96,11 @@ func (b *Balance) MinusCoin(coin Coin) {
 	if result == nil {
 		// TODO: This results in a negative coin, which is what was asked for...
 		base := NewCoinFromInt(0, coin.Currency.Name)
-		b.Amounts[coin.Currency.Id] = base.Minus(coin)
-		b.coinOrder = append(b.coinOrder, coin.Currency.Id)
+		b.Amounts[int(coin.Currency.Chain)] = base.Minus(coin)
+		b.coinOrder = append(b.coinOrder, int(coin.Currency.Chain))
 		return
 	}
-	b.Amounts[coin.Currency.Id] = result.Minus(coin)
+	b.Amounts[int(coin.Currency.Chain)] = result.Minus(coin)
 	return
 }
 
@@ -110,7 +110,7 @@ func (b *Balance) GetCoin(currency Currency) Coin {
 		// NOTE: Missing coins are actually zero value coins.
 		return NewCoinFromInt(0, currency.Name)
 	}
-	return b.Amounts[currency.Id]
+	return b.Amounts[int(currency.Chain)]
 }
 
 // GetCoinByName
@@ -121,11 +121,11 @@ func (b *Balance) GetCoinByName(name string) Coin {
 		// NOTE: Missing coins are actually zero value coins.
 		return NewCoinFromInt(0, name)
 	}
-	return b.Amounts[currencies[name].Id]
+	return b.Amounts[int(currencies[name].Chain)]
 }
 
 func (b *Balance) SetAmount(coin Coin) {
-	b.Amounts[coin.Currency.Id] = coin
+	b.Amounts[int(coin.Currency.Chain)] = coin
 	return
 }
 

@@ -16,18 +16,14 @@
 package balance
 
 import (
-	"github.com/Oneledger/protocol/data/chain"
+	"os"
+
 	"github.com/Oneledger/protocol/log"
 	"github.com/Oneledger/protocol/serialize"
-	"math/big"
-	"os"
 )
 
 var pSzlr serialize.Serializer
 var logger *log.Logger
-
-var currencies = make(map[string]Currency)
-var currenciesExtra = make(map[string]Extra)
 
 func init() {
 	logger = log.NewDefaultLogger(os.Stdout).WithPrefix("balance")
@@ -36,11 +32,4 @@ func init() {
 	serialize.RegisterConcrete(new(BalanceData), TagBalanceData)
 
 	pSzlr = serialize.GetSerializer(serialize.PERSISTENT)
-}
-
-func RegisterCurrency(name string, ct chain.Type, id int,
-	units *big.Float, decimal int, format uint8) {
-
-	currencies[name] = Currency{name, ct, id}
-	currenciesExtra[name] = Extra{units, decimal, format}
 }

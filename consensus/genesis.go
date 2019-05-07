@@ -4,17 +4,21 @@ import (
 	"encoding/json"
 	"time"
 
+	"github.com/Oneledger/protocol/data/balance"
+	"github.com/Oneledger/protocol/serialize"
+	"github.com/pkg/errors"
 	"github.com/tendermint/tendermint/types"
 )
 
 type GenesisDoc = types.GenesisDoc
 type GenesisValidator = types.GenesisValidator
 
-func NewGenesisDoc(chainID string) *GenesisDoc {
+func NewGenesisDoc(chainID string, currencies []balance.Currency, states []StateInput) (*GenesisDoc, error) {
 	validators := make([]GenesisValidator, 0)
-	appStateBytes, err := NewAppState().MarshalJSON()
+
+	appStateBytes, err := newAppState(currencies, states).RawJSON()
 	if err != nil {
-		logger.Fatal("Failed to marshal DefaultAppState")
+		return nil, errors.Wrap(err, "Failed to marshal DefaultAppState")
 	}
 	return &GenesisDoc{
 		GenesisTime:     time.Now(),
@@ -22,47 +26,59 @@ func NewGenesisDoc(chainID string) *GenesisDoc {
 		ConsensusParams: types.DefaultConsensusParams(),
 		Validators:      validators,
 		AppState:        json.RawMessage(appStateBytes),
+	}, nil
+}
+
+type State struct {
+	// Hash of their public key
+	Address string              `json:"address"`
+	Balance balance.BalanceData `json:"balance"`
+}
+
+// StateInput returns a StateInput form of State, converts all serialize.Data types back into their native-form
+func (s State) StateInput() StateInput {
+	b := new(balance.Balance)
+
+	// This should not return an error
+	_ = b.SetData(&s.Balance)
+	return StateInput{
+		Address: s.Address,
+		Balance: *b,
 	}
 }
 
-// TODO: Not used anymore
-type State struct {
-	Amount   string `json:"amount"`
-	Currency string `json:"currency"`
+type StateInput struct {
+	Address string
+	Balance balance.Balance
+}
+
+func (si StateInput) State() State {
+	data := si.Balance.Data().(*balance.BalanceData)
+
+	return State{
+		Address: si.Address,
+		Balance: *data,
+	}
 }
 
 type AppState struct {
-	// Name of the account
-	Account string  `json:"account"`
-	States  []State `json:"states"`
+	Currencies []balance.Currency `json:"currencies"`
+	States     []State            `json:"states"`
 }
 
-func NewAppState() *AppState {
+func newAppState(currencies []balance.Currency, stateInputs []StateInput) *AppState {
+	states := make([]State, len(stateInputs))
+	for i, s := range stateInputs {
+		states[i] = s.State()
+	}
+
 	return &AppState{
-		Account: "Zero",
-		States: []State{
-			State{Amount: "1000000000", Currency: "OLT"},
-			State{Amount: "10000", Currency: "VT"},
-		},
+		Currencies: currencies,
+		States:     states,
 	}
 }
 
-func (a AppState) MarshalJSON() ([]byte, error) {
-	states := make([]map[string]interface{}, len(a.States))
-	for i := 0; i < len(a.States); i++ {
-		coin := a.States[i]
-		states[i] = map[string]interface{}{
-			"amount":   coin.Amount,
-			"currency": coin.Currency,
-		}
-	}
-
-	jsOn := map[string]interface{}{
-		"account": a.Account,
-		"states":  states,
-	}
-
-	return json.Marshal(jsOn)
+func (a AppState) RawJSON() ([]byte, error) {
+	szr := serialize.GetSerializer(serialize.JSON)
+	return szr.Serialize(a)
 }
-
-// func (a AppState) UnmarshalJSON() (()

@@ -14,9 +14,10 @@
 package balance
 
 import (
+	"math/big"
+
 	"github.com/Oneledger/protocol/data/chain"
 	"github.com/Oneledger/protocol/serialize"
-	"math/big"
 )
 
 // BalanceData is an easy to serialize representation of a Balance object. A full Balance object can be recostructed
@@ -30,7 +31,6 @@ type BalanceData struct {
 
 // CoinData is a flattening of coin map in a balance data type
 type CoinData struct {
-	CurId    int        `json:"curr_id"`
 	CurName  string     `json:"curr_name"`
 	CurChain chain.Type `json:"curr_chain"`
 
@@ -58,7 +58,6 @@ func (b *Balance) Data() serialize.Data {
 	for _, id := range b.coinOrder {
 		coin := b.Amounts[id]
 		cd := CoinData{
-			CurId:    id,
 			CurName:  coin.Currency.Name,
 			CurChain: coin.Currency.Chain,
 			Amount:   coin.Amount.Bytes(),
@@ -91,19 +90,16 @@ func (ba *BalanceData) extract(b *Balance) error {
 	d := ba.Coins
 	for i := range d {
 
-		curID := d[i].CurId
-
 		//convert string representation to big int
 		amt := new(big.Int)
 		amt = amt.SetBytes(d[i].Amount)
 
 		coin := Coin{Amount: amt}
-		coin.Currency.Id = curID
 		coin.Currency.Name = d[i].CurName
 		coin.Currency.Chain = d[i].CurChain
 
-		b.Amounts[curID] = coin
-		b.coinOrder = append(b.coinOrder, curID)
+		b.Amounts[int(d[i].CurChain)] = coin
+		b.coinOrder = append(b.coinOrder, int(d[i].CurChain))
 	}
 
 	return nil
