@@ -90,10 +90,9 @@ func (ws WalletStore) SignWithAddress(msg []byte, address keys.Address) ([]byte,
 	return account.Sign(msg)
 }
 
-func NewWallet(config config.Server) WalletStore {
+func NewWallet(config config.Server, dbDir string) WalletStore {
 	ctx := storage.Context{
-		//todo: get the database path
-		DbDir:    "dbpath",
+		DbDir: dbDir,
 		ConfigDB: config.Node.DB,
 	}
 

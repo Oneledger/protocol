@@ -53,7 +53,8 @@ func TestChainState(t *testing.T) {
 	key := make([]byte, 20)
 	key[0] = 0xaf
 
-	state.Set(key, bal)
+	err := state.Set(key, bal)
+	assert.Nil(t, err)
 	state.Commit()
 	result := state.Get(key, false)
 
@@ -69,7 +70,8 @@ func TestChainStateContinueUpdate(t *testing.T) {
 
 	bal := balance.NewBalanceFromInt(10, "OLT")
 
-	state.Set(key, bal)
+	err := state.Set(key, bal)
+	assert.Nil(t, err)
 
 	state.Commit()
 
@@ -81,7 +83,8 @@ func TestChainStateContinueUpdate(t *testing.T) {
 
 	newbalance := balance.NewBalanceFromInt(14, "OLT")
 
-	state.Set(key, newbalance)
+	err = state.Set(key, newbalance)
+	assert.Nil(t, err)
 
 	b2 := state.Get(key, false)
 	//_, b2 := state.Delivered.ImmutableTree.Get(key)

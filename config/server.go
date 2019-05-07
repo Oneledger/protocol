@@ -12,15 +12,14 @@ import (
 	tmconfig "github.com/tendermint/tendermint/config"
 )
 
-
 const (
 	// Default permissions for writing files
 	// These are based on default umask settings
 	// User+Group: rw, Other: r
 	FilePerms = 0664
 	// User+Group: rwx, Other: rx
-	DirPerms = 0775
-	FileName = "config.toml"
+	DirPerms   = 0775
+	FileName   = "config.toml"
 	DefaultDir = ".olfullnode"
 )
 
@@ -167,7 +166,7 @@ type NodeConfig struct {
 	NodeName string `toml:"node_name"`
 	FastSync bool   `toml:"fast_sync" desc:"Fast sync allows a block to catch up quickly to the chain by downloading blocks in parallel and verifying their commits"`
 	DB       string `toml:"db" desc:"Specify what backend database to use (goleveldb|cleveldb)"`
-	DBDir string `toml: ""`
+	DBDir    string `toml:"db_dir" desc:"Specify the application database directory. This is always relative to the root directory of the app."`
 	// List of transaction tags to index in the db, allows them to be searched
 	// by this parameter
 	IndexTags []string `toml:"index_tags" desc:"List of transaction tags to index in the database, allows them to be searched by the specified tags"`
@@ -181,6 +180,7 @@ func DefaultNodeConfig() *NodeConfig {
 		NodeName:     "Newton-Node",
 		FastSync:     true,
 		DB:           "goleveldb",
+		DBDir:        "nodedata",
 		IndexTags:    []string{"tx.owner", "tx.type", "tx.swapkey"},
 		IndexAllTags: false,
 	}

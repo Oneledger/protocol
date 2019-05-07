@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"fmt"
+	"math/big"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -28,7 +29,7 @@ type testnetConfig struct {
 	allowSwap        bool
 	chainID          string
 	dbType           string
-	namesPath    string
+	namesPath        string
 }
 
 var testnetArgs = &testnetConfig{}
@@ -39,7 +40,6 @@ var testnetCmd = &cobra.Command{
 	RunE:  runDevnet,
 }
 
-
 func init() {
 	initCmd.AddCommand(testnetCmd)
 	testnetCmd.Flags().IntVar(&testnetArgs.numValidators, "validators", 4, "Number of validators to initialize devnet with")
@@ -48,7 +48,9 @@ func init() {
 	testnetCmd.Flags().BoolVar(&testnetArgs.allowSwap, "enable_swaps", false, "Allow swaps")
 	testnetCmd.Flags().StringVar(&testnetArgs.chainID, "chain_id", "", "Specify a chain ID, a random one is generated if not given")
 	testnetCmd.Flags().StringVar(&testnetArgs.dbType, "db_type", "goleveldb", "Specify the type of DB backend to use: (goleveldb|cleveldb)")
-	testnetCmd.Flags().StringVar(&testnetArgs.namesPath,"names", "", "Specify a path to a file containing a list of names separated by newlines if you want the nodes to be generated with human-readable names")
+	testnetCmd.Flags().StringVar(&testnetArgs.namesPath, "names", "", "Specify a path to a file containing a list of names separated by newlines if you want the nodes to be generated with human-readable names")
+	// TODO:
+	// testnetCmd.Flags().IntVar(&test)
 }
 
 func randStr(size int) string {
@@ -106,28 +108,29 @@ func generateAddress(port int, hasProtocol bool) string {
 
 // Just a basic context for the devnet cmd
 type devnetContext struct {
-	names []string
-	logger *log.Logger
+	names      []string
+	totalFunds *big.Int
+	logger     *log.Logger
 }
 
 func newDevnetContext(args *testnetConfig) (*devnetContext, error) {
 	logger := log.NewLoggerWithPrefix(os.Stdout, "olfullnode devnet")
 
-	names := nodeNamesWithZeros("node", args.numNonValidators + args.numValidators)
+	names := nodeNamesWithZeros("node", args.numNonValidators+args.numValidators)
 	// TODO: Reading from a file is actually unimplemented right now
 	if args.namesPath != "" {
 		logger.Warn("--names parameter is unimplemented")
 	}
 
 	return &devnetContext{
-		names: names,
+		names:  names,
 		logger: logger,
 	}, nil
 }
 
 // padZeroes takes the maximum number of zeroes allowed and pa
 func padZeroes(str string, total int) string {
-	prefix := strings.Repeat("0", total - len(str))
+	prefix := strings.Repeat("0", total-len(str))
 	return prefix + str
 }
 
@@ -235,7 +238,8 @@ func runDevnet(cmd *cobra.Command, _ []string) error {
 		chainID = args.chainID
 	}
 
-	genesisDoc := consensus.NewGenesisDoc(chainID)
+	// TODO: Share the money across everyone
+	genesisDoc, err := consensus.NewGenesisDoc(chainID)
 	genesisDoc.Validators = validatorList
 
 	for i := 0; i < args.numValidators+args.numNonValidators; i++ {

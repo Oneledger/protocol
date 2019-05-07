@@ -21,10 +21,12 @@
 package storage
 
 import (
+	"fmt"
 	"sync"
 
 	"github.com/Oneledger/protocol/data"
 	b "github.com/Oneledger/protocol/data/balance"
+	"github.com/pkg/errors"
 	"github.com/tendermint/iavl"
 	"github.com/tendermint/tendermint/libs/db"
 )
@@ -53,11 +55,11 @@ type ChainState struct {
 }
 
 // NewChainState generates a new ChainState object
-func NewChainState(name, configDB string, newType StorageType) *ChainState {
+func NewChainState(name, dbDir, configDB string, newType StorageType) *ChainState {
 	count = 0
 
 	chain := &ChainState{Name: name, Type: newType, Version: 0}
-	chain.dbDir = dbDir()
+	chain.dbDir = dbDir
 	chain.configDB = configDB
 
 	chain.reset()
@@ -66,18 +68,18 @@ func NewChainState(name, configDB string, newType StorageType) *ChainState {
 }
 
 // Do this only for the Delivery side
-func (state *ChainState) Set(key data.StoreKey, bal *b.Balance) {
+func (state *ChainState) Set(key data.StoreKey, bal *b.Balance) error {
 	state.Lock()
 	defer state.Unlock()
 
 	buffer, err := pSzlr.Serialize(bal)
 	if err != nil {
-		log.Fatal("Failed to Serialize bal: ", err)
+		return errors.Wrap(err, "failed to serialize balance")
 	}
 
 	setOk := state.Delivered.Set(key, buffer)
 	if !setOk {
-		log.Fatalf("%s %#v \n", "failed to set bal", bal)
+		return fmt.Errorf("%s %#v \n", "failed to set bal", bal)
 	}
 }
 
