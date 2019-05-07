@@ -16,7 +16,7 @@
 package balance
 
 import (
-	"github.com/Oneledger/protocol/data"
+	"github.com/Oneledger/protocol/storage"
 )
 
 // Wrap the amount with owner information
@@ -38,6 +38,7 @@ func NewBalance() *Balance {
 	return result
 }
 
+/*
 func NewBalanceFromString(amount string, currency string) *Balance {
 	coin := NewCoinFromString(amount, currency)
 	b := NewBalance()
@@ -51,10 +52,11 @@ func NewBalanceFromInt(amount int64, currency string) *Balance {
 	b.AddCoin(coin)
 	return b
 }
+*/
 
 // GetBalanceFromDb takes a datastore with GetSetter interface and initializes a new Balance
 // from the data.
-func GetBalanceFromDb(db data.Store, accountKey data.StoreKey) (*Balance, error) {
+func GetBalanceFromDb(db storage.Store, accountKey storage.StoreKey) (*Balance, error) {
 	dat, err := db.Get(accountKey)
 	if err != nil {
 		return nil, err
@@ -95,7 +97,7 @@ func (b *Balance) MinusCoin(coin Coin) {
 	result := b.FindCoin(coin.Currency)
 	if result == nil {
 		// TODO: This results in a negative coin, which is what was asked for...
-		base := NewCoinFromInt(0, coin.Currency.Name)
+		base := coin.Currency.NewCoinFromInt(0)
 		b.Amounts[int(coin.Currency.Chain)] = base.Minus(coin)
 		b.coinOrder = append(b.coinOrder, int(coin.Currency.Chain))
 		return
@@ -108,20 +110,9 @@ func (b *Balance) GetCoin(currency Currency) Coin {
 	result := b.FindCoin(currency)
 	if result == nil {
 		// NOTE: Missing coins are actually zero value coins.
-		return NewCoinFromInt(0, currency.Name)
+		return currency.NewCoinFromInt(0)
 	}
 	return b.Amounts[int(currency.Chain)]
-}
-
-// GetCoinByName
-func (b *Balance) GetCoinByName(name string) Coin {
-	currency := NewCurrency(name)
-	result := b.FindCoin(currency)
-	if result == nil {
-		// NOTE: Missing coins are actually zero value coins.
-		return NewCoinFromInt(0, name)
-	}
-	return b.Amounts[int(currencies[name].Chain)]
 }
 
 func (b *Balance) SetAmount(coin Coin) {
@@ -143,10 +134,10 @@ func (b Balance) IsEnoughBalance(balance Balance) bool {
 	for i, coin := range balance.Amounts {
 		v, ok := b.Amounts[i]
 		if !ok {
-			v = NewCoinFromInt(0, coin.Currency.Name)
+			v = coin.Currency.NewCoinFromInt(0)
 		}
 
-		if v.Minus(coin).LessThan(0) {
+		if v.Minus(coin).LessThanCoin(coin.Currency.NewCoinFromInt(0)) {
 			return false
 		}
 	}

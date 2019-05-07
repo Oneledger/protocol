@@ -16,6 +16,7 @@
 package balance
 
 import (
+	"fmt"
 	"math/big"
 	"runtime/debug"
 )
@@ -26,71 +27,7 @@ import (
 // Coin is the basic amount, specified in integers, at the smallest increment (i.e. a satoshi, not a bitcoin)
 type Coin struct {
 	Currency Currency `json:"currency"`
-	Amount   *big.Int `json:"amount"`
-}
-
-func NewCoinFromUnits(amount int64, currency string) Coin {
-	value := units2bint(amount, GetBase(currency))
-
-	coin := Coin{
-		Currency: currencies[currency],
-		Amount:   value,
-	}
-	if !coin.IsValid() {
-		logger.Warn("Create Invalid Coin", coin)
-	}
-
-	return coin
-}
-
-// Create a coin from integer (not fractional)
-func NewCoinFromInt(amount int64, currency string) Coin {
-
-	value := int2bint(amount, GetBase(currency))
-
-	coin := Coin{
-		Currency: currencies[currency],
-		Amount:   value,
-	}
-	if !coin.IsValid() {
-		logger.Warn("Create Invalid Coin", coin)
-	}
-
-	return coin
-}
-
-// Create a coin from floating point
-func NewCoinFromFloat(amount float64, currency string) Coin {
-	value := float2bint(amount, GetBase(currency))
-
-	coin := Coin{
-		Currency: currencies[currency],
-		Amount:   value,
-	}
-	if !coin.IsValid() {
-		logger.Warn("Create Invalid Coin", amount, coin)
-	}
-
-	return coin
-}
-
-// Create a coin from string
-func NewCoinFromString(amount string, currency string) Coin {
-	value := parseString(amount, GetBase(currency))
-
-	coin := Coin{
-		Currency: currencies[currency],
-		Amount:   value,
-	}
-	if !coin.IsValid() {
-		logger.Warn("Create Invalid Coin", coin)
-	}
-
-	return coin
-}
-
-func (coin Coin) Float64() float64 {
-	return bint2float(coin.Amount, GetBase(coin.Currency.Name))
+	Amount   *big.Int `json:"amount,string"`
 }
 
 // See if the coin is one of a list of currencies
@@ -108,38 +45,6 @@ func (coin Coin) IsCurrency(currencies ...string) bool {
 		}
 	}
 	return found
-}
-
-// LessThanEqual, just for OLTs...
-func (coin Coin) LessThanEqual(value float64) bool {
-	if coin.Amount == nil {
-		debug.PrintStack()
-		logger.Fatal("Invalid Coin", coin)
-	}
-
-	compare := float2bint(value, GetBase("OLT"))
-	//logger.Dump("LessThanEqual", value, compare)
-
-	if coin.Amount.Cmp(compare) <= 0 {
-		return true
-	}
-	return false
-}
-
-// LessThan, just for OLTs...
-func (coin Coin) LessThan(value float64) bool {
-	if coin.Amount == nil {
-		debug.PrintStack()
-		logger.Fatal("Invalid Coin", coin)
-	}
-
-	compare := float2bint(value, GetBase("OLT"))
-	//logger.Dump("LessThanEqual", value, compare)
-
-	if coin.Amount.Cmp(compare) < 0 {
-		return true
-	}
-	return false
 }
 
 // LessThan, for coins...
@@ -195,9 +100,6 @@ func (coin Coin) IsValid() bool {
 		return false
 	}
 
-	if _, ok := currencies[coin.Currency.Name]; ok {
-		return true
-	}
 
 	// TODO: Combine this with convert.GetCurrency...
 	return false
@@ -342,11 +244,5 @@ func (coin Coin) String() string {
 		logger.Fatal("Invalid Coin", "err", "Amount is nil")
 	}
 
-	currency := coin.Currency.Name
-	extra := GetExtra(currency)
-	float := new(big.Float).SetInt(coin.Amount)
-	value := float.Quo(float, extra.Units)
-	text := value.Text(extra.Format, extra.Decimal) + " " + currency
-
-	return text
+	return fmt.Sprintf("%=v", coin)
 }

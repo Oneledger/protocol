@@ -31,16 +31,16 @@ func TestPersistence(t *testing.T) {
 	key := "Hello"
 	value := "The Value"
 
-	state.Delivered.Set(data.StoreKey(key), []byte(value))
+	state.Delivered.Set(StoreKey(key), []byte(value))
 
 	version := state.Delivered.Version()
-	index, result := state.Delivered.GetVersioned(data.StoreKey(key), version)
+	index, result := state.Delivered.GetVersioned(StoreKey(key), version)
 	log.Debug("Uncommitted Fetched", "index", index, "version", version, "result", string(result))
 
 	state.Commit()
 
 	version = state.Delivered.Version()
-	index, result = state.Delivered.GetVersioned(data.StoreKey(key), version)
+	index, result = state.Delivered.GetVersioned(StoreKey(key), version)
 	log.Debug("Commited Fetched", "index", index, "version", version, "result", string(result))
 
 	assert.Equal(t, []byte(value), result, "These should be equal")

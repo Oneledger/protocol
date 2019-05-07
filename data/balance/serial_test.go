@@ -23,6 +23,7 @@ import (
 
 var log = logger.NewDefaultLogger(os.Stdout)
 
+/*
 func TestCoin(t *testing.T) {
 	// temp; remove this logger later
 	var log = logger.NewDefaultLogger(os.Stdout)
@@ -47,6 +48,9 @@ func TestCoin(t *testing.T) {
 
 	assert.Equal(t, &coin, result, "These should be equal")
 }
+
+ */
+
 
 func TestBalance(t *testing.T) {
 	// temp; remove this logger later

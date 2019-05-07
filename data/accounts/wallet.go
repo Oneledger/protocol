@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/Oneledger/protocol/config"
-	"github.com/Oneledger/protocol/data"
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/serialize"
 	"github.com/Oneledger/protocol/storage"
@@ -28,7 +27,7 @@ type Wallet interface {
 type WalletStore struct {
 	store storage.Storage
 
-	accounts []data.StoreKey
+	accounts []storage.StoreKey
 }
 
 func (ws WalletStore) Accounts() []Account {
@@ -102,7 +101,7 @@ func NewWallet(config config.Server, dbDir string) WalletStore {
 
 	accountKeys := store.Begin().FindAll()
 
-	accounts := make([]data.StoreKey, len(accountKeys))
+	accounts := make([]storage.StoreKey, len(accountKeys))
 	for i, key := range accountKeys {
 		accounts[i] = key
 	}

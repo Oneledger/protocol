@@ -16,70 +16,38 @@
 package balance
 
 import (
-	"encoding/hex"
 	"math/big"
 
-	"golang.org/x/crypto/ripemd160"
-
 	"github.com/Oneledger/protocol/data/chain"
-	"github.com/Oneledger/protocol/serialize"
 )
 
 /*
  Currency starts here
 */
 
-func GetCurrencies() map[string]Currency {
-	return currencies
-}
 
 type Currency struct {
 	Name  string     `json:"name"`
 	Chain chain.Type `json:"chain"`
+
+	Decimal int64
 }
 
-// Look up the currency
-func NewCurrency(currency string) Currency {
-	return currencies[currency]
+func (c Currency) Base() *big.Int {
+	return big.NewInt(0).Exp(big.NewInt(10), big.NewInt(c.Decimal), nil)
 }
 
-func GetBase(currency string) *big.Float {
-	return GetExtra(currency).Units
-}
 
-// Key sets a encodable key for the currency entry, we may end up using currencyCodes instead.
-func (c Currency) Key() (string, error) {
-	hasher := ripemd160.New()
+// Create a coin from integer (not fractional)
+func (c Currency) NewCoinFromInt(amount int64) Coin {
 
-	buffer, err := serialize.JSONSzr.Serialize(c)
-	if err != nil {
-		logger.Fatal("hash serialize failed", "err", err)
+	coin := Coin{
+		Currency: c,
+		Amount:   big.NewInt(amount),
+	}
+	if !coin.IsValid() {
+		logger.Warn("Create Invalid Coin", coin)
 	}
 
-	_, err = hasher.Write(buffer)
-	if err != nil {
-		logger.Fatal("hasher failed", "err", err)
-	}
-
-	buffer = hasher.Sum(nil)
-
-	return hex.EncodeToString(buffer), nil
-}
-
-/*
-	Currency Extra
-*/
-type Extra struct {
-	Units   *big.Float
-	Decimal int
-	Format  uint8
-}
-
-// TODO: Separated from Currency to avoid serializing big floats and giving out this info
-
-func GetExtra(currency string) Extra {
-	if value, ok := currenciesExtra[currency]; ok {
-		return value
-	}
-	return currenciesExtra["OLT"]
+	return coin
 }
