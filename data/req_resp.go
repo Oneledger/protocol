@@ -12,7 +12,7 @@
 Copyright 2017 - 2019 OneLedger
 */
 
-package app
+package data
 
 import (
 	"github.com/pkg/errors"
@@ -29,21 +29,32 @@ var (
 // Request generic request object for query handling
 type Request struct {
 	Query  string
+	Data   []byte
 	Params map[string]interface{}
-	Ctx    context
 }
 
 // NewRequest creates a new request with given params.
-func NewRequest(query string, params map[string]interface{}) *Request {
+func NewRequest(query string, params map[string]interface{}) (*Request, error) {
 	req := &Request{Query: query, Params: params}
 
+	d, err := clSzlr.Serialize(params)
+	if err != nil {
+		return nil, errors.Wrap(err, "error creating new request")
+	}
+
+	req.Data = d
+	return req, nil
+}
+
+func NewRequestFromData(query string, dat []byte) *Request {
+	req := &Request{Query:query, Data:dat}
 	return req
 }
 
 // NewRequestFromObj creates a new request object from an arguments struct passed.
 // It serializes the argument struct object for a client channel and sets it against an argname.
 // You can check example argument structs in client/request.
-func NewRequestFromObj(query, argName string, obj interface{}) (*Request, error) {
+func NewRequestFromObj(query string, obj interface{}) (*Request, error) {
 	req := &Request{Query: query}
 
 	d, err := clSzlr.Serialize(obj)
@@ -51,8 +62,20 @@ func NewRequestFromObj(query, argName string, obj interface{}) (*Request, error)
 		return nil, errors.Wrap(err, "error creating new request")
 	}
 
-	req.Params = map[string]interface{}{argName: d}
+	req.Data = d
 	return req, nil
+}
+
+// Parse parses the data and saves it to params
+func (r *Request) Parse() {
+	p := map[string]interface{}{}
+
+	err := clSzlr.Deserialize(r.Data, &p)
+	if err != nil {
+		// log
+	}
+
+	r.Params = p
 }
 
 // GetString retrieves a string parameter saved in a request object. If a string parameter
@@ -152,7 +175,7 @@ type Response struct {
 
 func (r *Response) JSON(a interface{}) (err error) {
 
-	r.Data, err = jsonSerializer.Serialize(a)
+	r.Data, err = jsonSzlr.Serialize(a)
 	r.Success = true
 	return
 }
@@ -165,4 +188,14 @@ func (r *Response) Error(msg string) {
 func (r *Response) SetData(dat []byte) {
 	r.Data = dat
 	r.Success = true
+}
+
+func (r *Response) SetDataObj(obj interface{}) {
+	d, err := clSzlr.Serialize(obj)
+	if err != nil {
+		// TODO
+		// log err
+	}
+
+	r.SetData(d)
 }

@@ -1,5 +1,4 @@
 /*
-
    ____             _              _                      _____           _                  _
   / __ \           | |            | |                    |  __ \         | |                | |
  | |  | |_ __   ___| |     ___  __| | __ _  ___ _ __     | |__) | __ ___ | |_ ___   ___ ___ | |
@@ -13,4 +12,35 @@
 Copyright 2017 - 2019 OneLedger
 */
 
-package app
+package storage
+
+type iteratorItem struct {
+	key []byte
+	value []byte
+}
+
+type Iterator struct {
+	items []iteratorItem
+}
+
+func newIterator(items []iteratorItem) *Iterator {
+	return &Iterator{items: items}
+}
+
+
+func (i *Iterator) Key() []byte {
+	return i.items[0].key
+}
+
+func (i *Iterator) Value() []byte {
+	return i.items[0].value
+}
+
+func (i *Iterator) Next() bool {
+
+	if len(i.items) <= 1 {
+		return false
+	}
+	i.items = i.items[1:]
+	return true
+}

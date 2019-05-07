@@ -36,27 +36,23 @@ func TestCache_SetGet(t *testing.T) {
 	assert.Equal(t, dat, dat2)
 	assert.NoError(t, err)
 
-	exists, err := c.Exists(key)
+	exists := c.Exists(key)
 	assert.True(t, exists)
-	assert.NoError(t, err)
 
 	deleted, err := c.Delete(key)
 	assert.True(t, deleted)
 	assert.NoError(t, err)
 
-	exists, err = c.Exists(key)
+	exists = c.Exists(key)
 	assert.False(t, exists)
-	assert.NoError(t, err)
 
 	key2 := data.StoreKey("key2")
 	assert.NoError(t, c.Set(key2, dat))
 
-	exists, err = c.Exists(key)
+	exists = c.Exists(key)
 	assert.False(t, exists)
-	assert.NoError(t, err)
 
-	exists, err = c.Exists(key2)
+	exists = c.Exists(key2)
 	assert.True(t, exists)
-	assert.NoError(t, err)
 
 }

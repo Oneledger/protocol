@@ -29,7 +29,11 @@ func Example_newRouter() {
 		"name":   "exec",
 		"number": 1,
 	}
-	req := NewRequest("/exec", p)
+	req, err := NewRequest("/exec", p)
+	if err != nil {
+		// log
+		return
+	}
 	resp := &Response{}
 	r.Handle(*req, resp)
 
