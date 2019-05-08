@@ -8,47 +8,22 @@
                                       __/ |
                                      |___/
 
-	Copyright 2017 - 2019 OneLedger
 
+Copyright 2017 - 2019 OneLedger
 */
 
-package chain
+package main
 
 import (
-	"github.com/pkg/errors"
+	"github.com/Oneledger/protocol/client"
 )
 
-type Type int
+var Ctx client.Context
 
-type Chain struct {
-	ChainType   Type
-	Description string
-	Features    []string
-}
-
-var chainTypes = map[string]Type{}
-var chainTypeNames = map[Type]string{}
-
-func RegisterChainType(name string, id int) {
-	chainTypes[name] = Type(id)
-	chainTypeNames[Type(id)] = name
-}
-
-func (ctype Type) String() string {
-
-	name, ok := chainTypeNames[ctype]
-	if !ok {
-		return "INVALID"
+func init() {
+	var err error
+	Ctx, err = client.NewContext(client.RPC_ADDRESS)
+	if err != nil {
+		logger.Fatal("error starting rpc client", err)
 	}
-
-	return name
-}
-
-func TypeFromName(chainName string) (Type, error) {
-	typ, ok :=  chainTypes[chainName]
-	if !ok {
-		return Type(-1), errors.New("wrong chain name")
-	}
-
-	return typ, nil
 }

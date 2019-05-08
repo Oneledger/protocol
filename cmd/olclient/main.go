@@ -12,43 +12,14 @@
 
 */
 
-package chain
+package main
 
-import (
-	"github.com/pkg/errors"
+import ("github.com/Oneledger/protocol/log"
+	"os"
 )
 
-type Type int
+var logger = log.NewLoggerWithPrefix(os.Stdout, "olclient")
 
-type Chain struct {
-	ChainType   Type
-	Description string
-	Features    []string
-}
-
-var chainTypes = map[string]Type{}
-var chainTypeNames = map[Type]string{}
-
-func RegisterChainType(name string, id int) {
-	chainTypes[name] = Type(id)
-	chainTypeNames[Type(id)] = name
-}
-
-func (ctype Type) String() string {
-
-	name, ok := chainTypeNames[ctype]
-	if !ok {
-		return "INVALID"
-	}
-
-	return name
-}
-
-func TypeFromName(chainName string) (Type, error) {
-	typ, ok :=  chainTypes[chainName]
-	if !ok {
-		return Type(-1), errors.New("wrong chain name")
-	}
-
-	return typ, nil
+func main() {
+	Execute()
 }
