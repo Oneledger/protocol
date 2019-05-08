@@ -137,7 +137,7 @@ type context struct {
 	// status           data.Store
 	// contract         data.Store
 	// event            data.Store
-	balances *storage.ChainState
+	balances *balance.Store
 	accounts *accounts.WalletStore
 
 	currencies      map[string]balance.Currency
@@ -153,7 +153,7 @@ func newContext(cfg config.Server, rootDir string) (context, error) {
 		logWriter: os.Stdout, // TODO: This should be driven by configuration
 	}
 
-	ctx.balances = storage.NewChainState("balances", ctx.dbDir(), ctx.cfg.Node.DB, storage.PERSISTENT)
+	ctx.balances = balance.NewStore("balance", ctx.dbDir(), ctx.cfg.Node.DB, storage.PERSISTENT)
 	return ctx, nil
 }
 
@@ -170,13 +170,12 @@ func (ctx *context) Balances() *balance.Context {
 	return balance.NewContext(
 		log.NewLoggerWithPrefix(ctx.logWriter, "balances"),
 		ctx.balances,
-		ctx.currencies,
-		ctx.currenciesExtra)
+		ctx.currencies)
 }
 
 func (app *App) startRPCServer() {
 
-	handlers := NewClientHandler(app.nodeName, app.Context.balances, app.Accounts(), app.WalletStore())
+	handlers := NewClientHandler(app.nodeName, app.Context.balances, app.Context.accounts)
 	err := rpc.Register(handlers)
 	if err != nil {
 		app.logger.Fatal("error registering rpc handlers", "err", err)

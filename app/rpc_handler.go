@@ -22,22 +22,20 @@ import (
 	"github.com/Oneledger/protocol/data/accounts"
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/log"
-	"github.com/Oneledger/protocol/storage"
 	"github.com/pkg/errors"
 )
 
 type RPCServerCtx struct {
 	nodeName string
 	balances *balance.Store
-	accounts storage.Store
-	wallet   accounts.WalletStore
+	accounts *accounts.WalletStore
 
 	logger *log.Logger
 }
 
-func NewClientHandler(nodeName string, balances *balance.Store, accounts storage.Store, wallet accounts.WalletStore) *RPCServerCtx {
+func NewClientHandler(nodeName string, balances *balance.Store, accounts *accounts.WalletStore) *RPCServerCtx {
 
-	return &RPCServerCtx{nodeName, balances, accounts, wallet,
+	return &RPCServerCtx{nodeName, balances, accounts,
 		log.NewLoggerWithPrefix(os.Stdout, "client_Handler")}
 }
 
@@ -52,33 +50,19 @@ func (h *RPCServerCtx) NodeName(req data.Request, resp *data.Response) error {
 func (h *RPCServerCtx) GetBalance(key []byte, bal *balance.Balance) error {
 	defer h.recoverPanic()
 
-	bal, err := h.balances.Get(key)
+	bal, err := h.balances.Get(key, true)
 	return err
 }
 
 /*
 	Account Handlers start here
 */
-// GetAccount gets an account for an address
-func (h *RPCServerCtx) GetAccount(key []byte, acc *accounts.Account) error {
-	defer h.recoverPanic()
 
-	// TODO get account by name
-	d, err := h.accounts.Get(key)
-	if err != nil {
-		return err
-	}
-
-	acc = acc.FromBytes(d)
-
-	return nil
-}
-
-// AddAccount adds an account to wallet store of the node
+// AddAccount adds an account to accounts store of the node
 func (h *RPCServerCtx) AddAccount(acc accounts.Account, resp *data.Response) error {
 	defer h.recoverPanic()
 
-	err := h.wallet.Add(acc)
+	err := h.accounts.Add(acc)
 	if err != nil {
 		return errors.Wrap(err, "error in adding account to walletstore")
 	}
@@ -86,11 +70,11 @@ func (h *RPCServerCtx) AddAccount(acc accounts.Account, resp *data.Response) err
 	return nil
 }
 
-// DeleteAccount deletes an account from the wallet store of node
+// DeleteAccount deletes an account from the accounts store of node
 func (h *RPCServerCtx) DeleteAccount(acc accounts.Account, resp *data.Response) error {
 	defer h.recoverPanic()
 
-	err := h.wallet.Delete(acc)
+	err := h.accounts.Delete(acc)
 	if err != nil {
 		return errors.Wrap(err, "error in deleting account from walletstore")
 	}
@@ -98,11 +82,11 @@ func (h *RPCServerCtx) DeleteAccount(acc accounts.Account, resp *data.Response) 
 	return nil
 }
 
-// ListAccounts returns a list of all accounts in the wallet store of node
+// ListAccounts returns a list of all accounts in the accounts store of node
 func (h *RPCServerCtx) ListAccounts(req data.Request, resp *data.Response) error {
 	defer h.recoverPanic()
 
-	accs := h.wallet.Accounts()
+	accs := h.accounts.Accounts()
 	resp.SetDataObj(accs)
 
 	return nil
