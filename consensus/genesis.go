@@ -29,14 +29,14 @@ func NewGenesisDoc(chainID string, currencies []balance.Currency, states []State
 	}, nil
 }
 
-type State struct {
+type state struct {
 	// Hash of their public key
 	Address string              `json:"address"`
 	Balance balance.BalanceData `json:"balance"`
 }
 
-// StateInput returns a StateInput form of State, converts all serialize.Data types back into their native-form
-func (s State) StateInput() StateInput {
+// StateInput returns a StateInput form of state, converts all serialize.Data types back into their native-form
+func (s state) StateInput() StateInput {
 	b := new(balance.Balance)
 
 	// This should not return an error
@@ -52,10 +52,9 @@ type StateInput struct {
 	Balance balance.Balance
 }
 
-func (si StateInput) State() State {
+func (si StateInput) state() state {
 	data := si.Balance.Data().(*balance.BalanceData)
-
-	return State{
+	return state{
 		Address: si.Address,
 		Balance: *data,
 	}
@@ -63,13 +62,13 @@ func (si StateInput) State() State {
 
 type AppState struct {
 	Currencies []balance.Currency `json:"currencies"`
-	States     []State            `json:"states"`
+	States     []state            `json:"states"`
 }
 
 func newAppState(currencies []balance.Currency, stateInputs []StateInput) *AppState {
-	states := make([]State, len(stateInputs))
+	states := make([]state, len(stateInputs))
 	for i, s := range stateInputs {
-		states[i] = s.State()
+		states[i] = s.state()
 	}
 
 	return &AppState{

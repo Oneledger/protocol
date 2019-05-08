@@ -25,29 +25,21 @@ import (
  Currency starts here
 */
 
-
 type Currency struct {
 	Name  string     `json:"name"`
 	Chain chain.Type `json:"chain"`
 
-	Decimal int64
+	Decimal int64 `json:"decimal"`
 }
 
 func (c Currency) Base() *big.Int {
 	return big.NewInt(0).Exp(big.NewInt(10), big.NewInt(c.Decimal), nil)
 }
 
-
 // Create a coin from integer (not fractional)
 func (c Currency) NewCoinFromInt(amount int64) Coin {
-
-	coin := Coin{
+	return Coin{
 		Currency: c,
 		Amount:   big.NewInt(amount),
 	}
-	if !coin.IsValid() {
-		logger.Warn("Create Invalid Coin", coin)
-	}
-
-	return coin
 }

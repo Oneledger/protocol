@@ -4,7 +4,6 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"fmt"
-	"math/big"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -13,6 +12,8 @@ import (
 
 	"github.com/Oneledger/protocol/config"
 	"github.com/Oneledger/protocol/consensus"
+	"github.com/Oneledger/protocol/data/balance"
+	"github.com/Oneledger/protocol/data/chain"
 	"github.com/Oneledger/protocol/log"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -30,6 +31,9 @@ type testnetConfig struct {
 	chainID          string
 	dbType           string
 	namesPath        string
+	// Total amount of funds to be shared across each node
+	totalFunds        int64
+	singleOriginFunds bool
 }
 
 var testnetArgs = &testnetConfig{}
@@ -49,8 +53,9 @@ func init() {
 	testnetCmd.Flags().StringVar(&testnetArgs.chainID, "chain_id", "", "Specify a chain ID, a random one is generated if not given")
 	testnetCmd.Flags().StringVar(&testnetArgs.dbType, "db_type", "goleveldb", "Specify the type of DB backend to use: (goleveldb|cleveldb)")
 	testnetCmd.Flags().StringVar(&testnetArgs.namesPath, "names", "", "Specify a path to a file containing a list of names separated by newlines if you want the nodes to be generated with human-readable names")
-	// TODO:
-	// testnetCmd.Flags().IntVar(&test)
+	// 1 billion by default
+	testnetCmd.Flags().Int64Var(&testnetArgs.totalFunds, "total_funds", 1000000000, "The total amount of tokens in circulation")
+	testnetCmd.Flags().BoolVar(&testnetArgs.singleOriginFunds, "single_origin_funds", false, "If specified, allocates all possible tokens to a single account")
 }
 
 func randStr(size int) string {
@@ -66,9 +71,10 @@ func randStr(size int) string {
 // (1) Keep track of all of their P2P addresses including their addresses
 // (2) Modify their configurations to have each one have its persistent peer set
 type node struct {
-	cfg *config.Server
-	dir string
-	key *p2p.NodeKey
+	isValidator bool
+	cfg         *config.Server
+	dir         string
+	key         *p2p.NodeKey
 }
 
 func (n node) connectionDetails() string {
@@ -108,15 +114,14 @@ func generateAddress(port int, hasProtocol bool) string {
 
 // Just a basic context for the devnet cmd
 type devnetContext struct {
-	names      []string
-	totalFunds *big.Int
-	logger     *log.Logger
+	names  []string
+	logger *log.Logger
 }
 
 func newDevnetContext(args *testnetConfig) (*devnetContext, error) {
 	logger := log.NewLoggerWithPrefix(os.Stdout, "olfullnode devnet")
 
-	names := nodeNamesWithZeros("node", args.numNonValidators+args.numValidators)
+	names := nodeNamesWithZeros("", args.numNonValidators+args.numValidators)
 	// TODO: Reading from a file is actually unimplemented right now
 	if args.namesPath != "" {
 		logger.Warn("--names parameter is unimplemented")
@@ -158,21 +163,25 @@ func runDevnet(cmd *cobra.Command, _ []string) error {
 	}
 	args := testnetArgs
 
-	if args.numValidators+args.numNonValidators > len(ctx.names) {
+	totalNodes := args.numValidators + args.numNonValidators
+
+	if totalNodes > len(ctx.names) {
 		return fmt.Errorf("Don't have enough node names, can't specify more than %d nodes", len(ctx.names))
 	}
+
 	if args.dbType != "cleveldb" && args.dbType != "goleveldb" {
 		ctx.logger.Error("Invalid dbType specified, using goleveldb...", "dbType", args.dbType)
 		args.dbType = "goleveldb"
 	}
+
 	generatePort := portGenerator(26600)
 
 	validatorList := make([]consensus.GenesisValidator, args.numValidators)
-	nodeList := make([]node, args.numValidators+args.numNonValidators)
-	persistentPeers := make([]string, args.numNonValidators+args.numValidators)
+	nodeList := make([]node, totalNodes)
+	persistentPeers := make([]string, totalNodes)
 
 	// Create the GenesisValidator list and its key files priv_validator_key.json and node_key.json
-	for i := 0; i < args.numValidators+args.numNonValidators; i++ {
+	for i := 0; i < totalNodes; i++ {
 		isValidator := i < args.numValidators
 		nodeName := ctx.names[i]
 		nodeDir := filepath.Join(args.outputDir, nodeName+"-Node")
@@ -189,19 +198,12 @@ func runDevnet(cmd *cobra.Command, _ []string) error {
 		cfg.Network.SDKAddress = generateAddress(generatePort(), true)
 		cfg.Network.OLVMAddress = generateAddress(generatePort(), true)
 
-		err := os.MkdirAll(configDir, config.DirPerms)
-		if err != nil {
-			return err
-		}
-
-		err = os.MkdirAll(dataDir, config.DirPerms)
-		if err != nil {
-			return err
-		}
-
-		err = os.MkdirAll(nodeDataDir, config.DirPerms)
-		if err != nil {
-			return err
+		dirs := []string{configDir, dataDir, nodeDataDir}
+		for _, dir := range dirs {
+			err := os.MkdirAll(dir, config.DirPerms)
+			if err != nil {
+				return err
+			}
 		}
 
 		// Make node key
@@ -217,15 +219,16 @@ func runDevnet(cmd *cobra.Command, _ []string) error {
 
 		if isValidator {
 			validator := consensus.GenesisValidator{
-				PubKey: pvFile.GetPubKey(),
-				Name:   nodeName,
-				Power:  0,
+				Address: pvFile.GetAddress(),
+				PubKey:  pvFile.GetPubKey(),
+				Name:    nodeName,
+				Power:   0,
 			}
 			validatorList[i] = validator
 		}
 
 		// Save the nodes to a list so we can iterate again and
-		n := node{cfg, nodeDir, nodeKey}
+		n := node{isValidator, cfg, nodeDir, nodeKey}
 		nodeList[i] = n
 		persistentPeers[i] = n.connectionDetails()
 	}
@@ -238,11 +241,15 @@ func runDevnet(cmd *cobra.Command, _ []string) error {
 		chainID = args.chainID
 	}
 
-	// TODO: Share the money across everyone
-	genesisDoc, err := consensus.NewGenesisDoc(chainID)
+	currencies, states := initialState(args, nodeList)
+
+	genesisDoc, err := consensus.NewGenesisDoc(chainID, currencies, states)
+	if err != nil {
+		return errors.Wrap(err, "failed to create new genesis file")
+	}
 	genesisDoc.Validators = validatorList
 
-	for i := 0; i < args.numValidators+args.numNonValidators; i++ {
+	for i := 0; i < totalNodes; i++ {
 		nodeName := ctx.names[i]
 		nodeDir := filepath.Join(args.outputDir, nodeName+"-Node")
 		configDir := filepath.Join(nodeDir, "consensus", "config")
@@ -265,6 +272,7 @@ func runDevnet(cmd *cobra.Command, _ []string) error {
 		}
 		return false
 	}
+
 	for _, node := range nodeList {
 		node.cfg.P2P.PersistentPeers = persistentPeers
 		// Modify the btc and eth ports
@@ -279,5 +287,59 @@ func runDevnet(cmd *cobra.Command, _ []string) error {
 		}
 	}
 
+	ctx.logger.Info("Created configuration files for", strconv.Itoa(totalNodes), "nodes")
+
 	return nil
+}
+
+func initialState(args *testnetConfig, nodeList []node) ([]balance.Currency, []consensus.StateInput) {
+	olt := balance.Currency{"OLT", chain.Type(0), 18}
+	vt := balance.Currency{"VT", chain.Type(1), 0}
+	currencies := []balance.Currency{olt, vt}
+
+	var out []consensus.StateInput
+	// If single origin is active, then the first node in the list should hold all the funds
+	if args.singleOriginFunds {
+		b0 := balance.NewBalance()
+		b0.AddCoin(olt.NewCoinFromInt(args.totalFunds))
+		b0.AddCoin(vt.NewCoinFromInt(1))
+
+		out = []consensus.StateInput{
+			{
+				Address: nodeList[0].key.PubKey().Address().String(),
+				Balance: *b0,
+			},
+		}
+		for _, node := range nodeList {
+			if !node.isValidator {
+				continue
+			}
+			b := balance.NewBalance()
+			b.AddCoin(vt.NewCoinFromInt(1))
+			out = append(out, consensus.StateInput{
+				Address: node.key.PubKey().Address().String(),
+				Balance: *b,
+			})
+		}
+		return currencies, out
+	}
+
+	out = make([]consensus.StateInput, len(nodeList))
+	for i, node := range nodeList {
+		share := args.totalFunds / int64(len(nodeList))
+		b := balance.NewBalance()
+		b.AddCoin(olt.NewCoinFromInt(share))
+		if node.isValidator {
+			b.AddCoin(vt.NewCoinFromInt(1))
+		}
+		out[i] = consensus.StateInput{
+			Address: node.key.PubKey().Address().String(),
+			Balance: *b,
+		}
+
+		if node.isValidator {
+			out[i].Balance.AddCoin(vt.NewCoinFromInt(1))
+		}
+	}
+	return currencies, out
 }
