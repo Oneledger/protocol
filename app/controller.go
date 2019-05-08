@@ -66,7 +66,7 @@ func (app *App) blockBeginner() blockBeginner {
 			Tags: []common.KVPair(nil),
 		}
 
-		app.logger.Debug("ABCI: BeginBlock Result", "result", result)
+		app.logger.Debug("Begin Block:", result)
 		return result
 	}
 }
@@ -92,7 +92,7 @@ func (app *App) txChecker() txChecker {
 		} else {
 			code = CodeNotOK
 		}
-		return ResponseCheckTx{
+		result := ResponseCheckTx{
 			Code:                 code.uint32(),
 			Data:                 response.Data,
 			Log:                  response.Log,
@@ -102,7 +102,8 @@ func (app *App) txChecker() txChecker {
 			Tags:                 response.Tags,
 			Codespace:            "",
 		}
-
+		app.logger.Debug("Check Tx: ", result)
+		return result
 
 	}
 }
@@ -128,7 +129,9 @@ func (app *App) txDeliverer() txDeliverer {
 		} else {
 			code = CodeNotOK
 		}
-		return ResponseDeliverTx{
+
+
+		result := ResponseDeliverTx{
 			Code:                 code.uint32(),
 			Data:                 response.Data,
 			Log:                  response.Log,
@@ -138,6 +141,8 @@ func (app *App) txDeliverer() txDeliverer {
 			Tags:                 response.Tags,
 			Codespace:            "",
 		}
+		app.logger.Debug("Deliver Tx: ", result)
+		return result
 	}
 }
 
@@ -145,15 +150,31 @@ func (app *App) blockEnder() blockEnder {
 	return func(req RequestEndBlock) ResponseEndBlock {
 
 		updates := app.Context.validators.GetEndBlockUpdate(app.Context.ValidatorCtx(), req)
-		return ResponseEndBlock{
+
+
+		result := ResponseEndBlock{
 			ValidatorUpdates: updates,
 			Tags:             []common.KVPair(nil),
 		}
+		app.logger.Debug("End Block: ", result)
+		return result
 	}
 }
 
 func (app *App) commitor() commitor {
 	return func() ResponseCommit {
-		return ResponseCommit{}
+
+		// Commit any pending changes.
+		hash, version := app.Context.balances.Commit()
+		//log.Dump("ZERO IS NOW", app.Balances.Get(ZeroAccountKey))
+
+		app.logger.Debugf("Committed New Block hash[%s], version[%s]", hash, version)
+
+		result := ResponseCommit{
+			Data: hash,
+		}
+
+		app.logger.Debug("ABCI: EndBlock Result", "result", result)
+		return result
 	}
 }
