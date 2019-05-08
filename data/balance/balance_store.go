@@ -29,8 +29,8 @@ func NewStore(name, dbDir, configDB string, typ storage.StorageType) *Store {
 	return &Store{cs}
 }
 
-func (st *Store) Get(address []byte) (bal *Balance, err error) {
-	dat := st.chainState.Get(storage.StoreKey(address), true)
+func (st *Store) Get(address []byte, lastCommit bool) (bal *Balance, err error) {
+	dat := st.chainState.Get(storage.StoreKey(address), lastCommit)
 
 	err = serialize.GetSerializer(serialize.PERSISTENT).Deserialize(dat, bal)
 	return

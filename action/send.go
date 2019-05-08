@@ -64,7 +64,7 @@ func (s sendTx) ProcessCheck(ctx Context, msg Msg, fee Fee) (bool, Response) {
 	balances := ctx.Balances
 
 	send, _ := msg.(Send)
-	b := balances.Get(send.From.Bytes(), true)
+	b, _ := balances.Get(send.From.Bytes(), true)
 	if b == nil {
 		return false, Response{}
 	}
@@ -81,9 +81,9 @@ func (sendTx) ProcessDeliver(ctx Context, msg Msg, fee Fee) (bool, Response) {
 	balances := ctx.Balances
 	send, _ := msg.(Send)
 
-	from := balances.Get(send.From.Bytes(), false)
-	if from == nil {
-		logger.Debug("Failed to get the balance of the owner", send.From)
+	from, err := balances.Get(send.From.Bytes(), false)
+	if err != nil {
+		logger.Error("Failed to get the balance of the owner", send.From, "err", err)
 		return false, Response{}
 	}
 
@@ -94,15 +94,22 @@ func (sendTx) ProcessDeliver(ctx Context, msg Msg, fee Fee) (bool, Response) {
 
 	//change owner balance
 	from.MinusAmount(send.Amount)
-	balances.Set(send.From.Bytes(), from)
+	err = balances.Set(send.From.Bytes(), *from)
+	if err != nil {
+		logger.Error("error updating balance in send transaction", err)
+		return false, Response{}
+	}
 
 	//change receiver balance
-	to := balances.Get(send.To.Bytes(), false)
+	to, err := balances.Get(send.To.Bytes(), false)
+	if err != nil {
+		logger.Error("failed to get the balance of the receipient", err)
+	}
 	if to == nil {
 		to = balance.NewBalance()
 	}
 	to.AddAmount(send.Amount)
-	balances.Set(send.To.Bytes(), to)
+	balances.Set(send.To.Bytes(), *to)
 	return true, Response{Tags: send.Tags()}
 }
 

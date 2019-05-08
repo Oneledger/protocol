@@ -30,6 +30,7 @@ type App struct {
 	Context context
 
 	name   string
+	nodeName string
 	logger *log.Logger
 	sdk    common.Service // Probably needs to be changed
 
@@ -44,6 +45,7 @@ func NewApp(cfg config.Server, rootDir string) (*App, error) {
 		name:   "OneLedger",
 		logger: log.NewLoggerWithPrefix(os.Stdout, "app"),
 	}
+	app.nodeName = cfg.Node.NodeName
 
 	ctx, err := newContext(cfg, rootDir)
 	if err != nil {
@@ -52,6 +54,8 @@ func NewApp(cfg config.Server, rootDir string) (*App, error) {
 
 	app.Context = ctx
 	app.setNewABCI()
+
+	go app.startRPCServer()
 	return app, nil
 }
 
@@ -133,7 +137,7 @@ type context struct {
 	// status           data.Store
 	// contract         data.Store
 	// event            data.Store
-	balances *storage.ChainState
+	balances *balance.Store
 	accounts *accounts.WalletStore
 
 	currencies      map[string]balance.Currency
@@ -149,7 +153,7 @@ func newContext(cfg config.Server, rootDir string) (context, error) {
 		logWriter: os.Stdout, // TODO: This should be driven by configuration
 	}
 
-	ctx.balances = storage.NewChainState("balances", ctx.dbDir(), ctx.cfg.Node.DB, storage.PERSISTENT)
+	ctx.balances = balance.NewStore("balance", ctx.dbDir(), ctx.cfg.Node.DB, storage.PERSISTENT)
 	return ctx, nil
 }
 
@@ -166,13 +170,12 @@ func (ctx *context) Balances() *balance.Context {
 	return balance.NewContext(
 		log.NewLoggerWithPrefix(ctx.logWriter, "balances"),
 		ctx.balances,
-		ctx.currencies,
-		ctx.currenciesExtra)
+		ctx.currencies)
 }
 
 func (app *App) startRPCServer() {
 
-	handlers := client.NewClientHandler(app.Balances(), app.Accounts(), app.WalletStore())
+	handlers := NewClientHandler(app.nodeName, app.Context.balances, app.Context.accounts)
 	err := rpc.Register(handlers)
 	if err != nil {
 		app.logger.Fatal("error registering rpc handlers", "err", err)
@@ -185,5 +188,8 @@ func (app *App) startRPCServer() {
 		app.logger.Fatal("listen error:", e)
 	}
 
-	go http.Serve(l, nil)
+	err =  http.Serve(l, nil)
+	if err != nil {
+		app.logger.Fatal("error while starting the RPC server", "err", err)
+	}
 }

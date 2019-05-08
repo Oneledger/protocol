@@ -8,39 +8,20 @@
                                       __/ |
                                      |___/
 
+	Copyright 2017 - 2019 OneLedger
 
-Copyright 2017 - 2019 OneLedger
 */
 
-package storage
+package main
 
-type IterItem struct {
-	key []byte
-	value []byte
-}
+import (
+	"os"
 
-type Iterator struct {
-	items []IterItem
-}
+	"github.com/Oneledger/protocol/log"
+)
 
-func newIterator(items []IterItem) *Iterator {
-	return &Iterator{items: items}
-}
+var logger = log.NewLoggerWithPrefix(os.Stdout, "olclient")
 
-
-func (i *Iterator) Key() []byte {
-	return i.items[0].key
-}
-
-func (i *Iterator) Value() []byte {
-	return i.items[0].value
-}
-
-func (i *Iterator) Next() bool {
-
-	if len(i.items) <= 1 {
-		return false
-	}
-	i.items = i.items[1:]
-	return true
+func main() {
+	Execute()
 }

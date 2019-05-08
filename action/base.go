@@ -3,7 +3,6 @@ package action
 import (
 	"bytes"
 	"fmt"
-	"github.com/Oneledger/protocol/data"
 	"github.com/Oneledger/protocol/data/accounts"
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/keys"
@@ -12,8 +11,8 @@ import (
 )
 
 type Context struct {
-	Accounts data.Store
-	Balances storage.ChainState
+	Accounts storage.Store
+	Balances *balance.Store
 }
 
 type Msg interface {

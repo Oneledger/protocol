@@ -25,7 +25,7 @@ type Wallet interface {
 }
 
 type WalletStore struct {
-	store storage.Storage
+	store storage.SessionedStorage
 
 	accounts []storage.StoreKey
 }
@@ -49,7 +49,7 @@ func (ws WalletStore) Accounts() []Account {
 }
 
 func (ws *WalletStore) Add(account Account) error {
-	session := ws.store.Begin()
+	session := ws.store.BeginSession()
 	exist := session.Exists(account.Address().Bytes())
 	if exist {
 		return errors.New("account already exist: " + string(account.Address()))
@@ -65,7 +65,7 @@ func (ws *WalletStore) Add(account Account) error {
 }
 
 func (ws *WalletStore) Delete(account Account) error {
-	session := ws.store.Begin()
+	session := ws.store.BeginSession()
 	exist := session.Exists(account.Address().Bytes())
 	if !exist {
 		return errors.New("account already exist: " + string(account.Address()))
@@ -92,14 +92,10 @@ func (ws WalletStore) SignWithAddress(msg []byte, address keys.Address) ([]byte,
 }
 
 func NewWallet(config config.Server, dbDir string) WalletStore {
-	ctx := storage.Context{
-		DbDir: dbDir,
-		ConfigDB: config.Node.DB,
-	}
 
-	store := storage.NewSessionStorageDB(storage.KEYVALUE, "accounts", ctx)
+	store := storage.NewStorageDB(storage.KEYVALUE, "accounts", dbDir, config.Node.DB)
 
-	accountKeys := store.Begin().FindAll()
+	accountKeys := store.BeginSession().FindAll()
 
 	accounts := make([]storage.StoreKey, len(accountKeys))
 	for i, key := range accountKeys {

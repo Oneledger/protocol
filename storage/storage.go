@@ -18,59 +18,39 @@ import (
 	"encoding/hex"
 )
 
-var _ Storage = &KeyValue{}
-var _ StorageSession = &KeyValueSession{}
+var _ SessionedStorage = &KeyValue{}
+var _ Session = &KeyValueSession{}
 var _ Store = &cacheSafe{}
 var _ Store = &cache{}
 
-// Storage wraps objects with option to start a session(db transaction)
-type Storage interface {
+// SessionedStorage wraps objects with option to start a session(db transaction)
+type SessionedStorage interface {
 	Get(StoreKey) ([]byte, error)
 	Exists(StoreKey) (bool, error)
 
-	Begin() StorageSession
+	BeginSession() Session
 	Close()
+	ReadAll() []IterItem
+	Iterate(fn func(key []byte, value []byte) bool) (stopped bool)
 }
 
-// NewStorage initializes a non sessioned storage
-func NewStorage(flavor, name string) Store {
-	switch flavor {
-	case CACHE:
-		return NewCache(name)
-	case CACHE_SAFE:
-		return NewCacheSafe(name)
-	default:
-		log.Error("incorrect storage: ", flavor)
-	}
-	return nil
-}
-
-/*
-	StorageSession
-*/
-
-// StorageSession defines a session-ed storage object of your choice
-type StorageSession interface {
+// Session defines a session-ed storage object of your choice
+type Session interface {
 	Store
 	Commit() bool
 	FindAll() []StoreKey
 }
 
 // NewStorageSession creates a new SessionStorage
-func NewSessionStorageDB(flavor, name string, ctx Context) Storage {
+func NewStorageDB(flavor, name string, DBDir, DBType string) SessionedStorage {
 
 	switch flavor {
 	case KEYVALUE:
-		return newKeyValue(name, ctx.DbDir, ctx.ConfigDB, PERSISTENT)
+		return newKeyValue(name, DBDir, DBType, PERSISTENT)
 	default:
 		log.Error("incorrect session storage: ", flavor)
 	}
 	return nil
-}
-
-type Context struct {
-	DbDir    string
-	ConfigDB string
 }
 
 
@@ -93,4 +73,19 @@ type Store interface {
 	Set(StoreKey, []byte) error
 	Exists(StoreKey) bool
 	Delete(StoreKey) (bool, error)
+	GetIterator() *Iterator
+}
+
+
+// NewStorage initializes a non sessioned storage
+func NewStorage(flavor, name string) Store {
+	switch flavor {
+	case CACHE:
+		return NewCache(name)
+	case CACHE_SAFE:
+		return NewCacheSafe(name)
+	default:
+		log.Error("incorrect storage: ", flavor)
+	}
+	return nil
 }

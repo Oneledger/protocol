@@ -20,7 +20,7 @@ import (
 )
 
 func TestIterator(t *testing.T) {
-	items := []iteratorItem{
+	items := []IterItem{
 		{[]byte("a"), []byte("a123")},
 		{[]byte("b"), []byte("a123")},
 		{[]byte("c"), []byte("a123")},

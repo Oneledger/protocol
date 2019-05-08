@@ -41,16 +41,11 @@ func NewLocalContext(node *node.Node) (cliCtx Context) {
 	tmClient := rpcclient.NewLocal(node)
 
 
-	oltClient, err := rpc.DialHTTP("tcp",  RPC_ADDRESS)
-	if err != nil {
-		logger.Fatal("dialing:", err)
-	}
 
 	cliCtx = Context{
 		rpcClient:     tmClient,
 		broadcastMode: BroadcastAsync,
 		proof:         false,
-		oltClient:     oltClient,
 	}
 	return
 }

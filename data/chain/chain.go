@@ -14,6 +14,10 @@
 
 package chain
 
+import (
+	"github.com/pkg/errors"
+)
+
 type Type int
 
 type Chain struct {
@@ -38,4 +42,13 @@ func (ctype Type) String() string {
 	}
 
 	return name
+}
+
+func TypeFromName(chainName string) (Type, error) {
+	typ, ok :=  chainTypes[chainName]
+	if !ok {
+		return Type(-1), errors.New("wrong chain name")
+	}
+
+	return typ, nil
 }

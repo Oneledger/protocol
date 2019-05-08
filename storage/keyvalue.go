@@ -32,7 +32,7 @@ import (
 	"github.com/tendermint/tendermint/libs/db"
 )
 
-var k Storage = KeyValue{}
+var k SessionedStorage = KeyValue{}
 var ErrNilData = errors.New("data is nil")
 
 /*
@@ -94,8 +94,8 @@ func newKeyValue(name, dbDir, configDB string, newType StorageType) *KeyValue {
 	return nil
 }
 
-// Begin a new writable session
-func (store KeyValue) Begin() StorageSession {
+// BeginSession a new writable session
+func (store KeyValue) BeginSession() Session {
 	return NewKeyValueSession(&store)
 }
 
@@ -164,6 +164,22 @@ func (store KeyValue) Get(key StoreKey) ([]byte, error) {
 
 }
 
+func (store KeyValue) Iterate(fn func(key []byte, value []byte) bool) (stopped bool) {
+	return store.tree.Iterate(fn)
+}
+
+func (store KeyValue) ReadAll() []IterItem {
+	a := make([]IterItem, 0, 100)
+
+	store.tree.Iterate(func(key []byte, value []byte) bool {
+		a = append(a, IterItem{key, value})
+		return false
+	})
+
+
+	return a
+}
+
 // List all of the keys
 func (store KeyValue) list() (keys []StoreKey) {
 	switch store.Type {
@@ -201,7 +217,7 @@ type KeyValueSession struct {
 }
 
 // Create a new session
-func NewKeyValueSession(store *KeyValue) StorageSession {
+func NewKeyValueSession(store *KeyValue) Session {
 	return &KeyValueSession{store: store}
 }
 
@@ -268,6 +284,11 @@ func (session KeyValueSession) Commit() bool {
 	session.store.version = version
 
 	return true
+}
+
+// GetIterator dummy iterator
+func (session KeyValueSession) GetIterator() *Iterator {
+	return nil
 }
 
 // Rollback any changes since the last commit

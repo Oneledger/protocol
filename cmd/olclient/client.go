@@ -12,35 +12,18 @@
 Copyright 2017 - 2019 OneLedger
 */
 
-package storage
+package main
 
-type IterItem struct {
-	key []byte
-	value []byte
-}
+import (
+	"github.com/Oneledger/protocol/client"
+)
 
-type Iterator struct {
-	items []IterItem
-}
+var Ctx client.Context
 
-func newIterator(items []IterItem) *Iterator {
-	return &Iterator{items: items}
-}
-
-
-func (i *Iterator) Key() []byte {
-	return i.items[0].key
-}
-
-func (i *Iterator) Value() []byte {
-	return i.items[0].value
-}
-
-func (i *Iterator) Next() bool {
-
-	if len(i.items) <= 1 {
-		return false
+func init() {
+	var err error
+	Ctx, err = client.NewContext(client.RPC_ADDRESS)
+	if err != nil {
+		logger.Fatal("error starting rpc client", err)
 	}
-	i.items = i.items[1:]
-	return true
 }
