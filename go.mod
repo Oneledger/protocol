@@ -17,7 +17,6 @@ require (
 	github.com/google/gofuzz v1.0.0 // indirect
 	github.com/google/uuid v1.1.1
 	github.com/gorilla/websocket v1.4.0 // indirect
-	github.com/inconshreveable/mousetrap v1.0.0 // indirect
 	github.com/jmhodges/levigo v1.0.0 // indirect
 	github.com/mattn/go-isatty v0.0.7 // indirect
 	github.com/pborman/uuid v1.2.0 // indirect
@@ -41,5 +40,4 @@ require (
 	golang.org/x/text v0.3.1-0.20180807135948-17ff2d5776d2 // indirect
 	google.golang.org/appengine v1.5.0 // indirect
 	google.golang.org/genproto v0.0.0-20190418145605-e7d98fc518a7 // indirect
-	gopkg.in/sourcemap.v1 v1.0.5 // indirect
 )

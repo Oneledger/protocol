@@ -16,7 +16,6 @@ package main
 
 import (
 	"fmt"
-	"github.com/Oneledger/protocol/node/global"
 	"os"
 
 	"github.com/spf13/cobra"
@@ -29,6 +28,7 @@ var RootCmd = &cobra.Command{
 }
 
 var rootArgs = rootArguments{}
+
 type rootArguments struct {
 	rootDir string
 }
@@ -40,17 +40,17 @@ func init() {
 		"./", "Set root directory")
 
 	/*
-	RootCmd.PersistentFlags().StringVar(&global.Current.NodeName, "node",
-		global.Current.NodeName, "Set a node name")
+		RootCmd.PersistentFlags().StringVar(&global.Current.NodeName, "node",
+			global.Current.NodeName, "Set a node name")
 
-	RootCmd.PersistentFlags().BoolVarP(&global.Current.Debug, "debug", "d",
-		global.Current.Debug, "Set DEBUG mode")
+		RootCmd.PersistentFlags().BoolVarP(&global.Current.Debug, "debug", "d",
+			global.Current.Debug, "Set DEBUG mode")
 
-	RootCmd.PersistentFlags().StringVarP(&global.Current.Config.Network.RPCAddress, "address", "a",
-		global.Current.Config.Network.RPCAddress, "full address")
+		RootCmd.PersistentFlags().StringVarP(&global.Current.Config.Network.RPCAddress, "address", "a",
+			global.Current.Config.Network.RPCAddress, "full address")
 
-	RootCmd.PersistentFlags().StringVar(&global.Current.Config.Network.SDKAddress, "sdkrpc",
-		global.Current.Config.Network.SDKAddress, "SDK address")
+		RootCmd.PersistentFlags().StringVar(&global.Current.Config.Network.SDKAddress, "sdkrpc",
+			global.Current.Config.Network.SDKAddress, "SDK address")
 	*/
 }
 

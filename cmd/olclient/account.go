@@ -15,17 +15,13 @@
 package main
 
 import (
-	"fmt"
+	"strings"
+
 	"github.com/Oneledger/protocol/data"
 	"github.com/Oneledger/protocol/data/accounts"
 	"github.com/Oneledger/protocol/data/chain"
 	"github.com/Oneledger/protocol/data/keys"
-	"github.com/Oneledger/protocol/node/cmd/shared"
-	"github.com/Oneledger/protocol/node/comm"
-	"github.com/Oneledger/protocol/node/id"
 	"github.com/spf13/cobra"
-	"reflect"
-	"strings"
 )
 
 var updateCmd = &cobra.Command{
@@ -43,7 +39,6 @@ type UpdateArguments struct {
 	chainkey    string
 	nodeaccount bool
 }
-
 
 var updateArgs = &UpdateArguments{}
 

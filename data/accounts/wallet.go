@@ -92,14 +92,10 @@ func (ws WalletStore) SignWithAddress(msg []byte, address keys.Address) ([]byte,
 }
 
 func NewWallet(config config.Server, dbDir string) WalletStore {
-	ctx := storage.Context{
-		DbDir: dbDir,
-		ConfigDB: config.Node.DB,
-	}
 
-	store := storage.NewStorageDB(storage.KEYVALUE, "accounts", ctx)
+	store := storage.NewStorageDB(storage.KEYVALUE, "accounts", dbDir, config.Node.DB)
 
-	accountKeys := store.Begin().FindAll()
+	accountKeys := store.BeginSession().FindAll()
 
 	accounts := make([]storage.StoreKey, len(accountKeys))
 	for i, key := range accountKeys {

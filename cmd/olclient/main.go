@@ -14,8 +14,10 @@
 
 package main
 
-import ("github.com/Oneledger/protocol/log"
+import (
 	"os"
+
+	"github.com/Oneledger/protocol/log"
 )
 
 var logger = log.NewLoggerWithPrefix(os.Stdout, "olclient")

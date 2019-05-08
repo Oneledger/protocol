@@ -35,7 +35,6 @@ var listCmd = &cobra.Command{
 
 var list = &ListArguments{}
 
-
 func init() {
 	RootCmd.AddCommand(listCmd)
 
@@ -45,7 +44,6 @@ func init() {
 	listCmd.Flags().StringVar(&list.accountName, "account", "", "account name")
 	listCmd.Flags().BoolVar(&list.validators, "validators", false, "include validators")
 }
-
 
 // IssueRequest sends out a sendTx to all of the nodes in the chain
 func ListNode(cmd *cobra.Command, args []string) {

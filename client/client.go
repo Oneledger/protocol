@@ -40,11 +40,12 @@ type Context struct {
 func NewLocalContext(node *node.Node) (cliCtx Context) {
 	tmClient := rpcclient.NewLocal(node)
 
+
+
 	cliCtx = Context{
 		rpcClient:     tmClient,
 		broadcastMode: BroadcastAsync,
 		proof:         false,
-		oltClient:     oltClient,
 	}
 	return
 }
