@@ -22,6 +22,7 @@ import (
 	"github.com/Oneledger/protocol/data/chain"
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/spf13/cobra"
+	"github.com/tendermint/tendermint/crypto/ed25519"
 )
 
 var updateCmd = &cobra.Command{
@@ -63,18 +64,33 @@ func UpdateAccount(cmd *cobra.Command, args []string) {
 		logger.Error("chain not registered")
 		return
 	}
-	pubKeyStr := strings.TrimPrefix(updateArgs.pubkey, "0x")
-	pubKey, err := keys.GetPublicKeyFromBytes([]byte(pubKeyStr), keys.ED25519)
-	if err != nil {
-		logger.Error("incorrect public key", err)
-		return
-	}
 
-	privKeyStr := strings.TrimPrefix(updateArgs.privkey, "0x")
-	privKey, err := keys.GetPrivateKeyFromBytes([]byte(privKeyStr), keys.ED25519)
-	if err != nil {
-		logger.Error("incorrect private key", err)
-		return
+	var privKey keys.PrivateKey
+	var pubKey  keys.PublicKey
+
+	if updateArgs.privkey == "" || updateArgs.pubkey == ""{
+		// if a public key or a private key is not passed; generate a pair of keys
+		tmPrivKey := ed25519.GenPrivKey()
+		tmPublicKey := tmPrivKey.PubKey()
+
+		privKey = keys.PrivateKey{keys.ED25519, tmPrivKey.Bytes()}
+		pubKey = keys.PublicKey{keys.ED25519, tmPublicKey.Bytes()}
+	} else {
+		// parse keys passed through commandline
+
+		pubKeyStr := strings.TrimPrefix(updateArgs.pubkey, "0x")
+		pubKey, err = keys.GetPublicKeyFromBytes([]byte(pubKeyStr), keys.ED25519)
+		if err != nil {
+			logger.Error("incorrect public key", err)
+			return
+		}
+
+		privKeyStr := strings.TrimPrefix(updateArgs.privkey, "0x")
+		privKey, err = keys.GetPrivateKeyFromBytes([]byte(privKeyStr), keys.ED25519)
+		if err != nil {
+			logger.Error("incorrect private key", err)
+			return
+		}
 	}
 
 	acc, err := accounts.NewAccount(typ, updateArgs.account, privKey, pubKey)
