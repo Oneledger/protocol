@@ -14,5 +14,4 @@ Copyright 2017 - 2019 OneLedger
 
 package data
 
-import "encoding/hex"
 

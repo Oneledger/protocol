@@ -17,11 +17,9 @@ package storage
 import (
 	"bytes"
 	"sync"
-
-	"github.com/Oneledger/protocol/data"
 )
 
-/* cache is a simple in-memory keyvalue store, to store binary data. This is not thread safe and
+/* cache is a simple in-memory keyvalue store, to store binary  This is not thread safe and
 any concurrent read/write might throw panics.
 */
 type cache struct {
@@ -29,15 +27,15 @@ type cache struct {
 	store map[string][]byte
 }
 
-// cache satisfies data.Store interface
-var _ data.Store = &cache{}
+// cache satisfies Store interface
+var _ Store = &cache{}
 
 func NewCache(name string) *cache {
 	return &cache{name, map[string][]byte{}}
 }
 
 // Get retrieves data for a key.
-func (c *cache) Get(key data.StoreKey) ([]byte, error) {
+func (c *cache) Get(key StoreKey) ([]byte, error) {
 
 	d, ok := c.store[string(key)]
 	if !ok {
@@ -48,7 +46,7 @@ func (c *cache) Get(key data.StoreKey) ([]byte, error) {
 }
 
 // Exists checks if a key exists in the database.
-func (c *cache) Exists(key data.StoreKey) bool {
+func (c *cache) Exists(key StoreKey) bool {
 
 	_, ok := c.store[string(key)]
 
@@ -56,7 +54,7 @@ func (c *cache) Exists(key data.StoreKey) bool {
 }
 
 // Set is used to store or update some data with a key
-func (c *cache) Set(key data.StoreKey, dat []byte) error {
+func (c *cache) Set(key StoreKey, dat []byte) error {
 
 	c.store[string(key)] = dat
 
@@ -64,7 +62,7 @@ func (c *cache) Set(key data.StoreKey, dat []byte) error {
 }
 
 // Delete removes any data stored against a key
-func (c *cache) Delete(key data.StoreKey) (bool, error) {
+func (c *cache) Delete(key StoreKey) (bool, error) {
 
 	delete(c.store, string(key))
 	return true, nil
@@ -79,7 +77,6 @@ func (c *cache) GetIterator() *Iterator {
 
 	return newIterator(items)
 }
-
 
 func (c *cache) GetRangeIterator(start, end []byte) *Iterator {
 	items := make([]IterItem, 0)
@@ -104,15 +101,15 @@ type cacheSafe struct {
 	cache
 }
 
-// cacheSafe pointer satisfies data.Store interface
-var _ data.Store = &cacheSafe{}
+// cacheSafe pointer satisfies Store interface
+var _ Store = &cacheSafe{}
 
 func NewCacheSafe(name string) *cacheSafe {
 	return &cacheSafe{sync.RWMutex{}, cache{name, map[string][]byte{}}}
 }
 
 // Get retrieves data for a key.
-func (c *cacheSafe) Get(key data.StoreKey) ([]byte, error) {
+func (c *cacheSafe) Get(key StoreKey) ([]byte, error) {
 	c.RLock()
 	defer c.RUnlock()
 
@@ -120,7 +117,7 @@ func (c *cacheSafe) Get(key data.StoreKey) ([]byte, error) {
 }
 
 // Exists checks if a key exists in the database.
-func (c *cacheSafe) Exists(key data.StoreKey) bool {
+func (c *cacheSafe) Exists(key StoreKey) bool {
 	c.RLock()
 	defer c.RUnlock()
 
@@ -128,7 +125,7 @@ func (c *cacheSafe) Exists(key data.StoreKey) bool {
 }
 
 // Set is used to store or update some data with a key
-func (c *cacheSafe) Set(key data.StoreKey, dat []byte) error {
+func (c *cacheSafe) Set(key StoreKey, dat []byte) error {
 	c.Lock()
 	defer c.Unlock()
 
@@ -136,7 +133,7 @@ func (c *cacheSafe) Set(key data.StoreKey, dat []byte) error {
 }
 
 // Delete removes any data stored against a key
-func (c *cacheSafe) Delete(key data.StoreKey) (bool, error) {
+func (c *cacheSafe) Delete(key StoreKey) (bool, error) {
 	c.Lock()
 	defer c.Unlock()
 
@@ -150,7 +147,6 @@ func (c *cacheSafe) GetIterator() *Iterator {
 	return c.cache.GetIterator()
 }
 
-
 func (c *cacheSafe) GetRangeIterator(start, end []byte) *Iterator {
 	c.RLock()
 	defer c.RUnlock()
@@ -161,7 +157,7 @@ func (c *cacheSafe) GetRangeIterator(start, end []byte) *Iterator {
 /*
 	utils
 */
-func  isKeyInDomain(key, start, end []byte) bool {
+func isKeyInDomain(key, start, end []byte) bool {
 	if bytes.Compare(key, start) < 0 {
 		return false
 	}

@@ -87,9 +87,8 @@ func bfloat2bint(value *big.Float, base *big.Float) *big.Int {
 // Handle a big int to outgoing float
 func bint2float(amount *big.Int, base *big.Float) float64 {
 	value := new(big.Float).SetInt(amount)
-	basef := new(big.Float).SetInt(base)
 
-	interim := value.Quo(value, basef)
+	interim := value.Quo(value, base)
 	result, _ := interim.Float64()
 
 	return result

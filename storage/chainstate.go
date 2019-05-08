@@ -73,6 +73,8 @@ func (state *ChainState) Set(key StoreKey, val []byte) error {
 	if !setOk {
 		return fmt.Errorf("%s %#v \n", "failed to set bal", val)
 	}
+
+	return nil
 }
 
 // Expensive O(n) search through everything...
