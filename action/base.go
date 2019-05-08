@@ -7,13 +7,7 @@ import (
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/serialize"
-	"github.com/Oneledger/protocol/storage"
 )
-
-type Context struct {
-	Accounts storage.Store
-	Balances *balance.Store
-}
 
 type Msg interface {
 	// return the necessary signers for the message, should have consistent order across the network
@@ -122,13 +116,7 @@ func (t *BaseTx) valideBasic() (bool, error) {
 }
 
 func sign(ctx Context, address Address, msg []byte) (Signature, error) {
-	value, err := ctx.Accounts.Get(address.Bytes())
-	if err != nil {
-		return Signature{}, fmt.Errorf("failed to get account for sign: %s", err)
-	}
-
-	account := (&accounts.Account{}).FromBytes(value)
-	signed, err := account.Sign(msg)
+	signed, err := ctx.Accounts.SignWithAddress(msg, address.Bytes())
 	if err != nil {
 		return Signature{}, fmt.Errorf("failed to sign: %s", err)
 	}

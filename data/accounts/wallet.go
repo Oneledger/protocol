@@ -19,6 +19,8 @@ type Wallet interface {
 
 	Delete(Account) error
 
+	GetAccount(address keys.Address) (Account, error)
+
 	SignWithAccountIndex([]byte, int) ([]byte, error)
 
 	SignWithAddress([]byte, keys.Address) ([]byte, error)
@@ -74,6 +76,16 @@ func (ws *WalletStore) Delete(account Account) error {
 	return err
 }
 
+func (ws WalletStore) GetAccount(address keys.Address) (Account, error) {
+	value, err := ws.store.Get(address.Bytes())
+	if err != nil {
+		return Account{}, fmt.Errorf("failed to get account by address: %s", err)
+	}
+	var account = &Account{}
+	account = account.FromBytes(value)
+	return *account, nil
+}
+
 func (ws WalletStore) SignWithAccountIndex(msg []byte, index int) ([]byte, error) {
 	if index > len(ws.accounts) {
 		return nil, fmt.Errorf("account index out of range")
@@ -82,16 +94,14 @@ func (ws WalletStore) SignWithAccountIndex(msg []byte, index int) ([]byte, error
 }
 
 func (ws WalletStore) SignWithAddress(msg []byte, address keys.Address) ([]byte, error) {
-	value, err := ws.store.Get(address.Bytes())
+	account, err := ws.GetAccount(address)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get account by address: %s", err)
+		return nil, err
 	}
-	var account = &Account{}
-	account = account.FromBytes(value)
 	return account.Sign(msg)
 }
 
-func NewWallet(config config.Server, dbDir string) WalletStore {
+func NewWallet(config config.Server, dbDir string) Wallet {
 
 	store := storage.NewStorageDB(storage.KEYVALUE, "accounts", dbDir, config.Node.DB)
 
@@ -102,7 +112,7 @@ func NewWallet(config config.Server, dbDir string) WalletStore {
 		accounts[i] = key
 	}
 
-	return WalletStore{
+	return &WalletStore{
 		store,
 		accounts,
 	}

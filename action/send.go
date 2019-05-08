@@ -59,7 +59,7 @@ func (sendTx) Validate(msg Msg, fee Fee, signatures []Signature) (bool, error) {
 	return base.valideBasic()
 }
 
-func (s sendTx) ProcessCheck(ctx Context, msg Msg, fee Fee) (bool, Response) {
+func (sendTx) ProcessCheck(ctx *Context, msg Msg, fee Fee) (bool, Response) {
 	logger.Debug("Processing Send Transaction for CheckTx", msg, fee)
 	balances := ctx.Balances
 
@@ -75,7 +75,7 @@ func (s sendTx) ProcessCheck(ctx Context, msg Msg, fee Fee) (bool, Response) {
 	return true, Response{Tags: send.Tags()}
 }
 
-func (sendTx) ProcessDeliver(ctx Context, msg Msg, fee Fee) (bool, Response) {
+func (sendTx) ProcessDeliver(ctx *Context, msg Msg, fee Fee) (bool, Response) {
 	logger.Debug("Processing Send Transaction for DeliverTx", msg, fee)
 
 	balances := ctx.Balances
@@ -93,7 +93,7 @@ func (sendTx) ProcessDeliver(ctx Context, msg Msg, fee Fee) (bool, Response) {
 	}
 
 	//change owner balance
-	from.MinusAmount(send.Amount)
+	from.MinusCoin(send.Amount)
 	err = balances.Set(send.From.Bytes(), *from)
 	if err != nil {
 		logger.Error("error updating balance in send transaction", err)
@@ -108,8 +108,11 @@ func (sendTx) ProcessDeliver(ctx Context, msg Msg, fee Fee) (bool, Response) {
 	if to == nil {
 		to = balance.NewBalance()
 	}
-	to.AddAmount(send.Amount)
-	balances.Set(send.To.Bytes(), *to)
+	to.MinusCoin(send.Amount)
+	err = balances.Set(send.To.Bytes(), *to)
+	if err != nil {
+		return false, Response{}
+	}
 	return true, Response{Tags: send.Tags()}
 }
 
@@ -126,7 +129,7 @@ func enoughBalance(b Balance, value Coin) bool {
 	}
 
 	total := balance.NewBalance()
-	total.AddAmount(value)
+	total.MinusCoin(value)
 	if !b.IsEnoughBalance(*total) {
 		return false
 	}

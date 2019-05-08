@@ -17,7 +17,6 @@ package action
 import (
 	"errors"
 	"github.com/Oneledger/protocol/log"
-	"github.com/Oneledger/protocol/serialize"
 	"os"
 )
 
@@ -25,7 +24,7 @@ import (
 // Handle a request.
 type Router interface {
 	AddHandler(Type, Tx) error
-	Handler([]byte) Tx
+	Handler(Msg) Tx
 }
 
 // router is an implementation of a Router interface, currently all routes are stored in a map
@@ -55,19 +54,11 @@ func (r *router) AddHandler(t Type, h Tx) error {
 }
 
 // Handle
-func (r *router) Handler(msg []byte) Tx {
-	var tx BaseTx
+func (r *router) Handler(msg Msg) Tx {
 
-	err := serialize.GetSerializer(serialize.NETWORK).Deserialize(msg, tx)
-	if err != nil {
-		r.logger.Errorf("failed to deserialize msg: %s, error: %s ", msg, err)
-	}
-
-	data := tx.Data
-
-	h, ok := r.routes[data.Type()]
+	h, ok := r.routes[msg.Type()]
 	if !ok {
-		r.logger.Error("handler not found", tx)
+		r.logger.Error("handler not found", msg)
 	}
 
 	return h

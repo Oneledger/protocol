@@ -9,11 +9,11 @@ type Tx interface {
 
 	//check tx on the first node who receives it, if process check failed, the tx will not be broadcast
 	//could store a version of checked value in storage, but not implemented now
-	ProcessCheck(ctx Context, msg Msg, fee Fee) (bool, Response)
+	ProcessCheck(ctx *Context, msg Msg, fee Fee) (bool, Response)
 
 	//deliver tx on the chain by changing the storage values, which should only be committed at Application
 	//commit stage
-	ProcessDeliver(ctx Context, msg Msg, fee Fee) (bool, Response)
+	ProcessDeliver(ctx *Context, msg Msg, fee Fee) (bool, Response)
 
 	//process the charge of fees
 	ProcessFee(ctx Context, fee Fee) (bool, Response)

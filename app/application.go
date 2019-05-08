@@ -2,6 +2,8 @@ package app
 
 import (
 	"encoding/hex"
+	"github.com/Oneledger/protocol/action"
+	"github.com/Oneledger/protocol/identity"
 	"io"
 	"net"
 	"net/http"
@@ -35,7 +37,6 @@ type App struct {
 	sdk    common.Service // Probably needs to be changed
 
 	header     Header      // Tendermint last header info
-	validators interface{} // Set of validators currently active
 	abci       *ABCI
 }
 
@@ -137,8 +138,12 @@ type context struct {
 	// status           data.Store
 	// contract         data.Store
 	// event            data.Store
+	actionRouter action.Router
+
 	balances *balance.Store
-	accounts *accounts.WalletStore
+	accounts accounts.Wallet
+
+	validators *identity.Validators // Set of validators currently active
 
 	currencies      map[string]balance.Currency
 
@@ -154,6 +159,12 @@ func newContext(cfg config.Server, rootDir string) (context, error) {
 	}
 
 	ctx.balances = balance.NewStore("balance", ctx.dbDir(), ctx.cfg.Node.DB, storage.PERSISTENT)
+
+	ctx.accounts = accounts.NewWallet(cfg, cfg.Node.DBDir)
+	ctx.validators = identity.NewValidators()
+
+	ctx.actionRouter = action.NewRouter("action")
+
 	return ctx, nil
 }
 
@@ -161,9 +172,21 @@ func (ctx context) dbDir() string {
 	return filepath.Join(ctx.rootDir, ctx.cfg.Node.DBDir)
 }
 
-func (ctx *context) Action()   {}
+func (ctx *context) Action() *action.Context  {
+	return action.NewContext(
+		ctx.actionRouter,
+		ctx.accounts,
+		ctx.balances,
+		log.NewLoggerWithPrefix(ctx.logWriter, "action"))
+}
+
 func (ctx *context) ID()       {}
 func (ctx *context) Accounts() {}
+
+
+func (ctx *context) ValidatorCtx() *identity.ValidatorContext {
+	return identity.NewValidatorContext(ctx.balances)
+}
 
 // Returns a balance.Context
 func (ctx *context) Balances() *balance.Context {
