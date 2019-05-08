@@ -24,7 +24,7 @@ import (
 // from a BalanceAdapter object and vice versa.
 // There is a map flattening of course for Coins
 type BalanceData struct {
-	Coins []CoinData `json:"pl"`
+	Coins []CoinData `json:"coins"`
 	Tag   string     `json:"tag"` // Tag is a field used to identify the type after ser/deser
 	// will be useful in future
 }
@@ -50,7 +50,6 @@ func (b *Balance) NewDataInstance() serialize.Data {
 func (b *Balance) Data() serialize.Data {
 	//initialize with source pointer
 	bd := &BalanceData{Tag: "balance_data"}
-
 	// this allows to reserve capacity so the process of adding
 	// items to the list
 	bd.Coins = make([]CoinData, 0, len(b.Amounts))
@@ -65,7 +64,6 @@ func (b *Balance) Data() serialize.Data {
 
 		bd.Coins = append(bd.Coins, cd)
 	}
-
 	return bd
 }
 

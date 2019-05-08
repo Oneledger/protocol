@@ -115,18 +115,8 @@ func (b *Balance) GetCoin(currency Currency) Coin {
 	return b.Amounts[int(currency.Chain)]
 }
 
-func (b *Balance) SetAmount(coin Coin) {
+func (b *Balance) setAmount(coin Coin) {
 	b.Amounts[int(coin.Currency.Chain)] = coin
-	return
-}
-
-func (b *Balance) AddAmount(coin Coin) {
-	b.AddCoin(coin)
-	return
-}
-
-func (b *Balance) MinusAmount(coin Coin) {
-	b.MinusCoin(coin)
 	return
 }
 
