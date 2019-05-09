@@ -44,6 +44,32 @@ func (c Currency) NewCoinFromInt(amount int64) Coin {
 	}
 }
 
+
+// TODO
+// Create a coin from integer (not fractional)
+func (c Currency) NewCoinFromFloat64(amount float64) Coin {
+
+	amountBigFloat := new(big.Float)
+	amountBigFloat.SetFloat64(amount)
+	// Set precision if required.
+	// amountBigFloat.SetPrec(64)
+
+	baseFloat := new(big.Float)
+	base := c.Base()
+	baseFloat.SetInt(base)
+
+	amountBigFloat.Mul(amountBigFloat, baseFloat)
+
+	result := new(big.Int)
+	amountBigFloat.Int(result) // store converted number in result
+
+	return Coin{
+		Currency: c,
+		Amount:   result,
+	}
+}
+
+
 // Create a coin from bytes, the bytes must come from Big.Int.
 func (c Currency) NewCoinFromBytes(amount []byte) Coin {
 	return Coin{

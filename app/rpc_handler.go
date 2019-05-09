@@ -15,9 +15,9 @@ Copyright 2017 - 2019 OneLedger
 package app
 
 import (
-	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/client"
 	"github.com/Oneledger/protocol/data/keys"
+	"github.com/Oneledger/protocol/serialize"
 	"os"
 	"runtime/debug"
 
@@ -25,6 +25,7 @@ import (
 	"github.com/Oneledger/protocol/data/accounts"
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/log"
+	"github.com/Oneledger/protocol/action"
 	"github.com/pkg/errors"
 )
 
@@ -32,19 +33,27 @@ type RPCServerCtx struct {
 	nodeName string
 	balances *balance.Store
 	accounts accounts.Wallet
+	currencies map[string]balance.Currency
 
 	logger *log.Logger
 }
 
-func NewClientHandler(nodeName string, balances *balance.Store, accounts accounts.Wallet) *RPCServerCtx {
+func NewClientHandler(nodeName string, balances *balance.Store, accounts accounts.Wallet,
+	currencies map[string]balance.Currency) *RPCServerCtx {
 
-	return &RPCServerCtx{nodeName, balances, accounts,
+	return &RPCServerCtx{nodeName, balances, accounts, currencies,
 		log.NewLoggerWithPrefix(os.Stdout, "client_Handler")}
 }
 
 // NodeName returns the name of a node. This is useful for displaying it at cmdline.
 func (h *RPCServerCtx) NodeName(req data.Request, resp *data.Response) error {
 	resp.SetData([]byte(h.nodeName))
+	return nil
+}
+
+// Currencies returns a list of registered currencies
+func (h *RPCServerCtx) Currencies(req data.Request, resp *data.Response) error {
+	resp.SetDataObj(h.currencies)
 	return nil
 }
 
@@ -96,8 +105,29 @@ func (h *RPCServerCtx) ListAccounts(req data.Request, resp *data.Response) error
 }
 
 func (h *RPCServerCtx) sendTx(args client.SendArguments, resp *data.Response) error {
+	send := action.Send{
+		From: keys.Address(args.Party),
+		To: keys.Address(args.CounterParty),
+		Amount: args.Amount,
+	}
 
+	fee := action.Fee{args.Fee, args.Gas}
+	tx := action.BaseTx{
+		Data: send,
+		Fee: fee,
+	}
 
+	pubKey, signed, err := h.accounts.SignWithAddress(tx.Bytes(), send.From)
+	if err != nil {
+		resp.Error(err.Error())
+		return err
+	}
+	tx.Signatures = []action.Signature{{pubKey, signed}}
+
+	packet, _ := serialize.GetSerializer(serialize.NETWORK).Serialize(tx)
+
+	resp.SetData(packet)
+	return nil
 }
 
 /*
