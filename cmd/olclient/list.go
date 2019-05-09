@@ -48,9 +48,11 @@ func init() {
 // IssueRequest sends out a sendTx to all of the nodes in the chain
 func ListNode(cmd *cobra.Command, args []string) {
 
+	Ctx := NewContext()
+
 	req := data.NewRequestFromData("listAccounts", []byte{})
 	resp := &data.Response{}
-	err := Ctx.Query("ListAccounts", req, resp)
+	err := Ctx.clCtx.Query("ListAccounts", req, resp)
 	if err != nil {
 		logger.Error("error in getting all accounts")
 	}

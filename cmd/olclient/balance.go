@@ -44,9 +44,10 @@ func init() {
 
 // IssueRequest sends out a sendTx to all of the nodes in the chain
 func BalanceNode(cmd *cobra.Command, args []string) {
+	Ctx := NewContext()
 
 	resp := &data.Response{}
-	err := Ctx.Query("NodeName", nil, resp)
+	err := Ctx.clCtx.Query("NodeName", nil, resp)
 	if err != nil {
 		logger.Fatal("error in getting nodename", err)
 	}
@@ -55,7 +56,7 @@ func BalanceNode(cmd *cobra.Command, args []string) {
 
 	// assuming we have public key
 	bal := balance.NewBalance()
-	err = Ctx.Query("Balance", []byte(balArgs.accountKey), bal)
+	err = Ctx.clCtx.Query("Balance", []byte(balArgs.accountKey), bal)
 	if err != nil || !resp.Success {
 		logger.Fatal("error in getting nodename", err, resp.ErrorMsg)
 	}
