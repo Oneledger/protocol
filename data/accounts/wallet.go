@@ -21,9 +21,9 @@ type Wallet interface {
 
 	GetAccount(address keys.Address) (Account, error)
 
-	SignWithAccountIndex([]byte, int) ([]byte, error)
+	SignWithAccountIndex([]byte, int) (keys.PublicKey, []byte, error)
 
-	SignWithAddress([]byte, keys.Address) ([]byte, error)
+	SignWithAddress([]byte, keys.Address) (keys.PublicKey, []byte, error)
 }
 
 type WalletStore struct {
@@ -86,19 +86,20 @@ func (ws WalletStore) GetAccount(address keys.Address) (Account, error) {
 	return *account, nil
 }
 
-func (ws WalletStore) SignWithAccountIndex(msg []byte, index int) ([]byte, error) {
+func (ws WalletStore) SignWithAccountIndex(msg []byte, index int) (keys.PublicKey, []byte, error) {
 	if index > len(ws.accounts) {
-		return nil, fmt.Errorf("account index out of range")
+		return keys.PublicKey{}, nil, fmt.Errorf("account index out of range")
 	}
 	return ws.SignWithAddress(msg, ws.accounts[index].Bytes())
 }
 
-func (ws WalletStore) SignWithAddress(msg []byte, address keys.Address) ([]byte, error) {
+func (ws WalletStore) SignWithAddress(msg []byte, address keys.Address) (keys.PublicKey, []byte, error) {
 	account, err := ws.GetAccount(address)
 	if err != nil {
-		return nil, err
+		return keys.PublicKey{}, nil, err
 	}
-	return account.Sign(msg)
+	signed, err := account.Sign(msg)
+	return account.PublicKey, signed, err
 }
 
 func NewWallet(config config.Server, dbDir string) Wallet {

@@ -56,7 +56,7 @@ func (sendTx) Validate(msg Msg, fee Fee, signatures []Signature) (bool, error) {
 		"",
 	}
 
-	return base.valideBasic()
+	return base.validateBasic()
 }
 
 func (sendTx) ProcessCheck(ctx *Context, msg Msg, fee Fee) (bool, Response) {
@@ -116,7 +116,7 @@ func (sendTx) ProcessDeliver(ctx *Context, msg Msg, fee Fee) (bool, Response) {
 	return true, Response{Tags: send.Tags()}
 }
 
-func (sendTx) ProcessFee(ctx Context, fee Fee) (bool, Response) {
+func (sendTx) ProcessFee(ctx *Context, fee Fee) (bool, Response) {
 	panic("implement me")
 	//todo: implement the fee charge for send
 	return true, Response{GasWanted: 0, GasUsed: 0}

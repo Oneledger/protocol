@@ -16,7 +16,7 @@ type Tx interface {
 	ProcessDeliver(ctx *Context, msg Msg, fee Fee) (bool, Response)
 
 	//process the charge of fees
-	ProcessFee(ctx Context, fee Fee) (bool, Response)
+	ProcessFee(ctx *Context, fee Fee) (bool, Response)
 }
 
 type Response struct {
