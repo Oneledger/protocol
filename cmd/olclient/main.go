@@ -17,10 +17,30 @@ package main
 import (
 	"os"
 
+	"github.com/Oneledger/protocol/client"
 	"github.com/Oneledger/protocol/log"
 )
 
 var logger = log.NewLoggerWithPrefix(os.Stdout, "olclient")
+
+type Context struct {
+	logger *log.Logger
+	clCtx  *client.Context
+}
+
+func NewContext() *Context {
+	Ctx := &Context{
+		logger: log.NewLoggerWithPrefix(os.Stdout, "olclient"),
+	}
+
+	clientContext, err := client.NewContext(client.RPC_ADDRESS)
+	if err != nil {
+		Ctx.logger.Fatal("error starting rpc client", err)
+	}
+
+	Ctx.clCtx = &clientContext
+	return Ctx
+}
 
 func main() {
 	Execute()

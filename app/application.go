@@ -247,8 +247,9 @@ func (ctx *context) Close() {
 }
 
 func (app *App) startRPCServer() {
-	handlers := NewClientHandler(app.Context.cfg.Node.NodeName, app.Context.balances, app.Context.accounts)
-	err := rpc.Register(handlers)
+	handlers := NewClientHandler(app.Context.cfg.Node.NodeName, app.Context.balances, app.Context.accounts, app.Context.currencies)
+
+  err := rpc.Register(handlers)
 	if err != nil {
 		app.logger.Fatal("error registering rpc handlers", "err", err)
 	}

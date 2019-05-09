@@ -16,6 +16,7 @@
 package balance
 
 import (
+	"math"
 	"math/big"
 
 	"github.com/Oneledger/protocol/data/chain"
@@ -43,6 +44,33 @@ func (c Currency) NewCoinFromInt(amount int64) Coin {
 		Amount:   big.NewInt(amount),
 	}
 }
+
+
+// TODO
+// Create a coin from float
+func (c Currency) NewCoinFromFloat64(amount float64) Coin {
+
+	base := math.Pow10(int(c.Decimal))
+
+	amountBigFloat := new(big.Float)
+	amountBigFloat.SetFloat64(amount)
+	// Set precision if required.
+	// amountBigFloat.SetPrec(64)
+
+	baseFloat := new(big.Float)
+	baseFloat.SetFloat64(base)
+
+	amountBigFloat.Mul(amountBigFloat, baseFloat)
+
+	result := new(big.Int)
+	amountBigFloat.Int(result) // store converted number in result
+
+	return Coin{
+		Currency: c,
+		Amount:   result,
+	}
+}
+
 
 // Create a coin from bytes, the bytes must come from Big.Int.
 func (c Currency) NewCoinFromBytes(amount []byte) Coin {

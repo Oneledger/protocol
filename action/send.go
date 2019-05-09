@@ -12,7 +12,7 @@ var _ Msg = Send{}
 type Send struct {
 	From   Address
 	To     Address
-	Amount Amount
+	Amount Coin
 }
 
 func (s Send) Signers() []Address {
@@ -42,8 +42,7 @@ func (sendTx) Validate(ctx *Context, msg Msg, fee Fee, signatures []Signature) (
 	if !ok {
 		return false, ErrWrongTxType
 	}
-	_, err := send.Amount.IsValid(ctx)
-	if err != nil {
+	if !send.Amount.IsValid() {
 		return false, errors.Wrap(ErrInvalidAmount, send.Amount.String())
 	}
 	if send.From == nil || send.To == nil {
@@ -70,11 +69,7 @@ func (sendTx) ProcessCheck(ctx *Context, msg Msg, fee Fee) (bool, Response) {
 		return false, Response{}
 	}
 
-	coin, err := send.Amount.ToCoin(ctx)
-	if err != nil {
-		return false, Response{}
-	}
-
+	coin := send.Amount
 	if !enoughBalance(*b, coin) {
 		return false, Response{}
 	}
@@ -93,10 +88,7 @@ func (sendTx) ProcessDeliver(ctx *Context, msg Msg, fee Fee) (bool, Response) {
 		logger.Error("Failed to get the balance of the owner", send.From, "err", err)
 		return false, Response{}
 	}
-	coin, err := send.Amount.ToCoin(ctx)
-	if err != nil {
-		return false, Response{}
-	}
+	coin := send.Amount
 
 	if !enoughBalance(*from, coin) {
 		logger.Debug("Owner balance is not enough", from, send.Amount)
