@@ -203,7 +203,7 @@ type NetworkConfig struct {
 
 func DefaultNetworkConfig() *NetworkConfig {
 	return &NetworkConfig{
-		RPCAddress:         "tcp://127.0.0.1:26601",
+		RPCAddress:         "127.0.0.1:26601",
 		P2PAddress:         "tcp://127.0.0.1:26611",
 		ExternalP2PAddress: "",
 		SDKAddress:         "tcp://127.0.0.1:26631",

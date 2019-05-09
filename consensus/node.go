@@ -9,8 +9,8 @@ import (
 
 type Node = tmnode.Node
 
-func NewNode(application abcitypes.Application, cfg *config.Server) (*tmnode.Node, error) {
-	nodecfg, err := parseConfig(cfg)
+func NewNode(application abcitypes.Application, cfg *config.Server, rootDir string) (*tmnode.Node, error) {
+	nodecfg, err := parseConfig(cfg, rootDir)
 	if err != nil {
 		return nil, err
 	}

@@ -55,6 +55,9 @@ func (ctx *nodeContext) init(rootDir string) error {
 		return errors.Wrapf(err, "failed to read configuration file at at %s", cfgPath(rootPath))
 	}
 
+
+	ctx.cfg = cfg
+
 	if ctx.rpc != "" {
 		ctx.cfg.Network.RPCAddress = ctx.rpc
 	}
@@ -75,7 +78,6 @@ func (ctx *nodeContext) init(rootDir string) error {
 		ctx.cfg.P2P.SeedMode = ctx.seedMode
 	}
 
-	ctx.cfg = cfg
 
 	return nil
 }
@@ -113,6 +115,7 @@ func StartNode(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return errors.Wrap(err, "failed to initialize config")
 	}
+
 	application, err := app.NewApp(ctx.cfg, ctx.rootDir)
 	if err != nil {
 		return errors.Wrap(err, "failed to create new app")
