@@ -20,7 +20,7 @@ import (
 )
 
 type Store struct {
-	chainState *storage.ChainState
+	*storage.ChainState
 }
 
 func NewStore(name, dbDir, configDB string, typ storage.StorageType) *Store {
@@ -30,7 +30,7 @@ func NewStore(name, dbDir, configDB string, typ storage.StorageType) *Store {
 }
 
 func (st *Store) Get(address []byte, lastCommit bool) (bal *Balance, err error) {
-	dat := st.chainState.Get(storage.StoreKey(address), lastCommit)
+	dat := st.ChainState.Get(storage.StoreKey(address), lastCommit)
 
 	err = serialize.GetSerializer(serialize.PERSISTENT).Deserialize(dat, bal)
 	return
@@ -42,15 +42,15 @@ func (st *Store) Set(address []byte, balance Balance) error {
 		return err
 	}
 
-	err = st.chainState.Set(storage.StoreKey(address), dat)
+	err = st.ChainState.Set(storage.StoreKey(address), dat)
 	return err
 }
 
-func (st *Store) FindALL() map[string]*Balance {
+func (st *Store) FindAll() map[string]*Balance {
 	balMap := make(map[string]*Balance)
 
 	pSzlr := serialize.GetSerializer(serialize.PERSISTENT)
-	for key, dat := range st.chainState.FindAll() {
+	for key, dat := range st.ChainState.FindAll() {
 		bal := &Balance{}
 		var err error
 		err = pSzlr.Deserialize(dat, bal)
@@ -65,9 +65,5 @@ func (st *Store) FindALL() map[string]*Balance {
 }
 
 func (st *Store) Exists(address []byte) bool {
-	return st.chainState.Exists(storage.StoreKey(address))
-}
-
-func (st *Store) Commit() ([]byte, int64){
-	return st.chainState.Commit()
+	return st.ChainState.Exists(storage.StoreKey(address))
 }

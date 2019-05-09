@@ -45,6 +45,14 @@ func (h *RPCServerCtx) NodeName(req data.Request, resp *data.Response) error {
 	return nil
 }
 
+type Handler struct {
+	balances *balance.Store
+	accounts accounts.Wallet
+	wallet   accounts.WalletStore
+
+	logger *log.Logger
+}
+
 // GetBalance gets the balance of an address
 // TODO make it more generic to handle account name and identity
 func (h *RPCServerCtx) GetBalance(key []byte, bal *balance.Balance) error {
