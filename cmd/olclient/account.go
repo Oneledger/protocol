@@ -52,8 +52,8 @@ func init() {
 	updateCmd.Flags().StringVar(&updateArgs.account, "account", "", "Account Name")
 	updateCmd.Flags().StringVar(&updateArgs.chain, "chain", "OneLedger", "Specify the chain")
 
-	updateCmd.Flags().BytesBase64Var(&updateArgs.pubkey, "pubkey", []byte{}, "Specify a base64 public key")
-	updateCmd.Flags().BytesBase64Var(&updateArgs.privkey, "privkey", []byte{}, "Specify a base64 private key")
+	updateCmd.Flags().BytesHexVar(&updateArgs.pubkey, "pubkey", []byte{}, "Specify a base64 public key")
+	updateCmd.Flags().BytesHexVar(&updateArgs.privkey, "privkey", []byte{}, "Specify a base64 private key")
 	updateCmd.Flags().BoolVar(&updateArgs.nodeaccount, "nodeaccount", false, "Specify whether it's a node account or not")
 
 	updateCmd.Flags().StringVar(&updateArgs.privKeyFilePath, "privKeyFilePath", "", "filepath to save the private key")

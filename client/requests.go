@@ -12,8 +12,8 @@ type ApplyValidatorArguments struct {
 }
 
 type SendArguments struct {
-	Party        string
-	CounterParty string
+	Party        []byte
+	CounterParty []byte
 	Currency     string
 	Amount       float64
 	Fee          float64

@@ -15,6 +15,9 @@ Copyright 2017 - 2019 OneLedger
 package app
 
 import (
+	"github.com/Oneledger/protocol/action"
+	"github.com/Oneledger/protocol/client"
+	"github.com/Oneledger/protocol/data/keys"
 	"os"
 	"runtime/debug"
 
@@ -90,6 +93,11 @@ func (h *RPCServerCtx) ListAccounts(req data.Request, resp *data.Response) error
 	resp.SetDataObj(accs)
 
 	return nil
+}
+
+func (h *RPCServerCtx) sendTx(args client.SendArguments, resp *data.Response) error {
+
+
 }
 
 /*
