@@ -12,7 +12,7 @@ var (
 )
 
 type Context struct {
-	balances        *Store
+	balances        *storage.ChainState
 	currencies      map[string]Currency
 
 	logger *log.Logger
@@ -26,7 +26,7 @@ func (ctx *Context) Currencies() map[string]Currency {
 	return ctx.currencies
 }
 
-func NewContext(logger *log.Logger, balances *Store, currencies map[string]Currency) *Context {
+func NewContext(logger *log.Logger, balances *storage.ChainState, currencies map[string]Currency) *Context {
 	return &Context{
 		logger:          logger,
 		balances:        balances,

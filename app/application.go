@@ -177,6 +177,7 @@ func (ctx *context) Action() *action.Context  {
 		ctx.actionRouter,
 		ctx.accounts,
 		ctx.balances,
+		ctx.currencies,
 		log.NewLoggerWithPrefix(ctx.logWriter, "action"))
 }
 
