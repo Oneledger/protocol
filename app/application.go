@@ -113,7 +113,7 @@ func (app *App) setupState(stateBytes []byte) error {
 		}
 
 		key := storage.StoreKey(addrBytes)
-		err = balanceCtx.Store().Set(key, &si.Balance)
+		err = balanceCtx.Store().Set(key, si.Balance)
 		if err != nil {
 			return errors.Wrap(err, "failed to set balance")
 		}
