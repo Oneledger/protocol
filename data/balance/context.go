@@ -13,8 +13,7 @@ var (
 type Context struct {
 	balances   *Store
 	currencies map[string]Currency
-
-	logger *log.Logger
+	logger     *log.Logger
 }
 
 func (ctx *Context) Store() *Store {

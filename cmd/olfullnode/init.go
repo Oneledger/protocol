@@ -40,9 +40,9 @@ func init() {
 }
 
 type initContext struct {
-	genesis *consensus.GenesisDoc
-	logger *log.Logger
-	rootDir string
+	genesis  *consensus.GenesisDoc
+	logger   *log.Logger
+	rootDir  string
 	nodeName string
 }
 
@@ -54,13 +54,10 @@ func newInitContext(args *InitCmdArguments, rootArgs *rootArguments) (*initConte
 		return nil, errors.Wrap(err, fmt.Sprintf("Invalid root directory specified %s", rootArgs))
 	}
 
-	var genesisPath string
-	if filepath.IsAbs(args.genesis) {
-		genesisPath = args.genesis
-	} else {
-		genesisPath = filepath.Join(rootArgs.rootDir, args.genesis)
+	genesisPath, err := filepath.Abs(args.genesis)
+	if err != nil {
+		return nil, err
 	}
-
 	genesis, err := types.GenesisDocFromFile(genesisPath)
 	if err != nil {
 		return nil, err
@@ -68,7 +65,7 @@ func newInitContext(args *InitCmdArguments, rootArgs *rootArguments) (*initConte
 
 	return &initContext{
 		rootDir: rootDir,
-		logger: logger,
+		logger:  logger,
 		genesis: genesis,
 	}, nil
 }

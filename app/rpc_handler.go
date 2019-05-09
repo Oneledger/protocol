@@ -55,6 +55,13 @@ func (h *RPCServerCtx) NodeName(req data.Request, resp *data.Response) error {
 func (h *RPCServerCtx) Currencies(req data.Request, resp *data.Response) error {
 	resp.SetDataObj(h.currencies)
 	return nil
+
+type Handler struct {
+	balances *balance.Store
+	accounts accounts.Wallet
+	wallet   accounts.WalletStore
+
+	logger *log.Logger
 }
 
 // GetBalance gets the balance of an address
