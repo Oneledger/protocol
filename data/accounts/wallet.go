@@ -3,6 +3,7 @@ package accounts
 import (
 	"errors"
 	"fmt"
+
 	"github.com/Oneledger/protocol/config"
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/serialize"
@@ -24,6 +25,8 @@ type Wallet interface {
 	SignWithAccountIndex([]byte, int) (keys.PublicKey, []byte, error)
 
 	SignWithAddress([]byte, keys.Address) (keys.PublicKey, []byte, error)
+
+	Close()
 }
 
 type WalletStore struct {
@@ -103,7 +106,6 @@ func (ws WalletStore) SignWithAddress(msg []byte, address keys.Address) (keys.Pu
 }
 
 func NewWallet(config config.Server, dbDir string) Wallet {
-
 	store := storage.NewStorageDB(storage.KEYVALUE, "accounts", dbDir, config.Node.DB)
 
 	accountKeys := store.BeginSession().FindAll()
@@ -117,4 +119,8 @@ func NewWallet(config config.Server, dbDir string) Wallet {
 		store,
 		accounts,
 	}
+}
+
+func (ws WalletStore) Close() {
+	ws.store.Close()
 }

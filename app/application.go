@@ -2,8 +2,6 @@ package app
 
 import (
 	"encoding/hex"
-	"github.com/Oneledger/protocol/action"
-	"github.com/Oneledger/protocol/identity"
 	"io"
 	"net"
 	"net/http"
@@ -11,11 +9,12 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/Oneledger/protocol/action"
+	"github.com/Oneledger/protocol/identity"
 
 	"github.com/pkg/errors"
 	"github.com/tendermint/tendermint/libs/common"
 
-	"github.com/Oneledger/protocol/client"
 	"github.com/Oneledger/protocol/config"
 	"github.com/Oneledger/protocol/consensus"
 	"github.com/Oneledger/protocol/data/accounts"
@@ -31,24 +30,29 @@ var _ abciController = &App{}
 type App struct {
 	Context context
 
-	name   string
+	name     string
 	nodeName string
-	logger *log.Logger
-	sdk    common.Service // Probably needs to be changed
+	logger   *log.Logger
+	sdk      common.Service // Probably needs to be changed
 
-	header     Header      // Tendermint last header info
-	abci       *ABCI
+	header Header // Tendermint last header info
+	abci   *ABCI
+
+	node *consensus.Node
 }
 
-// NewApp returns new app fresh and ready to start, returns an error if
-func NewApp(cfg config.Server, rootDir string) (*App, error) {
+// New returns new app fresh and ready to start, returns an error if
+func New(cfg *config.Server, rootDir string) (*App, error) {
+	// TODO: Determine the final logWriter in the configuration file
+	w := os.Stdout
+
 	app := &App{
 		name:   "OneLedger",
-		logger: log.NewLoggerWithPrefix(os.Stdout, "app"),
+		logger: log.NewLoggerWithPrefix(w, "app"),
 	}
 	app.nodeName = cfg.Node.NodeName
 
-	ctx, err := newContext(cfg, rootDir)
+	ctx, err := newContext(*cfg, w, rootDir)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create new app context")
 	}
@@ -60,8 +64,19 @@ func NewApp(cfg config.Server, rootDir string) (*App, error) {
 	return app, nil
 }
 
+// ABCI returns an ABCI-ready Application used to initialize the new Node
+func (app *App) ABCI() *ABCI {
+	return app.abci
+}
+
+// Header returns this node's header
 func (app *App) Header() Header {
 	return app.header
+}
+
+// Node returns the consensus.Node, use this value to communicate with the internal consensus engine
+func (app *App) Node() *consensus.Node {
+	return app.node
 }
 
 // setNewABCI returns a new ABCI struct with the current context-values set in App
@@ -77,11 +92,6 @@ func (app *App) setNewABCI() {
 		blockEnder:       app.blockEnder(),
 		commitor:         app.commitor(),
 	}
-}
-
-// ABCI returns an ABCI-ready Application used to initialize the new Node
-func (app *App) ABCI() *ABCI {
-	return app.abci
 }
 
 // setupState reads the AppState portion of the genesis file and uses that to set the app to its initial state
@@ -119,7 +129,30 @@ func (app *App) setupState(stateBytes []byte) error {
 		}
 	}
 	return nil
+}
 
+// Start initializes the state
+func (app *App) Start() error {
+	node, err := consensus.NewNode(app.ABCI(), &app.Context.cfg)
+	if err != nil {
+		return errors.Wrap(err, "failed to create new consensus.Node")
+	}
+	err = node.Start()
+	if err != nil {
+		return errors.Wrap(err, "failed to start new consensus.Node")
+	}
+	return nil
+}
+
+// Close closes the application
+func (app *App) Close() {
+	app.logger.Info("Closing App...")
+	if app.node == nil {
+		app.logger.Info("node is nil!")
+	} else {
+		app.node.OnStop()
+	}
+	app.Context.Close()
 }
 
 // The base context for the application, holds databases and other stateful information contained by the app.
@@ -141,29 +174,38 @@ type context struct {
 	actionRouter action.Router
 
 	balances *balance.Store
-	accounts accounts.Wallet
 
 	validators *identity.Validators // Set of validators currently active
+	accounts   accounts.Wallet
 
-	currencies      map[string]balance.Currency
+	currencies map[string]balance.Currency
 
 	logWriter io.Writer
 }
 
-func newContext(cfg config.Server, rootDir string) (context, error) {
+type closer interface {
+	Close()
+}
+
+func newContext(cfg config.Server, logWriter io.Writer, rootDir string) (context, error) {
 	ctx := context{
 		rootDir:   rootDir,
 		cfg:       cfg,
 		chainID:   cfg.ChainID(),
-		logWriter: os.Stdout, // TODO: This should be driven by configuration
+		logWriter: logWriter,
 	}
 
-	ctx.balances = balance.NewStore("balance", ctx.dbDir(), ctx.cfg.Node.DB, storage.PERSISTENT)
-
-	ctx.accounts = accounts.NewWallet(cfg, cfg.Node.DBDir)
 	ctx.validators = identity.NewValidators()
 
 	ctx.actionRouter = action.NewRouter("action")
+
+	closers := make([]closer, 0)
+
+	ctx.balances = balance.NewStore("balances", ctx.dbDir(), ctx.cfg.Node.DB, storage.PERSISTENT)
+	closers = append(closers, ctx.balances)
+
+	ctx.accounts = accounts.NewWallet(cfg, ctx.dbDir())
+	closers = append(closers, ctx.accounts)
 
 	return ctx, nil
 }
@@ -172,7 +214,7 @@ func (ctx context) dbDir() string {
 	return filepath.Join(ctx.rootDir, ctx.cfg.Node.DBDir)
 }
 
-func (ctx *context) Action() *action.Context  {
+func (ctx *context) Action() *action.Context {
 	return action.NewContext(
 		ctx.actionRouter,
 		ctx.accounts,
@@ -183,7 +225,6 @@ func (ctx *context) Action() *action.Context  {
 
 func (ctx *context) ID()       {}
 func (ctx *context) Accounts() {}
-
 
 func (ctx *context) ValidatorCtx() *identity.ValidatorContext {
 	return identity.NewValidatorContext(ctx.balances)
@@ -197,9 +238,16 @@ func (ctx *context) Balances() *balance.Context {
 		ctx.currencies)
 }
 
-func (app *App) startRPCServer() {
+// Close all things that need to be closed
+func (ctx *context) Close() {
+	closers := []closer{ctx.balances, ctx.accounts}
+	for _, closer := range closers {
+		closer.Close()
+	}
+}
 
-	handlers := NewClientHandler(app.nodeName, app.Context.balances, app.Context.accounts)
+func (app *App) startRPCServer() {
+	handlers := NewClientHandler(app.Context.cfg.Node.NodeName, app.Context.balances, app.Context.accounts)
 	err := rpc.Register(handlers)
 	if err != nil {
 		app.logger.Fatal("error registering rpc handlers", "err", err)
@@ -207,12 +255,13 @@ func (app *App) startRPCServer() {
 
 	rpc.HandleHTTP()
 
-	l, e := net.Listen("tcp", client.RPC_ADDRESS)
+	l, e := net.Listen("tcp", app.Context.cfg.Network.RPCAddress)
 	if e != nil {
+		app.Close()
 		app.logger.Fatal("listen error:", e)
 	}
 
-	err =  http.Serve(l, nil)
+	err = http.Serve(l, nil)
 	if err != nil {
 		app.logger.Fatal("error while starting the RPC server", "err", err)
 	}

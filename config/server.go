@@ -111,7 +111,6 @@ func (cfg *Server) ReadFile(filepath string) error {
 	if err != nil {
 		return errors.Wrap(err, "cfg.ReadFile error unmarshaling JSON")
 	}
-
 	return nil
 }
 
