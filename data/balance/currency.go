@@ -16,6 +16,7 @@
 package balance
 
 import (
+	"math"
 	"math/big"
 
 	"github.com/Oneledger/protocol/data/chain"
@@ -46,8 +47,10 @@ func (c Currency) NewCoinFromInt(amount int64) Coin {
 
 
 // TODO
-// Create a coin from integer (not fractional)
+// Create a coin from float
 func (c Currency) NewCoinFromFloat64(amount float64) Coin {
+
+	base := math.Pow10(int(c.Decimal))
 
 	amountBigFloat := new(big.Float)
 	amountBigFloat.SetFloat64(amount)
@@ -55,8 +58,7 @@ func (c Currency) NewCoinFromFloat64(amount float64) Coin {
 	// amountBigFloat.SetPrec(64)
 
 	baseFloat := new(big.Float)
-	base := c.Base()
-	baseFloat.SetInt(base)
+	baseFloat.SetFloat64(base)
 
 	amountBigFloat.Mul(amountBigFloat, baseFloat)
 
