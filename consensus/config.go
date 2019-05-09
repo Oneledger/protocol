@@ -35,18 +35,12 @@ func ParseConfig(cfg *config.Server, rootDir string) (NodeConfig, error) {
 func parseConfig(cfg *config.Server, rootDir string) (NodeConfig, error) {
 	// Proper consensus dir
 	tmcfg := cfg.TMConfig(Dir(rootDir))
+	tmcfg.SetRoot(Dir(rootDir))
 	genesisProvider := func() (*types.GenesisDoc, error) {
 		// TODO: Get the right consensus dir
 		return types.GenesisDocFromFile(filepath.Join(RootDirName, "config", "genesis.json"))
 		// return types.GenesisDocFromFile(filepath.Join(global.Current.ConsensusDir(), "config", "genesis.json"))
 	}
-	// TODO: Pass the chainID to the application
-	// doc, err := genesisProvider()
-	// if err != nil {
-	// 	logger.Error("Failed to read genesis file", "err", err)
-	// 	return NodeConfig{}, err
-	// }
-	// // global.Current.SetChainID(doc)
 
 	privValidator := privval.LoadFilePV(tmcfg.PrivValidatorKeyFile(), tmcfg.PrivValidatorStateFile())
 

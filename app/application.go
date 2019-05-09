@@ -144,6 +144,8 @@ func (app *App) Start() error {
 	if err != nil {
 		return errors.Wrap(err, "failed to start new consensus.Node")
 	}
+
+	app.node = node
 	return nil
 }
 
@@ -196,6 +198,7 @@ func newContext(cfg config.Server, logWriter io.Writer, rootDir string) (context
 		cfg:       cfg,
 		chainID:   cfg.ChainID(),
 		logWriter: logWriter,
+		currencies: make(map[string]balance.Currency),
 	}
 
 	ctx.validators = identity.NewValidators()
@@ -259,7 +262,7 @@ func (app *App) startRPCServer() {
 
 	rpc.HandleHTTP()
 
-	l, e := net.Listen("tcp", app.Context.cfg.Network.RPCAddress)
+	l, e := net.Listen("tcp", app.Context.cfg.Network.SDKAddress)
 	if e != nil {
 		app.Close()
 		app.logger.Fatal("listen error:", e)

@@ -203,10 +203,10 @@ type NetworkConfig struct {
 
 func DefaultNetworkConfig() *NetworkConfig {
 	return &NetworkConfig{
-		RPCAddress:         "127.0.0.1:26601",
+		RPCAddress:         "tcp://127.0.0.1:26601",
 		P2PAddress:         "tcp://127.0.0.1:26611",
 		ExternalP2PAddress: "",
-		SDKAddress:         "tcp://127.0.0.1:26631",
+		SDKAddress:         "127.0.0.1:26631",
 		OLVMAddress:        "tcp://127.0.0.1:26641",
 		OLVMProtocol:       "tcp",
 		BTCAddress:         "127.0.0.1:NONE",
@@ -254,7 +254,7 @@ func (cfg *P2PConfig) TMConfig() *tmconfig.P2PConfig {
 		Seeds:                   strings.Join(cfg.Seeds, ","),
 		PersistentPeers:         strings.Join(cfg.PersistentPeers, ","),
 		UPNP:                    cfg.UPNP,
-		AddrBook:                filepath.Join("consensus", "config", "addrbook.json"),
+		AddrBook:                filepath.Join( "config", "addrbook.json"),
 		AddrBookStrict:          cfg.AddrBookStrict,
 		MaxNumInboundPeers:      cfg.MaxNumInboundPeers,
 		MaxNumOutboundPeers:     cfg.MaxNumOutboundPeers,
