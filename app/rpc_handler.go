@@ -47,7 +47,7 @@ func (h *RPCServerCtx) NodeName(req data.Request, resp *data.Response) error {
 
 type Handler struct {
 	balances *balance.Store
-	accounts data.Store
+	accounts accounts.Wallet
 	wallet   accounts.WalletStore
 
 	logger *log.Logger

@@ -2,6 +2,7 @@ package identity
 
 import (
 	"bytes"
+
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/serialize"
@@ -65,7 +66,6 @@ func NewValidators() *Validators {
 		toBeRemoved:   make([]Validator, 0),
 	}
 }
-
 
 //setup the validators according to begin block
 func (vs *Validators) Set(req types.RequestBeginBlock) error {
@@ -173,13 +173,13 @@ func (vs *Validators) GetEndBlockUpdate(ctx *ValidatorContext, req types.Request
 	if req.Height > 1 && (len(vs.newValidators) > 0 || len(vs.toBeRemoved) > 0) {
 
 		for _, add := range vs.newValidators {
-			if !transferVT(ctx, add) {
+			if !transferVT(*ctx, add) {
 				logger.Error("failed to transfer the vt token for validator", add)
 			}
 			_ = vs.cached.Set(add.Address.Bytes(), add.Bytes())
 		}
 		for _, remove := range vs.toBeRemoved {
-			if !transferVT(ctx, remove) {
+			if !transferVT(*ctx, remove) {
 				logger.Error("failed to transfer the vt token for validator", remove)
 			}
 			_ = vs.cached.Set(remove.Address.Bytes(), remove.Bytes())
@@ -200,7 +200,7 @@ type ValidatorContext struct {
 	//todo: add necessary config
 }
 
-func NewValidatorContext(balances *balance.Store) *ValidatorContext{
+func NewValidatorContext(balances *balance.Store) *ValidatorContext {
 	return &ValidatorContext{
 		Balances: balances,
 	}
