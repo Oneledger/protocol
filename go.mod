@@ -15,8 +15,10 @@ require (
 	github.com/gogo/protobuf v1.2.1 // indirect
 	github.com/golang/protobuf v1.3.1 // indirect
 	github.com/google/gofuzz v1.0.0 // indirect
+	github.com/google/pprof v0.0.0-20190502144155-8358a9778bd1 // indirect
 	github.com/google/uuid v1.1.1
 	github.com/gorilla/websocket v1.4.0 // indirect
+	github.com/ianlancetaylor/demangle v0.0.0-20181102032728-5e5cf60278f6 // indirect
 	github.com/jmhodges/levigo v1.0.0 // indirect
 	github.com/mattn/go-isatty v0.0.7 // indirect
 	github.com/pborman/uuid v1.2.0 // indirect
@@ -36,6 +38,7 @@ require (
 	github.com/tidwall/match v1.0.1 // indirect
 	github.com/tidwall/pretty v0.0.0-20190325153808-1166b9ac2b65 // indirect
 	github.com/vmihailenco/msgpack v4.0.4+incompatible
+	golang.org/x/arch v0.0.0-20190312162104-788fe5ffcd8c // indirect
 	golang.org/x/crypto v0.0.0-20190422183909-d864b10871cd // indirect
 	golang.org/x/text v0.3.1-0.20180807135948-17ff2d5776d2 // indirect
 	google.golang.org/appengine v1.5.0 // indirect
