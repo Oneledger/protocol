@@ -113,7 +113,7 @@ func StartNode(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return errors.Wrap(err, "failed to initialize config")
 	}
-	application, err := app.New(ctx.cfg, ctx.rootDir)
+	application, err := app.NewApp(ctx.cfg, ctx.rootDir)
 	if err != nil {
 		return errors.Wrap(err, "failed to create new app")
 	}

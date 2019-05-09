@@ -42,7 +42,7 @@ type App struct {
 }
 
 // New returns new app fresh and ready to start, returns an error if
-func New(cfg *config.Server, rootDir string) (*App, error) {
+func NewApp(cfg *config.Server, rootDir string) (*App, error) {
 	// TODO: Determine the final logWriter in the configuration file
 	w := os.Stdout
 
