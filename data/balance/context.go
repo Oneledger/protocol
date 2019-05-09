@@ -4,7 +4,6 @@ import (
 	"errors"
 
 	"github.com/Oneledger/protocol/log"
-	"github.com/Oneledger/protocol/storage"
 )
 
 var (
@@ -18,7 +17,7 @@ type Context struct {
 	logger *log.Logger
 }
 
-func (ctx *Context) Store() *storage.ChainState {
+func (ctx *Context) Store() *Store {
 	return ctx.balances
 }
 

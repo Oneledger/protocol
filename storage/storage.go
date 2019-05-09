@@ -68,6 +68,7 @@ func (sk StoreKey) String() string {
 	return hex.EncodeToString(sk)
 }
 
+// store wraps object with option to use a cache type db
 type Store interface {
 	Get(StoreKey) ([]byte, error)
 	Set(StoreKey, []byte) error

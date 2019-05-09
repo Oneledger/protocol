@@ -28,12 +28,12 @@ import (
 type RPCServerCtx struct {
 	nodeName string
 	balances *balance.Store
-	accounts *accounts.WalletStore
+	accounts accounts.Wallet
 
 	logger *log.Logger
 }
 
-func NewClientHandler(nodeName string, balances *balance.Store, accounts *accounts.WalletStore) *RPCServerCtx {
+func NewClientHandler(nodeName string, balances *balance.Store, accounts accounts.Wallet) *RPCServerCtx {
 
 	return &RPCServerCtx{nodeName, balances, accounts,
 		log.NewLoggerWithPrefix(os.Stdout, "client_Handler")}

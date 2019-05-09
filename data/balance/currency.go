@@ -43,3 +43,11 @@ func (c Currency) NewCoinFromInt(amount int64) Coin {
 		Amount:   big.NewInt(amount),
 	}
 }
+
+// Create a coin from bytes, the bytes must come from Big.Int.
+func (c Currency) NewCoinFromBytes(amount []byte) Coin {
+	return Coin{
+		Currency: c,
+		Amount:   big.NewInt(0).SetBytes(amount),
+	}
+}

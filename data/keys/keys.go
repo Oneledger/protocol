@@ -102,7 +102,7 @@ func (privkey PrivateKey) GetHandler() (PrivateKeyHandler, error) {
 	switch privkey.keytype {
 	case ED25519:
 
-		if len(privkey.data) != 64 {
+		if len(privkey.data) != ED25519_PRIV_SIZE {
 			return new(PrivateKeyED25519),
 				fmt.Errorf("given key doesn't match the size of the key algorithm %s", privkey.keytype)
 		}
@@ -110,7 +110,7 @@ func (privkey PrivateKey) GetHandler() (PrivateKeyHandler, error) {
 		copy(key[:], privkey.data)
 		return PrivateKeyED25519(key), nil
 	case SECP256K1:
-		size := SECP256K1_PUB_SIZE
+		size := SECP256K1_PRIV_SIZE
 		if len(privkey.data) != size {
 			return new(PrivateKeySECP256K1),
 				fmt.Errorf("given key doesn't match the size of the key algorithm %s", privkey.keytype)

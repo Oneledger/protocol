@@ -3,17 +3,10 @@ package action
 import (
 	"bytes"
 	"fmt"
-	"github.com/Oneledger/protocol/data/accounts"
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/serialize"
-	"github.com/Oneledger/protocol/storage"
 )
-
-type Context struct {
-	Accounts storage.Store
-	Balances *balance.Store
-}
 
 type Msg interface {
 	// return the necessary signers for the message, should have consistent order across the network
@@ -57,7 +50,7 @@ func (t *BaseTx) Bytes() []byte {
 	return value
 }
 
-func (t *BaseTx) Sign(ctx Context) error {
+func (t *BaseTx) Sign(ctx *Context) error {
 	addrs := t.Data.Signers()
 
 	if t.Signatures == nil {
@@ -74,7 +67,7 @@ func (t *BaseTx) Sign(ctx Context) error {
 	return nil
 }
 
-func (t *BaseTx) SignWithAddress(ctx Context, address Address) error {
+func (t *BaseTx) SignWithAddress(ctx *Context, address Address) error {
 	addrs := t.Data.Signers()
 
 	if t.Signatures == nil {
@@ -96,7 +89,7 @@ func (t *BaseTx) SignWithAddress(ctx Context, address Address) error {
 	return nil
 }
 
-func (t *BaseTx) valideBasic() (bool, error) {
+func (t *BaseTx) validateBasic() (bool, error) {
 	msg := t.Data
 	signatures := t.Signatures
 	fee := t.Fee
@@ -121,18 +114,12 @@ func (t *BaseTx) valideBasic() (bool, error) {
 	return true, nil
 }
 
-func sign(ctx Context, address Address, msg []byte) (Signature, error) {
-	value, err := ctx.Accounts.Get(address.Bytes())
-	if err != nil {
-		return Signature{}, fmt.Errorf("failed to get account for sign: %s", err)
-	}
-
-	account := (&accounts.Account{}).FromBytes(value)
-	signed, err := account.Sign(msg)
+func sign(ctx *Context, address Address, msg []byte) (Signature, error) {
+	pubkey, signed, err := ctx.Accounts.SignWithAddress(msg, address.Bytes())
 	if err != nil {
 		return Signature{}, fmt.Errorf("failed to sign: %s", err)
 	}
-	return Signature{account.PublicKey, signed}, nil
+	return Signature{pubkey, signed}, nil
 }
 
 func verifyMinimumFee(fee Fee) bool {

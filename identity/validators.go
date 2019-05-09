@@ -2,11 +2,11 @@ package identity
 
 import (
 	"bytes"
-	"github.com/Oneledger/protocol/data"
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/serialize"
 	"github.com/Oneledger/protocol/storage"
+	"github.com/pkg/errors"
 	"github.com/tendermint/tendermint/abci/types"
 )
 
@@ -49,13 +49,13 @@ type Unstake struct {
 }
 
 type Validators struct {
-	cached        data.Store
+	cached        storage.Store
 	proposer      keys.Address
 	newValidators []Validator
 	toBeRemoved   []Validator
 }
 
-func NewValidators(ctx ValidatorContext) *Validators {
+func NewValidators() *Validators {
 	cache := storage.NewStorage(storage.CACHE, "validators")
 	//todo: get the genesis validators when start the node
 	return &Validators{
@@ -66,21 +66,25 @@ func NewValidators(ctx ValidatorContext) *Validators {
 	}
 }
 
-func (vs *Validators) Set(req types.RequestBeginBlock) *Validators {
+
+//setup the validators according to begin block
+func (vs *Validators) Set(req types.RequestBeginBlock) error {
 	vs.proposer = req.Header.GetProposerAddress()
-	updateValidiatorSet(vs.cached, req.LastCommitInfo.Votes)
+	err := updateValidiatorSet(vs.cached, req.LastCommitInfo.Votes)
+	if err != nil {
+		return err
+	}
 	vs.newValidators = make([]Validator, 0)
 	vs.toBeRemoved = make([]Validator, 0)
 	vs.toBeRemoved = makingslash(vs, req.ByzantineValidators)
-	return vs
+	return err
 }
 
-func updateValidiatorSet(cached data.Store, votes []types.VoteInfo) error {
-	//todo:
+func updateValidiatorSet(cached storage.Store, votes []types.VoteInfo) error {
 	for _, v := range votes {
 		addr := v.Validator.GetAddress()
-		if cached.Exists(addr) {
-			logger.Error("validator set not match to last commit", addr)
+		if !cached.Exists(addr) {
+			return errors.New("validator set not match to last commit")
 		}
 	}
 	return nil
@@ -162,7 +166,7 @@ func (vs *Validators) HandleUnstake(purge Unstake) *Validators {
 	return vs
 }
 
-func (vs *Validators) GetEndBlockUpdate(ctx ValidatorContext, req types.RequestEndBlock) []types.ValidatorUpdate {
+func (vs *Validators) GetEndBlockUpdate(ctx *ValidatorContext, req types.RequestEndBlock) []types.ValidatorUpdate {
 
 	validatorUpdates := make([]types.ValidatorUpdate, 0)
 
@@ -192,8 +196,14 @@ func (vs *Validators) GetValidator(addr keys.Address) *Validator {
 }
 
 type ValidatorContext struct {
-	Balances data.Store
+	Balances *balance.Store
 	//todo: add necessary config
+}
+
+func NewValidatorContext(balances *balance.Store) *ValidatorContext{
+	return &ValidatorContext{
+		Balances: balances,
+	}
 }
 
 func transferVT(ctx ValidatorContext, validator Validator) bool {

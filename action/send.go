@@ -12,7 +12,7 @@ var _ Msg = Send{}
 type Send struct {
 	From   Address
 	To     Address
-	Amount Coin
+	Amount Amount
 }
 
 func (s Send) Signers() []Address {
@@ -37,12 +37,13 @@ var _ Tx = sendTx{}
 type sendTx struct {
 }
 
-func (sendTx) Validate(msg Msg, fee Fee, signatures []Signature) (bool, error) {
+func (sendTx) Validate(ctx *Context, msg Msg, fee Fee, signatures []Signature) (bool, error) {
 	send, ok := msg.(Send)
 	if !ok {
 		return false, ErrWrongTxType
 	}
-	if !send.Amount.IsValid() {
+	_, err := send.Amount.IsValid(ctx)
+	if err != nil {
 		return false, errors.Wrap(ErrInvalidAmount, send.Amount.String())
 	}
 	if send.From == nil || send.To == nil {
@@ -56,10 +57,10 @@ func (sendTx) Validate(msg Msg, fee Fee, signatures []Signature) (bool, error) {
 		"",
 	}
 
-	return base.valideBasic()
+	return base.validateBasic()
 }
 
-func (s sendTx) ProcessCheck(ctx Context, msg Msg, fee Fee) (bool, Response) {
+func (sendTx) ProcessCheck(ctx *Context, msg Msg, fee Fee) (bool, Response) {
 	logger.Debug("Processing Send Transaction for CheckTx", msg, fee)
 	balances := ctx.Balances
 
@@ -68,14 +69,20 @@ func (s sendTx) ProcessCheck(ctx Context, msg Msg, fee Fee) (bool, Response) {
 	if b == nil {
 		return false, Response{}
 	}
-	if !enoughBalance(*b, send.Amount) {
+
+	coin, err := send.Amount.ToCoin(ctx)
+	if err != nil {
+		return false, Response{}
+	}
+
+	if !enoughBalance(*b, coin) {
 		return false, Response{}
 	}
 
 	return true, Response{Tags: send.Tags()}
 }
 
-func (sendTx) ProcessDeliver(ctx Context, msg Msg, fee Fee) (bool, Response) {
+func (sendTx) ProcessDeliver(ctx *Context, msg Msg, fee Fee) (bool, Response) {
 	logger.Debug("Processing Send Transaction for DeliverTx", msg, fee)
 
 	balances := ctx.Balances
@@ -86,14 +93,18 @@ func (sendTx) ProcessDeliver(ctx Context, msg Msg, fee Fee) (bool, Response) {
 		logger.Error("Failed to get the balance of the owner", send.From, "err", err)
 		return false, Response{}
 	}
+	coin, err := send.Amount.ToCoin(ctx)
+	if err != nil {
+		return false, Response{}
+	}
 
-	if !enoughBalance(*from, send.Amount) {
+	if !enoughBalance(*from, coin) {
 		logger.Debug("Owner balance is not enough", from, send.Amount)
 		return false, Response{}
 	}
 
 	//change owner balance
-	from.MinusAmount(send.Amount)
+	from.MinusCoin(coin)
 	err = balances.Set(send.From.Bytes(), *from)
 	if err != nil {
 		logger.Error("error updating balance in send transaction", err)
@@ -108,25 +119,28 @@ func (sendTx) ProcessDeliver(ctx Context, msg Msg, fee Fee) (bool, Response) {
 	if to == nil {
 		to = balance.NewBalance()
 	}
-	to.AddAmount(send.Amount)
-	balances.Set(send.To.Bytes(), *to)
+	to.AddCoin(coin)
+	err = balances.Set(send.To.Bytes(), *to)
+	if err != nil {
+		return false, Response{}
+	}
 	return true, Response{Tags: send.Tags()}
 }
 
-func (sendTx) ProcessFee(ctx Context, fee Fee) (bool, Response) {
+func (sendTx) ProcessFee(ctx *Context, fee Fee) (bool, Response) {
 	panic("implement me")
 	//todo: implement the fee charge for send
 	return true, Response{GasWanted: 0, GasUsed: 0}
 }
 
-func enoughBalance(b Balance, value Coin) bool {
+func enoughBalance(b Balance, value balance.Coin) bool {
 
 	if !value.IsValid() {
 		return false
 	}
 
 	total := balance.NewBalance()
-	total.AddAmount(value)
+	total.MinusCoin(value)
 	if !b.IsEnoughBalance(*total) {
 		return false
 	}
