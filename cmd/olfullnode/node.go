@@ -54,6 +54,8 @@ func (ctx *nodeContext) init(rootDir string) error {
 	if err != nil {
 		return errors.Wrapf(err, "failed to read configuration file at at %s", cfgPath(rootPath))
 	}
+	//assign cfg to context
+	ctx.cfg = cfg
 
 	if ctx.rpc != "" {
 		ctx.cfg.Network.RPCAddress = ctx.rpc
@@ -75,7 +77,6 @@ func (ctx *nodeContext) init(rootDir string) error {
 		ctx.cfg.P2P.SeedMode = ctx.seedMode
 	}
 
-	ctx.cfg = cfg
 
 	return nil
 }
