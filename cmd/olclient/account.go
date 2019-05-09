@@ -39,7 +39,6 @@ type UpdateArguments struct {
 	chain           string
 	pubkey          []byte
 	privkey         []byte
-	chainkey        string
 	nodeaccount     bool
 	privKeyFilePath string
 }
@@ -55,7 +54,6 @@ func init() {
 
 	updateCmd.Flags().BytesBase64Var(&updateArgs.pubkey, "pubkey", []byte{}, "Specify a base64 public key")
 	updateCmd.Flags().BytesBase64Var(&updateArgs.privkey, "privkey", []byte{}, "Specify a base64 private key")
-	updateCmd.Flags().StringVar(&updateArgs.chainkey, "chainkey", "<empty>", "Specify the chain key")
 	updateCmd.Flags().BoolVar(&updateArgs.nodeaccount, "nodeaccount", false, "Specify whether it's a node account or not")
 
 	updateCmd.Flags().StringVar(&updateArgs.privKeyFilePath, "privKeyFilePath", "", "filepath to save the private key")
@@ -135,7 +133,8 @@ func UpdateAccount(cmd *cobra.Command, args []string) {
 
 }
 
-func writePrivateKeyToFile(acc accounts.Account, filename string) {
+// writePrivateKeyToFile saves a base64 encoded copy of an account secret key to a filepath
+func writePrivateKeyToFile(acc accounts.Account, filepath string) {
 
 	pkHandler, err := acc.PrivateKey.GetHandler()
 	if err != nil {
@@ -143,12 +142,14 @@ func writePrivateKeyToFile(acc accounts.Account, filename string) {
 		return
 	}
 
-	f, err := os.Create(filename)
+	// open file
+	f, err := os.Create(filepath)
 	if err != nil {
 		logger.Error("error opening file for secret", err)
 		return
 	}
 
+	// pipe base64 encoder to file
 	encoder := base64.NewEncoder(base64.StdEncoding, f)
 	_, err = encoder.Write(pkHandler.Bytes())
 	if err != nil {
@@ -162,8 +163,8 @@ func writePrivateKeyToFile(acc accounts.Account, filename string) {
 
 	err = f.Close()
 	if err != nil {
-		logger.Error("error closing file ", filename, "err", err)
+		logger.Error("error closing file ", filepath, "err", err)
 	}
 
-	logger.Info("Private key wrote to file ", filename, " successfully.")
+	logger.Info("Private key wrote to file ", filepath, " successfully.")
 }
