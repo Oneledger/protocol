@@ -92,6 +92,7 @@ func (state *ChainState) FindAll() map[string][]byte {
 // TODO: Should be against the commit tree, not the delivered one!!!
 func (state *ChainState) Get(key StoreKey, lastCommit bool) []byte {
 
+	fmt.Println(len(key), CHAINKEY_MAXLEN)
 	// TODO: Should not be this hardcoded, but still needs protection
 	if len(key) != CHAINKEY_MAXLEN {
 		log.Fatal("Not a valid account key")

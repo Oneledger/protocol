@@ -15,11 +15,12 @@ Copyright 2017 - 2019 OneLedger
 package client
 
 import (
+	netRpc "net/rpc"
+
 	"github.com/pkg/errors"
 	"github.com/tendermint/tendermint/node"
 	rpcclient "github.com/tendermint/tendermint/rpc/client"
 	ctypes "github.com/tendermint/tendermint/rpc/core/types"
-	"net/rpc"
 )
 
 var (
@@ -31,7 +32,7 @@ type Context struct {
 	rpcClient     rpcclient.Client
 	broadcastMode string
 	proof         bool
-	oltClient  *rpc.Client
+	oltClient     *netRpc.Client
 }
 
 /*
@@ -39,8 +40,6 @@ type Context struct {
 */
 func NewLocalContext(node *node.Node) (cliCtx Context) {
 	tmClient := rpcclient.NewLocal(node)
-
-
 
 	cliCtx = Context{
 		rpcClient:     tmClient,
@@ -50,7 +49,7 @@ func NewLocalContext(node *node.Node) (cliCtx Context) {
 	return
 }
 
-func NewContext(rpcAddress string) (cliCtx Context, err error) {
+func NewContext(rpcAddress, sdkAddress string) (cliCtx Context, err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			logger.Debug("Ignoring rpcClient Panic", "r", r)
@@ -76,14 +75,21 @@ func NewContext(rpcAddress string) (cliCtx Context, err error) {
 	// try starting rpc client
 	err = rpc.Start()
 	if err != nil {
-		logger.Fatal("rpcClient is unavailable", "address", rpcAddress)
+		logger.Fatal("rpcClient is unavailable", "address", rpcAddress, err)
 		return
+	}
+
+	client, err := netRpc.DialHTTP("tcp", sdkAddress)
+	if err != nil {
+		logger.Fatal("dialing:", err)
 	}
 
 	cliCtx = Context{
 		rpcClient:     rpc,
 		broadcastMode: BroadcastCommit,
+		oltClient:     client,
 	}
+
 	return
 }
 
@@ -92,7 +98,7 @@ func NewContext(rpcAddress string) (cliCtx Context, err error) {
 */
 
 // Send a very specific query to return parse response.value
-func (ctx Context) Query(serviceMethod string, args interface{}, response interface{})  error {
+func (ctx Context) Query(serviceMethod string, args interface{}, response interface{}) error {
 
 	err := ctx.oltClient.Call(serviceMethod, args, response)
 	if err != nil {

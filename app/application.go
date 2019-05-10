@@ -11,18 +11,17 @@ import (
 	"path/filepath"
 
 	"github.com/Oneledger/protocol/action"
-	"github.com/Oneledger/protocol/identity"
-
-	"github.com/pkg/errors"
-	"github.com/tendermint/tendermint/libs/common"
-
 	"github.com/Oneledger/protocol/config"
 	"github.com/Oneledger/protocol/consensus"
 	"github.com/Oneledger/protocol/data/accounts"
 	"github.com/Oneledger/protocol/data/balance"
+	"github.com/Oneledger/protocol/identity"
 	"github.com/Oneledger/protocol/log"
 	"github.com/Oneledger/protocol/serialize"
 	"github.com/Oneledger/protocol/storage"
+
+	"github.com/pkg/errors"
+	"github.com/tendermint/tendermint/libs/common"
 )
 
 // Ensure this App struct can control the underlying ABCI app
@@ -274,6 +273,8 @@ func (app *App) startRPCServer() {
 		app.Close()
 		app.logger.Fatal("listen error:", e)
 	}
+
+	app.logger.Info("starting server")
 
 	err = http.Serve(l, nil)
 	if err != nil {

@@ -17,6 +17,8 @@ package main
 import (
 	"github.com/Oneledger/protocol/data"
 	"github.com/Oneledger/protocol/data/balance"
+	"github.com/Oneledger/protocol/serialize"
+
 	"github.com/spf13/cobra"
 )
 
@@ -29,7 +31,7 @@ var balanceCmd = &cobra.Command{
 type Balance struct {
 	identityName string
 	accountName  string
-	accountKey   string
+	accountKey   []byte
 }
 
 var balArgs *Balance = &Balance{}
@@ -39,15 +41,21 @@ func init() {
 
 	// Transaction Parameters
 	// TODO either get by identity or read base64 of account key
-	balanceCmd.Flags().StringVar(&balArgs.accountKey, "address", "", "account address")
+	balanceCmd.Flags().BytesHexVar(&balArgs.accountKey, "address", []byte{}, "account address")
 }
 
 // IssueRequest sends out a sendTx to all of the nodes in the chain
 func BalanceNode(cmd *cobra.Command, args []string) {
 	Ctx := NewContext()
 
+	if len(balArgs.accountKey) == 0 {
+		logger.Error("missing address")
+		return
+	}
+
 	resp := &data.Response{}
-	err := Ctx.clCtx.Query("NodeName", nil, resp)
+	req := data.NewRequestFromData("nodename", []byte{})
+	err := Ctx.clCtx.Query("RPCServerCtx.NodeName", *req, resp)
 	if err != nil {
 		logger.Fatal("error in getting nodename", err)
 	}
@@ -55,16 +63,19 @@ func BalanceNode(cmd *cobra.Command, args []string) {
 	nodeName := string(resp.Data)
 
 	// assuming we have public key
-	bal := balance.NewBalance()
-	err = Ctx.clCtx.Query("Balance", []byte(balArgs.accountKey), bal)
+	resp = &data.Response{}
+	err = Ctx.clCtx.Query("RPCServerCtx.Balance", balArgs.accountKey, resp)
 	if err != nil || !resp.Success {
-		logger.Fatal("error in getting nodename", err, resp.ErrorMsg)
+		logger.Fatal("error in getting balance", err, resp.ErrorMsg)
 	}
+
+	bal := balance.NewBalance()
+	serialize.GetSerializer(serialize.CLIENT).Deserialize(resp.Data, bal)
 
 	printBalance(nodeName, balArgs.accountKey, bal)
 }
 
-func printBalance(nodeName string, address string, bal *balance.Balance) {
+func printBalance(nodeName string, address []byte, bal *balance.Balance) {
 
 	logger.Infof("\t Balance for address %x on %s", address, nodeName)
 	logger.Info("\t Balance: ", bal.String())

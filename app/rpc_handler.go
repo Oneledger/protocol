@@ -15,24 +15,25 @@ Copyright 2017 - 2019 OneLedger
 package app
 
 import (
-	"github.com/Oneledger/protocol/client"
-	"github.com/Oneledger/protocol/data/keys"
-	"github.com/Oneledger/protocol/serialize"
+	"fmt"
 	"os"
 	"runtime/debug"
 
+	"github.com/Oneledger/protocol/action"
+	"github.com/Oneledger/protocol/client"
 	"github.com/Oneledger/protocol/data"
 	"github.com/Oneledger/protocol/data/accounts"
 	"github.com/Oneledger/protocol/data/balance"
+	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/log"
-	"github.com/Oneledger/protocol/action"
+	"github.com/Oneledger/protocol/serialize"
 	"github.com/pkg/errors"
 )
 
 type RPCServerCtx struct {
-	nodeName string
-	balances *balance.Store
-	accounts accounts.Wallet
+	nodeName   string
+	balances   *balance.Store
+	accounts   accounts.Wallet
 	currencies map[string]balance.Currency
 
 	logger *log.Logger
@@ -67,10 +68,13 @@ type Handler struct {
 
 // GetBalance gets the balance of an address
 // TODO make it more generic to handle account name and identity
-func (h *RPCServerCtx) GetBalance(key []byte, bal *balance.Balance) error {
+func (h *RPCServerCtx) Balance(key []byte, resp *data.Response) error {
 	defer h.recoverPanic()
 
 	bal, err := h.balances.Get(key, true)
+	resp.SetDataObj(bal)
+
+	fmt.Println(err)
 	return err
 }
 
@@ -82,10 +86,14 @@ func (h *RPCServerCtx) GetBalance(key []byte, bal *balance.Balance) error {
 func (h *RPCServerCtx) AddAccount(acc accounts.Account, resp *data.Response) error {
 	defer h.recoverPanic()
 
+	h.logger.Infof("adding account : %#v %s", acc, acc.Address())
 	err := h.accounts.Add(acc)
 	if err != nil {
 		return errors.Wrap(err, "error in adding account to walletstore")
 	}
+
+	acc1, err := h.accounts.GetAccount(acc.Address())
+	resp.SetDataObj(acc1)
 
 	return nil
 }
@@ -107,6 +115,7 @@ func (h *RPCServerCtx) ListAccounts(req data.Request, resp *data.Response) error
 	defer h.recoverPanic()
 
 	accs := h.accounts.Accounts()
+	h.logger.Error("accs", accs)
 	resp.SetDataObj(accs)
 
 	return nil
@@ -114,15 +123,15 @@ func (h *RPCServerCtx) ListAccounts(req data.Request, resp *data.Response) error
 
 func (h *RPCServerCtx) sendTx(args client.SendArguments, resp *data.Response) error {
 	send := action.Send{
-		From: keys.Address(args.Party),
-		To: keys.Address(args.CounterParty),
+		From:   keys.Address(args.Party),
+		To:     keys.Address(args.CounterParty),
 		Amount: args.Amount,
 	}
 
 	fee := action.Fee{args.Fee, args.Gas}
 	tx := action.BaseTx{
 		Data: send,
-		Fee: fee,
+		Fee:  fee,
 	}
 
 	pubKey, signed, err := h.accounts.SignWithAddress(tx.Bytes(), send.From)
