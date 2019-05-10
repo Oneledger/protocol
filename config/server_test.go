@@ -77,7 +77,7 @@ func TestServer_FileHandling(t *testing.T) {
 
 func TestTMConfig_Durations(t *testing.T) {
 	cfg := config.DefaultServerConfig()
-	tmcfg := cfg.TMConfig("foobar")
+	tmcfg := cfg.TMConfig()
 	tmcfgDefault := tmconfig.DefaultConfig()
 
 	int3Array := func(d config.Duration, td time.Duration, tdDefault time.Duration) [3]int64 {
@@ -99,7 +99,6 @@ func TestTMConfig_Durations(t *testing.T) {
 		"CreateEmptyBlocksInterval":   int3Array(cfg.Consensus.CreateEmptyBlocksInterval, tmcfg.Consensus.CreateEmptyBlocksInterval, tmcfgDefault.Consensus.CreateEmptyBlocksInterval),
 		"PeerGossipSleepDuration":     int3Array(cfg.Consensus.PeerGossipSleepDuration, tmcfg.Consensus.PeerGossipSleepDuration, tmcfgDefault.Consensus.PeerGossipSleepDuration),
 		"PeerQueryMaj23SleepDuration": int3Array(cfg.Consensus.PeerQueryMaj23SleepDuration, tmcfg.Consensus.PeerQueryMaj23SleepDuration, tmcfgDefault.Consensus.PeerQueryMaj23SleepDuration),
-		"BlockTimeIota":               int3Array(cfg.Consensus.BlockTimeIota, tmcfg.Consensus.BlockTimeIota, tmcfgDefault.Consensus.BlockTimeIota),
 	}
 
 	for field, duration := range fieldDurations {

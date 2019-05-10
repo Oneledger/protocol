@@ -222,7 +222,7 @@ func runDevnet(cmd *cobra.Command, _ []string) error {
 				Address: pvFile.GetAddress(),
 				PubKey:  pvFile.GetPubKey(),
 				Name:    nodeName,
-				Power:   0,
+				Power:   1,
 			}
 			validatorList[i] = validator
 		}
@@ -287,7 +287,7 @@ func runDevnet(cmd *cobra.Command, _ []string) error {
 		}
 	}
 
-	ctx.logger.Info("Created configuration files for", strconv.Itoa(totalNodes), "nodes")
+	ctx.logger.Info("Created configuration files for", strconv.Itoa(totalNodes), "nodes in", args.outputDir)
 
 	return nil
 }

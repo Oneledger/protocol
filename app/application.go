@@ -2,11 +2,11 @@ package app
 
 import (
 	"encoding/hex"
-	"fmt"
 	"io"
 	"net"
 	"net/http"
 	"net/rpc"
+	"net/url"
 	"os"
 	"path/filepath"
 
@@ -43,7 +43,7 @@ type App struct {
 }
 
 // New returns new app fresh and ready to start, returns an error if
-func NewApp(cfg *config.Server, rootDir string) (*App, error) {
+func NewApp(cfg *config.Server) (*App, error) {
 	// TODO: Determine the final logWriter in the configuration file
 	w := os.Stdout
 
@@ -53,7 +53,7 @@ func NewApp(cfg *config.Server, rootDir string) (*App, error) {
 	}
 	app.nodeName = cfg.Node.NodeName
 
-	ctx, err := newContext(*cfg, w, rootDir)
+	ctx, err := newContext(*cfg, w)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create new app context")
 	}
@@ -97,8 +97,8 @@ func (app *App) setNewABCI() {
 
 // setupState reads the AppState portion of the genesis file and uses that to set the app to its initial state
 func (app *App) setupState(stateBytes []byte) error {
+	app.logger.Info("Setting up state...")
 	var initial consensus.AppState
-
 	// Deserialize and get the proper app state
 	err := serialize.GetSerializer(serialize.JSON).Deserialize(stateBytes, &initial)
 	if err != nil {
@@ -134,14 +134,16 @@ func (app *App) setupState(stateBytes []byte) error {
 
 // Start initializes the state
 func (app *App) Start() error {
-	fmt.Println("befire consensus new node")
-	node, err := consensus.NewNode(app.ABCI(), &app.Context.cfg, app.Context.rootDir)
+	app.logger.Info("Starting node...")
+	node, err := consensus.NewNode(app.ABCI(), &app.Context.cfg)
 	if err != nil {
+		app.logger.Error("Failed to create consensus.Node")
 		return errors.Wrap(err, "failed to create new consensus.Node")
 	}
 
 	err = node.Start()
 	if err != nil {
+		app.logger.Error("Failed to start consensus.Node")
 		return errors.Wrap(err, "failed to start new consensus.Node")
 	}
 
@@ -165,7 +167,6 @@ func (app *App) Close() {
 type context struct {
 	chainID string
 	cfg     config.Server
-	rootDir string
 
 	// identities       data.Store
 	// smartContract    data.Store
@@ -192,12 +193,11 @@ type closer interface {
 	Close()
 }
 
-func newContext(cfg config.Server, logWriter io.Writer, rootDir string) (context, error) {
+func newContext(cfg config.Server, logWriter io.Writer) (context, error) {
 	ctx := context{
-		rootDir:   rootDir,
-		cfg:       cfg,
-		chainID:   cfg.ChainID(),
-		logWriter: logWriter,
+		cfg:        cfg,
+		chainID:    cfg.ChainID(),
+		logWriter:  logWriter,
 		currencies: make(map[string]balance.Currency),
 	}
 
@@ -217,7 +217,7 @@ func newContext(cfg config.Server, logWriter io.Writer, rootDir string) (context
 }
 
 func (ctx context) dbDir() string {
-	return filepath.Join(ctx.rootDir, ctx.cfg.Node.DBDir)
+	return filepath.Join(ctx.cfg.RootDir(), ctx.cfg.Node.DBDir)
 }
 
 func (ctx *context) Action() *action.Context {
@@ -255,14 +255,21 @@ func (ctx *context) Close() {
 func (app *App) startRPCServer() {
 	handlers := NewClientHandler(app.Context.cfg.Node.NodeName, app.Context.balances, app.Context.accounts, app.Context.currencies)
 
-  err := rpc.Register(handlers)
+	err := rpc.Register(handlers)
 	if err != nil {
 		app.logger.Fatal("error registering rpc handlers", "err", err)
 	}
 
+	u, err := url.Parse(app.Context.cfg.Network.SDKAddress)
+	if err != nil {
+		app.logger.Error("Failed to parse sdk address")
+	}
 	rpc.HandleHTTP()
 
-	l, e := net.Listen("tcp", app.Context.cfg.Network.SDKAddress)
+	// TODO: Thunk this function for better error handling
+	// Change: startRPCServer: func()
+	// To:     startRPCServer: func() -> (func(), err)
+	l, e := net.Listen("tcp", u.Host)
 	if e != nil {
 		app.Close()
 		app.logger.Fatal("listen error:", e)

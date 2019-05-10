@@ -44,6 +44,7 @@ func (app *App) chainInitializer() chainInitializer {
 		err := app.setupState(req.AppStateBytes)
 		// This should cause consensus to halt
 		if err != nil {
+			app.logger.Error("Failed to setupState", "err", err)
 			return ResponseInitChain{}
 		}
 		return ResponseInitChain{}
@@ -93,21 +94,20 @@ func (app *App) txChecker() txChecker {
 			code = CodeNotOK
 		}
 		result := ResponseCheckTx{
-			Code:                 code.uint32(),
-			Data:                 response.Data,
-			Log:                  response.Log,
-			Info:                 response.Info,
-			GasWanted:            response.GasWanted,
-			GasUsed:              response.GasUsed,
-			Tags:                 response.Tags,
-			Codespace:            "",
+			Code:      code.uint32(),
+			Data:      response.Data,
+			Log:       response.Log,
+			Info:      response.Info,
+			GasWanted: response.GasWanted,
+			GasUsed:   response.GasUsed,
+			Tags:      response.Tags,
+			Codespace: "",
 		}
 		app.logger.Debug("Check Tx: ", result)
 		return result
 
 	}
 }
-
 
 func (app *App) txDeliverer() txDeliverer {
 	return func(msg []byte) ResponseDeliverTx {
@@ -130,16 +130,15 @@ func (app *App) txDeliverer() txDeliverer {
 			code = CodeNotOK
 		}
 
-
 		result := ResponseDeliverTx{
-			Code:                 code.uint32(),
-			Data:                 response.Data,
-			Log:                  response.Log,
-			Info:                 response.Info,
-			GasWanted:            response.GasWanted,
-			GasUsed:              response.GasUsed,
-			Tags:                 response.Tags,
-			Codespace:            "",
+			Code:      code.uint32(),
+			Data:      response.Data,
+			Log:       response.Log,
+			Info:      response.Info,
+			GasWanted: response.GasWanted,
+			GasUsed:   response.GasUsed,
+			Tags:      response.Tags,
+			Codespace: "",
 		}
 		app.logger.Debug("Deliver Tx: ", result)
 		return result
@@ -150,7 +149,6 @@ func (app *App) blockEnder() blockEnder {
 	return func(req RequestEndBlock) ResponseEndBlock {
 
 		updates := app.Context.validators.GetEndBlockUpdate(app.Context.ValidatorCtx(), req)
-
 
 		result := ResponseEndBlock{
 			ValidatorUpdates: updates,
