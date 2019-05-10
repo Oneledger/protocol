@@ -57,6 +57,9 @@ func (ctx *nodeContext) init(rootDir string) error {
 	//assign cfg to context
 	ctx.cfg = cfg
 
+
+	ctx.cfg = cfg
+
 	if ctx.rpc != "" {
 		ctx.cfg.Network.RPCAddress = ctx.rpc
 	}
@@ -114,6 +117,7 @@ func StartNode(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return errors.Wrap(err, "failed to initialize config")
 	}
+
 	application, err := app.NewApp(ctx.cfg, ctx.rootDir)
 	if err != nil {
 		return errors.Wrap(err, "failed to create new app")

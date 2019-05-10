@@ -2,6 +2,7 @@ package app
 
 import (
 	"encoding/hex"
+	"fmt"
 	"io"
 	"net"
 	"net/http"
@@ -133,14 +134,18 @@ func (app *App) setupState(stateBytes []byte) error {
 
 // Start initializes the state
 func (app *App) Start() error {
-	node, err := consensus.NewNode(app.ABCI(), &app.Context.cfg)
+	fmt.Println("befire consensus new node")
+	node, err := consensus.NewNode(app.ABCI(), &app.Context.cfg, app.Context.rootDir)
 	if err != nil {
 		return errors.Wrap(err, "failed to create new consensus.Node")
 	}
+
 	err = node.Start()
 	if err != nil {
 		return errors.Wrap(err, "failed to start new consensus.Node")
 	}
+
+	app.node = node
 	return nil
 }
 
@@ -193,6 +198,7 @@ func newContext(cfg config.Server, logWriter io.Writer, rootDir string) (context
 		cfg:       cfg,
 		chainID:   cfg.ChainID(),
 		logWriter: logWriter,
+		currencies: make(map[string]balance.Currency),
 	}
 
 	ctx.validators = identity.NewValidators()
@@ -256,7 +262,7 @@ func (app *App) startRPCServer() {
 
 	rpc.HandleHTTP()
 
-	l, e := net.Listen("tcp", app.Context.cfg.Network.RPCAddress)
+	l, e := net.Listen("tcp", app.Context.cfg.Network.SDKAddress)
 	if e != nil {
 		app.Close()
 		app.logger.Fatal("listen error:", e)

@@ -12,8 +12,6 @@ import (
 	"github.com/tendermint/tendermint/types"
 )
 
-// TODO: placeholder
-const RootDir = "./"
 
 // config is used to provider the right arguments for spinning up a new consensus.Node
 type NodeConfig struct {
@@ -29,26 +27,20 @@ type NodeConfig struct {
 // TMConfig returns a ready to go config for starting a new tendermint node,
 // fields like logging and metrics still need to be handled before starting the new node
 
-func ParseConfig(cfg *config.Server) (NodeConfig, error) {
-	return parseConfig(cfg)
+func ParseConfig(cfg *config.Server, rootDir string) (NodeConfig, error) {
+	return parseConfig(cfg, rootDir)
 }
 
 // ParseConfig reads Tendermint level config and return as
-func parseConfig(cfg *config.Server) (NodeConfig, error) {
+func parseConfig(cfg *config.Server, rootDir string) (NodeConfig, error) {
 	// Proper consensus dir
-	tmcfg := cfg.TMConfig(RootDir)
+	tmcfg := cfg.TMConfig(Dir(rootDir))
+	tmcfg.SetRoot(Dir(rootDir))
 	genesisProvider := func() (*types.GenesisDoc, error) {
 		// TODO: Get the right consensus dir
-		return types.GenesisDocFromFile(filepath.Join("config", "genesis.json"))
+		return types.GenesisDocFromFile(filepath.Join(RootDirName, "config", "genesis.json"))
 		// return types.GenesisDocFromFile(filepath.Join(global.Current.ConsensusDir(), "config", "genesis.json"))
 	}
-	// TODO: Pass the chainID to the application
-	// doc, err := genesisProvider()
-	// if err != nil {
-	// 	logger.Error("Failed to read genesis file", "err", err)
-	// 	return NodeConfig{}, err
-	// }
-	// // global.Current.SetChainID(doc)
 
 	privValidator := privval.LoadFilePV(tmcfg.PrivValidatorKeyFile(), tmcfg.PrivValidatorStateFile())
 
@@ -62,7 +54,7 @@ func parseConfig(cfg *config.Server) (NodeConfig, error) {
 	if cfg.Consensus.LogOutput == "stdout" {
 		logger, err = newStdOutLogger(tmcfg)
 	} else {
-		logOutput := filepath.Join(RootDir, cfg.Consensus.LogOutput)
+		logOutput := filepath.Join(rootDir, cfg.Consensus.LogOutput)
 		logger, err = newFileLogger(logOutput, tmcfg)
 	}
 	if err != nil {
