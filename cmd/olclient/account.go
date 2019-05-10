@@ -17,13 +17,14 @@ package main
 import (
 	"encoding/base64"
 	"fmt"
-	"github.com/Oneledger/protocol/serialize"
 	"os"
 
 	"github.com/Oneledger/protocol/data"
 	"github.com/Oneledger/protocol/data/accounts"
 	"github.com/Oneledger/protocol/data/chain"
 	"github.com/Oneledger/protocol/data/keys"
+	"github.com/Oneledger/protocol/serialize"
+
 	"github.com/spf13/cobra"
 	"github.com/tendermint/tendermint/crypto/ed25519"
 )
@@ -61,7 +62,7 @@ func init() {
 }
 
 func UpdateAccount(cmd *cobra.Command, args []string) {
-	
+
 	Ctx := NewContext()
 	Ctx.logger.Debug("UPDATING ACCOUNT")
 

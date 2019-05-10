@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+
 	"github.com/tendermint/tendermint/abci/types"
 	"github.com/tendermint/tendermint/crypto/ed25519"
 	"github.com/tendermint/tendermint/crypto/secp256k1"
@@ -38,6 +39,7 @@ type gobkey struct {
 	K int
 	D []byte
 }
+
 func (pubKey *PublicKey) GobEncode() ([]byte, error) {
 	//a := map[string]interface{}{
 	//	"K": int(pubKey.keytype),
@@ -49,14 +51,14 @@ func (pubKey *PublicKey) GobEncode() ([]byte, error) {
 
 func (pubKey *PublicKey) GobDecode(buf []byte) error {
 	a := gobkey{}
-	err :=  json.Unmarshal(buf, &a)
+	err := json.Unmarshal(buf, &a)
 	if err != nil {
 		return err
 	}
 
 	//pubKey.keytype = Algorithm(a["K"].(float64))
 	pubKey.keytype = Algorithm(a.K)
-	pubKey.data  = a.D
+	pubKey.data = a.D
 
 	return nil
 }
@@ -68,20 +70,17 @@ func (privKey *PrivateKey) GobEncode() ([]byte, error) {
 
 func (privKey *PrivateKey) GobDecode(buf []byte) error {
 	a := gobkey{}
-	err :=  json.Unmarshal(buf, &a)
+	err := json.Unmarshal(buf, &a)
 	if err != nil {
 		return err
 	}
 
 	//pubKey.keytype = Algorithm(a["K"].(float64))
 	privKey.keytype = Algorithm(a.K)
-	privKey.data  = a.D
+	privKey.data = a.D
 
 	return nil
 }
-
-
-
 
 func (pubKey PublicKey) Equal(pkey PublicKey) bool {
 	if pubKey.keytype != pkey.keytype {

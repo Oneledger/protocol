@@ -18,6 +18,7 @@ import (
 	"github.com/Oneledger/protocol/data"
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/serialize"
+
 	"github.com/spf13/cobra"
 )
 

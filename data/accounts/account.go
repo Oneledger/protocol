@@ -2,6 +2,7 @@ package accounts
 
 import (
 	"fmt"
+
 	"github.com/Oneledger/protocol/data/chain"
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/serialize"
