@@ -46,7 +46,7 @@ func NewContext() *Context {
 		logger.Fatal("failed to read configuration", err)
 	}
 
-	clientContext, err := client.NewContext(Ctx.cfg.Network.SDKAddress)
+	clientContext, err := client.NewContext(Ctx.cfg.Network.RPCAddress, Ctx.cfg.Network.SDKAddress)
 	if err != nil {
 		Ctx.logger.Fatal("error starting rpc client", err)
 	}

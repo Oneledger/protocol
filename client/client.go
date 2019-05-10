@@ -49,7 +49,7 @@ func NewLocalContext(node *node.Node) (cliCtx Context) {
 	return
 }
 
-func NewContext(rpcAddress string) (cliCtx Context, err error) {
+func NewContext(rpcAddress, sdkAddress string) (cliCtx Context, err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			logger.Debug("Ignoring rpcClient Panic", "r", r)
@@ -79,7 +79,7 @@ func NewContext(rpcAddress string) (cliCtx Context, err error) {
 		return
 	}
 
-	client, err := netRpc.DialHTTP("tcp", RPC_ADDRESS)
+	client, err := netRpc.DialHTTP("tcp", sdkAddress)
 	if err != nil {
 		logger.Fatal("dialing:", err)
 	}

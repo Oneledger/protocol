@@ -11,7 +11,6 @@ import (
 	"path/filepath"
 
 	"github.com/Oneledger/protocol/action"
-	"github.com/Oneledger/protocol/client"
 	"github.com/Oneledger/protocol/config"
 	"github.com/Oneledger/protocol/consensus"
 	"github.com/Oneledger/protocol/data/accounts"
@@ -260,17 +259,16 @@ func (app *App) startRPCServer() {
 		app.logger.Fatal("error registering rpc handlers", "err", err)
 	}
 
-	app.logger.Error("registered handlers")
+	app.logger.Info("registered handlers")
 	rpc.HandleHTTP()
 
-	app.logger.Error("starting listener")
-	l, e := net.Listen("tcp", client.RPC_ADDRESS)
+	l, e := net.Listen("tcp",  app.Context.cfg.Network.SDKAddress)
 	if e != nil {
 		app.Close()
 		app.logger.Fatal("listen error:", e)
 	}
 
-	app.logger.Error("starting server")
+	app.logger.Info("starting server")
 
 	err = http.Serve(l, nil)
 	if err != nil {
