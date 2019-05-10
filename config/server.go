@@ -44,6 +44,11 @@ type Server struct {
 	Consensus *ConsensusConfig `toml:"consensus"`
 
 	chainID string
+	rootDir string
+}
+
+func (cfg *Server) RootDir() string {
+	return cfg.rootDir
 }
 
 func (cfg *Server) ChainID() string {
@@ -54,7 +59,7 @@ func (cfg *Server) setChainID(doc GenesisDoc) {
 	cfg.chainID = doc.ChainID
 }
 
-func (cfg *Server) TMConfig(rootDir string) tmconfig.Config {
+func (cfg *Server) TMConfig() tmconfig.Config {
 	leveldb := cfg.Node.DB
 	if cfg.Node.DB == "goleveldb" {
 		leveldb = "leveldb"
@@ -97,13 +102,12 @@ func (cfg *Server) TMConfig(rootDir string) tmconfig.Config {
 		Instrumentation: &nilMetricsConfig,
 	}
 
-	tmcfg.SetRoot(rootDir)
 	return *tmcfg
 }
 
 // ReadFile accepts a filepath and returns the
-func (cfg *Server) ReadFile(filepath string) error {
-	bz, err := ioutil.ReadFile(filepath)
+func (cfg *Server) ReadFile(path string) error {
+	bz, err := ioutil.ReadFile(path)
 	if err != nil {
 		return errors.Wrap(err, "cfg.ReadFile error")
 	}
@@ -111,6 +115,10 @@ func (cfg *Server) ReadFile(filepath string) error {
 	if err != nil {
 		return errors.Wrap(err, "cfg.ReadFile error unmarshaling JSON")
 	}
+
+	// Set internal root directory
+	cfg.rootDir = filepath.Dir(path)
+
 	return nil
 }
 
@@ -139,15 +147,6 @@ func (cfg *Server) SaveFile(filepath string) error {
 		return err
 	}
 	return ioutil.WriteFile(filepath, bz, FilePerms)
-}
-
-// OpenFile opens the file at a given path and injects the
-func (cfg *Server) OpenFile(filepath string) error {
-	bz, err := ioutil.ReadFile(filepath)
-	if err != nil {
-		return err
-	}
-	return cfg.Unmarshal(bz)
 }
 
 func DefaultServerConfig() *Server {
@@ -254,7 +253,7 @@ func (cfg *P2PConfig) TMConfig() *tmconfig.P2PConfig {
 		Seeds:                   strings.Join(cfg.Seeds, ","),
 		PersistentPeers:         strings.Join(cfg.PersistentPeers, ","),
 		UPNP:                    cfg.UPNP,
-		AddrBook:                filepath.Join( "config", "addrbook.json"),
+		AddrBook:                filepath.Join("config", "addrbook.json"),
 		AddrBookStrict:          cfg.AddrBookStrict,
 		MaxNumInboundPeers:      cfg.MaxNumInboundPeers,
 		MaxNumOutboundPeers:     cfg.MaxNumOutboundPeers,

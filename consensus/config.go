@@ -12,7 +12,6 @@ import (
 	"github.com/tendermint/tendermint/types"
 )
 
-
 // config is used to provider the right arguments for spinning up a new consensus.Node
 type NodeConfig struct {
 	CFG             tmconfig.Config
@@ -27,19 +26,19 @@ type NodeConfig struct {
 // TMConfig returns a ready to go config for starting a new tendermint node,
 // fields like logging and metrics still need to be handled before starting the new node
 
-func ParseConfig(cfg *config.Server, rootDir string) (NodeConfig, error) {
-	return parseConfig(cfg, rootDir)
+func ParseConfig(cfg *config.Server) (NodeConfig, error) {
+	return parseConfig(cfg)
 }
 
 // ParseConfig reads Tendermint level config and return as
-func parseConfig(cfg *config.Server, rootDir string) (NodeConfig, error) {
+func parseConfig(cfg *config.Server) (NodeConfig, error) {
 	// Proper consensus dir
-	tmcfg := cfg.TMConfig(Dir(rootDir))
-	tmcfg.SetRoot(Dir(rootDir))
+	rootDir := Dir(cfg.RootDir())
+	tmcfg := cfg.TMConfig()
+	tmcfg.SetRoot(rootDir)
+
 	genesisProvider := func() (*types.GenesisDoc, error) {
-		// TODO: Get the right consensus dir
-		return types.GenesisDocFromFile(filepath.Join(RootDirName, "config", "genesis.json"))
-		// return types.GenesisDocFromFile(filepath.Join(global.Current.ConsensusDir(), "config", "genesis.json"))
+		return types.GenesisDocFromFile(filepath.Join(rootDir, "config", "genesis.json"))
 	}
 
 	privValidator := privval.LoadFilePV(tmcfg.PrivValidatorKeyFile(), tmcfg.PrivValidatorStateFile())
@@ -54,7 +53,7 @@ func parseConfig(cfg *config.Server, rootDir string) (NodeConfig, error) {
 	if cfg.Consensus.LogOutput == "stdout" {
 		logger, err = newStdOutLogger(tmcfg)
 	} else {
-		logOutput := filepath.Join(rootDir, cfg.Consensus.LogOutput)
+		logOutput := filepath.Join(cfg.RootDir(), cfg.Consensus.LogOutput)
 		logger, err = newFileLogger(logOutput, tmcfg)
 	}
 	if err != nil {
@@ -68,7 +67,6 @@ func parseConfig(cfg *config.Server, rootDir string) (NodeConfig, error) {
 	var dbProvider node.DBProvider = node.DefaultDBProvider
 
 	nilMetricsProvider := node.DefaultMetricsProvider(tmcfg.Instrumentation)
-
 	// TODO: Switch DB provider depending on the value of CFG.Node.DB
 	return NodeConfig{
 		CFG:             tmcfg,

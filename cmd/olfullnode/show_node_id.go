@@ -2,13 +2,13 @@ package main
 
 import (
 	"fmt"
+	"net/url"
+
 	"github.com/Oneledger/protocol/config"
 	"github.com/Oneledger/protocol/consensus"
 	"github.com/spf13/cobra"
 	"github.com/tendermint/tendermint/p2p"
-	"net/url"
 )
-
 
 var showIdCmd = &cobra.Command{
 	Use:   "show_node_id",
@@ -28,7 +28,6 @@ func init() {
 	showIdCmd.Flags().BoolVar(&showIdCtx.showIp, "ip", false, "show the node ip in result")
 }
 
-
 func ShowID(cmd *cobra.Command, args []string) error {
 
 	root := rootArgs.rootDir
@@ -41,7 +40,6 @@ func ShowID(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-
 func showNodeID(root string, shouldShowIP bool) (result string, err error) {
 
 	cfg := new(config.Server)
@@ -49,7 +47,7 @@ func showNodeID(root string, shouldShowIP bool) (result string, err error) {
 	if err != nil {
 		return "", err
 	}
-	configuration, err := consensus.ParseConfig(cfg, root)
+	configuration, err := consensus.ParseConfig(cfg)
 	if err != nil {
 		return result, err
 	}
@@ -69,4 +67,3 @@ func showNodeID(root string, shouldShowIP bool) (result string, err error) {
 		return string(nodeKey.ID()), nil
 	}
 }
-
