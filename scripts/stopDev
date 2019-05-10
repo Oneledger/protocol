@@ -3,6 +3,6 @@
 pids=`pgrep -f "olfullnode node.*"`
 if ! [ -z "$pids" ]
 then
-	pkill -f "olfullnode node.*" >> $LOG/olvm.log
+	pkill -f "olfullnode node.*"
 	killed=true
 fi
