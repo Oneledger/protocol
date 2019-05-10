@@ -1,0 +1,7 @@
+#!/bin/bash
+
+for name in $(ls -l $OLDATA/devnet | awk '(NR>1){print $9}')
+do
+    echo "Start Node: $name"
+    olfullnode node --root $OLDATA/devnet/$name >> $OLDATA/devnet/$name/olfullnode.log
+done
