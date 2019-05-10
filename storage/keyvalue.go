@@ -176,7 +176,6 @@ func (store KeyValue) ReadAll() []IterItem {
 		return false
 	})
 
-
 	return a
 }
 
@@ -231,18 +230,18 @@ func (session KeyValueSession) Set(key StoreKey, dat []byte) error {
 	session.store.Lock()
 	defer session.store.Unlock()
 
-	ok := session.store.tree.Set(key, dat)
-	if !ok {
-		return ErrSetFailed
-	}
+	session.store.tree.Set(key, dat)
 	return nil
 }
 
 // Test to see if a key exists
-func (session KeyValueSession) Exists(key StoreKey) (bool) {
+func (session KeyValueSession) Exists(key StoreKey) bool {
 	version := session.store.tree.Version()
-	index, _ := session.store.tree.GetVersioned(key, version)
+	index, val := session.store.tree.GetVersioned(key, version)
 	if index == -1 {
+		return false
+	}
+	if val == nil {
 		return false
 	}
 	return true

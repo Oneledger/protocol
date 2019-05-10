@@ -1,9 +1,10 @@
 package client
 
 import (
+	"os"
+
 	"github.com/Oneledger/protocol/log"
 	"github.com/Oneledger/protocol/serialize"
-	"os"
 )
 
 var clSerializer serialize.Serializer
@@ -26,7 +27,5 @@ const (
 	// Broadcast a tax and return immediately
 	BroadcastAsync = "async"
 
-
-
-	RPC_ADDRESS = ":6019"
+	RPC_ADDRESS = "127.0.0.1:6019"
 )

@@ -1,6 +1,7 @@
 package accounts
 
 import (
+	"encoding/base64"
 	"errors"
 	"fmt"
 
@@ -43,7 +44,7 @@ func (ws WalletStore) Accounts() []Account {
 			logger.Error("account not exist anymore")
 		}
 		var account Account
-		err = serialize.GetSerializer(serialize.PERSISTENT).Deserialize(acc, account)
+		err = serialize.GetSerializer(serialize.PERSISTENT).Deserialize(acc, &account)
 		if err != nil {
 			logger.Error("failed to deserialize account")
 		}
@@ -54,7 +55,11 @@ func (ws WalletStore) Accounts() []Account {
 }
 
 func (ws *WalletStore) Add(account Account) error {
+
 	session := ws.store.BeginSession()
+
+	fmt.Println(base64.StdEncoding.EncodeToString(account.Address().Bytes()))
+
 	exist := session.Exists(account.Address().Bytes())
 	if exist {
 		return errors.New("account already exist: " + string(account.Address()))
@@ -66,6 +71,8 @@ func (ws *WalletStore) Add(account Account) error {
 	}
 	session.Commit()
 	ws.accounts = append(ws.accounts, account.Address().Bytes())
+
+	fmt.Println(account)
 	return nil
 }
 
@@ -102,7 +109,7 @@ func (ws WalletStore) SignWithAddress(msg []byte, address keys.Address) (keys.Pu
 		return keys.PublicKey{}, nil, err
 	}
 	signed, err := account.Sign(msg)
-	return account.PublicKey, signed, err
+	return *account.PublicKey, signed, err
 }
 
 func NewWallet(config config.Server, dbDir string) Wallet {
