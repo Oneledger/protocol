@@ -17,3 +17,8 @@ install_c:
 	CGO_ENABLED=1 CGO_LDFLAGS="-lsnappy" go install -tags "gcc" github.com/Oneledger/protocol/cmd/...
 
 #
+# test
+fulltest: install
+	@./scripts/stopDev
+	@./scripts/resetDev
+	@./scripts/startDev

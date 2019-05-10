@@ -1,6 +1,7 @@
 package app
 
 import (
+	"encoding/hex"
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/serialize"
 	"github.com/Oneledger/protocol/version"
@@ -166,13 +167,13 @@ func (app *App) commitor() commitor {
 		hash, version := app.Context.balances.Commit()
 		//log.Dump("ZERO IS NOW", app.Balances.Get(ZeroAccountKey))
 
-		app.logger.Debugf("Committed New Block hash[%s], version[%s]", hash, version)
+		app.logger.Debugf("Committed New Block hash[%s], version[%d]", hex.EncodeToString(hash), version)
 
 		result := ResponseCommit{
 			Data: hash,
 		}
 
-		app.logger.Debug("ABCI: EndBlock Result", "result", result)
+		app.logger.Debug("Commit Result", result)
 		return result
 	}
 }

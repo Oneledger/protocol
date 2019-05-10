@@ -2,7 +2,7 @@ package identity
 
 import (
 	"bytes"
-
+	"fmt"
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/serialize"
@@ -81,6 +81,8 @@ func (vs *Validators) Set(req types.RequestBeginBlock) error {
 }
 
 func updateValidiatorSet(cached storage.Store, votes []types.VoteInfo) error {
+
+	fmt.Println("q", votes )
 	for _, v := range votes {
 		addr := v.Validator.GetAddress()
 		if !cached.Exists(addr) {

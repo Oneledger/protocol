@@ -69,10 +69,7 @@ func (state *ChainState) Set(key StoreKey, val []byte) error {
 	state.Lock()
 	defer state.Unlock()
 
-	setOk := state.Delivered.Set(key, val)
-	if !setOk {
-		return fmt.Errorf("%s %#v \n", "failed to set bal", val)
-	}
+	state.Delivered.Set(key, val)
 
 	return nil
 }
