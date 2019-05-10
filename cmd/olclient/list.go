@@ -52,9 +52,10 @@ func ListNode(cmd *cobra.Command, args []string) {
 
 	req := data.NewRequestFromData("listAccounts", []byte{})
 	resp := &data.Response{}
-	err := Ctx.clCtx.Query("ListAccounts", req, resp)
+	err := Ctx.clCtx.Query("RPCServerCtx.ListAccounts", req, resp)
 	if err != nil {
-		logger.Error("error in getting all accounts")
+		logger.Error("error in getting all accounts", err)
+		return
 	}
 
 	var accs = make([]accounts.Account, 0, 10)
@@ -64,5 +65,5 @@ func ListNode(cmd *cobra.Command, args []string) {
 		return
 	}
 
-	logger.Infof("Accounts: %=v", accs)
+	logger.Infof("Accounts: %#v", accs)
 }

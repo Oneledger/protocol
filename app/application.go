@@ -11,18 +11,18 @@ import (
 	"path/filepath"
 
 	"github.com/Oneledger/protocol/action"
-	"github.com/Oneledger/protocol/identity"
-
-	"github.com/pkg/errors"
-	"github.com/tendermint/tendermint/libs/common"
-
+	"github.com/Oneledger/protocol/client"
 	"github.com/Oneledger/protocol/config"
 	"github.com/Oneledger/protocol/consensus"
 	"github.com/Oneledger/protocol/data/accounts"
 	"github.com/Oneledger/protocol/data/balance"
+	"github.com/Oneledger/protocol/identity"
 	"github.com/Oneledger/protocol/log"
 	"github.com/Oneledger/protocol/serialize"
 	"github.com/Oneledger/protocol/storage"
+
+	"github.com/pkg/errors"
+	"github.com/tendermint/tendermint/libs/common"
 )
 
 // Ensure this App struct can control the underlying ABCI app
@@ -194,10 +194,10 @@ type closer interface {
 
 func newContext(cfg config.Server, logWriter io.Writer, rootDir string) (context, error) {
 	ctx := context{
-		rootDir:   rootDir,
-		cfg:       cfg,
-		chainID:   cfg.ChainID(),
-		logWriter: logWriter,
+		rootDir:    rootDir,
+		cfg:        cfg,
+		chainID:    cfg.ChainID(),
+		logWriter:  logWriter,
 		currencies: make(map[string]balance.Currency),
 	}
 
@@ -255,18 +255,22 @@ func (ctx *context) Close() {
 func (app *App) startRPCServer() {
 	handlers := NewClientHandler(app.Context.cfg.Node.NodeName, app.Context.balances, app.Context.accounts, app.Context.currencies)
 
-  err := rpc.Register(handlers)
+	err := rpc.Register(handlers)
 	if err != nil {
 		app.logger.Fatal("error registering rpc handlers", "err", err)
 	}
 
+	app.logger.Error("registered handlers")
 	rpc.HandleHTTP()
 
-	l, e := net.Listen("tcp", app.Context.cfg.Network.SDKAddress)
+	app.logger.Error("starting listener")
+	l, e := net.Listen("tcp", client.RPC_ADDRESS)
 	if e != nil {
 		app.Close()
 		app.logger.Fatal("listen error:", e)
 	}
+
+	app.logger.Error("starting server")
 
 	err = http.Serve(l, nil)
 	if err != nil {

@@ -17,6 +17,7 @@ package balance
 import (
 	"github.com/Oneledger/protocol/serialize"
 	"github.com/Oneledger/protocol/storage"
+	"github.com/pkg/errors"
 )
 
 type Store struct {
@@ -32,6 +33,11 @@ func NewStore(name, dbDir, configDB string, typ storage.StorageType) *Store {
 func (st *Store) Get(address []byte, lastCommit bool) (bal *Balance, err error) {
 	dat := st.ChainState.Get(storage.StoreKey(address), lastCommit)
 
+	if len(dat) == 0 {
+		err = errors.New("no balance efound for the address")
+		return
+	}
+	bal = NewBalance()
 	err = serialize.GetSerializer(serialize.PERSISTENT).Deserialize(dat, bal)
 	return
 }

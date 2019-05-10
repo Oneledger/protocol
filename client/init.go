@@ -28,5 +28,5 @@ const (
 
 
 
-	RPC_ADDRESS = ":6019"
+	RPC_ADDRESS = "127.0.0.1:6019"
 )

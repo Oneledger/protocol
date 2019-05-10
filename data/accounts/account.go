@@ -11,11 +11,11 @@ type Account struct {
 	Type chain.Type `json:"type"`
 	Name string     `json:"name"`
 
-	PublicKey  keys.PublicKey  `json:"publicKey"`
-	PrivateKey keys.PrivateKey `json:"privateKey"`
+	PublicKey  *keys.PublicKey  `json:"publicKey"`
+	PrivateKey *keys.PrivateKey `json:"privateKey"`
 }
 
-func NewAccount(t chain.Type, name string, privkey keys.PrivateKey, pubkey keys.PublicKey) (Account, error) {
+func NewAccount(t chain.Type, name string, privkey *keys.PrivateKey, pubkey *keys.PublicKey) (Account, error) {
 	acc := Account{
 		Type:       t,
 		Name:       name,
@@ -54,9 +54,9 @@ func (acc Account) Sign(msg []byte) ([]byte, error) {
 }
 
 func (acc Account) Bytes() []byte {
-	value, err := serialize.GetSerializer(serialize.PERSISTENT).Serialize(acc)
+	value, err := serialize.GetSerializer(serialize.PERSISTENT).Serialize(&acc)
 	if err != nil {
-		logger.Fatal("account not serializable")
+		//logger.Fatal("account not serializable")
 		return nil
 	}
 	return value
@@ -65,7 +65,7 @@ func (acc Account) Bytes() []byte {
 func (acc *Account) FromBytes(msg []byte) *Account {
 	err := serialize.GetSerializer(serialize.PERSISTENT).Deserialize(msg, acc)
 	if err != nil {
-		logger.Fatal("failed to deserialize account from bytes")
+		logger.Fatal("failed to deserialize account from bytes", err)
 		return &Account{}
 	}
 	return acc

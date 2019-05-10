@@ -15,7 +15,9 @@
 package main
 
 import (
+	"github.com/Oneledger/protocol/config"
 	"os"
+	"path/filepath"
 
 	"github.com/Oneledger/protocol/client"
 	"github.com/Oneledger/protocol/log"
@@ -26,14 +28,27 @@ var logger = log.NewLoggerWithPrefix(os.Stdout, "olclient")
 type Context struct {
 	logger *log.Logger
 	clCtx  *client.Context
+	cfg config.Server
 }
+
 
 func NewContext() *Context {
 	Ctx := &Context{
 		logger: log.NewLoggerWithPrefix(os.Stdout, "olclient"),
 	}
 
-	clientContext, err := client.NewContext(client.RPC_ADDRESS)
+	rootPath, err := filepath.Abs(rootArgs.rootDir)
+	if err != nil {
+		logger.Fatal(err)
+	}
+
+	err = Ctx.cfg.ReadFile(cfgPath(rootPath))
+	if err != nil {
+		logger.Fatal("failed to read configuration", err)
+	}
+
+
+	clientContext, err := client.NewContext(Ctx.cfg.Network.SDKAddress)
 	if err != nil {
 		Ctx.logger.Fatal("error starting rpc client", err)
 	}
@@ -43,5 +58,11 @@ func NewContext() *Context {
 }
 
 func main() {
+
 	Execute()
+}
+
+
+func cfgPath(dir string) string {
+	return filepath.Join(dir, config.FileName)
 }

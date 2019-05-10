@@ -2,6 +2,7 @@ package keys
 
 import (
 	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/tendermint/tendermint/abci/types"
@@ -33,11 +34,60 @@ type PublicKey struct {
 	data    []byte
 }
 
-func (pubkey PublicKey) Equal(pkey PublicKey) bool {
-	if pubkey.keytype != pkey.keytype {
+type gobkey struct {
+	K int
+	D []byte
+}
+func (pubKey *PublicKey) GobEncode() ([]byte, error) {
+	//a := map[string]interface{}{
+	//	"K": int(pubKey.keytype),
+	//	"D":    pubKey.data,
+	//}
+	a := gobkey{int(pubKey.keytype), pubKey.data}
+	return json.Marshal(&a)
+}
+
+func (pubKey *PublicKey) GobDecode(buf []byte) error {
+	a := gobkey{}
+	err :=  json.Unmarshal(buf, &a)
+	if err != nil {
+		return err
+	}
+
+	//pubKey.keytype = Algorithm(a["K"].(float64))
+	pubKey.keytype = Algorithm(a.K)
+	pubKey.data  = a.D
+
+	return nil
+}
+
+func (privKey *PrivateKey) GobEncode() ([]byte, error) {
+	a := gobkey{int(privKey.keytype), privKey.data}
+	return json.Marshal(&a)
+}
+
+func (privKey *PrivateKey) GobDecode(buf []byte) error {
+	a := gobkey{}
+	err :=  json.Unmarshal(buf, &a)
+	if err != nil {
+		return err
+	}
+
+	//pubKey.keytype = Algorithm(a["K"].(float64))
+	privKey.keytype = Algorithm(a.K)
+	privKey.data  = a.D
+
+	return nil
+}
+
+
+
+
+func (pubKey PublicKey) Equal(pkey PublicKey) bool {
+	if pubKey.keytype != pkey.keytype {
 		return false
 	}
-	if !bytes.Equal(pubkey.data, pkey.data) {
+	if !bytes.Equal(pubKey.data, pkey.data) {
 		return false
 	}
 	return true
@@ -63,33 +113,33 @@ func GetPublicKeyFromBytes(k []byte, algorithm Algorithm) (PublicKey, error) {
 	return key, nil
 }
 
-func (pubkey PublicKey) GetABCIPubKey() types.PubKey {
+func (pubKey PublicKey) GetABCIPubKey() types.PubKey {
 	return types.PubKey{
-		Type: pubkey.keytype.Name(),
-		Data: pubkey.data,
+		Type: pubKey.keytype.Name(),
+		Data: pubKey.data,
 	}
 }
 
 // Get the public key handler
-func (pubkey PublicKey) GetHandler() (PublicKeyHandler, error) {
-	switch pubkey.keytype {
+func (pubKey PublicKey) GetHandler() (PublicKeyHandler, error) {
+	switch pubKey.keytype {
 	case ED25519:
 		size := ed25519.PubKeyEd25519Size
-		if len(pubkey.data) != size {
+		if len(pubKey.data) != size {
 			return new(PublicKeyED25519),
-				fmt.Errorf("given key doesn't match the size of the key algorithm %s", pubkey.keytype)
+				fmt.Errorf("given key doesn't match the size of the key algorithm %s length %d", pubKey.keytype, len(pubKey.data))
 		}
 		var key [ED25519_PUB_SIZE]byte
-		copy(key[:], pubkey.data)
+		copy(key[:], pubKey.data)
 		return PublicKeyED25519{key}, nil
 	case SECP256K1:
 		size := SECP256K1_PUB_SIZE
-		if len(pubkey.data) != size {
+		if len(pubKey.data) != size {
 			return new(PublicKeySECP256K1),
-				fmt.Errorf("given key doesn't match the size of the key algorithm %s", pubkey.keytype)
+				fmt.Errorf("given key doesn't match the size of the key algorithm %s", pubKey.keytype)
 		}
 		var key [SECP256K1_PUB_SIZE]byte
-		copy(key[:], pubkey.data)
+		copy(key[:], pubKey.data)
 		return PublicKeySECP256K1{key}, nil
 	default:
 		// Shouldn't reach here
@@ -98,25 +148,25 @@ func (pubkey PublicKey) GetHandler() (PublicKeyHandler, error) {
 }
 
 // get the private key handler
-func (privkey PrivateKey) GetHandler() (PrivateKeyHandler, error) {
-	switch privkey.keytype {
+func (privKey PrivateKey) GetHandler() (PrivateKeyHandler, error) {
+	switch privKey.keytype {
 	case ED25519:
 
-		if len(privkey.data) != ED25519_PRIV_SIZE {
+		if len(privKey.data) != ED25519_PRIV_SIZE {
 			return new(PrivateKeyED25519),
-				fmt.Errorf("given key doesn't match the size of the key algorithm %s", privkey.keytype)
+				fmt.Errorf("given key doesn't match the size of the key algorithm %s", privKey.keytype)
 		}
 		var key [64]byte
-		copy(key[:], privkey.data)
+		copy(key[:], privKey.data)
 		return PrivateKeyED25519(key), nil
 	case SECP256K1:
 		size := SECP256K1_PRIV_SIZE
-		if len(privkey.data) != size {
+		if len(privKey.data) != size {
 			return new(PrivateKeySECP256K1),
-				fmt.Errorf("given key doesn't match the size of the key algorithm %s", privkey.keytype)
+				fmt.Errorf("given key doesn't match the size of the key algorithm %s", privKey.keytype)
 		}
 		var key [32]byte
-		copy(key[:], privkey.data)
+		copy(key[:], privKey.data)
 		return PrivateKeySECP256K1(key), nil
 	default:
 		// Shouldn't reach here

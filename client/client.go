@@ -19,7 +19,7 @@ import (
 	"github.com/tendermint/tendermint/node"
 	rpcclient "github.com/tendermint/tendermint/rpc/client"
 	ctypes "github.com/tendermint/tendermint/rpc/core/types"
-	"net/rpc"
+	netRpc "net/rpc"
 )
 
 var (
@@ -31,7 +31,7 @@ type Context struct {
 	rpcClient     rpcclient.Client
 	broadcastMode string
 	proof         bool
-	oltClient  *rpc.Client
+	oltClient  *netRpc.Client
 }
 
 /*
@@ -58,6 +58,7 @@ func NewContext(rpcAddress string) (cliCtx Context, err error) {
 		}
 	}()
 
+
 	// tm rpc Context
 	var rpc = rpcclient.NewHTTP(rpcAddress, "/websocket")
 
@@ -76,14 +77,24 @@ func NewContext(rpcAddress string) (cliCtx Context, err error) {
 	// try starting rpc client
 	err = rpc.Start()
 	if err != nil {
-		logger.Fatal("rpcClient is unavailable", "address", rpcAddress)
+		logger.Fatal("rpcClient is unavailable", "address", rpcAddress, err)
 		return
+	}
+
+	client, err := netRpc.DialHTTP("tcp",  RPC_ADDRESS)
+	if err != nil {
+		logger.Fatal("dialing:", err)
 	}
 
 	cliCtx = Context{
 		rpcClient:     rpc,
 		broadcastMode: BroadcastCommit,
+		oltClient: client,
 	}
+
+
+
+
 	return
 }
 
