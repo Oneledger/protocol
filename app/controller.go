@@ -165,7 +165,6 @@ func (app *App) commitor() commitor {
 
 		// Commit any pending changes.
 		hash, version := app.Context.balances.Commit()
-		//log.Dump("ZERO IS NOW", app.Balances.Get(ZeroAccountKey))
 
 		app.logger.Debugf("Committed New Block hash[%s], version[%d]", hex.EncodeToString(hash), version)
 
