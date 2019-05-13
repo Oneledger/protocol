@@ -1,0 +1,12 @@
+---
+# defaults file for fullnode
+app_user: node
+compress_image: false
+logging: false
+dev_mode: false
+
+GOPATH: /home/{{app_user}}/go
+OLROOT: "{{GOPATH}}/src/github.com/Oneledger"
+OLDATA: "{{GOPATH}}/data"
+GOLANG_INSTALL_DIR: /usr/local/go
+CONTAINER_OUTPUT_PATH: "/home/{{app_user}}/output"

@@ -1,0 +1,196 @@
+---
+# tasks file for fullnode
+- name: Install a list of dependent packages
+  apt:
+    name: "{{ packages }}"
+    update_cache: yes
+  vars:
+    packages:
+    - libleveldb-dev
+    - libsnappy-dev
+    - procps
+    - git
+    - nano
+    - vim
+    - curl
+    - make 
+    - gcc
+- name: add user group for the app
+  group:
+    name: "{{app_user}}"
+- name: add user to run the app 
+  user:
+    name: "{{app_user}}"
+    group: "{{app_user}}"
+    append: yes
+- name: create directory for source code & app data
+  file:
+    path: "{{OLROOT}}/protocol"
+    state: directory
+    mode: 0755
+    recurse: yes
+    owner: "{{app_user}}"
+    group: "{{app_user}}"
+- name: create directory non recurse 
+  file: 
+    path: "{{item}}"
+    state: directory
+    mode: 0755
+    owner: "{{app_user}}"
+    group: "{{app_user}}"
+  with_items:
+    - "{{OLDATA}}"
+    - "{{CONTAINER_OUTPUT_PATH}}"
+- name: clone repo 
+  git:
+    repo: https://github.com/Oneledger/protocol.git
+    version: "{{app_version}}"
+    dest: "{{OLROOT}}/protocol"
+    accept_hostkey: yes 
+    force: yes
+- name: set environment variable 
+  lineinfile:
+    path: /home/{{app_user}}/.bashrc
+    line: "{{item}}"
+    insertbefore: BOF
+  with_items:
+    - "export GOPATH={{GOPATH}}"
+    - "export OLROOT={{OLROOT}}"
+    - "export OLDATA={{OLDATA}}"
+    - "export OLSCRIPT={{OLROOT}}/protocol/node/scripts"
+    - "export OLSETUP={{OLROOT}}/protocol/node/setup"
+    - "export OLTEST={{OLROOT}}/protocol/node/tests"
+    - "export GO111MODULE=on"
+    - "export PATH=$PATH:{{GOPATH}}/bin:{{GOLANG_INSTALL_DIR}}/bin"
+- name: source bashrc 
+  shell: . /home/{{app_user}}/.bashrc
+- name: compile binary
+  shell: chdir={{OLROOT}}/protocol/node make update install_c
+- name: move app binary artifact to user bin directory
+  shell: cp -R {{GOPATH}}/bin/* /usr/local/bin/  
+- name: change ownership of artifact to app user
+  file:
+    dest: "{{GOPATH}}"
+    owner: "{{app_user}}"
+    group: "{{app_user}}"
+    recurse: true
+- name: create temp genesis
+  copy:
+    src: ../files/genesis.json
+    dest: "{{OLDATA}}/genesis.json"
+    owner: "{{app_user}}"
+    group: "{{app_user}}"
+    mode: 0744      
+- name: fullnode configuration setup
+  copy:  
+    dest: "/usr/local/bin/fullnodeSetup"
+    owner: "{{app_user}}"
+    group: "{{app_user}}"
+    mode: 0744      
+    content: |
+      #!/usr/bin/env bash
+      source ~/.profile
+      public_ip="$(curl ifconfig.me | awk '{$1=$1};1')" 
+      internal_ip="$(hostname -I | awk '{$1=$1};1')"
+      seeds="[\"6a304d743e176f6eca5c393a42db349723db6b63@35.245.157.80:26605\""
+      seeds+=",\"35aa9b3e09290d3a74804eb03b559ab775f726d9@35.188.157.3:26605\"]"
+      olfullnode init --genesis {{OLDATA}}/genesis.json --root {{OLDATA}}
+      sed -i "s/rpc_address.*/rpc_address = \"tcp:\/\/$internal_ip:26604\"/" {{OLDATA}}/config.toml
+      sed -i "s/p2p_address.*/p2p_address = \"tcp:\/\/$internal_ip:26605\"/" {{OLDATA}}/config.toml
+      sed -i "s/sdk_address.*/sdk_address = \"tcp:\/\/$internal_ip:26606\"/" {{OLDATA}}/config.toml
+      sed -i "s/external_p2p_address.*/external_p2p_address = \"tcp:\/\/$public_ip:26605\"/" {{OLDATA}}/config.toml
+      sed -i "s/seed_mode.*/seed_mode = false/" {{OLDATA}}/config.toml
+      sed -i "s/seeds.*/seeds = $seeds/" {{OLDATA}}/config.toml
+      sed -i "s/log_output.*/log_output = \"stdout\"/" {{OLDATA}}/config.toml
+      sed -i "s/create_empty_blocks.=.*/create_empty_blocks = false/" {{OLDATA}}/config.toml
+      sed -i "s/db.=.*/db = \"cleveldb\"/" {{OLDATA}}/config.toml
+      sed -i "s/node_name.*/node_name = \"$public_ip\"/" {{OLDATA}}/config.toml
+- name: create start script
+  copy:
+    dest: "/usr/local/bin/fullnodeStartup"
+    owner: "{{app_user}}"
+    group: "{{app_user}}"
+    mode: 0744
+    content: |
+      #!/usr/bin/env bash
+      fullnodeSetup
+      olmonitor start olvm execute --root {{OLDATA}} >> {{OLDATA}}/olvm.log 2>&1 &
+      olfullnode node --root {{OLDATA}} >> {{OLDATA}}/olfullnode.log 2>&1 &
+      cp -R {{GOPATH}}/* {{CONTAINER_OUTPUT_PATH}}
+      exec "$@"
+- name: create start quick script to start node 
+  copy:
+    dest: "/usr/local/bin/startNode"
+    owner: "{{app_user}}"
+    group: "{{app_user}}"
+    mode: 0744
+    content: |
+      #!/usr/bin/env bash
+      olmonitor start olvm execute --root {{OLDATA}} >> {{OLDATA}}/olvm.log 2>&1 &
+      olfullnode node --root {{OLDATA}} >> {{OLDATA}}/olfullnode.log 2>&1 &
+  when: dev_mode == "true"
+- name: create start quick script to stop node 
+  copy:
+    dest: "/usr/local/bin/stopNode"
+    owner: "{{app_user}}"
+    group: "{{app_user}}"
+    mode: 0744
+    content: |
+      #!/usr/bin/env bash
+      pkill olfullnode
+      pkill olmonitor
+      pkill olvm
+  when: dev_mode == "true"
+- name: create a systemd monitor service file
+  copy:
+    dest: "/etc/systemd/system/olmonitor.service"
+    owner: "root"
+    group: "root"
+    mode: 0644
+    content: |
+      [Unit]
+      Description=montor
+      After=network.target
+
+      [Service]
+      WorkingDirectory={{OLDATA}}
+      ExecStart=/usr/local/bin/olmonitor start olvm execute --root {{OLDATA}}
+      # Other Restart options: or always, on-abort, etc
+      Restart=on-failure
+
+      [Install]
+      WantedBy=multi-user.target
+- name: create a systemd olfullnode service file
+  copy:
+    dest: "/etc/systemd/system/olfullnode.service"
+    owner: "root"
+    group: "root"
+    mode: 0644
+    content: |
+      [Unit]
+      Description=fullnode server
+      After=network.target
+
+      [Service]
+      WorkingDirectory={{OLDATA}}
+      ExecStart=/usr/local/bin/olfullnode node --root {{OLDATA}}
+      # Other Restart options: or always, on-abort, etc
+      Restart=on-failure
+
+      [Install]
+      WantedBy=multi-user.target
+- name: compress image size by remove developer dependencies
+  file:
+    path: "{{ item }}"
+    state: absent
+  with_items:
+  - "{{GOLANG_INSTALL_DIR}}"
+  - "{{GOPATH}}/src"
+  - "{{GOPATH}}/pkg"
+  - "{{GOPATH}}/bin"
+  when: compress_image == "true"
+- name: remove unused apt packages to reduce image size 
+  apt:
+    name: ["nano","git","vim"]
+    state: absent
+  when: compress_image == "true"
