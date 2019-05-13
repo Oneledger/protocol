@@ -15,6 +15,7 @@ package balance
 
 import (
 	"math/big"
+	"sort"
 
 	"github.com/Oneledger/protocol/data/chain"
 	"github.com/Oneledger/protocol/serialize"
@@ -55,7 +56,15 @@ func (b *Balance) Data() serialize.Data {
 	// items to the list
 	bd.Coins = make([]CoinData, 0, len(b.Amounts))
 
-	for _, coin := range b.Amounts {
+	currencyList := []string{}
+	for key := range b.Amounts {
+		currencyList = append(currencyList, key)
+	}
+
+	sort.Strings(currencyList)
+
+	for _, key := range currencyList {
+		coin := b.Amounts[key]
 		cd := CoinData{
 			CurName:  coin.Currency.Name,
 			CurChain: coin.Currency.Chain,
