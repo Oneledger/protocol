@@ -123,7 +123,6 @@ func (app *App) setupState(stateBytes []byte) error {
 		if err != nil {
 			return errors.Wrap(err, "failed to set balance")
 		}
-		balanceCtx.Store().Commit()
 	}
 	return nil
 }
