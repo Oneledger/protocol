@@ -16,6 +16,7 @@ package client
 
 import (
 	netRpc "net/rpc"
+	"net/url"
 
 	"github.com/pkg/errors"
 	"github.com/tendermint/tendermint/node"
@@ -57,6 +58,7 @@ func NewContext(rpcAddress, sdkAddress string) (cliCtx Context, err error) {
 		}
 	}()
 
+	/*
 	// tm rpc Context
 	var rpc = rpcclient.NewHTTP(rpcAddress, "/websocket")
 
@@ -79,13 +81,21 @@ func NewContext(rpcAddress, sdkAddress string) (cliCtx Context, err error) {
 		return
 	}
 
-	client, err := netRpc.DialHTTP("tcp", sdkAddress)
+	 */
+
+
+	u, err := url.Parse(sdkAddress)
+	if err != nil {
+		logger.Fatal("Failed to parse sdk address", sdkAddress)
+	}
+
+	client, err := netRpc.DialHTTP("tcp", u.Host)
 	if err != nil {
 		logger.Fatal("dialing:", err)
 	}
 
 	cliCtx = Context{
-		rpcClient:     rpc,
+		//rpcClient:     rpc,
 		broadcastMode: BroadcastCommit,
 		oltClient:     client,
 	}
