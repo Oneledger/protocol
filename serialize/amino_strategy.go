@@ -26,8 +26,8 @@ func (a *aminoStrategy) Serialize(obj interface{}) ([]byte, error) {
 		return b, nil
 	}
 
-	if _, ok := obj.(DataAdapter); ok {
-		logger.Warn("amino strategy does not support adapters")
+	if apr, ok := obj.(DataAdapter); ok {
+		obj = apr.Data()
 	}
 	bz, err := a.codec.MarshalBinaryLengthPrefixed(obj)
 
@@ -36,6 +36,11 @@ func (a *aminoStrategy) Serialize(obj interface{}) ([]byte, error) {
 
 //Deserialize
 func (a *aminoStrategy) Deserialize(src []byte, dest interface{}) error {
+
+	if apr, ok := dest.(DataAdapter); ok {
+		err := a.wrapDataAdapter(src, dest, a.deserialize, apr)
+		return err
+	}
 
 	err := a.deserialize(src, dest)
 	return err
