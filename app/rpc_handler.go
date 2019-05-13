@@ -119,7 +119,7 @@ func (h *RPCServerContext) ListAccounts(req data.Request, resp *data.Response) e
 	return nil
 }
 
-func (h *RPCServerContext) sendTx(args client.SendArguments, resp *data.Response) error {
+func (h *RPCServerContext) SendTx(args client.SendArguments, resp *data.Response) error {
 	send := action.Send{
 		From:   keys.Address(args.Party),
 		To:     keys.Address(args.CounterParty),
