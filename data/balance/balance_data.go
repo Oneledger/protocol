@@ -33,6 +33,7 @@ type BalanceData struct {
 type CoinData struct {
 	CurName  string     `json:"curr_name"`
 	CurChain chain.Type `json:"curr_chain"`
+	CurDecimal int64  	`json:"curr_decimal"`
 
 	Amount []byte `json:"amt"`
 }
@@ -58,6 +59,7 @@ func (b *Balance) Data() serialize.Data {
 		cd := CoinData{
 			CurName:  coin.Currency.Name,
 			CurChain: coin.Currency.Chain,
+			CurDecimal: coin.Currency.Decimal,
 			Amount:   coin.Amount.Bytes(),
 		}
 
@@ -93,6 +95,7 @@ func (ba *BalanceData) extract(b *Balance) error {
 		coin := Coin{Amount: amt}
 		coin.Currency.Name = d[i].CurName
 		coin.Currency.Chain = d[i].CurChain
+		coin.Currency.Decimal = d[i].CurDecimal
 
 		b.Amounts[coin.Currency.StringKey()] = coin
 	}
