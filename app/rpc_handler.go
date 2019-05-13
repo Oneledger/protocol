@@ -121,7 +121,7 @@ func (h *RPCServerCtx) ListAccounts(req data.Request, resp *data.Response) error
 	return nil
 }
 
-func (h *RPCServerCtx) sendTx(args client.SendArguments, resp *data.Response) error {
+func (h *RPCServerCtx) SendTx(args client.SendArguments, resp *data.Response) error {
 	send := action.Send{
 		From:   keys.Address(args.Party),
 		To:     keys.Address(args.CounterParty),
