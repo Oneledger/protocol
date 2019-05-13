@@ -18,10 +18,10 @@ type SendArguments struct {
 	CounterParty []byte
 	Amount       balance.Coin
 	Fee          balance.Coin
-	Gas 		 int64
-	CurrencyStr		string
-	AmountFloat float64
-	FeeFloat    float64
+	Gas          int64
+	CurrencyStr  string
+	AmountFloat  float64
+	FeeFloat     float64
 }
 
 type SwapArguments struct {

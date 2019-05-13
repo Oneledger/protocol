@@ -231,10 +231,12 @@ func (coin Coin) MultiplyInt(value int) Coin {
 
 // Turn a coin into a readable, floating point string with the currency
 func (coin Coin) String() string {
-	if coin.Amount == nil {
-		debug.PrintStack()
-		logger.Fatal("Invalid Coin", "err", "Amount is nil")
-	}
+	/*
+		if coin.Amount == nil {
+			debug.PrintStack()
+			logger.Fatal("Invalid Coin", "err", "Amount is nil")
+		}
+	*/
 
-	return fmt.Sprintf("%=v", coin)
+	return fmt.Sprintf("%#v", coin)
 }

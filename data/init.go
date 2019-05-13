@@ -19,7 +19,6 @@ import "github.com/Oneledger/protocol/serialize"
 var clSzlr serialize.Serializer
 var jsonSzlr serialize.Serializer
 
-
 func init() {
 
 	clSzlr = serialize.GetSerializer(serialize.CLIENT)

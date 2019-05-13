@@ -82,7 +82,7 @@ func (vs *Validators) Set(req types.RequestBeginBlock) error {
 
 func updateValidiatorSet(cached storage.Store, votes []types.VoteInfo) error {
 
-	fmt.Println("q", votes )
+	fmt.Println("q", votes)
 	for _, v := range votes {
 		addr := v.Validator.GetAddress()
 		if !cached.Exists(addr) {

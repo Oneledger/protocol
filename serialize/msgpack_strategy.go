@@ -1,6 +1,7 @@
 package serialize
 
 import (
+	"bytes"
 	"github.com/vmihailenco/msgpack"
 )
 
@@ -18,7 +19,10 @@ func (m *msgpackStrategy) Serialize(obj interface{}) ([]byte, error) {
 	if apr, ok := obj.(DataAdapter); ok {
 		obj = apr.Data()
 	}
-	return msgpack.Marshal(obj)
+	var buf bytes.Buffer
+	enc := msgpack.NewEncoder(&buf).SortMapKeys(true)
+	err := enc.Encode(obj)
+	return buf.Bytes(), err
 }
 
 func (m *msgpackStrategy) Deserialize(src []byte, dest interface{}) error {

@@ -15,6 +15,7 @@ package balance
 
 import (
 	"math/big"
+	"sort"
 
 	"github.com/Oneledger/protocol/data/chain"
 	"github.com/Oneledger/protocol/serialize"
@@ -31,8 +32,9 @@ type BalanceData struct {
 
 // CoinData is a flattening of coin map in a balance data type
 type CoinData struct {
-	CurName  string     `json:"curr_name"`
-	CurChain chain.Type `json:"curr_chain"`
+	CurName    string     `json:"curr_name"`
+	CurChain   chain.Type `json:"curr_chain"`
+	CurDecimal int64      `json:"curr_decimal"`
 
 	Amount []byte `json:"amt"`
 }
@@ -54,12 +56,20 @@ func (b *Balance) Data() serialize.Data {
 	// items to the list
 	bd.Coins = make([]CoinData, 0, len(b.Amounts))
 
-	for _, id := range b.coinOrder {
-		coin := b.Amounts[id]
+	currencyList := []string{}
+	for key := range b.Amounts {
+		currencyList = append(currencyList, key)
+	}
+
+	sort.Strings(currencyList)
+
+	for _, key := range currencyList {
+		coin := b.Amounts[key]
 		cd := CoinData{
-			CurName:  coin.Currency.Name,
-			CurChain: coin.Currency.Chain,
-			Amount:   coin.Amount.Bytes(),
+			CurName:    coin.Currency.Name,
+			CurChain:   coin.Currency.Chain,
+			CurDecimal: coin.Currency.Decimal,
+			Amount:     coin.Amount.Bytes(),
 		}
 
 		bd.Coins = append(bd.Coins, cd)
@@ -82,8 +92,7 @@ func (b *Balance) SetData(obj interface{}) error {
 // Extract recreates the Balance object form the info BalanceData holds after deserialization/
 func (ba *BalanceData) extract(b *Balance) error {
 
-	b.Amounts = make(map[int]Coin)
-	b.coinOrder = []int{}
+	b.Amounts = make(map[string]Coin)
 
 	d := ba.Coins
 	for i := range d {
@@ -95,9 +104,9 @@ func (ba *BalanceData) extract(b *Balance) error {
 		coin := Coin{Amount: amt}
 		coin.Currency.Name = d[i].CurName
 		coin.Currency.Chain = d[i].CurChain
+		coin.Currency.Decimal = d[i].CurDecimal
 
-		b.Amounts[int(d[i].CurChain)] = coin
-		b.coinOrder = append(b.coinOrder, int(d[i].CurChain))
+		b.Amounts[coin.Currency.StringKey()] = coin
 	}
 
 	return nil
