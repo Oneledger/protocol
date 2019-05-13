@@ -15,8 +15,10 @@ Copyright 2017 - 2019 OneLedger
 package client
 
 import (
+	"fmt"
 	netRpc "net/rpc"
 
+	"github.com/Oneledger/protocol/rpc"
 	"github.com/pkg/errors"
 	"github.com/tendermint/tendermint/node"
 	rpcclient "github.com/tendermint/tendermint/rpc/client"
@@ -57,35 +59,35 @@ func NewContext(rpcAddress, sdkAddress string) (cliCtx Context, err error) {
 		}
 	}()
 
-	// tm rpc Context
-	var rpc = rpcclient.NewHTTP(rpcAddress, "/websocket")
+	// tmRPCClient Context
+	var tmRPCClient = rpcclient.NewHTTP(rpcAddress, "/websocket")
 
-	// check status of rpc; return client if everything fine
-	_, err = rpc.Status()
+	// check status of tmRPCClient; return client if everything fine
+	_, err = tmRPCClient.Status()
 	if err == nil {
 		logger.Debug("rpcClient is running")
 
 		cliCtx = Context{
-			rpcClient:     rpc,
+			rpcClient:     tmRPCClient,
 			broadcastMode: BroadcastCommit,
 		}
 		return
 	}
 
-	// try starting rpc client
-	err = rpc.Start()
+	// try starting tmRPCClient client
+	err = tmRPCClient.Start()
 	if err != nil {
-		logger.Fatal("rpcClient is unavailable", "address", rpcAddress, err)
+		err = fmt.Errorf("rpcClient is unavailable", "address", rpcAddress, err)
 		return
 	}
 
-	client, err := netRpc.DialHTTP("tcp", sdkAddress)
+	client, err := netRpc.DialHTTPPath("tcp", sdkAddress, rpc.Path)
 	if err != nil {
-		logger.Fatal("dialing:", err)
+		return
 	}
 
 	cliCtx = Context{
-		rpcClient:     rpc,
+		rpcClient:     tmRPCClient,
 		broadcastMode: BroadcastCommit,
 		oltClient:     client,
 	}

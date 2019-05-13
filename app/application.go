@@ -3,9 +3,6 @@ package app
 import (
 	"encoding/hex"
 	"io"
-	"net"
-	"net/http"
-	"net/rpc"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -17,6 +14,7 @@ import (
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/identity"
 	"github.com/Oneledger/protocol/log"
+	"github.com/Oneledger/protocol/rpc"
 	"github.com/Oneledger/protocol/serialize"
 	"github.com/Oneledger/protocol/storage"
 
@@ -59,14 +57,6 @@ func NewApp(cfg *config.Server) (*App, error) {
 
 	app.Context = ctx
 	app.setNewABCI()
-
-	startRPC, err := app.rpcStarter()
-	if err != nil {
-		return nil, err
-	}
-
-	go startRPC()
-
 	return app, nil
 }
 
@@ -153,6 +143,17 @@ func (app *App) Start() error {
 		return errors.Wrap(err, "failed to start new consensus.Node")
 	}
 
+	startRPC, err := app.rpcStarter()
+	if err != nil {
+		return errors.Wrap(err, "failed to prepare rpc service")
+	}
+
+	err = startRPC()
+	if err != nil {
+		app.logger.Error("Failed to start rpc")
+		return err
+	}
+
 	app.node = node
 	return nil
 }
@@ -168,38 +169,24 @@ func (app *App) Close() {
 	app.Context.Close()
 }
 
-func (app *App) rpcStarter() (func(), error) {
-	noop := func() {}
+func (app *App) rpcStarter() (func() error, error) {
+	noop := func() error { return nil }
 
 	handlers := NewClientHandler(app.Context.cfg.Node.NodeName, app.Context.balances, app.Context.accounts, app.Context.currencies)
 
-	srv := app.Context.rpc
-
-	err := srv.Register(handlers)
-	if err != nil {
-		return noop, errors.Wrap(err, "failed to register rpc handlers")
-	}
-
 	u, err := url.Parse(app.Context.cfg.Network.SDKAddress)
 	if err != nil {
-		return noop, errors.Wrap(err, "failed to parse sdk address")
+		return noop, err
 	}
 
-	return func() {
-		l, err := net.Listen("tcp", u.Host)
-		if err != nil {
-			app.logger.Fatal("listen error:", err)
-		}
+	err = app.Context.rpc.Prepare(u, handlers)
+	if err != nil {
+		return noop, err
+	}
 
-		app.logger.Info("starting rpc server on " + u.Host)
+	srv := app.Context.rpc
 
-		err = http.Serve(l, srv)
-
-		if err != nil {
-			app.logger.Fatal("error while starting the RPC server", "err", err)
-		}
-	}, nil
-
+	return srv.Start, nil
 }
 
 // The base context for the application, holds databases and other stateful information contained by the app.
@@ -207,9 +194,7 @@ func (app *App) rpcStarter() (func(), error) {
 type context struct {
 	cfg config.Server
 
-	rpc  *rpc.Server
-	http *http.Server
-
+	rpc          *rpc.Server
 	actionRouter action.Router
 
 	balances *balance.Store
@@ -232,8 +217,7 @@ func newContext(cfg config.Server, logWriter io.Writer) (context, error) {
 		currencies: make(map[string]balance.Currency),
 	}
 
-	ctx.http = &http.Server{}
-	ctx.rpc = rpc.NewServer()
+	ctx.rpc = rpc.NewServer(logWriter)
 	ctx.validators = identity.NewValidators()
 	ctx.actionRouter = action.NewRouter("action")
 	ctx.balances = balance.NewStore("balances", ctx.dbDir(), ctx.cfg.Node.DB, storage.PERSISTENT)
@@ -282,7 +266,7 @@ func (ctx *context) RPC() *RPCServerContext {
 
 // Close all things that need to be closed
 func (ctx *context) Close() {
-	closers := []closer{ctx.balances, ctx.accounts}
+	closers := []closer{ctx.balances, ctx.accounts, ctx.rpc}
 	for _, closer := range closers {
 		closer.Close()
 	}

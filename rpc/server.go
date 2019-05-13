@@ -14,8 +14,9 @@ import (
 	"github.com/Oneledger/protocol/log"
 )
 
+// The http path used for our rpc handlers
 const (
-	RPCPath = "/ol_rpc"
+	Path = "/ol_rpc"
 )
 
 // Server holds an RPC server that is served over HTTP
@@ -65,7 +66,8 @@ func (srv *Server) Prepare(u *url.URL, rcvr interface{}) error {
 	}
 
 	// Register the handlers with our mux
-	srv.mux.Handle(RPCPath, srv.rpc)
+	// TODO: Eventually expand this so we can register multiple receivers
+	srv.mux.Handle(Path, srv.rpc)
 	srv.http.Handler = srv.mux
 	srv.listener = l
 	return nil

@@ -54,7 +54,7 @@ func TestServer(t *testing.T) {
 
 	time.Sleep(1 * time.Second)
 
-	client, err := rpc.DialHTTPPath(u.Scheme, u.Host, RPCPath)
+	client, err := rpc.DialHTTPPath(u.Scheme, u.Host, Path)
 	if err != nil {
 		assert.Nil(t, err, "failed to connect to server: %s", err.Error())
 	}
