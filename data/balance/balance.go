@@ -21,7 +21,7 @@ import (
 
 // Wrap the amount with owner information
 type Balance struct {
-	Amounts   map[string]Coin `json:"amounts"`
+	Amounts map[string]Coin `json:"amounts"`
 }
 
 /*
@@ -30,7 +30,7 @@ type Balance struct {
 func NewBalance() *Balance {
 	amounts := make(map[string]Coin, 0)
 	result := &Balance{
-		Amounts:   amounts,
+		Amounts: amounts,
 	}
 	return result
 }

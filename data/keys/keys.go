@@ -5,10 +5,10 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/pkg/errors"
 	"github.com/tendermint/tendermint/abci/types"
 	"github.com/tendermint/tendermint/crypto/ed25519"
 	"github.com/tendermint/tendermint/crypto/secp256k1"
-	"github.com/pkg/errors"
 )
 
 type PublicKeyHandler interface {
@@ -112,7 +112,7 @@ func GetPublicKeyFromBytes(k []byte, algorithm Algorithm) (PublicKey, error) {
 	return key, nil
 }
 
-func NewKeyPairFromTendermint() (PublicKey, PrivateKey, error){
+func NewKeyPairFromTendermint() (PublicKey, PrivateKey, error) {
 	tmPrivKey := ed25519.GenPrivKey()
 	tmPublicKey := tmPrivKey.PubKey()
 

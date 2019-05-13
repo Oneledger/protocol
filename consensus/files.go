@@ -6,15 +6,15 @@ import (
 
 // Common file names & directories
 const (
-	GenesisFilename = "genesis.json"
-	NodeKeyFilename = "node_key.json"
-	PrivValidatorKeyFilename = "priv_validator_key.json"
+	GenesisFilename            = "genesis.json"
+	NodeKeyFilename            = "node_key.json"
+	PrivValidatorKeyFilename   = "priv_validator_key.json"
 	PrivValidatorStateFilename = "priv_validator_state.json"
-	AddrBookFilename = "addrbook.json"
+	AddrBookFilename           = "addrbook.json"
 
-	RootDirName = "consensus"
+	RootDirName   = "consensus"
 	ConfigDirName = "config"
-	DataDirName = "data"
+	DataDirName   = "data"
 )
 
 // Dir returns the root folder for consensus files

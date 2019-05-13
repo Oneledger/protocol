@@ -47,7 +47,7 @@ func NewRequest(query string, params map[string]interface{}) (*Request, error) {
 }
 
 func NewRequestFromData(query string, dat []byte) *Request {
-	req := &Request{Query:query, Data:dat}
+	req := &Request{Query: query, Data: dat}
 	return req
 }
 

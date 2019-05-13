@@ -11,7 +11,6 @@
 Copyright 2017 - 2019 OneLedger
 */
 
-
 package balance
 
 import (
@@ -89,4 +88,4 @@ func TestBalance_IsEnoughBalance(t *testing.T) {
 	assert.Equal(t, false, result3, a.String(), b.String())
 	//fmt.Println("third", a, b)
 }
- */
+*/

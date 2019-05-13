@@ -59,30 +59,29 @@ func NewContext(rpcAddress, sdkAddress string) (cliCtx Context, err error) {
 	}()
 
 	/*
-	// tm rpc Context
-	var rpc = rpcclient.NewHTTP(rpcAddress, "/websocket")
+		// tm rpc Context
+		var rpc = rpcclient.NewHTTP(rpcAddress, "/websocket")
 
-	// check status of rpc; return client if everything fine
-	_, err = rpc.Status()
-	if err == nil {
-		logger.Debug("rpcClient is running")
+		// check status of rpc; return client if everything fine
+		_, err = rpc.Status()
+		if err == nil {
+			logger.Debug("rpcClient is running")
 
-		cliCtx = Context{
-			rpcClient:     rpc,
-			broadcastMode: BroadcastCommit,
+			cliCtx = Context{
+				rpcClient:     rpc,
+				broadcastMode: BroadcastCommit,
+			}
+			return
 		}
-		return
-	}
 
-	// try starting rpc client
-	err = rpc.Start()
-	if err != nil {
-		logger.Fatal("rpcClient is unavailable", "address", rpcAddress, err)
-		return
-	}
+		// try starting rpc client
+		err = rpc.Start()
+		if err != nil {
+			logger.Fatal("rpcClient is unavailable", "address", rpcAddress, err)
+			return
+		}
 
-	 */
-
+	*/
 
 	u, err := url.Parse(sdkAddress)
 	if err != nil {

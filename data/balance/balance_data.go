@@ -32,9 +32,9 @@ type BalanceData struct {
 
 // CoinData is a flattening of coin map in a balance data type
 type CoinData struct {
-	CurName  string     `json:"curr_name"`
-	CurChain chain.Type `json:"curr_chain"`
-	CurDecimal int64  	`json:"curr_decimal"`
+	CurName    string     `json:"curr_name"`
+	CurChain   chain.Type `json:"curr_chain"`
+	CurDecimal int64      `json:"curr_decimal"`
 
 	Amount []byte `json:"amt"`
 }
@@ -66,10 +66,10 @@ func (b *Balance) Data() serialize.Data {
 	for _, key := range currencyList {
 		coin := b.Amounts[key]
 		cd := CoinData{
-			CurName:  coin.Currency.Name,
-			CurChain: coin.Currency.Chain,
+			CurName:    coin.Currency.Name,
+			CurChain:   coin.Currency.Chain,
 			CurDecimal: coin.Currency.Decimal,
-			Amount:   coin.Amount.Bytes(),
+			Amount:     coin.Amount.Bytes(),
 		}
 
 		bd.Coins = append(bd.Coins, cd)
