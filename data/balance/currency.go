@@ -16,6 +16,9 @@
 package balance
 
 import (
+	"encoding/hex"
+	"encoding/json"
+	"golang.org/x/crypto/ripemd160"
 	"math"
 	"math/big"
 
@@ -45,6 +48,17 @@ func (c Currency) NewCoinFromInt(amount int64) Coin {
 	}
 }
 
+func (c Currency) StringKey() string {
+	return hex.EncodeToString(c.Bytes())
+}
+
+func (c Currency) Bytes() []byte {
+
+	dat, _ := json.Marshal(c)
+	r := ripemd160.New()
+	r.Write(dat)
+	return r.Sum(nil)
+}
 
 // TODO
 // Create a coin from float
@@ -70,7 +84,6 @@ func (c Currency) NewCoinFromFloat64(amount float64) Coin {
 		Amount:   result,
 	}
 }
-
 
 // Create a coin from bytes, the bytes must come from Big.Int.
 func (c Currency) NewCoinFromBytes(amount []byte) Coin {

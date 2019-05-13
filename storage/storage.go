@@ -53,10 +53,9 @@ func NewStorageDB(flavor, name string, DBDir, DBType string) SessionedStorage {
 	return nil
 }
 
-
 /*
-		Base interfaces
- */
+	Base interfaces
+*/
 
 type StoreKey []byte
 
@@ -76,7 +75,6 @@ type Store interface {
 	Delete(StoreKey) (bool, error)
 	GetIterator() *Iterator
 }
-
 
 // NewStorage initializes a non sessioned storage
 func NewStorage(flavor, name string) Store {

@@ -15,7 +15,7 @@ Copyright 2017 - 2019 OneLedger
 package storage
 
 type IterItem struct {
-	key []byte
+	key   []byte
 	value []byte
 }
 
@@ -26,7 +26,6 @@ type Iterator struct {
 func newIterator(items []IterItem) *Iterator {
 	return &Iterator{items: items}
 }
-
 
 func (i *Iterator) Key() []byte {
 	return i.items[0].key

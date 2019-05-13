@@ -17,6 +17,7 @@ package client
 import (
 	"fmt"
 	netRpc "net/rpc"
+	"net/url"
 
 	"github.com/Oneledger/protocol/rpc"
 	"github.com/pkg/errors"
@@ -59,20 +60,23 @@ func NewContext(rpcAddress, sdkAddress string) (cliCtx Context, err error) {
 		}
 	}()
 
-	// tmRPCClient Context
-	var tmRPCClient = rpcclient.NewHTTP(rpcAddress, "/websocket")
 
-	// check status of tmRPCClient; return client if everything fine
-	_, err = tmRPCClient.Status()
-	if err == nil {
-		logger.Debug("rpcClient is running")
+	/*
+		// tm rpc Context
+		var rpc = rpcclient.NewHTTP(rpcAddress, "/websocket")
 
-		cliCtx = Context{
-			rpcClient:     tmRPCClient,
-			broadcastMode: BroadcastCommit,
+		// check status of rpc; return client if everything fine
+		_, err = rpc.Status()
+		if err == nil {
+			logger.Debug("rpcClient is running")
+
+			cliCtx = Context{
+				rpcClient:     rpc,
+				broadcastMode: BroadcastCommit,
+			}
+			return
 		}
-		return
-	}
+
 
 	// try starting tmRPCClient client
 	err = tmRPCClient.Start()
@@ -82,12 +86,29 @@ func NewContext(rpcAddress, sdkAddress string) (cliCtx Context, err error) {
 	}
 
 	client, err := netRpc.DialHTTPPath("tcp", sdkAddress, rpc.Path)
+
+		// try starting rpc client
+		err = rpc.Start()
+		if err != nil {
+			logger.Fatal("rpcClient is unavailable", "address", rpcAddress, err)
+			return
+		}
+
+	*/
+
+	u, err := url.Parse(sdkAddress)
+	if err != nil {
+		return
+	}
+
+	client, err := netRpc.DialHTTP("tcp", u.Host)
+
 	if err != nil {
 		return
 	}
 
 	cliCtx = Context{
-		rpcClient:     tmRPCClient,
+		//rpcClient:     tmRPCClient,
 		broadcastMode: BroadcastCommit,
 		oltClient:     client,
 	}

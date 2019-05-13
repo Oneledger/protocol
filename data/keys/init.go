@@ -11,10 +11,10 @@ const (
 	ED25519 Algorithm = iota
 	SECP256K1
 
-	ED25519_PUB_SIZE   int = ed25519.PubKeyEd25519Size
+	ED25519_PUB_SIZE  int = ed25519.PubKeyEd25519Size
 	ED25519_PRIV_SIZE int = 64
 
-	SECP256K1_PUB_SIZE int = secp256k1.PubKeySecp256k1Size
+	SECP256K1_PUB_SIZE  int = secp256k1.PubKeySecp256k1Size
 	SECP256K1_PRIV_SIZE int = 32
 )
 

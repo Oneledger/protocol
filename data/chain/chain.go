@@ -45,7 +45,7 @@ func (ctype Type) String() string {
 }
 
 func TypeFromName(chainName string) (Type, error) {
-	typ, ok :=  chainTypes[chainName]
+	typ, ok := chainTypes[chainName]
 	if !ok {
 		return Type(-1), errors.New("wrong chain name")
 	}

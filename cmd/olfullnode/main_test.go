@@ -16,7 +16,7 @@ func TestMain(m *testing.M) {
 		var err error
 		dir, err = ioutil.TempDir("", "olfullnode")
 		if err != nil {
-			panic("Failed to create temporary directory: "+dir)
+			panic("Failed to create temporary directory: " + dir)
 		}
 	}
 
