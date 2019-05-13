@@ -15,7 +15,6 @@ Copyright 2017 - 2019 OneLedger
 package app
 
 import (
-	"fmt"
 	"os"
 	"runtime/debug"
 
@@ -30,7 +29,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-type RPCServerCtx struct {
+type RPCServerContext struct {
 	nodeName   string
 	balances   *balance.Store
 	accounts   accounts.Wallet
@@ -40,20 +39,20 @@ type RPCServerCtx struct {
 }
 
 func NewClientHandler(nodeName string, balances *balance.Store, accounts accounts.Wallet,
-	currencies map[string]balance.Currency) *RPCServerCtx {
+	currencies map[string]balance.Currency) *RPCServerContext {
 
-	return &RPCServerCtx{nodeName, balances, accounts, currencies,
+	return &RPCServerContext{nodeName, balances, accounts, currencies,
 		log.NewLoggerWithPrefix(os.Stdout, "client_Handler")}
 }
 
 // NodeName returns the name of a node. This is useful for displaying it at cmdline.
-func (h *RPCServerCtx) NodeName(req data.Request, resp *data.Response) error {
+func (h *RPCServerContext) NodeName(req data.Request, resp *data.Response) error {
 	resp.SetData([]byte(h.nodeName))
 	return nil
 }
 
 // Currencies returns a list of registered currencies
-func (h *RPCServerCtx) Currencies(req data.Request, resp *data.Response) error {
+func (h *RPCServerContext) Currencies(req data.Request, resp *data.Response) error {
 	resp.SetDataObj(h.currencies)
 	return nil
 }
@@ -68,13 +67,12 @@ type Handler struct {
 
 // GetBalance gets the balance of an address
 // TODO make it more generic to handle account name and identity
-func (h *RPCServerCtx) Balance(key []byte, resp *data.Response) error {
+func (h *RPCServerContext) Balance(key []byte, resp *data.Response) error {
 	defer h.recoverPanic()
 
 	bal, err := h.balances.Get(key, true)
 	resp.SetDataObj(bal)
 
-	fmt.Println(err)
 	return err
 }
 
@@ -83,7 +81,7 @@ func (h *RPCServerCtx) Balance(key []byte, resp *data.Response) error {
 */
 
 // AddAccount adds an account to accounts store of the node
-func (h *RPCServerCtx) AddAccount(acc accounts.Account, resp *data.Response) error {
+func (h *RPCServerContext) AddAccount(acc accounts.Account, resp *data.Response) error {
 	defer h.recoverPanic()
 
 	h.logger.Infof("adding account : %#v %s", acc, acc.Address())
@@ -99,7 +97,7 @@ func (h *RPCServerCtx) AddAccount(acc accounts.Account, resp *data.Response) err
 }
 
 // DeleteAccount deletes an account from the accounts store of node
-func (h *RPCServerCtx) DeleteAccount(acc accounts.Account, resp *data.Response) error {
+func (h *RPCServerContext) DeleteAccount(acc accounts.Account, resp *data.Response) error {
 	defer h.recoverPanic()
 
 	err := h.accounts.Delete(acc)
@@ -111,7 +109,7 @@ func (h *RPCServerCtx) DeleteAccount(acc accounts.Account, resp *data.Response) 
 }
 
 // ListAccounts returns a list of all accounts in the accounts store of node
-func (h *RPCServerCtx) ListAccounts(req data.Request, resp *data.Response) error {
+func (h *RPCServerContext) ListAccounts(req data.Request, resp *data.Response) error {
 	defer h.recoverPanic()
 
 	accs := h.accounts.Accounts()
@@ -121,7 +119,7 @@ func (h *RPCServerCtx) ListAccounts(req data.Request, resp *data.Response) error
 	return nil
 }
 
-func (h *RPCServerCtx) sendTx(args client.SendArguments, resp *data.Response) error {
+func (h *RPCServerContext) sendTx(args client.SendArguments, resp *data.Response) error {
 	send := action.Send{
 		From:   keys.Address(args.Party),
 		To:     keys.Address(args.CounterParty),
@@ -151,7 +149,7 @@ func (h *RPCServerCtx) sendTx(args client.SendArguments, resp *data.Response) er
 	Client handler util methods
 */
 // recoverPanic common method to recover from any handler panic
-func (h *RPCServerCtx) recoverPanic() {
+func (h *RPCServerContext) recoverPanic() {
 	if r := recover(); r != nil {
 		h.logger.Error("recovering a panic")
 		debug.PrintStack()
@@ -159,7 +157,7 @@ func (h *RPCServerCtx) recoverPanic() {
 }
 
 /*
-func (r *RPCServerCtx) CreateSend(args SendArguments, resp *app.Response) error {
+func (r *RPCServerContext) CreateSend(args SendArguments, resp *app.Response) error {
 	if args.Party == "" {
 		logger.Error("Missing Party argument")
 		return errors.New("Missing Party arguments")

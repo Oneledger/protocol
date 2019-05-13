@@ -60,7 +60,13 @@ func NewApp(cfg *config.Server) (*App, error) {
 	app.Context = ctx
 	app.setNewABCI()
 
-	go app.startRPCServer()
+	startRPC, err := app.rpcStarter()
+	if err != nil {
+		return nil, err
+	}
+
+	go startRPC()
+
 	return app, nil
 }
 
@@ -161,28 +167,56 @@ func (app *App) Close() {
 	app.Context.Close()
 }
 
+func (app *App) rpcStarter() (func(), error) {
+	noop := func() {}
+
+	handlers := NewClientHandler(app.Context.cfg.Node.NodeName, app.Context.balances, app.Context.accounts, app.Context.currencies)
+
+	srv := app.Context.rpc
+
+	err := srv.Register(handlers)
+	if err != nil {
+		return noop, errors.Wrap(err, "failed to register rpc handlers")
+	}
+
+	u, err := url.Parse(app.Context.cfg.Network.SDKAddress)
+	if err != nil {
+		return noop, errors.Wrap(err, "failed to parse sdk address")
+	}
+
+	return func() {
+		srv.HandleHTTP(rpc.DefaultRPCPath, rpc.DefaultDebugPath)
+
+		l, err := net.Listen("tcp", u.Host)
+		if err != nil {
+			app.logger.Fatal("listen error:", err)
+		}
+		srv.ServeConn(l)
+		app.logger.Info("starting rpc server on " + u.Host)
+
+		err = http.Serve(l, srv)
+
+		if err != nil {
+			app.logger.Fatal("error while starting the RPC server", "err", err)
+		}
+	}, nil
+
+}
+
 // The base context for the application, holds databases and other stateful information contained by the app.
 // Used to derive other package-level Contexts
 type context struct {
-	chainID string
-	cfg     config.Server
+	cfg config.Server
 
-	// identities       data.Store
-	// smartContract    data.Store
-	// executionContext data.Store
-	// admin            data.Store
+	rpc  *rpc.Server
+	http *http.Server
 
-	// sequence         data.Store
-	// status           data.Store
-	// contract         data.Store
-	// event            data.Store
 	actionRouter action.Router
 
 	balances *balance.Store
 
 	validators *identity.Validators // Set of validators currently active
 	accounts   accounts.Wallet
-
 	currencies map[string]balance.Currency
 
 	logWriter io.Writer
@@ -195,22 +229,16 @@ type closer interface {
 func newContext(cfg config.Server, logWriter io.Writer) (context, error) {
 	ctx := context{
 		cfg:        cfg,
-		chainID:    cfg.ChainID(),
 		logWriter:  logWriter,
 		currencies: make(map[string]balance.Currency),
 	}
 
+	ctx.http = &http.Server{}
+	ctx.rpc = rpc.NewServer()
 	ctx.validators = identity.NewValidators()
-
 	ctx.actionRouter = action.NewRouter("action")
-
-	closers := make([]closer, 0)
-
 	ctx.balances = balance.NewStore("balances", ctx.dbDir(), ctx.cfg.Node.DB, storage.PERSISTENT)
-	closers = append(closers, ctx.balances)
-
 	ctx.accounts = accounts.NewWallet(cfg, ctx.dbDir())
-	closers = append(closers, ctx.accounts)
 
 	return ctx, nil
 }
@@ -243,41 +271,20 @@ func (ctx *context) Balances() *balance.Context {
 		ctx.currencies)
 }
 
+func (ctx *context) RPC() *RPCServerContext {
+	return &RPCServerContext{
+		nodeName:   ctx.cfg.Node.NodeName,
+		balances:   ctx.balances,
+		accounts:   ctx.accounts,
+		currencies: ctx.currencies,
+		logger:     log.NewLoggerWithPrefix(ctx.logWriter, "rpc"),
+	}
+}
+
 // Close all things that need to be closed
 func (ctx *context) Close() {
 	closers := []closer{ctx.balances, ctx.accounts}
 	for _, closer := range closers {
 		closer.Close()
-	}
-}
-
-func (app *App) startRPCServer() {
-	handlers := NewClientHandler(app.Context.cfg.Node.NodeName, app.Context.balances, app.Context.accounts, app.Context.currencies)
-
-	err := rpc.Register(handlers)
-	if err != nil {
-		app.logger.Fatal("error registering rpc handlers", "err", err)
-	}
-
-	u, err := url.Parse(app.Context.cfg.Network.SDKAddress)
-	if err != nil {
-		app.logger.Error("Failed to parse sdk address")
-	}
-	rpc.HandleHTTP()
-
-	// TODO: Thunk this function for better error handling
-	// Change: startRPCServer: func()
-	// To:     startRPCServer: func() -> (func(), err)
-	l, e := net.Listen("tcp", u.Host)
-	if e != nil {
-		app.Close()
-		app.logger.Fatal("listen error:", e)
-	}
-
-	app.logger.Info("starting server")
-
-	err = http.Serve(l, nil)
-	if err != nil {
-		app.logger.Fatal("error while starting the RPC server", "err", err)
 	}
 }
