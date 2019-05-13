@@ -15,77 +15,89 @@ package balance
 
 import (
 	"fmt"
+	"github.com/Oneledger/protocol/data/chain"
 	"testing"
 
 	"github.com/Oneledger/protocol/serialize"
 	"github.com/stretchr/testify/assert"
 )
 
+var currencies = make(map[string]Currency)
+
 func init() {
 	pSzlr = serialize.GetSerializer(serialize.PERSISTENT)
+	currencies["OLT"] = Currency{"OLT", chain.Type(0), 18}
+	currencies["VT"] = Currency{"VT", chain.Type(1), 0}
 }
 
-/*
 func xTestNewBalance(t *testing.T) {
-
-	a := NewBalanceFromInt(100, "VT")
-	b := NewBalanceFromInt(241351, "OLT")
+	olt := currencies["OLT"]
+	vt := currencies["VT"]
+	a := NewBalance().AddCoin(olt.NewCoinFromFloat64(2623.232))
+	b := vt.NewCoinFromInt(100)
 	fmt.Println(a)
 	fmt.Println(b)
 
-	a.AddAmount(NewCoinFromInt(10, "OLT"))
+	a.AddCoin(b)
 	fmt.Println(a)
 
 }
 
 func TestSerialize(t *testing.T) {
-	a := NewBalanceFromString("10", "OLT")
+	olt := currencies["OLT"]
+	a := NewBalance().AddCoin(olt.NewCoinFromFloat64(2623.232))
 	buffer, err := pSzlr.Serialize(a)
 	assert.Nil(t, err)
+
 	var result = &Balance{}
 
 	err = pSzlr.Deserialize(buffer, result)
 	assert.Nil(t, err)
-	assert.Equal(t, result, a, "These should be equal")
+	assert.Equal(t, a, result, "These should be equal")
 }
 
-func TestBalance_AddAmmount(t *testing.T) {
+func TestBalance_AddCoin(t *testing.T) {
 
-	a := NewBalanceFromInt(100, "VT")
-	b := NewBalanceFromInt(100, "VT")
-	b.AddAmount(NewCoinFromInt(10, "VT"))
+	olt := currencies["OLT"]
+	a := NewBalance().AddCoin(olt.NewCoinFromFloat64(2623.232))
+	b := olt.NewCoinFromInt(100)
+	expect := a.GetCoin(olt).Amount.Uint64() + 100
 
-	assert.Equal(t, a.GetCoinByName("VT").Amount.Uint64()+10, b.GetCoinByName("VT").Amount.Uint64())
+	a.AddCoin(b)
+
+	assert.Equal(t, expect, a.GetCoin(olt).Amount.Uint64())
 
 }
 
-func TestBalance_MinusAmmount(t *testing.T) {
-	a := NewBalanceFromInt(100, "VT")
-	b := NewBalanceFromInt(100, "VT")
+func TestBalance_MinusCoin(t *testing.T) {
+	olt := currencies["OLT"]
+	a := NewBalance().AddCoin(olt.NewCoinFromFloat64(2623.232))
+	b := olt.NewCoinFromInt(100)
+	expect := a.GetCoin(olt).Amount.Uint64() - 100
+	a.MinusCoin(b)
 
-	b.MinusAmount(NewCoinFromInt(20, "VT"))
-	//assert.Equal(t, a.Amounts[3].Amount.Uint64()-20, b.Amounts[3].Amount.Uint64())
-	assert.Equal(t, a.GetCoinByName("VT").Amount.Uint64()-20, b.GetCoinByName("VT").Amount.Uint64())
+	assert.Equal(t, expect, a.GetCoin(olt).Amount.Uint64())
 }
 
 func TestBalance_IsEnoughBalance(t *testing.T) {
+	olt := currencies["OLT"]
+	vt := currencies["VT"]
 
 	a := NewBalance()
 	b := NewBalance()
 
-	a.AddAmount(NewCoinFromInt(100, "OLT"))
-	b.AddAmount(NewCoinFromInt(42, "VT"))
+	a.AddCoin(olt.NewCoinFromInt(100))
+	b.AddCoin(vt.NewCoinFromInt(42))
 	//fmt.Println("init", a, b)
 	result1 := a.IsEnoughBalance(*b)
 	assert.Equal(t, false, result1, a.String(), b.String())
 	//fmt.Println("first", a, b)
-	a.AddAmount(NewCoinFromInt(43, "VT"))
+	a.AddCoin(vt.NewCoinFromFloat64(43))
 	result2 := a.IsEnoughBalance(*b)
 	assert.Equal(t, true, result2, a.String(), b.String())
 	//fmt.Println("second", a, b)
-	b.AddAmount(NewCoinFromInt(101, "OLT"))
+	b.AddCoin(olt.NewCoinFromInt(101))
 	result3 := a.IsEnoughBalance(*b)
 	assert.Equal(t, false, result3, a.String(), b.String())
 	//fmt.Println("third", a, b)
 }
-*/

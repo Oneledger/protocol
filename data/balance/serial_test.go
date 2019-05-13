@@ -15,13 +15,12 @@ Copyright 2017 - 2019 OneLedger
 package balance
 
 import (
-	logger "github.com/Oneledger/protocol/log"
+	//logger "github.com/Oneledger/protocol/log"
 	"github.com/stretchr/testify/assert"
-	"os"
 	"testing"
 )
-
-var log = logger.NewDefaultLogger(os.Stdout)
+//
+//var log = logger.NewDefaultLogger(os.Stdout)
 
 /*
 func TestCoin(t *testing.T) {
@@ -53,7 +52,6 @@ func TestCoin(t *testing.T) {
 
 func TestBalance(t *testing.T) {
 	// temp; remove this logger later
-	var log = logger.NewDefaultLogger(os.Stdout)
 
 	var balance = NewBalance()
 
@@ -61,7 +59,7 @@ func TestBalance(t *testing.T) {
 	buffer, err := pSzlr.Serialize(balance)
 
 	if err != nil {
-		log.Fatal("Serialized failed", "err", err)
+		logger.Fatal("Serialized failed", "err", err)
 	}
 
 	var result = &Balance{}
@@ -69,7 +67,7 @@ func TestBalance(t *testing.T) {
 	// Deserialize back into a go data structure
 	err = pSzlr.Deserialize(buffer, result)
 	if err != nil {
-		log.Fatal("Deserialized failed", "err", err)
+		logger.Fatal("Deserialized failed", "err", err)
 	}
 
 	assert.Equal(t, balance, result, "These should be equal")
