@@ -261,7 +261,7 @@ func (app *App) startRPCServer() {
 
 	u, err := url.Parse(app.Context.cfg.Network.SDKAddress)
 	if err != nil {
-		app.logger.Error("Failed to parse sdk address")
+		app.logger.Fatal("Failed to parse sdk address", app.Context.cfg.Network.SDKAddress)
 	}
 	rpc.HandleHTTP()
 

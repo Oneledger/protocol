@@ -26,7 +26,6 @@ import (
 	"github.com/Oneledger/protocol/serialize"
 
 	"github.com/spf13/cobra"
-	"github.com/tendermint/tendermint/crypto/ed25519"
 )
 
 var updateCmd = &cobra.Command{
@@ -78,17 +77,9 @@ func UpdateAccount(cmd *cobra.Command, args []string) {
 	generatedKeysFlag := false
 	if len(updateArgs.privkey) == 0 || len(updateArgs.pubkey) == 0 {
 		// if a public key or a private key is not passed; generate a pair of keys
-		tmPrivKey := ed25519.GenPrivKey()
-		tmPublicKey := tmPrivKey.PubKey()
-
-		pubKey, err = keys.GetPublicKeyFromBytes(tmPublicKey.Bytes()[5:], keys.ED25519)
+		pubKey, privKey, err = keys.NewKeyPairFromTendermint()
 		if err != nil {
-			Ctx.logger.Error("error in generated public key", err)
-			return
-		}
-		privKey, err = keys.GetPrivateKeyFromBytes(tmPrivKey.Bytes()[5:], keys.ED25519)
-		if err != nil {
-			Ctx.logger.Error("error in generated private key", err)
+			Ctx.logger.Error("error generating key from tendermint", err)
 		}
 
 		generatedKeysFlag = true

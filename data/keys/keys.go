@@ -3,12 +3,12 @@ package keys
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"fmt"
 
 	"github.com/tendermint/tendermint/abci/types"
 	"github.com/tendermint/tendermint/crypto/ed25519"
 	"github.com/tendermint/tendermint/crypto/secp256k1"
+	"github.com/pkg/errors"
 )
 
 type PublicKeyHandler interface {
@@ -110,6 +110,23 @@ func GetPublicKeyFromBytes(k []byte, algorithm Algorithm) (PublicKey, error) {
 	}
 
 	return key, nil
+}
+
+func NewKeyPairFromTendermint() (PublicKey, PrivateKey, error){
+	tmPrivKey := ed25519.GenPrivKey()
+	tmPublicKey := tmPrivKey.PubKey()
+
+	pubKey, err := GetPublicKeyFromBytes(tmPublicKey.Bytes()[5:], ED25519)
+	if err != nil {
+		return PublicKey{}, PrivateKey{}, errors.Wrap(err, "error creating public key")
+	}
+
+	privKey, err := GetPrivateKeyFromBytes(tmPrivKey.Bytes()[5:], ED25519)
+	if err != nil {
+		return PublicKey{}, PrivateKey{}, errors.Wrap(err, "error in cr3eating private key")
+	}
+
+	return pubKey, privKey, nil
 }
 
 func (pubKey PublicKey) GetABCIPubKey() types.PubKey {
