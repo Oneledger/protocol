@@ -133,6 +133,7 @@ func (app *App) setupState(stateBytes []byte) error {
 		if err != nil {
 			return errors.Wrap(err, "failed to set balance")
 		}
+		balanceCtx.Store().Commit()
 	}
 	return nil
 }
@@ -185,13 +186,11 @@ func (app *App) rpcStarter() (func(), error) {
 	}
 
 	return func() {
-		srv.HandleHTTP(rpc.DefaultRPCPath, rpc.DefaultDebugPath)
-
 		l, err := net.Listen("tcp", u.Host)
 		if err != nil {
 			app.logger.Fatal("listen error:", err)
 		}
-		srv.ServeConn(l)
+
 		app.logger.Info("starting rpc server on " + u.Host)
 
 		err = http.Serve(l, srv)
