@@ -1,0 +1,141 @@
+---
+- hosts: all 
+  user: steven
+  become: true
+  become_user: root
+  roles:
+    - role: elastic.elasticsearch
+      vars:
+        es_instance_name: "node1"
+        es_version: 6.7.1
+        es_api_basic_auth_username: elastic
+        es_api_basic_auth_password: changeme
+        es_log_dir: "/run/log/journal"
+        es_config:
+          network.host: "0.0.0.0"
+          http.port: 9200
+          transport.tcp.port: 9300
+          xpack.monitoring.collection.enabled: true
+  tasks:
+  - name: download public signing key for elastic
+    apt_key:
+      url: https://artifacts.elastic.co/GPG-KEY-elasticsearch
+      state: present
+  - name: Save the repository definition to /etc/apt/sources.list.d/elastic-6.x.list
+    apt_repository: 
+      repo: 'deb https://artifacts.elastic.co/packages/6.x/apt stable main' 
+      state: present 
+      filename: /etc/apt/sources.list.d/elastic-6.x.list 
+      update_cache: yes
+  - name: install kibana 
+    apt:
+      name: ["apt-transport-https","kibana"]
+      update_cache: yes  
+  - name: place ssl cert to server
+    copy:
+      dest: /etc/ssl/certs/kibana.crt
+      mode: 0400
+      owner: root
+      group: root
+      content: |
+        -----BEGIN CERTIFICATE-----
+        MIIEmzCCA4OgAwIBAgIUEVH3QP43nptnj3jvgTezuNQkpVowDQYJKoZIhvcNAQEL
+        BQAwgYsxCzAJBgNVBAYTAlVTMRkwFwYDVQQKExBDbG91ZEZsYXJlLCBJbmMuMTQw
+        MgYDVQQLEytDbG91ZEZsYXJlIE9yaWdpbiBTU0wgQ2VydGlmaWNhdGUgQXV0aG9y
+        aXR5MRYwFAYDVQQHEw1TYW4gRnJhbmNpc2NvMRMwEQYDVQQIEwpDYWxpZm9ybmlh
+        MB4XDTE5MDQyNTE5NTAwMFoXDTIxMDQyNDE5NTAwMFowYjEZMBcGA1UEChMQQ2xv
+        dWRGbGFyZSwgSW5jLjEdMBsGA1UECxMUQ2xvdWRGbGFyZSBPcmlnaW4gQ0ExJjAk
+        BgNVBAMTHUNsb3VkRmxhcmUgT3JpZ2luIENlcnRpZmljYXRlMIIBIjANBgkqhkiG
+        9w0BAQEFAAOCAQ8AMIIBCgKCAQEA3zbvZ5pThXrkhurO1xyVFvTduyVOhf2ZDl50
+        tu5WgZjynepQ0BeNte8915mMePfDDE/t5cjEQa9kjfIdWYSLuEaGUNY5d6XUGPjJ
+        r6RUfc2as6X9kfoXK9enahKtqrgpjN83ls5MYSG5Ol9XrDyB295BwADG/cF4iuB/
+        QtWzr8/UxVp0s+WwNg01pXqGna1B+Z/k/uh2LPWAGA+lSaO1/qGdSau1ov7oN2ek
+        vyoJ27PlZ/5CzC5h9tH+3JvrxwFUuMTjV2zwWTXc6cFgLpxufQbSB38gwf7hoTPV
+        1Yc4ly54NoT47qFrkFq3LMxwXQmk1/+Irr3Z5KD7Lcgw7NX6vQIDAQABo4IBHTCC
+        ARkwDgYDVR0PAQH/BAQDAgWgMB0GA1UdJQQWMBQGCCsGAQUFBwMCBggrBgEFBQcD
+        ATAMBgNVHRMBAf8EAjAAMB0GA1UdDgQWBBSbkXlxFsPhgzRRpH2J3veVy4/IUzAf
+        BgNVHSMEGDAWgBQk6FNXXXw0QIep65TbuuEWePwppDBABggrBgEFBQcBAQQ0MDIw
+        MAYIKwYBBQUHMAGGJGh0dHA6Ly9vY3NwLmNsb3VkZmxhcmUuY29tL29yaWdpbl9j
+        YTAeBgNVHREEFzAVghMqLm9uZWxlZGdlci5uZXR3b3JrMDgGA1UdHwQxMC8wLaAr
+        oCmGJ2h0dHA6Ly9jcmwuY2xvdWRmbGFyZS5jb20vb3JpZ2luX2NhLmNybDANBgkq
+        hkiG9w0BAQsFAAOCAQEAE1r9SfTPLn+aGV3KQWsXoSrd9lavMEN6IS4kls8HRQZG
+        IHbNfLKEAx3VHyFhzsX+fAYZAidZJux5R9oKkqWWCcWGNe2AfJmyID9AuK9WYTl7
+        JjgexFkKnsqpBvr3lqxKAweoRpqbMGj64gEboAxnZCmj+1cg/qsWjzGnDf3isITr
+        xNbM7gtMF+vm1EPnh4m/BI/FvAuNPZOsNKJPBAQjmAB1DMuen1Kvlx7Lmqi3+StA
+        C+st4FnEDRLklmiMAyDcWd1NNgJwsCS5agzup5Ukg9doK+GOceQrXu3sj6p7DM9r
+        jVg5+ADMH6loG2Jg0BjY4uphVlgBC9XA3WkRKBpniQ==
+        -----END CERTIFICATE-----
+  - name: put private key
+    copy:
+      dest: /etc/ssl/private/kibana-private.key
+      mode: 0400
+      owner: root
+      group: root
+      content: |
+        -----BEGIN PRIVATE KEY-----
+        MIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQDfNu9nmlOFeuSG
+        6s7XHJUW9N27JU6F/ZkOXnS27laBmPKd6lDQF4217z3XmYx498MMT+3lyMRBr2SN
+        8h1ZhIu4RoZQ1jl3pdQY+MmvpFR9zZqzpf2R+hcr16dqEq2quCmM3zeWzkxhIbk6
+        X1esPIHb3kHAAMb9wXiK4H9C1bOvz9TFWnSz5bA2DTWleoadrUH5n+T+6HYs9YAY
+        D6VJo7X+oZ1Jq7Wi/ug3Z6S/Kgnbs+Vn/kLMLmH20f7cm+vHAVS4xONXbPBZNdzp
+        wWAunG59BtIHfyDB/uGhM9XVhziXLng2hPjuoWuQWrcszHBdCaTX/4iuvdnkoPst
+        yDDs1fq9AgMBAAECggEAFXFh0L5Q0TUT0IksixomEWE/Drwf/bu1sR1uUWd2fHcs
+        sXJhxofIt4ZO1tAboEBO5rcj96vQfK3kd0Vfv+p9gJuXyhq2RRHzXN3DhEHBUx+G
+        AcWLpTMU+EN8g/Jc6BZOeYe0/6H8UOVsNZkUo0lhwTUp9E+uzhBAq/iyiQFeBGDB
+        FaCdDahUZNElGjaec6H3PsKH+hwfHGMGk0tJgviFtvdwozdP0dj4N/gIRpX3UG0L
+        xXTnP2godEJjVKbGdC5Aw7XfzTrNL7RXsO5Hplra3NIRMf46BIbhsTBf+RTHuY6Z
+        ORiE7JQ6Vx3+QarviadU+EEHQ26D4axr6KKYQO4TKQKBgQDyAndmeVrqzK/B1d9e
+        4fTbaMqeUBAXtKuDsuNiZWUJFerL91sR9NpWAInUZUe9mCtNFmeL5OGXfrHeJyPl
+        A6fW0AH6kLMba2gKbmUFM6XtCslhx+0XedVbPMQQjojPplfguWt7XKc47FVVM5P/
+        pMErUrBq1d25jTCUNfcl7QTwhQKBgQDsHlF/UerieqzriW8m3oAJlQUv4tFdujpF
+        fjyVwD9B6qt3+EfLOmK9vvFnNrtRIzPYvOjvg2LgTuuuChfTPuTLCXqPb9YgQXSX
+        yOpLUeDlGj/gqC1yhBJ15AWtC1om7pvnk0/LVT3vNWAYa0AOX9PUaGNV0g2f+7FG
+        kWiGYMXS2QKBgEH0pB/ccQfO0xOrux27zSTC8X2l6kzbo2bYKRpW8etA+uWtuzcw
+        mRSZPvcQxzWHtD1lHsFElqrYD5ew6RpwHZzwwalNKFMPuaImJgf95Hmu1+V7PEWK
+        obgk3nZ4shaNiiOnxQAw5y4fUr5OuUYR28d32La1JKF+NkAeWQYQC6mVAoGABmuU
+        n7ekgWAAj67+/LmUFa6do32xX7EOoJEcKJ4/mhU9cFep7Ba8VJh6i+nrEfu5Dy2j
+        z89swtiig+r2VuIg6nxpfrj1w47EEtR9umqRiOk7z2oDQlfhAJ+gn+HtI53dU2Co
+        DMlWk8iJwmA4L6vfYKkt+klp4W3AlkCh7PV4q5ECgYA6BaNwxp3S4UcL4CbQolUH
+        sotdwVTaFyYfKYVxUmFMT9z23+TlkSwgfO116jSteh3VdHX4WGeJl0MPvEsnwpI0
+        f/VFozk5MScPlKupOnq9wTnaeA+14M6oY4H0yqIf8lG20CO+5Zk/RLu6ZaO+AXqL
+        c/QLNn0Ie7ytgHZffPMUvw==
+        -----END PRIVATE KEY-----
+  - name: get private ip for the vm 
+    shell: hostname -I | awk '{$1=$1};1'
+    register: private_ip
+  - name: create configuration file to start kibana 
+    copy:
+      dest: /etc/kibana/kibana.yml
+      mode: 0644
+      content: | 
+        server.port: 443
+        server.host: "0.0.0.0"
+        elasticsearch.hosts: "http://{{ private_ip.stdout }}:9200"
+        server.ssl.enabled: true	
+        server.ssl.certificate: /etc/ssl/certs/kibana.crt	
+        server.ssl.key: /etc/ssl/private/kibana-private.key
+  - name: create systemd service file for kibana
+    copy:
+      dest: /etc/systemd/system/kibana.service
+      mode: 0644
+      owner: root
+      group: root
+      content: |
+        Description=Kibana
+        StartLimitIntervalSec=30
+        StartLimitBurst=3
+
+        [Service]
+        Type=simple
+        EnvironmentFile=-/etc/default/kibana
+        EnvironmentFile=-/etc/sysconfig/kibana
+        ExecStart=/usr/share/kibana/bin/kibana "-c /etc/kibana/kibana.yml"
+        Restart=always
+
+        [Install]
+        WantedBy=multi-user.target
+  - name: restart kibana
+    service: 
+      name: kibana
+      state: restarted
+      daemon_reload: true
