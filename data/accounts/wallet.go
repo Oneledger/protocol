@@ -2,13 +2,13 @@ package accounts
 
 import (
 	"encoding/base64"
-	"errors"
 	"fmt"
 
 	"github.com/Oneledger/protocol/config"
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/serialize"
 	"github.com/Oneledger/protocol/storage"
+	"github.com/pkg/errors"
 )
 
 var _ Wallet = &WalletStore{}
@@ -88,7 +88,7 @@ func (ws *WalletStore) Delete(account Account) error {
 
 func (ws WalletStore) GetAccount(address keys.Address) (Account, error) {
 	value, err := ws.store.Get(address.Bytes())
-	if err != nil {
+	if err != nil || len(value) == 0 {
 		return Account{}, fmt.Errorf("failed to get account by address: %s", err)
 	}
 	var account = &Account{}
@@ -106,7 +106,7 @@ func (ws WalletStore) SignWithAccountIndex(msg []byte, index int) (keys.PublicKe
 func (ws WalletStore) SignWithAddress(msg []byte, address keys.Address) (keys.PublicKey, []byte, error) {
 	account, err := ws.GetAccount(address)
 	if err != nil {
-		return keys.PublicKey{}, nil, err
+		return keys.PublicKey{}, nil, errors.Wrap(err, "failed to get account by address")
 	}
 	signed, err := account.Sign(msg)
 	return *account.PublicKey, signed, err
