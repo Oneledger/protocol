@@ -1,6 +1,5 @@
 ---
 # tasks file for fullnode
-- debug: msg={{seeds}}
 - name: Install a list of dependent packages
   apt:
     name: "{{ packages }}"

@@ -5,7 +5,7 @@
   tasks:
   - name: run terraform apply 
     terraform:
-      project_path: '../gcp'
+      project_path: '../gcp/initialize-network'
       lock : true
       force_init: true  
       backend_config:

@@ -1,4 +1,4 @@
-gcp/.terraform
+gcp/*/.terraform
 ansible/*.retry
 gcp/DevNet.json
 gcp/Chronos.json

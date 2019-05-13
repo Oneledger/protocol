@@ -7,7 +7,7 @@ terraform {
 
 provider "google" {
   alias = "chronos"
-  credentials = "${file("../gcp/Chronos.json")}"
+  credentials = "${file("../Chronos.json")}"
   project     = "chronos-225820"
   region      = "us-east1"
   zone = "us-east1-b"
@@ -15,13 +15,13 @@ provider "google" {
 
 provider "google" {
   alias = "devnet"
-  credentials = "${file("../gcp/DevNet.json")}"
+  credentials = "${file("../DevNet.json")}"
   project     = "atomic-land-223022"
   region      = "us-west1"
 }
 
 module "network"{
-  source = "../gcp/network"
+  source = "../modules/network"
   vpc_ip_range = "${var.vpc_ip_range}"
   name = "${var.name}"
   regions = "${var.regions}"
