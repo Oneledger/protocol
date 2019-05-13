@@ -3,9 +3,6 @@ package app
 import (
 	"encoding/hex"
 	"io"
-	"net"
-	"net/http"
-	"net/rpc"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -17,6 +14,7 @@ import (
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/identity"
 	"github.com/Oneledger/protocol/log"
+	"github.com/Oneledger/protocol/rpc"
 	"github.com/Oneledger/protocol/serialize"
 	"github.com/Oneledger/protocol/storage"
 
@@ -59,8 +57,6 @@ func NewApp(cfg *config.Server) (*App, error) {
 
 	app.Context = ctx
 	app.setNewABCI()
-
-	go app.startRPCServer()
 	return app, nil
 }
 
@@ -146,6 +142,17 @@ func (app *App) Start() error {
 		return errors.Wrap(err, "failed to start new consensus.Node")
 	}
 
+	startRPC, err := app.rpcStarter()
+	if err != nil {
+		return errors.Wrap(err, "failed to prepare rpc service")
+	}
+
+	err = startRPC()
+	if err != nil {
+		app.logger.Error("Failed to start rpc")
+		return err
+	}
+
 	app.node = node
 	return nil
 }
@@ -161,28 +168,38 @@ func (app *App) Close() {
 	app.Context.Close()
 }
 
+func (app *App) rpcStarter() (func() error, error) {
+	noop := func() error { return nil }
+
+	handlers := NewClientHandler(app.Context.cfg.Node.NodeName, app.Context.balances, app.Context.accounts, app.Context.currencies)
+
+	u, err := url.Parse(app.Context.cfg.Network.SDKAddress)
+	if err != nil {
+		return noop, err
+	}
+
+	err = app.Context.rpc.Prepare(u, handlers)
+	if err != nil {
+		return noop, err
+	}
+
+	srv := app.Context.rpc
+
+	return srv.Start, nil
+}
+
 // The base context for the application, holds databases and other stateful information contained by the app.
 // Used to derive other package-level Contexts
 type context struct {
-	chainID string
-	cfg     config.Server
+	cfg config.Server
 
-	// identities       data.Store
-	// smartContract    data.Store
-	// executionContext data.Store
-	// admin            data.Store
-
-	// sequence         data.Store
-	// status           data.Store
-	// contract         data.Store
-	// event            data.Store
+	rpc          *rpc.Server
 	actionRouter action.Router
 
 	balances *balance.Store
 
 	validators *identity.Validators // Set of validators currently active
 	accounts   accounts.Wallet
-
 	currencies map[string]balance.Currency
 
 	logWriter io.Writer
@@ -195,22 +212,15 @@ type closer interface {
 func newContext(cfg config.Server, logWriter io.Writer) (context, error) {
 	ctx := context{
 		cfg:        cfg,
-		chainID:    cfg.ChainID(),
 		logWriter:  logWriter,
 		currencies: make(map[string]balance.Currency),
 	}
 
+	ctx.rpc = rpc.NewServer(logWriter)
 	ctx.validators = identity.NewValidators()
-
 	ctx.actionRouter = action.NewRouter("action")
-
-	closers := make([]closer, 0)
-
 	ctx.balances = balance.NewStore("balances", ctx.dbDir(), ctx.cfg.Node.DB, storage.PERSISTENT)
-	closers = append(closers, ctx.balances)
-
 	ctx.accounts = accounts.NewWallet(cfg, ctx.dbDir())
-	closers = append(closers, ctx.accounts)
 
 	return ctx, nil
 }
@@ -243,41 +253,20 @@ func (ctx *context) Balances() *balance.Context {
 		ctx.currencies)
 }
 
-// Close all things that need to be closed
-func (ctx *context) Close() {
-	closers := []closer{ctx.balances, ctx.accounts}
-	for _, closer := range closers {
-		closer.Close()
+func (ctx *context) RPC() *RPCServerContext {
+	return &RPCServerContext{
+		nodeName:   ctx.cfg.Node.NodeName,
+		balances:   ctx.balances,
+		accounts:   ctx.accounts,
+		currencies: ctx.currencies,
+		logger:     log.NewLoggerWithPrefix(ctx.logWriter, "rpc"),
 	}
 }
 
-func (app *App) startRPCServer() {
-	handlers := NewClientHandler(app.Context.cfg.Node.NodeName, app.Context.balances, app.Context.accounts, app.Context.currencies)
-
-	err := rpc.Register(handlers)
-	if err != nil {
-		app.logger.Fatal("error registering rpc handlers", "err", err)
-	}
-
-	u, err := url.Parse(app.Context.cfg.Network.SDKAddress)
-	if err != nil {
-		app.logger.Fatal("Failed to parse sdk address", app.Context.cfg.Network.SDKAddress)
-	}
-	rpc.HandleHTTP()
-
-	// TODO: Thunk this function for better error handling
-	// Change: startRPCServer: func()
-	// To:     startRPCServer: func() -> (func(), err)
-	l, e := net.Listen("tcp", u.Host)
-	if e != nil {
-		app.Close()
-		app.logger.Fatal("listen error:", e)
-	}
-
-	app.logger.Info("starting server")
-
-	err = http.Serve(l, nil)
-	if err != nil {
-		app.logger.Fatal("error while starting the RPC server", "err", err)
+// Close all things that need to be closed
+func (ctx *context) Close() {
+	closers := []closer{ctx.balances, ctx.accounts, ctx.rpc}
+	for _, closer := range closers {
+		closer.Close()
 	}
 }

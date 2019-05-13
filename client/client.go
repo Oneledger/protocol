@@ -15,9 +15,11 @@ Copyright 2017 - 2019 OneLedger
 package client
 
 import (
+	"fmt"
 	netRpc "net/rpc"
 	"net/url"
 
+	"github.com/Oneledger/protocol/rpc"
 	"github.com/pkg/errors"
 	"github.com/tendermint/tendermint/node"
 	rpcclient "github.com/tendermint/tendermint/rpc/client"
@@ -58,6 +60,7 @@ func NewContext(rpcAddress, sdkAddress string) (cliCtx Context, err error) {
 		}
 	}()
 
+
 	/*
 		// tm rpc Context
 		var rpc = rpcclient.NewHTTP(rpcAddress, "/websocket")
@@ -74,6 +77,16 @@ func NewContext(rpcAddress, sdkAddress string) (cliCtx Context, err error) {
 			return
 		}
 
+
+	// try starting tmRPCClient client
+	err = tmRPCClient.Start()
+	if err != nil {
+		err = fmt.Errorf("rpcClient is unavailable", "address", rpcAddress, err)
+		return
+	}
+
+	client, err := netRpc.DialHTTPPath("tcp", sdkAddress, rpc.Path)
+
 		// try starting rpc client
 		err = rpc.Start()
 		if err != nil {
@@ -85,16 +98,17 @@ func NewContext(rpcAddress, sdkAddress string) (cliCtx Context, err error) {
 
 	u, err := url.Parse(sdkAddress)
 	if err != nil {
-		logger.Fatal("Failed to parse sdk address", sdkAddress)
+		return
 	}
 
 	client, err := netRpc.DialHTTP("tcp", u.Host)
+
 	if err != nil {
-		logger.Fatal("dialing:", err)
+		return
 	}
 
 	cliCtx = Context{
-		//rpcClient:     rpc,
+		//rpcClient:     tmRPCClient,
 		broadcastMode: BroadcastCommit,
 		oltClient:     client,
 	}
