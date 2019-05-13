@@ -1,5 +1,6 @@
 ---
 # tasks file for fullnode
+- debug: msg={{seeds}}
 - name: Install a list of dependent packages
   apt:
     name: "{{ packages }}"
@@ -92,8 +93,17 @@
       source ~/.profile
       public_ip="$(curl ifconfig.me | awk '{$1=$1};1')" 
       internal_ip="$(hostname -I | awk '{$1=$1};1')"
-      seeds="[\"6a304d743e176f6eca5c393a42db349723db6b63@35.245.157.80:26605\""
-      seeds+=",\"35aa9b3e09290d3a74804eb03b559ab775f726d9@35.188.157.3:26605\"]"
+      user_input_seeds="{{ seeds }}"
+      seed_address=($user_input_seeds)
+      len={{ seeds.split() | length}}
+      seeds="["
+      for (( i=0; i<$len; i++ )); do
+        seeds+="\"${seed_address[$i]}\"";
+        if [[ $i < $(expr $len - 1) ]]; then
+          seeds+=", "
+        fi
+      done
+      seeds+="]"
       olfullnode init --genesis {{OLDATA}}/genesis.json --root {{OLDATA}}
       sed -i "s/rpc_address.*/rpc_address = \"tcp:\/\/$internal_ip:26604\"/" {{OLDATA}}/config.toml
       sed -i "s/p2p_address.*/p2p_address = \"tcp:\/\/$internal_ip:26605\"/" {{OLDATA}}/config.toml
