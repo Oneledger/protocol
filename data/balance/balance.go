@@ -79,26 +79,26 @@ func (b *Balance) FindCoin(currency Currency) *Coin {
 }
 
 // Add a new or existing coin
-func (b *Balance) AddCoin(coin Coin) {
+func (b *Balance) AddCoin(coin Coin) *Balance {
 	result := b.FindCoin(coin.Currency)
 	if result == nil {
 		b.Amounts[coin.Currency.StringKey()] = coin
-		return
+		return b
 	}
 	b.Amounts[coin.Currency.StringKey()] = result.Plus(coin)
-	return
+	return b
 }
 
-func (b *Balance) MinusCoin(coin Coin) {
+func (b *Balance) MinusCoin(coin Coin) *Balance {
 	result := b.FindCoin(coin.Currency)
 	if result == nil {
 		// TODO: This results in a negative coin, which is what was asked for...
 		base := coin.Currency.NewCoinFromInt(0)
 		b.Amounts[coin.Currency.StringKey()] = base.Minus(coin)
-		return
+		return b
 	}
 	b.Amounts[coin.Currency.StringKey()] = result.Minus(coin)
-	return
+	return b
 }
 
 func (b *Balance) GetCoin(currency Currency) Coin {
@@ -110,9 +110,9 @@ func (b *Balance) GetCoin(currency Currency) Coin {
 	return b.Amounts[currency.StringKey()]
 }
 
-func (b *Balance) setAmount(coin Coin) {
+func (b *Balance) setAmount(coin Coin) *Balance {
 	b.Amounts[coin.Currency.StringKey()] = coin
-	return
+	return b
 }
 
 func (b Balance) IsEnoughBalance(balance Balance) bool {
