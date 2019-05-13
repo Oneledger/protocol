@@ -21,19 +21,16 @@ import (
 
 // Wrap the amount with owner information
 type Balance struct {
-	Amounts   map[int]Coin `json:"amounts"`
-	coinOrder []int        // this field helps to maintain order during serialization ;
-	// so that all the nodes have the same hash of account balances
+	Amounts   map[string]Coin `json:"amounts"`
 }
 
 /*
 	balance Generators start here
 */
 func NewBalance() *Balance {
-	amounts := make(map[int]Coin, 0)
+	amounts := make(map[string]Coin, 0)
 	result := &Balance{
 		Amounts:   amounts,
-		coinOrder: []int{},
 	}
 	return result
 }
@@ -75,7 +72,7 @@ func GetBalanceFromDb(db storage.Store, accountKey storage.StoreKey) (*Balance, 
 	methods for balance start here
 */
 func (b *Balance) FindCoin(currency Currency) *Coin {
-	if coin, ok := b.Amounts[int(currency.Chain)]; ok {
+	if coin, ok := b.Amounts[currency.StringKey()]; ok {
 		return &coin
 	}
 	return nil
@@ -85,11 +82,10 @@ func (b *Balance) FindCoin(currency Currency) *Coin {
 func (b *Balance) AddCoin(coin Coin) {
 	result := b.FindCoin(coin.Currency)
 	if result == nil {
-		b.Amounts[int(coin.Currency.Chain)] = coin
-		b.coinOrder = append(b.coinOrder, int(coin.Currency.Chain))
+		b.Amounts[coin.Currency.StringKey()] = coin
 		return
 	}
-	b.Amounts[int(coin.Currency.Chain)] = result.Plus(coin)
+	b.Amounts[coin.Currency.StringKey()] = result.Plus(coin)
 	return
 }
 
@@ -98,11 +94,10 @@ func (b *Balance) MinusCoin(coin Coin) {
 	if result == nil {
 		// TODO: This results in a negative coin, which is what was asked for...
 		base := coin.Currency.NewCoinFromInt(0)
-		b.Amounts[int(coin.Currency.Chain)] = base.Minus(coin)
-		b.coinOrder = append(b.coinOrder, int(coin.Currency.Chain))
+		b.Amounts[coin.Currency.StringKey()] = base.Minus(coin)
 		return
 	}
-	b.Amounts[int(coin.Currency.Chain)] = result.Minus(coin)
+	b.Amounts[coin.Currency.StringKey()] = result.Minus(coin)
 	return
 }
 
@@ -112,11 +107,11 @@ func (b *Balance) GetCoin(currency Currency) Coin {
 		// NOTE: Missing coins are actually zero value coins.
 		return currency.NewCoinFromInt(0)
 	}
-	return b.Amounts[int(currency.Chain)]
+	return b.Amounts[currency.StringKey()]
 }
 
 func (b *Balance) setAmount(coin Coin) {
-	b.Amounts[int(coin.Currency.Chain)] = coin
+	b.Amounts[coin.Currency.StringKey()] = coin
 	return
 }
 

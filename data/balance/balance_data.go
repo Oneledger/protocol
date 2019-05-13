@@ -54,8 +54,7 @@ func (b *Balance) Data() serialize.Data {
 	// items to the list
 	bd.Coins = make([]CoinData, 0, len(b.Amounts))
 
-	for _, id := range b.coinOrder {
-		coin := b.Amounts[id]
+	for _, coin := range b.Amounts {
 		cd := CoinData{
 			CurName:  coin.Currency.Name,
 			CurChain: coin.Currency.Chain,
@@ -82,8 +81,7 @@ func (b *Balance) SetData(obj interface{}) error {
 // Extract recreates the Balance object form the info BalanceData holds after deserialization/
 func (ba *BalanceData) extract(b *Balance) error {
 
-	b.Amounts = make(map[int]Coin)
-	b.coinOrder = []int{}
+	b.Amounts = make(map[string]Coin)
 
 	d := ba.Coins
 	for i := range d {
@@ -96,8 +94,7 @@ func (ba *BalanceData) extract(b *Balance) error {
 		coin.Currency.Name = d[i].CurName
 		coin.Currency.Chain = d[i].CurChain
 
-		b.Amounts[int(d[i].CurChain)] = coin
-		b.coinOrder = append(b.coinOrder, int(d[i].CurChain))
+		b.Amounts[coin.Currency.StringKey()] = coin
 	}
 
 	return nil
