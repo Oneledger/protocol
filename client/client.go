@@ -61,22 +61,23 @@ func NewContext(rpcAddress, sdkAddress string) (cliCtx Context, err error) {
 	}()
 
 
-	/*
-		// tm rpc Context
-		var rpc = rpcclient.NewHTTP(rpcAddress, "/websocket")
 
+		// tm rpc Context
+		var tmRPCClient = rpcclient.NewHTTP(rpcAddress, "/websocket")
+/*
 		// check status of rpc; return client if everything fine
-		_, err = rpc.Status()
+		_, err = tmRPCClient.Status()
 		if err == nil {
 			logger.Debug("rpcClient is running")
 
 			cliCtx = Context{
-				rpcClient:     rpc,
+				rpcClient:     tmRPCClient,
 				broadcastMode: BroadcastCommit,
 			}
 			return
 		}
 
+ */
 
 	// try starting tmRPCClient client
 	err = tmRPCClient.Start()
@@ -85,30 +86,18 @@ func NewContext(rpcAddress, sdkAddress string) (cliCtx Context, err error) {
 		return
 	}
 
-	client, err := netRpc.DialHTTPPath("tcp", sdkAddress, rpc.Path)
-
-		// try starting rpc client
-		err = rpc.Start()
-		if err != nil {
-			logger.Fatal("rpcClient is unavailable", "address", rpcAddress, err)
-			return
-		}
-
-	*/
-
 	u, err := url.Parse(sdkAddress)
 	if err != nil {
 		return
 	}
 
-	client, err := netRpc.DialHTTP("tcp", u.Host)
-
+	client, err := netRpc.DialHTTPPath("tcp", u.Host, rpc.Path)
 	if err != nil {
 		return
 	}
 
 	cliCtx = Context{
-		//rpcClient:     tmRPCClient,
+		rpcClient:     tmRPCClient,
 		broadcastMode: BroadcastCommit,
 		oltClient:     client,
 	}

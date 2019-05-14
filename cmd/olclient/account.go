@@ -108,7 +108,7 @@ func UpdateAccount(cmd *cobra.Command, args []string) {
 
 	Ctx.logger.Infof("creating account %#v", acc)
 	resp := &data.Response{}
-	err = Ctx.clCtx.Query("RPCServerCtx.AddAccount", acc, resp)
+	err = Ctx.clCtx.Query("server.AddAccount", acc, resp)
 	if err != nil {
 		Ctx.logger.Error("error creating account", err)
 		return
