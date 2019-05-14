@@ -1,9 +1,10 @@
 package serialize
 
 import (
-	"github.com/Oneledger/protocol/log"
 	"os"
 	"sync"
+
+	"github.com/Oneledger/protocol/log"
 
 	"github.com/google/uuid"
 

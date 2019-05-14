@@ -72,7 +72,7 @@ func BalanceNode(cmd *cobra.Command, args []string) {
 	bal := balance.NewBalance()
 	err = serialize.GetSerializer(serialize.CLIENT).Deserialize(resp.Data, bal)
 	if err != nil {
-		logger.Fatal("error in desrializing",err)
+		logger.Fatal("error in desrializing", err)
 	}
 	printBalance(nodeName, balArgs.accountKey, bal)
 }

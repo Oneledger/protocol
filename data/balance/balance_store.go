@@ -30,7 +30,7 @@ func NewStore(name, dbDir, configDB string, typ storage.StorageType) *Store {
 	return &Store{cs}
 }
 
-func (st *Store) Get(address []byte, lastCommit bool) (bal *Balance,err error) {
+func (st *Store) Get(address []byte, lastCommit bool) (bal *Balance, err error) {
 	dat := st.ChainState.Get(storage.StoreKey(address), lastCommit)
 
 	if len(dat) == 0 {
