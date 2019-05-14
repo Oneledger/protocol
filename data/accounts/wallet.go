@@ -1,7 +1,6 @@
 package accounts
 
 import (
-	"encoding/base64"
 	"fmt"
 
 	"github.com/Oneledger/protocol/config"
@@ -55,10 +54,7 @@ func (ws WalletStore) Accounts() []Account {
 }
 
 func (ws *WalletStore) Add(account Account) error {
-
 	session := ws.store.BeginSession()
-
-	fmt.Println(base64.StdEncoding.EncodeToString(account.Address().Bytes()))
 
 	exist := session.Exists(account.Address().Bytes())
 	if exist {
@@ -72,7 +68,6 @@ func (ws *WalletStore) Add(account Account) error {
 	session.Commit()
 	ws.accounts = append(ws.accounts, account.Address().Bytes())
 
-	fmt.Println(account)
 	return nil
 }
 

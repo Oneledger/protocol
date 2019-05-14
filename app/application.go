@@ -104,7 +104,9 @@ func (app *App) setupState(stateBytes []byte) error {
 		return errors.Wrap(err, "setupState deserialization")
 	}
 
+	nodeCtx := app.Context.Node()
 	balanceCtx := app.Context.Balances()
+	walletCtx := app.Context.Accounts()
 
 	// (1) Register all the currencies
 	for _, currency := range initial.Currencies {
@@ -127,7 +129,32 @@ func (app *App) setupState(stateBytes []byte) error {
 		if err != nil {
 			return errors.Wrap(err, "failed to set balance")
 		}
+	}
 
+	myPrivKey := nodeCtx.PrivKey()
+	myPubKey := nodeCtx.PubKey()
+
+	// Start registering myself
+	app.logger.Info("Registering myself...")
+	for _, currency := range initial.Currencies {
+		chainType := currency.Chain
+		acct, err := accounts.NewAccount(
+			chainType,
+			nodeCtx.NodeName,
+			&myPrivKey,
+			&myPubKey)
+
+		if err != nil {
+			app.logger.Warn("Can't create a new account for myself", "err", err, "chainType", chainType)
+			continue
+		}
+
+		err = walletCtx.Add(acct)
+		if err != nil {
+			app.logger.Warn("Failed to register myself", "err", err)
+			continue
+		}
+		app.logger.Info("Successfully registered myself!")
 	}
 	return nil
 }
@@ -246,8 +273,10 @@ func (ctx *context) Action() *action.Context {
 		log.NewLoggerWithPrefix(ctx.logWriter, "action"))
 }
 
-func (ctx *context) ID()       {}
-func (ctx *context) Accounts() {}
+func (ctx *context) ID() {}
+func (ctx *context) Accounts() accounts.Wallet {
+	return ctx.accounts
+}
 
 func (ctx *context) ValidatorCtx() *identity.ValidatorContext {
 	return identity.NewValidatorContext(ctx.balances)

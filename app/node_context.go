@@ -28,6 +28,20 @@ func (n NodeContext) PrivVal() *privval.FilePV {
 	return n.privval
 }
 
+func (n NodeContext) PrivKey() keys.PrivateKey {
+	return n.privateKey
+}
+
+// PubKey returns the public key of the node's NodeKey
+func (n NodeContext) PubKey() keys.PublicKey {
+	h, err := n.privateKey.GetHandler()
+	if err != nil {
+		return keys.PublicKey{}
+	}
+
+	return h.PubKey()
+}
+
 // Address returns the address of the node's public key (the key's hash)
 func (n NodeContext) Address() keys.Address {
 	priv, err := n.privateKey.GetHandler()
