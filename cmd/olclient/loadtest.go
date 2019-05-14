@@ -17,6 +17,8 @@ package main
 import (
 	"fmt"
 	"math/rand"
+	"os"
+	"os/signal"
 	"time"
 
 	"github.com/Oneledger/protocol/client"
@@ -30,24 +32,26 @@ import (
 	"github.com/spf13/cobra"
 )
 
+const NODE_ADDRESS = "1234123412341234213412341234"
+
 var loadtestCmd = &cobra.Command{
 	Use:   "send",
 	Short: "Issue send transaction",
 	Run:   LoadTest,
 }
 
+var loadTestArgs = LoadTestArgs{}
+
 type LoadTestArgs struct {
 	threads  int
 	interval int
 }
 
-var loadTestArgs = LoadTestArgs{}
-
 func init() {
 	RootCmd.AddCommand(loadtestCmd)
 
 	loadtestCmd.Flags().IntVar(&loadTestArgs.interval, "interval",
-		1, "interval between successive transactions on a single thread in seconds")
+		1, "interval between successive transactions on a single thread in milliseconds")
 	loadtestCmd.Flags().IntVar(&loadTestArgs.threads, "threads",
 		1, "number of threads running")
 }
@@ -56,6 +60,12 @@ func LoadTest(cmd *cobra.Command, args []string) {
 
 	ctx := NewContext()
 	ctx.logger.Debug("Starting Loadtest")
+
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, os.Interrupt)
+
+	counterChan := make(chan int, 10000)
+	go handleSigTerm(ctx, c, counterChan)
 
 	// get a list of registered currencies
 	currResp := &data.Response{}
@@ -102,10 +112,12 @@ func LoadTest(cmd *cobra.Command, args []string) {
 
 		// start a thread to keep sending transactions after some interval
 		go func() {
+			waitDuration := getWaitDuration(loadTestArgs.interval)
+
 			for true {
 				doSendTransaction(ctx, i, &acc, &OLTCurrency) // send OLT to temp account
-
-				time.Sleep(time.Second * time.Duration(loadTestArgs.interval)) // wait for some time
+				counterChan <- 1
+				time.Sleep(waitDuration) // wait for some time
 			}
 		}()
 
@@ -127,7 +139,7 @@ func doSendTransaction(ctx *Context, threadNo int, acc *accounts.Account, curr *
 
 	// populate send arguments
 	sendArgs := &client.SendArguments{}
-	sendArgs.Party = NODE_ADDRESS
+	sendArgs.Party = []byte(NODE_ADDRESS)
 	sendArgs.CounterParty = []byte(acc.Address())  // receiver is the temp account
 	sendArgs.Amount = curr.NewCoinFromFloat64(amt) // make coin from currency object
 	sendArgs.Fee = curr.NewCoinFromFloat64(amt / 10.0)
@@ -152,4 +164,29 @@ func doSendTransaction(ctx *Context, threadNo int, acc *accounts.Account, curr *
 		return
 	}
 	ctx.logger.Info(acc.Name, "Result Data", "log", string(result.Log))
+}
+
+func getWaitDuration(interval int) time.Duration {
+	return time.Millisecond * time.Duration(interval)
+}
+
+func handleSigTerm(ctx *Context, c chan os.Signal, counterChan chan int) {
+	// keeps a running count of messages sent
+	msgCounter := 0
+
+	for true {
+		select {
+		case sig := <-c:
+			ctx.logger.Info("################################################################")
+			ctx.logger.Info("################	Terminating load test	####################")
+			ctx.logger.Info("################################################################")
+			ctx.logger.Infof("################	Messages sent: %09d-----	################", 1)
+
+			sig.String()
+			os.Exit(0)
+
+		case <-counterChan:
+			msgCounter++
+		}
+	}
 }
