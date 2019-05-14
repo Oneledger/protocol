@@ -15,8 +15,15 @@ Copyright 2017 - 2019 OneLedger
 package app
 
 import (
+	"fmt"
+	"net/url"
 	"os"
 	"runtime/debug"
+
+	"github.com/Oneledger/protocol/consensus"
+	"github.com/tendermint/tendermint/p2p"
+
+	"github.com/Oneledger/protocol/config"
 
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/client"
@@ -34,14 +41,16 @@ type RPCServerContext struct {
 	balances   *balance.Store
 	accounts   accounts.Wallet
 	currencies map[string]balance.Currency
+	cfg        config.Server
 
 	logger *log.Logger
 }
 
 func NewClientHandler(nodeName string, balances *balance.Store, accounts accounts.Wallet,
-	currencies map[string]balance.Currency) *RPCServerContext {
+	currencies map[string]balance.Currency, cfg config.Server) *RPCServerContext {
 
-	return &RPCServerContext{nodeName, balances, accounts, currencies,
+	return &RPCServerContext{nodeName, balances,
+		accounts, currencies, cfg,
 		log.NewLoggerWithPrefix(os.Stdout, "client_Handler")}
 }
 
@@ -54,6 +63,34 @@ func (h *RPCServerContext) NodeName(req data.Request, resp *data.Response) error
 // Currencies returns a list of registered currencies
 func (h *RPCServerContext) Currencies(req data.Request, resp *data.Response) error {
 	resp.SetDataObj(h.currencies)
+	return nil
+}
+
+func (h *RPCServerContext) NodeID(req data.Request, resp *data.Response) error {
+	configuration, err := consensus.ParseConfig(&h.cfg)
+	if err != nil {
+		return errors.Wrap(err, "error parsing config")
+	}
+
+	nodeKey, err := p2p.LoadNodeKey(configuration.CFG.NodeKeyFile())
+	if err != nil {
+		return errors.Wrap(err, "error loading node key")
+	}
+
+	// silenced error because not present means false
+	shouldShowIP, _ := req.GetBool("showIP")
+
+	ip := configuration.CFG.P2P.ExternalAddress
+	if shouldShowIP {
+		u, err := url.Parse(ip)
+		if err != nil {
+			return errors.Wrap(err, "error in parsing url")
+		}
+		resp.JSON(fmt.Sprintf("%s@%s", nodeKey.ID(), u.Host))
+
+	} else {
+		resp.JSON(string(nodeKey.ID()))
+	}
 	return nil
 }
 
