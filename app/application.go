@@ -39,8 +39,12 @@ type App struct {
 	node *consensus.Node
 }
 
-// New returns new app fresh and ready to start, returns an error if
-func NewApp(cfg *config.Server) (*App, error) {
+// New returns new app fresh and ready to start
+func NewApp(cfg *config.Server, nodeContext *NodeContext) (*App, error) {
+	if cfg == nil || nodeContext == nil {
+		return nil, errors.New("got nil argument")
+	}
+
 	// TODO: Determine the final logWriter in the configuration file
 	w := os.Stdout
 
@@ -50,7 +54,7 @@ func NewApp(cfg *config.Server) (*App, error) {
 	}
 	app.nodeName = cfg.Node.NodeName
 
-	ctx, err := newContext(*cfg, w)
+	ctx, err := newContext(w, *cfg, nodeContext)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create new app context")
 	}
@@ -193,7 +197,8 @@ func (app *App) rpcStarter() (func() error, error) {
 // The base context for the application, holds databases and other stateful information contained by the app.
 // Used to derive other package-level Contexts
 type context struct {
-	cfg config.Server
+	node NodeContext
+	cfg  config.Server
 
 	rpc          *rpc.Server
 	actionRouter action.Router
@@ -211,11 +216,12 @@ type closer interface {
 	Close()
 }
 
-func newContext(cfg config.Server, logWriter io.Writer) (context, error) {
+func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *NodeContext) (context, error) {
 	ctx := context{
 		cfg:        cfg,
 		logWriter:  logWriter,
 		currencies: make(map[string]balance.Currency),
+		node:       *nodeCtx,
 	}
 
 	ctx.rpc = rpc.NewServer(logWriter)
@@ -271,4 +277,8 @@ func (ctx *context) Close() {
 	for _, closer := range closers {
 		closer.Close()
 	}
+}
+
+func (ctx *context) Node() NodeContext {
+	return ctx.node
 }
