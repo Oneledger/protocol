@@ -63,7 +63,7 @@ func IssueRequest(cmd *cobra.Command, args []string) {
 
 	}
 
-	ctx.logger.Infof("arguments for send transaction: %#v", sendargs)
+	ctx.logger.Debugf("arguments for send transaction: %#v", sendargs)
 
 	currency, ok := currencies[sendargs.CurrencyStr]
 	if !ok {
