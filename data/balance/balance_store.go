@@ -30,11 +30,11 @@ func NewStore(name, dbDir, configDB string, typ storage.StorageType) *Store {
 	return &Store{cs}
 }
 
-func (st *Store) Get(address []byte, lastCommit bool) (bal *Balance, err error) {
+func (st *Store) Get(address []byte, lastCommit bool) (bal *Balance,err error) {
 	dat := st.ChainState.Get(storage.StoreKey(address), lastCommit)
 
 	if len(dat) == 0 {
-		err = errors.New("no balance efound for the address")
+		err = errors.New("no balance found for the address")
 		return
 	}
 	bal = NewBalance()
@@ -43,7 +43,7 @@ func (st *Store) Get(address []byte, lastCommit bool) (bal *Balance, err error) 
 }
 
 func (st *Store) Set(address []byte, balance Balance) error {
-	dat, err := serialize.GetSerializer(serialize.PERSISTENT).Serialize(balance)
+	dat, err := serialize.GetSerializer(serialize.PERSISTENT).Serialize(&balance)
 	if err != nil {
 		return err
 	}

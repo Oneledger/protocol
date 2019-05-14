@@ -47,7 +47,7 @@ func GetSerializer(channel Channel, args ...interface{}) Serializer {
 	switch channel {
 
 	case CLIENT:
-		return &msgpackStrategy{}
+		return &jsonStrategy{}
 
 	case PERSISTENT:
 		return &jsonStrategy{}

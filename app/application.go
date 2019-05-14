@@ -2,10 +2,12 @@ package app
 
 import (
 	"encoding/hex"
+	"fmt"
 	"io"
 	"net/url"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/config"
@@ -123,6 +125,8 @@ func (app *App) setupState(stateBytes []byte) error {
 		if err != nil {
 			return errors.Wrap(err, "failed to set balance")
 		}
+
+		fmt.Println(strings.ToUpper(hex.EncodeToString(key)))
 	}
 	return nil
 }

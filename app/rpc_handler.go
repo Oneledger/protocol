@@ -71,7 +71,14 @@ func (h *RPCServerContext) Balance(key []byte, resp *data.Response) error {
 	defer h.recoverPanic()
 
 	bal, err := h.balances.Get(key, true)
-	resp.SetDataObj(bal)
+	if err != nil {
+		h.logger.Error("error getting balance", err)
+		return errors.Wrap(err, "error getting balance")
+	}
+	err = resp.SetDataObj(bal)
+	if err != nil {
+		return errors.Wrap(err, "err serializing for client")
+	}
 
 	return err
 }

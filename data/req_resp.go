@@ -190,12 +190,12 @@ func (r *Response) SetData(dat []byte) {
 	r.Success = true
 }
 
-func (r *Response) SetDataObj(obj interface{}) {
+func (r *Response) SetDataObj(obj interface{}) error {
 	d, err := clSzlr.Serialize(obj)
 	if err != nil {
-		// TODO
-		// log err
+		return err
 	}
 
 	r.SetData(d)
+	return nil
 }
