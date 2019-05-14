@@ -51,7 +51,7 @@ func IssueRequest(cmd *cobra.Command, args []string) {
 	ctx.logger.Debug("Have Send Request", "sendargs", sendargs)
 
 	currResp := &data.Response{}
-	err := ctx.clCtx.Query("RPCServerCtx.Currencies", data.Request{}, currResp)
+	err := ctx.clCtx.Query("server.Currencies", data.Request{}, currResp)
 	if err != nil {
 		ctx.logger.Error("failed to get currencies from node", err)
 		return
@@ -76,7 +76,7 @@ func IssueRequest(cmd *cobra.Command, args []string) {
 
 	// Create message
 	resp := &data.Response{}
-	err = ctx.clCtx.Query("RPCServerCtx.SendTx", *sendargs, resp)
+	err = ctx.clCtx.Query("server.SendTx", *sendargs, resp)
 	if err != nil {
 		ctx.logger.Error("error executing SendTx", err)
 		return

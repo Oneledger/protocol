@@ -1,9 +1,10 @@
 package serialize
 
 import (
-	"github.com/Oneledger/protocol/log"
 	"os"
 	"sync"
+
+	"github.com/Oneledger/protocol/log"
 
 	"github.com/google/uuid"
 
@@ -47,7 +48,7 @@ func GetSerializer(channel Channel, args ...interface{}) Serializer {
 	switch channel {
 
 	case CLIENT:
-		return &msgpackStrategy{}
+		return &jsonStrategy{}
 
 	case PERSISTENT:
 		return &jsonStrategy{}

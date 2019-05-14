@@ -55,7 +55,7 @@ func BalanceNode(cmd *cobra.Command, args []string) {
 
 	resp := &data.Response{}
 	req := data.NewRequestFromData("nodename", []byte{})
-	err := Ctx.clCtx.Query("RPCServerCtx.NodeName", *req, resp)
+	err := Ctx.clCtx.Query("server.NodeName", *req, resp)
 	if err != nil {
 		logger.Fatal("error in getting nodename", err)
 	}
@@ -64,14 +64,16 @@ func BalanceNode(cmd *cobra.Command, args []string) {
 
 	// assuming we have public key
 	resp = &data.Response{}
-	err = Ctx.clCtx.Query("RPCServerCtx.Balance", balArgs.accountKey, resp)
+	err = Ctx.clCtx.Query("server.Balance", balArgs.accountKey, resp)
 	if err != nil || !resp.Success {
 		logger.Fatal("error in getting balance", err, resp.ErrorMsg)
 	}
 
 	bal := balance.NewBalance()
-	serialize.GetSerializer(serialize.CLIENT).Deserialize(resp.Data, bal)
-
+	err = serialize.GetSerializer(serialize.CLIENT).Deserialize(resp.Data, bal)
+	if err != nil {
+		logger.Fatal("error in desrializing", err)
+	}
 	printBalance(nodeName, balArgs.accountKey, bal)
 }
 

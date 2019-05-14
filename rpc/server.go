@@ -40,7 +40,7 @@ func NewServer(w io.Writer) *Server {
 }
 
 func (srv *Server) register(rcvr interface{}) error {
-	return srv.rpc.Register(rcvr)
+	return srv.rpc.RegisterName("server", rcvr)
 }
 
 // Prepare injects all the data necessary for serving over the specified URL.
