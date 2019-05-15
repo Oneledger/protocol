@@ -102,6 +102,8 @@ func (cfg *Server) TMConfig() tmconfig.Config {
 		Instrumentation: &nilMetricsConfig,
 	}
 
+	tmcfg.SetRoot(filepath.Join(cfg.rootDir, "consensus"))
+
 	return *tmcfg
 }
 
@@ -205,10 +207,10 @@ func DefaultNetworkConfig() *NetworkConfig {
 		RPCAddress:         "tcp://127.0.0.1:26601",
 		P2PAddress:         "tcp://127.0.0.1:26611",
 		ExternalP2PAddress: "",
-		SDKAddress:         "127.0.0.1:26631",
+		SDKAddress:         "tcp://127.0.0.1:26631",
 		OLVMAddress:        "tcp://127.0.0.1:26641",
 		OLVMProtocol:       "tcp",
-		BTCAddress:         "127.0.0.1:NONE",
+		BTCAddress:         "tcp://127.0.0.1:NONE",
 		ETHAddress:         "NONE",
 	}
 }

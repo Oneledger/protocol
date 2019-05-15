@@ -12,6 +12,8 @@ import (
 	"github.com/tendermint/tendermint/types"
 )
 
+type Config = tmconfig.Config
+
 // config is used to provider the right arguments for spinning up a new consensus.Node
 type NodeConfig struct {
 	CFG             tmconfig.Config
@@ -35,7 +37,6 @@ func parseConfig(cfg *config.Server) (NodeConfig, error) {
 	// Proper consensus dir
 	rootDir := Dir(cfg.RootDir())
 	tmcfg := cfg.TMConfig()
-	tmcfg.SetRoot(rootDir)
 
 	genesisProvider := func() (*types.GenesisDoc, error) {
 		return types.GenesisDocFromFile(filepath.Join(rootDir, "config", "genesis.json"))

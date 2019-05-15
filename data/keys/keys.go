@@ -9,6 +9,7 @@ import (
 	"github.com/tendermint/tendermint/abci/types"
 	"github.com/tendermint/tendermint/crypto/ed25519"
 	"github.com/tendermint/tendermint/crypto/secp256k1"
+	"github.com/tendermint/tendermint/p2p"
 )
 
 type PublicKeyHandler interface {
@@ -39,6 +40,9 @@ type gobkey struct {
 	K int
 	D []byte
 }
+
+// tmPrefixSize is the size of the prefix returned by tendermint/amino-encoded byte arrays
+const tmPrefixSize = 5
 
 func (pubKey *PublicKey) GobEncode() ([]byte, error) {
 	//a := map[string]interface{}{
@@ -116,17 +120,27 @@ func NewKeyPairFromTendermint() (PublicKey, PrivateKey, error) {
 	tmPrivKey := ed25519.GenPrivKey()
 	tmPublicKey := tmPrivKey.PubKey()
 
-	pubKey, err := GetPublicKeyFromBytes(tmPublicKey.Bytes()[5:], ED25519)
+	pubKey, err := GetPublicKeyFromBytes(tmPublicKey.Bytes()[tmPrefixSize:], ED25519)
 	if err != nil {
 		return PublicKey{}, PrivateKey{}, errors.Wrap(err, "error creating public key")
 	}
 
-	privKey, err := GetPrivateKeyFromBytes(tmPrivKey.Bytes()[5:], ED25519)
+	privKey, err := GetPrivateKeyFromBytes(tmPrivKey.Bytes()[tmPrefixSize:], ED25519)
 	if err != nil {
 		return PublicKey{}, PrivateKey{}, errors.Wrap(err, "error in cr3eating private key")
 	}
 
 	return pubKey, privKey, nil
+}
+
+// NodeKeyFromTendermint returns a PrivateKey from a tendermint NodeKey.
+// The input key must be a ED25519 key.
+func NodeKeyFromTendermint(key *p2p.NodeKey) (PrivateKey, error) {
+	if key == nil {
+		return PrivateKey{}, errors.New("NodeKeyFromTendermint: got nil argument")
+	}
+	bz := key.PrivKey.Bytes()[tmPrefixSize:]
+	return GetPrivateKeyFromBytes(bz, ED25519)
 }
 
 func (pubKey PublicKey) GetABCIPubKey() types.PubKey {
@@ -234,7 +248,7 @@ func (k PrivateKeyED25519) PubKey() PublicKey {
 	p := ed25519.PrivKeyEd25519(k).PubKey()
 	return PublicKey{
 		keytype: ED25519,
-		data:    p.Bytes(),
+		data:    p.Bytes()[tmPrefixSize:],
 	}
 }
 

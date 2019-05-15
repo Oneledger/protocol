@@ -44,7 +44,7 @@ func (c Currency) Base() *big.Int {
 func (c Currency) NewCoinFromInt(amount int64) Coin {
 	return Coin{
 		Currency: c,
-		Amount:   big.NewInt(amount),
+		Amount:   big.NewInt(0).Mul(big.NewInt(amount), c.Base()),
 	}
 }
 

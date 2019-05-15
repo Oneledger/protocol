@@ -24,7 +24,7 @@ var nodeCmd = &cobra.Command{
 	RunE:  StartNode,
 }
 
-type nodeContext struct {
+type nodeCmdContext struct {
 	cfg               *config.Server
 	logger            *log.Logger
 	debug             bool
@@ -38,7 +38,7 @@ type nodeContext struct {
 }
 
 // init reads the configuration file
-func (ctx *nodeContext) init(rootDir string) error {
+func (ctx *nodeCmdContext) init(rootDir string) error {
 
 	ctx.logger = log.NewLoggerWithPrefix(os.Stdout, "olfullnode node")
 
@@ -80,7 +80,7 @@ func (ctx *nodeContext) init(rootDir string) error {
 	return nil
 }
 
-var nodeCtx = &nodeContext{}
+var nodeCtx = &nodeCmdContext{}
 
 // Setup the command and flags in Cobra
 func init() {
@@ -113,7 +113,12 @@ func StartNode(cmd *cobra.Command, args []string) error {
 		return errors.Wrap(err, "failed to initialize config")
 	}
 
-	application, err := app.NewApp(ctx.cfg)
+	appNodeContext, err := app.NewNodeContext(ctx.cfg)
+	if err != nil {
+		return errors.Wrap(err, "failed to create app's node context")
+	}
+
+	application, err := app.NewApp(ctx.cfg, appNodeContext)
 	if err != nil {
 		return errors.Wrap(err, "failed to create new app")
 	}

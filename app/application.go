@@ -39,8 +39,12 @@ type App struct {
 	node *consensus.Node
 }
 
-// New returns new app fresh and ready to start, returns an error if
-func NewApp(cfg *config.Server) (*App, error) {
+// New returns new app fresh and ready to start
+func NewApp(cfg *config.Server, nodeContext *NodeContext) (*App, error) {
+	if cfg == nil || nodeContext == nil {
+		return nil, errors.New("got nil argument")
+	}
+
 	// TODO: Determine the final logWriter in the configuration file
 	w := os.Stdout
 
@@ -50,7 +54,7 @@ func NewApp(cfg *config.Server) (*App, error) {
 	}
 	app.nodeName = cfg.Node.NodeName
 
-	ctx, err := newContext(*cfg, w)
+	ctx, err := newContext(w, *cfg, nodeContext)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create new app context")
 	}
@@ -100,7 +104,9 @@ func (app *App) setupState(stateBytes []byte) error {
 		return errors.Wrap(err, "setupState deserialization")
 	}
 
+	nodeCtx := app.Context.Node()
 	balanceCtx := app.Context.Balances()
+	walletCtx := app.Context.Accounts()
 
 	// (1) Register all the currencies
 	for _, currency := range initial.Currencies {
@@ -123,7 +129,32 @@ func (app *App) setupState(stateBytes []byte) error {
 		if err != nil {
 			return errors.Wrap(err, "failed to set balance")
 		}
+	}
 
+	myPrivKey := nodeCtx.PrivKey()
+	myPubKey := nodeCtx.PubKey()
+
+	// Start registering myself
+	app.logger.Info("Registering myself...")
+	for _, currency := range initial.Currencies {
+		chainType := currency.Chain
+		acct, err := accounts.NewAccount(
+			chainType,
+			nodeCtx.NodeName,
+			&myPrivKey,
+			&myPubKey)
+
+		if err != nil {
+			app.logger.Warn("Can't create a new account for myself", "err", err, "chainType", chainType)
+			continue
+		}
+
+		err = walletCtx.Add(acct)
+		if err != nil {
+			app.logger.Warn("Failed to register myself", "err", err)
+			continue
+		}
+		app.logger.Info("Successfully registered myself!")
 	}
 	return nil
 }
@@ -193,7 +224,8 @@ func (app *App) rpcStarter() (func() error, error) {
 // The base context for the application, holds databases and other stateful information contained by the app.
 // Used to derive other package-level Contexts
 type context struct {
-	cfg config.Server
+	node NodeContext
+	cfg  config.Server
 
 	rpc          *rpc.Server
 	actionRouter action.Router
@@ -211,11 +243,12 @@ type closer interface {
 	Close()
 }
 
-func newContext(cfg config.Server, logWriter io.Writer) (context, error) {
+func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *NodeContext) (context, error) {
 	ctx := context{
 		cfg:        cfg,
 		logWriter:  logWriter,
 		currencies: make(map[string]balance.Currency),
+		node:       *nodeCtx,
 	}
 
 	ctx.rpc = rpc.NewServer(logWriter)
@@ -240,8 +273,10 @@ func (ctx *context) Action() *action.Context {
 		log.NewLoggerWithPrefix(ctx.logWriter, "action"))
 }
 
-func (ctx *context) ID()       {}
-func (ctx *context) Accounts() {}
+func (ctx *context) ID() {}
+func (ctx *context) Accounts() accounts.Wallet {
+	return ctx.accounts
+}
 
 func (ctx *context) ValidatorCtx() *identity.ValidatorContext {
 	return identity.NewValidatorContext(ctx.balances)
@@ -271,4 +306,8 @@ func (ctx *context) Close() {
 	for _, closer := range closers {
 		closer.Close()
 	}
+}
+
+func (ctx *context) Node() NodeContext {
+	return ctx.node
 }
