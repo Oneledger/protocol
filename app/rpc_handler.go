@@ -157,8 +157,12 @@ func (h *RPCServerContext) ListAccounts(req data.Request, resp *data.Response) e
 	defer h.recoverPanic()
 
 	accs := h.accounts.Accounts()
-	h.logger.Error("accs", accs)
-	resp.SetDataObj(accs)
+
+	result := make([]string, len(accs))
+	for i, a := range accs {
+		result[i] = a.String()
+	}
+	resp.SetDataObj(result)
 
 	return nil
 }

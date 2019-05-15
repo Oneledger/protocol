@@ -71,3 +71,14 @@ func (acc *Account) FromBytes(msg []byte) *Account {
 	}
 	return acc
 }
+
+func (acc Account) String() string {
+	//pkey := acc.PublicKey.GetABCIPubKey()
+	result := ""
+	result = result +
+		fmt.Sprintf("name %s \n", acc.Name) +
+		//fmt.Sprintf("type %s \n", acc.Type.String()) +
+		//fmt.Sprintf("pubkey %s \n", pkey.String()) +
+		fmt.Sprintf("address %s \n", acc.Address())
+	return result
+}
