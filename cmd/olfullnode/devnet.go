@@ -142,12 +142,13 @@ func padZeroes(str string, total int) string {
 // Returns a list of names with the given prefix and a number after the prefix afterwards
 func nodeNamesWithZeros(prefix string, total int) []string {
 	names := make([]string, total)
-	maxZeroes := len(strconv.Itoa(total))
+	//maxZeroes := len(strconv.Itoa(total))
 
 	generateName := func(i int) string {
 		name := prefix
 		num := strconv.Itoa(i)
-		return name + padZeroes(num, maxZeroes)
+		// Unpad nums
+		return name + num
 	}
 
 	for i := 0; i < total; i++ {
