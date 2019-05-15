@@ -2,6 +2,7 @@ package app
 
 import (
 	"encoding/hex"
+
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/serialize"
 	"github.com/Oneledger/protocol/version"
@@ -76,7 +77,7 @@ func (app *App) blockBeginner() blockBeginner {
 // mempool connection: for checking if transactions should be relayed before they are committed
 func (app *App) txChecker() txChecker {
 	return func(msg []byte) ResponseCheckTx {
-		var tx action.BaseTx
+		tx := &action.BaseTx{}
 
 		err := serialize.GetSerializer(serialize.NETWORK).Deserialize(msg, tx)
 		if err != nil {
@@ -86,7 +87,7 @@ func (app *App) txChecker() txChecker {
 
 		handler := txCtx.Router.Handler(tx.Data)
 
-		ok, response := handler.ProcessDeliver(txCtx, tx.Data, tx.Fee)
+		ok, response := handler.ProcessCheck(txCtx, tx.Data, tx.Fee)
 
 		var code Code
 		if ok {
@@ -112,7 +113,7 @@ func (app *App) txChecker() txChecker {
 
 func (app *App) txDeliverer() txDeliverer {
 	return func(msg []byte) ResponseDeliverTx {
-		var tx action.BaseTx
+		tx := &action.BaseTx{}
 
 		err := serialize.GetSerializer(serialize.NETWORK).Deserialize(msg, tx)
 		if err != nil {
@@ -164,9 +165,9 @@ func (app *App) commitor() commitor {
 	return func() ResponseCommit {
 
 		// Commit any pending changes.
-		hash, version := app.Context.balances.Commit()
+		hash, ver := app.Context.balances.Commit()
 
-		app.logger.Debugf("Committed New Block hash[%s], version[%d]", hex.EncodeToString(hash), version)
+		app.logger.Debugf("Committed New Block hash[%s], version[%d]", hex.EncodeToString(hash), ver)
 
 		result := ResponseCommit{
 			Data: hash,

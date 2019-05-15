@@ -6,6 +6,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/config"
@@ -129,6 +130,8 @@ func (app *App) setupState(stateBytes []byte) error {
 		if err != nil {
 			return errors.Wrap(err, "failed to set balance")
 		}
+
+		app.logger.Debug(strings.ToUpper(hex.EncodeToString(key)))
 	}
 
 	myPrivKey := nodeCtx.PrivKey()
@@ -265,12 +268,16 @@ func (ctx context) dbDir() string {
 }
 
 func (ctx *context) Action() *action.Context {
-	return action.NewContext(
+	actionCtx := action.NewContext(
 		ctx.actionRouter,
 		ctx.accounts,
 		ctx.balances,
 		ctx.currencies,
 		log.NewLoggerWithPrefix(ctx.logWriter, "action"))
+
+	actionCtx.EnableSend()
+
+	return actionCtx
 }
 
 func (ctx *context) ID() {}

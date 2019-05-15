@@ -164,6 +164,7 @@ func (h *RPCServerContext) ListAccounts(req data.Request, resp *data.Response) e
 }
 
 func (h *RPCServerContext) SendTx(args client.SendArguments, resp *data.Response) error {
+
 	send := action.Send{
 		From:   keys.Address(args.Party),
 		To:     keys.Address(args.CounterParty),
@@ -183,7 +184,10 @@ func (h *RPCServerContext) SendTx(args client.SendArguments, resp *data.Response
 	}
 	tx.Signatures = []action.Signature{{pubKey, signed}}
 
-	packet, _ := serialize.GetSerializer(serialize.NETWORK).Serialize(tx)
+	packet, err := serialize.GetSerializer(serialize.NETWORK).Serialize(tx)
+	if err != nil {
+		return errors.Wrap(err, "err while network serialization")
+	}
 
 	resp.SetData(packet)
 	return nil
