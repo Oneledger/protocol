@@ -92,3 +92,36 @@ func (c Currency) NewCoinFromBytes(amount []byte) Coin {
 		Amount:   big.NewInt(0).SetBytes(amount),
 	}
 }
+
+type CurrencyList struct {
+	nameMap map[string]Currency
+	keyMap  map[string]Currency
+}
+
+func NewCurrencyList() *CurrencyList {
+	return &CurrencyList{nameMap: make(map[string]Currency), keyMap: make(map[string]Currency)}
+}
+
+func (cl *CurrencyList) Register(c Currency) error {
+	_, ok := cl.nameMap[c.Name]
+	if ok { // If the currency is already registered, return a duplicate error
+		return ErrDuplicateCurrency
+	}
+	cl.nameMap[c.Name] = c
+	cl.keyMap[c.StringKey()] = c
+	return nil
+}
+
+func (cl *CurrencyList) GetCurrencyByName(name string) (Currency, bool) {
+	c, ok := cl.nameMap[name]
+	return c, ok
+}
+
+func (cl *CurrencyList) GetCurrencyByStringKey(key string) (Currency, bool) {
+	c, ok := cl.keyMap[key]
+	return c, ok
+}
+
+func (cl CurrencyList) Len() int {
+	return len(cl.nameMap)
+}

@@ -15,11 +15,9 @@ Copyright 2017 - 2019 OneLedger
 package main
 
 import (
+	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/client"
 	"github.com/Oneledger/protocol/data"
-	"github.com/Oneledger/protocol/data/balance"
-	"github.com/Oneledger/protocol/serialize"
-
 	"github.com/spf13/cobra"
 	ctypes "github.com/tendermint/tendermint/rpc/core/types"
 )
@@ -38,9 +36,9 @@ func init() {
 	// Transaction Parameters
 	sendCmd.Flags().BytesHexVar(&sendargs.Party, "party", []byte{}, "send sender")
 	sendCmd.Flags().BytesHexVar(&sendargs.CounterParty, "counterparty", []byte{}, "send recipient")
-	sendCmd.Flags().Float64Var(&sendargs.AmountFloat, "amount", 0.0, "specify an amount")
+	sendCmd.Flags().StringVar(&sendargs.AmountStr, "amount", "0.0", "specify an amount")
 	sendCmd.Flags().StringVar(&sendargs.CurrencyStr, "currency", "OLT", "the currency")
-	sendCmd.Flags().Float64Var(&sendargs.FeeFloat, "fee", 0.0, "include a fee in OLT")
+	sendCmd.Flags().StringVar(&sendargs.FeeStr, "fee", "0.0", "include a fee in OLT")
 }
 
 // IssueRequest sends out a sendTx to all of the nodes in the chain
@@ -48,33 +46,12 @@ func IssueRequest(cmd *cobra.Command, args []string) {
 
 	ctx := NewContext()
 
-	currResp := &data.Response{}
-	err := ctx.clCtx.Query("server.Currencies", data.Request{}, currResp)
-	if err != nil {
-		ctx.logger.Error("failed to get currencies from node", err)
-		return
-	}
-
-	currencies := map[string]balance.Currency{}
-	err = serialize.GetSerializer(serialize.CLIENT).Deserialize(currResp.Data, &currencies)
-	if err != nil {
-		ctx.logger.Fatal("error deserializng currencies")
-	}
-
-	ctx.logger.Debugf("arguments for send transaction: %#v", sendargs)
-
-	currency, ok := currencies[sendargs.CurrencyStr]
-	if !ok {
-		ctx.logger.Errorf("currency %s not registered", sendargs.CurrencyStr)
-		return
-	}
-
-	sendargs.Amount = currency.NewCoinFromFloat64(sendargs.AmountFloat)
-	sendargs.Fee = currency.NewCoinFromFloat64(sendargs.FeeFloat)
+	sendargs.Amount = action.Amount{sendargs.CurrencyStr, sendargs.AmountStr}
+	sendargs.Fee = action.Amount{"OLT", sendargs.FeeStr}
 
 	// Create message
 	resp := &data.Response{}
-	err = ctx.clCtx.Query("server.SendTx", *sendargs, resp)
+	err := ctx.clCtx.Query("server.SendTx", *sendargs, resp)
 	if err != nil {
 		ctx.logger.Error("error executing SendTx", err)
 		return

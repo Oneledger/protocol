@@ -111,7 +111,8 @@ func (app *App) setupState(stateBytes []byte) error {
 
 	// (1) Register all the currencies
 	for _, currency := range initial.Currencies {
-		err := balanceCtx.RegisterCurrency(currency)
+		app.logger.Debugf("register currency %s", currency)
+		err := balanceCtx.Currencies().Register(currency)
 		if err != nil {
 			return errors.Wrapf(err, "failed to register currency %s", currency.Name)
 		}
@@ -237,7 +238,7 @@ type context struct {
 
 	validators *identity.Validators // Set of validators currently active
 	accounts   accounts.Wallet
-	currencies map[string]balance.Currency
+	currencies *balance.CurrencyList
 
 	logWriter io.Writer
 }
@@ -250,7 +251,7 @@ func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *NodeContext) (c
 	ctx := context{
 		cfg:        cfg,
 		logWriter:  logWriter,
-		currencies: make(map[string]balance.Currency),
+		currencies: balance.NewCurrencyList(),
 		node:       *nodeCtx,
 	}
 

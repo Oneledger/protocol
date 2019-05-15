@@ -5,7 +5,9 @@
 */
 package client
 
-import "github.com/Oneledger/protocol/data/balance"
+import (
+	"github.com/Oneledger/protocol/action"
+)
 
 type ApplyValidatorArguments struct {
 	Id     string
@@ -16,12 +18,12 @@ type ApplyValidatorArguments struct {
 type SendArguments struct {
 	Party        []byte
 	CounterParty []byte
-	Amount       balance.Coin
-	Fee          balance.Coin
+	Amount       action.Amount
+	Fee          action.Amount
 	Gas          int64
 	CurrencyStr  string
-	AmountFloat  float64
-	FeeFloat     float64
+	AmountStr    string
+	FeeStr       string
 }
 
 type SwapArguments struct {

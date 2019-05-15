@@ -3,7 +3,6 @@ package action
 import (
 	"bytes"
 	"fmt"
-	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/serialize"
 )
@@ -18,7 +17,7 @@ type Msg interface {
 }
 
 type Fee struct {
-	Price balance.Coin
+	Price Amount
 	Gas   int64
 }
 

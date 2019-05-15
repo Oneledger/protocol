@@ -29,6 +29,10 @@ type Chain struct {
 var chainTypes = map[string]Type{}
 var chainTypeNames = map[Type]string{}
 
+func init() {
+	RegisterChainType("OneLedger", 0)
+}
+
 func RegisterChainType(name string, id int) {
 	chainTypes[name] = Type(id)
 	chainTypeNames[Type(id)] = name
