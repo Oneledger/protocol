@@ -16,16 +16,15 @@ package main
 
 import (
 	"fmt"
+	"github.com/Oneledger/protocol/action"
 	"math/rand"
 	"os"
 	"os/signal"
+	"strconv"
 	"time"
 
 	"github.com/Oneledger/protocol/client"
 	"github.com/Oneledger/protocol/data"
-	"github.com/Oneledger/protocol/data/balance"
-	"github.com/Oneledger/protocol/serialize"
-
 	"github.com/Oneledger/protocol/data/accounts"
 	"github.com/Oneledger/protocol/data/chain"
 	"github.com/Oneledger/protocol/data/keys"
@@ -35,8 +34,8 @@ import (
 const NODE_ADDRESS = "1234123412341234213412341234"
 
 var loadtestCmd = &cobra.Command{
-	Use:   "send",
-	Short: "Issue send transaction",
+	Use:   "loadtest",
+	Short: "launch load tester",
 	Run:   LoadTest,
 }
 
@@ -67,26 +66,6 @@ func LoadTest(cmd *cobra.Command, args []string) {
 	counterChan := make(chan int, 10000)
 	go handleSigTerm(ctx, c, counterChan)
 
-	// get a list of registered currencies
-	currResp := &data.Response{}
-	err := ctx.clCtx.Query("server.Currencies", data.Request{}, currResp)
-	if err != nil {
-		ctx.logger.Error("failed to get currencies from node", err)
-		return
-	}
-
-	currencies := map[string]balance.Currency{}
-	err = serialize.GetSerializer(serialize.CLIENT).Deserialize(currResp.Data, &currencies)
-	if err != nil || len(currencies) == 0 {
-		ctx.logger.Error("error getting currencies from server:")
-	}
-
-	// get OLT currency object
-	OLTCurrency, ok := currencies["OLT"]
-	if !ok {
-		ctx.logger.Fatal("OLT not registered in currency list")
-	}
-
 	for i := 0; i < loadTestArgs.threads; i++ {
 
 		// create a temp account to send OLT
@@ -115,7 +94,7 @@ func LoadTest(cmd *cobra.Command, args []string) {
 			waitDuration := getWaitDuration(loadTestArgs.interval)
 
 			for true {
-				doSendTransaction(ctx, i, &acc, &OLTCurrency) // send OLT to temp account
+				doSendTransaction(ctx, i, &acc) // send OLT to temp account
 				counterChan <- 1
 				time.Sleep(waitDuration) // wait for some time
 			}
@@ -126,7 +105,7 @@ func LoadTest(cmd *cobra.Command, args []string) {
 
 // doSendTransaction takes in an account and currency object and sends random amounts of coin from the
 // node account. It prints any errors to ctx.logger and returns
-func doSendTransaction(ctx *Context, threadNo int, acc *accounts.Account, curr *balance.Currency) {
+func doSendTransaction(ctx *Context, threadNo int, acc *accounts.Account) {
 	defer func() {
 		if r := recover(); r != nil {
 			fmt.Println("panic in doSendTransaction: thread", threadNo, r)
@@ -140,9 +119,9 @@ func doSendTransaction(ctx *Context, threadNo int, acc *accounts.Account, curr *
 	// populate send arguments
 	sendArgs := &client.SendArguments{}
 	sendArgs.Party = []byte(NODE_ADDRESS)
-	sendArgs.CounterParty = []byte(acc.Address())  // receiver is the temp account
-	sendArgs.Amount = curr.NewCoinFromFloat64(amt) // make coin from currency object
-	sendArgs.Fee = curr.NewCoinFromFloat64(amt / 10.0)
+	sendArgs.CounterParty = []byte(acc.Address())                                // receiver is the temp account
+	sendArgs.Amount = action.Amount{"OLT", strconv.FormatFloat(amt, 'f', 0, 64)} // make coin from currency object
+	sendArgs.Fee = action.Amount{"OLT", strconv.FormatFloat(amt/100, 'f', 0, 64)}
 
 	// Create message
 	resp := &data.Response{}

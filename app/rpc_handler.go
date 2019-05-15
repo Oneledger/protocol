@@ -40,14 +40,14 @@ type RPCServerContext struct {
 	nodeName   string
 	balances   *balance.Store
 	accounts   accounts.Wallet
-	currencies map[string]balance.Currency
+	currencies *balance.CurrencyList
 	cfg        config.Server
 
 	logger *log.Logger
 }
 
 func NewClientHandler(nodeName string, balances *balance.Store, accounts accounts.Wallet,
-	currencies map[string]balance.Currency, cfg config.Server) *RPCServerContext {
+	currencies *balance.CurrencyList, cfg config.Server) *RPCServerContext {
 
 	return &RPCServerContext{nodeName, balances,
 		accounts, currencies, cfg,
@@ -57,12 +57,6 @@ func NewClientHandler(nodeName string, balances *balance.Store, accounts account
 // NodeName returns the name of a node. This is useful for displaying it at cmdline.
 func (h *RPCServerContext) NodeName(req data.Request, resp *data.Response) error {
 	resp.SetData([]byte(h.nodeName))
-	return nil
-}
-
-// Currencies returns a list of registered currencies
-func (h *RPCServerContext) Currencies(req data.Request, resp *data.Response) error {
-	resp.SetDataObj(h.currencies)
 	return nil
 }
 

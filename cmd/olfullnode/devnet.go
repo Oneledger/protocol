@@ -194,6 +194,7 @@ func runDevnet(cmd *cobra.Command, _ []string) error {
 		cfg := config.DefaultServerConfig()
 		cfg.Node.NodeName = nodeName
 		cfg.Node.DB = args.dbType
+		cfg.Consensus.CreateEmptyBlocks = false
 		cfg.Network.RPCAddress = generateAddress(generatePort(), true)
 		cfg.Network.P2PAddress = generateAddress(generatePort(), true)
 		cfg.Network.SDKAddress = generateAddress(generatePort(), true)
@@ -295,7 +296,7 @@ func runDevnet(cmd *cobra.Command, _ []string) error {
 
 func initialState(args *testnetConfig, nodeList []node) ([]balance.Currency, []consensus.StateInput) {
 	olt := balance.Currency{"OLT", chain.Type(0), 18}
-	vt := balance.Currency{"VT", chain.Type(1), 0}
+	vt := balance.Currency{"VT", chain.Type(0), 0}
 	currencies := []balance.Currency{olt, vt}
 
 	var out []consensus.StateInput
