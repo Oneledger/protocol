@@ -15,10 +15,9 @@ Copyright 2017 - 2019 OneLedger
 package main
 
 import (
+	"fmt"
 	"github.com/Oneledger/protocol/data"
-	"github.com/Oneledger/protocol/data/accounts"
 	"github.com/Oneledger/protocol/serialize"
-
 	"github.com/spf13/cobra"
 )
 
@@ -59,12 +58,15 @@ func ListNode(cmd *cobra.Command, args []string) {
 		return
 	}
 
-	var accs = make([]accounts.Account, 0, 10)
+	var accs = make([]string, 0, 10)
 	err = serialize.GetSerializer(serialize.CLIENT).Deserialize(resp.Data, &accs)
 	if err != nil {
 		logger.Error("error deserializng", err)
 		return
 	}
 
-	logger.Infof("Accounts: %#v", accs)
+	logger.Infof("Accounts on node: %s ", Ctx.cfg.Node.NodeName)
+	for _, a := range accs {
+		fmt.Println(a)
+	}
 }

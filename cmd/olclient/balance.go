@@ -81,5 +81,4 @@ func printBalance(nodeName string, address []byte, bal *balance.Balance) {
 
 	logger.Infof("\t Balance for address %x on %s", address, nodeName)
 	logger.Info("\t Balance: ", bal.String())
-	logger.Info()
 }

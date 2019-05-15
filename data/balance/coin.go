@@ -237,6 +237,7 @@ func (coin Coin) String() string {
 			logger.Fatal("Invalid Coin", "err", "Amount is nil")
 		}
 	*/
-
-	return fmt.Sprintf("%#v", coin)
+	float := new(big.Float).SetInt(coin.Amount)
+	value := float.Quo(float, new(big.Float).SetInt(coin.Currency.Base()))
+	return fmt.Sprintf("%s %s", value.String(), coin.Currency.Name)
 }
