@@ -18,6 +18,7 @@ func (a *aminoStrategy) Serialize(obj interface{}) ([]byte, error) {
 	defer func() {
 		if r := recover(); r != nil {
 			logger.Error("panic in amino", r)
+			// debug.PrintStack()
 		}
 	}()
 

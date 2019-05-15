@@ -12,7 +12,7 @@ var _ Msg = Send{}
 type Send struct {
 	From   Address
 	To     Address
-	Amount Coin
+	Amount balance.Coin
 }
 
 func (s Send) Signers() []Address {
@@ -38,7 +38,7 @@ type sendTx struct {
 }
 
 func (sendTx) Validate(ctx *Context, msg Msg, fee Fee, signatures []Signature) (bool, error) {
-	send, ok := msg.(Send)
+	send, ok := msg.(*Send)
 	if !ok {
 		return false, ErrWrongTxType
 	}
@@ -63,7 +63,11 @@ func (sendTx) ProcessCheck(ctx *Context, msg Msg, fee Fee) (bool, Response) {
 	logger.Debug("Processing Send Transaction for CheckTx", msg, fee)
 	balances := ctx.Balances
 
-	send, _ := msg.(Send)
+	send, ok := msg.(*Send)
+	if !ok {
+		return false, Response{}
+	}
+
 	b, _ := balances.Get(send.From.Bytes(), true)
 	if b == nil {
 		return false, Response{}
@@ -81,7 +85,11 @@ func (sendTx) ProcessDeliver(ctx *Context, msg Msg, fee Fee) (bool, Response) {
 	logger.Debug("Processing Send Transaction for DeliverTx", msg, fee)
 
 	balances := ctx.Balances
-	send, _ := msg.(Send)
+
+	send, ok := msg.(*Send)
+	if !ok {
+		return false, Response{}
+	}
 
 	from, err := balances.Get(send.From.Bytes(), false)
 	if err != nil {

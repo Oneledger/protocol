@@ -16,8 +16,9 @@ package action
 
 import (
 	"errors"
-	"github.com/Oneledger/protocol/log"
 	"os"
+
+	"github.com/Oneledger/protocol/log"
 )
 
 // Router interface supplies functionality to add a handler function and

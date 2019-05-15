@@ -3,6 +3,7 @@ package keys
 import (
 	"bytes"
 	"encoding/hex"
+	"strings"
 )
 
 //Address to be used as to reference a key-pair.
@@ -18,4 +19,8 @@ func (a Address) Bytes() []byte {
 
 func (a Address) Equal(b Address) bool {
 	return bytes.Equal(a, b)
+}
+
+func (a Address) Humanize() string {
+	return strings.ToUpper(hex.EncodeToString(a))
 }

@@ -48,8 +48,6 @@ func IssueRequest(cmd *cobra.Command, args []string) {
 
 	ctx := NewContext()
 
-	ctx.logger.Debug("Have Send Request", "sendargs", sendargs)
-
 	currResp := &data.Response{}
 	err := ctx.clCtx.Query("server.Currencies", data.Request{}, currResp)
 	if err != nil {
@@ -60,7 +58,7 @@ func IssueRequest(cmd *cobra.Command, args []string) {
 	currencies := map[string]balance.Currency{}
 	err = serialize.GetSerializer(serialize.CLIENT).Deserialize(currResp.Data, &currencies)
 	if err != nil {
-
+		ctx.logger.Fatal("error deserializng currencies")
 	}
 
 	ctx.logger.Debugf("arguments for send transaction: %#v", sendargs)
@@ -83,13 +81,15 @@ func IssueRequest(cmd *cobra.Command, args []string) {
 	}
 
 	packet := resp.Data
-
 	if packet == nil {
 		ctx.logger.Error("Error in sending ", resp.ErrorMsg)
 		return
 	}
 
-	result, _ := ctx.clCtx.BroadcastTxCommit(packet)
+	result, err := ctx.clCtx.BroadcastTxCommit(packet)
+	if err != nil {
+		ctx.logger.Error("error in BroadcastTxCommit", err)
+	}
 	BroadcastStatus(ctx, result)
 }
 
@@ -109,7 +109,7 @@ func BroadcastStatus(ctx *Context, result *ctypes.ResultBroadcastTxCommit) {
 		ctx.logger.Error("Transaction, DeliverTx Failed", result)
 
 	} else {
-		ctx.logger.Info("Returned Successfully", result)
+		ctx.logger.Infof("Returned Successfully %#v", result)
 		ctx.logger.Info("Result Data", "data", string(result.DeliverTx.Data))
 	}
 }
