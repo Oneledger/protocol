@@ -166,7 +166,7 @@ func (pubKey PublicKey) GetHandler() (PublicKeyHandler, error) {
 		size := SECP256K1_PUB_SIZE
 		if len(pubKey.data) != size {
 			return new(PublicKeySECP256K1),
-				fmt.Errorf("given key doesn't match the size of the key algorithm %s", pubKey.keytype.Name())
+				fmt.Errorf("given key doesn't match the size of the key algorithm %s length %d", pubKey.keytype.Name(), len(pubKey.data))
 		}
 		var key [SECP256K1_PUB_SIZE]byte
 		copy(key[:], pubKey.data)
