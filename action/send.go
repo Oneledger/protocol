@@ -1,6 +1,7 @@
 package action
 
 import (
+	"fmt"
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/serialize"
 	"github.com/pkg/errors"
@@ -12,7 +13,7 @@ var _ Msg = Send{}
 type Send struct {
 	From   Address
 	To     Address
-	Amount balance.Coin
+	Amount Amount
 }
 
 func (s Send) Signers() []Address {
@@ -42,7 +43,7 @@ func (sendTx) Validate(ctx *Context, msg Msg, fee Fee, signatures []Signature) (
 	if !ok {
 		return false, ErrWrongTxType
 	}
-	if !send.Amount.IsValid() {
+	if !send.Amount.IsValid(ctx) {
 		return false, errors.Wrap(ErrInvalidAmount, send.Amount.String())
 	}
 	if send.From == nil || send.To == nil {
@@ -65,17 +66,21 @@ func (sendTx) ProcessCheck(ctx *Context, msg Msg, fee Fee) (bool, Response) {
 
 	send, ok := msg.(*Send)
 	if !ok {
-		return false, Response{}
+		return false, Response{Log: "failed to cast msg"}
 	}
 
 	b, _ := balances.Get(send.From.Bytes(), true)
 	if b == nil {
-		return false, Response{}
+		return false, Response{Log: "failed to get balance for sender"}
 	}
-
-	coin := send.Amount
+	if !send.Amount.IsValid(ctx) {
+		log := fmt.Sprint("amount is invalid", send.Amount, ctx.Currencies)
+		return false, Response{Log: log}
+	}
+	coin := send.Amount.ToCoin(ctx)
 	if !enoughBalance(*b, coin) {
-		return false, Response{}
+		log := fmt.Sprintf("sender don't have enough balance, need %s, has %s", b.String(), coin.String())
+		return false, Response{Log: log}
 	}
 
 	return true, Response{Tags: send.Tags()}
@@ -93,22 +98,22 @@ func (sendTx) ProcessDeliver(ctx *Context, msg Msg, fee Fee) (bool, Response) {
 
 	from, err := balances.Get(send.From.Bytes(), false)
 	if err != nil {
-		logger.Error("Failed to get the balance of the owner", send.From, "err", err)
-		return false, Response{}
+		log := fmt.Sprint("Failed to get the balance of the owner ", send.From, "err", err)
+		return false, Response{Log: log}
 	}
-	coin := send.Amount
+	coin := send.Amount.ToCoin(ctx)
 
 	if !enoughBalance(*from, coin) {
-		logger.Debug("Owner balance is not enough", from, send.Amount)
-		return false, Response{}
+		log := fmt.Sprint("Owner balance is not enough", from, send.Amount)
+		return false, Response{Log: log}
 	}
 
 	//change owner balance
 	from.MinusCoin(coin)
 	err = balances.Set(send.From.Bytes(), *from)
 	if err != nil {
-		logger.Error("error updating balance in send transaction", err)
-		return false, Response{}
+		log := fmt.Sprint("error updating balance in send transaction", err)
+		return false, Response{Log: log}
 	}
 
 	//change receiver balance
@@ -122,7 +127,7 @@ func (sendTx) ProcessDeliver(ctx *Context, msg Msg, fee Fee) (bool, Response) {
 	to.AddCoin(coin)
 	err = balances.Set(send.To.Bytes(), *to)
 	if err != nil {
-		return false, Response{}
+		return false, Response{Log: "balance set failed"}
 	}
 	return true, Response{Tags: send.Tags()}
 }
