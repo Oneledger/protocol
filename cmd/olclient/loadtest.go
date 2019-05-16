@@ -158,7 +158,7 @@ func doSendTransaction(ctx *Context, threadNo int, acc *accounts.Account, nodeAd
 
 	// Create message
 	resp := &data.Response{}
-	err := ctx.clCtx.Query("server.SendTx", *sendargs, resp)
+	err := ctx.clCtx.Query("server.SendTx", *sendArgs, resp)
 	if err != nil {
 		ctx.logger.Error(acc.Name, "error executing SendTx", err)
 		return
