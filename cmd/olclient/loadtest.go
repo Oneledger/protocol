@@ -51,6 +51,7 @@ type LoadTestArgs struct {
 	threads    int
 	interval   int
 	randomRecv bool
+	maxTx      int
 }
 
 func init() {
@@ -62,6 +63,7 @@ func init() {
 		1, "number of threads running")
 	loadtestCmd.Flags().BoolVar(&loadTestArgs.randomRecv, "random-receiver",
 		true, "whether to randomize the receiver everytime")
+	loadtestCmd.Flags().IntVar(&loadTestArgs.maxTx, "max-tx", 10000, "number of max tx in before the load test stop")
 }
 
 func LoadTest(cmd *cobra.Command, args []string) {
@@ -77,7 +79,7 @@ func LoadTest(cmd *cobra.Command, args []string) {
 	counterChan := make(chan int, 10000)
 
 	waiter.Add(1)
-	go handleSigTerm(ctx, c, counterChan, stopChan, loadTestArgs.threads, &waiter)
+	go handleSigTerm(ctx, c, counterChan, stopChan, loadTestArgs.threads, loadTestArgs.maxTx, &waiter)
 
 	req := data.NewRequestFromData("server.NodeAddress", nil)
 	resp := &data.Response{}
@@ -194,7 +196,7 @@ func getWaitDuration(interval int) time.Duration {
 	return time.Millisecond * time.Duration(interval)
 }
 
-func handleSigTerm(ctx *Context, c chan os.Signal, counterChan chan int, stopChan chan bool, n int, waiter *sync.WaitGroup) {
+func handleSigTerm(ctx *Context, c chan os.Signal, counterChan chan int, stopChan chan bool, n int, maxTx int, waiter *sync.WaitGroup) {
 	// keeps a running count of messages sent
 	msgCounter := 0
 
@@ -220,7 +222,7 @@ func handleSigTerm(ctx *Context, c chan os.Signal, counterChan chan int, stopCha
 
 		case <-counterChan:
 			msgCounter++
-			if msgCounter >= 10000 {
+			if msgCounter >= maxTx {
 				c <- os.Interrupt
 			}
 		}
