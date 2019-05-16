@@ -221,18 +221,7 @@ func handleSigTerm(ctx *Context, c chan os.Signal, counterChan chan int, stopCha
 		case <-counterChan:
 			msgCounter++
 			if msgCounter >= 10000 {
-				for i := 0; i < n; i++ {
-					stopChan <- true
-				}
-				time.Sleep(time.Second)
-
-				// print stats
-				fmt.Println("####################################################################")
-				fmt.Println("################	Terminating load test	####################")
-				fmt.Println("####################################################################")
-				fmt.Printf("################	Messages sent: %09d-----	############", msgCounter)
-
-				waiter.Done()
+				c <- os.Interrupt
 			}
 		}
 	}
