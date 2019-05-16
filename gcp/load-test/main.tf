@@ -34,6 +34,7 @@ module "fullnode"{
   name = "${var.name}"
   vmcount = "${var.vmcount}"
   subnets = "${module.network.subnets}"
+  vm_machine_type = "${var.vm_machine_type}"
   regions = "${var.regions}"
   providers = {
     google = "google.devnet"

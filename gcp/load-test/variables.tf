@@ -16,3 +16,7 @@ variable "vmcount" {
 variable "startup-script-url" {
   default = ""
 }
+variable "vm_machine_type" {
+  default = "n1-standard-1"
+}
+
