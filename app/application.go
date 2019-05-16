@@ -208,7 +208,7 @@ func (app *App) rpcStarter() (func() error, error) {
 	noop := func() error { return nil }
 
 	handlers := NewClientHandler(app.Context.cfg.Node.NodeName, app.Context.balances,
-		app.Context.accounts, app.Context.currencies, app.Context.cfg)
+		app.Context.accounts, app.Context.currencies, app.Context.cfg, app.Context.node)
 
 	u, err := url.Parse(app.Context.cfg.Network.SDKAddress)
 	if err != nil {

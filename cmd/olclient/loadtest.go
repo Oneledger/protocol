@@ -16,12 +16,16 @@ package main
 
 import (
 	"fmt"
-	"github.com/Oneledger/protocol/action"
 	"math/rand"
 	"os"
 	"os/signal"
 	"strconv"
+	"sync"
 	"time"
+
+	"github.com/Oneledger/protocol/serialize"
+
+	"github.com/Oneledger/protocol/action"
 
 	"github.com/Oneledger/protocol/client"
 	"github.com/Oneledger/protocol/data"
@@ -63,8 +67,21 @@ func LoadTest(cmd *cobra.Command, args []string) {
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt)
 
+	stopChan := make(chan bool, loadTestArgs.threads)
+	waiter := sync.WaitGroup{}
 	counterChan := make(chan int, 10000)
-	go handleSigTerm(ctx, c, counterChan)
+
+	waiter.Add(1)
+	go handleSigTerm(ctx, c, counterChan, stopChan, loadTestArgs.threads, &waiter)
+
+	req := data.NewRequestFromData("server.NodeAddress", nil)
+	resp := &data.Response{}
+	err := ctx.clCtx.Query("server.NodeAddress", *req, resp)
+	if err != nil {
+		ctx.logger.Fatal("error getting node address", err)
+	}
+
+	var nodeAddress = keys.Address(resp.Data)
 
 	for i := 0; i < loadTestArgs.threads; i++ {
 
@@ -89,23 +106,39 @@ func LoadTest(cmd *cobra.Command, args []string) {
 			return
 		}
 
+		var accRead = &accounts.Account{}
+		serialize.GetSerializer(serialize.CLIENT).Deserialize(resp.Data, &accRead)
+
+		// print details
+		ctx.logger.Infof("Created account successfully: %#v", accRead)
+		ctx.logger.Infof("Address for the account is: %s", acc.Address().Humanize())
+
+		waiter.Add(1)
 		// start a thread to keep sending transactions after some interval
-		go func() {
+		go func(stop chan bool) {
 			waitDuration := getWaitDuration(loadTestArgs.interval)
 
 			for true {
-				doSendTransaction(ctx, i, &acc) // send OLT to temp account
+				doSendTransaction(ctx, i, &acc, nodeAddress) // send OLT to temp account
 				counterChan <- 1
-				time.Sleep(waitDuration) // wait for some time
-			}
-		}()
 
+				select {
+				case <-stop:
+					waiter.Done()
+					return
+				default:
+					time.Sleep(waitDuration)
+				}
+			}
+
+		}(stopChan)
 	}
+	waiter.Wait()
 }
 
 // doSendTransaction takes in an account and currency object and sends random amounts of coin from the
 // node account. It prints any errors to ctx.logger and returns
-func doSendTransaction(ctx *Context, threadNo int, acc *accounts.Account) {
+func doSendTransaction(ctx *Context, threadNo int, acc *accounts.Account, nodeAddress keys.Address) {
 	defer func() {
 		if r := recover(); r != nil {
 			fmt.Println("panic in doSendTransaction: thread", threadNo, r)
@@ -118,7 +151,7 @@ func doSendTransaction(ctx *Context, threadNo int, acc *accounts.Account) {
 
 	// populate send arguments
 	sendArgs := &client.SendArguments{}
-	sendArgs.Party = []byte(NODE_ADDRESS)
+	sendArgs.Party = []byte(nodeAddress)
 	sendArgs.CounterParty = []byte(acc.Address())                                // receiver is the temp account
 	sendArgs.Amount = action.Amount{"OLT", strconv.FormatFloat(amt, 'f', 0, 64)} // make coin from currency object
 	sendArgs.Fee = action.Amount{"OLT", strconv.FormatFloat(amt/100, 'f', 0, 64)}
@@ -149,20 +182,29 @@ func getWaitDuration(interval int) time.Duration {
 	return time.Millisecond * time.Duration(interval)
 }
 
-func handleSigTerm(ctx *Context, c chan os.Signal, counterChan chan int) {
+func handleSigTerm(ctx *Context, c chan os.Signal, counterChan chan int, stopChan chan bool, n int, waiter *sync.WaitGroup) {
 	// keeps a running count of messages sent
 	msgCounter := 0
 
 	for true {
 		select {
 		case sig := <-c:
-			ctx.logger.Info("################################################################")
-			ctx.logger.Info("################	Terminating load test	####################")
-			ctx.logger.Info("################################################################")
-			ctx.logger.Infof("################	Messages sent: %09d-----	################", 1)
+			// signal the goroutines to stop
+			for i := 0; i < n; i++ {
+				stopChan <- true
+			}
+			// wait for the goroutines to stop
+			time.Sleep(time.Second)
+
+			// print stats
+			fmt.Println("####################################################################")
+			fmt.Println("################	Terminating load test	####################")
+			fmt.Println("####################################################################")
+			fmt.Printf("################	Messages sent: %09d-----	############", 1)
 
 			sig.String()
-			os.Exit(0)
+
+			waiter.Done()
 
 		case <-counterChan:
 			msgCounter++
