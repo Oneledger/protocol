@@ -37,30 +37,44 @@ import (
 )
 
 type RPCServerContext struct {
-	nodeName   string
-	balances   *balance.Store
-	accounts   accounts.Wallet
-	currencies *balance.CurrencyList
-	cfg        config.Server
+	nodeName    string
+	balances    *balance.Store
+	accounts    accounts.Wallet
+	currencies  *balance.CurrencyList
+	cfg         config.Server
+	nodeContext NodeContext
 
 	logger *log.Logger
 }
 
 func NewClientHandler(nodeName string, balances *balance.Store, accounts accounts.Wallet,
-	currencies *balance.CurrencyList, cfg config.Server) *RPCServerContext {
+	currencies *balance.CurrencyList, cfg config.Server, nodeContext NodeContext) *RPCServerContext {
 
 	return &RPCServerContext{nodeName, balances,
-		accounts, currencies, cfg,
+		accounts, currencies, cfg, nodeContext,
 		log.NewLoggerWithPrefix(os.Stdout, "client_Handler")}
 }
 
 // NodeName returns the name of a node. This is useful for displaying it at cmdline.
 func (h *RPCServerContext) NodeName(req data.Request, resp *data.Response) error {
+	defer h.recoverPanic()
+
 	resp.SetData([]byte(h.nodeName))
 	return nil
 }
 
+func (h *RPCServerContext) NodeAddress(req data.Request, resp *data.Response) error {
+	defer h.recoverPanic()
+
+	address := h.nodeContext.Address()
+	resp.SetData([]byte(address))
+
+	return nil
+}
+
 func (h *RPCServerContext) NodeID(req data.Request, resp *data.Response) error {
+	defer h.recoverPanic()
+
 	configuration, err := consensus.ParseConfig(&h.cfg)
 	if err != nil {
 		return errors.Wrap(err, "error parsing config")
@@ -162,6 +176,7 @@ func (h *RPCServerContext) ListAccounts(req data.Request, resp *data.Response) e
 }
 
 func (h *RPCServerContext) SendTx(args client.SendArguments, resp *data.Response) error {
+	defer h.recoverPanic()
 
 	send := action.Send{
 		From:   keys.Address(args.Party),
