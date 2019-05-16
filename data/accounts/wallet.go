@@ -84,7 +84,7 @@ func (ws *WalletStore) Delete(account Account) error {
 func (ws WalletStore) GetAccount(address keys.Address) (Account, error) {
 	value, err := ws.store.Get(address.Bytes())
 	if err != nil || len(value) == 0 {
-		return Account{}, fmt.Errorf("failed to get account by address: %s", err)
+		return Account{}, fmt.Errorf("failed to get account by address: %s", address.String())
 	}
 	var account = &Account{}
 	account = account.FromBytes(value)
@@ -101,7 +101,7 @@ func (ws WalletStore) SignWithAccountIndex(msg []byte, index int) (keys.PublicKe
 func (ws WalletStore) SignWithAddress(msg []byte, address keys.Address) (keys.PublicKey, []byte, error) {
 	account, err := ws.GetAccount(address)
 	if err != nil {
-		return keys.PublicKey{}, nil, errors.Wrap(err, "failed to get account by address")
+		return keys.PublicKey{}, nil, errors.Wrap(err, "sign with address")
 	}
 	signed, err := account.Sign(msg)
 	return *account.PublicKey, signed, err

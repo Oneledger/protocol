@@ -29,8 +29,9 @@ func NewContext(r Router, wallet accounts.Wallet, balances *balance.Store, curre
 func (ctx *Context) EnableSend() *Context {
 
 	err := ctx.Router.AddHandler(SEND, sendTx{})
+	//todo: ignore the err for now because register the handler path the second doesn't case any problem
 	if err != nil {
-		ctx.Logger.Warn("error enable send", err)
+
 	}
 	return ctx
 }
