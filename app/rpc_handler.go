@@ -20,6 +20,8 @@ import (
 	"os"
 	"runtime/debug"
 
+	"github.com/google/uuid"
+
 	"github.com/Oneledger/protocol/consensus"
 	"github.com/tendermint/tendermint/p2p"
 
@@ -184,10 +186,12 @@ func (h *RPCServerContext) SendTx(args client.SendArguments, resp *data.Response
 		Amount: args.Amount,
 	}
 
+	uuid, _ := uuid.NewUUID()
 	fee := action.Fee{args.Fee, args.Gas}
 	tx := action.BaseTx{
 		Data: send,
 		Fee:  fee,
+		Memo: uuid.String(),
 	}
 
 	pubKey, signed, err := h.accounts.SignWithAddress(tx.Bytes(), send.From)

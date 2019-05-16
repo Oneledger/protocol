@@ -23,6 +23,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/tendermint/tendermint/crypto/ed25519"
+
 	"github.com/Oneledger/protocol/serialize"
 
 	"github.com/Oneledger/protocol/action"
@@ -46,8 +48,9 @@ var loadtestCmd = &cobra.Command{
 var loadTestArgs = LoadTestArgs{}
 
 type LoadTestArgs struct {
-	threads  int
-	interval int
+	threads    int
+	interval   int
+	randomRecv bool
 }
 
 func init() {
@@ -57,6 +60,8 @@ func init() {
 		1, "interval between successive transactions on a single thread in milliseconds")
 	loadtestCmd.Flags().IntVar(&loadTestArgs.threads, "threads",
 		1, "number of threads running")
+	loadtestCmd.Flags().BoolVar(&loadTestArgs.randomRecv, "random-receiver",
+		true, "whether to randomize the receiver everytime")
 }
 
 func LoadTest(cmd *cobra.Command, args []string) {
@@ -119,7 +124,7 @@ func LoadTest(cmd *cobra.Command, args []string) {
 			waitDuration := getWaitDuration(loadTestArgs.interval)
 
 			for true {
-				doSendTransaction(ctx, i, &acc, nodeAddress) // send OLT to temp account
+				doSendTransaction(ctx, i, &acc, nodeAddress, loadTestArgs.randomRecv) // send OLT to temp account
 				counterChan <- 1
 
 				select {
@@ -138,7 +143,7 @@ func LoadTest(cmd *cobra.Command, args []string) {
 
 // doSendTransaction takes in an account and currency object and sends random amounts of coin from the
 // node account. It prints any errors to ctx.logger and returns
-func doSendTransaction(ctx *Context, threadNo int, acc *accounts.Account, nodeAddress keys.Address) {
+func doSendTransaction(ctx *Context, threadNo int, acc *accounts.Account, nodeAddress keys.Address, randomRev bool) {
 	defer func() {
 		if r := recover(); r != nil {
 			fmt.Println("panic in doSendTransaction: thread", threadNo, r)
@@ -149,10 +154,17 @@ func doSendTransaction(ctx *Context, threadNo int, acc *accounts.Account, nodeAd
 	r := rand.New(rand.NewSource(time.Now().UnixNano()))
 	amt := r.Float64() * 10.0 // amount is a random float between [0, 10)
 
+	recv := ed25519.GenPrivKey().PubKey().Address()
+
 	// populate send arguments
 	sendArgsLocal := client.SendArguments{}
 	sendArgsLocal.Party = []byte(nodeAddress)
-	sendArgsLocal.CounterParty = []byte(acc.Address())                                // receiver is the temp account
+	if randomRev {
+		sendArgsLocal.CounterParty = []byte(recv)
+	} else {
+		sendArgsLocal.CounterParty = []byte(acc.Address()) // receiver is the temp account
+	}
+
 	sendArgsLocal.Amount = action.Amount{"OLT", strconv.FormatFloat(amt, 'f', 0, 64)} // make coin from currency object
 	sendArgsLocal.Fee = action.Amount{"OLT", strconv.FormatFloat(amt/100, 'f', 0, 64)}
 
@@ -200,7 +212,7 @@ func handleSigTerm(ctx *Context, c chan os.Signal, counterChan chan int, stopCha
 			fmt.Println("####################################################################")
 			fmt.Println("################	Terminating load test	####################")
 			fmt.Println("####################################################################")
-			fmt.Printf("################	Messages sent: %09d-----	############", 1)
+			fmt.Printf("################	Messages sent: %09d-----	############", msgCounter)
 
 			sig.String()
 
