@@ -150,15 +150,15 @@ func doSendTransaction(ctx *Context, threadNo int, acc *accounts.Account, nodeAd
 	amt := r.Float64() * 10.0 // amount is a random float between [0, 10)
 
 	// populate send arguments
-	sendArgs := &client.SendArguments{}
-	sendArgs.Party = []byte(nodeAddress)
-	sendArgs.CounterParty = []byte(acc.Address())                                // receiver is the temp account
-	sendArgs.Amount = action.Amount{"OLT", strconv.FormatFloat(amt, 'f', 0, 64)} // make coin from currency object
-	sendArgs.Fee = action.Amount{"OLT", strconv.FormatFloat(amt/100, 'f', 0, 64)}
+	sendArgsLocal := client.SendArguments{}
+	sendArgsLocal.Party = []byte(nodeAddress)
+	sendArgsLocal.CounterParty = []byte(acc.Address())                                // receiver is the temp account
+	sendArgsLocal.Amount = action.Amount{"OLT", strconv.FormatFloat(amt, 'f', 0, 64)} // make coin from currency object
+	sendArgsLocal.Fee = action.Amount{"OLT", strconv.FormatFloat(amt/100, 'f', 0, 64)}
 
 	// Create message
 	resp := &data.Response{}
-	err := ctx.clCtx.Query("server.SendTx", *sendArgs, resp)
+	err := ctx.clCtx.Query("server.SendTx", sendArgsLocal, resp)
 	if err != nil {
 		ctx.logger.Error(acc.Name, "error executing SendTx", err)
 		return
