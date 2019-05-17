@@ -174,8 +174,10 @@
     - { regexp: "external_p2p_address", line: "external_p2p_address = \"tcp://{{inventory_hostname}}:26605\""}
     - { regexp: "log_output", line: "log_output = \"stdout\""}
     - { regexp: "create_empty_blocks = ", line: "create_empty_blocks = false"}
-    - { regexp: " size = ", line: "size = 10000"}
+    - { regexp: " size = ", line: "size = 100000"}
     - { regexp: "db = ", line: "db = \"cleveldb\""}
+    - { regexp: " recheck = ", line: "recheck = false"}
+    - { regexp: " broadcast = ", line: "broadcast = false"}
 # set up validator node config.toml
 - hosts: validator_node
   remote_user: "{{remote_user}}"
@@ -272,7 +274,7 @@
 
         [Service]
         WorkingDirectory={{APP_HOME}}
-        ExecStart=/usr/local/bin/olclient loadtest --root {{APP_HOME}} --interval 1 --threads 10 --max-tx 10000
+        ExecStart=/usr/local/bin/olclient loadtest --root {{APP_HOME}} --interval 1 --threads 10 --max-tx 1000000
         # Other Restart options: or always, on-abort, etc
 
         [Install]
