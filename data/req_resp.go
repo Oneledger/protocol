@@ -26,14 +26,14 @@ var (
 /*
 	Request
 */
-// Request generic request object for query handling
+// Request generic request object for Query handling
 type Request struct {
 	Query  string
 	Data   []byte
 	Params map[string]interface{}
 }
 
-// NewRequest creates a new request with given params.
+// NewRequest creates a new request with given Params.
 func NewRequest(query string, params map[string]interface{}) (*Request, error) {
 	req := &Request{Query: query, Params: params}
 
@@ -66,7 +66,7 @@ func NewRequestFromObj(query string, obj interface{}) (*Request, error) {
 	return req, nil
 }
 
-// Parse parses the data and saves it to params
+// Parse parses the data and saves it to Params
 func (r *Request) Parse() {
 	p := map[string]interface{}{}
 

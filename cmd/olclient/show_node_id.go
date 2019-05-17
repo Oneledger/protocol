@@ -38,8 +38,7 @@ func init() {
 func showNodeID(_ *cobra.Command, _ []string) {
 	ctx := NewContext()
 
-	req := data.Request{}
-	req.Params = map[string]interface{}{"showIP": showIP}
+	req, _ := data.NewRequest("", map[string]interface{}{"showIP": showIP})
 	resp := &data.Response{}
 
 	err := ctx.clCtx.Query("server.NodeID", req, resp)
