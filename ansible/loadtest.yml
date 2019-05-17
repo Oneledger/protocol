@@ -261,6 +261,11 @@
       scope: system
       state: restarted
       daemon_reload: yes
+- hosts: validator_node
+  remote_user: "{{remote_user}}"
+  become: true
+  become_user: root
+  tasks:
   - name: create a systemd loadtest service file
     copy:
       dest: "/etc/systemd/system/loadtest.service"
@@ -274,7 +279,7 @@
 
         [Service]
         WorkingDirectory={{APP_HOME}}
-        ExecStart=/usr/local/bin/olclient loadtest --root {{APP_HOME}} --interval 1 --threads 10 --max-tx 1000000
+        ExecStart=/usr/local/bin/olclient loadtest --root {{APP_HOME}} --interval 1 --threads 10 --max-tx 500000
         # Other Restart options: or always, on-abort, etc
 
         [Install]
