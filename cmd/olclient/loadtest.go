@@ -62,7 +62,7 @@ func init() {
 	loadtestCmd.Flags().IntVar(&loadTestArgs.threads, "threads",
 		1, "number of threads running")
 	loadtestCmd.Flags().BoolVar(&loadTestArgs.randomRecv, "random-receiver",
-		true, "whether to randomize the receiver everytime")
+		false, "whether to randomize the receiver everytime, default false")
 	loadtestCmd.Flags().IntVar(&loadTestArgs.maxTx, "max-tx", 10000, "number of max tx in before the load test stop")
 }
 
