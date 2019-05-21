@@ -1,0 +1,8 @@
+#!/bin/bash
+
+pids=`pgrep -f "olfullnode node.*"`
+if ! [ -z "$pids" ]
+then
+	pkill -f "olfullnode node.*"
+	killed=true
+fi

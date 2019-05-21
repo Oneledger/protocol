@@ -1,0 +1,8 @@
+#!/bin/bash
+
+echo
+
+rm -rf $OLDATA/devnet/*
+
+olfullnode init devnet --dir $OLDATA/devnet
+
