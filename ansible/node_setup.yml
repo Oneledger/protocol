@@ -110,6 +110,7 @@
     - { regexp: "node_name", line: "node_name = \"{{node_name}}\""}
     - { regexp: "external_p2p_address", line: "external_p2p_address = \"tcp://{{inventory_hostname}}:26605\""}
     - { regexp: "log_output", line: "log_output = \"stdout\""}
+    - { regexp: "create_empty_blocks = ", line: "create_empty_blocks = false"}
 # set up validator node config.toml
 - hosts: validator_node
   remote_user: "{{remote_user}}"
@@ -143,19 +144,24 @@
       path: "{{APP_HOME}}/config.toml"
       regexp: 'seed_mode'
       line: "  seed_mode = true"
-# modify configuration file for fullnodes 
-- hosts: seed_node:validator_node
-  remote_user: "{{remote_user}}"
-  become: true
-  become_user: root  
-  tasks:
   - name: set persistent peers
     lineinfile:
       path: "{{APP_HOME}}/config.toml"
       regexp: 'persistent_peers'
       line: "  persistent_peers = {{hostvars[groups['validator_node'][0]]['persistentAddressList'] | to_json }}"
+# modify configuration file for fullnodes 
+- hosts: validator_node
+  remote_user: "{{remote_user}}"
+  become: true
+  become_user: root  
+  tasks:
   - name: set seed nodes 
     lineinfile:
       path: "{{APP_HOME}}/config.toml"
       regexp: 'seeds'
       line: "  seeds = {{hostvars[groups['seed_node'][0]]['seedAddressList'] | to_json }}"
+  - name: clear persistent peers so it will connect with seed node instead
+    lineinfile:
+      path: "{{APP_HOME}}/config.toml"
+      regexp: 'persistent_peers'
+      line: "  persistent_peers = []"
