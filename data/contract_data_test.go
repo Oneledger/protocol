@@ -16,6 +16,8 @@ package data
 
 import (
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestCreateNewContractData(t *testing.T) {
@@ -29,7 +31,9 @@ func TestUpdate(t *testing.T) {
 	var toUpdate = make(map[string]interface{})
 	toUpdate["key1"] = "value1"
 	toUpdate["key2"] = 12
-	contractData.Update(toUpdate)
+	err := contractData.Update(toUpdate)
+	assert.NoError(t, err)
+
 	if contractData.Data["key1"] != "value1" {
 		t.Error("update key 1 failed")
 	}
@@ -89,7 +93,9 @@ func TestUpdateByJSONData(t *testing.T) {
 	contractData.Data["key1"] = "value1"
 	contractData.Data["key2"] = "value2"
 	jsonStr := `{"key1": "new value 1", "key3" : {"key3_1" : "key3_2"}}`
-	contractData.UpdateByJSONData([]byte(jsonStr))
+	err := contractData.UpdateByJSONData([]byte(jsonStr))
+	assert.NoError(t, err)
+
 	if string(contractData.Get("key1").([]byte)) != `"new value 1"` {
 		t.Error("update key1 failed")
 	}
@@ -100,4 +106,9 @@ func TestUpdateByJSONData(t *testing.T) {
 	if string(contractData.Get("key3").([]byte)) != `{"key3_1":"key3_2"}` {
 		t.Error("update key3 failed ")
 	}
+
+	invalidJsonStr := `]]]]]`
+	err = contractData.UpdateByJSONData([]byte(invalidJsonStr))
+	assert.Error(t, err)
+
 }

@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
+	"sync"
 	"syscall"
 
 	"github.com/Oneledger/protocol/app"
@@ -107,6 +108,8 @@ func init() {
 
 // Start a node to run continously
 func StartNode(cmd *cobra.Command, args []string) error {
+	waiter := sync.WaitGroup{}
+
 	ctx := nodeCtx
 	err := ctx.init(rootArgs.rootDir)
 	if err != nil {
@@ -135,12 +138,14 @@ func StartNode(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	catchSigTerm(ctx.logger, application.Close)
+	waiter.Add(1)
+	catchSigTerm(ctx.logger, application.Close, &waiter)
 
-	select {}
+	waiter.Wait()
+	return nil
 }
 
-func catchSigTerm(logger *log.Logger, close func()) {
+func catchSigTerm(logger *log.Logger, close func(), waiter *sync.WaitGroup) {
 	// Catch a SIGTERM and stop
 	sigs := make(chan os.Signal, 1)
 	signal.Notify(sigs, os.Interrupt, syscall.SIGTERM)
@@ -149,7 +154,8 @@ func catchSigTerm(logger *log.Logger, close func()) {
 		for sig := range sigs {
 			logger.Info("Stopping due to", sig.String())
 			close()
-			os.Exit(-1)
+
+			waiter.Done()
 		}
 	}()
 

@@ -41,10 +41,6 @@ func (data *ContractData) Get(key string) interface{} {
 	return data.Data[key]
 }
 
-func (data *ContractData) GetValue(key string) interface{} {
-	return data.Data[key]
-}
-
 func (data *ContractData) Validate(address []byte) bool {
 	return bytes.Equal(address, data.Address)
 }
@@ -65,6 +61,7 @@ func (data *ContractData) UpdateByJSONData(in []byte) error {
 }
 
 //private methods
+/*
 func isMap(jsonMessage *json.RawMessage) bool {
 	in, _ := json.Marshal(jsonMessage)
 	var raw map[string]*json.RawMessage
@@ -72,3 +69,4 @@ func isMap(jsonMessage *json.RawMessage) bool {
 	json.Unmarshal(in, &raw)
 	return len(raw) != 0
 }
+*/

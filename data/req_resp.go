@@ -26,26 +26,30 @@ var (
 /*
 	Request
 */
-// Request generic request object for Query handling
+// Request generic request object for Query handling. Request comes with its query
+// string and parameters
 type Request struct {
-	Query  string
-	Data   []byte
-	Params map[string]interface{}
+	Query  string                 // the query method
+	Data   []byte                 // data stored as a serialized byte array
+	Params map[string]interface{} // request params as a map of string to interface
 }
 
 // NewRequest creates a new request with given Params.
 func NewRequest(query string, params map[string]interface{}) (*Request, error) {
 	req := &Request{Query: query, Params: params}
 
+	// serialize the params
 	d, err := clSzlr.Serialize(params)
 	if err != nil {
 		return nil, errors.Wrap(err, "error creating new request")
 	}
 
+	// assign the data to request
 	req.Data = d
 	return req, nil
 }
 
+// NewRequestFromData creates a new request object from a byte array
 func NewRequestFromData(query string, dat []byte) *Request {
 	req := &Request{Query: query, Data: dat}
 	return req
@@ -66,7 +70,7 @@ func NewRequestFromObj(query string, obj interface{}) (*Request, error) {
 	return req, nil
 }
 
-// Parse parses the data and saves it to Params
+// Parse parses the serialized parameters data and saves it to Params
 func (r *Request) Parse() {
 	p := map[string]interface{}{}
 
@@ -95,6 +99,7 @@ func (r *Request) GetString(key string) string {
 	return str
 }
 
+// GetBytes retrieves a byte array
 func (r *Request) GetBytes(key string) []byte {
 	s, ok := r.Params[key]
 	if !ok {
@@ -152,12 +157,8 @@ func (r *Request) GetBool(key string) (bool, error) {
 }
 
 func (r *Request) ClientDeserialize(name string, obj interface{}) error {
-	d := r.GetBytes(name)
-	if len(d) == 0 {
-		return ErrParamNotFound
-	}
 
-	err := clSzlr.Deserialize(d, obj)
+	err := clSzlr.Deserialize(r.Data, obj)
 	if err != nil {
 		return errors.Wrap(err, "request deserialization error")
 	}

@@ -39,5 +39,6 @@ status:
 utest: 
 	go test github.com/Oneledger/protocol/data \
 		github.com/Oneledger/protocol/serialize \
+		github.com/Oneledger/protocol/utils \
 		-coverprofile a.out
 

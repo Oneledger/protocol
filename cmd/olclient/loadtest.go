@@ -8,8 +8,8 @@
                                       __/ |
                                      |___/
 
+	Copyright 2017 - 2019 OneLedger
 
-Copyright 2017 - 2019 OneLedger
 */
 
 package main
@@ -37,50 +37,63 @@ import (
 	"github.com/spf13/cobra"
 )
 
-const NODE_ADDRESS = "1234123412341234213412341234"
-
+// cobra command to loadtest
 var loadtestCmd = &cobra.Command{
 	Use:   "loadtest",
 	Short: "launch load tester",
-	Run:   LoadTest,
+	Run:   loadTest,
 }
 
+// global to load command line args
 var loadTestArgs = LoadTestArgs{}
 
+// struct to hold the command-line args
 type LoadTestArgs struct {
-	threads    int
-	interval   int
-	randomRecv bool
-	maxTx      int
+	threads    int  // no. of threads in the load test; for concurrency
+	interval   int  // interval (in milliseconds) between two successive send transactions on a thread
+	randomRecv bool // whether to send tokens to a random address every time or no, the default is false
+	maxTx      int  // max transactions after which the load test should stop, default is 10000(10k)
 }
 
+// init function initializes the loadtest command and attaches a bunch of flag parsers
 func init() {
 	RootCmd.AddCommand(loadtestCmd)
 
-	loadtestCmd.Flags().IntVar(&loadTestArgs.interval, "interval",
-		1, "interval between successive transactions on a single thread in milliseconds")
-	loadtestCmd.Flags().IntVar(&loadTestArgs.threads, "threads",
-		1, "number of threads running")
-	loadtestCmd.Flags().BoolVar(&loadTestArgs.randomRecv, "random-receiver",
-		false, "whether to randomize the receiver everytime, default false")
-	loadtestCmd.Flags().IntVar(&loadTestArgs.maxTx, "max-tx", 10000, "number of max tx in before the load test stop")
+	loadtestCmd.Flags().IntVar(&loadTestArgs.interval, "interval", 1,
+		"interval between successive transactions on a single thread in milliseconds")
+
+	loadtestCmd.Flags().IntVar(&loadTestArgs.threads, "threads", 1,
+		"number of threads running")
+
+	loadtestCmd.Flags().BoolVar(&loadTestArgs.randomRecv, "random-receiver", false,
+		"whether to randomize the receiver every time, default false")
+
+	loadtestCmd.Flags().IntVar(&loadTestArgs.maxTx, "max-tx", 10000,
+		"number of max tx in before the load test stop")
 }
 
-func LoadTest(cmd *cobra.Command, args []string) {
+// loadTest function spawns a few thread which create an account and execute send transactions on the
+// rpc server. This command is used to create a simulated load of send transactions
+func loadTest(_ *cobra.Command, _ []string) {
 
+	// create new connection to RPC server
 	ctx := NewContext()
-	ctx.logger.Debug("Starting Loadtest")
+	ctx.logger.Info("Starting Loadtest...")
 
+	// create a channel to catch os.Interrupt from a SIGTERM or similar kill signal
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt)
 
+	// create vars for concurrency management
 	stopChan := make(chan bool, loadTestArgs.threads)
 	waiter := sync.WaitGroup{}
-	counterChan := make(chan int, 10000)
+	counterChan := make(chan int)
 
+	// spawn a goroutine to handle sigterm and max transactions
 	waiter.Add(1)
-	go handleSigTerm(ctx, c, counterChan, stopChan, loadTestArgs.threads, loadTestArgs.maxTx, &waiter)
+	go handleSigTerm(c, counterChan, stopChan, loadTestArgs.threads, loadTestArgs.maxTx, &waiter)
 
+	// get address of the node
 	req := data.NewRequestFromData("server.NodeAddress", nil)
 	resp := &data.Response{}
 	err := ctx.clCtx.Query("server.NodeAddress", *req, resp)
@@ -90,34 +103,41 @@ func LoadTest(cmd *cobra.Command, args []string) {
 
 	var nodeAddress = keys.Address(resp.Data)
 
+	// start threads
 	for i := 0; i < loadTestArgs.threads; i++ {
+
+		thLogger := ctx.logger.WithPrefix(fmt.Sprintf("thread: %d", i))
 
 		// create a temp account to send OLT
 		accName := fmt.Sprintf("acc_%03d", i)
 		pubKey, privKey, err := keys.NewKeyPairFromTendermint() // generate a ed25519 key pair
 		if err != nil {
-			ctx.logger.Error(accName, "error generating key from tendermint", err)
+			thLogger.Error(accName, "error generating key from tendermint", err)
 		}
 
 		acc, err := accounts.NewAccount(chain.Type(1), accName, &privKey, &pubKey) // create account object
 		if err != nil {
-			ctx.logger.Error(accName, "Error initializing account", err)
+			thLogger.Error(accName, "Error initializing account", err)
 			return
 		}
 
-		ctx.logger.Infof("creating account %#v", acc)
+		thLogger.Infof("creating account %#v", acc)
 		resp := &data.Response{}
 		err = ctx.clCtx.Query("server.AddAccount", acc, resp) // create account on node
 		if err != nil {
-			ctx.logger.Error(accName, "error creating account", err)
+			thLogger.Error(accName, "error creating account", err)
 			return
 		}
 
 		var accRead = &accounts.Account{}
-		serialize.GetSerializer(serialize.CLIENT).Deserialize(resp.Data, &accRead)
+		err = serialize.GetSerializer(serialize.CLIENT).Deserialize(resp.Data, &accRead)
+		if err != nil {
+			thLogger.Error("error de-serializing account data", err)
+			return
+		}
 
 		// print details
-		ctx.logger.Infof("Created account successfully: %#v", accRead)
+		thLogger.Infof("Created account successfully: %#v", accRead)
 		ctx.logger.Infof("Address for the account is: %s", acc.Address().Humanize())
 
 		waiter.Add(1)
@@ -140,6 +160,8 @@ func LoadTest(cmd *cobra.Command, args []string) {
 
 		}(stopChan)
 	}
+
+	// wait for all threads to close through sigterm; indefinitely
 	waiter.Wait()
 }
 
@@ -156,19 +178,19 @@ func doSendTransaction(ctx *Context, threadNo int, acc *accounts.Account, nodeAd
 	r := rand.New(rand.NewSource(time.Now().UnixNano()))
 	amt := r.Float64() * 10.0 // amount is a random float between [0, 10)
 
-	recv := ed25519.GenPrivKey().PubKey().Address()
-
 	// populate send arguments
 	sendArgsLocal := client.SendArguments{}
 	sendArgsLocal.Party = []byte(nodeAddress)
 	if randomRev {
+		recv := ed25519.GenPrivKey().PubKey().Address()
 		sendArgsLocal.CounterParty = []byte(recv)
 	} else {
 		sendArgsLocal.CounterParty = []byte(acc.Address()) // receiver is the temp account
 	}
 
-	sendArgsLocal.Amount = action.Amount{"OLT", strconv.FormatFloat(amt, 'f', 0, 64)} // make coin from currency object
-	sendArgsLocal.Fee = action.Amount{"OLT", strconv.FormatFloat(amt/100, 'f', 0, 64)}
+	// set amount and fee
+	sendArgsLocal.Amount = *action.NewAmount("OLT", strconv.FormatFloat(amt, 'f', 0, 64))
+	sendArgsLocal.Fee = *action.NewAmount("OLT", strconv.FormatFloat(amt/100, 'f', 0, 64))
 
 	// Create message
 	resp := &data.Response{}
@@ -178,17 +200,20 @@ func doSendTransaction(ctx *Context, threadNo int, acc *accounts.Account, nodeAd
 		return
 	}
 
+	// check packet
 	packet := resp.Data
 	if packet == nil {
 		ctx.logger.Error(acc.Name, "Error in sending ", resp.ErrorMsg)
 		return
 	}
 
+	// broadcast packet over tendermint
 	result, err := ctx.clCtx.BroadcastTxAsync(packet)
 	if err != nil {
 		ctx.logger.Error(acc.Name, "error in BroadcastTxAsync:", err)
 		return
 	}
+
 	ctx.logger.Info(acc.Name, "Result Data", "log", string(result.Log))
 }
 
@@ -196,10 +221,16 @@ func getWaitDuration(interval int) time.Duration {
 	return time.Millisecond * time.Duration(interval)
 }
 
-func handleSigTerm(ctx *Context, c chan os.Signal, counterChan chan int, stopChan chan bool, n int, maxTx int, waiter *sync.WaitGroup) {
+// handleSigTerm keeps a count of messages sent and if the maximum number of transactions is reached it stops
+// all threads and proceeds to shut down the main thread. If it catches a SIGTERM or a CTRL C it similarly shuts down
+// gracefully. This function is blocking and is called as a go routine.
+func handleSigTerm(c chan os.Signal, counterChan chan int, stopChan chan bool,
+	n int, maxTx int, waiter *sync.WaitGroup) {
+
 	// keeps a running count of messages sent
 	msgCounter := 0
 
+	// indefinite loop listens over the counter and os.Signal for interrupt signal
 	for true {
 		select {
 		case sig := <-c:
@@ -212,16 +243,20 @@ func handleSigTerm(ctx *Context, c chan os.Signal, counterChan chan int, stopCha
 
 			// print stats
 			fmt.Println("####################################################################")
-			fmt.Println("################	Terminating load test	####################")
+			fmt.Println("################        Terminating load test        ###############")
 			fmt.Println("####################################################################")
-			fmt.Printf("################	Messages sent: %09d-----	############", msgCounter)
+			fmt.Printf("################       Messages sent: % 9d      ###############\n", msgCounter)
+			fmt.Println("####################################################################")
 
 			sig.String()
 
 			waiter.Done()
 
 		case <-counterChan:
+			// increment counter
 			msgCounter++
+
+			// send shutdown signal if max no. of transactions is reached
 			if msgCounter >= maxTx {
 				c <- os.Interrupt
 			}
