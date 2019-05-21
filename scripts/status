@@ -1,0 +1,28 @@
+#!/bin/bash
+
+# List of pids if the chain is running
+# No output if the chain isn't running
+
+echo -n "OLFullnode: "
+pgrep -f "^olfullnode.*--root.*" | tr "\n" " "
+echo
+
+echo -n " OLMonitor: "
+pgrep -f "^olmonitor start.*" | tr "\n" " "
+echo
+
+echo -n "      OLVM: "
+pgrep -f "^olvm execute --root.*" | tr "\n" " "
+echo
+
+echo -n "  olclient: "
+pgrep -f "^olclient --root.*" | tr "\n" " "
+echo
+
+echo -n "  Ethereum: "
+pgrep -f "^geth.*--datadir.*" | tr "\n" ","
+echo
+
+echo -n "   Bitcoin: "
+pgrep -f "^bitcoind.*-regtest.*" | tr "\n" ","
+echo
