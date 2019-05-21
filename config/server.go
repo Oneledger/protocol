@@ -351,8 +351,7 @@ func (cfg *ConsensusConfig) TMConfig() *tmconfig.ConsensusConfig {
 	c.TimeoutPrecommit = cfg.TimeoutPrecommit.Nanoseconds()
 	c.TimeoutPrecommitDelta = cfg.TimeoutPrecommitDelta.Nanoseconds()
 	c.TimeoutCommit = cfg.TimeoutCommit.Nanoseconds()
-	//c.SkipTimeoutCommit = cfg.SkipTimeoutCommit
-	c.SkipTimeoutCommit = true
+	c.SkipTimeoutCommit = cfg.SkipTimeoutCommit
 	c.CreateEmptyBlocks = cfg.CreateEmptyBlocks
 	c.CreateEmptyBlocksInterval = cfg.CreateEmptyBlocksInterval.Nanoseconds()
 	c.PeerGossipSleepDuration = cfg.PeerGossipSleepDuration.Nanoseconds()
