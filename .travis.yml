@@ -10,9 +10,9 @@ addons:
 before_install:
 - export OLDATA=$GOPATH/test
 - export OLROOT=$GOPATH/src/github.com/Oneledger
-- export OLSCRIPT=$OLROOT/protocol/node/scripts
-- export OLSETUP=$OLROOT/protocol/node/setup
-- export OLTEST=$OLROOT/protocol/node/tests
+- export OLSCRIPT=$OLROOT/protocol/scripts
+- export OLSETUP=$OLROOT/protocol/setup
+- export OLTEST=$OLROOT/protocol/tests
 - export GO111MODULE="on"
 - export PATH=$PATH:$GOPATH/bin
 - export OLDEBUG=true
