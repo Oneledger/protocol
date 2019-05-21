@@ -265,7 +265,10 @@ func runDevnet(cmd *cobra.Command, _ []string) error {
 	generateBTCPort := portGenerator(18831)
 	generateETHPort := portGenerator(28101)
 
-	swapNodes := ctx.names[1:4]
+	var swapNodes []string
+	if args.allowSwap {
+		swapNodes = ctx.names[1:4]
+	}
 	isSwapNode := func(name string) bool {
 		for _, nodeName := range swapNodes {
 			if nodeName == name {
