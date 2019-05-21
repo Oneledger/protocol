@@ -30,9 +30,8 @@ install:
 - sudo pip install cryptography==2.2.2
 - sudo pip install ansible
 script:
-- cd $OLROOT/protocol/node && make update
-- cd $OLROOT/protocol/node && make install
-- cd $OLROOT/protocol/node && make fulltest
+- cd $OLROOT/protocol && make update install
+- cd $OLROOT/protocol && make fulltest
 before_deploy:
 - sudo apt-get install unzip
 - wget https://releases.hashicorp.com/terraform/0.11.13/terraform_0.11.13_linux_amd64.zip
