@@ -21,8 +21,6 @@
 package storage
 
 import (
-	"sync"
-
 	"github.com/tendermint/iavl"
 	"github.com/tendermint/tendermint/libs/db"
 )
@@ -47,7 +45,7 @@ type ChainState struct {
 	configDB    string
 	dbDir       string
 
-	sync.RWMutex
+	//sync.RWMutex
 }
 
 // NewChainState generates a new ChainState object
@@ -65,8 +63,8 @@ func NewChainState(name, dbDir, configDB string, newType StorageType) *ChainStat
 
 // Do this only for the Delivery side
 func (state *ChainState) Set(key StoreKey, val []byte) error {
-	state.Lock()
-	defer state.Unlock()
+	//state.Lock()
+	//defer state.Unlock()
 
 	state.Delivered.Set(key, val)
 
@@ -122,13 +120,13 @@ func (state *ChainState) Exists(key StoreKey) bool {
 // TODO: Not sure about this, it seems to be Cosmos-sdk's way of getting arround the immutable copy problem...
 func (state *ChainState) Commit() ([]byte, int64) {
 
-	state.RLock()
+	//state.RLock()
 	// Persist the Delivered merkle tree
 	hash, version, err := state.Delivered.SaveVersion()
 	if err != nil {
 		log.Fatal("Saving", "err", err)
 	}
-	state.RUnlock()
+	//state.RUnlock()
 
 	state.LastVersion, state.Version = state.Version, version
 	state.LastHash, state.Hash = state.Hash, hash
