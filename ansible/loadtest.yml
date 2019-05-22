@@ -4,6 +4,7 @@
   vars:
     new_app_user: node
     validator_count: "{{ vcount | default(4) }}"
+    fullnode_count: "{{ fullnode_count }}"
   tasks:
     - name: run terraform apply 
       terraform:
@@ -16,7 +17,7 @@
           name: "{{ stage | default('load-test') }}"
           vpc_ip_range: "{{ vpc_ip_range | default('10.12.0.0/20') }}"
           vmcount: "{{ node_count | default(5) }}"
-          vm_machine_type: "n1-standard-2"
+          vm_machine_type: "n1-standard-8"
       register: vm_data
     - set_fact: remote_hosts={{vm_data.outputs.public_ip.value}}
     - name: add knowm hosts 
@@ -40,7 +41,6 @@
       add_host:
         name: "{{item.1}}"
         group: "seed_node"
-        node_name: consensus
         app_user: "{{new_app_user}}"
         APP_HOME: "/home/{{new_app_user}}/.olfullnode"
         remote_user: "{{ remote_user | default('steven') }}"
@@ -58,9 +58,8 @@
         state: absent
       with_items: "{{ files_to_delete.files }}"
     - name: create consensus/ initialized network with dir
-      shell: chdir={{lookup('env','OLDATA')}} olfullnode init devnet --root {{lookup('env','OLDATA')}} --validators {{validator_count}} 
-#setting up global source 
-- hosts: validator_node:seed_node
+      shell: chdir={{lookup('env','OLDATA')}} olfullnode init devnet --root {{lookup('env','OLDATA')}} --validators {{validator_count}} --nonvalidators {{fullnode_count}}
+- hosts: seed_node
   remote_user: "{{remote_user}}"
   become: true
   become_user: root
@@ -70,6 +69,14 @@
   roles:
   - role: logstash
     when: logging == "true" 
+#setting up global source 
+- hosts: validator_node:seed_node
+  remote_user: "{{remote_user}}"
+  become: true
+  become_user: root
+  vars:
+    logging: "{{ enable_logging | default('false') }}"
+    reset_network: "{{ reset_network | default('false') }}"
   tasks:
   - name: create a new user for app to run
     user:
@@ -123,7 +130,7 @@
         - libleveldb-dev
         - libsnappy-dev
 # move validator node consensus folder with private keys 
-- hosts: validator_node
+- hosts: validator_node:seed_node
   remote_user: "{{remote_user}}"
   become: true
   become_user: root
@@ -138,21 +145,6 @@
     with_items: 
       - consensus
       - config.toml
-# generate consensus folder for seed nodes 
-- hosts: seed_node
-  remote_user: "{{remote_user}}"
-  become: true
-  become_user: root
-  tasks:
-  - name: copy genesis file to seed node
-    copy:
-      src: "{{lookup('env','OLDATA')}}/0-Node/consensus/config/genesis.json"
-      dest: "{{APP_HOME}}"
-      mode: 0644
-      owner: "{{app_user}}"
-      group: "{{app_user}}"
-  - name: generate consensus file for seed node 
-    shell: chdir={{APP_HOME}} olfullnode init --root {{APP_HOME}} --genesis {{APP_HOME}}/genesis.json
 # replace application ports and address
 - hosts: seed_node:validator_node
   remote_user: "{{remote_user}}"
@@ -174,10 +166,25 @@
     - { regexp: "external_p2p_address", line: "external_p2p_address = \"tcp://{{inventory_hostname}}:26605\""}
     - { regexp: "log_output", line: "log_output = \"stdout\""}
     - { regexp: "create_empty_blocks = ", line: "create_empty_blocks = false"}
-    - { regexp: " size = ", line: "size = 10000"}
+    - { regexp: " size = ", line: "size = 15000"}
     - { regexp: "db = ", line: "db = \"cleveldb\""}
-    - { regexp: " recheck = ", line: "recheck = false"}
+    - { regexp: " recheck = ", line: "recheck = true"}
     - { regexp: " broadcast = ", line: "broadcast = true"}
+- hosts: validator_node
+  remote_user: "{{remote_user}}"
+  become: true
+  become_user: root  
+  vars:
+    internal_ip: "{{ ansible_all_ipv4_addresses | ipaddr('private') | first }}"
+  tasks:
+  - name: set fullnode specific configuration 
+    lineinfile:
+      path: "{{APP_HOME}}/config.toml"
+      regexp: '{{item.regexp}}'
+      line: "  {{item.line}}"
+    with_items:
+    - { regexp: " recheck = ", line: "recheck = false"}
+    - { regexp: " broadcast = ", line: "broadcast = false"}
 # set up validator node config.toml
 - hosts: validator_node
   remote_user: "{{remote_user}}"
@@ -206,11 +213,6 @@
       seedAddressList: "{{ ansible_play_hosts | map('extract', hostvars, 'command_output') | map(attribute='stdout') | list}}"
       seedAddress: "{{ ansible_play_hosts | map('extract', hostvars, 'command_output') | map(attribute='stdout') | list | join(',') }}"
     run_once: yes
-  - name: set seed node specific configuration 
-    lineinfile:
-      path: "{{APP_HOME}}/config.toml"
-      regexp: 'seed_mode'
-      line: "  seed_mode = true"
   - name: set persistent peers
     lineinfile:
       path: "{{APP_HOME}}/config.toml"
@@ -222,16 +224,11 @@
   become: true
   become_user: root  
   tasks:
-  - name: set seed nodes 
-    lineinfile:
-      path: "{{APP_HOME}}/config.toml"
-      regexp: 'seeds'
-      line: "  seeds = {{hostvars[groups['seed_node'][0]]['seedAddressList'] | to_json }}"
-  - name: clear persistent peers so it will connect with seed node instead
+  - name: set persistent peers
     lineinfile:
       path: "{{APP_HOME}}/config.toml"
       regexp: 'persistent_peers'
-      line: "  persistent_peers = []"
+      line: "  persistent_peers = {{hostvars[groups['validator_node'][0]]['persistentAddressList'] | to_json }}"
 - hosts: validator_node:seed_node
   remote_user: "{{remote_user}}"
   become: true
@@ -261,7 +258,7 @@
       scope: system
       state: restarted
       daemon_reload: yes
-- hosts: validator_node
+- hosts: seed_node
   remote_user: "{{remote_user}}"
   become: true
   become_user: root
@@ -279,7 +276,7 @@
 
         [Service]
         WorkingDirectory={{APP_HOME}}
-        ExecStart=/usr/local/bin/olclient loadtest --root {{APP_HOME}} --interval 1 --threads 10 --max-tx 500000
+        ExecStart=/usr/local/bin/olclient loadtest --root {{APP_HOME}} --interval 1 --threads 20 --max-tx 1000000
         # Other Restart options: or always, on-abort, etc
 
         [Install]
