@@ -42,3 +42,5 @@ utest:
 		github.com/Oneledger/protocol/utils \
 		-coverprofile a.out
 
+coverage:
+	go tool cover -html=a.out -o cover.html
