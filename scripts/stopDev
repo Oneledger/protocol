@@ -4,5 +4,6 @@ pids=`pgrep -f "olfullnode node.*"`
 if ! [ -z "$pids" ]
 then
 	pkill -f "olfullnode node.*"
-	killed=true
+
+	pkill -f "olclient.*"
 fi

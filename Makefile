@@ -31,3 +31,11 @@ fulltest: install
 #
 status:
 	@./scripts/status
+
+
+
+loadtest: install_c
+	@./scripts/stopDev
+	@./scripts/resetDev
+	@./scripts/startDev
+	@./scripts/loadtest

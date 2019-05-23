@@ -2,6 +2,8 @@ package app
 
 import (
 	"encoding/hex"
+	"github.com/Oneledger/protocol/log"
+	"time"
 
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/serialize"
@@ -53,6 +55,11 @@ func (app *App) chainInitializer() chainInitializer {
 	}
 }
 
+var startTime time.Time
+var endTime time.Time
+var startTx int64
+var endTx int64
+
 func (app *App) blockBeginner() blockBeginner {
 	return func(req RequestBeginBlock) ResponseBeginBlock {
 
@@ -69,9 +76,37 @@ func (app *App) blockBeginner() blockBeginner {
 			Tags: []common.KVPair(nil),
 		}
 
+		if req.Header.Height == 3 {
+			startTime = req.Header.Time
+			startTx = req.Header.TotalTxs
+		}
+
+		if req.Header.Height == 10 {
+			endTime = req.Header.Time
+			endTx = req.Header.TotalTxs
+			loadtest(req.Header.Height, app.logger)
+		}
+
+		if req.Header.Height == 30 {
+			endTime = req.Header.Time
+			endTx = req.Header.TotalTxs
+			loadtest(req.Header.Height, app.logger)
+		}
+
+		if req.Header.Height == 50 {
+			endTime = req.Header.Time
+			endTx = req.Header.TotalTxs
+			loadtest(req.Header.Height, app.logger)
+		}
+
 		app.logger.Debug("Begin Block:", result)
 		return result
 	}
+}
+
+func loadtest(h int64, logger *log.Logger) {
+	tps := float64(endTx-startTx) / (endTime.Sub(startTime).Seconds())
+	logger.Infof("Loadtest metric block %d tps: %3f", h, tps)
 }
 
 // mempool connection: for checking if transactions should be relayed before they are committed

@@ -16,7 +16,7 @@ pgrep -f "^olvm execute --root.*" | tr "\n" " "
 echo
 
 echo -n "  olclient: "
-pgrep -f "^olclient --root.*" | tr "\n" " "
+pgrep -f "^olclient.*--root.*" | tr "\n" " "
 echo
 
 echo -n "  Ethereum: "

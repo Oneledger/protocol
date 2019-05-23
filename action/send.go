@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/serialize"
-	"github.com/pkg/errors"
 	"github.com/tendermint/tendermint/libs/common"
 )
 
@@ -39,51 +38,53 @@ type sendTx struct {
 }
 
 func (sendTx) Validate(ctx *Context, msg Msg, fee Fee, signatures []Signature) (bool, error) {
-	send, ok := msg.(*Send)
-	if !ok {
-		return false, ErrWrongTxType
-	}
-	if !send.Amount.IsValid(ctx) {
-		return false, errors.Wrap(ErrInvalidAmount, send.Amount.String())
-	}
-	if send.From == nil || send.To == nil {
-		return false, ErrMissingData
-	}
-
-	base := BaseTx{
-		send,
-		fee,
-		signatures,
-		"",
-	}
-
-	return base.validateBasic()
+	//send, ok := msg.(*Send)
+	//if !ok {
+	//	return false, ErrWrongTxType
+	//}
+	//if !send.Amount.IsValid(ctx) {
+	//	return false, errors.Wrap(ErrInvalidAmount, send.Amount.String())
+	//}
+	//if send.From == nil || send.To == nil {
+	//	return false, ErrMissingData
+	//}
+	//
+	//base := BaseTx{
+	//	send,
+	//	fee,
+	//	signatures,
+	//	"",
+	//}
+	//
+	//return base.validateBasic()
+	return true, nil
 }
 
 func (sendTx) ProcessCheck(ctx *Context, msg Msg, fee Fee) (bool, Response) {
 	logger.Debug("Processing Send Transaction for CheckTx", msg, fee)
-	balances := ctx.Balances
+	//balances := ctx.Balances
 
-	send, ok := msg.(*Send)
-	if !ok {
-		return false, Response{Log: "failed to cast msg"}
-	}
-
-	b, _ := balances.Get(send.From.Bytes(), true)
-	if b == nil {
-		return false, Response{Log: "failed to get balance for sender"}
-	}
-	if !send.Amount.IsValid(ctx) {
-		log := fmt.Sprint("amount is invalid", send.Amount, ctx.Currencies)
-		return false, Response{Log: log}
-	}
-	coin := send.Amount.ToCoin(ctx)
-	if !enoughBalance(*b, coin) {
-		log := fmt.Sprintf("sender don't have enough balance, need %s, has %s", b.String(), coin.String())
-		return false, Response{Log: log}
-	}
-
-	return true, Response{Tags: send.Tags()}
+	//send, ok := msg.(*Send)
+	//if !ok {
+	//	return false, Response{Log: "failed to cast msg"}
+	//}
+	//
+	//b, _ := balances.Get(send.From.Bytes(), true)
+	//if b == nil {
+	//	return false, Response{Log: "failed to get balance for sender"}
+	//}
+	//if !send.Amount.IsValid(ctx) {
+	//	log := fmt.Sprint("amount is invalid", send.Amount, ctx.Currencies)
+	//	return false, Response{Log: log}
+	//}
+	//coin := send.Amount.ToCoin(ctx)
+	//if !enoughBalance(*b, coin) {
+	//	log := fmt.Sprintf("sender don't have enough balance, need %s, has %s", b.String(), coin.String())
+	//	return false, Response{Log: log}
+	//}
+	//
+	//return true, Response{Tags: send.Tags()}
+	return true, Response{}
 }
 
 func (sendTx) ProcessDeliver(ctx *Context, msg Msg, fee Fee) (bool, Response) {
