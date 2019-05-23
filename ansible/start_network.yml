@@ -3,30 +3,6 @@
   become: true
   become_user: root
   tasks:
-  - name: create a systemd monitor service file
-    copy:
-      dest: "/etc/systemd/system/olmonitor.service"
-      owner: "root"
-      group: "root"
-      mode: 0644
-      content: |
-        [Unit]
-        Description=montor
-        After=network.target
-
-        [Service]
-        WorkingDirectory={{APP_HOME}}
-        ExecStart=/usr/local/bin/olmonitor start olvm execute --root {{APP_HOME}}
-        # Other Restart options: or always, on-abort, etc
-
-        [Install]
-        WantedBy=multi-user.target
-  - name: start systemd olmonitor service
-    systemd:
-      name: olmonitor.service
-      scope: system
-      state: restarted
-      daemon_reload: yes
   - name: create a systemd olfullnode service file
     copy:
       dest: "/etc/systemd/system/olfullnode.service"
