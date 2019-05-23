@@ -9,7 +9,7 @@ This repo is the OneLedger blockchain full-node, which is currently an ABCi app 
 
 * [Getting Started](#getting-started)
     * [Development](#Development)
-    * [Join OneLedger Testnet](#join-oneledger-testnet)
+    * [Make Targets](#make-targets)
 * [License](#license)
 
 ## Getting Started
@@ -32,30 +32,26 @@ Ensure your system meets the following requirements:
 
 #### Install
 
-Before running any install scripts, ensure your GOPATH and the necessary environment variables are set up on your account. Visit the [Setting up the GOPATH](https://github.com/Oneledger/protocol/wiki/Environment-Variables#setting-up-the-gopath) page on the wiki for more help.
-
 First clone the repository for the OneLedger Protocol:
 
 ```
-$ mkdir -p $OLROOT
-$ cd $OLROOT
+$ mkdir ~/oneledger_protocol
+$ cd oneledger_protocol
 $ git clone github.com/Oneledger/protocol
 ```
-
-Before running any scripts, you'll need to set up the required [environment variables](https://github.com/Oneledger/protocol/wiki/Environment-Variables) properly.
 
 Install the required dependencies:
 
 ```
-$ cd "$OLROOT/protocol/node"
+$ cd ~/oneledger_protocol/protocol/node
 $ make install
 ```
 
-General scripts for running the OneLedger Protocol are inside [node/scripts](node/scripts).
+General scripts for running the OneLedger Protocol are inside `./protocol/node/scripts`
 
 ### Make Targets
 
-If everything is set up properly, you can begin testing the OneLedger Protocol with the `make` targets provided. Run the following scripts from inside the `$OLREPO/node` directory:
+If everything is set up properly, you can begin testing the OneLedger Protocol with the `make` targets provided. Run the following scripts from inside the `./protocol/node/` directory:
 
 | Target | Description |
 | --- | --- |
@@ -67,14 +63,6 @@ If everything is set up properly, you can begin testing the OneLedger Protocol w
 
 
 See [Make Targets](#make-targets) to see a list of `make` commands you can run to interact with the OneLedger Protocol.
-
-### Join OneLedger Testnet 
-
-* [Setup a node](https://github.com/Oneledger/protocol/wiki/Chronos-Set-Up-Instructions-v0.9.0)
-
-* [Become Validator](https://github.com/Oneledger/protocol/wiki/Chronos-Validator-Instructions-v0.8.1)
-
-* [Check the explorer](https://oneledger.network)
 
 
 ## License
