@@ -39,3 +39,4 @@ loadtest: install_c
 	@./scripts/resetDev
 	@./scripts/startDev
 	@./scripts/loadtest
+	@./scripts/stopDev

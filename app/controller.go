@@ -64,10 +64,10 @@ func (app *App) blockBeginner() blockBeginner {
 	return func(req RequestBeginBlock) ResponseBeginBlock {
 
 		//update the validator set
-		err := app.Context.validators.Set(req)
-		if err != nil {
-			app.logger.Error("validator set with error", err)
-		}
+		//err := app.Context.validators.Set(req)
+		//if err != nil {
+		//	app.logger.Error("validator set with error", err)
+		//}
 		//update the header to current block
 		//todo: store the header in persistent db
 		app.header = req.Header
@@ -84,19 +84,19 @@ func (app *App) blockBeginner() blockBeginner {
 		if req.Header.Height == 10 {
 			endTime = req.Header.Time
 			endTx = req.Header.TotalTxs
-			loadtest(req.Header.Height, app.logger)
+			loadtest(req.Header, app.logger)
 		}
 
 		if req.Header.Height == 30 {
 			endTime = req.Header.Time
 			endTx = req.Header.TotalTxs
-			loadtest(req.Header.Height, app.logger)
+			loadtest(req.Header, app.logger)
 		}
 
 		if req.Header.Height == 50 {
 			endTime = req.Header.Time
 			endTx = req.Header.TotalTxs
-			loadtest(req.Header.Height, app.logger)
+			loadtest(req.Header, app.logger)
 		}
 
 		app.logger.Debug("Begin Block:", result)
@@ -104,9 +104,10 @@ func (app *App) blockBeginner() blockBeginner {
 	}
 }
 
-func loadtest(h int64, logger *log.Logger) {
+func loadtest(head Header, logger *log.Logger) {
 	tps := float64(endTx-startTx) / (endTime.Sub(startTime).Seconds())
-	logger.Infof("Loadtest metric block %d tps: %3f", h, tps)
+	blktime := (endTime.Sub(startTime).Seconds()) / float64(head.Height-3)
+	logger.Infof("Loadtest metric height=%d, tx/b=%d, blktime=%3f , tps=%3f", head.Height, head.TotalTxs/head.Height, blktime, tps)
 }
 
 // mempool connection: for checking if transactions should be relayed before they are committed

@@ -7,3 +7,14 @@ do
     sleep 1
 done
 
+c=0
+while [ $c -lt 3 ]
+do
+    name=$(ls -l $OLDATA/devnet | awk '(NR==2){print $9}')
+    c=$(grep Loadtest $OLDATA/devnet/$name/olfullnode.log | wc -l )
+    sleep 10
+done
+
+grep Loadtest $OLDATA/devnet/$name/olfullnode.log
+
+sleep 1

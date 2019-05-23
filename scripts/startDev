@@ -7,11 +7,8 @@ do
     sleep 1
 done
 
-for name in $(ls -l $OLDATA/devnet | awk '(NR==2){print $9}')
-do
-    echo "Start Node: $name"
-    olfullnode node --root $OLDATA/devnet/$name >> $OLDATA/devnet/$name/olfullnode.log &
-    sleep 1
-done
+name=$(ls -l $OLDATA/devnet | awk '(NR==2){print $9}')
+echo "Start Node: $name"
+olfullnode node --root $OLDATA/devnet/$name >> $OLDATA/devnet/$name/olfullnode.log &
 
 sleep 3
