@@ -1,12 +1,6 @@
 language: go
 go:
 - 1.11.x
-addons:
-  apt:
-    update: true
-    package:
-    - python
-    - python-pip
 before_script:
 - export OLDATA=$GOPATH/test
 - export OLROOT=$GOPATH/src/github.com/Oneledger
@@ -28,8 +22,8 @@ script:
 - cd $OLROOT/protocol && make update install
 - cd $OLROOT/protocol && make fulltest
 before_deploy:
+- sudo apt-get update && sudo apt-get install unzip python python-pip
 - sudo pip install netaddr ipaddr cryptography==2.2.2 ansible
-- sudo apt-get install unzip
 - wget https://releases.hashicorp.com/terraform/0.11.13/terraform_0.11.13_linux_amd64.zip
 - unzip terraform_0.11.13_linux_amd64.zip
 - sudo mv terraform /usr/local/bin/
