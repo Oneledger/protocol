@@ -13,7 +13,8 @@ update:
 install:
 	go install github.com/Oneledger/protocol/cmd/...
 
-install_c:
+# Enable the clevelDB
+install_c:  
 	CGO_ENABLED=1 CGO_LDFLAGS="-lsnappy" go install -tags "gcc" github.com/Oneledger/protocol/cmd/...
 
 #

@@ -48,7 +48,7 @@ Install the required dependencies:
 
 ```
 $ cd "$OLROOT/protocol/node"
-$ make setup
+$ make install
 ```
 
 General scripts for running the OneLedger Protocol are inside [node/scripts](node/scripts).
@@ -59,18 +59,18 @@ If everything is set up properly, you can begin testing the OneLedger Protocol w
 
 | Target | Description |
 | --- | --- |
-| `make test` | Tests system initialization, brings up everything |
-| `make swaptest` | Test swap mechanics between BTC and ETH |
-| `make fulltest` | Does a full test, makes use of test scripts in the `/tests` folder |
-| `make status` | Lists all running nodes |
-| `make monitor` | Start tmux session |
-| `make stopmon` | Stops tmux session |
+| `make install`| Build and install a copy of Oneledger protocol in bin |
+| `make fulltest` | Test with send transaction in loadtest, makes use of test scripts in the `/tests` folder |
+| `make status` | Lists all running nodes, Check out the running status|
+| `make update` | Updata the dependencies |
+| `make install_c` | Enable the clevelDB |
+
 
 See [Make Targets](#make-targets) to see a list of `make` commands you can run to interact with the OneLedger Protocol.
 
 ### Join OneLedger Testnet 
 
-* [Setup a node](https://github.com/Oneledger/protocol/wiki/Chronos-Set-Up-Instructions-v0.8.1)
+* [Setup a node](https://github.com/Oneledger/protocol/wiki/Chronos-Set-Up-Instructions-v0.9.0)
 
 * [Become Validator](https://github.com/Oneledger/protocol/wiki/Chronos-Validator-Instructions-v0.8.1)
 
