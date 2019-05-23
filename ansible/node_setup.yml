@@ -39,7 +39,7 @@
       dest: /usr/local/bin
       mode: 0755
     with_items:
-      ["bin/olfullnode","bin/olmonitor", "bin/olvm", "bin/olclient"]
+      ["bin/olfullnode", "bin/olclient"]
   - set_fact: app_directory={{APP_HOME}}
   - name: set nofile soft limit
     pam_limits:
@@ -84,7 +84,7 @@
   tasks:
   - name: copy genesis file to seed node
     copy:
-      src: "{{lookup('env','OLDATA')}}/Alice-Node/consensus/config/genesis.json"
+      src: "{{lookup('env','OLDATA')}}/0-Node/consensus/config/genesis.json"
       dest: "{{APP_HOME}}"
       mode: 0644
       owner: "{{app_user}}"
@@ -118,7 +118,7 @@
   become_user: root
   tasks:
   - name: get persistent peer address
-    command: chdir={{APP_HOME}} olclient show_node_id --root {{APP_HOME}} --show-ip
+    command: chdir={{APP_HOME}} olfullnode show_node_id --root {{APP_HOME}} --ip
     register: persistent_peers
   - name: set concatenated p2p address string for all seed nodes
     set_fact:
@@ -132,7 +132,7 @@
   become_user: root
   tasks:
   - name: get seed address
-    command: chdir={{APP_HOME}} olclient show_node_id --root {{APP_HOME}} --show-ip
+    command: chdir={{APP_HOME}} olfullnode show_node_id --root {{APP_HOME}} --ip
     register: command_output
   - name: set concatenated p2p address string for all seed nodes
     set_fact:

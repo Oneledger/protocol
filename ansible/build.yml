@@ -2,6 +2,7 @@
   connection: local
   vars:
     new_app_user: node
+    validator_count: "{{vcount | default(4)}}"
   tasks:
   - name: run terraform apply 
     terraform:
@@ -25,49 +26,24 @@
     loop: "{{remote_hosts}}"
   - name: add first 4 hosts to validator_node group 
     add_host:
-      name: "{{item.1}}"
+      hostname: "{{item.1}}"
       group: "validator_node" 
+      node_name: "{{item.0}}-Node"
       app_user: "{{new_app_user}}"
       APP_HOME: "/home/{{new_app_user}}/.olfullnode"
       remote_user: "{{ remote_user | default('steven') }}"
     with_indexed_items: "{{remote_hosts}}"
-    when: item.0 < 4
+    when: item.0 < {{validator_count}}
   - name: add hosts after 4th host to seed_node group 
     add_host:
-      name: "{{item.1}}"
+      hostname: "{{item.1}}"
       group: "seed_node"
-      node_name: consensus
+      node_name: "{{item.0}}-Seed"
       app_user: "{{new_app_user}}"
       APP_HOME: "/home/{{new_app_user}}/.olfullnode"
       remote_user: "{{ remote_user | default('steven') }}"
     with_indexed_items: "{{remote_hosts}}"
-    when: item.0 >= 4 
-
-  - name: specify alice-node 
-    add_host: 
-      name: "{{item.1}}"
-      node_name: Alice-Node
-    with_indexed_items: "{{remote_hosts}}"
-    when: item.0 == 0 
-  - name: specify Bob-node 
-    add_host: 
-      name: "{{item.1}}"
-      node_name: Bob-Node
-    with_indexed_items: "{{remote_hosts}}"
-    when: item.0 == 1
-  - name: specify David-node 
-    add_host: 
-      name: "{{item.1}}"
-      node_name: David-Node
-    with_indexed_items: "{{remote_hosts}}"
-    when: item.0 == 2 
-  - name: specify Carol-node 
-    add_host: 
-      name: "{{item.1}}"
-      node_name: Carol-Node
-    with_indexed_items: "{{remote_hosts}}"
-    when: item.0 == 3 
-    
+    when: item.0 >= {{validator_count}}     
   - name: find Node data files to be deleted
     find:
       paths: "{{lookup('env','OLDATA')}}"
