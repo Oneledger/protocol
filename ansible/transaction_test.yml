@@ -11,10 +11,6 @@
       content: |
         #!/bin/bash
         olclient update --root {{APP_HOME}} --account "{{uuid}}-Oneledger" 
-        sleep 1
-        olclient testmint --root {{APP_HOME}} --party "{{uuid}}-Oneledger" --amount "14210.23" --currency OLT 
-        sleep 1
-        olclient register --root {{APP_HOME}} --identity "{{uuid}}" --account "{{uuid}}-Oneledger" --node "{{uuid}}-Node" --fee 0.1
       mode: 511
       owner: "{{app_user}}"
       group: "{{app_user}}"
