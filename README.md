@@ -32,26 +32,24 @@ Ensure your system meets the following requirements:
 
 #### Install
 
-First clone the repository for the OneLedger Protocol:
+First clone the repository for the OneLedger Protocol (pick any folder and clone it here):
 
 ```
-$ mkdir ~/oneledger_protocol
-$ cd oneledger_protocol
 $ git clone github.com/Oneledger/protocol
 ```
 
 Install the required dependencies:
 
 ```
-$ cd ~/oneledger_protocol/protocol/node
+$ cd ./protocol
 $ make install
 ```
 
-General scripts for running the OneLedger Protocol are inside `./protocol/node/scripts`
+General scripts for running the OneLedger Protocol are inside `./protocol/scripts`
 
 ### Make Targets
 
-If everything is set up properly, you can begin testing the OneLedger Protocol with the `make` targets provided. Run the following scripts from inside the `./protocol/node/` directory:
+If everything is set up properly, you can begin testing the OneLedger Protocol with the `make` targets provided. Run the following scripts inside the `./protocol/` directory:
 
 | Target | Description |
 | --- | --- |
