@@ -17,7 +17,7 @@ before_script:
 - eval $(ssh-agent -s)
 - ssh-add $TRAVIS_BUILD_DIR/id_rsa
 - cd $TRAVIS_BUILD_DIR && git clone git@github.com:Oneledger/infrastructure.git --branch
-  travis-update
+  master
 script:
 - cd $OLROOT/protocol && make update install
 - cd $OLROOT/protocol && make fulltest
