@@ -183,3 +183,15 @@
     name: ["nano","git","vim"]
     state: absent
   when: dev_mode == "false"
+- name: find all the linux package to be deleted
+  find:
+    paths: "/var/lib/apt/lists"
+    file_type: any
+  register: files_to_delete
+  when: dev_mode == "false"
+- name: delete unnesscary linux package to reduce size
+  file:
+    path: "{{ item.path }}"
+    state: absent
+  with_items: "{{ files_to_delete.files }}"
+  when: dev_mode == "false"
