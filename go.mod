@@ -17,6 +17,7 @@ require (
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
 	github.com/jmhodges/levigo v1.0.0 // indirect
 	github.com/kr/pretty v0.1.0 // indirect
+	github.com/kyokomi/emoji v2.1.0+incompatible
 	github.com/magiconair/properties v1.8.1 // indirect
 	github.com/pkg/errors v0.8.1
 	github.com/prometheus/client_golang v0.9.2 // indirect
