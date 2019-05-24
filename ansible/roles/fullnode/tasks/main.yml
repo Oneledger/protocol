@@ -88,7 +88,7 @@
     group: "{{app_user}}"
     mode: 0744      
     content: |
-      #!/usr/bin/env bash
+      #!/bin/bash
       source ~/.profile
       public_ip="$(curl ifconfig.me | awk '{$1=$1};1')" 
       internal_ip="$(hostname -I | awk '{$1=$1};1')"
@@ -121,11 +121,10 @@
     group: "{{app_user}}"
     mode: 0744
     content: |
-      #!/usr/bin/env bash
+      #!/bin/bash
       fullnodeSetup
-      olmonitor start olvm execute --root {{OLDATA}} >> {{OLDATA}}/olvm.log 2>&1 &
-      olfullnode node --root {{OLDATA}} >> {{OLDATA}}/olfullnode.log 2>&1 &
       cp -R {{GOPATH}}/* {{CONTAINER_OUTPUT_PATH}}
+      olfullnode node --root {{OLDATA}} >> {{OLDATA}}/olfullnode.log 2>&1
       exec "$@"
 - name: create start quick script to start node 
   copy:
@@ -134,7 +133,7 @@
     group: "{{app_user}}"
     mode: 0744
     content: |
-      #!/usr/bin/env bash
+      #!/bin/bash
       olmonitor start olvm execute --root {{OLDATA}} >> {{OLDATA}}/olvm.log 2>&1 &
       olfullnode node --root {{OLDATA}} >> {{OLDATA}}/olfullnode.log 2>&1 &
   when: dev_mode == "true"
@@ -145,7 +144,7 @@
     group: "{{app_user}}"
     mode: 0744
     content: |
-      #!/usr/bin/env bash
+      #!/bin/bash
       pkill olfullnode
       pkill olmonitor
       pkill olvm

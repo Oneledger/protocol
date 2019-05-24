@@ -4,7 +4,8 @@
         "version": "develop",
         "tag": "develop",
         "enable_logging":"false",
-        "compress" : "false"
+        "compress" : "false",
+        "docker_registry": "oneledger/chronos"
     },
     "builders": [
         {
@@ -15,6 +16,7 @@
             "changes": [
                 "USER {{user `app_user`}}",
                 "ENTRYPOINT [\"/usr/local/bin/fullnodeStartup\"]",
+                "CMD [\"/bin/bash\"]",
                 "VOLUME /home/{{user `app_user`}}/go"
             ]
         },
@@ -61,7 +63,7 @@
     "post-processors": [
         {
             "type": "docker-tag",
-            "repository": "oneledger/chronos",
+            "repository": "{{user `docker_registry`}}",
             "tag": "{{user `tag`}}",
             "only": ["docker-image"]
         },
