@@ -49,6 +49,7 @@ func (st *Store) Set(address []byte, balance Balance) error {
 	}
 
 	err = st.ChainState.Set(storage.StoreKey(address), dat)
+
 	return err
 }
 

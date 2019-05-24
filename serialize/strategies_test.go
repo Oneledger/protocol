@@ -133,14 +133,3 @@ func TestGobStrategy_Serialize(t *testing.T) {
 	assert.Equal(t, fn, f)
 
 }
-
-func TestAdapter(t *testing.T) {
-
-	f := &testStuffAd{"asdf", 1, 123123, []byte("4983h4tsdof"), 56.77867342}
-
-	fd := f.Data()
-
-	fn := fd.Primitive()
-
-	assert.Equal(t, f, fn)
-}
