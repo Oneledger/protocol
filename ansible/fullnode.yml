@@ -10,6 +10,7 @@
   roles:
     - role: fullnode
       logging: "{{ enable_logging | default('false') }}"
+      dev_mode: "{{ dev_env | default('false') }}"
       app_version: "{{ app_version | default('master') }}"
   environment:
     GOPATH: "{{GOPATH}}"

@@ -1,8 +1,8 @@
 ---
 # defaults file for fullnode
 app_user: node
-compress_image: false
-logging: false
+logging: 'false'
+dev_mode: 'false'
 dev_mode: false
 seeds: "6a304d743e176f6eca5c393a42db349723db6b63@35.245.157.80:26605 35aa9b3e09290d3a74804eb03b559ab775f726d9@35.188.157.3:26605"
 

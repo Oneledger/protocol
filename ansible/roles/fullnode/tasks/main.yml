@@ -65,7 +65,7 @@
 - name: source bashrc 
   shell: . /home/{{app_user}}/.bashrc
 - name: compile binary
-  shell: chdir={{OLROOT}}/protocol/node make update install_c
+  shell: chdir={{OLROOT}}/protocol make update install_c
 - name: move app binary artifact to user bin directory
   shell: cp -R {{GOPATH}}/bin/* /usr/local/bin/  
 - name: change ownership of artifact to app user
@@ -149,25 +149,6 @@
       pkill olmonitor
       pkill olvm
   when: dev_mode == "true"
-- name: create a systemd monitor service file
-  copy:
-    dest: "/etc/systemd/system/olmonitor.service"
-    owner: "root"
-    group: "root"
-    mode: 0644
-    content: |
-      [Unit]
-      Description=montor
-      After=network.target
-
-      [Service]
-      WorkingDirectory={{OLDATA}}
-      ExecStart=/usr/local/bin/olmonitor start olvm execute --root {{OLDATA}}
-      # Other Restart options: or always, on-abort, etc
-      Restart=on-failure
-
-      [Install]
-      WantedBy=multi-user.target
 - name: create a systemd olfullnode service file
   copy:
     dest: "/etc/systemd/system/olfullnode.service"
@@ -196,9 +177,9 @@
   - "{{GOPATH}}/src"
   - "{{GOPATH}}/pkg"
   - "{{GOPATH}}/bin"
-  when: compress_image == "true"
+  when: dev_mode == "false"
 - name: remove unused apt packages to reduce image size 
   apt:
     name: ["nano","git","vim"]
     state: absent
-  when: compress_image == "true"
+  when: dev_mode == "false"
