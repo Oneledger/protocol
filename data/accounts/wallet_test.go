@@ -58,7 +58,7 @@ func TestNewWallet(t *testing.T) {
 	assert.NoError(t, err)
 
 	err = w.Delete(acc)
-	assert.NoError(t, err)
+	assert.Error(t, err)
 
 	w.Close()
 }
@@ -83,15 +83,15 @@ func TestWalletSign(t *testing.T) {
 	assert.Equal(t, &pubKey, acc.PublicKey)
 
 	// here the index is 1 because there is anaother account present created in previous test function
-	pubKey, signedNew, err := w.SignWithAccountIndex(msg, 1)
+	pubKey, signedNew, err := w.SignWithAccountIndex(msg, 0)
 	assert.NoError(t, err)
 	assert.Equal(t, &pubKey, acc.PublicKey)
 
 	assert.Equal(t, signed, signedNew)
 
-	_, _, err = w.SignWithAccountIndex(msg, 2)
+	_, _, err = w.SignWithAccountIndex(msg, 1)
 	assert.Error(t, err)
-	_, _, err = w.SignWithAccountIndex(msg, 3)
+	_, _, err = w.SignWithAccountIndex(msg, 2)
 	assert.Error(t, err)
 
 	_, _, err = w.SignWithAddress(msg, make([]byte, 20))

@@ -89,6 +89,10 @@ func (ws *WalletStore) Delete(account Account) error {
 	}
 
 	_, err := session.Delete(account.Address().Bytes())
+	if err == nil {
+		session.Commit()
+	}
+
 	return err
 }
 
