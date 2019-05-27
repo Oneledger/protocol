@@ -80,7 +80,7 @@
     dest: "{{GOPATH}}/genesis.json"
     owner: "{{app_user}}"
     group: "{{app_user}}"
-    mode: 0744      
+    mode: 0644      
 - name: fullnode configuration setup
   copy:  
     dest: "/usr/local/bin/fullnodeSetup"
@@ -128,7 +128,7 @@
         fullnodeSetup
       fi
       cp -R {{GOPATH}}/* {{CONTAINER_OUTPUT_PATH}}
-      olfullnode node --root {{OLDATA}} >> {{OLDATA}}/olfullnode.log 2>&1
+      olfullnode node --root {{OLDATA}}
       exec "$@"
 - name: create start quick script to start node 
   copy:
