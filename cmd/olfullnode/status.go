@@ -69,22 +69,23 @@ func (ctx *showStatusArgs) dumpConfigContent(rootPath string, cfg *config.Server
 
 func (ctx *showStatusArgs) checkNodes(rootPath string, cfg *config.Server) error {
 
-	errRPC, _ := printPortStatus(cfg.Network.RPCAddress, "RPC")
-	errP2P, _ := printPortStatus(cfg.Network.P2PAddress, "P2P")
-	errSDK, _ := printPortStatus(cfg.Network.SDKAddress, "SDK")
+	okRPC := printPortStatus(cfg.Network.RPCAddress, "RPC")
+	okP2P := printPortStatus(cfg.Network.P2PAddress, "P2P")
+	okSDK := printPortStatus(cfg.Network.SDKAddress, "SDK")
 
-	if errRPC && errP2P && errSDK {
+	if okRPC && okP2P && okSDK {
 		fmt.Println("\u2713 Looks all good \u2713")
 	}
 
 	return nil
 }
 
-func printPortStatus(portAddress string, portType string) (bool, error) {
+func printPortStatus(portAddress string, portType string) bool {
 	url, err := url.Parse(portAddress)
 
 	if err != nil {
-		return false, errors.Wrap(err, "failed to parse url")
+		fmt.Println(portType, "bad address format \u274C")
+		return false
 	}
 
 	host, port, _ := net.SplitHostPort(url.Host)
@@ -92,9 +93,9 @@ func printPortStatus(portAddress string, portType string) (bool, error) {
 	_, errListen := net.Listen("tcp", host+":"+port)
 	if errListen != nil {
 		fmt.Println(portType, "Port:", port, "on", host, " \u2713")
-		return true, nil
+		return true
 	} else {
 		fmt.Println(portType, "Port:", port, "on", host, " \u274C")
-		return false, nil
+		return false
 	}
 }
