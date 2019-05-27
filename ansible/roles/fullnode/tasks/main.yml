@@ -77,7 +77,7 @@
 - name: create temp genesis
   copy:
     src: ../files/genesis.json
-    dest: "{{OLDATA}}/genesis.json"
+    dest: "{{GOPATH}}/genesis.json"
     owner: "{{app_user}}"
     group: "{{app_user}}"
     mode: 0744      
@@ -103,7 +103,7 @@
         fi
       done
       seeds+="]"
-      olfullnode init --genesis {{OLDATA}}/genesis.json --root {{OLDATA}}
+      olfullnode init --genesis {{GOPATH}}/genesis.json --root {{OLDATA}}
       sed -i "s/rpc_address.*/rpc_address = \"tcp:\/\/$internal_ip:26604\"/" {{OLDATA}}/config.toml
       sed -i "s/p2p_address.*/p2p_address = \"tcp:\/\/$internal_ip:26605\"/" {{OLDATA}}/config.toml
       sed -i "s/sdk_address.*/sdk_address = \"tcp:\/\/$internal_ip:26606\"/" {{OLDATA}}/config.toml
@@ -122,7 +122,11 @@
     mode: 0744
     content: |
       #!/bin/bash
-      fullnodeSetup
+      if [[ -d "$OLDATA/nodedata" && -d "$OLDATA/consensus" ]]; then
+        echo "restarting an existing node, skip initialization"
+      else
+        fullnodeSetup
+      fi
       cp -R {{GOPATH}}/* {{CONTAINER_OUTPUT_PATH}}
       olfullnode node --root {{OLDATA}} >> {{OLDATA}}/olfullnode.log 2>&1
       exec "$@"
