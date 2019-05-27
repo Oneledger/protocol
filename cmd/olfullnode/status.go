@@ -11,8 +11,6 @@ import (
 	"github.com/Oneledger/protocol/log"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
-
-	"github.com/kyokomi/emoji"
 )
 
 var showStatusCmd = &cobra.Command{
@@ -70,49 +68,33 @@ func (ctx *showStatusArgs) dumpConfigContent(rootPath string, cfg *config.Server
 }
 
 func (ctx *showStatusArgs) checkNodes(rootPath string, cfg *config.Server) error {
-	urlRPC, err := url.Parse(cfg.Network.RPCAddress)
-	urlP2P, err := url.Parse(cfg.Network.P2PAddress)
-	urlSDK, err := url.Parse(cfg.Network.SDKAddress)
 
-	if err != nil {
-		return errors.Wrapf(err, "failed to parse url")
-	}
+	errRPC, _ := printPortStatus(cfg.Network.RPCAddress, "RPC")
+	errP2P, _ := printPortStatus(cfg.Network.P2PAddress, "P2P")
+	errSDK, _ := printPortStatus(cfg.Network.SDKAddress, "SDK")
 
-	host, rpcPort, _ := net.SplitHostPort(urlRPC.Host)
-	host, p2pPort, _ := net.SplitHostPort(urlP2P.Host)
-	host, sdkPort, _ := net.SplitHostPort(urlSDK.Host)
-
-	_, errRPC := net.Listen("tcp", host+":"+rpcPort)
-	if errRPC != nil {
-		rpcTaken := emoji.Sprint("RPC Port: ", rpcPort, " on ", host, " :check_mark:")
-		fmt.Println(rpcTaken)
-	} else {
-		rpcAvail := emoji.Sprint("RPC Port: ", rpcPort, " on ", host, " :cross_mark:")
-		fmt.Println(rpcAvail)
-	}
-
-	_, errP2P := net.Listen("tcp", host+":"+p2pPort)
-	if errP2P != nil {
-		p2pTaken := emoji.Sprint("P2P Port: ", p2pPort, " on ", host, " :check_mark:")
-		fmt.Println(p2pTaken)
-	} else {
-		p2pAvail := emoji.Sprint("P2P Port: ", p2pPort, " on ", host, " :cross_mark:")
-		fmt.Println(p2pAvail)
-	}
-
-	_, errSDK := net.Listen("tcp", host+":"+sdkPort)
-	if errSDK != nil {
-		sdkTaken := emoji.Sprint("SDK Port: ", sdkPort, " on ", host, " :check_mark:")
-		fmt.Println(sdkTaken)
-	} else {
-		sdkAvail := emoji.Sprint("SDK Port: ", sdkPort, " on ", host, " :cross_mark:")
-		fmt.Println(sdkAvail)
-	}
-
-	if errRPC != nil && errP2P != nil && errSDK != nil {
-		allHealthy := emoji.Sprint(":clinking_beer_mugs::clinking_beer_mugs::clinking_beer_mugs: Looks all good :clinking_beer_mugs::clinking_beer_mugs::clinking_beer_mugs:")
-		fmt.Println(allHealthy)
+	if errRPC && errP2P && errSDK {
+		fmt.Println("\u2713 Looks all good \u2713")
 	}
 
 	return nil
+}
+
+func printPortStatus(portAddress string, portType string) (bool, error) {
+	url, err := url.Parse(portAddress)
+
+	if err != nil {
+		return false, errors.Wrap(err, "failed to parse url")
+	}
+
+	host, port, _ := net.SplitHostPort(url.Host)
+
+	_, errListen := net.Listen("tcp", host+":"+port)
+	if errListen != nil {
+		fmt.Println(portType, "Port:", port, "on", host, " \u2713")
+		return true, nil
+	} else {
+		fmt.Println(portType, "Port:", port, "on", host, " \u274C")
+		return false, nil
+	}
 }
