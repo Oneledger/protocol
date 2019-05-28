@@ -31,6 +31,7 @@ type testnetConfig struct {
 	chainID          string
 	dbType           string
 	namesPath        string
+	createEmptyBlock bool
 	// Total amount of funds to be shared across each node
 	totalFunds        int64
 	singleOriginFunds bool
@@ -50,6 +51,7 @@ func init() {
 	testnetCmd.Flags().IntVar(&testnetArgs.numNonValidators, "nonvalidators", 0, "Number of non-validators to initialize the devnet with")
 	testnetCmd.Flags().StringVarP(&testnetArgs.outputDir, "dir", "o", "./", "Directory to store initialization files for the devnet, default current folder")
 	testnetCmd.Flags().BoolVar(&testnetArgs.allowSwap, "enable_swaps", false, "Allow swaps")
+	testnetCmd.Flags().BoolVar(&testnetArgs.createEmptyBlock, "empty_blocks", false, "Allow creating empty blocks")
 	testnetCmd.Flags().StringVar(&testnetArgs.chainID, "chain_id", "", "Specify a chain ID, a random one is generated if not given")
 	testnetCmd.Flags().StringVar(&testnetArgs.dbType, "db_type", "goleveldb", "Specify the type of DB backend to use: (goleveldb|cleveldb)")
 	testnetCmd.Flags().StringVar(&testnetArgs.namesPath, "names", "", "Specify a path to a file containing a list of names separated by newlines if you want the nodes to be generated with human-readable names")
@@ -194,7 +196,11 @@ func runDevnet(cmd *cobra.Command, _ []string) error {
 		cfg := config.DefaultServerConfig()
 		cfg.Node.NodeName = nodeName
 		cfg.Node.DB = args.dbType
-		cfg.Consensus.CreateEmptyBlocks = false
+		if args.createEmptyBlock {
+			cfg.Consensus.CreateEmptyBlocks = true
+		} else {
+			cfg.Consensus.CreateEmptyBlocks = false
+		}
 		cfg.Network.RPCAddress = generateAddress(generatePort(), true)
 		cfg.Network.P2PAddress = generateAddress(generatePort(), true)
 		cfg.Network.SDKAddress = generateAddress(generatePort(), true)
