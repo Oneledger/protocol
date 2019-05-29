@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fullnode-deployment
+  labels:
+    app: fullnode
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: fullnode
+  template:  
+    metadata:
+      labels:
+        app: fullnode
+    spec:
+      volumes:
+      - name: fullnode-pv-claim
+        persistentVolumeClaim:
+          claimName: fullnode-pv-claim
+      containers:
+      - name: fullnode-container
+        image: localhost:5000/chronos:v0.9.2 
+        securityContext:
+          runAsUser: 1000
+        volumeMounts:
+          - mountPath: "/home/node/go/data"
+            name: fullnode-pv-claim
+      initContainers:
+      - name: change-persistent-data-ownership 
+        image: localhost:5000/chronos:v0.9.2 
+        command:
+        - chown
+        args:
+        - -R  
+        - node:node
+        - /home/node/go/data 
+        volumeMounts:
+        - name: fullnode-pv-claim
+          mountPath: "/home/node/go/data"
