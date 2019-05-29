@@ -201,6 +201,9 @@ func runDevnet(cmd *cobra.Command, _ []string) error {
 		} else {
 			cfg.Consensus.CreateEmptyBlocks = false
 		}
+		cfg.Mempool.Recheck = false
+		cfg.Consensus.LogOutput = "stdout"
+		cfg.Consensus.CreateEmptyBlocks = false
 		cfg.Network.RPCAddress = generateAddress(generatePort(), true)
 		cfg.Network.P2PAddress = generateAddress(generatePort(), true)
 		cfg.Network.SDKAddress = generateAddress(generatePort(), true)

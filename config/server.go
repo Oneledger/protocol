@@ -362,6 +362,13 @@ func (cfg *ConsensusConfig) TMConfig() *tmconfig.ConsensusConfig {
 func DefaultConsensusConfig() *ConsensusConfig {
 	var cfg ConsensusConfig
 	tmDefault := tmconfig.DefaultConsensusConfig()
+	//tmDefault.TimeoutPropose = 40 * time.Millisecond
+	//tmDefault.TimeoutProposeDelta = 1 * time.Millisecond
+	//tmDefault.TimeoutPrevote = 10 * time.Millisecond
+	//tmDefault.TimeoutPrevoteDelta = 1 * time.Millisecond
+	//tmDefault.TimeoutPrecommit = 10 * time.Millisecond
+	//tmDefault.TimeoutPrecommitDelta = 1 * time.Millisecond
+	tmDefault.TimeoutCommit = 10 * time.Millisecond
 	cfg.LogOutput = "consensus.log"
 	cfg.LogLevel = tmconfig.DefaultPackageLogLevels()
 	cfg.TimeoutPropose = toConfigDuration(tmDefault.TimeoutPropose)

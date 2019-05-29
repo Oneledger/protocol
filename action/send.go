@@ -63,7 +63,7 @@ func (sendTx) Validate(ctx *Context, msg Msg, fee Fee, signatures []Signature) (
 func (sendTx) ProcessCheck(ctx *Context, msg Msg, fee Fee) (bool, Response) {
 	logger.Debug("Processing Send Transaction for CheckTx", msg, fee)
 	//balances := ctx.Balances
-
+	//
 	//send, ok := msg.(*Send)
 	//if !ok {
 	//	return false, Response{Log: "failed to cast msg"}

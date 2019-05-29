@@ -5,5 +5,7 @@ if ! [ -z "$pids" ]
 then
 	pkill -f "olfullnode node.*"
 
-	pkill -f "olclient.*"
+	pkill -f "olclient"
+	killed=true
+	sleep 2
 fi

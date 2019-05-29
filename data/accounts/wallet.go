@@ -58,7 +58,7 @@ func (ws *WalletStore) Add(account Account) error {
 
 	exist := session.Exists(account.Address().Bytes())
 	if exist {
-		return errors.New("account already exist: " + string(account.Address()))
+		return errors.New("account already exist: " + account.Address().String())
 	}
 	value := account.Bytes()
 	err := session.Set(account.Address().Bytes(), value)
@@ -75,7 +75,7 @@ func (ws *WalletStore) Delete(account Account) error {
 	session := ws.store.BeginSession()
 	exist := session.Exists(account.Address().Bytes())
 	if !exist {
-		return errors.New("account already exist: " + string(account.Address()))
+		return errors.New("account already exist: " + account.Address().String())
 	}
 	_, err := session.Delete(account.Address().Bytes())
 	return err
