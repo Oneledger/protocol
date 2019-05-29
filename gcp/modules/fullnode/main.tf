@@ -6,6 +6,10 @@ variable "vmcount" {}
 variable "regions" {
   default = []
 }
+variable "vm_machine_type" {
+  default = "n1-standard-1"
+}
+
 resource "google_compute_address" "static-ips"{
   count = "${var.vmcount}"
   name = "${var.name}-static-ip-${count.index}"
@@ -15,7 +19,7 @@ resource "google_compute_address" "static-ips"{
 resource "google_compute_instance" "default" {
   count = "${var.vmcount}"
   name = "${var.name}-vm-${count.index}"
-  machine_type = "n1-standard-1"
+  machine_type = "${var.vm_machine_type}"
   tags = ["${var.name}"]
   zone = "${element(var.regions,count.index % length(var.regions))}-b"
   boot_disk {
