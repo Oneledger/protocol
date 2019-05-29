@@ -1,18 +1,12 @@
 language: go
 go:
 - 1.11.x
-addons:
-  apt:
-    update: true
-    package:
-    - python
-    - python-pip
-before_install:
+before_script:
 - export OLDATA=$GOPATH/test
 - export OLROOT=$GOPATH/src/github.com/Oneledger
-- export OLSCRIPT=$OLROOT/protocol/node/scripts
-- export OLSETUP=$OLROOT/protocol/node/setup
-- export OLTEST=$OLROOT/protocol/node/tests
+- export OLSCRIPT=$OLROOT/protocol/scripts
+- export OLSETUP=$OLROOT/protocol/setup
+- export OLTEST=$OLROOT/protocol/tests
 - export GO111MODULE="on"
 - export PATH=$PATH:$GOPATH/bin
 - export OLDEBUG=true
@@ -24,17 +18,12 @@ before_install:
 - ssh-add $TRAVIS_BUILD_DIR/id_rsa
 - cd $TRAVIS_BUILD_DIR && git clone git@github.com:Oneledger/infrastructure.git --branch
   master
-install:
-- sudo pip install netaddr
-- sudo pip install ipaddr
-- sudo pip install cryptography==2.2.2
-- sudo pip install ansible
 script:
-- cd $OLROOT/protocol/node && make update
-- cd $OLROOT/protocol/node && make install
-- cd $OLROOT/protocol/node && make fulltest
+- cd $OLROOT/protocol && make update install
+- cd $OLROOT/protocol && make fulltest
 before_deploy:
-- sudo apt-get install unzip
+- sudo apt-get update && sudo apt-get install unzip python python-pip
+- sudo pip install netaddr ipaddr cryptography==2.2.2 ansible
 - wget https://releases.hashicorp.com/terraform/0.11.13/terraform_0.11.13_linux_amd64.zip
 - unzip terraform_0.11.13_linux_amd64.zip
 - sudo mv terraform /usr/local/bin/

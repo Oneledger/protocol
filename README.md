@@ -9,7 +9,7 @@ This repo is the OneLedger blockchain full-node, which is currently an ABCi app 
 
 * [Getting Started](#getting-started)
     * [Development](#Development)
-    * [Join OneLedger Testnet](#join-oneledger-testnet)
+    * [Make Targets](#make-targets)
 * [License](#license)
 
 ## Getting Started
@@ -32,49 +32,35 @@ Ensure your system meets the following requirements:
 
 #### Install
 
-Before running any install scripts, ensure your GOPATH and the necessary environment variables are set up on your account. Visit the [Setting up the GOPATH](https://github.com/Oneledger/protocol/wiki/Environment-Variables#setting-up-the-gopath) page on the wiki for more help.
-
-First clone the repository for the OneLedger Protocol:
+First clone the repository for the OneLedger Protocol (pick any folder and clone it here):
 
 ```
-$ mkdir -p $OLROOT
-$ cd $OLROOT
 $ git clone github.com/Oneledger/protocol
 ```
-
-Before running any scripts, you'll need to set up the required [environment variables](https://github.com/Oneledger/protocol/wiki/Environment-Variables) properly.
 
 Install the required dependencies:
 
 ```
-$ cd "$OLROOT/protocol/node"
-$ make setup
+$ cd ./protocol
+$ make install
 ```
 
-General scripts for running the OneLedger Protocol are inside [node/scripts](node/scripts).
+General scripts for running the OneLedger Protocol are inside `./protocol/scripts`
 
 ### Make Targets
 
-If everything is set up properly, you can begin testing the OneLedger Protocol with the `make` targets provided. Run the following scripts from inside the `$OLREPO/node` directory:
+If everything is set up properly, you can begin testing the OneLedger Protocol with the `make` targets provided. Run the following scripts inside the `./protocol/` directory:
 
 | Target | Description |
 | --- | --- |
-| `make test` | Tests system initialization, brings up everything |
-| `make swaptest` | Test swap mechanics between BTC and ETH |
-| `make fulltest` | Does a full test, makes use of test scripts in the `/tests` folder |
-| `make status` | Lists all running nodes |
-| `make monitor` | Start tmux session |
-| `make stopmon` | Stops tmux session |
+| `make install`| Build and install a copy of Oneledger protocol in bin |
+| `make fulltest` | Test with send transaction in loadtest, makes use of test scripts in the `/tests` folder |
+| `make status` | Lists all running nodes, Check out the running status|
+| `make update` | Updata the dependencies |
+| `make install_c` | Enable the clevelDB |
+
 
 See [Make Targets](#make-targets) to see a list of `make` commands you can run to interact with the OneLedger Protocol.
-
-### Join OneLedger Testnet 
-
-* [Setup a node](https://github.com/Oneledger/protocol/wiki/Chronos-Set-Up-Instructions-v0.8.1)
-
-* [Become Validator](https://github.com/Oneledger/protocol/wiki/Chronos-Validator-Instructions-v0.8.1)
-
-* [Check the explorer](https://oneledger.network)
 
 
 ## License

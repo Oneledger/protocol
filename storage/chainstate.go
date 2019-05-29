@@ -88,8 +88,7 @@ func (state *ChainState) Get(key StoreKey, lastCommit bool) []byte {
 
 	// TODO: Should not be this hardcoded, but still needs protection
 	if len(key) != CHAINKEY_MAXLEN {
-		log.Fatal("Not a valid account key")
-		// debug.PrintStack()
+		return nil
 	}
 
 	var value []byte
