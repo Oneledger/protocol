@@ -50,12 +50,3 @@ func (c *Coin) SetData(a interface{}) error {
 func (ad *coinData) SerialTag() string {
 	return ""
 }
-
-func (cd *coinData) Primitive() serialize.DataAdapter {
-	c := &Coin{}
-
-	c.Currency = cd.Currency
-	c.Amount = c.Amount.SetBytes(cd.Amount)
-
-	return c
-}

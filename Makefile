@@ -32,3 +32,18 @@ fulltest: install
 #
 status:
 	@./scripts/status
+
+#
+# run unit tests on project packages
+#
+utest:
+	rm -rf /tmp/OneLedger-accounts.db
+	go test github.com/Oneledger/protocol/data \
+		github.com/Oneledger/protocol/data/accounts \
+		github.com/Oneledger/protocol/data/balance \
+		github.com/Oneledger/protocol/serialize \
+		github.com/Oneledger/protocol/utils \
+		-coverprofile a.out
+
+coverage:
+	go tool cover -html=a.out -o cover.html

@@ -7,6 +7,5 @@ type DataAdapter interface {
 }
 
 type Data interface {
-	Primitive() DataAdapter
 	SerialTag() string
 }

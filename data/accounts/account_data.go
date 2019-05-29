@@ -75,18 +75,3 @@ func (t *Account) SetData(a interface{}) error {
 func (ad *AccountData) SerialTag() string {
 	return ""
 }
-
-func (ad *AccountData) Primitive() serialize.DataAdapter {
-	t := &Account{}
-
-	t.PublicKey = &keys.PublicKey{}
-	t.PrivateKey = &keys.PrivateKey{}
-
-	t.Type = ad.Type
-	t.Name = ad.Name
-
-	t.PublicKey.GobDecode(ad.PublicKeyData)
-	t.PrivateKey.GobDecode(ad.PrivateKeyData)
-
-	return t
-}

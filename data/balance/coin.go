@@ -58,8 +58,6 @@ func (coin Coin) LessThanCoin(value Coin) bool {
 		logger.Fatal("Compare two different coin", coin, value)
 	}
 
-	//logger.Dump("LessThanCoin", value, coin)
-
 	if coin.Amount.Cmp(value.Amount) < 0 {
 		return true
 	}
@@ -114,16 +112,15 @@ func (coin Coin) Equals(value Coin) bool {
 }
 
 // Minus two coins
-func (coin Coin) Minus(value Coin) Coin {
+func (coin Coin) Minus(value Coin) (Coin, error) {
 	if coin.Amount == nil {
 		debug.PrintStack()
 		logger.Fatal("Invalid Coin", coin)
 	}
 
 	if coin.Currency.Name != value.Currency.Name {
-		//logger.Error("Mismatching currencies", "coin", coin, "value", value)
-		logger.Fatal("Mismatching currencies", coin, value)
-		return coin
+		logger.Error("Mismatching currencies", coin, value)
+		return coin, ErrMismatchingCurrency
 	}
 
 	base := big.NewInt(0)
@@ -131,20 +128,22 @@ func (coin Coin) Minus(value Coin) Coin {
 		Currency: coin.Currency,
 		Amount:   base.Sub(coin.Amount, value.Amount),
 	}
-	return result
+	if result.Amount.Cmp(big.NewInt(0)) == -1 {
+		return result, ErrInsufficientBalance
+	}
+	return result, nil
 }
 
 // Plus two coins
-func (coin Coin) Plus(value Coin) Coin {
+func (coin Coin) Plus(value Coin) (Coin, error) {
 	if coin.Amount == nil {
 		debug.PrintStack()
 		logger.Fatal("Invalid Coin", "coin", coin)
 	}
 
 	if coin.Currency.Name != value.Currency.Name {
-		//logger.Error("Mismatching currencies", "coin", coin, "value", value)
-		logger.Fatal("Mismatching currencies", coin, value)
-		return coin
+		logger.Error("Mismatching currencies", coin, value)
+		return coin, ErrMismatchingCurrency
 	}
 
 	base := big.NewInt(0)
@@ -152,28 +151,7 @@ func (coin Coin) Plus(value Coin) Coin {
 		Currency: coin.Currency,
 		Amount:   base.Add(coin.Amount, value.Amount),
 	}
-	return result
-}
-
-// Quotient of one coin by another (divide without remainder, modulus, etc)
-func (coin Coin) Quotient(value Coin) Coin {
-	if coin.Amount == nil {
-		debug.PrintStack()
-		logger.Fatal("Invalid Coin", "coin", coin)
-	}
-
-	if coin.Currency.Name != value.Currency.Name {
-		//logger.Error("Mismatching currencies", "coin", coin, "value", value)
-		logger.Fatal("Mismatching currencies", coin, value)
-		return coin
-	}
-
-	base := big.NewInt(0)
-	result := Coin{
-		Currency: coin.Currency,
-		Amount:   base.Quo(coin.Amount, value.Amount),
-	}
-	return result
+	return result, nil
 }
 
 func (coin Coin) Divide(value int) Coin {
@@ -190,27 +168,6 @@ func (coin Coin) Divide(value int) Coin {
 	}
 	return result
 
-}
-
-// Multiply one coin by another
-func (coin Coin) Multiply(value Coin) Coin {
-	if coin.Amount == nil {
-		debug.PrintStack()
-		logger.Fatal("Invalid Coin", coin)
-	}
-
-	if coin.Currency.Name != value.Currency.Name {
-		//logger.Error("Mismatching currencies", "coin", coin, "value", value)
-		logger.Fatal("Mismatching currencies", coin, value)
-		return coin
-	}
-
-	base := big.NewInt(0)
-	result := Coin{
-		Currency: coin.Currency,
-		Amount:   base.Mul(coin.Amount, value.Amount),
-	}
-	return result
 }
 
 // Multiply one coin by another
@@ -239,5 +196,6 @@ func (coin Coin) String() string {
 	*/
 	float := new(big.Float).SetInt(coin.Amount)
 	value := float.Quo(float, new(big.Float).SetInt(coin.Currency.Base()))
+
 	return fmt.Sprintf("%s %s", value.String(), coin.Currency.Name)
 }

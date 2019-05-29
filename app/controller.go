@@ -11,7 +11,7 @@ import (
 
 // The following set of functions will be passed to the abciController
 
-// query connection: for querying the application state; only uses Query and Info
+// query connection: for querying the application state; only uses query and Info
 func (app *App) infoServer() infoServer {
 	return func(info RequestInfo) ResponseInfo {
 		return ResponseInfo{

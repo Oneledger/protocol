@@ -10,8 +10,6 @@ import (
 	"github.com/pkg/errors"
 )
 
-var _ Wallet = &WalletStore{}
-
 type Wallet interface {
 	//returns the account that the wallet holds
 	Accounts() []Account
@@ -29,24 +27,33 @@ type Wallet interface {
 	Close()
 }
 
+// WalletStore keeps a session storage of accounts on the Full Node
 type WalletStore struct {
 	store storage.SessionedStorage
 
 	accounts []storage.StoreKey
 }
 
+// WalletStore satisfies the Wallet interface
+var _ Wallet = &WalletStore{}
+
+// Accounts returns all the accounts in the wallet store
 func (ws WalletStore) Accounts() []Account {
+
 	accounts := make([]Account, len(ws.accounts))
 	for i, key := range ws.accounts {
+
 		acc, err := ws.store.Get(key)
 		if err != nil {
 			logger.Error("account not exist anymore")
 		}
+
 		var account Account
 		err = serialize.GetSerializer(serialize.PERSISTENT).Deserialize(acc, &account)
 		if err != nil {
 			logger.Error("failed to deserialize account")
 		}
+
 		accounts[i] = account
 	}
 	return accounts
@@ -60,11 +67,13 @@ func (ws *WalletStore) Add(account Account) error {
 	if exist {
 		return errors.New("account already exist: " + string(account.Address()))
 	}
+
 	value := account.Bytes()
 	err := session.Set(account.Address().Bytes(), value)
 	if err != nil {
 		return fmt.Errorf("failed to set the new account: %s", err)
 	}
+
 	session.Commit()
 	ws.accounts = append(ws.accounts, account.Address().Bytes())
 
@@ -73,11 +82,17 @@ func (ws *WalletStore) Add(account Account) error {
 
 func (ws *WalletStore) Delete(account Account) error {
 	session := ws.store.BeginSession()
+
 	exist := session.Exists(account.Address().Bytes())
 	if !exist {
 		return errors.New("account already exist: " + string(account.Address()))
 	}
+
 	_, err := session.Delete(account.Address().Bytes())
+	if err == nil {
+		session.Commit()
+	}
+
 	return err
 }
 
@@ -86,13 +101,15 @@ func (ws WalletStore) GetAccount(address keys.Address) (Account, error) {
 	if err != nil || len(value) == 0 {
 		return Account{}, fmt.Errorf("failed to get account by address: %s", address.String())
 	}
+
 	var account = &Account{}
 	account = account.FromBytes(value)
+
 	return *account, nil
 }
 
 func (ws WalletStore) SignWithAccountIndex(msg []byte, index int) (keys.PublicKey, []byte, error) {
-	if index > len(ws.accounts) {
+	if index >= len(ws.accounts) {
 		return keys.PublicKey{}, nil, fmt.Errorf("account index out of range")
 	}
 	return ws.SignWithAddress(msg, ws.accounts[index].Bytes())
@@ -103,6 +120,7 @@ func (ws WalletStore) SignWithAddress(msg []byte, address keys.Address) (keys.Pu
 	if err != nil {
 		return keys.PublicKey{}, nil, errors.Wrap(err, "sign with address")
 	}
+
 	signed, err := account.Sign(msg)
 	return *account.PublicKey, signed, err
 }
