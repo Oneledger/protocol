@@ -1,0 +1,6 @@
+---
+# defaults file for dev-env-setup
+GOPATH: /home/{{ssh_user}}/go
+OLROOT: "/home/{{ssh_user}}"
+GOLANG_INSTALL_DIR: /usr/local/go
+OLDATA: "{{GOPATH}}/data"
