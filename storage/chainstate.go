@@ -135,7 +135,7 @@ func (state *ChainState) Commit() ([]byte, int64) {
 	if state.LastVersion-1 > 0 {
 		err := state.Delivered.DeleteVersion(state.LastVersion - 1)
 		if err != nil {
-			log.Fatal("Failed to delete old version of chainstate", "err", err)
+			log.Error("Failed to delete old version of chainstate", "err", err)
 		}
 	}
 

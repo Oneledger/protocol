@@ -20,6 +20,7 @@ import "errors"
 var (
 	ErrWrongBalanceAdapter = errors.New("error in asserting to BalanceAdapter")
 	ErrDuplicateCurrency   = errors.New("provided currency has already been registered")
+	ErrMismatchingCurrency = errors.New("mismatching currencies")
 
 	ErrInsufficientBalance = errors.New("insufficient balance")
 )

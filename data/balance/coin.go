@@ -19,8 +19,6 @@ import (
 	"fmt"
 	"math/big"
 	"runtime/debug"
-
-	"github.com/pkg/errors"
 )
 
 /*
@@ -59,8 +57,6 @@ func (coin Coin) LessThanCoin(value Coin) bool {
 	if coin.Currency.Chain != value.Currency.Chain {
 		logger.Fatal("Compare two different coin", coin, value)
 	}
-
-	//logger.Dump("LessThanCoin", value, coin)
 
 	if coin.Amount.Cmp(value.Amount) < 0 {
 		return true
@@ -123,9 +119,8 @@ func (coin Coin) Minus(value Coin) (Coin, error) {
 	}
 
 	if coin.Currency.Name != value.Currency.Name {
-		//logger.Error("Mismatching currencies", "coin", coin, "value", value)
 		logger.Error("Mismatching currencies", coin, value)
-		return coin, errors.New("")
+		return coin, ErrMismatchingCurrency
 	}
 
 	base := big.NewInt(0)
@@ -134,22 +129,21 @@ func (coin Coin) Minus(value Coin) (Coin, error) {
 		Amount:   base.Sub(coin.Amount, value.Amount),
 	}
 	if result.Amount.Cmp(big.NewInt(0)) == -1 {
-		return result, errors.New("insufficient coin amount")
+		return result, ErrInsufficientBalance
 	}
 	return result, nil
 }
 
 // Plus two coins
-func (coin Coin) Plus(value Coin) Coin {
+func (coin Coin) Plus(value Coin) (Coin, error) {
 	if coin.Amount == nil {
 		debug.PrintStack()
 		logger.Fatal("Invalid Coin", "coin", coin)
 	}
 
 	if coin.Currency.Name != value.Currency.Name {
-		//logger.Error("Mismatching currencies", "coin", coin, "value", value)
-		logger.Fatal("Mismatching currencies", coin, value)
-		return coin
+		logger.Error("Mismatching currencies", coin, value)
+		return coin, ErrMismatchingCurrency
 	}
 
 	base := big.NewInt(0)
@@ -157,7 +151,7 @@ func (coin Coin) Plus(value Coin) Coin {
 		Currency: coin.Currency,
 		Amount:   base.Add(coin.Amount, value.Amount),
 	}
-	return result
+	return result, nil
 }
 
 func (coin Coin) Divide(value int) Coin {
