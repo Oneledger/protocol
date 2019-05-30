@@ -7,7 +7,7 @@
     - role: elastic.elasticsearch
       vars:
         es_instance_name: "node1"
-        es_version: 6.7.1
+        es_version: 6.8.0
         es_api_basic_auth_username: elastic
         es_api_basic_auth_password: changeme
         es_log_dir: "/run/log/journal"
@@ -100,9 +100,6 @@
         f/VFozk5MScPlKupOnq9wTnaeA+14M6oY4H0yqIf8lG20CO+5Zk/RLu6ZaO+AXqL
         c/QLNn0Ie7ytgHZffPMUvw==
         -----END PRIVATE KEY-----
-  - name: get private ip for the vm 
-    shell: hostname -I | awk '{$1=$1};1'
-    register: private_ip
   - name: create configuration file to start kibana 
     copy:
       dest: /etc/kibana/kibana.yml
@@ -110,7 +107,7 @@
       content: | 
         server.port: 443
         server.host: "0.0.0.0"
-        elasticsearch.hosts: "http://{{ private_ip.stdout }}:9200"
+        elasticsearch.hosts: "http://{{ ansible_all_ipv4_addresses | ipaddr('private') | first }}:9200"
         server.ssl.enabled: true	
         server.ssl.certificate: /etc/ssl/certs/kibana.crt	
         server.ssl.key: /etc/ssl/private/kibana-private.key
