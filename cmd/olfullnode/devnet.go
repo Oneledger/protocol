@@ -201,6 +201,7 @@ func runDevnet(cmd *cobra.Command, _ []string) error {
 		} else {
 			cfg.Consensus.CreateEmptyBlocks = false
 		}
+		cfg.Mempool.Size = 10000
 		cfg.Mempool.Recheck = false
 		cfg.Consensus.LogOutput = "stdout"
 		cfg.Consensus.CreateEmptyBlocks = false

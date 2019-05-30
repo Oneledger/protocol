@@ -3,6 +3,7 @@ package app
 import (
 	"encoding/hex"
 	"github.com/Oneledger/protocol/log"
+	"math"
 	"time"
 
 	"github.com/Oneledger/protocol/action"
@@ -81,25 +82,13 @@ func (app *App) blockBeginner() blockBeginner {
 			startTx = req.Header.TotalTxs
 		}
 
-		if req.Header.Height == 10 {
+		if math.Mod(float64(req.Header.Height-10), 20) == 0 {
 			endTime = req.Header.Time
 			endTx = req.Header.TotalTxs
 			loadtest(req.Header, app.logger)
 		}
 
-		if req.Header.Height == 30 {
-			endTime = req.Header.Time
-			endTx = req.Header.TotalTxs
-			loadtest(req.Header, app.logger)
-		}
-
-		if req.Header.Height == 50 {
-			endTime = req.Header.Time
-			endTx = req.Header.TotalTxs
-			loadtest(req.Header, app.logger)
-		}
-
-		app.logger.Debug("Begin Block:", result)
+		app.logger.Debug("Begin Block:", result, "height", req.Header.Height)
 		return result
 	}
 }
@@ -107,7 +96,7 @@ func (app *App) blockBeginner() blockBeginner {
 func loadtest(head Header, logger *log.Logger) {
 	tps := float64(endTx-startTx) / (endTime.Sub(startTime).Seconds())
 	blktime := (endTime.Sub(startTime).Seconds()) / float64(head.Height-3)
-	logger.Infof("Loadtest metric height=%d, tx/b=%d, blktime=%3f , tps=%3f", head.Height, head.TotalTxs/head.Height, blktime, tps)
+	logger.Infof("Loadtest metric height=%d, total_tx =%d, tx/b=%d, blktime=%3f , tps=%3f", head.Height, head.TotalTxs, head.TotalTxs/head.Height, blktime, tps)
 }
 
 // mempool connection: for checking if transactions should be relayed before they are committed
