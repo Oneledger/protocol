@@ -2,6 +2,7 @@ package accounts
 
 import (
 	"fmt"
+	"sync"
 
 	"github.com/Oneledger/protocol/config"
 	"github.com/Oneledger/protocol/data/keys"
@@ -32,6 +33,8 @@ type WalletStore struct {
 	store storage.SessionedStorage
 
 	accounts []storage.StoreKey
+
+	sync.Mutex
 }
 
 // WalletStore satisfies the Wallet interface
@@ -61,6 +64,9 @@ func (ws WalletStore) Accounts() []Account {
 }
 
 func (ws *WalletStore) Add(account Account) error {
+	ws.Lock()
+	defer ws.Unlock()
+
 	session := ws.store.BeginSession()
 
 	exist := session.Exists(account.Address().Bytes())
@@ -81,6 +87,9 @@ func (ws *WalletStore) Add(account Account) error {
 }
 
 func (ws *WalletStore) Delete(account Account) error {
+	ws.Lock()
+	defer ws.Unlock()
+
 	session := ws.store.BeginSession()
 
 	exist := session.Exists(account.Address().Bytes())
@@ -138,6 +147,7 @@ func NewWallet(config config.Server, dbDir string) Wallet {
 	return &WalletStore{
 		store,
 		accounts,
+		sync.Mutex{},
 	}
 }
 
