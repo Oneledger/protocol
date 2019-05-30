@@ -48,7 +48,12 @@ func (b *Balance) AddCoin(coin Coin) *Balance {
 		b.Amounts[coin.Currency.StringKey()] = coin
 		return b
 	}
-	b.Amounts[coin.Currency.StringKey()] = result.Plus(coin)
+
+	amt, err := result.Plus(coin)
+	if err != nil {
+		return b
+	}
+	b.Amounts[coin.Currency.StringKey()] = amt
 	return b
 }
 
