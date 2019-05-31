@@ -45,7 +45,9 @@
     recurse: true   
 - name: install ansible module
   pip:
-    name: ansible>=2.8.0
+    name:
+      - ansible>=2.8.0
+      - netaddr
 - name: install terraform executable 
   get_url:
     url: https://releases.hashicorp.com/terraform/0.11.13/terraform_0.11.13_linux_amd64.zip
@@ -83,9 +85,19 @@
     state: present 
     filename: /etc/apt/sources.list.d/kubernetes.list
     update_cache: yes
+- name: Add the Cloud SDK distribution URI as a package source
+  apt_repository: 
+    repo: 'deb http://packages.cloud.google.com/apt cloud-sdk-{{ ansible_distribution_release }} main' 
+    state: present 
+    filename: /etc/apt/sources.list.d/google-cloud-sdk.list
+    update_cache: yes
 - name: install kubectl
   apt:
     name: kubectl
+    update_cache: yes
+- name: install google-cloud-sdk
+  apt:
+    name: google-cloud-sdk
     update_cache: yes
 - name: download minikube binary
   get_url:
