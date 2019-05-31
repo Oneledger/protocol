@@ -1,0 +1,45 @@
+{
+    "variables": {
+        "app_user": "explorer",
+        "ecr_endpoint": "260114726869.dkr.ecr.us-east-1.amazonaws.com",
+        "tag": "develop"
+    },
+    "builders": [
+        {
+            "type": "docker",
+            "image": "{{user `ecr_endpoint`}}/oneledger/explorer:latest",
+            "ecr_login": true,
+            "login_server": "{{user `ecr_endpoint`}}",
+            "commit": true,
+            "changes": [
+                "USER {{user `app_user`}}",
+                "VOLUME /home/{{user `app_user`}}"
+            ]
+        },
+        {
+            "type": "ansible-local",
+            "playbook_file": "ansible/fullnode.yml",
+            "command": "ansible-playbook -vvv",
+            "role_paths": ["ansible/roles/logstash","ansible/roles/fullnode"],
+            "extra_arguments": ["--extra-vars \"enable_logging={{user `enable_logging`}} dev_env={{user `dev_env`}} app_user={{user `app_user`}} app_version={{user `version`}}\""]
+        }
+    ],
+    "provisioners": [
+        {
+            "type": "shell",
+            "inline_shebang": "/bin/bash",
+            "inline": [
+                "apt update -y && apt install -y python-pip",
+                "pip install ansible",
+                "ansible-galaxy install gantsign.golang"
+            ]
+        }
+    ],
+    "post-processors": [
+        {
+            "type": "docker-tag",
+            "repository": "{{user `ecr_endpoint`}}",
+            "tag": "{{user `tag`}}"
+        }
+    ]
+}

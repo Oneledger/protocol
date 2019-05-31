@@ -1,0 +1,10 @@
+---
+- hosts: all
+  become: yes
+  become_user: root
+  vars:
+    EXPLORE_DATABASE_NAME: explorer_chronos
+  roles:
+  - role: geerlingguy.postgresql
+    postgresql_databases:
+    - name: "{{EXPLORE_DATABASE_NAME}}"
