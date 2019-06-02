@@ -13,15 +13,10 @@
             "commit": true,
             "changes": [
                 "USER {{user `app_user`}}",
-                "VOLUME /home/{{user `app_user`}}"
+                "EXPOSE 5432",
+                "VOLUME  [\"/etc/postgresql\", \"/var/log/postgresql\", \"/var/lib/postgresql\"]", 
+                "CMD [\"/usr/lib/postgresql/9.3/bin/postgres\", \"-D\", \"/var/lib/postgresql/9.3/main\", \"-c\", \"config_file=/etc/postgresql/9.3/main/postgresql.conf\"]"
             ]
-        },
-        {
-            "type": "ansible-local",
-            "playbook_file": "ansible/fullnode.yml",
-            "command": "ansible-playbook -vvv",
-            "role_paths": ["ansible/roles/logstash","ansible/roles/fullnode"],
-            "extra_arguments": ["--extra-vars \"enable_logging={{user `enable_logging`}} dev_env={{user `dev_env`}} app_user={{user `app_user`}} app_version={{user `version`}}\""]
         }
     ],
     "provisioners": [
@@ -30,9 +25,13 @@
             "inline_shebang": "/bin/bash",
             "inline": [
                 "apt update -y && apt install -y python-pip",
-                "pip install ansible",
-                "ansible-galaxy install gantsign.golang"
+                "pip install ansible"
             ]
+        },
+        {
+            "type": "ansible-local",
+            "playbook_file": "ansible/postgres_sql.yml",
+            "command": "ansible-playbook -vvv"
         }
     ],
     "post-processors": [

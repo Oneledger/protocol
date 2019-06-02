@@ -4,7 +4,40 @@
   become_user: root
   vars:
     EXPLORE_DATABASE_NAME: explorer_chronos
-  roles:
-  - role: geerlingguy.postgresql
-    postgresql_databases:
-    - name: "{{EXPLORE_DATABASE_NAME}}"
+  tasks:
+  - name: download public signing key for postgres
+    apt_key:
+      url: https://www.postgresql.org/media/keys/ACCC4CF8.asc
+      state: present
+  - name: Save postgres sql repo to the system 
+    apt_repository: 
+      repo: deb http://apt.postgresql.org/pub/repos/apt/ precise-pgdg main
+      state: present 
+      filename: /etc/apt/sources.list.d/pgdg.list
+      update_cache: yes
+  - name: install progres sql 
+    apt:
+      name: "{{ item }}"
+      update_cache: yes
+    with_items:
+    - python-software-properties
+    - software-properties-common 
+    - postgresql-9.3 
+    - postgresql-client-9.3 
+    - postgresql-contrib-9.3  
+  - name: Adjust PostgreSQL configuration so that remote connections to the database are possible.
+    lineinfile:
+      path: /etc/postgresql/9.3/main/pg_hba.conf
+      line: host all  all    0.0.0.0/0  md5
+  - name: add ``listen_addresses`` 
+    lineinfile:
+      path: /etc/postgresql/9.3/main/postgresql.conf
+      line: listen_addresses='*'
+  - name: change file permission for testing 
+    file:
+      path: "{{ item }}"
+      mode: '0660'
+      group: explorer 
+    with_items:
+    - /etc/postgresql/9.3/main/pg_hba.conf
+    - /etc/postgresql/9.3/main/postgresql.conf
