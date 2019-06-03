@@ -38,7 +38,7 @@ var _ Tx = sendTx{}
 type sendTx struct {
 }
 
-func (sendTx) Validate(ctx *Context, msg Msg, fee Fee, signatures []Signature) (bool, error) {
+func (sendTx) Validate(ctx *Context, msg Msg, fee Fee, memo string, signatures []Signature) (bool, error) {
 	send, ok := msg.(*Send)
 	if !ok {
 		return false, ErrWrongTxType
@@ -49,15 +49,7 @@ func (sendTx) Validate(ctx *Context, msg Msg, fee Fee, signatures []Signature) (
 	if send.From == nil || send.To == nil {
 		return false, ErrMissingData
 	}
-
-	base := BaseTx{
-		send,
-		fee,
-		signatures,
-		"",
-	}
-
-	return base.validateBasic()
+	return true, nil
 }
 
 func (sendTx) ProcessCheck(ctx *Context, msg Msg, fee Fee) (bool, Response) {

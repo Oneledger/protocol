@@ -83,20 +83,23 @@ func (app *App) txChecker() txChecker {
 		if err != nil {
 			app.logger.Errorf("failed to deserialize msg: %s, error: %s ", msg, err)
 		}
+		ok, err := tx.ValidateBasic()
+		if err != nil {
+			app.logger.Debugf("Check Tx invalid: ", err.Error())
+			return ResponseCheckTx{
+				Code: getCode(ok).uint32(),
+				Log:  err.Error(),
+			}
+		}
+
 		txCtx := app.Context.Action()
 
 		handler := txCtx.Router.Handler(tx.Data)
 
 		ok, response := handler.ProcessCheck(txCtx, tx.Data, tx.Fee)
 
-		var code Code
-		if ok {
-			code = CodeOK
-		} else {
-			code = CodeNotOK
-		}
 		result := ResponseCheckTx{
-			Code:      code.uint32(),
+			Code:      getCode(ok).uint32(),
 			Data:      response.Data,
 			Log:       response.Log,
 			Info:      response.Info,
@@ -125,15 +128,8 @@ func (app *App) txDeliverer() txDeliverer {
 
 		ok, response := handler.ProcessDeliver(txCtx, tx.Data, tx.Fee)
 
-		var code Code
-		if ok {
-			code = CodeOK
-		} else {
-			code = CodeNotOK
-		}
-
 		result := ResponseDeliverTx{
-			Code:      code.uint32(),
+			Code:      getCode(ok).uint32(),
 			Data:      response.Data,
 			Log:       response.Log,
 			Info:      response.Info,
@@ -176,4 +172,13 @@ func (app *App) commitor() commitor {
 		app.logger.Debug("Commit Result", result)
 		return result
 	}
+}
+
+func getCode(ok bool) (code Code) {
+	if ok {
+		code = CodeOK
+	} else {
+		code = CodeNotOK
+	}
+	return
 }
