@@ -4,6 +4,8 @@
   become_user: root
   vars:
     EXPLORE_DATABASE_NAME: explorer_chronos
+    EXPLORE_DATABASE_USER: explorer
+    EXPLORE_DATABASE_USER_PASSWORD: explorer
   tasks:
   - name: download public signing key for postgres
     apt_key:
@@ -22,16 +24,16 @@
     with_items:
     - python-software-properties
     - software-properties-common 
-    - postgresql-9.3 
-    - postgresql-client-9.3 
-    - postgresql-contrib-9.3  
+    - postgresql-9.4 
+    - postgresql-client-9.4 
+    - postgresql-contrib-9.4  
   - name: Adjust PostgreSQL configuration so that remote connections to the database are possible.
     lineinfile:
-      path: /etc/postgresql/9.3/main/pg_hba.conf
+      path: /etc/postgresql/9.4/main/pg_hba.conf
       line: host all  all    0.0.0.0/0  md5
   - name: add ``listen_addresses`` 
     lineinfile:
-      path: /etc/postgresql/9.3/main/postgresql.conf
+      path: /etc/postgresql/9.4/main/postgresql.conf
       line: listen_addresses='*'
   - name: change file permission for testing 
     file:
@@ -39,5 +41,26 @@
       mode: '0660'
       group: explorer 
     with_items:
-    - /etc/postgresql/9.3/main/pg_hba.conf
-    - /etc/postgresql/9.3/main/postgresql.conf
+    - /etc/postgresql/9.4/main/pg_hba.conf
+    - /etc/postgresql/9.4/main/postgresql.conf
+  - name: fullnode configuration setup
+    copy:  
+      dest: "/usr/local/bin/explorerStartup"
+      owner: "{{app_user}}"
+      group: "{{app_user}}"
+      mode: 0744      
+      content: |
+        #!/bin/bash
+        set -m
+        /etc/init.d/postgresql start &&\
+          psql --command "CREATE USER {{EXPLORE_DATABASE_USER}} WITH SUPERUSER PASSWORD '{{EXPLORE_DATABASE_USER_PASSWORD}}';" &&\
+          createdb -O {{EXPLORE_DATABASE_USER}} {{EXPLORE_DATABASE_USER}} &&\
+          createdb -O {{EXPLORE_DATABASE_USER}} {{EXPLORE_DATABASE_NAME}}
+        /etc/init.d/postgresql stop
+        /usr/lib/postgresql/9.4/bin/postgres \
+          -D /var/lib/postgresql/9.4/main \
+          -c config_file=/etc/postgresql/9.4/main/postgresql.conf & 
+        explorer setup --db localhost/explorer_chronos\
+          --dbpassword {{EXPLORE_DATABASE_USER_PASSWORD}} --dbuser {{EXPLORE_DATABASE_USER}}
+        exec "$@"
+        fg %1

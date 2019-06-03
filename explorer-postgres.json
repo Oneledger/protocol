@@ -1,6 +1,6 @@
 {
     "variables": {
-        "app_user": "explorer",
+        "app_user": "postgres",
         "ecr_endpoint": "260114726869.dkr.ecr.us-east-1.amazonaws.com",
         "tag": "develop"
     },
@@ -15,7 +15,7 @@
                 "USER {{user `app_user`}}",
                 "EXPOSE 5432",
                 "VOLUME  [\"/etc/postgresql\", \"/var/log/postgresql\", \"/var/lib/postgresql\"]", 
-                "CMD [\"/usr/lib/postgresql/9.3/bin/postgres\", \"-D\", \"/var/lib/postgresql/9.3/main\", \"-c\", \"config_file=/etc/postgresql/9.3/main/postgresql.conf\"]"
+                "ENTRYPOINT [\"/usr/local/bin/explorerStartup\"]"
             ]
         }
     ],
@@ -31,13 +31,14 @@
         {
             "type": "ansible-local",
             "playbook_file": "ansible/postgres_sql.yml",
-            "command": "ansible-playbook -vvv"
+            "command": "ansible-playbook -vvv",
+            "extra_arguments": ["--extra-vars app_user={{user `app_user`}}"]
         }
     ],
     "post-processors": [
         {
             "type": "docker-tag",
-            "repository": "{{user `ecr_endpoint`}}",
+            "repository": "{{user `ecr_endpoint`}}/oneledger/explorer_postgres",
             "tag": "{{user `tag`}}"
         }
     ]
