@@ -69,7 +69,7 @@ func (app *App) blockBeginner() blockBeginner {
 			Tags: []common.KVPair(nil),
 		}
 
-		app.logger.Debug("Begin Block:", result)
+		app.logger.Debug("Begin Block:", result, "height=", req.Header.Height, "AppHash=", hex.EncodeToString(req.Header.AppHash))
 		return result
 	}
 }
@@ -83,7 +83,12 @@ func (app *App) txChecker() txChecker {
 		if err != nil {
 			app.logger.Errorf("failed to deserialize msg: %s, error: %s ", msg, err)
 		}
-		ok, err := tx.ValidateBasic()
+
+		txCtx := app.Context.Action()
+
+		handler := txCtx.Router.Handler(tx.Data)
+
+		ok, err := handler.Validate(txCtx, tx.Data, tx.Fee, tx.Memo, tx.Signatures)
 		if err != nil {
 			app.logger.Debugf("Check Tx invalid: ", err.Error())
 			return ResponseCheckTx{
@@ -91,11 +96,6 @@ func (app *App) txChecker() txChecker {
 				Log:  err.Error(),
 			}
 		}
-
-		txCtx := app.Context.Action()
-
-		handler := txCtx.Router.Handler(tx.Data)
-
 		ok, response := handler.ProcessCheck(txCtx, tx.Data, tx.Fee)
 
 		result := ResponseCheckTx{
@@ -152,7 +152,7 @@ func (app *App) blockEnder() blockEnder {
 			ValidatorUpdates: updates,
 			Tags:             []common.KVPair(nil),
 		}
-		app.logger.Debug("End Block: ", result)
+		app.logger.Debug("End Block: ", result, "height=", req.Height)
 		return result
 	}
 }

@@ -88,14 +88,8 @@ func (t *BaseTx) SignWithAddress(ctx *Context, address Address) error {
 	return nil
 }
 
-func (t *BaseTx) ValidateBasic() (bool, error) {
-	msg := t.Data
-	signatures := t.Signatures
-	fee := t.Fee
-	toVerify, err := serialize.GetSerializer(serialize.NETWORK).Serialize(&BaseTx{msg, fee, nil, t.Memo})
-	if err != nil {
-		return false, ErrUnserializable
-	}
+func validateBasic(msg Msg, fee Fee, memo string, signatures []Signature) (bool, error) {
+	toVerify := BaseTx{msg, fee, nil, memo}.Bytes()
 
 	for i, s := range msg.Signers() {
 		pkey := signatures[i].Signer

@@ -274,9 +274,8 @@ func (ctx *context) Action() *action.Context {
 		ctx.accounts,
 		ctx.balances,
 		ctx.currencies,
+		ctx.validators,
 		log.NewLoggerWithPrefix(ctx.logWriter, "action"))
-
-	actionCtx.EnableSend()
 
 	return actionCtx
 }

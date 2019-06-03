@@ -39,6 +39,13 @@ type sendTx struct {
 }
 
 func (sendTx) Validate(ctx *Context, msg Msg, fee Fee, memo string, signatures []Signature) (bool, error) {
+	//validate basic signature
+	ok, err := validateBasic(msg, fee, memo, signatures)
+	if err != nil {
+		return ok, err
+	}
+
+	//validate transaction specific field
 	send, ok := msg.(*Send)
 	if !ok {
 		return false, ErrWrongTxType

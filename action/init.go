@@ -10,6 +10,7 @@ type Type int
 
 const (
 	SEND Type = iota
+	APPLYVALIDATOR
 )
 
 var logger *log.Logger
@@ -26,6 +27,8 @@ func (t Type) String() string {
 	switch t {
 	case SEND:
 		return "SEND"
+	case APPLYVALIDATOR:
+		return "APPLY_VALIDATOR"
 	default:
 		return "UNKNOWN"
 	}
