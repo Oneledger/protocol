@@ -1,0 +1,20 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: explorer-deployment
+  labels:
+    app: explorer
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: explorer
+  template:  
+    metadata:
+      labels:
+        app: explorer
+    spec:
+      containers:
+      - name: postgres-database
+        image: localhost:5000/oneledger/explorer_postgres:develop
+        

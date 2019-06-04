@@ -6,12 +6,13 @@ metadata:
     type: local
 spec:
   storageClassName: manual
+  persistentVolumeReclaimPolicy: Delete
   capacity:
     storage: 10Gi
   accessModes:
     - ReadWriteOnce
   hostPath:
-    path: "/mnt/data"
+    path: "/mnt/data/fullnode"
     type: DirectoryOrCreate
 ---
 kind: PersistentVolumeClaim

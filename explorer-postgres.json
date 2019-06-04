@@ -2,7 +2,8 @@
     "variables": {
         "app_user": "postgres",
         "ecr_endpoint": "260114726869.dkr.ecr.us-east-1.amazonaws.com",
-        "tag": "develop"
+        "tag": "develop",
+        "docker_registry": "260114726869.dkr.ecr.us-east-1.amazonaws.com"
     },
     "builders": [
         {
@@ -38,7 +39,7 @@
     "post-processors": [
         {
             "type": "docker-tag",
-            "repository": "{{user `ecr_endpoint`}}/oneledger/explorer_postgres",
+            "repository": "{{user `docker_registry`}}/oneledger/explorer_postgres",
             "tag": "{{user `tag`}}"
         }
     ]
