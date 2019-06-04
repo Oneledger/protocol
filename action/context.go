@@ -12,11 +12,11 @@ type Context struct {
 	Accounts   accounts.Wallet
 	Balances   *balance.Store
 	Currencies *balance.CurrencyList
-	Validators *identity.Validators
+	Validators *identity.ValidatorStore
 	Logger     *log.Logger
 }
 
-func NewContext(r Router, wallet accounts.Wallet, balances *balance.Store, currencies *balance.CurrencyList, validators *identity.Validators, logger *log.Logger) *Context {
+func NewContext(r Router, wallet accounts.Wallet, balances *balance.Store, currencies *balance.CurrencyList, validators *identity.ValidatorStore, logger *log.Logger) *Context {
 
 	return &Context{
 		Router:     r,
