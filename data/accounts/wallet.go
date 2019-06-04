@@ -94,7 +94,7 @@ func (ws *WalletStore) Delete(account Account) error {
 
 	exist := session.Exists(account.Address().Bytes())
 	if !exist {
-		return errors.New("account already exist: " + string(account.Address()))
+		return errors.New("account does not exist: " + string(account.Address()))
 	}
 
 	_, err := session.Delete(account.Address().Bytes())
