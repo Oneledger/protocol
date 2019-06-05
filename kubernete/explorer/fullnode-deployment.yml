@@ -22,16 +22,16 @@ spec:
       - name: fullnode-container
         image: localhost:5000/chronos:v0.10.0
         securityContext:
-          runAsUser: 1000
+          runAsUser: 0
         volumeMounts:
           - mountPath: "/home/node/go/data"
             name: fullnode-pv-claim
         ports:
           - name: sdk-port
-            containerPort: 56606
+            containerPort: 26606
             protocol: TCP
           - name: rpc-port
-            containerPort: 56604
+            containerPort: 26604
             protocol: TCP
       initContainers:
       - name: change-persistent-data-ownership 

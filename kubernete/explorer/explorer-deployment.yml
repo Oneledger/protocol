@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: explorer-deployment
+  labels:
+    app: explorer
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: explorer
+  template:  
+    metadata:
+      labels:
+        app: explorer
+    spec:
+      containers:
+      - name: explorer-watcher 
+        image: localhost:5000/explorer:v0.10.0
+        command: ["/bin/bash", "-c"]
+        args: 
+          - >- 
+            /usr/local/bin/explorer watch 
+            --db explorer-service/explorer_chronos 
+            --dbpassword explorer --dbuser explorer 
+            --sdk tcp://fullnode-service:26606 
+            --tendermint tcp://fullnode-service:26604
+      - name: explorer-api-server
+        image: localhost:5000/explorer:v0.10.0
+        command: ["/bin/bash", "-c"]
+        args: 
+          - >- 
+            /usr/local/bin/explorer serve 
+            --db explorer-service/explorer_chronos 
+            --dbpassword explorer --dbuser explorer 
+            --tendermint tcp://fullnode-service:26604
+            --sdk tcp://fullnode-service:26606 
+        ports:
+        - name: explorer-server
+          containerPort: 80
+          protocol: TCP 
+        securityContext:
+          runAsUser: 0

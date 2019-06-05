@@ -1,0 +1,20 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: explorer-service
+  labels:
+    run: explorer-service
+spec:
+  ports:
+  - name: psql-port
+    port: 5432
+    targetPort: psql-port
+    protocol: TCP
+  - name: explorer-api-server-port
+    port: 80
+    targetPort: explorer-server
+    protocol: TCP
+  type: NodePort
+  selector:
+    app: explorer

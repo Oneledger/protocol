@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: explorer-deployment
+  name: postgres-deployment
   labels:
     app: explorer
 spec:
@@ -17,4 +17,7 @@ spec:
       containers:
       - name: postgres-database
         image: localhost:5000/oneledger/explorer_postgres:develop
-        
+        ports: 
+        - name: psql-port
+          containerPort: 5432
+          protocol: TCP 

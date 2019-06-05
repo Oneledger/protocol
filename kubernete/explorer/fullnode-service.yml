@@ -8,12 +8,12 @@ metadata:
 spec:
   ports:
   - name: sdk-port
-    port: 56606
-    targetPort: sdk-port
+    port: 26606
+    targetPort: 26606
     protocol: TCP
   - name: rpc-port
-    port: 56604
-    targetPort: rpc-port
+    port: 26604
+    targetPort: 26604
     protocol: TCP  
   type: NodePort
   selector:
