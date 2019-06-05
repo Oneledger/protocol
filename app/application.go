@@ -236,7 +236,7 @@ type context struct {
 
 	balances *balance.Store
 
-	validators *identity.Validators // Set of validators currently active
+	validators *identity.ValidatorStore // Set of validators currently active
 	accounts   accounts.Wallet
 	currencies *balance.CurrencyList
 
@@ -256,7 +256,7 @@ func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *NodeContext) (c
 	}
 
 	ctx.rpc = rpc.NewServer(logWriter)
-	ctx.validators = identity.NewValidators()
+	ctx.validators = identity.NewValidatorStore(cfg, ctx.dbDir(), ctx.cfg.Node.DB)
 	ctx.actionRouter = action.NewRouter("action")
 	ctx.balances = balance.NewStore("balances", ctx.dbDir(), ctx.cfg.Node.DB, storage.PERSISTENT)
 	ctx.accounts = accounts.NewWallet(cfg, ctx.dbDir())

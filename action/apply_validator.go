@@ -5,7 +5,6 @@ import (
 	"github.com/Oneledger/protocol/identity"
 	"github.com/Oneledger/protocol/serialize"
 	"github.com/tendermint/tendermint/libs/common"
-	"google.golang.org/grpc/status"
 )
 
 type ApplyValidator struct {
@@ -112,12 +111,17 @@ func (applyTx) ProcessDeliver(ctx *Context, msg Msg, fee Fee) (bool, Response) {
 	stake := identity.Stake{
 		Address: validator.Address,
 		Pubkey:  apply.TmPubKey,
+		Name:    apply.NodeName,
+		Amount:  apply.Stake.ToCoin(ctx),
 	}
-	validators.HandleStake(stake)
-	return false, Response{}
+	err = validators.HandleStake(stake)
+	if err != nil {
+		return false, Response{Log: err.Error()}
+	}
+	return true, Response{Tags: apply.Tags()}
 }
 
-func (applyTx) ProcProcessFee(ctx *Context, fee Fee) (bool, Response) {
+func (applyTx) ProcessFee(ctx *Context, fee Fee) (bool, Response) {
 	panic("implement me")
 	//todo: implement fee charge for apply
 	return true, Response{}
@@ -134,11 +138,7 @@ func (apply ApplyValidator) Tags() common.KVPairs {
 		Key:   []byte("tx.from"),
 		Value: apply.Address.Bytes(),
 	}
-	tag3 := common.KVPair{
-		Key:   []byte("tx.to"),
-		Value: s.To.Bytes(),
-	}
 
-	tags = append(tags, tag, tag2, tag3)
+	tags = append(tags, tag, tag2)
 	return tags
 }

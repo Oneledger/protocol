@@ -89,7 +89,7 @@ func (t *BaseTx) SignWithAddress(ctx *Context, address Address) error {
 }
 
 func validateBasic(msg Msg, fee Fee, memo string, signatures []Signature) (bool, error) {
-	toVerify := BaseTx{msg, fee, nil, memo}.Bytes()
+	toVerify := (&BaseTx{msg, fee, nil, memo}).Bytes()
 
 	for i, s := range msg.Signers() {
 		pkey := signatures[i].Signer
