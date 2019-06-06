@@ -205,7 +205,7 @@
     state: directory
     owner: root
     group: root 
-    mode: 755
+    mode: 0755
   with_items:
     - /usr/share/doc/olclient
     - /usr/share/doc/olfullnode
