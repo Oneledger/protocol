@@ -19,7 +19,7 @@ func init() {
 
 	serialize.RegisterInterface(new(Msg))
 	serialize.RegisterConcrete(new(Send), "action_send")
-
+	serialize.RegisterConcrete(new(ApplyValidator), "action_av")
 	logger = log.NewLoggerWithPrefix(os.Stdout, "action")
 }
 

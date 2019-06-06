@@ -47,3 +47,10 @@ utest:
 
 coverage:
 	go tool cover -html=a.out -o cover.html
+
+
+applytest: install
+	@./scripts/stopDev
+	@./scripts/resetDev
+	@./scripts/startDev
+	@./scripts/testapply

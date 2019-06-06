@@ -188,13 +188,47 @@ func (h *RPCServerContext) SendTx(args client.SendArguments, resp *data.Response
 
 	uuidNew, _ := uuid.NewUUID()
 	fee := action.Fee{args.Fee, args.Gas}
-	tx := action.BaseTx{
+	tx := &action.BaseTx{
 		Data: send,
 		Fee:  fee,
 		Memo: uuidNew.String(),
 	}
 
 	pubKey, signed, err := h.accounts.SignWithAddress(tx.Bytes(), send.From)
+	if err != nil {
+		resp.Error(err.Error())
+		return err
+	}
+	tx.Signatures = []action.Signature{{pubKey, signed}}
+
+	packet, err := serialize.GetSerializer(serialize.NETWORK).Serialize(tx)
+	if err != nil {
+		return errors.Wrap(err, "err while network serialization")
+	}
+
+	resp.SetData(packet)
+	return nil
+}
+
+func (h *RPCServerContext) ApplyValidator(args client.ApplyValidatorArguments, resp *data.Response) error {
+	defer h.recoverPanic()
+
+	apply := action.ApplyValidator{
+		Address:   keys.Address(args.TmAddress),
+		Stake:     action.Amount{"VT", args.Amount},
+		NodeName:  args.Name,
+		TmAddress: keys.Address(args.TmAddress),
+		TmPubKey:  keys.PublicKey{keys.ED25519, args.TmPubKey},
+	}
+
+	uuidNew, _ := uuid.NewUUID()
+	tx := action.BaseTx{
+		Data: apply,
+		Fee:  action.Fee{action.Amount{"VT", args.Amount}, 1.0},
+		Memo: uuidNew.String(),
+	}
+
+	pubKey, signed, err := h.accounts.SignWithAccountIndex(tx.Bytes(), 0)
 	if err != nil {
 		resp.Error(err.Error())
 		return err

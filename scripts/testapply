@@ -1,0 +1,15 @@
+#!/bin/bash
+
+
+
+name=$(ls -l $OLDATA/devnet | awk '(NR==2){print $9}')
+
+olclient init --genesis $OLDATA/devnet/$name/consensus/config/genesis.json --root $
+
+
+if [ -n $name ]
+then
+    echo "run applyvalidator test command on node $name"
+    olclient applyvalidator --root $OLDATA/devnet/$name --amount 1
+fi
+

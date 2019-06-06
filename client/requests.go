@@ -7,12 +7,16 @@ package client
 
 import (
 	"github.com/Oneledger/protocol/action"
+	"github.com/Oneledger/protocol/data/keys"
 )
 
 type ApplyValidatorArguments struct {
-	Id     string
-	Amount float64
-	Purge  bool
+	ValidatorAddress     keys.Address
+	Name 		string
+	Amount 		string
+	Purge  		bool
+	TmAddress   []byte
+	TmPubKey    keys.Address
 }
 
 type SendArguments struct {

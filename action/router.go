@@ -80,7 +80,7 @@ func (r *router) enableSend() error {
 
 func (r *router) enableApplyValidator() error {
 
-	err := r.AddHandler(SEND, sendTx{})
+	err := r.AddHandler(APPLYVALIDATOR, applyTx{})
 	if err != nil {
 		return errors.New("tx handler already exist")
 	}

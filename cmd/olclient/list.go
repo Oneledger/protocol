@@ -16,9 +16,12 @@ package main
 
 import (
 	"fmt"
+	"github.com/Oneledger/protocol/config"
 	"github.com/Oneledger/protocol/data"
 	"github.com/Oneledger/protocol/serialize"
+	"github.com/Oneledger/protocol/app"
 	"github.com/spf13/cobra"
+	"path/filepath"
 )
 
 type ListArguments struct {
@@ -50,9 +53,35 @@ func ListNode(cmd *cobra.Command, args []string) {
 
 	Ctx := NewContext()
 
+
+
+	// test code
+	rootPath, err := filepath.Abs(rootArgs.rootDir)
+	if err != nil {
+		logger.Error(err)
+	}
+
+	cfg := &config.Server{}
+	err = cfg.ReadFile(cfgPath(rootPath))
+	if err != nil {
+		logger.Error("failed to read configuration file at at %s", cfgPath(rootPath))
+
+	}
+	nodeCtx, err := app.NewNodeContext(cfg)
+	if err != nil {
+		logger.Error("failed to create new Node context", err)
+	}
+	app, err := app.NewApp(cfg ,nodeCtx)
+	balanve := app.Context.ValidatorCtx()
+	fmt.Println(balanve)
+	if err != nil {
+		logger.Error("failed to create new app", err)
+	}
+	//
+
 	req := data.NewRequestFromData("listAccounts", []byte{})
 	resp := &data.Response{}
-	err := Ctx.clCtx.Query("server.ListAccounts", req, resp)
+	err = Ctx.clCtx.Query("server.ListAccounts", req, resp)
 	if err != nil {
 		logger.Error("error in getting all accounts", err)
 		return

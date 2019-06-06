@@ -7,6 +7,8 @@ import (
 	"github.com/tendermint/tendermint/libs/common"
 )
 
+var _ Msg = ApplyValidator{}
+
 type ApplyValidator struct {
 	Address   Address
 	Stake     Amount
@@ -37,7 +39,7 @@ type applyTx struct {
 }
 
 func (applyTx) Validate(ctx *Context, msg Msg, fee Fee, memo string, signatures []Signature) (bool, error) {
-	apply := msg.(ApplyValidator)
+	apply := msg.(*ApplyValidator)
 
 	ok, err := validateBasic(msg, fee, memo, signatures)
 	if err != nil {
@@ -69,7 +71,7 @@ func (applyTx) Validate(ctx *Context, msg Msg, fee Fee, memo string, signatures 
 }
 
 func (a applyTx) ProcessCheck(ctx *Context, msg Msg, fee Fee) (bool, Response) {
-	apply := msg.(ApplyValidator)
+	apply := msg.(*ApplyValidator)
 
 	result, err := checkBalances(ctx, apply.Address, apply.Stake)
 	if err != nil {
@@ -98,7 +100,7 @@ func checkBalances(ctx *Context, address Address, stake Amount) (bool, error) {
 }
 
 func (applyTx) ProcessDeliver(ctx *Context, msg Msg, fee Fee) (bool, Response) {
-	apply := msg.(ApplyValidator)
+	apply := msg.(*ApplyValidator)
 
 	_, err := checkBalances(ctx, apply.Address, apply.Stake)
 	if err != nil {
