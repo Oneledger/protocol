@@ -49,6 +49,16 @@ func (app *App) chainInitializer() chainInitializer {
 			app.logger.Error("Failed to setupState", "err", err)
 			return ResponseInitChain{}
 		}
+
+		//update the initial validator set to db, this should always comes after setupState as the currency for
+		// validator will be registered by setupState
+		validators, err := app.setupValidators(req, app.Context.currencies)
+		if err != nil {
+			app.logger.Error("Failed to setupValidator", "err", err)
+			return ResponseInitChain{}
+		}
+		_ = validators
+		app.logger.Error("finish chain initialize")
 		return ResponseInitChain{}
 	}
 }
@@ -108,7 +118,7 @@ func (app *App) txChecker() txChecker {
 			Tags:      response.Tags,
 			Codespace: "",
 		}
-		app.logger.Debug("Check Tx: ", result)
+		app.logger.Debug("Check Tx: ", result, "log", response.Log)
 		return result
 
 	}
@@ -163,7 +173,8 @@ func (app *App) commitor() commitor {
 		// Commit any pending changes.
 		hash, ver := app.Context.balances.Commit()
 
-		app.logger.Debugf("Committed New Block hash[%s], version[%d]", hex.EncodeToString(hash), ver)
+		_, _ = app.Context.validators.ChainState.Commit()
+		app.logger.Debugf("Committed New Block height[%d], hash[%s], version[%d]", app.header.Height, hex.EncodeToString(hash), ver)
 
 		result := ResponseCommit{
 			Data: hash,

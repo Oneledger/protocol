@@ -2,12 +2,6 @@ package app
 
 import (
 	"encoding/hex"
-	"io"
-	"net/url"
-	"os"
-	"path/filepath"
-	"strings"
-
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/config"
 	"github.com/Oneledger/protocol/consensus"
@@ -18,6 +12,12 @@ import (
 	"github.com/Oneledger/protocol/rpc"
 	"github.com/Oneledger/protocol/serialize"
 	"github.com/Oneledger/protocol/storage"
+	"github.com/tendermint/tendermint/abci/types"
+	"io"
+	"net/url"
+	"os"
+	"path/filepath"
+	"strings"
 
 	"github.com/pkg/errors"
 	"github.com/tendermint/tendermint/libs/common"
@@ -111,7 +111,6 @@ func (app *App) setupState(stateBytes []byte) error {
 
 	// (1) Register all the currencies
 	for _, currency := range initial.Currencies {
-		app.logger.Debugf("register currency %s", currency)
 		err := balanceCtx.Currencies().Register(currency)
 		if err != nil {
 			return errors.Wrapf(err, "failed to register currency %s", currency.Name)
@@ -153,14 +152,20 @@ func (app *App) setupState(stateBytes []byte) error {
 			continue
 		}
 
-		err = walletCtx.Add(acct)
-		if err != nil {
-			app.logger.Warn("Failed to register myself", "err", err)
-			continue
+		if _, err := walletCtx.GetAccount(acct.Address()); err != nil {
+			err = walletCtx.Add(acct)
+			if err != nil {
+				app.logger.Warn("Failed to register myself", "err", err)
+				continue
+			}
 		}
 		app.logger.Info("Successfully registered myself!")
 	}
 	return nil
+}
+
+func (app *App) setupValidators(req RequestInitChain, currencies *balance.CurrencyList) (types.ValidatorUpdates, error) {
+	return app.Context.validators.Init(req, currencies)
 }
 
 // Start initializes the state

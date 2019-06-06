@@ -213,18 +213,44 @@ func (h *RPCServerContext) SendTx(args client.SendArguments, resp *data.Response
 func (h *RPCServerContext) ApplyValidator(args client.ApplyValidatorArguments, resp *data.Response) error {
 	defer h.recoverPanic()
 
+	if len(args.Name) < 1 {
+		args.Name = h.nodeName
+	}
+
+	if len(args.Address) < 1 {
+		handler, err := h.nodeContext.PubKey().GetHandler()
+		if err != nil {
+			return err
+		}
+		args.Address = handler.Address()
+	}
+
+	pubkey := &keys.PublicKey{keys.GetAlgorithmFromTmKeyName(args.TmPubKeyType), args.TmPubKey}
+	if len(args.TmPubKey) < 1 {
+		*pubkey = h.nodeContext.ValidatorPubKey()
+
+		h.logger.Debug("length", len(pubkey.Data))
+	}
+
+	handler, err := pubkey.GetHandler()
+	if err != nil {
+
+		return err
+	}
+
+	addr := handler.Address()
 	apply := action.ApplyValidator{
-		Address:   keys.Address(args.TmAddress),
-		Stake:     action.Amount{"VT", args.Amount},
-		NodeName:  args.Name,
-		TmAddress: keys.Address(args.TmAddress),
-		TmPubKey:  keys.PublicKey{keys.ED25519, args.TmPubKey},
+		Address:          keys.Address(args.Address),
+		Stake:            action.Amount{Currency: "VT", Value: args.Amount},
+		NodeName:         args.Name,
+		ValidatorAddress: addr,
+		ValidatorPubKey:  *pubkey,
 	}
 
 	uuidNew, _ := uuid.NewUUID()
 	tx := action.BaseTx{
 		Data: apply,
-		Fee:  action.Fee{action.Amount{"VT", args.Amount}, 1.0},
+		Fee:  action.Fee{action.Amount{Currency: "OLT", Value: "0.1"}, 1},
 		Memo: uuidNew.String(),
 	}
 

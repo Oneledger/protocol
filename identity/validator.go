@@ -7,11 +7,12 @@ import (
 )
 
 type Validator struct {
-	Address keys.Address
-	PubKey  keys.PublicKey
-	Power   int64
-	Name    string
-	Staking balance.Coin
+	Address      keys.Address
+	StakeAddress keys.Address
+	PubKey       keys.PublicKey
+	Power        int64
+	Name         string
+	Staking      balance.Coin
 }
 
 func (v Validator) Bytes() []byte {
@@ -33,10 +34,11 @@ func (v *Validator) FromBytes(msg []byte) *Validator {
 }
 
 type Stake struct {
-	Address keys.Address
-	Pubkey  keys.PublicKey
-	Name    string
-	Amount  balance.Coin
+	ValidatorAddress keys.Address
+	StakeAddress     keys.Address
+	Pubkey           keys.PublicKey
+	Name             string
+	Amount           balance.Coin
 }
 
 type Unstake struct {

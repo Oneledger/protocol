@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/tendermint/tendermint/privval"
 
 	"github.com/pkg/errors"
 	"github.com/tendermint/tendermint/abci/types"
@@ -144,6 +145,16 @@ func NewKeyPairFromTendermint() (PublicKey, PrivateKey, error) {
 func NodeKeyFromTendermint(key *p2p.NodeKey) (PrivateKey, error) {
 	if key == nil {
 		return PrivateKey{}, errors.New("NodeKeyFromTendermint: got nil argument")
+	}
+	bz := key.PrivKey.Bytes()[tmPrefixSize:]
+	return GetPrivateKeyFromBytes(bz, ED25519)
+}
+
+// NodeKeyFromTendermint returns a PrivateKey from a tendermint NodeKey.
+// The input key must be a ED25519 key.
+func PVKeyFromTendermint(key *privval.FilePVKey) (PrivateKey, error) {
+	if key == nil {
+		return PrivateKey{}, errors.New("PVKeyFromTendermint: got nil argument")
 	}
 	bz := key.PrivKey.Bytes()[tmPrefixSize:]
 	return GetPrivateKeyFromBytes(bz, ED25519)

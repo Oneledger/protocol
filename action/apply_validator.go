@@ -10,11 +10,11 @@ import (
 var _ Msg = ApplyValidator{}
 
 type ApplyValidator struct {
-	Address   Address
-	Stake     Amount
-	NodeName  string
-	TmAddress Address
-	TmPubKey  keys.PublicKey
+	Address          Address
+	Stake            Amount
+	NodeName         string
+	ValidatorAddress Address
+	ValidatorPubKey  keys.PublicKey
 }
 
 func (apply ApplyValidator) Signers() []Address {
@@ -50,10 +50,10 @@ func (applyTx) Validate(ctx *Context, msg Msg, fee Fee, memo string, signatures 
 		return false, ErrMissingData
 	}
 
-	if apply.TmAddress == nil {
+	if apply.ValidatorAddress == nil {
 		return false, ErrMissingData
 	}
-	_, err = apply.TmPubKey.GetHandler()
+	_, err = apply.ValidatorPubKey.GetHandler()
 	if err != nil {
 		return false, ErrInvalidPubkey
 	}
@@ -108,14 +108,30 @@ func (applyTx) ProcessDeliver(ctx *Context, msg Msg, fee Fee) (bool, Response) {
 	}
 
 	validators := ctx.Validators
-	validator := validators.GetValidator(apply.TmAddress)
 
 	stake := identity.Stake{
-		Address: validator.Address,
-		Pubkey:  apply.TmPubKey,
-		Name:    apply.NodeName,
-		Amount:  apply.Stake.ToCoin(ctx),
+		ValidatorAddress: apply.ValidatorAddress,
+		StakeAddress:     apply.Address,
+		Pubkey:           apply.ValidatorPubKey,
+		Name:             apply.NodeName,
+		Amount:           apply.Stake.ToCoin(ctx),
 	}
+
+	balances := ctx.Balances
+	balance, err := balances.Get(apply.Address.Bytes(), false)
+	if err != nil {
+		return false, Response{Log: err.Error()}
+	}
+	b, err := balance.MinusCoin(apply.Stake.ToCoin(ctx))
+	if err != nil {
+		return false, Response{Log: err.Error()}
+	}
+
+	err = balances.Set(apply.Address.Bytes(), *b)
+	if err != nil {
+		return false, Response{Log: err.Error()}
+	}
+
 	err = validators.HandleStake(stake)
 	if err != nil {
 		return false, Response{Log: err.Error()}

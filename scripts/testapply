@@ -1,11 +1,7 @@
 #!/bin/bash
 
 
-
-name=$(ls -l $OLDATA/devnet | awk '(NR==2){print $9}')
-
-olclient init --genesis $OLDATA/devnet/$name/consensus/config/genesis.json --root $
-
+name=$(ls -l $OLDATA/devnet | grep Node | awk '(NR==5){print $9}')
 
 if [ -n $name ]
 then

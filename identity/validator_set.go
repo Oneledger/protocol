@@ -2,7 +2,6 @@ package identity
 
 import (
 	"container/heap"
-	"fmt"
 	"github.com/Oneledger/protocol/config"
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/keys"
@@ -29,6 +28,44 @@ func NewValidatorStore(cfg config.Server, dbPath string, dbType string) *Validat
 	}
 }
 
+func (vs *ValidatorStore) Init(req types.RequestInitChain, currencies *balance.CurrencyList) (types.ValidatorUpdates, error) {
+	currency, ok := currencies.GetCurrencyByName("VT")
+	if !ok {
+		return req.Validators, errors.New("stake token not registered")
+	}
+	validatorUpdates := make([]types.ValidatorUpdate, 0)
+
+	for _, v := range req.Validators {
+
+		vpubkey, err := keys.GetPublicKeyFromBytes(v.PubKey.Data, keys.GetAlgorithmFromTmKeyName(v.PubKey.Type))
+		if err != nil {
+			return validatorUpdates, errors.Wrap(err, "invalid pubkey type")
+		}
+
+		h, err := vpubkey.GetHandler()
+		if err != nil {
+			return validatorUpdates, errors.Wrap(err, "invalid pubkey type")
+		}
+
+		validator := Validator{
+			Address:      h.Address(),
+			StakeAddress: h.Address(), //todo : put the validator address for validator in genesis for now. should be a different address from who the validator pay the stake
+			PubKey:       vpubkey,
+			Power:        v.Power,
+			Name:         "",
+			//todo: this should be change with @todo99
+			Staking: currency.NewCoinFromInt(v.Power),
+		}
+		err = vs.ChainState.Set(h.Address().Bytes(), validator.Bytes())
+		if err != nil {
+			return req.Validators, errors.New("failed to add initial validators")
+		}
+		//fmt.Println("address in init ", hex.EncodeToString(h.Address().Bytes()))
+		validatorUpdates = append(validatorUpdates, v)
+	}
+	return validatorUpdates, nil
+}
+
 //setup the validators according to begin block
 func (vs *ValidatorStore) Set(req types.RequestBeginBlock) error {
 	vs.proposer = req.Header.GetProposerAddress()
@@ -42,7 +79,7 @@ func (vs *ValidatorStore) Set(req types.RequestBeginBlock) error {
 	i := 0
 	vs.ChainState.Iterate(func(key, value []byte) bool {
 		validator := (&Validator{}).FromBytes(value)
-		queued := Queued{
+		queued := &Queued{
 			value:    key,
 			priority: validator.Power,
 			index:    i,
@@ -60,7 +97,6 @@ func (vs *ValidatorStore) Set(req types.RequestBeginBlock) error {
 
 func updateValidiatorSet(store *storage.ChainState, votes []types.VoteInfo) error {
 
-	fmt.Println("q", votes)
 	for _, v := range votes {
 		addr := v.Validator.GetAddress()
 		if !store.Exists(addr) {
@@ -74,14 +110,15 @@ func updateValidiatorSet(store *storage.ChainState, votes []types.VoteInfo) erro
 func (vs *ValidatorStore) HandleStake(apply Stake) error {
 	validator := &Validator{}
 	queued := &Queued{}
-	if !vs.ChainState.Exists(apply.Address.Bytes()) {
+	if !vs.ChainState.Exists(apply.ValidatorAddress.Bytes()) {
 
 		validator = &Validator{
-			Address: apply.Address,
-			PubKey:  apply.Pubkey,
-			Power:   0,
-			Name:    apply.Name,
-			Staking: apply.Amount.Currency.NewCoinFromInt(0),
+			Address:      apply.ValidatorAddress,
+			StakeAddress: apply.StakeAddress,
+			PubKey:       apply.Pubkey,
+			Power:        0,
+			Name:         apply.Name,
+			Staking:      apply.Amount.Currency.NewCoinFromInt(0),
 		}
 		// push the new validator to queue
 		queued = &Queued{
@@ -91,7 +128,7 @@ func (vs *ValidatorStore) HandleStake(apply Stake) error {
 		vs.queue.Push(queued)
 	}
 
-	value := vs.ChainState.Get(apply.Address.Bytes(), false)
+	value := vs.ChainState.Get(apply.ValidatorAddress.Bytes(), false)
 	if value == nil {
 		return errors.New("failed to get validator from store")
 	}
@@ -116,7 +153,7 @@ func (vs *ValidatorStore) HandleStake(apply Stake) error {
 }
 
 func calculatePower(stake balance.Coin) int64 {
-	//todo: change to correct power function
+	//todo: change to correct power function @todo99
 	return stake.Amount.Int64()
 }
 
@@ -194,8 +231,4 @@ func (vs *ValidatorStore) GetEndBlockUpdate(ctx *ValidatorContext, req types.Req
 
 	//todo : get the final updates from vs.cached
 	return validatorUpdates
-}
-
-func (vs *ValidatorStore) GetValidator(addr keys.Address) *Validator {
-	return nil
 }
