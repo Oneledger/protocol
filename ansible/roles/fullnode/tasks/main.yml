@@ -193,9 +193,33 @@
     file_type: any
   register: files_to_delete
   when: dev_mode == "false"
-- name: delete unnesscary linux package to reduce size
+- name: delete unnesscary package repo file to reduce size
   file:
     path: "{{ item.path }}"
     state: absent
   with_items: "{{ files_to_delete.files }}"
   when: dev_mode == "false"
+- name: Ensures license dir exists
+  file: 
+    path: "{{ item }}"
+    state: directory
+    owner: root
+    group: root 
+    mode: 755
+  with_items:
+    - /usr/share/doc/olclient
+    - /usr/share/doc/olfullnode
+- name: copy apache v2 license  
+  copy:
+    src: ../files/license
+    dest: "{{ item }}"
+    owner: "root"
+    group: "root"
+    mode: 0644 
+  with_items:
+    - /usr/share/doc/olclient
+    - /usr/share/doc/olfullnode
+- name: remove unnesscary pip package (open source liscence compliance)
+  pip:
+    name: ansible
+    state: absent
