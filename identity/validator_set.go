@@ -23,7 +23,7 @@ func NewValidatorStore(cfg config.Server, dbPath string, dbType string) *Validat
 	return &ValidatorStore{
 		ChainState: store,
 		proposer:   []byte(nil),
-		queue:      make(ValidatorQueue, 0),
+		queue:      make(ValidatorQueue, 0, 100),
 		byzantine:  make([]Validator, 0),
 	}
 }
@@ -75,7 +75,7 @@ func (vs *ValidatorStore) Set(req types.RequestBeginBlock) error {
 	}
 
 	//initialize the queue for validators
-	heap.Init(&vs.queue)
+	vs.queue = make(ValidatorQueue, 0, 100)
 	i := 0
 	vs.ChainState.Iterate(func(key, value []byte) bool {
 		validator := (&Validator{}).FromBytes(value)
@@ -84,11 +84,14 @@ func (vs *ValidatorStore) Set(req types.RequestBeginBlock) error {
 			priority: validator.Power,
 			index:    i,
 		}
-		vs.queue.Push(queued)
+		vs.queue = append(vs.queue, queued)
+		//		vs.queue.Push(queued)
 		i++
-		return true
+		return false
 	})
+	heap.Init(&vs.queue)
 
+	logger.Debug("validator_update queue", vs.queue.Len(), "votes", len(req.LastCommitInfo.Votes))
 	//update the byzantine node that need to be slashed
 	vs.byzantine = make([]Validator, 0)
 	vs.byzantine = makingslash(vs, req.ByzantineValidators)
@@ -109,45 +112,44 @@ func updateValidiatorSet(store *storage.ChainState, votes []types.VoteInfo) erro
 // handle stake action
 func (vs *ValidatorStore) HandleStake(apply Stake) error {
 	validator := &Validator{}
-	queued := &Queued{}
+
 	if !vs.ChainState.Exists(apply.ValidatorAddress.Bytes()) {
 
 		validator = &Validator{
 			Address:      apply.ValidatorAddress,
 			StakeAddress: apply.StakeAddress,
 			PubKey:       apply.Pubkey,
-			Power:        0,
+			Power:        calculatePower(apply.Amount),
 			Name:         apply.Name,
-			Staking:      apply.Amount.Currency.NewCoinFromInt(0),
+			Staking:      apply.Amount,
 		}
 		// push the new validator to queue
-		queued = &Queued{
-			value:    validator.Address,
-			priority: validator.Power,
+	} else {
+		value := vs.ChainState.Get(apply.ValidatorAddress.Bytes(), false)
+		if value == nil {
+			return errors.New("failed to get validator from store")
 		}
-		vs.queue.Push(queued)
+		validator = validator.FromBytes(value)
+
+		amt, err := validator.Staking.Plus(apply.Amount)
+		if err != nil {
+			return errors.Wrap(err, "error adding staking amount")
+		}
+		validator.Staking = amt
+		validator.Power = calculatePower(amt)
+
+		queued := &Queued{}
+		queued.value = validator.Address
+		vs.queue.update(queued, queued.value, validator.Power)
 	}
 
-	value := vs.ChainState.Get(apply.ValidatorAddress.Bytes(), false)
-	if value == nil {
-		return errors.New("failed to get validator from store")
-	}
-	validator = validator.FromBytes(value)
-	queued.value = validator.Address
+	value := (validator).Bytes()
+	logger.Debug("validator stake ", validator, value)
 
-	amt, err := validator.Staking.Plus(apply.Amount)
-	if err != nil {
-		return errors.Wrap(err, "error adding staking amount")
-	}
-	validator.Staking = amt
-	validator.Power = calculatePower(amt)
-
-	err = vs.ChainState.Set(validator.Address.Bytes(), validator.Bytes())
+	err := vs.ChainState.Set(validator.Address.Bytes(), value)
 	if err != nil {
 		return errors.Wrap(err, "failed to set validator for stake")
 	}
-
-	vs.queue.update(queued, queued.value, validator.Power)
 
 	return nil
 }
@@ -209,7 +211,7 @@ func (vs *ValidatorStore) GetEndBlockUpdate(ctx *ValidatorContext, req types.Req
 
 	validatorUpdates := make([]types.ValidatorUpdate, 0)
 
-	if req.Height > 1 && (len(vs.byzantine) > 0) {
+	if req.Height > 1 || (len(vs.byzantine) > 0) {
 
 		for _, remove := range vs.byzantine {
 
@@ -218,10 +220,13 @@ func (vs *ValidatorStore) GetEndBlockUpdate(ctx *ValidatorContext, req types.Req
 				logger.Error("failed to set byzantine validator at end block")
 			}
 		}
-		for i := 0; i < 64; i++ {
+
+		length := vs.queue.Len()
+		for i := 0; i < 64 && i < length; i++ {
 			queued := heap.Pop(&vs.queue).(*Queued)
 			result := vs.ChainState.Get(queued.value, true)
 			validator := (&Validator{}).FromBytes(result)
+			logger.Debugf("validator_update id: %d validator: %#v", i, validator)
 			validatorUpdates = append(validatorUpdates, types.ValidatorUpdate{
 				PubKey: validator.PubKey.GetABCIPubKey(),
 				Power:  validator.Power,

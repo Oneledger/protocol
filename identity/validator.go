@@ -19,7 +19,7 @@ func (v Validator) Bytes() []byte {
 	value, err := serialize.GetSerializer(serialize.PERSISTENT).Serialize(v)
 	if err != nil {
 		logger.Error("validator not serializable", err)
-		return nil
+		return []byte{}
 	}
 	return value
 }

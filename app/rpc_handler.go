@@ -228,8 +228,6 @@ func (h *RPCServerContext) ApplyValidator(args client.ApplyValidatorArguments, r
 	pubkey := &keys.PublicKey{keys.GetAlgorithmFromTmKeyName(args.TmPubKeyType), args.TmPubKey}
 	if len(args.TmPubKey) < 1 {
 		*pubkey = h.nodeContext.ValidatorPubKey()
-
-		h.logger.Debug("length", len(pubkey.Data))
 	}
 
 	handler, err := pubkey.GetHandler()
