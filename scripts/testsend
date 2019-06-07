@@ -6,5 +6,6 @@ if [ -n $name ]
 then
     echo "run load test command on node $name"
     olclient loadtest --root $OLDATA/devnet/$name --threads 1 --interval 10 --max-tx 10
+
 fi
 

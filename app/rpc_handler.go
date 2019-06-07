@@ -16,6 +16,7 @@ package app
 
 import (
 	"fmt"
+	"github.com/Oneledger/protocol/identity"
 	"net/url"
 	"os"
 	"runtime/debug"
@@ -45,15 +46,16 @@ type RPCServerContext struct {
 	currencies  *balance.CurrencyList
 	cfg         config.Server
 	nodeContext NodeContext
+	validatorSet *identity.ValidatorStore
 
 	logger *log.Logger
 }
 
 func NewClientHandler(nodeName string, balances *balance.Store, accounts accounts.Wallet,
-	currencies *balance.CurrencyList, cfg config.Server, nodeContext NodeContext) *RPCServerContext {
+	currencies *balance.CurrencyList, cfg config.Server, nodeContext NodeContext, validatorSet *identity.ValidatorStore) *RPCServerContext {
 
 	return &RPCServerContext{nodeName, balances,
-		accounts, currencies, cfg, nodeContext,
+		accounts, currencies, cfg, nodeContext, validatorSet,
 		log.NewLoggerWithPrefix(os.Stdout, "client_Handler")}
 }
 
@@ -167,7 +169,6 @@ func (h *RPCServerContext) ListAccounts(req data.Request, resp *data.Response) e
 	defer h.recoverPanic()
 
 	accs := h.accounts.Accounts()
-
 	result := make([]string, len(accs))
 	for i, a := range accs {
 		result[i] = a.String()
@@ -265,6 +266,19 @@ func (h *RPCServerContext) ApplyValidator(args client.ApplyValidatorArguments, r
 	}
 
 	resp.SetData(packet)
+	return nil
+}
+
+// ListValidator returns a list of all validator
+func (h *RPCServerContext) ListValidators(req data.Request, resp *data.Response) error {
+	defer h.recoverPanic()
+
+	validators, err := h.validatorSet.GetValidatorSet()
+	if err != nil {
+		return errors.Wrap(err, "err while retrieving validators info")
+	}
+
+	resp.SetDataObj(validators)
 	return nil
 }
 

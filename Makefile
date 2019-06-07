@@ -54,3 +54,5 @@ applytest: install
 	@./scripts/resetDev
 	@./scripts/startDev
 	@./scripts/testapply
+	@./scripts/getValidators
+	@./scripts/stopDev

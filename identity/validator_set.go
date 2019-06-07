@@ -96,6 +96,18 @@ func (vs *ValidatorStore) Set(req types.RequestBeginBlock) error {
 	return err
 }
 
+//get validators set
+func (vs *ValidatorStore) GetValidatorSet() ([]Validator, error) {
+
+	validatorSet := make([]Validator, 0)
+	vs.ChainState.Iterate(func(key, value []byte) bool {
+		validator := (&Validator{}).FromBytes(value)
+		validatorSet = append(validatorSet, *validator)
+		return false
+	})
+	return validatorSet, nil
+}
+
 func updateValidiatorSet(store *storage.ChainState, votes []types.VoteInfo) error {
 
 	for _, v := range votes {

@@ -29,6 +29,7 @@ var _ abciController = &App{}
 type App struct {
 	Context context
 
+
 	name     string
 	nodeName string
 	logger   *log.Logger
@@ -213,7 +214,7 @@ func (app *App) rpcStarter() (func() error, error) {
 	noop := func() error { return nil }
 
 	handlers := NewClientHandler(app.Context.cfg.Node.NodeName, app.Context.balances,
-		app.Context.accounts, app.Context.currencies, app.Context.cfg, app.Context.node)
+		app.Context.accounts, app.Context.currencies, app.Context.cfg, app.Context.node, app.Context.validators)
 
 	u, err := url.Parse(app.Context.cfg.Network.SDKAddress)
 	if err != nil {
@@ -322,4 +323,9 @@ func (ctx *context) Close() {
 
 func (ctx *context) Node() NodeContext {
 	return ctx.node
+}
+
+
+func (ctx *context) Validators() *identity.ValidatorStore {
+	return ctx.validators
 }
