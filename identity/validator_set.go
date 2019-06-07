@@ -60,7 +60,6 @@ func (vs *ValidatorStore) Init(req types.RequestInitChain, currencies *balance.C
 		if err != nil {
 			return req.Validators, errors.New("failed to add initial validators")
 		}
-		//fmt.Println("address in init ", hex.EncodeToString(h.Address().Bytes()))
 		validatorUpdates = append(validatorUpdates, v)
 	}
 	return validatorUpdates, nil
@@ -71,7 +70,7 @@ func (vs *ValidatorStore) Set(req types.RequestBeginBlock) error {
 	vs.proposer = req.Header.GetProposerAddress()
 	err := updateValidiatorSet(vs.ChainState, req.LastCommitInfo.Votes)
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "height=%d", req.Header.Height)
 	}
 
 	//initialize the queue for validators
@@ -91,7 +90,6 @@ func (vs *ValidatorStore) Set(req types.RequestBeginBlock) error {
 	})
 	heap.Init(&vs.queue)
 
-	logger.Debug("validator_update queue", vs.queue.Len(), "votes", len(req.LastCommitInfo.Votes))
 	//update the byzantine node that need to be slashed
 	vs.byzantine = make([]Validator, 0)
 	vs.byzantine = makingslash(vs, req.ByzantineValidators)
@@ -144,7 +142,6 @@ func (vs *ValidatorStore) HandleStake(apply Stake) error {
 	}
 
 	value := (validator).Bytes()
-	logger.Debug("validator stake ", validator, value)
 
 	err := vs.ChainState.Set(validator.Address.Bytes(), value)
 	if err != nil {
@@ -218,6 +215,7 @@ func (vs *ValidatorStore) GetEndBlockUpdate(ctx *ValidatorContext, req types.Req
 			err := vs.ChainState.Set(remove.Address.Bytes(), remove.Bytes())
 			if err != nil {
 				logger.Error("failed to set byzantine validator at end block")
+				//todo: add fatal status for here after we decide what to do with byzantine validator
 			}
 		}
 
@@ -226,7 +224,6 @@ func (vs *ValidatorStore) GetEndBlockUpdate(ctx *ValidatorContext, req types.Req
 			queued := heap.Pop(&vs.queue).(*Queued)
 			result := vs.ChainState.Get(queued.value, true)
 			validator := (&Validator{}).FromBytes(result)
-			logger.Debugf("validator_update id: %d validator: %#v", i, validator)
 			validatorUpdates = append(validatorUpdates, types.ValidatorUpdate{
 				PubKey: validator.PubKey.GetABCIPubKey(),
 				Power:  validator.Power,
@@ -236,4 +233,8 @@ func (vs *ValidatorStore) GetEndBlockUpdate(ctx *ValidatorContext, req types.Req
 
 	//todo : get the final updates from vs.cached
 	return validatorUpdates
+}
+
+func (vs *ValidatorStore) Commit() ([]byte, int64) {
+	return vs.ChainState.Commit()
 }

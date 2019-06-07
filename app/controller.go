@@ -2,11 +2,11 @@ package app
 
 import (
 	"encoding/hex"
-
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/serialize"
 	"github.com/Oneledger/protocol/version"
 	"github.com/tendermint/tendermint/libs/common"
+	"golang.org/x/crypto/ripemd160"
 )
 
 // The following set of functions will be passed to the abciController
@@ -57,9 +57,8 @@ func (app *App) chainInitializer() chainInitializer {
 			app.logger.Error("Failed to setupValidator", "err", err)
 			return ResponseInitChain{}
 		}
-		_ = validators
 		app.logger.Error("finish chain initialize")
-		return ResponseInitChain{}
+		return ResponseInitChain{Validators: validators}
 	}
 }
 
@@ -171,10 +170,16 @@ func (app *App) commitor() commitor {
 	return func() ResponseCommit {
 
 		// Commit any pending changes.
-		hash, ver := app.Context.balances.Commit()
+		hashb, verb := app.Context.balances.Commit()
 
-		_, _ = app.Context.validators.ChainState.Commit()
-		app.logger.Debugf("Committed New Block height[%d], hash[%s], version[%d]", app.header.Height, hex.EncodeToString(hash), ver)
+		hashv, verv := app.Context.validators.Commit()
+
+		apphash := &appHash{}
+		apphash.Hashes = append(apphash.Hashes, hashb, hashv)
+
+		_, _ = verb, verv
+		hash := apphash.hash()
+		app.logger.Debugf("Committed New Block height[%d], hash[%s]", app.header.Height, hex.EncodeToString(hash))
 
 		result := ResponseCommit{
 			Data: hash,
@@ -192,4 +197,16 @@ func getCode(ok bool) (code Code) {
 		code = CodeNotOK
 	}
 	return
+}
+
+//todo: make appHash to use a commiter function to finish the commit and hashing for all the store that passed
+type appHash struct {
+	Hashes [][]byte `json:"hashes"`
+}
+
+func (ah *appHash) hash() []byte {
+	result, _ := serialize.GetSerializer(serialize.JSON).Serialize(ah)
+	hasher := ripemd160.New()
+	hasher.Write(result)
+	return hasher.Sum(nil)
 }
