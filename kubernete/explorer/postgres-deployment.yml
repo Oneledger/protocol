@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
       - name: postgres-database
-        image: localhost:5000/oneledger/explorer_postgres:develop
+        image: gcr.io/atomic-land-223022/oneledger/explorer_postgres:v0.10.0
         ports: 
         - name: psql-port
           containerPort: 5432

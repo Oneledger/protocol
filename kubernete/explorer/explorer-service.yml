@@ -15,6 +15,6 @@ spec:
     port: 80
     targetPort: explorer-server
     protocol: TCP
-  type: NodePort
+  type: LoadBalancer
   selector:
     app: explorer

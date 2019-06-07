@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
       - name: explorer-watcher 
-        image: localhost:5000/explorer:v0.10.0
+        image: gcr.io/atomic-land-223022/oneledger/explorer:v0.10.0
         command: ["/bin/bash", "-c"]
         args: 
           - >- 
@@ -26,7 +26,7 @@ spec:
             --sdk tcp://fullnode-service:26606 
             --tendermint tcp://fullnode-service:26604
       - name: explorer-api-server
-        image: localhost:5000/explorer:v0.10.0
+        image: gcr.io/atomic-land-223022/oneledger/explorer:v0.10.0
         command: ["/bin/bash", "-c"]
         args: 
           - >- 
