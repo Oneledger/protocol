@@ -24,7 +24,6 @@ import (
 type ListArguments struct {
 	identityName string
 	accountName  string
-	validators   bool
 }
 
 var listCmd = &cobra.Command{
@@ -42,7 +41,6 @@ func init() {
 	// Transaction Parameters
 	listCmd.Flags().StringVar(&list.identityName, "identity", "", "identity name")
 	listCmd.Flags().StringVar(&list.accountName, "account", "", "account name")
-	listCmd.Flags().BoolVar(&list.validators, "validators", false, "include validators")
 }
 
 // IssueRequest sends out a sendTx to all of the nodes in the chain
