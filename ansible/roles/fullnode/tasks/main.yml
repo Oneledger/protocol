@@ -207,18 +207,16 @@
     group: root 
     mode: 0755
   with_items:
-    - /usr/share/doc/olclient
-    - /usr/share/doc/olfullnode
+    - /usr/share/doc/THIRD_PARTY_NOTICES
 - name: copy apache v2 license  
   copy:
-    src: ../files/license
+    src: ../files/licenses/
     dest: "{{ item }}"
     owner: "root"
     group: "root"
     mode: 0644 
   with_items:
-    - /usr/share/doc/olclient
-    - /usr/share/doc/olfullnode
+    - /usr/share/doc/THIRD_PARTY_NOTICES
 - name: remove unnesscary pip package (open source liscence compliance)
   pip:
     name: ansible
