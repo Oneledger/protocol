@@ -45,3 +45,15 @@ spec:
         volumeMounts:
         - name: fullnode-pv-claim
           mountPath: "/home/node/go/data"
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: fullnode-pv-claim
+spec:
+  storageClassName: fast
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 3Gi

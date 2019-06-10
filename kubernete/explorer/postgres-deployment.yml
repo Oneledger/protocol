@@ -14,6 +14,10 @@ spec:
       labels:
         app: explorer
     spec:
+      volumes:
+      - name: psql-pv-claim
+        persistentVolumeClaim:
+          claimName: psql-pv-claim
       containers:
       - name: postgres-database
         image: gcr.io/atomic-land-223022/oneledger/explorer_postgres:v0.10.0
@@ -21,3 +25,32 @@ spec:
         - name: psql-port
           containerPort: 5432
           protocol: TCP 
+        volumeMounts:
+        - mountPath: /var/log/postgresql
+          name: psql-pv-claim
+      initContainers:
+      - name: change-persistent-data-ownership 
+        image: gcr.io/atomic-land-223022/oneledger/explorer_postgres:v0.10.0
+        securityContext:
+          runAsUser: 0
+        command:
+        - chown
+        args:
+        - -R  
+        - postgres:postgres
+        - /var/log/postgresql
+        volumeMounts:
+        - mountPath: /var/log/postgresql
+          name: psql-pv-claim
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: psql-pv-claim
+spec:
+  storageClassName: fast
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
