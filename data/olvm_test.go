@@ -12,39 +12,44 @@
 Copyright 2017 - 2019 OneLedger
 */
 
-package main
+package data
 
 import (
-	"fmt"
+	"testing"
 
-	"github.com/Oneledger/protocol/data"
-
-	"github.com/spf13/cobra"
+	"github.com/stretchr/testify/assert"
 )
 
-var showIP bool
+func TestOLVMContext_GetValue(t *testing.T) {
+	o := OLVMContext{}
 
-var showNodeIDCMD = &cobra.Command{
-	Use:   "show_node_id",
-	Short: "Show this node's id",
-	Run:   showNodeID,
-}
-
-func init() {
-	RootCmd.AddCommand(showNodeIDCMD)
-	showNodeIDCMD.Flags().BoolVar(&showIP, "show-ip", showIP, "Show this nodes IP")
-}
-
-func showNodeID(_ *cobra.Command, _ []string) {
-	ctx := NewContext()
-
-	req, _ := data.NewRequest("", map[string]interface{}{"showIP": showIP})
-	resp := &data.Response{}
-
-	err := ctx.clCtx.Query("server.NodeID", req, resp)
-	if err != nil {
-		ctx.logger.Fatal("error getting nodes", err)
+	o.Data = map[string]interface{}{
+		"key": []byte("value"),
 	}
 
-	fmt.Println(string(resp.Data))
+	assert.NotNil(t, o.Data)
+
+	val := o.GetValue("key")
+	assert.Equal(t, val, "value")
+
+	val = o.GetValue("badKey")
+	assert.Nil(t, val)
+}
+
+func TestNewOLVMRequest(t *testing.T) {
+	oc := OLVMContext{}
+
+	or := NewOLVMRequest([]byte("var a = 'a';"), oc)
+
+	assert.NotNil(t, or)
+	assert.Equal(t, or.CallString, "")
+	assert.Equal(t, or.SourceCode, []byte("var a = 'a';"))
+	assert.Equal(t, or.Context, oc)
+}
+
+func TestNewOLVMResult(t *testing.T) {
+	or := NewOLVMResult()
+
+	assert.NotNil(t, or)
+	assert.Equal(t, or.Status, "MISSING DATA")
 }

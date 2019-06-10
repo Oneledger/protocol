@@ -15,17 +15,13 @@
 
 package balance
 
-import (
-	"github.com/Oneledger/protocol/storage"
-)
-
 // Wrap the amount with owner information
 type Balance struct {
 	Amounts map[string]Coin `json:"amounts"`
 }
 
 /*
-	balance Generators start here
+	Generators
 */
 func NewBalance() *Balance {
 	amounts := make(map[string]Coin, 0)
@@ -36,40 +32,7 @@ func NewBalance() *Balance {
 }
 
 /*
-func NewBalanceFromString(amount string, currency string) *Balance {
-	coin := NewCoinFromString(amount, currency)
-	b := NewBalance()
-	b.AddCoin(coin)
-	return b
-}
-
-func NewBalanceFromInt(amount int64, currency string) *Balance {
-	coin := NewCoinFromInt(amount, currency)
-	b := NewBalance()
-	b.AddCoin(coin)
-	return b
-}
-*/
-
-// GetBalanceFromDb takes a datastore with GetSetter interface and initializes a new Balance
-// from the data.
-func GetBalanceFromDb(db storage.Store, accountKey storage.StoreKey) (*Balance, error) {
-	dat, err := db.Get(accountKey)
-	if err != nil {
-		return nil, err
-	}
-
-	var b = &Balance{}
-	err = pSzlr.Deserialize(dat, b)
-	if err != nil {
-		return nil, err
-	}
-
-	return b, nil
-}
-
-/*
-	methods for balance start here
+	methods
 */
 func (b *Balance) FindCoin(currency Currency) *Coin {
 	if coin, ok := b.Amounts[currency.StringKey()]; ok {
@@ -85,20 +48,29 @@ func (b *Balance) AddCoin(coin Coin) *Balance {
 		b.Amounts[coin.Currency.StringKey()] = coin
 		return b
 	}
-	b.Amounts[coin.Currency.StringKey()] = result.Plus(coin)
+
+	amt, err := result.Plus(coin)
+	if err != nil {
+		return b
+	}
+	b.Amounts[coin.Currency.StringKey()] = amt
 	return b
 }
 
-func (b *Balance) MinusCoin(coin Coin) *Balance {
+func (b *Balance) MinusCoin(coin Coin) (*Balance, error) {
 	result := b.FindCoin(coin.Currency)
 	if result == nil {
-		// TODO: This results in a negative coin, which is what was asked for...
-		base := coin.Currency.NewCoinFromInt(0)
-		b.Amounts[coin.Currency.StringKey()] = base.Minus(coin)
-		return b
+		return b, ErrInsufficientBalance
 	}
-	b.Amounts[coin.Currency.StringKey()] = result.Minus(coin)
-	return b
+
+	var err error
+
+	b.Amounts[coin.Currency.StringKey()], err = result.Minus(coin)
+	if err != nil {
+		return b, err
+	}
+
+	return b, nil
 }
 
 func (b *Balance) GetCoin(currency Currency) Coin {
@@ -122,7 +94,8 @@ func (b Balance) IsEnoughBalance(balance Balance) bool {
 			v = coin.Currency.NewCoinFromInt(0)
 		}
 
-		if v.Minus(coin).LessThanCoin(coin.Currency.NewCoinFromInt(0)) {
+		_, err := v.Minus(coin)
+		if err != nil {
 			return false
 		}
 	}

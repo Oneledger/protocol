@@ -22,11 +22,6 @@ func (a *aminoStrategy) Serialize(obj interface{}) ([]byte, error) {
 		}
 	}()
 
-	b := a.serializeString(obj)
-	if len(b) > 0 {
-		return b, nil
-	}
-
 	if apr, ok := obj.(DataAdapter); ok {
 		obj = apr.Data()
 	}

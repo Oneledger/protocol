@@ -112,18 +112,6 @@ func (ba *BalanceData) extract(b *Balance) error {
 	return nil
 }
 
-// Primitive gives the source object of the data through the adapter interface.
-// Useful if you want to access the source object after deserialization.
-func (bd *BalanceData) Primitive() serialize.DataAdapter {
-	b := &Balance{}
-	err := bd.extract(b)
-	if err != nil {
-		logger.Error("error in get primitive of balance data", err)
-		return nil
-	}
-	return b
-}
-
 func (bd *BalanceData) SerialTag() string {
 	return bd.Tag
 }

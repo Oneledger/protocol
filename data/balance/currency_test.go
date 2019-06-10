@@ -12,39 +12,36 @@
 Copyright 2017 - 2019 OneLedger
 */
 
-package main
+package balance
 
 import (
-	"fmt"
+	"testing"
 
-	"github.com/Oneledger/protocol/data"
-
-	"github.com/spf13/cobra"
+	"github.com/stretchr/testify/assert"
 )
 
-var showIP bool
+func TestNewCurrencyList(t *testing.T) {
+	cl := NewCurrencyList()
 
-var showNodeIDCMD = &cobra.Command{
-	Use:   "show_node_id",
-	Short: "Show this node's id",
-	Run:   showNodeID,
-}
+	curr := Currency{"OLT", 0, 18}
+	err := cl.Register(curr)
+	assert.NoError(t, err)
 
-func init() {
-	RootCmd.AddCommand(showNodeIDCMD)
-	showNodeIDCMD.Flags().BoolVar(&showIP, "show-ip", showIP, "Show this nodes IP")
-}
+	currNew, ok := cl.GetCurrencyByName("OLT")
+	assert.True(t, ok)
 
-func showNodeID(_ *cobra.Command, _ []string) {
-	ctx := NewContext()
+	assert.Equal(t, currNew, curr)
 
-	req, _ := data.NewRequest("", map[string]interface{}{"showIP": showIP})
-	resp := &data.Response{}
+	key := curr.StringKey()
+	curr3, ok := cl.GetCurrencyByStringKey(key)
+	assert.True(t, ok)
+	assert.Equal(t, curr3, curr)
 
-	err := ctx.clCtx.Query("server.NodeID", req, resp)
-	if err != nil {
-		ctx.logger.Fatal("error getting nodes", err)
-	}
+	assert.Equal(t, cl.Len(), 1)
 
-	fmt.Println(string(resp.Data))
+	curr4 := Currency{"Bitcoin", 1, 18}
+	err = cl.Register(curr4)
+	assert.NoError(t, err)
+
+	assert.Equal(t, cl.Len(), 2)
 }

@@ -117,3 +117,19 @@ func TestAminoStrategy_Serialize(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, fn, f)
 }
+
+func TestGobStrategy_Serialize(t *testing.T) {
+	gs := gobStrategy{}
+
+	f := &testStuff2{"asdf", 1, 123123, []byte("4983h4tsdof")}
+	fb, err := gs.Serialize(f)
+
+	assert.NoError(t, err)
+
+	var fn = &testStuff2{}
+	err = gs.Deserialize(fb, fn)
+
+	assert.Nil(t, err)
+	assert.Equal(t, fn, f)
+
+}

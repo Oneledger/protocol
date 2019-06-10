@@ -12,6 +12,9 @@ import (
 	"github.com/tendermint/tendermint/p2p"
 )
 
+/*
+	Interfaces
+*/
 type PublicKeyHandler interface {
 	Address() Address
 	Bytes() []byte
@@ -26,12 +29,15 @@ type PrivateKeyHandler interface {
 	Equals(PrivateKey) bool
 }
 
-type PrivateKey struct {
+/*
+	Key Types
+*/
+type PublicKey struct {
 	keytype Algorithm
 	data    []byte
 }
 
-type PublicKey struct {
+type PrivateKey struct {
 	keytype Algorithm
 	data    []byte
 }
@@ -184,7 +190,7 @@ func (privKey PrivateKey) GetHandler() (PrivateKeyHandler, error) {
 
 		if len(privKey.data) != ED25519_PRIV_SIZE {
 			return new(PrivateKeyED25519),
-				fmt.Errorf("given key doesn't match the size of the key algorithm %s", privKey.keytype)
+				fmt.Errorf("given key doesn't match the size of the key algorithm %d", privKey.keytype)
 		}
 		var key [64]byte
 		copy(key[:], privKey.data)
@@ -193,7 +199,7 @@ func (privKey PrivateKey) GetHandler() (PrivateKeyHandler, error) {
 		size := SECP256K1_PRIV_SIZE
 		if len(privKey.data) != size {
 			return new(PrivateKeySECP256K1),
-				fmt.Errorf("given key doesn't match the size of the key algorithm %s", privKey.keytype)
+				fmt.Errorf("given key doesn't match the size of the key algorithm %d", privKey.keytype)
 		}
 		var key [32]byte
 		copy(key[:], privKey.data)

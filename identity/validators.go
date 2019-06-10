@@ -3,6 +3,7 @@ package identity
 import (
 	"bytes"
 	"fmt"
+
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/serialize"
@@ -114,7 +115,13 @@ func (vs *Validators) HandleStake(apply Stake) *Validators {
 		logger.Error("failed to get validator from cache even it exist", err)
 	}
 	validator = validator.FromBytes(value)
-	validator.Staking = validator.Staking.Plus(apply.Amount)
+
+	amt, err := validator.Staking.Plus(apply.Amount)
+	if err != nil {
+		logger.Error("error adding staking amount", err)
+		return vs
+	}
+	validator.Staking = amt
 
 	vs.newValidators = append(vs.newValidators, *validator)
 	return vs

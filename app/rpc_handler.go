@@ -186,12 +186,12 @@ func (h *RPCServerContext) SendTx(args client.SendArguments, resp *data.Response
 		Amount: args.Amount,
 	}
 
-	uuid, _ := uuid.NewUUID()
+	uuidNew, _ := uuid.NewUUID()
 	fee := action.Fee{args.Fee, args.Gas}
 	tx := action.BaseTx{
 		Data: send,
 		Fee:  fee,
-		Memo: uuid.String(),
+		Memo: uuidNew.String(),
 	}
 
 	pubKey, signed, err := h.accounts.SignWithAddress(tx.Bytes(), send.From)
