@@ -5,7 +5,8 @@
         "tag": "develop",
         "enable_logging":"false",
         "dev_env": "false",
-        "docker_registry": "oneledger/chronos"
+        "docker_registry": "oneledger/chronos",
+        "systemd_service": "false"
     },
     "builders": [
         {
@@ -55,9 +56,9 @@
         {
             "type": "ansible-local",
             "playbook_file": "ansible/fullnode.yml",
-            "command": "ansible-playbook -vvv",
+            "command": "ansible-playbook -v",
             "role_paths": ["ansible/roles/logstash","ansible/roles/fullnode"],
-            "extra_arguments": ["--extra-vars \"enable_logging={{user `enable_logging`}} dev_env={{user `dev_env`}} app_user={{user `app_user`}} app_version={{user `version`}}\""]
+            "extra_arguments": ["--extra-vars \"systemd_service={{user `systemd_service` }} enable_logging={{user `enable_logging`}} dev_env={{user `dev_env`}} app_user={{user `app_user`}} app_version={{user `version`}}\""]
         }
     ],
     "post-processors": [
