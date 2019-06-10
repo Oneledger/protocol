@@ -1,11 +1,11 @@
 package identity
 
 import (
-	"container/heap"
 	"github.com/Oneledger/protocol/config"
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/storage"
+	"github.com/Oneledger/protocol/utils"
 	"github.com/pkg/errors"
 	"github.com/tendermint/tendermint/abci/types"
 )
@@ -23,7 +23,7 @@ func NewValidatorStore(cfg config.Server, dbPath string, dbType string) *Validat
 	return &ValidatorStore{
 		ChainState: store,
 		proposer:   []byte(nil),
-		queue:      make(ValidatorQueue, 0, 100),
+		queue:      ValidatorQueue{PriorityQueue: make(utils.PriorityQueue, 0, 100)},
 		byzantine:  make([]Validator, 0),
 	}
 }
@@ -73,26 +73,32 @@ func (vs *ValidatorStore) Set(req types.RequestBeginBlock) error {
 		return errors.Wrapf(err, "height=%d", req.Header.Height)
 	}
 
+	//update the byzantine node that need to be slashed
+	//this should happened before initialize the queue.
+	vs.byzantine = make([]Validator, 0)
+	vs.byzantine = makingslash(vs, req.ByzantineValidators)
+	for _, remove := range vs.byzantine {
+
+		err := vs.ChainState.Set(remove.Address.Bytes(), remove.Bytes())
+		if err != nil {
+			logger.Error("failed to set byzantine validator power")
+			//todo: add fatal status for here after we decide what to do with byzantine validator
+		}
+	}
+
 	//initialize the queue for validators
-	vs.queue = make(ValidatorQueue, 0, 100)
+	vs.queue.PriorityQueue = make(utils.PriorityQueue, 0, 100)
 	i := 0
 	vs.ChainState.Iterate(func(key, value []byte) bool {
 		validator := (&Validator{}).FromBytes(value)
-		queued := &Queued{
-			value:    key,
-			priority: validator.Power,
-			index:    i,
-		}
-		vs.queue = append(vs.queue, queued)
+		queued := utils.NewQueued(key, validator.Power, i)
+		vs.queue.append(queued)
 		//		vs.queue.Push(queued)
 		i++
 		return false
 	})
-	heap.Init(&vs.queue)
+	vs.queue.Init()
 
-	//update the byzantine node that need to be slashed
-	vs.byzantine = make([]Validator, 0)
-	vs.byzantine = makingslash(vs, req.ByzantineValidators)
 	return err
 }
 
@@ -148,9 +154,6 @@ func (vs *ValidatorStore) HandleStake(apply Stake) error {
 		validator.Staking = amt
 		validator.Power = calculatePower(amt)
 
-		queued := &Queued{}
-		queued.value = validator.Address
-		vs.queue.update(queued, queued.value, validator.Power)
 	}
 
 	value := (validator).Bytes()
@@ -187,7 +190,7 @@ func makingslash(vs *ValidatorStore, evidences []types.Evidence) []Validator {
 
 func (vs *ValidatorStore) HandleUnstake(unstake Unstake) error {
 	validator := &Validator{}
-	queued := &Queued{}
+
 	if !vs.ChainState.Exists(unstake.Address.Bytes()) {
 
 		return errors.New("address not exist in validator set")
@@ -198,7 +201,6 @@ func (vs *ValidatorStore) HandleUnstake(unstake Unstake) error {
 		return errors.New("failed to get validator from store")
 	}
 	validator = validator.FromBytes(value)
-	queued.value = validator.Address
 
 	amt, err := validator.Staking.Minus(unstake.Amount)
 	if err != nil {
@@ -212,7 +214,6 @@ func (vs *ValidatorStore) HandleUnstake(unstake Unstake) error {
 		return errors.Wrap(err, "failed to set validator for unstake")
 	}
 
-	vs.queue.update(queued, queued.value, validator.Power)
 	return nil
 }
 
@@ -222,19 +223,9 @@ func (vs *ValidatorStore) GetEndBlockUpdate(ctx *ValidatorContext, req types.Req
 
 	if req.Height > 1 || (len(vs.byzantine) > 0) {
 
-		for _, remove := range vs.byzantine {
-
-			err := vs.ChainState.Set(remove.Address.Bytes(), remove.Bytes())
-			if err != nil {
-				logger.Error("failed to set byzantine validator at end block")
-				//todo: add fatal status for here after we decide what to do with byzantine validator
-			}
-		}
-
-		length := vs.queue.Len()
-		for i := 0; i < 64 && i < length; i++ {
-			queued := heap.Pop(&vs.queue).(*Queued)
-			result := vs.ChainState.Get(queued.value, true)
+		for vs.queue.Len() > 0 {
+			queued := vs.queue.Pop()
+			result := vs.ChainState.Get(queued.Value(), true)
 			validator := (&Validator{}).FromBytes(result)
 			validatorUpdates = append(validatorUpdates, types.ValidatorUpdate{
 				PubKey: validator.PubKey.GetABCIPubKey(),
