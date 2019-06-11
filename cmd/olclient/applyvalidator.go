@@ -6,12 +6,13 @@
 package main
 
 import (
+	"path/filepath"
+
 	"github.com/Oneledger/protocol/client"
 	"github.com/Oneledger/protocol/config"
 	"github.com/Oneledger/protocol/data"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
-	"path/filepath"
 )
 
 var applyvalidatorCmd = &cobra.Command{

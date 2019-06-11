@@ -1,9 +1,10 @@
 package action
 
 import (
+	"os"
+
 	"github.com/Oneledger/protocol/log"
 	"github.com/Oneledger/protocol/serialize"
-	"os"
 )
 
 type Type int

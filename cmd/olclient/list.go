@@ -16,6 +16,7 @@ package main
 
 import (
 	"fmt"
+
 	"github.com/Oneledger/protocol/data"
 	"github.com/Oneledger/protocol/serialize"
 	"github.com/spf13/cobra"

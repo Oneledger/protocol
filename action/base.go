@@ -3,6 +3,7 @@ package action
 import (
 	"bytes"
 	"fmt"
+
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/serialize"
 )
@@ -68,7 +69,6 @@ func (t *BaseTx) Sign(ctx *Context) error {
 
 func (t *BaseTx) SignWithAddress(ctx *Context, address Address) error {
 	addrs := t.Data.Signers()
-
 	if t.Signatures == nil {
 		t.Signatures = make([]Signature, len(addrs))
 	}

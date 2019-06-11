@@ -2,6 +2,12 @@ package app
 
 import (
 	"encoding/hex"
+	"io"
+	"net/url"
+	"os"
+	"path/filepath"
+	"strings"
+
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/config"
 	"github.com/Oneledger/protocol/consensus"
@@ -13,11 +19,6 @@ import (
 	"github.com/Oneledger/protocol/serialize"
 	"github.com/Oneledger/protocol/storage"
 	"github.com/tendermint/tendermint/abci/types"
-	"io"
-	"net/url"
-	"os"
-	"path/filepath"
-	"strings"
 
 	"github.com/pkg/errors"
 	"github.com/tendermint/tendermint/libs/common"
@@ -28,7 +29,6 @@ var _ abciController = &App{}
 
 type App struct {
 	Context context
-
 
 	name     string
 	nodeName string
@@ -324,7 +324,6 @@ func (ctx *context) Close() {
 func (ctx *context) Node() NodeContext {
 	return ctx.node
 }
-
 
 func (ctx *context) Validators() *identity.ValidatorStore {
 	return ctx.validators

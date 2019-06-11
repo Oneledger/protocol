@@ -40,12 +40,12 @@ import (
 )
 
 type RPCServerContext struct {
-	nodeName    string
-	balances    *balance.Store
-	accounts    accounts.Wallet
-	currencies  *balance.CurrencyList
-	cfg         config.Server
-	nodeContext NodeContext
+	nodeName     string
+	balances     *balance.Store
+	accounts     accounts.Wallet
+	currencies   *balance.CurrencyList
+	cfg          config.Server
+	nodeContext  NodeContext
 	validatorSet *identity.ValidatorStore
 
 	logger *log.Logger

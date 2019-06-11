@@ -61,7 +61,7 @@ func ListValidator(cmd *cobra.Command, args []string) {
 	}
 }
 
-func printValidator (v identity.Validator) {
+func printValidator(v identity.Validator) {
 	fmt.Println("Address", v.Address)
 	fmt.Println("StakeAddress", v.StakeAddress)
 	fmt.Println("Power", v.Power)

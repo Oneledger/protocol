@@ -2,6 +2,7 @@ package identity
 
 import (
 	"container/heap"
+
 	"github.com/Oneledger/protocol/utils"
 )
 

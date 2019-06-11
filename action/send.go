@@ -2,6 +2,7 @@ package action
 
 import (
 	"fmt"
+
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/serialize"
 	"github.com/pkg/errors"

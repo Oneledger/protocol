@@ -2,6 +2,7 @@ package app
 
 import (
 	"encoding/hex"
+
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/serialize"
 	"github.com/Oneledger/protocol/version"

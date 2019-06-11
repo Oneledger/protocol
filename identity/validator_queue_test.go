@@ -1,10 +1,11 @@
 package identity
 
 import (
-	"github.com/Oneledger/protocol/utils"
-	"github.com/stretchr/testify/assert"
 	"os"
 	"testing"
+
+	"github.com/Oneledger/protocol/utils"
+	"github.com/stretchr/testify/assert"
 )
 
 var vq1 = utils.NewQueued([]byte("a"), 200, 1)
