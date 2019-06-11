@@ -24,13 +24,13 @@ func (v Validator) Bytes() []byte {
 	return value
 }
 
-func (v *Validator) FromBytes(msg []byte) *Validator {
+func (v *Validator) FromBytes(msg []byte) (*Validator, error) {
 	err := serialize.GetSerializer(serialize.PERSISTENT).Deserialize(msg, v)
 	if err != nil {
 		logger.Error("failed to deserialize account from bytes", err)
-		return &Validator{}
+		return nil, err
 	}
-	return v
+	return v, nil
 }
 
 type Stake struct {
@@ -48,7 +48,7 @@ type Unstake struct {
 
 type ValidatorContext struct {
 	Balances *balance.Store
-	//todo: add necessary config
+	// TODO: add necessary config
 }
 
 func NewValidatorContext(balances *balance.Store) *ValidatorContext {
@@ -60,7 +60,7 @@ func NewValidatorContext(balances *balance.Store) *ValidatorContext {
 func transferVT(ctx ValidatorContext, validator Validator) bool {
 	logger.Debug("Processing Transfer of VT to Payment Account")
 
-	//todo: implement transfer vt from account balance to some where else
+	// TODO: implement transfer vt from account balance to some where else
 
 	return true
 }
