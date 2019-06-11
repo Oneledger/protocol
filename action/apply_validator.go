@@ -1,6 +1,7 @@
 package action
 
 import (
+	"errors"
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/identity"
 	"github.com/Oneledger/protocol/serialize"
@@ -39,8 +40,10 @@ type applyTx struct {
 }
 
 func (applyTx) Validate(ctx *Context, msg Msg, fee Fee, memo string, signatures []Signature) (bool, error) {
-	apply := msg.(*ApplyValidator)
-
+	apply, ok := msg.(*ApplyValidator)
+	if !ok {
+		return false, errors.New("Apply validator cast failed")
+	}
 	ok, err := validateBasic(msg, fee, memo, signatures)
 	if err != nil {
 		return ok, err
@@ -71,8 +74,10 @@ func (applyTx) Validate(ctx *Context, msg Msg, fee Fee, memo string, signatures 
 }
 
 func (a applyTx) ProcessCheck(ctx *Context, msg Msg, fee Fee) (bool, Response) {
-	apply := msg.(*ApplyValidator)
-
+	apply, ok := msg.(*ApplyValidator)
+	if !ok {
+		return false, Response{Log: "Apply validator cast failed"}
+	}
 	result, err := checkBalances(ctx, apply.Address, apply.Stake)
 	if err != nil {
 		return false, Response{Log: err.Error()}
@@ -84,7 +89,7 @@ func checkBalances(ctx *Context, address Address, stake Amount) (bool, error) {
 
 	balances := ctx.Balances
 
-	//check identity's VT is equal to the stake
+	// check identity's VT is equal to the stake
 	balance, err := balances.Get(address, false)
 	if err != nil {
 		return false, ErrNotEnoughFund
@@ -100,8 +105,10 @@ func checkBalances(ctx *Context, address Address, stake Amount) (bool, error) {
 }
 
 func (applyTx) ProcessDeliver(ctx *Context, msg Msg, fee Fee) (bool, Response) {
-	apply := msg.(*ApplyValidator)
-
+	apply, ok := msg.(*ApplyValidator)
+	if !ok {
+		return false, Response{Log: "Apply validator cast failed"}
+	}
 	_, err := checkBalances(ctx, apply.Address, apply.Stake)
 	if err != nil {
 		return false, Response{Log: err.Error()}
@@ -140,9 +147,8 @@ func (applyTx) ProcessDeliver(ctx *Context, msg Msg, fee Fee) (bool, Response) {
 }
 
 func (applyTx) ProcessFee(ctx *Context, fee Fee) (bool, Response) {
-	panic("implement me")
-	//todo: implement fee charge for apply
-	return true, Response{}
+	// TODO: implement fee charge for apply
+	return true, Response{Info: "Unimplemented"}
 }
 
 func (apply ApplyValidator) Tags() common.KVPairs {
