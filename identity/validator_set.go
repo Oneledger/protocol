@@ -68,7 +68,7 @@ func (vs *ValidatorStore) Init(req types.RequestInitChain, currencies *balance.C
 //setup the validators according to begin block
 func (vs *ValidatorStore) Set(req types.RequestBeginBlock) error {
 	vs.proposer = req.Header.GetProposerAddress()
-	err := updateValidiatorSet(vs.ChainState, req.LastCommitInfo.Votes)
+	err := updateValidatorSet(vs.ChainState, req.LastCommitInfo.Votes)
 	if err != nil {
 		return errors.Wrapf(err, "height=%d", req.Header.Height)
 	}
@@ -114,7 +114,7 @@ func (vs *ValidatorStore) GetValidatorSet() ([]Validator, error) {
 	return validatorSet, nil
 }
 
-func updateValidiatorSet(store *storage.ChainState, votes []types.VoteInfo) error {
+func updateValidatorSet(store *storage.ChainState, votes []types.VoteInfo) error {
 
 	for _, v := range votes {
 		addr := v.Validator.GetAddress()
