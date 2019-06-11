@@ -177,9 +177,8 @@ func (app *App) commitor() commitor {
 		apphash := &appHash{}
 		apphash.Hashes = append(apphash.Hashes, hashb, hashv)
 
-		_, _ = verb, verv
 		hash := apphash.hash()
-		app.logger.Debugf("Committed New Block height[%d], hash[%s]", app.header.Height, hex.EncodeToString(hash))
+		app.logger.Debugf("Committed New Block height[%d], hash[%s], versions[%d, %d]", app.header.Height, hex.EncodeToString(hash), verb, verv)
 
 		result := ResponseCommit{
 			Data: hash,
