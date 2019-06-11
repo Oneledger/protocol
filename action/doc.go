@@ -14,4 +14,4 @@ Copyright 2017 - 2019 OneLedger
 
 package action
 
-//todo: action package document, handle transactions
+// TODO: action package document, handle transactions

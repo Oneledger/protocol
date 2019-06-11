@@ -2,12 +2,12 @@ package app
 
 import (
 	"encoding/hex"
+	"github.com/Oneledger/protocol/utils"
 
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/serialize"
 	"github.com/Oneledger/protocol/version"
 	"github.com/tendermint/tendermint/libs/common"
-	"golang.org/x/crypto/ripemd160"
 )
 
 // The following set of functions will be passed to the abciController
@@ -65,14 +65,13 @@ func (app *App) chainInitializer() chainInitializer {
 
 func (app *App) blockBeginner() blockBeginner {
 	return func(req RequestBeginBlock) ResponseBeginBlock {
-
-		//update the validator set
+		// update the validator set
 		err := app.Context.validators.Set(req)
 		if err != nil {
 			app.logger.Error("validator set with error", err)
 		}
 		//update the header to current block
-		//todo: store the header in persistent db
+		// TODO: store the header in persistent db
 		app.header = req.Header
 
 		result := ResponseBeginBlock{
@@ -199,14 +198,12 @@ func getCode(ok bool) (code Code) {
 	return
 }
 
-//todo: make appHash to use a commiter function to finish the commit and hashing for all the store that passed
+// TODO: make appHash to use a commiter function to finish the commit and hashing for all the store that passed
 type appHash struct {
 	Hashes [][]byte `json:"hashes"`
 }
 
 func (ah *appHash) hash() []byte {
 	result, _ := serialize.GetSerializer(serialize.JSON).Serialize(ah)
-	hasher := ripemd160.New()
-	hasher.Write(result)
-	return hasher.Sum(nil)
+	return utils.Hash(result)
 }

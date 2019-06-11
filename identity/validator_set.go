@@ -19,7 +19,7 @@ type ValidatorStore struct {
 
 func NewValidatorStore(cfg config.Server, dbPath string, dbType string) *ValidatorStore {
 	store := storage.NewChainState("validators", dbPath, dbType, storage.PERSISTENT)
-	//todo: get the genesis validators when start the node
+	// TODO: get the genesis validators when start the node
 	return &ValidatorStore{
 		ChainState: store,
 		proposer:   []byte(nil),
@@ -27,6 +27,7 @@ func NewValidatorStore(cfg config.Server, dbPath string, dbType string) *Validat
 		byzantine:  make([]Validator, 0),
 	}
 }
+
 
 func (vs *ValidatorStore) Init(req types.RequestInitChain, currencies *balance.CurrencyList) (types.ValidatorUpdates, error) {
 	currency, ok := currencies.GetCurrencyByName("VT")
@@ -49,11 +50,11 @@ func (vs *ValidatorStore) Init(req types.RequestInitChain, currencies *balance.C
 
 		validator := Validator{
 			Address:      h.Address(),
-			StakeAddress: h.Address(), //todo : put the validator address for validator in genesis for now. should be a different address from who the validator pay the stake
+			StakeAddress: h.Address(), // TODO : put the validator address for validator in genesis for now. should be a different address from who the validator pay the stake
 			PubKey:       vpubkey,
 			Power:        v.Power,
 			Name:         "",
-			//todo: this should be change with @todo99
+			// TODO: this should be change with @TODO99
 			Staking: currency.NewCoinFromInt(v.Power),
 		}
 		err = vs.ChainState.Set(h.Address().Bytes(), validator.Bytes())
@@ -65,7 +66,7 @@ func (vs *ValidatorStore) Init(req types.RequestInitChain, currencies *balance.C
 	return validatorUpdates, nil
 }
 
-//setup the validators according to begin block
+// setup the validators according to begin block
 func (vs *ValidatorStore) Set(req types.RequestBeginBlock) error {
 	vs.proposer = req.Header.GetProposerAddress()
 	err := updateValidatorSet(vs.ChainState, req.LastCommitInfo.Votes)
@@ -73,8 +74,8 @@ func (vs *ValidatorStore) Set(req types.RequestBeginBlock) error {
 		return errors.Wrapf(err, "height=%d", req.Header.Height)
 	}
 
-	//update the byzantine node that need to be slashed
-	//this should happened before initialize the queue.
+	// update the byzantine node that need to be slashed
+	// this should happened before initialize the queue.
 	vs.byzantine = make([]Validator, 0)
 	vs.byzantine = makingslash(vs, req.ByzantineValidators)
 	for _, remove := range vs.byzantine {
@@ -82,18 +83,21 @@ func (vs *ValidatorStore) Set(req types.RequestBeginBlock) error {
 		err := vs.ChainState.Set(remove.Address.Bytes(), remove.Bytes())
 		if err != nil {
 			logger.Error("failed to set byzantine validator power")
-			//todo: add fatal status for here after we decide what to do with byzantine validator
+			// TODO: add fatal status for here after we decide what to do with byzantine validator
 		}
 	}
 
-	//initialize the queue for validators
+	// initialize the queue for validators
 	vs.queue.PriorityQueue = make(utils.PriorityQueue, 0, 100)
 	i := 0
 	vs.ChainState.Iterate(func(key, value []byte) bool {
-		validator := (&Validator{}).FromBytes(value)
+		validator, err := (&Validator{}).FromBytes(value)
+		if err != nil {
+			return false
+		}
 		queued := utils.NewQueued(key, validator.Power, i)
 		vs.queue.append(queued)
-		//		vs.queue.Push(queued)
+		// 		vs.queue.Push(queued)
 		i++
 		return false
 	})
@@ -102,12 +106,15 @@ func (vs *ValidatorStore) Set(req types.RequestBeginBlock) error {
 	return err
 }
 
-//get validators set
+// get validators set
 func (vs *ValidatorStore) GetValidatorSet() ([]Validator, error) {
 
 	validatorSet := make([]Validator, 0)
 	vs.ChainState.Iterate(func(key, value []byte) bool {
-		validator := (&Validator{}).FromBytes(value)
+		validator, err := (&Validator{}).FromBytes(value)
+		if err != nil {
+			return false
+		}
 		validatorSet = append(validatorSet, *validator)
 		return false
 	})
@@ -145,8 +152,10 @@ func (vs *ValidatorStore) HandleStake(apply Stake) error {
 		if value == nil {
 			return errors.New("failed to get validator from store")
 		}
-		validator = validator.FromBytes(value)
-
+		validator, err := validator.FromBytes(value)
+		if err != nil {
+			return errors.Wrap(err, "error deserialize validator")
+		}
 		amt, err := validator.Staking.Plus(apply.Amount)
 		if err != nil {
 			return errors.Wrap(err, "error adding staking amount")
@@ -167,11 +176,11 @@ func (vs *ValidatorStore) HandleStake(apply Stake) error {
 }
 
 func calculatePower(stake balance.Coin) int64 {
-	//todo: change to correct power function @todo99
+	// TODO: change to correct power function @TODO99
 	return stake.Amount.Int64()
 }
 
-//todo: implement the proper slashing
+// TODO: implement the proper slashing
 func makingslash(vs *ValidatorStore, evidences []types.Evidence) []Validator {
 	remove := make([]Validator, 0)
 	for _, evidence := range evidences {
@@ -180,7 +189,10 @@ func makingslash(vs *ValidatorStore, evidences []types.Evidence) []Validator {
 			if value == nil {
 				logger.Error("failed to get validator from store", evidence.Validator.Address)
 			}
-			validator := (&Validator{}).FromBytes(value)
+			validator, err := (&Validator{}).FromBytes(value)
+			if err != nil {
+				logger.Error("error deserialize validator")
+			}
 			validator.Power = 0
 			remove = append(remove, *validator)
 		}
@@ -200,7 +212,11 @@ func (vs *ValidatorStore) HandleUnstake(unstake Unstake) error {
 	if value == nil {
 		return errors.New("failed to get validator from store")
 	}
-	validator = validator.FromBytes(value)
+	validator, err := validator.FromBytes(value)
+	if err != nil {
+		return errors.Wrap(err, "" +
+			"error deserialize validator")
+	}
 
 	amt, err := validator.Staking.Minus(unstake.Amount)
 	if err != nil {
@@ -226,7 +242,11 @@ func (vs *ValidatorStore) GetEndBlockUpdate(ctx *ValidatorContext, req types.Req
 		for vs.queue.Len() > 0 {
 			queued := vs.queue.Pop()
 			result := vs.ChainState.Get(queued.Value(), true)
-			validator := (&Validator{}).FromBytes(result)
+			validator, err := (&Validator{}).FromBytes(result)
+			if err != nil {
+				logger.Error(err, "error deserialize validator")
+				continue
+			}
 			validatorUpdates = append(validatorUpdates, types.ValidatorUpdate{
 				PubKey: validator.PubKey.GetABCIPubKey(),
 				Power:  validator.Power,
@@ -234,7 +254,7 @@ func (vs *ValidatorStore) GetEndBlockUpdate(ctx *ValidatorContext, req types.Req
 		}
 	}
 
-	//todo : get the final updates from vs.cached
+	// TODO : get the final updates from vs.cached
 	return validatorUpdates
 }
 

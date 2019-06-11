@@ -1,7 +1,6 @@
 package accounts
 
 import (
-	"encoding/hex"
 	"fmt"
 	"sync"
 
@@ -72,7 +71,7 @@ func (ws *WalletStore) Add(account Account) error {
 
 	exist := session.Exists(account.Address().Bytes())
 	if exist {
-		return errors.New("account already exist: " + hex.EncodeToString(account.Address()))
+		return errors.New("account already exist: " + account.Address().String())
 	}
 
 	value := account.Bytes()
@@ -95,7 +94,7 @@ func (ws *WalletStore) Delete(account Account) error {
 
 	exist := session.Exists(account.Address().Bytes())
 	if !exist {
-		return errors.New("account already exist: " + hex.EncodeToString(account.Address()))
+		return errors.New("account already exist: " + account.Address().String())
 	}
 
 	_, err := session.Delete(account.Address().Bytes())

@@ -1,7 +1,6 @@
 package identity
 
 import (
-	"os"
 	"testing"
 
 	"github.com/Oneledger/protocol/utils"
@@ -15,28 +14,11 @@ var vq4 = utils.NewQueued([]byte("d"), 2000, 4)
 
 var Vq *ValidatorQueue
 
-func setup() {
-	logger.Debug("This is main setting up")
-}
-
-func shutdown() {
-	logger.Debug("This is main tearing down")
-}
-
-func TestMain(m *testing.M) {
-	setup()
-	code := m.Run()
-	shutdown()
-	os.Exit(code)
-}
-
 func subtestsetup(funName string) {
-	logger.Debug("This is subtest setting up for", funName)
 	Vq = &ValidatorQueue{make(utils.PriorityQueue, 0)}
 }
 
 func subtestteardown(funName string) {
-	logger.Debug("This is subtest tearing down for", funName)
 	Vq = nil
 }
 

@@ -121,6 +121,6 @@ func sign(ctx *Context, address Address, msg []byte) (Signature, error) {
 }
 
 func verifyMinimumFee(fee Fee) bool {
-	//todo: implement minimum fee check
+	//TODO: implement minimum fee check
 	return true
 }

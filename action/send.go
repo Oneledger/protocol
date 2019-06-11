@@ -134,7 +134,7 @@ func (sendTx) ProcessDeliver(ctx *Context, msg Msg, fee Fee) (bool, Response) {
 
 func (sendTx) ProcessFee(ctx *Context, fee Fee) (bool, Response) {
 	panic("implement me")
-	//todo: implement the fee charge for send
+	// TODO: implement the fee charge for send
 	return true, Response{GasWanted: 0, GasUsed: 0}
 }
 
