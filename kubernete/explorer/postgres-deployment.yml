@@ -8,11 +8,11 @@ spec:
   replicas: 1
   selector:
     matchLabels:
-      app: explorer
+      app: explorer-postgres
   template:  
     metadata:
       labels:
-        app: explorer
+        app: explorer-postgres
     spec:
       volumes:
       - name: psql-pv-claim
@@ -21,16 +21,18 @@ spec:
       containers:
       - name: postgres-database
         image: gcr.io/atomic-land-223022/oneledger/explorer_postgres:v0.10.0
+        imagePullPolicy: "Always"
         ports: 
         - name: psql-port
           containerPort: 5432
           protocol: TCP 
         volumeMounts:
-        - mountPath: /var/log/postgresql
+        - mountPath: /data
           name: psql-pv-claim
       initContainers:
       - name: change-persistent-data-ownership 
         image: gcr.io/atomic-land-223022/oneledger/explorer_postgres:v0.10.0
+        imagePullPolicy: "Always"
         securityContext:
           runAsUser: 0
         command:
@@ -38,9 +40,9 @@ spec:
         args:
         - -R  
         - postgres:postgres
-        - /var/log/postgresql
+        - /data
         volumeMounts:
-        - mountPath: /var/log/postgresql
+        - mountPath: /data
           name: psql-pv-claim
 ---
 kind: PersistentVolumeClaim
@@ -54,3 +56,20 @@ spec:
   resources:
     requests:
       storage: 10Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: psql-service
+  labels:
+    run: psql-service
+    app: explorer
+spec:
+  ports:
+  - name: psql-port
+    port: 5432
+    targetPort: psql-port
+    protocol: TCP
+  type: NodePort
+  selector:
+    app: explorer-postgres

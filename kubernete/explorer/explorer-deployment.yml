@@ -1,18 +1,18 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: explorer-deployment
+  name: explorer-watcher
   labels:
     app: explorer
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: explorer
+      app: explorer-watcher
   template:  
     metadata:
       labels:
-        app: explorer
+        app: explorer-watcher
     spec:
       containers:
       - name: explorer-watcher 
@@ -21,18 +21,38 @@ spec:
         args: 
           - >- 
             /usr/local/bin/explorer watch 
-            --db explorer-service/explorer_chronos 
-            --dbpassword explorer --dbuser explorer 
+            --db psql-service/explorer_chronos?sslmode=disable  
+            --dbpassword postgres --dbuser postgres 
             --sdk tcp://fullnode-service:26606 
             --tendermint tcp://fullnode-service:26604
+        securityContext:
+          runAsUser: 0
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: explorer-api-server
+  labels:
+    app: explorer
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: explorer-api-server
+  template:  
+    metadata:
+      labels:
+        app: explorer-api-server
+    spec:
+      containers:
       - name: explorer-api-server
         image: gcr.io/atomic-land-223022/oneledger/explorer:v0.10.0
         command: ["/bin/bash", "-c"]
         args: 
           - >- 
             /usr/local/bin/explorer serve 
-            --db explorer-service/explorer_chronos 
-            --dbpassword explorer --dbuser explorer 
+            --db psql-service/explorer_chronos?sslmode=disable  
+            --dbpassword postgres --dbuser postgres 
             --tendermint tcp://fullnode-service:26604
             --sdk tcp://fullnode-service:26606 
         ports:
@@ -41,3 +61,20 @@ spec:
           protocol: TCP 
         securityContext:
           runAsUser: 0
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: explorer-service
+  labels:
+    run: explorer-service
+    app: explorer
+spec:
+  ports:
+  - name: explorer-api-server-port
+    port: 80
+    targetPort: explorer-server
+    protocol: TCP
+  type: LoadBalancer
+  selector:
+    app: explorer-api-server
