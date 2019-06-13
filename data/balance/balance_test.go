@@ -15,8 +15,9 @@ package balance
 
 import (
 	"fmt"
-	"github.com/Oneledger/protocol/data/chain"
 	"testing"
+
+	"github.com/Oneledger/protocol/data/chain"
 
 	"github.com/Oneledger/protocol/serialize"
 	"github.com/stretchr/testify/assert"
@@ -56,6 +57,7 @@ func TestSerialize(t *testing.T) {
 	assert.Equal(t, a, result, "These should be equal")
 }
 
+/*
 func TestBalance_AddCoin(t *testing.T) {
 
 	olt := currencies["OLT"]
@@ -79,6 +81,8 @@ func TestBalance_MinusCoin(t *testing.T) {
 	assert.Equal(t, expect, a.GetCoin(olt).Amount.Uint64())
 }
 
+*/
+
 func TestBalance_IsEnoughBalance(t *testing.T) {
 	olt := currencies["OLT"]
 	vt := currencies["VT"]
@@ -100,4 +104,48 @@ func TestBalance_IsEnoughBalance(t *testing.T) {
 	result3 := a.IsEnoughBalance(*b)
 	assert.Equal(t, false, result3, a.String(), b.String())
 	//fmt.Println("third", a, b)
+
+}
+
+func TestBalance_AddCoin(t *testing.T) {
+	olt := currencies["OLT"]
+
+	a := NewBalance()
+	a.AddCoin(olt.NewCoinFromInt(10))
+	a.AddCoin(olt.NewCoinFromInt(10))
+
+	coin := a.GetCoin(olt)
+
+	coin2 := olt.NewCoinFromInt(20)
+	assert.Equal(t, coin, coin2)
+
+	a, err := a.MinusCoin(olt.NewCoinFromInt(5))
+	assert.NoError(t, err)
+
+	coin3 := olt.NewCoinFromInt(15)
+	coin = a.GetCoin(olt)
+
+	assert.Equal(t, coin, coin3)
+
+	_, err = a.MinusCoin(olt.NewCoinFromInt(1000))
+	assert.Error(t, err)
+
+	vt := currencies["VT"]
+	_, err = a.MinusCoin(vt.NewCoinFromInt(10))
+	assert.Error(t, err)
+	assert.Equal(t, err, ErrInsufficientBalance)
+}
+
+func TestBalance_GetCoin(t *testing.T) {
+	olt := currencies["OLT"]
+	vt := currencies["VT"]
+
+	a := NewBalance()
+	a.setAmount(olt.NewCoinFromInt(10))
+
+	c := a.GetCoin(vt)
+	assert.Equal(t, c, vt.NewCoinFromInt(0))
+
+	c = a.GetCoin(olt)
+	assert.Equal(t, c, olt.NewCoinFromInt(10))
 }

@@ -90,8 +90,7 @@ func (state *ChainState) Get(key StoreKey, lastCommit bool) []byte {
 
 	// TODO: Should not be this hardcoded, but still needs protection
 	if len(key) != CHAINKEY_MAXLEN {
-		log.Fatal("Not a valid account key")
-		// debug.PrintStack()
+		return nil
 	}
 
 	var value []byte
@@ -136,7 +135,7 @@ func (state *ChainState) Commit() ([]byte, int64) {
 	if state.LastVersion-1 > 0 {
 		err := state.Delivered.DeleteVersion(state.LastVersion - 1)
 		if err != nil {
-			log.Fatal("Failed to delete old version of chainstate", "err", err)
+			log.Error("Failed to delete old version of chainstate", "err", err)
 		}
 	}
 

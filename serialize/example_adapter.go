@@ -48,15 +48,3 @@ func (t *testStuffAd) SetData(a interface{}) error {
 func (ad *testStuffAdData) SerialTag() string {
 	return ""
 }
-
-func (ad *testStuffAdData) Primitive() DataAdapter {
-	t := &testStuffAd{}
-
-	t.F = ad.X
-	t.A = ad.Y
-	t.B = ad.Z
-	t.C = ad.J
-	t.H, _ = strconv.ParseFloat(ad.K, 64)
-
-	return t
-}

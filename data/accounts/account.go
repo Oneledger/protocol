@@ -3,6 +3,8 @@ package accounts
 import (
 	"fmt"
 
+	"github.com/pkg/errors"
+
 	"github.com/Oneledger/protocol/data/chain"
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/serialize"
@@ -17,6 +19,10 @@ type Account struct {
 }
 
 func NewAccount(t chain.Type, name string, privkey *keys.PrivateKey, pubkey *keys.PublicKey) (Account, error) {
+	if pubkey == nil || privkey == nil {
+		return Account{}, errors.New("empty keys")
+	}
+
 	acc := Account{
 		Type:       t,
 		Name:       name,
@@ -67,7 +73,7 @@ func (acc *Account) FromBytes(msg []byte) *Account {
 	err := serialize.GetSerializer(serialize.PERSISTENT).Deserialize(msg, acc)
 	if err != nil {
 		logger.Fatal("failed to deserialize account from bytes", err)
-		return &Account{}
+		return nil
 	}
 	return acc
 }
