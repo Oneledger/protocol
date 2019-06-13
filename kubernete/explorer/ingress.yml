@@ -1,0 +1,19 @@
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: explorer-ingress
+  annotations:
+    kubernetes.io/ingress.global-static-ip-name: k8-explorer-api-server	
+spec:
+  tls:
+  - hosts:
+    - explorer-devnet.oneledger.network
+    secretName: first-secret
+  rules:
+  - host: explorer-devnet.oneledger.network
+    http:
+      paths:
+      - backend:
+          serviceName: explorer-service
+          servicePort: 80
+        path: /*
