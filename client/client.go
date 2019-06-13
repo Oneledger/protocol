@@ -60,11 +60,9 @@ func NewContext(rpcAddress, sdkAddress string) (cliCtx Context, err error) {
 		}
 	}()
 
-
-
-		// tm rpc Context
-		var tmRPCClient = rpcclient.NewHTTP(rpcAddress, "/websocket")
-/*
+	// tm rpc Context
+	var tmRPCClient = rpcclient.NewHTTP(rpcAddress, "/websocket")
+	/*
 		// check status of rpc; return client if everything fine
 		_, err = tmRPCClient.Status()
 		if err == nil {
@@ -77,7 +75,7 @@ func NewContext(rpcAddress, sdkAddress string) (cliCtx Context, err error) {
 			return
 		}
 
- */
+	*/
 
 	// try starting tmRPCClient client
 	err = tmRPCClient.Start()

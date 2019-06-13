@@ -73,6 +73,10 @@ func (state *ChainState) Set(key StoreKey, val []byte) error {
 	return nil
 }
 
+func (state *ChainState) Iterate(fn func(key []byte, value []byte) bool) (stopped bool) {
+	return state.Delivered.Iterate(fn)
+}
+
 // Expensive O(n) search through everything...
 func (state *ChainState) FindAll() map[string][]byte {
 	mapping := make(map[string][]byte, 1)

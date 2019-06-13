@@ -47,3 +47,15 @@ utest:
 
 coverage:
 	go tool cover -html=a.out -o cover.html
+
+
+#
+# run apply validator tests
+#
+applytest: install
+	@./scripts/stopDev
+	@./scripts/resetDev
+	@./scripts/startDev
+	@./scripts/testapply
+	@./scripts/getValidators
+	@./scripts/stopDev

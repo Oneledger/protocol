@@ -16,6 +16,7 @@ package app
 
 import (
 	"fmt"
+	"github.com/Oneledger/protocol/identity"
 	"net/url"
 	"os"
 	"runtime/debug"
@@ -39,21 +40,22 @@ import (
 )
 
 type RPCServerContext struct {
-	nodeName    string
-	balances    *balance.Store
-	accounts    accounts.Wallet
-	currencies  *balance.CurrencyList
-	cfg         config.Server
-	nodeContext NodeContext
+	nodeName     string
+	balances     *balance.Store
+	accounts     accounts.Wallet
+	currencies   *balance.CurrencyList
+	cfg          config.Server
+	nodeContext  NodeContext
+	validatorSet *identity.ValidatorStore
 
 	logger *log.Logger
 }
 
 func NewClientHandler(nodeName string, balances *balance.Store, accounts accounts.Wallet,
-	currencies *balance.CurrencyList, cfg config.Server, nodeContext NodeContext) *RPCServerContext {
+	currencies *balance.CurrencyList, cfg config.Server, nodeContext NodeContext, validatorSet *identity.ValidatorStore) *RPCServerContext {
 
 	return &RPCServerContext{nodeName, balances,
-		accounts, currencies, cfg, nodeContext,
+		accounts, currencies, cfg, nodeContext, validatorSet,
 		log.NewLoggerWithPrefix(os.Stdout, "client_Handler")}
 }
 
@@ -167,7 +169,6 @@ func (h *RPCServerContext) ListAccounts(req data.Request, resp *data.Response) e
 	defer h.recoverPanic()
 
 	accs := h.accounts.Accounts()
-
 	result := make([]string, len(accs))
 	for i, a := range accs {
 		result[i] = a.String()
@@ -188,7 +189,7 @@ func (h *RPCServerContext) SendTx(args client.SendArguments, resp *data.Response
 
 	uuidNew, _ := uuid.NewUUID()
 	fee := action.Fee{args.Fee, args.Gas}
-	tx := action.BaseTx{
+	tx := &action.BaseTx{
 		Data: send,
 		Fee:  fee,
 		Memo: uuidNew.String(),
@@ -207,6 +208,77 @@ func (h *RPCServerContext) SendTx(args client.SendArguments, resp *data.Response
 	}
 
 	resp.SetData(packet)
+	return nil
+}
+
+func (h *RPCServerContext) ApplyValidator(args client.ApplyValidatorArguments, resp *data.Response) error {
+	defer h.recoverPanic()
+
+	if len(args.Name) < 1 {
+		args.Name = h.nodeName
+	}
+
+	if len(args.Address) < 1 {
+		handler, err := h.nodeContext.PubKey().GetHandler()
+		if err != nil {
+			return err
+		}
+		args.Address = handler.Address()
+	}
+
+	pubkey := &keys.PublicKey{keys.GetAlgorithmFromTmKeyName(args.TmPubKeyType), args.TmPubKey}
+	if len(args.TmPubKey) < 1 {
+		*pubkey = h.nodeContext.ValidatorPubKey()
+	}
+
+	handler, err := pubkey.GetHandler()
+	if err != nil {
+
+		return err
+	}
+
+	addr := handler.Address()
+	apply := action.ApplyValidator{
+		Address:          keys.Address(args.Address),
+		Stake:            action.Amount{Currency: "VT", Value: args.Amount},
+		NodeName:         args.Name,
+		ValidatorAddress: addr,
+		ValidatorPubKey:  *pubkey,
+	}
+
+	uuidNew, _ := uuid.NewUUID()
+	tx := action.BaseTx{
+		Data: apply,
+		Fee:  action.Fee{action.Amount{Currency: "OLT", Value: "0.1"}, 1},
+		Memo: uuidNew.String(),
+	}
+
+	pubKey, signed, err := h.accounts.SignWithAccountIndex(tx.Bytes(), 0)
+	if err != nil {
+		resp.Error(err.Error())
+		return err
+	}
+	tx.Signatures = []action.Signature{{pubKey, signed}}
+
+	packet, err := serialize.GetSerializer(serialize.NETWORK).Serialize(tx)
+	if err != nil {
+		return errors.Wrap(err, "err while network serialization")
+	}
+
+	resp.SetData(packet)
+	return nil
+}
+
+// ListValidator returns a list of all validator
+func (h *RPCServerContext) ListValidators(req data.Request, resp *data.Response) error {
+	defer h.recoverPanic()
+
+	validators, err := h.validatorSet.GetValidatorSet()
+	if err != nil {
+		return errors.Wrap(err, "err while retrieving validators info")
+	}
+
+	resp.SetDataObj(validators)
 	return nil
 }
 

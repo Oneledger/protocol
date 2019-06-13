@@ -19,6 +19,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
+
 //
 //var log = logger.NewDefaultLogger(os.Stdout)
 

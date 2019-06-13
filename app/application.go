@@ -18,6 +18,7 @@ import (
 	"github.com/Oneledger/protocol/rpc"
 	"github.com/Oneledger/protocol/serialize"
 	"github.com/Oneledger/protocol/storage"
+	"github.com/tendermint/tendermint/abci/types"
 
 	"github.com/pkg/errors"
 	"github.com/tendermint/tendermint/libs/common"
@@ -111,7 +112,6 @@ func (app *App) setupState(stateBytes []byte) error {
 
 	// (1) Register all the currencies
 	for _, currency := range initial.Currencies {
-		app.logger.Debugf("register currency %s", currency)
 		err := balanceCtx.Currencies().Register(currency)
 		if err != nil {
 			return errors.Wrapf(err, "failed to register currency %s", currency.Name)
@@ -153,14 +153,20 @@ func (app *App) setupState(stateBytes []byte) error {
 			continue
 		}
 
-		err = walletCtx.Add(acct)
-		if err != nil {
-			app.logger.Warn("Failed to register myself", "err", err)
-			continue
+		if _, err := walletCtx.GetAccount(acct.Address()); err != nil {
+			err = walletCtx.Add(acct)
+			if err != nil {
+				app.logger.Warn("Failed to register myself", "err", err)
+				continue
+			}
 		}
 		app.logger.Info("Successfully registered myself!")
 	}
 	return nil
+}
+
+func (app *App) setupValidators(req RequestInitChain, currencies *balance.CurrencyList) (types.ValidatorUpdates, error) {
+	return app.Context.validators.Init(req, currencies)
 }
 
 // Start initializes the state
@@ -208,7 +214,7 @@ func (app *App) rpcStarter() (func() error, error) {
 	noop := func() error { return nil }
 
 	handlers := NewClientHandler(app.Context.cfg.Node.NodeName, app.Context.balances,
-		app.Context.accounts, app.Context.currencies, app.Context.cfg, app.Context.node)
+		app.Context.accounts, app.Context.currencies, app.Context.cfg, app.Context.node, app.Context.validators)
 
 	u, err := url.Parse(app.Context.cfg.Network.SDKAddress)
 	if err != nil {
@@ -236,7 +242,7 @@ type context struct {
 
 	balances *balance.Store
 
-	validators *identity.Validators // Set of validators currently active
+	validators *identity.ValidatorStore // Set of validators currently active
 	accounts   accounts.Wallet
 	currencies *balance.CurrencyList
 
@@ -256,7 +262,7 @@ func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *NodeContext) (c
 	}
 
 	ctx.rpc = rpc.NewServer(logWriter)
-	ctx.validators = identity.NewValidators()
+	ctx.validators = identity.NewValidatorStore(cfg, ctx.dbDir(), ctx.cfg.Node.DB)
 	ctx.actionRouter = action.NewRouter("action")
 	ctx.balances = balance.NewStore("balances", ctx.dbDir(), ctx.cfg.Node.DB, storage.PERSISTENT)
 	ctx.accounts = accounts.NewWallet(cfg, ctx.dbDir())
@@ -274,9 +280,8 @@ func (ctx *context) Action() *action.Context {
 		ctx.accounts,
 		ctx.balances,
 		ctx.currencies,
+		ctx.validators,
 		log.NewLoggerWithPrefix(ctx.logWriter, "action"))
-
-	actionCtx.EnableSend()
 
 	return actionCtx
 }
@@ -318,4 +323,8 @@ func (ctx *context) Close() {
 
 func (ctx *context) Node() NodeContext {
 	return ctx.node
+}
+
+func (ctx *context) Validators() *identity.ValidatorStore {
+	return ctx.validators
 }

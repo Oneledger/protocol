@@ -8,7 +8,8 @@ import (
 type Algorithm int
 
 const (
-	ED25519 Algorithm = iota
+	UNKNOWN Algorithm = iota
+	ED25519
 	SECP256K1
 
 	ED25519_PUB_SIZE  int = ed25519.PubKeyEd25519Size
@@ -21,9 +22,20 @@ const (
 func (a Algorithm) Name() string {
 	switch a {
 	case ED25519:
-		return "ED25519"
+		return "ed25519"
 	case SECP256K1:
-		return "SECP256K1"
+		return "secp256k1"
 	}
 	return "Unknown algorithm"
+}
+
+func GetAlgorithmFromTmKeyName(name string) Algorithm {
+
+	switch name {
+	case "ed25519":
+		return ED25519
+	case "secp256k1":
+		return SECP256K1
+	}
+	return UNKNOWN
 }

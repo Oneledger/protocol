@@ -1,10 +1,11 @@
 #!/bin/bash
 
-name=$(ls -l $OLDATA/devnet | awk '(NR==2){print $9}')
+name=$(ls -l $OLDATA/devnet | grep Node  | awk '(NR==1){print $9}')
 
 if [ -n $name ]
 then
     echo "run load test command on node $name"
     olclient loadtest --root $OLDATA/devnet/$name --threads 1 --interval 10 --max-tx 10
+
 fi
 

@@ -12,6 +12,13 @@
 Copyright 2017 - 2019 OneLedger
 */
 
-package action
+package utils
 
-// TODO: action package document, handle transactions
+import "golang.org/x/crypto/ripemd160"
+
+// Hash returns ripemd160 hash of the given input
+func Hash(result []byte) []byte {
+	hasher := ripemd160.New()
+	hasher.Write(result)
+	return hasher.Sum(nil)
+}

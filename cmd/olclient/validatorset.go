@@ -16,56 +16,57 @@ package main
 
 import (
 	"fmt"
-
 	"github.com/Oneledger/protocol/data"
+	"github.com/Oneledger/protocol/identity"
 	"github.com/Oneledger/protocol/serialize"
+
 	"github.com/spf13/cobra"
 )
 
-type ListArguments struct {
-	identityName string
-	accountName  string
+var validatorsetCmd = &cobra.Command{
+	Use:   "validatorset",
+	Short: "List out all validators",
+	Run:   ListValidator,
 }
-
-var listCmd = &cobra.Command{
-	Use:   "list",
-	Short: "List out Node data",
-	Run:   ListNode,
-}
-
-var list = &ListArguments{}
 
 func init() {
-	RootCmd.AddCommand(listCmd)
+	RootCmd.AddCommand(validatorsetCmd)
 
-	// TODO: I want to have a default account?
-	// Transaction Parameters
-	listCmd.Flags().StringVar(&list.identityName, "identity", "", "identity name")
-	listCmd.Flags().StringVar(&list.accountName, "account", "", "account name")
 }
 
 // IssueRequest sends out a sendTx to all of the nodes in the chain
-func ListNode(cmd *cobra.Command, args []string) {
+func ListValidator(cmd *cobra.Command, args []string) {
 
 	Ctx := NewContext()
 
-	req := data.NewRequestFromData("listAccounts", []byte{})
+	req := data.NewRequestFromData("listValidators", []byte{})
 	resp := &data.Response{}
-	err := Ctx.clCtx.Query("server.ListAccounts", req, resp)
+	err := Ctx.clCtx.Query("server.ListValidators", req, resp)
 	if err != nil {
-		logger.Error("error in getting all accounts", err)
+		logger.Error("error in getting all validators", err)
 		return
 	}
 
-	var accs = make([]string, 0, 10)
-	err = serialize.GetSerializer(serialize.CLIENT).Deserialize(resp.Data, &accs)
+	var validators = make([]identity.Validator, 0)
+
+	err = serialize.GetSerializer(serialize.CLIENT).Deserialize(resp.Data, &validators)
 	if err != nil {
 		logger.Error("error deserializng", err)
 		return
 	}
 
-	logger.Infof("Accounts on node: %s ", Ctx.cfg.Node.NodeName)
-	for _, a := range accs {
-		fmt.Println(a)
+	logger.Infof("Validators on node: %s ", Ctx.cfg.Node.NodeName)
+	for _, v := range validators {
+		printValidator(v)
 	}
+}
+
+func printValidator(v identity.Validator) {
+	fmt.Println("Address", v.Address)
+	fmt.Println("StakeAddress", v.StakeAddress)
+	fmt.Println("Power", v.Power)
+	fmt.Println("Name", v.Name)
+	fmt.Println("Staking", v.Staking)
+	fmt.Println()
+
 }

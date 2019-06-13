@@ -1,0 +1,14 @@
+#!/bin/bash
+
+name=$(ls -l $OLDATA/devnet | grep Node | awk '(NR==1){print $9}')
+
+echo "run list validator set test command on node $name"
+
+cnt=$(olclient validatorset --root $OLDATA/devnet/$name | grep "^Address" | wc -l )
+
+if [ $cnt -ne 5 ]
+then
+    echo "Validator test failed"
+    exit  -1
+fi
+echo "validator test success"
