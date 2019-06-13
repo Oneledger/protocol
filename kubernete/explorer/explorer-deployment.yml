@@ -59,6 +59,10 @@ spec:
         - name: explorer-server
           containerPort: 80
           protocol: TCP 
+        readinessProbe:
+          httpGet:
+            path: /metrics
+            port: 80
         securityContext:
           runAsUser: 0
 ---
@@ -71,10 +75,14 @@ metadata:
     app: explorer
 spec:
   ports:
-  - name: explorer-api-server-port
+  - name: explorer-api-http
     port: 80
     targetPort: explorer-server
     protocol: TCP
-  type: LoadBalancer
+  - name: explorer-api-https
+    port: 443
+    targetPort: explorer-server
+    protocol: TCP
+  type: NodePort
   selector:
     app: explorer-api-server
