@@ -56,7 +56,7 @@ spec:
     - ReadWriteOnce
   resources:
     requests:
-      storage: 3Gi
+      storage: 50Gi
 ---
 apiVersion: v1
 kind: Service
