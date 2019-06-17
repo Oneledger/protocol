@@ -28,7 +28,6 @@ func NewValidatorStore(cfg config.Server, dbPath string, dbType string) *Validat
 	}
 }
 
-
 func (vs *ValidatorStore) Init(req types.RequestInitChain, currencies *balance.CurrencyList) (types.ValidatorUpdates, error) {
 	currency, ok := currencies.GetCurrencyByName("VT")
 	if !ok {
@@ -214,8 +213,7 @@ func (vs *ValidatorStore) HandleUnstake(unstake Unstake) error {
 	}
 	validator, err := validator.FromBytes(value)
 	if err != nil {
-		return errors.Wrap(err, "" +
-			"error deserialize validator")
+		return errors.Wrap(err, "error deserialize validator")
 	}
 
 	amt, err := validator.Staking.Minus(unstake.Amount)
@@ -238,8 +236,8 @@ func (vs *ValidatorStore) GetEndBlockUpdate(ctx *ValidatorContext, req types.Req
 	validatorUpdates := make([]types.ValidatorUpdate, 0)
 
 	if req.Height > 1 || (len(vs.byzantine) > 0) {
-
-		for vs.queue.Len() > 0 {
+		cnt := 0
+		for vs.queue.Len() > 0 && cnt < 64 {
 			queued := vs.queue.Pop()
 			result := vs.ChainState.Get(queued.Value(), true)
 			validator, err := (&Validator{}).FromBytes(result)
@@ -247,10 +245,18 @@ func (vs *ValidatorStore) GetEndBlockUpdate(ctx *ValidatorContext, req types.Req
 				logger.Error(err, "error deserialize validator")
 				continue
 			}
+			// purge validator who's power is 0
+			if validator.Power <= 0 {
+				_, ok := vs.ChainState.Remove(validator.Address)
+				if !ok {
+					logger.Error("Failed to remove invalid validator from chainstate")
+				}
+			}
 			validatorUpdates = append(validatorUpdates, types.ValidatorUpdate{
 				PubKey: validator.PubKey.GetABCIPubKey(),
 				Power:  validator.Power,
 			})
+			cnt ++
 		}
 	}
 

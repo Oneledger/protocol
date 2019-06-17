@@ -244,6 +244,7 @@ func (h *RPCServerContext) ApplyValidator(args client.ApplyValidatorArguments, r
 		NodeName:         args.Name,
 		ValidatorAddress: addr,
 		ValidatorPubKey:  *pubkey,
+		Purge:            args.Purge,
 	}
 
 	uuidNew, _ := uuid.NewUUID()
