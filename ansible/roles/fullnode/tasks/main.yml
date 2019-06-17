@@ -92,23 +92,39 @@
       source ~/.profile
       public_ip="$(curl ifconfig.me | awk '{$1=$1};1')" 
       internal_ip="$(hostname -I | awk '{$1=$1};1')"
+      
       user_input_seeds="{{ seeds }}"
       seed_address=($user_input_seeds)
-      len={{ seeds.split() | length}}
+      seeds_len={{ seeds.split() | length}}
       seeds="["
-      for (( i=0; i<$len; i++ )); do
+      for (( i=0; i<$seeds_len; i++ )); do
         seeds+="\"${seed_address[$i]}\"";
-        if [[ $i < $(expr $len - 1) ]]; then
+        if [[ $i < $(expr $seeds_len - 1) ]]; then
           seeds+=", "
         fi
       done
       seeds+="]"
+
+      user_input_persistent_peers="{{ persistent_peers }}"
+      persistent_peer_address=($user_input_persistent_peers)
+      persistent_peers_len={{ persistent_peers.split() | length}}
+      persistent_peers="["
+      for (( i=0; i<$persistent_peers_len; i++ )); do
+        persistent_peers+="\"${persistent_peer_address[$i]}\"";
+        if [[ $i < $(expr $persistent_peers_len - 1) ]]; then
+          persistent_peers+=", "
+        fi
+      done
+      persistent_peers+="]"
+      if [[ $persistent_peers_len > 0  ]]; then
+        sed -i "s/seed_mode.*/seed_mode = true/" {{OLDATA}}/config.toml
+      fi
+
       olfullnode init --genesis {{GOPATH}}/genesis.json --root {{OLDATA}}
       sed -i "s/rpc_address.*/rpc_address = \"tcp:\/\/$internal_ip:26604\"/" {{OLDATA}}/config.toml
       sed -i "s/p2p_address.*/p2p_address = \"tcp:\/\/$internal_ip:26605\"/" {{OLDATA}}/config.toml
       sed -i "s/sdk_address.*/sdk_address = \"tcp:\/\/$internal_ip:26606\"/" {{OLDATA}}/config.toml
       sed -i "s/external_p2p_address.*/external_p2p_address = \"tcp:\/\/$public_ip:26605\"/" {{OLDATA}}/config.toml
-      sed -i "s/seed_mode.*/seed_mode = false/" {{OLDATA}}/config.toml
       sed -i "s/seeds.*/seeds = $seeds/" {{OLDATA}}/config.toml
       sed -i "s/log_output.*/log_output = \"stdout\"/" {{OLDATA}}/config.toml
       sed -i "s/create_empty_blocks.=.*/create_empty_blocks = false/" {{OLDATA}}/config.toml
