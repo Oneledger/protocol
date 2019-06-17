@@ -213,8 +213,7 @@ func (vs *ValidatorStore) HandleUnstake(unstake Unstake) error {
 	}
 	validator, err := validator.FromBytes(value)
 	if err != nil {
-		return errors.Wrap(err, ""+
-			"error deserialize validator")
+		return errors.Wrap(err, "error deserialize validator")
 	}
 
 	amt, err := validator.Staking.Minus(unstake.Amount)
