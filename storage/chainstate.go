@@ -155,6 +155,15 @@ func (state *ChainState) Dump() {
 
 }
 
+// Remove removes item from chainstate
+func (stake *ChainState) Remove(key []byte) ([]byte, bool) {
+	result, ok := stake.Delivered.Remove(key)
+	if !ok {
+		log.Error("Failed to delete the item from chainstate")
+	}
+	return result, ok
+}
+
 // Reset the chain state from persistence
 func (state *ChainState) reset() ([]byte, int64) {
 
