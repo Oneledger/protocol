@@ -116,9 +116,6 @@
         fi
       done
       persistent_peers+="]"
-      if [[ $persistent_peers_len > 0  ]]; then
-        sed -i "s/seed_mode.*/seed_mode = true/" {{OLDATA}}/config.toml
-      fi
 
       olfullnode init --genesis {{GOPATH}}/genesis.json --root {{OLDATA}}
       sed -i "s/rpc_address.*/rpc_address = \"tcp:\/\/$internal_ip:26604\"/" {{OLDATA}}/config.toml
@@ -126,10 +123,14 @@
       sed -i "s/sdk_address.*/sdk_address = \"tcp:\/\/$internal_ip:26606\"/" {{OLDATA}}/config.toml
       sed -i "s/external_p2p_address.*/external_p2p_address = \"tcp:\/\/$public_ip:26605\"/" {{OLDATA}}/config.toml
       sed -i "s/seeds.*/seeds = $seeds/" {{OLDATA}}/config.toml
+      sed -i "s/persistent_peers.*/persistent_peers = $persistent_peers/" {{OLDATA}}/config.toml
       sed -i "s/log_output.*/log_output = \"stdout\"/" {{OLDATA}}/config.toml
       sed -i "s/create_empty_blocks.=.*/create_empty_blocks = false/" {{OLDATA}}/config.toml
       sed -i "s/db.=.*/db = \"cleveldb\"/" {{OLDATA}}/config.toml
       sed -i "s/node_name.*/node_name = \"$public_ip\"/" {{OLDATA}}/config.toml
+      if [[ $persistent_peers_len > 0  ]]; then
+        sed -i "s/seed_mode.*/seed_mode = true/" {{OLDATA}}/config.toml
+      fi
 - name: create start script
   copy:
     dest: "/usr/local/bin/fullnodeStartup"
