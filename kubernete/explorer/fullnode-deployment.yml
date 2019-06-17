@@ -20,7 +20,8 @@ spec:
           claimName: fullnode-pv-claim
       containers:
       - name: fullnode-container
-        image: gcr.io/atomic-land-223022/oneledger/chronos:v0.10.0
+        image: gcr.io/atomic-land-223022/oneledger/chronos:latest
+        imagePullPolicy: "Always"
         volumeMounts:
           - mountPath: "/home/node/go/data"
             name: fullnode-pv-claim
@@ -33,7 +34,8 @@ spec:
             protocol: TCP
       initContainers:
       - name: change-persistent-data-ownership 
-        image: gcr.io/atomic-land-223022/oneledger/chronos:v0.10.0
+        image: gcr.io/atomic-land-223022/oneledger/chronos:latest
+        imagePullPolicy: "Always"
         securityContext:
           runAsUser: 0
         command:

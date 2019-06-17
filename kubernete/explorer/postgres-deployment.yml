@@ -20,7 +20,7 @@ spec:
           claimName: psql-pv-claim
       containers:
       - name: postgres-database
-        image: gcr.io/atomic-land-223022/oneledger/explorer_postgres:v0.10.0
+        image: gcr.io/atomic-land-223022/oneledger/explorer_postgres:latest
         imagePullPolicy: "Always"
         ports: 
         - name: psql-port
@@ -31,7 +31,7 @@ spec:
           name: psql-pv-claim
       initContainers:
       - name: change-persistent-data-ownership 
-        image: gcr.io/atomic-land-223022/oneledger/explorer_postgres:v0.10.0
+        image: gcr.io/atomic-land-223022/oneledger/explorer_postgres:latest
         imagePullPolicy: "Always"
         securityContext:
           runAsUser: 0

@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
       - name: explorer-watcher 
-        image: gcr.io/atomic-land-223022/oneledger/explorer:v0.10.0
+        image: gcr.io/atomic-land-223022/oneledger/explorer:latest
         command: ["/bin/bash", "-c"]
         args: 
           - >- 
@@ -45,7 +45,7 @@ spec:
     spec:
       containers:
       - name: explorer-api-server
-        image: gcr.io/atomic-land-223022/oneledger/explorer:v0.10.0
+        image: gcr.io/atomic-land-223022/oneledger/explorer:latest
         command: ["/bin/bash", "-c"]
         args: 
           - >- 

@@ -6,7 +6,7 @@ metadata:
     type: local
 spec:
   storageClassName: manual
-  persistentVolumeReclaimPolicy: Recyle
+  persistentVolumeReclaimPolicy: Recycle
   capacity:
     storage: 50Gi
   accessModes:
