@@ -22,21 +22,21 @@ import (
 	"github.com/Oneledger/protocol/serialize"
 )
 
-type coinData struct {
+type CoinData struct {
 	Currency Currency
 	Amount   []byte
 }
 
 func (c *Coin) NewDataInstance() serialize.Data {
-	return &coinData{}
+	return &CoinData{}
 }
 
 func (c *Coin) Data() serialize.Data {
-	return &coinData{c.Currency, c.Amount.Bytes()}
+	return &CoinData{c.Currency, c.Amount.Bytes()}
 }
 
 func (c *Coin) SetData(a interface{}) error {
-	cd, ok := a.(*coinData)
+	cd, ok := a.(*CoinData)
 	if !ok {
 		return errors.New("Wrong data")
 	}
@@ -47,6 +47,6 @@ func (c *Coin) SetData(a interface{}) error {
 	return nil
 }
 
-func (ad *coinData) SerialTag() string {
+func (ad *CoinData) SerialTag() string {
 	return ""
 }
