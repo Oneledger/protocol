@@ -18,15 +18,13 @@ import (
 	"bytes"
 	"testing"
 
-	"github.com/Oneledger/protocol/data"
-	"github.com/Oneledger/protocol/data/balance"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestPersistence(t *testing.T) {
 	log.Debug("Create new chain state")
 
-	state := NewChainState("PersistentTest", "goleveldb", PERSISTENT)
+	state := NewChainState("PersistentTest", "./", "goleveldb", PERSISTENT)
 
 	key := "Hello"
 	value := "The Value"
@@ -48,61 +46,58 @@ func TestPersistence(t *testing.T) {
 }
 
 func TestChainState(t *testing.T) {
-	state := NewChainState("ChainState", "goleveldb", PERSISTENT)
-	bal := balance.NewBalanceFromInt(10000, "OLT")
+	state := NewChainState("ChainState", "./", "goleveldb", PERSISTENT)
 	key := make([]byte, 20)
 	key[0] = 0xaf
+	value := []byte("value1")
 
-	err := state.Set(key, bal)
+	err := state.Set(key, value)
 	assert.Nil(t, err)
 	state.Commit()
 	result := state.Get(key, false)
 
-	assert.Equal(t, bal, result, "These should be equal")
+	assert.Equal(t, value, result, "These should be equal")
 }
 
 func TestChainStateContinueUpdate(t *testing.T) {
 
-	state := NewChainState("Continue", "goleveldb", PERSISTENT)
+	state := NewChainState("Continue", "./", "goleveldb", PERSISTENT)
 
 	key := make([]byte, 20)
 	key[0] = 0x03
 
-	bal := balance.NewBalanceFromInt(10, "OLT")
+	value := []byte("value1")
 
-	err := state.Set(key, bal)
+	err := state.Set(key, value)
 	assert.Nil(t, err)
 
 	state.Commit()
 
 	//_, b1 := state.Delivered.ImmutableTree.Get(key)
-	b1 := state.Get(key, false)
-	log.Debug("with commit", "balance", b1)
+	r1 := state.Get(key, false)
 
-	assert.Equal(t, true, bal.GetCoinByName("OLT").Equals(b1.GetCoinByName("OLT")), "balance not eqaul after commit", b1)
+	assert.Equal(t, value, r1, "value not eqaul after commit")
 
-	newbalance := balance.NewBalanceFromInt(14, "OLT")
+	value2 := []byte("value2")
 
-	err = state.Set(key, newbalance)
+	err = state.Set(key, value2)
 	assert.Nil(t, err)
 
-	b2 := state.Get(key, false)
-	//_, b2 := state.Delivered.ImmutableTree.Get(key)
-	log.Debug("without commit", "balance", b2)
+	r2 := state.Get(key, false)
 
-	assert.Equal(t, true, newbalance.GetCoinByName("OLT").Equals(b2.GetCoinByName("OLT")), "balance not eqaul without commit", b2)
+	assert.Equal(t, value2, r2, "value not eqaul without commit")
 
 }
 
 func TestChainState_Commit(t *testing.T) {
 
-	state := NewChainState("commit", "goleveldb", PERSISTENT)
+	state := NewChainState("commit", "./", "goleveldb", PERSISTENT)
 
 	key := make([]byte, 20)
 	key[0] = 0x05
-	bal := balance.NewBalanceFromInt(10, "OLT")
+	value := []byte("value1")
 
-	state.Set(key, bal)
+	state.Set(key, value)
 
 	hash, version := state.Commit()
 
