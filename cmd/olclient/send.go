@@ -28,7 +28,25 @@ var sendCmd = &cobra.Command{
 	Run:   IssueRequest,
 }
 
-var sendargs *client.SendArguments = &client.SendArguments{}
+type SendArguments struct {
+	Party        []byte        `json:"party"`
+	CounterParty []byte        `json:"counterParty"`
+	Amount       action.Amount `json:"amount"`
+	Fee          action.Amount `json:"fee"`
+	Gas          int64         `json:"gas"`
+}
+
+func (args *SendArguments) ClientRequest() client.SendTxRequest {
+	return client.SendTxRequest{
+		From:   args.Party,
+		To:     args.CounterParty,
+		Amount: args.Amount,
+		Fee:    args.Fee,
+		Gas:    args.Gas,
+	}
+}
+
+var sendargs = &SendArguments{}
 
 func init() {
 	RootCmd.AddCommand(sendCmd)
@@ -36,9 +54,9 @@ func init() {
 	// Transaction Parameters
 	sendCmd.Flags().BytesHexVar(&sendargs.Party, "party", []byte{}, "send sender")
 	sendCmd.Flags().BytesHexVar(&sendargs.CounterParty, "counterparty", []byte{}, "send recipient")
-	sendCmd.Flags().StringVar(&sendargs.AmountStr, "amount", "0.0", "specify an amount")
-	sendCmd.Flags().StringVar(&sendargs.CurrencyStr, "currency", "OLT", "the currency")
-	sendCmd.Flags().StringVar(&sendargs.FeeStr, "fee", "0.0", "include a fee in OLT")
+	sendCmd.Flags().StringVar(&sendargs.Amount.Value, "amount", "0.0", "specify an amount")
+	sendCmd.Flags().StringVar(&sendargs.Amount.Currency, "currency", "OLT", "the currency")
+	sendCmd.Flags().StringVar(&sendargs.Fee.Value, "fee", "0.0", "include a fee in OLT")
 }
 
 // IssueRequest sends out a sendTx to all of the nodes in the chain
@@ -46,12 +64,9 @@ func IssueRequest(cmd *cobra.Command, args []string) {
 
 	ctx := NewContext()
 
-	sendargs.Amount = action.Amount{sendargs.CurrencyStr, sendargs.AmountStr}
-	sendargs.Fee = action.Amount{"OLT", sendargs.FeeStr}
-
 	// Create message
 	resp := &data.Response{}
-	err := ctx.clCtx.Query("server.SendTx", *sendargs, resp)
+	err := ctx.clCtx.Query("server.SendTx", sendargs.ClientRequest(), resp)
 	if err != nil {
 		ctx.logger.Error("error executing SendTx", err)
 		return
@@ -67,6 +82,7 @@ func IssueRequest(cmd *cobra.Command, args []string) {
 	if err != nil {
 		ctx.logger.Error("error in BroadcastTxCommit", err)
 	}
+
 	BroadcastStatus(ctx, result)
 }
 

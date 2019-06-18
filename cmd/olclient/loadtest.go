@@ -29,7 +29,6 @@ import (
 
 	"github.com/Oneledger/protocol/action"
 
-	"github.com/Oneledger/protocol/client"
 	"github.com/Oneledger/protocol/data"
 	"github.com/Oneledger/protocol/data/accounts"
 	"github.com/Oneledger/protocol/data/chain"
@@ -179,7 +178,7 @@ func doSendTransaction(ctx *Context, threadNo int, acc *accounts.Account, nodeAd
 	amt := r.Float64() * 10.0 // amount is a random float between [0, 10)
 
 	// populate send arguments
-	sendArgsLocal := client.SendArguments{}
+	sendArgsLocal := SendArguments{}
 	sendArgsLocal.Party = []byte(nodeAddress)
 	if randomRev {
 		recv := ed25519.GenPrivKey().PubKey().Address()

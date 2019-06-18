@@ -43,7 +43,9 @@ func TestCoin(t *testing.T) {
 	ok = coin.IsValid()
 	assert.True(t, ok)
 
-	doubleCoin := coin.Plus(coinNew)
+	doubleCoin, err := coin.Plus(coinNew)
+	assert.Nil(t, err)
+
 	ok = coin.LessThanCoin(doubleCoin)
 	assert.True(t, ok)
 

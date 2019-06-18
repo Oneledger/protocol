@@ -16,7 +16,9 @@ import (
 
 // The http path used for our rpc handlers
 const (
-	Path = "/ol_rpc"
+	PathJSON = "/rpc/json"
+	PathGOB  = "/rpc/gob"
+	Path     = "/ol_rpc"
 )
 
 // Server holds an RPC server that is served over HTTP
@@ -39,15 +41,15 @@ func NewServer(w io.Writer) *Server {
 	}
 }
 
-func (srv *Server) register(rcvr interface{}) error {
-	return srv.rpc.RegisterName("server", rcvr)
+func (srv *Server) register(name string, rcvr interface{}) error {
+	return srv.rpc.RegisterName(name, rcvr)
 }
 
 // Prepare injects all the data necessary for serving over the specified URL.
 // It  prepares a net.Listener over the specified URL, and registers all methods
 // inside the given receiver. After this method is called, the Start function
 // is ready to be called.
-func (srv *Server) Prepare(u *url.URL, rcvr interface{}) error {
+func (srv *Server) Prepare(u *url.URL, services map[string]interface{}) error {
 	if u == nil {
 		return errors.New("no URL was provided")
 	} else if u.Port() == "" {
@@ -59,14 +61,16 @@ func (srv *Server) Prepare(u *url.URL, rcvr interface{}) error {
 		return errors.Wrap(err, "invalid URL provided, failed to create listener")
 	}
 
-	err = srv.register(rcvr)
-	if err != nil {
-		_ = l.Close()
-		return errors.Wrap(err, "failed to register the given rcvr")
+	for name, service := range services {
+		err = srv.register(name, service)
+		if err != nil {
+			_ = l.Close()
+			return errors.Wrap(err, "failed to register the given rcvr")
+		}
+
 	}
 
 	// Register the handlers with our mux
-	// TODO: Eventually expand this so we can register multiple receivers
 	srv.mux.Handle(Path, srv.rpc)
 	srv.http.Handler = srv.mux
 	srv.listener = l

@@ -12,16 +12,16 @@
 Copyright 2017 - 2019 OneLedger
 */
 
+// Package client holds data for access to our RPC interface
 package client
 
 import (
 	"fmt"
-	netRpc "net/rpc"
+	netrpc "net/rpc"
 	"net/url"
 
 	"github.com/Oneledger/protocol/rpc"
 	"github.com/pkg/errors"
-	"github.com/tendermint/tendermint/node"
 	rpcclient "github.com/tendermint/tendermint/rpc/client"
 	ctypes "github.com/tendermint/tendermint/rpc/core/types"
 )
@@ -31,28 +31,18 @@ var (
 	ErrEmptyResponse = errors.New("empty response")
 )
 
-type Context struct {
+// ServiceContext holds clients for making requests to external services
+type ServiceContext struct {
 	rpcClient     rpcclient.Client
 	broadcastMode string
 	proof         bool
-	oltClient     *netRpc.Client
+	oltClient     *netrpc.Client
 }
 
 /*
 	Generators
 */
-func NewLocalContext(node *node.Node) (cliCtx Context) {
-	tmClient := rpcclient.NewLocal(node)
-
-	cliCtx = Context{
-		rpcClient:     tmClient,
-		broadcastMode: BroadcastAsync,
-		proof:         false,
-	}
-	return
-}
-
-func NewContext(rpcAddress, sdkAddress string) (cliCtx Context, err error) {
+func NewServiceContext(rpcAddress, sdkAddress string) (cliCtx ServiceContext, err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			logger.Debug("Ignoring rpcClient Panic", "r", r)
@@ -60,22 +50,8 @@ func NewContext(rpcAddress, sdkAddress string) (cliCtx Context, err error) {
 		}
 	}()
 
-	// tm rpc Context
+	// tm rpc ServiceContext
 	var tmRPCClient = rpcclient.NewHTTP(rpcAddress, "/websocket")
-	/*
-		// check status of rpc; return client if everything fine
-		_, err = tmRPCClient.Status()
-		if err == nil {
-			logger.Debug("rpcClient is running")
-
-			cliCtx = Context{
-				rpcClient:     tmRPCClient,
-				broadcastMode: BroadcastCommit,
-			}
-			return
-		}
-
-	*/
 
 	// try starting tmRPCClient client
 	err = tmRPCClient.Start()
@@ -89,12 +65,12 @@ func NewContext(rpcAddress, sdkAddress string) (cliCtx Context, err error) {
 		return
 	}
 
-	client, err := netRpc.DialHTTPPath("tcp", u.Host, rpc.Path)
+	client, err := netrpc.DialHTTPPath("tcp", u.Host, rpc.Path)
 	if err != nil {
 		return
 	}
 
-	cliCtx = Context{
+	cliCtx = ServiceContext{
 		rpcClient:     tmRPCClient,
 		broadcastMode: BroadcastCommit,
 		oltClient:     client,
@@ -104,11 +80,10 @@ func NewContext(rpcAddress, sdkAddress string) (cliCtx Context, err error) {
 }
 
 /*
-	Context Methods
+	ServiceContext Methods
 */
 
-// Send a very specific query to return parse response.value
-func (ctx Context) Query(serviceMethod string, args interface{}, response interface{}) error {
+func (ctx ServiceContext) Query(serviceMethod string, args interface{}, response interface{}) error {
 
 	err := ctx.oltClient.Call(serviceMethod, args, response)
 	if err != nil {
@@ -118,7 +93,7 @@ func (ctx Context) Query(serviceMethod string, args interface{}, response interf
 	return err
 }
 
-func (ctx Context) Tx(hash []byte, prove bool) (res *ctypes.ResultTx) {
+func (ctx ServiceContext) Tx(hash []byte, prove bool) (res *ctypes.ResultTx) {
 
 	result, err := ctx.rpcClient.Tx(hash, prove)
 	if err != nil {
@@ -130,7 +105,7 @@ func (ctx Context) Tx(hash []byte, prove bool) (res *ctypes.ResultTx) {
 	return result
 }
 
-func (ctx Context) Block(height int64) (res *ctypes.ResultBlock) {
+func (ctx ServiceContext) Block(height int64) (res *ctypes.ResultBlock) {
 
 	h := blockHeightConvert(height)
 
@@ -143,7 +118,7 @@ func (ctx Context) Block(height int64) (res *ctypes.ResultBlock) {
 	return result
 }
 
-func (ctx Context) Search(query string, prove bool, page, perPage int) (res *ctypes.ResultTxSearch) {
+func (ctx ServiceContext) Search(query string, prove bool, page, perPage int) (res *ctypes.ResultTxSearch) {
 
 	result, err := ctx.rpcClient.TxSearch(query, prove, page, perPage)
 	if err != nil {
@@ -151,13 +126,11 @@ func (ctx Context) Search(query string, prove bool, page, perPage int) (res *cty
 		return nil
 	}
 
-	logger.Debug("TxSearch", "query", query, "prove", prove, "result", result)
-
 	return result
 }
 
 // abciQuery is a thin wrapper over tendermint rpc client's abciQuery
-func (ctx Context) abciQuery(path string, packet []byte) (res *ctypes.ResultABCIQuery, err error) {
+func (ctx ServiceContext) abciQuery(path string, packet []byte) (res *ctypes.ResultABCIQuery, err error) {
 
 	if len(path) < 1 {
 		return nil, ErrEmptyQuery

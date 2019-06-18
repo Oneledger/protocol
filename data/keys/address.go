@@ -6,16 +6,15 @@ import (
 	"encoding/hex"
 	"strings"
 
+	"github.com/Oneledger/protocol/utils"
 	"github.com/pkg/errors"
 )
-
-const hexPrefix = "0x"
 
 //Address to be used as to reference a key-pair.
 type Address []byte
 
 func (a Address) String() string {
-	return hexPrefix + hex.EncodeToString(a)
+	return utils.PrefixHex(hex.EncodeToString(a))
 }
 
 func (a Address) Bytes() []byte {
@@ -27,7 +26,7 @@ func (a Address) Equal(b Address) bool {
 }
 
 func (a Address) Humanize() string {
-	return hexPrefix + strings.ToUpper(hex.EncodeToString(a))
+	return utils.PrefixHex(strings.ToLower(hex.EncodeToString(a)))
 }
 
 var _ encoding.TextMarshaler = Address{}
@@ -37,7 +36,7 @@ var _ encoding.TextUnmarshaler = &Address{}
 // of the address excluding the prefix
 func (a Address) MarshalText() ([]byte, error) {
 	addrHex := hex.EncodeToString(a)
-	return []byte(hexPrefix + addrHex), nil
+	return []byte(utils.PrefixHex(addrHex)), nil
 }
 
 // UnmarshalText decodes the given text in a byteslice of UTF8 characters. This implementation ignores hexPrefixprefixes
@@ -49,8 +48,8 @@ func (a *Address) UnmarshalText(text []byte) error {
 	addrStr := string(text)
 	// Cut off the hex prefix if it exists
 
-	if strings.HasPrefix(addrStr, hexPrefix) {
-		addrStr = addrStr[len(hexPrefix):]
+	if strings.HasPrefix(addrStr, utils.HexPrefix) {
+		addrStr = addrStr[len(utils.HexPrefix):]
 	}
 
 	addrRaw, err := hex.DecodeString(addrStr)

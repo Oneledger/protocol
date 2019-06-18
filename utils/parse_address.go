@@ -19,6 +19,13 @@ import (
 	"regexp"
 )
 
+// Hex prefix
+const HexPrefix = "0x"
+
+func PrefixHex(in string) string {
+	return HexPrefix + in
+}
+
 var ErrParsingAddress = errors.New("failed to parse network address")
 
 // Pick out the port from a full address

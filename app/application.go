@@ -127,7 +127,7 @@ func (app *App) setupState(stateBytes []byte) error {
 		}
 
 		key := storage.StoreKey(addrBytes)
-		err = balanceCtx.Store().Set(key, si.Balance)
+		err = balanceCtx.Store().Set([]byte(key), si.Balance)
 		if err != nil {
 			return errors.Wrap(err, "failed to set balance")
 		}
@@ -213,15 +213,23 @@ func (app *App) Close() {
 func (app *App) rpcStarter() (func() error, error) {
 	noop := func() error { return nil }
 
-	handlers := NewClientHandler(app.Context.cfg.Node.NodeName, app.Context.balances,
-		app.Context.accounts, app.Context.currencies, app.Context.cfg, app.Context.node, app.Context.validators)
+	handlers := NewClientHandler(
+		app.Context.cfg.Node.NodeName,
+		app.Context.balances,
+		app.Context.accounts,
+		app.Context.currencies,
+		app.Context.cfg,
+		app.Context.node,
+		app.Context.validators,
+		app.Context.logWriter,
+	)
 
 	u, err := url.Parse(app.Context.cfg.Network.SDKAddress)
 	if err != nil {
 		return noop, err
 	}
 
-	err = app.Context.rpc.Prepare(u, handlers)
+	err = app.Context.rpc.Prepare(u, map[string]interface{}{"server": handlers})
 	if err != nil {
 		return noop, err
 	}

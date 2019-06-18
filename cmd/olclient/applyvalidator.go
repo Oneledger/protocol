@@ -15,13 +15,33 @@ import (
 	"github.com/spf13/cobra"
 )
 
+type ApplyValidatorArguments struct {
+	Address      []byte `json:"address"`
+	Name         string `json:"name"`
+	Amount       string `json:"amount"`
+	Purge        bool   `json:"purge"`
+	TmPubKeyType string `json:"tmPubKeyType"`
+	TmPubKey     []byte `json:"tmPubKey"`
+}
+
+func (args *ApplyValidatorArguments) ClientRequest() client.ApplyValidatorRequest {
+	return client.ApplyValidatorRequest{
+		Address:      args.Address,
+		Name:         args.Name,
+		Amount:       args.Amount,
+		Purge:        args.Purge,
+		TmPubKeyType: args.TmPubKeyType,
+		TmPubKey:     args.TmPubKey,
+	}
+}
+
 var applyvalidatorCmd = &cobra.Command{
 	Use:   "applyvalidator",
 	Short: "Apply a dynamic validator",
 	RunE:  applyValidator,
 }
 
-var applyValidatorArgs *client.ApplyValidatorArguments = &client.ApplyValidatorArguments{}
+var applyValidatorArgs = &ApplyValidatorArguments{}
 
 func init() {
 	RootCmd.AddCommand(applyvalidatorCmd)
@@ -33,7 +53,6 @@ func init() {
 	applyvalidatorCmd.Flags().BytesBase64Var(&applyValidatorArgs.TmPubKey, "pubkey", []byte{}, "validator pubkey")
 	applyvalidatorCmd.Flags().StringVar(&applyValidatorArgs.TmPubKeyType, "pubkeytype", "edd25519", "validator pubkey type, default \"ed25519\", if used pubkey flag, this input should match")
 	applyvalidatorCmd.Flags().StringVar(&applyValidatorArgs.Name, "name", "", "name for the validator, default to the node name in config.toml")
-
 }
 
 // IssueRequest sends out a sendTx to all of the nodes in the chain

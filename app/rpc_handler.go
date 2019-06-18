@@ -16,27 +16,24 @@ package app
 
 import (
 	"fmt"
-	"github.com/Oneledger/protocol/identity"
+	"io"
 	"net/url"
-	"os"
 	"runtime/debug"
-
-	"github.com/google/uuid"
-
-	"github.com/Oneledger/protocol/consensus"
-	"github.com/tendermint/tendermint/p2p"
-
-	"github.com/Oneledger/protocol/config"
 
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/client"
+	"github.com/Oneledger/protocol/config"
 	"github.com/Oneledger/protocol/data"
 	"github.com/Oneledger/protocol/data/accounts"
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/keys"
+	"github.com/Oneledger/protocol/identity"
 	"github.com/Oneledger/protocol/log"
 	"github.com/Oneledger/protocol/serialize"
+	"github.com/google/uuid"
 	"github.com/pkg/errors"
+	"github.com/tendermint/tendermint/p2p"
+	ctypes "github.com/tendermint/tendermint/rpc/core/types"
 )
 
 type RPCServerContext struct {
@@ -48,142 +45,144 @@ type RPCServerContext struct {
 	nodeContext  NodeContext
 	validatorSet *identity.ValidatorStore
 
-	logger *log.Logger
+	services *client.ServiceContext
+	logger   *log.Logger
 }
 
-func NewClientHandler(nodeName string, balances *balance.Store, accounts accounts.Wallet,
-	currencies *balance.CurrencyList, cfg config.Server, nodeContext NodeContext, validatorSet *identity.ValidatorStore) *RPCServerContext {
-
-	return &RPCServerContext{nodeName, balances,
-		accounts, currencies, cfg, nodeContext, validatorSet,
-		log.NewLoggerWithPrefix(os.Stdout, "client_Handler")}
+func NewClientHandler(
+	nodeName string,
+	balances *balance.Store,
+	accounts accounts.Wallet,
+	currencies *balance.CurrencyList,
+	cfg config.Server,
+	nodeContext NodeContext,
+	validatorSet *identity.ValidatorStore,
+	logWriter io.Writer,
+) *RPCServerContext {
+	return &RPCServerContext{
+		nodeName:     nodeName,
+		balances:     balances,
+		accounts:     accounts,
+		currencies:   currencies,
+		cfg:          cfg,
+		nodeContext:  nodeContext,
+		validatorSet: validatorSet,
+		logger:       log.NewLoggerWithPrefix(logWriter, "client_Handler"),
+	}
 }
 
 // NodeName returns the name of a node. This is useful for displaying it at cmdline.
-func (h *RPCServerContext) NodeName(req data.Request, resp *data.Response) error {
-	defer h.recoverPanic()
-
-	resp.SetData([]byte(h.nodeName))
+func (h *RPCServerContext) NodeName(_ client.NodeNameRequest, reply *client.NodeNameReply) error {
+	*reply = h.nodeName
 	return nil
 }
 
-func (h *RPCServerContext) NodeAddress(req data.Request, resp *data.Response) error {
-	defer h.recoverPanic()
-
-	address := h.nodeContext.Address()
-	resp.SetData([]byte(address))
-
+func (h *RPCServerContext) NodeAddress(_ client.NodeAddressRequest, reply *client.NodeAddressReply) error {
+	*reply = h.nodeContext.Address()
 	return nil
 }
 
-func (h *RPCServerContext) NodeID(req data.Request, resp *data.Response) error {
-	defer h.recoverPanic()
-
-	configuration, err := consensus.ParseConfig(&h.cfg)
-	if err != nil {
-		return errors.Wrap(err, "error parsing config")
-	}
-
-	nodeKey, err := p2p.LoadNodeKey(configuration.CFG.NodeKeyFile())
+func (h *RPCServerContext) NodeID(req client.NodeIDRequest, reply *client.NodeIDReply) error {
+	nodeKey, err := p2p.LoadNodeKey(h.cfg.TMConfig().NodeKeyFile())
 	if err != nil {
 		return errors.Wrap(err, "error loading node key")
 	}
 
 	// silenced error because not present means false
-	shouldShowIP, _ := req.GetBool("showIP")
-
-	ip := configuration.CFG.P2P.ExternalAddress
-	if shouldShowIP {
+	ip := p2pAddressFromCFG(h.cfg)
+	if req.ShouldShowIP {
 		u, err := url.Parse(ip)
 		if err != nil {
-			return errors.Wrap(err, "error in parsing url")
+			return errors.Wrap(err, "error in parsing configured url")
 		}
-		resp.JSON(fmt.Sprintf("%s@%s", nodeKey.ID(), u.Host))
-
+		out := fmt.Sprintf("%s@%s", nodeKey.ID(), u.Host)
+		*reply = out
 	} else {
-		resp.JSON(string(nodeKey.ID()))
+		*reply = string(nodeKey.ID())
 	}
 	return nil
 }
 
-type Handler struct {
-	balances *balance.Store
-	accounts accounts.Wallet
-	wallet   accounts.WalletStore
+// This function returns the external p2p address if it exists, but falls back to the regular p2p address if it is
+// not present from the config
+func p2pAddressFromCFG(cfg config.Server) string {
+	extP2P := cfg.Network.ExternalP2PAddress
+	if extP2P != "" {
+		return cfg.Network.P2PAddress
+	}
 
-	logger *log.Logger
+	return cfg.Network.ExternalP2PAddress
 }
 
 // GetBalance gets the balance of an address
 // TODO make it more generic to handle account name and identity
-func (h *RPCServerContext) Balance(key []byte, resp *data.Response) error {
-	defer h.recoverPanic()
+func (h *RPCServerContext) Balance(req client.BalanceRequest, resp *client.BalanceReply) error {
+	addr := req
+	bal, err := h.balances.Get(addr, true)
 
-	bal, err := h.balances.Get(key, true)
-	if err != nil {
+	if err != nil && err == balance.ErrNoBalanceFoundForThisAddress {
+		bal = balance.NewBalance()
+	} else if err != nil {
 		h.logger.Error("error getting balance", err)
 		return errors.Wrap(err, "error getting balance")
 	}
-	err = resp.SetDataObj(bal)
-	if err != nil {
-		return errors.Wrap(err, "err serializing for client")
-	}
 
-	return err
+	*resp = client.BalanceReply{
+		Balance: *bal,
+		Height:  h.balances.Version,
+	}
+	return nil
 }
 
-/*
-	Account Handlers start here
-*/
-
 // AddAccount adds an account to accounts store of the node
-func (h *RPCServerContext) AddAccount(acc accounts.Account, resp *data.Response) error {
-	defer h.recoverPanic()
-
-	h.logger.Infof("adding account : %#v %s", acc, acc.Address())
+func (h *RPCServerContext) AddAccountReply(acc client.AddAccountRequest, reply *client.AddAccountReply) error {
 	err := h.accounts.Add(acc)
 	if err != nil {
 		return errors.Wrap(err, "error in adding account to walletstore")
 	}
 
-	acc1, err := h.accounts.GetAccount(acc.Address())
-	resp.SetDataObj(acc1)
-
+	acct, err := h.accounts.GetAccount(acc.Address())
+	*reply = client.AddAccountReply{Account: acct}
 	return nil
 }
 
 // DeleteAccount deletes an account from the accounts store of node
-func (h *RPCServerContext) DeleteAccount(acc accounts.Account, resp *data.Response) error {
+func (h *RPCServerContext) DeleteAccount(req client.DeleteAccountRequest, reply *client.DeleteAccountReply) error {
 	defer h.recoverPanic()
-
-	err := h.accounts.Delete(acc)
+	// TODO: Need to verify that we're allowed to delete this account.
+	//       The input should be a pair of both the account address and a signed version of the address.
+	//       Only delete the account if the signature is valid
+	var nilAccount accounts.Account
+	toDelete, err := h.accounts.GetAccount(req.Address)
+	if err != nil || toDelete == nilAccount {
+		return errors.New("account doesn't exist!")
+	}
+	err = h.accounts.Delete(toDelete)
 	if err != nil {
 		return errors.Wrap(err, "error in deleting account from walletstore")
 	}
 
+	*reply = true
 	return nil
 }
 
 // ListAccounts returns a list of all accounts in the accounts store of node
-func (h *RPCServerContext) ListAccounts(req data.Request, resp *data.Response) error {
-	defer h.recoverPanic()
+func (h *RPCServerContext) ListAccountsRequest(req client.ListAccountsRequest, reply *client.ListAccountsReply) error {
+	// TODO: pagination
 
-	accs := h.accounts.Accounts()
-	result := make([]string, len(accs))
-	for i, a := range accs {
-		result[i] = a.String()
+	accts := h.accounts.Accounts()
+	if accts == nil {
+		accts = make([]accounts.Account, 0)
 	}
-	resp.SetDataObj(result)
+	*reply = client.ListAccountsReply{Accounts: accts}
 
 	return nil
 }
 
-func (h *RPCServerContext) SendTx(args client.SendArguments, resp *data.Response) error {
-	defer h.recoverPanic()
-
+func (h *RPCServerContext) SendTx(args client.SendTxRequest, reply *client.SendTxReply) error {
 	send := action.Send{
-		From:   keys.Address(args.Party),
-		To:     keys.Address(args.CounterParty),
+		From:   keys.Address(args.From),
+		To:     keys.Address(args.To),
 		Amount: args.Amount,
 	}
 
@@ -195,9 +194,12 @@ func (h *RPCServerContext) SendTx(args client.SendArguments, resp *data.Response
 		Memo: uuidNew.String(),
 	}
 
+	if _, err := h.accounts.GetAccount(args.From); err != nil {
+		return errors.New("Account doesn't exist. Send a raw tx instead")
+	}
+
 	pubKey, signed, err := h.accounts.SignWithAddress(tx.Bytes(), send.From)
 	if err != nil {
-		resp.Error(err.Error())
 		return err
 	}
 	tx.Signatures = []action.Signature{{pubKey, signed}}
@@ -207,11 +209,44 @@ func (h *RPCServerContext) SendTx(args client.SendArguments, resp *data.Response
 		return errors.Wrap(err, "err while network serialization")
 	}
 
-	resp.SetData(packet)
+	*reply = client.SendTxReply{
+		RawTx: packet,
+	}
+
 	return nil
 }
 
-func (h *RPCServerContext) ApplyValidator(args client.ApplyValidatorArguments, resp *data.Response) error {
+// SendRawTx
+func (h *RPCServerContext) SendRawTx(args client.SendRawTxRequest, reply *client.SendRawTxReply) error {
+	var act action.BaseTx
+
+	signer, err := args.PublicKey.GetHandler()
+	if err != nil {
+		return errors.New("not a valid public key")
+	}
+
+	isVerified := signer.VerifyBytes(args.RawTx, args.Signature)
+	if !isVerified {
+		return errors.New("signature is not valid")
+	}
+
+	packet, err := serialize.GetSerializer(serialize.NETWORK).Serialize(act)
+	if err != nil {
+		return errors.New("failed to serialize transaction")
+	}
+
+	result, err := h.broadcastTxSync(packet)
+	if err != nil {
+		return errors.Wrap(err, "failed to broadcast")
+	}
+
+	*reply = client.SendRawTxReply{
+		Result: *result,
+	}
+	return nil
+}
+
+func (h *RPCServerContext) ApplyValidator(args client.ApplyValidatorRequest, resp *data.Response) error {
 	defer h.recoverPanic()
 
 	if len(args.Name) < 1 {
@@ -270,15 +305,17 @@ func (h *RPCServerContext) ApplyValidator(args client.ApplyValidatorArguments, r
 }
 
 // ListValidator returns a list of all validator
-func (h *RPCServerContext) ListValidators(req data.Request, resp *data.Response) error {
-	defer h.recoverPanic()
-
+func (h *RPCServerContext) ListValidators(_ client.ListValidatorsRequest, reply *client.ListValidatorsReply) error {
 	validators, err := h.validatorSet.GetValidatorSet()
 	if err != nil {
 		return errors.Wrap(err, "err while retrieving validators info")
 	}
 
-	resp.SetDataObj(validators)
+	*reply = client.ListValidatorsReply{
+		Validators: validators,
+		Height:     h.balances.Version,
+	}
+
 	return nil
 }
 
@@ -293,35 +330,15 @@ func (h *RPCServerContext) recoverPanic() {
 	}
 }
 
-/*
-func (r *RPCServerContext) CreateSend(args SendArguments, resp *app.Response) error {
-	if args.Party == "" {
-		logger.Error("Missing Party argument")
-		return errors.New("Missing Party arguments")
-	}
-
-	if args.CounterParty == "" {
-		logger.Error("Missing CounterParty argument")
-		return errors.New("Missing Counterparty arguments")
-	}
-
-	party := GetAccountByName(args.Party)
-	counterParty := GetAccountByName("Zero")
-
-	if party == nil || counterParty == nil {
-		logger.Error("System doesn't recognize the parties", "party", args.Party, "counterParty", args.CounterParty)
-		return errors.New("system doesn;t recognize parties")
-	}
-
-	if args.Currency == "" || args.Amount == 0.0 {
-		logger.Error("Missing an amount argument")
-		return errors.New("missing amount")
-	}
-
-	amount := balance.NewCoinFromFloat(args.Amount, args.Currency)
-	fee := balance.NewCoinFromFloat(args.Fee, "OLT")
-
-	return nil
-
+// broadcastTxAsync asynchronously broadcasts a transaction to Tendermint
+func (h *RPCServerContext) broadcastTxAsync(packet []byte) (res *ctypes.ResultBroadcastTx, err error) {
+	return h.services.BroadcastTxAsync(packet)
 }
-*/
+
+func (h *RPCServerContext) broadcastTxSync(packet []byte) (res *ctypes.ResultBroadcastTx, err error) {
+	return h.services.BroadcastTxSync(packet)
+}
+
+func (h *RPCServerContext) broadcastTxCommit(packet []byte) (res *ctypes.ResultBroadcastTxCommit, err error) {
+	return h.services.BroadcastTxCommit(packet)
+}

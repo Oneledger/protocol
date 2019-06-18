@@ -15,10 +15,13 @@ Copyright 2017 - 2019 OneLedger
 package balance
 
 import (
+	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/serialize"
 	"github.com/Oneledger/protocol/storage"
 	"github.com/pkg/errors"
 )
+
+var ErrNoBalanceFoundForThisAddress = errors.New("no balance found for the address")
 
 type Store struct {
 	*storage.ChainState
@@ -34,7 +37,7 @@ func (st *Store) Get(address []byte, lastCommit bool) (bal *Balance, err error) 
 	dat := st.ChainState.Get(storage.StoreKey(address), lastCommit)
 
 	if len(dat) == 0 {
-		err = errors.New("no balance found for the address")
+		err = ErrNoBalanceFoundForThisAddress
 		return
 	}
 	bal = NewBalance()
@@ -42,7 +45,7 @@ func (st *Store) Get(address []byte, lastCommit bool) (bal *Balance, err error) 
 	return
 }
 
-func (st *Store) Set(address []byte, balance Balance) error {
+func (st *Store) Set(address keys.Address, balance Balance) error {
 	dat, err := serialize.GetSerializer(serialize.PERSISTENT).Serialize(&balance)
 	if err != nil {
 		return err
@@ -71,6 +74,6 @@ func (st *Store) FindAll() map[string]*Balance {
 	return balMap
 }
 
-func (st *Store) Exists(address []byte) bool {
+func (st *Store) Exists(address keys.Address) bool {
 	return st.ChainState.Exists(storage.StoreKey(address))
 }
