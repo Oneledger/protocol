@@ -8,6 +8,8 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/Oneledger/protocol/data/ons"
+
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/config"
 	"github.com/Oneledger/protocol/consensus"
@@ -242,6 +244,8 @@ type context struct {
 
 	balances *balance.Store
 
+	domains *ons.DomainStore
+
 	validators *identity.ValidatorStore // Set of validators currently active
 	accounts   accounts.Wallet
 	currencies *balance.CurrencyList
@@ -266,6 +270,7 @@ func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *NodeContext) (c
 	ctx.actionRouter = action.NewRouter("action")
 	ctx.balances = balance.NewStore("balances", ctx.dbDir(), ctx.cfg.Node.DB, storage.PERSISTENT)
 	ctx.accounts = accounts.NewWallet(cfg, ctx.dbDir())
+	ctx.domains = ons.NewDomainStore("domains", ctx.dbDir(), ctx.cfg.Node.DB, storage.PERSISTENT)
 
 	return ctx, nil
 }
@@ -281,6 +286,7 @@ func (ctx *context) Action() *action.Context {
 		ctx.balances,
 		ctx.currencies,
 		ctx.validators,
+		ctx.domains,
 		log.NewLoggerWithPrefix(ctx.logWriter, "action"))
 
 	return actionCtx
