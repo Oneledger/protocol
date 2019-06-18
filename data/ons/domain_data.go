@@ -5,8 +5,6 @@
 package ons
 
 import (
-	"math/big"
-
 	"github.com/Oneledger/protocol/serialize"
 	"github.com/pkg/errors"
 )
@@ -45,7 +43,6 @@ func (d *Domain) SetData(a interface{}) error {
 		return errors.New("Wrong data")
 	}
 
-	amt := new(big.Int)
 	d.OwnerAddress = cd.OwnerAddress
 	d.AccountAddress = cd.AccountAddress
 	d.Name = cd.Name
