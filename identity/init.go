@@ -1,8 +1,9 @@
 package identity
 
 import (
-	"github.com/Oneledger/protocol/log"
 	"os"
+
+	"github.com/Oneledger/protocol/log"
 )
 
 var logger *log.Logger

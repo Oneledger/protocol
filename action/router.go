@@ -40,7 +40,11 @@ var _ Router = &router{}
 
 // NewRouter creates a new router object with given name.
 func NewRouter(name string) Router {
-	return &router{name, map[Type]Tx{}, log.NewLoggerWithPrefix(os.Stdout, "action/router")}
+	router := &router{name, map[Type]Tx{}, log.NewLoggerWithPrefix(os.Stdout, "action/router")}
+
+	_ = router.enableSend()
+	_ = router.enableApplyValidator()
+	return router
 }
 
 // AddHandler adds a new path to the router alongwith its Handler function
@@ -63,4 +67,22 @@ func (r *router) Handler(msg Msg) Tx {
 	}
 
 	return h
+}
+
+func (r *router) enableSend() error {
+
+	err := r.AddHandler(SEND, sendTx{})
+	if err != nil {
+		return errors.New("tx handler already exist")
+	}
+	return nil
+}
+
+func (r *router) enableApplyValidator() error {
+
+	err := r.AddHandler(APPLYVALIDATOR, applyTx{})
+	if err != nil {
+		return errors.New("tx handler already exist")
+	}
+	return nil
 }

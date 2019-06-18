@@ -5,7 +5,7 @@ import "github.com/tendermint/tendermint/libs/common"
 type Tx interface {
 	//it should be able to validate a tx by itself, non-valid tx will be reject by the node directly
 	//without going to node process
-	Validate(ctx *Context, msg Msg, fee Fee, signatures []Signature) (bool, error)
+	Validate(ctx *Context, msg Msg, fee Fee, memo string, signatures []Signature) (bool, error)
 
 	//check tx on the first node who receives it, if process check failed, the tx will not be broadcast
 	//could store a version of checked value in storage, but not implemented now

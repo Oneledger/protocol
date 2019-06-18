@@ -2,6 +2,7 @@ package action
 
 import (
 	"fmt"
+
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/serialize"
 	"github.com/pkg/errors"
@@ -38,7 +39,14 @@ var _ Tx = sendTx{}
 type sendTx struct {
 }
 
-func (sendTx) Validate(ctx *Context, msg Msg, fee Fee, signatures []Signature) (bool, error) {
+func (sendTx) Validate(ctx *Context, msg Msg, fee Fee, memo string, signatures []Signature) (bool, error) {
+	//validate basic signature
+	ok, err := validateBasic(msg, fee, memo, signatures)
+	if err != nil {
+		return ok, err
+	}
+
+	//validate transaction specific field
 	send, ok := msg.(*Send)
 	if !ok {
 		return false, ErrWrongTxType
@@ -49,15 +57,7 @@ func (sendTx) Validate(ctx *Context, msg Msg, fee Fee, signatures []Signature) (
 	if send.From == nil || send.To == nil {
 		return false, ErrMissingData
 	}
-
-	base := BaseTx{
-		send,
-		fee,
-		signatures,
-		"",
-	}
-
-	return base.validateBasic()
+	return true, nil
 }
 
 func (sendTx) ProcessCheck(ctx *Context, msg Msg, fee Fee) (bool, Response) {
@@ -101,6 +101,12 @@ func (sendTx) ProcessDeliver(ctx *Context, msg Msg, fee Fee) (bool, Response) {
 		log := fmt.Sprint("Failed to get the balance of the owner ", send.From, "err", err)
 		return false, Response{Log: log}
 	}
+
+	if !send.Amount.IsValid(ctx) {
+		log := fmt.Sprint("amount is invalid", send.Amount, ctx.Currencies)
+		return false, Response{Log: log}
+	}
+
 	coin := send.Amount.ToCoin(ctx)
 
 	if !enoughBalance(*from, coin) {
@@ -134,7 +140,7 @@ func (sendTx) ProcessDeliver(ctx *Context, msg Msg, fee Fee) (bool, Response) {
 
 func (sendTx) ProcessFee(ctx *Context, fee Fee) (bool, Response) {
 	panic("implement me")
-	//todo: implement the fee charge for send
+	// TODO: implement the fee charge for send
 	return true, Response{GasWanted: 0, GasUsed: 0}
 }
 

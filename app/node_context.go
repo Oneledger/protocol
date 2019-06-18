@@ -20,14 +20,15 @@ type NodeContext struct {
 	privateKey keys.PrivateKey
 
 	// Validator key
-	privval *privval.FilePV
+	privval keys.PrivateKey
 }
 
 // PrivVal returns the private validator file
-func (n NodeContext) PrivVal() *privval.FilePV {
+func (n NodeContext) PrivVal() keys.PrivateKey {
 	return n.privval
 }
 
+// private key of the nodes
 func (n NodeContext) PrivKey() keys.PrivateKey {
 	return n.privateKey
 }
@@ -57,12 +58,31 @@ func (n NodeContext) Address() keys.Address {
 	return pub.Address()
 }
 
+func (n NodeContext) ValidatorPubKey() keys.PublicKey {
+	priv, err := n.privval.GetHandler()
+	if err != nil {
+		return keys.PublicKey{}
+	}
+
+	return priv.PubKey()
+}
+
 func (n NodeContext) ValidatorAddress() keys.Address {
-	return keys.Address(n.privval.GetPubKey().Address())
+	priv, err := n.privval.GetHandler()
+	if err != nil {
+		return nil
+	}
+
+	pub, err := priv.PubKey().GetHandler()
+	if err != nil {
+		return nil
+	}
+
+	return pub.Address()
 }
 
 func (n NodeContext) isValid() bool {
-	if n.privval == nil || n.Address() == nil {
+	if n.ValidatorAddress() == nil || n.Address() == nil {
 		return false
 	} //else if n.NodeName == "" { return false }
 	return true
@@ -118,8 +138,12 @@ func readKeyFiles(cfg *consensus.Config) (*NodeContext, error) {
 	// This function quits the process if either of these files don't exist
 	filePV := privval.LoadFilePV(pvKeyF, pvStateF)
 
+	pvkey, err := keys.PVKeyFromTendermint(&filePV.Key)
+	if err != nil {
+		return nil, err
+	}
 	return &NodeContext{
 		privateKey: priv,
-		privval:    filePV,
+		privval:    pvkey,
 	}, nil
 }
