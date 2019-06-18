@@ -3,6 +3,8 @@ package app
 import (
 	"encoding/hex"
 
+	"github.com/Oneledger/protocol/utils"
+
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/serialize"
 	"github.com/Oneledger/protocol/version"
@@ -14,12 +16,18 @@ import (
 // query connection: for querying the application state; only uses query and Info
 func (app *App) infoServer() infoServer {
 	return func(info RequestInfo) ResponseInfo {
-		return ResponseInfo{
+
+		//get apphash and height from db
+		ver, hash := app.getAppHash(false)
+
+		result := ResponseInfo{
 			Data:             app.name,
 			Version:          version.Fullnode.String(),
-			LastBlockHeight:  app.header.Height,
-			LastBlockAppHash: app.header.AppHash,
+			LastBlockHeight:  ver,
+			LastBlockAppHash: hash,
 		}
+		app.logger.Info("Server Info:", result, "hash", hex.EncodeToString(hash), "height", ver)
+		return result
 	}
 }
 
@@ -49,27 +57,35 @@ func (app *App) chainInitializer() chainInitializer {
 			app.logger.Error("Failed to setupState", "err", err)
 			return ResponseInitChain{}
 		}
-		return ResponseInitChain{}
+
+		//update the initial validator set to db, this should always comes after setupState as the currency for
+		// validator will be registered by setupState
+		validators, err := app.setupValidators(req, app.Context.currencies)
+		if err != nil {
+			app.logger.Error("Failed to setupValidator", "err", err)
+			return ResponseInitChain{}
+		}
+		app.logger.Error("finish chain initialize")
+		return ResponseInitChain{Validators: validators}
 	}
 }
 
 func (app *App) blockBeginner() blockBeginner {
 	return func(req RequestBeginBlock) ResponseBeginBlock {
-
-		//update the validator set
+		// update the validator set
 		err := app.Context.validators.Set(req)
 		if err != nil {
 			app.logger.Error("validator set with error", err)
 		}
-		//update the header to current block
-		//todo: store the header in persistent db
-		app.header = req.Header
 
 		result := ResponseBeginBlock{
 			Tags: []common.KVPair(nil),
 		}
 
-		app.logger.Debug("Begin Block:", result)
+		//update the header to current block
+		app.header = req.Header
+
+		app.logger.Debug("Begin Block:", result, "height:", req.Header.Height, "AppHash:", hex.EncodeToString(req.Header.AppHash))
 		return result
 	}
 }
@@ -81,22 +97,25 @@ func (app *App) txChecker() txChecker {
 
 		err := serialize.GetSerializer(serialize.NETWORK).Deserialize(msg, tx)
 		if err != nil {
-			app.logger.Errorf("failed to deserialize msg: %s, error: %s ", msg, err)
+			app.logger.Errorf("checkTx failed to deserialize msg: %s, error: %s ", msg, err)
 		}
+
 		txCtx := app.Context.Action()
 
 		handler := txCtx.Router.Handler(tx.Data)
 
+		ok, err := handler.Validate(txCtx, tx.Data, tx.Fee, tx.Memo, tx.Signatures)
+		if err != nil {
+			app.logger.Debugf("Check Tx invalid: ", err.Error())
+			return ResponseCheckTx{
+				Code: getCode(ok).uint32(),
+				Log:  err.Error(),
+			}
+		}
 		ok, response := handler.ProcessCheck(txCtx, tx.Data, tx.Fee)
 
-		var code Code
-		if ok {
-			code = CodeOK
-		} else {
-			code = CodeNotOK
-		}
 		result := ResponseCheckTx{
-			Code:      code.uint32(),
+			Code:      getCode(ok).uint32(),
 			Data:      response.Data,
 			Log:       response.Log,
 			Info:      response.Info,
@@ -105,7 +124,7 @@ func (app *App) txChecker() txChecker {
 			Tags:      response.Tags,
 			Codespace: "",
 		}
-		app.logger.Debug("Check Tx: ", result)
+		app.logger.Debug("Check Tx: ", result, "log", response.Log)
 		return result
 
 	}
@@ -117,7 +136,7 @@ func (app *App) txDeliverer() txDeliverer {
 
 		err := serialize.GetSerializer(serialize.NETWORK).Deserialize(msg, tx)
 		if err != nil {
-			app.logger.Errorf("failed to deserialize msg: %s, error: %s ", msg, err)
+			app.logger.Errorf("deliverTx failed to deserialize msg: %s, error: %s ", msg, err)
 		}
 		txCtx := app.Context.Action()
 
@@ -125,15 +144,8 @@ func (app *App) txDeliverer() txDeliverer {
 
 		ok, response := handler.ProcessDeliver(txCtx, tx.Data, tx.Fee)
 
-		var code Code
-		if ok {
-			code = CodeOK
-		} else {
-			code = CodeNotOK
-		}
-
 		result := ResponseDeliverTx{
-			Code:      code.uint32(),
+			Code:      getCode(ok).uint32(),
 			Data:      response.Data,
 			Log:       response.Log,
 			Info:      response.Info,
@@ -156,7 +168,8 @@ func (app *App) blockEnder() blockEnder {
 			ValidatorUpdates: updates,
 			Tags:             []common.KVPair(nil),
 		}
-		app.logger.Debug("End Block: ", result)
+
+		app.logger.Debug("End Block: ", result, "height:", req.Height)
 		return result
 	}
 }
@@ -165,9 +178,8 @@ func (app *App) commitor() commitor {
 	return func() ResponseCommit {
 
 		// Commit any pending changes.
-		hash, ver := app.Context.balances.Commit()
-
-		app.logger.Debugf("Committed New Block hash[%s], version[%d]", hex.EncodeToString(hash), ver)
+		version, hash := app.getAppHash(true)
+		app.logger.Debugf("Committed New Block height[%d], hash[%s], versions[%d]", app.header.Height, hex.EncodeToString(hash), version)
 
 		result := ResponseCommit{
 			Data: hash,
@@ -176,4 +188,45 @@ func (app *App) commitor() commitor {
 		app.logger.Debug("Commit Result", result)
 		return result
 	}
+}
+
+func getCode(ok bool) (code Code) {
+	if ok {
+		code = CodeOK
+	} else {
+		code = CodeNotOK
+	}
+	return
+}
+
+// TODO: make appHash to use a commiter function to finish the commit and hashing for all the store that passed
+type appHash struct {
+	Hashes [][]byte `json:"hashes"`
+}
+
+func (ah *appHash) hash() []byte {
+	result, _ := serialize.GetSerializer(serialize.JSON).Serialize(ah)
+	return utils.Hash(result)
+}
+
+func (app *App) getAppHash(commit bool) (version int64, hash []byte) {
+	var hashb, hashv []byte
+	var verb, verv int64
+	if commit {
+		hashb, verb = app.Context.balances.Commit()
+		hashv, verv = app.Context.validators.Commit()
+	} else {
+		hashb, verb = app.Context.balances.Hash, app.Context.balances.Version
+		hashv, verv = app.Context.validators.Hash, app.Context.validators.Version
+	}
+	apphash := &appHash{}
+	apphash.Hashes = append(apphash.Hashes, hashb, hashv)
+
+	if verb == verv {
+		version = verb
+		if version > 1 {
+			hash = apphash.hash()
+		}
+	}
+	return
 }

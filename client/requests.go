@@ -10,9 +10,12 @@ import (
 )
 
 type ApplyValidatorArguments struct {
-	Id     string
-	Amount float64
-	Purge  bool
+	Address      []byte
+	Name         string
+	Amount       string
+	Purge        bool
+	TmPubKeyType string
+	TmPubKey     []byte
 }
 
 type SendArguments struct {

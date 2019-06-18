@@ -18,6 +18,7 @@ import (
 	"github.com/Oneledger/protocol/rpc"
 	"github.com/Oneledger/protocol/serialize"
 	"github.com/Oneledger/protocol/storage"
+	"github.com/tendermint/tendermint/abci/types"
 
 	"github.com/pkg/errors"
 	"github.com/tendermint/tendermint/libs/common"
@@ -105,13 +106,17 @@ func (app *App) setupState(stateBytes []byte) error {
 		return errors.Wrap(err, "setupState deserialization")
 	}
 
+	// commit the initial currencies to the admin db
+	session := app.Context.admin.BeginSession()
+	_ = session.Set([]byte(ADMIN_CURRENCY_KEY), stateBytes)
+	session.Commit()
+
 	nodeCtx := app.Context.Node()
 	balanceCtx := app.Context.Balances()
 	walletCtx := app.Context.Accounts()
 
 	// (1) Register all the currencies
 	for _, currency := range initial.Currencies {
-		app.logger.Debugf("register currency %s", currency)
 		err := balanceCtx.Currencies().Register(currency)
 		if err != nil {
 			return errors.Wrapf(err, "failed to register currency %s", currency.Name)
@@ -153,19 +158,49 @@ func (app *App) setupState(stateBytes []byte) error {
 			continue
 		}
 
-		err = walletCtx.Add(acct)
-		if err != nil {
-			app.logger.Warn("Failed to register myself", "err", err)
-			continue
+		if _, err := walletCtx.GetAccount(acct.Address()); err != nil {
+			err = walletCtx.Add(acct)
+			if err != nil {
+				app.logger.Warn("Failed to register myself", "err", err)
+				continue
+			}
 		}
 		app.logger.Info("Successfully registered myself!")
 	}
 	return nil
 }
 
+func (app *App) setupValidators(req RequestInitChain, currencies *balance.CurrencyList) (types.ValidatorUpdates, error) {
+	return app.Context.validators.Init(req, currencies)
+}
+
 // Start initializes the state
 func (app *App) Start() error {
 	app.logger.Info("Starting node...")
+
+	//get currencies from admin db
+	result, err := app.Context.admin.Get([]byte(ADMIN_CURRENCY_KEY))
+	if err != nil {
+		app.logger.Debug("didn't get the currencies from db")
+	} else {
+
+		as := &consensus.AppState{}
+		err = serialize.GetSerializer(serialize.PERSISTENT).Deserialize(result, as)
+		if err != nil {
+			app.logger.Error("failed to deserialize the currencies from db")
+			return errors.Wrap(err, "failed to get the currencies")
+		}
+
+		for _, currency := range as.Currencies {
+			err := app.Context.currencies.Register(currency)
+			if err != nil {
+				return errors.Wrapf(err, "failed to register currency %s", currency.Name)
+			}
+		}
+
+		app.logger.Infof("Read currencies from db %#v", app.Context.currencies)
+	}
+
 	node, err := consensus.NewNode(app.ABCI(), &app.Context.cfg)
 	if err != nil {
 		app.logger.Error("Failed to create consensus.Node")
@@ -208,7 +243,7 @@ func (app *App) rpcStarter() (func() error, error) {
 	noop := func() error { return nil }
 
 	handlers := NewClientHandler(app.Context.cfg.Node.NodeName, app.Context.balances,
-		app.Context.accounts, app.Context.currencies, app.Context.cfg, app.Context.node)
+		app.Context.accounts, app.Context.currencies, app.Context.cfg, app.Context.node, app.Context.validators)
 
 	u, err := url.Parse(app.Context.cfg.Network.SDKAddress)
 	if err != nil {
@@ -236,9 +271,10 @@ type context struct {
 
 	balances *balance.Store
 
-	validators *identity.Validators // Set of validators currently active
+	validators *identity.ValidatorStore // Set of validators currently active
 	accounts   accounts.Wallet
 	currencies *balance.CurrencyList
+	admin      storage.SessionedStorage
 
 	logWriter io.Writer
 }
@@ -256,10 +292,11 @@ func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *NodeContext) (c
 	}
 
 	ctx.rpc = rpc.NewServer(logWriter)
-	ctx.validators = identity.NewValidators()
+	ctx.validators = identity.NewValidatorStore(cfg, ctx.dbDir(), ctx.cfg.Node.DB)
 	ctx.actionRouter = action.NewRouter("action")
 	ctx.balances = balance.NewStore("balances", ctx.dbDir(), ctx.cfg.Node.DB, storage.PERSISTENT)
 	ctx.accounts = accounts.NewWallet(cfg, ctx.dbDir())
+	ctx.admin = storage.NewStorageDB(storage.KEYVALUE, "admin", ctx.dbDir(), ctx.cfg.Node.DB)
 
 	return ctx, nil
 }
@@ -274,9 +311,8 @@ func (ctx *context) Action() *action.Context {
 		ctx.accounts,
 		ctx.balances,
 		ctx.currencies,
+		ctx.validators,
 		log.NewLoggerWithPrefix(ctx.logWriter, "action"))
-
-	actionCtx.EnableSend()
 
 	return actionCtx
 }
@@ -318,4 +354,8 @@ func (ctx *context) Close() {
 
 func (ctx *context) Node() NodeContext {
 	return ctx.node
+}
+
+func (ctx *context) Validators() *identity.ValidatorStore {
+	return ctx.validators
 }

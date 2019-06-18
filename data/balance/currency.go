@@ -18,7 +18,7 @@ package balance
 import (
 	"encoding/hex"
 	"encoding/json"
-	"golang.org/x/crypto/ripemd160"
+	"github.com/Oneledger/protocol/utils"
 	"math"
 	"math/big"
 
@@ -55,9 +55,7 @@ func (c Currency) StringKey() string {
 func (c Currency) Bytes() []byte {
 
 	dat, _ := json.Marshal(c)
-	r := ripemd160.New()
-	r.Write(dat)
-	return r.Sum(nil)
+	return utils.Hash(dat)
 }
 
 // TODO

@@ -3,6 +3,7 @@ package action
 import (
 	"bytes"
 	"fmt"
+
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/serialize"
 )
@@ -68,7 +69,6 @@ func (t *BaseTx) Sign(ctx *Context) error {
 
 func (t *BaseTx) SignWithAddress(ctx *Context, address Address) error {
 	addrs := t.Data.Signers()
-
 	if t.Signatures == nil {
 		t.Signatures = make([]Signature, len(addrs))
 	}
@@ -88,10 +88,8 @@ func (t *BaseTx) SignWithAddress(ctx *Context, address Address) error {
 	return nil
 }
 
-func (t *BaseTx) validateBasic() (bool, error) {
-	msg := t.Data
-	signatures := t.Signatures
-	fee := t.Fee
+func validateBasic(msg Msg, fee Fee, memo string, signatures []Signature) (bool, error) {
+	toVerify := (&BaseTx{msg, fee, nil, memo}).Bytes()
 	for i, s := range msg.Signers() {
 		pkey := signatures[i].Signer
 		h, err := pkey.GetHandler()
@@ -101,7 +99,8 @@ func (t *BaseTx) validateBasic() (bool, error) {
 		if !h.Address().Equal(s) {
 			return false, ErrUnmatchSigner
 		}
-		if !h.VerifyBytes(msg.Bytes(), signatures[i].Signed) {
+
+		if !h.VerifyBytes(toVerify, signatures[i].Signed) {
 			return false, ErrInvalidSignature
 		}
 	}
@@ -122,6 +121,6 @@ func sign(ctx *Context, address Address, msg []byte) (Signature, error) {
 }
 
 func verifyMinimumFee(fee Fee) bool {
-	//todo: implement minimum fee check
+	//TODO: implement minimum fee check
 	return true
 }

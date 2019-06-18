@@ -340,16 +340,14 @@ func initialState(args *testnetConfig, nodeList []node) ([]balance.Currency, []c
 		share := args.totalFunds / int64(len(nodeList))
 		b := balance.NewBalance()
 		b.AddCoin(olt.NewCoinFromInt(share))
-		if node.isValidator {
-			b.AddCoin(vt.NewCoinFromInt(1))
-		}
+		b.AddCoin(vt.NewCoinFromInt(1))
 		out[i] = consensus.StateInput{
 			Address: node.key.PubKey().Address().String(),
 			Balance: *b,
 		}
 
 		if node.isValidator {
-			out[i].Balance.AddCoin(vt.NewCoinFromInt(1))
+			out[i].Balance.AddCoin(vt.NewCoinFromInt(100))
 		}
 	}
 	return currencies, out
