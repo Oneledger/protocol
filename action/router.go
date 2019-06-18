@@ -42,8 +42,6 @@ var _ Router = &router{}
 func NewRouter(name string) Router {
 	router := &router{name, map[Type]Tx{}, log.NewLoggerWithPrefix(os.Stdout, "action/router")}
 
-	_ = router.enableSend()
-	_ = router.enableApplyValidator()
 	return router
 }
 
@@ -67,22 +65,4 @@ func (r *router) Handler(msg Msg) Tx {
 	}
 
 	return h
-}
-
-func (r *router) enableSend() error {
-
-	err := r.AddHandler(SEND, sendTx{})
-	if err != nil {
-		return errors.New("tx handler already exist")
-	}
-	return nil
-}
-
-func (r *router) enableApplyValidator() error {
-
-	err := r.AddHandler(APPLYVALIDATOR, applyTx{})
-	if err != nil {
-		return errors.New("tx handler already exist")
-	}
-	return nil
 }

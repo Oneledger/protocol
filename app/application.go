@@ -8,6 +8,9 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/Oneledger/protocol/action/staking"
+	"github.com/Oneledger/protocol/action/transfer"
+
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/config"
 	"github.com/Oneledger/protocol/consensus"
@@ -298,6 +301,8 @@ func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *NodeContext) (c
 	ctx.accounts = accounts.NewWallet(cfg, ctx.dbDir())
 	ctx.admin = storage.NewStorageDB(storage.KEYVALUE, "admin", ctx.dbDir(), ctx.cfg.Node.DB)
 
+	_ = transfer.EnableSend(ctx.actionRouter)
+	_ = staking.EnableApplyValidator(ctx.actionRouter)
 	return ctx, nil
 }
 

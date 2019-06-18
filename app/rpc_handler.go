@@ -16,10 +16,14 @@ package app
 
 import (
 	"fmt"
-	"github.com/Oneledger/protocol/identity"
 	"net/url"
 	"os"
 	"runtime/debug"
+
+	"github.com/Oneledger/protocol/action/transfer"
+
+	"github.com/Oneledger/protocol/action/staking"
+	"github.com/Oneledger/protocol/identity"
 
 	"github.com/google/uuid"
 
@@ -181,7 +185,7 @@ func (h *RPCServerContext) ListAccounts(req data.Request, resp *data.Response) e
 func (h *RPCServerContext) SendTx(args client.SendArguments, resp *data.Response) error {
 	defer h.recoverPanic()
 
-	send := action.Send{
+	send := transfer.Send{
 		From:   keys.Address(args.Party),
 		To:     keys.Address(args.CounterParty),
 		Amount: args.Amount,
@@ -238,7 +242,7 @@ func (h *RPCServerContext) ApplyValidator(args client.ApplyValidatorArguments, r
 	}
 
 	addr := handler.Address()
-	apply := action.ApplyValidator{
+	apply := staking.ApplyValidator{
 		Address:          keys.Address(args.Address),
 		Stake:            action.Amount{Currency: "VT", Value: args.Amount},
 		NodeName:         args.Name,
