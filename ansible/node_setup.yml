@@ -60,6 +60,7 @@
       packages:
         - libleveldb-dev
         - libsnappy-dev
+        - less
 # move validator node consensus folder with private keys 
 - hosts: validator_node
   remote_user: "{{remote_user}}"

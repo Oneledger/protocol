@@ -36,6 +36,7 @@ module "node"{
   vmcount = "${var.vmcount}"
   subnets = "${module.network.subnets}"
   regions = "${var.regions}"
+  vm_machine_type = "${var.vm_machine_type}"
   providers = {
     google = "google.devnet"
   }

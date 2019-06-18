@@ -11,3 +11,6 @@ variable "regions" {
 variable "vmcount" {
   default = 5
 }
+variable "vm_machine_type" {
+  default = "n1-standard-1"
+}
