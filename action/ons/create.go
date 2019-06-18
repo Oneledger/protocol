@@ -88,6 +88,7 @@ func (domainCreateTx) ProcessCheck(ctx *action.Context, msg action.Msg, fee acti
 	}
 	price := create.Price.ToCoin(ctx)
 
+	//just verify if balance is enough or not, don't set to db
 	b, err = b.MinusCoin(price)
 	if err != nil {
 		return false, action.Response{Log: err.Error()}
@@ -115,6 +116,8 @@ func (domainCreateTx) ProcessDeliver(ctx *action.Context, msg action.Msg, fee ac
 	}
 	price := create.Price.ToCoin(ctx)
 
+	// verify balance and set to db, the price for create domain is just burned for now.
+	//todo: pay the price to fee pool that will be shared by validators at the fee distribution time.
 	b, err = b.MinusCoin(price)
 	if err != nil {
 		return false, action.Response{Log: err.Error()}
@@ -125,6 +128,7 @@ func (domainCreateTx) ProcessDeliver(ctx *action.Context, msg action.Msg, fee ac
 		return false, action.Response{Log: errors.Wrap(err, "set balance of owner").Error()}
 	}
 
+	//check domain existence and set to db
 	if ctx.Domains.Exists(create.Name) {
 		return false, action.Response{Log: errors.New("domain already exist: " + create.Name).Error()}
 	}
