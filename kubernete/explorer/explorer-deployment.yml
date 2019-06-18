@@ -72,6 +72,8 @@ metadata:
   labels:
     run: explorer-service
     app: explorer
+  annotations:
+    beta.cloud.google.com/backend-config: '{"ports": {"80":"explorer-api-server-backendconfig","443":"explorer-api-server-backendconfig"}}'
 spec:
   ports:
   - name: explorer-api-http
@@ -85,6 +87,15 @@ spec:
   type: NodePort
   selector:
     app: explorer-api-server
+---
+apiVersion: cloud.google.com/v1beta1
+kind: BackendConfig
+metadata:
+  name: explorer-api-server-backendconfig
+spec:
+  timeoutSec: 3600
+  connectionDraining:
+    drainingTimeoutSec: 60
 ---
 apiVersion: autoscaling/v1
 kind: HorizontalPodAutoscaler
