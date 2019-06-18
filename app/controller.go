@@ -2,6 +2,7 @@ package app
 
 import (
 	"encoding/hex"
+
 	"github.com/Oneledger/protocol/utils"
 
 	"github.com/Oneledger/protocol/action"
@@ -15,12 +16,18 @@ import (
 // query connection: for querying the application state; only uses query and Info
 func (app *App) infoServer() infoServer {
 	return func(info RequestInfo) ResponseInfo {
-		return ResponseInfo{
+
+		//get apphash and height from db
+		ver, hash := app.getAppHash(false)
+
+		result := ResponseInfo{
 			Data:             app.name,
 			Version:          version.Fullnode.String(),
-			LastBlockHeight:  app.header.Height,
-			LastBlockAppHash: app.header.AppHash,
+			LastBlockHeight:  ver,
+			LastBlockAppHash: hash,
 		}
+		app.logger.Info("Server Info:", result, "hash", hex.EncodeToString(hash), "height", ver)
+		return result
 	}
 }
 
@@ -70,15 +77,15 @@ func (app *App) blockBeginner() blockBeginner {
 		if err != nil {
 			app.logger.Error("validator set with error", err)
 		}
-		//update the header to current block
-		// TODO: store the header in persistent db
-		app.header = req.Header
 
 		result := ResponseBeginBlock{
 			Tags: []common.KVPair(nil),
 		}
 
-		app.logger.Debug("Begin Block:", result, "height=", req.Header.Height, "AppHash=", hex.EncodeToString(req.Header.AppHash))
+		//update the header to current block
+		app.header = req.Header
+
+		app.logger.Debug("Begin Block:", result, "height:", req.Header.Height, "AppHash:", hex.EncodeToString(req.Header.AppHash))
 		return result
 	}
 }
@@ -161,7 +168,8 @@ func (app *App) blockEnder() blockEnder {
 			ValidatorUpdates: updates,
 			Tags:             []common.KVPair(nil),
 		}
-		app.logger.Debug("End Block: ", result, "height=", req.Height)
+
+		app.logger.Debug("End Block: ", result, "height:", req.Height)
 		return result
 	}
 }
@@ -170,15 +178,8 @@ func (app *App) commitor() commitor {
 	return func() ResponseCommit {
 
 		// Commit any pending changes.
-		hashb, verb := app.Context.balances.Commit()
-
-		hashv, verv := app.Context.validators.Commit()
-
-		apphash := &appHash{}
-		apphash.Hashes = append(apphash.Hashes, hashb, hashv)
-
-		hash := apphash.hash()
-		app.logger.Debugf("Committed New Block height[%d], hash[%s], versions[%d, %d]", app.header.Height, hex.EncodeToString(hash), verb, verv)
+		version, hash := app.getAppHash(true)
+		app.logger.Debugf("Committed New Block height[%d], hash[%s], versions[%d]", app.header.Height, hex.EncodeToString(hash), version)
 
 		result := ResponseCommit{
 			Data: hash,
@@ -206,4 +207,26 @@ type appHash struct {
 func (ah *appHash) hash() []byte {
 	result, _ := serialize.GetSerializer(serialize.JSON).Serialize(ah)
 	return utils.Hash(result)
+}
+
+func (app *App) getAppHash(commit bool) (version int64, hash []byte) {
+	var hashb, hashv []byte
+	var verb, verv int64
+	if commit {
+		hashb, verb = app.Context.balances.Commit()
+		hashv, verv = app.Context.validators.Commit()
+	} else {
+		hashb, verb = app.Context.balances.Hash, app.Context.balances.Version
+		hashv, verv = app.Context.validators.Hash, app.Context.validators.Version
+	}
+	apphash := &appHash{}
+	apphash.Hashes = append(apphash.Hashes, hashb, hashv)
+
+	if verb == verv {
+		version = verb
+		if version > 1 {
+			hash = apphash.hash()
+		}
+	}
+	return
 }
