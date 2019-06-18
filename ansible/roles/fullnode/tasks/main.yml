@@ -125,10 +125,10 @@
       if [[ -d "$OLDATA/nodedata" && -d "$OLDATA/consensus" ]]; then
         echo "restarting an existing node, skip initialization"
       else
-        fullnodeSetup
+        /usr/local/bin/fullnodeSetup
       fi
       cp -R {{GOPATH}}/* {{CONTAINER_OUTPUT_PATH}}
-      olfullnode node --root {{OLDATA}}
+      /usr/local/bin/olfullnode node --root {{OLDATA}}
       exec "$@"
 - name: create start quick script to start node 
   copy:
@@ -166,12 +166,19 @@
 
       [Service]
       WorkingDirectory={{OLDATA}}
-      ExecStart=/usr/local/bin/olfullnode node --root {{OLDATA}}
+      ExecStart=/usr/local/bin/fullnodeStartup
       # Other Restart options: or always, on-abort, etc
       Restart=on-failure
 
       [Install]
       WantedBy=multi-user.target
+- name: make sure olfullnode is running on boot
+  systemd:
+    state: started
+    name: olfullnode
+    enabled: true
+    scope: system
+  when: systemd_service == "true"
 - name: compress image size by remove developer dependencies
   file:
     path: "{{ item }}"
@@ -193,9 +200,31 @@
     file_type: any
   register: files_to_delete
   when: dev_mode == "false"
-- name: delete unnesscary linux package to reduce size
+- name: delete unnesscary package repo file to reduce size
   file:
     path: "{{ item.path }}"
     state: absent
   with_items: "{{ files_to_delete.files }}"
   when: dev_mode == "false"
+- name: Ensures license dir exists
+  file: 
+    path: "{{ item }}"
+    state: directory
+    owner: root
+    group: root 
+    mode: 0755
+  with_items:
+    - /usr/share/doc/THIRD_PARTY_NOTICES
+- name: copy apache v2 license  
+  copy:
+    src: ../files/licenses/
+    dest: "{{ item }}"
+    owner: "root"
+    group: "root"
+    mode: 0644 
+  with_items:
+    - /usr/share/doc/THIRD_PARTY_NOTICES
+- name: remove unnesscary pip package (open source liscence compliance)
+  pip:
+    name: ansible
+    state: absent
