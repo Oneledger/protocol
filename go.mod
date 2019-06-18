@@ -5,7 +5,8 @@ require (
 	github.com/OneOfOne/xxhash v1.2.5 // indirect
 	github.com/Oneledger/toml v0.4.1
 	github.com/VividCortex/gohistogram v1.0.0 // indirect
-	github.com/btcsuite/btcd v0.0.0-20190424234938-150379531efe // indirect
+	github.com/btcsuite/btcd v0.0.0-20190424234938-150379531efe
+	github.com/btcsuite/btcutil v0.0.0-20190207003914-4c204d697803
 	github.com/coreos/etcd v3.3.13+incompatible // indirect
 	github.com/coreos/go-semver v0.3.0 // indirect
 	github.com/cosiner/argv v0.0.1 // indirect
