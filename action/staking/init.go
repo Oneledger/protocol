@@ -14,7 +14,7 @@ func EnableApplyValidator(r action.Router) error {
 
 	err := r.AddHandler(action.APPLYVALIDATOR, applyTx{})
 	if err != nil {
-		return errors.New("tx handler already exist")
+		return errors.Wrap(err, "applyTx")
 	}
 	return nil
 }

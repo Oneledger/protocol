@@ -13,8 +13,8 @@ type domainData struct {
 	OwnerAddress     []byte
 	AccountAddress   []byte
 	Name             string
-	CreationHeight   uint32
-	LastUpdateHeight uint32
+	CreationHeight   int64
+	LastUpdateHeight int64
 	ActiveFlag       bool
 	OnSaleFlag       bool
 

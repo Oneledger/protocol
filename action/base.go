@@ -3,6 +3,7 @@ package action
 import (
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/serialize"
+	"github.com/tendermint/tendermint/libs/common"
 )
 
 type Msg interface {
@@ -10,6 +11,8 @@ type Msg interface {
 	Signers() []Address
 
 	Type() Type
+
+	Tags() common.KVPairs
 }
 
 type Fee struct {

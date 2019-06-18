@@ -16,7 +16,7 @@ func EnableSend(r action.Router) error {
 
 	err := r.AddHandler(action.SEND, sendTx{})
 	if err != nil {
-		return errors.New("tx handler already exist")
+		return errors.Wrap(err, "sendTx")
 	}
 	return nil
 }

@@ -1,8 +1,6 @@
 package staking
 
 import (
-	"errors"
-
 	"github.com/Oneledger/protocol/action"
 
 	"github.com/Oneledger/protocol/data/keys"
@@ -35,13 +33,14 @@ type applyTx struct {
 }
 
 func (applyTx) Validate(ctx *action.Context, msg action.Msg, fee action.Fee, memo string, signatures []action.Signature) (bool, error) {
-	apply, ok := msg.(*ApplyValidator)
-	if !ok {
-		return false, errors.New("Apply validator cast failed")
-	}
 	ok, err := action.ValidateBasic(msg, fee, memo, signatures)
 	if err != nil {
 		return ok, err
+	}
+
+	apply, ok := msg.(*ApplyValidator)
+	if !ok {
+		return false, action.ErrWrongTxType
 	}
 
 	if msg == nil || len(apply.Address) == 0 {

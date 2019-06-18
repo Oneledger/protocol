@@ -314,9 +314,10 @@ func (ctx context) dbDir() string {
 	return filepath.Join(ctx.cfg.RootDir(), ctx.cfg.Node.DBDir)
 }
 
-func (ctx *context) Action() *action.Context {
+func (ctx *context) Action(header *Header) *action.Context {
 	actionCtx := action.NewContext(
 		ctx.actionRouter,
+		header,
 		ctx.accounts,
 		ctx.balances,
 		ctx.currencies,

@@ -100,7 +100,7 @@ func (app *App) txChecker() txChecker {
 			app.logger.Errorf("checkTx failed to deserialize msg: %s, error: %s ", msg, err)
 		}
 
-		txCtx := app.Context.Action()
+		txCtx := app.Context.Action(&app.header)
 
 		handler := txCtx.Router.Handler(tx.Data)
 
@@ -138,7 +138,7 @@ func (app *App) txDeliverer() txDeliverer {
 		if err != nil {
 			app.logger.Errorf("deliverTx failed to deserialize msg: %s, error: %s ", msg, err)
 		}
-		txCtx := app.Context.Action()
+		txCtx := app.Context.Action(&app.header)
 
 		handler := txCtx.Router.Handler(tx.Data)
 
