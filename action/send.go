@@ -129,7 +129,6 @@ func (sendTx) ProcessDeliver(ctx *Context, msg Msg, fee Fee) (bool, Response) {
 	if err != nil {
 		return false, Response{Log: "balance set failed"}
 	}
-	logger.Debug("Successfully processed SendTransaction for CheckTx")
 
 	return true, Response{Tags: send.Tags()}
 }
