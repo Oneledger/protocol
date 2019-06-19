@@ -14,7 +14,6 @@
 package balance
 
 import (
-	"math/big"
 	"sort"
 
 	"github.com/Oneledger/protocol/data/chain"
@@ -84,7 +83,6 @@ func (b *Balance) SetData(obj interface{}) error {
 		return ErrWrongBalanceAdapter
 	}
 	return ba.extract(b)
-
 }
 
 //
@@ -98,7 +96,7 @@ func (ba *BalanceData) extract(b *Balance) error {
 	for i := range d {
 
 		//convert string representation to big int
-		amt := new(big.Int)
+		amt := NewAmount(0)
 		amt = amt.SetBytes(d[i].Amount)
 
 		coin := Coin{Amount: amt}

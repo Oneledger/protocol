@@ -13,6 +13,8 @@ import (
 	"github.com/Oneledger/protocol/data/ons"
 
 	"github.com/Oneledger/protocol/action"
+	"github.com/Oneledger/protocol/app/node"
+	"github.com/Oneledger/protocol/client"
 	"github.com/Oneledger/protocol/config"
 	"github.com/Oneledger/protocol/consensus"
 	"github.com/Oneledger/protocol/data/accounts"
@@ -21,6 +23,7 @@ import (
 	"github.com/Oneledger/protocol/log"
 	"github.com/Oneledger/protocol/rpc"
 	"github.com/Oneledger/protocol/serialize"
+	"github.com/Oneledger/protocol/service"
 	"github.com/Oneledger/protocol/storage"
 	"github.com/tendermint/tendermint/abci/types"
 
@@ -46,7 +49,7 @@ type App struct {
 }
 
 // New returns new app fresh and ready to start
-func NewApp(cfg *config.Server, nodeContext *NodeContext) (*App, error) {
+func NewApp(cfg *config.Server, nodeContext *node.Context) (*App, error) {
 	if cfg == nil || nodeContext == nil {
 		return nil, errors.New("got nil argument")
 	}
@@ -136,7 +139,7 @@ func (app *App) setupState(stateBytes []byte) error {
 		}
 
 		key := storage.StoreKey(addrBytes)
-		err = balanceCtx.Store().Set(key, si.Balance)
+		err = balanceCtx.Store().Set([]byte(key), si.Balance)
 		if err != nil {
 			return errors.Wrap(err, "failed to set balance")
 		}
@@ -246,15 +249,23 @@ func (app *App) Close() {
 func (app *App) rpcStarter() (func() error, error) {
 	noop := func() error { return nil }
 
-	handlers := NewClientHandler(app.Context.cfg.Node.NodeName, app.Context.balances,
-		app.Context.accounts, app.Context.currencies, app.Context.cfg, app.Context.node, app.Context.validators)
-
 	u, err := url.Parse(app.Context.cfg.Network.SDKAddress)
 	if err != nil {
 		return noop, err
 	}
 
-	err = app.Context.rpc.Prepare(u, handlers)
+	services, err := app.Context.Services()
+	if err != nil {
+		return noop, err
+	}
+	for name, svc := range services {
+		err := app.Context.rpc.Register(name, svc)
+		if err != nil {
+			app.logger.Errorf("failed to register service %s", name)
+		}
+	}
+
+	err = app.Context.rpc.Prepare(u)
 	if err != nil {
 		return noop, err
 	}
@@ -267,7 +278,7 @@ func (app *App) rpcStarter() (func() error, error) {
 // The base context for the application, holds databases and other stateful information contained by the app.
 // Used to derive other package-level Contexts
 type context struct {
-	node NodeContext
+	node node.Context
 	cfg  config.Server
 
 	rpc          *rpc.Server
@@ -289,7 +300,7 @@ type closer interface {
 	Close()
 }
 
-func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *NodeContext) (context, error) {
+func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *node.Context) (context, error) {
 	ctx := context{
 		cfg:        cfg,
 		logWriter:  logWriter,
@@ -345,14 +356,24 @@ func (ctx *context) Balances() *balance.Context {
 		ctx.currencies)
 }
 
-func (ctx *context) RPC() *RPCServerContext {
-	return &RPCServerContext{
-		nodeName:   ctx.cfg.Node.NodeName,
-		balances:   ctx.balances,
-		accounts:   ctx.accounts,
-		currencies: ctx.currencies,
-		logger:     log.NewLoggerWithPrefix(ctx.logWriter, "rpc"),
+func (ctx *context) Services() (service.Map, error) {
+	extSvcs, err := client.NewExtServiceContext(ctx.cfg.Network.RPCAddress, ctx.cfg.Network.SDKAddress)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to start service context")
 	}
+	svcCtx := &service.Context{
+		Balances:     ctx.balances,
+		Accounts:     ctx.accounts,
+		Currencies:   ctx.currencies,
+		Cfg:          ctx.cfg,
+		NodeContext:  ctx.node,
+		ValidatorSet: ctx.validators,
+		Router:       ctx.actionRouter,
+		Logger:       log.NewLoggerWithPrefix(ctx.logWriter, "rpc"),
+		Services:     extSvcs,
+	}
+
+	return service.NewMap(svcCtx), nil
 }
 
 // Close all things that need to be closed
@@ -363,7 +384,7 @@ func (ctx *context) Close() {
 	}
 }
 
-func (ctx *context) Node() NodeContext {
+func (ctx *context) Node() node.Context {
 	return ctx.node
 }
 

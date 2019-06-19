@@ -27,14 +27,13 @@ import (
 // Coin is the basic amount, specified in integers, at the smallest increment (i.e. a satoshi, not a bitcoin)
 type Coin struct {
 	Currency Currency `json:"currency"`
-	Amount   *big.Int `json:"amount,string"`
+	Amount   *Amount  `json:"amount,string"`
 }
 
 // See if the coin is one of a list of currencies
 func (coin Coin) IsCurrency(currencies ...string) bool {
 	if coin.Amount == nil {
-		debug.PrintStack()
-		logger.Fatal("Invalid Coin", coin)
+		return false
 	}
 
 	found := false
@@ -50,8 +49,7 @@ func (coin Coin) IsCurrency(currencies ...string) bool {
 // LessThan, for coins...
 func (coin Coin) LessThanCoin(value Coin) bool {
 	if coin.Amount == nil || value.Amount == nil {
-		debug.PrintStack()
-		logger.Fatal("Invalid Coin", coin)
+		coin.Amount = NewAmount(0)
 	}
 
 	if coin.Currency.Chain != value.Currency.Chain {
@@ -67,8 +65,7 @@ func (coin Coin) LessThanCoin(value Coin) bool {
 // LessThanEqual, for coins...
 func (coin Coin) LessThanEqualCoin(value Coin) bool {
 	if coin.Amount == nil || value.Amount == nil {
-		debug.PrintStack()
-		logger.Fatal("Invalid Coin", coin)
+		coin.Amount = NewAmount(0)
 	}
 
 	if coin.Currency.Chain != value.Currency.Chain {
@@ -98,8 +95,7 @@ func (coin Coin) IsValid() bool {
 // Equals another coin
 func (coin Coin) Equals(value Coin) bool {
 	if coin.Amount == nil {
-		debug.PrintStack()
-		logger.Fatal("Invalid Coin", coin)
+		coin.Amount = NewAmount(0)
 	}
 
 	if coin.Currency.Chain != value.Currency.Chain {
@@ -114,8 +110,7 @@ func (coin Coin) Equals(value Coin) bool {
 // Minus two coins
 func (coin Coin) Minus(value Coin) (Coin, error) {
 	if coin.Amount == nil {
-		debug.PrintStack()
-		logger.Fatal("Invalid Coin", coin)
+		coin.Amount = NewAmount(0)
 	}
 
 	if coin.Currency.Name != value.Currency.Name {
@@ -123,7 +118,7 @@ func (coin Coin) Minus(value Coin) (Coin, error) {
 		return coin, ErrMismatchingCurrency
 	}
 
-	base := big.NewInt(0)
+	base := NewAmount(0)
 	result := Coin{
 		Currency: coin.Currency,
 		Amount:   base.Sub(coin.Amount, value.Amount),
@@ -156,8 +151,7 @@ func (coin Coin) Plus(value Coin) (Coin, error) {
 
 func (coin Coin) Divide(value int) Coin {
 	if coin.Amount == nil {
-		debug.PrintStack()
-		logger.Fatal("Invalid Coin", coin)
+		coin.Amount = NewAmount(0)
 	}
 
 	base := big.NewInt(0)
@@ -173,8 +167,7 @@ func (coin Coin) Divide(value int) Coin {
 // Multiply one coin by another
 func (coin Coin) MultiplyInt(value int) Coin {
 	if coin.Amount == nil {
-		debug.PrintStack()
-		logger.Fatal("Invalid Coin", coin)
+		coin.Amount = NewAmount(0)
 	}
 
 	multiplier := big.NewInt(int64(value))

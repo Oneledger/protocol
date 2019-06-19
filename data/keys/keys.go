@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+
 	"github.com/tendermint/tendermint/privval"
 
 	"github.com/pkg/errors"
@@ -34,7 +35,7 @@ type PrivateKeyHandler interface {
 	Key Types
 */
 type PublicKey struct {
-	KeyType Algorithm `json:"key_type"`
+	KeyType Algorithm `json:"keyType"`
 	Data    []byte    `json:"data"`
 }
 
