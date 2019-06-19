@@ -14,8 +14,6 @@ import (
 	"github.com/tendermint/tendermint/libs/common"
 )
 
-const MinSend2DomainFeeOLT = 100
-
 /*
 	DomainSend info
 */
@@ -38,6 +36,26 @@ func (s DomainSend) Type() action.Type {
 // Signers gives the list of addresses of the signers (useful for verification_
 func (s DomainSend) Signers() []action.Address {
 	return []action.Address{s.From.Bytes()}
+}
+
+func (s DomainSend) Tags() common.KVPairs {
+	tags := make([]common.KVPair, 0)
+
+	tag := common.KVPair{
+		Key:   []byte("tx.type"),
+		Value: []byte(action.DOMAIN_SEND.String()),
+	}
+	tag2 := common.KVPair{
+		Key:   []byte("tx.from"),
+		Value: s.From.Bytes(),
+	}
+	tag3 := common.KVPair{
+		Key:   []byte("tx.domain_name"),
+		Value: []byte(s.DomainName),
+	}
+
+	tags = append(tags, tag, tag2, tag3)
+	return tags
 }
 
 /*
@@ -79,7 +97,7 @@ func (DomainSendTx) Validate(ctx *action.Context, msg action.Msg, fee action.Fee
 	// check if domain of receiver exists
 	receiverExists := ctx.Domains.Exists(send.DomainName)
 	if !receiverExists {
-		return false, action.ErrMissingData
+		return false, action.ErrInvalidDomain
 	}
 
 	return true, nil
@@ -125,7 +143,7 @@ func (DomainSendTx) ProcessCheck(ctx *action.Context, msg action.Msg,
 		return false, action.Response{Log: log}
 	}
 
-	domain, err := ctx.Domains.Get(send.DomainName)
+	domain, err := ctx.Domains.Get(send.DomainName, false)
 	if err != nil {
 		log := fmt.Sprint("error getting domain:", err)
 		return false, action.Response{Log: log}
@@ -166,7 +184,7 @@ func (DomainSendTx) ProcessDeliver(ctx *action.Context, msg action.Msg, fee acti
 	coin := send.Amount.ToCoin(ctx)
 
 	if !enoughBalance(*from, coin) {
-		log := fmt.Sprint("Owner balance is not enough", from, send.Amount)
+		log := fmt.Sprint("OwnerAddress balance is not enough", from, send.Amount)
 		return false, action.Response{Log: log}
 	}
 
@@ -178,7 +196,7 @@ func (DomainSendTx) ProcessDeliver(ctx *action.Context, msg action.Msg, fee acti
 		return false, action.Response{Log: log}
 	}
 
-	domain, err := ctx.Domains.Get(send.DomainName)
+	domain, err := ctx.Domains.Get(send.DomainName, false)
 	if err != nil {
 		log := fmt.Sprint("error getting domain:", err)
 		return false, action.Response{Log: log}
@@ -207,26 +225,6 @@ func (DomainSendTx) ProcessDeliver(ctx *action.Context, msg action.Msg, fee acti
 		return false, action.Response{Log: "balance set failed"}
 	}
 	return true, action.Response{Tags: send.Tags()}
-}
-
-func (s DomainSend) Tags() common.KVPairs {
-	tags := make([]common.KVPair, 0)
-
-	tag := common.KVPair{
-		Key:   []byte("tx.type"),
-		Value: []byte(action.DOMAIN_SEND.String()),
-	}
-	tag2 := common.KVPair{
-		Key:   []byte("tx.from"),
-		Value: s.From.Bytes(),
-	}
-	tag3 := common.KVPair{
-		Key:   []byte("tx.domain_name"),
-		Value: []byte(s.DomainName),
-	}
-
-	tags = append(tags, tag, tag2, tag3)
-	return tags
 }
 
 func (DomainSendTx) ProcessFee(ctx *action.Context, fee action.Fee) (bool, action.Response) {
