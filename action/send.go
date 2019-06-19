@@ -82,7 +82,7 @@ func (sendTx) ProcessCheck(ctx *Context, msg Msg, fee Fee) (bool, Response) {
 		log := fmt.Sprintf("sender don't have enough balance, need %s, has %s", b.String(), coin.String())
 		return false, Response{Log: log}
 	}
-
+	logger.Debug("Successfully processed SendTransaction for CheckTx")
 	return true, Response{Tags: send.Tags()}
 }
 
@@ -135,6 +135,7 @@ func (sendTx) ProcessDeliver(ctx *Context, msg Msg, fee Fee) (bool, Response) {
 	if err != nil {
 		return false, Response{Log: "balance set failed"}
 	}
+
 	return true, Response{Tags: send.Tags()}
 }
 

@@ -25,12 +25,8 @@ import (
 
 	"github.com/tendermint/tendermint/crypto/ed25519"
 
-	"github.com/Oneledger/protocol/serialize"
-
 	"github.com/Oneledger/protocol/action"
 
-	"github.com/Oneledger/protocol/client"
-	"github.com/Oneledger/protocol/data"
 	"github.com/Oneledger/protocol/data/accounts"
 	"github.com/Oneledger/protocol/data/chain"
 	"github.com/Oneledger/protocol/data/keys"
@@ -93,15 +89,12 @@ func loadTest(_ *cobra.Command, _ []string) {
 	waiter.Add(1)
 	go handleSigTerm(c, counterChan, stopChan, loadTestArgs.threads, loadTestArgs.maxTx, &waiter)
 
+	fullnode := ctx.clCtx.FullNodeClient()
 	// get address of the node
-	req := data.NewRequestFromData("server.NodeAddress", nil)
-	resp := &data.Response{}
-	err := ctx.clCtx.Query("server.NodeAddress", *req, resp)
+	nodeAddress, err := fullnode.NodeAddress()
 	if err != nil {
 		ctx.logger.Fatal("error getting node address", err)
 	}
-
-	var nodeAddress = keys.Address(resp.Data)
 
 	// start threads
 	for i := 0; i < loadTestArgs.threads; i++ {
@@ -122,19 +115,13 @@ func loadTest(_ *cobra.Command, _ []string) {
 		}
 
 		thLogger.Infof("creating account %#v", acc)
-		resp := &data.Response{}
-		err = ctx.clCtx.Query("server.AddAccount", acc, resp) // create account on node
+		reply, err := fullnode.AddAccount(acc)
 		if err != nil {
 			thLogger.Error(accName, "error creating account", err)
 			return
 		}
 
-		var accRead = &accounts.Account{}
-		err = serialize.GetSerializer(serialize.CLIENT).Deserialize(resp.Data, &accRead)
-		if err != nil {
-			thLogger.Error("error de-serializing account data", err)
-			return
-		}
+		accRead := reply.Account
 
 		// print details
 		thLogger.Infof("Created account successfully: %#v", accRead)
@@ -179,7 +166,7 @@ func doSendTransaction(ctx *Context, threadNo int, acc *accounts.Account, nodeAd
 	amt := r.Float64() * 10.0 // amount is a random float between [0, 10)
 
 	// populate send arguments
-	sendArgsLocal := client.SendArguments{}
+	sendArgsLocal := SendArguments{}
 	sendArgsLocal.Party = []byte(nodeAddress)
 	if randomRev {
 		recv := ed25519.GenPrivKey().PubKey().Address()
@@ -193,17 +180,18 @@ func doSendTransaction(ctx *Context, threadNo int, acc *accounts.Account, nodeAd
 	sendArgsLocal.Fee = *action.NewAmount("OLT", strconv.FormatFloat(amt/100, 'f', 0, 64))
 
 	// Create message
-	resp := &data.Response{}
-	err := ctx.clCtx.Query("server.SendTx", sendArgsLocal, resp)
+	fullnode := ctx.clCtx.FullNodeClient()
+
+	reply, err := fullnode.SendTx(sendArgsLocal.ClientRequest())
 	if err != nil {
 		ctx.logger.Error(acc.Name, "error executing SendTx", err)
 		return
 	}
 
 	// check packet
-	packet := resp.Data
+	packet := reply.RawTx
 	if packet == nil {
-		ctx.logger.Error(acc.Name, "Error in sending ", resp.ErrorMsg)
+		ctx.logger.Error(acc.Name, "error in creating new SendTx but server responded with no error")
 		return
 	}
 

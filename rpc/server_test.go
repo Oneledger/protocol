@@ -46,7 +46,7 @@ func TestServer(t *testing.T) {
 
 	service := Arith(0)
 	u, _ := url.Parse("tcp://127.0.0.1:9006")
-	err := srv.Prepare(u, &service)
+	err := srv.Prepare(u, map[string]interface{}{"Arith": &service})
 	assert.Nil(t, err, "preparing the server shouldn't return an error")
 
 	err = srv.Start()
