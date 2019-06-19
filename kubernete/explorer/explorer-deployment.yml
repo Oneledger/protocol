@@ -101,7 +101,6 @@ apiVersion: autoscaling/v1
 kind: HorizontalPodAutoscaler
 metadata:
   name: explorer-api-server
-  namespace: default
 spec:
   scaleTargetRef:
     apiVersion: apps/v1
@@ -115,7 +114,6 @@ apiVersion: autoscaling/v1
 kind: HorizontalPodAutoscaler
 metadata:
   name: explorer-watcher
-  namespace: default
 spec:
   scaleTargetRef:
     apiVersion: apps/v1
