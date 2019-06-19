@@ -3,7 +3,7 @@
 app_user: node
 logging: 'false'
 dev_mode: 'false'
-seeds: "76eb53462dbc4a48a1eea7eb89673ec557cd468c@35.245.214.170:26605 c0f25aacc2fd8f2a62fef38ba79e828bcbe363cd@34.68.113.107:26605"
+seeds: "76efc86bc27e9eea629045523ff4e7e880411790@34.94.179.45:26605 9417235198bb8d2fc0468dd4e9a0b1f4b3b62f6f@34.83.7.237:26605"
 systemd_service: 'false'
 GOPATH: /home/{{app_user}}/go
 OLROOT: "{{GOPATH}}/src/github.com/Oneledger"
