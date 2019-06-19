@@ -6,7 +6,6 @@ package ons
 
 import (
 	"github.com/Oneledger/protocol/data/balance"
-	"github.com/pkg/errors"
 )
 
 const HEIGHT_INTERVAL = 1
@@ -21,8 +20,8 @@ type Domain struct {
 	Name string
 
 	// block heights at which the domain was first created and updated
-	CreationHeight   uint32
-	LastUpdateHeight uint32
+	CreationHeight   int64
+	LastUpdateHeight int64
 
 	// flag to denote whether send2Domain is active on this domain
 	ActiveFlag bool
@@ -34,12 +33,8 @@ type Domain struct {
 	SalePrice balance.Coin
 }
 
-func CreateDomain(ownerAddress, accountAddress []byte,
-	name string, height uint32) (*Domain, error) {
-
-	if name == "" {
-		return nil, errors.New("empty domain name")
-	}
+func NewDomain(ownerAddress, accountAddress []byte,
+	name string, height int64) *Domain {
 
 	if accountAddress == nil ||
 		len(accountAddress) == 0 {
@@ -53,10 +48,10 @@ func CreateDomain(ownerAddress, accountAddress []byte,
 		CreationHeight:   height, // height of current txn
 		LastUpdateHeight: height, // height of current txn
 		ActiveFlag:       true,   // Active by default
-	}, nil
+	}
 }
 
-func (d *Domain) SetAccountAddress(addr []byte, height uint32) {
+func (d *Domain) SetAccountAddress(addr []byte) {
 	d.AccountAddress = addr
 }
 
@@ -68,7 +63,7 @@ func (d *Domain) Deactivate() {
 	d.ActiveFlag = false
 }
 
-func (d *Domain) SetLastUpdatedHeight(height uint32) {
+func (d *Domain) SetLastUpdatedHeight(height int64) {
 	d.LastUpdateHeight = height
 }
 
@@ -82,7 +77,7 @@ func (d *Domain) PutOnSale(price balance.Coin) {
 	d.SalePrice = price
 }
 
-func (d *Domain) IsChangeable(currentHeight uint32) bool {
+func (d *Domain) IsChangeable(currentHeight int64) bool {
 
 	if currentHeight > d.LastUpdateHeight+HEIGHT_INTERVAL {
 		return true

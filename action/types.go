@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"strconv"
 
+	"github.com/tendermint/tendermint/libs/common"
+
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/keys"
 )
@@ -63,4 +65,13 @@ func (a Amount) ToCoin(ctx *Context) balance.Coin {
 		return balance.Coin{}
 	}
 	return currency.NewCoinFromFloat64(f)
+}
+
+type Response struct {
+	Data      []byte
+	Log       string
+	Info      string
+	GasWanted int64
+	GasUsed   int64
+	Tags      []common.KVPair
 }

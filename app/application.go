@@ -8,6 +8,8 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/Oneledger/protocol/action/staking"
+	"github.com/Oneledger/protocol/action/transfer"
 	"github.com/Oneledger/protocol/data/ons"
 
 	"github.com/Oneledger/protocol/action"
@@ -314,7 +316,8 @@ func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *node.Context) (
 	ctx.domains = ons.NewDomainStore("domains", ctx.dbDir(), ctx.cfg.Node.DB, storage.PERSISTENT)
 	ctx.admin = storage.NewStorageDB(storage.KEYVALUE, "admin", ctx.dbDir(), ctx.cfg.Node.DB)
 
-
+	_ = transfer.EnableSend(ctx.actionRouter)
+	_ = staking.EnableApplyValidator(ctx.actionRouter)
 	return ctx, nil
 }
 
@@ -322,9 +325,10 @@ func (ctx context) dbDir() string {
 	return filepath.Join(ctx.cfg.RootDir(), ctx.cfg.Node.DBDir)
 }
 
-func (ctx *context) Action() *action.Context {
+func (ctx *context) Action(header *Header) *action.Context {
 	actionCtx := action.NewContext(
 		ctx.actionRouter,
+		header,
 		ctx.accounts,
 		ctx.balances,
 		ctx.currencies,

@@ -26,21 +26,21 @@ func NewDomainStore(name, dbDir, configDB string, typ storage.StorageType) *Doma
 }
 
 // Get is used to retrieve the domain object from the domain name
-func (ds *DomainStore) Get(name string) (*Domain, error) {
+func (ds *DomainStore) Get(name string, lastCommit bool) (*Domain, error) {
 
 	key := keyFromName(name)
 
 	exists := ds.ChainState.Exists(key)
 	if !exists {
-		return nil, errors.New("Domain doesn't exist")
+		return nil, ErrDomainNotFound
 	}
 
-	data := ds.ChainState.Get(key, true)
+	data := ds.ChainState.Get(key, lastCommit)
 
 	d := &Domain{}
 	err := ds.szlr.Deserialize(data, d)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "error de-serializing domain")
 	}
 
 	return d, nil

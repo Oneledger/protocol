@@ -1,118 +1,111 @@
-package action
+package staking
 
 import (
-	"errors"
+	"github.com/Oneledger/protocol/action"
+
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/identity"
-	"github.com/Oneledger/protocol/serialize"
 	"github.com/tendermint/tendermint/libs/common"
 )
 
-var _ Msg = ApplyValidator{}
+var _ action.Msg = ApplyValidator{}
 
 type ApplyValidator struct {
-	Address          Address
-	Stake            Amount
+	Address          action.Address
+	Stake            action.Amount
 	NodeName         string
-	ValidatorAddress Address
+	ValidatorAddress action.Address
 	ValidatorPubKey  keys.PublicKey
 	Purge            bool
 }
 
-func (apply ApplyValidator) Signers() []Address {
-	return []Address{apply.Address.Bytes()}
+func (apply ApplyValidator) Signers() []action.Address {
+	return []action.Address{apply.Address.Bytes()}
 }
 
-func (apply ApplyValidator) Type() Type {
-	return APPLYVALIDATOR
+func (apply ApplyValidator) Type() action.Type {
+	return action.APPLYVALIDATOR
 }
 
-func (apply ApplyValidator) Bytes() []byte {
-	result, err := serialize.GetSerializer(serialize.NETWORK).Serialize(apply)
-	if err != nil {
-		logger.Error("send bytes convert failed: ", err)
-	}
-	return result
-}
-
-var _ Tx = applyTx{}
+var _ action.Tx = applyTx{}
 
 type applyTx struct {
 }
 
-func (applyTx) Validate(ctx *Context, msg Msg, fee Fee, memo string, signatures []Signature) (bool, error) {
-	apply, ok := msg.(*ApplyValidator)
-	if !ok {
-		return false, errors.New("Apply validator cast failed")
-	}
-	ok, err := validateBasic(msg, fee, memo, signatures)
+func (applyTx) Validate(ctx *action.Context, msg action.Msg, fee action.Fee, memo string, signatures []action.Signature) (bool, error) {
+	ok, err := action.ValidateBasic(msg, fee, memo, signatures)
 	if err != nil {
 		return ok, err
 	}
 
+	apply, ok := msg.(*ApplyValidator)
+	if !ok {
+		return false, action.ErrWrongTxType
+	}
+
 	if msg == nil || len(apply.Address) == 0 {
-		return false, ErrMissingData
+		return false, action.ErrMissingData
 	}
 
 	if apply.ValidatorAddress == nil {
-		return false, ErrMissingData
+		return false, action.ErrMissingData
 	}
 	_, err = apply.ValidatorPubKey.GetHandler()
 	if err != nil {
-		return false, ErrInvalidPubkey
+		return false, action.ErrInvalidPubkey
 	}
 
 	coin := apply.Stake.ToCoin(ctx)
 	if coin.LessThanCoin(coin.Currency.NewCoinFromInt(0)) {
-		return false, ErrInvalidAmount
+		return false, action.ErrInvalidAmount
 	}
 
 	if coin.Currency.Name != "VT" {
-		return false, ErrInvalidAmount
+		return false, action.ErrInvalidAmount
 	}
 
 	return true, nil
 }
 
-func (a applyTx) ProcessCheck(ctx *Context, msg Msg, fee Fee) (bool, Response) {
+func (a applyTx) ProcessCheck(ctx *action.Context, msg action.Msg, fee action.Fee) (bool, action.Response) {
 	apply, ok := msg.(*ApplyValidator)
 	if !ok {
-		return false, Response{Log: "Apply validator cast failed"}
+		return false, action.Response{Log: "Apply validator cast failed"}
 	}
 	result, err := checkBalances(ctx, apply.Address, apply.Stake)
 	if err != nil {
-		return false, Response{Log: err.Error()}
+		return false, action.Response{Log: err.Error()}
 	}
-	return result, Response{Tags: apply.Tags()}
+	return result, action.Response{Tags: apply.Tags()}
 }
 
-func checkBalances(ctx *Context, address Address, stake Amount) (bool, error) {
+func checkBalances(ctx *action.Context, address action.Address, stake action.Amount) (bool, error) {
 
 	balances := ctx.Balances
 
 	// check identity's VT is equal to the stake
 	balance, err := balances.Get(address, false)
 	if err != nil {
-		return false, ErrNotEnoughFund
+		return false, action.ErrNotEnoughFund
 	}
 	c, ok := ctx.Currencies.GetCurrencyByName("VT")
 	if !ok {
-		return false, ErrInvalidAmount
+		return false, action.ErrInvalidAmount
 	}
 	if balance.GetCoin(c).LessThanCoin(stake.ToCoin(ctx)) {
-		return false, ErrNotEnoughFund
+		return false, action.ErrNotEnoughFund
 	}
 	return true, nil
 }
 
-func (applyTx) ProcessDeliver(ctx *Context, msg Msg, fee Fee) (bool, Response) {
+func (applyTx) ProcessDeliver(ctx *action.Context, msg action.Msg, fee action.Fee) (bool, action.Response) {
 	apply, ok := msg.(*ApplyValidator)
 	if !ok {
-		return false, Response{Log: "Apply validator cast failed"}
+		return false, action.Response{Log: "Apply validator cast failed"}
 	}
 	_, err := checkBalances(ctx, apply.Address, apply.Stake)
 	if err != nil {
-		return false, Response{Log: err.Error()}
+		return false, action.Response{Log: err.Error()}
 	}
 
 	validators := ctx.Validators
@@ -120,16 +113,16 @@ func (applyTx) ProcessDeliver(ctx *Context, msg Msg, fee Fee) (bool, Response) {
 	balances := ctx.Balances
 	balance, err := balances.Get(apply.Address.Bytes(), false)
 	if err != nil {
-		return false, Response{Log: err.Error()}
+		return false, action.Response{Log: err.Error()}
 	}
 	b, err := balance.MinusCoin(apply.Stake.ToCoin(ctx))
 	if err != nil {
-		return false, Response{Log: err.Error()}
+		return false, action.Response{Log: err.Error()}
 	}
 
 	err = balances.Set(apply.Address.Bytes(), *b)
 	if err != nil {
-		return false, Response{Log: err.Error()}
+		return false, action.Response{Log: err.Error()}
 	}
 
 	if !apply.Purge {
@@ -149,14 +142,14 @@ func (applyTx) ProcessDeliver(ctx *Context, msg Msg, fee Fee) (bool, Response) {
 		err = validators.HandleUnstake(unstake)
 	}
 	if err != nil {
-		return false, Response{Log: err.Error()}
+		return false, action.Response{Log: err.Error()}
 	}
-	return true, Response{Tags: apply.Tags()}
+	return true, action.Response{Tags: apply.Tags()}
 }
 
-func (applyTx) ProcessFee(ctx *Context, fee Fee) (bool, Response) {
+func (applyTx) ProcessFee(ctx *action.Context, fee action.Fee) (bool, action.Response) {
 	// TODO: implement fee charge for apply
-	return true, Response{Info: "Unimplemented"}
+	return true, action.Response{Info: "Unimplemented"}
 }
 
 func (apply ApplyValidator) Tags() common.KVPairs {
@@ -164,10 +157,10 @@ func (apply ApplyValidator) Tags() common.KVPairs {
 
 	tag := common.KVPair{
 		Key:   []byte("tx.type"),
-		Value: []byte(APPLYVALIDATOR.String()),
+		Value: []byte(apply.Type().String()),
 	}
 	tag2 := common.KVPair{
-		Key:   []byte("tx.from"),
+		Key:   []byte("tx.owner"),
 		Value: apply.Address.Bytes(),
 	}
 

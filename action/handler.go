@@ -1,7 +1,5 @@
 package action
 
-import "github.com/tendermint/tendermint/libs/common"
-
 type Tx interface {
 	//it should be able to validate a tx by itself, non-valid tx will be reject by the node directly
 	//without going to node process
@@ -17,13 +15,4 @@ type Tx interface {
 
 	//process the charge of fees
 	ProcessFee(ctx *Context, fee Fee) (bool, Response)
-}
-
-type Response struct {
-	Data      []byte
-	Log       string
-	Info      string
-	GasWanted int64
-	GasUsed   int64
-	Tags      []common.KVPair
 }
