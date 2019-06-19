@@ -61,15 +61,15 @@ func (s DomainSend) Tags() common.KVPairs {
 /*
 
 
-	DomainSendTx
+	domainSendTx
 
 */
-type DomainSendTx struct {
+type domainSendTx struct {
 }
 
-var _ action.Tx = DomainSendTx{}
+var _ action.Tx = domainSendTx{}
 
-func (DomainSendTx) Validate(ctx *action.Context, msg action.Msg, fee action.Fee,
+func (domainSendTx) Validate(ctx *action.Context, msg action.Msg, fee action.Fee,
 	memo string, signatures []action.Signature) (bool, error) {
 
 	// validate basic signature
@@ -97,7 +97,7 @@ func (DomainSendTx) Validate(ctx *action.Context, msg action.Msg, fee action.Fee
 	return true, nil
 }
 
-func (DomainSendTx) ProcessCheck(ctx *action.Context, msg action.Msg,
+func (domainSendTx) ProcessCheck(ctx *action.Context, msg action.Msg,
 	fee action.Fee) (bool, action.Response) {
 
 	ctx.Logger.Debug("Processing Send Transaction for CheckTx", msg, fee)
@@ -123,10 +123,9 @@ func (DomainSendTx) ProcessCheck(ctx *action.Context, msg action.Msg,
 	}
 
 	// check if balance is enough
-	if !enoughBalance(*b, coin) {
-		log := fmt.Sprintf("sender don't have enough balance, need %s, has %s",
-			b.String(), coin.String())
-
+	_, err := b.MinusCoin(coin)
+	if err != nil {
+		log := fmt.Sprint("error in minus coin", err)
 		return false, action.Response{Log: log}
 	}
 
@@ -140,7 +139,7 @@ func (DomainSendTx) ProcessCheck(ctx *action.Context, msg action.Msg,
 	return true, action.Response{Tags: send.Tags()}
 }
 
-func (DomainSendTx) ProcessDeliver(ctx *action.Context, msg action.Msg, fee action.Fee) (bool, action.Response) {
+func (domainSendTx) ProcessDeliver(ctx *action.Context, msg action.Msg, fee action.Fee) (bool, action.Response) {
 	ctx.Logger.Debug("Processing Send to Domain Transaction for DeliverTx", msg, fee)
 
 	balances := ctx.Balances
@@ -162,11 +161,6 @@ func (DomainSendTx) ProcessDeliver(ctx *action.Context, msg action.Msg, fee acti
 	}
 
 	coin := send.Amount.ToCoin(ctx)
-
-	if !enoughBalance(*from, coin) {
-		log := fmt.Sprint("OwnerAddress balance is not enough", from, send.Amount)
-		return false, action.Response{Log: log}
-	}
 
 	//change owner balance
 	from, err = from.MinusCoin(coin)
@@ -211,23 +205,8 @@ func (DomainSendTx) ProcessDeliver(ctx *action.Context, msg action.Msg, fee acti
 	return true, action.Response{Tags: send.Tags()}
 }
 
-func (DomainSendTx) ProcessFee(ctx *action.Context, fee action.Fee) (bool, action.Response) {
+func (domainSendTx) ProcessFee(ctx *action.Context, fee action.Fee) (bool, action.Response) {
 	panic("implement me")
 	// TODO: implement the fee charge for send
 	return true, action.Response{GasWanted: 0, GasUsed: 0}
-}
-
-func enoughBalance(b action.Balance, value balance.Coin) bool {
-
-	if !value.IsValid() {
-		return false
-	}
-
-	total := balance.NewBalance()
-	total.MinusCoin(value)
-	if !b.IsEnoughBalance(*total) {
-		return false
-	}
-
-	return true
 }

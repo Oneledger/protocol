@@ -17,7 +17,7 @@ const (
 	DOMAIN_CREATE
 	DOMAIN_UPDATE
 	DOMAIN_SELL
-	DOMAIN_BUY
+	DOMAIN_PURCHASE
 	DOMAIN_SEND
 )
 
@@ -41,8 +41,8 @@ func (t Type) String() string {
 		return "DOMAIN_UPDATE"
 	case DOMAIN_SELL:
 		return "DOMAIN_SELL"
-	case DOMAIN_BUY:
-		return "DOMAIN_BUY"
+	case DOMAIN_PURCHASE:
+		return "DOMAIN_PURCHASE"
 	case DOMAIN_SEND:
 		return "DOMAIN_SEND"
 	default:

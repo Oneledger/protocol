@@ -70,9 +70,10 @@ func (sendTx) ProcessCheck(ctx *action.Context, msg action.Msg, fee action.Fee) 
 		return false, action.Response{Log: log}
 	}
 	coin := send.Amount.ToCoin(ctx)
-	if !enoughBalance(*b, coin) {
-		log := fmt.Sprintf("sender don't have enough balance, need %s, has %s", b.String(), coin.String())
-		return false, action.Response{Log: log}
+	//change owner balance
+	_, err := b.MinusCoin(coin)
+	if err != nil {
+		return false, action.Response{Log: err.Error()}
 	}
 
 	return true, action.Response{Tags: send.Tags()}
@@ -101,13 +102,12 @@ func (sendTx) ProcessDeliver(ctx *action.Context, msg action.Msg, fee action.Fee
 
 	coin := send.Amount.ToCoin(ctx)
 
-	if !enoughBalance(*from, coin) {
-		log := fmt.Sprint("Owner balance is not enough", from, send.Amount)
-		return false, action.Response{Log: log}
+	//change owner balance
+	from, err = from.MinusCoin(coin)
+	if err != nil {
+		return false, action.Response{Log: err.Error()}
 	}
 
-	//change owner balance
-	from.MinusCoin(coin)
 	err = balances.Set(send.From.Bytes(), *from)
 	if err != nil {
 		log := fmt.Sprint("error updating balance in send transaction", err)
@@ -134,21 +134,6 @@ func (sendTx) ProcessFee(ctx *action.Context, fee action.Fee) (bool, action.Resp
 	panic("implement me")
 	// TODO: implement the fee charge for send
 	return true, action.Response{GasWanted: 0, GasUsed: 0}
-}
-
-func enoughBalance(b action.Balance, value balance.Coin) bool {
-
-	if !value.IsValid() {
-		return false
-	}
-
-	total := balance.NewBalance()
-	total.MinusCoin(value)
-	if !b.IsEnoughBalance(*total) {
-		return false
-	}
-
-	return true
 }
 
 func (s Send) Tags() common.KVPairs {

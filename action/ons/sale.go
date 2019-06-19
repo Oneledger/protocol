@@ -33,7 +33,7 @@ func (s DomainSale) Signers() []action.Address {
 }
 
 func (s DomainSale) Tags() common.KVPairs {
-	tags := []common.KVPair{}
+	tags := make([]common.KVPair, 0)
 	tag0 := common.KVPair{
 		Key:   []byte("tx.type"),
 		Value: []byte(action.DOMAIN_SELL.String()),
@@ -62,16 +62,16 @@ func (s DomainSale) Tags() common.KVPairs {
 /*
 
 
-	DomainSaleTx
+	domainSaleTx
 
 */
 
-type DomainSaleTx struct {
+type domainSaleTx struct {
 }
 
-var _ action.Tx = DomainSaleTx{}
+var _ action.Tx = domainSaleTx{}
 
-func (DomainSaleTx) Validate(ctx *action.Context, msg action.Msg, fee action.Fee,
+func (domainSaleTx) Validate(ctx *action.Context, msg action.Msg, fee action.Fee,
 	memo string, signatures []action.Signature) (bool, error) {
 
 	// validate basic signature
@@ -97,10 +97,10 @@ func (DomainSaleTx) Validate(ctx *action.Context, msg action.Msg, fee action.Fee
 	return true, nil
 }
 
-func (DomainSaleTx) ProcessCheck(ctx *action.Context, msg action.Msg,
+func (domainSaleTx) ProcessCheck(ctx *action.Context, msg action.Msg,
 	fee action.Fee) (bool, action.Response) {
 
-	sale, ok := msg.(DomainSale)
+	sale, ok := msg.(*DomainSale)
 	if !ok {
 		return false, action.Response{Log: "failed to cast msg"}
 	}
@@ -110,7 +110,7 @@ func (DomainSaleTx) ProcessCheck(ctx *action.Context, msg action.Msg,
 	}
 
 	// validate the sender and receiver are not nil
-	if sale.OwnerAddress == nil || sale.DomainName == "" {
+	if sale.OwnerAddress == nil || len(sale.DomainName) <= 0 {
 		return false, action.Response{Log: "invalid data"}
 	}
 
@@ -124,6 +124,12 @@ func (DomainSaleTx) ProcessCheck(ctx *action.Context, msg action.Msg,
 
 	if bytes.Compare(domain.OwnerAddress, sale.OwnerAddress) != 0 {
 		return false, action.Response{Log: "not the owner"}
+	}
+
+	if !domain.IsChangeable(ctx.Header.Height) {
+		log := fmt.Sprintf("domain not changeable; name: %s, lastUpdateheight %d",
+			domain.Name, domain.LastUpdateHeight)
+		return false, action.Response{Log: log}
 	}
 
 	// if action to cancel sale and domain is not on sale
@@ -136,9 +142,9 @@ func (DomainSaleTx) ProcessCheck(ctx *action.Context, msg action.Msg,
 	return true, action.Response{Tags: sale.Tags()}
 }
 
-func (DomainSaleTx) ProcessDeliver(ctx *action.Context, msg action.Msg, fee action.Fee) (bool, action.Response) {
+func (domainSaleTx) ProcessDeliver(ctx *action.Context, msg action.Msg, fee action.Fee) (bool, action.Response) {
 
-	sale, ok := msg.(DomainSale)
+	sale, ok := msg.(*DomainSale)
 	if !ok {
 		return false, action.Response{Log: "failed to cast msg"}
 	}
@@ -159,15 +165,16 @@ func (DomainSaleTx) ProcessDeliver(ctx *action.Context, msg action.Msg, fee acti
 		}
 		return false, action.Response{Log: "error getting domain"}
 	}
-	if !domain.IsChangeable(ctx.Header.Height) {
-		log := fmt.Sprintf("domain not changeable; name: %s, lastUpdateheight %d",
-			domain.Name, domain.LastUpdateHeight)
-		return false, action.Response{Log: log}
-	}
 
 	// verify the ownership
 	if bytes.Compare(domain.OwnerAddress, sale.OwnerAddress) != 0 {
 		return false, action.Response{Log: "not the owner"}
+	}
+
+	if !domain.IsChangeable(ctx.Header.Height) {
+		log := fmt.Sprintf("domain not changeable; name: %s, lastUpdateheight %d",
+			domain.Name, domain.LastUpdateHeight)
+		return false, action.Response{Log: log}
 	}
 
 	if sale.CancelSale {
@@ -185,7 +192,7 @@ func (DomainSaleTx) ProcessDeliver(ctx *action.Context, msg action.Msg, fee acti
 	return true, action.Response{Tags: sale.Tags()}
 }
 
-func (DomainSaleTx) ProcessFee(ctx *action.Context, fee action.Fee) (bool, action.Response) {
+func (domainSaleTx) ProcessFee(ctx *action.Context, fee action.Fee) (bool, action.Response) {
 	panic("implement me")
 	// TODO: implement the fee charge for send
 	return true, action.Response{GasWanted: 0, GasUsed: 0}
