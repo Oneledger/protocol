@@ -14,7 +14,10 @@ const (
 	CodeInvalidParams  = -32602
 	CodeInternalError  = -32603
 
-	// -32000 to -32099 Are application level errors (i.e. define your rpc errors in this range.
+	// -32000 to -32099 Are application level errors (i.e. define your rpc errors in this range)
+	CodeNotAllowed = -32001
+
+	CodeNotFound = -32000
 )
 
 type Error = jsonrpc2.Error
@@ -22,3 +25,25 @@ type Error = jsonrpc2.Error
 func NewError(code Code, msg string) *Error {
 	return jsonrpc2.NewError(int(code), msg)
 }
+
+func InvalidParamsError(msg string) *Error {
+	return NewError(CodeInvalidParams, msg)
+}
+
+func InternalError(msg string) *Error {
+	return NewError(CodeInternalError, msg)
+}
+
+func ParseError(msg string) *Error {
+	return NewError(CodeParseError, msg)
+}
+
+func InvalidRequestError(msg string) *Error {
+	return NewError(CodeInvalidRequest, msg)
+}
+
+func MethodNotFoundError(msg string) *Error {
+	return NewError(CodeMethodNotFound, msg)
+}
+
+/* Define application-specific errors here */

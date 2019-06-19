@@ -13,12 +13,6 @@ type ServiceClient struct {
 	*rpc.Client
 }
 
-/*
-	Blockchain Service
-	- Query basic information from the blockchain.
-	- Explorer stuff. Get tx by hash, query acct balance, get a block by height or list of blocks.
-*/
-
 func (c *ServiceClient) Balance(request BalanceRequest) (out BalanceReply, err error) {
 	if len(request) <= 20 {
 		return out, errors.New("address has insufficient length")
@@ -27,45 +21,23 @@ func (c *ServiceClient) Balance(request BalanceRequest) (out BalanceReply, err e
 	return
 }
 
-/*
-	Node Service
-	- Query information from the chain from us
-*/
-
 func (c *ServiceClient) NodeName() (out NodeNameReply, err error) {
-	err = c.Call("server.NodeName", struct{}{}, &out)
+	err = c.Call("node.Name", struct{}{}, &out)
 	return
 }
 
 func (c *ServiceClient) NodeAddress() (out NodeAddressReply, err error) {
-	err = c.Call("server.NodeAddress", struct{}{}, &out)
+	err = c.Call("node.Address", struct{}{}, &out)
 	return
 }
 
 func (c *ServiceClient) NodeID(req NodeIDRequest) (out NodeIDReply, err error) {
-	err = c.Call("server.NodeID", req, &out)
+	err = c.Call("node.ID", req, &out)
 	return
 }
-
-/*
-	Tx Service
-	- Returns raw messages to be signed so you can broadcast transactions
-	- TODO: There should be methods specific for having the node sign & broadcast for us in one go, but the authentication
-	  part needs to be fleshed out.
-*/
 
 func (c *ServiceClient) SendTx(req SendTxRequest) (out SendTxReply, err error) {
 	err = c.Call("server.SendTx", req, &out)
-	return
-}
-
-/*
-	Accounts/Identities Service
-	- Manages local accounts and what they deserve to be
-*/
-
-func (c *ServiceClient) RawTxBroadcast(req RawTxBroadcastRequest) (out RawTxBroadcastReply, err error) {
-	err = c.Call("server.RawTxBroadcast", req, &out)
 	return
 }
 
@@ -93,8 +65,3 @@ func (c *ServiceClient) ListValidators() (out ListValidatorsReply, err error) {
 	err = c.Call("server.ListValidators", struct{}{}, &out)
 	return
 }
-
-/*
-	Broadcast Service
-	- Broadcast transactions to the network. This should be protected
-*/

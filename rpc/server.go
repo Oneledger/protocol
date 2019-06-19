@@ -44,7 +44,14 @@ func NewServer(w io.Writer) *Server {
 	}
 }
 
-func (srv *Server) register(name string, rcvr interface{}) error {
+// Register creates a service on the Server with the given name.
+// The criteria of a service method is the same as defined in the net/rpc package:
+// - the method's type is exported.
+// - the method is exported.
+// - the method has two arguments, both exported (or builtin) types.
+// - the method's second argument is a pointer.
+// - the method has return type error.
+func (srv *Server) Register(name string, rcvr interface{}) error {
 	return srv.rpc.RegisterName(name, rcvr)
 }
 
@@ -52,7 +59,7 @@ func (srv *Server) register(name string, rcvr interface{}) error {
 // It  prepares a net.Listener over the specified URL, and registers all methods
 // inside the given receiver. After this method is called, the Start function
 // is ready to be called.
-func (srv *Server) Prepare(u *url.URL, services map[string]interface{}) error {
+func (srv *Server) Prepare(u *url.URL) error {
 	if u == nil {
 		return errors.New("no URL was provided")
 	} else if u.Port() == "" {
@@ -62,15 +69,6 @@ func (srv *Server) Prepare(u *url.URL, services map[string]interface{}) error {
 	l, err := net.Listen("tcp", u.Host)
 	if err != nil {
 		return errors.Wrap(err, "invalid URL provided, failed to create listener")
-	}
-
-	for name, service := range services {
-		err = srv.register(name, service)
-		if err != nil {
-			_ = l.Close()
-			return errors.Wrap(err, "failed to register the given rcvr")
-		}
-
 	}
 
 	// Register the handlers with our mux

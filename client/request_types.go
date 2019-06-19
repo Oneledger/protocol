@@ -22,11 +22,14 @@ import (
 
 We should divide our RPC layer using distinct services, which we can then define permissions & access rules over
 
-Right now we only support request-reply styled responses
+Right now we only support request-reply styled responses.
 
 Services:
-	* NodeService - Node-related queries and requests
-	* BlockchainService - General-blockchain
+	* broadcast
+	* node
+	* owner
+	* query
+	* tx
 */
 
 /* Blockchain service  */
@@ -66,19 +69,6 @@ type ApplyValidatorReply struct {
 	RawTx []byte `json:"rawTx"`
 }
 
-// SendTxBroadcast is for broadcasting a raw self-signed transaction over the network
-type RawTxBroadcastRequest struct {
-	// Msg is the raw transaction bytes
-	RawTx     []byte         `json:"rawTx"`
-	Signature []byte         `json:"signature"`
-	PublicKey keys.PublicKey `json:"publicKey"`
-}
-type RawTxBroadcastReply struct {
-	// The result of broadcasting this transaction to the network
-	Result ctypes.ResultBroadcastTx `json:"result"`
-}
-
-/* These are node-related access requests */
 type NodeNameRequest struct{}
 type NodeNameReply = string
 
@@ -111,4 +101,20 @@ type ListValidatorsReply struct {
 	Validators []identity.Validator `json:"validators"`
 	// Height at which this validator set was active
 	Height int64 `json:"height"`
+}
+
+type BroadcastRequest struct {
+	RawTx     []byte         `json:"rawTx"`
+	Signature []byte         `json:"signature"`
+	PublicKey keys.PublicKey `json:"publicKey"`
+}
+
+type BroadcastTxReply struct {
+	TxHash keys.Address             `json:"txHash"`
+	Result ctypes.ResultBroadcastTx `json:"result"`
+}
+
+type BroadcastTxCommitReply struct {
+	TxHash keys.Address                   `json:"txHash"`
+	Result ctypes.ResultBroadcastTxCommit `json:"result"`
 }

@@ -30,8 +30,8 @@ var (
 	ErrEmptyResponse = errors.New("empty response")
 )
 
-// ServiceContext holds clients for making requests to external services
-type ServiceContext struct {
+// ExtServiceContext holds clients for making requests to external services
+type ExtServiceContext struct {
 	rpcClient     rpcclient.Client
 	broadcastMode string
 	proof         bool
@@ -41,7 +41,7 @@ type ServiceContext struct {
 /*
 	Generators
 */
-func NewServiceContext(rpcAddress, sdkAddress string) (cliCtx ServiceContext, err error) {
+func NewExtServiceContext(rpcAddress, sdkAddress string) (cliCtx ExtServiceContext, err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			logger.Debug("Ignoring rpcClient Panic", "r", r)
@@ -49,7 +49,7 @@ func NewServiceContext(rpcAddress, sdkAddress string) (cliCtx ServiceContext, er
 		}
 	}()
 
-	// tm rpc ServiceContext
+	// tm rpc ExtServiceContext
 	var tmRPCClient = rpcclient.NewHTTP(rpcAddress, "/websocket")
 
 	// try starting tmRPCClient client
@@ -70,7 +70,7 @@ func NewServiceContext(rpcAddress, sdkAddress string) (cliCtx ServiceContext, er
 	}
 	client := &ServiceClient{rpcClient}
 
-	cliCtx = ServiceContext{
+	cliCtx = ExtServiceContext{
 		rpcClient:     tmRPCClient,
 		broadcastMode: BroadcastCommit,
 		oltClient:     client,
@@ -79,15 +79,15 @@ func NewServiceContext(rpcAddress, sdkAddress string) (cliCtx ServiceContext, er
 	return
 }
 
-func (ctx *ServiceContext) FullNodeClient() *ServiceClient {
+func (ctx *ExtServiceContext) FullNodeClient() *ServiceClient {
 	return ctx.oltClient
 }
 
 /*
-	ServiceContext Methods
+	ExtServiceContext Methods
 */
 
-func (ctx ServiceContext) Query(serviceMethod string, args interface{}, response interface{}) error {
+func (ctx ExtServiceContext) Query(serviceMethod string, args interface{}, response interface{}) error {
 
 	err := ctx.oltClient.Call(serviceMethod, args, response)
 	if err != nil {
@@ -97,7 +97,7 @@ func (ctx ServiceContext) Query(serviceMethod string, args interface{}, response
 	return err
 }
 
-func (ctx ServiceContext) Tx(hash []byte, prove bool) (res *ctypes.ResultTx) {
+func (ctx ExtServiceContext) Tx(hash []byte, prove bool) (res *ctypes.ResultTx) {
 
 	result, err := ctx.rpcClient.Tx(hash, prove)
 	if err != nil {
@@ -109,7 +109,7 @@ func (ctx ServiceContext) Tx(hash []byte, prove bool) (res *ctypes.ResultTx) {
 	return result
 }
 
-func (ctx ServiceContext) Block(height int64) (res *ctypes.ResultBlock) {
+func (ctx ExtServiceContext) Block(height int64) (res *ctypes.ResultBlock) {
 
 	h := blockHeightConvert(height)
 
@@ -122,7 +122,7 @@ func (ctx ServiceContext) Block(height int64) (res *ctypes.ResultBlock) {
 	return result
 }
 
-func (ctx ServiceContext) Search(query string, prove bool, page, perPage int) (res *ctypes.ResultTxSearch) {
+func (ctx ExtServiceContext) Search(query string, prove bool, page, perPage int) (res *ctypes.ResultTxSearch) {
 
 	result, err := ctx.rpcClient.TxSearch(query, prove, page, perPage)
 	if err != nil {
@@ -134,7 +134,7 @@ func (ctx ServiceContext) Search(query string, prove bool, page, perPage int) (r
 }
 
 // abciQuery is a thin wrapper over tendermint rpc client's abciQuery
-func (ctx ServiceContext) abciQuery(path string, packet []byte) (res *ctypes.ResultABCIQuery, err error) {
+func (ctx ExtServiceContext) abciQuery(path string, packet []byte) (res *ctypes.ResultABCIQuery, err error) {
 
 	if len(path) < 1 {
 		return nil, ErrEmptyQuery

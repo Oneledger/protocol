@@ -21,7 +21,7 @@ import (
 
 var ErrEmptyTransaction = errors.New("empty transaction")
 
-func (ctx ServiceContext) BroadcastTxSync(packet []byte) (res *ctypes.ResultBroadcastTx, err error) {
+func (ctx ExtServiceContext) BroadcastTxSync(packet []byte) (res *ctypes.ResultBroadcastTx, err error) {
 
 	if len(packet) < 1 {
 		return res, ErrEmptyTransaction
@@ -36,7 +36,7 @@ func (ctx ServiceContext) BroadcastTxSync(packet []byte) (res *ctypes.ResultBroa
 	return result, nil
 }
 
-func (ctx ServiceContext) BroadcastTxAsync(packet []byte) (res *ctypes.ResultBroadcastTx, err error) {
+func (ctx ExtServiceContext) BroadcastTxAsync(packet []byte) (res *ctypes.ResultBroadcastTx, err error) {
 
 	if len(packet) < 1 {
 		return nil, ErrEmptyTransaction
@@ -51,7 +51,7 @@ func (ctx ServiceContext) BroadcastTxAsync(packet []byte) (res *ctypes.ResultBro
 	return result, nil
 }
 
-func (ctx ServiceContext) BroadcastTxCommit(packet []byte) (res *ctypes.ResultBroadcastTxCommit, err error) {
+func (ctx ExtServiceContext) BroadcastTxCommit(packet []byte) (res *ctypes.ResultBroadcastTxCommit, err error) {
 
 	if len(packet) < 1 {
 		return nil, ErrEmptyTransaction

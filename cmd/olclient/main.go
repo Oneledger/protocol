@@ -27,7 +27,7 @@ var logger = log.NewLoggerWithPrefix(os.Stdout, "olclient")
 
 type Context struct {
 	logger *log.Logger
-	clCtx  *client.ServiceContext
+	clCtx  *client.ExtServiceContext
 	cfg    config.Server
 }
 
@@ -46,7 +46,7 @@ func NewContext() *Context {
 		logger.Fatal("failed to read configuration", err)
 	}
 
-	clientContext, err := client.NewServiceContext(Ctx.cfg.Network.RPCAddress, Ctx.cfg.Network.SDKAddress)
+	clientContext, err := client.NewExtServiceContext(Ctx.cfg.Network.RPCAddress, Ctx.cfg.Network.SDKAddress)
 	if err != nil {
 		Ctx.logger.Fatal("error starting rpc client", err)
 	}
