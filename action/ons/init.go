@@ -10,6 +10,10 @@ const (
 	CREATE_PRICE = 100
 )
 
+var (
+	ErrInvalidDomain = errors.New("invalid domain name")
+)
+
 func init() {
 
 	serialize.RegisterConcrete(new(DomainCreate), "action_dc")

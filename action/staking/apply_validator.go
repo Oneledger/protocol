@@ -160,7 +160,7 @@ func (apply ApplyValidator) Tags() common.KVPairs {
 		Value: []byte(apply.Type().String()),
 	}
 	tag2 := common.KVPair{
-		Key:   []byte("tx.from"),
+		Key:   []byte("tx.owner"),
 		Value: apply.Address.Bytes(),
 	}
 

@@ -159,7 +159,7 @@ func (s Send) Tags() common.KVPairs {
 		Value: []byte(s.Type().String()),
 	}
 	tag2 := common.KVPair{
-		Key:   []byte("tx.from"),
+		Key:   []byte("tx.owner"),
 		Value: s.From.Bytes(),
 	}
 	tag3 := common.KVPair{
