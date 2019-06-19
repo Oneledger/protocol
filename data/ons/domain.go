@@ -51,7 +51,7 @@ func NewDomain(ownerAddress, accountAddress []byte,
 	}
 }
 
-func (d *Domain) SetAccountAddress(addr []byte, height uint32) {
+func (d *Domain) SetAccountAddress(addr []byte) {
 	d.AccountAddress = addr
 }
 

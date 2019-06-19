@@ -95,7 +95,7 @@ func (domainCreateTx) ProcessCheck(ctx *action.Context, msg action.Msg, fee acti
 	}
 
 	if ctx.Domains.Exists(create.Name) {
-		return false, action.Response{Log: errors.New("Domain already exist").Error()}
+		return false, action.Response{Log: fmt.Sprintf("Domain already exist: %s", create.Name)}
 	}
 	result := action.Response{
 		Tags: create.Tags(),
@@ -130,7 +130,7 @@ func (domainCreateTx) ProcessDeliver(ctx *action.Context, msg action.Msg, fee ac
 
 	//check domain existence and set to db
 	if ctx.Domains.Exists(create.Name) {
-		return false, action.Response{Log: errors.New("domain already exist: " + create.Name).Error()}
+		return false, action.Response{Log: fmt.Sprintf("domain already exist: %s", create.Name)}
 	}
 	domain := ons.NewDomain(
 		create.Owner,
