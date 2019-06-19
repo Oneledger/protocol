@@ -2,28 +2,23 @@ module github.com/Oneledger/protocol
 
 require (
 	cloud.google.com/go v0.39.0 // indirect
-	github.com/OneOfOne/xxhash v1.2.5 // indirect
 	github.com/Oneledger/toml v0.4.1
-	github.com/VividCortex/gohistogram v1.0.0 // indirect
 	github.com/btcsuite/btcd v0.0.0-20190424234938-150379531efe // indirect
 	github.com/coreos/etcd v3.3.13+incompatible // indirect
 	github.com/coreos/go-semver v0.3.0 // indirect
 	github.com/cosiner/argv v0.0.1 // indirect
 	github.com/davecgh/go-spew v1.1.1
 	github.com/dgryski/go-sip13 v0.0.0-20190329191031-25c5027a8c7b // indirect
-	github.com/fortytw2/leaktest v1.3.0 // indirect
 	github.com/go-delve/delve v1.2.0 // indirect
 	github.com/go-kit/kit v0.8.0
 	github.com/go-openapi/runtime v0.19.2 // indirect
 	github.com/golang/mock v1.3.1 // indirect
 	github.com/google/go-cmp v0.3.0 // indirect
-	github.com/google/gofuzz v1.0.0 // indirect
 	github.com/google/pprof v0.0.0-20190515194954-54271f7e092f // indirect
 	github.com/google/uuid v1.1.1
 	github.com/hashicorp/go-rootcerts v1.0.1 // indirect
-	github.com/hashicorp/golang-lru v0.5.1 // indirect
 	github.com/hashicorp/nomad/api v0.0.0-20190618145707-2eacf1940e15 // indirect
-	github.com/jmhodges/levigo v1.0.0 // indirect
+	github.com/hyperledger/burrow v0.26.2 // indirect
 	github.com/kisielk/errcheck v1.2.0 // indirect
 	github.com/konsorten/go-windows-terminal-sequences v1.0.2 // indirect
 	github.com/magiconair/properties v1.8.1 // indirect
@@ -39,11 +34,9 @@ require (
 	github.com/powerman/structlog v0.5.0 // indirect
 	github.com/prometheus/common v0.6.0 // indirect
 	github.com/prometheus/tsdb v0.8.0 // indirect
-	github.com/rcrowley/go-metrics v0.0.0-20181016184325-3113b8401b8a // indirect
 	github.com/robertkrimen/otto v0.0.0-20180617131154-15f95af6e78d
 	github.com/rogpeppe/fastuuid v1.1.0 // indirect
 	github.com/russross/blackfriday v2.0.0+incompatible // indirect
-	github.com/sirupsen/logrus v1.4.2 // indirect
 	github.com/smartystreets/assertions v1.0.0 // indirect
 	github.com/spaolacci/murmur3 v1.1.0 // indirect
 	github.com/spf13/afero v1.2.2 // indirect
@@ -51,9 +44,8 @@ require (
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect
 	github.com/spf13/viper v1.4.0 // indirect
 	github.com/stretchr/testify v1.3.0
-	github.com/syndtr/goleveldb v1.0.0 // indirect
 	github.com/tendermint/go-amino v0.14.1
-	github.com/tendermint/iavl v0.12.0
+	github.com/tendermint/iavl v0.12.2
 	github.com/tendermint/tendermint v0.31.5
 	github.com/vmihailenco/msgpack v4.0.4+incompatible
 	golang.org/x/arch v0.0.0-20190312162104-788fe5ffcd8c // indirect

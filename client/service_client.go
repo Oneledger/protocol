@@ -17,7 +17,7 @@ func (c *ServiceClient) Balance(request BalanceRequest) (out BalanceReply, err e
 	if len(request) <= 20 {
 		return out, errors.New("address has insufficient length")
 	}
-	err = c.Call("server.Balance", request, &out)
+	err = c.Call("query.Balance", request, &out)
 	return
 }
 
@@ -37,31 +37,48 @@ func (c *ServiceClient) NodeID(req NodeIDRequest) (out NodeIDReply, err error) {
 }
 
 func (c *ServiceClient) SendTx(req SendTxRequest) (out SendTxReply, err error) {
-	err = c.Call("server.SendTx", req, &out)
+	err = c.Call("tx.SendTx", req, &out)
 	return
 }
 
 func (c *ServiceClient) AddAccount(req AddAccountRequest) (out AddAccountReply, err error) {
-	err = c.Call("server.AddAccount", req, &out)
+	err = c.Call("owner.AddAccount", req, &out)
 	return
 }
 
 func (c *ServiceClient) DeleteAccount(req DeleteAccountRequest) (out DeleteAccountReply, err error) {
-	err = c.Call("server.DeleteAccount", req, &out)
+	err = c.Call("owner.DeleteAccount", req, &out)
 	return
 }
 
 func (c *ServiceClient) ListAccounts() (out ListAccountsReply, err error) {
-	err = c.Call("server.ListAccounts", struct{}{}, &out)
+	err = c.Call("owner.ListAccounts", struct{}{}, &out)
 	return
 }
 
 func (c *ServiceClient) ApplyValidator(req ApplyValidatorRequest) (out ApplyValidatorReply, err error) {
-	err = c.Call("server.ApplyValidator", req, &out)
+	err = c.Call("tx.ApplyValidator", req, &out)
 	return
 }
 
 func (c *ServiceClient) ListValidators() (out ListValidatorsReply, err error) {
-	err = c.Call("server.ListValidators", struct{}{}, &out)
+	err = c.Call("query.ListValidators", struct{}{}, &out)
+	return
+}
+
+/* Broadcast */
+func (c *ServiceClient) TxAsync(req BroadcastRequest) (out BroadcastTxReply, err error) {
+	err = c.Call("broadcast.TxAsync", req, &out)
+	return
+
+}
+
+func (c *ServiceClient) TxSync(req BroadcastRequest) (out BroadcastTxReply, err error) {
+	err = c.Call("broadcast.TxSync", req, &out)
+	return
+}
+
+func (c *ServiceClient) TxCommit(req BroadcastRequest) (out BroadcastTxReply, err error) {
+	err = c.Call("broadcast.TxCommit", req, &out)
 	return
 }

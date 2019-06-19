@@ -37,7 +37,7 @@ func NewMap(ctx *Context) Map {
 		broadcast.Name(): broadcast.NewService(ctx.Services, ctx.Logger),
 		nodesvc.Name():   nodesvc.NewService(ctx.NodeContext, &ctx.Cfg, ctx.Logger),
 		owner.Name():     owner.NewService(ctx.Accounts, ctx.Logger),
-		query.Name():     query.NewService(ctx.Balances, ctx.Currencies, ctx.Logger),
+		query.Name():     query.NewService(ctx.Balances, ctx.Currencies, ctx.ValidatorSet, ctx.Logger),
 		tx.Name():        tx.NewService(ctx.Balances, ctx.Router, ctx.Accounts, ctx.NodeContext, ctx.Logger),
 	}
 }

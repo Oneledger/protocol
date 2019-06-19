@@ -314,16 +314,6 @@ func (ctx *context) Balances() *balance.Context {
 		ctx.currencies)
 }
 
-func (ctx *context) RPC() *RPCServerContext {
-	return &RPCServerContext{
-		nodeName:   ctx.cfg.Node.NodeName,
-		balances:   ctx.balances,
-		accounts:   ctx.accounts,
-		currencies: ctx.currencies,
-		logger:     log.NewLoggerWithPrefix(ctx.logWriter, "rpc"),
-	}
-}
-
 func (ctx *context) Services() (service.Map, error) {
 	extSvcs, err := client.NewExtServiceContext(ctx.cfg.Network.RPCAddress, ctx.cfg.Network.SDKAddress)
 	if err != nil {

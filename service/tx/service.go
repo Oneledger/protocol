@@ -34,10 +34,11 @@ func NewService(
 	logger *log.Logger,
 ) *Service {
 	return &Service{
-		balances: balances,
-		router:   router,
-		accounts: accounts,
-		logger:   logger,
+		balances:    balances,
+		router:      router,
+		nodeContext: nodeCtx,
+		accounts:    accounts,
+		logger:      logger,
 	}
 }
 
