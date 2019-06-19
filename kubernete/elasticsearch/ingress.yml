@@ -1,0 +1,21 @@
+---
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: kibana-ingress
+  namespace: logging 
+  annotations:
+    kubernetes.io/ingress.global-static-ip-name: k8-kibana
+spec:
+  tls:
+  - hosts:
+    - kibana.oneledger.network
+    secretName: tls-secret
+  rules:
+  - host: kibana.oneledger.network
+    http:
+      paths:
+      - backend:
+          serviceName: kibana
+          servicePort: 80
+        path: /
