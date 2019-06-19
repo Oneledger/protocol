@@ -210,19 +210,21 @@ func (ah *appHash) hash() []byte {
 }
 
 func (app *App) getAppHash(commit bool) (version int64, hash []byte) {
-	var hashb, hashv []byte
-	var verb, verv int64
+	var hashb, hashv, hashd []byte
+	var verb, verv, verd int64
 	if commit {
 		hashb, verb = app.Context.balances.Commit()
 		hashv, verv = app.Context.validators.Commit()
+		hashd, verd = app.Context.domains.Commit()
 	} else {
 		hashb, verb = app.Context.balances.Hash, app.Context.balances.Version
 		hashv, verv = app.Context.validators.Hash, app.Context.validators.Version
+		hashd, verd = app.Context.domains.Hash, app.Context.domains.Version
 	}
 	apphash := &appHash{}
-	apphash.Hashes = append(apphash.Hashes, hashb, hashv)
+	apphash.Hashes = append(apphash.Hashes, hashb, hashv, hashd)
 
-	if verb == verv {
+	if verb == verv && verb == verd {
 		version = verb
 		if version > 1 {
 			hash = apphash.hash()

@@ -70,7 +70,7 @@ func (sendTx) ProcessCheck(ctx *action.Context, msg action.Msg, fee action.Fee) 
 		return false, action.Response{Log: log}
 	}
 	coin := send.Amount.ToCoin(ctx)
-	//change owner balance
+	//check owner balance
 	_, err := b.MinusCoin(coin)
 	if err != nil {
 		return false, action.Response{Log: err.Error()}
