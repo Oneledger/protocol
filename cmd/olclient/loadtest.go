@@ -180,7 +180,6 @@ func doSendTransaction(ctx *Context, threadNo int, acc *accounts.Account, nodeAd
 	sendArgsLocal.Fee = *action.NewAmount("OLT", strconv.FormatFloat(amt/100, 'f', 0, 64))
 
 	// Create message
-
 	fullnode := ctx.clCtx.FullNodeClient()
 
 	reply, err := fullnode.SendTx(sendArgsLocal.ClientRequest())
@@ -202,7 +201,6 @@ func doSendTransaction(ctx *Context, threadNo int, acc *accounts.Account, nodeAd
 		ctx.logger.Error(acc.Name, "error in BroadcastTxAsync:", err)
 		return
 	}
-	time.Sleep(1)
 
 	ctx.logger.Info(acc.Name, "Result Data", "log", string(result.Log))
 }

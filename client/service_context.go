@@ -17,7 +17,6 @@ package client
 
 import (
 	"fmt"
-	netrpc "net/rpc"
 	"net/url"
 
 	"github.com/Oneledger/protocol/rpc"
@@ -60,16 +59,16 @@ func NewServiceContext(rpcAddress, sdkAddress string) (cliCtx ServiceContext, er
 		return
 	}
 
-	u, err := url.Parse(sdkAddress)
+	_, err = url.Parse(sdkAddress)
 	if err != nil {
 		return
 	}
 
-	netrpcClient, err := netrpc.DialHTTPPath("tcp", u.Host, rpc.Path)
+	rpcClient, err := rpc.NewClient(sdkAddress)
 	if err != nil {
 		return
 	}
-	client := &ServiceClient{&rpc.Client{netrpcClient}}
+	client := &ServiceClient{rpcClient}
 
 	cliCtx = ServiceContext{
 		rpcClient:     tmRPCClient,

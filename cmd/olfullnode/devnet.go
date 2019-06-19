@@ -101,10 +101,23 @@ func portGenerator(startingPort int) func() int {
 	}
 }
 
-func generateAddress(port int, hasProtocol bool) string {
+func generateAddress(port int, flags ...bool) string {
+	// flags
+	var hasProtocol, isRPC bool
+	switch len(flags) {
+	case 2:
+		hasProtocol, isRPC = flags[0], flags[1]
+	case 1:
+		hasProtocol = flags[0]
+	default:
+	}
+
 	var prefix string
 	ip := "127.0.0.1"
 	protocol := "tcp://"
+	if isRPC {
+		protocol = "http://"
+	}
 	if hasProtocol {
 		prefix = protocol + ip
 	} else {
@@ -203,7 +216,7 @@ func runDevnet(cmd *cobra.Command, _ []string) error {
 		}
 		cfg.Network.RPCAddress = generateAddress(generatePort(), true)
 		cfg.Network.P2PAddress = generateAddress(generatePort(), true)
-		cfg.Network.SDKAddress = generateAddress(generatePort(), true)
+		cfg.Network.SDKAddress = generateAddress(generatePort(), true, true)
 		cfg.Network.OLVMAddress = generateAddress(generatePort(), true)
 
 		dirs := []string{configDir, dataDir, nodeDataDir}

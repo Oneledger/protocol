@@ -1,12 +1,13 @@
 package rpc
 
 import (
-	"net/rpc"
 	"net/url"
+
+	"github.com/powerman/rpc-codec/jsonrpc2"
 )
 
 type Client struct {
-	*rpc.Client
+	*jsonrpc2.Client
 }
 
 func NewClient(addr string) (*Client, error) {
@@ -15,19 +16,6 @@ func NewClient(addr string) (*Client, error) {
 		return nil, err
 	}
 
-	// For gobs and http
-	client, err := rpc.Dial(u.Scheme, u.Host)
-	if err != nil {
-		return nil, err
-	}
-
-	// TODO: for jsonrpc 2.0
-	//conn, err := net.Dial(u.Scheme, u.Host)
-	//if err != nil {
-	//	return nil, err
-	//}
-
-	//codec := jsonrpc2.NewClientCodec(conn)
-	//client := rpc.NewClientWithCodec(codec)
+	client := jsonrpc2.NewHTTPClient("http://" + u.Host + Path)
 	return &Client{client}, nil
 }

@@ -13,10 +13,6 @@ type ServiceClient struct {
 	*rpc.Client
 }
 
-func NewServiceClient(client *rpc.Client) *ServiceClient {
-	return &ServiceClient{client}
-}
-
 /*
 	Blockchain Service
 	- Query basic information from the blockchain.

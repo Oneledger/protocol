@@ -9,16 +9,19 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/pkg/errors"
-
 	"github.com/Oneledger/protocol/log"
+	"github.com/pkg/errors"
+	"github.com/powerman/rpc-codec/jsonrpc2"
 )
 
 // The http path used for our rpc handlers
 const (
+	// All incoming requests must show this MIME type in the header
+	ContentType = "application/json"
+
 	PathJSON = "/rpc/json"
 	PathGOB  = "/rpc/gob"
-	Path     = "/ol_rpc"
+	Path     = PathJSON
 )
 
 // Server holds an RPC server that is served over HTTP
@@ -56,7 +59,7 @@ func (srv *Server) Prepare(u *url.URL, services map[string]interface{}) error {
 		return errors.New("no port was provided")
 	}
 
-	l, err := net.Listen(u.Scheme, u.Host)
+	l, err := net.Listen("tcp", u.Host)
 	if err != nil {
 		return errors.Wrap(err, "invalid URL provided, failed to create listener")
 	}
@@ -71,7 +74,7 @@ func (srv *Server) Prepare(u *url.URL, services map[string]interface{}) error {
 	}
 
 	// Register the handlers with our mux
-	srv.mux.Handle(Path, srv.rpc)
+	srv.mux.Handle(Path, jsonrpc2.HTTPHandler(srv.rpc))
 	srv.http.Handler = srv.mux
 	srv.listener = l
 	return nil
@@ -80,6 +83,7 @@ func (srv *Server) Prepare(u *url.URL, services map[string]interface{}) error {
 // Start spawns a new goroutine and listens on the configured address. Prepare
 // should be called before calling this method
 func (srv *Server) Start() error {
+
 	if srv.listener == nil {
 		return errors.New("no listener specified on server, was Prepare called?")
 	}
