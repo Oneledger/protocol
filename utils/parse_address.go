@@ -34,7 +34,7 @@ func GetPort(addr string) (string, error) {
 	if err != nil {
 		return "", err
 	} else if u.Port() == "" {
-		return "", errors.New("no port on address")
+		return "", ErrParsingAddress
 	}
 
 	return u.Port(), nil
