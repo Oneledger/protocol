@@ -46,7 +46,7 @@ func (s DomainSend) Tags() common.KVPairs {
 		Value: []byte(action.DOMAIN_SEND.String()),
 	}
 	tag2 := common.KVPair{
-		Key:   []byte("tx.from"),
+		Key:   []byte("tx.owner"),
 		Value: s.From.Bytes(),
 	}
 	tag3 := common.KVPair{
@@ -94,12 +94,6 @@ func (DomainSendTx) Validate(ctx *action.Context, msg action.Msg, fee action.Fee
 		return false, action.ErrMissingData
 	}
 
-	// check if domain of receiver exists
-	receiverExists := ctx.Domains.Exists(send.DomainName)
-	if !receiverExists {
-		return false, action.ErrInvalidDomain
-	}
-
 	return true, nil
 }
 
@@ -143,20 +137,6 @@ func (DomainSendTx) ProcessCheck(ctx *action.Context, msg action.Msg,
 		return false, action.Response{Log: log}
 	}
 
-	domain, err := ctx.Domains.Get(send.DomainName, false)
-	if err != nil {
-		log := fmt.Sprint("error getting domain:", err)
-		return false, action.Response{Log: log}
-	}
-	if !domain.ActiveFlag {
-		log := fmt.Sprint("domain inactive")
-		return false, action.Response{Log: log}
-	}
-	if len(domain.AccountAddress) == 0 {
-		log := fmt.Sprint("domain account address not set")
-		return false, action.Response{Log: log}
-	}
-
 	return true, action.Response{Tags: send.Tags()}
 }
 
@@ -189,14 +169,18 @@ func (DomainSendTx) ProcessDeliver(ctx *action.Context, msg action.Msg, fee acti
 	}
 
 	//change owner balance
-	from.MinusCoin(coin)
+	from, err = from.MinusCoin(coin)
+	if err != nil {
+		log := fmt.Sprint("error in minus coin", err)
+		return false, action.Response{Log: log}
+	}
 	err = balances.Set(send.From.Bytes(), *from)
 	if err != nil {
 		log := fmt.Sprint("error updating balance in send transaction", err)
 		return false, action.Response{Log: log}
 	}
 
-	domain, err := ctx.Domains.Get(send.DomainName, false)
+	domain, err := ctx.Domains.Get(send.DomainName, true)
 	if err != nil {
 		log := fmt.Sprint("error getting domain:", err)
 		return false, action.Response{Log: log}

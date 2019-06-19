@@ -6,6 +6,7 @@ package ons
 
 import (
 	"bytes"
+	"fmt"
 
 	"github.com/pkg/errors"
 	"github.com/tendermint/tendermint/libs/common"
@@ -79,7 +80,7 @@ func (DomainSaleTx) Validate(ctx *action.Context, msg action.Msg, fee action.Fee
 		return ok, err
 	}
 
-	sale, ok := msg.(DomainSale)
+	sale, ok := msg.(*DomainSale)
 	if !ok {
 		return false, action.ErrWrongTxType
 	}
@@ -89,22 +90,8 @@ func (DomainSaleTx) Validate(ctx *action.Context, msg action.Msg, fee action.Fee
 	}
 
 	// validate the sender and receiver are not nil
-	if sale.OwnerAddress == nil || sale.DomainName == "" {
+	if sale.OwnerAddress == nil || len(sale.DomainName) == 0 {
 		return false, action.ErrMissingData
-	}
-
-	domain, err := ctx.Domains.Get(sale.DomainName, false)
-	if err != nil {
-		if err == ons.ErrDomainNotFound {
-			return false, action.ErrInvalidDomain
-		}
-		return false, err
-	}
-
-	//domain.IsChangeable()
-
-	if bytes.Compare(domain.OwnerAddress, sale.OwnerAddress) != 0 {
-		return false, action.ErrDomainAuth
 	}
 
 	return true, nil
@@ -146,13 +133,6 @@ func (DomainSaleTx) ProcessCheck(ctx *action.Context, msg action.Msg,
 		return false, action.Response{Log: "cannot cancel sale of domain; domain not on sale"}
 	}
 
-	// if domain is already on sale and the new price is same as old price
-	// fail the ProcessCheck
-	if !sale.CancelSale && domain.OnSaleFlag &&
-		domain.SalePrice.Equals(sale.Price.ToCoin(ctx)) {
-		return false, action.Response{Log: "domain already on sale at same price"}
-	}
-
 	return true, action.Response{Tags: sale.Tags()}
 }
 
@@ -179,6 +159,11 @@ func (DomainSaleTx) ProcessDeliver(ctx *action.Context, msg action.Msg, fee acti
 		}
 		return false, action.Response{Log: "error getting domain"}
 	}
+	if !domain.IsChangeable(ctx.Header.Height) {
+		log := fmt.Sprintf("domain not changeable; name: %s, lastUpdateheight %d",
+			domain.Name, domain.LastUpdateHeight)
+		return false, action.Response{Log: log}
+	}
 
 	// verify the ownership
 	if bytes.Compare(domain.OwnerAddress, sale.OwnerAddress) != 0 {
@@ -190,6 +175,7 @@ func (DomainSaleTx) ProcessDeliver(ctx *action.Context, msg action.Msg, fee acti
 	} else {
 		domain.PutOnSale(sale.Price.ToCoin(ctx))
 	}
+	domain.LastUpdateHeight = ctx.Header.Height
 
 	err = ctx.Domains.Set(domain)
 	if err != nil {
@@ -197,9 +183,7 @@ func (DomainSaleTx) ProcessDeliver(ctx *action.Context, msg action.Msg, fee acti
 	}
 
 	return true, action.Response{Tags: sale.Tags()}
-
 }
-
 
 func (DomainSaleTx) ProcessFee(ctx *action.Context, fee action.Fee) (bool, action.Response) {
 	panic("implement me")

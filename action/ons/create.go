@@ -36,7 +36,7 @@ func (dc DomainCreate) Tags() common.KVPairs {
 		Value: []byte(dc.Type().String()),
 	}
 	tag2 := common.KVPair{
-		Key:   []byte("tx.from"),
+		Key:   []byte("tx.owner"),
 		Value: dc.Owner.Bytes(),
 	}
 
