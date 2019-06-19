@@ -16,7 +16,7 @@ package utils
 
 import (
 	"errors"
-	"regexp"
+	"net/url"
 )
 
 // Hex prefix
@@ -30,13 +30,12 @@ var ErrParsingAddress = errors.New("failed to parse network address")
 
 // Pick out the port from a full address
 func GetPort(addr string) (string, error) {
-
-	automata := regexp.MustCompile(`.*?:.*?:(.*)`)
-
-	groups := automata.FindStringSubmatch(addr)
-	if groups == nil || len(groups) != 2 {
-		return "", ErrParsingAddress
+	u, err := url.Parse(addr)
+	if err != nil {
+		return "", err
+	} else if u.Port() == "" {
+		return "", errors.New("no port on address")
 	}
 
-	return groups[1], nil
+	return u.Port(), nil
 }

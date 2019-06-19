@@ -17,7 +17,6 @@ package main
 import (
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/client"
-	"github.com/Oneledger/protocol/data"
 	"github.com/spf13/cobra"
 	ctypes "github.com/tendermint/tendermint/rpc/core/types"
 )
@@ -63,20 +62,14 @@ func init() {
 func IssueRequest(cmd *cobra.Command, args []string) {
 
 	ctx := NewContext()
-
+	fullnode := ctx.clCtx.FullNodeClient()
 	// Create message
-	resp := &data.Response{}
-	err := ctx.clCtx.Query("server.SendTx", sendargs.ClientRequest(), resp)
+	reply, err := fullnode.SendTx(sendargs.ClientRequest())
 	if err != nil {
-		ctx.logger.Error("error executing SendTx", err)
+		ctx.logger.Error("failed to create SendTx", err)
 		return
 	}
-
-	packet := resp.Data
-	if packet == nil {
-		ctx.logger.Error("Error in sending ", resp.ErrorMsg)
-		return
-	}
+	packet := reply.RawTx
 
 	result, err := ctx.clCtx.BroadcastTxCommit(packet)
 	if err != nil {

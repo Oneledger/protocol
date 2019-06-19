@@ -10,7 +10,6 @@ import (
 
 	"github.com/Oneledger/protocol/client"
 	"github.com/Oneledger/protocol/config"
-	"github.com/Oneledger/protocol/data"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 )
@@ -73,17 +72,17 @@ func applyValidator(cmd *cobra.Command, args []string) error {
 	}
 
 	// Create message
-	resp := &data.Response{}
-	err = ctx.clCtx.Query("server.ApplyValidator", *applyValidatorArgs, resp)
+	fullnode := ctx.clCtx.FullNodeClient()
+
+	out, err := fullnode.ApplyValidator(applyValidatorArgs.ClientRequest())
 	if err != nil {
-		ctx.logger.Error("error executing ApplyValidator", err)
-		return nil
+		ctx.logger.Error("Error in applying ", err.Error())
+		return err
 	}
 
-	packet := resp.Data
+	packet := out.RawTx
 	if packet == nil {
-		ctx.logger.Error("Error in applying ", resp.ErrorMsg)
-		return nil
+		return errors.New("got nil packet but error was nil")
 	}
 
 	result, err := ctx.clCtx.BroadcastTxCommit(packet)

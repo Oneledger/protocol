@@ -23,7 +23,6 @@ import (
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/client"
 	"github.com/Oneledger/protocol/config"
-	"github.com/Oneledger/protocol/data"
 	"github.com/Oneledger/protocol/data/accounts"
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/keys"
@@ -135,7 +134,7 @@ func (h *RPCServerContext) Balance(req client.BalanceRequest, resp *client.Balan
 }
 
 // AddAccount adds an account to accounts store of the node
-func (h *RPCServerContext) AddAccountReply(acc client.AddAccountRequest, reply *client.AddAccountReply) error {
+func (h *RPCServerContext) AddAccount(acc client.AddAccountRequest, reply *client.AddAccountReply) error {
 	err := h.accounts.Add(acc)
 	if err != nil {
 		return errors.Wrap(err, "error in adding account to walletstore")
@@ -167,7 +166,7 @@ func (h *RPCServerContext) DeleteAccount(req client.DeleteAccountRequest, reply 
 }
 
 // ListAccounts returns a list of all accounts in the accounts store of node
-func (h *RPCServerContext) ListAccountsRequest(req client.ListAccountsRequest, reply *client.ListAccountsReply) error {
+func (h *RPCServerContext) ListAccounts(req client.ListAccountsRequest, reply *client.ListAccountsReply) error {
 	// TODO: pagination
 
 	accts := h.accounts.Accounts()
@@ -216,8 +215,8 @@ func (h *RPCServerContext) SendTx(args client.SendTxRequest, reply *client.SendT
 	return nil
 }
 
-// SendRawTx
-func (h *RPCServerContext) SendRawTx(args client.SendRawTxRequest, reply *client.SendRawTxReply) error {
+// SendRawTx.
+func (h *RPCServerContext) RawTxBroadcast(args client.RawTxBroadcastRequest, reply *client.RawTxBroadcastReply) error {
 	var act action.BaseTx
 
 	signer, err := args.PublicKey.GetHandler()
@@ -240,13 +239,13 @@ func (h *RPCServerContext) SendRawTx(args client.SendRawTxRequest, reply *client
 		return errors.Wrap(err, "failed to broadcast")
 	}
 
-	*reply = client.SendRawTxReply{
+	*reply = client.RawTxBroadcastReply{
 		Result: *result,
 	}
 	return nil
 }
 
-func (h *RPCServerContext) ApplyValidator(args client.ApplyValidatorRequest, resp *data.Response) error {
+func (h *RPCServerContext) ApplyValidator(args client.ApplyValidatorRequest, reply *client.ApplyValidatorReply) error {
 	defer h.recoverPanic()
 
 	if len(args.Name) < 1 {
@@ -290,7 +289,6 @@ func (h *RPCServerContext) ApplyValidator(args client.ApplyValidatorRequest, res
 
 	pubKey, signed, err := h.accounts.SignWithAccountIndex(tx.Bytes(), 0)
 	if err != nil {
-		resp.Error(err.Error())
 		return err
 	}
 	tx.Signatures = []action.Signature{{pubKey, signed}}
@@ -300,7 +298,8 @@ func (h *RPCServerContext) ApplyValidator(args client.ApplyValidatorRequest, res
 		return errors.Wrap(err, "err while network serialization")
 	}
 
-	resp.SetData(packet)
+	*reply = client.ApplyValidatorReply{packet}
+
 	return nil
 }
 

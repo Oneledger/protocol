@@ -36,7 +36,7 @@ type ServiceContext struct {
 	rpcClient     rpcclient.Client
 	broadcastMode string
 	proof         bool
-	oltClient     *netrpc.Client
+	oltClient     *ServiceClient
 }
 
 /*
@@ -65,10 +65,11 @@ func NewServiceContext(rpcAddress, sdkAddress string) (cliCtx ServiceContext, er
 		return
 	}
 
-	client, err := netrpc.DialHTTPPath("tcp", u.Host, rpc.Path)
+	netrpcClient, err := netrpc.DialHTTPPath("tcp", u.Host, rpc.Path)
 	if err != nil {
 		return
 	}
+	client := &ServiceClient{&rpc.Client{netrpcClient}}
 
 	cliCtx = ServiceContext{
 		rpcClient:     tmRPCClient,
@@ -77,6 +78,10 @@ func NewServiceContext(rpcAddress, sdkAddress string) (cliCtx ServiceContext, er
 	}
 
 	return
+}
+
+func (ctx *ServiceContext) FullNodeClient() *ServiceClient {
+	return ctx.oltClient
 }
 
 /*

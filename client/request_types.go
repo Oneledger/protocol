@@ -4,7 +4,8 @@
 	Cover over the arguments of client requests
 */
 
-// Each of these should be able to be marshaled to and from javascript
+// This file defines the functions available.
+// Each of these should be able to be marshaled to and from JavaScript
 
 package client
 
@@ -31,31 +32,48 @@ Services:
 /* Blockchain service  */
 type BalanceRequest = keys.Address
 type BalanceReply struct {
+	// The balance of the account. Returns an empty balance
+	// if the account is not found
 	Balance balance.Balance `json:"balance"`
-	// The height perfect
+	// The height when this balance was recorded
 	Height int64 `json:"height"`
 }
+
+/* Tx Service */
 
 type SendTxRequest struct {
 	From   keys.Address  `json:"from"`
 	To     keys.Address  `json:"to"`
 	Amount action.Amount `json:"amount"`
-	// Unused
-	Fee action.Amount `json:"fee"`
-	Gas int64         `json:"gas"`
+	Fee    action.Amount `json:"fee"`
+	Gas    int64         `json:"gas"`
 }
+
 type SendTxReply struct {
 	RawTx []byte `json:"rawTx"`
 }
 
-// SendRawTx is for broadcasting a raw self-signed transaction over the network
-type SendRawTxRequest struct {
+type ApplyValidatorRequest struct {
+	Address      keys.Address `json:"address"`
+	Name         string       `json:"name"`
+	Amount       string       `json:"amount"`
+	Purge        bool         `json:"purge"`
+	TmPubKeyType string       `json:"tmPubKeyType"`
+	TmPubKey     []byte       `json:"tmPubKey"`
+}
+
+type ApplyValidatorReply struct {
+	RawTx []byte `json:"rawTx"`
+}
+
+// SendTxBroadcast is for broadcasting a raw self-signed transaction over the network
+type RawTxBroadcastRequest struct {
 	// Msg is the raw transaction bytes
 	RawTx     []byte         `json:"rawTx"`
 	Signature []byte         `json:"signature"`
 	PublicKey keys.PublicKey `json:"publicKey"`
 }
-type SendRawTxReply struct {
+type RawTxBroadcastReply struct {
 	// The result of broadcasting this transaction to the network
 	Result ctypes.ResultBroadcastTx `json:"result"`
 }
@@ -86,16 +104,6 @@ type ListAccountsRequest struct{}
 type ListAccountsReply struct {
 	Accounts []accounts.Account `json:"accounts"`
 }
-
-type ApplyValidatorRequest struct {
-	Address      keys.Address `json:"address"`
-	Name         string       `json:"name"`
-	Amount       string       `json:"amount"`
-	Purge        bool         `json:"purge"`
-	TmPubKeyType string       `json:"tmPubKeyType"`
-	TmPubKey     []byte       `json:"tmPubKey"`
-}
-type ApplyValidatorReply struct{}
 
 type ListValidatorsRequest struct{}
 type ListValidatorsReply struct {
