@@ -24,13 +24,13 @@ import (
 // from a BalanceAdapter object and vice versa.
 // There is a map flattening of course for Coins
 type BalanceData struct {
-	Coins []CoinData `json:"coins"`
+	Coins []coinData `json:"coins"`
 	Tag   string     `json:"tag"` // Tag is a field used to identify the type after ser/deser
 	// will be useful in future
 }
 
-// CoinData is a flattening of coin map in a balance data type
-type CoinData struct {
+// coinData is a flattening of coin map in a balance data type
+type coinData struct {
 	CurName    string     `json:"curr_name"`
 	CurChain   chain.Type `json:"curr_chain"`
 	CurDecimal int64      `json:"curr_decimal"`
@@ -53,7 +53,7 @@ func (b *Balance) Data() serialize.Data {
 	bd := &BalanceData{Tag: "balance_data"}
 	// this allows to reserve capacity so the process of adding
 	// items to the list
-	bd.Coins = make([]CoinData, 0, len(b.Amounts))
+	bd.Coins = make([]coinData, 0, len(b.Amounts))
 
 	currencyList := []string{}
 	for key := range b.Amounts {
@@ -64,7 +64,7 @@ func (b *Balance) Data() serialize.Data {
 
 	for _, key := range currencyList {
 		coin := b.Amounts[key]
-		cd := CoinData{
+		cd := coinData{
 			CurName:    coin.Currency.Name,
 			CurChain:   coin.Currency.Chain,
 			CurDecimal: coin.Currency.Decimal,

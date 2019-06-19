@@ -16,6 +16,7 @@ type ApplyValidator struct {
 	NodeName         string
 	ValidatorAddress Address
 	ValidatorPubKey  keys.PublicKey
+	Purge            bool
 }
 
 func (apply ApplyValidator) Signers() []Address {
@@ -116,14 +117,6 @@ func (applyTx) ProcessDeliver(ctx *Context, msg Msg, fee Fee) (bool, Response) {
 
 	validators := ctx.Validators
 
-	stake := identity.Stake{
-		ValidatorAddress: apply.ValidatorAddress,
-		StakeAddress:     apply.Address,
-		Pubkey:           apply.ValidatorPubKey,
-		Name:             apply.NodeName,
-		Amount:           apply.Stake.ToCoin(ctx),
-	}
-
 	balances := ctx.Balances
 	balance, err := balances.Get(apply.Address.Bytes(), false)
 	if err != nil {
@@ -139,7 +132,22 @@ func (applyTx) ProcessDeliver(ctx *Context, msg Msg, fee Fee) (bool, Response) {
 		return false, Response{Log: err.Error()}
 	}
 
-	err = validators.HandleStake(stake)
+	if !apply.Purge {
+		stake := identity.Stake{
+			ValidatorAddress: apply.ValidatorAddress,
+			StakeAddress:     apply.Address,
+			Pubkey:           apply.ValidatorPubKey,
+			Name:             apply.NodeName,
+			Amount:           apply.Stake.ToCoin(ctx),
+		}
+		err = validators.HandleStake(stake)
+	} else {
+		unstake := identity.Unstake{
+			Address: apply.ValidatorAddress,
+			Amount:  apply.Stake.ToCoin(ctx),
+		}
+		err = validators.HandleUnstake(unstake)
+	}
 	if err != nil {
 		return false, Response{Log: err.Error()}
 	}

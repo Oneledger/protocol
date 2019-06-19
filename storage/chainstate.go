@@ -21,14 +21,12 @@
 package storage
 
 import (
+	"encoding/hex"
 	"sync"
 
 	"github.com/tendermint/iavl"
 	"github.com/tendermint/tendermint/libs/db"
 )
-
-// Number of times we initialized since starting
-var count int
 
 // Chainstate is a storage for balances on the chain, a snapshot of all accounts
 type ChainState struct {
@@ -52,7 +50,6 @@ type ChainState struct {
 
 // NewChainState generates a new ChainState object
 func NewChainState(name, dbDir, configDB string, newType StorageType) *ChainState {
-	count = 0
 
 	chain := &ChainState{Name: name, Type: newType, Version: 0}
 	chain.dbDir = dbDir
@@ -155,6 +152,15 @@ func (state *ChainState) Dump() {
 
 }
 
+// Remove removes item from chainstate
+func (stake *ChainState) Remove(key []byte) ([]byte, bool) {
+	result, ok := stake.Delivered.Remove(key)
+	if !ok {
+		log.Error("Failed to delete the item from chainstate")
+	}
+	return result, ok
+}
+
 // Reset the chain state from persistence
 func (state *ChainState) reset() ([]byte, int64) {
 
@@ -169,7 +175,7 @@ func (state *ChainState) reset() ([]byte, int64) {
 	state.Version = state.Delivered.Version()
 	state.TreeHeight = state.Delivered.Height()
 
-	log.Debug("Reinitialized Database", "version", state.Version, "tree_height", state.TreeHeight, "hash", state.Hash)
+	log.Debug("Reinitialized Database", "version", state.Version, "tree_height", state.TreeHeight, "hash", hex.EncodeToString(state.Hash))
 	return state.Hash, state.Version
 }
 
@@ -178,7 +184,7 @@ func initializeDatabase(name, dbDir, configDB string, newType StorageType, versi
 	// TODO: Assuming persistence for right now
 	storage, err := getDatabase(name, dbDir, configDB)
 	if err != nil {
-		log.Error("Database create failed", "err", err, "count", count)
+		log.Error("Database create failed", "err", err)
 		panic("Can't create a database: " + dbDir + "/OneLedger-" + name)
 	}
 
@@ -187,8 +193,6 @@ func initializeDatabase(name, dbDir, configDB string, newType StorageType, versi
 	if err != nil {
 		log.Error("error in loading tree version", "version", version, "err", err)
 	}
-
-	count = count + 1
 
 	return tree, storage
 }

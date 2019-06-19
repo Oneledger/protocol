@@ -8,6 +8,8 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/Oneledger/protocol/data/ons"
+
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/app/node"
 	"github.com/Oneledger/protocol/client"
@@ -109,6 +111,11 @@ func (app *App) setupState(stateBytes []byte) error {
 		return errors.Wrap(err, "setupState deserialization")
 	}
 
+	// commit the initial currencies to the admin db
+	session := app.Context.admin.BeginSession()
+	_ = session.Set([]byte(ADMIN_CURRENCY_KEY), stateBytes)
+	session.Commit()
+
 	nodeCtx := app.Context.Node()
 	balanceCtx := app.Context.Balances()
 	walletCtx := app.Context.Accounts()
@@ -175,6 +182,30 @@ func (app *App) setupValidators(req RequestInitChain, currencies *balance.Curren
 // Start initializes the state
 func (app *App) Start() error {
 	app.logger.Info("Starting node...")
+
+	//get currencies from admin db
+	result, err := app.Context.admin.Get([]byte(ADMIN_CURRENCY_KEY))
+	if err != nil {
+		app.logger.Debug("didn't get the currencies from db")
+	} else {
+
+		as := &consensus.AppState{}
+		err = serialize.GetSerializer(serialize.PERSISTENT).Deserialize(result, as)
+		if err != nil {
+			app.logger.Error("failed to deserialize the currencies from db")
+			return errors.Wrap(err, "failed to get the currencies")
+		}
+
+		for _, currency := range as.Currencies {
+			err := app.Context.currencies.Register(currency)
+			if err != nil {
+				return errors.Wrapf(err, "failed to register currency %s", currency.Name)
+			}
+		}
+
+		app.logger.Infof("Read currencies from db %#v", app.Context.currencies)
+	}
+
 	node, err := consensus.NewNode(app.ABCI(), &app.Context.cfg)
 	if err != nil {
 		app.logger.Error("Failed to create consensus.Node")
@@ -253,9 +284,12 @@ type context struct {
 
 	balances *balance.Store
 
+	domains *ons.DomainStore
+
 	validators *identity.ValidatorStore // Set of validators currently active
 	accounts   accounts.Wallet
 	currencies *balance.CurrencyList
+	admin      storage.SessionedStorage
 
 	logWriter io.Writer
 }
@@ -277,6 +311,9 @@ func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *node.Context) (
 	ctx.actionRouter = action.NewRouter("action")
 	ctx.balances = balance.NewStore("balances", ctx.dbDir(), ctx.cfg.Node.DB, storage.PERSISTENT)
 	ctx.accounts = accounts.NewWallet(cfg, ctx.dbDir())
+	ctx.domains = ons.NewDomainStore("domains", ctx.dbDir(), ctx.cfg.Node.DB, storage.PERSISTENT)
+	ctx.admin = storage.NewStorageDB(storage.KEYVALUE, "admin", ctx.dbDir(), ctx.cfg.Node.DB)
+
 
 	return ctx, nil
 }
@@ -292,6 +329,7 @@ func (ctx *context) Action() *action.Context {
 		ctx.balances,
 		ctx.currencies,
 		ctx.validators,
+		ctx.domains,
 		log.NewLoggerWithPrefix(ctx.logWriter, "action"))
 
 	return actionCtx

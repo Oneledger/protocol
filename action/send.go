@@ -101,6 +101,12 @@ func (sendTx) ProcessDeliver(ctx *Context, msg Msg, fee Fee) (bool, Response) {
 		log := fmt.Sprint("Failed to get the balance of the owner ", send.From, "err", err)
 		return false, Response{Log: log}
 	}
+
+	if !send.Amount.IsValid(ctx) {
+		log := fmt.Sprint("amount is invalid", send.Amount, ctx.Currencies)
+		return false, Response{Log: log}
+	}
+
 	coin := send.Amount.ToCoin(ctx)
 
 	if !enoughBalance(*from, coin) {

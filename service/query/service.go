@@ -22,9 +22,10 @@ func Name() string {
 
 func NewService(balances *balance.Store, currencies *balance.CurrencyList, validators *identity.ValidatorStore, logger *log.Logger) *Service {
 	return &Service{
-		name:     "query",
-		balances: balances,
-		logger:   logger,
+		name:       "query",
+		currencies: currencies,
+		balances:   balances,
+		logger:     logger,
 	}
 }
 
