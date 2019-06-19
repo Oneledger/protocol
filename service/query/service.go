@@ -25,6 +25,7 @@ func NewService(balances *balance.Store, currencies *balance.CurrencyList, valid
 		name:       "query",
 		currencies: currencies,
 		balances:   balances,
+		validators: validators,
 		logger:     logger,
 	}
 }

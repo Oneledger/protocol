@@ -1,6 +1,8 @@
 package tx
 
 import (
+	"github.com/Oneledger/protocol/action/staking"
+	"github.com/Oneledger/protocol/action/transfer"
 	"github.com/Oneledger/protocol/log"
 
 	"github.com/Oneledger/protocol/action"
@@ -46,7 +48,7 @@ func NewService(
 // a signed transaction
 // TODO: deprecate this
 func (svc *Service) SendTx(args client.SendTxRequest, reply *client.SendTxReply) error {
-	send := action.Send{
+	send := transfer.Send{
 		From:   keys.Address(args.From),
 		To:     keys.Address(args.To),
 		Amount: args.Amount,
@@ -107,7 +109,7 @@ func (svc *Service) ApplyValidator(args client.ApplyValidatorRequest, reply *cli
 	}
 
 	addr := handler.Address()
-	apply := action.ApplyValidator{
+	apply := staking.ApplyValidator{
 		Address:          keys.Address(args.Address),
 		Stake:            action.Amount{Currency: "VT", Value: args.Amount},
 		NodeName:         args.Name,
