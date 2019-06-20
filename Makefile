@@ -60,3 +60,13 @@ applytest: install
 	@./scripts/testapply
 	@./scripts/getValidators
 	@./scripts/stopDev
+
+#
+# run ons tests
+#
+applytest: install
+	@./scripts/stopDev
+	@./scripts/resetDev
+	@./scripts/startDev
+	@./scripts/testons
+#	@./scripts/stopDev
