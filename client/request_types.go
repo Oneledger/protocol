@@ -118,3 +118,12 @@ type BroadcastTxCommitReply struct {
 	TxHash keys.Address                   `json:"txHash"`
 	Result ctypes.ResultBroadcastTxCommit `json:"result"`
 }
+
+type SignRawTxRequest struct {
+	RawTx   []byte         `json:"rawTx"`
+	Address action.Address `json:"address"`
+}
+
+type SignRawTxResponse struct {
+	Signature action.Signature `json:"signature"`
+}
