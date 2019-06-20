@@ -1,6 +1,8 @@
 package broadcast
 
 import (
+	"errors"
+
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/client"
 	"github.com/Oneledger/protocol/log"
@@ -41,56 +43,69 @@ func validateAndSignTx(req client.BroadcastRequest) ([]byte, error) {
 	return base.Bytes(), nil
 }
 
-// TxAsync returns as soon as the finishes. Returns with a hash
-func (svc *Service) TxAsync(req client.BroadcastRequest, reply *client.BroadcastTxReply) error {
+func broadcast(method string, req client.BroadcastRequest, broadcaster client.ExtServiceContext) (client.BroadcastReply, error) {
+	makeErr := func(err error) error { return rpc.InternalError(err.Error()) }
+
 	rawSignedTx, err := validateAndSignTx(req)
+	if err != nil {
+		return client.BroadcastReply{}, err
+	}
+
+	reply := new(client.BroadcastReply)
+
+	switch method {
+	case "sync":
+		result, err := broadcaster.BroadcastTxSync(rawSignedTx)
+		if err != nil {
+			return client.BroadcastReply{}, makeErr(err)
+		}
+		reply.FromResultBroadcastTx(result)
+		return *reply, nil
+	case "async":
+		result, err := broadcaster.BroadcastTxAsync(rawSignedTx)
+		if err != nil {
+			return client.BroadcastReply{}, makeErr(err)
+		}
+		reply.FromResultBroadcastTx(result)
+		return *reply, nil
+	case "commit":
+		result, err := broadcaster.BroadcastTxCommit(rawSignedTx)
+		if err != nil {
+			return client.BroadcastReply{}, makeErr(err)
+		}
+		reply.FromResultBroadcastTxCommit(result)
+		return *reply, nil
+	default:
+		return client.BroadcastReply{}, makeErr(errors.New("invalid method string"))
+	}
+}
+
+// TxAsync returns as soon as the finishes. Returns with a hash
+func (svc *Service) TxAsync(req client.BroadcastRequest, reply *client.BroadcastReply) error {
+	out, err := broadcast("async", req, svc.ext)
 	if err != nil {
 		return err
 	}
-	result, err := svc.ext.BroadcastTxAsync(rawSignedTx)
-	if err != nil {
-		return rpc.NewError(rpc.CodeInternalError, err.Error())
-	}
-
-	*reply = client.BroadcastTxReply{
-		TxHash: []byte(result.Hash),
-		Result: *result,
-	}
+	*reply = out
 	return nil
 }
 
 // TxSync returns when the transaction has been placed inside the mempool
-func (svc *Service) TxSync(req client.BroadcastRequest, reply *client.BroadcastTxReply) error {
-	rawSignedTx, err := validateAndSignTx(req)
+func (svc *Service) TxSync(req client.BroadcastRequest, reply *client.BroadcastReply) error {
+	out, err := broadcast("sync", req, svc.ext)
 	if err != nil {
 		return err
 	}
-	result, err := svc.ext.BroadcastTxSync(rawSignedTx)
-	if err != nil {
-		return rpc.NewError(rpc.CodeInternalError, err.Error())
-	}
-
-	*reply = client.BroadcastTxReply{
-		TxHash: []byte(result.Hash),
-		Result: *result,
-	}
+	*reply = out
 	return nil
 }
 
 // TxCommit returns when the transaction has been committed to a block.
-func (svc *Service) TxCommit(req client.BroadcastRequest, reply *client.BroadcastTxCommitReply) error {
-	rawSignedTx, err := validateAndSignTx(req)
+func (svc *Service) TxCommit(req client.BroadcastRequest, reply *client.BroadcastReply) error {
+	out, err := broadcast("commit", req, svc.ext)
 	if err != nil {
 		return err
 	}
-	result, err := svc.ext.BroadcastTxCommit(rawSignedTx)
-	if err != nil {
-		return rpc.NewError(rpc.CodeInternalError, err.Error())
-	}
-
-	*reply = client.BroadcastTxCommitReply{
-		TxHash: []byte(result.Hash),
-		Result: *result,
-	}
+	*reply = out
 	return nil
 }
