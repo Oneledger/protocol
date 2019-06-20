@@ -122,46 +122,46 @@ type BroadcastTxCommitReply struct {
 /*
 	ONS Request Types
 */
-type OnsCreateRequest struct {
-	Owner   []byte        `json:"owner"`
-	Account []byte        `json:"account"`
+type ONSCreateRequest struct {
+	Owner   keys.Address  `json:"owner"`
+	Account keys.Address  `json:"account"`
 	Name    string        `json:"name"`
 	Price   action.Amount `json:"price"`
 	Fee     action.Amount `json:"fee"`
 	Gas     int64         `json:"gas"`
 }
 
-type OnsUpdateRequest struct {
-	Owner   []byte        `json:"owner"`
-	Account []byte        `json:"account"`
+type ONSUpdateRequest struct {
+	Owner   keys.Address  `json:"owner"`
+	Account keys.Address  `json:"account"`
 	Name    string        `json:"name"`
 	Active  bool          `json:"active"`
 	Fee     action.Amount `json:"fee"`
 	Gas     int64         `json:"gas"`
 }
 
-type OnsSaleRequest struct {
+type ONSSaleRequest struct {
 	Name         string        `json:"name"`
-	OwnerAddress []byte        `json:"owner"`
+	OwnerAddress keys.Address  `json:"owner"`
 	Price        action.Amount `json:"price"`
 	CancelSale   bool          `json:"cancel_sale"`
 	Fee          action.Amount `json:"fee"`
 	Gas          int64         `json:"gas"`
 }
 
-type OnsPurchaseRequest struct {
-	Name     string         `json:"name"`
-	Buyer    action.Address `json:"buyer"`
-	Account  action.Address `json:"account"`
-	Offering action.Amount  `json:"offering"`
-	Fee      action.Amount  `json:"fee"`
-	Gas      int64          `json:"gas"`
+type ONSPurchaseRequest struct {
+	Name     string        `json:"name"`
+	Buyer    keys.Address  `json:"buyer"`
+	Account  keys.Address  `json:"account"`
+	Offering action.Amount `json:"offering"`
+	Fee      action.Amount `json:"fee"`
+	Gas      int64         `json:"gas"`
 }
 
-type OnsSendRequest struct {
-	From   action.Address `json:"from"`
-	Name   string         `json:"name"`
-	Amount action.Amount  `json:"amount"`
-	Fee    action.Amount  `json:"fee"`
-	Gas    int64          `json:"gas"`
+type ONSSendRequest struct {
+	From   keys.Address  `json:"from"`
+	Name   string        `json:"name"`
+	Amount action.Amount `json:"amount"`
+	Fee    action.Amount `json:"fee"`
+	Gas    int64         `json:"gas"`
 }

@@ -8,17 +8,16 @@ import (
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/action/ons"
 	"github.com/Oneledger/protocol/client"
-	"github.com/Oneledger/protocol/data/keys"
+	"github.com/Oneledger/protocol/rpc"
 	"github.com/Oneledger/protocol/serialize"
 	"github.com/google/uuid"
-	"github.com/pkg/errors"
 )
 
-func (s *Service) Ons_CreateRawCreate(args client.OnsCreateRequest, reply *client.SendTxReply) error {
+func (s *Service) Ons_CreateRawCreate(args client.ONSCreateRequest, reply *client.SendTxReply) error {
 
 	domainCreate := ons.DomainCreate{
-		Owner:   keys.Address(args.Owner),
-		Account: keys.Address(args.Account),
+		Owner:   args.Owner,
+		Account: args.Account,
 		Name:    args.Name,
 		Price:   args.Price,
 	}
@@ -33,7 +32,7 @@ func (s *Service) Ons_CreateRawCreate(args client.OnsCreateRequest, reply *clien
 
 	packet, err := serialize.GetSerializer(serialize.NETWORK).Serialize(tx)
 	if err != nil {
-		return errors.Wrap(err, "err while network serialization")
+		return rpc.NewError(rpc.CodeInternalError, "err while network serialization:"+err.Error())
 	}
 
 	*reply = client.SendTxReply{
@@ -43,11 +42,11 @@ func (s *Service) Ons_CreateRawCreate(args client.OnsCreateRequest, reply *clien
 	return nil
 }
 
-func (s *Service) Ons_CreateRawUpdate(args client.OnsUpdateRequest, reply *client.SendTxReply) error {
+func (s *Service) Ons_CreateRawUpdate(args client.ONSUpdateRequest, reply *client.SendTxReply) error {
 
 	domainUpdate := ons.DomainUpdate{
-		Owner:   keys.Address(args.Owner),
-		Account: keys.Address(args.Account),
+		Owner:   args.Owner,
+		Account: args.Account,
 		Name:    args.Name,
 		Active:  args.Active,
 	}
@@ -62,7 +61,7 @@ func (s *Service) Ons_CreateRawUpdate(args client.OnsUpdateRequest, reply *clien
 
 	packet, err := serialize.GetSerializer(serialize.NETWORK).Serialize(tx)
 	if err != nil {
-		return errors.Wrap(err, "err while network serialization")
+		return rpc.NewError(rpc.CodeInternalError, "err while network serialization:"+err.Error())
 	}
 
 	*reply = client.SendTxReply{
@@ -72,11 +71,11 @@ func (s *Service) Ons_CreateRawUpdate(args client.OnsUpdateRequest, reply *clien
 	return nil
 }
 
-func (s *Service) Ons_CreateRawSale(args client.OnsSaleRequest, reply *client.SendTxReply) error {
+func (s *Service) Ons_CreateRawSale(args client.ONSSaleRequest, reply *client.SendTxReply) error {
 
 	domainSale := ons.DomainSale{
 		DomainName:   args.Name,
-		OwnerAddress: keys.Address(args.OwnerAddress),
+		OwnerAddress: args.OwnerAddress,
 		Price:        args.Price,
 		CancelSale:   args.CancelSale,
 	}
@@ -91,7 +90,7 @@ func (s *Service) Ons_CreateRawSale(args client.OnsSaleRequest, reply *client.Se
 
 	packet, err := serialize.GetSerializer(serialize.NETWORK).Serialize(tx)
 	if err != nil {
-		return errors.Wrap(err, "err while network serialization")
+		return rpc.NewError(rpc.CodeInternalError, "err while network serialization:"+err.Error())
 	}
 
 	*reply = client.SendTxReply{
@@ -101,12 +100,12 @@ func (s *Service) Ons_CreateRawSale(args client.OnsSaleRequest, reply *client.Se
 	return nil
 }
 
-func (s *Service) Ons_CreateRawBuy(args client.OnsPurchaseRequest, reply *client.SendTxReply) error {
+func (s *Service) Ons_CreateRawBuy(args client.ONSPurchaseRequest, reply *client.SendTxReply) error {
 
 	domainPurchase := ons.DomainPurchase{
 		Name:     args.Name,
-		Buyer:    keys.Address(args.Buyer),
-		Account:  keys.Address(args.Account),
+		Buyer:    args.Buyer,
+		Account:  args.Account,
 		Offering: args.Offering,
 	}
 
@@ -120,7 +119,7 @@ func (s *Service) Ons_CreateRawBuy(args client.OnsPurchaseRequest, reply *client
 
 	packet, err := serialize.GetSerializer(serialize.NETWORK).Serialize(tx)
 	if err != nil {
-		return errors.Wrap(err, "err while network serialization")
+		return rpc.NewError(rpc.CodeInternalError, "err while network serialization:"+err.Error())
 	}
 
 	*reply = client.SendTxReply{
@@ -130,7 +129,7 @@ func (s *Service) Ons_CreateRawBuy(args client.OnsPurchaseRequest, reply *client
 	return nil
 }
 
-func (s *Service) Ons_CreateRawSend(args client.OnsSendRequest, reply *client.SendTxReply) error {
+func (s *Service) Ons_CreateRawSend(args client.ONSSendRequest, reply *client.SendTxReply) error {
 
 	domainSend := ons.DomainSend{
 		DomainName: args.Name,
@@ -148,7 +147,7 @@ func (s *Service) Ons_CreateRawSend(args client.OnsSendRequest, reply *client.Se
 
 	packet, err := serialize.GetSerializer(serialize.NETWORK).Serialize(tx)
 	if err != nil {
-		return errors.Wrap(err, "err while network serialization")
+		return rpc.NewError(rpc.CodeInternalError, "err while network serialization"+err.Error())
 	}
 
 	*reply = client.SendTxReply{
