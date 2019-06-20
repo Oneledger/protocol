@@ -32,6 +32,10 @@ spec:
           - name: rpc-port
             containerPort: 26604
             protocol: TCP
+        resources:
+          requests:
+            cpu: "1"
+            memory: "1Gi"
       initContainers:
       - name: change-persistent-data-ownership 
         image: gcr.io/atomic-land-223022/oneledger/chronos:latest

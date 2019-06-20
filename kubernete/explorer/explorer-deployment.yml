@@ -25,6 +25,10 @@ spec:
             --dbpassword postgres --dbuser postgres 
             --sdk tcp://fullnode-service:26606 
             --tendermint tcp://fullnode-service:26604
+        resources:
+          requests:
+            cpu: "200m"
+            memory: "512Mi"
         securityContext:
           runAsUser: 0
 ---
@@ -54,6 +58,10 @@ spec:
             --dbpassword postgres --dbuser postgres 
             --tendermint tcp://fullnode-service:26604
             --sdk tcp://fullnode-service:26606 
+        resources:
+          requests:
+            cpu: "100m"
+            memory: "256Mi"
         ports:
         - name: explorer-server
           containerPort: 80
@@ -62,17 +70,17 @@ spec:
           httpGet:
             path: /metrics
             port: 80
-          initialDelaySeconds: 10
+          initialDelaySeconds: 30
           failureThreshold: 10
           timeoutSeconds: 10
         livenessProbe:
           httpGet:
             path: /metrics
             port: 80
-          initialDelaySeconds: 10
+          initialDelaySeconds: 30
           periodSeconds: 30
-          timeoutSeconds: 5
-          failureThreshold: 5
+          timeoutSeconds: 10
+          failureThreshold: 10
         securityContext:
           runAsUser: 0
 ---
@@ -119,7 +127,7 @@ spec:
     name: explorer-api-server
   minReplicas: 1
   maxReplicas: 10
-  targetCPUUtilizationPercentage: 20
+  targetCPUUtilizationPercentage: 40
 ---
 apiVersion: autoscaling/v1
 kind: HorizontalPodAutoscaler
@@ -132,4 +140,4 @@ spec:
     name: explorer-watcher
   minReplicas: 1
   maxReplicas: 10
-  targetCPUUtilizationPercentage: 20
+  targetCPUUtilizationPercentage: 60
