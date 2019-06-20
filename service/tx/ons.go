@@ -130,35 +130,6 @@ func (s *Service) Ons_CreateRawBuy(args client.OnsPurchaseRequest, reply *client
 	return nil
 }
 
-func (s *Service) Ons_CreateRawBuy(args client.OnsPurchaseRequest, reply *client.SendTxReply) error {
-
-	domainPurchase := ons.DomainPurchase{
-		Name:     args.Name,
-		Buyer:    keys.Address(args.Buyer),
-		Account:  keys.Address(args.Account),
-		Offering: args.Offering,
-	}
-
-	uuidNew, _ := uuid.NewUUID()
-	fee := action.Fee{args.Fee, args.Gas}
-	tx := &action.BaseTx{
-		Data: domainPurchase,
-		Fee:  fee,
-		Memo: uuidNew.String(),
-	}
-
-	packet, err := serialize.GetSerializer(serialize.NETWORK).Serialize(tx)
-	if err != nil {
-		return errors.Wrap(err, "err while network serialization")
-	}
-
-	*reply = client.SendTxReply{
-		RawTx: packet,
-	}
-
-	return nil
-}
-
 func (s *Service) Ons_CreateRawSend(args client.OnsSendRequest, reply *client.SendTxReply) error {
 
 	domainSend := ons.DomainSend{
