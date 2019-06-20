@@ -119,6 +119,7 @@ type BroadcastTxCommitReply struct {
 	Result ctypes.ResultBroadcastTxCommit `json:"result"`
 }
 
+
 /*
 	ONS Request Types
 */
@@ -164,4 +165,12 @@ type ONSSendRequest struct {
 	Amount action.Amount `json:"amount"`
 	Fee    action.Amount `json:"fee"`
 	Gas    int64         `json:"gas"`
+
+type SignRawTxRequest struct {
+	RawTx   []byte         `json:"rawTx"`
+	Address action.Address `json:"address"`
+}
+
+type SignRawTxResponse struct {
+	Signature action.Signature `json:"signature"`
 }

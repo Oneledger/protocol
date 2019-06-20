@@ -1,6 +1,7 @@
 package owner
 
 import (
+	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/log"
 
 	"github.com/Oneledger/protocol/client"
@@ -61,5 +62,14 @@ func (svc *Service) ListAccounts(req client.ListAccountsRequest, reply *client.L
 	}
 	*reply = client.ListAccountsReply{Accounts: accts}
 
+	return nil
+}
+
+func (svc *Service) SignWithAddress(req client.SignRawTxRequest, reply *client.SignRawTxResponse) error {
+	pkey, signed, err := svc.accounts.SignWithAddress(req.RawTx, req.Address)
+	if err != nil {
+		return rpc.InternalError(err.Error())
+	}
+	*reply = client.SignRawTxResponse{Signature: action.Signature{Signed: signed, Signer: pkey}}
 	return nil
 }
