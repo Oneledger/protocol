@@ -13,7 +13,7 @@ import (
 	"github.com/google/uuid"
 )
 
-func (s *Service) Ons_CreateRawCreate(args client.ONSCreateRequest, reply *client.SendTxReply) error {
+func (s *Service) ONS_CreateRawCreate(args client.ONSCreateRequest, reply *client.SendTxReply) error {
 
 	domainCreate := ons.DomainCreate{
 		Owner:   args.Owner,
@@ -42,7 +42,7 @@ func (s *Service) Ons_CreateRawCreate(args client.ONSCreateRequest, reply *clien
 	return nil
 }
 
-func (s *Service) Ons_CreateRawUpdate(args client.ONSUpdateRequest, reply *client.SendTxReply) error {
+func (s *Service) ONS_CreateRawUpdate(args client.ONSUpdateRequest, reply *client.SendTxReply) error {
 
 	domainUpdate := ons.DomainUpdate{
 		Owner:   args.Owner,
@@ -71,7 +71,7 @@ func (s *Service) Ons_CreateRawUpdate(args client.ONSUpdateRequest, reply *clien
 	return nil
 }
 
-func (s *Service) Ons_CreateRawSale(args client.ONSSaleRequest, reply *client.SendTxReply) error {
+func (s *Service) ONS_CreateRawSale(args client.ONSSaleRequest, reply *client.SendTxReply) error {
 
 	domainSale := ons.DomainSale{
 		DomainName:   args.Name,
@@ -100,7 +100,7 @@ func (s *Service) Ons_CreateRawSale(args client.ONSSaleRequest, reply *client.Se
 	return nil
 }
 
-func (s *Service) Ons_CreateRawBuy(args client.ONSPurchaseRequest, reply *client.SendTxReply) error {
+func (s *Service) ONS_CreateRawBuy(args client.ONSPurchaseRequest, reply *client.SendTxReply) error {
 
 	domainPurchase := ons.DomainPurchase{
 		Name:     args.Name,
@@ -129,7 +129,7 @@ func (s *Service) Ons_CreateRawBuy(args client.ONSPurchaseRequest, reply *client
 	return nil
 }
 
-func (s *Service) Ons_CreateRawSend(args client.ONSSendRequest, reply *client.SendTxReply) error {
+func (s *Service) ONS_CreateRawSend(args client.ONSSendRequest, reply *client.SendTxReply) error {
 
 	domainSend := ons.DomainSend{
 		DomainName: args.Name,
