@@ -62,6 +62,17 @@ spec:
           httpGet:
             path: /metrics
             port: 80
+          initialDelaySeconds: 10
+          failureThreshold: 10
+          timeoutSeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /metrics
+            port: 80
+          initialDelaySeconds: 10
+          periodSeconds: 30
+          timeoutSeconds: 5
+          failureThreshold: 5
         securityContext:
           runAsUser: 0
 ---
@@ -93,9 +104,9 @@ kind: BackendConfig
 metadata:
   name: explorer-api-server-backendconfig
 spec:
-  timeoutSec: 3600
+  timeoutSec: 1800
   connectionDraining:
-    drainingTimeoutSec: 60
+    drainingTimeoutSec: 0
 ---
 apiVersion: autoscaling/v1
 kind: HorizontalPodAutoscaler
@@ -106,9 +117,9 @@ spec:
     apiVersion: apps/v1
     kind: Deployment
     name: explorer-api-server
-  minReplicas: 2
+  minReplicas: 1
   maxReplicas: 10
-  targetCPUUtilizationPercentage: 50
+  targetCPUUtilizationPercentage: 20
 ---
 apiVersion: autoscaling/v1
 kind: HorizontalPodAutoscaler
@@ -121,4 +132,4 @@ spec:
     name: explorer-watcher
   minReplicas: 1
   maxReplicas: 10
-  targetCPUUtilizationPercentage: 50
+  targetCPUUtilizationPercentage: 20
