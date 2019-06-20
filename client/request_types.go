@@ -118,3 +118,50 @@ type BroadcastTxCommitReply struct {
 	TxHash keys.Address                   `json:"txHash"`
 	Result ctypes.ResultBroadcastTxCommit `json:"result"`
 }
+
+/*
+	ONS Request Types
+*/
+type OnsCreateRequest struct {
+	Owner   []byte        `json:"owner"`
+	Account []byte        `json:"account"`
+	Name    string        `json:"name"`
+	Price   action.Amount `json:"price"`
+	Fee     action.Amount `json:"fee"`
+	Gas     int64         `json:"gas"`
+}
+
+type OnsUpdateRequest struct {
+	Owner   []byte        `json:"owner"`
+	Account []byte        `json:"account"`
+	Name    string        `json:"name"`
+	Active  bool          `json:"active"`
+	Fee     action.Amount `json:"fee"`
+	Gas     int64         `json:"gas"`
+}
+
+type OnsSaleRequest struct {
+	Name         string        `json:"name"`
+	OwnerAddress []byte        `json:"owner"`
+	Price        action.Amount `json:"price"`
+	CancelSale   bool          `json:"cancel_sale"`
+	Fee          action.Amount `json:"fee"`
+	Gas          int64         `json:"gas"`
+}
+
+type OnsPurchaseRequest struct {
+	Name     string         `json:"name"`
+	Buyer    action.Address `json:"buyer"`
+	Account  action.Address `json:"account"`
+	Offering action.Amount  `json:"offering"`
+	Fee      action.Amount  `json:"fee"`
+	Gas      int64          `json:"gas"`
+}
+
+type OnsSendRequest struct {
+	From   action.Address `json:"from"`
+	Name   string         `json:"name"`
+	Amount action.Amount  `json:"amount"`
+	Fee    action.Amount  `json:"fee"`
+	Gas    int64          `json:"gas"`
+}
