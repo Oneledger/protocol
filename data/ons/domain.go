@@ -49,6 +49,9 @@ func NewDomain(ownerAddress, accountAddress keys.Address,
 		CreationHeight:   height, // height of current txn
 		LastUpdateHeight: height, // height of current txn
 		ActiveFlag:       true,   // Active by default
+
+		SalePrice:  balance.Coin{},
+		OnSaleFlag: false,
 	}
 }
 
@@ -89,5 +92,4 @@ func (d *Domain) IsChangeable(currentHeight int64) bool {
 
 func (d *Domain) CancelSale() {
 	d.OnSaleFlag = false
-	d.SalePrice = balance.Coin{}
 }

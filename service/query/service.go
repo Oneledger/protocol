@@ -37,7 +37,7 @@ func NewService(ctx client.ExtServiceContext, balances *balance.Store, currencie
 }
 
 func (svc *Service) Balance(req client.BalanceRequest, resp *client.BalanceReply) error {
-	addr := req
+	addr := req.Address
 	bal, err := svc.balances.Get(addr, true)
 
 	if err != nil && err == balance.ErrNoBalanceFoundForThisAddress {

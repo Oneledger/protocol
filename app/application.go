@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	action_ons "github.com/Oneledger/protocol/action/ons"
 	"github.com/Oneledger/protocol/action/staking"
 	"github.com/Oneledger/protocol/action/transfer"
 	"github.com/Oneledger/protocol/data/ons"
@@ -318,6 +319,7 @@ func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *node.Context) (
 
 	_ = transfer.EnableSend(ctx.actionRouter)
 	_ = staking.EnableApplyValidator(ctx.actionRouter)
+	_ = action_ons.EnableONS(ctx.actionRouter)
 	return ctx, nil
 }
 

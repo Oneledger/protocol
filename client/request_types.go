@@ -33,7 +33,9 @@ Services:
 */
 
 /* Blockchain service  */
-type BalanceRequest = keys.Address
+type BalanceRequest struct {
+	Address keys.Address `json:"address"`
+}
 type BalanceReply struct {
 	// The balance of the account. Returns an empty balance
 	// if the account is not found
@@ -93,6 +95,10 @@ type DeleteAccountReply = bool
 type ListAccountsRequest struct{}
 type ListAccountsReply struct {
 	Accounts []accounts.Account `json:"accounts"`
+}
+
+type ListAccountAddressesReply struct {
+	Addresses []string `json:"addresses"`
 }
 
 type ListValidatorsRequest struct{}

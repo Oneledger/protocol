@@ -2,6 +2,8 @@ package owner
 
 import (
 	"github.com/Oneledger/protocol/action"
+	"github.com/Oneledger/protocol/data/chain"
+	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/log"
 
 	"github.com/Oneledger/protocol/client"
@@ -65,11 +67,47 @@ func (svc *Service) ListAccounts(req client.ListAccountsRequest, reply *client.L
 	return nil
 }
 
+// ListAccountAddresses lists all accounts available in the local store
+func (svc *Service) ListAccountAddresses(req client.ListAccountsRequest, reply *client.ListAccountAddressesReply) error {
+	accts := svc.accounts.Accounts()
+	if accts == nil {
+		accts = make([]accounts.Account, 0)
+	}
+	addrs := make([]string, len(accts))
+	for i := range accts {
+		addrs[i] = accts[i].Address().Humanize()
+	}
+	*reply = client.ListAccountAddressesReply{Addresses: addrs}
+
+	return nil
+}
+
 func (svc *Service) SignWithAddress(req client.SignRawTxRequest, reply *client.SignRawTxResponse) error {
 	pkey, signed, err := svc.accounts.SignWithAddress(req.RawTx, req.Address)
 	if err != nil {
 		return rpc.InternalError(err.Error())
 	}
 	*reply = client.SignRawTxResponse{Signature: action.Signature{Signed: signed, Signer: pkey}}
+	return nil
+}
+
+func (svc *Service) NewAccount(req client.NewAccountRequest, reply *client.NewAccountReply) error {
+
+	pubKey, privKey, err := keys.NewKeyPairFromTendermint()
+	if err != nil {
+		return rpc.InternalError(err.Error())
+	}
+
+	ct, err := chain.TypeFromName("OneLedger")
+	if err != nil {
+		return rpc.InternalError(err.Error())
+	}
+
+	acc, err := accounts.NewAccount(ct, req.Name, &privKey, &pubKey)
+	if err != nil {
+		return rpc.InternalError(err.Error())
+	}
+
+	reply = &client.NewAccountReply{acc}
 	return nil
 }
