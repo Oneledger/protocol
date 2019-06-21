@@ -19,7 +19,7 @@ const (
 	// All incoming requests must show this MIME type in the header
 	ContentType = "application/json"
 
-	PathJSON = "/rpc/json"
+	PathJSON = "/jsonrpc"
 	PathGOB  = "/rpc/gob"
 	Path     = PathJSON
 )

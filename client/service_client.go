@@ -1,8 +1,7 @@
 package client
 
 import (
-	"errors"
-
+	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/rpc"
 )
 
@@ -13,16 +12,17 @@ type ServiceClient struct {
 	*rpc.Client
 }
 
-func (c *ServiceClient) Balance(request BalanceRequest) (out BalanceReply, err error) {
-	if len(request) <= 20 {
+func (c *ServiceClient) Balance(addr keys.Address) (out BalanceReply, err error) {
+	/*if len(request) <= 20 {
 		return out, errors.New("address has insufficient length")
-	}
-	err = c.Call("query.Balance", request, &out)
+	}*/
+	request := BalanceRequest{addr}
+	err = c.Call("query.Balance", &request, &out)
 	return
 }
 
 func (c *ServiceClient) NodeName() (out NodeNameReply, err error) {
-	err = c.Call("node.Name", struct{}{}, &out)
+	err = c.Call("node.NodeName", struct{}{}, &out)
 	return
 }
 
@@ -53,6 +53,11 @@ func (c *ServiceClient) DeleteAccount(req DeleteAccountRequest) (out DeleteAccou
 
 func (c *ServiceClient) ListAccounts() (out ListAccountsReply, err error) {
 	err = c.Call("owner.ListAccounts", struct{}{}, &out)
+	return
+}
+
+func (c *ServiceClient) ListAccountAddresses() (out ListAccountsReply, err error) {
+	err = c.Call("owner.ListAccountAddress", struct{}{}, &out)
 	return
 }
 

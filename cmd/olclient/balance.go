@@ -53,7 +53,7 @@ func BalanceNode(cmd *cobra.Command, args []string) {
 	fullnode := Ctx.clCtx.FullNodeClient()
 	nodeName, err := fullnode.NodeName()
 	if err != nil {
-		return
+		logger.Fatal(err)
 	}
 
 	// assuming we have public key

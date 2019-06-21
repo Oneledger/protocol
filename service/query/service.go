@@ -31,7 +31,7 @@ func NewService(balances *balance.Store, currencies *balance.CurrencyList, valid
 }
 
 func (svc *Service) Balance(req client.BalanceRequest, resp *client.BalanceReply) error {
-	addr := req
+	addr := req.Address
 	bal, err := svc.balances.Get(addr, true)
 
 	if err != nil && err == balance.ErrNoBalanceFoundForThisAddress {

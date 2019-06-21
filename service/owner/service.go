@@ -65,6 +65,21 @@ func (svc *Service) ListAccounts(req client.ListAccountsRequest, reply *client.L
 	return nil
 }
 
+// ListAccountAddresses lists all accounts available in the local store
+func (svc *Service) ListAccountAddresses(req client.ListAccountsRequest, reply *client.ListAccountAddressesReply) error {
+	accts := svc.accounts.Accounts()
+	if accts == nil {
+		accts = make([]accounts.Account, 0)
+	}
+	addrs := make([]string, len(accts))
+	for i := range accts {
+		addrs[i] = accts[i].Address().Humanize()
+	}
+	*reply = client.ListAccountAddressesReply{Addresses: addrs}
+
+	return nil
+}
+
 func (svc *Service) SignWithAddress(req client.SignRawTxRequest, reply *client.SignRawTxResponse) error {
 	pkey, signed, err := svc.accounts.SignWithAddress(req.RawTx, req.Address)
 	if err != nil {
