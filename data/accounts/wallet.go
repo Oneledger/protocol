@@ -129,7 +129,6 @@ func (ws WalletStore) SignWithAddress(msg []byte, address keys.Address) (keys.Pu
 	if err != nil {
 		return keys.PublicKey{}, nil, errors.Wrap(err, "sign with address")
 	}
-	fmt.Printf("%#v", *account.PrivateKey)
 
 	signed, err := account.Sign(msg)
 	return *account.PublicKey, signed, err
