@@ -67,20 +67,18 @@ spec:
           containerPort: 80
           protocol: TCP 
         readinessProbe:
-          httpGet:
-            path: /metrics
+          tcpSocket:
             port: 80
           initialDelaySeconds: 30
           failureThreshold: 10
-          timeoutSeconds: 10
+          timeoutSeconds: 15
         livenessProbe:
-          httpGet:
-            path: /metrics
+          tcpSocket:
             port: 80
-          initialDelaySeconds: 30
-          periodSeconds: 30
-          timeoutSeconds: 10
-          failureThreshold: 10
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 2
         securityContext:
           runAsUser: 0
 ---
@@ -112,11 +110,11 @@ kind: BackendConfig
 metadata:
   name: explorer-api-server-backendconfig
 spec:
-  timeoutSec: 1800
+  timeoutSec: 60
   connectionDraining:
     drainingTimeoutSec: 0
 ---
-apiVersion: autoscaling/v1
+apiVersion: autoscaling/v2beta1
 kind: HorizontalPodAutoscaler
 metadata:
   name: explorer-api-server
@@ -127,7 +125,15 @@ spec:
     name: explorer-api-server
   minReplicas: 1
   maxReplicas: 10
-  targetCPUUtilizationPercentage: 40
+  metrics:
+  - type: Resource
+    resource:
+      name: memory
+      targetAverageUtilization: 60
+  - type: Resource
+    resource:
+      name: cpu
+      targetAverageUtilization: 40
 ---
 apiVersion: autoscaling/v1
 kind: HorizontalPodAutoscaler
