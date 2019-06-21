@@ -22,6 +22,12 @@ type DomainSale struct {
 	CancelSale   bool
 }
 
+var _ Ons = DomainSale{}
+
+func (s DomainSale) OnsName() string {
+	return s.DomainName
+}
+
 var _ action.Msg = DomainSale{}
 
 func (DomainSale) Type() action.Type {

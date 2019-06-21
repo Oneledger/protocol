@@ -28,6 +28,12 @@ type DomainSend struct {
 // DomainSend satisfies the action.Msg interface
 var _ action.Msg = DomainSend{}
 
+var _ Ons = DomainSend{}
+
+func (s DomainSend) OnsName() string {
+	return s.DomainName
+}
+
 // Type method gives the transaction type of the
 func (s DomainSend) Type() action.Type {
 	return action.DOMAIN_SEND

@@ -14,6 +14,12 @@ type DomainPurchase struct {
 	Offering action.Amount
 }
 
+var _ Ons = DomainPurchase{}
+
+func (dp DomainPurchase) OnsName() string {
+	return dp.Name
+}
+
 func (dp DomainPurchase) Signers() []action.Address {
 	return []action.Address{dp.Buyer}
 }

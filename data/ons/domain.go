@@ -6,14 +6,15 @@ package ons
 
 import (
 	"github.com/Oneledger/protocol/data/balance"
+	"github.com/Oneledger/protocol/data/keys"
 )
 
 const HEIGHT_INTERVAL = 1
 
 type Domain struct {
 	// addresses of the owner and the account the domain points to
-	OwnerAddress   []byte
-	AccountAddress []byte
+	OwnerAddress   keys.Address
+	AccountAddress keys.Address
 
 	// the domain name; this is als a unique identifier of
 	// the domain object over the chain
@@ -33,7 +34,7 @@ type Domain struct {
 	SalePrice balance.Coin
 }
 
-func NewDomain(ownerAddress, accountAddress []byte,
+func NewDomain(ownerAddress, accountAddress keys.Address,
 	name string, height int64) *Domain {
 
 	if accountAddress == nil ||
@@ -51,7 +52,7 @@ func NewDomain(ownerAddress, accountAddress []byte,
 	}
 }
 
-func (d *Domain) SetAccountAddress(addr []byte) {
+func (d *Domain) SetAccountAddress(addr keys.Address) {
 	d.AccountAddress = addr
 }
 
@@ -67,7 +68,7 @@ func (d *Domain) SetLastUpdatedHeight(height int64) {
 	d.LastUpdateHeight = height
 }
 
-func (d *Domain) ChangeOwner(addr []byte) {
+func (d *Domain) ChangeOwner(addr keys.Address) {
 	d.OwnerAddress = addr
 }
 
