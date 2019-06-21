@@ -1,6 +1,7 @@
 import requests
 import json
 import time
+import sys
 
 url = "http://127.0.0.1:26602/jsonrpc"
 headers = {
@@ -124,7 +125,6 @@ def broadcast_sync(rawTx, signature, pub_key):
 
 if __name__ == "__main__":
     addrs = addresses()
-
     print addrs
 
     raw_txn = create_domain("alice1.olt", addrs[0], "100.2345")
@@ -136,11 +136,13 @@ if __name__ == "__main__":
 
     result = broadcast_commit(raw_txn, signed['signature']['Signed'], signed['signature']['Signer'])
     print result
-    print "#################" \
-          "##"
+    print "###################"
     print
 
-    raw_txn = send_domain("alice1.olt", addrs[0], "100")
+    if result["ok"] != True:
+        sys.exit(-1)
+
+    raw_txn = send_domain("alice1.olt", addrs[0], "10")
     print raw_txn
 
     signed = sign(raw_txn, addrs[0])
@@ -165,6 +167,8 @@ if __name__ == "__main__":
     print result
     print "############################################"
     print
+    if result["ok"] != True:
+        sys.exit(-1)
 
     raw_txn = send_domain("alice1.olt", addrs[0], "100")
     print raw_txn
@@ -178,6 +182,8 @@ if __name__ == "__main__":
     print "#################" \
           "##"
     print
+    if result["ok"] != True:
+        sys.exit(-1)
 
     raw_txn = send_domain("alice1.olt", addrs[0], "100")
     print raw_txn
@@ -191,6 +197,8 @@ if __name__ == "__main__":
     print "#################" \
           "##"
     print
+    if result["ok"] != True:
+        sys.exit(-1)
 
     raw_txn = cancel_sell_domain("alice1.olt", addrs[0], "10.2345")
     print raw_txn
@@ -203,5 +211,7 @@ if __name__ == "__main__":
     result = broadcast_commit(raw_txn, signed['signature']['Signed'], signed['signature']['Signer'])
     print result
     print
+    if result["ok"] != True:
+        sys.exit(-1)
 
 

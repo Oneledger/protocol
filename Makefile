@@ -69,5 +69,5 @@ onstest: install
 	@./scripts/resetDev
 	@./scripts/startDev
 	@./scripts/testsend
-	#@./scripts/testons
 	python scripts/ons/create_domain.py
+	@./scripts/stopDev
