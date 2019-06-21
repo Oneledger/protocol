@@ -89,11 +89,6 @@ func (state *ChainState) FindAll() map[string][]byte {
 // TODO: Should be against the commit tree, not the delivered one!!!
 func (state *ChainState) Get(key StoreKey, lastCommit bool) []byte {
 
-	// TODO: Should not be this hardcoded, but still needs protection
-	if len(key) != CHAINKEY_MAXLEN {
-		return nil
-	}
-
 	var value []byte
 	if lastCommit {
 		// get the value of last commit version

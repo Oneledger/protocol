@@ -64,9 +64,10 @@ applytest: install
 #
 # run ons tests
 #
-applytest: install
+onstest: install
 	@./scripts/stopDev
 	@./scripts/resetDev
 	@./scripts/startDev
-	@./scripts/testons
-#	@./scripts/stopDev
+	@./scripts/testsend
+	#@./scripts/testons
+	python scripts/ons/create_domain.py

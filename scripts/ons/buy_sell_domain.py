@@ -1,3 +1,6 @@
+
+
+
 import requests
 import json
 import time
@@ -98,6 +101,11 @@ def addresses():
     resp = rpc_call('owner.ListAccountAddresses', {})
     return resp["result"]["addresses"]
 
+def new_account(name):
+    resp = rpc_call('owner.NewAccount', {"name": name})
+    print resp
+    return resp["result"]
+
 
 def sign(rawTx, address):
     resp = rpc_call('owner.SignWithAddress', {"rawTx": rawTx,"address": address})
@@ -127,7 +135,7 @@ if __name__ == "__main__":
 
     print addrs
 
-    raw_txn = create_domain("alice1.olt", addrs[0], "100.2345")
+    raw_txn = create_domain("bob.olt", addrs[0], "100.2345")
     print raw_txn
 
     signed = sign(raw_txn, addrs[0])
@@ -140,7 +148,7 @@ if __name__ == "__main__":
           "##"
     print
 
-    raw_txn = send_domain("alice1.olt", addrs[0], "100")
+    raw_txn = send_domain("bob.olt", addrs[0], "100")
     print raw_txn
 
     signed = sign(raw_txn, addrs[0])
@@ -153,7 +161,7 @@ if __name__ == "__main__":
           "##"
     print
     time.sleep(2)
-    raw_txn = sell_domain("alice1.olt", addrs[0], "10.2345")
+    raw_txn = sell_domain("bob.olt", addrs[0], "10.2345")
     print raw_txn
     print
 
@@ -166,42 +174,7 @@ if __name__ == "__main__":
     print "############################################"
     print
 
-    raw_txn = send_domain("alice1.olt", addrs[0], "100")
-    print raw_txn
 
-    signed = sign(raw_txn, addrs[0])
-    print signed
-    print
-
-    result = broadcast_commit(raw_txn, signed['signature']['Signed'], signed['signature']['Signer'])
+    # Create New account
+    result = new_account("new_name")
     print result
-    print "#################" \
-          "##"
-    print
-
-    raw_txn = send_domain("alice1.olt", addrs[0], "100")
-    print raw_txn
-
-    signed = sign(raw_txn, addrs[0])
-    print signed
-    print
-
-    result = broadcast_commit(raw_txn, signed['signature']['Signed'], signed['signature']['Signer'])
-    print result
-    print "#################" \
-          "##"
-    print
-
-    raw_txn = cancel_sell_domain("alice1.olt", addrs[0], "10.2345")
-    print raw_txn
-    print
-
-    signed = sign(raw_txn, addrs[0])
-    print signed
-    print
-
-    result = broadcast_commit(raw_txn, signed['signature']['Signed'], signed['signature']['Signer'])
-    print result
-    print
-
-

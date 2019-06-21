@@ -2,6 +2,8 @@ package owner
 
 import (
 	"github.com/Oneledger/protocol/action"
+	"github.com/Oneledger/protocol/data/chain"
+	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/log"
 
 	"github.com/Oneledger/protocol/client"
@@ -86,5 +88,26 @@ func (svc *Service) SignWithAddress(req client.SignRawTxRequest, reply *client.S
 		return rpc.InternalError(err.Error())
 	}
 	*reply = client.SignRawTxResponse{Signature: action.Signature{Signed: signed, Signer: pkey}}
+	return nil
+}
+
+func (svc *Service) NewAccount(req client.NewAccountRequest, reply *client.NewAccountReply) error {
+
+	pubKey, privKey, err := keys.NewKeyPairFromTendermint()
+	if err != nil {
+		return rpc.InternalError(err.Error())
+	}
+
+	ct, err := chain.TypeFromName("OneLedger")
+	if err != nil {
+		return rpc.InternalError(err.Error())
+	}
+
+	acc, err := accounts.NewAccount(ct, req.Name, &privKey, &pubKey)
+	if err != nil {
+		return rpc.InternalError(err.Error())
+	}
+
+	reply = &client.NewAccountReply{acc}
 	return nil
 }
