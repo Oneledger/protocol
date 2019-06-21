@@ -6,7 +6,7 @@ import (
 	"github.com/Oneledger/protocol/rpc"
 )
 
-// A generic client for accessing rpc services.
+// A type-safe client for accessing rpc services.
 // Eventually each service will be broken out onto its own type
 // TODO: The methods defined here should handle context.Context
 type ServiceClient struct {
@@ -58,6 +58,28 @@ func (c *ServiceClient) ListAccounts() (out ListAccountsReply, err error) {
 
 func (c *ServiceClient) ApplyValidator(req ApplyValidatorRequest) (out ApplyValidatorReply, err error) {
 	err = c.Call("tx.ApplyValidator", req, &out)
+	return
+}
+
+/* ONS */
+func (c *ServiceClient) ONS_CreateRawCreate(req ONSCreateRequest) (out SendTxReply, err error) {
+	err = c.Call("tx.ONS_CreateRawCreate", req, &out)
+	return
+}
+func (c *ServiceClient) ONS_CreateRawUpdate(req ONSUpdateRequest) (out SendTxReply, err error) {
+	err = c.Call("tx.ONS_CreateRawUpdate", req, &out)
+	return
+}
+func (c *ServiceClient) ONS_CreateRawSale(req ONSSaleRequest) (out SendTxReply, err error) {
+	err = c.Call("tx.ONS_CreateRawSale", req, &out)
+	return
+}
+func (c *ServiceClient) ONS_CreateRawBuy(req ONSPurchaseRequest) (out SendTxReply, err error) {
+	err = c.Call("tx.ONS_CreateRawBuy", req, &out)
+	return
+}
+func (c *ServiceClient) ONS_CreateRawSend(req ONSSendRequest) (out SendTxReply, err error) {
+	err = c.Call("tx.ONS_CreateRawSend", req, &out)
 	return
 }
 

@@ -33,21 +33,21 @@ var _ encoding.TextMarshaler = Address{}
 var _ encoding.TextUnmarshaler = &Address{}
 
 // MarshalText returns the text form for an Address. It returns a byteslice containing the hex encoding
-// of the address excluding the prefix
+// of the address including the 0x prefix
 func (a Address) MarshalText() ([]byte, error) {
 	addrHex := hex.EncodeToString(a)
 	return []byte(utils.PrefixHex(addrHex)), nil
 }
 
-// UnmarshalText decodes the given text in a byteslice of UTF8 characters. This implementation ignores hexPrefixprefixes
-// and works regardless of whether the prefix is present or not
+// UnmarshalText decodes the given text in a byteslice of characters,
+// and works regardless of whether the 0x prefix is present or not.
 func (a *Address) UnmarshalText(text []byte) error {
 	if a == nil {
 		*a = Address{}
 	}
 	addrStr := string(text)
-	// Cut off the hex prefix if it exists
 
+	// Cut off the hex prefix if it exists
 	if strings.HasPrefix(addrStr, utils.HexPrefix) {
 		addrStr = addrStr[len(utils.HexPrefix):]
 	}
