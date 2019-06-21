@@ -137,6 +137,13 @@ func (reply *BroadcastReply) FromResultBroadcastTxCommit(result *ctypes.ResultBr
 	reply.Height = &result.Height
 }
 
+type NewAccountRequest struct {
+	Name string `json:"name"`
+}
+type NewAccountReply struct {
+	Account accounts.Account `json:"account"`
+}
+
 /*
 	ONS Request Types
 */
