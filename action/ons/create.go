@@ -20,6 +20,12 @@ type DomainCreate struct {
 	Price   action.Amount
 }
 
+var _ Ons = DomainCreate{}
+
+func (dc DomainCreate) OnsName() string {
+	return dc.Name
+}
+
 func (dc DomainCreate) Signers() []action.Address {
 	return []action.Address{dc.Owner}
 }

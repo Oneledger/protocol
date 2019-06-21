@@ -6,13 +6,14 @@ package ons
 
 import (
 	"github.com/Oneledger/protocol/data/balance"
+	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/serialize"
 	"github.com/pkg/errors"
 )
 
 type domainData struct {
-	OwnerAddress     []byte
-	AccountAddress   []byte
+	OwnerAddress     keys.Address
+	AccountAddress   keys.Address
 	Name             string
 	CreationHeight   int64
 	LastUpdateHeight int64

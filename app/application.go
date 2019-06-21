@@ -370,6 +370,7 @@ func (ctx *context) Services() (service.Map, error) {
 		Cfg:          ctx.cfg,
 		NodeContext:  ctx.node,
 		ValidatorSet: ctx.validators,
+		Domains:      ctx.domains,
 		Router:       ctx.actionRouter,
 		Logger:       log.NewLoggerWithPrefix(ctx.logWriter, "rpc"),
 		Services:     extSvcs,

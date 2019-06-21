@@ -18,6 +18,12 @@ type DomainUpdate struct {
 	Active  bool
 }
 
+var _ Ons = DomainUpdate{}
+
+func (du DomainUpdate) OnsName() string {
+	return du.Name
+}
+
 func (du DomainUpdate) Signers() []action.Address {
 	return []action.Address{du.Owner}
 }

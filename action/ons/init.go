@@ -48,3 +48,8 @@ func EnableONS(r action.Router) error {
 
 	return nil
 }
+
+type Ons interface {
+	action.Msg
+	OnsName() string
+}
