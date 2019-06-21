@@ -36,6 +36,14 @@ spec:
           requests:
             cpu: "1"
             memory: "1Gi"
+        livenessProbe:
+          httpGet:
+            path: /status
+            port: 26604
+          initialDelaySeconds: 60
+          periodSeconds: 30
+          timeoutSeconds: 5
+          failureThreshold: 10
       initContainers:
       - name: change-persistent-data-ownership 
         image: gcr.io/atomic-land-223022/oneledger/chronos:latest

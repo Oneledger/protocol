@@ -29,6 +29,26 @@ spec:
         volumeMounts:
         - mountPath: /data
           name: psql-pv-claim
+        resources:
+          requests:
+            cpu: "1"
+            memory: "1Gi"
+        livenessProbe:
+          exec:
+            command:
+            - psql
+            - -U
+            - postgres 
+            - -h 
+            - localhost 
+            - -d 
+            - explorer_chronos
+            - -c 
+            - "SELECT 1 FROM blockchain.blocks"
+          initialDelaySeconds: 10
+          periodSeconds: 20
+          timeoutSeconds: 5
+          failureThreshold: 6
       initContainers:
       - name: change-persistent-data-ownership 
         image: gcr.io/atomic-land-223022/oneledger/explorer_postgres:latest
