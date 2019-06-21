@@ -67,18 +67,18 @@ func (c *ServiceClient) ListValidators() (out ListValidatorsReply, err error) {
 }
 
 /* Broadcast */
-func (c *ServiceClient) TxAsync(req BroadcastRequest) (out BroadcastTxReply, err error) {
+func (c *ServiceClient) TxAsync(req BroadcastRequest) (out BroadcastReply, err error) {
 	err = c.Call("broadcast.TxAsync", req, &out)
 	return
 
 }
 
-func (c *ServiceClient) TxSync(req BroadcastRequest) (out BroadcastTxReply, err error) {
+func (c *ServiceClient) TxSync(req BroadcastRequest) (out BroadcastReply, err error) {
 	err = c.Call("broadcast.TxSync", req, &out)
 	return
 }
 
-func (c *ServiceClient) TxCommit(req BroadcastRequest) (out BroadcastTxReply, err error) {
+func (c *ServiceClient) TxCommit(req BroadcastRequest) (out BroadcastReply, err error) {
 	err = c.Call("broadcast.TxCommit", req, &out)
 	return
 }

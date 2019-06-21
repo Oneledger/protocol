@@ -109,14 +109,26 @@ type BroadcastRequest struct {
 	PublicKey keys.PublicKey `json:"publicKey"`
 }
 
-type BroadcastTxReply struct {
-	TxHash keys.Address             `json:"txHash"`
-	Result ctypes.ResultBroadcastTx `json:"result"`
+type BroadcastReply struct {
+	TxHash action.Address `json:"txHash"`
+	// OK indicates whether this broadcast was a request.
+	// For TxSync, it indicates success of CheckTx. Does not guarantee inclusion of a block
+	// For TxAsync, it always returns true
+	// For TxCommit, it indicates the success of both CheckTx and DeliverTx. If the broadcast fails is false.
+	OK     bool   `json:"ok"`
+	Height *int64 `json:"height,omitempty"`
 }
 
-type BroadcastTxCommitReply struct {
-	TxHash keys.Address                   `json:"txHash"`
-	Result ctypes.ResultBroadcastTxCommit `json:"result"`
+func (reply *BroadcastReply) FromResultBroadcastTx(result *ctypes.ResultBroadcastTx) {
+	reply.TxHash = action.Address(result.Hash)
+	reply.OK = result.Code == 0
+	reply.Height = nil
+}
+
+func (reply *BroadcastReply) FromResultBroadcastTxCommit(result *ctypes.ResultBroadcastTxCommit) {
+	reply.TxHash = action.Address(result.Hash)
+	reply.OK = result.CheckTx.Code == 0 && result.DeliverTx.Code == 0
+	reply.Height = &result.Height
 }
 
 /*
