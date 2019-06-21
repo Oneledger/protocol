@@ -61,6 +61,28 @@ func (c *ServiceClient) ApplyValidator(req ApplyValidatorRequest) (out ApplyVali
 	return
 }
 
+/* ONS */
+func (c *ServiceClient) ONS_CreateRawCreate(req ONSCreateRequest) (out SendTxReply, err error) {
+	err = c.Call("tx.ONS_CreateRawCreate", req, &out)
+	return
+}
+func (c *ServiceClient) ONS_CreateRawUpdate(req ONSUpdateRequest) (out SendTxReply, err error) {
+	err = c.Call("tx.ONS_CreateRawUpdate", req, &out)
+	return
+}
+func (c *ServiceClient) ONS_CreateRawSale(req ONSSaleRequest) (out SendTxReply, err error) {
+	err = c.Call("tx.ONS_CreateRawSale", req, &out)
+	return
+}
+func (c *ServiceClient) ONS_CreateRawBuy(req ONSPurchaseRequest) (out SendTxReply, err error) {
+	err = c.Call("tx.ONS_CreateRawBuy", req, &out)
+	return
+}
+func (c *ServiceClient) ONS_CreateRawSend(req ONSSendRequest) (out SendTxReply, err error) {
+	err = c.Call("tx.ONS_CreateRawSend", req, &out)
+	return
+}
+
 func (c *ServiceClient) ListValidators() (out ListValidatorsReply, err error) {
 	err = c.Call("query.ListValidators", struct{}{}, &out)
 	return
