@@ -6,7 +6,7 @@ import (
 	"github.com/Oneledger/protocol/rpc"
 )
 
-// A generic client for accessing rpc services.
+// A type-safe client for accessing rpc services.
 // Eventually each service will be broken out onto its own type
 // TODO: The methods defined here should handle context.Context
 type ServiceClient struct {
