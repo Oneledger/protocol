@@ -20,6 +20,12 @@ type DomainCreate struct {
 	Price   action.Amount
 }
 
+var _ Ons = DomainCreate{}
+
+func (dc DomainCreate) OnsName() string {
+	return dc.Name
+}
+
 func (dc DomainCreate) Signers() []action.Address {
 	return []action.Address{dc.Owner}
 }
@@ -142,6 +148,8 @@ func (domainCreateTx) ProcessDeliver(ctx *action.Context, msg action.Msg, fee ac
 	if err != nil {
 		return false, action.Response{Log: err.Error()}
 	}
+	ctx.Logger.Error(domain)
+	ctx.Logger.Error(ctx.Domains.Get(domain.Name, false))
 	result := action.Response{
 		Tags: create.Tags(),
 	}

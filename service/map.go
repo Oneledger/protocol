@@ -7,6 +7,7 @@ import (
 	"github.com/Oneledger/protocol/config"
 	"github.com/Oneledger/protocol/data/accounts"
 	"github.com/Oneledger/protocol/data/balance"
+	"github.com/Oneledger/protocol/data/ons"
 	"github.com/Oneledger/protocol/identity"
 	"github.com/Oneledger/protocol/log"
 	"github.com/Oneledger/protocol/service/broadcast"
@@ -24,6 +25,7 @@ type Context struct {
 	Cfg          config.Server
 	NodeContext  node.Context
 	ValidatorSet *identity.ValidatorStore
+	Domains      *ons.DomainStore
 	Services     client.ExtServiceContext
 	Router       action.Router
 	Logger       *log.Logger
@@ -37,7 +39,7 @@ func NewMap(ctx *Context) Map {
 		broadcast.Name(): broadcast.NewService(ctx.Services, ctx.Logger),
 		nodesvc.Name():   nodesvc.NewService(ctx.NodeContext, &ctx.Cfg, ctx.Logger),
 		owner.Name():     owner.NewService(ctx.Accounts, ctx.Logger),
-		query.Name():     query.NewService(ctx.Balances, ctx.Currencies, ctx.ValidatorSet, ctx.Logger),
+		query.Name():     query.NewService(ctx.Services, ctx.Balances, ctx.Currencies, ctx.ValidatorSet, ctx.Domains, ctx.Logger),
 		tx.Name():        tx.NewService(ctx.Balances, ctx.Router, ctx.Accounts, ctx.NodeContext, ctx.Logger),
 	}
 }

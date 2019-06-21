@@ -33,7 +33,9 @@ Services:
 */
 
 /* Blockchain service  */
-type BalanceRequest = keys.Address
+type BalanceRequest struct {
+	Address keys.Address `json:"address"`
+}
 type BalanceReply struct {
 	// The balance of the account. Returns an empty balance
 	// if the account is not found
@@ -95,6 +97,10 @@ type ListAccountsReply struct {
 	Accounts []accounts.Account `json:"accounts"`
 }
 
+type ListAccountAddressesReply struct {
+	Addresses []string `json:"addresses"`
+}
+
 type ListValidatorsRequest struct{}
 type ListValidatorsReply struct {
 	// The list of active validators
@@ -131,51 +137,11 @@ func (reply *BroadcastReply) FromResultBroadcastTxCommit(result *ctypes.ResultBr
 	reply.Height = &result.Height
 }
 
-/*
-	ONS Request Types
-*/
-type ONSCreateRequest struct {
-	Owner   keys.Address  `json:"owner"`
-	Account keys.Address  `json:"account"`
-	Name    string        `json:"name"`
-	Price   action.Amount `json:"price"`
-	Fee     action.Amount `json:"fee"`
-	Gas     int64         `json:"gas"`
+type NewAccountRequest struct {
+	Name string `json:"name"`
 }
-
-type ONSUpdateRequest struct {
-	Owner   keys.Address  `json:"owner"`
-	Account keys.Address  `json:"account"`
-	Name    string        `json:"name"`
-	Active  bool          `json:"active"`
-	Fee     action.Amount `json:"fee"`
-	Gas     int64         `json:"gas"`
-}
-
-type ONSSaleRequest struct {
-	Name         string        `json:"name"`
-	OwnerAddress keys.Address  `json:"owner"`
-	Price        action.Amount `json:"price"`
-	CancelSale   bool          `json:"cancel_sale"`
-	Fee          action.Amount `json:"fee"`
-	Gas          int64         `json:"gas"`
-}
-
-type ONSPurchaseRequest struct {
-	Name     string        `json:"name"`
-	Buyer    keys.Address  `json:"buyer"`
-	Account  keys.Address  `json:"account"`
-	Offering action.Amount `json:"offering"`
-	Fee      action.Amount `json:"fee"`
-	Gas      int64         `json:"gas"`
-}
-
-type ONSSendRequest struct {
-	From   keys.Address  `json:"from"`
-	Name   string        `json:"name"`
-	Amount action.Amount `json:"amount"`
-	Fee    action.Amount `json:"fee"`
-	Gas    int64         `json:"gas"`
+type NewAccountReply struct {
+	Account accounts.Account `json:"account"`
 }
 
 type SignRawTxRequest struct {

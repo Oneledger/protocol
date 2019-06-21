@@ -22,6 +22,12 @@ type DomainSale struct {
 	CancelSale   bool
 }
 
+var _ Ons = DomainSale{}
+
+func (s DomainSale) OnsName() string {
+	return s.DomainName
+}
+
 var _ action.Msg = DomainSale{}
 
 func (DomainSale) Type() action.Type {
@@ -119,7 +125,7 @@ func (domainSaleTx) ProcessCheck(ctx *action.Context, msg action.Msg,
 		if err == ons.ErrDomainNotFound {
 			return false, action.Response{Log: "domain not found"}
 		}
-		return false, action.Response{Log: "error getting domain"}
+		return false, action.Response{Log: err.Error()}
 	}
 
 	if bytes.Compare(domain.OwnerAddress, sale.OwnerAddress) != 0 {
