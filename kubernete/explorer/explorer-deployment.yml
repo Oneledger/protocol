@@ -83,18 +83,21 @@ spec:
           containerPort: 80
           protocol: TCP 
         readinessProbe:
-          tcpSocket:
+          httpGet:
+            path: /metrics
             port: 80
-          initialDelaySeconds: 30
-          failureThreshold: 10
-          timeoutSeconds: 15
-        livenessProbe:
-          tcpSocket:
-            port: 80
-          initialDelaySeconds: 10
-          periodSeconds: 10
+          initialDelaySeconds: 60
+          periodSeconds: 30
+          failureThreshold: 5
           timeoutSeconds: 5
-          failureThreshold: 2
+        livenessProbe:
+          httpGet:
+            path: /metrics
+            port: 80
+          initialDelaySeconds: 60
+          periodSeconds: 15
+          failureThreshold: 5
+          timeoutSeconds: 5
         securityContext:
           runAsUser: 0
       - name: cloudsql-proxy
@@ -142,7 +145,7 @@ kind: BackendConfig
 metadata:
   name: explorer-api-server-backendconfig
 spec:
-  timeoutSec: 60
+  timeoutSec: 3600
   connectionDraining:
     drainingTimeoutSec: 0
 ---
@@ -155,7 +158,7 @@ spec:
     apiVersion: apps/v1
     kind: Deployment
     name: explorer-api-server
-  minReplicas: 1
+  minReplicas: 3
   maxReplicas: 10
   metrics:
   - type: Resource
