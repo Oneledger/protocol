@@ -21,7 +21,7 @@ spec:
         args: 
           - >- 
             /usr/local/bin/explorer watch 
-            --db psql-service/explorer_chronos?sslmode=disable  
+            --db localhost/explorer_chronos?sslmode=disable  
             --dbpassword postgres --dbuser postgres 
             --sdk tcp://fullnode-service:26606 
             --tendermint tcp://fullnode-service:26604
@@ -31,6 +31,22 @@ spec:
             memory: "512Mi"
         securityContext:
           runAsUser: 0
+      - name: cloudsql-proxy
+        image: gcr.io/cloudsql-docker/gce-proxy:1.11
+        command: ["/cloud_sql_proxy",
+              "-instances=atomic-land-223022:us-central1:explorer=tcp:5432",
+              "-credential_file=/secrets/cloudsql/credentials.json"]
+        securityContext:
+          runAsUser: 2  # non-root user
+          allowPrivilegeEscalation: false
+        volumeMounts:
+          - name: my-secrets-volume
+            mountPath: /secrets/cloudsql
+            readOnly: true
+      volumes:
+      - name: my-secrets-volume
+        secret:
+          secretName: cloudsql-cluster-credential
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -54,7 +70,7 @@ spec:
         args: 
           - >- 
             /usr/local/bin/explorer serve 
-            --db psql-service/explorer_chronos?sslmode=disable  
+            --db localhost/explorer_chronos?sslmode=disable  
             --dbpassword postgres --dbuser postgres 
             --tendermint tcp://fullnode-service:26604
             --sdk tcp://fullnode-service:26606 
@@ -81,6 +97,22 @@ spec:
           failureThreshold: 2
         securityContext:
           runAsUser: 0
+      - name: cloudsql-proxy
+        image: gcr.io/cloudsql-docker/gce-proxy:1.11
+        command: ["/cloud_sql_proxy",
+              "-instances=atomic-land-223022:us-central1:explorer=tcp:5432",
+              "-credential_file=/secrets/cloudsql/credentials.json"]
+        securityContext:
+          runAsUser: 2  # non-root user
+          allowPrivilegeEscalation: false
+        volumeMounts:
+          - name: my-secrets-volume
+            mountPath: /secrets/cloudsql
+            readOnly: true
+      volumes:
+      - name: my-secrets-volume
+        secret:
+          secretName: cloudsql-cluster-credential
 ---
 apiVersion: v1
 kind: Service
