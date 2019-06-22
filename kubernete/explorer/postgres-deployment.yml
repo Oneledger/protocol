@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: postgres-deployment
+  name: explorer-server-sql-proxy
   labels:
     app: explorer
 spec:
@@ -15,74 +15,36 @@ spec:
         app: explorer-postgres
     spec:
       volumes:
-      - name: psql-pv-claim
-        persistentVolumeClaim:
-          claimName: psql-pv-claim
+      - name: my-secrets-volume
+        secret:
+          secretName: cloudsql-cluster-credential
       containers:
-      - name: postgres-database
-        image: gcr.io/atomic-land-223022/oneledger/explorer_postgres:latest
-        imagePullPolicy: "Always"
-        ports: 
+      - name: cloudsql-proxy
+        image: gcr.io/cloudsql-docker/gce-proxy:1.11
+        command: ["/cloud_sql_proxy",
+              "-instances=atomic-land-223022:us-central1:explorer=tcp:5432",
+              "-credential_file=/secrets/cloudsql/credentials.json"]
+        ports:
         - name: psql-port
           containerPort: 5432
           protocol: TCP 
-        volumeMounts:
-        - mountPath: /data
-          name: psql-pv-claim
-        resources:
-          requests:
-            cpu: "1"
-            memory: "1Gi"
         livenessProbe:
           exec:
-            command:
-            - psql
-            - -U
-            - postgres 
-            - -h 
-            - localhost 
-            - -d 
-            - explorer_chronos
-            - -c 
-            - "SELECT 1 FROM blockchain.blocks"
+            command: ["nc", "-z", "localhost", "5432"]
           initialDelaySeconds: 10
-          periodSeconds: 20
-          timeoutSeconds: 5
-          failureThreshold: 6
-      initContainers:
-      - name: change-persistent-data-ownership 
-        image: gcr.io/atomic-land-223022/oneledger/explorer_postgres:latest
-        imagePullPolicy: "Always"
+          periodSeconds: 60
         securityContext:
           runAsUser: 0
-        command:
-        - chown
-        args:
-        - -R  
-        - postgres:postgres
-        - /data
         volumeMounts:
-        - mountPath: /data
-          name: psql-pv-claim
----
-kind: PersistentVolumeClaim
-apiVersion: v1
-metadata:
-  name: psql-pv-claim
-spec:
-  storageClassName: fast
-  accessModes:
-    - ReadWriteOnce
-  resources:
-    requests:
-      storage: 50Gi
+          - name: my-secrets-volume
+            mountPath: /secrets/cloudsql
+            readOnly: true
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: psql-service
+  name: explorer-server-sql-proxy
   labels:
-    run: psql-service
     app: explorer
 spec:
   ports:
