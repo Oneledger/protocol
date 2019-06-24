@@ -7,7 +7,7 @@ import (
 	"github.com/Oneledger/protocol/serialize"
 )
 
-func (sv *Service) ONS_GetDomainByName(req client.ONSGetDomainsRequest, reply *client.ONSGetDomainsReplay) error {
+func (sv *Service) ONS_GetDomainByName(req client.ONSGetDomainsRequest, reply *client.ONSGetDomainsReply) error {
 	domains := sv.ons
 	if len(req.Name) <= 0 {
 		return rpc.InvalidParamsError("name not provided")
@@ -17,14 +17,14 @@ func (sv *Service) ONS_GetDomainByName(req client.ONSGetDomainsRequest, reply *c
 	if err != nil {
 		return rpc.InternalError("domain not exist")
 	}
-	*reply = client.ONSGetDomainsReplay{
+	*reply = client.ONSGetDomainsReply{
 		Domains: []ons.Domain{*d},
 	}
 
 	return nil
 }
 
-func (sv *Service) ONS_GetDomainByOwner(req client.ONSGetDomainsRequest, reply *client.ONSGetDomainsReplay) error {
+func (sv *Service) ONS_GetDomainByOwner(req client.ONSGetDomainsRequest, reply *client.ONSGetDomainsReply) error {
 	domains := sv.ons
 	if req.Owner == nil {
 		return rpc.InvalidParamsError("owner not provided")
@@ -46,20 +46,20 @@ func (sv *Service) ONS_GetDomainByOwner(req client.ONSGetDomainsRequest, reply *
 		return false
 	})
 
-	*reply = client.ONSGetDomainsReplay{
+	*reply = client.ONSGetDomainsReply{
 		Domains: ds,
 	}
 
 	return nil
 }
 
-func (sv *Service) ONS_GetDomainOnSale(req client.ONSGetDomainsRequest, reply *client.ONSGetDomainsReplay) error {
+func (sv *Service) ONS_GetDomainOnSale(req client.ONSGetDomainsRequest, reply *client.ONSGetDomainsOnSaleReply) error {
 	domains := sv.ons
 	if req.OnSale == false {
 		return rpc.InvalidParamsError("OnSale flag not set")
 	}
-	ds := make([]ons.Domain, 0)
 
+	dds := []client.DomainData{}
 	domains.Iterate(func(key []byte, value []byte) bool {
 		d := &ons.Domain{}
 		err := serialize.GetSerializer(serialize.PERSISTENT).Deserialize(value, d)
@@ -67,13 +67,17 @@ func (sv *Service) ONS_GetDomainOnSale(req client.ONSGetDomainsRequest, reply *c
 			return true
 		}
 		if d.OnSaleFlag {
-			ds = append(ds, *d)
+			dd := client.DomainData{
+				d.Name,
+				d.SalePrice.Amount.String(),
+			}
+			dds = append(dds, dd)
 		}
 		return false
 	})
 
-	*reply = client.ONSGetDomainsReplay{
-		Domains: ds,
+	*reply = client.ONSGetDomainsOnSaleReply{
+		Domains: dds,
 	}
 	return nil
 }

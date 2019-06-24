@@ -70,4 +70,5 @@ onstest: install
 	@./scripts/startDev
 	@./scripts/testsend
 	python scripts/ons/create_domain.py
+	python scripts/ons/buy_sell_domain.py
 	@./scripts/stopDev

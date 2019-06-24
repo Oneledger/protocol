@@ -5,6 +5,8 @@
 package tx
 
 import (
+	"strings"
+
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/action/ons"
 	"github.com/Oneledger/protocol/client"
@@ -103,7 +105,7 @@ func (s *Service) ONS_CreateRawSale(args client.ONSSaleRequest, reply *client.Se
 func (s *Service) ONS_CreateRawBuy(args client.ONSPurchaseRequest, reply *client.SendTxReply) error {
 
 	domainPurchase := ons.DomainPurchase{
-		Name:     args.Name,
+		Name:     strings.ToLower(args.Name),
 		Buyer:    args.Buyer,
 		Account:  args.Account,
 		Offering: args.Offering,

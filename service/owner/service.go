@@ -40,6 +40,31 @@ func (svc *Service) AddAccount(acc client.AddAccountRequest, reply *client.AddAc
 	return nil
 }
 
+// AddAccount adds an account to the local accounts store of the node
+func (svc *Service) GenerateNewAccount(req client.GenerateAccountRequest, reply *client.AddAccountReply) error {
+	oneledgerChain, err := chain.TypeFromName("OneLedger")
+	if err != nil {
+		err := errors.Wrap(err, "error in getting chaintype")
+		return rpc.InternalError(err.Error())
+	}
+
+	acc, err := accounts.GenerateNewAccount(oneledgerChain, req.Name)
+	if err != nil {
+		err := errors.Wrap(err, "error in generating account")
+		return rpc.InternalError(err.Error())
+	}
+
+	err = svc.accounts.Add(acc)
+	if err != nil {
+		err := errors.Wrap(err, "error in adding account to walletstore")
+		return rpc.InternalError(err.Error())
+	}
+
+	acct, err := svc.accounts.GetAccount(acc.Address())
+	*reply = client.AddAccountReply{Account: acct}
+	return nil
+}
+
 // DeleteAccount deletes an account from the local store
 func (svc *Service) DeleteAccount(req client.DeleteAccountRequest, reply *client.DeleteAccountReply) error {
 	var nilAccount accounts.Account

@@ -94,13 +94,13 @@ func (domainPurchaseTx) ProcessCheck(ctx *action.Context, msg action.Msg, fee ac
 		return false, action.Response{Log: "domain is not on sale"}
 	}
 
-	if domain.SalePrice.LessThanEqualCoin(buy.Offering.ToCoin(ctx)) {
+	if !domain.SalePrice.LessThanEqualCoin(buy.Offering.ToCoin(ctx)) {
 		return false, action.Response{Log: "offering price not enough"}
 	}
 
 	buyerBalance, err := ctx.Balances.Get(buy.Buyer.Bytes(), false)
 	if err != nil {
-		return false, action.Response{Log: errors.Wrap(err, "failed to get buyerBalance balance").Error()}
+		return false, action.Response{Log: errors.Wrap(err, "failed to get buyer balance").Error()}
 	}
 
 	buyerBalance, err = buyerBalance.MinusCoin(buy.Offering.ToCoin(ctx))
@@ -131,13 +131,13 @@ func (domainPurchaseTx) ProcessDeliver(ctx *action.Context, msg action.Msg, fee 
 	}
 
 	coin := buy.Offering.ToCoin(ctx)
-	if domain.SalePrice.LessThanEqualCoin(coin) {
+	if !domain.SalePrice.LessThanEqualCoin(coin) {
 		return false, action.Response{Log: "offering price not enough"}
 	}
 
 	buyerBalance, err := ctx.Balances.Get(buy.Buyer.Bytes(), false)
 	if err != nil {
-		return false, action.Response{Log: errors.Wrap(err, "failed to get buyerBalance balance").Error()}
+		return false, action.Response{Log: errors.Wrap(err, "failed to get buyer balance").Error()}
 	}
 
 	buyerBalance, err = buyerBalance.MinusCoin(coin)
@@ -147,7 +147,7 @@ func (domainPurchaseTx) ProcessDeliver(ctx *action.Context, msg action.Msg, fee 
 
 	salerBalance, err := ctx.Balances.Get(domain.OwnerAddress, false)
 	if err != nil {
-		return false, action.Response{Log: errors.Wrap(err, "failed to get salerBalance balance").Error()}
+		return false, action.Response{Log: errors.Wrap(err, "failed to get saler balance").Error()}
 	}
 	salerBalance.AddCoin(coin)
 

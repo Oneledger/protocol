@@ -1,6 +1,8 @@
 package tx
 
 import (
+	"fmt"
+
 	"github.com/Oneledger/protocol/action/staking"
 	"github.com/Oneledger/protocol/action/transfer"
 	"github.com/Oneledger/protocol/log"
@@ -71,6 +73,35 @@ func (svc *Service) SendTx(args client.SendTxRequest, reply *client.SendTxReply)
 		return err
 	}
 	tx.Signatures = []action.Signature{{pubKey, signed}}
+
+	packet, err := serialize.GetSerializer(serialize.NETWORK).Serialize(tx)
+	if err != nil {
+		return errors.Wrap(err, "err while network serialization")
+	}
+
+	*reply = client.SendTxReply{
+		RawTx: packet,
+	}
+
+	return nil
+}
+
+func (svc *Service) CreateRawSend(args client.SendTxRequest, reply *client.SendTxReply) error {
+	send := transfer.Send{
+		From:   keys.Address(args.From),
+		To:     keys.Address(args.To),
+		Amount: args.Amount,
+	}
+
+	uuidNew, err := uuid.NewUUID()
+	fmt.Println(err)
+
+	fee := action.Fee{args.Fee, args.Gas}
+	tx := &action.BaseTx{
+		Data: send,
+		Fee:  fee,
+		Memo: uuidNew.String(),
+	}
 
 	packet, err := serialize.GetSerializer(serialize.NETWORK).Serialize(tx)
 	if err != nil {
