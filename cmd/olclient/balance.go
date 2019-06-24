@@ -66,6 +66,6 @@ func BalanceNode(cmd *cobra.Command, args []string) {
 
 func printBalance(nodeName string, address []byte, bal client.BalanceReply) {
 	logger.Infof("\t Balance for address %x on %s", address, nodeName)
-	logger.Info("\t Balance:", bal.Balance.String())
+	logger.Info("\t Balance:", bal.Balance)
 	logger.Info("\t Height:", bal.Height)
 }
