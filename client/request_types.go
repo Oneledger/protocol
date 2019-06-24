@@ -87,6 +87,10 @@ type AddAccountReply struct {
 	Account accounts.Account `json:"account"`
 }
 
+type GenerateAccountRequest struct {
+	Name string `json:"name"`
+}
+
 type DeleteAccountRequest struct {
 	Address keys.Address `json:"address"`
 }
