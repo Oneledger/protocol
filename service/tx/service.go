@@ -84,6 +84,33 @@ func (svc *Service) SendTx(args client.SendTxRequest, reply *client.SendTxReply)
 	return nil
 }
 
+func (svc *Service) CreateRawSend(args client.SendTxRequest, reply *client.SendTxReply) error {
+	send := transfer.Send{
+		From:   keys.Address(args.From),
+		To:     keys.Address(args.To),
+		Amount: args.Amount,
+	}
+
+	uuidNew, _ := uuid.NewUUID()
+	fee := action.Fee{args.Fee, args.Gas}
+	tx := &action.BaseTx{
+		Data: send,
+		Fee:  fee,
+		Memo: uuidNew.String(),
+	}
+
+	packet, err := serialize.GetSerializer(serialize.NETWORK).Serialize(tx)
+	if err != nil {
+		return errors.Wrap(err, "err while network serialization")
+	}
+
+	*reply = client.SendTxReply{
+		RawTx: packet,
+	}
+
+	return nil
+}
+
 func (svc *Service) ApplyValidator(args client.ApplyValidatorRequest, reply *client.ApplyValidatorReply) error {
 	if len(args.Name) < 1 {
 		args.Name = svc.nodeContext.NodeName
