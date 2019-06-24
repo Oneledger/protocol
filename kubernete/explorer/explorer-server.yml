@@ -1,77 +1,6 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: explorer-watcher
-  labels:
-    app: explorer
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: explorer-watcher
-  template:  
-    metadata:
-      labels:
-        app: explorer-watcher
-    spec:
-      containers:
-      - name: explorer-watcher 
-        image: gcr.io/atomic-land-223022/oneledger/explorer:latest
-        env:
-        - name: "DB_NAME"
-          valueFrom:
-            secretKeyRef:
-              name: cloudsql-db-credentials
-              key: dbname
-        - name: "DB_USER"
-          valueFrom:
-            secretKeyRef:
-              name: cloudsql-db-credentials
-              key: username
-        - name: "DB_PASSWORD"
-          valueFrom:
-            secretKeyRef:
-              name: cloudsql-db-credentials
-              key: password
-        command: ["/bin/bash", "-c"]
-        args: 
-          - >- 
-            /usr/local/bin/explorer watch 
-            --db localhost/$DB_NAME?sslmode=disable  
-            --dbpassword $DB_USER --dbuser $DB_PASSWORD 
-            --sdk tcp://fullnode-service:26606 
-            --tendermint tcp://fullnode-service:26604
-        resources:
-          requests:
-            cpu: "200m"
-            memory: "512Mi"
-        securityContext:
-          runAsUser: 0
-      - name: cloudsql-proxy
-        image: gcr.io/cloudsql-docker/gce-proxy:1.11
-        command: ["/cloud_sql_proxy",
-              "-instances=atomic-land-223022:us-central1:explorer=tcp:5432",
-              "-credential_file=/secrets/cloudsql/credentials.json"]
-        livenessProbe:
-          exec:
-            command: ["nc", "-z", "localhost", "5432"]
-          initialDelaySeconds: 10
-          periodSeconds: 60
-        securityContext:
-          runAsUser: 2  # non-root user
-          allowPrivilegeEscalation: false
-        volumeMounts:
-          - name: my-secrets-volume
-            mountPath: /secrets/cloudsql
-            readOnly: true
-      volumes:
-      - name: my-secrets-volume
-        secret:
-          secretName: cloudsql-cluster-credential
----
-apiVersion: apps/v1
-kind: Deployment
-metadata:
   name: explorer-api-server
   labels:
     app: explorer
@@ -194,16 +123,3 @@ spec:
     resource:
       name: cpu
       targetAverageUtilization: 40
----
-apiVersion: autoscaling/v1
-kind: HorizontalPodAutoscaler
-metadata:
-  name: explorer-watcher
-spec:
-  scaleTargetRef:
-    apiVersion: apps/v1
-    kind: Deployment
-    name: explorer-watcher
-  minReplicas: 1
-  maxReplicas: 10
-  targetCPUUtilizationPercentage: 60
