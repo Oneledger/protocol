@@ -17,12 +17,28 @@ spec:
       containers:
       - name: explorer-watcher 
         image: gcr.io/atomic-land-223022/oneledger/explorer:latest
+        env:
+        - name: "DB_NAME"
+          valueFrom:
+            secretKeyRef:
+              name: cloudsql-db-credentials
+              key: dbname
+        - name: "DB_USER"
+          valueFrom:
+            secretKeyRef:
+              name: cloudsql-db-credentials
+              key: username
+        - name: "DB_PASSWORD"
+          valueFrom:
+            secretKeyRef:
+              name: cloudsql-db-credentials
+              key: password
         command: ["/bin/bash", "-c"]
         args: 
           - >- 
             /usr/local/bin/explorer watch 
-            --db localhost/explorer_chronos?sslmode=disable  
-            --dbpassword postgres --dbuser postgres 
+            --db localhost/$DB_NAME?sslmode=disable  
+            --dbpassword $DB_USER --dbuser $DB_PASSWORD 
             --sdk tcp://fullnode-service:26606 
             --tendermint tcp://fullnode-service:26604
         resources:
@@ -71,12 +87,28 @@ spec:
       containers:
       - name: explorer-api-server
         image: gcr.io/atomic-land-223022/oneledger/explorer:latest
+        env:
+        - name: "DB_NAME"
+          valueFrom:
+            secretKeyRef:
+              name: cloudsql-db-credentials
+              key: dbname
+        - name: "DB_USER"
+          valueFrom:
+            secretKeyRef:
+              name: cloudsql-db-credentials
+              key: username
+        - name: "DB_PASSWORD"
+          valueFrom:
+            secretKeyRef:
+              name: cloudsql-db-credentials
+              key: password
         command: ["/bin/bash", "-c"]
         args: 
           - >- 
             /usr/local/bin/explorer serve 
-            --db explorer-server-sql-proxy/explorer_chronos?sslmode=disable  
-            --dbpassword postgres --dbuser postgres 
+            --db explorer-server-sql-proxy/$DB_NAME?sslmode=disable  
+            --dbpassword $DB_PASSWORD --dbuser $DB_USER 
             --tendermint tcp://fullnode-service:26604
             --sdk tcp://fullnode-service:26606 
         resources:
