@@ -131,7 +131,7 @@ func (domainPurchaseTx) ProcessDeliver(ctx *action.Context, msg action.Msg, fee 
 	}
 
 	coin := buy.Offering.ToCoin(ctx)
-	if domain.SalePrice.LessThanEqualCoin(coin) {
+	if !domain.SalePrice.LessThanEqualCoin(coin) {
 		return false, action.Response{Log: "offering price not enough"}
 	}
 
