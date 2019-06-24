@@ -39,6 +39,20 @@ func NewAccount(t chain.Type, name string, privkey *keys.PrivateKey, pubkey *key
 	return acc, nil
 }
 
+func GenerateNewAccount(t chain.Type, name string) (Account, error) {
+	pubKey, privKey, err := keys.NewKeyPairFromTendermint()
+	if err != nil {
+		return Account{}, err
+	}
+	acc := Account{
+		Type:       t,
+		Name:       name,
+		PrivateKey: &privKey,
+		PublicKey:  &pubKey,
+	}
+	return acc, nil
+}
+
 func (acc Account) Address() keys.Address {
 	handler, err := acc.PublicKey.GetHandler()
 	if err != nil {
