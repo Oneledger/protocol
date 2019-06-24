@@ -34,6 +34,10 @@ func validateAndSignTx(req client.BroadcastRequest) ([]byte, error) {
 		return nil, err
 	}
 
+	if len(base.Signatures) > 0 {
+		return base.Bytes(), nil
+	}
+
 	sigs := []action.Signature{{Signer: req.PublicKey, Signed: req.Signature}}
 	_, err = action.ValidateBasic(base.Data, base.Fee, base.Memo, sigs)
 	if err != nil {

@@ -1,6 +1,8 @@
 package tx
 
 import (
+	"fmt"
+
 	"github.com/Oneledger/protocol/action/staking"
 	"github.com/Oneledger/protocol/action/transfer"
 	"github.com/Oneledger/protocol/log"
@@ -91,7 +93,9 @@ func (svc *Service) CreateRawSend(args client.SendTxRequest, reply *client.SendT
 		Amount: args.Amount,
 	}
 
-	uuidNew, _ := uuid.NewUUID()
+	uuidNew, err := uuid.NewUUID()
+	fmt.Println(err)
+
 	fee := action.Fee{args.Fee, args.Gas}
 	tx := &action.BaseTx{
 		Data: send,

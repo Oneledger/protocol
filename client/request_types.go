@@ -115,8 +115,8 @@ type ListValidatorsReply struct {
 
 type BroadcastRequest struct {
 	RawTx     []byte         `json:"rawTx"`
-	Signature []byte         `json:"signature"`
-	PublicKey keys.PublicKey `json:"publicKey"`
+	Signature []byte         `json:"signature,omitempty"`
+	PublicKey keys.PublicKey `json:"publicKey,omitempty"`
 }
 
 type BroadcastReply struct {
