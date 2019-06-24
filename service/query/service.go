@@ -50,7 +50,7 @@ func (svc *Service) Balance(req client.BalanceRequest, resp *client.BalanceReply
 	}
 
 	*resp = client.BalanceReply{
-		Balance: *bal,
+		Balance: bal.String(),
 		Height:  svc.balances.Version,
 	}
 	return nil

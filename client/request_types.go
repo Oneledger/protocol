@@ -12,7 +12,6 @@ package client
 import (
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/data/accounts"
-	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/identity"
 	ctypes "github.com/tendermint/tendermint/rpc/core/types"
@@ -39,7 +38,7 @@ type BalanceRequest struct {
 type BalanceReply struct {
 	// The balance of the account. Returns an empty balance
 	// if the account is not found
-	Balance balance.Balance `json:"balance"`
+	Balance string `json:"balance"`
 	// The height when this balance was recorded
 	Height int64 `json:"height"`
 }
