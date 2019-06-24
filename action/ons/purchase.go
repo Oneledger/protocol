@@ -94,7 +94,7 @@ func (domainPurchaseTx) ProcessCheck(ctx *action.Context, msg action.Msg, fee ac
 		return false, action.Response{Log: "domain is not on sale"}
 	}
 
-	if domain.SalePrice.LessThanEqualCoin(buy.Offering.ToCoin(ctx)) {
+	if !domain.SalePrice.LessThanEqualCoin(buy.Offering.ToCoin(ctx)) {
 		return false, action.Response{Log: "offering price not enough"}
 	}
 
