@@ -59,6 +59,14 @@ type ONSGetDomainsRequest struct {
 	OnSale bool         `json:"onSale"`
 }
 
-type ONSGetDomainsReplay struct {
+type ONSGetDomainsReply struct {
 	Domains []ons.Domain `json:"domains"`
+}
+
+type ONSGetDomainsOnSaleReply struct {
+	Domains []DomainData `json:"domains"`
+}
+type DomainData struct {
+	Name      string `json:"name"`
+	SalePrice string `json:"sale_price"`
 }

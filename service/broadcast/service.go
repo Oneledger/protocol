@@ -2,7 +2,6 @@ package broadcast
 
 import (
 	"errors"
-	"fmt"
 
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/client"
@@ -35,7 +34,6 @@ func validateAndSignTx(req client.BroadcastRequest) ([]byte, error) {
 		return nil, err
 	}
 
-	fmt.Printf("%#v", base)
 	sigs := []action.Signature{{Signer: req.PublicKey, Signed: req.Signature}}
 	_, err = action.ValidateBasic(base.Data, base.Fee, base.Memo, sigs)
 	if err != nil {

@@ -95,6 +95,10 @@ def cancel_sell_domain(name, owner_hex, price):
     })
     return resp["result"]["rawTx"]
 
+def get_domain_on_sale():
+    resp = rpc_call('query.ONS_GetDomainOnSale', {'onSale': True})
+    return resp
+
 def addresses():
     resp = rpc_call('owner.ListAccountAddresses', {})
     return resp["result"]["addresses"]
@@ -200,6 +204,14 @@ if __name__ == "__main__":
     if result["ok"] != True:
         sys.exit(-1)
 
+    print "Get Domain on Sale"
+    resp = get_domain_on_sale()
+    print resp
+
+    print "#################" \
+          "##"
+    print
+
     raw_txn = cancel_sell_domain("alice1.olt", addrs[0], "10.2345")
     print raw_txn
     print
@@ -214,4 +226,10 @@ if __name__ == "__main__":
     if result["ok"] != True:
         sys.exit(-1)
 
+    print "Get Domain on Sale"
+    resp = get_domain_on_sale()
+    print resp
 
+    print "#################" \
+          "##"
+    print
