@@ -12,6 +12,11 @@ type ServiceClient struct {
 	*rpc.Client
 }
 
+func NewServiceClient(conn string) (*ServiceClient, error) {
+	client, err := rpc.NewClient(conn)
+	return &ServiceClient{client}, err
+}
+
 func (c *ServiceClient) Balance(addr keys.Address) (out BalanceReply, err error) {
 	/*if len(request) <= 20 {
 		return out, errors.New("address has insufficient length")
@@ -83,8 +88,14 @@ func (c *ServiceClient) ONS_CreateRawBuy(req ONSPurchaseRequest) (out SendTxRepl
 	err = c.Call("tx.ONS_CreateRawBuy", req, &out)
 	return
 }
+
 func (c *ServiceClient) ONS_CreateRawSend(req ONSSendRequest) (out SendTxReply, err error) {
 	err = c.Call("tx.ONS_CreateRawSend", req, &out)
+	return
+}
+
+func (c *ServiceClient) CreateRawSend(req SendTxRequest) (out *SendTxReply, err error) {
+	err = c.Call("tx.CreateRawSend", req, &out)
 	return
 }
 
