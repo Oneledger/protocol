@@ -37,6 +37,11 @@ func NewService(ctx client.ExtServiceContext, balances *balance.Store, currencie
 }
 
 func (svc *Service) Balance(req client.BalanceRequest, resp *client.BalanceReply) error {
+	err := req.Address.Err()
+	if err != nil {
+		return rpc.InvalidParamsError(err.Error())
+	}
+
 	addr := req.Address
 	bal, err := svc.balances.Get(addr, true)
 

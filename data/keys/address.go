@@ -29,6 +29,16 @@ func (a Address) Humanize() string {
 	return utils.PrefixHex(strings.ToLower(hex.EncodeToString(a)))
 }
 
+func (a Address) Err() error {
+	switch {
+	case len(a) == 0:
+		return errors.New("address is empty")
+	case len(a) != 20:
+		return errors.New("address is the incorrect length: must be 20-bytes (40 characters after 0x prefix)")
+	}
+	return nil
+}
+
 var _ encoding.TextMarshaler = Address{}
 var _ encoding.TextUnmarshaler = &Address{}
 

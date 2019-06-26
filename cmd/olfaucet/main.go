@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"net"
 	"net/http"
 	"net/url"
@@ -31,13 +32,13 @@ type faucetArgs struct {
 	rootDir         string
 	fullnodeConnStr string
 	listenAddr      string
-	maxLockTime     int
+	lockTime        int
 	maxReqAmount    int
 	dbDir           string
 }
 
 func (f faucetArgs) MaxLockTime() time.Duration {
-	return time.Minute * time.Duration(f.maxLockTime)
+	return time.Minute * time.Duration(f.lockTime)
 }
 
 var faucetCmd = &cobra.Command{
@@ -52,8 +53,8 @@ func init() {
 	faucetCmd.Flags().StringVar(&args.dbDir, "db_dir", "./", "Set directory of keyvalue store")
 	faucetCmd.Flags().StringVar(&args.fullnodeConnStr, "fullnode_connection", "", "Specify connection string for fullnode. If not present, uses the root directory's configuration to make the connection")
 	faucetCmd.Flags().StringVarP(&args.listenAddr, "listen_address", "l", "http://0.0.0.0:65432", "Specify what address to listen on")
-	faucetCmd.Flags().IntVar(&args.maxLockTime, "max_lock_time", 3000, "Max lock time for individual accounts, specified in terms of minutes")
-	faucetCmd.Flags().IntVar(&args.maxReqAmount, "max_req_amount", 5000, "Maximum number of OLT to request per account")
+	faucetCmd.Flags().IntVar(&args.lockTime, "lock_time", 60, "Max lock time for individual accounts, specified in terms of minutes")
+	faucetCmd.Flags().IntVar(&args.maxReqAmount, "max_req_amount", 50, "Maximum number of OLT to request per account")
 }
 
 func main() {
@@ -118,8 +119,9 @@ type Faucet struct {
 	db       *leveldb.DB
 }
 
-type MaxAmountReply struct {
-	MaxAmount int `json:"maxAmount"`
+type ParamsReply struct {
+	MaxAmount   int `json:"maxAmount"`
+	MinWaitTime int `json:"minWaitTimeMinutes"`
 }
 
 type Request struct {
@@ -179,9 +181,26 @@ func timeSinceLastReq(f *Faucet, req Request, now time.Time) time.Duration {
 	return now.Sub(t2)
 }
 
+func ip(rawAddr string) string {
+	host, _, _ := net.SplitHostPort(rawAddr)
+	return host
+}
+
 func (f *Faucet) RequestOLT(req Request, reply *Reply) error {
-	if timeSinceLastReq(f, req, time.Now()) < args.MaxLockTime() {
-		return rpc.NotAllowedError("This IP is locked from making requests until the MaxLockTime")
+	requestIP := ip(req.HTTPRequest().RemoteAddr)
+	logger.Info("Incoming request from", requestIP)
+
+	err := req.Address.Err()
+	if err != nil {
+		return rpc.InvalidParamsError(err.Error())
+	}
+	logger.Infof("Request \n\t Address: %s\n\t Amount: %d", req.Address.String(), req.Amount)
+
+	sinceLastReqTime := timeSinceLastReq(f, req, time.Now())
+	if sinceLastReqTime < args.MaxLockTime() {
+		waitTimeMins := args.MaxLockTime().Minutes() - sinceLastReqTime.Minutes()
+		waitTime := fmt.Sprintf("%.1f minutes", waitTimeMins)
+		return rpc.NotAllowedError("This IP is locked from making requests for " + waitTime)
 	}
 
 	if req.Amount <= 0 {
@@ -193,9 +212,6 @@ func (f *Faucet) RequestOLT(req Request, reply *Reply) error {
 	if req.Address == nil {
 		return rpc.InvalidRequestError("address must not be nil")
 	}
-
-	requestIP := req.HTTPRequest().RemoteAddr
-	logger.Info("Incoming request from", requestIP)
 
 	toSend := action.Amount{
 		Currency: "OLT",
@@ -240,14 +256,12 @@ func (f *Faucet) RequestOLT(req Request, reply *Reply) error {
 	}
 
 	// Set the time this request was made
-	host, _, _ := net.SplitHostPort(req.HTTPRequest().RemoteAddr)
-	f.set(host, time.Now())
-
+	f.set(requestIP, time.Now())
 	return nil
 }
 
-func (f *Faucet) GetMaxAmount(_ struct{}, reply *MaxAmountReply) error {
-	*reply = MaxAmountReply{MaxAmount: args.maxReqAmount}
+func (f *Faucet) GetParams(_ struct{}, reply *ParamsReply) error {
+	*reply = ParamsReply{MaxAmount: args.maxReqAmount, MinWaitTime: args.lockTime}
 	return nil
 }
 
