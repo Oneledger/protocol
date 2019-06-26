@@ -47,3 +47,7 @@ func MethodNotFoundError(msg string) *Error {
 }
 
 /* Define application-specific errors here */
+
+func NotAllowedError(msg string) *Error {
+	return NewError(CodeNotAllowed, msg)
+}
