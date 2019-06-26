@@ -29,7 +29,7 @@ var fullnodeConn string
 
 func init() {
 	RootCmd.AddCommand(callCmd)
-	callCmd.Flags().StringVar(&fullnodeConn, "address", "", "http://127.0.0.1:54321")
+	callCmd.Flags().StringVar(&fullnodeConn, "rpc_addr", "", "http://127.0.0.1:54321")
 }
 
 // IssueRequest sends out a sendTx to all of the nodes in the chain
