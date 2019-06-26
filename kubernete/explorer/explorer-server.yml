@@ -1,0 +1,125 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: explorer-api-server
+  labels:
+    app: explorer
+spec:
+  selector:
+    matchLabels:
+      app: explorer-api-server
+  template:  
+    metadata:
+      labels:
+        app: explorer-api-server
+    spec:
+      containers:
+      - name: explorer-api-server
+        image: gcr.io/atomic-land-223022/oneledger/explorer:latest
+        env:
+        - name: "DB_NAME"
+          valueFrom:
+            secretKeyRef:
+              name: cloudsql-db-credentials
+              key: dbname
+        - name: "DB_USER"
+          valueFrom:
+            secretKeyRef:
+              name: cloudsql-db-credentials
+              key: username
+        - name: "DB_PASSWORD"
+          valueFrom:
+            secretKeyRef:
+              name: cloudsql-db-credentials
+              key: password
+        command: ["/bin/bash", "-c"]
+        args: 
+          - >- 
+            /usr/local/bin/explorer serve 
+            --db explorer-server-sql-proxy/$DB_NAME?sslmode=disable  
+            --dbpassword $DB_PASSWORD --dbuser $DB_USER 
+            --tendermint tcp://fullnode-service:26604
+            --sdk tcp://fullnode-service:26606 
+        resources:
+          requests:
+            cpu: "400m"
+            memory: "512Mi"
+        ports:
+        - name: explorer-server
+          containerPort: 80
+          protocol: TCP 
+        readinessProbe:
+          httpGet:
+            path: /metrics
+            port: 80
+          initialDelaySeconds: 30
+          periodSeconds: 60
+          failureThreshold: 5
+          timeoutSeconds: 5
+        livenessProbe:
+          httpGet:
+            path: /metrics
+            port: 80
+          initialDelaySeconds: 60
+          periodSeconds: 30
+          failureThreshold: 10
+          timeoutSeconds: 5
+        securityContext:
+          runAsUser: 0
+      volumes:
+      - name: my-secrets-volume
+        secret:
+          secretName: cloudsql-cluster-credential
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: explorer-service
+  labels:
+    run: explorer-service
+    app: explorer
+  annotations:
+    beta.cloud.google.com/backend-config: '{"ports": {"80":"explorer-api-server-backendconfig","443":"explorer-api-server-backendconfig"}}'
+spec:
+  ports:
+  - name: explorer-api-http
+    port: 80
+    targetPort: explorer-server
+    protocol: TCP
+  - name: explorer-api-https
+    port: 443
+    targetPort: explorer-server
+    protocol: TCP
+  type: NodePort
+  selector:
+    app: explorer-api-server
+---
+apiVersion: cloud.google.com/v1beta1
+kind: BackendConfig
+metadata:
+  name: explorer-api-server-backendconfig
+spec:
+  timeoutSec: 3600
+  connectionDraining:
+    drainingTimeoutSec: 0
+---
+apiVersion: autoscaling/v2beta1
+kind: HorizontalPodAutoscaler
+metadata:
+  name: explorer-api-server
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: explorer-api-server
+  minReplicas: 3
+  maxReplicas: 10
+  metrics:
+  - type: Resource
+    resource:
+      name: memory
+      targetAverageUtilization: 60
+  - type: Resource
+    resource:
+      name: cpu
+      targetAverageUtilization: 40
