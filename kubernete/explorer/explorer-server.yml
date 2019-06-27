@@ -13,9 +13,29 @@ spec:
       labels:
         app: explorer-api-server
     spec:
+      volumes:
+      - name: my-secrets-volume
+        secret:
+          secretName: cloudsql-cluster-credential
       containers:
+      - name: cloudsql-proxy
+        image: gcr.io/cloudsql-docker/gce-proxy:1.11
+        command: ["/cloud_sql_proxy",
+              "-instances=atomic-land-223022:us-central1:explorer-read-replica=tcp:5432",
+              "-credential_file=/secrets/cloudsql/credentials.json"]
+        resources:
+          requests:
+            cpu: "250m"
+            memory: "206Mi"
+        securityContext:
+          runAsUser: 2  # non-root user
+          allowPrivilegeEscalation: false
+        volumeMounts:
+          - name: my-secrets-volume
+            mountPath: /secrets/cloudsql
+            readOnly: true
       - name: explorer-api-server
-        image: gcr.io/atomic-land-223022/oneledger/explorer:latest
+        image: gcr.io/atomic-land-223022/oneledger/explorer:v0.2.1
         env:
         - name: "DB_NAME"
           valueFrom:
@@ -36,7 +56,7 @@ spec:
         args: 
           - >- 
             /usr/local/bin/explorer serve 
-            --db explorer-server-sql-proxy/$DB_NAME?sslmode=disable  
+            --db localhost/$DB_NAME?sslmode=disable  
             --dbpassword $DB_PASSWORD --dbuser $DB_USER 
             --tendermint tcp://fullnode-service:26604
             --sdk tcp://fullnode-service:26606 
@@ -50,20 +70,20 @@ spec:
           protocol: TCP 
         readinessProbe:
           httpGet:
-            path: /metrics
+            path: /blocks
             port: 80
           initialDelaySeconds: 30
           periodSeconds: 60
           failureThreshold: 5
-          timeoutSeconds: 5
+          timeoutSeconds: 10
         livenessProbe:
           httpGet:
-            path: /metrics
+            path: /blocks
             port: 80
           initialDelaySeconds: 60
           periodSeconds: 30
           failureThreshold: 10
-          timeoutSeconds: 5
+          timeoutSeconds: 10
         securityContext:
           runAsUser: 0
       volumes:
