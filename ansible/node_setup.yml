@@ -114,7 +114,7 @@
     - { regexp: "create_empty_blocks = ", line: "create_empty_blocks = false"}
     - { regexp: "index_tags = ", line: "index_tags = []"}
     - { regexp: "  timeout_commit", line: "timeout_commit = 5000"}
-    - { regexp: "  db", line: "db = cleveldb"}
+    - { regexp: "  db = ", line: "db = \"cleveldb\""}
 # set up validator node config.toml
 - hosts: validator_node
   remote_user: "{{remote_user}}"
