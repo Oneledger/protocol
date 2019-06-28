@@ -35,7 +35,7 @@ spec:
             mountPath: /secrets/cloudsql
             readOnly: true
       - name: explorer-api-server
-        image: gcr.io/atomic-land-223022/oneledger/explorer:v0.2.1
+        image: gcr.io/atomic-land-223022/oneledger/explorer:latest
         env:
         - name: "DB_NAME"
           valueFrom:
@@ -75,7 +75,7 @@ spec:
           initialDelaySeconds: 30
           periodSeconds: 60
           failureThreshold: 5
-          timeoutSeconds: 10
+          timeoutSeconds: 5
         livenessProbe:
           httpGet:
             path: /blocks
@@ -83,7 +83,7 @@ spec:
           initialDelaySeconds: 60
           periodSeconds: 30
           failureThreshold: 10
-          timeoutSeconds: 10
+          timeoutSeconds: 5
         securityContext:
           runAsUser: 0
       volumes:
