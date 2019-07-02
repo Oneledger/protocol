@@ -1,0 +1,93 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fullnode-deployment
+  labels:
+    app: fullnode
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: fullnode
+  template:  
+    metadata:
+      labels:
+        app: fullnode
+    spec:
+      volumes:
+      - name: fullnode-pv-claim
+        persistentVolumeClaim:
+          claimName: fullnode-pv-claim
+      containers:
+      - name: fullnode-container
+        image: gcr.io/atomic-land-223022/oneledger/chronos:latest
+        imagePullPolicy: "Always"
+        volumeMounts:
+          - mountPath: "/home/node/go/data"
+            name: fullnode-pv-claim
+        ports:
+          - name: sdk-port
+            containerPort: 26606
+            protocol: TCP
+          - name: rpc-port
+            containerPort: 26604
+            protocol: TCP
+        resources:
+          requests:
+            cpu: "1"
+            memory: "4Gi"
+        livenessProbe:
+          httpGet:
+            path: /status
+            port: 26604
+          initialDelaySeconds: 60
+          periodSeconds: 30
+          timeoutSeconds: 5
+          failureThreshold: 10
+      initContainers:
+      - name: change-persistent-data-ownership 
+        image: gcr.io/atomic-land-223022/oneledger/chronos:latest
+        imagePullPolicy: "Always"
+        securityContext:
+          runAsUser: 0
+        command:
+        - chown
+        args:
+        - -R  
+        - node:node
+        - /home/node/go/data 
+        volumeMounts:
+        - name: fullnode-pv-claim
+          mountPath: "/home/node/go/data"
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: fullnode-pv-claim
+spec:
+  storageClassName: fast
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 50Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: fullnode-service
+  labels:
+    run: fullnode-service
+spec:
+  ports:
+  - name: sdk-port
+    port: 26606
+    targetPort: 26606
+    protocol: TCP
+  - name: rpc-port
+    port: 26604
+    targetPort: 26604
+    protocol: TCP  
+  type: NodePort
+  selector:
+    app: fullnode

@@ -1,0 +1,41 @@
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: explorer-ingress
+  namespace: chronos
+  annotations:
+    kubernetes.io/ingress.global-static-ip-name: k8-explorer-api-server-chronos
+spec:
+  tls:
+  - hosts:
+    - explorer.oneledger.network
+    secretName: tls-secret
+  rules:
+  - host: explorer.oneledger.network
+    http:
+      paths:
+      - backend:
+          serviceName: explorer-service
+          servicePort: 80
+        path: /* #!!!!!!!!DON"T REMOVE * , else the ingress controller wouldn't work. (BUG gce bug)
+---
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: explorer-ingress
+  namespace: default
+  annotations:
+    kubernetes.io/ingress.global-static-ip-name: k8-explorer-api-server
+spec:
+  tls:
+  - hosts:
+    - explorer-devnet.oneledger.network
+    secretName: tls-secret
+  rules:
+  - host: explorer-devnet.oneledger.network
+    http:
+      paths:
+      - backend:
+          serviceName: explorer-service
+          servicePort: 80
+        path: /* #!!!!!!!!DON"T REMOVE * , else the ingress controller wouldn't work. (BUG gce bug)

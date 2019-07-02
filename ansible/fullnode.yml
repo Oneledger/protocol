@@ -10,7 +10,9 @@
   roles:
     - role: fullnode
       logging: "{{ enable_logging | default('false') }}"
+      dev_mode: "{{ dev_env | default('false') }}"
       app_version: "{{ app_version | default('master') }}"
+      systemd_service: "{{ systemd_service | default('false') }}"
   environment:
     GOPATH: "{{GOPATH}}"
     OLTEST: "{{OLROOT}}/protocol/node/tests"

@@ -15,6 +15,7 @@
     - curl
     - make 
     - gcc
+    - wget
 - name: add user group for the app
   group:
     name: "{{app_user}}"
@@ -65,7 +66,7 @@
 - name: source bashrc 
   shell: . /home/{{app_user}}/.bashrc
 - name: compile binary
-  shell: chdir={{OLROOT}}/protocol/node make update install_c
+  shell: chdir={{OLROOT}}/protocol make update install_c
 - name: move app binary artifact to user bin directory
   shell: cp -R {{GOPATH}}/bin/* /usr/local/bin/  
 - name: change ownership of artifact to app user
@@ -73,14 +74,7 @@
     dest: "{{GOPATH}}"
     owner: "{{app_user}}"
     group: "{{app_user}}"
-    recurse: true
-- name: create temp genesis
-  copy:
-    src: ../files/genesis.json
-    dest: "{{OLDATA}}/genesis.json"
-    owner: "{{app_user}}"
-    group: "{{app_user}}"
-    mode: 0744      
+    recurse: true   
 - name: fullnode configuration setup
   copy:  
     dest: "/usr/local/bin/fullnodeSetup"
@@ -88,32 +82,18 @@
     group: "{{app_user}}"
     mode: 0744      
     content: |
-      #!/usr/bin/env bash
+      #!/bin/bash
       source ~/.profile
       public_ip="$(curl ifconfig.me | awk '{$1=$1};1')" 
       internal_ip="$(hostname -I | awk '{$1=$1};1')"
-      user_input_seeds="{{ seeds }}"
-      seed_address=($user_input_seeds)
-      len={{ seeds.split() | length}}
-      seeds="["
-      for (( i=0; i<$len; i++ )); do
-        seeds+="\"${seed_address[$i]}\"";
-        if [[ $i < $(expr $len - 1) ]]; then
-          seeds+=", "
-        fi
-      done
-      seeds+="]"
-      olfullnode init --genesis {{OLDATA}}/genesis.json --root {{OLDATA}}
+      wget -O {{GOPATH}}/genesis.json https://raw.githubusercontent.com/Oneledger/chronos-genesis/master/v0.10.4/genesis.json
+      olfullnode init --genesis {{GOPATH}}/genesis.json --root {{OLDATA}}
+      wget -O {{OLDATA}}/config.toml https://raw.githubusercontent.com/Oneledger/chronos-genesis/master/v0.10.4/config.toml
       sed -i "s/rpc_address.*/rpc_address = \"tcp:\/\/$internal_ip:26604\"/" {{OLDATA}}/config.toml
       sed -i "s/p2p_address.*/p2p_address = \"tcp:\/\/$internal_ip:26605\"/" {{OLDATA}}/config.toml
       sed -i "s/sdk_address.*/sdk_address = \"tcp:\/\/$internal_ip:26606\"/" {{OLDATA}}/config.toml
       sed -i "s/external_p2p_address.*/external_p2p_address = \"tcp:\/\/$public_ip:26605\"/" {{OLDATA}}/config.toml
-      sed -i "s/seed_mode.*/seed_mode = false/" {{OLDATA}}/config.toml
-      sed -i "s/seeds.*/seeds = $seeds/" {{OLDATA}}/config.toml
-      sed -i "s/log_output.*/log_output = \"stdout\"/" {{OLDATA}}/config.toml
-      sed -i "s/create_empty_blocks.=.*/create_empty_blocks = false/" {{OLDATA}}/config.toml
-      sed -i "s/db.=.*/db = \"cleveldb\"/" {{OLDATA}}/config.toml
-      sed -i "s/node_name.*/node_name = \"$public_ip\"/" {{OLDATA}}/config.toml
+      sed -i "s/node_name.*/node_name = \"$internal_ip\"/" {{OLDATA}}/config.toml
 - name: create start script
   copy:
     dest: "/usr/local/bin/fullnodeStartup"
@@ -121,11 +101,14 @@
     group: "{{app_user}}"
     mode: 0744
     content: |
-      #!/usr/bin/env bash
-      fullnodeSetup
-      olmonitor start olvm execute --root {{OLDATA}} >> {{OLDATA}}/olvm.log 2>&1 &
-      olfullnode node --root {{OLDATA}} >> {{OLDATA}}/olfullnode.log 2>&1 &
+      #!/bin/bash
+      if [[ -d "$OLDATA/nodedata" && -d "$OLDATA/consensus" ]]; then
+        echo "restarting an existing node, skip initialization"
+      else
+        /usr/local/bin/fullnodeSetup
+      fi
       cp -R {{GOPATH}}/* {{CONTAINER_OUTPUT_PATH}}
+      /usr/local/bin/olfullnode node --root {{OLDATA}}
       exec "$@"
 - name: create start quick script to start node 
   copy:
@@ -134,7 +117,7 @@
     group: "{{app_user}}"
     mode: 0744
     content: |
-      #!/usr/bin/env bash
+      #!/bin/bash
       olmonitor start olvm execute --root {{OLDATA}} >> {{OLDATA}}/olvm.log 2>&1 &
       olfullnode node --root {{OLDATA}} >> {{OLDATA}}/olfullnode.log 2>&1 &
   when: dev_mode == "true"
@@ -145,30 +128,11 @@
     group: "{{app_user}}"
     mode: 0744
     content: |
-      #!/usr/bin/env bash
+      #!/bin/bash
       pkill olfullnode
       pkill olmonitor
       pkill olvm
   when: dev_mode == "true"
-- name: create a systemd monitor service file
-  copy:
-    dest: "/etc/systemd/system/olmonitor.service"
-    owner: "root"
-    group: "root"
-    mode: 0644
-    content: |
-      [Unit]
-      Description=montor
-      After=network.target
-
-      [Service]
-      WorkingDirectory={{OLDATA}}
-      ExecStart=/usr/local/bin/olmonitor start olvm execute --root {{OLDATA}}
-      # Other Restart options: or always, on-abort, etc
-      Restart=on-failure
-
-      [Install]
-      WantedBy=multi-user.target
 - name: create a systemd olfullnode service file
   copy:
     dest: "/etc/systemd/system/olfullnode.service"
@@ -182,12 +146,19 @@
 
       [Service]
       WorkingDirectory={{OLDATA}}
-      ExecStart=/usr/local/bin/olfullnode node --root {{OLDATA}}
+      ExecStart=/usr/local/bin/fullnodeStartup
       # Other Restart options: or always, on-abort, etc
       Restart=on-failure
 
       [Install]
       WantedBy=multi-user.target
+- name: make sure olfullnode is running on boot
+  systemd:
+    state: started
+    name: olfullnode
+    enabled: true
+    scope: system
+  when: systemd_service == "true"
 - name: compress image size by remove developer dependencies
   file:
     path: "{{ item }}"
@@ -197,9 +168,43 @@
   - "{{GOPATH}}/src"
   - "{{GOPATH}}/pkg"
   - "{{GOPATH}}/bin"
-  when: compress_image == "true"
+  when: dev_mode == "false"
 - name: remove unused apt packages to reduce image size 
   apt:
     name: ["nano","git","vim"]
     state: absent
-  when: compress_image == "true"
+  when: dev_mode == "false"
+- name: find all the linux package to be deleted
+  find:
+    paths: "/var/lib/apt/lists"
+    file_type: any
+  register: files_to_delete
+  when: dev_mode == "false"
+- name: delete unnesscary package repo file to reduce size
+  file:
+    path: "{{ item.path }}"
+    state: absent
+  with_items: "{{ files_to_delete.files }}"
+  when: dev_mode == "false"
+- name: Ensures license dir exists
+  file: 
+    path: "{{ item }}"
+    state: directory
+    owner: root
+    group: root 
+    mode: 0755
+  with_items:
+    - /usr/share/doc/THIRD_PARTY_NOTICES
+- name: copy apache v2 license  
+  copy:
+    src: ../files/licenses/
+    dest: "{{ item }}"
+    owner: "root"
+    group: "root"
+    mode: 0644 
+  with_items:
+    - /usr/share/doc/THIRD_PARTY_NOTICES
+- name: remove unnesscary pip package (open source liscence compliance)
+  pip:
+    name: ansible
+    state: absent

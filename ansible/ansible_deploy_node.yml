@@ -1,0 +1,12 @@
+---
+- hosts: all
+  remote_user: "{{ssh_user}}"
+  become: true
+  become_user: root
+  vars:
+    GOPATH: /home/{{ssh_user}}/go
+    OLROOT: "/home/{{ssh_user}}"
+    GOLANG_INSTALL_DIR: /usr/local/go
+    OLDATA: "{{GOPATH}}/data"
+  roles:
+    - role: dev-setup
