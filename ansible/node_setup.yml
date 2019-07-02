@@ -60,6 +60,7 @@
       packages:
         - libleveldb-dev
         - libsnappy-dev
+        - less
 # move validator node consensus folder with private keys 
 - hosts: validator_node
   remote_user: "{{remote_user}}"
@@ -111,6 +112,9 @@
     - { regexp: "external_p2p_address", line: "external_p2p_address = \"tcp://{{inventory_hostname}}:26605\""}
     - { regexp: "log_output", line: "log_output = \"stdout\""}
     - { regexp: "create_empty_blocks = ", line: "create_empty_blocks = false"}
+    - { regexp: "index_tags = ", line: "index_tags = []"}
+    - { regexp: "  timeout_commit", line: "timeout_commit = 5000"}
+    - { regexp: "  db = ", line: "db = \"cleveldb\""}
 # set up validator node config.toml
 - hosts: validator_node
   remote_user: "{{remote_user}}"

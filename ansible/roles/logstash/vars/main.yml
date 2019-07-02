@@ -1,3 +1,3 @@
 ---
 # vars file for logstash
-elasticsearch_hosts: ["http://devnet-elasticsearch.oneledger.network:9200"] 
+elasticsearch_hosts: ["35.233.154.155"] 

@@ -1,0 +1,289 @@
+---
+- hosts: localhost
+  connection: local
+  vars:
+    new_app_user: node
+    validator_count: "{{ vcount | default(4) }}"
+    fullnode_count: "{{ fullnode_count }}"
+  tasks:
+    - name: run terraform apply 
+      terraform:
+        project_path: '../gcp/load-test'
+        lock : true
+        force_init: true  
+        backend_config:
+          key: "{{ stage | default('load-test') }}"
+        variables: 
+          name: "{{ stage | default('load-test') }}"
+          vpc_ip_range: "{{ vpc_ip_range | default('10.12.0.0/20') }}"
+          vmcount: "{{ node_count | default(5) }}"
+          vm_machine_type: "n1-standard-8"
+      register: vm_data
+    - set_fact: remote_hosts={{vm_data.outputs.public_ip.value}}
+    - name: add knowm hosts 
+      shell: ssh-keyscan -H {{item}} >> ~/.ssh/known_hosts
+      loop: "{{remote_hosts}}"
+    - name: add host to inventory file in memory 
+      add_host:
+        hostname: "{{item.1}}"
+        node_name: "{{item.0}}-Node"
+      with_indexed_items: "{{remote_hosts}}"      
+    - name: add first n hosts to validator_node group 
+      add_host:
+        name: "{{item.1}}"
+        group: "validator_node" 
+        app_user: "{{new_app_user}}"
+        APP_HOME: "/home/{{new_app_user}}/.olfullnode"
+        remote_user: "{{ remote_user | default('steven') }}"
+      with_indexed_items: "{{remote_hosts}}"
+      when: item.0 < {{validator_count}}
+    - name: add hosts after nth host to seed_node group 
+      add_host:
+        name: "{{item.1}}"
+        group: "seed_node"
+        app_user: "{{new_app_user}}"
+        APP_HOME: "/home/{{new_app_user}}/.olfullnode"
+        remote_user: "{{ remote_user | default('steven') }}"
+      with_indexed_items: "{{remote_hosts}}"
+      when: item.0 >= {{validator_count}} 
+    - name: find Node data files to be deleted
+      find:
+        paths: "{{lookup('env','OLDATA')}}"
+        patterns: '*-Node'
+        file_type: directory
+      register: files_to_delete
+    - name: delete data files generated during fulltest
+      file:
+        path: "{{ item.path }}"
+        state: absent
+      with_items: "{{ files_to_delete.files }}"
+    - name: create consensus/ initialized network with dir
+      shell: chdir={{lookup('env','OLDATA')}} olfullnode init devnet --root {{lookup('env','OLDATA')}} --validators {{validator_count}} --nonvalidators {{fullnode_count}}
+- hosts: seed_node
+  remote_user: "{{remote_user}}"
+  become: true
+  become_user: root
+  vars:
+    logging: "{{ enable_logging | default('false') }}"
+    reset_network: "{{ reset_network | default('false') }}"
+  roles:
+  - role: logstash
+    when: logging == "true" 
+#setting up global source 
+- hosts: validator_node:seed_node
+  remote_user: "{{remote_user}}"
+  become: true
+  become_user: root
+  vars:
+    logging: "{{ enable_logging | default('false') }}"
+    reset_network: "{{ reset_network | default('false') }}"
+  tasks:
+  - name: create a new user for app to run
+    user:
+      name: "{{app_user}}"
+  - name: Clean artifact path
+    file:
+      state: absent
+      path: "{{APP_HOME}}"
+    when: reset_network == 'true'
+  - name: ansible create a directory for go application
+    file:
+      path: "{{APP_HOME}}"
+      state: directory
+      mode: 0755
+      owner: "{{app_user}}"
+      group: "{{app_user}}"
+    when: reset_network == 'true'
+  - name: ansible create a directory for nodedata
+    file:
+      path: "{{APP_HOME}}/nodedata"
+      state: directory
+      mode: 0755
+      owner: "{{app_user}}"
+      group: "{{app_user}}"
+    when: reset_network == 'true'
+  - name: copy binary executables to remote servers
+    copy:
+      src: "{{lookup('env','GOPATH')}}/{{item}}"
+      dest: /usr/local/bin
+      mode: 0755
+    with_items:
+      ["bin/olfullnode", "bin/olclient"]
+  - set_fact: app_directory={{APP_HOME}}
+  - name: set nofile soft limit
+    pam_limits:
+      domain: "root"
+      limit_type: soft
+      limit_item: nofile
+      value: 1000000
+  - name: set nofile hard limit
+    pam_limits:
+      domain: "root"
+      limit_type: hard
+      limit_item: nofile
+      value: 1000000
+  - name: install lib for cmake
+    apt:
+      name: "{{ packages }}"
+    vars:
+      packages:
+        - libleveldb-dev
+        - libsnappy-dev
+# move validator node consensus folder with private keys 
+- hosts: validator_node:seed_node
+  remote_user: "{{remote_user}}"
+  become: true
+  become_user: root
+  tasks:
+  - name: copy consensus folder over to each validator node
+    copy:
+      src: "{{lookup('env','OLDATA')}}/{{node_name}}/{{item}}"
+      dest: "{{APP_HOME}}"
+      mode: 0644
+      owner: "{{app_user}}"
+      group: "{{app_user}}"
+    with_items: 
+      - consensus
+      - config.toml
+# replace application ports and address
+- hosts: seed_node:validator_node
+  remote_user: "{{remote_user}}"
+  become: true
+  become_user: root  
+  vars:
+    internal_ip: "{{ ansible_all_ipv4_addresses | ipaddr('private') | first }}"
+  tasks:
+  - name: set fullnode specific configuration 
+    lineinfile:
+      path: "{{APP_HOME}}/config.toml"
+      regexp: '{{item.regexp}}'
+      line: "  {{item.line}}"
+    with_items:
+    - { regexp: "rpc_address", line: "rpc_address = \"tcp://{{internal_ip}}:26604\""}
+    - { regexp: "p2p_address = \"tcp://", line: "p2p_address = \"tcp://{{internal_ip}}:26605\""}
+    - { regexp: "sdk_address = ", line: "sdk_address = \"tcp://127.0.0.1:26631\""}
+    - { regexp: "node_name", line: "node_name = \"{{node_name}}\""}
+    - { regexp: "external_p2p_address", line: "external_p2p_address = \"tcp://{{inventory_hostname}}:26605\""}
+    - { regexp: "log_output", line: "log_output = \"stdout\""}
+    - { regexp: "create_empty_blocks = ", line: "create_empty_blocks = false"}
+    - { regexp: " size = ", line: "size = 15000"}
+    - { regexp: "db = ", line: "db = \"cleveldb\""}
+    - { regexp: " recheck = ", line: "recheck = true"}
+    - { regexp: " broadcast = ", line: "broadcast = true"}
+- hosts: validator_node
+  remote_user: "{{remote_user}}"
+  become: true
+  become_user: root  
+  vars:
+    internal_ip: "{{ ansible_all_ipv4_addresses | ipaddr('private') | first }}"
+  tasks:
+  - name: set fullnode specific configuration 
+    lineinfile:
+      path: "{{APP_HOME}}/config.toml"
+      regexp: '{{item.regexp}}'
+      line: "  {{item.line}}"
+    with_items:
+    - { regexp: " recheck = ", line: "recheck = false"}
+    - { regexp: " broadcast = ", line: "broadcast = false"}
+# set up validator node config.toml
+- hosts: validator_node
+  remote_user: "{{remote_user}}"
+  become: true
+  become_user: root
+  tasks:
+  - name: get persistent peer address
+    command: chdir={{APP_HOME}} olfullnode show_node_id --root {{APP_HOME}} --ip
+    register: persistent_peers
+  - name: set concatenated p2p address string for all seed nodes
+    set_fact:
+      persistentAddressList: "{{ ansible_play_hosts | map('extract', hostvars, 'persistent_peers') | map(attribute='stdout') | list}}"
+      persistentAddress: "{{ ansible_play_hosts | map('extract', hostvars, 'persistent_peers') | map(attribute='stdout') | list | join(',') }}"
+    run_once: yes
+  # set up seed node config.toml
+- hosts: seed_node
+  remote_user: "{{remote_user}}"
+  become: true
+  become_user: root
+  tasks:
+  - name: get seed address
+    command: chdir={{APP_HOME}} olfullnode show_node_id --root {{APP_HOME}} --ip
+    register: command_output
+  - name: set concatenated p2p address string for all seed nodes
+    set_fact:
+      seedAddressList: "{{ ansible_play_hosts | map('extract', hostvars, 'command_output') | map(attribute='stdout') | list}}"
+      seedAddress: "{{ ansible_play_hosts | map('extract', hostvars, 'command_output') | map(attribute='stdout') | list | join(',') }}"
+    run_once: yes
+  - name: set persistent peers
+    lineinfile:
+      path: "{{APP_HOME}}/config.toml"
+      regexp: 'persistent_peers'
+      line: "  persistent_peers = {{hostvars[groups['validator_node'][0]]['persistentAddressList'] | to_json }}"
+# modify configuration file for fullnodes 
+- hosts: validator_node
+  remote_user: "{{remote_user}}"
+  become: true
+  become_user: root  
+  tasks:
+  - name: set persistent peers
+    lineinfile:
+      path: "{{APP_HOME}}/config.toml"
+      regexp: 'persistent_peers'
+      line: "  persistent_peers = {{hostvars[groups['validator_node'][0]]['persistentAddressList'] | to_json }}"
+- hosts: validator_node:seed_node
+  remote_user: "{{remote_user}}"
+  become: true
+  become_user: root
+  tasks:
+  - name: create a systemd olfullnode service file
+    copy:
+      dest: "/etc/systemd/system/olfullnode.service"
+      owner: "root"
+      group: "root"
+      mode: 0644
+      content: |
+        [Unit]
+        Description=fullnode server
+        After=network.target
+
+        [Service]
+        WorkingDirectory={{APP_HOME}}
+        ExecStart=/usr/local/bin/olfullnode node --root {{APP_HOME}}
+        # Other Restart options: or always, on-abort, etc
+
+        [Install]
+        WantedBy=multi-user.target
+  - name: start systemd olfullnode service
+    systemd:
+      name: olfullnode.service
+      scope: system
+      state: restarted
+      daemon_reload: yes
+- hosts: seed_node
+  remote_user: "{{remote_user}}"
+  become: true
+  become_user: root
+  tasks:
+  - name: create a systemd loadtest service file
+    copy:
+      dest: "/etc/systemd/system/loadtest.service"
+      owner: "root"
+      group: "root"
+      mode: 0644
+      content: |
+        [Unit]
+        Description=load test thread using olclient
+        After=network.target
+
+        [Service]
+        WorkingDirectory={{APP_HOME}}
+        ExecStart=/usr/local/bin/olclient loadtest --root {{APP_HOME}} --interval 1 --threads 20 --max-tx 1000000
+        # Other Restart options: or always, on-abort, etc
+
+        [Install]
+        WantedBy=multi-user.target
+  - name: start loadtest service
+    systemd:
+      name: loadtest.service
+      scope: system
+      state: restarted
+      daemon_reload: yes

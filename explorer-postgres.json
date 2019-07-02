@@ -1,0 +1,46 @@
+{
+    "variables": {
+        "app_user": "postgres",
+        "ecr_endpoint": "260114726869.dkr.ecr.us-east-1.amazonaws.com",
+        "tag": "develop",
+        "docker_registry": "260114726869.dkr.ecr.us-east-1.amazonaws.com"
+    },
+    "builders": [
+        {
+            "type": "docker",
+            "image": "{{user `ecr_endpoint`}}/oneledger/explorer:latest",
+            "ecr_login": true,
+            "login_server": "{{user `ecr_endpoint`}}",
+            "commit": true,
+            "changes": [
+                "USER {{user `app_user`}}",
+                "EXPOSE 5432",
+                "VOLUME  [\"/etc/postgresql\", \"/var/log/postgresql\", \"/var/lib/postgresql\"]", 
+                "ENTRYPOINT [\"/usr/local/bin/explorerStartup\"]"
+            ]
+        }
+    ],
+    "provisioners": [
+        {
+            "type": "shell",
+            "inline_shebang": "/bin/bash",
+            "inline": [
+                "apt update -y && apt install -y python-pip",
+                "pip install ansible"
+            ]
+        },
+        {
+            "type": "ansible-local",
+            "playbook_file": "ansible/postgres_sql.yml",
+            "command": "ansible-playbook -vvv",
+            "extra_arguments": ["--extra-vars app_user={{user `app_user`}}"]
+        }
+    ],
+    "post-processors": [
+        {
+            "type": "docker-tag",
+            "repository": "{{user `docker_registry`}}/oneledger/explorer_postgres",
+            "tag": "{{user `tag`}}"
+        }
+    ]
+}

@@ -15,6 +15,7 @@
         name: "{{ stage | default('devnet') }}"
         vpc_ip_range: "{{ vpc_ip_range | default('10.10.0.0/20') }}"
         vmcount: "{{ node_count | default(5) }}"
+        vm_machine_type: "{{ machine_type | default('n1-standard-1')}}"
     register: vm_data
   - set_fact: remote_hosts={{vm_data.outputs.public_ip.value}}
   - name: add knowm hosts 
@@ -56,4 +57,4 @@
       state: absent
     with_items: "{{ files_to_delete.files }}"
   - name: create consensus/ initialized network with dir
-    shell: chdir={{lookup('env','OLDATA')}} olfullnode init devnet --root {{lookup('env','OLDATA')}}
+    shell: chdir={{lookup('env','OLDATA')}} olfullnode init devnet --root {{lookup('env','OLDATA')}} --validators {{validator_count}}
