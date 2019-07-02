@@ -3,7 +3,6 @@ package identity
 import (
 	"encoding/base64"
 	"encoding/hex"
-	"errors"
 	"math/big"
 	"os"
 	"testing"
@@ -43,7 +42,7 @@ func teardown(dbPaths []string) {
 	for _, v := range dbPaths {
 		err := os.RemoveAll(v)
 		if err != nil {
-			errors.New("Remove test db file error")
+			panic("Remove test db file error")
 		}
 	}
 }
