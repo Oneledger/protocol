@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/Oneledger/protocol/utils"
+	"github.com/pkg/errors"
 
 	"github.com/Oneledger/protocol/config"
 	"github.com/Oneledger/protocol/data/balance"
@@ -42,7 +43,7 @@ func teardown(dbPaths []string) {
 	for _, v := range dbPaths {
 		err := os.RemoveAll(v)
 		if err != nil {
-			panic("Remove test db file error")
+			errors.New("Remove test db file error")
 		}
 	}
 }

@@ -38,7 +38,7 @@ func TestValidator_FromBytes(t *testing.T) {
 func TestNewValidatorContext(t *testing.T) {
 	balance := &balance.Store{}
 	vc := &ValidatorContext{
-		Balances:balance,
+		Balances: balance,
 	}
 	ValidatorContext := NewValidatorContext(balance)
 	assert.Equal(t, ValidatorContext, vc)
