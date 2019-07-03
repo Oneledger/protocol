@@ -111,7 +111,7 @@ func setupForInit(pubKeyType string, pubKeyData []byte, currencyName string, pow
 }
 
 func TestValidatorStore_Init(t *testing.T) {
-	t.Run("run with invalid currency type", func(t *testing.T) {
+	t.Run("run with invalid currency type, should return token not registered error", func(t *testing.T) {
 		vs, removePaths := setup()
 		req, currencies := setupForInit("", []byte(""), "VTT", 0)
 		_, err := vs.Init(req, currencies)
@@ -119,14 +119,14 @@ func TestValidatorStore_Init(t *testing.T) {
 		assert.EqualError(t, err, "stake token not registered")
 
 	})
-	t.Run("run with invalid pubkey type", func(t *testing.T) {
+	t.Run("run with invalid pubkey type, should return invalid key algorithm error", func(t *testing.T) {
 		vs, removePaths := setup()
 		req, currencies := setupForInit("ed25520", []byte(""), "VT", 0)
 		_, err := vs.Init(req, currencies)
 		teardown(removePaths)
 		assert.EqualError(t, err, "invalid pubkey type: provided invalid key algorithm")
 	})
-	t.Run("add initial validator", func(t *testing.T) {
+	t.Run("add initial validator, should return no error", func(t *testing.T) {
 		pubKeyData, _ := base64.StdEncoding.DecodeString("lLkWE3WfWrtqy2qiKw+dcD4mpQ2NW+K6ldzin4o1b9Q=")
 		vs, removePaths := setup()
 		req, currencies := setupForInit("ed25519", pubKeyData, "VT", 100)
@@ -166,7 +166,7 @@ func setupForSet() (types.RequestBeginBlock, types.Validator, []types.VoteInfo, 
 }
 
 func TestValidatorStore_Set(t *testing.T) {
-	t.Run("update validator set", func(t *testing.T) {
+	t.Run("update validator set, should return an error", func(t *testing.T) {
 		vs, removePaths := setup()
 		defer teardown(removePaths)
 		req, validator, voteInfo, _ := setupForSet()
@@ -179,7 +179,7 @@ func TestValidatorStore_Set(t *testing.T) {
 		err := vs.Set(req)
 		assert.Error(t, err, "validator set not match to last commit")
 	})
-	t.Run("update validator set success", func(t *testing.T) {
+	t.Run("update validator set successfully with valid stake", func(t *testing.T) {
 		vs, removePaths := setup()
 		defer teardown(removePaths)
 		req2, _, _, stake := setupForSet()
@@ -226,14 +226,14 @@ func setupForUnHandleStake() (Unstake, Stake) {
 }
 
 func TestValidatorStore_HandleUnstake(t *testing.T) {
-	t.Run("testing chainstate exist part", func(t *testing.T) {
+	t.Run("check chainstate exist, should return an error", func(t *testing.T) {
 		vs, removePaths := setup()
 		defer teardown(removePaths)
 		unstake, _ := setupForUnHandleStake()
 		err := vs.HandleUnstake(unstake)
 		assert.Error(t, err)
 	})
-	t.Run("test chainstate get part", func(t *testing.T) {
+	t.Run("check chainstate get, should return no error", func(t *testing.T) {
 		vs, removePaths := setup()
 		defer teardown(removePaths)
 		unstake, stake := setupForUnHandleStake()
@@ -242,7 +242,7 @@ func TestValidatorStore_HandleUnstake(t *testing.T) {
 		err := vs.HandleUnstake(unstake)
 		assert.NoError(t, err)
 	})
-	t.Run("test minus stake part", func(t *testing.T) {
+	t.Run("unstake with invalid currency type, should return error", func(t *testing.T) {
 		vs, removePaths := setup()
 		defer teardown(removePaths)
 		unstake, stake := setupForUnHandleStake()
