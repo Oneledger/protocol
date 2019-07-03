@@ -20,6 +20,7 @@ before_script:
   master
 script:
 - cd $OLROOT/protocol && make update install
+- cd $OLROOT/protocol && make utest
 - cd $OLROOT/protocol && make fulltest
 before_deploy:
 - sudo apt-get update && sudo apt-get install unzip python python-pip
