@@ -19,7 +19,7 @@ before_script:
 - cd $TRAVIS_BUILD_DIR && git clone git@github.com:Oneledger/infrastructure.git --branch
   master
 script:
-- cd $OLROOT/protocol && make update install
+- cd $OLROOT/protocol && make update install_c
 - cd $OLROOT/protocol && make utest
 - cd $OLROOT/protocol && make fulltest
 before_deploy:
