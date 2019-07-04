@@ -33,12 +33,11 @@ func setup() (*ValidatorStore, []string) {
 	testDBPath := "test_dbpath"
 	testdbType := "test_dbtype"
 	vs := NewValidatorStore(config.Server{}, testDBPath, testdbType)
-	removePaths := make([]string, 0)
-	removePaths = append(removePaths, testDBPath)
+	removePaths := []string{testDBPath}
 	return vs, removePaths
 }
 
-// remove test db dir after
+// remove test_db dir after test
 func teardown(dbPaths []string) {
 	for _, v := range dbPaths {
 		err := os.RemoveAll(v)
@@ -58,14 +57,14 @@ func prepareStake(address string) Stake {
 		Currency: currency,
 		Amount:   big.NewInt(0.0),
 	}
-	pubkeyObj := keys.PublicKey{
+	pubkey := keys.PublicKey{
 		KeyType: keys.ED25519,
 		Data:    nil,
 	}
 	apply := Stake{
 		ValidatorAddress: addr,
 		StakeAddress:     addr,
-		Pubkey:           pubkeyObj,
+		Pubkey:           pubkey,
 		Name:             "test_name",
 		Amount:           coin,
 	}
@@ -113,25 +112,26 @@ func setupForInit(pubKeyType string, pubKeyData []byte, currencyName string, pow
 func TestValidatorStore_Init(t *testing.T) {
 	t.Run("run with invalid currency type, should return token not registered error", func(t *testing.T) {
 		vs, removePaths := setup()
+		defer teardown(removePaths)
 		req, currencies := setupForInit("", []byte(""), "VTT", 0)
 		_, err := vs.Init(req, currencies)
-		teardown(removePaths)
+
 		assert.EqualError(t, err, "stake token not registered")
 
 	})
 	t.Run("run with invalid pubkey type, should return invalid key algorithm error", func(t *testing.T) {
 		vs, removePaths := setup()
+		defer teardown(removePaths)
 		req, currencies := setupForInit("ed25520", []byte(""), "VT", 0)
 		_, err := vs.Init(req, currencies)
-		teardown(removePaths)
 		assert.EqualError(t, err, "invalid pubkey type: provided invalid key algorithm")
 	})
 	t.Run("add initial validator, should return no error", func(t *testing.T) {
 		pubKeyData, _ := base64.StdEncoding.DecodeString("lLkWE3WfWrtqy2qiKw+dcD4mpQ2NW+K6ldzin4o1b9Q=")
 		vs, removePaths := setup()
+		defer teardown(removePaths)
 		req, currencies := setupForInit("ed25519", pubKeyData, "VT", 100)
 		_, err := vs.Init(req, currencies)
-		teardown(removePaths)
 		assert.NoError(t, err)
 	})
 }
@@ -183,10 +183,11 @@ func TestValidatorStore_Set(t *testing.T) {
 		vs, removePaths := setup()
 		defer teardown(removePaths)
 		req2, _, _, stake := setupForSet()
-		vs.HandleStake(stake)
+		err := vs.HandleStake(stake)
+		assert.Nil(t, err)
 		vs.Commit()
-		err := vs.Set(req2)
-		assert.NoError(t, err)
+		err = vs.Set(req2)
+		assert.Nil(t, err)
 	})
 }
 
@@ -246,10 +247,11 @@ func TestValidatorStore_HandleUnstake(t *testing.T) {
 		vs, removePaths := setup()
 		defer teardown(removePaths)
 		unstake, stake := setupForUnHandleStake()
-		vs.HandleStake(stake)
+		err := vs.HandleStake(stake)
+		assert.Nil(t, err)
 		vs.Commit()
 
-		// wrong currency type
+		// invalid currency type
 		currency := balance.Currency{
 			Name:  "ABC",
 			Chain: chain.Type(1),
@@ -259,7 +261,7 @@ func TestValidatorStore_HandleUnstake(t *testing.T) {
 			Amount:   big.NewInt(1000.0),
 		}
 		unstake.Amount = coin
-		err := vs.HandleUnstake(unstake)
+		err = vs.HandleUnstake(unstake)
 		assert.Error(t, err)
 	})
 }
@@ -280,18 +282,20 @@ func TestValidatorStore_GetEndBlockUpdate(t *testing.T) {
 
 	// prepare for testing data
 	vs.queue.PriorityQueue = make(utils.PriorityQueue, 0, 100)
-	// vaild validator test data
+	// valid validator test data
 	queued := utils.NewQueued(validatorAddr, 0, 1)
 	vs.queue.append(queued)
 	vs.queue.Init()
-	vs.HandleStake(stake)
+	err := vs.HandleStake(stake)
+	assert.Nil(t, err)
 	vs.Commit()
 
-	// invaild validator test data1
+	// invalid validator test data1
 	queued1 := utils.NewQueued([]byte("nonsenceaddress"), 0, 1)
 	vs.queue.append(queued1)
 	vs.queue.Init()
-	vs.HandleStake(stake1)
+	err = vs.HandleStake(stake1)
+	assert.Nil(t, err)
 	vs.Commit()
 
 	validatorUpdates := vs.GetEndBlockUpdate(nil, req)
@@ -304,7 +308,8 @@ func TestValidatorStore_Commit(t *testing.T) {
 	vs, removePaths := setup()
 	defer teardown(removePaths)
 	apply := setupForHandleStake()
-	vs.HandleStake(apply)
+	err := vs.HandleStake(apply)
+	assert.Nil(t, err)
 	result, index := vs.Commit()
 	assert.NotEmpty(t, result)
 	assert.Equal(t, int64(1), index)
