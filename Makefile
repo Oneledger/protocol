@@ -44,6 +44,7 @@ utest:
 		github.com/Oneledger/protocol/serialize \
 		github.com/Oneledger/protocol/utils \
 		github.com/Oneledger/protocol/rpc \
+		github.com/Oneledger/protocol/identity \
 		-coverprofile a.out
 
 coverage:
