@@ -106,7 +106,7 @@ func (app *App) txChecker() txChecker {
 
 		ok, err := handler.Validate(txCtx, tx.Data, tx.Fee, tx.Memo, tx.Signatures)
 		if err != nil {
-			app.logger.Debugf("Check Tx invalid: ", err.Error())
+			app.logger.Debug("Check Tx invalid: ", err.Error())
 			return ResponseCheckTx{
 				Code: getCode(ok).uint32(),
 				Log:  err.Error(),
