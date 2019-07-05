@@ -53,7 +53,7 @@ func setupForStart() (*config.Server, *node.Context) {
 	nodeConfig := &config.NodeConfig{
 		NodeName: "test_node",
 		FastSync: true,
-		DBDir:    "/Users/freddylee/Oneledger/protocol_build/test/devnet/0-Node",
+		DBDir:    "test_dbpath",
 		DB:       "goleveldb",
 	}
 	cfg := &config.Server{
