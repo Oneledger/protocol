@@ -45,6 +45,7 @@ utest:
 		github.com/Oneledger/protocol/utils \
 		github.com/Oneledger/protocol/rpc \
 		github.com/Oneledger/protocol/identity \
+		github.com/Oneledger/protocol/app \
 		-coverprofile a.out
 
 coverage:
