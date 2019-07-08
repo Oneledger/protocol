@@ -17,18 +17,17 @@ package storage
 import (
 	"testing"
 
-	"github.com/Oneledger/protocol/data"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestNewCache(t *testing.T) {
-	assert.Equal(t, cache{"name", map[string][]byte{}}, NewCache("name"))
+	assert.Equal(t, &cache{"name", map[string][]byte{}}, NewCache("name"))
 }
 
 func TestCache_SetGet(t *testing.T) {
 	c := NewCache("test")
 
-	key := data.StoreKey("key")
+	key := StoreKey("key")
 	dat := []byte("data")
 	assert.NoError(t, c.Set(key, dat))
 
@@ -46,7 +45,7 @@ func TestCache_SetGet(t *testing.T) {
 	exists = c.Exists(key)
 	assert.False(t, exists)
 
-	key2 := data.StoreKey("key2")
+	key2 := StoreKey("key2")
 	assert.NoError(t, c.Set(key2, dat))
 
 	exists = c.Exists(key)
