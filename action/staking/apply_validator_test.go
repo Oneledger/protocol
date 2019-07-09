@@ -50,7 +50,7 @@ func generateKeyPair() (crypto.Address, crypto.PubKey, ed25519.PrivKeyEd25519) {
 	return addr, pubkey, prikey
 }
 
-func assemblyData(addr crypto.Address, pubkey crypto.PubKey, prikey ed25519.PrivKeyEd25519, stake action.Amount, purge bool) *action.BaseTx {
+func assemblyApplyValidatorData(addr crypto.Address, pubkey crypto.PubKey, prikey ed25519.PrivKeyEd25519, stake action.Amount, purge bool) *action.BaseTx {
 
 	av := &ApplyValidator{
 		Address:          addr.Bytes(),
@@ -84,7 +84,7 @@ func setupForApplyValidatorWithPurge() *action.BaseTx {
 	addr, pubkey, prikey := generateKeyPair()
 
 	stake := action.Amount{"VT", "0.01"}
-	tx := assemblyData(addr, pubkey, prikey, stake, true)
+	tx := assemblyApplyValidatorData(addr, pubkey, prikey, stake, true)
 
 	return tx
 }
@@ -94,7 +94,7 @@ func setupForApplyValidator() *action.BaseTx {
 	addr, pubkey, prikey := generateKeyPair()
 
 	stake := action.Amount{"VT", "0.01"}
-	tx := assemblyData(addr, pubkey, prikey, stake, false)
+	tx := assemblyApplyValidatorData(addr, pubkey, prikey, stake, false)
 
 	return tx
 }
@@ -104,7 +104,7 @@ func setupForInvalidStakeAmount() *action.BaseTx {
 	addr, pubkey, prikey := generateKeyPair()
 
 	stake := action.Amount{"OLT", "-10"}
-	tx := assemblyData(addr, pubkey, prikey, stake, false)
+	tx := assemblyApplyValidatorData(addr, pubkey, prikey, stake, false)
 
 	return tx
 }
@@ -206,7 +206,7 @@ func TestApplyTx_Validate(t *testing.T) {
 		assert.False(t, ok)
 		assert.NotNil(t, err)
 	})
-	
+
 	t.Run("test apply validator with an invalid currency type, should be not ok", func(t *testing.T) {
 		tx := setupForApplyValidator()
 
