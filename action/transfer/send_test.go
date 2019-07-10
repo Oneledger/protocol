@@ -125,22 +125,20 @@ func assemblyCtxData(currencyName string, currencyDecimal int64, setStore bool, 
 			ctx.Balances = store
 		}
 	}
-
 	return ctx
 }
 
 func TestSendTx_Validate(t *testing.T) {
+	sendtx := &sendTx{}
+	ctx := &action.Context{}
 	t.Run("validate basic send tx with invalid tx data, should return error", func(t *testing.T) {
 		// invalid from address
 		tx, _ := assemblySendData(true)
-		ctx := &action.Context{}
-		sendtx := sendTx{}
 		ok, err := sendtx.Validate(ctx, tx.Data, tx.Fee, tx.Memo, tx.Signatures)
 		assert.False(t, ok)
 		assert.NotNil(t, err)
 	})
 	t.Run("cast tx to sendTx with invalid tx data, should return error", func(t *testing.T) {
-
 		amount := action.Amount{
 			Currency: "OLT",
 			Value:    "100",
@@ -167,28 +165,20 @@ func TestSendTx_Validate(t *testing.T) {
 			Signer: keys.PublicKey{keys.ED25519, fromPubkey.Bytes()[5:]},
 			Signed: signature,
 		}
-		ctx := &action.Context{}
-		sendtx := sendTx{}
 		ok, err := sendtx.Validate(ctx, send, tx.Fee, tx.Memo, []action.Signature{signer})
 		assert.False(t, ok)
 		assert.NotNil(t, err)
 	})
 	t.Run("invalid amount tx data(invalid currency), should return error", func(t *testing.T) {
-
 		tx, _ := assemblySendData(false)
-		ctx := assemblyCtxData("OTT", int64(18), false, false, false, nil)
-
-		sendtx := sendTx{}
+		ctx = assemblyCtxData("OTT", int64(18), false, false, false, nil)
 		ok, err := sendtx.Validate(ctx, tx.Data, tx.Fee, tx.Memo, tx.Signatures)
 		assert.False(t, ok)
 		assert.NotNil(t, err)
 	})
 	t.Run("valid tx data, should return ok", func(t *testing.T) {
-
 		tx, _ := assemblySendData(false)
-		ctx := assemblyCtxData("OLT", int64(18), false, false, false, nil)
-
-		sendtx := sendTx{}
+		ctx = assemblyCtxData("OLT", int64(18), false, false, false, nil)
 		ok, err := sendtx.Validate(ctx, tx.Data, tx.Fee, tx.Memo, tx.Signatures)
 		assert.True(t, ok)
 		assert.Nil(t, err)
@@ -196,6 +186,8 @@ func TestSendTx_Validate(t *testing.T) {
 }
 
 func TestSendTx_ProcessCheck(t *testing.T) {
+	sendtx := &sendTx{}
+	ctx := &action.Context{}
 	t.Run("cast sendtx with invalid data, should return error", func(t *testing.T) {
 		fee := action.Fee{
 			Price: action.Amount{"OLT", "10"},
@@ -204,10 +196,10 @@ func TestSendTx_ProcessCheck(t *testing.T) {
 		tx := &action.BaseTx{
 			Data: nil,
 		}
-		ctx := &action.Context{
+
+		ctx = &action.Context{
 			Logger: new(log.Logger),
 		}
-		sendtx := sendTx{}
 		ok, _ := sendtx.ProcessCheck(ctx, tx.Data, fee)
 		assert.False(t, ok)
 	})
@@ -216,9 +208,8 @@ func TestSendTx_ProcessCheck(t *testing.T) {
 		defer teardown(testDB)
 
 		tx, _ := assemblySendData(false)
-		ctx := assemblyCtxData("", int64(0), true, true, false, nil)
+		ctx = assemblyCtxData("", int64(0), true, true, false, nil)
 
-		sendtx := sendTx{}
 		ok, _ := sendtx.ProcessCheck(ctx, tx.Data, tx.Fee)
 		assert.False(t, ok)
 	})
@@ -227,9 +218,8 @@ func TestSendTx_ProcessCheck(t *testing.T) {
 		defer teardown(testDB)
 
 		tx, from := assemblySendData(false)
-		ctx := assemblyCtxData("OLL", int64(18), true, true, true, from)
+		ctx = assemblyCtxData("OLL", int64(18), true, true, true, from)
 
-		sendtx := sendTx{}
 		ok, _ := sendtx.ProcessCheck(ctx, tx.Data, tx.Fee)
 		assert.False(t, ok)
 	})
@@ -238,9 +228,8 @@ func TestSendTx_ProcessCheck(t *testing.T) {
 		defer teardown(testDB)
 
 		tx, from := assemblySendData(false)
-		ctx := assemblyCtxData("OLT", int64(18), true, true, true, from)
+		ctx = assemblyCtxData("OLT", int64(18), true, true, true, from)
 
-		sendtx := sendTx{}
 		ok, _ := sendtx.ProcessCheck(ctx, tx.Data, tx.Fee)
 		assert.False(t, ok)
 	})
@@ -249,23 +238,23 @@ func TestSendTx_ProcessCheck(t *testing.T) {
 		defer teardown(testDB)
 
 		tx, from := assemblySendData(false)
-		ctx := assemblyCtxData("OLT", int64(10), true, true, true, from)
+		ctx = assemblyCtxData("OLT", int64(10), true, true, true, from)
 
-		sendtx := sendTx{}
 		ok, _ := sendtx.ProcessCheck(ctx, tx.Data, tx.Fee)
 		assert.True(t, ok)
 	})
 }
 
 func TestSendTx_ProcessDeliver(t *testing.T) {
+	sendtx := &sendTx{}
+	ctx := &action.Context{}
 	t.Run("cast sendtx type with invalid tx data, should return error", func(t *testing.T) {
 		testDB := setup()
 		defer teardown(testDB)
 
-		ctx := assemblyCtxData("", int64(0), true, true, false, nil)
+		ctx = assemblyCtxData("", int64(0), true, true, false, nil)
 		tx, _ := assemblySendData(false)
 
-		sendtx := sendTx{}
 		ok, _ := sendtx.ProcessDeliver(ctx, nil, tx.Fee)
 		assert.False(t, ok)
 	})
@@ -273,10 +262,9 @@ func TestSendTx_ProcessDeliver(t *testing.T) {
 		testDB := setup()
 		defer teardown(testDB)
 
-		ctx := assemblyCtxData("", int64(0), true, true, false, nil)
+		ctx = assemblyCtxData("", int64(0), true, true, false, nil)
 		tx, _ := assemblySendData(false)
 
-		sendtx := sendTx{}
 		ok, _ := sendtx.ProcessDeliver(ctx, tx.Data, tx.Fee)
 		assert.False(t, ok)
 	})
@@ -285,9 +273,8 @@ func TestSendTx_ProcessDeliver(t *testing.T) {
 		defer teardown(testDB)
 
 		tx, from := assemblySendData(false)
-		ctx := assemblyCtxData("OLL", int64(18), true, true, true, from)
+		ctx = assemblyCtxData("OLL", int64(18), true, true, true, from)
 
-		sendtx := sendTx{}
 		ok, _ := sendtx.ProcessDeliver(ctx, tx.Data, tx.Fee)
 		assert.False(t, ok)
 	})
@@ -296,9 +283,8 @@ func TestSendTx_ProcessDeliver(t *testing.T) {
 		defer teardown(testDB)
 
 		tx, from := assemblySendData(false)
-		ctx := assemblyCtxData("OLT", int64(18), true, true, true, from)
+		ctx = assemblyCtxData("OLT", int64(18), true, true, true, from)
 
-		sendtx := sendTx{}
 		ok, _ := sendtx.ProcessDeliver(ctx, tx.Data, tx.Fee)
 		assert.False(t, ok)
 	})
@@ -307,9 +293,8 @@ func TestSendTx_ProcessDeliver(t *testing.T) {
 		defer teardown(testDB)
 
 		tx, from := assemblySendData(false)
-		ctx := assemblyCtxData("OLT", int64(10), true, true, true, from)
+		ctx = assemblyCtxData("OLT", int64(10), true, true, true, from)
 
-		sendtx := sendTx{}
 		ok, _ := sendtx.ProcessDeliver(ctx, tx.Data, tx.Fee)
 		assert.True(t, ok)
 	})
