@@ -36,6 +36,7 @@ spec:
             readOnly: true
       - name: explorer-api-server
         image: gcr.io/atomic-land-223022/oneledger/explorer:latest
+        imagePullPolicy: "Always"
         env:
         - name: "DB_NAME"
           valueFrom:
