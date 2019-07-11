@@ -5,6 +5,8 @@
 package ons
 
 import (
+	"strings"
+
 	"github.com/Oneledger/protocol/serialize"
 	"github.com/Oneledger/protocol/storage"
 	"github.com/pkg/errors"
@@ -47,7 +49,7 @@ func (ds *DomainStore) Get(name string, lastCommit bool) (*Domain, error) {
 }
 
 func (ds *DomainStore) Set(d *Domain) error {
-	key := []byte(d.Name)
+	key := keyFromName(d.Name)
 
 	data, err := ds.szlr.Serialize(d)
 	if err != nil {
@@ -69,5 +71,5 @@ func (ds *DomainStore) Exists(name string) bool {
 
 func keyFromName(name string) []byte {
 
-	return []byte(name)
+	return []byte(strings.ToLower(name))
 }
