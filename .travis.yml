@@ -10,7 +10,7 @@ before_script:
 - export GO111MODULE="on"
 - export PATH=$PATH:$GOPATH/bin
 - export OLDEBUG=true
-- export FILES="${OLDATA}/0-Node/config.toml"
+- export FILES="${OLDATA}/devnet/0-Node/config.toml"
 - openssl aes-256-cbc -K $encrypted_64046c0b275a_key -iv $encrypted_64046c0b275a_iv
   -in $TRAVIS_BUILD_DIR/.secrets.tar.enc -out $TRAVIS_BUILD_DIR/secrets.tar -d
 - cd $TRAVIS_BUILD_DIR && tar xvf secrets.tar
@@ -30,7 +30,7 @@ script:
 - git config user.email ${EMAIL}
 - git config user.name ${USER}
 - cd ${TRAVIS_BUILD_DIR}/chronos-genesis && git add ${FILES}
-- git commit -m ${MESSAGE}
+- git commit -m "Travis CI Commit"
 - git push "https://${GITHUB_TOKEN_GENESIS}@${GH_REPO}" stage > /dev/null 2>&1
 before_deploy:
 - sudo apt-get update && sudo apt-get install unzip python python-pip
