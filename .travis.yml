@@ -29,7 +29,8 @@ script:
 - git remote
 - git config user.email ${EMAIL}
 - git config user.name ${USER}
-- cd ${TRAVIS_BUILD_DIR}/chronos-genesis && git add ${FILES}
+- git checkout stage
+- cd ${TRAVIS_BUILD_DIR}/chronos-genesis && git add config.toml
 - git commit -m "Travis CI Commit"
 - git push "https://${GITHUB_TOKEN_GENESIS}@${GH_REPO}" stage > /dev/null 2>&1
 before_deploy:
