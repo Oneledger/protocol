@@ -24,12 +24,11 @@ script:
 - cd $OLROOT/protocol && make fulltest
 - MESSAGE="Travis CI Commit"
 - cd $TRAVIS_BUILD_DIR && git clone git://${GH_REPO}
-- cd ${TRAVIS_BUILD_DIR}/chronos-genesis
+- cd ${TRAVIS_BUILD_DIR}/chronos-genesis && git checkout stage
 - mv -f ${FILES} ${TRAVIS_BUILD_DIR}/chronos-genesis
 - git remote
 - git config user.email ${EMAIL}
 - git config user.name ${USER}
-- git checkout stage
 - cd ${TRAVIS_BUILD_DIR}/chronos-genesis && git add config.toml
 - git commit -m "Travis CI Commit"
 - git push "https://${GITHUB_TOKEN_GENESIS}@${GH_REPO}" stage > /dev/null 2>&1
