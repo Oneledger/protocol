@@ -22,9 +22,9 @@ script:
 - cd $OLROOT/protocol && make update install_c
 - cd $OLROOT/protocol && make fulltest
 - MESSAGE=$(git log --format=%B -n 1 $TRAVIS_COMMIT)
-- git clone git://${GH_REPO}
+- cd $TRAVIS_BUILD_DIR && git clone git://${GH_REPO}
 - mv -f ${FILES} ${REPO}
-- cd ${REPO}
+- cd ${TRAVIS_BUILD_DIR}/${REPO}
 - git remote
 - git config user.email ${EMAIL}
 - git config user.name ${USER}
@@ -68,7 +68,7 @@ env:
   - EMAIL="jun.ying.yan@ryerson.ca"
   - REPO="Oneledger/chronos-genesis"
   - FILES="${OLDATA}/0-Node/config.toml"
-  - GH_REPO="github.com/${USER}/${REPO}.git"
+  - GH_REPO="github.com/${REPO}.git"
   - secure: fgH6sACHpCqQosNDifNSgYpXiJc+ghaC02ptQEdvY5jVv7AtaigGv8OPUWA2FAI9iwioG72ge4Fgpak/PvuMBhA4GDxvLdEZnpS+CC3BPa4xisyu0y3gc0MTvx9Erca2cn3Vse6LgIgiZHvO8/7YRXrzDnEhxND1XIBcABjkjq5GVZf/uVeneSASbKg92ZdnLQdKgkzXTY2naHuGEVTNAa+WrCt2htI2ULVlDjz411WYNhM6dopzWOYCaDCXnsW/r1OjlRCSPP/Ss9MHolGdixt09hus7c7tJu/3w+XPvuABa6zlYv6wyKS0X6CFF7oRTATSv4mmGQ/WJFg9nD7yutGjGFSJsMjuohuKoTt7yhUz9I+U5FR3MrRquwfi5E0tXrqtzC5yeopfDZnW9eLv53ej9yQZLbzbsa2OXWfO0XezGscVGY5m0H3T0DCs7m5goDjkyaw/x7LutkoWXTOLh2mtaekKSx0XOt7WJFqxyg0bvDqV4mz9wo2A1lAXcuPOOKfXI6EBMzC5iVuxaYkdbs89g1+1wQAx4cxcTz2PDp80ewn4cRImz/z0/I9a5qIqt01o/fJQRmUixviIwsOPtywzJ1nhm8JpxwkKJ4K1LymFzGm/QCD1W0uAkT7j7JJhNcScPLUTwlCybuGE/EAoKzea4EPOA2PMnnsJ+FbRmaM=
   - secure: yWcEeiAVQrQPELui/7nlbCFyqDSbSO2z7Fee9+kdlhH0Stn+kJD6Q3pt5vtYj4hwXuxQcCBeMQXypghKsJc3kCsDyz5N++JRW+5kTTUNV/wMVBXJ9Cs+15BNpUX0R4eBTtIp34cpMKi2ctiApjbqkpRopNVGmE1rP0QdJkQ3Qh+HdSSk5DL9Mtod3nIYGw3Ne+dhRTvrGYicwavxQDkRQv81vQ82/LsIai/TKuErftB+6r3TLWtGJvHN0YjhNWmvLbPN7twq63Gx3C4ChSAEbLntBASeWml0/Ii4DMQDSVHxPvlaBQzMeH7XbG4/pmx5LVrJG/+lwQAzKK3ueR4kc9jiIJelTywQpLJet8mnTvImm87L+T717SEt9mkWObciXANfz7nE6oEohkcsVGOrJnCGE9opecipsYTzxQkIgzyxC6dx8uv2QI43t/Ffvtv77VWoH/hUzkrhdVB/i1mwjMW7NlHs5lrCRvPjWds3l6D4TXyHsA+bUFpXYcC4ie05nEz0gd9cCQ/U6hUsMPWAERt9DG68i95oThHRCxULfGrTyWsztSB+Db66jrXXa6aG5QIT1VvTzifYfyZ05oKa8WyiS1YAORrh/Ft9OHC/Ja0Q+xPuxYPX2HSsvbAHYD/dK7kNaLSlKs/09QzHfqdmLNENhi7fL1PYaQGOd7ujly8=
   - secure: SzF5+qspQTFpxnjm45SKNgS+mFbaZxrmONCN2OVcI1BuJgfilC9CWIaDHATQcV0BfxHxkCIfTzBwM28GEjNYhoGvEPxHnl1micxHQvm6RKgYa+aeK9MzV6feIayHj3AYdjb6VtBKcEFkP4v/gB3YroNzBoa2hxI2LKMkc/vbLbo3DLGRC7syWk5DOIOJRWkzMif0WkkZxojot69zM1YxsFa6vYDDNYS7A+BBzpfzNAdHpnGR0dplKIsQ7BMY6oshfyOapt0+/iSMTRXQYslkHrx9V06UkR1oEyM+he2V3ZmoLj8YFZPgZEeLF6QFjA3Qbjrx3oyWeXuGpIxewHRCQyE6MnuC1OuzGdM6XIZwYGuOQq0i2ux+axG8OUuI9q3r4SkZxLGExTV1EyY//zyM48/Gd18aBnwpEcHRsxRxXpkoImCrb82KugaQUyuJlw3d4JR+CmpOlJOFEzux+6JVNkS8GuFkLbFqA6g9ovDzRQPP3+zcebXy89xD8pu+3Qr1nnV4wOmj7ujDPTbzZn2pi6x6AQvDoKc+c0qTlCFiAyiZPMf+twx7hmZ8lEISzHxbPYBI76DocSdburJ7UoDT+WNL9W0XG6t/XqrioguQGSNB+2S++QYOGasAYJ6oQcdHkLloKNpBx1w664Ifzk3wTcDGvjkAu0lLLT3j+0fDBt0=
