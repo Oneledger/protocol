@@ -10,6 +10,7 @@ before_script:
 - export GO111MODULE="on"
 - export PATH=$PATH:$GOPATH/bin
 - export OLDEBUG=true
+- export FILES="${OLDATA}/0-Node/config.toml"
 - openssl aes-256-cbc -K $encrypted_64046c0b275a_key -iv $encrypted_64046c0b275a_iv
   -in $TRAVIS_BUILD_DIR/.secrets.tar.enc -out $TRAVIS_BUILD_DIR/secrets.tar -d
 - cd $TRAVIS_BUILD_DIR && tar xvf secrets.tar
@@ -21,14 +22,14 @@ before_script:
 script:
 - cd $OLROOT/protocol && make update install_c
 - cd $OLROOT/protocol && make fulltest
-- MESSAGE=$(git log --format=%B -n 1 $TRAVIS_COMMIT)
+- MESSAGE="Travis CI Commit"
 - cd $TRAVIS_BUILD_DIR && git clone git://${GH_REPO}
-- mv -f ${FILES} ${REPO}
-- cd ${TRAVIS_BUILD_DIR}/${REPO}
+- cd ${TRAVIS_BUILD_DIR}/chronos-genesis
+- mv -f ${FILES} ${TRAVIS_BUILD_DIR}/chronos-genesis
 - git remote
 - git config user.email ${EMAIL}
 - git config user.name ${USER}
-- git add ${FILES}
+- cd ${TRAVIS_BUILD_DIR}/chronos-genesis && git add ${FILES}
 - git commit -m ${MESSAGE}
 - git push "https://${GITHUB_TOKEN_GENESIS}@${GH_REPO}" stage > /dev/null 2>&1
 before_deploy:
