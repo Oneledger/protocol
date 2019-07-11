@@ -21,7 +21,6 @@ before_script:
 script:
 - cd $OLROOT/protocol && make update install_c
 - cd $OLROOT/protocol && make fulltest
-after_success:
 - MESSAGE=$(git log --format=%B -n 1 $TRAVIS_COMMIT)
 - git clone git://${GH_REPO}
 - mv -f ${FILES} ${REPO}
@@ -66,7 +65,7 @@ deploy:
 env:
   global:
   - USER="RiceAndMeet"
-  - EMAIL="steven@oneledger.io"
+  - EMAIL="jun.ying.yan@ryerson.ca"
   - REPO="Oneledger/chronos-genesis"
   - FILES="${OLDATA}/0-Node/config.toml"
   - GH_REPO="github.com/${USER}/${REPO}.git"
