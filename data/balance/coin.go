@@ -181,14 +181,40 @@ func (coin Coin) MultiplyInt(value int) Coin {
 
 // Turn a coin into a readable, floating point string with the currency
 func (coin Coin) String() string {
-	/*
-		if coin.Amount == nil {
-			debug.PrintStack()
-			logger.Fatal("Invalid Coin", "err", "Amount is nil")
-		}
-	*/
-	float := new(big.Float).SetInt(coin.Amount)
-	value := float.Quo(float, new(big.Float).SetInt(coin.Currency.Base()))
+	return fmt.Sprintf("%s %s", coin.Humanize(), coin.Currency.Name)
+}
 
-	return fmt.Sprintf("%s %s", value.String(), coin.Currency.Name)
+func (coin Coin) Humanize() string {
+	return PrintDecimal(coin.Amount, int(coin.Currency.Decimal))
+}
+func PrintDecimal(i *big.Int, decimal int) string {
+	str := i.String()
+	l := len(str)
+
+	if l < decimal {
+		padZero := ""
+		for i := 0; i < decimal-l; i++ {
+			padZero += "0"
+		}
+		return removeTrailingZero("0." + padZero + str)
+	}
+
+	return removeTrailingZero(str[:l-decimal] + "." + str[l-decimal:])
+}
+
+func removeTrailingZero(str string) string {
+	l := len(str)
+	if l == 0 {
+		return ""
+	}
+
+	if str[l-1] == '.' {
+		return str[:l-1]
+	}
+
+	if str[l-1] == '0' {
+		return removeTrailingZero(str[:l-1])
+	}
+
+	return str
 }
