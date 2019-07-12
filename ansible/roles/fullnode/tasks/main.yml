@@ -107,7 +107,6 @@
       else
         /usr/local/bin/fullnodeSetup
       fi
-      cp -R {{GOPATH}}/* {{CONTAINER_OUTPUT_PATH}}
       /usr/local/bin/olfullnode node --root {{OLDATA}}
       exec "$@"
 - name: create start quick script to start node 
