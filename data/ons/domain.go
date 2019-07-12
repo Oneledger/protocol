@@ -92,4 +92,5 @@ func (d *Domain) IsChangeable(currentHeight int64) bool {
 
 func (d *Domain) CancelSale() {
 	d.OnSaleFlag = false
+	d.SalePrice = balance.Coin{}
 }

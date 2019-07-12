@@ -167,6 +167,10 @@ func (domainPurchaseTx) ProcessDeliver(ctx *action.Context, msg action.Msg, fee 
 	} else {
 		domain.SetAccountAddress(buy.Buyer)
 	}
+
+	domain.CancelSale()
+	domain.Activate()
+
 	err = ctx.Domains.Set(domain)
 	if err != nil {
 		return false, action.Response{Log: errors.Wrap(err, "failed to update domain").Error()}
