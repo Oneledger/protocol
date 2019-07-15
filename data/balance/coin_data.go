@@ -17,14 +17,13 @@ package balance
 
 import (
 	"errors"
-	"math/big"
 
 	"github.com/Oneledger/protocol/serialize"
 )
 
 type CoinData struct {
-	Currency Currency
-	Amount   []byte
+	Currency Currency `json:"currency"`
+	Amount   []byte   `json:"amount"`
 }
 
 func (c *Coin) NewDataInstance() serialize.Data {
@@ -32,7 +31,8 @@ func (c *Coin) NewDataInstance() serialize.Data {
 }
 
 func (c *Coin) Data() serialize.Data {
-	return &CoinData{c.Currency, c.Amount.Bytes()}
+	b, _ := c.Amount.MarshalJSON()
+	return &CoinData{c.Currency, b}
 }
 
 func (c *Coin) SetData(a interface{}) error {
@@ -41,9 +41,13 @@ func (c *Coin) SetData(a interface{}) error {
 		return errors.New("Wrong data")
 	}
 
-	amt := new(big.Int)
+	amt := &Amount{}
+	err := amt.UnmarshalJSON(cd.Amount)
+	if err != nil {
+		return err
+	}
 	c.Currency = cd.Currency
-	c.Amount = amt.SetBytes(cd.Amount)
+	c.Amount = amt
 	return nil
 }
 

@@ -56,7 +56,7 @@ func (coin Coin) LessThanCoin(value Coin) bool {
 		logger.Fatal("Compare two different coin", coin, value)
 	}
 
-	if coin.Amount.Cmp(value.Amount) < 0 {
+	if coin.Amount.Int.Cmp(&value.Amount.Int) < 0 {
 		return true
 	}
 	return false
@@ -74,7 +74,7 @@ func (coin Coin) LessThanEqualCoin(value Coin) bool {
 
 	//logger.Dump("LessThanEqualCoin", value, coin)
 
-	if coin.Amount.Cmp(value.Amount) <= 0 {
+	if coin.Amount.Int.Cmp(&value.Amount.Int) <= 0 {
 		return true
 	}
 	return false
@@ -88,7 +88,7 @@ func (coin Coin) IsValid() bool {
 	case coin.Currency.Name == "":
 		return false
 	default:
-		return coin.Amount.Cmp(big.NewInt(0)) >= 0
+		return coin.Amount.Int.Cmp(big.NewInt(0)) >= 0
 	}
 }
 
@@ -101,7 +101,7 @@ func (coin Coin) Equals(value Coin) bool {
 	if coin.Currency.Chain != value.Currency.Chain {
 		return false
 	}
-	if coin.Amount.Cmp(value.Amount) == 0 {
+	if coin.Amount.Int.Cmp(&value.Amount.Int) == 0 {
 		return true
 	}
 	return false
@@ -121,9 +121,9 @@ func (coin Coin) Minus(value Coin) (Coin, error) {
 	base := NewAmount(0)
 	result := Coin{
 		Currency: coin.Currency,
-		Amount:   base.Sub(coin.Amount, value.Amount),
+		Amount:   &Amount{*base.Int.Sub(&coin.Amount.Int, &value.Amount.Int)},
 	}
-	if result.Amount.Cmp(big.NewInt(0)) == -1 {
+	if result.Amount.Int.Cmp(big.NewInt(0)) == -1 {
 		return result, ErrInsufficientBalance
 	}
 	return result, nil
@@ -144,7 +144,7 @@ func (coin Coin) Plus(value Coin) (Coin, error) {
 	base := big.NewInt(0)
 	result := Coin{
 		Currency: coin.Currency,
-		Amount:   base.Add(coin.Amount, value.Amount),
+		Amount:   &Amount{*base.Add(&coin.Amount.Int, &value.Amount.Int)},
 	}
 	return result, nil
 }
@@ -158,7 +158,7 @@ func (coin Coin) Divide(value int) Coin {
 	divisor := big.NewInt(int64(value))
 	result := Coin{
 		Currency: coin.Currency,
-		Amount:   base.Div(coin.Amount, divisor),
+		Amount:   &Amount{*base.Div(&coin.Amount.Int, divisor)},
 	}
 	return result
 
@@ -174,7 +174,7 @@ func (coin Coin) MultiplyInt(value int) Coin {
 	base := big.NewInt(0)
 	result := Coin{
 		Currency: coin.Currency,
-		Amount:   base.Mul(coin.Amount, multiplier),
+		Amount:   &Amount{*base.Mul(&coin.Amount.Int, multiplier)},
 	}
 	return result
 }
@@ -187,7 +187,7 @@ func (coin Coin) String() string {
 			logger.Fatal("Invalid Coin", "err", "Amount is nil")
 		}
 	*/
-	float := new(big.Float).SetInt(coin.Amount)
+	float := new(big.Float).SetInt(&coin.Amount.Int)
 	value := float.Quo(float, new(big.Float).SetInt(coin.Currency.Base()))
 
 	return fmt.Sprintf("%s %s", value.String(), coin.Currency.Name)
