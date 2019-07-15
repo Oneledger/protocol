@@ -23,9 +23,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/tendermint/tendermint/crypto/ed25519"
+	"github.com/Oneledger/protocol/data/balance"
 
-	"github.com/Oneledger/protocol/action"
+	"github.com/tendermint/tendermint/crypto/ed25519"
 
 	"github.com/Oneledger/protocol/data/accounts"
 	"github.com/Oneledger/protocol/data/chain"
@@ -126,6 +126,13 @@ func loadTest(_ *cobra.Command, _ []string) {
 		// print details
 		thLogger.Infof("Created account successfully: %#v", accRead)
 		ctx.logger.Infof("Address for the account is: %s", acc.Address().Humanize())
+		fullnode := ctx.clCtx.FullNodeClient()
+		currencies, err := fullnode.ListCurrencies()
+		if err != nil {
+			ctx.logger.Error("failed to get currencies", err)
+			return
+		}
+		fmt.Printf("currencies:::::: %#v", currencies)
 
 		waiter.Add(1)
 		// start a thread to keep sending transactions after some interval
@@ -133,7 +140,7 @@ func loadTest(_ *cobra.Command, _ []string) {
 			waitDuration := getWaitDuration(loadTestArgs.interval)
 
 			for true {
-				doSendTransaction(ctx, i, &acc, nodeAddress, loadTestArgs.randomRecv) // send OLT to temp account
+				doSendTransaction(ctx, i, &acc, nodeAddress, loadTestArgs.randomRecv, currencies.Currencies) // send OLT to temp account
 				counterChan <- 1
 
 				select {
@@ -154,7 +161,7 @@ func loadTest(_ *cobra.Command, _ []string) {
 
 // doSendTransaction takes in an account and currency object and sends random amounts of coin from the
 // node account. It prints any errors to ctx.logger and returns
-func doSendTransaction(ctx *Context, threadNo int, acc *accounts.Account, nodeAddress keys.Address, randomRev bool) {
+func doSendTransaction(ctx *Context, threadNo int, acc *accounts.Account, nodeAddress keys.Address, randomRev bool, currencies balance.Currencies) {
 	defer func() {
 		if r := recover(); r != nil {
 			fmt.Println("panic in doSendTransaction: thread", threadNo, r)
@@ -163,8 +170,7 @@ func doSendTransaction(ctx *Context, threadNo int, acc *accounts.Account, nodeAd
 
 	// generate a random amount
 	r := rand.New(rand.NewSource(time.Now().UnixNano()))
-	amt := r.Float64() * 10.0 // amount is a random float between [0, 10)
-
+	num := r.Float64() * 10 // amount is a random float between [0, 1000)
 	// populate send arguments
 	sendArgsLocal := SendArguments{}
 	sendArgsLocal.Party = []byte(nodeAddress)
@@ -176,13 +182,19 @@ func doSendTransaction(ctx *Context, threadNo int, acc *accounts.Account, nodeAd
 	}
 
 	// set amount and fee
-	sendArgsLocal.Amount = *action.NewAmount("OLT", strconv.FormatFloat(amt, 'f', 0, 64))
-	sendArgsLocal.Fee = *action.NewAmount("OLT", strconv.FormatFloat(amt/100, 'f', 0, 64))
+	sendArgsLocal.Amount = strconv.FormatFloat(num, 'f', 0, 64)
+	sendArgsLocal.Fee = strconv.FormatFloat(num/100, 'f', 0, 64)
+	sendArgsLocal.Currency = "OLT"
 
 	// Create message
 	fullnode := ctx.clCtx.FullNodeClient()
 
-	reply, err := fullnode.SendTx(sendArgsLocal.ClientRequest())
+	req, err := sendArgsLocal.ClientRequest(currencies.GetCurrencyList())
+	if err != nil {
+		ctx.logger.Error("failed to get request", err)
+	}
+
+	reply, err := fullnode.SendTx(req)
 	if err != nil {
 		ctx.logger.Error(acc.Name, "error executing SendTx", err)
 		return

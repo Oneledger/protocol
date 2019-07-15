@@ -54,7 +54,7 @@ func GetSerializer(channel Channel, args ...interface{}) Serializer {
 		return &jsonStrategy{}
 
 	case NETWORK:
-		return NewAminoStrategy(aminoCodec)
+		return &jsonStrategy{}
 
 	case JSON:
 		return &jsonStrategy{}

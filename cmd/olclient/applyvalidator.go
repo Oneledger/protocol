@@ -7,6 +7,9 @@ package main
 
 import (
 	"path/filepath"
+	"strconv"
+
+	"github.com/Oneledger/protocol/data/balance"
 
 	"github.com/Oneledger/protocol/client"
 	"github.com/Oneledger/protocol/config"
@@ -23,11 +26,18 @@ type ApplyValidatorArguments struct {
 	TmPubKey     []byte `json:"tmPubKey"`
 }
 
-func (args *ApplyValidatorArguments) ClientRequest() client.ApplyValidatorRequest {
+func (args *ApplyValidatorArguments) ClientRequest(currencies *balance.CurrencyList) client.ApplyValidatorRequest {
+	c, _ := currencies.GetCurrencyByName("VT")
+
+	f, err := strconv.ParseFloat(args.Amount, 64)
+	if err != nil {
+		return client.ApplyValidatorRequest{}
+	}
+	amt := c.NewCoinFromFloat64(f)
 	return client.ApplyValidatorRequest{
 		Address:      args.Address,
 		Name:         args.Name,
-		Amount:       args.Amount,
+		Amount:       *amt.Amount,
 		Purge:        args.Purge,
 		TmPubKeyType: args.TmPubKeyType,
 		TmPubKey:     args.TmPubKey,
@@ -73,8 +83,13 @@ func applyValidator(cmd *cobra.Command, args []string) error {
 
 	// Create message
 	fullnode := ctx.clCtx.FullNodeClient()
+	currencies, err := fullnode.ListCurrencies()
+	if err != nil {
+		ctx.logger.Error("failed to get currencies", err)
+		return err
+	}
 
-	out, err := fullnode.ApplyValidator(applyValidatorArgs.ClientRequest())
+	out, err := fullnode.ApplyValidator(applyValidatorArgs.ClientRequest(currencies.Currencies.GetCurrencyList()))
 	if err != nil {
 		ctx.logger.Error("Error in applying ", err.Error())
 		return err
