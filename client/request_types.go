@@ -12,6 +12,7 @@ package client
 import (
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/data/accounts"
+	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/identity"
 	ctypes "github.com/tendermint/tendermint/rpc/core/types"
@@ -58,12 +59,12 @@ type SendTxReply struct {
 }
 
 type ApplyValidatorRequest struct {
-	Address      keys.Address `json:"address"`
-	Name         string       `json:"name"`
-	Amount       string       `json:"amount"`
-	Purge        bool         `json:"purge"`
-	TmPubKeyType string       `json:"tmPubKeyType"`
-	TmPubKey     []byte       `json:"tmPubKey"`
+	Address      keys.Address   `json:"address"`
+	Name         string         `json:"name"`
+	Amount       balance.Amount `json:"amount"`
+	Purge        bool           `json:"purge"`
+	TmPubKeyType string         `json:"tmPubKeyType"`
+	TmPubKey     []byte         `json:"tmPubKey"`
 }
 
 type ApplyValidatorReply struct {
@@ -110,6 +111,11 @@ type ListValidatorsReply struct {
 	Validators []identity.Validator `json:"validators"`
 	// Height at which this validator set was active
 	Height int64 `json:"height"`
+}
+
+type ListCurrenciesRequest struct{}
+type ListCurrenciesReply struct {
+	Currencies balance.Currencies `json:"currencies"`
 }
 
 type BroadcastRequest struct {

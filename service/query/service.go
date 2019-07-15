@@ -75,3 +75,8 @@ func (svc *Service) ListValidators(_ client.ListValidatorsRequest, reply *client
 
 	return nil
 }
+
+func (svc *Service) ListCurrencies(_ client.ListCurrenciesRequest, reply *client.ListCurrenciesReply) error {
+	reply.Currencies = svc.currencies.GetCurrencies()
+	return nil
+}

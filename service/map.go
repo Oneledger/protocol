@@ -36,7 +36,7 @@ type Map map[string]interface{}
 
 func NewMap(ctx *Context) Map {
 	return Map{
-		broadcast.Name(): broadcast.NewService(ctx.Services, ctx.Logger),
+		broadcast.Name(): broadcast.NewService(ctx.Services, ctx.Router, ctx.Currencies, ctx.Logger),
 		nodesvc.Name():   nodesvc.NewService(ctx.NodeContext, &ctx.Cfg, ctx.Logger),
 		owner.Name():     owner.NewService(ctx.Accounts, ctx.Logger),
 		query.Name():     query.NewService(ctx.Services, ctx.Balances, ctx.Currencies, ctx.ValidatorSet, ctx.Domains, ctx.Logger),

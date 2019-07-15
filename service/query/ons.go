@@ -69,7 +69,7 @@ func (sv *Service) ONS_GetDomainOnSale(req client.ONSGetDomainsRequest, reply *c
 		if d.OnSaleFlag {
 			dd := client.DomainData{
 				d.Name,
-				d.SalePrice.Amount.String(),
+				d.SalePrice.Amount.Int.String(),
 			}
 			dds = append(dds, dd)
 		}
