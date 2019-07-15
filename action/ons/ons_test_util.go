@@ -78,7 +78,7 @@ func assemblyCtxData(currencyName string, currencyDecimal int64, setBalanceStore
 			}
 			coin := &balance.Coin{
 				Currency: *currency,
-				Amount:   big.NewInt(setDomainPrice),
+				Amount:   balance.NewAmount(setDomainPrice),
 			}
 			d := &ons.Domain{
 				Name:           "test_domain",
@@ -114,7 +114,7 @@ func assemblyCtxData(currencyName string, currencyDecimal int64, setBalanceStore
 		if setInitCoin {
 			coin := balance.Coin{
 				Currency: currency,
-				Amount:   big.NewInt(1000000000000000000),
+				Amount:   balance.NewAmount(1000000000000000000),
 			}
 			ba := balance.NewBalance()
 			ba = ba.AddCoin(coin)
@@ -182,75 +182,84 @@ func assemblyUpdateDomainTx(owner crypto.Address, active bool) *DomainUpdate {
 	return updateDomain
 }
 
-func assemblyTxData(replaceAddre bool, initTokenAmount string, txType string, failTypeCast bool, cancelSale bool, activeFlag bool) (*action.BaseTx, crypto.Address) {
+func assemblyTxData(replaceAddre bool, initTokenAmount string, txType string, failTypeCast bool, cancelSale bool, activeFlag bool) (action.SignedTx, crypto.Address) {
 
 	owner, ownerPubkey, ownerPrikey := generateKeyPair()
 	if replaceAddre {
 		owner = crypto.Address("")
 	}
+	amt, _ := balance.NewAmountFromString(initTokenAmount, 10)
 	amount := &action.Amount{
 		Currency: "OLT",
-		Value:    initTokenAmount,
+		Value:    *amt,
 	}
 	fee := action.Fee{
-		Price: action.Amount{"OLT", "10"},
+		Price: action.Amount{Currency: "OLT", Value: balance.Amount{Int: *big.NewInt(0).Div(&amt.Int, big.NewInt(1000))}},
 		Gas:   int64(10),
 	}
 
-	var txData action.Msg
+	var tx Ons
 
 	if failTypeCast {
-		txData = DomainCreate{
+		tx = &DomainCreate{
 			Owner: owner.Bytes(),
 		}
 	} else {
 		switch txType {
 		case "create":
-			txData = assemblyCreateDomainTx(owner, amount)
+			tx = assemblyCreateDomainTx(owner, amount)
 		case "purchase":
-			txData = assemblyPurchaseDomainTx(owner, amount)
+			tx = assemblyPurchaseDomainTx(owner, amount)
 		case "sale":
-			txData = assemblySaleDomainTx(owner, amount, cancelSale)
+			tx = assemblySaleDomainTx(owner, amount, cancelSale)
 		case "send":
-			txData = assemblySendDomainTx(owner, amount)
+			tx = assemblySendDomainTx(owner, amount)
 		case "update":
-			txData = assemblyUpdateDomainTx(owner, activeFlag)
+			tx = assemblyUpdateDomainTx(owner, activeFlag)
 		}
 	}
-
-	tx := &action.BaseTx{
+	txData, err := tx.Marshal()
+	if err != nil {
+		errors.New(err.Error())
+	}
+	rawtx := action.RawTx{
+		Type: tx.Type(),
 		Data: txData,
 		Fee:  fee,
 		Memo: "test_memo",
 	}
-	signature, _ := ownerPrikey.Sign(tx.Bytes())
-	signer := action.Signature{
-		Signer: keys.PublicKey{keys.ED25519, ownerPubkey.Bytes()[5:]},
-		Signed: signature,
-	}
-	tx.Signatures = []action.Signature{signer}
+	signature, _ := ownerPrikey.Sign(rawtx.RawBytes())
 
-	return tx, owner
+	signed := action.SignedTx{
+		RawTx: rawtx,
+		Signatures: []action.Signature{
+			action.Signature{
+				Signer: keys.PublicKey{keys.ED25519, ownerPubkey.Bytes()[5:]},
+				Signed: signature,
+			}},
+	}
+	return signed, owner
 }
 
-func assemblyTxDataSameKp(replaceAddre bool, initTokenAmount string, txType string, failTypeCast bool, owner crypto.Address, ownerPubkey crypto.PubKey, ownerPrikey ed25519.PrivKeyEd25519) *action.BaseTx {
+func assemblyTxDataSameKp(replaceAddre bool, initTokenAmount string, txType string, failTypeCast bool, owner crypto.Address, ownerPubkey crypto.PubKey, ownerPrikey ed25519.PrivKeyEd25519) action.SignedTx {
 
 	if replaceAddre {
 		owner = crypto.Address("")
 	}
+	amt, _ := balance.NewAmountFromString(initTokenAmount, 10)
 	amount := &action.Amount{
 		Currency: "OLT",
-		Value:    initTokenAmount,
+		Value:    *amt,
 	}
 	fee := action.Fee{
-		Price: action.Amount{"OLT", "10"},
+		Price: action.Amount{Currency: "OLT", Value: balance.Amount{Int: *big.NewInt(0).Div(&amt.Int, big.NewInt(1000))}},
 		Gas:   int64(10),
 	}
 
 	var txData action.Msg
 
 	if failTypeCast {
-		txData = DomainCreate{
+		txData = &DomainCreate{
 			Owner: owner.Bytes(),
 		}
 	} else {
@@ -267,18 +276,25 @@ func assemblyTxDataSameKp(replaceAddre bool, initTokenAmount string, txType stri
 			txData = assemblyUpdateDomainTx(owner, true)
 		}
 	}
-
-	tx := &action.BaseTx{
-		Data: txData,
+	data, err := txData.Marshal()
+	if err != nil {
+		errors.New(err.Error())
+	}
+	tx := action.RawTx{
+		Type: txData.Type(),
+		Data: data,
 		Fee:  fee,
 		Memo: "test_memo",
 	}
-	signature, _ := ownerPrikey.Sign(tx.Bytes())
-	signer := action.Signature{
-		Signer: keys.PublicKey{keys.ED25519, ownerPubkey.Bytes()[5:]},
-		Signed: signature,
-	}
-	tx.Signatures = []action.Signature{signer}
 
-	return tx
+	signature, _ := ownerPrikey.Sign(tx.RawBytes())
+	signed := action.SignedTx{
+		RawTx: tx,
+		Signatures: []action.Signature{
+			action.Signature{
+				Signer: keys.PublicKey{keys.ED25519, ownerPubkey.Bytes()[5:]},
+				Signed: signature,
+			}},
+	}
+	return signed
 }
