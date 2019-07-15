@@ -2,6 +2,7 @@ package ons
 
 import (
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 
 	"github.com/Oneledger/protocol/data/ons"
@@ -11,7 +12,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-var _ action.Msg = DomainCreate{}
+var _ Ons = &DomainCreate{}
 
 type DomainCreate struct {
 	Owner   action.Address
@@ -20,7 +21,13 @@ type DomainCreate struct {
 	Price   action.Amount
 }
 
-var _ Ons = DomainCreate{}
+func (dc DomainCreate) Marshal() ([]byte, error) {
+	return json.Marshal(dc)
+}
+
+func (dc *DomainCreate) Unmarshal(data []byte) error {
+	return json.Unmarshal(data, dc)
+}
 
 func (dc DomainCreate) OnsName() string {
 	return dc.Name
@@ -55,26 +62,28 @@ var _ action.Tx = domainCreateTx{}
 type domainCreateTx struct {
 }
 
-func (domainCreateTx) Validate(ctx *action.Context, msg action.Msg, fee action.Fee, memo string, signatures []action.Signature) (bool, error) {
-	ok, err := action.ValidateBasic(msg, fee, memo, signatures)
+func (domainCreateTx) Validate(ctx *action.Context, tx action.SignedTx) (bool, error) {
+
+	create := &DomainCreate{}
+	err := create.Unmarshal(tx.Data)
 	if err != nil {
-		return ok, err
+		return false, errors.Wrap(action.ErrWrongTxType, err.Error())
 	}
 
-	create, ok := msg.(*DomainCreate)
-	if !ok {
-		return false, action.ErrWrongTxType
+	ok, err := action.ValidateBasic(tx.RawBytes(), create.Signers(), tx.Signatures)
+	if err != nil {
+		return ok, err
 	}
 
 	if create.Owner == nil || len(create.Name) <= 0 {
 		return false, action.ErrMissingData
 	}
 
-	if !create.Price.IsValid(ctx) || create.Price.Currency != "OLT" {
+	if !create.Price.IsValid(ctx.Currencies) || create.Price.Currency != "OLT" {
 		return false, action.ErrInvalidAmount
 	}
 
-	coin := create.Price.ToCoin(ctx)
+	coin := create.Price.ToCoin(ctx.Currencies)
 	if coin.LessThanEqualCoin(coin.Currency.NewCoinFromInt(CREATE_PRICE)) {
 		return false, action.ErrNotEnoughFund
 	}
@@ -82,17 +91,18 @@ func (domainCreateTx) Validate(ctx *action.Context, msg action.Msg, fee action.F
 	return true, nil
 }
 
-func (domainCreateTx) ProcessCheck(ctx *action.Context, msg action.Msg, fee action.Fee) (bool, action.Response) {
-	create, ok := msg.(*DomainCreate)
-	if !ok {
-		return false, action.Response{Log: "DomainCreate cast failed"}
+func (domainCreateTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
+	create := &DomainCreate{}
+	err := create.Unmarshal(tx.Data)
+	if err != nil {
+		return false, action.Response{Log: err.Error()}
 	}
 
 	b, err := ctx.Balances.Get(create.Owner.Bytes(), false)
 	if err != nil {
 		return false, action.Response{Log: fmt.Sprintf("failed to get balance for owner: %s", hex.EncodeToString(create.Owner))}
 	}
-	price := create.Price.ToCoin(ctx)
+	price := create.Price.ToCoin(ctx.Currencies)
 
 	//just verify if balance is enough or not, don't set to db
 	b, err = b.MinusCoin(price)
@@ -110,17 +120,18 @@ func (domainCreateTx) ProcessCheck(ctx *action.Context, msg action.Msg, fee acti
 	return true, result
 }
 
-func (domainCreateTx) ProcessDeliver(ctx *action.Context, msg action.Msg, fee action.Fee) (bool, action.Response) {
-	create, ok := msg.(*DomainCreate)
-	if !ok {
-		return false, action.Response{Log: "DomainCreate cast failed"}
+func (domainCreateTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
+	create := &DomainCreate{}
+	err := create.Unmarshal(tx.Data)
+	if err != nil {
+		return false, action.Response{Log: err.Error()}
 	}
 
 	b, err := ctx.Balances.Get(create.Owner.Bytes(), false)
 	if err != nil {
 		return false, action.Response{Log: fmt.Sprintf("failed to get balance for owner: %s", hex.EncodeToString(create.Owner))}
 	}
-	price := create.Price.ToCoin(ctx)
+	price := create.Price.ToCoin(ctx.Currencies)
 
 	// verify balance and set to db, the price for create domain is just burned for now.
 	//todo: pay the price to fee pool that will be shared by validators at the fee distribution time.

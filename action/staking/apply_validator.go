@@ -1,6 +1,10 @@
 package staking
 
 import (
+	"encoding/json"
+
+	"github.com/pkg/errors"
+
 	"github.com/Oneledger/protocol/action"
 
 	"github.com/Oneledger/protocol/data/keys"
@@ -8,7 +12,7 @@ import (
 	"github.com/tendermint/tendermint/libs/common"
 )
 
-var _ action.Msg = ApplyValidator{}
+var _ action.Msg = &ApplyValidator{}
 
 type ApplyValidator struct {
 	Address          action.Address
@@ -17,6 +21,14 @@ type ApplyValidator struct {
 	ValidatorAddress action.Address
 	ValidatorPubKey  keys.PublicKey
 	Purge            bool
+}
+
+func (apply ApplyValidator) Marshal() ([]byte, error) {
+	return json.Marshal(apply)
+}
+
+func (apply *ApplyValidator) Unmarshal(data []byte) error {
+	return json.Unmarshal(data, apply)
 }
 
 func (apply ApplyValidator) Signers() []action.Address {
@@ -32,18 +44,19 @@ var _ action.Tx = applyTx{}
 type applyTx struct {
 }
 
-func (applyTx) Validate(ctx *action.Context, msg action.Msg, fee action.Fee, memo string, signatures []action.Signature) (bool, error) {
-	ok, err := action.ValidateBasic(msg, fee, memo, signatures)
+func (a applyTx) Validate(ctx *action.Context, tx action.SignedTx) (bool, error) {
+
+	apply := &ApplyValidator{}
+	err := apply.Unmarshal(tx.Data)
+	if err != nil {
+		return false, errors.Wrap(action.ErrWrongTxType, err.Error())
+	}
+	ok, err := action.ValidateBasic(tx.RawBytes(), apply.Signers(), tx.Signatures)
 	if err != nil {
 		return ok, err
 	}
 
-	apply, ok := msg.(*ApplyValidator)
-	if !ok {
-		return false, action.ErrWrongTxType
-	}
-
-	if msg == nil || len(apply.Address) == 0 {
+	if len(apply.Address) == 0 {
 		return false, action.ErrMissingData
 	}
 
@@ -55,7 +68,7 @@ func (applyTx) Validate(ctx *action.Context, msg action.Msg, fee action.Fee, mem
 		return false, action.ErrInvalidPubkey
 	}
 
-	coin := apply.Stake.ToCoin(ctx)
+	coin := apply.Stake.ToCoin(ctx.Currencies)
 	if coin.LessThanCoin(coin.Currency.NewCoinFromInt(0)) {
 		return false, action.ErrInvalidAmount
 	}
@@ -67,11 +80,13 @@ func (applyTx) Validate(ctx *action.Context, msg action.Msg, fee action.Fee, mem
 	return true, nil
 }
 
-func (a applyTx) ProcessCheck(ctx *action.Context, msg action.Msg, fee action.Fee) (bool, action.Response) {
-	apply, ok := msg.(*ApplyValidator)
-	if !ok {
-		return false, action.Response{Log: "Apply validator cast failed"}
+func (a applyTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
+	apply := &ApplyValidator{}
+	err := apply.Unmarshal(tx.Data)
+	if err != nil {
+		return false, action.Response{Log: err.Error()}
 	}
+
 	result, err := checkBalances(ctx, apply.Address, apply.Stake)
 	if err != nil {
 		return false, action.Response{Log: err.Error()}
@@ -92,18 +107,19 @@ func checkBalances(ctx *action.Context, address action.Address, stake action.Amo
 	if !ok {
 		return false, action.ErrInvalidAmount
 	}
-	if balance.GetCoin(c).LessThanCoin(stake.ToCoin(ctx)) {
+	if balance.GetCoin(c).LessThanCoin(stake.ToCoin(ctx.Currencies)) {
 		return false, action.ErrNotEnoughFund
 	}
 	return true, nil
 }
 
-func (applyTx) ProcessDeliver(ctx *action.Context, msg action.Msg, fee action.Fee) (bool, action.Response) {
-	apply, ok := msg.(*ApplyValidator)
-	if !ok {
-		return false, action.Response{Log: "Apply validator cast failed"}
+func (a applyTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
+	apply := &ApplyValidator{}
+	err := apply.Unmarshal(tx.Data)
+	if err != nil {
+		return false, action.Response{Log: err.Error()}
 	}
-	_, err := checkBalances(ctx, apply.Address, apply.Stake)
+	_, err = checkBalances(ctx, apply.Address, apply.Stake)
 	if err != nil {
 		return false, action.Response{Log: err.Error()}
 	}
@@ -115,7 +131,7 @@ func (applyTx) ProcessDeliver(ctx *action.Context, msg action.Msg, fee action.Fe
 	if err != nil {
 		return false, action.Response{Log: err.Error()}
 	}
-	b, err := balance.MinusCoin(apply.Stake.ToCoin(ctx))
+	b, err := balance.MinusCoin(apply.Stake.ToCoin(ctx.Currencies))
 	if err != nil {
 		return false, action.Response{Log: err.Error()}
 	}
@@ -131,13 +147,13 @@ func (applyTx) ProcessDeliver(ctx *action.Context, msg action.Msg, fee action.Fe
 			StakeAddress:     apply.Address,
 			Pubkey:           apply.ValidatorPubKey,
 			Name:             apply.NodeName,
-			Amount:           apply.Stake.ToCoin(ctx),
+			Amount:           apply.Stake.ToCoin(ctx.Currencies),
 		}
 		err = validators.HandleStake(stake)
 	} else {
 		unstake := identity.Unstake{
 			Address: apply.ValidatorAddress,
-			Amount:  apply.Stake.ToCoin(ctx),
+			Amount:  apply.Stake.ToCoin(ctx.Currencies),
 		}
 		err = validators.HandleUnstake(unstake)
 	}

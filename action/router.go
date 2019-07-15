@@ -25,7 +25,7 @@ import (
 // Handle a request.
 type Router interface {
 	AddHandler(Type, Tx) error
-	Handler(Msg) Tx
+	Handler(Type) Tx
 }
 
 // router is an implementation of a Router interface, currently all routes are stored in a map
@@ -57,11 +57,11 @@ func (r *router) AddHandler(t Type, h Tx) error {
 }
 
 // Handle
-func (r *router) Handler(msg Msg) Tx {
+func (r *router) Handler(t Type) Tx {
 
-	h, ok := r.routes[msg.Type()]
+	h, ok := r.routes[t]
 	if !ok {
-		r.logger.Error("handler not found", msg)
+		r.logger.Error("handler not found", t)
 	}
 
 	return h
