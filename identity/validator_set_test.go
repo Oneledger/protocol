@@ -3,7 +3,6 @@ package identity
 import (
 	"encoding/base64"
 	"encoding/hex"
-	"math/big"
 	"os"
 	"testing"
 
@@ -55,7 +54,7 @@ func prepareStake(address string) Stake {
 	}
 	coin := balance.Coin{
 		Currency: currency,
-		Amount:   big.NewInt(0.0),
+		Amount:   balance.NewAmount(0),
 	}
 	pubkey := keys.PublicKey{
 		KeyType: keys.ED25519,
@@ -79,7 +78,7 @@ func prepareUnstake(address string) Unstake {
 	}
 	coin := balance.Coin{
 		Currency: currency,
-		Amount:   big.NewInt(0.0),
+		Amount:   balance.NewAmount(0),
 	}
 	unstake := Unstake{
 		Address: validatorAddr,
@@ -258,7 +257,7 @@ func TestValidatorStore_HandleUnstake(t *testing.T) {
 		}
 		coin := balance.Coin{
 			Currency: currency,
-			Amount:   big.NewInt(1000.0),
+			Amount:   balance.NewAmount(1000),
 		}
 		unstake.Amount = coin
 		err = vs.HandleUnstake(unstake)

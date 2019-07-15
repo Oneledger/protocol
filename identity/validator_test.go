@@ -2,7 +2,6 @@ package identity
 
 import (
 	"encoding/hex"
-	"math/big"
 	"testing"
 
 	"github.com/Oneledger/protocol/data/balance"
@@ -21,7 +20,7 @@ var validator = &Validator{
 	},
 	Power:   500,
 	Name:    "test_node",
-	Staking: balance.Coin{balance.Currency{"VT", 1, 18}, big.NewInt(100.0)},
+	Staking: balance.Coin{balance.Currency{"VT", 1, 18}, balance.NewAmount(100)},
 }
 
 func TestValidator_Bytes(t *testing.T) {
