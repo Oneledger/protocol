@@ -17,6 +17,7 @@ spec:
       containers:
       - name: explorer-watcher 
         image: gcr.io/atomic-land-223022/oneledger/explorer:latest
+        imagePullPolicy: "Always"
         env:
         - name: "DB_NAME"
           valueFrom:
