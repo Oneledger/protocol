@@ -3,6 +3,7 @@ package client
 import (
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/data/keys"
+	"github.com/Oneledger/protocol/data/ons"
 )
 
 /*
@@ -59,19 +60,20 @@ type ONSGetDomainsRequest struct {
 }
 
 type ONSGetDomainsReply struct {
-	Domains []DomainData `json:"domains"`
+	Domains []ons.Domain `json:"domains"`
 }
 
 type ONSGetDomainsOnSaleReply struct {
-	Domains []DomainData `json:"domains"`
+	Domains []ons.Domain `json:"domains"`
 }
-type DomainData struct {
-	Name             string       `json:"name"`
-	SalePrice        string       `json:"sale_price"`
-	OwnerAddress     keys.Address `json:"owner_address"`
-	AccountAddress   keys.Address `json:"account_address"`
-	CreationHeight   int64        `json:"creation_height"`
-	LastUpdateHeight int64        `json:"lastUpdate_height"`
-	ActiveFlag       bool         `json:"active_flag"`
-	OnSaleFlag       bool         `json:"onSale_flag"`
-}
+
+//type DomainData struct {
+//	Name             string       `json:"name"`
+//	OwnerAddress     keys.Address `json:"owner_address"`
+//	AccountAddress   keys.Address `json:"account_address"`
+//	CreationHeight   int64        `json:"creation_height"`
+//	LastUpdateHeight int64        `json:"lastUpdate_height"`
+//	ActiveFlag       bool         `json:"active_flag"`
+//	OnSaleFlag       bool         `json:"onSale_flag"`
+//	SalePrice        balance.Coin `json:"sale_price"`
+//}

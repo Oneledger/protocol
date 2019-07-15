@@ -6,6 +6,7 @@ package ons
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 
 	"github.com/pkg/errors"
@@ -15,6 +16,8 @@ import (
 	"github.com/Oneledger/protocol/data/ons"
 )
 
+var _ Ons = &DomainSale{}
+
 type DomainSale struct {
 	DomainName   string
 	OwnerAddress action.Address
@@ -22,13 +25,17 @@ type DomainSale struct {
 	CancelSale   bool
 }
 
-var _ Ons = DomainSale{}
+func (s DomainSale) Marshal() ([]byte, error) {
+	return json.Marshal(s)
+}
+
+func (s *DomainSale) Unmarshal(data []byte) error {
+	return json.Unmarshal(data, s)
+}
 
 func (s DomainSale) OnsName() string {
 	return s.DomainName
 }
-
-var _ action.Msg = DomainSale{}
 
 func (DomainSale) Type() action.Type {
 	return action.DOMAIN_SELL
@@ -77,21 +84,21 @@ type domainSaleTx struct {
 
 var _ action.Tx = domainSaleTx{}
 
-func (domainSaleTx) Validate(ctx *action.Context, msg action.Msg, fee action.Fee,
-	memo string, signatures []action.Signature) (bool, error) {
+func (domainSaleTx) Validate(ctx *action.Context, tx action.SignedTx) (bool, error) {
+
+	sale := &DomainSale{}
+	err := sale.Unmarshal(tx.Data)
+	if err != nil {
+		return false, errors.Wrap(action.ErrWrongTxType, err.Error())
+	}
 
 	// validate basic signature
-	ok, err := action.ValidateBasic(msg, fee, memo, signatures)
+	ok, err := action.ValidateBasic(tx.RawBytes(), sale.Signers(), tx.Signatures)
 	if err != nil {
 		return ok, err
 	}
 
-	sale, ok := msg.(*DomainSale)
-	if !ok {
-		return false, action.ErrWrongTxType
-	}
-
-	if !sale.Price.IsValid(ctx) {
+	if !sale.Price.IsValid(ctx.Currencies) {
 		return false, errors.Wrap(action.ErrInvalidAmount, sale.Price.String())
 	}
 
@@ -103,15 +110,15 @@ func (domainSaleTx) Validate(ctx *action.Context, msg action.Msg, fee action.Fee
 	return true, nil
 }
 
-func (domainSaleTx) ProcessCheck(ctx *action.Context, msg action.Msg,
-	fee action.Fee) (bool, action.Response) {
+func (domainSaleTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 
-	sale, ok := msg.(*DomainSale)
-	if !ok {
-		return false, action.Response{Log: "failed to cast msg"}
+	sale := &DomainSale{}
+	err := sale.Unmarshal(tx.Data)
+	if err != nil {
+		return false, action.Response{Log: err.Error()}
 	}
 
-	if !sale.Price.IsValid(ctx) {
+	if !sale.Price.IsValid(ctx.Currencies) {
 		return false, action.Response{Log: "invalid price amount"}
 	}
 
@@ -148,14 +155,15 @@ func (domainSaleTx) ProcessCheck(ctx *action.Context, msg action.Msg,
 	return true, action.Response{Tags: sale.Tags()}
 }
 
-func (domainSaleTx) ProcessDeliver(ctx *action.Context, msg action.Msg, fee action.Fee) (bool, action.Response) {
+func (domainSaleTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 
-	sale, ok := msg.(*DomainSale)
-	if !ok {
-		return false, action.Response{Log: "failed to cast msg"}
+	sale := &DomainSale{}
+	err := sale.Unmarshal(tx.Data)
+	if err != nil {
+		return false, action.Response{Log: err.Error()}
 	}
 
-	if !sale.Price.IsValid(ctx) {
+	if !sale.Price.IsValid(ctx.Currencies) {
 		return false, action.Response{Log: "invalid price amount"}
 	}
 
@@ -186,7 +194,7 @@ func (domainSaleTx) ProcessDeliver(ctx *action.Context, msg action.Msg, fee acti
 	if sale.CancelSale {
 		domain.CancelSale()
 	} else {
-		domain.PutOnSale(sale.Price.ToCoin(ctx))
+		domain.PutOnSale(sale.Price.ToCoin(ctx.Currencies))
 	}
 	domain.LastUpdateHeight = ctx.Header.Height
 

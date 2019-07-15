@@ -3,9 +3,10 @@ package staking
 import (
 	"encoding/hex"
 	"errors"
-	"math/big"
 	"os"
 	"testing"
+
+	"github.com/Oneledger/protocol/serialize"
 
 	"github.com/Oneledger/protocol/config"
 	"github.com/Oneledger/protocol/identity"
@@ -50,7 +51,7 @@ func generateKeyPair() (crypto.Address, crypto.PubKey, ed25519.PrivKeyEd25519) {
 	return addr, pubkey, prikey
 }
 
-func assemblyApplyValidatorData(addr crypto.Address, pubkey crypto.PubKey, prikey ed25519.PrivKeyEd25519, stake action.Amount, purge bool) *action.BaseTx {
+func assemblyApplyValidatorData(addr crypto.Address, pubkey crypto.PubKey, prikey ed25519.PrivKeyEd25519, stake action.Amount, purge bool) action.SignedTx {
 
 	av := &ApplyValidator{
 		Address:          addr.Bytes(),
@@ -61,84 +62,93 @@ func assemblyApplyValidatorData(addr crypto.Address, pubkey crypto.PubKey, prike
 		Purge:            purge,
 	}
 	fee := action.Fee{
-		Price: action.Amount{"OLT", "10"},
+		Price: action.Amount{"OLT", *balance.NewAmount(10)},
 		Gas:   int64(10),
 	}
-	tx := &action.BaseTx{
-		Data: av,
+	data, _ := av.Marshal()
+	tx := action.RawTx{
+		Type: av.Type(),
+		Data: data,
 		Fee:  fee,
 		Memo: "test_memo",
 	}
-	signature, _ := prikey.Sign(tx.Bytes())
-	signer := action.Signature{
-		Signer: keys.PublicKey{keys.ED25519, pubkey.Bytes()[5:]},
-		Signed: signature,
+	signature, _ := prikey.Sign(tx.RawBytes())
+	signed := action.SignedTx{
+		RawTx: tx,
+		Signatures: []action.Signature{
+			action.Signature{
+				Signer: keys.PublicKey{keys.ED25519, pubkey.Bytes()[5:]},
+				Signed: signature,
+			}},
 	}
-	tx.Signatures = []action.Signature{signer}
-
-	return tx
+	return signed
 }
 
-func setupForApplyValidatorWithPurge() *action.BaseTx {
+func setupForApplyValidatorWithPurge() action.SignedTx {
 
 	addr, pubkey, prikey := generateKeyPair()
 
-	stake := action.Amount{"VT", "0.01"}
+	stake := action.Amount{"VT", *balance.NewAmount(1)}
 	tx := assemblyApplyValidatorData(addr, pubkey, prikey, stake, true)
 
 	return tx
 }
 
-func setupForApplyValidator() *action.BaseTx {
+func setupForApplyValidator() action.SignedTx {
 
 	addr, pubkey, prikey := generateKeyPair()
 
-	stake := action.Amount{"VT", "0.01"}
+	stake := action.Amount{"VT", *balance.NewAmount(1)}
 	tx := assemblyApplyValidatorData(addr, pubkey, prikey, stake, false)
 
 	return tx
 }
 
-func setupForInvalidStakeAmount() *action.BaseTx {
+func setupForInvalidStakeAmount() action.SignedTx {
 
 	addr, pubkey, prikey := generateKeyPair()
 
-	stake := action.Amount{"OLT", "-10"}
+	stake := action.Amount{"OLT", *balance.NewAmount(-10)}
 	tx := assemblyApplyValidatorData(addr, pubkey, prikey, stake, false)
 
 	return tx
 }
 
-func setupForTypeCastApplyValidator() *action.BaseTx {
+func setupForTypeCastApplyValidator() action.SignedTx {
 
 	addr, pubkey, prikey := generateKeyPair()
 
 	// test cast for type casting error
 	av := ApplyValidator{
 		Address:          addr.Bytes(),
-		Stake:            action.Amount{"OLT", "10"},
+		Stake:            action.Amount{"OLT", *balance.NewAmount(10)},
 		NodeName:         "test_node",
 		ValidatorAddress: addr.Bytes(),
 		ValidatorPubKey:  keys.PublicKey{keys.ED25519, pubkey.Bytes()[5:]},
 		Purge:            false,
 	}
 	fee := action.Fee{
-		Price: action.Amount{"OLT", "10"},
+		Price: action.Amount{"OLT", *balance.NewAmount(1)},
 		Gas:   int64(10),
 	}
-	tx := &action.BaseTx{
-		Data: av,
+
+	data, _ := av.Marshal()
+	tx := action.RawTx{
+		Type: av.Type(),
+		Data: data,
 		Fee:  fee,
 		Memo: "test_memo",
 	}
-	signature, _ := prikey.Sign(tx.Bytes())
-	signer := action.Signature{
-		Signer: keys.PublicKey{keys.ED25519, pubkey.Bytes()[5:]},
-		Signed: signature,
+	signature, _ := prikey.Sign(tx.RawBytes())
+	signed := action.SignedTx{
+		RawTx: tx,
+		Signatures: []action.Signature{
+			action.Signature{
+				Signer: keys.PublicKey{keys.ED25519, pubkey.Bytes()[5:]},
+				Signed: signature,
+			}},
 	}
-	tx.Signatures = []action.Signature{signer}
-
-	return tx
+	return signed
 }
 
 func TestApplyValidator_Signers(t *testing.T) {
@@ -171,21 +181,23 @@ func TestApplyTx_Validate(t *testing.T) {
 			Signed: []byte(""),
 		}
 		signatures := []action.Signature{signature}
+		txNoSig := tx
+		txNoSig.Signatures = signatures
 		ctx := &action.Context{}
 		handler := applyTx{}
-		ok, err := handler.Validate(ctx, tx.Data, tx.Fee, tx.Memo, signatures)
+		ok, err := handler.Validate(ctx, txNoSig)
 		assert.False(t, ok)
 		assert.NotNil(t, err)
 	})
 
-	t.Run("test apply validator type cast part, should be not ok", func(t *testing.T) {
-		tx := setupForTypeCastApplyValidator()
-		ctx := &action.Context{}
-		handler := applyTx{}
-		ok, err := handler.Validate(ctx, tx.Data, tx.Fee, tx.Memo, tx.Signatures)
-		assert.False(t, ok)
-		assert.NotNil(t, err)
-	})
+	//t.Run("test apply validator type cast part, should be not ok", func(t *testing.T) {
+	//	tx := setupForTypeCastApplyValidator()
+	//	ctx := &action.Context{}
+	//	handler := applyTx{}
+	//	ok, err := handler.Validate(ctx, tx)
+	//	assert.False(t, ok)
+	//	assert.NotNil(t, err)
+	//})
 
 	t.Run("test apply validator with an invalid currency type, should be not ok", func(t *testing.T) {
 		tx := setupForInvalidStakeAmount()
@@ -202,7 +214,7 @@ func TestApplyTx_Validate(t *testing.T) {
 			Currencies: currencyList,
 		}
 		handler := applyTx{}
-		ok, err := handler.Validate(ctx, tx.Data, tx.Fee, tx.Memo, tx.Signatures)
+		ok, err := handler.Validate(ctx, tx)
 		assert.False(t, ok)
 		assert.NotNil(t, err)
 	})
@@ -222,7 +234,7 @@ func TestApplyTx_Validate(t *testing.T) {
 			Currencies: currencyList,
 		}
 		handler := applyTx{}
-		ok, err := handler.Validate(ctx, tx.Data, tx.Fee, tx.Memo, tx.Signatures)
+		ok, err := handler.Validate(ctx, tx)
 		assert.False(t, ok)
 		assert.NotNil(t, err)
 	})
@@ -241,20 +253,20 @@ func TestApplyTx_Validate(t *testing.T) {
 			Currencies: currencyList,
 		}
 		handler := applyTx{}
-		ok, err := handler.Validate(ctx, tx.Data, tx.Fee, tx.Memo, tx.Signatures)
+		ok, err := handler.Validate(ctx, tx)
 		assert.True(t, ok)
 		assert.Nil(t, err)
 	})
 }
 
 func TestApplyTx_ProcessCheck(t *testing.T) {
-	t.Run("cast applyvalidator tx with invalid data, should return error", func(t *testing.T) {
-		tx := setupForTypeCastApplyValidator()
-		ctx := &action.Context{}
-		handler := applyTx{}
-		ok, _ := handler.ProcessCheck(ctx, tx.Data, tx.Fee)
-		assert.False(t, ok)
-	})
+	//t.Run("cast applyvalidator tx with invalid data, should return error", func(t *testing.T) {
+	//	tx := setupForTypeCastApplyValidator()
+	//	ctx := &action.Context{}
+	//	handler := applyTx{}
+	//	ok, _ := handler.ProcessCheck(ctx, tx.RawTx)
+	//	assert.False(t, ok)
+	//})
 	t.Run("check balance with valid data, should return no error", func(t *testing.T) {
 		testDB := setup()
 		defer teardown(testDB)
@@ -266,7 +278,7 @@ func TestApplyTx_ProcessCheck(t *testing.T) {
 		}
 		handler := applyTx{}
 
-		ok, _ := handler.ProcessCheck(ctx, tx.Data, tx.Fee)
+		ok, _ := handler.ProcessCheck(ctx, tx.RawTx)
 		assert.False(t, ok)
 	})
 }
@@ -288,11 +300,16 @@ func TestApplyTx_ProcessDeliver(t *testing.T) {
 		}
 		coin := balance.Coin{
 			Currency: currency,
-			Amount:   big.NewInt(100000000000000000),
+			Amount:   balance.NewAmount(100000000000000000),
 		}
 		ba := balance.NewBalance()
 		ba = ba.AddCoin(coin)
-		err := store.Set(tx.Data.Signers()[0], *ba)
+
+		apply := &ApplyValidator{}
+		err := serialize.GetSerializer(serialize.JSON).Deserialize(tx.Data, apply)
+
+		err = store.Set(apply.Address, *ba)
+
 		assert.Nil(t, err, "set some VT token for test, should be ok")
 		err = currencyList.Register(currency)
 		assert.Nil(t, err, "register new currency should be ok")
@@ -302,7 +319,7 @@ func TestApplyTx_ProcessDeliver(t *testing.T) {
 			Currencies: currencyList,
 		}
 		handler := applyTx{}
-		ok, _ := handler.ProcessDeliver(ctx, tx.Data, tx.Fee)
+		ok, _ := handler.ProcessDeliver(ctx, tx.RawTx)
 		assert.True(t, ok)
 	})
 	t.Run("process with valid data but using purge flag, should return no error", func(t *testing.T) {
@@ -320,11 +337,14 @@ func TestApplyTx_ProcessDeliver(t *testing.T) {
 		}
 		coin := balance.Coin{
 			Currency: currency,
-			Amount:   big.NewInt(100000000000000000),
+			Amount:   balance.NewAmount(100000000000000000),
 		}
 		ba := balance.NewBalance()
 		ba = ba.AddCoin(coin)
-		err := store.Set(tx.Data.Signers()[0], *ba)
+		apply := &ApplyValidator{}
+		err := serialize.GetSerializer(serialize.JSON).Deserialize(tx.Data, apply)
+
+		err = store.Set(apply.Address, *ba)
 		assert.Nil(t, err, "set some VT token for test, should be ok")
 		err = currencyList.Register(currency)
 		assert.Nil(t, err, "register new currency should be ok")
@@ -334,7 +354,7 @@ func TestApplyTx_ProcessDeliver(t *testing.T) {
 			Currencies: currencyList,
 		}
 		handler := applyTx{}
-		ok, _ := handler.ProcessDeliver(ctx, tx.Data, tx.Fee)
+		ok, _ := handler.ProcessDeliver(ctx, tx.RawTx)
 		assert.False(t, ok)
 	})
 }

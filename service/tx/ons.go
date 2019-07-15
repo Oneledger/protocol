@@ -23,11 +23,16 @@ func (s *Service) ONS_CreateRawCreate(args client.ONSCreateRequest, reply *clien
 		Name:    args.Name,
 		Price:   args.Price,
 	}
+	data, err := domainCreate.Marshal()
+	if err != nil {
+		return err
+	}
 
 	uuidNew, _ := uuid.NewUUID()
 	fee := action.Fee{args.Fee, args.Gas}
-	tx := &action.BaseTx{
-		Data: domainCreate,
+	tx := &action.RawTx{
+		Type: action.DOMAIN_CREATE,
+		Data: data,
 		Fee:  fee,
 		Memo: uuidNew.String(),
 	}
@@ -52,11 +57,16 @@ func (s *Service) ONS_CreateRawUpdate(args client.ONSUpdateRequest, reply *clien
 		Name:    args.Name,
 		Active:  args.Active,
 	}
+	data, err := domainUpdate.Marshal()
+	if err != nil {
+		return err
+	}
 
 	uuidNew, _ := uuid.NewUUID()
 	fee := action.Fee{args.Fee, args.Gas}
-	tx := &action.BaseTx{
-		Data: domainUpdate,
+	tx := &action.RawTx{
+		Type: action.DOMAIN_UPDATE,
+		Data: data,
 		Fee:  fee,
 		Memo: uuidNew.String(),
 	}
@@ -81,11 +91,16 @@ func (s *Service) ONS_CreateRawSale(args client.ONSSaleRequest, reply *client.Se
 		Price:        args.Price,
 		CancelSale:   args.CancelSale,
 	}
+	data, err := domainSale.Marshal()
+	if err != nil {
+		return err
+	}
 
 	uuidNew, _ := uuid.NewUUID()
 	fee := action.Fee{args.Fee, args.Gas}
-	tx := &action.BaseTx{
-		Data: domainSale,
+	tx := &action.RawTx{
+		Type: action.DOMAIN_SELL,
+		Data: data,
 		Fee:  fee,
 		Memo: uuidNew.String(),
 	}
@@ -110,11 +125,16 @@ func (s *Service) ONS_CreateRawBuy(args client.ONSPurchaseRequest, reply *client
 		Account:  args.Account,
 		Offering: args.Offering,
 	}
+	data, err := domainPurchase.Marshal()
+	if err != nil {
+		return err
+	}
 
 	uuidNew, _ := uuid.NewUUID()
 	fee := action.Fee{args.Fee, args.Gas}
-	tx := &action.BaseTx{
-		Data: domainPurchase,
+	tx := &action.RawTx{
+		Type: action.DOMAIN_PURCHASE,
+		Data: data,
 		Fee:  fee,
 		Memo: uuidNew.String(),
 	}
@@ -138,11 +158,16 @@ func (s *Service) ONS_CreateRawSend(args client.ONSSendRequest, reply *client.Se
 		From:       args.From,
 		Amount:     args.Amount,
 	}
+	data, err := domainSend.Marshal()
+	if err != nil {
+		return err
+	}
 
 	uuidNew, _ := uuid.NewUUID()
 	fee := action.Fee{args.Fee, args.Gas}
-	tx := &action.BaseTx{
-		Data: domainSend,
+	tx := &action.RawTx{
+		Type: action.DOMAIN_SEND,
+		Data: data,
 		Fee:  fee,
 		Memo: uuidNew.String(),
 	}

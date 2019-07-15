@@ -68,7 +68,7 @@ func (b *Balance) Data() serialize.Data {
 			CurName:    coin.Currency.Name,
 			CurChain:   coin.Currency.Chain,
 			CurDecimal: coin.Currency.Decimal,
-			Amount:     coin.Amount.Bytes(),
+			Amount:     coin.Amount.Int.Bytes(),
 		}
 
 		bd.Coins = append(bd.Coins, cd)
@@ -97,7 +97,7 @@ func (ba *BalanceData) extract(b *Balance) error {
 
 		//convert string representation to big int
 		amt := NewAmount(0)
-		amt = amt.SetBytes(d[i].Amount)
+		amt = &Amount{*amt.Int.SetBytes(d[i].Amount)}
 
 		coin := Coin{Amount: amt}
 		coin.Currency.Name = d[i].CurName

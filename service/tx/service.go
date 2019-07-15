@@ -1,6 +1,8 @@
 package tx
 
 import (
+	"fmt"
+
 	"github.com/Oneledger/protocol/action/staking"
 	"github.com/Oneledger/protocol/action/transfer"
 	"github.com/Oneledger/protocol/log"
@@ -53,11 +55,16 @@ func (svc *Service) SendTx(args client.SendTxRequest, reply *client.SendTxReply)
 		To:     keys.Address(args.To),
 		Amount: args.Amount,
 	}
+	data, err := send.Marshal()
+	if err != nil {
+		return err
+	}
 
 	uuidNew, _ := uuid.NewUUID()
 	fee := action.Fee{args.Fee, args.Gas}
-	tx := &action.BaseTx{
-		Data: send,
+	tx := action.RawTx{
+		Type: action.SEND,
+		Data: data,
 		Fee:  fee,
 		Memo: uuidNew.String(),
 	}
@@ -66,13 +73,17 @@ func (svc *Service) SendTx(args client.SendTxRequest, reply *client.SendTxReply)
 		return errors.New("Account doesn't exist. Send a raw tx instead")
 	}
 
-	pubKey, signed, err := svc.accounts.SignWithAddress(tx.Bytes(), send.From)
+	pubKey, signed, err := svc.accounts.SignWithAddress(tx.RawBytes(), send.From)
 	if err != nil {
 		return err
 	}
-	tx.Signatures = []action.Signature{{pubKey, signed}}
+	signatures := []action.Signature{{pubKey, signed}}
+	signedTx := &action.SignedTx{
+		RawTx:      tx,
+		Signatures: signatures,
+	}
 
-	packet, err := serialize.GetSerializer(serialize.NETWORK).Serialize(tx)
+	packet, err := serialize.GetSerializer(serialize.NETWORK).Serialize(signedTx)
 	if err != nil {
 		return errors.Wrap(err, "err while network serialization")
 	}
@@ -90,12 +101,17 @@ func (svc *Service) CreateRawSend(args client.SendTxRequest, reply *client.SendT
 		To:     args.To,
 		Amount: args.Amount,
 	}
+	data, err := send.Marshal()
+	if err != nil {
+		return err
+	}
 
 	uuidNew, err := uuid.NewUUID()
 
 	fee := action.Fee{args.Fee, args.Gas}
-	tx := &action.BaseTx{
-		Data: send,
+	tx := &action.RawTx{
+		Type: action.SEND,
+		Data: data,
 		Fee:  fee,
 		Memo: uuidNew.String(),
 	}
@@ -144,21 +160,35 @@ func (svc *Service) ApplyValidator(args client.ApplyValidatorRequest, reply *cli
 		ValidatorAddress: addr,
 		ValidatorPubKey:  *pubkey,
 	}
-
-	uuidNew, _ := uuid.NewUUID()
-	tx := action.BaseTx{
-		Data: apply,
-		Fee:  action.Fee{action.Amount{Currency: "OLT", Value: "0.1"}, 1},
-		Memo: uuidNew.String(),
-	}
-
-	pubKey, signed, err := svc.accounts.SignWithAccountIndex(tx.Bytes(), 0)
+	fmt.Println("apply validator", apply)
+	data, err := apply.Marshal()
 	if err != nil {
 		return err
 	}
-	tx.Signatures = []action.Signature{{pubKey, signed}}
 
-	packet, err := serialize.GetSerializer(serialize.NETWORK).Serialize(tx)
+	uuidNew, _ := uuid.NewUUID()
+	feeAmount, err := balance.NewAmountFromString("1", 10)
+	if err != nil {
+		return err
+	}
+	tx := action.RawTx{
+		Type: action.APPLYVALIDATOR,
+		Data: data,
+		Fee:  action.Fee{action.Amount{Currency: "OLT", Value: *feeAmount}, 1},
+		Memo: uuidNew.String(),
+	}
+
+	pubKey, signed, err := svc.accounts.SignWithAccountIndex(tx.RawBytes(), 0)
+	if err != nil {
+		return err
+	}
+	signatures := []action.Signature{{pubKey, signed}}
+	signedTx := &action.SignedTx{
+		RawTx:      tx,
+		Signatures: signatures,
+	}
+
+	packet, err := serialize.GetSerializer(serialize.NETWORK).Serialize(signedTx)
 	if err != nil {
 		return errors.Wrap(err, "err while network serialization")
 	}

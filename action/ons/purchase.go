@@ -1,11 +1,15 @@
 package ons
 
 import (
+	"encoding/json"
+
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/data/ons"
 	"github.com/pkg/errors"
 	"github.com/tendermint/tendermint/libs/common"
 )
+
+var _ Ons = &DomainPurchase{}
 
 type DomainPurchase struct {
 	Name     string
@@ -14,7 +18,13 @@ type DomainPurchase struct {
 	Offering action.Amount
 }
 
-var _ Ons = DomainPurchase{}
+func (dp DomainPurchase) Marshal() ([]byte, error) {
+	return json.Marshal(dp)
+}
+
+func (dp *DomainPurchase) Unmarshal(data []byte) error {
+	return json.Unmarshal(data, dp)
+}
 
 func (dp DomainPurchase) OnsName() string {
 	return dp.Name
@@ -50,20 +60,20 @@ func (dp DomainPurchase) Tags() common.KVPairs {
 type domainPurchaseTx struct {
 }
 
-func (domainPurchaseTx) Validate(ctx *action.Context, msg action.Msg, fee action.Fee, memo string, signatures []action.Signature) (bool, error) {
+func (domainPurchaseTx) Validate(ctx *action.Context, tx action.SignedTx) (bool, error) {
+	buy := &DomainPurchase{}
+	err := buy.Unmarshal(tx.Data)
+	if err != nil {
+		return false, errors.Wrap(action.ErrWrongTxType, err.Error())
+	}
 
 	// validate basic signature
-	ok, err := action.ValidateBasic(msg, fee, memo, signatures)
+	ok, err := action.ValidateBasic(tx.RawBytes(), buy.Signers(), tx.Signatures)
 	if err != nil {
 		return ok, err
 	}
 
-	buy, ok := msg.(*DomainPurchase)
-	if !ok {
-		return false, action.ErrWrongTxType
-	}
-
-	if !buy.Offering.IsValid(ctx) {
+	if !buy.Offering.IsValid(ctx.Currencies) {
 		return false, errors.Wrap(action.ErrInvalidAmount, buy.Offering.String())
 	}
 
@@ -75,11 +85,12 @@ func (domainPurchaseTx) Validate(ctx *action.Context, msg action.Msg, fee action
 	return true, nil
 }
 
-func (domainPurchaseTx) ProcessCheck(ctx *action.Context, msg action.Msg, fee action.Fee) (bool, action.Response) {
+func (domainPurchaseTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 
-	buy, ok := msg.(*DomainPurchase)
-	if !ok {
-		return false, action.Response{Log: "failed to cast msg"}
+	buy := &DomainPurchase{}
+	err := buy.Unmarshal(tx.Data)
+	if err != nil {
+		return false, action.Response{Log: err.Error()}
 	}
 
 	domain, err := ctx.Domains.Get(buy.Name, false)
@@ -94,7 +105,7 @@ func (domainPurchaseTx) ProcessCheck(ctx *action.Context, msg action.Msg, fee ac
 		return false, action.Response{Log: "domain is not on sale"}
 	}
 
-	if !domain.SalePrice.LessThanEqualCoin(buy.Offering.ToCoin(ctx)) {
+	if !domain.SalePrice.LessThanEqualCoin(buy.Offering.ToCoin(ctx.Currencies)) {
 		return false, action.Response{Log: "offering price not enough"}
 	}
 
@@ -103,7 +114,7 @@ func (domainPurchaseTx) ProcessCheck(ctx *action.Context, msg action.Msg, fee ac
 		return false, action.Response{Log: errors.Wrap(err, "failed to get buyer balance").Error()}
 	}
 
-	buyerBalance, err = buyerBalance.MinusCoin(buy.Offering.ToCoin(ctx))
+	buyerBalance, err = buyerBalance.MinusCoin(buy.Offering.ToCoin(ctx.Currencies))
 	if err != nil {
 		return false, action.Response{Log: err.Error()}
 	}
@@ -112,10 +123,11 @@ func (domainPurchaseTx) ProcessCheck(ctx *action.Context, msg action.Msg, fee ac
 
 }
 
-func (domainPurchaseTx) ProcessDeliver(ctx *action.Context, msg action.Msg, fee action.Fee) (bool, action.Response) {
-	buy, ok := msg.(*DomainPurchase)
-	if !ok {
-		return false, action.Response{Log: "failed to cast msg"}
+func (domainPurchaseTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
+	buy := &DomainPurchase{}
+	err := buy.Unmarshal(tx.Data)
+	if err != nil {
+		return false, action.Response{Log: err.Error()}
 	}
 
 	domain, err := ctx.Domains.Get(buy.Name, false)
@@ -130,7 +142,7 @@ func (domainPurchaseTx) ProcessDeliver(ctx *action.Context, msg action.Msg, fee 
 		return false, action.Response{Log: "domain is not on sale"}
 	}
 
-	coin := buy.Offering.ToCoin(ctx)
+	coin := buy.Offering.ToCoin(ctx.Currencies)
 	if !domain.SalePrice.LessThanEqualCoin(coin) {
 		return false, action.Response{Log: "offering price not enough"}
 	}

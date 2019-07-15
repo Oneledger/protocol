@@ -12,10 +12,10 @@ type Validator struct {
 	PubKey       keys.PublicKey `json:"pubKey"`
 	Power        int64          `json:"power"`
 	Name         string         `json:"name"`
-	Staking      balance.Coin   `json:"staking"`
+	Staking      balance.Coin   `json:"staking,string"`
 }
 
-func (v Validator) Bytes() []byte {
+func (v *Validator) Bytes() []byte {
 	value, err := serialize.GetSerializer(serialize.PERSISTENT).Serialize(v)
 	if err != nil {
 		logger.Error("validator not serializable", err)

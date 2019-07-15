@@ -3,6 +3,8 @@ package broadcast
 import (
 	"errors"
 
+	"github.com/Oneledger/protocol/data/balance"
+
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/client"
 	"github.com/Oneledger/protocol/log"
@@ -11,14 +13,18 @@ import (
 )
 
 type Service struct {
-	logger *log.Logger
-	ext    client.ExtServiceContext
+	logger     *log.Logger
+	router     action.Router
+	currencies *balance.CurrencyList
+	ext        client.ExtServiceContext
 }
 
-func NewService(ctx client.ExtServiceContext, logger *log.Logger) *Service {
+func NewService(ctx client.ExtServiceContext, router action.Router, currencies *balance.CurrencyList, logger *log.Logger) *Service {
 	return &Service{
-		ext:    ctx,
-		logger: logger,
+		ext:        ctx,
+		router:     router,
+		currencies: currencies,
+		logger:     logger,
 	}
 }
 
@@ -26,32 +32,35 @@ func NewService(ctx client.ExtServiceContext, logger *log.Logger) *Service {
 func Name() string {
 	return "broadcast"
 }
-func validateAndSignTx(req client.BroadcastRequest) ([]byte, error) {
-	var base action.BaseTx
-	err := serialize.GetSerializer(serialize.NETWORK).Deserialize(req.RawTx, &base)
+func (svc *Service) validateAndSignTx(req client.BroadcastRequest) ([]byte, error) {
+	var tx action.RawTx
+	err := serialize.GetSerializer(serialize.NETWORK).Deserialize(req.RawTx, &tx)
 	if err != nil {
 		err = rpc.InvalidRequestError("invalid rawTx given")
 		return nil, err
 	}
 
-	if len(base.Signatures) > 0 {
-		return base.Bytes(), nil
+	sigs := []action.Signature{{Signer: req.PublicKey, Signed: req.Signature}}
+	signedTx := action.SignedTx{
+		RawTx:      tx,
+		Signatures: sigs,
 	}
 
-	sigs := []action.Signature{{Signer: req.PublicKey, Signed: req.Signature}}
-	_, err = action.ValidateBasic(base.Data, base.Fee, base.Memo, sigs)
+	handler := svc.router.Handler(tx.Type)
+	ctx := action.NewContext(svc.router, nil, nil, nil, svc.currencies, nil, nil, svc.logger)
+	_, err = handler.Validate(ctx, signedTx)
 	if err != nil {
 		err = rpc.InvalidRequestError(err.Error())
 		return nil, err
 	}
-	base.Signatures = sigs
-	return base.Bytes(), nil
+
+	return signedTx.SignedBytes(), nil
 }
 
-func broadcast(method string, req client.BroadcastRequest, broadcaster client.ExtServiceContext) (client.BroadcastReply, error) {
+func (svc *Service) broadcast(method client.BroadcastMode, req client.BroadcastRequest) (client.BroadcastReply, error) {
 	makeErr := func(err error) error { return rpc.InternalError(err.Error()) }
 
-	rawSignedTx, err := validateAndSignTx(req)
+	rawSignedTx, err := svc.validateAndSignTx(req)
 	if err != nil {
 		return client.BroadcastReply{}, err
 	}
@@ -59,22 +68,22 @@ func broadcast(method string, req client.BroadcastRequest, broadcaster client.Ex
 	reply := new(client.BroadcastReply)
 
 	switch method {
-	case "sync":
-		result, err := broadcaster.BroadcastTxSync(rawSignedTx)
+	case client.BROADCASTSYNC:
+		result, err := svc.ext.BroadcastTxSync(rawSignedTx)
 		if err != nil {
 			return client.BroadcastReply{}, makeErr(err)
 		}
 		reply.FromResultBroadcastTx(result)
 		return *reply, nil
-	case "async":
-		result, err := broadcaster.BroadcastTxAsync(rawSignedTx)
+	case client.BROADCASTASYNC:
+		result, err := svc.ext.BroadcastTxAsync(rawSignedTx)
 		if err != nil {
 			return client.BroadcastReply{}, makeErr(err)
 		}
 		reply.FromResultBroadcastTx(result)
 		return *reply, nil
-	case "commit":
-		result, err := broadcaster.BroadcastTxCommit(rawSignedTx)
+	case client.BROADCASTCOMMIT:
+		result, err := svc.ext.BroadcastTxCommit(rawSignedTx)
 		if err != nil {
 			return client.BroadcastReply{}, makeErr(err)
 		}
@@ -87,7 +96,7 @@ func broadcast(method string, req client.BroadcastRequest, broadcaster client.Ex
 
 // TxAsync returns as soon as the finishes. Returns with a hash
 func (svc *Service) TxAsync(req client.BroadcastRequest, reply *client.BroadcastReply) error {
-	out, err := broadcast("async", req, svc.ext)
+	out, err := svc.broadcast(client.BROADCASTASYNC, req)
 	if err != nil {
 		return err
 	}
@@ -97,7 +106,7 @@ func (svc *Service) TxAsync(req client.BroadcastRequest, reply *client.Broadcast
 
 // TxSync returns when the transaction has been placed inside the mempool
 func (svc *Service) TxSync(req client.BroadcastRequest, reply *client.BroadcastReply) error {
-	out, err := broadcast("sync", req, svc.ext)
+	out, err := svc.broadcast(client.BROADCASTSYNC, req)
 	if err != nil {
 		return err
 	}
@@ -107,7 +116,7 @@ func (svc *Service) TxSync(req client.BroadcastRequest, reply *client.BroadcastR
 
 // TxCommit returns when the transaction has been committed to a block.
 func (svc *Service) TxCommit(req client.BroadcastRequest, reply *client.BroadcastReply) error {
-	out, err := broadcast("commit", req, svc.ext)
+	out, err := svc.broadcast(client.BROADCASTCOMMIT, req)
 	if err != nil {
 		return err
 	}

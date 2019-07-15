@@ -93,7 +93,7 @@ func (app *App) blockBeginner() blockBeginner {
 // mempool connection: for checking if transactions should be relayed before they are committed
 func (app *App) txChecker() txChecker {
 	return func(msg []byte) ResponseCheckTx {
-		tx := &action.BaseTx{}
+		tx := &action.SignedTx{}
 
 		err := serialize.GetSerializer(serialize.NETWORK).Deserialize(msg, tx)
 		if err != nil {
@@ -102,9 +102,9 @@ func (app *App) txChecker() txChecker {
 
 		txCtx := app.Context.Action(&app.header)
 
-		handler := txCtx.Router.Handler(tx.Data)
+		handler := txCtx.Router.Handler(tx.Type)
 
-		ok, err := handler.Validate(txCtx, tx.Data, tx.Fee, tx.Memo, tx.Signatures)
+		ok, err := handler.Validate(txCtx, *tx)
 		if err != nil {
 			app.logger.Debug("Check Tx invalid: ", err.Error())
 			return ResponseCheckTx{
@@ -112,7 +112,7 @@ func (app *App) txChecker() txChecker {
 				Log:  err.Error(),
 			}
 		}
-		ok, response := handler.ProcessCheck(txCtx, tx.Data, tx.Fee)
+		ok, response := handler.ProcessCheck(txCtx, tx.RawTx)
 
 		result := ResponseCheckTx{
 			Code:      getCode(ok).uint32(),
@@ -132,7 +132,7 @@ func (app *App) txChecker() txChecker {
 
 func (app *App) txDeliverer() txDeliverer {
 	return func(msg []byte) ResponseDeliverTx {
-		tx := &action.BaseTx{}
+		tx := &action.SignedTx{}
 
 		err := serialize.GetSerializer(serialize.NETWORK).Deserialize(msg, tx)
 		if err != nil {
@@ -140,9 +140,9 @@ func (app *App) txDeliverer() txDeliverer {
 		}
 		txCtx := app.Context.Action(&app.header)
 
-		handler := txCtx.Router.Handler(tx.Data)
+		handler := txCtx.Router.Handler(tx.Type)
 
-		ok, response := handler.ProcessDeliver(txCtx, tx.Data, tx.Fee)
+		ok, response := handler.ProcessDeliver(txCtx, tx.RawTx)
 
 		result := ResponseDeliverTx{
 			Code:      getCode(ok).uint32(),

@@ -1,7 +1,9 @@
 package balance
 
 import (
+	"encoding/json"
 	"math/big"
+	"strconv"
 	"strings"
 
 	"github.com/Oneledger/protocol/utils"
@@ -9,7 +11,9 @@ import (
 )
 
 // Amount represents an amount of a currency
-type Amount = big.Int
+type Amount struct {
+	Int big.Int `json:"bint"`
+}
 
 func NewAmount(x int64) *Amount {
 	return NewAmountFromInt(x)
@@ -25,11 +29,38 @@ func NewAmountFromString(x string, base int) (*Amount, error) {
 	}
 	out, ok := big.NewInt(0).SetString(x, base)
 	if !ok {
-		return nil, errors.New("failed to set amount from string with the given base")
+		return nil, errors.New("failed to set amount from string:" + x + " with the given base:" + strconv.Itoa(base))
 	}
-	return out, nil
+	return &Amount{*out}, nil
 }
 
 func NewAmountFromInt(x int64) *Amount {
-	return big.NewInt(x)
+	return &Amount{*big.NewInt(x)}
+}
+
+func (a Amount) MarshalJSON() ([]byte, error) {
+	v := a.Int.String()
+	return json.Marshal(v)
+}
+
+func (a *Amount) UnmarshalJSON(b []byte) error {
+	v := ""
+	err := json.Unmarshal(b, &v)
+	if err != nil {
+		return err
+	}
+	i, ok := big.NewInt(0).SetString(v, 0)
+	if !ok {
+		return errors.New("failed to unmarshal amount" + v)
+	}
+	a.Int = *i
+	return nil
+}
+
+func (a Amount) MarshalText() ([]byte, error) {
+	return a.Int.MarshalText()
+}
+
+func (a *Amount) UnmarshalText(b []byte) error {
+	return a.Int.UnmarshalText(b)
 }

@@ -15,17 +15,10 @@ func init() {
 	logger = log.NewLoggerWithPrefix(os.Stdout, "client")
 }
 
+type BroadcastMode string
+
 const (
-
-	// Broadcast a tx and wait for being commit to block
-	BroadcastCommit = "commit"
-
-	// Broadcast a tx and wait for CheckTx response
-	// Recommend for smart contract
-	BroadcastSync = "sync"
-
-	// Broadcast a tax and return immediately
-	BroadcastAsync = "async"
-
-	RPC_ADDRESS = "127.0.0.1:6019"
+	BROADCASTASYNC  BroadcastMode = "async"
+	BROADCASTSYNC   BroadcastMode = "sync"
+	BROADCASTCOMMIT BroadcastMode = "commit"
 )

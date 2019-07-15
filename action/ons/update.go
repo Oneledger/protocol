@@ -3,13 +3,16 @@ package ons
 import (
 	"bytes"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
+
+	"github.com/pkg/errors"
 
 	"github.com/Oneledger/protocol/action"
 	"github.com/tendermint/tendermint/libs/common"
 )
 
-var _ action.Msg = DomainUpdate{}
+var _ Ons = &DomainUpdate{}
 
 type DomainUpdate struct {
 	Owner   action.Address
@@ -18,7 +21,13 @@ type DomainUpdate struct {
 	Active  bool
 }
 
-var _ Ons = DomainUpdate{}
+func (du DomainUpdate) Marshal() ([]byte, error) {
+	return json.Marshal(du)
+}
+
+func (du *DomainUpdate) Unmarshal(data []byte) error {
+	return json.Unmarshal(data, du)
+}
 
 func (du DomainUpdate) OnsName() string {
 	return du.Name
@@ -53,15 +62,16 @@ var _ action.Tx = domainUpdateTx{}
 type domainUpdateTx struct {
 }
 
-func (domainUpdateTx) Validate(ctx *action.Context, msg action.Msg, fee action.Fee, memo string, signatures []action.Signature) (bool, error) {
-	ok, err := action.ValidateBasic(msg, fee, memo, signatures)
+func (domainUpdateTx) Validate(ctx *action.Context, tx action.SignedTx) (bool, error) {
+	update := &DomainUpdate{}
+	err := update.Unmarshal(tx.Data)
 	if err != nil {
-		return ok, err
+		return false, errors.Wrap(action.ErrWrongTxType, err.Error())
 	}
 
-	update, ok := msg.(*DomainUpdate)
-	if !ok {
-		return false, action.ErrWrongTxType
+	ok, err := action.ValidateBasic(tx.RawBytes(), update.Signers(), tx.Signatures)
+	if err != nil {
+		return ok, err
 	}
 
 	if update.Owner == nil || len(update.Name) <= 0 {
@@ -75,10 +85,11 @@ func (domainUpdateTx) Validate(ctx *action.Context, msg action.Msg, fee action.F
 	return true, nil
 }
 
-func (domainUpdateTx) ProcessCheck(ctx *action.Context, msg action.Msg, fee action.Fee) (bool, action.Response) {
-	update, ok := msg.(*DomainUpdate)
-	if !ok {
-		return false, action.Response{Log: action.ErrWrongTxType.Error()}
+func (domainUpdateTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
+	update := &DomainUpdate{}
+	err := update.Unmarshal(tx.Data)
+	if err != nil {
+		return false, action.Response{Log: err.Error()}
 	}
 
 	if !ctx.Domains.Exists(update.Name) {
@@ -97,10 +108,11 @@ func (domainUpdateTx) ProcessCheck(ctx *action.Context, msg action.Msg, fee acti
 	return true, action.Response{Tags: update.Tags()}
 }
 
-func (domainUpdateTx) ProcessDeliver(ctx *action.Context, msg action.Msg, fee action.Fee) (bool, action.Response) {
-	update, ok := msg.(*DomainUpdate)
-	if !ok {
-		return false, action.Response{Log: action.ErrWrongTxType.Error()}
+func (domainUpdateTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
+	update := &DomainUpdate{}
+	err := update.Unmarshal(tx.Data)
+	if err != nil {
+		return false, action.Response{Log: err.Error()}
 	}
 
 	if !ctx.Domains.Exists(update.Name) {

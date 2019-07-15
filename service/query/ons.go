@@ -18,18 +18,9 @@ func (sv *Service) ONS_GetDomainByName(req client.ONSGetDomainsRequest, reply *c
 		return rpc.InternalError("domain not exist")
 	}
 
-	ds := make([]client.DomainData, 0)
-	dd := &client.DomainData{
-		d.Name,
-		d.SalePrice.Humanize(),
-		d.OwnerAddress,
-		d.AccountAddress,
-		d.CreationHeight,
-		d.LastUpdateHeight,
-		d.ActiveFlag,
-		d.OnSaleFlag,
-	}
-	ds = append(ds, *dd)
+	ds := make([]ons.Domain, 0)
+
+	ds = append(ds, *d)
 
 	*reply = client.ONSGetDomainsReply{
 		Domains: ds,
@@ -43,7 +34,7 @@ func (sv *Service) ONS_GetDomainByOwner(req client.ONSGetDomainsRequest, reply *
 	if req.Owner == nil {
 		return rpc.InvalidParamsError("owner not provided")
 	}
-	ds := make([]client.DomainData, 0)
+	ds := make([]ons.Domain, 0)
 
 	domains.Iterate(func(key []byte, value []byte) bool {
 		d := &ons.Domain{}
@@ -54,16 +45,6 @@ func (sv *Service) ONS_GetDomainByOwner(req client.ONSGetDomainsRequest, reply *
 		if d.OwnerAddress.Equal(req.Owner) {
 			if req.OnSale && !d.OnSaleFlag {
 				return false
-			}
-			d := &client.DomainData{
-				d.Name,
-				d.SalePrice.Humanize(),
-				d.OwnerAddress,
-				d.AccountAddress,
-				d.CreationHeight,
-				d.LastUpdateHeight,
-				d.ActiveFlag,
-				d.OnSaleFlag,
 			}
 			ds = append(ds, *d)
 		}
@@ -83,7 +64,7 @@ func (sv *Service) ONS_GetDomainOnSale(req client.ONSGetDomainsRequest, reply *c
 		return rpc.InvalidParamsError("OnSale flag not set")
 	}
 
-	dds := []client.DomainData{}
+	dds := make([]ons.Domain, 0)
 	domains.Iterate(func(key []byte, value []byte) bool {
 		d := &ons.Domain{}
 		err := serialize.GetSerializer(serialize.PERSISTENT).Deserialize(value, d)
@@ -91,17 +72,7 @@ func (sv *Service) ONS_GetDomainOnSale(req client.ONSGetDomainsRequest, reply *c
 			return true
 		}
 		if d.OnSaleFlag {
-			dd := &client.DomainData{
-				d.Name,
-				d.SalePrice.Humanize(),
-				d.OwnerAddress,
-				d.AccountAddress,
-				d.CreationHeight,
-				d.LastUpdateHeight,
-				d.ActiveFlag,
-				d.OnSaleFlag,
-			}
-			dds = append(dds, *dd)
+			dds = append(dds, *d)
 		}
 		return false
 	})

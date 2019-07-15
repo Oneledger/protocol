@@ -8,9 +8,10 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
-	"strconv"
 	"syscall"
 	"time"
+
+	"github.com/Oneledger/protocol/data/balance"
 
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/app/node"
@@ -215,7 +216,7 @@ func (f *Faucet) RequestOLT(req Request, reply *Reply) error {
 
 	toSend := action.Amount{
 		Currency: "OLT",
-		Value:    strconv.Itoa(req.Amount),
+		Value:    *balance.NewAmount(int64(req.Amount)),
 	}
 
 	sendTxResults, err := f.fullnode.CreateRawSend(client.SendTxRequest{

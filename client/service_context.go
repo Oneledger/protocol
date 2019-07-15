@@ -33,7 +33,7 @@ var (
 // ExtServiceContext holds clients for making requests to external services
 type ExtServiceContext struct {
 	rpcClient     rpcclient.Client
-	broadcastMode string
+	broadcastMode BroadcastMode
 	proof         bool
 	oltClient     *ServiceClient
 }
@@ -72,7 +72,7 @@ func NewExtServiceContext(rpcAddress, sdkAddress string) (cliCtx ExtServiceConte
 
 	cliCtx = ExtServiceContext{
 		rpcClient:     tmRPCClient,
-		broadcastMode: BroadcastCommit,
+		broadcastMode: BROADCASTCOMMIT,
 		oltClient:     client,
 	}
 

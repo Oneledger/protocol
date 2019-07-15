@@ -1,6 +1,8 @@
 package client
 
 import (
+	"fmt"
+
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/rpc"
 )
@@ -101,6 +103,12 @@ func (c *ServiceClient) CreateRawSend(req SendTxRequest) (out *SendTxReply, err 
 
 func (c *ServiceClient) ListValidators() (out ListValidatorsReply, err error) {
 	err = c.Call("query.ListValidators", struct{}{}, &out)
+	return
+}
+
+func (c *ServiceClient) ListCurrencies() (out *ListCurrenciesReply, err error) {
+	err = c.Call("query.ListCurrencies", struct{}{}, &out)
+	fmt.Println("client", out)
 	return
 }
 

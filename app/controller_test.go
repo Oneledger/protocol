@@ -3,6 +3,8 @@ package app
 import (
 	"testing"
 
+	"github.com/Oneledger/protocol/data/balance"
+
 	"github.com/tendermint/tendermint/crypto/ed25519"
 
 	"github.com/Oneledger/protocol/action"
@@ -13,7 +15,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func setupForTx() action.BaseTx {
+func setupForTx() action.SignedTx {
 	prikey := ed25519.GenPrivKey()
 	pubkey := prikey.PubKey()
 	addr := pubkey.Address()
@@ -21,20 +23,24 @@ func setupForTx() action.BaseTx {
 	send := transfer.Send{
 		From:   keys.Address(addr),
 		To:     keys.Address(addr),
-		Amount: action.Amount{"OLT", "10"},
+		Amount: action.Amount{"OLT", *balance.NewAmount(10)},
 	}
 	fee := action.Fee{
-		Price: action.Amount{"OLT", "10"},
+		Price: action.Amount{"OLT", *balance.NewAmount(10)},
 		Gas:   int64(10),
 	}
 	signer := action.Signature{
 		Signer: keys.PublicKey{keys.ED25519, pubkey.Bytes()},
 	}
-	tx := action.BaseTx{
-		Data:       send,
-		Fee:        fee,
+	data, _ := send.Marshal()
+
+	tx := action.SignedTx{
+		RawTx: action.RawTx{
+			Data: data,
+			Fee:  fee,
+			Memo: "test_memo",
+		},
 		Signatures: []action.Signature{signer},
-		Memo:       "test_memo",
 	}
 	return tx
 }

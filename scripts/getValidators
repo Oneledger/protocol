@@ -8,7 +8,7 @@ cnt=$(olclient validatorset --root $OLDATA/devnet/$name | grep "^Address" | wc -
 
 if [ $cnt -ne 5 ]
 then
-    echo "Validator test failed"
+    echo "Validator test failed, only $cnt validators"
     exit  -1
 fi
 echo "validator test success"

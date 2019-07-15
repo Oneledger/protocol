@@ -2,6 +2,8 @@ import requests
 import json
 import time
 import sys
+import struct
+import binascii
 
 url = "http://127.0.0.1:26602/jsonrpc"
 headers = {
@@ -25,21 +27,25 @@ def rpc_call(method, params):
     resp = json.loads(response.text)
     return resp
 
+def converBigInt(value):
+    return str(value)
+
 def create_domain(name, owner_hex, price):
-    resp = rpc_call('tx.ONS_CreateRawCreate', {
+    req = {
         "name": name,
         "owner": owner_hex,
         "account": owner_hex,
         "price": {
             "currency": "OLT",
-            "value": price,
+            "value": converBigInt(price),
         },
         "fee": {
             "currency": "OLT",
             "value": "0",
         },
-        "gas": 0,
-    })
+        "gas": 1,
+    }
+    resp = rpc_call('tx.ONS_CreateRawCreate',req)
     return resp["result"]["rawTx"]
 
 
@@ -50,7 +56,7 @@ def send_domain(name, frm, price):
         "from": frm,
         "amount": {
             "currency": "OLT",
-            "value": price,
+            "value": converBigInt(price),
         },
         "fee": {
             "currency": "OLT",
@@ -67,7 +73,7 @@ def sell_domain(name, owner_hex, price):
         "owner": owner_hex,
         "price": {
             "currency": "OLT",
-            "value": price,
+            "value": converBigInt(price),
         },
         "cancel_sale": False,
         "fee": {
@@ -84,7 +90,7 @@ def cancel_sell_domain(name, owner_hex, price):
         "owner": owner_hex,
         "price": {
             "currency": "OLT",
-            "value": price,
+            "value": converBigInt(price),
         },
         "cancel_sale": True,
         "fee": {
@@ -115,6 +121,7 @@ def broadcast_commit(rawTx, signature, pub_key):
         "signature": signature,
         "publicKey": pub_key,
     })
+    print resp
     return resp["result"]
 
 def broadcast_sync(rawTx, signature, pub_key):
@@ -131,11 +138,14 @@ if __name__ == "__main__":
     addrs = addresses()
     print addrs
 
-    raw_txn = create_domain("alice1.olt", addrs[0], "100.2345")
-    print raw_txn
+    create_price = (int("1002345")*10**14)
+    print "create price:", create_price
+
+    raw_txn = create_domain("alice1.olt", addrs[0], create_price)
+    print "raw create domain tx:", raw_txn
 
     signed = sign(raw_txn, addrs[0])
-    print signed
+    print "signed create domain tx:", signed
     print
 
     result = broadcast_commit(raw_txn, signed['signature']['Signed'], signed['signature']['Signer'])
@@ -159,7 +169,9 @@ if __name__ == "__main__":
           "##"
     print
     time.sleep(2)
-    raw_txn = sell_domain("alice1.olt", addrs[0], "10.2345")
+
+    sell_price = (int("105432")*10**14)
+    raw_txn = sell_domain("alice1.olt", addrs[0], sell_price)
     print raw_txn
     print
 
@@ -174,7 +186,7 @@ if __name__ == "__main__":
     if result["ok"] != True:
         sys.exit(-1)
 
-    raw_txn = send_domain("alice1.olt", addrs[0], "100")
+    raw_txn = send_domain("alice1.olt", addrs[0], (int("100")*10**18))
     print raw_txn
 
     signed = sign(raw_txn, addrs[0])
@@ -189,7 +201,7 @@ if __name__ == "__main__":
     if result["ok"] != True:
         sys.exit(-1)
 
-    raw_txn = send_domain("alice1.olt", addrs[0], "100")
+    raw_txn = send_domain("alice1.olt", addrs[0], (int("100")*10**18))
     print raw_txn
 
     signed = sign(raw_txn, addrs[0])
@@ -212,7 +224,7 @@ if __name__ == "__main__":
           "##"
     print
 
-    raw_txn = cancel_sell_domain("alice1.olt", addrs[0], "10.2345")
+    raw_txn = cancel_sell_domain("alice1.olt", addrs[0], sell_price)
     print raw_txn
     print
 
