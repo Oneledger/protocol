@@ -46,6 +46,9 @@ utest:
 		github.com/Oneledger/protocol/rpc \
 		github.com/Oneledger/protocol/identity \
 		github.com/Oneledger/protocol/app \
+		github.com/Oneledger/protocol/action/ons \
+		github.com/Oneledger/protocol/action/staking \
+		github.com/Oneledger/protocol/action/transfer \
 		-coverprofile a.out
 
 coverage:
