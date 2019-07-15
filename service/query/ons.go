@@ -17,8 +17,13 @@ func (sv *Service) ONS_GetDomainByName(req client.ONSGetDomainsRequest, reply *c
 	if err != nil {
 		return rpc.InternalError("domain not exist")
 	}
+
+	ds := make([]ons.Domain, 0)
+
+	ds = append(ds, *d)
+
 	*reply = client.ONSGetDomainsReply{
-		Domains: []ons.Domain{*d},
+		Domains: ds,
 	}
 
 	return nil
@@ -59,7 +64,7 @@ func (sv *Service) ONS_GetDomainOnSale(req client.ONSGetDomainsRequest, reply *c
 		return rpc.InvalidParamsError("OnSale flag not set")
 	}
 
-	dds := []client.DomainData{}
+	dds := make([]ons.Domain, 0)
 	domains.Iterate(func(key []byte, value []byte) bool {
 		d := &ons.Domain{}
 		err := serialize.GetSerializer(serialize.PERSISTENT).Deserialize(value, d)
@@ -67,11 +72,7 @@ func (sv *Service) ONS_GetDomainOnSale(req client.ONSGetDomainsRequest, reply *c
 			return true
 		}
 		if d.OnSaleFlag {
-			dd := client.DomainData{
-				d.Name,
-				d.SalePrice.Amount.Int.String(),
-			}
-			dds = append(dds, dd)
+			dds = append(dds, *d)
 		}
 		return false
 	})

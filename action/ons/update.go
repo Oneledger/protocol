@@ -139,6 +139,11 @@ func (domainUpdateTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool
 		d.Deactivate()
 	}
 	d.SetLastUpdatedHeight(ctx.Header.Height)
+
+	err = ctx.Domains.Set(d)
+	if err != nil {
+		return false, action.Response{Log: err.Error()}
+	}
 	return true, action.Response{Tags: update.Tags()}
 }
 
