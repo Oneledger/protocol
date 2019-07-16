@@ -11,6 +11,8 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/Oneledger/protocol/version"
+
 	"github.com/Oneledger/protocol/data/balance"
 
 	"github.com/Oneledger/protocol/action"
@@ -121,8 +123,9 @@ type Faucet struct {
 }
 
 type ParamsReply struct {
-	MaxAmount   int `json:"maxAmount"`
-	MinWaitTime int `json:"minWaitTimeMinutes"`
+	MaxAmount   int    `json:"maxAmount"`
+	MinWaitTime int    `json:"minWaitTimeMinutes"`
+	Version     string `json:"version"`
 }
 
 type Request struct {
@@ -262,7 +265,7 @@ func (f *Faucet) RequestOLT(req Request, reply *Reply) error {
 }
 
 func (f *Faucet) GetParams(_ struct{}, reply *ParamsReply) error {
-	*reply = ParamsReply{MaxAmount: args.maxReqAmount, MinWaitTime: args.lockTime}
+	*reply = ParamsReply{MaxAmount: args.maxReqAmount, MinWaitTime: args.lockTime, Version: version.Fullnode.String()}
 	return nil
 }
 
