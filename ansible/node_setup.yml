@@ -107,6 +107,7 @@
       line: "  {{item.line}}"
     with_items:
     - { regexp: "rpc_address", line: "rpc_address = \"tcp://{{internal_ip}}:26604\""}
+    - { regexp: "sdk_address", line: "sdk_address = \"http://{{internal_ip}}:26602\""}
     - { regexp: "p2p_address = \"tcp://", line: "p2p_address = \"tcp://{{internal_ip}}:26605\""}
     - { regexp: "node_name", line: "node_name = \"{{node_name}}\""}
     - { regexp: "external_p2p_address", line: "external_p2p_address = \"tcp://{{inventory_hostname}}:26605\""}
