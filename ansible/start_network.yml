@@ -28,3 +28,35 @@
       state: restarted
       daemon_reload: yes
       enabled: yes
+- hosts: validator_node
+  remote_user: "{{remote_user}}"
+  become: true
+  become_user: root
+  vars:
+    internal_ip: "{{ ansible_all_ipv4_addresses | ipaddr('private') | first }}"
+  tasks:
+  - name: create a systemd olfaucet service file
+    copy:
+      dest: "/etc/systemd/system/olfaucet.service"
+      owner: "root"
+      group: "root"
+      mode: 0644
+      content: |
+        [Unit]
+        Description=olfaucet server
+        After=network.target
+
+        [Service]
+        WorkingDirectory={{APP_HOME}}
+        ExecStart=/usr/local/bin/olfaucet --listen_address http://{{internal_ip}}:26607 --lock_time 0 --max_req_amount=10000 --root {{APP_HOME}}
+        # Other Restart options: or always, on-abort, etc
+
+        [Install]
+        WantedBy=multi-user.target
+  - name: start systemd olfaucet service
+    systemd:
+      name: olfaucet.service
+      scope: system
+      state: restarted
+      daemon_reload: yes
+      enabled: yes
