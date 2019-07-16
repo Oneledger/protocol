@@ -38,7 +38,7 @@ func (c *Coin) Data() serialize.Data {
 func (c *Coin) SetData(a interface{}) error {
 	cd, ok := a.(*CoinData)
 	if !ok {
-		return errors.New("Wrong data")
+		return errors.New("Wrong coin data")
 	}
 
 	amt := &Amount{}
