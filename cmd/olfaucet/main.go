@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"math/big"
 	"net"
 	"net/http"
 	"net/url"
@@ -213,10 +214,11 @@ func (f *Faucet) RequestOLT(req Request, reply *Reply) error {
 	if req.Address == nil {
 		return rpc.InvalidRequestError("address must not be nil")
 	}
-
+	amt := balance.NewAmount(int64(req.Amount))
+	a := big.NewInt(0).Mul(&amt.Int, big.NewInt(0).Exp(big.NewInt(10), big.NewInt(18), nil))
 	toSend := action.Amount{
 		Currency: "OLT",
-		Value:    *balance.NewAmount(int64(req.Amount)),
+		Value:    balance.Amount{Int: *a},
 	}
 
 	sendTxResults, err := f.fullnode.CreateRawSend(client.SendTxRequest{
