@@ -1,12 +1,21 @@
 language: go
 go:
 - 1.11.x
+service: 
+- docker
 addons:
   apt:
     update: true
     packages:
     - libleveldb-dev
     - libsnappy-dev
+env:
+  global:
+  - GENESIS_REPO_BRANCH="master"
+  - INFRASTRUCTURE_REPO_BRANCH="master"
+  - secure: fgH6sACHpCqQosNDifNSgYpXiJc+ghaC02ptQEdvY5jVv7AtaigGv8OPUWA2FAI9iwioG72ge4Fgpak/PvuMBhA4GDxvLdEZnpS+CC3BPa4xisyu0y3gc0MTvx9Erca2cn3Vse6LgIgiZHvO8/7YRXrzDnEhxND1XIBcABjkjq5GVZf/uVeneSASbKg92ZdnLQdKgkzXTY2naHuGEVTNAa+WrCt2htI2ULVlDjz411WYNhM6dopzWOYCaDCXnsW/r1OjlRCSPP/Ss9MHolGdixt09hus7c7tJu/3w+XPvuABa6zlYv6wyKS0X6CFF7oRTATSv4mmGQ/WJFg9nD7yutGjGFSJsMjuohuKoTt7yhUz9I+U5FR3MrRquwfi5E0tXrqtzC5yeopfDZnW9eLv53ej9yQZLbzbsa2OXWfO0XezGscVGY5m0H3T0DCs7m5goDjkyaw/x7LutkoWXTOLh2mtaekKSx0XOt7WJFqxyg0bvDqV4mz9wo2A1lAXcuPOOKfXI6EBMzC5iVuxaYkdbs89g1+1wQAx4cxcTz2PDp80ewn4cRImz/z0/I9a5qIqt01o/fJQRmUixviIwsOPtywzJ1nhm8JpxwkKJ4K1LymFzGm/QCD1W0uAkT7j7JJhNcScPLUTwlCybuGE/EAoKzea4EPOA2PMnnsJ+FbRmaM=
+  - secure: yWcEeiAVQrQPELui/7nlbCFyqDSbSO2z7Fee9+kdlhH0Stn+kJD6Q3pt5vtYj4hwXuxQcCBeMQXypghKsJc3kCsDyz5N++JRW+5kTTUNV/wMVBXJ9Cs+15BNpUX0R4eBTtIp34cpMKi2ctiApjbqkpRopNVGmE1rP0QdJkQ3Qh+HdSSk5DL9Mtod3nIYGw3Ne+dhRTvrGYicwavxQDkRQv81vQ82/LsIai/TKuErftB+6r3TLWtGJvHN0YjhNWmvLbPN7twq63Gx3C4ChSAEbLntBASeWml0/Ii4DMQDSVHxPvlaBQzMeH7XbG4/pmx5LVrJG/+lwQAzKK3ueR4kc9jiIJelTywQpLJet8mnTvImm87L+T717SEt9mkWObciXANfz7nE6oEohkcsVGOrJnCGE9opecipsYTzxQkIgzyxC6dx8uv2QI43t/Ffvtv77VWoH/hUzkrhdVB/i1mwjMW7NlHs5lrCRvPjWds3l6D4TXyHsA+bUFpXYcC4ie05nEz0gd9cCQ/U6hUsMPWAERt9DG68i95oThHRCxULfGrTyWsztSB+Db66jrXXa6aG5QIT1VvTzifYfyZ05oKa8WyiS1YAORrh/Ft9OHC/Ja0Q+xPuxYPX2HSsvbAHYD/dK7kNaLSlKs/09QzHfqdmLNENhi7fL1PYaQGOd7ujly8=
+  - secure: SzF5+qspQTFpxnjm45SKNgS+mFbaZxrmONCN2OVcI1BuJgfilC9CWIaDHATQcV0BfxHxkCIfTzBwM28GEjNYhoGvEPxHnl1micxHQvm6RKgYa+aeK9MzV6feIayHj3AYdjb6VtBKcEFkP4v/gB3YroNzBoa2hxI2LKMkc/vbLbo3DLGRC7syWk5DOIOJRWkzMif0WkkZxojot69zM1YxsFa6vYDDNYS7A+BBzpfzNAdHpnGR0dplKIsQ7BMY6oshfyOapt0+/iSMTRXQYslkHrx9V06UkR1oEyM+he2V3ZmoLj8YFZPgZEeLF6QFjA3Qbjrx3oyWeXuGpIxewHRCQyE6MnuC1OuzGdM6XIZwYGuOQq0i2ux+axG8OUuI9q3r4SkZxLGExTV1EyY//zyM48/Gd18aBnwpEcHRsxRxXpkoImCrb82KugaQUyuJlw3d4JR+CmpOlJOFEzux+6JVNkS8GuFkLbFqA6g9ovDzRQPP3+zcebXy89xD8pu+3Qr1nnV4wOmj7ujDPTbzZn2pi6x6AQvDoKc+c0qTlCFiAyiZPMf+twx7hmZ8lEISzHxbPYBI76DocSdburJ7UoDT+WNL9W0XG6t/XqrioguQGSNB+2S++QYOGasAYJ6oQcdHkLloKNpBx1w664Ifzk3wTcDGvjkAu0lLLT3j+0fDBt0=
 before_script:
 - export OLDATA=$GOPATH/test
 - export OLROOT=$GOPATH/src/github.com/Oneledger
@@ -18,22 +27,24 @@ before_script:
 - export OLDEBUG=true
 - openssl aes-256-cbc -K $encrypted_64046c0b275a_key -iv $encrypted_64046c0b275a_iv
   -in $TRAVIS_BUILD_DIR/.secrets.tar.enc -out $TRAVIS_BUILD_DIR/secrets.tar -d
-- cd $TRAVIS_BUILD_DIR && tar xvf secrets.tar
-- chmod 600 DevNet.json id_rsa
+- cd $TRAVIS_BUILD_DIR && tar xvf secrets.tar && chmod 600 DevNet.json id_rsa
 - eval $(ssh-agent -s)
 - ssh-add $TRAVIS_BUILD_DIR/id_rsa
 - cd $TRAVIS_BUILD_DIR && git clone git@github.com:Oneledger/infrastructure.git --branch
-  master
+  ${INFRASTRUCTURE_REPO_BRANCH}
 script:
-- cd $OLROOT/protocol && make fulltest
+- cd $OLROOT/protocol && make fulltest utest
 - cd $OLROOT/protocol && make update install_c
 before_deploy:
 - sudo apt-get update && sudo apt-get install unzip python python-pip
 - sudo pip install netaddr ipaddr cryptography==2.2.2 ansible
 - wget https://releases.hashicorp.com/terraform/0.11.13/terraform_0.11.13_linux_amd64.zip
-- unzip terraform_0.11.13_linux_amd64.zip
-- sudo mv terraform /usr/local/bin/
+- unzip terraform_0.11.13_linux_amd64.zip && sudo mv terraform /usr/local/bin/
+- wget https://releases.hashicorp.com/packer/1.3.5/packer_1.3.5_linux_386.zip
+- unzip packer_1.3.5_linux_386.zip && sudo mv packer /usr/local/bin/
 - cp $TRAVIS_BUILD_DIR/DevNet.json $TRAVIS_BUILD_DIR/infrastructure/gcp
+- cat $TRAVIS_BUILD_DIR/DevNet.json | docker login -u _json_key --password-stdin https://gcr.io
+- CONTAINER_REGISTRY="gcr.io/atomic-land-223022/oneledger/chronos"
 deploy:
 - provider: releases
   skip_cleanup: true
@@ -48,17 +59,46 @@ deploy:
     branch: master
 - provider: script
   skip_cleanup: true
-  script: cd $TRAVIS_BUILD_DIR/infrastructure/ansible && ansible-playbook main.yml
-    -v --extra-vars "reset_network=true"
+  script: cd $TRAVIS_BUILD_DIR/infrastructure/ansible && ansible-playbook main.yml 
+    -v --extra-vars "reset_network=true" && 
+    cd $TRAVIS_BUILD_DIR/infrastructure && packer build 
+    -var "version=${TRAVIS_BRANCH}" -var "tag=${TRAVIS_BRANCH}" 
+    -var "docker_registry=${CONTAINER_REGISTRY}" -only=docker-image packer.json && 
+    docker push ${CONTAINER_REGISTRY}:${TRAVIS_BRANCH}
   on:
     branch: develop
 - provider: script
   skip_cleanup: true
-  script: cd $TRAVIS_BUILD_DIR/infrastructure/ansible && ansible-playbook main.yml
-    -v --extra-vars "reset_network=true"
+  script: cd $TRAVIS_BUILD_DIR/infrastructure/ansible && ansible-playbook main.yml 
+    -v --extra-vars "reset_network=true" && 
+    cd $TRAVIS_BUILD_DIR/infrastructure && packer build 
+    -var "version=${TRAVIS_BRANCH}" -var "tag=${TRAVIS_BRANCH}" 
+    -var "docker_registry=${CONTAINER_REGISTRY}" -only=docker-image packer.json && 
+    docker push ${CONTAINER_REGISTRY}:${TRAVIS_BRANCH}
   on:
     tags: true
-env:
-  global:
-  - secure: yWcEeiAVQrQPELui/7nlbCFyqDSbSO2z7Fee9+kdlhH0Stn+kJD6Q3pt5vtYj4hwXuxQcCBeMQXypghKsJc3kCsDyz5N++JRW+5kTTUNV/wMVBXJ9Cs+15BNpUX0R4eBTtIp34cpMKi2ctiApjbqkpRopNVGmE1rP0QdJkQ3Qh+HdSSk5DL9Mtod3nIYGw3Ne+dhRTvrGYicwavxQDkRQv81vQ82/LsIai/TKuErftB+6r3TLWtGJvHN0YjhNWmvLbPN7twq63Gx3C4ChSAEbLntBASeWml0/Ii4DMQDSVHxPvlaBQzMeH7XbG4/pmx5LVrJG/+lwQAzKK3ueR4kc9jiIJelTywQpLJet8mnTvImm87L+T717SEt9mkWObciXANfz7nE6oEohkcsVGOrJnCGE9opecipsYTzxQkIgzyxC6dx8uv2QI43t/Ffvtv77VWoH/hUzkrhdVB/i1mwjMW7NlHs5lrCRvPjWds3l6D4TXyHsA+bUFpXYcC4ie05nEz0gd9cCQ/U6hUsMPWAERt9DG68i95oThHRCxULfGrTyWsztSB+Db66jrXXa6aG5QIT1VvTzifYfyZ05oKa8WyiS1YAORrh/Ft9OHC/Ja0Q+xPuxYPX2HSsvbAHYD/dK7kNaLSlKs/09QzHfqdmLNENhi7fL1PYaQGOd7ujly8=
-  - secure: SzF5+qspQTFpxnjm45SKNgS+mFbaZxrmONCN2OVcI1BuJgfilC9CWIaDHATQcV0BfxHxkCIfTzBwM28GEjNYhoGvEPxHnl1micxHQvm6RKgYa+aeK9MzV6feIayHj3AYdjb6VtBKcEFkP4v/gB3YroNzBoa2hxI2LKMkc/vbLbo3DLGRC7syWk5DOIOJRWkzMif0WkkZxojot69zM1YxsFa6vYDDNYS7A+BBzpfzNAdHpnGR0dplKIsQ7BMY6oshfyOapt0+/iSMTRXQYslkHrx9V06UkR1oEyM+he2V3ZmoLj8YFZPgZEeLF6QFjA3Qbjrx3oyWeXuGpIxewHRCQyE6MnuC1OuzGdM6XIZwYGuOQq0i2ux+axG8OUuI9q3r4SkZxLGExTV1EyY//zyM48/Gd18aBnwpEcHRsxRxXpkoImCrb82KugaQUyuJlw3d4JR+CmpOlJOFEzux+6JVNkS8GuFkLbFqA6g9ovDzRQPP3+zcebXy89xD8pu+3Qr1nnV4wOmj7ujDPTbzZn2pi6x6AQvDoKc+c0qTlCFiAyiZPMf+twx7hmZ8lEISzHxbPYBI76DocSdburJ7UoDT+WNL9W0XG6t/XqrioguQGSNB+2S++QYOGasAYJ6oQcdHkLloKNpBx1w664Ifzk3wTcDGvjkAu0lLLT3j+0fDBt0=
+after_deploy:
+- USER="RiceAndMeet"
+- EMAIL="jun.ying.yan@ryerson.ca"
+- REPO="Oneledger/chronos-genesis"
+- GH_REPO="github.com/${REPO}.git"
+- GENESIS_DIR=${OLDATA}/0-Node 
+- SRC_FILES="${GENESIS_DIR}/config.toml ${GENESIS_DIR}/consensus/config/genesis.json"
+- GIT_COMMIT_PATH="${TRAVIS_BUILD_DIR}/chronos-genesis/${TRAVIS_BRANCH}"
+- MESSAGE="Travis CI Commit"
+- cd ${TRAVIS_BUILD_DIR} && git clone --single-branch --branch ${GENESIS_REPO_BRANCH} git://${GH_REPO}
+- cd ${TRAVIS_BUILD_DIR}/chronos-genesis && git checkout ${GENESIS_REPO_BRANCH}
+- mkdir -p ${GIT_COMMIT_PATH}
+- mv -f ${SRC_FILES} ${GIT_COMMIT_PATH}
+- git remote
+- git config user.email ${EMAIL}
+- git config user.name ${USER}
+- cd ${GIT_COMMIT_PATH} && git add config.toml genesis.json
+- git commit -m "${MESSAGE}"
+- git push "https://${GITHUB_TOKEN_GENESIS}@${GH_REPO}" ${GENESIS_REPO_BRANCH} > /dev/null 2>&1
+notifications:
+  slack:
+    on_failure: change
+    on_success: change
+    rooms:
+      secure: aALLEM4/HVjUGsHukIR6zoypzPyRFvGp7cqHPy17GO9sOwyZxXLjbC/stdfjMC3H+04gkOJjAxlpr9bCchm1Belrat6tZMiE/MYXQC2ZDoIRXqWzUq+bf+zCfm0AxVSf7tU1ioqjGmDcnINZXr7AzPM1IFx48iVM6KUUVhExVPQAZE83JiyLB9EaFZLi6yxqIlxx8Lfug/YFl5WSOMU8ZQPr6UWDowuTZjYe1f2LktQ3O949GdqvkKWBF4KbRjKjBOCZmJAWb43oYehejGI0zuoU3mprOUbYMv/Ml8KNyQpu/wwdbzfp8JmOwOFLUq7pvs8yAez0YetTYVACrPj3oFsty3KwQH1t0CVYPD/5f5NkBPYF6HHK3r5aqM9yS8pn3jy/IAmrMV9993tqI+X7I3ty/DaKl+xz+G2V7bMojSYKFP9EzTfk9iDtEzDVSOvccTd+vbls5RI9eycNIYRp/rzQLuIdkmqBqVOaesprnp6EAK7AwH0Z9DskFttWkpBNjlIY55a4R/sYDemazRuD7Ibalmk1HyTEvBIvJgkD30Dn8RZ+ojmIQHs4GyV7ysH8xL3CPSnXEhlLPa6NbUNLPur9557JBvsgEcXeJ2+yJTCxnsNEvAmH+brTTWToY2kj/bmLoYWR2rWDoLHGtxwDlC8eeFevh5wZw5REcab6EQ0=
