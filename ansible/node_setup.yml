@@ -92,34 +92,7 @@
       group: "{{app_user}}"
   - name: generate consensus file for seed node 
     shell: chdir={{APP_HOME}} olfullnode init --root {{APP_HOME}} --genesis {{APP_HOME}}/genesis.json
-# edit optimizd tindermint level configuration for distribution 
-- hosts: seed_node:validator_node
-  remote_user: "{{remote_user}}"
-  become: true
-  become_user: root  
-  tasks:
-  - name: set tindermint level configuration
-    lineinfile:
-      path: "{{APP_HOME}}/config.toml"
-      regexp: '{{item.regexp}}'
-      line: "  {{item.line}}"
-    with_items:
-    - { regexp: "log_output", line: "log_output = \"stdout\""}
-    - { regexp: "create_empty_blocks = ", line: "create_empty_blocks = false"}
-    - { regexp: "index_tags = ", line: "index_tags = []"}
-    - { regexp: "  timeout_commit", line: "timeout_commit = 5000"}
-    - { regexp: "  db = ", line: "db = \"cleveldb\""}
-- hosts: validator_node
-  remote_user: "{{remote_user}}"
-  become: true
-  become_user: root  
-  tasks:
-  - name: fetch updated configuration file for distribution purpose
-    fetch:
-      flat: true
-      src: "{{APP_HOME}}/config.toml"
-      dest: "{{lookup('env','OLDATA')}}/{{node_name}}/config.toml"
-# change node specific configuration 
+# change external p2p address to obtain seed address 
 - hosts: seed_node:validator_node
   remote_user: "{{remote_user}}"
   become: true
@@ -127,17 +100,11 @@
   vars:
     internal_ip: "{{ ansible_all_ipv4_addresses | ipaddr('private') | first }}"
   tasks:
-  - name: set fullnode specific configuration 
+  - name: set external p2p address
     lineinfile:
       path: "{{APP_HOME}}/config.toml"
-      regexp: '{{item.regexp}}'
-      line: "  {{item.line}}"
-    with_items:
-    - { regexp: "rpc_address", line: "rpc_address = \"tcp://{{internal_ip}}:26604\""}
-    - { regexp: "sdk_address", line: "sdk_address = \"http://{{internal_ip}}:26602\""}
-    - { regexp: "p2p_address = \"tcp://", line: "p2p_address = \"tcp://{{internal_ip}}:26605\""}
-    - { regexp: "node_name", line: "node_name = \"{{node_name}}\""}
-    - { regexp: "external_p2p_address", line: "external_p2p_address = \"tcp://{{inventory_hostname}}:26605\""}
+      regexp: 'external_p2p_address'
+      line: "  external_p2p_address = \"tcp://{{inventory_hostname}}:26605\""
 # set up validator node config.toml
 - hosts: validator_node
   remote_user: "{{remote_user}}"
@@ -164,7 +131,6 @@
   - name: set concatenated p2p address string for all seed nodes
     set_fact:
       seedAddressList: "{{ ansible_play_hosts | map('extract', hostvars, 'command_output') | map(attribute='stdout') | list}}"
-      seedAddress: "{{ ansible_play_hosts | map('extract', hostvars, 'command_output') | map(attribute='stdout') | list | join(',') }}"
     run_once: yes
   - name: set seed node specific configuration 
     lineinfile:
@@ -192,3 +158,48 @@
       path: "{{APP_HOME}}/config.toml"
       regexp: 'persistent_peers'
       line: "  persistent_peers = []"
+# edit optimizd tindermint level configuration for distribution 
+- hosts: seed_node:validator_node
+  remote_user: "{{remote_user}}"
+  become: true
+  become_user: root  
+  tasks:
+  - name: set tindermint level configuration
+    lineinfile:
+      path: "{{APP_HOME}}/config.toml"
+      regexp: ' {{item.regexp}}'
+      line: "  {{item.line}}"
+    with_items:
+    - { regexp: "log_output", line: "log_output = \"stdout\""}
+    - { regexp: "create_empty_blocks = ", line: "create_empty_blocks = false"}
+    - { regexp: "index_tags = ", line: "index_tags = []"}
+    - { regexp: "timeout_commit", line: "timeout_commit = 5000"}
+    - { regexp: "db = ", line: "db = \"cleveldb\""}
+- hosts: validator_node
+  remote_user: "{{remote_user}}"
+  become: true
+  become_user: root  
+  tasks:
+  - name: fetch updated configuration file for distribution purpose
+    fetch:
+      flat: true
+      src: "{{APP_HOME}}/config.toml"
+      dest: "{{lookup('env','OLDATA')}}/{{node_name}}/config.toml"
+# change node specific configuration 
+- hosts: seed_node:validator_node
+  remote_user: "{{remote_user}}"
+  become: true
+  become_user: root  
+  vars:
+    internal_ip: "{{ ansible_all_ipv4_addresses | ipaddr('private') | first }}"
+  tasks:
+  - name: set fullnode specific configuration 
+    lineinfile:
+      path: "{{APP_HOME}}/config.toml"
+      regexp: ' {{item.regexp}}'
+      line: "  {{item.line}}"
+    with_items:
+    - { regexp: "rpc_address", line: "rpc_address = \"tcp://{{internal_ip}}:26604\""}
+    - { regexp: "sdk_address", line: "sdk_address = \"http://{{internal_ip}}:26602\""}
+    - { regexp: "p2p_address = \"tcp://", line: "p2p_address = \"tcp://{{internal_ip}}:26605\""}
+    - { regexp: "node_name", line: "node_name = \"{{node_name}}\""}
