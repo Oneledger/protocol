@@ -12,7 +12,7 @@ import (
 
 // Amount represents an amount of a currency
 type Amount struct {
-	Int big.Int `json:"bint"`
+	Int big.Int `json:"bint,string"`
 }
 
 func NewAmount(x int64) *Amount {
