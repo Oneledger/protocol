@@ -27,7 +27,7 @@ import (
 // Coin is the basic amount, specified in integers, at the smallest increment (i.e. a satoshi, not a bitcoin)
 type Coin struct {
 	Currency Currency `json:"currency"`
-	Amount   *Amount  `json:"amount,string"`
+	Amount   *Amount  `json:"amount"`
 }
 
 // See if the coin is one of a list of currencies
