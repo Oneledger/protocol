@@ -42,6 +42,7 @@ func parseConfig(cfg *config.Server) (NodeConfig, error) {
 		return types.GenesisDocFromFile(filepath.Join(rootDir, "config", "genesis.json"))
 	}
 
+	// If either file path does not exist, the program will exit !
 	privValidator := privval.LoadFilePV(tmcfg.PrivValidatorKeyFile(), tmcfg.PrivValidatorStateFile())
 
 	nodeKey, err := p2p.LoadNodeKey(tmcfg.NodeKeyFile())

@@ -1,4 +1,4 @@
-package app
+package node
 
 import (
 	"errors"
@@ -11,9 +11,9 @@ import (
 	"github.com/tendermint/tendermint/privval"
 )
 
-// NodeContext holds key information about the running node. This is generally used to
+// Context holds key information about the running node. This is generally used to
 // to access its address and perform signing functions
-type NodeContext struct {
+type Context struct {
 	NodeName string
 
 	// Node keys
@@ -24,17 +24,17 @@ type NodeContext struct {
 }
 
 // PrivVal returns the private validator file
-func (n NodeContext) PrivVal() keys.PrivateKey {
+func (n Context) PrivVal() keys.PrivateKey {
 	return n.privval
 }
 
 // private key of the nodes
-func (n NodeContext) PrivKey() keys.PrivateKey {
+func (n Context) PrivKey() keys.PrivateKey {
 	return n.privateKey
 }
 
 // PubKey returns the public key of the node's NodeKey
-func (n NodeContext) PubKey() keys.PublicKey {
+func (n Context) PubKey() keys.PublicKey {
 	h, err := n.privateKey.GetHandler()
 	if err != nil {
 		return keys.PublicKey{}
@@ -44,7 +44,7 @@ func (n NodeContext) PubKey() keys.PublicKey {
 }
 
 // Address returns the address of the node's public key (the key's hash)
-func (n NodeContext) Address() keys.Address {
+func (n Context) Address() keys.Address {
 	priv, err := n.privateKey.GetHandler()
 	if err != nil {
 		return nil
@@ -58,7 +58,7 @@ func (n NodeContext) Address() keys.Address {
 	return pub.Address()
 }
 
-func (n NodeContext) ValidatorPubKey() keys.PublicKey {
+func (n Context) ValidatorPubKey() keys.PublicKey {
 	priv, err := n.privval.GetHandler()
 	if err != nil {
 		return keys.PublicKey{}
@@ -67,7 +67,7 @@ func (n NodeContext) ValidatorPubKey() keys.PublicKey {
 	return priv.PubKey()
 }
 
-func (n NodeContext) ValidatorAddress() keys.Address {
+func (n Context) ValidatorAddress() keys.Address {
 	priv, err := n.privval.GetHandler()
 	if err != nil {
 		return nil
@@ -81,17 +81,17 @@ func (n NodeContext) ValidatorAddress() keys.Address {
 	return pub.Address()
 }
 
-func (n NodeContext) isValid() bool {
+func (n Context) isValid() bool {
 	if n.ValidatorAddress() == nil || n.Address() == nil {
 		return false
 	} //else if n.NodeName == "" { return false }
 	return true
 }
 
-// NewNodeContext returns a NodeContext by reading from the specified configuration files.
+// NewNodeContext returns a Context by reading from the specified configuration files.
 // This function WILL exit if the private validator key files (priv_validator_state, and priv_validator_key) don't
 // exist in the configured location
-func NewNodeContext(cfg *config.Server) (*NodeContext, error) {
+func NewNodeContext(cfg *config.Server) (*Context, error) {
 	if cfg == nil {
 		return nil, errors.New("got nil argument")
 	}
@@ -112,7 +112,7 @@ func NewNodeContext(cfg *config.Server) (*NodeContext, error) {
 	return ctx, nil
 }
 
-func readKeyFiles(cfg *consensus.Config) (*NodeContext, error) {
+func readKeyFiles(cfg *consensus.Config) (*Context, error) {
 	nodeKeyF := cfg.NodeKeyFile()
 
 	nodeKey, err := p2p.LoadNodeKey(nodeKeyF)
@@ -142,7 +142,7 @@ func readKeyFiles(cfg *consensus.Config) (*NodeContext, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &NodeContext{
+	return &Context{
 		privateKey: priv,
 		privval:    pvkey,
 	}, nil

@@ -18,9 +18,10 @@ package balance
 import (
 	"encoding/hex"
 	"encoding/json"
-	"github.com/Oneledger/protocol/utils"
 	"math"
 	"math/big"
+
+	"github.com/Oneledger/protocol/utils"
 
 	"github.com/Oneledger/protocol/data/chain"
 )
@@ -40,11 +41,18 @@ func (c Currency) Base() *big.Int {
 	return big.NewInt(0).Exp(big.NewInt(10), big.NewInt(c.Decimal), nil)
 }
 
+func (c Currency) NewCoinFromAmount(a Amount) Coin {
+	return Coin{
+		Currency: c,
+		Amount:   &a,
+	}
+}
+
 // Create a coin from integer (not fractional)
 func (c Currency) NewCoinFromInt(amount int64) Coin {
 	return Coin{
 		Currency: c,
-		Amount:   big.NewInt(0).Mul(big.NewInt(amount), c.Base()),
+		Amount:   &Amount{*big.NewInt(0).Mul(&NewAmount(amount).Int, c.Base())},
 	}
 }
 
@@ -79,7 +87,7 @@ func (c Currency) NewCoinFromFloat64(amount float64) Coin {
 
 	return Coin{
 		Currency: c,
-		Amount:   result,
+		Amount:   &Amount{*result},
 	}
 }
 
@@ -87,7 +95,7 @@ func (c Currency) NewCoinFromFloat64(amount float64) Coin {
 func (c Currency) NewCoinFromBytes(amount []byte) Coin {
 	return Coin{
 		Currency: c,
-		Amount:   big.NewInt(0).SetBytes(amount),
+		Amount:   &Amount{*big.NewInt(0).SetBytes(amount)},
 	}
 }
 
@@ -122,4 +130,25 @@ func (cl *CurrencyList) GetCurrencyByStringKey(key string) (Currency, bool) {
 
 func (cl CurrencyList) Len() int {
 	return len(cl.nameMap)
+}
+
+type Currencies []Currency
+
+func (c CurrencyList) GetCurrencies() Currencies {
+	result := make([]Currency, len(c.nameMap))
+	i := 0
+	for _, v := range c.nameMap {
+		result[i] = v
+		i++
+	}
+	return result
+}
+
+func (cs Currencies) GetCurrencyList() *CurrencyList {
+	result := NewCurrencyList()
+	for _, v := range cs {
+		_ = result.Register(v)
+	}
+
+	return result
 }

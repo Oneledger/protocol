@@ -18,6 +18,8 @@ type Account struct {
 	PrivateKey *keys.PrivateKey `json:"privateKey"`
 }
 
+//todo: if we create the privkey out side of server(eg: in client), this function failed to store the account privkey
+// properly because the PrivateKey's field is private that cannot be serialized. need to be fixed.
 func NewAccount(t chain.Type, name string, privkey *keys.PrivateKey, pubkey *keys.PublicKey) (Account, error) {
 	if pubkey == nil || privkey == nil {
 		return Account{}, errors.New("empty keys")
@@ -35,6 +37,20 @@ func NewAccount(t chain.Type, name string, privkey *keys.PrivateKey, pubkey *key
 	}
 	if _, err := acc.PrivateKey.GetHandler(); err != nil {
 		return Account{}, err
+	}
+	return acc, nil
+}
+
+func GenerateNewAccount(t chain.Type, name string) (Account, error) {
+	pubKey, privKey, err := keys.NewKeyPairFromTendermint()
+	if err != nil {
+		return Account{}, err
+	}
+	acc := Account{
+		Type:       t,
+		Name:       name,
+		PrivateKey: &privKey,
+		PublicKey:  &pubKey,
 	}
 	return acc, nil
 }

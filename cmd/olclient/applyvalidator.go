@@ -7,13 +7,42 @@ package main
 
 import (
 	"path/filepath"
+	"strconv"
+
+	"github.com/Oneledger/protocol/data/balance"
 
 	"github.com/Oneledger/protocol/client"
 	"github.com/Oneledger/protocol/config"
-	"github.com/Oneledger/protocol/data"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 )
+
+type ApplyValidatorArguments struct {
+	Address      []byte `json:"address"`
+	Name         string `json:"name"`
+	Amount       string `json:"amount"`
+	Purge        bool   `json:"purge"`
+	TmPubKeyType string `json:"tmPubKeyType"`
+	TmPubKey     []byte `json:"tmPubKey"`
+}
+
+func (args *ApplyValidatorArguments) ClientRequest(currencies *balance.CurrencyList) client.ApplyValidatorRequest {
+	c, _ := currencies.GetCurrencyByName("VT")
+
+	f, err := strconv.ParseFloat(args.Amount, 64)
+	if err != nil {
+		return client.ApplyValidatorRequest{}
+	}
+	amt := c.NewCoinFromFloat64(f)
+	return client.ApplyValidatorRequest{
+		Address:      args.Address,
+		Name:         args.Name,
+		Amount:       *amt.Amount,
+		Purge:        args.Purge,
+		TmPubKeyType: args.TmPubKeyType,
+		TmPubKey:     args.TmPubKey,
+	}
+}
 
 var applyvalidatorCmd = &cobra.Command{
 	Use:   "applyvalidator",
@@ -21,7 +50,7 @@ var applyvalidatorCmd = &cobra.Command{
 	RunE:  applyValidator,
 }
 
-var applyValidatorArgs *client.ApplyValidatorArguments = &client.ApplyValidatorArguments{}
+var applyValidatorArgs = &ApplyValidatorArguments{}
 
 func init() {
 	RootCmd.AddCommand(applyvalidatorCmd)
@@ -33,7 +62,6 @@ func init() {
 	applyvalidatorCmd.Flags().BytesBase64Var(&applyValidatorArgs.TmPubKey, "pubkey", []byte{}, "validator pubkey")
 	applyvalidatorCmd.Flags().StringVar(&applyValidatorArgs.TmPubKeyType, "pubkeytype", "edd25519", "validator pubkey type, default \"ed25519\", if used pubkey flag, this input should match")
 	applyvalidatorCmd.Flags().StringVar(&applyValidatorArgs.Name, "name", "", "name for the validator, default to the node name in config.toml")
-
 }
 
 // IssueRequest sends out a sendTx to all of the nodes in the chain
@@ -54,17 +82,22 @@ func applyValidator(cmd *cobra.Command, args []string) error {
 	}
 
 	// Create message
-	resp := &data.Response{}
-	err = ctx.clCtx.Query("server.ApplyValidator", *applyValidatorArgs, resp)
+	fullnode := ctx.clCtx.FullNodeClient()
+	currencies, err := fullnode.ListCurrencies()
 	if err != nil {
-		ctx.logger.Error("error executing ApplyValidator", err)
-		return nil
+		ctx.logger.Error("failed to get currencies", err)
+		return err
 	}
 
-	packet := resp.Data
+	out, err := fullnode.ApplyValidator(applyValidatorArgs.ClientRequest(currencies.Currencies.GetCurrencyList()))
+	if err != nil {
+		ctx.logger.Error("Error in applying ", err.Error())
+		return err
+	}
+
+	packet := out.RawTx
 	if packet == nil {
-		ctx.logger.Error("Error in applying ", resp.ErrorMsg)
-		return nil
+		return errors.New("got nil packet but error was nil")
 	}
 
 	result, err := ctx.clCtx.BroadcastTxCommit(packet)

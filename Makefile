@@ -43,6 +43,12 @@ utest:
 		github.com/Oneledger/protocol/data/balance \
 		github.com/Oneledger/protocol/serialize \
 		github.com/Oneledger/protocol/utils \
+		github.com/Oneledger/protocol/rpc \
+		github.com/Oneledger/protocol/identity \
+		github.com/Oneledger/protocol/app \
+		github.com/Oneledger/protocol/action/ons \
+		github.com/Oneledger/protocol/action/staking \
+		github.com/Oneledger/protocol/action/transfer \
 		-coverprofile a.out
 
 coverage:
@@ -58,4 +64,16 @@ applytest: install
 	@./scripts/startDev
 	@./scripts/testapply
 	@./scripts/getValidators
+	@./scripts/stopDev
+
+#
+# run ons tests
+#
+onstest: install
+	@./scripts/stopDev
+	@./scripts/resetDev
+	@./scripts/startDev
+	@./scripts/testsend
+	python scripts/ons/create_domain.py
+	python scripts/ons/buy_sell_domain.py
 	@./scripts/stopDev

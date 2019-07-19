@@ -16,9 +16,8 @@ package main
 
 import (
 	"fmt"
-	"github.com/Oneledger/protocol/data"
+
 	"github.com/Oneledger/protocol/identity"
-	"github.com/Oneledger/protocol/serialize"
 
 	"github.com/spf13/cobra"
 )
@@ -36,29 +35,18 @@ func init() {
 
 // IssueRequest sends out a sendTx to all of the nodes in the chain
 func ListValidator(cmd *cobra.Command, args []string) {
-
 	Ctx := NewContext()
-
-	req := data.NewRequestFromData("listValidators", []byte{})
-	resp := &data.Response{}
-	err := Ctx.clCtx.Query("server.ListValidators", req, resp)
+	fullnode := Ctx.clCtx.FullNodeClient()
+	out, err := fullnode.ListValidators()
 	if err != nil {
 		logger.Error("error in getting all validators", err)
 		return
 	}
 
-	var validators = make([]identity.Validator, 0)
-
-	err = serialize.GetSerializer(serialize.CLIENT).Deserialize(resp.Data, &validators)
-	if err != nil {
-		logger.Error("error deserializng", err)
-		return
-	}
-
-	logger.Infof("Validators on node: %s ", Ctx.cfg.Node.NodeName)
-	for _, v := range validators {
+	for _, v := range out.Validators {
 		printValidator(v)
 	}
+	fmt.Println("Height", out.Height)
 }
 
 func printValidator(v identity.Validator) {

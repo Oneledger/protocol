@@ -1,6 +1,7 @@
 package keys
 
 import (
+	"github.com/pkg/errors"
 	"github.com/tendermint/tendermint/crypto/ed25519"
 	"github.com/tendermint/tendermint/crypto/secp256k1"
 )
@@ -29,8 +30,25 @@ func (a Algorithm) Name() string {
 	return "Unknown algorithm"
 }
 
-func GetAlgorithmFromTmKeyName(name string) Algorithm {
+func (a Algorithm) MarshalText() ([]byte, error) {
+	switch a {
+	case ED25519, SECP256K1:
+		return []byte(a.Name()), nil
+	default:
+		return nil, errors.New("Unknown Algorithm specified")
+	}
+}
 
+func (a *Algorithm) UnmarshalText(name []byte) error {
+	algo := GetAlgorithmFromTmKeyName(string(name))
+	if algo == UNKNOWN {
+		return errors.New("unknown key algorithm")
+	}
+	*a = algo
+	return nil
+}
+
+func GetAlgorithmFromTmKeyName(name string) Algorithm {
 	switch name {
 	case "ed25519":
 		return ED25519

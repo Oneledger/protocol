@@ -176,7 +176,7 @@ func (vs *ValidatorStore) HandleStake(apply Stake) error {
 
 func calculatePower(stake balance.Coin) int64 {
 	// TODO: change to correct power function @TODO99
-	return stake.Amount.Int64()
+	return stake.Amount.Int.Int64()
 }
 
 // TODO: implement the proper slashing
@@ -256,7 +256,7 @@ func (vs *ValidatorStore) GetEndBlockUpdate(ctx *ValidatorContext, req types.Req
 				PubKey: validator.PubKey.GetABCIPubKey(),
 				Power:  validator.Power,
 			})
-			cnt ++
+			cnt++
 		}
 	}
 
