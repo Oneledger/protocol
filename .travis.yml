@@ -25,8 +25,11 @@ before_script:
 - export GO111MODULE="on"
 - export PATH=$PATH:$GOPATH/bin
 - export OLDEBUG=true
-- sudo apt-get update && sudo apt-get install unzip python3
-- cd $HOME && python3 -m venv env && source env/bin/activate
+- sudo add-apt-repository ppa:jonathonf/python-3.6
+- sudo apt-get update && sudo apt-get install unzip python3.6
+- sudo update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.5 1
+- sudo update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.6 2
+- sudo update-alternatives --config python3
 - pip3 install netaddr ipaddr ansible
 script:
 - cd $OLROOT/protocol && make fulltest utest
