@@ -132,18 +132,21 @@ type BroadcastReply struct {
 	// For TxCommit, it indicates the success of both CheckTx and DeliverTx. If the broadcast fails is false.
 	OK     bool   `json:"ok"`
 	Height *int64 `json:"height,omitempty"`
+	Log    string `json:"log"`
 }
 
 func (reply *BroadcastReply) FromResultBroadcastTx(result *ctypes.ResultBroadcastTx) {
 	reply.TxHash = action.Address(result.Hash)
 	reply.OK = result.Code == 0
 	reply.Height = nil
+	reply.Log = result.Log
 }
 
 func (reply *BroadcastReply) FromResultBroadcastTxCommit(result *ctypes.ResultBroadcastTxCommit) {
 	reply.TxHash = action.Address(result.Hash)
 	reply.OK = result.CheckTx.Code == 0 && result.DeliverTx.Code == 0
 	reply.Height = &result.Height
+	reply.Log = "check: " + result.CheckTx.Log + ", deliver: " + result.DeliverTx.Log
 }
 
 type NewAccountRequest struct {

@@ -13,25 +13,25 @@ const HEIGHT_INTERVAL = 1
 
 type Domain struct {
 	// addresses of the owner and the account the domain points to
-	OwnerAddress   keys.Address
-	AccountAddress keys.Address
+	OwnerAddress   keys.Address `json:"ownerAddress"`
+	AccountAddress keys.Address `json:"accountAddress"`
 
 	// the domain name; this is als a unique identifier of
 	// the domain object over the chain
-	Name string
+	Name string `json:"name"`
 
 	// block heights at which the domain was first created and updated
-	CreationHeight   int64
-	LastUpdateHeight int64
+	CreationHeight   int64 `json:"creationHeight"`
+	LastUpdateHeight int64 `json:"lastUpdateHeight"`
 
 	// flag to denote whether send2Domain is active on this domain
-	ActiveFlag bool
+	ActiveFlag bool `json:"activeFlag"`
 
 	// denotes whether the domain is for sale
-	OnSaleFlag bool
+	OnSaleFlag bool `json:"onSaleFlag"`
 
 	// the asking price in OLT set by the owner
-	SalePrice balance.Coin
+	SalePrice balance.Coin `json:"salePrice"`
 }
 
 func NewDomain(ownerAddress, accountAddress keys.Address,
