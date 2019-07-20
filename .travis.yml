@@ -4,12 +4,6 @@ go:
 - 1.11.x
 service: 
 - docker
-addons:
-  apt:
-    update: true
-    packages:
-    - libleveldb-dev
-    - libsnappy-dev
 env:
   global:
   - GENESIS_REPO_BRANCH="master"
@@ -26,6 +20,7 @@ before_script:
 - export GO111MODULE="on"
 - export PATH=$PATH:$GOPATH/bin
 - export OLDEBUG=true
+- sudo apt-get update -y && sudo apt-get install -y libleveldb-dev libsnappy-dev
 script:
 - cd $OLROOT/protocol && make fulltest utest
 - cd $OLROOT/protocol && make update install_c
