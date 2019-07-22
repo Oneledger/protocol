@@ -27,7 +27,7 @@ before_script:
 - pip3 install netaddr ipaddr ansible awscli --upgrade
 - aws secretsmanager get-secret-value --secret-id Travis_CI_Deploy_Key | jq -r '.SecretString' >> $TRAVIS_BUILD_DIR/id_rsa
 - aws secretsmanager get-secret-value --secret-id Travis_CI_GCP_Compute | jq -r ".SecretString" >>  $TRAVIS_BUILD_DIR/DevNet.json
-- export GITHUB_TOKEN=${aws secretsmanager get-secret-value --secret-id Travis_CI_Github_Token | jq -c ".SecretString | fromjson.Github_Token"}
+- export GITHUB_TOKEN=$(aws secretsmanager get-secret-value --secret-id Travis_CI_Github_Token | jq -c ".SecretString | fromjson.Github_Token")
 - cd $TRAVIS_BUILD_DIR && chmod 600 id_rsa DevNet.json 
 - echo ${GITHUB_TOKEN} && echo $TRAVIS_BUILD_DIR/DevNet.json && echo $TRAVIS_BUILD_DIR/id_rsa  
 script:
