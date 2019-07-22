@@ -7,9 +7,8 @@ service:
 env:
   global:
   - GENESIS_REPO_BRANCH="master"
-  - INFRASTRUCTURE_REPO_BRANCH="master"
+  - INFRASTRUCTURE_REPO_BRANCH="inject-ssh-key-gce"
   - AWS_DEFAULT_REGION=us-east-1
-  - secure: fgH6sACHpCqQosNDifNSgYpXiJc+ghaC02ptQEdvY5jVv7AtaigGv8OPUWA2FAI9iwioG72ge4Fgpak/PvuMBhA4GDxvLdEZnpS+CC3BPa4xisyu0y3gc0MTvx9Erca2cn3Vse6LgIgiZHvO8/7YRXrzDnEhxND1XIBcABjkjq5GVZf/uVeneSASbKg92ZdnLQdKgkzXTY2naHuGEVTNAa+WrCt2htI2ULVlDjz411WYNhM6dopzWOYCaDCXnsW/r1OjlRCSPP/Ss9MHolGdixt09hus7c7tJu/3w+XPvuABa6zlYv6wyKS0X6CFF7oRTATSv4mmGQ/WJFg9nD7yutGjGFSJsMjuohuKoTt7yhUz9I+U5FR3MrRquwfi5E0tXrqtzC5yeopfDZnW9eLv53ej9yQZLbzbsa2OXWfO0XezGscVGY5m0H3T0DCs7m5goDjkyaw/x7LutkoWXTOLh2mtaekKSx0XOt7WJFqxyg0bvDqV4mz9wo2A1lAXcuPOOKfXI6EBMzC5iVuxaYkdbs89g1+1wQAx4cxcTz2PDp80ewn4cRImz/z0/I9a5qIqt01o/fJQRmUixviIwsOPtywzJ1nhm8JpxwkKJ4K1LymFzGm/QCD1W0uAkT7j7JJhNcScPLUTwlCybuGE/EAoKzea4EPOA2PMnnsJ+FbRmaM=
   - secure: yWcEeiAVQrQPELui/7nlbCFyqDSbSO2z7Fee9+kdlhH0Stn+kJD6Q3pt5vtYj4hwXuxQcCBeMQXypghKsJc3kCsDyz5N++JRW+5kTTUNV/wMVBXJ9Cs+15BNpUX0R4eBTtIp34cpMKi2ctiApjbqkpRopNVGmE1rP0QdJkQ3Qh+HdSSk5DL9Mtod3nIYGw3Ne+dhRTvrGYicwavxQDkRQv81vQ82/LsIai/TKuErftB+6r3TLWtGJvHN0YjhNWmvLbPN7twq63Gx3C4ChSAEbLntBASeWml0/Ii4DMQDSVHxPvlaBQzMeH7XbG4/pmx5LVrJG/+lwQAzKK3ueR4kc9jiIJelTywQpLJet8mnTvImm87L+T717SEt9mkWObciXANfz7nE6oEohkcsVGOrJnCGE9opecipsYTzxQkIgzyxC6dx8uv2QI43t/Ffvtv77VWoH/hUzkrhdVB/i1mwjMW7NlHs5lrCRvPjWds3l6D4TXyHsA+bUFpXYcC4ie05nEz0gd9cCQ/U6hUsMPWAERt9DG68i95oThHRCxULfGrTyWsztSB+Db66jrXXa6aG5QIT1VvTzifYfyZ05oKa8WyiS1YAORrh/Ft9OHC/Ja0Q+xPuxYPX2HSsvbAHYD/dK7kNaLSlKs/09QzHfqdmLNENhi7fL1PYaQGOd7ujly8=
   - secure: SzF5+qspQTFpxnjm45SKNgS+mFbaZxrmONCN2OVcI1BuJgfilC9CWIaDHATQcV0BfxHxkCIfTzBwM28GEjNYhoGvEPxHnl1micxHQvm6RKgYa+aeK9MzV6feIayHj3AYdjb6VtBKcEFkP4v/gB3YroNzBoa2hxI2LKMkc/vbLbo3DLGRC7syWk5DOIOJRWkzMif0WkkZxojot69zM1YxsFa6vYDDNYS7A+BBzpfzNAdHpnGR0dplKIsQ7BMY6oshfyOapt0+/iSMTRXQYslkHrx9V06UkR1oEyM+he2V3ZmoLj8YFZPgZEeLF6QFjA3Qbjrx3oyWeXuGpIxewHRCQyE6MnuC1OuzGdM6XIZwYGuOQq0i2ux+axG8OUuI9q3r4SkZxLGExTV1EyY//zyM48/Gd18aBnwpEcHRsxRxXpkoImCrb82KugaQUyuJlw3d4JR+CmpOlJOFEzux+6JVNkS8GuFkLbFqA6g9ovDzRQPP3+zcebXy89xD8pu+3Qr1nnV4wOmj7ujDPTbzZn2pi6x6AQvDoKc+c0qTlCFiAyiZPMf+twx7hmZ8lEISzHxbPYBI76DocSdburJ7UoDT+WNL9W0XG6t/XqrioguQGSNB+2S++QYOGasAYJ6oQcdHkLloKNpBx1w664Ifzk3wTcDGvjkAu0lLLT3j+0fDBt0=
 before_script:
@@ -30,11 +29,11 @@ before_deploy:
 - python3 -m venv env && source env/bin/activate 
 - pip3 install netaddr ipaddr ansible awscli --upgrade
 - export GITHUB_TOKEN=$(aws secretsmanager get-secret-value --secret-id Travis_CI_Github_Token | jq -r ".SecretString | fromjson.Github_Token")
-- echo ${GITHUB_TOKEN} && echo $TRAVIS_BUILD_DIR/DevNet.json && echo $TRAVIS_BUILD_DIR/id_rsa 
 - cd $TRAVIS_BUILD_DIR && 
   git clone https://$GITHUB_TOKEN:x-oauth-basic@github.com/Oneledger/infrastructure.git --branch
   ${INFRASTRUCTURE_REPO_BRANCH}
-- aws secretsmanager get-secret-value --secret-id Travis_CI_Deploy_Key | jq -r '.SecretString' >> $TRAVIS_BUILD_DIR/id_rsa
+# - aws secretsmanager get-secret-value --secret-id Travis_CI_Deploy_Key | jq -r '.SecretString' >> $TRAVIS_BUILD_DIR/id_rsa
+- ssh-keygen -C "$USER@ubuntu" -t rsa -N "" -f $TRAVIS_BUILD_DIR/id_rsa
 - aws secretsmanager get-secret-value --secret-id Travis_CI_GCP_Compute | jq -r ".SecretString" >>  $TRAVIS_BUILD_DIR/DevNet.json
 - cd $TRAVIS_BUILD_DIR && chmod 600 id_rsa DevNet.json
 - eval $(ssh-agent -s) && ssh-add $TRAVIS_BUILD_DIR/id_rsa
@@ -51,8 +50,7 @@ deploy:
   skip_cleanup: true
   prerelease: true
   draft: true
-  api_key:
-    secure: 2bnCcsdf5wf6zOYTJoYhunhzilLVFHL0ToSoVo8hXpaCsBtGGbO74uA3lustVSIbfrcKfE6XNMB0rOqUujEZiUtL2YvowTOFi/XuhNYO3IC9G+jdo5miCvh6PRo0O/eSsz2gluTIKPp8MPTvqfeWExgPvtUDYp9XDbRn8Pi2DPrdJ5JHmAusVVzYnVfulUjlah8yHsgLEkGlLFS0m/E1QudvlM8bqEIOnDKY4E+PdXANaWQSqNwj2rYlC2OqMSAUucvCsPENLtAuaWOo8/GJXlJqGTJr4cQNgZs+cA0CGicgnlmkmMtV7p3Cxtdactj7I5irkNCdL0YIRHwL8THo1xuWjTtqugxeDqcOHMPnGVKaCtbh0mzVzGuQTS3B5B3Ihp03JeZVq6rjGIKrYyTSjV2nD0HiCpKWb4rm4MQc2OFPoMqmmMWX4eKGp2sa04pF0v1NXK98B0qtUHgt2u/Zd+HjT8X4LoMiuh1g+6+DkGzSaQK8gSRd3B1rW/bx7ucJtQV+nb/nnfKvd2zLT6Z8WUuycJwkt+lA3jxDhiXm5apq8UN8zw/9JhAwjU04ID+gKNkjp3CALf5QlvBATT5PHSW+HrqLeS8wBwdjOVRBR8i1Rn0tFjsFhfQRFKhPSoVm3l1BfI23B2vLfN047pGtUceCzq55t2yD4IaSa+67go0=
+  api_key: ${GITHUB_TOKEN}
   file_glob: true
   file: "$GOPATH/bin/*"
   on:
@@ -61,7 +59,8 @@ deploy:
 - provider: script
   skip_cleanup: true
   script: cd $TRAVIS_BUILD_DIR/infrastructure/ansible && ansible-playbook main.yml 
-    -v --extra-vars "reset_network=true remote_user=$USER" && 
+    -v --extra-vars "reset_network=true remote_user=$USER 
+    stage=devnet-explorer vpc_ip_range=10.16.0.0/20 ssh_pub_key_file=$TRAVIS_BUILD_DIR/id_rsa.pub" && 
     cd $TRAVIS_BUILD_DIR/infrastructure && packer build 
     -var "version=${TRAVIS_BRANCH}" -var "tag=${TRAVIS_BRANCH}" 
     -var "docker_registry=${CONTAINER_REGISTRY}" -only=docker-image packer.json && 
