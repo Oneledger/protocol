@@ -15,10 +15,7 @@ Copyright 2017 - 2019 OneLedger
 package main
 
 import (
-	"github.com/Oneledger/protocol/data"
-	"github.com/Oneledger/protocol/data/balance"
-	"github.com/Oneledger/protocol/serialize"
-
+	"github.com/Oneledger/protocol/client"
 	"github.com/spf13/cobra"
 )
 
@@ -53,32 +50,22 @@ func BalanceNode(cmd *cobra.Command, args []string) {
 		return
 	}
 
-	resp := &data.Response{}
-	req := data.NewRequestFromData("nodename", []byte{})
-	err := Ctx.clCtx.Query("server.NodeName", *req, resp)
+	fullnode := Ctx.clCtx.FullNodeClient()
+	nodeName, err := fullnode.NodeName()
 	if err != nil {
-		logger.Fatal("error in getting nodename", err)
+		logger.Fatal(err)
 	}
-
-	nodeName := string(resp.Data)
 
 	// assuming we have public key
-	resp = &data.Response{}
-	err = Ctx.clCtx.Query("server.Balance", balArgs.accountKey, resp)
-	if err != nil || !resp.Success {
-		logger.Fatal("error in getting balance", err, resp.ErrorMsg)
-	}
-
-	bal := balance.NewBalance()
-	err = serialize.GetSerializer(serialize.CLIENT).Deserialize(resp.Data, bal)
+	bal, err := fullnode.Balance(balArgs.accountKey)
 	if err != nil {
-		logger.Fatal("error in desrializing", err)
+		logger.Fatal("error in getting balance", err)
 	}
 	printBalance(nodeName, balArgs.accountKey, bal)
 }
 
-func printBalance(nodeName string, address []byte, bal *balance.Balance) {
-
+func printBalance(nodeName string, address []byte, bal client.BalanceReply) {
 	logger.Infof("\t Balance for address %x on %s", address, nodeName)
-	logger.Info("\t Balance: ", bal.String())
+	logger.Info("\t Balance:", bal.Balance)
+	logger.Info("\t Height:", bal.Height)
 }

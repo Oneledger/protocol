@@ -27,14 +27,13 @@ import (
 // Coin is the basic amount, specified in integers, at the smallest increment (i.e. a satoshi, not a bitcoin)
 type Coin struct {
 	Currency Currency `json:"currency"`
-	Amount   *big.Int `json:"amount,string"`
+	Amount   *Amount  `json:"amount,string"`
 }
 
 // See if the coin is one of a list of currencies
 func (coin Coin) IsCurrency(currencies ...string) bool {
 	if coin.Amount == nil {
-		debug.PrintStack()
-		logger.Fatal("Invalid Coin", coin)
+		return false
 	}
 
 	found := false
@@ -50,15 +49,14 @@ func (coin Coin) IsCurrency(currencies ...string) bool {
 // LessThan, for coins...
 func (coin Coin) LessThanCoin(value Coin) bool {
 	if coin.Amount == nil || value.Amount == nil {
-		debug.PrintStack()
-		logger.Fatal("Invalid Coin", coin)
+		coin.Amount = NewAmount(0)
 	}
 
 	if coin.Currency.Chain != value.Currency.Chain {
 		logger.Fatal("Compare two different coin", coin, value)
 	}
 
-	if coin.Amount.Cmp(value.Amount) < 0 {
+	if coin.Amount.Int.Cmp(&value.Amount.Int) < 0 {
 		return true
 	}
 	return false
@@ -67,8 +65,7 @@ func (coin Coin) LessThanCoin(value Coin) bool {
 // LessThanEqual, for coins...
 func (coin Coin) LessThanEqualCoin(value Coin) bool {
 	if coin.Amount == nil || value.Amount == nil {
-		debug.PrintStack()
-		logger.Fatal("Invalid Coin", coin)
+		coin.Amount = NewAmount(0)
 	}
 
 	if coin.Currency.Chain != value.Currency.Chain {
@@ -77,7 +74,7 @@ func (coin Coin) LessThanEqualCoin(value Coin) bool {
 
 	//logger.Dump("LessThanEqualCoin", value, coin)
 
-	if coin.Amount.Cmp(value.Amount) <= 0 {
+	if coin.Amount.Int.Cmp(&value.Amount.Int) <= 0 {
 		return true
 	}
 	return false
@@ -91,21 +88,20 @@ func (coin Coin) IsValid() bool {
 	case coin.Currency.Name == "":
 		return false
 	default:
-		return coin.Amount.Cmp(big.NewInt(0)) >= 0
+		return coin.Amount.Int.Cmp(big.NewInt(0)) >= 0
 	}
 }
 
 // Equals another coin
 func (coin Coin) Equals(value Coin) bool {
 	if coin.Amount == nil {
-		debug.PrintStack()
-		logger.Fatal("Invalid Coin", coin)
+		coin.Amount = NewAmount(0)
 	}
 
 	if coin.Currency.Chain != value.Currency.Chain {
 		return false
 	}
-	if coin.Amount.Cmp(value.Amount) == 0 {
+	if coin.Amount.Int.Cmp(&value.Amount.Int) == 0 {
 		return true
 	}
 	return false
@@ -114,8 +110,7 @@ func (coin Coin) Equals(value Coin) bool {
 // Minus two coins
 func (coin Coin) Minus(value Coin) (Coin, error) {
 	if coin.Amount == nil {
-		debug.PrintStack()
-		logger.Fatal("Invalid Coin", coin)
+		coin.Amount = NewAmount(0)
 	}
 
 	if coin.Currency.Name != value.Currency.Name {
@@ -123,12 +118,12 @@ func (coin Coin) Minus(value Coin) (Coin, error) {
 		return coin, ErrMismatchingCurrency
 	}
 
-	base := big.NewInt(0)
+	base := NewAmount(0)
 	result := Coin{
 		Currency: coin.Currency,
-		Amount:   base.Sub(coin.Amount, value.Amount),
+		Amount:   &Amount{*base.Int.Sub(&coin.Amount.Int, &value.Amount.Int)},
 	}
-	if result.Amount.Cmp(big.NewInt(0)) == -1 {
+	if result.Amount.Int.Cmp(big.NewInt(0)) == -1 {
 		return result, ErrInsufficientBalance
 	}
 	return result, nil
@@ -149,22 +144,21 @@ func (coin Coin) Plus(value Coin) (Coin, error) {
 	base := big.NewInt(0)
 	result := Coin{
 		Currency: coin.Currency,
-		Amount:   base.Add(coin.Amount, value.Amount),
+		Amount:   &Amount{*base.Add(&coin.Amount.Int, &value.Amount.Int)},
 	}
 	return result, nil
 }
 
 func (coin Coin) Divide(value int) Coin {
 	if coin.Amount == nil {
-		debug.PrintStack()
-		logger.Fatal("Invalid Coin", coin)
+		coin.Amount = NewAmount(0)
 	}
 
 	base := big.NewInt(0)
 	divisor := big.NewInt(int64(value))
 	result := Coin{
 		Currency: coin.Currency,
-		Amount:   base.Div(coin.Amount, divisor),
+		Amount:   &Amount{*base.Div(&coin.Amount.Int, divisor)},
 	}
 	return result
 
@@ -173,29 +167,55 @@ func (coin Coin) Divide(value int) Coin {
 // Multiply one coin by another
 func (coin Coin) MultiplyInt(value int) Coin {
 	if coin.Amount == nil {
-		debug.PrintStack()
-		logger.Fatal("Invalid Coin", coin)
+		coin.Amount = NewAmount(0)
 	}
 
 	multiplier := big.NewInt(int64(value))
 	base := big.NewInt(0)
 	result := Coin{
 		Currency: coin.Currency,
-		Amount:   base.Mul(coin.Amount, multiplier),
+		Amount:   &Amount{*base.Mul(&coin.Amount.Int, multiplier)},
 	}
 	return result
 }
 
 // Turn a coin into a readable, floating point string with the currency
 func (coin Coin) String() string {
-	/*
-		if coin.Amount == nil {
-			debug.PrintStack()
-			logger.Fatal("Invalid Coin", "err", "Amount is nil")
-		}
-	*/
-	float := new(big.Float).SetInt(coin.Amount)
-	value := float.Quo(float, new(big.Float).SetInt(coin.Currency.Base()))
+	return fmt.Sprintf("%s %s", coin.Humanize(), coin.Currency.Name)
+}
 
-	return fmt.Sprintf("%s %s", value.String(), coin.Currency.Name)
+func (coin Coin) Humanize() string {
+	return PrintDecimal(&coin.Amount.Int, int(coin.Currency.Decimal))
+}
+
+func PrintDecimal(i *big.Int, decimal int) string {
+	str := i.String()
+	l := len(str)
+
+	if l < decimal {
+		padZero := ""
+		for i := 0; i < decimal-l; i++ {
+			padZero += "0"
+		}
+		return removeTrailingZero("0." + padZero + str)
+	}
+
+	return removeTrailingZero(str[:l-decimal] + "." + str[l-decimal:])
+}
+
+func removeTrailingZero(str string) string {
+	l := len(str)
+	if l == 0 {
+		return ""
+	}
+
+	if str[l-1] == '.' {
+		return str[:l-1]
+	}
+
+	if str[l-1] == '0' {
+		return removeTrailingZero(str[:l-1])
+	}
+
+	return str
 }

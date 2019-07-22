@@ -25,7 +25,7 @@ func TestCoin(t *testing.T) {
 
 	curr := Currency{"OLT", 0, 18}
 
-	coin := curr.NewCoinFromInt(1)
+	coin := curr.NewCoinFromInt(2)
 
 	str, err := serialize.GetSerializer(serialize.NETWORK).Serialize(&coin)
 	assert.NoError(t, err)
@@ -33,6 +33,7 @@ func TestCoin(t *testing.T) {
 
 	coinNew := Coin{}
 	err = serialize.GetSerializer(serialize.NETWORK).Deserialize(str, &coinNew)
+	assert.NoError(t, err, "serialization error")
 
 	notOk := coin.LessThanCoin(coinNew)
 	assert.False(t, notOk)
@@ -43,7 +44,9 @@ func TestCoin(t *testing.T) {
 	ok = coin.IsValid()
 	assert.True(t, ok)
 
-	doubleCoin := coin.Plus(coinNew)
+	doubleCoin, err := coin.Plus(coinNew)
+	assert.Nil(t, err)
+
 	ok = coin.LessThanCoin(doubleCoin)
 	assert.True(t, ok)
 

@@ -14,10 +14,8 @@
 package balance
 
 import (
-	"math/big"
 	"sort"
 
-	"github.com/Oneledger/protocol/data/chain"
 	"github.com/Oneledger/protocol/serialize"
 )
 
@@ -25,18 +23,9 @@ import (
 // from a BalanceAdapter object and vice versa.
 // There is a map flattening of course for Coins
 type BalanceData struct {
-	Coins []CoinData `json:"coins"`
-	Tag   string     `json:"tag"` // Tag is a field used to identify the type after ser/deser
+	Coins []*CoinData `json:"coins"`
+	Tag   string      `json:"tag"` // Tag is a field used to identify the type after ser/deser
 	// will be useful in future
-}
-
-// CoinData is a flattening of coin map in a balance data type
-type CoinData struct {
-	CurName    string     `json:"curr_name"`
-	CurChain   chain.Type `json:"curr_chain"`
-	CurDecimal int64      `json:"curr_decimal"`
-
-	Amount []byte `json:"amt"`
 }
 
 //
@@ -54,7 +43,7 @@ func (b *Balance) Data() serialize.Data {
 	bd := &BalanceData{Tag: "balance_data"}
 	// this allows to reserve capacity so the process of adding
 	// items to the list
-	bd.Coins = make([]CoinData, 0, len(b.Amounts))
+	bd.Coins = make([]*CoinData, 0, len(b.Amounts))
 
 	currencyList := []string{}
 	for key := range b.Amounts {
@@ -65,12 +54,7 @@ func (b *Balance) Data() serialize.Data {
 
 	for _, key := range currencyList {
 		coin := b.Amounts[key]
-		cd := CoinData{
-			CurName:    coin.Currency.Name,
-			CurChain:   coin.Currency.Chain,
-			CurDecimal: coin.Currency.Decimal,
-			Amount:     coin.Amount.Bytes(),
-		}
+		cd := coin.Data().(*CoinData)
 
 		bd.Coins = append(bd.Coins, cd)
 	}
@@ -84,7 +68,6 @@ func (b *Balance) SetData(obj interface{}) error {
 		return ErrWrongBalanceAdapter
 	}
 	return ba.extract(b)
-
 }
 
 //
@@ -98,13 +81,14 @@ func (ba *BalanceData) extract(b *Balance) error {
 	for i := range d {
 
 		//convert string representation to big int
-		amt := new(big.Int)
-		amt = amt.SetBytes(d[i].Amount)
+		amt := NewAmount(0)
+		amt = &Amount{*amt.Int.SetBytes(d[i].Amount)}
 
-		coin := Coin{Amount: amt}
-		coin.Currency.Name = d[i].CurName
-		coin.Currency.Chain = d[i].CurChain
-		coin.Currency.Decimal = d[i].CurDecimal
+		coin := Coin{}
+		err := coin.SetData(d[i])
+		if err != nil {
+			return err
+		}
 
 		b.Amounts[coin.Currency.StringKey()] = coin
 	}

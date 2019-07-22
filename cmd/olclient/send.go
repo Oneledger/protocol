@@ -15,9 +15,12 @@ Copyright 2017 - 2019 OneLedger
 package main
 
 import (
+	"errors"
+	"strconv"
+
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/client"
-	"github.com/Oneledger/protocol/data"
+	"github.com/Oneledger/protocol/data/balance"
 	"github.com/spf13/cobra"
 	ctypes "github.com/tendermint/tendermint/rpc/core/types"
 )
@@ -28,7 +31,38 @@ var sendCmd = &cobra.Command{
 	Run:   IssueRequest,
 }
 
-var sendargs *client.SendArguments = &client.SendArguments{}
+type SendArguments struct {
+	Party        []byte `json:"party"`
+	CounterParty []byte `json:"counterParty"`
+	Amount       string `json:"amount"`
+	Currency     string `json:"currency"`
+	Fee          string `json:"fee"`
+	Gas          int64  `json:"gas"`
+}
+
+func (args *SendArguments) ClientRequest(currencies *balance.CurrencyList) (client.SendTxRequest, error) {
+	c, ok := currencies.GetCurrencyByName(args.Currency)
+	if !ok {
+		return client.SendTxRequest{}, errors.New("currency not support:" + args.Currency)
+	}
+	f, err := strconv.ParseFloat(args.Amount, 64)
+	if err != nil {
+		return client.SendTxRequest{}, err
+	}
+	amt := c.NewCoinFromFloat64(f).Amount
+	olt, _ := currencies.GetCurrencyByName("OLT")
+	fee, err := strconv.ParseFloat(args.Fee, 64)
+	feeAmt := olt.NewCoinFromFloat64(fee).Amount
+	return client.SendTxRequest{
+		From:   args.Party,
+		To:     args.CounterParty,
+		Amount: action.Amount{Currency: args.Currency, Value: *amt},
+		Fee:    action.Amount{Currency: "OLT", Value: *feeAmt},
+		Gas:    args.Gas,
+	}, nil
+}
+
+var sendargs = &SendArguments{}
 
 func init() {
 	RootCmd.AddCommand(sendCmd)
@@ -36,37 +70,39 @@ func init() {
 	// Transaction Parameters
 	sendCmd.Flags().BytesHexVar(&sendargs.Party, "party", []byte{}, "send sender")
 	sendCmd.Flags().BytesHexVar(&sendargs.CounterParty, "counterparty", []byte{}, "send recipient")
-	sendCmd.Flags().StringVar(&sendargs.AmountStr, "amount", "0.0", "specify an amount")
-	sendCmd.Flags().StringVar(&sendargs.CurrencyStr, "currency", "OLT", "the currency")
-	sendCmd.Flags().StringVar(&sendargs.FeeStr, "fee", "0.0", "include a fee in OLT")
+	sendCmd.Flags().StringVar(&sendargs.Amount, "amount", "0", "specify an amount")
+	sendCmd.Flags().StringVar(&sendargs.Currency, "currency", "OLT", "the currency")
+	sendCmd.Flags().StringVar(&sendargs.Fee, "fee", "0", "include a fee in OLT")
 }
 
 // IssueRequest sends out a sendTx to all of the nodes in the chain
 func IssueRequest(cmd *cobra.Command, args []string) {
 
 	ctx := NewContext()
-
-	sendargs.Amount = action.Amount{sendargs.CurrencyStr, sendargs.AmountStr}
-	sendargs.Fee = action.Amount{"OLT", sendargs.FeeStr}
-
-	// Create message
-	resp := &data.Response{}
-	err := ctx.clCtx.Query("server.SendTx", *sendargs, resp)
+	fullnode := ctx.clCtx.FullNodeClient()
+	currencies, err := fullnode.ListCurrencies()
 	if err != nil {
-		ctx.logger.Error("error executing SendTx", err)
+		ctx.logger.Error("failed to get currencies", err)
 		return
 	}
-
-	packet := resp.Data
-	if packet == nil {
-		ctx.logger.Error("Error in sending ", resp.ErrorMsg)
+	// Create message
+	req, err := sendargs.ClientRequest(currencies.Currencies.GetCurrencyList())
+	if err != nil {
+		ctx.logger.Error("failed to get request", err)
 		return
 	}
+	reply, err := fullnode.SendTx(req)
+	if err != nil {
+		ctx.logger.Error("failed to create SendTx", err)
+		return
+	}
+	packet := reply.RawTx
 
 	result, err := ctx.clCtx.BroadcastTxCommit(packet)
 	if err != nil {
 		ctx.logger.Error("error in BroadcastTxCommit", err)
 	}
+
 	BroadcastStatus(ctx, result)
 }
 

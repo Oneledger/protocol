@@ -23,14 +23,10 @@ import (
 	"sync"
 	"time"
 
+	"github.com/Oneledger/protocol/data/balance"
+
 	"github.com/tendermint/tendermint/crypto/ed25519"
 
-	"github.com/Oneledger/protocol/serialize"
-
-	"github.com/Oneledger/protocol/action"
-
-	"github.com/Oneledger/protocol/client"
-	"github.com/Oneledger/protocol/data"
 	"github.com/Oneledger/protocol/data/accounts"
 	"github.com/Oneledger/protocol/data/chain"
 	"github.com/Oneledger/protocol/data/keys"
@@ -87,21 +83,27 @@ func loadTest(_ *cobra.Command, _ []string) {
 	// create vars for concurrency management
 	stopChan := make(chan bool, loadTestArgs.threads)
 	waiter := sync.WaitGroup{}
-	counterChan := make(chan int)
+	counterChan := make(chan int, loadTestArgs.threads)
 
 	// spawn a goroutine to handle sigterm and max transactions
 	waiter.Add(1)
-	go handleSigTerm(c, counterChan, stopChan, loadTestArgs.threads, loadTestArgs.maxTx, &waiter)
+	counter := 0
+	go handleSigTerm(c, counterChan, stopChan, loadTestArgs.threads, loadTestArgs.maxTx, &waiter, &counter)
+
+	fullnode := ctx.clCtx.FullNodeClient()
+	defer fullnode.Close()
+	currencies, err := fullnode.ListCurrencies()
+	if err != nil {
+		ctx.logger.Error("failed to get currencies", err)
+		return
+	}
+	fmt.Printf("currencies:::::: %#v", currencies)
 
 	// get address of the node
-	req := data.NewRequestFromData("server.NodeAddress", nil)
-	resp := &data.Response{}
-	err := ctx.clCtx.Query("server.NodeAddress", *req, resp)
+	nodeAddress, err := fullnode.NodeAddress()
 	if err != nil {
 		ctx.logger.Fatal("error getting node address", err)
 	}
-
-	var nodeAddress = keys.Address(resp.Data)
 
 	// start threads
 	for i := 0; i < loadTestArgs.threads; i++ {
@@ -122,19 +124,13 @@ func loadTest(_ *cobra.Command, _ []string) {
 		}
 
 		thLogger.Infof("creating account %#v", acc)
-		resp := &data.Response{}
-		err = ctx.clCtx.Query("server.AddAccount", acc, resp) // create account on node
+		reply, err := fullnode.AddAccount(acc)
 		if err != nil {
 			thLogger.Error(accName, "error creating account", err)
 			return
 		}
 
-		var accRead = &accounts.Account{}
-		err = serialize.GetSerializer(serialize.CLIENT).Deserialize(resp.Data, &accRead)
-		if err != nil {
-			thLogger.Error("error de-serializing account data", err)
-			return
-		}
+		accRead := reply.Account
 
 		// print details
 		thLogger.Infof("Created account successfully: %#v", accRead)
@@ -146,7 +142,7 @@ func loadTest(_ *cobra.Command, _ []string) {
 			waitDuration := getWaitDuration(loadTestArgs.interval)
 
 			for true {
-				doSendTransaction(ctx, i, &acc, nodeAddress, loadTestArgs.randomRecv) // send OLT to temp account
+				doSendTransaction(ctx, i, &acc, nodeAddress, loadTestArgs.randomRecv, currencies.Currencies) // send OLT to temp account
 				counterChan <- 1
 
 				select {
@@ -163,11 +159,18 @@ func loadTest(_ *cobra.Command, _ []string) {
 
 	// wait for all threads to close through sigterm; indefinitely
 	waiter.Wait()
+
+	// print stats
+	fmt.Println("####################################################################")
+	fmt.Println("################        Terminating load test        ###############")
+	fmt.Println("####################################################################")
+	fmt.Printf("################       Messages sent: % 9d      ###############\n", counter)
+	fmt.Println("####################################################################")
 }
 
 // doSendTransaction takes in an account and currency object and sends random amounts of coin from the
 // node account. It prints any errors to ctx.logger and returns
-func doSendTransaction(ctx *Context, threadNo int, acc *accounts.Account, nodeAddress keys.Address, randomRev bool) {
+func doSendTransaction(ctx *Context, threadNo int, acc *accounts.Account, nodeAddress keys.Address, randomRev bool, currencies balance.Currencies) {
 	defer func() {
 		if r := recover(); r != nil {
 			fmt.Println("panic in doSendTransaction: thread", threadNo, r)
@@ -176,10 +179,9 @@ func doSendTransaction(ctx *Context, threadNo int, acc *accounts.Account, nodeAd
 
 	// generate a random amount
 	r := rand.New(rand.NewSource(time.Now().UnixNano()))
-	amt := r.Float64() * 10.0 // amount is a random float between [0, 10)
-
+	num := r.Float64() * 10 // amount is a random float between [0, 1000)
 	// populate send arguments
-	sendArgsLocal := client.SendArguments{}
+	sendArgsLocal := SendArguments{}
 	sendArgsLocal.Party = []byte(nodeAddress)
 	if randomRev {
 		recv := ed25519.GenPrivKey().PubKey().Address()
@@ -189,21 +191,28 @@ func doSendTransaction(ctx *Context, threadNo int, acc *accounts.Account, nodeAd
 	}
 
 	// set amount and fee
-	sendArgsLocal.Amount = *action.NewAmount("OLT", strconv.FormatFloat(amt, 'f', 0, 64))
-	sendArgsLocal.Fee = *action.NewAmount("OLT", strconv.FormatFloat(amt/100, 'f', 0, 64))
+	sendArgsLocal.Amount = strconv.FormatFloat(num, 'f', 0, 64)
+	sendArgsLocal.Fee = strconv.FormatFloat(num/100, 'f', 0, 64)
+	sendArgsLocal.Currency = "OLT"
 
 	// Create message
-	resp := &data.Response{}
-	err := ctx.clCtx.Query("server.SendTx", sendArgsLocal, resp)
+	fullnode := ctx.clCtx.FullNodeClient()
+
+	req, err := sendArgsLocal.ClientRequest(currencies.GetCurrencyList())
+	if err != nil {
+		ctx.logger.Error("failed to get request", err)
+	}
+
+	reply, err := fullnode.SendTx(req)
 	if err != nil {
 		ctx.logger.Error(acc.Name, "error executing SendTx", err)
 		return
 	}
 
 	// check packet
-	packet := resp.Data
+	packet := reply.RawTx
 	if packet == nil {
-		ctx.logger.Error(acc.Name, "Error in sending ", resp.ErrorMsg)
+		ctx.logger.Error(acc.Name, "error in creating new SendTx but server responded with no error")
 		return
 	}
 
@@ -225,15 +234,12 @@ func getWaitDuration(interval int) time.Duration {
 // all threads and proceeds to shut down the main thread. If it catches a SIGTERM or a CTRL C it similarly shuts down
 // gracefully. This function is blocking and is called as a go routine.
 func handleSigTerm(c chan os.Signal, counterChan chan int, stopChan chan bool,
-	n int, maxTx int, waiter *sync.WaitGroup) {
-
-	// keeps a running count of messages sent
-	msgCounter := 0
+	n int, maxTx int, waiter *sync.WaitGroup, cnt *int) {
 
 	// indefinite loop listens over the counter and os.Signal for interrupt signal
 	for true {
 		select {
-		case sig := <-c:
+		case <-c:
 			// signal the goroutines to stop
 			for i := 0; i < n; i++ {
 				stopChan <- true
@@ -241,23 +247,14 @@ func handleSigTerm(c chan os.Signal, counterChan chan int, stopChan chan bool,
 			// wait for the goroutines to stop
 			time.Sleep(time.Second)
 
-			// print stats
-			fmt.Println("####################################################################")
-			fmt.Println("################        Terminating load test        ###############")
-			fmt.Println("####################################################################")
-			fmt.Printf("################       Messages sent: % 9d      ###############\n", msgCounter)
-			fmt.Println("####################################################################")
-
-			sig.String()
-
 			waiter.Done()
 
 		case <-counterChan:
 			// increment counter
-			msgCounter++
+			*cnt++
 
 			// send shutdown signal if max no. of transactions is reached
-			if msgCounter >= maxTx {
+			if *cnt >= maxTx {
 				c <- os.Interrupt
 			}
 		}

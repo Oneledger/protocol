@@ -17,36 +17,40 @@ package balance
 
 import (
 	"errors"
-	"math/big"
 
 	"github.com/Oneledger/protocol/serialize"
 )
 
-type coinData struct {
-	Currency Currency
-	Amount   []byte
+type CoinData struct {
+	Currency Currency `json:"currency"`
+	Amount   []byte   `json:"amount"`
 }
 
 func (c *Coin) NewDataInstance() serialize.Data {
-	return &coinData{}
+	return &CoinData{}
 }
 
 func (c *Coin) Data() serialize.Data {
-	return &coinData{c.Currency, c.Amount.Bytes()}
+	b, _ := c.Amount.MarshalJSON()
+	return &CoinData{c.Currency, b}
 }
 
 func (c *Coin) SetData(a interface{}) error {
-	cd, ok := a.(*coinData)
+	cd, ok := a.(*CoinData)
 	if !ok {
-		return errors.New("Wrong data")
+		return errors.New("Wrong coin data")
 	}
 
-	amt := new(big.Int)
+	amt := &Amount{}
+	err := amt.UnmarshalJSON(cd.Amount)
+	if err != nil {
+		return err
+	}
 	c.Currency = cd.Currency
-	c.Amount = amt.SetBytes(cd.Amount)
+	c.Amount = amt
 	return nil
 }
 
-func (ad *coinData) SerialTag() string {
+func (ad *CoinData) SerialTag() string {
 	return ""
 }

@@ -17,7 +17,7 @@ package main
 import (
 	"fmt"
 
-	"github.com/Oneledger/protocol/data"
+	"github.com/Oneledger/protocol/client"
 
 	"github.com/spf13/cobra"
 )
@@ -37,14 +37,12 @@ func init() {
 
 func showNodeID(_ *cobra.Command, _ []string) {
 	ctx := NewContext()
+	fullnode := ctx.clCtx.FullNodeClient()
 
-	req, _ := data.NewRequest("", map[string]interface{}{"showIP": showIP})
-	resp := &data.Response{}
-
-	err := ctx.clCtx.Query("server.NodeID", req, resp)
+	out, err := fullnode.NodeID(client.NodeIDRequest{ShouldShowIP: showIP})
 	if err != nil {
-		ctx.logger.Fatal("error getting nodes", err)
+		ctx.logger.Error("failed to get node ID", err)
+		return
 	}
-
-	fmt.Println(string(resp.Data))
+	fmt.Println(out)
 }

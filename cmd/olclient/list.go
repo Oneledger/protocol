@@ -17,8 +17,6 @@ package main
 import (
 	"fmt"
 
-	"github.com/Oneledger/protocol/data"
-	"github.com/Oneledger/protocol/serialize"
 	"github.com/spf13/cobra"
 )
 
@@ -46,26 +44,19 @@ func init() {
 
 // IssueRequest sends out a sendTx to all of the nodes in the chain
 func ListNode(cmd *cobra.Command, args []string) {
-
 	Ctx := NewContext()
+	fullnode := Ctx.clCtx.FullNodeClient()
 
-	req := data.NewRequestFromData("listAccounts", []byte{})
-	resp := &data.Response{}
-	err := Ctx.clCtx.Query("server.ListAccounts", req, resp)
+	out, err := fullnode.ListAccounts()
 	if err != nil {
 		logger.Error("error in getting all accounts", err)
 		return
 	}
 
-	var accs = make([]string, 0, 10)
-	err = serialize.GetSerializer(serialize.CLIENT).Deserialize(resp.Data, &accs)
-	if err != nil {
-		logger.Error("error deserializng", err)
-		return
-	}
+	accounts := out.Accounts
 
 	logger.Infof("Accounts on node: %s ", Ctx.cfg.Node.NodeName)
-	for _, a := range accs {
+	for _, a := range accounts {
 		fmt.Println(a)
 	}
 }

@@ -1,12 +1,15 @@
 package action
 
 import (
-	"bytes"
-	"fmt"
+	"encoding/hex"
 
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/serialize"
+	"github.com/pkg/errors"
+	"github.com/tendermint/tendermint/libs/common"
 )
+
+type MsgData []byte
 
 type Msg interface {
 	// return the necessary signers for the message, should have consistent order across the network
@@ -14,7 +17,11 @@ type Msg interface {
 
 	Type() Type
 
-	Bytes() []byte
+	Tags() common.KVPairs
+
+	Marshal() ([]byte, error)
+
+	Unmarshal([]byte) error
 }
 
 type Fee struct {
@@ -35,14 +42,14 @@ func (s Signature) Verify(msg []byte) bool {
 	return handler.VerifyBytes(msg, s.Signed)
 }
 
-type BaseTx struct {
-	Data       Msg         `json:"tx_data"`
-	Fee        Fee         `json:"fee"`
-	Signatures []Signature `json:"signatures"`
-	Memo       string      `json:"memo"`
+type RawTx struct {
+	Type Type    `json:"tx_type"`
+	Data MsgData `json:"tx_data"`
+	Fee  Fee     `json:"fee"`
+	Memo string  `json:"memo"`
 }
 
-func (t *BaseTx) Bytes() []byte {
+func (t *RawTx) RawBytes() []byte {
 	value, err := serialize.GetSerializer(serialize.NETWORK).Serialize(t)
 	if err != nil {
 		logger.Error("failed to serialize tx: ", t)
@@ -50,77 +57,34 @@ func (t *BaseTx) Bytes() []byte {
 	return value
 }
 
-func (t *BaseTx) Sign(ctx *Context) error {
-	addrs := t.Data.Signers()
-
-	if t.Signatures == nil {
-		t.Signatures = make([]Signature, len(addrs))
-	}
-
-	for i, addr := range addrs {
-		signed, err := sign(ctx, addr, t.Data.Bytes())
-		if err != nil {
-			return err
-		}
-		t.Signatures[i] = signed
-	}
-	return nil
+type SignedTx struct {
+	RawTx
+	Signatures []Signature `json:"signatures"`
 }
 
-func (t *BaseTx) SignWithAddress(ctx *Context, address Address) error {
-	addrs := t.Data.Signers()
-	if t.Signatures == nil {
-		t.Signatures = make([]Signature, len(addrs))
+func (t *SignedTx) SignedBytes() []byte {
+	value, err := serialize.GetSerializer(serialize.NETWORK).Serialize(t)
+	if err != nil {
+		logger.Error("failed to serialize tx: ", t)
 	}
-
-	for i, addr := range addrs {
-
-		if !bytes.Equal(addr, address) {
-			continue
-		}
-
-		signed, err := sign(ctx, addr, t.Data.Bytes())
-		if err != nil {
-			return err
-		}
-		t.Signatures[i] = signed
-	}
-	return nil
+	return value
 }
 
-func validateBasic(msg Msg, fee Fee, memo string, signatures []Signature) (bool, error) {
-	toVerify := (&BaseTx{msg, fee, nil, memo}).Bytes()
-	for i, s := range msg.Signers() {
+func ValidateBasic(data []byte, signerAddr []Address, signatures []Signature) (bool, error) {
+	for i, s := range signerAddr {
 		pkey := signatures[i].Signer
 		h, err := pkey.GetHandler()
 		if err != nil {
 			return false, ErrInvalidPubkey
 		}
 		if !h.Address().Equal(s) {
-			return false, ErrUnmatchSigner
+			return false, errors.Wrap(ErrUnmatchSigner, hex.EncodeToString(h.Address())+","+hex.EncodeToString(s))
 		}
 
-		if !h.VerifyBytes(toVerify, signatures[i].Signed) {
+		if !h.VerifyBytes(data, signatures[i].Signed) {
 			return false, ErrInvalidSignature
 		}
 	}
 
-	if !verifyMinimumFee(fee) {
-		return false, ErrInvalidFee
-	}
-
 	return true, nil
-}
-
-func sign(ctx *Context, address Address, msg []byte) (Signature, error) {
-	pubkey, signed, err := ctx.Accounts.SignWithAddress(msg, address.Bytes())
-	if err != nil {
-		return Signature{}, fmt.Errorf("failed to sign: %s", err)
-	}
-	return Signature{pubkey, signed}, nil
-}
-
-func verifyMinimumFee(fee Fee) bool {
-	//TODO: implement minimum fee check
-	return true
 }

@@ -13,6 +13,7 @@ import (
 	"syscall"
 
 	"github.com/Oneledger/protocol/app"
+	olnode "github.com/Oneledger/protocol/app/node"
 	"github.com/Oneledger/protocol/config"
 	"github.com/Oneledger/protocol/log"
 	"github.com/pkg/errors"
@@ -116,7 +117,7 @@ func StartNode(cmd *cobra.Command, args []string) error {
 		return errors.Wrap(err, "failed to initialize config")
 	}
 
-	appNodeContext, err := app.NewNodeContext(ctx.cfg)
+	appNodeContext, err := olnode.NewNodeContext(ctx.cfg)
 	if err != nil {
 		return errors.Wrap(err, "failed to create app's node context")
 	}

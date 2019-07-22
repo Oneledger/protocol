@@ -25,10 +25,10 @@ func subtestteardown(funName string) {
 func TestValidatorQueue_Len(t *testing.T) {
 	subtestsetup(t.Name())
 	defer subtestteardown(t.Name())
-	t.Run("run validator queue len fun", func(t *testing.T) {
+	t.Run("length should be 0", func(t *testing.T) {
 		assert.Equal(t, 0, Vq.Len())
 	})
-	t.Run("run validator queue len fun with actual item in it", func(t *testing.T) {
+	t.Run("length should be 3 when push 3 items in queue", func(t *testing.T) {
 		Vq.Push(vq1)
 		Vq.Push(vq2)
 		Vq.Push(vq3)
@@ -39,10 +39,10 @@ func TestValidatorQueue_Len(t *testing.T) {
 func TestValidatorQueue_Push(t *testing.T) {
 	subtestsetup(t.Name())
 	defer subtestteardown(t.Name())
-	t.Run("Before push", func(t *testing.T) {
+	t.Run("length should be 0 before push item", func(t *testing.T) {
 		assert.Equal(t, 0, Vq.Len())
 	})
-	t.Run("After push", func(t *testing.T) {
+	t.Run("length should be 3 after push item", func(t *testing.T) {
 		Vq.Push(vq1)
 		Vq.Push(vq2)
 		Vq.Push(vq3)
@@ -53,11 +53,11 @@ func TestValidatorQueue_Push(t *testing.T) {
 func TestValidatorQueue_Pop(t *testing.T) {
 	subtestsetup(t.Name())
 	defer subtestteardown(t.Name())
-	t.Run("pop empty validator queue", func(t *testing.T) {
+	t.Run("should return empty when pop item from an empty validator queue", func(t *testing.T) {
 		result := Vq.Pop()
 		assert.Empty(t, result)
 	})
-	t.Run("check if pop order is correct with push, pop, append, update fun", func(t *testing.T) {
+	t.Run("check if pop order is correct with push, pop, append, update", func(t *testing.T) {
 		Vq.append(vq1)
 		Vq.append(vq2)
 		Vq.append(vq3)

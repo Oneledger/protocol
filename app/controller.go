@@ -93,26 +93,26 @@ func (app *App) blockBeginner() blockBeginner {
 // mempool connection: for checking if transactions should be relayed before they are committed
 func (app *App) txChecker() txChecker {
 	return func(msg []byte) ResponseCheckTx {
-		tx := &action.BaseTx{}
+		tx := &action.SignedTx{}
 
 		err := serialize.GetSerializer(serialize.NETWORK).Deserialize(msg, tx)
 		if err != nil {
 			app.logger.Errorf("checkTx failed to deserialize msg: %s, error: %s ", msg, err)
 		}
 
-		txCtx := app.Context.Action()
+		txCtx := app.Context.Action(&app.header)
 
-		handler := txCtx.Router.Handler(tx.Data)
+		handler := txCtx.Router.Handler(tx.Type)
 
-		ok, err := handler.Validate(txCtx, tx.Data, tx.Fee, tx.Memo, tx.Signatures)
+		ok, err := handler.Validate(txCtx, *tx)
 		if err != nil {
-			app.logger.Debugf("Check Tx invalid: ", err.Error())
+			app.logger.Debug("Check Tx invalid: ", err.Error())
 			return ResponseCheckTx{
 				Code: getCode(ok).uint32(),
 				Log:  err.Error(),
 			}
 		}
-		ok, response := handler.ProcessCheck(txCtx, tx.Data, tx.Fee)
+		ok, response := handler.ProcessCheck(txCtx, tx.RawTx)
 
 		result := ResponseCheckTx{
 			Code:      getCode(ok).uint32(),
@@ -132,17 +132,17 @@ func (app *App) txChecker() txChecker {
 
 func (app *App) txDeliverer() txDeliverer {
 	return func(msg []byte) ResponseDeliverTx {
-		tx := &action.BaseTx{}
+		tx := &action.SignedTx{}
 
 		err := serialize.GetSerializer(serialize.NETWORK).Deserialize(msg, tx)
 		if err != nil {
 			app.logger.Errorf("deliverTx failed to deserialize msg: %s, error: %s ", msg, err)
 		}
-		txCtx := app.Context.Action()
+		txCtx := app.Context.Action(&app.header)
 
-		handler := txCtx.Router.Handler(tx.Data)
+		handler := txCtx.Router.Handler(tx.Type)
 
-		ok, response := handler.ProcessDeliver(txCtx, tx.Data, tx.Fee)
+		ok, response := handler.ProcessDeliver(txCtx, tx.RawTx)
 
 		result := ResponseDeliverTx{
 			Code:      getCode(ok).uint32(),
@@ -210,19 +210,21 @@ func (ah *appHash) hash() []byte {
 }
 
 func (app *App) getAppHash(commit bool) (version int64, hash []byte) {
-	var hashb, hashv []byte
-	var verb, verv int64
+	var hashb, hashv, hashd []byte
+	var verb, verv, verd int64
 	if commit {
 		hashb, verb = app.Context.balances.Commit()
 		hashv, verv = app.Context.validators.Commit()
+		hashd, verd = app.Context.domains.Commit()
 	} else {
 		hashb, verb = app.Context.balances.Hash, app.Context.balances.Version
 		hashv, verv = app.Context.validators.Hash, app.Context.validators.Version
+		hashd, verd = app.Context.domains.Hash, app.Context.domains.Version
 	}
 	apphash := &appHash{}
-	apphash.Hashes = append(apphash.Hashes, hashb, hashv)
+	apphash.Hashes = append(apphash.Hashes, hashb, hashv, hashd)
 
-	if verb == verv {
+	if verb == verv && verb == verd {
 		version = verb
 		if version > 1 {
 			hash = apphash.hash()
