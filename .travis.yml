@@ -26,7 +26,9 @@ before_script:
 - python3 -m venv env && source env/bin/activate 
 - pip3 install netaddr ipaddr ansible awscli --upgrade
 - aws secretsmanager get-secret-value --secret-id Travis_CI_Deploy_Key | jq -r '.SecretString' >> $TRAVIS_BUILD_DIR/id_rsa
+- export GITHUB_TOKEN=aws secretsmanager get-secret-value --secret-id Travis_CI_Github_Token | jq -c ".SecretString | fromjson.GIthub_Token"
 - chmod 600 $TRAVIS_BUILD_DIR/id_rsa && cat $TRAVIS_BUILD_DIR/id_rsa   
+- echo ${GITHUB_TOKEN}
 script:
 - cd $OLROOT/protocol && make fulltest utest
 - cd $OLROOT/protocol && make update install_c
