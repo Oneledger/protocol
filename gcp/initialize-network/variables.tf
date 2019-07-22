@@ -1,3 +1,7 @@
+variable "gce_ssh_user" {}
+variable "gce_ssh_pub_key_file" {
+  default = "~/.ssh/id_rsa.pub"
+}
 variable "name" {
     default = "devnet"
 }
