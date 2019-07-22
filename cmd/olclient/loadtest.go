@@ -83,13 +83,22 @@ func loadTest(_ *cobra.Command, _ []string) {
 	// create vars for concurrency management
 	stopChan := make(chan bool, loadTestArgs.threads)
 	waiter := sync.WaitGroup{}
-	counterChan := make(chan int)
+	counterChan := make(chan int, loadTestArgs.threads)
 
 	// spawn a goroutine to handle sigterm and max transactions
 	waiter.Add(1)
-	go handleSigTerm(c, counterChan, stopChan, loadTestArgs.threads, loadTestArgs.maxTx, &waiter)
+	counter := 0
+	go handleSigTerm(c, counterChan, stopChan, loadTestArgs.threads, loadTestArgs.maxTx, &waiter, &counter)
 
 	fullnode := ctx.clCtx.FullNodeClient()
+	defer fullnode.Close()
+	currencies, err := fullnode.ListCurrencies()
+	if err != nil {
+		ctx.logger.Error("failed to get currencies", err)
+		return
+	}
+	fmt.Printf("currencies:::::: %#v", currencies)
+
 	// get address of the node
 	nodeAddress, err := fullnode.NodeAddress()
 	if err != nil {
@@ -126,13 +135,6 @@ func loadTest(_ *cobra.Command, _ []string) {
 		// print details
 		thLogger.Infof("Created account successfully: %#v", accRead)
 		ctx.logger.Infof("Address for the account is: %s", acc.Address().Humanize())
-		fullnode := ctx.clCtx.FullNodeClient()
-		currencies, err := fullnode.ListCurrencies()
-		if err != nil {
-			ctx.logger.Error("failed to get currencies", err)
-			return
-		}
-		fmt.Printf("currencies:::::: %#v", currencies)
 
 		waiter.Add(1)
 		// start a thread to keep sending transactions after some interval
@@ -157,6 +159,13 @@ func loadTest(_ *cobra.Command, _ []string) {
 
 	// wait for all threads to close through sigterm; indefinitely
 	waiter.Wait()
+
+	// print stats
+	fmt.Println("####################################################################")
+	fmt.Println("################        Terminating load test        ###############")
+	fmt.Println("####################################################################")
+	fmt.Printf("################       Messages sent: % 9d      ###############\n", counter)
+	fmt.Println("####################################################################")
 }
 
 // doSendTransaction takes in an account and currency object and sends random amounts of coin from the
@@ -225,15 +234,12 @@ func getWaitDuration(interval int) time.Duration {
 // all threads and proceeds to shut down the main thread. If it catches a SIGTERM or a CTRL C it similarly shuts down
 // gracefully. This function is blocking and is called as a go routine.
 func handleSigTerm(c chan os.Signal, counterChan chan int, stopChan chan bool,
-	n int, maxTx int, waiter *sync.WaitGroup) {
-
-	// keeps a running count of messages sent
-	msgCounter := 0
+	n int, maxTx int, waiter *sync.WaitGroup, cnt *int) {
 
 	// indefinite loop listens over the counter and os.Signal for interrupt signal
 	for true {
 		select {
-		case sig := <-c:
+		case <-c:
 			// signal the goroutines to stop
 			for i := 0; i < n; i++ {
 				stopChan <- true
@@ -241,23 +247,14 @@ func handleSigTerm(c chan os.Signal, counterChan chan int, stopChan chan bool,
 			// wait for the goroutines to stop
 			time.Sleep(time.Second)
 
-			// print stats
-			fmt.Println("####################################################################")
-			fmt.Println("################        Terminating load test        ###############")
-			fmt.Println("####################################################################")
-			fmt.Printf("################       Messages sent: % 9d      ###############\n", msgCounter)
-			fmt.Println("####################################################################")
-
-			sig.String()
-
 			waiter.Done()
 
 		case <-counterChan:
 			// increment counter
-			msgCounter++
+			*cnt++
 
 			// send shutdown signal if max no. of transactions is reached
-			if msgCounter >= maxTx {
+			if *cnt >= maxTx {
 				c <- os.Interrupt
 			}
 		}
