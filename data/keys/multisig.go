@@ -126,7 +126,7 @@ func (m MultiSig) IsValid() bool {
 
 func (m MultiSig) Address() Address {
 	s := &MultiSig{m.Msg, m.M, m.Signers, nil}
-	b, _ := json.Marshal(s)
+	b := s.Bytes()
 	return utils.Hash(b)
 }
 
