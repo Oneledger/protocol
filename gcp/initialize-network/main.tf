@@ -33,6 +33,8 @@ module "network"{
 module "node"{
   source = "../modules/fullnode"
   name = "${var.name}"
+  gce_ssh_user= "${var.gce_ssh_user}"
+  gce_ssh_pub_key_file = "${var.gce_ssh_pub_key_file}"
   vmcount = "${var.vmcount}"
   subnets = "${module.network.subnets}"
   regions = "${var.regions}"
