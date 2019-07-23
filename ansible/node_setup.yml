@@ -156,8 +156,13 @@
   - name: clear persistent peers so it will connect with seed node instead
     lineinfile:
       path: "{{APP_HOME}}/config.toml"
-      regexp: 'persistent_peers'
-      line: "  persistent_peers = []"
+      regexp: ' {{item.regexp}}'
+      line: "  {{item.line}}"
+    with_items:
+    - { regexp: "pex = ", line: "pex = false"}
+    - { regexp: "persistent_peers = ", line: "persistent_peers = []"}
+    - { regexp: "create_empty_blocks = ", line: "create_empty_blocks = true"}
+    - { regexp: "create_empty_blocks_interval = ", line: "create_empty_blocks_interval = 10000"}
 # edit optimizd tindermint level configuration for distribution 
 - hosts: seed_node:validator_node
   remote_user: "{{remote_user}}"
@@ -171,7 +176,6 @@
       line: "  {{item.line}}"
     with_items:
     - { regexp: "log_output", line: "log_output = \"stdout\""}
-    - { regexp: "create_empty_blocks = ", line: "create_empty_blocks = false"}
     - { regexp: "index_tags = ", line: "index_tags = []"}
     - { regexp: "timeout_commit", line: "timeout_commit = 5000"}
     - { regexp: "db = ", line: "db = \"cleveldb\""}
@@ -200,6 +204,6 @@
       line: "  {{item.line}}"
     with_items:
     - { regexp: "rpc_address", line: "rpc_address = \"tcp://{{internal_ip}}:26604\""}
-    - { regexp: "sdk_address", line: "sdk_address = \"http://{{internal_ip}}:26602\""}
+    - { regexp: "sdk_address", line: "sdk_address = \"tcp://{{internal_ip}}:26602\""}
     - { regexp: "p2p_address = \"tcp://", line: "p2p_address = \"tcp://{{internal_ip}}:26605\""}
     - { regexp: "node_name", line: "node_name = \"{{node_name}}\""}

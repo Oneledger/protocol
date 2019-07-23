@@ -1,4 +1,6 @@
 variable "name" {}
+variable "gce_ssh_user" {}
+variable "gce_ssh_pub_key_file" {}
 variable "subnets" {
   default = []
 }
@@ -34,6 +36,9 @@ resource "google_compute_instance" "default" {
     access_config {
       nat_ip = "${element(google_compute_address.static-ips.*.address,count.index)}"
     }
+  }
+  metadata {
+    sshKeys = "${var.gce_ssh_user}:${file(var.gce_ssh_pub_key_file)}"
   }
 }
 
