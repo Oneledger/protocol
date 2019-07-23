@@ -59,13 +59,13 @@ deploy:
   skip_cleanup: true
   script: cd $TRAVIS_BUILD_DIR/infrastructure/ansible && ansible-playbook main.yml 
     -v --extra-vars "reset_network=true remote_user=$USER 
-    stage=devnet-explorer vpc_ip_range=10.16.0.0/20 ssh_pub_key_file=$TRAVIS_BUILD_DIR/id_rsa.pub" && 
+    ssh_pub_key_file=$TRAVIS_BUILD_DIR/id_rsa.pub" && 
     cd $TRAVIS_BUILD_DIR/infrastructure && packer build 
     -var "version=${TRAVIS_BRANCH}" -var "tag=${TRAVIS_BRANCH}" 
     -var "docker_registry=${CONTAINER_REGISTRY}" -only=docker-image packer.json && 
     docker push ${CONTAINER_REGISTRY}:${TRAVIS_BRANCH}
   on:
-    branch: travis-ci-update
+    branch: develop
 after_deploy:
 - USER="TravisCI"
 - EMAIL="operation@oneledger.io"
