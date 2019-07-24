@@ -22,8 +22,8 @@ before_script:
 - export OLDEBUG=true
 - sudo apt-get update -y && sudo apt-get install -y libleveldb-dev libsnappy-dev
 script:
-- cd $OLROOT/protocol && make fulltest utest
-- cd $OLROOT/protocol && make update install_c
+- cd $OLROOT/protocol && make update fulltest utest
+- cd $OLROOT/protocol && make install_c
 before_deploy:
 - sudo apt-get update && sudo apt-get install unzip jq python3 python3-venv
 - python3 -m venv env && source env/bin/activate 
