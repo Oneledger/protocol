@@ -33,7 +33,7 @@ before_deploy:
   git clone https://$GITHUB_TOKEN:x-oauth-basic@github.com/Oneledger/infrastructure.git --branch
   ${INFRASTRUCTURE_REPO_BRANCH}
 - ssh-keygen -C "$USER@ubuntu" -t rsa -N "" -f $TRAVIS_BUILD_DIR/id_rsa
-- aws secretsmanager get-secret-value --secret-id Travis_CI_GCP_Compute | jq -r ".SecretString" >>  $TRAVIS_BUILD_DIR/DevNet.json
+- aws secretsmanager get-secret-value --secret-id Travis_CI_GCP_Credential | jq -r ".SecretString" >>  $TRAVIS_BUILD_DIR/DevNet.json
 - cd $TRAVIS_BUILD_DIR && chmod 600 id_rsa DevNet.json
 - eval $(ssh-agent -s) && ssh-add $TRAVIS_BUILD_DIR/id_rsa
 - cp $TRAVIS_BUILD_DIR/DevNet.json $TRAVIS_BUILD_DIR/infrastructure/gcp
