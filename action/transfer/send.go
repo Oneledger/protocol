@@ -14,9 +14,9 @@ import (
 var _ action.Msg = &Send{}
 
 type Send struct {
-	From   action.Address
-	To     action.Address
-	Amount action.Amount
+	From   action.Address `json:"from"`
+	To     action.Address `json:"to"`
+	Amount action.Amount  `json:"amount"`
 }
 
 func (s Send) Marshal() ([]byte, error) {

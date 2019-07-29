@@ -19,10 +19,10 @@ import (
 var _ Ons = &DomainSale{}
 
 type DomainSale struct {
-	DomainName   string
-	OwnerAddress action.Address
-	Price        action.Amount
-	CancelSale   bool
+	DomainName   string         `json:"domainName"`
+	OwnerAddress action.Address `json:"ownerAddress"`
+	Price        action.Amount  `json:"price"`
+	CancelSale   bool           `json:"cancelSale"`
 }
 
 func (s DomainSale) Marshal() ([]byte, error) {

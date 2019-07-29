@@ -15,10 +15,10 @@ import (
 var _ Ons = &DomainCreate{}
 
 type DomainCreate struct {
-	Owner   action.Address
-	Account action.Address
-	Name    string
-	Price   action.Amount
+	Owner   action.Address `json:"owner"`
+	Account action.Address `json:"account"`
+	Name    string         `json:"name"`
+	Price   action.Amount  `json:"price"`
 }
 
 func (dc DomainCreate) Marshal() ([]byte, error) {

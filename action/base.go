@@ -25,8 +25,8 @@ type Msg interface {
 }
 
 type Fee struct {
-	Price Amount
-	Gas   int64
+	Price Amount `json:"price"`
+	Gas   int64  `json:"gas"`
 }
 
 type Signature struct {

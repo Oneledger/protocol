@@ -25,9 +25,9 @@ var _ Ons = &DomainSend{}
 // DomainSend is a struct which encapsulates information required in a send to domain transaction.
 // This is struct is serialized according to network strategy before sending over network.
 type DomainSend struct {
-	From       action.Address
-	DomainName string
-	Amount     action.Amount
+	From       action.Address `json:"from"`
+	DomainName string         `json:"domainName"`
+	Amount     action.Amount  `json:"amount"`
 }
 
 func (s DomainSend) Marshal() ([]byte, error) {
