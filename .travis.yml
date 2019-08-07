@@ -82,6 +82,7 @@ after_deploy:
 - git remote
 - git config user.email ${EMAIL}
 - git config user.name ${USER}
+- cd ${GIT_COMMIT_PATH} && sed -i "s/pex.*/pex = true/" config.toml # tempopary fix, remove after next infrastructure release 
 - cd ${GIT_COMMIT_PATH} && git add config.toml genesis.json
 - git commit -m "${MESSAGE}"
 - git push "https://${GITHUB_TOKEN}@${GH_REPO}" ${GENESIS_REPO_BRANCH} > /dev/null 2>&1
