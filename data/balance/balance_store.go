@@ -25,12 +25,16 @@ var ErrNoBalanceFoundForThisAddress = errors.New("no balance found for the addre
 
 type Store struct {
 	*storage.ChainState
+	prefix []byte
 }
 
-func NewStore(name, dbDir, configDB string, typ storage.StorageType) *Store {
-	cs := storage.NewChainState(name, dbDir, configDB, typ)
+func NewStore(name string, store *storage.ChainState) *Store {
+	//cs := storage.NewChainState(name, dbDir, configDB, typ)
 
-	return &Store{cs}
+	return &Store{
+		ChainState: store,
+		prefix:     []byte(name),
+	}
 }
 
 func (st *Store) Get(address []byte, lastCommit bool) (bal *Balance, err error) {
