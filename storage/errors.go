@@ -19,4 +19,5 @@ import "errors"
 var (
 	ErrNotFound  = errors.New("key not found")
 	ErrSetFailed = errors.New("failed to set data")
+	ErrExceedGasLimit = errors.New("gas exceeds limit")
 )
