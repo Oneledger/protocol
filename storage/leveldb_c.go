@@ -28,7 +28,7 @@ func init() {
 	// log.Info("Node running with cleveldb support...")
 }
 
-func getDatabase(name, dbDir, configDB string) (db.DB, error) {
+func GetDatabase(name, dbDir, configDB string) (db.DB, error) {
 
 	if configDB == "cleveldb" {
 		log.Info("Getting cleveldb...")

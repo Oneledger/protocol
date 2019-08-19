@@ -78,7 +78,15 @@ type GasChainState struct {
 	GasCalculator
 }
 
-func (g *GasChainState) Set(key, value []byte) error {
+func NewGasChainState(cs *ChainState, gc GasCalculator) *GasChainState {
+
+	return &GasChainState{
+		ChainState:    cs,
+		GasCalculator: gc,
+	}
+}
+
+func (g *GasChainState) Set(key StoreKey, value []byte) error {
 	ok := g.GasCalculator.Consume(Gas(1), WRITEFLAT, false)
 	if !ok {
 		return ErrExceedGasLimit
@@ -91,15 +99,18 @@ func (g *GasChainState) Set(key, value []byte) error {
 	return nil
 }
 
-func (g *GasChainState) Get(key StoreKey, lastCommit bool) []byte {
+func (g *GasChainState) Get(key StoreKey) ([]byte, error) {
 	ok := g.GasCalculator.Consume(Gas(1), READFLAT, false)
 	if !ok {
-		log.Error(ErrExceedGasLimit.Error())
-		return nil
+		//log.Error(ErrExceedGasLimit.Error())
+		return nil, ErrExceedGasLimit
 	}
-	value := g.ChainState.Get(key, lastCommit)
+	value, err := g.ChainState.Get(key)
+	if err != nil {
+		return nil, err
+	}
 	ok = g.GasCalculator.Consume(Gas(len(value)), READBYTES, true)
-	return value
+	return value, nil
 }
 
 func (g *GasChainState) Exists(key StoreKey) bool {
@@ -112,12 +123,11 @@ func (g *GasChainState) Exists(key StoreKey) bool {
 	return exist
 }
 
-func (g *GasChainState) Remove(key []byte) ([]byte, bool) {
+func (g *GasChainState) Delete(key StoreKey) (bool, error) {
 	ok := g.GasCalculator.Consume(Gas(1), DELETE, false)
 	if !ok {
 		log.Error(ErrExceedGasLimit.Error())
-		return nil, false
+		return false, ErrExceedGasLimit
 	}
-	value, ok := g.ChainState.Remove(key)
-	return value, ok
+	return g.ChainState.Delete(key)
 }

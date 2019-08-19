@@ -24,21 +24,24 @@ import (
 var ErrNoBalanceFoundForThisAddress = errors.New("no balance found for the address")
 
 type Store struct {
-	*storage.ChainState
+	State  *storage.State
 	prefix []byte
 }
 
-func NewStore(name string, store *storage.ChainState) *Store {
-	//cs := storage.NewChainState(name, dbDir, configDB, typ)
-
+func NewStore(prefix string, state *storage.State) *Store {
 	return &Store{
-		ChainState: store,
-		prefix:     []byte(name),
+		State:  state,
+		prefix: []byte(prefix),
 	}
 }
 
-func (st *Store) Get(address []byte, lastCommit bool) (bal *Balance, err error) {
-	dat := st.ChainState.Get(storage.StoreKey(address), lastCommit)
+func (st *Store) WithGas(gc storage.GasCalculator) *Store {
+	st.State = st.State.WithGas(gc)
+	return st
+}
+
+func (st *Store) Get(address []byte) (bal *Balance, err error) {
+	dat, _ := st.State.Get(storage.StoreKey(address))
 
 	if len(dat) == 0 {
 		err = ErrNoBalanceFoundForThisAddress
@@ -55,29 +58,29 @@ func (st *Store) Set(address keys.Address, balance Balance) error {
 		return err
 	}
 
-	err = st.ChainState.Set(storage.StoreKey(address), dat)
+	err = st.State.Set(storage.StoreKey(address), dat)
 
 	return err
 }
 
-func (st *Store) FindAll() map[string]*Balance {
-	balMap := make(map[string]*Balance)
-
-	pSzlr := serialize.GetSerializer(serialize.PERSISTENT)
-	for key, dat := range st.ChainState.FindAll() {
-		bal := &Balance{}
-		var err error
-		err = pSzlr.Deserialize(dat, bal)
-		if err != nil {
-			logger.Error("error in deserializing balance", "key", key)
-		}
-
-		balMap[key] = bal
-	}
-
-	return balMap
-}
+//func (st *Store) FindAll() map[string]*Balance {
+//	balMap := make(map[string]*Balance)
+//
+//	pSzlr := serialize.GetSerializer(serialize.PERSISTENT)
+//	for key, dat := range st.State.FindAll() {
+//		bal := &Balance{}
+//		var err error
+//		err = pSzlr.Deserialize(dat, bal)
+//		if err != nil {
+//			logger.Error("error in deserializing balance", "key", key)
+//		}
+//
+//		balMap[key] = bal
+//	}
+//
+//	return balMap
+//}
 
 func (st *Store) Exists(address keys.Address) bool {
-	return st.ChainState.Exists(storage.StoreKey(address))
+	return st.State.Exists(storage.StoreKey(address))
 }

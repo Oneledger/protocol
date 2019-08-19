@@ -68,7 +68,7 @@ func newKeyValue(name, dbDir, configDB string, newType StorageType) *KeyValue {
 		}
 
 	case PERSISTENT:
-		storage, err := getDatabase(name, dbDir, configDB)
+		storage, err := GetDatabase(name, dbDir, configDB)
 		if err != nil {
 			log.Error("Database create failed", "err", err)
 			panic("Can't create a database " + dbDir + "/" + name)

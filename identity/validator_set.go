@@ -11,25 +11,27 @@ import (
 )
 
 type ValidatorStore struct {
-	store *storage.GasChainState
+	prefix    []byte
+	store     *storage.State
 	proposer  keys.Address
 	queue     ValidatorQueue
 	byzantine []Validator
 }
 
-func NewValidatorStore(cfg config.Server, dbPath string, dbType string) *ValidatorStore {
-	store := storage.NewChainState("validators", dbPath, dbType, storage.PERSISTENT)
-	gasStore := storage.GasChainState{
-		ChainState: store,
-		GasCalculator: storage.NewGasCalculator(storage.Gas(100)),// TODO: limit read from config file
-	}
+func NewValidatorStore(prefix string, cfg config.Server, state *storage.State) *ValidatorStore {
 	// TODO: get the genesis validators when start the node
 	return &ValidatorStore{
-		store: &gasStore,
-		proposer:   []byte(nil),
-		queue:      ValidatorQueue{PriorityQueue: make(utils.PriorityQueue, 0, 100)},
-		byzantine:  make([]Validator, 0),
+		prefix:    []byte(prefix),
+		store:     state,
+		proposer:  []byte(nil),
+		queue:     ValidatorQueue{PriorityQueue: make(utils.PriorityQueue, 0, 100)},
+		byzantine: make([]Validator, 0),
 	}
+}
+
+func (vs *ValidatorStore) WithGas(gc storage.GasCalculator) *ValidatorStore {
+	vs.store = vs.store.WithGas(gc)
+	return vs
 }
 
 func (vs *ValidatorStore) Init(req types.RequestInitChain, currencies *balance.CurrencyList) (types.ValidatorUpdates, error) {
@@ -70,9 +72,9 @@ func (vs *ValidatorStore) Init(req types.RequestInitChain, currencies *balance.C
 }
 
 // setup the validators according to begin block
-func (vs *ValidatorStore) Set(req types.RequestBeginBlock) error {
+func (vs *ValidatorStore) Setup(req types.RequestBeginBlock) error {
 	vs.proposer = req.Header.GetProposerAddress()
-	err := updateValidatorSet(vs.store.ChainState, req.LastCommitInfo.Votes)
+	err := updateValidatorSet(vs.store, req.LastCommitInfo.Votes)
 	if err != nil {
 		return errors.Wrapf(err, "height=%d", req.Header.Height)
 	}
@@ -124,7 +126,7 @@ func (vs *ValidatorStore) GetValidatorSet() ([]Validator, error) {
 	return validatorSet, nil
 }
 
-func updateValidatorSet(store *storage.ChainState, votes []types.VoteInfo) error {
+func updateValidatorSet(store *storage.State, votes []types.VoteInfo) error {
 
 	for _, v := range votes {
 		addr := v.Validator.GetAddress()
@@ -151,7 +153,7 @@ func (vs *ValidatorStore) HandleStake(apply Stake) error {
 		}
 		// push the new validator to queue
 	} else {
-		value := vs.store.Get(apply.ValidatorAddress.Bytes(), false)
+		value, _ := vs.store.Get(apply.ValidatorAddress.Bytes())
 		if value == nil {
 			return errors.New("failed to get validator from store")
 		}
@@ -188,7 +190,7 @@ func makingslash(vs *ValidatorStore, evidences []types.Evidence) []Validator {
 	remove := make([]Validator, 0)
 	for _, evidence := range evidences {
 		if vs.store.Exists(evidence.Validator.Address) {
-			value := vs.store.Get(evidence.Validator.GetAddress(), false)
+			value, _ := vs.store.Get(evidence.Validator.GetAddress())
 			if value == nil {
 				logger.Error("failed to get validator from store", evidence.Validator.Address)
 			}
@@ -211,7 +213,7 @@ func (vs *ValidatorStore) HandleUnstake(unstake Unstake) error {
 		return errors.New("address not exist in validator set")
 	}
 
-	value := vs.store.Get(unstake.Address.Bytes(), false)
+	value, _ := vs.store.Get(unstake.Address.Bytes())
 	if value == nil {
 		return errors.New("failed to get validator from store")
 	}
@@ -243,7 +245,7 @@ func (vs *ValidatorStore) GetEndBlockUpdate(ctx *ValidatorContext, req types.Req
 		cnt := 0
 		for vs.queue.Len() > 0 && cnt < 64 {
 			queued := vs.queue.Pop()
-			result := vs.store.Get(queued.Value(), true)
+			result, _ := vs.store.Get(queued.Value())
 			validator, err := (&Validator{}).FromBytes(result)
 			if err != nil {
 				logger.Error(err, "error deserialize validator")
@@ -251,9 +253,9 @@ func (vs *ValidatorStore) GetEndBlockUpdate(ctx *ValidatorContext, req types.Req
 			}
 			// purge validator who's power is 0
 			if validator.Power <= 0 {
-				_, ok := vs.store.Remove(validator.Address)
+				ok, err := vs.store.Delete(validator.Address.Bytes())
 				if !ok {
-					logger.Error("Failed to remove invalid validator from store")
+					logger.Error(err.Error())
 				}
 			}
 			validatorUpdates = append(validatorUpdates, types.ValidatorUpdate{

@@ -15,16 +15,24 @@ import (
 // DomainStore wraps the persistent storage and the serializer giving
 // handy methods to access Domain objects
 type DomainStore struct {
-	*storage.ChainState
-	szlr serialize.Serializer
+	State  *storage.State
+	szlr   serialize.Serializer
+	prefix []byte
 }
 
 // NewDomainStore creates a new storage object from filepath and other configurations
-func NewDomainStore(name, dbDir, configDB string, typ storage.StorageType) *DomainStore {
-	cs := storage.NewChainState(name, dbDir, configDB, typ)
+func NewDomainStore(prefix string, state *storage.State) *DomainStore {
 
-	return &DomainStore{cs,
-		serialize.GetSerializer(serialize.PERSISTENT)}
+	return &DomainStore{
+		State:  state,
+		szlr:   serialize.GetSerializer(serialize.PERSISTENT),
+		prefix: []byte(prefix),
+	}
+}
+
+func (ds *DomainStore) WithGas(gc storage.GasCalculator) *DomainStore {
+	ds.State = ds.State.WithGas(gc)
+	return ds
 }
 
 // Get is used to retrieve the domain object from the domain name
@@ -32,12 +40,12 @@ func (ds *DomainStore) Get(name string, lastCommit bool) (*Domain, error) {
 
 	key := keyFromName(name)
 
-	exists := ds.ChainState.Exists(key)
+	exists := ds.State.Exists(key)
 	if !exists {
 		return nil, ErrDomainNotFound
 	}
 
-	data := ds.ChainState.Get(key, lastCommit)
+	data, _ := ds.State.Get(key)
 
 	d := &Domain{}
 	err := ds.szlr.Deserialize(data, d)
@@ -56,7 +64,7 @@ func (ds *DomainStore) Set(d *Domain) error {
 		return err
 	}
 
-	err = ds.ChainState.Set(key, data)
+	err = ds.State.Set(key, data)
 	if err != nil {
 		return err
 	}
@@ -66,7 +74,7 @@ func (ds *DomainStore) Set(d *Domain) error {
 
 func (ds *DomainStore) Exists(name string) bool {
 	key := keyFromName(name)
-	return ds.ChainState.Exists(key)
+	return ds.State.Exists(key)
 }
 
 func keyFromName(name string) []byte {

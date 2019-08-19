@@ -30,6 +30,7 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/tendermint/tendermint/libs/common"
+	"github.com/tendermint/tendermint/libs/db"
 )
 
 // Ensure this App struct can control the underlying ABCI app
@@ -43,8 +44,10 @@ type App struct {
 	logger   *log.Logger
 	sdk      common.Service // Probably needs to be changed
 
-	header Header // Tendermint last header info
-	abci   *ABCI
+	header        Header // Tendermint last header info
+	gasCalculator storage.GasCalculator
+
+	abci *ABCI
 
 	node *consensus.Node
 }
@@ -285,14 +288,17 @@ type context struct {
 	rpc          *rpc.Server
 	actionRouter action.Router
 
-	balances *balance.Store
-
-	domains *ons.DomainStore
-
+	//db for chain state storage
+	db         db.DB
+	chainstate *storage.ChainState
+	balances   *balance.Store
+	domains    *ons.DomainStore
 	validators *identity.ValidatorStore // Set of validators currently active
-	accounts   accounts.Wallet
+
 	currencies *balance.CurrencyList
-	admin      storage.SessionedStorage
+	//storage which is not a chain state
+	accounts accounts.Wallet
+	admin    storage.SessionedStorage
 
 	logWriter io.Writer
 }
@@ -310,13 +316,21 @@ func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *node.Context) (
 	}
 
 	ctx.rpc = rpc.NewServer(logWriter)
-	ctx.validators = identity.NewValidatorStore(cfg, ctx.dbDir(), ctx.cfg.Node.DB)
-	ctx.actionRouter = action.NewRouter("action")
-	ctx.balances = balance.NewStore("balances", ctx.dbDir(), ctx.cfg.Node.DB, storage.PERSISTENT)
+
+	db, err := storage.GetDatabase("chainstate", ctx.dbDir(), ctx.cfg.Node.DB)
+	if err != nil {
+		return ctx, errors.Wrap(err, "initial db failed")
+	}
+	ctx.db = db
+	ctx.chainstate = storage.NewChainState("chainstate", db)
+	ctx.validators = identity.NewValidatorStore("v_", cfg, storage.NewState(ctx.chainstate))
+	ctx.balances = balance.NewStore("b_", storage.NewState(ctx.chainstate))
+	ctx.domains = ons.NewDomainStore("d_", storage.NewState(ctx.chainstate))
+
 	ctx.accounts = accounts.NewWallet(cfg, ctx.dbDir())
-	ctx.domains = ons.NewDomainStore("domains", ctx.dbDir(), ctx.cfg.Node.DB, storage.PERSISTENT)
 	ctx.admin = storage.NewStorageDB(storage.KEYVALUE, "admin", ctx.dbDir(), ctx.cfg.Node.DB)
 
+	ctx.actionRouter = action.NewRouter("action")
 	_ = transfer.EnableSend(ctx.actionRouter)
 	_ = staking.EnableApplyValidator(ctx.actionRouter)
 	_ = action_ons.EnableONS(ctx.actionRouter)
@@ -327,15 +341,15 @@ func (ctx context) dbDir() string {
 	return filepath.Join(ctx.cfg.RootDir(), ctx.cfg.Node.DBDir)
 }
 
-func (ctx *context) Action(header *Header) *action.Context {
+func (ctx *context) Action(header *Header, gc storage.GasCalculator) *action.Context {
 	actionCtx := action.NewContext(
 		ctx.actionRouter,
 		header,
 		ctx.accounts,
-		ctx.balances,
+		ctx.balances.WithGas(gc),
 		ctx.currencies,
-		ctx.validators,
-		ctx.domains,
+		ctx.validators.WithGas(gc),
+		ctx.domains.WithGas(gc),
 		log.NewLoggerWithPrefix(ctx.logWriter, "action"))
 
 	return actionCtx
@@ -381,7 +395,7 @@ func (ctx *context) Services() (service.Map, error) {
 
 // Close all things that need to be closed
 func (ctx *context) Close() {
-	closers := []closer{ctx.balances, ctx.accounts, ctx.rpc}
+	closers := []closer{ctx.db, ctx.accounts, ctx.rpc}
 	for _, closer := range closers {
 		closer.Close()
 	}

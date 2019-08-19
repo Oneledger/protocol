@@ -2,6 +2,9 @@ package app
 
 import (
 	"encoding/hex"
+	"math"
+
+	"github.com/Oneledger/protocol/storage"
 
 	"github.com/Oneledger/protocol/utils"
 
@@ -72,8 +75,16 @@ func (app *App) chainInitializer() chainInitializer {
 
 func (app *App) blockBeginner() blockBeginner {
 	return func(req RequestBeginBlock) ResponseBeginBlock {
+		limit := app.node.GenesisDoc().ConsensusParams.Block.MaxGas
+		gas := storage.Gas(0)
+		if limit < 0 {
+			gas = math.MaxUint64
+		} else {
+			gas = storage.Gas(uint64(limit))
+		}
+		app.gasCalculator = storage.NewGasCalculator(gas)
 		// update the validator set
-		err := app.Context.validators.Set(req)
+		err := app.Context.validators.Setup(req)
 		if err != nil {
 			app.logger.Error("validator set with error", err)
 		}
@@ -100,7 +111,7 @@ func (app *App) txChecker() txChecker {
 			app.logger.Errorf("checkTx failed to deserialize msg: %s, error: %s ", msg, err)
 		}
 
-		txCtx := app.Context.Action(&app.header)
+		txCtx := app.Context.Action(&app.header, app.gasCalculator)
 
 		handler := txCtx.Router.Handler(tx.Type)
 
@@ -138,7 +149,7 @@ func (app *App) txDeliverer() txDeliverer {
 		if err != nil {
 			app.logger.Errorf("deliverTx failed to deserialize msg: %s, error: %s ", msg, err)
 		}
-		txCtx := app.Context.Action(&app.header)
+		txCtx := app.Context.Action(&app.header, app.gasCalculator)
 
 		handler := txCtx.Router.Handler(tx.Type)
 
@@ -210,25 +221,10 @@ func (ah *appHash) hash() []byte {
 }
 
 func (app *App) getAppHash(commit bool) (version int64, hash []byte) {
-	var hashb, hashv, hashd []byte
-	var verb, verv, verd int64
 	if commit {
-		hashb, verb = app.Context.balances.Commit()
-		hashv, verv = app.Context.validators.Commit()
-		hashd, verd = app.Context.domains.Commit()
+		hash, version = app.Context.chainstate.Commit()
 	} else {
-		hashb, verb = app.Context.balances.Hash, app.Context.balances.Version
-		hashv, verv = app.Context.validators.Hash, app.Context.validators.Version
-		hashd, verd = app.Context.domains.Hash, app.Context.domains.Version
-	}
-	apphash := &appHash{}
-	apphash.Hashes = append(apphash.Hashes, hashb, hashv, hashd)
-
-	if verb == verv && verb == verd {
-		version = verb
-		if version > 1 {
-			hash = apphash.hash()
-		}
+		hash, version = app.Context.chainstate.Hash, app.Context.chainstate.Version
 	}
 	return
 }
