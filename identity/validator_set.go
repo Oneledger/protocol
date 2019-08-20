@@ -141,6 +141,7 @@ func (vs *ValidatorStore) HandleStake(apply Stake) error {
 			Address:      apply.ValidatorAddress,
 			StakeAddress: apply.StakeAddress,
 			PubKey:       apply.Pubkey,
+			ECDSAPubKey:  apply.ECDSAPubKey,
 			Power:        calculatePower(apply.Amount),
 			Name:         apply.Name,
 			Staking:      apply.Amount,

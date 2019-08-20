@@ -34,6 +34,8 @@ func (a Algorithm) MarshalText() ([]byte, error) {
 	switch a {
 	case ED25519, SECP256K1:
 		return []byte(a.Name()), nil
+	case UNKNOWN:
+		return []byte{}, nil
 	default:
 		return nil, errors.New("Unknown Algorithm specified")
 	}
@@ -42,7 +44,7 @@ func (a Algorithm) MarshalText() ([]byte, error) {
 func (a *Algorithm) UnmarshalText(name []byte) error {
 	algo := GetAlgorithmFromTmKeyName(string(name))
 	if algo == UNKNOWN {
-		return errors.New("unknown key algorithm")
+		return nil
 	}
 	*a = algo
 	return nil

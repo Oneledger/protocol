@@ -6,9 +6,14 @@
 package main
 
 import (
+	"encoding/base64"
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
+
+	"github.com/Oneledger/protocol/data/keys"
+	"github.com/tendermint/tendermint/crypto/secp256k1"
 
 	"github.com/Oneledger/protocol/config"
 	"github.com/Oneledger/protocol/consensus"
@@ -75,6 +80,7 @@ func runInitNode(cmd *cobra.Command, _ []string) error {
 	if err != nil {
 		return err
 	}
+	panic("asdf")
 	return initNode(ctx)
 }
 
@@ -127,6 +133,28 @@ func initNode(ctx *initContext) error {
 	// Make private validator file
 	pvFile := privval.GenFilePV(filepath.Join(configDir, consensus.PrivValidatorKeyFilename), filepath.Join(dataDir, consensus.PrivValidatorStateFilename))
 	pvFile.Save()
+
+	ecdsaPrivKey := secp256k1.GenPrivKey()
+	ecdsaPrivKeyBytes := base64.StdEncoding.EncodeToString([]byte(ecdsaPrivKey[:]))
+	_, err = keys.GetPrivateKeyFromBytes([]byte(ecdsaPrivKey[:]), keys.SECP256K1)
+	if err != nil {
+		return errors.Wrap(err, "error generating secp256k1 private key")
+	}
+
+	ecdsaFile := strings.Replace(consensus.PrivValidatorKeyFilename, ".json", "_ecdsa.json", 1)
+
+	f, err := os.Create(filepath.Join(configDir, ecdsaFile))
+	if err != nil {
+		return errors.Wrap(err, "failed to open file to write validator ecdsa private key")
+	}
+	n, err := f.Write([]byte(ecdsaPrivKeyBytes))
+	if err != nil && n != len(ecdsaPrivKeyBytes) {
+		return errors.Wrap(err, "failed to write validator ecdsa private key")
+	}
+	err = f.Close()
+	if err != nil && n != len(ecdsaPrivKeyBytes) {
+		return errors.Wrap(err, "failed to save validator ecdsa private key")
+	}
 
 	return nil
 }

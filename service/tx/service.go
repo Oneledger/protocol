@@ -1,8 +1,6 @@
 package tx
 
 import (
-	"fmt"
-
 	"github.com/Oneledger/protocol/action/staking"
 	"github.com/Oneledger/protocol/action/transfer"
 	"github.com/Oneledger/protocol/log"
@@ -146,6 +144,8 @@ func (svc *Service) ApplyValidator(args client.ApplyValidatorRequest, reply *cli
 		*pubkey = svc.nodeContext.ValidatorPubKey()
 	}
 
+	ecdsaPubKey := svc.nodeContext.ValidatorECDSAPubKey()
+
 	handler, err := pubkey.GetHandler()
 	if err != nil {
 
@@ -154,13 +154,14 @@ func (svc *Service) ApplyValidator(args client.ApplyValidatorRequest, reply *cli
 
 	addr := handler.Address()
 	apply := staking.ApplyValidator{
-		Address:          keys.Address(args.Address),
-		Stake:            action.Amount{Currency: "VT", Value: args.Amount},
-		NodeName:         args.Name,
-		ValidatorAddress: addr,
-		ValidatorPubKey:  *pubkey,
+		Address:              keys.Address(args.Address),
+		Stake:                action.Amount{Currency: "VT", Value: args.Amount},
+		NodeName:             args.Name,
+		ValidatorAddress:     addr,
+		ValidatorPubKey:      *pubkey,
+		ValidatorECDSAPubKey: ecdsaPubKey,
 	}
-	fmt.Println("apply validator", apply)
+
 	data, err := apply.Marshal()
 	if err != nil {
 		return err
