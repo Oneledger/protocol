@@ -94,7 +94,7 @@ func (sendTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (bool, action.R
 		return false, action.Response{Log: err.Error()}
 	}
 
-	b, _ := balances.Get(send.From.Bytes(), true)
+	b, _ := balances.Get(send.From.Bytes())
 	if b == nil {
 		return false, action.Response{Log: "failed to get balance for sender"}
 	}
@@ -123,7 +123,7 @@ func (sendTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, action
 		return false, action.Response{Log: err.Error()}
 	}
 
-	from, err := balances.Get(send.From.Bytes(), false)
+	from, err := balances.Get(send.From.Bytes())
 	if err != nil {
 		log := fmt.Sprint("Failed to get the balance of the owner ", send.From, "err", err)
 		return false, action.Response{Log: log}
@@ -143,7 +143,7 @@ func (sendTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, action
 	}
 
 	//change receiver balance
-	to, err := balances.Get(send.To.Bytes(), false)
+	to, err := balances.Get(send.To.Bytes())
 	if err != nil {
 		ctx.Logger.Error("failed to get the balance of the receipient", err)
 	}

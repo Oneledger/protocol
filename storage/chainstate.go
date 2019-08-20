@@ -67,6 +67,14 @@ func (state *ChainState) Set(key StoreKey, val []byte) error {
 	return nil
 }
 
+func (state *ChainState) GetIterator() Iteratable {
+	return state.Delivered.ImmutableTree
+}
+
+func (state *ChainState) IterateRange(start, end []byte, ascending bool, fn func(key, value []byte) bool) (stop bool) {
+	return state.Delivered.IterateRange(start, end, ascending, fn)
+}
+
 func (state *ChainState) Iterate(fn func(key []byte, value []byte) bool) (stopped bool) {
 	return state.Delivered.Iterate(fn)
 }
@@ -119,10 +127,6 @@ func (state *ChainState) Delete(key StoreKey) (bool, error) {
 		return false, err
 	}
 	return ok, nil
-}
-
-func (state *ChainState) GetIterator() *Iterator {
-	panic("implement me")
 }
 
 // TODO: Not sure about this, it seems to be Cosmos-sdk's way of getting arround the immutable copy problem...

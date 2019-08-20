@@ -96,7 +96,7 @@ func (vs *ValidatorStore) Setup(req types.RequestBeginBlock) error {
 	// initialize the queue for validators
 	vs.queue.PriorityQueue = make(utils.PriorityQueue, 0, 100)
 	i := 0
-	vs.Iterate(func(key, value []byte) bool {
+	vs.store.Iterate(func(key, value []byte) bool {
 		validator, err := (&Validator{}).FromBytes(value)
 		if err != nil {
 			return false
@@ -116,7 +116,7 @@ func (vs *ValidatorStore) Setup(req types.RequestBeginBlock) error {
 func (vs *ValidatorStore) GetValidatorSet() ([]Validator, error) {
 
 	validatorSet := make([]Validator, 0)
-	vs.Iterate(func(key, value []byte) bool {
+	vs.store.Iterate(func(key, value []byte) bool {
 		validator, err := (&Validator{}).FromBytes(value)
 		if err != nil {
 			return false
@@ -275,8 +275,4 @@ func (vs *ValidatorStore) GetEndBlockUpdate(ctx *ValidatorContext, req types.Req
 
 	// TODO : get the final updates from vs.cached
 	return validatorUpdates
-}
-
-func (vs *ValidatorStore) Commit() ([]byte, int64) {
-	return vs.Commit()
 }

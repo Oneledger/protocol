@@ -98,7 +98,7 @@ func (domainCreateTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (bool, 
 		return false, action.Response{Log: err.Error()}
 	}
 
-	b, err := ctx.Balances.Get(create.Owner.Bytes(), false)
+	b, err := ctx.Balances.Get(create.Owner.Bytes())
 	if err != nil {
 		return false, action.Response{Log: fmt.Sprintf("failed to get balance for owner: %s", hex.EncodeToString(create.Owner))}
 	}
@@ -127,7 +127,7 @@ func (domainCreateTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool
 		return false, action.Response{Log: err.Error()}
 	}
 
-	b, err := ctx.Balances.Get(create.Owner.Bytes(), false)
+	b, err := ctx.Balances.Get(create.Owner.Bytes())
 	if err != nil {
 		return false, action.Response{Log: fmt.Sprintf("failed to get balance for owner: %s", hex.EncodeToString(create.Owner))}
 	}
@@ -160,7 +160,7 @@ func (domainCreateTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool
 		return false, action.Response{Log: err.Error()}
 	}
 	ctx.Logger.Error(domain)
-	ctx.Logger.Error(ctx.Domains.Get(domain.Name, false))
+	ctx.Logger.Error(ctx.Domains.Get(domain.Name))
 	result := action.Response{
 		Tags: create.Tags(),
 	}

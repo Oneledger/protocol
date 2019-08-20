@@ -36,7 +36,7 @@ func (ds *DomainStore) WithGas(gc storage.GasCalculator) *DomainStore {
 }
 
 // Get is used to retrieve the domain object from the domain name
-func (ds *DomainStore) Get(name string, lastCommit bool) (*Domain, error) {
+func (ds *DomainStore) Get(name string) (*Domain, error) {
 	key := keyFromName(name)
 	key = append(ds.prefix, key...)
 	exists := ds.State.Exists(key)

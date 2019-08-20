@@ -54,6 +54,18 @@ type KeyValue struct {
 	sync.RWMutex
 }
 
+func (store KeyValue) Set(StoreKey, []byte) error {
+	panic("implement me")
+}
+
+func (store KeyValue) Delete(StoreKey) (bool, error) {
+	panic("implement me")
+}
+
+func (store KeyValue) GetIterator() Iteratable {
+	panic("implement me")
+}
+
 // newKeyValue initializes a new  key value store backed by persistent or a memory store which implements a session
 // interface for db transactions
 func newKeyValue(name, dbDir, configDB string, newType StorageType) *KeyValue {
@@ -137,10 +149,6 @@ func (store KeyValue) Close() {
 	}
 }
 
-// Close and reopen the datastore
-func (store KeyValue) Reopen() {
-}
-
 // FindAll of the keys in the database
 func (store KeyValue) FindAll() []StoreKey {
 	return store.list()
@@ -166,17 +174,6 @@ func (store KeyValue) Get(key StoreKey) ([]byte, error) {
 
 func (store KeyValue) Iterate(fn func(key []byte, value []byte) bool) (stopped bool) {
 	return store.tree.Iterate(fn)
-}
-
-func (store KeyValue) ReadAll() []IterItem {
-	a := make([]IterItem, 0, 100)
-
-	store.tree.Iterate(func(key []byte, value []byte) bool {
-		a = append(a, IterItem{key, value})
-		return false
-	})
-
-	return a
 }
 
 // List all of the keys
@@ -285,9 +282,17 @@ func (session KeyValueSession) Commit() bool {
 	return true
 }
 
+func (session KeyValueSession) GetIterator() Iteratable {
+	return session
+}
+
 // GetIterator dummy iterator
-func (session KeyValueSession) GetIterator() *Iterator {
-	return nil
+func (session KeyValueSession) Iterate(fn func(key []byte, value []byte) bool) (stopped bool) {
+	return session.store.Iterate(fn)
+}
+
+func (session KeyValueSession) IterateRange(start, end []byte, ascending bool, fn func(key, value []byte) bool) (stop bool) {
+	return session.store.GetIterator().IterateRange(start, end, ascending, fn)
 }
 
 // Rollback any changes since the last commit

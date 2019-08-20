@@ -30,8 +30,6 @@ type SessionedStorage interface {
 
 	BeginSession() Session
 	Close()
-	ReadAll() []IterItem
-	Iterate(fn func(key []byte, value []byte) bool) (stopped bool)
 }
 
 // Session defines a session-ed storage object of your choice
@@ -73,7 +71,13 @@ type Store interface {
 	Set(StoreKey, []byte) error
 	Exists(StoreKey) bool
 	Delete(StoreKey) (bool, error)
-	GetIterator() *Iterator
+	GetIterator() Iteratable
+}
+
+// The iteratable interface include the function for iteration
+type Iteratable interface {
+	Iterate(fn func(key, value []byte) bool) (stop bool)
+	IterateRange(start, end []byte, ascending bool, fn func(key, value []byte) bool) (stop bool)
 }
 
 // NewStorage initializes a non sessioned storage

@@ -127,7 +127,7 @@ func (domainSaleTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (bool, ac
 		return false, action.Response{Log: "invalid data"}
 	}
 
-	domain, err := ctx.Domains.Get(sale.DomainName, false)
+	domain, err := ctx.Domains.Get(sale.DomainName)
 	if err != nil {
 		if err == ons.ErrDomainNotFound {
 			return false, action.Response{Log: "domain not found"}
@@ -172,7 +172,7 @@ func (domainSaleTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, 
 		return false, action.Response{Log: "invalid data"}
 	}
 
-	domain, err := ctx.Domains.Get(sale.DomainName, false)
+	domain, err := ctx.Domains.Get(sale.DomainName)
 	if err != nil {
 		if err == ons.ErrDomainNotFound {
 			return false, action.Response{Log: "domain not found"}

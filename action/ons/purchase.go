@@ -93,7 +93,7 @@ func (domainPurchaseTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (bool
 		return false, action.Response{Log: err.Error()}
 	}
 
-	domain, err := ctx.Domains.Get(buy.Name, false)
+	domain, err := ctx.Domains.Get(buy.Name)
 	if err != nil {
 		if err == ons.ErrDomainNotFound {
 			return false, action.Response{Log: "domain not found"}
@@ -109,7 +109,7 @@ func (domainPurchaseTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (bool
 		return false, action.Response{Log: "offering price not enough"}
 	}
 
-	buyerBalance, err := ctx.Balances.Get(buy.Buyer.Bytes(), false)
+	buyerBalance, err := ctx.Balances.Get(buy.Buyer.Bytes())
 	if err != nil {
 		return false, action.Response{Log: errors.Wrap(err, "failed to get buyer balance").Error()}
 	}
@@ -130,7 +130,7 @@ func (domainPurchaseTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bo
 		return false, action.Response{Log: err.Error()}
 	}
 
-	domain, err := ctx.Domains.Get(buy.Name, false)
+	domain, err := ctx.Domains.Get(buy.Name)
 	if err != nil {
 		if err == ons.ErrDomainNotFound {
 			return false, action.Response{Log: "domain not found"}
@@ -147,7 +147,7 @@ func (domainPurchaseTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bo
 		return false, action.Response{Log: "offering price not enough"}
 	}
 
-	buyerBalance, err := ctx.Balances.Get(buy.Buyer.Bytes(), false)
+	buyerBalance, err := ctx.Balances.Get(buy.Buyer.Bytes())
 	if err != nil {
 		return false, action.Response{Log: errors.Wrap(err, "failed to get buyer balance").Error()}
 	}
@@ -157,7 +157,7 @@ func (domainPurchaseTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bo
 		return false, action.Response{Log: err.Error()}
 	}
 
-	salerBalance, err := ctx.Balances.Get(domain.OwnerAddress, false)
+	salerBalance, err := ctx.Balances.Get(domain.OwnerAddress)
 	if err != nil {
 		return false, action.Response{Log: errors.Wrap(err, "failed to get saler balance").Error()}
 	}
