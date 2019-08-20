@@ -21,7 +21,7 @@ type ValidatorStore struct {
 func NewValidatorStore(prefix string, cfg config.Server, state *storage.State) *ValidatorStore {
 	// TODO: get the genesis validators when start the node
 	return &ValidatorStore{
-		prefix:    []byte(prefix),
+		prefix:    []byte(prefix + storage.DB_PREFIX),
 		store:     state,
 		proposer:  []byte(nil),
 		queue:     ValidatorQueue{PriorityQueue: make(utils.PriorityQueue, 0, 100)},
@@ -62,7 +62,8 @@ func (vs *ValidatorStore) Init(req types.RequestInitChain, currencies *balance.C
 			// TODO: this should be change with @TODO99
 			Staking: currency.NewCoinFromInt(v.Power),
 		}
-		err = vs.store.Set(h.Address().Bytes(), validator.Bytes())
+		key := append(vs.prefix, h.Address().Bytes()...)
+		err = vs.store.Set(key, validator.Bytes())
 		if err != nil {
 			return req.Validators, errors.New("failed to add initial validators")
 		}
@@ -74,7 +75,7 @@ func (vs *ValidatorStore) Init(req types.RequestInitChain, currencies *balance.C
 // setup the validators according to begin block
 func (vs *ValidatorStore) Setup(req types.RequestBeginBlock) error {
 	vs.proposer = req.Header.GetProposerAddress()
-	err := updateValidatorSet(vs.store, req.LastCommitInfo.Votes)
+	err := updateValidatorSet(vs.prefix, vs.store, req.LastCommitInfo.Votes)
 	if err != nil {
 		return errors.Wrapf(err, "height=%d", req.Header.Height)
 	}
@@ -84,8 +85,8 @@ func (vs *ValidatorStore) Setup(req types.RequestBeginBlock) error {
 	vs.byzantine = make([]Validator, 0)
 	vs.byzantine = makingslash(vs, req.ByzantineValidators)
 	for _, remove := range vs.byzantine {
-
-		err := vs.store.Set(remove.Address.Bytes(), remove.Bytes())
+		key := append(vs.prefix, remove.Address.Bytes()...)
+		err := vs.store.Set(key, remove.Bytes())
 		if err != nil {
 			logger.Error("failed to set byzantine validator power")
 			// TODO: add fatal status for here after we decide what to do with byzantine validator
@@ -95,7 +96,7 @@ func (vs *ValidatorStore) Setup(req types.RequestBeginBlock) error {
 	// initialize the queue for validators
 	vs.queue.PriorityQueue = make(utils.PriorityQueue, 0, 100)
 	i := 0
-	vs.store.Iterate(func(key, value []byte) bool {
+	vs.Iterate(func(key, value []byte) bool {
 		validator, err := (&Validator{}).FromBytes(value)
 		if err != nil {
 			return false
@@ -115,7 +116,7 @@ func (vs *ValidatorStore) Setup(req types.RequestBeginBlock) error {
 func (vs *ValidatorStore) GetValidatorSet() ([]Validator, error) {
 
 	validatorSet := make([]Validator, 0)
-	vs.store.Iterate(func(key, value []byte) bool {
+	vs.Iterate(func(key, value []byte) bool {
 		validator, err := (&Validator{}).FromBytes(value)
 		if err != nil {
 			return false
@@ -126,11 +127,12 @@ func (vs *ValidatorStore) GetValidatorSet() ([]Validator, error) {
 	return validatorSet, nil
 }
 
-func updateValidatorSet(store *storage.State, votes []types.VoteInfo) error {
+func updateValidatorSet(prefix []byte, store *storage.State, votes []types.VoteInfo) error {
 
 	for _, v := range votes {
 		addr := v.Validator.GetAddress()
-		if !store.Exists(addr) {
+		key := append(prefix, addr...)
+		if !store.Exists(key) {
 			return errors.New("validator set not match to last commit")
 		}
 	}
@@ -140,8 +142,8 @@ func updateValidatorSet(store *storage.State, votes []types.VoteInfo) error {
 // handle stake action
 func (vs *ValidatorStore) HandleStake(apply Stake) error {
 	validator := &Validator{}
-
-	if !vs.store.Exists(apply.ValidatorAddress.Bytes()) {
+	key := append(vs.prefix, apply.ValidatorAddress.Bytes()...)
+	if !vs.store.Exists(key) {
 
 		validator = &Validator{
 			Address:      apply.ValidatorAddress,
@@ -153,7 +155,7 @@ func (vs *ValidatorStore) HandleStake(apply Stake) error {
 		}
 		// push the new validator to queue
 	} else {
-		value, _ := vs.store.Get(apply.ValidatorAddress.Bytes())
+		value, _ := vs.store.Get(key)
 		if value == nil {
 			return errors.New("failed to get validator from store")
 		}
@@ -171,8 +173,8 @@ func (vs *ValidatorStore) HandleStake(apply Stake) error {
 	}
 
 	value := (validator).Bytes()
-
-	err := vs.store.Set(validator.Address.Bytes(), value)
+	vkey := append(vs.prefix, validator.Address.Bytes()...)
+	err := vs.store.Set(vkey, value)
 	if err != nil {
 		return errors.Wrap(err, "failed to set validator for stake")
 	}
@@ -207,13 +209,13 @@ func makingslash(vs *ValidatorStore, evidences []types.Evidence) []Validator {
 
 func (vs *ValidatorStore) HandleUnstake(unstake Unstake) error {
 	validator := &Validator{}
-
-	if !vs.store.Exists(unstake.Address.Bytes()) {
+	unstakeKey := append(vs.prefix, unstake.Address.Bytes()...)
+	if !vs.store.Exists(unstakeKey) {
 
 		return errors.New("address not exist in validator set")
 	}
 
-	value, _ := vs.store.Get(unstake.Address.Bytes())
+	value, _ := vs.store.Get(unstakeKey)
 	if value == nil {
 		return errors.New("failed to get validator from store")
 	}
@@ -228,8 +230,9 @@ func (vs *ValidatorStore) HandleUnstake(unstake Unstake) error {
 	}
 	validator.Staking = amt
 	validator.Power = calculatePower(amt)
+	vKey := append(vs.prefix, validator.Address.Bytes()...)
 
-	err = vs.store.Set(validator.Address.Bytes(), validator.Bytes())
+	err = vs.store.Set(vKey, validator.Bytes())
 	if err != nil {
 		return errors.Wrap(err, "failed to set validator for unstake")
 	}
@@ -245,7 +248,9 @@ func (vs *ValidatorStore) GetEndBlockUpdate(ctx *ValidatorContext, req types.Req
 		cnt := 0
 		for vs.queue.Len() > 0 && cnt < 64 {
 			queued := vs.queue.Pop()
-			result, _ := vs.store.Get(queued.Value())
+			cqKey := append(vs.prefix, queued.Value()...)
+
+			result, _ := vs.store.Get(cqKey)
 			validator, err := (&Validator{}).FromBytes(result)
 			if err != nil {
 				logger.Error(err, "error deserialize validator")
@@ -253,7 +258,9 @@ func (vs *ValidatorStore) GetEndBlockUpdate(ctx *ValidatorContext, req types.Req
 			}
 			// purge validator who's power is 0
 			if validator.Power <= 0 {
-				ok, err := vs.store.Delete(validator.Address.Bytes())
+				vKey := append(vs.prefix, validator.Address.Bytes()...)
+
+				ok, err := vs.store.Delete(vKey)
 				if !ok {
 					logger.Error(err.Error())
 				}
@@ -271,5 +278,5 @@ func (vs *ValidatorStore) GetEndBlockUpdate(ctx *ValidatorContext, req types.Req
 }
 
 func (vs *ValidatorStore) Commit() ([]byte, int64) {
-	return vs.store.Commit()
+	return vs.Commit()
 }

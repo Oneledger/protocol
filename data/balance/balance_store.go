@@ -24,14 +24,14 @@ import (
 var ErrNoBalanceFoundForThisAddress = errors.New("no balance found for the address")
 
 type Store struct {
-	State  *storage.State
+	State *storage.State
 	prefix []byte
 }
 
 func NewStore(prefix string, state *storage.State) *Store {
 	return &Store{
 		State:  state,
-		prefix: []byte(prefix),
+		prefix: []byte(prefix + storage.DB_PREFIX),
 	}
 }
 
@@ -41,7 +41,8 @@ func (st *Store) WithGas(gc storage.GasCalculator) *Store {
 }
 
 func (st *Store) Get(address []byte) (bal *Balance, err error) {
-	dat, _ := st.State.Get(storage.StoreKey(address))
+	key := append(st.prefix, storage.StoreKey(address)...)
+	dat, _ := st.State.Get(key)
 
 	if len(dat) == 0 {
 		err = ErrNoBalanceFoundForThisAddress
@@ -58,7 +59,8 @@ func (st *Store) Set(address keys.Address, balance Balance) error {
 		return err
 	}
 
-	err = st.State.Set(storage.StoreKey(address), dat)
+	key := append(st.prefix, storage.StoreKey(address)...)
+	err = st.State.Set(key, dat)
 
 	return err
 }
@@ -82,5 +84,6 @@ func (st *Store) Set(address keys.Address, balance Balance) error {
 //}
 
 func (st *Store) Exists(address keys.Address) bool {
-	return st.State.Exists(storage.StoreKey(address))
+	key := append(st.prefix, storage.StoreKey(address)...)
+	return st.State.Exists(key)
 }

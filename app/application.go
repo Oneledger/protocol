@@ -323,9 +323,10 @@ func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *node.Context) (
 	}
 	ctx.db = db
 	ctx.chainstate = storage.NewChainState("chainstate", db)
-	ctx.validators = identity.NewValidatorStore("v_", cfg, storage.NewState(ctx.chainstate))
-	ctx.balances = balance.NewStore("b_", storage.NewState(ctx.chainstate))
-	ctx.domains = ons.NewDomainStore("d_", storage.NewState(ctx.chainstate))
+	//ctx.check = storage.NewChainState()
+	ctx.validators = identity.NewValidatorStore("v", cfg, storage.NewState(ctx.chainstate))
+	ctx.balances = balance.NewStore("b", storage.NewState(ctx.chainstate))
+	ctx.domains = ons.NewDomainStore("d", storage.NewState(ctx.chainstate))
 
 	ctx.accounts = accounts.NewWallet(cfg, ctx.dbDir())
 	ctx.admin = storage.NewStorageDB(storage.KEYVALUE, "admin", ctx.dbDir(), ctx.cfg.Node.DB)

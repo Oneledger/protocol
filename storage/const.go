@@ -28,4 +28,6 @@ const (
 
 	CHAINKEY_MAXLEN       = 20
 	CHAINSTATE_CACHE_SIZE = 10000
+
+	DB_PREFIX = "_"
 )

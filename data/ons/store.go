@@ -26,7 +26,7 @@ func NewDomainStore(prefix string, state *storage.State) *DomainStore {
 	return &DomainStore{
 		State:  state,
 		szlr:   serialize.GetSerializer(serialize.PERSISTENT),
-		prefix: []byte(prefix),
+		prefix: []byte(prefix + storage.DB_PREFIX),
 	}
 }
 
@@ -37,9 +37,8 @@ func (ds *DomainStore) WithGas(gc storage.GasCalculator) *DomainStore {
 
 // Get is used to retrieve the domain object from the domain name
 func (ds *DomainStore) Get(name string, lastCommit bool) (*Domain, error) {
-
 	key := keyFromName(name)
-
+	key = append(ds.prefix, key...)
 	exists := ds.State.Exists(key)
 	if !exists {
 		return nil, ErrDomainNotFound
@@ -64,6 +63,7 @@ func (ds *DomainStore) Set(d *Domain) error {
 		return err
 	}
 
+	key = append(ds.prefix, key...)
 	err = ds.State.Set(key, data)
 	if err != nil {
 		return err
@@ -74,6 +74,7 @@ func (ds *DomainStore) Set(d *Domain) error {
 
 func (ds *DomainStore) Exists(name string) bool {
 	key := keyFromName(name)
+	key = append(ds.prefix, key...)
 	return ds.State.Exists(key)
 }
 
