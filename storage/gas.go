@@ -14,7 +14,7 @@ const (
 	DELETE     Gas = 50
 )
 
-// Calculate the gas used for each action, will be embedded with GasChainState.
+// Calculate the gas used for each action, will be embedded with GasStore.
 type GasCalculator interface {
 	// Consume amount of Gas for the Category
 	Consume(amount, category Gas, allowOverflow bool) bool
@@ -73,25 +73,25 @@ func NewGasCalculator(limit Gas) GasCalculator {
 	}
 }
 
-type GasChainState struct {
-	*ChainState
+type GasStore struct {
+	Store
 	GasCalculator
 }
 
-func NewGasChainState(cs *ChainState, gc GasCalculator) *GasChainState {
+func NewGasStore(store Store, gc GasCalculator) *GasStore {
 
-	return &GasChainState{
-		ChainState:    cs,
+	return &GasStore{
+		Store:         store,
 		GasCalculator: gc,
 	}
 }
 
-func (g *GasChainState) Set(key StoreKey, value []byte) error {
+func (g *GasStore) Set(key StoreKey, value []byte) error {
 	ok := g.GasCalculator.Consume(Gas(1), WRITEFLAT, false)
 	if !ok {
 		return ErrExceedGasLimit
 	}
-	err := g.ChainState.Set(key, value)
+	err := g.Store.Set(key, value)
 	if err != nil {
 		return err
 	}
@@ -99,13 +99,13 @@ func (g *GasChainState) Set(key StoreKey, value []byte) error {
 	return nil
 }
 
-func (g *GasChainState) Get(key StoreKey) ([]byte, error) {
+func (g *GasStore) Get(key StoreKey) ([]byte, error) {
 	ok := g.GasCalculator.Consume(Gas(1), READFLAT, false)
 	if !ok {
 		//log.Error(ErrExceedGasLimit.Error())
 		return nil, ErrExceedGasLimit
 	}
-	value, err := g.ChainState.Get(key)
+	value, err := g.Store.Get(key)
 	if err != nil {
 		return nil, err
 	}
@@ -113,21 +113,21 @@ func (g *GasChainState) Get(key StoreKey) ([]byte, error) {
 	return value, nil
 }
 
-func (g *GasChainState) Exists(key StoreKey) bool {
+func (g *GasStore) Exists(key StoreKey) bool {
 	ok := g.GasCalculator.Consume(Gas(1), CHECKEXIST, false)
 	if !ok {
 		log.Error(ErrExceedGasLimit.Error())
 		return false
 	}
-	exist := g.ChainState.Exists(key)
+	exist := g.Store.Exists(key)
 	return exist
 }
 
-func (g *GasChainState) Delete(key StoreKey) (bool, error) {
+func (g *GasStore) Delete(key StoreKey) (bool, error) {
 	ok := g.GasCalculator.Consume(Gas(1), DELETE, false)
 	if !ok {
 		log.Error(ErrExceedGasLimit.Error())
 		return false, ErrExceedGasLimit
 	}
-	return g.ChainState.Delete(key)
+	return g.Store.Delete(key)
 }

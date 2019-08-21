@@ -4,55 +4,72 @@ var _ Store = &State{}
 var _ Iteratable = &State{}
 
 type State struct {
-	cs      *ChainState
-	current Store
+	cs    *ChainState
+	cache Store
 }
 
 func (s *State) Get(key StoreKey) ([]byte, error) {
-	return s.current.Get(key)
+	// Get the cache first
+	result, err := s.cache.Get(key)
+	if err == nil {
+		// if got result, return directly
+		return result, err
+	}
+	// if didn't get result in cache, get from ChainState
+	return s.cs.Get(key)
 }
 
 func (s *State) Set(key StoreKey, value []byte) error {
-	return s.current.Set(key, value)
+	// set only for cache, waiting to be committed
+	return s.cache.Set(key, value)
 }
 
 func (s *State) Exists(key StoreKey) bool {
-	return s.current.Exists(key)
+	// check existence in cache, because it's cheaper
+	exist := s.cache.Exists(key)
+	if !exist {
+		// if not existed in cache, check ChainState
+		return s.cs.Exists(key)
+	}
+	return exist
 }
 
 func (s *State) Delete(key StoreKey) (bool, error) {
-	return s.current.Delete(key)
+	//cache delete is always true
+	_, _ = s.cache.Delete(key)
+	return s.cs.Delete(key)
 }
 
+// This only Iterate for the ChainState
 func (s *State) GetIterator() Iteratable {
-	return s.current.GetIterator()
+	return s.cs.GetIterator()
 }
 
 func (s *State) Iterate(fn func(key []byte, value []byte) bool) (stopped bool) {
-	return s.current.GetIterator().Iterate(fn)
+	return s.GetIterator().Iterate(fn)
 }
 
 func (s *State) IterateRange(start, end []byte, ascending bool, fn func(key, value []byte) bool) (stop bool) {
-	return s.current.GetIterator().IterateRange(start, end, ascending, fn)
+	return s.GetIterator().IterateRange(start, end, ascending, fn)
 }
 
 func NewState(state *ChainState) *State {
 	return &State{
-		cs:      state,
-		current: state,
+		cs:    state,
+		cache: NewStorage(CACHE, "state"),
 	}
 }
 
 func (s *State) WithGas(gc GasCalculator) *State {
-	gcs := NewGasChainState(s.cs, gc)
+	gs := NewGasStore(s.cache, gc)
 	return &State{
-		cs:      s.cs,
-		current: gcs,
+		cs:    s.cs,
+		cache: gs,
 	}
 }
 
 func (s *State) WithoutGas() *State {
-	s.current = s.cs
+	s.cache = NewStorage(CACHE, "state")
 	return s
 }
 
@@ -62,4 +79,14 @@ func (s State) Version() int64 {
 
 func (s State) RootHash() []byte {
 	return s.cs.Hash
+}
+
+func (s *State) Commit() (hash []byte, version int64) {
+
+	s.cache.GetIterator().Iterate(func(key []byte, value []byte) bool {
+		_ = s.cs.Set(key, value)
+		return false
+	})
+	s.cache = NewStorage(CACHE, "state")
+	return s.cs.Commit()
 }

@@ -138,7 +138,6 @@ func (state *ChainState) Commit() ([]byte, int64) {
 	if err != nil {
 		log.Fatal("Saving", "err", err)
 	}
-	state.RUnlock()
 
 	state.LastVersion, state.Version = state.Version, version
 	state.LastHash, state.Hash = state.Hash, hash
@@ -149,7 +148,7 @@ func (state *ChainState) Commit() ([]byte, int64) {
 			log.Error("Failed to delete old version of chainstate", "err", err)
 		}
 	}
-
+	state.RUnlock()
 	return hash, version
 }
 

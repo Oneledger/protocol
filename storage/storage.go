@@ -36,7 +36,6 @@ type SessionedStorage interface {
 type Session interface {
 	Store
 	Commit() bool
-	FindAll() []StoreKey
 }
 
 // NewStorageSession creates a new SessionStorage
@@ -75,6 +74,7 @@ type Store interface {
 }
 
 // The iteratable interface include the function for iteration
+// Iteratable function only be implemented for persistent data, doesn't guaranteed in the cache storage
 type Iteratable interface {
 	Iterate(fn func(key, value []byte) bool) (stop bool)
 	IterateRange(start, end []byte, ascending bool, fn func(key, value []byte) bool) (stop bool)
