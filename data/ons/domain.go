@@ -83,7 +83,7 @@ func (d *Domain) PutOnSale(price balance.Coin) {
 
 func (d *Domain) IsChangeable(currentHeight int64) bool {
 
-	if currentHeight > d.LastUpdateHeight+HEIGHT_INTERVAL {
+	if currentHeight >= d.LastUpdateHeight+HEIGHT_INTERVAL {
 		return true
 	}
 
