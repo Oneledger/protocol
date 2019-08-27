@@ -228,6 +228,8 @@ func (f *Faucet) RequestOLT(req Request, reply *Reply) error {
 		From:   f.nodeCtx.Address(),
 		To:     req.Address,
 		Amount: toSend,
+		Fee:    action.Amount{Currency: "OLT", Value: balance.Amount{Int: *big.NewInt(0)}},
+		Gas:    0,
 	})
 	if err != nil {
 		logger.Error("failed to sendTx", err)
