@@ -15,10 +15,10 @@ import (
 var _ Ons = &DomainUpdate{}
 
 type DomainUpdate struct {
-	Owner   action.Address
-	Account action.Address
-	Name    string
-	Active  bool
+	Owner   action.Address `json:"owner"`
+	Account action.Address `json:"account"`
+	Name    string         `json:"name"`
+	Active  bool           `json:"active"`
 }
 
 func (du DomainUpdate) Marshal() ([]byte, error) {
