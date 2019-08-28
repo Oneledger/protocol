@@ -12,10 +12,10 @@ import (
 var _ Ons = &DomainPurchase{}
 
 type DomainPurchase struct {
-	Name     string
-	Buyer    action.Address
-	Account  action.Address
-	Offering action.Amount
+	Name     string         `json:"name"`
+	Buyer    action.Address `json:"buyer"`
+	Account  action.Address `json:"account"`
+	Offering action.Amount  `json:"offering"`
 }
 
 func (dp DomainPurchase) Marshal() ([]byte, error) {

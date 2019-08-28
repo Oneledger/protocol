@@ -177,8 +177,8 @@ func (f *Faucet) set(key string, value time.Time) bool {
 }
 
 func timeSinceLastReq(f *Faucet, req Request, now time.Time) time.Duration {
-	host, _, _ := net.SplitHostPort(req.HTTPRequest().RemoteAddr)
-	t2, ok := f.get(host)
+	//host, _, _ := net.SplitHostPort(req.HTTPRequest().RemoteAddr)
+	t2, ok := f.get(req.Address.Humanize())
 	if !ok {
 		return args.MaxLockTime() + 50000
 	}
@@ -205,7 +205,7 @@ func (f *Faucet) RequestOLT(req Request, reply *Reply) error {
 	if sinceLastReqTime < args.MaxLockTime() {
 		waitTimeMins := args.MaxLockTime().Minutes() - sinceLastReqTime.Minutes()
 		waitTime := fmt.Sprintf("%.1f minutes", waitTimeMins)
-		return rpc.NotAllowedError("This IP is locked from making requests for " + waitTime)
+		return rpc.NotAllowedError("This address is locked from making requests for " + waitTime)
 	}
 
 	if req.Amount <= 0 {
@@ -228,6 +228,8 @@ func (f *Faucet) RequestOLT(req Request, reply *Reply) error {
 		From:   f.nodeCtx.Address(),
 		To:     req.Address,
 		Amount: toSend,
+		Fee:    action.Amount{Currency: "OLT", Value: balance.Amount{Int: *big.NewInt(0)}},
+		Gas:    0,
 	})
 	if err != nil {
 		logger.Error("failed to sendTx", err)
@@ -262,7 +264,7 @@ func (f *Faucet) RequestOLT(req Request, reply *Reply) error {
 	}
 
 	// Set the time this request was made
-	f.set(requestIP, time.Now())
+	f.set(req.Address.Humanize(), time.Now())
 	return nil
 }
 
