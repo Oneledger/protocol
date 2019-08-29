@@ -155,6 +155,7 @@ def new_account(name):
 
 def sign(rawTx, address):
     resp = rpc_call('owner.SignWithAddress', {"rawTx": rawTx,"address": address})
+    print resp
     return resp["result"]
 
 

@@ -1,5 +1,9 @@
 package storage
 
+import (
+	"fmt"
+)
+
 var _ Store = &State{}
 var _ Iteratable = &State{}
 
@@ -37,7 +41,9 @@ func (s *State) Exists(key StoreKey) bool {
 func (s *State) Delete(key StoreKey) (bool, error) {
 	//cache delete is always true
 	_, _ = s.cache.Delete(key)
-	return s.cs.Delete(key)
+	// delete in chainstate is dangerous for checkTx, so we skip that step for now
+	//return s.cs.Delete(key)
+	return true, nil
 }
 
 // This only Iterate for the ChainState
@@ -81,12 +87,17 @@ func (s State) RootHash() []byte {
 	return s.cs.Hash
 }
 
-func (s *State) Commit() (hash []byte, version int64) {
-
+func (s State) Write() bool {
 	s.cache.GetIterator().Iterate(func(key []byte, value []byte) bool {
 		_ = s.cs.Set(key, value)
+		fmt.Println("write cache", string(value))
 		return false
 	})
+	return true
+}
+
+func (s *State) Commit() (hash []byte, version int64) {
+	s.Write()
 	s.cache = NewStorage(CACHE, "state")
 	return s.cs.Commit()
 }

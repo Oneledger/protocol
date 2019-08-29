@@ -191,11 +191,6 @@ func (domainSendTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, 
 		return false, action.Response{Log: log}
 	}
 	to := domain.AccountAddress
-	//change receiver balance
-	toBalance, err := balances.Get(to)
-	if err != nil {
-		ctx.Logger.Error("failed to get the balance of the receipient", err)
-	}
 
 	//change owner balance
 	fromFinal, err := from.MinusCoin(coin)
@@ -209,6 +204,11 @@ func (domainSendTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, 
 		return false, action.Response{Log: log}
 	}
 
+	//change receiver balance
+	toBalance, err := balances.Get(to)
+	if err != nil {
+		ctx.Logger.Error("failed to get the balance of the receipient", err)
+	}
 	if toBalance == nil {
 		toBalance = balance.NewBalance()
 	}

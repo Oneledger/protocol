@@ -5,6 +5,8 @@ import (
 	"os"
 	"testing"
 
+	"github.com/tendermint/tendermint/libs/db"
+
 	"github.com/Oneledger/protocol/log"
 	"github.com/Oneledger/protocol/storage"
 
@@ -89,11 +91,12 @@ func assemblySendData(replaceFrom bool) (action.SignedTx, crypto.Address) {
 func assemblyCtxData(currencyName string, currencyDecimal int, setStore bool, setLogger bool, setCoin bool, setCoinAddr crypto.Address) *action.Context {
 
 	ctx := &action.Context{}
-
+	db := db.NewDB("test", db.MemDBBackend, "")
+	cs := storage.NewState(storage.NewChainState("balance", db))
 	// store
 	var store *balance.Store
 	if setStore {
-		store = balance.NewStore("test_balances", "test_dbpath", storage.CACHE, storage.PERSISTENT)
+		store = balance.NewStore("tb", cs)
 		ctx.Balances = store
 	}
 	// logger
@@ -129,7 +132,7 @@ func assemblyCtxData(currencyName string, currencyDecimal int, setStore bool, se
 			if err != nil {
 				errors.New("setup testing token balance error")
 			}
-			store.Commit()
+			store.State.Commit()
 			ctx.Balances = store
 		}
 	}

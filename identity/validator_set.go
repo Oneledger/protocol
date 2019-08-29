@@ -21,7 +21,7 @@ type ValidatorStore struct {
 func NewValidatorStore(prefix string, cfg config.Server, state *storage.State) *ValidatorStore {
 	// TODO: get the genesis validators when start the node
 	return &ValidatorStore{
-		prefix:    []byte(prefix + storage.DB_PREFIX),
+		prefix:    storage.Prefix(prefix),
 		store:     state,
 		proposer:  []byte(nil),
 		queue:     ValidatorQueue{PriorityQueue: make(utils.PriorityQueue, 0, 100)},
@@ -29,9 +29,25 @@ func NewValidatorStore(prefix string, cfg config.Server, state *storage.State) *
 	}
 }
 
-func (vs *ValidatorStore) WithGas(gc storage.GasCalculator) *ValidatorStore {
-	vs.store = vs.store.WithGas(gc)
+func (vs *ValidatorStore) WithState(state *storage.State) *ValidatorStore {
+	vs.store = state
 	return vs
+}
+
+func (vs *ValidatorStore) Iterate(fn func(addr keys.Address, validator *Validator) bool) (stopped bool) {
+	return vs.store.IterateRange(
+		vs.prefix,
+		storage.Rangefix(string(vs.prefix[:len(vs.prefix)-1])),
+		true,
+		func(key, value []byte) bool {
+			validator, err := (&Validator{}).FromBytes(value)
+			if err != nil {
+				logger.Error("failed to deserialize validator")
+				return false
+			}
+			return fn(key, validator)
+		},
+	)
 }
 
 func (vs *ValidatorStore) Init(req types.RequestInitChain, currencies *balance.CurrencyList) (types.ValidatorUpdates, error) {
@@ -42,7 +58,6 @@ func (vs *ValidatorStore) Init(req types.RequestInitChain, currencies *balance.C
 	validatorUpdates := make([]types.ValidatorUpdate, 0)
 
 	for _, v := range req.Validators {
-
 		vpubkey, err := keys.GetPublicKeyFromBytes(v.PubKey.Data, keys.GetAlgorithmFromTmKeyName(v.PubKey.Type))
 		if err != nil {
 			return validatorUpdates, errors.Wrap(err, "invalid pubkey type")
@@ -75,11 +90,7 @@ func (vs *ValidatorStore) Init(req types.RequestInitChain, currencies *balance.C
 // setup the validators according to begin block
 func (vs *ValidatorStore) Setup(req types.RequestBeginBlock) error {
 	vs.proposer = req.Header.GetProposerAddress()
-	err := updateValidatorSet(vs.prefix, vs.store, req.LastCommitInfo.Votes)
-	if err != nil {
-		return errors.Wrapf(err, "height=%d", req.Header.Height)
-	}
-
+	var def error
 	// update the byzantine node that need to be slashed
 	// this should happened before initialize the queue.
 	vs.byzantine = make([]Validator, 0)
@@ -90,17 +101,14 @@ func (vs *ValidatorStore) Setup(req types.RequestBeginBlock) error {
 		if err != nil {
 			logger.Error("failed to set byzantine validator power")
 			// TODO: add fatal status for here after we decide what to do with byzantine validator
+			def = err
 		}
 	}
 
 	// initialize the queue for validators
 	vs.queue.PriorityQueue = make(utils.PriorityQueue, 0, 100)
 	i := 0
-	vs.store.Iterate(func(key, value []byte) bool {
-		validator, err := (&Validator{}).FromBytes(value)
-		if err != nil {
-			return false
-		}
+	vs.Iterate(func(key keys.Address, validator *Validator) bool {
 		queued := utils.NewQueued(key, validator.Power, i)
 		vs.queue.append(queued)
 		// 		vs.queue.Push(queued)
@@ -109,34 +117,18 @@ func (vs *ValidatorStore) Setup(req types.RequestBeginBlock) error {
 	})
 	vs.queue.Init()
 
-	return err
+	return def
 }
 
 // get validators set
 func (vs *ValidatorStore) GetValidatorSet() ([]Validator, error) {
 
 	validatorSet := make([]Validator, 0)
-	vs.store.Iterate(func(key, value []byte) bool {
-		validator, err := (&Validator{}).FromBytes(value)
-		if err != nil {
-			return false
-		}
+	vs.Iterate(func(key keys.Address, validator *Validator) bool {
 		validatorSet = append(validatorSet, *validator)
 		return false
 	})
 	return validatorSet, nil
-}
-
-func updateValidatorSet(prefix []byte, store *storage.State, votes []types.VoteInfo) error {
-
-	for _, v := range votes {
-		addr := v.Validator.GetAddress()
-		key := append(prefix, addr...)
-		if !store.Exists(key) {
-			return errors.New("validator set not match to last commit")
-		}
-	}
-	return nil
 }
 
 // handle stake action

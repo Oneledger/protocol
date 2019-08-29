@@ -25,6 +25,7 @@ any concurrent read/write might throw panics.
 type cache struct {
 	name  string
 	store map[string][]byte
+	keys  []string
 }
 
 // cache satisfies Store interface
@@ -32,7 +33,11 @@ var _ Store = &cache{}
 var _ Iteratable = &cache{}
 
 func NewCache(name string) *cache {
-	return &cache{name, map[string][]byte{}}
+	return &cache{
+		name:  name,
+		store: make(map[string][]byte),
+		keys:  make([]string, 0, 100),
+	}
 }
 
 // Get retrieves data for a key.
@@ -58,7 +63,7 @@ func (c *cache) Exists(key StoreKey) bool {
 func (c *cache) Set(key StoreKey, dat []byte) error {
 
 	c.store[string(key)] = dat
-
+	c.keys = append(c.keys, string(key))
 	return nil
 }
 
@@ -74,9 +79,13 @@ func (c *cache) GetIterator() Iteratable {
 }
 
 func (c *cache) Iterate(fn func(key []byte, value []byte) bool) (stopped bool) {
-	for k, v := range c.store {
+	for _, k := range c.keys {
+		v, ok := c.store[k]
+		if !ok {
+			continue
+		}
 		if fn([]byte(k), v) {
-			return
+			return true
 		}
 	}
 	return true
@@ -102,7 +111,7 @@ type cacheSafe struct {
 var _ Store = &cacheSafe{}
 
 func NewCacheSafe(name string) *cacheSafe {
-	return &cacheSafe{sync.RWMutex{}, cache{name, map[string][]byte{}}}
+	return &cacheSafe{sync.RWMutex{}, *NewCache(name)}
 }
 
 // Get retrieves data for a key.
@@ -148,12 +157,7 @@ func (c *cacheSafe) Iterate(fn func(key []byte, value []byte) bool) (stopped boo
 	c.RLock()
 	defer c.RUnlock()
 
-	for k, v := range c.store {
-		if fn([]byte(k), v) {
-			return
-		}
-	}
-	return true
+	return c.cache.Iterate(fn)
 }
 
 //

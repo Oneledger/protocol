@@ -140,7 +140,7 @@ func NewWallet(config config.Server, dbDir string) Wallet {
 	accounts := make([]storage.StoreKey, 0, 10)
 	i := 0
 	store.BeginSession().GetIterator().Iterate(func(key, value []byte) bool {
-		accounts[0] = key
+		accounts = append(accounts, key)
 		i++
 		return false
 	})

@@ -44,12 +44,12 @@ type App struct {
 	logger   *log.Logger
 	sdk      common.Service // Probably needs to be changed
 
-	header        Header // Tendermint last header info
-	gasCalculator storage.GasCalculator
+	header Header // Tendermint last header info
 
 	abci *ABCI
 
-	node *consensus.Node
+	node       *consensus.Node
+	genesisDoc *config.GenesisDoc
 }
 
 // New returns new app fresh and ready to start
@@ -143,7 +143,7 @@ func (app *App) setupState(stateBytes []byte) error {
 		}
 
 		key := storage.StoreKey(addrBytes)
-		err = balanceCtx.Store().Set([]byte(key), si.Balance)
+		err = balanceCtx.Store().WithState(app.Context.deliver).Set([]byte(key), si.Balance)
 		if err != nil {
 			return errors.Wrap(err, "failed to set balance")
 		}
@@ -182,7 +182,7 @@ func (app *App) setupState(stateBytes []byte) error {
 }
 
 func (app *App) setupValidators(req RequestInitChain, currencies *balance.CurrencyList) (types.ValidatorUpdates, error) {
-	return app.Context.validators.Init(req, currencies)
+	return app.Context.validators.WithState(app.Context.deliver).Init(req, currencies)
 }
 
 // Start initializes the state
@@ -217,6 +217,7 @@ func (app *App) Start() error {
 		app.logger.Error("Failed to create consensus.Node")
 		return errors.Wrap(err, "failed to create new consensus.Node")
 	}
+	app.genesisDoc = node.GenesisDoc()
 
 	err = node.Start()
 	if err != nil {
@@ -291,6 +292,9 @@ type context struct {
 	//db for chain state storage
 	db         db.DB
 	chainstate *storage.ChainState
+	check      *storage.State
+	deliver    *storage.State
+
 	balances   *balance.Store
 	domains    *ons.DomainStore
 	validators *identity.ValidatorStore // Set of validators currently active
@@ -323,7 +327,9 @@ func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *node.Context) (
 	}
 	ctx.db = db
 	ctx.chainstate = storage.NewChainState("chainstate", db)
-	//ctx.check = storage.NewChainState()
+	ctx.deliver = storage.NewState(ctx.chainstate)
+	ctx.check = storage.NewState(ctx.chainstate)
+
 	ctx.validators = identity.NewValidatorStore("v", cfg, storage.NewState(ctx.chainstate))
 	ctx.balances = balance.NewStore("b", storage.NewState(ctx.chainstate))
 	ctx.domains = ons.NewDomainStore("d", storage.NewState(ctx.chainstate))
@@ -342,15 +348,15 @@ func (ctx context) dbDir() string {
 	return filepath.Join(ctx.cfg.RootDir(), ctx.cfg.Node.DBDir)
 }
 
-func (ctx *context) Action(header *Header, gc storage.GasCalculator) *action.Context {
+func (ctx *context) Action(header *Header, state *storage.State) *action.Context {
 	actionCtx := action.NewContext(
 		ctx.actionRouter,
 		header,
 		ctx.accounts,
-		ctx.balances.WithGas(gc),
+		ctx.balances.WithState(state),
 		ctx.currencies,
-		ctx.validators.WithGas(gc),
-		ctx.domains.WithGas(gc),
+		ctx.validators.WithState(state),
+		ctx.domains.WithState(state),
 		log.NewLoggerWithPrefix(ctx.logWriter, "action"))
 
 	return actionCtx

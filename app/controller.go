@@ -4,6 +4,8 @@ import (
 	"encoding/hex"
 	"math"
 
+	"github.com/tendermint/tendermint/types"
+
 	"github.com/Oneledger/protocol/storage"
 
 	"github.com/Oneledger/protocol/utils"
@@ -21,7 +23,7 @@ func (app *App) infoServer() infoServer {
 	return func(info RequestInfo) ResponseInfo {
 
 		//get apphash and height from db
-		ver, hash := app.getAppHash(false)
+		ver, hash := app.getAppHash()
 
 		result := ResponseInfo{
 			Data:             app.name,
@@ -54,6 +56,8 @@ func (app *App) optionSetter() optionSetter {
 
 func (app *App) chainInitializer() chainInitializer {
 	return func(req RequestInitChain) ResponseInitChain {
+		app.Context.deliver = storage.NewState(app.Context.chainstate)
+
 		err := app.setupState(req.AppStateBytes)
 		// This should cause consensus to halt
 		if err != nil {
@@ -68,21 +72,17 @@ func (app *App) chainInitializer() chainInitializer {
 			app.logger.Error("Failed to setupValidator", "err", err)
 			return ResponseInitChain{}
 		}
-		app.logger.Error("finish chain initialize")
+		app.Context.deliver.Write()
+		app.logger.Info("finish chain initialize")
 		return ResponseInitChain{Validators: validators}
 	}
 }
 
 func (app *App) blockBeginner() blockBeginner {
 	return func(req RequestBeginBlock) ResponseBeginBlock {
-		limit := app.node.GenesisDoc().ConsensusParams.Block.MaxGas
-		gas := storage.Gas(0)
-		if limit < 0 {
-			gas = math.MaxUint64
-		} else {
-			gas = storage.Gas(uint64(limit))
-		}
-		app.gasCalculator = storage.NewGasCalculator(gas)
+		gc := getGasCalculator(app.genesisDoc.ConsensusParams)
+		app.Context.deliver = storage.NewState(app.Context.chainstate).WithGas(gc)
+
 		// update the validator set
 		err := app.Context.validators.Setup(req)
 		if err != nil {
@@ -111,7 +111,7 @@ func (app *App) txChecker() txChecker {
 			app.logger.Errorf("checkTx failed to deserialize msg: %s, error: %s ", msg, err)
 		}
 
-		txCtx := app.Context.Action(&app.header, app.gasCalculator)
+		txCtx := app.Context.Action(&app.header, app.Context.check)
 
 		handler := txCtx.Router.Handler(tx.Type)
 
@@ -149,7 +149,7 @@ func (app *App) txDeliverer() txDeliverer {
 		if err != nil {
 			app.logger.Errorf("deliverTx failed to deserialize msg: %s, error: %s ", msg, err)
 		}
-		txCtx := app.Context.Action(&app.header, app.gasCalculator)
+		txCtx := app.Context.Action(&app.header, app.Context.deliver)
 
 		handler := txCtx.Router.Handler(tx.Type)
 
@@ -189,9 +189,12 @@ func (app *App) commitor() commitor {
 	return func() ResponseCommit {
 
 		// Commit any pending changes.
-		version, hash := app.getAppHash(true)
-		app.logger.Debugf("Committed New Block height[%d], hash[%s], versions[%d]", app.header.Height, hex.EncodeToString(hash), version)
+		hash, ver := app.Context.deliver.Commit()
+		app.logger.Debugf("Committed New Block height[%d], hash[%s], versions[%d]", app.header.Height, hex.EncodeToString(hash), ver)
 
+		// update check state by deliver state
+		gc := getGasCalculator(app.node.GenesisDoc().ConsensusParams)
+		app.Context.check = storage.NewState(app.Context.chainstate).WithGas(gc)
 		result := ResponseCommit{
 			Data: hash,
 		}
@@ -220,11 +223,21 @@ func (ah *appHash) hash() []byte {
 	return utils.Hash(result)
 }
 
-func (app *App) getAppHash(commit bool) (version int64, hash []byte) {
-	if commit {
-		hash, version = app.Context.chainstate.Commit()
-	} else {
-		hash, version = app.Context.chainstate.Hash, app.Context.chainstate.Version
-	}
+func (app *App) getAppHash() (version int64, hash []byte) {
+	hash, version = app.Context.chainstate.Hash, app.Context.chainstate.Version
 	return
+}
+
+func getGasCalculator(params *types.ConsensusParams) storage.GasCalculator {
+	limit := int64(0)
+	if params != nil {
+		limit = params.Block.MaxGas
+	}
+	gas := storage.Gas(0)
+	if limit < 0 {
+		gas = math.MaxUint64
+	} else {
+		gas = storage.Gas(uint64(limit))
+	}
+	return storage.NewGasCalculator(gas)
 }

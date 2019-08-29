@@ -109,14 +109,7 @@ func (state *ChainState) GetLatestVersioned(key StoreKey) ([]byte, int64) {
 
 // TODO: Should be against the commit tree, not the delivered one!!!
 func (state *ChainState) Exists(key StoreKey) bool {
-
-	version := state.Delivered.Version()
-	_, value := state.Delivered.GetVersioned([]byte(key), version)
-	if value == nil {
-		return false
-	}
-
-	return true
+	return state.Delivered.ImmutableTree.Has(key)
 }
 
 func (state *ChainState) Delete(key StoreKey) (bool, error) {

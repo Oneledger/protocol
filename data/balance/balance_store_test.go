@@ -17,14 +17,17 @@ package balance
 import (
 	"testing"
 
+	"github.com/tendermint/tendermint/libs/db"
+
 	"github.com/Oneledger/protocol/storage"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestNewStore(t *testing.T) {
 	olt := currencies["OLT"]
-
-	store := NewStore("test", "/tmp/", "test", storage.MEMORY)
+	db := db.NewDB("test", db.MemDBBackend, "")
+	cs := storage.NewState(storage.NewChainState("balance", db))
+	store := NewStore("b", cs)
 
 	bal := NewBalance()
 	bal.AddCoin(olt.NewCoinFromInt(10))
@@ -32,18 +35,22 @@ func TestNewStore(t *testing.T) {
 	err := store.Set([]byte("asdfasdfasdfasdfasdf"), *bal)
 	assert.NoError(t, err)
 
-	bal2, err := store.Get([]byte("asdfasdfasdfasdfasdf"), false)
+	bal2, err := store.Get([]byte("asdfasdfasdfasdfasdf"))
 	assert.NoError(t, err)
 	assert.Equal(t, bal, bal2)
 
-	bal2, err = store.Get([]byte("asdfasdfasdfasdfhjkl"), false)
+	bal2, err = store.Get([]byte("asdfasdfasdfasdfhjkl"))
 	assert.Error(t, err)
 	assert.NotEqual(t, bal, bal2)
 
 	//assert.True(t, store.Exists([]byte("asdfasdfasdfasdfasdf")))
 	assert.False(t, store.Exists([]byte("asdfasdfasdfasdfhjkl")))
 
-	balances := store.FindAll()
-	assert.Len(t, balances, 1)
-	assert.Equal(t, balances["asdfasdfasdfasdfasdf"], bal)
+	store.State.Commit()
+	cnt := 0
+	store.State.Iterate(func(key, value []byte) bool {
+		cnt++
+		return false
+	})
+	assert.Equal(t, 1, cnt)
 }

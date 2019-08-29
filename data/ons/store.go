@@ -26,12 +26,12 @@ func NewDomainStore(prefix string, state *storage.State) *DomainStore {
 	return &DomainStore{
 		State:  state,
 		szlr:   serialize.GetSerializer(serialize.PERSISTENT),
-		prefix: []byte(prefix + storage.DB_PREFIX),
+		prefix: storage.Prefix(prefix),
 	}
 }
 
-func (ds *DomainStore) WithGas(gc storage.GasCalculator) *DomainStore {
-	ds.State = ds.State.WithGas(gc)
+func (ds *DomainStore) WithState(state *storage.State) *DomainStore {
+	ds.State = state
 	return ds
 }
 
@@ -81,4 +81,21 @@ func (ds *DomainStore) Exists(name string) bool {
 func keyFromName(name string) []byte {
 
 	return []byte(strings.ToLower(name))
+}
+
+func (ds *DomainStore) Iterate(fn func(name string, domain *Domain) bool) (stopped bool) {
+	return ds.State.IterateRange(
+		ds.prefix,
+		storage.Rangefix(string(ds.prefix[:len(ds.prefix)-1])),
+		true,
+		func(key, value []byte) bool {
+			name := string(key)
+			domain := &Domain{}
+			err := ds.szlr.Deserialize(value, domain)
+			if err != nil {
+				return false
+			}
+			return fn(name, domain)
+		},
+	)
 }

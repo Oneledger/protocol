@@ -15,6 +15,7 @@ Copyright 2017 - 2019 OneLedger
 package storage
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 )
@@ -30,4 +31,14 @@ func dbDir() string {
 	result, _ := filepath.Abs(filepath.Join(rootDir, NODEDATA))
 
 	return result
+}
+
+func Prefix(prefix string) []byte {
+	return []byte(prefix + DB_PREFIX)
+}
+
+func Rangefix(prefix string) []byte {
+	a := []byte(prefix + DB_RANGEFIX)
+	fmt.Println("rangefix", string(a))
+	return a
 }
