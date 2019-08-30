@@ -240,7 +240,7 @@ if __name__ == "__main__":
     print
 
 
-    raw_txn = send(addrs[0], addrs[2], (int("20")*10**18))
+    raw_txn = send(addrs[0], addrs[3], (int("20")*10**18))
     print result
     signed = sign(raw_txn, addrs[0])
     print signed
@@ -253,8 +253,10 @@ if __name__ == "__main__":
 
     print bcolors.WARNING + "*** Buying domain ***" + bcolors.ENDC
 
-    raw_txn = buy_domain('bob2.olt', addrs[2], (int("20")*10**18))
-    signed = sign(raw_txn, addrs[2])
+    raw_txn = buy_domain('bob2.olt', addrs[3], (int("20")*10**18))
+    print addrs[3]
+    print addrs
+    signed = sign(raw_txn, addrs[3])
     print signed
     print
 
@@ -265,11 +267,11 @@ if __name__ == "__main__":
 
 
     print bcolors.WARNING + "*** Putting Domain on sale ***" + bcolors.ENDC
-    raw_txn = sell_domain("bob2.olt", addrs[2], (int("993242")*10**14))
+    raw_txn = sell_domain("bob2.olt", addrs[3], (int("993242")*10**14))
     print raw_txn
     print
 
-    signed = sign(raw_txn, addrs[2])
+    signed = sign(raw_txn, addrs[3])
     print signed
     print
 
