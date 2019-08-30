@@ -144,7 +144,7 @@ func TestApp_setupValidators(t *testing.T) {
 func TestContext_Action(t *testing.T) {
 	app := setup(setupForGeneralInfo)
 
-	context := app.Context.Action(&app.header, app.check)
+	context := app.Context.Action(&app.header, app.Context.check)
 	assert.NotEmpty(t, context)
 }
 

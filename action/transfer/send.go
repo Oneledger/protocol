@@ -87,7 +87,7 @@ func (sendTx) Validate(ctx *action.Context, tx action.SignedTx) (bool, error) {
 func (sendTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	ctx.Logger.Debug("Processing Send Transaction for CheckTx", tx)
 	balances := ctx.Balances
-	fmt.Printf("check %#v \n", balances.State)
+
 	send := &Send{}
 	err := send.Unmarshal(tx.Data)
 	if err != nil {
