@@ -240,7 +240,8 @@ func (vs *ValidatorStore) GetEndBlockUpdate(ctx *ValidatorContext, req types.Req
 		cnt := 0
 		for vs.queue.Len() > 0 && cnt < 64 {
 			queued := vs.queue.Pop()
-			cqKey := append(vs.prefix, queued.Value()...)
+			// cqKey := append(vs.prefix, queued.Value()...)
+			cqKey := queued.Value()
 
 			result, _ := vs.store.Get(cqKey)
 			validator, err := (&Validator{}).FromBytes(result)
