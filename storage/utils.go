@@ -15,7 +15,6 @@ Copyright 2017 - 2019 OneLedger
 package storage
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
 )
@@ -39,6 +38,5 @@ func Prefix(prefix string) []byte {
 
 func Rangefix(prefix string) []byte {
 	a := []byte(prefix + DB_RANGEFIX)
-	fmt.Println("rangefix", string(a))
 	return a
 }

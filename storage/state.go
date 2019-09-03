@@ -1,9 +1,5 @@
 package storage
 
-import (
-	"fmt"
-)
-
 var _ Store = &State{}
 var _ Iteratable = &State{}
 
@@ -42,6 +38,7 @@ func (s *State) Delete(key StoreKey) (bool, error) {
 	//cache delete is always true
 	_, _ = s.cache.Delete(key)
 	// delete in chainstate is dangerous for checkTx, so we skip that step for now
+	//todo: have a proper way of deleting information from chainstate
 	//return s.cs.Delete(key)
 	return true, nil
 }
@@ -90,7 +87,6 @@ func (s State) RootHash() []byte {
 func (s State) Write() bool {
 	s.cache.GetIterator().Iterate(func(key []byte, value []byte) bool {
 		_ = s.cs.Set(key, value)
-		fmt.Println("write cache", string(value))
 		return false
 	})
 	return true
