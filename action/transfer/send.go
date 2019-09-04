@@ -94,21 +94,46 @@ func (sendTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (bool, action.R
 		return false, action.Response{Log: err.Error()}
 	}
 
-	b, _ := balances.Get(send.From.Bytes())
-	if b == nil {
-		return false, action.Response{Log: "failed to get balance for sender"}
+	from, err := balances.Get(send.From.Bytes())
+	if err != nil {
+		log := fmt.Sprint("Failed to get the balance of the owner ", send.From, "err", err)
+		return false, action.Response{Log: log}
 	}
+
 	if !send.Amount.IsValid(ctx.Currencies) {
 		log := fmt.Sprint("amount is invalid", send.Amount, ctx.Currencies)
 		return false, action.Response{Log: log}
 	}
+
 	coin := send.Amount.ToCoin(ctx.Currencies)
-	//check owner balance
-	_, err = b.MinusCoin(coin)
+
+	//change owner balance
+	fromFinal, err := from.MinusCoin(coin)
 	if err != nil {
 		return false, action.Response{Log: err.Error()}
 	}
 
+	err = balances.Set(send.From.Bytes(), *fromFinal)
+	if err != nil {
+		log := fmt.Sprint("error updating balance in send transaction", err)
+		return false, action.Response{Log: log}
+	}
+
+	//change receiver balance
+	to, err := balances.Get(send.To.Bytes())
+	if err != nil {
+		ctx.Logger.Error("failed to get the balance of the receipient", err)
+	}
+	if to == nil {
+		to = balance.NewBalance()
+	}
+
+	to.AddCoin(coin)
+	err = balances.Set(send.To.Bytes(), *to)
+	if err != nil {
+		_ = balances.Set(send.From.Bytes(), *from)
+		return false, action.Response{Log: "balance set failed"}
+	}
 	return true, action.Response{Tags: send.Tags()}
 }
 
@@ -142,6 +167,12 @@ func (sendTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, action
 		return false, action.Response{Log: err.Error()}
 	}
 
+	err = balances.Set(send.From.Bytes(), *fromFinal)
+	if err != nil {
+		log := fmt.Sprint("error updating balance in send transaction", err)
+		return false, action.Response{Log: log}
+	}
+
 	//change receiver balance
 	to, err := balances.Get(send.To.Bytes())
 	if err != nil {
@@ -149,11 +180,6 @@ func (sendTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, action
 	}
 	if to == nil {
 		to = balance.NewBalance()
-	}
-	err = balances.Set(send.From.Bytes(), *fromFinal)
-	if err != nil {
-		log := fmt.Sprint("error updating balance in send transaction", err)
-		return false, action.Response{Log: log}
 	}
 
 	to.AddCoin(coin)
@@ -169,4 +195,8 @@ func (sendTx) ProcessFee(ctx *action.Context, fee action.Fee) (bool, action.Resp
 	panic("implement me")
 	// TODO: implement the fee charge for send
 	return true, action.Response{GasWanted: 0, GasUsed: 0}
+}
+
+func runTx(ctx *action.Context, tx action.RawTx) {
+
 }
