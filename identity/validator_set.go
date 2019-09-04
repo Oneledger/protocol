@@ -11,21 +11,43 @@ import (
 )
 
 type ValidatorStore struct {
-	*storage.ChainState
+	prefix    []byte
+	store     *storage.State
 	proposer  keys.Address
 	queue     ValidatorQueue
 	byzantine []Validator
 }
 
-func NewValidatorStore(cfg config.Server, dbPath string, dbType string) *ValidatorStore {
-	store := storage.NewChainState("validators", dbPath, dbType, storage.PERSISTENT)
+func NewValidatorStore(prefix string, cfg config.Server, state *storage.State) *ValidatorStore {
 	// TODO: get the genesis validators when start the node
 	return &ValidatorStore{
-		ChainState: store,
-		proposer:   []byte(nil),
-		queue:      ValidatorQueue{PriorityQueue: make(utils.PriorityQueue, 0, 100)},
-		byzantine:  make([]Validator, 0),
+		prefix:    storage.Prefix(prefix),
+		store:     state,
+		proposer:  []byte(nil),
+		queue:     ValidatorQueue{PriorityQueue: make(utils.PriorityQueue, 0, 100)},
+		byzantine: make([]Validator, 0),
 	}
+}
+
+func (vs *ValidatorStore) WithState(state *storage.State) *ValidatorStore {
+	vs.store = state
+	return vs
+}
+
+func (vs *ValidatorStore) Iterate(fn func(addr keys.Address, validator *Validator) bool) (stopped bool) {
+	return vs.store.IterateRange(
+		vs.prefix,
+		storage.Rangefix(string(vs.prefix[:len(vs.prefix)-1])),
+		true,
+		func(key, value []byte) bool {
+			validator, err := (&Validator{}).FromBytes(value)
+			if err != nil {
+				logger.Error("failed to deserialize validator")
+				return false
+			}
+			return fn(key, validator)
+		},
+	)
 }
 
 func (vs *ValidatorStore) Init(req types.RequestInitChain, currencies *balance.CurrencyList) (types.ValidatorUpdates, error) {
@@ -36,7 +58,6 @@ func (vs *ValidatorStore) Init(req types.RequestInitChain, currencies *balance.C
 	validatorUpdates := make([]types.ValidatorUpdate, 0)
 
 	for _, v := range req.Validators {
-
 		vpubkey, err := keys.GetPublicKeyFromBytes(v.PubKey.Data, keys.GetAlgorithmFromTmKeyName(v.PubKey.Type))
 		if err != nil {
 			return validatorUpdates, errors.Wrap(err, "invalid pubkey type")
@@ -56,7 +77,8 @@ func (vs *ValidatorStore) Init(req types.RequestInitChain, currencies *balance.C
 			// TODO: this should be change with @TODO99
 			Staking: currency.NewCoinFromInt(v.Power),
 		}
-		err = vs.ChainState.Set(h.Address().Bytes(), validator.Bytes())
+		key := append(vs.prefix, h.Address().Bytes()...)
+		err = vs.store.Set(key, validator.Bytes())
 		if err != nil {
 			return req.Validators, errors.New("failed to add initial validators")
 		}
@@ -66,34 +88,27 @@ func (vs *ValidatorStore) Init(req types.RequestInitChain, currencies *balance.C
 }
 
 // setup the validators according to begin block
-func (vs *ValidatorStore) Set(req types.RequestBeginBlock) error {
+func (vs *ValidatorStore) Setup(req types.RequestBeginBlock) error {
 	vs.proposer = req.Header.GetProposerAddress()
-	err := updateValidatorSet(vs.ChainState, req.LastCommitInfo.Votes)
-	if err != nil {
-		return errors.Wrapf(err, "height=%d", req.Header.Height)
-	}
-
+	var def error
 	// update the byzantine node that need to be slashed
 	// this should happened before initialize the queue.
 	vs.byzantine = make([]Validator, 0)
 	vs.byzantine = makingslash(vs, req.ByzantineValidators)
 	for _, remove := range vs.byzantine {
-
-		err := vs.ChainState.Set(remove.Address.Bytes(), remove.Bytes())
+		key := append(vs.prefix, remove.Address.Bytes()...)
+		err := vs.store.Set(key, remove.Bytes())
 		if err != nil {
 			logger.Error("failed to set byzantine validator power")
 			// TODO: add fatal status for here after we decide what to do with byzantine validator
+			def = err
 		}
 	}
 
 	// initialize the queue for validators
 	vs.queue.PriorityQueue = make(utils.PriorityQueue, 0, 100)
 	i := 0
-	vs.ChainState.Iterate(func(key, value []byte) bool {
-		validator, err := (&Validator{}).FromBytes(value)
-		if err != nil {
-			return false
-		}
+	vs.Iterate(func(key keys.Address, validator *Validator) bool {
 		queued := utils.NewQueued(key, validator.Power, i)
 		vs.queue.append(queued)
 		// 		vs.queue.Push(queued)
@@ -102,40 +117,25 @@ func (vs *ValidatorStore) Set(req types.RequestBeginBlock) error {
 	})
 	vs.queue.Init()
 
-	return err
+	return def
 }
 
 // get validators set
 func (vs *ValidatorStore) GetValidatorSet() ([]Validator, error) {
 
 	validatorSet := make([]Validator, 0)
-	vs.ChainState.Iterate(func(key, value []byte) bool {
-		validator, err := (&Validator{}).FromBytes(value)
-		if err != nil {
-			return false
-		}
+	vs.Iterate(func(key keys.Address, validator *Validator) bool {
 		validatorSet = append(validatorSet, *validator)
 		return false
 	})
 	return validatorSet, nil
 }
 
-func updateValidatorSet(store *storage.ChainState, votes []types.VoteInfo) error {
-
-	for _, v := range votes {
-		addr := v.Validator.GetAddress()
-		if !store.Exists(addr) {
-			return errors.New("validator set not match to last commit")
-		}
-	}
-	return nil
-}
-
 // handle stake action
 func (vs *ValidatorStore) HandleStake(apply Stake) error {
 	validator := &Validator{}
-
-	if !vs.ChainState.Exists(apply.ValidatorAddress.Bytes()) {
+	key := append(vs.prefix, apply.ValidatorAddress.Bytes()...)
+	if !vs.store.Exists(key) {
 
 		validator = &Validator{
 			Address:      apply.ValidatorAddress,
@@ -147,7 +147,7 @@ func (vs *ValidatorStore) HandleStake(apply Stake) error {
 		}
 		// push the new validator to queue
 	} else {
-		value := vs.ChainState.Get(apply.ValidatorAddress.Bytes(), false)
+		value, _ := vs.store.Get(key)
 		if value == nil {
 			return errors.New("failed to get validator from store")
 		}
@@ -165,8 +165,8 @@ func (vs *ValidatorStore) HandleStake(apply Stake) error {
 	}
 
 	value := (validator).Bytes()
-
-	err := vs.ChainState.Set(validator.Address.Bytes(), value)
+	vkey := append(vs.prefix, validator.Address.Bytes()...)
+	err := vs.store.Set(vkey, value)
 	if err != nil {
 		return errors.Wrap(err, "failed to set validator for stake")
 	}
@@ -183,8 +183,8 @@ func calculatePower(stake balance.Coin) int64 {
 func makingslash(vs *ValidatorStore, evidences []types.Evidence) []Validator {
 	remove := make([]Validator, 0)
 	for _, evidence := range evidences {
-		if vs.ChainState.Exists(evidence.Validator.Address) {
-			value := vs.ChainState.Get(evidence.Validator.GetAddress(), false)
+		if vs.store.Exists(evidence.Validator.Address) {
+			value, _ := vs.store.Get(evidence.Validator.GetAddress())
 			if value == nil {
 				logger.Error("failed to get validator from store", evidence.Validator.Address)
 			}
@@ -201,13 +201,13 @@ func makingslash(vs *ValidatorStore, evidences []types.Evidence) []Validator {
 
 func (vs *ValidatorStore) HandleUnstake(unstake Unstake) error {
 	validator := &Validator{}
-
-	if !vs.ChainState.Exists(unstake.Address.Bytes()) {
+	unstakeKey := append(vs.prefix, unstake.Address.Bytes()...)
+	if !vs.store.Exists(unstakeKey) {
 
 		return errors.New("address not exist in validator set")
 	}
 
-	value := vs.ChainState.Get(unstake.Address.Bytes(), false)
+	value, _ := vs.store.Get(unstakeKey)
 	if value == nil {
 		return errors.New("failed to get validator from store")
 	}
@@ -222,8 +222,9 @@ func (vs *ValidatorStore) HandleUnstake(unstake Unstake) error {
 	}
 	validator.Staking = amt
 	validator.Power = calculatePower(amt)
+	vKey := append(vs.prefix, validator.Address.Bytes()...)
 
-	err = vs.ChainState.Set(validator.Address.Bytes(), validator.Bytes())
+	err = vs.store.Set(vKey, validator.Bytes())
 	if err != nil {
 		return errors.Wrap(err, "failed to set validator for unstake")
 	}
@@ -239,7 +240,10 @@ func (vs *ValidatorStore) GetEndBlockUpdate(ctx *ValidatorContext, req types.Req
 		cnt := 0
 		for vs.queue.Len() > 0 && cnt < 64 {
 			queued := vs.queue.Pop()
-			result := vs.ChainState.Get(queued.Value(), true)
+			// cqKey := append(vs.prefix, queued.Value()...)
+			cqKey := queued.Value()
+
+			result, _ := vs.store.Get(cqKey)
 			validator, err := (&Validator{}).FromBytes(result)
 			if err != nil {
 				logger.Error(err, "error deserialize validator")
@@ -247,9 +251,11 @@ func (vs *ValidatorStore) GetEndBlockUpdate(ctx *ValidatorContext, req types.Req
 			}
 			// purge validator who's power is 0
 			if validator.Power <= 0 {
-				_, ok := vs.ChainState.Remove(validator.Address)
+				vKey := append(vs.prefix, validator.Address.Bytes()...)
+
+				ok, err := vs.store.Delete(vKey)
 				if !ok {
-					logger.Error("Failed to remove invalid validator from chainstate")
+					logger.Error(err.Error())
 				}
 			}
 			validatorUpdates = append(validatorUpdates, types.ValidatorUpdate{
@@ -262,8 +268,4 @@ func (vs *ValidatorStore) GetEndBlockUpdate(ctx *ValidatorContext, req types.Req
 
 	// TODO : get the final updates from vs.cached
 	return validatorUpdates
-}
-
-func (vs *ValidatorStore) Commit() ([]byte, int64) {
-	return vs.ChainState.Commit()
 }

@@ -27,7 +27,7 @@ func init() {
 	// log.Info("Compiled without GCC, no cleveldb support...")
 }
 
-func getDatabase(name, dbDir, configDB string) (db.DB, error) {
+func GetDatabase(name, dbDir, configDB string) (db.DB, error) {
 	if configDB == "cleveldb" {
 		return nil, errors.New("Binary compiled without cleveldb support. Failed because \"cleveldb\" was specified in config")
 	}

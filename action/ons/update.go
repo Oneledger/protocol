@@ -96,7 +96,7 @@ func (domainUpdateTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (bool, 
 		return false, action.Response{Log: fmt.Sprintf("domain doesn't exist: %s", update.Name)}
 	}
 
-	d, err := ctx.Domains.Get(update.Name, false)
+	d, err := ctx.Domains.Get(update.Name)
 	if err != nil {
 		return false, action.Response{Log: fmt.Sprintf("failed to get domain: %s", update.Name)}
 	}
@@ -119,7 +119,7 @@ func (domainUpdateTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool
 		return false, action.Response{Log: fmt.Sprintf("domain doesn't exist: %s", update.Name)}
 	}
 
-	d, err := ctx.Domains.Get(update.Name, false)
+	d, err := ctx.Domains.Get(update.Name)
 	if err != nil {
 		return false, action.Response{Log: fmt.Sprintf("failed to get domain: %s", update.Name)}
 	}

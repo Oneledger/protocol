@@ -31,3 +31,12 @@ func dbDir() string {
 
 	return result
 }
+
+func Prefix(prefix string) []byte {
+	return []byte(prefix + DB_PREFIX)
+}
+
+func Rangefix(prefix string) []byte {
+	a := []byte(prefix + DB_RANGEFIX)
+	return a
+}

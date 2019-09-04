@@ -13,7 +13,7 @@ func (sv *Service) ONS_GetDomainByName(req client.ONSGetDomainsRequest, reply *c
 		return rpc.InvalidParamsError("name not provided")
 	}
 
-	d, err := domains.Get(req.Name, true)
+	d, err := domains.Get(req.Name)
 	if err != nil {
 		return rpc.InternalError("domain not exist")
 	}
@@ -36,7 +36,7 @@ func (sv *Service) ONS_GetDomainByOwner(req client.ONSGetDomainsRequest, reply *
 	}
 	ds := make([]ons.Domain, 0)
 
-	domains.Iterate(func(key []byte, value []byte) bool {
+	domains.State.GetIterator().Iterate(func(key []byte, value []byte) bool {
 		d := &ons.Domain{}
 		err := serialize.GetSerializer(serialize.PERSISTENT).Deserialize(value, d)
 		if err != nil {
@@ -65,7 +65,7 @@ func (sv *Service) ONS_GetDomainOnSale(req client.ONSGetDomainsRequest, reply *c
 	}
 
 	dds := make([]ons.Domain, 0)
-	domains.Iterate(func(key []byte, value []byte) bool {
+	domains.State.GetIterator().Iterate(func(key []byte, value []byte) bool {
 		d := &ons.Domain{}
 		err := serialize.GetSerializer(serialize.PERSISTENT).Deserialize(value, d)
 		if err != nil {

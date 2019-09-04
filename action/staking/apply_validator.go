@@ -99,7 +99,7 @@ func checkBalances(ctx *action.Context, address action.Address, stake action.Amo
 	balances := ctx.Balances
 
 	// check identity's VT is equal to the stake
-	balance, err := balances.Get(address, false)
+	balance, err := balances.Get(address)
 	if err != nil {
 		return false, action.ErrNotEnoughFund
 	}
@@ -127,7 +127,7 @@ func (a applyTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, act
 	validators := ctx.Validators
 
 	balances := ctx.Balances
-	balance, err := balances.Get(apply.Address.Bytes(), false)
+	balance, err := balances.Get(apply.Address.Bytes())
 	if err != nil {
 		return false, action.Response{Log: err.Error()}
 	}

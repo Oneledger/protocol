@@ -212,7 +212,7 @@ func TestDomainTx_ProcessCheck(t *testing.T) {
 				Name: "test_domain",
 			}
 			err := ctx.Domains.Set(d)
-			ctx.Domains.Commit()
+			ctx.Domains.State.Commit()
 			assert.Nil(t, err, "pre setup a test domain, should be no error")
 			ok, _ := txRefer.tx.ProcessCheck(ctx, tx.RawTx)
 			teardown(testDB)
@@ -239,7 +239,7 @@ func TestDomainTx_ProcessCheck(t *testing.T) {
 				OwnerAddress: owner.Bytes(),
 			}
 			err := ctx.Domains.Set(d)
-			ctx.Domains.Commit()
+			ctx.Domains.State.Commit()
 			assert.Nil(t, err, "pre setup a test domain, should be no error")
 			ok, _ := txRefer.tx.ProcessCheck(ctx, tx.RawTx)
 			teardown(testDB)

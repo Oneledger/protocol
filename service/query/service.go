@@ -43,7 +43,7 @@ func (svc *Service) Balance(req client.BalanceRequest, resp *client.BalanceReply
 	}
 
 	addr := req.Address
-	bal, err := svc.balances.Get(addr, true)
+	bal, err := svc.balances.Get(addr)
 
 	if err != nil && err == balance.ErrNoBalanceFoundForThisAddress {
 		// Return a zero for balance if the account doesn't exist
@@ -56,7 +56,7 @@ func (svc *Service) Balance(req client.BalanceRequest, resp *client.BalanceReply
 
 	*resp = client.BalanceReply{
 		Balance: bal.String(),
-		Height:  svc.balances.Version,
+		Height:  svc.balances.State.Version(),
 	}
 	return nil
 }
@@ -70,7 +70,7 @@ func (svc *Service) ListValidators(_ client.ListValidatorsRequest, reply *client
 
 	*reply = client.ListValidatorsReply{
 		Validators: validators,
-		Height:     svc.balances.Version,
+		Height:     svc.balances.State.Version(),
 	}
 
 	return nil

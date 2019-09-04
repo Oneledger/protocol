@@ -131,7 +131,7 @@ func (domainSendTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (bool, ac
 	coin := send.Amount.ToCoin(ctx.Currencies)
 
 	// get sender balance
-	b, _ := balances.Get(send.From.Bytes(), true)
+	b, _ := balances.Get(send.From.Bytes())
 	if b == nil {
 		return false, action.Response{Log: "failed to get balance for sender"}
 	}
@@ -164,7 +164,7 @@ func (domainSendTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, 
 		return false, action.Response{Log: err.Error()}
 	}
 
-	from, err := balances.Get(send.From.Bytes(), false)
+	from, err := balances.Get(send.From.Bytes())
 	if err != nil {
 		log := fmt.Sprint("Failed to get the balance of the owner ", send.From, "err", err)
 		return false, action.Response{Log: log}
@@ -177,7 +177,7 @@ func (domainSendTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, 
 
 	coin := send.Amount.ToCoin(ctx.Currencies)
 
-	domain, err := ctx.Domains.Get(send.DomainName, true)
+	domain, err := ctx.Domains.Get(send.DomainName)
 	if err != nil {
 		log := fmt.Sprint("error getting domain:", err)
 		return false, action.Response{Log: log}
@@ -191,11 +191,6 @@ func (domainSendTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, 
 		return false, action.Response{Log: log}
 	}
 	to := domain.AccountAddress
-	//change receiver balance
-	toBalance, err := balances.Get(to, false)
-	if err != nil {
-		ctx.Logger.Error("failed to get the balance of the receipient", err)
-	}
 
 	//change owner balance
 	fromFinal, err := from.MinusCoin(coin)
@@ -209,6 +204,11 @@ func (domainSendTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, 
 		return false, action.Response{Log: log}
 	}
 
+	//change receiver balance
+	toBalance, err := balances.Get(to)
+	if err != nil {
+		ctx.Logger.Error("failed to get the balance of the receipient", err)
+	}
 	if toBalance == nil {
 		toBalance = balance.NewBalance()
 	}

@@ -22,19 +22,18 @@ package storage
 
 import (
 	"encoding/hex"
+	"errors"
 	"sync"
 
 	"github.com/tendermint/iavl"
-	"github.com/tendermint/tendermint/libs/db"
+	tmdb "github.com/tendermint/tendermint/libs/db"
 )
 
 // Chainstate is a storage for balances on the chain, a snapshot of all accounts
 type ChainState struct {
 	Name string
-	Type StorageType
 
 	Delivered *iavl.MutableTree // Build us a new set of transactions
-	database  db.DB
 
 	// Last committed values
 	LastVersion int64
@@ -42,20 +41,18 @@ type ChainState struct {
 	LastHash    []byte
 	Hash        []byte
 	TreeHeight  int8
-	configDB    string
-	dbDir       string
 
 	sync.RWMutex
 }
 
 // NewChainState generates a new ChainState object
-func NewChainState(name, dbDir, configDB string, newType StorageType) *ChainState {
+func NewChainState(name string, db tmdb.DB) *ChainState {
 
-	chain := &ChainState{Name: name, Type: newType, Version: 0}
-	chain.dbDir = dbDir
-	chain.configDB = configDB
-
-	chain.reset()
+	chain := &ChainState{
+		Name:    name,
+		Version: 0,
+	}
+	chain.loadDB(db)
 
 	return chain
 }
@@ -68,6 +65,14 @@ func (state *ChainState) Set(key StoreKey, val []byte) error {
 	state.Delivered.Set(key, val)
 
 	return nil
+}
+
+func (state *ChainState) GetIterator() Iteratable {
+	return state.Delivered.ImmutableTree
+}
+
+func (state *ChainState) IterateRange(start, end []byte, ascending bool, fn func(key, value []byte) bool) (stop bool) {
+	return state.Delivered.IterateRange(start, end, ascending, fn)
 }
 
 func (state *ChainState) Iterate(fn func(key []byte, value []byte) bool) (stopped bool) {
@@ -87,31 +92,34 @@ func (state *ChainState) FindAll() map[string][]byte {
 }
 
 // TODO: Should be against the commit tree, not the delivered one!!!
-func (state *ChainState) Get(key StoreKey, lastCommit bool) []byte {
+func (state *ChainState) Get(key StoreKey) ([]byte, error) {
+	// get the value of currently working tree. it's temporary value that is not persistent yet.
+	_, value := state.Delivered.ImmutableTree.Get(key)
 
-	var value []byte
-	if lastCommit {
-		// get the value of last commit version
-		version := state.Delivered.Version()
-		_, value = state.Delivered.GetVersioned(key, version)
-	} else {
-		// get the value of currently working tree. it's temporary value that is not persistent yet.
-		_, value = state.Delivered.ImmutableTree.Get(key)
-	}
+	return value, nil
+}
 
-	return value
+func (state *ChainState) GetLatestVersioned(key StoreKey) ([]byte, int64) {
+
+	// get the value of last commit version
+	version := state.Delivered.Version()
+	_, value := state.Delivered.GetVersioned(key, version)
+	return value, version
 }
 
 // TODO: Should be against the commit tree, not the delivered one!!!
 func (state *ChainState) Exists(key StoreKey) bool {
+	return state.Delivered.ImmutableTree.Has(key)
+}
 
-	version := state.Delivered.Version()
-	_, value := state.Delivered.GetVersioned([]byte(key), version)
-	if value == nil {
-		return false
+func (state *ChainState) Delete(key StoreKey) (bool, error) {
+	_, ok := state.Delivered.Remove(key)
+	if !ok {
+		err := errors.New("Failed to delete the item from chainstate")
+		log.Error(err.Error())
+		return false, err
 	}
-
-	return true
+	return ok, nil
 }
 
 // TODO: Not sure about this, it seems to be Cosmos-sdk's way of getting arround the immutable copy problem...
@@ -123,7 +131,6 @@ func (state *ChainState) Commit() ([]byte, int64) {
 	if err != nil {
 		log.Fatal("Saving", "err", err)
 	}
-	state.RUnlock()
 
 	state.LastVersion, state.Version = state.Version, version
 	state.LastHash, state.Hash = state.Hash, hash
@@ -134,33 +141,18 @@ func (state *ChainState) Commit() ([]byte, int64) {
 			log.Error("Failed to delete old version of chainstate", "err", err)
 		}
 	}
-
+	state.RUnlock()
 	return hash, version
 }
 
-func (state *ChainState) Dump() {
-	texts := state.database.Stats()
-
-	for key, value := range texts {
-		log.Debug("Stat", key, value)
-	}
-
-}
-
-// Remove removes item from chainstate
-func (stake *ChainState) Remove(key []byte) ([]byte, bool) {
-	result, ok := stake.Delivered.Remove(key)
-	if !ok {
-		log.Error("Failed to delete the item from chainstate")
-	}
-	return result, ok
-}
-
 // Reset the chain state from persistence
-func (state *ChainState) reset() ([]byte, int64) {
-
-	state.Delivered, state.database = initializeDatabase(state.Name, state.dbDir, state.configDB, state.Type, state.Version)
-
+func (state *ChainState) loadDB(db tmdb.DB) ([]byte, int64) {
+	tree := iavl.NewMutableTree(db, CHAINSTATE_CACHE_SIZE) // Do I need a historic tree here?
+	version, err := tree.Load()
+	if err != nil {
+		log.Error("error in loading tree version", "version", version, "err", err)
+	}
+	state.Delivered = tree
 	// Essentially, the last commited value...
 	state.LastHash = state.Hash
 	state.LastVersion = state.Version
@@ -170,28 +162,6 @@ func (state *ChainState) reset() ([]byte, int64) {
 	state.Version = state.Delivered.Version()
 	state.TreeHeight = state.Delivered.Height()
 
-	log.Debug("Reinitialized Database", "version", state.Version, "tree_height", state.TreeHeight, "hash", hex.EncodeToString(state.Hash))
+	log.Debug("Reinitialized From Database", "version", state.Version, "tree_height", state.TreeHeight, "hash", hex.EncodeToString(state.Hash))
 	return state.Hash, state.Version
-}
-
-// Create or attach to a database
-func initializeDatabase(name, dbDir, configDB string, newType StorageType, version int64) (*iavl.MutableTree, db.DB) {
-	// TODO: Assuming persistence for right now
-	storage, err := getDatabase(name, dbDir, configDB)
-	if err != nil {
-		log.Error("Database create failed", "err", err)
-		panic("Can't create a database: " + dbDir + "/OneLedger-" + name)
-	}
-
-	tree := iavl.NewMutableTree(storage, CHAINSTATE_CACHE_SIZE) // Do I need a historic tree here?
-	_, err = tree.LoadVersion(version)
-	if err != nil {
-		log.Error("error in loading tree version", "version", version, "err", err)
-	}
-
-	return tree, storage
-}
-
-func (state *ChainState) Close() {
-	state.database.Close()
 }

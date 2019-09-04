@@ -6,6 +6,8 @@ import (
 	"os"
 	"testing"
 
+	db2 "github.com/tendermint/tendermint/libs/db"
+
 	"github.com/Oneledger/protocol/serialize"
 
 	"github.com/Oneledger/protocol/config"
@@ -27,9 +29,12 @@ import (
 )
 
 // global setup
-func setup() []string {
-	testDBs := []string{"test_dbpath"}
-	return testDBs
+func setup() (*identity.ValidatorStore, *balance.Store) {
+	db := db2.NewDB("test", db2.MemDBBackend, "")
+	cs := storage.NewState(storage.NewChainState("balance", db))
+	b := balance.NewStore("tb", cs)
+	v := identity.NewValidatorStore("tv", config.Server{}, cs)
+	return v, b
 }
 
 // remove test db dir after
@@ -268,13 +273,12 @@ func TestApplyTx_ProcessCheck(t *testing.T) {
 	//	assert.False(t, ok)
 	//})
 	t.Run("check balance with valid data, should return no error", func(t *testing.T) {
-		testDB := setup()
-		defer teardown(testDB)
+		vs, bs := setup()
 		tx := setupForApplyValidator()
+		_ = vs
 
-		store := balance.NewStore("test_balances", "test_dbpath", storage.CACHE, storage.PERSISTENT)
 		ctx := &action.Context{
-			Balances: store,
+			Balances: bs,
 		}
 		handler := applyTx{}
 
@@ -285,13 +289,10 @@ func TestApplyTx_ProcessCheck(t *testing.T) {
 
 func TestApplyTx_ProcessDeliver(t *testing.T) {
 	t.Run(" process with valid data, should return no error", func(t *testing.T) {
-		testDB := setup()
-		defer teardown(testDB)
+		vs, bs := setup()
+
 		tx := setupForApplyValidator()
 
-		store := balance.NewStore("test_balances", "test_dbpath", storage.CACHE, storage.PERSISTENT)
-		cfg := config.Server{}
-		validator := identity.NewValidatorStore(cfg, "test_dbpath", "test_db_type")
 		currencyList := balance.NewCurrencyList()
 		currency := balance.Currency{
 			Name:    "VT",
@@ -308,14 +309,14 @@ func TestApplyTx_ProcessDeliver(t *testing.T) {
 		apply := &ApplyValidator{}
 		err := serialize.GetSerializer(serialize.JSON).Deserialize(tx.Data, apply)
 
-		err = store.Set(apply.Address, *ba)
+		err = bs.Set(apply.Address, *ba)
 
 		assert.Nil(t, err, "set some VT token for test, should be ok")
 		err = currencyList.Register(currency)
 		assert.Nil(t, err, "register new currency should be ok")
 		ctx := &action.Context{
-			Balances:   store,
-			Validators: validator,
+			Balances:   bs,
+			Validators: vs,
 			Currencies: currencyList,
 		}
 		handler := applyTx{}
@@ -323,12 +324,8 @@ func TestApplyTx_ProcessDeliver(t *testing.T) {
 		assert.True(t, ok)
 	})
 	t.Run("process with valid data but using purge flag, should return no error", func(t *testing.T) {
-		testDB := setup()
-		defer teardown(testDB)
+		vs, bs := setup()
 		tx := setupForApplyValidatorWithPurge()
-		store := balance.NewStore("test_balances", "test_dbpath", storage.CACHE, storage.PERSISTENT)
-		cfg := config.Server{}
-		validator := identity.NewValidatorStore(cfg, "test_dbpath", "test_db_type")
 		currencyList := balance.NewCurrencyList()
 		currency := balance.Currency{
 			Name:    "VT",
@@ -344,13 +341,13 @@ func TestApplyTx_ProcessDeliver(t *testing.T) {
 		apply := &ApplyValidator{}
 		err := serialize.GetSerializer(serialize.JSON).Deserialize(tx.Data, apply)
 
-		err = store.Set(apply.Address, *ba)
+		err = bs.Set(apply.Address, *ba)
 		assert.Nil(t, err, "set some VT token for test, should be ok")
 		err = currencyList.Register(currency)
 		assert.Nil(t, err, "register new currency should be ok")
 		ctx := &action.Context{
-			Balances:   store,
-			Validators: validator,
+			Balances:   bs,
+			Validators: vs,
 			Currencies: currencyList,
 		}
 		handler := applyTx{}
