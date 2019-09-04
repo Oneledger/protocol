@@ -15,12 +15,13 @@ import (
 var _ action.Msg = &ApplyValidator{}
 
 type ApplyValidator struct {
-	Address          action.Address
-	Stake            action.Amount
-	NodeName         string
-	ValidatorAddress action.Address
-	ValidatorPubKey  keys.PublicKey
-	Purge            bool
+	Address              action.Address
+	Stake                action.Amount
+	NodeName             string
+	ValidatorAddress     action.Address
+	ValidatorPubKey      keys.PublicKey
+	ValidatorECDSAPubKey keys.PublicKey
+	Purge                bool
 }
 
 func (apply ApplyValidator) Marshal() ([]byte, error) {
@@ -146,6 +147,7 @@ func (a applyTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, act
 			ValidatorAddress: apply.ValidatorAddress,
 			StakeAddress:     apply.Address,
 			Pubkey:           apply.ValidatorPubKey,
+			ECDSAPubKey:      apply.ValidatorECDSAPubKey,
 			Name:             apply.NodeName,
 			Amount:           apply.Stake.ToCoin(ctx.Currencies),
 		}
