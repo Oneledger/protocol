@@ -8,7 +8,7 @@ const (
 	READBYTES  Gas = 2
 	WRITEFLAT  Gas = 200
 	WRITEBYTES Gas = 20
-	VERIFYSIG  Gas = 50
+	VERIFYSIG  Gas = 500
 	HASHBYTES  Gas = 5
 	CHECKEXIST Gas = 20
 	DELETE     Gas = 50

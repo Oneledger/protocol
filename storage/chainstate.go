@@ -42,6 +42,24 @@ type ChainState struct {
 	Hash        []byte
 	TreeHeight  int8
 
+	//persistent data config
+
+	// "recent" : latest number of version to persist
+	// recent = 0 : keep last version only
+	// recent = 3 : keep last 4 version
+	recent int64
+
+	// "every"  : every X number of version to persist
+	// every = 0 : keep no other epoch version
+	// every = 1 : keep every version
+	// every > 1 : epoch number = every
+	every int64
+
+	// "cycles" : number of latest cycles for "every" to persist
+	// cycles = 1 : only keep one of latest every
+	// cycles = 0 : keep every "every"
+	cycles int64
+
 	sync.RWMutex
 }
 
@@ -55,6 +73,16 @@ func NewChainState(name string, db tmdb.DB) *ChainState {
 	chain.loadDB(db)
 
 	return chain
+}
+
+// Setup the rotation configuration for ChainState,
+// "recent" : latest number of version to persist
+// "every"  : every X number of version to persist
+// "cycles" : number of latest every version to persist
+func (state *ChainState) SetupRotation(recent, every, cycles int64) {
+	state.recent = recent
+	state.every = every
+	state.cycles = cycles
 }
 
 // Do this only for the Delivery side
@@ -135,11 +163,23 @@ func (state *ChainState) Commit() ([]byte, int64) {
 	state.LastVersion, state.Version = state.Version, version
 	state.LastHash, state.Hash = state.Hash, hash
 
-	if state.LastVersion-1 > 0 {
-		err := state.Delivered.DeleteVersion(state.LastVersion - 1)
-		if err != nil {
-			log.Error("Failed to delete old version of chainstate", "err", err)
+	release := state.LastVersion - state.recent
+
+	if release > 0 {
+		if state.every == 0 || release%state.every != 0 {
+			err := state.Delivered.DeleteVersion(release)
+			if err != nil {
+				log.Error("Failed to delete old version of chainstate", "err", err)
+			}
 		}
+		if state.cycles != 0 && release%state.every == 0 {
+			release = release - state.cycles*state.every
+			err := state.Delivered.DeleteVersion(release)
+			if err != nil {
+				log.Error("Failed to delete old version of chainstate", "err", err)
+			}
+		}
+
 	}
 	state.RUnlock()
 	return hash, version
