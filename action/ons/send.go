@@ -207,7 +207,7 @@ func (domainSendTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, 
 	//change receiver balance
 	toBalance, err := balances.Get(to)
 	if err != nil {
-		ctx.Logger.Error("failed to get the balance of the receipient", err)
+		ctx.Logger.Error("failed to get the balance of the recipient", err)
 	}
 	if toBalance == nil {
 		toBalance = balance.NewBalance()
