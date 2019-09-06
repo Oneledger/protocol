@@ -80,7 +80,6 @@ func runInitNode(cmd *cobra.Command, _ []string) error {
 	if err != nil {
 		return err
 	}
-	panic("asdf")
 	return initNode(ctx)
 }
 
