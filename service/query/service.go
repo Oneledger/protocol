@@ -6,7 +6,7 @@ import (
 	"github.com/Oneledger/protocol/data/ons"
 	"github.com/Oneledger/protocol/identity"
 	"github.com/Oneledger/protocol/log"
-	"github.com/Oneledger/protocol/rpc"
+	"github.com/Oneledger/protocol/service/codes"
 )
 
 type Service struct {
@@ -39,7 +39,7 @@ func NewService(ctx client.ExtServiceContext, balances *balance.Store, currencie
 func (svc *Service) Balance(req client.BalanceRequest, resp *client.BalanceReply) error {
 	err := req.Address.Err()
 	if err != nil {
-		return rpc.InvalidParamsError(err.Error())
+		return codes.ErrBadAddress
 	}
 
 	addr := req.Address
@@ -51,7 +51,7 @@ func (svc *Service) Balance(req client.BalanceRequest, resp *client.BalanceReply
 		bal = balance.NewBalance()
 	} else if err != nil {
 		svc.logger.Error("error getting balance", err)
-		return rpc.InternalError("error getting balance")
+		return codes.ErrGettingBalance
 	}
 
 	*resp = client.BalanceReply{
@@ -65,7 +65,8 @@ func (svc *Service) Balance(req client.BalanceRequest, resp *client.BalanceReply
 func (svc *Service) ListValidators(_ client.ListValidatorsRequest, reply *client.ListValidatorsReply) error {
 	validators, err := svc.validators.GetValidatorSet()
 	if err != nil {
-		return rpc.InternalError("err while retrieving validators info")
+		svc.logger.Error("error listing validators")
+		return codes.ErrListValidators
 	}
 
 	*reply = client.ListValidatorsReply{

@@ -4,12 +4,13 @@ import (
 	"fmt"
 	"net/url"
 
+	"github.com/Oneledger/protocol/service/codes"
+
 	"github.com/Oneledger/protocol/log"
 
 	"github.com/Oneledger/protocol/app/node"
 	"github.com/Oneledger/protocol/client"
 	"github.com/Oneledger/protocol/config"
-	"github.com/Oneledger/protocol/rpc"
 	"github.com/tendermint/tendermint/p2p"
 )
 
@@ -44,7 +45,7 @@ func (svc *Service) Address(_ client.NodeAddressRequest, reply *client.NodeAddre
 func (svc *Service) ID(req client.NodeIDRequest, reply *client.NodeIDReply) error {
 	nodeKey, err := p2p.LoadNodeKey(svc.cfg.TMConfig().NodeKeyFile())
 	if err != nil {
-		return rpc.InvalidParamsError("error loading node key")
+		return codes.ErrLoadingNodeKey
 	}
 
 	// silenced error because not present means false
@@ -52,7 +53,7 @@ func (svc *Service) ID(req client.NodeIDRequest, reply *client.NodeIDReply) erro
 	if req.ShouldShowIP {
 		u, err := url.Parse(ip)
 		if err != nil {
-			return rpc.InvalidParamsError("error in parsing configured url")
+			return codes.ErrParsingAddress
 		}
 		out := fmt.Sprintf("%s@%s", nodeKey.ID(), u.Host)
 		*reply = out

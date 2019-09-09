@@ -37,6 +37,8 @@ type WalletStore struct {
 	sync.Mutex
 }
 
+var ErrGetAccountByAddress = errors.New("account not found for address")
+
 // WalletStore satisfies the Wallet interface
 var _ Wallet = &WalletStore{}
 
@@ -127,7 +129,7 @@ func (ws WalletStore) SignWithAccountIndex(msg []byte, index int) (keys.PublicKe
 func (ws WalletStore) SignWithAddress(msg []byte, address keys.Address) (keys.PublicKey, []byte, error) {
 	account, err := ws.GetAccount(address)
 	if err != nil {
-		return keys.PublicKey{}, nil, errors.Wrap(err, "sign with address")
+		return keys.PublicKey{}, nil, ErrGetAccountByAddress
 	}
 
 	signed, err := account.Sign(msg)
