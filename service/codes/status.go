@@ -6,6 +6,9 @@ package codes
 
 import "fmt"
 
+/*
+	Service Error definition
+*/
 type ServiceError struct {
 	Code int
 	Msg  string
@@ -15,6 +18,20 @@ func (se ServiceError) Error() string {
 	return fmt.Sprintf("%d: %s", se.Code, se.Msg)
 }
 
+func (se ServiceError) Wrap(err error) *ServiceError {
+	return &ServiceError{se.Code,
+		se.Msg + ": " + err.Error()}
+}
+
+func WrapError(err error, code int, msg string) *ServiceError {
+	return &ServiceError{code, msg + ": " + err.Error()}
+}
+
+/*
+
+	Status declarations
+
+*/
 var (
 	ErrSerialization = ServiceError{InternalError, "error in serialization"}
 
