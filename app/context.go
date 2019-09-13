@@ -4,6 +4,9 @@ import (
 	"io"
 	"path/filepath"
 
+	"github.com/Oneledger/protocol/data/fees"
+	"github.com/Oneledger/protocol/data/governance"
+
 	"github.com/Oneledger/protocol/action"
 	action_ons "github.com/Oneledger/protocol/action/ons"
 	"github.com/Oneledger/protocol/action/staking"
@@ -41,11 +44,14 @@ type context struct {
 	balances   *balance.Store
 	domains    *ons.DomainStore
 	validators *identity.ValidatorStore // Set of validators currently active
+	feePool    *fees.Store
+	govern     *governance.Store
 
 	currencies *balance.CurrencyList
+	feeOption  *fees.FeeOption
+
 	//storage which is not a chain state
 	accounts accounts.Wallet
-	admin    storage.SessionedStorage
 
 	logWriter io.Writer
 }
@@ -72,11 +78,17 @@ func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *node.Context) (
 	ctx.validators = identity.NewValidatorStore("v", cfg, storage.NewState(ctx.chainstate))
 	ctx.balances = balance.NewStore("b", storage.NewState(ctx.chainstate))
 	ctx.domains = ons.NewDomainStore("d", storage.NewState(ctx.chainstate))
+	ctx.feePool = fees.NewStore("f", storage.NewState(ctx.chainstate))
+	ctx.govern = governance.NewStore("g", storage.NewState(ctx.chainstate))
 
 	ctx.accounts = accounts.NewWallet(cfg, ctx.dbDir())
-	ctx.admin = storage.NewStorageDB(storage.KEYVALUE, "admin", ctx.dbDir(), ctx.cfg.Node.DB)
 
 	ctx.actionRouter = action.NewRouter("action")
+	ctx.feeOption = &fees.FeeOption{
+		FeeCurrency:   balance.Currency{},
+		MinFeeDecimal: 0,
+	}
+
 	_ = transfer.EnableSend(ctx.actionRouter)
 	_ = staking.EnableApplyValidator(ctx.actionRouter)
 	_ = action_ons.EnableONS(ctx.actionRouter)
@@ -94,6 +106,7 @@ func (ctx *context) Action(header *Header, state *storage.State) *action.Context
 		ctx.accounts,
 		ctx.balances.WithState(state),
 		ctx.currencies,
+		ctx.feeOption,
 		ctx.validators.WithState(state),
 		ctx.domains.WithState(state),
 		log.NewLoggerWithPrefix(ctx.logWriter, "action"))

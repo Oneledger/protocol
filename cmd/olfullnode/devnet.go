@@ -11,6 +11,8 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/Oneledger/protocol/data/fees"
+
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/tendermint/tendermint/crypto/secp256k1"
 
@@ -286,9 +288,9 @@ func runDevnet(cmd *cobra.Command, _ []string) error {
 		chainID = args.chainID
 	}
 
-	currencies, states := initialState(args, nodeList)
+	currencies, feeOpt, states := initialState(args, nodeList)
 
-	genesisDoc, err := consensus.NewGenesisDoc(chainID, currencies, states)
+	genesisDoc, err := consensus.NewGenesisDoc(chainID, currencies, feeOpt, states)
 	if err != nil {
 		return errors.Wrap(err, "failed to create new genesis file")
 	}
@@ -340,11 +342,14 @@ func runDevnet(cmd *cobra.Command, _ []string) error {
 	return nil
 }
 
-func initialState(args *testnetConfig, nodeList []node) ([]balance.Currency, []consensus.StateInput) {
+func initialState(args *testnetConfig, nodeList []node) (balance.Currencies, fees.FeeOption, []consensus.StateInput) {
 	olt := balance.Currency{"OLT", chain.Type(0), 18}
 	vt := balance.Currency{"VT", chain.Type(0), 0}
 	currencies := []balance.Currency{olt, vt}
-
+	feeOpt := fees.FeeOption{
+		FeeCurrency:   olt,
+		MinFeeDecimal: 9,
+	}
 	var out []consensus.StateInput
 	// If single origin is active, then the first node in the list should hold all the funds
 	if args.singleOriginFunds {
@@ -369,7 +374,7 @@ func initialState(args *testnetConfig, nodeList []node) ([]balance.Currency, []c
 				Balance: *b,
 			})
 		}
-		return currencies, out
+		return currencies, feeOpt, out
 	}
 
 	out = make([]consensus.StateInput, len(nodeList))
@@ -387,5 +392,5 @@ func initialState(args *testnetConfig, nodeList []node) ([]balance.Currency, []c
 			out[i].Balance.AddCoin(vt.NewCoinFromInt(100))
 		}
 	}
-	return currencies, out
+	return currencies, feeOpt, out
 }

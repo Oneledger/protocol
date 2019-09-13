@@ -166,11 +166,16 @@ func (coin Coin) Divide(value int) Coin {
 
 // Multiply one coin by another
 func (coin Coin) MultiplyInt(value int) Coin {
+	return coin.MultiplyInt64(int64(value))
+}
+
+func (coin Coin) MultiplyInt64(value int64) Coin {
 	if coin.Amount == nil {
 		coin.Amount = NewAmount(0)
+		return coin
 	}
 
-	multiplier := big.NewInt(int64(value))
+	multiplier := big.NewInt(value)
 	base := big.NewInt(0)
 	result := Coin{
 		Currency: coin.Currency,

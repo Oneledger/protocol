@@ -47,7 +47,7 @@ func (svc *Service) validateAndSignTx(req client.BroadcastRequest) ([]byte, erro
 	}
 
 	handler := svc.router.Handler(tx.Type)
-	ctx := action.NewContext(svc.router, nil, nil, nil, svc.currencies, nil, nil, svc.logger)
+	ctx := action.NewContext(svc.router, nil, nil, nil, svc.currencies, nil, nil, nil, svc.logger)
 	_, err = handler.Validate(ctx, signedTx)
 	if err != nil {
 		err = rpc.InvalidRequestError(err.Error())

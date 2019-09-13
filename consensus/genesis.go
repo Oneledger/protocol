@@ -2,6 +2,7 @@ package consensus
 
 import (
 	"encoding/json"
+	"github.com/Oneledger/protocol/data/fees"
 	"time"
 
 	"github.com/Oneledger/protocol/data/balance"
@@ -13,10 +14,10 @@ import (
 type GenesisDoc = types.GenesisDoc
 type GenesisValidator = types.GenesisValidator
 
-func NewGenesisDoc(chainID string, currencies []balance.Currency, states []StateInput) (*GenesisDoc, error) {
+func NewGenesisDoc(chainID string, currencies balance.Currencies, feeOpt fees.FeeOption, states []StateInput) (*GenesisDoc, error) {
 	validators := make([]GenesisValidator, 0)
 
-	appStateBytes, err := newAppState(currencies, states).RawJSON()
+	appStateBytes, err := newAppState(currencies, feeOpt, states).RawJSON()
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to marshal DefaultAppState")
 	}
@@ -61,11 +62,12 @@ func (si StateInput) state() state {
 }
 
 type AppState struct {
-	Currencies []balance.Currency `json:"currencies"`
+	Currencies balance.Currencies `json:"currencies"`
+	FeeOption  fees.FeeOption     `json:"feeOption"`
 	States     []state            `json:"states"`
 }
 
-func newAppState(currencies []balance.Currency, stateInputs []StateInput) *AppState {
+func newAppState(currencies balance.Currencies, feeOpt fees.FeeOption, stateInputs []StateInput) *AppState {
 	states := make([]state, len(stateInputs))
 	for i, s := range stateInputs {
 		states[i] = s.state()
@@ -73,6 +75,7 @@ func newAppState(currencies []balance.Currency, stateInputs []StateInput) *AppSt
 
 	return &AppState{
 		Currencies: currencies,
+		FeeOption:  feeOpt,
 		States:     states,
 	}
 }

@@ -7,6 +7,7 @@ import (
 	"github.com/Oneledger/protocol/config"
 	"github.com/Oneledger/protocol/data/accounts"
 	"github.com/Oneledger/protocol/data/balance"
+	"github.com/Oneledger/protocol/data/fees"
 	"github.com/Oneledger/protocol/data/ons"
 	"github.com/Oneledger/protocol/identity"
 	"github.com/Oneledger/protocol/log"
@@ -19,16 +20,21 @@ import (
 
 // Context is the master context for creating new contexts
 type Context struct {
-	Balances     *balance.Store
+	//stores
 	Accounts     accounts.Wallet
-	Currencies   *balance.CurrencyList
-	Cfg          config.Server
-	NodeContext  node.Context
-	ValidatorSet *identity.ValidatorStore
+	Balances     *balance.Store
 	Domains      *ons.DomainStore
-	Services     client.ExtServiceContext
-	Router       action.Router
-	Logger       *log.Logger
+	ValidatorSet *identity.ValidatorStore
+
+	// configurations
+	Cfg         config.Server
+	Currencies  *balance.CurrencyList
+	FeeOpt      *fees.FeeOption
+	NodeContext node.Context
+
+	Router   action.Router
+	Services client.ExtServiceContext
+	Logger   *log.Logger
 }
 
 // Map of services, keyed by the name/prefix of the service

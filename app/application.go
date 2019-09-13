@@ -11,6 +11,7 @@ import (
 	"github.com/Oneledger/protocol/consensus"
 	"github.com/Oneledger/protocol/data/accounts"
 	"github.com/Oneledger/protocol/data/balance"
+	"github.com/Oneledger/protocol/data/chain"
 	"github.com/Oneledger/protocol/log"
 	"github.com/Oneledger/protocol/serialize"
 	"github.com/Oneledger/protocol/storage"
@@ -104,22 +105,22 @@ func (app *App) setupState(stateBytes []byte) error {
 		return errors.Wrap(err, "setupState deserialization")
 	}
 
-	// commit the initial currencies to the admin db
-	session := app.Context.admin.BeginSession()
-	_ = session.Set([]byte(ADMIN_CURRENCY_KEY), stateBytes)
-	session.Commit()
+	// commit the initial currencies to the governance db
 
-	nodeCtx := app.Context.Node()
+	err = app.Context.govern.SetCurrencies(initial.Currencies)
+	if err != nil {
+		return errors.Wrap(err, "Setup State")
+	}
 	balanceCtx := app.Context.Balances()
-	walletCtx := app.Context.Accounts()
 
-	// (1) Register all the currencies
+	// (1) Register all the currencies and fee
 	for _, currency := range initial.Currencies {
 		err := balanceCtx.Currencies().Register(currency)
 		if err != nil {
 			return errors.Wrapf(err, "failed to register currency %s", currency.Name)
 		}
 	}
+	app.Context.feeOption = &initial.FeeOption
 
 	// (2) Set balances to all those mentioned
 	for _, state := range initial.States {
@@ -138,33 +139,6 @@ func (app *App) setupState(stateBytes []byte) error {
 		app.logger.Debug(strings.ToUpper(hex.EncodeToString(key)))
 	}
 
-	myPrivKey := nodeCtx.PrivKey()
-	myPubKey := nodeCtx.PubKey()
-
-	// Start registering myself
-	app.logger.Info("Registering myself...")
-	for _, currency := range initial.Currencies {
-		chainType := currency.Chain
-		acct, err := accounts.NewAccount(
-			chainType,
-			nodeCtx.NodeName,
-			&myPrivKey,
-			&myPubKey)
-
-		if err != nil {
-			app.logger.Warn("Can't create a new account for myself", "err", err, "chainType", chainType)
-			continue
-		}
-
-		if _, err := walletCtx.GetAccount(acct.Address()); err != nil {
-			err = walletCtx.Add(acct)
-			if err != nil {
-				app.logger.Warn("Failed to register myself", "err", err)
-				continue
-			}
-		}
-		app.logger.Info("Successfully registered myself!")
-	}
 	return nil
 }
 
@@ -176,27 +150,55 @@ func (app *App) setupValidators(req RequestInitChain, currencies *balance.Curren
 func (app *App) Start() error {
 	app.logger.Info("Starting node...")
 
-	//get currencies from admin db
-	result, err := app.Context.admin.Get([]byte(ADMIN_CURRENCY_KEY))
-	if err != nil {
-		app.logger.Debug("didn't get the currencies from db")
-	} else {
+	//get currencies from governance db
 
-		as := &consensus.AppState{}
-		err = serialize.GetSerializer(serialize.PERSISTENT).Deserialize(result, as)
+	if app.Context.govern.InitialChain() {
+		app.logger.Debug("didn't get the currencies from db,  register self")
+		nodeCtx := app.Context.Node()
+		walletCtx := app.Context.Accounts()
+		myPrivKey := nodeCtx.PrivKey()
+		myPubKey := nodeCtx.PubKey()
+		// Start registering myself
+		app.logger.Info("Registering myself...")
+
+		chainType := chain.Type(0)
+		acct, err := accounts.NewAccount(
+			chainType,
+			nodeCtx.NodeName,
+			&myPrivKey,
+			&myPubKey)
+
 		if err != nil {
-			app.logger.Error("failed to deserialize the currencies from db")
-			return errors.Wrap(err, "failed to get the currencies")
+			app.logger.Warn("Can't create a new account for myself", "err", err, "chainType", chainType)
 		}
 
-		for _, currency := range as.Currencies {
+		if _, err := walletCtx.GetAccount(acct.Address()); err != nil {
+			err = walletCtx.Add(acct)
+			if err != nil {
+				app.logger.Warn("Failed to register myself", "err", err)
+			}
+		}
+		app.logger.Infof("Successfully registered myself: %s", acct.Address())
+
+	} else {
+		currencies, err := app.Context.govern.GetCurrencies()
+		if err != nil {
+			return err
+		}
+		for _, currency := range currencies {
 			err := app.Context.currencies.Register(currency)
 			if err != nil {
 				return errors.Wrapf(err, "failed to register currency %s", currency.Name)
 			}
 		}
 
-		app.logger.Infof("Read currencies from db %#v", app.Context.currencies)
+		app.logger.Infof("Read currencies from db %#v", currencies)
+
+		feeOpt, err := app.Context.govern.GetFeeOption()
+		if err != nil {
+			return err
+		}
+		app.Context.feeOption = feeOpt
 	}
 
 	node, err := consensus.NewNode(app.ABCI(), &app.Context.cfg)

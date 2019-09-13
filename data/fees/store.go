@@ -56,3 +56,19 @@ func (st *Store) Exists(address keys.Address) bool {
 	key := append(st.prefix, storage.StoreKey(address)...)
 	return st.state.Exists(key)
 }
+
+func (st *Store) Iterate(fn func(addr keys.Address, coin balance.Coin) bool) bool {
+	return st.state.IterateRange(
+		st.prefix,
+		storage.Rangefix(string(st.prefix[:len(st.prefix)-1])),
+		true,
+		func(key, value []byte) bool {
+			coin := &balance.Coin{}
+			err := serialize.GetSerializer(serialize.PERSISTENT).Deserialize(value, coin)
+			if err != nil {
+				return false
+			}
+			return fn(key, *coin)
+		},
+	)
+}
