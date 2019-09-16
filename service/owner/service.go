@@ -5,7 +5,7 @@ import (
 	"github.com/Oneledger/protocol/data/chain"
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/log"
-	"github.com/Oneledger/protocol/service/codes"
+	codes "github.com/Oneledger/protocol/status_codes"
 
 	"github.com/Oneledger/protocol/client"
 	"github.com/Oneledger/protocol/data/accounts"

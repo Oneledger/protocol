@@ -4,7 +4,7 @@ import (
 	"github.com/Oneledger/protocol/action/staking"
 	"github.com/Oneledger/protocol/action/transfer"
 	"github.com/Oneledger/protocol/log"
-	"github.com/Oneledger/protocol/service/codes"
+	codes "github.com/Oneledger/protocol/status_codes"
 
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/app/node"

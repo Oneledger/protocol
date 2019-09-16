@@ -6,7 +6,7 @@ import (
 	"github.com/Oneledger/protocol/data/ons"
 	"github.com/Oneledger/protocol/identity"
 	"github.com/Oneledger/protocol/log"
-	"github.com/Oneledger/protocol/service/codes"
+	codes "github.com/Oneledger/protocol/status_codes"
 )
 
 type Service struct {

@@ -4,7 +4,7 @@ import (
 	"github.com/Oneledger/protocol/client"
 	"github.com/Oneledger/protocol/data/ons"
 	"github.com/Oneledger/protocol/serialize"
-	"github.com/Oneledger/protocol/service/codes"
+	codes "github.com/Oneledger/protocol/status_codes"
 )
 
 func (sv *Service) ONS_GetDomainByName(req client.ONSGetDomainsRequest, reply *client.ONSGetDomainsReply) error {

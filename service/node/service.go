@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"net/url"
 
-	"github.com/Oneledger/protocol/service/codes"
+	codes "github.com/Oneledger/protocol/status_codes"
 
 	"github.com/Oneledger/protocol/log"
 

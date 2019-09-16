@@ -7,7 +7,7 @@ package tx
 import (
 	"strings"
 
-	"github.com/Oneledger/protocol/service/codes"
+	codes "github.com/Oneledger/protocol/status_codes"
 
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/action/ons"
