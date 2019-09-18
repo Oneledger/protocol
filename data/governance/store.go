@@ -1,6 +1,8 @@
 package governance
 
 import (
+	"fmt"
+
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/fees"
 	"github.com/Oneledger/protocol/serialize"
@@ -51,7 +53,7 @@ func (st *Store) Exists(key []byte) bool {
 func (st *Store) GetCurrencies() (balance.Currencies, error) {
 	result, err := st.Get([]byte(ADMIN_CURRENCY_KEY))
 	currencies := make(balance.Currencies, 0, 10)
-	err = serialize.GetSerializer(serialize.PERSISTENT).Deserialize(result, currencies)
+	err = serialize.GetSerializer(serialize.PERSISTENT).Deserialize(result, &currencies)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get the currencies")
 	}
@@ -79,6 +81,7 @@ func (st *Store) GetFeeOption() (*fees.FeeOption, error) {
 	}
 	err = serialize.GetSerializer(serialize.PERSISTENT).Deserialize(bytes, feeOpt)
 	if err != nil {
+		fmt.Println("get feeOption", string(bytes))
 		return nil, errors.Wrap(err, "failed to deserialize FeeOption stored")
 	}
 
@@ -96,6 +99,11 @@ func (st *Store) SetFeeOption(feeOpt fees.FeeOption) error {
 		return errors.Wrap(err, "failed to set the FeeOption")
 	}
 	return nil
+}
+
+func (st *Store) Initiated() bool {
+	_ = st.Set([]byte(ADMIN_INITIAL_KEY), []byte("initialed"))
+	return true
 }
 
 func (st *Store) InitialChain() bool {

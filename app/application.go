@@ -121,6 +121,10 @@ func (app *App) setupState(stateBytes []byte) error {
 		}
 	}
 	app.Context.feeOption = &initial.FeeOption
+	err = app.Context.govern.SetFeeOption(initial.FeeOption)
+	if err != nil {
+		return errors.Wrap(err, "Setup State")
+	}
 
 	// (2) Set balances to all those mentioned
 	for _, state := range initial.States {

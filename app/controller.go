@@ -57,7 +57,7 @@ func (app *App) optionSetter() optionSetter {
 func (app *App) chainInitializer() chainInitializer {
 	return func(req RequestInitChain) ResponseInitChain {
 		app.Context.deliver = storage.NewState(app.Context.chainstate)
-
+		app.Context.govern.WithState(app.Context.deliver)
 		err := app.setupState(req.AppStateBytes)
 		// This should cause consensus to halt
 		if err != nil {
@@ -72,6 +72,7 @@ func (app *App) chainInitializer() chainInitializer {
 			app.logger.Error("Failed to setupValidator", "err", err)
 			return ResponseInitChain{}
 		}
+		app.Context.govern.Initiated()
 		app.Context.deliver.Write()
 		app.logger.Info("finish chain initialize")
 		return ResponseInitChain{Validators: validators}
