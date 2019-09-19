@@ -179,7 +179,7 @@ func doSendTransaction(ctx *Context, threadNo int, acc *accounts.Account, nodeAd
 
 	// generate a random amount
 	r := rand.New(rand.NewSource(time.Now().UnixNano()))
-	num := r.Float64() * 10 // amount is a random float between [0, 1000)
+	num := r.Float64() * 10 // amount is a random float between [0, 10)
 	// populate send arguments
 	sendArgsLocal := SendArguments{}
 	sendArgsLocal.Party = []byte(nodeAddress)
@@ -191,9 +191,10 @@ func doSendTransaction(ctx *Context, threadNo int, acc *accounts.Account, nodeAd
 	}
 
 	// set amount and fee
-	sendArgsLocal.Amount = strconv.FormatFloat(num, 'f', 0, 64)
-	sendArgsLocal.Fee = strconv.FormatFloat(num/100, 'f', 0, 64)
+	sendArgsLocal.Amount = strconv.FormatFloat(num, 'f', 6, 64)
+	sendArgsLocal.Fee = strconv.FormatFloat(0.0000003, 'f', 9, 64)
 	sendArgsLocal.Currency = "OLT"
+	sendArgsLocal.Gas = 200030
 
 	// Create message
 	fullnode := ctx.clCtx.FullNodeClient()

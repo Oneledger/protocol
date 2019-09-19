@@ -12,4 +12,5 @@ var (
 	ErrInvalidSignature = errors.New("invalid signatures")
 	ErrInvalidFee       = errors.New("invalid fees")
 	ErrNotEnoughFund    = errors.New("not enough fund")
+	ErrGasOverflow      = errors.New("gas used exceed limit")
 )

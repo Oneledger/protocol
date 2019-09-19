@@ -7,31 +7,37 @@ import (
 	"github.com/Oneledger/protocol/data/ons"
 	"github.com/Oneledger/protocol/identity"
 	"github.com/Oneledger/protocol/log"
+	"github.com/Oneledger/protocol/storage"
 	abci "github.com/tendermint/tendermint/abci/types"
 )
 
 type Context struct {
 	Router     Router
+	State      *storage.State
 	Header     *abci.Header
 	Accounts   accounts.Wallet
 	Balances   *balance.Store
 	Domains    *ons.DomainStore
+	FeePool    *fees.Store
 	Currencies *balance.CurrencyList
 	FeeOpt     *fees.FeeOption
 	Validators *identity.ValidatorStore
 	Logger     *log.Logger
 }
 
-func NewContext(r Router, header *abci.Header, wallet accounts.Wallet, balances *balance.Store,
-	currencies *balance.CurrencyList, feeOpt *fees.FeeOption,
+func NewContext(r Router, header *abci.Header, state *storage.State,
+	wallet accounts.Wallet, balances *balance.Store,
+	currencies *balance.CurrencyList, feeOpt *fees.FeeOption, feePool *fees.Store,
 	validators *identity.ValidatorStore, domains *ons.DomainStore,
 	logger *log.Logger) *Context {
 	return &Context{
 		Router:     r,
+		State:      state,
 		Header:     header,
 		Accounts:   wallet,
 		Balances:   balances,
 		Domains:    domains,
+		FeePool:    feePool,
 		Currencies: currencies,
 		FeeOpt:     feeOpt,
 		Validators: validators,

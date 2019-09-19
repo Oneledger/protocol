@@ -6,6 +6,7 @@ var _ Iteratable = &State{}
 type State struct {
 	cs    *ChainState
 	cache Store
+	gc    GasCalculator
 }
 
 func (s *State) Get(key StoreKey) ([]byte, error) {
@@ -68,6 +69,7 @@ func (s *State) WithGas(gc GasCalculator) *State {
 	return &State{
 		cs:    s.cs,
 		cache: gs,
+		gc:    gc,
 	}
 }
 
@@ -96,4 +98,16 @@ func (s *State) Commit() (hash []byte, version int64) {
 	s.Write()
 	s.cache = NewStorage(CACHE, "state")
 	return s.cs.Commit()
+}
+
+func (s *State) ConsumedGas() Gas {
+	return s.gc.GetConsumed()
+}
+
+func (s *State) ConsumeVerifySigGas(gas Gas) bool {
+	return s.gc.Consume(gas, VERIFYSIG, true)
+}
+
+func (s *State) ConsumeStorageGas(gas Gas) bool {
+	return s.gc.Consume(gas, STOREBYTES, true)
 }

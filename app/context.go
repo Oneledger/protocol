@@ -103,10 +103,12 @@ func (ctx *context) Action(header *Header, state *storage.State) *action.Context
 	actionCtx := action.NewContext(
 		ctx.actionRouter,
 		header,
+		state,
 		ctx.accounts,
 		ctx.balances.WithState(state),
 		ctx.currencies,
 		ctx.feeOption,
+		ctx.feePool.WithState(state),
 		ctx.validators.WithState(state),
 		ctx.domains.WithState(state),
 		log.NewLoggerWithPrefix(ctx.logWriter, "action"))

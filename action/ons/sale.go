@@ -206,7 +206,7 @@ func (domainSaleTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, 
 	return true, action.Response{Tags: sale.Tags()}
 }
 
-func (domainSaleTx) ProcessFee(ctx *action.Context, fee action.Fee) (bool, action.Response) {
+func (domainSaleTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas) (bool, action.Response) {
 	panic("implement me")
 	// TODO: implement the fee charge for send
 	return true, action.Response{GasWanted: 0, GasUsed: 0}

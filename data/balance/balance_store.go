@@ -46,6 +46,7 @@ func (st *Store) Get(address []byte) (bal *Balance, err error) {
 
 	if len(dat) == 0 {
 		err = ErrNoBalanceFoundForThisAddress
+		bal = NewBalance()
 		return
 	}
 	bal = NewBalance()

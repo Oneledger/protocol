@@ -197,7 +197,7 @@ func PrintDecimal(i *big.Int, decimal int) string {
 	str := i.String()
 	l := len(str)
 
-	if l < decimal {
+	if l <= decimal {
 		padZero := ""
 		for i := 0; i < decimal-l; i++ {
 			padZero += "0"

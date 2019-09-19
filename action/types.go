@@ -3,6 +3,8 @@ package action
 import (
 	"encoding/json"
 
+	"github.com/Oneledger/protocol/storage"
+
 	"github.com/tendermint/tendermint/libs/common"
 
 	"github.com/Oneledger/protocol/data/balance"
@@ -14,6 +16,9 @@ type Address = keys.Address
 
 // Balance an action package over Balance in data/balance
 type Balance = balance.Balance
+
+// Gas an action package over Gas in storage
+type Gas = storage.Gas
 
 // Amount is an easily serializable representation of coin. Nodes can create coin from the Amount object
 // received over the network

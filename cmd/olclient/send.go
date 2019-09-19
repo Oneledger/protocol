@@ -73,6 +73,7 @@ func init() {
 	sendCmd.Flags().StringVar(&sendargs.Amount, "amount", "0", "specify an amount")
 	sendCmd.Flags().StringVar(&sendargs.Currency, "currency", "OLT", "the currency")
 	sendCmd.Flags().StringVar(&sendargs.Fee, "fee", "0", "include a fee in OLT")
+	sendCmd.Flags().Int64Var(&sendargs.Gas, "gas", 20000, "gas limit")
 }
 
 // IssueRequest sends out a sendTx to all of the nodes in the chain

@@ -167,6 +167,6 @@ func (domainCreateTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool
 	return true, result
 }
 
-func (domainCreateTx) ProcessFee(ctx *action.Context, fee action.Fee) (bool, action.Response) {
+func (domainCreateTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas) (bool, action.Response) {
 	panic("implement me")
 }

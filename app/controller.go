@@ -4,6 +4,8 @@ import (
 	"encoding/hex"
 	"math"
 
+	"github.com/Oneledger/protocol/data/fees"
+
 	"github.com/tendermint/tendermint/types"
 
 	"github.com/Oneledger/protocol/storage"
@@ -116,6 +118,8 @@ func (app *App) txChecker() txChecker {
 
 		handler := txCtx.Router.Handler(tx.Type)
 
+		gas := txCtx.State.ConsumedGas()
+
 		ok, err := handler.Validate(txCtx, *tx)
 		if err != nil {
 			app.logger.Debug("Check Tx invalid: ", err.Error())
@@ -126,13 +130,15 @@ func (app *App) txChecker() txChecker {
 		}
 		ok, response := handler.ProcessCheck(txCtx, tx.RawTx)
 
+		feeOk, feeResponse := handler.ProcessFee(txCtx, *tx, gas, storage.Gas(len(msg)))
+
 		result := ResponseCheckTx{
-			Code:      getCode(ok).uint32(),
+			Code:      getCode(ok && feeOk).uint32(),
 			Data:      response.Data,
-			Log:       response.Log,
+			Log:       response.Log + feeResponse.Log,
 			Info:      response.Info,
-			GasWanted: response.GasWanted,
-			GasUsed:   response.GasUsed,
+			GasWanted: feeResponse.GasWanted,
+			GasUsed:   feeResponse.GasUsed,
 			Tags:      response.Tags,
 			Codespace: "",
 		}
@@ -154,15 +160,19 @@ func (app *App) txDeliverer() txDeliverer {
 
 		handler := txCtx.Router.Handler(tx.Type)
 
+		gas := txCtx.State.ConsumedGas()
+
 		ok, response := handler.ProcessDeliver(txCtx, tx.RawTx)
 
+		feeOk, feeResponse := handler.ProcessFee(txCtx, *tx, gas, storage.Gas(len(msg)))
+
 		result := ResponseDeliverTx{
-			Code:      getCode(ok).uint32(),
+			Code:      getCode(ok && feeOk).uint32(),
 			Data:      response.Data,
-			Log:       response.Log,
+			Log:       response.Log + feeResponse.Log,
 			Info:      response.Info,
-			GasWanted: response.GasWanted,
-			GasUsed:   response.GasUsed,
+			GasWanted: feeResponse.GasWanted,
+			GasUsed:   feeResponse.GasUsed,
 			Tags:      response.Tags,
 			Codespace: "",
 		}
@@ -175,7 +185,8 @@ func (app *App) blockEnder() blockEnder {
 	return func(req RequestEndBlock) ResponseEndBlock {
 
 		updates := app.Context.validators.GetEndBlockUpdate(app.Context.ValidatorCtx(), req)
-
+		fee, err := app.Context.feePool.WithState(app.Context.deliver).Get([]byte(fees.POOL_KEY))
+		app.logger.Debug("endblock fee", fee, err)
 		result := ResponseEndBlock{
 			ValidatorUpdates: updates,
 			Tags:             []common.KVPair(nil),
@@ -236,9 +247,9 @@ func getGasCalculator(params *types.ConsensusParams) storage.GasCalculator {
 	}
 	gas := storage.Gas(0)
 	if limit < 0 {
-		gas = math.MaxUint64
+		gas = math.MaxInt64
 	} else {
-		gas = storage.Gas(uint64(limit))
+		gas = storage.Gas(limit)
 	}
 	return storage.NewGasCalculator(gas)
 }

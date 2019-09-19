@@ -1,6 +1,6 @@
 package storage
 
-type Gas uint64
+type Gas int64
 
 const (
 	STOREBYTES Gas = 20
@@ -8,7 +8,7 @@ const (
 	READBYTES  Gas = 2
 	WRITEFLAT  Gas = 200
 	WRITEBYTES Gas = 20
-	VERIFYSIG  Gas = 500
+	VERIFYSIG  Gas = 5000
 	HASHBYTES  Gas = 5
 	CHECKEXIST Gas = 20
 	DELETE     Gas = 50
@@ -29,7 +29,7 @@ type GasCalculator interface {
 	IsEnough() bool
 }
 
-var _ GasCalculator = gasCalculator{}
+var _ GasCalculator = &gasCalculator{}
 
 type gasCalculator struct {
 	limit    Gas
@@ -43,7 +43,7 @@ func (g gasCalculator) IsEnough() bool {
 	return false
 }
 
-func (g gasCalculator) Consume(amount, category Gas, allowOverflow bool) bool {
+func (g *gasCalculator) Consume(amount, category Gas, allowOverflow bool) bool {
 	currentGasCost := amount * category
 	if allowOverflow {
 		g.consumed += currentGasCost

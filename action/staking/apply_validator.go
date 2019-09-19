@@ -165,9 +165,8 @@ func (a applyTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, act
 	return true, action.Response{Tags: apply.Tags()}
 }
 
-func (applyTx) ProcessFee(ctx *action.Context, fee action.Fee) (bool, action.Response) {
-	// TODO: implement fee charge for apply
-	return true, action.Response{Info: "Unimplemented"}
+func (a applyTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas) (bool, action.Response) {
+	panic("implement me")
 }
 
 func (apply ApplyValidator) Tags() common.KVPairs {

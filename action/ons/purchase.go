@@ -190,6 +190,6 @@ func (domainPurchaseTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bo
 	return true, action.Response{Tags: buy.Tags()}
 }
 
-func (domainPurchaseTx) ProcessFee(ctx *action.Context, fee action.Fee) (bool, action.Response) {
+func (domainPurchaseTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas) (bool, action.Response) {
 	panic("implement me")
 }
