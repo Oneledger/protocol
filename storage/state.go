@@ -1,5 +1,9 @@
 package storage
 
+import (
+	"fmt"
+)
+
 var _ Store = &State{}
 var _ Iteratable = &State{}
 
@@ -61,6 +65,7 @@ func NewState(state *ChainState) *State {
 	return &State{
 		cs:    state,
 		cache: NewStorage(CACHE, "state"),
+		gc:    NewGasCalculator(0),
 	}
 }
 
@@ -75,6 +80,7 @@ func (s *State) WithGas(gc GasCalculator) *State {
 
 func (s *State) WithoutGas() *State {
 	s.cache = NewStorage(CACHE, "state")
+	//s.gc = NewGasCalculator(0)
 	return s
 }
 
@@ -101,6 +107,9 @@ func (s *State) Commit() (hash []byte, version int64) {
 }
 
 func (s *State) ConsumedGas() Gas {
+	if s.gc == nil {
+		fmt.Printf("consumed gas, gas calculater is nil %#v \n", s)
+	}
 	return s.gc.GetConsumed()
 }
 

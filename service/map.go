@@ -1,6 +1,7 @@
 package service
 
 import (
+	"fmt"
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/app/node"
 	"github.com/Oneledger/protocol/client"
@@ -41,8 +42,9 @@ type Context struct {
 type Map map[string]interface{}
 
 func NewMap(ctx *Context) Map {
+	fmt.Printf("map %#v", ctx.FeeOpt)
 	return Map{
-		broadcast.Name(): broadcast.NewService(ctx.Services, ctx.Router, ctx.Currencies, ctx.Logger),
+		broadcast.Name(): broadcast.NewService(ctx.Services, ctx.Router, ctx.Currencies, ctx.FeeOpt, ctx.Logger),
 		nodesvc.Name():   nodesvc.NewService(ctx.NodeContext, &ctx.Cfg, ctx.Logger),
 		owner.Name():     owner.NewService(ctx.Accounts, ctx.Logger),
 		query.Name():     query.NewService(ctx.Services, ctx.Balances, ctx.Currencies, ctx.ValidatorSet, ctx.Domains, ctx.Logger),

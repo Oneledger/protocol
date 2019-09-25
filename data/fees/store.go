@@ -1,8 +1,6 @@
 package fees
 
 import (
-	"fmt"
-
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/serialize"
@@ -10,7 +8,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-const POOL_KEY = "0x00000000000000000000"
+const POOL_KEY = "00000000000000000000"
 
 type Store struct {
 	state    *storage.State
@@ -62,10 +60,10 @@ func (st *Store) Exists(address keys.Address) bool {
 	return st.state.Exists(key)
 }
 
-func (st *Store) Iterate(fn func(addr keys.Address, coin balance.Coin) bool) bool {
+func (st *Store) Iterate(fn func(addr keys.Address, coin balance.Coin) (stop bool)) bool {
 	return st.state.IterateRange(
 		st.prefix,
-		storage.Rangefix(string(st.prefix[:len(st.prefix)-1])),
+		storage.Rangefix(string(st.prefix)),
 		true,
 		func(key, value []byte) bool {
 			coin := &balance.Coin{}
@@ -73,20 +71,40 @@ func (st *Store) Iterate(fn func(addr keys.Address, coin balance.Coin) bool) boo
 			if err != nil {
 				return false
 			}
-			return fn(key, *coin)
+			addr := key[len(st.prefix):]
+			return fn(addr, *coin)
 		},
 	)
 }
 
-func (st *Store) AddToPool(coin balance.Coin) error {
-	bal, err := st.Get([]byte(POOL_KEY))
+func (st *Store) AddToAddress(addr keys.Address, coin balance.Coin) error {
+	bal, err := st.Get(addr)
 	if err != nil {
-		return errors.Wrap(err, "failed to get pool balance")
+		return errors.Wrapf(err, "failed to get address balance %s", addr.String())
 	}
 	newBal, err := bal.Plus(coin)
-	err = st.Set([]byte(POOL_KEY), newBal)
+	if err != nil {
+		return err
+	}
+	return st.Set(addr, newBal)
+}
 
-	final, _ := st.Get([]byte(POOL_KEY))
-	fmt.Println("after add to pool", final)
-	return err
+func (st *Store) MinusFromAddress(addr keys.Address, coin balance.Coin) error {
+	bal, err := st.Get(addr)
+	if err != nil {
+		return errors.Wrapf(err, "failed to get address balance %s", addr.String())
+	}
+	newBal, err := bal.Minus(coin)
+	if err != nil {
+		return err
+	}
+	return st.Set(addr, newBal)
+}
+
+func (st *Store) AddToPool(coin balance.Coin) error {
+	return st.AddToAddress(keys.Address(POOL_KEY), coin)
+}
+
+func (st *Store) MinusFromPool(coin balance.Coin) error {
+	return st.MinusFromAddress(keys.Address(POOL_KEY), coin)
 }

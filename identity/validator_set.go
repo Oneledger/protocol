@@ -1,8 +1,10 @@
 package identity
 
 import (
+	"fmt"
 	"github.com/Oneledger/protocol/config"
 	"github.com/Oneledger/protocol/data/balance"
+	"github.com/Oneledger/protocol/data/fees"
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/storage"
 	"github.com/Oneledger/protocol/utils"
@@ -16,6 +18,7 @@ type ValidatorStore struct {
 	proposer  keys.Address
 	queue     ValidatorQueue
 	byzantine []Validator
+	totalPower int64
 }
 
 func NewValidatorStore(prefix string, cfg config.Server, state *storage.State) *ValidatorStore {
@@ -26,6 +29,7 @@ func NewValidatorStore(prefix string, cfg config.Server, state *storage.State) *
 		proposer:  []byte(nil),
 		queue:     ValidatorQueue{PriorityQueue: make(utils.PriorityQueue, 0, 100)},
 		byzantine: make([]Validator, 0),
+		totalPower: 0,
 	}
 }
 
@@ -37,7 +41,7 @@ func (vs *ValidatorStore) WithState(state *storage.State) *ValidatorStore {
 func (vs *ValidatorStore) Iterate(fn func(addr keys.Address, validator *Validator) bool) (stopped bool) {
 	return vs.store.IterateRange(
 		vs.prefix,
-		storage.Rangefix(string(vs.prefix[:len(vs.prefix)-1])),
+		storage.Rangefix(string(vs.prefix)),
 		true,
 		func(key, value []byte) bool {
 			validator, err := (&Validator{}).FromBytes(value)
@@ -45,7 +49,8 @@ func (vs *ValidatorStore) Iterate(fn func(addr keys.Address, validator *Validato
 				logger.Error("failed to deserialize validator")
 				return false
 			}
-			return fn(key, validator)
+			addr := key[len(vs.prefix):]
+			return fn(addr, validator)
 		},
 	)
 }
@@ -108,10 +113,11 @@ func (vs *ValidatorStore) Setup(req types.RequestBeginBlock) error {
 	// initialize the queue for validators
 	vs.queue.PriorityQueue = make(utils.PriorityQueue, 0, 100)
 	i := 0
-	vs.Iterate(func(key keys.Address, validator *Validator) bool {
-		queued := utils.NewQueued(key, validator.Power, i)
+	vs.totalPower = 0
+	vs.Iterate(func(addr keys.Address, validator *Validator) bool {
+		queued := utils.NewQueued(addr, validator.Power, i)
 		vs.queue.append(queued)
-		// 		vs.queue.Push(queued)
+		vs.totalPower += validator.Power
 		i++
 		return false
 	})
@@ -124,7 +130,7 @@ func (vs *ValidatorStore) Setup(req types.RequestBeginBlock) error {
 func (vs *ValidatorStore) GetValidatorSet() ([]Validator, error) {
 
 	validatorSet := make([]Validator, 0)
-	vs.Iterate(func(key keys.Address, validator *Validator) bool {
+	vs.Iterate(func(addr keys.Address, validator *Validator) bool {
 		validatorSet = append(validatorSet, *validator)
 		return false
 	})
@@ -236,13 +242,28 @@ func (vs *ValidatorStore) HandleUnstake(unstake Unstake) error {
 func (vs *ValidatorStore) GetEndBlockUpdate(ctx *ValidatorContext, req types.RequestEndBlock) []types.ValidatorUpdate {
 
 	validatorUpdates := make([]types.ValidatorUpdate, 0)
-
+	total, err := ctx.FeePool.Get([]byte(fees.POOL_KEY))
+	if err != nil {
+		logger.Fatal("failed to get the total fee pool")
+	}
 	if req.Height > 1 || (len(vs.byzantine) > 0) {
 		cnt := 0
 		for vs.queue.Len() > 0 && cnt < 64 {
 			queued := vs.queue.Pop()
-			// cqKey := append(vs.prefix, queued.Value()...)
-			cqKey := queued.Value()
+			addr := queued.Value()
+			cqKey := append(vs.prefix, addr...)
+
+			fmt.Printf("addr %s, key %s \n", keys.Address(addr), keys.Address(cqKey))
+			//distribute the fee for validators
+			feeShare := total.MultiplyInt64(queued.Priority()).DivideInt64(vs.totalPower)
+			err = ctx.FeePool.MinusFromPool(feeShare)
+			if err != nil {
+				logger.Fatal("failed to minus from fee pool")
+			}
+			err = ctx.FeePool.AddToAddress(addr, feeShare)
+			if err != nil {
+				logger.Fatal("failed to distribute fee")
+			}
 
 			result, _ := vs.store.Get(cqKey)
 			validator, err := (&Validator{}).FromBytes(result)

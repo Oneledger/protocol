@@ -1,6 +1,7 @@
 package app
 
 import (
+	"github.com/Oneledger/protocol/data/chain"
 	"io"
 	"path/filepath"
 
@@ -85,7 +86,7 @@ func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *node.Context) (
 
 	ctx.actionRouter = action.NewRouter("action")
 	ctx.feeOption = &fees.FeeOption{
-		FeeCurrency:   balance.Currency{},
+		FeeCurrency:   balance.Currency{Name: "OLT", Chain: chain.Type(0), Decimal: 18},
 		MinFeeDecimal: 0,
 	}
 
@@ -122,7 +123,10 @@ func (ctx *context) Accounts() accounts.Wallet {
 }
 
 func (ctx *context) ValidatorCtx() *identity.ValidatorContext {
-	return identity.NewValidatorContext(ctx.balances)
+	return identity.NewValidatorContext(
+		ctx.balances.WithState(ctx.deliver),
+		ctx.feePool.WithState(ctx.deliver),
+		)
 }
 
 // Returns a balance.Context
@@ -142,6 +146,7 @@ func (ctx *context) Services() (service.Map, error) {
 		Balances:     ctx.balances,
 		Accounts:     ctx.accounts,
 		Currencies:   ctx.currencies,
+		FeeOpt:       ctx.feeOption,
 		Cfg:          ctx.cfg,
 		NodeContext:  ctx.node,
 		ValidatorSet: ctx.validators,

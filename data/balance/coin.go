@@ -150,12 +150,16 @@ func (coin Coin) Plus(value Coin) (Coin, error) {
 }
 
 func (coin Coin) Divide(value int) Coin {
+	return coin.DivideInt64(int64(value))
+}
+
+func (coin Coin) DivideInt64(value int64) Coin {
 	if coin.Amount == nil {
 		coin.Amount = NewAmount(0)
 	}
 
 	base := big.NewInt(0)
-	divisor := big.NewInt(int64(value))
+	divisor := big.NewInt(value)
 	result := Coin{
 		Currency: coin.Currency,
 		Amount:   &Amount{*base.Div(&coin.Amount.Int, divisor)},

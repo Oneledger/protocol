@@ -2,6 +2,7 @@ package identity
 
 import (
 	"github.com/Oneledger/protocol/data/balance"
+	"github.com/Oneledger/protocol/data/fees"
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/serialize"
 )
@@ -50,11 +51,13 @@ type Unstake struct {
 
 type ValidatorContext struct {
 	Balances *balance.Store
+	FeePool *fees.Store
 	// TODO: add necessary config
 }
 
-func NewValidatorContext(balances *balance.Store) *ValidatorContext {
+func NewValidatorContext(balances *balance.Store, feePool *fees.Store) *ValidatorContext {
 	return &ValidatorContext{
 		Balances: balances,
+		FeePool: feePool,
 	}
 }

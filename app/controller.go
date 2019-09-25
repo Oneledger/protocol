@@ -2,6 +2,8 @@ package app
 
 import (
 	"encoding/hex"
+	"fmt"
+	"github.com/Oneledger/protocol/data/balance"
 	"math"
 
 	"github.com/Oneledger/protocol/data/fees"
@@ -115,7 +117,7 @@ func (app *App) txChecker() txChecker {
 		}
 
 		txCtx := app.Context.Action(&app.header, app.Context.check)
-
+		fmt.Printf("checker height %d %#v \n", app.header.Height, app.Context.check)
 		handler := txCtx.Router.Handler(tx.Type)
 
 		gas := txCtx.State.ConsumedGas()
@@ -184,9 +186,13 @@ func (app *App) txDeliverer() txDeliverer {
 func (app *App) blockEnder() blockEnder {
 	return func(req RequestEndBlock) ResponseEndBlock {
 
-		updates := app.Context.validators.GetEndBlockUpdate(app.Context.ValidatorCtx(), req)
 		fee, err := app.Context.feePool.WithState(app.Context.deliver).Get([]byte(fees.POOL_KEY))
 		app.logger.Debug("endblock fee", fee, err)
+		app.Context.feePool.Iterate(func(addr action.Address, coin balance.Coin) bool {
+			fmt.Printf("addr: %s, fee: %s \n", addr.String(), coin.String())
+			return false
+		})
+		updates := app.Context.validators.GetEndBlockUpdate(app.Context.ValidatorCtx(), req)
 		result := ResponseEndBlock{
 			ValidatorUpdates: updates,
 			Tags:             []common.KVPair(nil),

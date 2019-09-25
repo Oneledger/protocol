@@ -73,6 +73,12 @@ func (sendTx) Validate(ctx *action.Context, tx action.SignedTx) (bool, error) {
 		return ok, err
 	}
 
+	//if tx.Fee.Price.Currency != ctx.FeeOpt.FeeCurrency.Name {
+	//	return false, action.ErrInvalidFeeCurrency
+	//}
+	//if !ctx.FeeOpt.MinFee().LessThanEqualCoin(tx.Fee.Price.ToCoin(ctx.Currencies)) {
+	//	return false, action.ErrInvalidFeePrice
+	//}
 	//validate transaction specific field
 
 	if !send.Amount.IsValid(ctx.Currencies) {

@@ -120,7 +120,9 @@ func (app *App) setupState(stateBytes []byte) error {
 			return errors.Wrapf(err, "failed to register currency %s", currency.Name)
 		}
 	}
-	app.Context.feeOption = &initial.FeeOption
+	app.Context.feeOption.FeeCurrency = initial.FeeOption.FeeCurrency
+	app.Context.feeOption.MinFeeDecimal = initial.FeeOption.MinFeeDecimal
+
 	err = app.Context.govern.SetFeeOption(initial.FeeOption)
 	if err != nil {
 		return errors.Wrap(err, "Setup State")
