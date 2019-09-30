@@ -12,11 +12,6 @@ pipeline {
         PATH="${GOPATH}/bin:${PATH}"
     }
     stages{       
-        stage ('Checkout Repo'){
-            steps{
-                git credentialsId: 'github_token', url: 'https://github.com/Oneledger/protocol.git'
-            }
-        }
         stage ('download apt dependency'){
             steps{
                 sh 'apt-get update -y && apt-get install -y build-essential libleveldb-dev libsnappy-dev'
