@@ -48,6 +48,6 @@ func NewMap(ctx *Context) Map {
 		nodesvc.Name():   nodesvc.NewService(ctx.NodeContext, &ctx.Cfg, ctx.Logger),
 		owner.Name():     owner.NewService(ctx.Accounts, ctx.Logger),
 		query.Name():     query.NewService(ctx.Services, ctx.Balances, ctx.Currencies, ctx.ValidatorSet, ctx.Domains, ctx.Logger),
-		tx.Name():        tx.NewService(ctx.Balances, ctx.Router, ctx.Accounts, ctx.NodeContext, ctx.Logger),
+		tx.Name():        tx.NewService(ctx.Balances, ctx.Router, ctx.Accounts, ctx.FeeOpt, ctx.NodeContext, ctx.Logger),
 	}
 }

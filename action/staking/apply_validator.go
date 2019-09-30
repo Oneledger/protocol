@@ -52,9 +52,14 @@ func (a applyTx) Validate(ctx *action.Context, tx action.SignedTx) (bool, error)
 	if err != nil {
 		return false, errors.Wrap(action.ErrWrongTxType, err.Error())
 	}
-	ok, err := action.ValidateBasic(tx.RawBytes(), apply.Signers(), tx.Signatures)
+	err = action.ValidateBasic(tx.RawBytes(), apply.Signers(), tx.Signatures)
 	if err != nil {
-		return ok, err
+		return false, err
+	}
+
+	err = action.ValidateFee(ctx.FeeOpt, tx.Fee)
+	if err != nil {
+		return false, err
 	}
 
 	if len(apply.Address) == 0 {
@@ -82,17 +87,8 @@ func (a applyTx) Validate(ctx *action.Context, tx action.SignedTx) (bool, error)
 }
 
 func (a applyTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
-	apply := &ApplyValidator{}
-	err := apply.Unmarshal(tx.Data)
-	if err != nil {
-		return false, action.Response{Log: err.Error()}
-	}
-
-	result, err := checkBalances(ctx, apply.Address, apply.Stake)
-	if err != nil {
-		return false, action.Response{Log: err.Error()}
-	}
-	return result, action.Response{Tags: apply.Tags()}
+	ctx.Logger.Debug("Processing Apply Validator Transaction for CheckTx", tx)
+	return runApply(ctx, tx)
 }
 
 func checkBalances(ctx *action.Context, address action.Address, stake action.Amount) (bool, error) {
@@ -115,6 +111,31 @@ func checkBalances(ctx *action.Context, address action.Address, stake action.Amo
 }
 
 func (a applyTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
+	ctx.Logger.Debug("Processing Apply Validator Transaction for DeliverTx", tx)
+	return runApply(ctx, tx)
+}
+
+func (a applyTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas) (bool, action.Response) {
+	return action.BasicFeeHandling(ctx, signedTx, start, size, 1)
+}
+
+func (apply ApplyValidator) Tags() common.KVPairs {
+	tags := make([]common.KVPair, 0)
+
+	tag := common.KVPair{
+		Key:   []byte("tx.type"),
+		Value: []byte(apply.Type().String()),
+	}
+	tag2 := common.KVPair{
+		Key:   []byte("tx.owner"),
+		Value: apply.Address.Bytes(),
+	}
+
+	tags = append(tags, tag, tag2)
+	return tags
+}
+
+func runApply(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	apply := &ApplyValidator{}
 	err := apply.Unmarshal(tx.Data)
 	if err != nil {
@@ -163,24 +184,4 @@ func (a applyTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, act
 		return false, action.Response{Log: err.Error()}
 	}
 	return true, action.Response{Tags: apply.Tags()}
-}
-
-func (a applyTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas) (bool, action.Response) {
-	panic("implement me")
-}
-
-func (apply ApplyValidator) Tags() common.KVPairs {
-	tags := make([]common.KVPair, 0)
-
-	tag := common.KVPair{
-		Key:   []byte("tx.type"),
-		Value: []byte(apply.Type().String()),
-	}
-	tag2 := common.KVPair{
-		Key:   []byte("tx.owner"),
-		Value: apply.Address.Bytes(),
-	}
-
-	tags = append(tags, tag, tag2)
-	return tags
 }

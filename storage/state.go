@@ -120,3 +120,13 @@ func (s *State) ConsumeVerifySigGas(gas Gas) bool {
 func (s *State) ConsumeStorageGas(gas Gas) bool {
 	return s.gc.Consume(gas, STOREBYTES, true)
 }
+
+func (s *State) GetVersioned(version int64, key StoreKey) []byte {
+	_, value := s.cs.GetVersioned(version, key)
+	return value
+}
+
+func (s *State) GetPrevious(num int64, key StoreKey) []byte {
+	ver := s.cs.Version
+	return s.GetVersioned(ver-num, key)
+}

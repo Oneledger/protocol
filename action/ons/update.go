@@ -69,9 +69,14 @@ func (domainUpdateTx) Validate(ctx *action.Context, tx action.SignedTx) (bool, e
 		return false, errors.Wrap(action.ErrWrongTxType, err.Error())
 	}
 
-	ok, err := action.ValidateBasic(tx.RawBytes(), update.Signers(), tx.Signatures)
+	err = action.ValidateBasic(tx.RawBytes(), update.Signers(), tx.Signatures)
 	if err != nil {
-		return ok, err
+		return false, err
+	}
+
+	err = action.ValidateFee(ctx.FeeOpt, tx.Fee)
+	if err != nil {
+		return false, err
 	}
 
 	if update.Owner == nil || len(update.Name) <= 0 {

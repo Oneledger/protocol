@@ -70,9 +70,9 @@ func (domainCreateTx) Validate(ctx *action.Context, tx action.SignedTx) (bool, e
 		return false, errors.Wrap(action.ErrWrongTxType, err.Error())
 	}
 
-	ok, err := action.ValidateBasic(tx.RawBytes(), create.Signers(), tx.Signatures)
+	err = action.ValidateBasic(tx.RawBytes(), create.Signers(), tx.Signatures)
 	if err != nil {
-		return ok, err
+		return false, err
 	}
 
 	if create.Owner == nil || len(create.Name) <= 0 {
@@ -168,5 +168,5 @@ func (domainCreateTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool
 }
 
 func (domainCreateTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas) (bool, action.Response) {
-	panic("implement me")
+	return action.BasicFeeHandling(ctx, signedTx, start, size, 1)
 }

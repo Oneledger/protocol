@@ -127,7 +127,7 @@ func (app *App) setupState(stateBytes []byte) error {
 	if err != nil {
 		return errors.Wrap(err, "Setup State")
 	}
-	app.Context.feePool.SetupCurrency(initial.FeeOption.FeeCurrency)
+	app.Context.feePool.SetupOpt(app.Context.feeOption)
 
 	// (2) Set balances to all those mentioned
 	for _, state := range initial.States {
@@ -206,7 +206,7 @@ func (app *App) Start() error {
 			return err
 		}
 		app.Context.feeOption = feeOpt
-		app.Context.feePool.SetupCurrency(feeOpt.FeeCurrency)
+		app.Context.feePool.SetupOpt(feeOpt)
 	}
 
 	node, err := consensus.NewNode(app.ABCI(), &app.Context.cfg)

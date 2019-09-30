@@ -68,19 +68,17 @@ func (sendTx) Validate(ctx *action.Context, tx action.SignedTx) (bool, error) {
 	}
 
 	//validate basic signature
-	ok, err := action.ValidateBasic(tx.RawBytes(), send.Signers(), tx.Signatures)
+	err = action.ValidateBasic(tx.RawBytes(), send.Signers(), tx.Signatures)
 	if err != nil {
-		return ok, err
+		return false, err
 	}
 
-	//if tx.Fee.Price.Currency != ctx.FeeOpt.FeeCurrency.Name {
-	//	return false, action.ErrInvalidFeeCurrency
-	//}
-	//if !ctx.FeeOpt.MinFee().LessThanEqualCoin(tx.Fee.Price.ToCoin(ctx.Currencies)) {
-	//	return false, action.ErrInvalidFeePrice
-	//}
-	//validate transaction specific field
+	err = action.ValidateFee(ctx.FeeOpt, tx.Fee)
+	if err != nil {
+		return false, err
+	}
 
+	//validate transaction specific field
 	if !send.Amount.IsValid(ctx.Currencies) {
 		return false, errors.Wrap(action.ErrInvalidAmount, send.Amount.String())
 	}
@@ -103,37 +101,7 @@ func (s sendTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (ok bool, r
 }
 
 func (sendTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas) (bool, action.Response) {
-	ctx.State.ConsumeVerifySigGas(1)
-	ctx.State.ConsumeStorageGas(size)
-	// check the used gas for the tx
-	final := ctx.Balances.State.ConsumedGas()
-	used := int64(final - start)
-	if used > signedTx.Fee.Gas {
-		return false, action.Response{Log: action.ErrGasOverflow.Error(), GasWanted: signedTx.Fee.Gas, GasUsed: signedTx.Fee.Gas}
-	}
-	// only charge the first signer
-	signer := signedTx.Signatures[0].Signer
-	h, err := signer.GetHandler()
-	if err != nil {
-		return false, action.Response{Log: err.Error()}
-	}
-	addr := h.Address()
-
-	charge := signedTx.Fee.Price.ToCoin(ctx.Currencies).MultiplyInt64(int64(used))
-	bal, _ := ctx.Balances.Get(addr)
-	if _, err := bal.MinusCoin(charge); err != nil {
-		return false, action.Response{Log: err.Error()}
-	}
-	err = ctx.Balances.Set(h.Address(), *bal)
-	if err != nil {
-		return false, action.Response{Log: err.Error()}
-	}
-	fmt.Println("fee charged", charge)
-	err = ctx.FeePool.AddToPool(charge)
-	if err != nil {
-		return false, action.Response{Log: err.Error()}
-	}
-	return true, action.Response{GasWanted: signedTx.Fee.Gas, GasUsed: used}
+	return action.BasicFeeHandling(ctx, signedTx, start, size, 1)
 }
 
 func runTx(ctx *action.Context, tx action.RawTx) (bool, action.Response) {

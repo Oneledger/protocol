@@ -3,6 +3,7 @@ package tx
 import (
 	"github.com/Oneledger/protocol/action/staking"
 	"github.com/Oneledger/protocol/action/transfer"
+	"github.com/Oneledger/protocol/data/fees"
 	"github.com/Oneledger/protocol/log"
 
 	"github.com/Oneledger/protocol/action"
@@ -24,6 +25,7 @@ type Service struct {
 	balances    *balance.Store
 	router      action.Router
 	accounts    accounts.Wallet
+	feeOpt      *fees.FeeOption
 	logger      *log.Logger
 	nodeContext node.Context
 }
@@ -32,6 +34,7 @@ func NewService(
 	balances *balance.Store,
 	router action.Router,
 	accounts accounts.Wallet,
+	feeOpt  *fees.FeeOption,
 	nodeCtx node.Context,
 	logger *log.Logger,
 ) *Service {
@@ -40,6 +43,7 @@ func NewService(
 		router:      router,
 		nodeContext: nodeCtx,
 		accounts:    accounts,
+		feeOpt:      feeOpt,
 		logger:      logger,
 	}
 }
@@ -168,14 +172,12 @@ func (svc *Service) ApplyValidator(args client.ApplyValidatorRequest, reply *cli
 	}
 
 	uuidNew, _ := uuid.NewUUID()
-	feeAmount, err := balance.NewAmountFromString("1", 10)
-	if err != nil {
-		return err
-	}
+	feeAmount := svc.feeOpt.MinFee()
+
 	tx := action.RawTx{
 		Type: action.APPLYVALIDATOR,
 		Data: data,
-		Fee:  action.Fee{action.Amount{Currency: "OLT", Value: *feeAmount}, 1},
+		Fee:  action.Fee{action.Amount{Currency: "OLT", Value: *feeAmount.Amount}, 100000},
 		Memo: uuidNew.String(),
 	}
 

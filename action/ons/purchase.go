@@ -68,9 +68,14 @@ func (domainPurchaseTx) Validate(ctx *action.Context, tx action.SignedTx) (bool,
 	}
 
 	// validate basic signature
-	ok, err := action.ValidateBasic(tx.RawBytes(), buy.Signers(), tx.Signatures)
+	err = action.ValidateBasic(tx.RawBytes(), buy.Signers(), tx.Signatures)
 	if err != nil {
-		return ok, err
+		return false, err
+	}
+
+	err = action.ValidateFee(ctx.FeeOpt, tx.Fee)
+	if err != nil {
+		return false, err
 	}
 
 	if !buy.Offering.IsValid(ctx.Currencies) {
@@ -191,5 +196,5 @@ func (domainPurchaseTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bo
 }
 
 func (domainPurchaseTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas) (bool, action.Response) {
-	panic("implement me")
+	return action.BasicFeeHandling(ctx, signedTx, start, size, 1)
 }

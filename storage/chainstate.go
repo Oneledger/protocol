@@ -127,12 +127,15 @@ func (state *ChainState) Get(key StoreKey) ([]byte, error) {
 	return value, nil
 }
 
-func (state *ChainState) GetLatestVersioned(key StoreKey) ([]byte, int64) {
-
+func (state *ChainState) GetLatestVersioned(key StoreKey) (int64, []byte) {
 	// get the value of last commit version
 	version := state.Delivered.Version()
-	_, value := state.Delivered.GetVersioned(key, version)
-	return value, version
+	return state.Delivered.GetVersioned(key, version)
+
+}
+
+func (state *ChainState) GetVersioned(version int64, key StoreKey) (int64, []byte) {
+	return state.Delivered.GetVersioned(key, version)
 }
 
 // TODO: Should be against the commit tree, not the delivered one!!!

@@ -242,9 +242,12 @@ func (vs *ValidatorStore) HandleUnstake(unstake Unstake) error {
 func (vs *ValidatorStore) GetEndBlockUpdate(ctx *ValidatorContext, req types.RequestEndBlock) []types.ValidatorUpdate {
 
 	validatorUpdates := make([]types.ValidatorUpdate, 0)
+	distribute := false
 	total, err := ctx.FeePool.Get([]byte(fees.POOL_KEY))
 	if err != nil {
 		logger.Fatal("failed to get the total fee pool")
+	}else if ctx.FeePool.GetOpt().MinFee().LessThanCoin(total) {
+		distribute = true
 	}
 	if req.Height > 1 || (len(vs.byzantine) > 0) {
 		cnt := 0
@@ -255,14 +258,16 @@ func (vs *ValidatorStore) GetEndBlockUpdate(ctx *ValidatorContext, req types.Req
 
 			fmt.Printf("addr %s, key %s \n", keys.Address(addr), keys.Address(cqKey))
 			//distribute the fee for validators
-			feeShare := total.MultiplyInt64(queued.Priority()).DivideInt64(vs.totalPower)
-			err = ctx.FeePool.MinusFromPool(feeShare)
-			if err != nil {
-				logger.Fatal("failed to minus from fee pool")
-			}
-			err = ctx.FeePool.AddToAddress(addr, feeShare)
-			if err != nil {
-				logger.Fatal("failed to distribute fee")
+			if distribute {
+				feeShare := total.MultiplyInt64(queued.Priority()).DivideInt64(vs.totalPower)
+				err = ctx.FeePool.MinusFromPool(feeShare)
+				if err != nil {
+					logger.Fatal("failed to minus from fee pool")
+				}
+				err = ctx.FeePool.AddToAddress(addr, feeShare)
+				if err != nil {
+					logger.Fatal("failed to distribute fee")
+				}
 			}
 
 			result, _ := vs.store.Get(cqKey)

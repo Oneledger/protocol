@@ -8,12 +8,10 @@ import (
 	"github.com/pkg/errors"
 )
 
-const POOL_KEY = "00000000000000000000"
-
 type Store struct {
 	state    *storage.State
 	prefix   []byte
-	currency balance.Currency
+	feeOpt   *FeeOption
 }
 
 func NewStore(prefix string, state *storage.State) *Store {
@@ -28,8 +26,12 @@ func (st *Store) WithState(state *storage.State) *Store {
 	return st
 }
 
-func (st *Store) SetupCurrency(currency balance.Currency) {
-	st.currency = currency
+func (st *Store) SetupOpt(feeOpt *FeeOption) {
+	st.feeOpt = feeOpt
+}
+
+func (st *Store) GetOpt() *FeeOption {
+	return st.feeOpt
 }
 
 func (st *Store) Get(address []byte) (coin balance.Coin, err error) {
@@ -37,7 +39,7 @@ func (st *Store) Get(address []byte) (coin balance.Coin, err error) {
 	dat, _ := st.state.Get(key)
 	coin = balance.Coin{}
 	if len(dat) == 0 {
-		coin = st.currency.NewCoinFromInt(0)
+		coin = st.feeOpt.FeeCurrency.NewCoinFromInt(0)
 		return
 	}
 	err = serialize.GetSerializer(serialize.PERSISTENT).Deserialize(dat, &coin)
@@ -107,4 +109,18 @@ func (st *Store) AddToPool(coin balance.Coin) error {
 
 func (st *Store) MinusFromPool(coin balance.Coin) error {
 	return st.MinusFromAddress(keys.Address(POOL_KEY), coin)
+}
+
+func (st *Store) GetAllowedWithdraw(addr keys.Address) balance.Coin {
+	data := st.state.GetPrevious(FEE_LOCK_BLOCKS, addr.Bytes())
+	coin := balance.Coin{}
+	if len(data) == 0 {
+		coin = st.feeOpt.FeeCurrency.NewCoinFromInt(0)
+		return coin
+	}
+	err := serialize.GetSerializer(serialize.PERSISTENT).Deserialize(data, &coin)
+	if err != nil {
+		coin = st.feeOpt.FeeCurrency.NewCoinFromInt(0)
+	}
+	return coin
 }

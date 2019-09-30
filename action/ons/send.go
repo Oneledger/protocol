@@ -91,9 +91,14 @@ func (domainSendTx) Validate(ctx *action.Context, tx action.SignedTx) (bool, err
 	}
 
 	// validate basic signature
-	ok, err := action.ValidateBasic(tx.RawBytes(), send.Signers(), tx.Signatures)
+	err = action.ValidateBasic(tx.RawBytes(), send.Signers(), tx.Signatures)
 	if err != nil {
-		return ok, err
+		return false, err
+	}
+
+	err = action.ValidateFee(ctx.FeeOpt, tx.Fee)
+	if err != nil {
+		return false, err
 	}
 
 	// validate transaction specific field
@@ -222,7 +227,5 @@ func (domainSendTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, 
 }
 
 func (domainSendTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas) (bool, action.Response) {
-	panic("implement me")
-	// TODO: implement the fee charge for send
-	return true, action.Response{GasWanted: 0, GasUsed: 0}
+	return action.BasicFeeHandling(ctx, signedTx, start, size, 1)
 }

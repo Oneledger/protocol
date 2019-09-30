@@ -87,3 +87,25 @@ func (st *Store) Exists(address keys.Address) bool {
 	key := append(st.prefix, storage.StoreKey(address)...)
 	return st.State.Exists(key)
 }
+
+func (st *Store) AddToAddress(addr keys.Address, coin Coin) error {
+	bal, err := st.Get(addr)
+	if err != nil {
+		return errors.Wrapf(err, "failed to get address balance %s", addr.String())
+	}
+	newBal := bal.AddCoin(coin)
+
+	return st.Set(addr, *newBal)
+}
+
+func (st *Store) MinusFromAddress(addr keys.Address, coin Coin) error {
+	bal, err := st.Get(addr)
+	if err != nil {
+		return errors.Wrapf(err, "failed to get address balance %s", addr.String())
+	}
+	newBal, err := bal.MinusCoin(coin)
+	if err != nil {
+		return errors.Wrap(err, addr.String())
+	}
+	return st.Set(addr, *newBal)
+}

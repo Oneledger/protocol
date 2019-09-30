@@ -41,9 +41,9 @@ def create_domain(name, owner_hex, price):
         },
         "fee": {
             "currency": "OLT",
-            "value": "0",
+            "value": "1000000000",
         },
-        "gas": 1,
+        "gas": 40000,
     }
     resp = rpc_call('tx.ONS_CreateRawCreate',req)
     return resp["result"]["rawTx"]
@@ -60,9 +60,9 @@ def send_domain(name, frm, price):
         },
         "fee": {
             "currency": "OLT",
-            "value": "0",
+            "value": "1000000000",
         },
-        "gas": 0,
+        "gas": 40000,
     })
     return resp["result"]["rawTx"]
 
@@ -78,9 +78,9 @@ def sell_domain(name, owner_hex, price):
         "cancel_sale": False,
         "fee": {
             "currency": "OLT",
-            "value": "0",
+            "value": "1000000000",
         },
-        "gas": 0,
+        "gas": 40000,
     })
     return resp["result"]["rawTx"]
 
@@ -95,9 +95,9 @@ def cancel_sell_domain(name, owner_hex, price):
         "cancel_sale": True,
         "fee": {
             "currency": "OLT",
-            "value": "0",
+            "value": "1000000000",
         },
-        "gas": 0,
+        "gas": 40000,
     })
     return resp["result"]["rawTx"]
 

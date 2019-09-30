@@ -5,6 +5,11 @@ import (
 	"math/big"
 )
 
+const (
+	POOL_KEY = "00000000000000000000"
+	FEE_LOCK_BLOCKS = int64(1)
+)
+
 type FeeOption struct {
 	FeeCurrency   balance.Currency `json:"feeCurrency"`
 	MinFeeDecimal int64            `json:"minFeeDecimal"`
