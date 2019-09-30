@@ -5,6 +5,7 @@ import (
 	"github.com/Oneledger/protocol/action/transfer"
 	"github.com/Oneledger/protocol/data/fees"
 	"github.com/Oneledger/protocol/log"
+	codes "github.com/Oneledger/protocol/status_codes"
 
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/app/node"
@@ -14,7 +15,6 @@ import (
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/serialize"
 	"github.com/google/uuid"
-	"github.com/pkg/errors"
 )
 
 func Name() string {
@@ -59,7 +59,8 @@ func (svc *Service) SendTx(args client.SendTxRequest, reply *client.SendTxReply)
 	}
 	data, err := send.Marshal()
 	if err != nil {
-		return err
+		svc.logger.Error("error in serializing send object", err)
+		return codes.ErrSerialization
 	}
 
 	uuidNew, _ := uuid.NewUUID()
@@ -72,7 +73,7 @@ func (svc *Service) SendTx(args client.SendTxRequest, reply *client.SendTxReply)
 	}
 
 	if _, err := svc.accounts.GetAccount(args.From); err != nil {
-		return errors.New("Account doesn't exist. Send a raw tx instead")
+		return accounts.ErrGetAccountByAddress
 	}
 
 	pubKey, signed, err := svc.accounts.SignWithAddress(tx.RawBytes(), send.From)
@@ -87,7 +88,7 @@ func (svc *Service) SendTx(args client.SendTxRequest, reply *client.SendTxReply)
 
 	packet, err := serialize.GetSerializer(serialize.NETWORK).Serialize(signedTx)
 	if err != nil {
-		return errors.Wrap(err, "err while network serialization")
+		return codes.ErrSerialization
 	}
 
 	*reply = client.SendTxReply{
@@ -105,7 +106,8 @@ func (svc *Service) CreateRawSend(args client.SendTxRequest, reply *client.SendT
 	}
 	data, err := send.Marshal()
 	if err != nil {
-		return err
+		svc.logger.Error("error in serializing send object", err)
+		return codes.ErrSerialization
 	}
 
 	uuidNew, err := uuid.NewUUID()
@@ -120,7 +122,8 @@ func (svc *Service) CreateRawSend(args client.SendTxRequest, reply *client.SendT
 
 	packet, err := serialize.GetSerializer(serialize.NETWORK).Serialize(tx)
 	if err != nil {
-		return errors.Wrap(err, "err while network serialization")
+		svc.logger.Error("error in serializing send transaction", err)
+		return codes.ErrSerialization
 	}
 
 	*reply = client.SendTxReply{
@@ -168,7 +171,8 @@ func (svc *Service) ApplyValidator(args client.ApplyValidatorRequest, reply *cli
 
 	data, err := apply.Marshal()
 	if err != nil {
-		return err
+		svc.logger.Error("error in serializing applyValidator object", err)
+		return codes.ErrSerialization
 	}
 
 	uuidNew, _ := uuid.NewUUID()
@@ -183,7 +187,8 @@ func (svc *Service) ApplyValidator(args client.ApplyValidatorRequest, reply *cli
 
 	pubKey, signed, err := svc.accounts.SignWithAccountIndex(tx.RawBytes(), 0)
 	if err != nil {
-		return err
+		svc.logger.Error("error signing with account index", err)
+		return codes.ErrSigningError
 	}
 	signatures := []action.Signature{{pubKey, signed}}
 	signedTx := &action.SignedTx{
@@ -193,7 +198,8 @@ func (svc *Service) ApplyValidator(args client.ApplyValidatorRequest, reply *cli
 
 	packet, err := serialize.GetSerializer(serialize.NETWORK).Serialize(signedTx)
 	if err != nil {
-		return errors.Wrap(err, "err while network serialization")
+		svc.logger.Error("error in serializing signed transaction", err)
+		return codes.ErrSerialization
 	}
 
 	*reply = client.ApplyValidatorReply{RawTx: packet}

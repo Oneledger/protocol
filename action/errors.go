@@ -1,17 +1,19 @@
 package action
 
-import "errors"
+import (
+	codes "github.com/Oneledger/protocol/status_codes"
+)
 
 var (
-	ErrMissingData        = errors.New("missing data for tx")
-	ErrUnserializable     = errors.New("unserializable tx")
-	ErrWrongTxType        = errors.New("wrong tx type")
-	ErrInvalidAmount      = errors.New("invalid amount")
-	ErrInvalidPubkey      = errors.New("invalid pubkey")
-	ErrUnmatchSigner      = errors.New("unmatch signers")
-	ErrInvalidSignature   = errors.New("invalid signatures")
-	ErrInvalidFeeCurrency = errors.New("invalid fees currency")
-	ErrInvalidFeePrice    = errors.New("fee price is smaller than minimal fee")
-	ErrNotEnoughFund      = errors.New("not enough fund")
-	ErrGasOverflow        = errors.New("gas used exceed limit")
+	ErrMissingData        = codes.ProtocolError{codes.TxErrMisingData, "missing data in transaction"}
+	ErrUnserializable     = codes.ProtocolError{codes.TxErrUnserializable, "unserializable tx"}
+	ErrWrongTxType        = codes.ProtocolError{codes.TxErrWrongTxType, "wrong tx type"}
+	ErrInvalidAmount      = codes.ProtocolError{codes.TxErrInvalidAmount, "invalid amount"}
+	ErrInvalidPubkey      = codes.ProtocolError{codes.TxErrInvalidPubKey, "invalid pubkey"}
+	ErrUnmatchSigner      = codes.ProtocolError{codes.TxErrUnmatchedSigner, "unmatch signers"}
+	ErrInvalidSignature   = codes.ProtocolError{codes.TxErrInvalidSignature, "invalid signatures"}
+	ErrInvalidFeeCurrency = codes.ProtocolError{codes.TxErrInvalidFeeCurrency, "invalid fees currency"}
+	ErrInvalidFeePrice    = codes.ProtocolError{codes.TxErrInvalidFeePrice, "fee price is smaller than minimal fee"}
+	ErrNotEnoughFund      = codes.ProtocolError{codes.TxErrInsufficientFunds, "not enough fund"}
+	ErrGasOverflow        = codes.ProtocolError{codes.TxErrGasOverflow, "gas used exceed limit"}
 )

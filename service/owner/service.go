@@ -5,10 +5,10 @@ import (
 	"github.com/Oneledger/protocol/data/chain"
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/log"
+	codes "github.com/Oneledger/protocol/status_codes"
 
 	"github.com/Oneledger/protocol/client"
 	"github.com/Oneledger/protocol/data/accounts"
-	"github.com/Oneledger/protocol/rpc"
 	"github.com/pkg/errors"
 )
 
@@ -31,11 +31,14 @@ func Name() string {
 func (svc *Service) AddAccount(acc client.AddAccountRequest, reply *client.AddAccountReply) error {
 	err := svc.accounts.Add(acc)
 	if err != nil {
-		err := errors.Wrap(err, "error in adding account to walletstore")
-		return rpc.InternalError(err.Error())
+		svc.logger.Error("error adding account to walletstore", err)
+		return codes.ErrAddingAccount
 	}
 
 	acct, err := svc.accounts.GetAccount(acc.Address())
+	if err != nil {
+		svc.logger.Error("error reading wallet account: ", acc.Address(), err)
+	}
 	*reply = client.AddAccountReply{Account: acct}
 	return nil
 }
@@ -44,23 +47,28 @@ func (svc *Service) AddAccount(acc client.AddAccountRequest, reply *client.AddAc
 func (svc *Service) GenerateNewAccount(req client.GenerateAccountRequest, reply *client.AddAccountReply) error {
 	oneledgerChain, err := chain.TypeFromName("OneLedger")
 	if err != nil {
-		err := errors.Wrap(err, "error in getting chaintype")
-		return rpc.InternalError(err.Error())
+		svc.logger.Error("error getting chain type", "OneLedger", err)
+		return codes.ErrChainType
 	}
 
 	acc, err := accounts.GenerateNewAccount(oneledgerChain, req.Name)
 	if err != nil {
 		err := errors.Wrap(err, "error in generating account")
-		return rpc.InternalError(err.Error())
+		svc.logger.Error("error in generating account", err)
+		return codes.ErrGeneratingAccount
 	}
 
 	err = svc.accounts.Add(acc)
 	if err != nil {
-		err := errors.Wrap(err, "error in adding account to walletstore")
-		return rpc.InternalError(err.Error())
+		svc.logger.Error("error adding account to wallet", err)
+		return codes.ErrAddingAccount
 	}
 
 	acct, err := svc.accounts.GetAccount(acc.Address())
+	if err != nil {
+		svc.logger.Error("error getting account from wallet", err)
+		return codes.ErrGettingAccount
+	}
 	*reply = client.AddAccountReply{Account: acct}
 	return nil
 }
@@ -70,11 +78,12 @@ func (svc *Service) DeleteAccount(req client.DeleteAccountRequest, reply *client
 	var nilAccount accounts.Account
 	toDelete, err := svc.accounts.GetAccount(req.Address)
 	if err != nil || toDelete == nilAccount {
-		return rpc.NewError(rpc.CodeNotFound, "account doesn't exist")
+		return codes.ErrAccountNotFound
 	}
+
 	err = svc.accounts.Delete(toDelete)
 	if err != nil {
-		return rpc.InternalError("error in deleting account from walletstore")
+		return codes.ErrDeletingAccount
 	}
 
 	*reply = true
@@ -110,7 +119,11 @@ func (svc *Service) ListAccountAddresses(req client.ListAccountsRequest, reply *
 func (svc *Service) SignWithAddress(req client.SignRawTxRequest, reply *client.SignRawTxResponse) error {
 	pkey, signed, err := svc.accounts.SignWithAddress(req.RawTx, req.Address)
 	if err != nil {
-		return rpc.InternalError(err.Error())
+		svc.logger.Error("error while signing with address", err)
+		if err == accounts.ErrGetAccountByAddress {
+			return codes.ErrAccountNotFound
+		}
+		return codes.ErrSigningError
 	}
 	*reply = client.SignRawTxResponse{Signature: action.Signature{Signed: signed, Signer: pkey}}
 	return nil
@@ -120,17 +133,20 @@ func (svc *Service) NewAccount(req client.NewAccountRequest, reply *client.NewAc
 
 	pubKey, privKey, err := keys.NewKeyPairFromTendermint()
 	if err != nil {
-		return rpc.InternalError(err.Error())
+		svc.logger.Error("error generating new key pair", err)
+		return codes.ErrKeyGeneration
 	}
 
 	ct, err := chain.TypeFromName("OneLedger")
 	if err != nil {
-		return rpc.InternalError(err.Error())
+		svc.logger.Error("error getting chain type", "OneLedger", err)
+		return codes.ErrChainType
 	}
 
 	acc, err := accounts.NewAccount(ct, req.Name, &privKey, &pubKey)
 	if err != nil {
-		return rpc.InternalError(err.Error())
+		svc.logger.Error("error in generating account", err)
+		return codes.ErrGeneratingAccount
 	}
 
 	reply = &client.NewAccountReply{acc}
