@@ -6,6 +6,10 @@ package bitcoin
 
 import (
 	"bytes"
+	"crypto/rand"
+	"io"
+
+	"github.com/Oneledger/protocol/data/bitcoin"
 
 	"github.com/blockcypher/gobcy"
 	"github.com/btcsuite/btcd/chaincfg"
@@ -19,7 +23,7 @@ import (
 type TxHash [chainhash.HashSize]byte
 
 type ChainDriver interface {
-	PrepareLock(*UTXO, *UTXO, []byte, []byte) []byte
+	PrepareLock(*UTXO, *UTXO) []byte
 	AddUserLockSignature([]byte, []byte) *wire.MsgTx
 	AddLockSignature([]byte, []byte) *wire.MsgTx
 	BroadcastTx(*wire.MsgTx, *rpcclient.Client) (*chainhash.Hash, error)
@@ -30,18 +34,19 @@ type ChainDriver interface {
 }
 
 type chainDriver struct {
+	trackerStore *bitcoin.TrackerStore
 }
 
 var _ ChainDriver = &chainDriver{}
 
-func NewChainDriver() ChainDriver {
-	return &chainDriver{}
+func NewChainDriver(store *bitcoin.TrackerStore) ChainDriver {
+	return &chainDriver{store}
 }
 
-func (c *chainDriver) PrepareLock(prevLock, input *UTXO, prevLockScript []byte, lockAddress []byte) (txBytes []byte) {
+func (c *chainDriver) PrepareLock(prevLock, input *UTXO) (txBytes []byte) {
 	tx := wire.NewMsgTx(wire.TxVersion)
 
-	if prevLock.TxID.String() != "0000000000000000000000000000000000000000000000000000000000000000" {
+	if prevLock.TxID != bitcoin.NilTxHash {
 		prevLockOP := wire.NewOutPoint(prevLock.TxID, prevLock.Index)
 		vin1 := wire.NewTxIn(prevLockOP, nil, nil)
 		tx.AddTxIn(vin1)
@@ -54,7 +59,9 @@ func (c *chainDriver) PrepareLock(prevLock, input *UTXO, prevLockScript []byte, 
 	// will adjust fees later
 	balance := prevLock.Balance + input.Balance
 
-	out := wire.NewTxOut(balance, lockAddress)
+	tr, _ := c.trackerStore.GetTrackerForLock()
+
+	out := wire.NewTxOut(balance, tr.NextLockScriptAddress)
 	tx.AddTxOut(out)
 
 	tempBuf := bytes.NewBuffer([]byte{})
@@ -160,6 +167,17 @@ func CreateMultiSigAddress(m int, publicKeys []*btcutil.AddressPubKey) (script, 
 	}
 	builder.AddInt64(int64(len(publicKeys)))
 	builder.AddOp(txscript.OP_CHECKMULTISIG)
+
+	// add randomness
+	builder.AddOp(txscript.OP_RETURN)
+
+	data := [4]byte{}
+	_, err = io.ReadFull(rand.Reader, data[:])
+	if err != nil {
+		return
+	}
+
+	builder.AddData(data[:])
 
 	script, err = builder.Script()
 	if err != nil {

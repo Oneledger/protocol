@@ -22,6 +22,8 @@ const (
 	DOMAIN_SELL
 	DOMAIN_PURCHASE
 	DOMAIN_SEND
+
+	BTC_LOCK
 )
 
 var logger *log.Logger

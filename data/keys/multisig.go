@@ -143,8 +143,10 @@ func (m MultiSig) Address() Address {
 //}
 
 func (m MultiSig) Bytes() []byte {
+
 	signatures := m.Signatures
 	m.Signatures = make([]Signature, 0)
+
 	for _, item := range signatures {
 		if item.Signed != nil {
 			m.Signatures = append(m.Signatures, item)
@@ -160,10 +162,12 @@ func (m *MultiSig) FromBytes(b []byte) error {
 	if err != nil {
 		return err
 	}
+
 	signatures := m.Signatures
 	m.Signatures = make([]Signature, len(m.Signers))
 	for i, item := range signatures {
 		m.Signatures[i] = item
 	}
+
 	return nil
 }

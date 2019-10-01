@@ -7,6 +7,8 @@ import (
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/storage"
 	"github.com/Oneledger/protocol/utils"
+	"github.com/btcsuite/btcd/chaincfg"
+	"github.com/btcsuite/btcutil"
 	"github.com/pkg/errors"
 	"github.com/tendermint/tendermint/abci/types"
 	"math/big"
@@ -303,4 +305,22 @@ func (vs *ValidatorStore) GetEndBlockUpdate(ctx *ValidatorContext, req types.Req
 
 	// TODO : get the final updates from vs.cached
 	return validatorUpdates
+}
+
+func (vs *ValidatorStore) GetBitcoinKeys(net *chaincfg.Params) (list []*btcutil.AddressPubKey, err error) {
+
+	list = make([]*btcutil.AddressPubKey, 0)
+	vs.Iterate(func(key keys.Address, validator *Validator) bool {
+
+		var pubKey *btcutil.AddressPubKey
+		pubKey, err = btcutil.NewAddressPubKey(validator.ECDSAPubKey.Data, net)
+		if err != nil {
+			return true
+		}
+
+		list = append(list, pubKey)
+		return false
+	})
+
+	return
 }
