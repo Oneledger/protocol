@@ -71,6 +71,17 @@ type ApplyValidatorReply struct {
 	RawTx []byte `json:"rawTx"`
 }
 
+type WithdrawRewardRequest struct {
+	From keys.Address `json:"from"`
+	To   keys.Address `json:"to"`
+	Fee  action.Amount `json:"fee"`
+	Gas  int64         `json:"gas"`
+}
+
+type WithdrawRewardReply struct {
+	RawTx []byte `json:"rawTx"`
+}
+
 type NodeNameRequest struct{}
 type NodeNameReply = string
 

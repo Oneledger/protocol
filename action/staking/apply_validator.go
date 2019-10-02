@@ -15,7 +15,7 @@ import (
 var _ action.Msg = &ApplyValidator{}
 
 type ApplyValidator struct {
-	Address              action.Address
+	StakeAddress              action.Address
 	Stake                action.Amount
 	NodeName             string
 	ValidatorAddress     action.Address
@@ -33,7 +33,7 @@ func (apply *ApplyValidator) Unmarshal(data []byte) error {
 }
 
 func (apply ApplyValidator) Signers() []action.Address {
-	return []action.Address{apply.Address.Bytes()}
+	return []action.Address{apply.StakeAddress.Bytes()}
 }
 
 func (apply ApplyValidator) Type() action.Type {
@@ -62,7 +62,7 @@ func (a applyTx) Validate(ctx *action.Context, tx action.SignedTx) (bool, error)
 		return false, err
 	}
 
-	if len(apply.Address) == 0 {
+	if len(apply.StakeAddress) == 0 {
 		return false, action.ErrMissingData
 	}
 
@@ -128,7 +128,7 @@ func (apply ApplyValidator) Tags() common.KVPairs {
 	}
 	tag2 := common.KVPair{
 		Key:   []byte("tx.owner"),
-		Value: apply.Address.Bytes(),
+		Value: apply.StakeAddress.Bytes(),
 	}
 
 	tags = append(tags, tag, tag2)
@@ -141,7 +141,7 @@ func runApply(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	if err != nil {
 		return false, action.Response{Log: err.Error()}
 	}
-	_, err = checkBalances(ctx, apply.Address, apply.Stake)
+	_, err = checkBalances(ctx, apply.StakeAddress, apply.Stake)
 	if err != nil {
 		return false, action.Response{Log: err.Error()}
 	}
@@ -149,7 +149,7 @@ func runApply(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	validators := ctx.Validators
 
 	balances := ctx.Balances
-	balance, err := balances.Get(apply.Address.Bytes())
+	balance, err := balances.Get(apply.StakeAddress.Bytes())
 	if err != nil {
 		return false, action.Response{Log: err.Error()}
 	}
@@ -158,7 +158,7 @@ func runApply(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 		return false, action.Response{Log: err.Error()}
 	}
 
-	err = balances.Set(apply.Address.Bytes(), *b)
+	err = balances.Set(apply.StakeAddress.Bytes(), *b)
 	if err != nil {
 		return false, action.Response{Log: err.Error()}
 	}
@@ -166,7 +166,7 @@ func runApply(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	if !apply.Purge {
 		stake := identity.Stake{
 			ValidatorAddress: apply.ValidatorAddress,
-			StakeAddress:     apply.Address,
+			StakeAddress:     apply.StakeAddress,
 			Pubkey:           apply.ValidatorPubKey,
 			ECDSAPubKey:      apply.ValidatorECDSAPubKey,
 			Name:             apply.NodeName,

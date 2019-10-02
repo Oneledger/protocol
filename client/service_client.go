@@ -73,6 +73,12 @@ func (c *ServiceClient) ApplyValidator(req ApplyValidatorRequest) (out ApplyVali
 	return
 }
 
+func (c *ServiceClient) WithdrawReward(req WithdrawRewardRequest) (out WithdrawRewardReply, err error) {
+	err = c.Call("tx.WithdrawReward", req, &out)
+	return
+}
+
+
 /* ONS */
 func (c *ServiceClient) ONS_CreateRawCreate(req ONSCreateRequest) (out SendTxReply, err error) {
 	err = c.Call("tx.ONS_CreateRawCreate", req, &out)

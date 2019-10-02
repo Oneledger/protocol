@@ -21,8 +21,6 @@ import (
 	"github.com/pkg/errors"
 )
 
-var ErrNoBalanceFoundForThisAddress = errors.New("no balance found for the address")
-
 type Store struct {
 	State  *storage.State
 	prefix []byte
@@ -45,7 +43,6 @@ func (st *Store) Get(address []byte) (bal *Balance, err error) {
 	dat, _ := st.State.Get(key)
 
 	if len(dat) == 0 {
-		err = ErrNoBalanceFoundForThisAddress
 		bal = NewBalance()
 		return
 	}

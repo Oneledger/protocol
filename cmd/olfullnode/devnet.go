@@ -220,7 +220,6 @@ func runDevnet(cmd *cobra.Command, _ []string) error {
 			cfg.Consensus.CreateEmptyBlocksInterval = 10000
 		} else {
 			cfg.Consensus.CreateEmptyBlocks = false
-			cfg.Consensus.CreateEmptyBlocksInterval = 10000
 		}
 		cfg.Network.RPCAddress = generateAddress(generatePort(), true)
 		cfg.Network.P2PAddress = generateAddress(generatePort(), true)

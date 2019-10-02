@@ -161,7 +161,7 @@ func (svc *Service) ApplyValidator(args client.ApplyValidatorRequest, reply *cli
 
 	addr := handler.Address()
 	apply := staking.ApplyValidator{
-		Address:              keys.Address(args.Address),
+		StakeAddress:         args.Address,
 		Stake:                action.Amount{Currency: "VT", Value: args.Amount},
 		NodeName:             args.Name,
 		ValidatorAddress:     addr,
@@ -204,5 +204,39 @@ func (svc *Service) ApplyValidator(args client.ApplyValidatorRequest, reply *cli
 
 	*reply = client.ApplyValidatorReply{RawTx: packet}
 
+	return nil
+}
+
+func (svc *Service) WithdrawReward(args client.WithdrawRewardRequest, reply *client.WithdrawRewardReply) error {
+
+	if len(args.To) < 1 {
+		args.To = args.From
+	}
+
+	withdraw := staking.Withdraw{
+		From: args.From,
+		To:   args.To,
+	}
+
+	data, err := withdraw.Marshal()
+	if err != nil {
+		return codes.ErrSerialization
+	}
+
+	uuidNew, _ := uuid.NewUUID()
+
+	tx := action.RawTx{
+		Type: action.WITHDRAW,
+		Data: data,
+		Fee:  action.Fee{
+			Price: args.Fee,
+			Gas:   args.Gas,
+		},
+		Memo: uuidNew.String(),
+	}
+
+	packet := tx.RawBytes()
+
+	*reply = client.WithdrawRewardReply{RawTx: packet}
 	return nil
 }

@@ -11,7 +11,9 @@ import (
 var _ action.Msg = &Withdraw{}
 
 type Withdraw struct {
+	// staking account from which the reward is withdraw
 	From   action.Address `json:"from"`
+	// beneficiary account to which the reward is withdraw to
 	To     action.Address `json:"to"`
 }
 
@@ -43,7 +45,7 @@ func (s Withdraw) Tags() common.KVPairs {
 		Value: s.From.Bytes(),
 	}
 	tag3 := common.KVPair{
-		Key:   []byte("tx.to"),
+		Key:   []byte("tx.to") ,
 		Value: s.To.Bytes(),
 	}
 

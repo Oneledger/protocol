@@ -45,11 +45,7 @@ func (svc *Service) Balance(req client.BalanceRequest, resp *client.BalanceReply
 	addr := req.Address
 	bal, err := svc.balances.Get(addr)
 
-	if err != nil && err == balance.ErrNoBalanceFoundForThisAddress {
-		// Return a zero for balance if the account doesn't exist
-		// TODO: Zero in the balances
-		bal = balance.NewBalance()
-	} else if err != nil {
+	if err != nil {
 		svc.logger.Error("error getting balance", err)
 		return codes.ErrGettingBalance
 	}
