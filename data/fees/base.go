@@ -7,7 +7,7 @@ import (
 
 const (
 	POOL_KEY = "00000000000000000000"
-	FEE_LOCK_BLOCKS = int64(1)
+	FEE_LOCK_BLOCKS = int64(3)
 )
 
 type FeeOption struct {
@@ -17,11 +17,11 @@ type FeeOption struct {
 	minimalFee *balance.Coin
 }
 
-func (fo *FeeOption) MinFee() *balance.Coin {
+func (fo *FeeOption) MinFee() balance.Coin {
 	if fo.minimalFee == nil {
 		amount := balance.Amount{Int: *big.NewInt(0).Exp(big.NewInt(10), big.NewInt(fo.FeeCurrency.Decimal-fo.MinFeeDecimal), nil)}
 		coin := fo.FeeCurrency.NewCoinFromAmount(amount)
 		fo.minimalFee = &coin
 	}
-	return fo.minimalFee
+	return *fo.minimalFee
 }

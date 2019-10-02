@@ -112,7 +112,9 @@ func (st *Store) MinusFromPool(coin balance.Coin) error {
 }
 
 func (st *Store) GetAllowedWithdraw(addr keys.Address) balance.Coin {
-	data := st.state.GetPrevious(FEE_LOCK_BLOCKS, addr.Bytes())
+	prefixed := append(st.prefix, addr...)
+
+	data := st.state.GetPrevious(FEE_LOCK_BLOCKS, prefixed)
 	coin := balance.Coin{}
 	if len(data) == 0 {
 		coin = st.feeOpt.FeeCurrency.NewCoinFromInt(0)

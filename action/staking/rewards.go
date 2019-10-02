@@ -2,6 +2,7 @@ package staking
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/Oneledger/protocol/action"
 	"github.com/pkg/errors"
 	"github.com/tendermint/tendermint/libs/common"
@@ -114,7 +115,8 @@ func runWithdraw(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	}
 
 	allow := feePool.GetAllowedWithdraw(draw.From)
-	if allow.LessThanCoin(ctx.FeeOpt.FeeCurrency.NewCoinFromInt(0)) {
+	fmt.Printf("allowed reward for address %s %s \n", draw.From, allow.String())
+	if allow.LessThanCoin(ctx.FeeOpt.MinFee()) {
 		return false, action.Response{Log: "No reward is allowed to withdraw"}
 	}
 

@@ -1,9 +1,5 @@
 package storage
 
-import (
-	"fmt"
-)
-
 var _ Store = &State{}
 var _ Iteratable = &State{}
 
@@ -107,9 +103,6 @@ func (s *State) Commit() (hash []byte, version int64) {
 }
 
 func (s *State) ConsumedGas() Gas {
-	if s.gc == nil {
-		fmt.Printf("consumed gas, gas calculater is nil %#v \n", s)
-	}
 	return s.gc.GetConsumed()
 }
 
