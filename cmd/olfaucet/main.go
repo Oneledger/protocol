@@ -288,7 +288,7 @@ func (f *Faucet) GetParams(_ struct{}, reply *ParamsReply) error {
 
 // restful API functions
 func restfulAPIRoot(w http.ResponseWriter, r *http.Request) {
-	_, err := fmt.Fprintln(w, "Available endpoints: \n")
+	_, err := fmt.Fprintln(w, "Available endpoints: ")
 	if err != nil {
 		logger.Error("failed to display available endpoints info")
 	}
