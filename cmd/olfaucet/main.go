@@ -301,7 +301,7 @@ func restfulAPIRoot(w http.ResponseWriter, r *http.Request) {
 }
 
 func health(w http.ResponseWriter, r *http.Request) {
-	healthCheck := &ParamsReply{MaxAmount: args.maxReqAmount, MinWaitTime: args.lockTime, Version: version.Fullnode.String()}
+	healthCheck := ParamsReply{MaxAmount: args.maxReqAmount, MinWaitTime: args.lockTime, Version: version.Fullnode.String()}
 	_, err := fmt.Fprintf(w, "MaxAmount : %v, MinWaitTime : %d, version : %v", healthCheck.MaxAmount, healthCheck.MinWaitTime, healthCheck.Version)
 	if err != nil {
 		logger.Error("failed to display health check info")
