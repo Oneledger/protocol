@@ -31,10 +31,12 @@ import (
 */
 
 type Currency struct {
+	Id    int64      `json:"id"`
 	Name  string     `json:"name"`
 	Chain chain.Type `json:"chain"`
 
 	Decimal int64 `json:"decimal"`
+	Unit    string `json:"unit"`
 }
 
 func (c Currency) Base() *big.Int {
@@ -50,9 +52,11 @@ func (c Currency) NewCoinFromAmount(a Amount) Coin {
 
 // Create a coin from integer (not fractional)
 func (c Currency) NewCoinFromInt(amount int64) Coin {
+	amt := big.NewInt(amount)
+	finalAmt := big.NewInt(0).Mul(amt, c.Base())
 	return Coin{
 		Currency: c,
-		Amount:   &Amount{*big.NewInt(0).Mul(&NewAmount(amount).Int, c.Base())},
+		Amount:   (*Amount)(finalAmt),
 	}
 }
 
@@ -87,7 +91,7 @@ func (c Currency) NewCoinFromFloat64(amount float64) Coin {
 
 	return Coin{
 		Currency: c,
-		Amount:   &Amount{*result},
+		Amount:   (*Amount)(result),
 	}
 }
 
@@ -95,20 +99,20 @@ func (c Currency) NewCoinFromFloat64(amount float64) Coin {
 func (c Currency) NewCoinFromBytes(amount []byte) Coin {
 	return Coin{
 		Currency: c,
-		Amount:   &Amount{*big.NewInt(0).SetBytes(amount)},
+		Amount:   (*Amount)(big.NewInt(0).SetBytes(amount)),
 	}
 }
 
-type CurrencyList struct {
+type CurrencySet struct {
 	nameMap map[string]Currency
 	keyMap  map[string]Currency
 }
 
-func NewCurrencyList() *CurrencyList {
-	return &CurrencyList{nameMap: make(map[string]Currency), keyMap: make(map[string]Currency)}
+func NewCurrencyList() *CurrencySet {
+	return &CurrencySet{nameMap: make(map[string]Currency), keyMap: make(map[string]Currency)}
 }
 
-func (cl *CurrencyList) Register(c Currency) error {
+func (cl *CurrencySet) Register(c Currency) error {
 	_, ok := cl.nameMap[c.Name]
 	if ok { // If the currency is already registered, return a duplicate error
 		return ErrDuplicateCurrency
@@ -118,23 +122,23 @@ func (cl *CurrencyList) Register(c Currency) error {
 	return nil
 }
 
-func (cl *CurrencyList) GetCurrencyByName(name string) (Currency, bool) {
+func (cl *CurrencySet) GetCurrencyByName(name string) (Currency, bool) {
 	c, ok := cl.nameMap[name]
 	return c, ok
 }
 
-func (cl *CurrencyList) GetCurrencyByStringKey(key string) (Currency, bool) {
+func (cl *CurrencySet) GetCurrencyByStringKey(key string) (Currency, bool) {
 	c, ok := cl.keyMap[key]
 	return c, ok
 }
 
-func (cl CurrencyList) Len() int {
+func (cl CurrencySet) Len() int {
 	return len(cl.nameMap)
 }
 
 type Currencies []Currency
 
-func (c CurrencyList) GetCurrencies() Currencies {
+func (c CurrencySet) GetCurrencies() Currencies {
 	result := make([]Currency, len(c.nameMap))
 	i := 0
 	for _, v := range c.nameMap {
@@ -144,7 +148,7 @@ func (c CurrencyList) GetCurrencies() Currencies {
 	return result
 }
 
-func (cs Currencies) GetCurrencyList() *CurrencyList {
+func (cs Currencies) GetCurrencyList() *CurrencySet {
 	result := NewCurrencyList()
 	for _, v := range cs {
 		_ = result.Register(v)

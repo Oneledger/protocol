@@ -6,7 +6,7 @@ import (
 
 type Context struct {
 	balances   *Store
-	currencies *CurrencyList
+	currencies *CurrencySet
 	logger     *log.Logger
 }
 
@@ -14,11 +14,11 @@ func (ctx *Context) Store() *Store {
 	return ctx.balances
 }
 
-func (ctx *Context) Currencies() *CurrencyList {
+func (ctx *Context) Currencies() *CurrencySet {
 	return ctx.currencies
 }
 
-func NewContext(logger *log.Logger, balances *Store, currencies *CurrencyList) *Context {
+func NewContext(logger *log.Logger, balances *Store, currencies *CurrencySet) *Context {
 	return &Context{
 		logger:     logger,
 		balances:   balances,

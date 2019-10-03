@@ -16,12 +16,12 @@ import (
 type Service struct {
 	logger     *log.Logger
 	router     action.Router
-	currencies *balance.CurrencyList
+	currencies *balance.CurrencySet
 	feeOpt     *fees.FeeOption
 	ext        client.ExtServiceContext
 }
 
-func NewService(ctx client.ExtServiceContext, router action.Router, currencies *balance.CurrencyList, feeOpt *fees.FeeOption, logger *log.Logger) *Service {
+func NewService(ctx client.ExtServiceContext, router action.Router, currencies *balance.CurrencySet, feeOpt *fees.FeeOption, logger *log.Logger) *Service {
 	return &Service{
 		ext:        ctx,
 		router:     router,

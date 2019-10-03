@@ -48,7 +48,7 @@ type context struct {
 	feePool    *fees.Store
 	govern     *governance.Store
 
-	currencies *balance.CurrencyList
+	currencies *balance.CurrencySet
 	feeOption  *fees.FeeOption
 
 	//storage which is not a chain state

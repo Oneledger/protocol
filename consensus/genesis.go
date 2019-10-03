@@ -3,6 +3,7 @@ package consensus
 import (
 	"encoding/json"
 	"github.com/Oneledger/protocol/data/fees"
+	"github.com/Oneledger/protocol/identity"
 	"time"
 
 	"github.com/Oneledger/protocol/data/balance"
@@ -65,6 +66,7 @@ type AppState struct {
 	Currencies balance.Currencies `json:"currencies"`
 	FeeOption  fees.FeeOption     `json:"feeOption"`
 	States     []state            `json:"states"`
+	Staking    []identity.Stake   `json:"staking"`
 }
 
 func newAppState(currencies balance.Currencies, feeOpt fees.FeeOption, stateInputs []StateInput) *AppState {

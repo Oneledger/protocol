@@ -13,7 +13,7 @@ type Service struct {
 	name       string
 	ext        client.ExtServiceContext
 	balances   *balance.Store
-	currencies *balance.CurrencyList
+	currencies *balance.CurrencySet
 	validators *identity.ValidatorStore
 	ons        *ons.DomainStore
 	logger     *log.Logger
@@ -23,7 +23,7 @@ func Name() string {
 	return "query"
 }
 
-func NewService(ctx client.ExtServiceContext, balances *balance.Store, currencies *balance.CurrencyList, validators *identity.ValidatorStore,
+func NewService(ctx client.ExtServiceContext, balances *balance.Store, currencies *balance.CurrencySet, validators *identity.ValidatorStore,
 	domains *ons.DomainStore, logger *log.Logger) *Service {
 	return &Service{
 		name:       "query",
@@ -43,7 +43,7 @@ func (svc *Service) Balance(req client.BalanceRequest, resp *client.BalanceReply
 	}
 
 	addr := req.Address
-	bal, err := svc.balances.Get(addr)
+	bal, err := svc.balances.GetBalance(addr, svc.currencies)
 
 	if err != nil {
 		svc.logger.Error("error getting balance", err)

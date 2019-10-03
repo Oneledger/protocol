@@ -1,7 +1,6 @@
 package identity
 
 import (
-	"fmt"
 	"github.com/Oneledger/protocol/config"
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/fees"
@@ -10,6 +9,7 @@ import (
 	"github.com/Oneledger/protocol/utils"
 	"github.com/pkg/errors"
 	"github.com/tendermint/tendermint/abci/types"
+	"math/big"
 )
 
 type ValidatorStore struct {
@@ -55,8 +55,8 @@ func (vs *ValidatorStore) Iterate(fn func(addr keys.Address, validator *Validato
 	)
 }
 
-func (vs *ValidatorStore) Init(req types.RequestInitChain, currencies *balance.CurrencyList) (types.ValidatorUpdates, error) {
-	currency, ok := currencies.GetCurrencyByName("VT")
+func (vs *ValidatorStore) Init(req types.RequestInitChain, currencies *balance.CurrencySet) (types.ValidatorUpdates, error) {
+	_, ok := currencies.GetCurrencyByName("VT")
 	if !ok {
 		return req.Validators, errors.New("stake token not registered")
 	}
@@ -80,7 +80,7 @@ func (vs *ValidatorStore) Init(req types.RequestInitChain, currencies *balance.C
 			Power:        v.Power,
 			Name:         "",
 			// TODO: this should be change with @TODO99
-			Staking: currency.NewCoinFromInt(v.Power),
+			Staking:      *balance.NewAmount(v.Power),
 		}
 		key := append(vs.prefix, h.Address().Bytes()...)
 		err = vs.store.Set(key, validator.Bytes())
@@ -162,12 +162,10 @@ func (vs *ValidatorStore) HandleStake(apply Stake) error {
 		if err != nil {
 			return errors.Wrap(err, "error deserialize validator")
 		}
-		amt, err := validator.Staking.Plus(apply.Amount)
-		if err != nil {
-			return errors.Wrap(err, "error adding staking amount")
-		}
-		validator.Staking = amt
-		validator.Power = calculatePower(amt)
+		amt := big.NewInt(0).Add(validator.Staking.BigInt(), apply.Amount.BigInt())
+
+		validator.Staking = *balance.NewAmountFromBigInt(amt)
+		validator.Power = calculatePower(validator.Staking)
 
 	}
 
@@ -181,9 +179,9 @@ func (vs *ValidatorStore) HandleStake(apply Stake) error {
 	return nil
 }
 
-func calculatePower(stake balance.Coin) int64 {
+func calculatePower(stake balance.Amount) int64 {
 	// TODO: change to correct power function @TODO99
-	return stake.Amount.Int.Int64()
+	return stake.BigInt().Int64()
 }
 
 // TODO: implement the proper slashing
@@ -223,12 +221,10 @@ func (vs *ValidatorStore) HandleUnstake(unstake Unstake) error {
 		return errors.Wrap(err, "error deserialize validator")
 	}
 
-	amt, err := validator.Staking.Minus(unstake.Amount)
-	if err != nil {
-		return errors.Wrap(err, "minus staking amount")
-	}
-	validator.Staking = amt
-	validator.Power = calculatePower(amt)
+	amt := big.NewInt(0).Sub(validator.Staking.BigInt(), unstake.Amount.BigInt())
+
+	validator.Staking = *balance.NewAmountFromBigInt(amt)
+	validator.Power = calculatePower(validator.Staking)
 	vKey := append(vs.prefix, validator.Address.Bytes()...)
 
 	err = vs.store.Set(vKey, validator.Bytes())
@@ -275,7 +271,7 @@ func (vs *ValidatorStore) GetEndBlockUpdate(ctx *ValidatorContext, req types.Req
 				PubKey: validator.PubKey.GetABCIPubKey(),
 				Power:  validator.Power,
 			})
-			fmt.Printf("addr: %s, key: %s \n", keys.Address(addr), keys.Address(cqKey))
+
 			//distribute the fee for validators
 			if distribute {
 				feeShare := total.MultiplyInt64(queued.Priority()).DivideInt64(vs.totalPower)

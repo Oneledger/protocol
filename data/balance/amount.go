@@ -11,14 +11,15 @@ import (
 )
 
 // Amount represents an amount of a currency
-type Amount struct {
-	Int big.Int `json:"bint"`
-}
+type Amount big.Int
 
 func NewAmount(x int64) *Amount {
 	return NewAmountFromInt(x)
 }
 
+func NewAmountFromBigInt(x *big.Int) *Amount {
+	return (*Amount)(x)
+}
 // NewAmountFromString parses the amount as a string with the given base. For example, if base is 10, then it expects
 // the given string to be base-10 notation. If the base is 16, then it expects the string in hexadecimal notation. If
 // the base is set to 16, it ignores any "0x" prefix if present.
@@ -31,15 +32,15 @@ func NewAmountFromString(x string, base int) (*Amount, error) {
 	if !ok {
 		return nil, errors.New("failed to set amount from string:" + x + " with the given base:" + strconv.Itoa(base))
 	}
-	return &Amount{*out}, nil
+	return (*Amount)(out), nil
 }
 
 func NewAmountFromInt(x int64) *Amount {
-	return &Amount{*big.NewInt(x)}
+	return (*Amount)(big.NewInt(x))
 }
 
 func (a Amount) MarshalJSON() ([]byte, error) {
-	v := a.Int.String()
+	v := a.BigInt().String()
 	return json.Marshal(v)
 }
 
@@ -53,14 +54,21 @@ func (a *Amount) UnmarshalJSON(b []byte) error {
 	if !ok {
 		return errors.New("failed to unmarshal amount" + v)
 	}
-	a.Int = *i
+	a = (*Amount)(i)
 	return nil
 }
 
 func (a Amount) MarshalText() ([]byte, error) {
-	return a.Int.MarshalText()
+	return a.BigInt().MarshalText()
 }
 
 func (a *Amount) UnmarshalText(b []byte) error {
-	return a.Int.UnmarshalText(b)
+	tmp := big.Int(*a)
+	err := tmp.UnmarshalText(b)
+	*a = Amount(tmp)
+	return err
+}
+
+func (a *Amount) BigInt() *big.Int {
+	return (*big.Int)(a)
 }

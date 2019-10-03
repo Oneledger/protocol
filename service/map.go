@@ -29,7 +29,7 @@ type Context struct {
 
 	// configurations
 	Cfg         config.Server
-	Currencies  *balance.CurrencyList
+	Currencies  *balance.CurrencySet
 	FeeOpt      *fees.FeeOption
 	NodeContext node.Context
 

@@ -126,9 +126,7 @@ func assemblyCtxData(currencyName string, currencyDecimal int, setStore bool, se
 				Amount:   amt,
 			}
 			coin.MultiplyInt(currencyDecimal)
-			ba := balance.NewBalance()
-			ba = ba.AddCoin(coin)
-			err = store.Set(setCoinAddr.Bytes(), *ba)
+			err = store.AddToAddress(setCoinAddr.Bytes(), coin)
 			if err != nil {
 				errors.New("setup testing token balance error")
 			}

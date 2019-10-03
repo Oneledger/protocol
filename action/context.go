@@ -19,7 +19,7 @@ type Context struct {
 	Balances   *balance.Store
 	Domains    *ons.DomainStore
 	FeePool    *fees.Store
-	Currencies *balance.CurrencyList
+	Currencies *balance.CurrencySet
 	FeeOpt     *fees.FeeOption
 	Validators *identity.ValidatorStore
 	Logger     *log.Logger
@@ -27,7 +27,7 @@ type Context struct {
 
 func NewContext(r Router, header *abci.Header, state *storage.State,
 	wallet accounts.Wallet, balances *balance.Store,
-	currencies *balance.CurrencyList, feeOpt *fees.FeeOption, feePool *fees.Store,
+	currencies *balance.CurrencySet, feeOpt *fees.FeeOption, feePool *fees.Store,
 	validators *identity.ValidatorStore, domains *ons.DomainStore,
 	logger *log.Logger) *Context {
 	return &Context{

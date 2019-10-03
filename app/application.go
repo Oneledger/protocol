@@ -149,7 +149,7 @@ func (app *App) setupState(stateBytes []byte) error {
 	return nil
 }
 
-func (app *App) setupValidators(req RequestInitChain, currencies *balance.CurrencyList) (types.ValidatorUpdates, error) {
+func (app *App) setupValidators(req RequestInitChain, currencies *balance.CurrencySet) (types.ValidatorUpdates, error) {
 	return app.Context.validators.WithState(app.Context.deliver).Init(req, currencies)
 }
 

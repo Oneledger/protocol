@@ -95,7 +95,7 @@ func ValidateFee(feeOpt *fees.FeeOption, fee Fee) error {
 	if fee.Price.Currency != feeOpt.FeeCurrency.Name {
 		return ErrInvalidFeeCurrency
 	}
-	if feeOpt.MinFee().Amount.Int.Cmp(&fee.Price.Value.Int) > 0  {
+	if feeOpt.MinFee().Amount.BigInt().Cmp(fee.Price.Value.BigInt()) > 0  {
 		return ErrInvalidFeePrice
 	}
 	return nil

@@ -90,7 +90,7 @@ func prepareUnstake(address string) Unstake {
 	return unstake
 }
 
-func setupForInit(pubKeyType string, pubKeyData []byte, currencyName string, power int64) (types.RequestInitChain, *balance.CurrencyList) {
+func setupForInit(pubKeyType string, pubKeyData []byte, currencyName string, power int64) (types.RequestInitChain, *balance.CurrencySet) {
 	// prepare for request
 	validatorUpdates := make([]types.ValidatorUpdate, 0)
 	ValidatorUpdate := types.ValidatorUpdate{

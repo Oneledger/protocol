@@ -37,17 +37,22 @@ func (st *Store) GetOpt() *FeeOption {
 func (st *Store) Get(address []byte) (coin balance.Coin, err error) {
 	key := append(st.prefix, storage.StoreKey(address)...)
 	dat, _ := st.state.Get(key)
-	coin = balance.Coin{}
+	a := balance.NewAmount(0)
 	if len(dat) == 0 {
-		coin = st.feeOpt.FeeCurrency.NewCoinFromInt(0)
-		return
+		return st.feeOpt.FeeCurrency.NewCoinFromInt(0), nil
 	}
-	err = serialize.GetSerializer(serialize.PERSISTENT).Deserialize(dat, &coin)
+
+	err = serialize.GetSerializer(serialize.PERSISTENT).Deserialize(dat, a)
+	if err != nil {
+		return st.feeOpt.FeeCurrency.NewCoinFromInt(0), nil
+	}
+
+	coin = st.feeOpt.FeeCurrency.NewCoinFromAmount(*a)
 	return
 }
 
 func (st *Store) Set(address keys.Address, coin balance.Coin) error {
-	dat, err := serialize.GetSerializer(serialize.PERSISTENT).Serialize(&coin)
+	dat, err := serialize.GetSerializer(serialize.PERSISTENT).Serialize(&(coin.Amount))
 	if err != nil {
 		return err
 	}
@@ -80,27 +85,30 @@ func (st *Store) Iterate(fn func(addr keys.Address, coin balance.Coin) (stop boo
 }
 
 func (st *Store) AddToAddress(addr keys.Address, coin balance.Coin) error {
-	bal, err := st.Get(addr)
+
+
+	baseCoin, err := st.Get(addr)
 	if err != nil {
 		return errors.Wrapf(err, "failed to get address balance %s", addr.String())
 	}
-	newBal, err := bal.Plus(coin)
-	if err != nil {
-		return err
-	}
-	return st.Set(addr, newBal)
+
+	newCoin := baseCoin.Plus(coin)
+
+	return st.Set(addr, newCoin)
 }
 
 func (st *Store) MinusFromAddress(addr keys.Address, coin balance.Coin) error {
-	bal, err := st.Get(addr)
+	baseCoin, err := st.Get(addr)
 	if err != nil {
 		return errors.Wrapf(err, "failed to get address balance %s", addr.String())
 	}
-	newBal, err := bal.Minus(coin)
+
+	newCoin, err := baseCoin.Minus(coin)
 	if err != nil {
 		return err
 	}
-	return st.Set(addr, newBal)
+
+	return st.Set(addr, newCoin)
 }
 
 func (st *Store) AddToPool(coin balance.Coin) error {

@@ -98,17 +98,12 @@ func (domainCreateTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (bool, 
 		return false, action.Response{Log: err.Error()}
 	}
 
-	b, err := ctx.Balances.Get(create.Owner.Bytes())
-	if err != nil {
-		return false, action.Response{Log: fmt.Sprintf("failed to get balance for owner: %s", hex.EncodeToString(create.Owner))}
-	}
 	price := create.Price.ToCoin(ctx.Currencies)
-
-	//just verify if balance is enough or not, don't set to db
-	b, err = b.MinusCoin(price)
+	ctx.Balances.MinusFromAddress(create.Owner.Bytes(), price)
 	if err != nil {
-		return false, action.Response{Log: err.Error()}
+		return false, action.Response{Log: fmt.Sprintf("insufficient balance for owner: %s", hex.EncodeToString(create.Owner))}
 	}
+
 
 	if ctx.Domains.Exists(create.Name) {
 		return false, action.Response{Log: fmt.Sprintf("Domain already exist: %s", create.Name)}
@@ -127,22 +122,10 @@ func (domainCreateTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool
 		return false, action.Response{Log: err.Error()}
 	}
 
-	b, err := ctx.Balances.Get(create.Owner.Bytes())
+	price := create.Price.ToCoin(ctx.Currencies)
+	err = ctx.Balances.MinusFromAddress(create.Owner.Bytes(), price)
 	if err != nil {
 		return false, action.Response{Log: fmt.Sprintf("failed to get balance for owner: %s", hex.EncodeToString(create.Owner))}
-	}
-	price := create.Price.ToCoin(ctx.Currencies)
-
-	// verify balance and set to db, the price for create domain is just burned for now.
-	//todo: pay the price to fee pool that will be shared by validators at the fee distribution time.
-	b, err = b.MinusCoin(price)
-	if err != nil {
-		return false, action.Response{Log: err.Error()}
-	}
-
-	err = ctx.Balances.Set(create.Owner.Bytes(), *b)
-	if err != nil {
-		return false, action.Response{Log: errors.Wrap(err, "set balance of owner").Error()}
 	}
 
 	//check domain existence and set to db

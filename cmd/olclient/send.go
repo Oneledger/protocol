@@ -40,7 +40,7 @@ type SendArguments struct {
 	Gas          int64  `json:"gas"`
 }
 
-func (args *SendArguments) ClientRequest(currencies *balance.CurrencyList) (client.SendTxRequest, error) {
+func (args *SendArguments) ClientRequest(currencies *balance.CurrencySet) (client.SendTxRequest, error) {
 	c, ok := currencies.GetCurrencyByName(args.Currency)
 	if !ok {
 		return client.SendTxRequest{}, errors.New("currency not support:" + args.Currency)

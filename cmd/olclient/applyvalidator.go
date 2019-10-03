@@ -26,7 +26,7 @@ type ApplyValidatorArguments struct {
 	TmPubKey     []byte `json:"tmPubKey"`
 }
 
-func (args *ApplyValidatorArguments) ClientRequest(currencies *balance.CurrencyList) client.ApplyValidatorRequest {
+func (args *ApplyValidatorArguments) ClientRequest(currencies *balance.CurrencySet) client.ApplyValidatorRequest {
 	c, _ := currencies.GetCurrencyByName("VT")
 
 	f, err := strconv.ParseFloat(args.Amount, 64)

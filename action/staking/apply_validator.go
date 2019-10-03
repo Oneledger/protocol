@@ -2,7 +2,6 @@ package staking
 
 import (
 	"encoding/json"
-
 	"github.com/pkg/errors"
 
 	"github.com/Oneledger/protocol/action"
@@ -95,16 +94,13 @@ func checkBalances(ctx *action.Context, address action.Address, stake action.Amo
 
 	balances := ctx.Balances
 
-	// check identity's VT is equal to the stake
-	balance, err := balances.Get(address)
-	if err != nil {
-		return false, action.ErrNotEnoughFund
-	}
-	c, ok := ctx.Currencies.GetCurrencyByName("VT")
+	_, ok := ctx.Currencies.GetCurrencyByName("VT")
 	if !ok {
 		return false, action.ErrInvalidAmount
 	}
-	if balance.GetCoin(c).LessThanCoin(stake.ToCoin(ctx.Currencies)) {
+
+	err := balances.CheckBalanceFromAddress(address.Bytes(), stake.ToCoin(ctx.Currencies))
+	if err != nil {
 		return false, action.ErrNotEnoughFund
 	}
 	return true, nil
@@ -149,16 +145,9 @@ func runApply(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	validators := ctx.Validators
 
 	balances := ctx.Balances
-	balance, err := balances.Get(apply.StakeAddress.Bytes())
-	if err != nil {
-		return false, action.Response{Log: err.Error()}
-	}
-	b, err := balance.MinusCoin(apply.Stake.ToCoin(ctx.Currencies))
-	if err != nil {
-		return false, action.Response{Log: err.Error()}
-	}
 
-	err = balances.Set(apply.StakeAddress.Bytes(), *b)
+
+	err = balances.MinusFromAddress(apply.StakeAddress.Bytes(), apply.Stake.ToCoin(ctx.Currencies))
 	if err != nil {
 		return false, action.Response{Log: err.Error()}
 	}
@@ -170,13 +159,13 @@ func runApply(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 			Pubkey:           apply.ValidatorPubKey,
 			ECDSAPubKey:      apply.ValidatorECDSAPubKey,
 			Name:             apply.NodeName,
-			Amount:           apply.Stake.ToCoin(ctx.Currencies),
+			Amount:           apply.Stake.Value,
 		}
 		err = validators.HandleStake(stake)
 	} else {
 		unstake := identity.Unstake{
 			Address: apply.ValidatorAddress,
-			Amount:  apply.Stake.ToCoin(ctx.Currencies),
+			Amount:  apply.Stake.Value,
 		}
 		err = validators.HandleUnstake(unstake)
 	}
