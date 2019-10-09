@@ -52,6 +52,8 @@ var faucetCmd = &cobra.Command{
 	RunE:  runFaucet,
 }
 
+var apiRoutes = make(map[string]func(w http.ResponseWriter, r *http.Request))
+
 func init() {
 	faucetCmd.Flags().StringVarP(&args.rootDir, "root", "r", "./", "Set root directory containing olfullnode data files")
 	faucetCmd.Flags().StringVar(&args.dbDir, "db_dir", "./", "Set directory of keyvalue store")
@@ -59,6 +61,15 @@ func init() {
 	faucetCmd.Flags().StringVarP(&args.listenAddr, "listen_address", "l", "http://0.0.0.0:65432", "Specify what address to listen on")
 	faucetCmd.Flags().IntVar(&args.lockTime, "lock_time", 60, "Max lock time for individual accounts, specified in terms of minutes")
 	faucetCmd.Flags().IntVar(&args.maxReqAmount, "max_req_amount", 50, "Maximum number of OLT to request per account")
+
+	addRestfulAPIEndpoint()
+}
+
+// addRestfulAPIEndpoint collects all restful API router and function mapping
+// update this function to extend more restful API calls
+func addRestfulAPIEndpoint() {
+	apiRoutes["/"] = restfulAPIRoot
+	apiRoutes["/health"] = health
 }
 
 func main() {
@@ -103,6 +114,8 @@ func runFaucet(_ *cobra.Command, _ []string) error {
 	if err != nil {
 		return err
 	}
+
+	srv.RestfulAPIFuncRegister(apiRoutes)
 
 	err = srv.Start()
 	if err != nil {
@@ -271,6 +284,28 @@ func (f *Faucet) RequestOLT(req Request, reply *Reply) error {
 func (f *Faucet) GetParams(_ struct{}, reply *ParamsReply) error {
 	*reply = ParamsReply{MaxAmount: args.maxReqAmount, MinWaitTime: args.lockTime, Version: version.Fullnode.String()}
 	return nil
+}
+
+// restful API functions
+func restfulAPIRoot(w http.ResponseWriter, r *http.Request) {
+	_, err := fmt.Fprintln(w, "Available endpoints: ")
+	if err != nil {
+		logger.Error("failed to display available endpoints info")
+	}
+	for path := range apiRoutes {
+		_, err = fmt.Fprintln(w, r.Host+path)
+		if err != nil {
+			logger.Error("failed to display available endpoints info")
+		}
+	}
+}
+
+func health(w http.ResponseWriter, r *http.Request) {
+	healthCheck := ParamsReply{MaxAmount: args.maxReqAmount, MinWaitTime: args.lockTime, Version: version.Fullnode.String()}
+	_, err := fmt.Fprintf(w, "MaxAmount : %v, MinWaitTime : %d, version : %v", healthCheck.MaxAmount, healthCheck.MinWaitTime, healthCheck.Version)
+	if err != nil {
+		logger.Error("failed to display health check info")
+	}
 }
 
 func NewFaucet(cfg *config.Server) (*Faucet, error) {

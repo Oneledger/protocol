@@ -55,6 +55,13 @@ func (srv *Server) Register(name string, rcvr interface{}) error {
 	return srv.rpc.RegisterName(name, rcvr)
 }
 
+// RestfulAPIFuncRegister registers all restful API functions on the Server
+func (srv *Server) RestfulAPIFuncRegister(routerMap map[string]func(w http.ResponseWriter, r *http.Request)) {
+	for path, handlerFun := range routerMap {
+		srv.mux.HandleFunc(path, handlerFun)
+	}
+}
+
 // Prepare injects all the data necessary for serving over the specified URL.
 // It  prepares a net.Listener over the specified URL, and registers all methods
 // inside the given receiver. After this method is called, the Start function
