@@ -54,7 +54,7 @@ func (a *Amount) UnmarshalJSON(b []byte) error {
 	if !ok {
 		return errors.New("failed to unmarshal amount" + v)
 	}
-	a = (*Amount)(i)
+	*a = *(*Amount)(i)
 	return nil
 }
 

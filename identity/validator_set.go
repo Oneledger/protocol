@@ -1,6 +1,7 @@
 package identity
 
 import (
+	"fmt"
 	"github.com/Oneledger/protocol/config"
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/fees"
@@ -38,6 +39,30 @@ func (vs *ValidatorStore) WithState(state *storage.State) *ValidatorStore {
 	return vs
 }
 
+func (vs *ValidatorStore) Get(addr keys.Address) (*Validator, error) {
+	key := append(vs.prefix, addr...)
+	value, _ := vs.store.Get(key)
+	if value == nil {
+		return nil, errors.New("failed to get validator from store")
+	}
+	validator := &Validator{}
+	validator, err := validator.FromBytes(value)
+	if err != nil {
+		return nil, errors.Wrap(err, "error deserialize validator")
+	}
+	return validator, nil
+}
+
+func (vs *ValidatorStore) set(validator Validator) error {
+	value := (validator).Bytes()
+	vkey := append(vs.prefix, validator.Address.Bytes()...)
+	err := vs.store.Set(vkey, value)
+	if err != nil {
+		return errors.Wrap(err, "failed to set validator for stake")
+	}
+	return nil
+}
+
 func (vs *ValidatorStore) Iterate(fn func(addr keys.Address, validator *Validator) bool) (stopped bool) {
 	return vs.store.IterateRange(
 		vs.prefix,
@@ -73,20 +98,12 @@ func (vs *ValidatorStore) Init(req types.RequestInitChain, currencies *balance.C
 			return validatorUpdates, errors.Wrap(err, "invalid pubkey type")
 		}
 
-		validator := Validator{
-			Address:      h.Address(),
-			StakeAddress: h.Address(), // TODO : put the validator address for validator in genesis for now. should be a different address from who the validator pay the stake
-			PubKey:       vpubkey,
-			Power:        v.Power,
-			Name:         "",
-			// TODO: this should be change with @TODO99
-			Staking:      *balance.NewAmount(v.Power),
-		}
-		key := append(vs.prefix, h.Address().Bytes()...)
-		err = vs.store.Set(key, validator.Bytes())
+		validator, err := vs.Get(h.Address().Bytes())
 		if err != nil {
-			return req.Validators, errors.New("failed to add initial validators")
+			return validatorUpdates, errors.Wrap(err, "failed to get the validator")
 		}
+		//todo: add more check for initial validators if needed.
+		_ = validator
 		validatorUpdates = append(validatorUpdates, v)
 	}
 	return validatorUpdates, nil
@@ -168,7 +185,7 @@ func (vs *ValidatorStore) HandleStake(apply Stake) error {
 		validator.Power = calculatePower(validator.Staking)
 
 	}
-
+	fmt.Printf("staking %#v \n", validator)
 	value := (validator).Bytes()
 	vkey := append(vs.prefix, validator.Address.Bytes()...)
 	err := vs.store.Set(vkey, value)
@@ -250,10 +267,8 @@ func (vs *ValidatorStore) GetEndBlockUpdate(ctx *ValidatorContext, req types.Req
 		for vs.queue.Len() > 0 && cnt < 64 {
 			queued := vs.queue.Pop()
 			addr := queued.Value()
-			cqKey := append(vs.prefix, addr...)
 
-			result, _ := vs.store.Get(cqKey)
-			validator, err := (&Validator{}).FromBytes(result)
+			validator, err := vs.Get(addr)
 			if err != nil {
 				logger.Error(err, "error deserialize validator")
 				continue

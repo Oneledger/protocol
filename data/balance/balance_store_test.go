@@ -24,27 +24,44 @@ import (
 )
 
 func TestNewStore(t *testing.T) {
-	olt := currencies["OLT"]
+	olt := Currency{
+		Id:      0,
+		Name:    "OLT",
+		Chain:   0,
+		Decimal: 18,
+		Unit:    "nue",
+	}
 	db := db.NewDB("test", db.MemDBBackend, "")
 	cs := storage.NewState(storage.NewChainState("balance", db))
 	store := NewStore("b", cs)
-
-	bal := NewBalance()
-	bal.AddCoin(olt.NewCoinFromInt(10))
-
-	err := store.Set([]byte("asdfasdfasdfasdfasdf"), *bal)
+	currencies := NewCurrencySet()
+	err := currencies.Register(olt)
 	assert.NoError(t, err)
 
-	bal2, err := store.Get([]byte("asdfasdfasdfasdfasdf"))
-	assert.NoError(t, err)
-	assert.Equal(t, bal, bal2)
+	coin := olt.NewCoinFromInt(10)
 
-	bal2, err = store.Get([]byte("asdfasdfasdfasdfhjkl"))
+	err = store.AddToAddress([]byte("asdfasdfasdfasdfasdf"), coin)
+	assert.NoError(t, err)
+	cs.Commit()
+
+	bal, err := store.GetBalance([]byte("asdfasdfasdfasdfasdf"), currencies)
+	assert.NoError(t, err)
+	assert.Equal(t, coin, bal.GetCoin(olt))
+
+	coin2, err := coin.Minus(olt.NewCoinFromInt(4))
+	assert.NoError(t, err)
+	err = store.CheckBalanceFromAddress([]byte("asdfasdfasdfasdfasdf"), coin2)
+	assert.NoError(t, err)
+
+	coin3 := coin.Plus(olt.NewCoinFromInt(1))
+	err = store.CheckBalanceFromAddress([]byte("asdfasdfasdfasdfasdf"), coin3)
 	assert.Error(t, err)
-	assert.NotEqual(t, bal, bal2)
 
-	//assert.True(t, store.Exists([]byte("asdfasdfasdfasdfasdf")))
-	assert.False(t, store.Exists([]byte("asdfasdfasdfasdfhjkl")))
+	err = store.MinusFromAddress([]byte("asdfasdfasdfasdfasdf"), coin2)
+	assert.NoError(t, err)
+
+	err = store.MinusFromAddress([]byte("asdfasdfasdfasdfasdf"), coin2)
+	assert.Error(t, err)
 
 	store.State.Commit()
 	cnt := 0

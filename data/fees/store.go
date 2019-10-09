@@ -73,13 +73,14 @@ func (st *Store) Iterate(fn func(addr keys.Address, coin balance.Coin) (stop boo
 		storage.Rangefix(string(st.prefix)),
 		true,
 		func(key, value []byte) bool {
-			coin := &balance.Coin{}
-			err := serialize.GetSerializer(serialize.PERSISTENT).Deserialize(value, coin)
+			amt := &balance.Amount{}
+			err := serialize.GetSerializer(serialize.PERSISTENT).Deserialize(value, amt)
 			if err != nil {
 				return false
 			}
+			coin := st.feeOpt.FeeCurrency.NewCoinFromAmount(*amt)
 			addr := key[len(st.prefix):]
-			return fn(addr, *coin)
+			return fn(addr, coin)
 		},
 	)
 }
@@ -123,14 +124,15 @@ func (st *Store) GetAllowedWithdraw(addr keys.Address) balance.Coin {
 	prefixed := append(st.prefix, addr...)
 
 	data := st.state.GetPrevious(FEE_LOCK_BLOCKS, prefixed)
+	amt := balance.Amount{}
 	coin := balance.Coin{}
 	if len(data) == 0 {
 		coin = st.feeOpt.FeeCurrency.NewCoinFromInt(0)
 		return coin
 	}
-	err := serialize.GetSerializer(serialize.PERSISTENT).Deserialize(data, &coin)
+	err := serialize.GetSerializer(serialize.PERSISTENT).Deserialize(data, &amt)
 	if err != nil {
 		coin = st.feeOpt.FeeCurrency.NewCoinFromInt(0)
 	}
-	return coin
+	return st.feeOpt.FeeCurrency.NewCoinFromAmount(amt)
 }

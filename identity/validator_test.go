@@ -20,7 +20,7 @@ var validator = &Validator{
 	},
 	Power:   500,
 	Name:    "test_node",
-	Staking: balance.Coin{balance.Currency{"VT", 1, 18}, balance.NewAmount(100)},
+	Staking: *balance.NewAmount(100),
 }
 
 func TestValidator_Bytes(t *testing.T) {
@@ -34,11 +34,3 @@ func TestValidator_FromBytes(t *testing.T) {
 	}
 }
 
-func TestNewValidatorContext(t *testing.T) {
-	balance := &balance.Store{}
-	vc := &ValidatorContext{
-		Balances: balance,
-	}
-	ValidatorContext := NewValidatorContext(balance)
-	assert.Equal(t, ValidatorContext, vc)
-}

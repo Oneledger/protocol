@@ -87,7 +87,7 @@ func IssueRequest(cmd *cobra.Command, args []string) {
 		return
 	}
 	// Create message
-	req, err := sendargs.ClientRequest(currencies.Currencies.GetCurrencyList())
+	req, err := sendargs.ClientRequest(currencies.Currencies.GetCurrencySet())
 	if err != nil {
 		ctx.logger.Error("failed to get request", err)
 		return

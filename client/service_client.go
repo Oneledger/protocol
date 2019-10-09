@@ -63,7 +63,7 @@ func (c *ServiceClient) ListAccounts() (out ListAccountsReply, err error) {
 	return
 }
 
-func (c *ServiceClient) ListAccountAddresses() (out ListAccountsReply, err error) {
+func (c *ServiceClient) ListAccountAddresses() (out ListAccountAddressesReply, err error) {
 	err = c.Call("owner.ListAccountAddress", struct{}{}, &out)
 	return
 }

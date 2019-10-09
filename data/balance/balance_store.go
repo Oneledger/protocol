@@ -78,10 +78,11 @@ func (st *Store) iterate(addr keys.Address, fn func(c string, amt Amount) bool) 
 	)
 }
 
-func (st *Store) Exists(address keys.Address) bool {
-	key := append(st.prefix, storage.StoreKey(address)...)
-	return st.State.Exists(key)
-}
+// todo: add back if necessary. address will not work because key will be address+currency
+//func (st *Store) Exists(address keys.Address) bool {
+//	key := append(st.prefix, storage.StoreKey(address)...)
+//	return st.State.Exists(key)
+//}
 
 func (st *Store) AddToAddress(addr keys.Address, coin Coin) error {
 	key := storage.StoreKey(string(addr) + storage.DB_PREFIX  + coin.Currency.Name)

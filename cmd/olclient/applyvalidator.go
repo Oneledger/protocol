@@ -89,7 +89,7 @@ func applyValidator(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	out, err := fullnode.ApplyValidator(applyValidatorArgs.ClientRequest(currencies.Currencies.GetCurrencyList()))
+	out, err := fullnode.ApplyValidator(applyValidatorArgs.ClientRequest(currencies.Currencies.GetCurrencySet()))
 	if err != nil {
 		ctx.logger.Error("Error in applying ", err.Error())
 		return err

@@ -61,7 +61,7 @@ func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *node.Context) (
 	ctx := context{
 		cfg:        cfg,
 		logWriter:  logWriter,
-		currencies: balance.NewCurrencyList(),
+		currencies: balance.NewCurrencySet(),
 		node:       *nodeCtx,
 	}
 

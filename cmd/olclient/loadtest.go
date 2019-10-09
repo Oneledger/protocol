@@ -105,37 +105,46 @@ func loadTest(_ *cobra.Command, _ []string) {
 		ctx.logger.Fatal("error getting node address", err)
 	}
 
+	accs := make([]accounts.Account, 0, 10)
+	accReply, err := fullnode.ListAccounts()
+	if err != nil {
+		ctx.logger.Error("failed to get any address")
+	}
+	accs = accReply.Accounts
 	// start threads
 	for i := 0; i < loadTestArgs.threads; i++ {
 
 		thLogger := ctx.logger.WithPrefix(fmt.Sprintf("thread: %d", i))
+		acc := accounts.Account{}
+		if len(accs) <= i+1 {
+			// create a temp account to send OLT
+			accName := fmt.Sprintf("acc_%03d", i)
+			pubKey, privKey, err := keys.NewKeyPairFromTendermint() // generate a ed25519 key pair
+			if err != nil {
+				thLogger.Error(accName, "error generating key from tendermint", err)
+			}
 
-		// create a temp account to send OLT
-		accName := fmt.Sprintf("acc_%03d", i)
-		pubKey, privKey, err := keys.NewKeyPairFromTendermint() // generate a ed25519 key pair
-		if err != nil {
-			thLogger.Error(accName, "error generating key from tendermint", err)
+			acc, err = accounts.NewAccount(chain.Type(1), accName, &privKey, &pubKey) // create account object
+			if err != nil {
+				thLogger.Error(accName, "Error initializing account", err)
+				return
+			}
+
+			thLogger.Infof("creating account %#v", acc)
+			reply, err := fullnode.AddAccount(acc)
+			if err != nil {
+				thLogger.Error(accName, "error creating account", err)
+				return
+			}
+
+			accRead := reply.Account
+
+			// praccint details
+			thLogger.Infof("Created account successfully: %#v", accRead)
+			ctx.logger.Infof("Address for the account is: %s", acc.Address().Humanize())
+		} else {
+			acc = accs[i+1]
 		}
-
-		acc, err := accounts.NewAccount(chain.Type(1), accName, &privKey, &pubKey) // create account object
-		if err != nil {
-			thLogger.Error(accName, "Error initializing account", err)
-			return
-		}
-
-		thLogger.Infof("creating account %#v", acc)
-		reply, err := fullnode.AddAccount(acc)
-		if err != nil {
-			thLogger.Error(accName, "error creating account", err)
-			return
-		}
-
-		accRead := reply.Account
-
-		// print details
-		thLogger.Infof("Created account successfully: %#v", accRead)
-		ctx.logger.Infof("Address for the account is: %s", acc.Address().Humanize())
-
 		waiter.Add(1)
 		// start a thread to keep sending transactions after some interval
 		go func(stop chan bool) {
@@ -199,7 +208,7 @@ func doSendTransaction(ctx *Context, threadNo int, acc *accounts.Account, nodeAd
 	// Create message
 	fullnode := ctx.clCtx.FullNodeClient()
 
-	req, err := sendArgsLocal.ClientRequest(currencies.GetCurrencyList())
+	req, err := sendArgsLocal.ClientRequest(currencies.GetCurrencySet())
 	if err != nil {
 		ctx.logger.Error("failed to get request", err)
 	}

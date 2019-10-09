@@ -5,7 +5,7 @@ import sys
 import struct
 import binascii
 
-url = "http://127.0.0.1:26618/jsonrpc"
+url = "http://127.0.0.1:26606/jsonrpc"
 headers = {
     "Content-Type": "application/json",
     "Accept": "application/json",
@@ -89,5 +89,7 @@ if __name__ == "__main__":
 
     bal = balance(dest_addr)
     print "addr", dest_addr, "balance", bal
+    if len(bal) > 0:
+        print "Test withdraw succeed"
     print "###################"
     print

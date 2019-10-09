@@ -99,9 +99,9 @@ func (domainCreateTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (bool, 
 	}
 
 	price := create.Price.ToCoin(ctx.Currencies)
-	ctx.Balances.MinusFromAddress(create.Owner.Bytes(), price)
+	err = ctx.Balances.MinusFromAddress(create.Owner.Bytes(), price)
 	if err != nil {
-		return false, action.Response{Log: fmt.Sprintf("insufficient balance for owner: %s", hex.EncodeToString(create.Owner))}
+		return false, action.Response{Log: errors.Wrap(err, hex.EncodeToString(create.Owner)).Error()}
 	}
 
 
@@ -125,7 +125,7 @@ func (domainCreateTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool
 	price := create.Price.ToCoin(ctx.Currencies)
 	err = ctx.Balances.MinusFromAddress(create.Owner.Bytes(), price)
 	if err != nil {
-		return false, action.Response{Log: fmt.Sprintf("failed to get balance for owner: %s", hex.EncodeToString(create.Owner))}
+		return false, action.Response{Log: errors.Wrap(err, hex.EncodeToString(create.Owner)).Error()}
 	}
 
 	//check domain existence and set to db

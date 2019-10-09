@@ -1,21 +1,20 @@
 package app
 
 import (
-	"encoding/hex"
-	"net/url"
-	"os"
-	"strings"
-
 	"github.com/Oneledger/protocol/app/node"
 	"github.com/Oneledger/protocol/config"
 	"github.com/Oneledger/protocol/consensus"
 	"github.com/Oneledger/protocol/data/accounts"
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/chain"
+	"github.com/Oneledger/protocol/data/ons"
+	"github.com/Oneledger/protocol/identity"
 	"github.com/Oneledger/protocol/log"
 	"github.com/Oneledger/protocol/serialize"
 	"github.com/Oneledger/protocol/storage"
 	"github.com/tendermint/tendermint/abci/types"
+	"net/url"
+	"os"
 
 	"github.com/pkg/errors"
 	"github.com/tendermint/tendermint/libs/common"
@@ -130,20 +129,43 @@ func (app *App) setupState(stateBytes []byte) error {
 	app.Context.feePool.SetupOpt(app.Context.feeOption)
 
 	// (2) Set balances to all those mentioned
-	for _, state := range initial.States {
-		si := state.StateInput()
-		addrBytes, err := hex.DecodeString(si.Address)
-		if err != nil {
-			return errors.Wrapf(err, "failed to decode address %s", si.Address)
+	for _, bal := range initial.Balances {
+		key := storage.StoreKey(bal.Address)
+		c, ok := balanceCtx.Currencies().GetCurrencyByName(bal.Currency)
+		if !ok{
+			return errors.New("currency for initial balance not support")
 		}
-
-		key := storage.StoreKey(addrBytes)
-		err = balanceCtx.Store().WithState(app.Context.deliver).Set([]byte(key), si.Balance)
+		coin := c.NewCoinFromAmount(bal.Amount)
+		err = balanceCtx.Store().WithState(app.Context.deliver).AddToAddress([]byte(key), coin)
 		if err != nil {
 			return errors.Wrap(err, "failed to set balance")
 		}
+	}
 
-		app.logger.Debug(strings.ToUpper(hex.EncodeToString(key)))
+	for _, stake := range initial.Staking {
+		err := app.Context.validators.WithState(app.Context.deliver).HandleStake(identity.Stake(stake))
+		if err != nil {
+			return errors.Wrap(err, "failed to handle initial staking")
+		}
+	}
+
+	for _, domain := range initial.Domains {
+		d := ons.NewDomain(domain.OwnerAddress, domain.AccountAddress, domain.Name, 0)
+		err := app.Context.domains.WithState(app.Context.deliver).Set(d)
+		if err != nil {
+			return errors.Wrap(err, "failed to setup initial domain")
+		}
+	}
+
+	for _, fee := range initial.Fees {
+		c, ok := app.Context.currencies.GetCurrencyByName(fee.Currency)
+		if !ok {
+			return errors.New("currency for initial balance not support")
+		}
+		err := app.Context.feePool.WithState(app.Context.deliver).Set(fee.Address, c.NewCoinFromAmount(fee.Amount))
+		if err != nil {
+			return errors.Wrap(err, "failed to setup initial fee")
+		}
 	}
 
 	return nil

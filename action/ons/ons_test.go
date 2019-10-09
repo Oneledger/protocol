@@ -103,7 +103,7 @@ func assemblyCtxData(currencyName string, currencyDecimal int64, setBalanceStore
 	// currencyList
 	if currencyName != "" {
 		// register new token
-		currencyList := balance.NewCurrencyList()
+		currencyList := balance.NewCurrencySet()
 		currency := balance.Currency{
 			Name:    currencyName,
 			Chain:   chain.Type(1),

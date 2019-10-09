@@ -16,7 +16,6 @@
 package balance
 
 import (
-	"encoding/hex"
 	"encoding/json"
 	"math"
 	"math/big"
@@ -60,10 +59,6 @@ func (c Currency) NewCoinFromInt(amount int64) Coin {
 	}
 }
 
-func (c Currency) StringKey() string {
-	return hex.EncodeToString(c.Bytes())
-}
-
 func (c Currency) Bytes() []byte {
 
 	dat, _ := json.Marshal(c)
@@ -105,11 +100,11 @@ func (c Currency) NewCoinFromBytes(amount []byte) Coin {
 
 type CurrencySet struct {
 	nameMap map[string]Currency
-	keyMap  map[string]Currency
+	idMap  map[int64]Currency
 }
 
-func NewCurrencyList() *CurrencySet {
-	return &CurrencySet{nameMap: make(map[string]Currency), keyMap: make(map[string]Currency)}
+func NewCurrencySet() *CurrencySet {
+	return &CurrencySet{nameMap: make(map[string]Currency), idMap: make(map[int64]Currency)}
 }
 
 func (cl *CurrencySet) Register(c Currency) error {
@@ -118,7 +113,7 @@ func (cl *CurrencySet) Register(c Currency) error {
 		return ErrDuplicateCurrency
 	}
 	cl.nameMap[c.Name] = c
-	cl.keyMap[c.StringKey()] = c
+	cl.idMap[c.Id] = c
 	return nil
 }
 
@@ -127,8 +122,8 @@ func (cl *CurrencySet) GetCurrencyByName(name string) (Currency, bool) {
 	return c, ok
 }
 
-func (cl *CurrencySet) GetCurrencyByStringKey(key string) (Currency, bool) {
-	c, ok := cl.keyMap[key]
+func (cl *CurrencySet) GetCurrencyById(id int64) (Currency, bool) {
+	c, ok := cl.idMap[id]
 	return c, ok
 }
 
@@ -148,8 +143,8 @@ func (c CurrencySet) GetCurrencies() Currencies {
 	return result
 }
 
-func (cs Currencies) GetCurrencyList() *CurrencySet {
-	result := NewCurrencyList()
+func (cs Currencies) GetCurrencySet() *CurrencySet {
+	result := NewCurrencySet()
 	for _, v := range cs {
 		_ = result.Register(v)
 	}
