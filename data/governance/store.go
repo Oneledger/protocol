@@ -1,8 +1,6 @@
 package governance
 
 import (
-	"fmt"
-
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/fees"
 	"github.com/Oneledger/protocol/serialize"
@@ -81,7 +79,6 @@ func (st *Store) GetFeeOption() (*fees.FeeOption, error) {
 	}
 	err = serialize.GetSerializer(serialize.PERSISTENT).Deserialize(bytes, feeOpt)
 	if err != nil {
-		fmt.Println("get feeOption", string(bytes))
 		return nil, errors.Wrap(err, "failed to deserialize FeeOption stored")
 	}
 

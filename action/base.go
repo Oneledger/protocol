@@ -2,7 +2,6 @@ package action
 
 import (
 	"encoding/hex"
-	"fmt"
 	"github.com/Oneledger/protocol/data/fees"
 
 	"github.com/Oneledger/protocol/data/keys"
@@ -124,7 +123,6 @@ func BasicFeeHandling(ctx *Context, signedTx SignedTx, start Gas, size Gas, sign
 	if err != nil {
 		return false, Response{Log: errors.Wrap(err, "charge fee").Error()}
 	}
-	fmt.Println("fee charged", charge)
 	err = ctx.FeePool.AddToPool(charge)
 	if err != nil {
 		return false, Response{Log: err.Error()}

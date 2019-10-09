@@ -1,7 +1,6 @@
 package identity
 
 import (
-	"fmt"
 	"github.com/Oneledger/protocol/config"
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/fees"
@@ -185,7 +184,6 @@ func (vs *ValidatorStore) HandleStake(apply Stake) error {
 		validator.Power = calculatePower(validator.Staking)
 
 	}
-	fmt.Printf("staking %#v \n", validator)
 	value := (validator).Bytes()
 	vkey := append(vs.prefix, validator.Address.Bytes()...)
 	err := vs.store.Set(vkey, value)

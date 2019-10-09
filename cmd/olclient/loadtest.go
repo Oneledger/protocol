@@ -97,7 +97,7 @@ func loadTest(_ *cobra.Command, _ []string) {
 		ctx.logger.Error("failed to get currencies", err)
 		return
 	}
-	fmt.Printf("currencies:::::: %#v", currencies)
+	fmt.Printf("currencies: %#v", currencies)
 
 	// get address of the node
 	nodeAddress, err := fullnode.NodeAddress()

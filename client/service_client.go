@@ -1,8 +1,6 @@
 package client
 
 import (
-	"fmt"
-
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/rpc"
 )
@@ -114,7 +112,6 @@ func (c *ServiceClient) ListValidators() (out ListValidatorsReply, err error) {
 
 func (c *ServiceClient) ListCurrencies() (out *ListCurrenciesReply, err error) {
 	err = c.Call("query.ListCurrencies", struct{}{}, &out)
-	fmt.Println("client", out)
 	return
 }
 
