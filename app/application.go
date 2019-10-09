@@ -4,7 +4,6 @@ import (
 	"encoding/hex"
 	"fmt"
 	"io"
-	"net"
 	"net/http"
 	"net/url"
 	"os"
@@ -312,11 +311,7 @@ func (app *App) restfulAPIRoot(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *App) health(w http.ResponseWriter, r *http.Request) {
-	_, err := net.Listen("tcp", app.Context.cfg.Network.SDKAddress)
-	if err != nil {
-		app.logger.Errorf("failed to run health check")
-	}
-	_, err = fmt.Fprintf(w, "health check for SDK port %v is ok", app.Context.cfg.Network.SDKAddress)
+	_, err := fmt.Fprintf(w, "health check for SDK port %v : OK", app.Context.cfg.Network.SDKAddress)
 	if err != nil {
 		app.logger.Errorf("failed to display SDK port health check info")
 	}
