@@ -1,6 +1,7 @@
 package app
 
 import (
+	"github.com/Oneledger/protocol/data/bitcoin"
 	"github.com/Oneledger/protocol/data/chain"
 	"io"
 	"path/filepath"
@@ -47,6 +48,7 @@ type context struct {
 	validators *identity.ValidatorStore // Set of validators currently active
 	feePool    *fees.Store
 	govern     *governance.Store
+	trackers   *bitcoin.TrackerStore
 
 	currencies *balance.CurrencySet
 	feeOption  *fees.FeeOption
@@ -113,6 +115,7 @@ func (ctx *context) Action(header *Header, state *storage.State) *action.Context
 		ctx.feePool.WithState(state),
 		ctx.validators.WithState(state),
 		ctx.domains.WithState(state),
+		ctx.trackers.WithState(state),
 		log.NewLoggerWithPrefix(ctx.logWriter, "action"))
 
 	return actionCtx

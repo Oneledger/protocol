@@ -83,6 +83,19 @@ func (ts *TrackerStore) GetTrackerForLock() (*Tracker, error) {
 	return tempTracker, nil
 }
 
+func (ts *TrackerStore) SetTracker(name string, tracker *Tracker) error {
+
+	key := keyFromName(name)
+	key = append(ts.prefix, key...)
+
+	data, err := ts.szlr.Serialize(tracker)
+	if err != nil {
+		return errors.Wrap(err, "error de-serializing domain")
+	}
+
+	return ts.State.Set(storage.StoreKey(key), data)
+}
+
 func (ts *TrackerStore) SetLockScript(lockAddress, lockScript []byte) error {
 	key := append([]byte("lockscript:"), lockAddress...)
 

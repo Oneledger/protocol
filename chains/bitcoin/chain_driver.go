@@ -23,7 +23,7 @@ import (
 type TxHash [chainhash.HashSize]byte
 
 type ChainDriver interface {
-	PrepareLock(*UTXO, *UTXO) []byte
+	PrepareLock(*UTXO, *UTXO, []byte) []byte
 	AddUserLockSignature([]byte, []byte) *wire.MsgTx
 	AddLockSignature([]byte, []byte) *wire.MsgTx
 	BroadcastTx(*wire.MsgTx, *rpcclient.Client) (*chainhash.Hash, error)
@@ -34,16 +34,17 @@ type ChainDriver interface {
 }
 
 type chainDriver struct {
-	trackerStore *bitcoin.TrackerStore
+	blockCypherToken string
 }
 
 var _ ChainDriver = &chainDriver{}
 
-func NewChainDriver(store *bitcoin.TrackerStore) ChainDriver {
-	return &chainDriver{store}
+func NewChainDriver(token string) ChainDriver {
+
+	return &chainDriver{token}
 }
 
-func (c *chainDriver) PrepareLock(prevLock, input *UTXO) (txBytes []byte) {
+func (c *chainDriver) PrepareLock(prevLock, input *UTXO, lockScriptAddress []byte) (txBytes []byte) {
 	tx := wire.NewMsgTx(wire.TxVersion)
 
 	if prevLock.TxID != bitcoin.NilTxHash {
@@ -59,9 +60,7 @@ func (c *chainDriver) PrepareLock(prevLock, input *UTXO) (txBytes []byte) {
 	// will adjust fees later
 	balance := prevLock.Balance + input.Balance
 
-	tr, _ := c.trackerStore.GetTrackerForLock()
-
-	out := wire.NewTxOut(balance, tr.NextLockScriptAddress)
+	out := wire.NewTxOut(balance, lockScriptAddress)
 	tx.AddTxOut(out)
 
 	tempBuf := bytes.NewBuffer([]byte{})
@@ -131,7 +130,7 @@ func (c *chainDriver) PrepareRedeem(prevLock UTXO,
 
 	tx := wire.NewMsgTx(wire.TxVersion)
 
-	prevLockOP := wire.NewOutPoint(&prevLock.TxID, prevLock.Index)
+	prevLockOP := wire.NewOutPoint(prevLock.TxID, prevLock.Index)
 	vin1 := wire.NewTxIn(prevLockOP, nil, nil)
 	tx.AddTxIn(vin1)
 

@@ -28,6 +28,10 @@ type TrackerData struct {
 	LatestUTXO *UTXO
 
 	MultiSigData []byte
+
+	ProcessUTXO *UTXO
+
+	NextLockScriptAddress []byte
 }
 
 func (TrackerData) SerialTag() string {
@@ -45,6 +49,9 @@ func (t *Tracker) Data() serialize.Data {
 		t.PreviousTxID,
 		t.LatestUTXO,
 		t.Multisig.Bytes(),
+
+		t.ProcessUTXO,
+		t.NextLockScriptAddress,
 	}
 }
 
@@ -58,6 +65,9 @@ func (t *Tracker) SetData(obj interface{}) error {
 	t.LastUpdateHeight = td.LastUpdateHeight
 	t.PreviousTxID = td.PreviousTxID
 	t.LatestUTXO = td.LatestUTXO
+	t.ProcessUTXO = td.ProcessUTXO
+	t.NextLockScriptAddress = td.NextLockScriptAddress
+
 	err := t.Multisig.FromBytes(td.MultiSigData)
 	if err != nil {
 		return err

@@ -46,6 +46,10 @@ type MultiSigner interface {
 
 	// Set MultiSig from []byte
 	FromBytes(b []byte) error
+
+	GetSignerIndex(Address) (int, error)
+
+	GetSignatures() []Signature
 }
 
 type Signature struct {
@@ -170,4 +174,19 @@ func (m *MultiSig) FromBytes(b []byte) error {
 	}
 
 	return nil
+}
+
+func (m *MultiSig) GetSignerIndex(ad Address) (int, error) {
+
+	for i := range m.Signers {
+		if bytes.Equal(m.Signers[i], ad) {
+			return i, nil
+		}
+	}
+
+	return 0, errors.New("address not found")
+}
+
+func (m *MultiSig) GetSignatures() []Signature {
+	return m.Signatures
 }

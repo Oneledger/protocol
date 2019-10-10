@@ -24,6 +24,8 @@ const (
 	DOMAIN_SEND
 
 	BTC_LOCK
+	BTC_ADD_SIGNATURE
+	BTC_CHECK_FINALITY
 )
 
 var logger *log.Logger
