@@ -4,6 +4,8 @@ import (
 	"encoding/hex"
 	"math"
 
+	"github.com/Oneledger/protocol/data/fees"
+
 	"github.com/tendermint/tendermint/types"
 
 	"github.com/Oneledger/protocol/storage"
@@ -57,7 +59,7 @@ func (app *App) optionSetter() optionSetter {
 func (app *App) chainInitializer() chainInitializer {
 	return func(req RequestInitChain) ResponseInitChain {
 		app.Context.deliver = storage.NewState(app.Context.chainstate)
-
+		app.Context.govern.WithState(app.Context.deliver)
 		err := app.setupState(req.AppStateBytes)
 		// This should cause consensus to halt
 		if err != nil {
@@ -72,6 +74,7 @@ func (app *App) chainInitializer() chainInitializer {
 			app.logger.Error("Failed to setupValidator", "err", err)
 			return ResponseInitChain{}
 		}
+		app.Context.govern.Initiated()
 		app.Context.deliver.Write()
 		app.logger.Info("finish chain initialize")
 		return ResponseInitChain{Validators: validators}
@@ -112,8 +115,9 @@ func (app *App) txChecker() txChecker {
 		}
 
 		txCtx := app.Context.Action(&app.header, app.Context.check)
-
 		handler := txCtx.Router.Handler(tx.Type)
+
+		gas := txCtx.State.ConsumedGas()
 
 		ok, err := handler.Validate(txCtx, *tx)
 		if err != nil {
@@ -125,13 +129,15 @@ func (app *App) txChecker() txChecker {
 		}
 		ok, response := handler.ProcessCheck(txCtx, tx.RawTx)
 
+		feeOk, feeResponse := handler.ProcessFee(txCtx, *tx, gas, storage.Gas(len(msg)))
+
 		result := ResponseCheckTx{
-			Code:      getCode(ok).uint32(),
+			Code:      getCode(ok && feeOk).uint32(),
 			Data:      response.Data,
-			Log:       response.Log,
+			Log:       response.Log + feeResponse.Log,
 			Info:      response.Info,
-			GasWanted: response.GasWanted,
-			GasUsed:   response.GasUsed,
+			GasWanted: feeResponse.GasWanted,
+			GasUsed:   feeResponse.GasUsed,
 			Tags:      response.Tags,
 			Codespace: "",
 		}
@@ -153,15 +159,19 @@ func (app *App) txDeliverer() txDeliverer {
 
 		handler := txCtx.Router.Handler(tx.Type)
 
+		gas := txCtx.State.ConsumedGas()
+
 		ok, response := handler.ProcessDeliver(txCtx, tx.RawTx)
 
+		feeOk, feeResponse := handler.ProcessFee(txCtx, *tx, gas, storage.Gas(len(msg)))
+
 		result := ResponseDeliverTx{
-			Code:      getCode(ok).uint32(),
+			Code:      getCode(ok && feeOk).uint32(),
 			Data:      response.Data,
-			Log:       response.Log,
+			Log:       response.Log + feeResponse.Log,
 			Info:      response.Info,
-			GasWanted: response.GasWanted,
-			GasUsed:   response.GasUsed,
+			GasWanted: feeResponse.GasWanted,
+			GasUsed:   feeResponse.GasUsed,
 			Tags:      response.Tags,
 			Codespace: "",
 		}
@@ -173,8 +183,9 @@ func (app *App) txDeliverer() txDeliverer {
 func (app *App) blockEnder() blockEnder {
 	return func(req RequestEndBlock) ResponseEndBlock {
 
+		fee, err := app.Context.feePool.WithState(app.Context.deliver).Get([]byte(fees.POOL_KEY))
+		app.logger.Debug("endblock fee", fee, err)
 		updates := app.Context.validators.GetEndBlockUpdate(app.Context.ValidatorCtx(), req)
-
 		result := ResponseEndBlock{
 			ValidatorUpdates: updates,
 			Tags:             []common.KVPair(nil),
@@ -235,9 +246,9 @@ func getGasCalculator(params *types.ConsensusParams) storage.GasCalculator {
 	}
 	gas := storage.Gas(0)
 	if limit < 0 {
-		gas = math.MaxUint64
+		gas = math.MaxInt64
 	} else {
-		gas = storage.Gas(uint64(limit))
+		gas = storage.Gas(limit)
 	}
 	return storage.NewGasCalculator(gas)
 }

@@ -3,29 +3,33 @@ package identity
 import (
 	"github.com/Oneledger/protocol/config"
 	"github.com/Oneledger/protocol/data/balance"
+	"github.com/Oneledger/protocol/data/fees"
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/storage"
 	"github.com/Oneledger/protocol/utils"
 	"github.com/pkg/errors"
 	"github.com/tendermint/tendermint/abci/types"
+	"math/big"
 )
 
 type ValidatorStore struct {
-	prefix    []byte
-	store     *storage.State
-	proposer  keys.Address
-	queue     ValidatorQueue
-	byzantine []Validator
+	prefix     []byte
+	store      *storage.State
+	proposer   keys.Address
+	queue      ValidatorQueue
+	byzantine  []Validator
+	totalPower int64
 }
 
 func NewValidatorStore(prefix string, cfg config.Server, state *storage.State) *ValidatorStore {
 	// TODO: get the genesis validators when start the node
 	return &ValidatorStore{
-		prefix:    storage.Prefix(prefix),
-		store:     state,
-		proposer:  []byte(nil),
-		queue:     ValidatorQueue{PriorityQueue: make(utils.PriorityQueue, 0, 100)},
-		byzantine: make([]Validator, 0),
+		prefix:     storage.Prefix(prefix),
+		store:      state,
+		proposer:   []byte(nil),
+		queue:      ValidatorQueue{PriorityQueue: make(utils.PriorityQueue, 0, 100)},
+		byzantine:  make([]Validator, 0),
+		totalPower: 0,
 	}
 }
 
@@ -34,10 +38,34 @@ func (vs *ValidatorStore) WithState(state *storage.State) *ValidatorStore {
 	return vs
 }
 
+func (vs *ValidatorStore) Get(addr keys.Address) (*Validator, error) {
+	key := append(vs.prefix, addr...)
+	value, _ := vs.store.Get(key)
+	if value == nil {
+		return nil, errors.New("failed to get validator from store")
+	}
+	validator := &Validator{}
+	validator, err := validator.FromBytes(value)
+	if err != nil {
+		return nil, errors.Wrap(err, "error deserialize validator")
+	}
+	return validator, nil
+}
+
+func (vs *ValidatorStore) set(validator Validator) error {
+	value := (validator).Bytes()
+	vkey := append(vs.prefix, validator.Address.Bytes()...)
+	err := vs.store.Set(vkey, value)
+	if err != nil {
+		return errors.Wrap(err, "failed to set validator for stake")
+	}
+	return nil
+}
+
 func (vs *ValidatorStore) Iterate(fn func(addr keys.Address, validator *Validator) bool) (stopped bool) {
 	return vs.store.IterateRange(
 		vs.prefix,
-		storage.Rangefix(string(vs.prefix[:len(vs.prefix)-1])),
+		storage.Rangefix(string(vs.prefix)),
 		true,
 		func(key, value []byte) bool {
 			validator, err := (&Validator{}).FromBytes(value)
@@ -45,13 +73,14 @@ func (vs *ValidatorStore) Iterate(fn func(addr keys.Address, validator *Validato
 				logger.Error("failed to deserialize validator")
 				return false
 			}
-			return fn(key, validator)
+			addr := key[len(vs.prefix):]
+			return fn(addr, validator)
 		},
 	)
 }
 
-func (vs *ValidatorStore) Init(req types.RequestInitChain, currencies *balance.CurrencyList) (types.ValidatorUpdates, error) {
-	currency, ok := currencies.GetCurrencyByName("VT")
+func (vs *ValidatorStore) Init(req types.RequestInitChain, currencies *balance.CurrencySet) (types.ValidatorUpdates, error) {
+	_, ok := currencies.GetCurrencyByName("VT")
 	if !ok {
 		return req.Validators, errors.New("stake token not registered")
 	}
@@ -68,20 +97,12 @@ func (vs *ValidatorStore) Init(req types.RequestInitChain, currencies *balance.C
 			return validatorUpdates, errors.Wrap(err, "invalid pubkey type")
 		}
 
-		validator := Validator{
-			Address:      h.Address(),
-			StakeAddress: h.Address(), // TODO : put the validator address for validator in genesis for now. should be a different address from who the validator pay the stake
-			PubKey:       vpubkey,
-			Power:        v.Power,
-			Name:         "",
-			// TODO: this should be change with @TODO99
-			Staking: currency.NewCoinFromInt(v.Power),
-		}
-		key := append(vs.prefix, h.Address().Bytes()...)
-		err = vs.store.Set(key, validator.Bytes())
+		validator, err := vs.Get(h.Address().Bytes())
 		if err != nil {
-			return req.Validators, errors.New("failed to add initial validators")
+			return validatorUpdates, errors.Wrap(err, "failed to get the validator")
 		}
+		//todo: add more check for initial validators if needed.
+		_ = validator
 		validatorUpdates = append(validatorUpdates, v)
 	}
 	return validatorUpdates, nil
@@ -108,10 +129,11 @@ func (vs *ValidatorStore) Setup(req types.RequestBeginBlock) error {
 	// initialize the queue for validators
 	vs.queue.PriorityQueue = make(utils.PriorityQueue, 0, 100)
 	i := 0
-	vs.Iterate(func(key keys.Address, validator *Validator) bool {
-		queued := utils.NewQueued(key, validator.Power, i)
+	vs.totalPower = 0
+	vs.Iterate(func(addr keys.Address, validator *Validator) bool {
+		queued := utils.NewQueued(addr, validator.Power, i)
 		vs.queue.append(queued)
-		// 		vs.queue.Push(queued)
+		vs.totalPower += validator.Power
 		i++
 		return false
 	})
@@ -124,7 +146,7 @@ func (vs *ValidatorStore) Setup(req types.RequestBeginBlock) error {
 func (vs *ValidatorStore) GetValidatorSet() ([]Validator, error) {
 
 	validatorSet := make([]Validator, 0)
-	vs.Iterate(func(key keys.Address, validator *Validator) bool {
+	vs.Iterate(func(addr keys.Address, validator *Validator) bool {
 		validatorSet = append(validatorSet, *validator)
 		return false
 	})
@@ -156,15 +178,12 @@ func (vs *ValidatorStore) HandleStake(apply Stake) error {
 		if err != nil {
 			return errors.Wrap(err, "error deserialize validator")
 		}
-		amt, err := validator.Staking.Plus(apply.Amount)
-		if err != nil {
-			return errors.Wrap(err, "error adding staking amount")
-		}
-		validator.Staking = amt
-		validator.Power = calculatePower(amt)
+		amt := big.NewInt(0).Add(validator.Staking.BigInt(), apply.Amount.BigInt())
+
+		validator.Staking = *balance.NewAmountFromBigInt(amt)
+		validator.Power = calculatePower(validator.Staking)
 
 	}
-
 	value := (validator).Bytes()
 	vkey := append(vs.prefix, validator.Address.Bytes()...)
 	err := vs.store.Set(vkey, value)
@@ -175,9 +194,9 @@ func (vs *ValidatorStore) HandleStake(apply Stake) error {
 	return nil
 }
 
-func calculatePower(stake balance.Coin) int64 {
+func calculatePower(stake balance.Amount) int64 {
 	// TODO: change to correct power function @TODO99
-	return stake.Amount.Int.Int64()
+	return stake.BigInt().Int64()
 }
 
 // TODO: implement the proper slashing
@@ -217,12 +236,10 @@ func (vs *ValidatorStore) HandleUnstake(unstake Unstake) error {
 		return errors.Wrap(err, "error deserialize validator")
 	}
 
-	amt, err := validator.Staking.Minus(unstake.Amount)
-	if err != nil {
-		return errors.Wrap(err, "minus staking amount")
-	}
-	validator.Staking = amt
-	validator.Power = calculatePower(amt)
+	amt := big.NewInt(0).Sub(validator.Staking.BigInt(), unstake.Amount.BigInt())
+
+	validator.Staking = *balance.NewAmountFromBigInt(amt)
+	validator.Power = calculatePower(validator.Staking)
 	vKey := append(vs.prefix, validator.Address.Bytes()...)
 
 	err = vs.store.Set(vKey, validator.Bytes())
@@ -236,16 +253,20 @@ func (vs *ValidatorStore) HandleUnstake(unstake Unstake) error {
 func (vs *ValidatorStore) GetEndBlockUpdate(ctx *ValidatorContext, req types.RequestEndBlock) []types.ValidatorUpdate {
 
 	validatorUpdates := make([]types.ValidatorUpdate, 0)
-
+	distribute := false
+	total, err := ctx.FeePool.Get([]byte(fees.POOL_KEY))
+	if err != nil {
+		logger.Fatal("failed to get the total fee pool")
+	} else if ctx.FeePool.GetOpt().MinFee().LessThanCoin(total) {
+		distribute = true
+	}
 	if req.Height > 1 || (len(vs.byzantine) > 0) {
 		cnt := 0
 		for vs.queue.Len() > 0 && cnt < 64 {
 			queued := vs.queue.Pop()
-			// cqKey := append(vs.prefix, queued.Value()...)
-			cqKey := queued.Value()
+			addr := queued.Value()
 
-			result, _ := vs.store.Get(cqKey)
-			validator, err := (&Validator{}).FromBytes(result)
+			validator, err := vs.Get(addr)
 			if err != nil {
 				logger.Error(err, "error deserialize validator")
 				continue
@@ -263,6 +284,19 @@ func (vs *ValidatorStore) GetEndBlockUpdate(ctx *ValidatorContext, req types.Req
 				PubKey: validator.PubKey.GetABCIPubKey(),
 				Power:  validator.Power,
 			})
+
+			//distribute the fee for validators
+			if distribute {
+				feeShare := total.MultiplyInt64(queued.Priority()).DivideInt64(vs.totalPower)
+				err = ctx.FeePool.MinusFromPool(feeShare)
+				if err != nil {
+					logger.Fatal("failed to minus from fee pool")
+				}
+				err = ctx.FeePool.AddToAddress(validator.StakeAddress, feeShare)
+				if err != nil {
+					logger.Fatal("failed to distribute fee")
+				}
+			}
 			cnt++
 		}
 	}

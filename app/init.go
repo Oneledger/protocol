@@ -18,10 +18,6 @@ import (
 	"github.com/Oneledger/protocol/serialize"
 )
 
-const (
-	ADMIN_CURRENCY_KEY string = "currency"
-)
-
 var clSzlr serialize.Serializer
 var jsonSerializer serialize.Serializer
 

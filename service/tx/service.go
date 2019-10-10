@@ -3,6 +3,7 @@ package tx
 import (
 	"github.com/Oneledger/protocol/action/staking"
 	"github.com/Oneledger/protocol/action/transfer"
+	"github.com/Oneledger/protocol/data/fees"
 	"github.com/Oneledger/protocol/log"
 	codes "github.com/Oneledger/protocol/status_codes"
 
@@ -24,6 +25,7 @@ type Service struct {
 	balances    *balance.Store
 	router      action.Router
 	accounts    accounts.Wallet
+	feeOpt      *fees.FeeOption
 	logger      *log.Logger
 	nodeContext node.Context
 }
@@ -32,6 +34,7 @@ func NewService(
 	balances *balance.Store,
 	router action.Router,
 	accounts accounts.Wallet,
+	feeOpt *fees.FeeOption,
 	nodeCtx node.Context,
 	logger *log.Logger,
 ) *Service {
@@ -40,6 +43,7 @@ func NewService(
 		router:      router,
 		nodeContext: nodeCtx,
 		accounts:    accounts,
+		feeOpt:      feeOpt,
 		logger:      logger,
 	}
 }
@@ -157,7 +161,7 @@ func (svc *Service) ApplyValidator(args client.ApplyValidatorRequest, reply *cli
 
 	addr := handler.Address()
 	apply := staking.ApplyValidator{
-		Address:              keys.Address(args.Address),
+		StakeAddress:         args.Address,
 		Stake:                action.Amount{Currency: "VT", Value: args.Amount},
 		NodeName:             args.Name,
 		ValidatorAddress:     addr,
@@ -172,14 +176,12 @@ func (svc *Service) ApplyValidator(args client.ApplyValidatorRequest, reply *cli
 	}
 
 	uuidNew, _ := uuid.NewUUID()
-	feeAmount, err := balance.NewAmountFromString("1", 10)
-	if err != nil {
-		return err
-	}
+	feeAmount := svc.feeOpt.MinFee()
+
 	tx := action.RawTx{
 		Type: action.APPLYVALIDATOR,
 		Data: data,
-		Fee:  action.Fee{action.Amount{Currency: "OLT", Value: *feeAmount}, 1},
+		Fee:  action.Fee{action.Amount{Currency: "OLT", Value: *feeAmount.Amount}, 100000},
 		Memo: uuidNew.String(),
 	}
 
@@ -202,5 +204,39 @@ func (svc *Service) ApplyValidator(args client.ApplyValidatorRequest, reply *cli
 
 	*reply = client.ApplyValidatorReply{RawTx: packet}
 
+	return nil
+}
+
+func (svc *Service) WithdrawReward(args client.WithdrawRewardRequest, reply *client.WithdrawRewardReply) error {
+
+	if len(args.To) < 1 {
+		args.To = args.From
+	}
+
+	withdraw := staking.Withdraw{
+		From: args.From,
+		To:   args.To,
+	}
+
+	data, err := withdraw.Marshal()
+	if err != nil {
+		return codes.ErrSerialization
+	}
+
+	uuidNew, _ := uuid.NewUUID()
+
+	tx := action.RawTx{
+		Type: action.WITHDRAW,
+		Data: data,
+		Fee: action.Fee{
+			Price: args.Fee,
+			Gas:   args.Gas,
+		},
+		Memo: uuidNew.String(),
+	}
+
+	packet := tx.RawBytes()
+
+	*reply = client.WithdrawRewardReply{RawTx: packet}
 	return nil
 }

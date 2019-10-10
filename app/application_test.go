@@ -118,7 +118,7 @@ func TestApp_setupValidators(t *testing.T) {
 
 	req := RequestInitChain{}
 	// prepare for currencies
-	currencies := balance.NewCurrencyList()
+	currencies := balance.NewCurrencySet()
 	currency := balance.Currency{
 		Name: "VT",
 	}

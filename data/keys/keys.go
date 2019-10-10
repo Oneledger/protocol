@@ -161,6 +161,14 @@ func PVKeyFromTendermint(key *privval.FilePVKey) (PrivateKey, error) {
 	return GetPrivateKeyFromBytes(bz, ED25519)
 }
 
+func PubKeyFromTendermint(key []byte) (PublicKey, error) {
+	if key == nil {
+		return PublicKey{}, errors.New("PubKeyFromTendermint: got nil argument")
+	}
+	bz := key[tmPrefixSize:]
+	return GetPublicKeyFromBytes(bz, ED25519)
+}
+
 func (pubKey PublicKey) GetABCIPubKey() types.PubKey {
 	return types.PubKey{
 		Type: pubKey.KeyType.Name(),

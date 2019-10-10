@@ -9,8 +9,6 @@ import (
 	"fmt"
 
 	"github.com/Oneledger/protocol/action"
-	"github.com/Oneledger/protocol/data/balance"
-
 	"github.com/pkg/errors"
 	"github.com/tendermint/tendermint/libs/common"
 )
@@ -91,9 +89,14 @@ func (domainSendTx) Validate(ctx *action.Context, tx action.SignedTx) (bool, err
 	}
 
 	// validate basic signature
-	ok, err := action.ValidateBasic(tx.RawBytes(), send.Signers(), tx.Signatures)
+	err = action.ValidateBasic(tx.RawBytes(), send.Signers(), tx.Signatures)
 	if err != nil {
-		return ok, err
+		return false, err
+	}
+
+	err = action.ValidateFee(ctx.FeeOpt, tx.Fee)
+	if err != nil {
+		return false, err
 	}
 
 	// validate transaction specific field
@@ -115,8 +118,6 @@ func (domainSendTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (bool, ac
 
 	ctx.Logger.Debug("Processing Send to Domain Transaction for CheckTx", tx)
 
-	balances := ctx.Balances
-
 	send := &DomainSend{}
 	err := send.Unmarshal(tx.Data)
 	if err != nil {
@@ -130,24 +131,29 @@ func (domainSendTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (bool, ac
 	}
 	coin := send.Amount.ToCoin(ctx.Currencies)
 
-	// get sender balance
-	b, _ := balances.Get(send.From.Bytes())
-	if b == nil {
-		return false, action.Response{Log: "failed to get balance for sender"}
-	}
-
-	// check if balance is enough
-	_, err = b.MinusCoin(coin)
+	domain, err := ctx.Domains.Get(send.DomainName)
 	if err != nil {
-		log := fmt.Sprint("error in minus coin", err)
+		log := fmt.Sprint("error getting domain:", err)
 		return false, action.Response{Log: log}
 	}
-
-	// check if domain of receiver exists
-	receiverExists := ctx.Domains.Exists(send.DomainName)
-	if !receiverExists {
-		log := fmt.Sprintf("receiving domain does")
+	if !domain.ActiveFlag {
+		log := fmt.Sprint("domain inactive")
 		return false, action.Response{Log: log}
+	}
+	if len(domain.AccountAddress) == 0 {
+		log := fmt.Sprint("domain account address not set")
+		return false, action.Response{Log: log}
+	}
+	to := domain.AccountAddress
+
+	err = ctx.Balances.MinusFromAddress(send.From.Bytes(), coin)
+	if err != nil {
+		return false, action.Response{Log: "failed to debit balance of sender"}
+	}
+
+	err = ctx.Balances.AddToAddress(to.Bytes(), coin)
+	if err != nil {
+		return false, action.Response{Log: "failed to credit balance of domain address"}
 	}
 
 	return true, action.Response{Tags: send.Tags()}
@@ -156,18 +162,10 @@ func (domainSendTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (bool, ac
 func (domainSendTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	ctx.Logger.Debug("Processing Send to Domain Transaction for DeliverTx", tx)
 
-	balances := ctx.Balances
-
 	send := &DomainSend{}
 	err := send.Unmarshal(tx.Data)
 	if err != nil {
 		return false, action.Response{Log: err.Error()}
-	}
-
-	from, err := balances.Get(send.From.Bytes())
-	if err != nil {
-		log := fmt.Sprint("Failed to get the balance of the owner ", send.From, "err", err)
-		return false, action.Response{Log: log}
 	}
 
 	if !send.Amount.IsValid(ctx.Currencies) {
@@ -192,37 +190,19 @@ func (domainSendTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, 
 	}
 	to := domain.AccountAddress
 
-	//change owner balance
-	fromFinal, err := from.MinusCoin(coin)
+	err = ctx.Balances.MinusFromAddress(send.From.Bytes(), coin)
 	if err != nil {
-		log := fmt.Sprint("error in minus coin", err)
-		return false, action.Response{Log: log}
-	}
-	err = balances.Set(send.From.Bytes(), *fromFinal)
-	if err != nil {
-		log := fmt.Sprint("error updating balance in send transaction", err)
-		return false, action.Response{Log: log}
+		return false, action.Response{Log: "failed to debit sender balance"}
 	}
 
-	//change receiver balance
-	toBalance, err := balances.Get(to)
+	err = ctx.Balances.AddToAddress(to.Bytes(), coin)
 	if err != nil {
-		ctx.Logger.Error("failed to get the balance of the receipient", err)
+		return false, action.Response{Log: "failed to credit balance of domain address"}
 	}
-	if toBalance == nil {
-		toBalance = balance.NewBalance()
-	}
-	toBalance.AddCoin(coin)
-	err = balances.Set(to, *toBalance)
-	if err != nil {
-		_ = balances.Set(send.From.Bytes(), *from)
-		return false, action.Response{Log: "balance set failed"}
-	}
+
 	return true, action.Response{Tags: send.Tags()}
 }
 
-func (domainSendTx) ProcessFee(ctx *action.Context, fee action.Fee) (bool, action.Response) {
-	panic("implement me")
-	// TODO: implement the fee charge for send
-	return true, action.Response{GasWanted: 0, GasUsed: 0}
+func (domainSendTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas) (bool, action.Response) {
+	return action.BasicFeeHandling(ctx, signedTx, start, size, 1)
 }

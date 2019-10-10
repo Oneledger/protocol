@@ -19,9 +19,8 @@ import (
 	"github.com/Oneledger/protocol/serialize"
 	"github.com/Oneledger/protocol/storage"
 	"github.com/pkg/errors"
+	"strings"
 )
-
-var ErrNoBalanceFoundForThisAddress = errors.New("no balance found for the address")
 
 type Store struct {
 	State  *storage.State
@@ -40,49 +39,110 @@ func (st *Store) WithState(state *storage.State) *Store {
 	return st
 }
 
-func (st *Store) Get(address []byte) (bal *Balance, err error) {
-	key := append(st.prefix, storage.StoreKey(address)...)
-	dat, _ := st.State.Get(key)
-
+func (st *Store) get(key storage.StoreKey) (amt *Amount, err error) {
+	prefixed := append(st.prefix, storage.StoreKey(key)...)
+	dat, _ := st.State.Get(prefixed)
+	amt = NewAmount(0)
 	if len(dat) == 0 {
-		err = ErrNoBalanceFoundForThisAddress
 		return
 	}
-	bal = NewBalance()
-	err = serialize.GetSerializer(serialize.PERSISTENT).Deserialize(dat, bal)
+	err = serialize.GetSerializer(serialize.PERSISTENT).Deserialize(dat, amt)
 	return
 }
 
-func (st *Store) Set(address keys.Address, balance Balance) error {
-	dat, err := serialize.GetSerializer(serialize.PERSISTENT).Serialize(&balance)
+func (st *Store) set(key storage.StoreKey, amt Amount) error {
+	dat, err := serialize.GetSerializer(serialize.PERSISTENT).Serialize(amt)
 	if err != nil {
 		return err
 	}
 
-	key := append(st.prefix, storage.StoreKey(address)...)
-	err = st.State.Set(key, dat)
+	prefixed := append(st.prefix, key...)
+	err = st.State.Set(prefixed, dat)
 	return err
 }
 
-//func (st *Store) FindAll() map[string]*Balance {
-//	balMap := make(map[string]*Balance)
-//
-//	pSzlr := serialize.GetSerializer(serialize.PERSISTENT)
-//	for key, dat := range st.State.FindAll() {
-//		bal := &Balance{}
-//		var err error
-//		err = pSzlr.Deserialize(dat, bal)
-//		if err != nil {
-//			logger.Error("error in deserializing balance", "key", key)
-//		}
-//
-//		balMap[key] = bal
-//	}
-//
-//	return balMap
+func (st *Store) iterate(addr keys.Address, fn func(c string, amt Amount) bool) bool {
+	return st.State.IterateRange(
+		append(st.prefix, addr...),
+		storage.Rangefix(string(append(st.prefix, addr...))),
+		true,
+		func(key, value []byte) bool {
+			amt := NewAmount(0)
+			err := serialize.GetSerializer(serialize.PERSISTENT).Deserialize(value, amt)
+			if err != nil {
+				return true
+			}
+			arr := strings.Split(string(key), storage.DB_PREFIX)
+			return fn(arr[len(arr)-1], *amt)
+		},
+	)
+}
+
+// todo: add back if necessary. address will not work because key will be address+currency
+//func (st *Store) Exists(address keys.Address) bool {
+//	key := append(st.prefix, storage.StoreKey(address)...)
+//	return st.State.Exists(key)
 //}
 
-func (st *Store) Exists(address keys.Address) bool {
-	key := append(st.prefix, storage.StoreKey(address)...)
-	return st.State.Exists(key)
+func (st *Store) AddToAddress(addr keys.Address, coin Coin) error {
+	key := storage.StoreKey(string(addr) + storage.DB_PREFIX + coin.Currency.Name)
+
+	amt, err := st.get(key)
+	if err != nil {
+		return errors.Wrapf(err, "failed to get address balance %s", addr.String())
+	}
+
+	base := coin.Currency.NewCoinFromAmount(*amt)
+	newCoin := base.Plus(coin)
+
+	return st.set(key, *newCoin.Amount)
+}
+
+func (st *Store) MinusFromAddress(addr keys.Address, coin Coin) error {
+	key := storage.StoreKey(string(addr) + storage.DB_PREFIX + coin.Currency.Name)
+
+	amt, err := st.get(key)
+	if err != nil {
+		return errors.Wrapf(err, "failed to get address balance %s", addr.String())
+	}
+
+	base := coin.Currency.NewCoinFromAmount(*amt)
+	newCoin, err := base.Minus(coin)
+	if err != nil {
+		return errors.Wrap(err, "minus from address")
+	}
+
+	return st.set(key, *newCoin.Amount)
+}
+
+func (st *Store) CheckBalanceFromAddress(addr keys.Address, coin Coin) error {
+	key := storage.StoreKey(string(addr) + storage.DB_PREFIX + coin.Currency.Name)
+
+	amt, err := st.get(key)
+	if err != nil {
+		return errors.Wrapf(err, "failed to get address balance %s", addr.String())
+	}
+
+	base := coin.Currency.NewCoinFromAmount(*amt)
+	_, err = base.Minus(coin)
+	if err != nil {
+		return errors.Wrap(err, "minus from address")
+	}
+
+	return nil
+}
+
+func (st *Store) GetBalance(address keys.Address, list *CurrencySet) (balance *Balance, err error) {
+	balance = NewBalance()
+	st.iterate(address, func(c string, amt Amount) bool {
+		currency, ok := list.GetCurrencyByName(c)
+		if !ok {
+			err = errors.New("currency not expected")
+			return false
+		}
+		balance.setCoin(currency.NewCoinFromAmount(amt))
+
+		return false
+	})
+	return
 }

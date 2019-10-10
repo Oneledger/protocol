@@ -23,7 +23,7 @@ import (
 
 func TestCoin(t *testing.T) {
 
-	curr := Currency{"OLT", 0, 18}
+	curr := Currency{1, "OLT", 0, 18, "onz"}
 
 	coin := curr.NewCoinFromInt(2)
 
@@ -44,8 +44,7 @@ func TestCoin(t *testing.T) {
 	ok = coin.IsValid()
 	assert.True(t, ok)
 
-	doubleCoin, err := coin.Plus(coinNew)
-	assert.Nil(t, err)
+	doubleCoin := coin.Plus(coinNew)
 
 	ok = coin.LessThanCoin(doubleCoin)
 	assert.True(t, ok)
@@ -70,7 +69,7 @@ func TestCoin(t *testing.T) {
 
 func TestCoin_LessThanEqualCoin(t *testing.T) {
 
-	curr := Currency{"OLT", 0, 18}
+	curr := Currency{1, "OLT", 0, 18, "onz"}
 
 	coin := curr.NewCoinFromInt(1)
 	coin2 := curr.NewCoinFromFloat64(0.9)

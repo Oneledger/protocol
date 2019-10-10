@@ -40,7 +40,7 @@ type SendArguments struct {
 	Gas          int64  `json:"gas"`
 }
 
-func (args *SendArguments) ClientRequest(currencies *balance.CurrencyList) (client.SendTxRequest, error) {
+func (args *SendArguments) ClientRequest(currencies *balance.CurrencySet) (client.SendTxRequest, error) {
 	c, ok := currencies.GetCurrencyByName(args.Currency)
 	if !ok {
 		return client.SendTxRequest{}, errors.New("currency not support:" + args.Currency)
@@ -73,6 +73,7 @@ func init() {
 	sendCmd.Flags().StringVar(&sendargs.Amount, "amount", "0", "specify an amount")
 	sendCmd.Flags().StringVar(&sendargs.Currency, "currency", "OLT", "the currency")
 	sendCmd.Flags().StringVar(&sendargs.Fee, "fee", "0", "include a fee in OLT")
+	sendCmd.Flags().Int64Var(&sendargs.Gas, "gas", 20000, "gas limit")
 }
 
 // IssueRequest sends out a sendTx to all of the nodes in the chain
@@ -86,7 +87,7 @@ func IssueRequest(cmd *cobra.Command, args []string) {
 		return
 	}
 	// Create message
-	req, err := sendargs.ClientRequest(currencies.Currencies.GetCurrencyList())
+	req, err := sendargs.ClientRequest(currencies.Currencies.GetCurrencySet())
 	if err != nil {
 		ctx.logger.Error("failed to get request", err)
 		return

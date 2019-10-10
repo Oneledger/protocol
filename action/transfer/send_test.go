@@ -2,6 +2,7 @@ package transfer
 
 import (
 	"errors"
+	"github.com/Oneledger/protocol/data/fees"
 	"os"
 	"testing"
 
@@ -64,7 +65,7 @@ func assemblySendData(replaceFrom bool) (action.SignedTx, crypto.Address) {
 		Amount: *amount,
 	}
 	fee := action.Fee{
-		Price: action.Amount{"OLT", *balance.NewAmount(1)},
+		Price: action.Amount{"OLT", *balance.NewAmount(1000000000)},
 		Gas:   int64(10),
 	}
 
@@ -106,7 +107,7 @@ func assemblyCtxData(currencyName string, currencyDecimal int, setStore bool, se
 	// currencyList
 	if currencyName != "" {
 		// register new token OTT
-		currencyList := balance.NewCurrencyList()
+		currencyList := balance.NewCurrencySet()
 		currency := balance.Currency{
 			Name:    currencyName,
 			Chain:   chain.Type(1),
@@ -126,15 +127,23 @@ func assemblyCtxData(currencyName string, currencyDecimal int, setStore bool, se
 				Amount:   amt,
 			}
 			coin.MultiplyInt(currencyDecimal)
-			ba := balance.NewBalance()
-			ba = ba.AddCoin(coin)
-			err = store.Set(setCoinAddr.Bytes(), *ba)
+			err = store.AddToAddress(setCoinAddr.Bytes(), coin)
 			if err != nil {
 				errors.New("setup testing token balance error")
 			}
 			store.State.Commit()
 			ctx.Balances = store
 		}
+	}
+	ctx.FeeOpt = &fees.FeeOption{
+		FeeCurrency: balance.Currency{
+			Id:      0,
+			Name:    "OLT",
+			Chain:   0,
+			Decimal: 18,
+			Unit:    "nue",
+		},
+		MinFeeDecimal: 9,
 	}
 	return ctx
 }

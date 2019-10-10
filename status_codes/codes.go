@@ -40,13 +40,15 @@ const (
 	AccountsErrorGeneratingNewAccount = 200701
 
 	// Transaction statuses
-	TxErrMisingData        = 300101
-	TxErrUnserializable    = 300102
-	TxErrWrongTxType       = 300103
-	TxErrInvalidAmount     = 300104
-	TxErrInvalidPubKey     = 300105
-	TxErrUnmatchedSigner   = 300106
-	TxErrInvalidSignature  = 3001007
-	TxErrInvalidFee        = 300108
-	TxErrInsufficientFunds = 300109
+	TxErrMisingData         = 300101
+	TxErrUnserializable     = 300102
+	TxErrWrongTxType        = 300103
+	TxErrInvalidAmount      = 300104
+	TxErrInvalidPubKey      = 300105
+	TxErrUnmatchedSigner    = 300106
+	TxErrInvalidSignature   = 300107
+	TxErrInvalidFeeCurrency = 300108
+	TxErrInvalidFeePrice    = 300109
+	TxErrInsufficientFunds  = 300110
+	TxErrGasOverflow        = 300111
 )

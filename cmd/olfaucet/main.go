@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"math/big"
+	"github.com/Oneledger/protocol/data/chain"
 	"net"
 	"net/http"
 	"net/url"
@@ -207,6 +207,13 @@ func ip(rawAddr string) string {
 func (f *Faucet) RequestOLT(req Request, reply *Reply) error {
 	requestIP := ip(req.HTTPRequest().RemoteAddr)
 	logger.Info("Incoming request from", requestIP)
+	olt := balance.Currency{
+		Id:      0,
+		Name:    "OLT",
+		Chain:   chain.Type(0),
+		Decimal: 18,
+		Unit:    "nue",
+	}
 
 	err := req.Address.Err()
 	if err != nil {
@@ -230,19 +237,18 @@ func (f *Faucet) RequestOLT(req Request, reply *Reply) error {
 	if req.Address == nil {
 		return rpc.InvalidRequestError("address must not be nil")
 	}
-	amt := balance.NewAmount(int64(req.Amount))
-	a := big.NewInt(0).Mul(&amt.Int, big.NewInt(0).Exp(big.NewInt(10), big.NewInt(18), nil))
+	amt := olt.NewCoinFromInt(int64(req.Amount))
 	toSend := action.Amount{
-		Currency: "OLT",
-		Value:    balance.Amount{Int: *a},
+		Currency: olt.Name,
+		Value:    *amt.Amount,
 	}
 
 	sendTxResults, err := f.fullnode.CreateRawSend(client.SendTxRequest{
 		From:   f.nodeCtx.Address(),
 		To:     req.Address,
 		Amount: toSend,
-		Fee:    action.Amount{Currency: "OLT", Value: balance.Amount{Int: *big.NewInt(0)}},
-		Gas:    0,
+		Fee:    action.Amount{Currency: olt.Name, Value: *balance.NewAmount(1000000000)},
+		Gas:    40000,
 	})
 	if err != nil {
 		logger.Error("failed to sendTx", err)

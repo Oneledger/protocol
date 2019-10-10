@@ -7,6 +7,7 @@ import (
 	"github.com/Oneledger/protocol/config"
 	"github.com/Oneledger/protocol/data/accounts"
 	"github.com/Oneledger/protocol/data/balance"
+	"github.com/Oneledger/protocol/data/fees"
 	"github.com/Oneledger/protocol/data/ons"
 	"github.com/Oneledger/protocol/identity"
 	"github.com/Oneledger/protocol/log"
@@ -19,16 +20,21 @@ import (
 
 // Context is the master context for creating new contexts
 type Context struct {
-	Balances     *balance.Store
+	//stores
 	Accounts     accounts.Wallet
-	Currencies   *balance.CurrencyList
-	Cfg          config.Server
-	NodeContext  node.Context
-	ValidatorSet *identity.ValidatorStore
+	Balances     *balance.Store
 	Domains      *ons.DomainStore
-	Services     client.ExtServiceContext
-	Router       action.Router
-	Logger       *log.Logger
+	ValidatorSet *identity.ValidatorStore
+
+	// configurations
+	Cfg         config.Server
+	Currencies  *balance.CurrencySet
+	FeeOpt      *fees.FeeOption
+	NodeContext node.Context
+
+	Router   action.Router
+	Services client.ExtServiceContext
+	Logger   *log.Logger
 }
 
 // Map of services, keyed by the name/prefix of the service
@@ -36,10 +42,10 @@ type Map map[string]interface{}
 
 func NewMap(ctx *Context) Map {
 	return Map{
-		broadcast.Name(): broadcast.NewService(ctx.Services, ctx.Router, ctx.Currencies, ctx.Logger),
+		broadcast.Name(): broadcast.NewService(ctx.Services, ctx.Router, ctx.Currencies, ctx.FeeOpt, ctx.Logger),
 		nodesvc.Name():   nodesvc.NewService(ctx.NodeContext, &ctx.Cfg, ctx.Logger),
 		owner.Name():     owner.NewService(ctx.Accounts, ctx.Logger),
 		query.Name():     query.NewService(ctx.Services, ctx.Balances, ctx.Currencies, ctx.ValidatorSet, ctx.Domains, ctx.Logger),
-		tx.Name():        tx.NewService(ctx.Balances, ctx.Router, ctx.Accounts, ctx.NodeContext, ctx.Logger),
+		tx.Name():        tx.NewService(ctx.Balances, ctx.Router, ctx.Accounts, ctx.FeeOpt, ctx.NodeContext, ctx.Logger),
 	}
 }

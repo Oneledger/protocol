@@ -86,10 +86,10 @@ func keyFromName(name string) []byte {
 func (ds *DomainStore) Iterate(fn func(name string, domain *Domain) bool) (stopped bool) {
 	return ds.State.IterateRange(
 		ds.prefix,
-		storage.Rangefix(string(ds.prefix[:len(ds.prefix)-1])),
+		storage.Rangefix(string(ds.prefix)),
 		true,
 		func(key, value []byte) bool {
-			name := string(key)
+			name := string(key[len(ds.prefix):])
 			domain := &Domain{}
 			err := ds.szlr.Deserialize(value, domain)
 			if err != nil {

@@ -3,6 +3,8 @@ package action
 import (
 	"encoding/json"
 
+	"github.com/Oneledger/protocol/storage"
+
 	"github.com/tendermint/tendermint/libs/common"
 
 	"github.com/Oneledger/protocol/data/balance"
@@ -14,6 +16,9 @@ type Address = keys.Address
 
 // Balance an action package over Balance in data/balance
 type Balance = balance.Balance
+
+// Gas an action package over Gas in storage
+type Gas = storage.Gas
 
 // Amount is an easily serializable representation of coin. Nodes can create coin from the Amount object
 // received over the network
@@ -29,7 +34,7 @@ func NewAmount(currency string, amount balance.Amount) *Amount {
 
 // IsValid checks the validity of the currency and the amount string in the account object, which may be received
 // over a network.
-func (a Amount) IsValid(list *balance.CurrencyList) bool {
+func (a Amount) IsValid(list *balance.CurrencySet) bool {
 	currency, ok := list.GetCurrencyByName(a.Currency)
 	if !ok {
 		return false
@@ -47,7 +52,7 @@ func (a Amount) String() string {
 
 // ToCoin converts an easier to transport Amount object to a Coin object in Oneledger protocol.
 // It takes the action context to determine the currency from which to create the coin.
-func (a Amount) ToCoin(list *balance.CurrencyList) balance.Coin {
+func (a Amount) ToCoin(list *balance.CurrencySet) balance.Coin {
 
 	// get currency of Amount a
 	currency, ok := list.GetCurrencyByName(a.Currency)

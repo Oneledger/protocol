@@ -70,9 +70,9 @@ func (domainCreateTx) Validate(ctx *action.Context, tx action.SignedTx) (bool, e
 		return false, errors.Wrap(action.ErrWrongTxType, err.Error())
 	}
 
-	ok, err := action.ValidateBasic(tx.RawBytes(), create.Signers(), tx.Signatures)
+	err = action.ValidateBasic(tx.RawBytes(), create.Signers(), tx.Signatures)
 	if err != nil {
-		return ok, err
+		return false, err
 	}
 
 	if create.Owner == nil || len(create.Name) <= 0 {
@@ -98,16 +98,10 @@ func (domainCreateTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (bool, 
 		return false, action.Response{Log: err.Error()}
 	}
 
-	b, err := ctx.Balances.Get(create.Owner.Bytes())
-	if err != nil {
-		return false, action.Response{Log: fmt.Sprintf("failed to get balance for owner: %s", hex.EncodeToString(create.Owner))}
-	}
 	price := create.Price.ToCoin(ctx.Currencies)
-
-	//just verify if balance is enough or not, don't set to db
-	b, err = b.MinusCoin(price)
+	err = ctx.Balances.MinusFromAddress(create.Owner.Bytes(), price)
 	if err != nil {
-		return false, action.Response{Log: err.Error()}
+		return false, action.Response{Log: errors.Wrap(err, hex.EncodeToString(create.Owner)).Error()}
 	}
 
 	if ctx.Domains.Exists(create.Name) {
@@ -127,22 +121,10 @@ func (domainCreateTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool
 		return false, action.Response{Log: err.Error()}
 	}
 
-	b, err := ctx.Balances.Get(create.Owner.Bytes())
-	if err != nil {
-		return false, action.Response{Log: fmt.Sprintf("failed to get balance for owner: %s", hex.EncodeToString(create.Owner))}
-	}
 	price := create.Price.ToCoin(ctx.Currencies)
-
-	// verify balance and set to db, the price for create domain is just burned for now.
-	//todo: pay the price to fee pool that will be shared by validators at the fee distribution time.
-	b, err = b.MinusCoin(price)
+	err = ctx.Balances.MinusFromAddress(create.Owner.Bytes(), price)
 	if err != nil {
-		return false, action.Response{Log: err.Error()}
-	}
-
-	err = ctx.Balances.Set(create.Owner.Bytes(), *b)
-	if err != nil {
-		return false, action.Response{Log: errors.Wrap(err, "set balance of owner").Error()}
+		return false, action.Response{Log: errors.Wrap(err, hex.EncodeToString(create.Owner)).Error()}
 	}
 
 	//check domain existence and set to db
@@ -167,6 +149,6 @@ func (domainCreateTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool
 	return true, result
 }
 
-func (domainCreateTx) ProcessFee(ctx *action.Context, fee action.Fee) (bool, action.Response) {
-	panic("implement me")
+func (domainCreateTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas) (bool, action.Response) {
+	return action.BasicFeeHandling(ctx, signedTx, start, size, 1)
 }
