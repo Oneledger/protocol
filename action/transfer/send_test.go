@@ -136,7 +136,7 @@ func assemblyCtxData(currencyName string, currencyDecimal int, setStore bool, se
 		}
 	}
 	ctx.FeeOpt = &fees.FeeOption{
-		FeeCurrency:   balance.Currency{
+		FeeCurrency: balance.Currency{
 			Id:      0,
 			Name:    "OLT",
 			Chain:   0,

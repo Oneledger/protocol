@@ -94,13 +94,13 @@ func ValidateFee(feeOpt *fees.FeeOption, fee Fee) error {
 	if fee.Price.Currency != feeOpt.FeeCurrency.Name {
 		return ErrInvalidFeeCurrency
 	}
-	if feeOpt.MinFee().Amount.BigInt().Cmp(fee.Price.Value.BigInt()) > 0  {
+	if feeOpt.MinFee().Amount.BigInt().Cmp(fee.Price.Value.BigInt()) > 0 {
 		return ErrInvalidFeePrice
 	}
 	return nil
 }
 
-func BasicFeeHandling(ctx *Context, signedTx SignedTx, start Gas, size Gas, signatureCnt Gas) (bool, Response){
+func BasicFeeHandling(ctx *Context, signedTx SignedTx, start Gas, size Gas, signatureCnt Gas) (bool, Response) {
 	ctx.State.ConsumeVerifySigGas(signatureCnt)
 	ctx.State.ConsumeStorageGas(size)
 	// check the used gas for the tx

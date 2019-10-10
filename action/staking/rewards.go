@@ -7,14 +7,13 @@ import (
 	"github.com/tendermint/tendermint/libs/common"
 )
 
-
 var _ action.Msg = &Withdraw{}
 
 type Withdraw struct {
 	// staking account from which the reward is withdraw
-	From   action.Address `json:"from"`
+	From action.Address `json:"from"`
 	// beneficiary account to which the reward is withdraw to
-	To     action.Address `json:"to"`
+	To action.Address `json:"to"`
 }
 
 func (s Withdraw) Marshal() ([]byte, error) {
@@ -45,7 +44,7 @@ func (s Withdraw) Tags() common.KVPairs {
 		Value: s.From.Bytes(),
 	}
 	tag3 := common.KVPair{
-		Key:   []byte("tx.to") ,
+		Key:   []byte("tx.to"),
 		Value: s.To.Bytes(),
 	}
 
@@ -72,7 +71,7 @@ func (withdrawTx) Validate(ctx *action.Context, tx action.SignedTx) (bool, error
 	}
 
 	err = action.ValidateFee(ctx.FeeOpt, tx.Fee)
-	if err != nil{
+	if err != nil {
 		return false, err
 	}
 
@@ -130,4 +129,3 @@ func runWithdraw(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 
 	return true, action.Response{Tags: draw.Tags()}
 }
-

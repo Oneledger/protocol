@@ -104,7 +104,6 @@ func (domainCreateTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (bool, 
 		return false, action.Response{Log: errors.Wrap(err, hex.EncodeToString(create.Owner)).Error()}
 	}
 
-
 	if ctx.Domains.Exists(create.Name) {
 		return false, action.Response{Log: fmt.Sprintf("Domain already exist: %s", create.Name)}
 	}

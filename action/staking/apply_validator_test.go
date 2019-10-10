@@ -126,7 +126,7 @@ func setupForTypeCastApplyValidator() action.SignedTx {
 
 	// test cast for type casting error
 	av := ApplyValidator{
-		StakeAddress:          addr.Bytes(),
+		StakeAddress:     addr.Bytes(),
 		Stake:            action.Amount{"OLT", *balance.NewAmount(10)},
 		NodeName:         "test_node",
 		ValidatorAddress: addr.Bytes(),
@@ -218,7 +218,7 @@ func TestApplyTx_Validate(t *testing.T) {
 		assert.Nil(t, err, "register new OLT token should be ok")
 		ctx := &action.Context{
 			Currencies: currencyList,
-			FeeOpt:  &fees.FeeOption{FeeCurrency: currency, MinFeeDecimal: 9},
+			FeeOpt:     &fees.FeeOption{FeeCurrency: currency, MinFeeDecimal: 9},
 		}
 		handler := applyTx{}
 		ok, err := handler.Validate(ctx, tx)
@@ -239,7 +239,7 @@ func TestApplyTx_Validate(t *testing.T) {
 		assert.Nil(t, err, "register new OLT token should be ok")
 		ctx := &action.Context{
 			Currencies: currencyList,
-			FeeOpt:  &fees.FeeOption{FeeCurrency: currency, MinFeeDecimal: 9},
+			FeeOpt:     &fees.FeeOption{FeeCurrency: currency, MinFeeDecimal: 9},
 		}
 		handler := applyTx{}
 		ok, err := handler.Validate(ctx, tx)
@@ -259,7 +259,7 @@ func TestApplyTx_Validate(t *testing.T) {
 		assert.Nil(t, err, "register new currency should be ok")
 		ctx := &action.Context{
 			Currencies: currencyList,
-			FeeOpt:  &fees.FeeOption{FeeCurrency: currency, MinFeeDecimal: 9},
+			FeeOpt:     &fees.FeeOption{FeeCurrency: currency, MinFeeDecimal: 9},
 		}
 		handler := applyTx{}
 		ok, err := handler.Validate(ctx, tx)
@@ -320,7 +320,7 @@ func TestApplyTx_ProcessDeliver(t *testing.T) {
 			Balances:   bs,
 			Validators: vs,
 			Currencies: currencyList,
-			FeeOpt:  &fees.FeeOption{FeeCurrency: currency, MinFeeDecimal: 9},
+			FeeOpt:     &fees.FeeOption{FeeCurrency: currency, MinFeeDecimal: 9},
 		}
 		handler := applyTx{}
 		ok, _ := handler.ProcessDeliver(ctx, tx.RawTx)
@@ -351,7 +351,7 @@ func TestApplyTx_ProcessDeliver(t *testing.T) {
 			Balances:   bs,
 			Validators: vs,
 			Currencies: currencyList,
-			FeeOpt:  &fees.FeeOption{FeeCurrency: currency, MinFeeDecimal: 9},
+			FeeOpt:     &fees.FeeOption{FeeCurrency: currency, MinFeeDecimal: 9},
 		}
 		handler := applyTx{}
 		ok, _ := handler.ProcessDeliver(ctx, tx.RawTx)

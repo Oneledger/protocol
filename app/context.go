@@ -127,7 +127,7 @@ func (ctx *context) ValidatorCtx() *identity.ValidatorContext {
 	return identity.NewValidatorContext(
 		ctx.balances.WithState(ctx.deliver),
 		ctx.feePool.WithState(ctx.deliver),
-		)
+	)
 }
 
 // Returns a balance.Context

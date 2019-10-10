@@ -13,22 +13,22 @@ import (
 )
 
 type ValidatorStore struct {
-	prefix    []byte
-	store     *storage.State
-	proposer  keys.Address
-	queue     ValidatorQueue
-	byzantine []Validator
+	prefix     []byte
+	store      *storage.State
+	proposer   keys.Address
+	queue      ValidatorQueue
+	byzantine  []Validator
 	totalPower int64
 }
 
 func NewValidatorStore(prefix string, cfg config.Server, state *storage.State) *ValidatorStore {
 	// TODO: get the genesis validators when start the node
 	return &ValidatorStore{
-		prefix:    storage.Prefix(prefix),
-		store:     state,
-		proposer:  []byte(nil),
-		queue:     ValidatorQueue{PriorityQueue: make(utils.PriorityQueue, 0, 100)},
-		byzantine: make([]Validator, 0),
+		prefix:     storage.Prefix(prefix),
+		store:      state,
+		proposer:   []byte(nil),
+		queue:      ValidatorQueue{PriorityQueue: make(utils.PriorityQueue, 0, 100)},
+		byzantine:  make([]Validator, 0),
 		totalPower: 0,
 	}
 }
@@ -257,7 +257,7 @@ func (vs *ValidatorStore) GetEndBlockUpdate(ctx *ValidatorContext, req types.Req
 	total, err := ctx.FeePool.Get([]byte(fees.POOL_KEY))
 	if err != nil {
 		logger.Fatal("failed to get the total fee pool")
-	}else if ctx.FeePool.GetOpt().MinFee().LessThanCoin(total) {
+	} else if ctx.FeePool.GetOpt().MinFee().LessThanCoin(total) {
 		distribute = true
 	}
 	if req.Height > 1 || (len(vs.byzantine) > 0) {

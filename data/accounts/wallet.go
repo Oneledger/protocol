@@ -29,7 +29,6 @@ type Wallet interface {
 	Close()
 }
 
-
 const rootkey = "rootkey"
 
 // WalletStore keeps a session storage of accounts on the Full Node

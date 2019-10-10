@@ -34,7 +34,7 @@ type Currency struct {
 	Name  string     `json:"name"`
 	Chain chain.Type `json:"chain"`
 
-	Decimal int64 `json:"decimal"`
+	Decimal int64  `json:"decimal"`
 	Unit    string `json:"unit"`
 }
 
@@ -100,7 +100,7 @@ func (c Currency) NewCoinFromBytes(amount []byte) Coin {
 
 type CurrencySet struct {
 	nameMap map[string]Currency
-	idMap  map[int64]Currency
+	idMap   map[int64]Currency
 }
 
 func NewCurrencySet() *CurrencySet {

@@ -137,7 +137,7 @@ func (app *App) setupState(stateBytes []byte) error {
 	for _, bal := range initial.Balances {
 		key := storage.StoreKey(bal.Address)
 		c, ok := balanceCtx.Currencies().GetCurrencyByName(bal.Currency)
-		if !ok{
+		if !ok {
 			return errors.New("currency for initial balance not support")
 		}
 		coin := c.NewCoinFromAmount(bal.Amount)

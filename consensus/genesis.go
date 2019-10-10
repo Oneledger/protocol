@@ -50,25 +50,25 @@ type AppState struct {
 	Currencies balance.Currencies `json:"currencies"`
 	FeeOption  fees.FeeOption     `json:"feeOption"`
 	Balances   []BalanceState     `json:"balances"`
-	Staking    []Stake		      `json:"staking"`
+	Staking    []Stake            `json:"staking"`
 	Domains    []DomainState      `json:"domains"`
-	Fees       []BalanceState   `json:"fees"`
+	Fees       []BalanceState     `json:"fees"`
 }
 
 func NewAppState(currencies balance.Currencies,
 	feeOpt fees.FeeOption,
 	balances []BalanceState,
-	staking  []Stake,
-	domains  []DomainState,
-	fees     []BalanceState,
+	staking []Stake,
+	domains []DomainState,
+	fees []BalanceState,
 ) *AppState {
 	return &AppState{
 		Currencies: currencies,
 		FeeOption:  feeOpt,
-		Balances:  balances,
-		Staking:  staking,
-		Domains:  domains,
-		Fees:fees,
+		Balances:   balances,
+		Staking:    staking,
+		Domains:    domains,
+		Fees:       fees,
 	}
 }
 

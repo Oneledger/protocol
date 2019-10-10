@@ -20,6 +20,7 @@ func NewAmount(x int64) *Amount {
 func NewAmountFromBigInt(x *big.Int) *Amount {
 	return (*Amount)(x)
 }
+
 // NewAmountFromString parses the amount as a string with the given base. For example, if base is 10, then it expects
 // the given string to be base-10 notation. If the base is 16, then it expects the string in hexadecimal notation. If
 // the base is set to 16, it ignores any "0x" prefix if present.

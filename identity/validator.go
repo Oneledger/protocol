@@ -14,7 +14,7 @@ type Validator struct {
 	ECDSAPubKey  keys.PublicKey `json:"ecdsa_pubkey"`
 	Power        int64          `json:"power"`
 	Name         string         `json:"name"`
-	Staking      balance.Amount   `json:"staking,string"`
+	Staking      balance.Amount `json:"staking,string"`
 }
 
 func (v *Validator) Bytes() []byte {
@@ -51,13 +51,13 @@ type Unstake struct {
 
 type ValidatorContext struct {
 	Balances *balance.Store
-	FeePool *fees.Store
+	FeePool  *fees.Store
 	// TODO: add necessary config
 }
 
 func NewValidatorContext(balances *balance.Store, feePool *fees.Store) *ValidatorContext {
 	return &ValidatorContext{
 		Balances: balances,
-		FeePool: feePool,
+		FeePool:  feePool,
 	}
 }

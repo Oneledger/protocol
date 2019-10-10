@@ -5,4 +5,3 @@ import (
 )
 
 type Application = abci.Application
-

@@ -6,7 +6,7 @@ import (
 )
 
 const (
-	POOL_KEY = "00000000000000000000"
+	POOL_KEY        = "00000000000000000000"
 	FEE_LOCK_BLOCKS = int64(3)
 )
 

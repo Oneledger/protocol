@@ -9,9 +9,9 @@ import (
 )
 
 type Store struct {
-	state    *storage.State
-	prefix   []byte
-	feeOpt   *FeeOption
+	state  *storage.State
+	prefix []byte
+	feeOpt *FeeOption
 }
 
 func NewStore(prefix string, state *storage.State) *Store {
@@ -86,7 +86,6 @@ func (st *Store) Iterate(fn func(addr keys.Address, coin balance.Coin) (stop boo
 }
 
 func (st *Store) AddToAddress(addr keys.Address, coin balance.Coin) error {
-
 
 	baseCoin, err := st.Get(addr)
 	if err != nil {

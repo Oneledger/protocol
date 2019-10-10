@@ -119,7 +119,6 @@ func (domainPurchaseTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (bool
 		return false, action.Response{Log: errors.Wrap(err, "insufficient buyer balance").Error()}
 	}
 
-
 	return true, action.Response{Tags: buy.Tags()}
 
 }

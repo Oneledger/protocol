@@ -72,8 +72,8 @@ type ApplyValidatorReply struct {
 }
 
 type WithdrawRewardRequest struct {
-	From keys.Address `json:"from"`
-	To   keys.Address `json:"to"`
+	From keys.Address  `json:"from"`
+	To   keys.Address  `json:"to"`
 	Fee  action.Amount `json:"fee"`
 	Gas  int64         `json:"gas"`
 }

@@ -14,7 +14,7 @@ import (
 var _ action.Msg = &ApplyValidator{}
 
 type ApplyValidator struct {
-	StakeAddress              action.Address
+	StakeAddress         action.Address
 	Stake                action.Amount
 	NodeName             string
 	ValidatorAddress     action.Address
@@ -145,7 +145,6 @@ func runApply(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	validators := ctx.Validators
 
 	balances := ctx.Balances
-
 
 	err = balances.MinusFromAddress(apply.StakeAddress.Bytes(), apply.Stake.ToCoin(ctx.Currencies))
 	if err != nil {

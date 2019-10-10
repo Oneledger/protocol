@@ -33,4 +33,3 @@ func TestValidator_FromBytes(t *testing.T) {
 		assert.Equal(t, validator, validator)
 	}
 }
-

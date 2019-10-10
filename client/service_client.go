@@ -76,7 +76,6 @@ func (c *ServiceClient) WithdrawReward(req WithdrawRewardRequest) (out WithdrawR
 	return
 }
 
-
 /* ONS */
 func (c *ServiceClient) ONS_CreateRawCreate(req ONSCreateRequest) (out SendTxReply, err error) {
 	err = c.Call("tx.ONS_CreateRawCreate", req, &out)

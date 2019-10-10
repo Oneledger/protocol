@@ -34,7 +34,7 @@ func NewService(
 	balances *balance.Store,
 	router action.Router,
 	accounts accounts.Wallet,
-	feeOpt  *fees.FeeOption,
+	feeOpt *fees.FeeOption,
 	nodeCtx node.Context,
 	logger *log.Logger,
 ) *Service {
@@ -228,7 +228,7 @@ func (svc *Service) WithdrawReward(args client.WithdrawRewardRequest, reply *cli
 	tx := action.RawTx{
 		Type: action.WITHDRAW,
 		Data: data,
-		Fee:  action.Fee{
+		Fee: action.Fee{
 			Price: args.Fee,
 			Gas:   args.Gas,
 		},
