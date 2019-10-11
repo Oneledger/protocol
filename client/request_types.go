@@ -160,6 +160,10 @@ func (reply *BroadcastReply) FromResultBroadcastTxCommit(result *ctypes.ResultBr
 	reply.Log = "check: " + result.CheckTx.Log + ", deliver: " + result.DeliverTx.Log
 }
 
+type InternalBroadcastRequest struct {
+	RawTx     action.RawTx   `json:"rawTx"`
+}
+
 type NewAccountRequest struct {
 	Name string `json:"name"`
 }
