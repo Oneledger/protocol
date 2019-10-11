@@ -70,9 +70,13 @@ func (ast btcAddSignatureTx) Validate(ctx *action.Context, signedTx action.Signe
 		return false, errors.Wrap(action.ErrWrongTxType, err.Error())
 	}
 
-	_, err = action.ValidateBasic(signedTx.RawBytes(), addSignature.Signers(), signedTx.Signatures)
+	err = action.ValidateBasic(signedTx.RawBytes(), addSignature.Signers(), signedTx.Signatures)
 	if err != nil {
 		return false, err
+	}
+
+	if !ctx.Validators.IsValidatorAddress(addSignature.ValidatorAddress) {
+		return false, errors.New("only validator can add a signature")
 	}
 
 	tracker, err := ctx.Trackers.Get(addSignature.TrackerName)
@@ -95,6 +99,10 @@ func (ast btcAddSignatureTx) ProcessCheck(ctx *action.Context, tx action.RawTx) 
 		return false, action.Response{Log: "wrong tx type"}
 	}
 
+	if !ctx.Validators.IsValidatorAddress(addSignature.ValidatorAddress) {
+		return false, action.Response{Log: "signer not found in validator list"}
+	}
+
 	tracker, err := ctx.Trackers.Get(addSignature.TrackerName)
 	if err != nil {
 		return false, action.Response{Log: fmt.Sprintf("tracker not found: %s", addSignature.TrackerName)}
@@ -102,6 +110,20 @@ func (ast btcAddSignatureTx) ProcessCheck(ctx *action.Context, tx action.RawTx) 
 
 	if tracker.State != bitcoin.BusySigningTrackerState {
 		return false, action.Response{Log: fmt.Sprintf("tracker not accepting signatures: ", addSignature.TrackerName)}
+	}
+
+	err = tracker.AddSignature(addSignature.PubKey, addSignature.BTCSignature, addSignature.ValidatorPubKey)
+	if err != nil {
+		return false, action.Response{Log: fmt.Sprintf("error adding signature: %s, error: ", addSignature.TrackerName, err)}
+	}
+
+	if tracker.HasEnoughSignatures() {
+		tracker.State = bitcoin.BusyBroadcastingTrackerState
+	}
+
+	err = ctx.Trackers.SetTracker(addSignature.TrackerName, tracker)
+	if err != nil {
+		return false, action.Response{Log: fmt.Sprintf("error updating tracker store: %s, error: ", addSignature.TrackerName, err)}
 	}
 
 	return true, action.Response{
@@ -117,6 +139,10 @@ func (ast btcAddSignatureTx) ProcessDeliver(ctx *action.Context, tx action.RawTx
 		return false, action.Response{Log: "wrong tx type"}
 	}
 
+	if !ctx.Validators.IsValidatorAddress(addSignature.ValidatorAddress) {
+		return false, action.Response{Log: "signer not found in validator list"}
+	}
+
 	tracker, err := ctx.Trackers.Get(addSignature.TrackerName)
 	if err != nil {
 		return false, action.Response{Log: fmt.Sprintf("tracker not found: %s", addSignature.TrackerName)}
@@ -129,6 +155,15 @@ func (ast btcAddSignatureTx) ProcessDeliver(ctx *action.Context, tx action.RawTx
 	err = tracker.AddSignature(addSignature.PubKey, addSignature.BTCSignature, addSignature.ValidatorPubKey)
 	if err != nil {
 		return false, action.Response{Log: fmt.Sprintf("error adding signature: %s, error: ", addSignature.TrackerName, err)}
+	}
+
+	if tracker.HasEnoughSignatures() {
+		tracker.State = bitcoin.BusyBroadcastingTrackerState
+	}
+
+	err = ctx.Trackers.SetTracker(addSignature.TrackerName, tracker)
+	if err != nil {
+		return false, action.Response{Log: fmt.Sprintf("error updating tracker store: %s, error: ", addSignature.TrackerName, err)}
 	}
 
 	return true, action.Response{

@@ -4,6 +4,7 @@
 
 package bitcoin
 
+/*
 import "github.com/btcsuite/btcd/chaincfg/chainhash"
 
 type UTXO struct {
@@ -19,3 +20,6 @@ func NewUTXO(txID *chainhash.Hash, index uint32, balance int64) *UTXO {
 		balance,
 	}
 }
+
+
+*/

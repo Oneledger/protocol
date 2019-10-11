@@ -1,6 +1,9 @@
 package identity
 
 import (
+	"bytes"
+	"math/big"
+
 	"github.com/Oneledger/protocol/config"
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/fees"
@@ -11,7 +14,6 @@ import (
 	"github.com/btcsuite/btcutil"
 	"github.com/pkg/errors"
 	"github.com/tendermint/tendermint/abci/types"
-	"math/big"
 )
 
 type ValidatorStore struct {
@@ -153,6 +155,29 @@ func (vs *ValidatorStore) GetValidatorSet() ([]Validator, error) {
 		return false
 	})
 	return validatorSet, nil
+}
+
+// get validators set
+func (vs *ValidatorStore) GetValidatorsAddress() ([]keys.Address, error) {
+
+	validatorAddress := make([]keys.Address, 0)
+	vs.Iterate(func(addr keys.Address, validator *Validator) bool {
+		validatorAddress = append(validatorAddress, addr)
+		return false
+	})
+	return validatorAddress, nil
+}
+
+func (vs *ValidatorStore) IsValidatorAddress(query keys.Address) bool {
+	isValidator := false
+	vs.Iterate(func(addr keys.Address, validator *Validator) bool {
+		isValidator = bytes.Equal(query, addr)
+		if isValidator {
+			return true
+		}
+		return false
+	})
+	return isValidator
 }
 
 // handle stake action

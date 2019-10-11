@@ -21,6 +21,8 @@ type CheckFinality struct {
 	OwnerAddress action.Address
 }
 
+var _ action.Msg = &CheckFinality{}
+
 func (bcf *CheckFinality) Signers() []action.Address {
 	return []action.Address{
 		bcf.OwnerAddress,
@@ -62,6 +64,8 @@ func (bcf *CheckFinality) Unmarshal(data []byte) error {
 type btcCheckFinalityTx struct {
 }
 
+var _ action.Tx = btcCheckFinalityTx{}
+
 func (btcCheckFinalityTx) Validate(ctx *action.Context, signedTx action.SignedTx) (bool, error) {
 	f := CheckFinality{}
 	err := f.Unmarshal(signedTx.Data)
@@ -69,7 +73,7 @@ func (btcCheckFinalityTx) Validate(ctx *action.Context, signedTx action.SignedTx
 		return false, errors.Wrap(action.ErrWrongTxType, err.Error())
 	}
 
-	_, err = action.ValidateBasic(signedTx.RawBytes(), f.Signers(), signedTx.Signatures)
+	err = action.ValidateBasic(signedTx.RawBytes(), f.Signers(), signedTx.Signatures)
 	if err != nil {
 		return false, err
 	}
@@ -116,12 +120,21 @@ func (btcCheckFinalityTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (bo
 		return false, action.Response{Log: "tracker not finalized"}
 	}
 
+	// mint oBTC
+	curr, ok := ctx.Currencies.GetCurrencyByName("BTC")
+	oBTCCoin := curr.NewCoinFromUnit(tracker.ProcessUTXO.Balance - tracker.CurrentUTXO.Balance)
+	err = ctx.Balances.AddToAddress(f.OwnerAddress, oBTCCoin)
+	if err != nil {
+		return false, action.Response{Log: "error adding oBTC to address"}
+	}
+
 	// do final reset changes
 	tracker.State = bitcoin.AvailableTrackerState
 	tracker.CurrentUTXO = tracker.ProcessUTXO
 	tracker.ProcessUTXO = nil
 	tracker.ProcessOwner = nil
 	tracker.Multisig = nil
+	tracker.ProcessTx = nil
 
 	validatorPubKeys, err := ctx.Validators.GetBitcoinKeys(&chaincfg.TestNet3Params)
 	m := (len(validatorPubKeys) * 2 / 3) + 1
@@ -135,9 +148,6 @@ func (btcCheckFinalityTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (bo
 	if err != nil || !ok {
 		return false, action.Response{Log: "error resetting tracker, try again"}
 	}
-
-	// mint oBTC
-	// TODO: stopped for Alex's fee changes
 
 	return true, action.Response{
 		Tags: f.Tags(),
@@ -170,12 +180,21 @@ func (btcCheckFinalityTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (
 		return false, action.Response{Log: "tracker not finalized"}
 	}
 
+	// mint oBTC
+	curr, ok := ctx.Currencies.GetCurrencyByName("BTC")
+	oBTCCoin := curr.NewCoinFromUnit(tracker.ProcessUTXO.Balance - tracker.CurrentUTXO.Balance)
+	err = ctx.Balances.AddToAddress(f.OwnerAddress, oBTCCoin)
+	if err != nil {
+		return false, action.Response{Log: "error adding oBTC to address"}
+	}
+
 	// do final reset changes
 	tracker.State = bitcoin.AvailableTrackerState
 	tracker.CurrentUTXO = tracker.ProcessUTXO
 	tracker.ProcessUTXO = nil
 	tracker.ProcessOwner = nil
 	tracker.Multisig = nil
+	tracker.ProcessTx = nil
 
 	validatorPubKeys, err := ctx.Validators.GetBitcoinKeys(&chaincfg.TestNet3Params)
 	m := (len(validatorPubKeys) * 2 / 3) + 1
@@ -190,14 +209,11 @@ func (btcCheckFinalityTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (
 		return false, action.Response{Log: "error resetting tracker, try again"}
 	}
 
-	// mint oBTC
-	// TODO: stopped for Alex's fee changes
-
 	return true, action.Response{
 		Tags: f.Tags(),
 	}
 }
 
-func (btcCheckFinalityTx) ProcessFee(ctx *action.Context, fee action.Fee) (bool, action.Response) {
-	panic("implement me")
+func (btcCheckFinalityTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas) (bool, action.Response) {
+	return action.BasicFeeHandling(ctx, signedTx, start, size, 1)
 }

@@ -10,7 +10,6 @@ import (
 	"io"
 
 	"github.com/Oneledger/protocol/data/bitcoin"
-
 	"github.com/blockcypher/gobcy"
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
@@ -23,14 +22,14 @@ import (
 type TxHash [chainhash.HashSize]byte
 
 type ChainDriver interface {
-	PrepareLock(*UTXO, *UTXO, []byte) []byte
+	PrepareLock(prevLock, input *bitcoin.UTXO, lockScriptAddress []byte) (txBytes []byte)
 	AddUserLockSignature([]byte, []byte) *wire.MsgTx
 	AddLockSignature([]byte, []byte) *wire.MsgTx
 	BroadcastTx(*wire.MsgTx, *rpcclient.Client) (*chainhash.Hash, error)
 
 	CheckFinality(chainhash.Hash) (bool, error)
 
-	PrepareRedeem(UTXO, []byte, int64, []byte) []byte
+	PrepareRedeem(bitcoin.UTXO, []byte, int64, []byte) []byte
 }
 
 type chainDriver struct {
@@ -44,7 +43,7 @@ func NewChainDriver(token string) ChainDriver {
 	return &chainDriver{token}
 }
 
-func (c *chainDriver) PrepareLock(prevLock, input *UTXO, lockScriptAddress []byte) (txBytes []byte) {
+func (c *chainDriver) PrepareLock(prevLock, input *bitcoin.UTXO, lockScriptAddress []byte) (txBytes []byte) {
 	tx := wire.NewMsgTx(wire.TxVersion)
 
 	if prevLock.TxID != bitcoin.NilTxHash {
@@ -124,7 +123,7 @@ func (c *chainDriver) CheckFinality(hash chainhash.Hash) (bool, error) {
 	return false, nil
 }
 
-func (c *chainDriver) PrepareRedeem(prevLock UTXO,
+func (c *chainDriver) PrepareRedeem(prevLock bitcoin.UTXO,
 	userAddress []byte, amount int64,
 	lockAddress []byte) (txBytes []byte) {
 

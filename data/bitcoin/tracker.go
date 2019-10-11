@@ -7,7 +7,6 @@ package bitcoin
 import (
 	"errors"
 
-	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/btcsuite/btcutil"
@@ -21,7 +20,8 @@ const (
 	BusySigningTrackerState
 	BusyBroadcastingTrackerState
 	BusyFinalizingTrackerState
-
+	BusyMintingCoin
+	q1w
 	DefaultLastUpdateHeight = 0
 )
 
@@ -49,11 +49,14 @@ type Tracker struct {
 
 	CurrentUTXO *UTXO
 	ProcessUTXO *UTXO
+	ProcessTx   []byte
 
 	NextLockScript        []byte
 	NextLockScriptAddress []byte
 
-	ProcessOwner action.Address
+	CurrentLockScript []byte
+
+	ProcessOwner keys.Address
 }
 
 func NewTracker(lockScript, lockScriptAddress []byte) *Tracker {
@@ -139,21 +142,21 @@ func (t *Tracker) AddSignature(pubKey keys.PublicKey,
 	return t.Multisig.AddSignature(s)
 }
 
-func (t *Tracker) HasEnoughSignatures() (bool, error) {
+func (t *Tracker) HasEnoughSignatures() bool {
 
 	if t.State != BusySigningTrackerState {
-		return false, ErrTrackerNotCollectionSignatures
+		return false
 	}
 
 	if t.Multisig.IsValid() {
-		return true, nil
+		return true
 	}
 
-	return false, nil
+	return false
 }
 
 func (t *Tracker) StateChangeBroadcast() bool {
-	if ok, _ := t.HasEnoughSignatures(); ok {
+	if ok := t.HasEnoughSignatures(); ok {
 		t.State = BusyBroadcastingTrackerState
 
 		return true

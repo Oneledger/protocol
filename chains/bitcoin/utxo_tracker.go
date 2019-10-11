@@ -4,6 +4,7 @@
 
 package bitcoin
 
+/*
 import "github.com/btcsuite/btcd/chaincfg/chainhash"
 
 type TrackerState int
@@ -33,3 +34,6 @@ func (u *utxoTracker) IsAvailable() bool {
 func (u *utxoTracker) IsBusy() bool {
 	return u.State == StatusBusy
 }
+
+
+*/

@@ -59,6 +59,14 @@ func (c Currency) NewCoinFromInt(amount int64) Coin {
 	}
 }
 
+func (c Currency) NewCoinFromUnit(unitAmount int64) Coin {
+	amt := big.NewInt(unitAmount)
+	return Coin{
+		Currency: c,
+		Amount:   (*Amount)(amt),
+	}
+}
+
 func (c Currency) Bytes() []byte {
 
 	dat, _ := json.Marshal(c)

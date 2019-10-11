@@ -4,6 +4,7 @@
 
 package bitcoin
 
+/*
 import (
 	"fmt"
 
@@ -152,3 +153,5 @@ func (ls *LockStore) GetActiveTrackers() map[string]utxoTracker {
 
 	return trackerMap
 }
+
+*/
