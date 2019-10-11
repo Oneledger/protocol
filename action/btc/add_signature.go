@@ -24,6 +24,8 @@ type AddSignature struct {
 	ValidatorAddress action.Address
 }
 
+var _ action.Msg = &AddSignature{}
+
 func (as *AddSignature) Signers() []action.Address {
 	return []action.Address{
 		as.ValidatorAddress,
