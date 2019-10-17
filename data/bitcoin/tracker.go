@@ -7,6 +7,8 @@ package bitcoin
 import (
 	"errors"
 
+	"github.com/btcsuite/btcd/chaincfg"
+
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/btcsuite/btcutil"
@@ -39,7 +41,7 @@ func init() {
 // Tracker
 type Tracker struct {
 	// Multisig manages the signature collection and storage in a distributed way
-	Multisig *keys.MultiSig `json:"multisig"`
+	Multisig *keys.BTCMultiSig `json:"multisig"`
 
 	// State tracks the current state of the tracker, Also used for locking distributed access
 	State TrackerState `json:"state"`
@@ -98,7 +100,7 @@ func (t *Tracker) GetAddress() ([]byte, error) {
 }
 
 func (t *Tracker) ProcessLock(newUTXO *UTXO,
-	txn []byte, validatorsPubKeys []*btcutil.AddressPubKey,
+	txn []byte, validatorsPubKeys []btcutil.AddressPubKey,
 ) error {
 
 	if t.IsBusy() {
@@ -108,38 +110,33 @@ func (t *Tracker) ProcessLock(newUTXO *UTXO,
 	t.ProcessUTXO = newUTXO
 	t.State = BusySigningTrackerState
 
-	t.Multisig = &keys.MultiSig{}
+	threshold := (len(validatorsPubKeys) * 2 / 3) + 1
 
-	signers := make([]keys.Address, len(validatorsPubKeys))
-	for i := range validatorsPubKeys {
-		signers[i] = validatorsPubKeys[i].ScriptAddress()
-	}
-
-	threshold := (len(signers) * 2 / 3) + 1
-	err := t.Multisig.Init(txn, threshold, signers)
+	ms, err := keys.NewBTCMultiSig(txn, threshold, validatorsPubKeys)
+	t.Multisig = ms
 
 	return err
 }
 
-func (t *Tracker) AddSignature(pubKey keys.PublicKey,
-	signatureBytes []byte, validatorPubKey *btcutil.AddressPubKey) error {
+func (t *Tracker) AddSignature(signatureBytes []byte,
+	validatorPubKey btcutil.AddressPubKey, params *chaincfg.Params) error {
 
 	if t.State != BusySigningTrackerState {
 		return ErrTrackerNotCollectionSignatures
 	}
 
-	index, err := t.Multisig.GetSignerIndex(validatorPubKey.ScriptAddress())
+	index, err := t.Multisig.GetSignerIndex(validatorPubKey)
 	if err != nil {
 		return err
 	}
 
-	s := keys.Signature{
+	s := keys.BTCSignature{
 		Index:  index,
-		PubKey: pubKey,
-		Signed: signatureBytes,
+		PubKey: validatorPubKey.PubKey().SerializeCompressed(),
+		Sign:   signatureBytes,
 	}
 
-	return t.Multisig.AddSignature(s)
+	return t.Multisig.AddSignature(&s, params)
 }
 
 func (t *Tracker) HasEnoughSignatures() bool {
@@ -172,7 +169,7 @@ func (t *Tracker) GetSignatures() [][]byte {
 
 	signatures := make([][]byte, 0, len(t.Multisig.Signatures))
 	for i, signed := range t.Multisig.GetSignatures() {
-		signatures[i] = signed.Signed
+		signatures[i] = signed.Sign
 	}
 
 	return signatures

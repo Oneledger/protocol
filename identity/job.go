@@ -16,13 +16,14 @@ import (
 )
 
 type Job interface {
-	DoMyJob()
+	DoMyJob(ctx *JobsContext, data interface{})
 	IsMyJobDone(key keys.PrivateKey, ctx *JobsContext) bool
 
 	IsSufficient() bool
 	DoFinalize()
 
 	GetType() string
+	GetJobID() string
 }
 
 const (
@@ -37,7 +38,7 @@ func makeJob(data []byte, typ string) Job {
 	case JobTypeAddSignature:
 		as := JobAddSignature{}
 		ser.Deserialize(data, &as)
-		return as
+		return &as
 	}
 }
 

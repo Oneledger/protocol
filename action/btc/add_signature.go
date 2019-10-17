@@ -8,9 +8,10 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/btcsuite/btcd/chaincfg"
+
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/data/bitcoin"
-	"github.com/Oneledger/protocol/data/keys"
 	"github.com/btcsuite/btcutil"
 	"github.com/pkg/errors"
 	"github.com/tendermint/tendermint/libs/common"
@@ -19,9 +20,10 @@ import (
 type AddSignature struct {
 	TrackerName      string
 	ValidatorPubKey  *btcutil.AddressPubKey
-	PubKey           keys.PublicKey
 	BTCSignature     []byte
 	ValidatorAddress action.Address
+	Params           *chaincfg.Params
+	Memo             string
 }
 
 var _ action.Msg = &AddSignature{}
@@ -114,7 +116,7 @@ func (ast btcAddSignatureTx) ProcessCheck(ctx *action.Context, tx action.RawTx) 
 		return false, action.Response{Log: fmt.Sprintf("tracker not accepting signatures: ", addSignature.TrackerName)}
 	}
 
-	err = tracker.AddSignature(addSignature.PubKey, addSignature.BTCSignature, addSignature.ValidatorPubKey)
+	err = tracker.AddSignature(addSignature.BTCSignature, *addSignature.ValidatorPubKey, addSignature.Params)
 	if err != nil {
 		return false, action.Response{Log: fmt.Sprintf("error adding signature: %s, error: ", addSignature.TrackerName, err)}
 	}
@@ -154,7 +156,7 @@ func (ast btcAddSignatureTx) ProcessDeliver(ctx *action.Context, tx action.RawTx
 		return false, action.Response{Log: fmt.Sprintf("tracker not accepting signatures: %s", addSignature.TrackerName)}
 	}
 
-	err = tracker.AddSignature(addSignature.PubKey, addSignature.BTCSignature, addSignature.ValidatorPubKey)
+	err = tracker.AddSignature(addSignature.BTCSignature, *addSignature.ValidatorPubKey, addSignature.Params)
 	if err != nil {
 		return false, action.Response{Log: fmt.Sprintf("error adding signature: %s, error: ", addSignature.TrackerName, err)}
 	}
