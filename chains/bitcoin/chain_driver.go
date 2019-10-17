@@ -27,7 +27,7 @@ type ChainDriver interface {
 	AddLockSignature([]byte, []byte) *wire.MsgTx
 	BroadcastTx(*wire.MsgTx, *rpcclient.Client) (*chainhash.Hash, error)
 
-	CheckFinality(chainhash.Hash) (bool, error)
+	CheckFinality(*chainhash.Hash) (bool, error)
 
 	PrepareRedeem(bitcoin.UTXO, []byte, int64, []byte) []byte
 }
@@ -108,7 +108,7 @@ func (c *chainDriver) BroadcastTx(tx *wire.MsgTx, clt *rpcclient.Client) (*chain
 	return hash, nil
 }
 
-func (c *chainDriver) CheckFinality(hash chainhash.Hash) (bool, error) {
+func (c *chainDriver) CheckFinality(hash *chainhash.Hash) (bool, error) {
 
 	btc := gobcy.API{"dd53aae66b83431ca57a1f656af8ed69", "btc", "main"}
 	tx, err := btc.GetTX(hash.String(), nil)

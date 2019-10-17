@@ -134,6 +134,26 @@ func (m MultiSig) Address() Address {
 	return utils.Hash(b)
 }
 
+func (m MultiSig) HasAddressSigned(addr Address) bool {
+	index := len(m.Signers) + 100
+	for i := range m.Signers {
+		if bytes.Equal(m.Signers[i], addr) {
+			index = i
+			break
+		}
+	}
+
+	if index > len(m.Signers) {
+		return false
+	}
+
+	if len(m.Signatures[index].Signed) == 0 {
+		return false
+	}
+
+	return true
+}
+
 //func (m MultiSig) Threshold() int {
 //	return m.M
 //}
