@@ -52,7 +52,7 @@ var faucetCmd = &cobra.Command{
 	RunE:  runFaucet,
 }
 
-var apiRoutes = make(map[string]func(w http.ResponseWriter, r *http.Request))
+var apiRoutes = make(map[string]http.HandlerFunc)
 
 func init() {
 	faucetCmd.Flags().StringVarP(&args.rootDir, "root", "r", "./", "Set root directory containing olfullnode data files")
@@ -115,7 +115,7 @@ func runFaucet(_ *cobra.Command, _ []string) error {
 		return err
 	}
 
-	srv.RestfulAPIFuncRegister(apiRoutes)
+	srv.RegisterRestfulMap(apiRoutes)
 
 	err = srv.Start()
 	if err != nil {
@@ -308,7 +308,7 @@ func restfulAPIRoot(w http.ResponseWriter, r *http.Request) {
 
 func health(w http.ResponseWriter, r *http.Request) {
 	healthCheck := ParamsReply{MaxAmount: args.maxReqAmount, MinWaitTime: args.lockTime, Version: version.Fullnode.String()}
-	_, err := fmt.Fprintf(w, "MaxAmount : %v, MinWaitTime : %d, version : %v", healthCheck.MaxAmount, healthCheck.MinWaitTime, healthCheck.Version)
+	_, err := fmt.Fprintf(w, "MaxAmount : %v, MinWaitTime : %d, version : %v\n", healthCheck.MaxAmount, healthCheck.MinWaitTime, healthCheck.Version)
 	if err != nil {
 		logger.Error("failed to display health check info")
 	}
