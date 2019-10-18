@@ -68,9 +68,14 @@ func (domainPurchaseTx) Validate(ctx *action.Context, tx action.SignedTx) (bool,
 	}
 
 	// validate basic signature
-	ok, err := action.ValidateBasic(tx.RawBytes(), buy.Signers(), tx.Signatures)
+	err = action.ValidateBasic(tx.RawBytes(), buy.Signers(), tx.Signatures)
 	if err != nil {
-		return ok, err
+		return false, err
+	}
+
+	err = action.ValidateFee(ctx.FeeOpt, tx.Fee)
+	if err != nil {
+		return false, err
 	}
 
 	if !buy.Offering.IsValid(ctx.Currencies) {
@@ -93,7 +98,7 @@ func (domainPurchaseTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (bool
 		return false, action.Response{Log: err.Error()}
 	}
 
-	domain, err := ctx.Domains.Get(buy.Name, false)
+	domain, err := ctx.Domains.Get(buy.Name)
 	if err != nil {
 		if err == ons.ErrDomainNotFound {
 			return false, action.Response{Log: "domain not found"}
@@ -109,14 +114,9 @@ func (domainPurchaseTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (bool
 		return false, action.Response{Log: "offering price not enough"}
 	}
 
-	buyerBalance, err := ctx.Balances.Get(buy.Buyer.Bytes(), false)
+	ctx.Balances.MinusFromAddress(buy.Buyer.Bytes(), buy.Offering.ToCoin(ctx.Currencies))
 	if err != nil {
-		return false, action.Response{Log: errors.Wrap(err, "failed to get buyer balance").Error()}
-	}
-
-	buyerBalance, err = buyerBalance.MinusCoin(buy.Offering.ToCoin(ctx.Currencies))
-	if err != nil {
-		return false, action.Response{Log: err.Error()}
+		return false, action.Response{Log: errors.Wrap(err, "insufficient buyer balance").Error()}
 	}
 
 	return true, action.Response{Tags: buy.Tags()}
@@ -130,7 +130,7 @@ func (domainPurchaseTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bo
 		return false, action.Response{Log: err.Error()}
 	}
 
-	domain, err := ctx.Domains.Get(buy.Name, false)
+	domain, err := ctx.Domains.Get(buy.Name)
 	if err != nil {
 		if err == ons.ErrDomainNotFound {
 			return false, action.Response{Log: "domain not found"}
@@ -147,29 +147,14 @@ func (domainPurchaseTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bo
 		return false, action.Response{Log: "offering price not enough"}
 	}
 
-	buyerBalance, err := ctx.Balances.Get(buy.Buyer.Bytes(), false)
+	ctx.Balances.MinusFromAddress(buy.Buyer.Bytes(), coin)
 	if err != nil {
-		return false, action.Response{Log: errors.Wrap(err, "failed to get buyer balance").Error()}
+		return false, action.Response{Log: errors.Wrap(err, "failed to debit buyer balance").Error()}
 	}
 
-	buyerBalance, err = buyerBalance.MinusCoin(coin)
+	err = ctx.Balances.AddToAddress(domain.OwnerAddress, coin)
 	if err != nil {
-		return false, action.Response{Log: err.Error()}
-	}
-
-	salerBalance, err := ctx.Balances.Get(domain.OwnerAddress, false)
-	if err != nil {
-		return false, action.Response{Log: errors.Wrap(err, "failed to get saler balance").Error()}
-	}
-	salerBalance.AddCoin(coin)
-
-	err = ctx.Balances.Set(buy.Buyer, *buyerBalance)
-	if err != nil {
-		return false, action.Response{Log: err.Error()}
-	}
-	err = ctx.Balances.Set(domain.OwnerAddress, *salerBalance)
-	if err != nil {
-		return false, action.Response{Log: err.Error()}
+		return false, action.Response{Log: errors.Wrap(err, "failed to credit seller balance").Error()}
 	}
 
 	domain.OwnerAddress = buy.Buyer
@@ -190,6 +175,6 @@ func (domainPurchaseTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bo
 	return true, action.Response{Tags: buy.Tags()}
 }
 
-func (domainPurchaseTx) ProcessFee(ctx *action.Context, fee action.Fee) (bool, action.Response) {
-	panic("implement me")
+func (domainPurchaseTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas) (bool, action.Response) {
+	return action.BasicFeeHandling(ctx, signedTx, start, size, 1)
 }

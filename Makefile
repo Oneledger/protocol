@@ -47,8 +47,6 @@ utest:
 		github.com/Oneledger/protocol/rpc \
 		github.com/Oneledger/protocol/identity \
 		github.com/Oneledger/protocol/app \
-		github.com/Oneledger/protocol/action/staking \
-		github.com/Oneledger/protocol/action/transfer \
 		-coverprofile a.out
 
 coverage:
@@ -76,4 +74,16 @@ onstest: install
 	@./scripts/testsend
 	python scripts/ons/create_domain.py
 	python scripts/ons/buy_sell_domain.py
+	@./scripts/stopDev
+
+#
+# run ons tests
+#
+withdrawtest: install
+	@./scripts/stopDev
+	@./scripts/resetDev
+	@./scripts/startDev
+	@./scripts/testsend
+	@./scripts/testsend
+	python scripts/reward/withdraw.py
 	@./scripts/stopDev

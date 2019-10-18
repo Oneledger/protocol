@@ -12,57 +12,57 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestMain(m *testing.M) {
+
+	os.Exit(teardown([]string{"test_dbpath"}))
+}
+
 // global setup
-func setup() []string {
-	testDBs := []string{"test_dbpath"}
-	return testDBs
+func setup(fn func() (*config.Server, *node.Context)) *App {
+	cfg, nodeContext := fn()
+	app, _ := NewApp(cfg, nodeContext)
+	app.Start()
+	return app
 }
 
 // remove test db dir after
-func teardown(dbPaths []string) {
+func teardown(dbPaths []string) int {
 	for _, v := range dbPaths {
 		err := os.RemoveAll(v)
 		if err != nil {
 			errors.New("Remove test db file error")
 		}
 	}
+	return 0
 }
 
 func setupForGeneralInfo() (*config.Server, *node.Context) {
+	cfg := config.DefaultServerConfig()
 	NodeConfig := &config.NodeConfig{
 		NodeName: "test_node",
 		DBDir:    "test_dbpath",
 		DB:       "goleveldb",
 	}
-	cfg := &config.Server{
-		Node: NodeConfig,
-	}
+	cfg.Node = NodeConfig
 	nodeContext := &node.Context{}
 	return cfg, nodeContext
 }
 
 func setupForStart() (*config.Server, *node.Context) {
+	cfg := config.DefaultServerConfig()
 	networkConfig := &config.NetworkConfig{
 		P2PAddress: "tcp://127.0.0.1:26601",
 		RPCAddress: "tcp://127.0.0.1:26600",
 		SDKAddress: "http://127.0.0.1:26603",
 	}
-	consensus := &config.ConsensusConfig{}
-	p2pconfig := &config.P2PConfig{}
-	mempool := &config.MempoolConfig{}
 	nodeConfig := &config.NodeConfig{
 		NodeName: "test_node",
 		FastSync: true,
 		DBDir:    "test_dbpath",
 		DB:       "goleveldb",
 	}
-	cfg := &config.Server{
-		Node:      nodeConfig,
-		Network:   networkConfig,
-		Consensus: consensus,
-		P2P:       p2pconfig,
-		Mempool:   mempool,
-	}
+	cfg.Node = nodeConfig
+	cfg.Network = networkConfig
 	nodeContext := &node.Context{}
 	return cfg, nodeContext
 }
@@ -75,79 +75,33 @@ func TestNewApp(t *testing.T) {
 	})
 
 	t.Run("should return no error and non-empty new app", func(t *testing.T) {
-		testDB := setup()
-		defer teardown(testDB)
-		cfg, nodeContext := setupForGeneralInfo()
-		app, error := NewApp(cfg, nodeContext)
-		if assert.NoError(t, error) {
-			assert.NotEmpty(t, app)
-		}
+		app := setup(setupForGeneralInfo)
+		assert.NotEmpty(t, app)
 	})
 }
 
 // ABCI, Header, Node functions
 func TestApp_ABCI(t *testing.T) {
+	app := setup(setupForGeneralInfo)
 	t.Run("ABCI function should return non empty ABCI", func(t *testing.T) {
-		testDB := setup()
-		defer teardown(testDB)
-		cfg, nodeContext := setupForGeneralInfo()
-		app, _ := NewApp(cfg, nodeContext)
+
 		abci := app.ABCI()
 		assert.NotEmpty(t, abci)
 	})
 
 	t.Run("Header should return empty app header", func(t *testing.T) {
-		testDB := setup()
-		defer teardown(testDB)
-		cfg, nodeContext := setupForGeneralInfo()
-		app, _ := NewApp(cfg, nodeContext)
 		header := app.Header()
 		assert.Empty(t, header)
 	})
 
 	t.Run("Node should return empty app node", func(t *testing.T) {
-		testDB := setup()
-		defer teardown(testDB)
-		cfg, nodeContext := setupForGeneralInfo()
-		app, _ := NewApp(cfg, nodeContext)
 		node := app.Node()
 		assert.Empty(t, node)
 	})
 }
 
-// TODO : depend on starting a new node and tendermint server
-//func TestApp_Start(t *testing.T) {
-//	testDB := setup()
-//	testDB = append(testDB, "./consensus")
-//
-//	cfg, nodeContext := setupForStart()
-//	app, _ := NewApp(cfg, nodeContext)
-//
-//	err := os.MkdirAll("./consensus/config/", 0777)
-//	assert.Nil(t, err)
-//	pvKeyFilePath := "./consensus/config/priv_validator_key.json"
-//	pvKeyFile ,err := os.Create(pvKeyFilePath)
-//	assert.Nil(t, err)
-//
-//	err = os.MkdirAll("./consensus/data/", 0777)
-//	assert.Nil(t, err)
-//	pvStateFilePath := "./consensus/data/priv_validator_state.json"
-//	pvStateFile ,err := os.Create(pvStateFilePath)
-//	assert.Nil(t, err)
-//
-//	defer teardown(testDB)
-//	defer pvKeyFile.Close()
-//	defer pvStateFile.Close()
-//
-//	err = app.Start()
-//	assert.Error(t, err)
-//}
-
 func TestApp_setupstate(t *testing.T) {
-	testDB := setup()
-	defer teardown(testDB)
-	cfg, nodeContext := setupForGeneralInfo()
-	app, _ := NewApp(cfg, nodeContext)
+	app := setup(setupForGeneralInfo)
 	t.Run("should return an error with empty []byte as input", func(t *testing.T) {
 		testdata := []byte("")
 		err := app.setupState(testdata)
@@ -160,19 +114,15 @@ func TestApp_setupstate(t *testing.T) {
 }
 
 func TestApp_setupValidators(t *testing.T) {
-	testDB := setup()
-	defer teardown(testDB)
-	cfg, nodeContext := setupForGeneralInfo()
-	app, err := NewApp(cfg, nodeContext)
-	assert.Nil(t, err)
+	app := setup(setupForGeneralInfo)
 
 	req := RequestInitChain{}
 	// prepare for currencies
-	currencies := balance.NewCurrencyList()
+	currencies := balance.NewCurrencySet()
 	currency := balance.Currency{
 		Name: "VT",
 	}
-	err = currencies.Register(currency)
+	err := currencies.Register(currency)
 	assert.Nil(t, err)
 
 	validators, _ := app.setupValidators(req, currencies)
@@ -192,44 +142,28 @@ func TestApp_setupValidators(t *testing.T) {
 //}
 
 func TestContext_Action(t *testing.T) {
-	testDB := setup()
-	defer teardown(testDB)
-	cfg, nodeContext := setupForGeneralInfo()
-	app, err := NewApp(cfg, nodeContext)
-	assert.Nil(t, err)
+	app := setup(setupForGeneralInfo)
 
-	context := app.Context.Action(&app.header)
+	context := app.Context.Action(&app.header, app.Context.check)
 	assert.NotEmpty(t, context)
 }
 
 func TestContext_Accounts(t *testing.T) {
-	testDB := setup()
-	defer teardown(testDB)
-	cfg, nodeContext := setupForGeneralInfo()
-	app, err := NewApp(cfg, nodeContext)
-	assert.Nil(t, err)
+	app := setup(setupForGeneralInfo)
 
 	accounts := app.Context.Accounts()
 	assert.Empty(t, accounts.Accounts())
 }
 
 func TestContext_ValidatorCtx(t *testing.T) {
-	testDB := setup()
-	defer teardown(testDB)
-	cfg, nodeContext := setupForGeneralInfo()
-	app, err := NewApp(cfg, nodeContext)
-	assert.Nil(t, err)
+	app := setup(setupForGeneralInfo)
 
 	validatorContext := app.Context.ValidatorCtx()
 	assert.NotNil(t, validatorContext)
 }
 
 func TestContext_Balances(t *testing.T) {
-	testDB := setup()
-	defer teardown(testDB)
-	cfg, nodeContext := setupForGeneralInfo()
-	app, err := NewApp(cfg, nodeContext)
-	assert.Nil(t, err)
+	app := setup(setupForGeneralInfo)
 
 	balance := app.Context.Balances()
 	assert.Equal(t, 0, balance.Currencies().Len())
@@ -250,25 +184,16 @@ func TestContext_Balances(t *testing.T) {
 //}
 
 func TestContext_Node(t *testing.T) {
-	testDB := setup()
-	defer teardown(testDB)
-	cfg, nodeContext := setupForGeneralInfo()
-	app, err := NewApp(cfg, nodeContext)
-	assert.Nil(t, err)
+	app := setup(setupForGeneralInfo)
 
 	node := app.Context.Node()
 	assert.Equal(t, "", node.NodeName)
 }
 
 func TestContext_Validators(t *testing.T) {
-	testDB := setup()
-	defer teardown(testDB)
-	cfg, nodeContext := setupForGeneralInfo()
-	app, err := NewApp(cfg, nodeContext)
-	assert.Nil(t, err)
+	app := setup(setupForGeneralInfo)
 
 	vs := app.Context.Validators()
-	assert.Empty(t, vs.Hash)
-	assert.Empty(t, vs.LastHash)
-	assert.Equal(t, int8(0), vs.TreeHeight)
+	validators, _ := vs.GetValidatorSet()
+	assert.Empty(t, validators)
 }

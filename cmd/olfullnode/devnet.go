@@ -2,6 +2,7 @@ package main
 
 import (
 	"crypto/rand"
+	"encoding/base64"
 	"encoding/hex"
 	"fmt"
 	"net/url"
@@ -9,6 +10,11 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+
+	"github.com/Oneledger/protocol/data/fees"
+
+	"github.com/Oneledger/protocol/data/keys"
+	"github.com/tendermint/tendermint/crypto/secp256k1"
 
 	"github.com/Oneledger/protocol/config"
 	"github.com/Oneledger/protocol/consensus"
@@ -77,6 +83,8 @@ type node struct {
 	cfg         *config.Server
 	dir         string
 	key         *p2p.NodeKey
+	esdcaPk     keys.PrivateKey
+	validator   consensus.GenesisValidator
 }
 
 func (n node) connectionDetails() string {
@@ -211,6 +219,7 @@ func runDevnet(cmd *cobra.Command, _ []string) error {
 		cfg.Node.DB = args.dbType
 		if args.createEmptyBlock {
 			cfg.Consensus.CreateEmptyBlocks = true
+			cfg.Consensus.CreateEmptyBlocksInterval = 10000
 		} else {
 			cfg.Consensus.CreateEmptyBlocks = false
 		}
@@ -238,6 +247,28 @@ func runDevnet(cmd *cobra.Command, _ []string) error {
 		pvFile := privval.GenFilePV(filepath.Join(configDir, "priv_validator_key.json"), filepath.Join(dataDir, "priv_validator_state.json"))
 		pvFile.Save()
 
+		ecdsaPrivKey := secp256k1.GenPrivKey()
+		ecdsaPrivKeyBytes := base64.StdEncoding.EncodeToString([]byte(ecdsaPrivKey[:]))
+		ecdsaPk, err := keys.GetPrivateKeyFromBytes([]byte(ecdsaPrivKey[:]), keys.SECP256K1)
+		if err != nil {
+			return errors.Wrap(err, "error generating secp256k1 private key")
+		}
+
+		f, err := os.Create(filepath.Join(configDir, "priv_validator_key_ecdsa.json"))
+		if err != nil {
+			return errors.Wrap(err, "failed to open file to write validator ecdsa private key")
+		}
+		nPrivKeyBytes, err := f.WriteString(ecdsaPrivKeyBytes)
+		if err != nil && nPrivKeyBytes != len(ecdsaPrivKeyBytes) {
+			return errors.Wrap(err, "failed to write validator ecdsa private key")
+		}
+		err = f.Close()
+		if err != nil {
+			return errors.Wrap(err, "failed to save validator ecdsa private key")
+		}
+
+		// Save the nodes to a list so we can iterate again and
+		n := node{isValidator, cfg, nodeDir, nodeKey, ecdsaPk, consensus.GenesisValidator{}}
 		if isValidator {
 			validator := consensus.GenesisValidator{
 				Address: pvFile.GetAddress(),
@@ -246,10 +277,8 @@ func runDevnet(cmd *cobra.Command, _ []string) error {
 				Power:   1,
 			}
 			validatorList[i] = validator
+			n.validator = validator
 		}
-
-		// Save the nodes to a list so we can iterate again and
-		n := node{isValidator, cfg, nodeDir, nodeKey}
 		nodeList[i] = n
 		persistentPeers[i] = n.connectionDetails()
 	}
@@ -262,9 +291,9 @@ func runDevnet(cmd *cobra.Command, _ []string) error {
 		chainID = args.chainID
 	}
 
-	currencies, states := initialState(args, nodeList)
+	states := initialState(args, nodeList)
 
-	genesisDoc, err := consensus.NewGenesisDoc(chainID, currencies, states)
+	genesisDoc, err := consensus.NewGenesisDoc(chainID, states)
 	if err != nil {
 		return errors.Wrap(err, "failed to create new genesis file")
 	}
@@ -316,52 +345,78 @@ func runDevnet(cmd *cobra.Command, _ []string) error {
 	return nil
 }
 
-func initialState(args *testnetConfig, nodeList []node) ([]balance.Currency, []consensus.StateInput) {
-	olt := balance.Currency{"OLT", chain.Type(0), 18}
-	vt := balance.Currency{"VT", chain.Type(0), 0}
+func initialState(args *testnetConfig, nodeList []node) consensus.AppState {
+	olt := balance.Currency{Id: 0, Name: "OLT", Chain: chain.Type(0), Decimal: 18, Unit: "nue"}
+	vt := balance.Currency{Id: 1, Name: "VT", Chain: chain.Type(0), Unit: "vt"}
 	currencies := []balance.Currency{olt, vt}
+	feeOpt := fees.FeeOption{
+		FeeCurrency:   olt,
+		MinFeeDecimal: 9,
+	}
+	balances := make([]consensus.BalanceState, 0, len(nodeList))
+	staking := make([]consensus.Stake, 0, len(nodeList))
+	domains := make([]consensus.DomainState, 0, len(nodeList))
+	fees := make([]consensus.BalanceState, 0, len(nodeList))
+	total := olt.NewCoinFromInt(args.totalFunds)
 
-	var out []consensus.StateInput
-	// If single origin is active, then the first node in the list should hold all the funds
-	if args.singleOriginFunds {
-		b0 := balance.NewBalance()
-		b0.AddCoin(olt.NewCoinFromInt(args.totalFunds))
-		b0.AddCoin(vt.NewCoinFromInt(1))
-
-		out = []consensus.StateInput{
-			{
-				Address: nodeList[0].key.PubKey().Address().String(),
-				Balance: *b0,
-			},
-		}
-		for _, node := range nodeList {
-			if !node.isValidator {
-				continue
-			}
-			b := balance.NewBalance()
-			b.AddCoin(vt.NewCoinFromInt(1))
-			out = append(out, consensus.StateInput{
-				Address: node.key.PubKey().Address().String(),
-				Balance: *b,
+	for _, node := range nodeList {
+		if !node.isValidator {
+			balances = append(balances, consensus.BalanceState{
+				Address:  node.key.PubKey().Address().Bytes(),
+				Currency: vt.Name,
+				Amount:   *vt.NewCoinFromInt(1).Amount,
 			})
+			continue
 		}
-		return currencies, out
+		h, _ := node.esdcaPk.GetHandler()
+
+		pubkey, _ := keys.PubKeyFromTendermint(node.validator.PubKey.Bytes())
+		st := consensus.Stake{
+			ValidatorAddress: node.validator.Address.Bytes(),
+			StakeAddress:     node.key.PubKey().Address().Bytes(),
+			Pubkey:           pubkey,
+			ECDSAPubKey:      h.PubKey(),
+			Name:             node.validator.Name,
+			Amount:           *vt.NewCoinFromInt(node.validator.Power).Amount,
+		}
+		staking = append(staking, st)
+		balances = append(balances, consensus.BalanceState{
+			Address:  node.key.PubKey().Address().Bytes(),
+			Currency: vt.Name,
+			Amount:   *vt.NewCoinFromInt(100).Amount,
+		})
 	}
 
-	out = make([]consensus.StateInput, len(nodeList))
-	for i, node := range nodeList {
-		share := args.totalFunds / int64(len(nodeList))
-		b := balance.NewBalance()
-		b.AddCoin(olt.NewCoinFromInt(share))
-		b.AddCoin(vt.NewCoinFromInt(1))
-		out[i] = consensus.StateInput{
-			Address: node.key.PubKey().Address().String(),
-			Balance: *b,
-		}
-
-		if node.isValidator {
-			out[i].Balance.AddCoin(vt.NewCoinFromInt(100))
+	if args.singleOriginFunds {
+		balances = append(balances, consensus.BalanceState{
+			Address:  nodeList[0].key.PubKey().Address().Bytes(),
+			Currency: olt.Name,
+			Amount:   *total.Amount,
+		})
+		return consensus.AppState{
+			Currencies: currencies,
+			FeeOption:  feeOpt,
+			Balances:   balances,
+			Staking:    staking,
+			Domains:    domains,
+			Fees:       fees,
 		}
 	}
-	return currencies, out
+	for _, node := range nodeList {
+
+		share := total.DivideInt64(int64(len(nodeList)))
+		balances = append(balances, consensus.BalanceState{
+			Address:  node.key.PubKey().Address().Bytes(),
+			Currency: olt.Name,
+			Amount:   *olt.NewCoinFromAmount(*share.Amount).Amount,
+		})
+	}
+	return consensus.AppState{
+		Currencies: currencies,
+		FeeOption:  feeOpt,
+		Balances:   balances,
+		Staking:    staking,
+		Domains:    domains,
+		Fees:       fees,
+	}
 }

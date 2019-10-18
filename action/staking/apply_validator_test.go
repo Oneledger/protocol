@@ -3,8 +3,11 @@ package staking
 import (
 	"encoding/hex"
 	"errors"
+	"github.com/Oneledger/protocol/data/fees"
 	"os"
 	"testing"
+
+	db2 "github.com/tendermint/tendermint/libs/db"
 
 	"github.com/Oneledger/protocol/serialize"
 
@@ -27,9 +30,12 @@ import (
 )
 
 // global setup
-func setup() []string {
-	testDBs := []string{"test_dbpath"}
-	return testDBs
+func setup() (*identity.ValidatorStore, *balance.Store) {
+	db := db2.NewDB("test", db2.MemDBBackend, "")
+	cs := storage.NewState(storage.NewChainState("balance", db))
+	b := balance.NewStore("tb", cs)
+	v := identity.NewValidatorStore("tv", config.Server{}, cs)
+	return v, b
 }
 
 // remove test db dir after
@@ -54,7 +60,7 @@ func generateKeyPair() (crypto.Address, crypto.PubKey, ed25519.PrivKeyEd25519) {
 func assemblyApplyValidatorData(addr crypto.Address, pubkey crypto.PubKey, prikey ed25519.PrivKeyEd25519, stake action.Amount, purge bool) action.SignedTx {
 
 	av := &ApplyValidator{
-		Address:          addr.Bytes(),
+		StakeAddress:     addr.Bytes(),
 		Stake:            stake,
 		NodeName:         "test_node",
 		ValidatorAddress: addr.Bytes(),
@@ -120,7 +126,7 @@ func setupForTypeCastApplyValidator() action.SignedTx {
 
 	// test cast for type casting error
 	av := ApplyValidator{
-		Address:          addr.Bytes(),
+		StakeAddress:     addr.Bytes(),
 		Stake:            action.Amount{"OLT", *balance.NewAmount(10)},
 		NodeName:         "test_node",
 		ValidatorAddress: addr.Bytes(),
@@ -163,7 +169,7 @@ func TestApplyValidator_Signers(t *testing.T) {
 		b := []byte(hexData)
 		correctResult := []action.Address{b}
 		apply := ApplyValidator{}
-		apply.Address = keys.Address(b).Bytes()
+		apply.StakeAddress = keys.Address(b).Bytes()
 		assert.Equal(t, correctResult, apply.Signers())
 	})
 }
@@ -202,7 +208,7 @@ func TestApplyTx_Validate(t *testing.T) {
 	t.Run("test apply validator with an invalid currency type, should be not ok", func(t *testing.T) {
 		tx := setupForInvalidStakeAmount()
 
-		currencyList := balance.NewCurrencyList()
+		currencyList := balance.NewCurrencySet()
 		currency := balance.Currency{
 			Name:    "OLT",
 			Chain:   chain.Type(1),
@@ -212,6 +218,7 @@ func TestApplyTx_Validate(t *testing.T) {
 		assert.Nil(t, err, "register new OLT token should be ok")
 		ctx := &action.Context{
 			Currencies: currencyList,
+			FeeOpt:     &fees.FeeOption{FeeCurrency: currency, MinFeeDecimal: 9},
 		}
 		handler := applyTx{}
 		ok, err := handler.Validate(ctx, tx)
@@ -222,7 +229,7 @@ func TestApplyTx_Validate(t *testing.T) {
 	t.Run("test apply validator with an invalid currency type, should be not ok", func(t *testing.T) {
 		tx := setupForApplyValidator()
 
-		currencyList := balance.NewCurrencyList()
+		currencyList := balance.NewCurrencySet()
 		currency := balance.Currency{
 			Name:    "OLT",
 			Chain:   chain.Type(1),
@@ -232,6 +239,7 @@ func TestApplyTx_Validate(t *testing.T) {
 		assert.Nil(t, err, "register new OLT token should be ok")
 		ctx := &action.Context{
 			Currencies: currencyList,
+			FeeOpt:     &fees.FeeOption{FeeCurrency: currency, MinFeeDecimal: 9},
 		}
 		handler := applyTx{}
 		ok, err := handler.Validate(ctx, tx)
@@ -241,7 +249,7 @@ func TestApplyTx_Validate(t *testing.T) {
 
 	t.Run("test apply validator with valid tx data, should be ok", func(t *testing.T) {
 		tx := setupForApplyValidator()
-		currencyList := balance.NewCurrencyList()
+		currencyList := balance.NewCurrencySet()
 		currency := balance.Currency{
 			Name:    "VT",
 			Chain:   chain.Type(1),
@@ -251,6 +259,7 @@ func TestApplyTx_Validate(t *testing.T) {
 		assert.Nil(t, err, "register new currency should be ok")
 		ctx := &action.Context{
 			Currencies: currencyList,
+			FeeOpt:     &fees.FeeOption{FeeCurrency: currency, MinFeeDecimal: 9},
 		}
 		handler := applyTx{}
 		ok, err := handler.Validate(ctx, tx)
@@ -268,13 +277,12 @@ func TestApplyTx_ProcessCheck(t *testing.T) {
 	//	assert.False(t, ok)
 	//})
 	t.Run("check balance with valid data, should return no error", func(t *testing.T) {
-		testDB := setup()
-		defer teardown(testDB)
+		vs, bs := setup()
 		tx := setupForApplyValidator()
+		_ = vs
 
-		store := balance.NewStore("test_balances", "test_dbpath", storage.CACHE, storage.PERSISTENT)
 		ctx := &action.Context{
-			Balances: store,
+			Balances: bs,
 		}
 		handler := applyTx{}
 
@@ -285,14 +293,11 @@ func TestApplyTx_ProcessCheck(t *testing.T) {
 
 func TestApplyTx_ProcessDeliver(t *testing.T) {
 	t.Run(" process with valid data, should return no error", func(t *testing.T) {
-		testDB := setup()
-		defer teardown(testDB)
+		vs, bs := setup()
+
 		tx := setupForApplyValidator()
 
-		store := balance.NewStore("test_balances", "test_dbpath", storage.CACHE, storage.PERSISTENT)
-		cfg := config.Server{}
-		validator := identity.NewValidatorStore(cfg, "test_dbpath", "test_db_type")
-		currencyList := balance.NewCurrencyList()
+		currencyList := balance.NewCurrencySet()
 		currency := balance.Currency{
 			Name:    "VT",
 			Chain:   chain.Type(1),
@@ -302,34 +307,29 @@ func TestApplyTx_ProcessDeliver(t *testing.T) {
 			Currency: currency,
 			Amount:   balance.NewAmount(100000000000000000),
 		}
-		ba := balance.NewBalance()
-		ba = ba.AddCoin(coin)
 
 		apply := &ApplyValidator{}
 		err := serialize.GetSerializer(serialize.JSON).Deserialize(tx.Data, apply)
 
-		err = store.Set(apply.Address, *ba)
+		err = bs.AddToAddress(apply.StakeAddress, coin)
 
 		assert.Nil(t, err, "set some VT token for test, should be ok")
 		err = currencyList.Register(currency)
 		assert.Nil(t, err, "register new currency should be ok")
 		ctx := &action.Context{
-			Balances:   store,
-			Validators: validator,
+			Balances:   bs,
+			Validators: vs,
 			Currencies: currencyList,
+			FeeOpt:     &fees.FeeOption{FeeCurrency: currency, MinFeeDecimal: 9},
 		}
 		handler := applyTx{}
 		ok, _ := handler.ProcessDeliver(ctx, tx.RawTx)
 		assert.True(t, ok)
 	})
 	t.Run("process with valid data but using purge flag, should return no error", func(t *testing.T) {
-		testDB := setup()
-		defer teardown(testDB)
+		vs, bs := setup()
 		tx := setupForApplyValidatorWithPurge()
-		store := balance.NewStore("test_balances", "test_dbpath", storage.CACHE, storage.PERSISTENT)
-		cfg := config.Server{}
-		validator := identity.NewValidatorStore(cfg, "test_dbpath", "test_db_type")
-		currencyList := balance.NewCurrencyList()
+		currencyList := balance.NewCurrencySet()
 		currency := balance.Currency{
 			Name:    "VT",
 			Chain:   chain.Type(1),
@@ -339,19 +339,19 @@ func TestApplyTx_ProcessDeliver(t *testing.T) {
 			Currency: currency,
 			Amount:   balance.NewAmount(100000000000000000),
 		}
-		ba := balance.NewBalance()
-		ba = ba.AddCoin(coin)
+
 		apply := &ApplyValidator{}
 		err := serialize.GetSerializer(serialize.JSON).Deserialize(tx.Data, apply)
 
-		err = store.Set(apply.Address, *ba)
+		err = bs.AddToAddress(apply.StakeAddress, coin)
 		assert.Nil(t, err, "set some VT token for test, should be ok")
 		err = currencyList.Register(currency)
 		assert.Nil(t, err, "register new currency should be ok")
 		ctx := &action.Context{
-			Balances:   store,
-			Validators: validator,
+			Balances:   bs,
+			Validators: vs,
 			Currencies: currencyList,
+			FeeOpt:     &fees.FeeOption{FeeCurrency: currency, MinFeeDecimal: 9},
 		}
 		handler := applyTx{}
 		ok, _ := handler.ProcessDeliver(ctx, tx.RawTx)

@@ -15,29 +15,36 @@ import (
 // DomainStore wraps the persistent storage and the serializer giving
 // handy methods to access Domain objects
 type DomainStore struct {
-	*storage.ChainState
-	szlr serialize.Serializer
+	State  *storage.State
+	szlr   serialize.Serializer
+	prefix []byte
 }
 
 // NewDomainStore creates a new storage object from filepath and other configurations
-func NewDomainStore(name, dbDir, configDB string, typ storage.StorageType) *DomainStore {
-	cs := storage.NewChainState(name, dbDir, configDB, typ)
+func NewDomainStore(prefix string, state *storage.State) *DomainStore {
 
-	return &DomainStore{cs,
-		serialize.GetSerializer(serialize.PERSISTENT)}
+	return &DomainStore{
+		State:  state,
+		szlr:   serialize.GetSerializer(serialize.PERSISTENT),
+		prefix: storage.Prefix(prefix),
+	}
+}
+
+func (ds *DomainStore) WithState(state *storage.State) *DomainStore {
+	ds.State = state
+	return ds
 }
 
 // Get is used to retrieve the domain object from the domain name
-func (ds *DomainStore) Get(name string, lastCommit bool) (*Domain, error) {
-
+func (ds *DomainStore) Get(name string) (*Domain, error) {
 	key := keyFromName(name)
-
-	exists := ds.ChainState.Exists(key)
+	key = append(ds.prefix, key...)
+	exists := ds.State.Exists(key)
 	if !exists {
 		return nil, ErrDomainNotFound
 	}
 
-	data := ds.ChainState.Get(key, lastCommit)
+	data, _ := ds.State.Get(key)
 
 	d := &Domain{}
 	err := ds.szlr.Deserialize(data, d)
@@ -56,7 +63,8 @@ func (ds *DomainStore) Set(d *Domain) error {
 		return err
 	}
 
-	err = ds.ChainState.Set(key, data)
+	key = append(ds.prefix, key...)
+	err = ds.State.Set(key, data)
 	if err != nil {
 		return err
 	}
@@ -66,10 +74,28 @@ func (ds *DomainStore) Set(d *Domain) error {
 
 func (ds *DomainStore) Exists(name string) bool {
 	key := keyFromName(name)
-	return ds.ChainState.Exists(key)
+	key = append(ds.prefix, key...)
+	return ds.State.Exists(key)
 }
 
 func keyFromName(name string) []byte {
 
 	return []byte(strings.ToLower(name))
+}
+
+func (ds *DomainStore) Iterate(fn func(name string, domain *Domain) bool) (stopped bool) {
+	return ds.State.IterateRange(
+		ds.prefix,
+		storage.Rangefix(string(ds.prefix)),
+		true,
+		func(key, value []byte) bool {
+			name := string(key[len(ds.prefix):])
+			domain := &Domain{}
+			err := ds.szlr.Deserialize(value, domain)
+			if err != nil {
+				return false
+			}
+			return fn(name, domain)
+		},
+	)
 }

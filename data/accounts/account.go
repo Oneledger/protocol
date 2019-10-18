@@ -18,8 +18,6 @@ type Account struct {
 	PrivateKey *keys.PrivateKey `json:"privateKey"`
 }
 
-//todo: if we create the privkey out side of server(eg: in client), this function failed to store the account privkey
-// properly because the PrivateKey's field is private that cannot be serialized. need to be fixed.
 func NewAccount(t chain.Type, name string, privkey *keys.PrivateKey, pubkey *keys.PublicKey) (Account, error) {
 	if pubkey == nil || privkey == nil {
 		return Account{}, errors.New("empty keys")

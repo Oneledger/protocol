@@ -4,6 +4,8 @@ import (
 	"math/big"
 	"os"
 
+	"github.com/tendermint/tendermint/libs/db"
+
 	"github.com/tendermint/tendermint/abci/types"
 
 	"github.com/Oneledger/protocol/data/ons"
@@ -55,10 +57,13 @@ func assemblyCtxData(currencyName string, currencyDecimal int64, setBalanceStore
 		Header: header,
 	}
 
+	db := db.NewDB("test", db.MemDBBackend, "")
+	cs := storage.NewState(storage.NewChainState("balance", db))
 	// balance store
 	var store *balance.Store
 	if setBalanceStore {
-		store = balance.NewStore("test_balances", "test_dbpath", storage.CACHE, storage.PERSISTENT)
+
+		store = balance.NewStore("tb", cs)
 		ctx.Balances = store
 	}
 	// logger
@@ -67,7 +72,7 @@ func assemblyCtxData(currencyName string, currencyDecimal int64, setBalanceStore
 	}
 	// domainStore
 	if domainStore {
-		ds := ons.NewDomainStore("test_domain_store", "test_dbpath", storage.CACHE, storage.PERSISTENT)
+		ds := ons.NewDomainStore("td", cs)
 		ctx.Domains = ds
 
 		if setDomaintoStore {
@@ -89,7 +94,7 @@ func assemblyCtxData(currencyName string, currencyDecimal int64, setBalanceStore
 				SalePrice:      *coin,
 			}
 			err := ctx.Domains.Set(d)
-			ctx.Domains.Commit()
+			ctx.Domains.State.Commit()
 			if err != nil {
 				errors.New("error happens when pre-setup a test domain")
 			}
@@ -98,7 +103,7 @@ func assemblyCtxData(currencyName string, currencyDecimal int64, setBalanceStore
 	// currencyList
 	if currencyName != "" {
 		// register new token
-		currencyList := balance.NewCurrencyList()
+		currencyList := balance.NewCurrencySet()
 		currency := balance.Currency{
 			Name:    currencyName,
 			Chain:   chain.Type(1),
@@ -122,7 +127,7 @@ func assemblyCtxData(currencyName string, currencyDecimal int64, setBalanceStore
 			if err != nil {
 				errors.New("setup testing token balance error")
 			}
-			store.Commit()
+			store.State.Commit()
 			ctx.Balances = store
 		}
 	}

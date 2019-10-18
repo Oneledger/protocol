@@ -26,7 +26,7 @@ type ApplyValidatorArguments struct {
 	TmPubKey     []byte `json:"tmPubKey"`
 }
 
-func (args *ApplyValidatorArguments) ClientRequest(currencies *balance.CurrencyList) client.ApplyValidatorRequest {
+func (args *ApplyValidatorArguments) ClientRequest(currencies *balance.CurrencySet) client.ApplyValidatorRequest {
 	c, _ := currencies.GetCurrencyByName("VT")
 
 	f, err := strconv.ParseFloat(args.Amount, 64)
@@ -89,7 +89,7 @@ func applyValidator(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	out, err := fullnode.ApplyValidator(applyValidatorArgs.ClientRequest(currencies.Currencies.GetCurrencyList()))
+	out, err := fullnode.ApplyValidator(applyValidatorArgs.ClientRequest(currencies.Currencies.GetCurrencySet()))
 	if err != nil {
 		ctx.logger.Error("Error in applying ", err.Error())
 		return err

@@ -10,3 +10,4 @@ node/olvm/interpreter/bin/
 build/
 playground.go
 *.out
+venv/

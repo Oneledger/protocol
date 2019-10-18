@@ -1,8 +1,11 @@
 package node
 
 import (
+	"encoding/base64"
 	"errors"
+	"io/ioutil"
 	"os"
+	"strings"
 
 	"github.com/Oneledger/protocol/config"
 	"github.com/Oneledger/protocol/consensus"
@@ -21,6 +24,9 @@ type Context struct {
 
 	// Validator key
 	privval keys.PrivateKey
+
+	// Validator ECDSA key
+	ecdsaPrivVal keys.PrivateKey
 }
 
 // PrivVal returns the private validator file
@@ -79,6 +85,15 @@ func (n Context) ValidatorAddress() keys.Address {
 	}
 
 	return pub.Address()
+}
+
+func (n Context) ValidatorECDSAPubKey() keys.PublicKey {
+	priv, err := n.ecdsaPrivVal.GetHandler()
+	if err != nil {
+		return keys.PublicKey{}
+	}
+
+	return priv.PubKey()
 }
 
 func (n Context) isValid() bool {
@@ -142,8 +157,26 @@ func readKeyFiles(cfg *consensus.Config) (*Context, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	ecdsaFile := strings.Replace(pvKeyF, ".json", "_ecdsa.json", 1)
+	ecdsaPrivateKeyB64, err := ioutil.ReadFile(ecdsaFile)
+	if err != nil {
+		return nil, err
+	}
+
+	ecdsaPrivateKey, err := base64.StdEncoding.DecodeString(string(ecdsaPrivateKeyB64))
+	if err != nil {
+		return nil, err
+	}
+
+	ecdsaPrivKey, err := keys.GetPrivateKeyFromBytes(ecdsaPrivateKey, keys.SECP256K1)
+	if err != nil {
+		return nil, err
+	}
+
 	return &Context{
-		privateKey: priv,
-		privval:    pvkey,
+		privateKey:   priv,
+		privval:      pvkey,
+		ecdsaPrivVal: ecdsaPrivKey,
 	}, nil
 }

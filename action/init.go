@@ -11,7 +11,10 @@ type Type int
 
 const (
 	SEND Type = iota
+
+	//staking related transaction
 	APPLYVALIDATOR
+	WITHDRAW
 
 	//ons related transaction
 	DOMAIN_CREATE
@@ -35,6 +38,8 @@ func (t Type) String() string {
 		return "SEND"
 	case APPLYVALIDATOR:
 		return "APPLY_VALIDATOR"
+	case WITHDRAW:
+		return "WITHDRAW"
 	case DOMAIN_CREATE:
 		return "DOMAIN_CREATE"
 	case DOMAIN_UPDATE:

@@ -1,34 +1,22 @@
 package app
 
 import (
-	"encoding/hex"
-	"io"
+	"github.com/Oneledger/protocol/data/ons"
 	"net/url"
 	"os"
-	"path/filepath"
-	"strings"
 
-	action_ons "github.com/Oneledger/protocol/action/ons"
-	"github.com/Oneledger/protocol/action/staking"
-	"github.com/Oneledger/protocol/action/transfer"
-	"github.com/Oneledger/protocol/data/ons"
-
-	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/app/node"
-	"github.com/Oneledger/protocol/client"
 	"github.com/Oneledger/protocol/config"
 	"github.com/Oneledger/protocol/consensus"
 	"github.com/Oneledger/protocol/data/accounts"
 	"github.com/Oneledger/protocol/data/balance"
+	"github.com/Oneledger/protocol/data/chain"
 	"github.com/Oneledger/protocol/identity"
 	"github.com/Oneledger/protocol/log"
-	"github.com/Oneledger/protocol/rpc"
 	"github.com/Oneledger/protocol/serialize"
-	"github.com/Oneledger/protocol/service"
 	"github.com/Oneledger/protocol/storage"
-	"github.com/tendermint/tendermint/abci/types"
-
 	"github.com/pkg/errors"
+	"github.com/tendermint/tendermint/abci/types"
 	"github.com/tendermint/tendermint/libs/common"
 )
 
@@ -44,9 +32,11 @@ type App struct {
 	sdk      common.Service // Probably needs to be changed
 
 	header Header // Tendermint last header info
-	abci   *ABCI
 
-	node *consensus.Node
+	abci *ABCI
+
+	node       *consensus.Node
+	genesisDoc *config.GenesisDoc
 }
 
 // New returns new app fresh and ready to start
@@ -114,47 +104,93 @@ func (app *App) setupState(stateBytes []byte) error {
 		return errors.Wrap(err, "setupState deserialization")
 	}
 
-	// commit the initial currencies to the admin db
-	session := app.Context.admin.BeginSession()
-	_ = session.Set([]byte(ADMIN_CURRENCY_KEY), stateBytes)
-	session.Commit()
+	// commit the initial currencies to the governance db
 
-	nodeCtx := app.Context.Node()
+	err = app.Context.govern.SetCurrencies(initial.Currencies)
+	if err != nil {
+		return errors.Wrap(err, "Setup State")
+	}
 	balanceCtx := app.Context.Balances()
-	walletCtx := app.Context.Accounts()
 
-	// (1) Register all the currencies
+	// (1) Register all the currencies and fee
 	for _, currency := range initial.Currencies {
 		err := balanceCtx.Currencies().Register(currency)
 		if err != nil {
 			return errors.Wrapf(err, "failed to register currency %s", currency.Name)
 		}
 	}
+	app.Context.feeOption.FeeCurrency = initial.FeeOption.FeeCurrency
+	app.Context.feeOption.MinFeeDecimal = initial.FeeOption.MinFeeDecimal
+
+	err = app.Context.govern.SetFeeOption(initial.FeeOption)
+	if err != nil {
+		return errors.Wrap(err, "Setup State")
+	}
+	app.Context.feePool.SetupOpt(app.Context.feeOption)
 
 	// (2) Set balances to all those mentioned
-	for _, state := range initial.States {
-		si := state.StateInput()
-		addrBytes, err := hex.DecodeString(si.Address)
-		if err != nil {
-			return errors.Wrapf(err, "failed to decode address %s", si.Address)
+	for _, bal := range initial.Balances {
+		key := storage.StoreKey(bal.Address)
+		c, ok := balanceCtx.Currencies().GetCurrencyByName(bal.Currency)
+		if !ok {
+			return errors.New("currency for initial balance not support")
 		}
-
-		key := storage.StoreKey(addrBytes)
-		err = balanceCtx.Store().Set([]byte(key), si.Balance)
+		coin := c.NewCoinFromAmount(bal.Amount)
+		err = balanceCtx.Store().WithState(app.Context.deliver).AddToAddress([]byte(key), coin)
 		if err != nil {
 			return errors.Wrap(err, "failed to set balance")
 		}
-
-		app.logger.Debug(strings.ToUpper(hex.EncodeToString(key)))
 	}
 
-	myPrivKey := nodeCtx.PrivKey()
-	myPubKey := nodeCtx.PubKey()
+	for _, stake := range initial.Staking {
+		err := app.Context.validators.WithState(app.Context.deliver).HandleStake(identity.Stake(stake))
+		if err != nil {
+			return errors.Wrap(err, "failed to handle initial staking")
+		}
+	}
 
-	// Start registering myself
-	app.logger.Info("Registering myself...")
-	for _, currency := range initial.Currencies {
-		chainType := currency.Chain
+	for _, domain := range initial.Domains {
+		d := ons.NewDomain(domain.OwnerAddress, domain.AccountAddress, domain.Name, 0)
+		err := app.Context.domains.WithState(app.Context.deliver).Set(d)
+		if err != nil {
+			return errors.Wrap(err, "failed to setup initial domain")
+		}
+	}
+
+	for _, fee := range initial.Fees {
+		c, ok := app.Context.currencies.GetCurrencyByName(fee.Currency)
+		if !ok {
+			return errors.New("currency for initial balance not support")
+		}
+		err := app.Context.feePool.WithState(app.Context.deliver).Set(fee.Address, c.NewCoinFromAmount(fee.Amount))
+		if err != nil {
+			return errors.Wrap(err, "failed to setup initial fee")
+		}
+	}
+
+	return nil
+}
+
+func (app *App) setupValidators(req RequestInitChain, currencies *balance.CurrencySet) (types.ValidatorUpdates, error) {
+	return app.Context.validators.WithState(app.Context.deliver).Init(req, currencies)
+}
+
+// Start initializes the state
+func (app *App) Start() error {
+	app.logger.Info("Starting node...")
+
+	//get currencies from governance db
+
+	if app.Context.govern.InitialChain() {
+		app.logger.Debug("didn't get the currencies from db,  register self")
+		nodeCtx := app.Context.Node()
+		walletCtx := app.Context.Accounts()
+		myPrivKey := nodeCtx.PrivKey()
+		myPubKey := nodeCtx.PubKey()
+		// Start registering myself
+		app.logger.Info("Registering myself...")
+
+		chainType := chain.Type(0)
 		acct, err := accounts.NewAccount(
 			chainType,
 			nodeCtx.NodeName,
@@ -163,50 +199,36 @@ func (app *App) setupState(stateBytes []byte) error {
 
 		if err != nil {
 			app.logger.Warn("Can't create a new account for myself", "err", err, "chainType", chainType)
-			continue
 		}
 
 		if _, err := walletCtx.GetAccount(acct.Address()); err != nil {
 			err = walletCtx.Add(acct)
 			if err != nil {
 				app.logger.Warn("Failed to register myself", "err", err)
-				continue
 			}
 		}
-		app.logger.Info("Successfully registered myself!")
-	}
-	return nil
-}
+		app.logger.Infof("Successfully registered myself: %s", acct.Address())
 
-func (app *App) setupValidators(req RequestInitChain, currencies *balance.CurrencyList) (types.ValidatorUpdates, error) {
-	return app.Context.validators.Init(req, currencies)
-}
-
-// Start initializes the state
-func (app *App) Start() error {
-	app.logger.Info("Starting node...")
-
-	//get currencies from admin db
-	result, err := app.Context.admin.Get([]byte(ADMIN_CURRENCY_KEY))
-	if err != nil {
-		app.logger.Debug("didn't get the currencies from db")
 	} else {
-
-		as := &consensus.AppState{}
-		err = serialize.GetSerializer(serialize.PERSISTENT).Deserialize(result, as)
+		currencies, err := app.Context.govern.GetCurrencies()
 		if err != nil {
-			app.logger.Error("failed to deserialize the currencies from db")
-			return errors.Wrap(err, "failed to get the currencies")
+			return err
 		}
-
-		for _, currency := range as.Currencies {
+		for _, currency := range currencies {
 			err := app.Context.currencies.Register(currency)
 			if err != nil {
 				return errors.Wrapf(err, "failed to register currency %s", currency.Name)
 			}
 		}
 
-		app.logger.Infof("Read currencies from db %#v", app.Context.currencies)
+		app.logger.Infof("Read currencies from db %#v", currencies)
+
+		feeOpt, err := app.Context.govern.GetFeeOption()
+		if err != nil {
+			return err
+		}
+		app.Context.feeOption = feeOpt
+		app.Context.feePool.SetupOpt(feeOpt)
 	}
 
 	node, err := consensus.NewNode(app.ABCI(), &app.Context.cfg)
@@ -214,6 +236,7 @@ func (app *App) Start() error {
 		app.logger.Error("Failed to create consensus.Node")
 		return errors.Wrap(err, "failed to create new consensus.Node")
 	}
+	app.genesisDoc = node.GenesisDoc()
 
 	err = node.Start()
 	if err != nil {
@@ -266,6 +289,12 @@ func (app *App) rpcStarter() (func() error, error) {
 		}
 	}
 
+	restfulRouter, err := app.Context.Restful()
+	if err != nil {
+		return noop, err
+	}
+	app.Context.rpc.RegisterRestfulMap(restfulRouter)
+
 	err = app.Context.rpc.Prepare(u)
 	if err != nil {
 		return noop, err
@@ -276,121 +305,6 @@ func (app *App) rpcStarter() (func() error, error) {
 	return srv.Start, nil
 }
 
-// The base context for the application, holds databases and other stateful information contained by the app.
-// Used to derive other package-level Contexts
-type context struct {
-	node node.Context
-	cfg  config.Server
-
-	rpc          *rpc.Server
-	actionRouter action.Router
-
-	balances *balance.Store
-
-	domains *ons.DomainStore
-
-	validators *identity.ValidatorStore // Set of validators currently active
-	accounts   accounts.Wallet
-	currencies *balance.CurrencyList
-	admin      storage.SessionedStorage
-
-	logWriter io.Writer
-}
-
 type closer interface {
 	Close()
-}
-
-func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *node.Context) (context, error) {
-	ctx := context{
-		cfg:        cfg,
-		logWriter:  logWriter,
-		currencies: balance.NewCurrencyList(),
-		node:       *nodeCtx,
-	}
-
-	ctx.rpc = rpc.NewServer(logWriter)
-	ctx.validators = identity.NewValidatorStore(cfg, ctx.dbDir(), ctx.cfg.Node.DB)
-	ctx.actionRouter = action.NewRouter("action")
-	ctx.balances = balance.NewStore("balances", ctx.dbDir(), ctx.cfg.Node.DB, storage.PERSISTENT)
-	ctx.accounts = accounts.NewWallet(cfg, ctx.dbDir())
-	ctx.domains = ons.NewDomainStore("domains", ctx.dbDir(), ctx.cfg.Node.DB, storage.PERSISTENT)
-	ctx.admin = storage.NewStorageDB(storage.KEYVALUE, "admin", ctx.dbDir(), ctx.cfg.Node.DB)
-
-	_ = transfer.EnableSend(ctx.actionRouter)
-	_ = staking.EnableApplyValidator(ctx.actionRouter)
-	_ = action_ons.EnableONS(ctx.actionRouter)
-	return ctx, nil
-}
-
-func (ctx context) dbDir() string {
-	return filepath.Join(ctx.cfg.RootDir(), ctx.cfg.Node.DBDir)
-}
-
-func (ctx *context) Action(header *Header) *action.Context {
-	actionCtx := action.NewContext(
-		ctx.actionRouter,
-		header,
-		ctx.accounts,
-		ctx.balances,
-		ctx.currencies,
-		ctx.validators,
-		ctx.domains,
-		log.NewLoggerWithPrefix(ctx.logWriter, "action"))
-
-	return actionCtx
-}
-
-func (ctx *context) ID() {}
-func (ctx *context) Accounts() accounts.Wallet {
-	return ctx.accounts
-}
-
-func (ctx *context) ValidatorCtx() *identity.ValidatorContext {
-	return identity.NewValidatorContext(ctx.balances)
-}
-
-// Returns a balance.Context
-func (ctx *context) Balances() *balance.Context {
-	return balance.NewContext(
-		log.NewLoggerWithPrefix(ctx.logWriter, "balances"),
-		ctx.balances,
-		ctx.currencies)
-}
-
-func (ctx *context) Services() (service.Map, error) {
-	extSvcs, err := client.NewExtServiceContext(ctx.cfg.Network.RPCAddress, ctx.cfg.Network.SDKAddress)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to start service context")
-	}
-	svcCtx := &service.Context{
-		Balances:     ctx.balances,
-		Accounts:     ctx.accounts,
-		Currencies:   ctx.currencies,
-		Cfg:          ctx.cfg,
-		NodeContext:  ctx.node,
-		ValidatorSet: ctx.validators,
-		Domains:      ctx.domains,
-		Router:       ctx.actionRouter,
-		Logger:       log.NewLoggerWithPrefix(ctx.logWriter, "rpc"),
-		Services:     extSvcs,
-	}
-
-	return service.NewMap(svcCtx), nil
-}
-
-// Close all things that need to be closed
-func (ctx *context) Close() {
-	closers := []closer{ctx.balances, ctx.accounts, ctx.rpc}
-	for _, closer := range closers {
-		closer.Close()
-	}
-}
-
-func (ctx *context) Node() node.Context {
-	return ctx.node
-}
-
-func (ctx *context) Validators() *identity.ValidatorStore {
-	return ctx.validators
 }

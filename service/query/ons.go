@@ -3,19 +3,18 @@ package query
 import (
 	"github.com/Oneledger/protocol/client"
 	"github.com/Oneledger/protocol/data/ons"
-	"github.com/Oneledger/protocol/rpc"
-	"github.com/Oneledger/protocol/serialize"
+	codes "github.com/Oneledger/protocol/status_codes"
 )
 
 func (sv *Service) ONS_GetDomainByName(req client.ONSGetDomainsRequest, reply *client.ONSGetDomainsReply) error {
 	domains := sv.ons
 	if len(req.Name) <= 0 {
-		return rpc.InvalidParamsError("name not provided")
+		return codes.ErrBadName
 	}
 
-	d, err := domains.Get(req.Name, true)
+	d, err := domains.Get(req.Name)
 	if err != nil {
-		return rpc.InternalError("domain not exist")
+		return codes.ErrDomainNotFound
 	}
 
 	ds := make([]ons.Domain, 0)
@@ -32,21 +31,17 @@ func (sv *Service) ONS_GetDomainByName(req client.ONSGetDomainsRequest, reply *c
 func (sv *Service) ONS_GetDomainByOwner(req client.ONSGetDomainsRequest, reply *client.ONSGetDomainsReply) error {
 	domains := sv.ons
 	if req.Owner == nil {
-		return rpc.InvalidParamsError("owner not provided")
+		return codes.ErrBadOwner
 	}
 	ds := make([]ons.Domain, 0)
 
-	domains.Iterate(func(key []byte, value []byte) bool {
-		d := &ons.Domain{}
-		err := serialize.GetSerializer(serialize.PERSISTENT).Deserialize(value, d)
-		if err != nil {
-			return true
-		}
-		if d.OwnerAddress.Equal(req.Owner) {
-			if req.OnSale && !d.OnSaleFlag {
+	domains.Iterate(func(name string, domain *ons.Domain) bool {
+
+		if domain.OwnerAddress.Equal(req.Owner) {
+			if req.OnSale && !domain.OnSaleFlag {
 				return false
 			}
-			ds = append(ds, *d)
+			ds = append(ds, *domain)
 		}
 		return false
 	})
@@ -61,18 +56,13 @@ func (sv *Service) ONS_GetDomainByOwner(req client.ONSGetDomainsRequest, reply *
 func (sv *Service) ONS_GetDomainOnSale(req client.ONSGetDomainsRequest, reply *client.ONSGetDomainsOnSaleReply) error {
 	domains := sv.ons
 	if req.OnSale == false {
-		return rpc.InvalidParamsError("OnSale flag not set")
+		return codes.ErrFlagNotSet
 	}
 
 	dds := make([]ons.Domain, 0)
-	domains.Iterate(func(key []byte, value []byte) bool {
-		d := &ons.Domain{}
-		err := serialize.GetSerializer(serialize.PERSISTENT).Deserialize(value, d)
-		if err != nil {
-			return true
-		}
-		if d.OnSaleFlag {
-			dds = append(dds, *d)
+	domains.Iterate(func(name string, domain *ons.Domain) bool {
+		if domain.OnSaleFlag {
+			dds = append(dds, *domain)
 		}
 		return false
 	})

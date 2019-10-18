@@ -42,6 +42,7 @@ func TestNewWallet(t *testing.T) {
 	err = w.Add(acc)
 	assert.Error(t, err)
 
+	acc.PrivateKey = nil
 	accs = w.Accounts()
 	assert.Len(t, accs, 1)
 	assert.Equal(t, accs[0], acc)

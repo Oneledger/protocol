@@ -25,13 +25,19 @@ any concurrent read/write might throw panics.
 type cache struct {
 	name  string
 	store map[string][]byte
+	keys  []string
 }
 
 // cache satisfies Store interface
 var _ Store = &cache{}
+var _ Iteratable = &cache{}
 
 func NewCache(name string) *cache {
-	return &cache{name, map[string][]byte{}}
+	return &cache{
+		name:  name,
+		store: make(map[string][]byte),
+		keys:  make([]string, 0, 100),
+	}
 }
 
 // Get retrieves data for a key.
@@ -57,7 +63,7 @@ func (c *cache) Exists(key StoreKey) bool {
 func (c *cache) Set(key StoreKey, dat []byte) error {
 
 	c.store[string(key)] = dat
-
+	c.keys = append(c.keys, string(key))
 	return nil
 }
 
@@ -68,26 +74,26 @@ func (c *cache) Delete(key StoreKey) (bool, error) {
 	return true, nil
 }
 
-func (c *cache) GetIterator() *Iterator {
-	items := make([]IterItem, 0)
-
-	for k, v := range c.store {
-		items = append(items, IterItem{[]byte(k), v})
-	}
-
-	return newIterator(items)
+func (c *cache) GetIterator() Iteratable {
+	return c
 }
 
-func (c *cache) GetRangeIterator(start, end []byte) *Iterator {
-	items := make([]IterItem, 0)
-
-	for k, v := range c.store {
-		key := []byte(k)
-		if isKeyInDomain(key, start, end) {
-			items = append(items, IterItem{key, v})
+func (c *cache) Iterate(fn func(key []byte, value []byte) bool) (stopped bool) {
+	for _, k := range c.keys {
+		v, ok := c.store[k]
+		if !ok {
+			continue
+		}
+		if fn([]byte(k), v) {
+			return true
 		}
 	}
-	return newIterator(items)
+	return true
+}
+
+//
+func (c *cache) IterateRange(start, end []byte, ascending bool, fn func(key, value []byte) bool) (stop bool) {
+	panic("IterateRange not implemented for cache kv")
 }
 
 /*
@@ -105,7 +111,7 @@ type cacheSafe struct {
 var _ Store = &cacheSafe{}
 
 func NewCacheSafe(name string) *cacheSafe {
-	return &cacheSafe{sync.RWMutex{}, cache{name, map[string][]byte{}}}
+	return &cacheSafe{sync.RWMutex{}, *NewCache(name)}
 }
 
 // Get retrieves data for a key.
@@ -140,18 +146,23 @@ func (c *cacheSafe) Delete(key StoreKey) (bool, error) {
 	return c.cache.Delete(key)
 }
 
-func (c *cacheSafe) GetIterator() *Iterator {
+func (c *cacheSafe) GetIterator() Iteratable {
 	c.RLock()
 	defer c.RUnlock()
 
 	return c.cache.GetIterator()
 }
 
-func (c *cacheSafe) GetRangeIterator(start, end []byte) *Iterator {
+func (c *cacheSafe) Iterate(fn func(key []byte, value []byte) bool) (stopped bool) {
 	c.RLock()
 	defer c.RUnlock()
 
-	return c.cache.GetRangeIterator(start, end)
+	return c.cache.Iterate(fn)
+}
+
+//
+func (c *cacheSafe) IterateRange(start, end []byte, ascending bool, fn func(key, value []byte) bool) (stop bool) {
+	panic("IterateRange not implemented for cache kv")
 }
 
 /*

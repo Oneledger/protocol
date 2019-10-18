@@ -2,6 +2,13 @@ package app
 
 import (
 	"encoding/hex"
+	"math"
+
+	"github.com/Oneledger/protocol/data/fees"
+
+	"github.com/tendermint/tendermint/types"
+
+	"github.com/Oneledger/protocol/storage"
 
 	"github.com/Oneledger/protocol/utils"
 
@@ -18,7 +25,7 @@ func (app *App) infoServer() infoServer {
 	return func(info RequestInfo) ResponseInfo {
 
 		//get apphash and height from db
-		ver, hash := app.getAppHash(false)
+		ver, hash := app.getAppHash()
 
 		result := ResponseInfo{
 			Data:             app.name,
@@ -51,6 +58,8 @@ func (app *App) optionSetter() optionSetter {
 
 func (app *App) chainInitializer() chainInitializer {
 	return func(req RequestInitChain) ResponseInitChain {
+		app.Context.deliver = storage.NewState(app.Context.chainstate)
+		app.Context.govern.WithState(app.Context.deliver)
 		err := app.setupState(req.AppStateBytes)
 		// This should cause consensus to halt
 		if err != nil {
@@ -65,15 +74,20 @@ func (app *App) chainInitializer() chainInitializer {
 			app.logger.Error("Failed to setupValidator", "err", err)
 			return ResponseInitChain{}
 		}
-		app.logger.Error("finish chain initialize")
+		app.Context.govern.Initiated()
+		app.Context.deliver.Write()
+		app.logger.Info("finish chain initialize")
 		return ResponseInitChain{Validators: validators}
 	}
 }
 
 func (app *App) blockBeginner() blockBeginner {
 	return func(req RequestBeginBlock) ResponseBeginBlock {
+		gc := getGasCalculator(app.genesisDoc.ConsensusParams)
+		app.Context.deliver = storage.NewState(app.Context.chainstate).WithGas(gc)
+
 		// update the validator set
-		err := app.Context.validators.Set(req)
+		err := app.Context.validators.Setup(req)
 		if err != nil {
 			app.logger.Error("validator set with error", err)
 		}
@@ -100,9 +114,10 @@ func (app *App) txChecker() txChecker {
 			app.logger.Errorf("checkTx failed to deserialize msg: %s, error: %s ", msg, err)
 		}
 
-		txCtx := app.Context.Action(&app.header)
-
+		txCtx := app.Context.Action(&app.header, app.Context.check)
 		handler := txCtx.Router.Handler(tx.Type)
+
+		gas := txCtx.State.ConsumedGas()
 
 		ok, err := handler.Validate(txCtx, *tx)
 		if err != nil {
@@ -114,13 +129,15 @@ func (app *App) txChecker() txChecker {
 		}
 		ok, response := handler.ProcessCheck(txCtx, tx.RawTx)
 
+		feeOk, feeResponse := handler.ProcessFee(txCtx, *tx, gas, storage.Gas(len(msg)))
+
 		result := ResponseCheckTx{
-			Code:      getCode(ok).uint32(),
+			Code:      getCode(ok && feeOk).uint32(),
 			Data:      response.Data,
-			Log:       response.Log,
+			Log:       response.Log + feeResponse.Log,
 			Info:      response.Info,
-			GasWanted: response.GasWanted,
-			GasUsed:   response.GasUsed,
+			GasWanted: feeResponse.GasWanted,
+			GasUsed:   feeResponse.GasUsed,
 			Tags:      response.Tags,
 			Codespace: "",
 		}
@@ -138,19 +155,23 @@ func (app *App) txDeliverer() txDeliverer {
 		if err != nil {
 			app.logger.Errorf("deliverTx failed to deserialize msg: %s, error: %s ", msg, err)
 		}
-		txCtx := app.Context.Action(&app.header)
+		txCtx := app.Context.Action(&app.header, app.Context.deliver)
 
 		handler := txCtx.Router.Handler(tx.Type)
 
+		gas := txCtx.State.ConsumedGas()
+
 		ok, response := handler.ProcessDeliver(txCtx, tx.RawTx)
 
+		feeOk, feeResponse := handler.ProcessFee(txCtx, *tx, gas, storage.Gas(len(msg)))
+
 		result := ResponseDeliverTx{
-			Code:      getCode(ok).uint32(),
+			Code:      getCode(ok && feeOk).uint32(),
 			Data:      response.Data,
-			Log:       response.Log,
+			Log:       response.Log + feeResponse.Log,
 			Info:      response.Info,
-			GasWanted: response.GasWanted,
-			GasUsed:   response.GasUsed,
+			GasWanted: feeResponse.GasWanted,
+			GasUsed:   feeResponse.GasUsed,
 			Tags:      response.Tags,
 			Codespace: "",
 		}
@@ -162,8 +183,9 @@ func (app *App) txDeliverer() txDeliverer {
 func (app *App) blockEnder() blockEnder {
 	return func(req RequestEndBlock) ResponseEndBlock {
 
+		fee, err := app.Context.feePool.WithState(app.Context.deliver).Get([]byte(fees.POOL_KEY))
+		app.logger.Debug("endblock fee", fee, err)
 		updates := app.Context.validators.GetEndBlockUpdate(app.Context.ValidatorCtx(), req)
-
 		result := ResponseEndBlock{
 			ValidatorUpdates: updates,
 			Tags:             []common.KVPair(nil),
@@ -178,9 +200,12 @@ func (app *App) commitor() commitor {
 	return func() ResponseCommit {
 
 		// Commit any pending changes.
-		version, hash := app.getAppHash(true)
-		app.logger.Debugf("Committed New Block height[%d], hash[%s], versions[%d]", app.header.Height, hex.EncodeToString(hash), version)
+		hash, ver := app.Context.deliver.Commit()
+		app.logger.Debugf("Committed New Block height[%d], hash[%s], versions[%d]", app.header.Height, hex.EncodeToString(hash), ver)
 
+		// update check state by deliver state
+		gc := getGasCalculator(app.node.GenesisDoc().ConsensusParams)
+		app.Context.check = storage.NewState(app.Context.chainstate).WithGas(gc)
 		result := ResponseCommit{
 			Data: hash,
 		}
@@ -209,26 +234,21 @@ func (ah *appHash) hash() []byte {
 	return utils.Hash(result)
 }
 
-func (app *App) getAppHash(commit bool) (version int64, hash []byte) {
-	var hashb, hashv, hashd []byte
-	var verb, verv, verd int64
-	if commit {
-		hashb, verb = app.Context.balances.Commit()
-		hashv, verv = app.Context.validators.Commit()
-		hashd, verd = app.Context.domains.Commit()
-	} else {
-		hashb, verb = app.Context.balances.Hash, app.Context.balances.Version
-		hashv, verv = app.Context.validators.Hash, app.Context.validators.Version
-		hashd, verd = app.Context.domains.Hash, app.Context.domains.Version
-	}
-	apphash := &appHash{}
-	apphash.Hashes = append(apphash.Hashes, hashb, hashv, hashd)
-
-	if verb == verv && verb == verd {
-		version = verb
-		if version > 1 {
-			hash = apphash.hash()
-		}
-	}
+func (app *App) getAppHash() (version int64, hash []byte) {
+	hash, version = app.Context.chainstate.Hash, app.Context.chainstate.Version
 	return
+}
+
+func getGasCalculator(params *types.ConsensusParams) storage.GasCalculator {
+	limit := int64(0)
+	if params != nil {
+		limit = params.Block.MaxGas
+	}
+	gas := storage.Gas(0)
+	if limit < 0 {
+		gas = math.MaxInt64
+	} else {
+		gas = storage.Gas(limit)
+	}
+	return storage.NewGasCalculator(gas)
 }

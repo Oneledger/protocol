@@ -16,5 +16,10 @@ func EnableApplyValidator(r action.Router) error {
 	if err != nil {
 		return errors.Wrap(err, "applyTx")
 	}
+
+	err = r.AddHandler(action.WITHDRAW, withdrawTx{})
+	if err != nil {
+		return errors.Wrap(err, "withdrawTx")
+	}
 	return nil
 }

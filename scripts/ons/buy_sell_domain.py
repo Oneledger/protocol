@@ -51,9 +51,9 @@ def create_domain(name, owner_hex, price):
         },
         "fee": {
             "currency": "OLT",
-            "value": "0",
+            "value": "1000000000",
         },
-        "gas": 0,
+        "gas": 40000,
     })
     return resp["result"]["rawTx"]
 
@@ -69,9 +69,9 @@ def send_domain(name, frm, price):
         },
         "fee": {
             "currency": "OLT",
-            "value": "0",
+            "value": "1000000000",
         },
-        "gas": 0,
+        "gas": 40000,
     })
     return resp["result"]["rawTx"]
 
@@ -87,9 +87,9 @@ def sell_domain(name, owner_hex, price):
         "cancel_sale": False,
         "fee": {
             "currency": "OLT",
-            "value": "0",
+            "value": "1000000000",
         },
-        "gas": 0,
+        "gas": 40000,
     })
     return resp["result"]["rawTx"]
 
@@ -104,9 +104,9 @@ def cancel_sell_domain(name, owner_hex, price):
         "cancel_sale": True,
         "fee": {
             "currency": "OLT",
-            "value": "0",
+            "value": "1000000000",
         },
-        "gas": 0,
+        "gas": 40000,
     })
     return resp["result"]["rawTx"]
 
@@ -121,9 +121,9 @@ def buy_domain(name, buyer, price):
         },
         "fee": {
             "currency": "OLT",
-            "value": "0",
+            "value": "1000000000",
         },
-        "gas": 0,
+        "gas": 40000,
     })
     return resp["result"]["rawTx"]
 
@@ -137,9 +137,9 @@ def send(frm, to, amt):
         },
         "fee": {
             "currency": "OLT",
-            "value": "0",
+            "value": "1000000000",
         },
-        "gas": 0,
+        "gas": 40000,
     })
     return resp["result"]["rawTx"]
 
@@ -155,6 +155,7 @@ def new_account(name):
 
 def sign(rawTx, address):
     resp = rpc_call('owner.SignWithAddress', {"rawTx": rawTx,"address": address})
+    print resp
     return resp["result"]
 
 
@@ -239,7 +240,7 @@ if __name__ == "__main__":
     print
 
 
-    raw_txn = send(addrs[0], addrs[2], (int("20")*10**18))
+    raw_txn = send(addrs[0], addrs[3], (int("2000")*10**18))
     print result
     signed = sign(raw_txn, addrs[0])
     print signed
@@ -252,8 +253,10 @@ if __name__ == "__main__":
 
     print bcolors.WARNING + "*** Buying domain ***" + bcolors.ENDC
 
-    raw_txn = buy_domain('bob2.olt', addrs[2], (int("20")*10**18))
-    signed = sign(raw_txn, addrs[2])
+    raw_txn = buy_domain('bob2.olt', addrs[3], (int("20")*10**18))
+    print addrs[3]
+    print addrs
+    signed = sign(raw_txn, addrs[3])
     print signed
     print
 
@@ -264,11 +267,11 @@ if __name__ == "__main__":
 
 
     print bcolors.WARNING + "*** Putting Domain on sale ***" + bcolors.ENDC
-    raw_txn = sell_domain("bob2.olt", addrs[2], (int("993242")*10**14))
+    raw_txn = sell_domain("bob2.olt", addrs[3], (int("993242")*10**14))
     print raw_txn
     print
 
-    signed = sign(raw_txn, addrs[2])
+    signed = sign(raw_txn, addrs[3])
     print signed
     print
 

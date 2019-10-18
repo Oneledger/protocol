@@ -2,6 +2,9 @@ package consensus
 
 import (
 	"encoding/json"
+	"github.com/Oneledger/protocol/data/fees"
+	"github.com/Oneledger/protocol/data/keys"
+	"github.com/Oneledger/protocol/identity"
 	"time"
 
 	"github.com/Oneledger/protocol/data/balance"
@@ -13,10 +16,10 @@ import (
 type GenesisDoc = types.GenesisDoc
 type GenesisValidator = types.GenesisValidator
 
-func NewGenesisDoc(chainID string, currencies []balance.Currency, states []StateInput) (*GenesisDoc, error) {
+func NewGenesisDoc(chainID string, states AppState) (*GenesisDoc, error) {
 	validators := make([]GenesisValidator, 0)
 
-	appStateBytes, err := newAppState(currencies, states).RawJSON()
+	appStateBytes, err := states.RawJSON()
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to marshal DefaultAppState")
 	}
@@ -29,51 +32,43 @@ func NewGenesisDoc(chainID string, currencies []balance.Currency, states []State
 	}, nil
 }
 
-type state struct {
-	// Hash of their public key
-	Address string              `json:"address"`
-	Balance balance.BalanceData `json:"balance"`
+type BalanceState struct {
+	Address  keys.Address   `json:"address"`
+	Currency string         `json:"currency"`
+	Amount   balance.Amount `json:"amount"`
 }
 
-// StateInput returns a StateInput form of state, converts all serialize.Data types back into their native-form
-func (s state) StateInput() StateInput {
-	b := new(balance.Balance)
-
-	// This should not return an error
-	_ = b.SetData(&s.Balance)
-	return StateInput{
-		Address: s.Address,
-		Balance: *b,
-	}
+type DomainState struct {
+	OwnerAddress   keys.Address `json:"ownerAddress"`
+	AccountAddress keys.Address `json:"accountAddress"`
+	Name           string       `json:"name"`
 }
 
-type StateInput struct {
-	Address string
-	Balance balance.Balance
-}
-
-func (si StateInput) state() state {
-	data := si.Balance.Data().(*balance.BalanceData)
-	return state{
-		Address: si.Address,
-		Balance: *data,
-	}
-}
+type Stake identity.Stake
 
 type AppState struct {
-	Currencies []balance.Currency `json:"currencies"`
-	States     []state            `json:"states"`
+	Currencies balance.Currencies `json:"currencies"`
+	FeeOption  fees.FeeOption     `json:"feeOption"`
+	Balances   []BalanceState     `json:"balances"`
+	Staking    []Stake            `json:"staking"`
+	Domains    []DomainState      `json:"domains"`
+	Fees       []BalanceState     `json:"fees"`
 }
 
-func newAppState(currencies []balance.Currency, stateInputs []StateInput) *AppState {
-	states := make([]state, len(stateInputs))
-	for i, s := range stateInputs {
-		states[i] = s.state()
-	}
-
+func NewAppState(currencies balance.Currencies,
+	feeOpt fees.FeeOption,
+	balances []BalanceState,
+	staking []Stake,
+	domains []DomainState,
+	fees []BalanceState,
+) *AppState {
 	return &AppState{
 		Currencies: currencies,
-		States:     states,
+		FeeOption:  feeOpt,
+		Balances:   balances,
+		Staking:    staking,
+		Domains:    domains,
+		Fees:       fees,
 	}
 }
 
