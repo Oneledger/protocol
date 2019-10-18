@@ -174,12 +174,6 @@ func (btcCheckFinalityTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (
 		return false, action.Response{Log: "tracker not ready for finalizing"}
 	}
 
-	cd := bitcoin2.NewChainDriver("abcd")
-	ok, err := cd.CheckFinality(*tracker.ProcessUTXO.TxID)
-	if err != nil || !ok {
-		return false, action.Response{Log: "tracker not finalized"}
-	}
-
 	// mint oBTC
 	curr, ok := ctx.Currencies.GetCurrencyByName("BTC")
 	oBTCCoin := curr.NewCoinFromUnit(tracker.ProcessUTXO.Balance - tracker.CurrentUTXO.Balance)

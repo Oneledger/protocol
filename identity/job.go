@@ -20,7 +20,7 @@ type Job interface {
 	DoMyJob(ctx *JobsContext)
 	IsMyJobDone(ctx *JobsContext) bool
 
-	IsSufficient() bool
+	IsSufficient(ctx *JobsContext) bool
 	DoFinalize()
 
 	GetType() string
@@ -53,6 +53,8 @@ type JobsContext struct {
 	BTCPrivKey       *btcec.PrivateKey
 	Params           *chaincfg.Params
 	ValidatorAddress action.Address
+
+	BlockCypherToken string
 }
 
 func NewJobContext(ctx node.Context, logger *log.Logger,

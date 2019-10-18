@@ -3,8 +3,8 @@ package action
 import (
 	"github.com/Oneledger/protocol/data/accounts"
 	"github.com/Oneledger/protocol/data/balance"
-	"github.com/Oneledger/protocol/data/fees"
 	"github.com/Oneledger/protocol/data/bitcoin"
+	"github.com/Oneledger/protocol/data/fees"
 	"github.com/Oneledger/protocol/data/ons"
 	"github.com/Oneledger/protocol/identity"
 	"github.com/Oneledger/protocol/log"
@@ -25,8 +25,8 @@ type Context struct {
 	Validators *identity.ValidatorStore
 	Trackers   *bitcoin.TrackerStore
 	Logger     *log.Logger
+	JobStore   *identity.JobStore
 }
-
 
 func NewContext(r Router, header *abci.Header, state *storage.State,
 	wallet accounts.Wallet, balances *balance.Store,

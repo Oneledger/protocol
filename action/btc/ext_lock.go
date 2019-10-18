@@ -7,7 +7,9 @@ package btc
 import (
 	"encoding/json"
 	"fmt"
+
 	bitcoin2 "github.com/Oneledger/protocol/chains/bitcoin"
+	"github.com/Oneledger/protocol/identity"
 
 	"github.com/Oneledger/protocol/data/bitcoin"
 
@@ -22,6 +24,7 @@ type Lock struct {
 	TrackerName string
 	BTCTxn      []byte
 }
+
 var _ action.Msg = &Lock{}
 
 func (bl Lock) Signers() []action.Address {
@@ -108,7 +111,7 @@ func (btcLockTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (bool, actio
 
 	tracker.State = bitcoin.BusySigningTrackerState
 	tracker.ProcessOwner = lock.Locker
-	tracker.ProcessTx = lock.BTCTxn  // with user signature
+	tracker.ProcessTx = lock.BTCTxn // with user signature
 
 	err = ctx.Trackers.SetTracker(lock.TrackerName, tracker)
 	if err != nil {
@@ -148,11 +151,15 @@ func (btcLockTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, act
 		return false, action.Response{Log: "failed to update tracker"}
 	}
 
+	if ctx.JobStore != nil {
+		job := identity.NewAddSignatureJob(lock.TrackerName)
+		ctx.JobStore.SaveJob(job)
+	}
+
 	return true, action.Response{
 		Tags: lock.Tags(),
 	}
 }
-
 
 func (btcLockTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas) (bool, action.Response) {
 	return action.BasicFeeHandling(ctx, signedTx, start, size, 1)

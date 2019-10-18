@@ -7,6 +7,8 @@ package identity
 import (
 	"bytes"
 	"fmt"
+	"strconv"
+	"time"
 
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/action/btc"
@@ -24,6 +26,18 @@ type JobAddSignature struct {
 	JobID string
 
 	Done bool
+}
+
+func NewAddSignatureJob(trackerName string) Job {
+
+	id := strconv.FormatInt(time.Now().UnixNano(), 10)
+
+	return &JobAddSignature{
+		JobTypeAddSignature,
+		trackerName,
+		id,
+		false,
+	}
 }
 
 func (j *JobAddSignature) GetType() string {
@@ -109,4 +123,12 @@ func (j *JobAddSignature) DoFinalize() {
 	// TODO:
 
 	j.Done = true
+}
+
+func (j *JobAddSignature) GetJobID() string {
+	return j.JobID
+}
+
+func (j *JobAddSignature) IsDone() bool {
+	return j.Done
 }
