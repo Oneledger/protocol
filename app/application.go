@@ -1,9 +1,7 @@
 package app
 
 import (
-	"fmt"
 	"github.com/Oneledger/protocol/data/ons"
-	"net/http"
 	"net/url"
 	"os"
 
@@ -39,7 +37,6 @@ type App struct {
 
 	node       *consensus.Node
 	genesisDoc *config.GenesisDoc
-	apiRoutes  map[string]func(w http.ResponseWriter, r *http.Request) // Restful API router
 }
 
 // New returns new app fresh and ready to start
@@ -64,8 +61,6 @@ func NewApp(cfg *config.Server, nodeContext *node.Context) (*App, error) {
 
 	app.Context = ctx
 	app.setNewABCI()
-
-	app.apiRoutes = app.addRestfulAPIEndpoint()
 	return app, nil
 }
 
@@ -294,7 +289,11 @@ func (app *App) rpcStarter() (func() error, error) {
 		}
 	}
 
-	app.Context.rpc.RestfulAPIFuncRegister(app.apiRoutes)
+	restfulRouter, err := app.Context.Restful()
+	if err != nil {
+		return noop, err
+	}
+	app.Context.rpc.RegisterRestfulMap(restfulRouter)
 
 	err = app.Context.rpc.Prepare(u)
 	if err != nil {
@@ -304,36 +303,6 @@ func (app *App) rpcStarter() (func() error, error) {
 	srv := app.Context.rpc
 
 	return srv.Start, nil
-}
-
-// restful API functions
-// addRestfulAPIEndpoint collects all restful API router and function mapping
-// update this function to extend more restful API calls
-func (app *App) addRestfulAPIEndpoint() map[string]func(w http.ResponseWriter, r *http.Request) {
-	app.apiRoutes = make(map[string]func(w http.ResponseWriter, r *http.Request))
-	app.apiRoutes["/"] = app.restfulAPIRoot
-	app.apiRoutes["/health"] = app.health
-	return app.apiRoutes
-}
-
-func (app *App) restfulAPIRoot(w http.ResponseWriter, r *http.Request) {
-	_, err := fmt.Fprintln(w, "Available endpoints: ")
-	if err != nil {
-		app.logger.Errorf("failed to display available endpoints info")
-	}
-	for path := range app.apiRoutes {
-		_, err = fmt.Fprintln(w, r.Host+path)
-		if err != nil {
-			app.logger.Errorf("failed to display available endpoints info")
-		}
-	}
-}
-
-func (app *App) health(w http.ResponseWriter, r *http.Request) {
-	_, err := fmt.Fprintf(w, "health check for SDK port %v : OK", app.Context.cfg.Network.SDKAddress)
-	if err != nil {
-		app.logger.Errorf("failed to display SDK port health check info")
-	}
 }
 
 type closer interface {

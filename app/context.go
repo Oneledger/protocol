@@ -160,6 +160,27 @@ func (ctx *context) Services() (service.Map, error) {
 	return service.NewMap(svcCtx), nil
 }
 
+func (ctx *context) Restful() (service.RestfulRouter, error) {
+	extSvcs, err := client.NewExtServiceContext(ctx.cfg.Network.RPCAddress, ctx.cfg.Network.SDKAddress)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to start service context")
+	}
+	svcCtx := &service.Context{
+		Balances:     ctx.balances,
+		Accounts:     ctx.accounts,
+		Currencies:   ctx.currencies,
+		FeeOpt:       ctx.feeOption,
+		Cfg:          ctx.cfg,
+		NodeContext:  ctx.node,
+		ValidatorSet: ctx.validators,
+		Domains:      ctx.domains,
+		Router:       ctx.actionRouter,
+		Logger:       log.NewLoggerWithPrefix(ctx.logWriter, "restful"),
+		Services:     extSvcs,
+	}
+	return service.NewRestfulService(svcCtx).Router(), nil
+}
+
 // Close all things that need to be closed
 func (ctx *context) Close() {
 	closers := []closer{ctx.db, ctx.accounts, ctx.rpc}
