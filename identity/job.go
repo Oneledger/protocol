@@ -9,25 +9,28 @@ import (
 	"github.com/Oneledger/protocol/app/node"
 	"github.com/Oneledger/protocol/consensus"
 	"github.com/Oneledger/protocol/data/bitcoin"
-	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/identity/internal"
 	"github.com/Oneledger/protocol/log"
 	"github.com/Oneledger/protocol/serialize"
+	"github.com/btcsuite/btcd/btcec"
+	"github.com/btcsuite/btcd/chaincfg"
 )
 
 type Job interface {
-	DoMyJob(ctx *JobsContext, data interface{})
-	IsMyJobDone(key keys.PrivateKey, ctx *JobsContext) bool
+	DoMyJob(ctx *JobsContext)
+	IsMyJobDone(ctx *JobsContext) bool
 
 	IsSufficient() bool
 	DoFinalize()
 
 	GetType() string
 	GetJobID() string
+	IsDone() bool
 }
 
 const (
 	JobTypeAddSignature = "addSignature"
+	JobTypeBTCBroadcast = "btcBroadcast"
 )
 
 func makeJob(data []byte, typ string) Job {
@@ -46,6 +49,10 @@ type JobsContext struct {
 	service *internal.Service
 
 	trackers *bitcoin.TrackerStore
+
+	BTCPrivKey       *btcec.PrivateKey
+	Params           *chaincfg.Params
+	ValidatorAddress action.Address
 }
 
 func NewJobContext(ctx node.Context, logger *log.Logger,

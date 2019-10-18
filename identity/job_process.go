@@ -7,32 +7,26 @@ package identity
 import (
 	"strings"
 
-	"github.com/Oneledger/protocol/data/keys"
-	"github.com/Oneledger/protocol/identity/internal"
 	"github.com/Oneledger/protocol/serialize"
 	"github.com/Oneledger/protocol/storage"
 )
 
-type JobProcess func(job Job)
+type JobProcess func(job Job) Job
 
-func ProcessAllJobs(key keys.PrivateKey, jobs []Job) []Job {
+func ProcessAllJobs(ctx *JobsContext, js *JobStore) {
 
-	internal.NewService()
+	js.RangeJobs(func(job Job) Job {
 
-	for i := range jobs {
-
-		if !jobs[i].IsMyJobDone(key) {
-
-			jobs[i].DoMyJob()
+		if !job.IsMyJobDone(ctx) {
+			job.DoMyJob(ctx)
 		}
 
-		if jobs[i].IsSufficient() {
-
-			jobs[i].DoFinalize()
+		if job.IsSufficient() {
+			job.DoFinalize()
 		}
-	}
 
-	return jobs
+		return job
+	})
 }
 
 type JobStore struct {
@@ -77,24 +71,42 @@ func (js *JobStore) GetJob(jobID string) Job {
 	return makeJob(dat, string(typ))
 }
 
+func (js *JobStore) DeleteJob(job Job) error {
+
+	key := storage.StoreKey("job:" + job.GetJobID())
+	typKey := storage.StoreKey("jobtype:" + job.GetJobID())
+
+	_, err := js.Delete(key)
+	_, err = js.Delete(typKey)
+
+	return err
+}
+
 func (js *JobStore) RangeJobs(pro JobProcess) {
 	start := []byte("job:        ")
 	end := []byte("job:~~~~~~~~")
 	isAsc := true
 
+	jobkeys := make([]string, 0, 20)
+
 	js.IterateRange(start, end, isAsc, func(key, val []byte) bool {
 
-		jobID := strings.TrimPrefix(string(key), "job:")
-
-		typKey := storage.StoreKey("jobtype:" + jobID)
-		typ, err := js.Get(typKey)
-		if err != nil {
-			//
-		}
-
-		job := makeJob(val, string(typ))
-		pro(job)
+		jobkeys = append(jobkeys, string(key))
 
 		return false
 	})
+
+	for _, key := range jobkeys {
+		jobID := strings.TrimPrefix(string(key), "job:")
+
+		job := js.GetJob(jobID)
+
+		job = pro(job)
+
+		if job.IsDone() {
+			js.DeleteJob(job)
+		} else {
+			js.SaveJob(job)
+		}
+	}
 }

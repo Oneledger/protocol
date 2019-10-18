@@ -11,8 +11,6 @@ import (
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/action/btc"
 	"github.com/Oneledger/protocol/client"
-	"github.com/btcsuite/btcd/btcec"
-	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcd/txscript"
 	"github.com/btcsuite/btcd/wire"
 	"github.com/btcsuite/btcutil"
@@ -33,14 +31,9 @@ func (j *JobAddSignature) GetType() string {
 }
 
 type doJobData struct {
-	BTCPrivKey       *btcec.PrivateKey
-	Params           *chaincfg.Params
-	ValidatorAddress action.Address
 }
 
-func (j *JobAddSignature) DoMyJob(ctx *JobsContext, data interface{}) {
-
-	inp := data.(doJobData)
+func (j *JobAddSignature) DoMyJob(ctx *JobsContext) {
 
 	tracker, err := ctx.trackers.Get(j.TrackerName)
 	if err != nil {
@@ -48,21 +41,24 @@ func (j *JobAddSignature) DoMyJob(ctx *JobsContext, data interface{}) {
 	}
 
 	lockTx := wire.NewMsgTx(wire.TxVersion)
-	lockTx.Deserialize(bytes.NewReader(tracker.ProcessTx))
+	err = lockTx.Deserialize(bytes.NewReader(tracker.ProcessTx))
+	if err != nil {
+		//
+	}
 
 	sig, err := txscript.RawTxInSignature(lockTx, 0, tracker.CurrentLockScript, txscript.SigHashAll,
-		inp.BTCPrivKey)
+		ctx.BTCPrivKey)
 	if err != nil {
 		fmt.Println(err, "RawTxInSignature")
 	}
 
-	addrPubKey, err := btcutil.NewAddressPubKey(inp.BTCPrivKey.PubKey().SerializeCompressed(), inp.Params)
+	addrPubKey, err := btcutil.NewAddressPubKey(ctx.BTCPrivKey.PubKey().SerializeCompressed(), ctx.Params)
 
 	addSigData := btc.AddSignature{
 		TrackerName:      j.TrackerName,
 		ValidatorPubKey:  addrPubKey,
 		BTCSignature:     sig,
-		ValidatorAddress: inp.ValidatorAddress,
+		ValidatorAddress: ctx.ValidatorAddress,
 		Memo:             j.JobID,
 	}
 
@@ -89,14 +85,15 @@ func (j *JobAddSignature) DoMyJob(ctx *JobsContext, data interface{}) {
 	}
 }
 
-func (j *JobAddSignature) IsMyJobDone(addr btcutil.AddressPubKey, ctx *JobsContext) bool {
+func (j *JobAddSignature) IsMyJobDone(ctx *JobsContext) bool {
 
 	tracker, err := ctx.trackers.Get(j.TrackerName)
 	if err != nil {
 		return false
 	}
 
-	return tracker.Multisig.HasAddressSigned(addr)
+	addrPubKey, err := btcutil.NewAddressPubKey(ctx.BTCPrivKey.PubKey().SerializeCompressed(), ctx.Params)
+	return tracker.Multisig.HasAddressSigned(*addrPubKey)
 }
 
 func (j *JobAddSignature) IsSufficient(ctx *JobsContext) bool {
