@@ -97,7 +97,7 @@ func loadTest(_ *cobra.Command, _ []string) {
 		ctx.logger.Error("failed to get currencies", err)
 		return
 	}
-	fmt.Printf("currencies:::::: %#v", currencies)
+	fmt.Printf("currencies: %#v", currencies)
 
 	// get address of the node
 	nodeAddress, err := fullnode.NodeAddress()
@@ -105,37 +105,46 @@ func loadTest(_ *cobra.Command, _ []string) {
 		ctx.logger.Fatal("error getting node address", err)
 	}
 
+	accs := make([]accounts.Account, 0, 10)
+	accReply, err := fullnode.ListAccounts()
+	if err != nil {
+		ctx.logger.Error("failed to get any address")
+	}
+	accs = accReply.Accounts
 	// start threads
 	for i := 0; i < loadTestArgs.threads; i++ {
 
 		thLogger := ctx.logger.WithPrefix(fmt.Sprintf("thread: %d", i))
+		acc := accounts.Account{}
+		if len(accs) <= i+1 {
+			// create a temp account to send OLT
+			accName := fmt.Sprintf("acc_%03d", i)
+			pubKey, privKey, err := keys.NewKeyPairFromTendermint() // generate a ed25519 key pair
+			if err != nil {
+				thLogger.Error(accName, "error generating key from tendermint", err)
+			}
 
-		// create a temp account to send OLT
-		accName := fmt.Sprintf("acc_%03d", i)
-		pubKey, privKey, err := keys.NewKeyPairFromTendermint() // generate a ed25519 key pair
-		if err != nil {
-			thLogger.Error(accName, "error generating key from tendermint", err)
+			acc, err = accounts.NewAccount(chain.Type(1), accName, &privKey, &pubKey) // create account object
+			if err != nil {
+				thLogger.Error(accName, "Error initializing account", err)
+				return
+			}
+
+			thLogger.Infof("creating account %#v", acc)
+			reply, err := fullnode.AddAccount(acc)
+			if err != nil {
+				thLogger.Error(accName, "error creating account", err)
+				return
+			}
+
+			accRead := reply.Account
+
+			// praccint details
+			thLogger.Infof("Created account successfully: %#v", accRead)
+			ctx.logger.Infof("Address for the account is: %s", acc.Address().Humanize())
+		} else {
+			acc = accs[i+1]
 		}
-
-		acc, err := accounts.NewAccount(chain.Type(1), accName, &privKey, &pubKey) // create account object
-		if err != nil {
-			thLogger.Error(accName, "Error initializing account", err)
-			return
-		}
-
-		thLogger.Infof("creating account %#v", acc)
-		reply, err := fullnode.AddAccount(acc)
-		if err != nil {
-			thLogger.Error(accName, "error creating account", err)
-			return
-		}
-
-		accRead := reply.Account
-
-		// print details
-		thLogger.Infof("Created account successfully: %#v", accRead)
-		ctx.logger.Infof("Address for the account is: %s", acc.Address().Humanize())
-
 		waiter.Add(1)
 		// start a thread to keep sending transactions after some interval
 		go func(stop chan bool) {
@@ -179,7 +188,7 @@ func doSendTransaction(ctx *Context, threadNo int, acc *accounts.Account, nodeAd
 
 	// generate a random amount
 	r := rand.New(rand.NewSource(time.Now().UnixNano()))
-	num := r.Float64() * 10 // amount is a random float between [0, 1000)
+	num := r.Float64() * 10 // amount is a random float between [0, 10)
 	// populate send arguments
 	sendArgsLocal := SendArguments{}
 	sendArgsLocal.Party = []byte(nodeAddress)
@@ -191,14 +200,15 @@ func doSendTransaction(ctx *Context, threadNo int, acc *accounts.Account, nodeAd
 	}
 
 	// set amount and fee
-	sendArgsLocal.Amount = strconv.FormatFloat(num, 'f', 0, 64)
-	sendArgsLocal.Fee = strconv.FormatFloat(num/100, 'f', 0, 64)
+	sendArgsLocal.Amount = strconv.FormatFloat(num, 'f', 6, 64)
+	sendArgsLocal.Fee = strconv.FormatFloat(0.0000003, 'f', 9, 64)
 	sendArgsLocal.Currency = "OLT"
+	sendArgsLocal.Gas = 200030
 
 	// Create message
 	fullnode := ctx.clCtx.FullNodeClient()
 
-	req, err := sendArgsLocal.ClientRequest(currencies.GetCurrencyList())
+	req, err := sendArgsLocal.ClientRequest(currencies.GetCurrencySet())
 	if err != nil {
 		ctx.logger.Error("failed to get request", err)
 	}

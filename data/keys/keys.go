@@ -40,8 +40,8 @@ type PublicKey struct {
 }
 
 type PrivateKey struct {
-	keytype Algorithm
-	data    []byte
+	Keytype Algorithm `json:"keyType"`
+	Data    []byte    `json:"data"`
 }
 
 type gobkey struct {
@@ -54,8 +54,8 @@ const tmPrefixSize = 5
 
 func (pubKey *PublicKey) GobEncode() ([]byte, error) {
 	//a := map[string]interface{}{
-	//	"K": int(pubKey.keytype),
-	//	"D":    pubKey.data,
+	//	"K": int(pubKey.Keytype),
+	//	"D":    pubKey.Data,
 	//}
 	a := gobkey{int(pubKey.KeyType), pubKey.Data}
 	return json.Marshal(&a)
@@ -68,7 +68,7 @@ func (pubKey *PublicKey) GobDecode(buf []byte) error {
 		return err
 	}
 
-	//pubKey.keytype = Algorithm(a["K"].(float64))
+	//pubKey.Keytype = Algorithm(a["K"].(float64))
 	pubKey.KeyType = Algorithm(a.K)
 	pubKey.Data = a.D
 
@@ -76,7 +76,7 @@ func (pubKey *PublicKey) GobDecode(buf []byte) error {
 }
 
 func (privKey *PrivateKey) GobEncode() ([]byte, error) {
-	a := gobkey{int(privKey.keytype), privKey.data}
+	a := gobkey{int(privKey.Keytype), privKey.Data}
 	return json.Marshal(&a)
 }
 
@@ -87,9 +87,9 @@ func (privKey *PrivateKey) GobDecode(buf []byte) error {
 		return err
 	}
 
-	//pubKey.keytype = Algorithm(a["K"].(float64))
-	privKey.keytype = Algorithm(a.K)
-	privKey.data = a.D
+	//pubKey.Keytype = Algorithm(a["K"].(float64))
+	privKey.Keytype = Algorithm(a.K)
+	privKey.Data = a.D
 
 	return nil
 }
@@ -161,6 +161,14 @@ func PVKeyFromTendermint(key *privval.FilePVKey) (PrivateKey, error) {
 	return GetPrivateKeyFromBytes(bz, ED25519)
 }
 
+func PubKeyFromTendermint(key []byte) (PublicKey, error) {
+	if key == nil {
+		return PublicKey{}, errors.New("PubKeyFromTendermint: got nil argument")
+	}
+	bz := key[tmPrefixSize:]
+	return GetPublicKeyFromBytes(bz, ED25519)
+}
+
 func (pubKey PublicKey) GetABCIPubKey() types.PubKey {
 	return types.PubKey{
 		Type: pubKey.KeyType.Name(),
@@ -197,24 +205,24 @@ func (pubKey PublicKey) GetHandler() (PublicKeyHandler, error) {
 
 // get the private key handler
 func (privKey PrivateKey) GetHandler() (PrivateKeyHandler, error) {
-	switch privKey.keytype {
+	switch privKey.Keytype {
 	case ED25519:
 
-		if len(privKey.data) != ED25519_PRIV_SIZE {
+		if len(privKey.Data) != ED25519_PRIV_SIZE {
 			return new(PrivateKeyED25519),
-				fmt.Errorf("given key doesn't match the size of the key algorithm %d", privKey.keytype)
+				fmt.Errorf("given key doesn't match the size of the key algorithm %d", privKey.Keytype)
 		}
 		var key [64]byte
-		copy(key[:], privKey.data)
+		copy(key[:], privKey.Data)
 		return PrivateKeyED25519(key), nil
 	case SECP256K1:
 		size := SECP256K1_PRIV_SIZE
-		if len(privKey.data) != size {
+		if len(privKey.Data) != size {
 			return new(PrivateKeySECP256K1),
-				fmt.Errorf("given key doesn't match the size of the key algorithm %d", privKey.keytype)
+				fmt.Errorf("given key doesn't match the size of the key algorithm %d", privKey.Keytype)
 		}
 		var key [32]byte
-		copy(key[:], privKey.data)
+		copy(key[:], privKey.Data)
 		return PrivateKeySECP256K1(key), nil
 	default:
 		// Shouldn't reach here
@@ -271,7 +279,7 @@ func (k PrivateKeyED25519) PubKey() PublicKey {
 }
 
 func (k PrivateKeyED25519) Equals(privkey PrivateKey) bool {
-	return privkey.keytype == ED25519 && bytes.Equal(k.Bytes(), privkey.data)
+	return privkey.Keytype == ED25519 && bytes.Equal(k.Bytes(), privkey.Data)
 }
 
 //====================== ED25519 ======================
@@ -324,7 +332,7 @@ func (k PrivateKeySECP256K1) PubKey() PublicKey {
 }
 
 func (k PrivateKeySECP256K1) Equals(privkey PrivateKey) bool {
-	return privkey.keytype == SECP256K1 && bytes.Equal(k.Bytes(), privkey.data)
+	return privkey.Keytype == SECP256K1 && bytes.Equal(k.Bytes(), privkey.Data)
 }
 
 //====================== SECP256K1 ======================

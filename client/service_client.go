@@ -1,8 +1,6 @@
 package client
 
 import (
-	"fmt"
-
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/rpc"
 )
@@ -63,13 +61,18 @@ func (c *ServiceClient) ListAccounts() (out ListAccountsReply, err error) {
 	return
 }
 
-func (c *ServiceClient) ListAccountAddresses() (out ListAccountsReply, err error) {
+func (c *ServiceClient) ListAccountAddresses() (out ListAccountAddressesReply, err error) {
 	err = c.Call("owner.ListAccountAddress", struct{}{}, &out)
 	return
 }
 
 func (c *ServiceClient) ApplyValidator(req ApplyValidatorRequest) (out ApplyValidatorReply, err error) {
 	err = c.Call("tx.ApplyValidator", req, &out)
+	return
+}
+
+func (c *ServiceClient) WithdrawReward(req WithdrawRewardRequest) (out WithdrawRewardReply, err error) {
+	err = c.Call("tx.WithdrawReward", req, &out)
 	return
 }
 
@@ -108,7 +111,6 @@ func (c *ServiceClient) ListValidators() (out ListValidatorsReply, err error) {
 
 func (c *ServiceClient) ListCurrencies() (out *ListCurrenciesReply, err error) {
 	err = c.Call("query.ListCurrencies", struct{}{}, &out)
-	fmt.Println("client", out)
 	return
 }
 

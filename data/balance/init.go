@@ -29,7 +29,7 @@ func init() {
 	logger = log.NewDefaultLogger(os.Stdout).WithPrefix("balance")
 
 	serialize.RegisterConcrete(new(Balance), TagBalance)
-	serialize.RegisterConcrete(new(BalanceData), TagBalanceData)
+	//serialize.RegisterConcrete(new(BalanceData), TagBalanceData)
 
 	pSzlr = serialize.GetSerializer(serialize.PERSISTENT)
 }

@@ -2,6 +2,7 @@ package broadcast
 
 import (
 	"errors"
+	"github.com/Oneledger/protocol/data/fees"
 
 	"github.com/Oneledger/protocol/data/balance"
 
@@ -15,15 +16,17 @@ import (
 type Service struct {
 	logger     *log.Logger
 	router     action.Router
-	currencies *balance.CurrencyList
+	currencies *balance.CurrencySet
+	feeOpt     *fees.FeeOption
 	ext        client.ExtServiceContext
 }
 
-func NewService(ctx client.ExtServiceContext, router action.Router, currencies *balance.CurrencyList, logger *log.Logger) *Service {
+func NewService(ctx client.ExtServiceContext, router action.Router, currencies *balance.CurrencySet, feeOpt *fees.FeeOption, logger *log.Logger) *Service {
 	return &Service{
 		ext:        ctx,
 		router:     router,
 		currencies: currencies,
+		feeOpt:     feeOpt,
 		logger:     logger,
 	}
 }
@@ -47,7 +50,7 @@ func (svc *Service) validateAndSignTx(req client.BroadcastRequest) ([]byte, erro
 	}
 
 	handler := svc.router.Handler(tx.Type)
-	ctx := action.NewContext(svc.router, nil, nil, nil, svc.currencies, nil, nil, svc.logger)
+	ctx := action.NewContext(svc.router, nil, nil, nil, nil, svc.currencies, svc.feeOpt, nil, nil, nil, svc.logger)
 	_, err = handler.Validate(ctx, signedTx)
 	if err != nil {
 		err = rpc.InvalidRequestError(err.Error())

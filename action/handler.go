@@ -14,5 +14,5 @@ type Tx interface {
 	ProcessDeliver(ctx *Context, tx RawTx) (bool, Response)
 
 	//process the charge of fees
-	ProcessFee(ctx *Context, fee Fee) (bool, Response)
+	ProcessFee(ctx *Context, signedTx SignedTx, start Gas, size Gas) (bool, Response)
 }

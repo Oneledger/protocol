@@ -21,9 +21,9 @@ import (
 )
 
 func TestNewCurrencyList(t *testing.T) {
-	cl := NewCurrencyList()
+	cl := NewCurrencySet()
 
-	curr := Currency{"OLT", 0, 18}
+	curr := Currency{Id: 0, Name: "OLT", Chain: 0, Decimal: 18, Unit: "nue"}
 	err := cl.Register(curr)
 	assert.NoError(t, err)
 
@@ -32,14 +32,14 @@ func TestNewCurrencyList(t *testing.T) {
 
 	assert.Equal(t, currNew, curr)
 
-	key := curr.StringKey()
-	curr3, ok := cl.GetCurrencyByStringKey(key)
+	id := curr.Id
+	curr3, ok := cl.GetCurrencyById(id)
 	assert.True(t, ok)
 	assert.Equal(t, curr3, curr)
 
 	assert.Equal(t, cl.Len(), 1)
 
-	curr4 := Currency{"Bitcoin", 1, 18}
+	curr4 := Currency{Id: 1, Name: "Bitcoin", Chain: 1, Decimal: 18, Unit: "satoshi"}
 	err = cl.Register(curr4)
 	assert.NoError(t, err)
 

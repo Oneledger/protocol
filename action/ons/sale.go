@@ -93,9 +93,14 @@ func (domainSaleTx) Validate(ctx *action.Context, tx action.SignedTx) (bool, err
 	}
 
 	// validate basic signature
-	ok, err := action.ValidateBasic(tx.RawBytes(), sale.Signers(), tx.Signatures)
+	err = action.ValidateBasic(tx.RawBytes(), sale.Signers(), tx.Signatures)
 	if err != nil {
-		return ok, err
+		return false, err
+	}
+
+	err = action.ValidateFee(ctx.FeeOpt, tx.Fee)
+	if err != nil {
+		return false, err
 	}
 
 	if !sale.Price.IsValid(ctx.Currencies) {
@@ -127,7 +132,7 @@ func (domainSaleTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (bool, ac
 		return false, action.Response{Log: "invalid data"}
 	}
 
-	domain, err := ctx.Domains.Get(sale.DomainName, false)
+	domain, err := ctx.Domains.Get(sale.DomainName)
 	if err != nil {
 		if err == ons.ErrDomainNotFound {
 			return false, action.Response{Log: "domain not found"}
@@ -172,7 +177,7 @@ func (domainSaleTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, 
 		return false, action.Response{Log: "invalid data"}
 	}
 
-	domain, err := ctx.Domains.Get(sale.DomainName, false)
+	domain, err := ctx.Domains.Get(sale.DomainName)
 	if err != nil {
 		if err == ons.ErrDomainNotFound {
 			return false, action.Response{Log: "domain not found"}
@@ -206,8 +211,6 @@ func (domainSaleTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, 
 	return true, action.Response{Tags: sale.Tags()}
 }
 
-func (domainSaleTx) ProcessFee(ctx *action.Context, fee action.Fee) (bool, action.Response) {
-	panic("implement me")
-	// TODO: implement the fee charge for send
-	return true, action.Response{GasWanted: 0, GasUsed: 0}
+func (domainSaleTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas) (bool, action.Response) {
+	return action.BasicFeeHandling(ctx, signedTx, start, size, 1)
 }

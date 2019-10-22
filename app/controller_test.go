@@ -46,12 +46,7 @@ func setupForTx() action.SignedTx {
 }
 
 func TestApp_infoServer(t *testing.T) {
-	testDB := setup()
-	defer teardown(testDB)
-	cfg, nodeContext := setupForGeneralInfo()
-	app, err := NewApp(cfg, nodeContext)
-	assert.Nil(t, err)
-
+	app := setup(setupForGeneralInfo)
 	req := RequestInfo{}
 
 	infoServer := app.infoServer()
@@ -62,11 +57,7 @@ func TestApp_infoServer(t *testing.T) {
 
 // TODO can't pass setupState step
 func TestApp_chainInitializer(t *testing.T) {
-	testDB := setup()
-	defer teardown(testDB)
-	cfg, nodeContext := setupForGeneralInfo()
-	app, err := NewApp(cfg, nodeContext)
-	assert.Nil(t, err)
+	app := setup(setupForStart)
 
 	chainInitializer := app.chainInitializer()
 	req := RequestInitChain{}
@@ -76,11 +67,7 @@ func TestApp_chainInitializer(t *testing.T) {
 }
 
 func TestApp_blockBeginner(t *testing.T) {
-	testDB := setup()
-	defer teardown(testDB)
-	cfg, nodeContext := setupForGeneralInfo()
-	app, err := NewApp(cfg, nodeContext)
-	assert.Nil(t, err)
+	app := setup(setupForStart)
 
 	req := RequestBeginBlock{}
 	blockBeginner := app.blockBeginner()
@@ -90,11 +77,7 @@ func TestApp_blockBeginner(t *testing.T) {
 }
 
 func TestApp_txChecker(t *testing.T) {
-	testDB := setup()
-	defer teardown(testDB)
-	cfg, nodeContext := setupForGeneralInfo()
-	app, err := NewApp(cfg, nodeContext)
-	assert.Nil(t, err)
+	app := setup(setupForStart)
 
 	tx := setupForTx()
 	rawTx, err := serialize.GetSerializer(serialize.NETWORK).Serialize(tx)
@@ -106,11 +89,7 @@ func TestApp_txChecker(t *testing.T) {
 }
 
 func TestApp_txDeliverer(t *testing.T) {
-	testDB := setup()
-	defer teardown(testDB)
-	cfg, nodeContext := setupForGeneralInfo()
-	app, err := NewApp(cfg, nodeContext)
-	assert.Nil(t, err)
+	app := setup(setupForStart)
 
 	tx := setupForTx()
 	rawTx, err := serialize.GetSerializer(serialize.NETWORK).Serialize(tx)
@@ -123,11 +102,7 @@ func TestApp_txDeliverer(t *testing.T) {
 }
 
 func TestApp_blockEnder(t *testing.T) {
-	testDB := setup()
-	defer teardown(testDB)
-	cfg, nodeContext := setupForGeneralInfo()
-	app, err := NewApp(cfg, nodeContext)
-	assert.Nil(t, err)
+	app := setup(setupForStart)
 
 	req := RequestEndBlock{}
 	blockEnder := app.blockEnder()
@@ -138,11 +113,7 @@ func TestApp_blockEnder(t *testing.T) {
 }
 
 func TestApp_commitor(t *testing.T) {
-	testDB := setup()
-	defer teardown(testDB)
-	cfg, nodeContext := setupForStart()
-	app, err := NewApp(cfg, nodeContext)
-	assert.Nil(t, err)
+	app := setup(setupForStart)
 
 	commitor := app.commitor()
 	c := commitor()

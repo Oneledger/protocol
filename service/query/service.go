@@ -6,14 +6,14 @@ import (
 	"github.com/Oneledger/protocol/data/ons"
 	"github.com/Oneledger/protocol/identity"
 	"github.com/Oneledger/protocol/log"
-	"github.com/Oneledger/protocol/rpc"
+	codes "github.com/Oneledger/protocol/status_codes"
 )
 
 type Service struct {
 	name       string
 	ext        client.ExtServiceContext
 	balances   *balance.Store
-	currencies *balance.CurrencyList
+	currencies *balance.CurrencySet
 	validators *identity.ValidatorStore
 	ons        *ons.DomainStore
 	logger     *log.Logger
@@ -23,7 +23,7 @@ func Name() string {
 	return "query"
 }
 
-func NewService(ctx client.ExtServiceContext, balances *balance.Store, currencies *balance.CurrencyList, validators *identity.ValidatorStore,
+func NewService(ctx client.ExtServiceContext, balances *balance.Store, currencies *balance.CurrencySet, validators *identity.ValidatorStore,
 	domains *ons.DomainStore, logger *log.Logger) *Service {
 	return &Service{
 		name:       "query",
@@ -39,24 +39,20 @@ func NewService(ctx client.ExtServiceContext, balances *balance.Store, currencie
 func (svc *Service) Balance(req client.BalanceRequest, resp *client.BalanceReply) error {
 	err := req.Address.Err()
 	if err != nil {
-		return rpc.InvalidParamsError(err.Error())
+		return codes.ErrBadAddress
 	}
 
 	addr := req.Address
-	bal, err := svc.balances.Get(addr, true)
+	bal, err := svc.balances.GetBalance(addr, svc.currencies)
 
-	if err != nil && err == balance.ErrNoBalanceFoundForThisAddress {
-		// Return a zero for balance if the account doesn't exist
-		// TODO: Zero in the balances
-		bal = balance.NewBalance()
-	} else if err != nil {
+	if err != nil {
 		svc.logger.Error("error getting balance", err)
-		return rpc.InternalError("error getting balance")
+		return codes.ErrGettingBalance
 	}
 
 	*resp = client.BalanceReply{
 		Balance: bal.String(),
-		Height:  svc.balances.Version,
+		Height:  svc.balances.State.Version(),
 	}
 	return nil
 }
@@ -65,12 +61,13 @@ func (svc *Service) Balance(req client.BalanceRequest, resp *client.BalanceReply
 func (svc *Service) ListValidators(_ client.ListValidatorsRequest, reply *client.ListValidatorsReply) error {
 	validators, err := svc.validators.GetValidatorSet()
 	if err != nil {
-		return rpc.InternalError("err while retrieving validators info")
+		svc.logger.Error("error listing validators")
+		return codes.ErrListValidators
 	}
 
 	*reply = client.ListValidatorsReply{
 		Validators: validators,
-		Height:     svc.balances.Version,
+		Height:     svc.balances.State.Version(),
 	}
 
 	return nil
