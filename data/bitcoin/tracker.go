@@ -23,8 +23,6 @@ const (
 	BusyBroadcastingTrackerState
 	BusyFinalizingTrackerState
 	BusyMintingCoin
-	q1w
-	DefaultLastUpdateHeight = 0
 )
 
 var NilTxHash *chainhash.Hash
@@ -46,17 +44,14 @@ type Tracker struct {
 	// State tracks the current state of the tracker, Also used for locking distributed access
 	State TrackerState `json:"state"`
 
-	// LastUpdateHeight logs the last update height of the tracker
-	LastUpdateHeight int64 `json:"lastUpdateHeight"`
+	CurrentTxId              *chainhash.Hash
+	CurrentBalance           int64
+	CurrentLockScriptAddress []byte
 
-	CurrentUTXO *UTXO
-	ProcessUTXO *UTXO
-	ProcessTx   []byte
-
-	NextLockScript        []byte
-	NextLockScriptAddress []byte
-
-	CurrentLockScript []byte
+	ProcessTxId              *chainhash.Hash
+	ProcessBalance           int64
+	ProcessLockScriptAddress []byte
+	ProcessUnsignedTx        []byte
 
 	ProcessOwner keys.Address
 }
@@ -64,21 +59,18 @@ type Tracker struct {
 func NewTracker(lockScript, lockScriptAddress []byte) *Tracker {
 
 	return &Tracker{
-		State:                 AvailableTrackerState,
-		LastUpdateHeight:      DefaultLastUpdateHeight,
-		CurrentUTXO:           nil,
-		NextLockScript:        lockScript,
-		NextLockScriptAddress: lockScriptAddress,
+		State:                    AvailableTrackerState,
+		CurrentTxId:              nil,
+		CurrentLockScriptAddress: nil,
+
+		ProcessLockScriptAddress: lockScriptAddress,
 	}
 }
 
 // GetBalance gets the current balance of the utxo tracker
-func (t *Tracker) GetBalance() int64 {
-	if t.CurrentUTXO == nil {
-		return 0
-	}
+func (t *Tracker) GetBalanceSatoshi() int64 {
 
-	return t.CurrentUTXO.Balance
+	return t.CurrentBalance
 }
 
 // IsAvailable returns whether the tracker is available for new transaction
@@ -96,7 +88,7 @@ func (t *Tracker) GetAddress() ([]byte, error) {
 		return nil, ErrTrackerBusy
 	}
 
-	return t.NextLockScriptAddress, nil
+	return t.ProcessLockScriptAddress, nil
 }
 
 func (t *Tracker) ProcessLock(newUTXO *UTXO,
@@ -107,7 +99,9 @@ func (t *Tracker) ProcessLock(newUTXO *UTXO,
 		return ErrTrackerBusy
 	}
 
-	t.ProcessUTXO = newUTXO
+	t.ProcessBalance = newUTXO.Balance
+	t.ProcessUnsignedTx = txn
+
 	t.State = BusySigningTrackerState
 
 	threshold := (len(validatorsPubKeys) * 2 / 3) + 1
@@ -173,4 +167,8 @@ func (t *Tracker) GetSignatures() [][]byte {
 	}
 
 	return signatures
+}
+
+func (t *Tracker) GetBalance() int64 {
+	return t.CurrentBalance
 }

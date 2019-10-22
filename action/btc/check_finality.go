@@ -16,24 +16,24 @@ import (
 	"github.com/tendermint/tendermint/libs/common"
 )
 
-type CheckFinality struct {
+type MintOBTC struct {
 	TrackerName  string
 	OwnerAddress action.Address
 }
 
-var _ action.Msg = &CheckFinality{}
+var _ action.Msg = &MintOBTC{}
 
-func (bcf *CheckFinality) Signers() []action.Address {
+func (m *MintOBTC) Signers() []action.Address {
 	return []action.Address{
-		bcf.OwnerAddress,
+		m.OwnerAddress,
 	}
 }
 
-func (bcf *CheckFinality) Type() action.Type {
+func (m *MintOBTC) Type() action.Type {
 	return action.BTC_CHECK_FINALITY
 }
 
-func (bcf *CheckFinality) Tags() common.KVPairs {
+func (m *MintOBTC) Tags() common.KVPairs {
 	tags := make([]common.KVPair, 0)
 
 	tag := common.KVPair{
@@ -42,23 +42,23 @@ func (bcf *CheckFinality) Tags() common.KVPairs {
 	}
 	tag2 := common.KVPair{
 		Key:   []byte("tx.owner"),
-		Value: bcf.OwnerAddress.Bytes(),
+		Value: m.OwnerAddress.Bytes(),
 	}
 	tag3 := common.KVPair{
 		Key:   []byte("tx.domain_name"),
-		Value: []byte(bcf.TrackerName),
+		Value: []byte(m.TrackerName),
 	}
 
 	tags = append(tags, tag, tag2, tag3)
 	return tags
 }
 
-func (bcf *CheckFinality) Marshal() ([]byte, error) {
-	return json.Marshal(bcf)
+func (m *MintOBTC) Marshal() ([]byte, error) {
+	return json.Marshal(m)
 }
 
-func (bcf *CheckFinality) Unmarshal(data []byte) error {
-	return json.Unmarshal(data, bcf)
+func (m *MintOBTC) Unmarshal(data []byte) error {
+	return json.Unmarshal(data, m)
 }
 
 type btcCheckFinalityTx struct {
@@ -67,7 +67,7 @@ type btcCheckFinalityTx struct {
 var _ action.Tx = btcCheckFinalityTx{}
 
 func (btcCheckFinalityTx) Validate(ctx *action.Context, signedTx action.SignedTx) (bool, error) {
-	f := CheckFinality{}
+	f := MintOBTC{}
 	err := f.Unmarshal(signedTx.Data)
 	if err != nil {
 		return false, errors.Wrap(action.ErrWrongTxType, err.Error())
@@ -95,7 +95,7 @@ func (btcCheckFinalityTx) Validate(ctx *action.Context, signedTx action.SignedTx
 }
 
 func (btcCheckFinalityTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
-	f := CheckFinality{}
+	f := MintOBTC{}
 	err := f.Unmarshal(tx.Data)
 	if err != nil {
 		return false, action.Response{Log: "wrong tx type"}
@@ -110,14 +110,8 @@ func (btcCheckFinalityTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (bo
 		return false, action.Response{Log: "tracker process not owned by user"}
 	}
 
-	if tracker.State != bitcoin.BusyFinalizingTrackerState {
+	if tracker.State != bitcoin.BusyMintingCoin {
 		return false, action.Response{Log: "tracker not ready for finalizing"}
-	}
-
-	cd := bitcoin2.NewChainDriver("abcd")
-	ok, err := cd.CheckFinality(*tracker.ProcessUTXO.TxID)
-	if err != nil || !ok {
-		return false, action.Response{Log: "tracker not finalized"}
 	}
 
 	// mint oBTC
@@ -155,7 +149,7 @@ func (btcCheckFinalityTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (bo
 }
 
 func (btcCheckFinalityTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
-	f := CheckFinality{}
+	f := MintOBTC{}
 	err := f.Unmarshal(tx.Data)
 	if err != nil {
 		return false, action.Response{Log: "wrong tx type"}

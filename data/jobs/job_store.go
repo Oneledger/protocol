@@ -2,32 +2,13 @@
 
  */
 
-package identity
+package jobs
+
 
 import (
-	"strings"
-
 	"github.com/Oneledger/protocol/serialize"
 	"github.com/Oneledger/protocol/storage"
 )
-
-type JobProcess func(job Job) Job
-
-func ProcessAllJobs(ctx *JobsContext, js *JobStore) {
-
-	js.RangeJobs(func(job Job) Job {
-
-		if !job.IsMyJobDone(ctx) {
-			job.DoMyJob(ctx)
-		}
-
-		if job.IsSufficient() {
-			job.DoFinalize()
-		}
-
-		return job
-	})
-}
 
 type JobStore struct {
 	storage.ChainState
@@ -55,20 +36,20 @@ func (js *JobStore) SaveJob(job Job) error {
 	return js.Set(typKey, []byte(job.GetType()))
 }
 
-func (js *JobStore) GetJob(jobID string) Job {
+func (js *JobStore) GetJob(jobID string) ([]byte, string) {
 	key := storage.StoreKey("job:" + jobID)
 	typKey := storage.StoreKey("jobtype:" + jobID)
 
 	dat, err := js.Get(key)
 	if err != nil {
-		return nil
+		return nil, ""
 	}
 	typ, err := js.Get(typKey)
 	if err != nil {
-		return nil
+		return nil, ""
 	}
 
-	return makeJob(dat, string(typ))
+	return dat, string(typ)
 }
 
 func (js *JobStore) DeleteJob(job Job) error {
@@ -82,31 +63,3 @@ func (js *JobStore) DeleteJob(job Job) error {
 	return err
 }
 
-func (js *JobStore) RangeJobs(pro JobProcess) {
-	start := []byte("job:        ")
-	end := []byte("job:~~~~~~~~")
-	isAsc := true
-
-	jobkeys := make([]string, 0, 20)
-
-	js.IterateRange(start, end, isAsc, func(key, val []byte) bool {
-
-		jobkeys = append(jobkeys, string(key))
-
-		return false
-	})
-
-	for _, key := range jobkeys {
-		jobID := strings.TrimPrefix(string(key), "job:")
-
-		job := js.GetJob(jobID)
-
-		job = pro(job)
-
-		if job.IsDone() {
-			js.DeleteJob(job)
-		} else {
-			js.SaveJob(job)
-		}
-	}
-}

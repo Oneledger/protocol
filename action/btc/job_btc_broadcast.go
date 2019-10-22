@@ -2,12 +2,12 @@
 
  */
 
-package identity
+package btc
 
 import (
 	"bytes"
 	"fmt"
-
+	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/chains/bitcoin"
 	"github.com/btcsuite/btcd/rpcclient"
 	"github.com/btcsuite/btcd/txscript"
@@ -24,14 +24,17 @@ type JobBTCBroadcast struct {
 	Done bool
 }
 
-func (j *JobBTCBroadcast) DoMyJob(ctx *JobsContext) {
-	tracker, err := ctx.trackers.Get(j.TrackerName)
+func (j *JobBTCBroadcast) DoMyJob(ctxI interface{}) {
+
+	ctx, _ := ctxI.(action.JobsContext)
+
+	tracker, err := ctx.Trackers.Get(j.TrackerName)
 	if err != nil {
 		return
 	}
 
 	lockTx := wire.NewMsgTx(wire.TxVersion)
-	err = lockTx.Deserialize(bytes.NewReader(tracker.ProcessTx))
+	err = lockTx.Deserialize(bytes.NewReader(tracker.ProcessUnsignedTx))
 	if err != nil {
 		//
 	}
@@ -51,11 +54,17 @@ func (j *JobBTCBroadcast) DoMyJob(ctx *JobsContext) {
 			break
 		}
 	}
-	builder.AddFullData(tracker.CurrentLockScript)
+
+	lockScript, err := ctx.LockScripts.GetLockScript(tracker.CurrentLockScriptAddress)
+	if err != nil {
+
+	}
+
+	builder.AddFullData(lockScript)
 	sigScript, err := builder.Script()
 
 	cd := bitcoin.NewChainDriver(ctx.BlockCypherToken)
-	lockTx = cd.AddLockSignature(tracker.ProcessTx, sigScript)
+	lockTx = cd.AddLockSignature(tracker.ProcessUnsignedTx, sigScript)
 
 	buf := bytes.NewBuffer([]byte{})
 	lockTx.Serialize(buf)
@@ -78,16 +87,16 @@ func (j *JobBTCBroadcast) DoMyJob(ctx *JobsContext) {
 
 }
 
-func (j *JobBTCBroadcast) IsMyJobDone(ctx *JobsContext) bool {
+func (j *JobBTCBroadcast) IsMyJobDone(ctxI interface{}) bool {
 	panic("implement me")
 }
 
-func (j *JobBTCBroadcast) IsSufficient() bool {
+func (j *JobBTCBroadcast) IsSufficient(ctxI interface{}) bool {
 	panic("implement me")
 }
 
 func (j *JobBTCBroadcast) DoFinalize() {
-	panic("implement me")
+	j.Done = true
 }
 
 /*
@@ -104,3 +113,4 @@ func (j *JobBTCBroadcast) GetJobID() string {
 func (j *JobBTCBroadcast) IsDone() bool {
 	return j.Done
 }
+

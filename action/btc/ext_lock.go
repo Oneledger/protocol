@@ -5,8 +5,11 @@
 package btc
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+
+	"github.com/btcsuite/btcd/wire"
 
 	bitcoin2 "github.com/Oneledger/protocol/chains/bitcoin"
 	"github.com/Oneledger/protocol/identity"
@@ -23,6 +26,7 @@ type Lock struct {
 	Locker      action.Address
 	TrackerName string
 	BTCTxn      []byte
+	LockAmount  int64
 }
 
 var _ action.Msg = &Lock{}
@@ -90,6 +94,22 @@ func (btcLockTx) Validate(ctx *action.Context, signedTx action.SignedTx) (bool, 
 		return false, errors.New("tracker not available")
 	}
 
+	tx := wire.NewMsgTx(wire.TxVersion)
+
+	buf := bytes.NewBuffer(lock.BTCTxn)
+	tx.Deserialize(buf)
+
+	op := tx.TxIn[0].PreviousOutPoint
+	if op.Hash != *tracker.CurrentTxId {
+		return false, errors.New("txn doesn't match tracker")
+	}
+	if op.Index != 0 {
+		return false, errors.New("txn doesn't match tracker")
+	}
+	if tx.TxOut[0].Value != lock.LockAmount+tracker.CurrentBalance {
+		return false, errors.New("txn doesn't match tracker")
+	}
+
 	return true, nil
 }
 
@@ -111,7 +131,7 @@ func (btcLockTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (bool, actio
 
 	tracker.State = bitcoin.BusySigningTrackerState
 	tracker.ProcessOwner = lock.Locker
-	tracker.ProcessTx = lock.BTCTxn // with user signature
+	tracker.ProcessUnsignedTx = lock.BTCTxn // with user signature
 
 	err = ctx.Trackers.SetTracker(lock.TrackerName, tracker)
 	if err != nil {
@@ -141,10 +161,13 @@ func (btcLockTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, act
 
 	tracker.State = bitcoin.BusySigningTrackerState
 	tracker.ProcessOwner = lock.Locker
-	tracker.ProcessTx = lock.BTCTxn
+	tracker.ProcessUnsignedTx = lock.BTCTxn
+
+	currentUTXO := bitcoin.NewUTXO(tracker.CurrentTxId, 0, tracker.CurrentBalance)
+	processUTXO := bitcoin.NewUTXO(nil, 0, tracker.CurrentBalance+lock.LockAmount)
 
 	cd := bitcoin2.NewChainDriver("")
-	tracker.ProcessTx = cd.PrepareLock(tracker.CurrentUTXO, tracker.ProcessUTXO, tracker.NextLockScriptAddress)
+	tracker.ProcessUnsignedTx = cd.PrepareLock(currentUTXO, processUTXO, tracker.ProcessLockScriptAddress)
 
 	err = ctx.Trackers.SetTracker(lock.TrackerName, tracker)
 	if err != nil {

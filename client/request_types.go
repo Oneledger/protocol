@@ -160,10 +160,6 @@ func (reply *BroadcastReply) FromResultBroadcastTxCommit(result *ctypes.ResultBr
 	reply.Log = "check: " + result.CheckTx.Log + ", deliver: " + result.DeliverTx.Log
 }
 
-type InternalBroadcastRequest struct {
-	RawTx     action.RawTx   `json:"rawTx"`
-}
-
 type NewAccountRequest struct {
 	Name string `json:"name"`
 }
@@ -178,4 +174,13 @@ type SignRawTxRequest struct {
 
 type SignRawTxResponse struct {
 	Signature action.Signature `json:"signature"`
+}
+
+type BTCLockRequest struct {
+	Txn         []byte
+	Signature   []byte
+	Address     keys.Address
+	TrackerName string
+	Fee         action.Amount `json:"fee"`
+	Gas         int64         `json:"gas"`
 }

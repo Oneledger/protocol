@@ -2,16 +2,16 @@
 
  */
 
-package identity
+package btc
 
 import (
 	"bytes"
 	"fmt"
+	"github.com/Oneledger/protocol/data/jobs"
 	"strconv"
 	"time"
 
 	"github.com/Oneledger/protocol/action"
-	"github.com/Oneledger/protocol/action/btc"
 	"github.com/Oneledger/protocol/client"
 	"github.com/btcsuite/btcd/txscript"
 	"github.com/btcsuite/btcd/wire"
@@ -28,7 +28,7 @@ type JobAddSignature struct {
 	Done bool
 }
 
-func NewAddSignatureJob(trackerName string) Job {
+func NewAddSignatureJob(trackerName string) jobs.Job {
 
 	id := strconv.FormatInt(time.Now().UnixNano(), 10)
 
@@ -47,20 +47,26 @@ func (j *JobAddSignature) GetType() string {
 type doJobData struct {
 }
 
-func (j *JobAddSignature) DoMyJob(ctx *JobsContext) {
+func (j *JobAddSignature) DoMyJob(ctxI interface{}) {
+	ctx, _ := ctxI.(action.JobsContext)
 
-	tracker, err := ctx.trackers.Get(j.TrackerName)
+	tracker, err := ctx.Trackers.Get(j.TrackerName)
 	if err != nil {
 		return
 	}
 
 	lockTx := wire.NewMsgTx(wire.TxVersion)
-	err = lockTx.Deserialize(bytes.NewReader(tracker.ProcessTx))
+	err = lockTx.Deserialize(bytes.NewReader(tracker.ProcessUnsignedTx))
 	if err != nil {
 		//
 	}
 
-	sig, err := txscript.RawTxInSignature(lockTx, 0, tracker.CurrentLockScript, txscript.SigHashAll,
+	lockScript, err := ctx.LockScripts.GetLockScript(tracker.CurrentLockScriptAddress)
+	if err != nil {
+
+	}
+
+	sig, err := txscript.RawTxInSignature(lockTx, 0, lockScript, txscript.SigHashAll,
 		ctx.BTCPrivKey)
 	if err != nil {
 		fmt.Println(err, "RawTxInSignature")
@@ -68,7 +74,7 @@ func (j *JobAddSignature) DoMyJob(ctx *JobsContext) {
 
 	addrPubKey, err := btcutil.NewAddressPubKey(ctx.BTCPrivKey.PubKey().SerializeCompressed(), ctx.Params)
 
-	addSigData := btc.AddSignature{
+	addSigData := AddSignature{
 		TrackerName:      j.TrackerName,
 		ValidatorPubKey:  addrPubKey,
 		BTCSignature:     sig,
@@ -88,20 +94,22 @@ func (j *JobAddSignature) DoMyJob(ctx *JobsContext) {
 		Memo: j.JobID,
 	}
 
-	req := client.InternalBroadcastRequest{
+	req := action.InternalBroadcastRequest{
 		RawTx: tx,
 	}
 	rep := client.BroadcastReply{}
 
-	err = ctx.service.InternalBroadcast(req, &rep)
+	err = ctx.Service.InternalBroadcast(req, &rep)
 	if err != nil {
 		// TODO
 	}
 }
 
-func (j *JobAddSignature) IsMyJobDone(ctx *JobsContext) bool {
+func (j *JobAddSignature) IsMyJobDone(ctxI interface{}) bool {
+	ctx, _ := ctxI.(action.JobsContext)
 
-	tracker, err := ctx.trackers.Get(j.TrackerName)
+
+	tracker, err := ctx.Trackers.Get(j.TrackerName)
 	if err != nil {
 		return false
 	}
@@ -110,8 +118,12 @@ func (j *JobAddSignature) IsMyJobDone(ctx *JobsContext) bool {
 	return tracker.Multisig.HasAddressSigned(*addrPubKey)
 }
 
-func (j *JobAddSignature) IsSufficient(ctx *JobsContext) bool {
-	tracker, err := ctx.trackers.Get(j.TrackerName)
+func (j *JobAddSignature) IsSufficient(ctxI interface{}) bool {
+
+	ctx, _ := ctxI.(action.JobsContext)
+
+
+	tracker, err := ctx.Trackers.Get(j.TrackerName)
 	if err != nil {
 		return false
 	}
