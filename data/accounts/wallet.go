@@ -166,7 +166,7 @@ func NewWallet(config config.Server, dbDir string) Wallet {
 
 	accounts := make([]storage.StoreKey, 0, 10)
 	data, err := store.Get([]byte(rootkey))
-	if err == nil {
+	if err == nil && data != nil {
 		_ = serialize.GetSerializer(serialize.PERSISTENT).Deserialize(data, &accounts)
 	}
 	return &WalletStore{
