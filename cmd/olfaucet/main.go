@@ -251,8 +251,8 @@ func (f *Faucet) RequestOLT(req Request, reply *Reply) error {
 		Gas:    40000,
 	})
 	if err != nil {
-		logger.Error("failed to sendTx", err)
-		return rpc.InternalError(err.Error())
+		logger.Error("failed to create sendTx", err)
+		return err
 	}
 
 	rawTx := sendTxResults.RawTx
