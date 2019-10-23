@@ -157,7 +157,11 @@ func (reply *BroadcastReply) FromResultBroadcastTxCommit(result *ctypes.ResultBr
 	reply.TxHash = action.Address(result.Hash)
 	reply.OK = result.CheckTx.Code == 0 && result.DeliverTx.Code == 0
 	reply.Height = &result.Height
-	reply.Log = "check: " + result.CheckTx.Log + ", deliver: " + result.DeliverTx.Log
+	if len(result.CheckTx.Log) > 0 {
+		reply.Log = result.CheckTx.Log + "[check]"
+	} else if len(result.DeliverTx.Log) > 0 {
+		reply.Log = result.DeliverTx.Log + "[deliver]"
+	}
 }
 
 type NewAccountRequest struct {

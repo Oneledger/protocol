@@ -274,7 +274,7 @@ func (f *Faucet) RequestOLT(req Request, reply *Reply) error {
 	if err != nil {
 		logger.Error("failed to sendTx", err)
 
-		return rpc.InternalError(err.Error())
+		return err
 	}
 
 	*reply = Reply{
