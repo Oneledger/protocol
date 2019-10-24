@@ -75,6 +75,11 @@ func (domainCreateTx) Validate(ctx *action.Context, tx action.SignedTx) (bool, e
 		return false, err
 	}
 
+	err = action.ValidateFee(ctx.FeeOpt, tx.Fee)
+	if err != nil {
+		return false, err
+	}
+
 	if create.Owner == nil || len(create.Name) <= 0 {
 		return false, action.ErrMissingData
 	}
@@ -98,14 +103,19 @@ func (domainCreateTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (bool, 
 		return false, action.Response{Log: err.Error()}
 	}
 
+	if ctx.Domains.Exists(create.Name) {
+		return false, action.Response{Log: fmt.Sprintf("Domain already exist: %s", create.Name)}
+	}
+
 	price := create.Price.ToCoin(ctx.Currencies)
 	err = ctx.Balances.MinusFromAddress(create.Owner.Bytes(), price)
 	if err != nil {
 		return false, action.Response{Log: errors.Wrap(err, hex.EncodeToString(create.Owner)).Error()}
 	}
 
-	if ctx.Domains.Exists(create.Name) {
-		return false, action.Response{Log: fmt.Sprintf("Domain already exist: %s", create.Name)}
+	err = ctx.FeePool.AddToPool(price)
+	if err != nil {
+		return false, action.Response{Log: err.Error()}
 	}
 	result := action.Response{
 		Tags: create.Tags(),
@@ -121,16 +131,22 @@ func (domainCreateTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool
 		return false, action.Response{Log: err.Error()}
 	}
 
+	//check domain existence and set to db
+	if ctx.Domains.Exists(create.Name) {
+		return false, action.Response{Log: fmt.Sprintf("domain already exist: %s", create.Name)}
+	}
+
 	price := create.Price.ToCoin(ctx.Currencies)
 	err = ctx.Balances.MinusFromAddress(create.Owner.Bytes(), price)
 	if err != nil {
 		return false, action.Response{Log: errors.Wrap(err, hex.EncodeToString(create.Owner)).Error()}
 	}
 
-	//check domain existence and set to db
-	if ctx.Domains.Exists(create.Name) {
-		return false, action.Response{Log: fmt.Sprintf("domain already exist: %s", create.Name)}
+	err = ctx.FeePool.AddToPool(price)
+	if err != nil {
+		return false, action.Response{Log: err.Error()}
 	}
+
 	domain := ons.NewDomain(
 		create.Owner,
 		create.Account,

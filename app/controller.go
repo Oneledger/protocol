@@ -204,7 +204,7 @@ func (app *App) commitor() commitor {
 		app.logger.Debugf("Committed New Block height[%d], hash[%s], versions[%d]", app.header.Height, hex.EncodeToString(hash), ver)
 
 		// update check state by deliver state
-		gc := getGasCalculator(app.node.GenesisDoc().ConsensusParams)
+		gc := getGasCalculator(app.genesisDoc.ConsensusParams)
 		app.Context.check = storage.NewState(app.Context.chainstate).WithGas(gc)
 		result := ResponseCommit{
 			Data: hash,

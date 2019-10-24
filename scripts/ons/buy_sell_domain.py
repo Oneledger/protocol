@@ -49,7 +49,7 @@ def create_domain(name, owner_hex, price):
             "currency": "OLT",
             "value": converBigInt(price),
         },
-        "fee": {
+        "gasprice": {
             "currency": "OLT",
             "value": "1000000000",
         },
@@ -67,7 +67,7 @@ def send_domain(name, frm, price):
             "currency": "OLT",
             "value": converBigInt(price),
         },
-        "fee": {
+        "gasprice": {
             "currency": "OLT",
             "value": "1000000000",
         },
@@ -85,7 +85,7 @@ def sell_domain(name, owner_hex, price):
             "value": converBigInt(price),
         },
         "cancel_sale": False,
-        "fee": {
+        "gasprice": {
             "currency": "OLT",
             "value": "1000000000",
         },
@@ -102,7 +102,7 @@ def cancel_sell_domain(name, owner_hex, price):
             "value": converBigInt(price),
         },
         "cancel_sale": True,
-        "fee": {
+        "gasprice": {
             "currency": "OLT",
             "value": "1000000000",
         },
@@ -119,7 +119,7 @@ def buy_domain(name, buyer, price):
             "currency": "OLT",
             "value": converBigInt(price),
         },
-        "fee": {
+        "gasprice": {
             "currency": "OLT",
             "value": "1000000000",
         },
@@ -135,7 +135,7 @@ def send(frm, to, amt):
             "currency": "OLT",
             "value": converBigInt(amt),
         },
-        "fee": {
+        "gasprice": {
             "currency": "OLT",
             "value": "1000000000",
         },

@@ -80,3 +80,7 @@ func parseConfig(cfg *config.Server) (NodeConfig, error) {
 		logger:          logger,
 	}, nil
 }
+
+func (nc NodeConfig) GetGenesisDoc() (*types.GenesisDoc, error) {
+	return nc.genesisProvider()
+}

@@ -47,11 +47,11 @@ type BalanceReply struct {
 /* Tx Service */
 
 type SendTxRequest struct {
-	From   keys.Address  `json:"from"`
-	To     keys.Address  `json:"to"`
-	Amount action.Amount `json:"amount"`
-	Fee    action.Amount `json:"fee"`
-	Gas    int64         `json:"gas"`
+	From     keys.Address  `json:"from"`
+	To       keys.Address  `json:"to"`
+	Amount   action.Amount `json:"amount"`
+	GasPrice action.Amount `json:"gasprice"`
+	Gas      int64         `json:"gas"`
 }
 
 type SendTxReply struct {
@@ -72,10 +72,10 @@ type ApplyValidatorReply struct {
 }
 
 type WithdrawRewardRequest struct {
-	From keys.Address  `json:"from"`
-	To   keys.Address  `json:"to"`
-	Fee  action.Amount `json:"fee"`
-	Gas  int64         `json:"gas"`
+	From     keys.Address  `json:"from"`
+	To       keys.Address  `json:"to"`
+	GasPrice action.Amount `json:"gasprice"`
+	Gas      int64         `json:"gas"`
 }
 
 type WithdrawRewardReply struct {
@@ -157,7 +157,11 @@ func (reply *BroadcastReply) FromResultBroadcastTxCommit(result *ctypes.ResultBr
 	reply.TxHash = action.Address(result.Hash)
 	reply.OK = result.CheckTx.Code == 0 && result.DeliverTx.Code == 0
 	reply.Height = &result.Height
-	reply.Log = "check: " + result.CheckTx.Log + ", deliver: " + result.DeliverTx.Log
+	if len(result.CheckTx.Log) > 0 {
+		reply.Log = result.CheckTx.Log + "[check]"
+	} else if len(result.DeliverTx.Log) > 0 {
+		reply.Log = result.DeliverTx.Log + "[deliver]"
+	}
 }
 
 type NewAccountRequest struct {
