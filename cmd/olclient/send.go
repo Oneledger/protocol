@@ -54,11 +54,11 @@ func (args *SendArguments) ClientRequest(currencies *balance.CurrencySet) (clien
 	fee, err := strconv.ParseFloat(args.Fee, 64)
 	feeAmt := olt.NewCoinFromFloat64(fee).Amount
 	return client.SendTxRequest{
-		From:   args.Party,
-		To:     args.CounterParty,
-		Amount: action.Amount{Currency: args.Currency, Value: *amt},
-		Fee:    action.Amount{Currency: "OLT", Value: *feeAmt},
-		Gas:    args.Gas,
+		From:     args.Party,
+		To:       args.CounterParty,
+		Amount:   action.Amount{Currency: args.Currency, Value: *amt},
+		GasPrice: action.Amount{Currency: "OLT", Value: *feeAmt},
+		Gas:      args.Gas,
 	}, nil
 }
 

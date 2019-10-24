@@ -231,13 +231,21 @@ func (app *App) Start() error {
 		app.Context.feePool.SetupOpt(feeOpt)
 	}
 
-	node, err := consensus.NewNode(app.ABCI(), &app.Context.cfg)
+	nodecfg, err := consensus.ParseConfig(&app.Context.cfg)
+	if err != nil {
+		return errors.Wrap(err, "failed parse NodeConfig")
+	}
+	genesisDoc, err := nodecfg.GetGenesisDoc()
+	if err != nil {
+		return errors.Wrap(err, "failed get genesisDoc")
+	}
+	app.genesisDoc = genesisDoc
+
+	node, err := consensus.NewNode(app.ABCI(), nodecfg)
 	if err != nil {
 		app.logger.Error("Failed to create consensus.Node")
 		return errors.Wrap(err, "failed to create new consensus.Node")
 	}
-	app.genesisDoc = node.GenesisDoc()
-
 	err = node.Start()
 	if err != nil {
 		app.logger.Error("Failed to start consensus.Node")

@@ -64,7 +64,7 @@ func (svc *Service) SendTx(args client.SendTxRequest, reply *client.SendTxReply)
 	}
 
 	uuidNew, _ := uuid.NewUUID()
-	fee := action.Fee{args.Fee, args.Gas}
+	fee := action.Fee{args.GasPrice, args.Gas}
 	tx := action.RawTx{
 		Type: action.SEND,
 		Data: data,
@@ -112,7 +112,7 @@ func (svc *Service) CreateRawSend(args client.SendTxRequest, reply *client.SendT
 
 	uuidNew, err := uuid.NewUUID()
 
-	fee := action.Fee{args.Fee, args.Gas}
+	fee := action.Fee{args.GasPrice, args.Gas}
 	tx := &action.RawTx{
 		Type: action.SEND,
 		Data: data,
@@ -229,7 +229,7 @@ func (svc *Service) WithdrawReward(args client.WithdrawRewardRequest, reply *cli
 		Type: action.WITHDRAW,
 		Data: data,
 		Fee: action.Fee{
-			Price: args.Fee,
+			Price: args.GasPrice,
 			Gas:   args.Gas,
 		},
 		Memo: uuidNew.String(),
