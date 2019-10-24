@@ -87,3 +87,16 @@ withdrawtest: install
 	@./scripts/testsend
 	python scripts/reward/withdraw.py
 	@./scripts/stopDev
+
+alltest: install
+	@./scripts/stopDev
+	@./scripts/resetDev
+	@./scripts/startDev
+	@./scripts/testsend
+	@./scripts/testapply
+	@./scripts/getValidators
+	@./scripts/testsend
+	python scripts/ons/create_domain.py
+	python scripts/ons/buy_sell_domain.py
+	python scripts/reward/withdraw.py
+	@./scripts/stopDev
