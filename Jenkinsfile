@@ -32,11 +32,11 @@ pipeline {
                 sh 'make fulltest'
             }
         }
-        stage('install_c'){
-            steps{
-                sh 'make install_c'
-            }
-        }
+        // stage('install_c'){
+        //     steps{
+        //         sh 'make install_c'
+        //     }
+        // }
     }
     post {
         always {
