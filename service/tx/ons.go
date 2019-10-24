@@ -30,7 +30,7 @@ func (s *Service) ONS_CreateRawCreate(args client.ONSCreateRequest, reply *clien
 	}
 
 	uuidNew, _ := uuid.NewUUID()
-	fee := action.Fee{args.Fee, args.Gas}
+	fee := action.Fee{args.GasPrice, args.Gas}
 	tx := &action.RawTx{
 		Type: action.DOMAIN_CREATE,
 		Data: data,
@@ -65,7 +65,7 @@ func (s *Service) ONS_CreateRawUpdate(args client.ONSUpdateRequest, reply *clien
 	}
 
 	uuidNew, _ := uuid.NewUUID()
-	fee := action.Fee{args.Fee, args.Gas}
+	fee := action.Fee{args.GasPrice, args.Gas}
 	tx := &action.RawTx{
 		Type: action.DOMAIN_UPDATE,
 		Data: data,
@@ -101,7 +101,7 @@ func (s *Service) ONS_CreateRawSale(args client.ONSSaleRequest, reply *client.Se
 	}
 
 	uuidNew, _ := uuid.NewUUID()
-	fee := action.Fee{args.Fee, args.Gas}
+	fee := action.Fee{args.GasPrice, args.Gas}
 	tx := &action.RawTx{
 		Type: action.DOMAIN_SELL,
 		Data: data,
@@ -137,7 +137,7 @@ func (s *Service) ONS_CreateRawBuy(args client.ONSPurchaseRequest, reply *client
 	}
 
 	uuidNew, _ := uuid.NewUUID()
-	fee := action.Fee{args.Fee, args.Gas}
+	fee := action.Fee{args.GasPrice, args.Gas}
 	tx := &action.RawTx{
 		Type: action.DOMAIN_PURCHASE,
 		Data: data,
@@ -172,7 +172,7 @@ func (s *Service) ONS_CreateRawSend(args client.ONSSendRequest, reply *client.Se
 	}
 
 	uuidNew, _ := uuid.NewUUID()
-	fee := action.Fee{args.Fee, args.Gas}
+	fee := action.Fee{args.GasPrice, args.Gas}
 	tx := &action.RawTx{
 		Type: action.DOMAIN_SEND,
 		Data: data,
