@@ -4,16 +4,18 @@ import (
 	"fmt"
 	"net/http"
 )
+
 type RestfulRouter map[string]http.HandlerFunc
+
 //basic RestfulService entry point
 type RestfulService struct {
-	ctx *Context
+	ctx    *Context
 	router RestfulRouter
 }
 
 func NewRestfulService(ctx *Context) RestfulService {
 	svc := RestfulService{
-		ctx: ctx,
+		ctx:    ctx,
 		router: make(RestfulRouter),
 	}
 
@@ -52,4 +54,3 @@ func (rs RestfulService) health() http.HandlerFunc {
 		}
 	}
 }
-

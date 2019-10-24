@@ -244,15 +244,15 @@ func (f *Faucet) RequestOLT(req Request, reply *Reply) error {
 	}
 
 	sendTxResults, err := f.fullnode.CreateRawSend(client.SendTxRequest{
-		From:   f.nodeCtx.Address(),
-		To:     req.Address,
-		Amount: toSend,
-		Fee:    action.Amount{Currency: olt.Name, Value: *balance.NewAmount(1000000000)},
-		Gas:    40000,
+		From:     f.nodeCtx.Address(),
+		To:       req.Address,
+		Amount:   toSend,
+		GasPrice: action.Amount{Currency: olt.Name, Value: *balance.NewAmount(1000000000)},
+		Gas:      40000,
 	})
 	if err != nil {
-		logger.Error("failed to sendTx", err)
-		return rpc.InternalError(err.Error())
+		logger.Error("failed to create sendTx", err)
+		return err
 	}
 
 	rawTx := sendTxResults.RawTx
@@ -274,7 +274,7 @@ func (f *Faucet) RequestOLT(req Request, reply *Reply) error {
 	if err != nil {
 		logger.Error("failed to sendTx", err)
 
-		return rpc.InternalError(err.Error())
+		return err
 	}
 
 	*reply = Reply{
