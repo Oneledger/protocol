@@ -16,3 +16,23 @@ type Tx interface {
 	//process the charge of fees
 	ProcessFee(ctx *Context, signedTx SignedTx, start Gas, size Gas) (bool, Response)
 }
+
+//used for unknow transaction in router or not registered ones
+type unknownTx struct {
+}
+
+func (unknownTx) Validate(ctx *Context, signedTx SignedTx) (bool, error) {
+	return false, ErrWrongTxType
+}
+
+func (unknownTx) ProcessCheck(ctx *Context, tx RawTx) (bool, Response) {
+	return false, Response{}
+}
+
+func (unknownTx) ProcessDeliver(ctx *Context, tx RawTx) (bool, Response) {
+	return false, Response{}
+}
+
+func (unknownTx) ProcessFee(ctx *Context, signedTx SignedTx, start Gas, size Gas) (bool, Response) {
+	return false, Response{}
+}
