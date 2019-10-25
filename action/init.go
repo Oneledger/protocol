@@ -10,18 +10,18 @@ import (
 type Type int
 
 const (
-	SEND Type = iota
+	SEND Type = 0x01
 
 	//staking related transaction
-	APPLYVALIDATOR
-	WITHDRAW
+	APPLYVALIDATOR Type = 0x11
+	WITHDRAW       Type = 0x12
 
 	//ons related transaction
-	DOMAIN_CREATE
-	DOMAIN_UPDATE
-	DOMAIN_SELL
-	DOMAIN_PURCHASE
-	DOMAIN_SEND
+	DOMAIN_CREATE   Type = 0x21
+	DOMAIN_UPDATE   Type = 0x22
+	DOMAIN_SELL     Type = 0x23
+	DOMAIN_PURCHASE Type = 0x24
+	DOMAIN_SEND     Type = 0x25
 )
 
 var logger *log.Logger
