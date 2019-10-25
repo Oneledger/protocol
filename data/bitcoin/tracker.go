@@ -54,6 +54,8 @@ type Tracker struct {
 	ProcessUnsignedTx        []byte
 
 	ProcessOwner keys.Address
+
+	FinalityVotes []keys.Address
 }
 
 func NewTracker(lockScript, lockScriptAddress []byte) *Tracker {

@@ -14,19 +14,20 @@ import (
 )
 
 type Context struct {
-	Router     Router
-	State      *storage.State
-	Header     *abci.Header
-	Accounts   accounts.Wallet
-	Balances   *balance.Store
-	Domains    *ons.DomainStore
-	FeePool    *fees.Store
-	Currencies *balance.CurrencySet
-	FeeOpt     *fees.FeeOption
-	Validators *identity.ValidatorStore
-	Trackers   *bitcoin.TrackerStore
-	Logger     *log.Logger
-	JobStore   *jobs.JobStore
+	Router          Router
+	State           *storage.State
+	Header          *abci.Header
+	Accounts        accounts.Wallet
+	Balances        *balance.Store
+	Domains         *ons.DomainStore
+	FeePool         *fees.Store
+	Currencies      *balance.CurrencySet
+	FeeOpt          *fees.FeeOption
+	Validators      *identity.ValidatorStore
+	Trackers        *bitcoin.TrackerStore
+	Logger          *log.Logger
+	JobStore        *jobs.JobStore
+	LockScriptStore *bitcoin.LockScriptStore
 }
 
 func NewContext(r Router, header *abci.Header, state *storage.State,

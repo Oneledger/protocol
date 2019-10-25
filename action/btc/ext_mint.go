@@ -16,25 +16,24 @@ import (
 	"github.com/tendermint/tendermint/libs/common"
 )
 
-type ReportFinalityMint struct {
-	TrackerName      string
-	OwnerAddress     action.Address
-	ValidatorAddress action.Address
+type ExtMintOBTC struct {
+	TrackerName  string
+	OwnerAddress action.Address
 }
 
-var _ action.Msg = &ReportFinalityMint{}
+var _ action.Msg = &ExtMintOBTC{}
 
-func (m *ReportFinalityMint) Signers() []action.Address {
+func (em *ExtMintOBTC) Signers() []action.Address {
 	return []action.Address{
-		m.OwnerAddress,
+		em.OwnerAddress,
 	}
 }
 
-func (m *ReportFinalityMint) Type() action.Type {
-	return action.REPORT_FINALITY_MINT
+func (em *ExtMintOBTC) Type() action.Type {
+	return action.BTC_EXT_MINT
 }
 
-func (m *ReportFinalityMint) Tags() common.KVPairs {
+func (em *ExtMintOBTC) Tags() common.KVPairs {
 	tags := make([]common.KVPair, 0)
 
 	tag := common.KVPair{
@@ -43,35 +42,29 @@ func (m *ReportFinalityMint) Tags() common.KVPairs {
 	}
 	tag2 := common.KVPair{
 		Key:   []byte("tx.owner"),
-		Value: m.OwnerAddress.Bytes(),
+		Value: em.OwnerAddress.Bytes(),
 	}
 	tag3 := common.KVPair{
 		Key:   []byte("tx.tracker_name"),
-		Value: []byte(m.TrackerName),
-	}
-	tag4 := common.KVPair{
-		Key:   []byte("tx.validator"),
-		Value: m.ValidatorAddress.Bytes(),
+		Value: []byte(em.TrackerName),
 	}
 
-	tags = append(tags, tag, tag2, tag3, tag4)
+	tags = append(tags, tag, tag2, tag3)
 	return tags
 }
 
-func (m *ReportFinalityMint) Marshal() ([]byte, error) {
-	return json.Marshal(m)
+func (em *ExtMintOBTC) Marshal() ([]byte, error) {
+	return json.Marshal(em)
 }
 
-func (m *ReportFinalityMint) Unmarshal(data []byte) error {
-	return json.Unmarshal(data, m)
+func (em *ExtMintOBTC) Unmarshal(data []byte) error {
+	return json.Unmarshal(data, em)
 }
 
-type reportFinalityMintTx struct {
+type extMintOBTCTx struct {
 }
 
-var _ action.Tx = reportFinalityMintTx{}
-
-func (reportFinalityMintTx) Validate(ctx *action.Context, signedTx action.SignedTx) (bool, error) {
+func (emt *extMintOBTCTx) Validate(ctx *action.Context, signedTx action.SignedTx) (bool, error) {
 	f := ReportFinalityMint{}
 	err := f.Unmarshal(signedTx.Data)
 	if err != nil {
@@ -79,6 +72,11 @@ func (reportFinalityMintTx) Validate(ctx *action.Context, signedTx action.Signed
 	}
 
 	err = action.ValidateBasic(signedTx.RawBytes(), f.Signers(), signedTx.Signatures)
+	if err != nil {
+		return false, err
+	}
+
+	err = action.ValidateFee(ctx.FeeOpt, signedTx.Fee)
 	if err != nil {
 		return false, err
 	}
@@ -99,8 +97,8 @@ func (reportFinalityMintTx) Validate(ctx *action.Context, signedTx action.Signed
 	return true, nil
 }
 
-func (reportFinalityMintTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
-	f := ReportFinalityMint{}
+func (emt *extMintOBTCTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
+	f := ExtMintOBTC{}
 	err := f.Unmarshal(tx.Data)
 	if err != nil {
 		return false, action.Response{Log: "wrong tx type"}
@@ -117,49 +115,6 @@ func (reportFinalityMintTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (
 
 	if tracker.State != bitcoin.BusyFinalizingTrackerState {
 		return false, action.Response{Log: "tracker not ready for finalizing"}
-	}
-
-	valSet, err := ctx.Validators.GetValidatorSet()
-	if err != nil {
-		return false, action.Response{Log: "cannot get validator set"}
-	}
-	nValidators := len(valSet)
-	votesThresholdForMint := (2 * nValidators) / 3
-
-	isSenderAValidator := false
-	for i := range valSet {
-		if bytes.Equal(valSet[i].Address, f.ValidatorAddress) {
-			isSenderAValidator = true
-		}
-	}
-
-	if !isSenderAValidator {
-		return false, action.Response{Log: "transaction sender not a validator"}
-	}
-
-	validatorSignedFlag := false
-	for _, fv := range tracker.FinalityVotes {
-		if bytes.Equal(fv, f.ValidatorAddress) {
-			validatorSignedFlag = true
-		}
-	}
-	if !validatorSignedFlag {
-		tracker.FinalityVotes = append(tracker.FinalityVotes, f.ValidatorAddress)
-	}
-
-	// are there enough finality votes?
-	if len(tracker.FinalityVotes) < votesThresholdForMint {
-
-		// if not enough votes to mint end transaction processing
-
-		err = ctx.Trackers.SetTracker(f.TrackerName, tracker)
-		if err != nil {
-			return false, action.Response{Log: "tracker not ready for finalizing"}
-		}
-
-		return true, action.Response{
-			Tags: f.Tags(),
-		}
 	}
 
 	// mint oBTC
@@ -207,8 +162,8 @@ func (reportFinalityMintTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (
 	}
 }
 
-func (reportFinalityMintTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
-	f := ReportFinalityMint{}
+func (emt *extMintOBTCTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
+	f := ExtMintOBTC{}
 	err := f.Unmarshal(tx.Data)
 	if err != nil {
 		return false, action.Response{Log: "wrong tx type"}
@@ -218,55 +173,13 @@ func (reportFinalityMintTx) ProcessDeliver(ctx *action.Context, tx action.RawTx)
 	if err != nil {
 		return false, action.Response{Log: "tracker not found" + f.TrackerName}
 	}
+
 	if !bytes.Equal(tracker.ProcessOwner, f.OwnerAddress) {
 		return false, action.Response{Log: "tracker process not owned by user"}
 	}
 
 	if tracker.State != bitcoin.BusyFinalizingTrackerState {
 		return false, action.Response{Log: "tracker not ready for finalizing"}
-	}
-
-	valSet, err := ctx.Validators.GetValidatorSet()
-	if err != nil {
-		return false, action.Response{Log: "cannot get validator set"}
-	}
-	nValidators := len(valSet)
-	votesThresholdForMint := (2 * nValidators) / 3
-
-	isSenderAValidator := false
-	for i := range valSet {
-		if bytes.Equal(valSet[i].Address, f.ValidatorAddress) {
-			isSenderAValidator = true
-		}
-	}
-
-	if !isSenderAValidator {
-		return false, action.Response{Log: "transaction sender not a validator"}
-	}
-
-	validatorSignedFlag := false
-	for _, fv := range tracker.FinalityVotes {
-		if bytes.Equal(fv, f.ValidatorAddress) {
-			validatorSignedFlag = true
-		}
-	}
-	if !validatorSignedFlag {
-		tracker.FinalityVotes = append(tracker.FinalityVotes, f.ValidatorAddress)
-	}
-
-	// are there enough finality votes?
-	if len(tracker.FinalityVotes) < votesThresholdForMint {
-
-		// if not enough votes to mint end transaction processing
-
-		err = ctx.Trackers.SetTracker(f.TrackerName, tracker)
-		if err != nil {
-			return false, action.Response{Log: "tracker not ready for finalizing"}
-		}
-
-		return true, action.Response{
-			Tags: f.Tags(),
-		}
 	}
 
 	// mint oBTC
@@ -314,6 +227,6 @@ func (reportFinalityMintTx) ProcessDeliver(ctx *action.Context, tx action.RawTx)
 	}
 }
 
-func (reportFinalityMintTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas) (bool, action.Response) {
+func (emt *extMintOBTCTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas) (bool, action.Response) {
 	return action.BasicFeeHandling(ctx, signedTx, start, size, 1)
 }

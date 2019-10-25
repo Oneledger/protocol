@@ -7,6 +7,7 @@ package btc
 import (
 	"bytes"
 	"fmt"
+
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/chains/bitcoin"
 	"github.com/btcsuite/btcd/rpcclient"
@@ -21,6 +22,8 @@ type JobBTCBroadcast struct {
 
 	JobID string
 
+	BroadcastSuccessful bool
+
 	Done bool
 }
 
@@ -33,66 +36,127 @@ func (j *JobBTCBroadcast) DoMyJob(ctxI interface{}) {
 		return
 	}
 
-	lockTx := wire.NewMsgTx(wire.TxVersion)
-	err = lockTx.Deserialize(bytes.NewReader(tracker.ProcessUnsignedTx))
-	if err != nil {
-		//
-	}
+	if !j.BroadcastSuccessful {
 
-	type sign []byte
-	btcSignatures := tracker.Multisig.GetSignatures()
-	signatures := make([]sign, len(btcSignatures))
-	for i := range btcSignatures {
-		index := btcSignatures[i].Index
-		signatures[index] = btcSignatures[i].Sign
-	}
+		lockTx := wire.NewMsgTx(wire.TxVersion)
+		err = lockTx.Deserialize(bytes.NewReader(tracker.ProcessUnsignedTx))
+		if err != nil {
+			//
+		}
 
-	builder := txscript.NewScriptBuilder().AddOp(txscript.OP_FALSE)
-	for i := range signatures {
-		builder.AddData(signatures[i])
-		if i == tracker.Multisig.M {
-			break
+		type sign []byte
+		btcSignatures := tracker.Multisig.GetSignatures()
+		signatures := make([]sign, len(btcSignatures))
+		for i := range btcSignatures {
+			index := btcSignatures[i].Index
+			signatures[index] = btcSignatures[i].Sign
+		}
+
+		builder := txscript.NewScriptBuilder().AddOp(txscript.OP_FALSE)
+		for i := range signatures {
+			builder.AddData(signatures[i])
+			if i == tracker.Multisig.M {
+				break
+			}
+		}
+
+		lockScript, err := ctx.LockScripts.GetLockScript(tracker.CurrentLockScriptAddress)
+		if err != nil {
+
+		}
+
+		builder.AddFullData(lockScript)
+		sigScript, err := builder.Script()
+
+		cd := bitcoin.NewChainDriver(ctx.BlockCypherToken)
+		lockTx = cd.AddLockSignature(tracker.ProcessUnsignedTx, sigScript)
+
+		buf := bytes.NewBuffer([]byte{})
+		lockTx.Serialize(buf)
+
+		// TODO load from config
+		connCfg := &rpcclient.ConnConfig{
+			Host:         "localhost:18831",
+			User:         "oltest01",
+			Pass:         "olpass01",
+			HTTPPostMode: true, // Bitcoin core only supports HTTP POST mode
+			DisableTLS:   true, // Bitcoin core does not provide TLS by default
+		}
+
+		clt, err := rpcclient.New(connCfg, nil)
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+
+		_, err = cd.BroadcastTx(lockTx, clt)
+		if err != nil {
+			j.BroadcastSuccessful = true
+		}
+
+	} else {
+
+		cd := bitcoin.NewChainDriver(ctx.BlockCypherToken)
+		ok, _ := cd.CheckFinality(tracker.ProcessTxId)
+		if !ok {
+			return
+		}
+
+		reportFinalityMint := ReportFinalityMint{
+			TrackerName:      j.TrackerName,
+			OwnerAddress:     tracker.ProcessOwner,
+			ValidatorAddress: ctx.ValidatorAddress,
+		}
+
+		txData, err := reportFinalityMint.Marshal()
+		if err != nil {
+			// retry later
+			return
+		}
+
+		tx := action.RawTx{
+			Type: action.BTC_ADD_SIGNATURE,
+			Data: txData,
+			Fee:  action.Fee{},
+			Memo: j.JobID,
+		}
+
+		req := action.InternalBroadcastRequest{
+			RawTx: tx,
+		}
+		rep := action.BroadcastReply{}
+
+		err = ctx.Service.InternalBroadcast(req, &rep)
+		if err != nil {
+			// retry later
+			return
 		}
 	}
-
-	lockScript, err := ctx.LockScripts.GetLockScript(tracker.CurrentLockScriptAddress)
-	if err != nil {
-
-	}
-
-	builder.AddFullData(lockScript)
-	sigScript, err := builder.Script()
-
-	cd := bitcoin.NewChainDriver(ctx.BlockCypherToken)
-	lockTx = cd.AddLockSignature(tracker.ProcessUnsignedTx, sigScript)
-
-	buf := bytes.NewBuffer([]byte{})
-	lockTx.Serialize(buf)
-
-	connCfg := &rpcclient.ConnConfig{
-		Host:         "localhost:18831",
-		User:         "oltest01",
-		Pass:         "olpass01",
-		HTTPPostMode: true, // Bitcoin core only supports HTTP POST mode
-		DisableTLS:   true, // Bitcoin core does not provide TLS by default
-	}
-
-	clt, err := rpcclient.New(connCfg, nil)
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-
-	txHash, err := cd.BroadcastTx(lockTx, clt)
-
 }
 
 func (j *JobBTCBroadcast) IsMyJobDone(ctxI interface{}) bool {
-	panic("implement me")
+	ctx, _ := ctxI.(action.JobsContext)
+
+	tracker, err := ctx.Trackers.Get(j.TrackerName)
+	if err != nil {
+		return false
+	}
+
+	if tracker.IsAvailable() {
+		return true
+	}
+
+	for _, fv := range tracker.FinalityVotes {
+		if bytes.Equal(fv, ctx.ValidatorAddress) {
+			return true
+		}
+	}
+
+	return false
 }
 
 func (j *JobBTCBroadcast) IsSufficient(ctxI interface{}) bool {
-	panic("implement me")
+	return j.IsMyJobDone(ctxI)
 }
 
 func (j *JobBTCBroadcast) DoFinalize() {
@@ -113,4 +177,3 @@ func (j *JobBTCBroadcast) GetJobID() string {
 func (j *JobBTCBroadcast) IsDone() bool {
 	return j.Done
 }
-

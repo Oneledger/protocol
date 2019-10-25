@@ -38,7 +38,10 @@ func RangeJobs(js *jobs.JobStore, pro JobProcess) {
 
 	jobkeys := make([]string, 0, 20)
 
-	js.IterateRange(start, end, isAsc, func(key, val []byte) bool {
+	session := js.BeginSession()
+	iter := session.GetIterator()
+
+	iter.IterateRange(start, end, isAsc, func(key, val []byte) bool {
 
 		jobkeys = append(jobkeys, string(key))
 
@@ -50,6 +53,9 @@ func RangeJobs(js *jobs.JobStore, pro JobProcess) {
 
 		dat, typ := js.GetJob(jobID)
 		job := makeJob(dat, typ)
+		if job == nil {
+			continue
+		}
 
 		job = pro(job)
 
@@ -75,4 +81,6 @@ func makeJob(data []byte, typ string) jobs.Job {
 		ser.Deserialize(data, &as)
 		return &as
 	}
+
+	return nil
 }

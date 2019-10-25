@@ -7,12 +7,11 @@ package btc
 import (
 	"bytes"
 	"fmt"
-	"github.com/Oneledger/protocol/data/jobs"
 	"strconv"
 	"time"
 
 	"github.com/Oneledger/protocol/action"
-	"github.com/Oneledger/protocol/client"
+	"github.com/Oneledger/protocol/data/jobs"
 	"github.com/btcsuite/btcd/txscript"
 	"github.com/btcsuite/btcd/wire"
 	"github.com/btcsuite/btcutil"
@@ -84,30 +83,31 @@ func (j *JobAddSignature) DoMyJob(ctxI interface{}) {
 
 	txData, err := addSigData.Marshal()
 	if err != nil {
-
+		// retry later
+		return
 	}
 
 	tx := action.RawTx{
 		Type: action.BTC_ADD_SIGNATURE,
 		Data: txData,
-		Fee:  nil,
+		Fee:  action.Fee{},
 		Memo: j.JobID,
 	}
 
 	req := action.InternalBroadcastRequest{
 		RawTx: tx,
 	}
-	rep := client.BroadcastReply{}
+	rep := action.BroadcastReply{}
 
 	err = ctx.Service.InternalBroadcast(req, &rep)
 	if err != nil {
-		// TODO
+		// retry later
+		return
 	}
 }
 
 func (j *JobAddSignature) IsMyJobDone(ctxI interface{}) bool {
 	ctx, _ := ctxI.(action.JobsContext)
-
 
 	tracker, err := ctx.Trackers.Get(j.TrackerName)
 	if err != nil {
@@ -121,7 +121,6 @@ func (j *JobAddSignature) IsMyJobDone(ctxI interface{}) bool {
 func (j *JobAddSignature) IsSufficient(ctxI interface{}) bool {
 
 	ctx, _ := ctxI.(action.JobsContext)
-
 
 	tracker, err := ctx.Trackers.Get(j.TrackerName)
 	if err != nil {

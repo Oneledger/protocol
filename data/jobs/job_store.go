@@ -4,20 +4,27 @@
 
 package jobs
 
-
 import (
+	"errors"
+
+	"github.com/Oneledger/protocol/config"
 	"github.com/Oneledger/protocol/serialize"
 	"github.com/Oneledger/protocol/storage"
 )
 
+const rootkey = "rootkey"
+
 type JobStore struct {
-	storage.ChainState
+	storage.SessionedStorage
 	ser serialize.Serializer
 }
 
-func NewJobStore(store *storage.ChainState) *JobStore {
+func NewJobStore(config config.Server, dbDir string) *JobStore {
+
+	store := storage.NewStorageDB(storage.KEYVALUE, "validatorJobs", dbDir, config.Node.DB)
+
 	return &JobStore{
-		*store,
+		store,
 		serialize.GetSerializer(serialize.PERSISTENT),
 	}
 }
@@ -32,8 +39,20 @@ func (js *JobStore) SaveJob(job Job) error {
 		return err
 	}
 
-	js.Set(key, dat)
-	return js.Set(typKey, []byte(job.GetType()))
+	session := js.BeginSession()
+	err = session.Set(key, dat)
+	if err != nil {
+		return err
+	}
+	err = session.Set(typKey, []byte(job.GetType()))
+	if err != nil {
+		return err
+	}
+	ok := session.Commit()
+	if !ok {
+		return errors.New("err commiting to job store")
+	}
+	return nil
 }
 
 func (js *JobStore) GetJob(jobID string) ([]byte, string) {
@@ -57,9 +76,20 @@ func (js *JobStore) DeleteJob(job Job) error {
 	key := storage.StoreKey("job:" + job.GetJobID())
 	typKey := storage.StoreKey("jobtype:" + job.GetJobID())
 
-	_, err := js.Delete(key)
-	_, err = js.Delete(typKey)
+	session := js.BeginSession()
 
-	return err
+	_, err := session.Delete(key)
+	if err != nil {
+		return err
+	}
+
+	_, err = session.Delete(typKey)
+	if err != nil {
+		return err
+	}
+	ok := session.Commit()
+	if !ok {
+		return errors.New("error committing to job store")
+	}
+	return nil
 }
-

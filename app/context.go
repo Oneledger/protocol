@@ -1,10 +1,12 @@
 package app
 
 import (
-	"github.com/Oneledger/protocol/data/bitcoin"
-	"github.com/Oneledger/protocol/data/chain"
 	"io"
 	"path/filepath"
+
+	"github.com/Oneledger/protocol/data/bitcoin"
+	"github.com/Oneledger/protocol/data/chain"
+	"github.com/Oneledger/protocol/data/jobs"
 
 	"github.com/Oneledger/protocol/data/fees"
 	"github.com/Oneledger/protocol/data/governance"
@@ -56,6 +58,9 @@ type context struct {
 	//storage which is not a chain state
 	accounts accounts.Wallet
 
+	jobStore        *jobs.JobStore
+	lockScriptStore *bitcoin.LockScriptStore
+
 	logWriter io.Writer
 }
 
@@ -86,6 +91,12 @@ func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *node.Context) (
 	ctx.govern = governance.NewStore("g", storage.NewState(ctx.chainstate))
 
 	ctx.accounts = accounts.NewWallet(cfg, ctx.dbDir())
+
+	// TODO check if validator
+	if true {
+		ctx.jobStore = jobs.NewJobStore(cfg, ctx.dbDir())
+		ctx.lockScriptStore = bitcoin.NewLockScriptStore(cfg, ctx.dbDir())
+	}
 
 	ctx.actionRouter = action.NewRouter("action")
 	ctx.feeOption = &fees.FeeOption{

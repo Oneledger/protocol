@@ -11,7 +11,6 @@ import (
 	"github.com/Oneledger/protocol/action/btc"
 	"github.com/Oneledger/protocol/chains/bitcoin"
 	"github.com/Oneledger/protocol/client"
-	btc_data "github.com/Oneledger/protocol/data/bitcoin"
 	"github.com/Oneledger/protocol/serialize"
 	"github.com/blockcypher/gobcy"
 	"github.com/btcsuite/btcd/chaincfg"
@@ -22,52 +21,89 @@ import (
 	codes "github.com/Oneledger/protocol/status_codes"
 )
 
+const (
+	MINIMUM_CONFIRMATIONS_REQ = 10
+)
+
 func (s *Service) PrepareLock(hash string, index uint32, net *chaincfg.Params) ([]byte, error) {
 	cd := bitcoin.NewChainDriver("")
 
+	// TODO read this from config
 	btc := gobcy.API{"dd53aae66b83431ca57a1f656af8ed69", "btc", "main"}
 	tx, err := btc.GetTX(hash, nil)
 	if err != nil {
 		return nil, err
 	}
 
-	if tx.Confirmations > 10 {
+	if tx.Confirmations < MINIMUM_CONFIRMATIONS_REQ {
 		return nil, errors.New("source transaction doesn't have enough confirmations")
 	}
 
 	hashh, _ := chainhash.NewHashFromStr(tx.Hash)
-	balance := int64(tx.Outputs[index].Value)
+	inputAmount := int64(tx.Outputs[index].Value)
 
 	tracker, err := s.trackerStore.GetTrackerForLock()
 	if err != nil {
 		return nil, errors.Wrap(err, "error getting tracker for lock")
 	}
 
-	source := btc_data.NewUTXO(hashh, index, balance)
+	txnBytes := cd.PrepareLockNew(tracker.ProcessTxId, 0, tracker.CurrentBalance,
+		hashh, index, inputAmount, tracker.ProcessLockScriptAddress)
 
-	utxoInit := btc_data.NewUTXO(&chainhash.Hash{}, 0, 0)
-
-	txn := cd.PrepareLock(utxoInit, source, tracker.ProcessLockScriptAddress)
-
-	return txn, nil
+	return txnBytes, nil
 }
 
-func (s *Service) AddUserSignatureAndBroadcast(args *client.BTCLockRequest, reply *client.SendTxReply) error {
+func (s *Service) AddUserSignatureAndProcessLock(args *client.BTCLockRequest, reply *client.SendTxReply) error {
+
+	tracker, err := s.trackerStore.Get(args.TrackerName)
+	if err != nil {
+		// tracker of that name not found
+		return err
+	}
+	if tracker.IsBusy() {
+		// tracker not available anymore, try another tracker
+		return err
+	}
+
+	// initialize a chain driver for adding signature
 	cd := bitcoin.NewChainDriver("")
 
-	newTx := cd.AddUserLockSignature(args.Txn, args.Signature)
-	lockAmount := newTx.TxOut[0].Value
+	// add the users' btc signature to the lock txn in the appropriate place
+	newBTCTx := cd.AddUserLockSignature(args.Txn, args.Signature)
+	totalLockAmount := newBTCTx.TxOut[0].Value
+
+	if len(newBTCTx.TxIn) == 1 { // if new tracker
+
+		if tracker.CurrentTxId != nil {
+			// incorrect txn
+			return err
+		}
+	} else if len(newBTCTx.TxIn) == 2 { // if not a new tracker
+
+		if *tracker.CurrentTxId != newBTCTx.TxIn[0].PreviousOutPoint.Hash ||
+			newBTCTx.TxIn[0].PreviousOutPoint.Index != 0 {
+
+			// incorrect txn
+			return err
+		}
+	} else {
+		// incorrect txn
+		return err
+	}
 
 	var txBytes []byte
 	buf := bytes.NewBuffer(txBytes)
-	newTx.Serialize(buf)
+	err = newBTCTx.Serialize(buf)
+	if err != nil {
+		return err
+	}
 	txBytes = buf.Bytes()
 
 	lock := btc.Lock{
 		Locker:      args.Address,
 		TrackerName: args.TrackerName,
 		BTCTxn:      txBytes,
-		LockAmount:  lockAmount,
+		LockAmount:  totalLockAmount,
 	}
 
 	data, err := lock.Marshal()

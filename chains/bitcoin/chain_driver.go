@@ -23,8 +23,11 @@ type TxHash [chainhash.HashSize]byte
 
 type ChainDriver interface {
 	PrepareLock(prevLock, input *bitcoin.UTXO, lockScriptAddress []byte) (txBytes []byte)
+	PrepareLockNew(*chainhash.Hash, uint32, int64, *chainhash.Hash, uint32, int64, []byte) (txBytes []byte)
+
 	AddUserLockSignature([]byte, []byte) *wire.MsgTx
 	AddLockSignature([]byte, []byte) *wire.MsgTx
+
 	BroadcastTx(*wire.MsgTx, *rpcclient.Client) (*chainhash.Hash, error)
 
 	CheckFinality(*chainhash.Hash) (bool, error)
@@ -44,6 +47,8 @@ func NewChainDriver(token string) ChainDriver {
 }
 
 func (c *chainDriver) PrepareLock(prevLock, input *bitcoin.UTXO, lockScriptAddress []byte) (txBytes []byte) {
+
+	// start a new empty txn
 	tx := wire.NewMsgTx(wire.TxVersion)
 
 	if prevLock.TxID != bitcoin.NilTxHash {
@@ -69,6 +74,52 @@ func (c *chainDriver) PrepareLock(prevLock, input *bitcoin.UTXO, lockScriptAddre
 
 	tx.TxOut[0].Value = tx.TxOut[0].Value - fees
 
+	buf := bytes.NewBuffer(txBytes)
+	tx.Serialize(buf)
+	txBytes = buf.Bytes()
+
+	return
+}
+
+func (c *chainDriver) PrepareLockNew(prevLockTxID *chainhash.Hash, prevLockIndex uint32, prevLockBalance int64,
+	inputTxID *chainhash.Hash, inputIndex uint32, inputBalance int64,
+	lockScriptAddress []byte) (txBytes []byte) {
+
+	// start a new empty txn
+	tx := wire.NewMsgTx(wire.TxVersion)
+
+	// create tracker txin & add to txn
+	// if this is a newly initialized tracker the prev lock transaction id is nil,
+	// in that case there is no balance in the tracker, so just go ahead without carrying balance
+	if prevLockTxID != nil {
+
+		prevLockOP := wire.NewOutPoint(prevLockTxID, prevLockIndex)
+		vin1 := wire.NewTxIn(prevLockOP, nil, nil)
+		tx.AddTxIn(vin1)
+	}
+
+	// create users' txin & add to txn
+	userOP := wire.NewOutPoint(inputTxID, inputIndex)
+	vin2 := wire.NewTxIn(userOP, nil, nil)
+	tx.AddTxIn(vin2)
+
+	// will adjust fees later
+	balance := prevLockBalance + inputBalance
+
+	// add a txout to the lockscriptaddress
+	out := wire.NewTxOut(balance, lockScriptAddress)
+	tx.AddTxOut(out)
+
+	// serialize to estimate fees
+	tempBuf := bytes.NewBuffer([]byte{})
+	tx.Serialize(tempBuf)
+	size := len(tempBuf.Bytes()) * 2 // right now this is a magic number
+	// need a better estimation methodology
+	fees := int64(70 * size)
+
+	tx.TxOut[0].Value = tx.TxOut[0].Value - fees
+
+	// serialize again with fees accounted for
 	buf := bytes.NewBuffer(txBytes)
 	tx.Serialize(buf)
 	txBytes = buf.Bytes()

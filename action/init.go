@@ -25,7 +25,8 @@ const (
 
 	BTC_LOCK
 	BTC_ADD_SIGNATURE
-	BTC_CHECK_FINALITY
+	REPORT_FINALITY_MINT
+	BTC_EXT_MINT
 )
 
 var logger *log.Logger

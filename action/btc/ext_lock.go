@@ -12,8 +12,6 @@ import (
 	"github.com/btcsuite/btcd/wire"
 
 	bitcoin2 "github.com/Oneledger/protocol/chains/bitcoin"
-	"github.com/Oneledger/protocol/identity"
-
 	"github.com/Oneledger/protocol/data/bitcoin"
 
 	"github.com/pkg/errors"
@@ -175,8 +173,11 @@ func (btcLockTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, act
 	}
 
 	if ctx.JobStore != nil {
-		job := identity.NewAddSignatureJob(lock.TrackerName)
-		ctx.JobStore.SaveJob(job)
+		job := NewAddSignatureJob(lock.TrackerName)
+		err = ctx.JobStore.SaveJob(job)
+		if err != nil {
+			return false, action.Response{Log: "job serialization failed"}
+		}
 	}
 
 	return true, action.Response{
