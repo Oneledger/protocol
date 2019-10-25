@@ -153,5 +153,5 @@ func (domainUpdateTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool
 }
 
 func (domainUpdateTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas) (bool, action.Response) {
-	panic("implement me")
+	return action.BasicFeeHandling(ctx, signedTx, start, size, 1)
 }

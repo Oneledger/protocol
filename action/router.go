@@ -62,6 +62,7 @@ func (r *router) Handler(t Type) Tx {
 	h, ok := r.routes[t]
 	if !ok {
 		r.logger.Error("handler not found", t)
+		return unknownTx{}
 	}
 
 	return h
