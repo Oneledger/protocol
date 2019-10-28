@@ -3,7 +3,6 @@ package query
 import (
 	"github.com/Oneledger/protocol/client"
 	"github.com/Oneledger/protocol/data/ons"
-	"github.com/Oneledger/protocol/serialize"
 	codes "github.com/Oneledger/protocol/status_codes"
 )
 
@@ -36,17 +35,13 @@ func (sv *Service) ONS_GetDomainByOwner(req client.ONSGetDomainsRequest, reply *
 	}
 	ds := make([]ons.Domain, 0)
 
-	domains.State.GetIterator().Iterate(func(key []byte, value []byte) bool {
-		d := &ons.Domain{}
-		err := serialize.GetSerializer(serialize.PERSISTENT).Deserialize(value, d)
-		if err != nil {
-			return true
-		}
-		if d.OwnerAddress.Equal(req.Owner) {
-			if req.OnSale && !d.OnSaleFlag {
+	domains.Iterate(func(name string, domain *ons.Domain) bool {
+
+		if domain.OwnerAddress.Equal(req.Owner) {
+			if req.OnSale && !domain.OnSaleFlag {
 				return false
 			}
-			ds = append(ds, *d)
+			ds = append(ds, *domain)
 		}
 		return false
 	})
@@ -65,14 +60,9 @@ func (sv *Service) ONS_GetDomainOnSale(req client.ONSGetDomainsRequest, reply *c
 	}
 
 	dds := make([]ons.Domain, 0)
-	domains.State.GetIterator().Iterate(func(key []byte, value []byte) bool {
-		d := &ons.Domain{}
-		err := serialize.GetSerializer(serialize.PERSISTENT).Deserialize(value, d)
-		if err != nil {
-			return true
-		}
-		if d.OnSaleFlag {
-			dds = append(dds, *d)
+	domains.Iterate(func(name string, domain *ons.Domain) bool {
+		if domain.OnSaleFlag {
+			dds = append(dds, *domain)
 		}
 		return false
 	})

@@ -10,21 +10,21 @@ import (
 	ONS Request Types
 */
 type ONSCreateRequest struct {
-	Owner   keys.Address  `json:"owner"`
-	Account keys.Address  `json:"account"`
-	Name    string        `json:"name"`
-	Price   action.Amount `json:"price"`
-	Fee     action.Amount `json:"fee"`
-	Gas     int64         `json:"gas"`
+	Owner    keys.Address  `json:"owner"`
+	Account  keys.Address  `json:"account"`
+	Name     string        `json:"name"`
+	Price    action.Amount `json:"price"`
+	GasPrice action.Amount `json:"gasprice"`
+	Gas      int64         `json:"gas"`
 }
 
 type ONSUpdateRequest struct {
-	Owner   keys.Address  `json:"owner"`
-	Account keys.Address  `json:"account"`
-	Name    string        `json:"name"`
-	Active  bool          `json:"active"`
-	Fee     action.Amount `json:"fee"`
-	Gas     int64         `json:"gas"`
+	Owner    keys.Address  `json:"owner"`
+	Account  keys.Address  `json:"account"`
+	Name     string        `json:"name"`
+	Active   bool          `json:"active"`
+	GasPrice action.Amount `json:"gasprice"`
+	Gas      int64         `json:"gas"`
 }
 
 type ONSSaleRequest struct {
@@ -32,7 +32,7 @@ type ONSSaleRequest struct {
 	OwnerAddress keys.Address  `json:"owner"`
 	Price        action.Amount `json:"price"`
 	CancelSale   bool          `json:"cancel_sale"`
-	Fee          action.Amount `json:"fee"`
+	GasPrice     action.Amount `json:"gasprice"`
 	Gas          int64         `json:"gas"`
 }
 
@@ -41,16 +41,16 @@ type ONSPurchaseRequest struct {
 	Buyer    keys.Address  `json:"buyer"`
 	Account  keys.Address  `json:"account"`
 	Offering action.Amount `json:"offering"`
-	Fee      action.Amount `json:"fee"`
+	GasPrice action.Amount `json:"gasprice"`
 	Gas      int64         `json:"gas"`
 }
 
 type ONSSendRequest struct {
-	From   keys.Address  `json:"from"`
-	Name   string        `json:"name"`
-	Amount action.Amount `json:"amount"`
-	Fee    action.Amount `json:"fee"`
-	Gas    int64         `json:"gas"`
+	From     keys.Address  `json:"from"`
+	Name     string        `json:"name"`
+	Amount   action.Amount `json:"amount"`
+	GasPrice action.Amount `json:"gasprice"`
+	Gas      int64         `json:"gas"`
 }
 
 type ONSGetDomainsRequest struct {

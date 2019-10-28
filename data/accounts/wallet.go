@@ -3,8 +3,9 @@ package accounts
 import (
 	"bytes"
 	"fmt"
-	"github.com/Oneledger/protocol/serialize"
 	"sync"
+
+	"github.com/Oneledger/protocol/serialize"
 
 	"github.com/Oneledger/protocol/config"
 	"github.com/Oneledger/protocol/data/keys"
@@ -166,7 +167,7 @@ func NewWallet(config config.Server, dbDir string) Wallet {
 
 	accounts := make([]storage.StoreKey, 0, 10)
 	data, err := store.Get([]byte(rootkey))
-	if err == nil {
+	if err == nil && data != nil {
 		_ = serialize.GetSerializer(serialize.PERSISTENT).Deserialize(data, &accounts)
 	}
 	return &WalletStore{

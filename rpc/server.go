@@ -55,8 +55,8 @@ func (srv *Server) Register(name string, rcvr interface{}) error {
 	return srv.rpc.RegisterName(name, rcvr)
 }
 
-// RestfulAPIFuncRegister registers all restful API functions on the Server
-func (srv *Server) RestfulAPIFuncRegister(routerMap map[string]func(w http.ResponseWriter, r *http.Request)) {
+// RegisterRestfulMap registers all restful API functions in a map on the Server
+func (srv *Server) RegisterRestfulMap(routerMap map[string]http.HandlerFunc) {
 	for path, handlerFun := range routerMap {
 		srv.mux.HandleFunc(path, handlerFun)
 	}

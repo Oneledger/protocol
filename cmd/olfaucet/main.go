@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"github.com/Oneledger/protocol/data/chain"
 	"net"
 	"net/http"
 	"net/url"
@@ -11,6 +10,8 @@ import (
 	"path/filepath"
 	"syscall"
 	"time"
+
+	"github.com/Oneledger/protocol/data/chain"
 
 	"github.com/Oneledger/protocol/version"
 
@@ -52,7 +53,7 @@ var faucetCmd = &cobra.Command{
 	RunE:  runFaucet,
 }
 
-var apiRoutes = make(map[string]func(w http.ResponseWriter, r *http.Request))
+var apiRoutes = make(map[string]http.HandlerFunc)
 
 func init() {
 	faucetCmd.Flags().StringVarP(&args.rootDir, "root", "r", "./", "Set root directory containing olfullnode data files")
@@ -115,7 +116,7 @@ func runFaucet(_ *cobra.Command, _ []string) error {
 		return err
 	}
 
-	srv.RestfulAPIFuncRegister(apiRoutes)
+	srv.RegisterRestfulMap(apiRoutes)
 
 	err = srv.Start()
 	if err != nil {
@@ -244,15 +245,15 @@ func (f *Faucet) RequestOLT(req Request, reply *Reply) error {
 	}
 
 	sendTxResults, err := f.fullnode.CreateRawSend(client.SendTxRequest{
-		From:   f.nodeCtx.Address(),
-		To:     req.Address,
-		Amount: toSend,
-		Fee:    action.Amount{Currency: olt.Name, Value: *balance.NewAmount(1000000000)},
-		Gas:    40000,
+		From:     f.nodeCtx.Address(),
+		To:       req.Address,
+		Amount:   toSend,
+		GasPrice: action.Amount{Currency: olt.Name, Value: *balance.NewAmount(1000000000)},
+		Gas:      40000,
 	})
 	if err != nil {
-		logger.Error("failed to sendTx", err)
-		return rpc.InternalError(err.Error())
+		logger.Error("failed to create sendTx", err)
+		return err
 	}
 
 	rawTx := sendTxResults.RawTx
@@ -274,7 +275,7 @@ func (f *Faucet) RequestOLT(req Request, reply *Reply) error {
 	if err != nil {
 		logger.Error("failed to sendTx", err)
 
-		return rpc.InternalError(err.Error())
+		return err
 	}
 
 	*reply = Reply{
@@ -308,7 +309,7 @@ func restfulAPIRoot(w http.ResponseWriter, r *http.Request) {
 
 func health(w http.ResponseWriter, r *http.Request) {
 	healthCheck := ParamsReply{MaxAmount: args.maxReqAmount, MinWaitTime: args.lockTime, Version: version.Fullnode.String()}
-	_, err := fmt.Fprintf(w, "MaxAmount : %v, MinWaitTime : %d, version : %v", healthCheck.MaxAmount, healthCheck.MinWaitTime, healthCheck.Version)
+	_, err := fmt.Fprintf(w, "MaxAmount : %v, MinWaitTime : %d, version : %v\n", healthCheck.MaxAmount, healthCheck.MinWaitTime, healthCheck.Version)
 	if err != nil {
 		logger.Error("failed to display health check info")
 	}

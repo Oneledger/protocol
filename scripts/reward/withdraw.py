@@ -58,7 +58,7 @@ def withdraw(frm, to):
     resp = rpc_call('tx.WithdrawReward', {
         "from": frm,
         "to": to,
-        "fee": {
+        "gasprice": {
             "currency": "OLT",
             "value": "1000000000",
         },
