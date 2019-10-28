@@ -167,6 +167,8 @@ type NodeConfig struct {
 	FastSync bool   `toml:"fast_sync" desc:"Fast sync allows a block to catch up quickly to the chain by downloading blocks in parallel and verifying their commits"`
 	DB       string `toml:"db" desc:"Specify what backend database to use (goleveldb|cleveldb)"`
 	DBDir    string `toml:"db_dir" desc:"Specify the application database directory. This is always relative to the root directory of the app."`
+
+	LogLevel int `toml:"loglevel" desc:"Specify the log level for olfullnode. 0: Fatal, 1: Error, 2: Warning, 3: Info, 4: Debug, 5: Detail"`
 	// List of transaction tags to index in the db, allows them to be searched
 	// by this parameter
 	IndexTags []string `toml:"index_tags" desc:"List of transaction tags to index in the database, allows them to be searched by the specified tags"`
@@ -181,6 +183,7 @@ func DefaultNodeConfig() *NodeConfig {
 		FastSync:     true,
 		DB:           "goleveldb",
 		DBDir:        "nodedata",
+		LogLevel:     4,
 		IndexTags:    []string{"tx.owner", "tx.type", "tx.swapkey"},
 		IndexAllTags: false,
 	}
