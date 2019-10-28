@@ -6,7 +6,9 @@ package btc
 
 import (
 	"bytes"
+	"crypto/rand"
 	"fmt"
+	"io"
 
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/chains/bitcoin"
@@ -102,10 +104,17 @@ func (j *JobBTCBroadcast) DoMyJob(ctxI interface{}) {
 			return
 		}
 
+		data := [4]byte{}
+		_, err = io.ReadFull(rand.Reader, data[:])
+		if err != nil {
+			return
+		}
+
 		reportFinalityMint := ReportFinalityMint{
 			TrackerName:      j.TrackerName,
 			OwnerAddress:     tracker.ProcessOwner,
 			ValidatorAddress: ctx.ValidatorAddress,
+			RandomBytes:      data[:],
 		}
 
 		txData, err := reportFinalityMint.Marshal()

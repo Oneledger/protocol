@@ -17,12 +17,13 @@ import (
 )
 
 type ValidatorStore struct {
-	prefix     []byte
-	store      *storage.State
-	proposer   keys.Address
-	queue      ValidatorQueue
-	byzantine  []Validator
-	totalPower int64
+	prefix      []byte
+	store       *storage.State
+	proposer    keys.Address
+	queue       ValidatorQueue
+	byzantine   []Validator
+	totalPower  int64
+	isValidator bool
 }
 
 func NewValidatorStore(prefix string, cfg config.Server, state *storage.State) *ValidatorStore {
@@ -113,7 +114,7 @@ func (vs *ValidatorStore) Init(req types.RequestInitChain, currencies *balance.C
 }
 
 // setup the validators according to begin block
-func (vs *ValidatorStore) Setup(req types.RequestBeginBlock) error {
+func (vs *ValidatorStore) Setup(req types.RequestBeginBlock, nodeValidatorAddress keys.Address) error {
 	vs.proposer = req.Header.GetProposerAddress()
 	var def error
 	// update the byzantine node that need to be slashed
@@ -138,6 +139,9 @@ func (vs *ValidatorStore) Setup(req types.RequestBeginBlock) error {
 		queued := utils.NewQueued(addr, validator.Power, i)
 		vs.queue.append(queued)
 		vs.totalPower += validator.Power
+		if bytes.Equal(addr, nodeValidatorAddress) {
+			vs.isValidator = true
+		}
 		i++
 		return false
 	})
@@ -169,15 +173,8 @@ func (vs *ValidatorStore) GetValidatorsAddress() ([]keys.Address, error) {
 }
 
 func (vs *ValidatorStore) IsValidatorAddress(query keys.Address) bool {
-	isValidator := false
-	vs.Iterate(func(addr keys.Address, validator *Validator) bool {
-		isValidator = bytes.Equal(query, addr)
-		if isValidator {
-			return true
-		}
-		return false
-	})
-	return isValidator
+
+	return vs.isValidator
 }
 
 // handle stake action

@@ -4,14 +4,15 @@ import (
 	"net/url"
 	"os"
 
-	"github.com/Oneledger/protocol/data/ons"
-
+	"github.com/Oneledger/protocol/action"
+	"github.com/Oneledger/protocol/action/btc"
 	"github.com/Oneledger/protocol/app/node"
 	"github.com/Oneledger/protocol/config"
 	"github.com/Oneledger/protocol/consensus"
 	"github.com/Oneledger/protocol/data/accounts"
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/chain"
+	"github.com/Oneledger/protocol/data/ons"
 	"github.com/Oneledger/protocol/identity"
 	"github.com/Oneledger/protocol/log"
 	"github.com/Oneledger/protocol/serialize"
@@ -264,7 +265,16 @@ func (app *App) Start() error {
 		return err
 	}
 
+	internalRouter := action.NewRouter("internal")
+	err = btc.EnableBTCInternalTx(internalRouter)
+	if err != nil {
+		app.logger.Error("Failed to register internal transactions")
+		return err
+	}
+
 	app.node = node
+	app.Context.internalService = action.NewService(app.Context.node,
+		log.NewLoggerWithPrefix(app.Context.logWriter, "internal_service"), internalRouter, node)
 	return nil
 }
 

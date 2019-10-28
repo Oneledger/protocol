@@ -87,7 +87,7 @@ func (app *App) blockBeginner() blockBeginner {
 		app.Context.deliver = storage.NewState(app.Context.chainstate).WithGas(gc)
 
 		// update the validator set
-		err := app.Context.validators.Setup(req)
+		err := app.Context.validators.Setup(req, app.Context.node.ValidatorAddress())
 		if err != nil {
 			app.logger.Error("validator set with error", err)
 		}
@@ -190,6 +190,22 @@ func (app *App) blockEnder() blockEnder {
 			ValidatorUpdates: updates,
 			Tags:             []common.KVPair(nil),
 		}
+
+		go func() {
+
+			if req.Height%100 == 0 &&
+				app.Context.validators.IsValidatorAddress(app.Context.node.ValidatorAddress()) {
+
+				jc := action.NewJobsContext(app.Context.cfg.ChainDriver.BitcoinChainType,
+					app.Context.internalService, app.Context.trackers,
+					app.Context.node.ValidatorECDSAPrivateKey(),
+					app.Context.node.ValidatorAddress(), app.Context.cfg.ChainDriver.BlockCypherToken,
+					app.Context.lockScriptStore)
+
+				js := app.Context.jobStore
+				ProcessAllJobs(jc, js)
+			}
+		}()
 
 		app.logger.Debug("End Block: ", result, "height:", req.Height)
 		return result

@@ -1,6 +1,8 @@
 package governance
 
 import (
+	"encoding/binary"
+
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/fees"
 	"github.com/Oneledger/protocol/serialize"
@@ -12,6 +14,8 @@ const (
 	ADMIN_INITIAL_KEY    string = "initial"
 	ADMIN_CURRENCY_KEY   string = "currency"
 	ADMIN_FEE_OPTION_KEY string = "feeopt"
+
+	ADMIN_EPOCH_BLOCK_INTERVAL string = "epoch"
 )
 
 type Store struct {
@@ -112,4 +116,27 @@ func (st *Store) InitialChain() bool {
 		return true
 	}
 	return false
+}
+
+func (st *Store) GetEpoch() (int64, error) {
+	result, err := st.Get([]byte(ADMIN_EPOCH_BLOCK_INTERVAL))
+	if err != nil {
+		return 0, err
+	}
+
+	epoch := int64(binary.LittleEndian.Uint64(result))
+
+	return epoch, nil
+}
+
+func (st *Store) SetEpoch(epoch int64) error {
+
+	b := make([]byte, 8)
+	binary.LittleEndian.PutUint64(b, uint64(epoch))
+
+	err := st.Set([]byte(ADMIN_EPOCH_BLOCK_INTERVAL), b)
+	if err != nil {
+		return errors.Wrap(err, "failed to set the currencies")
+	}
+	return nil
 }

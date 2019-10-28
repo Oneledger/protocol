@@ -24,10 +24,10 @@ const (
 	DOMAIN_PURCHASE Type = 0x24
 	DOMAIN_SEND     Type = 0x25
 
-	BTC_LOCK             Type = 0x81
-	BTC_ADD_SIGNATURE    Type = 0x82
-	REPORT_FINALITY_MINT Type = 0x83
-	BTC_EXT_MINT         Type = 0x84
+	BTC_LOCK                 Type = 0x81
+	BTC_ADD_SIGNATURE        Type = 0x82
+	BTC_REPORT_FINALITY_MINT Type = 0x83
+	BTC_EXT_MINT             Type = 0x84
 )
 
 var logger *log.Logger

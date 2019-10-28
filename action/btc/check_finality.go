@@ -20,6 +20,7 @@ type ReportFinalityMint struct {
 	TrackerName      string
 	OwnerAddress     action.Address
 	ValidatorAddress action.Address
+	RandomBytes      []byte
 }
 
 var _ action.Msg = &ReportFinalityMint{}
@@ -31,7 +32,7 @@ func (m *ReportFinalityMint) Signers() []action.Address {
 }
 
 func (m *ReportFinalityMint) Type() action.Type {
-	return action.REPORT_FINALITY_MINT
+	return action.BTC_REPORT_FINALITY_MINT
 }
 
 func (m *ReportFinalityMint) Tags() common.KVPairs {
@@ -39,7 +40,7 @@ func (m *ReportFinalityMint) Tags() common.KVPairs {
 
 	tag := common.KVPair{
 		Key:   []byte("tx.type"),
-		Value: []byte(action.REPORT_FINALITY_MINT.String()),
+		Value: []byte(action.BTC_REPORT_FINALITY_MINT.String()),
 	}
 	tag2 := common.KVPair{
 		Key:   []byte("tx.owner"),
@@ -173,7 +174,7 @@ func (reportFinalityMintTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (
 	validatorPubKeys, err := ctx.Validators.GetBitcoinKeys(&chaincfg.TestNet3Params)
 	m := (len(validatorPubKeys) * 2 / 3) + 1
 
-	lockScript, lockScriptAddress, err := bitcoin2.CreateMultiSigAddress(m, validatorPubKeys)
+	lockScript, lockScriptAddress, err := bitcoin2.CreateMultiSigAddress(m, validatorPubKeys, f.RandomBytes)
 
 	// do final reset changes
 
@@ -280,7 +281,7 @@ func (reportFinalityMintTx) ProcessDeliver(ctx *action.Context, tx action.RawTx)
 	validatorPubKeys, err := ctx.Validators.GetBitcoinKeys(&chaincfg.TestNet3Params)
 	m := (len(validatorPubKeys) * 2 / 3) + 1
 
-	lockScript, lockScriptAddress, err := bitcoin2.CreateMultiSigAddress(m, validatorPubKeys)
+	lockScript, lockScriptAddress, err := bitcoin2.CreateMultiSigAddress(m, validatorPubKeys, f.RandomBytes)
 
 	// do final reset changes
 

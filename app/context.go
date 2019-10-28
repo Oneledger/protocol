@@ -50,7 +50,7 @@ type context struct {
 	validators *identity.ValidatorStore // Set of validators currently active
 	feePool    *fees.Store
 	govern     *governance.Store
-	trackers   *bitcoin.TrackerStore
+	trackers   *bitcoin.TrackerStore // tracker for bitcoin balance UTXO
 
 	currencies *balance.CurrencySet
 	feeOption  *fees.FeeOption
@@ -60,6 +60,7 @@ type context struct {
 
 	jobStore        *jobs.JobStore
 	lockScriptStore *bitcoin.LockScriptStore
+	internalService *action.Service
 
 	logWriter io.Writer
 }
@@ -96,6 +97,7 @@ func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *node.Context) (
 	if true {
 		ctx.jobStore = jobs.NewJobStore(cfg, ctx.dbDir())
 		ctx.lockScriptStore = bitcoin.NewLockScriptStore(cfg, ctx.dbDir())
+
 	}
 
 	ctx.actionRouter = action.NewRouter("action")

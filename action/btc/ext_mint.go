@@ -6,7 +6,9 @@ package btc
 
 import (
 	"bytes"
+	"crypto/rand"
 	"encoding/json"
+	"io"
 
 	"github.com/Oneledger/protocol/action"
 	bitcoin2 "github.com/Oneledger/protocol/chains/bitcoin"
@@ -38,7 +40,7 @@ func (em *ExtMintOBTC) Tags() common.KVPairs {
 
 	tag := common.KVPair{
 		Key:   []byte("tx.type"),
-		Value: []byte(action.REPORT_FINALITY_MINT.String()),
+		Value: []byte(action.BTC_REPORT_FINALITY_MINT.String()),
 	}
 	tag2 := common.KVPair{
 		Key:   []byte("tx.owner"),
@@ -128,7 +130,13 @@ func (emt *extMintOBTCTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (bo
 	validatorPubKeys, err := ctx.Validators.GetBitcoinKeys(&chaincfg.TestNet3Params)
 	m := (len(validatorPubKeys) * 2 / 3) + 1
 
-	lockScript, lockScriptAddress, err := bitcoin2.CreateMultiSigAddress(m, validatorPubKeys)
+	data := [4]byte{}
+	_, err = io.ReadFull(rand.Reader, data[:])
+	if err != nil {
+		//
+	}
+
+	lockScript, lockScriptAddress, err := bitcoin2.CreateMultiSigAddress(m, validatorPubKeys, data[:])
 
 	// do final reset changes
 
@@ -193,7 +201,13 @@ func (emt *extMintOBTCTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (
 	validatorPubKeys, err := ctx.Validators.GetBitcoinKeys(&chaincfg.TestNet3Params)
 	m := (len(validatorPubKeys) * 2 / 3) + 1
 
-	lockScript, lockScriptAddress, err := bitcoin2.CreateMultiSigAddress(m, validatorPubKeys)
+	data := [4]byte{}
+	_, err = io.ReadFull(rand.Reader, data[:])
+	if err != nil {
+
+	}
+
+	lockScript, lockScriptAddress, err := bitcoin2.CreateMultiSigAddress(m, validatorPubKeys, data[:])
 
 	// do final reset changes
 

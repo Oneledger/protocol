@@ -175,6 +175,6 @@ func (ast btcAddSignatureTx) ProcessDeliver(ctx *action.Context, tx action.RawTx
 	}
 }
 
-func (ast btcAddSignatureTx) ProcessFee(ctx *action.Context, fee action.Fee) (bool, action.Response) {
+func (ast btcAddSignatureTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas) (bool, action.Response) {
 	panic("implement me")
 }

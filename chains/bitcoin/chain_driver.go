@@ -6,8 +6,6 @@ package bitcoin
 
 import (
 	"bytes"
-	"crypto/rand"
-	"io"
 
 	"github.com/Oneledger/protocol/data/bitcoin"
 	"github.com/blockcypher/gobcy"
@@ -206,7 +204,7 @@ func (c *chainDriver) PrepareRedeem(prevLock bitcoin.UTXO,
 	return
 }
 
-func CreateMultiSigAddress(m int, publicKeys []*btcutil.AddressPubKey) (script, address []byte, err error) {
+func CreateMultiSigAddress(m int, publicKeys []*btcutil.AddressPubKey, randomBytes []byte) (script, address []byte, err error) {
 	// ideally m should be
 	//	m = len(publicKeys) * 2 /3 ) + 1
 
@@ -220,13 +218,7 @@ func CreateMultiSigAddress(m int, publicKeys []*btcutil.AddressPubKey) (script, 
 	// add randomness
 	builder.AddOp(txscript.OP_RETURN)
 
-	data := [4]byte{}
-	_, err = io.ReadFull(rand.Reader, data[:])
-	if err != nil {
-		return
-	}
-
-	builder.AddData(data[:])
+	builder.AddData(randomBytes)
 
 	script, err = builder.Script()
 	if err != nil {
