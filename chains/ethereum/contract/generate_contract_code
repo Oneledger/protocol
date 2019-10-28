@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+if [ -z "$1" ]; then
+	echo "Missing filename argument. (e.g. If your contract is called Store.sol, provide 'Store' as the first argument)"
+fi
+
+solc --abi "$1.sol" --bin "$1.sol" -o "./"
+abigen --abi="$1.abi" --pkg="contract" --out "$1.go"
