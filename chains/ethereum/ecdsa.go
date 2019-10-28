@@ -1,5 +1,5 @@
 // ecdsa.go contains some utility functions for reading and saving ECDSA keys
-package eth
+package ethereum
 
 import (
 	"crypto/ecdsa"

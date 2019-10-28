@@ -1,4 +1,4 @@
-package eth
+package ethereum
 
 type AppState struct {
 	// The contract address for the smart contract
