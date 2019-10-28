@@ -1,5 +1,5 @@
 // alias.go holds some type aliases from go-ethereum
-package eth
+package ethereum
 
 import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"

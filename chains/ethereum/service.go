@@ -1,4 +1,4 @@
-package eth
+package ethereum
 
 import (
 	"math/big"

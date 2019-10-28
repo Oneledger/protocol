@@ -1,4 +1,4 @@
-package eth
+package ethereum
 
 type Error string
 
