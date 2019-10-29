@@ -207,6 +207,7 @@ func (app *App) blockEnder() blockEnder {
 					cdConfig.BitcoinRPCPort,
 					cdConfig.BitcoinRPCUsername,
 					cdConfig.BitcoinRPCPassword,
+					cdConfig.BitcoinChainType,
 				)
 
 				js := app.Context.jobStore

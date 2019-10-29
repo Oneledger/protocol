@@ -13,7 +13,6 @@ import (
 	"github.com/Oneledger/protocol/client"
 	"github.com/Oneledger/protocol/serialize"
 	"github.com/blockcypher/gobcy"
-	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
@@ -25,35 +24,36 @@ const (
 	MINIMUM_CONFIRMATIONS_REQ = 10
 )
 
-func (s *Service) PrepareLock(hash string, index uint32, net *chaincfg.Params) ([]byte, error) {
-	cd := bitcoin.NewChainDriver("")
+func (s *Service) PrepareLock(args client.BTCLockPrepareRequest, reply *client.BTCLockPrepareResponse) error {
+	cd := bitcoin.NewChainDriver(s.blockCypherToken)
 
-	// TODO read this from config
-	btc := gobcy.API{"dd53aae66b83431ca57a1f656af8ed69", "btc", "main"}
-	tx, err := btc.GetTX(hash, nil)
+	btc := gobcy.API{s.blockCypherToken, "btc", s.btcChainType}
+	tx, err := btc.GetTX(args.Hash, nil)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	if tx.Confirmations < MINIMUM_CONFIRMATIONS_REQ {
-		return nil, errors.New("source transaction doesn't have enough confirmations")
+		return errors.New("source transaction doesn't have enough confirmations")
 	}
 
 	hashh, _ := chainhash.NewHashFromStr(tx.Hash)
-	inputAmount := int64(tx.Outputs[index].Value)
+	inputAmount := int64(tx.Outputs[args.Index].Value)
 
 	tracker, err := s.trackerStore.GetTrackerForLock()
 	if err != nil {
-		return nil, errors.Wrap(err, "error getting tracker for lock")
+		return errors.Wrap(err, "error getting tracker for lock")
 	}
 
 	txnBytes := cd.PrepareLockNew(tracker.ProcessTxId, 0, tracker.CurrentBalance,
-		hashh, index, inputAmount, tracker.ProcessLockScriptAddress)
+		hashh, args.Index, inputAmount, tracker.ProcessLockScriptAddress)
 
-	return txnBytes, nil
+	reply.Txn = txnBytes
+
+	return nil
 }
 
-func (s *Service) AddUserSignatureAndProcessLock(args *client.BTCLockRequest, reply *client.SendTxReply) error {
+func (s *Service) AddUserSignatureAndProcessLock(args client.BTCLockRequest, reply *client.SendTxReply) error {
 
 	tracker, err := s.trackerStore.Get(args.TrackerName)
 	if err != nil {

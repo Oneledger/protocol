@@ -99,7 +99,18 @@ func (j *JobBTCBroadcast) DoMyJob(ctxI interface{}) {
 	} else {
 
 		cd := bitcoin.NewChainDriver(ctx.BlockCypherToken)
-		ok, _ := cd.CheckFinality(tracker.ProcessTxId)
+
+		chain := "test3"
+		switch ctx.BTCChainnet {
+		case "testnet3":
+			chain = "test3"
+		case "testnet":
+			chain = "test"
+		case "mainnet":
+			chain = "main"
+		}
+
+		ok, _ := cd.CheckFinality(tracker.ProcessTxId, ctx.BlockCypherToken, chain)
 		if !ok {
 			return
 		}

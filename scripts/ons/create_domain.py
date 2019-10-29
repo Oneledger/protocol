@@ -45,7 +45,7 @@ def create_domain(name, owner_hex, price):
         },
         "gas": 40000,
     }
-    resp = rpc_call('tx.ONS_CreateRawCreate',req)
+    resp = rpc_call('tx.ONS_CreateRawCreate', req)
     return resp["result"]["rawTx"]
 
 

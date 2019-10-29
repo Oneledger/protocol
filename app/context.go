@@ -172,6 +172,8 @@ func (ctx *context) Services() (service.Map, error) {
 		Router:       ctx.actionRouter,
 		Logger:       log.NewLoggerWithPrefix(ctx.logWriter, "rpc"),
 		Services:     extSvcs,
+
+		Trackers: ctx.trackers,
 	}
 
 	return service.NewMap(svcCtx), nil
@@ -194,6 +196,8 @@ func (ctx *context) Restful() (service.RestfulRouter, error) {
 		Router:       ctx.actionRouter,
 		Logger:       log.NewLoggerWithPrefix(ctx.logWriter, "restful"),
 		Services:     extSvcs,
+
+		Trackers: ctx.trackers,
 	}
 	return service.NewRestfulService(svcCtx).Router(), nil
 }
