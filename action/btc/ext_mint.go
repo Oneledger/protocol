@@ -66,7 +66,7 @@ func (em *ExtMintOBTC) Unmarshal(data []byte) error {
 type extMintOBTCTx struct {
 }
 
-func (emt *extMintOBTCTx) Validate(ctx *action.Context, signedTx action.SignedTx) (bool, error) {
+func (extMintOBTCTx) Validate(ctx *action.Context, signedTx action.SignedTx) (bool, error) {
 	f := ReportFinalityMint{}
 	err := f.Unmarshal(signedTx.Data)
 	if err != nil {
@@ -99,7 +99,7 @@ func (emt *extMintOBTCTx) Validate(ctx *action.Context, signedTx action.SignedTx
 	return true, nil
 }
 
-func (emt *extMintOBTCTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
+func (extMintOBTCTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	f := ExtMintOBTC{}
 	err := f.Unmarshal(tx.Data)
 	if err != nil {
@@ -170,7 +170,7 @@ func (emt *extMintOBTCTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (bo
 	}
 }
 
-func (emt *extMintOBTCTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
+func (extMintOBTCTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	f := ExtMintOBTC{}
 	err := f.Unmarshal(tx.Data)
 	if err != nil {
@@ -241,6 +241,6 @@ func (emt *extMintOBTCTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (
 	}
 }
 
-func (emt *extMintOBTCTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas) (bool, action.Response) {
+func (extMintOBTCTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas) (bool, action.Response) {
 	return action.BasicFeeHandling(ctx, signedTx, start, size, 1)
 }

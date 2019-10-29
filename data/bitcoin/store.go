@@ -59,8 +59,8 @@ func (ts *TrackerStore) Get(name string) (*Tracker, error) {
 
 func (ts *TrackerStore) GetTrackerForLock() (*Tracker, error) {
 
-	start := append(ts.prefix, []byte("trackers000")...)
-	end := append(ts.prefix, []byte("trackers999")...)
+	start := append(ts.prefix, []byte("tracker_  ")...)
+	end := append(ts.prefix, []byte("tracker_~~")...)
 
 	var lowestAmount int64 = 999999999999999
 	var tempTracker *Tracker = nil
@@ -80,10 +80,16 @@ func (ts *TrackerStore) GetTrackerForLock() (*Tracker, error) {
 		return false
 	})
 
+	if tempTracker == nil {
+		return nil, errors.New("no tracker found")
+	}
+
 	return tempTracker, nil
 }
 
 func (ts *TrackerStore) SetTracker(name string, tracker *Tracker) error {
+
+	tracker.Name = name
 
 	key := keyFromName(name)
 	key = append(ts.prefix, key...)

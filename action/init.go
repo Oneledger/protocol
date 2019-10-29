@@ -56,6 +56,15 @@ func (t Type) String() string {
 		return "DOMAIN_PURCHASE"
 	case DOMAIN_SEND:
 		return "DOMAIN_SEND"
+
+	case BTC_LOCK:
+		return "BTC_LOCK"
+	case BTC_ADD_SIGNATURE:
+		return "BTC_ADD_SIGNATURE"
+	case BTC_REPORT_FINALITY_MINT:
+		return "BTC_REPORT_FINALITY_MINT"
+	case BTC_EXT_MINT:
+		return "BTC_EXT_MINT"
 	default:
 		return "UNKNOWN"
 	}

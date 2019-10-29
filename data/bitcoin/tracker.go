@@ -38,6 +38,8 @@ func init() {
 
 // Tracker
 type Tracker struct {
+	Name string
+
 	// Multisig manages the signature collection and storage in a distributed way
 	Multisig *keys.BTCMultiSig `json:"multisig"`
 

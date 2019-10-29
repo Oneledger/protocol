@@ -11,3 +11,4 @@ build/
 playground.go
 *.out
 venv/
+*.pyc

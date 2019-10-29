@@ -41,6 +41,17 @@ func NewService(
 	logger *log.Logger,
 	blockCypherToken, btcChainType string,
 ) *Service {
+
+	chain := "test3"
+	switch btcChainType {
+	case "testnet3":
+		chain = "test3"
+	case "testnet":
+		chain = "test"
+	case "mainnet":
+		chain = "main"
+	}
+
 	return &Service{
 		balances: balances,
 		//		router:       router,
@@ -51,6 +62,6 @@ func NewService(
 		logger:       logger,
 
 		blockCypherToken: blockCypherToken,
-		btcChainType:     btcChainType,
+		btcChainType:     chain,
 	}
 }

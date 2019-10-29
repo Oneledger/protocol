@@ -6,6 +6,7 @@ package btc
 
 import (
 	"bytes"
+	"encoding/hex"
 
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/action/btc"
@@ -30,25 +31,31 @@ func (s *Service) PrepareLock(args client.BTCLockPrepareRequest, reply *client.B
 	btc := gobcy.API{s.blockCypherToken, "btc", s.btcChainType}
 	tx, err := btc.GetTX(args.Hash, nil)
 	if err != nil {
+		s.logger.Error("error in getting txn from bitcoin network", err)
 		return err
 	}
 
 	if tx.Confirmations < MINIMUM_CONFIRMATIONS_REQ {
+
+		s.logger.Error("not enough txn confirmations", err)
 		return errors.New("source transaction doesn't have enough confirmations")
 	}
 
 	hashh, _ := chainhash.NewHashFromStr(tx.Hash)
 	inputAmount := int64(tx.Outputs[args.Index].Value)
 
+	//tracker, err := s.trackerStore.Get("tracker_1")
 	tracker, err := s.trackerStore.GetTrackerForLock()
 	if err != nil {
+		s.logger.Error("error getting tracker for lock", err)
 		return errors.Wrap(err, "error getting tracker for lock")
 	}
 
 	txnBytes := cd.PrepareLockNew(tracker.ProcessTxId, 0, tracker.CurrentBalance,
 		hashh, args.Index, inputAmount, tracker.ProcessLockScriptAddress)
 
-	reply.Txn = txnBytes
+	reply.Txn = hex.EncodeToString(txnBytes)
+	reply.TrackerName = tracker.Name
 
 	return nil
 }
@@ -69,7 +76,9 @@ func (s *Service) AddUserSignatureAndProcessLock(args client.BTCLockRequest, rep
 	cd := bitcoin.NewChainDriver("")
 
 	// add the users' btc signature to the lock txn in the appropriate place
+
 	newBTCTx := cd.AddUserLockSignature(args.Txn, args.Signature)
+
 	totalLockAmount := newBTCTx.TxOut[0].Value
 
 	if len(newBTCTx.TxIn) == 1 { // if new tracker
@@ -112,7 +121,7 @@ func (s *Service) AddUserSignatureAndProcessLock(args client.BTCLockRequest, rep
 	}
 
 	uuidNew, _ := uuid.NewUUID()
-	fee := action.Fee{args.Fee, args.Gas}
+	fee := action.Fee{args.GasPrice, args.Gas}
 	tx := &action.RawTx{
 		Type: action.BTC_LOCK,
 		Data: data,

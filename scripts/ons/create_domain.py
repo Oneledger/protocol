@@ -111,7 +111,7 @@ def addresses():
 
 
 def sign(rawTx, address):
-    resp = rpc_call('owner.SignWithAddress', {"rawTx": rawTx,"address": address})
+    resp = rpc_call('owner.SignWithAddress', {"rawTx": rawTx, "address": address})
     return resp["result"]
 
 

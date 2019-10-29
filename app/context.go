@@ -4,6 +4,8 @@ import (
 	"io"
 	"path/filepath"
 
+	"github.com/Oneledger/protocol/action/btc"
+
 	"github.com/Oneledger/protocol/data/bitcoin"
 	"github.com/Oneledger/protocol/data/chain"
 	"github.com/Oneledger/protocol/data/jobs"
@@ -110,6 +112,7 @@ func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *node.Context) (
 	_ = transfer.EnableSend(ctx.actionRouter)
 	_ = staking.EnableApplyValidator(ctx.actionRouter)
 	_ = action_ons.EnableONS(ctx.actionRouter)
+	_ = btc.EnableBTC(ctx.actionRouter)
 	return ctx, nil
 }
 

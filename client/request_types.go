@@ -185,7 +185,7 @@ type BTCLockRequest struct {
 	Signature   []byte        `json:"signature"`
 	Address     keys.Address  `json:"address"`
 	TrackerName string        `json:"tracker_name"`
-	Fee         action.Amount `json:"fee"`
+	GasPrice    action.Amount `json:"gas_price"`
 	Gas         int64         `json:"gas"`
 }
 
@@ -194,6 +194,6 @@ type BTCLockPrepareRequest struct {
 	Index uint32 `json:"index"`
 }
 type BTCLockPrepareResponse struct {
-	Txn         []byte `json:"txn"`
+	Txn         string `json:"txn"`
 	TrackerName string `json:"tracker_name"`
 }
