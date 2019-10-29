@@ -78,9 +78,9 @@ func (j *JobBTCBroadcast) DoMyJob(ctxI interface{}) {
 
 		// TODO load from config
 		connCfg := &rpcclient.ConnConfig{
-			Host:         "localhost:18831",
-			User:         "oltest01",
-			Pass:         "olpass01",
+			Host:         ctx.BTCNodeAddress + ":" + ctx.BTCRPCPort,
+			User:         ctx.BTCRPCUsername,
+			Pass:         ctx.BTCRPCPassword,
 			HTTPPostMode: true, // Bitcoin core only supports HTTP POST mode
 			DisableTLS:   true, // Bitcoin core does not provide TLS by default
 		}

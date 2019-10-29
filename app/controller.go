@@ -196,11 +196,18 @@ func (app *App) blockEnder() blockEnder {
 			if req.Height%100 == 0 &&
 				app.Context.validators.IsValidatorAddress(app.Context.node.ValidatorAddress()) {
 
-				jc := action.NewJobsContext(app.Context.cfg.ChainDriver.BitcoinChainType,
+				cdConfig := app.Context.cfg.ChainDriver
+
+				jc := action.NewJobsContext(cdConfig.BitcoinChainType,
 					app.Context.internalService, app.Context.trackers,
 					app.Context.node.ValidatorECDSAPrivateKey(),
 					app.Context.node.ValidatorAddress(), app.Context.cfg.ChainDriver.BlockCypherToken,
-					app.Context.lockScriptStore)
+					app.Context.lockScriptStore,
+					cdConfig.BitcoinNodeAddress,
+					cdConfig.BitcoinRPCPort,
+					cdConfig.BitcoinRPCUsername,
+					cdConfig.BitcoinRPCPassword,
+				)
 
 				js := app.Context.jobStore
 				ProcessAllJobs(jc, js)

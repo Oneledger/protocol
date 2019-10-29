@@ -23,10 +23,17 @@ type JobsContext struct {
 	BlockCypherToken string
 
 	LockScripts *bitcoin.LockScriptStore
+
+	BTCNodeAddress string
+	BTCRPCPort     string
+	BTCRPCUsername string
+	BTCRPCPassword string
 }
 
 func NewJobsContext(chainType string, svc *Service, trackers *bitcoin.TrackerStore, privKey *btcec.PrivateKey,
-	valAddress keys.Address, bcyToken string, lStore *bitcoin.LockScriptStore) *JobsContext {
+	valAddress keys.Address, bcyToken string, lStore *bitcoin.LockScriptStore,
+	btcAddress string, btcRPCPort string, BTCRPCUsername, BTCRPCPassword string,
+) *JobsContext {
 
 	var params *chaincfg.Params
 	switch chainType {
@@ -50,6 +57,11 @@ func NewJobsContext(chainType string, svc *Service, trackers *bitcoin.TrackerSto
 		ValidatorAddress: valAddress,
 		BlockCypherToken: bcyToken,
 		LockScripts:      lStore,
+
+		BTCNodeAddress: btcAddress,
+		BTCRPCPort:     btcRPCPort,
+		BTCRPCUsername: BTCRPCUsername,
+		BTCRPCPassword: BTCRPCPassword,
 	}
 
 }
