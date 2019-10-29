@@ -173,6 +173,15 @@ type NodeConfig struct {
 	// Tells the indexer to index all available tags, IndexTags has precedence
 	// over IndexAllTAgs
 	IndexAllTags bool `toml:"index_all_tags" desc:"Tells the indexer to index all available tags, IndexTags has precedence over IndexAllTags"`
+
+	//rpc package
+	Services []string `toml:"services" desc:"List of services used by the current Node. Possible valued [broadcast, node, owner, query, tx]"`
+
+	//owner's password
+	OwnerCredentials []string `toml:"owner_credentials" desc:"Username and Password required to access owner services. Format [\"Username:Password\", \"Username:Password\"...]"`
+
+	//Private Key for RPC Authentication
+	RPCPrivateKey string `toml:"rpc_private_key" desc:"(ED25519 key) This private key will be used to generate a token for authentication through RPC Port."`
 }
 
 func DefaultNodeConfig() *NodeConfig {
@@ -183,6 +192,7 @@ func DefaultNodeConfig() *NodeConfig {
 		DBDir:        "nodedata",
 		IndexTags:    []string{"tx.owner", "tx.type", "tx.swapkey"},
 		IndexAllTags: false,
+		Services:     []string{"broadcast", "node", "owner", "query", "tx"},
 	}
 }
 

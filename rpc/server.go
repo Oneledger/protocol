@@ -2,6 +2,10 @@ package rpc
 
 import (
 	"context"
+	"encoding/base64"
+	"github.com/Oneledger/protocol/config"
+	"github.com/Oneledger/protocol/data/keys"
+	"github.com/btcsuite/btcutil/base58"
 	"io"
 	"net"
 	"net/http"
@@ -26,21 +30,25 @@ const (
 
 // Server holds an RPC server that is served over HTTP
 type Server struct {
-	rpc      *rpc.Server
-	http     *http.Server
-	listener net.Listener
-	logger   *log.Logger
+	rpc           *rpc.Server
+	http          *http.Server
+	authenticator authHandler
+	listener      net.Listener
+	logger        *log.Logger
 	// Request multiplexer
 	mux *http.ServeMux
+	cfg *config.Server
 }
 
-func NewServer(w io.Writer) *Server {
+func NewServer(w io.Writer, config *config.Server) *Server {
 	logger := log.NewLoggerWithPrefix(w, "rpc")
 	return &Server{
-		rpc:    rpc.NewServer(),
-		http:   &http.Server{},
-		mux:    http.NewServeMux(),
-		logger: logger,
+		rpc:           rpc.NewServer(),
+		http:          &http.Server{},
+		authenticator: &rpcAuthHandler{},
+		mux:           http.NewServeMux(),
+		logger:        logger,
+		cfg:           config,
 	}
 }
 
@@ -62,6 +70,85 @@ func (srv *Server) RegisterRestfulMap(routerMap map[string]http.HandlerFunc) {
 	}
 }
 
+type authHandler interface {
+	http.Handler
+	Authorized(respW http.ResponseWriter, req *http.Request) bool
+}
+
+var _ authHandler = &rpcAuthHandler{}
+
+type rpcAuthHandler struct {
+	rpcHandler http.Handler
+	cfg        *config.Server
+}
+
+func (r rpcAuthHandler) ServeHTTP(respW http.ResponseWriter, req *http.Request) {
+	if r.Authorized(respW, req) {
+		r.rpcHandler.ServeHTTP(respW, req)
+	}
+}
+
+func (r *rpcAuthHandler) Authorized(respW http.ResponseWriter, req *http.Request) bool {
+	if r.cfg != nil && r.cfg.Node.RPCPrivateKey != "" {
+		respErr := ""
+		defer func() {
+			if respErr != "" {
+				http.Error(respW, respErr, 401)
+			}
+		}()
+
+		respW.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
+		token := req.Header.Get("Authorization")
+
+		data := base58.Decode(token)
+		if len(data) <= 0 {
+			respErr = "invalid token"
+			return false
+		}
+		signData := data[:20]
+		signature := data[20:]
+
+		var keyData []byte
+		//Get Private Key for signature verification.
+		keyData, err := base64.StdEncoding.DecodeString(r.cfg.Node.RPCPrivateKey)
+		if err != nil {
+			respErr = err.Error()
+			return false
+		}
+
+		privateKey, err := keys.GetPrivateKeyFromBytes(keyData, keys.ED25519)
+		if err != nil {
+			respErr = err.Error()
+			return false
+		}
+
+		//Private Key Handler
+		privateKeyHandler, err := privateKey.GetHandler()
+		if err != nil {
+			respErr = err.Error()
+			return false
+		}
+
+		//Get public key from private key handler
+		pubKey := privateKeyHandler.PubKey()
+		pubKeyHandler, err := pubKey.GetHandler()
+		if err != nil {
+			respErr = err.Error()
+			return false
+		}
+
+		//Verify Message with public key
+		verified := pubKeyHandler.VerifyBytes(signData, signature)
+
+		if !verified {
+			respErr = "not authorized"
+			return false
+		}
+	}
+
+	return true
+}
+
 // Prepare injects all the data necessary for serving over the specified URL.
 // It  prepares a net.Listener over the specified URL, and registers all methods
 // inside the given receiver. After this method is called, the Start function
@@ -78,8 +165,11 @@ func (srv *Server) Prepare(u *url.URL) error {
 		return errors.Wrap(err, "invalid URL provided, failed to create listener")
 	}
 
+	//Register jsonrpc handler to authenticator.
+	srv.authenticator = &rpcAuthHandler{jsonrpc2.HTTPHandler(srv.rpc), srv.cfg}
+
 	// Register the handlers with our mux
-	srv.mux.Handle(Path, jsonrpc2.HTTPHandler(srv.rpc))
+	srv.mux.Handle(Path, srv.authenticator)
 	srv.http.Handler = srv.mux
 	srv.listener = l
 	return nil
