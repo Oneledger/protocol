@@ -1,8 +1,13 @@
 package app
 
 import (
+	"fmt"
 	"net/url"
 	"os"
+
+	bitcoin2 "github.com/Oneledger/protocol/chains/bitcoin"
+	"github.com/Oneledger/protocol/data/bitcoin"
+	"github.com/btcsuite/btcd/chaincfg"
 
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/action/btc"
@@ -174,7 +179,50 @@ func (app *App) setupState(stateBytes []byte) error {
 }
 
 func (app *App) setupValidators(req RequestInitChain, currencies *balance.CurrencySet) (types.ValidatorUpdates, error) {
-	return app.Context.validators.WithState(app.Context.deliver).Init(req, currencies)
+
+	vu, err := app.Context.validators.WithState(app.Context.deliver).Init(req, currencies)
+
+	var params *chaincfg.Params
+	switch app.Context.cfg.ChainDriver.BitcoinChainType {
+	case "mainnet":
+		params = &chaincfg.MainNetParams
+	case "testnet3":
+		params = &chaincfg.TestNet3Params
+	case "regtest":
+		params = &chaincfg.RegressionNetParams
+	case "simnet":
+		params = &chaincfg.SimNetParams
+	default:
+		params = &chaincfg.TestNet3Params
+	}
+
+	vals, err := app.Context.validators.GetBitcoinKeys(params)
+	threshold := (len(vals) * 2 / 3) + 1
+	for i := 0; i < 8; i++ {
+		// appHash := app.genesisDoc.AppHash.Bytes()
+
+		randBytes := []byte("XOLT")
+
+		script, address, err := bitcoin2.CreateMultiSigAddress(threshold, vals, randBytes)
+		if err != nil {
+			return nil, err
+		}
+
+		tracker := bitcoin.NewTracker(address)
+
+		name := fmt.Sprintf("tracker_%d", i)
+		err = app.Context.trackers.SetTracker(name, tracker)
+		if err != nil {
+			return nil, err
+		}
+
+		err = app.Context.lockScriptStore.SaveLockScript(address, script)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return vu, err
 }
 
 // Start initializes the state

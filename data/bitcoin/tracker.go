@@ -58,7 +58,7 @@ type Tracker struct {
 	FinalityVotes []keys.Address
 }
 
-func NewTracker(lockScript, lockScriptAddress []byte) *Tracker {
+func NewTracker(lockScriptAddress []byte) *Tracker {
 
 	return &Tracker{
 		State:                    AvailableTrackerState,

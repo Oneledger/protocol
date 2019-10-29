@@ -182,6 +182,7 @@ func (btcLockTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, act
 
 	return true, action.Response{
 		Tags: lock.Tags(),
+		Info: fmt.Sprintf("tracker: %s", lock.TrackerName),
 	}
 }
 
