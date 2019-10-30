@@ -29,6 +29,7 @@ type Balance struct {
 	identityName string
 	accountName  string
 	accountKey   []byte
+	currencyName string
 }
 
 var balArgs *Balance = &Balance{}
@@ -39,6 +40,8 @@ func init() {
 	// Transaction Parameters
 	// TODO either get by identity or read base64 of account key
 	balanceCmd.Flags().BytesHexVar(&balArgs.accountKey, "address", []byte{}, "account address")
+
+	balanceCmd.Flags().StringVar(&balArgs.currencyName, "currency", "OLT", "currency name")
 }
 
 // IssueRequest sends out a sendTx to all of the nodes in the chain
@@ -57,7 +60,7 @@ func BalanceNode(cmd *cobra.Command, args []string) {
 	}
 
 	// assuming we have public key
-	bal, err := fullnode.Balance(balArgs.accountKey)
+	bal, err := fullnode.Balance(balArgs.accountKey, balArgs.currencyName)
 	if err != nil {
 		logger.Fatal("error in getting balance", err)
 	}

@@ -34,7 +34,8 @@ Services:
 
 /* Blockchain service  */
 type BalanceRequest struct {
-	Address keys.Address `json:"address"`
+	Address      keys.Address `json:"address"`
+	CurrencyName string       `json:"currency_name"`
 }
 type BalanceReply struct {
 	// The balance of the account. Returns an empty balance
@@ -178,15 +179,4 @@ type SignRawTxRequest struct {
 
 type SignRawTxResponse struct {
 	Signature action.Signature `json:"signature"`
-}
-
-type CurrencyBalanceRequest struct {
-	Currency string       `json:"currency"`
-	Address  keys.Address `json:"address"`
-}
-type CurrencyBalanceReply struct {
-	Currency string `json:"currency"`
-	Balance  string `json:"balance"`
-	// The height when this balance was recorded
-	Height int64 `json:"height"`
 }
