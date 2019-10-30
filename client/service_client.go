@@ -17,12 +17,21 @@ func NewServiceClient(conn string) (*ServiceClient, error) {
 	return &ServiceClient{client}, err
 }
 
-func (c *ServiceClient) Balance(addr keys.Address, currencyName string) (out BalanceReply, err error) {
+func (c *ServiceClient) Balance(addr keys.Address) (out BalanceReply, err error) {
 	/*if len(request) <= 20 {
 		return out, errors.New("address has insufficient length")
 	}*/
-	request := BalanceRequest{addr, currencyName}
+	request := BalanceRequest{addr}
 	err = c.Call("query.Balance", &request, &out)
+	return
+}
+
+func (c *ServiceClient) CurrBalance(addr keys.Address, currency string) (out CurrencyBalanceReply, err error) {
+	/*if len(request) <= 20 {
+		return out, errors.New("address has insufficient length")
+	}*/
+	request := CurrencyBalanceRequest{currency, addr}
+	err = c.Call("query.CurrencyBalance", &request, &out)
 	return
 }
 

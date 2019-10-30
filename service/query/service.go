@@ -1,8 +1,6 @@
 package query
 
 import (
-	"fmt"
-
 	"github.com/Oneledger/protocol/client"
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/ons"
@@ -52,25 +50,9 @@ func (svc *Service) Balance(req client.BalanceRequest, resp *client.BalanceReply
 		return codes.ErrGettingBalance
 	}
 
-	if req.CurrencyName != "" {
-
-		currency, ok := svc.currencies.GetCurrencyByName(req.CurrencyName)
-		if !ok {
-			return codes.ErrFindingCurrency
-		}
-
-		coin := bal.GetCoin(currency)
-		*resp = client.BalanceReply{
-			Balance: fmt.Sprintf("%s : %s", req.CurrencyName, coin.Humanize()),
-			Height:  svc.balances.State.Version(),
-		}
-
-	} else {
-
-		*resp = client.BalanceReply{
-			Balance: bal.String(),
-			Height:  svc.balances.State.Version(),
-		}
+	*resp = client.BalanceReply{
+		Balance: bal.String(),
+		Height:  svc.balances.State.Version(),
 	}
 	return nil
 }
@@ -93,5 +75,34 @@ func (svc *Service) ListValidators(_ client.ListValidatorsRequest, reply *client
 
 func (svc *Service) ListCurrencies(_ client.ListCurrenciesRequest, reply *client.ListCurrenciesReply) error {
 	reply.Currencies = svc.currencies.GetCurrencies()
+	return nil
+}
+
+func (svc *Service) CurrencyBalance(req client.CurrencyBalanceRequest, resp *client.CurrencyBalanceReply) error {
+	err := req.Address.Err()
+	if err != nil {
+		return codes.ErrBadAddress
+	}
+
+	currency, ok := svc.currencies.GetCurrencyByName(req.Currency)
+	if !ok {
+		return codes.ErrFindingCurrency
+	}
+
+	addr := req.Address
+	bal, err := svc.balances.GetBalance(addr, svc.currencies)
+
+	if err != nil {
+		svc.logger.Error("error getting balance", err)
+		return codes.ErrGettingBalance
+	}
+
+	coin := bal.GetCoin(currency)
+
+	*resp = client.CurrencyBalanceReply{
+		Currency: currency.Name,
+		Balance:  coin.Humanize(),
+		Height:   svc.balances.State.Version(),
+	}
 	return nil
 }

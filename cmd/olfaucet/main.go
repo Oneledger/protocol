@@ -346,7 +346,7 @@ func NewFaucet(cfg *config.Server) (*Faucet, error) {
 
 	logger.Info("Connected to node run by", addr.String())
 
-	balReply, err := fullnode.Balance(nodeCtx.Address(), "")
+	balReply, err := fullnode.Balance(nodeCtx.Address())
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get my balance")
 	}
