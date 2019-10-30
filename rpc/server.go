@@ -101,7 +101,7 @@ func (r *rpcAuthHandler) Authorized(respW http.ResponseWriter, req *http.Request
 		token := req.Header.Get("Authorization")
 
 		data := base58.Decode(token)
-		if len(data) <= 0 {
+		if len(data) <= 20 {
 			respErr = "invalid token"
 			return false
 		}
