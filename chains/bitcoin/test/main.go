@@ -97,8 +97,6 @@ func main() {
 	lockStore := bitcoin2.NewLockStore("primary", "/tmp/oneledger/btc/chaindriver",
 		"goleveldb", storage.PERSISTENT)
 
-
-
 	utxoInit := bitcoin2.NewUTXO(chainhash.Hash{}, 0, 0)
 
 	err = lockStore.InitializeTracker("tracker1", *utxoInit)

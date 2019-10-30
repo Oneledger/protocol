@@ -131,7 +131,7 @@ func initNode(ctx *initContext) error {
 
 	// Make private validator file
 	pvFile := privval.GenFilePV(filepath.Join(configDir, consensus.PrivValidatorKeyFilename),
-								filepath.Join(dataDir, consensus.PrivValidatorStateFilename))
+		filepath.Join(dataDir, consensus.PrivValidatorStateFilename))
 	pvFile.Save()
 
 	ecdsaPrivKey := secp256k1.GenPrivKey()
