@@ -100,3 +100,12 @@ alltest: install
 	python scripts/ons/buy_sell_domain.py
 	python scripts/reward/withdraw.py
 	@./scripts/stopDev
+
+
+rpcAuthtest: install
+	@./scripts/stopDev
+	@./scripts/resetDev
+	python scripts/rpcAuth/setup.py
+	@./scripts/startDev
+	python scripts/rpcAuth/rpcTestAuth.py
+	@./scripts/stopDev

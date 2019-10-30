@@ -65,7 +65,7 @@ func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *node.Context) (
 		node:       *nodeCtx,
 	}
 
-	ctx.rpc = rpc.NewServer(logWriter)
+	ctx.rpc = rpc.NewServer(logWriter, &cfg)
 
 	db, err := storage.GetDatabase("chainstate", ctx.dbDir(), ctx.cfg.Node.DB)
 	if err != nil {
@@ -157,7 +157,7 @@ func (ctx *context) Services() (service.Map, error) {
 		Services:     extSvcs,
 	}
 
-	return service.NewMap(svcCtx), nil
+	return service.NewMap(svcCtx)
 }
 
 func (ctx *context) Restful() (service.RestfulRouter, error) {
