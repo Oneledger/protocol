@@ -23,6 +23,7 @@ const (
 	ResourceNotFoundError = 1005
 	AccountNotFound       = 100501
 	DomainNotFound        = 100502
+	CurrencyNotFound      = 100503
 
 	InternalError                  = 1006
 	InternalErrorSerialization     = 100601
