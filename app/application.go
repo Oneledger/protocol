@@ -221,7 +221,7 @@ func (app *App) setupValidators(req RequestInitChain, currencies *balance.Curren
 			return nil, err
 		}
 	}
-	app.Context.trackers.State.Commit()
+	//app.Context.trackers.State.Commit()
 
 	return vu, err
 }

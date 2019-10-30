@@ -27,6 +27,8 @@ type JobAddSignature struct {
 	JobID string
 
 	Done bool
+
+	RetryCount int8
 }
 
 func NewAddSignatureJob(trackerName string) jobs.Job {
@@ -38,6 +40,7 @@ func NewAddSignatureJob(trackerName string) jobs.Job {
 		trackerName,
 		id,
 		false,
+		0,
 	}
 }
 

@@ -7,6 +7,7 @@ package btc
 import (
 	"encoding/json"
 	"fmt"
+	"time"
 
 	"github.com/btcsuite/btcd/chaincfg"
 
@@ -136,8 +137,20 @@ func (ast btcAddSignatureTx) ProcessCheck(ctx *action.Context, tx action.RawTx) 
 		return false, action.Response{Log: fmt.Sprintf("error adding signature: %s, error: ", addSignature.TrackerName, err)}
 	}
 
-	if tracker.HasEnoughSignatures() {
+	if tracker.HasEnoughSignatures() &&
+		ctx.JobStore != nil {
+
 		tracker.State = bitcoin.BusyBroadcastingTrackerState
+
+		job := JobBTCBroadcast{
+			JobTypeBTCBroadcast,
+			tracker.Name,
+			time.Now().String(),
+			false,
+			false,
+		}
+		err := ctx.JobStore.SaveJob(&job)
+		ctx.Logger.Error("error while scheduling bitcoin broadcast job", err)
 	}
 
 	err = ctx.Trackers.SetTracker(addSignature.TrackerName, tracker)

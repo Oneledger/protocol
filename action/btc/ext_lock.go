@@ -77,10 +77,10 @@ func (btcLockTx) Validate(ctx *action.Context, signedTx action.SignedTx) (bool, 
 		return false, err
 	}
 
-	// err = action.ValidateFee(ctx.FeeOpt, signedTx.Fee)
-	// if err != nil {
-	// 	return false, err
-	// }
+	err = action.ValidateFee(ctx.FeeOpt, signedTx.Fee)
+	if err != nil {
+		return false, err
+	}
 
 	tracker, err := ctx.Trackers.Get(lock.TrackerName)
 	if err != nil {
@@ -198,6 +198,6 @@ func (btcLockTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, act
 }
 
 func (btcLockTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas) (bool, action.Response) {
-	// return action.BasicFeeHandling(ctx, signedTx, start, size, 1)
-	return true, action.Response{}
+	return action.BasicFeeHandling(ctx, signedTx, start, size, 1)
+	// return true, action.Response{}
 }

@@ -53,7 +53,7 @@ def add_signature(txn, sign, address, tracker_name):
             "currency": "OLT",
             "value": "1000000000",
         },
-        "gas": 40000,
+        "gas": 400000,
     }
     resp = rpc_call('btc.AddUserSignatureAndProcessLock', req)
 
