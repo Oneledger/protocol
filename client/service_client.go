@@ -130,3 +130,12 @@ func (c *ServiceClient) TxCommit(req BroadcastRequest) (out BroadcastReply, err 
 	err = c.Call("broadcast.TxCommit", req, &out)
 	return
 }
+
+func (c *ServiceClient) GetTracker(name string) (out BTCGetTrackerReply, err error) {
+	/*if len(request) <= 20 {
+		return out, errors.New("address has insufficient length")
+	}*/
+	request := BTCGetTrackerRequest{name}
+	err = c.Call("btc.GetTracker", &request, &out)
+	return
+}

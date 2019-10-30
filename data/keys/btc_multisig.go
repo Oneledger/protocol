@@ -9,7 +9,6 @@ import (
 	"encoding/json"
 
 	"github.com/Oneledger/protocol/utils"
-	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/pkg/errors"
 )
 
@@ -51,7 +50,7 @@ func NewBTCMultiSig(msg []byte, m int, signers []Address) (*BTCMultiSig, error) 
 	}, nil
 }
 
-func (m *BTCMultiSig) AddSignature(s *BTCSignature, params *chaincfg.Params) error {
+func (m *BTCMultiSig) AddSignature(s *BTCSignature) error {
 
 	if !bytes.Equal(s.Address, m.Signers[s.Index]) {
 		return ErrNotExpectedSigner

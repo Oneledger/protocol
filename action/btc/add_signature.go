@@ -118,8 +118,20 @@ func (ast btcAddSignatureTx) ProcessCheck(ctx *action.Context, tx action.RawTx) 
 
 	addressPubkey, err := btcutil.NewAddressPubKey(addSignature.ValidatorPubKey, ctx.BTCChainType)
 
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Println("Recovered in f \n ======================================================", r)
+
+			fmt.Println(err)
+			fmt.Printf("%#v  \n", addSignature)
+			fmt.Println(addressPubkey)
+			fmt.Println(addSignature.BTCSignature)
+			fmt.Println(addSignature.ValidatorAddress)
+			fmt.Println("=========================================================")
+		}
+	}()
 	err = tracker.AddSignature(addSignature.BTCSignature, *addressPubkey,
-		addSignature.ValidatorAddress, addSignature.Params)
+		addSignature.ValidatorAddress)
 	if err != nil {
 		return false, action.Response{Log: fmt.Sprintf("error adding signature: %s, error: ", addSignature.TrackerName, err)}
 	}
@@ -162,7 +174,7 @@ func (ast btcAddSignatureTx) ProcessDeliver(ctx *action.Context, tx action.RawTx
 	addressPubKey, err := btcutil.NewAddressPubKey(addSignature.ValidatorPubKey, ctx.BTCChainType)
 
 	err = tracker.AddSignature(addSignature.BTCSignature, *addressPubKey,
-		addSignature.ValidatorAddress, addSignature.Params)
+		addSignature.ValidatorAddress)
 	if err != nil {
 		return false, action.Response{Log: fmt.Sprintf("error adding signature: %s, error: ", addSignature.TrackerName, err)}
 	}

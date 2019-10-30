@@ -7,8 +7,6 @@ package bitcoin
 import (
 	"errors"
 
-	"github.com/btcsuite/btcd/chaincfg"
-
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/btcsuite/btcutil"
@@ -117,7 +115,7 @@ func (t *Tracker) ProcessLock(newUTXO *UTXO,
 }
 
 func (t *Tracker) AddSignature(signatureBytes []byte,
-	validatorPubKey btcutil.AddressPubKey, addr keys.Address, params *chaincfg.Params) error {
+	validatorPubKey btcutil.AddressPubKey, addr keys.Address) error {
 
 	if t.State != BusySigningTrackerState {
 		return ErrTrackerNotCollectionSignatures
@@ -134,7 +132,7 @@ func (t *Tracker) AddSignature(signatureBytes []byte,
 		Sign:    signatureBytes,
 	}
 
-	return t.Multisig.AddSignature(&s, params)
+	return t.Multisig.AddSignature(&s)
 }
 
 func (t *Tracker) HasEnoughSignatures() bool {

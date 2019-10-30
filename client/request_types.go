@@ -13,6 +13,7 @@ import (
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/data/accounts"
 	"github.com/Oneledger/protocol/data/balance"
+	"github.com/Oneledger/protocol/data/bitcoin"
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/identity"
 	ctypes "github.com/tendermint/tendermint/rpc/core/types"
@@ -196,4 +197,11 @@ type BTCLockPrepareRequest struct {
 type BTCLockPrepareResponse struct {
 	Txn         string `json:"txn"`
 	TrackerName string `json:"tracker_name"`
+}
+
+type BTCGetTrackerRequest struct {
+	Name string `json:"name"`
+}
+type BTCGetTrackerReply struct {
+	Tracker bitcoin.Tracker `json:"tracker"`
 }
