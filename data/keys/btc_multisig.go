@@ -5,11 +5,11 @@
 package keys
 
 import (
+	"bytes"
 	"encoding/json"
 
 	"github.com/Oneledger/protocol/utils"
 	"github.com/btcsuite/btcd/chaincfg"
-	"github.com/btcsuite/btcutil"
 	"github.com/pkg/errors"
 )
 
@@ -18,18 +18,18 @@ type BTCMultiSig struct {
 
 	M int `json:"m"`
 
-	Signers []btcutil.AddressPubKey `json:"signers"`
+	Signers []Address `json:"signers"`
 
 	Signatures []BTCSignature `json:"signatures"`
 }
 
 type BTCSignature struct {
-	Index  int    `json:"index"`
-	PubKey []byte `json:"pubkey"` // this should be a compressed public key
-	Sign   []byte `json:"sign"`
+	Index   int     `json:"index"`
+	Address Address `json:"address"` // this should be a compressed public key
+	Sign    []byte  `json:"sign"`
 }
 
-func NewBTCMultiSig(msg []byte, m int, signers []btcutil.AddressPubKey) (*BTCMultiSig, error) {
+func NewBTCMultiSig(msg []byte, m int, signers []Address) (*BTCMultiSig, error) {
 
 	if msg == nil {
 		return nil, ErrMissMsg
@@ -53,12 +53,7 @@ func NewBTCMultiSig(msg []byte, m int, signers []btcutil.AddressPubKey) (*BTCMul
 
 func (m *BTCMultiSig) AddSignature(s *BTCSignature, params *chaincfg.Params) error {
 
-	address, err := btcutil.NewAddressPubKey(s.PubKey, params)
-	if err != nil {
-		return errors.Wrap(err, "failed to add")
-	}
-
-	if address.String() != m.Signers[s.Index].String() {
+	if !bytes.Equal(s.Address, m.Signers[s.Index]) {
 		return ErrNotExpectedSigner
 	}
 
@@ -102,10 +97,11 @@ func (m BTCMultiSig) Bytes() []byte {
 	return b
 }
 
-func (m BTCMultiSig) HasAddressSigned(addr btcutil.AddressPubKey) bool {
+func (m BTCMultiSig) HasAddressSigned(addr Address) bool {
 	index := len(m.Signers) + 100
+
 	for i := range m.Signers {
-		if m.Signers[i].String() == addr.String() {
+		if bytes.Equal(addr, m.Signers[i]) {
 			index = i
 			break
 		}
@@ -137,10 +133,10 @@ func (m *BTCMultiSig) FromBytes(b []byte) error {
 	return nil
 }
 
-func (m *BTCMultiSig) GetSignerIndex(addr btcutil.AddressPubKey) (int, error) {
+func (m *BTCMultiSig) GetSignerIndex(addr Address) (int, error) {
 
 	for i := range m.Signers {
-		if m.Signers[i].String() == addr.String() {
+		if bytes.Equal(addr, m.Signers[i]) {
 			return i, nil
 		}
 	}

@@ -7,7 +7,6 @@ package action
 import (
 	"github.com/Oneledger/protocol/data/bitcoin"
 	"github.com/Oneledger/protocol/data/keys"
-	"github.com/btcsuite/btcd/btcec"
 	"github.com/btcsuite/btcd/chaincfg"
 )
 
@@ -16,7 +15,7 @@ type JobsContext struct {
 
 	Trackers *bitcoin.TrackerStore
 
-	BTCPrivKey       *btcec.PrivateKey
+	BTCPrivKey       keys.PrivateKey
 	Params           *chaincfg.Params
 	ValidatorAddress Address
 
@@ -32,7 +31,7 @@ type JobsContext struct {
 	BTCChainnet string
 }
 
-func NewJobsContext(chainType string, svc *Service, trackers *bitcoin.TrackerStore, privKey *btcec.PrivateKey,
+func NewJobsContext(chainType string, svc *Service, trackers *bitcoin.TrackerStore, privKey *keys.PrivateKey,
 	valAddress keys.Address, bcyToken string, lStore *bitcoin.LockScriptStore,
 	btcAddress, btcRPCPort, BTCRPCUsername, BTCRPCPassword, btcChain string,
 ) *JobsContext {
@@ -54,7 +53,7 @@ func NewJobsContext(chainType string, svc *Service, trackers *bitcoin.TrackerSto
 	return &JobsContext{
 		Service:          svc,
 		Trackers:         trackers,
-		BTCPrivKey:       privKey,
+		BTCPrivKey:       *privKey,
 		Params:           params,
 		ValidatorAddress: valAddress,
 		BlockCypherToken: bcyToken,

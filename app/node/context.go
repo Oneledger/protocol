@@ -1,14 +1,11 @@
 package node
 
 import (
-	"crypto/elliptic"
 	"encoding/base64"
 	"errors"
 	"io/ioutil"
 	"os"
 	"strings"
-
-	"github.com/btcsuite/btcd/btcec"
 
 	"github.com/Oneledger/protocol/config"
 	"github.com/Oneledger/protocol/consensus"
@@ -99,10 +96,9 @@ func (n Context) ValidatorECDSAPubKey() keys.PublicKey {
 	return priv.PubKey()
 }
 
-func (n Context) ValidatorECDSAPrivateKey() *btcec.PrivateKey {
+func (n Context) ValidatorECDSAPrivateKey() *keys.PrivateKey {
 
-	privKey, _ := btcec.PrivKeyFromBytes(elliptic.P256(), n.ecdsaPrivVal.Data)
-	return privKey
+	return &n.ecdsaPrivVal
 }
 
 func (n Context) isValid() bool {

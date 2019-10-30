@@ -6,15 +6,17 @@ package btc
 
 import (
 	"bytes"
+	"crypto/elliptic"
 	"fmt"
 	"strconv"
 	"time"
+
+	"github.com/btcsuite/btcd/btcec"
 
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/data/jobs"
 	"github.com/btcsuite/btcd/txscript"
 	"github.com/btcsuite/btcd/wire"
-	"github.com/btcsuite/btcutil"
 )
 
 type JobAddSignature struct {
@@ -47,7 +49,7 @@ type doJobData struct {
 }
 
 func (j *JobAddSignature) DoMyJob(ctxI interface{}) {
-	ctx, _ := ctxI.(action.JobsContext)
+	ctx, _ := ctxI.(*action.JobsContext)
 
 	tracker, err := ctx.Trackers.Get(j.TrackerName)
 	if err != nil {
@@ -65,17 +67,16 @@ func (j *JobAddSignature) DoMyJob(ctxI interface{}) {
 
 	}
 
-	sig, err := txscript.RawTxInSignature(lockTx, 0, lockScript, txscript.SigHashAll,
-		ctx.BTCPrivKey)
+	pk, _ := btcec.PrivKeyFromBytes(elliptic.P256(), ctx.BTCPrivKey.Data)
+
+	sig, err := txscript.RawTxInSignature(lockTx, 0, lockScript, txscript.SigHashAll, pk)
 	if err != nil {
 		fmt.Println(err, "RawTxInSignature")
 	}
 
-	addrPubKey, err := btcutil.NewAddressPubKey(ctx.BTCPrivKey.PubKey().SerializeCompressed(), ctx.Params)
-
 	addSigData := AddSignature{
 		TrackerName:      j.TrackerName,
-		ValidatorPubKey:  addrPubKey,
+		ValidatorPubKey:  pk.PubKey().SerializeCompressed(),
 		BTCSignature:     sig,
 		ValidatorAddress: ctx.ValidatorAddress,
 		Memo:             j.JobID,
@@ -107,20 +108,22 @@ func (j *JobAddSignature) DoMyJob(ctxI interface{}) {
 }
 
 func (j *JobAddSignature) IsMyJobDone(ctxI interface{}) bool {
-	ctx, _ := ctxI.(action.JobsContext)
+	ctx, ok := ctxI.(*action.JobsContext)
+	fmt.Println("========================================================")
+	fmt.Printf("%#v \n", ctx)
+	fmt.Println(ok)
 
 	tracker, err := ctx.Trackers.Get(j.TrackerName)
 	if err != nil {
 		return false
 	}
 
-	addrPubKey, err := btcutil.NewAddressPubKey(ctx.BTCPrivKey.PubKey().SerializeCompressed(), ctx.Params)
-	return tracker.Multisig.HasAddressSigned(*addrPubKey)
+	return tracker.Multisig.HasAddressSigned(ctx.ValidatorAddress)
 }
 
 func (j *JobAddSignature) IsSufficient(ctxI interface{}) bool {
 
-	ctx, _ := ctxI.(action.JobsContext)
+	ctx, _ := ctxI.(*action.JobsContext)
 
 	tracker, err := ctx.Trackers.Get(j.TrackerName)
 	if err != nil {

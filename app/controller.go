@@ -193,7 +193,7 @@ func (app *App) blockEnder() blockEnder {
 
 		go func() {
 
-			if req.Height%100 == 0 &&
+			if req.Height%1 == 0 &&
 				app.Context.validators.IsValidatorAddress(app.Context.node.ValidatorAddress()) {
 
 				cdConfig := app.Context.cfg.ChainDriver

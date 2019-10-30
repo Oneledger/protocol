@@ -103,3 +103,9 @@ alltest: install
 	@./scripts/stopDev
 
 
+
+reset: install
+	@./scripts/stopDev
+	@./scripts/resetDev
+	@./scripts/startDev
+	@./scripts/testapply

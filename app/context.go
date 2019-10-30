@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 
 	"github.com/Oneledger/protocol/action/btc"
+	"github.com/btcsuite/btcd/chaincfg"
 
 	"github.com/Oneledger/protocol/data/bitcoin"
 	"github.com/Oneledger/protocol/data/chain"
@@ -121,6 +122,21 @@ func (ctx context) dbDir() string {
 }
 
 func (ctx *context) Action(header *Header, state *storage.State) *action.Context {
+
+	var params *chaincfg.Params
+	switch ctx.cfg.ChainDriver.BitcoinChainType {
+	case "mainnet":
+		params = &chaincfg.MainNetParams
+	case "testnet3":
+		params = &chaincfg.TestNet3Params
+	case "regtest":
+		params = &chaincfg.RegressionNetParams
+	case "simnet":
+		params = &chaincfg.SimNetParams
+	default:
+		params = &chaincfg.TestNet3Params
+	}
+
 	actionCtx := action.NewContext(
 		ctx.actionRouter,
 		header,
@@ -133,6 +149,8 @@ func (ctx *context) Action(header *Header, state *storage.State) *action.Context
 		ctx.validators.WithState(state),
 		ctx.domains.WithState(state),
 		ctx.trackers.WithState(state),
+		ctx.jobStore,
+		params,
 		log.NewLoggerWithPrefix(ctx.logWriter, "action"))
 
 	return actionCtx

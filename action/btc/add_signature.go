@@ -19,7 +19,7 @@ import (
 
 type AddSignature struct {
 	TrackerName      string
-	ValidatorPubKey  *btcutil.AddressPubKey
+	ValidatorPubKey  []byte
 	BTCSignature     []byte
 	ValidatorAddress action.Address
 	Params           *chaincfg.Params
@@ -116,7 +116,10 @@ func (ast btcAddSignatureTx) ProcessCheck(ctx *action.Context, tx action.RawTx) 
 		return false, action.Response{Log: fmt.Sprintf("tracker not accepting signatures: ", addSignature.TrackerName)}
 	}
 
-	err = tracker.AddSignature(addSignature.BTCSignature, *addSignature.ValidatorPubKey, addSignature.Params)
+	addressPubkey, err := btcutil.NewAddressPubKey(addSignature.ValidatorPubKey, ctx.BTCChainType)
+
+	err = tracker.AddSignature(addSignature.BTCSignature, *addressPubkey,
+		addSignature.ValidatorAddress, addSignature.Params)
 	if err != nil {
 		return false, action.Response{Log: fmt.Sprintf("error adding signature: %s, error: ", addSignature.TrackerName, err)}
 	}
@@ -156,7 +159,10 @@ func (ast btcAddSignatureTx) ProcessDeliver(ctx *action.Context, tx action.RawTx
 		return false, action.Response{Log: fmt.Sprintf("tracker not accepting signatures: %s", addSignature.TrackerName)}
 	}
 
-	err = tracker.AddSignature(addSignature.BTCSignature, *addSignature.ValidatorPubKey, addSignature.Params)
+	addressPubKey, err := btcutil.NewAddressPubKey(addSignature.ValidatorPubKey, ctx.BTCChainType)
+
+	err = tracker.AddSignature(addSignature.BTCSignature, *addressPubKey,
+		addSignature.ValidatorAddress, addSignature.Params)
 	if err != nil {
 		return false, action.Response{Log: fmt.Sprintf("error adding signature: %s, error: ", addSignature.TrackerName, err)}
 	}
@@ -176,5 +182,5 @@ func (ast btcAddSignatureTx) ProcessDeliver(ctx *action.Context, tx action.RawTx
 }
 
 func (ast btcAddSignatureTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas) (bool, action.Response) {
-	panic("implement me")
+	return true, action.Response{}
 }

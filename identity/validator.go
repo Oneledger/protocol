@@ -5,16 +5,18 @@ import (
 	"github.com/Oneledger/protocol/data/fees"
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/serialize"
+	"github.com/btcsuite/btcutil"
 )
 
 type Validator struct {
-	Address      keys.Address   `json:"address"`
-	StakeAddress keys.Address   `json:"stakeAddress"`
-	PubKey       keys.PublicKey `json:"pubKey"`
-	ECDSAPubKey  keys.PublicKey `json:"ecdsa_pubkey"`
-	Power        int64          `json:"power"`
-	Name         string         `json:"name"`
-	Staking      balance.Amount `json:"staking,string"`
+	Address          keys.Address          `json:"address"`
+	StakeAddress     keys.Address          `json:"stakeAddress"`
+	PubKey           keys.PublicKey        `json:"pubKey"`
+	ECDSAPubKey      keys.PublicKey        `json:"ecdsa_pubkey"`
+	BTCAddressPubKey btcutil.AddressPubKey `json:"btc_address_pubkey"`
+	Power            int64                 `json:"power"`
+	Name             string                `json:"name"`
+	Staking          balance.Amount        `json:"staking,string"`
 }
 
 func (v *Validator) Bytes() []byte {
@@ -40,6 +42,7 @@ type Stake struct {
 	StakeAddress     keys.Address
 	Pubkey           keys.PublicKey
 	ECDSAPubKey      keys.PublicKey
+	BTCAddresPubkey  btcutil.AddressPubKey
 	Name             string
 	Amount           balance.Amount
 }

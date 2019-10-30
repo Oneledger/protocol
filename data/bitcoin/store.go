@@ -39,6 +39,7 @@ func (ts *TrackerStore) WithState(state *storage.State) *TrackerStore {
 func (ts *TrackerStore) Get(name string) (*Tracker, error) {
 
 	key := keyFromName(name)
+
 	key = append(ts.prefix, key...)
 	exists := ts.State.Exists(key)
 	if !exists {

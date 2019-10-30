@@ -1,6 +1,7 @@
 package main
 
 import (
+	"crypto/elliptic"
 	"crypto/rand"
 	"encoding/base64"
 	"encoding/hex"
@@ -10,6 +11,10 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+
+	"github.com/btcsuite/btcd/btcec"
+	"github.com/btcsuite/btcd/chaincfg"
+	"github.com/btcsuite/btcutil"
 
 	"github.com/Oneledger/protocol/data/fees"
 
@@ -369,6 +374,11 @@ func initialState(args *testnetConfig, nodeList []node) consensus.AppState {
 			continue
 		}
 		h, _ := node.esdcaPk.GetHandler()
+		_, pubk := btcec.PrivKeyFromBytes(elliptic.P256(), node.esdcaPk.Data)
+		bap, err := btcutil.NewAddressPubKey(pubk.SerializeCompressed(), &chaincfg.TestNet3Params)
+		if err != nil {
+			fmt.Println(err)
+		}
 
 		pubkey, _ := keys.PubKeyFromTendermint(node.validator.PubKey.Bytes())
 		st := consensus.Stake{
@@ -376,6 +386,7 @@ func initialState(args *testnetConfig, nodeList []node) consensus.AppState {
 			StakeAddress:     node.key.PubKey().Address().Bytes(),
 			Pubkey:           pubkey,
 			ECDSAPubKey:      h.PubKey(),
+			BTCAddresPubkey:  *bap,
 			Name:             node.validator.Name,
 			Amount:           *vt.NewCoinFromInt(node.validator.Power).Amount,
 		}

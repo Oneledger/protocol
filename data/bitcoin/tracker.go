@@ -96,7 +96,7 @@ func (t *Tracker) GetAddress() ([]byte, error) {
 }
 
 func (t *Tracker) ProcessLock(newUTXO *UTXO,
-	txn []byte, validatorsPubKeys []btcutil.AddressPubKey,
+	txn []byte, validatorsPubKeys []keys.Address,
 ) error {
 
 	if t.IsBusy() {
@@ -117,21 +117,21 @@ func (t *Tracker) ProcessLock(newUTXO *UTXO,
 }
 
 func (t *Tracker) AddSignature(signatureBytes []byte,
-	validatorPubKey btcutil.AddressPubKey, params *chaincfg.Params) error {
+	validatorPubKey btcutil.AddressPubKey, addr keys.Address, params *chaincfg.Params) error {
 
 	if t.State != BusySigningTrackerState {
 		return ErrTrackerNotCollectionSignatures
 	}
 
-	index, err := t.Multisig.GetSignerIndex(validatorPubKey)
+	index, err := t.Multisig.GetSignerIndex(addr)
 	if err != nil {
 		return err
 	}
 
 	s := keys.BTCSignature{
-		Index:  index,
-		PubKey: validatorPubKey.PubKey().SerializeCompressed(),
-		Sign:   signatureBytes,
+		Index:   index,
+		Address: addr,
+		Sign:    signatureBytes,
 	}
 
 	return t.Multisig.AddSignature(&s, params)

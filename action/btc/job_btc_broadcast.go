@@ -31,7 +31,7 @@ type JobBTCBroadcast struct {
 
 func (j *JobBTCBroadcast) DoMyJob(ctxI interface{}) {
 
-	ctx, _ := ctxI.(action.JobsContext)
+	ctx, _ := ctxI.(*action.JobsContext)
 
 	tracker, err := ctx.Trackers.Get(j.TrackerName)
 	if err != nil {
@@ -155,7 +155,7 @@ func (j *JobBTCBroadcast) DoMyJob(ctxI interface{}) {
 }
 
 func (j *JobBTCBroadcast) IsMyJobDone(ctxI interface{}) bool {
-	ctx, _ := ctxI.(action.JobsContext)
+	ctx, _ := ctxI.(*action.JobsContext)
 
 	tracker, err := ctx.Trackers.Get(j.TrackerName)
 	if err != nil {

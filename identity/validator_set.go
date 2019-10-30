@@ -184,13 +184,14 @@ func (vs *ValidatorStore) HandleStake(apply Stake) error {
 	if !vs.store.Exists(key) {
 
 		validator = &Validator{
-			Address:      apply.ValidatorAddress,
-			StakeAddress: apply.StakeAddress,
-			PubKey:       apply.Pubkey,
-			ECDSAPubKey:  apply.ECDSAPubKey,
-			Power:        calculatePower(apply.Amount),
-			Name:         apply.Name,
-			Staking:      apply.Amount,
+			Address:          apply.ValidatorAddress,
+			StakeAddress:     apply.StakeAddress,
+			PubKey:           apply.Pubkey,
+			ECDSAPubKey:      apply.ECDSAPubKey,
+			BTCAddressPubKey: apply.BTCAddresPubkey,
+			Power:            calculatePower(apply.Amount),
+			Name:             apply.Name,
+			Staking:          apply.Amount,
 		}
 		// push the new validator to queue
 	} else {

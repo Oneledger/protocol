@@ -20,7 +20,7 @@ def rpc_call(method, params):
         "jsonrpc": "2.0"
     }
     print(json.dumps(payload))
-    response = requests.request("POST", url, data=json.dumps(payload), headers=headers)
+    response = requests.request("POST", url, data=json.dumps(payload), headers=headers, timeout=200)
     print(response, response.text)
     if response.status_code != 200:
         return ""

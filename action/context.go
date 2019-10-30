@@ -10,6 +10,7 @@ import (
 	"github.com/Oneledger/protocol/identity"
 	"github.com/Oneledger/protocol/log"
 	"github.com/Oneledger/protocol/storage"
+	"github.com/btcsuite/btcd/chaincfg"
 	abci "github.com/tendermint/tendermint/abci/types"
 )
 
@@ -28,26 +29,30 @@ type Context struct {
 	Logger          *log.Logger
 	JobStore        *jobs.JobStore
 	LockScriptStore *bitcoin.LockScriptStore
+	BTCChainType    *chaincfg.Params
 }
 
 func NewContext(r Router, header *abci.Header, state *storage.State,
 	wallet accounts.Wallet, balances *balance.Store,
 	currencies *balance.CurrencySet, feeOpt *fees.FeeOption, feePool *fees.Store,
 	validators *identity.ValidatorStore, domains *ons.DomainStore, trackers *bitcoin.TrackerStore,
+	jobStore *jobs.JobStore, btcChainType *chaincfg.Params,
 	logger *log.Logger) *Context {
 
 	return &Context{
-		Router:     r,
-		State:      state,
-		Header:     header,
-		Accounts:   wallet,
-		Balances:   balances,
-		Domains:    domains,
-		FeePool:    feePool,
-		Currencies: currencies,
-		FeeOpt:     feeOpt,
-		Validators: validators,
-		Trackers:   trackers,
-		Logger:     logger,
+		Router:       r,
+		State:        state,
+		Header:       header,
+		Accounts:     wallet,
+		Balances:     balances,
+		Domains:      domains,
+		FeePool:      feePool,
+		Currencies:   currencies,
+		FeeOpt:       feeOpt,
+		Validators:   validators,
+		Trackers:     trackers,
+		Logger:       logger,
+		JobStore:     jobStore,
+		BTCChainType: btcChainType,
 	}
 }
