@@ -179,3 +179,14 @@ type SignRawTxRequest struct {
 type SignRawTxResponse struct {
 	Signature action.Signature `json:"signature"`
 }
+
+type CurrencyBalanceRequest struct {
+	Currency string       `json:"currency"`
+	Address  keys.Address `json:"address"`
+}
+type CurrencyBalanceReply struct {
+	Currency string `json:"currency"`
+	Balance  string `json:"balance"`
+	// The height when this balance was recorded
+	Height int64 `json:"height"`
+}

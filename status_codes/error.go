@@ -53,9 +53,10 @@ var (
 	ErrKeyGeneration     = ProtocolError{InternalErrorGeneratingKeyPair, "error generating key pair"}
 
 	// Query errors
-	ErrBadAddress     = ProtocolError{IncorrectAddress, "address incorrect"}
-	ErrGettingBalance = ProtocolError{InternalErrorGettingBalance, "error  getting balance"}
-	ErrListValidators = ProtocolError{InternalErrorListValidators, "error getting list of validators"}
+	ErrBadAddress      = ProtocolError{IncorrectAddress, "address incorrect"}
+	ErrGettingBalance  = ProtocolError{InternalErrorGettingBalance, "error  getting balance"}
+	ErrListValidators  = ProtocolError{InternalErrorListValidators, "error getting list of validators"}
+	ErrFindingCurrency = ProtocolError{CurrencyNotFound, "error  finding currency"}
 
 	// ONS errors
 	ErrBadName        = ProtocolError{DomainMissing, "domain name not provided"}
