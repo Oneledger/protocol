@@ -205,6 +205,6 @@ func (state *ChainState) loadDB(db tmdb.DB) ([]byte, int64) {
 	state.Version = state.Delivered.Version()
 	state.TreeHeight = state.Delivered.Height()
 
-	log.Debug("Reinitialized From Database", "version", state.Version, "tree_height", state.TreeHeight, "hash", hex.EncodeToString(state.Hash))
+	log.Info("Reinitialized From Database", "version", state.Version, "tree_height", state.TreeHeight, "hash", hex.EncodeToString(state.Hash))
 	return state.Hash, state.Version
 }

@@ -113,7 +113,7 @@ func (ctx *context) Action(header *Header, state *storage.State) *action.Context
 		ctx.feePool.WithState(state),
 		ctx.validators.WithState(state),
 		ctx.domains.WithState(state),
-		log.NewLoggerWithPrefix(ctx.logWriter, "action"))
+		log.NewLoggerWithPrefix(ctx.logWriter, "action").WithLevel(log.Level(ctx.cfg.Node.LogLevel)))
 
 	return actionCtx
 }
@@ -133,7 +133,7 @@ func (ctx *context) ValidatorCtx() *identity.ValidatorContext {
 // Returns a balance.Context
 func (ctx *context) Balances() *balance.Context {
 	return balance.NewContext(
-		log.NewLoggerWithPrefix(ctx.logWriter, "balances"),
+		log.NewLoggerWithPrefix(ctx.logWriter, "balances").WithLevel(log.Level(ctx.cfg.Node.LogLevel)),
 		ctx.balances,
 		ctx.currencies)
 }
@@ -153,7 +153,7 @@ func (ctx *context) Services() (service.Map, error) {
 		ValidatorSet: ctx.validators,
 		Domains:      ctx.domains,
 		Router:       ctx.actionRouter,
-		Logger:       log.NewLoggerWithPrefix(ctx.logWriter, "rpc"),
+		Logger:       log.NewLoggerWithPrefix(ctx.logWriter, "rpc").WithLevel(log.Level(ctx.cfg.Node.LogLevel)),
 		Services:     extSvcs,
 	}
 
@@ -175,7 +175,7 @@ func (ctx *context) Restful() (service.RestfulRouter, error) {
 		ValidatorSet: ctx.validators,
 		Domains:      ctx.domains,
 		Router:       ctx.actionRouter,
-		Logger:       log.NewLoggerWithPrefix(ctx.logWriter, "restful"),
+		Logger:       log.NewLoggerWithPrefix(ctx.logWriter, "restful").WithLevel(log.Level(ctx.cfg.Node.LogLevel)),
 		Services:     extSvcs,
 	}
 	return service.NewRestfulService(svcCtx).Router(), nil
