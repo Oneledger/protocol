@@ -6,6 +6,7 @@ package jobs
 
 import (
 	"errors"
+	"sync"
 
 	"github.com/Oneledger/protocol/config"
 	"github.com/Oneledger/protocol/serialize"
@@ -16,7 +17,8 @@ const rootkey = "rootkey"
 
 type JobStore struct {
 	storage.SessionedStorage
-	ser serialize.Serializer
+	ser  serialize.Serializer
+	lock sync.Mutex
 }
 
 func NewJobStore(config config.Server, dbDir string) *JobStore {
@@ -26,6 +28,7 @@ func NewJobStore(config config.Server, dbDir string) *JobStore {
 	return &JobStore{
 		store,
 		serialize.GetSerializer(serialize.PERSISTENT),
+		sync.Mutex{},
 	}
 }
 
@@ -39,6 +42,7 @@ func (js *JobStore) SaveJob(job Job) error {
 		return err
 	}
 
+	js.lock.Lock()
 	session := js.BeginSession()
 	err = session.Set(key, dat)
 	if err != nil {
@@ -49,6 +53,7 @@ func (js *JobStore) SaveJob(job Job) error {
 		return err
 	}
 	ok := session.Commit()
+	js.lock.Unlock()
 	if !ok {
 		return errors.New("err commiting to job store")
 	}
@@ -76,6 +81,7 @@ func (js *JobStore) DeleteJob(job Job) error {
 	key := storage.StoreKey("job:" + job.GetJobID())
 	typKey := storage.StoreKey("jobtype:" + job.GetJobID())
 
+	js.lock.Lock()
 	session := js.BeginSession()
 
 	_, err := session.Delete(key)
@@ -88,6 +94,7 @@ func (js *JobStore) DeleteJob(job Job) error {
 		return err
 	}
 	ok := session.Commit()
+	js.lock.Unlock()
 	if !ok {
 		return errors.New("error committing to job store")
 	}

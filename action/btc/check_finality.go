@@ -27,7 +27,7 @@ var _ action.Msg = &ReportFinalityMint{}
 
 func (m *ReportFinalityMint) Signers() []action.Address {
 	return []action.Address{
-		m.OwnerAddress,
+		m.ValidatorAddress,
 	}
 }
 
@@ -73,6 +73,7 @@ type reportFinalityMintTx struct {
 var _ action.Tx = reportFinalityMintTx{}
 
 func (reportFinalityMintTx) Validate(ctx *action.Context, signedTx action.SignedTx) (bool, error) {
+
 	f := ReportFinalityMint{}
 	err := f.Unmarshal(signedTx.Data)
 	if err != nil {
@@ -93,14 +94,15 @@ func (reportFinalityMintTx) Validate(ctx *action.Context, signedTx action.Signed
 		return false, errors.New("tracker process not owned by user")
 	}
 
-	if tracker.State != bitcoin.BusyFinalizingTrackerState {
-		return false, errors.New("tracker not available for broadcast")
+	if tracker.State != bitcoin.BusyBroadcastingTrackerState {
+		return false, errors.New("tracker not available for finalizing")
 	}
 
 	return true, nil
 }
 
 func (reportFinalityMintTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
+
 	f := ReportFinalityMint{}
 	err := f.Unmarshal(tx.Data)
 	if err != nil {
@@ -116,7 +118,7 @@ func (reportFinalityMintTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (
 		return false, action.Response{Log: "tracker process not owned by user"}
 	}
 
-	if tracker.State != bitcoin.BusyFinalizingTrackerState {
+	if tracker.State != bitcoin.BusyBroadcastingTrackerState {
 		return false, action.Response{Log: "tracker not ready for finalizing"}
 	}
 
@@ -124,6 +126,7 @@ func (reportFinalityMintTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (
 	if err != nil {
 		return false, action.Response{Log: "cannot get validator set"}
 	}
+
 	nValidators := len(valSet)
 	votesThresholdForMint := (2 * nValidators) / 3
 
@@ -144,6 +147,7 @@ func (reportFinalityMintTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (
 			validatorSignedFlag = true
 		}
 	}
+
 	if !validatorSignedFlag {
 		tracker.FinalityVotes = append(tracker.FinalityVotes, f.ValidatorAddress)
 	}
@@ -163,8 +167,13 @@ func (reportFinalityMintTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (
 		}
 	}
 
+	ctx.Logger.Info("ready to mint")
+
 	// mint oBTC
 	curr, ok := ctx.Currencies.GetCurrencyByName("BTC")
+	if !ok {
+
+	}
 	oBTCCoin := curr.NewCoinFromUnit(tracker.ProcessBalance - tracker.CurrentBalance)
 	err = ctx.Balances.AddToAddress(f.OwnerAddress, oBTCCoin)
 	if err != nil {
@@ -174,7 +183,7 @@ func (reportFinalityMintTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (
 	validatorPubKeys, err := ctx.Validators.GetBitcoinKeys(&chaincfg.TestNet3Params)
 	m := (len(validatorPubKeys) * 2 / 3) + 1
 
-	lockScript, lockScriptAddress, err := bitcoin2.CreateMultiSigAddress(m, validatorPubKeys, f.RandomBytes)
+	_, lockScriptAddress, err := bitcoin2.CreateMultiSigAddress(m, validatorPubKeys, f.RandomBytes)
 
 	// do final reset changes
 
@@ -191,17 +200,14 @@ func (reportFinalityMintTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (
 	tracker.ProcessUnsignedTx = nil
 	tracker.ProcessOwner = nil
 
-	if ctx.LockScriptStore != nil {
-		err := ctx.LockScriptStore.SaveLockScript(lockScriptAddress, lockScript)
-		if err != nil {
-			return false, action.Response{Log: "error setting lockscript to store"}
-		}
+	err = ctx.Trackers.SetTracker(f.TrackerName, tracker)
+	if err != nil {
+		ctx.Logger.Error(err)
+		return false, action.Response{Log: "error resetting tracker, try again" + err.Error()}
 	}
 
-	err = ctx.Trackers.SetTracker(f.TrackerName, tracker)
-	if err != nil || !ok {
-		return false, action.Response{Log: "error resetting tracker, try again"}
-	}
+	// mint oBTC
+	// TODO: stopped for Alex's fee changes
 
 	return true, action.Response{
 		Tags: f.Tags(),
@@ -209,6 +215,7 @@ func (reportFinalityMintTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (
 }
 
 func (reportFinalityMintTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
+
 	f := ReportFinalityMint{}
 	err := f.Unmarshal(tx.Data)
 	if err != nil {
@@ -219,11 +226,12 @@ func (reportFinalityMintTx) ProcessDeliver(ctx *action.Context, tx action.RawTx)
 	if err != nil {
 		return false, action.Response{Log: "tracker not found" + f.TrackerName}
 	}
+
 	if !bytes.Equal(tracker.ProcessOwner, f.OwnerAddress) {
 		return false, action.Response{Log: "tracker process not owned by user"}
 	}
 
-	if tracker.State != bitcoin.BusyFinalizingTrackerState {
+	if tracker.State != bitcoin.BusyBroadcastingTrackerState {
 		return false, action.Response{Log: "tracker not ready for finalizing"}
 	}
 
@@ -231,6 +239,7 @@ func (reportFinalityMintTx) ProcessDeliver(ctx *action.Context, tx action.RawTx)
 	if err != nil {
 		return false, action.Response{Log: "cannot get validator set"}
 	}
+
 	nValidators := len(valSet)
 	votesThresholdForMint := (2 * nValidators) / 3
 
@@ -245,12 +254,15 @@ func (reportFinalityMintTx) ProcessDeliver(ctx *action.Context, tx action.RawTx)
 		return false, action.Response{Log: "transaction sender not a validator"}
 	}
 
+	ctx.Logger.Info("h")
+
 	validatorSignedFlag := false
 	for _, fv := range tracker.FinalityVotes {
 		if bytes.Equal(fv, f.ValidatorAddress) {
 			validatorSignedFlag = true
 		}
 	}
+
 	if !validatorSignedFlag {
 		tracker.FinalityVotes = append(tracker.FinalityVotes, f.ValidatorAddress)
 	}
@@ -258,6 +270,7 @@ func (reportFinalityMintTx) ProcessDeliver(ctx *action.Context, tx action.RawTx)
 	// are there enough finality votes?
 	if len(tracker.FinalityVotes) < votesThresholdForMint {
 
+		ctx.Logger.Info("end tx processing")
 		// if not enough votes to mint end transaction processing
 
 		err = ctx.Trackers.SetTracker(f.TrackerName, tracker)
@@ -272,11 +285,15 @@ func (reportFinalityMintTx) ProcessDeliver(ctx *action.Context, tx action.RawTx)
 
 	// mint oBTC
 	curr, ok := ctx.Currencies.GetCurrencyByName("BTC")
+
 	oBTCCoin := curr.NewCoinFromUnit(tracker.ProcessBalance - tracker.CurrentBalance)
 	err = ctx.Balances.AddToAddress(f.OwnerAddress, oBTCCoin)
 	if err != nil {
+		ctx.Logger.Error(err)
 		return false, action.Response{Log: "error adding oBTC to address"}
 	}
+
+	ctx.Logger.Info("coin minted to ", f.OwnerAddress)
 
 	validatorPubKeys, err := ctx.Validators.GetBitcoinKeys(&chaincfg.TestNet3Params)
 	m := (len(validatorPubKeys) * 2 / 3) + 1
@@ -316,5 +333,7 @@ func (reportFinalityMintTx) ProcessDeliver(ctx *action.Context, tx action.RawTx)
 }
 
 func (reportFinalityMintTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas) (bool, action.Response) {
-	return action.BasicFeeHandling(ctx, signedTx, start, size, 1)
+	// return action.BasicFeeHandling(ctx, signedTx, start, size, 1)
+
+	return true, action.Response{}
 }

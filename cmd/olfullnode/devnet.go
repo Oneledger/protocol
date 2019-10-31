@@ -1,7 +1,6 @@
 package main
 
 import (
-	"crypto/elliptic"
 	"crypto/rand"
 	"encoding/base64"
 	"encoding/hex"
@@ -224,7 +223,7 @@ func runDevnet(cmd *cobra.Command, _ []string) error {
 		cfg.Node.DB = args.dbType
 		if args.createEmptyBlock {
 			cfg.Consensus.CreateEmptyBlocks = true
-			cfg.Consensus.CreateEmptyBlocksInterval = 10000
+			cfg.Consensus.CreateEmptyBlocksInterval = 3000
 		} else {
 			cfg.Consensus.CreateEmptyBlocks = false
 		}
@@ -353,7 +352,8 @@ func runDevnet(cmd *cobra.Command, _ []string) error {
 func initialState(args *testnetConfig, nodeList []node) consensus.AppState {
 	olt := balance.Currency{Id: 0, Name: "OLT", Chain: chain.Type(0), Decimal: 18, Unit: "nue"}
 	vt := balance.Currency{Id: 1, Name: "VT", Chain: chain.Type(0), Unit: "vt"}
-	currencies := []balance.Currency{olt, vt}
+	obtc := balance.Currency{Id: 2, Name: "BTC", Chain: chain.Type(1), Decimal: 8, Unit: "satoshi"}
+	currencies := []balance.Currency{olt, vt, obtc}
 	feeOpt := fees.FeeOption{
 		FeeCurrency:   olt,
 		MinFeeDecimal: 9,
@@ -374,7 +374,7 @@ func initialState(args *testnetConfig, nodeList []node) consensus.AppState {
 			continue
 		}
 		h, _ := node.esdcaPk.GetHandler()
-		_, pubk := btcec.PrivKeyFromBytes(elliptic.P256(), node.esdcaPk.Data)
+		_, pubk := btcec.PrivKeyFromBytes(btcec.S256(), node.esdcaPk.Data)
 		bap, err := btcutil.NewAddressPubKey(pubk.SerializeCompressed(), &chaincfg.TestNet3Params)
 		if err != nil {
 			fmt.Println(err)

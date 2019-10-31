@@ -119,26 +119,17 @@ func (ast btcAddSignatureTx) ProcessCheck(ctx *action.Context, tx action.RawTx) 
 
 	addressPubkey, err := btcutil.NewAddressPubKey(addSignature.ValidatorPubKey, ctx.BTCChainType)
 
-	defer func() {
-		if r := recover(); r != nil {
-			fmt.Println("Recovered in f \n ======================================================", r)
-
-			fmt.Println(err)
-			fmt.Printf("%#v  \n", addSignature)
-			fmt.Println(addressPubkey)
-			fmt.Println(addSignature.BTCSignature)
-			fmt.Println(addSignature.ValidatorAddress)
-			fmt.Println("=========================================================")
-		}
-	}()
 	err = tracker.AddSignature(addSignature.BTCSignature, *addressPubkey,
 		addSignature.ValidatorAddress)
 	if err != nil {
 		return false, action.Response{Log: fmt.Sprintf("error adding signature: %s, error: ", addSignature.TrackerName, err)}
 	}
 
+	ctx.Logger.Info("before has enough signatures", tracker.HasEnoughSignatures(), ctx.JobStore)
 	if tracker.HasEnoughSignatures() &&
 		ctx.JobStore != nil {
+
+		ctx.Logger.Info("in has enough signatures")
 
 		tracker.State = bitcoin.BusyBroadcastingTrackerState
 
@@ -148,7 +139,9 @@ func (ast btcAddSignatureTx) ProcessCheck(ctx *action.Context, tx action.RawTx) 
 			time.Now().String(),
 			false,
 			false,
+			0,
 		}
+
 		err := ctx.JobStore.SaveJob(&job)
 		ctx.Logger.Error("error while scheduling bitcoin broadcast job", err)
 	}

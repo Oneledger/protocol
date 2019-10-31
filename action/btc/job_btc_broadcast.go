@@ -27,23 +27,30 @@ type JobBTCBroadcast struct {
 	BroadcastSuccessful bool
 
 	Done bool
+
+	RetryCount int8
 }
 
 func (j *JobBTCBroadcast) DoMyJob(ctxI interface{}) {
+
+	fmt.Println("00000000000000000000000000000000000000000000000000000000000000000000000000000000000000")
 
 	ctx, _ := ctxI.(*action.JobsContext)
 
 	tracker, err := ctx.Trackers.Get(j.TrackerName)
 	if err != nil {
+		j.RetryCount += 1
 		return
 	}
 
 	if !j.BroadcastSuccessful {
 
+		fmt.Println("00000000000000000000000000000000000000000000000000000000000000000000000000000000000000")
 		lockTx := wire.NewMsgTx(wire.TxVersion)
 		err = lockTx.Deserialize(bytes.NewReader(tracker.ProcessUnsignedTx))
 		if err != nil {
-			//
+			j.RetryCount += 1
+			return
 		}
 
 		type sign []byte
@@ -54,6 +61,8 @@ func (j *JobBTCBroadcast) DoMyJob(ctxI interface{}) {
 			signatures[index] = btcSignatures[i].Sign
 		}
 
+		fmt.Println("00000000000000000000000000000000000000000000000000000000000000000000000000000000000000")
+
 		builder := txscript.NewScriptBuilder().AddOp(txscript.OP_FALSE)
 		for i := range signatures {
 			builder.AddData(signatures[i])
@@ -62,10 +71,16 @@ func (j *JobBTCBroadcast) DoMyJob(ctxI interface{}) {
 			}
 		}
 
+		fmt.Println("00000000000000000000000000000000000000000000000000000000000000000000000000000000000000")
+
 		lockScript, err := ctx.LockScripts.GetLockScript(tracker.CurrentLockScriptAddress)
 		if err != nil {
-
+			j.RetryCount += 1
+			return
 		}
+
+		fmt.Println("after getting lockscript")
+		fmt.Println("00000000000000000000000000000000000000000000000000000000000000000000000000000000000000")
 
 		builder.AddFullData(lockScript)
 		sigScript, err := builder.Script()
@@ -87,37 +102,61 @@ func (j *JobBTCBroadcast) DoMyJob(ctxI interface{}) {
 
 		clt, err := rpcclient.New(connCfg, nil)
 		if err != nil {
-			fmt.Println(err)
+			j.RetryCount += 1
 			return
 		}
 
-		_, err = cd.BroadcastTx(lockTx, clt)
-		if err != nil {
+		fmt.Println("after init rpc client")
+		fmt.Println("00000000000000000000000000000000000000000000000000000000000000000000000000000000000000")
+
+		hash, err := cd.BroadcastTx(lockTx, clt)
+		if err == nil {
+			fmt.Println("btc tx hash", hash)
 			j.BroadcastSuccessful = true
+			return
+		} else {
+
+			fmt.Println("broadcast failed, but going forward")
+			fmt.Println("00000000000000000000000000000000000000000000000000000000000000000000000000000000000000")
+			j.BroadcastSuccessful = true
+			j.RetryCount += 1
+			return
 		}
 
 	} else {
 
-		cd := bitcoin.NewChainDriver(ctx.BlockCypherToken)
+		/*
+			cd := bitcoin.NewChainDriver(ctx.BlockCypherToken)
 
-		chain := "test3"
-		switch ctx.BTCChainnet {
-		case "testnet3":
-			chain = "test3"
-		case "testnet":
-			chain = "test"
-		case "mainnet":
-			chain = "main"
-		}
+			chain := "test3"
+			switch ctx.BTCChainnet {
+			case "testnet3":
+				chain = "test3"
+			case "testnet":
+				chain = "test"
+			case "mainnet":
+				chain = "main"
+			}
 
-		ok, _ := cd.CheckFinality(tracker.ProcessTxId, ctx.BlockCypherToken, chain)
-		if !ok {
-			return
-		}
+
+			ok, _ := cd.CheckFinality(tracker.ProcessTxId, ctx.BlockCypherToken, chain)
+			if !ok {
+				j.RetryCount += 1
+				// return
+			}
+
+		*/
+
+		fmt.Println("111111111111111111111111111111111111111111111111111111111111111111111111111111111")
+
+		fmt.Println("111111111111111111111111111111111111111111111111111111111111111111111111111111111")
+		fmt.Println("111111111111111111111111111111111111111111111111111111111111111111111111111111111")
+		fmt.Println("111111111111111111111111111111111111111111111111111111111111111111111111111111111")
 
 		data := [4]byte{}
 		_, err = io.ReadFull(rand.Reader, data[:])
 		if err != nil {
+			j.RetryCount += 1
 			return
 		}
 
@@ -128,14 +167,18 @@ func (j *JobBTCBroadcast) DoMyJob(ctxI interface{}) {
 			RandomBytes:      data[:],
 		}
 
+		fmt.Println(0)
+
 		txData, err := reportFinalityMint.Marshal()
 		if err != nil {
 			// retry later
+			j.RetryCount += 1
 			return
 		}
 
+		fmt.Println(1)
 		tx := action.RawTx{
-			Type: action.BTC_ADD_SIGNATURE,
+			Type: action.BTC_REPORT_FINALITY_MINT,
 			Data: txData,
 			Fee:  action.Fee{},
 			Memo: j.JobID,
@@ -146,16 +189,27 @@ func (j *JobBTCBroadcast) DoMyJob(ctxI interface{}) {
 		}
 		rep := action.BroadcastReply{}
 
+		fmt.Println("before sending mint txn")
 		err = ctx.Service.InternalBroadcast(req, &rep)
 		if err != nil {
+
+			fmt.Println("internal broadcast error ", err)
 			// retry later
+			j.RetryCount += 1
 			return
 		}
+
 	}
 }
 
 func (j *JobBTCBroadcast) IsMyJobDone(ctxI interface{}) bool {
 	ctx, _ := ctxI.(*action.JobsContext)
+
+	fmt.Println("/////////////////////////////  is my done ")
+
+	if j.RetryCount > 20 {
+		return true
+	}
 
 	tracker, err := ctx.Trackers.Get(j.TrackerName)
 	if err != nil {
@@ -168,6 +222,8 @@ func (j *JobBTCBroadcast) IsMyJobDone(ctxI interface{}) bool {
 
 	for _, fv := range tracker.FinalityVotes {
 		if bytes.Equal(fv, ctx.ValidatorAddress) {
+
+			fmt.Println("/////////////////////////////  found my vote in finality votes")
 			return true
 		}
 	}

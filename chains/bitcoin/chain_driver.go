@@ -149,6 +149,8 @@ func (c *chainDriver) AddLockSignature(txBytes []byte, sigScript []byte) *wire.M
 
 func (c *chainDriver) BroadcastTx(tx *wire.MsgTx, clt *rpcclient.Client) (*chainhash.Hash, error) {
 
+	return nil, nil
+
 	hash, err := clt.SendRawTransaction(tx, false)
 	if err != nil {
 		return &chainhash.Hash{}, err
@@ -160,6 +162,7 @@ func (c *chainDriver) BroadcastTx(tx *wire.MsgTx, clt *rpcclient.Client) (*chain
 func (c *chainDriver) CheckFinality(hash *chainhash.Hash, token, chain string) (bool, error) {
 
 	btc := gobcy.API{token, "btc", chain}
+
 	tx, err := btc.GetTX(hash.String(), nil)
 	if err != nil {
 		return false, err

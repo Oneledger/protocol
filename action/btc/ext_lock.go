@@ -139,6 +139,7 @@ func (btcLockTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (bool, actio
 	tracker.ProcessOwner = lock.Locker
 	tracker.ProcessUnsignedTx = lock.BTCTxn // with user signature
 	tracker.Multisig, err = keys.NewBTCMultiSig(lock.BTCTxn, threshold, list)
+	tracker.ProcessBalance = tracker.CurrentBalance + lock.LockAmount
 
 	err = ctx.Trackers.SetTracker(lock.TrackerName, tracker)
 	if err != nil {
@@ -177,6 +178,7 @@ func (btcLockTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, act
 	tracker.ProcessOwner = lock.Locker
 	tracker.ProcessUnsignedTx = lock.BTCTxn
 	tracker.Multisig, err = keys.NewBTCMultiSig(lock.BTCTxn, threshold, list)
+	tracker.ProcessBalance = tracker.CurrentBalance + lock.LockAmount
 
 	err = ctx.Trackers.SetTracker(lock.TrackerName, tracker)
 	if err != nil {

@@ -6,7 +6,6 @@ package btc
 
 import (
 	"bytes"
-	"crypto/elliptic"
 	"fmt"
 	"strconv"
 	"time"
@@ -54,27 +53,48 @@ type doJobData struct {
 func (j *JobAddSignature) DoMyJob(ctxI interface{}) {
 	ctx, _ := ctxI.(*action.JobsContext)
 
+	fmt.Println("****************************************************************")
+	fmt.Println("****************************************************************")
+	fmt.Println("****************************************************************")
+	fmt.Println("****************************************************************")
+	fmt.Println("****************************************************************")
+	fmt.Println("****************************************************************")
+	fmt.Println("****************************************************************")
+	fmt.Println("					adding signature")
+	fmt.Println("****************************************************************")
+	fmt.Println("****************************************************************")
+	fmt.Println("****************************************************************")
+	fmt.Println("****************************************************************")
+	fmt.Println("****************************************************************")
+	fmt.Println("****************************************************************")
+	fmt.Println("****************************************************************")
+
 	tracker, err := ctx.Trackers.Get(j.TrackerName)
 	if err != nil {
+		j.RetryCount += 1
 		return
 	}
 
 	lockTx := wire.NewMsgTx(wire.TxVersion)
 	err = lockTx.Deserialize(bytes.NewReader(tracker.ProcessUnsignedTx))
 	if err != nil {
-		//
+		j.RetryCount += 1
+		return
 	}
 
 	lockScript, err := ctx.LockScripts.GetLockScript(tracker.CurrentLockScriptAddress)
 	if err != nil {
-
+		j.RetryCount += 1
+		return
 	}
 
-	pk, _ := btcec.PrivKeyFromBytes(elliptic.P256(), ctx.BTCPrivKey.Data)
+	pk, _ := btcec.PrivKeyFromBytes(btcec.S256(), ctx.BTCPrivKey.Data)
 
 	sig, err := txscript.RawTxInSignature(lockTx, 0, lockScript, txscript.SigHashAll, pk)
 	if err != nil {
 		fmt.Println(err, "RawTxInSignature")
+		j.RetryCount += 1
+		return
 	}
 
 	addSigData := AddSignature{
@@ -88,6 +108,7 @@ func (j *JobAddSignature) DoMyJob(ctxI interface{}) {
 	txData, err := addSigData.Marshal()
 	if err != nil {
 		// retry later
+		j.RetryCount += 1
 		return
 	}
 
@@ -105,16 +126,18 @@ func (j *JobAddSignature) DoMyJob(ctxI interface{}) {
 
 	err = ctx.Service.InternalBroadcast(req, &rep)
 	if err != nil {
-		// retry later
+		j.RetryCount += 1
 		return
 	}
+
 }
 
 func (j *JobAddSignature) IsMyJobDone(ctxI interface{}) bool {
-	ctx, ok := ctxI.(*action.JobsContext)
-	fmt.Println("========================================================")
-	fmt.Printf("%#v \n", ctx)
-	fmt.Println(ok)
+	ctx, _ := ctxI.(*action.JobsContext)
+
+	if j.RetryCount > MaxJobRetries {
+		return true
+	}
 
 	tracker, err := ctx.Trackers.Get(j.TrackerName)
 	if err != nil {

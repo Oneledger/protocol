@@ -49,6 +49,7 @@ func RangeJobs(js *jobs.JobStore, pro JobProcess) {
 	})
 
 	for _, key := range jobkeys {
+
 		jobID := strings.TrimPrefix(string(key), "job:")
 
 		dat, typ := js.GetJob(jobID)
