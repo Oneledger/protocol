@@ -6,6 +6,7 @@ package btc
 
 import (
 	"bytes"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 
@@ -157,6 +158,8 @@ func (btcLockTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, act
 	if err != nil {
 		return false, action.Response{Log: "wrong tx type"}
 	}
+
+	ctx.Logger.Debug(hex.EncodeToString(lock.BTCTxn))
 
 	tracker, err := ctx.Trackers.Get(lock.TrackerName)
 	if err != nil {

@@ -199,6 +199,7 @@ func (reportFinalityMintTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (
 	tracker.ProcessLockScriptAddress = lockScriptAddress
 	tracker.ProcessUnsignedTx = nil
 	tracker.ProcessOwner = nil
+	tracker.FinalityVotes = nil
 
 	err = ctx.Trackers.SetTracker(f.TrackerName, tracker)
 	if err != nil {
@@ -314,6 +315,7 @@ func (reportFinalityMintTx) ProcessDeliver(ctx *action.Context, tx action.RawTx)
 	tracker.ProcessLockScriptAddress = lockScriptAddress
 	tracker.ProcessUnsignedTx = nil
 	tracker.ProcessOwner = nil
+	tracker.FinalityVotes = nil
 
 	if ctx.LockScriptStore != nil {
 		err := ctx.LockScriptStore.SaveLockScript(lockScriptAddress, lockScript)

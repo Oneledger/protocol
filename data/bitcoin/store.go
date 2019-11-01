@@ -74,8 +74,9 @@ func (ts *TrackerStore) GetTrackerForLock() (*Tracker, error) {
 			return false
 		}
 
-		if d.GetBalance() <= lowestAmount {
+		if d.IsAvailable() && d.GetBalance() < lowestAmount {
 			tempTracker = d
+			lowestAmount = d.CurrentBalance
 		}
 
 		return false

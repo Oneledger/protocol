@@ -77,6 +77,8 @@ func (s *Service) AddUserSignatureAndProcessLock(args client.BTCLockRequest, rep
 
 	// add the users' btc signature to the lock txn in the appropriate place
 
+	s.logger.Debug("----", hex.EncodeToString(args.Txn))
+
 	newBTCTx := cd.AddUserLockSignature(args.Txn, args.Signature)
 
 	totalLockAmount := newBTCTx.TxOut[0].Value
@@ -107,6 +109,8 @@ func (s *Service) AddUserSignatureAndProcessLock(args client.BTCLockRequest, rep
 		return err
 	}
 	txBytes = buf.Bytes()
+
+	s.logger.Debug("-----", hex.EncodeToString(txBytes))
 
 	lock := btc.Lock{
 		Locker:      args.Address,

@@ -20,7 +20,8 @@ import (
 type TxHash [chainhash.HashSize]byte
 
 type ChainDriver interface {
-	PrepareLock(prevLock, input *bitcoin.UTXO, lockScriptAddress []byte) (txBytes []byte)
+	//	PrepareLock(prevLock, input *bitcoin.UTXO, lockScriptAddress []byte) (txBytes []byte)
+
 	PrepareLockNew(*chainhash.Hash, uint32, int64, *chainhash.Hash, uint32, int64, []byte) (txBytes []byte)
 
 	AddUserLockSignature([]byte, []byte) *wire.MsgTx
@@ -149,6 +150,7 @@ func (c *chainDriver) AddLockSignature(txBytes []byte, sigScript []byte) *wire.M
 
 func (c *chainDriver) BroadcastTx(tx *wire.MsgTx, clt *rpcclient.Client) (*chainhash.Hash, error) {
 
+	// temp
 	return nil, nil
 
 	hash, err := clt.SendRawTransaction(tx, false)
