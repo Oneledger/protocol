@@ -1,6 +1,7 @@
 package ethereum
 
 import (
+	"github.com/ethereum/go-ethereum/common"
 	"math/big"
 )
 
@@ -25,6 +26,15 @@ type LockReply struct {
 	Reason string  `json:"reason"`
 }
 
+type SignRequest struct {
+	wei *big.Int `json:"wei"`
+	recepient common.Address `json:"recepient"`
+}
+
+type SignReply struct{
+	txHash common.Hash `json:"tx_hash"`
+}
+
 func (svc *Service) CheckLock(req LockRequest, out *LockReply) error {
 	verifyBalance, err := svc.access.CheckLock(req.Amount,req.OLTAddress)
 	if err != nil {
@@ -40,6 +50,17 @@ func (svc *Service) CheckLock(req LockRequest, out *LockReply) error {
 			VerifyBalance:verifyBalance,
 	}
     return nil
+}
+
+func (svc *Service) Sign(req SignRequest,out *SignReply) error {
+	tx,err := svc.access.Sign(req.wei,req.recepient)
+	if err!= nil {
+		return err
+	}
+	*out = SignReply{
+		txHash:tx.Hash(),
+	}
+	return nil
 }
 
 

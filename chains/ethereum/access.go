@@ -118,15 +118,15 @@ func (acc Access) Address() Address {
 	return crypto.PubkeyToAddress(acc.PublicKey())
 }
 //addr keys.Address,
-func (acc *Access) Lock(wei *big.Int) (*Transaction, error) {
-	acc.logger.Info("locked wei")
-	opts := acc.TransactOpts()
-	opts.Value = wei
-	opts.From = acc.Address()
-	//var oltAddrAsEthAddr Address
-	//copy(oltAddrAsEthAddr[:], addr)
-	return acc.Contract.Lock(opts)
-}
+//func (acc *Access) Lock(wei *big.Int) (*Transaction, error) {
+//	acc.logger.Info("locked wei")
+//	opts := acc.TransactOpts()
+//	opts.Value = wei
+//	opts.From = acc.Address()
+//	//var oltAddrAsEthAddr Address
+//	//copy(oltAddrAsEthAddr[:], addr)
+//	return acc.Contract.Lock(opts)
+//}
 
 
 
@@ -169,6 +169,8 @@ func (acc *Access) CheckLock(amount int64,oltethadress string)(bool,error){
 	currentBalance := balance.Int64()
 	var previousBalance int64 //Save Balance of account on chain state ;
     return currentBalance-previousBalance == amount,nil
+	//update chainstate if true else return false
+	//Call mint function
 }
 
 /*
