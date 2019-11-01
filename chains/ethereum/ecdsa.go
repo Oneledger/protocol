@@ -74,3 +74,6 @@ func unsafeKeyDump(key *ecdsa.PrivateKey) privateKeyDump {
 func GenerateKey() (*ecdsa.PrivateKey, error) {
 	return ecdsa.GenerateKey(secp256k1.S256(), rand.Reader)
 }
+
+
+//a457c30cf398ea99be3df698f2a4be41a1fed199

@@ -17,7 +17,7 @@ contract LockRedeem {
 
     // Default Voting power should be updated at one point
     int constant DEFAULT_VALIDATOR_POWER = 50;
-    uint constant MIN_VALIDATORS = 4;
+    uint constant MIN_VALIDATORS = 0;
 
     // This is the height at which the current epoch was started
     uint public epochBlockHeight;
@@ -41,13 +41,16 @@ contract LockRedeem {
         address indexed _address,
         int _power
     );
+    //Lock
+    mapping(string => uint) lockedbalances;
 
     //Redeem
-   // mapping (address => bool) public isSigned;
+    // mapping (address => bool) public isSigned;
     struct RedeemTX {
         address payable recipient;
         uint amount;
         uint signature_count;
+        bool isCompleted ;
     }
     mapping (uint => RedeemTX) redeemRequests;
 
@@ -67,7 +70,8 @@ contract LockRedeem {
     event Lock(
         address sender,
         uint amunt_received,
-        uint updated_balance
+        uint updated_balance,
+        string oltEthAdress_User
     );
 
     event NewThreshold(uint _prevThreshold, uint _newThreshold);
@@ -91,17 +95,21 @@ contract LockRedeem {
     function isValidator(address addr) public view returns(bool) {
         return validators[addr] > 0;
     }
-
-    function lock() payable public {                                        
+    // function called by user
+    function lock(string memory oltethAdress_user) payable public {
         require(msg.value >= 0, "Must pay a balance more than 0");
-        //balances[oltAddress] += msg.value;
-        emit Lock(msg.sender,msg.value,getTotalEthBalance());
+        lockedbalances[oltethAdress_user] += msg.value;
+        emit Lock(msg.sender,msg.value,getTotalEthBalance(),oltethAdress_user);
     }
-
-    // getLockedBalance returns the amount of ether locked by a specific account
-//    function getLockedBalance(address addr) public view returns (uint) {
-//        return balances[addr];
-//    }
+    //function called by go
+    function getLockedBalance(string memory oltethAdress_user) public view returns (uint) {
+        return lockedbalances[oltethAdress_user];
+    }
+    //remove function from production code
+    function getRedeemAmount(uint redeemID_) public view returns(uint) {
+        return redeemRequests[redeemID_].amount;
+    }
+    //function called by go
     function sign(uint redeemID_,uint amount_,address payable recipient_) public  {
         require(isValidator(msg.sender),"validator not pressent in list");
         if(redeemRequests[redeemID_].signature_count > 0 )
@@ -115,15 +123,22 @@ contract LockRedeem {
             redeemRequests[redeemID_].amount = amount_;
             redeemRequests[redeemID_].recipient = recipient_;
             redeemRequests[redeemID_].signature_count = 1;
+            redeemRequests[redeemID_].isCompleted = false;
         }
         emit ValidatorSignedRedeem(msg.sender);
     }
-    function redeem (uint redeemID_)  public  {
-        require(redeemRequests[redeemID_].recipient == msg.sender);
-        require(redeemRequests[redeemID_].signature_count >= votingThreshold);
+    // function called by user
+    function redeem (uint redeemID_,string memory oltethAdress_user)  public  {
+        require(redeemRequests[redeemID_].recipient == msg.sender,"Redeem can only be intitated by the recepient of redeem transaction");
+        require(redeemRequests[redeemID_].isCompleted == false,"Redeem already executed on this redeemID");
+        require(redeemRequests[redeemID_].signature_count >= votingThreshold,"Not enough Validator votes to execute Redeem");
+        require(lockedbalances[oltethAdress_user]> redeemRequests[redeemID_].amount,"Redeem amount is more than available balance");
         redeemRequests[redeemID_].recipient.transfer(redeemRequests[redeemID_].amount);
+        redeemRequests[redeemID_].isCompleted = true ;
+        lockedbalances[oltethAdress_user] -= redeemRequests[redeemID_].amount;
         emit RedeemSuccessful(redeemRequests[redeemID_].recipient,redeemRequests[redeemID_].amount);
     }
+
     function getTotalEthBalance() public view returns(uint) {
         return address(this).balance ;
     }
@@ -199,3 +214,4 @@ contract LockRedeem {
         emit DeleteValidator(v);
     }
 }
+//["0xa5d180c3be91e70cb00ca3a2b67fe2664ae61087"]
