@@ -14,7 +14,6 @@ import (
 
 	"github.com/Oneledger/protocol/chains/bitcoin"
 
-	"github.com/Oneledger/protocol/chains/bitcoin2"
 	"github.com/Oneledger/protocol/storage"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/btcsuite/btcd/txscript"

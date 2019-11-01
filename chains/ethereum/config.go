@@ -24,6 +24,15 @@ func DefaultEthConfig() *Config {
 	}
 }
 
+func CreateEthConfig(connection string,keylocation string,address string,validators []string) *Config{
+	return &Config{
+		Connection:connection,
+		KeyLocation:keylocation,
+		ContractAddress:address,
+        InitialValidators:validators,
+	}
+}
+
 // Returns an instance of the private and public keypair with the given root directory
 func (cfg *Config) Key(rootDir string) (*ecdsa.PrivateKey, error) {
 	switch {

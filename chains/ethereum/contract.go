@@ -4,12 +4,12 @@ import (
 	"crypto/ecdsa"
 	"math/big"
 
-	"github.com/Oneledger/protocol/chains/eth/contract"
+	"github.com/Oneledger/protocol/chains/ethereum/contract"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 )
 
 // Contract is our main access point to the Ethereum smart contract we use to lock and redeem ethereum tokens
-type Contract = contract.Contract
+type Contract = contract.LockRedeem
 
 // newKeyTransactor returns a transactror
 func newKeyTransactor(key *ecdsa.PrivateKey) *bind.TransactOpts {
