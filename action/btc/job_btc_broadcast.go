@@ -11,8 +11,6 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/btcsuite/btcd/chaincfg/chainhash"
-
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/chains/bitcoin"
 	"github.com/btcsuite/btcd/rpcclient"
@@ -40,6 +38,7 @@ func (j *JobBTCBroadcast) DoMyJob(ctxI interface{}) {
 
 	tracker, err := ctx.Trackers.Get(j.TrackerName)
 	if err != nil {
+		ctx.Logger.Error("err trying to deserialize tracker: ", j.TrackerName, err)
 		j.RetryCount += 1
 		return
 	}
@@ -49,6 +48,7 @@ func (j *JobBTCBroadcast) DoMyJob(ctxI interface{}) {
 		lockTx := wire.NewMsgTx(wire.TxVersion)
 		err = lockTx.Deserialize(bytes.NewReader(tracker.ProcessUnsignedTx))
 		if err != nil {
+			ctx.Logger.Error("err trying to deserialize btc txn: ", err, j.TrackerName)
 			j.RetryCount += 1
 			return
 		}
@@ -71,6 +71,7 @@ func (j *JobBTCBroadcast) DoMyJob(ctxI interface{}) {
 
 		lockScript, err := ctx.LockScripts.GetLockScript(tracker.CurrentLockScriptAddress)
 		if err != nil {
+			ctx.Logger.Error("err trying to get lockscript ", err, j.TrackerName)
 			j.RetryCount += 1
 			return
 		}
@@ -82,9 +83,13 @@ func (j *JobBTCBroadcast) DoMyJob(ctxI interface{}) {
 		lockTx = cd.AddLockSignature(tracker.ProcessUnsignedTx, sigScript)
 
 		buf := bytes.NewBuffer([]byte{})
-		lockTx.Serialize(buf)
+		err = lockTx.Serialize(buf)
+		if err != nil {
+			ctx.Logger.Error("err trying to serialize btc final txn ", err, j.TrackerName)
+			j.RetryCount += 1
+			return
+		}
 
-		// TODO load from config
 		connCfg := &rpcclient.ConnConfig{
 			Host:         ctx.BTCNodeAddress + ":" + ctx.BTCRPCPort,
 			User:         ctx.BTCRPCUsername,
@@ -95,6 +100,7 @@ func (j *JobBTCBroadcast) DoMyJob(ctxI interface{}) {
 
 		clt, err := rpcclient.New(connCfg, nil)
 		if err != nil {
+			ctx.Logger.Error("err trying to connect to bitcoin node", j.TrackerName)
 			j.RetryCount += 1
 			return
 		}
@@ -104,19 +110,20 @@ func (j *JobBTCBroadcast) DoMyJob(ctxI interface{}) {
 		lockTx.Serialize(buf)
 		txBytes = buf.Bytes()
 
-		fmt.Println("--------------------------------------------------------------")
-		fmt.Println(hex.EncodeToString(txBytes))
-		fmt.Println(hex.EncodeToString(lockTx.TxIn[0].SignatureScript))
+		ctx.Logger.Debug(hex.EncodeToString(txBytes))
 
 		hash, err := cd.BroadcastTx(lockTx, clt)
 		if err == nil {
-			fmt.Println("btc tx hash", hash)
+
+			ctx.Logger.Info("bitcoin tx successful", hash)
+
 			j.BroadcastSuccessful = true
 			return
 		} else {
-
+			ctx.Logger.Error("broadcast failed err: ", err, " tracker: ", j.TrackerName)
 			fmt.Println("broadcast failed, but going forward")
-			j.BroadcastSuccessful = true
+
+			// j.BroadcastSuccessful = true
 			j.RetryCount += 1
 			return
 		}
@@ -135,18 +142,27 @@ func (j *JobBTCBroadcast) DoMyJob(ctxI interface{}) {
 			chain = "main"
 		}
 
-		tempHash, _ := chainhash.NewHashFromStr("860a32ef84ed54df86d207112d1f8d3d5ad28751b25cc7e2107ef55cccbc7586")
+		// tempHash, _ := chainhash.NewHashFromStr("860a32ef84ed54df86d207112d1f8d3d5ad28751b25cc7e2107ef55cccbc7586")
 
-		ok, _ := cd.CheckFinality(tempHash, ctx.BlockCypherToken, chain)
-		//	ok, _ := cd.CheckFinality(tracker.ProcessTxId, ctx.BlockCypherToken, chain)
-		if !ok {
+		// ok, err := cd.CheckFinality(tempHash, ctx.BlockCypherToken, chain)
+
+		ok, _ := cd.CheckFinality(tracker.ProcessTxId, ctx.BlockCypherToken, chain)
+		if err != nil {
+			ctx.Logger.Error("error while checking finality", err, j.TrackerName)
 			j.RetryCount += 1
-			// return
+			return
+		}
+
+		if !ok {
+			ctx.Logger.Info("not finalized yet", j.TrackerName)
+			j.RetryCount += 1
+			return
 		}
 
 		data := [4]byte{}
 		_, err = io.ReadFull(rand.Reader, data[:])
 		if err != nil {
+			ctx.Logger.Error("error while reading random bytes for minting", err, j.TrackerName)
 			j.RetryCount += 1
 			return
 		}
@@ -158,10 +174,9 @@ func (j *JobBTCBroadcast) DoMyJob(ctxI interface{}) {
 			RandomBytes:      data[:],
 		}
 
-		fmt.Println(0)
-
 		txData, err := reportFinalityMint.Marshal()
 		if err != nil {
+			ctx.Logger.Error("error while preparing mint txn ", err, j.TrackerName)
 			// retry later
 			j.RetryCount += 1
 			return
@@ -182,8 +197,8 @@ func (j *JobBTCBroadcast) DoMyJob(ctxI interface{}) {
 
 		err = ctx.Service.InternalBroadcast(req, &rep)
 		if err != nil {
+			ctx.Logger.Error("error while broadcasting finality vote and mint txn ", err, j.TrackerName)
 
-			fmt.Println("internal broadcast error ", err)
 			// retry later
 			j.RetryCount += 1
 			return

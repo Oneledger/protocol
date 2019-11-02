@@ -6,6 +6,7 @@ package btc
 
 import (
 	"bytes"
+	"encoding/hex"
 	"fmt"
 	"strconv"
 	"time"
@@ -53,27 +54,14 @@ type doJobData struct {
 func (j *JobAddSignature) DoMyJob(ctxI interface{}) {
 	ctx, _ := ctxI.(*action.JobsContext)
 
-	fmt.Println("****************************************************************")
-	fmt.Println("****************************************************************")
-	fmt.Println("****************************************************************")
-	fmt.Println("****************************************************************")
-	fmt.Println("****************************************************************")
-	fmt.Println("****************************************************************")
-	fmt.Println("****************************************************************")
-	fmt.Println("					adding signature")
-	fmt.Println("****************************************************************")
-	fmt.Println("****************************************************************")
-	fmt.Println("****************************************************************")
-	fmt.Println("****************************************************************")
-	fmt.Println("****************************************************************")
-	fmt.Println("****************************************************************")
-	fmt.Println("****************************************************************")
-
 	tracker, err := ctx.Trackers.Get(j.TrackerName)
 	if err != nil {
+		ctx.Logger.Error("error while getting tracker ", err, j.TrackerName)
 		j.RetryCount += 1
 		return
 	}
+
+	ctx.Logger.Info(hex.EncodeToString(tracker.ProcessUnsignedTx))
 
 	lockTx := wire.NewMsgTx(wire.TxVersion)
 	err = lockTx.Deserialize(bytes.NewReader(tracker.ProcessUnsignedTx))

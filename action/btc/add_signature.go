@@ -7,6 +7,7 @@ package btc
 import (
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/btcsuite/btcd/chaincfg"
@@ -133,10 +134,11 @@ func (ast btcAddSignatureTx) ProcessCheck(ctx *action.Context, tx action.RawTx) 
 
 		tracker.State = bitcoin.BusyBroadcastingTrackerState
 
+		id := strconv.Itoa(int(time.Now().UnixNano()))
 		job := JobBTCBroadcast{
 			JobTypeBTCBroadcast,
 			tracker.Name,
-			time.Now().String(),
+			id,
 			false,
 			false,
 			0,

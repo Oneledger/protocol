@@ -5,13 +5,17 @@
 package action
 
 import (
+	"os"
+
 	"github.com/Oneledger/protocol/data/bitcoin"
 	"github.com/Oneledger/protocol/data/keys"
+	"github.com/Oneledger/protocol/log"
 	"github.com/btcsuite/btcd/chaincfg"
 )
 
 type JobsContext struct {
 	Service *Service
+	Logger  *log.Logger
 
 	Trackers *bitcoin.TrackerStore
 
@@ -50,8 +54,11 @@ func NewJobsContext(chainType string, svc *Service, trackers *bitcoin.TrackerSto
 		params = &chaincfg.TestNet3Params
 	}
 
+	w := os.Stdout
+
 	return &JobsContext{
 		Service:          svc,
+		Logger:           log.NewLoggerWithPrefix(w, "internal_jobs"),
 		Trackers:         trackers,
 		BTCPrivKey:       *privKey,
 		Params:           params,

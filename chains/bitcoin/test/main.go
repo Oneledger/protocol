@@ -187,6 +187,8 @@ func main() {
 		break
 	}
 
+	txscript.SignatureScript()
+
 	builder.AddFullData(lockScript)
 	sigScript, err := builder.Script()
 	//sigScript = append(sigScript, lockScript...)

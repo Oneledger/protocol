@@ -6,6 +6,8 @@ package bitcoin
 
 import (
 	"bytes"
+	"encoding/hex"
+	"fmt"
 
 	"github.com/Oneledger/protocol/data/bitcoin"
 	"github.com/blockcypher/gobcy"
@@ -114,7 +116,8 @@ func (c *chainDriver) PrepareLockNew(prevLockTxID *chainhash.Hash, prevLockIndex
 	tx.Serialize(tempBuf)
 	size := len(tempBuf.Bytes()) * 2 // right now this is a magic number
 	// need a better estimation methodology
-	fees := int64(70 * size)
+	fees := int64(20 * size)
+	// fees = 0
 
 	tx.TxOut[0].Value = tx.TxOut[0].Value - fees
 
@@ -123,6 +126,7 @@ func (c *chainDriver) PrepareLockNew(prevLockTxID *chainhash.Hash, prevLockIndex
 	tx.Serialize(buf)
 	txBytes = buf.Bytes()
 
+	fmt.Println(hex.EncodeToString(txBytes))
 	return
 }
 
@@ -143,6 +147,11 @@ func (c *chainDriver) AddLockSignature(txBytes []byte, sigScript []byte) *wire.M
 	buf := bytes.NewBuffer(txBytes)
 	tx.Deserialize(buf)
 
+	// if first lock
+	if len(tx.TxIn) == 1 {
+		return tx
+	}
+
 	tx.TxIn[0].SignatureScript = sigScript
 
 	return tx
@@ -151,7 +160,6 @@ func (c *chainDriver) AddLockSignature(txBytes []byte, sigScript []byte) *wire.M
 func (c *chainDriver) BroadcastTx(tx *wire.MsgTx, clt *rpcclient.Client) (*chainhash.Hash, error) {
 
 	// temp
-	return nil, nil
 
 	hash, err := clt.SendRawTransaction(tx, false)
 	if err != nil {
