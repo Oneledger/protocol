@@ -5,11 +5,10 @@
 package bitcoin
 
 import (
-	"errors"
+	"github.com/pkg/errors"
 
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
-	"github.com/btcsuite/btcutil"
 )
 
 type TrackerState int
@@ -58,7 +57,12 @@ type Tracker struct {
 	FinalityVotes []keys.Address
 }
 
-func NewTracker(lockScriptAddress []byte) *Tracker {
+func NewTracker(lockScriptAddress []byte, m int, signers []keys.Address) (*Tracker, error) {
+
+	btcMultisig, err := keys.NewBTCMultiSig(nil, m, signers)
+	if err != nil {
+		return nil, errors.Wrap(err, "error initializing multisig")
+	}
 
 	return &Tracker{
 		State:                    AvailableTrackerState,
@@ -66,7 +70,8 @@ func NewTracker(lockScriptAddress []byte) *Tracker {
 		CurrentLockScriptAddress: nil,
 
 		ProcessLockScriptAddress: lockScriptAddress,
-	}
+		Multisig:                 btcMultisig,
+	}, nil
 }
 
 // GetBalance gets the current balance of the utxo tracker
@@ -114,8 +119,7 @@ func (t *Tracker) ProcessLock(newUTXO *UTXO,
 	return err
 }
 
-func (t *Tracker) AddSignature(signatureBytes []byte,
-	validatorPubKey btcutil.AddressPubKey, addr keys.Address) error {
+func (t *Tracker) AddSignature(signatureBytes []byte, addr keys.Address) error {
 
 	if t.State != BusySigningTrackerState {
 		return ErrTrackerNotCollectionSignatures

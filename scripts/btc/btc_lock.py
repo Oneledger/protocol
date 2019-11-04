@@ -1,6 +1,7 @@
 
 import requests
 import json
+import sys
 
 
 from ecdsa import VerifyingKey, SECP256k1
@@ -78,13 +79,17 @@ def broadcast_commit(rawTx, signature, pub_key):
     return resp["result"]
 
 if __name__ == "__main__":
-    result = prepare_lock("860a32ef84ed54df86d207112d1f8d3d5ad28751b25cc7e2107ef55cccbc7586", 1)
+    result = prepare_lock("1b9c234aa1add73f96cc2756de8adef9a0e78a113f660fccdfe9dc3dd6beb8aa", 1)
+
+
+    print(result)
+
+    sys.exit(1)
 
     txn = "01000000018675bccc5cf57e10e2c75cb25187d25a3d8d1f2d1107d286df54ed84ef320a860100000000ffffffff016c752e000000000014aae651e577abfe1d951872de8b48232bb8787f7300000000".decode('hex').encode('base64')
     signature = "47304402200ed0cb4f0b29a069e1ef730efd7920cd59c1cfc6f49cbe28c5512d1298d33aa4022016f96575652b19c356188911ad8731975357f7f8fbe60623bbae93864257b5b8012102c525a34b4ee4c20dc5ea25f2b29de83c8851a502829c685a0965066a121a6617".decode('hex').encode('base64')
 
-    print(result)
-    #
+#
     # comp_str = 'ef817664f54410936e81dce0b93996d7bda2e4c16747aeadc9cf6278c4cd427aae012a1a0a8e'
     # vk = VerifyingKey.from_string(bytearray.fromhex(comp_str), curve=SECP256k1)
     # print(vk.to_string("uncompressed").hex())

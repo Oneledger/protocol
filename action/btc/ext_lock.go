@@ -133,7 +133,7 @@ func (btcLockTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (bool, actio
 	threshold := (len(vs) * 2 / 3) + 1
 	list := make([]keys.Address, 0, len(vs))
 	for i := range vs {
-		list = append(list, vs[i].Address)
+		list = append(list, vs[i].BTCAddressPubKey.ScriptAddress())
 	}
 
 	tracker.State = bitcoin.BusySigningTrackerState
@@ -170,17 +170,10 @@ func (btcLockTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, act
 		return false, action.Response{Log: fmt.Sprintf("tracker not available for lock: ", lock.TrackerName)}
 	}
 
-	vs, err := ctx.Validators.GetValidatorSet()
-	threshold := (len(vs) * 2 / 3) + 1
-	list := make([]keys.Address, 0, len(vs))
-	for i := range vs {
-		list = append(list, vs[i].Address)
-	}
-
 	tracker.State = bitcoin.BusySigningTrackerState
 	tracker.ProcessOwner = lock.Locker
 	tracker.ProcessUnsignedTx = lock.BTCTxn
-	tracker.Multisig, err = keys.NewBTCMultiSig(lock.BTCTxn, threshold, list)
+	tracker.Multisig.Msg = lock.BTCTxn
 	tracker.ProcessBalance = tracker.CurrentBalance + lock.LockAmount
 
 	err = ctx.Trackers.SetTracker(lock.TrackerName, tracker)

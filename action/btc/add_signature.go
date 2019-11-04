@@ -120,8 +120,7 @@ func (ast btcAddSignatureTx) ProcessCheck(ctx *action.Context, tx action.RawTx) 
 
 	addressPubkey, err := btcutil.NewAddressPubKey(addSignature.ValidatorPubKey, ctx.BTCChainType)
 
-	err = tracker.AddSignature(addSignature.BTCSignature, *addressPubkey,
-		addSignature.ValidatorAddress)
+	err = tracker.AddSignature(addSignature.BTCSignature, addressPubkey.ScriptAddress())
 	if err != nil {
 		return false, action.Response{Log: fmt.Sprintf("error adding signature: %s, error: ", addSignature.TrackerName, err)}
 	}
@@ -180,9 +179,11 @@ func (ast btcAddSignatureTx) ProcessDeliver(ctx *action.Context, tx action.RawTx
 	}
 
 	addressPubKey, err := btcutil.NewAddressPubKey(addSignature.ValidatorPubKey, ctx.BTCChainType)
+	if err != nil {
+		return false, action.Response{Log: "error creating validator btc pubkey " + err.Error()}
+	}
 
-	err = tracker.AddSignature(addSignature.BTCSignature, *addressPubKey,
-		addSignature.ValidatorAddress)
+	err = tracker.AddSignature(addSignature.BTCSignature, addressPubKey.ScriptAddress())
 	if err != nil {
 		return false, action.Response{Log: fmt.Sprintf("error adding signature: %s, error: ", addSignature.TrackerName, err)}
 	}

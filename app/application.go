@@ -5,6 +5,8 @@ import (
 	"net/url"
 	"os"
 
+	"github.com/Oneledger/protocol/data/keys"
+
 	bitcoin2 "github.com/Oneledger/protocol/chains/bitcoin"
 	"github.com/Oneledger/protocol/data/bitcoin"
 	"github.com/btcsuite/btcd/chaincfg"
@@ -203,12 +205,20 @@ func (app *App) setupValidators(req RequestInitChain, currencies *balance.Curren
 
 		randBytes := []byte("XOLT")
 
-		script, address, err := bitcoin2.CreateMultiSigAddress(threshold, vals, randBytes)
+		script, address, addressList, err := bitcoin2.CreateMultiSigAddress(threshold, vals, randBytes)
 		if err != nil {
 			return nil, err
 		}
 
-		tracker := bitcoin.NewTracker(address)
+		signers := make([]keys.Address, len(addressList))
+		for i := range addressList {
+			signers[i] = keys.Address(addressList[i])
+		}
+
+		tracker, err := bitcoin.NewTracker(address, threshold, signers)
+		if err != nil {
+			return nil, err
+		}
 
 		name := fmt.Sprintf("tracker_%d", i)
 		err = app.Context.trackers.SetTracker(name, tracker)

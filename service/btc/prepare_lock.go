@@ -22,7 +22,7 @@ import (
 )
 
 const (
-	MINIMUM_CONFIRMATIONS_REQ = 10
+	MINIMUM_CONFIRMATIONS_REQ = 1
 )
 
 func (s *Service) PrepareLock(args client.BTCLockPrepareRequest, reply *client.BTCLockPrepareResponse) error {

@@ -30,9 +30,11 @@ type BTCSignature struct {
 
 func NewBTCMultiSig(msg []byte, m int, signers []Address) (*BTCMultiSig, error) {
 
-	if msg == nil {
-		return nil, ErrMissMsg
-	}
+	/*
+		if msg == nil {
+			return nil, ErrMissMsg
+		}
+	*/
 
 	if signers == nil {
 		return nil, ErrMissSigners

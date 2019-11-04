@@ -8,6 +8,7 @@ import (
 	"bytes"
 	"encoding/hex"
 	"fmt"
+	"sort"
 
 	"github.com/Oneledger/protocol/data/bitcoin"
 	"github.com/blockcypher/gobcy"
@@ -217,20 +218,32 @@ func (c *chainDriver) PrepareRedeem(prevLock bitcoin.UTXO,
 	return
 }
 
-func CreateMultiSigAddress(m int, publicKeys []*btcutil.AddressPubKey, randomBytes []byte) (script, address []byte, err error) {
+func CreateMultiSigAddress(m int, publicKeys []*btcutil.AddressPubKey, randomBytes []byte) (script, address []byte,
+	btcAddressList []string, err error) {
+
 	// ideally m should be
 	//	m = len(publicKeys) * 2 /3 ) + 1
+	btcAddressList = make([]string, 0, len(publicKeys))
+	btcPubKeyMap := make(map[string][]byte)
+
+	for i := range publicKeys {
+		address := publicKeys[i].EncodeAddress()
+
+		btcAddressList[i] = address
+		btcPubKeyMap[address] = publicKeys[i].ScriptAddress()
+	}
+
+	sort.Strings(btcAddressList)
 
 	builder := txscript.NewScriptBuilder().AddInt64(int64(m))
-	for _, key := range publicKeys {
-		builder.AddData(key.ScriptAddress())
+	for _, addr := range btcAddressList {
+		builder.AddData(btcPubKeyMap[addr])
 	}
 	builder.AddInt64(int64(len(publicKeys)))
 	builder.AddOp(txscript.OP_CHECKMULTISIG)
 
 	// add randomness
 	builder.AddOp(txscript.OP_RETURN)
-
 	builder.AddData(randomBytes)
 
 	script, err = builder.Script()

@@ -6,13 +6,12 @@ package btc
 
 import (
 	"bytes"
-	"crypto/rand"
 	"encoding/json"
-	"io"
 
 	"github.com/Oneledger/protocol/action"
 	bitcoin2 "github.com/Oneledger/protocol/chains/bitcoin"
 	"github.com/Oneledger/protocol/data/bitcoin"
+	"github.com/Oneledger/protocol/data/keys"
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/pkg/errors"
 	"github.com/tendermint/tendermint/libs/common"
@@ -21,6 +20,7 @@ import (
 type ExtMintOBTC struct {
 	TrackerName  string
 	OwnerAddress action.Address
+	RandomBytes  []byte
 }
 
 var _ action.Msg = &ExtMintOBTC{}
@@ -130,17 +130,15 @@ func (extMintOBTCTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (bool, a
 	validatorPubKeys, err := ctx.Validators.GetBitcoinKeys(&chaincfg.TestNet3Params)
 	m := (len(validatorPubKeys) * 2 / 3) + 1
 
-	data := [4]byte{}
-	_, err = io.ReadFull(rand.Reader, data[:])
-	if err != nil {
-		//
-	}
-
-	lockScript, lockScriptAddress, err := bitcoin2.CreateMultiSigAddress(m, validatorPubKeys, data[:])
+	_, lockScriptAddress, addressList, err := bitcoin2.CreateMultiSigAddress(m, validatorPubKeys, f.RandomBytes)
 
 	// do final reset changes
+	signers := make([]keys.Address, len(addressList))
+	for i := range addressList {
+		signers[i] = keys.Address(addressList[i])
+	}
+	tracker.Multisig, err = keys.NewBTCMultiSig(nil, m, signers)
 
-	tracker.Multisig = nil
 	tracker.State = bitcoin.AvailableTrackerState
 
 	tracker.CurrentTxId = tracker.ProcessTxId
@@ -152,13 +150,6 @@ func (extMintOBTCTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (bool, a
 	tracker.ProcessLockScriptAddress = lockScriptAddress
 	tracker.ProcessUnsignedTx = nil
 	tracker.ProcessOwner = nil
-
-	if ctx.LockScriptStore != nil {
-		err := ctx.LockScriptStore.SaveLockScript(lockScriptAddress, lockScript)
-		if err != nil {
-			return false, action.Response{Log: "error setting lockscript to store"}
-		}
-	}
 
 	err = ctx.Trackers.SetTracker(f.TrackerName, tracker)
 	if err != nil || !ok {
@@ -201,17 +192,15 @@ func (extMintOBTCTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool,
 	validatorPubKeys, err := ctx.Validators.GetBitcoinKeys(&chaincfg.TestNet3Params)
 	m := (len(validatorPubKeys) * 2 / 3) + 1
 
-	data := [4]byte{}
-	_, err = io.ReadFull(rand.Reader, data[:])
-	if err != nil {
-
-	}
-
-	lockScript, lockScriptAddress, err := bitcoin2.CreateMultiSigAddress(m, validatorPubKeys, data[:])
+	lockScript, lockScriptAddress, addressList, err := bitcoin2.CreateMultiSigAddress(m, validatorPubKeys, f.RandomBytes)
 
 	// do final reset changes
+	signers := make([]keys.Address, len(addressList))
+	for i := range addressList {
+		signers[i] = keys.Address(addressList[i])
+	}
+	tracker.Multisig, err = keys.NewBTCMultiSig(nil, m, signers)
 
-	tracker.Multisig = nil
 	tracker.State = bitcoin.AvailableTrackerState
 
 	tracker.CurrentTxId = tracker.ProcessTxId
