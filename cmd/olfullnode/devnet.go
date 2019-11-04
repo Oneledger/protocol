@@ -40,7 +40,6 @@ type testnetConfig struct {
 	createEmptyBlock bool
 	// Total amount of funds to be shared across each node
 	totalFunds          int64
-	singleOriginFunds   bool
 	initialTokenHolders []string
 }
 
@@ -64,7 +63,6 @@ func init() {
 	testnetCmd.Flags().StringVar(&testnetArgs.namesPath, "names", "", "Specify a path to a file containing a list of names separated by newlines if you want the nodes to be generated with human-readable names")
 	// 1 billion by default
 	testnetCmd.Flags().Int64Var(&testnetArgs.totalFunds, "total_funds", 1000000000, "The total amount of tokens in circulation")
-	testnetCmd.Flags().BoolVar(&testnetArgs.singleOriginFunds, "single_origin_funds", false, "If specified, allocates all possible tokens to a single account")
 	testnetCmd.Flags().StringSliceVar(&testnetArgs.initialTokenHolders, "initial_token_holders", []string{}, "Initial list of addresses that hold an equal share of Total funds")
 }
 
@@ -375,11 +373,6 @@ func initialState(args *testnetConfig, nodeList []node) consensus.AppState {
 
 	for _, node := range nodeList {
 		if !node.isValidator {
-			balances = append(balances, consensus.BalanceState{
-				Address:  node.key.PubKey().Address().Bytes(),
-				Currency: vt.Name,
-				Amount:   *vt.NewCoinFromInt(1).Amount,
-			})
 			continue
 		}
 		h, _ := node.esdcaPk.GetHandler()
@@ -405,27 +398,6 @@ func initialState(args *testnetConfig, nodeList []node) consensus.AppState {
 			Amount:           *vt.NewCoinFromInt(node.validator.Power).Amount,
 		}
 		staking = append(staking, st)
-		balances = append(balances, consensus.BalanceState{
-			Address:  node.key.PubKey().Address().Bytes(),
-			Currency: vt.Name,
-			Amount:   *vt.NewCoinFromInt(100).Amount,
-		})
-	}
-
-	if args.singleOriginFunds {
-		balances = append(balances, consensus.BalanceState{
-			Address:  nodeList[0].key.PubKey().Address().Bytes(),
-			Currency: olt.Name,
-			Amount:   *total.Amount,
-		})
-		return consensus.AppState{
-			Currencies: currencies,
-			FeeOption:  feeOpt,
-			Balances:   balances,
-			Staking:    staking,
-			Domains:    domains,
-			Fees:       fees,
-		}
 	}
 
 	if len(args.initialTokenHolders) > 0 {
@@ -436,10 +408,21 @@ func initialState(args *testnetConfig, nodeList []node) consensus.AppState {
 				Currency: olt.Name,
 				Amount:   *olt.NewCoinFromAmount(*share.Amount).Amount,
 			})
+			balances = append(balances, consensus.BalanceState{
+				Address:  acct,
+				Currency: vt.Name,
+				Amount:   *vt.NewCoinFromInt(100).Amount,
+			})
 		}
 	} else {
 		for _, node := range nodeList {
-
+			if !node.isValidator {
+				balances = append(balances, consensus.BalanceState{
+					Address:  node.key.PubKey().Address().Bytes(),
+					Currency: vt.Name,
+					Amount:   *vt.NewCoinFromInt(1).Amount,
+				})
+			}
 			share := total.DivideInt64(int64(len(nodeList)))
 			balances = append(balances, consensus.BalanceState{
 				Address:  node.key.PubKey().Address().Bytes(),
