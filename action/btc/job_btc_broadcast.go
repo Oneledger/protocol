@@ -11,6 +11,8 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/btcsuite/btcd/chaincfg/chainhash"
+
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/chains/bitcoin"
 	"github.com/btcsuite/btcd/rpcclient"
@@ -26,6 +28,7 @@ type JobBTCBroadcast struct {
 	JobID string
 
 	BroadcastSuccessful bool
+	BroadcastTxId       *chainhash.Hash
 
 	Done bool
 
@@ -118,6 +121,7 @@ func (j *JobBTCBroadcast) DoMyJob(ctxI interface{}) {
 			ctx.Logger.Info("bitcoin tx successful", hash)
 
 			j.BroadcastSuccessful = true
+			j.BroadcastTxId = hash
 			return
 		} else {
 			ctx.Logger.Error("broadcast failed err: ", err, " tracker: ", j.TrackerName)
@@ -143,10 +147,9 @@ func (j *JobBTCBroadcast) DoMyJob(ctxI interface{}) {
 		}
 
 		// tempHash, _ := chainhash.NewHashFromStr("860a32ef84ed54df86d207112d1f8d3d5ad28751b25cc7e2107ef55cccbc7586")
-
 		// ok, err := cd.CheckFinality(tempHash, ctx.BlockCypherToken, chain)
 
-		ok, _ := cd.CheckFinality(tracker.ProcessTxId, ctx.BlockCypherToken, chain)
+		ok, _ := cd.CheckFinality(j.BroadcastTxId, ctx.BlockCypherToken, chain)
 		if err != nil {
 			ctx.Logger.Error("error while checking finality", err, j.TrackerName)
 			j.RetryCount += 1

@@ -10,6 +10,8 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/Oneledger/protocol/data/keys"
+
 	"github.com/btcsuite/btcd/chaincfg"
 
 	"github.com/Oneledger/protocol/action"
@@ -119,8 +121,11 @@ func (ast btcAddSignatureTx) ProcessCheck(ctx *action.Context, tx action.RawTx) 
 	}
 
 	addressPubkey, err := btcutil.NewAddressPubKey(addSignature.ValidatorPubKey, ctx.BTCChainType)
+	if err != nil {
+		return false, action.Response{Log: fmt.Sprintf("%s, error generating btc public key", err.Error())}
+	}
 
-	err = tracker.AddSignature(addSignature.BTCSignature, addressPubkey.ScriptAddress())
+	err = tracker.AddSignature(addSignature.BTCSignature, keys.Address(addressPubkey.EncodeAddress()))
 	if err != nil {
 		return false, action.Response{Log: fmt.Sprintf("error adding signature: %s, error: ", addSignature.TrackerName, err)}
 	}
@@ -139,6 +144,7 @@ func (ast btcAddSignatureTx) ProcessCheck(ctx *action.Context, tx action.RawTx) 
 			tracker.Name,
 			id,
 			false,
+			nil,
 			false,
 			0,
 		}

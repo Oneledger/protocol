@@ -2,6 +2,7 @@ package identity
 
 import (
 	"bytes"
+	"fmt"
 	"math/big"
 
 	"github.com/Oneledger/protocol/config"
@@ -184,14 +185,13 @@ func (vs *ValidatorStore) HandleStake(apply Stake) error {
 	if !vs.store.Exists(key) {
 
 		validator = &Validator{
-			Address:          apply.ValidatorAddress,
-			StakeAddress:     apply.StakeAddress,
-			PubKey:           apply.Pubkey,
-			ECDSAPubKey:      apply.ECDSAPubKey,
-			BTCAddressPubKey: apply.BTCAddresPubkey,
-			Power:            calculatePower(apply.Amount),
-			Name:             apply.Name,
-			Staking:          apply.Amount,
+			Address:      apply.ValidatorAddress,
+			StakeAddress: apply.StakeAddress,
+			PubKey:       apply.Pubkey,
+			ECDSAPubKey:  apply.ECDSAPubKey,
+			Power:        calculatePower(apply.Amount),
+			Name:         apply.Name,
+			Staking:      apply.Amount,
 		}
 		// push the new validator to queue
 	} else {
@@ -336,7 +336,13 @@ func (vs *ValidatorStore) GetBitcoinKeys(net *chaincfg.Params) (list []*btcutil.
 	vs.Iterate(func(key keys.Address, validator *Validator) bool {
 
 		var pubKey *btcutil.AddressPubKey
-		pubKey, err = btcutil.NewAddressPubKey(validator.ECDSAPubKey.Data, net)
+		h, err := validator.ECDSAPubKey.GetHandler()
+		if err != nil {
+			fmt.Println("GetBitcoinKeys", err)
+			return true
+		}
+
+		pubKey, err = btcutil.NewAddressPubKey(h.Bytes(), net)
 		if err != nil {
 			return true
 		}

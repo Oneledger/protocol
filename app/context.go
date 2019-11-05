@@ -4,17 +4,8 @@ import (
 	"io"
 	"path/filepath"
 
-	"github.com/Oneledger/protocol/action/btc"
-	"github.com/btcsuite/btcd/chaincfg"
-
-	"github.com/Oneledger/protocol/data/bitcoin"
-	"github.com/Oneledger/protocol/data/chain"
-	"github.com/Oneledger/protocol/data/jobs"
-
-	"github.com/Oneledger/protocol/data/fees"
-	"github.com/Oneledger/protocol/data/governance"
-
 	"github.com/Oneledger/protocol/action"
+	"github.com/Oneledger/protocol/action/btc"
 	action_ons "github.com/Oneledger/protocol/action/ons"
 	"github.com/Oneledger/protocol/action/staking"
 	"github.com/Oneledger/protocol/action/transfer"
@@ -23,12 +14,19 @@ import (
 	"github.com/Oneledger/protocol/config"
 	"github.com/Oneledger/protocol/data/accounts"
 	"github.com/Oneledger/protocol/data/balance"
+	"github.com/Oneledger/protocol/data/bitcoin"
+	"github.com/Oneledger/protocol/data/chain"
+	"github.com/Oneledger/protocol/data/fees"
+	"github.com/Oneledger/protocol/data/governance"
+	"github.com/Oneledger/protocol/data/jobs"
 	"github.com/Oneledger/protocol/data/ons"
 	"github.com/Oneledger/protocol/identity"
 	"github.com/Oneledger/protocol/log"
 	"github.com/Oneledger/protocol/rpc"
 	"github.com/Oneledger/protocol/service"
 	"github.com/Oneledger/protocol/storage"
+
+	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/pkg/errors"
 	"github.com/tendermint/tendermint/libs/db"
 )

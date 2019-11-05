@@ -11,19 +11,14 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/btcsuite/btcd/btcec"
-	"github.com/btcsuite/btcd/chaincfg"
-	"github.com/btcsuite/btcutil"
-
 	"github.com/Oneledger/protocol/data/fees"
-
-	"github.com/Oneledger/protocol/data/keys"
-	"github.com/tendermint/tendermint/crypto/secp256k1"
+	"github.com/btcsuite/btcd/btcec"
 
 	"github.com/Oneledger/protocol/config"
 	"github.com/Oneledger/protocol/consensus"
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/chain"
+	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/log"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -251,11 +246,12 @@ func runDevnet(cmd *cobra.Command, _ []string) error {
 		pvFile := privval.GenFilePV(filepath.Join(configDir, "priv_validator_key.json"), filepath.Join(dataDir, "priv_validator_state.json"))
 		pvFile.Save()
 
-		ecdsaPrivKey := secp256k1.GenPrivKey()
-		ecdsaPrivKeyBytes := base64.StdEncoding.EncodeToString([]byte(ecdsaPrivKey[:]))
-		ecdsaPk, err := keys.GetPrivateKeyFromBytes([]byte(ecdsaPrivKey[:]), keys.SECP256K1)
+		ecdsaPrivKey, _ := btcec.NewPrivateKey(btcec.S256())
+		ecdsaPrivKeyBytes := base64.StdEncoding.EncodeToString([]byte(ecdsaPrivKey.Serialize()))
+
+		ecdsaPk, err := keys.GetPrivateKeyFromBytes([]byte(ecdsaPrivKey.Serialize()), keys.BTCECSECP)
 		if err != nil {
-			return errors.Wrap(err, "error generating secp256k1 private key")
+			return errors.Wrap(err, "error generating BTCECSECP private key")
 		}
 
 		f, err := os.Create(filepath.Join(configDir, "priv_validator_key_ecdsa.json"))
@@ -373,11 +369,10 @@ func initialState(args *testnetConfig, nodeList []node) consensus.AppState {
 			})
 			continue
 		}
-		h, _ := node.esdcaPk.GetHandler()
-		_, pubk := btcec.PrivKeyFromBytes(btcec.S256(), node.esdcaPk.Data)
-		bap, err := btcutil.NewAddressPubKey(pubk.SerializeCompressed(), &chaincfg.TestNet3Params)
+
+		h, err := node.esdcaPk.GetHandler()
 		if err != nil {
-			fmt.Println(err)
+			fmt.Println("err")
 		}
 
 		pubkey, _ := keys.PubKeyFromTendermint(node.validator.PubKey.Bytes())
@@ -386,7 +381,6 @@ func initialState(args *testnetConfig, nodeList []node) consensus.AppState {
 			StakeAddress:     node.key.PubKey().Address().Bytes(),
 			Pubkey:           pubkey,
 			ECDSAPubKey:      h.PubKey(),
-			BTCAddresPubkey:  *bap,
 			Name:             node.validator.Name,
 			Amount:           *vt.NewCoinFromInt(node.validator.Power).Amount,
 		}

@@ -34,7 +34,9 @@ type ChainDriver interface {
 
 	CheckFinality(*chainhash.Hash, string, string) (bool, error)
 
-	PrepareRedeem(bitcoin.UTXO, []byte, int64, []byte) []byte
+	PrepareRedeemNew(prevLockTxID *chainhash.Hash, prevLockIndex uint32, prevLockBalance int64,
+		userAddress []byte, redeemAmount int64,
+		lockScriptAddress []byte) (txBytes []byte)
 }
 
 type chainDriver struct {
@@ -46,41 +48,6 @@ var _ ChainDriver = &chainDriver{}
 func NewChainDriver(token string) ChainDriver {
 
 	return &chainDriver{token}
-}
-
-func (c *chainDriver) PrepareLock(prevLock, input *bitcoin.UTXO, lockScriptAddress []byte) (txBytes []byte) {
-
-	// start a new empty txn
-	tx := wire.NewMsgTx(wire.TxVersion)
-
-	if prevLock.TxID != bitcoin.NilTxHash {
-		prevLockOP := wire.NewOutPoint(prevLock.TxID, prevLock.Index)
-		vin1 := wire.NewTxIn(prevLockOP, nil, nil)
-		tx.AddTxIn(vin1)
-	}
-
-	userOP := wire.NewOutPoint(input.TxID, input.Index)
-	vin2 := wire.NewTxIn(userOP, nil, nil)
-	tx.AddTxIn(vin2)
-
-	// will adjust fees later
-	balance := prevLock.Balance + input.Balance
-
-	out := wire.NewTxOut(balance, lockScriptAddress)
-	tx.AddTxOut(out)
-
-	tempBuf := bytes.NewBuffer([]byte{})
-	tx.Serialize(tempBuf)
-	size := len(tempBuf.Bytes()) * 2
-	fees := int64(70 * size)
-
-	tx.TxOut[0].Value = tx.TxOut[0].Value - fees
-
-	buf := bytes.NewBuffer(txBytes)
-	tx.Serialize(buf)
-	txBytes = buf.Bytes()
-
-	return
 }
 
 func (c *chainDriver) PrepareLockNew(prevLockTxID *chainhash.Hash, prevLockIndex uint32, prevLockBalance int64,
@@ -117,8 +84,7 @@ func (c *chainDriver) PrepareLockNew(prevLockTxID *chainhash.Hash, prevLockIndex
 	tx.Serialize(tempBuf)
 	size := len(tempBuf.Bytes()) * 2 // right now this is a magic number
 	// need a better estimation methodology
-	fees := int64(20 * size)
-	// fees = 0
+	fees := int64(40 * size)
 
 	tx.TxOut[0].Value = tx.TxOut[0].Value - fees
 
@@ -218,12 +184,44 @@ func (c *chainDriver) PrepareRedeem(prevLock bitcoin.UTXO,
 	return
 }
 
+func (c *chainDriver) PrepareRedeemNew(prevLockTxID *chainhash.Hash, prevLockIndex uint32, prevLockBalance int64,
+	userAddress []byte, redeemAmount int64,
+	lockScriptAddress []byte) (txBytes []byte) {
+
+	tx := wire.NewMsgTx(wire.TxVersion)
+
+	prevLockOP := wire.NewOutPoint(prevLockTxID, prevLockIndex)
+	vin1 := wire.NewTxIn(prevLockOP, nil, nil)
+	tx.AddTxIn(vin1)
+
+	balance := prevLockBalance - redeemAmount
+
+	out := wire.NewTxOut(balance, lockScriptAddress)
+	tx.AddTxOut(out)
+
+	userOP := wire.NewTxOut(redeemAmount, userAddress)
+	tx.AddTxOut(userOP)
+
+	tempBuf := bytes.NewBuffer([]byte{})
+	tx.Serialize(tempBuf)
+	size := len(tempBuf.Bytes()) * 2
+	fees := int64(70 * size)
+
+	tx.TxOut[0].Value = tx.TxOut[1].Value - fees
+
+	buf := bytes.NewBuffer(txBytes)
+	tx.Serialize(buf)
+	txBytes = buf.Bytes()
+
+	return
+}
+
 func CreateMultiSigAddress(m int, publicKeys []*btcutil.AddressPubKey, randomBytes []byte) (script, address []byte,
 	btcAddressList []string, err error) {
 
 	// ideally m should be
 	//	m = len(publicKeys) * 2 /3 ) + 1
-	btcAddressList = make([]string, 0, len(publicKeys))
+	btcAddressList = make([]string, len(publicKeys))
 	btcPubKeyMap := make(map[string][]byte)
 
 	for i := range publicKeys {

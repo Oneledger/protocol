@@ -12,7 +12,9 @@ import (
 
 	"github.com/Oneledger/protocol/data/bitcoin"
 	"github.com/Oneledger/protocol/data/keys"
+	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcd/wire"
+	"github.com/btcsuite/btcutil"
 
 	"github.com/pkg/errors"
 
@@ -132,8 +134,16 @@ func (btcLockTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (bool, actio
 	vs, err := ctx.Validators.GetValidatorSet()
 	threshold := (len(vs) * 2 / 3) + 1
 	list := make([]keys.Address, 0, len(vs))
+
+	ctx.Logger.Debug()
 	for i := range vs {
-		list = append(list, vs[i].BTCAddressPubKey.ScriptAddress())
+		ctx.Logger.Debug(i, vs[i].ECDSAPubKey.KeyType)
+
+		h, _ := vs[i].ECDSAPubKey.GetHandler()
+
+		apk, _ := btcutil.NewAddressPubKey(h.Bytes(), &chaincfg.TestNet3Params)
+
+		list = append(list, apk.ScriptAddress())
 	}
 
 	tracker.State = bitcoin.BusySigningTrackerState

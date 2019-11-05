@@ -3,7 +3,6 @@ package staking
 import (
 	"encoding/json"
 
-	"github.com/btcsuite/btcutil"
 	"github.com/pkg/errors"
 
 	"github.com/Oneledger/protocol/action"
@@ -22,7 +21,6 @@ type ApplyValidator struct {
 	ValidatorAddress     action.Address
 	ValidatorPubKey      keys.PublicKey
 	ValidatorECDSAPubKey keys.PublicKey
-	BTCAddressPubkey     btcutil.AddressPubKey
 	Purge                bool
 }
 
@@ -160,7 +158,6 @@ func runApply(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 			StakeAddress:     apply.StakeAddress,
 			Pubkey:           apply.ValidatorPubKey,
 			ECDSAPubKey:      apply.ValidatorECDSAPubKey,
-			BTCAddresPubkey:  apply.BTCAddressPubkey,
 			Name:             apply.NodeName,
 			Amount:           apply.Stake.Value,
 		}

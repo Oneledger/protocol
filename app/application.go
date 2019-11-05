@@ -176,7 +176,7 @@ func (app *App) setupState(stateBytes []byte) error {
 			return errors.Wrap(err, "failed to setup initial fee")
 		}
 	}
-
+	app.Context.deliver.Write()
 	return nil
 }
 
@@ -198,7 +198,7 @@ func (app *App) setupValidators(req RequestInitChain, currencies *balance.Curren
 		params = &chaincfg.TestNet3Params
 	}
 
-	vals, err := app.Context.validators.GetBitcoinKeys(params)
+	vals, err := app.Context.validators.WithState(app.Context.deliver).GetBitcoinKeys(params)
 	threshold := (len(vals) * 2 / 3) + 1
 	for i := 0; i < 8; i++ {
 		// appHash := app.genesisDoc.AppHash.Bytes()
@@ -231,7 +231,6 @@ func (app *App) setupValidators(req RequestInitChain, currencies *balance.Curren
 			return nil, err
 		}
 	}
-	//app.Context.trackers.State.Commit()
 
 	return vu, err
 }

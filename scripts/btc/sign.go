@@ -17,12 +17,12 @@ import (
 
 func main() {
 
-	wif, _ := btcutil.DecodeWIF("cRvMpZ6X4DVTb7G94msgfFiefhW1bRfW9193FWzNtnoTc8SDqjLy")
+	wif, _ := btcutil.DecodeWIF("cSxM9B2KMPFa5k8cC8VnMN5jyWG2FH3e5RCKQ2bpWbjbQvX6tW1j")
 
 	address, _ := btcutil.NewAddressPubKey(wif.PrivKey.PubKey().SerializeCompressed(), &chaincfg.TestNet3Params)
 
 	fmt.Println(address.EncodeAddress())
-	txBytes, _ := hex.DecodeString("01000000018675bccc5cf57e10e2c75cb25187d25a3d8d1f2d1107d286df54ed84ef320a860100000000ffffffff016c752e000000000014aae651e577abfe1d951872de8b48232bb8787f7300000000")
+	txBytes, _ := hex.DecodeString("0100000001d6e7493a71bd2566d530b94ca6548199553190496ba0548a90905e879f921f4c0100000000ffffffff0140290f0000000000140678fa5af71cdcfbfa849cb439bae319ba27f0ff00000000")
 
 	tx := wire.NewMsgTx(wire.TxVersion)
 	buf := bytes.NewBuffer(txBytes)

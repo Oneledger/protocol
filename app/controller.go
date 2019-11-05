@@ -76,6 +76,7 @@ func (app *App) chainInitializer() chainInitializer {
 			app.logger.Error("Failed to setupValidator", "err", err)
 			return ResponseInitChain{}
 		}
+
 		app.Context.govern.Initiated()
 		app.Context.deliver.Write()
 

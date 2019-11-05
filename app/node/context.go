@@ -174,7 +174,7 @@ func readKeyFiles(cfg *consensus.Config) (*Context, error) {
 		return nil, err
 	}
 
-	ecdsaPrivKey, err := keys.GetPrivateKeyFromBytes(ecdsaPrivateKey, keys.SECP256K1)
+	ecdsaPrivKey, err := keys.GetPrivateKeyFromBytes(ecdsaPrivateKey, keys.BTCECSECP)
 	if err != nil {
 		return nil, err
 	}
