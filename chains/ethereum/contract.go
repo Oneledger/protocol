@@ -11,6 +11,7 @@ import (
 // Contract is our main access point to the Ethereum smart contract we use to lock and redeem ethereum tokens
 type Contract = contract.LockRedeem
 
+
 // newKeyTransactor returns a transactror
 func newKeyTransactor(key *ecdsa.PrivateKey) *bind.TransactOpts {
 	return bind.NewKeyedTransactor(key)

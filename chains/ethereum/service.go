@@ -1,6 +1,7 @@
 package ethereum
 
 import (
+	"crypto/ecdsa"
 	"github.com/ethereum/go-ethereum/common"
 	"math/big"
 )
@@ -14,16 +15,26 @@ func NewService(access *Access) *Service {
 	return &Service{access: access}
 }
 
-type LockRequest struct {
+type OnlineLockRequest struct {
 	// RawTransaction of a Lock call from the user to the smart contract
 	// This should be signed and RLP encoded with the ethereum address of the user
-	OLTAddress string  `json:"oltAddress"`
-	Amount     int64 `json:"amount"`
+	//OLTAddress common.Address  `json:"oltAddress"`
+	RawTx      []byte   `json:"rawTx"`
+	//Amount     int64 `json:"amount"`
+}
+type OfflineLockRequest struct {
+	PublicKey *ecdsa.PublicKey `json:"public_key"`
+	Amount *big.Int `json:"amount"`
+}
+
+type OfflineLockRawTX struct {
+	UnsignedRawTx []byte `json:"unsigned_raw_tx"`
 }
 type LockReply struct {
-	//Amount *big.Int `json:"amount"`
-	VerifyBalance     bool     `json:"ok"`
-	Reason string  `json:"reason"`
+	Amount *big.Int `json:"amount"`
+	Ok bool `json:"ok"`
+	//VerifyBalance     bool     `json:"ok"`
+	//Reason string  `json:"reason"`
 }
 
 type SignRequest struct {
@@ -35,22 +46,29 @@ type SignReply struct{
 	txHash common.Hash `json:"tx_hash"`
 }
 
-func (svc *Service) CheckLock(req LockRequest, out *LockReply) error {
-	verifyBalance, err := svc.access.CheckLock(req.Amount,req.OLTAddress)
+
+func (svc *Service) OnlineLock(req OnlineLockRequest, out *LockReply) error {
+	amount, err := svc.access.LockFromSignedTx(req.RawTx)
 	if err != nil {
 		return err
 	}
-	if !verifyBalance {
-		*out = LockReply{
-			verifyBalance,
-			"Balance Calculations do not match",
-		}
-	}
 	*out = LockReply{
-			VerifyBalance:verifyBalance,
+		Amount: amount,
+		Ok:     true,
 	}
-    return nil
+	return nil
 }
+
+
+func (svc *Service) OfflineLock (req OfflineLockRequest,out *OfflineLockRawTX) error {
+	rawTx,err := svc.access.GetRawLockTX(req.PublicKey,req.Amount)
+	if err != nil {
+		return err
+	}
+	*out = OfflineLockRawTX{UnsignedRawTx:rawTx}
+	return nil
+}
+
 
 func (svc *Service) Sign(req SignRequest,out *SignReply) error {
 	tx,err := svc.access.Sign(req.wei,req.recepient)

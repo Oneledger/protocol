@@ -5,20 +5,23 @@ import (
 	"crypto/ecdsa"
 	"github.com/Oneledger/protocol/chains/ethereum/contract"
 	"github.com/Oneledger/protocol/log"
+	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/pkg/errors"
 	"math/big"
+	"strings"
 	"time"
 )
 
 const DefaultTimeout = 5 * time.Second
 
-func NewAccess(rootDir string, cfg *Config, logger *log.Logger) (*Access, error) {
+func NewAccess(rootDir string, cfg *Config, logger *log.Logger,privateKey *ecdsa.PrivateKey) (*Access, error) {
 	// So first we need to grab the current address
 	contractAddrSlice, err := hexutil.Decode(cfg.ContractAddress)
 	if err != nil {
@@ -46,7 +49,7 @@ func NewAccess(rootDir string, cfg *Config, logger *log.Logger) (*Access, error)
 	//keyPath := filepath.Join(rootDir, cfg.KeyLocation)
 	// READ FROM KEYSTORE ,ganache does not have a keystore
 	//privKey, err := ReadUnsafeKeyDump(keyPath)
-	privKey,err := crypto.HexToECDSA("2d3a5b8530d3024501885220b8ef645876bfc816a198a7f89e4b1458fc1644a8")
+	privKey := privateKey
 	if err != nil {
 		logger.Error("Failed to create private key")
 		return nil, err
@@ -58,6 +61,7 @@ func NewAccess(rootDir string, cfg *Config, logger *log.Logger) (*Access, error)
 		Client:          client,
 		logger:          logger,
 		ContractAddress: contractAddr,
+		ContractABI:     cfg.ContractABI,
 	}, nil
 }
 
@@ -77,6 +81,7 @@ type Access struct {
 	Contract        *Contract
 	ContractAddress Address
 	logger          *log.Logger
+	ContractABI     string
 }
 
 // Balance returns the current balance of the
@@ -142,9 +147,9 @@ func (acc *Access) Sign(wei *big.Int, recipient common.Address) (*Transaction,er
 
 // LockFromSignedTx accepts a OneLedger address, and a signed transaction
 // It handles the ethereum
-func (acc *Access) LockFromSignedTx(oltAddr Address, rawTx []byte) (*big.Int, error) {
+func (acc *Access) LockFromSignedTx(rawTx []byte) (*big.Int, error) {
 	// First accept the rawTx
-	var tx *Transaction
+	tx := &Transaction{}
 	err := rlp.DecodeBytes(rawTx, tx)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to decode provided transaction bytes")
@@ -157,21 +162,43 @@ func (acc *Access) LockFromSignedTx(oltAddr Address, rawTx []byte) (*big.Int, er
 	return tx.Value(), nil
 }
 
-
-func (acc *Access) CheckLock(amount int64,oltethadress string)(bool,error){
-	acc.logger.Info("Checking Locked amount")
-	opts := acc.CallOpts()
-	opts.From = acc.Address()
-	balance,err := acc.Contract.GetLockedBalance(opts,oltethadress)
+func (acc *Access) GetRawLockTX (pubKey *ecdsa.PublicKey,lockAmount *big.Int) ([]byte,error){
+	fromAddress := crypto.PubkeyToAddress(*pubKey)
+	nonce,err := acc.Client.PendingNonceAt(context.Background(),fromAddress)
 	if err != nil {
-		return false, errors.Wrap(err, "Unable to get locked balance for specified address")
+		return nil,err
 	}
-	currentBalance := balance.Int64()
-	var previousBalance int64 //Save Balance of account on chain state ;
-    return currentBalance-previousBalance == amount,nil
+	gasLimit := uint64(6721974)
+	gasPrice, err := acc.Client.SuggestGasPrice(context.Background())
+	if err != nil {
+		return nil,err
+	}
+	contractAbi, _ := abi.JSON(strings.NewReader(acc.ContractABI))
+	bytesData, _ := contractAbi.Pack("lock")
+	toAddress := acc.ContractAddress
+	tx := types.NewTransaction(nonce, toAddress, lockAmount, gasLimit, gasPrice, bytesData)
+	ts := types.Transactions{tx}
+	rawTxBytes := ts.GetRlp(0)
+	return rawTxBytes,nil
+}
+
+
+//func (acc *Access) CheckLock(amount int64,oltethadress string)(bool,error){
+//	acc.logger.Info("Checking Locked amount")
+//	opts := acc.CallOpts()
+//	opts.From = acc.Address()
+//	balance,err := acc.Contract.GetLockedBalance(opts,oltethadress)
+//	if err != nil {
+//		return false, errors.Wrap(err, "Unable to get locked balance for specified address")
+//	}
+
+	//return  balance == amount,nil
+	//currentBalance := balance.Int64() // Get from chain state
+	//var previousBalance int64 //Save Balance of account on chain state ;
+    //return currentBalance-previousBalance == amount,nil
 	//update chainstate if true else return false
 	//Call mint function
-}
+//}
 
 /*
 Methods for generating valid Options for calling contracts, creating transactions, etc.

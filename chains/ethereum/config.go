@@ -11,6 +11,7 @@ const defaultKeyLocation = "eth/key.json"
 
 type Config struct {
 	// Path to the ethereum key
+	ContractABI       string   `toml: contractAbi" desc:"AVI for the contract"`
 	Connection        string   `toml:"connection" desc:"Connection string to the Ethereum node"`
 	KeyLocation       string   `toml:"key" desc:"Relative path to the Ethereum key. Can be left blank"`
 	ContractAddress   string   `toml:"contract_address" desc:"Address to the ethereum LockRedeem contract. This should not depend on  things."`

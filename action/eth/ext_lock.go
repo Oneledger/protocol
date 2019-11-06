@@ -8,3 +8,5 @@ type Lock struct {
 	ETHTxn      []byte
 	LockAmount  int64
 }
+
+
