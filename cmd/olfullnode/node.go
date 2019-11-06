@@ -149,7 +149,7 @@ func StartNode(cmd *cobra.Command, args []string) error {
 func catchSigTerm(logger *log.Logger, close func(), waiter *sync.WaitGroup) {
 	// Catch a SIGTERM and stop
 	sigs := make(chan os.Signal, 1)
-	signal.Notify(sigs, os.Interrupt, syscall.SIGTERM)
+	signal.Notify(sigs, os.Interrupt, os.Kill, syscall.SIGSTOP, syscall.SIGTERM, syscall.SIGQUIT)
 
 	go func() {
 		for sig := range sigs {
