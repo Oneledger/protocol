@@ -42,7 +42,7 @@ contract LockRedeem {
         int _power
     );
     //Lock
-    mapping(string => uint) lockedbalances;
+    //mapping(string => uint) lockedbalances;
 
     //Redeem
     // mapping (address => bool) public isSigned;
@@ -69,9 +69,9 @@ contract LockRedeem {
 
     event Lock(
         address sender,
-        uint amunt_received,
-        uint updated_balance,
-        string oltEthAdress_User
+        uint amount_received
+    //uint updated_balance,
+    // string oltEthAdress_User
     );
 
     event NewThreshold(uint _prevThreshold, uint _newThreshold);
@@ -96,15 +96,17 @@ contract LockRedeem {
         return validators[addr] > 0;
     }
     // function called by user
-    function lock(string memory oltethAdress_user) payable public {
+    function lock() payable public {
         require(msg.value >= 0, "Must pay a balance more than 0");
-        lockedbalances[oltethAdress_user] += msg.value;
-        emit Lock(msg.sender,msg.value,getTotalEthBalance(),oltethAdress_user);
+        // lockedbalances[tx_id] = msg.value;
+        // lockedaddress[tx_id] = oltaddress;
+        emit Lock(msg.sender,msg.value);
     }
     //function called by go
-    function getLockedBalance(string memory oltethAdress_user) public view returns (uint) {
-        return lockedbalances[oltethAdress_user];
-    }
+    // function getLockedBalance(string memory oltethAdress_user) public view returns (uint) {
+    //     return lockedbalances[oltethAdress_user];
+    // }
+
     //remove function from production code
     function getRedeemAmount(uint redeemID_) public view returns(uint) {
         return redeemRequests[redeemID_].amount;
@@ -128,14 +130,14 @@ contract LockRedeem {
         emit ValidatorSignedRedeem(msg.sender);
     }
     // function called by user
-    function redeem (uint redeemID_,string memory oltethAdress_user)  public  {
+    function redeem (uint redeemID_)  public  {
         require(redeemRequests[redeemID_].recipient == msg.sender,"Redeem can only be intitated by the recepient of redeem transaction");
         require(redeemRequests[redeemID_].isCompleted == false,"Redeem already executed on this redeemID");
         require(redeemRequests[redeemID_].signature_count >= votingThreshold,"Not enough Validator votes to execute Redeem");
-        require(lockedbalances[oltethAdress_user]> redeemRequests[redeemID_].amount,"Redeem amount is more than available balance");
+        // require(lockedbalances[oltethAdress_user]> redeemRequests[redeemID_].amount,"Redeem amount is more than available balance");
         redeemRequests[redeemID_].recipient.transfer(redeemRequests[redeemID_].amount);
         redeemRequests[redeemID_].isCompleted = true ;
-        lockedbalances[oltethAdress_user] -= redeemRequests[redeemID_].amount;
+        // lockedbalances[oltethAdress_user] -= redeemRequests[redeemID_].amount;
         emit RedeemSuccessful(redeemRequests[redeemID_].recipient,redeemRequests[redeemID_].amount);
     }
 
