@@ -4,6 +4,7 @@ require (
 	github.com/Oneledger/toml v0.4.1
 	github.com/VividCortex/gohistogram v1.0.0 // indirect
 	github.com/btcsuite/btcd v0.0.0-20190424234938-150379531efe // indirect
+	github.com/btcsuite/btcutil v0.0.0-20190207003914-4c204d697803
 	github.com/davecgh/go-spew v1.1.1
 	github.com/fortytw2/leaktest v1.3.0 // indirect
 	github.com/go-kit/kit v0.8.0
