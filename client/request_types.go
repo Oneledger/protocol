@@ -205,3 +205,12 @@ type BTCGetTrackerRequest struct {
 type BTCGetTrackerReply struct {
 	Tracker bitcoin.Tracker `json:"tracker"`
 }
+
+type BTCLockRedeemRequest struct {
+	Address string `json:"address"`
+	Amount  int64  `json:"amount"`
+}
+type BTCRedeemPrepareResponse struct {
+	Txn         string `json:"txn"`
+	TrackerName string `json:"tracker_name"`
+}

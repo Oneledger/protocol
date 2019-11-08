@@ -184,8 +184,8 @@ func (c *chainDriver) PrepareRedeem(prevLock bitcoin.UTXO,
 	return
 }
 
-func (c *chainDriver) PrepareRedeemNew(prevLockTxID *chainhash.Hash, prevLockIndex uint32, prevLockBalance int64,
-	userAddress []byte, redeemAmount int64,
+func (c *chainDriver) PrepareRedeemNew(prevLockTxID *chainhash.Hash, prevLockIndex uint32,
+	prevLockBalance int64, userAddress []byte, redeemAmount int64,
 	lockScriptAddress []byte) (txBytes []byte) {
 
 	tx := wire.NewMsgTx(wire.TxVersion)
@@ -205,7 +205,7 @@ func (c *chainDriver) PrepareRedeemNew(prevLockTxID *chainhash.Hash, prevLockInd
 	tempBuf := bytes.NewBuffer([]byte{})
 	tx.Serialize(tempBuf)
 	size := len(tempBuf.Bytes()) * 2
-	fees := int64(70 * size)
+	fees := int64(40 * size)
 
 	tx.TxOut[0].Value = tx.TxOut[1].Value - fees
 
