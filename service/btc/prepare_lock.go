@@ -13,12 +13,10 @@ import (
 	"github.com/Oneledger/protocol/chains/bitcoin"
 	"github.com/Oneledger/protocol/client"
 	"github.com/Oneledger/protocol/serialize"
+	codes "github.com/Oneledger/protocol/status_codes"
 	"github.com/blockcypher/gobcy"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/google/uuid"
-	"github.com/pkg/errors"
-
-	codes "github.com/Oneledger/protocol/status_codes"
 )
 
 const (
@@ -32,13 +30,13 @@ func (s *Service) PrepareLock(args client.BTCLockPrepareRequest, reply *client.B
 	tx, err := btc.GetTX(args.Hash, nil)
 	if err != nil {
 		s.logger.Error("error in getting txn from bitcoin network", err)
-		return err
+		return codes.ErrBTCReadingTxn
 	}
 
 	if tx.Confirmations < MINIMUM_CONFIRMATIONS_REQ {
 
 		s.logger.Error("not enough txn confirmations", err)
-		return errors.New("source transaction doesn't have enough confirmations")
+		return codes.ErrBTCNotEnoughConfirmations
 	}
 
 	hashh, _ := chainhash.NewHashFromStr(tx.Hash)
@@ -48,7 +46,7 @@ func (s *Service) PrepareLock(args client.BTCLockPrepareRequest, reply *client.B
 	tracker, err := s.trackerStore.GetTrackerForLock()
 	if err != nil {
 		s.logger.Error("error getting tracker for lock", err)
-		return errors.Wrap(err, "error getting tracker for lock")
+		return codes.ErrGettingTracker
 	}
 
 	txnBytes := cd.PrepareLockNew(tracker.ProcessTxId, 0, tracker.CurrentBalance,
@@ -65,11 +63,11 @@ func (s *Service) AddUserSignatureAndProcessLock(args client.BTCLockRequest, rep
 	tracker, err := s.trackerStore.Get(args.TrackerName)
 	if err != nil {
 		// tracker of that name not found
-		return err
+		return codes.ErrTrackerNotFound
 	}
 	if tracker.IsBusy() {
 		// tracker not available anymore, try another tracker
-		return err
+		return codes.ErrTrackerBusy
 	}
 
 	// initialize a chain driver for adding signature
@@ -87,7 +85,7 @@ func (s *Service) AddUserSignatureAndProcessLock(args client.BTCLockRequest, rep
 
 		if tracker.CurrentTxId != nil {
 			// incorrect txn
-			return err
+			return codes.ErrBadBTCTxn
 		}
 	} else if len(newBTCTx.TxIn) == 2 { // if not a new tracker
 
@@ -95,18 +93,18 @@ func (s *Service) AddUserSignatureAndProcessLock(args client.BTCLockRequest, rep
 			newBTCTx.TxIn[0].PreviousOutPoint.Index != 0 {
 
 			// incorrect txn
-			return err
+			return codes.ErrBadBTCTxn
 		}
 	} else {
 		// incorrect txn
-		return err
+		return codes.ErrBadBTCTxn
 	}
 
 	var txBytes []byte
 	buf := bytes.NewBuffer(txBytes)
 	err = newBTCTx.Serialize(buf)
 	if err != nil {
-		return err
+		return codes.ErrSerialization
 	}
 	txBytes = buf.Bytes()
 
@@ -121,7 +119,7 @@ func (s *Service) AddUserSignatureAndProcessLock(args client.BTCLockRequest, rep
 
 	data, err := lock.Marshal()
 	if err != nil {
-		return err
+		return codes.ErrSerialization
 	}
 
 	uuidNew, _ := uuid.NewUUID()

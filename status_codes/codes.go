@@ -14,8 +14,9 @@ const (
 	IOError        = 1002
 	IOErrorNodeKey = 100201
 
-	ParseError        = 1003
-	ParseErrorAddress = 100301
+	ParseError          = 1003
+	ParseErrorAddress   = 100301
+	ParseErrorBadBTCTxn = 100302
 
 	ConfigurationError          = 1004
 	ConfigurationErrorChainType = 100401
@@ -30,6 +31,9 @@ const (
 	InternalErrorGeneratingKeyPair = 100603
 	InternalErrorGettingBalance    = 100604
 	InternalErrorListValidators    = 100605
+	InternalErrorGettingTracker    = 100606
+	InternalErrorTrackerNotFound   = 100607
+	InternalErrorTrackerBusy       = 100608
 
 	WalletError               = 2006
 	WalletErrorAddingAccount  = 200601
@@ -51,4 +55,9 @@ const (
 	TxErrInvalidFeePrice    = 300109
 	TxErrInsufficientFunds  = 300110
 	TxErrGasOverflow        = 300111
+
+	ExternalErr                       = 400100
+	ExternalErrBitcoinTxNotFound      = 400101
+	ExternalErrGettingBTCTxn          = 400102
+	ExternalErrNotEnoughConfirmations = 400103
 )
