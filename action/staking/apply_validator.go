@@ -137,12 +137,6 @@ func runApply(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	if err != nil {
 		return false, action.Response{Log: err.Error()}
 	}
-	if !apply.Purge {
-		_, err = checkBalances(ctx, apply.StakeAddress, apply.Stake)
-		if err != nil {
-			return false, action.Response{Log: err.Error()}
-		}
-	}
 
 	validators := ctx.Validators
 
@@ -150,6 +144,11 @@ func runApply(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 
 
 	if !apply.Purge {
+		_, err = checkBalances(ctx, apply.StakeAddress, apply.Stake)
+		if err != nil {
+			return false, action.Response{Log: err.Error()}
+		}
+
 		err = balances.MinusFromAddress(apply.StakeAddress.Bytes(), apply.Stake.ToCoin(ctx.Currencies))
 		if err != nil {
 			return false, action.Response{Log: errors.Wrap(err, apply.StakeAddress.String()).Error()}
