@@ -5,6 +5,7 @@ require (
 	github.com/VividCortex/gohistogram v1.0.0 // indirect
 	github.com/btcsuite/btcd v0.0.0-20190424234938-150379531efe // indirect
 	github.com/davecgh/go-spew v1.1.1
+	github.com/ethereum/go-ethereum v1.9.6
 	github.com/fortytw2/leaktest v1.3.0 // indirect
 	github.com/go-kit/kit v0.8.0
 	github.com/gogo/protobuf v1.2.1 // indirect
