@@ -12,6 +12,7 @@ import (
 
 type (
 	Address      = common.Address
+	TrackerName  = common.Hash
 	Client       = ethclient.Client
 	Transaction  = types.Transaction
 	TransactOpts = bind.TransactOpts
