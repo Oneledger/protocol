@@ -63,7 +63,21 @@ func (store KeyValue) Delete(StoreKey) (bool, error) {
 }
 
 func (store KeyValue) GetIterator() Iteratable {
-	panic("implement me")
+	return &KeyValueIterator{
+		store.tree,
+	}
+}
+
+type KeyValueIterator struct {
+	tree *iavl.MutableTree
+}
+
+func (kvi *KeyValueIterator) Iterate(fn func(key, value []byte) bool) (stop bool) {
+	return kvi.tree.Iterate(fn)
+}
+
+func (kvi *KeyValueIterator) IterateRange(start, end []byte, ascending bool, fn func(key, value []byte) bool) (stop bool) {
+	return kvi.tree.IterateRange(start, end, ascending, fn)
 }
 
 // newKeyValue initializes a new  key value store backed by persistent or a memory store which implements a session

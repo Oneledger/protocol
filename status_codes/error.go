@@ -52,6 +52,10 @@ var (
 	ErrSigningError      = ProtocolError{InternalErrorSigning, "error while signing"}
 	ErrKeyGeneration     = ProtocolError{InternalErrorGeneratingKeyPair, "error generating key pair"}
 
+	ErrGettingTracker  = ProtocolError{InternalErrorGettingTracker, "error getting tracker"}
+	ErrTrackerNotFound = ProtocolError{InternalErrorTrackerNotFound, "tracker not found"}
+	ErrTrackerBusy     = ProtocolError{InternalErrorTrackerBusy, "tracker busy"}
+
 	// Query errors
 	ErrBadAddress      = ProtocolError{IncorrectAddress, "address incorrect"}
 	ErrGettingBalance  = ProtocolError{InternalErrorGettingBalance, "error  getting balance"}
@@ -66,4 +70,10 @@ var (
 
 	// Tx errors
 
+	// External Errors
+	ErrBTCTxNotFound             = ProtocolError{ExternalErrBitcoinTxNotFound, "bitcoin txn not found"}
+	ErrBTCReadingTxn             = ProtocolError{ExternalErrGettingBTCTxn, "err getting btc txn"}
+	ErrBTCNotEnoughConfirmations = ProtocolError{ExternalErrNotEnoughConfirmations, "not enough btc confirmations"}
+
+	ErrBadBTCTxn = ProtocolError{ParseErrorBadBTCTxn, "bad btc txn"}
 )

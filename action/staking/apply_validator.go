@@ -2,6 +2,7 @@ package staking
 
 import (
 	"encoding/json"
+
 	"github.com/pkg/errors"
 
 	"github.com/Oneledger/protocol/action"

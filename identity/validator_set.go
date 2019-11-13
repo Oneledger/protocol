@@ -1,24 +1,30 @@
 package identity
 
 import (
+	"bytes"
+	"fmt"
+	"math/big"
+
 	"github.com/Oneledger/protocol/config"
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/fees"
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/storage"
 	"github.com/Oneledger/protocol/utils"
+	"github.com/btcsuite/btcd/chaincfg"
+	"github.com/btcsuite/btcutil"
 	"github.com/pkg/errors"
 	"github.com/tendermint/tendermint/abci/types"
-	"math/big"
 )
 
 type ValidatorStore struct {
-	prefix     []byte
-	store      *storage.State
-	proposer   keys.Address
-	queue      ValidatorQueue
-	byzantine  []Validator
-	totalPower int64
+	prefix      []byte
+	store       *storage.State
+	proposer    keys.Address
+	queue       ValidatorQueue
+	byzantine   []Validator
+	totalPower  int64
+	isValidator bool
 }
 
 func NewValidatorStore(prefix string, cfg config.Server, state *storage.State) *ValidatorStore {
@@ -114,7 +120,7 @@ func (vs *ValidatorStore) Init(req types.RequestInitChain, currencies *balance.C
 }
 
 // setup the validators according to begin block
-func (vs *ValidatorStore) Setup(req types.RequestBeginBlock) error {
+func (vs *ValidatorStore) Setup(req types.RequestBeginBlock, nodeValidatorAddress keys.Address) error {
 	vs.proposer = req.Header.GetProposerAddress()
 	var def error
 	// update the byzantine node that need to be slashed
@@ -139,6 +145,9 @@ func (vs *ValidatorStore) Setup(req types.RequestBeginBlock) error {
 		queued := utils.NewQueued(addr, validator.Power, i)
 		vs.queue.append(queued)
 		vs.totalPower += validator.Power
+		if bytes.Equal(addr, nodeValidatorAddress) {
+			vs.isValidator = true
+		}
 		i++
 		return false
 	})
@@ -156,6 +165,22 @@ func (vs *ValidatorStore) GetValidatorSet() ([]Validator, error) {
 		return false
 	})
 	return validatorSet, nil
+}
+
+// get validators set
+func (vs *ValidatorStore) GetValidatorsAddress() ([]keys.Address, error) {
+
+	validatorAddress := make([]keys.Address, 0)
+	vs.Iterate(func(addr keys.Address, validator *Validator) bool {
+		validatorAddress = append(validatorAddress, addr)
+		return false
+	})
+	return validatorAddress, nil
+}
+
+func (vs *ValidatorStore) IsValidatorAddress(query keys.Address) bool {
+
+	return vs.isValidator
 }
 
 // handle stake action
@@ -293,4 +318,28 @@ func (vs *ValidatorStore) GetEndBlockUpdate(ctx *ValidatorContext, req types.Req
 
 	// TODO : get the final updates from vs.cached
 	return validatorUpdates
+}
+
+func (vs *ValidatorStore) GetBitcoinKeys(net *chaincfg.Params) (list []*btcutil.AddressPubKey, err error) {
+
+	list = make([]*btcutil.AddressPubKey, 0)
+	vs.Iterate(func(key keys.Address, validator *Validator) bool {
+
+		var pubKey *btcutil.AddressPubKey
+		h, err := validator.ECDSAPubKey.GetHandler()
+		if err != nil {
+			fmt.Println("GetBitcoinKeys", err)
+			return true
+		}
+
+		pubKey, err = btcutil.NewAddressPubKey(h.Bytes(), net)
+		if err != nil {
+			return true
+		}
+
+		list = append(list, pubKey)
+		return false
+	})
+
+	return
 }

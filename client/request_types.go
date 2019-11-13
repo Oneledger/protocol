@@ -13,6 +13,7 @@ import (
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/data/accounts"
 	"github.com/Oneledger/protocol/data/balance"
+	"github.com/Oneledger/protocol/data/bitcoin"
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/identity"
 	ctypes "github.com/tendermint/tendermint/rpc/core/types"
@@ -180,6 +181,40 @@ type SignRawTxResponse struct {
 	Signature action.Signature `json:"signature"`
 }
 
+
+type BTCLockRequest struct {
+	Txn         []byte        `json:"txn"`
+	Signature   []byte        `json:"signature"`
+	Address     keys.Address  `json:"address"`
+	TrackerName string        `json:"tracker_name"`
+	GasPrice    action.Amount `json:"gasprice"`
+	Gas         int64         `json:"gas"`
+}
+
+type BTCLockPrepareRequest struct {
+	Hash  string `json:"hash"`
+	Index uint32 `json:"index"`
+}
+type BTCLockPrepareResponse struct {
+	Txn         string `json:"txn"`
+	TrackerName string `json:"tracker_name"`
+}
+
+type BTCGetTrackerRequest struct {
+	Name string `json:"name"`
+}
+type BTCGetTrackerReply struct {
+	Tracker bitcoin.Tracker `json:"tracker"`
+}
+
+type BTCLockRedeemRequest struct {
+	Address string `json:"address"`
+	Amount  int64  `json:"amount"`
+}
+type BTCRedeemPrepareResponse struct {
+	Txn         string `json:"txn"`
+	TrackerName string `json:"tracker_name"`
+
 type CurrencyBalanceRequest struct {
 	Currency string       `json:"currency"`
 	Address  keys.Address `json:"address"`
@@ -189,4 +224,5 @@ type CurrencyBalanceReply struct {
 	Balance  string `json:"balance"`
 	// The height when this balance was recorded
 	Height int64 `json:"height"`
+
 }
