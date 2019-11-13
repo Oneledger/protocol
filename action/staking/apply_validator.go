@@ -143,7 +143,6 @@ func runApply(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 
 	balances := ctx.Balances
 
-
 	if !apply.Purge {
 		_, err = checkBalances(ctx, apply.StakeAddress, apply.Stake)
 		if err != nil {

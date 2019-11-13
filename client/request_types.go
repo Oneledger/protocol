@@ -181,7 +181,6 @@ type SignRawTxResponse struct {
 	Signature action.Signature `json:"signature"`
 }
 
-
 type BTCLockRequest struct {
 	Txn         []byte        `json:"txn"`
 	Signature   []byte        `json:"signature"`
@@ -214,6 +213,7 @@ type BTCLockRedeemRequest struct {
 type BTCRedeemPrepareResponse struct {
 	Txn         string `json:"txn"`
 	TrackerName string `json:"tracker_name"`
+}
 
 type CurrencyBalanceRequest struct {
 	Currency string       `json:"currency"`
@@ -224,5 +224,4 @@ type CurrencyBalanceReply struct {
 	Balance  string `json:"balance"`
 	// The height when this balance was recorded
 	Height int64 `json:"height"`
-
 }

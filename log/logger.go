@@ -70,7 +70,7 @@ type Logger struct {
 	w      io.Writer
 	prefix string
 	// Basic log-level filtering
-	level  Level
+	level Level
 }
 
 func NewDefaultLogger(w io.Writer) *Logger {
@@ -97,7 +97,7 @@ func NewLoggerWithLevel(w io.Writer, level Level) *Logger {
 	return NewLoggerWithOpts(w, ops)
 }
 
-func(l *Logger) WithLevel(level Level) *Logger {
+func (l *Logger) WithLevel(level Level) *Logger {
 	l.level = level
 	return l
 }

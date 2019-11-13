@@ -74,6 +74,6 @@ func (a *Amount) BigInt() *big.Int {
 	return (*big.Int)(a)
 }
 
-func(a Amount) String() string {
+func (a Amount) String() string {
 	return a.BigInt().String()
 }

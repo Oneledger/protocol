@@ -41,7 +41,6 @@ func init() {
 	// TODO either get by identity or read base64 of account key
 	balanceCmd.Flags().BytesHexVar(&balArgs.accountKey, "address", []byte{}, "account address")
 
-
 	balanceCmd.Flags().StringVar(&balArgs.currencyName, "currency", "", "currency name")
 
 }

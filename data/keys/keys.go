@@ -11,12 +11,12 @@ import (
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/tendermint/tendermint/privval"
 
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/pkg/errors"
 	"github.com/tendermint/tendermint/abci/types"
 	"github.com/tendermint/tendermint/crypto/ed25519"
 	"github.com/tendermint/tendermint/crypto/secp256k1"
 	"github.com/tendermint/tendermint/p2p"
-	"github.com/ethereum/go-ethereum/crypto"
 )
 
 /*
@@ -247,7 +247,7 @@ func (privKey PrivateKey) GetHandler() (PrivateKeyHandler, error) {
 		var key [SECP256K1_PRIV_SIZE]byte
 		copy(key[:], privKey.Data)
 		return PrivateKeySECP256K1(key), nil
-    
+
 	case ETHSECP:
 		k := big.NewInt(0).SetBytes(privKey.Data)
 
@@ -375,7 +375,6 @@ func (k PrivateKeySECP256K1) Equals(privkey PrivateKey) bool {
 
 //====================== SECP256K1 ======================
 
-
 //====================== ETHSECP256K1 ====================
 var _ PublicKeyHandler = PublicKeyETHSECP{}
 var _ PrivateKeyHandler = PrivateKeyETHSECP{}
@@ -429,10 +428,7 @@ func (p PrivateKeyETHSECP) Equals(privKey PrivateKey) bool {
 	return privKey.Keytype == ETHSECP && bytes.Equal(privKey.Data, p.Bytes())
 }
 
-
 //====================== ETHSECP256K1 ==========================
-
-
 
 //=====================  BTCECSECP256K1 ========================
 var _ PublicKeyHandler = PublicKeyBTCEC{}
@@ -489,4 +485,5 @@ func (k PrivateKeyBTCEC) PubKey() PublicKey {
 func (k PrivateKeyBTCEC) Equals(privkey PrivateKey) bool {
 	return privkey.Keytype == BTCECSECP && bytes.Equal(k.Bytes(), privkey.Data)
 }
+
 //=====================  BTCECSECP256K1 ========================

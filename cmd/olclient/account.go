@@ -30,7 +30,7 @@ import (
 var updateCmd = &cobra.Command{
 	Use:   "account",
 	Short: "handling an account",
-	RunE:   UpdateAccount,
+	RunE:  UpdateAccount,
 }
 
 // Arguments to the command
@@ -80,7 +80,7 @@ func UpdateAccount(cmd *cobra.Command, args []string) error {
 			return err
 		}
 		Ctx.logger.Info("delete success: ", keys.Address(updateArgs.delete).String())
-		return  nil
+		return nil
 	}
 	// get the kys for the new account
 	var privKey keys.PrivateKey
@@ -116,8 +116,6 @@ func UpdateAccount(cmd *cobra.Command, args []string) error {
 		Ctx.logger.Error("Error initializing account", err)
 		return err
 	}
-
-
 
 	Ctx.logger.Infof("creating account %#v", acc)
 	out, err := fullnode.AddAccount(acc)
