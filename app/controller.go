@@ -204,7 +204,7 @@ func (app *App) blockEnder() blockEnder {
 				app.Context.validators.IsValidatorAddress(app.Context.node.ValidatorAddress()) {
 
 				cdConfig := app.Context.cfg.ChainDriver
-
+                ethConfig := app.Context.cfg.EthChainDriver
 				jc := action.NewJobsContext(cdConfig.BitcoinChainType,
 					app.Context.internalService, app.Context.trackers,
 					app.Context.node.ValidatorECDSAPrivateKey(),
@@ -215,6 +215,9 @@ func (app *App) blockEnder() blockEnder {
 					cdConfig.BitcoinRPCUsername,
 					cdConfig.BitcoinRPCPassword,
 					cdConfig.BitcoinChainType,
+					ethConfig.ContractABI,
+					ethConfig.ContractAddress,
+					ethConfig.ContractAddress,
 				)
 
 				js := app.Context.jobStore

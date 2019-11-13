@@ -2,6 +2,8 @@ package config
 
 import (
 	"bytes"
+	//"crypto/ecdsa"
+	"github.com/ethereum/go-ethereum/ethclient"
 	"io/ioutil"
 	"path/filepath"
 	"strings"
@@ -43,6 +45,7 @@ type Server struct {
 	Mempool     *MempoolConfig     `toml:"mempool"`
 	Consensus   *ConsensusConfig   `toml:"consensus"`
 	ChainDriver *ChainDriverConfig `toml:"chain_driver"`
+	EthChainDriver *EthereumChainDriverConfig  `toml:"ethereum_chain_driver"`
 
 	chainID string
 	rootDir string
@@ -390,6 +393,16 @@ type ChainDriverConfig struct {
 
 	BlockCypherToken string `toml:"blockcypher_token" desc:"token to use blockcypher APIs"`
 }
+const defaultKeyLocation = "eth/key.json"
+
+type EthereumChainDriverConfig struct {
+	// Path to the ethereum key
+	ContractABI       string   `toml: contractAbi" desc:"AVI for the contract"`
+	Connection        string   `toml:"connection" desc:"Connection string to the Ethereum node"`
+	KeyLocation       string   `toml:"key" desc:"Relative path to the Ethereum key. Can be left blank"`
+	ContractAddress   string   `toml:"contract_address" desc:"Address to the ethereum LockRedeem contract. This should not depend on  things."`
+	InitialValidators []string `toml:"initial_validators" desc:"Addresses of the initial validators"`
+}
 
 func DefaultChainDriverConfig() *ChainDriverConfig {
 
@@ -405,4 +418,24 @@ func DefaultChainDriverConfig() *ChainDriverConfig {
 	cfg.BitcoinRPCPassword = ""
 
 	return &cfg
+}
+
+func DefaultEthConfig() *EthereumChainDriverConfig {
+	return &EthereumChainDriverConfig{
+		Connection:  "https://ropsten.infura.io/v3/{API_KEY}",
+		KeyLocation: defaultKeyLocation,
+	}
+}
+
+func CreateEthConfig(connection string,keylocation string,address string,validators []string) *EthereumChainDriverConfig{
+	return &EthereumChainDriverConfig{
+		Connection:connection,
+		KeyLocation:keylocation,
+		ContractAddress:address,
+		InitialValidators:validators,
+	}
+}
+
+func (cfg *EthereumChainDriverConfig) Client() (*ethclient.Client, error) {
+	return ethclient.Dial(cfg.Connection)
 }

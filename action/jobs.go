@@ -31,13 +31,18 @@ type JobsContext struct {
 	BTCRPCPort     string
 	BTCRPCUsername string
 	BTCRPCPassword string
+	ETHContractABI string
+	ETHConnection  string
+	ETHContractAddress string
 
 	BTCChainnet string
+
+	// eth driver config
 }
 
 func NewJobsContext(chainType string, svc *Service, trackers *bitcoin.TrackerStore, privKey *keys.PrivateKey,
 	valAddress keys.Address, bcyToken string, lStore *bitcoin.LockScriptStore,
-	btcAddress, btcRPCPort, BTCRPCUsername, BTCRPCPassword, btcChain string,
+	btcAddress, btcRPCPort, BTCRPCUsername, BTCRPCPassword, btcChain string,ETHAbi string,ETHconn string,ETHContractaddress string,
 ) *JobsContext {
 
 	var params *chaincfg.Params
