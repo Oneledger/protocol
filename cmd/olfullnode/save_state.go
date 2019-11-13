@@ -13,7 +13,6 @@ import (
 	"github.com/Oneledger/protocol/data/ons"
 	"github.com/Oneledger/protocol/identity"
 	"github.com/Oneledger/protocol/log"
-	"github.com/Oneledger/protocol/storage"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"io"
@@ -315,31 +314,22 @@ type DomainState struct {
 func DumpDomainToFile(ds *ons.DomainStore, writer io.Writer, fn func(writer io.Writer, obj interface{}) bool) {
 	iterator := 0
 	delimiter := ","
-	ds.State.IterateRange(
-		ds.Prefix,
-		storage.Rangefix(string(ds.Prefix)),
-		true,
-		func(key, value []byte) bool {
-			domainState := DomainState{}
-			domain := &ons.Domain{}
-			err := ds.Szlr.Deserialize(value, domain)
+
+	ds.Iterate(func(name string, domain *ons.Domain) bool {
+		if iterator != 0 {
+			_, err := writer.Write([]byte(delimiter))
 			if err != nil {
 				return true
 			}
-			if iterator != 0 {
-				_, err := writer.Write([]byte(delimiter))
-				if err != nil {
-					return true
-				}
-			}
-			domainState.Name = domain.Name
-			domainState.AccountAddress = domain.AccountAddress
-			domainState.OwnerAddress = domain.OwnerAddress
+		}
+		domainState := DomainState{}
+		domainState.Name = domain.Name
+		domainState.AccountAddress = domain.AccountAddress
+		domainState.OwnerAddress = domain.OwnerAddress
 
-			fn(writer, domainState)
-			iterator++
-			return false
-		},
-	)
+		fn(writer, domainState)
+		iterator++
+		return false
+	})
 	return
 }
