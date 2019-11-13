@@ -59,7 +59,7 @@ func NewApp(cfg *config.Server, nodeContext *node.Context) (*App, error) {
 
 	app := &App{
 		name:   "OneLedger",
-		logger: log.NewLoggerWithPrefix(w, "app"),
+		logger: log.NewLoggerWithPrefix(w, "app").WithLevel(log.Level(cfg.Node.LogLevel)),
 	}
 	app.nodeName = cfg.Node.NodeName
 

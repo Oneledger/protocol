@@ -26,6 +26,15 @@ func (c *ServiceClient) Balance(addr keys.Address) (out BalanceReply, err error)
 	return
 }
 
+func (c *ServiceClient) CurrBalance(addr keys.Address, currency string) (out CurrencyBalanceReply, err error) {
+	/*if len(request) <= 20 {
+		return out, errors.New("address has insufficient length")
+	}*/
+	request := CurrencyBalanceRequest{currency, addr}
+	err = c.Call("query.CurrencyBalance", &request, &out)
+	return
+}
+
 func (c *ServiceClient) NodeName() (out NodeNameReply, err error) {
 	err = c.Call("node.NodeName", struct{}{}, &out)
 	return
