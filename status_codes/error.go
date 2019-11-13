@@ -48,7 +48,7 @@ var (
 	ErrDeletingAccount = ProtocolError{WalletErrorDeleteAccount, "error in deleting account"}
 
 	ErrGeneratingAccount = ProtocolError{AccountsErrorGeneratingNewAccount, "error generating new account"}
-	ErrAccountNotFound   = ProtocolError{AccountNotFound, "account doesn't in wallet"}
+	ErrAccountNotFound   = ProtocolError{AccountNotFound, "account is not in wallet"}
 	ErrSigningError      = ProtocolError{InternalErrorSigning, "error while signing"}
 	ErrKeyGeneration     = ProtocolError{InternalErrorGeneratingKeyPair, "error generating key pair"}
 
