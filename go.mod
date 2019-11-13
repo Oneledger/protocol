@@ -7,6 +7,7 @@ require (
 	github.com/btcsuite/btcd v0.0.0-20190424234938-150379531efe
 	github.com/btcsuite/btcutil v0.0.0-20190207003914-4c204d697803
 	github.com/davecgh/go-spew v1.1.1
+	github.com/ethereum/go-ethereum v1.9.6
 	github.com/fortytw2/leaktest v1.3.0 // indirect
 	github.com/go-kit/kit v0.8.0
 	github.com/gogo/protobuf v1.2.1 // indirect

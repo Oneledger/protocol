@@ -2,9 +2,11 @@ package keys
 
 import (
 	"bytes"
+	"crypto/ecdsa"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"math/big"
 
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/tendermint/tendermint/privval"
@@ -14,6 +16,7 @@ import (
 	"github.com/tendermint/tendermint/crypto/ed25519"
 	"github.com/tendermint/tendermint/crypto/secp256k1"
 	"github.com/tendermint/tendermint/p2p"
+	"github.com/ethereum/go-ethereum/crypto"
 )
 
 /*
@@ -201,6 +204,14 @@ func (pubKey PublicKey) GetHandler() (PublicKeyHandler, error) {
 		copy(key[:], pubKey.Data)
 		return PublicKeySECP256K1{key}, nil
 
+	case ETHSECP:
+		pkey, err := crypto.DecompressPubkey(pubKey.Data)
+		if err != nil {
+			return new(PublicKeyETHSECP),
+				fmt.Errorf("given key can not be decompressed to the keytype algorithm %s, err %s", pubKey.KeyType.Name(), err.Error())
+		}
+		return PublicKeyETHSECP{key: pkey}, nil
+
 	case BTCECSECP:
 		k, err := btcec.ParsePubKey(pubKey.Data, btcec.S256())
 		if err != nil {
@@ -223,7 +234,7 @@ func (privKey PrivateKey) GetHandler() (PrivateKeyHandler, error) {
 			return new(PrivateKeyED25519),
 				fmt.Errorf("given key doesn't match the size of the key algorithm %d", privKey.Keytype)
 		}
-		var key [64]byte
+		var key [ED25519_PRIV_SIZE]byte
 		copy(key[:], privKey.Data)
 		return PrivateKeyED25519(key), nil
 
@@ -233,9 +244,19 @@ func (privKey PrivateKey) GetHandler() (PrivateKeyHandler, error) {
 			return new(PrivateKeySECP256K1),
 				fmt.Errorf("given key doesn't match the size of the key algorithm %d", privKey.Keytype)
 		}
-		var key [32]byte
+		var key [SECP256K1_PRIV_SIZE]byte
 		copy(key[:], privKey.Data)
 		return PrivateKeySECP256K1(key), nil
+    
+	case ETHSECP:
+		k := big.NewInt(0).SetBytes(privKey.Data)
+
+		priv := new(ecdsa.PrivateKey)
+		priv.PublicKey.Curve = crypto.S256()
+		priv.D = k
+		priv.PublicKey.X, priv.PublicKey.Y = crypto.S256().ScalarBaseMult(k.Bytes())
+
+		return PrivateKeyETHSECP(*priv), nil
 
 	case BTCECSECP:
 		k, _ := btcec.PrivKeyFromBytes(btcec.S256(), privKey.Data)
@@ -354,6 +375,66 @@ func (k PrivateKeySECP256K1) Equals(privkey PrivateKey) bool {
 
 //====================== SECP256K1 ======================
 
+
+//====================== ETHSECP256K1 ====================
+var _ PublicKeyHandler = PublicKeyETHSECP{}
+var _ PrivateKeyHandler = PrivateKeyETHSECP{}
+
+type PublicKeyETHSECP struct {
+	key *ecdsa.PublicKey
+}
+
+func (k PublicKeyETHSECP) Address() Address {
+	data := crypto.PubkeyToAddress(*k.key)
+	addr := make([]byte, 20)
+	copy(addr[:], data.Bytes())
+	return Address(addr)
+}
+
+func (k PublicKeyETHSECP) Bytes() []byte {
+	return crypto.CompressPubkey(k.key)
+}
+
+func (k PublicKeyETHSECP) VerifyBytes(msg []byte, sig []byte) bool {
+	pub := k.Bytes()
+	return crypto.VerifySignature(pub, msg, sig)
+}
+
+func (k PublicKeyETHSECP) Equals(pubKey PublicKey) bool {
+	return pubKey.KeyType == ETHSECP && bytes.Equal(k.Bytes(), pubKey.Data)
+}
+
+type PrivateKeyETHSECP ecdsa.PrivateKey
+
+func (p PrivateKeyETHSECP) Bytes() []byte {
+	return p.D.Bytes()
+}
+
+func (p PrivateKeyETHSECP) Sign(b []byte) ([]byte, error) {
+	pkey := ecdsa.PrivateKey(p)
+
+	return crypto.Sign(b, &pkey)
+}
+
+func (p PrivateKeyETHSECP) PubKey() PublicKey {
+	pkey := ecdsa.PrivateKey(p)
+	b := crypto.CompressPubkey(&pkey.PublicKey)
+	return PublicKey{
+		KeyType: ETHSECP,
+		Data:    b,
+	}
+}
+
+func (p PrivateKeyETHSECP) Equals(privKey PrivateKey) bool {
+	return privKey.Keytype == ETHSECP && bytes.Equal(privKey.Data, p.Bytes())
+}
+
+
+//====================== ETHSECP256K1 ==========================
+
+
+
+//=====================  BTCECSECP256K1 ========================
 var _ PublicKeyHandler = PublicKeyBTCEC{}
 var _ PrivateKeyHandler = PrivateKeyBTCEC{}
 
@@ -408,3 +489,4 @@ func (k PrivateKeyBTCEC) PubKey() PublicKey {
 func (k PrivateKeyBTCEC) Equals(privkey PrivateKey) bool {
 	return privkey.Keytype == BTCECSECP && bytes.Equal(k.Bytes(), privkey.Data)
 }
+//=====================  BTCECSECP256K1 ========================
