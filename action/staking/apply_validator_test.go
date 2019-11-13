@@ -3,9 +3,10 @@ package staking
 import (
 	"encoding/hex"
 	"errors"
-	"github.com/Oneledger/protocol/data/fees"
 	"os"
 	"testing"
+
+	"github.com/Oneledger/protocol/data/fees"
 
 	db2 "github.com/tendermint/tendermint/libs/db"
 
@@ -133,6 +134,7 @@ func setupForTypeCastApplyValidator() action.SignedTx {
 		ValidatorPubKey:  keys.PublicKey{keys.ED25519, pubkey.Bytes()[5:]},
 		Purge:            false,
 	}
+
 	fee := action.Fee{
 		Price: action.Amount{"OLT", *balance.NewAmount(1)},
 		Gas:   int64(10),
