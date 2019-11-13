@@ -16,8 +16,8 @@ import (
 // handy methods to access Domain objects
 type DomainStore struct {
 	State  *storage.State
-	szlr   serialize.Serializer
-	prefix []byte
+	Szlr   serialize.Serializer
+	Prefix []byte
 }
 
 // NewDomainStore creates a new storage object from filepath and other configurations
@@ -25,8 +25,8 @@ func NewDomainStore(prefix string, state *storage.State) *DomainStore {
 
 	return &DomainStore{
 		State:  state,
-		szlr:   serialize.GetSerializer(serialize.PERSISTENT),
-		prefix: storage.Prefix(prefix),
+		Szlr:   serialize.GetSerializer(serialize.PERSISTENT),
+		Prefix: storage.Prefix(prefix),
 	}
 }
 
@@ -38,7 +38,7 @@ func (ds *DomainStore) WithState(state *storage.State) *DomainStore {
 // Get is used to retrieve the domain object from the domain name
 func (ds *DomainStore) Get(name string) (*Domain, error) {
 	key := keyFromName(name)
-	key = append(ds.prefix, key...)
+	key = append(ds.Prefix, key...)
 	exists := ds.State.Exists(key)
 	if !exists {
 		return nil, ErrDomainNotFound
@@ -47,7 +47,7 @@ func (ds *DomainStore) Get(name string) (*Domain, error) {
 	data, _ := ds.State.Get(key)
 
 	d := &Domain{}
-	err := ds.szlr.Deserialize(data, d)
+	err := ds.Szlr.Deserialize(data, d)
 	if err != nil {
 		return nil, errors.Wrap(err, "error de-serializing domain")
 	}
@@ -58,12 +58,12 @@ func (ds *DomainStore) Get(name string) (*Domain, error) {
 func (ds *DomainStore) Set(d *Domain) error {
 	key := keyFromName(d.Name)
 
-	data, err := ds.szlr.Serialize(d)
+	data, err := ds.Szlr.Serialize(d)
 	if err != nil {
 		return err
 	}
 
-	key = append(ds.prefix, key...)
+	key = append(ds.Prefix, key...)
 	err = ds.State.Set(key, data)
 	if err != nil {
 		return err
@@ -74,7 +74,7 @@ func (ds *DomainStore) Set(d *Domain) error {
 
 func (ds *DomainStore) Exists(name string) bool {
 	key := keyFromName(name)
-	key = append(ds.prefix, key...)
+	key = append(ds.Prefix, key...)
 	return ds.State.Exists(key)
 }
 
@@ -85,13 +85,13 @@ func keyFromName(name string) []byte {
 
 func (ds *DomainStore) Iterate(fn func(name string, domain *Domain) bool) (stopped bool) {
 	return ds.State.IterateRange(
-		ds.prefix,
-		storage.Rangefix(string(ds.prefix)),
+		ds.Prefix,
+		storage.Rangefix(string(ds.Prefix)),
 		true,
 		func(key, value []byte) bool {
-			name := string(key[len(ds.prefix):])
+			name := string(key[len(ds.Prefix):])
 			domain := &Domain{}
-			err := ds.szlr.Deserialize(value, domain)
+			err := ds.Szlr.Deserialize(value, domain)
 			if err != nil {
 				return false
 			}
