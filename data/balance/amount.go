@@ -73,3 +73,7 @@ func (a *Amount) UnmarshalText(b []byte) error {
 func (a *Amount) BigInt() *big.Int {
 	return (*big.Int)(a)
 }
+
+func(a Amount) String() string {
+	return a.BigInt().String()
+}

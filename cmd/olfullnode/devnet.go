@@ -416,18 +416,20 @@ func initialState(args *testnetConfig, nodeList []node) consensus.AppState {
 		}
 	} else {
 		for _, node := range nodeList {
+			amt := int64(100)
 			if !node.isValidator {
-				balances = append(balances, consensus.BalanceState{
-					Address:  node.key.PubKey().Address().Bytes(),
-					Currency: vt.Name,
-					Amount:   *vt.NewCoinFromInt(1).Amount,
-				})
+				amt = 1
 			}
 			share := total.DivideInt64(int64(len(nodeList)))
 			balances = append(balances, consensus.BalanceState{
 				Address:  node.key.PubKey().Address().Bytes(),
 				Currency: olt.Name,
 				Amount:   *olt.NewCoinFromAmount(*share.Amount).Amount,
+			})
+			balances = append(balances, consensus.BalanceState{
+				Address:  node.key.PubKey().Address().Bytes(),
+				Currency: vt.Name,
+				Amount:   *vt.NewCoinFromInt(amt).Amount,
 			})
 		}
 	}

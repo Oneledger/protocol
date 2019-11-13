@@ -52,6 +52,11 @@ func (vs *ValidatorStore) Get(addr keys.Address) (*Validator, error) {
 	return validator, nil
 }
 
+func (vs *ValidatorStore) Exists(addr keys.Address) bool {
+	key := append(vs.prefix, addr...)
+	return vs.store.Exists(key)
+}
+
 func (vs *ValidatorStore) set(validator Validator) error {
 	value := (validator).Bytes()
 	vkey := append(vs.prefix, validator.Address.Bytes()...)
@@ -156,8 +161,7 @@ func (vs *ValidatorStore) GetValidatorSet() ([]Validator, error) {
 // handle stake action
 func (vs *ValidatorStore) HandleStake(apply Stake) error {
 	validator := &Validator{}
-	key := append(vs.prefix, apply.ValidatorAddress.Bytes()...)
-	if !vs.store.Exists(key) {
+	if !vs.Exists(apply.ValidatorAddress) {
 
 		validator = &Validator{
 			Address:      apply.ValidatorAddress,
@@ -170,19 +174,17 @@ func (vs *ValidatorStore) HandleStake(apply Stake) error {
 		}
 		// push the new validator to queue
 	} else {
-		value, _ := vs.store.Get(key)
-		if value == nil {
-			return errors.New("failed to get validator from store")
-		}
-		validator, err := validator.FromBytes(value)
+		v, err := vs.Get(apply.ValidatorAddress)
 		if err != nil {
 			return errors.Wrap(err, "error deserialize validator")
 		}
+		validator = v
+
 		amt := big.NewInt(0).Add(validator.Staking.BigInt(), apply.Amount.BigInt())
 
 		validator.Staking = *balance.NewAmountFromBigInt(amt)
 		validator.Power = calculatePower(validator.Staking)
-
+		validator = validator
 	}
 	value := (validator).Bytes()
 	vkey := append(vs.prefix, validator.Address.Bytes()...)
@@ -221,17 +223,8 @@ func makingslash(vs *ValidatorStore, evidences []types.Evidence) []Validator {
 
 func (vs *ValidatorStore) HandleUnstake(unstake Unstake) error {
 	validator := &Validator{}
-	unstakeKey := append(vs.prefix, unstake.Address.Bytes()...)
-	if !vs.store.Exists(unstakeKey) {
 
-		return errors.New("address not exist in validator set")
-	}
-
-	value, _ := vs.store.Get(unstakeKey)
-	if value == nil {
-		return errors.New("failed to get validator from store")
-	}
-	validator, err := validator.FromBytes(value)
+	validator, err := vs.Get(unstake.Address)
 	if err != nil {
 		return errors.Wrap(err, "error deserialize validator")
 	}
@@ -240,9 +233,7 @@ func (vs *ValidatorStore) HandleUnstake(unstake Unstake) error {
 
 	validator.Staking = *balance.NewAmountFromBigInt(amt)
 	validator.Power = calculatePower(validator.Staking)
-	vKey := append(vs.prefix, validator.Address.Bytes()...)
-
-	err = vs.store.Set(vKey, validator.Bytes())
+	err = vs.set(*validator)
 	if err != nil {
 		return errors.Wrap(err, "failed to set validator for unstake")
 	}
@@ -274,7 +265,7 @@ func (vs *ValidatorStore) GetEndBlockUpdate(ctx *ValidatorContext, req types.Req
 			// purge validator who's power is 0
 			if validator.Power <= 0 {
 				vKey := append(vs.prefix, validator.Address.Bytes()...)
-
+				//TODO: validator delete will not properly delete the item because of state implementation
 				ok, err := vs.store.Delete(vKey)
 				if !ok {
 					logger.Error(err.Error())
@@ -284,7 +275,6 @@ func (vs *ValidatorStore) GetEndBlockUpdate(ctx *ValidatorContext, req types.Req
 				PubKey: validator.PubKey.GetABCIPubKey(),
 				Power:  validator.Power,
 			})
-
 			//distribute the fee for validators
 			if distribute {
 				feeShare := total.MultiplyInt64(queued.Priority()).DivideInt64(vs.totalPower)

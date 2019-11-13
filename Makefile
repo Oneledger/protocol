@@ -33,6 +33,15 @@ fulltest: install
 status:
 	@./scripts/status
 
+
+
+#
+# install and restart the network
+#
+restart: install
+	@./scripts/stopDev
+	@./scripts/startDev
+
 #
 # run unit tests on project packages
 #
