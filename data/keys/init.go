@@ -12,6 +12,7 @@ const (
 	UNKNOWN Algorithm = iota
 	ED25519
 	SECP256K1
+	BTCECSECP
 
 	ETHSECP
 
@@ -28,13 +29,15 @@ func (a Algorithm) Name() string {
 		return "ed25519"
 	case SECP256K1:
 		return "secp256k1"
+	case BTCECSECP:
+		return "btcecsecp"
 	}
 	return "Unknown algorithm"
 }
 
 func (a Algorithm) MarshalText() ([]byte, error) {
 	switch a {
-	case ED25519, SECP256K1:
+	case ED25519, SECP256K1, BTCECSECP:
 		return []byte(a.Name()), nil
 	case UNKNOWN:
 		return []byte{}, nil
@@ -58,6 +61,9 @@ func GetAlgorithmFromTmKeyName(name string) Algorithm {
 		return ED25519
 	case "secp256k1":
 		return SECP256K1
+	case "btcecsecp":
+		return BTCECSECP
 	}
+
 	return UNKNOWN
 }

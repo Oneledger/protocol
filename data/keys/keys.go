@@ -3,10 +3,12 @@ package keys
 import (
 	"bytes"
 	"crypto/ecdsa"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"math/big"
 
+	"github.com/btcsuite/btcd/btcec"
 	"github.com/tendermint/tendermint/privval"
 
 	"github.com/pkg/errors"
@@ -191,6 +193,7 @@ func (pubKey PublicKey) GetHandler() (PublicKeyHandler, error) {
 		var key [ED25519_PUB_SIZE]byte
 		copy(key[:], pubKey.Data)
 		return PublicKeyED25519{key}, nil
+
 	case SECP256K1:
 		size := SECP256K1_PUB_SIZE
 		if len(pubKey.Data) != size {
@@ -200,6 +203,7 @@ func (pubKey PublicKey) GetHandler() (PublicKeyHandler, error) {
 		var key [SECP256K1_PUB_SIZE]byte
 		copy(key[:], pubKey.Data)
 		return PublicKeySECP256K1{key}, nil
+
 	case ETHSECP:
 		pkey, err := crypto.DecompressPubkey(pubKey.Data)
 		if err != nil {
@@ -207,6 +211,14 @@ func (pubKey PublicKey) GetHandler() (PublicKeyHandler, error) {
 				fmt.Errorf("given key can not be decompressed to the keytype algorithm %s, err %s", pubKey.KeyType.Name(), err.Error())
 		}
 		return PublicKeyETHSECP{key: pkey}, nil
+
+	case BTCECSECP:
+		k, err := btcec.ParsePubKey(pubKey.Data, btcec.S256())
+		if err != nil {
+			return nil, err
+		}
+		return PublicKeyBTCEC{*k}, err
+
 	default:
 		// Shouldn't reach here
 		return nil, errors.New("provided invalid key algorithm")
@@ -225,6 +237,7 @@ func (privKey PrivateKey) GetHandler() (PrivateKeyHandler, error) {
 		var key [ED25519_PRIV_SIZE]byte
 		copy(key[:], privKey.Data)
 		return PrivateKeyED25519(key), nil
+
 	case SECP256K1:
 		size := SECP256K1_PRIV_SIZE
 		if len(privKey.Data) != size {
@@ -234,6 +247,7 @@ func (privKey PrivateKey) GetHandler() (PrivateKeyHandler, error) {
 		var key [SECP256K1_PRIV_SIZE]byte
 		copy(key[:], privKey.Data)
 		return PrivateKeySECP256K1(key), nil
+    
 	case ETHSECP:
 		k := big.NewInt(0).SetBytes(privKey.Data)
 
@@ -243,6 +257,11 @@ func (privKey PrivateKey) GetHandler() (PrivateKeyHandler, error) {
 		priv.PublicKey.X, priv.PublicKey.Y = crypto.S256().ScalarBaseMult(k.Bytes())
 
 		return PrivateKeyETHSECP(*priv), nil
+
+	case BTCECSECP:
+		k, _ := btcec.PrivKeyFromBytes(btcec.S256(), privKey.Data)
+		return PrivateKeyBTCEC(*k), nil
+
 	default:
 		// Shouldn't reach here
 		return nil, errors.New("provided invalid key algorithm")
@@ -357,7 +376,6 @@ func (k PrivateKeySECP256K1) Equals(privkey PrivateKey) bool {
 //====================== SECP256K1 ======================
 
 
-
 //====================== ETHSECP256K1 ====================
 var _ PublicKeyHandler = PublicKeyETHSECP{}
 var _ PrivateKeyHandler = PrivateKeyETHSECP{}
@@ -413,3 +431,62 @@ func (p PrivateKeyETHSECP) Equals(privKey PrivateKey) bool {
 
 
 //====================== ETHSECP256K1 ==========================
+
+
+
+//=====================  BTCECSECP256K1 ========================
+var _ PublicKeyHandler = PublicKeyBTCEC{}
+var _ PrivateKeyHandler = PrivateKeyBTCEC{}
+
+type PublicKeyBTCEC struct {
+	key btcec.PublicKey
+}
+
+func (k PublicKeyBTCEC) Bytes() []byte {
+	return k.key.SerializeCompressed()
+}
+
+// Address hashes the key with a RIPEMD-160 hash
+func (k PublicKeyBTCEC) Address() Address {
+	return nil
+}
+
+func (k PublicKeyBTCEC) VerifyBytes(msg []byte, sig []byte) bool {
+	return true
+}
+
+func (k PublicKeyBTCEC) Equals(PubkeyBTCEC PublicKey) bool {
+	return PubkeyBTCEC.KeyType == BTCECSECP && bytes.Equal(k.Bytes(), PubkeyBTCEC.Data)
+}
+
+func (k PublicKeyBTCEC) String() string {
+	return base64.StdEncoding.EncodeToString(k.key.SerializeCompressed())
+}
+
+type PrivateKeyBTCEC btcec.PrivateKey
+
+func (k PrivateKeyBTCEC) Bytes() []byte {
+	return k.D.Bytes()
+}
+
+func (k PrivateKeyBTCEC) Sign(msg []byte) ([]byte, error) {
+	priv, _ := btcec.PrivKeyFromBytes(btcec.S256(), k.Bytes())
+	s, err := priv.Sign(msg)
+	if err != nil {
+		return nil, err
+	}
+	return s.Serialize(), err
+}
+
+func (k PrivateKeyBTCEC) PubKey() PublicKey {
+	_, p := btcec.PrivKeyFromBytes(btcec.S256(), k.Bytes())
+	return PublicKey{
+		KeyType: BTCECSECP,
+		Data:    p.SerializeCompressed(),
+	}
+}
+
+func (k PrivateKeyBTCEC) Equals(privkey PrivateKey) bool {
+	return privkey.Keytype == BTCECSECP && bytes.Equal(k.Bytes(), privkey.Data)
+}
+//=====================  BTCECSECP256K1 ========================

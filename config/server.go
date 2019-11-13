@@ -37,11 +37,12 @@ func toConfigDuration(d time.Duration) Duration {
 
 // Struct for holding the configuration details for the node
 type Server struct {
-	Node      *NodeConfig      `toml:"node"`
-	Network   *NetworkConfig   `toml:"network"`
-	P2P       *P2PConfig       `toml:"p2p"`
-	Mempool   *MempoolConfig   `toml:"mempool"`
-	Consensus *ConsensusConfig `toml:"consensus"`
+	Node        *NodeConfig        `toml:"node"`
+	Network     *NetworkConfig     `toml:"network"`
+	P2P         *P2PConfig         `toml:"p2p"`
+	Mempool     *MempoolConfig     `toml:"mempool"`
+	Consensus   *ConsensusConfig   `toml:"consensus"`
+	ChainDriver *ChainDriverConfig `toml:"chain_driver"`
 
 	chainID string
 	rootDir string
@@ -153,11 +154,12 @@ func (cfg *Server) SaveFile(filepath string) error {
 
 func DefaultServerConfig() *Server {
 	return &Server{
-		Node:      DefaultNodeConfig(),
-		Network:   DefaultNetworkConfig(),
-		P2P:       DefaultP2PConfig(),
-		Mempool:   DefaultMempoolConfig(),
-		Consensus: DefaultConsensusConfig(),
+		Node:        DefaultNodeConfig(),
+		Network:     DefaultNetworkConfig(),
+		P2P:         DefaultP2PConfig(),
+		Mempool:     DefaultMempoolConfig(),
+		Consensus:   DefaultConsensusConfig(),
+		ChainDriver: DefaultChainDriverConfig(),
 	}
 }
 
@@ -389,5 +391,31 @@ func DefaultConsensusConfig() *ConsensusConfig {
 	cfg.CreateEmptyBlocksInterval = toConfigDuration(tmDefault.CreateEmptyBlocksInterval)
 	cfg.PeerGossipSleepDuration = toConfigDuration(tmDefault.PeerGossipSleepDuration)
 	cfg.PeerQueryMaj23SleepDuration = toConfigDuration(tmDefault.PeerQueryMaj23SleepDuration)
+	return &cfg
+}
+
+type ChainDriverConfig struct {
+	BitcoinChainType   string `toml:"bitcoin_chain_type" desc:"bitcoin chain types, mainnet, testnet3, or regtest"`
+	BitcoinNodeAddress string `toml:"bitcoin_node_address" desc:"ip address of bitcoin node"`
+	BitcoinRPCPort     string `toml:"bitcoin rpc_port" desc:"rpc port of bitcoin node"`
+	BitcoinRPCUsername string `toml:"bitcoin_rpc_username" desc:"rpc username of bitcoin node"`
+	BitcoinRPCPassword string `toml:"bitcoin_rpc_password" desc:"rpc password of bitcoin node"`
+
+	BlockCypherToken string `toml:"blockcypher_token" desc:"token to use blockcypher APIs"`
+}
+
+func DefaultChainDriverConfig() *ChainDriverConfig {
+
+	var cfg ChainDriverConfig
+
+	cfg.BitcoinChainType = "testnet3"
+
+	cfg.BlockCypherToken = ""
+
+	cfg.BitcoinNodeAddress = ""
+	cfg.BitcoinRPCPort = "18333"
+	cfg.BitcoinRPCUsername = ""
+	cfg.BitcoinRPCPassword = ""
+
 	return &cfg
 }
