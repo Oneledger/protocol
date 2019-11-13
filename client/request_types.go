@@ -214,3 +214,11 @@ type BTCRedeemPrepareResponse struct {
 	Txn         string `json:"txn"`
 	TrackerName string `json:"tracker_name"`
 }
+
+type ETHLockRequest struct {
+	Txn         []byte
+	Address     keys.Address
+	Fee         action.Amount `json:"fee"`
+	Gas         int64         `json:"gas"`
+}
+

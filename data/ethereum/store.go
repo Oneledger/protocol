@@ -1,0 +1,109 @@
+package ethereum
+
+import (
+	"strings"
+
+	"github.com/Oneledger/protocol/serialize"
+	"github.com/Oneledger/protocol/storage"
+	"github.com/pkg/errors"
+)
+
+var (
+	ErrTrackerNotFound = errors.New("tracker not found")
+)
+
+type TrackerStore struct {
+	State  *storage.State
+	szlr   serialize.Serializer
+	prefix []byte
+}
+
+func NewTrackerStore(prefix string, state *storage.State) *TrackerStore {
+	return &TrackerStore{
+		State:  state,
+		szlr:   serialize.GetSerializer(serialize.PERSISTENT),
+		prefix: storage.Prefix(prefix),
+	}
+}
+
+// WithState updates the storage state of the tracker and returns the tracker address back
+func (ts *TrackerStore) WithState(state *storage.State) *TrackerStore {
+	ts.State = state
+	return ts
+}
+
+func (ts *TrackerStore) Get(name string) (*Tracker, error) {
+
+	key := keyFromName(name)
+	key = append(ts.prefix, key...)
+	exists := ts.State.Exists(key)
+	if !exists {
+		return nil, ErrTrackerNotFound
+	}
+
+	data, _ := ts.State.Get(key)
+
+	d := &Tracker{}
+	err := ts.szlr.Deserialize(data, d)
+	if err != nil {
+		return nil, errors.Wrap(err, "error de-serializing domain")
+	}
+
+	return d, nil
+
+}
+
+func (ts *TrackerStore) GetTrackerForLock() (*Tracker, error) {
+
+	start := append(ts.prefix, []byte("trackers000")...)
+	end := append(ts.prefix, []byte("trackers999")...)
+
+	var lowestAmount int64 = 999999999999999
+	var tempTracker *Tracker = nil
+
+	doAscending := true
+	ts.State.IterateRange(start, end, doAscending, func(k, v []byte) bool {
+		d := &Tracker{}
+		err := ts.szlr.Deserialize(v, d)
+		if err != nil {
+			return false
+		}
+
+		if d.GetBalance() <= lowestAmount {
+			tempTracker = d
+		}
+
+		return false
+	})
+
+	return tempTracker, nil
+}
+
+func (ts *TrackerStore) SetTracker(name string, tracker *Tracker) error {
+
+	key := keyFromName(name)
+	key = append(ts.prefix, key...)
+
+	data, err := ts.szlr.Serialize(tracker)
+	if err != nil {
+		return errors.Wrap(err, "error de-serializing domain")
+	}
+
+	return ts.State.Set(storage.StoreKey(key), data)
+}
+
+func (ts *TrackerStore) SetLockScript(lockAddress, lockScript []byte) error {
+	key := append([]byte("lockscript:"), lockAddress...)
+
+	return ts.State.Set(key, lockScript)
+}
+
+func (ts *TrackerStore) GetLockScript(lockAddress []byte) ([]byte, error) {
+	key := append([]byte("lockscript:"), lockAddress...)
+
+	return ts.State.Get(key)
+}
+
+func keyFromName(name string) []byte {
+	return []byte(strings.ToLower(name))
+}

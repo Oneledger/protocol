@@ -29,3 +29,4 @@ type LRContract interface {
 	Epoch() (uint, *Transaction, error)
 	DoNewEpoch() (uint, *Transaction, error)
 }
+

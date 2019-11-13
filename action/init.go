@@ -28,6 +28,12 @@ const (
 	BTC_ADD_SIGNATURE        Type = 0x82
 	BTC_REPORT_FINALITY_MINT Type = 0x83
 	BTC_EXT_MINT             Type = 0x84
+
+	//Ethereum Actions
+	ETH_LOCK
+	ETH_SIGN
+	ETH_FINALITY
+	ETH_MINT
 )
 
 var logger *log.Logger
