@@ -18,6 +18,7 @@ import (
 	"github.com/Oneledger/protocol/service/owner"
 	"github.com/Oneledger/protocol/service/query"
 	"github.com/Oneledger/protocol/service/tx"
+	"github.com/pkg/errors"
 )
 
 // Context is the master context for creating new contexts
@@ -43,9 +44,11 @@ type Context struct {
 // Map of services, keyed by the name/prefix of the service
 type Map map[string]interface{}
 
-func NewMap(ctx *Context) Map {
-	return Map{
-		broadcast.Name(): broadcast.NewService(ctx.Services, ctx.Router, ctx.Currencies, ctx.FeeOpt, ctx.Logger, ctx.Trackers),
+
+func NewMap(ctx *Context) (Map, error) {
+
+	defaultMap := Map{
+		broadcast.Name(): broadcast.NewService(ctx.Services, ctx.Router, ctx.Currencies, ctx.FeeOpt, ctx.Logger),
 		nodesvc.Name():   nodesvc.NewService(ctx.NodeContext, &ctx.Cfg, ctx.Logger),
 		owner.Name():     owner.NewService(ctx.Accounts, ctx.Logger),
 		query.Name():     query.NewService(ctx.Services, ctx.Balances, ctx.Currencies, ctx.ValidatorSet, ctx.Domains, ctx.Logger),
@@ -53,4 +56,15 @@ func NewMap(ctx *Context) Map {
 		btc.Name(): btc.NewService(ctx.Balances, ctx.Accounts, ctx.NodeContext, ctx.ValidatorSet, ctx.Trackers, ctx.Logger,
 			ctx.Cfg.ChainDriver.BlockCypherToken, ctx.Cfg.ChainDriver.BitcoinChainType),
 	}
+
+	serviceMap := Map{}
+	for _, serviceName := range ctx.Cfg.Node.Services {
+		if _, ok := defaultMap[serviceName]; ok {
+			serviceMap[serviceName] = defaultMap[serviceName]
+		} else {
+			return serviceMap, errors.Wrap(errors.New("Service doesn't exist "), serviceName)
+		}
+	}
+
+	return serviceMap, nil
 }

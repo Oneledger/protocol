@@ -36,8 +36,8 @@ type testnetConfig struct {
 	namesPath        string
 	createEmptyBlock bool
 	// Total amount of funds to be shared across each node
-	totalFunds        int64
-	singleOriginFunds bool
+	totalFunds          int64
+	initialTokenHolders []string
 }
 
 var testnetArgs = &testnetConfig{}
@@ -60,7 +60,7 @@ func init() {
 	testnetCmd.Flags().StringVar(&testnetArgs.namesPath, "names", "", "Specify a path to a file containing a list of names separated by newlines if you want the nodes to be generated with human-readable names")
 	// 1 billion by default
 	testnetCmd.Flags().Int64Var(&testnetArgs.totalFunds, "total_funds", 1000000000, "The total amount of tokens in circulation")
-	testnetCmd.Flags().BoolVar(&testnetArgs.singleOriginFunds, "single_origin_funds", false, "If specified, allocates all possible tokens to a single account")
+	testnetCmd.Flags().StringSliceVar(&testnetArgs.initialTokenHolders, "initial_token_holders", []string{}, "Initial list of addresses that hold an equal share of Total funds")
 }
 
 func randStr(size int) string {
@@ -355,56 +355,84 @@ func initialState(args *testnetConfig, nodeList []node) consensus.AppState {
 	fees := make([]consensus.BalanceState, 0, len(nodeList))
 	total := olt.NewCoinFromInt(args.totalFunds)
 
+	var initialAddrs []keys.Address
+	initAddrIndex := 0
+	for _, addr := range args.initialTokenHolders {
+		tmpAddr := keys.Address{}
+		err := tmpAddr.UnmarshalText([]byte(addr))
+		if err != nil {
+			fmt.Println("Error adding initial address:", addr)
+			continue
+		}
+		initialAddrs = append(initialAddrs, tmpAddr)
+	}
+
 	for _, node := range nodeList {
 		if !node.isValidator {
-			balances = append(balances, consensus.BalanceState{
-				Address:  node.key.PubKey().Address().Bytes(),
-				Currency: vt.Name,
-				Amount:   *vt.NewCoinFromInt(1).Amount,
-			})
 			continue
 		}
 
-		pubkey, _ := keys.PubKeyFromTendermint(node.validator.PubKey.Bytes())
+		h, err := node.esdcaPk.GetHandler()
+		if err != nil {
+			fmt.Println("err")
+		}
+
+		var stakeAddr keys.Address
+		if len(initialAddrs) > 0 {
+			if initAddrIndex > (len(initialAddrs) - 1) {
+				initAddrIndex = 0
+			}
+			stakeAddr = initialAddrs[initAddrIndex]
+			initAddrIndex++
+		} else {
+			stakeAddr = node.key.PubKey().Address().Bytes()
+		}
+
+    pubkey, _ := keys.PubKeyFromTendermint(node.validator.PubKey.Bytes())
 		st := consensus.Stake{
 			ValidatorAddress: node.validator.Address.Bytes(),
-			StakeAddress:     node.key.PubKey().Address().Bytes(),
+			StakeAddress:     stakeAddr,
 			Pubkey:           pubkey,
 			Name:             node.validator.Name,
 			Amount:           *vt.NewCoinFromInt(node.validator.Power).Amount,
 		}
 		staking = append(staking, st)
-		balances = append(balances, consensus.BalanceState{
-			Address:  node.key.PubKey().Address().Bytes(),
-			Currency: vt.Name,
-			Amount:   *vt.NewCoinFromInt(100).Amount,
-		})
 	}
 
-	if args.singleOriginFunds {
-		balances = append(balances, consensus.BalanceState{
-			Address:  nodeList[0].key.PubKey().Address().Bytes(),
-			Currency: olt.Name,
-			Amount:   *total.Amount,
-		})
-		return consensus.AppState{
-			Currencies: currencies,
-			FeeOption:  feeOpt,
-			Balances:   balances,
-			Staking:    staking,
-			Domains:    domains,
-			Fees:       fees,
+	if len(args.initialTokenHolders) > 0 {
+		for _, acct := range initialAddrs {
+			share := total.DivideInt64(int64(len(args.initialTokenHolders)))
+			balances = append(balances, consensus.BalanceState{
+				Address:  acct,
+				Currency: olt.Name,
+				Amount:   *olt.NewCoinFromAmount(*share.Amount).Amount,
+			})
+			balances = append(balances, consensus.BalanceState{
+				Address:  acct,
+				Currency: vt.Name,
+				Amount:   *vt.NewCoinFromInt(100).Amount,
+			})
+		}
+	} else {
+		for _, node := range nodeList {
+			amt := int64(100)
+			if !node.isValidator {
+				amt = 1
+			}
+			share := total.DivideInt64(int64(len(nodeList)))
+			balances = append(balances, consensus.BalanceState{
+				Address:  node.key.PubKey().Address().Bytes(),
+				Currency: olt.Name,
+				Amount:   *olt.NewCoinFromAmount(*share.Amount).Amount,
+			})
+			balances = append(balances, consensus.BalanceState{
+				Address:  node.key.PubKey().Address().Bytes(),
+				Currency: vt.Name,
+				Amount:   *vt.NewCoinFromInt(amt).Amount,
+			})
 		}
 	}
-	for _, node := range nodeList {
 
-		share := total.DivideInt64(int64(len(nodeList)))
-		balances = append(balances, consensus.BalanceState{
-			Address:  node.key.PubKey().Address().Bytes(),
-			Currency: olt.Name,
-			Amount:   *olt.NewCoinFromAmount(*share.Amount).Amount,
-		})
-	}
 	return consensus.AppState{
 		Currencies: currencies,
 		FeeOption:  feeOpt,

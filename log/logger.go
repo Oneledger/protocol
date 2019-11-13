@@ -19,11 +19,12 @@ func init() {
 type Level int
 
 const (
-	Info Level = iota
-	Warning
-	Debug
+	Fatal Level = iota
 	Error
-	Fatal
+	Warning
+	Info
+	Debug
+	Detail
 )
 
 func (l Level) String() string {
@@ -36,6 +37,8 @@ func (l Level) String() string {
 		return "D"
 	case Error:
 		return "E"
+	case Detail:
+		return "DETAIL"
 	case Fatal:
 		return "FATAL"
 	default:
@@ -49,7 +52,7 @@ type Options struct {
 	// Setting sync to true wraps the
 	Sync bool
 	// Defines a filter for each log filter
-	Levels map[Level]bool
+	Level Level
 	// Include timestamp?
 	IncludeTimestamp bool
 }
@@ -58,7 +61,7 @@ func DefaultOptions() Options {
 	return Options{
 		Prefix:           "",
 		Sync:             true,
-		Levels:           map[Level]bool{Info: true, Warning: true, Error: true, Debug: true},
+		Level:            Debug,
 		IncludeTimestamp: true,
 	}
 }
@@ -67,7 +70,7 @@ type Logger struct {
 	w      io.Writer
 	prefix string
 	// Basic log-level filtering
-	levels map[Level]bool
+	level  Level
 }
 
 func NewDefaultLogger(w io.Writer) *Logger {
@@ -78,7 +81,7 @@ func NewLoggerWithOpts(w io.Writer, opts Options) *Logger {
 	if opts.Sync {
 		w = newSyncWriter(w)
 	}
-	return &Logger{w, opts.Prefix, opts.Levels}
+	return &Logger{w, opts.Prefix, opts.Level}
 }
 
 // NewLoggerWithPrefix returns a brand new Logger with the prefix attached
@@ -88,13 +91,24 @@ func NewLoggerWithPrefix(w io.Writer, prefix string) *Logger {
 	return NewLoggerWithOpts(w, opts)
 }
 
+func NewLoggerWithLevel(w io.Writer, level Level) *Logger {
+	ops := DefaultOptions()
+	ops.Level = level
+	return NewLoggerWithOpts(w, ops)
+}
+
+func(l *Logger) WithLevel(level Level) *Logger {
+	l.level = level
+	return l
+}
+
 // WithPrefix returns a new logger with the prefix appended to the current logger's prefix
 func (l Logger) WithPrefix(prefix string) *Logger {
 	nextPrefix := strings.Trim(l.prefix+" "+prefix, " ")
 	return NewLoggerWithOpts(l.w, Options{
 		Prefix: nextPrefix,
 		Sync:   false,
-		Levels: l.levels,
+		Level:  l.level,
 	})
 }
 
@@ -147,7 +161,7 @@ func (l *Logger) Dump(msg string, args ...interface{}) {
 }
 
 func (l *Logger) fprintln(level Level, now time.Time, args ...interface{}) {
-	if !l.levels[level] && level != Fatal {
+	if level > l.level {
 		return
 	}
 

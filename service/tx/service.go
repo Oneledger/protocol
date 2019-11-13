@@ -167,6 +167,7 @@ func (svc *Service) ApplyValidator(args client.ApplyValidatorRequest, reply *cli
 		ValidatorAddress:     addr,
 		ValidatorPubKey:      *pubkey,
 		ValidatorECDSAPubKey: ecdsaPubKey,
+		Purge:                args.Purge,
 	}
 
 	data, err := apply.Marshal()
@@ -184,13 +185,21 @@ func (svc *Service) ApplyValidator(args client.ApplyValidatorRequest, reply *cli
 		Fee:  action.Fee{action.Amount{Currency: "OLT", Value: *feeAmount.Amount}, 100000},
 		Memo: uuidNew.String(),
 	}
-
-	pubKey, signed, err := svc.accounts.SignWithAccountIndex(tx.RawBytes(), 0)
+	rawData := tx.RawBytes()
+	pubKey, signed, err := svc.accounts.SignWithAddress(rawData, args.Address)
 	if err != nil {
-		svc.logger.Error("error signing with account index", err)
+		svc.logger.Error("error signing with account ", err, args.Address)
 		return codes.ErrSigningError
 	}
-	signatures := []action.Signature{{pubKey, signed}}
+	h, err := svc.nodeContext.PrivVal().GetHandler()
+	if err != nil {
+		svc.logger.Error("error get validator handler", err)
+		return codes.ErrLoadingNodeKey
+	}
+	vpubkey := h.PubKey()
+	vsinged, err := h.Sign(rawData)
+
+	signatures := []action.Signature{{pubKey, signed}, {vpubkey, vsinged}}
 	signedTx := &action.SignedTx{
 		RawTx:      tx,
 		Signatures: signatures,
