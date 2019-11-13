@@ -7,11 +7,11 @@ import (
 )
 
 type Service struct {
-	access *Access
+	access *EthereumChainDriver
 }
 
 // Returns a new Service, should be passed as an RPC handler
-func NewService(access *Access) *Service {
+func NewService(access *EthereumChainDriver) *Service {
 	return &Service{access: access}
 }
 
@@ -47,8 +47,8 @@ type SignReply struct{
 }
 
 
-func (svc *Service) OnlineLock(req OnlineLockRequest, out *LockReply) error {
-	amount, err := svc.access.LockFromSignedTx(req.RawTx)
+func (svc *Service) CreateRawLock(req OnlineLockRequest, out *LockReply) error {
+	amount, err := svc.access.CreateRawLock(req.RawTx)
 	if err != nil {
 		return err
 	}
@@ -60,8 +60,8 @@ func (svc *Service) OnlineLock(req OnlineLockRequest, out *LockReply) error {
 }
 
 
-func (svc *Service) OfflineLock (req OfflineLockRequest,out *OfflineLockRawTX) error {
-	rawTx,err := svc.access.GetRawLockTX(req.PublicKey,req.Amount)
+func (svc *Service) PrepareETHLock (req OfflineLockRequest,out *OfflineLockRawTX) error {
+	rawTx,err := svc.access.PrepareETHLock(req.PublicKey,req.Amount)
 	if err != nil {
 		return err
 	}
@@ -70,16 +70,16 @@ func (svc *Service) OfflineLock (req OfflineLockRequest,out *OfflineLockRawTX) e
 }
 
 
-func (svc *Service) Sign(req SignRequest,out *SignReply) error {
-	tx,err := svc.access.Sign(req.wei,req.recepient)
-	if err!= nil {
-		return err
-	}
-	*out = SignReply{
-		txHash:tx.Hash(),
-	}
-	return nil
-}
+//func (svc *Service) ValidatorSignRedeem(req SignRequest,out *SignReply) error {
+//	tx,err := svc.access.Sign(req.wei,req.recepient)
+//	if err!= nil {
+//		return err
+//	}
+//	*out = SignReply{
+//		txHash:tx.Hash(),
+//	}
+//	return nil
+//}
 
 
 

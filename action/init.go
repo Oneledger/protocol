@@ -27,6 +27,12 @@ const (
 	BTC_ADD_SIGNATURE
 	REPORT_FINALITY_MINT
 	BTC_EXT_MINT
+
+	//Ethereum Actions
+	ETH_LOCK
+	ETH_SIGN
+	ETH_FINALITY
+	ETH_MINT
 )
 
 var logger *log.Logger

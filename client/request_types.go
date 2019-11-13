@@ -184,3 +184,12 @@ type BTCLockRequest struct {
 	Fee         action.Amount `json:"fee"`
 	Gas         int64         `json:"gas"`
 }
+
+
+type ETHLockRequest struct {
+	Txn         []byte
+	Address     keys.Address
+	Fee         action.Amount `json:"fee"`
+	Gas         int64         `json:"gas"`
+}
+

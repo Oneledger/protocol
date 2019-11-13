@@ -12,8 +12,6 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/rlp"
 	"strings"
-	"time"
-
 	//"github.com/ethereum/go-ethereum/core/types"
 	"math/big"
 	"os"
@@ -31,7 +29,7 @@ func main() {
 	config := ethereum.CreateEthConfig("http://127.0.0.1:7545", keypath,contractaddress,initialValidators)
 	var log = log.NewDefaultLogger(os.Stdout).WithPrefix("testeth")
 	privKey,err := crypto.HexToECDSA("0e342e8ad59b75c4dd8af7340b85efb3308a09a54eded1ee194b83132b6b1395")
-	//access,err := ethereum.NewAccess("/home/tanmay/Codebase/protocol",config,log,privKey)
+	//access,err := ethereum.NewEthereumChainDriver("/home/tanmay/Codebase/protocol",config,log,privKey)
     // todo Remove private Key parameter
     //if(err!=nil){
 	//	fmt.Println(err)
@@ -92,15 +90,15 @@ func main() {
 		//fmt.Println("2")
 		return
 	}
-
-	d := time.Now().Add(1000 * time.Millisecond)
-	ctx, cancel := context.WithDeadline(context.Background(), d)
-	defer cancel()
-	err = client.SendTransaction(ctx, txNew)
+	fmt.Println(txNew.Value())
+	//d := time.Now().Add(1000 * time.Millisecond)
+	//ctx, cancel := context.WithDeadline(context.Background(), d)
+	//defer cancel()
+	//err = client.SendTransaction(ctx, txNew)
 	//locktx,err := access.LockFromSignedTx(signedTx)
-	if err!=nil {
-		fmt.Println(err)
-	}
+	//if err!=nil {
+	//	fmt.Println(err)
+	//}
 	//fmt.Println(txNew)
 
 

@@ -5,23 +5,17 @@ import (
 	"crypto/ecdsa"
 	"github.com/Oneledger/protocol/chains/ethereum/contract"
 	"github.com/Oneledger/protocol/log"
-	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
-	"github.com/ethereum/go-ethereum/rlp"
-	"github.com/pkg/errors"
 	"math/big"
-	"strings"
 	"time"
 )
 
 const DefaultTimeout = 5 * time.Second
 
-func NewAccess(rootDir string, cfg *Config, logger *log.Logger,privateKey *ecdsa.PrivateKey) (*Access, error) {
+func NewEthereumChainDriver(rootDir string, cfg *Config ,vaidatorEthPrivKey *ecdsa.PrivateKey,logger * log.Logger) (*EthereumChainDriver, error) {
 	// So first we need to grab the current address
 	contractAddrSlice, err := hexutil.Decode(cfg.ContractAddress)
 	if err != nil {
@@ -49,15 +43,15 @@ func NewAccess(rootDir string, cfg *Config, logger *log.Logger,privateKey *ecdsa
 	//keyPath := filepath.Join(rootDir, cfg.KeyLocation)
 	// READ FROM KEYSTORE ,ganache does not have a keystore
 	//privKey, err := ReadUnsafeKeyDump(keyPath)
-	privKey := privateKey
+	//privKey := privateKey
 	if err != nil {
 		logger.Error("Failed to create private key")
 		return nil, err
 	}
 
-	return &Access{
+	return &EthereumChainDriver{
 		Contract:        ctrct,
-		PrivateKey:      privKey,
+		PrivateKey:      vaidatorEthPrivKey,
 		Client:          client,
 		logger:          logger,
 		ContractAddress: contractAddr,
@@ -65,17 +59,17 @@ func NewAccess(rootDir string, cfg *Config, logger *log.Logger,privateKey *ecdsa
 	}, nil
 }
 
-// defaultContext returns the context.Access to be used in requests against the Ethereum client
+// defaultContext returns the context.EthereumChainDriver to be used in requests against the Ethereum client
 func defaultContext() (context.Context, context.CancelFunc) {
 	return context.WithTimeout(context.Background(), DefaultTimeout)
 }
 
 // Implements SContract interface
-// var _ SContract = &Access{}
+// var _ SContract = &EthereumChainDriver{}
 
-// Access provides the core fields required to interact with the Ethereum network. As of this moment (2019-08-21)
+// EthereumChainDriver provides the core fields required to interact with the Ethereum network. As of this moment (2019-08-21)
 // it should only be used by validator nodes.
-type Access struct {
+type EthereumChainDriver struct {
 	PrivateKey      *ecdsa.PrivateKey
 	Client          *Client
 	Contract        *Contract
@@ -85,14 +79,14 @@ type Access struct {
 }
 
 // Balance returns the current balance of the
-func (acc Access) Balance() (*big.Int, error) {
+func (acc EthereumChainDriver) Balance() (*big.Int, error) {
 	c, cancel := defaultContext()
 	defer cancel()
 	return acc.Client.BalanceAt(c, acc.Address(), nil)
 }
 
 // Nonce returns the nonce to use for our next transaction
-func (acc Access) Nonce() (uint64, error) {
+func (acc EthereumChainDriver) Nonce() (uint64, error) {
 	c, cancel := defaultContext()
 	defer cancel()
 	return acc.Client.PendingNonceAt(c, acc.Address())
@@ -100,120 +94,37 @@ func (acc Access) Nonce() (uint64, error) {
 
 
 
-func (acc Access) IsContract() {
+func (acc EthereumChainDriver) IsContract() {
 
 }
 
-func (acc Access) PublicKey() ecdsa.PublicKey {
+func (acc EthereumChainDriver) PublicKey() ecdsa.PublicKey {
 	return acc.PrivateKey.PublicKey
 }
 
 // VerifyContract returns true if we can verify that the current contract matches the
-func (acc Access) VerifyContract(vs []Address) (bool, error) {
+func (acc EthereumChainDriver) VerifyContract(vs []Address) (bool, error) {
 	// 1. Make sure good IsValidator
 	// 2. Make sure bad !IsValidator
 	return false, ErrNotImplemented
 }
 
-func (acc Access) isContract() (bool, error) {
+func (acc EthereumChainDriver) isContract() (bool, error) {
 	return true, nil
 }
 
-func (acc Access) Address() Address {
+func (acc EthereumChainDriver) Address() Address {
 	return crypto.PubkeyToAddress(acc.PublicKey())
 }
-//addr keys.Address,
-//func (acc *Access) Lock(wei *big.Int) (*Transaction, error) {
-//	acc.logger.Info("locked wei")
-//	opts := acc.TransactOpts()
-//	opts.Value = wei
-//	opts.From = acc.Address()
-//	//var oltAddrAsEthAddr Address
-//	//copy(oltAddrAsEthAddr[:], addr)
-//	return acc.Contract.Lock(opts)
-//}
 
 
-
-func (acc *Access) Sign(wei *big.Int, recipient common.Address) (*Transaction,error){
-	acc.logger.Info("Validator Signed Redeem")
-	opts := acc.TransactOpts()
-	opts.From = acc.Address()
-	var redeemid = new(big.Int)
-	redeemid.SetString("2", 10)
-	return  acc.Contract.Sign(opts,redeemid,wei, recipient)
-}
-
-
-// LockFromSignedTx accepts a OneLedger address, and a signed transaction
-// It handles the ethereum
-func (acc *Access) LockFromSignedTx(rawTx []byte) (*big.Int, error) {
-	// First accept the rawTx
-	tx := &Transaction{}
-	err := rlp.DecodeBytes(rawTx, tx)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to decode provided transaction bytes")
-	}
-
-	err = acc.Client.SendTransaction(context.Background(), tx)
-	if err != nil {
-		return nil, err
-	}
-	return tx.Value(), nil
-}
-
-func (acc *Access) GetRawLockTX (pubKey *ecdsa.PublicKey,lockAmount *big.Int) ([]byte,error){
-	fromAddress := crypto.PubkeyToAddress(*pubKey)
-	nonce,err := acc.Client.PendingNonceAt(context.Background(),fromAddress)
-	if err != nil {
-		return nil,err
-	}
-	gasLimit := uint64(6721974)
-	gasPrice, err := acc.Client.SuggestGasPrice(context.Background())
-	if err != nil {
-		return nil,err
-	}
-	contractAbi, _ := abi.JSON(strings.NewReader(acc.ContractABI))
-	bytesData, _ := contractAbi.Pack("lock")
-	toAddress := acc.ContractAddress
-	tx := types.NewTransaction(nonce, toAddress, lockAmount, gasLimit, gasPrice, bytesData)
-	ts := types.Transactions{tx}
-	rawTxBytes := ts.GetRlp(0)
-	return rawTxBytes,nil
-}
-
-
-//func (acc *Access) CheckLock(amount int64,oltethadress string)(bool,error){
-//	acc.logger.Info("Checking Locked amount")
-//	opts := acc.CallOpts()
-//	opts.From = acc.Address()
-//	balance,err := acc.Contract.GetLockedBalance(opts,oltethadress)
-//	if err != nil {
-//		return false, errors.Wrap(err, "Unable to get locked balance for specified address")
-//	}
-
-	//return  balance == amount,nil
-	//currentBalance := balance.Int64() // Get from chain state
-	//var previousBalance int64 //Save Balance of account on chain state ;
-    //return currentBalance-previousBalance == amount,nil
-	//update chainstate if true else return false
-	//Call mint function
-//}
-
-/*
-Methods for generating valid Options for calling contracts, creating transactions, etc.
-
-These methods generally fill in the options with the next valid nonce and injects the private key inside
-*/
-
-// TransactOpts() returns a new transactor with the Access struct's private key
-func (acc *Access) TransactOpts() *TransactOpts {
+// TransactOpts() returns a new transactor with the EthereumChainDriver struct's private key
+func (acc *EthereumChainDriver) TransactOpts() *TransactOpts {
 	return bind.NewKeyedTransactor(acc.PrivateKey)
 }
 
-func (acc *Access) CallOpts() *CallOpts {
+func (acc *EthereumChainDriver) CallOpts() *CallOpts {
 	return &CallOpts{
-		// Whyethere or not we want to operate on pending state or last known state
 		Pending:     true,
 		From:        acc.Address(),
 		BlockNumber: nil,
