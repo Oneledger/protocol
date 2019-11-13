@@ -17,8 +17,6 @@ const (
 	WITHDRAW       Type = 0x12
 
 	//ons related transaction
-<<<<<<< HEAD
-
 	DOMAIN_CREATE   Type = 0x21
 	DOMAIN_UPDATE   Type = 0x22
 	DOMAIN_SELL     Type = 0x23
@@ -29,24 +27,12 @@ const (
 	BTC_ADD_SIGNATURE        Type = 0x82
 	BTC_REPORT_FINALITY_MINT Type = 0x83
 	BTC_EXT_MINT             Type = 0x84
-=======
-	DOMAIN_CREATE
-	DOMAIN_UPDATE
-	DOMAIN_SELL
-	DOMAIN_PURCHASE
-	DOMAIN_SEND
-
-	BTC_LOCK
-	BTC_ADD_SIGNATURE
-	REPORT_FINALITY_MINT
-	BTC_EXT_MINT
->>>>>>> 98ea16d3f77a9a18800e62754b70d9ae27263893
 
 	//Ethereum Actions
-	ETH_LOCK
-	ETH_SIGN
-	ETH_FINALITY
-	ETH_MINT
+	ETH_LOCK     Type = 0x91
+	ETH_SIGN     Type = 0x92
+	ETH_FINALITY Type = 0x93
+	ETH_MINT     Type = 0x94
 )
 
 var logger *log.Logger

@@ -33,6 +33,15 @@ fulltest: install
 status:
 	@./scripts/status
 
+
+
+#
+# install and restart the network
+#
+restart: install
+	@./scripts/stopDev
+	@./scripts/startDev
+
 #
 # run unit tests on project packages
 #
@@ -104,9 +113,19 @@ alltest: install
 
 
 
+
 reset: install
 	@./scripts/stopDev
 	@./scripts/resetDev
 	@./scripts/startDev
 	@./scripts/testapply
 	@./scripts/testsend
+
+rpcAuthtest: install
+	@./scripts/stopDev
+	@./scripts/resetDev
+	python scripts/rpcAuth/setup.py
+	@./scripts/startDev
+	python scripts/rpcAuth/rpcTestAuth.py
+	@./scripts/stopDev
+

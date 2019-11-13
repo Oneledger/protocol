@@ -98,7 +98,7 @@ func runFaucet(_ *cobra.Command, _ []string) error {
 	}
 	defer faucet.db.Close()
 
-	srv := rpc.NewServer(os.Stdout)
+	srv := rpc.NewServer(os.Stdout, cfg)
 
 	logger.Info(args.listenAddr)
 	u, err := url.Parse(args.listenAddr)

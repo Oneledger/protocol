@@ -222,14 +222,13 @@ type ETHLockRequest struct {
 	Gas         int64         `json:"gas"`
 }
 
-<<<<<<< HEAD
-=======
-
-type ETHLockRequest struct {
-	Txn         []byte
-	Address     keys.Address
-	Fee         action.Amount `json:"fee"`
-	Gas         int64         `json:"gas"`
+type CurrencyBalanceRequest struct {
+	Currency string       `json:"currency"`
+	Address  keys.Address `json:"address"`
 }
-
->>>>>>> 98ea16d3f77a9a18800e62754b70d9ae27263893
+type CurrencyBalanceReply struct {
+	Currency string `json:"currency"`
+	Balance  string `json:"balance"`
+	// The height when this balance was recorded
+	Height int64 `json:"height"`
+}

@@ -44,11 +44,17 @@ type DomainState struct {
 	Name           string       `json:"name"`
 }
 
+type ChainState struct {
+	Version int64
+	Hash    []byte
+}
+
 type Stake identity.Stake
 
 type AppState struct {
 	Currencies balance.Currencies `json:"currencies"`
 	FeeOption  fees.FeeOption     `json:"feeOption"`
+	Chain      ChainState         `json:"state"`
 	Balances   []BalanceState     `json:"balances"`
 	Staking    []Stake            `json:"staking"`
 	Domains    []DomainState      `json:"domains"`

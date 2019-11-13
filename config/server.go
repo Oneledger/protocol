@@ -172,12 +172,23 @@ type NodeConfig struct {
 	FastSync bool   `toml:"fast_sync" desc:"Fast sync allows a block to catch up quickly to the chain by downloading blocks in parallel and verifying their commits"`
 	DB       string `toml:"db" desc:"Specify what backend database to use (goleveldb|cleveldb)"`
 	DBDir    string `toml:"db_dir" desc:"Specify the application database directory. This is always relative to the root directory of the app."`
+
+	LogLevel int `toml:"loglevel" desc:"Specify the log level for olfullnode. 0: Fatal, 1: Error, 2: Warning, 3: Info, 4: Debug, 5: Detail"`
 	// List of transaction tags to index in the db, allows them to be searched
 	// by this parameter
 	IndexTags []string `toml:"index_tags" desc:"List of transaction tags to index in the database, allows them to be searched by the specified tags"`
 	// Tells the indexer to index all available tags, IndexTags has precedence
 	// over IndexAllTAgs
 	IndexAllTags bool `toml:"index_all_tags" desc:"Tells the indexer to index all available tags, IndexTags has precedence over IndexAllTags"`
+
+	//rpc package
+	Services []string `toml:"services" desc:"List of services used by the current Node. Possible valued [broadcast, node, owner, query, tx]"`
+
+	//owner's password
+	OwnerCredentials []string `toml:"owner_credentials" desc:"Username and Password required to access owner services. Format [\"Username:Password\", \"Username:Password\"...]"`
+
+	//Private Key for RPC Authentication
+	RPCPrivateKey string `toml:"rpc_private_key" desc:"(ED25519 key) This private key will be used to generate a token for authentication through RPC Port."`
 }
 
 func DefaultNodeConfig() *NodeConfig {
@@ -186,8 +197,10 @@ func DefaultNodeConfig() *NodeConfig {
 		FastSync:     true,
 		DB:           "goleveldb",
 		DBDir:        "nodedata",
+		LogLevel:     4,
 		IndexTags:    []string{"tx.owner", "tx.type", "tx.swapkey"},
 		IndexAllTags: false,
+		Services:     []string{"broadcast", "node", "owner", "query", "tx"},
 	}
 }
 

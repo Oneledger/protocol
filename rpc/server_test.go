@@ -35,7 +35,7 @@ func (t *Arith) Divide(args *Args, quo *Quotient) error {
 
 // Simple round-trip test
 func TestServer(t *testing.T) {
-	srv := NewServer(ioutil.Discard)
+	srv := NewServer(ioutil.Discard, nil)
 	// srv.Close() failed the test with all test cases pass.
 	//defer srv.Close()
 	assert.NotNil(t, srv.rpc)

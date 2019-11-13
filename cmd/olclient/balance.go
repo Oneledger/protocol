@@ -29,6 +29,7 @@ type Balance struct {
 	identityName string
 	accountName  string
 	accountKey   []byte
+	currencyName string
 }
 
 var balArgs *Balance = &Balance{}
@@ -39,6 +40,8 @@ func init() {
 	// Transaction Parameters
 	// TODO either get by identity or read base64 of account key
 	balanceCmd.Flags().BytesHexVar(&balArgs.accountKey, "address", []byte{}, "account address")
+
+	balanceCmd.Flags().StringVar(&balArgs.currencyName, "currency", "", "currency name")
 
 }
 
@@ -58,15 +61,33 @@ func BalanceNode(cmd *cobra.Command, args []string) {
 	}
 
 	// assuming we have public key
-	bal, err := fullnode.Balance(balArgs.accountKey)
-	if err != nil {
-		logger.Fatal("error in getting balance", err)
+	if balArgs.currencyName == "" {
+		bal, err := fullnode.Balance(balArgs.accountKey)
+		if err != nil {
+			logger.Fatal("error in getting balance", err)
+		}
+
+		printBalance(nodeName, balArgs.accountKey, bal)
+
+	} else {
+		bal, err := fullnode.CurrBalance(balArgs.accountKey, balArgs.currencyName)
+		if err != nil {
+			logger.Fatal("error in getting balance", err)
+		}
+
+		printCurrBalance(nodeName, balArgs.accountKey, bal)
 	}
-	printBalance(nodeName, balArgs.accountKey, bal)
 }
 
 func printBalance(nodeName string, address []byte, bal client.BalanceReply) {
 	logger.Infof("\t Balance for address %x on %s", address, nodeName)
+	logger.Info("\t Balance:", bal.Balance)
+	logger.Info("\t Height:", bal.Height)
+}
+
+func printCurrBalance(nodeName string, address []byte, bal client.CurrencyBalanceReply) {
+	logger.Infof("\t Balance for address %x on %s", address, nodeName)
+	logger.Info("\t Currency:", bal.Currency)
 	logger.Info("\t Balance:", bal.Balance)
 	logger.Info("\t Height:", bal.Height)
 }
