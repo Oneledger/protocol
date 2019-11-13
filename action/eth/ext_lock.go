@@ -73,9 +73,9 @@ func (ethLockTx) Validate(ctx *action.Context, signedTx action.SignedTx) (bool, 
 	if err != nil {
 		return false, err
 	}
-    // Check lock fields for incoming trasaction
-    // Verify if lockAmount == eth.tx.value
-    //TODO : Verify beninfiaciary address in ETHTX == locker (Phase 2)
+	// Check lock fields for incoming trasaction
+	// Verify if lockAmount == eth.tx.value
+	//TODO : Verify beninfiaciary address in ETHTX == locker (Phase 2)
 	return true, nil
 }
 
@@ -88,13 +88,13 @@ func (ethLockTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (bool, actio
 
 	//tracker, err := ctx.Trackers.Get(lock.TrackerName)
 
-    // Create ethereum tracker
+	// Create ethereum tracker
 	tracker := NewTracker()
-	tracker.State = bitcoin.BusySigningTrackerState
+	tracker.State = bitcoin.BusySigning
 	tracker.ProcessOwner = lock.Locker
 	tracker.ProcessUnsignedTx = lock.ETHTxn // with user signature
 
-    // Save eth Tracker
+	// Save eth Tracker
 
 	return true, action.Response{
 		Tags: lock.Tags(),
@@ -117,7 +117,7 @@ func (ethLockTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, act
 		return false, action.Response{Log: fmt.Sprintf("tracker not available for lock: ", lock.TrackerName)}
 	}
 
-	tracker.State = bitcoin.BusySigningTrackerState
+	tracker.State = bitcoin.BusySigning
 	tracker.ProcessOwner = lock.Locker
 	tracker.ProcessUnsignedTx = lock.ETHTxn
 

@@ -14,12 +14,13 @@ import (
 type TrackerState int
 
 const (
-	AvailableTrackerState = iota
-	BusyLockingTrackerState
-	BusySigningTrackerState
-	BusyBroadcastingTrackerState
-	BusyFinalizingTrackerState
-	BusyMintingCoin
+	Available TrackerState = iota
+	BusyLocking
+	BusySigning
+	BusyBroadcasting
+	BusyFinalizing
+	Finalized
+	BusyMinting
 )
 
 var NilTxHash *chainhash.Hash
@@ -65,7 +66,7 @@ func NewTracker(lockScriptAddress []byte, m int, signers []keys.Address) (*Track
 	}
 
 	return &Tracker{
-		State:                    AvailableTrackerState,
+		State:                    Available,
 		CurrentTxId:              nil,
 		CurrentLockScriptAddress: nil,
 
@@ -82,12 +83,12 @@ func (t *Tracker) GetBalanceSatoshi() int64 {
 
 // IsAvailable returns whether the tracker is available for new transaction
 func (t *Tracker) IsAvailable() bool {
-	return t.State == AvailableTrackerState
+	return t.State == Available
 }
 
 // IsBusy returns whether the tracker is in any of the busy states
 func (t *Tracker) IsBusy() bool {
-	return t.State != AvailableTrackerState
+	return t.State != Available
 }
 
 func (t *Tracker) GetAddress() ([]byte, error) {
@@ -109,7 +110,7 @@ func (t *Tracker) ProcessLock(newUTXO *UTXO,
 	t.ProcessBalance = newUTXO.Balance
 	t.ProcessUnsignedTx = txn
 
-	t.State = BusySigningTrackerState
+	t.State = BusySigning
 
 	threshold := (len(validatorsPubKeys) * 2 / 3) + 1
 
@@ -121,7 +122,7 @@ func (t *Tracker) ProcessLock(newUTXO *UTXO,
 
 func (t *Tracker) AddSignature(signatureBytes []byte, addr keys.Address) error {
 
-	if t.State != BusySigningTrackerState {
+	if t.State != BusySigning {
 		return ErrTrackerNotCollectionSignatures
 	}
 
@@ -141,7 +142,7 @@ func (t *Tracker) AddSignature(signatureBytes []byte, addr keys.Address) error {
 
 func (t *Tracker) HasEnoughSignatures() bool {
 
-	if t.State != BusySigningTrackerState {
+	if t.State != BusySigning {
 		return false
 	}
 
@@ -154,7 +155,7 @@ func (t *Tracker) HasEnoughSignatures() bool {
 
 func (t *Tracker) StateChangeBroadcast() bool {
 	if ok := t.HasEnoughSignatures(); ok {
-		t.State = BusyBroadcastingTrackerState
+		t.State = BusyBroadcasting
 
 		return true
 	}
@@ -163,7 +164,7 @@ func (t *Tracker) StateChangeBroadcast() bool {
 }
 
 func (t *Tracker) GetSignatures() [][]byte {
-	if t.State != BusyBroadcastingTrackerState {
+	if t.State != BusyBroadcasting {
 		return nil
 	}
 

@@ -92,7 +92,7 @@ func (ast btcAddSignatureTx) Validate(ctx *action.Context, signedTx action.Signe
 		return false, err
 	}
 
-	if tracker.State != bitcoin.BusySigningTrackerState {
+	if tracker.State != bitcoin.BusySigning {
 		return false, errors.New("tracker not accepting signatures")
 	}
 
@@ -116,7 +116,7 @@ func (ast btcAddSignatureTx) ProcessCheck(ctx *action.Context, tx action.RawTx) 
 		return false, action.Response{Log: fmt.Sprintf("tracker not found: %s", addSignature.TrackerName)}
 	}
 
-	if tracker.State != bitcoin.BusySigningTrackerState {
+	if tracker.State != bitcoin.BusySigning {
 		return false, action.Response{Log: fmt.Sprintf("tracker not accepting signatures: ", addSignature.TrackerName)}
 	}
 
@@ -136,7 +136,7 @@ func (ast btcAddSignatureTx) ProcessCheck(ctx *action.Context, tx action.RawTx) 
 
 		ctx.Logger.Info("in has enough signatures")
 
-		tracker.State = bitcoin.BusyBroadcastingTrackerState
+		tracker.State = bitcoin.BusyBroadcasting
 
 		id := strconv.Itoa(int(time.Now().UnixNano()))
 		job := JobBTCBroadcast{
@@ -180,7 +180,7 @@ func (ast btcAddSignatureTx) ProcessDeliver(ctx *action.Context, tx action.RawTx
 		return false, action.Response{Log: fmt.Sprintf("tracker not found: %s", addSignature.TrackerName)}
 	}
 
-	if tracker.State != bitcoin.BusySigningTrackerState {
+	if tracker.State != bitcoin.BusySigning {
 		return false, action.Response{Log: fmt.Sprintf("tracker not accepting signatures: %s", addSignature.TrackerName)}
 	}
 
@@ -195,7 +195,7 @@ func (ast btcAddSignatureTx) ProcessDeliver(ctx *action.Context, tx action.RawTx
 	}
 
 	if tracker.HasEnoughSignatures() {
-		tracker.State = bitcoin.BusyBroadcastingTrackerState
+		tracker.State = bitcoin.BusyBroadcasting
 	}
 
 	err = ctx.Trackers.SetTracker(addSignature.TrackerName, tracker)

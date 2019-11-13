@@ -96,7 +96,7 @@ func (reportFinalityMintTx) Validate(ctx *action.Context, signedTx action.Signed
 		return false, errors.New("tracker process not owned by user")
 	}
 
-	if tracker.State != bitcoin.BusyBroadcastingTrackerState {
+	if tracker.State != bitcoin.BusyBroadcasting {
 		return false, errors.New("tracker not available for finalizing")
 	}
 
@@ -120,7 +120,7 @@ func (reportFinalityMintTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (
 		return false, action.Response{Log: "tracker process not owned by user"}
 	}
 
-	if tracker.State != bitcoin.BusyBroadcastingTrackerState {
+	if tracker.State != bitcoin.BusyBroadcasting {
 		return false, action.Response{Log: "tracker not ready for finalizing"}
 	}
 
@@ -194,7 +194,7 @@ func (reportFinalityMintTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (
 	}
 	tracker.Multisig, err = keys.NewBTCMultiSig(nil, m, signers)
 
-	tracker.State = bitcoin.AvailableTrackerState
+	tracker.State = bitcoin.Available
 
 	tracker.CurrentTxId = tracker.ProcessTxId
 	tracker.CurrentBalance = tracker.ProcessBalance
@@ -238,7 +238,7 @@ func (reportFinalityMintTx) ProcessDeliver(ctx *action.Context, tx action.RawTx)
 		return false, action.Response{Log: "tracker process not owned by user"}
 	}
 
-	if tracker.State != bitcoin.BusyBroadcastingTrackerState {
+	if tracker.State != bitcoin.BusyBroadcasting {
 		return false, action.Response{Log: "tracker not ready for finalizing"}
 	}
 
@@ -314,7 +314,7 @@ func (reportFinalityMintTx) ProcessDeliver(ctx *action.Context, tx action.RawTx)
 	}
 	tracker.Multisig, err = keys.NewBTCMultiSig(nil, m, signers)
 
-	tracker.State = bitcoin.AvailableTrackerState
+	tracker.State = bitcoin.Available
 
 	tracker.CurrentTxId = tracker.ProcessTxId
 	tracker.CurrentBalance = tracker.ProcessBalance
