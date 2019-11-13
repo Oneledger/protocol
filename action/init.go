@@ -17,6 +17,7 @@ const (
 	WITHDRAW       Type = 0x12
 
 	//ons related transaction
+<<<<<<< HEAD
 
 	DOMAIN_CREATE   Type = 0x21
 	DOMAIN_UPDATE   Type = 0x22
@@ -28,6 +29,18 @@ const (
 	BTC_ADD_SIGNATURE        Type = 0x82
 	BTC_REPORT_FINALITY_MINT Type = 0x83
 	BTC_EXT_MINT             Type = 0x84
+=======
+	DOMAIN_CREATE
+	DOMAIN_UPDATE
+	DOMAIN_SELL
+	DOMAIN_PURCHASE
+	DOMAIN_SEND
+
+	BTC_LOCK
+	BTC_ADD_SIGNATURE
+	REPORT_FINALITY_MINT
+	BTC_EXT_MINT
+>>>>>>> 98ea16d3f77a9a18800e62754b70d9ae27263893
 
 	//Ethereum Actions
 	ETH_LOCK

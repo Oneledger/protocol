@@ -222,3 +222,14 @@ type ETHLockRequest struct {
 	Gas         int64         `json:"gas"`
 }
 
+<<<<<<< HEAD
+=======
+
+type ETHLockRequest struct {
+	Txn         []byte
+	Address     keys.Address
+	Fee         action.Amount `json:"fee"`
+	Gas         int64         `json:"gas"`
+}
+
+>>>>>>> 98ea16d3f77a9a18800e62754b70d9ae27263893

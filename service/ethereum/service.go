@@ -5,7 +5,10 @@ import (
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/app/node"
 	"github.com/Oneledger/protocol/chains/ethereum"
+<<<<<<< HEAD
 	"github.com/Oneledger/protocol/config"
+=======
+>>>>>>> 98ea16d3f77a9a18800e62754b70d9ae27263893
 	"github.com/Oneledger/protocol/data/accounts"
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/identity"
@@ -15,7 +18,11 @@ import (
 )
 
 type Service struct {
+<<<<<<< HEAD
 	config      *config.EthereumChainDriverConfig
+=======
+	config      *ethereum.Config
+>>>>>>> 98ea16d3f77a9a18800e62754b70d9ae27263893
 	router      action.Router
 	accounts    accounts.Wallet
 	logger      *log.Logger
@@ -25,9 +32,15 @@ type Service struct {
 }
 
 // Returns a new Service, should be passed as an RPC handler
+<<<<<<< HEAD
 func NewEthereumService(
 //balances *balance.Store,
 	config config.EthereumChainDriverConfig,
+=======
+func NewService(
+//balances *balance.Store,
+	config ethereum.Config,
+>>>>>>> 98ea16d3f77a9a18800e62754b70d9ae27263893
 	router action.Router,
 	accounts accounts.Wallet,
 	nodeCtx node.Context,
