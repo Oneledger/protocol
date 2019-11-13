@@ -2,6 +2,7 @@ package ethereum
 
 import (
 	"errors"
+	"github.com/Oneledger/protocol/chains/ethereum"
 	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/Oneledger/protocol/data/keys"
@@ -11,7 +12,6 @@ import (
 type TrackerState int
 
 const (
-
 	AvailableTrackerState = iota
 	NewTrackerState
 	BusyLockingTrackerState
@@ -35,20 +35,18 @@ func init() {
 // Tracker
 type Tracker struct {
 	// State tracks the current state of the tracker, Also used for locking distributed access
-	State TrackerState `json:"state"`
-	SignedETHTx   []byte
+	State       TrackerState `json:"state"`
+	SignedETHTx []byte
 	//UserOlAddress common.Address
 	ProcessOwner  keys.Address
 	FinalityVotes []keys.Address
-	TrackerName   common.Hash
+	TrackerName   ethereum.TrackerName
 }
 
 func NewTracker(name common.Hash) *Tracker {
 
 	return &Tracker{
-		State:                    NewTrackerState,
-		TrackerName:              name,
+		State:       NewTrackerState,
+		TrackerName: name,
 	}
 }
-
-
