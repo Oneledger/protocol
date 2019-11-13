@@ -51,14 +51,35 @@ func (ts *TrackerStore) Delete(key ethereum.TrackerName) (bool, error) {
 	return ts.state.Delete(prefixed)
 }
 
-/*
 func (ts *TrackerStore) GetIterator() storage.Iteratable {
-	panic("implement me")
+	return ts.state.GetIterator()
+}
+
+func (ts *TrackerStore) Iterate(fn func(name ethereum.TrackerName, tracker Tracker) bool) (stopped bool) {
+	return ts.state.IterateRange(
+		ts.prefix,
+		storage.Rangefix(string(ts.prefix)),
+		true,
+		func(key, value []byte) bool {
+			name := ethereum.TrackerName{}
+			err := ts.szlr.Deserialize([]byte(string(key[len(ts.prefix):])), name)
+			if err != nil {
+				return true
+			}
+
+			tracker := Tracker{}
+			err = ts.szlr.Deserialize(value, tracker)
+			if err != nil {
+				return true
+			}
+			return fn(name, tracker)
+		},
+	)
 }
 
 func NewTrackerStore(prefix string, state *storage.State) *TrackerStore {
 	return &TrackerStore{
-		State:  state,
+		state:  state,
 		szlr:   serialize.GetSerializer(serialize.PERSISTENT),
 		prefix: storage.Prefix(prefix),
 	}
@@ -66,6 +87,6 @@ func NewTrackerStore(prefix string, state *storage.State) *TrackerStore {
 
 // WithState updates the storage state of the tracker and returns the tracker address back
 func (ts *TrackerStore) WithState(state *storage.State) *TrackerStore {
-	ts.State = state
+	ts.state = state
 	return ts
-}*/
+}
