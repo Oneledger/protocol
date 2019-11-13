@@ -2,7 +2,6 @@ package main
 
 import (
 	"crypto/rand"
-	"encoding/base64"
 	"encoding/hex"
 	"fmt"
 	"net/url"
@@ -11,13 +10,12 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/Oneledger/protocol/data/fees"
-	"github.com/btcsuite/btcd/btcec"
-
+	hdwallet "github.com/Oneledger/hdkeychain"
 	"github.com/Oneledger/protocol/config"
 	"github.com/Oneledger/protocol/consensus"
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/chain"
+	"github.com/Oneledger/protocol/data/fees"
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/log"
 	"github.com/pkg/errors"
@@ -82,8 +80,8 @@ type node struct {
 	cfg         *config.Server
 	dir         string
 	key         *p2p.NodeKey
-	esdcaPk     keys.PrivateKey
 	validator   consensus.GenesisValidator
+	keywords    []string
 }
 
 func (n node) connectionDetails() string {
@@ -246,21 +244,18 @@ func runDevnet(cmd *cobra.Command, _ []string) error {
 		pvFile := privval.GenFilePV(filepath.Join(configDir, "priv_validator_key.json"), filepath.Join(dataDir, "priv_validator_state.json"))
 		pvFile.Save()
 
-		ecdsaPrivKey, _ := btcec.NewPrivateKey(btcec.S256())
-		ecdsaPrivKeyBytes := base64.StdEncoding.EncodeToString([]byte(ecdsaPrivKey.Serialize()))
-
-		ecdsaPk, err := keys.GetPrivateKeyFromBytes([]byte(ecdsaPrivKey.Serialize()), keys.BTCECSECP)
+		hdw, err := hdwallet.NewHDWallet("")
 		if err != nil {
-			return errors.Wrap(err, "error generating BTCECSECP private key")
+			return errors.Wrap(err, "error generating hdwallet")
 		}
-
-		f, err := os.Create(filepath.Join(configDir, "priv_validator_key_ecdsa.json"))
+		hdwalletFile := strings.Replace(consensus.PrivValidatorKeyFilename, ".json", "hdkeychain.json", 1)
+		f, err := os.Create(filepath.Join(configDir, hdwalletFile))
 		if err != nil {
 			return errors.Wrap(err, "failed to open file to write validator ecdsa private key")
 		}
-		nPrivKeyBytes, err := f.WriteString(ecdsaPrivKeyBytes)
-		if err != nil && nPrivKeyBytes != len(ecdsaPrivKeyBytes) {
-			return errors.Wrap(err, "failed to write validator ecdsa private key")
+		nB, err := f.Write([]byte(hdw.GetKeywordsString()))
+		if err != nil && nB != len(hdw.GetKeywordsString()) {
+			return errors.Wrap(err, "failed to write validator hdkeychain keywords")
 		}
 		err = f.Close()
 		if err != nil {
@@ -268,7 +263,7 @@ func runDevnet(cmd *cobra.Command, _ []string) error {
 		}
 
 		// Save the nodes to a list so we can iterate again and
-		n := node{isValidator, cfg, nodeDir, nodeKey, ecdsaPk, consensus.GenesisValidator{}}
+		n := node{isValidator, cfg, nodeDir, nodeKey, consensus.GenesisValidator{}, hdw.GetKeywords()}
 		if isValidator {
 			validator := consensus.GenesisValidator{
 				Address: pvFile.GetAddress(),
@@ -370,17 +365,11 @@ func initialState(args *testnetConfig, nodeList []node) consensus.AppState {
 			continue
 		}
 
-		h, err := node.esdcaPk.GetHandler()
-		if err != nil {
-			fmt.Println("err")
-		}
-
 		pubkey, _ := keys.PubKeyFromTendermint(node.validator.PubKey.Bytes())
 		st := consensus.Stake{
 			ValidatorAddress: node.validator.Address.Bytes(),
 			StakeAddress:     node.key.PubKey().Address().Bytes(),
 			Pubkey:           pubkey,
-			ECDSAPubKey:      h.PubKey(),
 			Name:             node.validator.Name,
 			Amount:           *vt.NewCoinFromInt(node.validator.Power).Amount,
 		}

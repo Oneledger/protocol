@@ -7,6 +7,8 @@ package action
 import (
 	"os"
 
+	hdwallet "github.com/Oneledger/hdkeychain"
+
 	"github.com/Oneledger/protocol/data/bitcoin"
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/log"
@@ -19,7 +21,7 @@ type JobsContext struct {
 
 	Trackers *bitcoin.TrackerStore
 
-	BTCPrivKey       keys.PrivateKey
+	HDWallet         hdwallet.HDWallet
 	Params           *chaincfg.Params
 	ValidatorAddress Address
 
@@ -35,7 +37,7 @@ type JobsContext struct {
 	BTCChainnet string
 }
 
-func NewJobsContext(chainType string, svc *Service, trackers *bitcoin.TrackerStore, privKey *keys.PrivateKey,
+func NewJobsContext(chainType string, svc *Service, trackers *bitcoin.TrackerStore, hdw hdwallet.HDWallet,
 	valAddress keys.Address, bcyToken string, lStore *bitcoin.LockScriptStore,
 	btcAddress, btcRPCPort, BTCRPCUsername, BTCRPCPassword, btcChain string,
 ) *JobsContext {
@@ -60,7 +62,7 @@ func NewJobsContext(chainType string, svc *Service, trackers *bitcoin.TrackerSto
 		Service:          svc,
 		Logger:           log.NewLoggerWithPrefix(w, "internal_jobs"),
 		Trackers:         trackers,
-		BTCPrivKey:       *privKey,
+		HDWallet:         hdw,
 		Params:           params,
 		ValidatorAddress: valAddress,
 		BlockCypherToken: bcyToken,

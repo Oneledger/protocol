@@ -1,14 +1,16 @@
 module github.com/Oneledger/protocol
 
 require (
+	github.com/Oneledger/hdkeychain v0.0.0-20191112182338-0c6b72502a5c
 	github.com/Oneledger/toml v0.4.1
 	github.com/VividCortex/gohistogram v1.0.0 // indirect
 	github.com/blockcypher/gobcy v1.3.1
-	github.com/btcsuite/btcd v0.0.0-20190424234938-150379531efe
-	github.com/btcsuite/btcutil v0.0.0-20190207003914-4c204d697803
+	github.com/btcsuite/btcd v0.20.0-beta
+	github.com/btcsuite/btcutil v0.0.0-20190425235716-9e5f4b9a998d
 	github.com/davecgh/go-spew v1.1.1
 	github.com/fortytw2/leaktest v1.3.0 // indirect
 	github.com/go-kit/kit v0.8.0
+	github.com/go-stack/stack v1.8.0 // indirect
 	github.com/gogo/protobuf v1.2.1 // indirect
 	github.com/google/gofuzz v1.0.0 // indirect
 	github.com/google/uuid v1.1.1
@@ -26,7 +28,7 @@ require (
 	github.com/tendermint/iavl v0.12.2
 	github.com/tendermint/tendermint v0.31.5
 	github.com/vmihailenco/msgpack v4.0.4+incompatible
-	golang.org/x/crypto v0.0.0-20190617133340-57b3e21c3d56
+	golang.org/x/crypto v0.0.0-20191111213947-16651526fdb4
 	golang.org/x/sys v0.0.0-20190618155005-516e3c20635f // indirect
 	golang.org/x/text v0.3.2 // indirect
 	google.golang.org/appengine v1.6.0 // indirect

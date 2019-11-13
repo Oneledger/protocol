@@ -69,6 +69,7 @@ type btcLockTx struct {
 var _ action.Tx = btcLockTx{}
 
 func (btcLockTx) Validate(ctx *action.Context, signedTx action.SignedTx) (bool, error) {
+
 	lock := Lock{}
 	err := lock.Unmarshal(signedTx.Data)
 	if err != nil {

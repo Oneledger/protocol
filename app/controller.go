@@ -202,9 +202,15 @@ func (app *App) blockEnder() blockEnder {
 
 				cdConfig := app.Context.cfg.ChainDriver
 
+				hdw, err := app.Context.node.ValidatorHDWallet()
+				if err != nil {
+					app.logger.Error("error in getting validator hdwallet, skipping jobs processing", err)
+					return
+				}
+
 				jc := action.NewJobsContext(cdConfig.BitcoinChainType,
 					app.Context.internalService, app.Context.trackers,
-					app.Context.node.ValidatorECDSAPrivateKey(),
+					hdw,
 					app.Context.node.ValidatorAddress(), app.Context.cfg.ChainDriver.BlockCypherToken,
 					app.Context.lockScriptStore,
 					cdConfig.BitcoinNodeAddress,

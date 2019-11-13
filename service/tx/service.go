@@ -151,7 +151,7 @@ func (svc *Service) ApplyValidator(args client.ApplyValidatorRequest, reply *cli
 		*pubkey = svc.nodeContext.ValidatorPubKey()
 	}
 
-	ecdsaPubKey := svc.nodeContext.ValidatorECDSAPubKey()
+	ecdsaPubKey := svc.nodeContext.ValidatorBTCPubKey(0)
 
 	handler, err := pubkey.GetHandler()
 	if err != nil {

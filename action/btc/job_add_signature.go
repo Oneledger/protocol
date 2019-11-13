@@ -76,7 +76,13 @@ func (j *JobAddSignature) DoMyJob(ctxI interface{}) {
 		return
 	}
 
-	pk, _ := btcec.PrivKeyFromBytes(btcec.S256(), ctx.BTCPrivKey.Data)
+	privKey, _, err := ctx.HDWallet.GetBTCExternalKeyPair(tracker.KeyIndex)
+	if err != nil {
+		fmt.Println(err, "HDWallet GetBTCExternalKeyPair")
+		j.RetryCount += 1
+	}
+
+	pk, _ := btcec.PrivKeyFromBytes(btcec.S256(), privKey.Serialize())
 
 	sig, err := txscript.RawTxInSignature(lockTx, 0, lockScript, txscript.SigHashAll, pk)
 	if err != nil {

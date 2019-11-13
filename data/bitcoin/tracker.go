@@ -55,6 +55,8 @@ type Tracker struct {
 	ProcessOwner keys.Address
 
 	FinalityVotes []keys.Address
+
+	KeyIndex uint32
 }
 
 func NewTracker(lockScriptAddress []byte, m int, signers []keys.Address) (*Tracker, error) {

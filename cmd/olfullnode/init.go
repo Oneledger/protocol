@@ -6,14 +6,12 @@
 package main
 
 import (
-	"encoding/base64"
 	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
 
-	"github.com/Oneledger/protocol/data/keys"
-	"github.com/tendermint/tendermint/crypto/secp256k1"
+	hdwallet "github.com/Oneledger/hdkeychain"
 
 	"github.com/Oneledger/protocol/config"
 	"github.com/Oneledger/protocol/consensus"
@@ -134,25 +132,21 @@ func initNode(ctx *initContext) error {
 		filepath.Join(dataDir, consensus.PrivValidatorStateFilename))
 	pvFile.Save()
 
-	ecdsaPrivKey := secp256k1.GenPrivKey()
-	ecdsaPrivKeyBytes := base64.StdEncoding.EncodeToString([]byte(ecdsaPrivKey[:]))
-	_, err = keys.GetPrivateKeyFromBytes([]byte(ecdsaPrivKey[:]), keys.SECP256K1)
+	hdw, err := hdwallet.NewHDWallet("")
 	if err != nil {
-		return errors.Wrap(err, "error generating secp256k1 private key")
+		return errors.Wrap(err, "error generating hdwallet")
 	}
-
-	ecdsaFile := strings.Replace(consensus.PrivValidatorKeyFilename, ".json", "_ecdsa.json", 1)
-
-	f, err := os.Create(filepath.Join(configDir, ecdsaFile))
+	hdwalletFile := strings.Replace(consensus.PrivValidatorKeyFilename, ".json", "hdkeychain.json", 1)
+	f, err := os.Create(filepath.Join(configDir, hdwalletFile))
 	if err != nil {
 		return errors.Wrap(err, "failed to open file to write validator ecdsa private key")
 	}
-	n, err := f.Write([]byte(ecdsaPrivKeyBytes))
-	if err != nil && n != len(ecdsaPrivKeyBytes) {
-		return errors.Wrap(err, "failed to write validator ecdsa private key")
+	n, err := f.Write([]byte(hdw.GetKeywordsString()))
+	if err != nil && n != len(hdw.GetKeywordsString()) {
+		return errors.Wrap(err, "failed to write validator hdkeychain keywords")
 	}
 	err = f.Close()
-	if err != nil && n != len(ecdsaPrivKeyBytes) {
+	if err != nil {
 		return errors.Wrap(err, "failed to save validator ecdsa private key")
 	}
 

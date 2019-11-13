@@ -1,12 +1,14 @@
 package node
 
 import (
-	"encoding/base64"
 	"errors"
 	"io/ioutil"
 	"os"
 	"strings"
 
+	"github.com/btcsuite/btcd/btcec"
+
+	hdwallet "github.com/Oneledger/hdkeychain"
 	"github.com/Oneledger/protocol/config"
 	"github.com/Oneledger/protocol/consensus"
 	"github.com/Oneledger/protocol/data/keys"
@@ -25,8 +27,8 @@ type Context struct {
 	// Validator key
 	privval keys.PrivateKey
 
-	// Validator ECDSA key
-	ecdsaPrivVal keys.PrivateKey
+	// Validator hd keywords
+	keywords []string
 }
 
 // PrivVal returns the private validator file
@@ -87,18 +89,38 @@ func (n Context) ValidatorAddress() keys.Address {
 	return pub.Address()
 }
 
-func (n Context) ValidatorECDSAPubKey() keys.PublicKey {
-	priv, err := n.ecdsaPrivVal.GetHandler()
+func (n Context) ValidatorBTCPubKey(i uint32) keys.PublicKey {
+
+	hdw, err := hdwallet.NewHDWalletFromKeywords(n.keywords, "")
 	if err != nil {
 		return keys.PublicKey{}
 	}
 
-	return priv.PubKey()
+	pubKey := &btcec.PublicKey{}
+
+	_, pubKey, err = hdw.GetBTCExternalKeyPair(i)
+
+	pkey, err := keys.GetPublicKeyFromBytes(pubKey.SerializeCompressed(), keys.BTCECSECP)
+	return pkey
 }
 
-func (n Context) ValidatorECDSAPrivateKey() *keys.PrivateKey {
+func (n Context) ValidatorBTCPrivateKey(i uint32) *keys.PrivateKey {
+	hdw, err := hdwallet.NewHDWalletFromKeywords(n.keywords, "")
+	if err != nil {
+		return &keys.PrivateKey{}
+	}
 
-	return &n.ecdsaPrivVal
+	privKey := &btcec.PrivateKey{}
+
+	privKey, _, err = hdw.GetBTCExternalKeyPair(i)
+
+	pkey, err := keys.GetPrivateKeyFromBytes(privKey.Serialize(), keys.BTCECSECP)
+	return &pkey
+}
+
+func (n Context) ValidatorHDWallet() (hdwallet.HDWallet, error) {
+
+	return hdwallet.NewHDWalletFromKeywords(n.keywords, "")
 }
 
 func (n Context) isValid() bool {
@@ -163,25 +185,18 @@ func readKeyFiles(cfg *consensus.Config) (*Context, error) {
 		return nil, err
 	}
 
-	ecdsaFile := strings.Replace(pvKeyF, ".json", "_ecdsa.json", 1)
-	ecdsaPrivateKeyB64, err := ioutil.ReadFile(ecdsaFile)
+	hdwalletFile := strings.Replace(consensus.PrivValidatorKeyFilename, ".json", "hdkeychain.json", 1)
+
+	keywordsBytes, err := ioutil.ReadFile(hdwalletFile)
 	if err != nil {
 		return nil, err
 	}
 
-	ecdsaPrivateKey, err := base64.StdEncoding.DecodeString(string(ecdsaPrivateKeyB64))
-	if err != nil {
-		return nil, err
-	}
-
-	ecdsaPrivKey, err := keys.GetPrivateKeyFromBytes(ecdsaPrivateKey, keys.BTCECSECP)
-	if err != nil {
-		return nil, err
-	}
+	keywords := strings.Split(string(keywordsBytes), " ")
 
 	return &Context{
-		privateKey:   priv,
-		privval:      pvkey,
-		ecdsaPrivVal: ecdsaPrivKey,
+		privateKey: priv,
+		privval:    pvkey,
+		keywords:   keywords,
 	}, nil
 }
