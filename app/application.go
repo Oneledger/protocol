@@ -235,10 +235,7 @@ func (app *App) setupValidators(req RequestInitChain, currencies *balance.Curren
 	return vu, err
 }
 
-// Start initializes the state
-func (app *App) Start() error {
-	app.logger.Info("Starting node...")
-
+func (app *App) Prepare() error {
 	//get currencies from governance db
 
 	if app.Context.govern.InitialChain() {
@@ -289,6 +286,17 @@ func (app *App) Start() error {
 		}
 		app.Context.feeOption = feeOpt
 		app.Context.feePool.SetupOpt(feeOpt)
+	}
+	return nil
+}
+
+// Start initializes the state
+func (app *App) Start() error {
+	app.logger.Info("Starting node...")
+
+	err := app.Prepare()
+	if err != nil {
+		return err
 	}
 
 	nodecfg, err := consensus.ParseConfig(&app.Context.cfg)

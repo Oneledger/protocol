@@ -1,6 +1,7 @@
 package app
 
 import (
+
 	"io"
 	"path/filepath"
 
@@ -14,6 +15,9 @@ import (
 	"github.com/Oneledger/protocol/config"
 	"github.com/Oneledger/protocol/data/accounts"
 	"github.com/Oneledger/protocol/data/balance"
+	"github.com/Oneledger/protocol/data/chain"
+	"github.com/Oneledger/protocol/data/fees"
+	"github.com/Oneledger/protocol/data/governance"
 	"github.com/Oneledger/protocol/data/bitcoin"
 	"github.com/Oneledger/protocol/data/chain"
 	"github.com/Oneledger/protocol/data/fees"
@@ -29,6 +33,8 @@ import (
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/pkg/errors"
 	"github.com/tendermint/tendermint/libs/db"
+	"io"
+	"path/filepath"
 )
 
 // The base context for the application, holds databases and other stateful information contained by the app.
@@ -221,6 +227,33 @@ func (ctx *context) Restful() (service.RestfulRouter, error) {
 		Trackers: ctx.trackers,
 	}
 	return service.NewRestfulService(svcCtx).Router(), nil
+}
+
+type StorageCtx struct {
+	Balances   *balance.Store
+	Domains    *ons.DomainStore
+	Validators *identity.ValidatorStore // Set of validators currently active
+	FeePool    *fees.Store
+	Govern     *governance.Store
+
+	Currencies *balance.CurrencySet
+	FeeOption  *fees.FeeOption
+	Hash       []byte
+	Version    int64
+}
+
+func (ctx *context) Storage() StorageCtx {
+	return StorageCtx{
+		Version:    ctx.chainstate.Version,
+		Hash:       ctx.chainstate.Hash,
+		Balances:   ctx.balances,
+		Domains:    ctx.domains,
+		Validators: ctx.validators,
+		FeePool:    ctx.feePool,
+		Govern:     ctx.govern,
+		Currencies: ctx.currencies,
+		FeeOption:  ctx.feeOption,
+	}
 }
 
 // Close all things that need to be closed
