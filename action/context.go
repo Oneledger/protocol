@@ -4,6 +4,7 @@ import (
 	"github.com/Oneledger/protocol/data/accounts"
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/bitcoin"
+	"github.com/Oneledger/protocol/data/ethereum"
 	"github.com/Oneledger/protocol/data/fees"
 	"github.com/Oneledger/protocol/data/jobs"
 	"github.com/Oneledger/protocol/data/ons"
@@ -25,7 +26,8 @@ type Context struct {
 	Currencies      *balance.CurrencySet
 	FeeOpt          *fees.FeeOption
 	Validators      *identity.ValidatorStore
-	Trackers        *bitcoin.TrackerStore
+	BTCTrackers     *bitcoin.TrackerStore
+	ETHTrackers     *ethereum.TrackerStore
 	Logger          *log.Logger
 	JobStore        *jobs.JobStore
 	LockScriptStore *bitcoin.LockScriptStore
@@ -35,7 +37,8 @@ type Context struct {
 func NewContext(r Router, header *abci.Header, state *storage.State,
 	wallet accounts.Wallet, balances *balance.Store,
 	currencies *balance.CurrencySet, feeOpt *fees.FeeOption, feePool *fees.Store,
-	validators *identity.ValidatorStore, domains *ons.DomainStore, trackers *bitcoin.TrackerStore,
+	validators *identity.ValidatorStore, domains *ons.DomainStore,
+	btcTrackers *bitcoin.TrackerStore, ethTrackers *ethereum.TrackerStore,
 	jobStore *jobs.JobStore, btcChainType *chaincfg.Params,
 	logger *log.Logger) *Context {
 
@@ -50,7 +53,8 @@ func NewContext(r Router, header *abci.Header, state *storage.State,
 		Currencies:   currencies,
 		FeeOpt:       feeOpt,
 		Validators:   validators,
-		Trackers:     trackers,
+		BTCTrackers:  btcTrackers,
+		ETHTrackers:  ethTrackers,
 		Logger:       logger,
 		JobStore:     jobStore,
 		BTCChainType: btcChainType,

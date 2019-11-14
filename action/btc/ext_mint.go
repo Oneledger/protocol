@@ -83,7 +83,7 @@ func (extMintOBTCTx) Validate(ctx *action.Context, signedTx action.SignedTx) (bo
 		return false, err
 	}
 
-	tracker, err := ctx.Trackers.Get(f.TrackerName)
+	tracker, err := ctx.BTCTrackers.Get(f.TrackerName)
 	if err != nil {
 		return false, err
 	}
@@ -106,7 +106,7 @@ func (extMintOBTCTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (bool, a
 		return false, action.Response{Log: "wrong tx type"}
 	}
 
-	tracker, err := ctx.Trackers.Get(f.TrackerName)
+	tracker, err := ctx.BTCTrackers.Get(f.TrackerName)
 	if err != nil {
 		return false, action.Response{Log: "tracker not found" + f.TrackerName}
 	}
@@ -151,7 +151,7 @@ func (extMintOBTCTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (bool, a
 	tracker.ProcessUnsignedTx = nil
 	tracker.ProcessOwner = nil
 
-	err = ctx.Trackers.SetTracker(f.TrackerName, tracker)
+	err = ctx.BTCTrackers.SetTracker(f.TrackerName, tracker)
 	if err != nil || !ok {
 		return false, action.Response{Log: "error resetting tracker, try again"}
 	}
@@ -168,7 +168,7 @@ func (extMintOBTCTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool,
 		return false, action.Response{Log: "wrong tx type"}
 	}
 
-	tracker, err := ctx.Trackers.Get(f.TrackerName)
+	tracker, err := ctx.BTCTrackers.Get(f.TrackerName)
 	if err != nil {
 		return false, action.Response{Log: "tracker not found" + f.TrackerName}
 	}
@@ -220,7 +220,7 @@ func (extMintOBTCTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool,
 		}
 	}
 
-	err = ctx.Trackers.SetTracker(f.TrackerName, tracker)
+	err = ctx.BTCTrackers.SetTracker(f.TrackerName, tracker)
 	if err != nil || !ok {
 		return false, action.Response{Log: "error resetting tracker, try again"}
 	}

@@ -2,19 +2,18 @@ package eth
 
 import (
 	"github.com/Oneledger/protocol/chains/ethereum"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
 )
 
 type JobETHBroadcast struct {
-	TrackerName string
-
+	TrackerName common.Hash
 }
 
 func (j JobETHBroadcast) DoMyJob(ctx interface{}) {
 
 	// get tracker
 	tracker, err := ctx.ETHTrackerStore.Get(j.TrackerName)
-
 
 	client := ethclient.Dial("")
 
@@ -48,4 +47,3 @@ func (j JobETHBroadcast) GetJobID() string {
 func (j JobETHBroadcast) IsDone() bool {
 	panic("implement me")
 }
-

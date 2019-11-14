@@ -85,7 +85,7 @@ func (btcLockTx) Validate(ctx *action.Context, signedTx action.SignedTx) (bool, 
 		return false, err
 	}
 
-	tracker, err := ctx.Trackers.Get(lock.TrackerName)
+	tracker, err := ctx.BTCTrackers.Get(lock.TrackerName)
 	if err != nil {
 		return false, err
 	}
@@ -122,7 +122,7 @@ func (btcLockTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (bool, actio
 		return false, action.Response{Log: "wrong tx type"}
 	}
 
-	tracker, err := ctx.Trackers.Get(lock.TrackerName)
+	tracker, err := ctx.BTCTrackers.Get(lock.TrackerName)
 	if err != nil {
 		return false, action.Response{Log: fmt.Sprintf("tracker not found: %s", lock.TrackerName)}
 	}
@@ -152,7 +152,7 @@ func (btcLockTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (bool, actio
 	tracker.Multisig, err = keys.NewBTCMultiSig(lock.BTCTxn, threshold, list)
 	tracker.ProcessBalance = tracker.CurrentBalance + lock.LockAmount
 
-	err = ctx.Trackers.SetTracker(lock.TrackerName, tracker)
+	err = ctx.BTCTrackers.SetTracker(lock.TrackerName, tracker)
 	if err != nil {
 		return false, action.Response{Log: "failed to update tracker"}
 	}
@@ -171,7 +171,7 @@ func (btcLockTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, act
 
 	ctx.Logger.Debug(hex.EncodeToString(lock.BTCTxn))
 
-	tracker, err := ctx.Trackers.Get(lock.TrackerName)
+	tracker, err := ctx.BTCTrackers.Get(lock.TrackerName)
 	if err != nil {
 		return false, action.Response{Log: fmt.Sprintf("tracker not found: %s", lock.TrackerName)}
 	}
@@ -186,7 +186,7 @@ func (btcLockTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, act
 	tracker.Multisig.Msg = lock.BTCTxn
 	tracker.ProcessBalance = tracker.CurrentBalance + lock.LockAmount
 
-	err = ctx.Trackers.SetTracker(lock.TrackerName, tracker)
+	err = ctx.BTCTrackers.SetTracker(lock.TrackerName, tracker)
 	if err != nil {
 		return false, action.Response{Log: "failed to update tracker"}
 	}

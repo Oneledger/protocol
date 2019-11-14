@@ -87,7 +87,7 @@ func (ast btcAddSignatureTx) Validate(ctx *action.Context, signedTx action.Signe
 		return false, errors.New("only validator can add a signature")
 	}
 
-	tracker, err := ctx.Trackers.Get(addSignature.TrackerName)
+	tracker, err := ctx.BTCTrackers.Get(addSignature.TrackerName)
 	if err != nil {
 		return false, err
 	}
@@ -111,7 +111,7 @@ func (ast btcAddSignatureTx) ProcessCheck(ctx *action.Context, tx action.RawTx) 
 		return false, action.Response{Log: "signer not found in validator list"}
 	}
 
-	tracker, err := ctx.Trackers.Get(addSignature.TrackerName)
+	tracker, err := ctx.BTCTrackers.Get(addSignature.TrackerName)
 	if err != nil {
 		return false, action.Response{Log: fmt.Sprintf("tracker not found: %s", addSignature.TrackerName)}
 	}
@@ -153,7 +153,7 @@ func (ast btcAddSignatureTx) ProcessCheck(ctx *action.Context, tx action.RawTx) 
 		ctx.Logger.Error("error while scheduling bitcoin broadcast job", err)
 	}
 
-	err = ctx.Trackers.SetTracker(addSignature.TrackerName, tracker)
+	err = ctx.BTCTrackers.SetTracker(addSignature.TrackerName, tracker)
 	if err != nil {
 		return false, action.Response{Log: fmt.Sprintf("error updating tracker store: %s, error: ", addSignature.TrackerName, err)}
 	}
@@ -175,7 +175,7 @@ func (ast btcAddSignatureTx) ProcessDeliver(ctx *action.Context, tx action.RawTx
 		return false, action.Response{Log: "signer not found in validator list"}
 	}
 
-	tracker, err := ctx.Trackers.Get(addSignature.TrackerName)
+	tracker, err := ctx.BTCTrackers.Get(addSignature.TrackerName)
 	if err != nil {
 		return false, action.Response{Log: fmt.Sprintf("tracker not found: %s", addSignature.TrackerName)}
 	}
@@ -198,7 +198,7 @@ func (ast btcAddSignatureTx) ProcessDeliver(ctx *action.Context, tx action.RawTx
 		tracker.State = bitcoin.BusyBroadcasting
 	}
 
-	err = ctx.Trackers.SetTracker(addSignature.TrackerName, tracker)
+	err = ctx.BTCTrackers.SetTracker(addSignature.TrackerName, tracker)
 	if err != nil {
 		return false, action.Response{Log: fmt.Sprintf("error updating tracker store: %s, error: ", addSignature.TrackerName, err)}
 	}
