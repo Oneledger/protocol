@@ -87,12 +87,12 @@ func (ast btcAddSignatureTx) Validate(ctx *action.Context, signedTx action.Signe
 		return false, errors.New("only validator can add a signature")
 	}
 
-	tracker, err := ctx.Trackers.Get(addSignature.TrackerName)
+	tracker, err := ctx.BTCTrackers.Get(addSignature.TrackerName)
 	if err != nil {
 		return false, err
 	}
 
-	if tracker.State != bitcoin.BusySigningTrackerState {
+	if tracker.State != bitcoin.BusySigning {
 		return false, errors.New("tracker not accepting signatures")
 	}
 
@@ -111,12 +111,12 @@ func (ast btcAddSignatureTx) ProcessCheck(ctx *action.Context, tx action.RawTx) 
 		return false, action.Response{Log: "signer not found in validator list"}
 	}
 
-	tracker, err := ctx.Trackers.Get(addSignature.TrackerName)
+	tracker, err := ctx.BTCTrackers.Get(addSignature.TrackerName)
 	if err != nil {
 		return false, action.Response{Log: fmt.Sprintf("tracker not found: %s", addSignature.TrackerName)}
 	}
 
-	if tracker.State != bitcoin.BusySigningTrackerState {
+	if tracker.State != bitcoin.BusySigning {
 		return false, action.Response{Log: fmt.Sprintf("tracker not accepting signatures: ", addSignature.TrackerName)}
 	}
 
@@ -136,7 +136,7 @@ func (ast btcAddSignatureTx) ProcessCheck(ctx *action.Context, tx action.RawTx) 
 
 		ctx.Logger.Info("in has enough signatures")
 
-		tracker.State = bitcoin.BusyBroadcastingTrackerState
+		tracker.State = bitcoin.BusyBroadcasting
 
 		id := strconv.Itoa(int(time.Now().UnixNano()))
 		job := JobBTCBroadcast{
@@ -153,7 +153,7 @@ func (ast btcAddSignatureTx) ProcessCheck(ctx *action.Context, tx action.RawTx) 
 		ctx.Logger.Error("error while scheduling bitcoin broadcast job", err)
 	}
 
-	err = ctx.Trackers.SetTracker(addSignature.TrackerName, tracker)
+	err = ctx.BTCTrackers.SetTracker(addSignature.TrackerName, tracker)
 	if err != nil {
 		return false, action.Response{Log: fmt.Sprintf("error updating tracker store: %s, error: ", addSignature.TrackerName, err)}
 	}
@@ -175,12 +175,12 @@ func (ast btcAddSignatureTx) ProcessDeliver(ctx *action.Context, tx action.RawTx
 		return false, action.Response{Log: "signer not found in validator list"}
 	}
 
-	tracker, err := ctx.Trackers.Get(addSignature.TrackerName)
+	tracker, err := ctx.BTCTrackers.Get(addSignature.TrackerName)
 	if err != nil {
 		return false, action.Response{Log: fmt.Sprintf("tracker not found: %s", addSignature.TrackerName)}
 	}
 
-	if tracker.State != bitcoin.BusySigningTrackerState {
+	if tracker.State != bitcoin.BusySigning {
 		return false, action.Response{Log: fmt.Sprintf("tracker not accepting signatures: %s", addSignature.TrackerName)}
 	}
 
@@ -195,10 +195,10 @@ func (ast btcAddSignatureTx) ProcessDeliver(ctx *action.Context, tx action.RawTx
 	}
 
 	if tracker.HasEnoughSignatures() {
-		tracker.State = bitcoin.BusyBroadcastingTrackerState
+		tracker.State = bitcoin.BusyBroadcasting
 	}
 
-	err = ctx.Trackers.SetTracker(addSignature.TrackerName, tracker)
+	err = ctx.BTCTrackers.SetTracker(addSignature.TrackerName, tracker)
 	if err != nil {
 		return false, action.Response{Log: fmt.Sprintf("error updating tracker store: %s, error: ", addSignature.TrackerName, err)}
 	}

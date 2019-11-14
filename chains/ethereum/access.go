@@ -4,10 +4,8 @@ import (
 	"context"
 	"crypto/ecdsa"
 	"github.com/Oneledger/protocol/chains/ethereum/contract"
-<<<<<<< HEAD
+
 	"github.com/Oneledger/protocol/config"
-=======
->>>>>>> 98ea16d3f77a9a18800e62754b70d9ae27263893
 	"github.com/Oneledger/protocol/log"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -19,11 +17,8 @@ import (
 
 const DefaultTimeout = 5 * time.Second
 
-<<<<<<< HEAD
 func NewEthereumChainDriver(rootDir string, cfg *config.EthereumChainDriverConfig ,vaidatorEthPrivKey *ecdsa.PrivateKey,logger * log.Logger) (*EthereumChainDriver, error) {
-=======
-func NewEthereumChainDriver(rootDir string, cfg *Config ,vaidatorEthPrivKey *ecdsa.PrivateKey,logger * log.Logger) (*EthereumChainDriver, error) {
->>>>>>> 98ea16d3f77a9a18800e62754b70d9ae27263893
+
 	// So first we need to grab the current address
 	contractAddrSlice, err := hexutil.Decode(cfg.ContractAddress)
 	if err != nil {

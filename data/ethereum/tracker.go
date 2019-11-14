@@ -12,13 +12,10 @@ import (
 type TrackerState int
 
 const (
-	AvailableTrackerState = iota
-	NewTrackerState
-	BusyLockingTrackerState
-	BusySigningTrackerState
-	BusyBroadcastingTrackerState
-	BusyFinalizingTrackerState
-	BusyMintingCoin
+	New TrackerState = iota
+	BusyFinalizing
+	Finalized
+	Minted
 )
 
 var NilTxHash *chainhash.Hash
@@ -46,7 +43,7 @@ type Tracker struct {
 func NewTracker(name common.Hash) *Tracker {
 
 	return &Tracker{
-		State:       NewTrackerState,
+		State:       New,
 		TrackerName: name,
 	}
 }

@@ -47,41 +47,6 @@ type SignReply struct{
 }
 
 
-func (svc *Service) CreateRawLock(req OnlineLockRequest, out *LockReply) error {
-	amount, err := svc.access.CreateRawLock(req.RawTx)
-	if err != nil {
-		return err
-	}
-	*out = LockReply{
-		Amount: amount,
-		Ok:     true,
-	}
-	return nil
-}
-
-
-func (svc *Service) PrepareETHLock (req OfflineLockRequest,out *OfflineLockRawTX) error {
-	rawTx,err := svc.access.PrepareETHLock(req.PublicKey,req.Amount)
-	if err != nil {
-		return err
-	}
-	*out = OfflineLockRawTX{UnsignedRawTx:rawTx}
-	return nil
-}
-
-
-//func (svc *Service) ValidatorSignRedeem(req SignRequest,out *SignReply) error {
-//	tx,err := svc.access.Sign(req.wei,req.recepient)
-//	if err!= nil {
-//		return err
-//	}
-//	*out = SignReply{
-//		txHash:tx.Hash(),
-//	}
-//	return nil
-//}
-
-
 
 type BalanceRequest struct {
 	Address Address `json:"address"`
@@ -92,19 +57,4 @@ type BalanceReply struct {
 	Amount  *big.Int `json:"amount"`
 }
 
-// Balance returns the balance of the requested address
-//func (svc *Service) Balance(req BalanceRequest, out *BalanceReply) error {
-//	amount, err := svc.access.Contract.getTotalEthBalance(nil, req.Address)
-//	if err != nil {
-//		return err
-//	}
-//	*out = BalanceReply{
-//		Address: req.Address,
-//		Amount:  amount,
-//	}
-//	return nil
-//}
 
-//func (svc *Service) ETHBalance(req BalanceRequest, out *BalanceReply) error {
-//
-//}

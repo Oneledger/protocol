@@ -87,7 +87,7 @@ func (reportFinalityMintTx) Validate(ctx *action.Context, signedTx action.Signed
 		return false, err
 	}
 
-	tracker, err := ctx.Trackers.Get(f.TrackerName)
+	tracker, err := ctx.BTCTrackers.Get(f.TrackerName)
 	if err != nil {
 		return false, err
 	}
@@ -96,7 +96,7 @@ func (reportFinalityMintTx) Validate(ctx *action.Context, signedTx action.Signed
 		return false, errors.New("tracker process not owned by user")
 	}
 
-	if tracker.State != bitcoin.BusyBroadcastingTrackerState {
+	if tracker.State != bitcoin.BusyBroadcasting {
 		return false, errors.New("tracker not available for finalizing")
 	}
 
@@ -111,7 +111,7 @@ func (reportFinalityMintTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (
 		return false, action.Response{Log: "wrong tx type"}
 	}
 
-	tracker, err := ctx.Trackers.Get(f.TrackerName)
+	tracker, err := ctx.BTCTrackers.Get(f.TrackerName)
 	if err != nil {
 		return false, action.Response{Log: "tracker not found" + f.TrackerName}
 	}
@@ -120,7 +120,7 @@ func (reportFinalityMintTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (
 		return false, action.Response{Log: "tracker process not owned by user"}
 	}
 
-	if tracker.State != bitcoin.BusyBroadcastingTrackerState {
+	if tracker.State != bitcoin.BusyBroadcasting {
 		return false, action.Response{Log: "tracker not ready for finalizing"}
 	}
 
@@ -159,7 +159,7 @@ func (reportFinalityMintTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (
 
 		// if not enough votes to mint end transaction processing
 
-		err = ctx.Trackers.SetTracker(f.TrackerName, tracker)
+		err = ctx.BTCTrackers.SetTracker(f.TrackerName, tracker)
 		if err != nil {
 			return false, action.Response{Log: "tracker not ready for finalizing"}
 		}
@@ -194,7 +194,7 @@ func (reportFinalityMintTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (
 	}
 	tracker.Multisig, err = keys.NewBTCMultiSig(nil, m, signers)
 
-	tracker.State = bitcoin.AvailableTrackerState
+	tracker.State = bitcoin.Available
 
 	tracker.CurrentTxId = tracker.ProcessTxId
 	tracker.CurrentBalance = tracker.ProcessBalance
@@ -207,7 +207,7 @@ func (reportFinalityMintTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (
 	tracker.ProcessOwner = nil
 	tracker.FinalityVotes = nil
 
-	err = ctx.Trackers.SetTracker(f.TrackerName, tracker)
+	err = ctx.BTCTrackers.SetTracker(f.TrackerName, tracker)
 	if err != nil {
 		ctx.Logger.Error(err)
 		return false, action.Response{Log: "error resetting tracker, try again" + err.Error()}
@@ -229,7 +229,7 @@ func (reportFinalityMintTx) ProcessDeliver(ctx *action.Context, tx action.RawTx)
 		return false, action.Response{Log: "wrong tx type"}
 	}
 
-	tracker, err := ctx.Trackers.Get(f.TrackerName)
+	tracker, err := ctx.BTCTrackers.Get(f.TrackerName)
 	if err != nil {
 		return false, action.Response{Log: "tracker not found" + f.TrackerName}
 	}
@@ -238,7 +238,7 @@ func (reportFinalityMintTx) ProcessDeliver(ctx *action.Context, tx action.RawTx)
 		return false, action.Response{Log: "tracker process not owned by user"}
 	}
 
-	if tracker.State != bitcoin.BusyBroadcastingTrackerState {
+	if tracker.State != bitcoin.BusyBroadcasting {
 		return false, action.Response{Log: "tracker not ready for finalizing"}
 	}
 
@@ -280,7 +280,7 @@ func (reportFinalityMintTx) ProcessDeliver(ctx *action.Context, tx action.RawTx)
 		ctx.Logger.Info("end tx processing")
 		// if not enough votes to mint end transaction processing
 
-		err = ctx.Trackers.SetTracker(f.TrackerName, tracker)
+		err = ctx.BTCTrackers.SetTracker(f.TrackerName, tracker)
 		if err != nil {
 			return false, action.Response{Log: "tracker not ready for finalizing"}
 		}
@@ -314,7 +314,7 @@ func (reportFinalityMintTx) ProcessDeliver(ctx *action.Context, tx action.RawTx)
 	}
 	tracker.Multisig, err = keys.NewBTCMultiSig(nil, m, signers)
 
-	tracker.State = bitcoin.AvailableTrackerState
+	tracker.State = bitcoin.Available
 
 	tracker.CurrentTxId = tracker.ProcessTxId
 	tracker.CurrentBalance = tracker.ProcessBalance
@@ -334,7 +334,7 @@ func (reportFinalityMintTx) ProcessDeliver(ctx *action.Context, tx action.RawTx)
 		}
 	}
 
-	err = ctx.Trackers.SetTracker(f.TrackerName, tracker)
+	err = ctx.BTCTrackers.SetTracker(f.TrackerName, tracker)
 	if err != nil || !ok {
 		return false, action.Response{Log: "error resetting tracker, try again"}
 	}

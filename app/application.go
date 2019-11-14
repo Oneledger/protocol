@@ -221,7 +221,7 @@ func (app *App) setupValidators(req RequestInitChain, currencies *balance.Curren
 		}
 
 		name := fmt.Sprintf("tracker_%d", i)
-		err = app.Context.trackers.SetTracker(name, tracker)
+		err = app.Context.btcTrackers.SetTracker(name, tracker)
 		if err != nil {
 			return nil, err
 		}

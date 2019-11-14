@@ -13,6 +13,7 @@ import (
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/bitcoin"
 	"github.com/Oneledger/protocol/data/chain"
+	"github.com/Oneledger/protocol/data/ethereum"
 	"github.com/Oneledger/protocol/data/fees"
 	"github.com/Oneledger/protocol/data/governance"
 	"github.com/Oneledger/protocol/data/jobs"
@@ -46,12 +47,13 @@ type context struct {
 	check      *storage.State
 	deliver    *storage.State
 
-	balances   *balance.Store
-	domains    *ons.DomainStore
-	validators *identity.ValidatorStore // Set of validators currently active
-	feePool    *fees.Store
-	govern     *governance.Store
-	trackers   *bitcoin.TrackerStore // tracker for bitcoin balance UTXO
+	balances    *balance.Store
+	domains     *ons.DomainStore
+	validators  *identity.ValidatorStore // Set of validators currently active
+	feePool     *fees.Store
+	govern      *governance.Store
+	btcTrackers *bitcoin.TrackerStore  // tracker for bitcoin balance UTXO
+	ethTrackers *ethereum.TrackerStore // tracker for ethereum tracker store
 
 	currencies *balance.CurrencySet
 	feeOption  *fees.FeeOption
@@ -91,7 +93,8 @@ func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *node.Context) (
 	ctx.domains = ons.NewDomainStore("d", storage.NewState(ctx.chainstate))
 	ctx.feePool = fees.NewStore("f", storage.NewState(ctx.chainstate))
 	ctx.govern = governance.NewStore("g", storage.NewState(ctx.chainstate))
-	ctx.trackers = bitcoin.NewTrackerStore("btct", storage.NewState(ctx.chainstate))
+	ctx.btcTrackers = bitcoin.NewTrackerStore("btct", storage.NewState(ctx.chainstate))
+	ctx.ethTrackers = ethereum.NewTrackerStore("etht", storage.NewState(ctx.chainstate))
 
 	ctx.accounts = accounts.NewWallet(cfg, ctx.dbDir())
 
@@ -147,7 +150,8 @@ func (ctx *context) Action(header *Header, state *storage.State) *action.Context
 		ctx.validators.WithState(state),
 		ctx.domains.WithState(state),
 
-		ctx.trackers.WithState(state),
+		ctx.btcTrackers.WithState(state),
+		ctx.ethTrackers.WithState(state),
 		ctx.jobStore,
 		params,
 
@@ -194,7 +198,7 @@ func (ctx *context) Services() (service.Map, error) {
 		Logger:       log.NewLoggerWithPrefix(ctx.logWriter, "rpc").WithLevel(log.Level(ctx.cfg.Node.LogLevel)),
 		Services:     extSvcs,
 
-		Trackers: ctx.trackers,
+		Trackers: ctx.btcTrackers,
 	}
 
 	return service.NewMap(svcCtx)
@@ -218,7 +222,7 @@ func (ctx *context) Restful() (service.RestfulRouter, error) {
 		Logger:       log.NewLoggerWithPrefix(ctx.logWriter, "restful").WithLevel(log.Level(ctx.cfg.Node.LogLevel)),
 		Services:     extSvcs,
 
-		Trackers: ctx.trackers,
+		Trackers: ctx.btcTrackers,
 	}
 	return service.NewRestfulService(svcCtx).Router(), nil
 }

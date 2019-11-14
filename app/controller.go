@@ -1,6 +1,3 @@
-
-
-
 package app
 
 import (
@@ -63,7 +60,7 @@ func (app *App) chainInitializer() chainInitializer {
 	return func(req RequestInitChain) ResponseInitChain {
 		app.Context.deliver = storage.NewState(app.Context.chainstate)
 		app.Context.govern.WithState(app.Context.deliver)
-		app.Context.trackers.WithState(app.Context.deliver)
+		app.Context.btcTrackers.WithState(app.Context.deliver)
 
 		err := app.setupState(req.AppStateBytes)
 		// This should cause consensus to halt
@@ -204,9 +201,9 @@ func (app *App) blockEnder() blockEnder {
 				app.Context.validators.IsValidatorAddress(app.Context.node.ValidatorAddress()) {
 
 				cdConfig := app.Context.cfg.ChainDriver
-                ethConfig := app.Context.cfg.EthChainDriver
+				ethConfig := app.Context.cfg.EthChainDriver
 				jc := action.NewJobsContext(cdConfig.BitcoinChainType,
-					app.Context.internalService, app.Context.trackers,
+					app.Context.internalService, app.Context.btcTrackers,
 					app.Context.node.ValidatorECDSAPrivateKey(),
 					app.Context.node.ValidatorAddress(), app.Context.cfg.ChainDriver.BlockCypherToken,
 					app.Context.lockScriptStore,
@@ -218,7 +215,7 @@ func (app *App) blockEnder() blockEnder {
 					ethConfig.ContractABI,
 					ethConfig.ContractAddress,
 					ethConfig.ContractAddress,
-					app.Context.ethtrackers,
+					app.Context.ethTrackers,
 				)
 
 				js := app.Context.jobStore

@@ -85,7 +85,7 @@ func (btcLockTx) Validate(ctx *action.Context, signedTx action.SignedTx) (bool, 
 		return false, err
 	}
 
-	tracker, err := ctx.Trackers.Get(lock.TrackerName)
+	tracker, err := ctx.BTCTrackers.Get(lock.TrackerName)
 	if err != nil {
 		return false, err
 	}
@@ -122,7 +122,7 @@ func (btcLockTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (bool, actio
 		return false, action.Response{Log: "wrong tx type"}
 	}
 
-	tracker, err := ctx.Trackers.Get(lock.TrackerName)
+	tracker, err := ctx.BTCTrackers.Get(lock.TrackerName)
 	if err != nil {
 		return false, action.Response{Log: fmt.Sprintf("tracker not found: %s", lock.TrackerName)}
 	}
@@ -146,13 +146,13 @@ func (btcLockTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (bool, actio
 		list = append(list, apk.ScriptAddress())
 	}
 
-	tracker.State = bitcoin.BusySigningTrackerState
+	tracker.State = bitcoin.BusySigning
 	tracker.ProcessOwner = lock.Locker
 	tracker.ProcessUnsignedTx = lock.BTCTxn // with user signature
 	tracker.Multisig, err = keys.NewBTCMultiSig(lock.BTCTxn, threshold, list)
 	tracker.ProcessBalance = tracker.CurrentBalance + lock.LockAmount
 
-	err = ctx.Trackers.SetTracker(lock.TrackerName, tracker)
+	err = ctx.BTCTrackers.SetTracker(lock.TrackerName, tracker)
 	if err != nil {
 		return false, action.Response{Log: "failed to update tracker"}
 	}
@@ -171,7 +171,7 @@ func (btcLockTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, act
 
 	ctx.Logger.Debug(hex.EncodeToString(lock.BTCTxn))
 
-	tracker, err := ctx.Trackers.Get(lock.TrackerName)
+	tracker, err := ctx.BTCTrackers.Get(lock.TrackerName)
 	if err != nil {
 		return false, action.Response{Log: fmt.Sprintf("tracker not found: %s", lock.TrackerName)}
 	}
@@ -180,13 +180,13 @@ func (btcLockTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, act
 		return false, action.Response{Log: fmt.Sprintf("tracker not available for lock: ", lock.TrackerName)}
 	}
 
-	tracker.State = bitcoin.BusySigningTrackerState
+	tracker.State = bitcoin.BusySigning
 	tracker.ProcessOwner = lock.Locker
 	tracker.ProcessUnsignedTx = lock.BTCTxn
 	tracker.Multisig.Msg = lock.BTCTxn
 	tracker.ProcessBalance = tracker.CurrentBalance + lock.LockAmount
 
-	err = ctx.Trackers.SetTracker(lock.TrackerName, tracker)
+	err = ctx.BTCTrackers.SetTracker(lock.TrackerName, tracker)
 	if err != nil {
 		return false, action.Response{Log: "failed to update tracker"}
 	}
