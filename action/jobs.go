@@ -5,6 +5,7 @@
 package action
 
 import (
+	"github.com/Oneledger/protocol/data/ethereum"
 	"os"
 
 	"github.com/Oneledger/protocol/data/bitcoin"
@@ -31,9 +32,12 @@ type JobsContext struct {
 	BTCRPCPort     string
 	BTCRPCUsername string
 	BTCRPCPassword string
+
+	EthereumTrackers *ethereum.TrackerStore
 	ETHContractABI string
 	ETHConnection  string
 	ETHContractAddress string
+
 
 	BTCChainnet string
 
@@ -42,7 +46,7 @@ type JobsContext struct {
 
 func NewJobsContext(chainType string, svc *Service, trackers *bitcoin.TrackerStore, privKey *keys.PrivateKey,
 	valAddress keys.Address, bcyToken string, lStore *bitcoin.LockScriptStore,
-	btcAddress, btcRPCPort, BTCRPCUsername, BTCRPCPassword, btcChain string,ETHAbi string,ETHconn string,ETHContractaddress string,
+	btcAddress, btcRPCPort, BTCRPCUsername, BTCRPCPassword, btcChain string,ETHAbi string,ETHconn string,ETHContractaddress string,ethTracker *ethereum.TrackerStore,
 ) *JobsContext {
 
 	var params *chaincfg.Params
@@ -70,13 +74,16 @@ func NewJobsContext(chainType string, svc *Service, trackers *bitcoin.TrackerSto
 		ValidatorAddress: valAddress,
 		BlockCypherToken: bcyToken,
 		LockScripts:      lStore,
-
 		BTCNodeAddress: btcAddress,
 		BTCRPCPort:     btcRPCPort,
 		BTCRPCUsername: BTCRPCUsername,
 		BTCRPCPassword: BTCRPCPassword,
-
+		ETHConnection:ETHconn,
+		ETHContractAddress:ETHContractaddress,
+		ETHContractABI:ETHAbi,
+		EthereumTrackers:ethTracker,
 		BTCChainnet: btcChain,
+
 	}
 
 }

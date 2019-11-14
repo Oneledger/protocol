@@ -218,6 +218,7 @@ func (app *App) blockEnder() blockEnder {
 					ethConfig.ContractABI,
 					ethConfig.ContractAddress,
 					ethConfig.ContractAddress,
+					app.Context.ethtrackers,
 				)
 
 				js := app.Context.jobStore
