@@ -17,8 +17,8 @@ type TrackerStore struct {
 	prefix []byte
 }
 
-func (ts *TrackerStore) Get(key ethereum.TrackerName) (Tracker, error) {
-	tracker := Tracker{}
+func (ts *TrackerStore) Get(key ethereum.TrackerName) (*Tracker, error) {
+	tracker := &Tracker{}
 	prefixed := append(ts.prefix, key.Bytes()...)
 	data, err := ts.state.Get(prefixed)
 	if err != nil {
@@ -55,7 +55,7 @@ func (ts *TrackerStore) GetIterator() storage.Iteratable {
 	return ts.state.GetIterator()
 }
 
-func (ts *TrackerStore) Iterate(fn func(name ethereum.TrackerName, tracker Tracker) bool) (stopped bool) {
+func (ts *TrackerStore) Iterate(fn func(name ethereum.TrackerName, tracker *Tracker) bool) (stopped bool) {
 	return ts.state.IterateRange(
 		ts.prefix,
 		storage.Rangefix(string(ts.prefix)),
@@ -67,7 +67,7 @@ func (ts *TrackerStore) Iterate(fn func(name ethereum.TrackerName, tracker Track
 				return true
 			}
 
-			tracker := Tracker{}
+			tracker := &Tracker{}
 			err = ts.szlr.Deserialize(value, tracker)
 			if err != nil {
 				return true
