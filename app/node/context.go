@@ -96,6 +96,11 @@ func (n Context) ValidatorECDSAPubKey() keys.PublicKey {
 	return priv.PubKey()
 }
 
+func (n Context) ValidatorECDSAPrivateKey() *keys.PrivateKey {
+
+	return &n.ecdsaPrivVal
+}
+
 func (n Context) isValid() bool {
 	if n.ValidatorAddress() == nil || n.Address() == nil {
 		return false
@@ -169,7 +174,7 @@ func readKeyFiles(cfg *consensus.Config) (*Context, error) {
 		return nil, err
 	}
 
-	ecdsaPrivKey, err := keys.GetPrivateKeyFromBytes(ecdsaPrivateKey, keys.SECP256K1)
+	ecdsaPrivKey, err := keys.GetPrivateKeyFromBytes(ecdsaPrivateKey, keys.BTCECSECP)
 	if err != nil {
 		return nil, err
 	}

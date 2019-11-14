@@ -4,5 +4,5 @@ echo
 
 rm -rf $OLDATA/devnet/*
 
-olfullnode init devnet --dir $OLDATA/devnet --nonvalidators 1
+olfullnode init devnet --dir $OLDATA/devnet --nonvalidators 1 --empty_blocks
 

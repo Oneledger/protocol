@@ -31,6 +31,8 @@ var chainTypeNames = map[Type]string{}
 
 func init() {
 	RegisterChainType("OneLedger", 0)
+	RegisterChainType("Bitcoin", 1)
+
 }
 
 func RegisterChainType(name string, id int) {

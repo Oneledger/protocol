@@ -12,14 +12,13 @@ import (
 	"strings"
 
 	"github.com/Oneledger/protocol/data/fees"
-
-	"github.com/Oneledger/protocol/data/keys"
-	"github.com/tendermint/tendermint/crypto/secp256k1"
+	"github.com/btcsuite/btcd/btcec"
 
 	"github.com/Oneledger/protocol/config"
 	"github.com/Oneledger/protocol/consensus"
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/chain"
+	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/log"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -219,7 +218,7 @@ func runDevnet(cmd *cobra.Command, _ []string) error {
 		cfg.Node.DB = args.dbType
 		if args.createEmptyBlock {
 			cfg.Consensus.CreateEmptyBlocks = true
-			cfg.Consensus.CreateEmptyBlocksInterval = 10000
+			cfg.Consensus.CreateEmptyBlocksInterval = 3000
 		} else {
 			cfg.Consensus.CreateEmptyBlocks = false
 		}
@@ -247,11 +246,12 @@ func runDevnet(cmd *cobra.Command, _ []string) error {
 		pvFile := privval.GenFilePV(filepath.Join(configDir, "priv_validator_key.json"), filepath.Join(dataDir, "priv_validator_state.json"))
 		pvFile.Save()
 
-		ecdsaPrivKey := secp256k1.GenPrivKey()
-		ecdsaPrivKeyBytes := base64.StdEncoding.EncodeToString([]byte(ecdsaPrivKey[:]))
-		ecdsaPk, err := keys.GetPrivateKeyFromBytes([]byte(ecdsaPrivKey[:]), keys.SECP256K1)
+		ecdsaPrivKey, _ := btcec.NewPrivateKey(btcec.S256())
+		ecdsaPrivKeyBytes := base64.StdEncoding.EncodeToString([]byte(ecdsaPrivKey.Serialize()))
+
+		ecdsaPk, err := keys.GetPrivateKeyFromBytes([]byte(ecdsaPrivKey.Serialize()), keys.BTCECSECP)
 		if err != nil {
-			return errors.Wrap(err, "error generating secp256k1 private key")
+			return errors.Wrap(err, "error generating BTCECSECP private key")
 		}
 
 		f, err := os.Create(filepath.Join(configDir, "priv_validator_key_ecdsa.json"))
@@ -348,7 +348,8 @@ func runDevnet(cmd *cobra.Command, _ []string) error {
 func initialState(args *testnetConfig, nodeList []node) consensus.AppState {
 	olt := balance.Currency{Id: 0, Name: "OLT", Chain: chain.Type(0), Decimal: 18, Unit: "nue"}
 	vt := balance.Currency{Id: 1, Name: "VT", Chain: chain.Type(0), Unit: "vt"}
-	currencies := []balance.Currency{olt, vt}
+	obtc := balance.Currency{Id: 2, Name: "BTC", Chain: chain.Type(1), Decimal: 8, Unit: "satoshi"}
+	currencies := []balance.Currency{olt, vt, obtc}
 	feeOpt := fees.FeeOption{
 		FeeCurrency:   olt,
 		MinFeeDecimal: 9,
@@ -375,7 +376,11 @@ func initialState(args *testnetConfig, nodeList []node) consensus.AppState {
 		if !node.isValidator {
 			continue
 		}
-		h, _ := node.esdcaPk.GetHandler()
+
+		h, err := node.esdcaPk.GetHandler()
+		if err != nil {
+			fmt.Println("err")
+		}
 
 		var stakeAddr keys.Address
 		if len(initialAddrs) > 0 {
@@ -416,18 +421,20 @@ func initialState(args *testnetConfig, nodeList []node) consensus.AppState {
 		}
 	} else {
 		for _, node := range nodeList {
+			amt := int64(100)
 			if !node.isValidator {
-				balances = append(balances, consensus.BalanceState{
-					Address:  node.key.PubKey().Address().Bytes(),
-					Currency: vt.Name,
-					Amount:   *vt.NewCoinFromInt(1).Amount,
-				})
+				amt = 1
 			}
 			share := total.DivideInt64(int64(len(nodeList)))
 			balances = append(balances, consensus.BalanceState{
 				Address:  node.key.PubKey().Address().Bytes(),
 				Currency: olt.Name,
 				Amount:   *olt.NewCoinFromAmount(*share.Amount).Amount,
+			})
+			balances = append(balances, consensus.BalanceState{
+				Address:  node.key.PubKey().Address().Bytes(),
+				Currency: vt.Name,
+				Amount:   *vt.NewCoinFromInt(amt).Amount,
 			})
 		}
 	}

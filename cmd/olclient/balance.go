@@ -42,6 +42,7 @@ func init() {
 	balanceCmd.Flags().BytesHexVar(&balArgs.accountKey, "address", []byte{}, "account address")
 
 	balanceCmd.Flags().StringVar(&balArgs.currencyName, "currency", "", "currency name")
+
 }
 
 // IssueRequest sends out a sendTx to all of the nodes in the chain

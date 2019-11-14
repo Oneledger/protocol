@@ -1,24 +1,30 @@
 package identity
 
 import (
+	"bytes"
+	"fmt"
+	"math/big"
+
 	"github.com/Oneledger/protocol/config"
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/fees"
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/storage"
 	"github.com/Oneledger/protocol/utils"
+	"github.com/btcsuite/btcd/chaincfg"
+	"github.com/btcsuite/btcutil"
 	"github.com/pkg/errors"
 	"github.com/tendermint/tendermint/abci/types"
-	"math/big"
 )
 
 type ValidatorStore struct {
-	prefix     []byte
-	store      *storage.State
-	proposer   keys.Address
-	queue      ValidatorQueue
-	byzantine  []Validator
-	totalPower int64
+	prefix      []byte
+	store       *storage.State
+	proposer    keys.Address
+	queue       ValidatorQueue
+	byzantine   []Validator
+	totalPower  int64
+	isValidator bool
 }
 
 func NewValidatorStore(prefix string, cfg config.Server, state *storage.State) *ValidatorStore {
@@ -50,6 +56,11 @@ func (vs *ValidatorStore) Get(addr keys.Address) (*Validator, error) {
 		return nil, errors.Wrap(err, "error deserialize validator")
 	}
 	return validator, nil
+}
+
+func (vs *ValidatorStore) Exists(addr keys.Address) bool {
+	key := append(vs.prefix, addr...)
+	return vs.store.Exists(key)
 }
 
 func (vs *ValidatorStore) set(validator Validator) error {
@@ -109,7 +120,7 @@ func (vs *ValidatorStore) Init(req types.RequestInitChain, currencies *balance.C
 }
 
 // setup the validators according to begin block
-func (vs *ValidatorStore) Setup(req types.RequestBeginBlock) error {
+func (vs *ValidatorStore) Setup(req types.RequestBeginBlock, nodeValidatorAddress keys.Address) error {
 	vs.proposer = req.Header.GetProposerAddress()
 	var def error
 	// update the byzantine node that need to be slashed
@@ -134,6 +145,9 @@ func (vs *ValidatorStore) Setup(req types.RequestBeginBlock) error {
 		queued := utils.NewQueued(addr, validator.Power, i)
 		vs.queue.append(queued)
 		vs.totalPower += validator.Power
+		if bytes.Equal(addr, nodeValidatorAddress) {
+			vs.isValidator = true
+		}
 		i++
 		return false
 	})
@@ -153,11 +167,26 @@ func (vs *ValidatorStore) GetValidatorSet() ([]Validator, error) {
 	return validatorSet, nil
 }
 
+// get validators set
+func (vs *ValidatorStore) GetValidatorsAddress() ([]keys.Address, error) {
+
+	validatorAddress := make([]keys.Address, 0)
+	vs.Iterate(func(addr keys.Address, validator *Validator) bool {
+		validatorAddress = append(validatorAddress, addr)
+		return false
+	})
+	return validatorAddress, nil
+}
+
+func (vs *ValidatorStore) IsValidatorAddress(query keys.Address) bool {
+
+	return vs.isValidator
+}
+
 // handle stake action
 func (vs *ValidatorStore) HandleStake(apply Stake) error {
 	validator := &Validator{}
-	key := append(vs.prefix, apply.ValidatorAddress.Bytes()...)
-	if !vs.store.Exists(key) {
+	if !vs.Exists(apply.ValidatorAddress) {
 
 		validator = &Validator{
 			Address:      apply.ValidatorAddress,
@@ -170,19 +199,17 @@ func (vs *ValidatorStore) HandleStake(apply Stake) error {
 		}
 		// push the new validator to queue
 	} else {
-		value, _ := vs.store.Get(key)
-		if value == nil {
-			return errors.New("failed to get validator from store")
-		}
-		validator, err := validator.FromBytes(value)
+		v, err := vs.Get(apply.ValidatorAddress)
 		if err != nil {
 			return errors.Wrap(err, "error deserialize validator")
 		}
+		validator = v
+
 		amt := big.NewInt(0).Add(validator.Staking.BigInt(), apply.Amount.BigInt())
 
 		validator.Staking = *balance.NewAmountFromBigInt(amt)
 		validator.Power = calculatePower(validator.Staking)
-
+		validator = validator
 	}
 	value := (validator).Bytes()
 	vkey := append(vs.prefix, validator.Address.Bytes()...)
@@ -221,17 +248,8 @@ func makingslash(vs *ValidatorStore, evidences []types.Evidence) []Validator {
 
 func (vs *ValidatorStore) HandleUnstake(unstake Unstake) error {
 	validator := &Validator{}
-	unstakeKey := append(vs.prefix, unstake.Address.Bytes()...)
-	if !vs.store.Exists(unstakeKey) {
 
-		return errors.New("address not exist in validator set")
-	}
-
-	value, _ := vs.store.Get(unstakeKey)
-	if value == nil {
-		return errors.New("failed to get validator from store")
-	}
-	validator, err := validator.FromBytes(value)
+	validator, err := vs.Get(unstake.Address)
 	if err != nil {
 		return errors.Wrap(err, "error deserialize validator")
 	}
@@ -240,9 +258,7 @@ func (vs *ValidatorStore) HandleUnstake(unstake Unstake) error {
 
 	validator.Staking = *balance.NewAmountFromBigInt(amt)
 	validator.Power = calculatePower(validator.Staking)
-	vKey := append(vs.prefix, validator.Address.Bytes()...)
-
-	err = vs.store.Set(vKey, validator.Bytes())
+	err = vs.set(*validator)
 	if err != nil {
 		return errors.Wrap(err, "failed to set validator for unstake")
 	}
@@ -274,7 +290,7 @@ func (vs *ValidatorStore) GetEndBlockUpdate(ctx *ValidatorContext, req types.Req
 			// purge validator who's power is 0
 			if validator.Power <= 0 {
 				vKey := append(vs.prefix, validator.Address.Bytes()...)
-
+				//TODO: validator delete will not properly delete the item because of state implementation
 				ok, err := vs.store.Delete(vKey)
 				if !ok {
 					logger.Error(err.Error())
@@ -284,7 +300,6 @@ func (vs *ValidatorStore) GetEndBlockUpdate(ctx *ValidatorContext, req types.Req
 				PubKey: validator.PubKey.GetABCIPubKey(),
 				Power:  validator.Power,
 			})
-
 			//distribute the fee for validators
 			if distribute {
 				feeShare := total.MultiplyInt64(queued.Priority()).DivideInt64(vs.totalPower)
@@ -303,4 +318,28 @@ func (vs *ValidatorStore) GetEndBlockUpdate(ctx *ValidatorContext, req types.Req
 
 	// TODO : get the final updates from vs.cached
 	return validatorUpdates
+}
+
+func (vs *ValidatorStore) GetBitcoinKeys(net *chaincfg.Params) (list []*btcutil.AddressPubKey, err error) {
+
+	list = make([]*btcutil.AddressPubKey, 0)
+	vs.Iterate(func(key keys.Address, validator *Validator) bool {
+
+		var pubKey *btcutil.AddressPubKey
+		h, err := validator.ECDSAPubKey.GetHandler()
+		if err != nil {
+			fmt.Println("GetBitcoinKeys", err)
+			return true
+		}
+
+		pubKey, err = btcutil.NewAddressPubKey(h.Bytes(), net)
+		if err != nil {
+			return true
+		}
+
+		list = append(list, pubKey)
+		return false
+	})
+
+	return
 }
