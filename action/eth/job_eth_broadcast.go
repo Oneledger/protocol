@@ -4,7 +4,7 @@ import (
 	"context"
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/chains/ethereum"
-	"github.com/ethereum/go-ethereum/common"
+	"time"
 
 	"github.com/ethereum/go-ethereum/core/types"
 
@@ -53,22 +53,15 @@ func (job JobETHBroadcast) DoMyJob(ctx interface{}) {
 		job.BroadcastSuccessful = true
 		job.BroadcastedHash = tx.Hash()
 	} else {
-         receipt,err := client.TransactionReceipt(context.Background(),job.BroadcastedHash)
-         if err != nil{
-			 ethCtx.Logger.Error("Error unable to get Trasanction Receipt: ",job.TrackerName)
-			 return
-		 }
-		receipt.Status == ReceiptStatusSuccessful {
-			ticker.Stop()
+        // CheckTX receipts
 	}
 
 }
 
 func (job JobETHBroadcast) IsMyJobDone(ctx interface{}) bool {
 
-}
 	panic("implement me")
-
+}
 
 func (job JobETHBroadcast) IsSufficient(ctx interface{}) bool {
 	panic("implement me")
@@ -88,4 +81,29 @@ func (job JobETHBroadcast) GetJobID() string {
 
 func (job JobETHBroadcast) IsDone() bool {
 	panic("implement me")
+}
+
+
+func CheckTxForSuccess(client *ethclient.Client, tx *types.Transaction, maxWait time.Duration, interval time.Duration) {
+	ticker := time.NewTicker(interval * time.Second)
+	stop := make(chan bool)
+	go func() {
+		for {
+			select {
+			case <-ticker.C:
+				result, err := client.TransactionReceipt(context.Background(), tx.Hash())
+				if err == nil {
+					if result.Status == types.ReceiptStatusSuccessful {
+						ticker.Stop()
+					}
+				}
+			case <-stop:
+				ticker.Stop()
+				return
+			}
+		}
+	}()
+	time.Sleep(maxWait)
+	close(stop)
+	return
 }

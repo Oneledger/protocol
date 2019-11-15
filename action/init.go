@@ -33,6 +33,7 @@ const (
 	ETH_SIGN     Type = 0x92
 	ETH_FINALITY Type = 0x93
 	ETH_MINT     Type = 0x94
+	ETH_REPORT_FINALITY_MINT Type = 0x95
 )
 
 var logger *log.Logger
