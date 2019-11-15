@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/chains/ethereum"
+	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/ethereum/go-ethereum/core/types"
 
@@ -14,45 +15,77 @@ import (
 type JobETHBroadcast struct {
 
 	TrackerName ethereum.TrackerName
-
-
+    RetryCount int8
+	Done bool
+	BroadcastSuccessful bool
+	BroadcastedHash ethereum.TransactionHash
 }
 
-func (j JobETHBroadcast) DoMyJob(ctx interface{}) {
+func (job JobETHBroadcast) DoMyJob(ctx interface{}) {
 
 	// get tracker
 	ethCtx, _ := ctx.(*action.JobsContext)
 	trackerStore := ethCtx.EthereumTrackers
-	tracker,_ := trackerStore.Get(j.TrackerName)
-	client, _ := ethclient.Dial(ethCtx.ETHConnection)
-	rawTx := tracker.SignedETHTx
-	tx := &types.Transaction{}
-	_ := rlp.DecodeBytes(rawTx,tx)
-	txHash := client.SendTransaction(context.Background(),tx)
-	// Put tx hash into tracker   ?
+	tracker,err := trackerStore.Get(job.TrackerName)
+	if err != nil {
+		ethCtx.Logger.Error("err trying to deserialize tracker: ", job.TrackerName, err)
+		job.RetryCount += 1
+		return
+	}
+	client, err := ethclient.Dial(ethCtx.ETHConnection)
+	if err != nil {
+		ethCtx.Logger.Error("Unable to create Ethereum connection for the connection string :,",ethCtx.ETHConnection)
+		return
+	}
+	if !job.BroadcastSuccessful {
+		rawTx := tracker.SignedETHTx
+		tx := &types.Transaction{}
+		err = rlp.DecodeBytes(rawTx, tx)
+		if err != nil {
+			ethCtx.Logger.Error("Error Decoding Bytes from RaxTX :" ,job.TrackerName)
+			return
+		}
+		err = client.SendTransaction(context.Background(), tx)
+		if err!= nil {
+			ethCtx.Logger.Error("Error in tranascation broadcast : ",job.TrackerName)
+			return
+		}
+		job.BroadcastSuccessful = true
+		job.BroadcastedHash = tx.Hash()
+	} else {
+         receipt,err := client.TransactionReceipt(context.Background(),job.BroadcastedHash)
+         if err != nil{
+			 ethCtx.Logger.Error("Error unable to get Trasanction Receipt: ",job.TrackerName)
+			 return
+		 }
+		receipt.Status == ReceiptStatusSuccessful {
+			ticker.Stop()
+	}
 
 }
 
-func (j JobETHBroadcast) IsMyJobDone(ctx interface{}) bool {}
+func (job JobETHBroadcast) IsMyJobDone(ctx interface{}) bool {
+
+}
 	panic("implement me")
 
 
-func (j JobETHBroadcast) IsSufficient(ctx interface{}) bool {
+func (job JobETHBroadcast) IsSufficient(ctx interface{}) bool {
 	panic("implement me")
 }
 
-func (j JobETHBroadcast) DoFinalize() {
+func (job JobETHBroadcast) DoFinalize() {
 	panic("implement me")
 }
 
-func (j JobETHBroadcast) GetType() string {
+func (job JobETHBroadcast) GetType() string {
 	panic("implement me")
 }
 
-func (j JobETHBroadcast) GetJobID() string {
+func (job JobETHBroadcast) GetJobID() string {
 	panic("implement me")
 }
 
-func (j JobETHBroadcast) IsDone() bool {
+func (job JobETHBroadcast) IsDone() bool {
 	panic("implement me")
 }
