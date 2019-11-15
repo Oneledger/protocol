@@ -58,6 +58,7 @@ func (eem ExtMintOETH) Unmarshal(data []byte) error {
 
 type extMintOETHTx struct {
 }
+
 func (extMintOETHTx) Validate(ctx *action.Context, signedTx action.SignedTx) (bool, error) {
 //Implement check Finality first
 	f := ReportFinalityMint{}
@@ -112,7 +113,7 @@ func (extMintOETHTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (bool, a
 }
 
 func (extMintOETHTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
-	panic("Implement this")
+	panic("Implement this / Same as Process Check ")
 }
 
 func (extMintOETHTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas) (bool, action.Response) {
