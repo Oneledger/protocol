@@ -12,6 +12,10 @@ var (
 	engine transition.Engine
 )
 
+type trackerCtx struct {
+	tracker Tracker
+}
+
 func init() {
 	engine = transition.NewEngine(
 		[]transition.Status{
@@ -23,11 +27,12 @@ func init() {
 		})
 
 	_ = engine.Register(transition.Transition{
-		Name: "finalizing",
-		Fn:   CheckFinality,
-		From: transition.Status(BusyBroadcasting),
-		To:   transition.Status(BusyFinalizing),
+		Name: "broadcasting",
+		Fn:   Broadcast,
+		From: transition.Status(New),
+		To:   transition.Status(BusyBroadcasting),
 	})
+
 	_ = engine.Register(transition.Transition{
 		Name: "finalize",
 		Fn:   Finalize,

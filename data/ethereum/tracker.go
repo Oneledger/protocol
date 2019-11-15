@@ -3,6 +3,7 @@ package ethereum
 import (
 	"github.com/Oneledger/protocol/chains/ethereum"
 	"github.com/Oneledger/protocol/data/keys"
+	"github.com/pkg/errors"
 )
 
 type TrackerState int
@@ -66,14 +67,43 @@ func (t Tracker) Finalized() bool {
 	return cnt >= num
 }
 
-func CheckFinality(ctx interface{}) error {
+func Broadcast(ctx interface{}) error {
+	context := ctx.(trackerCtx)
+	tracker := context.tracker
 
+	if tracker.State != New {
+		err := errors.New("Cannot Broadcast from the current state")
+		return errors.Wrap(err, string(tracker.State))
+	}
+
+	tracker.State = BusyBroadcasting
+	return nil
 }
 
 func Finalize(ctx interface{}) error {
+	context := ctx.(trackerCtx)
+	tracker := context.tracker
 
+	if tracker.State != BusyBroadcasting {
+		err := errors.New("Cannot Finalize from the current state")
+		return errors.Wrap(err, string(tracker.State))
+	}
+
+	if tracker.Finalized() {
+		tracker.State = Finalized
+	}
+	return nil
 }
 
 func Minting(ctx interface{}) error {
+	context := ctx.(trackerCtx)
+	tracker := context.tracker
 
+	if tracker.State != Finalized {
+		err := errors.New("Cannot Mint from the current state")
+		return errors.Wrap(err, string(tracker.State))
+	}
+
+	tracker.State = Minted
+	return nil
 }
