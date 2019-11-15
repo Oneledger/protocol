@@ -1,9 +1,10 @@
 package app
 
 import (
-	"github.com/Oneledger/protocol/data/chain"
 	"io"
 	"path/filepath"
+
+	"github.com/Oneledger/protocol/data/chain"
 
 	"github.com/Oneledger/protocol/data/fees"
 	"github.com/Oneledger/protocol/data/governance"
@@ -195,4 +196,8 @@ func (ctx *context) Node() node.Context {
 
 func (ctx *context) Validators() *identity.ValidatorStore {
 	return ctx.validators
+}
+
+func (ctx *context) Replay(version int64) error {
+	return ctx.chainstate.ClearFrom(version)
 }
