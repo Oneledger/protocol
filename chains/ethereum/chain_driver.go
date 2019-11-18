@@ -16,6 +16,7 @@ type ChainDriver interface {
        // OfflineLock (pubKey *ecdsa.PublicKey,lockAmount *big.Int) ([]byte,error)
 	    PrepareUnsignedETHLock (pubKey *ecdsa.PublicKey,lockAmount *big.Int) ([]byte,error)
 	    CheckFinality(txHash TransactionHash)
+	    BroadcastTx (tx *types.Transaction) (TransactionHash,error)
         //ValidatorSignRedeem (wei *big.Int, recipient common.Address) (*Transaction,error)
 }
 
@@ -54,19 +55,33 @@ func (acc *EthereumChainDriver) PrepareUnsignedETHLock (pubKey *ecdsa.PublicKey,
 }
 
 func (acc *EthereumChainDriver) CheckFinality (txHash TransactionHash) (*types.Receipt,error) {
+
 		result, err := acc.Client.TransactionReceipt(context.Background(), txHash)
 		if err == nil {
 			if result.Status == types.ReceiptStatusSuccessful {
+		    acc.logger.Info("Received TX Receipt for : ",txHash)
 			return result, nil
 			}
 			if result.Status == types.ReceiptStatusFailed {
+				acc.logger.Warn("Receipt not found ")
 				err := Error("Transaction not added to blockchain yet / Failed to obtain receipt")
 				return nil,err
 			}
 		}
+		acc.logger.Error("Unable to connect to Ethereum :" ,err)
 		return nil,err
 		}
 
+func (acc *EthereumChainDriver) BroadcastTx (tx *types.Transaction) (TransactionHash,error){
 
+	err := acc.Client.SendTransaction(context.Background(), tx)
+	if err!= nil {
+		acc.logger.Error("Error connecting to ETHEREUM :",err)
+		return tx.Hash(),err
+	}
+	acc.logger.Info("Trasnaction Broadcasted to Ethereum ",tx.Hash())
+	return tx.Hash(),nil
+
+}
 
 

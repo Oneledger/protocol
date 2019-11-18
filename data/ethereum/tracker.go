@@ -1,7 +1,7 @@
 package ethereum
 
 import (
-	"errors"
+	//"errors"
 
 	"github.com/Oneledger/protocol/chains/ethereum"
 	"github.com/Oneledger/protocol/data/keys"

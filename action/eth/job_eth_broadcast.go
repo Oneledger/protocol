@@ -45,6 +45,7 @@ func (job JobETHBroadcast) DoMyJob(ctx interface{}) {
 			ethCtx.Logger.Error("Error Decoding Bytes from RaxTX :" ,job.TrackerName)
 			return
 		}
+		// Replace with Chain Driver Function
 		err = client.SendTransaction(context.Background(), tx)
 		if err!= nil {
 			ethCtx.Logger.Error("Error in tranascation broadcast : ",job.TrackerName)
@@ -53,7 +54,7 @@ func (job JobETHBroadcast) DoMyJob(ctx interface{}) {
 		job.BroadcastSuccessful = true
 		job.BroadcastedHash = tx.Hash()
 	} else {
-         receipt,err :=
+         // Checkfinality from Ethereum Chain Driver
 	}
 
 }
