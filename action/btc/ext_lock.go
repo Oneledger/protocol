@@ -191,13 +191,13 @@ func (btcLockTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, act
 		return false, action.Response{Log: "failed to update tracker"}
 	}
 
-	if ctx.JobStore != nil {
-		job := NewAddSignatureJob(lock.TrackerName)
-		err = ctx.JobStore.SaveJob(job)
-		if err != nil {
-			return false, action.Response{Log: "job serialization failed"}
-		}
-	}
+	//if ctx.JobStore != nil {
+	//	job := event.NewAddSignatureJob(lock.TrackerName)
+	//	err = ctx.JobStore.SaveJob(job)
+	//	if err != nil {
+	//		return false, action.Response{Log: "job serialization failed"}
+	//	}
+	//}
 
 	return true, action.Response{
 		Tags: lock.Tags(),

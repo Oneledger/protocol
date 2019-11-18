@@ -18,6 +18,7 @@ import (
 	"github.com/Oneledger/protocol/data/governance"
 	"github.com/Oneledger/protocol/data/jobs"
 	"github.com/Oneledger/protocol/data/ons"
+	"github.com/Oneledger/protocol/event"
 	"github.com/Oneledger/protocol/identity"
 	"github.com/Oneledger/protocol/log"
 	"github.com/Oneledger/protocol/rpc"
@@ -63,7 +64,7 @@ type context struct {
 
 	jobStore        *jobs.JobStore
 	lockScriptStore *bitcoin.LockScriptStore
-	internalService *action.Service
+	internalService *event.Service
 
 	logWriter io.Writer
 }

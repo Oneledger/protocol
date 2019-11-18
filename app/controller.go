@@ -4,6 +4,8 @@ import (
 	"encoding/hex"
 	"math"
 
+	"github.com/Oneledger/protocol/event"
+
 	"github.com/Oneledger/protocol/utils/transition"
 
 	ceth "github.com/Oneledger/protocol/chains/ethereum"
@@ -207,7 +209,7 @@ func (app *App) blockEnder() blockEnder {
 
 				cdConfig := app.Context.cfg.ChainDriver
 				ethConfig := app.Context.cfg.EthChainDriver
-				jc := action.NewJobsContext(cdConfig.BitcoinChainType,
+				jc := event.NewJobsContext(cdConfig.BitcoinChainType,
 					app.Context.internalService, app.Context.btcTrackers,
 					app.Context.node.ValidatorECDSAPrivateKey(),
 					app.Context.node.ValidatorAddress(), app.Context.cfg.ChainDriver.BlockCypherToken,
@@ -224,7 +226,7 @@ func (app *App) blockEnder() blockEnder {
 				)
 
 				js := app.Context.jobStore
-				ProcessAllJobs(jc, js)
+				event.ProcessAllJobs(jc, js)
 			}
 		}()
 

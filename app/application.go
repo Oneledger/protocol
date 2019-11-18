@@ -5,6 +5,8 @@ import (
 	"net/url"
 	"os"
 
+	"github.com/Oneledger/protocol/event"
+
 	"github.com/Oneledger/protocol/data/keys"
 
 	bitcoin2 "github.com/Oneledger/protocol/chains/bitcoin"
@@ -339,7 +341,7 @@ func (app *App) Start() error {
 	}
 
 	app.node = node
-	app.Context.internalService = action.NewService(app.Context.node,
+	app.Context.internalService = event.NewService(app.Context.node,
 		log.NewLoggerWithPrefix(app.Context.logWriter, "internal_service"), internalRouter, node)
 	return nil
 }

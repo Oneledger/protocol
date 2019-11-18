@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"strconv"
 
+	"github.com/Oneledger/protocol/event"
+
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/rlp"
 
@@ -133,7 +135,7 @@ func (e ethLockTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, a
 	//todo: don't do job related work in delivery, just create tracker
 	if ctx.JobStore != nil {
 
-		job := JobETHBroadcast{lock.TrackerName}
+		job := event.JobETHBroadcast{lock.TrackerName}
 		err = ctx.JobStore.SaveJob(job)
 		if err != nil {
 			return false, action.Response{Log: "job serialization failed err: " + err.Error()}

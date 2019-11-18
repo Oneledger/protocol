@@ -349,8 +349,8 @@ func initialState(args *testnetConfig, nodeList []node) consensus.AppState {
 	olt := balance.Currency{Id: 0, Name: "OLT", Chain: chain.Type(0), Decimal: 18, Unit: "nue"}
 	vt := balance.Currency{Id: 1, Name: "VT", Chain: chain.Type(0), Unit: "vt"}
 	obtc := balance.Currency{Id: 2, Name: "BTC", Chain: chain.Type(1), Decimal: 8, Unit: "satoshi"}
-	oeth := balance.Currency{Id: 2, Name: "ETH", Chain: chain.Type(1), Decimal: 8, Unit: "wei"}
-	currencies := []balance.Currency{olt, vt, obtc}
+	oeth := balance.Currency{Id: 3, Name: "ETH", Chain: chain.Type(1), Decimal: 8, Unit: "wei"}
+	currencies := []balance.Currency{olt, vt, obtc, oeth}
 	feeOpt := fees.FeeOption{
 		FeeCurrency:   olt,
 		MinFeeDecimal: 9,
