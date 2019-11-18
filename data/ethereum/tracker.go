@@ -52,7 +52,21 @@ func (t *Tracker) AddVote(vote keys.Address, index int64) error {
 	return errTrackerInvalidVote
 }
 
-func (t Tracker) Finalized() bool {
+func (t *Tracker) GetVotes() int {
+	v := t.FinalityVotes
+
+	cnt := 0
+	for v >= 1 {
+		if v%2 == 1 {
+			v = v >> 1
+			cnt++
+		}
+	}
+
+	return cnt
+}
+
+func (t *Tracker) Finalized() bool {
 	l := len(t.Validators)
 	num := int(float32(l)*votesThreshold) + 1
 	v := t.FinalityVotes
@@ -67,7 +81,8 @@ func (t Tracker) Finalized() bool {
 	return cnt >= num
 }
 
-func Broadcast(ctx interface{}) error {
+//TODO Go back to Busy broadcasting if there is a failure in Finalizing.
+func Broadcasting(ctx interface{}) error {
 	context := ctx.(trackerCtx)
 	tracker := context.tracker
 
@@ -80,11 +95,29 @@ func Broadcast(ctx interface{}) error {
 	return nil
 }
 
-func Finalize(ctx interface{}) error {
+func Finalizing(ctx interface{}) error {
 	context := ctx.(trackerCtx)
 	tracker := context.tracker
 
 	if tracker.State != BusyBroadcasting {
+		err := errors.New("Cannot start Finalizing from the current state")
+		return errors.Wrap(err, string(tracker.State))
+	}
+
+	numVotes := tracker.GetVotes()
+
+	if numVotes > 0 {
+		tracker.State = BusyFinalizing
+	}
+
+	return nil
+}
+
+func Finalization(ctx interface{}) error {
+	context := ctx.(trackerCtx)
+	tracker := context.tracker
+
+	if tracker.State != BusyFinalizing {
 		err := errors.New("Cannot Finalize from the current state")
 		return errors.Wrap(err, string(tracker.State))
 	}

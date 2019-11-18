@@ -9,7 +9,7 @@ var (
 	ErrTrackerNotFound    = errors.New("tracker not found")
 	errTrackerInvalidVote = errors.New("vote information is invalid")
 
-	engine transition.Engine
+	Engine transition.Engine
 )
 
 type trackerCtx struct {
@@ -17,7 +17,7 @@ type trackerCtx struct {
 }
 
 func init() {
-	engine = transition.NewEngine(
+	Engine = transition.NewEngine(
 		[]transition.Status{
 			transition.Status(New),
 			transition.Status(BusyBroadcasting),
@@ -26,20 +26,28 @@ func init() {
 			transition.Status(Minted),
 		})
 
-	_ = engine.Register(transition.Transition{
+	_ = Engine.Register(transition.Transition{
 		Name: "broadcasting",
-		Fn:   Broadcast,
+		Fn:   Broadcasting,
 		From: transition.Status(New),
 		To:   transition.Status(BusyBroadcasting),
 	})
 
-	_ = engine.Register(transition.Transition{
+	_ = Engine.Register(transition.Transition{
+		Name: "finalizing",
+		Fn:   Finalizing,
+		From: transition.Status(New),
+		To:   transition.Status(BusyBroadcasting),
+	})
+
+	_ = Engine.Register(transition.Transition{
 		Name: "finalize",
-		Fn:   Finalize,
+		Fn:   Finalization,
 		From: transition.Status(BusyFinalizing),
 		To:   transition.Status(Finalized),
 	})
-	_ = engine.Register(transition.Transition{
+
+	_ = Engine.Register(transition.Transition{
 		Name: "mint",
 		Fn:   Minting,
 		From: transition.Status(Finalized),
