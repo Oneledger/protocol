@@ -125,7 +125,7 @@ func Finalization(ctx interface{}) error {
 	tracker := context.tracker
 
 	if tracker.State != BusyFinalizing {
-		err := errors.New("Cannot Finalize from the current state")
+		err := errors.New("cannot finalize from the current state")
 		return errors.Wrap(err, string(tracker.State))
 	}
 
