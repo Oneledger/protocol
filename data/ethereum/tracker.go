@@ -3,6 +3,7 @@ package ethereum
 import (
 	"github.com/Oneledger/protocol/chains/ethereum"
 	"github.com/Oneledger/protocol/data/keys"
+	"github.com/Oneledger/protocol/event"
 	"github.com/pkg/errors"
 )
 
@@ -56,6 +57,10 @@ func (t *Tracker) GetVotes() int {
 	return cnt
 }
 
+func (t *Tracker) CheckIfVoted(node keys.Address) bool {
+
+}
+
 func (t *Tracker) Finalized() bool {
 	l := len(t.Validators)
 	num := int(float32(l)*votesThreshold) + 1
@@ -97,7 +102,14 @@ func Broadcasting(ctx interface{}) error {
 		err := errors.New("Cannot Broadcast from the current state")
 		return errors.Wrap(err, string(tracker.State))
 	}
-	// TODO: create broadcasting job
+
+	//create broadcasting job
+	job := event.JobETHBroadcast{TrackerName: tracker.TrackerName}
+	err := context.jobStore.SaveJob(job)
+	if err != nil {
+		return errors.Wrap(errors.New("job serialization failed err: "), err.Error())
+	}
+
 	tracker.State = BusyBroadcasting
 	return nil
 }
@@ -111,8 +123,23 @@ func Finalizing(ctx interface{}) error {
 		return errors.Wrap(err, string(tracker.State))
 	}
 
+	//Check if current Node voted
+	voted := tracker.CheckIfVoted(context.currNodeAddr)
+
+	if !voted {
+		//Check Broadcasting job
+		job, typ := context.jobStore.GetJob("ID")
+		broadcastJob := event.MakeJob(job, typ)
+
+		if broadcastJob.IsDone() {
+			//Create job to check finality
+		}
+	}
+
 	numVotes := tracker.GetVotes()
-	//todo: check if I vote, if not, check my job of broadcasting status, create broadcasting job if necessary, if someone broadcasted, create job to check finality
+
+	//TODO: check if I vote, if not, check my job of broadcasting status, create broadcasting job if necessary, if someone broadcasted, create job to check finality
+
 	if numVotes > 0 {
 		tracker.State = BusyFinalizing
 	}

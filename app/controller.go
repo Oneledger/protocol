@@ -230,9 +230,11 @@ func (app *App) blockEnder() blockEnder {
 			}
 		}()
 
+		js := app.Context.jobStore
 		eth := app.Context.ethTrackers
+
 		eth.Iterate(func(name ceth.TrackerName, tracker *ethereum.Tracker) bool {
-			ctx := ethereum.NewTrackerCtx(tracker, app.Context.node.ValidatorAddress())
+			ctx := ethereum.NewTrackerCtx(tracker, app.Context.node.ValidatorAddress(), js)
 			_, err := ethereum.Engine.Process(tracker.NextStep(), ctx, transition.Status(tracker.State))
 			if err != nil {
 
@@ -244,6 +246,7 @@ func (app *App) blockEnder() blockEnder {
 			}
 			return false
 		})
+
 		app.logger.Debug("End Block: ", result, "height:", req.Height)
 		return result
 	}
