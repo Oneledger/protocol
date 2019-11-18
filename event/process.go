@@ -2,20 +2,18 @@
 
  */
 
-package app
+package event
 
 import (
 	"strings"
 
-	"github.com/Oneledger/protocol/action"
-	"github.com/Oneledger/protocol/action/btc"
 	"github.com/Oneledger/protocol/data/jobs"
 	"github.com/Oneledger/protocol/serialize"
 )
 
 type JobProcess func(job jobs.Job) jobs.Job
 
-func ProcessAllJobs(ctx *action.JobsContext, js *jobs.JobStore) {
+func ProcessAllJobs(ctx *JobsContext, js *jobs.JobStore) {
 
 	RangeJobs(js, func(job jobs.Job) jobs.Job {
 
@@ -73,12 +71,12 @@ func makeJob(data []byte, typ string) jobs.Job {
 	ser := serialize.GetSerializer(serialize.PERSISTENT)
 
 	switch typ {
-	case btc.JobTypeAddSignature:
-		as := btc.JobAddSignature{}
+	case JobTypeAddSignature:
+		as := JobAddSignature{}
 		ser.Deserialize(data, &as)
 		return &as
-	case btc.JobTypeBTCBroadcast:
-		as := btc.JobBTCBroadcast{}
+	case JobTypeBTCBroadcast:
+		as := JobBTCBroadcast{}
 		ser.Deserialize(data, &as)
 		return &as
 	}

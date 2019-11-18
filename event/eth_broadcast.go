@@ -1,11 +1,10 @@
-package eth
+package event
 
 import (
 	"context"
-	"github.com/Oneledger/protocol/action"
-	"github.com/Oneledger/protocol/chains/ethereum"
 	"time"
 
+	"github.com/Oneledger/protocol/chains/ethereum"
 	"github.com/ethereum/go-ethereum/core/types"
 
 	"github.com/ethereum/go-ethereum/ethclient"
@@ -13,20 +12,19 @@ import (
 )
 
 type JobETHBroadcast struct {
-
-	TrackerName ethereum.TrackerName
-    RetryCount int8
-	Done bool
+	TrackerName         ethereum.TrackerName
+	RetryCount          int8
+	Done                bool
 	BroadcastSuccessful bool
-	BroadcastedHash ethereum.TransactionHash
+	BroadcastedHash     ethereum.TransactionHash
 }
 
 func (job JobETHBroadcast) DoMyJob(ctx interface{}) {
 
 	// get tracker
-	ethCtx, _ := ctx.(*action.JobsContext)
+	ethCtx, _ := ctx.(*JobsContext)
 	trackerStore := ethCtx.EthereumTrackers
-	tracker,err := trackerStore.Get(job.TrackerName)
+	tracker, err := trackerStore.Get(job.TrackerName)
 	if err != nil {
 		ethCtx.Logger.Error("err trying to deserialize tracker: ", job.TrackerName, err)
 		job.RetryCount += 1
@@ -34,7 +32,7 @@ func (job JobETHBroadcast) DoMyJob(ctx interface{}) {
 	}
 	client, err := ethclient.Dial(ethCtx.ETHConnection)
 	if err != nil {
-		ethCtx.Logger.Error("Unable to create Ethereum connection for the connection string :,",ethCtx.ETHConnection)
+		ethCtx.Logger.Error("Unable to create Ethereum connection for the connection string :,", ethCtx.ETHConnection)
 		return
 	}
 	if !job.BroadcastSuccessful {
@@ -42,18 +40,18 @@ func (job JobETHBroadcast) DoMyJob(ctx interface{}) {
 		tx := &types.Transaction{}
 		err = rlp.DecodeBytes(rawTx, tx)
 		if err != nil {
-			ethCtx.Logger.Error("Error Decoding Bytes from RaxTX :" ,job.TrackerName)
+			ethCtx.Logger.Error("Error Decoding Bytes from RaxTX :", job.TrackerName)
 			return
 		}
 		err = client.SendTransaction(context.Background(), tx)
-		if err!= nil {
-			ethCtx.Logger.Error("Error in tranascation broadcast : ",job.TrackerName)
+		if err != nil {
+			ethCtx.Logger.Error("Error in tranascation broadcast : ", job.TrackerName)
 			return
 		}
 		job.BroadcastSuccessful = true
 		job.BroadcastedHash = tx.Hash()
 	} else {
-         receipt,err :=
+
 	}
 
 }
@@ -82,7 +80,6 @@ func (job JobETHBroadcast) GetJobID() string {
 func (job JobETHBroadcast) IsDone() bool {
 	panic("implement me")
 }
-
 
 func CheckTxForSuccess(client *ethclient.Client, tx *types.Transaction, maxWait time.Duration, interval time.Duration) {
 	ticker := time.NewTicker(interval * time.Second)

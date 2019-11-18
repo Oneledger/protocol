@@ -7,8 +7,6 @@ package btc
 import (
 	"encoding/json"
 	"fmt"
-	"strconv"
-	"time"
 
 	"github.com/Oneledger/protocol/data/keys"
 
@@ -131,27 +129,27 @@ func (ast btcAddSignatureTx) ProcessCheck(ctx *action.Context, tx action.RawTx) 
 	}
 
 	ctx.Logger.Info("before has enough signatures", tracker.HasEnoughSignatures(), ctx.JobStore)
-	if tracker.HasEnoughSignatures() &&
-		ctx.JobStore != nil {
-
-		ctx.Logger.Info("in has enough signatures")
-
-		tracker.State = bitcoin.BusyBroadcasting
-
-		id := strconv.Itoa(int(time.Now().UnixNano()))
-		job := JobBTCBroadcast{
-			JobTypeBTCBroadcast,
-			tracker.Name,
-			id,
-			false,
-			nil,
-			false,
-			0,
-		}
-
-		err := ctx.JobStore.SaveJob(&job)
-		ctx.Logger.Error("error while scheduling bitcoin broadcast job", err)
-	}
+	//if tracker.HasEnoughSignatures() &&
+	//	ctx.JobStore != nil {
+	//
+	//	ctx.Logger.Info("in has enough signatures")
+	//
+	//	tracker.State = bitcoin.BusyBroadcasting
+	//
+	//	id := strconv.Itoa(int(time.Now().UnixNano()))
+	//	job := event.JobBTCBroadcast{
+	//		event.JobTypeBTCBroadcast,
+	//		tracker.Name,
+	//		id,
+	//		false,
+	//		nil,
+	//		false,
+	//		0,
+	//	}
+	//
+	////	err := ctx.JobStore.SaveJob(&job)
+	//	ctx.Logger.Error("error while scheduling bitcoin broadcast job", err)
+	//}
 
 	err = ctx.BTCTrackers.SetTracker(addSignature.TrackerName, tracker)
 	if err != nil {

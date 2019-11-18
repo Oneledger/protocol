@@ -2,7 +2,7 @@
 
  */
 
-package btc
+package event
 
 import (
 	"bytes"
@@ -10,6 +10,8 @@ import (
 	"fmt"
 	"strconv"
 	"time"
+
+	"github.com/Oneledger/protocol/action/btc"
 
 	"github.com/btcsuite/btcd/btcec"
 
@@ -52,7 +54,7 @@ type doJobData struct {
 }
 
 func (j *JobAddSignature) DoMyJob(ctxI interface{}) {
-	ctx, _ := ctxI.(*action.JobsContext)
+	ctx, _ := ctxI.(*JobsContext)
 
 	tracker, err := ctx.Trackers.Get(j.TrackerName)
 	if err != nil {
@@ -85,7 +87,7 @@ func (j *JobAddSignature) DoMyJob(ctxI interface{}) {
 		return
 	}
 
-	addSigData := AddSignature{
+	addSigData := btc.AddSignature{
 		TrackerName:      j.TrackerName,
 		ValidatorPubKey:  pk.PubKey().SerializeCompressed(),
 		BTCSignature:     sig,
@@ -107,10 +109,10 @@ func (j *JobAddSignature) DoMyJob(ctxI interface{}) {
 		Memo: j.JobID,
 	}
 
-	req := action.InternalBroadcastRequest{
+	req := InternalBroadcastRequest{
 		RawTx: tx,
 	}
-	rep := action.BroadcastReply{}
+	rep := BroadcastReply{}
 
 	err = ctx.Service.InternalBroadcast(req, &rep)
 	if err != nil {
@@ -121,7 +123,7 @@ func (j *JobAddSignature) DoMyJob(ctxI interface{}) {
 }
 
 func (j *JobAddSignature) IsMyJobDone(ctxI interface{}) bool {
-	ctx, _ := ctxI.(*action.JobsContext)
+	ctx, _ := ctxI.(*JobsContext)
 
 	if j.RetryCount > MaxJobRetries {
 		return true
@@ -137,7 +139,7 @@ func (j *JobAddSignature) IsMyJobDone(ctxI interface{}) bool {
 
 func (j *JobAddSignature) IsSufficient(ctxI interface{}) bool {
 
-	ctx, _ := ctxI.(*action.JobsContext)
+	ctx, _ := ctxI.(*JobsContext)
 
 	tracker, err := ctx.Trackers.Get(j.TrackerName)
 	if err != nil {

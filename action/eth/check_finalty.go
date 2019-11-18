@@ -3,19 +3,17 @@ package eth
 import (
 	"bytes"
 	"encoding/json"
+
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/chains/ethereum"
-	"github.com/Oneledger/protocol/data/bitcoin"
 	trackerlib "github.com/Oneledger/protocol/data/ethereum"
-	"github.com/Oneledger/protocol/data/keys"
-	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/pkg/errors"
 	"github.com/tendermint/tendermint/libs/common"
 )
 
 type ReportFinalityMint struct {
 	TrackerName      ethereum.TrackerName
-	Locker     		 action.Address
+	Locker           action.Address
 	ValidatorAddress action.Address
 	RandomBytes      []byte
 }
@@ -86,7 +84,7 @@ func (r reportFinalityMintTx) Validate(ctx *action.Context, signedTx action.Sign
 	if !bytes.Equal(tracker.ProcessOwner, f.Locker) {
 		return false, errors.New("tracker process not owned by user")
 	}
-	if tracker.State != trackerlib.BusyBroadcasting{
+	if tracker.State != trackerlib.BusyBroadcasting {
 		return false, errors.New("tracker not available for finalizing")
 	}
 
@@ -122,17 +120,16 @@ func (r reportFinalityMintTx) ProcessCheck(ctx *action.Context, tx action.RawTx)
 		return false, action.Response{Log: "transaction sender not a validator"}
 	}
 
-
-	for index , fv := range tracker.Validators {
+	for index, fv := range tracker.Validators {
 		if bytes.Equal(fv, f.ValidatorAddress) {
-			tracker.AddVote(fv,int64(index))
+			tracker.AddVote(fv, int64(index))
 		}
 	}
-    // Are there Enough votes ?
-    // If not LOG it and return
-    // IF yes Mint OTETh
+	// Are there Enough votes ?
+	// If not LOG it and return
+	// IF yes Mint OTETh
 	if !tracker.Finalized() {
-		return  false,action.Response{Log:"Not Enough votes to finalize a transaction"}
+		return false, action.Response{Log: "Not Enough votes to finalize a transaction"}
 	}
 
 	ctx.Logger.Info("ready to mint")
@@ -140,7 +137,7 @@ func (r reportFinalityMintTx) ProcessCheck(ctx *action.Context, tx action.RawTx)
 	// mint OETH coins
 	// Transition function to set state to Minted  (Finalized -> minted)
 
-
+	return true, action.Response{}
 }
 
 func (r reportFinalityMintTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, action.Response) {

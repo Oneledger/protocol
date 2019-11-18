@@ -1,8 +1,4 @@
-/*
-
- */
-
-package btc
+package event
 
 const (
 	JobTypeAddSignature = "addSignature"

@@ -2,7 +2,7 @@
 
  */
 
-package btc
+package event
 
 import (
 	"bytes"
@@ -10,6 +10,8 @@ import (
 	"encoding/hex"
 	"fmt"
 	"io"
+
+	"github.com/Oneledger/protocol/action/btc"
 
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 
@@ -37,7 +39,7 @@ type JobBTCBroadcast struct {
 
 func (j *JobBTCBroadcast) DoMyJob(ctxI interface{}) {
 
-	ctx, _ := ctxI.(*action.JobsContext)
+	ctx, _ := ctxI.(*JobsContext)
 
 	tracker, err := ctx.Trackers.Get(j.TrackerName)
 	if err != nil {
@@ -170,7 +172,7 @@ func (j *JobBTCBroadcast) DoMyJob(ctxI interface{}) {
 			return
 		}
 
-		reportFinalityMint := ReportFinalityMint{
+		reportFinalityMint := btc.ReportFinalityMint{
 			TrackerName:      j.TrackerName,
 			OwnerAddress:     tracker.ProcessOwner,
 			ValidatorAddress: ctx.ValidatorAddress,
@@ -193,10 +195,10 @@ func (j *JobBTCBroadcast) DoMyJob(ctxI interface{}) {
 			Memo: j.JobID,
 		}
 
-		req := action.InternalBroadcastRequest{
+		req := InternalBroadcastRequest{
 			RawTx: tx,
 		}
-		rep := action.BroadcastReply{}
+		rep := BroadcastReply{}
 
 		err = ctx.Service.InternalBroadcast(req, &rep)
 		if err != nil {
@@ -211,7 +213,7 @@ func (j *JobBTCBroadcast) DoMyJob(ctxI interface{}) {
 }
 
 func (j *JobBTCBroadcast) IsMyJobDone(ctxI interface{}) bool {
-	ctx, _ := ctxI.(*action.JobsContext)
+	ctx, _ := ctxI.(*JobsContext)
 
 	if j.RetryCount > 20 {
 		return true
