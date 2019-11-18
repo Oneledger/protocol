@@ -53,7 +53,7 @@ func (job JobETHBroadcast) DoMyJob(ctx interface{}) {
 		job.BroadcastSuccessful = true
 		job.BroadcastedHash = tx.Hash()
 	} else {
-        // CheckTX receipts
+         receipt,err :=
 	}
 
 }
