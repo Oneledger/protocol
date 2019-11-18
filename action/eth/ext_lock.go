@@ -2,6 +2,7 @@ package eth
 
 import (
 	"encoding/json"
+	"strconv"
 
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/rlp"
@@ -22,14 +23,17 @@ type Lock struct {
 
 var _ action.Msg = &Lock{}
 
+// Signers for the ethereum ext lock is the user who wishes to lock his ether
 func (et Lock) Signers() []action.Address {
 	return []action.Address{et.Locker}
 }
 
+// Type for ethlock
 func (et Lock) Type() action.Type {
 	return action.ETH_LOCK
 }
 
+// Tags for ethereum lock
 func (et Lock) Tags() common.KVPairs {
 	tags := make([]common.KVPair, 0)
 
@@ -41,8 +45,12 @@ func (et Lock) Tags() common.KVPairs {
 		Key:   []byte("tx.locker"),
 		Value: et.Locker.Bytes(),
 	}
+	tag3 := common.KVPair{
+		Key:   []byte("tx.amount"),
+		Value: []byte(strconv.FormatInt(et.LockAmount, 10)),
+	}
 
-	tags = append(tags, tag, tag2)
+	tags = append(tags, tag, tag2, tag3)
 	return tags
 }
 
@@ -59,30 +67,36 @@ type ethLockTx struct {
 
 var _ action.Tx = ethLockTx{}
 
+// Validate
 func (ethLockTx) Validate(ctx *action.Context, signedTx action.SignedTx) (bool, error) {
+
+	// unmarshal the tx message
 	lock := &Lock{}
 	err := lock.Unmarshal(signedTx.Data)
 	if err != nil {
 		return false, errors.Wrap(action.ErrWrongTxType, err.Error())
 	}
 
+	// validate basic
 	err = action.ValidateBasic(signedTx.RawBytes(), lock.Signers(), signedTx.Signatures)
 	if err != nil {
 		return false, err
 	}
 
+	// validate fee
 	err = action.ValidateFee(ctx.FeeOpt, signedTx.Fee)
 	if err != nil {
 		return false, err
 	}
-	// Check lock fields for incoming trasaction
 
+	// Check lock fields for incoming trasaction
 	ethTx := &types.Transaction{}
 	err = rlp.DecodeBytes(lock.ETHTxn, ethTx)
 	if err != nil {
 		return false, errors.Wrap(err, "eth txn decode failed")
 	}
 
+	// check if lock amount in ethereum txn
 	if ethTx.Value().Int64() != lock.LockAmount {
 		return false, errors.New("incorrect lock amount in eth txn")
 	}
@@ -91,6 +105,7 @@ func (ethLockTx) Validate(ctx *action.Context, signedTx action.SignedTx) (bool, 
 	return true, nil
 }
 
+// ProcessCheck
 func (e ethLockTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 
 	lock := &Lock{}
@@ -102,6 +117,7 @@ func (e ethLockTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (bool, act
 	return e.processCommon(ctx, tx, lock)
 }
 
+// ProcessDeliver
 func (e ethLockTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 
 	lock := &Lock{}
@@ -129,24 +145,37 @@ func (e ethLockTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, a
 	}
 }
 
+// ProcessFee
 func (ethLockTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas) (bool, action.Response) {
 	return action.BasicFeeHandling(ctx, signedTx, start, size, 1)
 }
 
+// processCommon
 func (ethLockTx) processCommon(ctx *action.Context, tx action.RawTx, lock *Lock) (bool, action.Response) {
 
+	// parse eth transaction
 	ethTx := &types.Transaction{}
 	err := rlp.DecodeBytes(lock.ETHTxn, ethTx)
 	if err != nil {
 		return false, action.Response{Log: "err decoding txn: " + err.Error()}
 	}
 
+	// verify lock amount in the txn
 	if ethTx.Value().Int64() != lock.LockAmount {
 		return false, action.Response{Log: "incorrect lock amount in txn"}
 	}
 
+	val, err := ctx.Validators.GetValidatorsAddress()
+	if err != nil {
+		return false, action.Response{Log: "error in getting validator addresses" + err.Error()}
+	}
+
 	// Create ethereum tracker
-	tracker := ethereum.NewTracker(lock.TrackerName)
+	tracker := ethereum.NewTracker(
+		lock.Locker, lock.ETHTxn,
+		lock.TrackerName, val,
+	)
+
 	tracker.State = ethereum.New
 	tracker.ProcessOwner = lock.Locker
 	tracker.SignedETHTx = lock.ETHTxn
@@ -154,7 +183,7 @@ func (ethLockTx) processCommon(ctx *action.Context, tx action.RawTx, lock *Lock)
 	// Save eth Tracker
 	err = ctx.ETHTrackers.Set(*tracker)
 	if err != nil {
-
+		return false, action.Response{Log: "error saving eth tracker: " + err.Error()}
 	}
 
 	return true, action.Response{
