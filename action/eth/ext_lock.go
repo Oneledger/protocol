@@ -130,7 +130,7 @@ func (e ethLockTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, a
 	if !ok {
 		return ok, resp
 	}
-
+	//todo: don't do job related work in delivery, just create tracker
 	if ctx.JobStore != nil {
 
 		job := JobETHBroadcast{lock.TrackerName}
