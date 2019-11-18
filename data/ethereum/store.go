@@ -4,11 +4,6 @@ import (
 	"github.com/Oneledger/protocol/chains/ethereum"
 	"github.com/Oneledger/protocol/serialize"
 	"github.com/Oneledger/protocol/storage"
-	"github.com/pkg/errors"
-)
-
-var (
-	ErrTrackerNotFound = errors.New("tracker not found")
 )
 
 type TrackerStore struct {
