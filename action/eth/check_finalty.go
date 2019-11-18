@@ -15,7 +15,6 @@ type ReportFinalityMint struct {
 	TrackerName      ethereum.TrackerName
 	Locker           action.Address
 	ValidatorAddress action.Address
-	RandomBytes      []byte
 }
 
 var _ action.Msg = &ReportFinalityMint{}
@@ -131,11 +130,12 @@ func (r reportFinalityMintTx) ProcessCheck(ctx *action.Context, tx action.RawTx)
 	if !tracker.Finalized() {
 		return false, action.Response{Log: "Not Enough votes to finalize a transaction"}
 	}
+    if ! tracker.IsTaskCompleted(){
+		ctx.Logger.Info("ready to mint")
+		//Mint Tokens OETH
+		tracker.CompleteTask()
+	}
 
-	ctx.Logger.Info("ready to mint")
-	// Transition function change state to Finalized  ( Broadcasting -> Finalized )
-	// mint OETH coins
-	// Transition function to set state to Minted  (Finalized -> minted)
 
 	return true, action.Response{}
 }

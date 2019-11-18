@@ -79,7 +79,7 @@ func (acc *EthereumChainDriver) BroadcastTx (tx *types.Transaction) (Transaction
 		acc.logger.Error("Error connecting to ETHEREUM :",err)
 		return tx.Hash(),err
 	}
-	acc.logger.Info("Trasnaction Broadcasted to Ethereum ",tx.Hash())
+	acc.logger.Info("Transaction Broadcasted to Ethereum ",tx.Hash())
 	return tx.Hash(),nil
 
 }

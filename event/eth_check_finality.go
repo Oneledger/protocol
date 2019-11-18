@@ -41,7 +41,7 @@ func (job JobETHCheckFinality) DoMyJob(ctx interface{}) {
 		return
 	}
 	ethconfig := config.DefaultEthConfig()
-	logger := log.NewLoggerWithPrefix(os.Stdout, "JOB_ETHBROADCAST")
+	logger := log.NewLoggerWithPrefix(os.Stdout, "JOB_ETHCHECKFINALITY")
 	cd, err := ethereum.NewEthereumChainDriver(ethconfig, logger, &ethCtx.ETHPrivKey)
 	if err != nil {
 		ethCtx.Logger.Error("err trying to get ChainDriver : ", job.GetJobID(), err)

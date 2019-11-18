@@ -77,7 +77,7 @@ func (job JobETHBroadcast) GetType() string {
 }
 
 func (job JobETHBroadcast) GetJobID() string {
-	return "We should make a Job ID"
+	return job.JobID
 }
 
 func (job JobETHBroadcast) IsDone() bool {

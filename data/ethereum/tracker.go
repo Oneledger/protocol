@@ -19,6 +19,7 @@ type Tracker struct {
 	Validators    []keys.Address
 	ProcessOwner  keys.Address
 	FinalityVotes int64
+	TaskCompleted bool
 	TrackerName   ethereum.TrackerName
 }
 
@@ -31,6 +32,16 @@ func NewTracker(owner keys.Address, signedEthTx []byte, name ethereum.TrackerNam
 		ProcessOwner: owner,
 		SignedETHTx:  signedEthTx,
 		Validators:   validators,
+	}
+}
+
+func (t *Tracker) IsTaskCompleted() bool {
+	return t.TaskCompleted
+}
+
+func (t *Tracker) CompleteTask(){
+	if!t.TaskCompleted && t.Finalized(){
+		t.TaskCompleted = true
 	}
 }
 
