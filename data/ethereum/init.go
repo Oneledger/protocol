@@ -12,9 +12,21 @@ var (
 	Engine transition.Engine
 )
 
-type trackerCtx struct {
-	tracker Tracker
-}
+const (
+	New TrackerState = iota
+	BusyBroadcasting
+	BusyFinalizing
+	Finalized
+	Minted
+
+	votesThreshold float32 = 0.6667
+
+	BROADCASTING string = "broadcasting"
+	FINALIZING   string = "finalizing"
+	FINALIZE     string = "finalize"
+	MINTING      string = "minting"
+	CLEANUP      string = "cleanup"
+)
 
 func init() {
 	Engine = transition.NewEngine(
@@ -27,30 +39,36 @@ func init() {
 		})
 
 	_ = Engine.Register(transition.Transition{
-		Name: "broadcasting",
+		Name: BROADCASTING,
 		Fn:   Broadcasting,
 		From: transition.Status(New),
 		To:   transition.Status(BusyBroadcasting),
 	})
 
 	_ = Engine.Register(transition.Transition{
-		Name: "finalizing",
+		Name: FINALIZING,
 		Fn:   Finalizing,
-		From: transition.Status(New),
-		To:   transition.Status(BusyBroadcasting),
+		From: transition.Status(BusyBroadcasting),
+		To:   transition.Status(BusyFinalizing),
 	})
 
 	_ = Engine.Register(transition.Transition{
-		Name: "finalize",
+		Name: FINALIZE,
 		Fn:   Finalization,
 		From: transition.Status(BusyFinalizing),
 		To:   transition.Status(Finalized),
 	})
 
 	_ = Engine.Register(transition.Transition{
-		Name: "mint",
+		Name: MINTING,
 		Fn:   Minting,
 		From: transition.Status(Finalized),
 		To:   transition.Status(Minted),
+	})
+	_ = Engine.Register(transition.Transition{
+		Name: CLEANUP,
+		Fn:   Cleanup,
+		From: transition.Status(Minted),
+		To:   0,
 	})
 }

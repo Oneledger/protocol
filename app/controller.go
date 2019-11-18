@@ -4,6 +4,11 @@ import (
 	"encoding/hex"
 	"math"
 
+	"github.com/Oneledger/protocol/utils/transition"
+
+	ceth "github.com/Oneledger/protocol/chains/ethereum"
+	"github.com/Oneledger/protocol/data/ethereum"
+
 	"github.com/Oneledger/protocol/data/fees"
 
 	"github.com/tendermint/tendermint/types"
@@ -223,6 +228,20 @@ func (app *App) blockEnder() blockEnder {
 			}
 		}()
 
+		eth := app.Context.ethTrackers
+		eth.Iterate(func(name ceth.TrackerName, tracker *ethereum.Tracker) bool {
+			ctx := ethereum.NewTrackerCtx(tracker, app.Context.node.ValidatorAddress())
+			_, err := ethereum.Engine.Process(tracker.NextStep(), ctx, transition.Status(tracker.State))
+			if err != nil {
+
+			}
+			//todo save the tracker back to cache
+			err = eth.Set(*tracker)
+			if err != nil {
+
+			}
+			return false
+		})
 		app.logger.Debug("End Block: ", result, "height:", req.Height)
 		return result
 	}

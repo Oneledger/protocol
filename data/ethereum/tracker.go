@@ -8,16 +8,6 @@ import (
 
 type TrackerState int
 
-const (
-	New TrackerState = iota
-	BusyBroadcasting
-	BusyFinalizing
-	Finalized
-	Minted
-
-	votesThreshold float32 = 0.6667
-)
-
 // Tracker
 type Tracker struct {
 	// State tracks the current state of the tracker, Also used for locking distributed access
@@ -81,22 +71,39 @@ func (t *Tracker) Finalized() bool {
 	return cnt >= num
 }
 
+func (t Tracker) NextStep() string {
+
+	switch t.State {
+	case New:
+		return BROADCASTING
+	case BusyBroadcasting:
+		return FINALIZING
+	case BusyFinalizing:
+		return FINALIZE
+	case Finalized:
+		return MINTING
+	case Minted:
+		return CLEANUP
+	}
+	return ""
+}
+
 //TODO Go back to Busy broadcasting if there is a failure in Finalizing.
 func Broadcasting(ctx interface{}) error {
-	context := ctx.(trackerCtx)
+	context := ctx.(TrackerCtx)
 	tracker := context.tracker
 
 	if tracker.State != New {
 		err := errors.New("Cannot Broadcast from the current state")
 		return errors.Wrap(err, string(tracker.State))
 	}
-
+	// TODO: create broadcasting job
 	tracker.State = BusyBroadcasting
 	return nil
 }
 
 func Finalizing(ctx interface{}) error {
-	context := ctx.(trackerCtx)
+	context := ctx.(TrackerCtx)
 	tracker := context.tracker
 
 	if tracker.State != BusyBroadcasting {
@@ -105,7 +112,7 @@ func Finalizing(ctx interface{}) error {
 	}
 
 	numVotes := tracker.GetVotes()
-
+	//todo: check if I vote, if not, check my job of broadcasting status, create broadcasting job if necessary, if someone broadcasted, create job to check finality
 	if numVotes > 0 {
 		tracker.State = BusyFinalizing
 	}
@@ -114,7 +121,7 @@ func Finalizing(ctx interface{}) error {
 }
 
 func Finalization(ctx interface{}) error {
-	context := ctx.(trackerCtx)
+	context := ctx.(TrackerCtx)
 	tracker := context.tracker
 
 	if tracker.State != BusyFinalizing {
@@ -122,6 +129,7 @@ func Finalization(ctx interface{}) error {
 		return errors.Wrap(err, string(tracker.State))
 	}
 
+	//todo: check if I vote, if not create job for check finality
 	if tracker.Finalized() {
 		tracker.State = Finalized
 	}
@@ -129,14 +137,20 @@ func Finalization(ctx interface{}) error {
 }
 
 func Minting(ctx interface{}) error {
-	context := ctx.(trackerCtx)
+	context := ctx.(TrackerCtx)
 	tracker := context.tracker
 
 	if tracker.State != Finalized {
 		err := errors.New("Cannot Mint from the current state")
 		return errors.Wrap(err, string(tracker.State))
 	}
-
+	//todo: create a job to mint
 	tracker.State = Minted
+	return nil
+}
+
+func Cleanup(ctx interface{}) error {
+	//todo: delete the tracker and jobs related
+
 	return nil
 }
