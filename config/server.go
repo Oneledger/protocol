@@ -413,8 +413,8 @@ type EthereumChainDriverConfig struct {
 	ContractABI       string   `toml: contractAbi" desc:"AVI for the contract"`
 	Connection        string   `toml:"connection" desc:"Connection string to the Ethereum node"`
 	KeyLocation       string   `toml:"key" desc:"Relative path to the Ethereum key. Can be left blank"`
-	ContractAddress   string   `toml:"contract_address" desc:"Address to the ethereum LockRedeem contract. This should not depend on  things."`
-	InitialValidators []string `toml:"initial_validators" desc:"Addresses of the initial validators"`
+	ContractAddress   string   `toml:"contract_address" desc:"Address to the ethereum LockRedeem contract . Contract deployment returns address."`
+	//0InitialValidators []string `toml:"initial_validators" desc:"Addresses of the initial validators"`
 }
 
 func DefaultChainDriverConfig() *ChainDriverConfig {
@@ -433,19 +433,26 @@ func DefaultChainDriverConfig() *ChainDriverConfig {
 	return &cfg
 }
 
-func DefaultEthConfig() *EthereumChainDriverConfig {
+func DefaultEthConfigRoopsten() *EthereumChainDriverConfig {
 	return &EthereumChainDriverConfig{
 		Connection:  "https://ropsten.infura.io/v3/{API_KEY}",
 		KeyLocation: defaultKeyLocation,
 	}
 }
 
-func CreateEthConfig(connection string,keylocation string,address string,validators []string) *EthereumChainDriverConfig{
+func DefaultEthConfig() *EthereumChainDriverConfig{
+	return &EthereumChainDriverConfig{
+		Connection: "http://localhost:7545",
+	}
+}
+
+func CreateEthConfig(connection string,keylocation string,address string,abi string) *EthereumChainDriverConfig{
 	return &EthereumChainDriverConfig{
 		Connection:connection,
 		KeyLocation:keylocation,
 		ContractAddress:address,
-		InitialValidators:validators,
+		ContractABI:abi,
+		//InitialValidators:validators,
 	}
 }
 

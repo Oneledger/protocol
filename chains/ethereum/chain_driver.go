@@ -64,8 +64,8 @@ func (acc *EthereumChainDriver) CheckFinality (txHash TransactionHash) (*types.R
 			}
 			if result.Status == types.ReceiptStatusFailed {
 				acc.logger.Warn("Receipt not found ")
-				err := Error("Transaction not added to blockchain yet / Failed to obtain receipt")
-				return nil,err
+				//err := Error("Transaction not added to blockchain yet / Failed to obtain receipt")
+				return nil,nil
 			}
 		}
 		acc.logger.Error("Unable to connect to Ethereum :" ,err)

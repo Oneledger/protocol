@@ -2,6 +2,9 @@ package event
 
 import (
 	"context"
+	"github.com/Oneledger/protocol/config"
+	"github.com/Oneledger/protocol/log"
+	"os"
 	"time"
 
 	"github.com/Oneledger/protocol/chains/ethereum"
@@ -14,7 +17,7 @@ import (
 type JobETHBroadcast struct {
 	TrackerName         ethereum.TrackerName
 	RetryCount          int8
-	Done                bool
+	Finalized           bool
 	BroadcastSuccessful bool
 	BroadcastedHash     ethereum.TransactionHash
 }
@@ -30,29 +33,48 @@ func (job JobETHBroadcast) DoMyJob(ctx interface{}) {
 		job.RetryCount += 1
 		return
 	}
-	client, err := ethclient.Dial(ethCtx.ETHConnection)
+
+
+	ethconfig := config.DefaultEthConfig()
+	logger := log.NewLoggerWithPrefix(os.Stdout,"JOB_ETHBROADCAST")
+	cd,err := ethereum.NewEthereumChainDriver(ethconfig,logger,&ethCtx.ETHPrivKey)
 	if err != nil {
-		ethCtx.Logger.Error("Unable to create Ethereum connection for the connection string :,", ethCtx.ETHConnection)
+		ethCtx.Logger.Error("err trying to get ChainDriver : ", job.GetJobID(), err)
+		job.RetryCount += 1
 		return
 	}
+
+
 	if !job.BroadcastSuccessful {
 		rawTx := tracker.SignedETHTx
 		tx := &types.Transaction{}
 		err = rlp.DecodeBytes(rawTx, tx)
 		if err != nil {
-			ethCtx.Logger.Error("Error Decoding Bytes from RaxTX :", job.TrackerName)
+			ethCtx.Logger.Error("Error Decoding Bytes from RaxTX :", job.GetJobID(),err)
 			return
 		}
-		err = client.SendTransaction(context.Background(), tx)
+		// get chain driver here
+		txhash,err := cd.BroadcastTx(tx)
 		if err != nil {
-			ethCtx.Logger.Error("Error in tranascation broadcast : ", job.TrackerName)
+			ethCtx.Logger.Error("Error in transaction broadcast : ", job.GetJobID(),err)
 			return
 		}
 		job.BroadcastSuccessful = true
-		job.BroadcastedHash = tx.Hash()
+		job.BroadcastedHash = txhash
 	} else {
 
-         // Checkfinality from Ethereum Chain Driver
+		receipt,err := cd.CheckFinality(job.BroadcastedHash)
+		if err != nil {
+			ethCtx.Logger.Error("Error in Receiving TX receipt : ", job.GetJobID(),err)
+			return
+		}
+		if receipt == nil {
+			ethCtx.Logger.Info("Transaction not added to Ethereum Network yet ",job.GetJobID())
+		}
+		job.Finalized =true
+	}
+	if job.BroadcastSuccessful&&job.Finalized{
+		// Create internal  TX
 	}
 
 }
@@ -75,7 +97,7 @@ func (job JobETHBroadcast) GetType() string {
 }
 
 func (job JobETHBroadcast) GetJobID() string {
-	panic("implement me")
+	return "We should make a Job ID"
 }
 
 func (job JobETHBroadcast) IsDone() bool {

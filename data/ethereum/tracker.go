@@ -73,6 +73,11 @@ func (t *Tracker) Finalized() bool {
 	return cnt >= num
 }
 
+func (t Tracker) JobId() string {
+	return "Implement this function"
+	//return t.TrackerName.String() + storage.DB_PREFIX + strconv.ParseInt(t.State, errors.New("Unable to convert") )
+}
+
 func (t Tracker) NextStep() string {
 
 	switch t.State {
