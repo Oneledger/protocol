@@ -1,6 +1,7 @@
 package ethereum
 
 import (
+	"context"
 	"crypto/ecdsa"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
@@ -14,6 +15,7 @@ type ChainDriver interface {
         //OnlineLock (rawTx []byte) (*big.Int, error)
        // OfflineLock (pubKey *ecdsa.PublicKey,lockAmount *big.Int) ([]byte,error)
 	    PrepareUnsignedETHLock (pubKey *ecdsa.PublicKey,lockAmount *big.Int) ([]byte,error)
+	    CheckFinality(txHash TransactionHash)
         //ValidatorSignRedeem (wei *big.Int, recipient common.Address) (*Transaction,error)
 }
 
@@ -50,4 +52,21 @@ func (acc *EthereumChainDriver) PrepareUnsignedETHLock (pubKey *ecdsa.PublicKey,
 	rawTxBytes := ts.GetRlp(0)
 	return rawTxBytes,nil
 }
+
+func (acc *EthereumChainDriver) CheckFinality (txHash TransactionHash) (*types.Receipt,error) {
+		result, err := acc.Client.TransactionReceipt(context.Background(), txHash)
+		if err == nil {
+			if result.Status == types.ReceiptStatusSuccessful {
+			return result, nil
+			}
+			if result.Status == types.ReceiptStatusFailed {
+				err := Error("Transaction not added to blockchain yet / Failed to obtain receipt")
+				return nil,err
+			}
+		}
+		return nil,err
+		}
+
+
+
 
