@@ -2,6 +2,9 @@ package app
 
 import (
 	"encoding/hex"
+	"fmt"
+	"github.com/Oneledger/protocol/config"
+	"github.com/pkg/errors"
 	"math"
 
 	"github.com/Oneledger/protocol/event"
@@ -53,10 +56,17 @@ func (app *App) queryer() queryer {
 }
 
 func (app *App) optionSetter() optionSetter {
-	return func(RequestSetOption) ResponseSetOption {
-		// TODO
+	return func(req RequestSetOption) ResponseSetOption {
+		err := config.Setup(&app.Context.cfg, req.Key, req.Value)
+		if err != nil {
+			return ResponseSetOption{
+				Code: CodeNotOK.uint32(),
+				Log: errors.Wrap(err, "set option").Error(),
+			}
+		}
 		return ResponseSetOption{
 			Code: CodeOK.uint32(),
+			Info: fmt.Sprintf("set option: key=%s, value=%s ", req.Key, req.Value),
 		}
 	}
 }

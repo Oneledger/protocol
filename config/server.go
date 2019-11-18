@@ -290,6 +290,10 @@ func (cfg *P2PConfig) TMConfig() *tmconfig.P2PConfig {
 	}
 }
 
+func (cfg *P2PConfig) SetPersistentPeers(peers []string) {
+	cfg.PersistentPeers = peers
+}
+
 func DefaultP2PConfig() *P2PConfig {
 	var cfg P2PConfig
 	tmDefaults := tmconfig.DefaultP2PConfig()
