@@ -212,6 +212,7 @@ func (app *App) blockEnder() blockEnder {
 				jc := event.NewJobsContext(cdConfig.BitcoinChainType,
 					app.Context.internalService, app.Context.btcTrackers,
 					app.Context.node.ValidatorECDSAPrivateKey(),
+					app.Context.node.EthPrivKey(),
 					app.Context.node.ValidatorAddress(), app.Context.cfg.ChainDriver.BlockCypherToken,
 					app.Context.lockScriptStore,
 					cdConfig.BitcoinNodeAddress,

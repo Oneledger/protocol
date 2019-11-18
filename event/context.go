@@ -23,6 +23,7 @@ type JobsContext struct {
 	Trackers *bitcoin.TrackerStore
 
 	BTCPrivKey       keys.PrivateKey
+	ETHPrivKey       keys.PrivateKey
 	Params           *chaincfg.Params
 	ValidatorAddress action.Address
 
@@ -36,16 +37,16 @@ type JobsContext struct {
 	BTCRPCPassword string
 
 	EthereumTrackers   *ethereum.TrackerStore
-	ETHContractABI     string
+	ETHContractABI     string   // Replace 39,40,41 with ethchaindriverconfig
 	ETHConnection      string
 	ETHContractAddress string
 
 	BTCChainnet string
 
-	// eth driver config
+
 }
 
-func NewJobsContext(chainType string, svc *Service, trackers *bitcoin.TrackerStore, privKey *keys.PrivateKey,
+func NewJobsContext(chainType string, svc *Service, trackers *bitcoin.TrackerStore, privKey *keys.PrivateKey,ethprivKey *keys.PrivateKey,
 	valAddress keys.Address, bcyToken string, lStore *bitcoin.LockScriptStore,
 	btcAddress, btcRPCPort, BTCRPCUsername, BTCRPCPassword, btcChain string, ETHAbi string, ETHconn string, ETHContractaddress string, ethTracker *ethereum.TrackerStore,
 ) *JobsContext {
@@ -71,6 +72,7 @@ func NewJobsContext(chainType string, svc *Service, trackers *bitcoin.TrackerSto
 		Logger:             log.NewLoggerWithPrefix(w, "internal_jobs"),
 		Trackers:           trackers,
 		BTCPrivKey:         *privKey,
+        ETHPrivKey:         *ethprivKey,
 		Params:             params,
 		ValidatorAddress:   valAddress,
 		BlockCypherToken:   bcyToken,
