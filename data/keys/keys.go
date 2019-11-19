@@ -9,14 +9,13 @@ import (
 	"math/big"
 
 	"github.com/btcsuite/btcd/btcec"
-	"github.com/tendermint/tendermint/privval"
-
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/pkg/errors"
 	"github.com/tendermint/tendermint/abci/types"
 	"github.com/tendermint/tendermint/crypto/ed25519"
 	"github.com/tendermint/tendermint/crypto/secp256k1"
 	"github.com/tendermint/tendermint/p2p"
+	"github.com/tendermint/tendermint/privval"
 )
 
 /*

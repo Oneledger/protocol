@@ -10,14 +10,13 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/Oneledger/protocol/action/btc"
-
 	"github.com/btcsuite/btcd/btcec"
-
-	"github.com/Oneledger/protocol/action"
-	"github.com/Oneledger/protocol/data/jobs"
 	"github.com/btcsuite/btcd/txscript"
 	"github.com/btcsuite/btcd/wire"
+
+	"github.com/Oneledger/protocol/action"
+	"github.com/Oneledger/protocol/action/btc"
+	"github.com/Oneledger/protocol/data/jobs"
 )
 
 type JobAddSignature struct {
@@ -26,6 +25,8 @@ type JobAddSignature struct {
 	TrackerName string
 
 	JobID string
+
+	Status jobs.Status
 }
 
 func NewAddSignatureJob(trackerName string) jobs.Job {
@@ -33,9 +34,10 @@ func NewAddSignatureJob(trackerName string) jobs.Job {
 	id := strconv.FormatInt(time.Now().UnixNano(), 10)
 
 	return &JobAddSignature{
-		JobTypeAddSignature,
-		trackerName,
-		id,
+		Type:        JobTypeAddSignature,
+		TrackerName: trackerName,
+		JobID:       id,
+		Status:      jobs.New,
 	}
 }
 
@@ -114,4 +116,8 @@ func (j *JobAddSignature) DoMyJob(ctxI interface{}) {
 
 func (j *JobAddSignature) GetJobID() string {
 	return j.JobID
+}
+
+func (j JobAddSignature) IsDone() bool {
+	return j.Status == jobs.Completed
 }

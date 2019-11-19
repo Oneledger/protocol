@@ -238,7 +238,7 @@ func assemblyTxData(replaceAddre bool, initTokenAmount string, txType string, fa
 	signed := action.SignedTx{
 		RawTx: rawtx,
 		Signatures: []action.Signature{
-			action.Signature{
+			{
 				Signer: keys.PublicKey{keys.ED25519, ownerPubkey.Bytes()[5:]},
 				Signed: signature,
 			}},
@@ -296,7 +296,7 @@ func assemblyTxDataSameKp(replaceAddre bool, initTokenAmount string, txType stri
 	signed := action.SignedTx{
 		RawTx: tx,
 		Signatures: []action.Signature{
-			action.Signature{
+			{
 				Signer: keys.PublicKey{keys.ED25519, ownerPubkey.Bytes()[5:]},
 				Signed: signature,
 			}},

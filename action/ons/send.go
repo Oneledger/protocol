@@ -8,9 +8,10 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/Oneledger/protocol/action"
 	"github.com/pkg/errors"
 	"github.com/tendermint/tendermint/libs/common"
+
+	"github.com/Oneledger/protocol/action"
 )
 
 /*

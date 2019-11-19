@@ -23,14 +23,13 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Oneledger/protocol/data/balance"
-
+	"github.com/spf13/cobra"
 	"github.com/tendermint/tendermint/crypto/ed25519"
 
 	"github.com/Oneledger/protocol/data/accounts"
+	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/chain"
 	"github.com/Oneledger/protocol/data/keys"
-	"github.com/spf13/cobra"
 )
 
 // cobra command to loadtest

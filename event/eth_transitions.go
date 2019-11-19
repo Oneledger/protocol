@@ -1,8 +1,9 @@
 package event
 
 import (
-	"github.com/Oneledger/protocol/data/ethereum"
 	"github.com/pkg/errors"
+
+	"github.com/Oneledger/protocol/data/ethereum"
 )
 
 //TODO Go back to Busy broadcasting if there is a failure in Finalizing.

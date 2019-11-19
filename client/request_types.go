@@ -10,13 +10,14 @@
 package client
 
 import (
+	ctypes "github.com/tendermint/tendermint/rpc/core/types"
+
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/data/accounts"
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/bitcoin"
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/identity"
-	ctypes "github.com/tendermint/tendermint/rpc/core/types"
 )
 
 /*

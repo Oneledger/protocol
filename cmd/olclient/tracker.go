@@ -5,8 +5,9 @@
 package main
 
 import (
-	"github.com/Oneledger/protocol/data/bitcoin"
 	"github.com/spf13/cobra"
+
+	"github.com/Oneledger/protocol/data/bitcoin"
 )
 
 var trackerCmd = &cobra.Command{

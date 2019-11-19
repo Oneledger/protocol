@@ -10,12 +10,12 @@ import (
 
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcutil"
+	"github.com/tendermint/tendermint/p2p"
+	"github.com/tendermint/tendermint/privval"
 
 	"github.com/Oneledger/protocol/config"
 	"github.com/Oneledger/protocol/consensus"
 	"github.com/Oneledger/protocol/data/keys"
-	"github.com/tendermint/tendermint/p2p"
-	"github.com/tendermint/tendermint/privval"
 )
 
 // Context holds key information about the running node. This is generally used to

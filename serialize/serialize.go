@@ -4,12 +4,11 @@ import (
 	"os"
 	"sync"
 
-	"github.com/Oneledger/protocol/log"
-
 	"github.com/google/uuid"
-
 	"github.com/tendermint/go-amino"
 	"github.com/vmihailenco/msgpack"
+
+	"github.com/Oneledger/protocol/log"
 )
 
 type Channel int

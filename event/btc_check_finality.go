@@ -10,11 +10,10 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/Oneledger/protocol/data/jobs"
-
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/action/btc"
 	"github.com/Oneledger/protocol/chains/bitcoin"
+	"github.com/Oneledger/protocol/data/jobs"
 )
 
 type JobBTCCheckFinality struct {
@@ -22,6 +21,8 @@ type JobBTCCheckFinality struct {
 
 	TrackerName string
 	JobID       string
+
+	Status jobs.Status
 }
 
 func NewBTCCheckFinalityJob(trackerName string) jobs.Job {
@@ -29,9 +30,10 @@ func NewBTCCheckFinalityJob(trackerName string) jobs.Job {
 	id := strconv.FormatInt(time.Now().UnixNano(), 10)
 
 	return &JobBTCCheckFinality{
-		JobTypeBTCCheckFinality,
-		trackerName,
-		id,
+		Type:        JobTypeBTCCheckFinality,
+		TrackerName: trackerName,
+		JobID:       id,
+		Status:      jobs.New,
 	}
 }
 
@@ -41,7 +43,7 @@ func (cf *JobBTCCheckFinality) DoMyJob(ctxI interface{}) {
 
 	tracker, err := ctx.Trackers.Get(cf.TrackerName)
 	if err != nil {
-		ctx.Logger.Error("err trying to deserialize tracker: ", c.TrackerName, err)
+		ctx.Logger.Error("err trying to deserialize tracker: ", cf.TrackerName, err)
 		return
 	}
 
@@ -74,7 +76,7 @@ func (cf *JobBTCCheckFinality) DoMyJob(ctxI interface{}) {
 	data := [4]byte{}
 	_, err = io.ReadFull(rand.Reader, data[:])
 	if err != nil {
-		ctx.Logger.Error("error while reading random bytes for minting", err, j.TrackerName)
+		ctx.Logger.Error("error while reading random bytes for minting", err, cf.TrackerName)
 		return
 	}
 
@@ -117,4 +119,8 @@ func (cf *JobBTCCheckFinality) GetType() string {
 
 func (cf *JobBTCCheckFinality) GetJobID() string {
 	return cf.JobID
+}
+
+func (cf *JobBTCCheckFinality) IsDone() bool {
+	return cf.Status == jobs.Completed
 }

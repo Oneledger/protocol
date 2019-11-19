@@ -8,15 +8,16 @@ import (
 	"bytes"
 	"encoding/hex"
 
+	"github.com/blockcypher/gobcy"
+	"github.com/btcsuite/btcd/chaincfg/chainhash"
+	"github.com/google/uuid"
+
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/action/btc"
 	"github.com/Oneledger/protocol/chains/bitcoin"
 	"github.com/Oneledger/protocol/client"
 	"github.com/Oneledger/protocol/serialize"
 	codes "github.com/Oneledger/protocol/status_codes"
-	"github.com/blockcypher/gobcy"
-	"github.com/btcsuite/btcd/chaincfg/chainhash"
-	"github.com/google/uuid"
 )
 
 const (

@@ -8,14 +8,14 @@ import (
 	"bytes"
 	"encoding/json"
 
-	"github.com/Oneledger/protocol/data/keys"
+	"github.com/btcsuite/btcd/chaincfg"
+	"github.com/pkg/errors"
+	"github.com/tendermint/tendermint/libs/common"
 
 	"github.com/Oneledger/protocol/action"
 	bitcoin2 "github.com/Oneledger/protocol/chains/bitcoin"
 	"github.com/Oneledger/protocol/data/bitcoin"
-	"github.com/btcsuite/btcd/chaincfg"
-	"github.com/pkg/errors"
-	"github.com/tendermint/tendermint/libs/common"
+	"github.com/Oneledger/protocol/data/keys"
 )
 
 type ReportFinalityMint struct {
@@ -343,7 +343,7 @@ func (reportFinalityMintTx) ProcessDeliver(ctx *action.Context, tx action.RawTx)
 	}
 
 	err = ctx.BTCTrackers.SetTracker(f.TrackerName, tracker)
-	if err != nil || !ok {
+	if err != nil {
 		return false, action.Response{Log: "error resetting tracker, try again"}
 	}
 

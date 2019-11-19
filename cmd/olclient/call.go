@@ -5,8 +5,9 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/Oneledger/protocol/rpc"
 	"github.com/spf13/cobra"
+
+	"github.com/Oneledger/protocol/rpc"
 )
 
 var callCmd = &cobra.Command{

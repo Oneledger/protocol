@@ -1,6 +1,11 @@
 package event
 
 import (
+	"os"
+	"strconv"
+
+	"github.com/ethereum/go-ethereum/core/types"
+
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/action/eth"
 	"github.com/Oneledger/protocol/chains/ethereum"
@@ -9,9 +14,6 @@ import (
 	"github.com/Oneledger/protocol/data/jobs"
 	"github.com/Oneledger/protocol/log"
 	"github.com/Oneledger/protocol/storage"
-	"github.com/ethereum/go-ethereum/core/types"
-	"os"
-	"strconv"
 
 	"github.com/ethereum/go-ethereum/rlp"
 )

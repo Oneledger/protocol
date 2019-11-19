@@ -8,13 +8,14 @@ import (
 	"bytes"
 	"encoding/json"
 
+	"github.com/btcsuite/btcd/chaincfg"
+	"github.com/pkg/errors"
+	"github.com/tendermint/tendermint/libs/common"
+
 	"github.com/Oneledger/protocol/action"
 	bitcoin2 "github.com/Oneledger/protocol/chains/bitcoin"
 	"github.com/Oneledger/protocol/data/bitcoin"
 	"github.com/Oneledger/protocol/data/keys"
-	"github.com/btcsuite/btcd/chaincfg"
-	"github.com/pkg/errors"
-	"github.com/tendermint/tendermint/libs/common"
 )
 
 type ExtMintOBTC struct {

@@ -5,9 +5,9 @@ import (
 	"net/url"
 	"os"
 
-	"github.com/Oneledger/protocol/event"
-
-	"github.com/Oneledger/protocol/data/keys"
+	"github.com/pkg/errors"
+	"github.com/tendermint/tendermint/abci/types"
+	"github.com/tendermint/tendermint/libs/common"
 
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/action/btc"
@@ -19,14 +19,13 @@ import (
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/bitcoin"
 	"github.com/Oneledger/protocol/data/chain"
+	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/data/ons"
+	"github.com/Oneledger/protocol/event"
 	"github.com/Oneledger/protocol/identity"
 	"github.com/Oneledger/protocol/log"
 	"github.com/Oneledger/protocol/serialize"
 	"github.com/Oneledger/protocol/storage"
-	"github.com/pkg/errors"
-	"github.com/tendermint/tendermint/abci/types"
-	"github.com/tendermint/tendermint/libs/common"
 )
 
 // Ensure this App struct can control the underlying ABCI app

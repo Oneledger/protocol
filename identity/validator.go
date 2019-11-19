@@ -1,12 +1,13 @@
 package identity
 
 import (
+	"github.com/btcsuite/btcd/chaincfg"
+	"github.com/btcsuite/btcutil"
+
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/fees"
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/serialize"
-	"github.com/btcsuite/btcd/chaincfg"
-	"github.com/btcsuite/btcutil"
 )
 
 type Validator struct {

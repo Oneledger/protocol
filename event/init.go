@@ -1,12 +1,16 @@
 package event
 
 import (
+	"os"
+
+	"github.com/Oneledger/protocol/data/bitcoin"
 	"github.com/Oneledger/protocol/data/ethereum"
 	"github.com/Oneledger/protocol/utils/transition"
 )
 
 var (
 	EthEngine transition.Engine
+	BtcEngine transition.Engine
 )
 
 const (
@@ -60,4 +64,48 @@ func init() {
 		From: transition.Status(ethereum.Minted),
 		To:   0,
 	})
+
+	BtcEngine = transition.NewEngine(
+		[]transition.Status{bitcoin.Available, bitcoin.BusySigning, bitcoin.BusyBroadcasting, bitcoin.BusyFinalizing},
+	)
+
+	err := BtcEngine.Register(transition.Transition{
+		Name: "makeAvailable",
+		Fn:   MakeAvailable,
+		From: bitcoin.BusyFinalizing,
+		To:   bitcoin.Available,
+	})
+	if err != nil {
+		os.Exit(1)
+	}
+
+	err = BtcEngine.Register(transition.Transition{
+		Name: "reserveTracker",
+		Fn:   ReserveTracker,
+		From: bitcoin.Available,
+		To:   bitcoin.BusySigning,
+	})
+	if err != nil {
+		os.Exit(1)
+	}
+
+	err = BtcEngine.Register(transition.Transition{
+		Name: "freezeForBroadcast",
+		Fn:   FreezeForBroadcast,
+		From: bitcoin.BusySigning,
+		To:   bitcoin.BusyBroadcasting,
+	})
+	if err != nil {
+		os.Exit(1)
+	}
+
+	err = BtcEngine.Register(transition.Transition{
+		Name: "reportBroadcastSuccess",
+		Fn:   ReportBroadcastSuccess,
+		From: bitcoin.BusySigning,
+		To:   bitcoin.BusyFinalizing,
+	})
+	if err != nil {
+		os.Exit(1)
+	}
 }

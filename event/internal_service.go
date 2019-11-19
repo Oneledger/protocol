@@ -88,7 +88,7 @@ func (svc Service) InternalBroadcast(request InternalBroadcastRequest, reply *Br
 	}
 	rawSignedTx := action.SignedTx{
 		RawTx: request.RawTx,
-		Signatures: []action.Signature{action.Signature{
+		Signatures: []action.Signature{{
 			Signer: h.PubKey(),
 			Signed: signed,
 		}},

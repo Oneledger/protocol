@@ -8,15 +8,14 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/Oneledger/protocol/data/keys"
-
 	"github.com/btcsuite/btcd/chaincfg"
-
-	"github.com/Oneledger/protocol/action"
-	"github.com/Oneledger/protocol/data/bitcoin"
 	"github.com/btcsuite/btcutil"
 	"github.com/pkg/errors"
 	"github.com/tendermint/tendermint/libs/common"
+
+	"github.com/Oneledger/protocol/action"
+	"github.com/Oneledger/protocol/data/bitcoin"
+	"github.com/Oneledger/protocol/data/keys"
 )
 
 type AddSignature struct {
@@ -130,8 +129,8 @@ func (ast btcAddSignatureTx) ProcessCheck(ctx *action.Context, tx action.RawTx) 
 
 	ctx.Logger.Info("before has enough signatures", tracker.HasEnoughSignatures(), ctx.JobStore)
 
-	dat := bitcoin.BTCTransitionContext{Tracker: tracker}
-	_, err = bitcoin.Engine.Process("freezeForBroadcast", dat, tracker.State)
+	//dat := event.BTCTransitionContext{Tracker: tracker}
+	//_, err = bitcoin.Engine.Process("freezeForBroadcast", dat, tracker.State)
 
 	err = ctx.BTCTrackers.SetTracker(addSignature.TrackerName, tracker)
 	if err != nil {
@@ -178,8 +177,8 @@ func (ast btcAddSignatureTx) ProcessDeliver(ctx *action.Context, tx action.RawTx
 		tracker.State = bitcoin.BusyBroadcasting
 	}
 
-	dat := bitcoin.BTCTransitionContext{Tracker: tracker}
-	_, err = bitcoin.Engine.Process("freezeForBroadcast", dat, tracker.State)
+	//dat := event.BTCTransitionContext{Tracker: tracker}
+	//_, err = bitcoin.Engine.Process("freezeForBroadcast", dat, tracker.State)
 
 	err = ctx.BTCTrackers.SetTracker(addSignature.TrackerName, tracker)
 	if err != nil {

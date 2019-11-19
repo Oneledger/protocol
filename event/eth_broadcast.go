@@ -1,16 +1,18 @@
 package event
 
 import (
+	"os"
+	"strconv"
+
+	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/rlp"
+
 	"github.com/Oneledger/protocol/chains/ethereum"
 	"github.com/Oneledger/protocol/config"
 	ethereum2 "github.com/Oneledger/protocol/data/ethereum"
 	"github.com/Oneledger/protocol/data/jobs"
 	"github.com/Oneledger/protocol/log"
 	"github.com/Oneledger/protocol/storage"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/rlp"
-	"os"
-	"strconv"
 )
 
 var _ jobs.Job = &JobETHBroadcast{}

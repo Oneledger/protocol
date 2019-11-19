@@ -9,6 +9,7 @@ type Job interface {
 
 	GetType() string
 	GetJobID() string
+	IsDone() bool
 }
 
 type Status int

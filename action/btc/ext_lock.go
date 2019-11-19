@@ -12,12 +12,14 @@ import (
 
 	"github.com/Oneledger/protocol/data/bitcoin"
 
-	"github.com/Oneledger/protocol/data/keys"
 	"github.com/btcsuite/btcd/wire"
 	"github.com/pkg/errors"
 
-	"github.com/Oneledger/protocol/action"
+	"github.com/Oneledger/protocol/data/keys"
+
 	"github.com/tendermint/tendermint/libs/common"
+
+	"github.com/Oneledger/protocol/action"
 )
 
 type Lock struct {
@@ -150,11 +152,11 @@ func (btcLockTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (bool, actio
 	tracker.ProcessUnsignedTx = lock.BTCTxn // with user signature
 
 	dat := bitcoin.BTCTransitionContext{Tracker: tracker}
-	_, err = bitcoin.Engine.Process("reserveTracker", dat, tracker.State)
-	if err != nil {
-		return false, action.Response{Log: "failed transition " + err.Error()}
-	}
-
+	//_, err = Engine.Process("reserveTracker", dat, tracker.State)
+	//if err != nil {
+	//	return false, action.Response{Log: "failed transition " + err.Error()}
+	//}
+	_ = dat
 	err = ctx.BTCTrackers.SetTracker(lock.TrackerName, tracker)
 	if err != nil {
 		return false, action.Response{Log: "failed to update tracker"}
@@ -201,11 +203,11 @@ func (btcLockTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, act
 	tracker.ProcessUnsignedTx = lock.BTCTxn // with user signature
 
 	dat := bitcoin.BTCTransitionContext{Tracker: tracker}
-	_, err = bitcoin.Engine.Process("reserveTracker", dat, tracker.State)
-	if err != nil {
-		return false, action.Response{Log: "failed transition " + err.Error()}
-	}
-
+	//_, err = bitcoin.Engine.Process("reserveTracker", dat, tracker.State)
+	//if err != nil {
+	//	return false, action.Response{Log: "failed transition " + err.Error()}
+	//}
+	_ = dat
 	err = ctx.BTCTrackers.SetTracker(lock.TrackerName, tracker)
 	if err != nil {
 		return false, action.Response{Log: "failed to update tracker"}

@@ -3,34 +3,26 @@ package app
 import (
 	"encoding/hex"
 	"fmt"
-	"github.com/Oneledger/protocol/config"
-	"github.com/pkg/errors"
 	"math"
 
-	"github.com/Oneledger/protocol/data/jobs"
-
-	bitcoin2 "github.com/Oneledger/protocol/chains/bitcoin"
-	"github.com/Oneledger/protocol/data/bitcoin"
-
-	"github.com/Oneledger/protocol/event"
-
-	"github.com/Oneledger/protocol/utils/transition"
-
-	ceth "github.com/Oneledger/protocol/chains/ethereum"
-	"github.com/Oneledger/protocol/data/ethereum"
-
-	"github.com/Oneledger/protocol/data/fees"
-
+	"github.com/pkg/errors"
+	"github.com/tendermint/tendermint/libs/common"
 	"github.com/tendermint/tendermint/types"
 
-	"github.com/Oneledger/protocol/storage"
-
-	"github.com/Oneledger/protocol/utils"
-
 	"github.com/Oneledger/protocol/action"
+	bitcoin2 "github.com/Oneledger/protocol/chains/bitcoin"
+	ceth "github.com/Oneledger/protocol/chains/ethereum"
+	"github.com/Oneledger/protocol/config"
+	"github.com/Oneledger/protocol/data/bitcoin"
+	"github.com/Oneledger/protocol/data/ethereum"
+	"github.com/Oneledger/protocol/data/fees"
+	"github.com/Oneledger/protocol/data/jobs"
+	"github.com/Oneledger/protocol/event"
 	"github.com/Oneledger/protocol/serialize"
+	"github.com/Oneledger/protocol/storage"
+	"github.com/Oneledger/protocol/utils"
+	"github.com/Oneledger/protocol/utils/transition"
 	"github.com/Oneledger/protocol/version"
-	"github.com/tendermint/tendermint/libs/common"
 )
 
 // The following set of functions will be passed to the abciController
@@ -66,7 +58,7 @@ func (app *App) optionSetter() optionSetter {
 		if err != nil {
 			return ResponseSetOption{
 				Code: CodeNotOK.uint32(),
-				Log: errors.Wrap(err, "set option").Error(),
+				Log:  errors.Wrap(err, "set option").Error(),
 			}
 		}
 		return ResponseSetOption{
@@ -266,7 +258,6 @@ func (app *App) blockEnder() blockEnder {
 
 			return false
 		})
-
 
 		if app.Context.jobStore != nil {
 			app.Context.btcTrackers.Iterate(func(k, v []byte) bool {

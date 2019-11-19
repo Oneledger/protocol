@@ -1,6 +1,12 @@
 package app
 
 import (
+	"io"
+	"path/filepath"
+
+	"github.com/pkg/errors"
+	"github.com/tendermint/tendermint/libs/db"
+
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/action/btc"
 	action_ons "github.com/Oneledger/protocol/action/ons"
@@ -25,12 +31,6 @@ import (
 	"github.com/Oneledger/protocol/rpc"
 	"github.com/Oneledger/protocol/service"
 	"github.com/Oneledger/protocol/storage"
-
-	"io"
-	"path/filepath"
-
-	"github.com/pkg/errors"
-	"github.com/tendermint/tendermint/libs/db"
 )
 
 // The base context for the application, holds databases and other stateful information contained by the app.

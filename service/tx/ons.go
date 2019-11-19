@@ -7,13 +7,13 @@ package tx
 import (
 	"strings"
 
-	codes "github.com/Oneledger/protocol/status_codes"
+	"github.com/google/uuid"
 
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/action/ons"
 	"github.com/Oneledger/protocol/client"
 	"github.com/Oneledger/protocol/serialize"
-	"github.com/google/uuid"
+	codes "github.com/Oneledger/protocol/status_codes"
 )
 
 func (s *Service) ONS_CreateRawCreate(args client.ONSCreateRequest, reply *client.SendTxReply) error {

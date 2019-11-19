@@ -10,15 +10,14 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/Oneledger/protocol/data/jobs"
-
-	"github.com/Oneledger/protocol/action"
-	"github.com/Oneledger/protocol/action/btc"
-
-	"github.com/Oneledger/protocol/chains/bitcoin"
 	"github.com/btcsuite/btcd/rpcclient"
 	"github.com/btcsuite/btcd/txscript"
 	"github.com/btcsuite/btcd/wire"
+
+	"github.com/Oneledger/protocol/action"
+	"github.com/Oneledger/protocol/action/btc"
+	"github.com/Oneledger/protocol/chains/bitcoin"
+	"github.com/Oneledger/protocol/data/jobs"
 )
 
 type JobBTCBroadcast struct {
@@ -27,6 +26,8 @@ type JobBTCBroadcast struct {
 	TrackerName string
 
 	JobID string
+
+	Status jobs.Status
 }
 
 func NewBTCBroadcastJob(trackerName string) jobs.Job {
@@ -34,9 +35,10 @@ func NewBTCBroadcastJob(trackerName string) jobs.Job {
 	id := strconv.FormatInt(time.Now().UnixNano(), 10)
 
 	return &JobBTCBroadcast{
-		JobTypeBTCBroadcast,
-		trackerName,
-		id,
+		Type:        JobTypeBTCBroadcast,
+		TrackerName: trackerName,
+		JobID:       id,
+		Status:      jobs.New,
 	}
 }
 
@@ -162,4 +164,8 @@ func (j *JobBTCBroadcast) GetType() string {
 
 func (j *JobBTCBroadcast) GetJobID() string {
 	return j.JobID
+}
+
+func (j JobBTCBroadcast) IsDone() bool {
+	return j.Status == jobs.Completed
 }

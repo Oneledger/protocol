@@ -8,13 +8,13 @@ import (
 	"crypto/ecdsa"
 	"os"
 
-	"github.com/Oneledger/protocol/action"
-	"github.com/Oneledger/protocol/data/ethereum"
+	"github.com/btcsuite/btcd/chaincfg"
 
+	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/data/bitcoin"
+	"github.com/Oneledger/protocol/data/ethereum"
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/log"
-	"github.com/btcsuite/btcd/chaincfg"
 )
 
 type JobsContext struct {

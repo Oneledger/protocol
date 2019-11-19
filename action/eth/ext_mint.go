@@ -3,11 +3,13 @@ package eth
 import (
 	"bytes"
 	"encoding/json"
+
+	"github.com/pkg/errors"
+	"github.com/tendermint/tendermint/libs/common"
+
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/chains/ethereum"
 	trackerlib "github.com/Oneledger/protocol/data/ethereum"
-	"github.com/pkg/errors"
-	"github.com/tendermint/tendermint/libs/common"
 )
 
 type ExtMintOETH struct {

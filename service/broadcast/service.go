@@ -3,14 +3,11 @@ package broadcast
 import (
 	"errors"
 
-	"github.com/Oneledger/protocol/data/bitcoin"
-
-	"github.com/Oneledger/protocol/data/fees"
-
-	"github.com/Oneledger/protocol/data/balance"
-
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/client"
+	"github.com/Oneledger/protocol/data/balance"
+	"github.com/Oneledger/protocol/data/bitcoin"
+	"github.com/Oneledger/protocol/data/fees"
 	"github.com/Oneledger/protocol/log"
 	"github.com/Oneledger/protocol/rpc"
 	"github.com/Oneledger/protocol/serialize"

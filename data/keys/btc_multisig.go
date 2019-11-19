@@ -8,8 +8,9 @@ import (
 	"bytes"
 	"encoding/json"
 
-	"github.com/Oneledger/protocol/utils"
 	"github.com/pkg/errors"
+
+	"github.com/Oneledger/protocol/utils"
 )
 
 type BTCMultiSig struct {

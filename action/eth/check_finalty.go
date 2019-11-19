@@ -3,13 +3,15 @@ package eth
 import (
 	"bytes"
 	"encoding/json"
-	"github.com/Oneledger/protocol/action"
-	"github.com/Oneledger/protocol/chains/ethereum"
-	trackerlib "github.com/Oneledger/protocol/data/ethereum"
+
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/pkg/errors"
 	"github.com/tendermint/tendermint/libs/common"
+
+	"github.com/Oneledger/protocol/action"
+	"github.com/Oneledger/protocol/chains/ethereum"
+	trackerlib "github.com/Oneledger/protocol/data/ethereum"
 )
 
 type ReportFinalityMint struct {

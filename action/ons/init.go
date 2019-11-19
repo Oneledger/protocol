@@ -1,9 +1,10 @@
 package ons
 
 import (
+	"github.com/pkg/errors"
+
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/serialize"
-	"github.com/pkg/errors"
 )
 
 const (

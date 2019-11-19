@@ -3,11 +3,12 @@ package governance
 import (
 	"encoding/binary"
 
+	"github.com/pkg/errors"
+
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/fees"
 	"github.com/Oneledger/protocol/serialize"
 	"github.com/Oneledger/protocol/storage"
-	"github.com/pkg/errors"
 )
 
 const (

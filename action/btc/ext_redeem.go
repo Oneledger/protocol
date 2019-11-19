@@ -10,14 +10,16 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/Oneledger/protocol/data/bitcoin"
-
-	"github.com/Oneledger/protocol/data/keys"
 	"github.com/btcsuite/btcd/wire"
 	"github.com/pkg/errors"
 
-	"github.com/Oneledger/protocol/action"
+	"github.com/Oneledger/protocol/data/bitcoin"
+
+	"github.com/Oneledger/protocol/data/keys"
+
 	"github.com/tendermint/tendermint/libs/common"
+
+	"github.com/Oneledger/protocol/action"
 )
 
 type Redeem struct {
@@ -150,11 +152,11 @@ func (btcRedeemTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (bool, act
 	tracker.ProcessUnsignedTx = redeem.BTCTxn // with user signature
 
 	dat := bitcoin.BTCTransitionContext{Tracker: tracker}
-	_, err = bitcoin.Engine.Process("reserveTracker", dat, tracker.State)
-	if err != nil {
-		return false, action.Response{Log: "failed transition " + err.Error()}
-	}
-
+	//_, err = bitcoin.Engine.Process("reserveTracker", dat, tracker.State)
+	//if err != nil {
+	//	return false, action.Response{Log: "failed transition " + err.Error()}
+	//}
+	_ = dat
 	err = ctx.BTCTrackers.SetTracker(redeem.TrackerName, tracker)
 	if err != nil {
 		return false, action.Response{Log: "failed to update tracker err:" + err.Error()}
@@ -212,10 +214,11 @@ func (btcRedeemTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, a
 	tracker.ProcessUnsignedTx = redeem.BTCTxn // with user signature
 
 	dat := bitcoin.BTCTransitionContext{Tracker: tracker}
-	_, err = bitcoin.Engine.Process("reserveTracker", dat, tracker.State)
-	if err != nil {
-		return false, action.Response{Log: "failed transition " + err.Error()}
-	}
+	//_, err = bitcoin.Engine.Process("reserveTracker", dat, tracker.State)
+	//if err != nil {
+	//	return false, action.Response{Log: "failed transition " + err.Error()}
+	//}
+	_ = dat
 
 	err = ctx.BTCTrackers.SetTracker(redeem.TrackerName, tracker)
 	if err != nil {

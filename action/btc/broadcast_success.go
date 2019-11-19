@@ -10,11 +10,13 @@ import (
 
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 
-	"github.com/Oneledger/protocol/data/bitcoin"
 	"github.com/pkg/errors"
 
-	"github.com/Oneledger/protocol/action"
+	"github.com/Oneledger/protocol/data/bitcoin"
+
 	"github.com/tendermint/tendermint/libs/common"
+
+	"github.com/Oneledger/protocol/action"
 )
 
 type BroadcastSuccess struct {
@@ -125,11 +127,11 @@ func (b *btcBroadcastSuccessTx) process(ctx *action.Context, tx action.RawTx) (b
 
 	tracker.ProcessTxId = &broadcastSuccess.BTCTxID
 
-	dat := bitcoin.BTCTransitionContext{Tracker: tracker}
-	_, err = bitcoin.Engine.Process("reportBroadcastSuccess", dat, tracker.State)
-	if err != nil {
-
-	}
+	//dat := event.BTCTransitionContext{Tracker: tracker}
+	//_, err = bitcoin.Engine.Process("reportBroadcastSuccess", dat, tracker.State)
+	//if err != nil {
+	//
+	//}
 
 	err = ctx.BTCTrackers.SetTracker(broadcastSuccess.TrackerName, tracker)
 	if err != nil {

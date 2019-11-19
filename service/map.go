@@ -1,6 +1,8 @@
 package service
 
 import (
+	"github.com/pkg/errors"
+
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/app/node"
 	"github.com/Oneledger/protocol/client"
@@ -18,7 +20,6 @@ import (
 	"github.com/Oneledger/protocol/service/owner"
 	"github.com/Oneledger/protocol/service/query"
 	"github.com/Oneledger/protocol/service/tx"
-	"github.com/pkg/errors"
 )
 
 // Context is the master context for creating new contexts

@@ -5,8 +5,9 @@
 package btc
 
 import (
-	"github.com/Oneledger/protocol/action"
 	"github.com/pkg/errors"
+
+	"github.com/Oneledger/protocol/action"
 )
 
 func EnableBTC(r action.Router) error {

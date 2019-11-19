@@ -4,16 +4,14 @@ import (
 	"encoding/json"
 	"strconv"
 
-	//"github.com/Oneledger/protocol/event"
-
+	ethcommon "github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/rlp"
+	"github.com/pkg/errors"
+	"github.com/tendermint/tendermint/libs/common"
 
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/data/ethereum"
-	ethcommon "github.com/ethereum/go-ethereum/common"
-	"github.com/pkg/errors"
-	"github.com/tendermint/tendermint/libs/common"
 )
 
 type Lock struct {

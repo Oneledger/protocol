@@ -1,16 +1,17 @@
 package ethereum
 
 import (
-	"github.com/Oneledger/protocol/action"
-	"github.com/Oneledger/protocol/action/eth"
-	"github.com/Oneledger/protocol/chains/ethereum"
-	"github.com/Oneledger/protocol/serialize"
-	codes "github.com/Oneledger/protocol/status_codes"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
+
+	"github.com/Oneledger/protocol/action"
+	"github.com/Oneledger/protocol/action/eth"
+	"github.com/Oneledger/protocol/chains/ethereum"
+	"github.com/Oneledger/protocol/serialize"
+	codes "github.com/Oneledger/protocol/status_codes"
 )
 
 // Service Called by Wallet

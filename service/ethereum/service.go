@@ -4,6 +4,8 @@ import (
 	"crypto/ecdsa"
 	"math/big"
 
+	"github.com/ethereum/go-ethereum/common"
+
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/app/node"
 	"github.com/Oneledger/protocol/chains/ethereum"
@@ -12,7 +14,6 @@ import (
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/identity"
 	"github.com/Oneledger/protocol/log"
-	"github.com/ethereum/go-ethereum/common"
 )
 
 type Service struct {

@@ -1,6 +1,9 @@
 package action
 
 import (
+	"github.com/btcsuite/btcd/chaincfg"
+	abci "github.com/tendermint/tendermint/abci/types"
+
 	"github.com/Oneledger/protocol/data/accounts"
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/bitcoin"
@@ -11,8 +14,6 @@ import (
 	"github.com/Oneledger/protocol/identity"
 	"github.com/Oneledger/protocol/log"
 	"github.com/Oneledger/protocol/storage"
-	"github.com/btcsuite/btcd/chaincfg"
-	abci "github.com/tendermint/tendermint/abci/types"
 )
 
 type Context struct {

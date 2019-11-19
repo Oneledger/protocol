@@ -4,9 +4,10 @@ import (
 	"encoding/hex"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/keys"
-	"github.com/stretchr/testify/assert"
 )
 
 var hexString, _ = hex.DecodeString("89507C7ABC6D1E9124FE94101A0AB38D5085E15A")

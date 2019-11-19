@@ -8,14 +8,15 @@ import (
 	"bytes"
 	"encoding/hex"
 
+	"github.com/google/uuid"
+	"github.com/pkg/errors"
+
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/action/btc"
 	"github.com/Oneledger/protocol/chains/bitcoin"
 	"github.com/Oneledger/protocol/client"
 	"github.com/Oneledger/protocol/serialize"
 	codes "github.com/Oneledger/protocol/status_codes"
-	"github.com/google/uuid"
-	"github.com/pkg/errors"
 )
 
 func (s *Service) PrepareRedeem(args client.BTCLockRedeemRequest, reply *client.BTCRedeemPrepareResponse) error {
