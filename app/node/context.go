@@ -47,6 +47,10 @@ func (n Context) EthPrivKey() *ecdsa.PrivateKey {
 	return &n.ethPrivKey
 }
 
+//func (n Context) EthPrivKey() *ecdsa.PrivateKey {
+//	return &n.ethPrivKey
+//}
+
 // PubKey returns the public key of the node's NodeKey
 func (n Context) PubKey() keys.PublicKey {
 	h, err := n.privateKey.GetHandler()

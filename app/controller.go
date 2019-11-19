@@ -222,6 +222,7 @@ func (app *App) blockEnder() blockEnder {
 				jc := event.NewJobsContext(cdConfig.BitcoinChainType,
 					app.Context.internalService, app.Context.btcTrackers,
 					app.Context.node.ValidatorECDSAPrivateKey(),
+					app.Context.node.EthPrivKey(),
 					app.Context.node.ValidatorAddress(), app.Context.cfg.ChainDriver.BlockCypherToken,
 					app.Context.lockScriptStore,
 					cdConfig.BitcoinNodeAddress,
@@ -240,10 +241,12 @@ func (app *App) blockEnder() blockEnder {
 			}
 		}()
 
+		js := app.Context.jobStore
 		eth := app.Context.ethTrackers
+
 		eth.Iterate(func(name ceth.TrackerName, tracker *ethereum.Tracker) bool {
-			ctx := ethereum.NewTrackerCtx(tracker, app.Context.node.ValidatorAddress())
-			_, err := ethereum.Engine.Process(tracker.NextStep(), ctx, transition.Status(tracker.State))
+			ctx := ethereum.NewTrackerCtx(tracker, app.Context.node.ValidatorAddress(), js, eth)
+			_, err := event.EthEngine.Process(tracker.NextStep(), ctx, transition.Status(tracker.State))
 			if err != nil {
 
 			}
@@ -254,6 +257,7 @@ func (app *App) blockEnder() blockEnder {
 			}
 			return false
 		})
+
 		app.logger.Debug("End Block: ", result, "height:", req.Height)
 		return result
 	}

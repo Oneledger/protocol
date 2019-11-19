@@ -15,3 +15,14 @@ type Job interface {
 	GetJobID() string
 	IsDone() bool
 }
+
+type Status int
+
+const (
+	New Status = iota
+	InProgress
+	Completed
+	Failed
+
+	Max_Retry_Count int = 3
+)

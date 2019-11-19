@@ -1,15 +1,22 @@
 package ethereum
 
-import "github.com/Oneledger/protocol/data/keys"
+import (
+	"github.com/Oneledger/protocol/data/jobs"
+	"github.com/Oneledger/protocol/data/keys"
+)
 
 type TrackerCtx struct {
-	tracker *Tracker
-	me      keys.Address
+	Tracker      *Tracker
+	TrackerStore *TrackerStore
+	JobStore     *jobs.JobStore
+	CurrNodeAddr keys.Address
 }
 
-func NewTrackerCtx(t *Tracker, me keys.Address) TrackerCtx {
+func NewTrackerCtx(t *Tracker, addr keys.Address, js *jobs.JobStore, ts *TrackerStore) TrackerCtx {
 	return TrackerCtx{
-		tracker: t,
-		me:      me,
+		Tracker:      t,
+		CurrNodeAddr: addr,
+		JobStore:     js,
+		TrackerStore: ts,
 	}
 }

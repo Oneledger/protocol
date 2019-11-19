@@ -216,10 +216,10 @@ type BTCRedeemPrepareResponse struct {
 }
 
 type ETHLockRequest struct {
-	Txn         []byte
-	Address     keys.Address
-	Fee         action.Amount `json:"fee"`
-	Gas         int64         `json:"gas"`
+	Txn     []byte
+	Address keys.Address
+	Fee     action.Amount `json:"fee"`
+	Gas     int64         `json:"gas"`
 }
 
 type CurrencyBalanceRequest struct {

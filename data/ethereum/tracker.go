@@ -1,9 +1,13 @@
 package ethereum
 
 import (
+	//"errors"
+
+	"strconv"
+
 	"github.com/Oneledger/protocol/chains/ethereum"
 	"github.com/Oneledger/protocol/data/keys"
-	"github.com/pkg/errors"
+	"github.com/Oneledger/protocol/storage"
 )
 
 type TrackerState int
@@ -16,6 +20,7 @@ type Tracker struct {
 	Validators    []keys.Address
 	ProcessOwner  keys.Address
 	FinalityVotes int64
+	TaskCompleted bool
 	TrackerName   ethereum.TrackerName
 }
 
@@ -31,6 +36,16 @@ func NewTracker(owner keys.Address, signedEthTx []byte, name ethereum.TrackerNam
 	}
 }
 
+func (t *Tracker) IsTaskCompleted() bool {
+	return t.TaskCompleted
+}
+
+func (t *Tracker) CompleteTask() {
+	if !t.TaskCompleted && t.Finalized() {
+		t.TaskCompleted = true
+	}
+}
+
 func (t *Tracker) AddVote(vote keys.Address, index int64) error {
 	if len(t.Validators) <= int(index) {
 		return errTrackerInvalidVote
@@ -40,6 +55,10 @@ func (t *Tracker) AddVote(vote keys.Address, index int64) error {
 		return nil
 	}
 	return errTrackerInvalidVote
+}
+
+func (t *Tracker) GetJobID(state TrackerState) string {
+	return t.TrackerName.String() + storage.DB_PREFIX + strconv.Itoa(int(state))
 }
 
 func (t *Tracker) GetVotes() int {
@@ -54,6 +73,23 @@ func (t *Tracker) GetVotes() int {
 	}
 
 	return cnt
+}
+
+func (t *Tracker) CheckIfVoted(node keys.Address) bool {
+	index := 0
+	voted := int64(0)
+	for i, addr := range t.Validators {
+		if addr.Equal(node) {
+			index = i
+			break
+		}
+	}
+
+	if index < len(t.Validators) {
+		voted = (t.FinalityVotes >> index) % 2
+	}
+
+	return voted > 0
 }
 
 func (t *Tracker) Finalized() bool {
@@ -86,71 +122,4 @@ func (t Tracker) NextStep() string {
 		return CLEANUP
 	}
 	return ""
-}
-
-//TODO Go back to Busy broadcasting if there is a failure in Finalizing.
-func Broadcasting(ctx interface{}) error {
-	context := ctx.(TrackerCtx)
-	tracker := context.tracker
-
-	if tracker.State != New {
-		err := errors.New("Cannot Broadcast from the current state")
-		return errors.Wrap(err, string(tracker.State))
-	}
-	// TODO: create broadcasting job
-	tracker.State = BusyBroadcasting
-	return nil
-}
-
-func Finalizing(ctx interface{}) error {
-	context := ctx.(TrackerCtx)
-	tracker := context.tracker
-
-	if tracker.State != BusyBroadcasting {
-		err := errors.New("Cannot start Finalizing from the current state")
-		return errors.Wrap(err, string(tracker.State))
-	}
-
-	numVotes := tracker.GetVotes()
-	//todo: check if I vote, if not, check my job of broadcasting status, create broadcasting job if necessary, if someone broadcasted, create job to check finality
-	if numVotes > 0 {
-		tracker.State = BusyFinalizing
-	}
-
-	return nil
-}
-
-func Finalization(ctx interface{}) error {
-	context := ctx.(TrackerCtx)
-	tracker := context.tracker
-
-	if tracker.State != BusyFinalizing {
-		err := errors.New("Cannot Finalize from the current state")
-		return errors.Wrap(err, string(tracker.State))
-	}
-
-	//todo: check if I vote, if not create job for check finality
-	if tracker.Finalized() {
-		tracker.State = Finalized
-	}
-	return nil
-}
-
-func Minting(ctx interface{}) error {
-	context := ctx.(TrackerCtx)
-	tracker := context.tracker
-
-	if tracker.State != Finalized {
-		err := errors.New("Cannot Mint from the current state")
-		return errors.Wrap(err, string(tracker.State))
-	}
-	//todo: create a job to mint
-	tracker.State = Minted
-	return nil
-}
-
-func Cleanup(ctx interface{}) error {
-	//todo: delete the tracker and jobs related
-
-	return nil
 }

@@ -67,7 +67,7 @@ type ETHLockRequest struct {
 	Amount    *big.Int         `json:"amount"`
 }
 
-type LockRawTX struct {
+type ETHLockRawTX struct {
 	UnsignedRawTx []byte `json:"unsigned_raw_tx"`
 }
 
