@@ -2,6 +2,9 @@ package app
 
 import (
 	"encoding/hex"
+	"fmt"
+	"github.com/Oneledger/protocol/config"
+	"github.com/pkg/errors"
 	"math"
 
 	"github.com/Oneledger/protocol/data/jobs"
@@ -58,10 +61,17 @@ func (app *App) queryer() queryer {
 }
 
 func (app *App) optionSetter() optionSetter {
-	return func(RequestSetOption) ResponseSetOption {
-		// TODO
+	return func(req RequestSetOption) ResponseSetOption {
+		err := config.Setup(&app.Context.cfg, req.Key, req.Value)
+		if err != nil {
+			return ResponseSetOption{
+				Code: CodeNotOK.uint32(),
+				Log: errors.Wrap(err, "set option").Error(),
+			}
+		}
 		return ResponseSetOption{
 			Code: CodeOK.uint32(),
+			Info: fmt.Sprintf("set option: key=%s, value=%s ", req.Key, req.Value),
 		}
 	}
 }
@@ -217,6 +227,7 @@ func (app *App) blockEnder() blockEnder {
 				jc := event.NewJobsContext(cdConfig.BitcoinChainType,
 					app.Context.internalService, app.Context.btcTrackers,
 					app.Context.node.ValidatorECDSAPrivateKey(),
+					app.Context.node.EthPrivKey(),
 					app.Context.node.ValidatorAddress(), app.Context.cfg.ChainDriver.BlockCypherToken,
 					app.Context.lockScriptStore,
 					cdConfig.BitcoinNodeAddress,
@@ -235,12 +246,14 @@ func (app *App) blockEnder() blockEnder {
 			}
 		}()
 
+		js := app.Context.jobStore
 		eth := app.Context.ethTrackers
+
 		eth.Iterate(func(name ceth.TrackerName, tracker *ethereum.Tracker) bool {
 
-			ctx := ethereum.NewTrackerCtx(tracker, app.Context.node.ValidatorAddress())
+			ctx := ethereum.NewTrackerCtx(tracker, app.Context.node.ValidatorAddress(), js, eth)
+			_, err := event.EthEngine.Process(tracker.NextStep(), ctx, transition.Status(tracker.State))
 
-			_, err := ethereum.Engine.Process(tracker.NextStep(), ctx, transition.Status(tracker.State))
 			if err != nil {
 
 			}
@@ -253,6 +266,7 @@ func (app *App) blockEnder() blockEnder {
 
 			return false
 		})
+
 
 		if app.Context.jobStore != nil {
 			app.Context.btcTrackers.Iterate(func(k, v []byte) bool {
@@ -296,7 +310,6 @@ func (app *App) blockEnder() blockEnder {
 				return false
 			})
 		}
-
 		app.logger.Debug("End Block: ", result, "height:", req.Height)
 		return result
 	}

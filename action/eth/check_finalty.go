@@ -3,10 +3,11 @@ package eth
 import (
 	"bytes"
 	"encoding/json"
-
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/chains/ethereum"
 	trackerlib "github.com/Oneledger/protocol/data/ethereum"
+	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/pkg/errors"
 	"github.com/tendermint/tendermint/libs/common"
 )
@@ -15,7 +16,6 @@ type ReportFinalityMint struct {
 	TrackerName      ethereum.TrackerName
 	Locker           action.Address
 	ValidatorAddress action.Address
-	RandomBytes      []byte
 }
 
 var _ action.Msg = &ReportFinalityMint{}
@@ -127,17 +127,23 @@ func (r reportFinalityMintTx) ProcessCheck(ctx *action.Context, tx action.RawTx)
 	}
 	// Are there Enough votes ?
 	// If not LOG it and return
+	// IF yes Check if status of minting
+	// CHeck if it has been minted already, if not
+	//    MINTING -> Mint OTETh and update status
+	// If it has been minted
+	//   MINTED -> Skip
 	// IF yes Mint OTETh
 	if !tracker.Finalized() {
 		return false, action.Response{Log: "Not Enough votes to finalize a transaction"}
 	}
-
-	ctx.Logger.Info("ready to mint")
-	// Transition function change state to Finalized  ( Broadcasting -> Finalized )
-	// mint OETH coins
-	// Transition function to set state to Minted  (Finalized -> minted)
-
-	return true, action.Response{}
+	if !tracker.IsTaskCompleted() {
+		ctx.Logger.Info("ready to mint")
+		if !mintTokens(ctx, *tracker, f) {
+			return false, action.Response{Log: "Unable to mint Tokens"}
+		}
+		tracker.CompleteTask()
+	}
+	return true, action.Response{Log: "MINTING SUCCESSFULL"}
 }
 
 func (r reportFinalityMintTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
@@ -149,3 +155,21 @@ func (r reportFinalityMintTx) ProcessFee(ctx *action.Context, signedTx action.Si
 }
 
 var _ action.Tx = reportFinalityMintTx{}
+
+func mintTokens(ctx *action.Context, tracker trackerlib.Tracker, oltTx ReportFinalityMint) bool {
+	curr, _ := ctx.Currencies.GetCurrencyByName("BTC")
+	rawTx := tracker.SignedETHTx
+	tx := &types.Transaction{}
+	err := rlp.DecodeBytes(rawTx, tx)
+	if err != nil {
+		ctx.Logger.Error("Error Decoding Bytes from RaxTX :", tracker.TrackerName, err)
+		return false
+	}
+	oEthCoin := curr.NewCoinFromUnit(tx.Value().Int64())
+	err = ctx.Balances.AddToAddress(oltTx.Locker, oEthCoin)
+	if err != nil {
+		ctx.Logger.Error(err)
+		return false
+	}
+	return true
+}

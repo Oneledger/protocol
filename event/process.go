@@ -45,7 +45,7 @@ func RangeJobs(js *jobs.JobStore, pro JobProcess) {
 		jobID := strings.TrimPrefix(string(key), "job:")
 
 		dat, typ := js.GetJob(jobID)
-		job := makeJob(dat, typ)
+		job := MakeJob(dat, typ)
 		if job == nil {
 			continue
 		}
@@ -57,7 +57,7 @@ func RangeJobs(js *jobs.JobStore, pro JobProcess) {
 	}
 }
 
-func makeJob(data []byte, typ string) jobs.Job {
+func MakeJob(data []byte, typ string) jobs.Job {
 
 	ser := serialize.GetSerializer(serialize.PERSISTENT)
 

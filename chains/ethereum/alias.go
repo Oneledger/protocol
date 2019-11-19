@@ -11,14 +11,14 @@ import (
 )
 
 type (
-	Address      = common.Address
-	TrackerName  = common.Hash
+	Address         = common.Address
+	TrackerName     = common.Hash
 	TransactionHash = common.Hash
-	Client       = ethclient.Client
-	Transaction  = types.Transaction
-	TransactOpts = bind.TransactOpts
-	CallOpts     = bind.CallOpts
-	Genesis      = core.Genesis
+	Client          = ethclient.Client
+	Transaction     = types.Transaction
+	TransactOpts    = bind.TransactOpts
+	CallOpts        = bind.CallOpts
+	Genesis         = core.Genesis
 )
 
 // Alias some helper funcs

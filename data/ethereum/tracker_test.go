@@ -9,11 +9,11 @@ import (
 
 var (
 	numberOfPrivKey = 16
-	threshold = 11
-	tracker Tracker
+	threshold       = 11
+	tracker         Tracker
 
-	privKeys []keys.PrivateKey = make([]keys.PrivateKey, numberOfPrivKey)
-	addresses []keys.Address = make([]keys.Address, numberOfPrivKey)
+	privKeys  []keys.PrivateKey = make([]keys.PrivateKey, numberOfPrivKey)
+	addresses []keys.Address    = make([]keys.Address, numberOfPrivKey)
 )
 
 func init() {
@@ -26,7 +26,7 @@ func init() {
 	}
 	h := &common.Hash{}
 	h.SetBytes([]byte("test"))
-	tracker = *NewTracker(addresses[0], []byte("test"), *h, addresses )
+	tracker = *NewTracker(addresses[0], []byte("test"), *h, addresses)
 }
 
 func TestTracker_AddVote(t *testing.T) {
@@ -42,4 +42,24 @@ func TestTracker_AddVote(t *testing.T) {
 func TestTracker_Finalized(t *testing.T) {
 	ok := tracker.Finalized()
 	assert.True(t, ok)
+}
+
+func TestTracker_TestStateMachine(t *testing.T) {
+	index := 0
+	validatorIndex := 0
+
+	for index < 100 {
+		if index%3 == 0 {
+			if validatorIndex < len(addresses) {
+				//Add Vote to tracker
+				tracker.AddVote(addresses[validatorIndex], int64(validatorIndex))
+				validatorIndex++
+			}
+		}
+
+		//Transition Engine Process
+		//Engine.Process(tracker.TrackerName, tracker, tracker.State)
+
+		index++
+	}
 }
