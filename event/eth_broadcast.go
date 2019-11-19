@@ -1,29 +1,41 @@
 package event
 
 import (
-
+	"github.com/Oneledger/protocol/chains/ethereum"
 	"github.com/Oneledger/protocol/config"
+	ethereum2 "github.com/Oneledger/protocol/data/ethereum"
 	"github.com/Oneledger/protocol/data/jobs"
 	"github.com/Oneledger/protocol/log"
-	"os"
-	"github.com/Oneledger/protocol/chains/ethereum"
+	"github.com/Oneledger/protocol/storage"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/rlp"
+	"os"
+	"strconv"
 )
 
 var _ jobs.Job = &JobETHBroadcast{}
+
 type JobETHBroadcast struct {
-	TrackerName         ethereum.TrackerName
-	JobID               string
-	RetryCount          int
-	JobStatus          	jobs.Status
+	TrackerName ethereum.TrackerName
+	JobID       string
+	RetryCount  int
+	JobStatus   jobs.Status
+}
+
+func NewETHBroadcast(name ethereum.TrackerName, state ethereum2.TrackerState) JobETHCheckFinality {
+	return JobETHCheckFinality{
+		TrackerName: name,
+		JobID:       name.String() + storage.DB_PREFIX + strconv.Itoa(int(state)),
+		RetryCount:  0,
+		JobStatus:   0,
+	}
 }
 
 func (job JobETHBroadcast) DoMyJob(ctx interface{}) {
 
 	// get tracker
 	job.RetryCount += 1
-	if job.RetryCount > jobs.Max_Retry_Count{
+	if job.RetryCount > jobs.Max_Retry_Count {
 		job.JobStatus = jobs.Failed
 	}
 	if job.JobStatus == jobs.New {
@@ -37,8 +49,8 @@ func (job JobETHBroadcast) DoMyJob(ctx interface{}) {
 		return
 	}
 	ethconfig := config.DefaultEthConfig()
-	logger := log.NewLoggerWithPrefix(os.Stdout,"JOB_ETHBROADCAST")
-	cd,err := ethereum.NewEthereumChainDriver(ethconfig,logger,&ethCtx.ETHPrivKey)
+	logger := log.NewLoggerWithPrefix(os.Stdout, "JOB_ETHBROADCAST")
+	cd, err := ethereum.NewEthereumChainDriver(ethconfig, logger, &ethCtx.ETHPrivKey)
 	if err != nil {
 		ethCtx.Logger.Error("err trying to get ChainDriver : ", job.GetJobID(), err)
 
@@ -48,12 +60,12 @@ func (job JobETHBroadcast) DoMyJob(ctx interface{}) {
 	tx := &types.Transaction{}
 	err = rlp.DecodeBytes(rawTx, tx)
 	if err != nil {
-		ethCtx.Logger.Error("Error Decoding Bytes from RaxTX :", job.GetJobID(),err)
+		ethCtx.Logger.Error("Error Decoding Bytes from RaxTX :", job.GetJobID(), err)
 		return
 	}
-	_,err = cd.BroadcastTx(tx)
+	_, err = cd.BroadcastTx(tx)
 	if err != nil {
-		ethCtx.Logger.Error("Error in transaction broadcast : ", job.GetJobID(),err)
+		ethCtx.Logger.Error("Error in transaction broadcast : ", job.GetJobID(), err)
 		return
 	}
 	job.JobStatus = jobs.Completed
@@ -81,9 +93,8 @@ func (job JobETHBroadcast) GetJobID() string {
 }
 
 func (job JobETHBroadcast) IsDone() bool {
-	if job.JobStatus==jobs.Completed {
+	if job.JobStatus == jobs.Completed {
 		return true
 	}
 	return false
 }
-
