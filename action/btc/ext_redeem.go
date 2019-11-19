@@ -20,24 +20,24 @@ import (
 	"github.com/tendermint/tendermint/libs/common"
 )
 
-type Lock struct {
-	Locker      action.Address
-	TrackerName string
-	BTCTxn      []byte
-	LockAmount  int64
+type Redeem struct {
+	Redeemer     action.Address
+	TrackerName  string
+	BTCTxn       []byte
+	RedeemAmount int64
 }
 
-var _ action.Msg = &Lock{}
+var _ action.Msg = &Redeem{}
 
-func (bl Lock) Signers() []action.Address {
-	return []action.Address{bl.Locker}
+func (bl Redeem) Signers() []action.Address {
+	return []action.Address{bl.Redeemer}
 }
 
-func (bl Lock) Type() action.Type {
-	return action.BTC_LOCK
+func (bl Redeem) Type() action.Type {
+	return action.BTC_REDEEM
 }
 
-func (bl Lock) Tags() common.KVPairs {
+func (bl Redeem) Tags() common.KVPairs {
 	tags := make([]common.KVPair, 0)
 
 	tag := common.KVPair{
@@ -45,28 +45,28 @@ func (bl Lock) Tags() common.KVPairs {
 		Value: []byte(bl.Type().String()),
 	}
 	tag2 := common.KVPair{
-		Key:   []byte("tx.locker"),
-		Value: bl.Locker.Bytes(),
+		Key:   []byte("tx.redeem"),
+		Value: bl.Redeemer.Bytes(),
 	}
 
 	tags = append(tags, tag, tag2)
 	return tags
 }
 
-func (bl Lock) Marshal() ([]byte, error) {
+func (bl Redeem) Marshal() ([]byte, error) {
 	return json.Marshal(bl)
 }
 
-func (bl *Lock) Unmarshal(data []byte) error {
+func (bl *Redeem) Unmarshal(data []byte) error {
 	return json.Unmarshal(data, bl)
 }
 
-type btcLockTx struct {
+type btcRedeemTx struct {
 }
 
-var _ action.Tx = btcLockTx{}
+var _ action.Tx = btcRedeemTx{}
 
-func (btcLockTx) Validate(ctx *action.Context, signedTx action.SignedTx) (bool, error) {
+func (btcRedeemTx) Validate(ctx *action.Context, signedTx action.SignedTx) (bool, error) {
 	lock := Lock{}
 	err := lock.Unmarshal(signedTx.Data)
 	if err != nil {
@@ -113,20 +113,20 @@ func (btcLockTx) Validate(ctx *action.Context, signedTx action.SignedTx) (bool, 
 	return true, nil
 }
 
-func (btcLockTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
-	lock := Lock{}
-	err := lock.Unmarshal(tx.Data)
+func (btcRedeemTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
+	redeem := Redeem{}
+	err := redeem.Unmarshal(tx.Data)
 	if err != nil {
 		return false, action.Response{Log: "wrong tx type"}
 	}
 
-	tracker, err := ctx.BTCTrackers.Get(lock.TrackerName)
+	tracker, err := ctx.BTCTrackers.Get(redeem.TrackerName)
 	if err != nil {
-		return false, action.Response{Log: fmt.Sprintf("tracker not found: %s", lock.TrackerName)}
+		return false, action.Response{Log: fmt.Sprintf("tracker not found: %s", redeem.TrackerName)}
 	}
 
 	if !tracker.IsAvailable() {
-		return false, action.Response{Log: fmt.Sprintf("tracker not available for lock: ", lock.TrackerName)}
+		return false, action.Response{Log: fmt.Sprintf("tracker not available for redeem: ", redeem.TrackerName)}
 	}
 
 	vs, err := ctx.Validators.GetValidatorSet()
@@ -144,10 +144,10 @@ func (btcLockTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (bool, actio
 	}
 
 	tracker.ProcessType = bitcoin.ProcessTypeLock
-	tracker.ProcessOwner = lock.Locker
-	tracker.Multisig, err = keys.NewBTCMultiSig(lock.BTCTxn, threshold, list)
-	tracker.ProcessBalance = tracker.CurrentBalance + lock.LockAmount
-	tracker.ProcessUnsignedTx = lock.BTCTxn // with user signature
+	tracker.ProcessOwner = redeem.Redeemer
+	tracker.Multisig, err = keys.NewBTCMultiSig(redeem.BTCTxn, threshold, list)
+	tracker.ProcessBalance = tracker.CurrentBalance - redeem.RedeemAmount
+	tracker.ProcessUnsignedTx = redeem.BTCTxn // with user signature
 
 	dat := bitcoin.BTCTransitionContext{Tracker: tracker}
 	_, err = bitcoin.Engine.Process("reserveTracker", dat, tracker.State)
@@ -155,36 +155,47 @@ func (btcLockTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (bool, actio
 		return false, action.Response{Log: "failed transition " + err.Error()}
 	}
 
-	err = ctx.BTCTrackers.SetTracker(lock.TrackerName, tracker)
+	err = ctx.BTCTrackers.SetTracker(redeem.TrackerName, tracker)
 	if err != nil {
-		return false, action.Response{Log: "failed to update tracker"}
+		return false, action.Response{Log: "failed to update tracker err:" + err.Error()}
+	}
+
+	btcCurr, ok := ctx.Currencies.GetCurrencyByName("BTC")
+	if !ok {
+		return false, action.Response{Log: "failed to find currency BTC"}
+	}
+	coin := btcCurr.NewCoinFromInt(redeem.RedeemAmount)
+
+	err = ctx.Balances.MinusFromAddress(redeem.Redeemer, coin)
+	if err != nil {
+		return false, action.Response{Log: "failed to subtract currency err:" + err.Error()}
 	}
 
 	return true, action.Response{
-		Tags: lock.Tags(),
+		Tags: redeem.Tags(),
 	}
 }
 
-func (btcLockTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
-	lock := Lock{}
-	err := lock.Unmarshal(tx.Data)
+func (btcRedeemTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
+	redeem := Redeem{}
+	err := redeem.Unmarshal(tx.Data)
 	if err != nil {
 		return false, action.Response{Log: "wrong tx type"}
 	}
 
-	ctx.Logger.Debug(hex.EncodeToString(lock.BTCTxn))
+	ctx.Logger.Debug(hex.EncodeToString(redeem.BTCTxn))
 
 	vs, err := ctx.Validators.GetValidatorSet()
 	threshold := (len(vs) * 2 / 3) + 1
 	list := make([]keys.Address, 0, len(vs))
 
-	tracker, err := ctx.BTCTrackers.Get(lock.TrackerName)
+	tracker, err := ctx.BTCTrackers.Get(redeem.TrackerName)
 	if err != nil {
-		return false, action.Response{Log: fmt.Sprintf("tracker not found: %s", lock.TrackerName)}
+		return false, action.Response{Log: fmt.Sprintf("tracker not found: %s", redeem.TrackerName)}
 	}
 
 	if !tracker.IsAvailable() {
-		return false, action.Response{Log: fmt.Sprintf("tracker not available for lock: ", lock.TrackerName)}
+		return false, action.Response{Log: fmt.Sprintf("tracker not available for redeem: ", redeem.TrackerName)}
 	}
 	for i := range vs {
 		addr, err := vs[i].GetBTCScriptAddress(ctx.BTCChainType)
@@ -194,11 +205,11 @@ func (btcLockTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, act
 		list = append(list, addr)
 	}
 
-	tracker.ProcessType = bitcoin.ProcessTypeLock
-	tracker.ProcessOwner = lock.Locker
-	tracker.Multisig, err = keys.NewBTCMultiSig(lock.BTCTxn, threshold, list)
-	tracker.ProcessBalance = tracker.CurrentBalance + lock.LockAmount
-	tracker.ProcessUnsignedTx = lock.BTCTxn // with user signature
+	tracker.ProcessType = bitcoin.ProcessTypeRedeem
+	tracker.ProcessOwner = redeem.Redeemer
+	tracker.Multisig, err = keys.NewBTCMultiSig(redeem.BTCTxn, threshold, list)
+	tracker.ProcessBalance = tracker.CurrentBalance - redeem.RedeemAmount
+	tracker.ProcessUnsignedTx = redeem.BTCTxn // with user signature
 
 	dat := bitcoin.BTCTransitionContext{Tracker: tracker}
 	_, err = bitcoin.Engine.Process("reserveTracker", dat, tracker.State)
@@ -206,18 +217,29 @@ func (btcLockTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, act
 		return false, action.Response{Log: "failed transition " + err.Error()}
 	}
 
-	err = ctx.BTCTrackers.SetTracker(lock.TrackerName, tracker)
+	err = ctx.BTCTrackers.SetTracker(redeem.TrackerName, tracker)
 	if err != nil {
 		return false, action.Response{Log: "failed to update tracker"}
 	}
 
+	btcCurr, ok := ctx.Currencies.GetCurrencyByName("BTC")
+	if !ok {
+		return false, action.Response{Log: "failed to find currency BTC"}
+	}
+	coin := btcCurr.NewCoinFromInt(redeem.RedeemAmount)
+
+	err = ctx.Balances.MinusFromAddress(redeem.Redeemer, coin)
+	if err != nil {
+		return false, action.Response{Log: "failed to subtract currency err:" + err.Error()}
+	}
+
 	return true, action.Response{
-		Tags: lock.Tags(),
-		Info: fmt.Sprintf("tracker: %s", lock.TrackerName),
+		Tags: redeem.Tags(),
+		Info: fmt.Sprintf("tracker: %s", redeem.TrackerName),
 	}
 }
 
-func (btcLockTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas) (bool, action.Response) {
+func (btcRedeemTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas) (bool, action.Response) {
 	return action.BasicFeeHandling(ctx, signedTx, start, size, 1)
 	// return true, action.Response{}
 }

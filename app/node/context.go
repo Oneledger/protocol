@@ -8,6 +8,9 @@ import (
 	"os"
 	"strings"
 
+	"github.com/btcsuite/btcd/chaincfg"
+	"github.com/btcsuite/btcutil"
+
 	"github.com/Oneledger/protocol/config"
 	"github.com/Oneledger/protocol/consensus"
 	"github.com/Oneledger/protocol/data/keys"
@@ -111,6 +114,21 @@ func (n Context) ValidatorECDSAPubKey() keys.PublicKey {
 func (n Context) ValidatorECDSAPrivateKey() *keys.PrivateKey {
 
 	return &n.ecdsaPrivVal
+}
+
+func (n Context) ValidatorBTCScriptAddress(params *chaincfg.Params) (keys.Address, error) {
+
+	h, err := n.ecdsaPrivVal.GetHandler()
+	if err != nil {
+		return nil, err
+	}
+
+	apk, err := btcutil.NewAddressPubKey(h.PubKey().Data, params)
+	if err != nil {
+		return nil, err
+	}
+
+	return apk.ScriptAddress(), nil
 }
 
 func (n Context) isValid() bool {

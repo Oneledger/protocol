@@ -10,8 +10,9 @@ var (
 )
 
 const (
-	JobTypeAddSignature = "addSignature"
-	JobTypeBTCBroadcast = "btcBroadcast"
+	JobTypeAddSignature     = "addSignature"
+	JobTypeBTCBroadcast     = "btcBroadcast"
+	JobTypeBTCCheckFinality = "btcCheckFinality"
 
 	MaxJobRetries = 10
 )

@@ -7,6 +7,11 @@ import (
 	"github.com/pkg/errors"
 	"math"
 
+	"github.com/Oneledger/protocol/data/jobs"
+
+	bitcoin2 "github.com/Oneledger/protocol/chains/bitcoin"
+	"github.com/Oneledger/protocol/data/bitcoin"
+
 	"github.com/Oneledger/protocol/event"
 
 	"github.com/Oneledger/protocol/utils/transition"
@@ -245,19 +250,66 @@ func (app *App) blockEnder() blockEnder {
 		eth := app.Context.ethTrackers
 
 		eth.Iterate(func(name ceth.TrackerName, tracker *ethereum.Tracker) bool {
+
 			ctx := ethereum.NewTrackerCtx(tracker, app.Context.node.ValidatorAddress(), js, eth)
 			_, err := event.EthEngine.Process(tracker.NextStep(), ctx, transition.Status(tracker.State))
+
 			if err != nil {
 
 			}
+
 			//todo save the tracker back to cache
 			err = eth.Set(*tracker)
 			if err != nil {
 
 			}
+
 			return false
 		})
 
+
+		if app.Context.jobStore != nil {
+			app.Context.btcTrackers.Iterate(func(k, v []byte) bool {
+
+				szlr := serialize.GetSerializer(serialize.PERSISTENT)
+
+				d := &bitcoin.Tracker{}
+				err := szlr.Deserialize(v, d)
+				if err != nil {
+					return false
+				}
+				chainParams := bitcoin2.GetChainParams(app.Context.cfg.ChainDriver.BitcoinChainType)
+				btcAddress, err := app.Context.node.ValidatorBTCScriptAddress(chainParams)
+				if err != nil {
+					return false
+				}
+
+				var job jobs.Job
+				if d.State == bitcoin.BusySigning &&
+					!d.Multisig.HasAddressSigned(btcAddress) {
+
+					job = event.NewAddSignatureJob(d.Name)
+				}
+
+				if d.State == bitcoin.BusyBroadcasting {
+					job = event.NewBTCBroadcastJob(d.Name)
+				}
+
+				if d.State == bitcoin.BusyFinalizing {
+					job = event.NewBTCCheckFinalityJob(d.Name)
+
+				}
+
+				if job != nil {
+					err = app.Context.jobStore.SaveJob(job)
+					if err != nil {
+						return false
+					}
+				}
+
+				return false
+			})
+		}
 		app.logger.Debug("End Block: ", result, "height:", req.Height)
 		return result
 	}

@@ -71,9 +71,9 @@ func (s *Service) AddUserSignatureAndProcessLock(args client.BTCLockRequest, rep
 	}
 
 	// initialize a chain driver for adding signature
-	cd := bitcoin.NewChainDriver("")
+	cd := bitcoin.NewChainDriver(s.blockCypherToken)
 
-	// add the users' btc signature to the lock txn in the appropriate place
+	// add the users' btc signature to the redeem txn in the appropriate place
 
 	s.logger.Debug("----", hex.EncodeToString(args.Txn), hex.EncodeToString(args.Signature))
 
@@ -110,14 +110,14 @@ func (s *Service) AddUserSignatureAndProcessLock(args client.BTCLockRequest, rep
 
 	s.logger.Debug("-----", hex.EncodeToString(txBytes))
 
-	lock := btc.Lock{
-		Locker:      args.Address,
-		TrackerName: args.TrackerName,
-		BTCTxn:      txBytes,
-		LockAmount:  totalLockAmount,
+	redeem := btc.Redeem{
+		Redeemer:     args.Address,
+		TrackerName:  args.TrackerName,
+		BTCTxn:       txBytes,
+		RedeemAmount: totalLockAmount,
 	}
 
-	data, err := lock.Marshal()
+	data, err := redeem.Marshal()
 	if err != nil {
 		return codes.ErrSerialization
 	}

@@ -9,17 +9,15 @@ import (
 
 	"github.com/Oneledger/protocol/data/keys"
 
-	bitcoin2 "github.com/Oneledger/protocol/chains/bitcoin"
-	"github.com/Oneledger/protocol/data/bitcoin"
-	"github.com/btcsuite/btcd/chaincfg"
-
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/action/btc"
 	"github.com/Oneledger/protocol/app/node"
+	bitcoin2 "github.com/Oneledger/protocol/chains/bitcoin"
 	"github.com/Oneledger/protocol/config"
 	"github.com/Oneledger/protocol/consensus"
 	"github.com/Oneledger/protocol/data/accounts"
 	"github.com/Oneledger/protocol/data/balance"
+	"github.com/Oneledger/protocol/data/bitcoin"
 	"github.com/Oneledger/protocol/data/chain"
 	"github.com/Oneledger/protocol/data/ons"
 	"github.com/Oneledger/protocol/identity"
@@ -186,19 +184,7 @@ func (app *App) setupValidators(req RequestInitChain, currencies *balance.Curren
 
 	vu, err := app.Context.validators.WithState(app.Context.deliver).Init(req, currencies)
 
-	var params *chaincfg.Params
-	switch app.Context.cfg.ChainDriver.BitcoinChainType {
-	case "mainnet":
-		params = &chaincfg.MainNetParams
-	case "testnet3":
-		params = &chaincfg.TestNet3Params
-	case "regtest":
-		params = &chaincfg.RegressionNetParams
-	case "simnet":
-		params = &chaincfg.SimNetParams
-	default:
-		params = &chaincfg.TestNet3Params
-	}
+	params := bitcoin2.GetChainParams(app.Context.cfg.ChainDriver.BitcoinChainType)
 
 	vals, err := app.Context.validators.WithState(app.Context.deliver).GetBitcoinKeys(params)
 	threshold := (len(vals) * 2 / 3) + 1

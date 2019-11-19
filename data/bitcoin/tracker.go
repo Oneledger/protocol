@@ -5,6 +5,7 @@
 package bitcoin
 
 import (
+	"github.com/Oneledger/protocol/utils/transition"
 	"github.com/pkg/errors"
 
 	"github.com/Oneledger/protocol/data/keys"
@@ -14,13 +15,16 @@ import (
 type TrackerState int
 
 const (
-	Available TrackerState = iota
-	BusyLocking
+	Available transition.Status = iota
 	BusySigning
 	BusyBroadcasting
 	BusyFinalizing
-	Finalized
-	BusyMinting
+)
+
+const (
+	ProcessTypeNone   = 0x00
+	ProcessTypeLock   = 0x01
+	ProcessTypeRedeem = 0x02
 )
 
 var NilTxHash *chainhash.Hash
@@ -42,7 +46,7 @@ type Tracker struct {
 	Multisig *keys.BTCMultiSig `json:"multisig"`
 
 	// State tracks the current state of the tracker, Also used for locking distributed access
-	State TrackerState `json:"state"`
+	State transition.Status `json:"state"`
 
 	CurrentTxId              *chainhash.Hash
 	CurrentBalance           int64
@@ -54,6 +58,7 @@ type Tracker struct {
 	ProcessUnsignedTx        []byte
 
 	ProcessOwner keys.Address
+	ProcessType  int
 
 	FinalityVotes []keys.Address
 }

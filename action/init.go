@@ -25,8 +25,10 @@ const (
 
 	BTC_LOCK                 Type = 0x81
 	BTC_ADD_SIGNATURE        Type = 0x82
-	BTC_REPORT_FINALITY_MINT Type = 0x83
-	BTC_EXT_MINT             Type = 0x84
+	BTC_BROADCAST_SUCCESS    Type = 0x83
+	BTC_REPORT_FINALITY_MINT Type = 0x84
+	BTC_EXT_MINT             Type = 0x85
+	BTC_REDEEM               Type = 0x86
 
 	//Ethereum Actions
 	ETH_LOCK                 Type = 0x91

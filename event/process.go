@@ -17,19 +17,13 @@ func ProcessAllJobs(ctx *JobsContext, js *jobs.JobStore) {
 
 	RangeJobs(js, func(job jobs.Job) jobs.Job {
 
-		if !job.IsMyJobDone(ctx) {
-			job.DoMyJob(ctx)
-		}
-
-		if job.IsSufficient(ctx) {
-			job.DoFinalize()
-		}
-
+		job.DoMyJob(ctx)
 		return job
 	})
 }
 
 func RangeJobs(js *jobs.JobStore, pro JobProcess) {
+
 	start := []byte("job:     ")
 	end := []byte("job:~~~~~~~~")
 	isAsc := true
@@ -58,11 +52,8 @@ func RangeJobs(js *jobs.JobStore, pro JobProcess) {
 
 		job = pro(job)
 
-		if job.IsDone() {
-			js.DeleteJob(job)
-		} else {
-			js.SaveJob(job)
-		}
+		js.DeleteJob(job)
+
 	}
 }
 

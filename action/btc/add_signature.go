@@ -129,27 +129,9 @@ func (ast btcAddSignatureTx) ProcessCheck(ctx *action.Context, tx action.RawTx) 
 	}
 
 	ctx.Logger.Info("before has enough signatures", tracker.HasEnoughSignatures(), ctx.JobStore)
-	//if tracker.HasEnoughSignatures() &&
-	//	ctx.JobStore != nil {
-	//
-	//	ctx.Logger.Info("in has enough signatures")
-	//
-	//	tracker.State = bitcoin.BusyBroadcasting
-	//
-	//	id := strconv.Itoa(int(time.Now().UnixNano()))
-	//	job := event.JobBTCBroadcast{
-	//		event.JobTypeBTCBroadcast,
-	//		tracker.Name,
-	//		id,
-	//		false,
-	//		nil,
-	//		false,
-	//		0,
-	//	}
-	//
-	////	err := ctx.JobStore.SaveJob(&job)
-	//	ctx.Logger.Error("error while scheduling bitcoin broadcast job", err)
-	//}
+
+	dat := bitcoin.BTCTransitionContext{Tracker: tracker}
+	_, err = bitcoin.Engine.Process("freezeForBroadcast", dat, tracker.State)
 
 	err = ctx.BTCTrackers.SetTracker(addSignature.TrackerName, tracker)
 	if err != nil {
@@ -195,6 +177,9 @@ func (ast btcAddSignatureTx) ProcessDeliver(ctx *action.Context, tx action.RawTx
 	if tracker.HasEnoughSignatures() {
 		tracker.State = bitcoin.BusyBroadcasting
 	}
+
+	dat := bitcoin.BTCTransitionContext{Tracker: tracker}
+	_, err = bitcoin.Engine.Process("freezeForBroadcast", dat, tracker.State)
 
 	err = ctx.BTCTrackers.SetTracker(addSignature.TrackerName, tracker)
 	if err != nil {
