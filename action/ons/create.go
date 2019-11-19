@@ -5,11 +5,10 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/Oneledger/protocol/data/ons"
-	"github.com/tendermint/tendermint/libs/common"
-
 	"github.com/Oneledger/protocol/action"
+	"github.com/Oneledger/protocol/data/ons"
 	"github.com/pkg/errors"
+	"github.com/tendermint/tendermint/libs/common"
 )
 
 var _ Ons = &DomainCreate{}

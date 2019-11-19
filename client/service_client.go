@@ -26,6 +26,15 @@ func (c *ServiceClient) Balance(addr keys.Address) (out BalanceReply, err error)
 	return
 }
 
+func (c *ServiceClient) CurrBalance(addr keys.Address, currency string) (out CurrencyBalanceReply, err error) {
+	/*if len(request) <= 20 {
+		return out, errors.New("address has insufficient length")
+	}*/
+	request := CurrencyBalanceRequest{currency, addr}
+	err = c.Call("query.CurrencyBalance", &request, &out)
+	return
+}
+
 func (c *ServiceClient) NodeName() (out NodeNameReply, err error) {
 	err = c.Call("node.NodeName", struct{}{}, &out)
 	return
@@ -128,5 +137,14 @@ func (c *ServiceClient) TxSync(req BroadcastRequest) (out BroadcastReply, err er
 
 func (c *ServiceClient) TxCommit(req BroadcastRequest) (out BroadcastReply, err error) {
 	err = c.Call("broadcast.TxCommit", req, &out)
+	return
+}
+
+func (c *ServiceClient) GetTracker(name string) (out BTCGetTrackerReply, err error) {
+	/*if len(request) <= 20 {
+		return out, errors.New("address has insufficient length")
+	}*/
+	request := BTCGetTrackerRequest{name}
+	err = c.Call("btc.GetTracker", &request, &out)
 	return
 }

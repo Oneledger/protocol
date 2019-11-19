@@ -15,11 +15,13 @@ Copyright 2017 - 2019 OneLedger
 package balance
 
 import (
+	"fmt"
+	"strings"
+
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/serialize"
 	"github.com/Oneledger/protocol/storage"
 	"github.com/pkg/errors"
-	"strings"
 )
 
 type Store struct {
@@ -78,6 +80,25 @@ func (st *Store) iterate(addr keys.Address, fn func(c string, amt Amount) bool) 
 	)
 }
 
+func (st *Store) IterateAll(fn func(addr keys.Address, c string, amt Amount) bool) bool {
+	return st.State.IterateRange(
+		st.prefix,
+		storage.Rangefix(string(st.prefix)),
+		true,
+		func(key, value []byte) bool {
+			amt := NewAmount(0)
+			err := serialize.GetSerializer(serialize.PERSISTENT).Deserialize(value, amt)
+			if err != nil {
+				return true
+			}
+			arr := strings.Split(string(key), storage.DB_PREFIX)
+			addr := keys.Address(arr[1])
+			curr := arr[len(arr)-1]
+			return fn(addr, curr, *amt)
+		},
+	)
+}
+
 // todo: add back if necessary. address will not work because key will be address+currency
 //func (st *Store) Exists(address keys.Address) bool {
 //	key := append(st.prefix, storage.StoreKey(address)...)
@@ -93,6 +114,8 @@ func (st *Store) AddToAddress(addr keys.Address, coin Coin) error {
 	}
 
 	base := coin.Currency.NewCoinFromAmount(*amt)
+
+	fmt.Println("add to", addr.String())
 	newCoin := base.Plus(coin)
 
 	return st.set(key, *newCoin.Amount)
@@ -107,6 +130,8 @@ func (st *Store) MinusFromAddress(addr keys.Address, coin Coin) error {
 	}
 
 	base := coin.Currency.NewCoinFromAmount(*amt)
+
+	fmt.Println("minus from", addr.String())
 	newCoin, err := base.Minus(coin)
 	if err != nil {
 		return errors.Wrap(err, "minus from address")
@@ -124,6 +149,7 @@ func (st *Store) CheckBalanceFromAddress(addr keys.Address, coin Coin) error {
 	}
 
 	base := coin.Currency.NewCoinFromAmount(*amt)
+	fmt.Println("check balance", addr.String())
 	_, err = base.Minus(coin)
 	if err != nil {
 		return errors.Wrap(err, "minus from address")

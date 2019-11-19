@@ -3,8 +3,9 @@ package accounts
 import (
 	"bytes"
 	"fmt"
-	"github.com/Oneledger/protocol/serialize"
 	"sync"
+
+	"github.com/Oneledger/protocol/serialize"
 
 	"github.com/Oneledger/protocol/config"
 	"github.com/Oneledger/protocol/data/keys"

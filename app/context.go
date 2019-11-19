@@ -4,7 +4,8 @@ import (
 	"io"
 	"path/filepath"
 
-	"github.com/Oneledger/protocol/action"
+  "github.com/Oneledger/protocol/action"
+	"github.com/Oneledger/protocol/action/btc"
 	action_ons "github.com/Oneledger/protocol/action/ons"
 	"github.com/Oneledger/protocol/action/staking"
 	"github.com/Oneledger/protocol/action/transfer"
@@ -13,15 +14,19 @@ import (
 	"github.com/Oneledger/protocol/config"
 	"github.com/Oneledger/protocol/data/accounts"
 	"github.com/Oneledger/protocol/data/balance"
+	"github.com/Oneledger/protocol/data/bitcoin"
 	"github.com/Oneledger/protocol/data/chain"
 	"github.com/Oneledger/protocol/data/fees"
 	"github.com/Oneledger/protocol/data/governance"
+	"github.com/Oneledger/protocol/data/jobs"
 	"github.com/Oneledger/protocol/data/ons"
 	"github.com/Oneledger/protocol/identity"
 	"github.com/Oneledger/protocol/log"
 	"github.com/Oneledger/protocol/rpc"
 	"github.com/Oneledger/protocol/service"
 	"github.com/Oneledger/protocol/storage"
+
+	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/pkg/errors"
 	"github.com/tendermint/tendermint/libs/db"
 )
@@ -46,12 +51,17 @@ type context struct {
 	validators *identity.ValidatorStore // Set of validators currently active
 	feePool    *fees.Store
 	govern     *governance.Store
+	trackers   *bitcoin.TrackerStore // tracker for bitcoin balance UTXO
 
 	currencies *balance.CurrencySet
 	feeOption  *fees.FeeOption
 
 	//storage which is not a chain state
 	accounts accounts.Wallet
+
+	jobStore        *jobs.JobStore
+	lockScriptStore *bitcoin.LockScriptStore
+	internalService *action.Service
 
 	logWriter io.Writer
 }
@@ -64,7 +74,7 @@ func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *node.Context) (
 		node:       *nodeCtx,
 	}
 
-	ctx.rpc = rpc.NewServer(logWriter)
+	ctx.rpc = rpc.NewServer(logWriter, &cfg)
 
 	db, err := storage.GetDatabase("chainstate", ctx.dbDir(), ctx.cfg.Node.DB)
 	if err != nil {
@@ -81,8 +91,16 @@ func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *node.Context) (
 	ctx.domains = ons.NewDomainStore("d", storage.NewState(ctx.chainstate))
 	ctx.feePool = fees.NewStore("f", storage.NewState(ctx.chainstate))
 	ctx.govern = governance.NewStore("g", storage.NewState(ctx.chainstate))
+	ctx.trackers = bitcoin.NewTrackerStore("btct", storage.NewState(ctx.chainstate))
 
 	ctx.accounts = accounts.NewWallet(cfg, ctx.dbDir())
+
+	// TODO check if validator
+	if true {
+		ctx.jobStore = jobs.NewJobStore(cfg, ctx.dbDir())
+		ctx.lockScriptStore = bitcoin.NewLockScriptStore(cfg, ctx.dbDir())
+
+	}
 
 	ctx.actionRouter = action.NewRouter("action")
 	ctx.feeOption = &fees.FeeOption{
@@ -93,6 +111,7 @@ func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *node.Context) (
 	_ = transfer.EnableSend(ctx.actionRouter)
 	_ = staking.EnableApplyValidator(ctx.actionRouter)
 	_ = action_ons.EnableONS(ctx.actionRouter)
+	_ = btc.EnableBTC(ctx.actionRouter)
 	return ctx, nil
 }
 
@@ -101,6 +120,21 @@ func (ctx context) dbDir() string {
 }
 
 func (ctx *context) Action(header *Header, state *storage.State) *action.Context {
+
+	var params *chaincfg.Params
+	switch ctx.cfg.ChainDriver.BitcoinChainType {
+	case "mainnet":
+		params = &chaincfg.MainNetParams
+	case "testnet3":
+		params = &chaincfg.TestNet3Params
+	case "regtest":
+		params = &chaincfg.RegressionNetParams
+	case "simnet":
+		params = &chaincfg.SimNetParams
+	default:
+		params = &chaincfg.TestNet3Params
+	}
+
 	actionCtx := action.NewContext(
 		ctx.actionRouter,
 		header,
@@ -112,7 +146,12 @@ func (ctx *context) Action(header *Header, state *storage.State) *action.Context
 		ctx.feePool.WithState(state),
 		ctx.validators.WithState(state),
 		ctx.domains.WithState(state),
-		log.NewLoggerWithPrefix(ctx.logWriter, "action"))
+
+		ctx.trackers.WithState(state),
+		ctx.jobStore,
+		params,
+
+		log.NewLoggerWithPrefix(ctx.logWriter, "action").WithLevel(log.Level(ctx.cfg.Node.LogLevel)))
 
 	return actionCtx
 }
@@ -132,7 +171,7 @@ func (ctx *context) ValidatorCtx() *identity.ValidatorContext {
 // Returns a balance.Context
 func (ctx *context) Balances() *balance.Context {
 	return balance.NewContext(
-		log.NewLoggerWithPrefix(ctx.logWriter, "balances"),
+		log.NewLoggerWithPrefix(ctx.logWriter, "balances").WithLevel(log.Level(ctx.cfg.Node.LogLevel)),
 		ctx.balances,
 		ctx.currencies)
 }
@@ -152,11 +191,13 @@ func (ctx *context) Services() (service.Map, error) {
 		ValidatorSet: ctx.validators,
 		Domains:      ctx.domains,
 		Router:       ctx.actionRouter,
-		Logger:       log.NewLoggerWithPrefix(ctx.logWriter, "rpc"),
+		Logger:       log.NewLoggerWithPrefix(ctx.logWriter, "rpc").WithLevel(log.Level(ctx.cfg.Node.LogLevel)),
 		Services:     extSvcs,
+
+		Trackers: ctx.trackers,
 	}
 
-	return service.NewMap(svcCtx), nil
+	return service.NewMap(svcCtx)
 }
 
 func (ctx *context) Restful() (service.RestfulRouter, error) {
@@ -174,10 +215,39 @@ func (ctx *context) Restful() (service.RestfulRouter, error) {
 		ValidatorSet: ctx.validators,
 		Domains:      ctx.domains,
 		Router:       ctx.actionRouter,
-		Logger:       log.NewLoggerWithPrefix(ctx.logWriter, "restful"),
+		Logger:       log.NewLoggerWithPrefix(ctx.logWriter, "restful").WithLevel(log.Level(ctx.cfg.Node.LogLevel)),
 		Services:     extSvcs,
+
+		Trackers: ctx.trackers,
 	}
 	return service.NewRestfulService(svcCtx).Router(), nil
+}
+
+type StorageCtx struct {
+	Balances   *balance.Store
+	Domains    *ons.DomainStore
+	Validators *identity.ValidatorStore // Set of validators currently active
+	FeePool    *fees.Store
+	Govern     *governance.Store
+
+	Currencies *balance.CurrencySet
+	FeeOption  *fees.FeeOption
+	Hash       []byte
+	Version    int64
+}
+
+func (ctx *context) Storage() StorageCtx {
+	return StorageCtx{
+		Version:    ctx.chainstate.Version,
+		Hash:       ctx.chainstate.Hash,
+		Balances:   ctx.balances,
+		Domains:    ctx.domains,
+		Validators: ctx.validators,
+		FeePool:    ctx.feePool,
+		Govern:     ctx.govern,
+		Currencies: ctx.currencies,
+		FeeOption:  ctx.feeOption,
+	}
 }
 
 // Close all things that need to be closed

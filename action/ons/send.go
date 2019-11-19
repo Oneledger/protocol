@@ -200,7 +200,7 @@ func (domainSendTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, 
 		return false, action.Response{Log: "failed to credit balance of domain address"}
 	}
 
-	return true, action.Response{Tags: send.Tags()}
+	return true, action.Response{Tags: send.Tags(), Info: to.String()}
 }
 
 func (domainSendTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas) (bool, action.Response) {

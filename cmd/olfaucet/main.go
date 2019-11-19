@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"github.com/Oneledger/protocol/data/chain"
 	"net"
 	"net/http"
 	"net/url"
@@ -11,6 +10,8 @@ import (
 	"path/filepath"
 	"syscall"
 	"time"
+
+	"github.com/Oneledger/protocol/data/chain"
 
 	"github.com/Oneledger/protocol/version"
 
@@ -97,7 +98,7 @@ func runFaucet(_ *cobra.Command, _ []string) error {
 	}
 	defer faucet.db.Close()
 
-	srv := rpc.NewServer(os.Stdout)
+	srv := rpc.NewServer(os.Stdout, cfg)
 
 	logger.Info(args.listenAddr)
 	u, err := url.Parse(args.listenAddr)

@@ -77,3 +77,32 @@ func (svc *Service) ListCurrencies(_ client.ListCurrenciesRequest, reply *client
 	reply.Currencies = svc.currencies.GetCurrencies()
 	return nil
 }
+
+func (svc *Service) CurrencyBalance(req client.CurrencyBalanceRequest, resp *client.CurrencyBalanceReply) error {
+	err := req.Address.Err()
+	if err != nil {
+		return codes.ErrBadAddress
+	}
+
+	currency, ok := svc.currencies.GetCurrencyByName(req.Currency)
+	if !ok {
+		return codes.ErrFindingCurrency
+	}
+
+	addr := req.Address
+	bal, err := svc.balances.GetBalance(addr, svc.currencies)
+
+	if err != nil {
+		svc.logger.Error("error getting balance", err)
+		return codes.ErrGettingBalance
+	}
+
+	coin := bal.GetCoin(currency)
+
+	*resp = client.CurrencyBalanceReply{
+		Currency: currency.Name,
+		Balance:  coin.Humanize(),
+		Height:   svc.balances.State.Version(),
+	}
+	return nil
+}

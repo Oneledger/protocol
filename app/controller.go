@@ -2,6 +2,9 @@ package app
 
 import (
 	"encoding/hex"
+	"fmt"
+	"github.com/Oneledger/protocol/config"
+	"github.com/pkg/errors"
 	"math"
 
 	"github.com/Oneledger/protocol/data/fees"
@@ -46,10 +49,17 @@ func (app *App) queryer() queryer {
 }
 
 func (app *App) optionSetter() optionSetter {
-	return func(RequestSetOption) ResponseSetOption {
-		// TODO
+	return func(req RequestSetOption) ResponseSetOption {
+		err := config.Setup(&app.Context.cfg, req.Key, req.Value)
+		if err != nil {
+			return ResponseSetOption{
+				Code: CodeNotOK.uint32(),
+				Log: errors.Wrap(err, "set option").Error(),
+			}
+		}
 		return ResponseSetOption{
 			Code: CodeOK.uint32(),
+			Info: fmt.Sprintf("set option: key=%s, value=%s ", req.Key, req.Value),
 		}
 	}
 }
@@ -60,6 +70,8 @@ func (app *App) chainInitializer() chainInitializer {
 	return func(req RequestInitChain) ResponseInitChain {
 		app.Context.deliver = storage.NewState(app.Context.chainstate)
 		app.Context.govern.WithState(app.Context.deliver)
+		app.Context.trackers.WithState(app.Context.deliver)
+
 		err := app.setupState(req.AppStateBytes)
 		// This should cause consensus to halt
 		if err != nil {
@@ -74,8 +86,10 @@ func (app *App) chainInitializer() chainInitializer {
 			app.logger.Error("Failed to setupValidator", "err", err)
 			return ResponseInitChain{}
 		}
+
 		app.Context.govern.Initiated()
 		app.Context.deliver.Write()
+
 		app.logger.Info("finish chain initialize")
 		return ResponseInitChain{Validators: validators}
 	}
@@ -87,7 +101,7 @@ func (app *App) blockBeginner() blockBeginner {
 		app.Context.deliver = storage.NewState(app.Context.chainstate).WithGas(gc)
 
 		// update the validator set
-		err := app.Context.validators.Setup(req)
+		err := app.Context.validators.Setup(req, app.Context.node.ValidatorAddress())
 		if err != nil {
 			app.logger.Error("validator set with error", err)
 		}
@@ -190,6 +204,30 @@ func (app *App) blockEnder() blockEnder {
 			ValidatorUpdates: updates,
 			Tags:             []common.KVPair(nil),
 		}
+
+		go func() {
+
+			if req.Height%3 == 0 &&
+				app.Context.validators.IsValidatorAddress(app.Context.node.ValidatorAddress()) {
+
+				cdConfig := app.Context.cfg.ChainDriver
+
+				jc := action.NewJobsContext(cdConfig.BitcoinChainType,
+					app.Context.internalService, app.Context.trackers,
+					app.Context.node.ValidatorECDSAPrivateKey(),
+					app.Context.node.ValidatorAddress(), app.Context.cfg.ChainDriver.BlockCypherToken,
+					app.Context.lockScriptStore,
+					cdConfig.BitcoinNodeAddress,
+					cdConfig.BitcoinRPCPort,
+					cdConfig.BitcoinRPCUsername,
+					cdConfig.BitcoinRPCPassword,
+					cdConfig.BitcoinChainType,
+				)
+
+				js := app.Context.jobStore
+				ProcessAllJobs(jc, js)
+			}
+		}()
 
 		app.logger.Debug("End Block: ", result, "height:", req.Height)
 		return result

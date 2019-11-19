@@ -48,14 +48,19 @@ var (
 	ErrDeletingAccount = ProtocolError{WalletErrorDeleteAccount, "error in deleting account"}
 
 	ErrGeneratingAccount = ProtocolError{AccountsErrorGeneratingNewAccount, "error generating new account"}
-	ErrAccountNotFound   = ProtocolError{AccountNotFound, "account doesn't in wallet"}
+	ErrAccountNotFound   = ProtocolError{AccountNotFound, "account is not in wallet"}
 	ErrSigningError      = ProtocolError{InternalErrorSigning, "error while signing"}
 	ErrKeyGeneration     = ProtocolError{InternalErrorGeneratingKeyPair, "error generating key pair"}
 
+	ErrGettingTracker  = ProtocolError{InternalErrorGettingTracker, "error getting tracker"}
+	ErrTrackerNotFound = ProtocolError{InternalErrorTrackerNotFound, "tracker not found"}
+	ErrTrackerBusy     = ProtocolError{InternalErrorTrackerBusy, "tracker busy"}
+
 	// Query errors
-	ErrBadAddress     = ProtocolError{IncorrectAddress, "address incorrect"}
-	ErrGettingBalance = ProtocolError{InternalErrorGettingBalance, "error  getting balance"}
-	ErrListValidators = ProtocolError{InternalErrorListValidators, "error getting list of validators"}
+	ErrBadAddress      = ProtocolError{IncorrectAddress, "address incorrect"}
+	ErrGettingBalance  = ProtocolError{InternalErrorGettingBalance, "error  getting balance"}
+	ErrListValidators  = ProtocolError{InternalErrorListValidators, "error getting list of validators"}
+	ErrFindingCurrency = ProtocolError{CurrencyNotFound, "error  finding currency"}
 
 	// ONS errors
 	ErrBadName        = ProtocolError{DomainMissing, "domain name not provided"}
@@ -65,4 +70,10 @@ var (
 
 	// Tx errors
 
+	// External Errors
+	ErrBTCTxNotFound             = ProtocolError{ExternalErrBitcoinTxNotFound, "bitcoin txn not found"}
+	ErrBTCReadingTxn             = ProtocolError{ExternalErrGettingBTCTxn, "err getting btc txn"}
+	ErrBTCNotEnoughConfirmations = ProtocolError{ExternalErrNotEnoughConfirmations, "not enough btc confirmations"}
+
+	ErrBadBTCTxn = ProtocolError{ParseErrorBadBTCTxn, "bad btc txn"}
 )
