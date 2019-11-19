@@ -3,10 +3,11 @@ package eth
 import (
 	"bytes"
 	"encoding/json"
-
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/chains/ethereum"
 	trackerlib "github.com/Oneledger/protocol/data/ethereum"
+	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/pkg/errors"
 	"github.com/tendermint/tendermint/libs/common"
 )
@@ -131,16 +132,18 @@ func (r reportFinalityMintTx) ProcessCheck(ctx *action.Context, tx action.RawTx)
 	//    MINTING -> Mint OTETh and update status
 	// If it has been minted
 	//   MINTED -> Skip
+	// IF yes Mint OTETh
 	if !tracker.Finalized() {
 		return false, action.Response{Log: "Not Enough votes to finalize a transaction"}
 	}
-	if !tracker.IsTaskCompleted() {
+	if ! tracker.IsTaskCompleted() {
 		ctx.Logger.Info("ready to mint")
-		//Mint Tokens OETH
+		if !mintTokens(ctx, *tracker, f) {
+			return false, action.Response{Log: "Unable to mint Tokens"}
+		}
 		tracker.CompleteTask()
 	}
-
-	return true, action.Response{}
+	return true, action.Response{Log:"MINTING SUCCESSFULL"}
 }
 
 func (r reportFinalityMintTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
@@ -152,3 +155,22 @@ func (r reportFinalityMintTx) ProcessFee(ctx *action.Context, signedTx action.Si
 }
 
 var _ action.Tx = reportFinalityMintTx{}
+
+
+func mintTokens (ctx *action.Context,tracker trackerlib.Tracker,oltTx ReportFinalityMint) bool {
+	curr, _ := ctx.Currencies.GetCurrencyByName("BTC")
+	rawTx := tracker.SignedETHTx
+	tx := &types.Transaction{}
+	err := rlp.DecodeBytes(rawTx, tx)
+	if err != nil {
+		ctx.Logger.Error("Error Decoding Bytes from RaxTX :", tracker.TrackerName,err)
+		return false
+	}
+	oEthCoin := curr.NewCoinFromUnit(tx.Value().Int64())
+	err = ctx.Balances.AddToAddress(oltTx.Locker,oEthCoin)
+	if err != nil {
+		ctx.Logger.Error(err)
+		return false
+	}
+	return true
+}
