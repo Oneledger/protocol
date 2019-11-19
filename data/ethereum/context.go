@@ -7,14 +7,16 @@ import (
 
 type TrackerCtx struct {
 	tracker      *Tracker
+	trackerStore *TrackerStore
 	jobStore     *jobs.JobStore
 	currNodeAddr keys.Address
 }
 
-func NewTrackerCtx(t *Tracker, currAddr keys.Address, jobStore *jobs.JobStore) TrackerCtx {
+func NewTrackerCtx(t *Tracker, addr keys.Address, js *jobs.JobStore, ts *TrackerStore) TrackerCtx {
 	return TrackerCtx{
 		tracker:      t,
-		currNodeAddr: currAddr,
-		jobStore:     jobStore,
+		currNodeAddr: addr,
+		jobStore:     js,
+		trackerStore: ts,
 	}
 }

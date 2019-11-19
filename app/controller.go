@@ -235,7 +235,7 @@ func (app *App) blockEnder() blockEnder {
 		eth := app.Context.ethTrackers
 
 		eth.Iterate(func(name ceth.TrackerName, tracker *ethereum.Tracker) bool {
-			ctx := ethereum.NewTrackerCtx(tracker, app.Context.node.ValidatorAddress(), js)
+			ctx := ethereum.NewTrackerCtx(tracker, app.Context.node.ValidatorAddress(), js, eth)
 			_, err := ethereum.Engine.Process(tracker.NextStep(), ctx, transition.Status(tracker.State))
 			if err != nil {
 

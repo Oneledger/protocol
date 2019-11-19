@@ -6,7 +6,9 @@ import (
 	"github.com/Oneledger/protocol/chains/ethereum"
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/event"
+	"github.com/Oneledger/protocol/storage"
 	"github.com/pkg/errors"
+	"strconv"
 )
 
 type TrackerState int
@@ -39,8 +41,8 @@ func (t *Tracker) IsTaskCompleted() bool {
 	return t.TaskCompleted
 }
 
-func (t *Tracker) CompleteTask(){
-	if!t.TaskCompleted && t.Finalized(){
+func (t *Tracker) CompleteTask() {
+	if !t.TaskCompleted && t.Finalized() {
 		t.TaskCompleted = true
 	}
 }
@@ -54,6 +56,10 @@ func (t *Tracker) AddVote(vote keys.Address, index int64) error {
 		return nil
 	}
 	return errTrackerInvalidVote
+}
+
+func (t *Tracker) GetJobID(state TrackerState) string {
+	return t.TrackerName.String() + storage.DB_PREFIX + strconv.Itoa(int(state))
 }
 
 func (t *Tracker) GetVotes() int {
@@ -71,7 +77,20 @@ func (t *Tracker) GetVotes() int {
 }
 
 func (t *Tracker) CheckIfVoted(node keys.Address) bool {
+	index := 0
+	voted := 0
+	for i, addr := range t.Validators {
+		if addr.Equal(node) {
+			index = i
+			break
+		}
+	}
 
+	if index < len(t.Validators) {
+		voted = (t.FinalityVotes >> index) % 2
+	}
+
+	return voted > 0
 }
 
 func (t *Tracker) Finalized() bool {
@@ -87,11 +106,6 @@ func (t *Tracker) Finalized() bool {
 		}
 	}
 	return cnt >= num
-}
-
-func (t Tracker) JobId() string {
-	return "Implement this function"
-	//return t.TrackerName.String() + storage.DB_PREFIX + strconv.ParseInt(t.State, errors.New("Unable to convert") )
 }
 
 func (t Tracker) NextStep() string {
@@ -121,14 +135,15 @@ func Broadcasting(ctx interface{}) error {
 		return errors.Wrap(err, string(tracker.State))
 	}
 
+	tracker.State = BusyBroadcasting
+
 	//create broadcasting job
-	job := event.JobETHBroadcast{TrackerName: tracker.TrackerName}
+	job := event.NewETHBroadcast(tracker.TrackerName, tracker.State)
 	err := context.jobStore.SaveJob(job)
 	if err != nil {
 		return errors.Wrap(errors.New("job serialization failed err: "), err.Error())
 	}
 
-	tracker.State = BusyBroadcasting
 	return nil
 }
 
@@ -146,17 +161,21 @@ func Finalizing(ctx interface{}) error {
 
 	if !voted {
 		//Check Broadcasting job
-		job, typ := context.jobStore.GetJob("ID")
+		job, typ := context.jobStore.GetJob(tracker.GetJobID(BusyBroadcasting))
 		broadcastJob := event.MakeJob(job, typ)
 
 		if broadcastJob.IsDone() {
+
 			//Create job to check finality
+			job := event.NewETHCheckFinality(tracker.TrackerName, BusyFinalizing)
+			err := context.jobStore.SaveJob(job)
+			if err != nil {
+				return errors.Wrap(errors.New("job serialization failed err: "), err.Error())
+			}
 		}
 	}
 
 	numVotes := tracker.GetVotes()
-
-	//TODO: check if I vote, if not, check my job of broadcasting status, create broadcasting job if necessary, if someone broadcasted, create job to check finality
 
 	if numVotes > 0 {
 		tracker.State = BusyFinalizing
@@ -174,7 +193,18 @@ func Finalization(ctx interface{}) error {
 		return errors.Wrap(err, string(tracker.State))
 	}
 
-	//todo: check if I vote, if not create job for check finality
+	//Check if current Node voted
+	voted := tracker.CheckIfVoted(context.currNodeAddr)
+
+	if !voted {
+		//Create job to check finality
+		job := event.NewETHCheckFinality(tracker.TrackerName, tracker.State)
+		err := context.jobStore.SaveJob(job)
+		if err != nil {
+			return errors.Wrap(errors.New("job serialization failed err: "), err.Error())
+		}
+	}
+
 	if tracker.Finalized() {
 		tracker.State = Finalized
 	}
@@ -190,12 +220,41 @@ func Minting(ctx interface{}) error {
 		return errors.Wrap(err, string(tracker.State))
 	}
 	//todo: create a job to mint
-	tracker.State = Minted
+
+	if tracker.TaskCompleted {
+		tracker.State = Minted
+	}
 	return nil
 }
 
 func Cleanup(ctx interface{}) error {
+	context := ctx.(TrackerCtx)
+	tracker := context.tracker
 	//todo: delete the tracker and jobs related
+
+	//Delete Broadcasting Job
+	job, typ := context.jobStore.GetJob(tracker.GetJobID(BusyBroadcasting))
+	broadcastJob := event.MakeJob(job, typ)
+
+	err := context.jobStore.DeleteJob(broadcastJob)
+	if err != nil {
+		return err
+	}
+
+	//Delete CheckFinality Job
+	job, typ = context.jobStore.GetJob(tracker.GetJobID(BusyFinalizing))
+	checkFinJob := event.MakeJob(job, typ)
+
+	err = context.jobStore.DeleteJob(checkFinJob)
+	if err != nil {
+		return err
+	}
+
+	//Delete Tracker
+	res, err := context.trackerStore.Delete(tracker.TrackerName)
+	if err != nil || !res {
+		return err
+	}
 
 	return nil
 }

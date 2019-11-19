@@ -5,10 +5,13 @@ import (
 	"github.com/Oneledger/protocol/action/eth"
 	"github.com/Oneledger/protocol/chains/ethereum"
 	"github.com/Oneledger/protocol/config"
+	ethereum2 "github.com/Oneledger/protocol/data/ethereum"
 	"github.com/Oneledger/protocol/data/jobs"
 	"github.com/Oneledger/protocol/log"
+	"github.com/Oneledger/protocol/storage"
 	"github.com/ethereum/go-ethereum/core/types"
 	"os"
+	"strconv"
 
 	"github.com/ethereum/go-ethereum/rlp"
 )
@@ -16,10 +19,19 @@ import (
 var _ jobs.Job = &JobETHCheckFinality{}
 
 type JobETHCheckFinality struct {
-	TrackerName         ethereum.TrackerName
-	JobID               string
-	RetryCount          int
-	JobStatus          	jobs.Status
+	TrackerName ethereum.TrackerName
+	JobID       string
+	RetryCount  int
+	JobStatus   jobs.Status
+}
+
+func NewETHCheckFinality(name ethereum.TrackerName, state ethereum2.TrackerState) JobETHCheckFinality {
+	return JobETHCheckFinality{
+		TrackerName: name,
+		JobID:       name.String() + storage.DB_PREFIX + strconv.Itoa(int(state)),
+		RetryCount:  0,
+		JobStatus:   0,
+	}
 }
 
 func (job JobETHCheckFinality) DoMyJob(ctx interface{}) {
@@ -91,9 +103,8 @@ func (job JobETHCheckFinality) DoMyJob(ctx interface{}) {
 		ethCtx.Logger.Error("error while broadcasting finality vote and mint txn ", job.GetJobID(), err)
 		return
 	}
-    job.JobStatus = jobs.Completed
+	job.JobStatus = jobs.Completed
 }
-
 
 func (job JobETHCheckFinality) IsMyJobDone(ctx interface{}) bool {
 
@@ -113,13 +124,12 @@ func (job JobETHCheckFinality) GetType() string {
 }
 
 func (job JobETHCheckFinality) GetJobID() string {
-	return "We should make a Job ID"
+	return job.JobID
 }
 
 func (job JobETHCheckFinality) IsDone() bool {
-	if job.JobStatus==jobs.Completed {
+	if job.JobStatus == jobs.Completed {
 		return true
 	}
 	return false
 }
-

@@ -126,16 +126,19 @@ func (r reportFinalityMintTx) ProcessCheck(ctx *action.Context, tx action.RawTx)
 	}
 	// Are there Enough votes ?
 	// If not LOG it and return
-	// IF yes Mint OTETh
+	// IF yes Check if status of minting
+	// CHeck if it has been minted already, if not
+	//    MINTING -> Mint OTETh and update status
+	// If it has been minted
+	//   MINTED -> Skip
 	if !tracker.Finalized() {
 		return false, action.Response{Log: "Not Enough votes to finalize a transaction"}
 	}
-    if ! tracker.IsTaskCompleted(){
+	if !tracker.IsTaskCompleted() {
 		ctx.Logger.Info("ready to mint")
 		//Mint Tokens OETH
 		tracker.CompleteTask()
 	}
-
 
 	return true, action.Response{}
 }
