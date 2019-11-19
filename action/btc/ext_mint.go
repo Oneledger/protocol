@@ -150,6 +150,7 @@ func (extMintOBTCTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (bool, a
 	tracker.ProcessLockScriptAddress = lockScriptAddress
 	tracker.ProcessUnsignedTx = nil
 	tracker.ProcessOwner = nil
+	tracker.ProcessType = bitcoin.ProcessTypeNone
 
 	err = ctx.BTCTrackers.SetTracker(f.TrackerName, tracker)
 	if err != nil || !ok {
@@ -212,6 +213,7 @@ func (extMintOBTCTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool,
 	tracker.ProcessLockScriptAddress = lockScriptAddress
 	tracker.ProcessUnsignedTx = nil
 	tracker.ProcessOwner = nil
+	tracker.ProcessType = bitcoin.ProcessTypeNone
 
 	if ctx.LockScriptStore != nil {
 		err := ctx.LockScriptStore.SaveLockScript(lockScriptAddress, lockScript)

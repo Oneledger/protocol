@@ -7,7 +7,6 @@ package event
 import (
 	"bytes"
 	"encoding/hex"
-	"fmt"
 	"strconv"
 	"time"
 
@@ -27,10 +26,6 @@ type JobAddSignature struct {
 	TrackerName string
 
 	JobID string
-
-	Done bool
-
-	RetryCount int8
 }
 
 func NewAddSignatureJob(trackerName string) jobs.Job {
@@ -41,8 +36,6 @@ func NewAddSignatureJob(trackerName string) jobs.Job {
 		JobTypeAddSignature,
 		trackerName,
 		id,
-		false,
-		0,
 	}
 }
 
@@ -59,7 +52,6 @@ func (j *JobAddSignature) DoMyJob(ctxI interface{}) {
 	tracker, err := ctx.Trackers.Get(j.TrackerName)
 	if err != nil {
 		ctx.Logger.Error("error while getting tracker ", err, j.TrackerName)
-		j.RetryCount += 1
 		return
 	}
 
@@ -68,13 +60,13 @@ func (j *JobAddSignature) DoMyJob(ctxI interface{}) {
 	lockTx := wire.NewMsgTx(wire.TxVersion)
 	err = lockTx.Deserialize(bytes.NewReader(tracker.ProcessUnsignedTx))
 	if err != nil {
-		j.RetryCount += 1
+		ctx.Logger.Error("error while deserializing lock", err)
 		return
 	}
 
 	lockScript, err := ctx.LockScripts.GetLockScript(tracker.CurrentLockScriptAddress)
 	if err != nil {
-		j.RetryCount += 1
+		ctx.Logger.Error("erroring in reading lockscript", err)
 		return
 	}
 
@@ -82,8 +74,7 @@ func (j *JobAddSignature) DoMyJob(ctxI interface{}) {
 
 	sig, err := txscript.RawTxInSignature(lockTx, 0, lockScript, txscript.SigHashAll, pk)
 	if err != nil {
-		fmt.Println(err, "RawTxInSignature")
-		j.RetryCount += 1
+		ctx.Logger.Error(err, "RawTxInSignature")
 		return
 	}
 
@@ -97,8 +88,7 @@ func (j *JobAddSignature) DoMyJob(ctxI interface{}) {
 
 	txData, err := addSigData.Marshal()
 	if err != nil {
-		// retry later
-		j.RetryCount += 1
+		ctx.Logger.Error("error in marshalling txn", err)
 		return
 	}
 
@@ -116,49 +106,12 @@ func (j *JobAddSignature) DoMyJob(ctxI interface{}) {
 
 	err = ctx.Service.InternalBroadcast(req, &rep)
 	if err != nil {
-		j.RetryCount += 1
+		ctx.Logger.Error("error in broadcasting internal addsignature", err)
 		return
 	}
 
 }
 
-func (j *JobAddSignature) IsMyJobDone(ctxI interface{}) bool {
-	ctx, _ := ctxI.(*JobsContext)
-
-	if j.RetryCount > MaxJobRetries {
-		return true
-	}
-
-	tracker, err := ctx.Trackers.Get(j.TrackerName)
-	if err != nil {
-		return false
-	}
-
-	return tracker.Multisig.HasAddressSigned(ctx.ValidatorAddress)
-}
-
-func (j *JobAddSignature) IsSufficient(ctxI interface{}) bool {
-
-	ctx, _ := ctxI.(*JobsContext)
-
-	tracker, err := ctx.Trackers.Get(j.TrackerName)
-	if err != nil {
-		return false
-	}
-
-	return tracker.Multisig.IsValid()
-}
-
-func (j *JobAddSignature) DoFinalize() {
-	// TODO:
-
-	j.Done = true
-}
-
 func (j *JobAddSignature) GetJobID() string {
 	return j.JobID
-}
-
-func (j *JobAddSignature) IsDone() bool {
-	return j.Done
 }

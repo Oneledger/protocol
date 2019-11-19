@@ -5,6 +5,8 @@ import (
 	"github.com/Oneledger/protocol/data/fees"
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/serialize"
+	"github.com/btcsuite/btcd/chaincfg"
+	"github.com/btcsuite/btcutil"
 )
 
 type Validator struct {
@@ -33,6 +35,21 @@ func (v *Validator) FromBytes(msg []byte) (*Validator, error) {
 		return nil, err
 	}
 	return v, nil
+}
+
+func (v *Validator) GetBTCScriptAddress(params *chaincfg.Params) (keys.Address, error) {
+
+	h, err := v.ECDSAPubKey.GetHandler()
+	if err != nil {
+		return nil, err
+	}
+
+	apk, err := btcutil.NewAddressPubKey(h.Bytes(), params)
+	if err != nil {
+		return nil, err
+	}
+
+	return apk.ScriptAddress(), nil
 }
 
 type Stake struct {

@@ -10,7 +10,6 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/Oneledger/protocol/data/bitcoin"
 	"github.com/blockcypher/gobcy"
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
@@ -152,38 +151,6 @@ func (c *chainDriver) CheckFinality(hash *chainhash.Hash, token, chain string) (
 	return false, nil
 }
 
-func (c *chainDriver) PrepareRedeem(prevLock bitcoin.UTXO,
-	userAddress []byte, amount int64,
-	lockAddress []byte) (txBytes []byte) {
-
-	tx := wire.NewMsgTx(wire.TxVersion)
-
-	prevLockOP := wire.NewOutPoint(prevLock.TxID, prevLock.Index)
-	vin1 := wire.NewTxIn(prevLockOP, nil, nil)
-	tx.AddTxIn(vin1)
-
-	balance := prevLock.Balance - amount
-
-	out := wire.NewTxOut(balance, lockAddress)
-	tx.AddTxOut(out)
-
-	userOP := wire.NewTxOut(amount, userAddress)
-	tx.AddTxOut(userOP)
-
-	tempBuf := bytes.NewBuffer([]byte{})
-	tx.Serialize(tempBuf)
-	size := len(tempBuf.Bytes()) * 2
-	fees := int64(70 * size)
-
-	tx.TxOut[0].Value = tx.TxOut[0].Value - fees
-
-	buf := bytes.NewBuffer(txBytes)
-	tx.Serialize(buf)
-	txBytes = buf.Bytes()
-
-	return
-}
-
 func (c *chainDriver) PrepareRedeemNew(prevLockTxID *chainhash.Hash, prevLockIndex uint32,
 	prevLockBalance int64, userAddress []byte, redeemAmount int64,
 	lockScriptAddress []byte) (txBytes []byte) {
@@ -207,7 +174,7 @@ func (c *chainDriver) PrepareRedeemNew(prevLockTxID *chainhash.Hash, prevLockInd
 	size := len(tempBuf.Bytes()) * 2
 	fees := int64(40 * size)
 
-	tx.TxOut[0].Value = tx.TxOut[1].Value - fees
+	tx.TxOut[1].Value = tx.TxOut[1].Value - fees
 
 	buf := bytes.NewBuffer(txBytes)
 	tx.Serialize(buf)

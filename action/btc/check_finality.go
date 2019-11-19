@@ -171,15 +171,17 @@ func (reportFinalityMintTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (
 
 	ctx.Logger.Info("ready to mint")
 
-	// mint oBTC
-	curr, ok := ctx.Currencies.GetCurrencyByName("BTC")
-	if !ok {
+	if tracker.ProcessType == bitcoin.ProcessTypeLock {
+		// mint oBTC
+		curr, ok := ctx.Currencies.GetCurrencyByName("BTC")
+		if !ok {
 
-	}
-	oBTCCoin := curr.NewCoinFromUnit(tracker.ProcessBalance - tracker.CurrentBalance)
-	err = ctx.Balances.AddToAddress(f.OwnerAddress, oBTCCoin)
-	if err != nil {
-		return false, action.Response{Log: "error adding oBTC to address"}
+		}
+		oBTCCoin := curr.NewCoinFromUnit(tracker.ProcessBalance - tracker.CurrentBalance)
+		err = ctx.Balances.AddToAddress(f.OwnerAddress, oBTCCoin)
+		if err != nil {
+			return false, action.Response{Log: "error adding oBTC to address"}
+		}
 	}
 
 	validatorPubKeys, err := ctx.Validators.GetBitcoinKeys(&chaincfg.TestNet3Params)
@@ -290,17 +292,23 @@ func (reportFinalityMintTx) ProcessDeliver(ctx *action.Context, tx action.RawTx)
 		}
 	}
 
-	// mint oBTC
-	curr, ok := ctx.Currencies.GetCurrencyByName("BTC")
+	if tracker.ProcessType == bitcoin.ProcessTypeLock {
 
-	oBTCCoin := curr.NewCoinFromUnit(tracker.ProcessBalance - tracker.CurrentBalance)
-	err = ctx.Balances.AddToAddress(f.OwnerAddress, oBTCCoin)
-	if err != nil {
-		ctx.Logger.Error(err)
-		return false, action.Response{Log: "error adding oBTC to address"}
+		// mint oBTC
+		curr, ok := ctx.Currencies.GetCurrencyByName("BTC")
+		if !ok {
+
+		}
+
+		oBTCCoin := curr.NewCoinFromUnit(tracker.ProcessBalance - tracker.CurrentBalance)
+		err = ctx.Balances.AddToAddress(f.OwnerAddress, oBTCCoin)
+		if err != nil {
+			ctx.Logger.Error(err)
+			return false, action.Response{Log: "error adding oBTC to address"}
+		}
+
+		ctx.Logger.Info("coin minted to ", f.OwnerAddress)
 	}
-
-	ctx.Logger.Info("coin minted to ", f.OwnerAddress)
 
 	validatorPubKeys, err := ctx.Validators.GetBitcoinKeys(&chaincfg.TestNet3Params)
 	m := (len(validatorPubKeys) * 2 / 3) + 1

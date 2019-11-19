@@ -61,18 +61,11 @@ func (ts *TrackerStore) Get(name string) (*Tracker, error) {
 
 func (ts *TrackerStore) GetTrackerForLock() (*Tracker, error) {
 
-	fmt.Println(" *************************************************************")
-	start := append(ts.prefix, []byte("tracker_  ")...)
-	end := append(ts.prefix, []byte("tracker_~~")...)
-
 	var lowestAmount int64 = 999999999999999
 	var tempTracker *Tracker = nil
 
-	fmt.Println("111111111111111111111111111111111111111111111111111111111111111111111")
-	doAscending := true
-	ts.State.IterateRange(start, end, doAscending, func(k, v []byte) bool {
+	ts.Iterate(func(k, v []byte) bool {
 
-		fmt.Println("22222222222222222222222222222222222222222222222222222222222222222")
 		d := &Tracker{}
 		err := ts.szlr.Deserialize(v, d)
 		if err != nil {
@@ -94,6 +87,45 @@ func (ts *TrackerStore) GetTrackerForLock() (*Tracker, error) {
 	}
 
 	return tempTracker, nil
+}
+
+func (ts *TrackerStore) GetTrackerForRedeem() (*Tracker, error) {
+
+	var highestAmount int64 = -1
+	var tempTracker *Tracker = nil
+
+	ts.Iterate(func(k, v []byte) bool {
+
+		d := &Tracker{}
+		err := ts.szlr.Deserialize(v, d)
+		if err != nil {
+			return false
+		}
+
+		if d.IsAvailable() && d.GetBalance() > highestAmount {
+			tempTracker = d
+			highestAmount = d.CurrentBalance
+		}
+
+		// return false
+		return false
+	})
+
+	if tempTracker == nil {
+		return nil, errors.New("no tracker found")
+	}
+
+	return tempTracker, nil
+}
+
+func (ts *TrackerStore) Iterate(fn func(k, v []byte) bool) {
+
+	start := append(ts.prefix, []byte("tracker_  ")...)
+	end := append(ts.prefix, []byte("tracker_~~")...)
+
+	doAscending := true
+	ts.State.IterateRange(start, end, doAscending, fn)
+
 }
 
 func (ts *TrackerStore) SetTracker(name string, tracker *Tracker) error {

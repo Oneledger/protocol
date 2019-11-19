@@ -7,6 +7,7 @@ import (
 	"github.com/Oneledger/protocol/action/staking"
 	"github.com/Oneledger/protocol/action/transfer"
 	"github.com/Oneledger/protocol/app/node"
+	bitcoin2 "github.com/Oneledger/protocol/chains/bitcoin"
 	"github.com/Oneledger/protocol/client"
 	"github.com/Oneledger/protocol/config"
 	"github.com/Oneledger/protocol/data/accounts"
@@ -28,7 +29,6 @@ import (
 	"io"
 	"path/filepath"
 
-	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/pkg/errors"
 	"github.com/tendermint/tendermint/libs/db"
 )
@@ -100,10 +100,11 @@ func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *node.Context) (
 	ctx.accounts = accounts.NewWallet(cfg, ctx.dbDir())
 
 	// TODO check if validator
-	if true {
+	valAddr := ctx.node.ValidatorAddress()
+	if ctx.validators.IsValidatorAddress(valAddr) {
+
 		ctx.jobStore = jobs.NewJobStore(cfg, ctx.dbDir())
 		ctx.lockScriptStore = bitcoin.NewLockScriptStore(cfg, ctx.dbDir())
-
 	}
 
 	ctx.actionRouter = action.NewRouter("action")
@@ -125,19 +126,7 @@ func (ctx context) dbDir() string {
 
 func (ctx *context) Action(header *Header, state *storage.State) *action.Context {
 
-	var params *chaincfg.Params
-	switch ctx.cfg.ChainDriver.BitcoinChainType {
-	case "mainnet":
-		params = &chaincfg.MainNetParams
-	case "testnet3":
-		params = &chaincfg.TestNet3Params
-	case "regtest":
-		params = &chaincfg.RegressionNetParams
-	case "simnet":
-		params = &chaincfg.SimNetParams
-	default:
-		params = &chaincfg.TestNet3Params
-	}
+	params := bitcoin2.GetChainParams(ctx.cfg.ChainDriver.BitcoinChainType)
 
 	actionCtx := action.NewContext(
 		ctx.actionRouter,
