@@ -136,14 +136,14 @@ func (r reportFinalityMintTx) ProcessCheck(ctx *action.Context, tx action.RawTx)
 	if !tracker.Finalized() {
 		return false, action.Response{Log: "Not Enough votes to finalize a transaction"}
 	}
-	if ! tracker.IsTaskCompleted() {
+	if !tracker.IsTaskCompleted() {
 		ctx.Logger.Info("ready to mint")
 		if !mintTokens(ctx, *tracker, f) {
 			return false, action.Response{Log: "Unable to mint Tokens"}
 		}
 		tracker.CompleteTask()
 	}
-	return true, action.Response{Log:"MINTING SUCCESSFULL"}
+	return true, action.Response{Log: "MINTING SUCCESSFULL"}
 }
 
 func (r reportFinalityMintTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
@@ -156,18 +156,17 @@ func (r reportFinalityMintTx) ProcessFee(ctx *action.Context, signedTx action.Si
 
 var _ action.Tx = reportFinalityMintTx{}
 
-
-func mintTokens (ctx *action.Context,tracker trackerlib.Tracker,oltTx ReportFinalityMint) bool {
+func mintTokens(ctx *action.Context, tracker trackerlib.Tracker, oltTx ReportFinalityMint) bool {
 	curr, _ := ctx.Currencies.GetCurrencyByName("BTC")
 	rawTx := tracker.SignedETHTx
 	tx := &types.Transaction{}
 	err := rlp.DecodeBytes(rawTx, tx)
 	if err != nil {
-		ctx.Logger.Error("Error Decoding Bytes from RaxTX :", tracker.TrackerName,err)
+		ctx.Logger.Error("Error Decoding Bytes from RaxTX :", tracker.TrackerName, err)
 		return false
 	}
 	oEthCoin := curr.NewCoinFromUnit(tx.Value().Int64())
-	err = ctx.Balances.AddToAddress(oltTx.Locker,oEthCoin)
+	err = ctx.Balances.AddToAddress(oltTx.Locker, oEthCoin)
 	if err != nil {
 		ctx.Logger.Error(err)
 		return false

@@ -19,12 +19,12 @@ type OnlineLockRequest struct {
 	// RawTransaction of a Lock call from the user to the smart contract
 	// This should be signed and RLP encoded with the ethereum address of the user
 	//OLTAddress common.Address  `json:"oltAddress"`
-	RawTx      []byte   `json:"rawTx"`
+	RawTx []byte `json:"rawTx"`
 	//Amount     int64 `json:"amount"`
 }
 type OfflineLockRequest struct {
 	PublicKey *ecdsa.PublicKey `json:"public_key"`
-	Amount *big.Int `json:"amount"`
+	Amount    *big.Int         `json:"amount"`
 }
 
 type OfflineLockRawTX struct {
@@ -32,21 +32,19 @@ type OfflineLockRawTX struct {
 }
 type LockReply struct {
 	Amount *big.Int `json:"amount"`
-	Ok bool `json:"ok"`
+	Ok     bool     `json:"ok"`
 	//VerifyBalance     bool     `json:"ok"`
 	//Reason string  `json:"reason"`
 }
 
 type SignRequest struct {
-	wei *big.Int `json:"wei"`
+	wei       *big.Int       `json:"wei"`
 	recepient common.Address `json:"recepient"`
 }
 
-type SignReply struct{
+type SignReply struct {
 	txHash common.Hash `json:"tx_hash"`
 }
-
-
 
 type BalanceRequest struct {
 	Address Address `json:"address"`
@@ -56,5 +54,3 @@ type BalanceReply struct {
 	Address Address  `json:"address"`
 	Amount  *big.Int `json:"amount"`
 }
-
-

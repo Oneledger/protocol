@@ -3,12 +3,11 @@ package ethereum
 import (
 	//"errors"
 
+	"strconv"
+
 	"github.com/Oneledger/protocol/chains/ethereum"
 	"github.com/Oneledger/protocol/data/keys"
-	"github.com/Oneledger/protocol/event"
 	"github.com/Oneledger/protocol/storage"
-	"github.com/pkg/errors"
-	"strconv"
 )
 
 type TrackerState int
@@ -78,7 +77,7 @@ func (t *Tracker) GetVotes() int {
 
 func (t *Tracker) CheckIfVoted(node keys.Address) bool {
 	index := 0
-	voted := 0
+	voted := int64(0)
 	for i, addr := range t.Validators {
 		if addr.Equal(node) {
 			index = i
@@ -123,138 +122,4 @@ func (t Tracker) NextStep() string {
 		return CLEANUP
 	}
 	return ""
-}
-
-//TODO Go back to Busy broadcasting if there is a failure in Finalizing.
-func Broadcasting(ctx interface{}) error {
-	context := ctx.(TrackerCtx)
-	tracker := context.tracker
-
-	if tracker.State != New {
-		err := errors.New("Cannot Broadcast from the current state")
-		return errors.Wrap(err, string(tracker.State))
-	}
-
-	tracker.State = BusyBroadcasting
-
-	//create broadcasting job
-	job := event.NewETHBroadcast(tracker.TrackerName, tracker.State)
-	err := context.jobStore.SaveJob(job)
-	if err != nil {
-		return errors.Wrap(errors.New("job serialization failed err: "), err.Error())
-	}
-
-	return nil
-}
-
-func Finalizing(ctx interface{}) error {
-	context := ctx.(TrackerCtx)
-	tracker := context.tracker
-
-	if tracker.State != BusyBroadcasting {
-		err := errors.New("Cannot start Finalizing from the current state")
-		return errors.Wrap(err, string(tracker.State))
-	}
-
-	//Check if current Node voted
-	voted := tracker.CheckIfVoted(context.currNodeAddr)
-
-	if !voted {
-		//Check Broadcasting job
-		job, typ := context.jobStore.GetJob(tracker.GetJobID(BusyBroadcasting))
-		broadcastJob := event.MakeJob(job, typ)
-
-		if broadcastJob.IsDone() {
-
-			//Create job to check finality
-			job := event.NewETHCheckFinality(tracker.TrackerName, BusyFinalizing)
-			err := context.jobStore.SaveJob(job)
-			if err != nil {
-				return errors.Wrap(errors.New("job serialization failed err: "), err.Error())
-			}
-		}
-	}
-
-	numVotes := tracker.GetVotes()
-
-	if numVotes > 0 {
-		tracker.State = BusyFinalizing
-	}
-
-	return nil
-}
-
-func Finalization(ctx interface{}) error {
-	context := ctx.(TrackerCtx)
-	tracker := context.tracker
-
-	if tracker.State != BusyFinalizing {
-		err := errors.New("cannot finalize from the current state")
-		return errors.Wrap(err, string(tracker.State))
-	}
-
-	//Check if current Node voted
-	voted := tracker.CheckIfVoted(context.currNodeAddr)
-
-	if !voted {
-		//Create job to check finality
-		job := event.NewETHCheckFinality(tracker.TrackerName, tracker.State)
-		err := context.jobStore.SaveJob(job)
-		if err != nil {
-			return errors.Wrap(errors.New("job serialization failed err: "), err.Error())
-		}
-	}
-
-	if tracker.Finalized() {
-		tracker.State = Finalized
-	}
-	return nil
-}
-
-func Minting(ctx interface{}) error {
-	context := ctx.(TrackerCtx)
-	tracker := context.tracker
-
-	if tracker.State != Finalized {
-		err := errors.New("Cannot Mint from the current state")
-		return errors.Wrap(err, string(tracker.State))
-	}
-	//todo: create a job to mint
-
-	if tracker.TaskCompleted {
-		tracker.State = Minted
-	}
-	return nil
-}
-
-func Cleanup(ctx interface{}) error {
-	context := ctx.(TrackerCtx)
-	tracker := context.tracker
-	//todo: delete the tracker and jobs related
-
-	//Delete Broadcasting Job
-	job, typ := context.jobStore.GetJob(tracker.GetJobID(BusyBroadcasting))
-	broadcastJob := event.MakeJob(job, typ)
-
-	err := context.jobStore.DeleteJob(broadcastJob)
-	if err != nil {
-		return err
-	}
-
-	//Delete CheckFinality Job
-	job, typ = context.jobStore.GetJob(tracker.GetJobID(BusyFinalizing))
-	checkFinJob := event.MakeJob(job, typ)
-
-	err = context.jobStore.DeleteJob(checkFinJob)
-	if err != nil {
-		return err
-	}
-
-	//Delete Tracker
-	res, err := context.trackerStore.Delete(tracker.TrackerName)
-	if err != nil || !res {
-		return err
-	}
-
-	return nil
 }

@@ -11,10 +11,11 @@ import (
 )
 
 type ExtMintOETH struct {
-	TrackerName  ethereum.TrackerName
-	Locker action.Address
+	TrackerName ethereum.TrackerName
+	Locker      action.Address
 	// Set locked amount from Tracker.signed TX ?
 }
+
 var _ action.Msg = &ExtMintOETH{}
 
 func (eem ExtMintOETH) Signers() []action.Address {
@@ -52,15 +53,14 @@ func (eem ExtMintOETH) Marshal() ([]byte, error) {
 }
 
 func (eem ExtMintOETH) Unmarshal(data []byte) error {
-	return json.Unmarshal(data,eem)
+	return json.Unmarshal(data, eem)
 }
-
 
 type extMintOETHTx struct {
 }
 
 func (extMintOETHTx) Validate(ctx *action.Context, signedTx action.SignedTx) (bool, error) {
-//Implement check Finality first
+	//Implement check Finality first
 	f := ReportFinalityMint{}
 	err := f.Unmarshal(signedTx.Data)
 	if err != nil {
@@ -105,11 +105,11 @@ func (extMintOETHTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (bool, a
 	if !bytes.Equal(tracker.ProcessOwner, f.Locker) {
 		return false, action.Response{Log: "tracker process not owned by user"}
 	}
-    if ! (tracker.State == trackerlib.Finalized) {
-    	return false, action.Response{Log: "Not enough votes collected for this tracker"}
+	if !(tracker.State == trackerlib.Finalized) {
+		return false, action.Response{Log: "Not enough votes collected for this tracker"}
 	}
 	// Mint OETH
-	return true ,action.Response{Log: "External Mint Successful"}
+	return true, action.Response{Log: "External Mint Successful"}
 }
 
 func (extMintOETHTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, action.Response) {

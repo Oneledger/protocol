@@ -39,13 +39,13 @@ func toConfigDuration(d time.Duration) Duration {
 
 // Struct for holding the configuration details for the node
 type Server struct {
-	Node        *NodeConfig        `toml:"node"`
-	Network     *NetworkConfig     `toml:"network"`
-	P2P         *P2PConfig         `toml:"p2p"`
-	Mempool     *MempoolConfig     `toml:"mempool"`
-	Consensus   *ConsensusConfig   `toml:"consensus"`
-	ChainDriver *ChainDriverConfig `toml:"chain_driver"`
-	EthChainDriver *EthereumChainDriverConfig  `toml:"ethereum_chain_driver"`
+	Node           *NodeConfig                `toml:"node"`
+	Network        *NetworkConfig             `toml:"network"`
+	P2P            *P2PConfig                 `toml:"p2p"`
+	Mempool        *MempoolConfig             `toml:"mempool"`
+	Consensus      *ConsensusConfig           `toml:"consensus"`
+	ChainDriver    *ChainDriverConfig         `toml:"chain_driver"`
+	EthChainDriver *EthereumChainDriverConfig `toml:"ethereum_chain_driver"`
 
 	chainID string
 	rootDir string
@@ -406,14 +406,15 @@ type ChainDriverConfig struct {
 
 	BlockCypherToken string `toml:"blockcypher_token" desc:"token to use blockcypher APIs"`
 }
+
 const defaultKeyLocation = "eth/key.json"
 
 type EthereumChainDriverConfig struct {
 	// Path to the ethereum key
-	ContractABI       string   `toml: contractAbi" desc:"AVI for the contract"`
-	Connection        string   `toml:"connection" desc:"Connection string to the Ethereum node"`
-	KeyLocation       string   `toml:"key" desc:"Relative path to the Ethereum key. Can be left blank"`
-	ContractAddress   string   `toml:"contract_address" desc:"Address to the ethereum LockRedeem contract . Contract deployment returns address."`
+	ContractABI     string `toml: contractAbi" desc:"AVI for the contract"`
+	Connection      string `toml:"connection" desc:"Connection string to the Ethereum node"`
+	KeyLocation     string `toml:"key" desc:"Relative path to the Ethereum key. Can be left blank"`
+	ContractAddress string `toml:"contract_address" desc:"Address to the ethereum LockRedeem contract . Contract deployment returns address."`
 	//0InitialValidators []string `toml:"initial_validators" desc:"Addresses of the initial validators"`
 }
 
@@ -440,18 +441,18 @@ func DefaultEthConfigRoopsten() *EthereumChainDriverConfig {
 	}
 }
 
-func DefaultEthConfig() *EthereumChainDriverConfig{
+func DefaultEthConfig() *EthereumChainDriverConfig {
 	return &EthereumChainDriverConfig{
 		Connection: "http://localhost:7545",
 	}
 }
 
-func CreateEthConfig(connection string,keylocation string,address string,abi string) *EthereumChainDriverConfig{
+func CreateEthConfig(connection string, keylocation string, address string, abi string) *EthereumChainDriverConfig {
 	return &EthereumChainDriverConfig{
-		Connection:connection,
-		KeyLocation:keylocation,
-		ContractAddress:address,
-		ContractABI:abi,
+		Connection:      connection,
+		KeyLocation:     keylocation,
+		ContractAddress: address,
+		ContractABI:     abi,
 		//InitialValidators:validators,
 	}
 }

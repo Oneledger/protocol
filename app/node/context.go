@@ -46,6 +46,7 @@ func (n Context) PrivKey() keys.PrivateKey {
 func (n Context) EthPrivKey() *ecdsa.PrivateKey {
 	return &n.ethPrivKey
 }
+
 //func (n Context) EthPrivKey() *ecdsa.PrivateKey {
 //	return &n.ethPrivKey
 //}

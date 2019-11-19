@@ -16,7 +16,7 @@ import (
 
 const DefaultTimeout = 5 * time.Second
 
-func NewEthereumChainDriver(cfg *config.EthereumChainDriverConfig ,logger * log.Logger ,ethPrivKey *ecdsa.PrivateKey) (*EthereumChainDriver, error) {
+func NewEthereumChainDriver(cfg *config.EthereumChainDriverConfig, logger *log.Logger, ethPrivKey *ecdsa.PrivateKey) (*EthereumChainDriver, error) {
 
 	// So first we need to grab the current address
 	contractAddrSlice, err := hexutil.Decode(cfg.ContractAddress)
@@ -33,9 +33,9 @@ func NewEthereumChainDriver(cfg *config.EthereumChainDriverConfig ,logger * log.
 		logger.Error("failed to dial the given ethereum connection")
 		return nil, err
 	}
-    //TODO : Function to return AUTH object
-    //TODO : Function to load contract from specific Address .
-    //Todo : Deploy Smart contract and return Deployed addresss
+	//TODO : Function to return AUTH object
+	//TODO : Function to load contract from specific Address .
+	//Todo : Deploy Smart contract and return Deployed addresss
 	ctrct, err := contract.NewLockRedeem(contractAddr, client)
 	if err != nil {
 		logger.Error("failed to create new contract")
@@ -94,12 +94,9 @@ func (acc EthereumChainDriver) Nonce() (uint64, error) {
 	return acc.Client.PendingNonceAt(c, acc.Address())
 }
 
-
-
 func (acc EthereumChainDriver) IsContract() {
 
 }
-
 
 // VerifyContract returns true if we can verify that the current contract matches the
 func (acc EthereumChainDriver) VerifyContract(vs []Address) (bool, error) {
@@ -116,7 +113,6 @@ func (acc EthereumChainDriver) Address() Address {
 
 	return crypto.PubkeyToAddress(acc.PrivateKey.PublicKey)
 }
-
 
 // TransactOpts() returns a new transactor with the EthereumChainDriver struct's private key
 func (acc *EthereumChainDriver) TransactOpts() *TransactOpts {
