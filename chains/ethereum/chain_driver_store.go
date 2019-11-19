@@ -4,8 +4,6 @@ import (
 	"context"
 	"crypto/ecdsa"
 	"github.com/Oneledger/protocol/chains/ethereum/contract"
-	"github.com/Oneledger/protocol/data/keys"
-
 	"github.com/Oneledger/protocol/config"
 	"github.com/Oneledger/protocol/log"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -18,7 +16,7 @@ import (
 
 const DefaultTimeout = 5 * time.Second
 
-func NewEthereumChainDriver(cfg *config.EthereumChainDriverConfig ,logger * log.Logger ,ethPrivKey *keys.PrivateKey) (*EthereumChainDriver, error) {
+func NewEthereumChainDriver(cfg *config.EthereumChainDriverConfig ,logger * log.Logger ,ethPrivKey *ecdsa.PrivateKey) (*EthereumChainDriver, error) {
 
 	// So first we need to grab the current address
 	contractAddrSlice, err := hexutil.Decode(cfg.ContractAddress)
@@ -74,7 +72,7 @@ func defaultContext() (context.Context, context.CancelFunc) {
 // EthereumChainDriver provides the core fields required to interact with the Ethereum network. As of this moment (2019-08-21)
 // it should only be used by validator nodes.
 type EthereumChainDriver struct {
-	PrivateKey      *keys.PrivateKey
+	PrivateKey      *ecdsa.PrivateKey
 	Client          *Client
 	Contract        *Contract
 	ContractAddress Address
@@ -115,7 +113,8 @@ func (acc EthereumChainDriver) isContract() (bool, error) {
 }
 
 func (acc EthereumChainDriver) Address() Address {
-	return crypto.PubkeyToAddress(acc.PublicKey())
+
+	return crypto.PubkeyToAddress(acc.PrivateKey.PublicKey)
 }
 
 
