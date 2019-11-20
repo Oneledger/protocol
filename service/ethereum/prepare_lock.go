@@ -1,6 +1,8 @@
 package ethereum
 
 import (
+	"fmt"
+
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/rlp"
@@ -27,8 +29,9 @@ func (svc *Service) CreateRawExtLock(req OLTLockRequest, out *OLTLockReply) erro
 	}
 	packets, err := createRawLock(req.Address, req.RawTx, tx.Value().Int64(), req.Fee, req.Gas)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "createRawLock")
 	}
+	fmt.Println("CreateRawExtLock:", packets)
 	*out = OLTLockReply{
 		RawTX: packets,
 	}
@@ -73,7 +76,7 @@ func createRawLock(locker action.Address, rawTx []byte, lockamount int64, userfe
 // Wallet signs and then calls onlinelock
 func (svc *Service) GetRawLockTX(req ETHLockRequest, out *ETHLockRawTX) error {
 	//TODO GET ECDSA PRIVATE KEY
-	cd, _ := ethereum.NewEthereumChainDriver("dir", svc.config, svc.nodeContext.EthPrivKey(), svc.logger)
+	cd, _ := ethereum.NewEthereumChainDriver(svc.config, svc.logger,svc.nodeContext.EthPrivKey())
 	rawTx, err := cd.PrepareUnsignedETHLock(req.PublicKey, req.Amount)
 	if err != nil {
 		return err

@@ -16,6 +16,10 @@ import (
 	"github.com/Oneledger/protocol/log"
 )
 
+func Name() string {
+	return "eth"
+}
+
 type Service struct {
 	config      *config.EthereumChainDriverConfig
 	router      action.Router
@@ -27,9 +31,9 @@ type Service struct {
 }
 
 // Returns a new Service, should be passed as an RPC handler
-func NewEthereumService(
+func NewService(
 	//balances *balance.Store,
-	config config.EthereumChainDriverConfig,
+	config *config.EthereumChainDriverConfig,
 	router action.Router,
 	accounts accounts.Wallet,
 	nodeCtx node.Context,
@@ -39,7 +43,7 @@ func NewEthereumService(
 ) *Service {
 	return &Service{
 		//balances:     balances,
-		config:      &config,
+		config:      config,
 		router:      router,
 		nodeContext: nodeCtx,
 		accounts:    accounts,

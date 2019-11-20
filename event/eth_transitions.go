@@ -1,6 +1,8 @@
 package event
 
 import (
+	"fmt"
+
 	"github.com/pkg/errors"
 
 	"github.com/Oneledger/protocol/data/ethereum"
@@ -13,6 +15,7 @@ func Broadcasting(ctx interface{}) error {
 		return errors.New("error casting tracker context")
 	}
 
+	fmt.Println("broadcasting")
 	tracker := context.Tracker
 
 	if tracker.State != ethereum.New {
@@ -37,6 +40,8 @@ func Finalizing(ctx interface{}) error {
 	if !ok {
 		return errors.New("error casting tracker context")
 	}
+
+	fmt.Println("finalizing")
 
 	tracker := context.Tracker
 
