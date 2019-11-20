@@ -19,7 +19,7 @@ type JobETHBroadcast struct {
 	TrackerName ethereum.TrackerName
 	JobID       string
 	RetryCount  int
-	JobStatus   jobs.Status
+	Status      jobs.Status
 }
 
 func NewETHBroadcast(name ethereum.TrackerName, state ethereum2.TrackerState) JobETHCheckFinality {
@@ -36,10 +36,10 @@ func (job JobETHBroadcast) DoMyJob(ctx interface{}) {
 	// get tracker
 	job.RetryCount += 1
 	if job.RetryCount > jobs.Max_Retry_Count {
-		job.JobStatus = jobs.Failed
+		job.Status = jobs.Failed
 	}
-	if job.JobStatus == jobs.New {
-		job.JobStatus = jobs.InProgress
+	if job.Status == jobs.New {
+		job.Status = jobs.InProgress
 	}
 	ethCtx, _ := ctx.(*JobsContext)
 	trackerStore := ethCtx.EthereumTrackers
@@ -68,12 +68,12 @@ func (job JobETHBroadcast) DoMyJob(ctx interface{}) {
 		ethCtx.Logger.Error("Error in transaction broadcast : ", job.GetJobID(), err)
 		return
 	}
-	job.JobStatus = jobs.Completed
+	job.Status = jobs.Completed
 }
 
 func (job JobETHBroadcast) IsMyJobDone(ctx interface{}) bool {
 
-	panic("implement me")
+	return job.Status == jobs.Completed
 }
 
 func (job JobETHBroadcast) IsSufficient(ctx interface{}) bool {
@@ -93,7 +93,7 @@ func (job JobETHBroadcast) GetJobID() string {
 }
 
 func (job JobETHBroadcast) IsDone() bool {
-	if job.JobStatus == jobs.Completed {
+	if job.Status == jobs.Completed {
 		return true
 	}
 	return false

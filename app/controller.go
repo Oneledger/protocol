@@ -2,27 +2,20 @@ package app
 
 import (
 	"encoding/hex"
-	"math"
-
-	"github.com/Oneledger/protocol/event"
-
-	"github.com/Oneledger/protocol/utils/transition"
-
+	"fmt"
+	"github.com/Oneledger/protocol/action"
 	ceth "github.com/Oneledger/protocol/chains/ethereum"
 	"github.com/Oneledger/protocol/data/ethereum"
-
 	"github.com/Oneledger/protocol/data/fees"
-
-	"github.com/tendermint/tendermint/types"
-
-	"github.com/Oneledger/protocol/storage"
-
-	"github.com/Oneledger/protocol/utils"
-
-	"github.com/Oneledger/protocol/action"
+	"github.com/Oneledger/protocol/event"
 	"github.com/Oneledger/protocol/serialize"
+	"github.com/Oneledger/protocol/storage"
+	"github.com/Oneledger/protocol/utils"
+	"github.com/Oneledger/protocol/utils/transition"
 	"github.com/Oneledger/protocol/version"
 	"github.com/tendermint/tendermint/libs/common"
+	"github.com/tendermint/tendermint/types"
+	"math"
 )
 
 // The following set of functions will be passed to the abciController
@@ -234,21 +227,26 @@ func (app *App) blockEnder() blockEnder {
 		js := app.Context.jobStore
 		eth := app.Context.ethTrackers
 
-		eth.Iterate(func(name ceth.TrackerName, tracker *ethereum.Tracker) bool {
+		eth.Iterate(func(name *ceth.TrackerName, tracker *ethereum.Tracker) bool {
 			ctx := ethereum.NewTrackerCtx(tracker, app.Context.node.ValidatorAddress(), js, eth)
 			_, err := event.EthEngine.Process(tracker.NextStep(), ctx, transition.Status(tracker.State))
 			if err != nil {
-
+				app.logger.Error("process eth tracker", err)
 			}
 			//todo save the tracker back to cache
 			err = eth.Set(*tracker)
 			if err != nil {
-
+				app.logger.Error("process eth tracker", err)
 			}
 			return false
 		})
-
 		app.logger.Debug("End Block: ", result, "height:", req.Height)
+
+
+		app.Context.ethTrackers.Iterate(func(name *ceth.TrackerName, tracker *ethereum.Tracker) bool {
+			fmt.Println("name", name, "tracker", tracker)
+			return false
+		})
 		return result
 	}
 }

@@ -14,6 +14,7 @@ import (
 	"github.com/Oneledger/protocol/log"
 	"github.com/Oneledger/protocol/service/broadcast"
 	"github.com/Oneledger/protocol/service/btc"
+	"github.com/Oneledger/protocol/service/ethereum"
 	nodesvc "github.com/Oneledger/protocol/service/node"
 	"github.com/Oneledger/protocol/service/owner"
 	"github.com/Oneledger/protocol/service/query"
@@ -54,6 +55,7 @@ func NewMap(ctx *Context) (Map, error) {
 		tx.Name():        tx.NewService(ctx.Balances, ctx.Router, ctx.Accounts, ctx.FeeOpt, ctx.NodeContext, ctx.Logger),
 		btc.Name(): btc.NewService(ctx.Balances, ctx.Accounts, ctx.NodeContext, ctx.ValidatorSet, ctx.Trackers, ctx.Logger,
 			ctx.Cfg.ChainDriver.BlockCypherToken, ctx.Cfg.ChainDriver.BitcoinChainType),
+		ethereum.Name():  ethereum.NewService(ctx.Cfg.EthChainDriver, ctx.Router, ctx.Accounts, ctx.NodeContext, ctx.ValidatorSet, ctx.Logger),
 	}
 
 	serviceMap := Map{}

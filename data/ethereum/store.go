@@ -56,20 +56,17 @@ func (ts *TrackerStore) GetIterator() storage.Iteratable {
 	return ts.state.GetIterator()
 }
 
-func (ts *TrackerStore) Iterate(fn func(name ethereum.TrackerName, tracker *Tracker) bool) (stopped bool) {
+func (ts *TrackerStore) Iterate(fn func(name *ethereum.TrackerName, tracker *Tracker) bool) (stopped bool) {
 	return ts.state.IterateRange(
 		ts.prefix,
 		storage.Rangefix(string(ts.prefix)),
 		true,
 		func(key, value []byte) bool {
-			name := ethereum.TrackerName{}
-			err := ts.szlr.Deserialize([]byte(string(key[len(ts.prefix):])), name)
-			if err != nil {
-				return true
-			}
+			name := &ethereum.TrackerName{}
+			name.SetBytes([]byte(string(key[len(ts.prefix):])))
 
 			tracker := &Tracker{}
-			err = ts.szlr.Deserialize(value, tracker)
+			err := ts.szlr.Deserialize(value, tracker)
 			if err != nil {
 				return true
 			}

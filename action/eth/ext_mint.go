@@ -56,10 +56,10 @@ func (eem ExtMintOETH) Unmarshal(data []byte) error {
 	return json.Unmarshal(data, eem)
 }
 
-type extMintOETHTx struct {
+type ethExtMintTx struct {
 }
 
-func (extMintOETHTx) Validate(ctx *action.Context, signedTx action.SignedTx) (bool, error) {
+func (ethExtMintTx) Validate(ctx *action.Context, signedTx action.SignedTx) (bool, error) {
 	//Implement check Finality first
 	f := ReportFinalityMint{}
 	err := f.Unmarshal(signedTx.Data)
@@ -92,7 +92,7 @@ func (extMintOETHTx) Validate(ctx *action.Context, signedTx action.SignedTx) (bo
 	return true, nil
 
 }
-func (extMintOETHTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
+func (ethExtMintTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	f := ExtMintOETH{}
 	err := f.Unmarshal(tx.Data)
 	if err != nil {
@@ -112,10 +112,10 @@ func (extMintOETHTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (bool, a
 	return true, action.Response{Log: "External Mint Successful"}
 }
 
-func (extMintOETHTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
+func (ethExtMintTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	panic("Implement this / Same as Process Check ")
 }
 
-func (extMintOETHTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas) (bool, action.Response) {
+func (ethExtMintTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas) (bool, action.Response) {
 	return action.BasicFeeHandling(ctx, signedTx, start, size, 1)
 }

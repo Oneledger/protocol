@@ -163,6 +163,7 @@ func DefaultServerConfig() *Server {
 		Mempool:     DefaultMempoolConfig(),
 		Consensus:   DefaultConsensusConfig(),
 		ChainDriver: DefaultChainDriverConfig(),
+		EthChainDriver: DefaultEthConfig(),
 	}
 }
 
@@ -198,9 +199,9 @@ func DefaultNodeConfig() *NodeConfig {
 		DB:           "goleveldb",
 		DBDir:        "nodedata",
 		LogLevel:     4,
-		IndexTags:    []string{"tx.owner", "tx.type", "tx.swapkey"},
+		IndexTags:    []string{"tx.owner", "tx.type"},
 		IndexAllTags: false,
-		Services:     []string{"broadcast", "node", "owner", "query", "tx"},
+		Services:     []string{"broadcast", "node", "owner", "query", "tx", "btc", "eth"},
 	}
 }
 
@@ -447,11 +448,11 @@ func DefaultEthConfig() *EthereumChainDriverConfig {
 	}
 }
 
-func CreateEthConfig(connection string, keylocation string, address string, abi string) *EthereumChainDriverConfig {
+func CreateEthConfig(connection string, keylocation string, contractaddress string, abi string) *EthereumChainDriverConfig {
 	return &EthereumChainDriverConfig{
 		Connection:      connection,
 		KeyLocation:     keylocation,
-		ContractAddress: address,
+		ContractAddress: contractaddress,
 		ContractABI:     abi,
 		//InitialValidators:validators,
 	}

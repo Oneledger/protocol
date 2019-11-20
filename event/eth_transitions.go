@@ -1,12 +1,14 @@
 package event
 
 import (
+	"fmt"
 	"github.com/Oneledger/protocol/data/ethereum"
 	"github.com/pkg/errors"
 )
 
 //TODO Go back to Busy broadcasting if there is a failure in Finalizing.
 func Broadcasting(ctx interface{}) error {
+	fmt.Println("broadcasting")
 	context := ctx.(ethereum.TrackerCtx)
 	tracker := context.Tracker
 
@@ -28,6 +30,7 @@ func Broadcasting(ctx interface{}) error {
 }
 
 func Finalizing(ctx interface{}) error {
+	fmt.Println("finalizing")
 	context := ctx.(ethereum.TrackerCtx)
 	tracker := context.Tracker
 
