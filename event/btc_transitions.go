@@ -18,7 +18,14 @@ func ReserveTracker(inp interface{}) error {
 		panic("wrong transition data")
 	}
 
-	data.Tracker.State = bitcoin.BusySigning
+	t := data.Tracker
+	t.State = bitcoin.BusySigning
+
+	job := NewAddSignatureJob(t.Name)
+	err := data.JobStore.SaveJob(job)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -29,8 +36,18 @@ func FreezeForBroadcast(inp interface{}) error {
 		panic("wrong transition data")
 	}
 
-	if data.Tracker.Multisig.IsValid() {
+	t := data.Tracker
+	if t.Multisig.IsValid() {
+
 		data.Tracker.State = bitcoin.BusyBroadcasting
+
+		job := NewBTCBroadcastJob(t.Name)
+		err := data.JobStore.SaveJob(job)
+		if err != nil {
+			return err
+		}
+	} else if t.Multisig.IsCancel() {
+
 	}
 
 	return nil
@@ -42,7 +59,14 @@ func ReportBroadcastSuccess(inp interface{}) error {
 		panic("wrong transition data")
 	}
 
-	data.Tracker.State = bitcoin.BusyFinalizing
+	t := data.Tracker
+	t.State = bitcoin.BusyFinalizing
+
+	job := NewBTCCheckFinalityJob(t.Name)
+	err := data.JobStore.SaveJob(job)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
