@@ -108,21 +108,9 @@ func (job JobETHCheckFinality) DoMyJob(ctx interface{}) {
 	job.JobStatus = jobs.Completed
 }
 
-func (job JobETHCheckFinality) IsMyJobDone(ctx interface{}) bool {
-
-	panic("implement me")
-}
-
-func (job JobETHCheckFinality) IsSufficient(ctx interface{}) bool {
-	panic("implement me")
-}
-
-func (job JobETHCheckFinality) DoFinalize() {
-	panic("implement me")
-}
 
 func (job JobETHCheckFinality) GetType() string {
-	panic("implement me")
+	return JobTypeETHBroadcast
 }
 
 func (job JobETHCheckFinality) GetJobID() string {

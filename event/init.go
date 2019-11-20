@@ -17,6 +17,8 @@ const (
 	JobTypeAddSignature     = "addSignature"
 	JobTypeBTCBroadcast     = "btcBroadcast"
 	JobTypeBTCCheckFinality = "btcCheckFinality"
+	JobTypeETHCheckfinalty  = "ethCheckFinality"
+	JobTypeETHBroadcast     = "ethBroadcast"
 
 	MaxJobRetries = 10
 )
