@@ -8,7 +8,11 @@ import (
 
 //TODO Go back to Busy broadcasting if there is a failure in Finalizing.
 func Broadcasting(ctx interface{}) error {
-	context := ctx.(ethereum.TrackerCtx)
+	context, ok := ctx.(ethereum.TrackerCtx)
+	if !ok {
+		return errors.New("error casting tracker context")
+	}
+
 	tracker := context.Tracker
 
 	if tracker.State != ethereum.New {
@@ -29,7 +33,11 @@ func Broadcasting(ctx interface{}) error {
 }
 
 func Finalizing(ctx interface{}) error {
-	context := ctx.(ethereum.TrackerCtx)
+	context, ok := ctx.(ethereum.TrackerCtx)
+	if !ok {
+		return errors.New("error casting tracker context")
+	}
+
 	tracker := context.Tracker
 
 	if tracker.State != ethereum.BusyBroadcasting {
@@ -66,7 +74,11 @@ func Finalizing(ctx interface{}) error {
 }
 
 func Finalization(ctx interface{}) error {
-	context := ctx.(ethereum.TrackerCtx)
+	context, ok := ctx.(ethereum.TrackerCtx)
+	if !ok {
+		return errors.New("error casting tracker context")
+	}
+
 	tracker := context.Tracker
 
 	if tracker.State != ethereum.BusyFinalizing {
@@ -93,7 +105,11 @@ func Finalization(ctx interface{}) error {
 }
 
 func Minting(ctx interface{}) error {
-	context := ctx.(ethereum.TrackerCtx)
+	context, ok := ctx.(ethereum.TrackerCtx)
+	if !ok {
+		return errors.New("error casting tracker context")
+	}
+
 	tracker := context.Tracker
 
 	if tracker.State != ethereum.Finalized {
@@ -109,7 +125,11 @@ func Minting(ctx interface{}) error {
 }
 
 func Cleanup(ctx interface{}) error {
-	context := ctx.(ethereum.TrackerCtx)
+	context, ok := ctx.(ethereum.TrackerCtx)
+	if !ok {
+		return errors.New("error casting tracker context")
+	}
+
 	tracker := context.Tracker
 	//todo: delete the tracker and jobs related
 
