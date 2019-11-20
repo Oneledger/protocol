@@ -24,10 +24,13 @@ const (
 	MINIMUM_CONFIRMATIONS_REQ = 1
 )
 
+// PrepareLock
 func (s *Service) PrepareLock(args client.BTCLockPrepareRequest, reply *client.BTCLockPrepareResponse) error {
+
 	cd := bitcoin.NewChainDriver(s.blockCypherToken)
 
 	btc := gobcy.API{s.blockCypherToken, "btc", s.btcChainType}
+
 	tx, err := btc.GetTX(args.Hash, nil)
 	if err != nil {
 		s.logger.Error("error in getting txn from bitcoin network", err)
@@ -38,6 +41,12 @@ func (s *Service) PrepareLock(args client.BTCLockPrepareRequest, reply *client.B
 
 		s.logger.Error("not enough txn confirmations", err)
 		return codes.ErrBTCNotEnoughConfirmations
+	}
+
+	if tx.Outputs[args.Index].SpentBy != "" {
+
+		s.logger.Error("source is not spendable", err)
+		return codes.ErrBTCNotSpendable
 	}
 
 	hashh, _ := chainhash.NewHashFromStr(tx.Hash)
@@ -51,7 +60,7 @@ func (s *Service) PrepareLock(args client.BTCLockPrepareRequest, reply *client.B
 	}
 
 	txnBytes := cd.PrepareLockNew(tracker.ProcessTxId, 0, tracker.CurrentBalance,
-		hashh, args.Index, inputAmount, tracker.ProcessLockScriptAddress)
+		hashh, args.Index, inputAmount, args.FeesBTC, tracker.ProcessLockScriptAddress)
 
 	reply.Txn = hex.EncodeToString(txnBytes)
 	reply.TrackerName = tracker.Name
@@ -75,12 +84,11 @@ func (s *Service) AddUserSignatureAndProcessLock(args client.BTCLockRequest, rep
 	cd := bitcoin.NewChainDriver(s.blockCypherToken)
 
 	// add the users' btc signature to the redeem txn in the appropriate place
-
 	s.logger.Debug("----", hex.EncodeToString(args.Txn), hex.EncodeToString(args.Signature))
 
 	newBTCTx := cd.AddUserLockSignature(args.Txn, args.Signature)
 
-	totalLockAmount := newBTCTx.TxOut[0].Value
+	totalLockAmount := newBTCTx.TxOut[0].Value - tracker.CurrentBalance
 
 	if len(newBTCTx.TxIn) == 1 { // if new tracker
 
@@ -101,6 +109,10 @@ func (s *Service) AddUserSignatureAndProcessLock(args client.BTCLockRequest, rep
 		return codes.ErrBadBTCTxn
 	}
 
+	if !bitcoin.ValidateLock(newBTCTx, s.blockCypherToken, s.btcChainType, tracker.CurrentTxId, tracker.ProcessLockScriptAddress) {
+		return codes.ErrBadBTCTxn
+	}
+
 	var txBytes []byte
 	buf := bytes.NewBuffer(txBytes)
 	err = newBTCTx.Serialize(buf)
@@ -111,14 +123,14 @@ func (s *Service) AddUserSignatureAndProcessLock(args client.BTCLockRequest, rep
 
 	s.logger.Debug("-----", hex.EncodeToString(txBytes))
 
-	redeem := btc.Redeem{
-		Redeemer:     args.Address,
-		TrackerName:  args.TrackerName,
-		BTCTxn:       txBytes,
-		RedeemAmount: totalLockAmount,
+	lock := btc.Lock{
+		Locker:      args.Address,
+		TrackerName: args.TrackerName,
+		BTCTxn:      txBytes,
+		LockAmount:  totalLockAmount,
 	}
 
-	data, err := redeem.Marshal()
+	data, err := lock.Marshal()
 	if err != nil {
 		return codes.ErrSerialization
 	}

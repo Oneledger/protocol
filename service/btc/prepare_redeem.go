@@ -25,14 +25,18 @@ func (s *Service) PrepareRedeem(args client.BTCLockRedeemRequest, reply *client.
 	//tracker, err := s.trackerStore.Get("tracker_1")
 	tracker, err := s.trackerStore.GetTrackerForRedeem()
 	if err != nil {
+
 		s.logger.Error("error getting tracker for lock", err)
 		return errors.Wrap(err, "error getting tracker for lock")
 	}
 
 	addr, err := hex.DecodeString(args.Address)
+	if err != nil {
+
+	}
 
 	txnBytes := cd.PrepareRedeemNew(tracker.ProcessTxId, 0, tracker.CurrentBalance,
-		addr, args.Amount, tracker.ProcessLockScriptAddress)
+		addr, args.Amount, args.FeesBTC, tracker.ProcessLockScriptAddress)
 
 	reply.Txn = hex.EncodeToString(txnBytes)
 	reply.TrackerName = tracker.Name
@@ -47,6 +51,7 @@ func (s *Service) AddUserSignatureAndProcessRedeem(args client.BTCLockRequest, r
 		// tracker of that name not found
 		return codes.ErrTrackerNotFound
 	}
+
 	if tracker.IsBusy() {
 		// tracker not available anymore, try another tracker
 		return codes.ErrTrackerBusy
@@ -56,28 +61,25 @@ func (s *Service) AddUserSignatureAndProcessRedeem(args client.BTCLockRequest, r
 	cd := bitcoin.NewChainDriver(s.blockCypherToken)
 
 	// add the users' btc signature to the lock txn in the appropriate place
-
 	s.logger.Debug("----", hex.EncodeToString(args.Txn), hex.EncodeToString(args.Signature))
 
 	newBTCTx := cd.AddUserLockSignature(args.Txn, args.Signature)
 
-	totalRedeemAmount := newBTCTx.TxOut[0].Value - tracker.CurrentBalance
+	totalRedeemAmount := tracker.CurrentBalance - newBTCTx.TxOut[0].Value
 
-	if len(newBTCTx.TxIn) == 1 { // if new tracker
+	if len(newBTCTx.TxIn) != 1 { // if new tracker
 
-		if tracker.CurrentTxId != nil {
-			// incorrect txn
-			return codes.ErrBadBTCTxn
-		}
-	} else if len(newBTCTx.TxIn) == 2 { // if not a new tracker
+		return codes.ErrBadBTCTxn
+	}
 
-		if *tracker.CurrentTxId != newBTCTx.TxIn[0].PreviousOutPoint.Hash ||
-			newBTCTx.TxIn[0].PreviousOutPoint.Index != 0 {
+	if len(newBTCTx.TxOut) != 2 { // if not a new tracker
 
-			// incorrect txn
-			return codes.ErrBadBTCTxn
-		}
-	} else {
+		// incorrect txn
+		return codes.ErrBadBTCTxn
+	}
+
+	if *tracker.CurrentTxId != newBTCTx.TxIn[0].PreviousOutPoint.Hash ||
+		newBTCTx.TxIn[0].PreviousOutPoint.Index != 0 {
 		// incorrect txn
 		return codes.ErrBadBTCTxn
 	}
@@ -92,14 +94,14 @@ func (s *Service) AddUserSignatureAndProcessRedeem(args client.BTCLockRequest, r
 
 	s.logger.Debug("-----", hex.EncodeToString(txBytes))
 
-	lock := btc.Lock{
-		Locker:      args.Address,
-		TrackerName: args.TrackerName,
-		BTCTxn:      txBytes,
-		LockAmount:  totalRedeemAmount,
+	redeem := btc.Redeem{
+		Redeemer:     args.Address,
+		TrackerName:  args.TrackerName,
+		BTCTxn:       txBytes,
+		RedeemAmount: totalRedeemAmount,
 	}
 
-	data, err := lock.Marshal()
+	data, err := redeem.Marshal()
 	if err != nil {
 		return codes.ErrSerialization
 	}

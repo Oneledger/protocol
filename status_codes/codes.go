@@ -61,4 +61,5 @@ const (
 	ExternalErrBitcoinTxNotFound      = 400101
 	ExternalErrGettingBTCTxn          = 400102
 	ExternalErrNotEnoughConfirmations = 400103
+	ExternalErrNotSpendable           = 400104
 )

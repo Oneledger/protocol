@@ -192,8 +192,9 @@ type BTCLockRequest struct {
 }
 
 type BTCLockPrepareRequest struct {
-	Hash  string `json:"hash"`
-	Index uint32 `json:"index"`
+	Hash    string `json:"hash"`
+	Index   uint32 `json:"index"`
+	FeesBTC int64  `json:"fees_btc"`
 }
 type BTCLockPrepareResponse struct {
 	Txn         string `json:"txn"`
@@ -210,6 +211,7 @@ type BTCGetTrackerReply struct {
 type BTCLockRedeemRequest struct {
 	Address string `json:"address"`
 	Amount  int64  `json:"amount"`
+	FeesBTC int64  `json:"fees_btc"`
 }
 type BTCRedeemPrepareResponse struct {
 	Txn         string `json:"txn"`

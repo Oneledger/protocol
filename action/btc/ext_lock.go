@@ -6,27 +6,30 @@ package btc
 
 import (
 	"bytes"
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
 
-	"github.com/Oneledger/protocol/data/bitcoin"
-
 	"github.com/btcsuite/btcd/wire"
 	"github.com/pkg/errors"
-
-	"github.com/Oneledger/protocol/data/keys"
-
 	"github.com/tendermint/tendermint/libs/common"
 
 	"github.com/Oneledger/protocol/action"
+	"github.com/Oneledger/protocol/data/bitcoin"
+	"github.com/Oneledger/protocol/data/keys"
 )
 
 type Lock struct {
-	Locker      action.Address
+	// OLT address of the person locking the BTC
+	Locker action.Address
+
+	// Name of the tracker used to register this txn
 	TrackerName string
-	BTCTxn      []byte
-	LockAmount  int64
+
+	// BTC Txn as a byte array
+	BTCTxn []byte
+
+	// The amount in satoshi to lock
+	LockAmount int64
 }
 
 var _ action.Msg = &Lock{}
@@ -97,7 +100,8 @@ func (btcLockTx) Validate(ctx *action.Context, signedTx action.SignedTx) (bool, 
 	tx := wire.NewMsgTx(wire.TxVersion)
 
 	buf := bytes.NewBuffer(lock.BTCTxn)
-	tx.Deserialize(buf)
+	err = tx.Deserialize(buf)
+	// TODO handle error
 
 	isFirstTxn := len(tx.TxIn) == 1
 	op := tx.TxIn[0].PreviousOutPoint
@@ -116,6 +120,19 @@ func (btcLockTx) Validate(ctx *action.Context, signedTx action.SignedTx) (bool, 
 }
 
 func (btcLockTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
+	return runBTCLock(ctx, tx)
+}
+
+func (btcLockTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
+	return runBTCLock(ctx, tx)
+}
+
+func (btcLockTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas) (bool, action.Response) {
+	return action.BasicFeeHandling(ctx, signedTx, start, size, 1)
+	// return true, action.Response{}
+}
+
+func runBTCLock(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	lock := Lock{}
 	err := lock.Unmarshal(tx.Data)
 	if err != nil {
@@ -150,13 +167,8 @@ func (btcLockTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (bool, actio
 	tracker.Multisig, err = keys.NewBTCMultiSig(lock.BTCTxn, threshold, list)
 	tracker.ProcessBalance = tracker.CurrentBalance + lock.LockAmount
 	tracker.ProcessUnsignedTx = lock.BTCTxn // with user signature
+	tracker.State = bitcoin.Requested
 
-	dat := bitcoin.BTCTransitionContext{Tracker: tracker}
-	//_, err = Engine.Process("reserveTracker", dat, tracker.State)
-	//if err != nil {
-	//	return false, action.Response{Log: "failed transition " + err.Error()}
-	//}
-	_ = dat
 	err = ctx.BTCTrackers.SetTracker(lock.TrackerName, tracker)
 	if err != nil {
 		return false, action.Response{Log: "failed to update tracker"}
@@ -165,61 +177,4 @@ func (btcLockTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (bool, actio
 	return true, action.Response{
 		Tags: lock.Tags(),
 	}
-}
-
-func (btcLockTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
-	lock := Lock{}
-	err := lock.Unmarshal(tx.Data)
-	if err != nil {
-		return false, action.Response{Log: "wrong tx type"}
-	}
-
-	ctx.Logger.Debug(hex.EncodeToString(lock.BTCTxn))
-
-	vs, err := ctx.Validators.GetValidatorSet()
-	threshold := (len(vs) * 2 / 3) + 1
-	list := make([]keys.Address, 0, len(vs))
-
-	tracker, err := ctx.BTCTrackers.Get(lock.TrackerName)
-	if err != nil {
-		return false, action.Response{Log: fmt.Sprintf("tracker not found: %s", lock.TrackerName)}
-	}
-
-	if !tracker.IsAvailable() {
-		return false, action.Response{Log: fmt.Sprintf("tracker not available for lock: ", lock.TrackerName)}
-	}
-	for i := range vs {
-		addr, err := vs[i].GetBTCScriptAddress(ctx.BTCChainType)
-		if err != nil {
-
-		}
-		list = append(list, addr)
-	}
-
-	tracker.ProcessType = bitcoin.ProcessTypeLock
-	tracker.ProcessOwner = lock.Locker
-	tracker.Multisig, err = keys.NewBTCMultiSig(lock.BTCTxn, threshold, list)
-	tracker.ProcessBalance = tracker.CurrentBalance + lock.LockAmount
-	tracker.ProcessUnsignedTx = lock.BTCTxn // with user signature
-
-	dat := bitcoin.BTCTransitionContext{Tracker: tracker}
-	//_, err = bitcoin.Engine.Process("reserveTracker", dat, tracker.State)
-	//if err != nil {
-	//	return false, action.Response{Log: "failed transition " + err.Error()}
-	//}
-	_ = dat
-	err = ctx.BTCTrackers.SetTracker(lock.TrackerName, tracker)
-	if err != nil {
-		return false, action.Response{Log: "failed to update tracker"}
-	}
-
-	return true, action.Response{
-		Tags: lock.Tags(),
-		Info: fmt.Sprintf("tracker: %s", lock.TrackerName),
-	}
-}
-
-func (btcLockTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas) (bool, action.Response) {
-	return action.BasicFeeHandling(ctx, signedTx, start, size, 1)
-	// return true, action.Response{}
 }

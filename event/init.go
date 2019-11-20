@@ -69,20 +69,22 @@ func init() {
 		[]transition.Status{bitcoin.Available, bitcoin.BusySigning, bitcoin.BusyBroadcasting, bitcoin.BusyFinalizing},
 	)
 
-	err := BtcEngine.Register(transition.Transition{
-		Name: "makeAvailable",
-		Fn:   MakeAvailable,
-		From: bitcoin.BusyFinalizing,
-		To:   bitcoin.Available,
-	})
-	if err != nil {
-		os.Exit(1)
-	}
+	/*
+		err := BtcEngine.Register(transition.Transition{
+			Name: "makeAvailable",
+			Fn:   MakeAvailable,
+			From: bitcoin.BusyFinalizing,
+			To:   bitcoin.Available,
+		})
+		if err != nil {
+			os.Exit(1)
+		}
+	*/
 
-	err = BtcEngine.Register(transition.Transition{
-		Name: "reserveTracker",
+	err := BtcEngine.Register(transition.Transition{
+		Name: bitcoin.RESERVE,
 		Fn:   ReserveTracker,
-		From: bitcoin.Available,
+		From: bitcoin.Requested,
 		To:   bitcoin.BusySigning,
 	})
 	if err != nil {
@@ -108,4 +110,5 @@ func init() {
 	if err != nil {
 		os.Exit(1)
 	}
+
 }

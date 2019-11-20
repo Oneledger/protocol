@@ -74,6 +74,7 @@ var (
 	ErrBTCTxNotFound             = ProtocolError{ExternalErrBitcoinTxNotFound, "bitcoin txn not found"}
 	ErrBTCReadingTxn             = ProtocolError{ExternalErrGettingBTCTxn, "err getting btc txn"}
 	ErrBTCNotEnoughConfirmations = ProtocolError{ExternalErrNotEnoughConfirmations, "not enough btc confirmations"}
+	ErrBTCNotSpendable           = ProtocolError{ExternalErrNotSpendable, "btc source not spendable"}
 
 	ErrBadBTCTxn = ProtocolError{ParseErrorBadBTCTxn, "bad btc txn"}
 )
