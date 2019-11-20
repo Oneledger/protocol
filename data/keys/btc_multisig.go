@@ -78,6 +78,19 @@ func (m BTCMultiSig) IsValid() bool {
 	return true
 }
 
+func (m BTCMultiSig) IsCancel() bool {
+	cnt := 0
+	for _, item := range m.Signatures {
+		if item.Sign != nil {
+			cnt++
+		}
+	}
+	if cnt < m.M {
+		return false
+	}
+	return true
+}
+
 func (m BTCMultiSig) Address() Address {
 	s := &BTCMultiSig{m.Msg, m.M, m.Signers, nil}
 	b := s.Bytes()

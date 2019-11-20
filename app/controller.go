@@ -10,7 +10,6 @@ import (
 	"github.com/tendermint/tendermint/types"
 
 	"github.com/Oneledger/protocol/action"
-	bitcoin2 "github.com/Oneledger/protocol/chains/bitcoin"
 	ceth "github.com/Oneledger/protocol/chains/ethereum"
 	"github.com/Oneledger/protocol/config"
 	"github.com/Oneledger/protocol/data/bitcoin"
@@ -259,48 +258,8 @@ func (app *App) blockEnder() blockEnder {
 			return false
 		})
 
-		if app.Context.jobStore != nil {
-			app.Context.btcTrackers.Iterate(func(k, v []byte) bool {
+		doTransitions(app.Context.jobStore, app.Context.btcTrackers)
 
-				szlr := serialize.GetSerializer(serialize.PERSISTENT)
-
-				d := &bitcoin.Tracker{}
-				err := szlr.Deserialize(v, d)
-				if err != nil {
-					return false
-				}
-				chainParams := bitcoin2.GetChainParams(app.Context.cfg.ChainDriver.BitcoinChainType)
-				btcAddress, err := app.Context.node.ValidatorBTCScriptAddress(chainParams)
-				if err != nil {
-					return false
-				}
-
-				var job jobs.Job
-				if d.State == bitcoin.BusySigning &&
-					!d.Multisig.HasAddressSigned(btcAddress) {
-
-					job = event.NewAddSignatureJob(d.Name)
-				}
-
-				if d.State == bitcoin.BusyBroadcasting {
-					job = event.NewBTCBroadcastJob(d.Name)
-				}
-
-				if d.State == bitcoin.BusyFinalizing {
-					job = event.NewBTCCheckFinalityJob(d.Name)
-
-				}
-
-				if job != nil {
-					err = app.Context.jobStore.SaveJob(job)
-					if err != nil {
-						return false
-					}
-				}
-
-				return false
-			})
-		}
 		app.logger.Debug("End Block: ", result, "height:", req.Height)
 		return result
 	}
@@ -361,4 +320,36 @@ func getGasCalculator(params *types.ConsensusParams) storage.GasCalculator {
 		gas = storage.Gas(limit)
 	}
 	return storage.NewGasCalculator(gas)
+}
+
+func doTransitions(js *jobs.JobStore, ts *bitcoin.TrackerStore) {
+
+	btcTracker := []bitcoin.Tracker{}
+	if js != nil {
+		ts.Iterate(func(k, v []byte) bool {
+
+			szlr := serialize.GetSerializer(serialize.PERSISTENT)
+
+			d := &bitcoin.Tracker{}
+			err := szlr.Deserialize(v, d)
+			if err != nil {
+				return false
+			}
+
+			btcTracker = append(btcTracker, *d)
+			return false
+		})
+	}
+
+	for _, t := range btcTracker {
+		ctx := bitcoin.BTCTransitionContext{&t, js}
+
+		stt, err := event.BtcEngine.Process(t.NextStep(), ctx, t.State)
+		if err != nil {
+			continue
+		}
+		t.State = stt
+
+		err = ts.SetTracker(t.Name, &t)
+	}
 }

@@ -24,7 +24,7 @@ type TxHash [chainhash.HashSize]byte
 type ChainDriver interface {
 	//	PrepareLock(prevLock, input *bitcoin.UTXO, lockScriptAddress []byte) (txBytes []byte)
 
-	PrepareLockNew(*chainhash.Hash, uint32, int64, *chainhash.Hash, uint32, int64, []byte) (txBytes []byte)
+	PrepareLockNew(*chainhash.Hash, uint32, int64, *chainhash.Hash, uint32, int64, int64, []byte) (txBytes []byte)
 
 	AddUserLockSignature([]byte, []byte) *wire.MsgTx
 	AddLockSignature([]byte, []byte) *wire.MsgTx
@@ -34,7 +34,7 @@ type ChainDriver interface {
 	CheckFinality(*chainhash.Hash, string, string) (bool, error)
 
 	PrepareRedeemNew(prevLockTxID *chainhash.Hash, prevLockIndex uint32, prevLockBalance int64,
-		userAddress []byte, redeemAmount int64,
+		userAddress []byte, redeemAmount int64, feesInSatoshi int64,
 		lockScriptAddress []byte) (txBytes []byte)
 }
 
@@ -50,7 +50,7 @@ func NewChainDriver(token string) ChainDriver {
 }
 
 func (c *chainDriver) PrepareLockNew(prevLockTxID *chainhash.Hash, prevLockIndex uint32, prevLockBalance int64,
-	inputTxID *chainhash.Hash, inputIndex uint32, inputBalance int64,
+	inputTxID *chainhash.Hash, inputIndex uint32, inputBalance int64, feesInSatoshi int64,
 	lockScriptAddress []byte) (txBytes []byte) {
 
 	// start a new empty txn
@@ -78,14 +78,7 @@ func (c *chainDriver) PrepareLockNew(prevLockTxID *chainhash.Hash, prevLockIndex
 	out := wire.NewTxOut(balance, lockScriptAddress)
 	tx.AddTxOut(out)
 
-	// serialize to estimate fees
-	tempBuf := bytes.NewBuffer([]byte{})
-	tx.Serialize(tempBuf)
-	size := len(tempBuf.Bytes()) * 2 // right now this is a magic number
-	// need a better estimation methodology
-	fees := int64(40 * size)
-
-	tx.TxOut[0].Value = tx.TxOut[0].Value - fees
+	tx.TxOut[0].Value = tx.TxOut[0].Value - feesInSatoshi
 
 	// serialize again with fees accounted for
 	buf := bytes.NewBuffer(txBytes)
@@ -152,7 +145,7 @@ func (c *chainDriver) CheckFinality(hash *chainhash.Hash, token, chain string) (
 }
 
 func (c *chainDriver) PrepareRedeemNew(prevLockTxID *chainhash.Hash, prevLockIndex uint32,
-	prevLockBalance int64, userAddress []byte, redeemAmount int64,
+	prevLockBalance int64, userAddress []byte, redeemAmount int64, feesInSatoshi int64,
 	lockScriptAddress []byte) (txBytes []byte) {
 
 	tx := wire.NewMsgTx(wire.TxVersion)

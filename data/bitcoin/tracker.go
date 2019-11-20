@@ -15,13 +15,6 @@ import (
 type TrackerState int
 
 const (
-	Available transition.Status = iota
-	BusySigning
-	BusyBroadcasting
-	BusyFinalizing
-)
-
-const (
 	ProcessTypeNone   = 0x00
 	ProcessTypeLock   = 0x01
 	ProcessTypeRedeem = 0x02
@@ -183,4 +176,17 @@ func (t *Tracker) GetSignatures() [][]byte {
 
 func (t *Tracker) GetBalance() int64 {
 	return t.CurrentBalance
+}
+
+func (t Tracker) NextStep() string {
+
+	switch t.State {
+	case Requested:
+		return RESERVE
+	case BusySigning:
+		return FREEZE_FOR_BROADCAST
+	case BusyBroadcasting:
+		return REPORT_BROADCAST
+	}
+	return ""
 }
