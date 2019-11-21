@@ -42,7 +42,6 @@ func (js *JobStore) WithChain(chain chain.Type) *JobStore {
 func (js *JobStore) SaveJob(job Job) error {
 
 	key := storage.StoreKey("job:" + js.chain.String() + ":" + job.GetJobID())
-
 	dat, err := js.ser.Serialize(job)
 	if err != nil {
 		return err
@@ -65,13 +64,12 @@ func (js *JobStore) SaveJob(job Job) error {
 
 func (js *JobStore) GetJob(jobID string) (Job, error) {
 	key := storage.StoreKey("job:" + js.chain.String() + ":" + jobID)
-
 	dat, err := js.Get(key)
 	if err != nil {
 		return nil, err
 	}
 	var job Job
-	err = js.ser.Deserialize(dat, job)
+	err = js.ser.Deserialize(dat,&job)
 	if err != nil {
 		return nil, err
 	}
@@ -108,7 +106,7 @@ func (js *JobStore) Iterate(fn func(job Job)) {
 
 	iter.IterateRange(start, end, isAsc, func(key, val []byte) bool {
 		var job Job
-		err := js.ser.Deserialize(val, job)
+		err := js.ser.Deserialize(val, &job)
 		if err != nil {
 			return false
 		}

@@ -115,8 +115,8 @@ func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *node.Context) (
 	}
 
 	ctx.jobBus = event.NewJobBus(event.Option{
-		EthInterval: time.Minute,
-		BtcInterval: 30 * time.Second,
+		BtcInterval: time.Minute,
+		EthInterval: 3 * time.Second,
 	}, ctx.jobStore)
 
 	_ = transfer.EnableSend(ctx.actionRouter)
@@ -282,7 +282,7 @@ func (ctx *context) JobContext() *event.JobsContext {
 		cdConfig.BitcoinRPCPassword,
 		cdConfig.BitcoinChainType,
 		ethConfig.ContractABI,
-		ethConfig.ContractAddress,
+		ethConfig.Connection,
 		ethConfig.ContractAddress,
 		ctx.ethTrackers,
 	)
