@@ -8,6 +8,10 @@ var (
 	errTransitionWrongStatus = errors.New("transition from current state not allowed")
 )
 
+const (
+	NOOP string = "noop"
+)
+
 type Status int
 
 type Transition struct {
@@ -55,9 +59,12 @@ func (m *engine) Register(ts Transition) error {
 }
 
 func (m *engine) Process(name string, ctx interface{}, current Status) (Status, error) {
+	if name == NOOP {
+		return -1, nil
+	}
 	ts, ok := m.transitions[name]
 	if !ok {
-		panic("requested transition not registered")
+		panic("requested transition not registered: " + name)
 	}
 	if ts.From != current {
 		return ts.From, errTransitionWrongStatus
