@@ -103,12 +103,10 @@ func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *node.Context) (
 	ctx.accounts = accounts.NewWallet(cfg, ctx.dbDir())
 
 	// TODO check if validator
-	valAddr := ctx.node.ValidatorAddress()
-	if ctx.validators.IsValidatorAddress(valAddr) {
+	// valAddr := ctx.node.ValidatorAddress()
 
-		ctx.jobStore = jobs.NewJobStore(cfg, ctx.dbDir())
-		ctx.lockScriptStore = bitcoin.NewLockScriptStore(cfg, ctx.dbDir())
-	}
+	ctx.jobStore = jobs.NewJobStore(cfg, ctx.dbDir())
+	ctx.lockScriptStore = bitcoin.NewLockScriptStore(cfg, ctx.dbDir())
 
 	ctx.actionRouter = action.NewRouter("action")
 	ctx.feeOption = &fees.FeeOption{

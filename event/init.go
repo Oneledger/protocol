@@ -1,6 +1,7 @@
 package event
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/Oneledger/protocol/data/bitcoin"
@@ -73,7 +74,7 @@ func init() {
 	})
 
 	BtcEngine = transition.NewEngine(
-		[]transition.Status{bitcoin.Available, bitcoin.BusySigning, bitcoin.BusyBroadcasting, bitcoin.BusyFinalizing},
+		[]transition.Status{bitcoin.Available, bitcoin.Requested, bitcoin.BusySigning, bitcoin.BusyBroadcasting, bitcoin.BusyFinalizing},
 	)
 
 	/*
@@ -95,6 +96,7 @@ func init() {
 		To:   bitcoin.BusySigning,
 	})
 	if err != nil {
+		fmt.Println(err)
 		os.Exit(1)
 	}
 
@@ -105,6 +107,7 @@ func init() {
 		To:   bitcoin.BusyBroadcasting,
 	})
 	if err != nil {
+		fmt.Println(err)
 		os.Exit(1)
 	}
 
@@ -115,6 +118,7 @@ func init() {
 		To:   bitcoin.BusyFinalizing,
 	})
 	if err != nil {
+		fmt.Println(err)
 		os.Exit(1)
 	}
 
