@@ -5,17 +5,20 @@
 package btc
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 
+	"github.com/btcsuite/btcd/btcec"
 	"github.com/btcsuite/btcd/chaincfg"
+	"github.com/btcsuite/btcd/txscript"
+	"github.com/btcsuite/btcd/wire"
 	"github.com/btcsuite/btcutil"
 	"github.com/pkg/errors"
 	"github.com/tendermint/tendermint/libs/common"
 
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/data/bitcoin"
-	"github.com/Oneledger/protocol/data/keys"
 )
 
 type AddSignature struct {
@@ -98,51 +101,18 @@ func (ast btcAddSignatureTx) Validate(ctx *action.Context, signedTx action.Signe
 
 func (ast btcAddSignatureTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 
-	addSignature := AddSignature{}
-	err := addSignature.Unmarshal(tx.Data)
-	if err != nil {
-		return false, action.Response{Log: "wrong tx type"}
-	}
-
-	if !ctx.Validators.IsValidatorAddress(addSignature.ValidatorAddress) {
-		return false, action.Response{Log: "signer not found in validator list"}
-	}
-
-	tracker, err := ctx.BTCTrackers.Get(addSignature.TrackerName)
-	if err != nil {
-		return false, action.Response{Log: fmt.Sprintf("tracker not found: %s", addSignature.TrackerName)}
-	}
-
-	if tracker.State != bitcoin.BusySigning {
-		return false, action.Response{Log: fmt.Sprintf("tracker not accepting signatures: ", addSignature.TrackerName)}
-	}
-
-	addressPubkey, err := btcutil.NewAddressPubKey(addSignature.ValidatorPubKey, ctx.BTCChainType)
-	if err != nil {
-		return false, action.Response{Log: fmt.Sprintf("%s, error generating btc public key", err.Error())}
-	}
-
-	err = tracker.AddSignature(addSignature.BTCSignature, keys.Address(addressPubkey.EncodeAddress()))
-	if err != nil {
-		return false, action.Response{Log: fmt.Sprintf("error adding signature: %s, error: ", addSignature.TrackerName, err)}
-	}
-
-	ctx.Logger.Info("before has enough signatures", tracker.HasEnoughSignatures(), ctx.JobStore)
-
-	//dat := event.BTCTransitionContext{Tracker: tracker}
-	//_, err = bitcoin.Engine.Process("freezeForBroadcast", dat, tracker.State)
-
-	err = ctx.BTCTrackers.SetTracker(addSignature.TrackerName, tracker)
-	if err != nil {
-		return false, action.Response{Log: fmt.Sprintf("error updating tracker store: %s, error: ", addSignature.TrackerName, err)}
-	}
-
-	return true, action.Response{
-		Tags: addSignature.Tags(),
-	}
+	return runAddSignature(ctx, tx)
 }
 
 func (ast btcAddSignatureTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
+	return runAddSignature(ctx, tx)
+}
+
+func (ast btcAddSignatureTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas) (bool, action.Response) {
+	return true, action.Response{}
+}
+
+func runAddSignature(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 
 	addSignature := AddSignature{}
 	err := addSignature.Unmarshal(tx.Data)
@@ -168,28 +138,46 @@ func (ast btcAddSignatureTx) ProcessDeliver(ctx *action.Context, tx action.RawTx
 		return false, action.Response{Log: "error creating validator btc pubkey " + err.Error()}
 	}
 
+	btcTx := wire.NewMsgTx(wire.TxVersion)
+	buf := bytes.NewBuffer(tracker.ProcessUnsignedTx)
+	err = btcTx.Deserialize(buf)
+	if err != nil {
+
+	}
+
+	pk, err := btcec.ParsePubKey(addSignature.ValidatorPubKey, btcec.S256())
+	sign, err := btcec.ParseSignature(addSignature.BTCSignature, btcec.S256())
+	if err != nil {
+		return false, action.Response{Log: errors.Wrap(err, "failed parse signature").Error()}
+	}
+
+	sc, _ := txscript.NewScriptBuilder().AddData(addSignature.ValidatorPubKey).AddOp(txscript.OP_CHECKSIG).Script()
+
+	hash, err := txscript.CalcSignatureHash(sc, txscript.SigHashAll, btcTx, 0)
+	if err != nil {
+		return false, action.Response{Log: errors.Wrap(err, "failed to calc signature hash").Error()}
+	}
+	ok := sign.Verify(hash, pk)
+	if !ok {
+		return false, action.Response{Log: errors.Wrap(err, "invalid user signature").Error()}
+	}
+
 	err = tracker.AddSignature(addSignature.BTCSignature, addressPubKey.ScriptAddress())
 	if err != nil {
-		return false, action.Response{Log: fmt.Sprintf("error adding signature: %s, error: ", addSignature.TrackerName, err)}
+		return false, action.Response{Log: fmt.Sprintf("error adding signature: %s, error: %s", addSignature.TrackerName, err.Error())}
 	}
 
 	if tracker.HasEnoughSignatures() {
 		tracker.State = bitcoin.BusyBroadcasting
 	}
 
-	//dat := event.BTCTransitionContext{Tracker: tracker}
-	//_, err = bitcoin.Engine.Process("freezeForBroadcast", dat, tracker.State)
-
 	err = ctx.BTCTrackers.SetTracker(addSignature.TrackerName, tracker)
 	if err != nil {
-		return false, action.Response{Log: fmt.Sprintf("error updating tracker store: %s, error: ", addSignature.TrackerName, err)}
+		return false, action.Response{Log: fmt.Sprintf("error updating tracker store: %s, error: %s", addSignature.TrackerName, err.Error())}
 	}
 
 	return true, action.Response{
 		Tags: addSignature.Tags(),
 	}
-}
 
-func (ast btcAddSignatureTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas) (bool, action.Response) {
-	return true, action.Response{}
 }

@@ -1,6 +1,8 @@
 package transition
 
-import "github.com/pkg/errors"
+import (
+	"github.com/pkg/errors"
+)
 
 var (
 	errTransitionExist       = errors.New("transition already exist")
@@ -59,6 +61,7 @@ func (m *engine) Register(ts Transition) error {
 }
 
 func (m *engine) Process(name string, ctx interface{}, current Status) (Status, error) {
+
 	if name == NOOP {
 		return -1, nil
 	}

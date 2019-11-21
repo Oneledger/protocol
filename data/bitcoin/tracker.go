@@ -5,11 +5,16 @@
 package bitcoin
 
 import (
+	"strconv"
+
+	"github.com/Oneledger/protocol/storage"
 	"github.com/Oneledger/protocol/utils/transition"
+
 	"github.com/pkg/errors"
 
-	"github.com/Oneledger/protocol/data/keys"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
+
+	"github.com/Oneledger/protocol/data/keys"
 )
 
 type TrackerState int
@@ -39,7 +44,7 @@ type Tracker struct {
 	Multisig *keys.BTCMultiSig `json:"multisig"`
 
 	// State tracks the current state of the tracker, Also used for locking distributed access
-	State transition.Status `json:"state"`
+	State TrackerState `json:"state"`
 
 	CurrentTxId              *chainhash.Hash
 	CurrentBalance           int64
@@ -189,4 +194,9 @@ func (t Tracker) NextStep() string {
 		return REPORT_BROADCAST
 	}
 	return transition.NOOP
+
+}
+
+func (t *Tracker) GetJobID(state TrackerState) string {
+	return t.Name + storage.DB_PREFIX + strconv.Itoa(int(state))
 }

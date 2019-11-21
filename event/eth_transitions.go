@@ -213,7 +213,7 @@ func Cleanup(ctx interface{}) error {
 	}
 
 	//Delete CheckFinality Job
-	fjob, err := context.JobStore.GetJob(tracker.GetJobID(ethereum.BusyBroadcasting))
+	fjob, err := context.JobStore.GetJob(tracker.GetJobID(ethereum.BusyFinalizing))
 	if err != nil {
 		return errors.Wrap(err, "failed to get job")
 	}

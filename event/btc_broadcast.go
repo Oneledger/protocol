@@ -7,8 +7,6 @@ package event
 import (
 	"bytes"
 	"encoding/hex"
-	"strconv"
-	"time"
 
 	"github.com/btcsuite/btcd/rpcclient"
 	"github.com/btcsuite/btcd/txscript"
@@ -30,9 +28,7 @@ type JobBTCBroadcast struct {
 	Status jobs.Status
 }
 
-func NewBTCBroadcastJob(trackerName string) jobs.Job {
-
-	id := strconv.FormatInt(time.Now().UnixNano(), 10)
+func NewBTCBroadcastJob(trackerName, id string) jobs.Job {
 
 	return &JobBTCBroadcast{
 		Type:        JobTypeBTCBroadcast,
@@ -148,6 +144,8 @@ func (j *JobBTCBroadcast) DoMyJob(ctxI interface{}) {
 			ctx.Logger.Error("error while broadcasting finality vote and mint txn ", err, j.TrackerName)
 			return
 		}
+
+		j.Status = jobs.Completed
 
 	} else {
 		ctx.Logger.Error("broadcast failed err: ", err, " tracker: ", j.TrackerName)

@@ -7,8 +7,6 @@ package event
 import (
 	"crypto/rand"
 	"io"
-	"strconv"
-	"time"
 
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/action/btc"
@@ -25,9 +23,7 @@ type JobBTCCheckFinality struct {
 	Status jobs.Status
 }
 
-func NewBTCCheckFinalityJob(trackerName string) jobs.Job {
-
-	id := strconv.FormatInt(time.Now().UnixNano(), 10)
+func NewBTCCheckFinalityJob(trackerName, id string) jobs.Job {
 
 	return &JobBTCCheckFinality{
 		Type:        JobTypeBTCCheckFinality,
@@ -111,6 +107,7 @@ func (cf *JobBTCCheckFinality) DoMyJob(ctxI interface{}) {
 		return
 	}
 
+	cf.Status = jobs.Completed
 }
 
 func (cf *JobBTCCheckFinality) GetType() string {

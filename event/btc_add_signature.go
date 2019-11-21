@@ -7,12 +7,11 @@ package event
 import (
 	"bytes"
 	"encoding/hex"
-	"strconv"
-	"time"
 
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/btcsuite/btcd/txscript"
 	"github.com/btcsuite/btcd/wire"
+	"github.com/btcsuite/btcutil"
 
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/action/btc"
@@ -29,9 +28,7 @@ type JobAddSignature struct {
 	Status jobs.Status
 }
 
-func NewAddSignatureJob(trackerName string) jobs.Job {
-
-	id := strconv.FormatInt(time.Now().UnixNano(), 10)
+func NewAddSignatureJob(trackerName, id string) jobs.Job {
 
 	return &JobAddSignature{
 		Type:        JobTypeAddSignature,
@@ -56,6 +53,20 @@ func (j *JobAddSignature) DoMyJob(ctxI interface{}) {
 
 	ctx.Logger.Info(hex.EncodeToString(tracker.ProcessUnsignedTx))
 
+	pk, _ := btcec.PrivKeyFromBytes(btcec.S256(), ctx.BTCPrivKey.Data)
+
+	addressPubKey, err := btcutil.NewAddressPubKey(pk.PubKey().SerializeCompressed(), ctx.BTCParams)
+	if err != nil {
+		ctx.Logger.Error("error while generating btc address", err)
+		return
+	}
+
+	if tracker.Multisig.HasAddressSigned(addressPubKey.ScriptAddress()) {
+
+		j.Status = jobs.Completed
+		return
+	}
+
 	lockTx := wire.NewMsgTx(wire.TxVersion)
 	err = lockTx.Deserialize(bytes.NewReader(tracker.ProcessUnsignedTx))
 	if err != nil {
@@ -68,8 +79,6 @@ func (j *JobAddSignature) DoMyJob(ctxI interface{}) {
 		ctx.Logger.Error("erroring in reading lockscript", err)
 		return
 	}
-
-	pk, _ := btcec.PrivKeyFromBytes(btcec.S256(), ctx.BTCPrivKey.Data)
 
 	sig, err := txscript.RawTxInSignature(lockTx, 0, lockScript, txscript.SigHashAll, pk)
 	if err != nil {

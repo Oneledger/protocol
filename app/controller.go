@@ -320,11 +320,11 @@ func doTransitions(js *jobs.JobStore, ts *bitcoin.TrackerStore) {
 	for _, t := range btcTracker {
 		ctx := bitcoin.BTCTransitionContext{&t, js.WithChain(chain.BITCOIN)}
 
-		stt, err := event.BtcEngine.Process(t.NextStep(), ctx, t.State)
+		stt, err := event.BtcEngine.Process(t.NextStep(), ctx, transition.Status(t.State))
 		if err != nil {
 			continue
 		}
-		t.State = stt
+		t.State = bitcoin.TrackerState(stt)
 
 		err = ts.SetTracker(t.Name, &t)
 	}

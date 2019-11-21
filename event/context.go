@@ -11,6 +11,7 @@ import (
 	"github.com/btcsuite/btcd/chaincfg"
 
 	"github.com/Oneledger/protocol/action"
+	bitcoin2 "github.com/Oneledger/protocol/chains/bitcoin"
 	"github.com/Oneledger/protocol/data/bitcoin"
 	"github.com/Oneledger/protocol/data/ethereum"
 	"github.com/Oneledger/protocol/data/keys"
@@ -25,7 +26,7 @@ type JobsContext struct {
 
 	BTCPrivKey       keys.PrivateKey
 	ETHPrivKey       ecdsa.PrivateKey
-	Params           *chaincfg.Params
+	BTCParams        *chaincfg.Params
 	ValidatorAddress action.Address
 
 	BlockCypherToken string
@@ -52,19 +53,7 @@ func NewJobsContext(chainType string, svc *Service,
 	ETHAbi string, ETHconn string, ETHContractaddress string, ethTracker *ethereum.TrackerStore,
 ) *JobsContext {
 
-	var params *chaincfg.Params
-	switch chainType {
-	case "mainnet":
-		params = &chaincfg.MainNetParams
-	case "testnet3":
-		params = &chaincfg.TestNet3Params
-	case "regtest":
-		params = &chaincfg.RegressionNetParams
-	case "simnet":
-		params = &chaincfg.SimNetParams
-	default:
-		params = &chaincfg.TestNet3Params
-	}
+	params := bitcoin2.GetChainParams(chainType)
 
 	w := os.Stdout
 
@@ -74,7 +63,7 @@ func NewJobsContext(chainType string, svc *Service,
 		Trackers:           trackers,
 		BTCPrivKey:         *privKey,
 		ETHPrivKey:         *ethprivKey,
-		Params:             params,
+		BTCParams:          params,
 		ValidatorAddress:   valAddress,
 		BlockCypherToken:   bcyToken,
 		LockScripts:        lStore,
