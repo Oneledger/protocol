@@ -8,6 +8,7 @@ import (
 	"github.com/Oneledger/protocol/chains/ethereum"
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/storage"
+	"github.com/Oneledger/protocol/utils/transition"
 )
 
 type TrackerState int
@@ -121,5 +122,5 @@ func (t Tracker) NextStep() string {
 	case Minted:
 		return CLEANUP
 	}
-	return ""
+	return transition.NOOP
 }

@@ -188,5 +188,5 @@ func (t Tracker) NextStep() string {
 	case BusyBroadcasting:
 		return REPORT_BROADCAST
 	}
-	return ""
+	return transition.NOOP
 }
