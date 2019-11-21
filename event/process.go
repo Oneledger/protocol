@@ -62,8 +62,9 @@ type JobProcess func(job jobs.Job) jobs.Job
 func ProcessAllJobs(ctx *JobsContext, js *jobs.JobStore) {
 
 	RangeJobs(js, func(job jobs.Job) jobs.Job {
-
-		job.DoMyJob(ctx)
+		if !job.IsDone() {
+			job.DoMyJob(ctx)
+		}
 		return job
 	})
 }

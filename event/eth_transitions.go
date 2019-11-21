@@ -6,7 +6,68 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/Oneledger/protocol/data/ethereum"
+	"github.com/Oneledger/protocol/utils/transition"
 )
+
+func init() {
+	EthEngine = transition.NewEngine(
+		[]transition.Status{
+			transition.Status(ethereum.New),
+			transition.Status(ethereum.BusyBroadcasting),
+			transition.Status(ethereum.BusyFinalizing),
+			transition.Status(ethereum.Finalized),
+			transition.Status(ethereum.Minted),
+		})
+
+	err := EthEngine.Register(transition.Transition{
+		Name: ethereum.BROADCASTING,
+		Fn:   Broadcasting,
+		From: transition.Status(ethereum.New),
+		To:   transition.Status(ethereum.BusyBroadcasting),
+	})
+	if err != nil {
+		panic(err)
+	}
+
+	err = EthEngine.Register(transition.Transition{
+		Name: ethereum.FINALIZING,
+		Fn:   Finalizing,
+		From: transition.Status(ethereum.BusyBroadcasting),
+		To:   transition.Status(ethereum.BusyFinalizing),
+	})
+	if err != nil {
+		panic(err)
+	}
+
+	err = EthEngine.Register(transition.Transition{
+		Name: ethereum.FINALIZE,
+		Fn:   Finalization,
+		From: transition.Status(ethereum.BusyFinalizing),
+		To:   transition.Status(ethereum.Finalized),
+	})
+	if err != nil {
+		panic(err)
+	}
+
+	err = EthEngine.Register(transition.Transition{
+		Name: ethereum.MINTING,
+		Fn:   Minting,
+		From: transition.Status(ethereum.Finalized),
+		To:   transition.Status(ethereum.Minted),
+	})
+	if err != nil {
+		panic(err)
+	}
+	err = EthEngine.Register(transition.Transition{
+		Name: ethereum.CLEANUP,
+		Fn:   Cleanup,
+		From: transition.Status(ethereum.Minted),
+		To:   0,
+	})
+	if err != nil {
+		panic(err)
+	}
+}
 
 //TODO Go back to Busy broadcasting if there is a failure in Finalizing.
 func Broadcasting(ctx interface{}) error {
