@@ -5,11 +5,57 @@
 package event
 
 import (
-	"strings"
+	"time"
 
+	"github.com/Oneledger/protocol/data/chain"
 	"github.com/Oneledger/protocol/data/jobs"
-	"github.com/Oneledger/protocol/serialize"
 )
+
+type JobBus struct {
+	store *jobs.JobStore
+	ctx   *JobsContext
+	opt   Option
+	quit  chan struct{}
+}
+
+type Option struct {
+	EthInterval time.Duration
+	BtcInterval time.Duration
+}
+
+func NewJobBus(opt Option, store *jobs.JobStore) *JobBus {
+	return &JobBus{
+		store: store,
+		opt:   opt,
+		quit:  make(chan struct{}),
+	}
+}
+
+func (j *JobBus) Start(ctx *JobsContext) error {
+	tickerBtc := time.NewTicker(j.opt.BtcInterval)
+	tickerEth := time.NewTicker(j.opt.EthInterval)
+	go func() {
+		for {
+			select {
+			case <-tickerBtc.C:
+				ProcessAllJobs(ctx, j.store.WithChain(chain.BITCOIN))
+			case <-tickerEth.C:
+				ProcessAllJobs(ctx, j.store.WithChain(chain.ETHEREUM))
+			case <-j.quit:
+				tickerBtc.Stop()
+				tickerEth.Stop()
+				return
+			}
+		}
+	}()
+
+	return nil
+}
+
+func (j *JobBus) Close() error {
+	close(j.quit)
+	return nil
+}
 
 type JobProcess func(job jobs.Job) jobs.Job
 
@@ -24,29 +70,14 @@ func ProcessAllJobs(ctx *JobsContext, js *jobs.JobStore) {
 
 func RangeJobs(js *jobs.JobStore, pro JobProcess) {
 
-	start := []byte("job:     ")
-	end := []byte("job:~~~~~~~~")
-	isAsc := true
-
 	jobkeys := make([]string, 0, 20)
-
-	session := js.BeginSession()
-	iter := session.GetIterator()
-
-	iter.IterateRange(start, end, isAsc, func(key, val []byte) bool {
-
-		jobkeys = append(jobkeys, string(key))
-
-		return false
+	js.Iterate(func(job jobs.Job) {
+		jobkeys = append(jobkeys, job.GetJobID())
 	})
-
 	for _, key := range jobkeys {
 
-		jobID := strings.TrimPrefix(string(key), "job:")
-
-		dat, typ := js.GetJob(jobID)
-		job := MakeJob(dat, typ)
-		if job == nil {
+		job, err := js.GetJob(key)
+		if err != nil {
 			continue
 		}
 
@@ -55,22 +86,4 @@ func RangeJobs(js *jobs.JobStore, pro JobProcess) {
 		js.DeleteJob(job)
 
 	}
-}
-
-func MakeJob(data []byte, typ string) jobs.Job {
-
-	ser := serialize.GetSerializer(serialize.PERSISTENT)
-
-	switch typ {
-	case JobTypeAddSignature:
-		as := JobAddSignature{}
-		ser.Deserialize(data, &as)
-		return &as
-	case JobTypeBTCBroadcast:
-		as := JobBTCBroadcast{}
-		ser.Deserialize(data, &as)
-		return &as
-	}
-
-	return nil
 }

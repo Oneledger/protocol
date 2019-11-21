@@ -328,6 +328,9 @@ func (app *App) Start() error {
 	app.node = node
 	app.Context.internalService = event.NewService(app.Context.node,
 		log.NewLoggerWithPrefix(app.Context.logWriter, "internal_service"), internalRouter, node)
+
+	_ = app.Context.jobBus.Start(app.Context.JobContext())
+
 	return nil
 }
 

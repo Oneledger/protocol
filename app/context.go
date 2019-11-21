@@ -3,6 +3,7 @@ package app
 import (
 	"io"
 	"path/filepath"
+	"time"
 
 	"github.com/pkg/errors"
 	"github.com/tendermint/tendermint/libs/db"
@@ -66,6 +67,7 @@ type context struct {
 	jobStore        *jobs.JobStore
 	lockScriptStore *bitcoin.LockScriptStore
 	internalService *event.Service
+	jobBus          *event.JobBus
 
 	logWriter io.Writer
 }
@@ -113,6 +115,11 @@ func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *node.Context) (
 		FeeCurrency:   balance.Currency{Name: "OLT", Chain: chain.Type(0), Decimal: 18},
 		MinFeeDecimal: 0,
 	}
+
+	ctx.jobBus = event.NewJobBus(event.Option{
+		EthInterval: time.Minute,
+		BtcInterval: 30 * time.Second,
+	}, ctx.jobStore)
 
 	_ = transfer.EnableSend(ctx.actionRouter)
 	_ = staking.EnableApplyValidator(ctx.actionRouter)
@@ -260,4 +267,25 @@ func (ctx *context) Node() node.Context {
 
 func (ctx *context) Validators() *identity.ValidatorStore {
 	return ctx.validators
+}
+
+func (ctx *context) JobContext() *event.JobsContext {
+	cdConfig := ctx.cfg.ChainDriver
+	ethConfig := ctx.cfg.EthChainDriver
+	return event.NewJobsContext(cdConfig.BitcoinChainType,
+		ctx.internalService, ctx.btcTrackers,
+		ctx.node.ValidatorECDSAPrivateKey(),
+		ctx.node.EthPrivKey(),
+		ctx.node.ValidatorAddress(), ctx.cfg.ChainDriver.BlockCypherToken,
+		ctx.lockScriptStore,
+		cdConfig.BitcoinNodeAddress,
+		cdConfig.BitcoinRPCPort,
+		cdConfig.BitcoinRPCUsername,
+		cdConfig.BitcoinRPCPassword,
+		cdConfig.BitcoinChainType,
+		ethConfig.ContractABI,
+		ethConfig.ContractAddress,
+		ethConfig.ContractAddress,
+		ctx.ethTrackers,
+	)
 }

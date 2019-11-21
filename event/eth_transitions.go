@@ -55,10 +55,12 @@ func Finalizing(ctx interface{}) error {
 
 	if !voted {
 		//Check Broadcasting job
-		job, typ := context.JobStore.GetJob(tracker.GetJobID(ethereum.BusyBroadcasting))
-		broadcastJob := MakeJob(job, typ)
+		bjob, err := context.JobStore.GetJob(tracker.GetJobID(ethereum.BusyBroadcasting))
+		if err != nil {
+			return errors.Wrap(err, "failed to get job")
+		}
 
-		if broadcastJob.IsDone() {
+		if bjob.IsDone() {
 
 			//Create job to check finality
 			job := NewETHCheckFinality(tracker.TrackerName, ethereum.BusyFinalizing)
@@ -139,19 +141,22 @@ func Cleanup(ctx interface{}) error {
 	//todo: delete the tracker and jobs related
 
 	//Delete Broadcasting Job
-	job, typ := context.JobStore.GetJob(tracker.GetJobID(ethereum.BusyBroadcasting))
-	broadcastJob := MakeJob(job, typ)
+	bjob, err := context.JobStore.GetJob(tracker.GetJobID(ethereum.BusyBroadcasting))
+	if err != nil {
+		return errors.Wrap(err, "failed to get job")
+	}
 
-	err := context.JobStore.DeleteJob(broadcastJob)
+	err = context.JobStore.DeleteJob(bjob)
 	if err != nil {
 		return err
 	}
 
 	//Delete CheckFinality Job
-	job, typ = context.JobStore.GetJob(tracker.GetJobID(ethereum.BusyFinalizing))
-	checkFinJob := MakeJob(job, typ)
-
-	err = context.JobStore.DeleteJob(checkFinJob)
+	fjob, err := context.JobStore.GetJob(tracker.GetJobID(ethereum.BusyBroadcasting))
+	if err != nil {
+		return errors.Wrap(err, "failed to get job")
+	}
+	err = context.JobStore.DeleteJob(fjob)
 	if err != nil {
 		return err
 	}

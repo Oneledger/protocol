@@ -13,6 +13,7 @@ import (
 	ceth "github.com/Oneledger/protocol/chains/ethereum"
 	"github.com/Oneledger/protocol/config"
 	"github.com/Oneledger/protocol/data/bitcoin"
+	"github.com/Oneledger/protocol/data/chain"
 	"github.com/Oneledger/protocol/data/ethereum"
 	"github.com/Oneledger/protocol/data/fees"
 	"github.com/Oneledger/protocol/data/jobs"
@@ -208,40 +209,11 @@ func (app *App) blockEnder() blockEnder {
 			Tags:             []common.KVPair(nil),
 		}
 
-		go func() {
-
-			if req.Height%3 == 0 &&
-				app.Context.validators.IsValidatorAddress(app.Context.node.ValidatorAddress()) {
-
-				cdConfig := app.Context.cfg.ChainDriver
-				ethConfig := app.Context.cfg.EthChainDriver
-				jc := event.NewJobsContext(cdConfig.BitcoinChainType,
-					app.Context.internalService, app.Context.btcTrackers,
-					app.Context.node.ValidatorECDSAPrivateKey(),
-					app.Context.node.EthPrivKey(),
-					app.Context.node.ValidatorAddress(), app.Context.cfg.ChainDriver.BlockCypherToken,
-					app.Context.lockScriptStore,
-					cdConfig.BitcoinNodeAddress,
-					cdConfig.BitcoinRPCPort,
-					cdConfig.BitcoinRPCUsername,
-					cdConfig.BitcoinRPCPassword,
-					cdConfig.BitcoinChainType,
-					ethConfig.ContractABI,
-					ethConfig.ContractAddress,
-					ethConfig.ContractAddress,
-					app.Context.ethTrackers,
-				)
-
-				js := app.Context.jobStore
-				event.ProcessAllJobs(jc, js)
-			}
-		}()
-
 		js := app.Context.jobStore
 		eth := app.Context.ethTrackers
 
 		eth.Iterate(func(name *ceth.TrackerName, tracker *ethereum.Tracker) bool {
-			ctx := ethereum.NewTrackerCtx(tracker, app.Context.node.ValidatorAddress(), js, eth)
+			ctx := ethereum.NewTrackerCtx(tracker, app.Context.node.ValidatorAddress(), js.WithChain(chain.ETHEREUM), eth)
 			_, err := event.EthEngine.Process(tracker.NextStep(), ctx, transition.Status(tracker.State))
 
 			if err != nil {
@@ -346,7 +318,7 @@ func doTransitions(js *jobs.JobStore, ts *bitcoin.TrackerStore) {
 	}
 
 	for _, t := range btcTracker {
-		ctx := bitcoin.BTCTransitionContext{&t, js}
+		ctx := bitcoin.BTCTransitionContext{&t, js.WithChain(chain.BITCOIN)}
 
 		stt, err := event.BtcEngine.Process(t.NextStep(), ctx, t.State)
 		if err != nil {
