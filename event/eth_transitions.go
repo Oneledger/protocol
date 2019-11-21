@@ -6,7 +6,68 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/Oneledger/protocol/data/ethereum"
+	"github.com/Oneledger/protocol/utils/transition"
 )
+
+func init() {
+	EthEngine = transition.NewEngine(
+		[]transition.Status{
+			transition.Status(ethereum.New),
+			transition.Status(ethereum.BusyBroadcasting),
+			transition.Status(ethereum.BusyFinalizing),
+			transition.Status(ethereum.Finalized),
+			transition.Status(ethereum.Minted),
+		})
+
+	err := EthEngine.Register(transition.Transition{
+		Name: ethereum.BROADCASTING,
+		Fn:   Broadcasting,
+		From: transition.Status(ethereum.New),
+		To:   transition.Status(ethereum.BusyBroadcasting),
+	})
+	if err != nil {
+		panic(err)
+	}
+
+	err = EthEngine.Register(transition.Transition{
+		Name: ethereum.FINALIZING,
+		Fn:   Finalizing,
+		From: transition.Status(ethereum.BusyBroadcasting),
+		To:   transition.Status(ethereum.BusyFinalizing),
+	})
+	if err != nil {
+		panic(err)
+	}
+
+	err = EthEngine.Register(transition.Transition{
+		Name: ethereum.FINALIZE,
+		Fn:   Finalization,
+		From: transition.Status(ethereum.BusyFinalizing),
+		To:   transition.Status(ethereum.Finalized),
+	})
+	if err != nil {
+		panic(err)
+	}
+
+	err = EthEngine.Register(transition.Transition{
+		Name: ethereum.MINTING,
+		Fn:   Minting,
+		From: transition.Status(ethereum.Finalized),
+		To:   transition.Status(ethereum.Minted),
+	})
+	if err != nil {
+		panic(err)
+	}
+	err = EthEngine.Register(transition.Transition{
+		Name: ethereum.CLEANUP,
+		Fn:   Cleanup,
+		From: transition.Status(ethereum.Minted),
+		To:   0,
+	})
+	if err != nil {
+		panic(err)
+	}
+}
 
 //TODO Go back to Busy broadcasting if there is a failure in Finalizing.
 func Broadcasting(ctx interface{}) error {
@@ -55,10 +116,12 @@ func Finalizing(ctx interface{}) error {
 
 	if !voted {
 		//Check Broadcasting job
-		job, typ := context.JobStore.GetJob(tracker.GetJobID(ethereum.BusyBroadcasting))
-		broadcastJob := MakeJob(job, typ)
+		bjob, err := context.JobStore.GetJob(tracker.GetJobID(ethereum.BusyBroadcasting))
+		if err != nil {
+			return errors.Wrap(err, "failed to get job")
+		}
 
-		if broadcastJob.IsDone() {
+		if bjob.IsDone() {
 
 			//Create job to check finality
 			job := NewETHCheckFinality(tracker.TrackerName, ethereum.BusyFinalizing)
@@ -139,19 +202,22 @@ func Cleanup(ctx interface{}) error {
 	//todo: delete the tracker and jobs related
 
 	//Delete Broadcasting Job
-	job, typ := context.JobStore.GetJob(tracker.GetJobID(ethereum.BusyBroadcasting))
-	broadcastJob := MakeJob(job, typ)
+	bjob, err := context.JobStore.GetJob(tracker.GetJobID(ethereum.BusyBroadcasting))
+	if err != nil {
+		return errors.Wrap(err, "failed to get job")
+	}
 
-	err := context.JobStore.DeleteJob(broadcastJob)
+	err = context.JobStore.DeleteJob(bjob)
 	if err != nil {
 		return err
 	}
 
 	//Delete CheckFinality Job
-	job, typ = context.JobStore.GetJob(tracker.GetJobID(ethereum.BusyFinalizing))
-	checkFinJob := MakeJob(job, typ)
-
-	err = context.JobStore.DeleteJob(checkFinJob)
+	fjob, err := context.JobStore.GetJob(tracker.GetJobID(ethereum.BusyBroadcasting))
+	if err != nil {
+		return errors.Wrap(err, "failed to get job")
+	}
+	err = context.JobStore.DeleteJob(fjob)
 	if err != nil {
 		return err
 	}

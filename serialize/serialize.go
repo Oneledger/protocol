@@ -17,6 +17,7 @@ const (
 	CLIENT Channel = iota
 	PERSISTENT
 	NETWORK
+	LOCAL
 	JSON
 )
 
@@ -54,6 +55,9 @@ func GetSerializer(channel Channel, args ...interface{}) Serializer {
 
 	case NETWORK:
 		return &jsonStrategy{}
+
+	case LOCAL:
+		return &msgpackStrategy{}
 
 	case JSON:
 		return &jsonStrategy{}

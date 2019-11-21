@@ -6,7 +6,44 @@ package event
 
 import (
 	"github.com/Oneledger/protocol/data/bitcoin"
+	"github.com/Oneledger/protocol/utils/transition"
 )
+
+func init() {
+	BtcEngine = transition.NewEngine(
+		[]transition.Status{bitcoin.Available, bitcoin.Requested, bitcoin.BusySigning, bitcoin.BusyBroadcasting, bitcoin.BusyFinalizing},
+	)
+
+	err := BtcEngine.Register(transition.Transition{
+		Name: bitcoin.RESERVE,
+		Fn:   ReserveTracker,
+		From: bitcoin.Requested,
+		To:   bitcoin.BusySigning,
+	})
+	if err != nil {
+		panic(err)
+	}
+
+	err = BtcEngine.Register(transition.Transition{
+		Name: "freezeForBroadcast",
+		Fn:   FreezeForBroadcast,
+		From: bitcoin.BusySigning,
+		To:   bitcoin.BusyBroadcasting,
+	})
+	if err != nil {
+		panic(err)
+	}
+
+	err = BtcEngine.Register(transition.Transition{
+		Name: "reportBroadcastSuccess",
+		Fn:   ReportBroadcastSuccess,
+		From: bitcoin.BusySigning,
+		To:   bitcoin.BusyFinalizing,
+	})
+	if err != nil {
+		panic(err)
+	}
+}
 
 func MakeAvailable(ctx interface{}) error {
 	return nil

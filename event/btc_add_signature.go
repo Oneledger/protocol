@@ -45,9 +45,6 @@ func (j *JobAddSignature) GetType() string {
 	return JobTypeAddSignature
 }
 
-type doJobData struct {
-}
-
 func (j *JobAddSignature) DoMyJob(ctxI interface{}) {
 	ctx, _ := ctxI.(*JobsContext)
 

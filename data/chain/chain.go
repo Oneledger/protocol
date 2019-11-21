@@ -26,13 +26,19 @@ type Chain struct {
 	Features    []string
 }
 
+const (
+	ONELEDGER Type = 0
+	BITCOIN   Type = 1
+	ETHEREUM  Type = 2
+)
+
 var chainTypes = map[string]Type{}
 var chainTypeNames = map[Type]string{}
 
 func init() {
-	RegisterChainType("OneLedger", 0)
-	RegisterChainType("Bitcoin", 1)
-	RegisterChainType("Ethereum", 2)
+	RegisterChainType("OneLedger", int(ONELEDGER))
+	RegisterChainType("Bitcoin", int(BITCOIN))
+	RegisterChainType("Ethereum", int(ETHEREUM))
 
 }
 
