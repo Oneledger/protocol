@@ -18,7 +18,7 @@ func EnableETH(r action.Router) error {
 
 	err = r.AddHandler(action.ETH_MINT, ethExtMintTx{})
 	if err != nil {
-		return errors.Wrap(err, "extMintOBTCTx")
+		return errors.Wrap(err, "extMintETHTx")
 	}
 
 	return nil

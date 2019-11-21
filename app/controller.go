@@ -100,6 +100,7 @@ func (app *App) chainInitializer() chainInitializer {
 }
 
 func (app *App) blockBeginner() blockBeginner {
+	fmt.Println("blockbeginner")
 	return func(req RequestBeginBlock) ResponseBeginBlock {
 		gc := getGasCalculator(app.genesisDoc.ConsensusParams)
 		app.Context.deliver = storage.NewState(app.Context.chainstate).WithGas(gc)
@@ -124,6 +125,8 @@ func (app *App) blockBeginner() blockBeginner {
 
 // mempool connection: for checking if transactions should be relayed before they are committed
 func (app *App) txChecker() txChecker {
+	fmt.Println("txchecker")
+	app.logger.Info("TXCHECKER :")
 	return func(msg []byte) ResponseCheckTx {
 		tx := &action.SignedTx{}
 
@@ -159,6 +162,9 @@ func (app *App) txChecker() txChecker {
 			Tags:      response.Tags,
 			Codespace: "",
 		}
+		app.logger.Debug("Check TX TAG")
+		app.logger.Debug(response)
+		app.logger.Debug(result.Data)
 		app.logger.Debug("Check Tx: ", result, "log", response.Log)
 		return result
 
@@ -167,6 +173,8 @@ func (app *App) txChecker() txChecker {
 
 func (app *App) txDeliverer() txDeliverer {
 	return func(msg []byte) ResponseDeliverTx {
+		fmt.Println("TXDELIVER")
+		app.logger.Debug("TXDELIVER")
 		tx := &action.SignedTx{}
 
 		err := serialize.GetSerializer(serialize.NETWORK).Deserialize(msg, tx)
@@ -178,8 +186,9 @@ func (app *App) txDeliverer() txDeliverer {
 		handler := txCtx.Router.Handler(tx.Type)
 
 		gas := txCtx.State.ConsumedGas()
-
+		app.logger.Debug("BEFORE DELIVER : ")
 		ok, response := handler.ProcessDeliver(txCtx, tx.RawTx)
+		app.logger.Debug("AFTER  DELIVER : ")
 
 		feeOk, feeResponse := handler.ProcessFee(txCtx, *tx, gas, storage.Gas(len(msg)))
 
@@ -199,8 +208,9 @@ func (app *App) txDeliverer() txDeliverer {
 }
 
 func (app *App) blockEnder() blockEnder {
-	return func(req RequestEndBlock) ResponseEndBlock {
 
+	return func(req RequestEndBlock) ResponseEndBlock {
+		fmt.Println("blockEnder")
 		fee, err := app.Context.feePool.WithState(app.Context.deliver).Get([]byte(fees.POOL_KEY))
 		app.logger.Debug("endblock fee", fee, err)
 		updates := app.Context.validators.GetEndBlockUpdate(app.Context.ValidatorCtx(), req)
@@ -214,6 +224,7 @@ func (app *App) blockEnder() blockEnder {
 
 		eth.Iterate(func(name *ceth.TrackerName, tracker *ethereum.Tracker) bool {
 			ctx := ethereum.NewTrackerCtx(tracker, app.Context.node.ValidatorAddress(), js.WithChain(chain.ETHEREUM), eth)
+			fmt.Println("iterate tracker:", tracker)
 			_, err := event.EthEngine.Process(tracker.NextStep(), ctx, transition.Status(tracker.State))
 
 			if err != nil {
@@ -221,10 +232,10 @@ func (app *App) blockEnder() blockEnder {
 			}
 
 			//todo save the tracker back to cache
-			err = eth.Set(*tracker)
-			if err != nil {
-				app.logger.Error("process eth tracker", err)
-			}
+			//err = eth.Set(*tracker)
+			//if err != nil {
+			//	app.logger.Error("process eth tracker", err)
+			//}
 
 			return false
 		})

@@ -118,8 +118,8 @@ reset: install
 	@./scripts/stopDev
 	@./scripts/resetDev
 	@./scripts/startDev
-	@./scripts/testapply
-	@./scripts/testsend
+# 	@./scripts/testapply
+# 	@./scripts/testsend
 
 rpcAuthtest: install
 	@./scripts/stopDev

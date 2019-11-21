@@ -1,6 +1,7 @@
 package event
 
 import (
+	"fmt"
 	"os"
 	"strconv"
 
@@ -35,7 +36,7 @@ func NewETHBroadcast(name ethereum.TrackerName, state ethereum2.TrackerState) Jo
 
 func (job JobETHBroadcast) DoMyJob(ctx interface{}) {
 
-	// get tracker
+	fmt.Println("Do job for broadcast")
 	job.RetryCount += 1
 	if job.RetryCount > jobs.Max_Retry_Count {
 		job.Status = jobs.Failed

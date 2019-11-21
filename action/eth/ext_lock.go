@@ -2,6 +2,7 @@ package eth
 
 import (
 	"encoding/json"
+	"fmt"
 	"strconv"
 
 	ethcommon "github.com/ethereum/go-ethereum/common"
@@ -184,6 +185,7 @@ func (ethLockTx) processCommon(ctx *action.Context, tx action.RawTx, lock *Lock)
 
 	// Save eth Tracker
 	err = ctx.ETHTrackers.Set(*tracker)
+	fmt.Println("Setting the tracker")
 	if err != nil {
 		return false, action.Response{Log: "error saving eth tracker: " + err.Error()}
 	}
