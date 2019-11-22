@@ -284,6 +284,6 @@ func (ctx *context) JobContext() *event.JobsContext {
 		ethConfig.ContractABI,
 		ethConfig.Connection,
 		ethConfig.ContractAddress,
-		ctx.ethTrackers,
+		ctx.ethTrackers.WithState(ctx.deliver),
 	)
 }
