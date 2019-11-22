@@ -45,9 +45,11 @@ type JobsContext struct {
 	BTCChainnet string
 }
 
-func NewJobsContext(chainType string, svc *Service, trackers *bitcoin.TrackerStore, privKey *keys.PrivateKey, ethprivKey *ecdsa.PrivateKey,
+func NewJobsContext(chainType string, svc *Service,
+	trackers *bitcoin.TrackerStore, privKey *keys.PrivateKey, ethprivKey *ecdsa.PrivateKey,
 	valAddress keys.Address, bcyToken string, lStore *bitcoin.LockScriptStore,
-	btcAddress, btcRPCPort, BTCRPCUsername, BTCRPCPassword, btcChain string, ETHAbi string, ETHconn string, ETHContractaddress string, ethTracker *ethereum.TrackerStore,
+	btcAddress, btcRPCPort, BTCRPCUsername, BTCRPCPassword, btcChain string,
+	ETHAbi string, ETHconn string, ETHContractaddress string, ethTracker *ethereum.TrackerStore,
 ) *JobsContext {
 
 	var params *chaincfg.Params
