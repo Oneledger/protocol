@@ -83,20 +83,21 @@ func Broadcasting(ctx interface{}) error {
 		err := errors.New("Cannot Broadcast from the current state")
 		return errors.Wrap(err, string(tracker.State))
 	}
-
+	fmt.Println("STATE :" ,tracker.State)
 	tracker.State = ethereum.BusyBroadcasting
-
+	fmt.Println("STATE CHANGED TO :" ,tracker.State)
 	//create broadcasting job
 	job := NewETHBroadcast(tracker.TrackerName, tracker.State)
 	err := context.JobStore.SaveJob(job)
 	if err != nil {
+		fmt.Println("ERROR SAVING")
 		return errors.Wrap(errors.New("job serialization failed err: "), err.Error())
 	}
-
 	return nil
 }
 
 func Finalizing(ctx interface{}) error {
+	fmt.Println("finalizing start ")
 	context, ok := ctx.(ethereum.TrackerCtx)
 	if !ok {
 		return errors.New("error casting tracker context")

@@ -73,6 +73,10 @@ func (t Type) String() string {
 		return "BTC_REPORT_FINALITY_MINT"
 	case BTC_EXT_MINT:
 		return "BTC_EXT_MINT"
+	case ETH_LOCK:
+		return "ETH_LOCK"
+	case ETH_REPORT_FINALITY_MINT:
+		 return "ETH_REPORT_FINALITY_MINT"
 	default:
 		return "UNKNOWN"
 	}

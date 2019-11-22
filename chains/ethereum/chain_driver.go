@@ -71,7 +71,11 @@ func (acc *EthereumChainDriver) CheckFinality(txHash TransactionHash) (*types.Re
 
 func (acc *EthereumChainDriver) BroadcastTx(tx *types.Transaction) (TransactionHash, error) {
 
-	err := acc.Client.SendTransaction(context.Background(), tx)
+    _, _, err := acc.Client.TransactionByHash(context.Background(), tx.Hash())
+    if err == nil {
+    	return tx.Hash(), nil
+	}
+	err = acc.Client.SendTransaction(context.Background(), tx)
 	if err != nil {
 		acc.logger.Error("Error connecting to ETHEREUM :", err)
 		return tx.Hash(), err

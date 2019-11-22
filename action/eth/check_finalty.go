@@ -3,6 +3,7 @@ package eth
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/rlp"
@@ -149,11 +150,65 @@ func (r reportFinalityMintTx) ProcessCheck(ctx *action.Context, tx action.RawTx)
 }
 
 func (r reportFinalityMintTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
-	panic("implement me")
+	f := ReportFinalityMint{}
+	err := f.Unmarshal(tx.Data)
+	if err != nil {
+		return false, action.Response{Log: "wrong tx type"}
+	}
+
+	tracker, err := ctx.ETHTrackers.Get(f.TrackerName)
+	if err != nil {
+		return false, action.Response{Log: "tracker not found" + f.TrackerName.Hex()}
+	}
+	if !bytes.Equal(tracker.ProcessOwner, f.Locker) {
+		return false, action.Response{Log: "tracker process not owned by user"}
+	}
+	valSet, err := ctx.Validators.GetValidatorSet()
+	if err != nil {
+		return false, action.Response{Log: "cannot get validator set"}
+	}
+	isSenderAValidator := false
+	for i := range valSet {
+		if bytes.Equal(valSet[i].Address, f.ValidatorAddress) {
+			isSenderAValidator = true
+		}
+	}
+
+	if !isSenderAValidator {
+		return false, action.Response{Log: "transaction sender not a validator"}
+	}
+
+	for index, fv := range tracker.Validators {
+		if bytes.Equal(fv, f.ValidatorAddress) {
+			tracker.AddVote(fv, int64(index))
+		}
+	}
+	// Are there Enough votes ?
+	// If not LOG it and return
+	// IF yes Check if status of minting
+	// CHeck if it has been minted already, if not
+	//    MINTING -> Mint OTETh and update status
+	// If it has been minted
+	//   MINTED -> Skip
+	// IF yes Mint OTETh
+	if !tracker.Finalized() {
+		return false, action.Response{Log: "Not Enough votes to finalize a transaction"}
+	}
+	fmt.Println("minting Now")
+	if !tracker.IsTaskCompleted() {
+		ctx.Logger.Info("ready to mint")
+		if !mintTokens(ctx, *tracker, f) {
+			return false, action.Response{Log: "Unable to mint Tokens"}
+		}
+		tracker.CompleteTask()
+	}
+	return true, action.Response{Log: "MINTING SUCCESSFULL"}
 }
 
-func (r reportFinalityMintTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas) (bool, action.Response) {
-	panic("implement me")
+func (reportFinalityMintTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas) (bool, action.Response) {
+	// return action.BasicFeeHandling(ctx, signedTx, start, size, 1)
+
+	return true, action.Response{}
 }
 
 var _ action.Tx = reportFinalityMintTx{}

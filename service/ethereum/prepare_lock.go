@@ -76,7 +76,10 @@ func createRawLock(locker action.Address, rawTx []byte, lockamount int64, userfe
 // Wallet signs and then calls onlinelock
 func (svc *Service) GetRawLockTX(req ETHLockRequest, out *ETHLockRawTX) error {
 	//TODO GET ECDSA PRIVATE KEY
-	cd, _ := ethereum.NewEthereumChainDriver(svc.config, svc.logger,svc.nodeContext.EthPrivKey())
+	cd, err := ethereum.NewEthereumChainDriver(svc.config, svc.logger,svc.nodeContext.EthPrivKey())
+	if err != nil {
+		return errors.Wrap(err, "GetRawLockTx")
+	}
 	rawTx, err := cd.PrepareUnsignedETHLock(req.PublicKey, req.Amount)
 	if err != nil {
 		return err

@@ -5,6 +5,7 @@
 package event
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/Oneledger/protocol/data/chain"
@@ -19,8 +20,8 @@ type JobBus struct {
 }
 
 type Option struct {
-	EthInterval time.Duration
 	BtcInterval time.Duration
+	EthInterval time.Duration
 }
 
 func NewJobBus(opt Option, store *jobs.JobStore) *JobBus {
@@ -62,6 +63,7 @@ type JobProcess func(job jobs.Job) jobs.Job
 func ProcessAllJobs(ctx *JobsContext, js *jobs.JobStore) {
 
 	RangeJobs(js, func(job jobs.Job) jobs.Job {
+		fmt.Println("trying to do job:", job.GetType(),job.GetJobID(),job.IsDone())
 		if !job.IsDone() {
 			job.DoMyJob(ctx)
 		}
@@ -73,7 +75,8 @@ func RangeJobs(js *jobs.JobStore, pro JobProcess) {
 
 	jobkeys := make([]string, 0, 20)
 	js.Iterate(func(job jobs.Job) {
-		jobkeys = append(jobkeys, job.GetJobID())
+		//fmt.Println("Searching Jobstore",job.GetType())
+		 if !job.IsDone() {jobkeys = append(jobkeys, job.GetJobID())}
 	})
 	for _, key := range jobkeys {
 
@@ -82,9 +85,14 @@ func RangeJobs(js *jobs.JobStore, pro JobProcess) {
 			continue
 		}
 
-		job = pro(job)
 
-		js.DeleteJob(job)
+		job = pro(job)
+		fmt.Println("JOB PROCESSED:",job.GetJobID())
+
+		err = js.SaveJob(job)
+			if err != nil {
+				fmt.Println("range job", err)
+			}
 
 	}
 }

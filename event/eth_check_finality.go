@@ -1,6 +1,7 @@
 package event
 
 import (
+	"fmt"
 	"os"
 	"strconv"
 
@@ -24,29 +25,31 @@ type JobETHCheckFinality struct {
 	TrackerName ethereum.TrackerName
 	JobID       string
 	RetryCount  int
-	JobStatus   jobs.Status
+	Status      jobs.Status
 }
 
-func NewETHCheckFinality(name ethereum.TrackerName, state ethereum2.TrackerState) JobETHCheckFinality {
-	return JobETHCheckFinality{
+func NewETHCheckFinality(name ethereum.TrackerName, state ethereum2.TrackerState) *JobETHCheckFinality {
+	return &JobETHCheckFinality{
 		TrackerName: name,
 		JobID:       name.String() + storage.DB_PREFIX + strconv.Itoa(int(state)),
 		RetryCount:  0,
-		JobStatus:   0,
+		Status:      0,
 	}
 }
 
-func (job JobETHCheckFinality) DoMyJob(ctx interface{}) {
+func (job *JobETHCheckFinality) DoMyJob(ctx interface{}) {
 
 	// get tracker
+
 	job.RetryCount += 1
 	if job.RetryCount > jobs.Max_Retry_Count {
-		job.JobStatus = jobs.Failed
+		job.Status = jobs.Failed
 	}
-	if job.JobStatus == jobs.New {
-		job.JobStatus = jobs.InProgress
+	if job.Status == jobs.New {
+		job.Status = jobs.InProgress
 	}
 	ethCtx, _ := ctx.(*JobsContext)
+	fmt.Println("Satrting finalaizing job for ",ethCtx.ValidatorAddress)
 	trackerStore := ethCtx.EthereumTrackers
 	tracker, err := trackerStore.Get(job.TrackerName)
 	if err != nil {
@@ -54,6 +57,11 @@ func (job JobETHCheckFinality) DoMyJob(ctx interface{}) {
 		job.RetryCount += 1
 		return
 	}
+	//ethconfig := &config.EthereumChainDriverConfig{
+	//	ContractABI:     ethCtx.ETHContractABI,
+	//	Connection:      ethCtx.ETHConnection,
+	//	ContractAddress: ethCtx.ETHContractAddress,
+	//}
 	ethconfig := config.DefaultEthConfig()
 	logger := log.NewLoggerWithPrefix(os.Stdout, "JOB_ETHCHECKFINALITY")
 	cd, err := ethereum.NewEthereumChainDriver(ethconfig, logger, &ethCtx.ETHPrivKey)
@@ -105,21 +113,19 @@ func (job JobETHCheckFinality) DoMyJob(ctx interface{}) {
 		ethCtx.Logger.Error("error while broadcasting finality vote and mint txn ", job.GetJobID(), err)
 		return
 	}
-	job.JobStatus = jobs.Completed
+	fmt.Println("Setting finalizing complete for : " ,ethCtx.ValidatorAddress)
+	job.Status = jobs.Completed
 }
 
 
-func (job JobETHCheckFinality) GetType() string {
+func (job *JobETHCheckFinality) GetType() string {
 	return JobTypeETHBroadcast
 }
 
-func (job JobETHCheckFinality) GetJobID() string {
+func (job *JobETHCheckFinality) GetJobID() string {
 	return job.JobID
 }
 
-func (job JobETHCheckFinality) IsDone() bool {
-	if job.JobStatus == jobs.Completed {
-		return true
-	}
-	return false
+func (job *JobETHCheckFinality) IsDone() bool {
+	return job.Status == jobs.Completed
 }

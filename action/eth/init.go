@@ -11,6 +11,7 @@ func EnableETH(r action.Router) error {
 		return errors.Wrap(err, "ethLockTx")
 	}
 
+
 	err = r.AddHandler(action.ETH_REPORT_FINALITY_MINT, reportFinalityMintTx{})
 	if err != nil {
 		return errors.Wrap(err, "reportFinalityMintTx")

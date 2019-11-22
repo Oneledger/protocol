@@ -25,16 +25,17 @@ type JobETHBroadcast struct {
 	Status      jobs.Status
 }
 
-func NewETHBroadcast(name ethereum.TrackerName, state ethereum2.TrackerState) JobETHCheckFinality {
-	return JobETHCheckFinality{
+func NewETHBroadcast(name ethereum.TrackerName, state ethereum2.TrackerState) *JobETHBroadcast {
+	fmt.Println("CREATING NEW JOB ",name,state)
+	return &JobETHBroadcast{
 		TrackerName: name,
 		JobID:       name.String() + storage.DB_PREFIX + strconv.Itoa(int(state)),
 		RetryCount:  0,
-		JobStatus:   0,
+		Status:   0,
 	}
 }
 
-func (job JobETHBroadcast) DoMyJob(ctx interface{}) {
+func (job *JobETHBroadcast) DoMyJob(ctx interface{}) {
 
 	fmt.Println("Do job for broadcast")
 	job.RetryCount += 1
@@ -51,7 +52,14 @@ func (job JobETHBroadcast) DoMyJob(ctx interface{}) {
 		ethCtx.Logger.Error("err trying to deserialize tracker: ", job.TrackerName, err)
 		return
 	}
-	ethconfig := config.DefaultEthConfig()
+	//ethconfig := &config.EthereumChainDriverConfig{
+	//	ContractABI:     ethCtx.ETHContractABI,
+	//	Connection:      ethCtx.ETHConnection,
+	//	ContractAddress: ethCtx.ETHContractAddress,
+	//}
+
+	ethconfig :=  config.DefaultEthConfig()
+
 	logger := log.NewLoggerWithPrefix(os.Stdout, "JOB_ETHBROADCAST")
 	cd, err := ethereum.NewEthereumChainDriver(ethconfig, logger, &ethCtx.ETHPrivKey)
 	if err != nil {
@@ -66,27 +74,26 @@ func (job JobETHBroadcast) DoMyJob(ctx interface{}) {
 		ethCtx.Logger.Error("Error Decoding Bytes from RaxTX :", job.GetJobID(), err)
 		return
 	}
+	//check if tx already broadcasted, if yest, job.Status = jobs.Completed
 	_, err = cd.BroadcastTx(tx)
 	if err != nil {
 		ethCtx.Logger.Error("Error in transaction broadcast : ", job.GetJobID(), err)
 		return
 	}
+	fmt.Println("setting job status to completed")
 	job.Status = jobs.Completed
 }
 
 
 
-func (job JobETHBroadcast) GetType() string {
+func (job *JobETHBroadcast) GetType() string {
 	return JobTypeETHBroadcast
 }
 
-func (job JobETHBroadcast) GetJobID() string {
+func (job *JobETHBroadcast) GetJobID() string {
 	return job.JobID
 }
 
-func (job JobETHBroadcast) IsDone() bool {
-	if job.Status == jobs.Completed {
-		return true
-	}
-	return false
+func (job *JobETHBroadcast) IsDone() bool {
+	return job.Status == jobs.Completed
 }

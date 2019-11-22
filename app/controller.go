@@ -17,7 +17,9 @@ import (
 	"github.com/Oneledger/protocol/data/ethereum"
 	"github.com/Oneledger/protocol/data/fees"
 	"github.com/Oneledger/protocol/data/jobs"
+	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/event"
+	"github.com/Oneledger/protocol/log"
 	"github.com/Oneledger/protocol/serialize"
 	"github.com/Oneledger/protocol/storage"
 	"github.com/Oneledger/protocol/utils"
@@ -219,28 +221,11 @@ func (app *App) blockEnder() blockEnder {
 			Tags:             []common.KVPair(nil),
 		}
 
-		js := app.Context.jobStore
-		eth := app.Context.ethTrackers
 
-		eth.Iterate(func(name *ceth.TrackerName, tracker *ethereum.Tracker) bool {
-			ctx := ethereum.NewTrackerCtx(tracker, app.Context.node.ValidatorAddress(), js.WithChain(chain.ETHEREUM), eth)
-			fmt.Println("iterate tracker:", tracker)
-			_, err := event.EthEngine.Process(tracker.NextStep(), ctx, transition.Status(tracker.State))
-
-			if err != nil {
-				app.logger.Error("process eth tracker", err)
-			}
-
-			//todo save the tracker back to cache
-			//err = eth.Set(*tracker)
-			//if err != nil {
-			//	app.logger.Error("process eth tracker", err)
-			//}
-
-			return false
-		})
 
 		doTransitions(app.Context.jobStore, app.Context.btcTrackers)
+
+		doEthTransitions(app.Context.jobStore, app.Context.ethTrackers, app.Context.node.ValidatorAddress(), app.logger)
 
 		app.logger.Debug("End Block: ", result, "height:", req.Height)
 
@@ -339,4 +324,30 @@ func doTransitions(js *jobs.JobStore, ts *bitcoin.TrackerStore) {
 
 		err = ts.SetTracker(t.Name, &t)
 	}
+}
+
+func doEthTransitions(js *jobs.JobStore, ts *ethereum.TrackerStore, myValAddr keys.Address, logger *log.Logger) {
+
+	trackers := make([]*ethereum.Tracker, 0, 20)
+	ts.Iterate(func(name *ceth.TrackerName, tracker *ethereum.Tracker) bool {
+		trackers = append(trackers, tracker)
+		return false
+	})
+	for _, t := range trackers {
+		ctx := ethereum.NewTrackerCtx(t, myValAddr, js.WithChain(chain.ETHEREUM), ts)
+		fmt.Println("iterate tracker:", t)
+		_, err := event.EthEngine.Process(t.NextStep(), ctx, transition.Status(t.State))
+
+		if err != nil {
+			logger.Error("failed to process eth tracker", err)
+		}
+
+		err = ts.Set(*ctx.Tracker)
+		if err != nil {
+			logger.Error("failed to save eth tracker", err)
+		}
+	}
+
+
+
 }

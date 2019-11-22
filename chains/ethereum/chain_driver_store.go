@@ -21,7 +21,7 @@ func NewEthereumChainDriver(cfg *config.EthereumChainDriverConfig, logger *log.L
 	// So first we need to grab the current address
 	contractAddrSlice, err := hexutil.Decode(cfg.ContractAddress)
 	if err != nil {
-		logger.Error("failed to decode given contract address")
+		logger.Error("failed to decode given contract address:", cfg.ContractAddress)
 		return nil, err
 	}
 
@@ -30,7 +30,7 @@ func NewEthereumChainDriver(cfg *config.EthereumChainDriverConfig, logger *log.L
 
 	client, err := ethclient.Dial(cfg.Connection)
 	if err != nil {
-		logger.Error("failed to dial the given ethereum connection")
+		logger.Error("failed to dial the given ethereum connection", err)
 		return nil, err
 	}
 	//TODO : Function to return AUTH object
@@ -127,3 +127,5 @@ func (acc *EthereumChainDriver) CallOpts() *CallOpts {
 		Context:     context.Background(),
 	}
 }
+
+
