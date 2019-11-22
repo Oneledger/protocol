@@ -93,6 +93,7 @@ func (s *Service) AddUserSignatureAndProcessLock(args client.BTCLockRequest, rep
 	if len(newBTCTx.TxIn) == 1 { // if new tracker
 
 		if tracker.CurrentTxId != nil {
+
 			// incorrect txn
 			return codes.ErrBadBTCTxn
 		}
@@ -105,11 +106,13 @@ func (s *Service) AddUserSignatureAndProcessLock(args client.BTCLockRequest, rep
 			return codes.ErrBadBTCTxn
 		}
 	} else {
+
 		// incorrect txn
 		return codes.ErrBadBTCTxn
 	}
 
 	if !bitcoin.ValidateLock(newBTCTx, s.blockCypherToken, s.btcChainType, tracker.CurrentTxId, tracker.ProcessLockScriptAddress) {
+
 		return codes.ErrBadBTCTxn
 	}
 

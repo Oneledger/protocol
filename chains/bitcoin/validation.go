@@ -15,7 +15,7 @@ import (
 func ValidateLock(tx *wire.MsgTx, token, chainType string, trackerPrevTxID *chainhash.Hash,
 	lockScriptAddress []byte) bool {
 
-	if len(tx.TxIn) != 1 || len(tx.TxIn) != 2 {
+	if !(len(tx.TxIn) == 1 || len(tx.TxIn) == 2) {
 		return false
 	}
 

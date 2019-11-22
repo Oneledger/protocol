@@ -187,7 +187,7 @@ func (app *App) setupValidators(req RequestInitChain, currencies *balance.Curren
 
 	vals, err := app.Context.validators.WithState(app.Context.deliver).GetBitcoinKeys(params)
 	threshold := (len(vals) * 2 / 3) + 1
-	for i := 0; i < 8; i++ {
+	for i := 0; i < 1; i++ {
 		// appHash := app.genesisDoc.AppHash.Bytes()
 
 		randBytes := []byte("XOLT")

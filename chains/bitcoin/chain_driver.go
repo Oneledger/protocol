@@ -72,13 +72,11 @@ func (c *chainDriver) PrepareLockNew(prevLockTxID *chainhash.Hash, prevLockIndex
 	tx.AddTxIn(vin2)
 
 	// will adjust fees later
-	balance := prevLockBalance + inputBalance
+	balance := prevLockBalance + inputBalance - feesInSatoshi
 
 	// add a txout to the lockscriptaddress
 	out := wire.NewTxOut(balance, lockScriptAddress)
 	tx.AddTxOut(out)
-
-	tx.TxOut[0].Value = tx.TxOut[0].Value - feesInSatoshi
 
 	// serialize again with fees accounted for
 	buf := bytes.NewBuffer(txBytes)

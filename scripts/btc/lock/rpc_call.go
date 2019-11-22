@@ -5,7 +5,9 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -15,10 +17,11 @@ type jsonRPCData struct {
 	Method  string                 `json:"method"`
 	Params  map[string]interface{} `json:"params"`
 	ID      int                    `json:"id"`
-	JsonRpc float64                `json:"jsonrpc"`
+	JsonRpc string                 `json:"jsonrpc"`
 }
 type RPCResponse struct {
 	Result map[string]interface{} `json:"result"`
+	Error  map[string]interface{} `json:"error"`
 }
 
 func makeRPCcall(method string, params map[string]interface{}) (*RPCResponse, error) {
@@ -28,11 +31,12 @@ func makeRPCcall(method string, params map[string]interface{}) (*RPCResponse, er
 	payload, _ := json.Marshal(&jsonRPCData{
 		Method:  method,
 		Params:  params,
-		ID:      123,
-		JsonRpc: 2.0,
+		ID:      51,
+		JsonRpc: "2.0",
 	})
 
-	req, _ := http.NewRequest("POST", url, payload)
+	req, _ := http.NewRequest("POST", url,
+		bytes.NewReader(payload))
 
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Add("Accept", "application/json")
@@ -45,10 +49,21 @@ func makeRPCcall(method string, params map[string]interface{}) (*RPCResponse, er
 
 	defer res.Body.Close()
 	body, _ := ioutil.ReadAll(res.Body)
+
+	if res.StatusCode != 200 {
+		panic(string(body))
+	}
+
+	fmt.Println(string(body))
 	resp := RPCResponse{}
 	err = json.Unmarshal(body, &resp)
 	if err != nil {
 		return nil, err
+	}
+
+	if resp.Error != nil {
+		fmt.Println(resp.Error)
+		return nil, errors.New("rpc error")
 	}
 
 	return &resp, nil

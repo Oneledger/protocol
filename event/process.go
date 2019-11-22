@@ -5,6 +5,7 @@
 package event
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/Oneledger/protocol/data/chain"
@@ -40,7 +41,7 @@ func (j *JobBus) Start(ctx *JobsContext) error {
 			case <-tickerBtc.C:
 				ProcessAllJobs(ctx, j.store.WithChain(chain.BITCOIN))
 			case <-tickerEth.C:
-				ProcessAllJobs(ctx, j.store.WithChain(chain.ETHEREUM))
+				// ProcessAllJobs(ctx, j.store.WithChain(chain.ETHEREUM))
 			case <-j.quit:
 				tickerBtc.Stop()
 				tickerEth.Stop()
@@ -63,6 +64,7 @@ func ProcessAllJobs(ctx *JobsContext, js *jobs.JobStore) {
 
 	RangeJobs(js, func(job jobs.Job) jobs.Job {
 		if !job.IsDone() {
+
 			job.DoMyJob(ctx)
 		}
 		return job
@@ -79,6 +81,7 @@ func RangeJobs(js *jobs.JobStore, pro JobProcess) {
 
 		job, err := js.GetJob(key)
 		if err != nil {
+			fmt.Println(err)
 			continue
 		}
 

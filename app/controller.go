@@ -324,8 +324,10 @@ func doTransitions(js *jobs.JobStore, ts *bitcoin.TrackerStore) {
 		if err != nil {
 			continue
 		}
-		t.State = bitcoin.TrackerState(stt)
+		if stt != -1 {
+			t.State = bitcoin.TrackerState(stt)
+			err = ts.SetTracker(t.Name, &t)
+		}
 
-		err = ts.SetTracker(t.Name, &t)
 	}
 }

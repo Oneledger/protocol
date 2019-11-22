@@ -3,15 +3,18 @@ package config
 import (
 	"bytes"
 	//"crypto/ecdsa"
-	"github.com/ethereum/go-ethereum/ethclient"
 	"io/ioutil"
 	"path/filepath"
 	"strings"
 	"time"
 
+	"github.com/ethereum/go-ethereum/ethclient"
+
 	"github.com/Oneledger/toml"
 	"github.com/pkg/errors"
 	tmconfig "github.com/tendermint/tendermint/config"
+
+	"github.com/Oneledger/protocol/log"
 )
 
 const (
@@ -157,12 +160,12 @@ func (cfg *Server) SaveFile(filepath string) error {
 
 func DefaultServerConfig() *Server {
 	return &Server{
-		Node:        DefaultNodeConfig(),
-		Network:     DefaultNetworkConfig(),
-		P2P:         DefaultP2PConfig(),
-		Mempool:     DefaultMempoolConfig(),
-		Consensus:   DefaultConsensusConfig(),
-		ChainDriver: DefaultChainDriverConfig(),
+		Node:           DefaultNodeConfig(),
+		Network:        DefaultNetworkConfig(),
+		P2P:            DefaultP2PConfig(),
+		Mempool:        DefaultMempoolConfig(),
+		Consensus:      DefaultConsensusConfig(),
+		ChainDriver:    DefaultChainDriverConfig(),
 		EthChainDriver: DefaultEthConfig(),
 	}
 }
@@ -198,7 +201,7 @@ func DefaultNodeConfig() *NodeConfig {
 		FastSync:     true,
 		DB:           "goleveldb",
 		DBDir:        "nodedata",
-		LogLevel:     4,
+		LogLevel:     int(log.Info),
 		IndexTags:    []string{"tx.owner", "tx.type"},
 		IndexAllTags: false,
 		Services:     []string{"broadcast", "node", "owner", "query", "tx", "btc", "eth"},

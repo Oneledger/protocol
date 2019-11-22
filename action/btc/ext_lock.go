@@ -133,6 +133,7 @@ func (btcLockTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start
 }
 
 func runBTCLock(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
+
 	lock := Lock{}
 	err := lock.Unmarshal(tx.Data)
 	if err != nil {
