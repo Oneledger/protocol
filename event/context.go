@@ -14,6 +14,7 @@ import (
 	"github.com/Oneledger/protocol/data/bitcoin"
 	"github.com/Oneledger/protocol/data/ethereum"
 	"github.com/Oneledger/protocol/data/keys"
+	"github.com/Oneledger/protocol/identity"
 	"github.com/Oneledger/protocol/log"
 )
 
@@ -21,7 +22,8 @@ type JobsContext struct {
 	Service *Service
 	Logger  *log.Logger
 
-	Trackers *bitcoin.TrackerStore
+	Trackers   *bitcoin.TrackerStore
+	Validators *identity.ValidatorStore
 
 	BTCPrivKey       keys.PrivateKey
 	ETHPrivKey       ecdsa.PrivateKey
@@ -46,7 +48,8 @@ type JobsContext struct {
 }
 
 func NewJobsContext(chainType string, svc *Service,
-	trackers *bitcoin.TrackerStore, privKey *keys.PrivateKey, ethprivKey *ecdsa.PrivateKey,
+	trackers *bitcoin.TrackerStore, validators *identity.ValidatorStore,
+	privKey *keys.PrivateKey, ethprivKey *ecdsa.PrivateKey,
 	valAddress keys.Address, bcyToken string, lStore *bitcoin.LockScriptStore,
 	btcAddress, btcRPCPort, BTCRPCUsername, BTCRPCPassword, btcChain string,
 	ETHAbi string, ETHconn string, ETHContractaddress string, ethTracker *ethereum.TrackerStore,
@@ -72,6 +75,7 @@ func NewJobsContext(chainType string, svc *Service,
 		Service:            svc,
 		Logger:             log.NewLoggerWithPrefix(w, "internal_jobs"),
 		Trackers:           trackers,
+		Validators:         validators,
 		BTCPrivKey:         *privKey,
 		ETHPrivKey:         *ethprivKey,
 		Params:             params,

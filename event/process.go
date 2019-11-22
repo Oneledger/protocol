@@ -32,15 +32,16 @@ func NewJobBus(opt Option, store *jobs.JobStore) *JobBus {
 }
 
 func (j *JobBus) Start(ctx *JobsContext) error {
+	j.ctx = ctx
 	tickerBtc := time.NewTicker(j.opt.BtcInterval)
 	tickerEth := time.NewTicker(j.opt.EthInterval)
 	go func() {
 		for {
 			select {
 			case <-tickerBtc.C:
-				ProcessAllJobs(ctx, j.store.WithChain(chain.BITCOIN))
+				ProcessAllJobs(j.ctx, j.store.WithChain(chain.BITCOIN))
 			case <-tickerEth.C:
-				ProcessAllJobs(ctx, j.store.WithChain(chain.ETHEREUM))
+				ProcessAllJobs(j.ctx, j.store.WithChain(chain.ETHEREUM))
 			case <-j.quit:
 				tickerBtc.Stop()
 				tickerEth.Stop()
