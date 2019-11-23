@@ -115,7 +115,7 @@ func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *node.Context) (
 	}
 
 	ctx.jobBus = event.NewJobBus(event.Option{
-		BtcInterval: 10 * time.Second,
+		BtcInterval: 30 * time.Second,
 		EthInterval: 3 * time.Second,
 	}, ctx.jobStore)
 

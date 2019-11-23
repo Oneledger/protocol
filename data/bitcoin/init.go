@@ -8,7 +8,9 @@ const (
 	Available TrackerState = iota
 	Requested
 	BusySigning
+	BusyScheduleBroadcasting
 	BusyBroadcasting
+	BusyScheduleFinalizing
 	BusyFinalizing
 	Finalized
 )

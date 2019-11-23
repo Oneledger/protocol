@@ -39,5 +39,16 @@ func btcSign(txBytes []byte, wifStr string) []byte {
 	tx.Serialize(buf)
 	txBytes = buf.Bytes()
 
+	flags := txscript.StandardVerifyFlags
+	vm, err := txscript.NewEngine(sc, tx, 0, flags, nil, nil, tx.TxOut[0].Value)
+	if err != nil {
+		panic(err)
+	}
+
+	err = vm.Execute()
+	if err != nil {
+		panic(err)
+	}
+
 	return sigScript
 }

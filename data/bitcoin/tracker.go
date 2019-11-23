@@ -5,6 +5,7 @@
 package bitcoin
 
 import (
+	"bytes"
 	"strconv"
 
 	"github.com/Oneledger/protocol/storage"
@@ -188,10 +189,12 @@ func (t Tracker) NextStep() string {
 	switch t.State {
 	case Requested:
 		return RESERVE
-	case BusySigning:
+	case BusyScheduleBroadcasting:
 		return FREEZE_FOR_BROADCAST
-	case BusyBroadcasting:
+	case BusyScheduleFinalizing:
 		return REPORT_BROADCAST
+	case Finalized:
+		return CLEANUP
 	}
 	return transition.NOOP
 
@@ -199,4 +202,14 @@ func (t Tracker) NextStep() string {
 
 func (t *Tracker) GetJobID(state TrackerState) string {
 	return t.Name + storage.DB_PREFIX + strconv.Itoa(int(state))
+}
+
+func (t *Tracker) HasVotedFinality(addr keys.Address) bool {
+	for i := range t.FinalityVotes {
+		if bytes.Equal(addr, t.FinalityVotes[i]) {
+			return true
+		}
+	}
+
+	return false
 }

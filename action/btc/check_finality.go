@@ -96,7 +96,7 @@ func (reportFinalityMintTx) Validate(ctx *action.Context, signedTx action.Signed
 		return false, errors.New("tracker process not owned by user")
 	}
 
-	if tracker.State != bitcoin.BusyBroadcasting {
+	if tracker.State != bitcoin.BusyFinalizing {
 		return false, errors.New("tracker not available for finalizing")
 	}
 
@@ -104,6 +104,8 @@ func (reportFinalityMintTx) Validate(ctx *action.Context, signedTx action.Signed
 }
 
 func (reportFinalityMintTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
+
+	ctx.Logger.Info("received a finality vote")
 
 	f := ReportFinalityMint{}
 	err := f.Unmarshal(tx.Data)
@@ -120,7 +122,7 @@ func (reportFinalityMintTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (
 		return false, action.Response{Log: "tracker process not owned by user"}
 	}
 
-	if tracker.State != bitcoin.BusyBroadcasting {
+	if tracker.State != bitcoin.BusyFinalizing {
 		return false, action.Response{Log: "tracker not ready for finalizing"}
 	}
 
@@ -157,6 +159,7 @@ func (reportFinalityMintTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (
 	// are there enough finality votes?
 	if len(tracker.FinalityVotes) < votesThresholdForMint {
 
+		ctx.Logger.Info("not enough votes to mint")
 		// if not enough votes to mint end transaction processing
 
 		err = ctx.BTCTrackers.SetTracker(f.TrackerName, tracker)
@@ -215,9 +218,6 @@ func (reportFinalityMintTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (
 		return false, action.Response{Log: "error resetting tracker, try again" + err.Error()}
 	}
 
-	// mint oBTC
-	// TODO: stopped for Alex's fee changes
-
 	return true, action.Response{
 		Tags: f.Tags(),
 	}
@@ -240,7 +240,7 @@ func (reportFinalityMintTx) ProcessDeliver(ctx *action.Context, tx action.RawTx)
 		return false, action.Response{Log: "tracker process not owned by user"}
 	}
 
-	if tracker.State != bitcoin.BusyBroadcasting {
+	if tracker.State != bitcoin.BusyFinalizing {
 		return false, action.Response{Log: "tracker not ready for finalizing"}
 	}
 

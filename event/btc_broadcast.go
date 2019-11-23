@@ -7,7 +7,9 @@ package event
 import (
 	"bytes"
 	"encoding/hex"
+	"fmt"
 
+	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/btcsuite/btcd/rpcclient"
 	"github.com/btcsuite/btcd/txscript"
 	"github.com/btcsuite/btcd/wire"
@@ -15,6 +17,7 @@ import (
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/action/btc"
 	"github.com/Oneledger/protocol/chains/bitcoin"
+	bitcoin2 "github.com/Oneledger/protocol/data/bitcoin"
 	"github.com/Oneledger/protocol/data/jobs"
 )
 
@@ -45,6 +48,11 @@ func (j *JobBTCBroadcast) DoMyJob(ctxI interface{}) {
 	tracker, err := ctx.Trackers.Get(j.TrackerName)
 	if err != nil {
 		ctx.Logger.Error("err trying to deserialize tracker: ", j.TrackerName, err)
+		return
+	}
+
+	if tracker.State != bitcoin2.BusyBroadcasting {
+		j.Status = jobs.Completed
 		return
 	}
 
@@ -80,6 +88,8 @@ func (j *JobBTCBroadcast) DoMyJob(ctxI interface{}) {
 	builder.AddFullData(lockScript)
 	sigScript, err := builder.Script()
 
+	ctx.Logger.Debug(hex.EncodeToString(tracker.ProcessUnsignedTx))
+
 	cd := bitcoin.NewChainDriver(ctx.BlockCypherToken)
 	lockTx = cd.AddLockSignature(tracker.ProcessUnsignedTx, sigScript)
 
@@ -90,6 +100,7 @@ func (j *JobBTCBroadcast) DoMyJob(ctxI interface{}) {
 		return
 	}
 
+	ctx.Logger.Infof("%#v \n", ctx)
 	connCfg := &rpcclient.ConnConfig{
 		Host:         ctx.BTCNodeAddress + ":" + ctx.BTCRPCPort,
 		User:         ctx.BTCRPCUsername,
@@ -111,7 +122,10 @@ func (j *JobBTCBroadcast) DoMyJob(ctxI interface{}) {
 
 	ctx.Logger.Debug(hex.EncodeToString(txBytes))
 
-	hash, err := cd.BroadcastTx(lockTx, clt)
+	//hash, err := cd.BroadcastTx(lockTx, clt)
+	// use dummy hash for testing without broadcasting
+	fmt.Println(clt)
+	hash, err := chainhash.NewHashFromStr("f67c10b88aabf651a4fb2ca557040eda4707d3f085fceb823365a01577e88c59")
 	if err == nil {
 
 		ctx.Logger.Info("bitcoin tx successful", hash)
@@ -140,11 +154,13 @@ func (j *JobBTCBroadcast) DoMyJob(ctxI interface{}) {
 		rep := BroadcastReply{}
 
 		err = ctx.Service.InternalBroadcast(req, &rep)
-		if err != nil {
+		if err != nil || !rep.OK {
 			ctx.Logger.Error("error while broadcasting finality vote and mint txn ", err, j.TrackerName)
 			return
 		}
 
+		ctx.Logger.Info("btc success internal tx broadcast")
+		ctx.Logger.Infof("%#v \n", rep)
 		j.Status = jobs.Completed
 
 	} else {

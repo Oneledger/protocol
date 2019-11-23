@@ -5,14 +5,10 @@
 package btc
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 
-	"github.com/btcsuite/btcd/btcec"
 	"github.com/btcsuite/btcd/chaincfg"
-	"github.com/btcsuite/btcd/txscript"
-	"github.com/btcsuite/btcd/wire"
 	"github.com/btcsuite/btcutil"
 	"github.com/pkg/errors"
 	"github.com/tendermint/tendermint/libs/common"
@@ -71,6 +67,7 @@ type btcAddSignatureTx struct {
 
 func (ast btcAddSignatureTx) Validate(ctx *action.Context, signedTx action.SignedTx) (bool, error) {
 
+	ctx.Logger.Info("validating internal add signature job")
 	addSignature := AddSignature{}
 
 	err := addSignature.Unmarshal(signedTx.Data)
@@ -96,6 +93,11 @@ func (ast btcAddSignatureTx) Validate(ctx *action.Context, signedTx action.Signe
 		return false, errors.New("tracker not accepting signatures")
 	}
 
+	if tracker.HasEnoughSignatures() {
+		return false, errors.New("tracker has sufficient signatures")
+	}
+
+	ctx.Logger.Info(" done validating internal add signature")
 	return true, nil
 }
 
@@ -129,6 +131,10 @@ func runAddSignature(ctx *action.Context, tx action.RawTx) (bool, action.Respons
 		return false, action.Response{Log: fmt.Sprintf("tracker not found: %s", addSignature.TrackerName)}
 	}
 
+	if tracker.HasEnoughSignatures() {
+		return false, action.Response{Log: "tracker has sufficient signatures"}
+	}
+
 	if tracker.State != bitcoin.BusySigning {
 		return false, action.Response{Log: fmt.Sprintf("tracker not accepting signatures: %s", addSignature.TrackerName)}
 	}
@@ -138,29 +144,36 @@ func runAddSignature(ctx *action.Context, tx action.RawTx) (bool, action.Respons
 		return false, action.Response{Log: "error creating validator btc pubkey " + err.Error()}
 	}
 
-	btcTx := wire.NewMsgTx(wire.TxVersion)
-	buf := bytes.NewBuffer(tracker.ProcessUnsignedTx)
-	err = btcTx.Deserialize(buf)
-	if err != nil {
+	/*
 
-	}
+		btcTx := wire.NewMsgTx(wire.TxVersion)
+		buf := bytes.NewBuffer(tracker.ProcessUnsignedTx)
+		err = btcTx.Deserialize(buf)
+		if err != nil {
+			return false, action.Response{Log: errors.Wrap(err, "error parsing btc txn").Error()}
+		}
 
-	pk, err := btcec.ParsePubKey(addSignature.ValidatorPubKey, btcec.S256())
-	sign, err := btcec.ParseSignature(addSignature.BTCSignature, btcec.S256())
-	if err != nil {
-		return false, action.Response{Log: errors.Wrap(err, "failed parse signature").Error()}
-	}
 
-	sc, _ := txscript.NewScriptBuilder().AddData(addSignature.ValidatorPubKey).AddOp(txscript.OP_CHECKSIG).Script()
+		pk, err := btcec.ParsePubKey(addSignature.ValidatorPubKey, btcec.S256())
+		sign, err := btcec.ParseSignature(addSignature.BTCSignature, btcec.S256())
+		if err != nil {
+			return false, action.Response{Log: errors.Wrap(err, "failed parse signature").Error()}
+		}
 
-	hash, err := txscript.CalcSignatureHash(sc, txscript.SigHashAll, btcTx, 0)
-	if err != nil {
-		return false, action.Response{Log: errors.Wrap(err, "failed to calc signature hash").Error()}
-	}
-	ok := sign.Verify(hash, pk)
-	if !ok {
-		return false, action.Response{Log: errors.Wrap(err, "invalid user signature").Error()}
-	}
+
+		sc, _ := txscript.NewScriptBuilder().AddData(addSignature.ValidatorPubKey).AddOp(txscript.OP_CHECKSIG).Script()
+
+		hash, err := txscript.CalcSignatureHash(sc, txscript.SigHashAll, btcTx, 0)
+		if err != nil {
+			return false, action.Response{Log: errors.Wrap(err, "failed to calc signature hash").Error()}
+		}
+
+
+		ok := sign.Verify(hash, pk)
+		if !ok {
+			return false, action.Response{Log: "invalid user signature"}
+		}
+	*/
 
 	err = tracker.AddSignature(addSignature.BTCSignature, addressPubKey.ScriptAddress())
 	if err != nil {
@@ -168,7 +181,8 @@ func runAddSignature(ctx *action.Context, tx action.RawTx) (bool, action.Respons
 	}
 
 	if tracker.HasEnoughSignatures() {
-		tracker.State = bitcoin.BusyBroadcasting
+		tracker.State = bitcoin.BusyScheduleBroadcasting
+
 	}
 
 	err = ctx.BTCTrackers.SetTracker(addSignature.TrackerName, tracker)

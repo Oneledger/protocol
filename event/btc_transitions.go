@@ -17,7 +17,9 @@ func init() {
 			transition.Status(bitcoin.Available),
 			transition.Status(bitcoin.Requested),
 			transition.Status(bitcoin.BusySigning),
+			transition.Status(bitcoin.BusyScheduleBroadcasting),
 			transition.Status(bitcoin.BusyBroadcasting),
+			transition.Status(bitcoin.BusyScheduleFinalizing),
 			transition.Status(bitcoin.BusyFinalizing),
 			transition.Status(bitcoin.Finalized),
 		},
@@ -46,7 +48,7 @@ func init() {
 	err = BtcEngine.Register(transition.Transition{
 		Name: bitcoin.FREEZE_FOR_BROADCAST,
 		Fn:   FreezeForBroadcast,
-		From: transition.Status(bitcoin.BusySigning),
+		From: transition.Status(bitcoin.BusyScheduleBroadcasting),
 		To:   transition.Status(bitcoin.BusyBroadcasting),
 	})
 	if err != nil {
@@ -56,7 +58,7 @@ func init() {
 	err = BtcEngine.Register(transition.Transition{
 		Name: bitcoin.REPORT_BROADCAST,
 		Fn:   ReportBroadcastSuccess,
-		From: transition.Status(bitcoin.BusySigning),
+		From: transition.Status(bitcoin.BusyScheduleFinalizing),
 		To:   transition.Status(bitcoin.BusyFinalizing),
 	})
 	if err != nil {

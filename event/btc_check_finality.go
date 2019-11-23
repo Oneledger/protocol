@@ -6,11 +6,13 @@ package event
 
 import (
 	"crypto/rand"
+	"fmt"
 	"io"
 
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/action/btc"
 	"github.com/Oneledger/protocol/chains/bitcoin"
+	bitcoin2 "github.com/Oneledger/protocol/data/bitcoin"
 	"github.com/Oneledger/protocol/data/jobs"
 )
 
@@ -43,6 +45,13 @@ func (cf *JobBTCCheckFinality) DoMyJob(ctxI interface{}) {
 		return
 	}
 
+	if tracker.State != bitcoin2.BusyFinalizing ||
+		tracker.HasVotedFinality(ctx.ValidatorAddress) {
+
+		cf.Status = jobs.Completed
+		return
+	}
+
 	cd := bitcoin.NewChainDriver(ctx.BlockCypherToken)
 
 	chain := "test3"
@@ -58,6 +67,7 @@ func (cf *JobBTCCheckFinality) DoMyJob(ctxI interface{}) {
 	// tempHash, _ := chainhash.NewHashFromStr("860a32ef84ed54df86d207112d1f8d3d5ad28751b25cc7e2107ef55cccbc7586")
 	// ok, err := cd.CheckFinality(tempHash, ctx.BlockCypherToken, chain)
 
+	fmt.Println(tracker.ProcessTxId)
 	ok, err := cd.CheckFinality(tracker.ProcessTxId, ctx.BlockCypherToken, chain)
 	if err != nil {
 		ctx.Logger.Error("error while checking finality", err, cf.TrackerName)
@@ -102,11 +112,14 @@ func (cf *JobBTCCheckFinality) DoMyJob(ctxI interface{}) {
 	rep := BroadcastReply{}
 
 	err = ctx.Service.InternalBroadcast(req, &rep)
-	if err != nil {
+	if err != nil || !rep.OK {
 		ctx.Logger.Error("error while broadcasting finality vote and mint txn ", err, cf.TrackerName)
 		return
 	}
 
+	ctx.Logger.Info("BTC_REPORT_FINALITY_MINT internal job broadcast success")
+	ctx.Logger.Infof("%#v \n", rep)
+	ctx.Logger.Infof("%#v \n", tracker)
 	cf.Status = jobs.Completed
 }
 

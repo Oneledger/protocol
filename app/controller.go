@@ -229,7 +229,9 @@ func (app *App) blockEnder() blockEnder {
 			return false
 		})
 
-		doTransitions(app.Context.jobStore, app.Context.btcTrackers)
+		if req.Height%3 == 0 {
+			doTransitions(app.Context.jobStore, app.Context.btcTrackers.WithState(app.Context.deliver))
+		}
 
 		app.logger.Debug("End Block: ", result, "height:", req.Height)
 

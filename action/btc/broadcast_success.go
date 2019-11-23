@@ -25,17 +25,17 @@ type BroadcastSuccess struct {
 	BTCTxID          chainhash.Hash
 }
 
-func (b BroadcastSuccess) Signers() []action.Address {
+func (b *BroadcastSuccess) Signers() []action.Address {
 	return []action.Address{
 		b.ValidatorAddress,
 	}
 }
 
-func (b BroadcastSuccess) Type() action.Type {
+func (b *BroadcastSuccess) Type() action.Type {
 	return action.BTC_BROADCAST_SUCCESS
 }
 
-func (b BroadcastSuccess) Tags() common.KVPairs {
+func (b *BroadcastSuccess) Tags() common.KVPairs {
 	tags := make([]common.KVPair, 0)
 
 	tag := common.KVPair{
@@ -51,11 +51,11 @@ func (b BroadcastSuccess) Tags() common.KVPairs {
 	return tags
 }
 
-func (b BroadcastSuccess) Marshal() ([]byte, error) {
+func (b *BroadcastSuccess) Marshal() ([]byte, error) {
 	return json.Marshal(b)
 }
 
-func (b BroadcastSuccess) Unmarshal(data []byte) error {
+func (b *BroadcastSuccess) Unmarshal(data []byte) error {
 	return json.Unmarshal(data, b)
 }
 
@@ -126,13 +126,9 @@ func (b *btcBroadcastSuccessTx) process(ctx *action.Context, tx action.RawTx) (b
 	}
 
 	tracker.ProcessTxId = &broadcastSuccess.BTCTxID
+	tracker.State = bitcoin.BusyScheduleFinalizing
 
-	//dat := event.BTCTransitionContext{Tracker: tracker}
-	//_, err = bitcoin.Engine.Process("reportBroadcastSuccess", dat, tracker.State)
-	//if err != nil {
-	//
-	//}
-
+	fmt.Println(tracker.ProcessTxId)
 	err = ctx.BTCTrackers.SetTracker(broadcastSuccess.TrackerName, tracker)
 	if err != nil {
 		return false, action.Response{Log: fmt.Sprintf("error updating tracker store: %s, error: ", broadcastSuccess.TrackerName, err)}

@@ -59,6 +59,8 @@ func (s *Service) PrepareLock(args client.BTCLockPrepareRequest, reply *client.B
 		return codes.ErrGettingTracker
 	}
 
+	s.logger.Infof("%#v \n", tracker)
+
 	txnBytes := cd.PrepareLockNew(tracker.ProcessTxId, 0, tracker.CurrentBalance,
 		hashh, args.Index, inputAmount, args.FeesBTC, tracker.ProcessLockScriptAddress)
 

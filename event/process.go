@@ -65,7 +65,15 @@ func ProcessAllJobs(ctx *JobsContext, js *jobs.JobStore) {
 	RangeJobs(js, func(job jobs.Job) jobs.Job {
 		if !job.IsDone() {
 
-			job.DoMyJob(ctx)
+			func() {
+				defer func() {
+					if r := recover(); r != nil {
+						fmt.Println("panic in job: ", job.GetJobID())
+						fmt.Println(r)
+					}
+				}()
+				job.DoMyJob(ctx)
+			}()
 		}
 		return job
 	})
@@ -81,13 +89,19 @@ func RangeJobs(js *jobs.JobStore, pro JobProcess) {
 
 		job, err := js.GetJob(key)
 		if err != nil {
-			fmt.Println(err)
+			fmt.Println("err getting job", err)
 			continue
 		}
 
+		fmt.Println(" *** doing job: ", job.GetJobID())
 		job = pro(job)
 
-		js.DeleteJob(job)
-
+		if job.IsDone() {
+			fmt.Println(" *** deleting job because it is done: ", job.GetJobID())
+			err = js.DeleteJob(job)
+			if err != nil {
+				fmt.Println("err deleting job: ", err)
+			}
+		}
 	}
 }
