@@ -117,8 +117,6 @@ func (j *JobAddSignature) DoMyJob(ctxI interface{}) {
 		ctx.Logger.Error("error in broadcasting internal addsignature", err)
 		return
 	}
-
-	ctx.Logger.Info("btc add signature broadcast success")
 }
 
 func (j *JobAddSignature) GetJobID() string {

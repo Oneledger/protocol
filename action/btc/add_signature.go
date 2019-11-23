@@ -67,7 +67,6 @@ type btcAddSignatureTx struct {
 
 func (ast btcAddSignatureTx) Validate(ctx *action.Context, signedTx action.SignedTx) (bool, error) {
 
-	ctx.Logger.Info("validating internal add signature job")
 	addSignature := AddSignature{}
 
 	err := addSignature.Unmarshal(signedTx.Data)
@@ -97,7 +96,6 @@ func (ast btcAddSignatureTx) Validate(ctx *action.Context, signedTx action.Signe
 		return false, errors.New("tracker has sufficient signatures")
 	}
 
-	ctx.Logger.Info(" done validating internal add signature")
 	return true, nil
 }
 

@@ -125,7 +125,7 @@ func (j *JobBTCBroadcast) DoMyJob(ctxI interface{}) {
 	//hash, err := cd.BroadcastTx(lockTx, clt)
 	// use dummy hash for testing without broadcasting
 	fmt.Println(clt)
-	hash, err := chainhash.NewHashFromStr("f67c10b88aabf651a4fb2ca557040eda4707d3f085fceb823365a01577e88c59")
+	hash, err := chainhash.NewHashFromStr("cb0eee8e68b474cd1e845702052847dcbf248eb5a08ec498e887108842019d06")
 	if err == nil {
 
 		ctx.Logger.Info("bitcoin tx successful", hash)
