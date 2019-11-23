@@ -15,7 +15,6 @@ import (
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/data/accounts"
 	"github.com/Oneledger/protocol/data/balance"
-	"github.com/Oneledger/protocol/data/bitcoin"
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/identity"
 )
@@ -205,7 +204,7 @@ type BTCGetTrackerRequest struct {
 	Name string `json:"name"`
 }
 type BTCGetTrackerReply struct {
-	Tracker bitcoin.Tracker `json:"tracker"`
+	TrackerData string `json:"tracker"`
 }
 
 type BTCLockRedeemRequest struct {

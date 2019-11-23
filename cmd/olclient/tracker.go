@@ -6,8 +6,6 @@ package main
 
 import (
 	"github.com/spf13/cobra"
-
-	"github.com/Oneledger/protocol/data/bitcoin"
 )
 
 var trackerCmd = &cobra.Command{
@@ -44,9 +42,9 @@ func TrackerNode(cmd *cobra.Command, args []string) {
 	if err != nil {
 		logger.Fatal("error in getting balance", err)
 	}
-	printTracker(bal.Tracker, nodeName)
+	printTracker(bal.TrackerData, nodeName)
 }
 
-func printTracker(tracker bitcoin.Tracker, nodeName string) {
-	logger.Infof("\n %#v on %s \n", tracker, nodeName)
+func printTracker(tracker string, nodeName string) {
+	logger.Infof("\n %s \n Node Name: %s \n", tracker, nodeName)
 }
