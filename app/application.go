@@ -192,7 +192,7 @@ func (app *App) setupValidators(req RequestInitChain, currencies *balance.Curren
 
 		randBytes := []byte("XOLT")
 
-		script, address, addressList, err := bitcoin2.CreateMultiSigAddress(threshold, vals, randBytes)
+		script, address, addressList, err := bitcoin2.CreateMultiSigAddress(threshold, vals, randBytes, params)
 		if err != nil {
 			return nil, err
 		}

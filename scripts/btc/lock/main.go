@@ -22,6 +22,9 @@ func main() {
 
 	// time.Sleep(20 * time.Second)
 
+	fmt.Println(hex.EncodeToString(txn))
+	// os.Exit(1)
+
 	addrs := addressess()
 	fmt.Println("Will lock to OLT Address: ", addrs[0])
 

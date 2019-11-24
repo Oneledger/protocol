@@ -83,6 +83,7 @@ func (j *JobAddSignature) DoMyJob(ctxI interface{}) {
 	sig, err := txscript.RawTxInSignature(lockTx, 0, lockScript, txscript.SigHashAll, pk)
 	if err != nil {
 		ctx.Logger.Error(err, "RawTxInSignature")
+		ctx.Logger.Error(hex.EncodeToString(lockScript), hex.EncodeToString(tracker.CurrentLockScriptAddress))
 		return
 	}
 

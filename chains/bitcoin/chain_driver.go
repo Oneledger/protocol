@@ -71,14 +71,12 @@ func (c *chainDriver) PrepareLockNew(prevLockTxID *chainhash.Hash, prevLockIndex
 	vin2 := wire.NewTxIn(userOP, nil, nil)
 	tx.AddTxIn(vin2)
 
-	// will adjust fees later
-	balance := prevLockBalance + inputBalance - feesInSatoshi
+	var balance = prevLockBalance + inputBalance - feesInSatoshi
 
 	// add a txout to the lockscriptaddress
 	out := wire.NewTxOut(balance, lockScriptAddress)
 	tx.AddTxOut(out)
 
-	// serialize again with fees accounted for
 	buf := bytes.NewBuffer(txBytes)
 	tx.Serialize(buf)
 	txBytes = buf.Bytes()
@@ -135,7 +133,7 @@ func (c *chainDriver) CheckFinality(hash *chainhash.Hash, token, chain string) (
 		return false, err
 	}
 
-	if tx.Confirmations > 10 {
+	if tx.Confirmations > 1 {
 		return true, nil
 	}
 
@@ -174,7 +172,7 @@ func (c *chainDriver) PrepareRedeemNew(prevLockTxID *chainhash.Hash, prevLockInd
 	return
 }
 
-func CreateMultiSigAddress(m int, publicKeys []*btcutil.AddressPubKey, randomBytes []byte) (script, address []byte,
+func CreateMultiSigAddress(m int, publicKeys []*btcutil.AddressPubKey, randomBytes []byte, params *chaincfg.Params) (script, address []byte,
 	btcAddressList []string, err error) {
 
 	// ideally m should be
@@ -207,7 +205,7 @@ func CreateMultiSigAddress(m int, publicKeys []*btcutil.AddressPubKey, randomByt
 		return
 	}
 
-	addressObj, err := btcutil.NewAddressScriptHash(script, &chaincfg.RegressionNetParams)
+	addressObj, err := btcutil.NewAddressScriptHash(script, params)
 	if err != nil {
 		return
 	}

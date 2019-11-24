@@ -7,9 +7,7 @@ package event
 import (
 	"bytes"
 	"encoding/hex"
-	"fmt"
 
-	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/btcsuite/btcd/rpcclient"
 	"github.com/btcsuite/btcd/txscript"
 	"github.com/btcsuite/btcd/wire"
@@ -122,10 +120,10 @@ func (j *JobBTCBroadcast) DoMyJob(ctxI interface{}) {
 
 	ctx.Logger.Debug(hex.EncodeToString(txBytes))
 
-	//hash, err := cd.BroadcastTx(lockTx, clt)
+	hash, err := cd.BroadcastTx(lockTx, clt)
 	// use dummy hash for testing without broadcasting
-	fmt.Println(clt)
-	hash, err := chainhash.NewHashFromStr("cb0eee8e68b474cd1e845702052847dcbf248eb5a08ec498e887108842019d06")
+	// fmt.Println(clt)
+	// hash, err := chainhash.NewHashFromStr("cb0eee8e68b474cd1e845702052847dcbf248eb5a08ec498e887108842019d06")
 	if err == nil {
 
 		ctx.Logger.Info("bitcoin tx successful", hash)
