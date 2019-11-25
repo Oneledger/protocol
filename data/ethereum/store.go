@@ -17,6 +17,7 @@ type TrackerStore struct {
 	state  *storage.State
 	szlr   serialize.Serializer
 	prefix []byte
+	cdOpt  *ethereum.ChainDriverOption
 }
 
 func (ts *TrackerStore) Get(key ethereum.TrackerName) (*Tracker, error) {
@@ -81,6 +82,7 @@ func NewTrackerStore(prefix string, state *storage.State) *TrackerStore {
 		state:  state,
 		szlr:   serialize.GetSerializer(serialize.PERSISTENT),
 		prefix: storage.Prefix(prefix),
+		cdOpt:  &ethereum.ChainDriverOption{},
 	}
 }
 
@@ -88,4 +90,12 @@ func NewTrackerStore(prefix string, state *storage.State) *TrackerStore {
 func (ts *TrackerStore) WithState(state *storage.State) *TrackerStore {
 	ts.state = state
 	return ts
+}
+
+func (ts *TrackerStore) SetupOption(opt *ethereum.ChainDriverOption) {
+	ts.cdOpt = opt
+}
+
+func (ts *TrackerStore) GetOption() *ethereum.ChainDriverOption {
+	return ts.cdOpt
 }

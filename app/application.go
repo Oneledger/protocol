@@ -11,6 +11,7 @@ import (
 
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/action/btc"
+	"github.com/Oneledger/protocol/action/eth"
 	"github.com/Oneledger/protocol/app/node"
 	bitcoin2 "github.com/Oneledger/protocol/chains/bitcoin"
 	"github.com/Oneledger/protocol/config"
@@ -118,6 +119,12 @@ func (app *App) setupState(stateBytes []byte) error {
 	if err != nil {
 		return errors.Wrap(err, "Setup State")
 	}
+
+	err = app.Context.govern.SetETHChainDriverOption(initial.ETHCDOption)
+	if err != nil {
+		return errors.Wrap(err, "Setup State")
+	}
+
 	balanceCtx := app.Context.Balances()
 
 	// (1) Register all the currencies and fee
@@ -273,6 +280,12 @@ func (app *App) Prepare() error {
 		}
 		app.Context.feeOption = feeOpt
 		app.Context.feePool.SetupOpt(feeOpt)
+
+		cdOpt, err := app.Context.govern.GetETHChainDriverOption()
+		if err != nil {
+			return err
+		}
+		app.Context.ethTrackers.SetupOption(cdOpt)
 	}
 	return nil
 }
@@ -321,8 +334,12 @@ func (app *App) Start() error {
 	internalRouter := action.NewRouter("internal")
 	err = btc.EnableBTCInternalTx(internalRouter)
 	if err != nil {
-		app.logger.Error("Failed to register internal transactions")
+		app.logger.Error("Failed to register btc internal transactions")
 		return err
+	}
+	err = eth.EnableInternalETH(internalRouter)
+	if err != nil {
+		app.logger.Error("failed to register eth internal transaction")
 	}
 
 	app.node = node

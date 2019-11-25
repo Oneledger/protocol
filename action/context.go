@@ -14,6 +14,7 @@ import (
 	"github.com/Oneledger/protocol/identity"
 	"github.com/Oneledger/protocol/log"
 	"github.com/Oneledger/protocol/storage"
+	ethchain "github.com/Oneledger/protocol/chains/ethereum"
 )
 
 type Context struct {
@@ -33,6 +34,7 @@ type Context struct {
 	JobStore        *jobs.JobStore
 	LockScriptStore *bitcoin.LockScriptStore
 	BTCChainType    *chaincfg.Params
+	ETHOptions      *ethchain.ChainDriverOption
 }
 
 func NewContext(r Router, header *abci.Header, state *storage.State,

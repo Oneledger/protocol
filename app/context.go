@@ -99,7 +99,6 @@ func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *node.Context) (
 	ctx.govern = governance.NewStore("g", storage.NewState(ctx.chainstate))
 	ctx.btcTrackers = bitcoin.NewTrackerStore("btct", storage.NewState(ctx.chainstate))
 	ctx.ethTrackers = ethereum.NewTrackerStore("etht", storage.NewState(ctx.chainstate))
-
 	ctx.accounts = accounts.NewWallet(cfg, ctx.dbDir())
 
 	// TODO check if validator
@@ -253,7 +252,7 @@ func (ctx *context) Storage() StorageCtx {
 
 // Close all things that need to be closed
 func (ctx *context) Close() {
-	closers := []closer{ctx.db, ctx.accounts, ctx.rpc}
+	closers := []closer{ctx.db, ctx.accounts, ctx.rpc, ctx.jobBus}
 	for _, closer := range closers {
 		closer.Close()
 	}
@@ -269,9 +268,8 @@ func (ctx *context) Validators() *identity.ValidatorStore {
 
 func (ctx *context) JobContext() *event.JobsContext {
 	cdConfig := ctx.cfg.ChainDriver
-	ethConfig := ctx.cfg.EthChainDriver
 	return event.NewJobsContext(cdConfig.BitcoinChainType,
-		ctx.internalService, ctx.btcTrackers,
+		ctx.internalService, ctx.btcTrackers, ctx.validators,
 		ctx.node.ValidatorECDSAPrivateKey(),
 		ctx.node.EthPrivKey(),
 		ctx.node.ValidatorAddress(), ctx.cfg.ChainDriver.BlockCypherToken,
@@ -281,9 +279,6 @@ func (ctx *context) JobContext() *event.JobsContext {
 		cdConfig.BitcoinRPCUsername,
 		cdConfig.BitcoinRPCPassword,
 		cdConfig.BitcoinChainType,
-		ethConfig.ContractABI,
-		ethConfig.Connection,
-		ethConfig.ContractAddress,
 		ctx.ethTrackers.WithState(ctx.deliver),
 	)
 }

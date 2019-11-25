@@ -4,5 +4,5 @@ echo
 
 rm -rf $OLDATA/devnet/*
 
-olfullnode init devnet --dir $OLDATA/devnet --nonvalidators 1 #--empty_blocks
+olfullnode init devnet --dir $OLDATA/devnet --nonvalidators 1 --deploy_eth_contract http://localhost:7545 #--empty_blocks
 

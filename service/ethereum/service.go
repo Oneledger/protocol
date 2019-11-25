@@ -8,9 +8,10 @@ import (
 
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/app/node"
-	"github.com/Oneledger/protocol/chains/ethereum"
+	chain "github.com/Oneledger/protocol/chains/ethereum"
 	"github.com/Oneledger/protocol/config"
 	"github.com/Oneledger/protocol/data/accounts"
+	tracker "github.com/Oneledger/protocol/data/ethereum"
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/identity"
 	"github.com/Oneledger/protocol/log"
@@ -28,7 +29,7 @@ type Service struct {
 	logger      *log.Logger
 	nodeContext node.Context
 	validators  *identity.ValidatorStore
-	// trackerStore *ethereum.TrackerStore
+	trackerStore *tracker.TrackerStore
 }
 
 // Returns a new Service, should be passed as an RPC handler
@@ -78,19 +79,19 @@ type ETHLockRawTX struct {
 }
 
 type SignRequest struct {
-	wei       *big.Int       `json:"wei"`
-	recepient common.Address `json:"recepient"`
+	Wei       *big.Int       `json:"wei"`
+	Recepient common.Address `json:"recepient"`
 }
 
 type SignReply struct {
-	txHash common.Hash `json:"tx_hash"`
+	TxHash common.Hash `json:"tx_hash"`
 }
 
 type BalanceRequest struct {
-	Address ethereum.Address `json:"address"`
+	Address chain.Address `json:"address"`
 }
 
 type BalanceReply struct {
-	Address ethereum.Address `json:"address"`
+	Address chain.Address `json:"address"`
 	Amount  *big.Int         `json:"amount"`
 }

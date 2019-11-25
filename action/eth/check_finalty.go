@@ -4,11 +4,11 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"strconv"
 
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/pkg/errors"
 	"github.com/tendermint/tendermint/libs/common"
+	"github.com/Oneledger/protocol/data/balance"
 
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/chains/ethereum"
@@ -19,6 +19,7 @@ type ReportFinalityMint struct {
 	TrackerName      ethereum.TrackerName
 	Locker           action.Address
 	ValidatorAddress action.Address
+	VoteIndex         int64
 }
 
 var _ action.Msg = &ReportFinalityMint{}
@@ -65,11 +66,14 @@ func (m *ReportFinalityMint) Unmarshal(data []byte) error {
 	return json.Unmarshal(data, m)
 }
 
+var _ action.Tx = reportFinalityMintTx{}
+
 type reportFinalityMintTx struct {
 }
 
 func (r reportFinalityMintTx) Validate(ctx *action.Context, signedTx action.SignedTx) (bool, error) {
-	f := ReportFinalityMint{}
+	fmt.Println("Starting Validate ")
+	f := &ReportFinalityMint{}
 	err := f.Unmarshal(signedTx.Data)
 	if err != nil {
 		return false, errors.Wrap(action.ErrWrongTxType, err.Error())
@@ -80,77 +84,25 @@ func (r reportFinalityMintTx) Validate(ctx *action.Context, signedTx action.Sign
 		return false, err
 	}
 
-	tracker, err := ctx.ETHTrackers.Get(f.TrackerName)
-	if err != nil {
-		return false, err
-	}
-	if !bytes.Equal(tracker.ProcessOwner, f.Locker) {
-		return false, errors.New("tracker process not owned by user")
-	}
-	if tracker.State != trackerlib.BusyBroadcasting {
-		return false, errors.New("tracker not available for finalizing")
+	if f.VoteIndex < 0 {
+		return false, action.ErrMissingData
 	}
 
 	return true, nil
 }
 
 func (r reportFinalityMintTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
-	f := ReportFinalityMint{}
-	err := f.Unmarshal(tx.Data)
-	if err != nil {
-		return false, action.Response{Log: "wrong tx type"}
-	}
+	return runCheckFinalityMint(ctx,tx)
 
-	tracker, err := ctx.ETHTrackers.Get(f.TrackerName)
-	if err != nil {
-		return false, action.Response{Log: "tracker not found" + f.TrackerName.Hex()}
-	}
-	if !bytes.Equal(tracker.ProcessOwner, f.Locker) {
-		return false, action.Response{Log: "tracker process not owned by user"}
-	}
-	valSet, err := ctx.Validators.GetValidatorSet()
-	if err != nil {
-		return false, action.Response{Log: "cannot get validator set"}
-	}
-	isSenderAValidator := false
-	for i := range valSet {
-		if bytes.Equal(valSet[i].Address, f.ValidatorAddress) {
-			isSenderAValidator = true
-		}
-	}
-
-	if !isSenderAValidator {
-		return false, action.Response{Log: "transaction sender not a validator"}
-	}
-
-	for index, fv := range tracker.Validators {
-		if bytes.Equal(fv, f.ValidatorAddress) {
-			tracker.AddVote(fv, int64(index))
-		}
-	}
-	// Are there Enough votes ?
-	// If not LOG it and return
-	// IF yes Check if status of minting
-	// CHeck if it has been minted already, if not
-	//    MINTING -> Mint OTETh and update status
-	// If it has been minted
-	//   MINTED -> Skip
-	// IF yes Mint OTETh
-	if !tracker.Finalized() {
-		return false, action.Response{Log: "Not Enough votes to finalize a transaction"}
-	}
-	if !tracker.IsTaskCompleted() {
-		ctx.Logger.Info("ready to mint")
-		if !mintTokens(ctx, *tracker, f) {
-			return false, action.Response{Log: "Unable to mint Tokens"}
-		}
-		tracker.CompleteTask()
-	}
-	return true, action.Response{Log: "MINTING SUCCESSFULL"}
 }
 
 func (r reportFinalityMintTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
-	f := ReportFinalityMint{}
+    return runCheckFinalityMint(ctx,tx)
+}
+
+func runCheckFinalityMint(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
+	fmt.Println("Starting runCheck Finality Mint")
+	f := &ReportFinalityMint{}
 	err := f.Unmarshal(tx.Data)
 	if err != nil {
 		return false, action.Response{Log: "wrong tx type"}
@@ -158,51 +110,39 @@ func (r reportFinalityMintTx) ProcessDeliver(ctx *action.Context, tx action.RawT
 
 	tracker, err := ctx.ETHTrackers.Get(f.TrackerName)
 	if err != nil {
-		return false, action.Response{Log: "tracker not found" + f.TrackerName.Hex()}
+		return false, action.Response{Log: err.Error()}
 	}
+	if tracker.State != trackerlib.BusyBroadcasting {
+		return false, action.Response{Log: errors.New("tracker not available for finalizing").Error()}
+	}
+
 	if !bytes.Equal(tracker.ProcessOwner, f.Locker) {
 		return false, action.Response{Log: "tracker process not owned by user"}
 	}
-	valSet, err := ctx.Validators.GetValidatorSet()
-	if err != nil {
-		return false, action.Response{Log: "cannot get validator set"}
-	}
-	isSenderAValidator := false
-	for i := range valSet {
-		if bytes.Equal(valSet[i].Address, f.ValidatorAddress) {
-			isSenderAValidator = true
-		}
-	}
 
-	if !isSenderAValidator {
+	if !ctx.Validators.IsValidatorAddress(f.ValidatorAddress) {
 		return false, action.Response{Log: "transaction sender not a validator"}
 	}
 
-	for index, fv := range tracker.Validators {
-		if bytes.Equal(fv, f.ValidatorAddress) {
-			tracker.AddVote(fv, int64(index))
+	if tracker.Finalized() {
+		return true, action.Response{Log: "tracker already finalized"}
+	}
+
+	err = tracker.AddVote(f.ValidatorAddress, f.VoteIndex)
+	if err != nil {
+		return false, action.Response{Log: errors.Wrap(err, "failed to add vote").Error()}
+	}
+	tracker.State = trackerlib.BusyFinalizing
+
+	if tracker.Finalized() {
+
+		err = mintTokens(ctx, tracker, *f)
+		if err !=nil {
+			return false, action.Response{Log:errors.Wrap(err,"UNABLE TO MINT TOKENS").Error()}
 		}
+		return true, action.Response{Log: "MINTING SUCCESSFUL"}
 	}
-	// Are there Enough votes ?
-	// If not LOG it and return
-	// IF yes Check if status of minting
-	// CHeck if it has been minted already, if not
-	//    MINTING -> Mint OTETh and update status
-	// If it has been minted
-	//   MINTED -> Skip
-	// IF yes Mint OTETh
-	if !tracker.Finalized() {
-		return false, action.Response{Log: "Not Enough votes to finalize a transaction"}
-	}
-	fmt.Println("minting Now")
-	if !tracker.IsTaskCompleted() {
-		ctx.Logger.Info("ready to mint")
-		if !mintTokens(ctx, *tracker, f) {
-			return false, action.Response{Log: "Unable to mint Tokens"}
-		}
-		tracker.CompleteTask()
-	}
-	return true, action.Response{Log: "MINTING SUCCESSFULL"}
+	return true, action.Response{Log: "vote success, not ready to mint: "+ strconv.Itoa(tracker.GetVotes())}
 }
 
 func (reportFinalityMintTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas) (bool, action.Response) {
@@ -211,22 +151,28 @@ func (reportFinalityMintTx) ProcessFee(ctx *action.Context, signedTx action.Sign
 	return true, action.Response{}
 }
 
-var _ action.Tx = reportFinalityMintTx{}
-
-func mintTokens(ctx *action.Context, tracker trackerlib.Tracker, oltTx ReportFinalityMint) bool {
-	curr, _ := ctx.Currencies.GetCurrencyByName("BTC")
-	rawTx := tracker.SignedETHTx
-	tx := &types.Transaction{}
-	err := rlp.DecodeBytes(rawTx, tx)
-	if err != nil {
-		ctx.Logger.Error("Error Decoding Bytes from RaxTX :", tracker.TrackerName, err)
-		return false
+func mintTokens(ctx *action.Context, tracker *trackerlib.Tracker, oltTx ReportFinalityMint) error {
+	curr, ok := ctx.Currencies.GetCurrencyByName("ETH")
+	if !ok {
+		return errors.New("ETH currency not allowed")
 	}
-	oEthCoin := curr.NewCoinFromUnit(tx.Value().Int64())
+	lockAmount,err := GetAmount(tracker)
+	if err != nil {
+		return err
+	}
+
+	tracker.State = trackerlib.Minted
+	err = ctx.ETHTrackers.Set(*tracker)
+	if err != nil {
+		return err
+	}
+
+	oEthCoin := curr.NewCoinFromAmount(balance.Amount(*lockAmount))
 	err = ctx.Balances.AddToAddress(oltTx.Locker, oEthCoin)
 	if err != nil {
 		ctx.Logger.Error(err)
-		return false
+		return errors.New("Unable to mint")
 	}
-	return true
+
+	return nil
 }

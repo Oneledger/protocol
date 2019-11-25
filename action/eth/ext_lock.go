@@ -3,7 +3,6 @@ package eth
 import (
 	"encoding/json"
 	"fmt"
-	"strconv"
 
 	ethcommon "github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -19,7 +18,6 @@ type Lock struct {
 	Locker      action.Address
 	TrackerName ethcommon.Hash
 	ETHTxn      []byte
-	LockAmount  int64
 }
 
 var _ action.Msg = &Lock{}
@@ -46,12 +44,8 @@ func (et Lock) Tags() common.KVPairs {
 		Key:   []byte("tx.locker"),
 		Value: et.Locker.Bytes(),
 	}
-	tag3 := common.KVPair{
-		Key:   []byte("tx.amount"),
-		Value: []byte(strconv.FormatInt(et.LockAmount, 10)),
-	}
 
-	tags = append(tags, tag, tag2, tag3)
+	tags = append(tags, tag, tag2)
 	return tags
 }
 
@@ -97,10 +91,6 @@ func (ethLockTx) Validate(ctx *action.Context, signedTx action.SignedTx) (bool, 
 		return false, errors.Wrap(err, "eth txn decode failed")
 	}
 
-	// check if lock amount in ethereum txn
-	if ethTx.Value().Int64() != lock.LockAmount {
-		return false, errors.New("incorrect lock amount in eth txn")
-	}
 
 	//TODO : Verify beninfiaciary address in ETHTX == locker (Phase 2)
 	return true, nil
@@ -161,11 +151,6 @@ func (ethLockTx) processCommon(ctx *action.Context, tx action.RawTx, lock *Lock)
 	err := rlp.DecodeBytes(lock.ETHTxn, ethTx)
 	if err != nil {
 		return false, action.Response{Log: "err decoding txn: " + err.Error()}
-	}
-
-	// verify lock amount in the txn
-	if ethTx.Value().Int64() != lock.LockAmount {
-		return false, action.Response{Log: "incorrect lock amount in txn"}
 	}
 
 	val, err := ctx.Validators.GetValidatorsAddress()

@@ -115,7 +115,23 @@ func (ethExtMintTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (bool, ac
 }
 
 func (ethExtMintTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
-	panic("Implement this / Same as Process Check ")
+	f := ExtMintOETH{}
+	err := f.Unmarshal(tx.Data)
+	if err != nil {
+		return false, action.Response{Log: "wrong tx type"}
+	}
+	tracker, err := ctx.ETHTrackers.Get(f.TrackerName)
+	if err != nil {
+		return false, action.Response{Log: "tracker not found" + f.TrackerName.Hex()}
+	}
+	if !bytes.Equal(tracker.ProcessOwner, f.Locker) {
+		return false, action.Response{Log: "tracker process not owned by user"}
+	}
+	if !(tracker.State == trackerlib.Finalized) {
+		return false, action.Response{Log: "Not enough votes collected for this tracker"}
+	}
+	// Mint OETH
+	return true, action.Response{Log: "External Mint Successful"}
 }
 
 func (ethExtMintTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas) (bool, action.Response) {

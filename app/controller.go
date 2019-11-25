@@ -19,6 +19,7 @@ import (
 	"github.com/Oneledger/protocol/data/jobs"
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/event"
+	"github.com/Oneledger/protocol/identity"
 	"github.com/Oneledger/protocol/log"
 	"github.com/Oneledger/protocol/serialize"
 	"github.com/Oneledger/protocol/storage"
@@ -77,7 +78,6 @@ func (app *App) chainInitializer() chainInitializer {
 		app.Context.deliver = storage.NewState(app.Context.chainstate)
 		app.Context.govern.WithState(app.Context.deliver)
 		app.Context.btcTrackers.WithState(app.Context.deliver)
-
 		err := app.setupState(req.AppStateBytes)
 		// This should cause consensus to halt
 		if err != nil {
@@ -164,9 +164,6 @@ func (app *App) txChecker() txChecker {
 			Tags:      response.Tags,
 			Codespace: "",
 		}
-		app.logger.Debug("Check TX TAG")
-		app.logger.Debug(response)
-		app.logger.Debug(result.Data)
 		app.logger.Debug("Check Tx: ", result, "log", response.Log)
 		return result
 
@@ -175,8 +172,7 @@ func (app *App) txChecker() txChecker {
 
 func (app *App) txDeliverer() txDeliverer {
 	return func(msg []byte) ResponseDeliverTx {
-		fmt.Println("TXDELIVER")
-		app.logger.Debug("TXDELIVER")
+
 		tx := &action.SignedTx{}
 
 		err := serialize.GetSerializer(serialize.NETWORK).Deserialize(msg, tx)
@@ -188,9 +184,9 @@ func (app *App) txDeliverer() txDeliverer {
 		handler := txCtx.Router.Handler(tx.Type)
 
 		gas := txCtx.State.ConsumedGas()
-		app.logger.Debug("BEFORE DELIVER : ")
+		app.logger.Debug("Process Deliver  : " )
 		ok, response := handler.ProcessDeliver(txCtx, tx.RawTx)
-		app.logger.Debug("AFTER  DELIVER : ")
+
 
 		feeOk, feeResponse := handler.ProcessFee(txCtx, *tx, gas, storage.Gas(len(msg)))
 
@@ -223,9 +219,9 @@ func (app *App) blockEnder() blockEnder {
 
 
 
-		doTransitions(app.Context.jobStore, app.Context.btcTrackers)
+		doTransitions(app.Context.jobStore, app.Context.btcTrackers ,app.Context.validators)
 
-		doEthTransitions(app.Context.jobStore, app.Context.ethTrackers, app.Context.node.ValidatorAddress(), app.logger)
+		doEthTransitions(app.Context.jobStore, app.Context.ethTrackers.WithState(app.Context.deliver), app.Context.node.ValidatorAddress(), app.logger,app.Context.validators)
 
 		app.logger.Debug("End Block: ", result, "height:", req.Height)
 
@@ -239,7 +235,7 @@ func (app *App) blockEnder() blockEnder {
 
 func (app *App) commitor() commitor {
 	return func() ResponseCommit {
-
+         fmt.Println("Commited block")
 		// Commit any pending changes.
 		hash, ver := app.Context.deliver.Commit()
 		app.logger.Debugf("Committed New Block height[%d], hash[%s], versions[%d]", app.header.Height, hex.EncodeToString(hash), ver)
@@ -294,7 +290,7 @@ func getGasCalculator(params *types.ConsensusParams) storage.GasCalculator {
 	return storage.NewGasCalculator(gas)
 }
 
-func doTransitions(js *jobs.JobStore, ts *bitcoin.TrackerStore) {
+func doTransitions(js *jobs.JobStore, ts *bitcoin.TrackerStore ,validators *identity.ValidatorStore) {
 
 	btcTracker := []bitcoin.Tracker{}
 	if js != nil {
@@ -314,7 +310,7 @@ func doTransitions(js *jobs.JobStore, ts *bitcoin.TrackerStore) {
 	}
 
 	for _, t := range btcTracker {
-		ctx := bitcoin.BTCTransitionContext{&t, js.WithChain(chain.BITCOIN)}
+		ctx := bitcoin.BTCTransitionContext{&t, js.WithChain(chain.BITCOIN),validators}
 
 		stt, err := event.BtcEngine.Process(t.NextStep(), ctx, t.State)
 		if err != nil {
@@ -326,28 +322,28 @@ func doTransitions(js *jobs.JobStore, ts *bitcoin.TrackerStore) {
 	}
 }
 
-func doEthTransitions(js *jobs.JobStore, ts *ethereum.TrackerStore, myValAddr keys.Address, logger *log.Logger) {
+func doEthTransitions(js *jobs.JobStore, ts *ethereum.TrackerStore, myValAddr keys.Address, logger *log.Logger ,validators *identity.ValidatorStore) {
+
 
 	trackers := make([]*ethereum.Tracker, 0, 20)
 	ts.Iterate(func(name *ceth.TrackerName, tracker *ethereum.Tracker) bool {
 		trackers = append(trackers, tracker)
 		return false
 	})
+	fmt.Println("NO OF TRACKERS :" ,len(trackers))
 	for _, t := range trackers {
-		ctx := ethereum.NewTrackerCtx(t, myValAddr, js.WithChain(chain.ETHEREUM), ts)
-		fmt.Println("iterate tracker:", t)
+		ctx := ethereum.NewTrackerCtx(t, myValAddr, js.WithChain(chain.ETHEREUM), ts,validators)
+		fmt.Println("BLOCKENDER    Tracker current state :", t.State)
 		_, err := event.EthEngine.Process(t.NextStep(), ctx, transition.Status(t.State))
 
 		if err != nil {
 			logger.Error("failed to process eth tracker", err)
 		}
-
+		fmt.Println("controller tracker:", ctx.Tracker)
 		err = ts.Set(*ctx.Tracker)
 		if err != nil {
 			logger.Error("failed to save eth tracker", err)
 		}
 	}
-
-
 
 }

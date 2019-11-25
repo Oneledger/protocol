@@ -27,11 +27,13 @@ func (svc *Service) CreateRawExtLock(req OLTLockRequest, out *OLTLockReply) erro
 	if err != nil {
 		return errors.Wrap(err, "failed to decode provided transaction bytes")
 	}
-	packets, err := createRawLock(req.Address, req.RawTx, tx.Value().Int64(), req.Fee, req.Gas)
+
+	packets, err := createRawLock(req.Address, req.RawTx, req.Fee, req.Gas)
 	if err != nil {
 		return errors.Wrap(err, "createRawLock")
 	}
 	fmt.Println("CreateRawExtLock:", packets)
+
 	*out = OLTLockReply{
 		RawTX: packets,
 	}
@@ -41,14 +43,13 @@ func (svc *Service) CreateRawExtLock(req OLTLockRequest, out *OLTLockReply) erro
 // Helper Function to create Lock ,and send back unsigned OLT transaction
 // Data Field is Lock struct (Tx.data.ETHTxn)
 
-func createRawLock(locker action.Address, rawTx []byte, lockamount int64, userfee action.Amount, gas int64) ([]byte, error) {
+func createRawLock(locker action.Address, rawTx []byte, userfee action.Amount, gas int64) ([]byte, error) {
 	// First accept the rawTx
 	//tracker := tracker.NewTracker(common.BytesToHash(rawTx))
 	lock := eth.Lock{
 		Locker:      locker,
 		TrackerName: common.BytesToHash(rawTx),
 		ETHTxn:      rawTx,
-		LockAmount:  lockamount,
 	}
 
 	data, err := lock.Marshal()
@@ -75,8 +76,8 @@ func createRawLock(locker action.Address, rawTx []byte, lockamount int64, userfe
 // Expects public key , and creates an unsigned TX to send to wallet .
 // Wallet signs and then calls onlinelock
 func (svc *Service) GetRawLockTX(req ETHLockRequest, out *ETHLockRawTX) error {
-	//TODO GET ECDSA PRIVATE KEY
-	cd, err := ethereum.NewEthereumChainDriver(svc.config, svc.logger,svc.nodeContext.EthPrivKey())
+	opt := svc.trackerStore.GetOption()
+	cd, err := ethereum.NewEthereumChainDriver(svc.config, svc.logger, opt)
 	if err != nil {
 		return errors.Wrap(err, "GetRawLockTx")
 	}

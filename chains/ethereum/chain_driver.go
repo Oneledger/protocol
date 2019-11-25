@@ -20,13 +20,11 @@ type ChainDriver interface {
 	//ValidatorSignRedeem (wei *big.Int, recipient common.Address) (*Transaction,error)
 }
 
-func (acc *EthereumChainDriver) ValidatorSignRedeem(wei *big.Int, recipient common.Address) (*Transaction, error) {
+func (acc *EthereumChainDriver) ValidatorSignRedeem(wei *big.Int, recipient common.Address, txOpt *TransactOpts) (*Transaction, error) {
 	acc.logger.Info("Validator Signed Redeem")
-	opts := acc.TransactOpts()
-	opts.From = acc.Address()
 	var redeemid = new(big.Int)
 	redeemid.SetString("2", 10)
-	return acc.Contract.Sign(opts, redeemid, wei, recipient)
+	return acc.Contract.Sign(txOpt, redeemid, wei, recipient)
 }
 
 func (acc *EthereumChainDriver) PrepareUnsignedETHLock(pubKey *ecdsa.PublicKey, lockAmount *big.Int) ([]byte, error) {

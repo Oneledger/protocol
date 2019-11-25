@@ -2,31 +2,19 @@ package ethereum
 
 import (
 	"context"
-	"crypto/ecdsa"
+	"math/big"
+	"time"
+
+	"github.com/ethereum/go-ethereum/ethclient"
+
 	"github.com/Oneledger/protocol/chains/ethereum/contract"
 	"github.com/Oneledger/protocol/config"
 	"github.com/Oneledger/protocol/log"
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/ethereum/go-ethereum/ethclient"
-	"math/big"
-	"time"
 )
 
 const DefaultTimeout = 5 * time.Second
 
-func NewEthereumChainDriver(cfg *config.EthereumChainDriverConfig, logger *log.Logger, ethPrivKey *ecdsa.PrivateKey) (*EthereumChainDriver, error) {
-
-	// So first we need to grab the current address
-	contractAddrSlice, err := hexutil.Decode(cfg.ContractAddress)
-	if err != nil {
-		logger.Error("failed to decode given contract address:", cfg.ContractAddress)
-		return nil, err
-	}
-
-	var contractAddr Address
-	copy(contractAddr[:], contractAddrSlice)
+func NewEthereumChainDriver(cfg *config.EthereumChainDriverConfig, logger *log.Logger, option *ChainDriverOption) (*EthereumChainDriver, error) {
 
 	client, err := ethclient.Dial(cfg.Connection)
 	if err != nil {
@@ -36,7 +24,7 @@ func NewEthereumChainDriver(cfg *config.EthereumChainDriverConfig, logger *log.L
 	//TODO : Function to return AUTH object
 	//TODO : Function to load contract from specific Address .
 	//Todo : Deploy Smart contract and return Deployed addresss
-	ctrct, err := contract.NewLockRedeem(contractAddr, client)
+	ctrct, err := contract.NewLockRedeem(option.ContractAddress, client)
 	if err != nil {
 		logger.Error("failed to create new contract")
 		return nil, err
@@ -55,9 +43,8 @@ func NewEthereumChainDriver(cfg *config.EthereumChainDriverConfig, logger *log.L
 		Contract:        ctrct,
 		Client:          client,
 		logger:          logger,
-		ContractAddress: contractAddr,
-		ContractABI:     cfg.ContractABI,
-		PrivateKey:      ethPrivKey,
+		ContractAddress: option.ContractAddress,
+		ContractABI:     option.ContractABI,
 	}, nil
 }
 
@@ -72,7 +59,6 @@ func defaultContext() (context.Context, context.CancelFunc) {
 // EthereumChainDriver provides the core fields required to interact with the Ethereum network. As of this moment (2019-08-21)
 // it should only be used by validator nodes.
 type EthereumChainDriver struct {
-	PrivateKey      *ecdsa.PrivateKey
 	Client          *Client
 	Contract        *Contract
 	ContractAddress Address
@@ -81,17 +67,17 @@ type EthereumChainDriver struct {
 }
 
 // Balance returns the current balance of the
-func (acc EthereumChainDriver) Balance() (*big.Int, error) {
+func (acc EthereumChainDriver) Balance(addr Address) (*big.Int, error) {
 	c, cancel := defaultContext()
 	defer cancel()
-	return acc.Client.BalanceAt(c, acc.Address(), nil)
+	return acc.Client.BalanceAt(c, addr, nil)
 }
 
 // Nonce returns the nonce to use for our next transaction
-func (acc EthereumChainDriver) Nonce() (uint64, error) {
+func (acc EthereumChainDriver) Nonce(addr Address) (uint64, error) {
 	c, cancel := defaultContext()
 	defer cancel()
-	return acc.Client.PendingNonceAt(c, acc.Address())
+	return acc.Client.PendingNonceAt(c, addr)
 }
 
 func (acc EthereumChainDriver) IsContract() {
@@ -106,23 +92,14 @@ func (acc EthereumChainDriver) VerifyContract(vs []Address) (bool, error) {
 }
 
 func (acc EthereumChainDriver) isContract() (bool, error) {
+	panic("implement me")
 	return true, nil
 }
 
-func (acc EthereumChainDriver) Address() Address {
-
-	return crypto.PubkeyToAddress(acc.PrivateKey.PublicKey)
-}
-
-// TransactOpts() returns a new transactor with the EthereumChainDriver struct's private key
-func (acc *EthereumChainDriver) TransactOpts() *TransactOpts {
-	return bind.NewKeyedTransactor(acc.PrivateKey)
-}
-
-func (acc *EthereumChainDriver) CallOpts() *CallOpts {
+func (acc *EthereumChainDriver) CallOpts(addr Address) *CallOpts {
 	return &CallOpts{
 		Pending:     true,
-		From:        acc.Address(),
+		From:        addr,
 		BlockNumber: nil,
 		Context:     context.Background(),
 	}

@@ -1,29 +1,39 @@
 package main
 
 import (
+	"context"
+	"crypto/ecdsa"
 	"crypto/rand"
 	"encoding/base64"
 	"encoding/hex"
 	"fmt"
+	"math/big"
 	"net/url"
 	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
 
-	"github.com/Oneledger/protocol/data/fees"
 	"github.com/btcsuite/btcd/btcec"
-
-	"github.com/Oneledger/protocol/config"
-	"github.com/Oneledger/protocol/consensus"
-	"github.com/Oneledger/protocol/data/balance"
-	"github.com/Oneledger/protocol/data/chain"
-	"github.com/Oneledger/protocol/data/keys"
-	"github.com/Oneledger/protocol/log"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/tendermint/tendermint/p2p"
 	"github.com/tendermint/tendermint/privval"
+
+	ethchain "github.com/Oneledger/protocol/chains/ethereum"
+	"github.com/Oneledger/protocol/config"
+	"github.com/Oneledger/protocol/consensus"
+	"github.com/Oneledger/protocol/data/balance"
+	"github.com/Oneledger/protocol/data/chain"
+	//"github.com/Oneledger/protocol/data/ethereum"
+	"github.com/Oneledger/protocol/data/fees"
+	"github.com/Oneledger/protocol/data/keys"
+	"github.com/Oneledger/protocol/ethcontracts"
+	"github.com/Oneledger/protocol/log"
 )
 
 type testnetConfig struct {
@@ -40,6 +50,8 @@ type testnetConfig struct {
 	// Total amount of funds to be shared across each node
 	totalFunds          int64
 	initialTokenHolders []string
+
+	deployETHContract string
 }
 
 var testnetArgs = &testnetConfig{}
@@ -63,6 +75,8 @@ func init() {
 	// 1 billion by default
 	testnetCmd.Flags().Int64Var(&testnetArgs.totalFunds, "total_funds", 1000000000, "The total amount of tokens in circulation")
 	testnetCmd.Flags().StringSliceVar(&testnetArgs.initialTokenHolders, "initial_token_holders", []string{}, "Initial list of addresses that hold an equal share of Total funds")
+	testnetCmd.Flags().StringVar(&testnetArgs.deployETHContract, "deploy_eth_contract", "", "deploy the ethereum Contract")
+
 }
 
 func randStr(size int) string {
@@ -253,6 +267,14 @@ func runDevnet(cmd *cobra.Command, _ []string) error {
 		if err != nil {
 			return errors.Wrap(err, "error generating BTCECSECP private key")
 		}
+		//ethecdsaPrivKey, err := crypto.GenerateKey()
+		//if err != nil {
+		//	return errors.Wrap(err, "error generating ETHSECP key")
+		//}
+		//ethecdsaPk, err := keys.GetPrivateKeyFromBytes(ethecdsaPrivKey.D.Bytes(), keys.ETHSECP)
+		//if err != nil {
+		//	return errors.Wrap(err, "error generating BTCECSECP private key")
+		//}
 
 		f, err := os.Create(filepath.Join(configDir, "priv_validator_key_ecdsa.json"))
 		if err != nil {
@@ -281,6 +303,7 @@ func runDevnet(cmd *cobra.Command, _ []string) error {
 		}
 		nodeList[i] = n
 		persistentPeers[i] = n.connectionDetails()
+
 	}
 
 	// Create the non validator nodes
@@ -291,7 +314,15 @@ func runDevnet(cmd *cobra.Command, _ []string) error {
 		chainID = args.chainID
 	}
 
-	states := initialState(args, nodeList)
+	cdo := &ethchain.ChainDriverOption{}
+	if len(args.deployETHContract) > 0 {
+		cdo, err = deployethcdcontract(args.deployETHContract, nodeList)
+		if err != nil {
+			return errors.Wrap(err, "failed to deploy the initial eth contract")
+		}
+	}
+
+	states := initialState(args, nodeList, *cdo)
 
 	genesisDoc, err := consensus.NewGenesisDoc(chainID, states)
 	if err != nil {
@@ -326,6 +357,10 @@ func runDevnet(cmd *cobra.Command, _ []string) error {
 		return false
 	}
 
+
+	//deploy contract and get contract addr
+
+
 	for _, node := range nodeList {
 		node.cfg.P2P.PersistentPeers = persistentPeers
 		// Modify the btc and eth ports
@@ -333,7 +368,7 @@ func runDevnet(cmd *cobra.Command, _ []string) error {
 			node.cfg.Network.BTCAddress = generateAddress(generateBTCPort(), false)
 			node.cfg.Network.ETHAddress = generateAddress(generateETHPort(), false)
 		}
-
+		//	node.cfg.EthChainDriver.ContractAddress = contractaddr
 		err := node.cfg.SaveFile(filepath.Join(node.dir, config.FileName))
 		if err != nil {
 			return err
@@ -345,7 +380,7 @@ func runDevnet(cmd *cobra.Command, _ []string) error {
 	return nil
 }
 
-func initialState(args *testnetConfig, nodeList []node) consensus.AppState {
+func initialState(args *testnetConfig, nodeList []node, option ethchain.ChainDriverOption) consensus.AppState {
 	olt := balance.Currency{Id: 0, Name: "OLT", Chain: chain.Type(0), Decimal: 18, Unit: "nue"}
 	vt := balance.Currency{Id: 1, Name: "VT", Chain: chain.Type(0), Unit: "vt"}
 	obtc := balance.Currency{Id: 2, Name: "BTC", Chain: chain.Type(1), Decimal: 8, Unit: "satoshi"}
@@ -439,13 +474,65 @@ func initialState(args *testnetConfig, nodeList []node) consensus.AppState {
 			})
 		}
 	}
-
 	return consensus.AppState{
 		Currencies: currencies,
 		FeeOption:  feeOpt,
+		ETHCDOption: option,
 		Balances:   balances,
 		Staking:    staking,
 		Domains:    domains,
 		Fees:       fees,
 	}
+}
+
+func deployethcdcontract(conn string, nodeList []node) (*ethchain.ChainDriverOption, error) {
+	privatekey, err := crypto.HexToECDSA("545771d36868950ae1f90779c2f1a65b72bda13cf4e64069691601b53403a1d6")
+	if err != nil {
+		return  nil, err
+	}
+	cli, err := ethclient.Dial(conn)
+	if err != nil {
+		return nil, err
+	}
+
+
+	publicKey := privatekey.Public()
+	publicKeyECDSA, ok := publicKey.(*ecdsa.PublicKey)
+	if !ok {
+		return nil, err
+	}
+
+	fromAddress := crypto.PubkeyToAddress(*publicKeyECDSA)
+	nonce, err := cli.PendingNonceAt(context.Background(), fromAddress)
+	if err != nil {
+		return nil, err
+	}
+
+	gasPrice, err := cli.SuggestGasPrice(context.Background())
+	if err != nil {
+		return nil, err
+	}
+	gasLimit := uint64(6721974)              // in units
+
+	auth := bind.NewKeyedTransactor(privatekey)
+	auth.Nonce = big.NewInt(int64(nonce))
+	auth.Value = big.NewInt(0)     // in wei
+	auth.GasLimit = gasLimit // in units
+	auth.GasPrice = gasPrice
+
+	input := make([]common.Address, 0, 10)
+	for _, node := range nodeList {
+		addr := common.HexToAddress(node.validator.Address.String())
+		input = append(input, addr)
+	}
+	address, _, _, err := ethcontracts.DeployLockRedeem(auth, cli, input)
+	if err != nil {
+		return nil, err
+	}
+
+	return &ethchain.ChainDriverOption{
+		ContractABI:     "[{\"constant\":true,\"inputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"name\":\"removeValidatorProposals\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"voteCount\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"epochBlockHeight\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"name\":\"newThresholdProposals\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"voteCount\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"internalType\":\"address\",\"name\":\"v\",\"type\":\"address\"}],\"name\":\"proposeRemoveValidator\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"getTotalEthBalance\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"redeemID_\",\"type\":\"uint256\"}],\"name\":\"getRedeemAmount\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"internalType\":\"address\",\"name\":\"v\",\"type\":\"address\"}],\"name\":\"proposeAddValidator\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"getOLTEthAddress\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"numValidators\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"votingThreshold\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"name\":\"addValidatorProposals\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"voteCount\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"redeemID_\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"amount_\",\"type\":\"uint256\"},{\"internalType\":\"addresspayable\",\"name\":\"recipient_\",\"type\":\"address\"}],\"name\":\"sign\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"redeemID_\",\"type\":\"uint256\"}],\"name\":\"redeem\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"threshold\",\"type\":\"uint256\"}],\"name\":\"proposeNewThreshold\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[],\"name\":\"lock\",\"outputs\":[],\"payable\":true,\"stateMutability\":\"payable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"name\":\"validators\",\"outputs\":[{\"internalType\":\"int256\",\"name\":\"\",\"type\":\"int256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"internalType\":\"address\",\"name\":\"addr\",\"type\":\"address\"}],\"name\":\"isValidator\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address[]\",\"name\":\"initialValidators\",\"type\":\"address[]\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"_address\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"int256\",\"name\":\"_power\",\"type\":\"int256\"}],\"name\":\"AddValidator\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"recepient\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"amount_trafered\",\"type\":\"uint256\"}],\"name\":\"RedeemSuccessful\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"validator_addresss\",\"type\":\"address\"}],\"name\":\"ValidatorSignedRedeem\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"_address\",\"type\":\"address\"}],\"name\":\"DeleteValidator\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"epochHeight\",\"type\":\"uint256\"}],\"name\":\"NewEpoch\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"address\",\"name\":\"sender\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"amount_received\",\"type\":\"uint256\"}],\"name\":\"Lock\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"_prevThreshold\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"_newThreshold\",\"type\":\"uint256\"}],\"name\":\"NewThreshold\",\"type\":\"event\"}]",
+		ContractAddress: address,
+	}, nil
+
 }

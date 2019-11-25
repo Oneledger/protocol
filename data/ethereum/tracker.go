@@ -3,6 +3,7 @@ package ethereum
 import (
 	//"errors"
 
+	"fmt"
 	"strconv"
 
 	"github.com/Oneledger/protocol/chains/ethereum"
@@ -21,7 +22,6 @@ type Tracker struct {
 	Validators    []keys.Address
 	ProcessOwner  keys.Address
 	FinalityVotes int64
-	TaskCompleted bool
 	TrackerName   ethereum.TrackerName
 }
 
@@ -34,16 +34,6 @@ func NewTracker(owner keys.Address, signedEthTx []byte, name ethereum.TrackerNam
 		ProcessOwner: owner,
 		SignedETHTx:  signedEthTx,
 		Validators:   validators,
-	}
-}
-
-func (t *Tracker) IsTaskCompleted() bool {
-	return t.TaskCompleted
-}
-
-func (t *Tracker) CompleteTask() {
-	if !t.TaskCompleted && t.Finalized() {
-		t.TaskCompleted = true
 	}
 }
 
@@ -76,21 +66,21 @@ func (t *Tracker) GetVotes() int {
 	return cnt
 }
 
-func (t *Tracker) CheckIfVoted(node keys.Address) bool {
-	index := 0
-	voted := int64(0)
+func (t *Tracker) CheckIfVoted(node keys.Address) (index int64, voted bool) {
+	index = int64(-1)
+	v := int64(0)
 	for i, addr := range t.Validators {
 		if addr.Equal(node) {
-			index = i
+			index = int64(i)
 			break
 		}
 	}
 
-	if index < len(t.Validators) {
-		voted = (t.FinalityVotes >> index) % 2
+	if index < int64(len(t.Validators)) && index > 0 {
+		v = (t.FinalityVotes >> index) % 2
 	}
 
-	return voted > 0
+	return index, v > 0
 }
 
 func (t *Tracker) Finalized() bool {
@@ -112,8 +102,10 @@ func (t Tracker) NextStep() string {
 
 	switch t.State {
 	case New:
+		fmt.Println("Chanjing state from NEW to Broadcasting")
 		return BROADCASTING
 	case BusyBroadcasting:
+		fmt.Println("Changing state from BusyBroadcasting to Finalizing")
 		return FINALIZING
 	case BusyFinalizing:
 		return FINALIZE

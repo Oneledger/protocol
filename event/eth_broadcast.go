@@ -2,7 +2,6 @@ package event
 
 import (
 	"fmt"
-	"os"
 	"strconv"
 
 	"github.com/ethereum/go-ethereum/core/types"
@@ -12,7 +11,6 @@ import (
 	"github.com/Oneledger/protocol/config"
 	ethereum2 "github.com/Oneledger/protocol/data/ethereum"
 	"github.com/Oneledger/protocol/data/jobs"
-	"github.com/Oneledger/protocol/log"
 	"github.com/Oneledger/protocol/storage"
 )
 
@@ -26,7 +24,7 @@ type JobETHBroadcast struct {
 }
 
 func NewETHBroadcast(name ethereum.TrackerName, state ethereum2.TrackerState) *JobETHBroadcast {
-	fmt.Println("CREATING NEW JOB ",name,state)
+	fmt.Println("CREATING NEW JOB ", name, state)
 	return &JobETHBroadcast{
 		TrackerName: name,
 		JobID:       name.String() + storage.DB_PREFIX + strconv.Itoa(int(state)),
@@ -60,8 +58,8 @@ func (job *JobETHBroadcast) DoMyJob(ctx interface{}) {
 
 	ethconfig :=  config.DefaultEthConfig()
 
-	logger := log.NewLoggerWithPrefix(os.Stdout, "JOB_ETHBROADCAST")
-	cd, err := ethereum.NewEthereumChainDriver(ethconfig, logger, &ethCtx.ETHPrivKey)
+	//logger := log.NewLoggerWithPrefix(os.Stdout, "JOB_ETHBROADCAST")
+	cd, err := ethereum.NewEthereumChainDriver(ethconfig, ethCtx.Logger, trackerStore.GetOption())
 	if err != nil {
 		ethCtx.Logger.Error("err trying to get ChainDriver : ", job.GetJobID(), err)
 

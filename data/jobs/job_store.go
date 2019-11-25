@@ -5,8 +5,9 @@
 package jobs
 
 import (
-	"errors"
 	"sync"
+
+	"github.com/pkg/errors"
 
 	"github.com/Oneledger/protocol/config"
 	"github.com/Oneledger/protocol/data/chain"
@@ -66,7 +67,7 @@ func (js *JobStore) GetJob(jobID string) (Job, error) {
 	key := storage.StoreKey("job:" + js.chain.String() + ":" + jobID)
 	dat, err := js.Get(key)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, key.String())
 	}
 	var job Job
 	err = js.ser.Deserialize(dat,&job)

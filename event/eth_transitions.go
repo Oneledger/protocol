@@ -71,7 +71,7 @@ func init() {
 
 //TODO Go back to Busy broadcasting if there is a failure in Finalizing.
 func Broadcasting(ctx interface{}) error {
-	context, ok := ctx.(ethereum.TrackerCtx)
+	context, ok := ctx.(*ethereum.TrackerCtx)
 	if !ok {
 		return errors.New("error casting tracker context")
 	}
@@ -81,29 +81,33 @@ func Broadcasting(ctx interface{}) error {
 
 	if tracker.State != ethereum.New {
 		err := errors.New("Cannot Broadcast from the current state")
-		return errors.Wrap(err, string(tracker.State))
+		return errors.Wrap(err, string((*tracker).State))
 	}
-	fmt.Println("STATE :" ,tracker.State)
+	fmt.Println("STATE :" , tracker.State)
 	tracker.State = ethereum.BusyBroadcasting
-	fmt.Println("STATE CHANGED TO :" ,tracker.State)
-	//create broadcasting job
-	job := NewETHBroadcast(tracker.TrackerName, tracker.State)
-	err := context.JobStore.SaveJob(job)
-	if err != nil {
-		fmt.Println("ERROR SAVING")
-		return errors.Wrap(errors.New("job serialization failed err: "), err.Error())
+	fmt.Println("STATE CHANGED TO :" , tracker.State)
+
+	//create broadcasting
+    if context.Validators.IsValidator() {
+		job := NewETHBroadcast((*tracker).TrackerName, tracker.State)
+		err := context.JobStore.SaveJob(job)
+		if err != nil {
+			fmt.Println("ERROR SAVING")
+			return errors.Wrap(errors.New("job serialization failed err: "), err.Error())
+		}
+		fmt.Println("saved job:", job)
 	}
+	context.Tracker = tracker
 	return nil
 }
 
 func Finalizing(ctx interface{}) error {
 	fmt.Println("finalizing start ")
-	context, ok := ctx.(ethereum.TrackerCtx)
+	context, ok := ctx.(*ethereum.TrackerCtx)
 	if !ok {
 		return errors.New("error casting tracker context")
 	}
 
-	fmt.Println("finalizing")
 
 	tracker := context.Tracker
 
@@ -112,23 +116,26 @@ func Finalizing(ctx interface{}) error {
 		return errors.Wrap(err, string(tracker.State))
 	}
 
-	//Check if current Node voted
-	voted := tracker.CheckIfVoted(context.CurrNodeAddr)
+	if context.Validators.IsValidator() {
+		//Check if current Node voted
+		_, voted := tracker.CheckIfVoted(context.CurrNodeAddr)
 
-	if !voted {
-		//Check Broadcasting job
-		bjob, err := context.JobStore.GetJob(tracker.GetJobID(ethereum.BusyBroadcasting))
-		if err != nil {
-			return errors.Wrap(err, "failed to get job")
-		}
-
-		if bjob.IsDone() {
-
-			//Create job to check finality
-			job := NewETHCheckFinality(tracker.TrackerName, ethereum.BusyFinalizing)
-			err := context.JobStore.SaveJob(job)
+		if !voted {
+			//Check Broadcasting job
+			bjob, err := context.JobStore.GetJob(tracker.GetJobID(ethereum.BusyBroadcasting))
 			if err != nil {
-				return errors.Wrap(errors.New("job serialization failed err: "), err.Error())
+				return errors.Wrap(err, "failed to get job")
+			}
+			fmt.Println("Broadcasting job is done creating job for CHECK FINALITY",bjob.IsDone(),bjob.GetType())
+			if bjob.IsDone() {
+
+				//Create job to check finality
+				fmt.Println("Broadcasting job is done creating job for CHECK FINALITY")
+				job := NewETHCheckFinality(tracker.TrackerName, ethereum.BusyFinalizing)
+				err := context.JobStore.SaveJob(job)
+				if err != nil {
+					return errors.Wrap(errors.New("job serialization failed err: "), err.Error())
+				}
 			}
 		}
 	}
@@ -139,11 +146,12 @@ func Finalizing(ctx interface{}) error {
 		tracker.State = ethereum.BusyFinalizing
 	}
 
+	context.Tracker = tracker
 	return nil
 }
 
 func Finalization(ctx interface{}) error {
-	context, ok := ctx.(ethereum.TrackerCtx)
+	context, ok := ctx.(*ethereum.TrackerCtx)
 	if !ok {
 		return errors.New("error casting tracker context")
 	}
@@ -155,26 +163,30 @@ func Finalization(ctx interface{}) error {
 		return errors.Wrap(err, string(tracker.State))
 	}
 
-	//Check if current Node voted
-	voted := tracker.CheckIfVoted(context.CurrNodeAddr)
-
-	if !voted {
-		//Create job to check finality
-		job := NewETHCheckFinality(tracker.TrackerName, tracker.State)
-		err := context.JobStore.SaveJob(job)
-		if err != nil {
-			return errors.Wrap(errors.New("job serialization failed err: "), err.Error())
-		}
-	}
-
 	if tracker.Finalized() {
 		tracker.State = ethereum.Finalized
+		return nil
 	}
+
+	if context.Validators.IsValidator() {
+		//Check if current Node voted
+		_, voted := tracker.CheckIfVoted(context.CurrNodeAddr)
+
+		if !voted {
+			//Create job to check finality
+			job := NewETHCheckFinality(tracker.TrackerName, tracker.State)
+			err := context.JobStore.SaveJob(job)
+			if err != nil {
+				return errors.Wrap(errors.New("job serialization failed err: "), err.Error())
+			}
+		}
+	}
+	context.Tracker = tracker
 	return nil
 }
 
 func Minting(ctx interface{}) error {
-	context, ok := ctx.(ethereum.TrackerCtx)
+	context, ok := ctx.(*ethereum.TrackerCtx)
 	if !ok {
 		return errors.New("error casting tracker context")
 	}
@@ -187,7 +199,7 @@ func Minting(ctx interface{}) error {
 	}
 	//todo: create a job to mint
 
-	if tracker.TaskCompleted {
+	if tracker.Finalized() {
 		tracker.State = ethereum.Minted
 	}
 	return nil

@@ -40,9 +40,6 @@ type JobsContext struct {
 	BTCRPCPassword string
 
 	EthereumTrackers   *ethereum.TrackerStore
-	ETHContractABI     string // Replace 39,40,41 with ethchaindriverconfig
-	ETHConnection      string
-	ETHContractAddress string
 
 	BTCChainnet string
 }
@@ -52,7 +49,7 @@ func NewJobsContext(chainType string, svc *Service,
 	privKey *keys.PrivateKey, ethprivKey *ecdsa.PrivateKey,
 	valAddress keys.Address, bcyToken string, lStore *bitcoin.LockScriptStore,
 	btcAddress, btcRPCPort, BTCRPCUsername, BTCRPCPassword, btcChain string,
-	ETHAbi string, ETHconn string, ETHContractaddress string, ethTracker *ethereum.TrackerStore,
+    ethTracker *ethereum.TrackerStore,
 ) *JobsContext {
 
 	var params *chaincfg.Params
@@ -86,9 +83,6 @@ func NewJobsContext(chainType string, svc *Service,
 		BTCRPCPort:         btcRPCPort,
 		BTCRPCUsername:     BTCRPCUsername,
 		BTCRPCPassword:     BTCRPCPassword,
-		ETHConnection:      ETHconn,
-		ETHContractAddress: ETHContractaddress,
-		ETHContractABI:     ETHAbi,
 		EthereumTrackers:   ethTracker,
 		BTCChainnet:        btcChain,
 	}

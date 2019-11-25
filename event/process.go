@@ -54,9 +54,8 @@ func (j *JobBus) Start(ctx *JobsContext) error {
 	return nil
 }
 
-func (j *JobBus) Close() error {
+func (j *JobBus) Close()  {
 	close(j.quit)
-	return nil
 }
 
 type JobProcess func(job jobs.Job) jobs.Job
@@ -77,18 +76,21 @@ func RangeJobs(js *jobs.JobStore, pro JobProcess) {
 	jobkeys := make([]string, 0, 20)
 	js.Iterate(func(job jobs.Job) {
 		//fmt.Println("Searching Jobstore",job.GetType())
-		 if !job.IsDone() {jobkeys = append(jobkeys, job.GetJobID())}
+		 if !job.IsDone() {
+		 	jobkeys = append(jobkeys, job.GetJobID())
+		 }
 	})
+	fmt.Println("number of jobs:", len(jobkeys))
 	for _, key := range jobkeys {
 
 		job, err := js.GetJob(key)
 		if err != nil {
+			fmt.Println("err get job by key", key)
 			continue
 		}
 
-
+		fmt.Println("processing job",job)
 		job = pro(job)
-		fmt.Println("JOB PROCESSED:",job.GetJobID())
 
 		err = js.SaveJob(job)
 			if err != nil {
