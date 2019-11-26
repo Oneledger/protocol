@@ -33,7 +33,7 @@ func (ls *LockScriptStore) SaveLockScript(lockScriptAddress, lockScript []byte) 
 
 	session := ls.BeginSession()
 
-	err := session.Set(key, lockScriptAddress)
+	err := session.Set(key, lockScript)
 	if err != nil {
 		return err
 	}

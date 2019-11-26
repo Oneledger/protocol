@@ -207,13 +207,16 @@ type BTCGetTrackerReply struct {
 	TrackerData string `json:"tracker"`
 }
 
-type BTCLockRedeemRequest struct {
-	Address string `json:"address"`
-	Amount  int64  `json:"amount"`
-	FeesBTC int64  `json:"fees_btc"`
+type BTCRedeemRequest struct {
+	Address    keys.Address  `json:"address"`
+	BTCAddress string        `json:"btc_address"`
+	Amount     int64         `json:"amount"`
+	FeesBTC    int64         `json:"fees_btc"`
+	GasPrice   action.Amount `json:"gasprice"`
+	Gas        int64         `json:"gas"`
 }
 type BTCRedeemPrepareResponse struct {
-	Txn         string `json:"txn"`
+	RawTx       []byte `json:"rawTx"`
 	TrackerName string `json:"tracker_name"`
 }
 

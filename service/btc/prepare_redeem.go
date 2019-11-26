@@ -5,9 +5,10 @@
 package btc
 
 import (
-	"bytes"
 	"encoding/hex"
+	"fmt"
 
+	"github.com/btcsuite/btcutil/base58"
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
 
@@ -19,7 +20,7 @@ import (
 	codes "github.com/Oneledger/protocol/status_codes"
 )
 
-func (s *Service) PrepareRedeem(args client.BTCLockRedeemRequest, reply *client.BTCRedeemPrepareResponse) error {
+func (s *Service) PrepareRedeem(args client.BTCRedeemRequest, reply *client.BTCRedeemPrepareResponse) error {
 	cd := bitcoin.NewChainDriver(s.blockCypherToken)
 
 	//tracker, err := s.trackerStore.Get("tracker_1")
@@ -30,75 +31,26 @@ func (s *Service) PrepareRedeem(args client.BTCLockRedeemRequest, reply *client.
 		return errors.Wrap(err, "error getting tracker for lock")
 	}
 
-	addr, err := hex.DecodeString(args.Address)
-	if err != nil {
-
+	if tracker.CurrentBalance < (args.Amount + args.FeesBTC) {
+		return errors.New("not tracker with enough balance")
 	}
 
-	txnBytes := cd.PrepareRedeemNew(tracker.ProcessTxId, 0, tracker.CurrentBalance,
-		addr, args.Amount, args.FeesBTC, tracker.ProcessLockScriptAddress)
-
-	reply.Txn = hex.EncodeToString(txnBytes)
-	reply.TrackerName = tracker.Name
-
-	return nil
-}
-
-func (s *Service) AddUserSignatureAndProcessRedeem(args client.BTCLockRequest, reply *client.SendTxReply) error {
-
-	tracker, err := s.trackerStore.Get(args.TrackerName)
-	if err != nil {
-		// tracker of that name not found
-		return codes.ErrTrackerNotFound
+	btcAddr := base58.Decode(args.BTCAddress)
+	if len(btcAddr) == 0 {
+		return errors.New("redeem address not base58")
 	}
 
-	if tracker.IsBusy() {
-		// tracker not available anymore, try another tracker
-		return codes.ErrTrackerBusy
-	}
+	fmt.Printf("%#v \n", tracker)
+	txnBytes := cd.PrepareRedeemNew(tracker.CurrentTxId, 0, tracker.CurrentBalance,
+		btcAddr, args.Amount, args.FeesBTC, tracker.ProcessLockScriptAddress)
 
-	// initialize a chain driver for adding signature
-	cd := bitcoin.NewChainDriver(s.blockCypherToken)
-
-	// add the users' btc signature to the lock txn in the appropriate place
-	s.logger.Debug("----", hex.EncodeToString(args.Txn), hex.EncodeToString(args.Signature))
-
-	newBTCTx := cd.AddUserLockSignature(args.Txn, args.Signature)
-
-	totalRedeemAmount := tracker.CurrentBalance - newBTCTx.TxOut[0].Value
-
-	if len(newBTCTx.TxIn) != 1 { // if new tracker
-
-		return codes.ErrBadBTCTxn
-	}
-
-	if len(newBTCTx.TxOut) != 2 { // if not a new tracker
-
-		// incorrect txn
-		return codes.ErrBadBTCTxn
-	}
-
-	if *tracker.CurrentTxId != newBTCTx.TxIn[0].PreviousOutPoint.Hash ||
-		newBTCTx.TxIn[0].PreviousOutPoint.Index != 0 {
-		// incorrect txn
-		return codes.ErrBadBTCTxn
-	}
-
-	var txBytes []byte
-	buf := bytes.NewBuffer(txBytes)
-	err = newBTCTx.Serialize(buf)
-	if err != nil {
-		return codes.ErrSerialization
-	}
-	txBytes = buf.Bytes()
-
-	s.logger.Debug("-----", hex.EncodeToString(txBytes))
+	fmt.Println(hex.EncodeToString(txnBytes))
 
 	redeem := btc.Redeem{
 		Redeemer:     args.Address,
-		TrackerName:  args.TrackerName,
-		BTCTxn:       txBytes,
-		RedeemAmount: totalRedeemAmount,
+		TrackerName:  tracker.Name,
+		BTCTxn:       txnBytes,
+		RedeemAmount: args.Amount,
 	}
 
 	data, err := redeem.Marshal()
@@ -109,7 +61,7 @@ func (s *Service) AddUserSignatureAndProcessRedeem(args client.BTCLockRequest, r
 	uuidNew, _ := uuid.NewUUID()
 	fee := action.Fee{args.GasPrice, args.Gas}
 	tx := &action.RawTx{
-		Type: action.BTC_LOCK,
+		Type: action.BTC_REDEEM,
 		Data: data,
 		Fee:  fee,
 		Memo: uuidNew.String(),
@@ -120,8 +72,7 @@ func (s *Service) AddUserSignatureAndProcessRedeem(args client.BTCLockRequest, r
 		return codes.ErrSerialization
 	}
 
-	*reply = client.SendTxReply{
-		RawTx: packet,
-	}
+	reply.RawTx = packet
+	reply.TrackerName = tracker.Name
 	return nil
 }

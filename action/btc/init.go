@@ -15,6 +15,10 @@ func EnableBTC(r action.Router) error {
 	if err != nil {
 		return errors.Wrap(err, "btcLockTx")
 	}
+	err = r.AddHandler(action.BTC_REDEEM, btcRedeemTx{})
+	if err != nil {
+		return errors.Wrap(err, "btcRedeemTx")
+	}
 
 	err = r.AddHandler(action.BTC_EXT_MINT, extMintOBTCTx{})
 	if err != nil {

@@ -11,7 +11,7 @@ import (
 )
 
 func main() {
-	sourceBTCHash := "c1c5aff3a04c99b1c22fc0f9f3cdc2cb9ed108454bbbcce74f23737357a24195"
+	sourceBTCHash := "04dee4fe3643067ee7a251ee8577849ca2daf99ecfd8287309727306858d5fe6"
 	sourceBTCIndex := 1
 	wif := "cNVonQDXYShV3PJLHbz6bEs4qkKm6smRUXuYtD2uMseiUubBB25j"
 

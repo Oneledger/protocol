@@ -185,6 +185,7 @@ func runReportFinalityMint(ctx *action.Context, tx action.RawTx) (bool, action.R
 		}
 	}
 
+	// if type is lock, then mint the oBTC
 	if tracker.ProcessType == bitcoin.ProcessTypeLock {
 
 		// mint oBTC
@@ -202,6 +203,8 @@ func runReportFinalityMint(ctx *action.Context, tx action.RawTx) (bool, action.R
 
 		ctx.Logger.Info("coin minted to ", f.OwnerAddress)
 	}
+
+	// set the tracker to the new state
 
 	validatorPubKeys, err := ctx.Validators.GetBitcoinKeys(&chaincfg.TestNet3Params)
 	m := (len(validatorPubKeys) * 2 / 3) + 1

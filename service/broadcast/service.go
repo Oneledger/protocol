@@ -20,10 +20,15 @@ type Service struct {
 	trackers   *bitcoin.TrackerStore
 	feeOpt     *fees.FeeOption
 	ext        client.ExtServiceContext
+
+	blockCypherToken     string
+	blockCypherchainType string
 }
 
 func NewService(ctx client.ExtServiceContext, router action.Router, currencies *balance.CurrencySet,
-	feeOpt *fees.FeeOption, logger *log.Logger, trackers *bitcoin.TrackerStore) *Service {
+	feeOpt *fees.FeeOption, logger *log.Logger, trackers *bitcoin.TrackerStore,
+	blockCypherToken, blockCypherChainType string,
+) *Service {
 	return &Service{
 		ext:        ctx,
 		router:     router,
@@ -31,6 +36,9 @@ func NewService(ctx client.ExtServiceContext, router action.Router, currencies *
 		trackers:   trackers,
 		feeOpt:     feeOpt,
 		logger:     logger,
+
+		blockCypherToken:     blockCypherToken,
+		blockCypherchainType: blockCypherChainType,
 	}
 }
 
@@ -55,7 +63,8 @@ func (svc *Service) validateAndSignTx(req client.BroadcastRequest) ([]byte, erro
 
 	handler := svc.router.Handler(tx.Type)
 	ctx := action.NewContext(svc.router, nil, nil, nil, nil, svc.currencies,
-		svc.feeOpt, nil, nil, nil, svc.trackers, nil, nil, nil, svc.logger)
+		svc.feeOpt, nil, nil, nil, svc.trackers, nil, nil, nil,
+		svc.blockCypherToken, svc.blockCypherchainType, svc.logger)
 	_, err = handler.Validate(ctx, signedTx)
 	if err != nil {
 		err = rpc.InvalidRequestError(err.Error())

@@ -14,6 +14,7 @@ import (
 	"github.com/tendermint/tendermint/libs/common"
 
 	"github.com/Oneledger/protocol/action"
+	bitcoin2 "github.com/Oneledger/protocol/chains/bitcoin"
 	"github.com/Oneledger/protocol/data/bitcoin"
 	"github.com/Oneledger/protocol/data/keys"
 )
@@ -113,6 +114,12 @@ func (btcLockTx) Validate(ctx *action.Context, signedTx action.SignedTx) (bool, 
 		return false, errors.New("txn doesn't match tracker")
 	}
 	if isFirstTxn && tx.TxOut[0].Value != lock.LockAmount+tracker.CurrentBalance {
+		return false, errors.New("txn doesn't match tracker")
+	}
+
+	if !bitcoin2.ValidateLock(tx, ctx.BlockCypherToken, ctx.BlockCypherChainType, tracker.CurrentTxId,
+		tracker.ProcessLockScriptAddress, tracker.CurrentBalance, lock.LockAmount) {
+
 		return false, errors.New("txn doesn't match tracker")
 	}
 

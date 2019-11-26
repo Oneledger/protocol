@@ -129,11 +129,14 @@ func (c *chainDriver) CheckFinality(hash *chainhash.Hash, token, chain string) (
 	btc := gobcy.API{token, "btc", chain}
 
 	tx, err := btc.GetTX(hash.String(), nil)
+	fmt.Println(err)
+	fmt.Printf("\n\n%#v\n\n", tx)
 	if err != nil {
 		return false, err
 	}
+	fmt.Printf("\n\n%#v\n\n", tx)
 
-	if tx.Confirmations > 1 {
+	if tx.Confirmations > 0 {
 		return true, nil
 	}
 
@@ -197,8 +200,8 @@ func CreateMultiSigAddress(m int, publicKeys []*btcutil.AddressPubKey, randomByt
 	builder.AddOp(txscript.OP_CHECKMULTISIG)
 
 	// add randomness
-	builder.AddOp(txscript.OP_RETURN)
-	builder.AddData(randomBytes)
+	// builder.AddOp(txscript.OP_RETURN)
+	// builder.AddData(randomBytes)
 
 	script, err = builder.Script()
 	if err != nil {

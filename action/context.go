@@ -1,6 +1,8 @@
 package action
 
 import (
+	"fmt"
+
 	"github.com/btcsuite/btcd/chaincfg"
 	abci "github.com/tendermint/tendermint/abci/types"
 
@@ -33,6 +35,9 @@ type Context struct {
 	JobStore        *jobs.JobStore
 	LockScriptStore *bitcoin.LockScriptStore
 	BTCChainType    *chaincfg.Params
+
+	BlockCypherToken     string
+	BlockCypherChainType string
 }
 
 func NewContext(r Router, header *abci.Header, state *storage.State,
@@ -40,9 +45,11 @@ func NewContext(r Router, header *abci.Header, state *storage.State,
 	currencies *balance.CurrencySet, feeOpt *fees.FeeOption, feePool *fees.Store,
 	validators *identity.ValidatorStore, domains *ons.DomainStore,
 	btcTrackers *bitcoin.TrackerStore, ethTrackers *ethereum.TrackerStore,
-	jobStore *jobs.JobStore, btcChainType *chaincfg.Params,
+	jobStore *jobs.JobStore, btcChainType *chaincfg.Params, blockCypherToken, blockCypherChainType string,
 	logger *log.Logger) *Context {
 
+	fmt.Println(blockCypherToken)
+	fmt.Println(blockCypherChainType)
 	return &Context{
 		Router:       r,
 		State:        state,
@@ -59,5 +66,8 @@ func NewContext(r Router, header *abci.Header, state *storage.State,
 		Logger:       logger,
 		JobStore:     jobStore,
 		BTCChainType: btcChainType,
+
+		BlockCypherToken:     blockCypherToken,
+		BlockCypherChainType: blockCypherChainType,
 	}
 }

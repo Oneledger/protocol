@@ -432,7 +432,7 @@ func DefaultChainDriverConfig() *ChainDriverConfig {
 
 	cfg.BitcoinChainType = "testnet3"
 
-	cfg.BlockCypherToken = "dd53aae66b83431ca57a1f656af8ed69"
+	cfg.BlockCypherToken = "2144784c254140aa9988f1155def46a7"
 
 	cfg.BitcoinNodeAddress = "34.74.207.115"
 	cfg.BitcoinRPCPort = "18332"

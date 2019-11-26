@@ -76,7 +76,7 @@ func (j *JobAddSignature) DoMyJob(ctxI interface{}) {
 
 	lockScript, err := ctx.LockScripts.GetLockScript(tracker.CurrentLockScriptAddress)
 	if err != nil {
-		ctx.Logger.Error("erroring in reading lockscript", err)
+		ctx.Logger.Error("error in reading lockscript", err)
 		return
 	}
 
