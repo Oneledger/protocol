@@ -1,13 +1,13 @@
 package eth
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"strconv"
 
 	"github.com/pkg/errors"
 	"github.com/tendermint/tendermint/libs/common"
+
 	"github.com/Oneledger/protocol/data/balance"
 
 	"github.com/Oneledger/protocol/action"
@@ -107,33 +107,36 @@ func runCheckFinalityMint(ctx *action.Context, tx action.RawTx) (bool, action.Re
 	if err != nil {
 		return false, action.Response{Log: "wrong tx type"}
 	}
-
+	//
 	tracker, err := ctx.ETHTrackers.Get(f.TrackerName)
 	if err != nil {
-		return false, action.Response{Log: err.Error()}
-	}
-	if tracker.State != trackerlib.BusyBroadcasting {
-		return false, action.Response{Log: errors.New("tracker not available for finalizing").Error()}
+		ctx.Logger.Error(err, "err getting tracker")
+	//	return false, action.Response{Log: err.Error()}
 	}
 
-	if !bytes.Equal(tracker.ProcessOwner, f.Locker) {
-		return false, action.Response{Log: "tracker process not owned by user"}
-	}
-
-	if !ctx.Validators.IsValidatorAddress(f.ValidatorAddress) {
-		return false, action.Response{Log: "transaction sender not a validator"}
-	}
-
-	if tracker.Finalized() {
-		return true, action.Response{Log: "tracker already finalized"}
-	}
-
+	//if tracker.State != trackerlib.BusyBroadcasting {
+	//	return false, action.Response{Log: errors.New("tracker not available for finalizing").Error()}
+	//}
+	//
+	//if !bytes.Equal(tracker.ProcessOwner, f.Locker) {
+	//	return false, action.Response{Log: "tracker process not owned by user"}
+	//}
+	//
+	//if !ctx.Validators.IsValidatorAddress(f.ValidatorAddress) {
+	//	return false, action.Response{Log: "transaction sender not a validator"}
+	//}
+	//
+	//if tracker.Finalized() {
+	//	return true, action.Response{Log: "tracker already finalized"}
+	//}
+	ctx.Logger.Error("Trying to add vote ")
 	err = tracker.AddVote(f.ValidatorAddress, f.VoteIndex)
 	if err != nil {
 		return false, action.Response{Log: errors.Wrap(err, "failed to add vote").Error()}
 	}
+	ctx.Logger.Info("Changing State to busyFinalizing ")
 	tracker.State = trackerlib.BusyFinalizing
-
+	ctx.Logger.Info("Tracker Votes  : " ,tracker.GetVotes(),tracker.Finalized())
 	if tracker.Finalized() {
 
 		err = mintTokens(ctx, tracker, *f)
@@ -142,6 +145,7 @@ func runCheckFinalityMint(ctx *action.Context, tx action.RawTx) (bool, action.Re
 		}
 		return true, action.Response{Log: "MINTING SUCCESSFUL"}
 	}
+	ctx.Logger.Info("Voting Done ,unable to mint yet")
 	return true, action.Response{Log: "vote success, not ready to mint: "+ strconv.Itoa(tracker.GetVotes())}
 }
 

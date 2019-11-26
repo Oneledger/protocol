@@ -107,10 +107,7 @@ func Finalizing(ctx interface{}) error {
 	if !ok {
 		return errors.New("error casting tracker context")
 	}
-
-
 	tracker := context.Tracker
-
 	if tracker.State != ethereum.BusyBroadcasting {
 		err := errors.New("Cannot start Finalizing from the current state")
 		return errors.Wrap(err, string(tracker.State))
@@ -126,7 +123,7 @@ func Finalizing(ctx interface{}) error {
 			if err != nil {
 				return errors.Wrap(err, "failed to get job")
 			}
-			fmt.Println("Broadcasting job is done creating job for CHECK FINALITY",bjob.IsDone(),bjob.GetType())
+			fmt.Println("Checkecking Broadcasting job status",bjob.IsDone(),bjob.GetType())
 			if bjob.IsDone() {
 
 				//Create job to check finality
@@ -174,11 +171,19 @@ func Finalization(ctx interface{}) error {
 
 		if !voted {
 			//Create job to check finality
+
 			job := NewETHCheckFinality(tracker.TrackerName, tracker.State)
+			fmt.Println("Creating new Finality job :" ,job.JobID,job.Status)
 			err := context.JobStore.SaveJob(job)
 			if err != nil {
 				return errors.Wrap(errors.New("job serialization failed err: "), err.Error())
 			}
+		//} else {
+		//	job, err := context.JobStore.GetJob(tracker.GetJobID(tracker.State))
+		//	if err != nil {
+		//		return errors.Wrap(errors.New("job serialization failed err: "), err.Error())
+		//	}
+		//	job.
 		}
 	}
 	context.Tracker = tracker
