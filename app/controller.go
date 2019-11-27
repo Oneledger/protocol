@@ -237,9 +237,22 @@ func (app *App) commitor() commitor {
 	return func() ResponseCommit {
          fmt.Println("Commited block")
 		// Commit any pending changes.
+		app.Context.ethTrackers.Iterate(func(a *ceth.TrackerName, t *ethereum.Tracker) bool {
+
+			fmt.Println("BEFORE commit trackers in commitor after chainstate Commit")
+			fmt.Println(t.FinalityVotes, t.GetVotes())
+
+			return false
+		})
 		hash, ver := app.Context.deliver.Commit()
 		app.logger.Debugf("Committed New Block height[%d], hash[%s], versions[%d]", app.header.Height, hex.EncodeToString(hash), ver)
+		app.Context.ethTrackers.Iterate(func(a *ceth.TrackerName, t *ethereum.Tracker) bool {
 
+			fmt.Println("AFTER Commit trackers in commitor after chainstate Commit")
+			fmt.Println(t.FinalityVotes, t.GetVotes())
+
+			return false
+		})
 		// update check state by deliver state
 		gc := getGasCalculator(app.genesisDoc.ConsensusParams)
 		app.Context.check = storage.NewState(app.Context.chainstate).WithGas(gc)

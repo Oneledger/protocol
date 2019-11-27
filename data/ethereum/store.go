@@ -1,8 +1,6 @@
 package ethereum
 
 import (
-	"fmt"
-
 	"github.com/Oneledger/protocol/chains/ethereum"
 	"github.com/Oneledger/protocol/serialize"
 	"github.com/Oneledger/protocol/storage"
@@ -41,8 +39,7 @@ func (ts *TrackerStore) Set(tracker *Tracker) error {
 	if err != nil {
 		return err
 	}
-	fmt.Println(".............................................")
-	fmt.Println(string(data),tracker.TrackerName)
+
 	err = ts.state.Set(prefixed, data)
 
 	return err

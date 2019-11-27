@@ -1,5 +1,10 @@
 package storage
 
+import (
+	"encoding/base64"
+	"fmt"
+)
+
 var _ Store = &State{}
 var _ Iteratable = &State{}
 
@@ -90,7 +95,9 @@ func (s State) RootHash() []byte {
 
 func (s State) Write() bool {
 	s.cache.GetIterator().Iterate(func(key []byte, value []byte) bool {
-		_ = s.cs.Set(key, value)
+		err := s.cs.Set(key, value)
+		fmt.Println("in chainstate commit write", err, string(value))
+		fmt.Println("chainstate : ",base64.StdEncoding.EncodeToString(key),string(value))
 		return false
 	})
 	return true
