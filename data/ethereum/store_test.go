@@ -25,7 +25,7 @@ func TestTrackerStore_Get(t *testing.T) {
 	h := &common.Hash{}
 	h.SetBytes([]byte("testhash"))
 	tracker := NewTracker([]byte("tracker1addr"),[]byte("signedeth"), ethereum.TrackerName(*h), []keys.Address{keys.Address("s")})
-	err := store.Set(*tracker)
+	err := store.Set(tracker)
 	assert.NoError(t, err, "set")
 
 	trackerNew, err := store.Get(tracker.TrackerName)

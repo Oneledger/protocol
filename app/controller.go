@@ -332,15 +332,17 @@ func doEthTransitions(js *jobs.JobStore, ts *ethereum.TrackerStore, myValAddr ke
 	})
 	fmt.Println("NO OF TRACKERS :" ,len(trackers))
 	for _, t := range trackers {
+		fmt.Println("Tracker Votes doethtrasitions",t.GetVotes())
+		fmt.Println(t.TrackerName)
 		ctx := ethereum.NewTrackerCtx(t, myValAddr, js.WithChain(chain.ETHEREUM), ts,validators)
-		fmt.Println("BLOCKENDER    Tracker current state :", t.State)
+		fmt.Println("Doethtransactions Tracker current state :", t.State)
 		_, err := event.EthEngine.Process(t.NextStep(), ctx, transition.Status(t.State))
 
 		if err != nil {
 			logger.Error("failed to process eth tracker", err)
 		}
 		fmt.Println("controller tracker:", ctx.Tracker)
-		err = ts.Set(*ctx.Tracker)
+		err = ts.Set(ctx.Tracker)
 		if err != nil {
 			logger.Error("failed to save eth tracker", err)
 		}

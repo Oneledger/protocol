@@ -47,7 +47,7 @@ func (job *JobETHCheckFinality) DoMyJob(ctx interface{}) {
 		job.Status = jobs.InProgress
 	}
 	ethCtx, _ := ctx.(*JobsContext)
-	fmt.Println("Starting finalaizing job for ",ethCtx.ValidatorAddress)
+	fmt.Println("Starting check Finality JOB ",ethCtx.ValidatorAddress)
 	trackerStore := ethCtx.EthereumTrackers
 	tracker, err := trackerStore.Get(job.TrackerName)
 	if err != nil {
@@ -96,7 +96,7 @@ func (job *JobETHCheckFinality) DoMyJob(ctx interface{}) {
 		VoteIndex:        index,
 	}
 
-	fmt.Println("report finality:", reportFinalityMint)
+	fmt.Println("Creating Internal Transaction to add vote:", reportFinalityMint)
 	txData, err := reportFinalityMint.Marshal()
 	if err != nil {
 		ethCtx.Logger.Error("Error while preparing mint txn ", job.GetJobID(), err)
@@ -109,17 +109,18 @@ func (job *JobETHCheckFinality) DoMyJob(ctx interface{}) {
 		Fee:  action.Fee{},
 		Memo: job.GetJobID(),
 	}
+
 	req := InternalBroadcastRequest{
 		RawTx: internalMintTx,
 	}
 	rep := BroadcastReply{}
 	err = ethCtx.Service.InternalBroadcast(req, &rep)
 	fmt.Println("Reply :" ,rep)
-	if err != nil {
-		ethCtx.Logger.Error("error while broadcasting finality vote and mint txn ", job.GetJobID(), err)
+	if err != nil || !rep.OK {
+		ethCtx.Logger.Error("error while broadcasting finality vote and mint txn ", job.GetJobID(), err, rep.Log)
 		return
 	}
-	fmt.Println("Setting finalizing complete for : " ,ethCtx.ValidatorAddress)
+	fmt.Println("Completed Check Finality JOB : " ,ethCtx.ValidatorAddress)
 	job.Status = jobs.Completed
 }
 

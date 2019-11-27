@@ -1,6 +1,8 @@
 package ethereum
 
 import (
+	"fmt"
+
 	"github.com/Oneledger/protocol/chains/ethereum"
 	"github.com/Oneledger/protocol/serialize"
 	"github.com/Oneledger/protocol/storage"
@@ -33,12 +35,14 @@ func (ts *TrackerStore) Get(key ethereum.TrackerName) (*Tracker, error) {
 	return tracker, err
 }
 
-func (ts *TrackerStore) Set(tracker Tracker) error {
+func (ts *TrackerStore) Set(tracker *Tracker) error {
 	prefixed := append(ts.prefix, tracker.TrackerName.Bytes()...)
 	data, err := ts.szlr.Serialize(tracker)
 	if err != nil {
 		return err
 	}
+	fmt.Println(".............................................")
+	fmt.Println(string(data),tracker.TrackerName)
 	err = ts.state.Set(prefixed, data)
 
 	return err

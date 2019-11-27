@@ -24,7 +24,7 @@ type JobETHBroadcast struct {
 }
 
 func NewETHBroadcast(name ethereum.TrackerName, state ethereum2.TrackerState) *JobETHBroadcast {
-	fmt.Println("CREATING NEW JOB ", name, state)
+	fmt.Println("CREATING NEW JOB FOR NewETHBroadcast")
 	return &JobETHBroadcast{
 		TrackerName: name,
 		JobID:       name.String() + storage.DB_PREFIX + strconv.Itoa(int(state)),
@@ -78,7 +78,7 @@ func (job *JobETHBroadcast) DoMyJob(ctx interface{}) {
 		ethCtx.Logger.Error("Error in transaction broadcast : ", job.GetJobID(), err)
 		return
 	}
-	fmt.Println("setting job status to completed")
+	fmt.Println("Broadcast job completed " , job.GetJobID())
 	job.Status = jobs.Completed
 }
 

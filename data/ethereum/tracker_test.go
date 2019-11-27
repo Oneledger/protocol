@@ -4,6 +4,7 @@ import (
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/assert"
+	"fmt"
 	"testing"
 )
 
@@ -62,4 +63,29 @@ func TestTracker_TestStateMachine(t *testing.T) {
 
 		index++
 	}
+}
+
+func TestTracker_CheckIfVoted(t *testing.T) {
+
+	h := &common.Hash{}
+	h.SetBytes([]byte("test"))
+	tracker = *NewTracker(addresses[0], []byte("test"), *h, addresses)
+	tracker.AddVote(addresses[1],1)
+	index0,ok := tracker.CheckIfVoted(addresses[0])
+	assert.False(t, ok)
+	index1,ok := tracker.CheckIfVoted(addresses[1])
+	assert.True(t, ok)
+
+	assert.Equal(t, index0,int64(0))
+	assert.Equal(t,index1,int64(1))
+	assert.Equal(t, ok,true)
+}
+
+
+func TestTracker_GetVotes(t *testing.T) {
+	//tracker.FinalityVotes = int64(0)
+	tracker.AddVote(addresses[0],0)
+	tracker.AddVote(addresses[1],1)
+	fmt.Println("VOTES: " , tracker.GetVotes())
+	assert.Equal(t,2,tracker.GetVotes())
 }
