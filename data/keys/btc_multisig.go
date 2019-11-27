@@ -7,6 +7,7 @@ package keys
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 
 	"github.com/pkg/errors"
 
@@ -161,4 +162,29 @@ func (m *BTCMultiSig) GetSignerIndex(addr Address) (int, error) {
 
 func (m *BTCMultiSig) GetSignatures() []BTCSignature {
 	return m.Signatures
+}
+
+func (m *BTCMultiSig) GetSignaturesInOrder() [][]byte {
+
+	tempSignatures := make([][]byte, len(m.Signers))
+	for _, s := range m.Signatures {
+		if len(s.Sign) == 0 {
+			continue
+		}
+
+		index := s.Index
+		tempSignatures[index] = s.Sign
+		fmt.Println(s.Index, s.Sign)
+	}
+
+	signatures := make([][]byte, 0, len(m.Signers))
+	for _, sig := range tempSignatures {
+		if len(sig) == 0 {
+			continue
+		}
+
+		signatures = append(signatures, sig)
+	}
+
+	return signatures
 }

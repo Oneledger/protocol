@@ -6,6 +6,7 @@ package event
 
 import (
 	"fmt"
+	"runtime/debug"
 	"time"
 
 	"github.com/Oneledger/protocol/data/chain"
@@ -70,6 +71,7 @@ func ProcessAllJobs(ctx *JobsContext, js *jobs.JobStore) {
 					if r := recover(); r != nil {
 						fmt.Println("panic in job: ", job.GetJobID())
 						fmt.Println(r)
+						debug.PrintStack()
 					}
 				}()
 				job.DoMyJob(ctx)

@@ -5,10 +5,14 @@
 package btc
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 
+	"github.com/btcsuite/btcd/btcec"
 	"github.com/btcsuite/btcd/chaincfg"
+	"github.com/btcsuite/btcd/txscript"
+	"github.com/btcsuite/btcd/wire"
 	"github.com/btcsuite/btcutil"
 	"github.com/pkg/errors"
 	"github.com/tendermint/tendermint/libs/common"
@@ -142,15 +146,14 @@ func runAddSignature(ctx *action.Context, tx action.RawTx) (bool, action.Respons
 		return false, action.Response{Log: "error creating validator btc pubkey " + err.Error()}
 	}
 
-	/*
+	btcTx := wire.NewMsgTx(wire.TxVersion)
+	buf := bytes.NewBuffer(tracker.ProcessUnsignedTx)
+	err = btcTx.Deserialize(buf)
+	if err != nil {
+		return false, action.Response{Log: errors.Wrap(err, "error parsing btc txn").Error()}
+	}
 
-		btcTx := wire.NewMsgTx(wire.TxVersion)
-		buf := bytes.NewBuffer(tracker.ProcessUnsignedTx)
-		err = btcTx.Deserialize(buf)
-		if err != nil {
-			return false, action.Response{Log: errors.Wrap(err, "error parsing btc txn").Error()}
-		}
-
+	if !(tracker.ProcessType == bitcoin.ProcessTypeLock && len(btcTx.TxIn) == 1) {
 
 		pk, err := btcec.ParsePubKey(addSignature.ValidatorPubKey, btcec.S256())
 		sign, err := btcec.ParseSignature(addSignature.BTCSignature, btcec.S256())
@@ -158,21 +161,21 @@ func runAddSignature(ctx *action.Context, tx action.RawTx) (bool, action.Respons
 			return false, action.Response{Log: errors.Wrap(err, "failed parse signature").Error()}
 		}
 
-
-		sc, _ := txscript.NewScriptBuilder().AddData(addSignature.ValidatorPubKey).AddOp(txscript.OP_CHECKSIG).Script()
+		sc, err := ctx.LockScriptStore.Get(tracker.CurrentLockScriptAddress)
+		if err != nil {
+			return false, action.Response{Log: errors.Wrap(err, "cannot find lockscript").Error()}
+		}
 
 		hash, err := txscript.CalcSignatureHash(sc, txscript.SigHashAll, btcTx, 0)
 		if err != nil {
 			return false, action.Response{Log: errors.Wrap(err, "failed to calc signature hash").Error()}
 		}
 
-
 		ok := sign.Verify(hash, pk)
 		if !ok {
-			return false, action.Response{Log: "invalid user signature"}
+			return false, action.Response{Log: "invalid validator signature"}
 		}
-	*/
-
+	}
 	err = tracker.AddSignature(addSignature.BTCSignature, addressPubKey.ScriptAddress())
 	if err != nil {
 		return false, action.Response{Log: fmt.Sprintf("error adding signature: %s, error: %s", addSignature.TrackerName, err.Error())}

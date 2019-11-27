@@ -5,6 +5,7 @@ import (
 	"net/url"
 	"os"
 
+	"github.com/btcsuite/btcutil/base58"
 	"github.com/pkg/errors"
 	"github.com/tendermint/tendermint/abci/types"
 	"github.com/tendermint/tendermint/libs/common"
@@ -199,8 +200,12 @@ func (app *App) setupValidators(req RequestInitChain, currencies *balance.Curren
 
 		signers := make([]keys.Address, len(addressList))
 		for i := range addressList {
-			signers[i] = keys.Address(addressList[i])
+			addr := base58.Decode(addressList[i])
+			signers[i] = keys.Address(addr)
 		}
+
+		fmt.Println(address)
+		fmt.Println("-------------------------------------------------------")
 
 		tracker, err := bitcoin.NewTracker(address, threshold, signers)
 		if err != nil {

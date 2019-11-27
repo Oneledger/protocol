@@ -8,19 +8,20 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"fmt"
+	"time"
 )
 
 func main() {
-	sourceBTCHash := "04dee4fe3643067ee7a251ee8577849ca2daf99ecfd8287309727306858d5fe6"
-	sourceBTCIndex := 1
-	wif := "cNVonQDXYShV3PJLHbz6bEs4qkKm6smRUXuYtD2uMseiUubBB25j"
+	sourceBTCHash := "62f457d3cc7c60a2d9877c9a1c2263e98ba91b3a74066153dc85fa6c4dad5cc9"
+	sourceBTCIndex := 0
+	wif := "cSxM9B2KMPFa5k8cC8VnMN5jyWG2FH3e5RCKQ2bpWbjbQvX6tW1j"
 
 	txn, tname := prepareLock(sourceBTCHash, sourceBTCIndex)
 	fmt.Println("Received response of PrepareLock")
 	fmt.Println("Tracker for lock: ", tname)
 	fmt.Println("BTC Unsigned Txn: ", hex.EncodeToString(txn))
 
-	// time.Sleep(20 * time.Second)
+	time.Sleep(20 * time.Second)
 
 	fmt.Println(hex.EncodeToString(txn))
 	// os.Exit(1)
@@ -35,6 +36,7 @@ func main() {
 
 	signed, signer := sign(base64.StdEncoding.EncodeToString(rawTx), addrs[0])
 
+	time.Sleep(20 * time.Second)
 	result := broadcastCommit(base64.StdEncoding.EncodeToString(rawTx),
 		base64.StdEncoding.EncodeToString(signed),
 		signer)

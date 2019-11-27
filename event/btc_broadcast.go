@@ -7,6 +7,7 @@ package event
 import (
 	"bytes"
 	"encoding/hex"
+	"fmt"
 
 	"github.com/btcsuite/btcd/rpcclient"
 	"github.com/btcsuite/btcd/txscript"
@@ -61,20 +62,16 @@ func (j *JobBTCBroadcast) DoMyJob(ctxI interface{}) {
 		return
 	}
 
-	type sign []byte
-	btcSignatures := tracker.Multisig.GetSignatures()
-	signatures := make([]sign, len(btcSignatures))
-	for i := range btcSignatures {
-		index := btcSignatures[i].Index
-		signatures[index] = btcSignatures[i].Sign
-	}
+	signatures := tracker.Multisig.GetSignaturesInOrder()
 
 	builder := txscript.NewScriptBuilder().AddOp(txscript.OP_FALSE)
 	for i := range signatures {
-		builder.AddData(signatures[i])
+		fmt.Println(i, tracker.Multisig.M)
 		if i == tracker.Multisig.M {
-			break
+			// break
 		}
+
+		builder.AddData(signatures[i])
 	}
 
 	lockScript, err := ctx.LockScripts.GetLockScript(tracker.CurrentLockScriptAddress)
@@ -83,10 +80,14 @@ func (j *JobBTCBroadcast) DoMyJob(ctxI interface{}) {
 		return
 	}
 
-	builder.AddFullData(lockScript)
+	builder.AddData(lockScript)
 	sigScript, err := builder.Script()
+	if err != nil {
+		ctx.Logger.Error("error in building sig script", err)
+	}
 
 	ctx.Logger.Debug(hex.EncodeToString(tracker.ProcessUnsignedTx))
+	ctx.Logger.Debug(hex.EncodeToString(sigScript))
 
 	cd := bitcoin.NewChainDriver(ctx.BlockCypherToken)
 	lockTx = cd.AddLockSignature(tracker.ProcessUnsignedTx, sigScript)
@@ -98,7 +99,31 @@ func (j *JobBTCBroadcast) DoMyJob(ctxI interface{}) {
 		return
 	}
 
-	ctx.Logger.Infof("%#v \n", ctx)
+	var txBytes []byte
+	buf = bytes.NewBuffer(txBytes)
+	lockTx.Serialize(buf)
+	txBytes = buf.Bytes()
+
+	ctx.Logger.Debug(hex.EncodeToString(txBytes))
+
+	fmt.Println(hex.EncodeToString(lockTx.TxIn[0].SignatureScript))
+	fmt.Println("IIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII")
+
+	if !(len(lockTx.TxIn) == 1 && tracker.ProcessType == bitcoin2.ProcessTypeLock) {
+
+		vm, err := txscript.NewEngine(tracker.CurrentLockScriptAddress, lockTx, 0, txscript.StandardVerifyFlags, nil, nil, tracker.CurrentBalance)
+		if err != nil {
+			fmt.Println("new engine", err)
+			ctx.Logger.Error("error in test engine")
+			return
+		}
+		if err := vm.Execute(); err != nil {
+			fmt.Println("vm Execute", err)
+			ctx.Logger.Error("error in vm execute")
+			return
+		}
+	}
+
 	connCfg := &rpcclient.ConnConfig{
 		Host:         ctx.BTCNodeAddress + ":" + ctx.BTCRPCPort,
 		User:         ctx.BTCRPCUsername,
@@ -106,19 +131,11 @@ func (j *JobBTCBroadcast) DoMyJob(ctxI interface{}) {
 		HTTPPostMode: true, // Bitcoin core only supports HTTP POST mode
 		DisableTLS:   true, // Bitcoin core does not provide TLS by default
 	}
-
 	clt, err := rpcclient.New(connCfg, nil)
 	if err != nil {
 		ctx.Logger.Error("err trying to connect to bitcoin node", j.TrackerName)
 		return
 	}
-
-	var txBytes []byte
-	buf = bytes.NewBuffer(txBytes)
-	lockTx.Serialize(buf)
-	txBytes = buf.Bytes()
-
-	ctx.Logger.Debug(hex.EncodeToString(txBytes))
 
 	hash, err := cd.BroadcastTx(lockTx, clt)
 	// use dummy hash for testing without broadcasting

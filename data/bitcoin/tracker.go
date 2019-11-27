@@ -172,12 +172,7 @@ func (t *Tracker) GetSignatures() [][]byte {
 		return nil
 	}
 
-	signatures := make([][]byte, 0, len(t.Multisig.Signatures))
-	for i, signed := range t.Multisig.GetSignatures() {
-		signatures[i] = signed.Sign
-	}
-
-	return signatures
+	return t.Multisig.GetSignaturesInOrder()
 }
 
 func (t *Tracker) GetBalance() int64 {

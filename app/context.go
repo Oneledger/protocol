@@ -153,6 +153,7 @@ func (ctx *context) Action(header *Header, state *storage.State) *action.Context
 		ctx.ethTrackers.WithState(state),
 		ctx.jobStore,
 		params,
+		ctx.lockScriptStore,
 		ctx.cfg.ChainDriver.BlockCypherToken,
 		bcct,
 

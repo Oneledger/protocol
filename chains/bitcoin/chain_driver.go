@@ -17,6 +17,7 @@ import (
 	"github.com/btcsuite/btcd/txscript"
 	"github.com/btcsuite/btcd/wire"
 	"github.com/btcsuite/btcutil"
+	"github.com/btcsuite/btcutil/base58"
 )
 
 type TxHash [chainhash.HashSize]byte
@@ -102,8 +103,8 @@ func (c *chainDriver) AddLockSignature(txBytes []byte, sigScript []byte) *wire.M
 	buf := bytes.NewBuffer(txBytes)
 	tx.Deserialize(buf)
 
-	// if first lock
-	if len(tx.TxIn) == 1 {
+	// if first lock & not redeem
+	if len(tx.TxIn) == 1 && len(tx.TxOut) == 1 {
 		return tx
 	}
 
@@ -175,8 +176,9 @@ func (c *chainDriver) PrepareRedeemNew(prevLockTxID *chainhash.Hash, prevLockInd
 	return
 }
 
-func CreateMultiSigAddress(m int, publicKeys []*btcutil.AddressPubKey, randomBytes []byte, params *chaincfg.Params) (script, address []byte,
-	btcAddressList []string, err error) {
+func CreateMultiSigAddress(m int, publicKeys []*btcutil.AddressPubKey, randomBytes []byte,
+	params *chaincfg.Params) (
+	script, address []byte, btcAddressList []string, err error) {
 
 	// ideally m should be
 	//	m = len(publicKeys) * 2 /3 ) + 1
@@ -184,9 +186,9 @@ func CreateMultiSigAddress(m int, publicKeys []*btcutil.AddressPubKey, randomByt
 	btcPubKeyMap := make(map[string][]byte)
 
 	for i := range publicKeys {
-		address := publicKeys[i].EncodeAddress()
-
+		address := base58.Encode(publicKeys[i].ScriptAddress())
 		btcAddressList[i] = address
+
 		btcPubKeyMap[address] = publicKeys[i].ScriptAddress()
 	}
 
@@ -213,7 +215,7 @@ func CreateMultiSigAddress(m int, publicKeys []*btcutil.AddressPubKey, randomByt
 		return
 	}
 
-	address = addressObj.ScriptAddress()
+	address, err = txscript.PayToAddrScript(addressObj)
 
 	return
 }

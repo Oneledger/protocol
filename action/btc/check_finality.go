@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 
 	"github.com/btcsuite/btcd/chaincfg"
+	"github.com/btcsuite/btcutil/base58"
 	"github.com/pkg/errors"
 	"github.com/tendermint/tendermint/libs/common"
 
@@ -215,7 +216,8 @@ func runReportFinalityMint(ctx *action.Context, tx action.RawTx) (bool, action.R
 	// do final reset changes
 	signers := make([]keys.Address, len(addressList))
 	for i := range addressList {
-		signers[i] = keys.Address(addressList[i])
+		addr := base58.Decode(addressList[i])
+		signers[i] = keys.Address(addr)
 	}
 	tracker.Multisig, err = keys.NewBTCMultiSig(nil, m, signers)
 

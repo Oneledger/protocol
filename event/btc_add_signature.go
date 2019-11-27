@@ -80,6 +80,11 @@ func (j *JobAddSignature) DoMyJob(ctxI interface{}) {
 		return
 	}
 
+	if len(lockScript) == 0 && tracker.CurrentTxId != nil {
+		ctx.Logger.Error("error in reading lockscript", err)
+		return
+	}
+
 	sig, err := txscript.RawTxInSignature(lockTx, 0, lockScript, txscript.SigHashAll, pk)
 	if err != nil {
 		ctx.Logger.Error(err, "RawTxInSignature")
@@ -115,7 +120,7 @@ func (j *JobAddSignature) DoMyJob(ctxI interface{}) {
 
 	err = ctx.Service.InternalBroadcast(req, &rep)
 	if err != nil || !rep.OK {
-		ctx.Logger.Error("error in broadcasting internal addsignature", err)
+		ctx.Logger.Error("error in broadcasting internal addsignature", err, rep.Log)
 		return
 	}
 }

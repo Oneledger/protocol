@@ -7,7 +7,6 @@ package main
 import (
 	"encoding/base64"
 	"fmt"
-	"os"
 )
 
 func main() {
@@ -16,7 +15,7 @@ func main() {
 	txn, tname := prepareRedeem(addrs[0], "mkW45toPFaa1uyNGV4TXEWWCxyuDC7BbKG", 300000)
 	fmt.Println("Tracker for lock: ", tname)
 
-	os.Exit(1)
+	// os.Exit(1)
 	signed, signer := sign(base64.StdEncoding.EncodeToString(txn), addrs[0])
 
 	result := broadcastCommit(base64.StdEncoding.EncodeToString(txn),
