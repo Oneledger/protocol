@@ -16,8 +16,6 @@ package storage
 
 import (
 	"bytes"
-	"encoding/base64"
-	"fmt"
 	"sync"
 )
 
@@ -64,8 +62,6 @@ func (c *cache) Exists(key StoreKey) bool {
 // Set is used to store or update some data with a key
 func (c *cache) Set(key StoreKey, dat []byte) error {
 
-	fmt.Println("in cache state saving key", base64.StdEncoding.EncodeToString(key))
-	fmt.Println(string(dat))
 	c.store[string(key)] = dat
 	c.keys = append(c.keys, string(key))
 	return nil

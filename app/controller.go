@@ -78,6 +78,7 @@ func (app *App) chainInitializer() chainInitializer {
 		app.Context.deliver = storage.NewState(app.Context.chainstate)
 		app.Context.govern.WithState(app.Context.deliver)
 		app.Context.btcTrackers.WithState(app.Context.deliver)
+
 		err := app.setupState(req.AppStateBytes)
 		// This should cause consensus to halt
 		if err != nil {
@@ -219,7 +220,7 @@ func (app *App) blockEnder() blockEnder {
 
 
 
-		doTransitions(app.Context.jobStore, app.Context.btcTrackers ,app.Context.validators)
+		doTransitions(app.Context.jobStore, app.Context.btcTrackers.WithState(app.Context.deliver) ,app.Context.validators)
 
 		doEthTransitions(app.Context.jobStore, app.Context.ethTrackers.WithState(app.Context.deliver), app.Context.node.ValidatorAddress(), app.logger,app.Context.validators)
 
@@ -338,13 +339,14 @@ func doTransitions(js *jobs.JobStore, ts *bitcoin.TrackerStore ,validators *iden
 func doEthTransitions(js *jobs.JobStore, ts *ethereum.TrackerStore, myValAddr keys.Address, logger *log.Logger ,validators *identity.ValidatorStore) {
 
 
-	trackers := make([]*ethereum.Tracker, 0, 20)
+	tnames := make([]*ceth.TrackerName, 0, 20)
 	ts.Iterate(func(name *ceth.TrackerName, tracker *ethereum.Tracker) bool {
-		trackers = append(trackers, tracker)
+		tnames = append(tnames, name)
 		return false
 	})
-	fmt.Println("NO OF TRACKERS :" ,len(trackers))
-	for _, t := range trackers {
+	for _, name := range tnames {
+		t, _ := ts.Get(*name)
+
 		fmt.Println("Tracker Votes doethtrasitions",t.GetVotes())
 		fmt.Println(t.TrackerName)
 		ctx := ethereum.NewTrackerCtx(t, myValAddr, js.WithChain(chain.ETHEREUM), ts,validators)
