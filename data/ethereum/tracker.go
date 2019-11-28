@@ -4,7 +4,6 @@ import (
 	//"errors"
 
 	"fmt"
-	"math/bits"
 	"strconv"
 
 	"github.com/Oneledger/protocol/chains/ethereum"
@@ -18,41 +17,52 @@ type TrackerState int
 // Tracker
 type Tracker struct {
 	// State tracks the current state of the tracker, Also used for locking distributed access
-	State         TrackerState `json:"state"`
+	Type          ProcessType
+	State         TrackerState
+	TrackerName   ethereum.TrackerName
 	SignedETHTx   []byte
 	Validators    []keys.Address
 	ProcessOwner  keys.Address
-	FinalityVotes int64
-	TrackerName   ethereum.TrackerName
+	FinalityVotes []Vote
 }
 
 //number of validator should be smaller than 64
-func NewTracker(owner keys.Address, signedEthTx []byte, name ethereum.TrackerName, validators []keys.Address) *Tracker {
+func NewTracker(typ ProcessType, owner keys.Address, signedEthTx []byte, name ethereum.TrackerName, validators []keys.Address) *Tracker {
 
 	return &Tracker{
-		State:        New,
-		TrackerName:  name,
-		ProcessOwner: owner,
-		SignedETHTx:  signedEthTx,
-		Validators:   validators,
-		FinalityVotes: int64(0),
+		Type:          typ,
+		State:         New,
+		TrackerName:   name,
+		ProcessOwner:  owner,
+		SignedETHTx:   signedEthTx,
+		Validators:    validators,
+		FinalityVotes: make([]Vote, len(validators)),
 	}
 }
 
-func (t *Tracker) AddVote(addr keys.Address, index int64) error {
+func (t *Tracker) AddVote(addr keys.Address, index int64, vote bool) error {
 
 	if len(t.Validators) <= int(index) {
 		return errTrackerInvalidVote
 	}
 
 	_, voted := t.CheckIfVoted(addr)
-	if !voted{
+	if !voted {
 		if t.Validators[index].Equal(addr) {
-			t.FinalityVotes = (t.FinalityVotes | (1 << index))
-			return nil
+			//		t.FinalityVotes = (t.FinalityVotes | (1 << index))
+			//		return nil
+
+			// vote:
+			//      0: not vote yet
+			//      1: vote for yes
+			//      2: vote for no
+			v := int8(0)
+			if !vote {
+				v = 1
+			}
+			t.FinalityVotes[index] = Vote(v + 1)
 		}
 	}
-
 
 	return errTrackerInvalidVote
 }
@@ -61,22 +71,19 @@ func (t *Tracker) GetJobID(state TrackerState) string {
 	return t.TrackerName.String() + storage.DB_PREFIX + strconv.Itoa(int(state))
 }
 
-func (t *Tracker) GetVotes() int {
-	v := t.FinalityVotes
-	/*
-    fmt.Println(fmt.Sprintf("%b",t.FinalityVotes))
-	cnt := 0
-	for v >= 1 {
-		if v%2 == 1 {
-
-			cnt++
+func (t *Tracker) GetVotes() (yes, no int) {
+	ycnt := 0
+	ncnt := 0
+	for _, item := range t.FinalityVotes {
+		if item == 1 {
+			ycnt++
 		}
-		v = v >> 1
-	}*/
+		if item == 2 {
+			ncnt++
+		}
+	}
 
-	cnt := bits.OnesCount64(uint64(v))
-
-	return cnt
+	return ycnt, ncnt
 }
 
 func (t *Tracker) CheckIfVoted(node keys.Address) (index int64, voted bool) {
@@ -88,10 +95,14 @@ func (t *Tracker) CheckIfVoted(node keys.Address) (index int64, voted bool) {
 			break
 		}
 	}
-	if index < int64(len(t.Validators)) && index >= 0 {
-		var mybit int64 = 1 << index
-		and := t.FinalityVotes & mybit
-		v = and == mybit
+	//if index < int64(len(t.Validators)) && index >= 0 {
+	//	var mybit uint64 = 1 << index
+	//	and := t.FinalityVotes & mybit
+	//	v = and == mybit
+	//}
+
+	if t.FinalityVotes[index] > 0 {
+		v = true
 	}
 
 	return index, v
@@ -99,16 +110,17 @@ func (t *Tracker) CheckIfVoted(node keys.Address) (index int64, voted bool) {
 
 func (t *Tracker) Finalized() bool {
 	l := len(t.Validators)
-	num := int(float32(l)*votesThreshold) + 1
-	v := t.FinalityVotes
-	cnt := 0
-	for v >= 1 {
-		if v%2 == 1 {
-			cnt++
-		}
-		v = v >> 1
-	}
-	return cnt >= num
+	num := (l * 2 / 3) + 1
+	//v := t.FinalityVotes
+	//cnt := 0
+	//for v >= 1 {
+	//	if v%2 == 1 {
+	//		cnt++
+	//	}
+	//	v = v >> 1
+	//}
+	y, _ := t.GetVotes()
+	return y >= num
 }
 
 func (t Tracker) NextStep() string {

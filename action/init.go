@@ -36,6 +36,7 @@ const (
 	ETH_FINALITY             Type = 0x93
 	ETH_MINT                 Type = 0x94
 	ETH_REPORT_FINALITY_MINT Type = 0x95
+	ETH_REDEEM               Type = 0x96
 )
 
 var logger *log.Logger
@@ -76,7 +77,7 @@ func (t Type) String() string {
 	case ETH_LOCK:
 		return "ETH_LOCK"
 	case ETH_REPORT_FINALITY_MINT:
-		 return "ETH_REPORT_FINALITY_MINT"
+		return "ETH_REPORT_FINALITY_MINT"
 	default:
 		return "UNKNOWN"
 	}

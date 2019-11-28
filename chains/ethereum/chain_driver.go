@@ -3,10 +3,12 @@ package ethereum
 import (
 	"context"
 	"crypto/ecdsa"
+
 	"github.com/ethereum/go-ethereum/accounts/abi"
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/ethereum/go-ethereum/rlp"
+
 	"math/big"
 	"strings"
 )
@@ -20,11 +22,16 @@ type ChainDriver interface {
 	//ValidatorSignRedeem (wei *big.Int, recipient common.Address) (*Transaction,error)
 }
 
-func (acc *EthereumChainDriver) ValidatorSignRedeem(wei *big.Int, recipient common.Address, txOpt *TransactOpts) (*Transaction, error) {
+func (acc *EthereumChainDriver) ValidatorSignRedeem(ethTxn []byte, txOpt *TransactOpts) (*Transaction, error) {
 	acc.logger.Info("Validator Signed Redeem")
 	var redeemid = new(big.Int)
-	redeemid.SetString("2", 10)
-	return acc.Contract.Sign(txOpt, redeemid, wei, recipient)
+	tx := &types.Transaction{}
+	err := rlp.DecodeBytes(ethTxn, tx)
+	if err != nil {
+		return nil, err
+	}
+	redeemid.SetBytes(tx.Hash().Bytes())
+	return acc.Contract.Sign(txOpt, redeemid)
 }
 
 func (acc *EthereumChainDriver) PrepareUnsignedETHLock(pubKey *ecdsa.PublicKey, lockAmount *big.Int) ([]byte, error) {
@@ -69,9 +76,9 @@ func (acc *EthereumChainDriver) CheckFinality(txHash TransactionHash) (*types.Re
 
 func (acc *EthereumChainDriver) BroadcastTx(tx *types.Transaction) (TransactionHash, error) {
 
-    _, _, err := acc.Client.TransactionByHash(context.Background(), tx.Hash())
-    if err == nil {
-    	return tx.Hash(), nil
+	_, _, err := acc.Client.TransactionByHash(context.Background(), tx.Hash())
+	if err == nil {
+		return tx.Hash(), nil
 	}
 	err = acc.Client.SendTransaction(context.Background(), tx)
 	if err != nil {

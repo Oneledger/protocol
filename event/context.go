@@ -11,6 +11,7 @@ import (
 	"github.com/btcsuite/btcd/chaincfg"
 
 	"github.com/Oneledger/protocol/action"
+	"github.com/Oneledger/protocol/config"
 	"github.com/Oneledger/protocol/data/bitcoin"
 	"github.com/Oneledger/protocol/data/ethereum"
 	"github.com/Oneledger/protocol/data/keys"
@@ -19,6 +20,7 @@ import (
 )
 
 type JobsContext struct {
+	cfg     config.Server
 	Service *Service
 	Logger  *log.Logger
 
@@ -39,21 +41,21 @@ type JobsContext struct {
 	BTCRPCUsername string
 	BTCRPCPassword string
 
-	EthereumTrackers   *ethereum.TrackerStore
+	EthereumTrackers *ethereum.TrackerStore
 
 	BTCChainnet string
 }
 
-func NewJobsContext(chainType string, svc *Service,
+func NewJobsContext(cfg config.Server, btcchainType string, svc *Service,
 	trackers *bitcoin.TrackerStore, validators *identity.ValidatorStore,
 	privKey *keys.PrivateKey, ethprivKey *ecdsa.PrivateKey,
 	valAddress keys.Address, bcyToken string, lStore *bitcoin.LockScriptStore,
 	btcAddress, btcRPCPort, BTCRPCUsername, BTCRPCPassword, btcChain string,
-    ethTracker *ethereum.TrackerStore,
+	ethTracker *ethereum.TrackerStore,
 ) *JobsContext {
 
 	var params *chaincfg.Params
-	switch chainType {
+	switch btcchainType {
 	case "mainnet":
 		params = &chaincfg.MainNetParams
 	case "testnet3":
@@ -69,22 +71,23 @@ func NewJobsContext(chainType string, svc *Service,
 	w := os.Stdout
 
 	return &JobsContext{
-		Service:            svc,
-		Logger:             log.NewLoggerWithPrefix(w, "internal_jobs"),
-		Trackers:           trackers,
-		Validators:         validators,
-		BTCPrivKey:         *privKey,
-		ETHPrivKey:         *ethprivKey,
-		Params:             params,
-		ValidatorAddress:   valAddress,
-		BlockCypherToken:   bcyToken,
-		LockScripts:        lStore,
-		BTCNodeAddress:     btcAddress,
-		BTCRPCPort:         btcRPCPort,
-		BTCRPCUsername:     BTCRPCUsername,
-		BTCRPCPassword:     BTCRPCPassword,
-		EthereumTrackers:   ethTracker,
-		BTCChainnet:        btcChain,
+		cfg:              cfg,
+		Service:          svc,
+		Logger:           log.NewLoggerWithPrefix(w, "internal_jobs"),
+		Trackers:         trackers,
+		Validators:       validators,
+		BTCPrivKey:       *privKey,
+		ETHPrivKey:       *ethprivKey,
+		Params:           params,
+		ValidatorAddress: valAddress,
+		BlockCypherToken: bcyToken,
+		LockScripts:      lStore,
+		BTCNodeAddress:   btcAddress,
+		BTCRPCPort:       btcRPCPort,
+		BTCRPCUsername:   BTCRPCUsername,
+		BTCRPCPassword:   BTCRPCPassword,
+		EthereumTrackers: ethTracker,
+		BTCChainnet:      btcChain,
 	}
 
 }

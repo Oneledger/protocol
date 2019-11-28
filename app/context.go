@@ -268,7 +268,9 @@ func (ctx *context) Validators() *identity.ValidatorStore {
 
 func (ctx *context) JobContext() *event.JobsContext {
 	cdConfig := ctx.cfg.ChainDriver
-	return event.NewJobsContext(cdConfig.BitcoinChainType,
+	return event.NewJobsContext(
+		ctx.cfg,
+		cdConfig.BitcoinChainType,
 		ctx.internalService, ctx.btcTrackers, ctx.validators,
 		ctx.node.ValidatorECDSAPrivateKey(),
 		ctx.node.EthPrivKey(),

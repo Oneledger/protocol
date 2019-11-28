@@ -185,9 +185,8 @@ func (app *App) txDeliverer() txDeliverer {
 		handler := txCtx.Router.Handler(tx.Type)
 
 		gas := txCtx.State.ConsumedGas()
-		app.logger.Debug("Process Deliver  : " )
+		app.logger.Debug("Process Deliver  : ")
 		ok, response := handler.ProcessDeliver(txCtx, tx.RawTx)
-
 
 		feeOk, feeResponse := handler.ProcessFee(txCtx, *tx, gas, storage.Gas(len(msg)))
 
@@ -218,11 +217,9 @@ func (app *App) blockEnder() blockEnder {
 			Tags:             []common.KVPair(nil),
 		}
 
+		doTransitions(app.Context.jobStore, app.Context.btcTrackers.WithState(app.Context.deliver), app.Context.validators)
 
-
-		doTransitions(app.Context.jobStore, app.Context.btcTrackers.WithState(app.Context.deliver) ,app.Context.validators)
-
-		doEthTransitions(app.Context.jobStore, app.Context.ethTrackers.WithState(app.Context.deliver), app.Context.node.ValidatorAddress(), app.logger,app.Context.validators)
+		doEthTransitions(app.Context.jobStore, app.Context.ethTrackers.WithState(app.Context.deliver), app.Context.node.ValidatorAddress(), app.logger, app.Context.validators)
 
 		app.logger.Debug("End Block: ", result, "height:", req.Height)
 
@@ -236,7 +233,7 @@ func (app *App) blockEnder() blockEnder {
 
 func (app *App) commitor() commitor {
 	return func() ResponseCommit {
-         fmt.Println("Commited block")
+		fmt.Println("Commited block")
 		// Commit any pending changes.
 		app.Context.ethTrackers.Iterate(func(a *ceth.TrackerName, t *ethereum.Tracker) bool {
 
@@ -304,7 +301,7 @@ func getGasCalculator(params *types.ConsensusParams) storage.GasCalculator {
 	return storage.NewGasCalculator(gas)
 }
 
-func doTransitions(js *jobs.JobStore, ts *bitcoin.TrackerStore ,validators *identity.ValidatorStore) {
+func doTransitions(js *jobs.JobStore, ts *bitcoin.TrackerStore, validators *identity.ValidatorStore) {
 
 	btcTracker := []bitcoin.Tracker{}
 	if js != nil {
@@ -324,7 +321,7 @@ func doTransitions(js *jobs.JobStore, ts *bitcoin.TrackerStore ,validators *iden
 	}
 
 	for _, t := range btcTracker {
-		ctx := bitcoin.BTCTransitionContext{&t, js.WithChain(chain.BITCOIN),validators}
+		ctx := bitcoin.BTCTransitionContext{&t, js.WithChain(chain.BITCOIN), validators}
 
 		stt, err := event.BtcEngine.Process(t.NextStep(), ctx, t.State)
 		if err != nil {
@@ -336,8 +333,7 @@ func doTransitions(js *jobs.JobStore, ts *bitcoin.TrackerStore ,validators *iden
 	}
 }
 
-func doEthTransitions(js *jobs.JobStore, ts *ethereum.TrackerStore, myValAddr keys.Address, logger *log.Logger ,validators *identity.ValidatorStore) {
-
+func doEthTransitions(js *jobs.JobStore, ts *ethereum.TrackerStore, myValAddr keys.Address, logger *log.Logger, validators *identity.ValidatorStore) {
 
 	tnames := make([]*ceth.TrackerName, 0, 20)
 	ts.Iterate(func(name *ceth.TrackerName, tracker *ethereum.Tracker) bool {
@@ -347,9 +343,9 @@ func doEthTransitions(js *jobs.JobStore, ts *ethereum.TrackerStore, myValAddr ke
 	for _, name := range tnames {
 		t, _ := ts.Get(*name)
 
-		fmt.Println("Tracker Votes doethtrasitions",t.GetVotes())
+		fmt.Println("Tracker Votes doethtrasitions", t.GetVotes())
 		fmt.Println(t.TrackerName)
-		ctx := ethereum.NewTrackerCtx(t, myValAddr, js.WithChain(chain.ETHEREUM), ts,validators)
+		ctx := ethereum.NewTrackerCtx(t, myValAddr, js.WithChain(chain.ETHEREUM), ts, validators)
 		fmt.Println("Doethtransactions Tracker current state :", t.State)
 		_, err := event.EthEngine.Process(t.NextStep(), ctx, transition.Status(t.State))
 

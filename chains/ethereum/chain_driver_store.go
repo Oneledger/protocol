@@ -34,10 +34,10 @@ func NewEthereumChainDriver(cfg *config.EthereumChainDriverConfig, logger *log.L
 	// READ FROM KEYSTORE ,ganache does not have a keystore
 	//privKey, err := ReadUnsafeKeyDump(keyPath)
 	//privKey := privateKey
-	if err != nil {
-		logger.Error("Failed to create private key")
-		return nil, err
-	}
+	//if err != nil {
+	//	logger.Error("Failed to create private key")
+	//	return nil, err
+	//}
 
 	return &EthereumChainDriver{
 		Contract:        ctrct,
@@ -80,10 +80,6 @@ func (acc EthereumChainDriver) Nonce(addr Address) (uint64, error) {
 	return acc.Client.PendingNonceAt(c, addr)
 }
 
-func (acc EthereumChainDriver) IsContract() {
-
-}
-
 // VerifyContract returns true if we can verify that the current contract matches the
 func (acc EthereumChainDriver) VerifyContract(vs []Address) (bool, error) {
 	// 1. Make sure good IsValidator
@@ -104,5 +100,3 @@ func (acc *EthereumChainDriver) CallOpts(addr Address) *CallOpts {
 		Context:     context.Background(),
 	}
 }
-
-

@@ -8,7 +8,6 @@ import (
 	"github.com/ethereum/go-ethereum/rlp"
 
 	"github.com/Oneledger/protocol/chains/ethereum"
-	"github.com/Oneledger/protocol/config"
 	ethereum2 "github.com/Oneledger/protocol/data/ethereum"
 	"github.com/Oneledger/protocol/data/jobs"
 	"github.com/Oneledger/protocol/storage"
@@ -29,7 +28,7 @@ func NewETHBroadcast(name ethereum.TrackerName, state ethereum2.TrackerState) *J
 		TrackerName: name,
 		JobID:       name.String() + storage.DB_PREFIX + strconv.Itoa(int(state)),
 		RetryCount:  0,
-		Status:   0,
+		Status:      0,
 	}
 }
 
@@ -50,13 +49,7 @@ func (job *JobETHBroadcast) DoMyJob(ctx interface{}) {
 		ethCtx.Logger.Error("err trying to deserialize tracker: ", job.TrackerName, err)
 		return
 	}
-	//ethconfig := &config.EthereumChainDriverConfig{
-	//	ContractABI:     ethCtx.ETHContractABI,
-	//	Connection:      ethCtx.ETHConnection,
-	//	ContractAddress: ethCtx.ETHContractAddress,
-	//}
-
-	ethconfig :=  config.DefaultEthConfig()
+	ethconfig := ethCtx.cfg.EthChainDriver
 
 	//logger := log.NewLoggerWithPrefix(os.Stdout, "JOB_ETHBROADCAST")
 	cd, err := ethereum.NewEthereumChainDriver(ethconfig, ethCtx.Logger, trackerStore.GetOption())
@@ -78,11 +71,9 @@ func (job *JobETHBroadcast) DoMyJob(ctx interface{}) {
 		ethCtx.Logger.Error("Error in transaction broadcast : ", job.GetJobID(), err)
 		return
 	}
-	fmt.Println("Broadcast job completed " , job.GetJobID())
+	fmt.Println("Broadcast job completed ", job.GetJobID())
 	job.Status = jobs.Completed
 }
-
-
 
 func (job *JobETHBroadcast) GetType() string {
 	return JobTypeETHBroadcast

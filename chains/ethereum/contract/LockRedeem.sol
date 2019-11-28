@@ -35,28 +35,24 @@ contract LockRedeem {
     address[] validatorsToRemove;
 
     mapping (address => int) public validators;
-    //mapping (address => uint) public balances;
 
     event AddValidator(
         address indexed _address,
         int _power
     );
-    //Lock
-    //mapping(string => uint) lockedbalances;
 
-    //Redeem
-    // mapping (address => bool) public isSigned;
     struct RedeemTX {
         address payable recipient;
-        uint amount;
-        uint signature_count;
+        mapping (address => bool) signers;
+        uint256 amount;
+        uint256 signature_count;
         bool isCompleted ;
     }
     mapping (uint => RedeemTX) redeemRequests;
 
     event RedeemSuccessful(
         address indexed recepient,
-        uint amount_trafered
+        uint256 amount_trafered
     );
 
     event ValidatorSignedRedeem(
@@ -69,7 +65,7 @@ contract LockRedeem {
 
     event Lock(
         address sender,
-        uint amount_received
+        uint256 amount_received
     //uint updated_balance,
     // string oltEthAdress_User
     );
@@ -98,47 +94,35 @@ contract LockRedeem {
     // function called by user
     function lock() payable public {
         require(msg.value >= 0, "Must pay a balance more than 0");
-        // lockedbalances[tx_id] = msg.value;
-        // lockedaddress[tx_id] = oltaddress;
         emit Lock(msg.sender,msg.value);
     }
-    //function called by go
-    // function getLockedBalance(string memory oltethAdress_user) public view returns (uint) {
-    //     return lockedbalances[oltethAdress_user];
-    // }
 
-    //remove function from production code
-    function getRedeemAmount(uint redeemID_) public view returns(uint) {
-        return redeemRequests[redeemID_].amount;
-    }
     //function called by go
-    function sign(uint redeemID_,uint amount_,address payable recipient_) public  {
+    // todo: validator sign and if enough vote, transfer directly
+    function sign(uint amount_, address payable recipient_) public  {
         require(isValidator(msg.sender),"validator not pressent in list");
-        if(redeemRequests[redeemID_].signature_count > 0 )
-        {
-            require(redeemRequests[redeemID_].amount == amount_,"ValidatorCompromised" );
-            require(redeemRequests[redeemID_].recipient == recipient_, "ValidatorCompromised");
-            redeemRequests[redeemID_].signature_count = redeemRequests[redeemID_].signature_count + 1;
-        }
-        else
-        {
-            redeemRequests[redeemID_].amount = amount_;
-            redeemRequests[redeemID_].recipient = recipient_;
-            redeemRequests[redeemID_].signature_count = 1;
-            redeemRequests[redeemID_].isCompleted = false;
+        require(redeemRequests[recipient_].amount == amount_,"redeem amount Compromised" );
+        require(redeemRequests[recipient_].recipient == recipient_, "redeem recipient Compromised");
+        require(!hasvote(redeemRequests[recipient_].signature_count, msg.sender));
+        if (redeemRequests[redeemID_].signature_count > 10 ) {
+            redeemRequests[redeemID_].recipient.transfer(redeemRequests[redeemID_].amount);
         }
         emit ValidatorSignedRedeem(msg.sender);
     }
     // function called by user
-    function redeem (uint redeemID_)  public  {
-        require(redeemRequests[redeemID_].recipient == msg.sender,"Redeem can only be intitated by the recepient of redeem transaction");
-        require(redeemRequests[redeemID_].isCompleted == false,"Redeem already executed on this redeemID");
-        require(redeemRequests[redeemID_].signature_count >= votingThreshold,"Not enough Validator votes to execute Redeem");
-        // require(lockedbalances[oltethAdress_user]> redeemRequests[redeemID_].amount,"Redeem amount is more than available balance");
-        redeemRequests[redeemID_].recipient.transfer(redeemRequests[redeemID_].amount);
-        redeemRequests[redeemID_].isCompleted = true ;
-        // lockedbalances[oltethAdress_user] -= redeemRequests[redeemID_].amount;
-        emit RedeemSuccessful(redeemRequests[redeemID_].recipient,redeemRequests[redeemID_].amount);
+    // todo: the redeem call should happen before the sign
+    function redeem(uint256 amount_)  public  {
+        require(redeemRequests[msg.sender].amount == uint256(0));
+        require(amount_ > 0);
+        redeemRequests[msg.sender].isCompleted == false;
+        redeemRequests[msg.sender].signature_count = uint256(0);
+        redeemRequests[msg.sender].recipient = msg.sender;
+        redeemRequests[msg.sender].amount = amount_ ;
+        emit RedeemRequest(redeemRequests[redeemID_].recipient,redeemRequests[redeemID_].amount);
+    }
+
+    function hasVote(uint256 votes_, address addr_) internal {
+
     }
 
     function getTotalEthBalance() public view returns(uint) {
@@ -153,7 +137,6 @@ contract LockRedeem {
     function proposeAddValidator(address v) public onlyValidator {
         Proposal storage proposal = addValidatorProposals[v];
         require(!proposal.voters[msg.sender], "sender has already voted to add this address");
-
         // Mark this voter as added and increment the vote count
         proposal.voters[msg.sender] = true;
         proposal.voteCount += 1;
@@ -216,4 +199,3 @@ contract LockRedeem {
         emit DeleteValidator(v);
     }
 }
-//["0xa5d180c3be91e70cb00ca3a2b67fe2664ae61087"]

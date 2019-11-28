@@ -9,7 +9,6 @@ import (
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/action/eth"
 	"github.com/Oneledger/protocol/chains/ethereum"
-	"github.com/Oneledger/protocol/config"
 	ethtracker "github.com/Oneledger/protocol/data/ethereum"
 	"github.com/Oneledger/protocol/data/jobs"
 	"github.com/Oneledger/protocol/storage"
@@ -47,7 +46,7 @@ func (job *JobETHCheckFinality) DoMyJob(ctx interface{}) {
 		job.Status = jobs.InProgress
 	}
 	ethCtx, _ := ctx.(*JobsContext)
-	fmt.Println("Starting check Finality JOB ",ethCtx.ValidatorAddress)
+	fmt.Println("Starting check Finality JOB ", ethCtx.ValidatorAddress)
 	trackerStore := ethCtx.EthereumTrackers
 	tracker, err := trackerStore.Get(job.TrackerName)
 	if err != nil {
@@ -55,13 +54,7 @@ func (job *JobETHCheckFinality) DoMyJob(ctx interface{}) {
 		job.RetryCount += 1
 		return
 	}
-	//ethconfig := &config.EthereumChainDriverConfig{
-	//	ContractABI:     ethCtx.ETHContractABI,
-	//	Connection:      ethCtx.ETHConnection,
-	//	ContractAddress: ethCtx.ETHContractAddress,
-	//}
-	ethconfig := config.DefaultEthConfig()
-	//logger := log.NewLoggerWithPrefix(os.Stdout, "JOB_ETHCHECKFINALITY")
+	ethconfig := ethCtx.cfg.EthChainDriver
 	cd, err := ethereum.NewEthereumChainDriver(ethconfig, ethCtx.Logger, trackerStore.GetOption())
 	if err != nil {
 		ethCtx.Logger.Error("err trying to get ChainDriver : ", job.GetJobID(), err)
@@ -115,15 +108,14 @@ func (job *JobETHCheckFinality) DoMyJob(ctx interface{}) {
 	}
 	rep := BroadcastReply{}
 	err = ethCtx.Service.InternalBroadcast(req, &rep)
-	fmt.Println("Reply :" ,rep)
+	fmt.Println("Reply :", rep)
 	if err != nil || !rep.OK {
 		ethCtx.Logger.Error("error while broadcasting finality vote and mint txn ", job.GetJobID(), err, rep.Log)
 		return
 	}
-	fmt.Println("Completed Check Finality JOB : " ,ethCtx.ValidatorAddress)
+	fmt.Println("Completed Check Finality JOB : ", ethCtx.ValidatorAddress)
 	job.Status = jobs.Completed
 }
-
 
 func (job *JobETHCheckFinality) GetType() string {
 	return JobTypeETHCheckfinalty

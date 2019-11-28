@@ -16,6 +16,7 @@ const (
 	JobTypeBTCCheckFinality = "btcCheckFinality"
 	JobTypeETHCheckfinalty  = "ethCheckFinality"
 	JobTypeETHBroadcast     = "ethBroadcast"
+	JobTypeETHSignRedeem    = "ethsignredeem"
 
 	MaxJobRetries = 10
 )
@@ -26,4 +27,5 @@ func init() {
 	serialize.RegisterConcrete(new(JobBTCCheckFinality), "btc_cf")
 	serialize.RegisterConcrete(new(JobETHBroadcast), "eth_broadcast")
 	serialize.RegisterConcrete(new(JobETHCheckFinality), "eth_cf")
+	serialize.RegisterConcrete(new(JobETHSignRedeem), "eth_sign")
 }

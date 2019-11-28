@@ -91,7 +91,6 @@ func (ethLockTx) Validate(ctx *action.Context, signedTx action.SignedTx) (bool, 
 		return false, errors.Wrap(err, "eth txn decode failed")
 	}
 
-
 	//TODO : Verify beninfiaciary address in ETHTX == locker (Phase 2)
 	return true, nil
 }
@@ -160,8 +159,11 @@ func (ethLockTx) processCommon(ctx *action.Context, tx action.RawTx, lock *Lock)
 
 	// Create ethereum tracker
 	tracker := ethereum.NewTracker(
-		lock.Locker, lock.ETHTxn,
-		lock.TrackerName, val,
+		ethereum.ProcessTypeLock,
+		lock.Locker,
+		lock.ETHTxn,
+		lock.TrackerName,
+		val,
 	)
 
 	tracker.State = ethereum.New
