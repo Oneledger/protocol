@@ -60,6 +60,7 @@ type Tracker struct {
 	ProcessType  int
 
 	FinalityVotes []keys.Address
+	ResetVotes    []keys.Address
 }
 
 func NewTracker(lockScriptAddress []byte, m int, signers []keys.Address) (*Tracker, error) {

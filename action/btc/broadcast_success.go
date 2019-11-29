@@ -43,7 +43,7 @@ func (b *BroadcastSuccess) Tags() common.KVPairs {
 		Value: []byte(b.Type().String()),
 	}
 	tag2 := common.KVPair{
-		Key:   []byte("tx.locker"),
+		Key:   []byte("tx.validator"),
 		Value: []byte(b.ValidatorAddress.String()),
 	}
 

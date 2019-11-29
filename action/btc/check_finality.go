@@ -233,6 +233,7 @@ func runReportFinalityMint(ctx *action.Context, tx action.RawTx) (bool, action.R
 	tracker.ProcessUnsignedTx = nil
 	tracker.ProcessOwner = nil
 	tracker.FinalityVotes = nil
+	tracker.ResetVotes = nil
 	tracker.ProcessType = bitcoin.ProcessTypeNone
 
 	// TODO check if node is validator

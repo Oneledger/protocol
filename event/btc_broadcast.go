@@ -20,6 +20,10 @@ import (
 	"github.com/Oneledger/protocol/data/jobs"
 )
 
+const (
+	MAX_BROADCAST_RETRY = 20
+)
+
 type JobBTCBroadcast struct {
 	Type string
 
@@ -28,6 +32,8 @@ type JobBTCBroadcast struct {
 	JobID string
 
 	Status jobs.Status
+
+	RetryCount int
 }
 
 func NewBTCBroadcastJob(trackerName, id string) jobs.Job {
@@ -42,16 +48,31 @@ func NewBTCBroadcastJob(trackerName, id string) jobs.Job {
 
 func (j *JobBTCBroadcast) DoMyJob(ctxI interface{}) {
 
-	ctx, _ := ctxI.(*JobsContext)
+	j.RetryCount += 1
+	ctx, ok := ctxI.(*JobsContext)
+	if !ok &&
+		j.RetryCount > MAX_BROADCAST_RETRY {
+		j.Status = jobs.Completed
+		return
+	}
 
 	tracker, err := ctx.Trackers.Get(j.TrackerName)
 	if err != nil {
+
 		ctx.Logger.Error("err trying to deserialize tracker: ", j.TrackerName, err)
 		return
 	}
 
 	if tracker.State != bitcoin2.BusyBroadcasting {
 		j.Status = jobs.Completed
+		return
+	}
+
+	if j.RetryCount > MAX_BROADCAST_RETRY {
+		ok := resetCall(tracker, ctx, j.JobID)
+		if ok {
+			j.Status = jobs.Completed
+		}
 		return
 	}
 
@@ -190,4 +211,37 @@ func (j *JobBTCBroadcast) GetJobID() string {
 
 func (j JobBTCBroadcast) IsDone() bool {
 	return j.Status == jobs.Completed
+}
+
+func resetCall(tracker *bitcoin2.Tracker, ctx *JobsContext, jobID string) bool {
+
+	bs := btc.FailedBroadcastReset{
+		tracker.Name,
+		ctx.ValidatorAddress,
+	}
+
+	txData, err := bs.Marshal()
+	if err != nil {
+		ctx.Logger.Error("error while preparing mint txn ", err, tracker.Name)
+		return false
+	}
+	tx := action.RawTx{
+		Type: action.BTC_FAILED_BROADCAST_RESET,
+		Data: txData,
+		Fee:  action.Fee{},
+		Memo: jobID,
+	}
+
+	req := InternalBroadcastRequest{
+		RawTx: tx,
+	}
+	rep := BroadcastReply{}
+
+	err = ctx.Service.InternalBroadcast(req, &rep)
+	if err != nil || !rep.OK {
+		ctx.Logger.Error("error while broadcasting reset vote txn ", err, tracker.Name)
+		return false
+	}
+
+	return true
 }
