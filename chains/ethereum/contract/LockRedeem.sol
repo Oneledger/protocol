@@ -18,6 +18,7 @@ contract LockRedeem {
     // Default Voting power should be updated at one point
     int constant DEFAULT_VALIDATOR_POWER = 50;
     uint constant MIN_VALIDATORS = 0;
+    uint256 LOCK_PERIOD = 28800;
 
     // This is the height at which the current epoch was started
     uint public epochBlockHeight;
@@ -43,20 +44,23 @@ contract LockRedeem {
 
     struct RedeemTX {
         address payable recipient;
-        mapping (address => bool) signers;
+        mapping (address => bool) votes;
         uint256 amount;
         uint256 signature_count;
         bool isCompleted ;
+        uint256 until;
     }
-    mapping (uint => RedeemTX) redeemRequests;
+    mapping (address => RedeemTX) redeemRequests;
 
-    event RedeemSuccessful(
+    event RedeemRequest(
         address indexed recepient,
-        uint256 amount_trafered
+        uint256 amount_requested
     );
 
     event ValidatorSignedRedeem(
-        address indexed validator_addresss
+        address indexed recipient,
+        address validator_addresss,
+        uint256 amount
     );
 
     event DeleteValidator(address indexed _address);
@@ -97,32 +101,38 @@ contract LockRedeem {
         emit Lock(msg.sender,msg.value);
     }
 
-    //function called by go
-    // todo: validator sign and if enough vote, transfer directly
-    function sign(uint amount_, address payable recipient_) public  {
-        require(isValidator(msg.sender),"validator not pressent in list");
-        require(redeemRequests[recipient_].amount == amount_,"redeem amount Compromised" );
-        require(redeemRequests[recipient_].recipient == recipient_, "redeem recipient Compromised");
-        require(!hasvote(redeemRequests[recipient_].signature_count, msg.sender));
-        if (redeemRequests[redeemID_].signature_count > 10 ) {
-            redeemRequests[redeemID_].recipient.transfer(redeemRequests[redeemID_].amount);
-        }
-        emit ValidatorSignedRedeem(msg.sender);
-    }
     // function called by user
-    // todo: the redeem call should happen before the sign
     function redeem(uint256 amount_)  public  {
         require(redeemRequests[msg.sender].amount == uint256(0));
-        require(amount_ > 0);
+        require(amount_ > 0, "amount should be bigger than 0");
+        require(redeemRequests[msg.sender].until < block.number, "request is locked, not available");
+
         redeemRequests[msg.sender].isCompleted == false;
         redeemRequests[msg.sender].signature_count = uint256(0);
         redeemRequests[msg.sender].recipient = msg.sender;
         redeemRequests[msg.sender].amount = amount_ ;
-        emit RedeemRequest(redeemRequests[redeemID_].recipient,redeemRequests[redeemID_].amount);
+        redeemRequests[msg.sender].until = block.number + LOCK_PERIOD;
+        emit RedeemRequest(redeemRequests[msg.sender].recipient,redeemRequests[msg.sender].amount);
     }
 
-    function hasVote(uint256 votes_, address addr_) internal {
+    //function called by go
+    // todo: validator sign and if enough vote, transfer directly
+    function sign(uint amount_, address payable recipient_) public  {
+        require(isValidator(msg.sender),"validator not present in list");
+        require(redeemRequests[recipient_].amount == amount_,"redeem amount Compromised" );
+        require(!redeemRequests[recipient_].votes[msg.sender]);
+        // update votes
+        redeemRequests[recipient_].votes[msg.sender] = true;
+        redeemRequests[recipient_].signature_count += 1;
 
+        // if reach threshold, transfer
+        if (redeemRequests[recipient_].signature_count >= votingThreshold ) {
+            redeemRequests[recipient_].recipient.transfer(redeemRequests[recipient_].amount);
+            redeemRequests[recipient_].amount = 0;
+            redeemRequests[recipient_].isCompleted = true;
+            redeemRequests[recipient_].until = block.number;
+        }
+        emit ValidatorSignedRedeem(recipient_, msg.sender, amount_);
     }
 
     function getTotalEthBalance() public view returns(uint) {

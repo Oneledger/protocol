@@ -4,4 +4,4 @@ if [ -z "$1" ]; then
 fi
 
 solc --abi "$1.sol" --bin "$1.sol" -o "./"
-abigen --abi="$1.abi" --pkg="contract" --out "$1.go"
+abigen --abi="$1.abi" --bin "$1.bin" --pkg="contract" --out "$1.go"
