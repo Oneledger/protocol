@@ -8,7 +8,8 @@ import (
 	"encoding/hex"
 	"fmt"
 
-	"github.com/btcsuite/btcutil/base58"
+	"github.com/btcsuite/btcd/txscript"
+	"github.com/btcsuite/btcutil"
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
 
@@ -35,9 +36,16 @@ func (s *Service) PrepareRedeem(args client.BTCRedeemRequest, reply *client.BTCR
 		return errors.New("not tracker with enough balance")
 	}
 
-	btcAddr := base58.Decode(args.BTCAddress)
-	if len(btcAddr) == 0 {
-		return errors.New("redeem address not base58")
+	params := bitcoin.GetChainParams(s.btcChainType)
+
+	userAddress, err := btcutil.DecodeAddress(args.BTCAddress, params)
+	if err != nil {
+		return errors.New("user Address not decipherable")
+	}
+
+	btcAddr, err := txscript.PayToAddrScript(userAddress)
+	if err != nil {
+		return errors.New("user Address not decipherable")
 	}
 
 	fmt.Printf("%#v \n", tracker)

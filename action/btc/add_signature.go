@@ -10,7 +10,6 @@ import (
 	"fmt"
 
 	"github.com/btcsuite/btcd/btcec"
-	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcd/txscript"
 	"github.com/btcsuite/btcd/wire"
 	"github.com/btcsuite/btcutil"
@@ -21,12 +20,15 @@ import (
 	"github.com/Oneledger/protocol/data/bitcoin"
 )
 
+// AddSignature is an internal transaction on the OneLedger Network. This transaction is used to add validator/witness
+// signatures to the bitcoin lock or redeem transaction.
 type AddSignature struct {
-	TrackerName      string
-	ValidatorPubKey  []byte
-	BTCSignature     []byte
+	TrackerName string
+
+	ValidatorPubKey []byte
+	BTCSignature    []byte
+
 	ValidatorAddress action.Address
-	Params           *chaincfg.Params
 	Memo             string
 }
 
@@ -176,10 +178,12 @@ func runAddSignature(ctx *action.Context, tx action.RawTx) (bool, action.Respons
 			return false, action.Response{Log: "invalid validator signature"}
 		}
 	}
+
 	err = tracker.AddSignature(addSignature.BTCSignature, addressPubKey.ScriptAddress())
 	if err != nil {
 		return false, action.Response{Log: fmt.Sprintf("error adding signature: %s, error: %s", addSignature.TrackerName, err.Error())}
 	}
+	tracker.Multisig.GetSignaturesInOrder()
 
 	if tracker.HasEnoughSignatures() {
 		tracker.State = bitcoin.BusyScheduleBroadcasting

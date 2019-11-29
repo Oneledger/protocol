@@ -15,8 +15,6 @@ import (
 	bitcoin2 "github.com/Oneledger/protocol/chains/bitcoin"
 	"github.com/Oneledger/protocol/data/bitcoin"
 
-	"github.com/Oneledger/protocol/data/keys"
-
 	"github.com/tendermint/tendermint/libs/common"
 
 	"github.com/Oneledger/protocol/action"
@@ -163,26 +161,10 @@ func runExtRedeem(ctx *action.Context, tx action.RawTx) (bool, action.Response) 
 		return false, action.Response{Log: fmt.Sprintf("tracker not available for redeem: ", redeem.TrackerName)}
 	}
 
-	vs, err := ctx.Validators.GetValidatorSet()
-	if err != nil {
-		return false, action.Response{Log: "error getting validator set"}
-	}
-	threshold := (len(vs) * 2 / 3) + 1
-	list := make([]keys.Address, 0, len(vs))
-
-	for i := range vs {
-		ctx.Logger.Debug(i, vs[i].ECDSAPubKey.KeyType)
-
-		addr, err := vs[i].GetBTCScriptAddress(ctx.BTCChainType)
-		if err != nil {
-
-		}
-		list = append(list, addr)
-	}
-
 	tracker.ProcessType = bitcoin.ProcessTypeRedeem
 	tracker.ProcessOwner = redeem.Redeemer
-	tracker.Multisig, err = keys.NewBTCMultiSig(redeem.BTCTxn, threshold, list)
+
+	tracker.Multisig.Msg = redeem.BTCTxn
 	tracker.ProcessBalance = tracker.CurrentBalance - redeem.RedeemAmount
 	tracker.ProcessUnsignedTx = redeem.BTCTxn // with user signature
 	tracker.State = bitcoin.Requested

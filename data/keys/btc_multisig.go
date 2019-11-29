@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/btcsuite/btcutil/base58"
 	"github.com/pkg/errors"
 
 	"github.com/Oneledger/protocol/utils"
@@ -142,8 +143,8 @@ func (m *BTCMultiSig) FromBytes(b []byte) error {
 
 	signatures := m.Signatures
 	m.Signatures = make([]BTCSignature, len(m.Signers))
-	for i, item := range signatures {
-		m.Signatures[i] = item
+	for _, item := range signatures {
+		m.Signatures[item.Index] = item
 	}
 
 	return nil
@@ -174,7 +175,7 @@ func (m *BTCMultiSig) GetSignaturesInOrder() [][]byte {
 
 		index := s.Index
 		tempSignatures[index] = s.Sign
-		fmt.Println(s.Index, s.Sign)
+		fmt.Println(s.Index, base58.Encode(s.Address))
 	}
 
 	signatures := make([][]byte, 0, len(m.Signers))
@@ -187,4 +188,12 @@ func (m *BTCMultiSig) GetSignaturesInOrder() [][]byte {
 	}
 
 	return signatures
+}
+
+func (m *BTCMultiSig) Marshal() ([]byte, error) {
+	return m.Bytes(), nil
+}
+
+func (m *BTCMultiSig) Unmarshal(b []byte) error {
+	return m.FromBytes(b)
 }

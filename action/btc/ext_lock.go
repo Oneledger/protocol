@@ -16,7 +16,6 @@ import (
 	"github.com/Oneledger/protocol/action"
 	bitcoin2 "github.com/Oneledger/protocol/chains/bitcoin"
 	"github.com/Oneledger/protocol/data/bitcoin"
-	"github.com/Oneledger/protocol/data/keys"
 )
 
 type Lock struct {
@@ -156,23 +155,10 @@ func runBTCLock(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 		return false, action.Response{Log: fmt.Sprintf("tracker not available for lock: ", lock.TrackerName)}
 	}
 
-	vs, err := ctx.Validators.GetValidatorSet()
-	threshold := (len(vs) * 2 / 3) + 1
-	list := make([]keys.Address, 0, len(vs))
-
-	for i := range vs {
-		ctx.Logger.Debug(i, vs[i].ECDSAPubKey.KeyType)
-
-		addr, err := vs[i].GetBTCScriptAddress(ctx.BTCChainType)
-		if err != nil {
-
-		}
-		list = append(list, addr)
-	}
-
 	tracker.ProcessType = bitcoin.ProcessTypeLock
 	tracker.ProcessOwner = lock.Locker
-	tracker.Multisig, err = keys.NewBTCMultiSig(lock.BTCTxn, threshold, list)
+	tracker.Multisig.Msg = lock.BTCTxn
+
 	tracker.ProcessBalance = tracker.CurrentBalance + lock.LockAmount
 	tracker.ProcessUnsignedTx = lock.BTCTxn // with user signature
 	tracker.State = bitcoin.Requested

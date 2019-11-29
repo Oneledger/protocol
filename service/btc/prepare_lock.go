@@ -129,8 +129,6 @@ func (s *Service) AddUserSignatureAndProcessLock(args client.BTCLockRequest, rep
 	}
 	txBytes = buf.Bytes()
 
-	s.logger.Debug("-----", hex.EncodeToString(txBytes))
-
 	lock := btc.Lock{
 		Locker:      args.Address,
 		TrackerName: args.TrackerName,

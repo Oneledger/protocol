@@ -130,12 +130,10 @@ func (c *chainDriver) CheckFinality(hash *chainhash.Hash, token, chain string) (
 	btc := gobcy.API{token, "btc", chain}
 
 	tx, err := btc.GetTX(hash.String(), nil)
-	fmt.Println(err)
-	fmt.Printf("\n\n%#v\n\n", tx)
+
 	if err != nil {
 		return false, err
 	}
-	fmt.Printf("\n\n%#v\n\n", tx)
 
 	if tx.Confirmations > 0 {
 		return true, nil
@@ -178,11 +176,13 @@ func (c *chainDriver) PrepareRedeemNew(prevLockTxID *chainhash.Hash, prevLockInd
 
 func CreateMultiSigAddress(m int, publicKeys []*btcutil.AddressPubKey, randomBytes []byte,
 	params *chaincfg.Params) (
+
 	script, address []byte, btcAddressList []string, err error) {
 
 	// ideally m should be
 	//	m = len(publicKeys) * 2 /3 ) + 1
 	btcAddressList = make([]string, len(publicKeys))
+
 	btcPubKeyMap := make(map[string][]byte)
 
 	for i := range publicKeys {
@@ -196,6 +196,7 @@ func CreateMultiSigAddress(m int, publicKeys []*btcutil.AddressPubKey, randomByt
 
 	builder := txscript.NewScriptBuilder().AddInt64(int64(m))
 	for _, addr := range btcAddressList {
+
 		builder.AddData(btcPubKeyMap[addr])
 	}
 	builder.AddInt64(int64(len(publicKeys)))

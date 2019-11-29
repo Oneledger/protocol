@@ -202,7 +202,7 @@ func runReportFinalityMint(ctx *action.Context, tx action.RawTx) (bool, action.R
 			return false, action.Response{Log: "error adding oBTC to address"}
 		}
 
-		ctx.Logger.Info("coin minted to ", f.OwnerAddress)
+		ctx.Logger.Info("btc coin minted to ", f.OwnerAddress)
 	}
 
 	// set the tracker to the new state

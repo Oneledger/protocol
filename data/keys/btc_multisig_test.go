@@ -26,6 +26,13 @@ func TestNewBTCMultiSig(t *testing.T) {
 	assert.NoError(t, err)
 
 	err = m.AddSignature(&BTCSignature{
+		2,
+		hexDump("qwefqw"),
+		hexDump("dddddd"),
+	})
+	assert.Error(t, err)
+
+	err = m.AddSignature(&BTCSignature{
 		3,
 		hexDump("dddddd"),
 		hexDump("dddddd"),
@@ -83,4 +90,38 @@ func TestNewBTCMultiSig(t *testing.T) {
 func hexDump(a string) []byte {
 	b, _ := hex.DecodeString(a)
 	return b
+}
+
+func TestBTCMultiSig_Bytes(t *testing.T) {
+	c := testCases[0]
+
+	ms, err := NewBTCMultiSig([]byte(c.msg), c.m, c.signers)
+	assert.NoError(t, err, "unexpected failed to init")
+
+	b := ms.Bytes()
+
+	newms := &BTCMultiSig{}
+	err = newms.FromBytes(b)
+	assert.NoError(t, err, "failed deser %s", err)
+
+	assert.Equal(t, ms, newms, "unmatch after ser/deser %#v. %#v", ms, newms)
+
+	signMsg := []byte(c.testMsg)
+	h, err := c.testSigners[0].GetHandler()
+	assert.NoError(t, err, "unexpected error in sign", err)
+	signed, err := h.Sign(signMsg)
+	assert.NoError(t, err, "unexpected error in sign", err)
+	ph, err := h.PubKey().GetHandler()
+	assert.NoError(t, err, "unexpected error in get pubkey", err)
+	signature := &BTCSignature{Index: 0, Address: ph.Address(), Sign: signed}
+	err = ms.AddSignature(signature)
+	assert.NoError(t, err, "get unexpected error for [case 0]: %s", c.log)
+
+	b = ms.Bytes()
+
+	newSignedMS := &BTCMultiSig{}
+	err = newSignedMS.FromBytes(b)
+	assert.NoError(t, err, "failed deser %s", err)
+
+	assert.Equal(t, ms, newSignedMS, "unmatch after ser/deser %#v. %#v", ms, newms)
 }

@@ -66,7 +66,6 @@ func (j *JobBTCBroadcast) DoMyJob(ctxI interface{}) {
 
 	builder := txscript.NewScriptBuilder().AddOp(txscript.OP_FALSE)
 	for i := range signatures {
-		fmt.Println(i, tracker.Multisig.M)
 		if i == tracker.Multisig.M {
 			// break
 		}
@@ -86,9 +85,6 @@ func (j *JobBTCBroadcast) DoMyJob(ctxI interface{}) {
 		ctx.Logger.Error("error in building sig script", err)
 	}
 
-	ctx.Logger.Debug(hex.EncodeToString(tracker.ProcessUnsignedTx))
-	ctx.Logger.Debug(hex.EncodeToString(sigScript))
-
 	cd := bitcoin.NewChainDriver(ctx.BlockCypherToken)
 	lockTx = cd.AddLockSignature(tracker.ProcessUnsignedTx, sigScript)
 
@@ -105,9 +101,6 @@ func (j *JobBTCBroadcast) DoMyJob(ctxI interface{}) {
 	txBytes = buf.Bytes()
 
 	ctx.Logger.Debug(hex.EncodeToString(txBytes))
-
-	fmt.Println(hex.EncodeToString(lockTx.TxIn[0].SignatureScript))
-	fmt.Println("IIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII")
 
 	if !(len(lockTx.TxIn) == 1 && tracker.ProcessType == bitcoin2.ProcessTypeLock) {
 

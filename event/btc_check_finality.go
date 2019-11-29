@@ -6,7 +6,6 @@ package event
 
 import (
 	"crypto/rand"
-	"fmt"
 	"io"
 	"time"
 
@@ -47,19 +46,15 @@ func (cf *JobBTCCheckFinality) DoMyJob(ctxI interface{}) {
 
 	ctx, _ := ctxI.(*JobsContext)
 
-	fmt.Println(1)
-
 	if time.Now().Unix() < cf.CheckAfter {
 		return
 	}
 
-	fmt.Println(2)
 	tracker, err := ctx.Trackers.Get(cf.TrackerName)
 	if err != nil {
 		ctx.Logger.Error("err trying to deserialize tracker: ", cf.TrackerName, err)
 		return
 	}
-	fmt.Println(3)
 
 	if tracker.State != bitcoin2.BusyFinalizing ||
 		tracker.HasVotedFinality(ctx.ValidatorAddress) {
@@ -68,7 +63,6 @@ func (cf *JobBTCCheckFinality) DoMyJob(ctxI interface{}) {
 		return
 	}
 
-	fmt.Println(4)
 	cd := bitcoin.NewChainDriver(ctx.BlockCypherToken)
 
 	chain := "test3"
@@ -87,15 +81,12 @@ func (cf *JobBTCCheckFinality) DoMyJob(ctxI interface{}) {
 		ctx.Logger.Error("error while checking finality", err, cf.TrackerName)
 		return
 	}
-	fmt.Println(5)
 
 	if !ok {
 		cf.CheckAfter = time.Now().Unix() + TwoMinutes
 		ctx.Logger.Info("not finalized yet", cf.TrackerName)
 		return
 	}
-
-	fmt.Println(6)
 
 	data := [4]byte{}
 	_, err = io.ReadFull(rand.Reader, data[:])
@@ -104,8 +95,6 @@ func (cf *JobBTCCheckFinality) DoMyJob(ctxI interface{}) {
 		return
 	}
 
-	fmt.Println(7)
-
 	reportFinalityMint := btc.ReportFinalityMint{
 		TrackerName:      cf.TrackerName,
 		OwnerAddress:     tracker.ProcessOwner,
@@ -113,15 +102,11 @@ func (cf *JobBTCCheckFinality) DoMyJob(ctxI interface{}) {
 		RandomBytes:      data[:],
 	}
 
-	fmt.Println(8)
-
 	txData, err := reportFinalityMint.Marshal()
 	if err != nil {
 		ctx.Logger.Error("error while preparing mint txn ", err, cf.TrackerName)
 		return
 	}
-
-	fmt.Println(9)
 
 	tx := action.RawTx{
 		Type: action.BTC_REPORT_FINALITY_MINT,
@@ -141,9 +126,6 @@ func (cf *JobBTCCheckFinality) DoMyJob(ctxI interface{}) {
 		return
 	}
 
-	ctx.Logger.Info("BTC_REPORT_FINALITY_MINT internal job broadcast success")
-	ctx.Logger.Infof("%#v \n", rep)
-	ctx.Logger.Infof("%#v \n", tracker)
 	cf.Status = jobs.Completed
 }
 

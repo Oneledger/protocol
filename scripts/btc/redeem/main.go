@@ -12,7 +12,7 @@ import (
 func main() {
 
 	addrs := addressess()
-	txn, tname := prepareRedeem(addrs[0], "mkW45toPFaa1uyNGV4TXEWWCxyuDC7BbKG", 300000)
+	txn, tname := prepareRedeem(addrs[0], "mpkTNzXNdBjPqYCfok7JGaF8Byc4bpsJxE", 300000)
 	fmt.Println("Tracker for lock: ", tname)
 
 	// os.Exit(1)

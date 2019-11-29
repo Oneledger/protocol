@@ -12,7 +12,7 @@ import (
 )
 
 func main() {
-	sourceBTCHash := "62f457d3cc7c60a2d9877c9a1c2263e98ba91b3a74066153dc85fa6c4dad5cc9"
+	sourceBTCHash := "0a4d1ed79a0f95e6aed353a640845e6b593d5fde6a0ec625344ea35ad401cfe5"
 	sourceBTCIndex := 0
 	wif := "cSxM9B2KMPFa5k8cC8VnMN5jyWG2FH3e5RCKQ2bpWbjbQvX6tW1j"
 
