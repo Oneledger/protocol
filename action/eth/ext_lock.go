@@ -5,12 +5,12 @@ import (
 	"fmt"
 
 	ethcommon "github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/pkg/errors"
 	"github.com/tendermint/tendermint/libs/common"
 
 	"github.com/Oneledger/protocol/action"
+	ethchaindriver "github.com/Oneledger/protocol/chains/ethereum"
+	"github.com/Oneledger/protocol/config"
 	"github.com/Oneledger/protocol/data/ethereum"
 )
 
@@ -84,11 +84,8 @@ func (ethLockTx) Validate(ctx *action.Context, signedTx action.SignedTx) (bool, 
 	}
 
 	// Check lock fields for incoming trasaction
-	ethTx := &types.Transaction{}
-	err = rlp.DecodeBytes(lock.ETHTxn, ethTx)
-	if err != nil {
-		return false, errors.Wrap(err, "eth txn decode failed")
-	}
+
+
 
 	//TODO : Verify beninfiaciary address in ETHTX == locker (Phase 2)
 	return true, nil
@@ -144,9 +141,31 @@ func (ethLockTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start
 // processCommon
 func (ethLockTx) processCommon(ctx *action.Context, tx action.RawTx, lock *Lock) (bool, action.Response) {
 
-	// parse eth transaction
-	ethTx := &types.Transaction{}
-	err := rlp.DecodeBytes(lock.ETHTxn, ethTx)
+	cd, err := ethchaindriver.NewChainDriver(config.DefaultEthConfig(), ctx.Logger,ctx.ETHOptions)
+	if err != nil {
+		ctx.Logger.Error("err trying to get ChainDriver : ", err)
+		return false,action.Response{
+			Data:      nil,
+			Log:       "Unable to get Chain Driver",
+			Info:      "",
+			GasWanted: 0,
+			GasUsed:   0,
+			Tags:      nil,
+		}
+	}// parse eth transaction
+	ethTx,err := cd.DecodeTransaction(lock.ETHTxn)
+	if ethTx.To() != &ctx.ETHOptions.ContractAddress {
+		return false,action.Response{
+			Data:      nil,
+			Log:       "Invalid transaction ,To field of Transaction does not match Contract address",
+			Info:      "",
+			GasWanted: 0,
+			GasUsed:   0,
+			Tags:      nil,
+		}
+	}
+
+
 	if err != nil {
 		return false, action.Response{Log: "err decoding txn: " + err.Error()}
 	}

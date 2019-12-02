@@ -3,8 +3,6 @@ package ethereum
 import (
 	"fmt"
 
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
 
@@ -21,11 +19,6 @@ import (
 // This function might create a loophope that node owner might use the sgned eth lock tx for his own benificiary address.
 // DONT USE IN PRODUCTION
 func (svc *Service) CreateRawExtLock(req OLTLockRequest, out *OLTLockReply) error {
-	tx := &types.Transaction{}
-	err := rlp.DecodeBytes(req.RawTx, tx)
-	if err != nil {
-		return errors.Wrap(err, "failed to decode provided transaction bytes")
-	}
 
 	packets, err := createRawLock(req.Address, req.RawTx, req.Fee, req.Gas)
 	if err != nil {
@@ -71,7 +64,7 @@ func createRawLock(locker action.Address, rawTx []byte, userfee action.Amount, g
 	return packet, nil
 }
 
-// Expects public key , and creates an unsigned TX to send to wallet .
+// Expects users ethereum address , and creates an unsigned TX to send to wallet .
 // Wallet signs and then calls onlinelock
 func (svc *Service) GetRawLockTX(req ETHLockRequest, out *ETHLockRawTX) error {
 	opt := svc.trackerStore.GetOption()
@@ -80,7 +73,7 @@ func (svc *Service) GetRawLockTX(req ETHLockRequest, out *ETHLockRawTX) error {
 		return errors.Wrap(err, "GetRawLockTx")
 	}
 	// TODO:Change to address
-	rawTx, err := cd.PrepareUnsignedETHLock(req.PublicKey, req.Amount)
+	rawTx, err := cd.PrepareUnsignedETHLock(req.UserAddress, req.Amount)
 	if err != nil {
 		return err
 	}

@@ -1,7 +1,6 @@
 package ethereum
 
 import (
-	"crypto/ecdsa"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -70,7 +69,7 @@ type OLTLockReply struct {
 }
 
 type ETHLockRequest struct {
-	PublicKey *ecdsa.PublicKey `json:"public_key"`
+	UserAddress common.Address `json:"user_eth_address"`
 	Amount    *big.Int         `json:"amount"`
 }
 
