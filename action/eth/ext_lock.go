@@ -117,17 +117,6 @@ func (e ethLockTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, a
 		return ok, resp
 	}
 
-	//ethereum.NewTracker(lock.Locker,lock.ETHTxn,lock.TrackerName,)
-	//todo: don't do job related work in delivery, just create tracker
-	//if ctx.JobStore != nil {
-	//
-	//	job := event.JobETHBroadcast{lock.TrackerName}
-	//	err = ctx.JobStore.SaveJob(job)
-	//	if err != nil {
-	//		return false, action.Response{Log: "job serialization failed err: " + err.Error()}
-	//	}
-	//}
-
 	return true, action.Response{
 		Tags: lock.Tags(),
 	}
@@ -145,27 +134,15 @@ func (ethLockTx) processCommon(ctx *action.Context, tx action.RawTx, lock *Lock)
 	if err != nil {
 		ctx.Logger.Error("err trying to get ChainDriver : ", err)
 		return false,action.Response{
-			Data:      nil,
 			Log:       "Unable to get Chain Driver",
-			Info:      "",
-			GasWanted: 0,
-			GasUsed:   0,
-			Tags:      nil,
 		}
 	}// parse eth transaction
 	ethTx,err := cd.DecodeTransaction(lock.ETHTxn)
 	if ethTx.To() != &ctx.ETHOptions.ContractAddress {
 		return false,action.Response{
-			Data:      nil,
 			Log:       "Invalid transaction ,To field of Transaction does not match Contract address",
-			Info:      "",
-			GasWanted: 0,
-			GasUsed:   0,
-			Tags:      nil,
 		}
 	}
-
-
 	if err != nil {
 		return false, action.Response{Log: "err decoding txn: " + err.Error()}
 	}
