@@ -5,13 +5,17 @@ const (
 	BusyBroadcasting
 	BusyFinalizing
 	Finalized
-	Minted
+	Released
 
-	BROADCASTING string = "broadcasting"
-	FINALIZING   string = "finalizing"
-	FINALIZE     string = "finalize"
-	MINTING      string = "minting"
-	CLEANUP      string = "cleanup"
+	BROADCASTING    string = "broadcasting"
+	FINALIZING      string = "finalizing"
+	FINALIZE        string = "finalize"
+	MINTING         string = "minting"
+	CLEANUP         string = "cleanup"
+	SIGNING         string = "signing"
+	FINALIZESIGNING string = "finalizesigning"
+	VERIFYREDEEM    string = "verifyredeem"
+	BURN            string = "burn"
 
 	ProcessTypeNone   ProcessType = 0x00
 	ProcessTypeLock   ProcessType = 0x01

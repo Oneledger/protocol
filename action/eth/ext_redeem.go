@@ -1,23 +1,23 @@
 package eth
 
- import (
-	 "encoding/json"
+import (
+	"encoding/json"
 
-	 ethcommon "github.com/ethereum/go-ethereum/common"
-	 "github.com/pkg/errors"
-	 "github.com/tendermint/tendermint/libs/common"
+	ethcommon "github.com/ethereum/go-ethereum/common"
+	"github.com/pkg/errors"
+	"github.com/tendermint/tendermint/libs/common"
 
-	 "github.com/Oneledger/protocol/action"
-	 "github.com/Oneledger/protocol/chains/ethereum"
-	 "github.com/Oneledger/protocol/config"
-	 trackerlib "github.com/Oneledger/protocol/data/ethereum"
- )
+	"github.com/Oneledger/protocol/action"
+	"github.com/Oneledger/protocol/chains/ethereum"
+	"github.com/Oneledger/protocol/config"
+	trackerlib "github.com/Oneledger/protocol/data/ethereum"
+)
 
 var _ action.Msg = &Redeem{}
 
 type Redeem struct {
-	Owner  action.Address   //User Oneledger address
-	To     action.Address   //User Ethereum address
+	Owner  action.Address //User Oneledger address
+	To     action.Address //User Ethereum address
 	ETHTxn []byte
 }
 
@@ -84,29 +84,28 @@ func (ethRedeemTx) Validate(ctx *action.Context, signedTx action.SignedTx) (bool
 }
 
 func (ethRedeemTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
-	return processCommon(ctx,tx)
+	return processCommon(ctx, tx)
 
 }
 
 func (ethRedeemTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
-	return processCommon(ctx,tx)
+	return processCommon(ctx, tx)
 	// Create ethereum tracker
 
 }
 
-
 func processCommon(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
-	redeem :=&Redeem{}
+	redeem := &Redeem{}
 	err := redeem.Unmarshal(tx.Data)
 	if err != nil {
-		return false,action.Response{Log: action.ErrUnserializable.Error()}
+		return false, action.Response{Log: action.ErrUnserializable.Error()}
 	}
 	opt := ctx.ETHTrackers.GetOption()
 	config := config.DefaultEthConfig()
-	cd, err := ethereum.NewChainDriver(config,ctx.Logger, opt)
+	cd, err := ethereum.NewChainDriver(config, ctx.Logger, opt)
 	req, err := cd.ParseRedeem(redeem.ETHTxn)
 	if err != nil {
-		return false,action.Response{
+		return false, action.Response{
 			Data:      nil,
 			Log:       action.ErrInvalidAmount.Error(),
 			Info:      "",
@@ -129,7 +128,7 @@ func processCommon(ctx *action.Context, tx action.RawTx) (bool, action.Response)
 	)
 
 	tracker.State = trackerlib.New
-	tracker.ProcessOwner =  redeem.Owner
+	tracker.ProcessOwner = redeem.Owner
 	tracker.SignedETHTx = redeem.ETHTxn
 
 	// Save eth Tracker

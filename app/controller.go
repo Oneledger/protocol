@@ -243,7 +243,7 @@ func (app *App) commitor() commitor {
 			return false
 		})
 		hash, ver := app.Context.deliver.Commit()
-		app.logger.Debugf("Committed New Block height[%d], hash[%s], versions[%d]", app.header.Height, hex.EncodeToString(hash), ver)
+		app.logger.Debugf("Committed LockNew Block height[%d], hash[%s], versions[%d]", app.header.Height, hex.EncodeToString(hash), ver)
 		app.Context.ethTrackers.Iterate(func(a *ceth.TrackerName, t *ethereum.Tracker) bool {
 
 			fmt.Println("AFTER Commit trackers in commitor after chainstate Commit")
@@ -347,7 +347,7 @@ func doEthTransitions(js *jobs.JobStore, ts *ethereum.TrackerStore, myValAddr ke
 		fmt.Println(t.TrackerName)
 		ctx := ethereum.NewTrackerCtx(t, myValAddr, js.WithChain(chain.ETHEREUM), ts, validators)
 		fmt.Println("Doethtransactions Tracker current state :", t.State)
-		_, err := event.EthEngine.Process(t.NextStep(), ctx, transition.Status(t.State))
+		_, err := event.EthLockEngine.Process(t.NextStep(), ctx, transition.Status(t.State))
 
 		if err != nil {
 			logger.Error("failed to process eth tracker", err)

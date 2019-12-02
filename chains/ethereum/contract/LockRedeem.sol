@@ -130,9 +130,12 @@ contract LockRedeem {
             redeemRequests[recipient_].recipient.transfer(redeemRequests[recipient_].amount);
             redeemRequests[recipient_].amount = 0;
             redeemRequests[recipient_].isCompleted = true;
-            redeemRequests[recipient_].until = block.number;
         }
         emit ValidatorSignedRedeem(recipient_, msg.sender, amount_);
+    }
+
+    function verifyRedeem(address recipient_) public view returns(bool){
+        return redeemRequests[recipient_].isCompleted;
     }
 
     function getTotalEthBalance() public view returns(uint) {

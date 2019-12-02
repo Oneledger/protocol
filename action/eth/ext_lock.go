@@ -15,8 +15,8 @@ import (
 )
 
 type Lock struct {
-	Locker      action.Address
-	ETHTxn      []byte
+	Locker action.Address
+	ETHTxn []byte
 }
 
 var _ action.Msg = &Lock{}

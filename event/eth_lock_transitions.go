@@ -10,16 +10,16 @@ import (
 )
 
 func init() {
-	EthEngine = transition.NewEngine(
+	EthLockEngine = transition.NewEngine(
 		[]transition.Status{
 			transition.Status(ethereum.New),
 			transition.Status(ethereum.BusyBroadcasting),
 			transition.Status(ethereum.BusyFinalizing),
 			transition.Status(ethereum.Finalized),
-			transition.Status(ethereum.Minted),
+			transition.Status(ethereum.Released),
 		})
 
-	err := EthEngine.Register(transition.Transition{
+	err := EthLockEngine.Register(transition.Transition{
 		Name: ethereum.BROADCASTING,
 		Fn:   Broadcasting,
 		From: transition.Status(ethereum.New),
@@ -29,7 +29,7 @@ func init() {
 		panic(err)
 	}
 
-	err = EthEngine.Register(transition.Transition{
+	err = EthLockEngine.Register(transition.Transition{
 		Name: ethereum.FINALIZING,
 		Fn:   Finalizing,
 		From: transition.Status(ethereum.BusyBroadcasting),
@@ -39,7 +39,7 @@ func init() {
 		panic(err)
 	}
 
-	err = EthEngine.Register(transition.Transition{
+	err = EthLockEngine.Register(transition.Transition{
 		Name: ethereum.FINALIZE,
 		Fn:   Finalization,
 		From: transition.Status(ethereum.BusyFinalizing),
@@ -49,24 +49,25 @@ func init() {
 		panic(err)
 	}
 
-	err = EthEngine.Register(transition.Transition{
+	err = EthLockEngine.Register(transition.Transition{
 		Name: ethereum.MINTING,
 		Fn:   Minting,
 		From: transition.Status(ethereum.Finalized),
-		To:   transition.Status(ethereum.Minted),
+		To:   transition.Status(ethereum.Released),
 	})
 	if err != nil {
 		panic(err)
 	}
-	err = EthEngine.Register(transition.Transition{
+	err = EthLockEngine.Register(transition.Transition{
 		Name: ethereum.CLEANUP,
 		Fn:   Cleanup,
-		From: transition.Status(ethereum.Minted),
+		From: transition.Status(ethereum.Released),
 		To:   0,
 	})
 	if err != nil {
 		panic(err)
 	}
+
 }
 
 //TODO Go back to Busy broadcasting if there is a failure in Finalizing.
@@ -183,7 +184,7 @@ func Finalization(ctx interface{}) error {
 			//} else {
 			//	job, err := context.JobStore.GetJob(tracker.GetJobID(tracker.State))
 			//	if err != nil {
-			//		return errors.Wrap(errors.New("job serialization failed err: "), err.Error())
+			//		return errors.Wrap(errors.LockNew("job serialization failed err: "), err.Error())
 			//	}
 			//	job.
 		}
@@ -207,7 +208,7 @@ func Minting(ctx interface{}) error {
 	//todo: create a job to mint
 
 	if tracker.Finalized() {
-		tracker.State = ethereum.Minted
+		tracker.State = ethereum.Released
 	}
 	return nil
 }
@@ -233,7 +234,7 @@ func Cleanup(ctx interface{}) error {
 	}
 
 	//Delete CheckFinality Job
-	fjob, err := context.JobStore.GetJob(tracker.GetJobID(ethereum.BusyBroadcasting))
+	fjob, err := context.JobStore.GetJob(tracker.GetJobID(ethereum.BusyFinalizing))
 	if err != nil {
 		return errors.Wrap(err, "failed to get job")
 	}

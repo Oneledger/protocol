@@ -6,8 +6,9 @@ import (
 )
 
 var (
-	EthEngine transition.Engine
-	BtcEngine transition.Engine
+	EthLockEngine   transition.Engine
+	EthRedeemEngine transition.Engine
+	BtcEngine       transition.Engine
 )
 
 const (

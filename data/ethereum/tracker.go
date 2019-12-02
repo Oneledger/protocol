@@ -124,20 +124,38 @@ func (t *Tracker) Finalized() bool {
 }
 
 func (t Tracker) NextStep() string {
-
-	switch t.State {
-	case New:
-		fmt.Println("Chanjing state from NEW to Broadcasting")
-		return BROADCASTING
-	case BusyBroadcasting:
-		fmt.Println("Changing state from BusyBroadcasting to Finalizing")
-		return FINALIZING
-	case BusyFinalizing:
-		return FINALIZE
-	case Finalized:
-		return MINTING
-	case Minted:
-		return CLEANUP
+	if t.Type == ProcessTypeLock {
+		switch t.State {
+		case New:
+			fmt.Println("Chanjing state from NEW to Broadcasting")
+			return BROADCASTING
+		case BusyBroadcasting:
+			fmt.Println("Changing state from BusyBroadcasting to Finalizing")
+			return FINALIZING
+		case BusyFinalizing:
+			return FINALIZE
+		case Finalized:
+			return MINTING
+		case Released:
+			return CLEANUP
+		}
+		return transition.NOOP
 	}
-	return transition.NOOP
+	if t.Type == ProcessTypeRedeem {
+		switch t.State {
+		case New:
+			fmt.Println("Chanjing state from NEW to Broadcasting")
+			return SIGNING
+		case BusyBroadcasting:
+			fmt.Println("Changing state from BusyBroadcasting to Finalizing")
+			return FINALIZESIGNING
+		case BusyFinalizing:
+			return VERIFYREDEEM
+		case Finalized:
+			return BURN
+		case Released:
+			return CLEANUP
+		}
+		return transition.NOOP
+	}
 }

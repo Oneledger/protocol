@@ -108,7 +108,7 @@ func (r reportFinalityMintTx) ProcessCheck(ctx *action.Context, tx action.RawTx)
 	}
 
 	//if tracker.State != trackerlib.BusyBroadcasting {
-	//	return false, action.Response{Log: errors.New("tracker not available for finalizing").Error()}
+	//	return false, action.Response{Log: errors.LockNew("tracker not available for finalizing").Error()}
 	//}
 	//
 	//if !bytes.Equal(tracker.ProcessOwner, f.Locker) {
@@ -179,7 +179,7 @@ func (r reportFinalityMintTx) ProcessDeliver(ctx *action.Context, tx action.RawT
 	}
 
 	//if tracker.State != trackerlib.BusyBroadcasting {
-	//	return false, action.Response{Log: errors.New("tracker not available for finalizing").Error()}
+	//	return false, action.Response{Log: errors.LockNew("tracker not available for finalizing").Error()}
 	//}
 	//
 	//if !bytes.Equal(tracker.ProcessOwner, f.Locker) {
@@ -246,7 +246,7 @@ func runCheckFinalityMint(ctx *action.Context, tx action.RawTx) (bool, action.Re
 	}
 
 	//if tracker.State != trackerlib.BusyBroadcasting {
-	//	return false, action.Response{Log: errors.New("tracker not available for finalizing").Error()}
+	//	return false, action.Response{Log: errors.LockNew("tracker not available for finalizing").Error()}
 	//}
 	//
 	//if !bytes.Equal(tracker.ProcessOwner, f.Locker) {
@@ -316,7 +316,7 @@ func mintTokens(ctx *action.Context, tracker *trackerlib.Tracker, oltTx ReportFi
 		return err
 	}
 
-	tracker.State = trackerlib.Minted
+	tracker.State = trackerlib.Released
 	err = ctx.ETHTrackers.Set(tracker)
 	if err != nil {
 		return err
