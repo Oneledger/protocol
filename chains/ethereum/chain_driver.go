@@ -22,26 +22,24 @@ import (
 const DefaultTimeout = 5 * time.Second
 
 type ChainDriver interface {
-
 }
 
 func NewChainDriver(cfg *config.EthereumChainDriverConfig, logger *log.Logger, option *ChainDriverOption) (*ETHChainDriver, error) {
 
 	client, err := ethclient.Dial(cfg.Connection)
 	if err != nil {
-		logger.Error("failed to dial the given ethereum connection", err)
 		return nil, err
 	}
 
-	ctrct, err := contract.NewLockRedeem(option.ContractAddress, client)
+	_, err = contract.NewLockRedeem(option.ContractAddress, client)
 	if err != nil {
-		logger.Error("failed to create new contract")
 		return nil, err
 	}
 
 	return &ETHChainDriver{
-		Contract:        ctrct,
-		Client:          client,
+		cfg:             cfg,
+		contract:        nil,
+		client:          nil,
 		logger:          logger,
 		ContractAddress: option.ContractAddress,
 		ContractABI:     option.ContractABI,
@@ -59,25 +57,50 @@ var _ ChainDriver = &ETHChainDriver{}
 // ETHChainDriver provides the core fields required to interact with the Ethereum network. As of this moment (2019-08-21)
 // it should only be used by validator nodes.
 type ETHChainDriver struct {
-	Client          *Client
-	Contract        *Contract
-	ContractAddress Address
+	cfg             *config.EthereumChainDriverConfig
+	client          *Client
+	contract        *Contract
 	logger          *log.Logger
+	ContractAddress Address
 	ContractABI     string
+}
+
+func (acc *ETHChainDriver) GetClient() *Client {
+	if acc.client == nil {
+		client, err := ethclient.Dial(acc.cfg.Connection)
+		if err != nil {
+			panic(err)
+		}
+		acc.client = client
+	}
+	return acc.client
+}
+
+func (acc *ETHChainDriver) GetContract() *Contract {
+	client := acc.GetClient()
+
+	if acc.contract == nil {
+		ctrct, err := contract.NewLockRedeem(acc.ContractAddress, client)
+		if err != nil {
+			panic(err)
+		}
+		acc.contract = ctrct
+	}
+	return acc.contract
 }
 
 // Balance returns the current balance of the
 func (acc ETHChainDriver) Balance(addr Address) (*big.Int, error) {
 	c, cancel := defaultContext()
 	defer cancel()
-	return acc.Client.BalanceAt(c, addr, nil)
+	return acc.GetClient().BalanceAt(c, addr, nil)
 }
 
 // Nonce returns the nonce to use for our next transaction
 func (acc ETHChainDriver) Nonce(addr Address) (uint64, error) {
 	c, cancel := defaultContext()
 	defer cancel()
-	return acc.Client.PendingNonceAt(c, addr)
+	return acc.GetClient().PendingNonceAt(c, addr)
 }
 
 // VerifyContract returns true if we can verify that the current contract matches the
@@ -96,26 +119,24 @@ func (acc *ETHChainDriver) CallOpts(addr Address) *CallOpts {
 	}
 }
 
-func (acc *ETHChainDriver) SignRedeem(fromaddr common.Address,redeemAmount *big.Int,recipient common.Address) (*Transaction, error) {
-
+func (acc *ETHChainDriver) SignRedeem(fromaddr common.Address, redeemAmount *big.Int, recipient common.Address) (*Transaction, error) {
 
 	c, cancel := defaultContext()
 	defer cancel()
-	nonce, err := acc.Client.PendingNonceAt(c, fromaddr)
+	nonce, err := acc.GetClient().PendingNonceAt(c, fromaddr)
 	if err != nil {
 		return nil, err
 	}
 	gasLimit := uint64(6721974)
-	gasPrice, err := acc.Client.SuggestGasPrice(c)
+	gasPrice, err := acc.GetClient().SuggestGasPrice(c)
 	if err != nil {
 		return nil, err
 	}
 	contractAbi, _ := abi.JSON(strings.NewReader(acc.ContractABI))
-	bytesData, _ := contractAbi.Pack("sign",redeemAmount,recipient)
+	bytesData, _ := contractAbi.Pack("sign", redeemAmount, recipient)
 	toAddress := acc.ContractAddress
-	tx := types.NewTransaction(nonce, toAddress,redeemAmount, gasLimit, gasPrice, bytesData)
-	return tx,nil
-
+	tx := types.NewTransaction(nonce, toAddress, redeemAmount, gasLimit, gasPrice, bytesData)
+	return tx, nil
 
 }
 
@@ -123,12 +144,12 @@ func (acc *ETHChainDriver) PrepareUnsignedETHLock(addr common.Address, lockAmoun
 
 	c, cancel := defaultContext()
 	defer cancel()
-	nonce, err := acc.Client.PendingNonceAt(c, addr)
+	nonce, err := acc.GetClient().PendingNonceAt(c, addr)
 	if err != nil {
 		return nil, err
 	}
 	gasLimit := uint64(6721974)
-	gasPrice, err := acc.Client.SuggestGasPrice(c)
+	gasPrice, err := acc.GetClient().SuggestGasPrice(c)
 	if err != nil {
 		return nil, err
 	}
@@ -140,24 +161,26 @@ func (acc *ETHChainDriver) PrepareUnsignedETHLock(addr common.Address, lockAmoun
 	rawTxBytes := ts.GetRlp(0)
 	return rawTxBytes, nil
 }
-func (acc *ETHChainDriver) DecodeTransaction(rawBytes []byte) (*types.Transaction,error) {
+
+func (acc *ETHChainDriver) DecodeTransaction(rawBytes []byte) (*types.Transaction, error) {
 	tx := &types.Transaction{}
 	err := rlp.DecodeBytes(rawBytes, tx)
 	if err != nil {
-		return nil,errors.Wrap(err,"Unable to decode Bytes")
+		return nil, errors.Wrap(err, "Unable to decode Bytes")
 	}
-	return tx,nil
+	return tx, nil
 }
-func (acc *ETHChainDriver) PrepareUnsignedETHRedeem(addr common.Address, lockAmount *big.Int) ( *Transaction, error) {
+
+func (acc *ETHChainDriver) PrepareUnsignedETHRedeem(addr common.Address, lockAmount *big.Int) (*Transaction, error) {
 
 	c, cancel := defaultContext()
 	defer cancel()
-	nonce, err := acc.Client.PendingNonceAt(c, addr)
+	nonce, err := acc.GetClient().PendingNonceAt(c, addr)
 	if err != nil {
 		return nil, err
 	}
 	gasLimit := uint64(6721974)
-	gasPrice, err := acc.Client.SuggestGasPrice(c)
+	gasPrice, err := acc.GetClient().SuggestGasPrice(c)
 	if err != nil {
 		return nil, err
 	}
@@ -169,10 +192,9 @@ func (acc *ETHChainDriver) PrepareUnsignedETHRedeem(addr common.Address, lockAmo
 	return tx, nil
 }
 
-
 func (acc *ETHChainDriver) CheckFinality(txHash TransactionHash) (*types.Receipt, error) {
 
-	result, err := acc.Client.TransactionReceipt(context.Background(), txHash)
+	result, err := acc.GetClient().TransactionReceipt(context.Background(), txHash)
 	if err == nil {
 		if result.Status == types.ReceiptStatusSuccessful {
 			acc.logger.Info("Received TX Receipt for : ", txHash)
@@ -190,11 +212,11 @@ func (acc *ETHChainDriver) CheckFinality(txHash TransactionHash) (*types.Receipt
 
 func (acc *ETHChainDriver) BroadcastTx(tx *types.Transaction) (TransactionHash, error) {
 
-	_, _, err := acc.Client.TransactionByHash(context.Background(), tx.Hash())
+	_, _, err := acc.GetClient().TransactionByHash(context.Background(), tx.Hash())
 	if err == nil {
 		return tx.Hash(), nil
 	}
-	err = acc.Client.SendTransaction(context.Background(), tx)
+	err = acc.GetClient().SendTransaction(context.Background(), tx)
 	if err != nil {
 		acc.logger.Error("Error connecting to ETHEREUM :", err)
 		return tx.Hash(), err
@@ -221,19 +243,19 @@ func (acc *ETHChainDriver) ParseRedeem(data []byte) (req *RedeemRequest, err err
 	//	fmt.Println(r)
 	//	return nil, errors.Wrap(err,"Unable to create Redeem Request")
 	//}
-    //TODO : Refactor to use UNPACK
+	//TODO : Refactor to use UNPACK
 	ss := strings.Split(hex.EncodeToString(data), "db006a75")
 	if len(ss) == 0 {
-		return nil,errors.New("Transaction does not have the required input data")
+		return nil, errors.New("Transaction does not have the required input data")
 	}
 	if len(ss[1]) < 64 {
-		return nil,errors.New("Transaction data is invalid")
+		return nil, errors.New("Transaction data is invalid")
 	}
 	d, err := hex.DecodeString(ss[1][:64])
-	if err != nil{
-		return nil,err
+	if err != nil {
+		return nil, err
 	}
 	amt := big.NewInt(0).SetBytes(d)
 
-    return &RedeemRequest{Amount: amt},nil
+	return &RedeemRequest{Amount: amt}, nil
 }
