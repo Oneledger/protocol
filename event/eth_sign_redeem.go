@@ -1,11 +1,11 @@
 package event
 
 import (
+	"crypto/ecdsa"
 	"fmt"
 
 	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/rlp"
-
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/Oneledger/protocol/chains/ethereum"
 	"github.com/Oneledger/protocol/data/jobs"
 )
@@ -40,18 +40,41 @@ func (j JobETHSignRedeem) DoMyJob(ctx interface{}) {
 		return
 	}
 	rawTx := tracker.SignedETHTx
-	tx := &types.Transaction{}
-	err = rlp.DecodeBytes(rawTx, tx)
+    tx,err := cd.DecodeTransaction(rawTx)
 	if err != nil {
 		ethCtx.Logger.Error("Error Decoding Bytes from RaxTX :", j.GetJobID(), err)
 		return
 	}
 	//check if tx already broadcasted, if yest, job.Status = jobs.Completed
-	_, err = cd.ValidatorSignRedeem()
-	if err != nil {
-		ethCtx.Logger.Error("Error in transaction broadcast : ", j.GetJobID(), err)
+    req,err := cd.ParseRedeem(rawTx)
+    if err !=nil{
+    	ethCtx.Logger.Error("Error in Parsing amount from rawTx ",j.GetJobID(),err)
 		return
 	}
+    redeemAmount := req.Amount
+    msg,err := tx.AsMessage(types.NewEIP155Signer(tx.ChainId()))
+    if err != nil {
+    	ethCtx.Logger.Error("Error in decoding trasnaction as message : ",j.GetJobID(),err)
+		return
+	}
+	validatorPublicKey := ethCtx.ETHPrivKey.Public()
+	publicKeyECDSA, ok := validatorPublicKey.(*ecdsa.PublicKey)
+	if !ok {
+		ethCtx.Logger.Error("error casting public key to ECDSA",j.GetJobID())
+
+	}
+	fromAddress := crypto.PubkeyToAddress(*publicKeyECDSA)
+	tx, err = cd.SignRedeem(fromAddress,redeemAmount,msg.From())
+	if err != nil {
+		ethCtx.Logger.Error("Error in creating signing trasanction : ", j.GetJobID(), err)
+		return
+	}
+	signedTx,err := types.SignTx(tx,types.NewEIP155Signer(tx.ChainId()),ethCtx.ETHPrivKey)
+	txHash,err := cd.BroadcastTx(signedTx)
+	if err != nil {
+		ethCtx.Logger.Error("Unable to broadcast transaction :",j.GetJobID(),err)
+	}
+	ethCtx.Logger.Info("Redeem Transaction broadcasted to network : ",txHash)
 	fmt.Println("Broadcast job completed ", j.GetJobID())
 	j.Status = jobs.Completed
 }

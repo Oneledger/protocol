@@ -4,9 +4,6 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/rlp"
-
 	"github.com/Oneledger/protocol/chains/ethereum"
 	ethereum2 "github.com/Oneledger/protocol/data/ethereum"
 	"github.com/Oneledger/protocol/data/jobs"
@@ -59,8 +56,7 @@ func (job *JobETHBroadcast) DoMyJob(ctx interface{}) {
 		return
 	}
 	rawTx := tracker.SignedETHTx
-	tx := &types.Transaction{}
-	err = rlp.DecodeBytes(rawTx, tx)
+	tx,err := cd.DecodeTransaction(rawTx)
 	if err != nil {
 		ethCtx.Logger.Error("Error Decoding Bytes from RaxTX :", job.GetJobID(), err)
 		return

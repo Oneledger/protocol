@@ -16,8 +16,8 @@ package eth
 var _ action.Msg = &Redeem{}
 
 type Redeem struct {
-	Owner  action.Address
-	To     action.Address
+	Owner  action.Address   //User Oneledger address
+	To     action.Address   //User Ethereum address
 	ETHTxn []byte
 }
 

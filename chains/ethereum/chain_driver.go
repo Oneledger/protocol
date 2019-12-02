@@ -11,6 +11,8 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
+	"github.com/ethereum/go-ethereum/rlp"
+	"github.com/pkg/errors"
 
 	"github.com/Oneledger/protocol/chains/ethereum/contract"
 	"github.com/Oneledger/protocol/config"
@@ -94,12 +96,12 @@ func (acc *ETHChainDriver) CallOpts(addr Address) *CallOpts {
 	}
 }
 
-func (acc *ETHChainDriver) SignRedeem(addr common.Address,redeemAmount *big.Int,recipient common.Address) (*Transaction, error) {
+func (acc *ETHChainDriver) SignRedeem(fromaddr common.Address,redeemAmount *big.Int,recipient common.Address) (*Transaction, error) {
 
 
 	c, cancel := defaultContext()
 	defer cancel()
-	nonce, err := acc.Client.PendingNonceAt(c, addr)
+	nonce, err := acc.Client.PendingNonceAt(c, fromaddr)
 	if err != nil {
 		return nil, err
 	}
@@ -138,7 +140,14 @@ func (acc *ETHChainDriver) PrepareUnsignedETHLock(addr common.Address, lockAmoun
 	rawTxBytes := ts.GetRlp(0)
 	return rawTxBytes, nil
 }
-
+func (acc *ETHChainDriver) DecodeTransaction(rawBytes []byte) (*types.Transaction,error) {
+	tx := &types.Transaction{}
+	err := rlp.DecodeBytes(rawBytes, tx)
+	if err != nil {
+		return nil,errors.Wrap(err,"Unable to decode Bytes")
+	}
+	return tx,nil
+}
 func (acc *ETHChainDriver) PrepareUnsignedETHRedeem(addr common.Address, lockAmount *big.Int) ( *Transaction, error) {
 
 	c, cancel := defaultContext()
@@ -212,9 +221,18 @@ func (acc *ETHChainDriver) ParseRedeem(data []byte) (req *RedeemRequest, err err
 	//	fmt.Println(r)
 	//	return nil, errors.Wrap(err,"Unable to create Redeem Request")
 	//}
-
+    //TODO : Refactor to use UNPACK
 	ss := strings.Split(hex.EncodeToString(data), "db006a75")
-	d, _ := hex.DecodeString(ss[1][:64])
+	if len(ss) == 0 {
+		return nil,errors.New("Transaction does not have the required input data")
+	}
+	if len(ss[1]) < 64 {
+		return nil,errors.New("Transaction data is invalid")
+	}
+	d, err := hex.DecodeString(ss[1][:64])
+	if err != nil{
+		return nil,err
+	}
 	amt := big.NewInt(0).SetBytes(d)
 
     return &RedeemRequest{Amount: amt},nil

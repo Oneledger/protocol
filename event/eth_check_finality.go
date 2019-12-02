@@ -4,16 +4,12 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/ethereum/go-ethereum/core/types"
-
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/action/eth"
 	"github.com/Oneledger/protocol/chains/ethereum"
 	ethtracker "github.com/Oneledger/protocol/data/ethereum"
 	"github.com/Oneledger/protocol/data/jobs"
 	"github.com/Oneledger/protocol/storage"
-
-	"github.com/ethereum/go-ethereum/rlp"
 )
 
 var _ jobs.Job = &JobETHCheckFinality{}
@@ -62,8 +58,7 @@ func (job *JobETHCheckFinality) DoMyJob(ctx interface{}) {
 		return
 	}
 	rawTx := tracker.SignedETHTx
-	tx := &types.Transaction{}
-	err = rlp.DecodeBytes(rawTx, tx)
+	tx,err := cd.DecodeTransaction(rawTx)
 	if err != nil {
 		ethCtx.Logger.Error("Error Decoding Bytes from RaxTX :", job.GetJobID(), err)
 		return

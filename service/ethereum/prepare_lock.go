@@ -79,6 +79,7 @@ func (svc *Service) GetRawLockTX(req ETHLockRequest, out *ETHLockRawTX) error {
 	if err != nil {
 		return errors.Wrap(err, "GetRawLockTx")
 	}
+	// TODO:Change to address
 	rawTx, err := cd.PrepareUnsignedETHLock(req.PublicKey, req.Amount)
 	if err != nil {
 		return err

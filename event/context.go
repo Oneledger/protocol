@@ -28,7 +28,7 @@ type JobsContext struct {
 	Validators *identity.ValidatorStore
 
 	BTCPrivKey       keys.PrivateKey
-	ETHPrivKey       ecdsa.PrivateKey
+	ETHPrivKey       *ecdsa.PrivateKey
 	Params           *chaincfg.Params
 	ValidatorAddress action.Address
 
@@ -77,7 +77,7 @@ func NewJobsContext(cfg config.Server, btcchainType string, svc *Service,
 		Trackers:         trackers,
 		Validators:       validators,
 		BTCPrivKey:       *privKey,
-		ETHPrivKey:       *ethprivKey,
+		ETHPrivKey:       ethprivKey,
 		Params:           params,
 		ValidatorAddress: valAddress,
 		BlockCypherToken: bcyToken,

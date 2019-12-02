@@ -50,5 +50,4 @@ func GetAmount(tracker *ethereum.Tracker) (*big.Int, error) {
 		return nil, errors.Wrap(err, "eth txn decode failed")
 	}
 	return ethTx.Value(), nil
-
 }
