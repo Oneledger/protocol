@@ -79,10 +79,9 @@ func Signing(ctx interface{}) error {
 	tracker.State = ethereum.BusyBroadcasting
 	fmt.Println("STATE CHANGED TO :", tracker.State)
 
-	//create broadcasting
 	if context.Validators.IsValidator() {
-		fmt.Println("Created Broadcast JOB")
-		job := NewETHBroadcast((*tracker).TrackerName, tracker.State)
+		fmt.Println("Created Signing JOB")
+		job := NewETHSignRedeem(tracker.TrackerName, tracker.State)
 		err := context.JobStore.SaveJob(job)
 		if err != nil {
 			fmt.Println("ERROR SAVING")
@@ -92,10 +91,44 @@ func Signing(ctx interface{}) error {
 	}
 	context.Tracker = tracker
 	return nil
-	return nil
 }
 
 func FinalizeSigning(ctx interface{}) error {
+	fmt.Println("Starting Finalizing of Redeem Signing")
+
+	context, ok := ctx.(*ethereum.TrackerCtx)
+	if !ok {
+		return errors.New("error casting tracker context")
+	}
+	tracker := context.Tracker
+	if tracker.State != ethereum.BusyBroadcasting {
+		err := errors.New("Cannot start Finalizing Redeem from the current state")
+		return errors.Wrap(err, string(tracker.State))
+	}
+	if context.Validators.IsValidator() {
+		_, voted := tracker.CheckIfVoted(context.CurrNodeAddr)
+		if !voted {
+			signingjob, err := context.JobStore.GetJob(tracker.GetJobID(ethereum.BusyBroadcasting))
+			if err != nil {
+				return errors.Wrap(err, "failed to get job")
+			}
+			if signingjob.IsDone() {
+				fmt.Println("Signing job is done but Vote not received ")
+				job := NewETHCheckFinality(tracker.TrackerName, ethereum.BusyFinalizing)
+				err := context.JobStore.SaveJob(job)
+				if err != nil {
+					return errors.Wrap(errors.New("job serialization failed err: "), err.Error())
+				}
+			}
+		}
+	}
+	yesVotes, _ := tracker.GetVotes()
+	if yesVotes > 0 {
+		fmt.Println("Setting Status to BusyFinalizing")
+		tracker.State = ethereum.BusyFinalizing
+	}
+
+	context.Tracker = tracker
 	return nil
 }
 
