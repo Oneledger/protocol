@@ -273,7 +273,7 @@ func runCheckFinalityMint(ctx *action.Context, tx action.RawTx) (bool, action.Re
 	ctx.Logger.Error("Trying to add vote ")
 	index, ok := tracker.CheckIfVoted(f.ValidatorAddress)
 	ctx.Logger.Info("Before voting", ok, "Index :", index, "F.index", f.VoteIndex)
-	err = tracker.AddVote(f.ValidatorAddress, f.VoteIndex)
+	err = tracker.AddVote(f.ValidatorAddress, f.VoteIndex,true)
 	if err != nil {
 		return false, action.Response{Log: errors.Wrap(err, "failed to add vote").Error()}
 	}
@@ -281,13 +281,13 @@ func runCheckFinalityMint(ctx *action.Context, tx action.RawTx) (bool, action.Re
 
 	index, ok = tracker.CheckIfVoted(f.ValidatorAddress)
 
-	ctx.Logger.Info("After voting", ok, "Index :", index)
-	ctx.Logger.Info("Vote Count : ", tracker.GetVotes())
+	//ctx.Logger.Info("After voting", ok, "Index :", index)
+	//ctx.Logger.Info("Vote Count : ", tracker.GetVotes())
 
 	//if tracker.State != trackerlib.BusyFinalizing {tracker.State = trackerlib.BusyFinalizing}
 
-	ctx.Logger.Info("IS finalaized  :", tracker.Finalized())
-	ctx.Logger.Info("Tracker Votes  : ", tracker.GetVotes())
+	//ctx.Logger.Info("IS finalaized  :", tracker.Finalized())
+	//ctx.Logger.Info("Tracker Votes  : ", tracker.GetVotes())
 
 	if tracker.Finalized() {
 
@@ -352,18 +352,12 @@ func burnTokens(ctx *action.Context, tracker *trackerlib.Tracker, oltTx ReportFi
 		return err
 	}
 
-	tracker.State = trackerlib.Burned
+	tracker.State = trackerlib.Released
 	err = ctx.ETHTrackers.Set(tracker)
 	if err != nil {
 		return err
 	}
-
-	oEthCoin := curr.
-	err = ctx.Balances.AddToAddress(oltTx.Locker, oEthCoin)
-	if err != nil {
-		ctx.Logger.Error(err)
-		return errors.New("Unable to mint")
-	}
-
+	fmt.Println(curr,burnAmount)
+	//Implement Burn Tokens
 	return nil
 }
