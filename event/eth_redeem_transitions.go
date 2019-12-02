@@ -1,6 +1,10 @@
 package event
 
 import (
+	"fmt"
+
+	"github.com/pkg/errors"
+
 	"github.com/Oneledger/protocol/data/ethereum"
 	"github.com/Oneledger/protocol/utils/transition"
 )
@@ -59,6 +63,35 @@ func init() {
 }
 
 func Signing(ctx interface{}) error {
+	context, ok := ctx.(*ethereum.TrackerCtx)
+	if !ok {
+		return errors.New("error casting tracker context")
+	}
+
+	fmt.Println("Starting Redeem Signing")
+	tracker := context.Tracker
+
+	if tracker.State != ethereum.New {
+		err := errors.New("Cannot Start Sign and Broadcast from Current State")
+		return errors.Wrap(err, string((*tracker).State))
+	}
+
+	tracker.State = ethereum.BusyBroadcasting
+	fmt.Println("STATE CHANGED TO :", tracker.State)
+
+	//create broadcasting
+	if context.Validators.IsValidator() {
+		fmt.Println("Created Broadcast JOB")
+		job := NewETHBroadcast((*tracker).TrackerName, tracker.State)
+		err := context.JobStore.SaveJob(job)
+		if err != nil {
+			fmt.Println("ERROR SAVING")
+			return errors.Wrap(errors.New("job serialization failed err: "), err.Error())
+		}
+		fmt.Println("saved job:", job)
+	}
+	context.Tracker = tracker
+	return nil
 	return nil
 }
 

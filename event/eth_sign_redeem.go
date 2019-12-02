@@ -3,11 +3,15 @@ package event
 import (
 	"crypto/ecdsa"
 	"fmt"
+	"strconv"
 
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
+
 	"github.com/Oneledger/protocol/chains/ethereum"
+	trackerlib "github.com/Oneledger/protocol/data/ethereum"
 	"github.com/Oneledger/protocol/data/jobs"
+	"github.com/Oneledger/protocol/storage"
 )
 
 type JobETHSignRedeem struct {
@@ -15,6 +19,15 @@ type JobETHSignRedeem struct {
 	JobID       string
 	RetryCount  int
 	Status      jobs.Status
+}
+
+func NewETHSignRedeem (name ethereum.TrackerName,state trackerlib.TrackerState) *JobETHSignRedeem{
+	return &JobETHSignRedeem{
+		TrackerName: name,
+		JobID:       name.String()+storage.DB_PREFIX+strconv.Itoa(int(state)),
+		RetryCount:  0,
+		Status:      0,
+	}
 }
 
 func (j JobETHSignRedeem) DoMyJob(ctx interface{}) {
