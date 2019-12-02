@@ -52,7 +52,7 @@ func (job *JobETHBroadcast) DoMyJob(ctx interface{}) {
 	ethconfig := ethCtx.cfg.EthChainDriver
 
 	//logger := log.NewLoggerWithPrefix(os.Stdout, "JOB_ETHBROADCAST")
-	cd, err := ethereum.NewEthereumChainDriver(ethconfig, ethCtx.Logger, trackerStore.GetOption())
+	cd, err := ethereum.NewChainDriver(ethconfig, ethCtx.Logger, trackerStore.GetOption())
 	if err != nil {
 		ethCtx.Logger.Error("err trying to get ChainDriver : ", job.GetJobID(), err)
 

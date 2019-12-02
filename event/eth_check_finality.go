@@ -55,7 +55,7 @@ func (job *JobETHCheckFinality) DoMyJob(ctx interface{}) {
 		return
 	}
 	ethconfig := ethCtx.cfg.EthChainDriver
-	cd, err := ethereum.NewEthereumChainDriver(ethconfig, ethCtx.Logger, trackerStore.GetOption())
+	cd, err := ethereum.NewChainDriver(ethconfig, ethCtx.Logger, trackerStore.GetOption())
 	if err != nil {
 		ethCtx.Logger.Error("err trying to get ChainDriver : ", job.GetJobID(), err)
 		job.RetryCount += 1

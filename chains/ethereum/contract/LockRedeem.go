@@ -27,124 +27,144 @@ var (
 	_ = event.NewSubscription
 )
 
-// ContractABI is the input ABI used to generate the binding from.
-const ContractABI = "[{\"constant\":true,\"inputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"name\":\"removeValidatorProposals\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"voteCount\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"epochBlockHeight\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"name\":\"newThresholdProposals\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"voteCount\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"internalType\":\"address\",\"name\":\"v\",\"type\":\"address\"}],\"name\":\"proposeRemoveValidator\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"getTotalEthBalance\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"internalType\":\"address\",\"name\":\"v\",\"type\":\"address\"}],\"name\":\"proposeAddValidator\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"getOLTEthAddress\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"numValidators\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"votingThreshold\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"amount_\",\"type\":\"uint256\"},{\"internalType\":\"addresspayable\",\"name\":\"recipient_\",\"type\":\"address\"}],\"name\":\"sign\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"name\":\"addValidatorProposals\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"voteCount\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"amount_\",\"type\":\"uint256\"}],\"name\":\"redeem\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"threshold\",\"type\":\"uint256\"}],\"name\":\"proposeNewThreshold\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[],\"name\":\"lock\",\"outputs\":[],\"payable\":true,\"stateMutability\":\"payable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"name\":\"validators\",\"outputs\":[{\"internalType\":\"int256\",\"name\":\"\",\"type\":\"int256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"internalType\":\"address\",\"name\":\"addr\",\"type\":\"address\"}],\"name\":\"isValidator\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address[]\",\"name\":\"initialValidators\",\"type\":\"address[]\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"_address\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"int256\",\"name\":\"_power\",\"type\":\"int256\"}],\"name\":\"AddValidator\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"recepient\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"amount_requested\",\"type\":\"uint256\"}],\"name\":\"RedeemRequest\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"recipient\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"address\",\"name\":\"validator_addresss\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"}],\"name\":\"ValidatorSignedRedeem\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"_address\",\"type\":\"address\"}],\"name\":\"DeleteValidator\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"epochHeight\",\"type\":\"uint256\"}],\"name\":\"NewEpoch\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"address\",\"name\":\"sender\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"amount_received\",\"type\":\"uint256\"}],\"name\":\"Lock\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"_prevThreshold\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"_newThreshold\",\"type\":\"uint256\"}],\"name\":\"NewThreshold\",\"type\":\"event\"}]"
+// LockRedeemABI is the input ABI used to generate the binding from.
+const LockRedeemABI = "[{\"constant\":true,\"inputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"name\":\"removeValidatorProposals\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"voteCount\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"epochBlockHeight\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"name\":\"newThresholdProposals\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"voteCount\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"internalType\":\"address\",\"name\":\"v\",\"type\":\"address\"}],\"name\":\"proposeRemoveValidator\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"getTotalEthBalance\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"internalType\":\"address\",\"name\":\"v\",\"type\":\"address\"}],\"name\":\"proposeAddValidator\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"getOLTEthAddress\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"numValidators\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"votingThreshold\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"amount_\",\"type\":\"uint256\"},{\"internalType\":\"addresspayable\",\"name\":\"recipient_\",\"type\":\"address\"}],\"name\":\"sign\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"name\":\"addValidatorProposals\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"voteCount\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"amount_\",\"type\":\"uint256\"}],\"name\":\"redeem\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"threshold\",\"type\":\"uint256\"}],\"name\":\"proposeNewThreshold\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[],\"name\":\"lock\",\"outputs\":[],\"payable\":true,\"stateMutability\":\"payable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"name\":\"validators\",\"outputs\":[{\"internalType\":\"int256\",\"name\":\"\",\"type\":\"int256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"internalType\":\"address\",\"name\":\"addr\",\"type\":\"address\"}],\"name\":\"isValidator\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address[]\",\"name\":\"initialValidators\",\"type\":\"address[]\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"_address\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"int256\",\"name\":\"_power\",\"type\":\"int256\"}],\"name\":\"AddValidator\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"recepient\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"amount_requested\",\"type\":\"uint256\"}],\"name\":\"RedeemRequest\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"recipient\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"address\",\"name\":\"validator_addresss\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"}],\"name\":\"ValidatorSignedRedeem\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"_address\",\"type\":\"address\"}],\"name\":\"DeleteValidator\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"epochHeight\",\"type\":\"uint256\"}],\"name\":\"NewEpoch\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"address\",\"name\":\"sender\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"amount_received\",\"type\":\"uint256\"}],\"name\":\"Lock\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"_prevThreshold\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"_newThreshold\",\"type\":\"uint256\"}],\"name\":\"NewThreshold\",\"type\":\"event\"}]"
 
-// ContractBin is the compiled bytecode used for deploying new contracts.
-var ContractBin = "0x60806040526170806002553480156200001757600080fd5b5060405162001dda38038062001dda833981810160405260208110156200003d57600080fd5b81019080805160405193929190846401000000008211156200005e57600080fd5b838201915060208201858111156200007557600080fd5b82518660208202830111640100000000821117156200009357600080fd5b8083526020830192505050908051906020019060200280838360005b83811015620000cc578082015181840152602081019050620000af565b5050505090500160405250505060008151101562000136576040517f08c379a000000000000000000000000000000000000000000000000000000000815260040180806020018281038252602d81526020018062001d7e602d913960400191505060405180910390fd5b60008090505b8151811015620002195760008282815181106200015557fe5b602002602001015190506000600960008373ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff1681526020019081526020016000205414620001f9576040517f08c379a000000000000000000000000000000000000000000000000000000000815260040180806020018281038252602f81526020018062001dab602f913960400191505060405180910390fd5b6200020a816200023260201b60201c565b5080806001019150506200013c565b506200022b436200031760201b60201c565b5062000623565b6032600960008373ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200190815260200160002081905550600160008082825401925050819055508073ffffffffffffffffffffffffffffffffffffffff167fb2076c69a79e1dfb01d613dcc63b7c42ae1962daf11d4f2151352135133f824b600960008473ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff168152602001908152602001600020546040518082815260200191505060405180910390a250565b6000600960003373ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200190815260200160002054136200036457600080fd5b806003819055507febad8099c467528a56c98b63c8d476d251cf1ffb4c75db94b4d23fa2b6a1e3356003546040518082815260200191505060405180910390a160008090505b6007805490508110156200045f57600060078281548110620003c857fe5b9060005260206000200160009054906101000a900473ffffffffffffffffffffffffffffffffffffffff16905062000406816200023260201b60201c565b600460008273ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff1681526020019081526020016000206000808201600090555050508080600101915050620003aa565b5060076000620004709190620005d8565b60008090505b6008805490508110156200052b576000600882815481106200049457fe5b9060005260206000200160009054906101000a900473ffffffffffffffffffffffffffffffffffffffff169050620004d2816200053f60201b60201c565b600560008273ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff168152602001908152602001600020600080820160009055505050808060010191505062000476565b50600860006200053c9190620005d8565b50565b600960008273ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200190815260200160002060009055600160008082825403925050819055508073ffffffffffffffffffffffffffffffffffffffff167f6d70afad774d81e8c32f930c6412789502b16ccf0a20f21679b249bdfac060e560405160405180910390a250565b5080546000825590600052602060002090810190620005f89190620005fb565b50565b6200062091905b808211156200061c57600081600090555060010162000602565b5090565b90565b61174b80620006336000396000f3fe6080604052600436106100f35760003560e01c8063628277331161008a578063e0e887d011610059578063e0e887d01461044c578063f83d08ba14610487578063fa52c7d814610491578063facd743b146104f6576100f3565b806362827733146103265780637cacde3f14610351578063bfb9e9f5146103ac578063db006a7514610411576100f3565b8063287cc96b116100c6578063287cc96b14610228578063383ea59a1461025357806345dfa415146102a45780635d593f8d146102fb576100f3565b80630d00753a146100f85780630d8f6b5b1461015d5780630e7d275d14610188578063101a8538146101d7575b600080fd5b34801561010457600080fd5b506101476004803603602081101561011b57600080fd5b81019080803573ffffffffffffffffffffffffffffffffffffffff16906020019092919050505061055f565b6040518082815260200191505060405180910390f35b34801561016957600080fd5b5061017261057d565b6040518082815260200191505060405180910390f35b34801561019457600080fd5b506101c1600480360360208110156101ab57600080fd5b8101908080359060200190929190505050610583565b6040518082815260200191505060405180910390f35b3480156101e357600080fd5b50610226600480360360208110156101fa57600080fd5b81019080803573ffffffffffffffffffffffffffffffffffffffff1690602001909291905050506105a1565b005b34801561023457600080fd5b5061023d6106d9565b6040518082815260200191505060405180910390f35b34801561025f57600080fd5b506102a26004803603602081101561027657600080fd5b81019080803573ffffffffffffffffffffffffffffffffffffffff1690602001909291905050506106f8565b005b3480156102b057600080fd5b506102b96108a6565b604051808273ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200191505060405180910390f35b34801561030757600080fd5b506103106108ae565b6040518082815260200191505060405180910390f35b34801561033257600080fd5b5061033b6108b4565b6040518082815260200191505060405180910390f35b34801561035d57600080fd5b506103aa6004803603604081101561037457600080fd5b8101908080359060200190929190803573ffffffffffffffffffffffffffffffffffffffff1690602001909291905050506108ba565b005b3480156103b857600080fd5b506103fb600480360360208110156103cf57600080fd5b81019080803573ffffffffffffffffffffffffffffffffffffffff169060200190929190505050610e13565b6040518082815260200191505060405180910390f35b34801561041d57600080fd5b5061044a6004803603602081101561043457600080fd5b8101908080359060200190929190505050610e31565b005b34801561045857600080fd5b506104856004803603602081101561046f57600080fd5b8101908080359060200190929190505050611250565b005b61048f611423565b005b34801561049d57600080fd5b506104e0600480360360208110156104b457600080fd5b81019080803573ffffffffffffffffffffffffffffffffffffffff169060200190929190505050611507565b6040518082815260200191505060405180910390f35b34801561050257600080fd5b506105456004803603602081101561051957600080fd5b81019080803573ffffffffffffffffffffffffffffffffffffffff16906020019092919050505061151f565b604051808215151515815260200191505060405180910390f35b60056020528060005260406000206000915090508060000154905081565b60035481565b60066020528060005260406000206000915090508060000154905081565b6000600960003373ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200190815260200160002054136105ed57600080fd5b6000600560008373ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200190815260200160002090508060010160003373ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200190815260200160002060009054906101000a900460ff16156106d5576040517f08c379a00000000000000000000000000000000000000000000000000000000081526004018080602001828103825260308152602001806116bb6030913960400191505060405180910390fd5b5050565b60003073ffffffffffffffffffffffffffffffffffffffff1631905090565b6000600960003373ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff168152602001908152602001600020541361074457600080fd5b6000600460008373ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200190815260200160002090508060010160003373ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200190815260200160002060009054906101000a900460ff161561082c576040517f08c379a000000000000000000000000000000000000000000000000000000000815260040180806020018281038252602c8152602001806116eb602c913960400191505060405180910390fd5b60018160010160003373ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200190815260200160002060006101000a81548160ff021916908315150217905550600181600001600082825401925050819055506108a28261156a565b5050565b600030905090565b60005481565b60015481565b6108c33361151f565b610935576040517f08c379a000000000000000000000000000000000000000000000000000000000815260040180806020018281038252601d8152602001807f76616c696461746f72206e6f742070726573656e7420696e206c69737400000081525060200191505060405180910390fd5b81600a60008373ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200190815260200160002060020154146109ec576040517f08c379a00000000000000000000000000000000000000000000000000000000081526004018080602001828103825260198152602001807f72656465656d20616d6f756e7420436f6d70726f6d697365640000000000000081525060200191505060405180910390fd5b600a60008273ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200190815260200160002060010160003373ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200190815260200160002060009054906101000a900460ff1615610a8357600080fd5b6001600a60008373ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200190815260200160002060010160003373ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200190815260200160002060006101000a81548160ff0219169083151502179055506001600a60008373ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200190815260200160002060030160008282540192505081905550600154600a60008373ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff1681526020019081526020016000206003015410610d8d57600a60008273ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200190815260200160002060000160009054906101000a900473ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff166108fc600a60008473ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff168152602001908152602001600020600201549081150290604051600060405180830381858888f19350505050158015610ca1573d6000803e3d6000fd5b506000600a60008373ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff168152602001908152602001600020600201819055506001600a60008373ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200190815260200160002060040160006101000a81548160ff02191690831515021790555043600a60008373ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff168152602001908152602001600020600501819055505b8073ffffffffffffffffffffffffffffffffffffffff167f3b76df4bf55914fbcbc8b02f6773984cc346db1e6aef40410dcee0f94c6a05db3384604051808373ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff1681526020018281526020019250505060405180910390a25050565b60046020528060005260406000206000915090508060000154905081565b6000600a60003373ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff1681526020019081526020016000206002015414610e8057600080fd5b60008111610ef6576040517f08c379a000000000000000000000000000000000000000000000000000000000815260040180806020018281038252601e8152602001807f616d6f756e742073686f756c6420626520626967676572207468616e2030000081525060200191505060405180910390fd5b43600a60003373ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff1681526020019081526020016000206005015410610fad576040517f08c379a00000000000000000000000000000000000000000000000000000000081526004018080602001828103825260208152602001807f72657175657374206973206c6f636b65642c206e6f7420617661696c61626c6581525060200191505060405180910390fd5b60001515600a60003373ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200190815260200160002060040160009054906101000a905050506000600a60003373ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff1681526020019081526020016000206003018190555033600a60003373ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200190815260200160002060000160006101000a81548173ffffffffffffffffffffffffffffffffffffffff021916908373ffffffffffffffffffffffffffffffffffffffff16021790555080600a60003373ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff168152602001908152602001600020600201819055506002544301600a60003373ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200190815260200160002060050181905550600a60003373ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200190815260200160002060000160009054906101000a900473ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff167f222dc200773fe9b45015bf792e8fee37d651e3590c215806a5042404b6d741d2600a60003373ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff168152602001908152602001600020600201546040518082815260200191505060405180910390a250565b6000600960003373ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff168152602001908152602001600020541361129c57600080fd5b60005481106112f6576040517f08c379a00000000000000000000000000000000000000000000000000000000081526004018080602001828103825260418152602001806116506041913960600191505060405180910390fd5b60006006600083815260200190815260200160002090508060010160003373ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200190815260200160002060009054906101000a900460ff16156113b2576040517f08c379a000000000000000000000000000000000000000000000000000000000815260040180806020018281038252602a815260200180611691602a913960400191505060405180910390fd5b60018160010160003373ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200190815260200160002060006101000a81548160ff021916908315150217905550600181600001600082825401925050819055505050565b600034101561149a576040517f08c379a000000000000000000000000000000000000000000000000000000000815260040180806020018281038252601e8152602001807f4d7573742070617920612062616c616e6365206d6f7265207468616e2030000081525060200191505060405180910390fd5b7f625fed9875dada8643f2418b838ae0bc78d9a148a18eee4ee1979ff0f3f5d4273334604051808373ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff1681526020018281526020019250505060405180910390a1565b60096020528060005260406000206000915090505481565b600080600960008473ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200190815260200160002054139050919050565b6032600960008373ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200190815260200160002081905550600160008082825401925050819055508073ffffffffffffffffffffffffffffffffffffffff167fb2076c69a79e1dfb01d613dcc63b7c42ae1962daf11d4f2151352135133f824b600960008473ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff168152602001908152602001600020546040518082815260200191505060405180910390a25056fe4e6577207468726573686f6c647320286d29206d757374206265206c657373207468616e20746865206e756d626572206f662076616c696461746f727320286e2973656e6465722068617320616c726561647920766f74656420666f7220746869732070726f706f73616c73656e6465722068617320616c726561647920766f74656420746f20616464207468697320746f2070726f706f73616c73656e6465722068617320616c726561647920766f74656420746f2061646420746869732061646472657373a265627a7a72315820c2d6331b1babb91556272aef46eca1897f964ffaac0d437df7709dd558b561ee64736f6c634300050b0032696e73756666696369656e742076616c696461746f72732070617373656420746f20636f6e7374727563746f72666f756e64206e6f6e2d756e697175652076616c696461746f7220696e20696e697469616c56616c696461746f7273"
+// LockRedeemFuncSigs maps the 4-byte function signature to its string representation.
+var LockRedeemFuncSigs = map[string]string{
+	"bfb9e9f5": "addValidatorProposals(address)",
+	"0d8f6b5b": "epochBlockHeight()",
+	"45dfa415": "getOLTEthAddress()",
+	"287cc96b": "getTotalEthBalance()",
+	"facd743b": "isValidator(address)",
+	"f83d08ba": "lock()",
+	"0e7d275d": "newThresholdProposals(uint256)",
+	"5d593f8d": "numValidators()",
+	"383ea59a": "proposeAddValidator(address)",
+	"e0e887d0": "proposeNewThreshold(uint256)",
+	"101a8538": "proposeRemoveValidator(address)",
+	"db006a75": "redeem(uint256)",
+	"0d00753a": "removeValidatorProposals(address)",
+	"7cacde3f": "sign(uint256,address)",
+	"fa52c7d8": "validators(address)",
+	"62827733": "votingThreshold()",
+}
 
-// DeployContract deploys a new Ethereum contract, binding an instance of Contract to it.
-func DeployContract(auth *bind.TransactOpts, backend bind.ContractBackend, initialValidators []common.Address) (common.Address, *types.Transaction, *Contract, error) {
-	parsed, err := abi.JSON(strings.NewReader(ContractABI))
+// LockRedeemBin is the compiled bytecode used for deploying new contracts.
+var LockRedeemBin = "0x60806040526170806002553480156200001757600080fd5b5060405162000f4a38038062000f4a833981810160405260208110156200003d57600080fd5b81019080805160405193929190846401000000008211156200005e57600080fd5b9083019060208201858111156200007457600080fd5b82518660208202830111640100000000821117156200009257600080fd5b82525081516020918201928201910280838360005b83811015620000c1578181015183820152602001620000a7565b505050509190910160405250620000d792505050565b60005b81518110156200019b576000828281518110620000f357fe5b6020026020010151905060096000826001600160a01b03166001600160a01b03168152602001908152602001600020546000146200017d576040517f08c379a000000000000000000000000000000000000000000000000000000000815260040180806020018281038252602f81526020018062000f1b602f913960400191505060405180910390fd5b62000191816001600160e01b03620001b716565b50600101620000da565b50620001b0436001600160e01b036200021416565b50620003e6565b6001600160a01b03811660008181526009602090815260408083206032815583546001019093559154825190815291517fb2076c69a79e1dfb01d613dcc63b7c42ae1962daf11d4f2151352135133f824b9281900390910190a250565b33600090815260096020526040812054136200022f57600080fd5b60038190556040805182815290517febad8099c467528a56c98b63c8d476d251cf1ffb4c75db94b4d23fa2b6a1e3359181900360200190a160005b600754811015620002d1576000600782815481106200028557fe5b6000918252602090912001546001600160a01b03169050620002b0816001600160e01b03620001b716565b6001600160a01b03166000908152600460205260408120556001016200026a565b50620002e060076000620003a8565b60005b6008548110156200034a57600060088281548110620002fe57fe5b6000918252602090912001546001600160a01b0316905062000329816001600160e01b036200035c16565b6001600160a01b0316600090815260056020526040812055600101620002e3565b506200035960086000620003a8565b50565b6001600160a01b0381166000818152600960205260408082208290558154600019018255517f6d70afad774d81e8c32f930c6412789502b16ccf0a20f21679b249bdfac060e59190a250565b5080546000825590600052602060002090810190620003599190620003e391905b80821115620003df5760008155600101620003c9565b5090565b90565b610b2580620003f66000396000f3fe6080604052600436106100f35760003560e01c8063628277331161008a578063e0e887d011610059578063e0e887d0146102ea578063f83d08ba14610314578063fa52c7d81461031c578063facd743b1461034f576100f3565b8063628277331461023f5780637cacde3f14610254578063bfb9e9f51461028d578063db006a75146102c0576100f3565b8063287cc96b116100c6578063287cc96b146101b1578063383ea59a146101c657806345dfa415146101f95780635d593f8d1461022a576100f3565b80630d00753a146100f85780630d8f6b5b1461013d5780630e7d275d14610152578063101a85381461017c575b600080fd5b34801561010457600080fd5b5061012b6004803603602081101561011b57600080fd5b50356001600160a01b0316610396565b60408051918252519081900360200190f35b34801561014957600080fd5b5061012b6103a8565b34801561015e57600080fd5b5061012b6004803603602081101561017557600080fd5b50356103ae565b34801561018857600080fd5b506101af6004803603602081101561019f57600080fd5b50356001600160a01b03166103c0565b005b3480156101bd57600080fd5b5061012b610446565b3480156101d257600080fd5b506101af600480360360208110156101e957600080fd5b50356001600160a01b031661044b565b34801561020557600080fd5b5061020e6104f8565b604080516001600160a01b039092168252519081900360200190f35b34801561023657600080fd5b5061012b6104fc565b34801561024b57600080fd5b5061012b610502565b34801561026057600080fd5b506101af6004803603604081101561027757600080fd5b50803590602001356001600160a01b0316610508565b34801561029957600080fd5b5061012b600480360360208110156102b057600080fd5b50356001600160a01b031661071a565b3480156102cc57600080fd5b506101af600480360360208110156102e357600080fd5b503561072c565b3480156102f657600080fd5b506101af6004803603602081101561030d57600080fd5b5035610885565b6101af610962565b34801561032857600080fd5b5061012b6004803603602081101561033f57600080fd5b50356001600160a01b031661099e565b34801561035b57600080fd5b506103826004803603602081101561037257600080fd5b50356001600160a01b03166109b0565b604080519115158252519081900360200190f35b60056020526000908152604090205481565b60035481565b60066020526000908152604090205481565b33600090815260096020526040812054136103da57600080fd5b6001600160a01b0381166000908152600560209081526040808320338452600181019092529091205460ff16156104425760405162461bcd60e51b8152600401808060200182810382526030815260200180610a956030913960400191505060405180910390fd5b5050565b303190565b336000908152600960205260408120541361046557600080fd5b6001600160a01b0381166000908152600460209081526040808320338452600181019092529091205460ff16156104cd5760405162461bcd60e51b815260040180806020018281038252602c815260200180610ac5602c913960400191505060405180910390fd5b33600090815260018281016020526040909120805460ff1916821790558154018155610442826109cc565b3090565b60005481565b60015481565b610511336109b0565b610562576040805162461bcd60e51b815260206004820152601d60248201527f76616c696461746f72206e6f742070726573656e7420696e206c697374000000604482015290519081900360640190fd5b6001600160a01b0381166000908152600a602052604090206002015482146105d1576040805162461bcd60e51b815260206004820152601960248201527f72656465656d20616d6f756e7420436f6d70726f6d6973656400000000000000604482015290519081900360640190fd5b6001600160a01b0381166000908152600a6020908152604080832033845260010190915290205460ff161561060557600080fd5b6001600160a01b0381166000818152600a6020818152604080842033855260018181018452918520805460ff1916831790559490935252600390910180548201908190559054116106d3576001600160a01b038082166000908152600a60205260408082208054600290910154915193169281156108fc0292818181858888f1935050505015801561069b573d6000803e3d6000fd5b506001600160a01b0381166000908152600a60205260408120600281019190915560048101805460ff19166001179055436005909101555b604080513381526020810184905281516001600160a01b038416927f3b76df4bf55914fbcbc8b02f6773984cc346db1e6aef40410dcee0f94c6a05db928290030190a25050565b60046020526000908152604090205481565b336000908152600a60205260409020600201541561074957600080fd5b6000811161079e576040805162461bcd60e51b815260206004820152601e60248201527f616d6f756e742073686f756c6420626520626967676572207468616e20300000604482015290519081900360640190fd5b336000908152600a60205260409020600501544311610804576040805162461bcd60e51b815260206004820181905260248201527f72657175657374206973206c6f636b65642c206e6f7420617661696c61626c65604482015290519081900360640190fd5b336000818152600a60209081526040808320600381019390935582546001600160a01b0319169093178083556002808401869055544301600590930192909255825184815292516001600160a01b03909216927f222dc200773fe9b45015bf792e8fee37d651e3590c215806a5042404b6d741d2929081900390910190a250565b336000908152600960205260408120541361089f57600080fd5b60005481106108df5760405162461bcd60e51b8152600401808060200182810382526041815260200180610a2a6041913960600191505060405180910390fd5b6000818152600660209081526040808320338452600181019092529091205460ff161561093d5760405162461bcd60e51b815260040180806020018281038252602a815260200180610a6b602a913960400191505060405180910390fd5b33600090815260018281016020526040909120805460ff191682179055815401905550565b6040805133815234602082015281517f625fed9875dada8643f2418b838ae0bc78d9a148a18eee4ee1979ff0f3f5d427929181900390910190a1565b60096020526000908152604090205481565b6001600160a01b03166000908152600960205260408120541390565b6001600160a01b03811660008181526009602090815260408083206032815583546001019093559154825190815291517fb2076c69a79e1dfb01d613dcc63b7c42ae1962daf11d4f2151352135133f824b9281900390910190a25056fe4e6577207468726573686f6c647320286d29206d757374206265206c657373207468616e20746865206e756d626572206f662076616c696461746f727320286e2973656e6465722068617320616c726561647920766f74656420666f7220746869732070726f706f73616c73656e6465722068617320616c726561647920766f74656420746f20616464207468697320746f2070726f706f73616c73656e6465722068617320616c726561647920766f74656420746f2061646420746869732061646472657373a265627a7a7231582092725aafb95a1e96dbebe1a9cbf226a6f5fb9ad28e1eb77f1459b60a292881e464736f6c634300050b0032666f756e64206e6f6e2d756e697175652076616c696461746f7220696e20696e697469616c56616c696461746f7273"
+
+// DeployLockRedeem deploys a new Ethereum contract, binding an instance of LockRedeem to it.
+func DeployLockRedeem(auth *bind.TransactOpts, backend bind.ContractBackend, initialValidators []common.Address) (common.Address, *types.Transaction, *LockRedeem, error) {
+	parsed, err := abi.JSON(strings.NewReader(LockRedeemABI))
 	if err != nil {
 		return common.Address{}, nil, nil, err
 	}
 
-	address, tx, contract, err := bind.DeployContract(auth, parsed, common.FromHex(ContractBin), backend, initialValidators)
+	address, tx, contract, err := bind.DeployContract(auth, parsed, common.FromHex(LockRedeemBin), backend, initialValidators)
 	if err != nil {
 		return common.Address{}, nil, nil, err
 	}
-	return address, tx, &Contract{ContractCaller: ContractCaller{contract: contract}, ContractTransactor: ContractTransactor{contract: contract}, ContractFilterer: ContractFilterer{contract: contract}}, nil
+	return address, tx, &LockRedeem{LockRedeemCaller: LockRedeemCaller{contract: contract}, LockRedeemTransactor: LockRedeemTransactor{contract: contract}, LockRedeemFilterer: LockRedeemFilterer{contract: contract}}, nil
 }
 
-// Contract is an auto generated Go binding around an Ethereum contract.
-type Contract struct {
-	ContractCaller     // Read-only binding to the contract
-	ContractTransactor // Write-only binding to the contract
-	ContractFilterer   // Log filterer for contract events
+// LockRedeem is an auto generated Go binding around an Ethereum contract.
+type LockRedeem struct {
+	LockRedeemCaller     // Read-only binding to the contract
+	LockRedeemTransactor // Write-only binding to the contract
+	LockRedeemFilterer   // Log filterer for contract events
 }
 
-// ContractCaller is an auto generated read-only Go binding around an Ethereum contract.
-type ContractCaller struct {
+// LockRedeemCaller is an auto generated read-only Go binding around an Ethereum contract.
+type LockRedeemCaller struct {
 	contract *bind.BoundContract // Generic contract wrapper for the low level calls
 }
 
-// ContractTransactor is an auto generated write-only Go binding around an Ethereum contract.
-type ContractTransactor struct {
+// LockRedeemTransactor is an auto generated write-only Go binding around an Ethereum contract.
+type LockRedeemTransactor struct {
 	contract *bind.BoundContract // Generic contract wrapper for the low level calls
 }
 
-// ContractFilterer is an auto generated log filtering Go binding around an Ethereum contract events.
-type ContractFilterer struct {
+// LockRedeemFilterer is an auto generated log filtering Go binding around an Ethereum contract events.
+type LockRedeemFilterer struct {
 	contract *bind.BoundContract // Generic contract wrapper for the low level calls
 }
 
-// ContractSession is an auto generated Go binding around an Ethereum contract,
+// LockRedeemSession is an auto generated Go binding around an Ethereum contract,
 // with pre-set call and transact options.
-type ContractSession struct {
-	Contract     *Contract         // Generic contract binding to set the session for
+type LockRedeemSession struct {
+	Contract     *LockRedeem       // Generic contract binding to set the session for
 	CallOpts     bind.CallOpts     // Call options to use throughout this session
 	TransactOpts bind.TransactOpts // Transaction auth options to use throughout this session
 }
 
-// ContractCallerSession is an auto generated read-only Go binding around an Ethereum contract,
+// LockRedeemCallerSession is an auto generated read-only Go binding around an Ethereum contract,
 // with pre-set call options.
-type ContractCallerSession struct {
-	Contract *ContractCaller // Generic contract caller binding to set the session for
-	CallOpts bind.CallOpts   // Call options to use throughout this session
+type LockRedeemCallerSession struct {
+	Contract *LockRedeemCaller // Generic contract caller binding to set the session for
+	CallOpts bind.CallOpts     // Call options to use throughout this session
 }
 
-// ContractTransactorSession is an auto generated write-only Go binding around an Ethereum contract,
+// LockRedeemTransactorSession is an auto generated write-only Go binding around an Ethereum contract,
 // with pre-set transact options.
-type ContractTransactorSession struct {
-	Contract     *ContractTransactor // Generic contract transactor binding to set the session for
-	TransactOpts bind.TransactOpts   // Transaction auth options to use throughout this session
+type LockRedeemTransactorSession struct {
+	Contract     *LockRedeemTransactor // Generic contract transactor binding to set the session for
+	TransactOpts bind.TransactOpts     // Transaction auth options to use throughout this session
 }
 
-// ContractRaw is an auto generated low-level Go binding around an Ethereum contract.
-type ContractRaw struct {
-	Contract *Contract // Generic contract binding to access the raw methods on
+// LockRedeemRaw is an auto generated low-level Go binding around an Ethereum contract.
+type LockRedeemRaw struct {
+	Contract *LockRedeem // Generic contract binding to access the raw methods on
 }
 
-// ContractCallerRaw is an auto generated low-level read-only Go binding around an Ethereum contract.
-type ContractCallerRaw struct {
-	Contract *ContractCaller // Generic read-only contract binding to access the raw methods on
+// LockRedeemCallerRaw is an auto generated low-level read-only Go binding around an Ethereum contract.
+type LockRedeemCallerRaw struct {
+	Contract *LockRedeemCaller // Generic read-only contract binding to access the raw methods on
 }
 
-// ContractTransactorRaw is an auto generated low-level write-only Go binding around an Ethereum contract.
-type ContractTransactorRaw struct {
-	Contract *ContractTransactor // Generic write-only contract binding to access the raw methods on
+// LockRedeemTransactorRaw is an auto generated low-level write-only Go binding around an Ethereum contract.
+type LockRedeemTransactorRaw struct {
+	Contract *LockRedeemTransactor // Generic write-only contract binding to access the raw methods on
 }
 
-// NewContract creates a new instance of Contract, bound to a specific deployed contract.
-func NewContract(address common.Address, backend bind.ContractBackend) (*Contract, error) {
-	contract, err := bindContract(address, backend, backend, backend)
+// NewLockRedeem creates a new instance of LockRedeem, bound to a specific deployed contract.
+func NewLockRedeem(address common.Address, backend bind.ContractBackend) (*LockRedeem, error) {
+	contract, err := bindLockRedeem(address, backend, backend, backend)
 	if err != nil {
 		return nil, err
 	}
-	return &Contract{ContractCaller: ContractCaller{contract: contract}, ContractTransactor: ContractTransactor{contract: contract}, ContractFilterer: ContractFilterer{contract: contract}}, nil
+	return &LockRedeem{LockRedeemCaller: LockRedeemCaller{contract: contract}, LockRedeemTransactor: LockRedeemTransactor{contract: contract}, LockRedeemFilterer: LockRedeemFilterer{contract: contract}}, nil
 }
 
-// NewContractCaller creates a new read-only instance of Contract, bound to a specific deployed contract.
-func NewContractCaller(address common.Address, caller bind.ContractCaller) (*ContractCaller, error) {
-	contract, err := bindContract(address, caller, nil, nil)
+// NewLockRedeemCaller creates a new read-only instance of LockRedeem, bound to a specific deployed contract.
+func NewLockRedeemCaller(address common.Address, caller bind.ContractCaller) (*LockRedeemCaller, error) {
+	contract, err := bindLockRedeem(address, caller, nil, nil)
 	if err != nil {
 		return nil, err
 	}
-	return &ContractCaller{contract: contract}, nil
+	return &LockRedeemCaller{contract: contract}, nil
 }
 
-// NewContractTransactor creates a new write-only instance of Contract, bound to a specific deployed contract.
-func NewContractTransactor(address common.Address, transactor bind.ContractTransactor) (*ContractTransactor, error) {
-	contract, err := bindContract(address, nil, transactor, nil)
+// NewLockRedeemTransactor creates a new write-only instance of LockRedeem, bound to a specific deployed contract.
+func NewLockRedeemTransactor(address common.Address, transactor bind.ContractTransactor) (*LockRedeemTransactor, error) {
+	contract, err := bindLockRedeem(address, nil, transactor, nil)
 	if err != nil {
 		return nil, err
 	}
-	return &ContractTransactor{contract: contract}, nil
+	return &LockRedeemTransactor{contract: contract}, nil
 }
 
-// NewContractFilterer creates a new log filterer instance of Contract, bound to a specific deployed contract.
-func NewContractFilterer(address common.Address, filterer bind.ContractFilterer) (*ContractFilterer, error) {
-	contract, err := bindContract(address, nil, nil, filterer)
+// NewLockRedeemFilterer creates a new log filterer instance of LockRedeem, bound to a specific deployed contract.
+func NewLockRedeemFilterer(address common.Address, filterer bind.ContractFilterer) (*LockRedeemFilterer, error) {
+	contract, err := bindLockRedeem(address, nil, nil, filterer)
 	if err != nil {
 		return nil, err
 	}
-	return &ContractFilterer{contract: contract}, nil
+	return &LockRedeemFilterer{contract: contract}, nil
 }
 
-// bindContract binds a generic wrapper to an already deployed contract.
-func bindContract(address common.Address, caller bind.ContractCaller, transactor bind.ContractTransactor, filterer bind.ContractFilterer) (*bind.BoundContract, error) {
-	parsed, err := abi.JSON(strings.NewReader(ContractABI))
+// bindLockRedeem binds a generic wrapper to an already deployed contract.
+func bindLockRedeem(address common.Address, caller bind.ContractCaller, transactor bind.ContractTransactor, filterer bind.ContractFilterer) (*bind.BoundContract, error) {
+	parsed, err := abi.JSON(strings.NewReader(LockRedeemABI))
 	if err != nil {
 		return nil, err
 	}
@@ -155,432 +175,432 @@ func bindContract(address common.Address, caller bind.ContractCaller, transactor
 // sets the output to result. The result type might be a single field for simple
 // returns, a slice of interfaces for anonymous returns and a struct for named
 // returns.
-func (_Contract *ContractRaw) Call(opts *bind.CallOpts, result interface{}, method string, params ...interface{}) error {
-	return _Contract.Contract.ContractCaller.contract.Call(opts, result, method, params...)
+func (_LockRedeem *LockRedeemRaw) Call(opts *bind.CallOpts, result interface{}, method string, params ...interface{}) error {
+	return _LockRedeem.Contract.LockRedeemCaller.contract.Call(opts, result, method, params...)
 }
 
 // Transfer initiates a plain transaction to move funds to the contract, calling
 // its default method if one is available.
-func (_Contract *ContractRaw) Transfer(opts *bind.TransactOpts) (*types.Transaction, error) {
-	return _Contract.Contract.ContractTransactor.contract.Transfer(opts)
+func (_LockRedeem *LockRedeemRaw) Transfer(opts *bind.TransactOpts) (*types.Transaction, error) {
+	return _LockRedeem.Contract.LockRedeemTransactor.contract.Transfer(opts)
 }
 
 // Transact invokes the (paid) contract method with params as input values.
-func (_Contract *ContractRaw) Transact(opts *bind.TransactOpts, method string, params ...interface{}) (*types.Transaction, error) {
-	return _Contract.Contract.ContractTransactor.contract.Transact(opts, method, params...)
+func (_LockRedeem *LockRedeemRaw) Transact(opts *bind.TransactOpts, method string, params ...interface{}) (*types.Transaction, error) {
+	return _LockRedeem.Contract.LockRedeemTransactor.contract.Transact(opts, method, params...)
 }
 
 // Call invokes the (constant) contract method with params as input values and
 // sets the output to result. The result type might be a single field for simple
 // returns, a slice of interfaces for anonymous returns and a struct for named
 // returns.
-func (_Contract *ContractCallerRaw) Call(opts *bind.CallOpts, result interface{}, method string, params ...interface{}) error {
-	return _Contract.Contract.contract.Call(opts, result, method, params...)
+func (_LockRedeem *LockRedeemCallerRaw) Call(opts *bind.CallOpts, result interface{}, method string, params ...interface{}) error {
+	return _LockRedeem.Contract.contract.Call(opts, result, method, params...)
 }
 
 // Transfer initiates a plain transaction to move funds to the contract, calling
 // its default method if one is available.
-func (_Contract *ContractTransactorRaw) Transfer(opts *bind.TransactOpts) (*types.Transaction, error) {
-	return _Contract.Contract.contract.Transfer(opts)
+func (_LockRedeem *LockRedeemTransactorRaw) Transfer(opts *bind.TransactOpts) (*types.Transaction, error) {
+	return _LockRedeem.Contract.contract.Transfer(opts)
 }
 
 // Transact invokes the (paid) contract method with params as input values.
-func (_Contract *ContractTransactorRaw) Transact(opts *bind.TransactOpts, method string, params ...interface{}) (*types.Transaction, error) {
-	return _Contract.Contract.contract.Transact(opts, method, params...)
+func (_LockRedeem *LockRedeemTransactorRaw) Transact(opts *bind.TransactOpts, method string, params ...interface{}) (*types.Transaction, error) {
+	return _LockRedeem.Contract.contract.Transact(opts, method, params...)
 }
 
 // AddValidatorProposals is a free data retrieval call binding the contract method 0xbfb9e9f5.
 //
 // Solidity: function addValidatorProposals(address ) constant returns(uint256 voteCount)
-func (_Contract *ContractCaller) AddValidatorProposals(opts *bind.CallOpts, arg0 common.Address) (*big.Int, error) {
+func (_LockRedeem *LockRedeemCaller) AddValidatorProposals(opts *bind.CallOpts, arg0 common.Address) (*big.Int, error) {
 	var (
 		ret0 = new(*big.Int)
 	)
 	out := ret0
-	err := _Contract.contract.Call(opts, out, "addValidatorProposals", arg0)
+	err := _LockRedeem.contract.Call(opts, out, "addValidatorProposals", arg0)
 	return *ret0, err
 }
 
 // AddValidatorProposals is a free data retrieval call binding the contract method 0xbfb9e9f5.
 //
 // Solidity: function addValidatorProposals(address ) constant returns(uint256 voteCount)
-func (_Contract *ContractSession) AddValidatorProposals(arg0 common.Address) (*big.Int, error) {
-	return _Contract.Contract.AddValidatorProposals(&_Contract.CallOpts, arg0)
+func (_LockRedeem *LockRedeemSession) AddValidatorProposals(arg0 common.Address) (*big.Int, error) {
+	return _LockRedeem.Contract.AddValidatorProposals(&_LockRedeem.CallOpts, arg0)
 }
 
 // AddValidatorProposals is a free data retrieval call binding the contract method 0xbfb9e9f5.
 //
 // Solidity: function addValidatorProposals(address ) constant returns(uint256 voteCount)
-func (_Contract *ContractCallerSession) AddValidatorProposals(arg0 common.Address) (*big.Int, error) {
-	return _Contract.Contract.AddValidatorProposals(&_Contract.CallOpts, arg0)
+func (_LockRedeem *LockRedeemCallerSession) AddValidatorProposals(arg0 common.Address) (*big.Int, error) {
+	return _LockRedeem.Contract.AddValidatorProposals(&_LockRedeem.CallOpts, arg0)
 }
 
 // EpochBlockHeight is a free data retrieval call binding the contract method 0x0d8f6b5b.
 //
 // Solidity: function epochBlockHeight() constant returns(uint256)
-func (_Contract *ContractCaller) EpochBlockHeight(opts *bind.CallOpts) (*big.Int, error) {
+func (_LockRedeem *LockRedeemCaller) EpochBlockHeight(opts *bind.CallOpts) (*big.Int, error) {
 	var (
 		ret0 = new(*big.Int)
 	)
 	out := ret0
-	err := _Contract.contract.Call(opts, out, "epochBlockHeight")
+	err := _LockRedeem.contract.Call(opts, out, "epochBlockHeight")
 	return *ret0, err
 }
 
 // EpochBlockHeight is a free data retrieval call binding the contract method 0x0d8f6b5b.
 //
 // Solidity: function epochBlockHeight() constant returns(uint256)
-func (_Contract *ContractSession) EpochBlockHeight() (*big.Int, error) {
-	return _Contract.Contract.EpochBlockHeight(&_Contract.CallOpts)
+func (_LockRedeem *LockRedeemSession) EpochBlockHeight() (*big.Int, error) {
+	return _LockRedeem.Contract.EpochBlockHeight(&_LockRedeem.CallOpts)
 }
 
 // EpochBlockHeight is a free data retrieval call binding the contract method 0x0d8f6b5b.
 //
 // Solidity: function epochBlockHeight() constant returns(uint256)
-func (_Contract *ContractCallerSession) EpochBlockHeight() (*big.Int, error) {
-	return _Contract.Contract.EpochBlockHeight(&_Contract.CallOpts)
+func (_LockRedeem *LockRedeemCallerSession) EpochBlockHeight() (*big.Int, error) {
+	return _LockRedeem.Contract.EpochBlockHeight(&_LockRedeem.CallOpts)
 }
 
 // GetOLTEthAddress is a free data retrieval call binding the contract method 0x45dfa415.
 //
 // Solidity: function getOLTEthAddress() constant returns(address)
-func (_Contract *ContractCaller) GetOLTEthAddress(opts *bind.CallOpts) (common.Address, error) {
+func (_LockRedeem *LockRedeemCaller) GetOLTEthAddress(opts *bind.CallOpts) (common.Address, error) {
 	var (
 		ret0 = new(common.Address)
 	)
 	out := ret0
-	err := _Contract.contract.Call(opts, out, "getOLTEthAddress")
+	err := _LockRedeem.contract.Call(opts, out, "getOLTEthAddress")
 	return *ret0, err
 }
 
 // GetOLTEthAddress is a free data retrieval call binding the contract method 0x45dfa415.
 //
 // Solidity: function getOLTEthAddress() constant returns(address)
-func (_Contract *ContractSession) GetOLTEthAddress() (common.Address, error) {
-	return _Contract.Contract.GetOLTEthAddress(&_Contract.CallOpts)
+func (_LockRedeem *LockRedeemSession) GetOLTEthAddress() (common.Address, error) {
+	return _LockRedeem.Contract.GetOLTEthAddress(&_LockRedeem.CallOpts)
 }
 
 // GetOLTEthAddress is a free data retrieval call binding the contract method 0x45dfa415.
 //
 // Solidity: function getOLTEthAddress() constant returns(address)
-func (_Contract *ContractCallerSession) GetOLTEthAddress() (common.Address, error) {
-	return _Contract.Contract.GetOLTEthAddress(&_Contract.CallOpts)
+func (_LockRedeem *LockRedeemCallerSession) GetOLTEthAddress() (common.Address, error) {
+	return _LockRedeem.Contract.GetOLTEthAddress(&_LockRedeem.CallOpts)
 }
 
 // GetTotalEthBalance is a free data retrieval call binding the contract method 0x287cc96b.
 //
 // Solidity: function getTotalEthBalance() constant returns(uint256)
-func (_Contract *ContractCaller) GetTotalEthBalance(opts *bind.CallOpts) (*big.Int, error) {
+func (_LockRedeem *LockRedeemCaller) GetTotalEthBalance(opts *bind.CallOpts) (*big.Int, error) {
 	var (
 		ret0 = new(*big.Int)
 	)
 	out := ret0
-	err := _Contract.contract.Call(opts, out, "getTotalEthBalance")
+	err := _LockRedeem.contract.Call(opts, out, "getTotalEthBalance")
 	return *ret0, err
 }
 
 // GetTotalEthBalance is a free data retrieval call binding the contract method 0x287cc96b.
 //
 // Solidity: function getTotalEthBalance() constant returns(uint256)
-func (_Contract *ContractSession) GetTotalEthBalance() (*big.Int, error) {
-	return _Contract.Contract.GetTotalEthBalance(&_Contract.CallOpts)
+func (_LockRedeem *LockRedeemSession) GetTotalEthBalance() (*big.Int, error) {
+	return _LockRedeem.Contract.GetTotalEthBalance(&_LockRedeem.CallOpts)
 }
 
 // GetTotalEthBalance is a free data retrieval call binding the contract method 0x287cc96b.
 //
 // Solidity: function getTotalEthBalance() constant returns(uint256)
-func (_Contract *ContractCallerSession) GetTotalEthBalance() (*big.Int, error) {
-	return _Contract.Contract.GetTotalEthBalance(&_Contract.CallOpts)
+func (_LockRedeem *LockRedeemCallerSession) GetTotalEthBalance() (*big.Int, error) {
+	return _LockRedeem.Contract.GetTotalEthBalance(&_LockRedeem.CallOpts)
 }
 
 // IsValidator is a free data retrieval call binding the contract method 0xfacd743b.
 //
 // Solidity: function isValidator(address addr) constant returns(bool)
-func (_Contract *ContractCaller) IsValidator(opts *bind.CallOpts, addr common.Address) (bool, error) {
+func (_LockRedeem *LockRedeemCaller) IsValidator(opts *bind.CallOpts, addr common.Address) (bool, error) {
 	var (
 		ret0 = new(bool)
 	)
 	out := ret0
-	err := _Contract.contract.Call(opts, out, "isValidator", addr)
+	err := _LockRedeem.contract.Call(opts, out, "isValidator", addr)
 	return *ret0, err
 }
 
 // IsValidator is a free data retrieval call binding the contract method 0xfacd743b.
 //
 // Solidity: function isValidator(address addr) constant returns(bool)
-func (_Contract *ContractSession) IsValidator(addr common.Address) (bool, error) {
-	return _Contract.Contract.IsValidator(&_Contract.CallOpts, addr)
+func (_LockRedeem *LockRedeemSession) IsValidator(addr common.Address) (bool, error) {
+	return _LockRedeem.Contract.IsValidator(&_LockRedeem.CallOpts, addr)
 }
 
 // IsValidator is a free data retrieval call binding the contract method 0xfacd743b.
 //
 // Solidity: function isValidator(address addr) constant returns(bool)
-func (_Contract *ContractCallerSession) IsValidator(addr common.Address) (bool, error) {
-	return _Contract.Contract.IsValidator(&_Contract.CallOpts, addr)
+func (_LockRedeem *LockRedeemCallerSession) IsValidator(addr common.Address) (bool, error) {
+	return _LockRedeem.Contract.IsValidator(&_LockRedeem.CallOpts, addr)
 }
 
 // NewThresholdProposals is a free data retrieval call binding the contract method 0x0e7d275d.
 //
 // Solidity: function newThresholdProposals(uint256 ) constant returns(uint256 voteCount)
-func (_Contract *ContractCaller) NewThresholdProposals(opts *bind.CallOpts, arg0 *big.Int) (*big.Int, error) {
+func (_LockRedeem *LockRedeemCaller) NewThresholdProposals(opts *bind.CallOpts, arg0 *big.Int) (*big.Int, error) {
 	var (
 		ret0 = new(*big.Int)
 	)
 	out := ret0
-	err := _Contract.contract.Call(opts, out, "newThresholdProposals", arg0)
+	err := _LockRedeem.contract.Call(opts, out, "newThresholdProposals", arg0)
 	return *ret0, err
 }
 
 // NewThresholdProposals is a free data retrieval call binding the contract method 0x0e7d275d.
 //
 // Solidity: function newThresholdProposals(uint256 ) constant returns(uint256 voteCount)
-func (_Contract *ContractSession) NewThresholdProposals(arg0 *big.Int) (*big.Int, error) {
-	return _Contract.Contract.NewThresholdProposals(&_Contract.CallOpts, arg0)
+func (_LockRedeem *LockRedeemSession) NewThresholdProposals(arg0 *big.Int) (*big.Int, error) {
+	return _LockRedeem.Contract.NewThresholdProposals(&_LockRedeem.CallOpts, arg0)
 }
 
 // NewThresholdProposals is a free data retrieval call binding the contract method 0x0e7d275d.
 //
 // Solidity: function newThresholdProposals(uint256 ) constant returns(uint256 voteCount)
-func (_Contract *ContractCallerSession) NewThresholdProposals(arg0 *big.Int) (*big.Int, error) {
-	return _Contract.Contract.NewThresholdProposals(&_Contract.CallOpts, arg0)
+func (_LockRedeem *LockRedeemCallerSession) NewThresholdProposals(arg0 *big.Int) (*big.Int, error) {
+	return _LockRedeem.Contract.NewThresholdProposals(&_LockRedeem.CallOpts, arg0)
 }
 
 // NumValidators is a free data retrieval call binding the contract method 0x5d593f8d.
 //
 // Solidity: function numValidators() constant returns(uint256)
-func (_Contract *ContractCaller) NumValidators(opts *bind.CallOpts) (*big.Int, error) {
+func (_LockRedeem *LockRedeemCaller) NumValidators(opts *bind.CallOpts) (*big.Int, error) {
 	var (
 		ret0 = new(*big.Int)
 	)
 	out := ret0
-	err := _Contract.contract.Call(opts, out, "numValidators")
+	err := _LockRedeem.contract.Call(opts, out, "numValidators")
 	return *ret0, err
 }
 
 // NumValidators is a free data retrieval call binding the contract method 0x5d593f8d.
 //
 // Solidity: function numValidators() constant returns(uint256)
-func (_Contract *ContractSession) NumValidators() (*big.Int, error) {
-	return _Contract.Contract.NumValidators(&_Contract.CallOpts)
+func (_LockRedeem *LockRedeemSession) NumValidators() (*big.Int, error) {
+	return _LockRedeem.Contract.NumValidators(&_LockRedeem.CallOpts)
 }
 
 // NumValidators is a free data retrieval call binding the contract method 0x5d593f8d.
 //
 // Solidity: function numValidators() constant returns(uint256)
-func (_Contract *ContractCallerSession) NumValidators() (*big.Int, error) {
-	return _Contract.Contract.NumValidators(&_Contract.CallOpts)
+func (_LockRedeem *LockRedeemCallerSession) NumValidators() (*big.Int, error) {
+	return _LockRedeem.Contract.NumValidators(&_LockRedeem.CallOpts)
 }
 
 // ProposeRemoveValidator is a free data retrieval call binding the contract method 0x101a8538.
 //
 // Solidity: function proposeRemoveValidator(address v) constant returns()
-func (_Contract *ContractCaller) ProposeRemoveValidator(opts *bind.CallOpts, v common.Address) error {
+func (_LockRedeem *LockRedeemCaller) ProposeRemoveValidator(opts *bind.CallOpts, v common.Address) error {
 	var ()
 	out := &[]interface{}{}
-	err := _Contract.contract.Call(opts, out, "proposeRemoveValidator", v)
+	err := _LockRedeem.contract.Call(opts, out, "proposeRemoveValidator", v)
 	return err
 }
 
 // ProposeRemoveValidator is a free data retrieval call binding the contract method 0x101a8538.
 //
 // Solidity: function proposeRemoveValidator(address v) constant returns()
-func (_Contract *ContractSession) ProposeRemoveValidator(v common.Address) error {
-	return _Contract.Contract.ProposeRemoveValidator(&_Contract.CallOpts, v)
+func (_LockRedeem *LockRedeemSession) ProposeRemoveValidator(v common.Address) error {
+	return _LockRedeem.Contract.ProposeRemoveValidator(&_LockRedeem.CallOpts, v)
 }
 
 // ProposeRemoveValidator is a free data retrieval call binding the contract method 0x101a8538.
 //
 // Solidity: function proposeRemoveValidator(address v) constant returns()
-func (_Contract *ContractCallerSession) ProposeRemoveValidator(v common.Address) error {
-	return _Contract.Contract.ProposeRemoveValidator(&_Contract.CallOpts, v)
+func (_LockRedeem *LockRedeemCallerSession) ProposeRemoveValidator(v common.Address) error {
+	return _LockRedeem.Contract.ProposeRemoveValidator(&_LockRedeem.CallOpts, v)
 }
 
 // RemoveValidatorProposals is a free data retrieval call binding the contract method 0x0d00753a.
 //
 // Solidity: function removeValidatorProposals(address ) constant returns(uint256 voteCount)
-func (_Contract *ContractCaller) RemoveValidatorProposals(opts *bind.CallOpts, arg0 common.Address) (*big.Int, error) {
+func (_LockRedeem *LockRedeemCaller) RemoveValidatorProposals(opts *bind.CallOpts, arg0 common.Address) (*big.Int, error) {
 	var (
 		ret0 = new(*big.Int)
 	)
 	out := ret0
-	err := _Contract.contract.Call(opts, out, "removeValidatorProposals", arg0)
+	err := _LockRedeem.contract.Call(opts, out, "removeValidatorProposals", arg0)
 	return *ret0, err
 }
 
 // RemoveValidatorProposals is a free data retrieval call binding the contract method 0x0d00753a.
 //
 // Solidity: function removeValidatorProposals(address ) constant returns(uint256 voteCount)
-func (_Contract *ContractSession) RemoveValidatorProposals(arg0 common.Address) (*big.Int, error) {
-	return _Contract.Contract.RemoveValidatorProposals(&_Contract.CallOpts, arg0)
+func (_LockRedeem *LockRedeemSession) RemoveValidatorProposals(arg0 common.Address) (*big.Int, error) {
+	return _LockRedeem.Contract.RemoveValidatorProposals(&_LockRedeem.CallOpts, arg0)
 }
 
 // RemoveValidatorProposals is a free data retrieval call binding the contract method 0x0d00753a.
 //
 // Solidity: function removeValidatorProposals(address ) constant returns(uint256 voteCount)
-func (_Contract *ContractCallerSession) RemoveValidatorProposals(arg0 common.Address) (*big.Int, error) {
-	return _Contract.Contract.RemoveValidatorProposals(&_Contract.CallOpts, arg0)
+func (_LockRedeem *LockRedeemCallerSession) RemoveValidatorProposals(arg0 common.Address) (*big.Int, error) {
+	return _LockRedeem.Contract.RemoveValidatorProposals(&_LockRedeem.CallOpts, arg0)
 }
 
 // Validators is a free data retrieval call binding the contract method 0xfa52c7d8.
 //
 // Solidity: function validators(address ) constant returns(int256)
-func (_Contract *ContractCaller) Validators(opts *bind.CallOpts, arg0 common.Address) (*big.Int, error) {
+func (_LockRedeem *LockRedeemCaller) Validators(opts *bind.CallOpts, arg0 common.Address) (*big.Int, error) {
 	var (
 		ret0 = new(*big.Int)
 	)
 	out := ret0
-	err := _Contract.contract.Call(opts, out, "validators", arg0)
+	err := _LockRedeem.contract.Call(opts, out, "validators", arg0)
 	return *ret0, err
 }
 
 // Validators is a free data retrieval call binding the contract method 0xfa52c7d8.
 //
 // Solidity: function validators(address ) constant returns(int256)
-func (_Contract *ContractSession) Validators(arg0 common.Address) (*big.Int, error) {
-	return _Contract.Contract.Validators(&_Contract.CallOpts, arg0)
+func (_LockRedeem *LockRedeemSession) Validators(arg0 common.Address) (*big.Int, error) {
+	return _LockRedeem.Contract.Validators(&_LockRedeem.CallOpts, arg0)
 }
 
 // Validators is a free data retrieval call binding the contract method 0xfa52c7d8.
 //
 // Solidity: function validators(address ) constant returns(int256)
-func (_Contract *ContractCallerSession) Validators(arg0 common.Address) (*big.Int, error) {
-	return _Contract.Contract.Validators(&_Contract.CallOpts, arg0)
+func (_LockRedeem *LockRedeemCallerSession) Validators(arg0 common.Address) (*big.Int, error) {
+	return _LockRedeem.Contract.Validators(&_LockRedeem.CallOpts, arg0)
 }
 
 // VotingThreshold is a free data retrieval call binding the contract method 0x62827733.
 //
 // Solidity: function votingThreshold() constant returns(uint256)
-func (_Contract *ContractCaller) VotingThreshold(opts *bind.CallOpts) (*big.Int, error) {
+func (_LockRedeem *LockRedeemCaller) VotingThreshold(opts *bind.CallOpts) (*big.Int, error) {
 	var (
 		ret0 = new(*big.Int)
 	)
 	out := ret0
-	err := _Contract.contract.Call(opts, out, "votingThreshold")
+	err := _LockRedeem.contract.Call(opts, out, "votingThreshold")
 	return *ret0, err
 }
 
 // VotingThreshold is a free data retrieval call binding the contract method 0x62827733.
 //
 // Solidity: function votingThreshold() constant returns(uint256)
-func (_Contract *ContractSession) VotingThreshold() (*big.Int, error) {
-	return _Contract.Contract.VotingThreshold(&_Contract.CallOpts)
+func (_LockRedeem *LockRedeemSession) VotingThreshold() (*big.Int, error) {
+	return _LockRedeem.Contract.VotingThreshold(&_LockRedeem.CallOpts)
 }
 
 // VotingThreshold is a free data retrieval call binding the contract method 0x62827733.
 //
 // Solidity: function votingThreshold() constant returns(uint256)
-func (_Contract *ContractCallerSession) VotingThreshold() (*big.Int, error) {
-	return _Contract.Contract.VotingThreshold(&_Contract.CallOpts)
+func (_LockRedeem *LockRedeemCallerSession) VotingThreshold() (*big.Int, error) {
+	return _LockRedeem.Contract.VotingThreshold(&_LockRedeem.CallOpts)
 }
 
 // Lock is a paid mutator transaction binding the contract method 0xf83d08ba.
 //
 // Solidity: function lock() returns()
-func (_Contract *ContractTransactor) Lock(opts *bind.TransactOpts) (*types.Transaction, error) {
-	return _Contract.contract.Transact(opts, "lock")
+func (_LockRedeem *LockRedeemTransactor) Lock(opts *bind.TransactOpts) (*types.Transaction, error) {
+	return _LockRedeem.contract.Transact(opts, "lock")
 }
 
 // Lock is a paid mutator transaction binding the contract method 0xf83d08ba.
 //
 // Solidity: function lock() returns()
-func (_Contract *ContractSession) Lock() (*types.Transaction, error) {
-	return _Contract.Contract.Lock(&_Contract.TransactOpts)
+func (_LockRedeem *LockRedeemSession) Lock() (*types.Transaction, error) {
+	return _LockRedeem.Contract.Lock(&_LockRedeem.TransactOpts)
 }
 
 // Lock is a paid mutator transaction binding the contract method 0xf83d08ba.
 //
 // Solidity: function lock() returns()
-func (_Contract *ContractTransactorSession) Lock() (*types.Transaction, error) {
-	return _Contract.Contract.Lock(&_Contract.TransactOpts)
+func (_LockRedeem *LockRedeemTransactorSession) Lock() (*types.Transaction, error) {
+	return _LockRedeem.Contract.Lock(&_LockRedeem.TransactOpts)
 }
 
 // ProposeAddValidator is a paid mutator transaction binding the contract method 0x383ea59a.
 //
 // Solidity: function proposeAddValidator(address v) returns()
-func (_Contract *ContractTransactor) ProposeAddValidator(opts *bind.TransactOpts, v common.Address) (*types.Transaction, error) {
-	return _Contract.contract.Transact(opts, "proposeAddValidator", v)
+func (_LockRedeem *LockRedeemTransactor) ProposeAddValidator(opts *bind.TransactOpts, v common.Address) (*types.Transaction, error) {
+	return _LockRedeem.contract.Transact(opts, "proposeAddValidator", v)
 }
 
 // ProposeAddValidator is a paid mutator transaction binding the contract method 0x383ea59a.
 //
 // Solidity: function proposeAddValidator(address v) returns()
-func (_Contract *ContractSession) ProposeAddValidator(v common.Address) (*types.Transaction, error) {
-	return _Contract.Contract.ProposeAddValidator(&_Contract.TransactOpts, v)
+func (_LockRedeem *LockRedeemSession) ProposeAddValidator(v common.Address) (*types.Transaction, error) {
+	return _LockRedeem.Contract.ProposeAddValidator(&_LockRedeem.TransactOpts, v)
 }
 
 // ProposeAddValidator is a paid mutator transaction binding the contract method 0x383ea59a.
 //
 // Solidity: function proposeAddValidator(address v) returns()
-func (_Contract *ContractTransactorSession) ProposeAddValidator(v common.Address) (*types.Transaction, error) {
-	return _Contract.Contract.ProposeAddValidator(&_Contract.TransactOpts, v)
+func (_LockRedeem *LockRedeemTransactorSession) ProposeAddValidator(v common.Address) (*types.Transaction, error) {
+	return _LockRedeem.Contract.ProposeAddValidator(&_LockRedeem.TransactOpts, v)
 }
 
 // ProposeNewThreshold is a paid mutator transaction binding the contract method 0xe0e887d0.
 //
 // Solidity: function proposeNewThreshold(uint256 threshold) returns()
-func (_Contract *ContractTransactor) ProposeNewThreshold(opts *bind.TransactOpts, threshold *big.Int) (*types.Transaction, error) {
-	return _Contract.contract.Transact(opts, "proposeNewThreshold", threshold)
+func (_LockRedeem *LockRedeemTransactor) ProposeNewThreshold(opts *bind.TransactOpts, threshold *big.Int) (*types.Transaction, error) {
+	return _LockRedeem.contract.Transact(opts, "proposeNewThreshold", threshold)
 }
 
 // ProposeNewThreshold is a paid mutator transaction binding the contract method 0xe0e887d0.
 //
 // Solidity: function proposeNewThreshold(uint256 threshold) returns()
-func (_Contract *ContractSession) ProposeNewThreshold(threshold *big.Int) (*types.Transaction, error) {
-	return _Contract.Contract.ProposeNewThreshold(&_Contract.TransactOpts, threshold)
+func (_LockRedeem *LockRedeemSession) ProposeNewThreshold(threshold *big.Int) (*types.Transaction, error) {
+	return _LockRedeem.Contract.ProposeNewThreshold(&_LockRedeem.TransactOpts, threshold)
 }
 
 // ProposeNewThreshold is a paid mutator transaction binding the contract method 0xe0e887d0.
 //
 // Solidity: function proposeNewThreshold(uint256 threshold) returns()
-func (_Contract *ContractTransactorSession) ProposeNewThreshold(threshold *big.Int) (*types.Transaction, error) {
-	return _Contract.Contract.ProposeNewThreshold(&_Contract.TransactOpts, threshold)
+func (_LockRedeem *LockRedeemTransactorSession) ProposeNewThreshold(threshold *big.Int) (*types.Transaction, error) {
+	return _LockRedeem.Contract.ProposeNewThreshold(&_LockRedeem.TransactOpts, threshold)
 }
 
 // Redeem is a paid mutator transaction binding the contract method 0xdb006a75.
 //
 // Solidity: function redeem(uint256 amount_) returns()
-func (_Contract *ContractTransactor) Redeem(opts *bind.TransactOpts, amount_ *big.Int) (*types.Transaction, error) {
-	return _Contract.contract.Transact(opts, "redeem", amount_)
+func (_LockRedeem *LockRedeemTransactor) Redeem(opts *bind.TransactOpts, amount_ *big.Int) (*types.Transaction, error) {
+	return _LockRedeem.contract.Transact(opts, "redeem", amount_)
 }
 
 // Redeem is a paid mutator transaction binding the contract method 0xdb006a75.
 //
 // Solidity: function redeem(uint256 amount_) returns()
-func (_Contract *ContractSession) Redeem(amount_ *big.Int) (*types.Transaction, error) {
-	return _Contract.Contract.Redeem(&_Contract.TransactOpts, amount_)
+func (_LockRedeem *LockRedeemSession) Redeem(amount_ *big.Int) (*types.Transaction, error) {
+	return _LockRedeem.Contract.Redeem(&_LockRedeem.TransactOpts, amount_)
 }
 
 // Redeem is a paid mutator transaction binding the contract method 0xdb006a75.
 //
 // Solidity: function redeem(uint256 amount_) returns()
-func (_Contract *ContractTransactorSession) Redeem(amount_ *big.Int) (*types.Transaction, error) {
-	return _Contract.Contract.Redeem(&_Contract.TransactOpts, amount_)
+func (_LockRedeem *LockRedeemTransactorSession) Redeem(amount_ *big.Int) (*types.Transaction, error) {
+	return _LockRedeem.Contract.Redeem(&_LockRedeem.TransactOpts, amount_)
 }
 
 // Sign is a paid mutator transaction binding the contract method 0x7cacde3f.
 //
 // Solidity: function sign(uint256 amount_, address recipient_) returns()
-func (_Contract *ContractTransactor) Sign(opts *bind.TransactOpts, amount_ *big.Int, recipient_ common.Address) (*types.Transaction, error) {
-	return _Contract.contract.Transact(opts, "sign", amount_, recipient_)
+func (_LockRedeem *LockRedeemTransactor) Sign(opts *bind.TransactOpts, amount_ *big.Int, recipient_ common.Address) (*types.Transaction, error) {
+	return _LockRedeem.contract.Transact(opts, "sign", amount_, recipient_)
 }
 
 // Sign is a paid mutator transaction binding the contract method 0x7cacde3f.
 //
 // Solidity: function sign(uint256 amount_, address recipient_) returns()
-func (_Contract *ContractSession) Sign(amount_ *big.Int, recipient_ common.Address) (*types.Transaction, error) {
-	return _Contract.Contract.Sign(&_Contract.TransactOpts, amount_, recipient_)
+func (_LockRedeem *LockRedeemSession) Sign(amount_ *big.Int, recipient_ common.Address) (*types.Transaction, error) {
+	return _LockRedeem.Contract.Sign(&_LockRedeem.TransactOpts, amount_, recipient_)
 }
 
 // Sign is a paid mutator transaction binding the contract method 0x7cacde3f.
 //
 // Solidity: function sign(uint256 amount_, address recipient_) returns()
-func (_Contract *ContractTransactorSession) Sign(amount_ *big.Int, recipient_ common.Address) (*types.Transaction, error) {
-	return _Contract.Contract.Sign(&_Contract.TransactOpts, amount_, recipient_)
+func (_LockRedeem *LockRedeemTransactorSession) Sign(amount_ *big.Int, recipient_ common.Address) (*types.Transaction, error) {
+	return _LockRedeem.Contract.Sign(&_LockRedeem.TransactOpts, amount_, recipient_)
 }
 
-// ContractAddValidatorIterator is returned from FilterAddValidator and is used to iterate over the raw logs and unpacked data for AddValidator events raised by the Contract contract.
-type ContractAddValidatorIterator struct {
-	Event *ContractAddValidator // Event containing the contract specifics and raw log
+// LockRedeemAddValidatorIterator is returned from FilterAddValidator and is used to iterate over the raw logs and unpacked data for AddValidator events raised by the LockRedeem contract.
+type LockRedeemAddValidatorIterator struct {
+	Event *LockRedeemAddValidator // Event containing the contract specifics and raw log
 
 	contract *bind.BoundContract // Generic contract to use for unpacking event data
 	event    string              // Event name to use for unpacking event data
@@ -594,7 +614,7 @@ type ContractAddValidatorIterator struct {
 // Next advances the iterator to the subsequent event, returning whether there
 // are any more events found. In case of a retrieval or parsing error, false is
 // returned and Error() can be queried for the exact failure.
-func (it *ContractAddValidatorIterator) Next() bool {
+func (it *LockRedeemAddValidatorIterator) Next() bool {
 	// If the iterator failed, stop iterating
 	if it.fail != nil {
 		return false
@@ -603,7 +623,7 @@ func (it *ContractAddValidatorIterator) Next() bool {
 	if it.done {
 		select {
 		case log := <-it.logs:
-			it.Event = new(ContractAddValidator)
+			it.Event = new(LockRedeemAddValidator)
 			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 				it.fail = err
 				return false
@@ -618,7 +638,7 @@ func (it *ContractAddValidatorIterator) Next() bool {
 	// Iterator still in progress, wait for either a data or an error event
 	select {
 	case log := <-it.logs:
-		it.Event = new(ContractAddValidator)
+		it.Event = new(LockRedeemAddValidator)
 		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 			it.fail = err
 			return false
@@ -634,19 +654,19 @@ func (it *ContractAddValidatorIterator) Next() bool {
 }
 
 // Error returns any retrieval or parsing error occurred during filtering.
-func (it *ContractAddValidatorIterator) Error() error {
+func (it *LockRedeemAddValidatorIterator) Error() error {
 	return it.fail
 }
 
 // Close terminates the iteration process, releasing any pending underlying
 // resources.
-func (it *ContractAddValidatorIterator) Close() error {
+func (it *LockRedeemAddValidatorIterator) Close() error {
 	it.sub.Unsubscribe()
 	return nil
 }
 
-// ContractAddValidator represents a AddValidator event raised by the Contract contract.
-type ContractAddValidator struct {
+// LockRedeemAddValidator represents a AddValidator event raised by the LockRedeem contract.
+type LockRedeemAddValidator struct {
 	Address common.Address
 	Power   *big.Int
 	Raw     types.Log // Blockchain specific contextual infos
@@ -655,31 +675,31 @@ type ContractAddValidator struct {
 // FilterAddValidator is a free log retrieval operation binding the contract event 0xb2076c69a79e1dfb01d613dcc63b7c42ae1962daf11d4f2151352135133f824b.
 //
 // Solidity: event AddValidator(address indexed _address, int256 _power)
-func (_Contract *ContractFilterer) FilterAddValidator(opts *bind.FilterOpts, _address []common.Address) (*ContractAddValidatorIterator, error) {
+func (_LockRedeem *LockRedeemFilterer) FilterAddValidator(opts *bind.FilterOpts, _address []common.Address) (*LockRedeemAddValidatorIterator, error) {
 
 	var _addressRule []interface{}
 	for _, _addressItem := range _address {
 		_addressRule = append(_addressRule, _addressItem)
 	}
 
-	logs, sub, err := _Contract.contract.FilterLogs(opts, "AddValidator", _addressRule)
+	logs, sub, err := _LockRedeem.contract.FilterLogs(opts, "AddValidator", _addressRule)
 	if err != nil {
 		return nil, err
 	}
-	return &ContractAddValidatorIterator{contract: _Contract.contract, event: "AddValidator", logs: logs, sub: sub}, nil
+	return &LockRedeemAddValidatorIterator{contract: _LockRedeem.contract, event: "AddValidator", logs: logs, sub: sub}, nil
 }
 
 // WatchAddValidator is a free log subscription operation binding the contract event 0xb2076c69a79e1dfb01d613dcc63b7c42ae1962daf11d4f2151352135133f824b.
 //
 // Solidity: event AddValidator(address indexed _address, int256 _power)
-func (_Contract *ContractFilterer) WatchAddValidator(opts *bind.WatchOpts, sink chan<- *ContractAddValidator, _address []common.Address) (event.Subscription, error) {
+func (_LockRedeem *LockRedeemFilterer) WatchAddValidator(opts *bind.WatchOpts, sink chan<- *LockRedeemAddValidator, _address []common.Address) (event.Subscription, error) {
 
 	var _addressRule []interface{}
 	for _, _addressItem := range _address {
 		_addressRule = append(_addressRule, _addressItem)
 	}
 
-	logs, sub, err := _Contract.contract.WatchLogs(opts, "AddValidator", _addressRule)
+	logs, sub, err := _LockRedeem.contract.WatchLogs(opts, "AddValidator", _addressRule)
 	if err != nil {
 		return nil, err
 	}
@@ -689,8 +709,8 @@ func (_Contract *ContractFilterer) WatchAddValidator(opts *bind.WatchOpts, sink 
 			select {
 			case log := <-logs:
 				// New log arrived, parse the event and forward to the user
-				event := new(ContractAddValidator)
-				if err := _Contract.contract.UnpackLog(event, "AddValidator", log); err != nil {
+				event := new(LockRedeemAddValidator)
+				if err := _LockRedeem.contract.UnpackLog(event, "AddValidator", log); err != nil {
 					return err
 				}
 				event.Raw = log
@@ -714,17 +734,17 @@ func (_Contract *ContractFilterer) WatchAddValidator(opts *bind.WatchOpts, sink 
 // ParseAddValidator is a log parse operation binding the contract event 0xb2076c69a79e1dfb01d613dcc63b7c42ae1962daf11d4f2151352135133f824b.
 //
 // Solidity: event AddValidator(address indexed _address, int256 _power)
-func (_Contract *ContractFilterer) ParseAddValidator(log types.Log) (*ContractAddValidator, error) {
-	event := new(ContractAddValidator)
-	if err := _Contract.contract.UnpackLog(event, "AddValidator", log); err != nil {
+func (_LockRedeem *LockRedeemFilterer) ParseAddValidator(log types.Log) (*LockRedeemAddValidator, error) {
+	event := new(LockRedeemAddValidator)
+	if err := _LockRedeem.contract.UnpackLog(event, "AddValidator", log); err != nil {
 		return nil, err
 	}
 	return event, nil
 }
 
-// ContractDeleteValidatorIterator is returned from FilterDeleteValidator and is used to iterate over the raw logs and unpacked data for DeleteValidator events raised by the Contract contract.
-type ContractDeleteValidatorIterator struct {
-	Event *ContractDeleteValidator // Event containing the contract specifics and raw log
+// LockRedeemDeleteValidatorIterator is returned from FilterDeleteValidator and is used to iterate over the raw logs and unpacked data for DeleteValidator events raised by the LockRedeem contract.
+type LockRedeemDeleteValidatorIterator struct {
+	Event *LockRedeemDeleteValidator // Event containing the contract specifics and raw log
 
 	contract *bind.BoundContract // Generic contract to use for unpacking event data
 	event    string              // Event name to use for unpacking event data
@@ -738,7 +758,7 @@ type ContractDeleteValidatorIterator struct {
 // Next advances the iterator to the subsequent event, returning whether there
 // are any more events found. In case of a retrieval or parsing error, false is
 // returned and Error() can be queried for the exact failure.
-func (it *ContractDeleteValidatorIterator) Next() bool {
+func (it *LockRedeemDeleteValidatorIterator) Next() bool {
 	// If the iterator failed, stop iterating
 	if it.fail != nil {
 		return false
@@ -747,7 +767,7 @@ func (it *ContractDeleteValidatorIterator) Next() bool {
 	if it.done {
 		select {
 		case log := <-it.logs:
-			it.Event = new(ContractDeleteValidator)
+			it.Event = new(LockRedeemDeleteValidator)
 			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 				it.fail = err
 				return false
@@ -762,7 +782,7 @@ func (it *ContractDeleteValidatorIterator) Next() bool {
 	// Iterator still in progress, wait for either a data or an error event
 	select {
 	case log := <-it.logs:
-		it.Event = new(ContractDeleteValidator)
+		it.Event = new(LockRedeemDeleteValidator)
 		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 			it.fail = err
 			return false
@@ -778,19 +798,19 @@ func (it *ContractDeleteValidatorIterator) Next() bool {
 }
 
 // Error returns any retrieval or parsing error occurred during filtering.
-func (it *ContractDeleteValidatorIterator) Error() error {
+func (it *LockRedeemDeleteValidatorIterator) Error() error {
 	return it.fail
 }
 
 // Close terminates the iteration process, releasing any pending underlying
 // resources.
-func (it *ContractDeleteValidatorIterator) Close() error {
+func (it *LockRedeemDeleteValidatorIterator) Close() error {
 	it.sub.Unsubscribe()
 	return nil
 }
 
-// ContractDeleteValidator represents a DeleteValidator event raised by the Contract contract.
-type ContractDeleteValidator struct {
+// LockRedeemDeleteValidator represents a DeleteValidator event raised by the LockRedeem contract.
+type LockRedeemDeleteValidator struct {
 	Address common.Address
 	Raw     types.Log // Blockchain specific contextual infos
 }
@@ -798,31 +818,31 @@ type ContractDeleteValidator struct {
 // FilterDeleteValidator is a free log retrieval operation binding the contract event 0x6d70afad774d81e8c32f930c6412789502b16ccf0a20f21679b249bdfac060e5.
 //
 // Solidity: event DeleteValidator(address indexed _address)
-func (_Contract *ContractFilterer) FilterDeleteValidator(opts *bind.FilterOpts, _address []common.Address) (*ContractDeleteValidatorIterator, error) {
+func (_LockRedeem *LockRedeemFilterer) FilterDeleteValidator(opts *bind.FilterOpts, _address []common.Address) (*LockRedeemDeleteValidatorIterator, error) {
 
 	var _addressRule []interface{}
 	for _, _addressItem := range _address {
 		_addressRule = append(_addressRule, _addressItem)
 	}
 
-	logs, sub, err := _Contract.contract.FilterLogs(opts, "DeleteValidator", _addressRule)
+	logs, sub, err := _LockRedeem.contract.FilterLogs(opts, "DeleteValidator", _addressRule)
 	if err != nil {
 		return nil, err
 	}
-	return &ContractDeleteValidatorIterator{contract: _Contract.contract, event: "DeleteValidator", logs: logs, sub: sub}, nil
+	return &LockRedeemDeleteValidatorIterator{contract: _LockRedeem.contract, event: "DeleteValidator", logs: logs, sub: sub}, nil
 }
 
 // WatchDeleteValidator is a free log subscription operation binding the contract event 0x6d70afad774d81e8c32f930c6412789502b16ccf0a20f21679b249bdfac060e5.
 //
 // Solidity: event DeleteValidator(address indexed _address)
-func (_Contract *ContractFilterer) WatchDeleteValidator(opts *bind.WatchOpts, sink chan<- *ContractDeleteValidator, _address []common.Address) (event.Subscription, error) {
+func (_LockRedeem *LockRedeemFilterer) WatchDeleteValidator(opts *bind.WatchOpts, sink chan<- *LockRedeemDeleteValidator, _address []common.Address) (event.Subscription, error) {
 
 	var _addressRule []interface{}
 	for _, _addressItem := range _address {
 		_addressRule = append(_addressRule, _addressItem)
 	}
 
-	logs, sub, err := _Contract.contract.WatchLogs(opts, "DeleteValidator", _addressRule)
+	logs, sub, err := _LockRedeem.contract.WatchLogs(opts, "DeleteValidator", _addressRule)
 	if err != nil {
 		return nil, err
 	}
@@ -832,8 +852,8 @@ func (_Contract *ContractFilterer) WatchDeleteValidator(opts *bind.WatchOpts, si
 			select {
 			case log := <-logs:
 				// New log arrived, parse the event and forward to the user
-				event := new(ContractDeleteValidator)
-				if err := _Contract.contract.UnpackLog(event, "DeleteValidator", log); err != nil {
+				event := new(LockRedeemDeleteValidator)
+				if err := _LockRedeem.contract.UnpackLog(event, "DeleteValidator", log); err != nil {
 					return err
 				}
 				event.Raw = log
@@ -857,17 +877,17 @@ func (_Contract *ContractFilterer) WatchDeleteValidator(opts *bind.WatchOpts, si
 // ParseDeleteValidator is a log parse operation binding the contract event 0x6d70afad774d81e8c32f930c6412789502b16ccf0a20f21679b249bdfac060e5.
 //
 // Solidity: event DeleteValidator(address indexed _address)
-func (_Contract *ContractFilterer) ParseDeleteValidator(log types.Log) (*ContractDeleteValidator, error) {
-	event := new(ContractDeleteValidator)
-	if err := _Contract.contract.UnpackLog(event, "DeleteValidator", log); err != nil {
+func (_LockRedeem *LockRedeemFilterer) ParseDeleteValidator(log types.Log) (*LockRedeemDeleteValidator, error) {
+	event := new(LockRedeemDeleteValidator)
+	if err := _LockRedeem.contract.UnpackLog(event, "DeleteValidator", log); err != nil {
 		return nil, err
 	}
 	return event, nil
 }
 
-// ContractLockIterator is returned from FilterLock and is used to iterate over the raw logs and unpacked data for Lock events raised by the Contract contract.
-type ContractLockIterator struct {
-	Event *ContractLock // Event containing the contract specifics and raw log
+// LockRedeemLockIterator is returned from FilterLock and is used to iterate over the raw logs and unpacked data for Lock events raised by the LockRedeem contract.
+type LockRedeemLockIterator struct {
+	Event *LockRedeemLock // Event containing the contract specifics and raw log
 
 	contract *bind.BoundContract // Generic contract to use for unpacking event data
 	event    string              // Event name to use for unpacking event data
@@ -881,7 +901,7 @@ type ContractLockIterator struct {
 // Next advances the iterator to the subsequent event, returning whether there
 // are any more events found. In case of a retrieval or parsing error, false is
 // returned and Error() can be queried for the exact failure.
-func (it *ContractLockIterator) Next() bool {
+func (it *LockRedeemLockIterator) Next() bool {
 	// If the iterator failed, stop iterating
 	if it.fail != nil {
 		return false
@@ -890,7 +910,7 @@ func (it *ContractLockIterator) Next() bool {
 	if it.done {
 		select {
 		case log := <-it.logs:
-			it.Event = new(ContractLock)
+			it.Event = new(LockRedeemLock)
 			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 				it.fail = err
 				return false
@@ -905,7 +925,7 @@ func (it *ContractLockIterator) Next() bool {
 	// Iterator still in progress, wait for either a data or an error event
 	select {
 	case log := <-it.logs:
-		it.Event = new(ContractLock)
+		it.Event = new(LockRedeemLock)
 		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 			it.fail = err
 			return false
@@ -921,19 +941,19 @@ func (it *ContractLockIterator) Next() bool {
 }
 
 // Error returns any retrieval or parsing error occurred during filtering.
-func (it *ContractLockIterator) Error() error {
+func (it *LockRedeemLockIterator) Error() error {
 	return it.fail
 }
 
 // Close terminates the iteration process, releasing any pending underlying
 // resources.
-func (it *ContractLockIterator) Close() error {
+func (it *LockRedeemLockIterator) Close() error {
 	it.sub.Unsubscribe()
 	return nil
 }
 
-// ContractLock represents a Lock event raised by the Contract contract.
-type ContractLock struct {
+// LockRedeemLock represents a Lock event raised by the LockRedeem contract.
+type LockRedeemLock struct {
 	Sender         common.Address
 	AmountReceived *big.Int
 	Raw            types.Log // Blockchain specific contextual infos
@@ -942,21 +962,21 @@ type ContractLock struct {
 // FilterLock is a free log retrieval operation binding the contract event 0x625fed9875dada8643f2418b838ae0bc78d9a148a18eee4ee1979ff0f3f5d427.
 //
 // Solidity: event Lock(address sender, uint256 amount_received)
-func (_Contract *ContractFilterer) FilterLock(opts *bind.FilterOpts) (*ContractLockIterator, error) {
+func (_LockRedeem *LockRedeemFilterer) FilterLock(opts *bind.FilterOpts) (*LockRedeemLockIterator, error) {
 
-	logs, sub, err := _Contract.contract.FilterLogs(opts, "Lock")
+	logs, sub, err := _LockRedeem.contract.FilterLogs(opts, "Lock")
 	if err != nil {
 		return nil, err
 	}
-	return &ContractLockIterator{contract: _Contract.contract, event: "Lock", logs: logs, sub: sub}, nil
+	return &LockRedeemLockIterator{contract: _LockRedeem.contract, event: "Lock", logs: logs, sub: sub}, nil
 }
 
 // WatchLock is a free log subscription operation binding the contract event 0x625fed9875dada8643f2418b838ae0bc78d9a148a18eee4ee1979ff0f3f5d427.
 //
 // Solidity: event Lock(address sender, uint256 amount_received)
-func (_Contract *ContractFilterer) WatchLock(opts *bind.WatchOpts, sink chan<- *ContractLock) (event.Subscription, error) {
+func (_LockRedeem *LockRedeemFilterer) WatchLock(opts *bind.WatchOpts, sink chan<- *LockRedeemLock) (event.Subscription, error) {
 
-	logs, sub, err := _Contract.contract.WatchLogs(opts, "Lock")
+	logs, sub, err := _LockRedeem.contract.WatchLogs(opts, "Lock")
 	if err != nil {
 		return nil, err
 	}
@@ -966,8 +986,8 @@ func (_Contract *ContractFilterer) WatchLock(opts *bind.WatchOpts, sink chan<- *
 			select {
 			case log := <-logs:
 				// New log arrived, parse the event and forward to the user
-				event := new(ContractLock)
-				if err := _Contract.contract.UnpackLog(event, "Lock", log); err != nil {
+				event := new(LockRedeemLock)
+				if err := _LockRedeem.contract.UnpackLog(event, "Lock", log); err != nil {
 					return err
 				}
 				event.Raw = log
@@ -991,17 +1011,17 @@ func (_Contract *ContractFilterer) WatchLock(opts *bind.WatchOpts, sink chan<- *
 // ParseLock is a log parse operation binding the contract event 0x625fed9875dada8643f2418b838ae0bc78d9a148a18eee4ee1979ff0f3f5d427.
 //
 // Solidity: event Lock(address sender, uint256 amount_received)
-func (_Contract *ContractFilterer) ParseLock(log types.Log) (*ContractLock, error) {
-	event := new(ContractLock)
-	if err := _Contract.contract.UnpackLog(event, "Lock", log); err != nil {
+func (_LockRedeem *LockRedeemFilterer) ParseLock(log types.Log) (*LockRedeemLock, error) {
+	event := new(LockRedeemLock)
+	if err := _LockRedeem.contract.UnpackLog(event, "Lock", log); err != nil {
 		return nil, err
 	}
 	return event, nil
 }
 
-// ContractNewEpochIterator is returned from FilterNewEpoch and is used to iterate over the raw logs and unpacked data for NewEpoch events raised by the Contract contract.
-type ContractNewEpochIterator struct {
-	Event *ContractNewEpoch // Event containing the contract specifics and raw log
+// LockRedeemNewEpochIterator is returned from FilterNewEpoch and is used to iterate over the raw logs and unpacked data for NewEpoch events raised by the LockRedeem contract.
+type LockRedeemNewEpochIterator struct {
+	Event *LockRedeemNewEpoch // Event containing the contract specifics and raw log
 
 	contract *bind.BoundContract // Generic contract to use for unpacking event data
 	event    string              // Event name to use for unpacking event data
@@ -1015,7 +1035,7 @@ type ContractNewEpochIterator struct {
 // Next advances the iterator to the subsequent event, returning whether there
 // are any more events found. In case of a retrieval or parsing error, false is
 // returned and Error() can be queried for the exact failure.
-func (it *ContractNewEpochIterator) Next() bool {
+func (it *LockRedeemNewEpochIterator) Next() bool {
 	// If the iterator failed, stop iterating
 	if it.fail != nil {
 		return false
@@ -1024,7 +1044,7 @@ func (it *ContractNewEpochIterator) Next() bool {
 	if it.done {
 		select {
 		case log := <-it.logs:
-			it.Event = new(ContractNewEpoch)
+			it.Event = new(LockRedeemNewEpoch)
 			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 				it.fail = err
 				return false
@@ -1039,7 +1059,7 @@ func (it *ContractNewEpochIterator) Next() bool {
 	// Iterator still in progress, wait for either a data or an error event
 	select {
 	case log := <-it.logs:
-		it.Event = new(ContractNewEpoch)
+		it.Event = new(LockRedeemNewEpoch)
 		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 			it.fail = err
 			return false
@@ -1055,19 +1075,19 @@ func (it *ContractNewEpochIterator) Next() bool {
 }
 
 // Error returns any retrieval or parsing error occurred during filtering.
-func (it *ContractNewEpochIterator) Error() error {
+func (it *LockRedeemNewEpochIterator) Error() error {
 	return it.fail
 }
 
 // Close terminates the iteration process, releasing any pending underlying
 // resources.
-func (it *ContractNewEpochIterator) Close() error {
+func (it *LockRedeemNewEpochIterator) Close() error {
 	it.sub.Unsubscribe()
 	return nil
 }
 
-// ContractNewEpoch represents a NewEpoch event raised by the Contract contract.
-type ContractNewEpoch struct {
+// LockRedeemNewEpoch represents a NewEpoch event raised by the LockRedeem contract.
+type LockRedeemNewEpoch struct {
 	EpochHeight *big.Int
 	Raw         types.Log // Blockchain specific contextual infos
 }
@@ -1075,21 +1095,21 @@ type ContractNewEpoch struct {
 // FilterNewEpoch is a free log retrieval operation binding the contract event 0xebad8099c467528a56c98b63c8d476d251cf1ffb4c75db94b4d23fa2b6a1e335.
 //
 // Solidity: event NewEpoch(uint256 epochHeight)
-func (_Contract *ContractFilterer) FilterNewEpoch(opts *bind.FilterOpts) (*ContractNewEpochIterator, error) {
+func (_LockRedeem *LockRedeemFilterer) FilterNewEpoch(opts *bind.FilterOpts) (*LockRedeemNewEpochIterator, error) {
 
-	logs, sub, err := _Contract.contract.FilterLogs(opts, "NewEpoch")
+	logs, sub, err := _LockRedeem.contract.FilterLogs(opts, "NewEpoch")
 	if err != nil {
 		return nil, err
 	}
-	return &ContractNewEpochIterator{contract: _Contract.contract, event: "NewEpoch", logs: logs, sub: sub}, nil
+	return &LockRedeemNewEpochIterator{contract: _LockRedeem.contract, event: "NewEpoch", logs: logs, sub: sub}, nil
 }
 
 // WatchNewEpoch is a free log subscription operation binding the contract event 0xebad8099c467528a56c98b63c8d476d251cf1ffb4c75db94b4d23fa2b6a1e335.
 //
 // Solidity: event NewEpoch(uint256 epochHeight)
-func (_Contract *ContractFilterer) WatchNewEpoch(opts *bind.WatchOpts, sink chan<- *ContractNewEpoch) (event.Subscription, error) {
+func (_LockRedeem *LockRedeemFilterer) WatchNewEpoch(opts *bind.WatchOpts, sink chan<- *LockRedeemNewEpoch) (event.Subscription, error) {
 
-	logs, sub, err := _Contract.contract.WatchLogs(opts, "NewEpoch")
+	logs, sub, err := _LockRedeem.contract.WatchLogs(opts, "NewEpoch")
 	if err != nil {
 		return nil, err
 	}
@@ -1099,8 +1119,8 @@ func (_Contract *ContractFilterer) WatchNewEpoch(opts *bind.WatchOpts, sink chan
 			select {
 			case log := <-logs:
 				// New log arrived, parse the event and forward to the user
-				event := new(ContractNewEpoch)
-				if err := _Contract.contract.UnpackLog(event, "NewEpoch", log); err != nil {
+				event := new(LockRedeemNewEpoch)
+				if err := _LockRedeem.contract.UnpackLog(event, "NewEpoch", log); err != nil {
 					return err
 				}
 				event.Raw = log
@@ -1124,17 +1144,17 @@ func (_Contract *ContractFilterer) WatchNewEpoch(opts *bind.WatchOpts, sink chan
 // ParseNewEpoch is a log parse operation binding the contract event 0xebad8099c467528a56c98b63c8d476d251cf1ffb4c75db94b4d23fa2b6a1e335.
 //
 // Solidity: event NewEpoch(uint256 epochHeight)
-func (_Contract *ContractFilterer) ParseNewEpoch(log types.Log) (*ContractNewEpoch, error) {
-	event := new(ContractNewEpoch)
-	if err := _Contract.contract.UnpackLog(event, "NewEpoch", log); err != nil {
+func (_LockRedeem *LockRedeemFilterer) ParseNewEpoch(log types.Log) (*LockRedeemNewEpoch, error) {
+	event := new(LockRedeemNewEpoch)
+	if err := _LockRedeem.contract.UnpackLog(event, "NewEpoch", log); err != nil {
 		return nil, err
 	}
 	return event, nil
 }
 
-// ContractNewThresholdIterator is returned from FilterNewThreshold and is used to iterate over the raw logs and unpacked data for NewThreshold events raised by the Contract contract.
-type ContractNewThresholdIterator struct {
-	Event *ContractNewThreshold // Event containing the contract specifics and raw log
+// LockRedeemNewThresholdIterator is returned from FilterNewThreshold and is used to iterate over the raw logs and unpacked data for NewThreshold events raised by the LockRedeem contract.
+type LockRedeemNewThresholdIterator struct {
+	Event *LockRedeemNewThreshold // Event containing the contract specifics and raw log
 
 	contract *bind.BoundContract // Generic contract to use for unpacking event data
 	event    string              // Event name to use for unpacking event data
@@ -1148,7 +1168,7 @@ type ContractNewThresholdIterator struct {
 // Next advances the iterator to the subsequent event, returning whether there
 // are any more events found. In case of a retrieval or parsing error, false is
 // returned and Error() can be queried for the exact failure.
-func (it *ContractNewThresholdIterator) Next() bool {
+func (it *LockRedeemNewThresholdIterator) Next() bool {
 	// If the iterator failed, stop iterating
 	if it.fail != nil {
 		return false
@@ -1157,7 +1177,7 @@ func (it *ContractNewThresholdIterator) Next() bool {
 	if it.done {
 		select {
 		case log := <-it.logs:
-			it.Event = new(ContractNewThreshold)
+			it.Event = new(LockRedeemNewThreshold)
 			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 				it.fail = err
 				return false
@@ -1172,7 +1192,7 @@ func (it *ContractNewThresholdIterator) Next() bool {
 	// Iterator still in progress, wait for either a data or an error event
 	select {
 	case log := <-it.logs:
-		it.Event = new(ContractNewThreshold)
+		it.Event = new(LockRedeemNewThreshold)
 		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 			it.fail = err
 			return false
@@ -1188,19 +1208,19 @@ func (it *ContractNewThresholdIterator) Next() bool {
 }
 
 // Error returns any retrieval or parsing error occurred during filtering.
-func (it *ContractNewThresholdIterator) Error() error {
+func (it *LockRedeemNewThresholdIterator) Error() error {
 	return it.fail
 }
 
 // Close terminates the iteration process, releasing any pending underlying
 // resources.
-func (it *ContractNewThresholdIterator) Close() error {
+func (it *LockRedeemNewThresholdIterator) Close() error {
 	it.sub.Unsubscribe()
 	return nil
 }
 
-// ContractNewThreshold represents a NewThreshold event raised by the Contract contract.
-type ContractNewThreshold struct {
+// LockRedeemNewThreshold represents a NewThreshold event raised by the LockRedeem contract.
+type LockRedeemNewThreshold struct {
 	PrevThreshold *big.Int
 	NewThreshold  *big.Int
 	Raw           types.Log // Blockchain specific contextual infos
@@ -1209,21 +1229,21 @@ type ContractNewThreshold struct {
 // FilterNewThreshold is a free log retrieval operation binding the contract event 0x7a5c0f01d83576763cde96136a1c8a8c1c05ff95d8a184db483894a9b69b8b3a.
 //
 // Solidity: event NewThreshold(uint256 _prevThreshold, uint256 _newThreshold)
-func (_Contract *ContractFilterer) FilterNewThreshold(opts *bind.FilterOpts) (*ContractNewThresholdIterator, error) {
+func (_LockRedeem *LockRedeemFilterer) FilterNewThreshold(opts *bind.FilterOpts) (*LockRedeemNewThresholdIterator, error) {
 
-	logs, sub, err := _Contract.contract.FilterLogs(opts, "NewThreshold")
+	logs, sub, err := _LockRedeem.contract.FilterLogs(opts, "NewThreshold")
 	if err != nil {
 		return nil, err
 	}
-	return &ContractNewThresholdIterator{contract: _Contract.contract, event: "NewThreshold", logs: logs, sub: sub}, nil
+	return &LockRedeemNewThresholdIterator{contract: _LockRedeem.contract, event: "NewThreshold", logs: logs, sub: sub}, nil
 }
 
 // WatchNewThreshold is a free log subscription operation binding the contract event 0x7a5c0f01d83576763cde96136a1c8a8c1c05ff95d8a184db483894a9b69b8b3a.
 //
 // Solidity: event NewThreshold(uint256 _prevThreshold, uint256 _newThreshold)
-func (_Contract *ContractFilterer) WatchNewThreshold(opts *bind.WatchOpts, sink chan<- *ContractNewThreshold) (event.Subscription, error) {
+func (_LockRedeem *LockRedeemFilterer) WatchNewThreshold(opts *bind.WatchOpts, sink chan<- *LockRedeemNewThreshold) (event.Subscription, error) {
 
-	logs, sub, err := _Contract.contract.WatchLogs(opts, "NewThreshold")
+	logs, sub, err := _LockRedeem.contract.WatchLogs(opts, "NewThreshold")
 	if err != nil {
 		return nil, err
 	}
@@ -1233,8 +1253,8 @@ func (_Contract *ContractFilterer) WatchNewThreshold(opts *bind.WatchOpts, sink 
 			select {
 			case log := <-logs:
 				// New log arrived, parse the event and forward to the user
-				event := new(ContractNewThreshold)
-				if err := _Contract.contract.UnpackLog(event, "NewThreshold", log); err != nil {
+				event := new(LockRedeemNewThreshold)
+				if err := _LockRedeem.contract.UnpackLog(event, "NewThreshold", log); err != nil {
 					return err
 				}
 				event.Raw = log
@@ -1258,17 +1278,17 @@ func (_Contract *ContractFilterer) WatchNewThreshold(opts *bind.WatchOpts, sink 
 // ParseNewThreshold is a log parse operation binding the contract event 0x7a5c0f01d83576763cde96136a1c8a8c1c05ff95d8a184db483894a9b69b8b3a.
 //
 // Solidity: event NewThreshold(uint256 _prevThreshold, uint256 _newThreshold)
-func (_Contract *ContractFilterer) ParseNewThreshold(log types.Log) (*ContractNewThreshold, error) {
-	event := new(ContractNewThreshold)
-	if err := _Contract.contract.UnpackLog(event, "NewThreshold", log); err != nil {
+func (_LockRedeem *LockRedeemFilterer) ParseNewThreshold(log types.Log) (*LockRedeemNewThreshold, error) {
+	event := new(LockRedeemNewThreshold)
+	if err := _LockRedeem.contract.UnpackLog(event, "NewThreshold", log); err != nil {
 		return nil, err
 	}
 	return event, nil
 }
 
-// ContractRedeemRequestIterator is returned from FilterRedeemRequest and is used to iterate over the raw logs and unpacked data for RedeemRequest events raised by the Contract contract.
-type ContractRedeemRequestIterator struct {
-	Event *ContractRedeemRequest // Event containing the contract specifics and raw log
+// LockRedeemRedeemRequestIterator is returned from FilterRedeemRequest and is used to iterate over the raw logs and unpacked data for RedeemRequest events raised by the LockRedeem contract.
+type LockRedeemRedeemRequestIterator struct {
+	Event *LockRedeemRedeemRequest // Event containing the contract specifics and raw log
 
 	contract *bind.BoundContract // Generic contract to use for unpacking event data
 	event    string              // Event name to use for unpacking event data
@@ -1282,7 +1302,7 @@ type ContractRedeemRequestIterator struct {
 // Next advances the iterator to the subsequent event, returning whether there
 // are any more events found. In case of a retrieval or parsing error, false is
 // returned and Error() can be queried for the exact failure.
-func (it *ContractRedeemRequestIterator) Next() bool {
+func (it *LockRedeemRedeemRequestIterator) Next() bool {
 	// If the iterator failed, stop iterating
 	if it.fail != nil {
 		return false
@@ -1291,7 +1311,7 @@ func (it *ContractRedeemRequestIterator) Next() bool {
 	if it.done {
 		select {
 		case log := <-it.logs:
-			it.Event = new(ContractRedeemRequest)
+			it.Event = new(LockRedeemRedeemRequest)
 			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 				it.fail = err
 				return false
@@ -1306,7 +1326,7 @@ func (it *ContractRedeemRequestIterator) Next() bool {
 	// Iterator still in progress, wait for either a data or an error event
 	select {
 	case log := <-it.logs:
-		it.Event = new(ContractRedeemRequest)
+		it.Event = new(LockRedeemRedeemRequest)
 		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 			it.fail = err
 			return false
@@ -1322,19 +1342,19 @@ func (it *ContractRedeemRequestIterator) Next() bool {
 }
 
 // Error returns any retrieval or parsing error occurred during filtering.
-func (it *ContractRedeemRequestIterator) Error() error {
+func (it *LockRedeemRedeemRequestIterator) Error() error {
 	return it.fail
 }
 
 // Close terminates the iteration process, releasing any pending underlying
 // resources.
-func (it *ContractRedeemRequestIterator) Close() error {
+func (it *LockRedeemRedeemRequestIterator) Close() error {
 	it.sub.Unsubscribe()
 	return nil
 }
 
-// ContractRedeemRequest represents a RedeemRequest event raised by the Contract contract.
-type ContractRedeemRequest struct {
+// LockRedeemRedeemRequest represents a RedeemRequest event raised by the LockRedeem contract.
+type LockRedeemRedeemRequest struct {
 	Recepient       common.Address
 	AmountRequested *big.Int
 	Raw             types.Log // Blockchain specific contextual infos
@@ -1343,31 +1363,31 @@ type ContractRedeemRequest struct {
 // FilterRedeemRequest is a free log retrieval operation binding the contract event 0x222dc200773fe9b45015bf792e8fee37d651e3590c215806a5042404b6d741d2.
 //
 // Solidity: event RedeemRequest(address indexed recepient, uint256 amount_requested)
-func (_Contract *ContractFilterer) FilterRedeemRequest(opts *bind.FilterOpts, recepient []common.Address) (*ContractRedeemRequestIterator, error) {
+func (_LockRedeem *LockRedeemFilterer) FilterRedeemRequest(opts *bind.FilterOpts, recepient []common.Address) (*LockRedeemRedeemRequestIterator, error) {
 
 	var recepientRule []interface{}
 	for _, recepientItem := range recepient {
 		recepientRule = append(recepientRule, recepientItem)
 	}
 
-	logs, sub, err := _Contract.contract.FilterLogs(opts, "RedeemRequest", recepientRule)
+	logs, sub, err := _LockRedeem.contract.FilterLogs(opts, "RedeemRequest", recepientRule)
 	if err != nil {
 		return nil, err
 	}
-	return &ContractRedeemRequestIterator{contract: _Contract.contract, event: "RedeemRequest", logs: logs, sub: sub}, nil
+	return &LockRedeemRedeemRequestIterator{contract: _LockRedeem.contract, event: "RedeemRequest", logs: logs, sub: sub}, nil
 }
 
 // WatchRedeemRequest is a free log subscription operation binding the contract event 0x222dc200773fe9b45015bf792e8fee37d651e3590c215806a5042404b6d741d2.
 //
 // Solidity: event RedeemRequest(address indexed recepient, uint256 amount_requested)
-func (_Contract *ContractFilterer) WatchRedeemRequest(opts *bind.WatchOpts, sink chan<- *ContractRedeemRequest, recepient []common.Address) (event.Subscription, error) {
+func (_LockRedeem *LockRedeemFilterer) WatchRedeemRequest(opts *bind.WatchOpts, sink chan<- *LockRedeemRedeemRequest, recepient []common.Address) (event.Subscription, error) {
 
 	var recepientRule []interface{}
 	for _, recepientItem := range recepient {
 		recepientRule = append(recepientRule, recepientItem)
 	}
 
-	logs, sub, err := _Contract.contract.WatchLogs(opts, "RedeemRequest", recepientRule)
+	logs, sub, err := _LockRedeem.contract.WatchLogs(opts, "RedeemRequest", recepientRule)
 	if err != nil {
 		return nil, err
 	}
@@ -1377,8 +1397,8 @@ func (_Contract *ContractFilterer) WatchRedeemRequest(opts *bind.WatchOpts, sink
 			select {
 			case log := <-logs:
 				// New log arrived, parse the event and forward to the user
-				event := new(ContractRedeemRequest)
-				if err := _Contract.contract.UnpackLog(event, "RedeemRequest", log); err != nil {
+				event := new(LockRedeemRedeemRequest)
+				if err := _LockRedeem.contract.UnpackLog(event, "RedeemRequest", log); err != nil {
 					return err
 				}
 				event.Raw = log
@@ -1402,17 +1422,17 @@ func (_Contract *ContractFilterer) WatchRedeemRequest(opts *bind.WatchOpts, sink
 // ParseRedeemRequest is a log parse operation binding the contract event 0x222dc200773fe9b45015bf792e8fee37d651e3590c215806a5042404b6d741d2.
 //
 // Solidity: event RedeemRequest(address indexed recepient, uint256 amount_requested)
-func (_Contract *ContractFilterer) ParseRedeemRequest(log types.Log) (*ContractRedeemRequest, error) {
-	event := new(ContractRedeemRequest)
-	if err := _Contract.contract.UnpackLog(event, "RedeemRequest", log); err != nil {
+func (_LockRedeem *LockRedeemFilterer) ParseRedeemRequest(log types.Log) (*LockRedeemRedeemRequest, error) {
+	event := new(LockRedeemRedeemRequest)
+	if err := _LockRedeem.contract.UnpackLog(event, "RedeemRequest", log); err != nil {
 		return nil, err
 	}
 	return event, nil
 }
 
-// ContractValidatorSignedRedeemIterator is returned from FilterValidatorSignedRedeem and is used to iterate over the raw logs and unpacked data for ValidatorSignedRedeem events raised by the Contract contract.
-type ContractValidatorSignedRedeemIterator struct {
-	Event *ContractValidatorSignedRedeem // Event containing the contract specifics and raw log
+// LockRedeemValidatorSignedRedeemIterator is returned from FilterValidatorSignedRedeem and is used to iterate over the raw logs and unpacked data for ValidatorSignedRedeem events raised by the LockRedeem contract.
+type LockRedeemValidatorSignedRedeemIterator struct {
+	Event *LockRedeemValidatorSignedRedeem // Event containing the contract specifics and raw log
 
 	contract *bind.BoundContract // Generic contract to use for unpacking event data
 	event    string              // Event name to use for unpacking event data
@@ -1426,7 +1446,7 @@ type ContractValidatorSignedRedeemIterator struct {
 // Next advances the iterator to the subsequent event, returning whether there
 // are any more events found. In case of a retrieval or parsing error, false is
 // returned and Error() can be queried for the exact failure.
-func (it *ContractValidatorSignedRedeemIterator) Next() bool {
+func (it *LockRedeemValidatorSignedRedeemIterator) Next() bool {
 	// If the iterator failed, stop iterating
 	if it.fail != nil {
 		return false
@@ -1435,7 +1455,7 @@ func (it *ContractValidatorSignedRedeemIterator) Next() bool {
 	if it.done {
 		select {
 		case log := <-it.logs:
-			it.Event = new(ContractValidatorSignedRedeem)
+			it.Event = new(LockRedeemValidatorSignedRedeem)
 			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 				it.fail = err
 				return false
@@ -1450,7 +1470,7 @@ func (it *ContractValidatorSignedRedeemIterator) Next() bool {
 	// Iterator still in progress, wait for either a data or an error event
 	select {
 	case log := <-it.logs:
-		it.Event = new(ContractValidatorSignedRedeem)
+		it.Event = new(LockRedeemValidatorSignedRedeem)
 		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 			it.fail = err
 			return false
@@ -1466,19 +1486,19 @@ func (it *ContractValidatorSignedRedeemIterator) Next() bool {
 }
 
 // Error returns any retrieval or parsing error occurred during filtering.
-func (it *ContractValidatorSignedRedeemIterator) Error() error {
+func (it *LockRedeemValidatorSignedRedeemIterator) Error() error {
 	return it.fail
 }
 
 // Close terminates the iteration process, releasing any pending underlying
 // resources.
-func (it *ContractValidatorSignedRedeemIterator) Close() error {
+func (it *LockRedeemValidatorSignedRedeemIterator) Close() error {
 	it.sub.Unsubscribe()
 	return nil
 }
 
-// ContractValidatorSignedRedeem represents a ValidatorSignedRedeem event raised by the Contract contract.
-type ContractValidatorSignedRedeem struct {
+// LockRedeemValidatorSignedRedeem represents a ValidatorSignedRedeem event raised by the LockRedeem contract.
+type LockRedeemValidatorSignedRedeem struct {
 	Recipient         common.Address
 	ValidatorAddresss common.Address
 	Amount            *big.Int
@@ -1488,31 +1508,31 @@ type ContractValidatorSignedRedeem struct {
 // FilterValidatorSignedRedeem is a free log retrieval operation binding the contract event 0x3b76df4bf55914fbcbc8b02f6773984cc346db1e6aef40410dcee0f94c6a05db.
 //
 // Solidity: event ValidatorSignedRedeem(address indexed recipient, address validator_addresss, uint256 amount)
-func (_Contract *ContractFilterer) FilterValidatorSignedRedeem(opts *bind.FilterOpts, recipient []common.Address) (*ContractValidatorSignedRedeemIterator, error) {
+func (_LockRedeem *LockRedeemFilterer) FilterValidatorSignedRedeem(opts *bind.FilterOpts, recipient []common.Address) (*LockRedeemValidatorSignedRedeemIterator, error) {
 
 	var recipientRule []interface{}
 	for _, recipientItem := range recipient {
 		recipientRule = append(recipientRule, recipientItem)
 	}
 
-	logs, sub, err := _Contract.contract.FilterLogs(opts, "ValidatorSignedRedeem", recipientRule)
+	logs, sub, err := _LockRedeem.contract.FilterLogs(opts, "ValidatorSignedRedeem", recipientRule)
 	if err != nil {
 		return nil, err
 	}
-	return &ContractValidatorSignedRedeemIterator{contract: _Contract.contract, event: "ValidatorSignedRedeem", logs: logs, sub: sub}, nil
+	return &LockRedeemValidatorSignedRedeemIterator{contract: _LockRedeem.contract, event: "ValidatorSignedRedeem", logs: logs, sub: sub}, nil
 }
 
 // WatchValidatorSignedRedeem is a free log subscription operation binding the contract event 0x3b76df4bf55914fbcbc8b02f6773984cc346db1e6aef40410dcee0f94c6a05db.
 //
 // Solidity: event ValidatorSignedRedeem(address indexed recipient, address validator_addresss, uint256 amount)
-func (_Contract *ContractFilterer) WatchValidatorSignedRedeem(opts *bind.WatchOpts, sink chan<- *ContractValidatorSignedRedeem, recipient []common.Address) (event.Subscription, error) {
+func (_LockRedeem *LockRedeemFilterer) WatchValidatorSignedRedeem(opts *bind.WatchOpts, sink chan<- *LockRedeemValidatorSignedRedeem, recipient []common.Address) (event.Subscription, error) {
 
 	var recipientRule []interface{}
 	for _, recipientItem := range recipient {
 		recipientRule = append(recipientRule, recipientItem)
 	}
 
-	logs, sub, err := _Contract.contract.WatchLogs(opts, "ValidatorSignedRedeem", recipientRule)
+	logs, sub, err := _LockRedeem.contract.WatchLogs(opts, "ValidatorSignedRedeem", recipientRule)
 	if err != nil {
 		return nil, err
 	}
@@ -1522,8 +1542,8 @@ func (_Contract *ContractFilterer) WatchValidatorSignedRedeem(opts *bind.WatchOp
 			select {
 			case log := <-logs:
 				// New log arrived, parse the event and forward to the user
-				event := new(ContractValidatorSignedRedeem)
-				if err := _Contract.contract.UnpackLog(event, "ValidatorSignedRedeem", log); err != nil {
+				event := new(LockRedeemValidatorSignedRedeem)
+				if err := _LockRedeem.contract.UnpackLog(event, "ValidatorSignedRedeem", log); err != nil {
 					return err
 				}
 				event.Raw = log
@@ -1547,9 +1567,9 @@ func (_Contract *ContractFilterer) WatchValidatorSignedRedeem(opts *bind.WatchOp
 // ParseValidatorSignedRedeem is a log parse operation binding the contract event 0x3b76df4bf55914fbcbc8b02f6773984cc346db1e6aef40410dcee0f94c6a05db.
 //
 // Solidity: event ValidatorSignedRedeem(address indexed recipient, address validator_addresss, uint256 amount)
-func (_Contract *ContractFilterer) ParseValidatorSignedRedeem(log types.Log) (*ContractValidatorSignedRedeem, error) {
-	event := new(ContractValidatorSignedRedeem)
-	if err := _Contract.contract.UnpackLog(event, "ValidatorSignedRedeem", log); err != nil {
+func (_LockRedeem *LockRedeemFilterer) ParseValidatorSignedRedeem(log types.Log) (*LockRedeemValidatorSignedRedeem, error) {
+	event := new(LockRedeemValidatorSignedRedeem)
+	if err := _LockRedeem.contract.UnpackLog(event, "ValidatorSignedRedeem", log); err != nil {
 		return nil, err
 	}
 	return event, nil

@@ -16,7 +16,6 @@ import (
 
 type Lock struct {
 	Locker      action.Address
-	TrackerName ethcommon.Hash
 	ETHTxn      []byte
 }
 
@@ -162,7 +161,7 @@ func (ethLockTx) processCommon(ctx *action.Context, tx action.RawTx, lock *Lock)
 		ethereum.ProcessTypeLock,
 		lock.Locker,
 		lock.ETHTxn,
-		lock.TrackerName,
+		ethcommon.BytesToHash(lock.ETHTxn),
 		val,
 	)
 

@@ -7,11 +7,11 @@ import (
 )
 
 type Service struct {
-	access *EthereumChainDriver
+	access *ETHChainDriver
 }
 
 // Returns a new Service, should be passed as an RPC handler
-func NewService(access *EthereumChainDriver) *Service {
+func NewService(access *ETHChainDriver) *Service {
 	return &Service{access: access}
 }
 

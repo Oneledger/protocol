@@ -3,7 +3,6 @@ package ethereum
 import (
 	"fmt"
 
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/google/uuid"
@@ -48,7 +47,6 @@ func createRawLock(locker action.Address, rawTx []byte, userfee action.Amount, g
 	//tracker := tracker.NewTracker(common.BytesToHash(rawTx))
 	lock := eth.Lock{
 		Locker:      locker,
-		TrackerName: common.BytesToHash(rawTx),
 		ETHTxn:      rawTx,
 	}
 
@@ -77,7 +75,7 @@ func createRawLock(locker action.Address, rawTx []byte, userfee action.Amount, g
 // Wallet signs and then calls onlinelock
 func (svc *Service) GetRawLockTX(req ETHLockRequest, out *ETHLockRawTX) error {
 	opt := svc.trackerStore.GetOption()
-	cd, err := ethereum.NewEthereumChainDriver(svc.config, svc.logger, opt)
+	cd, err := ethereum.NewChainDriver(svc.config, svc.logger, opt)
 	if err != nil {
 		return errors.Wrap(err, "GetRawLockTx")
 	}

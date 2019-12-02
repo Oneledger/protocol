@@ -34,7 +34,7 @@ func (j JobETHSignRedeem) DoMyJob(ctx interface{}) {
 	}
 	ethconfig := ethCtx.cfg.EthChainDriver
 
-	cd, err := ethereum.NewEthereumChainDriver(ethconfig, ethCtx.Logger, trackerStore.GetOption())
+	cd, err := ethereum.NewChainDriver(ethconfig, ethCtx.Logger, trackerStore.GetOption())
 	if err != nil {
 		ethCtx.Logger.Error("err trying to get ChainDriver : ", j.GetJobID(), err)
 		return

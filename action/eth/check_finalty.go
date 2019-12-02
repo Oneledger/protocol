@@ -199,21 +199,13 @@ func (r reportFinalityMintTx) ProcessDeliver(ctx *action.Context, tx action.RawT
 	ctx.Logger.Error("Trying to add vote (DELIVER TX)")
 	index, ok := tracker.CheckIfVoted(f.ValidatorAddress)
 	ctx.Logger.Info("Before voting", ok, "Index :", index, "F.index", f.VoteIndex, "VALIDATOR ADDRESS : ", f.ValidatorAddress)
-	err = tracker.AddVote(f.ValidatorAddress, f.VoteIndex)
+	err = tracker.AddVote(f.ValidatorAddress, f.VoteIndex, true)
 	if err != nil {
 		return false, action.Response{Log: errors.Wrap(err, "failed to add vote").Error()}
 	}
 	fmt.Printf("%b \n", tracker.FinalityVotes)
 
 	index, ok = tracker.CheckIfVoted(f.ValidatorAddress)
-
-	ctx.Logger.Info("After voting (DELIVER TX)", ok, "Index :", index)
-	ctx.Logger.Info("Vote Count (DELIVER TX): ", tracker.GetVotes())
-
-	//if tracker.State != trackerlib.BusyFinalizing {tracker.State = trackerlib.BusyFinalizing}
-
-	ctx.Logger.Info("IS finalaized (DELIVER TX) :", tracker.Finalized())
-	ctx.Logger.Info("Tracker Votes (DELIVER TX) : ", tracker.GetVotes())
 
 	if tracker.Finalized() {
 
@@ -231,9 +223,10 @@ func (r reportFinalityMintTx) ProcessDeliver(ctx *action.Context, tx action.RawT
 		ctx.Logger.Info("Unable to save the tracker", err)
 		return false, action.Response{Log: errors.Wrap(err, "unable to save the tracker").Error()}
 	}
-	fmt.Println("TRACKER SAVED AT CHECK FINALITY (VOTES) (DELIVER TX): ", tracker.GetVotes())
+	yesVotes, noVotes := tracker.GetVotes()
+	fmt.Println("TRACKER SAVED AT CHECK FINALITY (VOTES) (DELIVER TX): ", yesVotes, noVotes)
 	ctx.Logger.Info("(DELIVER TX) COMPLETED")
-	return true, action.Response{Log: "vote success, not ready to mint: " + strconv.Itoa(tracker.GetVotes())}
+	return true, action.Response{Log: "vote success, not ready to mint: " + strconv.Itoa(yesVotes)}
 	//return runCheckFinalityMint(ctx,tx)
 
 }
