@@ -68,6 +68,17 @@ type OLTLockReply struct {
 	RawTX []byte `json:"UnsignedOLTLock"`
 }
 
+type RedeemRequest struct {
+	userOLTaddress  action.Address `json:"user_olt_address"`
+	userETHaddress  action.Address  `json:"user_eth_address"`
+	ETHTxn []byte `json:"eth_txn"`
+	Fee     action.Amount `json:"fee"`
+	Gas     int64         `json:"gas"`
+}
+
+type RedeemReply struct {
+	ok bool `json:"ok"`
+}
 type ETHLockRequest struct {
 	UserAddress common.Address `json:"user_eth_address"`
 	Amount    *big.Int         `json:"amount"`
@@ -94,3 +105,4 @@ type BalanceReply struct {
 	Address chain.Address `json:"address"`
 	Amount  *big.Int         `json:"amount"`
 }
+

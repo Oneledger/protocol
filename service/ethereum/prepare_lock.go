@@ -18,6 +18,8 @@ import (
 // OUTPUT :UNSIGNED OLT TRANSANTION
 // This function might create a loophope that node owner might use the sgned eth lock tx for his own benificiary address.
 // DONT USE IN PRODUCTION
+
+
 func (svc *Service) CreateRawExtLock(req OLTLockRequest, out *OLTLockReply) error {
 
 	packets, err := createRawLock(req.Address, req.RawTx, req.Fee, req.Gas)
