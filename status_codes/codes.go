@@ -56,6 +56,7 @@ const (
 	TxErrInvalidFeePrice    = 300109
 	TxErrInsufficientFunds  = 300110
 	TxErrGasOverflow        = 300111
+	TxErrInvalidExtTx       = 300112
 
 	ExternalErr                       = 400100
 	ExternalErrBitcoinTxNotFound      = 400101

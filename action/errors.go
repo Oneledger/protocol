@@ -16,4 +16,5 @@ var (
 	ErrInvalidFeePrice    = codes.ProtocolError{codes.TxErrInvalidFeePrice, "fee price is smaller than minimal fee"}
 	ErrNotEnoughFund      = codes.ProtocolError{codes.TxErrInsufficientFunds, "not enough fund"}
 	ErrGasOverflow        = codes.ProtocolError{codes.TxErrGasOverflow, "gas used exceed limit"}
+	ErrInvalidExtTx       = codes.ProtocolError{codes.TxErrInvalidExtTx, "invalid external tx"}
 )

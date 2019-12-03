@@ -1,6 +1,8 @@
 package event
 
 import (
+	"github.com/pkg/errors"
+
 	"github.com/Oneledger/protocol/data/ethereum"
 	"github.com/Oneledger/protocol/utils/transition"
 )
@@ -71,6 +73,17 @@ func VerifyRedeem(ctx interface{}) error {
 }
 
 func Burn(ctx interface{}) error {
+	context, ok := ctx.(*ethereum.TrackerCtx)
+	if !ok {
+		return errors.New("error casting tracker context")
+	}
+
+	tracker := context.Tracker
+	if tracker.Finalized() {
+		tracker.State = ethereum.Released
+	}
+	context.Tracker = tracker
+
 	return nil
 }
 
