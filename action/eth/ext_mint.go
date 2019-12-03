@@ -63,7 +63,7 @@ type ethExtMintTx struct {
 
 func (ethExtMintTx) Validate(ctx *action.Context, signedTx action.SignedTx) (bool, error) {
 	//Implement check Finality first
-	f := ReportFinalityMint{}
+	f := ReportFinality{}
 	err := f.Unmarshal(signedTx.Data)
 	if err != nil {
 		return false, errors.Wrap(action.ErrWrongTxType, err.Error())

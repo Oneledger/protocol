@@ -7,14 +7,15 @@ const (
 	Finalized
 	Released
 
-	BROADCASTING    string = "broadcasting"
-	FINALIZING      string = "finalizing"
-	FINALIZE        string = "finalize"
-	MINTING         string = "minting"
-	CLEANUP         string = "cleanup"
-	SIGNING         string = "signing"
-	VERIFYREDEEM    string = "verifyredeem"
-	BURN            string = "burn"
+	BROADCASTING  string = "broadcasting"
+	FINALIZING    string = "finalizing"
+	FINALIZE      string = "finalize"
+	MINTING       string = "minting"
+	CLEANUP       string = "cleanup"
+	SIGNING       string = "signing"
+	VERIFYREDEEM  string = "verifyredeem"
+	REDEEMCONFIRM string = "redeemconfirm"
+	BURN          string = "burn"
 
 	ProcessTypeNone   ProcessType = 0x00
 	ProcessTypeLock   ProcessType = 0x01

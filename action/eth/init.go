@@ -1,15 +1,9 @@
 package eth
 
 import (
-	"math/big"
-
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/rlp"
+	"github.com/pkg/errors"
 
 	"github.com/Oneledger/protocol/action"
-	"github.com/Oneledger/protocol/data/ethereum"
-
-	"github.com/pkg/errors"
 )
 
 func EnableETH(r action.Router) error {
@@ -41,13 +35,4 @@ func EnableInternalETH(r action.Router) error {
 		return errors.Wrap(err, "reportFinaityMintTx")
 	}
 	return nil
-}
-
-func GetAmount(tracker *ethereum.Tracker) (*big.Int, error) {
-	ethTx := &types.Transaction{}
-	err := rlp.DecodeBytes(tracker.SignedETHTx, ethTx)
-	if err != nil {
-		return nil, errors.Wrap(err, "eth txn decode failed")
-	}
-	return ethTx.Value(), nil
 }

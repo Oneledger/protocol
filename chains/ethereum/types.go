@@ -5,5 +5,9 @@ import (
 )
 
 type RedeemRequest struct {
-	Amount    *big.Int
+	Amount *big.Int
+}
+
+type LockRequest struct {
+	Amount *big.Int
 }
