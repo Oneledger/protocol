@@ -10,6 +10,7 @@ import (
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/chains/ethereum"
 	"github.com/Oneledger/protocol/config"
+	"github.com/Oneledger/protocol/data/balance"
 	trackerlib "github.com/Oneledger/protocol/data/ethereum"
 )
 
@@ -100,20 +101,26 @@ func processCommon(ctx *action.Context, tx action.RawTx) (bool, action.Response)
 	if err != nil {
 		return false, action.Response{Log: action.ErrUnserializable.Error()}
 	}
+
 	opt := ctx.ETHTrackers.GetOption()
 	config := config.DefaultEthConfig()
 	cd, err := ethereum.NewChainDriver(config, ctx.Logger, opt)
-	_, err = cd.ParseRedeem(redeem.ETHTxn)
+	req, err := cd.ParseRedeem(redeem.ETHTxn)
 	if err != nil {
-		return false, action.Response{
-			Data:      nil,
-			Log:       action.ErrInvalidAmount.Error(),
-			Info:      "",
-			GasWanted: 0,
-			GasUsed:   0,
-			Tags:      nil,
-		}
+		return false, action.Response{Log: action.ErrInvalidExtTx.Error()}
 	}
+
+	c, ok := ctx.Currencies.GetCurrencyByName("ETH")
+	if !ok {
+		return false, action.Response{Log: "ETH not registered"}
+	}
+
+	coin := c.NewCoinFromAmount(*balance.NewAmountFromBigInt(req.Amount))
+	err = ctx.Balances.MinusFromAddress(redeem.Owner, coin)
+	if err != nil {
+		return false, action.Response{Log: action.ErrNotEnoughFund.Error()}
+	}
+
 	validators, err := ctx.Validators.GetValidatorsAddress()
 	if err != nil {
 		return false, action.Response{Log: "error in getting validator addresses" + err.Error()}
@@ -142,6 +149,7 @@ func processCommon(ctx *action.Context, tx action.RawTx) (bool, action.Response)
 		Tags:      nil,
 	}
 }
+
 func (ethRedeemTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas) (bool, action.Response) {
 	return action.BasicFeeHandling(ctx, signedTx, start, size, 1)
 }
