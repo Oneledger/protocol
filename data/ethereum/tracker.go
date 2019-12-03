@@ -156,6 +156,6 @@ func (t Tracker) NextStep() string {
 		case Released:
 			return CLEANUP
 		}
-		return transition.NOOP
 	}
+	return transition.NOOP
 }

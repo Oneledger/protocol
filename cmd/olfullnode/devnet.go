@@ -29,10 +29,12 @@ import (
 	"github.com/Oneledger/protocol/consensus"
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/chain"
+
 	//"github.com/Oneledger/protocol/data/ethereum"
 	"github.com/Oneledger/protocol/data/fees"
 	"github.com/Oneledger/protocol/data/keys"
-	"github.com/Oneledger/protocol/ethcontracts"
+
+	ethcontracts "github.com/Oneledger/protocol/chains/ethereum/contract"
 	"github.com/Oneledger/protocol/log"
 )
 
@@ -357,9 +359,7 @@ func runDevnet(cmd *cobra.Command, _ []string) error {
 		return false
 	}
 
-
 	//deploy contract and get contract addr
-
 
 	for _, node := range nodeList {
 		node.cfg.P2P.PersistentPeers = persistentPeers
@@ -475,26 +475,25 @@ func initialState(args *testnetConfig, nodeList []node, option ethchain.ChainDri
 		}
 	}
 	return consensus.AppState{
-		Currencies: currencies,
-		FeeOption:  feeOpt,
+		Currencies:  currencies,
+		FeeOption:   feeOpt,
 		ETHCDOption: option,
-		Balances:   balances,
-		Staking:    staking,
-		Domains:    domains,
-		Fees:       fees,
+		Balances:    balances,
+		Staking:     staking,
+		Domains:     domains,
+		Fees:        fees,
 	}
 }
 
 func deployethcdcontract(conn string, nodeList []node) (*ethchain.ChainDriverOption, error) {
-	privatekey, err := crypto.HexToECDSA("545771d36868950ae1f90779c2f1a65b72bda13cf4e64069691601b53403a1d6")
+	privatekey, err := crypto.HexToECDSA("7156f3dead9c3b83a263664e610a7f5d0512ee98d015edc981a34d87c4088d23")
 	if err != nil {
-		return  nil, err
+		return nil, err
 	}
 	cli, err := ethclient.Dial(conn)
 	if err != nil {
 		return nil, err
 	}
-
 
 	publicKey := privatekey.Public()
 	publicKeyECDSA, ok := publicKey.(*ecdsa.PublicKey)
@@ -512,19 +511,24 @@ func deployethcdcontract(conn string, nodeList []node) (*ethchain.ChainDriverOpt
 	if err != nil {
 		return nil, err
 	}
-	gasLimit := uint64(6721974)              // in units
+	gasLimit := uint64(6721974) // in units
 
 	auth := bind.NewKeyedTransactor(privatekey)
 	auth.Nonce = big.NewInt(int64(nonce))
-	auth.Value = big.NewInt(0)     // in wei
-	auth.GasLimit = gasLimit // in units
+	auth.Value = big.NewInt(0) // in wei
+	auth.GasLimit = gasLimit   // in units
 	auth.GasPrice = gasPrice
 
 	input := make([]common.Address, 0, 10)
 	for _, node := range nodeList {
+
 		addr := common.HexToAddress(node.validator.Address.String())
+		if node.validator.Address.String() == "" {
+			continue
+		}
 		input = append(input, addr)
 	}
+	fmt.Printf("%#v \n", input)
 	address, _, _, err := ethcontracts.DeployLockRedeem(auth, cli, input)
 	if err != nil {
 		return nil, err

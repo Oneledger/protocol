@@ -12,6 +12,15 @@ import (
 
 func init() {
 
+	EthRedeemEngine = transition.NewEngine(
+		[]transition.Status{
+			transition.Status(ethereum.New),
+			transition.Status(ethereum.BusyBroadcasting),
+			transition.Status(ethereum.BusyFinalizing),
+			transition.Status(ethereum.Finalized),
+			transition.Status(ethereum.Released),
+		})
+
 	err := EthRedeemEngine.Register(transition.Transition{
 		Name: ethereum.SIGNING,
 		Fn:   Signing,

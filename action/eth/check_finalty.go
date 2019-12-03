@@ -126,7 +126,7 @@ func (r reportFinalityMintTx) ProcessCheck(ctx *action.Context, tx action.RawTx)
 	//ctx.Logger.Error("Trying to add vote (CHECK TX)")
 	//index,ok := tracker.CheckIfVoted(f.ValidatorAddress)
 	//ctx.Logger.Info("Before voting", ok,"Index :",index ,"F.index" ,f.VoteIndex)
-	err = tracker.AddVote(f.ValidatorAddress, f.VoteIndex,true)
+	err = tracker.AddVote(f.ValidatorAddress, f.VoteIndex, true)
 	if err != nil {
 		return false, action.Response{Log: errors.Wrap(err, "failed to add vote").Error()}
 	}
@@ -159,8 +159,8 @@ func (r reportFinalityMintTx) ProcessCheck(ctx *action.Context, tx action.RawTx)
 	}
 	//fmt.Println("TRACKER SAVED AT CHECK FINALITY (VOTES) (CHECK TX): ", tracker.GetVotes())
 	//ctx.Logger.Info("(CHECK TX) COMPLETED"
-	yesVotes,noVotes := tracker.GetVotes()
-	return true, action.Response{Log: "vote success, not ready to mint , Yes Votes : " + strconv.Itoa(yesVotes) +"NoVotes" + strconv.Itoa(noVotes)}
+	yesVotes, noVotes := tracker.GetVotes()
+	return true, action.Response{Log: "vote success, not ready to mint , Yes Votes : " + strconv.Itoa(yesVotes) + "NoVotes" + strconv.Itoa(noVotes)}
 
 }
 
@@ -210,15 +210,15 @@ func (r reportFinalityMintTx) ProcessDeliver(ctx *action.Context, tx action.RawT
 
 	if tracker.Finalized() {
 
-
 		if tracker.Type == trackerlib.ProcessTypeLock {
 			fmt.Println("MINTING OWEI :")
 			err = mintTokens(ctx, tracker, *f)
 			if err != nil {
 				return false, action.Response{Log: errors.Wrap(err, "UNABLE TO MINT TOKENS").Error()}
-		}}
-		if tracker.Type == trackerlib.ProcessTypeRedeem{
-			err = burnTokens(ctx,tracker, *f)
+			}
+		}
+		if tracker.Type == trackerlib.ProcessTypeRedeem {
+			err = burnTokens(ctx, tracker, *f)
 			if err != nil {
 				return false, action.Response{Log: errors.Wrap(err, "UNABLE TO MINT TOKENS").Error()}
 			}
@@ -273,7 +273,7 @@ func runCheckFinalityMint(ctx *action.Context, tx action.RawTx) (bool, action.Re
 	ctx.Logger.Error("Trying to add vote ")
 	index, ok := tracker.CheckIfVoted(f.ValidatorAddress)
 	ctx.Logger.Info("Before voting", ok, "Index :", index, "F.index", f.VoteIndex)
-	err = tracker.AddVote(f.ValidatorAddress, f.VoteIndex,true)
+	err = tracker.AddVote(f.ValidatorAddress, f.VoteIndex, true)
 	if err != nil {
 		return false, action.Response{Log: errors.Wrap(err, "failed to add vote").Error()}
 	}
@@ -304,9 +304,10 @@ func runCheckFinalityMint(ctx *action.Context, tx action.RawTx) (bool, action.Re
 		ctx.Logger.Info("Unable to save the tracker", err)
 		return false, action.Response{Log: errors.Wrap(err, "unable to save the tracker").Error()}
 	}
-	fmt.Println("TRACKER SAVED AT CHECK FINALITY (VOTES): ", tracker.GetVotes())
+	// fmt.Println("TRACKER SAVED AT CHECK FINALITY (VOTES): ", tracker.GetVotes())
 	ctx.Logger.Info("Voting Done ,unable to mint yet")
-	return true, action.Response{Log: "vote success, not ready to mint: " + strconv.Itoa(tracker.GetVotes())}
+	yes, no := tracker.GetVotes()
+	return true, action.Response{Log: "vote success, not ready to mint: " + strconv.Itoa(yes) + strconv.Itoa(no)}
 }
 
 func (reportFinalityMintTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas) (bool, action.Response) {
@@ -341,7 +342,6 @@ func mintTokens(ctx *action.Context, tracker *trackerlib.Tracker, oltTx ReportFi
 	return nil
 }
 
-
 func burnTokens(ctx *action.Context, tracker *trackerlib.Tracker, oltTx ReportFinalityMint) error {
 	curr, ok := ctx.Currencies.GetCurrencyByName("ETH")
 	if !ok {
@@ -357,7 +357,7 @@ func burnTokens(ctx *action.Context, tracker *trackerlib.Tracker, oltTx ReportFi
 	if err != nil {
 		return err
 	}
-	fmt.Println(curr,burnAmount)
+	fmt.Println(curr, burnAmount)
 	//Implement Burn Tokens
 	return nil
 }

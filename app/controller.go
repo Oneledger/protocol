@@ -238,7 +238,7 @@ func (app *App) commitor() commitor {
 		app.Context.ethTrackers.Iterate(func(a *ceth.TrackerName, t *ethereum.Tracker) bool {
 
 			fmt.Println("BEFORE commit trackers in commitor after chainstate Commit")
-			fmt.Println(t.FinalityVotes, t.GetVotes())
+			// fmt.Println(t.FinalityVotes, t.GetVotes())
 
 			return false
 		})
@@ -247,7 +247,7 @@ func (app *App) commitor() commitor {
 		app.Context.ethTrackers.Iterate(func(a *ceth.TrackerName, t *ethereum.Tracker) bool {
 
 			fmt.Println("AFTER Commit trackers in commitor after chainstate Commit")
-			fmt.Println(t.FinalityVotes, t.GetVotes())
+			// fmt.Println(t.FinalityVotes, t.GetVotes())
 
 			return false
 		})
@@ -343,7 +343,7 @@ func doEthTransitions(js *jobs.JobStore, ts *ethereum.TrackerStore, myValAddr ke
 	for _, name := range tnames {
 		t, _ := ts.Get(*name)
 
-		fmt.Println("Tracker Votes doethtrasitions", t.GetVotes())
+		// fmt.Println("Tracker Votes doethtrasitions", t.GetVotes())
 		fmt.Println(t.TrackerName)
 		ctx := ethereum.NewTrackerCtx(t, myValAddr, js.WithChain(chain.ETHEREUM), ts, validators)
 		fmt.Println("Doethtransactions Tracker current state :", t.State)

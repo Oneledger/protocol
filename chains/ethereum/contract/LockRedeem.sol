@@ -171,7 +171,7 @@ contract LockRedeem {
 
     }
 
-    function declareNewEpoch(uint nextEpochHeight) internal onlyValidator {
+    function declareNewEpoch(uint nextEpochHeight) internal {
         epochBlockHeight = nextEpochHeight;
         emit NewEpoch(epochBlockHeight);
 
