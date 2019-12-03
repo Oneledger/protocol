@@ -77,14 +77,16 @@ func MakeAvailable(input interface{}) error {
 	states := []bitcoin.TrackerState{bitcoin.BusySigning, bitcoin.BusyBroadcasting, bitcoin.BusyFinalizing}
 	for i := range states {
 
-		//Delete Add Signature Job
-		fjob, err := data.JobStore.GetJob(t.GetJobID(states[i]))
-		if err != nil {
-			continue
-		}
-		err = data.JobStore.DeleteJob(fjob)
-		if err != nil {
-			return errors.Wrap(err, "failed to delete job")
+		if data.Validators.IsValidator() {
+			//Delete Add Signature Job
+			fjob, err := data.JobStore.GetJob(t.GetJobID(states[i]))
+			if err != nil {
+				continue
+			}
+			err = data.JobStore.DeleteJob(fjob)
+			if err != nil {
+				return errors.Wrap(err, "failed to delete job")
+			}
 		}
 	}
 
@@ -101,10 +103,14 @@ func ReserveTracker(inp interface{}) error {
 	t := data.Tracker
 	t.State = bitcoin.BusySigning
 
-	job := NewAddSignatureJob(t.Name, t.GetJobID(t.State))
-	err := data.JobStore.SaveJob(job)
-	if err != nil {
-		return err
+	if data.Validators.IsValidator() {
+
+		job := NewAddSignatureJob(t.Name, t.GetJobID(t.State))
+
+		err := data.JobStore.SaveJob(job)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -120,12 +126,14 @@ func FreezeForBroadcast(inp interface{}) error {
 	if t.Multisig.IsValid() {
 
 		data.Tracker.State = bitcoin.BusyBroadcasting
-
-		job := NewBTCBroadcastJob(t.Name, t.GetJobID(t.State))
-		err := data.JobStore.SaveJob(job)
-		if err != nil {
-			return err
+		if data.Validators.IsValidator() {
+			job := NewBTCBroadcastJob(t.Name, t.GetJobID(t.State))
+			err := data.JobStore.SaveJob(job)
+			if err != nil {
+				return err
+			}
 		}
+
 	} else if t.Multisig.IsCancel() {
 
 	}
@@ -142,10 +150,12 @@ func ReportBroadcastSuccess(inp interface{}) error {
 	t := data.Tracker
 	t.State = bitcoin.BusyFinalizing
 
-	job := NewBTCCheckFinalityJob(t.Name, t.GetJobID(t.State))
-	err := data.JobStore.SaveJob(job)
-	if err != nil {
-		return err
+	if data.Validators.IsValidator() {
+		job := NewBTCCheckFinalityJob(t.Name, t.GetJobID(t.State))
+		err := data.JobStore.SaveJob(job)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
