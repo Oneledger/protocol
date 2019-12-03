@@ -6,7 +6,6 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/Oneledger/protocol/data/ethereum"
-	chaindriver "github.com/Oneledger/protocol/chains/ethereum"
 	"github.com/Oneledger/protocol/utils/transition"
 )
 
@@ -35,16 +34,6 @@ func init() {
 		Name: ethereum.VERIFYREDEEM,
 		Fn:   VerifyRedeem,
 		From: transition.Status(ethereum.BusyBroadcasting),
-		To:   transition.Status(ethereum.BusyFinalizing),
-	})
-	if err != nil {
-		panic(err)
-	}
-
-	err = EthRedeemEngine.Register(transition.Transition{
-		Name: ethereum.VERIFYREDEEM,
-		Fn:   VerifyRedeem,
-		From: transition.Status(ethereum.BusyFinalizing),
 		To:   transition.Status(ethereum.Finalized),
 	})
 	if err != nil {
@@ -116,10 +105,10 @@ func VerifyRedeem(ctx interface{}) error {
 		return errors.Wrap(err, string(tracker.State))
 	}
 	if context.Validators.IsValidator() {
-		job :=NewETHVerifyRedeem(tracker.TrackerName,ethereum.BusyFinalizing)
+		job := NewETHVerifyRedeem(tracker.TrackerName, ethereum.BusyFinalizing)
 		err := context.JobStore.SaveJob(job)
 		if err != nil {
-			return errors.Wrap(err,"Failed to save job")
+			return errors.Wrap(err, "Failed to save job")
 		}
 	}
 	if tracker.State == ethereum.BusyFinalizing {
@@ -127,15 +116,13 @@ func VerifyRedeem(ctx interface{}) error {
 		if err != nil {
 			return errors.Wrap(err, "Signing Job not found ")
 		}
-		if signingJob.IsDone(){
-			tracker.State=ethereum.Finalized
+		if signingJob.IsDone() {
+			tracker.State = ethereum.Finalized
 		}
 	}
 	context.Tracker = tracker
 	return nil
 }
-
-
 
 func Burn(ctx interface{}) error {
 	return nil

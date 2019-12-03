@@ -528,7 +528,7 @@ func deployethcdcontract(conn string, nodeList []node) (*ethchain.ChainDriverOpt
 		}
 		input = append(input, addr)
 	}
-	fmt.Printf("%#v \n", input)
+
 	address, _, _, err := ethcontracts.DeployLockRedeem(auth, cli, input)
 	if err != nil {
 		return nil, err
