@@ -1,6 +1,7 @@
 package eth
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 
@@ -97,7 +98,7 @@ func (e ethLockTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (bool, act
 		return false, action.Response{Log: "wrong tx type"}
 	}
 
-	return e.processCommon(ctx, tx, lock)
+	return runLock(ctx, tx, lock)
 }
 
 // ProcessDeliver
@@ -109,7 +110,7 @@ func (e ethLockTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, a
 		return false, action.Response{Log: "wrong tx type"}
 	}
 
-	ok, resp := e.processCommon(ctx, tx, lock)
+	ok, resp := runLock(ctx, tx, lock)
 	if !ok {
 		return ok, resp
 	}
@@ -125,15 +126,18 @@ func (ethLockTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start
 }
 
 // processCommon
-func (ethLockTx) processCommon(ctx *action.Context, tx action.RawTx, lock *Lock) (bool, action.Response) {
+func runLock(ctx *action.Context, tx action.RawTx, lock *Lock) (bool, action.Response) {
 	ethTx, err := ethchaindriver.DecodeTransaction(lock.ETHTxn)
-	if ethTx.To() != &ctx.ETHOptions.ContractAddress {
+	if err != nil {
+		return false, action.Response{
+			Log: "decode eth txn error" + err.Error(),
+		}
+	}
+	fmt.Printf("%#v \n", ethTx)
+	if !bytes.Equal(ethTx.To().Bytes(), ctx.ETHTrackers.GetOption().ContractAddress.Bytes()) {
 		return false, action.Response{
 			Log: "Invalid transaction ,To field of Transaction does not match Contract address",
 		}
-	}
-	if err != nil {
-		return false, action.Response{Log: "err decoding txn: " + err.Error()}
 	}
 
 	val, err := ctx.Validators.GetValidatorsAddress()

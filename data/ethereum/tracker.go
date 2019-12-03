@@ -46,24 +46,26 @@ func (t *Tracker) AddVote(addr keys.Address, index int64, vote bool) error {
 	}
 
 	_, voted := t.CheckIfVoted(addr)
-	if !voted {
-		if t.Validators[index].Equal(addr) {
-			//		t.FinalityVotes = (t.FinalityVotes | (1 << index))
-			//		return nil
+	if voted {
+		return errTrackerInvalidVote
+	}
+	if t.Validators[index].Equal(addr) {
+		//		t.FinalityVotes = (t.FinalityVotes | (1 << index))
+		//		return nil
 
-			// vote:
-			//      0: not vote yet
-			//      1: vote for yes
-			//      2: vote for no
-			v := int8(0)
-			if !vote {
-				v = 1
-			}
-			t.FinalityVotes[index] = Vote(v + 1)
+		// vote:
+		//      0: not vote yet
+		//      1: vote for yes
+		//      2: vote for no
+		v := int8(0)
+		if !vote {
+			v = 1
 		}
+		t.FinalityVotes[index] = Vote(v + 1)
+
 	}
 
-	return errTrackerInvalidVote
+	return nil
 }
 
 func (t *Tracker) GetJobID(state TrackerState) string {

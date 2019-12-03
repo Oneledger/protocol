@@ -381,10 +381,10 @@ func runDevnet(cmd *cobra.Command, _ []string) error {
 }
 
 func initialState(args *testnetConfig, nodeList []node, option ethchain.ChainDriverOption) consensus.AppState {
-	olt := balance.Currency{Id: 0, Name: "OLT", Chain: chain.Type(0), Decimal: 18, Unit: "nue"}
-	vt := balance.Currency{Id: 1, Name: "VT", Chain: chain.Type(0), Unit: "vt"}
-	obtc := balance.Currency{Id: 2, Name: "BTC", Chain: chain.Type(1), Decimal: 8, Unit: "satoshi"}
-	oeth := balance.Currency{Id: 3, Name: "ETH", Chain: chain.Type(1), Decimal: 8, Unit: "wei"}
+	olt := balance.Currency{Id: 0, Name: "OLT", Chain: chain.ONELEDGER, Decimal: 18, Unit: "nue"}
+	vt := balance.Currency{Id: 1, Name: "VT", Chain: chain.ONELEDGER, Unit: "vt"}
+	obtc := balance.Currency{Id: 2, Name: "BTC", Chain: chain.BITCOIN, Decimal: 8, Unit: "satoshi"}
+	oeth := balance.Currency{Id: 3, Name: "ETH", Chain: chain.ETHEREUM, Decimal: 18, Unit: "wei"}
 	currencies := []balance.Currency{olt, vt, obtc, oeth}
 	feeOpt := fees.FeeOption{
 		FeeCurrency:   olt,

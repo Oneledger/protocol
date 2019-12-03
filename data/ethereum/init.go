@@ -1,5 +1,7 @@
 package ethereum
 
+import "errors"
+
 const (
 	New TrackerState = iota
 	BusyBroadcasting
@@ -20,6 +22,11 @@ const (
 	ProcessTypeNone   ProcessType = 0x00
 	ProcessTypeLock   ProcessType = 0x01
 	ProcessTypeRedeem ProcessType = 0x02
+)
+
+var (
+	ErrTrackerNotFound    = errors.New("tracker not found")
+	errTrackerInvalidVote = errors.New("vote information is invalid")
 )
 
 type ProcessType int8

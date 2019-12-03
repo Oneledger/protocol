@@ -36,7 +36,7 @@ func TestTracker_AddVote(t *testing.T) {
 		if i >= threshold {
 			continue
 		}
-		err := tracker.AddVote(addr, int64(i))
+		err := tracker.AddVote(addr, int64(i), true)
 		assert.NoError(t, err, "add vote error")
 	}
 }
@@ -54,7 +54,7 @@ func TestTracker_TestStateMachine(t *testing.T) {
 		if index%3 == 0 {
 			if validatorIndex < len(addresses) {
 				//Add Vote to tracker
-				tracker.AddVote(addresses[validatorIndex], int64(validatorIndex))
+				tracker.AddVote(addresses[validatorIndex], int64(validatorIndex), true)
 				validatorIndex++
 			}
 		}
@@ -71,7 +71,7 @@ func TestTracker_CheckIfVoted(t *testing.T) {
 	h := &common.Hash{}
 	h.SetBytes([]byte("test"))
 	tracker = *NewTracker(ProcessTypeNone, addresses[0], []byte("test"), *h, addresses)
-	tracker.AddVote(addresses[1], 1)
+	tracker.AddVote(addresses[1], 1, true)
 	index0, ok := tracker.CheckIfVoted(addresses[0])
 	assert.False(t, ok)
 	index1, ok := tracker.CheckIfVoted(addresses[1])
@@ -84,8 +84,10 @@ func TestTracker_CheckIfVoted(t *testing.T) {
 
 func TestTracker_GetVotes(t *testing.T) {
 	//tracker.FinalityVotes = int64(0)
-	tracker.AddVote(addresses[0], 0)
-	tracker.AddVote(addresses[1], 1)
-	fmt.Println("VOTES: ", tracker.GetVotes())
-	assert.Equal(t, 2, tracker.GetVotes())
+	tracker.AddVote(addresses[0], 0, true)
+	tracker.AddVote(addresses[1], 1, true)
+	y, n := tracker.GetVotes()
+	fmt.Println("VOTES: ", y, n)
+	assert.Equal(t, 2, y)
+	assert.Equal(t, 0, n)
 }

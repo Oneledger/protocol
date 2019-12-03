@@ -4,7 +4,6 @@ import (
 	"github.com/btcsuite/btcd/chaincfg"
 	abci "github.com/tendermint/tendermint/abci/types"
 
-	ethchain "github.com/Oneledger/protocol/chains/ethereum"
 	"github.com/Oneledger/protocol/data/accounts"
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/bitcoin"
@@ -36,7 +35,6 @@ type Context struct {
 	BTCChainType         *chaincfg.Params
 	BlockCypherToken     string
 	BlockCypherChainType string
-	ETHOptions           *ethchain.ChainDriverOption
 }
 
 func NewContext(r Router, header *abci.Header, state *storage.State,

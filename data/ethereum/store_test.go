@@ -2,14 +2,16 @@ package ethereum
 
 import (
 	"fmt"
+	"testing"
+
 	"github.com/Oneledger/protocol/chains/ethereum"
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/storage"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/assert"
 	"github.com/tendermint/tendermint/libs/db"
-	"testing"
 )
+
 var store *TrackerStore
 var cs *storage.State
 
@@ -21,10 +23,9 @@ func init() {
 
 func TestTrackerStore_Get(t *testing.T) {
 
-
 	h := &common.Hash{}
 	h.SetBytes([]byte("testhash"))
-	tracker := NewTracker([]byte("tracker1addr"),[]byte("signedeth"), ethereum.TrackerName(*h), []keys.Address{keys.Address("s")})
+	tracker := NewTracker(0x01, []byte("tracker1addr"), []byte("signedeth"), ethereum.TrackerName(*h), []keys.Address{keys.Address("s")})
 	err := store.Set(tracker)
 	assert.NoError(t, err, "set")
 
@@ -33,7 +34,6 @@ func TestTrackerStore_Get(t *testing.T) {
 	assert.Equal(t, tracker, trackerNew, "equal")
 
 }
-
 
 func TestTrackerStore_Iterate(t *testing.T) {
 	cs.Commit()

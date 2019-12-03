@@ -214,7 +214,7 @@ func Minting(ctx interface{}) error {
 }
 
 func Cleanup(ctx interface{}) error {
-	context, ok := ctx.(ethereum.TrackerCtx)
+	context, ok := ctx.(*ethereum.TrackerCtx)
 	if !ok {
 		return errors.New("error casting tracker context")
 	}
