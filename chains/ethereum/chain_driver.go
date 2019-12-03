@@ -218,7 +218,7 @@ func (acc *ETHChainDriver) BroadcastTx(tx *types.Transaction) (TransactionHash, 
 	}
 	err = acc.GetClient().SendTransaction(context.Background(), tx)
 	if err != nil {
-		acc.logger.Error("Error connecting to ETHEREUM :", err)
+		acc.logger.Error("Error connecting to Ethereum :", err)
 		return tx.Hash(), err
 	}
 	acc.logger.Info("Transaction Broadcasted to Ethereum ", tx.Hash())

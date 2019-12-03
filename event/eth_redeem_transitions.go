@@ -53,7 +53,7 @@ func init() {
 
 	err = EthRedeemEngine.Register(transition.Transition{
 		Name: ethereum.CLEANUP,
-		Fn:   redeemcleanup,
+		Fn:   redeemCleanup,
 		From: transition.Status(ethereum.Released),
 		To:   transition.Status(0),
 	})
@@ -140,6 +140,28 @@ func Burn(ctx interface{}) error {
 	return nil
 }
 
-func redeemcleanup(ctx interface{}) error {
+func redeemCleanup(ctx interface{}) error {
+	context, ok := ctx.(ethereum.TrackerCtx)
+	if !ok {
+		return errors.New("error casting tracker context")
+	}
+	tracker := context.Tracker
+	//delete the tracker related jobs
+	for state := ethereum.BusyBroadcasting; state <= ethereum.Released; state++ {
+		job, err := context.JobStore.GetJob(tracker.GetJobID(state))
+		if err != nil {
+			fmt.Println(err, "failed to get job from state: ", state)
+			continue
+		}
+		err = context.JobStore.DeleteJob(job)
+		if err != nil {
+			return errors.Wrap(err, "error deleting job from store")
+		}
+	}
+	//Delete Tracker
+	res, err := context.TrackerStore.Delete(tracker.TrackerName)
+	if err != nil || !res {
+		return errors.Wrap(err, "error deleting tracker from store")
+	}
 	return nil
 }
