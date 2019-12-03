@@ -9,7 +9,6 @@ import (
 
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/chains/ethereum"
-	"github.com/Oneledger/protocol/config"
 	"github.com/Oneledger/protocol/data/balance"
 	trackerlib "github.com/Oneledger/protocol/data/ethereum"
 )
