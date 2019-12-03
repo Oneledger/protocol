@@ -58,7 +58,7 @@ func (job *JobETHCheckFinality) DoMyJob(ctx interface{}) {
 		return
 	}
 	rawTx := tracker.SignedETHTx
-	tx,err := cd.DecodeTransaction(rawTx)
+	tx, err := cd.DecodeTransaction(rawTx)
 	if err != nil {
 		ethCtx.Logger.Error("Error Decoding Bytes from RaxTX :", job.GetJobID(), err)
 		return
@@ -77,11 +77,12 @@ func (job *JobETHCheckFinality) DoMyJob(ctx interface{}) {
 	if index < 0 {
 		return
 	}
-	reportFinalityMint := &eth.ReportFinalityMint{
+	reportFinalityMint := &eth.ReportFinality{
 		TrackerName:      job.TrackerName,
 		Locker:           tracker.ProcessOwner,
 		ValidatorAddress: ethCtx.ValidatorAddress,
 		VoteIndex:        index,
+		Refund:           false,
 	}
 
 	fmt.Println("Creating Internal Transaction to add vote:", reportFinalityMint)

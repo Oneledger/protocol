@@ -34,21 +34,31 @@ func init() {
 		Name: ethereum.VERIFYREDEEM,
 		Fn:   VerifyRedeem,
 		From: transition.Status(ethereum.BusyBroadcasting),
-		To:   transition.Status(ethereum.Finalized),
+		To:   transition.Status(ethereum.BusyFinalizing),
 	})
 	if err != nil {
 		panic(err)
 	}
 
 	err = EthRedeemEngine.Register(transition.Transition{
-		Name: ethereum.BURN,
-		Fn:   Burn,
-		From: transition.Status(ethereum.Finalized),
-		To:   transition.Status(ethereum.Released),
+		Name: ethereum.REDEEMCONFIRM,
+		Fn:   RedeemConfirmed,
+		From: transition.Status(ethereum.BusyFinalizing),
+		To:   transition.Status(ethereum.Finalized),
 	})
 	if err != nil {
 		panic(err)
 	}
+
+	//err = EthRedeemEngine.Register(transition.Transition{
+	//	Name: ethereum.BURN,
+	//	Fn:   Burn,
+	//	From: transition.Status(ethereum.Finalized),
+	//	To:   transition.Status(ethereum.Released),
+	//})
+	//if err != nil {
+	//	panic(err)
+	//}
 
 	err = EthRedeemEngine.Register(transition.Transition{
 		Name: ethereum.CLEANUP,
@@ -100,42 +110,35 @@ func VerifyRedeem(ctx interface{}) error {
 		return errors.New("error casting tracker context")
 	}
 	tracker := context.Tracker
-	if tracker.State != ethereum.BusyBroadcasting {
-		err := errors.New("Cannot start Finalizing Redeem from the current state")
-		return errors.Wrap(err, string(tracker.State))
-	}
-	if context.Validators.IsValidator() {
+
+	// create verify job for the first time from the state of broadcasting
+	if tracker.State == ethereum.BusyBroadcasting && context.Validators.IsValidator() {
 		job := NewETHVerifyRedeem(tracker.TrackerName, ethereum.BusyFinalizing)
 		err := context.JobStore.SaveJob(job)
 		if err != nil {
 			return errors.Wrap(err, "Failed to save job")
 		}
+		tracker.State = ethereum.BusyFinalizing
 	}
-	if tracker.State == ethereum.BusyFinalizing {
-		signingJob, err := context.JobStore.GetJob(tracker.GetJobID(ethereum.BusyFinalizing))
-		if err != nil {
-			return errors.Wrap(err, "Signing Job not found ")
-		}
-		if signingJob.IsDone() {
-			tracker.State = ethereum.Finalized
-		}
-	}
+
 	context.Tracker = tracker
 	return nil
 }
 
-func Burn(ctx interface{}) error {
+func RedeemConfirmed(ctx interface{}) error {
+
 	context, ok := ctx.(*ethereum.TrackerCtx)
 	if !ok {
 		return errors.New("error casting tracker context")
 	}
-
 	tracker := context.Tracker
-	if tracker.Finalized() {
-		tracker.State = ethereum.Released
+
+	if tracker.State == ethereum.BusyFinalizing {
+		if tracker.Finalized() {
+			tracker.State = ethereum.Finalized
+		}
 	}
 	context.Tracker = tracker
-
 	return nil
 }
 
@@ -146,15 +149,17 @@ func redeemCleanup(ctx interface{}) error {
 	}
 	tracker := context.Tracker
 	//delete the tracker related jobs
-	for state := ethereum.BusyBroadcasting; state <= ethereum.Released; state++ {
-		job, err := context.JobStore.GetJob(tracker.GetJobID(state))
-		if err != nil {
-			fmt.Println(err, "failed to get job from state: ", state)
-			continue
-		}
-		err = context.JobStore.DeleteJob(job)
-		if err != nil {
-			return errors.Wrap(err, "error deleting job from store")
+	if context.Validators.IsValidator() {
+		for state := ethereum.BusyBroadcasting; state <= ethereum.Released; state++ {
+			job, err := context.JobStore.GetJob(tracker.GetJobID(state))
+			if err != nil {
+				fmt.Println(err, "failed to get job from state: ", state)
+				continue
+			}
+			err = context.JobStore.DeleteJob(job)
+			if err != nil {
+				return errors.Wrap(err, "error deleting job from store")
+			}
 		}
 	}
 	//Delete Tracker

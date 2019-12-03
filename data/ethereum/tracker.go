@@ -3,7 +3,6 @@ package ethereum
 import (
 	//"errors"
 
-	"fmt"
 	"strconv"
 
 	"github.com/Oneledger/protocol/chains/ethereum"
@@ -127,10 +126,8 @@ func (t Tracker) NextStep() string {
 	if t.Type == ProcessTypeLock {
 		switch t.State {
 		case New:
-			fmt.Println("Chanjing state from NEW to Broadcasting")
 			return BROADCASTING
 		case BusyBroadcasting:
-			fmt.Println("Changing state from BusyBroadcasting to Finalizing")
 			return FINALIZING
 		case BusyFinalizing:
 			return FINALIZE
@@ -144,10 +141,8 @@ func (t Tracker) NextStep() string {
 	if t.Type == ProcessTypeRedeem {
 		switch t.State {
 		case New:
-			fmt.Println("Chanjing state from NEW to Broadcasting")
 			return SIGNING
 		case BusyBroadcasting:
-			fmt.Println("Changing state from BusyBroadcasting to Finalizing")
 			return VERIFYREDEEM
 		case BusyFinalizing:
 			return VERIFYREDEEM

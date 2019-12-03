@@ -163,20 +163,15 @@ func (acc *ETHChainDriver) PrepareUnsignedETHLock(addr common.Address, lockAmoun
 }
 
 func (acc *ETHChainDriver) DecodeTransaction(rawBytes []byte) (*types.Transaction, error) {
-	tx := &types.Transaction{}
-	err := rlp.DecodeBytes(rawBytes, tx)
-	if err != nil {
-		return nil, errors.Wrap(err, "Unable to decode Bytes")
-	}
-	return tx, nil
+	return DecodeTransaction(rawBytes)
 }
 
-func (acc *ETHChainDriver) GetTransactionMessage(tx *types.Transaction) (*types.Message ,error) {
-	msg,err := tx.AsMessage(types.NewEIP155Signer(tx.ChainId()))
+func (acc *ETHChainDriver) GetTransactionMessage(tx *types.Transaction) (*types.Message, error) {
+	msg, err := tx.AsMessage(types.NewEIP155Signer(tx.ChainId()))
 	if err != nil {
-		return nil,errors.Wrap(err,"Unable to convert Tx to message")
+		return nil, errors.Wrap(err, "Unable to convert Tx to message")
 	}
-	return &msg,nil
+	return &msg, nil
 }
 
 func (acc *ETHChainDriver) PrepareUnsignedETHRedeem(addr common.Address, lockAmount *big.Int) (*Transaction, error) {
@@ -252,6 +247,20 @@ func (acc *ETHChainDriver) ParseRedeem(data []byte) (req *RedeemRequest, err err
 	//	return nil, errors.Wrap(err,"Unable to create Redeem Request")
 	//}
 	//TODO : Refactor to use UNPACK
+
+	return ParseRedeem(data)
+}
+
+func (acc *ETHChainDriver) VerifyRedeem(validatorAddress common.Address, recepient common.Address) (bool, error) {
+	instance := acc.GetContract()
+	ok, err := instance.VerifyRedeem(acc.CallOpts(validatorAddress), recepient)
+	if err != nil {
+		return false, errors.Wrap(err, "Unable to connect to ethereum smart contract")
+	}
+	return ok, nil
+}
+
+func ParseRedeem(data []byte) (req *RedeemRequest, err error) {
 	ss := strings.Split(hex.EncodeToString(data), "db006a75")
 	if len(ss) == 0 {
 		return nil, errors.New("Transaction does not have the required input data")
@@ -264,15 +273,22 @@ func (acc *ETHChainDriver) ParseRedeem(data []byte) (req *RedeemRequest, err err
 		return nil, err
 	}
 	amt := big.NewInt(0).SetBytes(d)
-
 	return &RedeemRequest{Amount: amt}, nil
 }
 
-func (acc *ETHChainDriver) VerifyRedeem (validatorAddress common.Address,recepient common.Address) (bool,error) {
-	instance:= acc.GetContract()
-	ok,err := instance.VerifyRedeem(acc.CallOpts(validatorAddress),recepient)
+func ParseLock(data []byte) (req *LockRequest, err error) {
+	tx, err := DecodeTransaction(data)
 	if err != nil {
-		return false,errors.Wrap(err,"Unable to connect to ethereum smart contract")
+		return nil, err
 	}
-	return ok,nil
+	return &LockRequest{Amount: tx.Value()}, nil
+}
+
+func DecodeTransaction(data []byte) (*types.Transaction, error) {
+	tx := &types.Transaction{}
+	err := rlp.DecodeBytes(data, tx)
+	if err != nil {
+		return nil, errors.Wrap(err, "Unable to decode Bytes")
+	}
+	return tx, nil
 }
