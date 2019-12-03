@@ -6,6 +6,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/Oneledger/protocol/data/ethereum"
+	chaindriver "github.com/Oneledger/protocol/chains/ethereum"
 	"github.com/Oneledger/protocol/utils/transition"
 )
 
@@ -22,8 +23,8 @@ func init() {
 	}
 
 	err = EthRedeemEngine.Register(transition.Transition{
-		Name: ethereum.FINALIZESIGNING,
-		Fn:   FinalizeSigning,
+		Name: ethereum.VERIFYREDEEM,
+		Fn:   VerifyRedeem,
 		From: transition.Status(ethereum.BusyBroadcasting),
 		To:   transition.Status(ethereum.BusyFinalizing),
 	})
@@ -93,7 +94,7 @@ func Signing(ctx interface{}) error {
 	return nil
 }
 
-func FinalizeSigning(ctx interface{}) error {
+func VerifyRedeem(ctx interface{}) error {
 	fmt.Println("Starting Finalizing of Redeem Signing")
 
 	context, ok := ctx.(*ethereum.TrackerCtx)
@@ -106,35 +107,26 @@ func FinalizeSigning(ctx interface{}) error {
 		return errors.Wrap(err, string(tracker.State))
 	}
 	if context.Validators.IsValidator() {
-		_, voted := tracker.CheckIfVoted(context.CurrNodeAddr)
-		if !voted {
-			signingjob, err := context.JobStore.GetJob(tracker.GetJobID(ethereum.BusyBroadcasting))
-			if err != nil {
-				return errors.Wrap(err, "failed to get job")
-			}
-			if signingjob.IsDone() {
-				fmt.Println("Signing job is done but Vote not received ")
-				job := NewETHCheckFinality(tracker.TrackerName, ethereum.BusyFinalizing)
-				err := context.JobStore.SaveJob(job)
-				if err != nil {
-					return errors.Wrap(errors.New("job serialization failed err: "), err.Error())
-				}
-			}
+		job :=NewETHVerifyRedeem(tracker.TrackerName,ethereum.BusyFinalizing)
+		err := context.JobStore.SaveJob(job)
+		if err != nil {
+			return errors.Wrap(err,"Failed to save job")
 		}
 	}
-	yesVotes, _ := tracker.GetVotes()
-	if yesVotes > 0 {
-		fmt.Println("Setting Status to BusyFinalizing")
-		tracker.State = ethereum.BusyFinalizing
+	if tracker.State == ethereum.BusyFinalizing {
+		signingJob, err := context.JobStore.GetJob(tracker.GetJobID(ethereum.BusyFinalizing))
+		if err != nil {
+			return errors.Wrap(err, "Signing Job not found ")
+		}
+		if signingJob.IsDone(){
+			tracker.State=ethereum.Finalized
+		}
 	}
-
 	context.Tracker = tracker
 	return nil
 }
 
-func VerifyRedeem(ctx interface{}) error {
-	return nil
-}
+
 
 func Burn(ctx interface{}) error {
 	return nil

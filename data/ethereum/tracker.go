@@ -148,7 +148,7 @@ func (t Tracker) NextStep() string {
 			return SIGNING
 		case BusyBroadcasting:
 			fmt.Println("Changing state from BusyBroadcasting to Finalizing")
-			return FINALIZESIGNING
+			return VERIFYREDEEM
 		case BusyFinalizing:
 			return VERIFYREDEEM
 		case Finalized:

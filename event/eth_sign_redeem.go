@@ -14,6 +14,9 @@ import (
 	"github.com/Oneledger/protocol/storage"
 )
 
+
+var _ jobs.Job = &JobETHSignRedeem{}
+
 type JobETHSignRedeem struct {
 	TrackerName ethereum.TrackerName
 	JobID       string
@@ -30,7 +33,7 @@ func NewETHSignRedeem (name ethereum.TrackerName,state trackerlib.TrackerState) 
 	}
 }
 
-func (j JobETHSignRedeem) DoMyJob(ctx interface{}) {
+func (j *JobETHSignRedeem) DoMyJob(ctx interface{}) {
 	j.RetryCount += 1
 	if j.RetryCount > jobs.Max_Retry_Count {
 		j.Status = jobs.Failed
@@ -66,7 +69,7 @@ func (j JobETHSignRedeem) DoMyJob(ctx interface{}) {
 		return
 	}
     redeemAmount := req.Amount
-    msg,err := tx.AsMessage(types.NewEIP155Signer(tx.ChainId()))
+    msg,err := cd.GetTransactionMessage(tx)
     if err != nil {
     	ethCtx.Logger.Error("Error in decoding trasnaction as message : ",j.GetJobID(),err)
 		return
@@ -97,14 +100,14 @@ func (j JobETHSignRedeem) DoMyJob(ctx interface{}) {
 	j.Status = jobs.Completed
 }
 
-func (j JobETHSignRedeem) IsDone() bool {
+func (j *JobETHSignRedeem) IsDone() bool {
 	return j.Status == jobs.Completed
 }
 
-func (j JobETHSignRedeem) GetType() string {
+func (j *JobETHSignRedeem) GetType() string {
 	return JobTypeETHSignRedeem
 }
 
-func (j JobETHSignRedeem) GetJobID() string {
+func (j *JobETHSignRedeem) GetJobID() string {
 	return j.JobID
 }

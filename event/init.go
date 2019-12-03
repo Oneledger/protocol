@@ -18,6 +18,7 @@ const (
 	JobTypeETHCheckfinalty  = "ethCheckFinality"
 	JobTypeETHBroadcast     = "ethBroadcast"
 	JobTypeETHSignRedeem    = "ethsignredeem"
+	JobTypeETHVerifyRedeem  = "verifyredeem"
 
 	MaxJobRetries = 10
 )

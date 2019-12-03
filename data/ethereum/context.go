@@ -12,6 +12,7 @@ type TrackerCtx struct {
 	JobStore     *jobs.JobStore
 	CurrNodeAddr keys.Address
 	Validators   *identity.ValidatorStore
+
 }
 
 func NewTrackerCtx(t *Tracker, addr keys.Address, js *jobs.JobStore, ts *TrackerStore, vs *identity.ValidatorStore) *TrackerCtx {

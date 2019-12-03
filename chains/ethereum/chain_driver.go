@@ -33,7 +33,7 @@ func NewChainDriver(cfg *config.EthereumChainDriverConfig, logger *log.Logger, o
 
 	_, err = contract.NewLockRedeem(option.ContractAddress, client)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "Unable to find contract at address ")
 	}
 
 	return &ETHChainDriver{
@@ -171,6 +171,14 @@ func (acc *ETHChainDriver) DecodeTransaction(rawBytes []byte) (*types.Transactio
 	return tx, nil
 }
 
+func (acc *ETHChainDriver) GetTransactionMessage(tx *types.Transaction) (*types.Message ,error) {
+	msg,err := tx.AsMessage(types.NewEIP155Signer(tx.ChainId()))
+	if err != nil {
+		return nil,errors.Wrap(err,"Unable to convert Tx to message")
+	}
+	return &msg,nil
+}
+
 func (acc *ETHChainDriver) PrepareUnsignedETHRedeem(addr common.Address, lockAmount *big.Int) (*Transaction, error) {
 
 	c, cancel := defaultContext()
@@ -258,4 +266,13 @@ func (acc *ETHChainDriver) ParseRedeem(data []byte) (req *RedeemRequest, err err
 	amt := big.NewInt(0).SetBytes(d)
 
 	return &RedeemRequest{Amount: amt}, nil
+}
+
+func (acc *ETHChainDriver) VerifyRedeem (validatorAddress common.Address,recepient common.Address) (bool,error) {
+	instance:= acc.GetContract()
+	ok,err := instance.VerifyRedeem(acc.CallOpts(validatorAddress),recepient)
+	if err != nil {
+		return false,errors.Wrap(err,"Unable to connect to ethereum smart contract")
+	}
+	return ok,nil
 }

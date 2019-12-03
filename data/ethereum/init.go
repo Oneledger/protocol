@@ -13,7 +13,6 @@ const (
 	MINTING         string = "minting"
 	CLEANUP         string = "cleanup"
 	SIGNING         string = "signing"
-	FINALIZESIGNING string = "finalizesigning"
 	VERIFYREDEEM    string = "verifyredeem"
 	BURN            string = "burn"
 
