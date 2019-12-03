@@ -10,7 +10,6 @@ import (
 
 	"github.com/Oneledger/protocol/action"
 	ethchaindriver "github.com/Oneledger/protocol/chains/ethereum"
-	"github.com/Oneledger/protocol/config"
 	"github.com/Oneledger/protocol/data/ethereum"
 )
 
@@ -85,8 +84,6 @@ func (ethLockTx) Validate(ctx *action.Context, signedTx action.SignedTx) (bool, 
 
 	// Check lock fields for incoming trasaction
 
-
-
 	//TODO : Verify beninfiaciary address in ETHTX == locker (Phase 2)
 	return true, nil
 }
@@ -129,18 +126,10 @@ func (ethLockTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start
 
 // processCommon
 func (ethLockTx) processCommon(ctx *action.Context, tx action.RawTx, lock *Lock) (bool, action.Response) {
-
-	cd, err := ethchaindriver.NewChainDriver(config.DefaultEthConfig(), ctx.Logger,ctx.ETHOptions)
-	if err != nil {
-		ctx.Logger.Error("err trying to get ChainDriver : ", err)
-		return false,action.Response{
-			Log:       "Unable to get Chain Driver",
-		}
-	}// parse eth transaction
-	ethTx,err := cd.DecodeTransaction(lock.ETHTxn)
+	ethTx, err := ethchaindriver.DecodeTransaction(lock.ETHTxn)
 	if ethTx.To() != &ctx.ETHOptions.ContractAddress {
-		return false,action.Response{
-			Log:       "Invalid transaction ,To field of Transaction does not match Contract address",
+		return false, action.Response{
+			Log: "Invalid transaction ,To field of Transaction does not match Contract address",
 		}
 	}
 	if err != nil {

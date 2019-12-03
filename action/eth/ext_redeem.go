@@ -102,10 +102,7 @@ func processCommon(ctx *action.Context, tx action.RawTx) (bool, action.Response)
 		return false, action.Response{Log: action.ErrUnserializable.Error()}
 	}
 
-	opt := ctx.ETHTrackers.GetOption()
-	config := config.DefaultEthConfig()
-	cd, err := ethereum.NewChainDriver(config, ctx.Logger, opt)
-	req, err := cd.ParseRedeem(redeem.ETHTxn)
+	req, err := ethereum.ParseRedeem(redeem.ETHTxn)
 	if err != nil {
 		return false, action.Response{Log: action.ErrInvalidExtTx.Error()}
 	}
