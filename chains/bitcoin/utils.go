@@ -24,3 +24,19 @@ func GetChainParams(typeString string) *chaincfg.Params {
 
 	return params
 }
+
+func GetBlockCypherChainType(typeString string) string {
+
+	chain := "test3"
+
+	switch typeString {
+	case "testnet3":
+		chain = "test3"
+	case "testnet":
+		chain = "test"
+	case "mainnet":
+		chain = "main"
+	}
+
+	return chain
+}

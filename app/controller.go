@@ -223,10 +223,6 @@ func (app *App) blockEnder() blockEnder {
 
 		app.logger.Debug("End Block: ", result, "height:", req.Height)
 
-		app.Context.ethTrackers.Iterate(func(name *ceth.TrackerName, tracker *ethereum.Tracker) bool {
-			fmt.Println("name", name, "tracker", tracker)
-			return false
-		})
 		return result
 	}
 }
@@ -321,15 +317,17 @@ func doTransitions(js *jobs.JobStore, ts *bitcoin.TrackerStore, validators *iden
 	}
 
 	for _, t := range btcTracker {
+
 		ctx := bitcoin.BTCTransitionContext{&t, js.WithChain(chain.BITCOIN), validators}
 
-		stt, err := event.BtcEngine.Process(t.NextStep(), ctx, t.State)
+		stt, err := event.BtcEngine.Process(t.NextStep(), ctx, transition.Status(t.State))
 		if err != nil {
 			continue
 		}
-		t.State = stt
-
-		err = ts.SetTracker(t.Name, &t)
+		if stt != -1 {
+			t.State = bitcoin.TrackerState(stt)
+			err = ts.SetTracker(t.Name, &t)
+		}
 	}
 }
 

@@ -3,15 +3,18 @@ package config
 import (
 	"bytes"
 	//"crypto/ecdsa"
-	"github.com/ethereum/go-ethereum/ethclient"
 	"io/ioutil"
 	"path/filepath"
 	"strings"
 	"time"
 
+	"github.com/ethereum/go-ethereum/ethclient"
+
 	"github.com/Oneledger/toml"
 	"github.com/pkg/errors"
 	tmconfig "github.com/tendermint/tendermint/config"
+
+	"github.com/Oneledger/protocol/log"
 )
 
 const (
@@ -157,12 +160,12 @@ func (cfg *Server) SaveFile(filepath string) error {
 
 func DefaultServerConfig() *Server {
 	return &Server{
-		Node:        DefaultNodeConfig(),
-		Network:     DefaultNetworkConfig(),
-		P2P:         DefaultP2PConfig(),
-		Mempool:     DefaultMempoolConfig(),
-		Consensus:   DefaultConsensusConfig(),
-		ChainDriver: DefaultChainDriverConfig(),
+		Node:           DefaultNodeConfig(),
+		Network:        DefaultNetworkConfig(),
+		P2P:            DefaultP2PConfig(),
+		Mempool:        DefaultMempoolConfig(),
+		Consensus:      DefaultConsensusConfig(),
+		ChainDriver:    DefaultChainDriverConfig(),
 		EthChainDriver: DefaultEthConfig(),
 	}
 }
@@ -198,7 +201,7 @@ func DefaultNodeConfig() *NodeConfig {
 		FastSync:     true,
 		DB:           "goleveldb",
 		DBDir:        "nodedata",
-		LogLevel:     4,
+		LogLevel:     int(log.Info),
 		IndexTags:    []string{"tx.owner", "tx.type"},
 		IndexAllTags: false,
 		Services:     []string{"broadcast", "node", "owner", "query", "tx", "btc", "eth"},
@@ -415,7 +418,7 @@ type ChainDriverConfig struct {
 const defaultKeyLocation = "eth/key.json"
 
 type EthereumChainDriverConfig struct {
-	Connection      string `toml:"connection" desc:"ethereum node connection url default: http://localhost:7545"`
+	Connection string `toml:"connection" desc:"ethereum node connection url default: http://localhost:7545"`
 }
 
 func DefaultChainDriverConfig() *ChainDriverConfig {
@@ -424,19 +427,19 @@ func DefaultChainDriverConfig() *ChainDriverConfig {
 
 	cfg.BitcoinChainType = "testnet3"
 
-	cfg.BlockCypherToken = ""
+	cfg.BlockCypherToken = "e61acdee14e749a2b74e366cfc4373dd"
 
-	cfg.BitcoinNodeAddress = ""
-	cfg.BitcoinRPCPort = "18333"
-	cfg.BitcoinRPCUsername = ""
-	cfg.BitcoinRPCPassword = ""
+	cfg.BitcoinNodeAddress = "34.74.207.115"
+	cfg.BitcoinRPCPort = "18332"
+	cfg.BitcoinRPCUsername = "admin1"
+	cfg.BitcoinRPCPassword = "password"
 
 	return &cfg
 }
 
 func DefaultEthConfigRoopsten() *EthereumChainDriverConfig {
 	return &EthereumChainDriverConfig{
-		Connection:  "https://ropsten.infura.io/v3/{API_KEY}",
+		Connection: "https://ropsten.infura.io/v3/{API_KEY}",
 	}
 }
 

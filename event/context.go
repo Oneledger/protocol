@@ -11,6 +11,7 @@ import (
 	"github.com/btcsuite/btcd/chaincfg"
 
 	"github.com/Oneledger/protocol/action"
+	bitcoin2 "github.com/Oneledger/protocol/chains/bitcoin"
 	"github.com/Oneledger/protocol/config"
 	"github.com/Oneledger/protocol/data/bitcoin"
 	"github.com/Oneledger/protocol/data/ethereum"
@@ -27,9 +28,10 @@ type JobsContext struct {
 	Trackers   *bitcoin.TrackerStore
 	Validators *identity.ValidatorStore
 
-	BTCPrivKey       keys.PrivateKey
-	ETHPrivKey       *ecdsa.PrivateKey
-	Params           *chaincfg.Params
+	BTCPrivKey keys.PrivateKey
+	ETHPrivKey ecdsa.PrivateKey
+	BTCParams  *chaincfg.Params
+
 	ValidatorAddress action.Address
 
 	BlockCypherToken string
@@ -46,27 +48,15 @@ type JobsContext struct {
 	BTCChainnet string
 }
 
-func NewJobsContext(cfg config.Server, btcchainType string, svc *Service,
+func NewJobsContext(cfg config.Server, btcChainType string, svc *Service,
 	trackers *bitcoin.TrackerStore, validators *identity.ValidatorStore,
 	privKey *keys.PrivateKey, ethprivKey *ecdsa.PrivateKey,
 	valAddress keys.Address, bcyToken string, lStore *bitcoin.LockScriptStore,
-	btcAddress, btcRPCPort, BTCRPCUsername, BTCRPCPassword, btcChain string,
+	btcAddress, btcRPCPort, BTCRPCUsername, BTCRPCPassword string,
 	ethTracker *ethereum.TrackerStore,
 ) *JobsContext {
 
-	var params *chaincfg.Params
-	switch btcchainType {
-	case "mainnet":
-		params = &chaincfg.MainNetParams
-	case "testnet3":
-		params = &chaincfg.TestNet3Params
-	case "regtest":
-		params = &chaincfg.RegressionNetParams
-	case "simnet":
-		params = &chaincfg.SimNetParams
-	default:
-		params = &chaincfg.TestNet3Params
-	}
+	params := bitcoin2.GetChainParams(btcChainType)
 
 	w := os.Stdout
 
@@ -77,8 +67,8 @@ func NewJobsContext(cfg config.Server, btcchainType string, svc *Service,
 		Trackers:         trackers,
 		Validators:       validators,
 		BTCPrivKey:       *privKey,
-		ETHPrivKey:       ethprivKey,
-		Params:           params,
+		ETHPrivKey:       *ethprivKey,
+		BTCParams:        params,
 		ValidatorAddress: valAddress,
 		BlockCypherToken: bcyToken,
 		LockScripts:      lStore,
@@ -87,7 +77,7 @@ func NewJobsContext(cfg config.Server, btcchainType string, svc *Service,
 		BTCRPCUsername:   BTCRPCUsername,
 		BTCRPCPassword:   BTCRPCPassword,
 		EthereumTrackers: ethTracker,
-		BTCChainnet:      btcChain,
+		BTCChainnet:      btcChainType,
 	}
 
 }

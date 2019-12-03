@@ -4,6 +4,7 @@ import (
 	"github.com/btcsuite/btcd/chaincfg"
 	abci "github.com/tendermint/tendermint/abci/types"
 
+	ethchain "github.com/Oneledger/protocol/chains/ethereum"
 	"github.com/Oneledger/protocol/data/accounts"
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/bitcoin"
@@ -14,27 +15,28 @@ import (
 	"github.com/Oneledger/protocol/identity"
 	"github.com/Oneledger/protocol/log"
 	"github.com/Oneledger/protocol/storage"
-	ethchain "github.com/Oneledger/protocol/chains/ethereum"
 )
 
 type Context struct {
-	Router          Router
-	State           *storage.State
-	Header          *abci.Header
-	Accounts        accounts.Wallet
-	Balances        *balance.Store
-	Domains         *ons.DomainStore
-	FeePool         *fees.Store
-	Currencies      *balance.CurrencySet
-	FeeOpt          *fees.FeeOption
-	Validators      *identity.ValidatorStore
-	BTCTrackers     *bitcoin.TrackerStore
-	ETHTrackers     *ethereum.TrackerStore
-	Logger          *log.Logger
-	JobStore        *jobs.JobStore
-	LockScriptStore *bitcoin.LockScriptStore
-	BTCChainType    *chaincfg.Params
-	ETHOptions      *ethchain.ChainDriverOption
+	Router               Router
+	State                *storage.State
+	Header               *abci.Header
+	Accounts             accounts.Wallet
+	Balances             *balance.Store
+	Domains              *ons.DomainStore
+	FeePool              *fees.Store
+	Currencies           *balance.CurrencySet
+	FeeOpt               *fees.FeeOption
+	Validators           *identity.ValidatorStore
+	BTCTrackers          *bitcoin.TrackerStore
+	ETHTrackers          *ethereum.TrackerStore
+	Logger               *log.Logger
+	JobStore             *jobs.JobStore
+	LockScriptStore      *bitcoin.LockScriptStore
+	BTCChainType         *chaincfg.Params
+	BlockCypherToken     string
+	BlockCypherChainType string
+	ETHOptions           *ethchain.ChainDriverOption
 }
 
 func NewContext(r Router, header *abci.Header, state *storage.State,
@@ -42,24 +44,29 @@ func NewContext(r Router, header *abci.Header, state *storage.State,
 	currencies *balance.CurrencySet, feeOpt *fees.FeeOption, feePool *fees.Store,
 	validators *identity.ValidatorStore, domains *ons.DomainStore,
 	btcTrackers *bitcoin.TrackerStore, ethTrackers *ethereum.TrackerStore,
-	jobStore *jobs.JobStore, btcChainType *chaincfg.Params,
+	jobStore *jobs.JobStore, btcChainType *chaincfg.Params, lockScriptStore *bitcoin.LockScriptStore,
+	blockCypherToken, blockCypherChainType string,
 	logger *log.Logger) *Context {
 
 	return &Context{
-		Router:       r,
-		State:        state,
-		Header:       header,
-		Accounts:     wallet,
-		Balances:     balances,
-		Domains:      domains,
-		FeePool:      feePool,
-		Currencies:   currencies,
-		FeeOpt:       feeOpt,
-		Validators:   validators,
-		BTCTrackers:  btcTrackers,
-		ETHTrackers:  ethTrackers,
-		Logger:       logger,
-		JobStore:     jobStore,
-		BTCChainType: btcChainType,
+		Router:          r,
+		State:           state,
+		Header:          header,
+		Accounts:        wallet,
+		Balances:        balances,
+		Domains:         domains,
+		FeePool:         feePool,
+		Currencies:      currencies,
+		FeeOpt:          feeOpt,
+		Validators:      validators,
+		BTCTrackers:     btcTrackers,
+		ETHTrackers:     ethTrackers,
+		Logger:          logger,
+		JobStore:        jobStore,
+		BTCChainType:    btcChainType,
+		LockScriptStore: lockScriptStore,
+
+		BlockCypherToken:     blockCypherToken,
+		BlockCypherChainType: blockCypherChainType,
 	}
 }

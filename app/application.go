@@ -5,6 +5,7 @@ import (
 	"net/url"
 	"os"
 
+	"github.com/btcsuite/btcutil/base58"
 	"github.com/pkg/errors"
 	"github.com/tendermint/tendermint/abci/types"
 	"github.com/tendermint/tendermint/libs/common"
@@ -194,20 +195,24 @@ func (app *App) setupValidators(req RequestInitChain, currencies *balance.Curren
 
 	vals, err := app.Context.validators.WithState(app.Context.deliver).GetBitcoinKeys(params)
 	threshold := (len(vals) * 2 / 3) + 1
-	for i := 0; i < 8; i++ {
+	for i := 0; i < 1; i++ {
 		// appHash := app.genesisDoc.AppHash.Bytes()
 
 		randBytes := []byte("XOLT")
 
-		script, address, addressList, err := bitcoin2.CreateMultiSigAddress(threshold, vals, randBytes)
+		script, address, addressList, err := bitcoin2.CreateMultiSigAddress(threshold, vals, randBytes, params)
 		if err != nil {
 			return nil, err
 		}
 
 		signers := make([]keys.Address, len(addressList))
 		for i := range addressList {
-			signers[i] = keys.Address(addressList[i])
+			addr := base58.Decode(addressList[i])
+			signers[i] = keys.Address(addr)
 		}
+
+		fmt.Println(address)
+		fmt.Println("-------------------------------------------------------")
 
 		tracker, err := bitcoin.NewTracker(address, threshold, signers)
 		if err != nil {

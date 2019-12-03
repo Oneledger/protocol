@@ -114,7 +114,7 @@ func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *node.Context) (
 	}
 
 	ctx.jobBus = event.NewJobBus(event.Option{
-		BtcInterval: time.Minute,
+		BtcInterval: 30 * time.Second,
 		EthInterval: 3 * time.Second,
 	}, ctx.jobStore)
 
@@ -134,6 +134,8 @@ func (ctx *context) Action(header *Header, state *storage.State) *action.Context
 
 	params := bitcoin2.GetChainParams(ctx.cfg.ChainDriver.BitcoinChainType)
 
+	bcct := bitcoin2.GetBlockCypherChainType(ctx.cfg.ChainDriver.BitcoinChainType)
+
 	actionCtx := action.NewContext(
 		ctx.actionRouter,
 		header,
@@ -150,6 +152,9 @@ func (ctx *context) Action(header *Header, state *storage.State) *action.Context
 		ctx.ethTrackers.WithState(state),
 		ctx.jobStore,
 		params,
+		ctx.lockScriptStore,
+		ctx.cfg.ChainDriver.BlockCypherToken,
+		bcct,
 
 		log.NewLoggerWithPrefix(ctx.logWriter, "action").WithLevel(log.Level(ctx.cfg.Node.LogLevel)))
 
@@ -280,7 +285,6 @@ func (ctx *context) JobContext() *event.JobsContext {
 		cdConfig.BitcoinRPCPort,
 		cdConfig.BitcoinRPCUsername,
 		cdConfig.BitcoinRPCPassword,
-		cdConfig.BitcoinChainType,
 		ctx.ethTrackers.WithState(ctx.deliver),
 	)
 }

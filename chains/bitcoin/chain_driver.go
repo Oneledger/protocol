@@ -17,6 +17,7 @@ import (
 	"github.com/btcsuite/btcd/txscript"
 	"github.com/btcsuite/btcd/wire"
 	"github.com/btcsuite/btcutil"
+	"github.com/btcsuite/btcutil/base58"
 )
 
 type TxHash [chainhash.HashSize]byte
@@ -71,16 +72,12 @@ func (c *chainDriver) PrepareLockNew(prevLockTxID *chainhash.Hash, prevLockIndex
 	vin2 := wire.NewTxIn(userOP, nil, nil)
 	tx.AddTxIn(vin2)
 
-	// will adjust fees later
-	balance := prevLockBalance + inputBalance
+	var balance = prevLockBalance + inputBalance - feesInSatoshi
 
 	// add a txout to the lockscriptaddress
 	out := wire.NewTxOut(balance, lockScriptAddress)
 	tx.AddTxOut(out)
 
-	tx.TxOut[0].Value = tx.TxOut[0].Value - feesInSatoshi
-
-	// serialize again with fees accounted for
 	buf := bytes.NewBuffer(txBytes)
 	tx.Serialize(buf)
 	txBytes = buf.Bytes()
@@ -106,8 +103,8 @@ func (c *chainDriver) AddLockSignature(txBytes []byte, sigScript []byte) *wire.M
 	buf := bytes.NewBuffer(txBytes)
 	tx.Deserialize(buf)
 
-	// if first lock
-	if len(tx.TxIn) == 1 {
+	// if first lock & not redeem
+	if len(tx.TxIn) == 1 && len(tx.TxOut) == 1 {
 		return tx
 	}
 
@@ -133,11 +130,12 @@ func (c *chainDriver) CheckFinality(hash *chainhash.Hash, token, chain string) (
 	btc := gobcy.API{token, "btc", chain}
 
 	tx, err := btc.GetTX(hash.String(), nil)
+
 	if err != nil {
 		return false, err
 	}
 
-	if tx.Confirmations > 10 {
+	if tx.Confirmations > 0 {
 		return true, nil
 	}
 
@@ -176,18 +174,21 @@ func (c *chainDriver) PrepareRedeemNew(prevLockTxID *chainhash.Hash, prevLockInd
 	return
 }
 
-func CreateMultiSigAddress(m int, publicKeys []*btcutil.AddressPubKey, randomBytes []byte) (script, address []byte,
-	btcAddressList []string, err error) {
+func CreateMultiSigAddress(m int, publicKeys []*btcutil.AddressPubKey, randomBytes []byte,
+	params *chaincfg.Params) (
+
+	script, address []byte, btcAddressList []string, err error) {
 
 	// ideally m should be
 	//	m = len(publicKeys) * 2 /3 ) + 1
 	btcAddressList = make([]string, len(publicKeys))
+
 	btcPubKeyMap := make(map[string][]byte)
 
 	for i := range publicKeys {
-		address := publicKeys[i].EncodeAddress()
-
+		address := base58.Encode(publicKeys[i].ScriptAddress())
 		btcAddressList[i] = address
+
 		btcPubKeyMap[address] = publicKeys[i].ScriptAddress()
 	}
 
@@ -195,26 +196,27 @@ func CreateMultiSigAddress(m int, publicKeys []*btcutil.AddressPubKey, randomByt
 
 	builder := txscript.NewScriptBuilder().AddInt64(int64(m))
 	for _, addr := range btcAddressList {
+
 		builder.AddData(btcPubKeyMap[addr])
 	}
 	builder.AddInt64(int64(len(publicKeys)))
 	builder.AddOp(txscript.OP_CHECKMULTISIG)
 
 	// add randomness
-	builder.AddOp(txscript.OP_RETURN)
-	builder.AddData(randomBytes)
+	// builder.AddOp(txscript.OP_RETURN)
+	// builder.AddData(randomBytes)
 
 	script, err = builder.Script()
 	if err != nil {
 		return
 	}
 
-	addressObj, err := btcutil.NewAddressScriptHash(script, &chaincfg.RegressionNetParams)
+	addressObj, err := btcutil.NewAddressScriptHash(script, params)
 	if err != nil {
 		return
 	}
 
-	address = addressObj.ScriptAddress()
+	address, err = txscript.PayToAddrScript(addressObj)
 
 	return
 }

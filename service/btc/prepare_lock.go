@@ -59,7 +59,9 @@ func (s *Service) PrepareLock(args client.BTCLockPrepareRequest, reply *client.B
 		return codes.ErrGettingTracker
 	}
 
-	txnBytes := cd.PrepareLockNew(tracker.ProcessTxId, 0, tracker.CurrentBalance,
+	s.logger.Infof("%#v \n", tracker)
+
+	txnBytes := cd.PrepareLockNew(tracker.CurrentTxId, 0, tracker.CurrentBalance,
 		hashh, args.Index, inputAmount, args.FeesBTC, tracker.ProcessLockScriptAddress)
 
 	reply.Txn = hex.EncodeToString(txnBytes)
@@ -93,7 +95,9 @@ func (s *Service) AddUserSignatureAndProcessLock(args client.BTCLockRequest, rep
 	if len(newBTCTx.TxIn) == 1 { // if new tracker
 
 		if tracker.CurrentTxId != nil {
+
 			// incorrect txn
+			s.logger.Error("tracker current txid not nil")
 			return codes.ErrBadBTCTxn
 		}
 	} else if len(newBTCTx.TxIn) == 2 { // if not a new tracker
@@ -102,14 +106,18 @@ func (s *Service) AddUserSignatureAndProcessLock(args client.BTCLockRequest, rep
 			newBTCTx.TxIn[0].PreviousOutPoint.Index != 0 {
 
 			// incorrect txn
+			s.logger.Error("btc txn doesn;t match tracker")
 			return codes.ErrBadBTCTxn
 		}
 	} else {
+
 		// incorrect txn
 		return codes.ErrBadBTCTxn
 	}
 
-	if !bitcoin.ValidateLock(newBTCTx, s.blockCypherToken, s.btcChainType, tracker.CurrentTxId, tracker.ProcessLockScriptAddress) {
+	if !bitcoin.ValidateLock(newBTCTx, s.blockCypherToken, s.btcChainType, tracker.CurrentTxId,
+		tracker.ProcessLockScriptAddress, tracker.CurrentBalance, totalLockAmount) {
+
 		return codes.ErrBadBTCTxn
 	}
 
@@ -120,8 +128,6 @@ func (s *Service) AddUserSignatureAndProcessLock(args client.BTCLockRequest, rep
 		return codes.ErrSerialization
 	}
 	txBytes = buf.Bytes()
-
-	s.logger.Debug("-----", hex.EncodeToString(txBytes))
 
 	lock := btc.Lock{
 		Locker:      args.Address,

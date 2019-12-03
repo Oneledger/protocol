@@ -7,8 +7,7 @@ package event
 import (
 	"bytes"
 	"encoding/hex"
-	"strconv"
-	"time"
+	"fmt"
 
 	"github.com/btcsuite/btcd/rpcclient"
 	"github.com/btcsuite/btcd/txscript"
@@ -17,7 +16,12 @@ import (
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/action/btc"
 	"github.com/Oneledger/protocol/chains/bitcoin"
+	bitcoin2 "github.com/Oneledger/protocol/data/bitcoin"
 	"github.com/Oneledger/protocol/data/jobs"
+)
+
+const (
+	MAX_BROADCAST_RETRY = 20
 )
 
 type JobBTCBroadcast struct {
@@ -28,11 +32,11 @@ type JobBTCBroadcast struct {
 	JobID string
 
 	Status jobs.Status
+
+	RetryCount int
 }
 
-func NewBTCBroadcastJob(trackerName string) jobs.Job {
-
-	id := strconv.FormatInt(time.Now().UnixNano(), 10)
+func NewBTCBroadcastJob(trackerName, id string) jobs.Job {
 
 	return &JobBTCBroadcast{
 		Type:        JobTypeBTCBroadcast,
@@ -44,11 +48,31 @@ func NewBTCBroadcastJob(trackerName string) jobs.Job {
 
 func (j *JobBTCBroadcast) DoMyJob(ctxI interface{}) {
 
-	ctx, _ := ctxI.(*JobsContext)
+	j.RetryCount += 1
+	ctx, ok := ctxI.(*JobsContext)
+	if !ok &&
+		j.RetryCount > MAX_BROADCAST_RETRY {
+		j.Status = jobs.Completed
+		return
+	}
 
 	tracker, err := ctx.Trackers.Get(j.TrackerName)
 	if err != nil {
+
 		ctx.Logger.Error("err trying to deserialize tracker: ", j.TrackerName, err)
+		return
+	}
+
+	if tracker.State != bitcoin2.BusyBroadcasting {
+		j.Status = jobs.Completed
+		return
+	}
+
+	if j.RetryCount > MAX_BROADCAST_RETRY {
+		ok := resetCall(tracker, ctx, j.JobID)
+		if ok {
+			j.Status = jobs.Completed
+		}
 		return
 	}
 
@@ -59,20 +83,15 @@ func (j *JobBTCBroadcast) DoMyJob(ctxI interface{}) {
 		return
 	}
 
-	type sign []byte
-	btcSignatures := tracker.Multisig.GetSignatures()
-	signatures := make([]sign, len(btcSignatures))
-	for i := range btcSignatures {
-		index := btcSignatures[i].Index
-		signatures[index] = btcSignatures[i].Sign
-	}
+	signatures := tracker.Multisig.GetSignaturesInOrder()
 
 	builder := txscript.NewScriptBuilder().AddOp(txscript.OP_FALSE)
 	for i := range signatures {
-		builder.AddData(signatures[i])
 		if i == tracker.Multisig.M {
-			break
+			// break
 		}
+
+		builder.AddData(signatures[i])
 	}
 
 	lockScript, err := ctx.LockScripts.GetLockScript(tracker.CurrentLockScriptAddress)
@@ -81,8 +100,11 @@ func (j *JobBTCBroadcast) DoMyJob(ctxI interface{}) {
 		return
 	}
 
-	builder.AddFullData(lockScript)
+	builder.AddData(lockScript)
 	sigScript, err := builder.Script()
+	if err != nil {
+		ctx.Logger.Error("error in building sig script", err)
+	}
 
 	cd := bitcoin.NewChainDriver(ctx.BlockCypherToken)
 	lockTx = cd.AddLockSignature(tracker.ProcessUnsignedTx, sigScript)
@@ -94,20 +116,6 @@ func (j *JobBTCBroadcast) DoMyJob(ctxI interface{}) {
 		return
 	}
 
-	connCfg := &rpcclient.ConnConfig{
-		Host:         ctx.BTCNodeAddress + ":" + ctx.BTCRPCPort,
-		User:         ctx.BTCRPCUsername,
-		Pass:         ctx.BTCRPCPassword,
-		HTTPPostMode: true, // Bitcoin core only supports HTTP POST mode
-		DisableTLS:   true, // Bitcoin core does not provide TLS by default
-	}
-
-	clt, err := rpcclient.New(connCfg, nil)
-	if err != nil {
-		ctx.Logger.Error("err trying to connect to bitcoin node", j.TrackerName)
-		return
-	}
-
 	var txBytes []byte
 	buf = bytes.NewBuffer(txBytes)
 	lockTx.Serialize(buf)
@@ -115,7 +123,38 @@ func (j *JobBTCBroadcast) DoMyJob(ctxI interface{}) {
 
 	ctx.Logger.Debug(hex.EncodeToString(txBytes))
 
+	if !(len(lockTx.TxIn) == 1 && tracker.ProcessType == bitcoin2.ProcessTypeLock) {
+
+		vm, err := txscript.NewEngine(tracker.CurrentLockScriptAddress, lockTx, 0, txscript.StandardVerifyFlags, nil, nil, tracker.CurrentBalance)
+		if err != nil {
+			fmt.Println("new engine", err)
+			ctx.Logger.Error("error in test engine")
+			return
+		}
+		if err := vm.Execute(); err != nil {
+			fmt.Println("vm Execute", err)
+			ctx.Logger.Error("error in vm execute")
+			return
+		}
+	}
+
+	connCfg := &rpcclient.ConnConfig{
+		Host:         ctx.BTCNodeAddress + ":" + ctx.BTCRPCPort,
+		User:         ctx.BTCRPCUsername,
+		Pass:         ctx.BTCRPCPassword,
+		HTTPPostMode: true, // Bitcoin core only supports HTTP POST mode
+		DisableTLS:   true, // Bitcoin core does not provide TLS by default
+	}
+	clt, err := rpcclient.New(connCfg, nil)
+	if err != nil {
+		ctx.Logger.Error("err trying to connect to bitcoin node", j.TrackerName)
+		return
+	}
+
 	hash, err := cd.BroadcastTx(lockTx, clt)
+	// use dummy hash for testing without broadcasting
+	// fmt.Println(clt)
+	// hash, err := chainhash.NewHashFromStr("cb0eee8e68b474cd1e845702052847dcbf248eb5a08ec498e887108842019d06")
 	if err == nil {
 
 		ctx.Logger.Info("bitcoin tx successful", hash)
@@ -144,10 +183,14 @@ func (j *JobBTCBroadcast) DoMyJob(ctxI interface{}) {
 		rep := BroadcastReply{}
 
 		err = ctx.Service.InternalBroadcast(req, &rep)
-		if err != nil {
+		if err != nil || !rep.OK {
 			ctx.Logger.Error("error while broadcasting finality vote and mint txn ", err, j.TrackerName)
 			return
 		}
+
+		ctx.Logger.Info("btc success internal tx broadcast")
+		ctx.Logger.Infof("%#v \n", rep)
+		j.Status = jobs.Completed
 
 	} else {
 		ctx.Logger.Error("broadcast failed err: ", err, " tracker: ", j.TrackerName)
@@ -168,4 +211,37 @@ func (j *JobBTCBroadcast) GetJobID() string {
 
 func (j JobBTCBroadcast) IsDone() bool {
 	return j.Status == jobs.Completed
+}
+
+func resetCall(tracker *bitcoin2.Tracker, ctx *JobsContext, jobID string) bool {
+
+	bs := btc.FailedBroadcastReset{
+		tracker.Name,
+		ctx.ValidatorAddress,
+	}
+
+	txData, err := bs.Marshal()
+	if err != nil {
+		ctx.Logger.Error("error while preparing mint txn ", err, tracker.Name)
+		return false
+	}
+	tx := action.RawTx{
+		Type: action.BTC_FAILED_BROADCAST_RESET,
+		Data: txData,
+		Fee:  action.Fee{},
+		Memo: jobID,
+	}
+
+	req := InternalBroadcastRequest{
+		RawTx: tx,
+	}
+	rep := BroadcastReply{}
+
+	err = ctx.Service.InternalBroadcast(req, &rep)
+	if err != nil || !rep.OK {
+		ctx.Logger.Error("error while broadcasting reset vote txn ", err, tracker.Name)
+		return false
+	}
+
+	return true
 }

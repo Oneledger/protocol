@@ -5,47 +5,90 @@
 package event
 
 import (
+	"github.com/pkg/errors"
+
 	"github.com/Oneledger/protocol/data/bitcoin"
 	"github.com/Oneledger/protocol/utils/transition"
 )
 
 func init() {
 	BtcEngine = transition.NewEngine(
-		[]transition.Status{bitcoin.Available, bitcoin.Requested, bitcoin.BusySigning, bitcoin.BusyBroadcasting, bitcoin.BusyFinalizing},
+		[]transition.Status{
+			transition.Status(bitcoin.Available),
+			transition.Status(bitcoin.Requested),
+			transition.Status(bitcoin.BusySigning),
+			transition.Status(bitcoin.BusyScheduleBroadcasting),
+			transition.Status(bitcoin.BusyBroadcasting),
+			transition.Status(bitcoin.BusyScheduleFinalizing),
+			transition.Status(bitcoin.BusyFinalizing),
+			transition.Status(bitcoin.Finalized),
+		},
 	)
 
 	err := BtcEngine.Register(transition.Transition{
+		Name: bitcoin.CLEANUP,
+		Fn:   MakeAvailable,
+		From: transition.Status(bitcoin.Finalized),
+		To:   transition.Status(bitcoin.Available),
+	})
+	if err != nil {
+		panic(err)
+	}
+
+	err = BtcEngine.Register(transition.Transition{
 		Name: bitcoin.RESERVE,
 		Fn:   ReserveTracker,
-		From: bitcoin.Requested,
-		To:   bitcoin.BusySigning,
+		From: transition.Status(bitcoin.Requested),
+		To:   transition.Status(bitcoin.BusySigning),
 	})
 	if err != nil {
 		panic(err)
 	}
 
 	err = BtcEngine.Register(transition.Transition{
-		Name: "freezeForBroadcast",
+		Name: bitcoin.FREEZE_FOR_BROADCAST,
 		Fn:   FreezeForBroadcast,
-		From: bitcoin.BusySigning,
-		To:   bitcoin.BusyBroadcasting,
+		From: transition.Status(bitcoin.BusyScheduleBroadcasting),
+		To:   transition.Status(bitcoin.BusyBroadcasting),
 	})
 	if err != nil {
 		panic(err)
 	}
 
 	err = BtcEngine.Register(transition.Transition{
-		Name: "reportBroadcastSuccess",
+		Name: bitcoin.REPORT_BROADCAST,
 		Fn:   ReportBroadcastSuccess,
-		From: bitcoin.BusySigning,
-		To:   bitcoin.BusyFinalizing,
+		From: transition.Status(bitcoin.BusyScheduleFinalizing),
+		To:   transition.Status(bitcoin.BusyFinalizing),
 	})
 	if err != nil {
 		panic(err)
 	}
 }
 
-func MakeAvailable(ctx interface{}) error {
+func MakeAvailable(input interface{}) error {
+	data, ok := input.(bitcoin.BTCTransitionContext)
+	if !ok {
+		panic("wrong transition data")
+	}
+
+	t := data.Tracker
+
+	states := []bitcoin.TrackerState{bitcoin.BusySigning, bitcoin.BusyBroadcasting, bitcoin.BusyFinalizing}
+	for i := range states {
+
+		//Delete Add Signature Job
+		fjob, err := data.JobStore.GetJob(t.GetJobID(states[i]))
+		if err != nil {
+			continue
+		}
+		err = data.JobStore.DeleteJob(fjob)
+		if err != nil {
+			return errors.Wrap(err, "failed to delete job")
+		}
+	}
+
+	t.State = bitcoin.Available
 	return nil
 }
 
@@ -58,7 +101,7 @@ func ReserveTracker(inp interface{}) error {
 	t := data.Tracker
 	t.State = bitcoin.BusySigning
 
-	job := NewAddSignatureJob(t.Name)
+	job := NewAddSignatureJob(t.Name, t.GetJobID(t.State))
 	err := data.JobStore.SaveJob(job)
 	if err != nil {
 		return err
@@ -78,7 +121,7 @@ func FreezeForBroadcast(inp interface{}) error {
 
 		data.Tracker.State = bitcoin.BusyBroadcasting
 
-		job := NewBTCBroadcastJob(t.Name)
+		job := NewBTCBroadcastJob(t.Name, t.GetJobID(t.State))
 		err := data.JobStore.SaveJob(job)
 		if err != nil {
 			return err
@@ -99,7 +142,7 @@ func ReportBroadcastSuccess(inp interface{}) error {
 	t := data.Tracker
 	t.State = bitcoin.BusyFinalizing
 
-	job := NewBTCCheckFinalityJob(t.Name)
+	job := NewBTCCheckFinalityJob(t.Name, t.GetJobID(t.State))
 	err := data.JobStore.SaveJob(job)
 	if err != nil {
 		return err

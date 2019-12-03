@@ -7,13 +7,18 @@ package event
 import (
 	"crypto/rand"
 	"io"
-	"strconv"
 	"time"
 
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/action/btc"
 	"github.com/Oneledger/protocol/chains/bitcoin"
+	bitcoin2 "github.com/Oneledger/protocol/data/bitcoin"
 	"github.com/Oneledger/protocol/data/jobs"
+)
+
+const (
+	TwoMinutes  = 60 * 2
+	FiveMinutes = 60 * 5
 )
 
 type JobBTCCheckFinality struct {
@@ -21,18 +26,18 @@ type JobBTCCheckFinality struct {
 
 	TrackerName string
 	JobID       string
+	CheckAfter  int64
 
 	Status jobs.Status
 }
 
-func NewBTCCheckFinalityJob(trackerName string) jobs.Job {
-
-	id := strconv.FormatInt(time.Now().UnixNano(), 10)
+func NewBTCCheckFinalityJob(trackerName, id string) jobs.Job {
 
 	return &JobBTCCheckFinality{
 		Type:        JobTypeBTCCheckFinality,
 		TrackerName: trackerName,
 		JobID:       id,
+		CheckAfter:  time.Now().Unix() + FiveMinutes,
 		Status:      jobs.New,
 	}
 }
@@ -41,9 +46,20 @@ func (cf *JobBTCCheckFinality) DoMyJob(ctxI interface{}) {
 
 	ctx, _ := ctxI.(*JobsContext)
 
+	if time.Now().Unix() < cf.CheckAfter {
+		return
+	}
+
 	tracker, err := ctx.Trackers.Get(cf.TrackerName)
 	if err != nil {
 		ctx.Logger.Error("err trying to deserialize tracker: ", cf.TrackerName, err)
+		return
+	}
+
+	if tracker.State != bitcoin2.BusyFinalizing ||
+		tracker.HasVotedFinality(ctx.ValidatorAddress) {
+
+		cf.Status = jobs.Completed
 		return
 	}
 
@@ -59,9 +75,7 @@ func (cf *JobBTCCheckFinality) DoMyJob(ctxI interface{}) {
 		chain = "main"
 	}
 
-	// tempHash, _ := chainhash.NewHashFromStr("860a32ef84ed54df86d207112d1f8d3d5ad28751b25cc7e2107ef55cccbc7586")
-	// ok, err := cd.CheckFinality(tempHash, ctx.BlockCypherToken, chain)
-
+	ctx.Logger.Info("checking btc finality for ", tracker.ProcessTxId)
 	ok, err := cd.CheckFinality(tracker.ProcessTxId, ctx.BlockCypherToken, chain)
 	if err != nil {
 		ctx.Logger.Error("error while checking finality", err, cf.TrackerName)
@@ -69,6 +83,7 @@ func (cf *JobBTCCheckFinality) DoMyJob(ctxI interface{}) {
 	}
 
 	if !ok {
+		cf.CheckAfter = time.Now().Unix() + TwoMinutes
 		ctx.Logger.Info("not finalized yet", cf.TrackerName)
 		return
 	}
@@ -106,11 +121,12 @@ func (cf *JobBTCCheckFinality) DoMyJob(ctxI interface{}) {
 	rep := BroadcastReply{}
 
 	err = ctx.Service.InternalBroadcast(req, &rep)
-	if err != nil {
+	if err != nil || !rep.OK {
 		ctx.Logger.Error("error while broadcasting finality vote and mint txn ", err, cf.TrackerName)
 		return
 	}
 
+	cf.Status = jobs.Completed
 }
 
 func (cf *JobBTCCheckFinality) GetType() string {

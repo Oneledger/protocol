@@ -5,11 +5,17 @@
 package bitcoin
 
 import (
+	"bytes"
+	"strconv"
+
+	"github.com/Oneledger/protocol/storage"
 	"github.com/Oneledger/protocol/utils/transition"
+
 	"github.com/pkg/errors"
 
-	"github.com/Oneledger/protocol/data/keys"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
+
+	"github.com/Oneledger/protocol/data/keys"
 )
 
 type TrackerState int
@@ -39,7 +45,7 @@ type Tracker struct {
 	Multisig *keys.BTCMultiSig `json:"multisig"`
 
 	// State tracks the current state of the tracker, Also used for locking distributed access
-	State transition.Status `json:"state"`
+	State TrackerState `json:"state"`
 
 	CurrentTxId              *chainhash.Hash
 	CurrentBalance           int64
@@ -54,6 +60,7 @@ type Tracker struct {
 	ProcessType  int
 
 	FinalityVotes []keys.Address
+	ResetVotes    []keys.Address
 }
 
 func NewTracker(lockScriptAddress []byte, m int, signers []keys.Address) (*Tracker, error) {
@@ -166,12 +173,7 @@ func (t *Tracker) GetSignatures() [][]byte {
 		return nil
 	}
 
-	signatures := make([][]byte, 0, len(t.Multisig.Signatures))
-	for i, signed := range t.Multisig.GetSignatures() {
-		signatures[i] = signed.Sign
-	}
-
-	return signatures
+	return t.Multisig.GetSignaturesInOrder()
 }
 
 func (t *Tracker) GetBalance() int64 {
@@ -183,10 +185,27 @@ func (t Tracker) NextStep() string {
 	switch t.State {
 	case Requested:
 		return RESERVE
-	case BusySigning:
+	case BusyScheduleBroadcasting:
 		return FREEZE_FOR_BROADCAST
-	case BusyBroadcasting:
+	case BusyScheduleFinalizing:
 		return REPORT_BROADCAST
+	case Finalized:
+		return CLEANUP
 	}
 	return transition.NOOP
+
+}
+
+func (t *Tracker) GetJobID(state TrackerState) string {
+	return t.Name + storage.DB_PREFIX + strconv.Itoa(int(state))
+}
+
+func (t *Tracker) HasVotedFinality(addr keys.Address) bool {
+	for i := range t.FinalityVotes {
+		if bytes.Equal(addr, t.FinalityVotes[i]) {
+			return true
+		}
+	}
+
+	return false
 }
