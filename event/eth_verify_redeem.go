@@ -1,11 +1,8 @@
 package event
 
 import (
-	"crypto/ecdsa"
 	"fmt"
 	"strconv"
-
-	"github.com/ethereum/go-ethereum/crypto"
 
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/action/eth"
@@ -48,6 +45,7 @@ func (job *JobETHVerifyRedeem) DoMyJob(ctx interface{}) {
 		ethCtx.Logger.Error("Unable to get Tracker", job.JobID)
 		return
 	}
+	fmt.Println("1")
 	cd, err := ethereum.NewChainDriver(ethCtx.cfg.EthChainDriver, ethCtx.Logger, trackerStore.GetOption())
 	if err != nil {
 		ethCtx.Logger.Error("Unable to get Chain Driver", job.JobID)
@@ -58,22 +56,19 @@ func (job *JobETHVerifyRedeem) DoMyJob(ctx interface{}) {
 		ethCtx.Logger.Error("Unable to decode transaction")
 		return
 	}
+	fmt.Println("2")
 	msg, err := cd.GetTransactionMessage(tx)
 	if err != nil {
 		ethCtx.Logger.Error("Error in decoding transaction as message : ", job.GetJobID(), err)
 		return
 	}
-	validatorPublicKey := ethCtx.ETHPrivKey.Public()
-	publicKeyECDSA, ok := validatorPublicKey.(*ecdsa.PublicKey)
-	if !ok {
-		ethCtx.Logger.Error("error casting public key to ECDSA", job.GetJobID())
-
-	}
-	fromAddress := crypto.PubkeyToAddress(*publicKeyECDSA)
-	success, err := cd.VerifyRedeem(fromAddress, msg.From())
+	fmt.Println("3 : before verify")
+	addr := ethCtx.GetValidatorETHAddress()
+	success, err := cd.VerifyRedeem(addr, msg.From())
 	if err != nil {
 		ethCtx.Logger.Error("Error in verifying redeem :", job.GetJobID(), err)
 	}
+	fmt.Println("4 : verify redeem", success)
 	// create internal check finality to report that the redeem is done on ethereum chain
 	if success {
 		index, _ := tracker.CheckIfVoted(ethCtx.ValidatorAddress)
@@ -88,7 +83,7 @@ func (job *JobETHVerifyRedeem) DoMyJob(ctx interface{}) {
 			Refund:           false,
 		}
 
-		fmt.Println("Creating Internal Transaction to add vote:", cf)
+		fmt.Println("5 : Creating Internal Transaction to add vote:", cf)
 		txData, err := cf.Marshal()
 		if err != nil {
 			ethCtx.Logger.Error("Error while preparing mint txn ", job.GetJobID(), err)
@@ -107,7 +102,7 @@ func (job *JobETHVerifyRedeem) DoMyJob(ctx interface{}) {
 		}
 		rep := BroadcastReply{}
 		err = ethCtx.Service.InternalBroadcast(req, &rep)
-		fmt.Println("Reply :", rep)
+		fmt.Println("6 : Reply :", rep)
 		if err != nil || !rep.OK {
 			ethCtx.Logger.Error("error while broadcasting finality vote and mint txn ", job.GetJobID(), err, rep.Log)
 			return

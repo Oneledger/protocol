@@ -87,7 +87,7 @@ contract LockRedeem {
             require(validators[v] == 0, "found non-unique validator in initialValidators");
             addValidator(v);
         }
-
+        votingThreshold = (initialValidators.length * 2 / 3) + 1;
         // Set the initial epochBlockHeight
         declareNewEpoch(block.number);
     }

@@ -9,6 +9,8 @@ import (
 	"os"
 
 	"github.com/btcsuite/btcd/chaincfg"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/crypto"
 
 	"github.com/Oneledger/protocol/action"
 	bitcoin2 "github.com/Oneledger/protocol/chains/bitcoin"
@@ -28,8 +30,8 @@ type JobsContext struct {
 	Trackers   *bitcoin.TrackerStore
 	Validators *identity.ValidatorStore
 
-	BTCPrivKey keys.PrivateKey
-	ETHPrivKey ecdsa.PrivateKey
+	BTCPrivKey *keys.PrivateKey
+	ETHPrivKey *keys.PrivateKey
 	BTCParams  *chaincfg.Params
 
 	ValidatorAddress action.Address
@@ -50,7 +52,7 @@ type JobsContext struct {
 
 func NewJobsContext(cfg config.Server, btcChainType string, svc *Service,
 	trackers *bitcoin.TrackerStore, validators *identity.ValidatorStore,
-	privKey *keys.PrivateKey, ethprivKey *ecdsa.PrivateKey,
+	privKey *keys.PrivateKey, ethprivKey *keys.PrivateKey,
 	valAddress keys.Address, bcyToken string, lStore *bitcoin.LockScriptStore,
 	btcAddress, btcRPCPort, BTCRPCUsername, BTCRPCPassword string,
 	ethTracker *ethereum.TrackerStore,
@@ -66,8 +68,8 @@ func NewJobsContext(cfg config.Server, btcChainType string, svc *Service,
 		Logger:           log.NewLoggerWithPrefix(w, "internal_jobs"),
 		Trackers:         trackers,
 		Validators:       validators,
-		BTCPrivKey:       *privKey,
-		ETHPrivKey:       *ethprivKey,
+		BTCPrivKey:       privKey,
+		ETHPrivKey:       ethprivKey,
 		BTCParams:        params,
 		ValidatorAddress: valAddress,
 		BlockCypherToken: bcyToken,
@@ -80,4 +82,23 @@ func NewJobsContext(cfg config.Server, btcChainType string, svc *Service,
 		BTCChainnet:      btcChainType,
 	}
 
+}
+
+func (jc *JobsContext) GetValidatorETHAddress() common.Address {
+	privkey := keys.ETHSECP256K1TOECDSA(jc.ETHPrivKey.Data)
+
+	pubkey := privkey.Public()
+	ecdsapubkey, ok := pubkey.(*ecdsa.PublicKey)
+	if !ok {
+		jc.Logger.Error("failed to cast pubkey", pubkey)
+		return common.Address{}
+	}
+	addr := crypto.PubkeyToAddress(*ecdsapubkey)
+	return addr
+}
+
+func (jc *JobsContext) GetValidatorETHPrivKey() *ecdsa.PrivateKey {
+	privkey := keys.ETHSECP256K1TOECDSA(jc.ETHPrivKey.Data)
+
+	return privkey
 }

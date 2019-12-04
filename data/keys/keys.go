@@ -427,6 +427,16 @@ func (p PrivateKeyETHSECP) Equals(privKey PrivateKey) bool {
 	return privKey.Keytype == ETHSECP && bytes.Equal(privKey.Data, p.Bytes())
 }
 
+func ETHSECP256K1TOECDSA(data []byte) *ecdsa.PrivateKey {
+	k := big.NewInt(0).SetBytes(data)
+
+	priv := new(ecdsa.PrivateKey)
+	priv.PublicKey.Curve = crypto.S256()
+	priv.D = k
+	priv.PublicKey.X, priv.PublicKey.Y = crypto.S256().ScalarBaseMult(k.Bytes())
+	return priv
+}
+
 //====================== ETHSECP256K1 ==========================
 
 //=====================  BTCECSECP256K1 ========================

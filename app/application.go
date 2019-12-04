@@ -137,7 +137,7 @@ func (app *App) setupState(stateBytes []byte) error {
 	}
 	app.Context.feeOption.FeeCurrency = initial.FeeOption.FeeCurrency
 	app.Context.feeOption.MinFeeDecimal = initial.FeeOption.MinFeeDecimal
-
+	app.Context.ethTrackers.SetupOption(&initial.ETHCDOption)
 	err = app.Context.govern.SetFeeOption(initial.FeeOption)
 	if err != nil {
 		return errors.Wrap(err, "Setup State")

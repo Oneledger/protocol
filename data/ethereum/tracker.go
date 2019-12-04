@@ -89,7 +89,6 @@ func (t *Tracker) GetVotes() (yes, no int) {
 
 func (t *Tracker) CheckIfVoted(node keys.Address) (index int64, voted bool) {
 	index = int64(-1)
-	v := false
 	for i, addr := range t.Validators {
 		if addr.Equal(node) {
 			index = int64(i)
@@ -101,12 +100,14 @@ func (t *Tracker) CheckIfVoted(node keys.Address) (index int64, voted bool) {
 	//	and := t.FinalityVotes & mybit
 	//	v = and == mybit
 	//}
-
+	if index == -1 {
+		return -1, false
+	}
 	if t.FinalityVotes[index] > 0 {
-		v = true
+		return index, true
 	}
 
-	return index, v
+	return index, false
 }
 
 func (t *Tracker) Finalized() bool {
@@ -147,7 +148,7 @@ func (t Tracker) NextStep() string {
 		case BusyBroadcasting:
 			return VERIFYREDEEM
 		case BusyFinalizing:
-			return VERIFYREDEEM
+			return REDEEMCONFIRM
 		case Finalized:
 			return BURN
 		case Released:

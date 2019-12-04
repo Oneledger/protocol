@@ -1,7 +1,6 @@
 package node
 
 import (
-	"crypto/ecdsa"
 	"encoding/base64"
 	"errors"
 	"io/ioutil"
@@ -31,9 +30,6 @@ type Context struct {
 
 	// Validator ECDSA key
 	ecdsaPrivVal keys.PrivateKey
-
-	//Validatator Ethereum key
-	ethPrivKey ecdsa.PrivateKey
 }
 
 // PrivVal returns the private validator file
@@ -44,10 +40,6 @@ func (n Context) PrivVal() keys.PrivateKey {
 // private key of the nodes
 func (n Context) PrivKey() keys.PrivateKey {
 	return n.privateKey
-}
-
-func (n Context) EthPrivKey() *ecdsa.PrivateKey {
-	return &n.ethPrivKey
 }
 
 //func (n Context) EthPrivKey() *ecdsa.PrivateKey {

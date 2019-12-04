@@ -278,7 +278,7 @@ func (ctx *context) JobContext() *event.JobsContext {
 		cdConfig.BitcoinChainType,
 		ctx.internalService, ctx.btcTrackers, ctx.validators,
 		ctx.node.ValidatorECDSAPrivateKey(),
-		ctx.node.EthPrivKey(),
+		ctx.node.ValidatorECDSAPrivateKey(),
 		ctx.node.ValidatorAddress(), ctx.cfg.ChainDriver.BlockCypherToken,
 		ctx.lockScriptStore,
 		cdConfig.BitcoinNodeAddress,

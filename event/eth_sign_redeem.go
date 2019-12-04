@@ -1,12 +1,10 @@
 package event
 
 import (
-	"crypto/ecdsa"
 	"fmt"
 	"strconv"
 
 	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/crypto"
 
 	"github.com/Oneledger/protocol/chains/ethereum"
 	trackerlib "github.com/Oneledger/protocol/data/ethereum"
@@ -81,30 +79,30 @@ func (j *JobETHSignRedeem) DoMyJob(ctx interface{}) {
 	}
 
 	fmt.Println(4)
-	validatorPublicKey := ethCtx.ETHPrivKey.Public()
-	publicKeyECDSA, ok := validatorPublicKey.(*ecdsa.PublicKey)
-	if !ok {
-		ethCtx.Logger.Error("error casting public key to ECDSA", j.GetJobID())
-		return
-	}
 
-	fmt.Println(5, publicKeyECDSA, validatorPublicKey, ethCtx.ETHPrivKey)
-	fromAddress := crypto.PubkeyToAddress(*publicKeyECDSA)
-	tx, err = cd.SignRedeem(fromAddress, redeemAmount, msg.From())
+	addr := ethCtx.GetValidatorETHAddress()
+
+	tx, err = cd.SignRedeem(addr, redeemAmount, msg.From())
 	if err != nil {
 		ethCtx.Logger.Error("Error in creating signing trasanction : ", j.GetJobID(), err)
 		return
 	}
 
 	fmt.Println(6)
-	unsignedTx, err := cd.PrepareUnsignedETHRedeem(fromAddress, redeemAmount)
+	unsignedTx, err := cd.PrepareUnsignedETHRedeem(addr, redeemAmount)
 	if err != nil {
 		ethCtx.Logger.Error("Error in preparing unsigned Ethereum Transaction")
 		return
 	}
-
+	privkey := ethCtx.GetValidatorETHPrivKey()
+	chainid, err := cd.ChainId()
+	if err != nil {
+		ethCtx.Logger.Error("Failed to get chain id ", err)
+		return
+	}
 	fmt.Println(7)
-	signedTx, err := types.SignTx(unsignedTx, types.NewEIP155Signer(tx.ChainId()), &ethCtx.ETHPrivKey)
+	signedTx, err := types.SignTx(unsignedTx, types.NewEIP155Signer(chainid), privkey)
+	privkey = nil
 	txHash, err := cd.BroadcastTx(signedTx)
 	if err != nil {
 		ethCtx.Logger.Error("Unable to broadcast transaction :", j.GetJobID(), err)
@@ -126,4 +124,10 @@ func (j *JobETHSignRedeem) GetType() string {
 
 func (j *JobETHSignRedeem) GetJobID() string {
 	return j.JobID
+}
+
+func zeroBytes(bytes []byte) {
+	for i := range bytes {
+		bytes[i] = 0
+	}
 }

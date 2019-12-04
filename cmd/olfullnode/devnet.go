@@ -13,10 +13,12 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/pkg/errors"
@@ -292,7 +294,7 @@ func runDevnet(cmd *cobra.Command, _ []string) error {
 		}
 
 		// Save the nodes to a list so we can iterate again and
-		n := node{isValidator, cfg, nodeDir, nodeKey, ecdsaPk, consensus.GenesisValidator{}}
+		n := node{isValidator: isValidator, cfg: cfg, dir: nodeDir, key: nodeKey, esdcaPk: ecdsaPk}
 		if isValidator {
 			validator := consensus.GenesisValidator{
 				Address: pvFile.GetAddress(),
@@ -486,7 +488,7 @@ func initialState(args *testnetConfig, nodeList []node, option ethchain.ChainDri
 }
 
 func deployethcdcontract(conn string, nodeList []node) (*ethchain.ChainDriverOption, error) {
-	privatekey, err := crypto.HexToECDSA("7156f3dead9c3b83a263664e610a7f5d0512ee98d015edc981a34d87c4088d23")
+	privatekey, err := crypto.HexToECDSA("7b12b9e7fd50eb577306baf543d2c63b0df5a93dc8ec4d90cb5ef22db7a427af")
 	if err != nil {
 		return nil, err
 	}
@@ -502,11 +504,7 @@ func deployethcdcontract(conn string, nodeList []node) (*ethchain.ChainDriverOpt
 	}
 
 	fromAddress := crypto.PubkeyToAddress(*publicKeyECDSA)
-	nonce, err := cli.PendingNonceAt(context.Background(), fromAddress)
-	if err != nil {
-		return nil, err
-	}
-
+	fmt.Println("paying addr", fromAddress.Hex())
 	gasPrice, err := cli.SuggestGasPrice(context.Background())
 	if err != nil {
 		return nil, err
@@ -514,24 +512,54 @@ func deployethcdcontract(conn string, nodeList []node) (*ethchain.ChainDriverOpt
 	gasLimit := uint64(6721974) // in units
 
 	auth := bind.NewKeyedTransactor(privatekey)
-	auth.Nonce = big.NewInt(int64(nonce))
 	auth.Value = big.NewInt(0) // in wei
 	auth.GasLimit = gasLimit   // in units
 	auth.GasPrice = gasPrice
 
 	input := make([]common.Address, 0, 10)
 	for _, node := range nodeList {
+		privkey := keys.ETHSECP256K1TOECDSA(node.esdcaPk.Data)
+		nonce, err := cli.PendingNonceAt(context.Background(), fromAddress)
+		if err != nil {
+			return nil, err
+		}
 
-		addr := common.HexToAddress(node.validator.Address.String())
+		fmt.Println("nonce", nonce)
+		pubkey := privkey.Public()
+		ecdsapubkey, ok := pubkey.(*ecdsa.PublicKey)
+		if !ok {
+			return nil, errors.New("failed to cast pubkey")
+		}
+		addr := crypto.PubkeyToAddress(*ecdsapubkey)
 		if node.validator.Address.String() == "" {
 			continue
 		}
+		fmt.Println("validator address:", addr.Hex())
 		input = append(input, addr)
+		tx := types.NewTransaction(nonce, addr, big.NewInt(1000000000000000000), auth.GasLimit, auth.GasPrice, (nil))
+		fmt.Printf("%#v", tx)
+		chainId, _ := cli.ChainID(context.Background())
+		signedTx, err := types.SignTx(tx, types.NewEIP155Signer(chainId), privatekey)
+		if err != nil {
+			return nil, errors.Wrap(err, "signing tx")
+		}
+		err = cli.SendTransaction(context.Background(), signedTx)
+		if err != nil {
+			return nil, errors.Wrap(err, "sending")
+		}
+		time.Sleep(3 * time.Second)
 	}
 
-	address, _, _, err := ethcontracts.DeployLockRedeem(auth, cli, input)
+	nonce, err := cli.PendingNonceAt(context.Background(), fromAddress)
 	if err != nil {
 		return nil, err
+	}
+
+	auth.Nonce = big.NewInt(int64(nonce))
+	fmt.Println("deploy nonce", nonce)
+	address, _, _, err := ethcontracts.DeployLockRedeem(auth, cli, input)
+	if err != nil {
+		return nil, errors.Wrap(err, "deploy")
 	}
 
 	return &ethchain.ChainDriverOption{

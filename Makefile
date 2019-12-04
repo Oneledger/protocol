@@ -11,7 +11,7 @@ update:
 # Build and install a copy in bin
 #
 install:
-	go install github.com/Oneledger/protocol/cmd/...
+	go install -i github.com/Oneledger/protocol/cmd/...
 
 # Enable the clevelDB
 install_c:  

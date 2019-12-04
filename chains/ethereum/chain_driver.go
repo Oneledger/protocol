@@ -215,6 +215,10 @@ func (acc *ETHChainDriver) CheckFinality(txHash TransactionHash) (*types.Receipt
 	return nil, err
 }
 
+func (acc *ETHChainDriver) ChainId() (*big.Int, error) {
+	return acc.GetClient().ChainID(context.Background())
+}
+
 func (acc *ETHChainDriver) BroadcastTx(tx *types.Transaction) (TransactionHash, error) {
 
 	_, _, err := acc.GetClient().TransactionByHash(context.Background(), tx.Hash())
