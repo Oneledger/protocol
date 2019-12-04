@@ -71,12 +71,12 @@ var _ action.Tx = reportFinalityMintTx{}
 type reportFinalityMintTx struct {
 }
 
-func (r reportFinalityMintTx) Validate(ctx *action.Context, signedTx action.SignedTx) (bool, error) {
+func (reportFinalityMintTx) Validate(ctx *action.Context, signedTx action.SignedTx) (bool, error) {
 	fmt.Println("Starting Validate ")
 	f := &ReportFinality{}
 	err := f.Unmarshal(signedTx.Data)
 	if err != nil {
-		return false, errors.Wrap(action.ErrWrongTxType, err.Error())
+		return false, errors.Wrap(err, action.ErrWrongTxType.Error())
 	}
 
 	err = action.ValidateBasic(signedTx.RawBytes(), f.Signers(), signedTx.Signatures)
@@ -91,12 +91,12 @@ func (r reportFinalityMintTx) Validate(ctx *action.Context, signedTx action.Sign
 	return true, nil
 }
 
-func (r reportFinalityMintTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
+func (reportFinalityMintTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	fmt.Println("START CHECK TX CheckFinality")
 	return runCheckFinality(ctx, tx)
 }
 
-func (r reportFinalityMintTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
+func (reportFinalityMintTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	fmt.Println("START DELIVER TX CheckFinality")
 	return runCheckFinality(ctx, tx)
 }

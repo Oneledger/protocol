@@ -11,8 +11,8 @@ import (
 func (svc *Service) CreateRawExtRedeem(req RedeemRequest, out *OLTLockReply) error {
 
 	redeem := eth.Redeem{
-		Owner:  req.userOLTaddress,
-		To:     req.userETHaddress,
+		Owner:  req.UserOLTaddress,
+		To:     req.UserETHaddress,
 		ETHTxn: req.ETHTxn,
 	}
 

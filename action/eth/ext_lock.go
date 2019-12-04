@@ -68,18 +68,21 @@ func (ethLockTx) Validate(ctx *action.Context, signedTx action.SignedTx) (bool, 
 	lock := &Lock{}
 	err := lock.Unmarshal(signedTx.Data)
 	if err != nil {
-		return false, errors.Wrap(action.ErrWrongTxType, err.Error())
+		ctx.Logger.Error("error wrong tx type")
+		return false, errors.Wrap(err, action.ErrWrongTxType.Msg)
 	}
 
 	// validate basic
 	err = action.ValidateBasic(signedTx.RawBytes(), lock.Signers(), signedTx.Signatures)
 	if err != nil {
+		ctx.Logger.Error("validate basic failed", err)
 		return false, err
 	}
 
 	// validate fee
 	err = action.ValidateFee(ctx.FeeOpt, signedTx.Fee)
 	if err != nil {
+		ctx.Logger.Error("validate fee failed", err)
 		return false, err
 	}
 
@@ -95,6 +98,7 @@ func (e ethLockTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (bool, act
 	lock := &Lock{}
 	err := lock.Unmarshal(tx.Data)
 	if err != nil {
+		ctx.Logger.Error("wrong tx type", err)
 		return false, action.Response{Log: "wrong tx type"}
 	}
 
@@ -107,6 +111,7 @@ func (e ethLockTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, a
 	lock := &Lock{}
 	err := lock.Unmarshal(tx.Data)
 	if err != nil {
+		ctx.Logger.Error("wrong tx type", err)
 		return false, action.Response{Log: "wrong tx type"}
 	}
 
@@ -129,12 +134,15 @@ func (ethLockTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start
 func runLock(ctx *action.Context, tx action.RawTx, lock *Lock) (bool, action.Response) {
 	ethTx, err := ethchaindriver.DecodeTransaction(lock.ETHTxn)
 	if err != nil {
+		ctx.Logger.Error("decode eth txn err", err)
 		return false, action.Response{
 			Log: "decode eth txn error" + err.Error(),
 		}
 	}
-	fmt.Printf("%#v \n", ethTx)
+
 	if !bytes.Equal(ethTx.To().Bytes(), ctx.ETHTrackers.GetOption().ContractAddress.Bytes()) {
+
+		ctx.Logger.Error("to field does not match contract address")
 		return false, action.Response{
 			Log: "Invalid transaction ,To field of Transaction does not match Contract address",
 		}
@@ -142,6 +150,8 @@ func runLock(ctx *action.Context, tx action.RawTx, lock *Lock) (bool, action.Res
 
 	val, err := ctx.Validators.GetValidatorsAddress()
 	if err != nil {
+
+		ctx.Logger.Error("err in getting validator address", err)
 		return false, action.Response{Log: "error in getting validator addresses" + err.Error()}
 	}
 
@@ -162,6 +172,7 @@ func runLock(ctx *action.Context, tx action.RawTx, lock *Lock) (bool, action.Res
 	err = ctx.ETHTrackers.Set(tracker)
 	fmt.Println("Setting the tracker")
 	if err != nil {
+		ctx.Logger.Error("error saving eth tracker", err)
 		return false, action.Response{Log: "error saving eth tracker: " + err.Error()}
 	}
 

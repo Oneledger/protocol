@@ -125,5 +125,5 @@ func (job *JobETHVerifyRedeem) GetType() string {
 }
 
 func (job *JobETHVerifyRedeem) GetJobID() string {
-	return job.GetJobID()
+	return job.JobID
 }

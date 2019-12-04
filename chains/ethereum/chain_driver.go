@@ -3,6 +3,7 @@ package ethereum
 import (
 	"context"
 	"encoding/hex"
+	"fmt"
 	"math/big"
 	"strings"
 	"time"
@@ -182,6 +183,7 @@ func (acc *ETHChainDriver) PrepareUnsignedETHRedeem(addr common.Address, lockAmo
 	if err != nil {
 		return nil, err
 	}
+	fmt.Println(nonce, "for validator:", addr)
 	gasLimit := uint64(6721974)
 	gasPrice, err := acc.GetClient().SuggestGasPrice(c)
 	if err != nil {

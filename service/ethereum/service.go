@@ -20,14 +20,13 @@ func Name() string {
 	return "eth"
 }
 
-
 type Service struct {
-	config      *config.EthereumChainDriverConfig
-	router      action.Router
-	accounts    accounts.Wallet
-	logger      *log.Logger
-	nodeContext node.Context
-	validators  *identity.ValidatorStore
+	config       *config.EthereumChainDriverConfig
+	router       action.Router
+	accounts     accounts.Wallet
+	logger       *log.Logger
+	nodeContext  node.Context
+	validators   *identity.ValidatorStore
 	trackerStore *tracker.TrackerStore
 }
 
@@ -69,19 +68,19 @@ type OLTLockReply struct {
 }
 
 type RedeemRequest struct {
-	userOLTaddress  action.Address `json:"user_olt_address"`
-	userETHaddress  action.Address  `json:"user_eth_address"`
-	ETHTxn []byte `json:"eth_txn"`
-	Fee     action.Amount `json:"fee"`
-	Gas     int64         `json:"gas"`
+	UserOLTaddress action.Address `json:"user_olt_address"`
+	UserETHaddress action.Address `json:"user_eth_address"`
+	ETHTxn         []byte         `json:"eth_txn"`
+	Fee            action.Amount  `json:"fee"`
+	Gas            int64          `json:"gas"`
 }
 
 type RedeemReply struct {
-	ok bool `json:"ok"`
+	OK bool `json:"ok"`
 }
 type ETHLockRequest struct {
 	UserAddress common.Address `json:"user_eth_address"`
-	Amount    *big.Int         `json:"amount"`
+	Amount      *big.Int       `json:"amount"`
 }
 
 type ETHLockRawTX struct {
@@ -103,6 +102,5 @@ type BalanceRequest struct {
 
 type BalanceReply struct {
 	Address chain.Address `json:"address"`
-	Amount  *big.Int         `json:"amount"`
+	Amount  *big.Int      `json:"amount"`
 }
-

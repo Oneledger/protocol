@@ -66,7 +66,7 @@ func (ethExtMintTx) Validate(ctx *action.Context, signedTx action.SignedTx) (boo
 	f := ReportFinality{}
 	err := f.Unmarshal(signedTx.Data)
 	if err != nil {
-		return false, errors.Wrap(action.ErrWrongTxType, err.Error())
+		return false, errors.Wrap(err, action.ErrWrongTxType.Msg)
 	}
 
 	err = action.ValidateBasic(signedTx.RawBytes(), f.Signers(), signedTx.Signatures)

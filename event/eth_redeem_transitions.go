@@ -20,6 +20,7 @@ func init() {
 			transition.Status(ethereum.Released),
 		})
 
+	fmt.Println("EthRedeemEngine Register SIGNING")
 	err := EthRedeemEngine.Register(transition.Transition{
 		Name: ethereum.SIGNING,
 		Fn:   Signing,
@@ -27,9 +28,12 @@ func init() {
 		To:   transition.Status(ethereum.BusyBroadcasting),
 	})
 	if err != nil {
+
+		fmt.Println("EthRedeemEngine Register SIGNING", err)
 		panic(err)
 	}
 
+	fmt.Println("EthRedeemEngine Register VERIFYREDEEM")
 	err = EthRedeemEngine.Register(transition.Transition{
 		Name: ethereum.VERIFYREDEEM,
 		Fn:   VerifyRedeem,
@@ -37,9 +41,11 @@ func init() {
 		To:   transition.Status(ethereum.BusyFinalizing),
 	})
 	if err != nil {
+		fmt.Println("EthRedeemEngine Register VERIFYREDEEM", err)
 		panic(err)
 	}
 
+	fmt.Println("EthRedeemEngine Register REDEEMCONFIRM")
 	err = EthRedeemEngine.Register(transition.Transition{
 		Name: ethereum.REDEEMCONFIRM,
 		Fn:   RedeemConfirmed,
@@ -47,6 +53,7 @@ func init() {
 		To:   transition.Status(ethereum.Finalized),
 	})
 	if err != nil {
+		fmt.Println("EthRedeemEngine Register REDEEMCONFIRM", err)
 		panic(err)
 	}
 
@@ -60,6 +67,7 @@ func init() {
 	//	panic(err)
 	//}
 
+	fmt.Println("EthRedeemEngine Register CLEANUP")
 	err = EthRedeemEngine.Register(transition.Transition{
 		Name: ethereum.CLEANUP,
 		Fn:   redeemCleanup,
@@ -67,6 +75,7 @@ func init() {
 		To:   transition.Status(0),
 	})
 	if err != nil {
+		fmt.Println("EthRedeemEngine Register CLEANUP", err)
 		panic(err)
 	}
 }

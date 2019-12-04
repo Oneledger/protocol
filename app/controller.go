@@ -345,13 +345,21 @@ func doEthTransitions(js *jobs.JobStore, ts *ethereum.TrackerStore, myValAddr ke
 		fmt.Println(t.TrackerName)
 		ctx := ethereum.NewTrackerCtx(t, myValAddr, js.WithChain(chain.ETHEREUM), ts, validators)
 		fmt.Println("Doethtransactions Tracker current state :", t.State)
-		_, err := event.EthLockEngine.Process(t.NextStep(), ctx, transition.Status(t.State))
 
-		if err != nil {
-			logger.Error("failed to process eth tracker", err)
+		if t.Type == ethereum.ProcessTypeLock {
+			_, err := event.EthLockEngine.Process(t.NextStep(), ctx, transition.Status(t.State))
+			if err != nil {
+				logger.Error("failed to process eth tracker", err)
+			}
+		} else if t.Type == ethereum.ProcessTypeRedeem {
+			_, err := event.EthRedeemEngine.Process(t.NextStep(), ctx, transition.Status(t.State))
+			if err != nil {
+				logger.Error("failed to process eth tracker", err)
+			}
 		}
+
 		fmt.Println("controller tracker:", ctx.Tracker)
-		err = ts.Set(ctx.Tracker)
+		err := ts.Set(ctx.Tracker)
 		if err != nil {
 			logger.Error("failed to save eth tracker", err)
 		}

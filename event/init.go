@@ -30,4 +30,5 @@ func init() {
 	serialize.RegisterConcrete(new(JobETHBroadcast), "eth_broadcast")
 	serialize.RegisterConcrete(new(JobETHCheckFinality), "eth_cf")
 	serialize.RegisterConcrete(new(JobETHSignRedeem), "eth_sign")
+	serialize.RegisterConcrete(new(JobETHVerifyRedeem), "eth_verify")
 }

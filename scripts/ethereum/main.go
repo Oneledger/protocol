@@ -33,7 +33,7 @@ func main() {
 	// var initialValidators = []string{"0xdE11f49F87A0eF71A805Bb47Ba0473432AA5E07a"}
 	//
 	const LockRedeemABI = contract.LockRedeemABI
-	contractAddr := "0x4B1BBb85929333569b7c109A815b8e50fEad8096"
+	contractAddr := "0xEf496da95D84a04bAb0807FBFA2c0704D9e34b55"
 	cfg := config.EthereumChainDriverConfig{Connection: "http://localhost:7545"}
 
 	var log = log.NewDefaultLogger(os.Stdout).WithPrefix("testeth")
@@ -81,6 +81,7 @@ func main() {
 
 	toAddress := common.HexToAddress(contractAddr)
 	tx := types.NewTransaction(nonce, toAddress, value, gasLimit, gasPrice, bytesData)
+
 	fmt.Println("Trasaction Unsigned : ", tx)
 	chainID, err := client.NetworkID(context.Background())
 	if err != nil {
@@ -88,6 +89,7 @@ func main() {
 		log.Fatal(err)
 	}
 
+	fmt.Println("a")
 	signedTx, err := types.SignTx(tx, types.NewEIP155Signer(chainID), UserprivKey)
 	if err != nil {
 
@@ -95,6 +97,7 @@ func main() {
 	}
 	ts := types.Transactions{signedTx}
 
+	fmt.Println("b")
 	rawTxBytes := ts.GetRlp(0)
 	txNew := &types.Transaction{}
 	err = rlp.DecodeBytes(rawTxBytes, txNew)
@@ -105,11 +108,14 @@ func main() {
 		return
 	}
 
+	fmt.Println("c")
 	rpcclient, err := rpc.NewClient("http://localhost:26602")
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
+
+	fmt.Println("d")
 	result := &oclient.ListCurrenciesReply{}
 	err = rpcclient.Call("query.ListCurrencies", struct{}{}, result)
 	if err != nil {
@@ -149,18 +155,109 @@ func main() {
 		return
 	}
 
-	bresult := &oclient.BroadcastReply{}
-	err = rpcclient.Call("broadcast.TxCommit", oclient.BroadcastRequest{
-		RawTx:     reply.RawTX,
-		Signature: signReply.Signature.Signed,
-		PublicKey: signReply.Signature.Signer,
-	}, bresult)
+	/*
+		fmt.Println("after sign call")
+
+		bresult := &oclient.BroadcastReply{}
+		err = rpcclient.Call("broadcast.TxCommit", oclient.BroadcastRequest{
+			RawTx:     reply.RawTX,
+			Signature: signReply.Signature.Signed,
+			PublicKey: signReply.Signature.Signer,
+		}, bresult)
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+
+		fmt.Println("broadcast result: ", bresult.OK)
+
+		time.Sleep(time.Minute)
+	*/
+	//}
+
+	// redeem
+
+	fmt.Println(1)
+	contractAbi, _ = abi.JSON(strings.NewReader(LockRedeemABI))
+	bytesData, err = contractAbi.Pack("redeem", value.Div(value, big.NewInt(100)))
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
 
-	fmt.Println("broadcast result: ", bresult.OK)
-	//}
+	fmt.Println(1.5)
 
+	redeemAddress := fromAddress.Bytes()
+	nonce, err = client.PendingNonceAt(context.Background(), fromAddress)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Println(2)
+	auth2 := bind.NewKeyedTransactor(UserprivKey)
+	auth2.Nonce = big.NewInt(int64(nonce))
+	auth2.Value = big.NewInt(0) // in wei
+	auth2.GasLimit = gasLimit   // in units
+	auth2.GasPrice = gasPrice
+
+	value = big.NewInt(0)
+	tx2 := types.NewTransaction(nonce, toAddress, value, gasLimit, gasPrice, bytesData)
+
+	signedTx2, err := types.SignTx(tx2, types.NewEIP155Signer(chainID), UserprivKey)
+	if err != nil {
+
+		log.Fatal(err)
+	}
+	fmt.Println(3)
+
+	ts2 := types.Transactions{signedTx2}
+
+	rawTxBytes2 := ts2.GetRlp(0)
+	txNew2 := &types.Transaction{}
+	err = rlp.DecodeBytes(rawTxBytes2, txNew2)
+
+	if err != nil {
+		fmt.Println(err)
+		//fmt.Println("2")
+		return
+	}
+	txhash := client.SendTransaction(context.Background(), signedTx2)
+	fmt.Println(txhash)
+
+	fmt.Println(4)
+
+	rr := se.RedeemRequest{
+		acc.Address(),
+		redeemAddress,
+		rawTxBytes2,
+		action.Amount{Currency: olt.Name, Value: *balance.NewAmountFromInt(10000000000)},
+		400000,
+	}
+
+	rreply := &se.OLTLockReply{}
+	err = rpcclient.Call("eth.CreateRawExtRedeem", rr, rreply)
+
+	fmt.Println("REPLY    : ", reply, err)
+	signReply = &oclient.SignRawTxResponse{}
+	err = rpcclient.Call("owner.SignWithAddress", oclient.SignRawTxRequest{
+		RawTx:   rreply.RawTX,
+		Address: acc.Address(),
+	}, signReply)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	bresult2 := &oclient.BroadcastReply{}
+	err = rpcclient.Call("broadcast.TxCommit", oclient.BroadcastRequest{
+		RawTx:     rreply.RawTX,
+		Signature: signReply.Signature.Signed,
+		PublicKey: signReply.Signature.Signer,
+	}, bresult2)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	fmt.Println("broadcast result: ", bresult2.OK)
 }

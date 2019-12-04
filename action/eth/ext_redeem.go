@@ -62,20 +62,23 @@ func (ethRedeemTx) Validate(ctx *action.Context, signedTx action.SignedTx) (bool
 	redeem := &Redeem{}
 	err := redeem.Unmarshal(signedTx.Data)
 	if err != nil {
-		return false, errors.Wrap(action.ErrWrongTxType, err.Error())
+		return false, errors.Wrap(err, action.ErrWrongTxType.Error())
 	}
 	err = action.ValidateBasic(signedTx.RawBytes(), redeem.Signers(), signedTx.Signatures)
 	if err != nil {
+		ctx.Logger.Error("validate basic failed", err)
 		return false, err
 	}
 
 	// validate fee
 	err = action.ValidateFee(ctx.FeeOpt, signedTx.Fee)
 	if err != nil {
+		ctx.Logger.Error("validate fee failed", err)
 		return false, err
 	}
 
 	if redeem.ETHTxn == nil {
+		ctx.Logger.Error("eth txn is nil")
 		return false, action.ErrMissingData
 	}
 
@@ -98,6 +101,7 @@ func processCommon(ctx *action.Context, tx action.RawTx) (bool, action.Response)
 	redeem := &Redeem{}
 	err := redeem.Unmarshal(tx.Data)
 	if err != nil {
+		ctx.Logger.Error("")
 		return false, action.Response{Log: action.ErrUnserializable.Error()}
 	}
 
