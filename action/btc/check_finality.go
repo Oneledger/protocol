@@ -202,6 +202,13 @@ func runReportFinalityMint(ctx *action.Context, tx action.RawTx) (bool, action.R
 			return false, action.Response{Log: "error adding oBTC to address"}
 		}
 
+		tally := keys.Address(lockBalanceAddress)
+		err = ctx.Balances.AddToAddress(tally, oBTCCoin)
+		if err != nil {
+			ctx.Logger.Error(err)
+			return false, action.Response{Log: "error adding oBTC to address"}
+		}
+
 		ctx.Logger.Info("btc coin minted to ", f.OwnerAddress)
 	}
 

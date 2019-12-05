@@ -172,3 +172,17 @@ func (st *Store) GetBalance(address keys.Address, list *CurrencySet) (balance *B
 	})
 	return
 }
+
+func (st *Store) GetBalanceForCurr(address keys.Address, curr *Currency) (coin Coin, err error) {
+
+	key := storage.StoreKey(string(address) + storage.DB_PREFIX + curr.Name)
+
+	amt, err := st.get(key)
+	if err != nil {
+		err = errors.Wrapf(err, "failed to get address balance %s", address.String())
+		return
+	}
+	coin = curr.NewCoinFromAmount(*amt)
+
+	return
+}

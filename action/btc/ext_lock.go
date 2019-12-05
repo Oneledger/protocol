@@ -155,6 +155,24 @@ func runBTCLock(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 		return false, action.Response{Log: fmt.Sprintf("tracker not available for lock: ", lock.TrackerName)}
 	}
 
+	curr, ok := ctx.Currencies.GetCurrencyByName("BTC")
+	if !ok {
+		return false, action.Response{Log: fmt.Sprintf("BTC currency not available", lock.TrackerName)}
+	}
+
+	lockCoin := curr.NewCoinFromUnit(lock.LockAmount)
+	tally := action.Address(lockBalanceAddress)
+	balCoin, err := ctx.Balances.GetBalanceForCurr(tally, &curr)
+	if err != nil {
+		return false, action.Response{Log: fmt.Sprintf("unable to get btc lock total balance", lock.TrackerName)}
+	}
+
+	totalSupplyCoin := curr.NewCoinFromInt(totalBTCSupply)
+
+	if !balCoin.Plus(lockCoin).LessThanEqualCoin(totalSupplyCoin) {
+		return false, action.Response{Log: fmt.Sprintf("btc lock exceeded limit", lock.TrackerName)}
+	}
+
 	tracker.ProcessType = bitcoin.ProcessTypeLock
 	tracker.ProcessOwner = lock.Locker
 	tracker.Multisig.Msg = lock.BTCTxn
