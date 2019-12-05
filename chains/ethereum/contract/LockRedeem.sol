@@ -107,7 +107,7 @@ contract LockRedeem {
         require(amount_ > 0, "amount should be bigger than 0");
         require(redeemRequests[msg.sender].until < block.number, "request is locked, not available");
 
-        redeemRequests[msg.sender].isCompleted == false;
+        redeemRequests[msg.sender].isCompleted = false;
         redeemRequests[msg.sender].signature_count = uint256(0);
         redeemRequests[msg.sender].recipient = msg.sender;
         redeemRequests[msg.sender].amount = amount_ ;
@@ -119,8 +119,10 @@ contract LockRedeem {
     // todo: validator sign and if enough vote, transfer directly
     function sign(uint amount_, address payable recipient_) public  {
         require(isValidator(msg.sender),"validator not present in list");
+        require(!redeemRequests[recipient_].isCompleted, "redeem request is completed");
         require(redeemRequests[recipient_].amount == amount_,"redeem amount Compromised" );
         require(!redeemRequests[recipient_].votes[msg.sender]);
+
         // update votes
         redeemRequests[recipient_].votes[msg.sender] = true;
         redeemRequests[recipient_].signature_count += 1;
@@ -134,8 +136,16 @@ contract LockRedeem {
         emit ValidatorSignedRedeem(recipient_, msg.sender, amount_);
     }
 
+    function hasValidatorSigned(address recipient_) public view returns(bool) {
+        return redeemRequests[recipient_].votes[msg.sender];
+    }
+
     function verifyRedeem(address recipient_) public view returns(bool){
         return redeemRequests[recipient_].isCompleted;
+    }
+
+    function getSignatureCount(address recipient_) public view returns(uint256){
+        return redeemRequests[recipient_].signature_count;
     }
 
     function getTotalEthBalance() public view returns(uint) {

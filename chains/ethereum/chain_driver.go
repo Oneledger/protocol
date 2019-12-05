@@ -175,7 +175,7 @@ func (acc *ETHChainDriver) GetTransactionMessage(tx *types.Transaction) (*types.
 	return &msg, nil
 }
 
-func (acc *ETHChainDriver) PrepareUnsignedETHRedeem(addr common.Address, lockAmount *big.Int) (*Transaction, error) {
+func (acc *ETHChainDriver) PrepareUnsignedETHRedeem(addr common.Address, lockAmount *big.Int, recipientAddr common.Address) (*Transaction, error) {
 
 	c, cancel := defaultContext()
 	defer cancel()
@@ -189,8 +189,12 @@ func (acc *ETHChainDriver) PrepareUnsignedETHRedeem(addr common.Address, lockAmo
 	if err != nil {
 		return nil, err
 	}
-	contractAbi, _ := abi.JSON(strings.NewReader(acc.ContractABI))
-	bytesData, _ := contractAbi.Pack("redeem", lockAmount)
+	contractAbi, _ := abi.JSON(strings.NewReader(contract.LockRedeemABI))
+
+	bytesData, err := contractAbi.Pack("sign", lockAmount, recipientAddr)
+	if err != nil {
+		return nil, err
+	}
 	toAddress := acc.ContractAddress
 	tx := types.NewTransaction(nonce, toAddress, big.NewInt(0), gasLimit, gasPrice, bytesData)
 
@@ -207,6 +211,8 @@ func (acc *ETHChainDriver) CheckFinality(txHash TransactionHash) (*types.Receipt
 		}
 		if result.Status == types.ReceiptStatusFailed {
 			acc.logger.Warn("Receipt not found ")
+			b, _ := result.MarshalJSON()
+			acc.logger.Error(string(b))
 			//err := Error("Transaction not added to blockchain yet / Failed to obtain receipt")
 			return nil, nil
 		}
@@ -257,13 +263,26 @@ func (acc *ETHChainDriver) ParseRedeem(data []byte) (req *RedeemRequest, err err
 	return ParseRedeem(data)
 }
 
-func (acc *ETHChainDriver) VerifyRedeem(validatorAddress common.Address, recepient common.Address) (bool, error) {
+func (acc *ETHChainDriver) VerifyRedeem(validatorAddress common.Address, recipient common.Address) (bool, error) {
 	instance := acc.GetContract()
-	ok, err := instance.VerifyRedeem(acc.CallOpts(validatorAddress), recepient)
+	ok, err := instance.VerifyRedeem(acc.CallOpts(validatorAddress), recipient)
+	fmt.Println(instance.VotingThreshold(acc.CallOpts(validatorAddress)))
+	fmt.Println("voting threshold")
+	fmt.Println(instance.GetSignatureCount(acc.CallOpts(validatorAddress), recipient))
+	fmt.Println("signature count")
+	fmt.Println(instance.HasValidatorSigned(acc.CallOpts(validatorAddress), recipient))
+	fmt.Println("has validator signed")
+
 	if err != nil {
 		return false, errors.Wrap(err, "Unable to connect to ethereum smart contract")
 	}
 	return ok, nil
+}
+
+func (acc *ETHChainDriver) LogFinality(txHash TransactionHash) {
+
+	result, err := acc.GetClient().TransactionReceipt(context.Background(), txHash)
+	fmt.Printf("%#v |||||| %#v receipt of tx \n", result, err)
 }
 
 func ParseRedeem(data []byte) (req *RedeemRequest, err error) {

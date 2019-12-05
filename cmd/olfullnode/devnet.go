@@ -488,7 +488,7 @@ func initialState(args *testnetConfig, nodeList []node, option ethchain.ChainDri
 }
 
 func deployethcdcontract(conn string, nodeList []node) (*ethchain.ChainDriverOption, error) {
-	privatekey, err := crypto.HexToECDSA("7b12b9e7fd50eb577306baf543d2c63b0df5a93dc8ec4d90cb5ef22db7a427af")
+	privatekey, err := crypto.HexToECDSA("a54f9a028a362b0068a5fcd8ec4d4ca512e837264e1675f351280fac71f192ad")
 	if err != nil {
 		return nil, err
 	}

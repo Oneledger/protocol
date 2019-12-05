@@ -23,6 +23,7 @@ type Tracker struct {
 	Validators    []keys.Address
 	ProcessOwner  keys.Address
 	FinalityVotes []Vote
+	To            keys.Address
 }
 
 //number of validator should be smaller than 64

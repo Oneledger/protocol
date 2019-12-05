@@ -137,6 +137,7 @@ func processCommon(ctx *action.Context, tx action.RawTx) (bool, action.Response)
 	tracker.State = trackerlib.New
 	tracker.ProcessOwner = redeem.Owner
 	tracker.SignedETHTx = redeem.ETHTxn
+	tracker.To = redeem.To
 
 	// Save eth Tracker
 	err = ctx.ETHTrackers.Set(tracker)

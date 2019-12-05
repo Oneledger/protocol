@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 
 	"github.com/Oneledger/protocol/chains/ethereum"
@@ -19,6 +20,7 @@ type JobETHSignRedeem struct {
 	JobID       string
 	RetryCount  int
 	Status      jobs.Status
+	TxHash      *ethereum.TransactionHash
 }
 
 func NewETHSignRedeem(name ethereum.TrackerName, state trackerlib.TrackerState) *JobETHSignRedeem {
@@ -62,6 +64,25 @@ func (j *JobETHSignRedeem) DoMyJob(ctx interface{}) {
 		return
 	}
 
+	msg, err := cd.GetTransactionMessage(tx)
+	if err != nil {
+		ethCtx.Logger.Error("Error in decoding transaction as message : ", j.GetJobID(), err)
+		return
+	}
+
+	addr := ethCtx.GetValidatorETHAddress()
+	if j.TxHash != nil {
+		cd.LogFinality(*j.TxHash)
+	}
+	success, err := cd.VerifyRedeem(addr, msg.From())
+	if err != nil {
+		ethCtx.Logger.Error("Error in verifying redeem :", j.GetJobID(), err)
+	}
+	if success {
+		j.Status = jobs.Completed
+		return
+	}
+
 	fmt.Println(2)
 	//check if tx already broadcasted, if yest, job.Status = jobs.Completed
 	req, err := cd.ParseRedeem(rawTx)
@@ -72,15 +93,8 @@ func (j *JobETHSignRedeem) DoMyJob(ctx interface{}) {
 
 	fmt.Println(3)
 	redeemAmount := req.Amount
-	msg, err := cd.GetTransactionMessage(tx)
-	if err != nil {
-		ethCtx.Logger.Error("Error in decoding trasnaction as message : ", j.GetJobID(), err)
-		return
-	}
 
 	fmt.Println(4)
-
-	addr := ethCtx.GetValidatorETHAddress()
 
 	tx, err = cd.SignRedeem(addr, redeemAmount, msg.From())
 	if err != nil {
@@ -89,9 +103,10 @@ func (j *JobETHSignRedeem) DoMyJob(ctx interface{}) {
 	}
 
 	fmt.Println(6)
-	unsignedTx, err := cd.PrepareUnsignedETHRedeem(addr, redeemAmount)
+	recipientAddr := common.HexToAddress(tracker.To.String())
+	unsignedTx, err := cd.PrepareUnsignedETHRedeem(addr, redeemAmount, recipientAddr)
 	if err != nil {
-		ethCtx.Logger.Error("Error in preparing unsigned Ethereum Transaction")
+		ethCtx.Logger.Error("Error in preparing unsigned Ethereum Transaction", err)
 		return
 	}
 	privkey := ethCtx.GetValidatorETHPrivKey()
@@ -108,10 +123,13 @@ func (j *JobETHSignRedeem) DoMyJob(ctx interface{}) {
 		ethCtx.Logger.Error("Unable to broadcast transaction :", j.GetJobID(), err)
 		return
 	}
+
 	fmt.Println(8)
 	ethCtx.Logger.Info("Redeem Transaction broadcasted to network : ", txHash)
 	fmt.Println("Broadcast job completed for ", ethCtx.ValidatorAddress, "Job ID : ", j.GetJobID())
-	j.Status = jobs.Completed
+
+	j.TxHash = &txHash
+	// j.Status = jobs.Completed
 }
 
 func (j *JobETHSignRedeem) IsDone() bool {

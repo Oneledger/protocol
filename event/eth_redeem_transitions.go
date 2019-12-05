@@ -120,6 +120,15 @@ func VerifyRedeem(ctx interface{}) error {
 	}
 	tracker := context.Tracker
 
+	bjob, err := context.JobStore.GetJob(tracker.GetJobID(ethereum.BusyBroadcasting))
+	if err != nil {
+		return errors.Wrap(err, "failed to get job")
+	}
+	fmt.Println("Checking Broadcasting job status", bjob.IsDone(), bjob.GetType())
+	if !bjob.IsDone() {
+		return errors.New("broadcast not done")
+	}
+
 	// create verify job for the first time from the state of broadcasting
 	if tracker.State == ethereum.BusyBroadcasting && context.Validators.IsValidator() {
 		job := NewETHVerifyRedeem(tracker.TrackerName, ethereum.BusyFinalizing)
@@ -152,7 +161,7 @@ func RedeemConfirmed(ctx interface{}) error {
 }
 
 func redeemCleanup(ctx interface{}) error {
-	context, ok := ctx.(ethereum.TrackerCtx)
+	context, ok := ctx.(*ethereum.TrackerCtx)
 	if !ok {
 		return errors.New("error casting tracker context")
 	}
