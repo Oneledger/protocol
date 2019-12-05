@@ -19,7 +19,6 @@ import (
 // This function might create a loophope that node owner might use the sgned eth lock tx for his own benificiary address.
 // DONT USE IN PRODUCTION
 
-
 func (svc *Service) CreateRawExtLock(req OLTLockRequest, out *OLTLockReply) error {
 
 	packets, err := createRawLock(req.Address, req.RawTx, req.Fee, req.Gas)
@@ -41,8 +40,8 @@ func createRawLock(locker action.Address, rawTx []byte, userfee action.Amount, g
 	// First accept the rawTx
 	//tracker := tracker.NewTracker(common.BytesToHash(rawTx))
 	lock := eth.Lock{
-		Locker:      locker,
-		ETHTxn:      rawTx,
+		Locker: locker,
+		ETHTxn: rawTx,
 	}
 
 	data, err := lock.Marshal()
@@ -77,6 +76,7 @@ func (svc *Service) GetRawLockTX(req ETHLockRequest, out *ETHLockRawTX) error {
 	// TODO:Change to address
 	rawTx, err := cd.PrepareUnsignedETHLock(req.UserAddress, req.Amount)
 	if err != nil {
+
 		return err
 	}
 	*out = ETHLockRawTX{UnsignedRawTx: rawTx}

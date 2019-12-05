@@ -175,33 +175,6 @@ func (acc *ETHChainDriver) GetTransactionMessage(tx *types.Transaction) (*types.
 	return &msg, nil
 }
 
-func (acc *ETHChainDriver) PrepareUnsignedETHRedeem(addr common.Address, lockAmount *big.Int, recipientAddr common.Address) (*Transaction, error) {
-
-	c, cancel := defaultContext()
-	defer cancel()
-	nonce, err := acc.GetClient().PendingNonceAt(c, addr)
-	if err != nil {
-		return nil, err
-	}
-	fmt.Println(nonce, "for validator:", addr)
-	gasLimit := uint64(6721974)
-	gasPrice, err := acc.GetClient().SuggestGasPrice(c)
-	if err != nil {
-		return nil, err
-	}
-	contractAbi, _ := abi.JSON(strings.NewReader(contract.LockRedeemABI))
-
-	fmt.Println("recipient address:", recipientAddr.Hex())
-	bytesData, err := contractAbi.Pack("sign", lockAmount, recipientAddr)
-	if err != nil {
-		return nil, err
-	}
-	toAddress := acc.ContractAddress
-	tx := types.NewTransaction(nonce, toAddress, big.NewInt(0), gasLimit, gasPrice, bytesData)
-
-	return tx, nil
-}
-
 func (acc *ETHChainDriver) CheckFinality(txHash TransactionHash) (*types.Receipt, error) {
 
 	result, err := acc.GetClient().TransactionReceipt(context.Background(), txHash)
