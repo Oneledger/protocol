@@ -33,7 +33,7 @@ import (
 
 var (
 	LockRedeemABI = contract.LockRedeemABI
-	contractAddr  = "0x80DDDD1bF33641500f9c87eB15Cc63764e435B45"
+	contractAddr  = "0x902A99800E666c0ACF3135E9e278994183455659"
 
 	cfg               = config.EthereumChainDriverConfig{Connection: "http://localhost:7545"}
 	log               = logger.NewDefaultLogger(os.Stdout).WithPrefix("testeth")

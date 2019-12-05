@@ -133,10 +133,14 @@ func (acc *ETHChainDriver) SignRedeem(fromaddr common.Address, redeemAmount *big
 	if err != nil {
 		return nil, err
 	}
+
 	contractAbi, _ := abi.JSON(strings.NewReader(acc.ContractABI))
-	bytesData, _ := contractAbi.Pack("sign", redeemAmount, recipient)
+	bytesData, err := contractAbi.Pack("sign", redeemAmount, recipient)
+	if err != nil {
+		return nil, err
+	}
 	toAddress := acc.ContractAddress
-	tx := types.NewTransaction(nonce, toAddress, redeemAmount, gasLimit, gasPrice, bytesData)
+	tx := types.NewTransaction(nonce, toAddress, big.NewInt(0), gasLimit, gasPrice, bytesData)
 	return tx, nil
 
 }

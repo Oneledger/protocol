@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 
 	"github.com/Oneledger/protocol/chains/ethereum"
@@ -92,7 +93,8 @@ func (j *JobETHSignRedeem) DoMyJob(ctx interface{}) {
 
 	redeemAmount := req.Amount
 
-	tx, err = cd.SignRedeem(addr, redeemAmount, msg.From())
+	redeemAddr := common.HexToAddress(tracker.To.String())
+	tx, err = cd.SignRedeem(addr, redeemAmount, redeemAddr)
 	if err != nil {
 		ethCtx.Logger.Error("Error in creating signing trasanction : ", j.GetJobID(), err)
 		return
@@ -129,10 +131,4 @@ func (j *JobETHSignRedeem) GetType() string {
 
 func (j *JobETHSignRedeem) GetJobID() string {
 	return j.JobID
-}
-
-func zeroBytes(bytes []byte) {
-	for i := range bytes {
-		bytes[i] = 0
-	}
 }
