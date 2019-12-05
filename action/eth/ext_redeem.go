@@ -11,6 +11,7 @@ import (
 	"github.com/Oneledger/protocol/chains/ethereum"
 	"github.com/Oneledger/protocol/data/balance"
 	trackerlib "github.com/Oneledger/protocol/data/ethereum"
+	"github.com/Oneledger/protocol/data/keys"
 )
 
 var _ action.Msg = &Redeem{}
@@ -117,6 +118,12 @@ func processCommon(ctx *action.Context, tx action.RawTx) (bool, action.Response)
 
 	coin := c.NewCoinFromAmount(*balance.NewAmountFromBigInt(req.Amount))
 	err = ctx.Balances.MinusFromAddress(redeem.Owner, coin)
+	if err != nil {
+		return false, action.Response{Log: action.ErrNotEnoughFund.Error()}
+	}
+
+	ethSupply := keys.Address(lockBalanceAddress)
+	err = ctx.Balances.MinusFromAddress(ethSupply, coin)
 	if err != nil {
 		return false, action.Response{Log: action.ErrNotEnoughFund.Error()}
 	}

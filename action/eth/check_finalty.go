@@ -12,6 +12,7 @@ import (
 	"github.com/Oneledger/protocol/chains/ethereum"
 	"github.com/Oneledger/protocol/data/balance"
 	trackerlib "github.com/Oneledger/protocol/data/ethereum"
+	"github.com/Oneledger/protocol/data/keys"
 )
 
 type ReportFinality struct {
@@ -177,6 +178,12 @@ func mintTokens(ctx *action.Context, tracker *trackerlib.Tracker, oltTx ReportFi
 		return errors.New("Unable to mint")
 	}
 
+	ethSupply := keys.Address(lockBalanceAddress)
+	err = ctx.Balances.AddToAddress(ethSupply, oEthCoin)
+	if err != nil {
+		return errors.Wrap(err, "Unable to update total Eth supply")
+	}
+
 	tracker.State = trackerlib.Released
 	err = ctx.ETHTrackers.Set(tracker)
 	if err != nil {
@@ -186,20 +193,12 @@ func mintTokens(ctx *action.Context, tracker *trackerlib.Tracker, oltTx ReportFi
 }
 
 func burnTokens(ctx *action.Context, tracker *trackerlib.Tracker, oltTx ReportFinality) error {
-	curr, ok := ctx.Currencies.GetCurrencyByName("ETH")
-	if !ok {
-		return errors.New("ETH currency not allowed")
-	}
-	burnAmount, err := ethereum.ParseRedeem(tracker.SignedETHTx)
+
+	tracker.State = trackerlib.Released
+	err := ctx.ETHTrackers.Set(tracker)
 	if err != nil {
 		return err
 	}
 
-	tracker.State = trackerlib.Released
-	err = ctx.ETHTrackers.Set(tracker)
-	if err != nil {
-		return err
-	}
-	fmt.Println(curr, burnAmount)
 	return nil
 }

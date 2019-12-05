@@ -5,6 +5,6 @@
 package btc
 
 const (
-	totalBTCSupply     = 10 - 00 - 000 - 000 // 10 BTC
+	totalBTCSupply     = 1000000000 // 10 BTC
 	lockBalanceAddress = "13371337"
 )

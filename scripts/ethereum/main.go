@@ -33,7 +33,7 @@ import (
 
 var (
 	LockRedeemABI = contract.LockRedeemABI
-	contractAddr  = "0x902A99800E666c0ACF3135E9e278994183455659"
+	contractAddr  = "0x181599CaC362067bE8556FC4Faa8eE302e534bb2"
 
 	cfg               = config.EthereumChainDriverConfig{Connection: "http://localhost:7545"}
 	log               = logger.NewDefaultLogger(os.Stdout).WithPrefix("testeth")
@@ -42,16 +42,26 @@ var (
 
 	client                 *ethclient.Client
 	contractAbi            abi.ABI
-	valuelock              = big.NewInt(1000000000000000000) // in wei (1 eth)
-	valueredeem            = big.NewInt(0).Div(valuelock, big.NewInt(4))
+	valuelock              = createValue("9000000000000000000") // in wei (1 eth)
+	valueredeem            = createValue("47000000000000000000")
 	fromAddress            common.Address
 	redeemRecipientAddress common.Address
 
 	toAddress = common.HexToAddress(contractAddr)
 )
 
+func createValue(str string) *big.Int {
+	n := new(big.Int)
+	n, ok := n.SetString(str, 10)
+	if !ok {
+		fmt.Println("SetString: error")
+		return big.NewInt(0)
+	}
+	return n
+}
+
 func init() {
-	UserprivKey, _ = crypto.HexToECDSA("4cd9d773baa6cdfc46b8c910bb08a69e2619fb7234d96cdbd79d992ed1812160")
+	UserprivKey, _ = crypto.HexToECDSA("566c177a11b69721a7439b5496af2c2481e47088179ed218c8ae3b039ce18132")
 
 	UserprivKeyRedeem, _ = crypto.HexToECDSA("e495c77769154d3321b16b1d39d01ae3beaee6828466bcf5bd1f929fed1ab466")
 

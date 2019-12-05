@@ -155,6 +155,23 @@ func runLock(ctx *action.Context, tx action.RawTx, lock *Lock) (bool, action.Res
 		return false, action.Response{Log: "error in getting validator addresses" + err.Error()}
 	}
 
+	curr, ok := ctx.Currencies.GetCurrencyByName("ETH")
+	if !ok {
+		return false, action.Response{Log: fmt.Sprintf("ETH currency not available", lock.Locker)}
+	}
+	lockCoin := curr.NewCoinFromString(ethTx.Value().String())
+	ethSupply := action.Address(lockBalanceAddress)
+	balCoin, err := ctx.Balances.GetBalanceForCurr(ethSupply, &curr)
+	if err != nil {
+		return false, action.Response{Log: fmt.Sprintf("Unable to get Eth lock total balance", lock.Locker)}
+	}
+
+	totalSupplyCoin := curr.NewCoinFromString(totalETHSupply)
+	fmt.Println("Lock amount coin " + lockCoin.String() + "Total Supply " + totalSupplyCoin.String() + balCoin.String())
+	if !balCoin.Plus(lockCoin).LessThanEqualCoin(totalSupplyCoin) {
+		return false, action.Response{Log: fmt.Sprintf("Eth lock exceeded limit", lock.Locker)}
+	}
+
 	// Create ethereum tracker
 	tracker := ethereum.NewTracker(
 		ethereum.ProcessTypeLock,
