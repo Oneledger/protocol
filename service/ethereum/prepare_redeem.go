@@ -6,6 +6,7 @@ import (
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/action/eth"
 	"github.com/Oneledger/protocol/serialize"
+	codes "github.com/Oneledger/protocol/status_codes"
 )
 
 func (svc *Service) CreateRawExtRedeem(req RedeemRequest, out *OLTLockReply) error {
@@ -18,7 +19,8 @@ func (svc *Service) CreateRawExtRedeem(req RedeemRequest, out *OLTLockReply) err
 
 	data, err := redeem.Marshal()
 	if err != nil {
-		return err
+		svc.logger.Error(codes.ErrUnmarshaling.ErrorMsg())
+		return codes.ErrUnmarshaling
 	}
 
 	uuidNew, _ := uuid.NewUUID()

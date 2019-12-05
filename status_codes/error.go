@@ -72,9 +72,24 @@ var (
 
 	// External Errors
 	ErrBTCTxNotFound             = ProtocolError{ExternalErrBitcoinTxNotFound, "bitcoin txn not found"}
-	ErrBTCReadingTxn             = ProtocolError{ExternalErrGettingBTCTxn, "err getting btc txn"}
+
 	ErrBTCNotEnoughConfirmations = ProtocolError{ExternalErrNotEnoughConfirmations, "not enough btc confirmations"}
 	ErrBTCNotSpendable           = ProtocolError{ExternalErrNotSpendable, "btc source not spendable"}
 
 	ErrBadBTCTxn = ProtocolError{ParseErrorBadBTCTxn, "bad btc txn"}
+
+	//Ethereum Erros
+	ErrPreparingETHLock = ProtocolError{
+		Code: ExternalErrUnableToCreateEthTX,
+		Msg:  "Unable to create an unsigned lock transaction for Ethereum",
+	}
+	ErrPreparingOLTLock = ProtocolError{
+		Code: ExternalErrUnableToCreateOLTLockTX,
+		Msg:  "Unable to create OLT lock Tx for Ethereum",
+	}
+	ErrUnmarshaling = ProtocolError{
+		Code: ErrUnmarshalingRedeem,
+		Msg:  "Unable to unmarshall the incoming transaction into struct ,Wrong Json data",
+	}
+
 )

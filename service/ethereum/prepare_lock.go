@@ -23,7 +23,8 @@ func (svc *Service) CreateRawExtLock(req OLTLockRequest, out *OLTLockReply) erro
 
 	packets, err := createRawLock(req.Address, req.RawTx, req.Fee, req.Gas)
 	if err != nil {
-		return errors.Wrap(err, "createRawLock")
+		svc.logger.Error(err,codes.ErrPreparingOLTLock.ErrorMsg())
+		return codes.ErrPreparingOLTLock
 	}
 	fmt.Println("CreateRawExtLock:", packets)
 
@@ -76,8 +77,8 @@ func (svc *Service) GetRawLockTX(req ETHLockRequest, out *ETHLockRawTX) error {
 	// TODO:Change to address
 	rawTx, err := cd.PrepareUnsignedETHLock(req.UserAddress, req.Amount)
 	if err != nil {
-
-		return err
+		svc.logger.Error(codes.ErrPreparingETHLock.Msg)
+		return codes.ErrPreparingETHLock
 	}
 	*out = ETHLockRawTX{UnsignedRawTx: rawTx}
 	return nil

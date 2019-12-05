@@ -63,4 +63,7 @@ const (
 	ExternalErrGettingBTCTxn          = 400102
 	ExternalErrNotEnoughConfirmations = 400103
 	ExternalErrNotSpendable           = 400104
+	ExternalErrUnableToCreateEthTX    = 400105
+	ExternalErrUnableToCreateOLTLockTX =400106
+	ErrUnmarshalingRedeem             = 400107
 )
