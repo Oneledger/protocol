@@ -49,14 +49,12 @@ func (j *JobETHSignRedeem) DoMyJob(ctx interface{}) {
 	}
 	ethconfig := ethCtx.cfg.EthChainDriver
 
-	fmt.Println(0)
 	cd, err := ethereum.NewChainDriver(ethconfig, ethCtx.Logger, trackerStore.GetOption())
 	if err != nil {
 		ethCtx.Logger.Error("err trying to get ChainDriver : ", j.GetJobID(), err)
 		return
 	}
 
-	fmt.Println(1, "before decoding txn")
 	rawTx := tracker.SignedETHTx
 	tx, err := cd.DecodeTransaction(rawTx)
 	if err != nil {
@@ -71,10 +69,8 @@ func (j *JobETHSignRedeem) DoMyJob(ctx interface{}) {
 	}
 
 	addr := ethCtx.GetValidatorETHAddress()
-	if j.TxHash != nil {
-		cd.LogFinality(*j.TxHash)
-	}
-	success, err := cd.VerifyRedeem(addr, msg.From())
+
+	success, err := cd.HasValidatorSigned(addr, msg.From())
 	if err != nil {
 		ethCtx.Logger.Error("Error in verifying redeem :", j.GetJobID(), err)
 	}
@@ -83,7 +79,6 @@ func (j *JobETHSignRedeem) DoMyJob(ctx interface{}) {
 		return
 	}
 
-	fmt.Println(2)
 	//check if tx already broadcasted, if yest, job.Status = jobs.Completed
 	req, err := cd.ParseRedeem(rawTx)
 	if err != nil {
@@ -91,10 +86,7 @@ func (j *JobETHSignRedeem) DoMyJob(ctx interface{}) {
 		return
 	}
 
-	fmt.Println(3)
 	redeemAmount := req.Amount
-
-	fmt.Println(4)
 
 	tx, err = cd.SignRedeem(addr, redeemAmount, msg.From())
 	if err != nil {
@@ -102,7 +94,6 @@ func (j *JobETHSignRedeem) DoMyJob(ctx interface{}) {
 		return
 	}
 
-	fmt.Println(6)
 	recipientAddr := common.HexToAddress(tracker.To.String())
 	unsignedTx, err := cd.PrepareUnsignedETHRedeem(addr, redeemAmount, recipientAddr)
 	if err != nil {
@@ -115,7 +106,7 @@ func (j *JobETHSignRedeem) DoMyJob(ctx interface{}) {
 		ethCtx.Logger.Error("Failed to get chain id ", err)
 		return
 	}
-	fmt.Println(7)
+
 	signedTx, err := types.SignTx(unsignedTx, types.NewEIP155Signer(chainid), privkey)
 	privkey = nil
 	txHash, err := cd.BroadcastTx(signedTx)
@@ -124,7 +115,6 @@ func (j *JobETHSignRedeem) DoMyJob(ctx interface{}) {
 		return
 	}
 
-	fmt.Println(8)
 	ethCtx.Logger.Info("Redeem Transaction broadcasted to network : ", txHash)
 	fmt.Println("Broadcast job completed for ", ethCtx.ValidatorAddress, "Job ID : ", j.GetJobID())
 

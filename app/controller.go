@@ -349,12 +349,12 @@ func doEthTransitions(js *jobs.JobStore, ts *ethereum.TrackerStore, myValAddr ke
 		if t.Type == ethereum.ProcessTypeLock {
 			_, err := event.EthLockEngine.Process(t.NextStep(), ctx, transition.Status(t.State))
 			if err != nil {
-				logger.Error("failed to process eth tracker", err)
+				logger.Error("failed to process eth tracker ProcessTypeLock", err)
 			}
 		} else if t.Type == ethereum.ProcessTypeRedeem {
 			_, err := event.EthRedeemEngine.Process(t.NextStep(), ctx, transition.Status(t.State))
 			if err != nil {
-				logger.Error("failed to process eth tracker", err)
+				logger.Error("failed to process eth tracker ProcessTypeRedeem", err)
 			}
 		}
 

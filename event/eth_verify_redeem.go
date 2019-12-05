@@ -1,7 +1,6 @@
 package event
 
 import (
-	"fmt"
 	"strconv"
 
 	"github.com/Oneledger/protocol/action"
@@ -45,7 +44,7 @@ func (job *JobETHVerifyRedeem) DoMyJob(ctx interface{}) {
 		ethCtx.Logger.Error("Unable to get Tracker", job.JobID)
 		return
 	}
-	fmt.Println("1")
+
 	cd, err := ethereum.NewChainDriver(ethCtx.cfg.EthChainDriver, ethCtx.Logger, trackerStore.GetOption())
 	if err != nil {
 		ethCtx.Logger.Error("Unable to get Chain Driver", job.JobID)
@@ -56,19 +55,19 @@ func (job *JobETHVerifyRedeem) DoMyJob(ctx interface{}) {
 		ethCtx.Logger.Error("Unable to decode transaction")
 		return
 	}
-	fmt.Println("2")
+
 	msg, err := cd.GetTransactionMessage(tx)
 	if err != nil {
 		ethCtx.Logger.Error("Error in decoding transaction as message : ", job.GetJobID(), err)
 		return
 	}
-	fmt.Println("3 : before verify")
+
 	addr := ethCtx.GetValidatorETHAddress()
 	success, err := cd.VerifyRedeem(addr, msg.From())
 	if err != nil {
 		ethCtx.Logger.Error("Error in verifying redeem :", job.GetJobID(), err)
 	}
-	fmt.Println("4 : verify redeem", success)
+
 	// create internal check finality to report that the redeem is done on ethereum chain
 	if success {
 		index, _ := tracker.CheckIfVoted(ethCtx.ValidatorAddress)
@@ -83,13 +82,12 @@ func (job *JobETHVerifyRedeem) DoMyJob(ctx interface{}) {
 			Refund:           false,
 		}
 
-		fmt.Println("5 : Creating Internal Transaction to add vote:", cf)
 		txData, err := cf.Marshal()
 		if err != nil {
 			ethCtx.Logger.Error("Error while preparing mint txn ", job.GetJobID(), err)
 			return
 		}
-		fmt.Println("after serialization", txData)
+
 		internalMintTx := action.RawTx{
 			Type: action.ETH_REPORT_FINALITY_MINT,
 			Data: txData,
@@ -102,7 +100,7 @@ func (job *JobETHVerifyRedeem) DoMyJob(ctx interface{}) {
 		}
 		rep := BroadcastReply{}
 		err = ethCtx.Service.InternalBroadcast(req, &rep)
-		fmt.Println("6 : Reply :", rep)
+
 		if err != nil || !rep.OK {
 			ethCtx.Logger.Error("error while broadcasting finality vote and mint txn ", job.GetJobID(), err, rep.Log)
 			return

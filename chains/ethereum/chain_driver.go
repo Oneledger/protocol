@@ -191,6 +191,7 @@ func (acc *ETHChainDriver) PrepareUnsignedETHRedeem(addr common.Address, lockAmo
 	}
 	contractAbi, _ := abi.JSON(strings.NewReader(contract.LockRedeemABI))
 
+	fmt.Println("recipient address:", recipientAddr.Hex())
 	bytesData, err := contractAbi.Pack("sign", lockAmount, recipientAddr)
 	if err != nil {
 		return nil, err
@@ -279,10 +280,10 @@ func (acc *ETHChainDriver) VerifyRedeem(validatorAddress common.Address, recipie
 	return ok, nil
 }
 
-func (acc *ETHChainDriver) LogFinality(txHash TransactionHash) {
+func (acc *ETHChainDriver) HasValidatorSigned(validatorAddress common.Address, recipient common.Address) (bool, error) {
+	instance := acc.GetContract()
 
-	result, err := acc.GetClient().TransactionReceipt(context.Background(), txHash)
-	fmt.Printf("%#v |||||| %#v receipt of tx \n", result, err)
+	return instance.HasValidatorSigned(acc.CallOpts(validatorAddress), recipient)
 }
 
 func ParseRedeem(data []byte) (req *RedeemRequest, err error) {

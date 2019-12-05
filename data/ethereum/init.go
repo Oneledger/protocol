@@ -5,6 +5,7 @@ import "errors"
 const (
 	New TrackerState = iota
 	BusyBroadcasting
+	BroadcastSuccess
 	BusyFinalizing
 	Finalized
 	Released

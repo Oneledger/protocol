@@ -33,21 +33,27 @@ import (
 
 var (
 	LockRedeemABI = contract.LockRedeemABI
-	contractAddr  = "0x15Bf0042B8C4De55cFef39d03d62818c09F8E2D1"
+	contractAddr  = "0x80DDDD1bF33641500f9c87eB15Cc63764e435B45"
 
-	cfg         = config.EthereumChainDriverConfig{Connection: "http://localhost:7545"}
-	log         = logger.NewDefaultLogger(os.Stdout).WithPrefix("testeth")
-	UserprivKey *ecdsa.PrivateKey
-	client      *ethclient.Client
-	contractAbi abi.ABI
-	valuelock   = big.NewInt(1000000000000000000) // in wei (1 eth)
-	valueredeem = big.NewInt(0).Div(valuelock, big.NewInt(4))
-	fromAddress common.Address
-	toAddress   = common.HexToAddress(contractAddr)
+	cfg               = config.EthereumChainDriverConfig{Connection: "http://localhost:7545"}
+	log               = logger.NewDefaultLogger(os.Stdout).WithPrefix("testeth")
+	UserprivKey       *ecdsa.PrivateKey
+	UserprivKeyRedeem *ecdsa.PrivateKey
+
+	client                 *ethclient.Client
+	contractAbi            abi.ABI
+	valuelock              = big.NewInt(1000000000000000000) // in wei (1 eth)
+	valueredeem            = big.NewInt(0).Div(valuelock, big.NewInt(4))
+	fromAddress            common.Address
+	redeemRecipientAddress common.Address
+
+	toAddress = common.HexToAddress(contractAddr)
 )
 
 func init() {
 	UserprivKey, _ = crypto.HexToECDSA("4cd9d773baa6cdfc46b8c910bb08a69e2619fb7234d96cdbd79d992ed1812160")
+
+	UserprivKeyRedeem, _ = crypto.HexToECDSA("e495c77769154d3321b16b1d39d01ae3beaee6828466bcf5bd1f929fed1ab466")
 
 	client, _ = cfg.Client()
 	contractAbi, _ = abi.JSON(strings.NewReader(LockRedeemABI))
@@ -59,6 +65,14 @@ func init() {
 
 	}
 	fromAddress = crypto.PubkeyToAddress(*publicKeyECDSA)
+
+	publicKeyRedeem := UserprivKeyRedeem.Public()
+	publicKeyECDSARedeem, ok := publicKeyRedeem.(*ecdsa.PublicKey)
+	if !ok {
+		log.Fatal("error casting public key to ECDSA")
+
+	}
+	redeemRecipientAddress = crypto.PubkeyToAddress(*publicKeyECDSARedeem)
 }
 
 func main() {
@@ -201,10 +215,8 @@ func redeem() {
 		return
 	}
 
-	fmt.Println(1.5)
-
-	redeemAddress := fromAddress.Bytes()
-	nonce, err := client.PendingNonceAt(context.Background(), fromAddress)
+	redeemAddress := redeemRecipientAddress.Bytes()
+	nonce, err := client.PendingNonceAt(context.Background(), redeemRecipientAddress)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -218,7 +230,7 @@ func redeem() {
 	}
 
 	fmt.Println(2)
-	auth2 := bind.NewKeyedTransactor(UserprivKey)
+	auth2 := bind.NewKeyedTransactor(UserprivKeyRedeem)
 	auth2.Nonce = big.NewInt(int64(nonce))
 	auth2.Value = big.NewInt(0) // in wei
 	auth2.GasLimit = gasLimit   // in units
@@ -232,7 +244,8 @@ func redeem() {
 
 		log.Fatal(err)
 	}
-	signedTx2, err := types.SignTx(tx2, types.NewEIP155Signer(chainID), UserprivKey)
+
+	signedTx2, err := types.SignTx(tx2, types.NewEIP155Signer(chainID), UserprivKeyRedeem)
 	if err != nil {
 
 		log.Fatal(err)
