@@ -11,7 +11,6 @@ import (
 	"github.com/btcsuite/btcd/txscript"
 	"github.com/btcsuite/btcutil"
 	"github.com/google/uuid"
-	"github.com/pkg/errors"
 
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/action/btc"
@@ -28,24 +27,24 @@ func (s *Service) PrepareRedeem(args client.BTCRedeemRequest, reply *client.BTCR
 	tracker, err := s.trackerStore.GetTrackerForRedeem()
 	if err != nil {
 
-		s.logger.Error("error getting tracker for lock", err)
-		return errors.Wrap(err, "error getting tracker for lock")
+		s.logger.Error("error getting tracker for redeem", err)
+		return codes.ErrGettingTracker
 	}
 
 	if tracker.CurrentBalance < (args.Amount + args.FeesBTC) {
-		return errors.New("not tracker with enough balance")
+		return codes.ErrTrackerBalance
 	}
 
 	params := bitcoin.GetChainParams(s.btcChainType)
 
 	userAddress, err := btcutil.DecodeAddress(args.BTCAddress, params)
 	if err != nil {
-		return errors.New("user Address not decipherable")
+		return codes.ErrBadBTCAddress
 	}
 
 	btcAddr, err := txscript.PayToAddrScript(userAddress)
 	if err != nil {
-		return errors.New("user Address not decipherable")
+		return codes.ErrBadBTCAddress.Wrap(err)
 	}
 
 	fmt.Printf("%#v \n", tracker)

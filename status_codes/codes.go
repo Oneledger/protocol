@@ -14,9 +14,10 @@ const (
 	IOError        = 1002
 	IOErrorNodeKey = 100201
 
-	ParseError          = 1003
-	ParseErrorAddress   = 100301
-	ParseErrorBadBTCTxn = 100302
+	ParseError           = 1003
+	ParseErrorAddress    = 100301
+	ParseErrorBadBTCTxn  = 100302
+	ParseErrorBTCAddress = 100303
 
 	ConfigurationError          = 1004
 	ConfigurationErrorChainType = 100401
@@ -26,15 +27,16 @@ const (
 	DomainNotFound        = 100502
 	CurrencyNotFound      = 100503
 
-	InternalError                  = 1006
-	InternalErrorSerialization     = 100601
-	InternalErrorSigning           = 100602
-	InternalErrorGeneratingKeyPair = 100603
-	InternalErrorGettingBalance    = 100604
-	InternalErrorListValidators    = 100605
-	InternalErrorGettingTracker    = 100606
-	InternalErrorTrackerNotFound   = 100607
-	InternalErrorTrackerBusy       = 100608
+	InternalError                           = 1006
+	InternalErrorSerialization              = 100601
+	InternalErrorSigning                    = 100602
+	InternalErrorGeneratingKeyPair          = 100603
+	InternalErrorGettingBalance             = 100604
+	InternalErrorListValidators             = 100605
+	InternalErrorGettingTracker             = 100606
+	InternalErrorTrackerNotFound            = 100607
+	InternalErrorTrackerBusy                = 100608
+	InternalErrorTrackerInsufficientBalance = 100609
 
 	WalletError               = 2006
 	WalletErrorAddingAccount  = 200601

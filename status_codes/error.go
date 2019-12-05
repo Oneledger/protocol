@@ -55,6 +55,7 @@ var (
 	ErrGettingTracker  = ProtocolError{InternalErrorGettingTracker, "error getting tracker"}
 	ErrTrackerNotFound = ProtocolError{InternalErrorTrackerNotFound, "tracker not found"}
 	ErrTrackerBusy     = ProtocolError{InternalErrorTrackerBusy, "tracker busy"}
+	ErrTrackerBalance  = ProtocolError{InternalErrorTrackerInsufficientBalance, "insufficient balance in tracker"}
 
 	// Query errors
 	ErrBadAddress      = ProtocolError{IncorrectAddress, "address incorrect"}
@@ -76,5 +77,6 @@ var (
 	ErrBTCNotEnoughConfirmations = ProtocolError{ExternalErrNotEnoughConfirmations, "not enough btc confirmations"}
 	ErrBTCNotSpendable           = ProtocolError{ExternalErrNotSpendable, "btc source not spendable"}
 
-	ErrBadBTCTxn = ProtocolError{ParseErrorBadBTCTxn, "bad btc txn"}
+	ErrBadBTCTxn     = ProtocolError{ParseErrorBadBTCTxn, "bad btc txn"}
+	ErrBadBTCAddress = ProtocolError{ParseErrorBTCAddress, "bad btc address"}
 )
