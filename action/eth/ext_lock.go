@@ -132,6 +132,7 @@ func (ethLockTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start
 
 // processCommon
 func runLock(ctx *action.Context, tx action.RawTx, lock *Lock) (bool, action.Response) {
+
 	ethTx, err := ethchaindriver.DecodeTransaction(lock.ETHTxn)
 	if err != nil {
 		ctx.Logger.Error("decode eth txn err", err)
@@ -167,7 +168,7 @@ func runLock(ctx *action.Context, tx action.RawTx, lock *Lock) (bool, action.Res
 	}
 
 	totalSupplyCoin := curr.NewCoinFromString(totalETHSupply)
-	fmt.Println("Lock amount coin " + lockCoin.String() + "Total Supply " + totalSupplyCoin.String() + balCoin.String())
+
 	if !balCoin.Plus(lockCoin).LessThanEqualCoin(totalSupplyCoin) {
 		return false, action.Response{Log: fmt.Sprintf("Eth lock exceeded limit", lock.Locker)}
 	}
@@ -187,7 +188,6 @@ func runLock(ctx *action.Context, tx action.RawTx, lock *Lock) (bool, action.Res
 
 	// Save eth Tracker
 	err = ctx.ETHTrackers.Set(tracker)
-	fmt.Println("Setting the tracker")
 	if err != nil {
 		ctx.Logger.Error("error saving eth tracker", err)
 		return false, action.Response{Log: "error saving eth tracker: " + err.Error()}

@@ -20,7 +20,6 @@ func init() {
 			transition.Status(ethereum.Released),
 		})
 
-	fmt.Println("EthRedeemEngine Register SIGNING")
 	err := EthRedeemEngine.Register(transition.Transition{
 		Name: ethereum.SIGNING,
 		Fn:   Signing,
@@ -29,11 +28,9 @@ func init() {
 	})
 	if err != nil {
 
-		fmt.Println("EthRedeemEngine Register SIGNING", err)
 		panic(err)
 	}
 
-	fmt.Println("EthRedeemEngine Register VERIFYREDEEM")
 	err = EthRedeemEngine.Register(transition.Transition{
 		Name: ethereum.VERIFYREDEEM,
 		Fn:   VerifyRedeem,
@@ -41,11 +38,9 @@ func init() {
 		To:   transition.Status(ethereum.BusyFinalizing),
 	})
 	if err != nil {
-		fmt.Println("EthRedeemEngine Register VERIFYREDEEM", err)
 		panic(err)
 	}
 
-	fmt.Println("EthRedeemEngine Register REDEEMCONFIRM")
 	err = EthRedeemEngine.Register(transition.Transition{
 		Name: ethereum.REDEEMCONFIRM,
 		Fn:   RedeemConfirmed,
@@ -53,7 +48,6 @@ func init() {
 		To:   transition.Status(ethereum.Finalized),
 	})
 	if err != nil {
-		fmt.Println("EthRedeemEngine Register REDEEMCONFIRM", err)
 		panic(err)
 	}
 
@@ -67,7 +61,6 @@ func init() {
 	//	panic(err)
 	//}
 
-	fmt.Println("EthRedeemEngine Register CLEANUP")
 	err = EthRedeemEngine.Register(transition.Transition{
 		Name: ethereum.CLEANUP,
 		Fn:   redeemCleanup,
@@ -75,7 +68,6 @@ func init() {
 		To:   transition.Status(0),
 	})
 	if err != nil {
-		fmt.Println("EthRedeemEngine Register CLEANUP", err)
 		panic(err)
 	}
 }
@@ -86,7 +78,6 @@ func Signing(ctx interface{}) error {
 		return errors.New("error casting tracker context")
 	}
 
-	fmt.Println("Starting Redeem Signing")
 	tracker := context.Tracker
 
 	if tracker.State != ethereum.New {
@@ -95,24 +86,22 @@ func Signing(ctx interface{}) error {
 	}
 
 	tracker.State = ethereum.BusyBroadcasting
-	fmt.Println("STATE CHANGED TO :", tracker.State)
 
 	if context.Validators.IsValidator() {
-		fmt.Println("Created Signing JOB")
+
 		job := NewETHSignRedeem(tracker.TrackerName, tracker.State)
 		err := context.JobStore.SaveJob(job)
 		if err != nil {
-			fmt.Println("ERROR SAVING")
+
 			return errors.Wrap(errors.New("job serialization failed err: "), err.Error())
 		}
-		fmt.Println("saved job:", job)
+
 	}
 	context.Tracker = tracker
 	return nil
 }
 
 func VerifyRedeem(ctx interface{}) error {
-	fmt.Println("Starting Finalizing of Redeem Signing")
 
 	context, ok := ctx.(*ethereum.TrackerCtx)
 	if !ok {

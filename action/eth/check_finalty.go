@@ -2,7 +2,6 @@ package eth
 
 import (
 	"encoding/json"
-	"fmt"
 	"strconv"
 
 	"github.com/pkg/errors"
@@ -73,10 +72,11 @@ type reportFinalityMintTx struct {
 }
 
 func (reportFinalityMintTx) Validate(ctx *action.Context, signedTx action.SignedTx) (bool, error) {
-	fmt.Println("Starting Validate ")
+
 	f := &ReportFinality{}
 	err := f.Unmarshal(signedTx.Data)
 	if err != nil {
+		ctx.Logger.Error(err)
 		return false, errors.Wrap(err, action.ErrWrongTxType.Error())
 	}
 
@@ -93,17 +93,17 @@ func (reportFinalityMintTx) Validate(ctx *action.Context, signedTx action.Signed
 }
 
 func (reportFinalityMintTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
-	fmt.Println("START CHECK TX CheckFinality")
+
 	return runCheckFinality(ctx, tx)
 }
 
 func (reportFinalityMintTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
-	fmt.Println("START DELIVER TX CheckFinality")
+
 	return runCheckFinality(ctx, tx)
 }
 
 func runCheckFinality(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
-	fmt.Println("Starting runCheck Finality Mint Internal Trasaction")
+
 	f := &ReportFinality{}
 	err := f.Unmarshal(tx.Data)
 	if err != nil {
@@ -123,12 +123,12 @@ func runCheckFinality(ctx *action.Context, tx action.RawTx) (bool, action.Respon
 
 	ctx.Logger.Error("Trying to add vote ")
 	index, ok := tracker.CheckIfVoted(f.ValidatorAddress)
+
 	ctx.Logger.Info("Before voting", ok, "Index :", index, "F.index", f.VoteIndex)
 	err = tracker.AddVote(f.ValidatorAddress, f.VoteIndex, true)
 	if err != nil {
 		return false, action.Response{Log: errors.Wrap(err, "failed to add vote").Error()}
 	}
-	fmt.Printf("%b \n", tracker.FinalityVotes)
 
 	if tracker.Finalized() {
 		if tracker.Type == trackerlib.ProcessTypeLock {
@@ -151,6 +151,7 @@ func runCheckFinality(ctx *action.Context, tx action.RawTx) (bool, action.Respon
 		ctx.Logger.Info("Unable to save the tracker", err)
 		return false, action.Response{Log: errors.Wrap(err, "unable to save the tracker").Error()}
 	}
+
 	// fmt.Println("TRACKER SAVED AT CHECK FINALITY (VOTES): ", tracker.GetVotes())
 	ctx.Logger.Info("Voting Done ,unable to mint yet")
 	yes, no := tracker.GetVotes()

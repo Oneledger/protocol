@@ -1,7 +1,6 @@
 package event
 
 import (
-	"fmt"
 	"strconv"
 
 	"github.com/Oneledger/protocol/action"
@@ -42,7 +41,7 @@ func (job *JobETHCheckFinality) DoMyJob(ctx interface{}) {
 		job.Status = jobs.InProgress
 	}
 	ethCtx, _ := ctx.(*JobsContext)
-	fmt.Println("Starting check Finality JOB ", ethCtx.ValidatorAddress)
+
 	trackerStore := ethCtx.EthereumTrackers
 	tracker, err := trackerStore.Get(job.TrackerName)
 	if err != nil {
@@ -50,6 +49,7 @@ func (job *JobETHCheckFinality) DoMyJob(ctx interface{}) {
 		job.RetryCount += 1
 		return
 	}
+
 	ethconfig := ethCtx.cfg.EthChainDriver
 	cd, err := ethereum.NewChainDriver(ethconfig, ethCtx.Logger, trackerStore.GetOption())
 	if err != nil {
@@ -57,6 +57,7 @@ func (job *JobETHCheckFinality) DoMyJob(ctx interface{}) {
 		job.RetryCount += 1
 		return
 	}
+
 	rawTx := tracker.SignedETHTx
 	tx, err := cd.DecodeTransaction(rawTx)
 	if err != nil {
@@ -85,13 +86,12 @@ func (job *JobETHCheckFinality) DoMyJob(ctx interface{}) {
 		Refund:           false,
 	}
 
-	fmt.Println("Creating Internal Transaction to add vote:", reportFinalityMint)
 	txData, err := reportFinalityMint.Marshal()
 	if err != nil {
 		ethCtx.Logger.Error("Error while preparing mint txn ", job.GetJobID(), err)
 		return
 	}
-	fmt.Println("after serialization", txData)
+
 	internalMintTx := action.RawTx{
 		Type: action.ETH_REPORT_FINALITY_MINT,
 		Data: txData,
@@ -104,12 +104,12 @@ func (job *JobETHCheckFinality) DoMyJob(ctx interface{}) {
 	}
 	rep := BroadcastReply{}
 	err = ethCtx.Service.InternalBroadcast(req, &rep)
-	fmt.Println("Reply :", rep)
+
 	if err != nil || !rep.OK {
 		ethCtx.Logger.Error("error while broadcasting finality vote and mint txn ", job.GetJobID(), err, rep.Log)
 		return
 	}
-	fmt.Println("Completed Check Finality JOB : ", ethCtx.ValidatorAddress)
+
 	job.Status = jobs.Completed
 }
 

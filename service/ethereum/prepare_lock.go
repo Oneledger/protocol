@@ -1,8 +1,6 @@
 package ethereum
 
 import (
-	"fmt"
-
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
 
@@ -23,10 +21,9 @@ func (svc *Service) CreateRawExtLock(req OLTLockRequest, out *OLTLockReply) erro
 
 	packets, err := createRawLock(req.Address, req.RawTx, req.Fee, req.Gas)
 	if err != nil {
-		svc.logger.Error(err,codes.ErrPreparingOLTLock.ErrorMsg())
+		svc.logger.Error(err, codes.ErrPreparingOLTLock.ErrorMsg())
 		return codes.ErrPreparingOLTLock
 	}
-	fmt.Println("CreateRawExtLock:", packets)
 
 	*out = OLTLockReply{
 		RawTX: packets,

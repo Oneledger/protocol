@@ -3,7 +3,6 @@ package ethereum
 import (
 	"context"
 	"encoding/hex"
-	"fmt"
 	"math/big"
 	"strings"
 	"time"
@@ -243,17 +242,12 @@ func (acc *ETHChainDriver) ParseRedeem(data []byte) (req *RedeemRequest, err err
 
 func (acc *ETHChainDriver) VerifyRedeem(validatorAddress common.Address, recipient common.Address) (bool, error) {
 	instance := acc.GetContract()
-	ok, err := instance.VerifyRedeem(acc.CallOpts(validatorAddress), recipient)
-	fmt.Println(instance.VotingThreshold(acc.CallOpts(validatorAddress)))
-	fmt.Println("voting threshold")
-	fmt.Println(instance.GetSignatureCount(acc.CallOpts(validatorAddress), recipient))
-	fmt.Println("signature count")
-	fmt.Println(instance.HasValidatorSigned(acc.CallOpts(validatorAddress), recipient))
-	fmt.Println("has validator signed")
 
+	ok, err := instance.VerifyRedeem(acc.CallOpts(validatorAddress), recipient)
 	if err != nil {
 		return false, errors.Wrap(err, "Unable to connect to ethereum smart contract")
 	}
+
 	return ok, nil
 }
 
@@ -268,30 +262,37 @@ func ParseRedeem(data []byte) (req *RedeemRequest, err error) {
 	if len(ss) == 0 {
 		return nil, errors.New("Transaction does not have the required input data")
 	}
+
 	if len(ss[1]) < 64 {
 		return nil, errors.New("Transaction data is invalid")
 	}
+
 	d, err := hex.DecodeString(ss[1][:64])
 	if err != nil {
 		return nil, err
 	}
+
 	amt := big.NewInt(0).SetBytes(d)
 	return &RedeemRequest{Amount: amt}, nil
 }
 
 func ParseLock(data []byte) (req *LockRequest, err error) {
+
 	tx, err := DecodeTransaction(data)
 	if err != nil {
 		return nil, err
 	}
+
 	return &LockRequest{Amount: tx.Value()}, nil
 }
 
 func DecodeTransaction(data []byte) (*types.Transaction, error) {
 	tx := &types.Transaction{}
+
 	err := rlp.DecodeBytes(data, tx)
 	if err != nil {
 		return nil, errors.Wrap(err, "Unable to decode Bytes")
 	}
+
 	return tx, nil
 }

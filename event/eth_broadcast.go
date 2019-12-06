@@ -1,7 +1,6 @@
 package event
 
 import (
-	"fmt"
 	"strconv"
 
 	"github.com/Oneledger/protocol/chains/ethereum"
@@ -20,7 +19,7 @@ type JobETHBroadcast struct {
 }
 
 func NewETHBroadcast(name ethereum.TrackerName, state ethereum2.TrackerState) *JobETHBroadcast {
-	fmt.Println("CREATING NEW JOB FOR NewETHBroadcast")
+
 	return &JobETHBroadcast{
 		TrackerName: name,
 		JobID:       name.String() + storage.DB_PREFIX + strconv.Itoa(int(state)),
@@ -31,7 +30,6 @@ func NewETHBroadcast(name ethereum.TrackerName, state ethereum2.TrackerState) *J
 
 func (job *JobETHBroadcast) DoMyJob(ctx interface{}) {
 
-	fmt.Println("Do job for broadcast")
 	job.RetryCount += 1
 	if job.RetryCount > jobs.Max_Retry_Count {
 		job.Status = jobs.Failed
@@ -39,8 +37,10 @@ func (job *JobETHBroadcast) DoMyJob(ctx interface{}) {
 	if job.Status == jobs.New {
 		job.Status = jobs.InProgress
 	}
+
 	ethCtx, _ := ctx.(*JobsContext)
 	trackerStore := ethCtx.EthereumTrackers
+
 	tracker, err := trackerStore.Get(job.TrackerName)
 	if err != nil {
 		ethCtx.Logger.Error("err trying to deserialize tracker: ", job.TrackerName, err)
@@ -55,8 +55,9 @@ func (job *JobETHBroadcast) DoMyJob(ctx interface{}) {
 
 		return
 	}
+
 	rawTx := tracker.SignedETHTx
-	tx,err := cd.DecodeTransaction(rawTx)
+	tx, err := cd.DecodeTransaction(rawTx)
 	if err != nil {
 		ethCtx.Logger.Error("Error Decoding Bytes from RaxTX :", job.GetJobID(), err)
 		return
@@ -67,7 +68,7 @@ func (job *JobETHBroadcast) DoMyJob(ctx interface{}) {
 		ethCtx.Logger.Error("Error in transaction broadcast : ", job.GetJobID(), err)
 		return
 	}
-	fmt.Println("Broadcast job completed ", job.GetJobID())
+
 	job.Status = jobs.Completed
 }
 
