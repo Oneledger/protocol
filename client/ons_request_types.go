@@ -54,9 +54,10 @@ type ONSSendRequest struct {
 }
 
 type ONSGetDomainsRequest struct {
-	Name   string       `json:"name"`
-	Owner  keys.Address `json:"owner"`
-	OnSale bool         `json:"onSale"`
+	Name        string       `json:"name"`
+	Owner       keys.Address `json:"owner"`
+	OnSale      bool         `json:"onSale"`
+	Beneficiary keys.Address `json:"beneficiary"`
 }
 
 type ONSGetDomainsReply struct {
