@@ -27,7 +27,7 @@ func TestTrackerMarshal(t *testing.T) {
 
 	assert.NoError(t, err)
 
-	db, err := storage.GetDatabase("chainstate", "tmp/btc_test", "goleveldb")
+	db, err := storage.GetDatabase("chainstate", "/tmp/btc_test", "goleveldb")
 	assert.NoError(t, err)
 
 	cs := storage.NewChainState("testing", db)
