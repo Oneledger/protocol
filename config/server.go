@@ -415,8 +415,6 @@ type ChainDriverConfig struct {
 	BlockCypherToken string `toml:"blockcypher_token" desc:"token to use blockcypher APIs"`
 }
 
-const defaultKeyLocation = "eth/key.json"
-
 type EthereumChainDriverConfig struct {
 	Connection string `toml:"connection" desc:"ethereum node connection url default: http://localhost:7545"`
 }
