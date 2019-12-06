@@ -5,21 +5,25 @@
 package bitcoin
 
 import (
+	"bytes"
+	"strconv"
+
+	"github.com/Oneledger/protocol/storage"
+	"github.com/Oneledger/protocol/utils/transition"
+
 	"github.com/pkg/errors"
 
-	"github.com/Oneledger/protocol/data/keys"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
+
+	"github.com/Oneledger/protocol/data/keys"
 )
 
 type TrackerState int
 
 const (
-	AvailableTrackerState = iota
-	BusyLockingTrackerState
-	BusySigningTrackerState
-	BusyBroadcastingTrackerState
-	BusyFinalizingTrackerState
-	BusyMintingCoin
+	ProcessTypeNone   = 0x00
+	ProcessTypeLock   = 0x01
+	ProcessTypeRedeem = 0x02
 )
 
 var NilTxHash *chainhash.Hash
@@ -53,8 +57,10 @@ type Tracker struct {
 	ProcessUnsignedTx        []byte
 
 	ProcessOwner keys.Address
+	ProcessType  int
 
 	FinalityVotes []keys.Address
+	ResetVotes    []keys.Address
 }
 
 func NewTracker(lockScriptAddress []byte, m int, signers []keys.Address) (*Tracker, error) {
@@ -65,7 +71,7 @@ func NewTracker(lockScriptAddress []byte, m int, signers []keys.Address) (*Track
 	}
 
 	return &Tracker{
-		State:                    AvailableTrackerState,
+		State:                    Available,
 		CurrentTxId:              nil,
 		CurrentLockScriptAddress: nil,
 
@@ -82,12 +88,12 @@ func (t *Tracker) GetBalanceSatoshi() int64 {
 
 // IsAvailable returns whether the tracker is available for new transaction
 func (t *Tracker) IsAvailable() bool {
-	return t.State == AvailableTrackerState
+	return t.State == Available
 }
 
 // IsBusy returns whether the tracker is in any of the busy states
 func (t *Tracker) IsBusy() bool {
-	return t.State != AvailableTrackerState
+	return t.State != Available
 }
 
 func (t *Tracker) GetAddress() ([]byte, error) {
@@ -109,7 +115,7 @@ func (t *Tracker) ProcessLock(newUTXO *UTXO,
 	t.ProcessBalance = newUTXO.Balance
 	t.ProcessUnsignedTx = txn
 
-	t.State = BusySigningTrackerState
+	t.State = BusySigning
 
 	threshold := (len(validatorsPubKeys) * 2 / 3) + 1
 
@@ -121,7 +127,7 @@ func (t *Tracker) ProcessLock(newUTXO *UTXO,
 
 func (t *Tracker) AddSignature(signatureBytes []byte, addr keys.Address) error {
 
-	if t.State != BusySigningTrackerState {
+	if t.State != BusySigning {
 		return ErrTrackerNotCollectionSignatures
 	}
 
@@ -141,7 +147,7 @@ func (t *Tracker) AddSignature(signatureBytes []byte, addr keys.Address) error {
 
 func (t *Tracker) HasEnoughSignatures() bool {
 
-	if t.State != BusySigningTrackerState {
+	if t.State != BusySigning {
 		return false
 	}
 
@@ -154,7 +160,7 @@ func (t *Tracker) HasEnoughSignatures() bool {
 
 func (t *Tracker) StateChangeBroadcast() bool {
 	if ok := t.HasEnoughSignatures(); ok {
-		t.State = BusyBroadcastingTrackerState
+		t.State = BusyBroadcasting
 
 		return true
 	}
@@ -163,18 +169,43 @@ func (t *Tracker) StateChangeBroadcast() bool {
 }
 
 func (t *Tracker) GetSignatures() [][]byte {
-	if t.State != BusyBroadcastingTrackerState {
+	if t.State != BusyBroadcasting {
 		return nil
 	}
 
-	signatures := make([][]byte, 0, len(t.Multisig.Signatures))
-	for i, signed := range t.Multisig.GetSignatures() {
-		signatures[i] = signed.Sign
-	}
-
-	return signatures
+	return t.Multisig.GetSignaturesInOrder()
 }
 
 func (t *Tracker) GetBalance() int64 {
 	return t.CurrentBalance
+}
+
+func (t Tracker) NextStep() string {
+
+	switch t.State {
+	case Requested:
+		return RESERVE
+	case BusyScheduleBroadcasting:
+		return FREEZE_FOR_BROADCAST
+	case BusyScheduleFinalizing:
+		return REPORT_BROADCAST
+	case Finalized:
+		return CLEANUP
+	}
+	return transition.NOOP
+
+}
+
+func (t *Tracker) GetJobID(state TrackerState) string {
+	return t.Name + storage.DB_PREFIX + strconv.Itoa(int(state))
+}
+
+func (t *Tracker) HasVotedFinality(addr keys.Address) bool {
+	for i := range t.FinalityVotes {
+		if bytes.Equal(addr, t.FinalityVotes[i]) {
+			return true
+		}
+	}
+
+	return false
 }

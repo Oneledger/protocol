@@ -5,8 +5,9 @@
 package btc
 
 import (
-	"github.com/Oneledger/protocol/action"
 	"github.com/pkg/errors"
+
+	"github.com/Oneledger/protocol/action"
 )
 
 func EnableBTC(r action.Router) error {
@@ -14,21 +15,40 @@ func EnableBTC(r action.Router) error {
 	if err != nil {
 		return errors.Wrap(err, "btcLockTx")
 	}
-
-	err = r.AddHandler(action.BTC_ADD_SIGNATURE, btcAddSignatureTx{})
+	err = r.AddHandler(action.BTC_REDEEM, btcRedeemTx{})
 	if err != nil {
-		return errors.Wrap(err, "btcAddSignatureTx")
+		return errors.Wrap(err, "btcRedeemTx")
 	}
 
-	err = r.AddHandler(action.BTC_REPORT_FINALITY_MINT, reportFinalityMintTx{})
+	err = r.AddHandler(action.BTC_ADD_SIGNATURE, &btcAddSignatureTx{})
 	if err != nil {
-		return errors.Wrap(err, "reportFinalityMintTx")
+		return err
 	}
 
-	err = r.AddHandler(action.BTC_EXT_MINT, extMintOBTCTx{})
+	err = r.AddHandler(action.BTC_BROADCAST_SUCCESS, &btcBroadcastSuccessTx{})
 	if err != nil {
-		return errors.Wrap(err, "extMintOBTCTx")
+		return err
+	}
+
+	err = r.AddHandler(action.BTC_REPORT_FINALITY_MINT, &reportFinalityMintTx{})
+	if err != nil {
+		return err
 	}
 
 	return nil
+}
+
+func EnableBTCInternalTx(r action.Router) error {
+	err := r.AddHandler(action.BTC_ADD_SIGNATURE, &btcAddSignatureTx{})
+	if err != nil {
+		return err
+	}
+
+	err = r.AddHandler(action.BTC_BROADCAST_SUCCESS, &btcBroadcastSuccessTx{})
+	if err != nil {
+		return err
+	}
+
+	err = r.AddHandler(action.BTC_REPORT_FINALITY_MINT, &reportFinalityMintTx{})
+	return err
 }

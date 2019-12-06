@@ -1,34 +1,38 @@
 package app
 
 import (
+	"io"
+	"path/filepath"
+	"time"
+
+	"github.com/pkg/errors"
+	"github.com/tendermint/tendermint/libs/db"
+
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/action/btc"
+	"github.com/Oneledger/protocol/action/eth"
 	action_ons "github.com/Oneledger/protocol/action/ons"
 	"github.com/Oneledger/protocol/action/staking"
 	"github.com/Oneledger/protocol/action/transfer"
 	"github.com/Oneledger/protocol/app/node"
+	bitcoin2 "github.com/Oneledger/protocol/chains/bitcoin"
 	"github.com/Oneledger/protocol/client"
 	"github.com/Oneledger/protocol/config"
 	"github.com/Oneledger/protocol/data/accounts"
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/bitcoin"
 	"github.com/Oneledger/protocol/data/chain"
+	"github.com/Oneledger/protocol/data/ethereum"
 	"github.com/Oneledger/protocol/data/fees"
 	"github.com/Oneledger/protocol/data/governance"
 	"github.com/Oneledger/protocol/data/jobs"
 	"github.com/Oneledger/protocol/data/ons"
+	"github.com/Oneledger/protocol/event"
 	"github.com/Oneledger/protocol/identity"
 	"github.com/Oneledger/protocol/log"
 	"github.com/Oneledger/protocol/rpc"
 	"github.com/Oneledger/protocol/service"
 	"github.com/Oneledger/protocol/storage"
-
-	"io"
-	"path/filepath"
-
-	"github.com/btcsuite/btcd/chaincfg"
-	"github.com/pkg/errors"
-	"github.com/tendermint/tendermint/libs/db"
 )
 
 // The base context for the application, holds databases and other stateful information contained by the app.
@@ -46,12 +50,13 @@ type context struct {
 	check      *storage.State
 	deliver    *storage.State
 
-	balances   *balance.Store
-	domains    *ons.DomainStore
-	validators *identity.ValidatorStore // Set of validators currently active
-	feePool    *fees.Store
-	govern     *governance.Store
-	trackers   *bitcoin.TrackerStore // tracker for bitcoin balance UTXO
+	balances    *balance.Store
+	domains     *ons.DomainStore
+	validators  *identity.ValidatorStore // Set of validators currently active
+	feePool     *fees.Store
+	govern      *governance.Store
+	btcTrackers *bitcoin.TrackerStore  // tracker for bitcoin balance UTXO
+	ethTrackers *ethereum.TrackerStore // tracker for ethereum tracker store
 
 	currencies *balance.CurrencySet
 	feeOption  *fees.FeeOption
@@ -61,7 +66,8 @@ type context struct {
 
 	jobStore        *jobs.JobStore
 	lockScriptStore *bitcoin.LockScriptStore
-	internalService *action.Service
+	internalService *event.Service
+	jobBus          *event.JobBus
 
 	logWriter io.Writer
 }
@@ -91,16 +97,15 @@ func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *node.Context) (
 	ctx.domains = ons.NewDomainStore("d", storage.NewState(ctx.chainstate))
 	ctx.feePool = fees.NewStore("f", storage.NewState(ctx.chainstate))
 	ctx.govern = governance.NewStore("g", storage.NewState(ctx.chainstate))
-	ctx.trackers = bitcoin.NewTrackerStore("btct", storage.NewState(ctx.chainstate))
-
+	ctx.btcTrackers = bitcoin.NewTrackerStore("btct", storage.NewState(ctx.chainstate))
+	ctx.ethTrackers = ethereum.NewTrackerStore("etht", storage.NewState(ctx.chainstate))
 	ctx.accounts = accounts.NewWallet(cfg, ctx.dbDir())
 
 	// TODO check if validator
-	if true {
-		ctx.jobStore = jobs.NewJobStore(cfg, ctx.dbDir())
-		ctx.lockScriptStore = bitcoin.NewLockScriptStore(cfg, ctx.dbDir())
+	// valAddr := ctx.node.ValidatorAddress()
 
-	}
+	ctx.jobStore = jobs.NewJobStore(cfg, ctx.dbDir())
+	ctx.lockScriptStore = bitcoin.NewLockScriptStore(cfg, ctx.dbDir())
 
 	ctx.actionRouter = action.NewRouter("action")
 	ctx.feeOption = &fees.FeeOption{
@@ -108,10 +113,16 @@ func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *node.Context) (
 		MinFeeDecimal: 0,
 	}
 
+	ctx.jobBus = event.NewJobBus(event.Option{
+		BtcInterval: 30 * time.Second,
+		EthInterval: 3 * time.Second,
+	}, ctx.jobStore)
+
 	_ = transfer.EnableSend(ctx.actionRouter)
 	_ = staking.EnableApplyValidator(ctx.actionRouter)
 	_ = action_ons.EnableONS(ctx.actionRouter)
 	_ = btc.EnableBTC(ctx.actionRouter)
+	_ = eth.EnableETH(ctx.actionRouter)
 	return ctx, nil
 }
 
@@ -121,19 +132,9 @@ func (ctx context) dbDir() string {
 
 func (ctx *context) Action(header *Header, state *storage.State) *action.Context {
 
-	var params *chaincfg.Params
-	switch ctx.cfg.ChainDriver.BitcoinChainType {
-	case "mainnet":
-		params = &chaincfg.MainNetParams
-	case "testnet3":
-		params = &chaincfg.TestNet3Params
-	case "regtest":
-		params = &chaincfg.RegressionNetParams
-	case "simnet":
-		params = &chaincfg.SimNetParams
-	default:
-		params = &chaincfg.TestNet3Params
-	}
+	params := bitcoin2.GetChainParams(ctx.cfg.ChainDriver.BitcoinChainType)
+
+	bcct := bitcoin2.GetBlockCypherChainType(ctx.cfg.ChainDriver.BitcoinChainType)
 
 	actionCtx := action.NewContext(
 		ctx.actionRouter,
@@ -147,9 +148,13 @@ func (ctx *context) Action(header *Header, state *storage.State) *action.Context
 		ctx.validators.WithState(state),
 		ctx.domains.WithState(state),
 
-		ctx.trackers.WithState(state),
+		ctx.btcTrackers.WithState(state),
+		ctx.ethTrackers.WithState(state),
 		ctx.jobStore,
 		params,
+		ctx.lockScriptStore,
+		ctx.cfg.ChainDriver.BlockCypherToken,
+		bcct,
 
 		log.NewLoggerWithPrefix(ctx.logWriter, "action").WithLevel(log.Level(ctx.cfg.Node.LogLevel)))
 
@@ -194,7 +199,7 @@ func (ctx *context) Services() (service.Map, error) {
 		Logger:       log.NewLoggerWithPrefix(ctx.logWriter, "rpc").WithLevel(log.Level(ctx.cfg.Node.LogLevel)),
 		Services:     extSvcs,
 
-		Trackers: ctx.trackers,
+		Trackers: ctx.btcTrackers,
 	}
 
 	return service.NewMap(svcCtx)
@@ -218,7 +223,7 @@ func (ctx *context) Restful() (service.RestfulRouter, error) {
 		Logger:       log.NewLoggerWithPrefix(ctx.logWriter, "restful").WithLevel(log.Level(ctx.cfg.Node.LogLevel)),
 		Services:     extSvcs,
 
-		Trackers: ctx.trackers,
+		Trackers: ctx.btcTrackers,
 	}
 	return service.NewRestfulService(svcCtx).Router(), nil
 }
@@ -252,7 +257,7 @@ func (ctx *context) Storage() StorageCtx {
 
 // Close all things that need to be closed
 func (ctx *context) Close() {
-	closers := []closer{ctx.db, ctx.accounts, ctx.rpc}
+	closers := []closer{ctx.db, ctx.accounts, ctx.rpc, ctx.jobBus}
 	for _, closer := range closers {
 		closer.Close()
 	}
@@ -264,4 +269,22 @@ func (ctx *context) Node() node.Context {
 
 func (ctx *context) Validators() *identity.ValidatorStore {
 	return ctx.validators
+}
+
+func (ctx *context) JobContext() *event.JobsContext {
+	cdConfig := ctx.cfg.ChainDriver
+	return event.NewJobsContext(
+		ctx.cfg,
+		cdConfig.BitcoinChainType,
+		ctx.internalService, ctx.btcTrackers, ctx.validators,
+		ctx.node.ValidatorECDSAPrivateKey(),
+		ctx.node.ValidatorECDSAPrivateKey(),
+		ctx.node.ValidatorAddress(), ctx.cfg.ChainDriver.BlockCypherToken,
+		ctx.lockScriptStore,
+		cdConfig.BitcoinNodeAddress,
+		cdConfig.BitcoinRPCPort,
+		cdConfig.BitcoinRPCUsername,
+		cdConfig.BitcoinRPCPassword,
+		ctx.ethTrackers.WithState(ctx.deliver),
+	)
 }

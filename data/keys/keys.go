@@ -9,14 +9,13 @@ import (
 	"math/big"
 
 	"github.com/btcsuite/btcd/btcec"
-	"github.com/tendermint/tendermint/privval"
-
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/pkg/errors"
 	"github.com/tendermint/tendermint/abci/types"
 	"github.com/tendermint/tendermint/crypto/ed25519"
 	"github.com/tendermint/tendermint/crypto/secp256k1"
 	"github.com/tendermint/tendermint/p2p"
+	"github.com/tendermint/tendermint/privval"
 )
 
 /*
@@ -426,6 +425,16 @@ func (p PrivateKeyETHSECP) PubKey() PublicKey {
 
 func (p PrivateKeyETHSECP) Equals(privKey PrivateKey) bool {
 	return privKey.Keytype == ETHSECP && bytes.Equal(privKey.Data, p.Bytes())
+}
+
+func ETHSECP256K1TOECDSA(data []byte) *ecdsa.PrivateKey {
+	k := big.NewInt(0).SetBytes(data)
+
+	priv := new(ecdsa.PrivateKey)
+	priv.PublicKey.Curve = crypto.S256()
+	priv.D = k
+	priv.PublicKey.X, priv.PublicKey.Y = crypto.S256().ScalarBaseMult(k.Bytes())
+	return priv
 }
 
 //====================== ETHSECP256K1 ==========================

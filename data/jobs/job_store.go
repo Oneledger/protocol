@@ -5,10 +5,12 @@
 package jobs
 
 import (
-	"errors"
 	"sync"
 
+	"github.com/pkg/errors"
+
 	"github.com/Oneledger/protocol/config"
+	"github.com/Oneledger/protocol/data/chain"
 	"github.com/Oneledger/protocol/serialize"
 	"github.com/Oneledger/protocol/storage"
 )
@@ -17,8 +19,9 @@ const rootkey = "rootkey"
 
 type JobStore struct {
 	storage.SessionedStorage
-	ser  serialize.Serializer
-	lock sync.Mutex
+	chain chain.Type
+	ser   serialize.Serializer
+	lock  sync.Mutex
 }
 
 func NewJobStore(config config.Server, dbDir string) *JobStore {
@@ -26,17 +29,20 @@ func NewJobStore(config config.Server, dbDir string) *JobStore {
 	store := storage.NewStorageDB(storage.KEYVALUE, "validatorJobs", dbDir, config.Node.DB)
 
 	return &JobStore{
-		store,
-		serialize.GetSerializer(serialize.PERSISTENT),
-		sync.Mutex{},
+		SessionedStorage: store,
+		chain:            chain.Type(-1),
+		ser:              serialize.GetSerializer(serialize.LOCAL),
+		lock:             sync.Mutex{},
 	}
+}
+func (js *JobStore) WithChain(chain chain.Type) *JobStore {
+	js.chain = chain
+	return js
 }
 
 func (js *JobStore) SaveJob(job Job) error {
 
-	key := storage.StoreKey("job:" + job.GetJobID())
-	typKey := storage.StoreKey("jobtype:" + job.GetJobID())
-
+	key := storage.StoreKey("job:" + js.chain.String() + ":" + job.GetJobID())
 	dat, err := js.ser.Serialize(job)
 	if err != nil {
 		return err
@@ -48,10 +54,7 @@ func (js *JobStore) SaveJob(job Job) error {
 	if err != nil {
 		return err
 	}
-	err = session.Set(typKey, []byte(job.GetType()))
-	if err != nil {
-		return err
-	}
+
 	ok := session.Commit()
 	js.lock.Unlock()
 	if !ok {
@@ -60,26 +63,23 @@ func (js *JobStore) SaveJob(job Job) error {
 	return nil
 }
 
-func (js *JobStore) GetJob(jobID string) ([]byte, string) {
-	key := storage.StoreKey("job:" + jobID)
-	typKey := storage.StoreKey("jobtype:" + jobID)
-
+func (js *JobStore) GetJob(jobID string) (Job, error) {
+	key := storage.StoreKey("job:" + js.chain.String() + ":" + jobID)
 	dat, err := js.Get(key)
 	if err != nil {
-		return nil, ""
+		return nil, errors.Wrap(err, key.String())
 	}
-	typ, err := js.Get(typKey)
+	var job Job
+	err = js.ser.Deserialize(dat,&job)
 	if err != nil {
-		return nil, ""
+		return nil, err
 	}
-
-	return dat, string(typ)
+	return job, err
 }
 
 func (js *JobStore) DeleteJob(job Job) error {
 
-	key := storage.StoreKey("job:" + job.GetJobID())
-	typKey := storage.StoreKey("jobtype:" + job.GetJobID())
+	key := storage.StoreKey("job:" + js.chain.String() + ":" + job.GetJobID())
 
 	js.lock.Lock()
 	session := js.BeginSession()
@@ -89,14 +89,30 @@ func (js *JobStore) DeleteJob(job Job) error {
 		return err
 	}
 
-	_, err = session.Delete(typKey)
-	if err != nil {
-		return err
-	}
 	ok := session.Commit()
 	js.lock.Unlock()
 	if !ok {
 		return errors.New("error committing to job store")
 	}
 	return nil
+}
+
+func (js *JobStore) Iterate(fn func(job Job)) {
+	start := []byte("job:" + js.chain.String() + ":")
+	end := []byte("job:" + js.chain.String() + storage.DB_RANGEFIX)
+	isAsc := true
+
+	session := js.BeginSession()
+	iter := session.GetIterator()
+
+	iter.IterateRange(start, end, isAsc, func(key, val []byte) bool {
+		var job Job
+		err := js.ser.Deserialize(val, &job)
+		if err != nil {
+			return false
+		}
+		fn(job)
+		return false
+	})
+
 }

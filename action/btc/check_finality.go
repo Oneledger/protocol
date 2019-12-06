@@ -8,14 +8,15 @@ import (
 	"bytes"
 	"encoding/json"
 
-	"github.com/Oneledger/protocol/data/keys"
+	"github.com/btcsuite/btcd/chaincfg"
+	"github.com/btcsuite/btcutil/base58"
+	"github.com/pkg/errors"
+	"github.com/tendermint/tendermint/libs/common"
 
 	"github.com/Oneledger/protocol/action"
 	bitcoin2 "github.com/Oneledger/protocol/chains/bitcoin"
 	"github.com/Oneledger/protocol/data/bitcoin"
-	"github.com/btcsuite/btcd/chaincfg"
-	"github.com/pkg/errors"
-	"github.com/tendermint/tendermint/libs/common"
+	"github.com/Oneledger/protocol/data/keys"
 )
 
 type ReportFinalityMint struct {
@@ -87,7 +88,7 @@ func (reportFinalityMintTx) Validate(ctx *action.Context, signedTx action.Signed
 		return false, err
 	}
 
-	tracker, err := ctx.Trackers.Get(f.TrackerName)
+	tracker, err := ctx.BTCTrackers.Get(f.TrackerName)
 	if err != nil {
 		return false, err
 	}
@@ -96,7 +97,7 @@ func (reportFinalityMintTx) Validate(ctx *action.Context, signedTx action.Signed
 		return false, errors.New("tracker process not owned by user")
 	}
 
-	if tracker.State != bitcoin.BusyBroadcastingTrackerState {
+	if tracker.State != bitcoin.BusyFinalizing {
 		return false, errors.New("tracker not available for finalizing")
 	}
 
@@ -105,131 +106,29 @@ func (reportFinalityMintTx) Validate(ctx *action.Context, signedTx action.Signed
 
 func (reportFinalityMintTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 
-	f := ReportFinalityMint{}
-	err := f.Unmarshal(tx.Data)
-	if err != nil {
-		return false, action.Response{Log: "wrong tx type"}
-	}
-
-	tracker, err := ctx.Trackers.Get(f.TrackerName)
-	if err != nil {
-		return false, action.Response{Log: "tracker not found" + f.TrackerName}
-	}
-
-	if !bytes.Equal(tracker.ProcessOwner, f.OwnerAddress) {
-		return false, action.Response{Log: "tracker process not owned by user"}
-	}
-
-	if tracker.State != bitcoin.BusyBroadcastingTrackerState {
-		return false, action.Response{Log: "tracker not ready for finalizing"}
-	}
-
-	valSet, err := ctx.Validators.GetValidatorSet()
-	if err != nil {
-		return false, action.Response{Log: "cannot get validator set"}
-	}
-
-	nValidators := len(valSet)
-	votesThresholdForMint := (2 * nValidators) / 3
-
-	isSenderAValidator := false
-	for i := range valSet {
-		if bytes.Equal(valSet[i].Address, f.ValidatorAddress) {
-			isSenderAValidator = true
-		}
-	}
-
-	if !isSenderAValidator {
-		return false, action.Response{Log: "transaction sender not a validator"}
-	}
-
-	validatorSignedFlag := false
-	for _, fv := range tracker.FinalityVotes {
-		if bytes.Equal(fv, f.ValidatorAddress) {
-			validatorSignedFlag = true
-		}
-	}
-
-	if !validatorSignedFlag {
-		tracker.FinalityVotes = append(tracker.FinalityVotes, f.ValidatorAddress)
-	}
-
-	// are there enough finality votes?
-	if len(tracker.FinalityVotes) < votesThresholdForMint {
-
-		// if not enough votes to mint end transaction processing
-
-		err = ctx.Trackers.SetTracker(f.TrackerName, tracker)
-		if err != nil {
-			return false, action.Response{Log: "tracker not ready for finalizing"}
-		}
-
-		return true, action.Response{
-			Tags: f.Tags(),
-		}
-	}
-
-	ctx.Logger.Info("ready to mint")
-
-	// mint oBTC
-	curr, ok := ctx.Currencies.GetCurrencyByName("BTC")
-	if !ok {
-
-	}
-	oBTCCoin := curr.NewCoinFromUnit(tracker.ProcessBalance - tracker.CurrentBalance)
-	err = ctx.Balances.AddToAddress(f.OwnerAddress, oBTCCoin)
-	if err != nil {
-		return false, action.Response{Log: "error adding oBTC to address"}
-	}
-
-	validatorPubKeys, err := ctx.Validators.GetBitcoinKeys(&chaincfg.TestNet3Params)
-	m := (len(validatorPubKeys) * 2 / 3) + 1
-
-	_, lockScriptAddress, addressList, err := bitcoin2.CreateMultiSigAddress(m, validatorPubKeys, f.RandomBytes)
-
-	// do final reset changes
-	signers := make([]keys.Address, len(addressList))
-	for i := range addressList {
-		signers[i] = keys.Address(addressList[i])
-	}
-	tracker.Multisig, err = keys.NewBTCMultiSig(nil, m, signers)
-
-	tracker.State = bitcoin.AvailableTrackerState
-
-	tracker.CurrentTxId = tracker.ProcessTxId
-	tracker.CurrentBalance = tracker.ProcessBalance
-	tracker.CurrentLockScriptAddress = tracker.ProcessLockScriptAddress
-
-	tracker.ProcessTxId = nil
-	tracker.ProcessBalance = 0
-	tracker.ProcessLockScriptAddress = lockScriptAddress
-	tracker.ProcessUnsignedTx = nil
-	tracker.ProcessOwner = nil
-	tracker.FinalityVotes = nil
-
-	err = ctx.Trackers.SetTracker(f.TrackerName, tracker)
-	if err != nil {
-		ctx.Logger.Error(err)
-		return false, action.Response{Log: "error resetting tracker, try again" + err.Error()}
-	}
-
-	// mint oBTC
-	// TODO: stopped for Alex's fee changes
-
-	return true, action.Response{
-		Tags: f.Tags(),
-	}
+	return runReportFinalityMint(ctx, tx)
 }
 
 func (reportFinalityMintTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 
+	return runReportFinalityMint(ctx, tx)
+}
+
+func (reportFinalityMintTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas) (bool, action.Response) {
+	// return action.BasicFeeHandling(ctx, signedTx, start, size, 1)
+
+	return true, action.Response{}
+}
+
+func runReportFinalityMint(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
+
 	f := ReportFinalityMint{}
 	err := f.Unmarshal(tx.Data)
 	if err != nil {
 		return false, action.Response{Log: "wrong tx type"}
 	}
 
-	tracker, err := ctx.Trackers.Get(f.TrackerName)
+	tracker, err := ctx.BTCTrackers.Get(f.TrackerName)
 	if err != nil {
 		return false, action.Response{Log: "tracker not found" + f.TrackerName}
 	}
@@ -238,7 +137,7 @@ func (reportFinalityMintTx) ProcessDeliver(ctx *action.Context, tx action.RawTx)
 		return false, action.Response{Log: "tracker process not owned by user"}
 	}
 
-	if tracker.State != bitcoin.BusyBroadcastingTrackerState {
+	if tracker.State != bitcoin.BusyFinalizing {
 		return false, action.Response{Log: "tracker not ready for finalizing"}
 	}
 
@@ -261,8 +160,6 @@ func (reportFinalityMintTx) ProcessDeliver(ctx *action.Context, tx action.RawTx)
 		return false, action.Response{Log: "transaction sender not a validator"}
 	}
 
-	ctx.Logger.Info("h")
-
 	validatorSignedFlag := false
 	for _, fv := range tracker.FinalityVotes {
 		if bytes.Equal(fv, f.ValidatorAddress) {
@@ -277,10 +174,9 @@ func (reportFinalityMintTx) ProcessDeliver(ctx *action.Context, tx action.RawTx)
 	// are there enough finality votes?
 	if len(tracker.FinalityVotes) < votesThresholdForMint {
 
-		ctx.Logger.Info("end tx processing")
 		// if not enough votes to mint end transaction processing
 
-		err = ctx.Trackers.SetTracker(f.TrackerName, tracker)
+		err = ctx.BTCTrackers.SetTracker(f.TrackerName, tracker)
 		if err != nil {
 			return false, action.Response{Log: "tracker not ready for finalizing"}
 		}
@@ -290,31 +186,49 @@ func (reportFinalityMintTx) ProcessDeliver(ctx *action.Context, tx action.RawTx)
 		}
 	}
 
-	// mint oBTC
-	curr, ok := ctx.Currencies.GetCurrencyByName("BTC")
+	// if type is lock, then mint the oBTC
+	if tracker.ProcessType == bitcoin.ProcessTypeLock {
 
-	oBTCCoin := curr.NewCoinFromUnit(tracker.ProcessBalance - tracker.CurrentBalance)
-	err = ctx.Balances.AddToAddress(f.OwnerAddress, oBTCCoin)
-	if err != nil {
-		ctx.Logger.Error(err)
-		return false, action.Response{Log: "error adding oBTC to address"}
+		// mint oBTC
+		curr, ok := ctx.Currencies.GetCurrencyByName("BTC")
+		if !ok {
+
+		}
+
+		oBTCCoin := curr.NewCoinFromUnit(tracker.ProcessBalance - tracker.CurrentBalance)
+		err = ctx.Balances.AddToAddress(f.OwnerAddress, oBTCCoin)
+		if err != nil {
+			ctx.Logger.Error(err)
+			return false, action.Response{Log: "error adding oBTC to address"}
+		}
+
+		tally := keys.Address(lockBalanceAddress)
+		err = ctx.Balances.AddToAddress(tally, oBTCCoin)
+		if err != nil {
+			ctx.Logger.Error(err)
+			return false, action.Response{Log: "error adding oBTC to address"}
+		}
+
+		ctx.Logger.Info("btc coin minted to ", f.OwnerAddress)
 	}
 
-	ctx.Logger.Info("coin minted to ", f.OwnerAddress)
+	// set the tracker to the new state
 
 	validatorPubKeys, err := ctx.Validators.GetBitcoinKeys(&chaincfg.TestNet3Params)
 	m := (len(validatorPubKeys) * 2 / 3) + 1
 
-	lockScript, lockScriptAddress, addressList, err := bitcoin2.CreateMultiSigAddress(m, validatorPubKeys, f.RandomBytes)
+	lockScript, lockScriptAddress, addressList, err := bitcoin2.CreateMultiSigAddress(m, validatorPubKeys,
+		f.RandomBytes, ctx.BTCChainType)
 
 	// do final reset changes
 	signers := make([]keys.Address, len(addressList))
 	for i := range addressList {
-		signers[i] = keys.Address(addressList[i])
+		addr := base58.Decode(addressList[i])
+		signers[i] = keys.Address(addr)
 	}
 	tracker.Multisig, err = keys.NewBTCMultiSig(nil, m, signers)
 
-	tracker.State = bitcoin.AvailableTrackerState
+	tracker.State = bitcoin.Available
 
 	tracker.CurrentTxId = tracker.ProcessTxId
 	tracker.CurrentBalance = tracker.ProcessBalance
@@ -326,7 +240,10 @@ func (reportFinalityMintTx) ProcessDeliver(ctx *action.Context, tx action.RawTx)
 	tracker.ProcessUnsignedTx = nil
 	tracker.ProcessOwner = nil
 	tracker.FinalityVotes = nil
+	tracker.ResetVotes = nil
+	tracker.ProcessType = bitcoin.ProcessTypeNone
 
+	// TODO check if node is validator
 	if ctx.LockScriptStore != nil {
 		err := ctx.LockScriptStore.SaveLockScript(lockScriptAddress, lockScript)
 		if err != nil {
@@ -334,18 +251,12 @@ func (reportFinalityMintTx) ProcessDeliver(ctx *action.Context, tx action.RawTx)
 		}
 	}
 
-	err = ctx.Trackers.SetTracker(f.TrackerName, tracker)
-	if err != nil || !ok {
+	err = ctx.BTCTrackers.SetTracker(f.TrackerName, tracker)
+	if err != nil {
 		return false, action.Response{Log: "error resetting tracker, try again"}
 	}
 
 	return true, action.Response{
 		Tags: f.Tags(),
 	}
-}
-
-func (reportFinalityMintTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas) (bool, action.Response) {
-	// return action.BasicFeeHandling(ctx, signedTx, start, size, 1)
-
-	return true, action.Response{}
 }

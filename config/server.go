@@ -2,14 +2,19 @@ package config
 
 import (
 	"bytes"
+	//"crypto/ecdsa"
 	"io/ioutil"
 	"path/filepath"
 	"strings"
 	"time"
 
+	"github.com/ethereum/go-ethereum/ethclient"
+
 	"github.com/Oneledger/toml"
 	"github.com/pkg/errors"
 	tmconfig "github.com/tendermint/tendermint/config"
+
+	"github.com/Oneledger/protocol/log"
 )
 
 const (
@@ -37,12 +42,13 @@ func toConfigDuration(d time.Duration) Duration {
 
 // Struct for holding the configuration details for the node
 type Server struct {
-	Node        *NodeConfig        `toml:"node"`
-	Network     *NetworkConfig     `toml:"network"`
-	P2P         *P2PConfig         `toml:"p2p"`
-	Mempool     *MempoolConfig     `toml:"mempool"`
-	Consensus   *ConsensusConfig   `toml:"consensus"`
-	ChainDriver *ChainDriverConfig `toml:"chain_driver"`
+	Node           *NodeConfig                `toml:"node"`
+	Network        *NetworkConfig             `toml:"network"`
+	P2P            *P2PConfig                 `toml:"p2p"`
+	Mempool        *MempoolConfig             `toml:"mempool"`
+	Consensus      *ConsensusConfig           `toml:"consensus"`
+	ChainDriver    *ChainDriverConfig         `toml:"chain_driver"`
+	EthChainDriver *EthereumChainDriverConfig `toml:"ethereum_chain_driver"`
 
 	chainID string
 	rootDir string
@@ -154,12 +160,13 @@ func (cfg *Server) SaveFile(filepath string) error {
 
 func DefaultServerConfig() *Server {
 	return &Server{
-		Node:        DefaultNodeConfig(),
-		Network:     DefaultNetworkConfig(),
-		P2P:         DefaultP2PConfig(),
-		Mempool:     DefaultMempoolConfig(),
-		Consensus:   DefaultConsensusConfig(),
-		ChainDriver: DefaultChainDriverConfig(),
+		Node:           DefaultNodeConfig(),
+		Network:        DefaultNetworkConfig(),
+		P2P:            DefaultP2PConfig(),
+		Mempool:        DefaultMempoolConfig(),
+		Consensus:      DefaultConsensusConfig(),
+		ChainDriver:    DefaultChainDriverConfig(),
+		EthChainDriver: DefaultEthConfig(),
 	}
 }
 
@@ -194,10 +201,10 @@ func DefaultNodeConfig() *NodeConfig {
 		FastSync:     true,
 		DB:           "goleveldb",
 		DBDir:        "nodedata",
-		LogLevel:     4,
-		IndexTags:    []string{"tx.owner", "tx.type", "tx.swapkey"},
+		LogLevel:     int(log.Info),
+		IndexTags:    []string{"tx.owner", "tx.type"},
 		IndexAllTags: false,
-		Services:     []string{"broadcast", "node", "owner", "query", "tx"},
+		Services:     []string{"broadcast", "node", "owner", "query", "tx", "btc", "eth"},
 	}
 }
 
@@ -408,18 +415,38 @@ type ChainDriverConfig struct {
 	BlockCypherToken string `toml:"blockcypher_token" desc:"token to use blockcypher APIs"`
 }
 
+type EthereumChainDriverConfig struct {
+	Connection string `toml:"connection" desc:"ethereum node connection url default: http://localhost:7545"`
+}
+
 func DefaultChainDriverConfig() *ChainDriverConfig {
 
 	var cfg ChainDriverConfig
 
 	cfg.BitcoinChainType = "testnet3"
 
-	cfg.BlockCypherToken = ""
+	cfg.BlockCypherToken = "e61acdee14e749a2b74e366cfc4373dd"
 
-	cfg.BitcoinNodeAddress = ""
-	cfg.BitcoinRPCPort = "18333"
-	cfg.BitcoinRPCUsername = ""
-	cfg.BitcoinRPCPassword = ""
+	cfg.BitcoinNodeAddress = "34.74.207.115"
+	cfg.BitcoinRPCPort = "18332"
+	cfg.BitcoinRPCUsername = "admin1"
+	cfg.BitcoinRPCPassword = "password"
 
 	return &cfg
+}
+
+func DefaultEthConfigRoopsten() *EthereumChainDriverConfig {
+	return &EthereumChainDriverConfig{
+		Connection: "https://ropsten.infura.io/v3/{API_KEY}",
+	}
+}
+
+func DefaultEthConfig() *EthereumChainDriverConfig {
+	return &EthereumChainDriverConfig{
+		Connection: "http://localhost:7545",
+	}
+}
+
+func (cfg *EthereumChainDriverConfig) Client() (*ethclient.Client, error) {
+	return ethclient.Dial(cfg.Connection)
 }

@@ -6,27 +6,30 @@ package btc
 
 import (
 	"bytes"
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
 
-	"github.com/Oneledger/protocol/data/bitcoin"
-	"github.com/Oneledger/protocol/data/keys"
-	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcd/wire"
-	"github.com/btcsuite/btcutil"
-
 	"github.com/pkg/errors"
+	"github.com/tendermint/tendermint/libs/common"
 
 	"github.com/Oneledger/protocol/action"
-	"github.com/tendermint/tendermint/libs/common"
+	bitcoin2 "github.com/Oneledger/protocol/chains/bitcoin"
+	"github.com/Oneledger/protocol/data/bitcoin"
 )
 
 type Lock struct {
-	Locker      action.Address
+	// OLT address of the person locking the BTC
+	Locker action.Address
+
+	// Name of the tracker used to register this txn
 	TrackerName string
-	BTCTxn      []byte
-	LockAmount  int64
+
+	// BTC Txn as a byte array
+	BTCTxn []byte
+
+	// The amount in satoshi to lock
+	LockAmount int64
 }
 
 var _ action.Msg = &Lock{}
@@ -85,7 +88,7 @@ func (btcLockTx) Validate(ctx *action.Context, signedTx action.SignedTx) (bool, 
 		return false, err
 	}
 
-	tracker, err := ctx.Trackers.Get(lock.TrackerName)
+	tracker, err := ctx.BTCTrackers.Get(lock.TrackerName)
 	if err != nil {
 		return false, err
 	}
@@ -97,7 +100,8 @@ func (btcLockTx) Validate(ctx *action.Context, signedTx action.SignedTx) (bool, 
 	tx := wire.NewMsgTx(wire.TxVersion)
 
 	buf := bytes.NewBuffer(lock.BTCTxn)
-	tx.Deserialize(buf)
+	err = tx.Deserialize(buf)
+	// TODO handle error
 
 	isFirstTxn := len(tx.TxIn) == 1
 	op := tx.TxIn[0].PreviousOutPoint
@@ -112,100 +116,77 @@ func (btcLockTx) Validate(ctx *action.Context, signedTx action.SignedTx) (bool, 
 		return false, errors.New("txn doesn't match tracker")
 	}
 
+	if !bitcoin2.ValidateLock(tx, ctx.BlockCypherToken, ctx.BlockCypherChainType, tracker.CurrentTxId,
+		tracker.ProcessLockScriptAddress, tracker.CurrentBalance, lock.LockAmount) {
+
+		return false, errors.New("txn doesn't match tracker")
+	}
+
 	return true, nil
 }
 
 func (btcLockTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
-	lock := Lock{}
-	err := lock.Unmarshal(tx.Data)
-	if err != nil {
-		return false, action.Response{Log: "wrong tx type"}
-	}
-
-	tracker, err := ctx.Trackers.Get(lock.TrackerName)
-	if err != nil {
-		return false, action.Response{Log: fmt.Sprintf("tracker not found: %s", lock.TrackerName)}
-	}
-
-	if !tracker.IsAvailable() {
-		return false, action.Response{Log: fmt.Sprintf("tracker not available for lock: ", lock.TrackerName)}
-	}
-
-	vs, err := ctx.Validators.GetValidatorSet()
-	threshold := (len(vs) * 2 / 3) + 1
-	list := make([]keys.Address, 0, len(vs))
-
-	ctx.Logger.Debug()
-	for i := range vs {
-		ctx.Logger.Debug(i, vs[i].ECDSAPubKey.KeyType)
-
-		h, _ := vs[i].ECDSAPubKey.GetHandler()
-
-		apk, _ := btcutil.NewAddressPubKey(h.Bytes(), &chaincfg.TestNet3Params)
-
-		list = append(list, apk.ScriptAddress())
-	}
-
-	tracker.State = bitcoin.BusySigningTrackerState
-	tracker.ProcessOwner = lock.Locker
-	tracker.ProcessUnsignedTx = lock.BTCTxn // with user signature
-	tracker.Multisig, err = keys.NewBTCMultiSig(lock.BTCTxn, threshold, list)
-	tracker.ProcessBalance = tracker.CurrentBalance + lock.LockAmount
-
-	err = ctx.Trackers.SetTracker(lock.TrackerName, tracker)
-	if err != nil {
-		return false, action.Response{Log: "failed to update tracker"}
-	}
-
-	return true, action.Response{
-		Tags: lock.Tags(),
-	}
+	return runBTCLock(ctx, tx)
 }
 
 func (btcLockTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
-	lock := Lock{}
-	err := lock.Unmarshal(tx.Data)
-	if err != nil {
-		return false, action.Response{Log: "wrong tx type"}
-	}
-
-	ctx.Logger.Debug(hex.EncodeToString(lock.BTCTxn))
-
-	tracker, err := ctx.Trackers.Get(lock.TrackerName)
-	if err != nil {
-		return false, action.Response{Log: fmt.Sprintf("tracker not found: %s", lock.TrackerName)}
-	}
-
-	if !tracker.IsAvailable() {
-		return false, action.Response{Log: fmt.Sprintf("tracker not available for lock: ", lock.TrackerName)}
-	}
-
-	tracker.State = bitcoin.BusySigningTrackerState
-	tracker.ProcessOwner = lock.Locker
-	tracker.ProcessUnsignedTx = lock.BTCTxn
-	tracker.Multisig.Msg = lock.BTCTxn
-	tracker.ProcessBalance = tracker.CurrentBalance + lock.LockAmount
-
-	err = ctx.Trackers.SetTracker(lock.TrackerName, tracker)
-	if err != nil {
-		return false, action.Response{Log: "failed to update tracker"}
-	}
-
-	if ctx.JobStore != nil {
-		job := NewAddSignatureJob(lock.TrackerName)
-		err = ctx.JobStore.SaveJob(job)
-		if err != nil {
-			return false, action.Response{Log: "job serialization failed"}
-		}
-	}
-
-	return true, action.Response{
-		Tags: lock.Tags(),
-		Info: fmt.Sprintf("tracker: %s", lock.TrackerName),
-	}
+	return runBTCLock(ctx, tx)
 }
 
 func (btcLockTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas) (bool, action.Response) {
 	return action.BasicFeeHandling(ctx, signedTx, start, size, 1)
 	// return true, action.Response{}
+}
+
+func runBTCLock(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
+
+	lock := Lock{}
+	err := lock.Unmarshal(tx.Data)
+	if err != nil {
+		return false, action.Response{Log: "wrong tx type"}
+	}
+
+	tracker, err := ctx.BTCTrackers.Get(lock.TrackerName)
+	if err != nil {
+		return false, action.Response{Log: fmt.Sprintf("tracker not found: %s", lock.TrackerName)}
+	}
+
+	if !tracker.IsAvailable() {
+		return false, action.Response{Log: fmt.Sprintf("tracker not available for lock: ", lock.TrackerName)}
+	}
+
+	curr, ok := ctx.Currencies.GetCurrencyByName("BTC")
+	if !ok {
+		return false, action.Response{Log: fmt.Sprintf("BTC currency not available", lock.TrackerName)}
+	}
+
+	lockCoin := curr.NewCoinFromUnit(lock.LockAmount)
+	tally := action.Address(lockBalanceAddress)
+	balCoin, err := ctx.Balances.GetBalanceForCurr(tally, &curr)
+	if err != nil {
+		return false, action.Response{Log: fmt.Sprintf("unable to get btc lock total balance", lock.TrackerName)}
+	}
+
+	totalSupplyCoin := curr.NewCoinFromInt(totalBTCSupply)
+
+	if !balCoin.Plus(lockCoin).LessThanEqualCoin(totalSupplyCoin) {
+		return false, action.Response{Log: fmt.Sprintf("btc lock exceeded limit", lock.TrackerName)}
+	}
+
+	tracker.ProcessType = bitcoin.ProcessTypeLock
+	tracker.ProcessOwner = lock.Locker
+	tracker.Multisig.Msg = lock.BTCTxn
+
+	tracker.ProcessBalance = tracker.CurrentBalance + lock.LockAmount
+	tracker.ProcessUnsignedTx = lock.BTCTxn // with user signature
+	tracker.State = bitcoin.Requested
+
+	err = ctx.BTCTrackers.SetTracker(lock.TrackerName, tracker)
+	if err != nil {
+		return false, action.Response{Log: "failed to update tracker"}
+	}
+
+	return true, action.Response{
+		Tags: lock.Tags(),
+	}
 }

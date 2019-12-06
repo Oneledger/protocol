@@ -19,10 +19,11 @@ import (
 	"fmt"
 	"net/url"
 
-	"github.com/Oneledger/protocol/rpc"
 	"github.com/pkg/errors"
 	rpcclient "github.com/tendermint/tendermint/rpc/client"
 	ctypes "github.com/tendermint/tendermint/rpc/core/types"
+
+	"github.com/Oneledger/protocol/rpc"
 )
 
 var (

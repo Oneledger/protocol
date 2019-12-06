@@ -55,6 +55,7 @@ var (
 	ErrGettingTracker  = ProtocolError{InternalErrorGettingTracker, "error getting tracker"}
 	ErrTrackerNotFound = ProtocolError{InternalErrorTrackerNotFound, "tracker not found"}
 	ErrTrackerBusy     = ProtocolError{InternalErrorTrackerBusy, "tracker busy"}
+	ErrTrackerBalance  = ProtocolError{InternalErrorTrackerInsufficientBalance, "insufficient balance in tracker"}
 
 	// Query errors
 	ErrBadAddress      = ProtocolError{IncorrectAddress, "address incorrect"}
@@ -72,8 +73,17 @@ var (
 
 	// External Errors
 	ErrBTCTxNotFound             = ProtocolError{ExternalErrBitcoinTxNotFound, "bitcoin txn not found"}
-	ErrBTCReadingTxn             = ProtocolError{ExternalErrGettingBTCTxn, "err getting btc txn"}
+	ErrBadBTCAddress 			 = ProtocolError{ParseErrorBTCAddress, "bad btc address"}
 	ErrBTCNotEnoughConfirmations = ProtocolError{ExternalErrNotEnoughConfirmations, "not enough btc confirmations"}
+	ErrBTCNotSpendable           = ProtocolError{ExternalErrNotSpendable, "btc source not spendable"}
+	ErrBTCReadingTxn             = ProtocolError{ExternalErrGettingBTCTxn, "err getting btc txn"}
 
 	ErrBadBTCTxn = ProtocolError{ParseErrorBadBTCTxn, "bad btc txn"}
+
+	//Ethereum Errors
+	ErrPreparingETHLock = ProtocolError{Code: ExternalErrUnableToCreateEthTX, Msg:  "Unable to create an unsigned lock transaction for Ethereum",}
+	ErrPreparingOLTLock = ProtocolError{Code: ExternalErrUnableToCreateOLTLockTX, Msg:  "Unable to create OLT lock Tx for Ethereum",}
+	ErrUnmarshaling = ProtocolError{Code: ErrUnmarshalingRedeem, Msg:  "Unable to unmarshall the incoming transaction into struct ,Wrong Json data",}
+
+
 )

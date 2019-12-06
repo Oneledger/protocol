@@ -7,9 +7,12 @@ package keys
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
+
+	"github.com/btcsuite/btcutil/base58"
+	"github.com/pkg/errors"
 
 	"github.com/Oneledger/protocol/utils"
-	"github.com/pkg/errors"
 )
 
 type BTCMultiSig struct {
@@ -77,6 +80,19 @@ func (m BTCMultiSig) IsValid() bool {
 	return true
 }
 
+func (m BTCMultiSig) IsCancel() bool {
+	cnt := 0
+	for _, item := range m.Signatures {
+		if item.Sign != nil {
+			cnt++
+		}
+	}
+	if cnt < m.M {
+		return false
+	}
+	return true
+}
+
 func (m BTCMultiSig) Address() Address {
 	s := &BTCMultiSig{m.Msg, m.M, m.Signers, nil}
 	b := s.Bytes()
@@ -127,8 +143,8 @@ func (m *BTCMultiSig) FromBytes(b []byte) error {
 
 	signatures := m.Signatures
 	m.Signatures = make([]BTCSignature, len(m.Signers))
-	for i, item := range signatures {
-		m.Signatures[i] = item
+	for _, item := range signatures {
+		m.Signatures[item.Index] = item
 	}
 
 	return nil
@@ -147,4 +163,37 @@ func (m *BTCMultiSig) GetSignerIndex(addr Address) (int, error) {
 
 func (m *BTCMultiSig) GetSignatures() []BTCSignature {
 	return m.Signatures
+}
+
+func (m *BTCMultiSig) GetSignaturesInOrder() [][]byte {
+
+	tempSignatures := make([][]byte, len(m.Signers))
+	for _, s := range m.Signatures {
+		if len(s.Sign) == 0 {
+			continue
+		}
+
+		index := s.Index
+		tempSignatures[index] = s.Sign
+		fmt.Println(s.Index, base58.Encode(s.Address))
+	}
+
+	signatures := make([][]byte, 0, len(m.Signers))
+	for _, sig := range tempSignatures {
+		if len(sig) == 0 {
+			continue
+		}
+
+		signatures = append(signatures, sig)
+	}
+
+	return signatures
+}
+
+func (m *BTCMultiSig) Marshal() ([]byte, error) {
+	return m.Bytes(), nil
+}
+
+func (m *BTCMultiSig) Unmarshal(b []byte) error {
+	return m.FromBytes(b)
 }

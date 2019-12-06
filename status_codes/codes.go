@@ -14,9 +14,10 @@ const (
 	IOError        = 1002
 	IOErrorNodeKey = 100201
 
-	ParseError          = 1003
-	ParseErrorAddress   = 100301
-	ParseErrorBadBTCTxn = 100302
+	ParseError           = 1003
+	ParseErrorAddress    = 100301
+	ParseErrorBadBTCTxn  = 100302
+	ParseErrorBTCAddress = 100303
 
 	ConfigurationError          = 1004
 	ConfigurationErrorChainType = 100401
@@ -26,15 +27,16 @@ const (
 	DomainNotFound        = 100502
 	CurrencyNotFound      = 100503
 
-	InternalError                  = 1006
-	InternalErrorSerialization     = 100601
-	InternalErrorSigning           = 100602
-	InternalErrorGeneratingKeyPair = 100603
-	InternalErrorGettingBalance    = 100604
-	InternalErrorListValidators    = 100605
-	InternalErrorGettingTracker    = 100606
-	InternalErrorTrackerNotFound   = 100607
-	InternalErrorTrackerBusy       = 100608
+	InternalError                           = 1006
+	InternalErrorSerialization              = 100601
+	InternalErrorSigning                    = 100602
+	InternalErrorGeneratingKeyPair          = 100603
+	InternalErrorGettingBalance             = 100604
+	InternalErrorListValidators             = 100605
+	InternalErrorGettingTracker             = 100606
+	InternalErrorTrackerNotFound            = 100607
+	InternalErrorTrackerBusy                = 100608
+	InternalErrorTrackerInsufficientBalance = 100609
 
 	WalletError               = 2006
 	WalletErrorAddingAccount  = 200601
@@ -56,9 +58,14 @@ const (
 	TxErrInvalidFeePrice    = 300109
 	TxErrInsufficientFunds  = 300110
 	TxErrGasOverflow        = 300111
+	TxErrInvalidExtTx       = 300112
 
 	ExternalErr                       = 400100
 	ExternalErrBitcoinTxNotFound      = 400101
 	ExternalErrGettingBTCTxn          = 400102
 	ExternalErrNotEnoughConfirmations = 400103
+	ExternalErrNotSpendable           = 400104
+	ExternalErrUnableToCreateEthTX    = 400105
+	ExternalErrUnableToCreateOLTLockTX =400106
+	ErrUnmarshalingRedeem             = 400107
 )

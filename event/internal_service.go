@@ -2,9 +2,10 @@
 
  */
 
-package action
+package event
 
 import (
+	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/app/node"
 	"github.com/Oneledger/protocol/consensus"
 	"github.com/Oneledger/protocol/log"
@@ -17,13 +18,13 @@ type Service struct {
 	nodeCtx node.Context
 
 	logger *log.Logger
-	router Router
+	router action.Router
 
 	//only support local client for broadcasting internal txs
 	tmrpc *tmclient.Local
 }
 
-func NewService(ctx node.Context, logger *log.Logger, router Router, tmnode *consensus.Node) *Service {
+func NewService(ctx node.Context, logger *log.Logger, router action.Router, tmnode *consensus.Node) *Service {
 	return &Service{
 		nodeCtx: ctx,
 		logger:  logger,
@@ -32,7 +33,7 @@ func NewService(ctx node.Context, logger *log.Logger, router Router, tmnode *con
 	}
 }
 
-func (svc Service) allowedTx(tx RawTx) error {
+func (svc Service) allowedTx(tx action.RawTx) error {
 	h := svc.router.Handler(tx.Type)
 	if h == nil {
 		return errors.New("transaction type not allowed")
@@ -41,11 +42,11 @@ func (svc Service) allowedTx(tx RawTx) error {
 }
 
 type InternalBroadcastRequest struct {
-	RawTx RawTx `json:"rawTx"`
+	RawTx action.RawTx `json:"rawTx"`
 }
 
 type BroadcastReply struct {
-	TxHash Address `json:"txHash"`
+	TxHash action.Address `json:"txHash"`
 	// OK indicates whether this broadcast was a request.
 	// For TxSync, it indicates success of CheckTx. Does not guarantee inclusion of a block
 	// For TxAsync, it always returns true
@@ -56,14 +57,14 @@ type BroadcastReply struct {
 }
 
 func (reply *BroadcastReply) FromResultBroadcastTx(result *ctypes.ResultBroadcastTx) {
-	reply.TxHash = Address(result.Hash)
+	reply.TxHash = action.Address(result.Hash)
 	reply.OK = result.Code == 0
 	reply.Height = nil
 	reply.Log = result.Log
 }
 
 func (reply *BroadcastReply) FromResultBroadcastTxCommit(result *ctypes.ResultBroadcastTxCommit) {
-	reply.TxHash = Address(result.Hash)
+	reply.TxHash = action.Address(result.Hash)
 	reply.OK = result.CheckTx.Code == 0 && result.DeliverTx.Code == 0
 	reply.Height = &result.Height
 	reply.Log = "check: " + result.CheckTx.Log + ", deliver: " + result.DeliverTx.Log
@@ -85,9 +86,9 @@ func (svc Service) InternalBroadcast(request InternalBroadcastRequest, reply *Br
 	if err != nil {
 		return errors.Wrap(err, "signing failed")
 	}
-	rawSignedTx := SignedTx{
+	rawSignedTx := action.SignedTx{
 		RawTx: request.RawTx,
-		Signatures: []Signature{Signature{
+		Signatures: []action.Signature{{
 			Signer: h.PubKey(),
 			Signed: signed,
 		}},

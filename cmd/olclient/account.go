@@ -17,14 +17,14 @@ package main
 import (
 	"encoding/base64"
 	"fmt"
-	"github.com/Oneledger/protocol/client"
 	"os"
 
+	"github.com/spf13/cobra"
+
+	"github.com/Oneledger/protocol/client"
 	"github.com/Oneledger/protocol/data/accounts"
 	"github.com/Oneledger/protocol/data/chain"
 	"github.com/Oneledger/protocol/data/keys"
-
-	"github.com/spf13/cobra"
 )
 
 var updateCmd = &cobra.Command{

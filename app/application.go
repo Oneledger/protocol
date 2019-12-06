@@ -5,28 +5,29 @@ import (
 	"net/url"
 	"os"
 
-	"github.com/Oneledger/protocol/data/keys"
-
-	bitcoin2 "github.com/Oneledger/protocol/chains/bitcoin"
-	"github.com/Oneledger/protocol/data/bitcoin"
-	"github.com/btcsuite/btcd/chaincfg"
+	"github.com/btcsuite/btcutil/base58"
+	"github.com/pkg/errors"
+	"github.com/tendermint/tendermint/abci/types"
+	"github.com/tendermint/tendermint/libs/common"
 
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/action/btc"
+	"github.com/Oneledger/protocol/action/eth"
 	"github.com/Oneledger/protocol/app/node"
+	bitcoin2 "github.com/Oneledger/protocol/chains/bitcoin"
 	"github.com/Oneledger/protocol/config"
 	"github.com/Oneledger/protocol/consensus"
 	"github.com/Oneledger/protocol/data/accounts"
 	"github.com/Oneledger/protocol/data/balance"
+	"github.com/Oneledger/protocol/data/bitcoin"
 	"github.com/Oneledger/protocol/data/chain"
+	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/data/ons"
+	"github.com/Oneledger/protocol/event"
 	"github.com/Oneledger/protocol/identity"
 	"github.com/Oneledger/protocol/log"
 	"github.com/Oneledger/protocol/serialize"
 	"github.com/Oneledger/protocol/storage"
-	"github.com/pkg/errors"
-	"github.com/tendermint/tendermint/abci/types"
-	"github.com/tendermint/tendermint/libs/common"
 )
 
 // Ensure this App struct can control the underlying ABCI app
@@ -119,6 +120,12 @@ func (app *App) setupState(stateBytes []byte) error {
 	if err != nil {
 		return errors.Wrap(err, "Setup State")
 	}
+
+	err = app.Context.govern.SetETHChainDriverOption(initial.ETHCDOption)
+	if err != nil {
+		return errors.Wrap(err, "Setup State")
+	}
+
 	balanceCtx := app.Context.Balances()
 
 	// (1) Register all the currencies and fee
@@ -130,7 +137,7 @@ func (app *App) setupState(stateBytes []byte) error {
 	}
 	app.Context.feeOption.FeeCurrency = initial.FeeOption.FeeCurrency
 	app.Context.feeOption.MinFeeDecimal = initial.FeeOption.MinFeeDecimal
-
+	app.Context.ethTrackers.SetupOption(&initial.ETHCDOption)
 	err = app.Context.govern.SetFeeOption(initial.FeeOption)
 	if err != nil {
 		return errors.Wrap(err, "Setup State")
@@ -184,36 +191,28 @@ func (app *App) setupValidators(req RequestInitChain, currencies *balance.Curren
 
 	vu, err := app.Context.validators.WithState(app.Context.deliver).Init(req, currencies)
 
-	var params *chaincfg.Params
-	switch app.Context.cfg.ChainDriver.BitcoinChainType {
-	case "mainnet":
-		params = &chaincfg.MainNetParams
-	case "testnet3":
-		params = &chaincfg.TestNet3Params
-	case "regtest":
-		params = &chaincfg.RegressionNetParams
-	case "simnet":
-		params = &chaincfg.SimNetParams
-	default:
-		params = &chaincfg.TestNet3Params
-	}
+	params := bitcoin2.GetChainParams(app.Context.cfg.ChainDriver.BitcoinChainType)
 
 	vals, err := app.Context.validators.WithState(app.Context.deliver).GetBitcoinKeys(params)
 	threshold := (len(vals) * 2 / 3) + 1
-	for i := 0; i < 8; i++ {
+	for i := 0; i < 1; i++ {
 		// appHash := app.genesisDoc.AppHash.Bytes()
 
 		randBytes := []byte("XOLT")
 
-		script, address, addressList, err := bitcoin2.CreateMultiSigAddress(threshold, vals, randBytes)
+		script, address, addressList, err := bitcoin2.CreateMultiSigAddress(threshold, vals, randBytes, params)
 		if err != nil {
 			return nil, err
 		}
 
 		signers := make([]keys.Address, len(addressList))
 		for i := range addressList {
-			signers[i] = keys.Address(addressList[i])
+			addr := base58.Decode(addressList[i])
+			signers[i] = keys.Address(addr)
 		}
+
+		fmt.Println(address)
+		fmt.Println("-------------------------------------------------------")
 
 		tracker, err := bitcoin.NewTracker(address, threshold, signers)
 		if err != nil {
@@ -221,7 +220,7 @@ func (app *App) setupValidators(req RequestInitChain, currencies *balance.Curren
 		}
 
 		name := fmt.Sprintf("tracker_%d", i)
-		err = app.Context.trackers.SetTracker(name, tracker)
+		err = app.Context.btcTrackers.SetTracker(name, tracker)
 		if err != nil {
 			return nil, err
 		}
@@ -286,6 +285,12 @@ func (app *App) Prepare() error {
 		}
 		app.Context.feeOption = feeOpt
 		app.Context.feePool.SetupOpt(feeOpt)
+
+		cdOpt, err := app.Context.govern.GetETHChainDriverOption()
+		if err != nil {
+			return err
+		}
+		app.Context.ethTrackers.SetupOption(cdOpt)
 	}
 	return nil
 }
@@ -334,13 +339,20 @@ func (app *App) Start() error {
 	internalRouter := action.NewRouter("internal")
 	err = btc.EnableBTCInternalTx(internalRouter)
 	if err != nil {
-		app.logger.Error("Failed to register internal transactions")
+		app.logger.Error("Failed to register btc internal transactions")
 		return err
+	}
+	err = eth.EnableInternalETH(internalRouter)
+	if err != nil {
+		app.logger.Error("failed to register eth internal transaction")
 	}
 
 	app.node = node
-	app.Context.internalService = action.NewService(app.Context.node,
+	app.Context.internalService = event.NewService(app.Context.node,
 		log.NewLoggerWithPrefix(app.Context.logWriter, "internal_service"), internalRouter, node)
+
+	_ = app.Context.jobBus.Start(app.Context.JobContext())
+
 	return nil
 }
 

@@ -15,8 +15,9 @@ Copyright 2017 - 2019 OneLedger
 package main
 
 import (
-	"github.com/Oneledger/protocol/client"
 	"github.com/spf13/cobra"
+
+	"github.com/Oneledger/protocol/client"
 )
 
 var balanceCmd = &cobra.Command{

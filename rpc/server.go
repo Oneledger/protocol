@@ -3,9 +3,6 @@ package rpc
 import (
 	"context"
 	"encoding/base64"
-	"github.com/Oneledger/protocol/config"
-	"github.com/Oneledger/protocol/data/keys"
-	"github.com/btcsuite/btcutil/base58"
 	"io"
 	"net"
 	"net/http"
@@ -13,9 +10,13 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/Oneledger/protocol/log"
+	"github.com/btcsuite/btcutil/base58"
 	"github.com/pkg/errors"
 	"github.com/powerman/rpc-codec/jsonrpc2"
+
+	"github.com/Oneledger/protocol/config"
+	"github.com/Oneledger/protocol/data/keys"
+	"github.com/Oneledger/protocol/log"
 )
 
 // The http path used for our rpc handlers
