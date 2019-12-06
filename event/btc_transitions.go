@@ -135,7 +135,7 @@ func FreezeForBroadcast(inp interface{}) error {
 		}
 
 	} else if t.Multisig.IsCancel() {
-
+		// TODO handle multisig cancellation by validators
 	}
 
 	return nil
