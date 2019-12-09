@@ -22,6 +22,11 @@ import (
 
 type TxHash [chainhash.HashSize]byte
 
+const (
+	BLOCK_CONFIRMATIONS      = 6
+	BLOCK_CONFIRMATIONS_TEST = 1
+)
+
 type ChainDriver interface {
 	//	PrepareLock(prevLock, input *bitcoin.UTXO, lockScriptAddress []byte) (txBytes []byte)
 
@@ -135,7 +140,7 @@ func (c *chainDriver) CheckFinality(hash *chainhash.Hash, token, chain string) (
 		return false, err
 	}
 
-	if tx.Confirmations > 0 {
+	if tx.Confirmations >= BLOCK_CONFIRMATIONS {
 		return true, nil
 	}
 
