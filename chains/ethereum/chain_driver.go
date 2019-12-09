@@ -1,6 +1,7 @@
 package ethereum
 
 import (
+	"bytes"
 	"context"
 	"encoding/hex"
 	"math/big"
@@ -178,19 +179,26 @@ func (acc *ETHChainDriver) GetTransactionMessage(tx *types.Transaction) (*types.
 	return &msg, nil
 }
 
-func (acc *ETHChainDriver) CheckFinality(txHash TransactionHash) (*types.Receipt, error) {
+func (acc *ETHChainDriver) CheckFinality(txHash *TransactionHash) (*types.Receipt, error) {
 
-	result, err := acc.GetClient().TransactionReceipt(context.Background(), txHash)
+	result, err := acc.GetClient().TransactionReceipt(context.Background(), *txHash)
 	if err == nil {
 		if result.Status == types.ReceiptStatusSuccessful {
-			acc.logger.Info("Received TX Receipt for : ", txHash)
+			acc.logger.Info("Received TX Receipt , Mined at : ",result.BlockNumber)
+			latestHeader,err:= acc.client.HeaderByNumber(context.Background(),nil)
+			if err != nil {
+				return nil,errors.Wrap(err,"Unable to extract latest header")
+			}
+			diff := big.NewInt(0).Sub(latestHeader.Number, result.BlockNumber)
+			if big.NewInt(12).Cmp(diff) > 0 {
+				return nil,errors.New("Waiting for confirmation . Current depth of TX in Number of block : "+ diff.String())
+			}
 			return result, nil
 		}
 		if result.Status == types.ReceiptStatusFailed {
 			acc.logger.Warn("Receipt not found ")
 			b, _ := result.MarshalJSON()
 			acc.logger.Error(string(b))
-			//err := Error("Transaction not added to blockchain yet / Failed to obtain receipt")
 			return nil, nil
 		}
 	}
@@ -251,6 +259,19 @@ func (acc *ETHChainDriver) VerifyRedeem(validatorAddress common.Address, recipie
 	return ok, nil
 }
 
+func VerifyLock(tx *types.Transaction,contractabi string) (bool,error) {
+	contractAbi, err := abi.JSON(strings.NewReader(contractabi))
+	if err!= nil {
+		return false,errors.Wrap(err,"Unable to get contract Abi from ChainDriver options")
+	}
+	bytesData, err := contractAbi.Pack("lock")
+	{
+		return false,errors.Wrap(err,"Unable to to create Bytes data for Lock")
+	}
+	return bytes.Equal(bytesData,tx.Data()),nil
+
+}
+
 func (acc *ETHChainDriver) HasValidatorSigned(validatorAddress common.Address, recipient common.Address) (bool, error) {
 	instance := acc.GetContract()
 
@@ -296,3 +317,4 @@ func DecodeTransaction(data []byte) (*types.Transaction, error) {
 
 	return tx, nil
 }
+
