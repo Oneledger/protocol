@@ -12,9 +12,9 @@ import (
 )
 
 func main() {
-	sourceBTCHash := "f277af2dee93a1d8c577a588135f6805fe07fb9fd3d76e40f8b29c003d97615a"
+	sourceBTCHash := "08eb169a33cd53f150f412a5a11fa7f6412f8922fea0c0ba3a430d8b6d3d1d97"
 	sourceBTCIndex := 0
-	wif := "cNVonQDXYShV3PJLHbz6bEs4qkKm6smRUXuYtD2uMseiUubBB25j"
+	wif := "cMe6v24SwBTyhsBaJfieGvJGWcw6wgpE4anE8nX5hrQdP8vaBsym"
 
 	txn, tname := prepareLock(sourceBTCHash, sourceBTCIndex)
 	fmt.Println("Received response of PrepareLock")

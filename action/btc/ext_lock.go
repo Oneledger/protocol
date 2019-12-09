@@ -101,7 +101,9 @@ func (btcLockTx) Validate(ctx *action.Context, signedTx action.SignedTx) (bool, 
 
 	buf := bytes.NewBuffer(lock.BTCTxn)
 	err = tx.Deserialize(buf)
-	// TODO handle error
+	if err != nil {
+		return false, errors.New("err in deserializing btc txn")
+	}
 
 	isFirstTxn := len(tx.TxIn) == 1
 	op := tx.TxIn[0].PreviousOutPoint
@@ -135,7 +137,6 @@ func (btcLockTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, act
 
 func (btcLockTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas) (bool, action.Response) {
 	return action.BasicFeeHandling(ctx, signedTx, start, size, 1)
-	// return true, action.Response{}
 }
 
 func runBTCLock(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
@@ -153,6 +154,31 @@ func runBTCLock(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 
 	if !tracker.IsAvailable() {
 		return false, action.Response{Log: fmt.Sprintf("tracker not available for lock: ", lock.TrackerName)}
+	}
+
+	btcTx := wire.NewMsgTx(wire.TxVersion)
+
+	buf := bytes.NewBuffer(lock.BTCTxn)
+	err = btcTx.Deserialize(buf)
+	if err != nil {
+		return false, action.Response{Log: fmt.Sprintf("err desrializing btc txn ", lock.TrackerName)}
+	}
+
+	isFirstTxn := len(btcTx.TxIn) == 1
+	op := btcTx.TxIn[0].PreviousOutPoint
+
+	if !isFirstTxn && op.Hash != *tracker.CurrentTxId {
+		return false, action.Response{Log: fmt.Sprintf("err incorrect btc txn", lock.TrackerName)}
+	}
+	if !isFirstTxn && op.Index != 0 {
+		return false, action.Response{Log: fmt.Sprintf("err incorrect btc txn ", lock.TrackerName)}
+	}
+	if isFirstTxn && btcTx.TxOut[0].Value != lock.LockAmount+tracker.CurrentBalance {
+		return false, action.Response{Log: fmt.Sprintf("err incorrect btc txn ", lock.TrackerName)}
+	}
+
+	if !bytes.Equal(btcTx.TxOut[0].PkScript, tracker.ProcessLockScriptAddress) {
+		return false, action.Response{Log: fmt.Sprintf("err incorrect btc lock address ", lock.TrackerName)}
 	}
 
 	curr, ok := ctx.Currencies.GetCurrencyByName("BTC")
