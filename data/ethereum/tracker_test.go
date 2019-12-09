@@ -2,17 +2,18 @@ package ethereum
 
 import (
 	"fmt"
-	"testing"
-
 	"github.com/Oneledger/protocol/data/keys"
+	"github.com/Oneledger/protocol/utils/transition"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/assert"
+	"testing"
 )
 
 var (
 	numberOfPrivKey = 16
 	threshold       = 11
-	tracker         Tracker
+	trackerLock     Tracker
+	trackerRedeem   Tracker
 
 	privKeys  []keys.PrivateKey = make([]keys.PrivateKey, numberOfPrivKey)
 	addresses []keys.Address    = make([]keys.Address, numberOfPrivKey)
@@ -28,66 +29,75 @@ func init() {
 	}
 	h := &common.Hash{}
 	h.SetBytes([]byte("test"))
-	tracker = *NewTracker(ProcessTypeNone, addresses[0], []byte("test"), *h, addresses)
+	trackerLock = *NewTracker(ProcessTypeLock, addresses[0], []byte("test"), *h, addresses)
+	trackerRedeem = *NewTracker(ProcessTypeRedeem, addresses[0], []byte("test"), *h, addresses)
 }
 
 func TestTracker_AddVote(t *testing.T) {
+	fmt.Println("***Test AddVote***")
 	for i, addr := range addresses {
 		if i >= threshold {
 			continue
 		}
-		err := tracker.AddVote(addr, int64(i), true)
+		err := trackerLock.AddVote(addr, int64(i), true)
 		assert.NoError(t, err, "add vote error")
 	}
+	yesVotes, _ := trackerLock.GetVotes()
+	assert.Equal(t, yesVotes, 11)
 }
 
 func TestTracker_Finalized(t *testing.T) {
-	ok := tracker.Finalized()
+	fmt.Println("***Test Finalized***")
+	ok := trackerLock.Finalized()
 	assert.True(t, ok)
-}
-
-func TestTracker_TestStateMachine(t *testing.T) {
-	index := 0
-	validatorIndex := 0
-
-	for index < 100 {
-		if index%3 == 0 {
-			if validatorIndex < len(addresses) {
-				//Add Vote to tracker
-				tracker.AddVote(addresses[validatorIndex], int64(validatorIndex), true)
-				validatorIndex++
-			}
-		}
-
-		//Transition Engine Process
-		//Engine.Process(tracker.TrackerName, tracker, tracker.State)
-
-		index++
-	}
 }
 
 func TestTracker_CheckIfVoted(t *testing.T) {
+	addr := addresses[12]
+	err := trackerLock.AddVote(addr, int64(12), true)
+	if err != nil {
+		t.Errorf(err.Error())
+	}
 
-	h := &common.Hash{}
-	h.SetBytes([]byte("test"))
-	tracker = *NewTracker(ProcessTypeNone, addresses[0], []byte("test"), *h, addresses)
-	tracker.AddVote(addresses[1], 1, true)
-	index0, ok := tracker.CheckIfVoted(addresses[0])
-	assert.False(t, ok)
-	index1, ok := tracker.CheckIfVoted(addresses[1])
-	assert.True(t, ok)
-
-	assert.Equal(t, index0, int64(0))
-	assert.Equal(t, index1, int64(1))
-	assert.Equal(t, ok, true)
+	_, voted := trackerLock.CheckIfVoted(addr)
+	assert.True(t, voted)
 }
 
 func TestTracker_GetVotes(t *testing.T) {
-	//tracker.FinalityVotes = int64(0)
-	tracker.AddVote(addresses[0], 0, true)
-	tracker.AddVote(addresses[1], 1, true)
-	y, n := tracker.GetVotes()
-	fmt.Println("VOTES: ", y, n)
-	assert.Equal(t, 2, y)
-	assert.Equal(t, 0, n)
+	yesVotes, _ := trackerLock.GetVotes()
+	assert.Equal(t, yesVotes, threshold+1) //Vote was added in TestTracker_CheckIfVoted
+}
+
+type trackerCase struct {
+	Input  TrackerState
+	Output string
+}
+
+func TestTracker_NextStep(t *testing.T) {
+
+	testCases := make(map[int]trackerCase)
+	testCases[0] = trackerCase{New, BROADCASTING}
+	testCases[1] = trackerCase{BusyBroadcasting, FINALIZING}
+	testCases[2] = trackerCase{BusyFinalizing, FINALIZE}
+	testCases[3] = trackerCase{Finalized, MINTING}
+	testCases[4] = trackerCase{Released, CLEANUP}
+	testCases[5] = trackerCase{-1, transition.NOOP}
+
+	//Test Lock
+	for _, test := range testCases {
+		trackerLock.State = test.Input
+		assert.Equal(t, trackerLock.NextStep(), test.Output)
+	}
+
+	testCases[0] = trackerCase{New, SIGNING}
+	testCases[1] = trackerCase{BusyBroadcasting, VERIFYREDEEM}
+	testCases[2] = trackerCase{BusyFinalizing, REDEEMCONFIRM}
+	testCases[3] = trackerCase{Finalized, BURN}
+
+	//Test Redeem
+	for _, test := range testCases {
+		trackerRedeem.State = test.Input
+		assert.Equal(t, trackerRedeem.NextStep(), test.Output)
+	}
+
 }
