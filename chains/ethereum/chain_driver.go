@@ -176,19 +176,19 @@ func (acc *ETHChainDriver) GetTransactionMessage(tx *types.Transaction) (*types.
 	return &msg, nil
 }
 
-func (acc *ETHChainDriver) CheckFinality(txHash TransactionHash) (*types.Receipt, error) {
+func (acc *ETHChainDriver) CheckFinality(txHash *TransactionHash) (*types.Receipt, error) {
 
-	result, err := acc.GetClient().TransactionReceipt(context.Background(), txHash)
+	result, err := acc.GetClient().TransactionReceipt(context.Background(), *txHash)
 	if err == nil {
 		if result.Status == types.ReceiptStatusSuccessful {
-			acc.logger.Info("Received TX Receipt for : ", txHash)
-			latestHeader,err:= acc.client.HeaderByNumber(nil,nil)
+			acc.logger.Info("Received TX Receipt , Mined at : ",result.BlockNumber)
+			latestHeader,err:= acc.client.HeaderByNumber(context.Background(),nil)
 			if err != nil {
 				return nil,errors.Wrap(err,"Unable to extract latest header")
 			}
 			diff := big.NewInt(0).Sub(latestHeader.Number, result.BlockNumber)
 			if big.NewInt(12).Cmp(diff) > 0 {
-				return nil,errors.New("Waiting for transaction to be confirmed after 12 blocks")
+				return nil,errors.New("Waiting for confirmation . Current depth of TX in Number of block : "+ diff.String())
 			}
 			return result, nil
 		}
@@ -196,7 +196,6 @@ func (acc *ETHChainDriver) CheckFinality(txHash TransactionHash) (*types.Receipt
 			acc.logger.Warn("Receipt not found ")
 			b, _ := result.MarshalJSON()
 			acc.logger.Error(string(b))
-			//err := Error("Transaction not added to blockchain yet / Failed to obtain receipt")
 			return nil, nil
 		}
 	}
