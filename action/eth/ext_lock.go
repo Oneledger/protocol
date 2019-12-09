@@ -102,7 +102,7 @@ func (e ethLockTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (bool, act
 		return false, action.Response{Log: "wrong tx type"}
 	}
 
-	return runLock(ctx, tx, lock)
+	return runLock(ctx, lock)
 }
 
 // ProcessDeliver
@@ -115,7 +115,7 @@ func (e ethLockTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, a
 		return false, action.Response{Log: "wrong tx type"}
 	}
 
-	ok, resp := runLock(ctx, tx, lock)
+	ok, resp := runLock(ctx, lock)
 	if !ok {
 		return ok, resp
 	}
@@ -131,7 +131,7 @@ func (ethLockTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start
 }
 
 // processCommon
-func runLock(ctx *action.Context, tx action.RawTx, lock *Lock) (bool, action.Response) {
+func runLock(ctx *action.Context, lock *Lock) (bool, action.Response) {
 	ethTx, err := ethchaindriver.DecodeTransaction(lock.ETHTxn)
 	if err != nil {
 		ctx.Logger.Error("decode eth txn err", err)
@@ -139,7 +139,19 @@ func runLock(ctx *action.Context, tx action.RawTx, lock *Lock) (bool, action.Res
 			Log: "decode eth txn error" + err.Error(),
 		}
 	}
-
+	ok,err := ethchaindriver.VerifyLock(ethTx,ctx.ETHTrackers.GetOption().ContractABI)
+	if err != nil {
+		ctx.Logger.Error("Unable to Verify Data for Ethereum Lock")
+		return false,action.Response{
+			Log: "Unable to verify lock trasaction" + err.Error(),
+		}
+	}
+	if !ok {
+		return false,action.Response{
+			Log: "Bytes data does not match (function name field is different)",
+		}
+	}
+	
 	if !bytes.Equal(ethTx.To().Bytes(), ctx.ETHTrackers.GetOption().ContractAddress.Bytes()) {
 
 		ctx.Logger.Error("to field does not match contract address")
@@ -154,7 +166,6 @@ func runLock(ctx *action.Context, tx action.RawTx, lock *Lock) (bool, action.Res
 		ctx.Logger.Error("err in getting validator address", err)
 		return false, action.Response{Log: "error in getting validator addresses" + err.Error()}
 	}
-
 	// Create ethereum tracker
 	tracker := ethereum.NewTracker(
 		ethereum.ProcessTypeLock,
@@ -167,7 +178,6 @@ func runLock(ctx *action.Context, tx action.RawTx, lock *Lock) (bool, action.Res
 	tracker.State = ethereum.New
 	tracker.ProcessOwner = lock.Locker
 	tracker.SignedETHTx = lock.ETHTxn
-
 	// Save eth Tracker
 	err = ctx.ETHTrackers.Set(tracker)
 	fmt.Println("Setting the tracker")

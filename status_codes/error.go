@@ -81,7 +81,7 @@ var (
 	ErrBadBTCTxn = ProtocolError{ParseErrorBadBTCTxn, "bad btc txn"}
 
 	//Ethereum Errors
-	ErrPreparingETHLock = ProtocolError{Code: ExternalErrUnableToCreateEthTX, Msg:  "Unable to create an unsigned lock transaction for Ethereum",}
+	ErrPreparingETHLock        = ProtocolError{Code: ExternalErrUnableToCreateEthTX, Msg:  "Unable to create an unsigned lock transaction for Ethereum",}
 	ErrPreparingOLTLock = ProtocolError{Code: ExternalErrUnableToCreateOLTLockTX, Msg:  "Unable to create OLT lock Tx for Ethereum",}
 	ErrUnmarshaling = ProtocolError{Code: ErrUnmarshalingRedeem, Msg:  "Unable to unmarshall the incoming transaction into struct ,Wrong Json data",}
 

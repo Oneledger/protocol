@@ -33,7 +33,7 @@ import (
 
 var (
 	LockRedeemABI = contract.LockRedeemABI
-	contractAddr  = "0x80DDDD1bF33641500f9c87eB15Cc63764e435B45"
+	contractAddr  = "0x21150903051831557eB818C4c4481F7EA7d2073d"
 
 	cfg               = config.EthereumChainDriverConfig{Connection: "http://localhost:7545"}
 	log               = logger.NewDefaultLogger(os.Stdout).WithPrefix("testeth")
@@ -51,9 +51,9 @@ var (
 )
 
 func init() {
-	UserprivKey, _ = crypto.HexToECDSA("4cd9d773baa6cdfc46b8c910bb08a69e2619fb7234d96cdbd79d992ed1812160")
+	UserprivKey, _ = crypto.HexToECDSA("6c24a44424c8182c1e3e995ad3ccfb2797e3f7ca845b99bea8dead7fc9dccd09")
 
-	UserprivKeyRedeem, _ = crypto.HexToECDSA("e495c77769154d3321b16b1d39d01ae3beaee6828466bcf5bd1f929fed1ab466")
+	UserprivKeyRedeem, _ = crypto.HexToECDSA("6c24a44424c8182c1e3e995ad3ccfb2797e3f7ca845b99bea8dead7fc9dccd09")
 
 	client, _ = cfg.Client()
 	contractAbi, _ = abi.JSON(strings.NewReader(LockRedeemABI))

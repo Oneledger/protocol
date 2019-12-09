@@ -488,7 +488,7 @@ func initialState(args *testnetConfig, nodeList []node, option ethchain.ChainDri
 }
 
 func deployethcdcontract(conn string, nodeList []node) (*ethchain.ChainDriverOption, error) {
-	privatekey, err := crypto.HexToECDSA("a54f9a028a362b0068a5fcd8ec4d4ca512e837264e1675f351280fac71f192ad")
+	privatekey, err := crypto.HexToECDSA("6c24a44424c8182c1e3e995ad3ccfb2797e3f7ca845b99bea8dead7fc9dccd09")
 	if err != nil {
 		return nil, err
 	}
@@ -504,7 +504,7 @@ func deployethcdcontract(conn string, nodeList []node) (*ethchain.ChainDriverOpt
 	}
 
 	fromAddress := crypto.PubkeyToAddress(*publicKeyECDSA)
-	fmt.Println("paying addr", fromAddress.Hex())
+	//fmt.Println("paying addr", fromAddress.Hex())
 	gasPrice, err := cli.SuggestGasPrice(context.Background())
 	if err != nil {
 		return nil, err
@@ -524,7 +524,7 @@ func deployethcdcontract(conn string, nodeList []node) (*ethchain.ChainDriverOpt
 			return nil, err
 		}
 
-		fmt.Println("nonce", nonce)
+		//fmt.Println("nonce", nonce)
 		pubkey := privkey.Public()
 		ecdsapubkey, ok := pubkey.(*ecdsa.PublicKey)
 		if !ok {
@@ -534,7 +534,7 @@ func deployethcdcontract(conn string, nodeList []node) (*ethchain.ChainDriverOpt
 		if node.validator.Address.String() == "" {
 			continue
 		}
-		fmt.Println("validator address:", addr.Hex())
+
 		input = append(input, addr)
 		tx := types.NewTransaction(nonce, addr, big.NewInt(1000000000000000000), auth.GasLimit, auth.GasPrice, (nil))
 		fmt.Printf("%#v", tx)
@@ -544,6 +544,7 @@ func deployethcdcontract(conn string, nodeList []node) (*ethchain.ChainDriverOpt
 			return nil, errors.Wrap(err, "signing tx")
 		}
 		err = cli.SendTransaction(context.Background(), signedTx)
+		fmt.Println("Sending Ether to validator address:", addr.Hex())
 		if err != nil {
 			return nil, errors.Wrap(err, "sending")
 		}
