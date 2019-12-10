@@ -271,6 +271,10 @@ func (ctx *context) Validators() *identity.ValidatorStore {
 	return ctx.validators
 }
 
+func (ctx *context) Replay(version int64) error {
+	return ctx.chainstate.ClearFrom(version)
+}
+
 func (ctx *context) JobContext() *event.JobsContext {
 	cdConfig := ctx.cfg.ChainDriver
 	return event.NewJobsContext(
