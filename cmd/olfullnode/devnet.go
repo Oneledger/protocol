@@ -237,7 +237,7 @@ func runDevnet(_ *cobra.Command, _ []string) error {
 		cfg.Network.P2PAddress = generateAddress(generatePort(), true)
 		cfg.Network.SDKAddress = generateAddress(generatePort(), true, true)
 		cfg.Network.OLVMAddress = generateAddress(generatePort(), true)
-		cfg.EthChainDriver.Connection = "https://ropsten.infura.io/v3/49d4e8f6943b48f28b0d04428eb002af"
+		//cfg.EthChainDriver.Connection = "https://ropsten.infura.io/v3/49d4e8f6943b48f28b0d04428eb002af"
 
 		dirs := []string{configDir, dataDir, nodeDataDir}
 		for _, dir := range dirs {
