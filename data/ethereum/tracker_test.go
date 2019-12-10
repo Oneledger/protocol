@@ -34,7 +34,7 @@ func init() {
 }
 
 func TestTracker_AddVote(t *testing.T) {
-	fmt.Println("***Test AddVote***")
+	fmt.Println("***Test AddVote()***")
 	for i, addr := range addresses {
 		if i >= threshold {
 			continue
@@ -47,12 +47,13 @@ func TestTracker_AddVote(t *testing.T) {
 }
 
 func TestTracker_Finalized(t *testing.T) {
-	fmt.Println("***Test Finalized***")
+	fmt.Println("***Test Finalized()***")
 	ok := trackerLock.Finalized()
 	assert.True(t, ok)
 }
 
 func TestTracker_CheckIfVoted(t *testing.T) {
+	fmt.Println("***Test CheckIfVoted()***")
 	addr := addresses[12]
 	err := trackerLock.AddVote(addr, int64(12), true)
 	if err != nil {
@@ -64,6 +65,7 @@ func TestTracker_CheckIfVoted(t *testing.T) {
 }
 
 func TestTracker_GetVotes(t *testing.T) {
+	fmt.Println("***Test GetVotes()***")
 	yesVotes, _ := trackerLock.GetVotes()
 	assert.Equal(t, yesVotes, threshold+1) //Vote was added in TestTracker_CheckIfVoted
 }
@@ -74,7 +76,7 @@ type trackerCase struct {
 }
 
 func TestTracker_NextStep(t *testing.T) {
-
+	fmt.Println("***Test NextStep()***")
 	testCases := make(map[int]trackerCase)
 	testCases[0] = trackerCase{New, BROADCASTING}
 	testCases[1] = trackerCase{BusyBroadcasting, FINALIZING}
