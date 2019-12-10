@@ -145,6 +145,14 @@ func (l *Logger) Errorf(format string, args ...interface{}) {
 	l.fprintf(Error, time.Now(), format, args...)
 }
 
+func (l *Logger) Detail(args ...interface{}) {
+	l.fprintln(Detail, time.Now(), args...)
+}
+
+func (l *Logger) Detailf(format string, args ...interface{}) {
+	l.fprintf(Detail, time.Now(), format, args...)
+}
+
 func (l *Logger) Fatal(args ...interface{}) {
 	l.fprintln(Fatal, time.Now(), args...)
 	os.Exit(1)
