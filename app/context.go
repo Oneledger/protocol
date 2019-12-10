@@ -5,12 +5,10 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/tendermint/tendermint/libs/db"
-	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/pkg/errors"
 	"github.com/tendermint/tendermint/libs/db"
-  
-  "github.com/Oneledger/protocol/action"
+
+	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/action/btc"
 	"github.com/Oneledger/protocol/action/eth"
 	action_ons "github.com/Oneledger/protocol/action/ons"
@@ -35,7 +33,6 @@ import (
 	"github.com/Oneledger/protocol/rpc"
 	"github.com/Oneledger/protocol/service"
 	"github.com/Oneledger/protocol/storage"
-
 )
 
 // The base context for the application, holds databases and other stateful information contained by the app.
