@@ -106,7 +106,7 @@ func (j *JobBTCBroadcast) DoMyJob(ctxI interface{}) {
 		ctx.Logger.Error("error in building sig script", err)
 	}
 
-	cd := bitcoin.NewChainDriver(ctx.BlockCypherToken)
+	cd := bitcoin.NewChainDriver(ctx.BTCData.BlockCypherToken)
 	lockTx = cd.AddLockSignature(tracker.ProcessUnsignedTx, sigScript)
 
 	buf := bytes.NewBuffer([]byte{})
@@ -139,9 +139,9 @@ func (j *JobBTCBroadcast) DoMyJob(ctxI interface{}) {
 	}
 
 	connCfg := &rpcclient.ConnConfig{
-		Host:         ctx.BTCNodeAddress + ":" + ctx.BTCRPCPort,
-		User:         ctx.BTCRPCUsername,
-		Pass:         ctx.BTCRPCPassword,
+		Host:         ctx.BTCData.BTCNodeAddress + ":" + ctx.BTCData.BTCRPCPort,
+		User:         ctx.BTCData.BTCRPCUsername,
+		Pass:         ctx.BTCData.BTCRPCPassword,
 		HTTPPostMode: true, // Bitcoin core only supports HTTP POST mode
 		DisableTLS:   true, // Bitcoin core does not provide TLS by default
 	}

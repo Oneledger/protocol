@@ -35,19 +35,19 @@ type JobsContext struct {
 	BTCParams  *chaincfg.Params
 
 	ValidatorAddress action.Address
-
-	BlockCypherToken string
-
-	LockScripts *bitcoin.LockScriptStore
-
-	BTCNodeAddress string
-	BTCRPCPort     string
-	BTCRPCUsername string
-	BTCRPCPassword string
-
+	LockScripts      *bitcoin.LockScriptStore
 	EthereumTrackers *ethereum.TrackerStore
 
-	BTCChainnet string
+	BTCData BTCData
+}
+
+type BTCData struct {
+	BTCNodeAddress   string
+	BTCRPCPort       string
+	BTCRPCUsername   string
+	BTCRPCPassword   string
+	BTCChainnet      string
+	BlockCypherToken string
 }
 
 func NewJobsContext(cfg config.Server, btcChainType string, svc *Service,
@@ -72,14 +72,17 @@ func NewJobsContext(cfg config.Server, btcChainType string, svc *Service,
 		ETHPrivKey:       ethprivKey,
 		BTCParams:        params,
 		ValidatorAddress: valAddress,
-		BlockCypherToken: bcyToken,
 		LockScripts:      lStore,
-		BTCNodeAddress:   btcAddress,
-		BTCRPCPort:       btcRPCPort,
-		BTCRPCUsername:   BTCRPCUsername,
-		BTCRPCPassword:   BTCRPCPassword,
 		EthereumTrackers: ethTracker,
-		BTCChainnet:      btcChainType,
+
+		BTCData: BTCData{
+			BlockCypherToken: bcyToken,
+			BTCNodeAddress:   btcAddress,
+			BTCRPCPort:       btcRPCPort,
+			BTCRPCUsername:   BTCRPCUsername,
+			BTCRPCPassword:   BTCRPCPassword,
+			BTCChainnet:      btcChainType,
+		},
 	}
 
 }

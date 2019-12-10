@@ -101,33 +101,32 @@ func (btcRedeemTx) Validate(ctx *action.Context, signedTx action.SignedTx) (bool
 	}
 
 	tx := wire.NewMsgTx(wire.TxVersion)
-
 	buf := bytes.NewBuffer(redeem.BTCTxn)
-	tx.Deserialize(buf)
+	err = tx.Deserialize(buf)
+	if err != nil {
+		return false, errors.New("err in the deserialized btc txn")
+	}
 
 	if len(tx.TxIn) != 1 {
 		return false, errors.New("input should be 1 in txn")
 	}
 	op := tx.TxIn[0].PreviousOutPoint
 
-	fmt.Println(tracker.CurrentTxId.String())
-	fmt.Println(0)
 	// check if the source 0 in the txn is our tracker
 	if op.Hash != *tracker.CurrentTxId {
 		return false, errors.New("txn doesn't match tracker")
 	}
-	fmt.Println(1)
+
 	if op.Index != 0 {
 		return false, errors.New("txn doesn't match tracker")
 	}
-	fmt.Println(2)
+
 	if !bitcoin2.ValidateRedeem(tx, ctx.BlockCypherToken, ctx.BlockCypherChainType, tracker.CurrentTxId,
 		tracker.ProcessLockScriptAddress, tracker.CurrentBalance, redeem.RedeemAmount) {
 
 		return false, errors.New("txn doesn't match tracker")
 	}
 
-	fmt.Println(4)
 	return true, nil
 }
 
@@ -159,6 +158,31 @@ func runExtRedeem(ctx *action.Context, tx action.RawTx) (bool, action.Response) 
 
 	if !tracker.IsAvailable() {
 		return false, action.Response{Log: fmt.Sprintf("tracker not available for redeem: ", redeem.TrackerName)}
+	}
+
+	btcTx := wire.NewMsgTx(wire.TxVersion)
+	buf := bytes.NewBuffer(redeem.BTCTxn)
+	err = btcTx.Deserialize(buf)
+	if err != nil {
+		return false, action.Response{Log: fmt.Sprintf("err bad btc txn: %s", redeem.TrackerName)}
+	}
+
+	if len(btcTx.TxIn) != 1 {
+		return false, action.Response{Log: fmt.Sprintf("err bad btc txn: %s", redeem.TrackerName)}
+	}
+	op := btcTx.TxIn[0].PreviousOutPoint
+
+	// check if the source 0 in the txn is our tracker
+	if op.Hash != *tracker.CurrentTxId {
+		return false, action.Response{Log: fmt.Sprintf("err bad btc txn: %s", redeem.TrackerName)}
+	}
+
+	if op.Index != 0 {
+		return false, action.Response{Log: fmt.Sprintf("err bad btc txn: %s", redeem.TrackerName)}
+	}
+
+	if !bytes.Equal(btcTx.TxOut[0].PkScript, tracker.ProcessLockScriptAddress) {
+		return false, action.Response{Log: fmt.Sprintf("err incorrect btc lock address ", redeem.TrackerName)}
 	}
 
 	tracker.ProcessType = bitcoin.ProcessTypeRedeem
