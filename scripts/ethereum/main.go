@@ -33,7 +33,7 @@ import (
 var (
 	LockRedeemABI = contract.LockRedeemABI
 
-	contractAddr  = "0x4b2d7c542A027A742B1513b1b92693C3E886697D"
+	contractAddr  = "0x6ec797CDE172F27256F8fF3A817be3D6FBB9CE4E"
 
 
 	cfg               = config.DefaultEthConfigRoopsten()
@@ -101,7 +101,6 @@ func lock() {
 	}
 
 	nonce, err := client.PendingNonceAt(context.Background(), fromAddress)
-	fmt.Println(nonce)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -160,7 +159,6 @@ func lock() {
 		fmt.Println(err)
 		return
 	}
-	fmt.Println(result)
 	olt, _ := result.Currencies.GetCurrencySet().GetCurrencyByName("OLT")
 
 	accReply := &oclient.ListAccountsReply{}
@@ -179,11 +177,8 @@ func lock() {
 		Gas:     400000,
 	}
 	//
-	fmt.Println("REQUEST  : ", req)
 	reply := &se.OLTLockReply{}
 	err = rpcclient.Call("eth.CreateRawExtLock", req, reply)
-
-	fmt.Println("REPLY    : ", reply, err)
 	signReply := &oclient.SignRawTxResponse{}
 	err = rpcclient.Call("owner.SignWithAddress", oclient.SignRawTxRequest{
 		RawTx:   reply.RawTX,
@@ -233,7 +228,6 @@ func redeem() {
 		log.Fatal(err)
 	}
 
-	fmt.Println(2)
 	auth2 := bind.NewKeyedTransactor(UserprivKeyRedeem)
 	auth2.Nonce = big.NewInt(int64(nonce))
 	auth2.Value = big.NewInt(0) // in wei
@@ -254,7 +248,6 @@ func redeem() {
 
 		log.Fatal(err)
 	}
-	fmt.Println(3)
 
 	ts2 := types.Transactions{signedTx2}
 
@@ -264,13 +257,10 @@ func redeem() {
 
 	if err != nil {
 		fmt.Println(err)
-		//fmt.Println("2")
 		return
 	}
-	txhash := client.SendTransaction(context.Background(), signedTx2)
-	fmt.Println(txhash)
 
-	fmt.Println(4)
+	_ = client.SendTransaction(context.Background(), signedTx2)
 	rpcclient, err := rpc.NewClient("http://localhost:26602")
 	if err != nil {
 		fmt.Println(err)
@@ -292,7 +282,6 @@ func redeem() {
 		fmt.Println(err)
 		return
 	}
-	fmt.Println(result)
 	olt, _ := result.Currencies.GetCurrencySet().GetCurrencyByName("OLT")
 
 	rr := se.RedeemRequest{
@@ -306,7 +295,6 @@ func redeem() {
 	reply := &se.OLTLockReply{}
 	err = rpcclient.Call("eth.CreateRawExtRedeem", rr, reply)
 
-	fmt.Println("REPLY    : ", reply, err)
 	signReply := &oclient.SignRawTxResponse{}
 	err = rpcclient.Call("owner.SignWithAddress", oclient.SignRawTxRequest{
 		RawTx:   reply.RawTX,

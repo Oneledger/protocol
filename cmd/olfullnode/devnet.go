@@ -532,7 +532,6 @@ func deployethcdcontract(conn string, nodeList []node) (*ethchain.ChainDriverOpt
 
 		input = append(input, addr)
 		tx := types.NewTransaction(nonce, addr, big.NewInt(100000000000000000), auth.GasLimit, auth.GasPrice, (nil))
-		fmt.Printf("%#v", tx)
 		chainId, _ := cli.ChainID(context.Background())
 		signedTx, err := types.SignTx(tx, types.NewEIP155Signer(chainId), privatekey)
 		if err != nil {

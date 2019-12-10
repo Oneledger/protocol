@@ -145,7 +145,7 @@ func runCheckFinality(ctx *action.Context, tx action.RawTx) (bool, action.Respon
 		ctx.Logger.Info("Unable to save the tracker", err)
 		return false, action.Response{Log: errors.Wrap(err, "unable to save the tracker").Error()}
 	}
-	ctx.Logger.Info("Vote added | Validator : " ,f.ValidatorAddress, " | Process Type : ",tracker.Type)
+	ctx.Logger.Info("Vote added | Validator : " ,f.ValidatorAddress, " | Process Type : ",tracker)
 	yes, no := tracker.GetVotes()
 	return true, action.Response{Log: "vote success, not ready to mint: " + strconv.Itoa(yes) + strconv.Itoa(no)}
 }
