@@ -179,9 +179,9 @@ func (acc *ETHChainDriver) GetTransactionMessage(tx *types.Transaction) (*types.
 	return &msg, nil
 }
 
-func (acc *ETHChainDriver) CheckFinality(txHash *TransactionHash) (*types.Receipt, error) {
+func (acc *ETHChainDriver) CheckFinality(txHash TransactionHash) (*types.Receipt, error) {
 
-	result, err := acc.GetClient().TransactionReceipt(context.Background(), *txHash)
+	result, err := acc.GetClient().TransactionReceipt(context.Background(), txHash)
 	if err == nil {
 		if result.Status == types.ReceiptStatusSuccessful {
 			acc.logger.Info("Received TX Receipt , Mined at : ",result.BlockNumber)
@@ -191,7 +191,7 @@ func (acc *ETHChainDriver) CheckFinality(txHash *TransactionHash) (*types.Receip
 			}
 			diff := big.NewInt(0).Sub(latestHeader.Number, result.BlockNumber)
 			if big.NewInt(12).Cmp(diff) > 0 {
-				return nil,errors.New("Waiting for confirmation . Current depth of TX in Number of block : "+ diff.String())
+				return nil,errors.New("Waiting for confirmation . Current depth of TX in Number of blocks : "+ diff.String())
 			}
 			return result, nil
 		}
@@ -202,7 +202,7 @@ func (acc *ETHChainDriver) CheckFinality(txHash *TransactionHash) (*types.Receip
 			return nil, nil
 		}
 	}
-	acc.logger.Error("Unable to connect to Ethereum :", err)
+	acc.logger.Error("Transaction not added to Block yet :", err)
 	return nil, err
 }
 
@@ -221,7 +221,7 @@ func (acc *ETHChainDriver) BroadcastTx(tx *types.Transaction) (TransactionHash, 
 		acc.logger.Error("Error connecting to Ethereum :", err)
 		return tx.Hash(), err
 	}
-	acc.logger.Info("Transaction Broadcasted to Ethereum ", tx.Hash())
+	acc.logger.Info("Transaction Broadcasted to Ethereum ", tx.Hash().Hex())
 	return tx.Hash(), nil
 
 }
@@ -260,12 +260,13 @@ func (acc *ETHChainDriver) VerifyRedeem(validatorAddress common.Address, recipie
 }
 
 func VerifyLock(tx *types.Transaction,contractabi string) (bool,error) {
+
 	contractAbi, err := abi.JSON(strings.NewReader(contractabi))
 	if err!= nil {
 		return false,errors.Wrap(err,"Unable to get contract Abi from ChainDriver options")
 	}
 	bytesData, err := contractAbi.Pack("lock")
-	{
+	if err!= nil {
 		return false,errors.Wrap(err,"Unable to to create Bytes data for Lock")
 	}
 	return bytes.Equal(bytesData,tx.Data()),nil

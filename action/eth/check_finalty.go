@@ -2,6 +2,7 @@ package eth
 
 import (
 	"encoding/json"
+	"fmt"
 	"strconv"
 
 	"github.com/pkg/errors"
@@ -116,7 +117,6 @@ func runCheckFinality(ctx *action.Context, tx action.RawTx) (bool, action.Respon
 		//	return false, action.Response{Log: err.Error()}
 	}
 
-	//
 	if tracker.Finalized() {
 		return true, action.Response{Log: "tracker already finalized"}
 	}
@@ -159,6 +159,12 @@ func runCheckFinality(ctx *action.Context, tx action.RawTx) (bool, action.Respon
 }
 
 func (reportFinalityMintTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas) (bool, action.Response) {
+	ctx.State.ConsumeVerifySigGas(1)
+	ctx.State.ConsumeStorageGas(size)
+	// check the used gas for the tx
+	final := ctx.Balances.State.ConsumedGas()
+	used := int64(final - start)
+	fmt.Println("gas used:", used)
 	return true, action.Response{}
 }
 

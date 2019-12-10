@@ -10,7 +10,6 @@ import (
 	"math/big"
 	"os"
 	"strings"
-	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -34,18 +33,18 @@ import (
 var (
 	LockRedeemABI = contract.LockRedeemABI
 
-	contractAddr  = "0x181599CaC362067bE8556FC4Faa8eE302e534bb2"
+	contractAddr  = "0x4b2d7c542A027A742B1513b1b92693C3E886697D"
 
 
-	cfg               = config.EthereumChainDriverConfig{Connection: "http://localhost:7545"}
+	cfg               = config.DefaultEthConfigRoopsten()
 	log               = logger.NewDefaultLogger(os.Stdout).WithPrefix("testeth")
 	UserprivKey       *ecdsa.PrivateKey
 	UserprivKeyRedeem *ecdsa.PrivateKey
 
 	client                 *ethclient.Client
 	contractAbi            abi.ABI
-	valuelock              = createValue("9000000000000000000") // in wei (1 eth)
-	valueredeem            = createValue("47000000000000000000")
+	valuelock              = createValue("10000") // in wei (1 eth)
+	valueredeem            = createValue("100")
 	fromAddress            common.Address
 	redeemRecipientAddress common.Address
 
@@ -64,10 +63,10 @@ func createValue(str string) *big.Int {
 
 func init() {
 
-	UserprivKey, _ = crypto.HexToECDSA("566c177a11b69721a7439b5496af2c2481e47088179ed218c8ae3b039ce18132")
+	UserprivKey, _ = crypto.HexToECDSA("02038529C9AB706E9F4136F4A4EB51E866DBFE22D5E102FD3A22C14236E1C2EA")
 
 
-	UserprivKeyRedeem, _ = crypto.HexToECDSA("6c24a44424c8182c1e3e995ad3ccfb2797e3f7ca845b99bea8dead7fc9dccd09")
+	UserprivKeyRedeem, _ = crypto.HexToECDSA("02038529C9AB706E9F4136F4A4EB51E866DBFE22D5E102FD3A22C14236E1C2EA")
 
 	client, _ = cfg.Client()
 	contractAbi, _ = abi.JSON(strings.NewReader(LockRedeemABI))
@@ -90,16 +89,7 @@ func init() {
 }
 
 func main() {
-
-	//
-	lock()
-
-	time.Sleep(10 * time.Second)
-
-	//}
-
-	// redeem
-
+	//lock()
 	redeem()
 }
 
@@ -111,6 +101,7 @@ func lock() {
 	}
 
 	nonce, err := client.PendingNonceAt(context.Background(), fromAddress)
+	fmt.Println(nonce)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -130,14 +121,14 @@ func lock() {
 
 	tx := types.NewTransaction(nonce, toAddress, valuelock, gasLimit, gasPrice, bytesData)
 
-	fmt.Println("Trasaction Unsigned : ", tx)
-	chainID, err := client.NetworkID(context.Background())
+	//fmt.Println("Transaction Unsigned : ", tx)
+	chainID, err := client.ChainID(context.Background())
 	if err != nil {
 
 		log.Fatal(err)
 	}
 
-	fmt.Println("a")
+
 	signedTx, err := types.SignTx(tx, types.NewEIP155Signer(chainID), UserprivKey)
 	if err != nil {
 
@@ -145,25 +136,24 @@ func lock() {
 	}
 	ts := types.Transactions{signedTx}
 
-	fmt.Println("b")
+
 	rawTxBytes := ts.GetRlp(0)
 	txNew := &types.Transaction{}
 	err = rlp.DecodeBytes(rawTxBytes, txNew)
 
 	if err != nil {
 		fmt.Println(err)
-		//fmt.Println("2")
 		return
 	}
 
-	fmt.Println("c")
+
 	rpcclient, err := rpc.NewClient("http://localhost:26602")
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
 
-	fmt.Println("d")
+
 	result := &oclient.ListCurrenciesReply{}
 	err = rpcclient.Call("query.ListCurrencies", struct{}{}, result)
 	if err != nil {

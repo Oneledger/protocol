@@ -237,6 +237,7 @@ func runDevnet(_ *cobra.Command, _ []string) error {
 		cfg.Network.P2PAddress = generateAddress(generatePort(), true)
 		cfg.Network.SDKAddress = generateAddress(generatePort(), true, true)
 		cfg.Network.OLVMAddress = generateAddress(generatePort(), true)
+		cfg.EthChainDriver.Connection = "https://ropsten.infura.io/v3/49d4e8f6943b48f28b0d04428eb002af"
 
 		dirs := []string{configDir, dataDir, nodeDataDir}
 		for _, dir := range dirs {
@@ -482,7 +483,7 @@ func initialState(args *testnetConfig, nodeList []node, option ethchain.ChainDri
 }
 
 func deployethcdcontract(conn string, nodeList []node) (*ethchain.ChainDriverOption, error) {
-	privatekey, err := crypto.HexToECDSA("6c24a44424c8182c1e3e995ad3ccfb2797e3f7ca845b99bea8dead7fc9dccd09")
+	privatekey, err := crypto.HexToECDSA("02038529C9AB706E9F4136F4A4EB51E866DBFE22D5E102FD3A22C14236E1C2EA")
 	if err != nil {
 		return nil, err
 	}
@@ -530,7 +531,7 @@ func deployethcdcontract(conn string, nodeList []node) (*ethchain.ChainDriverOpt
 		}
 
 		input = append(input, addr)
-		tx := types.NewTransaction(nonce, addr, big.NewInt(1000000000000000000), auth.GasLimit, auth.GasPrice, (nil))
+		tx := types.NewTransaction(nonce, addr, big.NewInt(100000000000000000), auth.GasLimit, auth.GasPrice, (nil))
 		fmt.Printf("%#v", tx)
 		chainId, _ := cli.ChainID(context.Background())
 		signedTx, err := types.SignTx(tx, types.NewEIP155Signer(chainId), privatekey)
@@ -538,7 +539,6 @@ func deployethcdcontract(conn string, nodeList []node) (*ethchain.ChainDriverOpt
 			return nil, errors.Wrap(err, "signing tx")
 		}
 		err = cli.SendTransaction(context.Background(), signedTx)
-		fmt.Println("Sending Ether to validator address:", addr.Hex())
 		if err != nil {
 			return nil, errors.Wrap(err, "sending")
 		}
@@ -551,11 +551,11 @@ func deployethcdcontract(conn string, nodeList []node) (*ethchain.ChainDriverOpt
 	}
 
 	auth.Nonce = big.NewInt(int64(nonce))
-	fmt.Println("deploy nonce", nonce)
 	address, _, _, err := ethcontracts.DeployLockRedeem(auth, cli, input)
 	if err != nil {
 		return nil, errors.Wrap(err, "deploy")
 	}
+	fmt.Println("Contract Address : ",address.Hex())
 
 	return &ethchain.ChainDriverOption{
 		ContractABI:     contract.LockRedeemABI,
