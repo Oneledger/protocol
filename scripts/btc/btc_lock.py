@@ -1,10 +1,6 @@
 
 import requests
 import json
-import sys
-
-
-from ecdsa import VerifyingKey, SECP256k1
 
 url = "http://127.0.0.1:26602/jsonrpc"
 headers = {
@@ -36,6 +32,7 @@ def prepare_lock(txhash, index):
     req = {
         "hash": txhash,
         "index": index,
+        "btc_fees": 50000,
     }
     resp = rpc_call('btc.PrepareLock', req)
 

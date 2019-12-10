@@ -3,11 +3,13 @@ package governance
 import (
 	"encoding/binary"
 
+	"github.com/pkg/errors"
+
+	ethchain "github.com/Oneledger/protocol/chains/ethereum"
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/fees"
 	"github.com/Oneledger/protocol/serialize"
 	"github.com/Oneledger/protocol/storage"
-	"github.com/pkg/errors"
 )
 
 const (
@@ -16,6 +18,8 @@ const (
 	ADMIN_FEE_OPTION_KEY string = "feeopt"
 
 	ADMIN_EPOCH_BLOCK_INTERVAL string = "epoch"
+
+	ADMIN_ETH_CHAINDRIVER_OPTION string = "ethcdopt"
 )
 
 type Store struct {
@@ -137,6 +141,31 @@ func (st *Store) SetEpoch(epoch int64) error {
 	err := st.Set([]byte(ADMIN_EPOCH_BLOCK_INTERVAL), b)
 	if err != nil {
 		return errors.Wrap(err, "failed to set the currencies")
+	}
+	return nil
+}
+
+func (st *Store) GetETHChainDriverOption() (*ethchain.ChainDriverOption, error) {
+	bytes, err := st.Get([]byte(ADMIN_ETH_CHAINDRIVER_OPTION))
+	if err != nil {
+		return nil, err
+	}
+	r := &ethchain.ChainDriverOption{}
+	err = serialize.GetSerializer(serialize.PERSISTENT).Deserialize(bytes, r)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to deserialize eth chaindriver option stored")
+	}
+	return r, nil
+}
+
+func (st *Store) SetETHChainDriverOption(opt ethchain.ChainDriverOption) error {
+	bytes, err := serialize.GetSerializer(serialize.PERSISTENT).Serialize(opt)
+	if err != nil {
+		return errors.Wrap(err, "failed to serialize eth chaindriver option")
+	}
+	err = st.Set([]byte(ADMIN_ETH_CHAINDRIVER_OPTION), bytes)
+	if err != nil {
+		return errors.Wrap(err, "failed to set the eth chaindriver option")
 	}
 	return nil
 }

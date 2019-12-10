@@ -80,7 +80,7 @@ func assemblySendData(replaceFrom bool) (action.SignedTx, crypto.Address) {
 	signed := action.SignedTx{
 		RawTx: tx,
 		Signatures: []action.Signature{
-			action.Signature{
+			{
 				Signer: keys.PublicKey{keys.ED25519, fromPubkey.Bytes()[5:]},
 				Signed: signature,
 			}},

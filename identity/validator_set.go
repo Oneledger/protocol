@@ -5,16 +5,17 @@ import (
 	"fmt"
 	"math/big"
 
+	"github.com/btcsuite/btcd/chaincfg"
+	"github.com/btcsuite/btcutil"
+	"github.com/pkg/errors"
+	"github.com/tendermint/tendermint/abci/types"
+
 	"github.com/Oneledger/protocol/config"
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/fees"
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/storage"
 	"github.com/Oneledger/protocol/utils"
-	"github.com/btcsuite/btcd/chaincfg"
-	"github.com/btcsuite/btcutil"
-	"github.com/pkg/errors"
-	"github.com/tendermint/tendermint/abci/types"
 )
 
 type ValidatorStore struct {
@@ -178,9 +179,19 @@ func (vs *ValidatorStore) GetValidatorsAddress() ([]keys.Address, error) {
 	return validatorAddress, nil
 }
 
-func (vs *ValidatorStore) IsValidatorAddress(query keys.Address) bool {
-
+func (vs *ValidatorStore) IsValidator() bool {
 	return vs.isValidator
+}
+
+func (vs *ValidatorStore) IsValidatorAddress(addr keys.Address) bool {
+	v, err := vs.Get(addr)
+	if err != nil {
+		return false
+	}
+	if v.Power > 0 {
+		return true
+	}
+	return false
 }
 
 // handle stake action

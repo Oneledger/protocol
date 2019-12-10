@@ -59,16 +59,36 @@ func (sv *Service) ONS_GetDomainOnSale(req client.ONSGetDomainsRequest, reply *c
 		return codes.ErrFlagNotSet
 	}
 
-	dds := make([]ons.Domain, 0)
+	ds := make([]ons.Domain, 0)
 	domains.Iterate(func(name string, domain *ons.Domain) bool {
 		if domain.OnSaleFlag {
-			dds = append(dds, *domain)
+			ds = append(ds, *domain)
 		}
 		return false
 	})
 
 	*reply = client.ONSGetDomainsOnSaleReply{
-		Domains: dds,
+		Domains: ds,
+	}
+	return nil
+}
+
+func (sv *Service) ONS_GetDomainByBeneficiary(req client.ONSGetDomainsRequest, reply *client.ONSGetDomainsOnSaleReply) error {
+	domains := sv.ons
+	if req.Beneficiary == nil {
+		return codes.ErrBadAddress
+	}
+
+	ds := make([]ons.Domain, 0)
+	domains.Iterate(func(name string, domain *ons.Domain) bool {
+		if domain.AccountAddress.Equal(req.Beneficiary) {
+			ds = append(ds, *domain)
+		}
+		return false
+	})
+
+	*reply = client.ONSGetDomainsOnSaleReply{
+		Domains: ds,
 	}
 	return nil
 }

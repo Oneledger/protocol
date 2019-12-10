@@ -11,7 +11,7 @@ update:
 # Build and install a copy in bin
 #
 install:
-	go install github.com/Oneledger/protocol/cmd/...
+	go install -i github.com/Oneledger/protocol/cmd/...
 
 # Enable the clevelDB
 install_c:  
@@ -112,14 +112,13 @@ alltest: install
 	@./scripts/stopDev
 
 
-
-
 reset: install
 	@./scripts/stopDev
 	@./scripts/resetDev
 	@./scripts/startDev
-	@./scripts/testapply
-	@./scripts/testsend
+# 	@./scripts/testapply
+# 	@./scripts/testsend
+
 
 rpcAuthtest: install
 	@./scripts/stopDev

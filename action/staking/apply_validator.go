@@ -4,12 +4,11 @@ import (
 	"encoding/json"
 
 	"github.com/pkg/errors"
+	"github.com/tendermint/tendermint/libs/common"
 
 	"github.com/Oneledger/protocol/action"
-
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/identity"
-	"github.com/tendermint/tendermint/libs/common"
 )
 
 var _ action.Msg = &ApplyValidator{}

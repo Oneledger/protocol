@@ -10,13 +10,13 @@
 package client
 
 import (
+	ctypes "github.com/tendermint/tendermint/rpc/core/types"
+
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/data/accounts"
 	"github.com/Oneledger/protocol/data/balance"
-	"github.com/Oneledger/protocol/data/bitcoin"
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/identity"
-	ctypes "github.com/tendermint/tendermint/rpc/core/types"
 )
 
 /*
@@ -191,8 +191,9 @@ type BTCLockRequest struct {
 }
 
 type BTCLockPrepareRequest struct {
-	Hash  string `json:"hash"`
-	Index uint32 `json:"index"`
+	Hash    string `json:"hash"`
+	Index   uint32 `json:"index"`
+	FeesBTC int64  `json:"fees_btc"`
 }
 type BTCLockPrepareResponse struct {
 	Txn         string `json:"txn"`
@@ -203,16 +204,27 @@ type BTCGetTrackerRequest struct {
 	Name string `json:"name"`
 }
 type BTCGetTrackerReply struct {
-	Tracker bitcoin.Tracker `json:"tracker"`
+	TrackerData string `json:"tracker"`
 }
 
-type BTCLockRedeemRequest struct {
-	Address string `json:"address"`
-	Amount  int64  `json:"amount"`
+type BTCRedeemRequest struct {
+	Address    keys.Address  `json:"address"`
+	BTCAddress string        `json:"btc_address"`
+	Amount     int64         `json:"amount"`
+	FeesBTC    int64         `json:"fees_btc"`
+	GasPrice   action.Amount `json:"gasprice"`
+	Gas        int64         `json:"gas"`
 }
 type BTCRedeemPrepareResponse struct {
-	Txn         string `json:"txn"`
+	RawTx       []byte `json:"rawTx"`
 	TrackerName string `json:"tracker_name"`
+}
+
+type ETHLockRequest struct {
+	Txn     []byte
+	Address keys.Address
+	Fee     action.Amount `json:"fee"`
+	Gas     int64         `json:"gas"`
 }
 
 type CurrencyBalanceRequest struct {

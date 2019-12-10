@@ -4,14 +4,15 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"fmt"
-	"github.com/btcsuite/btcutil/base58"
 	"io/ioutil"
 	"net/http"
 	"strings"
 
+	"github.com/btcsuite/btcutil/base58"
+	"github.com/pkg/errors"
+
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/serialize"
-	"github.com/pkg/errors"
 )
 
 type RestfulRouter map[string]http.HandlerFunc

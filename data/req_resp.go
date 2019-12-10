@@ -34,7 +34,7 @@ type Request struct {
 	Params map[string]interface{} // request params as a map of string to interface
 }
 
-// NewRequest creates a new request with given Params.
+// NewRequest creates a new request with given BTCParams.
 func NewRequest(query string, params map[string]interface{}) (*Request, error) {
 	req := &Request{Query: query, Params: params}
 
@@ -70,7 +70,7 @@ func NewRequestFromObj(query string, obj interface{}) (*Request, error) {
 	return req, nil
 }
 
-// Parse parses the serialized parameters data and saves it to Params
+// Parse parses the serialized parameters data and saves it to BTCParams
 func (r *Request) Parse() {
 	p := map[string]interface{}{}
 

@@ -12,7 +12,6 @@ func init() {
 	setup = make(map[string]func(cfg *Server, value string) error)
 	setup["persistent_peers"] = persistent
 
-
 }
 
 func Setup(cfg *Server, key string, value string) error {

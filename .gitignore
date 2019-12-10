@@ -12,3 +12,4 @@ playground.go
 *.out
 venv/
 *.pyc
+data/bitcoin/tmp

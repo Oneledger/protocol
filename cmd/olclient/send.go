@@ -18,11 +18,12 @@ import (
 	"errors"
 	"strconv"
 
+	"github.com/spf13/cobra"
+	ctypes "github.com/tendermint/tendermint/rpc/core/types"
+
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/client"
 	"github.com/Oneledger/protocol/data/balance"
-	"github.com/spf13/cobra"
-	ctypes "github.com/tendermint/tendermint/rpc/core/types"
 )
 
 var sendCmd = &cobra.Command{

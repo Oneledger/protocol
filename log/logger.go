@@ -2,12 +2,13 @@ package log
 
 import (
 	"fmt"
-	"github.com/davecgh/go-spew/spew"
-	kitlog "github.com/go-kit/kit/log"
 	"io"
 	"os"
 	"strings"
 	"time"
+
+	"github.com/davecgh/go-spew/spew"
+	kitlog "github.com/go-kit/kit/log"
 )
 
 func init() {

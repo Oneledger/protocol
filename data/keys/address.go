@@ -6,8 +6,9 @@ import (
 	"encoding/hex"
 	"strings"
 
-	"github.com/Oneledger/protocol/utils"
 	"github.com/pkg/errors"
+
+	"github.com/Oneledger/protocol/utils"
 )
 
 //Address to be used as to reference a key-pair.

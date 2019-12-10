@@ -9,12 +9,12 @@ import (
 	"path/filepath"
 	"strconv"
 
-	"github.com/Oneledger/protocol/data/balance"
+	"github.com/pkg/errors"
+	"github.com/spf13/cobra"
 
 	"github.com/Oneledger/protocol/client"
 	"github.com/Oneledger/protocol/config"
-	"github.com/pkg/errors"
-	"github.com/spf13/cobra"
+	"github.com/Oneledger/protocol/data/balance"
 )
 
 type ApplyValidatorArguments struct {
