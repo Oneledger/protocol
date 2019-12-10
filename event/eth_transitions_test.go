@@ -3,10 +3,11 @@ package event
 import (
 	"fmt"
 	"github.com/Oneledger/protocol/config"
-	"github.com/Oneledger/protocol/data/bitcoin"
+	"github.com/Oneledger/protocol/data/chain"
 	"github.com/Oneledger/protocol/data/ethereum"
 	"github.com/Oneledger/protocol/data/jobs"
 	"github.com/Oneledger/protocol/data/keys"
+	"github.com/Oneledger/protocol/identity"
 	"github.com/Oneledger/protocol/storage"
 	"github.com/Oneledger/protocol/utils/transition"
 	"github.com/ethereum/go-ethereum/common"
@@ -23,9 +24,9 @@ var (
 	privKeys    = make([]keys.PrivateKey, numberOfPrivKey)
 	addresses   = make([]keys.Address, numberOfPrivKey)
 	chainState  storage.ChainState
-	btcTrackers bitcoin.TrackerStore
 	ethTrackers ethereum.TrackerStore
 	jobStore    jobs.JobStore
+	valStore    identity.ValidatorStore
 
 	testCases map[int]Case
 )
@@ -51,9 +52,9 @@ func setup() {
 	}
 
 	chainState = *storage.NewChainState("chainstate", db)
-	btcTrackers = *bitcoin.NewTrackerStore("btct", storage.NewState(&chainState))
 	ethTrackers = *ethereum.NewTrackerStore("etht", storage.NewState(&chainState))
 	jobStore = *jobs.NewJobStore(*config.DefaultServerConfig(), "test_dbpath")
+	valStore = *identity.NewValidatorStore("val", *config.DefaultServerConfig(), storage.NewState(&chainState))
 }
 
 func init() {
@@ -105,24 +106,17 @@ func TestTransitions(t *testing.T) {
 			//Set Status
 			tracker.State = testCase.InState
 
-			ctx := ethereum.TrackerCtx{
-				Tracker:      &tracker,
-				TrackerStore: &ethTrackers,
-				JobStore:     &jobStore,
-				CurrNodeAddr: testCase.CurrNodeAddr,
-				Validators:   nil,
-			}
-
 			fmt.Println("In State:", transition.Status(tracker.State))
 
+			ctx := ethereum.NewTrackerCtx(&tracker, testCase.CurrNodeAddr, jobStore.WithChain(chain.ETHEREUM), &ethTrackers, &valStore)
 			_, err := EthLockEngine.Process(tracker.NextStep(), ctx, transition.Status(tracker.State))
 			if err != nil {
 				t.Errorf(err.Error())
 			}
 
 			//Validate Output
-			assert.Equal(t, transition.Status(testCase.OutState), transition.Status(tracker.State))
-			assert.Equal(t, testCase.Err, err)
+			assert.Equal(t, transition.Status(tracker.State), transition.Status(testCase.OutState))
+			assert.Equal(t, err, testCase.Err)
 		})
 	}
 }
