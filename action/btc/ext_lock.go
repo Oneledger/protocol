@@ -134,8 +134,8 @@ func (btcLockTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, act
 }
 
 func (btcLockTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas) (bool, action.Response) {
+	ctx.State.ConsumeUpfront(701660)
 	return action.BasicFeeHandling(ctx, signedTx, start, size, 1)
-	// return true, action.Response{}
 }
 
 func runBTCLock(ctx *action.Context, tx action.RawTx) (bool, action.Response) {

@@ -33,7 +33,7 @@ import (
 
 var (
 	LockRedeemABI = contract.LockRedeemABI
-	contractAddr  = "0x181599CaC362067bE8556FC4Faa8eE302e534bb2"
+	contractAddr  = "0xDEBd41B662c3E085071D7a236C5d650a04e6853B"
 
 	cfg               = config.EthereumChainDriverConfig{Connection: "http://localhost:7545"}
 	log               = logger.NewDefaultLogger(os.Stdout).WithPrefix("testeth")
@@ -61,9 +61,9 @@ func createValue(str string) *big.Int {
 }
 
 func init() {
-	UserprivKey, _ = crypto.HexToECDSA("566c177a11b69721a7439b5496af2c2481e47088179ed218c8ae3b039ce18132")
+	UserprivKey, _ = crypto.HexToECDSA("d18258b9bdcdbd0aa5b5a9717164907e0f22f0917d6da227d8dc1721d22596c5")
 
-	UserprivKeyRedeem, _ = crypto.HexToECDSA("e495c77769154d3321b16b1d39d01ae3beaee6828466bcf5bd1f929fed1ab466")
+	UserprivKeyRedeem, _ = crypto.HexToECDSA("69420dfe6efcb7127872e9a7c0d818c33c1b3cc1c5f8dd68e66164bbae4faf92")
 
 	client, _ = cfg.Client()
 	contractAbi, _ = abi.JSON(strings.NewReader(LockRedeemABI))
@@ -87,14 +87,9 @@ func init() {
 
 func main() {
 
-	//
 	lock()
 
 	time.Sleep(10 * time.Second)
-
-	//}
-
-	// redeem
 
 	redeem()
 }
@@ -249,7 +244,7 @@ func redeem() {
 	value := big.NewInt(0)
 	tx2 := types.NewTransaction(nonce, toAddress, value, gasLimit, gasPrice, bytesData)
 
-	chainID, err := client.NetworkID(context.Background())
+	chainID, err := client.ChainID(context.Background())
 	if err != nil {
 
 		log.Fatal(err)
