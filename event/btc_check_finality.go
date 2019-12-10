@@ -19,6 +19,8 @@ import (
 const (
 	TwoMinutes  = 60 * 2
 	FiveMinutes = 60 * 5
+
+	SixtyMinutes = 60 * 60
 )
 
 type JobBTCCheckFinality struct {
@@ -37,7 +39,7 @@ func NewBTCCheckFinalityJob(trackerName, id string) jobs.Job {
 		Type:        JobTypeBTCCheckFinality,
 		TrackerName: trackerName,
 		JobID:       id,
-		CheckAfter:  time.Now().Unix() + FiveMinutes,
+		CheckAfter:  time.Now().Unix() + SixtyMinutes,
 		Status:      jobs.New,
 	}
 }
@@ -75,7 +77,7 @@ func (cf *JobBTCCheckFinality) DoMyJob(ctxI interface{}) {
 	}
 
 	if !ok {
-		cf.CheckAfter = time.Now().Unix() + TwoMinutes
+		cf.CheckAfter = time.Now().Unix() + FiveMinutes
 		ctx.Logger.Info("not finalized yet", cf.TrackerName)
 		return
 	}
