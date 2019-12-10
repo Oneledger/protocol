@@ -184,14 +184,13 @@ func (acc *ETHChainDriver) CheckFinality(txHash TransactionHash) (*types.Receipt
 	result, err := acc.GetClient().TransactionReceipt(context.Background(), txHash)
 	if err == nil {
 		if result.Status == types.ReceiptStatusSuccessful {
-			acc.logger.Info("Received TX Receipt , Mined at : ",result.BlockNumber)
 			latestHeader,err:= acc.client.HeaderByNumber(context.Background(),nil)
 			if err != nil {
 				return nil,errors.Wrap(err,"Unable to extract latest header")
 			}
 			diff := big.NewInt(0).Sub(latestHeader.Number, result.BlockNumber)
 			if big.NewInt(12).Cmp(diff) > 0 {
-				return nil,errors.New("Waiting for confirmation . Current depth of TX in Number of blocks : "+ diff.String())
+				return nil,errors.New("Waiting for confirmation . Current Block Confirmations : "+ diff.String())
 			}
 			return result, nil
 		}

@@ -114,17 +114,11 @@ func runCheckFinality(ctx *action.Context, tx action.RawTx) (bool, action.Respon
 	tracker, err := ctx.ETHTrackers.Get(f.TrackerName)
 	if err != nil {
 		ctx.Logger.Error(err, "err getting tracker")
-		//	return false, action.Response{Log: err.Error()}
 	}
 
 	if tracker.Finalized() {
-		return true, action.Response{Log: "tracker already finalized"}
+		return true, action.Response{Log: "Tracker already finalized"}
 	}
-
-	ctx.Logger.Error("Trying to add vote ")
-	index, ok := tracker.CheckIfVoted(f.ValidatorAddress)
-
-	ctx.Logger.Info("Before voting", ok, "Index :", index, "F.index", f.VoteIndex)
 	err = tracker.AddVote(f.ValidatorAddress, f.VoteIndex, true)
 	if err != nil {
 		return false, action.Response{Log: errors.Wrap(err, "failed to add vote").Error()}
@@ -143,7 +137,7 @@ func runCheckFinality(ctx *action.Context, tx action.RawTx) (bool, action.Respon
 			}
 		}
 
-		return true, action.Response{Log: "minting successful"}
+		return true, action.Response{Log: "Minting successful"}
 	}
 
 	err = ctx.ETHTrackers.Set(tracker)
@@ -151,9 +145,7 @@ func runCheckFinality(ctx *action.Context, tx action.RawTx) (bool, action.Respon
 		ctx.Logger.Info("Unable to save the tracker", err)
 		return false, action.Response{Log: errors.Wrap(err, "unable to save the tracker").Error()}
 	}
-
-	// fmt.Println("TRACKER SAVED AT CHECK FINALITY (VOTES): ", tracker.GetVotes())
-	ctx.Logger.Info("Voting Done ,unable to mint yet")
+	ctx.Logger.Info("Vote added | Validator : " ,f.ValidatorAddress, " | Process Type : ",tracker.Type)
 	yes, no := tracker.GetVotes()
 	return true, action.Response{Log: "vote success, not ready to mint: " + strconv.Itoa(yes) + strconv.Itoa(no)}
 }
