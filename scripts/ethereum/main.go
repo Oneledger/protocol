@@ -10,7 +10,6 @@ import (
 	"math/big"
 	"os"
 	"strings"
-	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -33,17 +32,19 @@ import (
 
 var (
 	LockRedeemABI = contract.LockRedeemABI
-	contractAddr  = "0xDEBd41B662c3E085071D7a236C5d650a04e6853B"
 
-	cfg               = config.EthereumChainDriverConfig{Connection: "http://localhost:7545"}
+	contractAddr  = "0x6ec797CDE172F27256F8fF3A817be3D6FBB9CE4E"
+
+
+	cfg               = config.DefaultEthConfigRoopsten()
 	log               = logger.NewDefaultLogger(os.Stdout).WithPrefix("testeth")
 	UserprivKey       *ecdsa.PrivateKey
 	UserprivKeyRedeem *ecdsa.PrivateKey
 
 	client                 *ethclient.Client
 	contractAbi            abi.ABI
-	valuelock              = createValue("9000000000000000000") // in wei (1 eth)
-	valueredeem            = createValue("47000000000000000000")
+	valuelock              = createValue("10000") // in wei (1 eth)
+	valueredeem            = createValue("100")
 	fromAddress            common.Address
 	redeemRecipientAddress common.Address
 
@@ -61,9 +62,10 @@ func createValue(str string) *big.Int {
 }
 
 func init() {
-	UserprivKey, _ = crypto.HexToECDSA("d18258b9bdcdbd0aa5b5a9717164907e0f22f0917d6da227d8dc1721d22596c5")
 
-	UserprivKeyRedeem, _ = crypto.HexToECDSA("69420dfe6efcb7127872e9a7c0d818c33c1b3cc1c5f8dd68e66164bbae4faf92")
+	UserprivKey, _ = crypto.HexToECDSA("02038529C9AB706E9F4136F4A4EB51E866DBFE22D5E102FD3A22C14236E1C2EA")
+
+	UserprivKeyRedeem, _ = crypto.HexToECDSA("02038529C9AB706E9F4136F4A4EB51E866DBFE22D5E102FD3A22C14236E1C2EA")
 
 	client, _ = cfg.Client()
 	contractAbi, _ = abi.JSON(strings.NewReader(LockRedeemABI))
@@ -121,14 +123,14 @@ func lock() {
 
 	tx := types.NewTransaction(nonce, toAddress, valuelock, gasLimit, gasPrice, bytesData)
 
-	fmt.Println("Trasaction Unsigned : ", tx)
-	chainID, err := client.NetworkID(context.Background())
+	//fmt.Println("Transaction Unsigned : ", tx)
+	chainID, err := client.ChainID(context.Background())
 	if err != nil {
 
 		log.Fatal(err)
 	}
 
-	fmt.Println("a")
+
 	signedTx, err := types.SignTx(tx, types.NewEIP155Signer(chainID), UserprivKey)
 	if err != nil {
 
@@ -136,32 +138,30 @@ func lock() {
 	}
 	ts := types.Transactions{signedTx}
 
-	fmt.Println("b")
+
 	rawTxBytes := ts.GetRlp(0)
 	txNew := &types.Transaction{}
 	err = rlp.DecodeBytes(rawTxBytes, txNew)
 
 	if err != nil {
 		fmt.Println(err)
-		//fmt.Println("2")
 		return
 	}
 
-	fmt.Println("c")
+
 	rpcclient, err := rpc.NewClient("http://localhost:26602")
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
 
-	fmt.Println("d")
+
 	result := &oclient.ListCurrenciesReply{}
 	err = rpcclient.Call("query.ListCurrencies", struct{}{}, result)
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
-	fmt.Println(result)
 	olt, _ := result.Currencies.GetCurrencySet().GetCurrencyByName("OLT")
 
 	accReply := &oclient.ListAccountsReply{}
@@ -180,11 +180,8 @@ func lock() {
 		Gas:     400000,
 	}
 	//
-	fmt.Println("REQUEST  : ", req)
 	reply := &se.OLTLockReply{}
 	err = rpcclient.Call("eth.CreateRawExtLock", req, reply)
-
-	fmt.Println("REPLY    : ", reply, err)
 	signReply := &oclient.SignRawTxResponse{}
 	err = rpcclient.Call("owner.SignWithAddress", oclient.SignRawTxRequest{
 		RawTx:   reply.RawTX,
@@ -234,7 +231,6 @@ func redeem() {
 		log.Fatal(err)
 	}
 
-	fmt.Println(2)
 	auth2 := bind.NewKeyedTransactor(UserprivKeyRedeem)
 	auth2.Nonce = big.NewInt(int64(nonce))
 	auth2.Value = big.NewInt(0) // in wei
@@ -255,7 +251,6 @@ func redeem() {
 
 		log.Fatal(err)
 	}
-	fmt.Println(3)
 
 	ts2 := types.Transactions{signedTx2}
 
@@ -265,13 +260,10 @@ func redeem() {
 
 	if err != nil {
 		fmt.Println(err)
-		//fmt.Println("2")
 		return
 	}
-	txhash := client.SendTransaction(context.Background(), signedTx2)
-	fmt.Println(txhash)
 
-	fmt.Println(4)
+	_ = client.SendTransaction(context.Background(), signedTx2)
 	rpcclient, err := rpc.NewClient("http://localhost:26602")
 	if err != nil {
 		fmt.Println(err)
@@ -293,7 +285,6 @@ func redeem() {
 		fmt.Println(err)
 		return
 	}
-	fmt.Println(result)
 	olt, _ := result.Currencies.GetCurrencySet().GetCurrencyByName("OLT")
 
 	rr := se.RedeemRequest{
@@ -307,7 +298,6 @@ func redeem() {
 	reply := &se.OLTLockReply{}
 	err = rpcclient.Call("eth.CreateRawExtRedeem", rr, reply)
 
-	fmt.Println("REPLY    : ", reply, err)
 	signReply := &oclient.SignRawTxResponse{}
 	err = rpcclient.Call("owner.SignWithAddress", oclient.SignRawTxRequest{
 		RawTx:   reply.RawTX,

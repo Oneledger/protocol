@@ -1,6 +1,7 @@
 package ethereum
 
 import (
+	"bytes"
 	"context"
 	"encoding/hex"
 	"math/big"
@@ -183,18 +184,24 @@ func (acc *ETHChainDriver) CheckFinality(txHash TransactionHash) (*types.Receipt
 	result, err := acc.GetClient().TransactionReceipt(context.Background(), txHash)
 	if err == nil {
 		if result.Status == types.ReceiptStatusSuccessful {
-			acc.logger.Info("Received TX Receipt for : ", txHash)
+			latestHeader,err:= acc.client.HeaderByNumber(context.Background(),nil)
+			if err != nil {
+				return nil,errors.Wrap(err,"Unable to extract latest header")
+			}
+			diff := big.NewInt(0).Sub(latestHeader.Number, result.BlockNumber)
+			if big.NewInt(12).Cmp(diff) > 0 {
+				return nil,errors.New("Waiting for confirmation . Current Block Confirmations : "+ diff.String())
+			}
 			return result, nil
 		}
 		if result.Status == types.ReceiptStatusFailed {
 			acc.logger.Warn("Receipt not found ")
 			b, _ := result.MarshalJSON()
 			acc.logger.Error(string(b))
-			//err := Error("Transaction not added to blockchain yet / Failed to obtain receipt")
 			return nil, nil
 		}
 	}
-	acc.logger.Error("Unable to connect to Ethereum :", err)
+	acc.logger.Error("Transaction not added to Block yet :", err)
 	return nil, err
 }
 
@@ -213,7 +220,7 @@ func (acc *ETHChainDriver) BroadcastTx(tx *types.Transaction) (TransactionHash, 
 		acc.logger.Error("Error connecting to Ethereum :", err)
 		return tx.Hash(), err
 	}
-	acc.logger.Info("Transaction Broadcasted to Ethereum ", tx.Hash())
+	acc.logger.Info("Transaction Broadcasted to Ethereum ", tx.Hash().Hex())
 	return tx.Hash(), nil
 
 }
@@ -249,6 +256,20 @@ func (acc *ETHChainDriver) VerifyRedeem(validatorAddress common.Address, recipie
 	}
 
 	return ok, nil
+}
+
+func VerifyLock(tx *types.Transaction,contractabi string) (bool,error) {
+
+	contractAbi, err := abi.JSON(strings.NewReader(contractabi))
+	if err!= nil {
+		return false,errors.Wrap(err,"Unable to get contract Abi from ChainDriver options")
+	}
+	bytesData, err := contractAbi.Pack("lock")
+	if err!= nil {
+		return false,errors.Wrap(err,"Unable to to create Bytes data for Lock")
+	}
+	return bytes.Equal(bytesData,tx.Data()),nil
+
 }
 
 func (acc *ETHChainDriver) HasValidatorSigned(validatorAddress common.Address, recipient common.Address) (bool, error) {
@@ -296,3 +317,4 @@ func DecodeTransaction(data []byte) (*types.Transaction, error) {
 
 	return tx, nil
 }
+

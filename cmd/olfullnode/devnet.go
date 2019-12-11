@@ -482,7 +482,7 @@ func initialState(args *testnetConfig, nodeList []node, option ethchain.ChainDri
 }
 
 func deployethcdcontract(conn string, nodeList []node) (*ethchain.ChainDriverOption, error) {
-	privatekey, err := crypto.HexToECDSA("a54f9a028a362b0068a5fcd8ec4d4ca512e837264e1675f351280fac71f192ad")
+	privatekey, err := crypto.HexToECDSA("")
 	if err != nil {
 		return nil, err
 	}
@@ -498,7 +498,7 @@ func deployethcdcontract(conn string, nodeList []node) (*ethchain.ChainDriverOpt
 	}
 
 	fromAddress := crypto.PubkeyToAddress(*publicKeyECDSA)
-	fmt.Println("paying addr", fromAddress.Hex())
+	//fmt.Println("paying addr", fromAddress.Hex())
 	gasPrice, err := cli.SuggestGasPrice(context.Background())
 	if err != nil {
 		return nil, err
@@ -518,7 +518,7 @@ func deployethcdcontract(conn string, nodeList []node) (*ethchain.ChainDriverOpt
 			return nil, err
 		}
 
-		fmt.Println("nonce", nonce)
+		//fmt.Println("nonce", nonce)
 		pubkey := privkey.Public()
 		ecdsapubkey, ok := pubkey.(*ecdsa.PublicKey)
 		if !ok {
@@ -528,10 +528,9 @@ func deployethcdcontract(conn string, nodeList []node) (*ethchain.ChainDriverOpt
 		if node.validator.Address.String() == "" {
 			continue
 		}
-		fmt.Println("validator address:", addr.Hex())
+
 		input = append(input, addr)
-		tx := types.NewTransaction(nonce, addr, big.NewInt(1000000000000000000), auth.GasLimit, auth.GasPrice, (nil))
-		fmt.Printf("%#v", tx)
+		tx := types.NewTransaction(nonce, addr, big.NewInt(100000000000000000), auth.GasLimit, auth.GasPrice, (nil))
 		chainId, _ := cli.ChainID(context.Background())
 		signedTx, err := types.SignTx(tx, types.NewEIP155Signer(chainId), privatekey)
 		if err != nil {
@@ -550,11 +549,11 @@ func deployethcdcontract(conn string, nodeList []node) (*ethchain.ChainDriverOpt
 	}
 
 	auth.Nonce = big.NewInt(int64(nonce))
-	fmt.Println("deploy nonce", nonce)
 	address, _, _, err := ethcontracts.DeployLockRedeem(auth, cli, input)
 	if err != nil {
 		return nil, errors.Wrap(err, "deploy")
 	}
+	fmt.Println("Contract Address : ", address.Hex())
 
 	return &ethchain.ChainDriverOption{
 		ContractABI:     contract.LockRedeemABI,

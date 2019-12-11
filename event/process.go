@@ -92,7 +92,6 @@ func RangeJobs(js *jobs.JobStore, pro JobProcess) {
 			jobkeys = append(jobkeys, job.GetJobID())
 		}
 	})
-	fmt.Println("number of jobs:", len(jobkeys))
 	for _, key := range jobkeys {
 
 		job, err := js.GetJob(key)
@@ -116,7 +115,6 @@ func DeleteCompletedJobs(ctx *JobsContext, js *jobs.JobStore) {
 
 	jobkeys := make([]string, 0, 20)
 	js.Iterate(func(job jobs.Job) {
-		//fmt.Println("Searching Jobstore",job.GetType())
 		if job.IsDone() {
 			jobkeys = append(jobkeys, job.GetJobID())
 		}
