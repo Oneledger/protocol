@@ -19,6 +19,8 @@ import (
 const (
 	TwoMinutes  = 60 * 2
 	FiveMinutes = 60 * 5
+
+	SixtyMinutes = 60 * 60
 )
 
 type JobBTCCheckFinality struct {
@@ -37,7 +39,7 @@ func NewBTCCheckFinalityJob(trackerName, id string) jobs.Job {
 		Type:        JobTypeBTCCheckFinality,
 		TrackerName: trackerName,
 		JobID:       id,
-		CheckAfter:  time.Now().Unix() + FiveMinutes,
+		CheckAfter:  time.Now().Unix() + SixtyMinutes,
 		Status:      jobs.New,
 	}
 }
@@ -63,19 +65,19 @@ func (cf *JobBTCCheckFinality) DoMyJob(ctxI interface{}) {
 		return
 	}
 
-	cd := bitcoin.NewChainDriver(ctx.BlockCypherToken)
+	cd := bitcoin.NewChainDriver(ctx.BTCData.BlockCypherToken)
 
-	chain := bitcoin.GetBlockCypherChainType(ctx.BTCChainnet)
+	chain := bitcoin.GetBlockCypherChainType(ctx.BTCData.BTCChainnet)
 
 	ctx.Logger.Info("checking btc finality for ", tracker.ProcessTxId)
-	ok, err := cd.CheckFinality(tracker.ProcessTxId, ctx.BlockCypherToken, chain)
+	ok, err := cd.CheckFinality(tracker.ProcessTxId, ctx.BTCData.BlockCypherToken, chain)
 	if err != nil {
 		ctx.Logger.Error("error while checking finality", err, cf.TrackerName)
 		return
 	}
 
 	if !ok {
-		cf.CheckAfter = time.Now().Unix() + TwoMinutes
+		cf.CheckAfter = time.Now().Unix() + FiveMinutes
 		ctx.Logger.Info("not finalized yet", cf.TrackerName)
 		return
 	}

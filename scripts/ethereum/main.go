@@ -65,7 +65,6 @@ func init() {
 
 	UserprivKey, _ = crypto.HexToECDSA("02038529C9AB706E9F4136F4A4EB51E866DBFE22D5E102FD3A22C14236E1C2EA")
 
-
 	UserprivKeyRedeem, _ = crypto.HexToECDSA("02038529C9AB706E9F4136F4A4EB51E866DBFE22D5E102FD3A22C14236E1C2EA")
 
 	client, _ = cfg.Client()
@@ -89,7 +88,11 @@ func init() {
 }
 
 func main() {
-	//lock()
+
+	lock()
+
+	time.Sleep(10 * time.Second)
+
 	redeem()
 }
 
@@ -237,7 +240,7 @@ func redeem() {
 	value := big.NewInt(0)
 	tx2 := types.NewTransaction(nonce, toAddress, value, gasLimit, gasPrice, bytesData)
 
-	chainID, err := client.NetworkID(context.Background())
+	chainID, err := client.ChainID(context.Background())
 	if err != nil {
 
 		log.Fatal(err)
