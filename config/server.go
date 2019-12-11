@@ -437,11 +437,11 @@ func DefaultChainDriverConfig() *ChainDriverConfig {
 
 func DefaultEthConfigRoopsten() *EthereumChainDriverConfig {
 	return &EthereumChainDriverConfig{
-		Connection: "https://ropsten.infura.io/v3/49d4e8f6943b48f28b0d04428eb002af",
+		Connection: "https://ropsten.infura.io/v3/{api_key}}",
 	}
 }
 func DefautEthConfigRinkeby() *EthereumChainDriverConfig {
-	return &EthereumChainDriverConfig{Connection:"https://rinkeby.infura.io/v3/49d4e8f6943b48f28b0d04428eb002af"}
+	return &EthereumChainDriverConfig{Connection: "https://rinkeby.infura.io/v3/{api_key}}"}
 }
 
 func DefaultEthConfig() *EthereumChainDriverConfig {

@@ -237,7 +237,6 @@ func runDevnet(_ *cobra.Command, _ []string) error {
 		cfg.Network.P2PAddress = generateAddress(generatePort(), true)
 		cfg.Network.SDKAddress = generateAddress(generatePort(), true, true)
 		cfg.Network.OLVMAddress = generateAddress(generatePort(), true)
-		//cfg.EthChainDriver.Connection = "https://ropsten.infura.io/v3/49d4e8f6943b48f28b0d04428eb002af"
 
 		dirs := []string{configDir, dataDir, nodeDataDir}
 		for _, dir := range dirs {
@@ -483,7 +482,7 @@ func initialState(args *testnetConfig, nodeList []node, option ethchain.ChainDri
 }
 
 func deployethcdcontract(conn string, nodeList []node) (*ethchain.ChainDriverOption, error) {
-	privatekey, err := crypto.HexToECDSA("02038529C9AB706E9F4136F4A4EB51E866DBFE22D5E102FD3A22C14236E1C2EA")
+	privatekey, err := crypto.HexToECDSA("")
 	if err != nil {
 		return nil, err
 	}
@@ -554,7 +553,7 @@ func deployethcdcontract(conn string, nodeList []node) (*ethchain.ChainDriverOpt
 	if err != nil {
 		return nil, errors.Wrap(err, "deploy")
 	}
-	fmt.Println("Contract Address : ",address.Hex())
+	fmt.Println("Contract Address : ", address.Hex())
 
 	return &ethchain.ChainDriverOption{
 		ContractABI:     contract.LockRedeemABI,
