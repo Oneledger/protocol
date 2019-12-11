@@ -116,6 +116,10 @@ func (s *State) ConsumedGas() Gas {
 	return s.gc.GetConsumed()
 }
 
+func (s *State) ConsumeUpfront(gas Gas) bool {
+	return s.gc.Consume(gas, FLAT, true)
+}
+
 func (s *State) ConsumeVerifySigGas(gas Gas) bool {
 	return s.gc.Consume(gas, VERIFYSIG, true)
 }

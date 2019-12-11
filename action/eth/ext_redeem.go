@@ -94,8 +94,6 @@ func (ethRedeemTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (bool, act
 
 func (ethRedeemTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	return processCommon(ctx, tx)
-	// Create ethereum tracker
-
 }
 
 func processCommon(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
@@ -159,5 +157,6 @@ func processCommon(ctx *action.Context, tx action.RawTx) (bool, action.Response)
 }
 
 func (ethRedeemTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas) (bool, action.Response) {
+	ctx.State.ConsumeUpfront(250400)
 	return action.BasicFeeHandling(ctx, signedTx, start, size, 1)
 }

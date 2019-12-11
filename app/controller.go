@@ -4,6 +4,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"math"
+	"runtime/debug"
 
 	"github.com/pkg/errors"
 	"github.com/tendermint/tendermint/libs/common"
@@ -23,7 +24,6 @@ import (
 	"github.com/Oneledger/protocol/log"
 	"github.com/Oneledger/protocol/serialize"
 	"github.com/Oneledger/protocol/storage"
-	"github.com/Oneledger/protocol/utils"
 	"github.com/Oneledger/protocol/utils/transition"
 	"github.com/Oneledger/protocol/version"
 )
@@ -33,7 +33,7 @@ import (
 // query connection: for querying the application state; only uses query and Info
 func (app *App) infoServer() infoServer {
 	return func(info RequestInfo) ResponseInfo {
-
+		defer app.handlePanic()
 		//get apphash and height from db
 		ver, hash := app.getAppHash()
 
@@ -50,6 +50,7 @@ func (app *App) infoServer() infoServer {
 
 func (app *App) queryer() queryer {
 	return func(RequestQuery) ResponseQuery {
+		defer app.handlePanic()
 		// Do stuff
 		return ResponseQuery{}
 	}
@@ -57,6 +58,7 @@ func (app *App) queryer() queryer {
 
 func (app *App) optionSetter() optionSetter {
 	return func(req RequestSetOption) ResponseSetOption {
+		defer app.handlePanic()
 		err := config.Setup(&app.Context.cfg, req.Key, req.Value)
 		if err != nil {
 			return ResponseSetOption{
@@ -75,6 +77,7 @@ func (app *App) optionSetter() optionSetter {
 
 func (app *App) chainInitializer() chainInitializer {
 	return func(req RequestInitChain) ResponseInitChain {
+		defer app.handlePanic()
 		app.Context.deliver = storage.NewState(app.Context.chainstate)
 		app.Context.govern.WithState(app.Context.deliver)
 		app.Context.btcTrackers.WithState(app.Context.deliver)
@@ -103,8 +106,8 @@ func (app *App) chainInitializer() chainInitializer {
 }
 
 func (app *App) blockBeginner() blockBeginner {
-	fmt.Println("blockbeginner")
 	return func(req RequestBeginBlock) ResponseBeginBlock {
+		defer app.handlePanic()
 		gc := getGasCalculator(app.genesisDoc.ConsensusParams)
 		app.Context.deliver = storage.NewState(app.Context.chainstate).WithGas(gc)
 
@@ -128,9 +131,9 @@ func (app *App) blockBeginner() blockBeginner {
 
 // mempool connection: for checking if transactions should be relayed before they are committed
 func (app *App) txChecker() txChecker {
-	fmt.Println("txchecker")
-	app.logger.Info("TXCHECKER :")
 	return func(msg []byte) ResponseCheckTx {
+		defer app.handlePanic()
+
 		tx := &action.SignedTx{}
 
 		err := serialize.GetSerializer(serialize.NETWORK).Deserialize(msg, tx)
@@ -173,6 +176,7 @@ func (app *App) txChecker() txChecker {
 
 func (app *App) txDeliverer() txDeliverer {
 	return func(msg []byte) ResponseDeliverTx {
+		defer app.handlePanic()
 
 		tx := &action.SignedTx{}
 
@@ -185,7 +189,7 @@ func (app *App) txDeliverer() txDeliverer {
 		handler := txCtx.Router.Handler(tx.Type)
 
 		gas := txCtx.State.ConsumedGas()
-		app.logger.Debug("Process Deliver  : ")
+
 		ok, response := handler.ProcessDeliver(txCtx, tx.RawTx)
 
 		feeOk, feeResponse := handler.ProcessFee(txCtx, *tx, gas, storage.Gas(len(msg)))
@@ -206,9 +210,9 @@ func (app *App) txDeliverer() txDeliverer {
 }
 
 func (app *App) blockEnder() blockEnder {
-
 	return func(req RequestEndBlock) ResponseEndBlock {
-		fmt.Println("blockEnder")
+		defer app.handlePanic()
+
 		fee, err := app.Context.feePool.WithState(app.Context.deliver).Get([]byte(fees.POOL_KEY))
 		app.logger.Debug("endblock fee", fee, err)
 		updates := app.Context.validators.GetEndBlockUpdate(app.Context.ValidatorCtx(), req)
@@ -229,24 +233,11 @@ func (app *App) blockEnder() blockEnder {
 
 func (app *App) commitor() commitor {
 	return func() ResponseCommit {
-		fmt.Println("Commited block")
-		// Commit any pending changes.
-		app.Context.ethTrackers.Iterate(func(a *ceth.TrackerName, t *ethereum.Tracker) bool {
+		defer app.handlePanic()
 
-			fmt.Println("BEFORE commit trackers in commitor after chainstate Commit")
-			// fmt.Println(t.FinalityVotes, t.GetVotes())
-
-			return false
-		})
 		hash, ver := app.Context.deliver.Commit()
 		app.logger.Debugf("Committed LockNew Block height[%d], hash[%s], versions[%d]", app.header.Height, hex.EncodeToString(hash), ver)
-		app.Context.ethTrackers.Iterate(func(a *ceth.TrackerName, t *ethereum.Tracker) bool {
 
-			fmt.Println("AFTER Commit trackers in commitor after chainstate Commit")
-			// fmt.Println(t.FinalityVotes, t.GetVotes())
-
-			return false
-		})
 		// update check state by deliver state
 		gc := getGasCalculator(app.genesisDoc.ConsensusParams)
 		app.Context.check = storage.NewState(app.Context.chainstate).WithGas(gc)
@@ -268,19 +259,17 @@ func getCode(ok bool) (code Code) {
 	return
 }
 
-// TODO: make appHash to use a commiter function to finish the commit and hashing for all the store that passed
-type appHash struct {
-	Hashes [][]byte `json:"hashes"`
-}
-
-func (ah *appHash) hash() []byte {
-	result, _ := serialize.GetSerializer(serialize.JSON).Serialize(ah)
-	return utils.Hash(result)
-}
-
 func (app *App) getAppHash() (version int64, hash []byte) {
 	hash, version = app.Context.chainstate.Hash, app.Context.chainstate.Version
 	return
+}
+
+func (app *App) handlePanic() {
+	if r := recover(); r != nil {
+		fmt.Println("panic in controller: ", r)
+		fmt.Println(debug.Stack())
+		app.Close()
+	}
 }
 
 func getGasCalculator(params *types.ConsensusParams) storage.GasCalculator {
@@ -341,10 +330,7 @@ func doEthTransitions(js *jobs.JobStore, ts *ethereum.TrackerStore, myValAddr ke
 	for _, name := range tnames {
 		t, _ := ts.Get(*name)
 
-		// fmt.Println("Tracker Votes doethtrasitions", t.GetVotes())
-		fmt.Println(t.TrackerName)
 		ctx := ethereum.NewTrackerCtx(t, myValAddr, js.WithChain(chain.ETHEREUM), ts, validators)
-		fmt.Println("Doethtransactions Tracker current state :", t.State)
 
 		if t.Type == ethereum.ProcessTypeLock {
 			_, err := event.EthLockEngine.Process(t.NextStep(), ctx, transition.Status(t.State))
@@ -358,7 +344,6 @@ func doEthTransitions(js *jobs.JobStore, ts *ethereum.TrackerStore, myValAddr ke
 			}
 		}
 
-		fmt.Println("controller tracker:", ctx.Tracker)
 		err := ts.Set(ctx.Tracker)
 		if err != nil {
 			logger.Error("failed to save eth tracker", err)
