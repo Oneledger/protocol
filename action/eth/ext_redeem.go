@@ -130,12 +130,18 @@ func processCommon(ctx *action.Context, tx action.RawTx) (bool, action.Response)
 	if err != nil {
 		return false, action.Response{Log: "error in getting validator addresses" + err.Error()}
 	}
+    name := ethcommon.BytesToHash(redeem.ETHTxn)
+    if ctx.ETHTrackers.Exists(name){
+    	return false,action.Response{
+			Log: "Tracker already exists",
+		}
+	}
 
 	tracker := trackerlib.NewTracker(
 		trackerlib.ProcessTypeRedeem,
 		redeem.Owner,
 		redeem.ETHTxn,
-		ethcommon.BytesToHash(redeem.ETHTxn),
+		name,
 		validators,
 	)
 
