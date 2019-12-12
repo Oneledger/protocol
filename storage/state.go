@@ -4,9 +4,10 @@ var _ Store = &State{}
 var _ Iteratable = &State{}
 
 type State struct {
-	cs    *ChainState
-	cache Store
-	gc    GasCalculator
+	cs     *ChainState
+	cache  Store
+	gc     GasCalculator
+	delete Store
 }
 
 func (s *State) Get(key StoreKey) ([]byte, error) {
@@ -38,9 +39,10 @@ func (s *State) Exists(key StoreKey) bool {
 func (s *State) Delete(key StoreKey) (bool, error) {
 	//cache delete is always true
 	_, _ = s.cache.Delete(key)
-	// delete in chainstate is dangerous for checkTx, so we skip that step for now
-	//todo: have a proper way of deleting information from chainstate
-	//return s.cs.Delete(key)
+	err := s.delete.Set(key, []byte{127})
+	if err != nil {
+		return false, err
+	}
 	return true, nil
 }
 
@@ -59,24 +61,28 @@ func (s *State) IterateRange(start, end []byte, ascending bool, fn func(key, val
 
 func NewState(state *ChainState) *State {
 	return &State{
-		cs:    state,
-		cache: NewStorage(CACHE, "state"),
-		gc:    NewGasCalculator(0),
+		cs:     state,
+		cache:  NewStorage(CACHE, "state"),
+		gc:     NewGasCalculator(0),
+		delete: NewStorage(CACHE, "state_delete"),
 	}
 }
 
 func (s *State) WithGas(gc GasCalculator) *State {
 	gs := NewGasStore(s.cache, gc)
+	del := NewGasStore(s.delete, gc)
 	return &State{
-		cs:    s.cs,
-		cache: gs,
-		gc:    gc,
+		cs:     s.cs,
+		cache:  gs,
+		gc:     gc,
+		delete: del,
 	}
 }
 
 func (s *State) WithoutGas() *State {
 	s.cache = NewStorage(CACHE, "state")
 	//s.gc = NewGasCalculator(0)
+	s.delete = NewStorage(CACHE, "state_delete")
 	return s
 }
 
@@ -93,6 +99,10 @@ func (s State) Write() bool {
 		_ = s.cs.Set(key, value)
 		return false
 	})
+	s.delete.GetIterator().Iterate(func(key, value []byte) bool {
+		_, _ = s.cs.Delete(key)
+		return false
+	})
 	return true
 }
 
@@ -104,6 +114,10 @@ func (s *State) Commit() (hash []byte, version int64) {
 
 func (s *State) ConsumedGas() Gas {
 	return s.gc.GetConsumed()
+}
+
+func (s *State) ConsumeUpfront(gas Gas) bool {
+	return s.gc.Consume(gas, FLAT, true)
 }
 
 func (s *State) ConsumeVerifySigGas(gas Gas) bool {

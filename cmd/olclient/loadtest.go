@@ -23,14 +23,13 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Oneledger/protocol/data/balance"
-
+	"github.com/spf13/cobra"
 	"github.com/tendermint/tendermint/crypto/ed25519"
 
 	"github.com/Oneledger/protocol/data/accounts"
+	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/chain"
 	"github.com/Oneledger/protocol/data/keys"
-	"github.com/spf13/cobra"
 )
 
 // cobra command to loadtest
@@ -49,6 +48,7 @@ type LoadTestArgs struct {
 	interval   int  // interval (in milliseconds) between two successive send transactions on a thread
 	randomRecv bool // whether to send tokens to a random address every time or no, the default is false
 	maxTx      int  // max transactions after which the load test should stop, default is 10000(10k)
+	address    []byte
 }
 
 // init function initializes the loadtest command and attaches a bunch of flag parsers
@@ -66,6 +66,9 @@ func init() {
 
 	loadtestCmd.Flags().IntVar(&loadTestArgs.maxTx, "max-tx", 10000,
 		"number of max tx in before the load test stop")
+
+	loadtestCmd.Flags().BytesHexVar(&loadTestArgs.address, "address", []byte(nil),
+		"fund address that loadtest uses")
 }
 
 // loadTest function spawns a few thread which create an account and execute send transactions on the
@@ -99,16 +102,21 @@ func loadTest(_ *cobra.Command, _ []string) {
 	}
 	fmt.Printf("currencies: %#v", currencies)
 
+	var nodeAddress keys.Address
 	// get address of the node
-	nodeAddress, err := fullnode.NodeAddress()
-	if err != nil {
-		ctx.logger.Fatal("error getting node address", err)
+	if loadTestArgs.address != nil {
+		nodeAddress = loadTestArgs.address
+	} else {
+		nodeAddress, err = fullnode.NodeAddress()
+		if err != nil {
+			ctx.logger.Fatal("error getting node address", err)
+		}
 	}
 
 	accs := make([]accounts.Account, 0, 10)
 	accReply, err := fullnode.ListAccounts()
 	if err != nil {
-		ctx.logger.Error("failed to get any address")
+		ctx.logger.Fatal("failed to get any address")
 	}
 	accs = accReply.Accounts
 	// start threads

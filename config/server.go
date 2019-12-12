@@ -2,14 +2,19 @@ package config
 
 import (
 	"bytes"
+	//"crypto/ecdsa"
 	"io/ioutil"
 	"path/filepath"
 	"strings"
 	"time"
 
+	"github.com/ethereum/go-ethereum/ethclient"
+
 	"github.com/Oneledger/toml"
 	"github.com/pkg/errors"
 	tmconfig "github.com/tendermint/tendermint/config"
+
+	"github.com/Oneledger/protocol/log"
 )
 
 const (
@@ -37,11 +42,13 @@ func toConfigDuration(d time.Duration) Duration {
 
 // Struct for holding the configuration details for the node
 type Server struct {
-	Node      *NodeConfig      `toml:"node"`
-	Network   *NetworkConfig   `toml:"network"`
-	P2P       *P2PConfig       `toml:"p2p"`
-	Mempool   *MempoolConfig   `toml:"mempool"`
-	Consensus *ConsensusConfig `toml:"consensus"`
+	Node           *NodeConfig                `toml:"node"`
+	Network        *NetworkConfig             `toml:"network"`
+	P2P            *P2PConfig                 `toml:"p2p"`
+	Mempool        *MempoolConfig             `toml:"mempool"`
+	Consensus      *ConsensusConfig           `toml:"consensus"`
+	ChainDriver    *ChainDriverConfig         `toml:"chain_driver"`
+	EthChainDriver *EthereumChainDriverConfig `toml:"ethereum_chain_driver"`
 
 	chainID string
 	rootDir string
@@ -153,11 +160,13 @@ func (cfg *Server) SaveFile(filepath string) error {
 
 func DefaultServerConfig() *Server {
 	return &Server{
-		Node:      DefaultNodeConfig(),
-		Network:   DefaultNetworkConfig(),
-		P2P:       DefaultP2PConfig(),
-		Mempool:   DefaultMempoolConfig(),
-		Consensus: DefaultConsensusConfig(),
+		Node:           DefaultNodeConfig(),
+		Network:        DefaultNetworkConfig(),
+		P2P:            DefaultP2PConfig(),
+		Mempool:        DefaultMempoolConfig(),
+		Consensus:      DefaultConsensusConfig(),
+		ChainDriver:    DefaultChainDriverConfig(),
+		EthChainDriver: DefaultEthConfig(),
 	}
 }
 
@@ -167,12 +176,23 @@ type NodeConfig struct {
 	FastSync bool   `toml:"fast_sync" desc:"Fast sync allows a block to catch up quickly to the chain by downloading blocks in parallel and verifying their commits"`
 	DB       string `toml:"db" desc:"Specify what backend database to use (goleveldb|cleveldb)"`
 	DBDir    string `toml:"db_dir" desc:"Specify the application database directory. This is always relative to the root directory of the app."`
+
+	LogLevel int `toml:"loglevel" desc:"Specify the log level for olfullnode. 0: Fatal, 1: Error, 2: Warning, 3: Info, 4: Debug, 5: Detail"`
 	// List of transaction tags to index in the db, allows them to be searched
 	// by this parameter
 	IndexTags []string `toml:"index_tags" desc:"List of transaction tags to index in the database, allows them to be searched by the specified tags"`
 	// Tells the indexer to index all available tags, IndexTags has precedence
 	// over IndexAllTAgs
 	IndexAllTags bool `toml:"index_all_tags" desc:"Tells the indexer to index all available tags, IndexTags has precedence over IndexAllTags"`
+
+	//rpc package
+	Services []string `toml:"services" desc:"List of services used by the current Node. Possible valued [broadcast, node, owner, query, tx]"`
+
+	//owner's password
+	OwnerCredentials []string `toml:"owner_credentials" desc:"Username and Password required to access owner services. Format [\"Username:Password\", \"Username:Password\"...]"`
+
+	//Private Key for RPC Authentication
+	RPCPrivateKey string `toml:"rpc_private_key" desc:"(ED25519 key) This private key will be used to generate a token for authentication through RPC Port."`
 }
 
 func DefaultNodeConfig() *NodeConfig {
@@ -181,8 +201,10 @@ func DefaultNodeConfig() *NodeConfig {
 		FastSync:     true,
 		DB:           "goleveldb",
 		DBDir:        "nodedata",
-		IndexTags:    []string{"tx.owner", "tx.type", "tx.swapkey"},
+		LogLevel:     int(log.Info),
+		IndexTags:    []string{"tx.owner", "tx.type"},
 		IndexAllTags: false,
+		Services:     []string{"broadcast", "node", "owner", "query", "tx", "btc", "eth"},
 	}
 }
 
@@ -270,6 +292,10 @@ func (cfg *P2PConfig) TMConfig() *tmconfig.P2PConfig {
 		HandshakeTimeout:        cfg.HandshakeTimeout.Nanoseconds(),
 		DialTimeout:             cfg.DialTimeout.Nanoseconds(),
 	}
+}
+
+func (cfg *P2PConfig) SetPersistentPeers(peers []string) {
+	cfg.PersistentPeers = peers
 }
 
 func DefaultP2PConfig() *P2PConfig {
@@ -377,4 +403,53 @@ func DefaultConsensusConfig() *ConsensusConfig {
 	cfg.PeerGossipSleepDuration = toConfigDuration(tmDefault.PeerGossipSleepDuration)
 	cfg.PeerQueryMaj23SleepDuration = toConfigDuration(tmDefault.PeerQueryMaj23SleepDuration)
 	return &cfg
+}
+
+type ChainDriverConfig struct {
+	BitcoinChainType   string `toml:"bitcoin_chain_type" desc:"bitcoin chain types, mainnet, testnet3, or regtest"`
+	BitcoinNodeAddress string `toml:"bitcoin_node_address" desc:"ip address of bitcoin node"`
+	BitcoinRPCPort     string `toml:"bitcoin rpc_port" desc:"rpc port of bitcoin node"`
+	BitcoinRPCUsername string `toml:"bitcoin_rpc_username" desc:"rpc username of bitcoin node"`
+	BitcoinRPCPassword string `toml:"bitcoin_rpc_password" desc:"rpc password of bitcoin node"`
+
+	BlockCypherToken string `toml:"blockcypher_token" desc:"token to use blockcypher APIs"`
+}
+
+type EthereumChainDriverConfig struct {
+	Connection string `toml:"connection" desc:"ethereum node connection url default: http://localhost:7545"`
+}
+
+func DefaultChainDriverConfig() *ChainDriverConfig {
+
+	var cfg ChainDriverConfig
+
+	cfg.BitcoinChainType = "testnet3"
+
+	cfg.BlockCypherToken = "e61acdee14e749a2b74e366cfc4373dd"
+
+	cfg.BitcoinNodeAddress = "34.74.207.115"
+	cfg.BitcoinRPCPort = "18332"
+	cfg.BitcoinRPCUsername = "admin1"
+	cfg.BitcoinRPCPassword = "password"
+
+	return &cfg
+}
+
+func DefaultEthConfigRoopsten() *EthereumChainDriverConfig {
+	return &EthereumChainDriverConfig{
+		Connection: "https://ropsten.infura.io/v3/{api_key}}",
+	}
+}
+func DefautEthConfigRinkeby() *EthereumChainDriverConfig {
+	return &EthereumChainDriverConfig{Connection: "https://rinkeby.infura.io/v3/{api_key}}"}
+}
+
+func DefaultEthConfig() *EthereumChainDriverConfig {
+	return &EthereumChainDriverConfig{
+		Connection: "http://localhost:7545",
+	}
+}
+
+func (cfg *EthereumChainDriverConfig) Client() (*ethclient.Client, error) {
+	return ethclient.Dial(cfg.Connection)
 }

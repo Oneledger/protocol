@@ -12,6 +12,7 @@ const (
 	HASHBYTES  Gas = 5
 	CHECKEXIST Gas = 20
 	DELETE     Gas = 50
+	FLAT       Gas = 1
 )
 
 // Calculate the gas used for each action, will be embedded with GasStore.

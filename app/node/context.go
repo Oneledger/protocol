@@ -7,11 +7,14 @@ import (
 	"os"
 	"strings"
 
+	"github.com/btcsuite/btcd/chaincfg"
+	"github.com/btcsuite/btcutil"
+	"github.com/tendermint/tendermint/p2p"
+	"github.com/tendermint/tendermint/privval"
+
 	"github.com/Oneledger/protocol/config"
 	"github.com/Oneledger/protocol/consensus"
 	"github.com/Oneledger/protocol/data/keys"
-	"github.com/tendermint/tendermint/p2p"
-	"github.com/tendermint/tendermint/privval"
 )
 
 // Context holds key information about the running node. This is generally used to
@@ -38,6 +41,10 @@ func (n Context) PrivVal() keys.PrivateKey {
 func (n Context) PrivKey() keys.PrivateKey {
 	return n.privateKey
 }
+
+//func (n Context) EthPrivKey() *ecdsa.PrivateKey {
+//	return &n.ethPrivKey
+//}
 
 // PubKey returns the public key of the node's NodeKey
 func (n Context) PubKey() keys.PublicKey {
@@ -94,6 +101,26 @@ func (n Context) ValidatorECDSAPubKey() keys.PublicKey {
 	}
 
 	return priv.PubKey()
+}
+
+func (n Context) ValidatorECDSAPrivateKey() *keys.PrivateKey {
+
+	return &n.ecdsaPrivVal
+}
+
+func (n Context) ValidatorBTCScriptAddress(params *chaincfg.Params) (keys.Address, error) {
+
+	h, err := n.ecdsaPrivVal.GetHandler()
+	if err != nil {
+		return nil, err
+	}
+
+	apk, err := btcutil.NewAddressPubKey(h.PubKey().Data, params)
+	if err != nil {
+		return nil, err
+	}
+
+	return apk.ScriptAddress(), nil
 }
 
 func (n Context) isValid() bool {
@@ -169,7 +196,7 @@ func readKeyFiles(cfg *consensus.Config) (*Context, error) {
 		return nil, err
 	}
 
-	ecdsaPrivKey, err := keys.GetPrivateKeyFromBytes(ecdsaPrivateKey, keys.SECP256K1)
+	ecdsaPrivKey, err := keys.GetPrivateKeyFromBytes(ecdsaPrivateKey, keys.BTCECSECP)
 	if err != nil {
 		return nil, err
 	}

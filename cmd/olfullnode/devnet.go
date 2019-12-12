@@ -1,30 +1,42 @@
 package main
 
 import (
+	"context"
+	"crypto/ecdsa"
 	"crypto/rand"
 	"encoding/base64"
 	"encoding/hex"
 	"fmt"
+	"math/big"
 	"net/url"
 	"os"
 	"path/filepath"
 	"strconv"
-	"strings"
+	"time"
 
-	"github.com/Oneledger/protocol/data/fees"
-
-	"github.com/Oneledger/protocol/data/keys"
-	"github.com/tendermint/tendermint/crypto/secp256k1"
-
-	"github.com/Oneledger/protocol/config"
-	"github.com/Oneledger/protocol/consensus"
-	"github.com/Oneledger/protocol/data/balance"
-	"github.com/Oneledger/protocol/data/chain"
-	"github.com/Oneledger/protocol/log"
+	"github.com/btcsuite/btcd/btcec"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/tendermint/tendermint/p2p"
 	"github.com/tendermint/tendermint/privval"
+
+	ethchain "github.com/Oneledger/protocol/chains/ethereum"
+	"github.com/Oneledger/protocol/chains/ethereum/contract"
+	"github.com/Oneledger/protocol/config"
+	"github.com/Oneledger/protocol/consensus"
+	"github.com/Oneledger/protocol/data/balance"
+	"github.com/Oneledger/protocol/data/chain"
+
+	"github.com/Oneledger/protocol/data/fees"
+	"github.com/Oneledger/protocol/data/keys"
+
+	ethcontracts "github.com/Oneledger/protocol/chains/ethereum/contract"
+	"github.com/Oneledger/protocol/log"
 )
 
 type testnetConfig struct {
@@ -39,8 +51,10 @@ type testnetConfig struct {
 	namesPath        string
 	createEmptyBlock bool
 	// Total amount of funds to be shared across each node
-	totalFunds        int64
-	singleOriginFunds bool
+	totalFunds          int64
+	initialTokenHolders []string
+
+	deployETHContract string
 }
 
 var testnetArgs = &testnetConfig{}
@@ -63,7 +77,9 @@ func init() {
 	testnetCmd.Flags().StringVar(&testnetArgs.namesPath, "names", "", "Specify a path to a file containing a list of names separated by newlines if you want the nodes to be generated with human-readable names")
 	// 1 billion by default
 	testnetCmd.Flags().Int64Var(&testnetArgs.totalFunds, "total_funds", 1000000000, "The total amount of tokens in circulation")
-	testnetCmd.Flags().BoolVar(&testnetArgs.singleOriginFunds, "single_origin_funds", false, "If specified, allocates all possible tokens to a single account")
+	testnetCmd.Flags().StringSliceVar(&testnetArgs.initialTokenHolders, "initial_token_holders", []string{}, "Initial list of addresses that hold an equal share of Total funds")
+	testnetCmd.Flags().StringVar(&testnetArgs.deployETHContract, "deploy_eth_contract", "", "deploy the ethereum Contract")
+
 }
 
 func randStr(size int) string {
@@ -156,12 +172,6 @@ func newDevnetContext(args *testnetConfig) (*devnetContext, error) {
 	}, nil
 }
 
-// padZeroes takes the maximum number of zeroes allowed and pa
-func padZeroes(str string, total int) string {
-	prefix := strings.Repeat("0", total-len(str))
-	return prefix + str
-}
-
 // Returns a list of names with the given prefix and a number after the prefix afterwards
 func nodeNamesWithZeros(prefix string, total int) []string {
 	names := make([]string, total)
@@ -180,7 +190,7 @@ func nodeNamesWithZeros(prefix string, total int) []string {
 	return names
 }
 
-func runDevnet(cmd *cobra.Command, _ []string) error {
+func runDevnet(_ *cobra.Command, _ []string) error {
 	ctx, err := newDevnetContext(testnetArgs)
 	if err != nil {
 		return errors.Wrap(err, "runDevnet failed")
@@ -219,7 +229,7 @@ func runDevnet(cmd *cobra.Command, _ []string) error {
 		cfg.Node.DB = args.dbType
 		if args.createEmptyBlock {
 			cfg.Consensus.CreateEmptyBlocks = true
-			cfg.Consensus.CreateEmptyBlocksInterval = 10000
+			cfg.Consensus.CreateEmptyBlocksInterval = 3000
 		} else {
 			cfg.Consensus.CreateEmptyBlocks = false
 		}
@@ -247,12 +257,21 @@ func runDevnet(cmd *cobra.Command, _ []string) error {
 		pvFile := privval.GenFilePV(filepath.Join(configDir, "priv_validator_key.json"), filepath.Join(dataDir, "priv_validator_state.json"))
 		pvFile.Save()
 
-		ecdsaPrivKey := secp256k1.GenPrivKey()
-		ecdsaPrivKeyBytes := base64.StdEncoding.EncodeToString([]byte(ecdsaPrivKey[:]))
-		ecdsaPk, err := keys.GetPrivateKeyFromBytes([]byte(ecdsaPrivKey[:]), keys.SECP256K1)
+		ecdsaPrivKey, _ := btcec.NewPrivateKey(btcec.S256())
+		ecdsaPrivKeyBytes := base64.StdEncoding.EncodeToString([]byte(ecdsaPrivKey.Serialize()))
+
+		ecdsaPk, err := keys.GetPrivateKeyFromBytes([]byte(ecdsaPrivKey.Serialize()), keys.BTCECSECP)
 		if err != nil {
-			return errors.Wrap(err, "error generating secp256k1 private key")
+			return errors.Wrap(err, "error generating BTCECSECP private key")
 		}
+		//ethecdsaPrivKey, err := crypto.GenerateKey()
+		//if err != nil {
+		//	return errors.Wrap(err, "error generating ETHSECP key")
+		//}
+		//ethecdsaPk, err := keys.GetPrivateKeyFromBytes(ethecdsaPrivKey.D.Bytes(), keys.ETHSECP)
+		//if err != nil {
+		//	return errors.Wrap(err, "error generating BTCECSECP private key")
+		//}
 
 		f, err := os.Create(filepath.Join(configDir, "priv_validator_key_ecdsa.json"))
 		if err != nil {
@@ -268,7 +287,7 @@ func runDevnet(cmd *cobra.Command, _ []string) error {
 		}
 
 		// Save the nodes to a list so we can iterate again and
-		n := node{isValidator, cfg, nodeDir, nodeKey, ecdsaPk, consensus.GenesisValidator{}}
+		n := node{isValidator: isValidator, cfg: cfg, dir: nodeDir, key: nodeKey, esdcaPk: ecdsaPk}
 		if isValidator {
 			validator := consensus.GenesisValidator{
 				Address: pvFile.GetAddress(),
@@ -281,6 +300,7 @@ func runDevnet(cmd *cobra.Command, _ []string) error {
 		}
 		nodeList[i] = n
 		persistentPeers[i] = n.connectionDetails()
+
 	}
 
 	// Create the non validator nodes
@@ -291,7 +311,15 @@ func runDevnet(cmd *cobra.Command, _ []string) error {
 		chainID = args.chainID
 	}
 
-	states := initialState(args, nodeList)
+	cdo := &ethchain.ChainDriverOption{}
+	if len(args.deployETHContract) > 0 {
+		cdo, err = deployethcdcontract(args.deployETHContract, nodeList)
+		if err != nil {
+			return errors.Wrap(err, "failed to deploy the initial eth contract")
+		}
+	}
+
+	states := initialState(args, nodeList, *cdo)
 
 	genesisDoc, err := consensus.NewGenesisDoc(chainID, states)
 	if err != nil {
@@ -326,6 +354,8 @@ func runDevnet(cmd *cobra.Command, _ []string) error {
 		return false
 	}
 
+	//deploy contract and get contract addr
+
 	for _, node := range nodeList {
 		node.cfg.P2P.PersistentPeers = persistentPeers
 		// Modify the btc and eth ports
@@ -333,7 +363,7 @@ func runDevnet(cmd *cobra.Command, _ []string) error {
 			node.cfg.Network.BTCAddress = generateAddress(generateBTCPort(), false)
 			node.cfg.Network.ETHAddress = generateAddress(generateETHPort(), false)
 		}
-
+		//	node.cfg.EthChainDriver.ContractAddress = contractaddr
 		err := node.cfg.SaveFile(filepath.Join(node.dir, config.FileName))
 		if err != nil {
 			return err
@@ -345,10 +375,12 @@ func runDevnet(cmd *cobra.Command, _ []string) error {
 	return nil
 }
 
-func initialState(args *testnetConfig, nodeList []node) consensus.AppState {
-	olt := balance.Currency{Id: 0, Name: "OLT", Chain: chain.Type(0), Decimal: 18, Unit: "nue"}
-	vt := balance.Currency{Id: 1, Name: "VT", Chain: chain.Type(0), Unit: "vt"}
-	currencies := []balance.Currency{olt, vt}
+func initialState(args *testnetConfig, nodeList []node, option ethchain.ChainDriverOption) consensus.AppState {
+	olt := balance.Currency{Id: 0, Name: "OLT", Chain: chain.ONELEDGER, Decimal: 18, Unit: "nue"}
+	vt := balance.Currency{Id: 1, Name: "VT", Chain: chain.ONELEDGER, Unit: "vt"}
+	obtc := balance.Currency{Id: 2, Name: "BTC", Chain: chain.BITCOIN, Decimal: 8, Unit: "satoshi"}
+	oeth := balance.Currency{Id: 3, Name: "ETH", Chain: chain.ETHEREUM, Decimal: 18, Unit: "wei"}
+	currencies := []balance.Currency{olt, vt, obtc, oeth}
 	feeOpt := fees.FeeOption{
 		FeeCurrency:   olt,
 		MinFeeDecimal: 9,
@@ -356,67 +388,176 @@ func initialState(args *testnetConfig, nodeList []node) consensus.AppState {
 	balances := make([]consensus.BalanceState, 0, len(nodeList))
 	staking := make([]consensus.Stake, 0, len(nodeList))
 	domains := make([]consensus.DomainState, 0, len(nodeList))
-	fees := make([]consensus.BalanceState, 0, len(nodeList))
+	fees_db := make([]consensus.BalanceState, 0, len(nodeList))
 	total := olt.NewCoinFromInt(args.totalFunds)
+
+	var initialAddrs []keys.Address
+	initAddrIndex := 0
+	for _, addr := range args.initialTokenHolders {
+		tmpAddr := keys.Address{}
+		err := tmpAddr.UnmarshalText([]byte(addr))
+		if err != nil {
+			fmt.Println("Error adding initial address:", addr)
+			continue
+		}
+		initialAddrs = append(initialAddrs, tmpAddr)
+	}
 
 	for _, node := range nodeList {
 		if !node.isValidator {
-			balances = append(balances, consensus.BalanceState{
-				Address:  node.key.PubKey().Address().Bytes(),
-				Currency: vt.Name,
-				Amount:   *vt.NewCoinFromInt(1).Amount,
-			})
 			continue
 		}
-		h, _ := node.esdcaPk.GetHandler()
+
+		h, err := node.esdcaPk.GetHandler()
+		if err != nil {
+			fmt.Println("err")
+			panic(err)
+		}
+
+		var stakeAddr keys.Address
+		if len(initialAddrs) > 0 {
+			if initAddrIndex > (len(initialAddrs) - 1) {
+				initAddrIndex = 0
+			}
+			stakeAddr = initialAddrs[initAddrIndex]
+			initAddrIndex++
+		} else {
+			stakeAddr = node.key.PubKey().Address().Bytes()
+		}
 
 		pubkey, _ := keys.PubKeyFromTendermint(node.validator.PubKey.Bytes())
 		st := consensus.Stake{
 			ValidatorAddress: node.validator.Address.Bytes(),
-			StakeAddress:     node.key.PubKey().Address().Bytes(),
+			StakeAddress:     stakeAddr,
 			Pubkey:           pubkey,
 			ECDSAPubKey:      h.PubKey(),
 			Name:             node.validator.Name,
 			Amount:           *vt.NewCoinFromInt(node.validator.Power).Amount,
 		}
 		staking = append(staking, st)
-		balances = append(balances, consensus.BalanceState{
-			Address:  node.key.PubKey().Address().Bytes(),
-			Currency: vt.Name,
-			Amount:   *vt.NewCoinFromInt(100).Amount,
-		})
 	}
 
-	if args.singleOriginFunds {
-		balances = append(balances, consensus.BalanceState{
-			Address:  nodeList[0].key.PubKey().Address().Bytes(),
-			Currency: olt.Name,
-			Amount:   *total.Amount,
-		})
-		return consensus.AppState{
-			Currencies: currencies,
-			FeeOption:  feeOpt,
-			Balances:   balances,
-			Staking:    staking,
-			Domains:    domains,
-			Fees:       fees,
+	if len(args.initialTokenHolders) > 0 {
+		for _, acct := range initialAddrs {
+			share := total.DivideInt64(int64(len(args.initialTokenHolders)))
+			balances = append(balances, consensus.BalanceState{
+				Address:  acct,
+				Currency: olt.Name,
+				Amount:   *olt.NewCoinFromAmount(*share.Amount).Amount,
+			})
+			balances = append(balances, consensus.BalanceState{
+				Address:  acct,
+				Currency: vt.Name,
+				Amount:   *vt.NewCoinFromInt(100).Amount,
+			})
+		}
+	} else {
+		for _, node := range nodeList {
+			amt := int64(100)
+			if !node.isValidator {
+				amt = 1
+			}
+			share := total.DivideInt64(int64(len(nodeList)))
+			balances = append(balances, consensus.BalanceState{
+				Address:  node.key.PubKey().Address().Bytes(),
+				Currency: olt.Name,
+				Amount:   *olt.NewCoinFromAmount(*share.Amount).Amount,
+			})
+			balances = append(balances, consensus.BalanceState{
+				Address:  node.key.PubKey().Address().Bytes(),
+				Currency: vt.Name,
+				Amount:   *vt.NewCoinFromInt(amt).Amount,
+			})
 		}
 	}
-	for _, node := range nodeList {
-
-		share := total.DivideInt64(int64(len(nodeList)))
-		balances = append(balances, consensus.BalanceState{
-			Address:  node.key.PubKey().Address().Bytes(),
-			Currency: olt.Name,
-			Amount:   *olt.NewCoinFromAmount(*share.Amount).Amount,
-		})
-	}
 	return consensus.AppState{
-		Currencies: currencies,
-		FeeOption:  feeOpt,
-		Balances:   balances,
-		Staking:    staking,
-		Domains:    domains,
-		Fees:       fees,
+		Currencies:  currencies,
+		FeeOption:   feeOpt,
+		ETHCDOption: option,
+		Balances:    balances,
+		Staking:     staking,
+		Domains:     domains,
+		Fees:        fees_db,
 	}
+}
+
+func deployethcdcontract(conn string, nodeList []node) (*ethchain.ChainDriverOption, error) {
+	privatekey, err := crypto.HexToECDSA("")
+	if err != nil {
+		return nil, err
+	}
+	cli, err := ethclient.Dial(conn)
+	if err != nil {
+		return nil, err
+	}
+
+	publicKey := privatekey.Public()
+	publicKeyECDSA, ok := publicKey.(*ecdsa.PublicKey)
+	if !ok {
+		return nil, err
+	}
+
+	fromAddress := crypto.PubkeyToAddress(*publicKeyECDSA)
+	//fmt.Println("paying addr", fromAddress.Hex())
+	gasPrice, err := cli.SuggestGasPrice(context.Background())
+	if err != nil {
+		return nil, err
+	}
+	gasLimit := uint64(6721974) // in units
+
+	auth := bind.NewKeyedTransactor(privatekey)
+	auth.Value = big.NewInt(0) // in wei
+	auth.GasLimit = gasLimit   // in units
+	auth.GasPrice = gasPrice
+
+	input := make([]common.Address, 0, 10)
+	for _, node := range nodeList {
+		privkey := keys.ETHSECP256K1TOECDSA(node.esdcaPk.Data)
+		nonce, err := cli.PendingNonceAt(context.Background(), fromAddress)
+		if err != nil {
+			return nil, err
+		}
+
+		//fmt.Println("nonce", nonce)
+		pubkey := privkey.Public()
+		ecdsapubkey, ok := pubkey.(*ecdsa.PublicKey)
+		if !ok {
+			return nil, errors.New("failed to cast pubkey")
+		}
+		addr := crypto.PubkeyToAddress(*ecdsapubkey)
+		if node.validator.Address.String() == "" {
+			continue
+		}
+
+		input = append(input, addr)
+		tx := types.NewTransaction(nonce, addr, big.NewInt(100000000000000000), auth.GasLimit, auth.GasPrice, (nil))
+		chainId, _ := cli.ChainID(context.Background())
+		signedTx, err := types.SignTx(tx, types.NewEIP155Signer(chainId), privatekey)
+		if err != nil {
+			return nil, errors.Wrap(err, "signing tx")
+		}
+		err = cli.SendTransaction(context.Background(), signedTx)
+		if err != nil {
+			return nil, errors.Wrap(err, "sending")
+		}
+		time.Sleep(3 * time.Second)
+	}
+
+	nonce, err := cli.PendingNonceAt(context.Background(), fromAddress)
+	if err != nil {
+		return nil, err
+	}
+
+	auth.Nonce = big.NewInt(int64(nonce))
+	address, _, _, err := ethcontracts.DeployLockRedeem(auth, cli, input)
+	if err != nil {
+		return nil, errors.Wrap(err, "deploy")
+	}
+	fmt.Println("Contract Address : ", address.Hex())
+
+	return &ethchain.ChainDriverOption{
+		ContractABI:     contract.LockRedeemABI,
+		ContractAddress: address,
+	}, nil
+
 }

@@ -2,12 +2,13 @@ package broadcast
 
 import (
 	"errors"
-	"github.com/Oneledger/protocol/data/fees"
-
-	"github.com/Oneledger/protocol/data/balance"
+	"fmt"
 
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/client"
+	"github.com/Oneledger/protocol/data/balance"
+	"github.com/Oneledger/protocol/data/bitcoin"
+	"github.com/Oneledger/protocol/data/fees"
 	"github.com/Oneledger/protocol/log"
 	"github.com/Oneledger/protocol/rpc"
 	"github.com/Oneledger/protocol/serialize"
@@ -17,17 +18,28 @@ type Service struct {
 	logger     *log.Logger
 	router     action.Router
 	currencies *balance.CurrencySet
+	trackers   *bitcoin.TrackerStore
 	feeOpt     *fees.FeeOption
 	ext        client.ExtServiceContext
+
+	blockCypherToken     string
+	blockCypherchainType string
 }
 
-func NewService(ctx client.ExtServiceContext, router action.Router, currencies *balance.CurrencySet, feeOpt *fees.FeeOption, logger *log.Logger) *Service {
+func NewService(ctx client.ExtServiceContext, router action.Router, currencies *balance.CurrencySet,
+	feeOpt *fees.FeeOption, logger *log.Logger, trackers *bitcoin.TrackerStore,
+	blockCypherToken, blockCypherChainType string,
+) *Service {
 	return &Service{
 		ext:        ctx,
 		router:     router,
 		currencies: currencies,
+		trackers:   trackers,
 		feeOpt:     feeOpt,
 		logger:     logger,
+
+		blockCypherToken:     blockCypherToken,
+		blockCypherchainType: blockCypherChainType,
 	}
 }
 
@@ -39,6 +51,7 @@ func (svc *Service) validateAndSignTx(req client.BroadcastRequest) ([]byte, erro
 	var tx action.RawTx
 	err := serialize.GetSerializer(serialize.NETWORK).Deserialize(req.RawTx, &tx)
 	if err != nil {
+		svc.logger.Error("invalid rawTx:", err)
 		err = rpc.InvalidRequestError("invalid rawTx given")
 		return nil, err
 	}
@@ -50,7 +63,9 @@ func (svc *Service) validateAndSignTx(req client.BroadcastRequest) ([]byte, erro
 	}
 
 	handler := svc.router.Handler(tx.Type)
-	ctx := action.NewContext(svc.router, nil, nil, nil, nil, svc.currencies, svc.feeOpt, nil, nil, nil, svc.logger)
+	ctx := action.NewContext(svc.router, nil, nil, nil, nil, svc.currencies,
+		svc.feeOpt, nil, nil, nil, svc.trackers, nil, nil, nil,
+		nil, svc.blockCypherToken, svc.blockCypherchainType, svc.logger)
 	_, err = handler.Validate(ctx, signedTx)
 	if err != nil {
 		err = rpc.InvalidRequestError(err.Error())
@@ -62,7 +77,7 @@ func (svc *Service) validateAndSignTx(req client.BroadcastRequest) ([]byte, erro
 
 func (svc *Service) broadcast(method client.BroadcastMode, req client.BroadcastRequest) (client.BroadcastReply, error) {
 	makeErr := func(err error) error { return rpc.InternalError(err.Error()) }
-
+	fmt.Println("BROADCAST ")
 	rawSignedTx, err := svc.validateAndSignTx(req)
 	if err != nil {
 		return client.BroadcastReply{}, err
@@ -119,6 +134,7 @@ func (svc *Service) TxSync(req client.BroadcastRequest, reply *client.BroadcastR
 
 // TxCommit returns when the transaction has been committed to a block.
 func (svc *Service) TxCommit(req client.BroadcastRequest, reply *client.BroadcastReply) error {
+	fmt.Println("TXCOMMIT BROADCAST ")
 	out, err := svc.broadcast(client.BROADCASTCOMMIT, req)
 	if err != nil {
 		return err

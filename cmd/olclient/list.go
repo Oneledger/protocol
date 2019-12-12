@@ -57,6 +57,11 @@ func ListNode(cmd *cobra.Command, args []string) {
 
 	logger.Infof("Accounts on node: %s ", Ctx.cfg.Node.NodeName)
 	for _, a := range accounts {
-		fmt.Println(a)
+		fmt.Print(a)
+		rep, err := fullnode.Balance(a.Address())
+		if err != nil {
+			continue
+		}
+		fmt.Printf("Balance: %s \n\n", rep.Balance)
 	}
 }

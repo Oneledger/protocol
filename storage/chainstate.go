@@ -205,6 +205,12 @@ func (state *ChainState) loadDB(db tmdb.DB) ([]byte, int64) {
 	state.Version = state.Delivered.Version()
 	state.TreeHeight = state.Delivered.Height()
 
-	log.Debug("Reinitialized From Database", "version", state.Version, "tree_height", state.TreeHeight, "hash", hex.EncodeToString(state.Hash))
+	log.Info("Reinitialized From Database", "version", state.Version, "tree_height", state.TreeHeight, "hash", hex.EncodeToString(state.Hash))
 	return state.Hash, state.Version
+}
+
+func (state *ChainState) ClearFrom(version int64) error {
+	version, err := state.Delivered.LoadVersionForOverwriting(version)
+	log.Info("cleared version after: ", version)
+	return err
 }
