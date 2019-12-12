@@ -147,12 +147,17 @@ func (domainCreateTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool
 		return false, action.Response{Log: err.Error()}
 	}
 
-	domain := ons.NewDomain(
+	domain, err := ons.NewDomain(
 		create.Owner,
 		create.Account,
 		create.Name,
+		"",
 		ctx.Header.Height,
+		"",
 	)
+	if err != nil {
+		return false, action.Response{Log: err.Error()}
+	}
 	err = ctx.Domains.Set(domain)
 	if err != nil {
 		return false, action.Response{Log: err.Error()}

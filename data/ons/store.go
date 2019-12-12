@@ -36,7 +36,7 @@ func (ds *DomainStore) WithState(state *storage.State) *DomainStore {
 }
 
 // Get is used to retrieve the domain object from the domain name
-func (ds *DomainStore) Get(name string) (*Domain, error) {
+func (ds *DomainStore) Get(name Name) (*Domain, error) {
 	key := keyFromName(name)
 	key = append(ds.prefix, key...)
 	exists := ds.State.Exists(key)
@@ -72,14 +72,14 @@ func (ds *DomainStore) Set(d *Domain) error {
 	return nil
 }
 
-func (ds *DomainStore) Exists(name string) bool {
+func (ds *DomainStore) Exists(name Name) bool {
 	key := keyFromName(name)
 	key = append(ds.prefix, key...)
 	return ds.State.Exists(key)
 }
 
-func keyFromName(name string) []byte {
-	return []byte(strings.ToLower(name))
+func keyFromName(name Name) []byte {
+	return []byte(strings.ToLower(name.String()))
 }
 
 func (ds *DomainStore) Iterate(fn func(name string, domain *Domain) bool) (stopped bool) {

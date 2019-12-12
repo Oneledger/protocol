@@ -7,12 +7,12 @@ import (
 	"github.com/pkg/errors"
 	"github.com/tendermint/tendermint/types"
 
+	ethchain "github.com/Oneledger/protocol/chains/ethereum"
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/fees"
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/identity"
 	"github.com/Oneledger/protocol/serialize"
-	ethchain "github.com/Oneledger/protocol/chains/ethereum"
 )
 
 type GenesisDoc = types.GenesisDoc
@@ -41,9 +41,11 @@ type BalanceState struct {
 }
 
 type DomainState struct {
-	OwnerAddress   keys.Address `json:"ownerAddress"`
-	AccountAddress keys.Address `json:"accountAddress"`
-	Name           string       `json:"name"`
+	OwnerAddress keys.Address `json:"ownerAddress"`
+	Beneficiary  keys.Address `json:"beneficiary"`
+	Name         string       `json:"name"`
+	Parent       string       `json:"parent"`
+	URI          string       `json:"uri"`
 }
 
 type ChainState struct {
@@ -54,14 +56,14 @@ type ChainState struct {
 type Stake identity.Stake
 
 type AppState struct {
-	Currencies balance.Currencies `json:"currencies"`
-	FeeOption  fees.FeeOption     `json:"feeOption"`
-	ETHCDOption   ethchain.ChainDriverOption `json:"ethchaindriverOption"`
-	Chain      ChainState         `json:"state"`
-	Balances   []BalanceState     `json:"balances"`
-	Staking    []Stake            `json:"staking"`
-	Domains    []DomainState      `json:"domains"`
-	Fees       []BalanceState     `json:"fees"`
+	Currencies  balance.Currencies         `json:"currencies"`
+	FeeOption   fees.FeeOption             `json:"feeOption"`
+	ETHCDOption ethchain.ChainDriverOption `json:"ethchaindriverOption"`
+	Chain       ChainState                 `json:"state"`
+	Balances    []BalanceState             `json:"balances"`
+	Staking     []Stake                    `json:"staking"`
+	Domains     []DomainState              `json:"domains"`
+	Fees        []BalanceState             `json:"fees"`
 }
 
 func NewAppState(currencies balance.Currencies,
@@ -73,13 +75,13 @@ func NewAppState(currencies balance.Currencies,
 	ethoptions ethchain.ChainDriverOption,
 ) *AppState {
 	return &AppState{
-		Currencies: currencies,
-		FeeOption:  feeOpt,
-		Balances:   balances,
-		Staking:    staking,
-		Domains:    domains,
-		Fees:       fees,
-		ETHCDOption:ethoptions,
+		Currencies:  currencies,
+		FeeOption:   feeOpt,
+		Balances:    balances,
+		Staking:     staking,
+		Domains:     domains,
+		Fees:        fees,
+		ETHCDOption: ethoptions,
 	}
 }
 

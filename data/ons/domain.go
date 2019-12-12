@@ -13,16 +13,19 @@ const HEIGHT_INTERVAL = 1
 
 type Domain struct {
 	// addresses of the owner and the account the domain points to
-	OwnerAddress   keys.Address `json:"ownerAddress"`
-	AccountAddress keys.Address `json:"accountAddress"`
+	OwnerAddress keys.Address `json:"ownerAddress"`
+	Beneficiary  keys.Address `json:"Beneficiary"`
 
 	// the domain name; this is als a unique identifier of
 	// the domain object over the chain
-	Name string `json:"name"`
+	Name Name `json:"name"`
 
 	// block heights at which the domain was first created and updated
 	CreationHeight   int64 `json:"creationHeight"`
 	LastUpdateHeight int64 `json:"lastUpdateHeight"`
+
+	// expire block height
+	ExpireHeight int64 `json:"expireHeight"`
 
 	// flag to denote whether send2Domain is active on this domain
 	ActiveFlag bool `json:"activeFlag"`
@@ -32,31 +35,55 @@ type Domain struct {
 
 	// the asking price in OLT set by the owner
 	SalePrice balance.Coin `json:"salePrice"`
+
+	// parent domain name
+	Parent Name `json:"parent"`
+
+	// URI string for external reference
+	URI string `json:"uri"`
 }
 
 func NewDomain(ownerAddress, accountAddress keys.Address,
-	name string, height int64) *Domain {
+	name, parent string,
+	height int64,
+	uri string,
+) (*Domain, error) {
 
 	if accountAddress == nil ||
 		len(accountAddress) == 0 {
 		accountAddress = ownerAddress
 	}
 
+	n := GetNameFromString(name)
+	if !n.IsValid() {
+		return nil, ErrDomainNameNotValid
+	}
+	var p Name
+	if len(parent) > 0 {
+		p := GetNameFromString(parent)
+		if !p.IsValid() {
+			return nil, ErrDomainNameNotValid
+		}
+	}
 	return &Domain{
 		OwnerAddress:     ownerAddress,
-		AccountAddress:   accountAddress,
-		Name:             name,
+		Beneficiary:      ownerAddress,
+		Name:             n,
 		CreationHeight:   height, // height of current txn
 		LastUpdateHeight: height, // height of current txn
+		ExpireHeight:     height, // height of current txn
 		ActiveFlag:       true,   // Active by default
 
 		SalePrice:  balance.Coin{},
 		OnSaleFlag: false,
-	}
+
+		Parent: p,
+		URI:    uri,
+	}, nil
 }
 
 func (d *Domain) SetAccountAddress(addr keys.Address) {
-	d.AccountAddress = addr
+	d.Beneficiary = addr
 }
 
 func (d *Domain) Activate() {
@@ -93,4 +120,16 @@ func (d *Domain) IsChangeable(currentHeight int64) bool {
 func (d *Domain) CancelSale() {
 	d.OnSaleFlag = false
 	d.SalePrice = balance.Coin{}
+}
+
+func (d *Domain) AddToExpire(h int64) {
+	d.ExpireHeight = d.ExpireHeight + h
+}
+
+func (d Domain) IsActive(height int64) bool {
+	return d.ActiveFlag && d.ExpireHeight > height
+}
+
+func (d Domain) GetParent() Name {
+	return d.Parent
 }
