@@ -99,6 +99,7 @@ func (domainCreateTx) Validate(ctx *action.Context, tx action.SignedTx) (bool, e
 }
 
 func (domainCreateTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
+	fmt.Println("ONS OPTIONS",ctx.OnsOptions)
 	create := &DomainCreate{}
 	err := create.Unmarshal(tx.Data)
 	if err != nil {
