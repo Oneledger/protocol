@@ -5,25 +5,26 @@
 package tx
 
 import (
-	"strings"
-
 	"github.com/google/uuid"
 
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/action/ons"
 	"github.com/Oneledger/protocol/client"
+	ons2 "github.com/Oneledger/protocol/data/ons"
 	"github.com/Oneledger/protocol/serialize"
 	codes "github.com/Oneledger/protocol/status_codes"
 )
 
 func (s *Service) ONS_CreateRawCreate(args client.ONSCreateRequest, reply *client.SendTxReply) error {
 
+	name := ons2.GetNameFromString(args.Name)
 	domainCreate := ons.DomainCreate{
 		Owner:   args.Owner,
 		Account: args.Account,
-		Name:    args.Name,
+		Name:    name,
 		Price:   args.Price,
 	}
+
 	data, err := domainCreate.Marshal()
 	if err != nil {
 		return err
@@ -52,10 +53,11 @@ func (s *Service) ONS_CreateRawCreate(args client.ONSCreateRequest, reply *clien
 
 func (s *Service) ONS_CreateRawUpdate(args client.ONSUpdateRequest, reply *client.SendTxReply) error {
 
+	name := ons2.GetNameFromString(args.Name)
 	domainUpdate := ons.DomainUpdate{
 		Owner:   args.Owner,
 		Account: args.Account,
-		Name:    args.Name,
+		Name:    name,
 		Active:  args.Active,
 	}
 	data, err := domainUpdate.Marshal()
@@ -88,8 +90,9 @@ func (s *Service) ONS_CreateRawUpdate(args client.ONSUpdateRequest, reply *clien
 
 func (s *Service) ONS_CreateRawSale(args client.ONSSaleRequest, reply *client.SendTxReply) error {
 
+	name := ons2.GetNameFromString(args.Name)
 	domainSale := ons.DomainSale{
-		DomainName:   args.Name,
+		DomainName:   name,
 		OwnerAddress: args.OwnerAddress,
 		Price:        args.Price,
 		CancelSale:   args.CancelSale,
@@ -124,8 +127,9 @@ func (s *Service) ONS_CreateRawSale(args client.ONSSaleRequest, reply *client.Se
 
 func (s *Service) ONS_CreateRawBuy(args client.ONSPurchaseRequest, reply *client.SendTxReply) error {
 
+	name := ons2.GetNameFromString(args.Name)
 	domainPurchase := ons.DomainPurchase{
-		Name:     strings.ToLower(args.Name),
+		Name:     name,
 		Buyer:    args.Buyer,
 		Account:  args.Account,
 		Offering: args.Offering,
@@ -160,8 +164,9 @@ func (s *Service) ONS_CreateRawBuy(args client.ONSPurchaseRequest, reply *client
 
 func (s *Service) ONS_CreateRawSend(args client.ONSSendRequest, reply *client.SendTxReply) error {
 
+	name := ons2.GetNameFromString(args.Name)
 	domainSend := ons.DomainSend{
-		DomainName: args.Name,
+		DomainName: name,
 		From:       args.From,
 		Amount:     args.Amount,
 	}

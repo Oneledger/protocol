@@ -10,6 +10,7 @@ import (
 	"github.com/tendermint/tendermint/libs/common"
 
 	"github.com/Oneledger/protocol/action"
+	"github.com/Oneledger/protocol/data/ons"
 )
 
 var _ Ons = &DomainUpdate{}
@@ -17,7 +18,7 @@ var _ Ons = &DomainUpdate{}
 type DomainUpdate struct {
 	Owner   action.Address `json:"owner"`
 	Account action.Address `json:"account"`
-	Name    string         `json:"name"`
+	Name    ons.Name       `json:"name"`
 	Active  bool           `json:"active"`
 }
 
@@ -30,7 +31,7 @@ func (du *DomainUpdate) Unmarshal(data []byte) error {
 }
 
 func (du DomainUpdate) OnsName() string {
-	return du.Name
+	return du.Name.String()
 }
 
 func (du DomainUpdate) Signers() []action.Address {

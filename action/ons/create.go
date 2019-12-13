@@ -17,7 +17,7 @@ var _ Ons = &DomainCreate{}
 type DomainCreate struct {
 	Owner   action.Address `json:"owner"`
 	Account action.Address `json:"account"`
-	Name    string         `json:"name"`
+	Name    ons.Name       `json:"name"`
 	Price   action.Amount  `json:"price"`
 }
 
@@ -30,7 +30,7 @@ func (dc *DomainCreate) Unmarshal(data []byte) error {
 }
 
 func (dc DomainCreate) OnsName() string {
-	return dc.Name
+	return dc.Name.String()
 }
 
 func (dc DomainCreate) Signers() []action.Address {
@@ -150,7 +150,7 @@ func (domainCreateTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool
 	domain, err := ons.NewDomain(
 		create.Owner,
 		create.Account,
-		create.Name,
+		create.Name.String(),
 		"",
 		ctx.Header.Height,
 		"",

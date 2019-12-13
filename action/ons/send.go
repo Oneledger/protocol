@@ -12,6 +12,7 @@ import (
 	"github.com/tendermint/tendermint/libs/common"
 
 	"github.com/Oneledger/protocol/action"
+	"github.com/Oneledger/protocol/data/ons"
 )
 
 /*
@@ -25,7 +26,7 @@ var _ Ons = &DomainSend{}
 // This is struct is serialized according to network strategy before sending over network.
 type DomainSend struct {
 	From       action.Address `json:"from"`
-	DomainName string         `json:"domainName"`
+	DomainName ons.Name       `json:"domainName"`
 	Amount     action.Amount  `json:"amount"`
 }
 
@@ -38,7 +39,7 @@ func (s *DomainSend) Unmarshal(data []byte) error {
 }
 
 func (s DomainSend) OnsName() string {
-	return s.DomainName
+	return s.DomainName.String()
 }
 
 // Type method gives the transaction type of the
@@ -141,11 +142,11 @@ func (domainSendTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (bool, ac
 		log := fmt.Sprint("domain inactive")
 		return false, action.Response{Log: log}
 	}
-	if len(domain.AccountAddress) == 0 {
+	if len(domain.Beneficiary) == 0 {
 		log := fmt.Sprint("domain account address not set")
 		return false, action.Response{Log: log}
 	}
-	to := domain.AccountAddress
+	to := domain.Beneficiary
 
 	err = ctx.Balances.MinusFromAddress(send.From.Bytes(), coin)
 	if err != nil {
@@ -185,11 +186,11 @@ func (domainSendTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, 
 		log := fmt.Sprint("domain inactive")
 		return false, action.Response{Log: log}
 	}
-	if len(domain.AccountAddress) == 0 {
+	if len(domain.Beneficiary) == 0 {
 		log := fmt.Sprint("domain account address not set")
 		return false, action.Response{Log: log}
 	}
-	to := domain.AccountAddress
+	to := domain.Beneficiary
 
 	err = ctx.Balances.MinusFromAddress(send.From.Bytes(), coin)
 	if err != nil {

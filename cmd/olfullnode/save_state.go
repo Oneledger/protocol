@@ -3,6 +3,11 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"io"
+	"os"
+	"path/filepath"
+	"strings"
+
 	"github.com/Oneledger/protocol/app"
 	olnode "github.com/Oneledger/protocol/app/node"
 	"github.com/Oneledger/protocol/config"
@@ -15,10 +20,6 @@ import (
 	"github.com/Oneledger/protocol/log"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
-	"io"
-	"os"
-	"path/filepath"
-	"strings"
 )
 
 var saveStateCmd = &cobra.Command{
@@ -323,8 +324,8 @@ func DumpDomainToFile(ds *ons.DomainStore, writer io.Writer, fn func(writer io.W
 			}
 		}
 		domainState := DomainState{}
-		domainState.Name = domain.Name
-		domainState.AccountAddress = domain.AccountAddress
+		domainState.Name = domain.Name.String()
+		domainState.AccountAddress = domain.Beneficiary
 		domainState.OwnerAddress = domain.OwnerAddress
 
 		fn(writer, domainState)
