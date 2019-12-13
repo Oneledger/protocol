@@ -20,7 +20,7 @@ type DomainCreate struct {
 	Name    ons.Name       `json:"name"`
 	Price   action.Amount  `json:"price"`
 	Uri     string         `json:"uri"`
-	ExpiryHeight int64      `json:"expiry_height"`
+	BuyingPrice int64      `json:"buying_price"`
 }
 
 func (dc DomainCreate) Marshal() ([]byte, error) {
