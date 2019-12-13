@@ -7,6 +7,7 @@ package ons
 import (
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/keys"
+
 )
 
 const HEIGHT_INTERVAL = 1
@@ -44,7 +45,7 @@ type Domain struct {
 }
 
 func NewDomain(ownerAddress, accountAddress keys.Address,
-	name, parent string,
+	name string, parent string,
 	height int64,
 	uri string,
 ) (*Domain, error) {

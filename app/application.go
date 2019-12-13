@@ -127,7 +127,10 @@ func (app *App) setupState(stateBytes []byte) error {
 	}
 
 	balanceCtx := app.Context.Balances()
-
+    err = app.Context.govern.SetONSOptions(initial.ONSOptions)
+    if err != nil {
+    	return errors.Wrap(err,"Error in setting up ONS options")
+	}
 	// (1) Register all the currencies and fee
 	for _, currency := range initial.Currencies {
 		err := balanceCtx.Currencies().Register(currency)

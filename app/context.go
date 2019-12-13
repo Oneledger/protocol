@@ -135,7 +135,10 @@ func (ctx *context) Action(header *Header, state *storage.State) *action.Context
 	params := bitcoin2.GetChainParams(ctx.cfg.ChainDriver.BitcoinChainType)
 
 	bcct := bitcoin2.GetBlockCypherChainType(ctx.cfg.ChainDriver.BitcoinChainType)
-
+	onsoptins,err := ctx.govern.GetONSOptions()
+	if err != nil {
+		panic(err.Error() + "ons options not found in governanace db")
+	}
 	actionCtx := action.NewContext(
 		ctx.actionRouter,
 		header,
@@ -155,8 +158,8 @@ func (ctx *context) Action(header *Header, state *storage.State) *action.Context
 		ctx.lockScriptStore,
 		ctx.cfg.ChainDriver.BlockCypherToken,
 		bcct,
-
-		log.NewLoggerWithPrefix(ctx.logWriter, "action").WithLevel(log.Level(ctx.cfg.Node.LogLevel)))
+		log.NewLoggerWithPrefix(ctx.logWriter, "action").WithLevel(log.Level(ctx.cfg.Node.LogLevel)),
+		onsoptins)
 
 	return actionCtx
 }

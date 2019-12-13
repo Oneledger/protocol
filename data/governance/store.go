@@ -8,6 +8,7 @@ import (
 	ethchain "github.com/Oneledger/protocol/chains/ethereum"
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/fees"
+	"github.com/Oneledger/protocol/data/ons"
 	"github.com/Oneledger/protocol/serialize"
 	"github.com/Oneledger/protocol/storage"
 )
@@ -20,6 +21,7 @@ const (
 	ADMIN_EPOCH_BLOCK_INTERVAL string = "epoch"
 
 	ADMIN_ETH_CHAINDRIVER_OPTION string = "ethcdopt"
+	ADMIN_ONS_OPTION string = "onsopt"
 )
 
 type Store struct {
@@ -168,4 +170,30 @@ func (st *Store) SetETHChainDriverOption(opt ethchain.ChainDriverOption) error {
 		return errors.Wrap(err, "failed to set the eth chaindriver option")
 	}
 	return nil
+}
+
+func (st *Store) SetONSOptions(onsOpt ons.OnsOptions) error{
+	bytes, err := serialize.GetSerializer(serialize.PERSISTENT).Serialize(onsOpt)
+	if err != nil {
+		return errors.Wrap(err, "failed to serialize ons options")
+	}
+	err = st.Set([]byte(ADMIN_ONS_OPTION), bytes)
+	if err != nil {
+		return errors.Wrap(err, "failed to set the ons options")
+	}
+	return nil
+}
+
+
+func (st *Store) GetONSOptions() (*ons.OnsOptions, error) {
+	bytes, err := st.Get([]byte(ADMIN_ONS_OPTION))
+	if err != nil {
+		return nil, err
+	}
+	r := &ons.OnsOptions{}
+	err = serialize.GetSerializer(serialize.PERSISTENT).Deserialize(bytes, r)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to deserialize ons options")
+	}
+	return r, nil
 }

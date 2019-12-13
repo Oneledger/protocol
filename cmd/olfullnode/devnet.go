@@ -31,6 +31,7 @@ import (
 	"github.com/Oneledger/protocol/consensus"
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/chain"
+	"github.com/Oneledger/protocol/data/ons"
 
 	"github.com/Oneledger/protocol/data/fees"
 	"github.com/Oneledger/protocol/data/keys"
@@ -318,8 +319,12 @@ func runDevnet(_ *cobra.Command, _ []string) error {
 			return errors.Wrap(err, "failed to deploy the initial eth contract")
 		}
 	}
-
-	states := initialState(args, nodeList, *cdo)
+    onsOp := &ons.OnsOptions{
+		PerBlockFees:     1,
+		FirstLevelDomain: "ol",
+		SubDomainPrice:   balance.Coin{},
+	}
+	states := initialState(args, nodeList, *cdo,*onsOp)
 
 	genesisDoc, err := consensus.NewGenesisDoc(chainID, states)
 	if err != nil {
@@ -375,7 +380,7 @@ func runDevnet(_ *cobra.Command, _ []string) error {
 	return nil
 }
 
-func initialState(args *testnetConfig, nodeList []node, option ethchain.ChainDriverOption) consensus.AppState {
+func initialState(args *testnetConfig, nodeList []node, option ethchain.ChainDriverOption ,onsOption ons.OnsOptions) consensus.AppState {
 	olt := balance.Currency{Id: 0, Name: "OLT", Chain: chain.ONELEDGER, Decimal: 18, Unit: "nue"}
 	vt := balance.Currency{Id: 1, Name: "VT", Chain: chain.ONELEDGER, Unit: "vt"}
 	obtc := balance.Currency{Id: 2, Name: "BTC", Chain: chain.BITCOIN, Decimal: 8, Unit: "satoshi"}
@@ -478,6 +483,7 @@ func initialState(args *testnetConfig, nodeList []node, option ethchain.ChainDri
 		Staking:     staking,
 		Domains:     domains,
 		Fees:        fees_db,
+		ONSOptions:  onsOption,
 	}
 }
 

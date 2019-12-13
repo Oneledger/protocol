@@ -19,6 +19,8 @@ type DomainCreate struct {
 	Account action.Address `json:"account"`
 	Name    string         `json:"name"`
 	Price   action.Amount  `json:"price"`
+	Uri     string         `json:"uri"`
+	ExpiryHeight int64      `json:"expiry_height"`
 }
 
 func (dc DomainCreate) Marshal() ([]byte, error) {
@@ -153,7 +155,7 @@ func (domainCreateTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool
 		create.Name,
 		"",
 		ctx.Header.Height,
-		"",
+		create.Uri,
 	)
 	if err != nil {
 		return false, action.Response{Log: err.Error()}
