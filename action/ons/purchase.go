@@ -13,7 +13,7 @@ import (
 var _ Ons = &DomainPurchase{}
 
 type DomainPurchase struct {
-	Name     string         `json:"name"`
+	Name     ons.Name       `json:"name"`
 	Buyer    action.Address `json:"buyer"`
 	Account  action.Address `json:"account"`
 	Offering action.Amount  `json:"offering"`
@@ -28,7 +28,7 @@ func (dp *DomainPurchase) Unmarshal(data []byte) error {
 }
 
 func (dp DomainPurchase) OnsName() string {
-	return dp.Name
+	return dp.Name.String()
 }
 
 func (dp DomainPurchase) Signers() []action.Address {

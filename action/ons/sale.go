@@ -19,7 +19,7 @@ import (
 var _ Ons = &DomainSale{}
 
 type DomainSale struct {
-	DomainName   string         `json:"domainName"`
+	DomainName   ons.Name       `json:"domainName"`
 	OwnerAddress action.Address `json:"ownerAddress"`
 	Price        action.Amount  `json:"price"`
 	CancelSale   bool           `json:"cancelSale"`
@@ -34,7 +34,7 @@ func (s *DomainSale) Unmarshal(data []byte) error {
 }
 
 func (s DomainSale) OnsName() string {
-	return s.DomainName
+	return s.DomainName.String()
 }
 
 func (DomainSale) Type() action.Type {

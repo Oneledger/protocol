@@ -12,7 +12,7 @@ func (sv *Service) ONS_GetDomainByName(req client.ONSGetDomainsRequest, reply *c
 		return codes.ErrBadName
 	}
 
-	d, err := domains.Get(req.Name)
+	d, err := domains.Get(ons.Name(req.Name))
 	if err != nil {
 		return codes.ErrDomainNotFound
 	}
@@ -81,7 +81,7 @@ func (sv *Service) ONS_GetDomainByBeneficiary(req client.ONSGetDomainsRequest, r
 
 	ds := make([]ons.Domain, 0)
 	domains.Iterate(func(name string, domain *ons.Domain) bool {
-		if domain.AccountAddress.Equal(req.Beneficiary) {
+		if domain.Beneficiary.Equal(req.Beneficiary) {
 			ds = append(ds, *domain)
 		}
 		return false
