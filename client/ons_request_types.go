@@ -18,11 +18,30 @@ type ONSCreateRequest struct {
 	Gas      int64         `json:"gas"`
 }
 
+type ONSCreateSubRequest struct {
+	Owner    keys.Address  `json:"owner"`
+	Account  keys.Address  `json:"account"`
+	Name     string        `json:"name"`
+	Parent   string        `json:"parent"`
+	Price    action.Amount `json:"price"`
+	GasPrice action.Amount `json:"gasprice"`
+	Gas      int64         `json:"gas"`
+}
+
 type ONSUpdateRequest struct {
 	Owner    keys.Address  `json:"owner"`
 	Account  keys.Address  `json:"account"`
 	Name     string        `json:"name"`
 	Active   bool          `json:"active"`
+	GasPrice action.Amount `json:"gasprice"`
+	Gas      int64         `json:"gas"`
+}
+
+type ONSRenewRequest struct {
+	Owner    keys.Address  `json:"owner"`
+	Account  keys.Address  `json:"account"`
+	Name     string        `json:"name"`
+	Price    action.Amount `json:"price"`
 	GasPrice action.Amount `json:"gasprice"`
 	Gas      int64         `json:"gas"`
 }
