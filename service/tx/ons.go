@@ -197,3 +197,40 @@ func (s *Service) ONS_CreateRawSend(args client.ONSSendRequest, reply *client.Se
 
 	return nil
 }
+
+func (s *Service) ONS_CreateRawBuyExpired(args client.ONSPurchaseExpiredRequest, reply *client.SendTxReply) error {
+
+	name := ons2.GetNameFromString(args.Name)
+	domainPurchase := ons.DomainExpiredPurchase{
+		Name:   name,
+		Buyer:  args.Buyer,
+		Blocks: args.Blocks,
+	}
+
+	data, err := domainPurchase.Marshal()
+	if err != nil {
+		s.logger.Error("error in serializing domain purchase object", err)
+		return codes.ErrSerialization
+	}
+
+	uuidNew, _ := uuid.NewUUID()
+	fee := action.Fee{args.GasPrice, args.Gas}
+	tx := &action.RawTx{
+		Type: action.DOMAIN_EXPIRED_PURCHASE,
+		Data: data,
+		Fee:  fee,
+		Memo: uuidNew.String(),
+	}
+
+	packet, err := serialize.GetSerializer(serialize.NETWORK).Serialize(tx)
+	if err != nil {
+		s.logger.Error("error in serializing domain purchase transaction", err)
+		return codes.ErrSerialization
+	}
+
+	*reply = client.SendTxReply{
+		RawTx: packet,
+	}
+
+	return nil
+}

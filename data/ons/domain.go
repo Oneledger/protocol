@@ -7,7 +7,6 @@ package ons
 import (
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/keys"
-
 )
 
 const HEIGHT_INTERVAL = 1
@@ -133,4 +132,15 @@ func (d Domain) IsActive(height int64) bool {
 
 func (d Domain) GetParent() Name {
 	return d.Parent
+}
+
+func (d *Domain) ResetAfterSale(buyer keys.Address, nBlocks, currentHeight int64) {
+	d.Beneficiary = nil
+	d.ExpireHeight = currentHeight + nBlocks
+	d.OwnerAddress = buyer
+	d.SalePrice = balance.Coin{}
+	d.LastUpdateHeight = currentHeight
+	d.ActiveFlag = true
+	d.Parent = Name("")
+	d.URI = ""
 }

@@ -115,7 +115,7 @@ func (domainPurchaseTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (bool
 		return false, action.Response{Log: "offering price not enough"}
 	}
 
-	ctx.Balances.MinusFromAddress(buy.Buyer.Bytes(), buy.Offering.ToCoin(ctx.Currencies))
+	err = ctx.Balances.MinusFromAddress(buy.Buyer.Bytes(), buy.Offering.ToCoin(ctx.Currencies))
 	if err != nil {
 		return false, action.Response{Log: errors.Wrap(err, "insufficient buyer balance").Error()}
 	}
@@ -148,7 +148,7 @@ func (domainPurchaseTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bo
 		return false, action.Response{Log: "offering price not enough"}
 	}
 
-	ctx.Balances.MinusFromAddress(buy.Buyer.Bytes(), coin)
+	err = ctx.Balances.MinusFromAddress(buy.Buyer.Bytes(), coin)
 	if err != nil {
 		return false, action.Response{Log: errors.Wrap(err, "failed to debit buyer balance").Error()}
 	}

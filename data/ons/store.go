@@ -98,3 +98,8 @@ func (ds *DomainStore) Iterate(fn func(name string, domain *Domain) bool) (stopp
 		},
 	)
 }
+
+func (ds *DomainStore) DeleteSubdomains(name Name) error {
+
+	return nil
+}

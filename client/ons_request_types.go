@@ -60,6 +60,14 @@ type ONSGetDomainsRequest struct {
 	Beneficiary keys.Address `json:"beneficiary"`
 }
 
+type ONSPurchaseExpiredRequest struct {
+	Name     string        `json:"name"`
+	Buyer    keys.Address  `json:"buyer"`
+	Blocks   int64         `json:"blocks"`
+	GasPrice action.Amount `json:"gasprice"`
+	Gas      int64         `json:"gas"`
+}
+
 type ONSGetDomainsReply struct {
 	Domains []ons.Domain `json:"domains"`
 }
