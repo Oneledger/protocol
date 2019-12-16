@@ -99,7 +99,6 @@ func (domainCreateTx) Validate(ctx *action.Context, tx action.SignedTx) (bool, e
 }
 
 func (domainCreateTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
-	fmt.Println("ONS OPTIONS",ctx.OnsOptions)
 	create := &DomainCreate{}
 	err := create.Unmarshal(tx.Data)
 	if err != nil {
@@ -115,7 +114,6 @@ func (domainCreateTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (bool, 
 	if err != nil {
 		return false, action.Response{Log: errors.Wrap(err, hex.EncodeToString(create.Owner)).Error()}
 	}
-
 	err = ctx.FeePool.AddToPool(price)
 	if err != nil {
 		return false, action.Response{Log: err.Error()}
@@ -171,8 +169,17 @@ func (domainCreateTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool
 		Tags: create.Tags(),
 	}
 	return true, result
+
 }
 
 func (domainCreateTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas) (bool, action.Response) {
 	return action.BasicFeeHandling(ctx, signedTx, start, size, 1)
+}
+
+func CalculateExpiry (buyingPrice int64,basePrice int64,pricePerBlock int64) (expiry int64){
+	return (buyingPrice - basePrice)/pricePerBlock
+}
+
+func CreateDomainName (name ons.Name,firstLeveldomain string){
+
 }

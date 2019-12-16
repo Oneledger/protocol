@@ -77,15 +77,12 @@ func NewDomain(ownerAddress, accountAddress keys.Address,
 
 		SalePrice:  balance.Coin{},
 		OnSaleFlag: false,
-
-<<<<<<< Updated upstream
 		Parent: p,
 		URI:    uri,
 	}, nil
-=======
 	}
->>>>>>> Stashed changes
-}
+
+
 
 func (d *Domain) SetAccountAddress(addr keys.Address) {
 	d.Beneficiary = addr
