@@ -10,11 +10,11 @@
       dest: "{{APP_HOME}}/init.sh"
       content: |
         #!/bin/bash
-        olclient account --privKeyFilePath {{APP_HOME}} --name "{{uuid}}-Oneledger" 
+        olclient account --privKeyFilePath {{APP_HOME}}/{{uuid}}-Oneledger  --name "{{uuid}}-Oneledger" 
       mode: 511
       owner: "{{app_user}}"
       group: "{{app_user}}"
   - name: execute init.sh script
-    command: "/bin/bash {{APP_HOME}}/init.sh"
+    command: "chdir={{APP_HOME}} /bin/bash {{APP_HOME}}/init.sh"
     register: account_init_result
   - debug: "msg={{account_init_result.stdout_lines}}"
