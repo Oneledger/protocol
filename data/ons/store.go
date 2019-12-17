@@ -5,17 +5,17 @@
 package ons
 
 import (
-	"strings"
+	"github.com/pkg/errors"
 
 	"github.com/Oneledger/protocol/serialize"
 	"github.com/Oneledger/protocol/storage"
-	"github.com/pkg/errors"
 )
 
 // DomainStore wraps the persistent storage and the serializer giving
 // handy methods to access Domain objects
 type DomainStore struct {
 	State  *storage.State
+	opt    *Options
 	szlr   serialize.Serializer
 	prefix []byte
 }
@@ -35,9 +35,13 @@ func (ds *DomainStore) WithState(state *storage.State) *DomainStore {
 	return ds
 }
 
+func (ds *DomainStore) SetOptions(opt *Options) {
+	ds.opt = opt
+}
+
 // Get is used to retrieve the domain object from the domain name
 func (ds *DomainStore) Get(name Name) (*Domain, error) {
-	key := keyFromName(name)
+	key := name.toKey()
 	key = append(ds.prefix, key...)
 	exists := ds.State.Exists(key)
 	if !exists {
@@ -56,7 +60,7 @@ func (ds *DomainStore) Get(name Name) (*Domain, error) {
 }
 
 func (ds *DomainStore) Set(d *Domain) error {
-	key := keyFromName(d.Name)
+	key := d.Name.toKey()
 
 	data, err := ds.szlr.Serialize(d)
 	if err != nil {
@@ -73,16 +77,12 @@ func (ds *DomainStore) Set(d *Domain) error {
 }
 
 func (ds *DomainStore) Exists(name Name) bool {
-	key := keyFromName(name)
+	key := name.toKey()
 	key = append(ds.prefix, key...)
 	return ds.State.Exists(key)
 }
 
-func keyFromName(name Name) []byte {
-	return []byte(strings.ToLower(name.String()))
-}
-
-func (ds *DomainStore) Iterate(fn func(name string, domain *Domain) bool) (stopped bool) {
+func (ds *DomainStore) Iterate(fn func(name Name, domain *Domain) bool) (stopped bool) {
 	return ds.State.IterateRange(
 		ds.prefix,
 		storage.Rangefix(string(ds.prefix)),
@@ -94,7 +94,26 @@ func (ds *DomainStore) Iterate(fn func(name string, domain *Domain) bool) (stopp
 			if err != nil {
 				return false
 			}
-			return fn(name, domain)
+			return fn(Name(reverse(name)), domain)
+		},
+	)
+}
+
+func (ds *DomainStore) IterateSubDomain(parentName Name, fn func(name Name, domain *Domain) bool) (stopped bool) {
+	start := append(ds.prefix, (parentName + storage.DB_PREFIX).toKey()...)
+	end := storage.Rangefix(string(start))
+	return ds.State.IterateRange(
+		start,
+		end,
+		true,
+		func(key, value []byte) bool {
+			name := string(key[len(ds.prefix):])
+			domain := &Domain{}
+			err := ds.szlr.Deserialize(value, domain)
+			if err != nil {
+				return false
+			}
+			return fn(Name(reverse(name)), domain)
 		},
 	)
 }

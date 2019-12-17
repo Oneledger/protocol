@@ -21,7 +21,7 @@ const (
 	ADMIN_EPOCH_BLOCK_INTERVAL string = "epoch"
 
 	ADMIN_ETH_CHAINDRIVER_OPTION string = "ethcdopt"
-	ADMIN_ONS_OPTION string = "onsopt"
+	ADMIN_ONS_OPTION             string = "onsopt"
 )
 
 type Store struct {
@@ -172,7 +172,7 @@ func (st *Store) SetETHChainDriverOption(opt ethchain.ChainDriverOption) error {
 	return nil
 }
 
-func (st *Store) SetONSOptions(onsOpt ons.OnsOptions) error{
+func (st *Store) SetONSOptions(onsOpt ons.Options) error {
 	bytes, err := serialize.GetSerializer(serialize.PERSISTENT).Serialize(onsOpt)
 	if err != nil {
 		return errors.Wrap(err, "failed to serialize ons options")
@@ -184,13 +184,12 @@ func (st *Store) SetONSOptions(onsOpt ons.OnsOptions) error{
 	return nil
 }
 
-
-func (st *Store) GetONSOptions() (*ons.OnsOptions, error) {
+func (st *Store) GetONSOptions() (*ons.Options, error) {
 	bytes, err := st.Get([]byte(ADMIN_ONS_OPTION))
 	if err != nil {
 		return nil, err
 	}
-	r := &ons.OnsOptions{}
+	r := &ons.Options{}
 	err = serialize.GetSerializer(serialize.PERSISTENT).Deserialize(bytes, r)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to deserialize ons options")

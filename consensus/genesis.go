@@ -11,9 +11,9 @@ import (
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/fees"
 	"github.com/Oneledger/protocol/data/keys"
+	"github.com/Oneledger/protocol/data/ons"
 	"github.com/Oneledger/protocol/identity"
 	"github.com/Oneledger/protocol/serialize"
-	"github.com/Oneledger/protocol/data/ons"
 )
 
 type GenesisDoc = types.GenesisDoc
@@ -65,7 +65,7 @@ type AppState struct {
 	Staking     []Stake                    `json:"staking"`
 	Domains     []DomainState              `json:"domains"`
 	Fees        []BalanceState             `json:"fees"`
-	ONSOptions  ons.OnsOptions             `json:"ons_options"`
+	ONSOptions  ons.Options                `json:"ons_options"`
 }
 
 func NewAppState(currencies balance.Currencies,
@@ -75,7 +75,7 @@ func NewAppState(currencies balance.Currencies,
 	domains []DomainState,
 	fees []BalanceState,
 	ethoptions ethchain.ChainDriverOption,
-	onsoptions ons.OnsOptions,
+	onsoptions ons.Options,
 ) *AppState {
 	return &AppState{
 		Currencies:  currencies,
@@ -85,7 +85,7 @@ func NewAppState(currencies balance.Currencies,
 		Domains:     domains,
 		Fees:        fees,
 		ETHCDOption: ethoptions,
-		ONSOptions:onsoptions,
+		ONSOptions:  onsoptions,
 	}
 }
 

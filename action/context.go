@@ -35,7 +35,7 @@ type Context struct {
 	BTCChainType         *chaincfg.Params
 	BlockCypherToken     string
 	BlockCypherChainType string
-	OnsOptions            *ons.OnsOptions
+	OnsOptions           *ons.Options
 }
 
 func NewContext(r Router, header *abci.Header, state *storage.State,
@@ -45,7 +45,7 @@ func NewContext(r Router, header *abci.Header, state *storage.State,
 	btcTrackers *bitcoin.TrackerStore, ethTrackers *ethereum.TrackerStore,
 	jobStore *jobs.JobStore, btcChainType *chaincfg.Params, lockScriptStore *bitcoin.LockScriptStore,
 	blockCypherToken, blockCypherChainType string,
-	logger *log.Logger,onsOptions *ons.OnsOptions) *Context {
+	logger *log.Logger, onsOptions *ons.Options) *Context {
 
 	return &Context{
 		Router:          r,
@@ -67,6 +67,6 @@ func NewContext(r Router, header *abci.Header, state *storage.State,
 
 		BlockCypherToken:     blockCypherToken,
 		BlockCypherChainType: blockCypherChainType,
-		OnsOptions:onsOptions,
+		OnsOptions:           onsOptions,
 	}
 }
