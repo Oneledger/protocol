@@ -180,6 +180,6 @@ func CalculateExpiry (buyingPrice int64,basePrice int64,pricePerBlock int64) (ex
 	return (buyingPrice - basePrice)/pricePerBlock
 }
 
-func CreateDomainName (name ons.Name,firstLeveldomain string){
-
+func CreateDomainName (name ons.Name,firstlevelDomain []string) []string{
+	return append([]string{name.String()},firstlevelDomain...)
 }
