@@ -10,7 +10,7 @@
       dest: "{{APP_HOME}}/init.sh"
       content: |
         #!/bin/bash
-        olclient update --root {{APP_HOME}} --account "{{uuid}}-Oneledger" 
+        olclient account --privKeyFilePath {{APP_HOME}} --name "{{uuid}}-Oneledger" 
       mode: 511
       owner: "{{app_user}}"
       group: "{{app_user}}"
