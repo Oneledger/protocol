@@ -322,7 +322,7 @@ func runDevnet(_ *cobra.Command, _ []string) error {
     onsOp := &ons.OnsOptions{
 		PerBlockFees:     1,
 		FirstLevelDomain: "ol",
-		SubDomainPrice:   balance.Coin{},
+		DomainBasePrice:  balance.Coin{},
 	}
 	states := initialState(args, nodeList, *cdo,*onsOp)
 

@@ -3,8 +3,9 @@ package ons
 import (
 	"encoding/hex"
 	"encoding/json"
+	"flag"
 	"fmt"
-
+	"net/url"
 	"github.com/pkg/errors"
 	"github.com/tendermint/tendermint/libs/common"
 
@@ -126,6 +127,14 @@ func (domainCreateTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (bool, 
 }
 
 func (domainCreateTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
+	return processCommon(ctx,tx)
+}
+
+func (domainCreateTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas) (bool, action.Response) {
+	return action.BasicFeeHandling(ctx, signedTx, start, size, 1)
+}
+
+func processCommon (ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	create := &DomainCreate{}
 	err := create.Unmarshal(tx.Data)
 	if err != nil {
@@ -146,6 +155,13 @@ func (domainCreateTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool
 	err = ctx.FeePool.AddToPool(price)
 	if err != nil {
 		return false, action.Response{Log: err.Error()}
+	}
+	
+    expiry,err := calculateExpiry(create.BuyingPrice,ctx.OnsOptions.DomainBasePrice.Amount.BigInt().Int64(),ctx.OnsOptions.PerBlockFees)
+    if err != nil {
+    	return false,action.Response{
+			Log: "Unable to calculate Expiry" + err.Error(),
+		}
 	}
 
 	domain, err := ons.NewDomain(
@@ -172,14 +188,25 @@ func (domainCreateTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool
 
 }
 
-func (domainCreateTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas) (bool, action.Response) {
-	return action.BasicFeeHandling(ctx, signedTx, start, size, 1)
+func calculateExpiry (buyingPrice int64,basePrice int64,pricePerBlock int64) (int64,error){
+	if buyingPrice < basePrice {
+		return 0,errors.New("Buying price too less")
+	}
+	return (buyingPrice - basePrice)/pricePerBlock,nil
 }
 
-func CalculateExpiry (buyingPrice int64,basePrice int64,pricePerBlock int64) (expiry int64){
-	return (buyingPrice - basePrice)/pricePerBlock
-}
-
-func CreateDomainName (name ons.Name,firstlevelDomain []string) []string{
+func createDomainName (name ons.Name,firstlevelDomain []string) []string{
 	return append([]string{name.String()},firstlevelDomain...)
+}
+
+func parseUrl (uri string ) (bool,error){
+	u,err := url.Parse(uri)
+	if err != nil {
+		return false,err
+	}
+	validProtocol := map[string]bool{"http": true, "ipfs": true, "ftp": true}
+	if !validProtocol[u.Scheme]{
+		return false,errors.New("Protocol not recognised")
+	}
+	return true,nil
 }
