@@ -55,8 +55,12 @@ func (as *AddSignature) Tags() common.KVPairs {
 		Key:   []byte("tx.locker"),
 		Value: []byte(as.ValidatorAddress.String()),
 	}
+	tag3 := common.KVPair{
+		Key:   []byte("tx.tracker_name"),
+		Value: []byte(as.TrackerName),
+	}
 
-	tags = append(tags, tag, tag2)
+	tags = append(tags, tag, tag2, tag3)
 	return tags
 }
 

@@ -53,7 +53,7 @@ func (bl Redeem) Tags() common.KVPairs {
 		Value: bl.Redeemer,
 	}
 	tag4 := common.KVPair{
-		Key:   []byte("tx.redeem_curr"),
+		Key:   []byte("tx.redeem_currency"),
 		Value: []byte("BTC"),
 	}
 
