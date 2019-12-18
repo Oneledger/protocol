@@ -51,6 +51,44 @@ func (s *Service) ONS_CreateRawCreate(args client.ONSCreateRequest, reply *clien
 	return nil
 }
 
+func (s *Service) ONS_CreateRawCreateSub(args client.ONSCreateSubRequest, reply *client.SendTxReply) error {
+
+	name := ons2.GetNameFromString(args.Name)
+	parent := ons2.GetNameFromString(args.Parent)
+	createSubDomain := ons.CreateSubDomain{
+		Owner:       args.Owner,
+		Beneficiary: args.Account,
+		Name:        name,
+		Parent:      parent,
+		Price:       args.Price,
+	}
+
+	data, err := createSubDomain.Marshal()
+	if err != nil {
+		return err
+	}
+
+	uuidNew, _ := uuid.NewUUID()
+	fee := action.Fee{args.GasPrice, args.Gas}
+	tx := &action.RawTx{
+		Type: action.DOMAIN_CREATE_SUB,
+		Data: data,
+		Fee:  fee,
+		Memo: uuidNew.String(),
+	}
+
+	packet, err := serialize.GetSerializer(serialize.NETWORK).Serialize(tx)
+	if err != nil {
+		return codes.ErrSerialization
+	}
+
+	*reply = client.SendTxReply{
+		RawTx: packet,
+	}
+
+	return nil
+}
+
 func (s *Service) ONS_CreateRawUpdate(args client.ONSUpdateRequest, reply *client.SendTxReply) error {
 
 	name := ons2.GetNameFromString(args.Name)
@@ -70,6 +108,42 @@ func (s *Service) ONS_CreateRawUpdate(args client.ONSUpdateRequest, reply *clien
 	fee := action.Fee{args.GasPrice, args.Gas}
 	tx := &action.RawTx{
 		Type: action.DOMAIN_UPDATE,
+		Data: data,
+		Fee:  fee,
+		Memo: uuidNew.String(),
+	}
+
+	packet, err := serialize.GetSerializer(serialize.NETWORK).Serialize(tx)
+	if err != nil {
+		s.logger.Error("error in serializing domain update transaction", err)
+		return codes.ErrSerialization
+	}
+
+	*reply = client.SendTxReply{
+		RawTx: packet,
+	}
+
+	return nil
+}
+
+func (s *Service) ONS_CreateRawRenew(args client.ONSRenewRequest, reply *client.SendTxReply) error {
+
+	name := ons2.GetNameFromString(args.Name)
+	renewDomain := ons.RenewDomain{
+		Owner: args.Owner,
+		Name:  name,
+		Price: args.Price,
+	}
+	data, err := renewDomain.Marshal()
+	if err != nil {
+		s.logger.Error("error in serializing domain update object", err)
+		return codes.ErrSerialization
+	}
+
+	uuidNew, _ := uuid.NewUUID()
+	fee := action.Fee{args.GasPrice, args.Gas}
+	tx := &action.RawTx{
+		Type: action.DOMAIN_RENEW,
 		Data: data,
 		Fee:  fee,
 		Memo: uuidNew.String(),

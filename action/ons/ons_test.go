@@ -1,305 +1,188 @@
 package ons
 
 import (
-	"math/big"
-	"os"
-
-	"github.com/tendermint/tendermint/libs/db"
-
-	"github.com/tendermint/tendermint/abci/types"
-
-	"github.com/Oneledger/protocol/data/ons"
-
-	"github.com/Oneledger/protocol/data/keys"
-	"github.com/Oneledger/protocol/log"
-
+	"encoding/json"
+	"fmt"
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/chain"
+	"github.com/Oneledger/protocol/data/fees"
+	"github.com/Oneledger/protocol/data/keys"
+	"github.com/Oneledger/protocol/data/ons"
+	"github.com/Oneledger/protocol/log"
+	"github.com/Oneledger/protocol/serialize"
 	"github.com/Oneledger/protocol/storage"
-	"github.com/pkg/errors"
-	"github.com/tendermint/tendermint/crypto"
-	"github.com/tendermint/tendermint/crypto/ed25519"
+	"github.com/magiconair/properties/assert"
+	abci "github.com/tendermint/tendermint/abci/types"
+	db2 "github.com/tendermint/tendermint/libs/db"
+	"os"
+	"strconv"
+	"testing"
 )
 
-// global setup
-func setup() []string {
-	testDBs := []string{"test_dbpath"}
-	return testDBs
+var (
+	testCases           map[int]Case
+	transactionHandlers map[string]action.Tx
+	ctx                 *action.Context
+
+	create      = "create"
+	createPrice = "200000000000000000000"
+
+	pub1, priv1, _ = keys.NewKeyPairFromTendermint()
+	h1, _          = pub1.GetHandler()
+)
+
+type Case struct {
+	//input values
+	ctx      *action.Context
+	tx       *action.RawTx
+	signedTx action.SignedTx
+	startGas action.Gas
+	endGas   action.Gas
+	txType   string
+
+	//expected output
+	validateResp bool
+	checkResp    bool
+	deliverResp  bool
+	feeResp      bool
 }
 
-// remove test db dir after
-func teardown(dbPaths []string) {
-	for _, v := range dbPaths {
-		err := os.RemoveAll(v)
-		if err != nil {
-			errors.New("Remove test db file error")
+func setup() {
+	testCases = make(map[int]Case)
+	transactionHandlers = make(map[string]action.Tx)
+
+	//create and initialize new context
+	{
+		db := db2.NewDB("test", db2.MemDBBackend, "")
+		cs := storage.NewState(storage.NewChainState("test", db))
+
+		domain, err := ons.NewDomain(keys.Address("abcd"), nil, "name.ol", "", 22, "")
+		fmt.Println(err)
+
+		ds := ons.NewDomainStore("d", cs)
+		ds.Set(domain)
+
+		bs := balance.NewStore("b", cs)
+		feePool := fees.NewStore("f", cs)
+
+		logger := log.NewLoggerWithPrefix(os.Stdout, "test_action_ons")
+
+		ct, _ := chain.TypeFromName("OneLedger")
+
+		olt := balance.Currency{
+			0, "olt", ct, 18, "ones",
 		}
+
+		currencies := balance.NewCurrencySet()
+		err = currencies.Register(olt)
+		fmt.Println(err)
+
+		feeOpt := &fees.FeeOption{FeeCurrency: olt, MinFeeDecimal: 9}
+		feePool.SetupOpt(feeOpt)
+
+		opt := &ons.OnsOptions{50000, "ol", olt.NewCoinFromUnit(1000000)}
+
+		bs.AddToAddress(h1.Address(), olt.NewCoinFromInt(500))
+
+		header := &abci.Header{Height: 0}
+		ctx = action.NewContext(nil, header, cs, nil, bs, currencies,
+			feeOpt, feePool, nil, ds, nil, nil, nil, nil,
+			nil, "", "", logger, opt)
 	}
 }
 
-func generateKeyPair() (crypto.Address, crypto.PubKey, ed25519.PrivKeyEd25519) {
+const (
+	create1 = iota
+	create2
+	create3
+)
 
-	prikey := ed25519.GenPrivKey()
-	pubkey := prikey.PubKey()
-	addr := pubkey.Address()
+func makeCreateRawTx(name ons.Name, amount balance.Amount, expiryHeight int64) action.RawTx {
 
-	return addr, pubkey, prikey
-}
+	pub2, _, _ := keys.NewKeyPairFromTendermint()
+	h2, _ := pub2.GetHandler()
 
-func assemblyCtxData(currencyName string, currencyDecimal int64, setBalanceStore bool, setLogger bool, setInitCoin bool,
-	setCoinAddr crypto.Address, domainStore bool, setDomaintoStore bool, setDomainPrice int64, onsaleFlag bool, headerHeight int64) *action.Context {
+	Amount := action.NewAmount("olt", amount)
 
-	header := &types.Header{
-		Height: headerHeight,
-	}
-	ctx := &action.Context{
-		Header: header,
-	}
-
-	db := db.NewDB("test", db.MemDBBackend, "")
-	cs := storage.NewState(storage.NewChainState("balance", db))
-	// balance store
-	var store *balance.Store
-	if setBalanceStore {
-
-		store = balance.NewStore("tb", cs)
-		ctx.Balances = store
-	}
-	// logger
-	if setLogger {
-		ctx.Logger = new(log.Logger)
-	}
-	// domainStore
-	if domainStore {
-		ds := ons.NewDomainStore("td", cs)
-		ctx.Domains = ds
-
-		if setDomaintoStore {
-			currency := &balance.Currency{
-				Name:    "OLT",
-				Chain:   chain.Type(1),
-				Decimal: int64(5),
-			}
-			coin := &balance.Coin{
-				Currency: *currency,
-				Amount:   balance.NewAmount(setDomainPrice),
-			}
-			d := &ons.Domain{
-				Name:           "test_domain",
-				OwnerAddress:   setCoinAddr.Bytes(),
-				AccountAddress: setCoinAddr.Bytes(),
-				OnSaleFlag:     onsaleFlag,
-				ActiveFlag:     true,
-				SalePrice:      *coin,
-			}
-			err := ctx.Domains.Set(d)
-			ctx.Domains.State.Commit()
-			if err != nil {
-				errors.New("error happens when pre-setup a test domain")
-			}
-		}
-	}
-	// currencyList
-	if currencyName != "" {
-		// register new token
-		currencyList := balance.NewCurrencySet()
-		currency := balance.Currency{
-			Name:    currencyName,
-			Chain:   chain.Type(1),
-			Decimal: currencyDecimal,
-		}
-		err := currencyList.Register(currency)
-		if err != nil {
-			errors.New("register new token error")
-		}
-		ctx.Currencies = currencyList
-
-		// set coin for account
-		if setInitCoin {
-			coin := balance.Coin{
-				Currency: currency,
-				Amount:   balance.NewAmount(1000000000000000000),
-			}
-			ba := balance.NewBalance()
-			ba = ba.AddCoin(coin)
-			err = store.Set(setCoinAddr.Bytes(), *ba)
-			if err != nil {
-				errors.New("setup testing token balance error")
-			}
-			store.State.Commit()
-			ctx.Balances = store
-		}
-	}
-	return ctx
-}
-
-func assemblyCreateDomainTx(owner crypto.Address, amount *action.Amount) *DomainCreate {
-
-	createDoamin := &DomainCreate{
-		Owner:   owner.Bytes(),
-		Account: owner.Bytes(),
-		Name:    "test_domain",
-		Price:   *amount,
-	}
-	return createDoamin
-}
-
-func assemblyPurchaseDomainTx(owner crypto.Address, amount *action.Amount) *DomainPurchase {
-
-	purchaseDomain := &DomainPurchase{
-		Name:     "test_domain",
-		Buyer:    owner.Bytes(),
-		Account:  owner.Bytes(),
-		Offering: *amount,
-	}
-	return purchaseDomain
-}
-
-func assemblySaleDomainTx(owner crypto.Address, amount *action.Amount, cancelSale bool) *DomainSale {
-
-	saleDomain := &DomainSale{
-		DomainName:   "test_domain",
-		OwnerAddress: owner.Bytes(),
-		Price:        *amount,
-		CancelSale:   cancelSale,
-	}
-	return saleDomain
-}
-func assemblySendDomainTx(owner crypto.Address, amount *action.Amount) *DomainSend {
-
-	sendDomain := &DomainSend{
-		From:       owner.Bytes(),
-		DomainName: "test_domain",
-		Amount:     *amount,
-	}
-	return sendDomain
-}
-
-func assemblyUpdateDomainTx(owner crypto.Address, active bool) *DomainUpdate {
-
-	updateDomain := &DomainUpdate{
-		Owner:   owner.Bytes(),
-		Account: owner.Bytes(),
-		Name:    "test_domain",
-		Active:  active,
-	}
-	return updateDomain
-}
-
-func assemblyTxData(replaceAddre bool, initTokenAmount string, txType string, failTypeCast bool, cancelSale bool, activeFlag bool) (action.SignedTx, crypto.Address) {
-
-	owner, ownerPubkey, ownerPrikey := generateKeyPair()
-	if replaceAddre {
-		owner = crypto.Address("")
-	}
-	amt, _ := balance.NewAmountFromString(initTokenAmount, 10)
-	amount := &action.Amount{
-		Currency: "OLT",
-		Value:    *amt,
-	}
-	fee := action.Fee{
-		Price: action.Amount{Currency: "OLT", Value: balance.Amount{Int: *big.NewInt(0).Div(&amt.Int, big.NewInt(1000))}},
-		Gas:   int64(10),
+	tx := &DomainCreate{
+		h1.Address(),
+		h2.Address(),
+		name,
+		*Amount,
+		"hashard.ol/lookatme",
+		expiryHeight,
 	}
 
-	var tx Ons
-
-	if failTypeCast {
-		tx = &DomainCreate{
-			Owner: owner.Bytes(),
-		}
-	} else {
-		switch txType {
-		case "create":
-			tx = assemblyCreateDomainTx(owner, amount)
-		case "purchase":
-			tx = assemblyPurchaseDomainTx(owner, amount)
-		case "sale":
-			tx = assemblySaleDomainTx(owner, amount, cancelSale)
-		case "send":
-			tx = assemblySendDomainTx(owner, amount)
-		case "update":
-			tx = assemblyUpdateDomainTx(owner, activeFlag)
-		}
-	}
-	txData, err := tx.Marshal()
+	msg, err := json.Marshal(tx)
 	if err != nil {
-		errors.New(err.Error())
+		fmt.Println("Error marshalling transaction: ", err.Error())
+		return action.RawTx{}
 	}
-	rawtx := action.RawTx{
-		Type: tx.Type(),
-		Data: txData,
-		Fee:  fee,
-		Memo: "test_memo",
-	}
-	signature, _ := ownerPrikey.Sign(rawtx.RawBytes())
 
-	signed := action.SignedTx{
-		RawTx: rawtx,
-		Signatures: []action.Signature{
-			{
-				Signer: keys.PublicKey{keys.ED25519, ownerPubkey.Bytes()[5:]},
-				Signed: signature,
-			}},
+	rawTx := action.RawTx{
+		Type: action.DOMAIN_CREATE,
+		Data: msg,
+		Fee: action.Fee{
+			Price: *action.NewAmount("olt", *balance.NewAmount(int64(10000000000))),
+			Gas:   0,
+		},
+		Memo: "test1",
 	}
-	return signed, owner
+
+	return rawTx
 }
 
-func assemblyTxDataSameKp(replaceAddre bool, initTokenAmount string, txType string, failTypeCast bool, owner crypto.Address, ownerPubkey crypto.PubKey, ownerPrikey ed25519.PrivKeyEd25519) action.SignedTx {
+func setupCreateDomain() {
+	transactionHandlers[create] = domainCreateTx{}
 
-	if replaceAddre {
-		owner = crypto.Address("")
-	}
-	amt, _ := balance.NewAmountFromString(initTokenAmount, 10)
-	amount := &action.Amount{
-		Currency: "OLT",
-		Value:    *amt,
-	}
-	fee := action.Fee{
-		Price: action.Amount{Currency: "OLT", Value: balance.Amount{Int: *big.NewInt(0).Div(&amt.Int, big.NewInt(1000))}},
-		Gas:   int64(10),
-	}
+	price, _ := balance.NewAmountFromString(createPrice, 10)
+	rawTx := makeCreateRawTx("hashard.ol", *price, int64(500000000))
 
-	var txData action.Msg
-
-	if failTypeCast {
-		txData = &DomainCreate{
-			Owner: owner.Bytes(),
-		}
-	} else {
-		switch txType {
-		case "create":
-			txData = assemblyCreateDomainTx(owner, amount)
-		case "purchase":
-			txData = assemblyPurchaseDomainTx(owner, amount)
-		case "sale":
-			txData = assemblySaleDomainTx(owner, amount, false)
-		case "send":
-			txData = assemblySendDomainTx(owner, amount)
-		case "update":
-			txData = assemblyUpdateDomainTx(owner, true)
-		}
-	}
-	data, err := txData.Marshal()
+	packet, err := serialize.GetSerializer(serialize.NETWORK).Serialize(rawTx)
 	if err != nil {
-		errors.New(err.Error())
-	}
-	tx := action.RawTx{
-		Type: txData.Type(),
-		Data: data,
-		Fee:  fee,
-		Memo: "test_memo",
+		fmt.Println(err.Error())
 	}
 
-	signature, _ := ownerPrikey.Sign(tx.RawBytes())
-	signed := action.SignedTx{
-		RawTx: tx,
-		Signatures: []action.Signature{
-			{
-				Signer: keys.PublicKey{keys.ED25519, ownerPubkey.Bytes()[5:]},
-				Signed: signature,
-			}},
+	a, _ := priv1.GetHandler()
+	signed, _ := a.Sign(packet)
+	signature := action.Signature{Signed: signed, Signer: pub1}
+
+	signedTx := action.SignedTx{
+		RawTx:      rawTx,
+		Signatures: []action.Signature{signature},
 	}
-	return signed
+
+	testCases[create1] = Case{ctx, &rawTx, signedTx, action.Gas(50000), action.Gas(100000), create, true, true, true, true}
+}
+
+func init() {
+	setup()
+	setupCreateDomain()
+}
+
+func TestONSTx(t *testing.T) {
+
+	for i, testCase := range testCases {
+		t.Run("Testing case "+strconv.Itoa(i), func(t *testing.T) {
+			//Get handler
+			handler := transactionHandlers[testCase.txType]
+
+			//Call transaction Validate, Then assert response.
+			response, err := handler.Validate(testCase.ctx, testCase.signedTx)
+			assert.Equal(t, response, testCase.validateResp)
+			if err != nil {
+				fmt.Println(err.Error())
+			}
+
+			response, resp := handler.ProcessCheck(testCase.ctx, *testCase.tx)
+			assert.Equal(t, response, testCase.checkResp)
+			fmt.Println(resp.Log)
+
+			response, resp = handler.ProcessDeliver(testCase.ctx, *testCase.tx)
+			assert.Equal(t, response, testCase.deliverResp)
+			fmt.Println(resp.Log)
+
+		})
+	}
 }
