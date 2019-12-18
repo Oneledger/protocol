@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/url"
+	"strings"
+
 	"github.com/pkg/errors"
 	"github.com/tendermint/tendermint/libs/common"
 
@@ -102,30 +104,7 @@ func (domainCreateTx) Validate(ctx *action.Context, tx action.SignedTx) (bool, e
 
 func (domainCreateTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 
-	create := &DomainCreate{}
-	err := create.Unmarshal(tx.Data)
-	if err != nil {
-		return false, action.Response{Log: err.Error()}
-	}
-
-	if ctx.Domains.Exists(create.Name) {
-		return false, action.Response{Log: fmt.Sprintf("Domain already exist: %s", create.Name)}
-	}
-
-	price := create.Price.ToCoin(ctx.Currencies)
-	err = ctx.Balances.MinusFromAddress(create.Owner.Bytes(), price)
-	if err != nil {
-		return false, action.Response{Log: errors.Wrap(err, hex.EncodeToString(create.Owner)).Error()}
-	}
-	err = ctx.FeePool.AddToPool(price)
-	if err != nil {
-		return false, action.Response{Log: err.Error()}
-	}
-	result := action.Response{
-		Tags: create.Tags(),
-	}
-
-	return true, result
+	return processCommon(ctx,tx)
 }
 
 func (domainCreateTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
@@ -159,20 +138,29 @@ func processCommon (ctx *action.Context, tx action.RawTx) (bool, action.Response
 		return false, action.Response{Log: err.Error()}
 	}
 	
-    _,err = calculateExpiry(create.BuyingPrice,ctx.OnsOptions.BaseDomainPrice.Amount.BigInt().Int64(),ctx.OnsOptions.PerBlockFees)
+    expiry,err := calculateExpiry(create.BuyingPrice,ctx.OnsOptions.BaseDomainPrice.Amount.BigInt().Int64(),ctx.OnsOptions.PerBlockFees)
     if err != nil {
     	return false,action.Response{
 			Log: "Unable to calculate Expiry" + err.Error(),
 		}
 	}
 
+	name := createDomainName(create.Name,ctx.OnsOptions.FirstLevelDomain)
+	err = parseUrl(create.Uri)
+	if err != nil {
+		return false,action.Response{
+			Log: err.Error(),
+		}
+	}
+
 	domain, err := ons.NewDomain(
 		create.Owner,
 		create.Account,
-		create.Name.String(),
+		strings.Join(name,"."),
 		"",
 		ctx.Header.Height,
 		create.Uri,
+		expiry,
 	)
 	if err != nil {
 		return false, action.Response{Log: err.Error()}
@@ -197,18 +185,18 @@ func calculateExpiry (buyingPrice int64,basePrice int64,pricePerBlock int64) (in
 	return (buyingPrice - basePrice)/pricePerBlock,nil
 }
 
-func createDomainName (name ons.Name,firstlevelDomain []string) []string{
+func createDomainName (name ons.Name,firstlevelDomain []string) []string {
 	return append([]string{name.String()},firstlevelDomain...)
 }
 
-func parseUrl (uri string ) (bool,error){
+func parseUrl (uri string ) error{
 	u,err := url.Parse(uri)
 	if err != nil {
-		return false,err
+		return err
 	}
 	validProtocol := map[string]bool{"http": true, "ipfs": true, "ftp": true}
 	if !validProtocol[u.Scheme]{
-		return false,errors.New("Protocol not recognised")
+		return errors.New("Protocol not recognised")
 	}
-	return true,nil
+	return nil
 }

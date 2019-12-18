@@ -202,6 +202,7 @@ func (ctx *context) Services() (service.Map, error) {
 		Logger:       log.NewLoggerWithPrefix(ctx.logWriter, "rpc").WithLevel(log.Level(ctx.cfg.Node.LogLevel)),
 		Services:     extSvcs,
 
+
 		Trackers: ctx.btcTrackers,
 	}
 

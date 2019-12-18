@@ -47,6 +47,7 @@ func NewDomain(ownerAddress, accountAddress keys.Address,
 	name string, parent string,
 	height int64,
 	uri string,
+	expiry int64,
 ) (*Domain, error) {
 
 	if accountAddress == nil ||
@@ -78,6 +79,7 @@ func NewDomain(ownerAddress, accountAddress keys.Address,
 		OnSaleFlag: false,
 		Parent: p,
 		URI:    uri,
+		Expiry:expiry,
 	}, nil
 	}
 
