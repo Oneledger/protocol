@@ -15,12 +15,12 @@ import (
 var _ Ons = &DomainCreate{}
 
 type DomainCreate struct {
-	Owner   action.Address `json:"owner"`
-	Account action.Address `json:"account"`
-	Name    ons.Name       `json:"name"`
-	Price   action.Amount  `json:"price"`
-	Uri     string         `json:"uri"`
-	ExpiryHeight int64      `json:"expiry_height"`
+	Owner        action.Address `json:"owner"`
+	Account      action.Address `json:"account"`
+	Name         ons.Name       `json:"name"`
+	Price        action.Amount  `json:"price"`
+	Uri          string         `json:"uri"`
+	ExpiryHeight int64          `json:"expiry_height"`
 }
 
 func (dc DomainCreate) Marshal() ([]byte, error) {
@@ -86,7 +86,7 @@ func (domainCreateTx) Validate(ctx *action.Context, tx action.SignedTx) (bool, e
 		return false, action.ErrMissingData
 	}
 
-	if !create.Price.IsValid(ctx.Currencies) || create.Price.Currency != "OLT" {
+	if !create.Price.IsValid(ctx.Currencies) || create.Price.Currency != "olt" {
 		return false, action.ErrInvalidAmount
 	}
 
@@ -99,7 +99,7 @@ func (domainCreateTx) Validate(ctx *action.Context, tx action.SignedTx) (bool, e
 }
 
 func (domainCreateTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
-	fmt.Println("ONS OPTIONS",ctx.OnsOptions)
+	fmt.Println("ONS OPTIONS", ctx.OnsOptions)
 	create := &DomainCreate{}
 	err := create.Unmarshal(tx.Data)
 	if err != nil {
