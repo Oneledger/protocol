@@ -319,12 +319,12 @@ func runDevnet(_ *cobra.Command, _ []string) error {
 			return errors.Wrap(err, "failed to deploy the initial eth contract")
 		}
 	}
-    onsOp := &ons.OnsOptions{
+	onsOp := &ons.Options{
 		PerBlockFees:     1,
-		FirstLevelDomain: "ol",
-		SubDomainPrice:   balance.Coin{},
+		FirstLevelDomain: []string{"ol"},
+		BaseDomainPrice:  balance.Coin{},
 	}
-	states := initialState(args, nodeList, *cdo,*onsOp)
+	states := initialState(args, nodeList, *cdo, *onsOp)
 
 	genesisDoc, err := consensus.NewGenesisDoc(chainID, states)
 	if err != nil {
@@ -380,7 +380,7 @@ func runDevnet(_ *cobra.Command, _ []string) error {
 	return nil
 }
 
-func initialState(args *testnetConfig, nodeList []node, option ethchain.ChainDriverOption ,onsOption ons.OnsOptions) consensus.AppState {
+func initialState(args *testnetConfig, nodeList []node, option ethchain.ChainDriverOption, onsOption ons.Options) consensus.AppState {
 	olt := balance.Currency{Id: 0, Name: "OLT", Chain: chain.ONELEDGER, Decimal: 18, Unit: "nue"}
 	vt := balance.Currency{Id: 1, Name: "VT", Chain: chain.ONELEDGER, Unit: "vt"}
 	obtc := balance.Currency{Id: 2, Name: "BTC", Chain: chain.BITCOIN, Decimal: 8, Unit: "satoshi"}

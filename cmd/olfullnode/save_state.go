@@ -316,7 +316,7 @@ func DumpDomainToFile(ds *ons.DomainStore, writer io.Writer, fn func(writer io.W
 	iterator := 0
 	delimiter := ","
 
-	ds.Iterate(func(name string, domain *ons.Domain) bool {
+	ds.Iterate(func(name ons.Name, domain *ons.Domain) bool {
 		if iterator != 0 {
 			_, err := writer.Write([]byte(delimiter))
 			if err != nil {
