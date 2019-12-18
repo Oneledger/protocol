@@ -81,7 +81,7 @@ func setup() {
 		feeOpt := &fees.FeeOption{FeeCurrency: olt, MinFeeDecimal: 9}
 		feePool.SetupOpt(feeOpt)
 
-		opt := &ons.OnsOptions{50000, "ol", olt.NewCoinFromUnit(1000000)}
+		opt := &ons.Options{PerBlockFees: 50000, FirstLevelDomain: []string{"ol"}, BaseDomainPrice: olt.NewCoinFromUnit(1000000)}
 
 		bs.AddToAddress(h1.Address(), olt.NewCoinFromInt(500))
 
