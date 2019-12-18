@@ -110,19 +110,30 @@ func BroadCastLock() (*TransactionHash,error) {
 //}
 
 
-func TestETHChainDriver_VerifyLock(t *testing.T) {
-	signedTx,err := GetSignedLockTX()
-	if err != nil {
-		fmt.Println(errors.Wrap(err,"Unable to getSigned Transaction"))
-		return
-	}
-	ok,err := VerifyLock(signedTx,LockRedeemABI)
-	if err != nil {
-		fmt.Println("Unable to verify lock transaction" ,err)
-		return
-		} else if !ok {
-		fmt.Println("Bytes data does not match (function name field is different)")
-		 return
-	}
-}
+//func TestETHChainDriver_VerifyLock(t *testing.T) {
+//	signedTx,err := GetSignedLockTX()
+//	if err != nil {
+//		fmt.Println(errors.Wrap(err,"Unable to getSigned Transaction"))
+//		return
+//	}
+//	ok,err := VerifyLock(signedTx,LockRedeemABI)
+//	if err != nil {
+//		fmt.Println("Unable to verify lock transaction" ,err)
+//		return
+//		} else if !ok {
+//		fmt.Println("Bytes data does not match (function name field is different)")
+//		 return
+//	}
+//}
 
+func TestETHChainDriver_DecodeTransaction(t *testing.T) {
+
+	data := []byte{248, 119, 30, 139, 50, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 131, 102, 145, 182, 148, 133, 169, 40, 34, 122, 76, 57, 145, 29, 183, 60, 107, 219, 177, 34, 247, 235, 75, 91, 41, 136, 13, 224, 182, 179, 167, 100, 0, 0, 132, 248, 61, 8, 186, 38, 160, 88, 197, 150, 4, 107, 150, 167, 134, 243, 218, 151, 78, 168, 77, 142, 208, 57, 238, 47, 174, 179, 216, 250, 88, 161, 95, 84, 224, 232, 164, 87, 223, 160, 32, 180, 100, 16, 32, 148, 1, 233, 140, 79, 133, 239, 61, 229, 214, 77, 17, 38, 236, 84, 206, 166, 250, 209, 255, 76, 62, 197, 84, 30, 2, 110}
+	tx, err := DecodeTransaction(data)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	fmt.Println(tx.GasPrice())
+
+}

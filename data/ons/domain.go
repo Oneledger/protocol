@@ -32,15 +32,15 @@ type Domain struct {
 
 	// denotes whether the domain is for sale
 	OnSaleFlag bool `json:"onSaleFlag"`
-
+    URI string `json:"uri"`
 	// the asking price in OLT set by the owner
 	SalePrice balance.Coin `json:"salePrice"`
 
 	// parent domain name
 	Parent Name `json:"parent"`
 
-	// URI string for external reference
-	URI string `json:"uri"`
+	Expiry int64 `json:"expiry"`
+
 }
 
 func NewDomain(ownerAddress, accountAddress keys.Address,
@@ -76,11 +76,12 @@ func NewDomain(ownerAddress, accountAddress keys.Address,
 
 		SalePrice:  balance.Coin{},
 		OnSaleFlag: false,
-
 		Parent: p,
 		URI:    uri,
 	}, nil
-}
+	}
+
+
 
 func (d *Domain) SetAccountAddress(addr keys.Address) {
 	d.Beneficiary = addr

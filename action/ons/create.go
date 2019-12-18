@@ -4,7 +4,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-
+	"net/url"
 	"github.com/pkg/errors"
 	"github.com/tendermint/tendermint/libs/common"
 
@@ -15,12 +15,14 @@ import (
 var _ Ons = &DomainCreate{}
 
 type DomainCreate struct {
-	Owner        action.Address `json:"owner"`
-	Account      action.Address `json:"account"`
-	Name         ons.Name       `json:"name"`
-	Price        action.Amount  `json:"price"`
-	Uri          string         `json:"uri"`
-	ExpiryHeight int64          `json:"expiry_height"`
+
+	Owner   action.Address `json:"owner"`
+	Account action.Address `json:"account"`
+	Name    ons.Name       `json:"name"`
+	Price   action.Amount  `json:"price"`
+	Uri     string         `json:"uri"`
+	BuyingPrice int64      `json:"buying_price"`
+
 }
 
 func (dc DomainCreate) Marshal() ([]byte, error) {
@@ -99,7 +101,7 @@ func (domainCreateTx) Validate(ctx *action.Context, tx action.SignedTx) (bool, e
 }
 
 func (domainCreateTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
-	fmt.Println("ONS OPTIONS", ctx.OnsOptions)
+
 	create := &DomainCreate{}
 	err := create.Unmarshal(tx.Data)
 	if err != nil {
@@ -115,7 +117,6 @@ func (domainCreateTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (bool, 
 	if err != nil {
 		return false, action.Response{Log: errors.Wrap(err, hex.EncodeToString(create.Owner)).Error()}
 	}
-
 	err = ctx.FeePool.AddToPool(price)
 	if err != nil {
 		return false, action.Response{Log: err.Error()}
@@ -128,6 +129,14 @@ func (domainCreateTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (bool, 
 }
 
 func (domainCreateTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
+	return processCommon(ctx,tx)
+}
+
+func (domainCreateTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas) (bool, action.Response) {
+	return action.BasicFeeHandling(ctx, signedTx, start, size, 1)
+}
+
+func processCommon (ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	create := &DomainCreate{}
 	err := create.Unmarshal(tx.Data)
 	if err != nil {
@@ -148,6 +157,13 @@ func (domainCreateTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool
 	err = ctx.FeePool.AddToPool(price)
 	if err != nil {
 		return false, action.Response{Log: err.Error()}
+	}
+	
+    _,err = calculateExpiry(create.BuyingPrice,ctx.OnsOptions.BaseDomainPrice.Amount.BigInt().Int64(),ctx.OnsOptions.PerBlockFees)
+    if err != nil {
+    	return false,action.Response{
+			Log: "Unable to calculate Expiry" + err.Error(),
+		}
 	}
 
 	domain, err := ons.NewDomain(
@@ -171,8 +187,28 @@ func (domainCreateTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool
 		Tags: create.Tags(),
 	}
 	return true, result
+
 }
 
-func (domainCreateTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas) (bool, action.Response) {
-	return action.BasicFeeHandling(ctx, signedTx, start, size, 1)
+func calculateExpiry (buyingPrice int64,basePrice int64,pricePerBlock int64) (int64,error){
+	if buyingPrice < basePrice {
+		return 0,errors.New("Buying price too less")
+	}
+	return (buyingPrice - basePrice)/pricePerBlock,nil
+}
+
+func createDomainName (name ons.Name,firstlevelDomain []string) []string{
+	return append([]string{name.String()},firstlevelDomain...)
+}
+
+func parseUrl (uri string ) (bool,error){
+	u,err := url.Parse(uri)
+	if err != nil {
+		return false,err
+	}
+	validProtocol := map[string]bool{"http": true, "ipfs": true, "ftp": true}
+	if !validProtocol[u.Scheme]{
+		return false,errors.New("Protocol not recognised")
+	}
+	return true,nil
 }
