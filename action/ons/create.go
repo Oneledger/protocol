@@ -3,7 +3,6 @@ package ons
 import (
 	"encoding/hex"
 	"encoding/json"
-	"flag"
 	"fmt"
 	"net/url"
 	"github.com/pkg/errors"
@@ -157,7 +156,7 @@ func processCommon (ctx *action.Context, tx action.RawTx) (bool, action.Response
 		return false, action.Response{Log: err.Error()}
 	}
 	
-    expiry,err := calculateExpiry(create.BuyingPrice,ctx.OnsOptions.DomainBasePrice.Amount.BigInt().Int64(),ctx.OnsOptions.PerBlockFees)
+    _,err = calculateExpiry(create.BuyingPrice,ctx.OnsOptions.DomainBasePrice.Amount.BigInt().Int64(),ctx.OnsOptions.PerBlockFees)
     if err != nil {
     	return false,action.Response{
 			Log: "Unable to calculate Expiry" + err.Error(),
