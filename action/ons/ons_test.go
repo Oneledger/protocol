@@ -57,7 +57,9 @@ func setup() {
 		db := db2.NewDB("test", db2.MemDBBackend, "")
 		cs := storage.NewState(storage.NewChainState("test", db))
 
+
 		domain, err := ons.NewDomain(keys.Address("abcd"), nil, "name.ol", "", 22, "", 10)
+
 		fmt.Println(err)
 
 		ds := ons.NewDomainStore("d", cs)
