@@ -47,6 +47,7 @@ type DomainState struct {
 	Name         string       `json:"name"`
 	Parent       string       `json:"parent"`
 	URI          string       `json:"uri"`
+	Expiry       int64        `json:"expiry"`
 }
 
 type ChainState struct {

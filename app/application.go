@@ -169,7 +169,7 @@ func (app *App) setupState(stateBytes []byte) error {
 	}
 
 	for _, domain := range initial.Domains {
-		d, err := ons.NewDomain(domain.OwnerAddress, domain.Beneficiary, domain.Name, domain.Parent, 0, domain.URI)
+		d, err := ons.NewDomain(domain.OwnerAddress, domain.Beneficiary, domain.Name, domain.Parent, 0, domain.URI,domain.Expiry)
 		if err != nil {
 			return errors.Wrap(err, "failed to create initial domain")
 		}

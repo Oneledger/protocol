@@ -173,7 +173,13 @@ func (crSubD CreateSubDomainTx) ProcessDeliver(ctx *action.Context, tx action.Ra
 	if err != nil {
 		return false, action.Response{Log: err.Error()}
 	}
-
+	
+	parent,err := ctx.Domains.Get(createSub.Parent)
+	if err != nil {
+		return false,action.Response{
+			Log: "Unable to get parent domain",
+		}
+	}
 	//TODO: Need to get fields from Parent domain to populate the sub domain. URI, Expiry height, etc.
 	domain, err := ons.NewDomain(
 		createSub.Owner,
@@ -182,7 +188,9 @@ func (crSubD CreateSubDomainTx) ProcessDeliver(ctx *action.Context, tx action.Ra
 		createSub.Parent.String(),
 		ctx.Header.Height,
 		"",
-	)
+		parent.Expiry,
+		)
+
 	if err != nil {
 		return false, action.Response{Log: err.Error()}
 	}

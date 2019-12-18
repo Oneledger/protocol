@@ -68,7 +68,7 @@ func NewDomain(ownerAddress, accountAddress keys.Address,
 	}
 	return &Domain{
 		OwnerAddress:     ownerAddress,
-		Beneficiary:      ownerAddress,
+		Beneficiary:      accountAddress,
 		Name:             n,
 		CreationHeight:   height, // height of current txn
 		LastUpdateHeight: height, // height of current txn
@@ -136,6 +136,8 @@ func (d Domain) IsActive(height int64) bool {
 func (d Domain) GetParent() Name {
 	return d.Parent
 }
+
+
 
 func (d *Domain) ResetAfterSale(buyer keys.Address, nBlocks, currentHeight int64) {
 	d.Beneficiary = nil
