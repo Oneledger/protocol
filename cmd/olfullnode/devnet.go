@@ -313,6 +313,7 @@ func runDevnet(_ *cobra.Command, _ []string) error {
 	}
 
 	cdo := &ethchain.ChainDriverOption{}
+	fmt.Println(args.deployETHContract)
 	if len(args.deployETHContract) > 0 {
 		cdo, err = deployethcdcontract(args.deployETHContract, nodeList)
 		if err != nil {
@@ -488,7 +489,8 @@ func initialState(args *testnetConfig, nodeList []node, option ethchain.ChainDri
 }
 
 func deployethcdcontract(conn string, nodeList []node) (*ethchain.ChainDriverOption, error) {
-	privatekey, err := crypto.HexToECDSA("")
+
+	privatekey, err := crypto.HexToECDSA("6c24a44424c8182c1e3e995ad3ccfb2797e3f7ca845b99bea8dead7fc9dccd09")
 	if err != nil {
 		return nil, err
 	}
