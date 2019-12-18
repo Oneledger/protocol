@@ -173,10 +173,10 @@ func (crSubD CreateSubDomainTx) ProcessDeliver(ctx *action.Context, tx action.Ra
 	if err != nil {
 		return false, action.Response{Log: err.Error()}
 	}
-	
-	parent,err := ctx.Domains.Get(createSub.Parent)
+
+	parent, err := ctx.Domains.Get(createSub.Parent)
 	if err != nil {
-		return false,action.Response{
+		return false, action.Response{
 			Log: "Unable to get parent domain",
 		}
 	}
@@ -189,7 +189,7 @@ func (crSubD CreateSubDomainTx) ProcessDeliver(ctx *action.Context, tx action.Ra
 		ctx.Header.Height,
 		"",
 		parent.Expiry,
-		)
+	)
 
 	if err != nil {
 		return false, action.Response{Log: err.Error()}

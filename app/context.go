@@ -135,7 +135,7 @@ func (ctx *context) Action(header *Header, state *storage.State) *action.Context
 	params := bitcoin2.GetChainParams(ctx.cfg.ChainDriver.BitcoinChainType)
 
 	bcct := bitcoin2.GetBlockCypherChainType(ctx.cfg.ChainDriver.BitcoinChainType)
-	onsoptins,err := ctx.govern.GetONSOptions()
+	onsoptins, err := ctx.govern.GetONSOptions()
 	if err != nil {
 		panic(err.Error() + "ons options not found in governanace db")
 	}
@@ -201,7 +201,6 @@ func (ctx *context) Services() (service.Map, error) {
 		Router:       ctx.actionRouter,
 		Logger:       log.NewLoggerWithPrefix(ctx.logWriter, "rpc").WithLevel(log.Level(ctx.cfg.Node.LogLevel)),
 		Services:     extSvcs,
-
 
 		Trackers: ctx.btcTrackers,
 	}

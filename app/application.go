@@ -127,9 +127,9 @@ func (app *App) setupState(stateBytes []byte) error {
 	}
 
 	balanceCtx := app.Context.Balances()
-    err = app.Context.govern.SetONSOptions(initial.ONSOptions)
-    if err != nil {
-    	return errors.Wrap(err,"Error in setting up ONS options")
+	err = app.Context.govern.SetONSOptions(initial.ONSOptions)
+	if err != nil {
+		return errors.Wrap(err, "Error in setting up ONS options")
 	}
 	// (1) Register all the currencies and fee
 	for _, currency := range initial.Currencies {
@@ -169,7 +169,7 @@ func (app *App) setupState(stateBytes []byte) error {
 	}
 
 	for _, domain := range initial.Domains {
-		d, err := ons.NewDomain(domain.OwnerAddress, domain.Beneficiary, domain.Name, domain.Parent, 0, domain.URI,domain.Expiry)
+		d, err := ons.NewDomain(domain.OwnerAddress, domain.Beneficiary, domain.Name, domain.Parent, 0, domain.URI, domain.Expiry)
 		if err != nil {
 			return errors.Wrap(err, "failed to create initial domain")
 		}

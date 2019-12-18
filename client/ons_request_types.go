@@ -10,12 +10,14 @@ import (
 	ONS Request Types
 */
 type ONSCreateRequest struct {
-	Owner    keys.Address  `json:"owner"`
-	Account  keys.Address  `json:"account"`
-	Name     string        `json:"name"`
-	Price    action.Amount `json:"price"`
-	GasPrice action.Amount `json:"gasprice"`
-	Gas      int64         `json:"gas"`
+	Owner       keys.Address  `json:"owner"`
+	Account     keys.Address  `json:"account"`
+	Name        string        `json:"name"`
+	Price       action.Amount `json:"price"`
+	Uri         string        `json:"uri"`
+	BuyingPrice int64         `json:"buying_price"`
+	GasPrice    action.Amount `json:"gasprice"`
+	Gas         int64         `json:"gas"`
 }
 
 type ONSCreateSubRequest struct {
@@ -29,12 +31,13 @@ type ONSCreateSubRequest struct {
 }
 
 type ONSUpdateRequest struct {
-	Owner    keys.Address  `json:"owner"`
-	Account  keys.Address  `json:"account"`
-	Name     string        `json:"name"`
-	Active   bool          `json:"active"`
-	GasPrice action.Amount `json:"gasprice"`
-	Gas      int64         `json:"gas"`
+	Owner        keys.Address  `json:"owner"`
+	Account      keys.Address  `json:"account"`
+	Name         string        `json:"name"`
+	Active       bool          `json:"active"`
+	ExtendExpiry int64         `json:"extend_expiry"`
+	GasPrice     action.Amount `json:"gasprice"`
+	Gas          int64         `json:"gas"`
 }
 
 type ONSRenewRequest struct {

@@ -34,8 +34,7 @@ import (
 var (
 	LockRedeemABI = contract.LockRedeemABI
 
-	contractAddr  = "0x66d0C996969e3aCDBbA0cE41Aff9cb262b7bcacc"
-
+	contractAddr = "0x66d0C996969e3aCDBbA0cE41Aff9cb262b7bcacc"
 
 	cfg               = config.DefaultEthConfig()
 	log               = logger.NewDefaultLogger(os.Stdout).WithPrefix("testeth")
@@ -131,14 +130,12 @@ func lock() {
 		log.Fatal(err)
 	}
 
-
 	signedTx, err := types.SignTx(tx, types.NewEIP155Signer(chainID), UserprivKey)
 	if err != nil {
 
 		log.Fatal(err)
 	}
 	ts := types.Transactions{signedTx}
-
 
 	rawTxBytes := ts.GetRlp(0)
 	txNew := &types.Transaction{}
@@ -149,13 +146,11 @@ func lock() {
 		return
 	}
 
-
 	rpcclient, err := rpc.NewClient("http://localhost:26602")
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
-
 
 	result := &oclient.ListCurrenciesReply{}
 	err = rpcclient.Call("query.ListCurrencies", struct{}{}, result)

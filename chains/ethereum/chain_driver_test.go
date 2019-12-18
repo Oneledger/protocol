@@ -37,14 +37,14 @@ func init() {
 
 }
 
-func getPrivKey () *ecdsa.PrivateKey {
+func getPrivKey() *ecdsa.PrivateKey {
 	UserprivKey, err := crypto.HexToECDSA(priv_key)
 	if err != nil {
 		logger.Error("Unable to create Private key")
 	}
 	return UserprivKey
 }
-func getAddress () common.Address {
+func getAddress() common.Address {
 
 	pubkey := getPrivKey().Public()
 	ecdsapubkey, ok := pubkey.(*ecdsa.PublicKey)
@@ -55,38 +55,37 @@ func getAddress () common.Address {
 	return addr
 }
 
-func GetSignedLockTX() (*Transaction,error){
-	rawtx,err := ethCD.PrepareUnsignedETHLock(getAddress(),big.NewInt(100000000000000000))
+func GetSignedLockTX() (*Transaction, error) {
+	rawtx, err := ethCD.PrepareUnsignedETHLock(getAddress(), big.NewInt(100000000000000000))
 	if err != nil {
-		return nil,errors.Wrap(err,"Unable to get rawLockTX")
+		return nil, errors.Wrap(err, "Unable to get rawLockTX")
 	}
-	chainid,err := ethCD.ChainId()
+	chainid, err := ethCD.ChainId()
 	if err != nil {
-		return nil,errors.Wrap(err,"Unable to get ChainID")
+		return nil, errors.Wrap(err, "Unable to get ChainID")
 	}
-	tx,err := ethCD.DecodeTransaction(rawtx)
+	tx, err := ethCD.DecodeTransaction(rawtx)
 	if err != nil {
-		return nil,errors.Wrap(err,"Unable to Decode rawTX to Transaction")
+		return nil, errors.Wrap(err, "Unable to Decode rawTX to Transaction")
 	}
 	signedTx, err := types.SignTx(tx, types.NewEIP155Signer(chainid), getPrivKey())
 	if err != nil {
-		return nil,errors.Wrap(err,"Unable to Sign Transaction")
+		return nil, errors.Wrap(err, "Unable to Sign Transaction")
 	}
-	return signedTx,nil
+	return signedTx, nil
 }
-func BroadCastLock() (*TransactionHash,error) {
+func BroadCastLock() (*TransactionHash, error) {
 
-	signedTx,err := GetSignedLockTX()
+	signedTx, err := GetSignedLockTX()
 	if err != nil {
-		return nil,errors.Wrap(err,"Unable to getSigned Transaction")
+		return nil, errors.Wrap(err, "Unable to getSigned Transaction")
 	}
 	txHash, err := ethCD.BroadcastTx(signedTx)
-	if err !=nil {
-		return nil,errors.Wrap(err,"Unable to get Broadcast")
+	if err != nil {
+		return nil, errors.Wrap(err, "Unable to get Broadcast")
 	}
-	return &txHash,nil
+	return &txHash, nil
 }
-
 
 //func TestETHChainDriver_CheckFinality(t *testing.T) {
 //	 txHash,err := BroadCastLock()
@@ -108,7 +107,6 @@ func BroadCastLock() (*TransactionHash,error) {
 //		}
 //	 }
 //}
-
 
 //func TestETHChainDriver_VerifyLock(t *testing.T) {
 //	signedTx,err := GetSignedLockTX()

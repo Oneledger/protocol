@@ -142,19 +142,19 @@ func runLock(ctx *action.Context, lock *Lock) (bool, action.Response) {
 			Log: "decode eth txn error" + err.Error(),
 		}
 	}
-	ok,err := ethchaindriver.VerifyLock(ethTx,ctx.ETHTrackers.GetOption().ContractABI)
+	ok, err := ethchaindriver.VerifyLock(ethTx, ctx.ETHTrackers.GetOption().ContractABI)
 	if err != nil {
 		ctx.Logger.Error("Unable to Verify Data for Ethereum Lock")
-		return false,action.Response{
+		return false, action.Response{
 			Log: "Unable to verify lock trasaction" + err.Error(),
 		}
 	}
 	if !ok {
-		return false,action.Response{
+		return false, action.Response{
 			Log: "Bytes data does not match (function name field is different)",
 		}
 	}
-	
+
 	if !bytes.Equal(ethTx.To().Bytes(), ctx.ETHTrackers.GetOption().ContractAddress.Bytes()) {
 
 		ctx.Logger.Error("to field does not match contract address")
@@ -169,7 +169,6 @@ func runLock(ctx *action.Context, lock *Lock) (bool, action.Response) {
 		ctx.Logger.Error("err in getting validator address", err)
 		return false, action.Response{Log: "error in getting validator addresses" + err.Error()}
 	}
-
 
 	curr, ok := ctx.Currencies.GetCurrencyByName("ETH")
 	if !ok {

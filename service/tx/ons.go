@@ -19,10 +19,12 @@ func (s *Service) ONS_CreateRawCreate(args client.ONSCreateRequest, reply *clien
 
 	name := ons2.GetNameFromString(args.Name)
 	domainCreate := ons.DomainCreate{
-		Owner:   args.Owner,
-		Account: args.Account,
-		Name:    name,
-		Price:   args.Price,
+		Owner:       args.Owner,
+		Beneficiary: args.Account,
+		Name:        name,
+		Price:       args.Price,
+		Uri:         args.Uri,
+		BuyingPrice: args.BuyingPrice,
 	}
 
 	data, err := domainCreate.Marshal()
@@ -93,10 +95,11 @@ func (s *Service) ONS_CreateRawUpdate(args client.ONSUpdateRequest, reply *clien
 
 	name := ons2.GetNameFromString(args.Name)
 	domainUpdate := ons.DomainUpdate{
-		Owner:   args.Owner,
-		Account: args.Account,
-		Name:    name,
-		Active:  args.Active,
+		Owner:        args.Owner,
+		Beneficiary:  args.Account,
+		Name:         name,
+		Active:       args.Active,
+		ExtendExpiry: args.ExtendExpiry,
 	}
 	data, err := domainUpdate.Marshal()
 	if err != nil {

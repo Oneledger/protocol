@@ -17,14 +17,12 @@ import (
 var _ Ons = &DomainCreate{}
 
 type DomainCreate struct {
-
-	Owner   action.Address `json:"owner"`
-	Account action.Address `json:"account"`
-	Name    ons.Name       `json:"name"`
-	Price   action.Amount  `json:"price"`
-	Uri     string         `json:"uri"`
-	BuyingPrice int64      `json:"buying_price"`
-
+	Owner       action.Address `json:"owner"`
+	Beneficiary action.Address `json:"account"`
+	Name        ons.Name       `json:"name"`
+	Price       action.Amount  `json:"price"`
+	Uri         string         `json:"uri"`
+	BuyingPrice int64          `json:"buying_price"`
 }
 
 func (dc DomainCreate) Marshal() ([]byte, error) {
@@ -104,18 +102,18 @@ func (domainCreateTx) Validate(ctx *action.Context, tx action.SignedTx) (bool, e
 
 func (domainCreateTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 
-	return processCommon(ctx,tx)
+	return runCreate(ctx, tx)
 }
 
 func (domainCreateTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
-	return processCommon(ctx,tx)
+	return runCreate(ctx, tx)
 }
 
 func (domainCreateTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas) (bool, action.Response) {
 	return action.BasicFeeHandling(ctx, signedTx, start, size, 1)
 }
 
-func processCommon (ctx *action.Context, tx action.RawTx) (bool, action.Response) {
+func runCreate(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	create := &DomainCreate{}
 	err := create.Unmarshal(tx.Data)
 	if err != nil {
@@ -137,26 +135,26 @@ func processCommon (ctx *action.Context, tx action.RawTx) (bool, action.Response
 	if err != nil {
 		return false, action.Response{Log: err.Error()}
 	}
-	
-    expiry,err := calculateExpiry(create.BuyingPrice,ctx.OnsOptions.BaseDomainPrice.Amount.BigInt().Int64(),ctx.OnsOptions.PerBlockFees)
-    if err != nil {
-    	return false,action.Response{
+
+	expiry, err := calculateExpiry(create.BuyingPrice, ctx.OnsOptions.BaseDomainPrice.Amount.BigInt().Int64(), ctx.OnsOptions.PerBlockFees)
+	if err != nil {
+		return false, action.Response{
 			Log: "Unable to calculate Expiry" + err.Error(),
 		}
 	}
 
-	name := createDomainName(create.Name,ctx.OnsOptions.FirstLevelDomain)
+	name := createDomainName(create.Name, ctx.OnsOptions.FirstLevelDomain)
 	err = parseUrl(create.Uri)
 	if err != nil {
-		return false,action.Response{
+		return false, action.Response{
 			Log: err.Error(),
 		}
 	}
 
 	domain, err := ons.NewDomain(
 		create.Owner,
-		create.Account,
-		strings.Join(name,"."),
+		create.Beneficiary,
+		strings.Join(name, "."),
 		"",
 		ctx.Header.Height,
 		create.Uri,
@@ -178,24 +176,24 @@ func processCommon (ctx *action.Context, tx action.RawTx) (bool, action.Response
 
 }
 
-func calculateExpiry (buyingPrice int64,basePrice int64,pricePerBlock int64) (int64,error){
+func calculateExpiry(buyingPrice int64, basePrice int64, pricePerBlock int64) (int64, error) {
 	if buyingPrice < basePrice {
-		return 0,errors.New("Buying price too less")
+		return 0, errors.New("Buying price too less")
 	}
-	return (buyingPrice - basePrice)/pricePerBlock,nil
+	return (buyingPrice - basePrice) / pricePerBlock, nil
 }
 
-func createDomainName (name ons.Name,firstlevelDomain []string) []string {
-	return append([]string{name.String()},firstlevelDomain...)
+func createDomainName(name ons.Name, firstlevelDomain []string) []string {
+	return append([]string{name.String()}, firstlevelDomain...)
 }
 
-func parseUrl (uri string ) error{
-	u,err := url.Parse(uri)
+func parseUrl(uri string) error {
+	u, err := url.Parse(uri)
 	if err != nil {
 		return err
 	}
 	validProtocol := map[string]bool{"http": true, "ipfs": true, "ftp": true}
-	if !validProtocol[u.Scheme]{
+	if !validProtocol[u.Scheme] {
 		return errors.New("Protocol not recognised")
 	}
 	return nil

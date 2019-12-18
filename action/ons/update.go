@@ -16,10 +16,11 @@ import (
 var _ Ons = &DomainUpdate{}
 
 type DomainUpdate struct {
-	Owner   action.Address `json:"owner"`
-	Account action.Address `json:"account"`
-	Name    ons.Name       `json:"name"`
-	Active  bool           `json:"active"`
+	Owner        action.Address `json:"owner"`
+	Beneficiary  action.Address `json:"account"`
+	Name         ons.Name       `json:"name"`
+	Active       bool           `json:"active"`
+	ExtendExpiry int64          `json:"extend_expiry"`
 }
 
 func (du DomainUpdate) Marshal() ([]byte, error) {
@@ -84,7 +85,7 @@ func (domainUpdateTx) Validate(ctx *action.Context, tx action.SignedTx) (bool, e
 		return false, action.ErrMissingData
 	}
 
-	if update.Active == false && update.Account == nil {
+	if update.Active == false && update.Beneficiary == nil {
 		return false, action.ErrMissingData
 	}
 
@@ -92,29 +93,18 @@ func (domainUpdateTx) Validate(ctx *action.Context, tx action.SignedTx) (bool, e
 }
 
 func (domainUpdateTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
-	update := &DomainUpdate{}
-	err := update.Unmarshal(tx.Data)
-	if err != nil {
-		return false, action.Response{Log: err.Error()}
-	}
-
-	if !ctx.Domains.Exists(update.Name) {
-		return false, action.Response{Log: fmt.Sprintf("domain doesn't exist: %s", update.Name)}
-	}
-
-	d, err := ctx.Domains.Get(update.Name)
-	if err != nil {
-		return false, action.Response{Log: fmt.Sprintf("failed to get domain: %s", update.Name)}
-	}
-
-	if !bytes.Equal(d.OwnerAddress, update.Owner) {
-		return false, action.Response{Log: fmt.Sprintf("domain is not owned by: %s", hex.EncodeToString(update.Owner))}
-	}
-
-	return true, action.Response{Tags: update.Tags()}
+	return runUpdate(ctx, tx)
 }
 
 func (domainUpdateTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
+	return runUpdate(ctx, tx)
+}
+
+func (domainUpdateTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas) (bool, action.Response) {
+	return action.BasicFeeHandling(ctx, signedTx, start, size, 1)
+}
+
+func runUpdate(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	update := &DomainUpdate{}
 	err := update.Unmarshal(tx.Data)
 	if err != nil {
@@ -138,7 +128,8 @@ func (domainUpdateTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool
 		return false, action.Response{Log: fmt.Sprintf("domain is not owned by: %s", hex.EncodeToString(update.Owner))}
 	}
 
-	d.SetAccountAddress(update.Account)
+	d.AddToExpire(extendExpiry(update.ExtendExpiry, ctx.OnsOptions.PerBlockFees))
+	d.SetAccountAddress(update.Beneficiary)
 	if update.Active {
 		d.Activate()
 	} else {
@@ -153,6 +144,6 @@ func (domainUpdateTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool
 	return true, action.Response{Tags: update.Tags()}
 }
 
-func (domainUpdateTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas) (bool, action.Response) {
-	return action.BasicFeeHandling(ctx, signedTx, start, size, 1)
+func extendExpiry(amountPaid int64, pricePerBlock int64) int64 {
+	return amountPaid / pricePerBlock
 }

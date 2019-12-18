@@ -324,7 +324,6 @@ func runDevnet(_ *cobra.Command, _ []string) error {
 		PerBlockFees:     1,
 		FirstLevelDomain: []string{"ol"},
 		BaseDomainPrice:  balance.Coin{},
-
 	}
 	states := initialState(args, nodeList, *cdo, *onsOp)
 
