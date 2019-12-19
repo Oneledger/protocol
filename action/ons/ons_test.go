@@ -3,6 +3,10 @@ package ons
 import (
 	"encoding/json"
 	"fmt"
+	"os"
+	"strconv"
+	"testing"
+
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/chain"
@@ -15,17 +19,13 @@ import (
 	"github.com/magiconair/properties/assert"
 	abci "github.com/tendermint/tendermint/abci/types"
 	db2 "github.com/tendermint/tendermint/libs/db"
-	"os"
-	"strconv"
-	"testing"
 )
 
 var (
-	testCases           map[int]Case
-	transactionHandlers map[string]action.Tx
-	ctx                 *action.Context
+	testCases map[int]Case
+	router    action.Router
+	ctx       *action.Context
 
-	create      = "create"
 	createPrice = "200000000000000000000"
 
 	pub1, priv1, _ = keys.NewKeyPairFromTendermint()
@@ -39,7 +39,7 @@ type Case struct {
 	signedTx action.SignedTx
 	startGas action.Gas
 	endGas   action.Gas
-	txType   string
+	txType   action.Type
 
 	//expected output
 	validateResp bool
@@ -50,7 +50,8 @@ type Case struct {
 
 func setup() {
 	testCases = make(map[int]Case)
-	transactionHandlers = make(map[string]action.Tx)
+	router = action.NewRouter("test")
+	_ = EnableONS(router)
 
 	//create and initialize new context
 	{
@@ -134,7 +135,6 @@ func makeCreateRawTx(name ons.Name, amount balance.Amount, expiryHeight int64) a
 }
 
 func setupCreateDomain() {
-	transactionHandlers[create] = domainCreateTx{}
 
 	price, _ := balance.NewAmountFromString(createPrice, 10)
 	rawTx := makeCreateRawTx("hashard.ol", *price, int64(500000000))
@@ -153,7 +153,7 @@ func setupCreateDomain() {
 		Signatures: []action.Signature{signature},
 	}
 
-	testCases[create1] = Case{ctx, &rawTx, signedTx, action.Gas(50000), action.Gas(100000), create, true, true, true, true}
+	testCases[create1] = Case{ctx, &rawTx, signedTx, action.Gas(50000), action.Gas(100000), action.DOMAIN_CREATE, true, true, true, true}
 }
 
 func init() {
@@ -166,7 +166,7 @@ func TestONSTx(t *testing.T) {
 	for i, testCase := range testCases {
 		t.Run("Testing case "+strconv.Itoa(i), func(t *testing.T) {
 			//Get handler
-			handler := transactionHandlers[testCase.txType]
+			handler := router.Handler(testCase.txType)
 
 			//Call transaction Validate, Then assert response.
 			response, err := handler.Validate(testCase.ctx, testCase.signedTx)
