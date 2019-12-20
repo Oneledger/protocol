@@ -1,11 +1,16 @@
 package ons
 
 import (
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"os"
 	"strconv"
 	"testing"
+
+	"github.com/magiconair/properties/assert"
+	abci "github.com/tendermint/tendermint/abci/types"
+	db2 "github.com/tendermint/tendermint/libs/db"
 
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/data/balance"
@@ -16,9 +21,6 @@ import (
 	"github.com/Oneledger/protocol/log"
 	"github.com/Oneledger/protocol/serialize"
 	"github.com/Oneledger/protocol/storage"
-	"github.com/magiconair/properties/assert"
-	abci "github.com/tendermint/tendermint/abci/types"
-	db2 "github.com/tendermint/tendermint/libs/db"
 )
 
 var (
@@ -96,12 +98,11 @@ func setup() {
 }
 
 const (
-	create1 = iota
-	create2
-	create3
+	create = iota
+	update
 )
 
-func makeCreateRawTx(name ons.Name, amount balance.Amount, expiryHeight int64) action.RawTx {
+func makeCreateRawTx(name ons.Name, amount balance.Amount, buyingPrice int64) action.RawTx {
 
 	pub2, _, _ := keys.NewKeyPairFromTendermint()
 	h2, _ := pub2.GetHandler()
@@ -114,7 +115,7 @@ func makeCreateRawTx(name ons.Name, amount balance.Amount, expiryHeight int64) a
 		name,
 		*Amount,
 		"http://hashard.ol/lookatme",
-		expiryHeight,
+		buyingPrice,
 	}
 
 	msg, err := json.Marshal(tx)
@@ -132,15 +133,43 @@ func makeCreateRawTx(name ons.Name, amount balance.Amount, expiryHeight int64) a
 		},
 		Memo: "test1",
 	}
-
 	return rawTx
 }
 
-func setupCreateDomain() {
+func makeUpdateRawTx(name ons.Name,extendPrice int64) (action.RawTx,error){
+	pubBen,_ ,err := keys.NewKeyPairFromTendermint()
+	if err != nil {
+		return action.RawTx{},nil
+	}
+	pubBenH,err := pubBen.GetHandler()
+	if err != nil {
+		return action.RawTx{},nil
+	}
+    updateTx := DomainUpdate{
+		Owner:        h1.Address(),
+		Beneficiary:  pubBenH.Address(),
+		Name:         name,
+		Active:       false,
+		ExtendExpiry: extendPrice,
+	}
+	msg,err := json.Marshal(updateTx)
+	if err != nil {
+		return action.RawTx{},nil
+	}
+	rawTx := action.RawTx{
+		Type: action.DOMAIN_UPDATE,
+		Data: msg,
+		Fee: action.Fee{
+			Price: *action.NewAmount("olt", *balance.NewAmount(int64(10000000000))),
+			Gas:   0,
+		},
+		Memo: "testUpdate",
+	}
+	return rawTx,nil
+	
+}
 
-	price, _ := balance.NewAmountFromString(createPrice, 10)
-	rawTx := makeCreateRawTx("hashard.ol", *price, int64(500000000))
-
+func createTestCase(rawTx action.RawTx,t action.Type,testcaseType int) {
 	packet, err := serialize.GetSerializer(serialize.NETWORK).Serialize(rawTx)
 	if err != nil {
 		fmt.Println(err.Error())
@@ -155,36 +184,101 @@ func setupCreateDomain() {
 		Signatures: []action.Signature{signature},
 	}
 
-	testCases[create1] = Case{ctx, &rawTx, signedTx, action.Gas(50000), action.Gas(100000), action.DOMAIN_CREATE, true, true, true, true}
+	testCases[testcaseType] = Case{ctx, &rawTx, signedTx, action.Gas(50000), action.Gas(100000), t, true, true, true, true}
 }
+func setupCreateDomain() {
+
+	price, _ := balance.NewAmountFromString(createPrice, 10)
+	rawTx := makeCreateRawTx("harshad.ol", *price, int64(500000000))
+    createTestCase(rawTx,action.DOMAIN_CREATE,create)
+}
+
+
+func setupUpdateDomain() {
+	rawTx,err := makeUpdateRawTx("harshad.ol",int64(800000000))
+	if err != nil {
+		return
+	}
+	createTestCase(rawTx,action.DOMAIN_UPDATE,update)
+}
+
 
 func init() {
 	setup()
 	setupCreateDomain()
+	setupUpdateDomain()
 }
 
 func TestONSTx(t *testing.T) {
 
-	for i, testCase := range testCases {
+	for i:=0; i < len(testCases); i++ {
+		testCase := testCases[i]
 		t.Run("Testing case "+strconv.Itoa(i), func(t *testing.T) {
 			//Get handler
 			handler := router.Handler(testCase.txType)
-
+            fmt.Println("-----------------------------------------------------------")
 			//Call transaction Validate, Then assert response.
 			response, err := handler.Validate(testCase.ctx, testCase.signedTx)
 			assert.Equal(t, response, testCase.validateResp)
 			if err != nil {
-				fmt.Println(err.Error())
+				fmt.Println("Validate",err.Error())
 			}
 
-			response, resp := handler.ProcessCheck(testCase.ctx, *testCase.tx)
-			assert.Equal(t, response, testCase.checkResp)
-			fmt.Println(resp.Log)
+			//response, resp := handler.ProcessCheck(testCase.ctx, *testCase.tx)
+			//assert.Equal(t, response, testCase.checkResp)
+			//fmt.Println("ProcessCheck :" , resp.Log)
 
-			response, resp = handler.ProcessDeliver(testCase.ctx, *testCase.tx)
+			response, resp := handler.ProcessDeliver(testCase.ctx, *testCase.tx)
 			assert.Equal(t, response, testCase.deliverResp)
-			fmt.Println(resp.Log)
+			fmt.Println("ProcessDeliver :" , resp.Log)
 
+            ctx.State.Commit()
+			//fmt.Println("height", hex.EncodeToString(ctx.State.RootHash()), ctx.State.Version())
 		})
 	}
+}
+
+func TestUpdate (t *testing.T)  {
+	testCase := testCases[0]
+
+	handler := router.Handler(testCase.txType)
+	//Call transaction Validate, Then assert response.
+	response, err := handler.Validate(ctx, testCase.signedTx)
+	assert.Equal(t, response, testCase.validateResp, "validate")
+	if err != nil {
+		fmt.Println("Validate", err.Error())
+	}
+
+	//response, resp := handler.ProcessCheck(testCase.ctx, *testCase.tx)
+	//assert.Equal(t, response, testCase.checkResp)
+	//fmt.Println("ProcessCheck :" , resp.Log)
+
+	response, resp := handler.ProcessDeliver(ctx, *testCase.tx)
+	assert.Equal(t, response, testCase.deliverResp, "deliver")
+	fmt.Println("ProcessDeliver :", resp.Log)
+	ctx.State.Commit()
+	fmt.Println("height", hex.EncodeToString(ctx.State.RootHash()), ctx.State.Version())
+	fmt.Println("-----------------------------------------------------------------------------------------------------")
+	testCase = testCases[1]
+
+	ctx.Header.Height = ctx.State.Version()+1
+	handler = router.Handler(testCase.txType)
+	//Call transaction Validate, Then assert response.
+	//t.Run("Testing case "+strconv.Itoa(1), func(t *testing.T) {
+	response, err = handler.Validate(ctx, testCase.signedTx)
+	assert.Equal(t, response, testCase.validateResp)
+	if err != nil {
+		fmt.Println("Validate", err.Error())
+	}
+
+	//response, resp = handler.ProcessCheck(ctx, *testCase.tx)
+	//assert.Equal(t, response, testCase.checkResp)
+	//fmt.Println("ProcessCheck :" , resp.Log)
+
+	response, resp = handler.ProcessDeliver(ctx, *testCase.tx)
+	assert.Equal(t, response, testCase.deliverResp)
+	fmt.Println("ProcessDeliver :", resp.Log)
+	ctx.State.Commit()
+	fmt.Println("height", hex.EncodeToString(ctx.State.RootHash()), ctx.State.Version())
+
 }
