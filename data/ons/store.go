@@ -100,7 +100,8 @@ func (ds *DomainStore) Iterate(fn func(name Name, domain *Domain) bool) (stopped
 }
 
 func (ds *DomainStore) IterateSubDomain(parentName Name, fn func(name Name, domain *Domain) bool) (stopped bool) {
-	start := append(ds.prefix, (parentName + storage.DB_PREFIX).toKey()...)
+	parentkey := parentName.toKey()
+	start := append(ds.prefix, Name(string(parentkey)+".").toKey()...)
 	end := storage.Rangefix(string(start))
 	return ds.State.IterateRange(
 		start,
