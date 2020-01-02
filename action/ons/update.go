@@ -110,7 +110,6 @@ func runUpdate(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	if err != nil {
 		return false, action.Response{Log: err.Error()}
 	}
-
 	if !ctx.Domains.Exists(update.Name) {
 		return false, action.Response{Log: fmt.Sprintf("domain doesn't exist: %s", update.Name)}
 	}
@@ -121,7 +120,7 @@ func runUpdate(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	}
 
 	if !d.IsChangeable(ctx.Header.Height) {
-		return false, action.Response{Log: fmt.Sprintf("domain is not changable: %s, last change: %d", update.Name, d.LastUpdateHeight)}
+		return false, action.Response{Log: fmt.Sprintf("domain is not changable: %s, last change: %d ,current height :%d", update.Name, d.LastUpdateHeight,ctx.Header.Height)}
 	}
 
 	if !bytes.Equal(d.OwnerAddress, update.Owner) {

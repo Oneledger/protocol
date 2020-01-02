@@ -143,7 +143,12 @@ func runCreate(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 		}
 	}
 
-	name := createDomainName(create.Name, ctx.OnsOptions.FirstLevelDomain)
+	err = verifyDomainName(create.Name, ctx.OnsOptions.FirstLevelDomain)
+	if err != nil {
+		return false,action.Response{
+			Log: err.Error(),
+		}
+	}
 	err = parseUrl(create.Uri)
 	if err != nil {
 		return false, action.Response{
@@ -154,7 +159,7 @@ func runCreate(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	domain, err := ons.NewDomain(
 		create.Owner,
 		create.Beneficiary,
-		strings.Join(name, "."),
+		create.Name.String(),
 		"",
 		ctx.Header.Height,
 		create.Uri,
@@ -167,8 +172,9 @@ func runCreate(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	if err != nil {
 		return false, action.Response{Log: err.Error()}
 	}
-	ctx.Logger.Error(domain)
-	ctx.Logger.Error(ctx.Domains.Get(domain.Name))
+	//ctx.Logger.Info("Domain :" ,domain)
+
+	//ctx.Logger.Info(ctx.Domains.Get(domain.Name))
 	result := action.Response{
 		Tags: create.Tags(),
 	}
@@ -183,8 +189,17 @@ func calculateExpiry(buyingPrice int64, basePrice int64, pricePerBlock int64) (i
 	return (buyingPrice - basePrice) / pricePerBlock, nil
 }
 
-func createDomainName(name ons.Name, firstlevelDomain []string) []string {
-	return append([]string{name.String()}, firstlevelDomain...)
+func verifyDomainName(name ons.Name, firstlevelDomain []string) error {
+
+	firstlevelMap := make(map[string]bool)
+	for i := 0; i < len(firstlevelDomain); i ++ {
+		firstlevelMap[firstlevelDomain[i]] = true
+	}
+	nameAr:= strings.Split(name.String(),".")
+	if !firstlevelMap[nameAr[len(nameAr)-1]] {
+		return errors.New("First level domain does is not allowed")
+	} 
+	return nil
 }
 
 func parseUrl(uri string) error {
