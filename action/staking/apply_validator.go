@@ -2,13 +2,13 @@ package staking
 
 import (
 	"encoding/json"
+
 	"github.com/pkg/errors"
+	"github.com/tendermint/tendermint/libs/common"
 
 	"github.com/Oneledger/protocol/action"
-
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/identity"
-	"github.com/tendermint/tendermint/libs/common"
 )
 
 var _ action.Msg = &ApplyValidator{}
@@ -32,7 +32,7 @@ func (apply *ApplyValidator) Unmarshal(data []byte) error {
 }
 
 func (apply ApplyValidator) Signers() []action.Address {
-	return []action.Address{apply.StakeAddress.Bytes()}
+	return []action.Address{apply.StakeAddress.Bytes(), apply.ValidatorAddress.Bytes()}
 }
 
 func (apply ApplyValidator) Type() action.Type {
@@ -112,7 +112,7 @@ func (a applyTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, act
 }
 
 func (a applyTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas) (bool, action.Response) {
-	return action.BasicFeeHandling(ctx, signedTx, start, size, 1)
+	return action.BasicFeeHandling(ctx, signedTx, start, size, 2)
 }
 
 func (apply ApplyValidator) Tags() common.KVPairs {
@@ -137,21 +137,21 @@ func runApply(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	if err != nil {
 		return false, action.Response{Log: err.Error()}
 	}
-	_, err = checkBalances(ctx, apply.StakeAddress, apply.Stake)
-	if err != nil {
-		return false, action.Response{Log: err.Error()}
-	}
 
 	validators := ctx.Validators
 
 	balances := ctx.Balances
 
-	err = balances.MinusFromAddress(apply.StakeAddress.Bytes(), apply.Stake.ToCoin(ctx.Currencies))
-	if err != nil {
-		return false, action.Response{Log: err.Error()}
-	}
-
 	if !apply.Purge {
+		_, err = checkBalances(ctx, apply.StakeAddress, apply.Stake)
+		if err != nil {
+			return false, action.Response{Log: err.Error()}
+		}
+
+		err = balances.MinusFromAddress(apply.StakeAddress.Bytes(), apply.Stake.ToCoin(ctx.Currencies))
+		if err != nil {
+			return false, action.Response{Log: errors.Wrap(err, apply.StakeAddress.String()).Error()}
+		}
 		stake := identity.Stake{
 			ValidatorAddress: apply.ValidatorAddress,
 			StakeAddress:     apply.StakeAddress,

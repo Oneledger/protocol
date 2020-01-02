@@ -1,8 +1,9 @@
 package fees
 
 import (
-	"github.com/Oneledger/protocol/data/balance"
 	"math/big"
+
+	"github.com/Oneledger/protocol/data/balance"
 )
 
 const (

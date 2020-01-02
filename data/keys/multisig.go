@@ -46,6 +46,10 @@ type MultiSigner interface {
 
 	// Set MultiSig from []byte
 	FromBytes(b []byte) error
+
+	GetSignerIndex(Address) (int, error)
+
+	GetSignatures() []Signature
 }
 
 type Signature struct {
@@ -130,6 +134,26 @@ func (m MultiSig) Address() Address {
 	return utils.Hash(b)
 }
 
+func (m MultiSig) HasAddressSigned(addr Address) bool {
+	index := len(m.Signers) + 100
+	for i := range m.Signers {
+		if bytes.Equal(m.Signers[i], addr) {
+			index = i
+			break
+		}
+	}
+
+	if index > len(m.Signers) {
+		return false
+	}
+
+	if len(m.Signatures[index].Signed) == 0 {
+		return false
+	}
+
+	return true
+}
+
 //func (m MultiSig) Threshold() int {
 //	return m.M
 //}
@@ -143,8 +167,10 @@ func (m MultiSig) Address() Address {
 //}
 
 func (m MultiSig) Bytes() []byte {
+
 	signatures := m.Signatures
 	m.Signatures = make([]Signature, 0)
+
 	for _, item := range signatures {
 		if item.Signed != nil {
 			m.Signatures = append(m.Signatures, item)
@@ -160,10 +186,27 @@ func (m *MultiSig) FromBytes(b []byte) error {
 	if err != nil {
 		return err
 	}
+
 	signatures := m.Signatures
 	m.Signatures = make([]Signature, len(m.Signers))
 	for i, item := range signatures {
 		m.Signatures[i] = item
 	}
+
 	return nil
+}
+
+func (m *MultiSig) GetSignerIndex(ad Address) (int, error) {
+
+	for i := range m.Signers {
+		if bytes.Equal(m.Signers[i], ad) {
+			return i, nil
+		}
+	}
+
+	return 0, errors.New("address not found")
+}
+
+func (m *MultiSig) GetSignatures() []Signature {
+	return m.Signatures
 }

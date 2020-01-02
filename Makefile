@@ -11,7 +11,7 @@ update:
 # Build and install a copy in bin
 #
 install:
-	go install github.com/Oneledger/protocol/cmd/...
+	go install -i github.com/Oneledger/protocol/cmd/...
 
 # Enable the clevelDB
 install_c:  
@@ -32,6 +32,15 @@ fulltest: install
 #
 status:
 	@./scripts/status
+
+
+
+#
+# install and restart the network
+#
+restart: install
+	@./scripts/stopDev
+	@./scripts/startDev
 
 #
 # run unit tests on project packages
@@ -88,6 +97,7 @@ withdrawtest: install
 	python scripts/reward/withdraw.py
 	@./scripts/stopDev
 
+
 alltest: install
 	@./scripts/stopDev
 	@./scripts/resetDev
@@ -100,3 +110,21 @@ alltest: install
 	python scripts/ons/buy_sell_domain.py
 	python scripts/reward/withdraw.py
 	@./scripts/stopDev
+
+
+reset: install
+	@./scripts/stopDev
+	@./scripts/resetDev
+	@./scripts/startDev
+# 	@./scripts/testapply
+# 	@./scripts/testsend
+
+
+rpcAuthtest: install
+	@./scripts/stopDev
+	@./scripts/resetDev
+	python scripts/rpcAuth/setup.py
+	@./scripts/startDev
+	python scripts/rpcAuth/rpcTestAuth.py
+	@./scripts/stopDev
+

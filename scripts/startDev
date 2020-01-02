@@ -3,7 +3,7 @@
 for name in $(ls -l $OLDATA/devnet | grep Node  | awk '(NR>0){print $9}')
 do
     echo "Start Node: $name"
-    olfullnode node --root $OLDATA/devnet/$name >> $OLDATA/devnet/$name/olfullnode.log &
+    olfullnode node --root $OLDATA/devnet/$name >> $OLDATA/devnet/$name/olfullnode.log 2>&1  &
     sleep 1
 done
 

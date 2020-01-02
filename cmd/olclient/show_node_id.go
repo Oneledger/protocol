@@ -17,9 +17,9 @@ package main
 import (
 	"fmt"
 
-	"github.com/Oneledger/protocol/client"
-
 	"github.com/spf13/cobra"
+
+	"github.com/Oneledger/protocol/client"
 )
 
 var showIP bool

@@ -4,14 +4,13 @@ import (
 	"fmt"
 	"net/url"
 
-	codes "github.com/Oneledger/protocol/status_codes"
-
-	"github.com/Oneledger/protocol/log"
+	"github.com/tendermint/tendermint/p2p"
 
 	"github.com/Oneledger/protocol/app/node"
 	"github.com/Oneledger/protocol/client"
 	"github.com/Oneledger/protocol/config"
-	"github.com/tendermint/tendermint/p2p"
+	"github.com/Oneledger/protocol/log"
+	codes "github.com/Oneledger/protocol/status_codes"
 )
 
 type Service struct {

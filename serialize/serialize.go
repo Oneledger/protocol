@@ -4,12 +4,11 @@ import (
 	"os"
 	"sync"
 
-	"github.com/Oneledger/protocol/log"
-
 	"github.com/google/uuid"
-
 	"github.com/tendermint/go-amino"
 	"github.com/vmihailenco/msgpack"
+
+	"github.com/Oneledger/protocol/log"
 )
 
 type Channel int
@@ -18,6 +17,7 @@ const (
 	CLIENT Channel = iota
 	PERSISTENT
 	NETWORK
+	LOCAL
 	JSON
 )
 
@@ -55,6 +55,9 @@ func GetSerializer(channel Channel, args ...interface{}) Serializer {
 
 	case NETWORK:
 		return &jsonStrategy{}
+
+	case LOCAL:
+		return &msgpackStrategy{}
 
 	case JSON:
 		return &jsonStrategy{}

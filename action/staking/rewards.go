@@ -2,9 +2,11 @@ package staking
 
 import (
 	"encoding/json"
-	"github.com/Oneledger/protocol/action"
+
 	"github.com/pkg/errors"
 	"github.com/tendermint/tendermint/libs/common"
+
+	"github.com/Oneledger/protocol/action"
 )
 
 var _ action.Msg = &Withdraw{}
@@ -127,5 +129,5 @@ func runWithdraw(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 		return false, action.Response{Log: errors.Wrap(err, "add to balance").Error()}
 	}
 
-	return true, action.Response{Tags: draw.Tags()}
+	return true, action.Response{Tags: draw.Tags(), Info: allow.String()}
 }

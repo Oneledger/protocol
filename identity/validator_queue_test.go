@@ -3,8 +3,9 @@ package identity
 import (
 	"testing"
 
-	"github.com/Oneledger/protocol/utils"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/Oneledger/protocol/utils"
 )
 
 var vq1 = utils.NewQueued([]byte("a"), 200, 1)

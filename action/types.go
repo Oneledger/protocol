@@ -3,12 +3,11 @@ package action
 import (
 	"encoding/json"
 
-	"github.com/Oneledger/protocol/storage"
-
 	"github.com/tendermint/tendermint/libs/common"
 
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/keys"
+	"github.com/Oneledger/protocol/storage"
 )
 
 // Address an action package over Address in data/keys package

@@ -79,7 +79,6 @@ func (ds *DomainStore) Exists(name string) bool {
 }
 
 func keyFromName(name string) []byte {
-
 	return []byte(strings.ToLower(name))
 }
 

@@ -1,11 +1,12 @@
 package fees
 
 import (
+	"github.com/pkg/errors"
+
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/serialize"
 	"github.com/Oneledger/protocol/storage"
-	"github.com/pkg/errors"
 )
 
 type Store struct {
@@ -74,11 +75,14 @@ func (st *Store) Iterate(fn func(addr keys.Address, coin balance.Coin) (stop boo
 		true,
 		func(key, value []byte) bool {
 			amt := &balance.Amount{}
+			coin := balance.Coin{}
 			err := serialize.GetSerializer(serialize.PERSISTENT).Deserialize(value, amt)
 			if err != nil {
 				return false
 			}
-			coin := st.feeOpt.FeeCurrency.NewCoinFromAmount(*amt)
+			if st.feeOpt != nil {
+				coin = st.feeOpt.FeeCurrency.NewCoinFromAmount(*amt)
+			}
 			addr := key[len(st.prefix):]
 			return fn(addr, coin)
 		},

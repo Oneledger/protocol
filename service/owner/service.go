@@ -1,15 +1,15 @@
 package owner
 
 import (
+	"github.com/pkg/errors"
+
 	"github.com/Oneledger/protocol/action"
+	"github.com/Oneledger/protocol/client"
+	"github.com/Oneledger/protocol/data/accounts"
 	"github.com/Oneledger/protocol/data/chain"
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/log"
 	codes "github.com/Oneledger/protocol/status_codes"
-
-	"github.com/Oneledger/protocol/client"
-	"github.com/Oneledger/protocol/data/accounts"
-	"github.com/pkg/errors"
 )
 
 type Service struct {

@@ -1,0 +1,168 @@
+/*
+
+ */
+
+package btc
+
+import (
+	"bytes"
+	"encoding/json"
+	"fmt"
+
+	"github.com/pkg/errors"
+	"github.com/tendermint/tendermint/libs/common"
+
+	"github.com/Oneledger/protocol/action"
+	"github.com/Oneledger/protocol/data/bitcoin"
+	"github.com/Oneledger/protocol/data/keys"
+)
+
+type FailedBroadcastReset struct {
+	TrackerName      string
+	ValidatorAddress action.Address
+}
+
+func (fbr *FailedBroadcastReset) Signers() []action.Address {
+	panic("implement me")
+}
+
+func (fbr *FailedBroadcastReset) Type() action.Type {
+	return action.BTC_FAILED_BROADCAST_RESET
+}
+
+func (fbr *FailedBroadcastReset) Tags() common.KVPairs {
+	tags := make([]common.KVPair, 0)
+
+	tag := common.KVPair{
+		Key:   []byte("tx.type"),
+		Value: []byte(fbr.Type().String()),
+	}
+	tag2 := common.KVPair{
+		Key:   []byte("tx.validator"),
+		Value: []byte(fbr.ValidatorAddress.String()),
+	}
+
+	tags = append(tags, tag, tag2)
+	return tags
+}
+
+func (fbr *FailedBroadcastReset) Marshal() ([]byte, error) {
+	return json.Marshal(fbr)
+}
+
+func (fbr *FailedBroadcastReset) Unmarshal(data []byte) error {
+	return json.Unmarshal(data, fbr)
+}
+
+type btcBroadcastFailureReset struct {
+}
+
+func (btcBroadcastFailureReset) Validate(ctx *action.Context, signedTx action.SignedTx) (bool, error) {
+	failedBroadcastReset := FailedBroadcastReset{}
+
+	err := failedBroadcastReset.Unmarshal(signedTx.Data)
+	if err != nil {
+		return false, errors.Wrap(action.ErrWrongTxType, err.Error())
+	}
+
+	err = action.ValidateBasic(signedTx.RawBytes(), failedBroadcastReset.Signers(), signedTx.Signatures)
+	if err != nil {
+		return false, err
+	}
+
+	if !ctx.Validators.IsValidatorAddress(failedBroadcastReset.ValidatorAddress) {
+		return false, errors.New("only validator can report a broadcast")
+	}
+
+	tracker, err := ctx.BTCTrackers.Get(failedBroadcastReset.TrackerName)
+	if err != nil {
+		return false, err
+	}
+
+	if tracker.State != bitcoin.BusyBroadcasting {
+		return false, errors.New("tracker not broadcasting")
+	}
+
+	return true, nil
+}
+
+func (btcBroadcastFailureReset) ProcessCheck(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
+	return runBroadcastFailureReset(ctx, tx)
+}
+
+func (btcBroadcastFailureReset) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
+	return runBroadcastFailureReset(ctx, tx)
+}
+
+func (btcBroadcastFailureReset) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas) (bool, action.Response) {
+	return true, action.Response{}
+}
+
+func runBroadcastFailureReset(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
+	fbr := FailedBroadcastReset{}
+
+	err := fbr.Unmarshal(tx.Data)
+	if err != nil {
+		return false, action.Response{Log: err.Error()}
+	}
+
+	if !ctx.Validators.IsValidatorAddress(fbr.ValidatorAddress) {
+		return false, action.Response{Log: "broadcast reporter not found in validator list"}
+	}
+
+	tracker, err := ctx.BTCTrackers.Get(fbr.TrackerName)
+	if err != nil {
+		return false, action.Response{Log: fmt.Sprintf("tracker not found: %s", fbr.TrackerName)}
+	}
+
+	if tracker.State != bitcoin.BusyBroadcasting {
+		return false, action.Response{Log: fmt.Sprintf("tracker not broadcasting: ", fbr.TrackerName)}
+	}
+
+	validatorSignedFlag := false
+	for _, fv := range tracker.ResetVotes {
+		if bytes.Equal(fv, fbr.ValidatorAddress) {
+			validatorSignedFlag = true
+		}
+	}
+
+	if !validatorSignedFlag {
+		tracker.ResetVotes = append(tracker.ResetVotes, fbr.ValidatorAddress)
+	}
+
+	valSet, err := ctx.Validators.GetValidatorSet()
+	if err != nil {
+		return false, action.Response{Log: "cannot get validator set"}
+	}
+
+	nValidators := len(valSet)
+	votesThresholdForReset := (2 * nValidators) / 3
+
+	// are there enough reset votes?
+	if len(tracker.ResetVotes) < votesThresholdForReset {
+		err = ctx.BTCTrackers.SetTracker(fbr.TrackerName, tracker)
+		if err != nil {
+			return false, action.Response{Log: "tracker not ready for finalizing"}
+		}
+
+		return true, action.Response{
+			Tags: fbr.Tags(),
+		}
+	}
+
+	tracker.Multisig.Msg = nil
+	tracker.Multisig.Signatures = []keys.BTCSignature{}
+
+	tracker.State = bitcoin.Available
+	tracker.ProcessTxId = nil
+	tracker.ProcessBalance = 0
+	tracker.ProcessUnsignedTx = nil
+
+	tracker.ProcessOwner = nil
+	tracker.ProcessType = bitcoin.ProcessTypeNone
+
+	tracker.FinalityVotes = []keys.Address{}
+	tracker.ResetVotes = []keys.Address{}
+
+	return true, action.Response{Tags: fbr.Tags()}
+}

@@ -1,6 +1,9 @@
 package identity
 
 import (
+	"github.com/btcsuite/btcd/chaincfg"
+	"github.com/btcsuite/btcutil"
+
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/fees"
 	"github.com/Oneledger/protocol/data/keys"
@@ -33,6 +36,21 @@ func (v *Validator) FromBytes(msg []byte) (*Validator, error) {
 		return nil, err
 	}
 	return v, nil
+}
+
+func (v *Validator) GetBTCScriptAddress(params *chaincfg.Params) (keys.Address, error) {
+
+	h, err := v.ECDSAPubKey.GetHandler()
+	if err != nil {
+		return nil, err
+	}
+
+	apk, err := btcutil.NewAddressPubKey(h.Bytes(), params)
+	if err != nil {
+		return nil, err
+	}
+
+	return apk.ScriptAddress(), nil
 }
 
 type Stake struct {

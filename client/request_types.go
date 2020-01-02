@@ -10,12 +10,13 @@
 package client
 
 import (
+	ctypes "github.com/tendermint/tendermint/rpc/core/types"
+
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/data/accounts"
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/identity"
-	ctypes "github.com/tendermint/tendermint/rpc/core/types"
 )
 
 /*
@@ -178,4 +179,61 @@ type SignRawTxRequest struct {
 
 type SignRawTxResponse struct {
 	Signature action.Signature `json:"signature"`
+}
+
+type BTCLockRequest struct {
+	Txn         []byte        `json:"txn"`
+	Signature   []byte        `json:"signature"`
+	Address     keys.Address  `json:"address"`
+	TrackerName string        `json:"tracker_name"`
+	GasPrice    action.Amount `json:"gasprice"`
+	Gas         int64         `json:"gas"`
+}
+
+type BTCLockPrepareRequest struct {
+	Hash    string `json:"hash"`
+	Index   uint32 `json:"index"`
+	FeesBTC int64  `json:"fees_btc"`
+}
+type BTCLockPrepareResponse struct {
+	Txn         string `json:"txn"`
+	TrackerName string `json:"tracker_name"`
+}
+
+type BTCGetTrackerRequest struct {
+	Name string `json:"name"`
+}
+type BTCGetTrackerReply struct {
+	TrackerData string `json:"tracker"`
+}
+
+type BTCRedeemRequest struct {
+	Address    keys.Address  `json:"address"`
+	BTCAddress string        `json:"btc_address"`
+	Amount     int64         `json:"amount"`
+	FeesBTC    int64         `json:"fees_btc"`
+	GasPrice   action.Amount `json:"gasprice"`
+	Gas        int64         `json:"gas"`
+}
+type BTCRedeemPrepareResponse struct {
+	RawTx       []byte `json:"rawTx"`
+	TrackerName string `json:"tracker_name"`
+}
+
+type ETHLockRequest struct {
+	Txn     []byte
+	Address keys.Address
+	Fee     action.Amount `json:"fee"`
+	Gas     int64         `json:"gas"`
+}
+
+type CurrencyBalanceRequest struct {
+	Currency string       `json:"currency"`
+	Address  keys.Address `json:"address"`
+}
+type CurrencyBalanceReply struct {
+	Currency string `json:"currency"`
+	Balance  string `json:"balance"`
+	// The height when this balance was recorded
+	Height int64 `json:"height"`
 }
