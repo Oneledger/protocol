@@ -1,7 +1,9 @@
 package ons
 
 import (
+	"errors"
 	"regexp"
+	"strings"
 )
 
 const (
@@ -39,6 +41,14 @@ func (n Name) IsValid() bool {
 
 func (n Name) IsSub() bool {
 	return subpattern.Match([]byte(n.String()))
+}
+
+func (n Name) GetParentName() (Name, error) {
+	if !n.IsSub() {
+		return "", errors.New("this is not a sub domain name")
+	}
+	ar := strings.Split(n.String(), ".")
+	return GetNameFromString(ar[len(ar)-2] + "." + ar[len(ar)-1]), nil
 }
 
 func (n Name) toKey() []byte {

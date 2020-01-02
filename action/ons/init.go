@@ -7,11 +7,6 @@ import (
 	"github.com/Oneledger/protocol/serialize"
 )
 
-const (
-	CREATE_PRICE     = 100
-	CREATE_SUB_PRICE = 50
-)
-
 var (
 	ErrInvalidDomain = errors.New("invalid domain name")
 )

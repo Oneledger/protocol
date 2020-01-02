@@ -50,7 +50,7 @@ func (c *ServiceClient) NodeID(req NodeIDRequest) (out NodeIDReply, err error) {
 	return
 }
 
-func (c *ServiceClient) SendTx(req SendTxRequest) (out SendTxReply, err error) {
+func (c *ServiceClient) SendTx(req SendTxRequest) (out CreateTxReply, err error) {
 	err = c.Call("tx.SendTx", req, &out)
 	return
 }
@@ -86,29 +86,29 @@ func (c *ServiceClient) WithdrawReward(req WithdrawRewardRequest) (out WithdrawR
 }
 
 /* ONS */
-func (c *ServiceClient) ONS_CreateRawCreate(req ONSCreateRequest) (out SendTxReply, err error) {
+func (c *ServiceClient) ONS_CreateRawCreate(req ONSCreateRequest) (out CreateTxReply, err error) {
 	err = c.Call("tx.ONS_CreateRawCreate", req, &out)
 	return
 }
-func (c *ServiceClient) ONS_CreateRawUpdate(req ONSUpdateRequest) (out SendTxReply, err error) {
+func (c *ServiceClient) ONS_CreateRawUpdate(req ONSUpdateRequest) (out CreateTxReply, err error) {
 	err = c.Call("tx.ONS_CreateRawUpdate", req, &out)
 	return
 }
-func (c *ServiceClient) ONS_CreateRawSale(req ONSSaleRequest) (out SendTxReply, err error) {
+func (c *ServiceClient) ONS_CreateRawSale(req ONSSaleRequest) (out CreateTxReply, err error) {
 	err = c.Call("tx.ONS_CreateRawSale", req, &out)
 	return
 }
-func (c *ServiceClient) ONS_CreateRawBuy(req ONSPurchaseRequest) (out SendTxReply, err error) {
+func (c *ServiceClient) ONS_CreateRawBuy(req ONSPurchaseRequest) (out CreateTxReply, err error) {
 	err = c.Call("tx.ONS_CreateRawBuy", req, &out)
 	return
 }
 
-func (c *ServiceClient) ONS_CreateRawSend(req ONSSendRequest) (out SendTxReply, err error) {
+func (c *ServiceClient) ONS_CreateRawSend(req ONSSendRequest) (out CreateTxReply, err error) {
 	err = c.Call("tx.ONS_CreateRawSend", req, &out)
 	return
 }
 
-func (c *ServiceClient) CreateRawSend(req SendTxRequest) (out *SendTxReply, err error) {
+func (c *ServiceClient) CreateRawSend(req SendTxRequest) (out *CreateTxReply, err error) {
 	err = c.Call("tx.CreateRawSend", req, &out)
 	return
 }

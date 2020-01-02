@@ -60,7 +60,6 @@ func setup() {
 		db := db2.NewDB("test", db2.MemDBBackend, "")
 		cs := storage.NewState(storage.NewChainState("test", db))
 
-
 		domain, err := ons.NewDomain(keys.Address("abcd"), nil, "name.ol", "", 22, "", 10)
 
 		fmt.Println(err)
@@ -86,7 +85,7 @@ func setup() {
 		feeOpt := &fees.FeeOption{FeeCurrency: olt, MinFeeDecimal: 9}
 		feePool.SetupOpt(feeOpt)
 
-		opt := &ons.Options{PerBlockFees: 50000, FirstLevelDomain: []string{"ol"}, BaseDomainPrice: olt.NewCoinFromUnit(1000000)}
+		opt := &ons.Options{PerBlockFees: 50000, FirstLevelDomains: []string{"ol"}, BaseDomainPrice: olt.NewCoinFromUnit(1000000)}
 
 		bs.AddToAddress(h1.Address(), olt.NewCoinFromInt(500))
 
@@ -136,25 +135,25 @@ func makeCreateRawTx(name ons.Name, amount balance.Amount, buyingPrice int64) ac
 	return rawTx
 }
 
-func makeUpdateRawTx(name ons.Name,extendPrice int64) (action.RawTx,error){
-	pubBen,_ ,err := keys.NewKeyPairFromTendermint()
+func makeUpdateRawTx(name ons.Name, extendPrice int64) (action.RawTx, error) {
+	pubBen, _, err := keys.NewKeyPairFromTendermint()
 	if err != nil {
-		return action.RawTx{},nil
+		return action.RawTx{}, nil
 	}
-	pubBenH,err := pubBen.GetHandler()
+	pubBenH, err := pubBen.GetHandler()
 	if err != nil {
-		return action.RawTx{},nil
+		return action.RawTx{}, nil
 	}
-    updateTx := DomainUpdate{
+	updateTx := DomainUpdate{
 		Owner:        h1.Address(),
 		Beneficiary:  pubBenH.Address(),
 		Name:         name,
 		Active:       false,
 		ExtendExpiry: extendPrice,
 	}
-	msg,err := json.Marshal(updateTx)
+	msg, err := json.Marshal(updateTx)
 	if err != nil {
-		return action.RawTx{},nil
+		return action.RawTx{}, nil
 	}
 	rawTx := action.RawTx{
 		Type: action.DOMAIN_UPDATE,
@@ -165,11 +164,11 @@ func makeUpdateRawTx(name ons.Name,extendPrice int64) (action.RawTx,error){
 		},
 		Memo: "testUpdate",
 	}
-	return rawTx,nil
-	
+	return rawTx, nil
+
 }
 
-func createTestCase(rawTx action.RawTx,t action.Type,testcaseType int) {
+func createTestCase(rawTx action.RawTx, t action.Type, testcaseType int) {
 	packet, err := serialize.GetSerializer(serialize.NETWORK).Serialize(rawTx)
 	if err != nil {
 		fmt.Println(err.Error())
@@ -190,18 +189,16 @@ func setupCreateDomain() {
 
 	price, _ := balance.NewAmountFromString(createPrice, 10)
 	rawTx := makeCreateRawTx("harshad.ol", *price, int64(500000000))
-    createTestCase(rawTx,action.DOMAIN_CREATE,create)
+	createTestCase(rawTx, action.DOMAIN_CREATE, create)
 }
 
-
 func setupUpdateDomain() {
-	rawTx,err := makeUpdateRawTx("harshad.ol",int64(800000000))
+	rawTx, err := makeUpdateRawTx("harshad.ol", int64(800000000))
 	if err != nil {
 		return
 	}
-	createTestCase(rawTx,action.DOMAIN_UPDATE,update)
+	createTestCase(rawTx, action.DOMAIN_UPDATE, update)
 }
-
 
 func init() {
 	setup()
@@ -211,17 +208,17 @@ func init() {
 
 func TestONSTx(t *testing.T) {
 
-	for i:=0; i < len(testCases); i++ {
+	for i := 0; i < len(testCases); i++ {
 		testCase := testCases[i]
 		t.Run("Testing case "+strconv.Itoa(i), func(t *testing.T) {
 			//Get handler
 			handler := router.Handler(testCase.txType)
-            fmt.Println("-----------------------------------------------------------")
+			fmt.Println("-----------------------------------------------------------")
 			//Call transaction Validate, Then assert response.
 			response, err := handler.Validate(testCase.ctx, testCase.signedTx)
 			assert.Equal(t, response, testCase.validateResp)
 			if err != nil {
-				fmt.Println("Validate",err.Error())
+				fmt.Println("Validate", err.Error())
 			}
 
 			//response, resp := handler.ProcessCheck(testCase.ctx, *testCase.tx)
@@ -230,15 +227,15 @@ func TestONSTx(t *testing.T) {
 
 			response, resp := handler.ProcessDeliver(testCase.ctx, *testCase.tx)
 			assert.Equal(t, response, testCase.deliverResp)
-			fmt.Println("ProcessDeliver :" , resp.Log)
+			fmt.Println("ProcessDeliver :", resp.Log)
 
-            ctx.State.Commit()
+			ctx.State.Commit()
 			//fmt.Println("height", hex.EncodeToString(ctx.State.RootHash()), ctx.State.Version())
 		})
 	}
 }
 
-func TestUpdate (t *testing.T)  {
+func TestUpdate(t *testing.T) {
 	testCase := testCases[0]
 
 	handler := router.Handler(testCase.txType)
@@ -261,7 +258,7 @@ func TestUpdate (t *testing.T)  {
 	fmt.Println("-----------------------------------------------------------------------------------------------------")
 	testCase = testCases[1]
 
-	ctx.Header.Height = ctx.State.Version()+1
+	ctx.Header.Height = ctx.State.Version() + 1
 	handler = router.Handler(testCase.txType)
 	//Call transaction Validate, Then assert response.
 	//t.Run("Testing case "+strconv.Itoa(1), func(t *testing.T) {

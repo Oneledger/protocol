@@ -15,14 +15,13 @@ import (
 	codes "github.com/Oneledger/protocol/status_codes"
 )
 
-func (s *Service) ONS_CreateRawCreate(args client.ONSCreateRequest, reply *client.SendTxReply) error {
+func (s *Service) ONS_CreateRawCreate(args client.ONSCreateRequest, reply *client.CreateTxReply) error {
 
 	name := ons2.GetNameFromString(args.Name)
 	domainCreate := ons.DomainCreate{
 		Owner:       args.Owner,
 		Beneficiary: args.Account,
 		Name:        name,
-		Price:       args.Price,
 		Uri:         args.Uri,
 		BuyingPrice: args.BuyingPrice,
 	}
@@ -46,23 +45,21 @@ func (s *Service) ONS_CreateRawCreate(args client.ONSCreateRequest, reply *clien
 		return codes.ErrSerialization
 	}
 
-	*reply = client.SendTxReply{
+	*reply = client.CreateTxReply{
 		RawTx: packet,
 	}
 
 	return nil
 }
 
-func (s *Service) ONS_CreateRawCreateSub(args client.ONSCreateSubRequest, reply *client.SendTxReply) error {
+func (s *Service) ONS_CreateRawCreateSub(args client.ONSCreateSubRequest, reply *client.CreateTxReply) error {
 
 	name := ons2.GetNameFromString(args.Name)
-	parent := ons2.GetNameFromString(args.Parent)
 	createSubDomain := ons.CreateSubDomain{
 		Owner:       args.Owner,
 		Beneficiary: args.Account,
 		Name:        name,
-		Parent:      parent,
-		Price:       args.Price,
+		BuyingPrice: args.BuyingPrice,
 	}
 
 	data, err := createSubDomain.Marshal()
@@ -84,22 +81,22 @@ func (s *Service) ONS_CreateRawCreateSub(args client.ONSCreateSubRequest, reply 
 		return codes.ErrSerialization
 	}
 
-	*reply = client.SendTxReply{
+	*reply = client.CreateTxReply{
 		RawTx: packet,
 	}
 
 	return nil
 }
 
-func (s *Service) ONS_CreateRawUpdate(args client.ONSUpdateRequest, reply *client.SendTxReply) error {
+func (s *Service) ONS_CreateRawUpdate(args client.ONSUpdateRequest, reply *client.CreateTxReply) error {
 
 	name := ons2.GetNameFromString(args.Name)
 	domainUpdate := ons.DomainUpdate{
-		Owner:        args.Owner,
-		Beneficiary:  args.Account,
-		Name:         name,
-		Active:       args.Active,
-		ExtendExpiry: args.ExtendExpiry,
+		Owner:       args.Owner,
+		Beneficiary: args.Account,
+		Name:        name,
+		Active:      args.Active,
+		Uri:         args.Uri,
 	}
 	data, err := domainUpdate.Marshal()
 	if err != nil {
@@ -122,20 +119,20 @@ func (s *Service) ONS_CreateRawUpdate(args client.ONSUpdateRequest, reply *clien
 		return codes.ErrSerialization
 	}
 
-	*reply = client.SendTxReply{
+	*reply = client.CreateTxReply{
 		RawTx: packet,
 	}
 
 	return nil
 }
 
-func (s *Service) ONS_CreateRawRenew(args client.ONSRenewRequest, reply *client.SendTxReply) error {
+func (s *Service) ONS_CreateRawRenew(args client.ONSRenewRequest, reply *client.CreateTxReply) error {
 
 	name := ons2.GetNameFromString(args.Name)
 	renewDomain := ons.RenewDomain{
-		Owner: args.Owner,
-		Name:  name,
-		Price: args.Price,
+		Owner:       args.Owner,
+		Name:        name,
+		BuyingPrice: args.BuyingPrice,
 	}
 	data, err := renewDomain.Marshal()
 	if err != nil {
@@ -158,18 +155,18 @@ func (s *Service) ONS_CreateRawRenew(args client.ONSRenewRequest, reply *client.
 		return codes.ErrSerialization
 	}
 
-	*reply = client.SendTxReply{
+	*reply = client.CreateTxReply{
 		RawTx: packet,
 	}
 
 	return nil
 }
 
-func (s *Service) ONS_CreateRawSale(args client.ONSSaleRequest, reply *client.SendTxReply) error {
+func (s *Service) ONS_CreateRawSale(args client.ONSSaleRequest, reply *client.CreateTxReply) error {
 
 	name := ons2.GetNameFromString(args.Name)
 	domainSale := ons.DomainSale{
-		DomainName:   name,
+		Name:         name,
 		OwnerAddress: args.OwnerAddress,
 		Price:        args.Price,
 		CancelSale:   args.CancelSale,
@@ -195,14 +192,14 @@ func (s *Service) ONS_CreateRawSale(args client.ONSSaleRequest, reply *client.Se
 		return codes.ErrSerialization
 	}
 
-	*reply = client.SendTxReply{
+	*reply = client.CreateTxReply{
 		RawTx: packet,
 	}
 
 	return nil
 }
 
-func (s *Service) ONS_CreateRawBuy(args client.ONSPurchaseRequest, reply *client.SendTxReply) error {
+func (s *Service) ONS_CreateRawBuy(args client.ONSPurchaseRequest, reply *client.CreateTxReply) error {
 
 	name := ons2.GetNameFromString(args.Name)
 	domainPurchase := ons.DomainPurchase{
@@ -232,14 +229,14 @@ func (s *Service) ONS_CreateRawBuy(args client.ONSPurchaseRequest, reply *client
 		return codes.ErrSerialization
 	}
 
-	*reply = client.SendTxReply{
+	*reply = client.CreateTxReply{
 		RawTx: packet,
 	}
 
 	return nil
 }
 
-func (s *Service) ONS_CreateRawSend(args client.ONSSendRequest, reply *client.SendTxReply) error {
+func (s *Service) ONS_CreateRawSend(args client.ONSSendRequest, reply *client.CreateTxReply) error {
 
 	name := ons2.GetNameFromString(args.Name)
 	domainSend := ons.DomainSend{
@@ -268,7 +265,7 @@ func (s *Service) ONS_CreateRawSend(args client.ONSSendRequest, reply *client.Se
 		return codes.ErrSerialization
 	}
 
-	*reply = client.SendTxReply{
+	*reply = client.CreateTxReply{
 		RawTx: packet,
 	}
 

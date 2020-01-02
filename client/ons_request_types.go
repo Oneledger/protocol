@@ -13,47 +13,45 @@ type ONSCreateRequest struct {
 	Owner       keys.Address  `json:"owner"`
 	Account     keys.Address  `json:"account"`
 	Name        string        `json:"name"`
-	Price       action.Amount `json:"price"`
 	Uri         string        `json:"uri"`
-	BuyingPrice int64         `json:"buying_price"`
+	BuyingPrice action.Amount `json:"buyingprice"`
 	GasPrice    action.Amount `json:"gasprice"`
 	Gas         int64         `json:"gas"`
 }
 
 type ONSCreateSubRequest struct {
-	Owner    keys.Address  `json:"owner"`
-	Account  keys.Address  `json:"account"`
-	Name     string        `json:"name"`
-	Parent   string        `json:"parent"`
-	Price    action.Amount `json:"price"`
-	GasPrice action.Amount `json:"gasprice"`
-	Gas      int64         `json:"gas"`
+	Owner       keys.Address  `json:"owner"`
+	Account     keys.Address  `json:"account"`
+	Name        string        `json:"name"`
+	BuyingPrice action.Amount `json:"buyingprice"`
+	GasPrice    action.Amount `json:"gasprice"`
+	Gas         int64         `json:"gas"`
 }
 
 type ONSUpdateRequest struct {
-	Owner        keys.Address  `json:"owner"`
-	Account      keys.Address  `json:"account"`
-	Name         string        `json:"name"`
-	Active       bool          `json:"active"`
-	ExtendExpiry int64         `json:"extend_expiry"`
-	GasPrice     action.Amount `json:"gasprice"`
-	Gas          int64         `json:"gas"`
-}
-
-type ONSRenewRequest struct {
 	Owner    keys.Address  `json:"owner"`
 	Account  keys.Address  `json:"account"`
 	Name     string        `json:"name"`
-	Price    action.Amount `json:"price"`
+	Active   bool          `json:"active"`
+	Uri      string        `json:"uri"`
 	GasPrice action.Amount `json:"gasprice"`
 	Gas      int64         `json:"gas"`
+}
+
+type ONSRenewRequest struct {
+	Owner       keys.Address  `json:"owner"`
+	Account     keys.Address  `json:"account"`
+	Name        string        `json:"name"`
+	BuyingPrice action.Amount `json:"buyingprice"`
+	GasPrice    action.Amount `json:"gasprice"`
+	Gas         int64         `json:"gas"`
 }
 
 type ONSSaleRequest struct {
 	Name         string        `json:"name"`
 	OwnerAddress keys.Address  `json:"owner"`
 	Price        action.Amount `json:"price"`
-	CancelSale   bool          `json:"cancel_sale"`
+	CancelSale   bool          `json:"cancelsale"`
 	GasPrice     action.Amount `json:"gasprice"`
 	Gas          int64         `json:"gas"`
 }
@@ -97,14 +95,3 @@ type ONSGetDomainsReply struct {
 type ONSGetDomainsOnSaleReply struct {
 	Domains []ons.Domain `json:"domains"`
 }
-
-//type DomainData struct {
-//	Name             string       `json:"name"`
-//	OwnerAddress     keys.Address `json:"owner_address"`
-//	AccountAddress   keys.Address `json:"account_address"`
-//	CreationHeight   int64        `json:"creation_height"`
-//	LastUpdateHeight int64        `json:"lastUpdate_height"`
-//	ActiveFlag       bool         `json:"active_flag"`
-//	OnSaleFlag       bool         `json:"onSale_flag"`
-//	SalePrice        balance.Coin `json:"sale_price"`
-//}

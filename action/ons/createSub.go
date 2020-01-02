@@ -1,14 +1,16 @@
 package ons
 
 import (
+	"bytes"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
 
-	"github.com/Oneledger/protocol/action"
-	"github.com/Oneledger/protocol/data/ons"
 	"github.com/pkg/errors"
 	"github.com/tendermint/tendermint/libs/common"
+
+	"github.com/Oneledger/protocol/action"
+	"github.com/Oneledger/protocol/data/ons"
 )
 
 var _ Ons = &CreateSubDomain{}
@@ -23,11 +25,10 @@ type CreateSubDomain struct {
 	//Name of New Sub domain
 	Name ons.Name `json:"name"`
 
-	//Name of Parent domain
-	Parent ons.Name `json:"parent"`
-
 	//Amount paid for the Sub Domain
-	Price action.Amount `json:"price"`
+	BuyingPrice action.Amount `json:"price"`
+
+	Uri string `json:"uri"`
 }
 
 func (c CreateSubDomain) Signers() []action.Address {
@@ -71,10 +72,6 @@ var _ action.Tx = CreateSubDomainTx{}
 type CreateSubDomainTx struct {
 }
 
-func makeSubDomainKey(parent ons.Name, subDomain ons.Name) ons.Name {
-	return parent + "_" + subDomain
-}
-
 func (crSubD CreateSubDomainTx) Validate(ctx *action.Context, signedTx action.SignedTx) (bool, error) {
 	createSub := &CreateSubDomain{}
 	err := createSub.Unmarshal(signedTx.Data)
@@ -98,72 +95,44 @@ func (crSubD CreateSubDomainTx) Validate(ctx *action.Context, signedTx action.Si
 		return false, action.ErrMissingData
 	}
 
-	if !createSub.Price.IsValid(ctx.Currencies) || createSub.Price.Currency != "OLT" {
-		return false, action.ErrInvalidFeeCurrency
+	if !createSub.Name.IsValid() {
+		return false, ErrInvalidDomain
 	}
 
-	coin := createSub.Price.ToCoin(ctx.Currencies)
-	if coin.LessThanCoin(coin.Currency.NewCoinFromInt(CREATE_SUB_PRICE)) {
+	c, _ := ctx.Currencies.GetCurrencyById(0)
+	if c.Name != createSub.BuyingPrice.Currency {
+		return false, errors.Wrap(action.ErrInvalidAmount, createSub.BuyingPrice.String())
+	}
+
+	coin := createSub.BuyingPrice.ToCoin(ctx.Currencies)
+	if coin.LessThanEqualCoin(coin.Currency.NewCoinFromAmount(ctx.Domains.GetOptions().BaseDomainPrice)) {
 		return false, action.ErrNotEnoughFund
 	}
-
 	return true, nil
 }
 
 func (crSubD CreateSubDomainTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
-	createSub := &CreateSubDomain{}
-	err := createSub.Unmarshal(tx.Data)
-	if err != nil {
-		return false, action.Response{Log: err.Error()}
-	}
-
-	//Check if Parent exists in Domain Store
-	if !ctx.Domains.Exists(createSub.Parent) {
-		return false, action.Response{Log: "Parent domain doesn't exist, cannot create sub domain!"}
-	}
-
-	//Create Sub Domain Key for Domain Store. Then Check to see if it already exists.
-	if ctx.Domains.Exists(makeSubDomainKey(createSub.Parent, createSub.Name)) {
-		return false, action.Response{Log: fmt.Sprintf("sub domain already exist: %s", createSub.Name)}
-	}
-
-	//Deduct Price from Owner
-	price := createSub.Price.ToCoin(ctx.Currencies)
-	err = ctx.Balances.MinusFromAddress(createSub.Owner, price)
-	if err != nil {
-		return false, action.Response{Log: errors.Wrap(err, hex.EncodeToString(createSub.Owner)).Error()}
-	}
-
-	//Add Price to the Fee Pool
-	err = ctx.FeePool.AddToPool(price)
-	if err != nil {
-		return false, action.Response{Log: err.Error()}
-	}
-	result := action.Response{Tags: createSub.Tags()}
-
-	return true, result
+	return runCreateSub(ctx, tx)
 }
 
 func (crSubD CreateSubDomainTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
+
+	return runCreateSub(ctx, tx)
+}
+
+func (crSubD CreateSubDomainTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas) (bool, action.Response) {
+	return action.BasicFeeHandling(ctx, signedTx, start, size, 1)
+}
+
+func runCreateSub(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	createSub := &CreateSubDomain{}
 	err := createSub.Unmarshal(tx.Data)
 	if err != nil {
 		return false, action.Response{Log: err.Error()}
 	}
 
-	//Check if Parent exists in Domain Store
-	if !ctx.Domains.Exists(createSub.Parent) {
-		return false, action.Response{Log: "Parent domain doesn't exist, cannot create sub domain!"}
-	}
-
-	//Create Sub Domain Key for Domain Store. Then Check to see if it already exists.
-	subDomain := makeSubDomainKey(createSub.Parent, createSub.Name)
-	if ctx.Domains.Exists(subDomain) {
-		return false, action.Response{Log: fmt.Sprintf("sub domain already exist: %s", createSub.Name)}
-	}
-
 	//Deduct Price from Owner
-	price := createSub.Price.ToCoin(ctx.Currencies)
+	price := createSub.BuyingPrice.ToCoin(ctx.Currencies)
 	err = ctx.Balances.MinusFromAddress(createSub.Owner, price)
 	if err != nil {
 		return false, action.Response{Log: errors.Wrap(err, hex.EncodeToString(createSub.Owner)).Error()}
@@ -175,20 +144,55 @@ func (crSubD CreateSubDomainTx) ProcessDeliver(ctx *action.Context, tx action.Ra
 		return false, action.Response{Log: err.Error()}
 	}
 
-	parent, err := ctx.Domains.Get(createSub.Parent)
+	if createSub.Name.IsSub() {
+		return false, action.Response{Log: "invalid sub domain name"}
+	}
+	parentName, err := createSub.Name.GetParentName()
 	if err != nil {
+		return false, action.Response{Log: err.Error()}
+	}
+	parent, err := ctx.Domains.Get(parentName)
+	//Check if Parent exists in Domain Store
+	if err != nil {
+		return false, action.Response{Log: "Parent domain doesn't exist, cannot create sub domain!"}
+	}
+	if !bytes.Equal(parent.OwnerAddress, createSub.Owner) {
+		return false, action.Response{Log: "parent domain not owned"}
+	}
+
+	//Create Sub Domain Key for Domain Store. Then Check to see if it already exists.
+	if ctx.Domains.Exists(createSub.Name) {
+		return false, action.Response{Log: fmt.Sprintf("sub domain already exist: %s", createSub.Name)}
+	}
+
+	opt := ctx.Domains.GetOptions()
+
+	if createSub.BuyingPrice.Value.BigInt().Cmp(opt.BaseDomainPrice.BigInt()) < 0 {
+		return false, action.Response{Log: action.ErrInvalidAmount.Error()}
+	}
+
+	ok := verifyDomainName(createSub.Name, opt)
+	if !ok {
 		return false, action.Response{
-			Log: "Unable to get parent domain",
+			Log: ErrInvalidDomain.Error(),
+		}
+	}
+	if len(createSub.Uri) > 0 {
+		ok = opt.IsValidURI(createSub.Uri)
+		if !ok {
+			return false, action.Response{
+				Log: "invalid uri provided",
+			}
 		}
 	}
 	//TODO: Need to get fields from Parent domain to populate the sub domain. URI, Expiry height, etc.
 	domain, err := ons.NewDomain(
 		createSub.Owner,
 		createSub.Beneficiary,
-		subDomain.String(),
-		createSub.Parent.String(),
+		createSub.Name.String(),
+		parentName.String(),
 		ctx.Header.Height,
-		"",
+		createSub.Uri,
 		parent.Expiry,
 	)
 
@@ -202,15 +206,8 @@ func (crSubD CreateSubDomainTx) ProcessDeliver(ctx *action.Context, tx action.Ra
 		return false, action.Response{Log: err.Error()}
 	}
 
-	ctx.Logger.Error(domain)
-	ctx.Logger.Error(ctx.Domains.Get(domain.Name))
 	result := action.Response{
 		Tags: createSub.Tags(),
 	}
-
 	return true, result
-}
-
-func (crSubD CreateSubDomainTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas) (bool, action.Response) {
-	return action.BasicFeeHandling(ctx, signedTx, start, size, 1)
 }

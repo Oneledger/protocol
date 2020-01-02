@@ -51,7 +51,7 @@ func NewService(
 // SendTx exists for maintaining backwards compatibility with existing olclient implementations. It returns
 // a signed transaction
 // TODO: deprecate this
-func (svc *Service) SendTx(args client.SendTxRequest, reply *client.SendTxReply) error {
+func (svc *Service) SendTx(args client.SendTxRequest, reply *client.CreateTxReply) error {
 	send := transfer.Send{
 		From:   keys.Address(args.From),
 		To:     keys.Address(args.To),
@@ -91,14 +91,14 @@ func (svc *Service) SendTx(args client.SendTxRequest, reply *client.SendTxReply)
 		return codes.ErrSerialization
 	}
 
-	*reply = client.SendTxReply{
+	*reply = client.CreateTxReply{
 		RawTx: packet,
 	}
 
 	return nil
 }
 
-func (svc *Service) CreateRawSend(args client.SendTxRequest, reply *client.SendTxReply) error {
+func (svc *Service) CreateRawSend(args client.SendTxRequest, reply *client.CreateTxReply) error {
 	send := transfer.Send{
 		From:   args.From,
 		To:     args.To,
@@ -126,7 +126,7 @@ func (svc *Service) CreateRawSend(args client.SendTxRequest, reply *client.SendT
 		return codes.ErrSerialization
 	}
 
-	*reply = client.SendTxReply{
+	*reply = client.CreateTxReply{
 		RawTx: packet,
 	}
 

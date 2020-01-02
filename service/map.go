@@ -53,7 +53,7 @@ func NewMap(ctx *Context) (Map, error) {
 	bcct := bitcoin2.GetBlockCypherChainType(ctx.Cfg.ChainDriver.BitcoinChainType)
 
 	defaultMap := Map{
-		broadcast.Name(): broadcast.NewService(ctx.Services, ctx.Router, ctx.Currencies, ctx.FeePool, ctx.Logger, ctx.Trackers, ctx.Cfg.ChainDriver.BlockCypherToken, bcct),
+		broadcast.Name(): broadcast.NewService(ctx.Services, ctx.Router, ctx.Currencies, ctx.FeePool, ctx.Domains, ctx.Logger, ctx.Trackers, ctx.Cfg.ChainDriver.BlockCypherToken, bcct),
 		nodesvc.Name():   nodesvc.NewService(ctx.NodeContext, &ctx.Cfg, ctx.Logger),
 		owner.Name():     owner.NewService(ctx.Accounts, ctx.Logger),
 		query.Name():     query.NewService(ctx.Services, ctx.Balances, ctx.Currencies, ctx.ValidatorSet, ctx.Domains, ctx.Logger),

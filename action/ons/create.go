@@ -4,13 +4,13 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"net/url"
-	"strings"
+	"math/big"
 
 	"github.com/pkg/errors"
 	"github.com/tendermint/tendermint/libs/common"
 
 	"github.com/Oneledger/protocol/action"
+	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/ons"
 )
 
@@ -20,9 +20,8 @@ type DomainCreate struct {
 	Owner       action.Address `json:"owner"`
 	Beneficiary action.Address `json:"account"`
 	Name        ons.Name       `json:"name"`
-	Price       action.Amount  `json:"price"`
 	Uri         string         `json:"uri"`
-	BuyingPrice int64          `json:"buying_price"`
+	BuyingPrice action.Amount  `json:"buyingprice"`
 }
 
 func (dc DomainCreate) Marshal() ([]byte, error) {
@@ -88,12 +87,17 @@ func (domainCreateTx) Validate(ctx *action.Context, tx action.SignedTx) (bool, e
 		return false, action.ErrMissingData
 	}
 
-	if !create.Price.IsValid(ctx.Currencies) || create.Price.Currency != "olt" {
-		return false, action.ErrInvalidAmount
+	if !create.Name.IsValid() {
+		return false, ErrInvalidDomain
+	}
+	c, _ := ctx.Currencies.GetCurrencyById(0)
+	if c.Name != create.BuyingPrice.Currency {
+		fmt.Println(c, create)
+		return false, errors.Wrap(action.ErrInvalidAmount, create.BuyingPrice.String())
 	}
 
-	coin := create.Price.ToCoin(ctx.Currencies)
-	if coin.LessThanEqualCoin(coin.Currency.NewCoinFromInt(CREATE_PRICE)) {
+	coin := create.BuyingPrice.ToCoin(ctx.Currencies)
+	if coin.LessThanEqualCoin(coin.Currency.NewCoinFromAmount(ctx.Domains.GetOptions().BaseDomainPrice)) {
 		return false, action.ErrNotEnoughFund
 	}
 
@@ -125,7 +129,7 @@ func runCreate(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 		return false, action.Response{Log: fmt.Sprintf("domain already exist: %s", create.Name)}
 	}
 
-	price := create.Price.ToCoin(ctx.Currencies)
+	price := create.BuyingPrice.ToCoin(ctx.Currencies)
 	err = ctx.Balances.MinusFromAddress(create.Owner.Bytes(), price)
 	if err != nil {
 		return false, action.Response{Log: errors.Wrap(err, hex.EncodeToString(create.Owner)).Error()}
@@ -138,23 +142,27 @@ func runCreate(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 
 	opt := ctx.Domains.GetOptions()
 
-	expiry, err := calculateExpiry(create.BuyingPrice, opt.BaseDomainPrice.Amount.BigInt().Int64(), opt.PerBlockFees)
+	expiry, err := calculateExpiry(&create.BuyingPrice.Value, &opt.BaseDomainPrice, &opt.PerBlockFees)
 	if err != nil {
 		return false, action.Response{
 			Log: "Unable to calculate Expiry" + err.Error(),
 		}
 	}
 
-	err = verifyDomainName(create.Name, opt.FirstLevelDomain)
-	if err != nil {
+	ok := verifyDomainName(create.Name, opt)
+	if !ok {
 		return false, action.Response{
-			Log: err.Error(),
+			Log: ErrInvalidDomain.Error(),
 		}
 	}
-	err = parseUrl(create.Uri)
-	if err != nil {
-		return false, action.Response{
-			Log: err.Error(),
+
+	if len(create.Uri) > 0 {
+
+		ok = opt.IsValidURI(create.Uri)
+		if !ok {
+			return false, action.Response{
+				Log: "invalid uri provided",
+			}
 		}
 	}
 
@@ -165,7 +173,7 @@ func runCreate(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 		"",
 		ctx.Header.Height,
 		create.Uri,
-		expiry,
+		ctx.State.Version()+expiry,
 	)
 	if err != nil {
 		return false, action.Response{Log: err.Error()}
@@ -184,34 +192,14 @@ func runCreate(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 
 }
 
-func calculateExpiry(buyingPrice int64, basePrice int64, pricePerBlock int64) (int64, error) {
-	if buyingPrice < basePrice {
+func calculateExpiry(buyingPrice *balance.Amount, basePrice *balance.Amount, pricePerBlock *balance.Amount) (int64, error) {
+	if buyingPrice.BigInt().Cmp(basePrice.BigInt()) < 0 {
 		return 0, errors.New("Buying price too less")
 	}
-	return (buyingPrice - basePrice) / pricePerBlock, nil
+	remain := big.NewInt(0).Sub(buyingPrice.BigInt(), basePrice.BigInt())
+	return big.NewInt(0).Div(remain, pricePerBlock.BigInt()).Int64(), nil
 }
 
-func verifyDomainName(name ons.Name, firstlevelDomain []string) error {
-
-	firstlevelMap := make(map[string]bool)
-	for i := 0; i < len(firstlevelDomain); i++ {
-		firstlevelMap[firstlevelDomain[i]] = true
-	}
-	nameAr := strings.Split(name.String(), ".")
-	if !firstlevelMap[nameAr[len(nameAr)-1]] {
-		return errors.New("First level domain does is not allowed")
-	}
-	return nil
-}
-
-func parseUrl(uri string) error {
-	u, err := url.Parse(uri)
-	if err != nil {
-		return err
-	}
-	validProtocol := map[string]bool{"http": true, "ipfs": true, "ftp": true}
-	if !validProtocol[u.Scheme] {
-		return errors.New("Protocol not recognised")
-	}
-	return nil
+func verifyDomainName(name ons.Name, feeOpt *ons.Options) bool {
+	return feeOpt.IsNameAllowed(name) && name.IsValid()
 }

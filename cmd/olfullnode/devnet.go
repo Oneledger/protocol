@@ -320,10 +320,14 @@ func runDevnet(_ *cobra.Command, _ []string) error {
 			return errors.Wrap(err, "failed to deploy the initial eth contract")
 		}
 	}
+
+	perblock, _ := big.NewInt(0).SetString("100000000000000", 10)
+	baseDomainPrice, _ := big.NewInt(0).SetString("1000000000000000000000", 10)
 	onsOp := &ons.Options{
-		PerBlockFees:     1,
-		FirstLevelDomain: []string{"ol"},
-		BaseDomainPrice:  balance.Coin{},
+		Currency:          "OLT",
+		PerBlockFees:      *balance.NewAmountFromBigInt(perblock),
+		FirstLevelDomains: []string{"ol"},
+		BaseDomainPrice:   *balance.NewAmountFromBigInt(baseDomainPrice),
 	}
 	states := initialState(args, nodeList, *cdo, *onsOp)
 

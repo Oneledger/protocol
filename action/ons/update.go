@@ -16,11 +16,11 @@ import (
 var _ Ons = &DomainUpdate{}
 
 type DomainUpdate struct {
-	Owner        action.Address `json:"owner"`
-	Beneficiary  action.Address `json:"account"`
-	Name         ons.Name       `json:"name"`
-	Active       bool           `json:"active"`
-	ExtendExpiry int64          `json:"extend_expiry"`
+	Owner       action.Address `json:"owner"`
+	Beneficiary action.Address `json:"account"`
+	Name        ons.Name       `json:"name"`
+	Active      bool           `json:"active"`
+	Uri         string         `json:"uri"`
 }
 
 func (du DomainUpdate) Marshal() ([]byte, error) {
@@ -85,6 +85,10 @@ func (domainUpdateTx) Validate(ctx *action.Context, tx action.SignedTx) (bool, e
 		return false, action.ErrMissingData
 	}
 
+	if !update.Name.IsValid() {
+		return false, ErrInvalidDomain
+	}
+
 	if update.Active == false && update.Beneficiary == nil {
 		return false, action.ErrMissingData
 	}
@@ -127,7 +131,6 @@ func runUpdate(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 		return false, action.Response{Log: fmt.Sprintf("domain is not owned by: %s", hex.EncodeToString(update.Owner))}
 	}
 
-	d.AddToExpire(extendExpiry(update.ExtendExpiry, ctx.Domains.GetOptions().PerBlockFees))
 	d.SetAccountAddress(update.Beneficiary)
 	if update.Active {
 		d.Activate()
@@ -135,14 +138,19 @@ func runUpdate(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 		d.Deactivate()
 	}
 	d.SetLastUpdatedHeight(ctx.Header.Height)
+	opt := ctx.Domains.GetOptions()
+	if len(update.Uri) > 0 {
+		ok := opt.IsValidURI(update.Uri)
+		if !ok {
+			return false, action.Response{
+				Log: "invalid uri provided",
+			}
+		}
+	}
 
 	err = ctx.Domains.Set(d)
 	if err != nil {
 		return false, action.Response{Log: err.Error()}
 	}
 	return true, action.Response{Tags: update.Tags()}
-}
-
-func extendExpiry(amountPaid int64, pricePerBlock int64) int64 {
-	return amountPaid / pricePerBlock
 }

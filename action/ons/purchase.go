@@ -90,8 +90,17 @@ func (domainPurchaseTx) Validate(ctx *action.Context, tx action.SignedTx) (bool,
 		return false, action.ErrMissingData
 	}
 
-	if buy.Offering.Value.BigInt().Cmp(big.NewInt(ctx.Domains.GetOptions().PerBlockFees)) < 0 {
-		return false, action.ErrInvalidAmount
+	if !buy.Name.IsValid() {
+		return false, ErrInvalidDomain
+	}
+
+	if c.Name != buy.Offering.Currency {
+		return false, errors.Wrap(action.ErrInvalidAmount, buy.Offering.String())
+	}
+
+	coin := buy.Offering.ToCoin(ctx.Currencies)
+	if coin.LessThanEqualCoin(coin.Currency.NewCoinFromAmount(ctx.Domains.GetOptions().PerBlockFees)) {
+		return false, action.ErrNotEnoughFund
 	}
 
 	return true, nil
@@ -154,7 +163,8 @@ func runPurchaseDomain(ctx *action.Context, tx action.RawTx) (bool, action.Respo
 		}
 	}
 
-	blocks := remain.DivideInt64(ctx.Domains.GetOptions().PerBlockFees).Amount.BigInt().Int64()
+	opt := ctx.Domains.GetOptions()
+	extend := big.NewInt(0).Div(remain.Amount.BigInt(), opt.PerBlockFees.BigInt()).Int64()
 
 	err = ctx.Balances.MinusFromAddress(buy.Buyer, remain)
 	if err != nil {
@@ -166,7 +176,7 @@ func runPurchaseDomain(ctx *action.Context, tx action.RawTx) (bool, action.Respo
 		return false, action.Response{Log: "error adding domain purchase: " + err.Error()}
 	}
 
-	domain.ResetAfterSale(buy.Buyer, blocks, ctx.State.Version())
+	domain.ResetAfterSale(buy.Buyer, extend, ctx.State.Version())
 
 	err = ctx.Domains.Set(domain)
 	if err != nil {

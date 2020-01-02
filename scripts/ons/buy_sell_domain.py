@@ -45,7 +45,7 @@ def create_domain(name, owner_hex, price):
         "name": name,
         "owner": owner_hex,
         "account": owner_hex,
-        "price": {
+        "buyingprice": {
             "currency": "OLT",
             "value": converBigInt(price),
         },
@@ -101,7 +101,7 @@ def cancel_sell_domain(name, owner_hex, price):
             "currency": "OLT",
             "value": converBigInt(price),
         },
-        "cancel_sale": True,
+        "cancelsale": True,
         "gasprice": {
             "currency": "OLT",
             "value": "1000000000",
@@ -190,15 +190,15 @@ if __name__ == "__main__":
     result = new_account('charlie')
     print result
 
-
+    name = "bob2.ol"
     addrs = addresses()
 
     print addrs
 
-    create_price = (int("1002345")*10**14)
+    create_price = (int("10002345")*10**14)
     print "create price:", create_price
 
-    raw_txn = create_domain("bob2.olt", addrs[0], create_price)
+    raw_txn = create_domain(name, addrs[0], create_price)
     print raw_txn
 
     signed = sign(raw_txn, addrs[0])
@@ -213,7 +213,7 @@ if __name__ == "__main__":
 
     sell_price = (int("105432")*10**14)
 
-    raw_txn = send_domain("bob2.olt", addrs[0], (int("100")*10**18))
+    raw_txn = send_domain(name, addrs[0], (int("100")*10**18))
     print raw_txn
 
     signed = sign(raw_txn, addrs[0])
@@ -226,7 +226,7 @@ if __name__ == "__main__":
           "##"
     print
     time.sleep(2)
-    raw_txn = sell_domain("bob2.olt", addrs[0], sell_price)
+    raw_txn = sell_domain(name, addrs[0], sell_price)
     print raw_txn
     print
 
@@ -253,7 +253,7 @@ if __name__ == "__main__":
 
     print bcolors.WARNING + "*** Buying domain ***" + bcolors.ENDC
 
-    raw_txn = buy_domain('bob2.olt', addrs[3], (int("20")*10**18))
+    raw_txn = buy_domain(name, addrs[3], (int("20")*10**18))
     print addrs[3]
     print addrs
     signed = sign(raw_txn, addrs[3])
@@ -267,7 +267,7 @@ if __name__ == "__main__":
 
 
     print bcolors.WARNING + "*** Putting Domain on sale ***" + bcolors.ENDC
-    raw_txn = sell_domain("bob2.olt", addrs[3], (int("993242")*10**14))
+    raw_txn = sell_domain(name, addrs[3], (int("993242")*10**14))
     print raw_txn
     print
 

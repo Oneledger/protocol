@@ -120,48 +120,20 @@ func (domainSendTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (bool, ac
 
 	ctx.Logger.Debug("Processing Send to Domain Transaction for CheckTx", tx)
 
-	send := &DomainSend{}
-	err := send.Unmarshal(tx.Data)
-	if err != nil {
-		return false, action.Response{Log: err.Error()}
-	}
-
-	// validate amount and get coin representation
-	if !send.Amount.IsValid(ctx.Currencies) {
-		log := fmt.Sprint("amount is invalid", send.Amount, ctx.Currencies)
-		return false, action.Response{Log: log}
-	}
-	coin := send.Amount.ToCoin(ctx.Currencies)
-
-	domain, err := ctx.Domains.Get(send.DomainName)
-	if err != nil {
-		log := fmt.Sprint("error getting domain:", err)
-		return false, action.Response{Log: log}
-	}
-	if !domain.ActiveFlag {
-		log := fmt.Sprint("domain inactive")
-		return false, action.Response{Log: log}
-	}
-	if len(domain.Beneficiary) == 0 {
-		log := fmt.Sprint("domain account address not set")
-		return false, action.Response{Log: log}
-	}
-	to := domain.Beneficiary
-
-	err = ctx.Balances.MinusFromAddress(send.From.Bytes(), coin)
-	if err != nil {
-		return false, action.Response{Log: "failed to debit balance of sender"}
-	}
-
-	err = ctx.Balances.AddToAddress(to.Bytes(), coin)
-	if err != nil {
-		return false, action.Response{Log: "failed to credit balance of domain address"}
-	}
-
-	return true, action.Response{Tags: send.Tags()}
+	return runDomainSend(ctx, tx)
 }
 
 func (domainSendTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
+	ctx.Logger.Debug("Processing Send to Domain Transaction for DeliverTx", tx)
+
+	return runDomainSend(ctx, tx)
+}
+
+func (domainSendTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas) (bool, action.Response) {
+	return action.BasicFeeHandling(ctx, signedTx, start, size, 1)
+}
+
+func runDomainSend(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	ctx.Logger.Debug("Processing Send to Domain Transaction for DeliverTx", tx)
 
 	send := &DomainSend{}
@@ -203,8 +175,4 @@ func (domainSendTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, 
 	}
 
 	return true, action.Response{Tags: send.Tags(), Info: to.String()}
-}
-
-func (domainSendTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas) (bool, action.Response) {
-	return action.BasicFeeHandling(ctx, signedTx, start, size, 1)
 }
