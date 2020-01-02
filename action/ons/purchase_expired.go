@@ -159,11 +159,10 @@ func processDomainExpiredPurchase(ctx *action.Context, tx action.RawTx) (bool, a
 		return false, action.Response{Log: "error saving domain: " + err.Error()}
 	}
 
-	err = ctx.Domains.DeleteSubdomains(domain.Name)
+	err = ctx.Domains.DeleteAllSubdomains(domain.Name)
 	if err != nil {
 		return false, action.Response{Log: "error deleting subdomains in domain purchase" + err.Error()}
 	}
 
 	return true, action.Response{Tags: buy.Tags()}
-
 }

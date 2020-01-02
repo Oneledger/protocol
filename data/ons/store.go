@@ -118,7 +118,35 @@ func (ds *DomainStore) IterateSubDomain(parentName Name, fn func(name Name, doma
 	)
 }
 
-func (ds *DomainStore) DeleteSubdomains(name Name) error {
+func (ds *DomainStore) DeleteAllSubdomains(name Name) error {
+
+	subdomainNames := make([]Name, 0, 20)
+	ds.IterateSubDomain(name, func(name Name, domain *Domain) bool {
+		subdomainNames = append(subdomainNames, domain.Name)
+		return true
+	})
+
+	for _, name := range subdomainNames {
+		prefixed := append(ds.prefix, name.toKey()...)
+		_, err := ds.State.Delete(prefixed)
+		if err != nil {
+			return err
+		}
+	}
 
 	return nil
+}
+
+func (ds *DomainStore) DeleteASubdomain(subdomainName Name) error {
+	domain, err := ds.Get(subdomainName)
+	if err != nil {
+		return err
+	}
+
+	if domain.Parent.String() == "" {
+		return errors.New("not a subdomain")
+	}
+
+	_, err = ds.State.Delete(subdomainName.toKey())
+	return err
 }
