@@ -134,7 +134,7 @@ func (st *Store) MinusFromAddress(addr keys.Address, coin Coin) error {
 	fmt.Println("minus from", addr.String())
 	newCoin, err := base.Minus(coin)
 	if err != nil {
-		return errors.Wrap(err, "minus from address")
+		return errors.Wrap(err, "minus from address"+addr.String())
 	}
 
 	return st.set(key, *newCoin.Amount)

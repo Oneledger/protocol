@@ -25,7 +25,6 @@ type Context struct {
 	Domains              *ons.DomainStore
 	FeePool              *fees.Store
 	Currencies           *balance.CurrencySet
-	FeeOpt               *fees.FeeOption
 	Validators           *identity.ValidatorStore
 	BTCTrackers          *bitcoin.TrackerStore
 	ETHTrackers          *ethereum.TrackerStore
@@ -35,17 +34,16 @@ type Context struct {
 	BTCChainType         *chaincfg.Params
 	BlockCypherToken     string
 	BlockCypherChainType string
-	OnsOptions           *ons.Options
 }
 
 func NewContext(r Router, header *abci.Header, state *storage.State,
 	wallet accounts.Wallet, balances *balance.Store,
-	currencies *balance.CurrencySet, feeOpt *fees.FeeOption, feePool *fees.Store,
+	currencies *balance.CurrencySet, feePool *fees.Store,
 	validators *identity.ValidatorStore, domains *ons.DomainStore,
 	btcTrackers *bitcoin.TrackerStore, ethTrackers *ethereum.TrackerStore,
 	jobStore *jobs.JobStore, btcChainType *chaincfg.Params, lockScriptStore *bitcoin.LockScriptStore,
 	blockCypherToken, blockCypherChainType string,
-	logger *log.Logger, onsOptions *ons.Options) *Context {
+	logger *log.Logger) *Context {
 
 	return &Context{
 		Router:          r,
@@ -56,7 +54,6 @@ func NewContext(r Router, header *abci.Header, state *storage.State,
 		Domains:         domains,
 		FeePool:         feePool,
 		Currencies:      currencies,
-		FeeOpt:          feeOpt,
 		Validators:      validators,
 		BTCTrackers:     btcTrackers,
 		ETHTrackers:     ethTrackers,
@@ -67,6 +64,5 @@ func NewContext(r Router, header *abci.Header, state *storage.State,
 
 		BlockCypherToken:     blockCypherToken,
 		BlockCypherChainType: blockCypherChainType,
-		OnsOptions:           onsOptions,
 	}
 }

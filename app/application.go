@@ -138,14 +138,13 @@ func (app *App) setupState(stateBytes []byte) error {
 			return errors.Wrapf(err, "failed to register currency %s", currency.Name)
 		}
 	}
-	app.Context.feeOption.FeeCurrency = initial.FeeOption.FeeCurrency
-	app.Context.feeOption.MinFeeDecimal = initial.FeeOption.MinFeeDecimal
 	app.Context.ethTrackers.SetupOption(&initial.ETHCDOption)
 	err = app.Context.govern.SetFeeOption(initial.FeeOption)
 	if err != nil {
 		return errors.Wrap(err, "Setup State")
 	}
-	app.Context.feePool.SetupOpt(app.Context.feeOption)
+	app.Context.feePool.SetupOpt(&initial.FeeOption)
+	app.Context.domains.SetOptions(&initial.ONSOptions)
 
 	// (2) Set balances to all those mentioned
 	for _, bal := range initial.Balances {
@@ -286,8 +285,14 @@ func (app *App) Prepare() error {
 		if err != nil {
 			return err
 		}
-		app.Context.feeOption = feeOpt
+
 		app.Context.feePool.SetupOpt(feeOpt)
+
+		onsOpt, err := app.Context.govern.GetONSOptions()
+		if err != nil {
+			return err
+		}
+		app.Context.domains.SetOptions(onsOpt)
 
 		cdOpt, err := app.Context.govern.GetETHChainDriverOption()
 		if err != nil {

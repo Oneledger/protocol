@@ -79,7 +79,7 @@ func (domainCreateTx) Validate(ctx *action.Context, tx action.SignedTx) (bool, e
 		return false, err
 	}
 
-	err = action.ValidateFee(ctx.FeeOpt, tx.Fee)
+	err = action.ValidateFee(ctx.FeePool.GetOpt(), tx.Fee)
 	if err != nil {
 		return false, err
 	}
@@ -136,16 +136,18 @@ func runCreate(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 		return false, action.Response{Log: err.Error()}
 	}
 
-	expiry, err := calculateExpiry(create.BuyingPrice, ctx.OnsOptions.BaseDomainPrice.Amount.BigInt().Int64(), ctx.OnsOptions.PerBlockFees)
+	opt := ctx.Domains.GetOptions()
+
+	expiry, err := calculateExpiry(create.BuyingPrice, opt.BaseDomainPrice.Amount.BigInt().Int64(), opt.PerBlockFees)
 	if err != nil {
 		return false, action.Response{
 			Log: "Unable to calculate Expiry" + err.Error(),
 		}
 	}
 
-	err = verifyDomainName(create.Name, ctx.OnsOptions.FirstLevelDomain)
+	err = verifyDomainName(create.Name, opt.FirstLevelDomain)
 	if err != nil {
-		return false,action.Response{
+		return false, action.Response{
 			Log: err.Error(),
 		}
 	}
@@ -192,13 +194,13 @@ func calculateExpiry(buyingPrice int64, basePrice int64, pricePerBlock int64) (i
 func verifyDomainName(name ons.Name, firstlevelDomain []string) error {
 
 	firstlevelMap := make(map[string]bool)
-	for i := 0; i < len(firstlevelDomain); i ++ {
+	for i := 0; i < len(firstlevelDomain); i++ {
 		firstlevelMap[firstlevelDomain[i]] = true
 	}
-	nameAr:= strings.Split(name.String(),".")
+	nameAr := strings.Split(name.String(), ".")
 	if !firstlevelMap[nameAr[len(nameAr)-1]] {
 		return errors.New("First level domain does is not allowed")
-	} 
+	}
 	return nil
 }
 

@@ -4,6 +4,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/data/ons"
 	"github.com/pkg/errors"
@@ -88,7 +89,7 @@ func (crSubD CreateSubDomainTx) Validate(ctx *action.Context, signedTx action.Si
 	}
 
 	//Verify fee currency is valid and the amount exceeds the minimum.
-	err = action.ValidateFee(ctx.FeeOpt, signedTx.Fee)
+	err = action.ValidateFee(ctx.FeePool.GetOpt(), signedTx.Fee)
 	if err != nil {
 		return false, errors.Wrap(err, err.Error())
 	}

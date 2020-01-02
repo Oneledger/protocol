@@ -76,7 +76,7 @@ func (domainUpdateTx) Validate(ctx *action.Context, tx action.SignedTx) (bool, e
 		return false, err
 	}
 
-	err = action.ValidateFee(ctx.FeeOpt, tx.Fee)
+	err = action.ValidateFee(ctx.FeePool.GetOpt(), tx.Fee)
 	if err != nil {
 		return false, err
 	}
@@ -120,14 +120,14 @@ func runUpdate(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	}
 
 	if !d.IsChangeable(ctx.Header.Height) {
-		return false, action.Response{Log: fmt.Sprintf("domain is not changable: %s, last change: %d ,current height :%d", update.Name, d.LastUpdateHeight,ctx.Header.Height)}
+		return false, action.Response{Log: fmt.Sprintf("domain is not changable: %s, last change: %d ,current height :%d", update.Name, d.LastUpdateHeight, ctx.Header.Height)}
 	}
 
 	if !bytes.Equal(d.OwnerAddress, update.Owner) {
 		return false, action.Response{Log: fmt.Sprintf("domain is not owned by: %s", hex.EncodeToString(update.Owner))}
 	}
 
-	d.AddToExpire(extendExpiry(update.ExtendExpiry, ctx.OnsOptions.PerBlockFees))
+	d.AddToExpire(extendExpiry(update.ExtendExpiry, ctx.Domains.GetOptions().PerBlockFees))
 	d.SetAccountAddress(update.Beneficiary)
 	if update.Active {
 		d.Activate()

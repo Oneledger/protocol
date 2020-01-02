@@ -39,6 +39,10 @@ func (ds *DomainStore) SetOptions(opt *Options) {
 	ds.opt = opt
 }
 
+func (ds *DomainStore) GetOptions() *Options {
+	return ds.opt
+}
+
 // Get is used to retrieve the domain object from the domain name
 func (ds *DomainStore) Get(name Name) (*Domain, error) {
 	key := name.toKey()
