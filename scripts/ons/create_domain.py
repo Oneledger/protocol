@@ -35,7 +35,7 @@ def create_domain(name, owner_hex, price):
         "name": name,
         "owner": owner_hex,
         "account": owner_hex,
-        "buyingprice": {
+        "price": {
             "currency": "OLT",
             "value": converBigInt(price),
         },
@@ -43,7 +43,7 @@ def create_domain(name, owner_hex, price):
             "currency": "OLT",
             "value": "1000000000",
         },
-        "gas": 400000,
+        "gas": 40000,
     }
     resp = rpc_call('tx.ONS_CreateRawCreate', req)
     return resp["result"]["rawTx"]
@@ -75,7 +75,7 @@ def sell_domain(name, owner_hex, price):
             "currency": "OLT",
             "value": converBigInt(price),
         },
-        "cancelsale": False,
+        "cancel_sale": False,
         "gasprice": {
             "currency": "OLT",
             "value": "1000000000",
@@ -92,7 +92,7 @@ def cancel_sell_domain(name, owner_hex, price):
             "currency": "OLT",
             "value": converBigInt(price),
         },
-        "cancelsale": True,
+        "cancel_sale": True,
         "gasprice": {
             "currency": "OLT",
             "value": "1000000000",
@@ -138,11 +138,10 @@ if __name__ == "__main__":
     addrs = addresses()
     print addrs
 
-    name = "alice1.ol"
-    create_price = (int("10002345")*10**14)
+    create_price = (int("1002345")*10**14)
     print "create price:", create_price
 
-    raw_txn = create_domain(name, addrs[0], create_price)
+    raw_txn = create_domain("alice1.olt", addrs[0], create_price)
     print "raw create domain tx:", raw_txn
 
     signed = sign(raw_txn, addrs[0])
@@ -157,7 +156,7 @@ if __name__ == "__main__":
     if result["ok"] != True:
         sys.exit(-1)
 
-    raw_txn = send_domain(name, addrs[0], "10")
+    raw_txn = send_domain("alice1.olt", addrs[0], "10")
     print raw_txn
 
     signed = sign(raw_txn, addrs[0])
@@ -172,7 +171,7 @@ if __name__ == "__main__":
     time.sleep(2)
 
     sell_price = (int("105432")*10**14)
-    raw_txn = sell_domain(name, addrs[0], sell_price)
+    raw_txn = sell_domain("alice1.olt", addrs[0], sell_price)
     print raw_txn
     print
 
@@ -187,7 +186,7 @@ if __name__ == "__main__":
     if result["ok"] != True:
         sys.exit(-1)
 
-    raw_txn = send_domain(name, addrs[0], (int("100")*10**18))
+    raw_txn = send_domain("alice1.olt", addrs[0], (int("100")*10**18))
     print raw_txn
 
     signed = sign(raw_txn, addrs[0])
@@ -202,7 +201,7 @@ if __name__ == "__main__":
     if result["ok"] != True:
         sys.exit(-1)
 
-    raw_txn = send_domain(name, addrs[0], (int("100")*10**18))
+    raw_txn = send_domain("alice1.olt", addrs[0], (int("100")*10**18))
     print raw_txn
 
     signed = sign(raw_txn, addrs[0])
@@ -225,7 +224,7 @@ if __name__ == "__main__":
           "##"
     print
 
-    raw_txn = cancel_sell_domain(name, addrs[0], sell_price)
+    raw_txn = cancel_sell_domain("alice1.olt", addrs[0], sell_price)
     print raw_txn
     print
 
