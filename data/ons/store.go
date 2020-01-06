@@ -92,13 +92,13 @@ func (ds *DomainStore) Iterate(fn func(name Name, domain *Domain) bool) (stopped
 		storage.Rangefix(string(ds.prefix)),
 		true,
 		func(key, value []byte) bool {
-			name := string(key[len(ds.prefix):])
+			nameKey := string(key[len(ds.prefix):])
 			domain := &Domain{}
 			err := ds.szlr.Deserialize(value, domain)
 			if err != nil {
 				return false
 			}
-			return fn(Name(reverse(name)), domain)
+			return fn(Name(reverse(nameKey)), domain)
 		},
 	)
 }
@@ -124,20 +124,14 @@ func (ds *DomainStore) IterateSubDomain(parentName Name, fn func(name Name, doma
 
 func (ds *DomainStore) DeleteAllSubdomains(name Name) error {
 
-	subdomainNames := make([]Name, 0, 20)
 	ds.IterateSubDomain(name, func(name Name, domain *Domain) bool {
-		subdomainNames = append(subdomainNames, domain.Name)
-		return true
-	})
-
-	for _, name := range subdomainNames {
 		prefixed := append(ds.prefix, name.toKey()...)
 		_, err := ds.State.Delete(prefixed)
 		if err != nil {
-			return err
+			return false
 		}
-	}
-
+		return false
+	})
 	return nil
 }
 

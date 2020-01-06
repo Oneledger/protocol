@@ -52,7 +52,7 @@ func (r RenewDomain) Marshal() ([]byte, error) {
 	return json.Marshal(r)
 }
 
-func (r RenewDomain) Unmarshal(data []byte) error {
+func (r *RenewDomain) Unmarshal(data []byte) error {
 	return json.Unmarshal(data, r)
 }
 
