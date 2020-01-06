@@ -73,19 +73,18 @@ type ONSSendRequest struct {
 	Gas      int64         `json:"gas"`
 }
 
+type ONSDeleteSubRequest struct {
+	Name     string        `json:"name"`
+	Owner    keys.Address  `json:"owner"`
+	GasPrice action.Amount `json:"gasprice"`
+	Gas      int64         `json:"gas"`
+}
+
 type ONSGetDomainsRequest struct {
 	Name        string       `json:"name"`
 	Owner       keys.Address `json:"owner"`
 	OnSale      bool         `json:"onSale"`
 	Beneficiary keys.Address `json:"beneficiary"`
-}
-
-type ONSPurchaseExpiredRequest struct {
-	Name     string        `json:"name"`
-	Buyer    keys.Address  `json:"buyer"`
-	Blocks   int64         `json:"blocks"`
-	GasPrice action.Amount `json:"gasprice"`
-	Gas      int64         `json:"gas"`
 }
 
 type ONSGetDomainsReply struct {

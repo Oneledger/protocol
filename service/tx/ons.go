@@ -271,3 +271,37 @@ func (s *Service) ONS_CreateRawSend(args client.ONSSendRequest, reply *client.Cr
 
 	return nil
 }
+
+func (s *Service) ONS_CreateRawDeleteSub(args client.ONSDeleteSubRequest, reply *client.CreateTxReply) error {
+
+	name := ons2.GetNameFromString(args.Name)
+	del := ons.DeleteSub{
+		Name:  name,
+		Owner: args.Owner,
+	}
+	data, err := del.Marshal()
+	if err != nil {
+		s.logger.Error("error in serializing domain delete object", err)
+		return codes.ErrSerialization
+	}
+
+	uuidNew, _ := uuid.NewUUID()
+	fee := action.Fee{args.GasPrice, args.Gas}
+	tx := &action.RawTx{
+		Type: action.DOMAIN_DELETE_SUB,
+		Data: data,
+		Fee:  fee,
+		Memo: uuidNew.String(),
+	}
+
+	packet, err := serialize.GetSerializer(serialize.NETWORK).Serialize(tx)
+	if err != nil {
+		s.logger.Error("error in serializing domain delete transaction", err)
+		return codes.ErrSerialization
+	}
+
+	*reply = client.CreateTxReply{
+		RawTx: packet,
+	}
+	return nil
+}
