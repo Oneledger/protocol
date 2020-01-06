@@ -42,3 +42,4 @@ func (opt *Options) IsValidURI(uri string) bool {
 	_, ok := opt.protocols[u.Scheme]
 	return ok
 }
+
