@@ -38,7 +38,7 @@ def create_domain(name, owner_hex, price):
         "name": name,
         "owner": owner_hex,
         "account": owner_hex,
-        "price": {
+        "buyingprice": {
             "currency": "OLT",
             "value": converBigInt(price),
         },
@@ -119,11 +119,11 @@ if __name__ == "__main__":
     addrs = addresses()
     print addrs
 
-    name = "alice1.olt"
-    create_price = (int("1002345") * 10 ** 14)
+    name = "alic.ol"
+    create_price = (int("10023450")*10**14)
     print "create price:", create_price
 
-    raw_txn = create_domain("alice1.olt", addrs[0], create_price)
+    raw_txn = create_domain(name, addrs[0], create_price)
     print "raw create domain tx:", raw_txn
 
     signed = sign(raw_txn, addrs[0])
@@ -138,7 +138,28 @@ if __name__ == "__main__":
     if not result["ok"]:
         sys.exit(-1)
 
+    time.sleep(2)
+
     active_state = False
+    raw_txn = update_domain(name, addrs[0], active_state)
+    print "rax update domain tx:", raw_txn
+    print
+
+    signed = sign(raw_txn, addrs[0])
+    print "signed update TX :", signed
+    print
+
+    result = broadcast_commit(raw_txn, signed['signature']['Signed'], signed['signature']['Signer'])
+    print result
+    print "###################"
+    print
+
+    if result["ok"] != True:
+        sys.exit(-1)
+
+    time.sleep(2)
+
+    active_state = True
     raw_txn = update_domain(name, addrs[0], active_state)
     print "rax update domain tx:", raw_txn
     print

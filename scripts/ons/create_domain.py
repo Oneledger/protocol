@@ -35,7 +35,7 @@ def create_domain(name, owner_hex, price):
         "name": name,
         "owner": owner_hex,
         "account": owner_hex,
-        "price": {
+        "buyingprice": {
             "currency": "OLT",
             "value": converBigInt(price),
         },
@@ -138,10 +138,10 @@ if __name__ == "__main__":
     addrs = addresses()
     print addrs
 
-    create_price = (int("1002345")*10**14)
+    create_price = (int("10023450")*10**14)
     print "create price:", create_price
-
-    raw_txn = create_domain("alice1.olt", addrs[0], create_price)
+    name = "alice.ol"
+    raw_txn = create_domain(name, addrs[0], create_price)
     print "raw create domain tx:", raw_txn
 
     signed = sign(raw_txn, addrs[0])
@@ -156,7 +156,7 @@ if __name__ == "__main__":
     if result["ok"] != True:
         sys.exit(-1)
 
-    raw_txn = send_domain("alice1.olt", addrs[0], "10")
+    raw_txn = send_domain(name, addrs[0], "10")
     print raw_txn
 
     signed = sign(raw_txn, addrs[0])
@@ -171,7 +171,7 @@ if __name__ == "__main__":
     time.sleep(2)
 
     sell_price = (int("105432")*10**14)
-    raw_txn = sell_domain("alice1.olt", addrs[0], sell_price)
+    raw_txn = sell_domain(name, addrs[0], sell_price)
     print raw_txn
     print
 
@@ -186,7 +186,7 @@ if __name__ == "__main__":
     if result["ok"] != True:
         sys.exit(-1)
 
-    raw_txn = send_domain("alice1.olt", addrs[0], (int("100")*10**18))
+    raw_txn = send_domain(name, addrs[0], (int("100")*10**18))
     print raw_txn
 
     signed = sign(raw_txn, addrs[0])
@@ -201,7 +201,7 @@ if __name__ == "__main__":
     if result["ok"] != True:
         sys.exit(-1)
 
-    raw_txn = send_domain("alice1.olt", addrs[0], (int("100")*10**18))
+    raw_txn = send_domain(name, addrs[0], (int("100")*10**18))
     print raw_txn
 
     signed = sign(raw_txn, addrs[0])
@@ -224,7 +224,7 @@ if __name__ == "__main__":
           "##"
     print
 
-    raw_txn = cancel_sell_domain("alice1.olt", addrs[0], sell_price)
+    raw_txn = cancel_sell_domain(name, addrs[0], sell_price)
     print raw_txn
     print
 
