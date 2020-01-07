@@ -197,3 +197,22 @@ def delete_sub_domain(name, owner_hex):
 
     resp = rpc_call('tx.ONS_CreateRawDeleteSub', req)
     return resp["result"]["rawTx"]
+
+
+def renew_domain(name, owner_hex, price):
+    req = {
+        "owner": owner_hex,
+        "name": name,
+        "account": owner_hex,
+        "buyingprice": {
+            "currency": "OLT",
+            "value": converBigInt(price)
+        },
+        "gasprice": {
+                    "currency": "OLT",
+                    "value": "1000000000",
+         },
+         "gas": 400000,
+    }
+    resp = rpc_call('tx.ONS_CreateRawDeleteSub', req)
+    return resp["result"]["rawTx"]
