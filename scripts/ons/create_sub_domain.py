@@ -63,3 +63,5 @@ if __name__ == "__main__":
     print result
     print "###################"
     print
+
+    print_all_domains(addrs[0])

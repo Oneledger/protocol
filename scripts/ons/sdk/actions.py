@@ -1,5 +1,5 @@
 from rpc_call import rpc_call, converBigInt
-
+import json
 
 def create_domain(name, owner_hex, price):
     req = {
@@ -154,14 +154,12 @@ def get_domains(owner_hex, onsale):
     }
 
     resp = rpc_call('query.ONS_GetDomainByOwner', req)
-    return resp["result"]["rawTx"]
+    return resp["result"]["domains"]
 
 
 def print_all_domains(owner_addr):
-    raw_tx = get_domains(owner_addr, False)
-    signedTx = sign(raw_tx, owner_addr)
-    result = broadcast_commit(raw_tx, signedTx['signature']['Signed'], signedTx['signature']['Signer'])
-    print result
+    result = get_domains(owner_addr, False)
+    print json.dumps(result, indent=4)
     print
 
 
