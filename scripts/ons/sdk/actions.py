@@ -186,3 +186,16 @@ def create_sub_domain(name, owner_hex, price, uri):
     return resp["result"]["rawTx"]
 
 
+def delete_sub_domain(name, owner_hex):
+    req = {
+        "owner": owner_hex,
+        "name": name,
+        "gasprice": {
+            "currency": "OLT",
+            "value": "1000000000",
+        },
+        "gas": 400000,
+    }
+
+    resp = rpc_call('tx.ONS_CreateRawDeleteSub', req)
+    return resp["result"]["rawTx"]

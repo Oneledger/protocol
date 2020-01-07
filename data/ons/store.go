@@ -142,7 +142,7 @@ func (ds *DomainStore) DeleteASubdomain(subdomainName Name) error {
 		return err
 	}
 
-	if domain.Parent.String() == "" {
+	if domain.Name.IsSub() {
 		return errors.New("not a subdomain")
 	}
 

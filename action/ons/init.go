@@ -51,6 +51,10 @@ func EnableONS(r action.Router) error {
 	if err != nil {
 		return errors.Wrap(err, "domainCreateTx")
 	}
+	err = r.AddHandler(action.DOMAIN_DELETE_SUB, deleteSubTx{})
+	if err != nil {
+		return errors.Wrap(err, "deleteSubTx")
+	}
 
 	return nil
 }
