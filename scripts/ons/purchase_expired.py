@@ -1,10 +1,5 @@
 
-
-import sys
-import requests
-import json
 import time
-
 from sdk.actions import *
 
 class bcolors:
@@ -23,13 +18,13 @@ if __name__ == "__main__":
     result = new_account('charlie')
     print result
 
-    name = "bob2.ol"
-
+    name = "expiring.ol"
     addrs = addresses()
 
     print addrs
 
-    create_price = (int("10002345")*10**14)
+    # expiring after one block
+    create_price = (int("10000001")*10**14)
     print "create price:", create_price
 
     raw_txn = create_domain(name, addrs[0], create_price)
@@ -45,8 +40,6 @@ if __name__ == "__main__":
           "##"
     print
 
-    sell_price = (int("105432")*10**14)
-
     raw_txn = send_domain(name, addrs[0], (int("100")*10**18))
     print raw_txn
 
@@ -60,30 +53,8 @@ if __name__ == "__main__":
           "##"
     print
     time.sleep(2)
-    raw_txn = sell_domain(name, addrs[0], sell_price)
-    print raw_txn
-    print
-
-    signed = sign(raw_txn, addrs[0])
-    print signed
-    print
-
-    result = broadcast_commit(raw_txn, signed['signature']['Signed'], signed['signature']['Signer'])
-    print result
-    print "############################################"
-    print
 
 
-    raw_txn = send(addrs[0], addrs[3], (int("2000")*10**18))
-    print result
-    signed = sign(raw_txn, addrs[0])
-    print signed
-    print
-
-    result = broadcast_commit(raw_txn, signed['signature']['Signed'], signed['signature']['Signer'])
-    print result
-    print "############################################"
-    print
 
     print bcolors.WARNING + "*** Buying domain ***" + bcolors.ENDC
 
@@ -100,11 +71,11 @@ if __name__ == "__main__":
     print
 
 
-    print bcolors.WARNING + "*** Putting Domain on sale ***" + bcolors.ENDC
-    raw_txn = sell_domain(name, addrs[3], (int("993242")*10**14))
-    print raw_txn
-    print
+    print bcolors.WARNING + "*** Buying non-expired domain ***" + bcolors.ENDC
 
+    raw_txn = buy_domain(name, addrs[3], (int("20")*10**18))
+    print addrs[3]
+    print addrs
     signed = sign(raw_txn, addrs[3])
     print signed
     print
@@ -113,9 +84,3 @@ if __name__ == "__main__":
     print result
     print "############################################"
     print
-    if result["ok"] != True:
-        sys.exit(-1)
-
-    print bcolors.WARNING + "*** Get Domains on sale ***" + bcolors.ENDC
-    resp = get_domain_on_sale()
-    print resp
