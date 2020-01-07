@@ -22,7 +22,7 @@ type TrackerStore struct {
 	State  *storage.State
 	szlr   serialize.Serializer
 	prefix []byte
-	Config BTCConfig
+	config BTCConfig
 }
 
 type BTCConfig struct {
@@ -38,12 +38,11 @@ type BTCConfig struct {
 	BlockCypherChainType string
 }
 
-func NewTrackerStore(prefix string, state *storage.State, config BTCConfig) *TrackerStore {
+func NewTrackerStore(prefix string, state *storage.State) *TrackerStore {
 	return &TrackerStore{
 		State:  state,
 		szlr:   serialize.GetSerializer(serialize.PERSISTENT),
 		prefix: storage.Prefix(prefix),
-		Config: config,
 	}
 }
 
@@ -51,6 +50,14 @@ func NewTrackerStore(prefix string, state *storage.State, config BTCConfig) *Tra
 func (ts *TrackerStore) WithState(state *storage.State) *TrackerStore {
 	ts.State = state
 	return ts
+}
+
+func (ts *TrackerStore) SetOptions(config BTCConfig) {
+	ts.config = config
+}
+
+func (ts *TrackerStore) GetOptions() BTCConfig {
+	return ts.config
 }
 
 func (ts *TrackerStore) Get(name string) (*Tracker, error) {

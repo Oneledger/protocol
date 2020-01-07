@@ -147,7 +147,8 @@ func runAddSignature(ctx *action.Context, tx action.RawTx) (bool, action.Respons
 		return false, action.Response{Log: fmt.Sprintf("tracker not accepting signatures: %s", addSignature.TrackerName)}
 	}
 
-	addressPubKey, err := btcutil.NewAddressPubKey(addSignature.ValidatorPubKey, ctx.BTCTrackers.Config.BTCParams)
+	opt := ctx.BTCTrackers.GetOptions()
+	addressPubKey, err := btcutil.NewAddressPubKey(addSignature.ValidatorPubKey, opt.BTCParams)
 	if err != nil {
 		return false, action.Response{Log: "error creating validator btc pubkey " + err.Error()}
 	}

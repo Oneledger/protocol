@@ -121,7 +121,8 @@ func (btcRedeemTx) Validate(ctx *action.Context, signedTx action.SignedTx) (bool
 		return false, errors.New("txn doesn't match tracker")
 	}
 
-	if !bitcoin2.ValidateRedeem(tx, ctx.BTCTrackers.Config.BlockCypherToken, ctx.BTCTrackers.Config.BlockCypherChainType, tracker.CurrentTxId,
+	opt := ctx.BTCTrackers.GetOptions()
+	if !bitcoin2.ValidateRedeem(tx, opt.BlockCypherToken, opt.BlockCypherChainType, tracker.CurrentTxId,
 		tracker.ProcessLockScriptAddress, tracker.CurrentBalance, redeem.RedeemAmount) {
 
 		return false, errors.New("txn doesn't match tracker")

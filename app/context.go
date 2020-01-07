@@ -108,7 +108,9 @@ func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *node.Context) (
 		ctx.cfg.ChainDriver.BlockCypherToken,
 		bitcoin2.GetBlockCypherChainType(ctx.cfg.ChainDriver.BitcoinChainType),
 	}
-	ctx.btcTrackers = bitcoin.NewTrackerStore("btct", storage.NewState(ctx.chainstate), btcConfig)
+	ctx.btcTrackers = bitcoin.NewTrackerStore("btct", storage.NewState(ctx.chainstate))
+	ctx.btcTrackers.SetOptions(btcConfig)
+
 	ctx.ethTrackers = ethereum.NewTrackerStore("etht", storage.NewState(ctx.chainstate))
 	ctx.accounts = accounts.NewWallet(cfg, ctx.dbDir())
 
