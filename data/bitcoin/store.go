@@ -10,6 +10,7 @@ import (
 
 	"github.com/Oneledger/protocol/serialize"
 	"github.com/Oneledger/protocol/storage"
+	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/pkg/errors"
 )
 
@@ -21,13 +22,28 @@ type TrackerStore struct {
 	State  *storage.State
 	szlr   serialize.Serializer
 	prefix []byte
+	Config BTCConfig
 }
 
-func NewTrackerStore(prefix string, state *storage.State) *TrackerStore {
+type BTCConfig struct {
+	BTCAddress     string
+	BTCRPCPort     string
+	BTCRPCUsername string
+	BTCRPCPassword string
+	BTCChainnet    string
+
+	BTCParams *chaincfg.Params
+
+	BlockCypherToken     string
+	BlockCypherChainType string
+}
+
+func NewTrackerStore(prefix string, state *storage.State, config BTCConfig) *TrackerStore {
 	return &TrackerStore{
 		State:  state,
 		szlr:   serialize.GetSerializer(serialize.PERSISTENT),
 		prefix: storage.Prefix(prefix),
+		Config: config,
 	}
 }
 

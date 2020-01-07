@@ -132,7 +132,8 @@ func (btcLockTx) Validate(ctx *action.Context, signedTx action.SignedTx) (bool, 
 		return false, errors.New("txn doesn't match tracker")
 	}
 
-	if !bitcoin2.ValidateLock(tx, ctx.BlockCypherToken, ctx.BlockCypherChainType, tracker.CurrentTxId,
+	if !bitcoin2.ValidateLock(tx, ctx.BTCTrackers.Config.BlockCypherToken,
+		ctx.BTCTrackers.Config.BlockCypherChainType, tracker.CurrentTxId,
 		tracker.ProcessLockScriptAddress, tracker.CurrentBalance, lock.LockAmount) {
 
 		return false, errors.New("txn doesn't match tracker")

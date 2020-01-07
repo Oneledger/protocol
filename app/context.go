@@ -97,7 +97,18 @@ func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *node.Context) (
 	ctx.domains = ons.NewDomainStore("d", storage.NewState(ctx.chainstate))
 	ctx.feePool = fees.NewStore("f", storage.NewState(ctx.chainstate))
 	ctx.govern = governance.NewStore("g", storage.NewState(ctx.chainstate))
-	ctx.btcTrackers = bitcoin.NewTrackerStore("btct", storage.NewState(ctx.chainstate))
+
+	btcConfig := bitcoin.BTCConfig{
+		ctx.cfg.ChainDriver.BitcoinNodeAddress,
+		ctx.cfg.ChainDriver.BitcoinRPCPort,
+		ctx.cfg.ChainDriver.BitcoinRPCUsername,
+		ctx.cfg.ChainDriver.BitcoinRPCPassword,
+		ctx.cfg.ChainDriver.BitcoinChainType,
+		bitcoin2.GetChainParams(ctx.cfg.ChainDriver.BitcoinChainType),
+		ctx.cfg.ChainDriver.BlockCypherToken,
+		bitcoin2.GetBlockCypherChainType(ctx.cfg.ChainDriver.BitcoinChainType),
+	}
+	ctx.btcTrackers = bitcoin.NewTrackerStore("btct", storage.NewState(ctx.chainstate), btcConfig)
 	ctx.ethTrackers = ethereum.NewTrackerStore("etht", storage.NewState(ctx.chainstate))
 	ctx.accounts = accounts.NewWallet(cfg, ctx.dbDir())
 
@@ -132,10 +143,6 @@ func (ctx context) dbDir() string {
 
 func (ctx *context) Action(header *Header, state *storage.State) *action.Context {
 
-	params := bitcoin2.GetChainParams(ctx.cfg.ChainDriver.BitcoinChainType)
-
-	bcct := bitcoin2.GetBlockCypherChainType(ctx.cfg.ChainDriver.BitcoinChainType)
-
 	actionCtx := action.NewContext(
 		ctx.actionRouter,
 		header,
@@ -151,10 +158,7 @@ func (ctx *context) Action(header *Header, state *storage.State) *action.Context
 		ctx.btcTrackers.WithState(state),
 		ctx.ethTrackers.WithState(state),
 		ctx.jobStore,
-		params,
 		ctx.lockScriptStore,
-		ctx.cfg.ChainDriver.BlockCypherToken,
-		bcct,
 
 		log.NewLoggerWithPrefix(ctx.logWriter, "action").WithLevel(log.Level(ctx.cfg.Node.LogLevel)))
 
@@ -276,19 +280,16 @@ func (ctx *context) Replay(version int64) error {
 }
 
 func (ctx *context) JobContext() *event.JobsContext {
-	cdConfig := ctx.cfg.ChainDriver
+
 	return event.NewJobsContext(
 		ctx.cfg,
-		cdConfig.BitcoinChainType,
-		ctx.internalService, ctx.btcTrackers, ctx.validators,
+		ctx.internalService,
+		ctx.btcTrackers,
+		ctx.validators,
 		ctx.node.ValidatorECDSAPrivateKey(),
 		ctx.node.ValidatorECDSAPrivateKey(),
-		ctx.node.ValidatorAddress(), ctx.cfg.ChainDriver.BlockCypherToken,
+		ctx.node.ValidatorAddress(),
 		ctx.lockScriptStore,
-		cdConfig.BitcoinNodeAddress,
-		cdConfig.BitcoinRPCPort,
-		cdConfig.BitcoinRPCUsername,
-		cdConfig.BitcoinRPCPassword,
 		ctx.ethTrackers.WithState(ctx.deliver),
 	)
 }
