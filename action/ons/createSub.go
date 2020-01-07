@@ -5,7 +5,6 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-
 	"github.com/pkg/errors"
 	"github.com/tendermint/tendermint/libs/common"
 
@@ -59,7 +58,7 @@ func (c CreateSubDomain) Marshal() ([]byte, error) {
 	return json.Marshal(c)
 }
 
-func (c CreateSubDomain) Unmarshal(data []byte) error {
+func (c *CreateSubDomain) Unmarshal(data []byte) error {
 	return json.Unmarshal(data, c)
 }
 
@@ -144,8 +143,9 @@ func runCreateSub(ctx *action.Context, tx action.RawTx) (bool, action.Response) 
 		return false, action.Response{Log: err.Error()}
 	}
 
-	if createSub.Name.IsSub() {
-		return false, action.Response{Log: "invalid sub domain name"}
+	if !createSub.Name.IsSub() {
+		subDomainName := createSub.Name.String()
+		return false, action.Response{Log: "invalid sub domain name: " + subDomainName}
 	}
 	parentName, err := createSub.Name.GetParentName()
 	if err != nil {

@@ -60,6 +60,7 @@ func (s *Service) ONS_CreateRawCreateSub(args client.ONSCreateSubRequest, reply 
 		Beneficiary: args.Account,
 		Name:        name,
 		BuyingPrice: args.BuyingPrice,
+		Uri:         args.Uri,
 	}
 
 	data, err := createSubDomain.Marshal()

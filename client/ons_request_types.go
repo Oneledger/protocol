@@ -23,6 +23,7 @@ type ONSCreateSubRequest struct {
 	Owner       keys.Address  `json:"owner"`
 	Account     keys.Address  `json:"account"`
 	Name        string        `json:"name"`
+	Uri         string        `json:"uri"`
 	BuyingPrice action.Amount `json:"buyingprice"`
 	GasPrice    action.Amount `json:"gasprice"`
 	Gas         int64         `json:"gas"`
