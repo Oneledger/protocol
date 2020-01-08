@@ -60,7 +60,7 @@ func NewDomain(ownerAddress, accountAddress keys.Address,
 	}
 	var p Name
 	if len(parent) > 0 {
-		p := GetNameFromString(parent)
+		p = GetNameFromString(parent)
 		if !p.IsValid() {
 			return nil, ErrDomainNameNotValid
 		}
