@@ -214,5 +214,5 @@ def renew_domain(name, owner_hex, price):
          },
          "gas": 400000,
     }
-    resp = rpc_call('tx.ONS_CreateRawDeleteSub', req)
+    resp = rpc_call('tx.ONS_CreateRawRenew', req)
     return resp["result"]["rawTx"]

@@ -45,7 +45,7 @@ if __name__ == "__main__":
 
     print bcolors.WARNING + "*** Renewing domain ***" + bcolors.ENDC
 
-    raw_txn = renew_domain(name, addrs[0], (int("200")*10**18))
+    raw_txn = renew_domain(name, addrs[0], (int("20")*10**15))
     signed = sign(raw_txn, addrs[0])
     print signed
     print

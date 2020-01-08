@@ -98,7 +98,7 @@ func (r RenewDomainTx) Validate(ctx *action.Context, signedTx action.SignedTx) (
 	}
 
 	coin := renewDomain.BuyingPrice.ToCoin(ctx.Currencies)
-	if coin.LessThanEqualCoin(coin.Currency.NewCoinFromAmount(ctx.Domains.GetOptions().BaseDomainPrice)) {
+	if coin.LessThanEqualCoin(coin.Currency.NewCoinFromAmount(ctx.Domains.GetOptions().PerBlockFees)) {
 		return false, action.ErrNotEnoughFund
 	}
 
