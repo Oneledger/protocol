@@ -65,7 +65,7 @@ func (cf *JobBTCCheckFinality) DoMyJob(ctxI interface{}) {
 		return
 	}
 
-	opt := ctx.Trackers.GetOptions()
+	opt := ctx.Trackers.GetConfig()
 	cd := bitcoin.NewChainDriver(opt.BlockCypherToken)
 
 	chain := bitcoin.GetBlockCypherChainType(opt.BTCChainnet)

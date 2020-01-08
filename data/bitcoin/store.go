@@ -8,6 +8,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/Oneledger/protocol/chains/bitcoin"
+	"github.com/Oneledger/protocol/config"
 	"github.com/Oneledger/protocol/serialize"
 	"github.com/Oneledger/protocol/storage"
 	"github.com/btcsuite/btcd/chaincfg"
@@ -25,19 +27,6 @@ type TrackerStore struct {
 	config BTCConfig
 }
 
-type BTCConfig struct {
-	BTCAddress     string
-	BTCRPCPort     string
-	BTCRPCUsername string
-	BTCRPCPassword string
-	BTCChainnet    string
-
-	BTCParams *chaincfg.Params
-
-	BlockCypherToken     string
-	BlockCypherChainType string
-}
-
 func NewTrackerStore(prefix string, state *storage.State) *TrackerStore {
 	return &TrackerStore{
 		State:  state,
@@ -52,11 +41,11 @@ func (ts *TrackerStore) WithState(state *storage.State) *TrackerStore {
 	return ts
 }
 
-func (ts *TrackerStore) SetOptions(config BTCConfig) {
+func (ts *TrackerStore) SetConfig(config BTCConfig) {
 	ts.config = config
 }
 
-func (ts *TrackerStore) GetOptions() BTCConfig {
+func (ts *TrackerStore) GetConfig() BTCConfig {
 	return ts.config
 }
 
@@ -180,4 +169,35 @@ func (ts *TrackerStore) GetLockScript(lockAddress []byte) ([]byte, error) {
 
 func keyFromName(name string) []byte {
 	return []byte(strings.ToLower(name))
+}
+
+/*
+	BTC Config
+*/
+
+type BTCConfig struct {
+	BTCAddress     string
+	BTCRPCPort     string
+	BTCRPCUsername string
+	BTCRPCPassword string
+	BTCChainnet    string
+
+	BTCParams *chaincfg.Params
+
+	BlockCypherToken     string
+	BlockCypherChainType string
+}
+
+func NewBTCConfig(cfg *config.ChainDriverConfig, chainType string) BTCConfig {
+	return BTCConfig{
+
+		cfg.BitcoinNodeAddress,
+		cfg.BitcoinRPCPort,
+		cfg.BitcoinRPCUsername,
+		cfg.BitcoinRPCPassword,
+		chainType,
+		bitcoin.GetChainParams(chainType),
+		cfg.BlockCypherToken,
+		bitcoin.GetBlockCypherChainType(chainType),
+	}
 }

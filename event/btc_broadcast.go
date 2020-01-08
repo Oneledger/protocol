@@ -106,7 +106,7 @@ func (j *JobBTCBroadcast) DoMyJob(ctxI interface{}) {
 		ctx.Logger.Error("error in building sig script", err)
 	}
 
-	opt := ctx.Trackers.GetOptions()
+	opt := ctx.Trackers.GetConfig()
 	cd := bitcoin.NewChainDriver(opt.BlockCypherToken)
 	lockTx = cd.AddLockSignature(tracker.ProcessUnsignedTx, sigScript)
 

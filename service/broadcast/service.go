@@ -21,14 +21,10 @@ type Service struct {
 	trackers   *bitcoin.TrackerStore
 	feeOpt     *fees.FeeOption
 	ext        client.ExtServiceContext
-
-	blockCypherToken     string
-	blockCypherchainType string
 }
 
 func NewService(ctx client.ExtServiceContext, router action.Router, currencies *balance.CurrencySet,
 	feeOpt *fees.FeeOption, logger *log.Logger, trackers *bitcoin.TrackerStore,
-	blockCypherToken, blockCypherChainType string,
 ) *Service {
 	return &Service{
 		ext:        ctx,
@@ -37,9 +33,6 @@ func NewService(ctx client.ExtServiceContext, router action.Router, currencies *
 		trackers:   trackers,
 		feeOpt:     feeOpt,
 		logger:     logger,
-
-		blockCypherToken:     blockCypherToken,
-		blockCypherchainType: blockCypherChainType,
 	}
 }
 

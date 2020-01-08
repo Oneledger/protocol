@@ -245,7 +245,7 @@ func runReportFinalityMint(ctx *action.Context, tx action.RawTx) (bool, action.R
 	validatorPubKeys, err := ctx.Validators.GetBitcoinKeys(&chaincfg.TestNet3Params)
 	m := (len(validatorPubKeys) * 2 / 3) + 1
 
-	opt := ctx.BTCTrackers.GetOptions()
+	opt := ctx.BTCTrackers.GetConfig()
 	lockScript, lockScriptAddress, addressList, err := bitcoin2.CreateMultiSigAddress(m, validatorPubKeys,
 		f.RandomBytes, opt.BTCParams)
 

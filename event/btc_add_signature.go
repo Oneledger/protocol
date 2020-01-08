@@ -55,7 +55,7 @@ func (j *JobAddSignature) DoMyJob(ctxI interface{}) {
 
 	pk, _ := btcec.PrivKeyFromBytes(btcec.S256(), ctx.BTCPrivKey.Data)
 
-	opt := ctx.Trackers.GetOptions()
+	opt := ctx.Trackers.GetConfig()
 	addressPubKey, err := btcutil.NewAddressPubKey(pk.PubKey().SerializeCompressed(), opt.BTCParams)
 	if err != nil {
 		ctx.Logger.Error("error while generating btc address", err)

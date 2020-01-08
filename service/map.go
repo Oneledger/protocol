@@ -5,7 +5,6 @@ import (
 
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/app/node"
-	bitcoin2 "github.com/Oneledger/protocol/chains/bitcoin"
 	"github.com/Oneledger/protocol/client"
 	"github.com/Oneledger/protocol/config"
 	"github.com/Oneledger/protocol/data/accounts"
@@ -49,17 +48,14 @@ type Map map[string]interface{}
 
 func NewMap(ctx *Context) (Map, error) {
 
-	bcct := bitcoin2.GetBlockCypherChainType(ctx.Cfg.ChainDriver.BitcoinChainType)
-
 	defaultMap := Map{
-		broadcast.Name(): broadcast.NewService(ctx.Services, ctx.Router, ctx.Currencies, ctx.FeeOpt, ctx.Logger, ctx.Trackers, ctx.Cfg.ChainDriver.BlockCypherToken, bcct),
+		broadcast.Name(): broadcast.NewService(ctx.Services, ctx.Router, ctx.Currencies, ctx.FeeOpt, ctx.Logger, ctx.Trackers),
 		nodesvc.Name():   nodesvc.NewService(ctx.NodeContext, &ctx.Cfg, ctx.Logger),
 		owner.Name():     owner.NewService(ctx.Accounts, ctx.Logger),
 		query.Name():     query.NewService(ctx.Services, ctx.Balances, ctx.Currencies, ctx.ValidatorSet, ctx.Domains, ctx.Logger),
 		tx.Name():        tx.NewService(ctx.Balances, ctx.Router, ctx.Accounts, ctx.FeeOpt, ctx.NodeContext, ctx.Logger),
-		btc.Name(): btc.NewService(ctx.Balances, ctx.Accounts, ctx.NodeContext, ctx.ValidatorSet, ctx.Trackers, ctx.Logger,
-			ctx.Cfg.ChainDriver.BlockCypherToken, ctx.Cfg.ChainDriver.BitcoinChainType),
-		ethereum.Name(): ethereum.NewService(ctx.Cfg.EthChainDriver, ctx.Router, ctx.Accounts, ctx.NodeContext, ctx.ValidatorSet, ctx.Logger),
+		btc.Name():       btc.NewService(ctx.Balances, ctx.Accounts, ctx.NodeContext, ctx.ValidatorSet, ctx.Trackers, ctx.Logger),
+		ethereum.Name():  ethereum.NewService(ctx.Cfg.EthChainDriver, ctx.Router, ctx.Accounts, ctx.NodeContext, ctx.ValidatorSet, ctx.Logger),
 	}
 
 	serviceMap := Map{}
