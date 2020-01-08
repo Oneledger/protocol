@@ -26,6 +26,11 @@ func EnableETH(r action.Router) error {
 	if err != nil {
 		return errors.Wrap(err, "ethRedeemTx")
 	}
+
+	err = r.AddHandler(action.ERC20_LOCK, ethERC20LockTx{})
+	if err != nil {
+		return errors.Wrap(err, "ERC20LockTx")
+	}
 	return nil
 }
 

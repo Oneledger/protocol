@@ -272,6 +272,8 @@ func VerifyLock(tx *types.Transaction, contractabi string) (bool, error) {
 
 }
 
+
+
 func (acc *ETHChainDriver) HasValidatorSigned(validatorAddress common.Address, recipient common.Address) (bool, error) {
 	instance := acc.GetContract()
 
@@ -297,6 +299,22 @@ func ParseRedeem(data []byte) (req *RedeemRequest, err error) {
 	return &RedeemRequest{Amount: amt}, nil
 }
 
+func ParseERC20Lock(data []byte) (req *LockErcRequest, err error) {
+
+	ss := strings.Split(hex.EncodeToString(data), "a9059cbb")
+
+	tokenAmount,err := hex.DecodeString(ss[1][64:128])
+	if err != nil {
+		return nil,err
+	}
+	receiver := ss[1][24:64]
+	amt := big.NewInt(0).SetBytes(tokenAmount)
+	return &LockErcRequest{
+		Receiver:    receiver,
+		TokenAmount: amt,
+	},nil
+}
+
 func ParseLock(data []byte) (req *LockRequest, err error) {
 
 	tx, err := DecodeTransaction(data)
@@ -317,3 +335,4 @@ func DecodeTransaction(data []byte) (*types.Transaction, error) {
 
 	return tx, nil
 }
+

@@ -63,6 +63,13 @@ type OLTLockRequest struct {
 	Gas     int64         `json:"gas"`
 }
 
+type OLTERC20LockRequest struct {
+	RawTx   []byte `json:"raw_tx"`
+	Address keys.Address
+	Fee     action.Amount `json:"fee"`
+	Gas     int64         `json:"gas"`
+}
+
 type OLTLockReply struct {
 	RawTX []byte `json:"UnsignedOLTLock"`
 }

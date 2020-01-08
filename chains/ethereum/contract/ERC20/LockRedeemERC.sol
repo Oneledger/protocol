@@ -515,7 +515,8 @@ contract LockRedeemERC {
 
     // Default Voting power should be updated at one point
     int constant DEFAULT_VALIDATOR_POWER = 50;
-    uint constant MIN_VALIDATORS = 4; // 4 for production
+    uint constant MIN_VALIDATORS = 1; // 4 for production
+    uint256 LOCK_PERIOD = 28800;
 
     // This is the height at which the current epoch was started
     uint public epochBlockHeight;
@@ -534,19 +535,21 @@ contract LockRedeemERC {
 
     mapping (address => int) public validators;
 
-    //mapping (address => uint) public balances;
-    //ERC20 Token Details
+
     string tokenName;
     address tokenAddress; // Address of tokenName smartContract
 
     //Redeem
     //mapping (address => bool) public isSigned;
     struct RedeemTX {
-        address recipient;
-        uint amount;
-        uint signature_count;
+        address payable recipient;
+        mapping (address => bool) votes;
+        uint256 amount;
+        uint256 signature_count;
+        bool isCompleted ;
+        uint256 until;
     }
-    mapping (uint => RedeemTX) redeemRequests;
+    mapping (address => RedeemTX) redeemRequests;
 
     ERC20 public ERC20Interface;
     event AddValidator(
@@ -564,9 +567,14 @@ contract LockRedeemERC {
     );
 
     event ValidatorSignedRedeem(
-        address indexed validator_addresss
+        address indexed recipient,
+        address validator_addresss,
+        uint256 amount
     );
-
+    event RedeemRequest(
+        address indexed recepient,
+        uint256 amount_requested
+    );
 
 
 
@@ -595,43 +603,44 @@ contract LockRedeemERC {
         return validators[addr] > 0;
     }
 
-    // function lock(uint amount_ ) public {
-    //     require(amount_ >= 0, "Must pay a balance more than 0");
-    //     address from_ = msg.sender; // Assuming Go code ,calls the ethereum smart contract using the users eth address
-    //     ERC20Interface =  ERC20(tokenAddress);
-    //     //if (ERC20Interface.approve(address,amount_))
-    //     //{
-    //     ERC20Interface.transfer(from_,address(this), amount_);
-    //     //}
-    //     balances[from_] += amount_; // For testing only
-    //     tokenBalance += amount_; // Aggregate value
-    //     ERC20Interface.balanceOf(address(this))
-    //     emit LockSuccsessful(msg.sender, amount_);
-    // }
 
-    function sign(uint redeemID_,uint amount_,address recipient_) public  {
-        require(isValidator(msg.sender),"validator not present in list");
-        if(redeemRequests[redeemID_].signature_count > 0 )
-        {
-          require(redeemRequests[redeemID_].amount == amount_,"ValidatorCompromised" );
-          require(redeemRequests[redeemID_].recipient == recipient_, "ValidatorCompromised");
-            redeemRequests[redeemID_].signature_count = redeemRequests[redeemID_].signature_count + 1;
-        }
-        else
-        {
-            redeemRequests[redeemID_].amount = amount_;
-            redeemRequests[redeemID_].recipient = recipient_;
-            redeemRequests[redeemID_].signature_count = 1;
-        }
-        emit ValidatorSignedRedeem(msg.sender);
+
+    //function called by user andcopy of trasaction sent to protocol
+    function redeem(uint256 amount_)  public  {
+        require(redeemRequests[msg.sender].amount == uint256(0));
+        require(amount_ > 0, "amount should be bigger than 0");
+        require(redeemRequests[msg.sender].isCompleted == true, "earlier redeem has not been executed yet");
+        require(redeemRequests[msg.sender].until < block.number, "request is locked, not available");
+
+        redeemRequests[msg.sender].isCompleted = false;
+        redeemRequests[msg.sender].signature_count = uint256(0);
+        redeemRequests[msg.sender].recipient = msg.sender;
+        redeemRequests[msg.sender].amount = amount_ ;
+        redeemRequests[msg.sender].until = block.number + LOCK_PERIOD;
+        emit RedeemRequest(redeemRequests[msg.sender].recipient,redeemRequests[msg.sender].amount);
     }
 
-    function redeem (uint redeemID_) public  {
-        require(redeemRequests[redeemID_].recipient == msg.sender);
-        require(redeemRequests[redeemID_].signature_count >= votingThreshold);
+    function sign(uint amount_, address payable recipient_) public  {
+        require(isValidator(msg.sender),"validator not present in list");
+        require(!redeemRequests[recipient_].isCompleted, "redeem request is completed");
+        require(redeemRequests[recipient_].amount == amount_,"redeem amount Compromised" );
+        require(!redeemRequests[recipient_].votes[msg.sender]);
+
+        // update votes
+        redeemRequests[recipient_].votes[msg.sender] = true;
+        redeemRequests[recipient_].signature_count += 1;
+        emit ValidatorSignedRedeem(recipient_, msg.sender, amount_);
+    }
+
+
+    function executeredeem () public  {
+        require(redeemRequests[msg.sender].recipient == msg.sender);
+        require(redeemRequests[msg.sender].signature_count >= votingThreshold);
         ERC20Interface =  ERC20(tokenAddress);
-        ERC20Interface.transfer(redeemRequests[redeemID_].recipient,redeemRequests[redeemID_].amount);
-        emit RedeemSuccessful(redeemRequests[redeemID_].recipient,redeemRequests[redeemID_].amount);
+        ERC20Interface.transfer(redeemRequests[msg.sender].recipient,redeemRequests[msg.sender].amount);
+        redeemRequests[msg.sender].amount = 0;
+        redeemRequests[msg.sender].isCompleted = true;
+        emit RedeemSuccessful(redeemRequests[msg.sender].recipient,redeemRequests[msg.sender].amount);
     }
 
     function getTotalErcBalance() public returns (uint) {
