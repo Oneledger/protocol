@@ -126,6 +126,10 @@ func (app *App) setupState(stateBytes []byte) error {
 		return errors.Wrap(err, "Setup State")
 	}
 
+	err = app.Context.govern.SetBTCChainDriverOption(initial.BTCCDOption)
+	if err != nil {
+		return errors.Wrap(err, "Setup State")
+	}
 	balanceCtx := app.Context.Balances()
 
 	// (1) Register all the currencies and fee
@@ -290,6 +294,11 @@ func (app *App) Prepare() error {
 			return err
 		}
 		app.Context.ethTrackers.SetupOption(cdOpt)
+
+		btcOption, err := app.Context.govern.GetBTCChainDriverOption()
+		btcConfig := bitcoin.NewBTCConfig(app.Context.cfg.ChainDriver, btcOption.BTCChainType)
+
+		app.Context.btcTrackers.SetConfig(btcConfig)
 	}
 	return nil
 }
