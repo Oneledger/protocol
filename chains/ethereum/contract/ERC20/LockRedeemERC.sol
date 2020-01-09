@@ -535,9 +535,7 @@ contract LockRedeemERC {
 
     mapping (address => int) public validators;
 
-
-    string tokenName;
-    address tokenAddress; // Address of tokenName smartContract
+    //address tokenAddress; // Address of tokenName smartContract
 
     //Redeem
     //mapping (address => bool) public isSigned;
@@ -580,7 +578,7 @@ contract LockRedeemERC {
 
     event NewThreshold(uint _prevThreshold, uint _newThreshold);
 
-    constructor(address[] memory initialValidators,address tokenAddress_,string memory tokenName_) public {
+    constructor(address[] memory initialValidators) public {
         // Require at least 4 validators
         require(initialValidators.length >= MIN_VALIDATORS, "insufficient validators passed to constructor");
         // require( tokenAddress_ != '0x0');
@@ -592,8 +590,7 @@ contract LockRedeemERC {
             require(validators[v] == 0, "found non-unique validator in initialValidators");
             addValidator(v);
         }
-        tokenName = tokenName_;
-        tokenAddress = tokenAddress_;
+        //tokenAddress = tokenAddress_;
         votingThreshold = 1; // Take as input
         // Set the initial epochBlockHeight
         //declareNewEpoch(block.number);
@@ -629,21 +626,22 @@ contract LockRedeemERC {
         // update votes
         redeemRequests[recipient_].votes[msg.sender] = true;
         redeemRequests[recipient_].signature_count += 1;
+
         emit ValidatorSignedRedeem(recipient_, msg.sender, amount_);
     }
 
 
-    function executeredeem () public  {
+    function executeredeem (address tokenAddress) public  {
         require(redeemRequests[msg.sender].recipient == msg.sender);
         require(redeemRequests[msg.sender].signature_count >= votingThreshold);
         ERC20Interface =  ERC20(tokenAddress);
-        ERC20Interface.transfer(redeemRequests[msg.sender].recipient,redeemRequests[msg.sender].amount);
+        ERC20Interface.transfer(msg.sender,redeemRequests[msg.sender].amount);
         redeemRequests[msg.sender].amount = 0;
         redeemRequests[msg.sender].isCompleted = true;
         emit RedeemSuccessful(redeemRequests[msg.sender].recipient,redeemRequests[msg.sender].amount);
     }
 
-    function getTotalErcBalance() public returns (uint) {
+    function getTotalErcBalance(address tokenAddress) public returns (uint) {
         ERC20Interface =  ERC20(tokenAddress);
         return ERC20Interface.balanceOf(address(this));
     }

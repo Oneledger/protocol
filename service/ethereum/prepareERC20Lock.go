@@ -19,6 +19,7 @@ func (svc *Service) PrepareOLTERC20Lock(req *OLTERC20LockRequest,out *OLTLockRep
 		svc.logger.Error(err,codes.ErrPreparingErc20OLTLock.ErrorMsg())
 		return codes.ErrPreparingErc20OLTLock
 	}
+
 	uuidNew, _ := uuid.NewUUID()
 	fee := action.Fee{req.Fee, req.Gas}
 	tx := &action.RawTx{
@@ -27,7 +28,6 @@ func (svc *Service) PrepareOLTERC20Lock(req *OLTERC20LockRequest,out *OLTLockRep
 		Fee:  fee,
 		Memo: uuidNew.String(),
 	}
-
 	packets, err := serialize.GetSerializer(serialize.NETWORK).Serialize(tx)
 	if err != nil {
 		return codes.ErrSerialization

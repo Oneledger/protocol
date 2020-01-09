@@ -2,7 +2,6 @@ package broadcast
 
 import (
 	"errors"
-	"fmt"
 
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/client"
@@ -81,7 +80,6 @@ func (svc *Service) validateAndSignTx(req client.BroadcastRequest) ([]byte, erro
 
 func (svc *Service) broadcast(method client.BroadcastMode, req client.BroadcastRequest) (client.BroadcastReply, error) {
 	makeErr := func(err error) error { return rpc.InternalError(err.Error()) }
-	fmt.Println("BROADCAST ")
 	rawSignedTx, err := svc.validateAndSignTx(req)
 	if err != nil {
 		return client.BroadcastReply{}, err
@@ -138,7 +136,6 @@ func (svc *Service) TxSync(req client.BroadcastRequest, reply *client.BroadcastR
 
 // TxCommit returns when the transaction has been committed to a block.
 func (svc *Service) TxCommit(req client.BroadcastRequest, reply *client.BroadcastReply) error {
-	fmt.Println("TXCOMMIT BROADCAST ")
 	out, err := svc.broadcast(client.BROADCASTCOMMIT, req)
 	if err != nil {
 		return err

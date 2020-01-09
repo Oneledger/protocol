@@ -1,6 +1,7 @@
 package event
 
 import (
+	"fmt"
 	"strconv"
 
 	"github.com/Oneledger/protocol/chains/ethereum"
@@ -63,6 +64,7 @@ func (job *JobETHBroadcast) DoMyJob(ctx interface{}) {
 		return
 	}
 	//check if tx already broadcasted, if yest, job.Status = jobs.Completed
+	fmt.Println("BroadCasting Trasaction")
 	_, err = cd.BroadcastTx(tx)
 	if err != nil {
 		ethCtx.Logger.Error("Error in transaction broadcast : ", job.GetJobID(), err)

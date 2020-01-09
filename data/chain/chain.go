@@ -30,6 +30,7 @@ const (
 	ONELEDGER Type = 0
 	BITCOIN   Type = 1
 	ETHEREUM  Type = 2
+	TESTTOKEN Type = 3
 )
 
 var chainTypes = map[string]Type{}
@@ -39,6 +40,7 @@ func init() {
 	RegisterChainType("OneLedger", int(ONELEDGER))
 	RegisterChainType("Bitcoin", int(BITCOIN))
 	RegisterChainType("Ethereum", int(ETHEREUM))
+	RegisterChainType("TestToken",int(TESTTOKEN))
 
 }
 

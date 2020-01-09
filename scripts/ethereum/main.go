@@ -35,11 +35,9 @@ var (
 	LockRedeemABI = contract.LockRedeemABI
     TestTokenABI  = contract.ERC20BasicABI
    // LockRedeemERC20ABI = contract.ContextABI
-
-	LockRedeemContractAddr = "0x66d0C996969e3aCDBbA0cE41Aff9cb262b7bcacc"
-	TestTokenContractAddr = "0x0a8Da058651f2aEc36Db1Bb1B2d95f7E1b5652C6"
-	LockRedeemERC20ContractAddr = "0x188a2d7bA128C510E0E35Cf1fa5B8EE3811367F7"
-
+	LockRedeemContractAddr = "0x4ff8d7b79109192B50549D9a4d1Cc60362b9fba8"
+	TestTokenContractAddr = "0x0ABBe32373e47aeADB03F528a66Ce2E704fEBd9D"
+	LockRedeemERC20ContractAddr = "0xe206815653100EEcbBbC96C8dd4E141C10D8785E"
 	cfg               = config.DefaultEthConfig()
 	log               = logger.NewDefaultLogger(os.Stdout).WithPrefix("testeth")
 	UserprivKey       *ecdsa.PrivateKey
@@ -49,7 +47,7 @@ var (
 	contractAbi            abi.ABI
 	valuelock              = createValue("10000") // in wei (1 eth)
 	valueredeem            = createValue("100")
-	valuelockERC20           = big.NewInt(10)
+	valuelockERC20           = createValue("1000000000000000000")
 	fromAddress            common.Address
 	redeemRecipientAddress common.Address
 
@@ -372,101 +370,111 @@ func erc20lock() {
 	txNew := &types.Transaction{}
 	err = rlp.DecodeBytes(rawTxBytes, txNew)
 
-
-
-
-
-	methodName := "transfer"
-	method,exists:=tokenAbi.Methods[methodName]
-	if !exists {
-		fmt.Println("Method '%v' not found in the ABI", methodName)
+	rpcclient, err := rpc.NewClient("http://localhost:26602")
+	if err != nil {
+		fmt.Println(err)
 		return
 	}
-	signature,ok := mapkey(contract.ERC20BasicFuncSigs,method.Sig())
-	if !ok {
-		log.Fatal("Method Signature does not exist")
+
+	result := &oclient.ListCurrenciesReply{}
+	err = rpcclient.Call("query.ListCurrencies", struct{}{}, result)
+	if err != nil {
+		fmt.Println(err)
+		return
 	}
-	fmt.Println(signature)
+	olt, ok := result.Currencies.GetCurrencySet().GetCurrencyByName("OLT")
+    if !ok {
+    	fmt.Println(result.Currencies)
+		return
+	}
+	accReply := &oclient.ListAccountsReply{}
+	err = rpcclient.Call("owner.ListAccounts", struct{}{}, accReply)
+	if err != nil {
+		fmt.Println("query account failed", err)
+		return
+	}
 
+	acc := accReply.Accounts[0]
 
-	//transactionHash := client.SendTransaction(context.Background(), signedTx)
+	req := se.OLTERC20LockRequest{
+		RawTx:   rawTxBytes,
+		Address: acc.Address(),
+		Fee:     action.Amount{Currency: olt.Name, Value: *balance.NewAmountFromInt(10000000000)},
+		Gas:     400000,
+	}
+	reply := &se.OLTLockReply{}
+	err = rpcclient.Call("eth.PrepareOLTERC20Lock", req, reply)
+	if err != nil {
+		fmt.Println("Error in prepare OLTERCLock " , err)
+		return
+	}
+	signReply := &oclient.SignRawTxResponse{}
+	err = rpcclient.Call("owner.SignWithAddress", oclient.SignRawTxRequest{
+		RawTx:   reply.RawTX,
+		Address: acc.Address(),
+	}, signReply)
+	if err != nil {
+		fmt.Println("Error in signing erc lock " ,err)
+		return
+	}
 
+	bresult := &oclient.BroadcastReply{}
+	err = rpcclient.Call("broadcast.TxCommit", oclient.BroadcastRequest{
+		RawTx:     reply.RawTX,
+		Signature: signReply.Signature.Signed,
+		PublicKey: signReply.Signature.Signer,
+	}, bresult)
 
-	//
-	//if err != nil {
-	//	fmt.Println(err)
-	//	return
-	//}
-	//
-	//rpcclient, err := rpc.NewClient("http://localhost:26602")
-	//if err != nil {
-	//	fmt.Println(err)
-	//	return
-	//}
-	//
-	//result := &oclient.ListCurrenciesReply{}
-	//err = rpcclient.Call("query.ListCurrencies", struct{}{}, result)
-	//if err != nil {
-	//	fmt.Println(err)
-	//	return
-	//}
-	//olt, _ := result.Currencies.GetCurrencySet().GetCurrencyByName("OLT")
-	//
-	//accReply := &oclient.ListAccountsReply{}
-	//err = rpcclient.Call("owner.ListAccounts", struct{}{}, accReply)
-	//if err != nil {
-	//	fmt.Println("query account failed", err)
-	//	return
-	//}
-	//
-	//acc := accReply.Accounts[0]
-	//
-	//req := se.OLTERC20LockRequest{
-	//	RawTx:   rawTxBytes,
-	//	Address: acc.Address(),
-	//	Fee:     action.Amount{Currency: olt.Name, Value: *balance.NewAmountFromInt(10000000000)},
-	//	Gas:     400000,
-	//}
-	////
-	//reply := &se.OLTLockReply{}
-	//err = rpcclient.Call("eth.PrepareOLTERC20Lock", req, reply)
-	//signReply := &oclient.SignRawTxResponse{}
-	//err = rpcclient.Call("owner.SignWithAddress", oclient.SignRawTxRequest{
-	//	RawTx:   reply.RawTX,
-	//	Address: acc.Address(),
-	//}, signReply)
-	//if err != nil {
-	//	fmt.Println(err)
-	//	return
-	//}
-	//
-	////fmt.Println("after sign call",reply.RawTX)
-	//
-	//bresult := &oclient.BroadcastReply{}
-	//err = rpcclient.Call("broadcast.TxCommit", oclient.BroadcastRequest{
-	//	RawTx:     reply.RawTX,
-	//	Signature: signReply.Signature.Signed,
-	//	PublicKey: signReply.Signature.Signer,
-	//}, bresult)
-	//
-	////fmt.Println(hex.EncodeToString(reply.RawTX))
-	//if err != nil {
-	//	fmt.Println(err)
-	//	return
-	//}
-	//
-	//fmt.Println("broadcast result: ", bresult.OK)
-	//fmt.Println(bresult.Log)
+	//fmt.Println(hex.EncodeToString(reply.RawTX))
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	fmt.Println("broadcast result: ", bresult.OK)
+	fmt.Println(bresult.Log)
 }
 
 
-func mapkey(m map[string]string, value string) (key string, ok bool) {
-	for k, v := range m {
-		if v == value {
-			key = k
-			ok = true
-			return
-		}
-	}
-	return
-}
+//func mapkey(m map[string]string, value string) (key string, ok bool) {
+//	for k, v := range m {
+//		if v == value {
+//			key = k
+//			ok = true
+//			return
+//		}
+//	}
+//	return
+//}
+
+//methodName := "transfer"
+//method,exists:=tokenAbi.Methods[methodName]
+//if !exists {
+//	fmt.Println("Method '%v' not found in the ABI", methodName)
+//	return
+//}
+//_,ok := mapkey(contract.ERC20BasicFuncSigs,method.Sig())
+//if !ok {
+//	log.Fatal("Method Signature does not exist")
+//}
+//
+//ss := strings.Split(hex.EncodeToString(rawTxBytes), "a9059cbb")
+
+//tokenAmount,err := hex.DecodeString(ss[1][64:128])
+//if err != nil {
+//	return nil,err
+//}
+//receiver := ss[1][24:64]
+//fmt.Println(common.HexToAddress(receiver))
+//amt := big.NewInt(0).SetBytes(tokenAmount)
+
+
+//transactionHash := client.SendTransaction(context.Background(), signedTx)
+
+
+//
+//if err != nil {
+//	fmt.Println(err)
+//	return
+//}
+//

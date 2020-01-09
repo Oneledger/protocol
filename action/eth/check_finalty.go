@@ -4,7 +4,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"strconv"
+	"strings"
 
+	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/pkg/errors"
 	"github.com/tendermint/tendermint/libs/common"
 
@@ -136,6 +138,12 @@ func runCheckFinality(ctx *action.Context, tx action.RawTx) (bool, action.Respon
 				return false, action.Response{Log: errors.Wrap(err, "unable to burn tokens").Error()}
 			}
 		}
+		if tracker.Type == trackerlib.ProcessTypeLockERC {
+			err := mintERC20tokens(ctx, tracker, *f)
+			if err != nil {
+				return false, action.Response{Log: errors.Wrap(err, "unable to mint tokens").Error()}
+			}
+		}
 
 		return true, action.Response{Log: "Minting successful"}
 	}
@@ -199,5 +207,42 @@ func burnTokens(ctx *action.Context, tracker *trackerlib.Tracker, oltTx ReportFi
 		return err
 	}
 
+	return nil
+}
+
+func mintERC20tokens(ctx *action.Context, tracker *trackerlib.Tracker, oltTx ReportFinality) error {
+	fmt.Println("Mint Tokens of Type Test Token")
+	curr, ok := ctx.Currencies.GetCurrencyByName("TTC")
+	if !ok {
+		return errors.New("TTC currency not allowed")
+	}
+
+	contractAbi, err := abi.JSON(strings.NewReader(ctx.ETHTrackers.GetOption().TestTokenABI))
+	if err != nil {
+		return errors.Wrap(err, "Unable to get contract Abi for Test Token from ChainDriver options")
+	}
+
+	functionSignature,err := ethereum.CetSignfromName(contractAbi,"transfer")
+	erc20Params, err := ethereum.ParseERC20Lock(tracker.SignedETHTx,functionSignature)
+	if err != nil {
+		return err
+	}
+    fmt.Println(erc20Params)
+	oTTCCoin := curr.NewCoinFromAmount(*balance.NewAmountFromBigInt(erc20Params.TokenAmount))
+	err = ctx.Balances.AddToAddress(oltTx.Locker, oTTCCoin)
+	if err != nil {
+		ctx.Logger.Error(err)
+		return errors.New("Unable to mint")
+	}
+
+	//ethSupply := keys.Address(lockBalanceAddress)
+	//err = ctx.Balances.AddToAddress(ethSupply, oEthCoin)
+	//if err != nil
+
+	tracker.State = trackerlib.Released
+	err = ctx.ETHTrackers.Set(tracker)
+	if err != nil {
+		return err
+	}
 	return nil
 }

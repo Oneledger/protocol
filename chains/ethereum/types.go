@@ -2,6 +2,8 @@ package ethereum
 
 import (
 	"math/big"
+
+	"github.com/ethereum/go-ethereum/common"
 )
 
 type RedeemRequest struct {
@@ -9,7 +11,7 @@ type RedeemRequest struct {
 }
 
 type LockErcRequest struct {
-	Receiver string
+	Receiver common.Address
   	TokenAmount *big.Int
 }
 
