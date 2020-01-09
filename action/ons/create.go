@@ -1,6 +1,7 @@
 package ons
 
 import (
+	"bytes"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -73,11 +74,13 @@ func (domainCreateTx) Validate(ctx *action.Context, tx action.SignedTx) (bool, e
 		return false, errors.Wrap(action.ErrWrongTxType, err.Error())
 	}
 
+	//Validate whether signers match those of the transaction and verify the signed transaction.
 	err = action.ValidateBasic(tx.RawBytes(), create.Signers(), tx.Signatures)
 	if err != nil {
 		return false, err
 	}
 
+	//Verify fee currency is valid and the amount exceeds the minimum.
 	err = action.ValidateFee(ctx.FeePool.GetOpt(), tx.Fee)
 	if err != nil {
 		return false, err
@@ -90,6 +93,7 @@ func (domainCreateTx) Validate(ctx *action.Context, tx action.SignedTx) (bool, e
 	if !create.Name.IsValid() {
 		return false, ErrInvalidDomain
 	}
+
 	c, _ := ctx.Currencies.GetCurrencyById(0)
 	if c.Name != create.BuyingPrice.Currency {
 		fmt.Println(c, create)
@@ -98,7 +102,7 @@ func (domainCreateTx) Validate(ctx *action.Context, tx action.SignedTx) (bool, e
 
 	coin := create.BuyingPrice.ToCoin(ctx.Currencies)
 	if coin.LessThanEqualCoin(coin.Currency.NewCoinFromAmount(ctx.Domains.GetOptions().BaseDomainPrice)) {
-		return false, action.ErrNotEnoughFund
+		return false, action.ErrInvalidAmount
 	}
 
 	return true, nil
@@ -124,6 +128,7 @@ func runCreate(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 		return false, action.Response{Log: err.Error()}
 	}
 
+	isSub := create.Name.IsSub()
 	//check domain existence and set to db
 	if ctx.Domains.Exists(create.Name) {
 		return false, action.Response{Log: fmt.Sprintf("domain already exist: %s", create.Name)}
@@ -142,13 +147,6 @@ func runCreate(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 
 	opt := ctx.Domains.GetOptions()
 
-	expiry, err := calculateExpiry(&create.BuyingPrice.Value, &opt.BaseDomainPrice, &opt.PerBlockFees)
-	if err != nil {
-		return false, action.Response{
-			Log: "Unable to calculate Expiry" + err.Error(),
-		}
-	}
-
 	ok := verifyDomainName(create.Name, opt)
 	if !ok {
 		return false, action.Response{
@@ -166,14 +164,44 @@ func runCreate(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 		}
 	}
 
+	var expiry int64
+
+	if isSub {
+		parentName, err := create.Name.GetParentName()
+		if err != nil {
+			return false, action.Response{Log: err.Error()}
+		}
+		parent, err := ctx.Domains.Get(parentName)
+		//Check if Parent exists in Domain Store
+		if err != nil {
+			return false, action.Response{Log: "Parent domain doesn't exist, cannot create sub domain!"}
+		}
+		if !bytes.Equal(parent.OwnerAddress, create.Owner) {
+			return false, action.Response{Log: "parent domain not owned"}
+		}
+
+		if create.BuyingPrice.Value.BigInt().Cmp(opt.BaseDomainPrice.BigInt()) < 0 {
+			return false, action.Response{Log: action.ErrInvalidAmount.Error()}
+		}
+
+		expiry = parent.ExpireHeight
+	} else {
+		extend, err := calculateExpiry(&create.BuyingPrice.Value, &opt.BaseDomainPrice, &opt.PerBlockFees)
+		if err != nil {
+			return false, action.Response{
+				Log: err.Error(),
+			}
+		}
+		expiry = ctx.State.Version() + extend
+	}
+
 	domain, err := ons.NewDomain(
 		create.Owner,
 		create.Beneficiary,
 		create.Name.String(),
-		"",
 		ctx.Header.Height,
 		create.Uri,
-		ctx.State.Version()+expiry,
+		expiry,
 	)
 	if err != nil {
 		return false, action.Response{Log: err.Error()}
@@ -184,7 +212,6 @@ func runCreate(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	}
 	//ctx.Logger.Info("Domain :" ,domain)
 
-	//ctx.Logger.Info(ctx.Domains.Get(domain.Name))
 	result := action.Response{
 		Tags: create.Tags(),
 	}

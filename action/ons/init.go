@@ -14,7 +14,6 @@ var (
 func init() {
 
 	serialize.RegisterConcrete(new(DomainCreate), "action_dc")
-	serialize.RegisterConcrete(new(CreateSubDomain), "action_csd")
 	serialize.RegisterConcrete(new(DomainUpdate), "action_du")
 	serialize.RegisterConcrete(new(DomainSale), "action_dsale")
 	serialize.RegisterConcrete(new(DomainSend), "action_dsend")
@@ -24,10 +23,6 @@ func init() {
 
 func EnableONS(r action.Router) error {
 	err := r.AddHandler(action.DOMAIN_CREATE, domainCreateTx{})
-	if err != nil {
-		return errors.Wrap(err, "domainCreateTx")
-	}
-	err = r.AddHandler(action.DOMAIN_CREATE_SUB, CreateSubDomainTx{})
 	if err != nil {
 		return errors.Wrap(err, "domainCreateTx")
 	}

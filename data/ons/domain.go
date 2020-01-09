@@ -35,15 +35,10 @@ type Domain struct {
 	URI        string `json:"uri"`
 	// the asking price in OLT set by the owner
 	SalePrice balance.Coin `json:"salePrice"`
-
-	// parent domain name
-	Parent Name `json:"parent"`
-
-	Expiry int64 `json:"expiry"`
 }
 
 func NewDomain(ownerAddress, accountAddress keys.Address,
-	name string, parent string,
+	name string,
 	height int64,
 	uri string,
 	expiry int64,
@@ -58,27 +53,19 @@ func NewDomain(ownerAddress, accountAddress keys.Address,
 	if !n.IsValid() {
 		return nil, ErrDomainNameNotValid
 	}
-	var p Name
-	if len(parent) > 0 {
-		p = GetNameFromString(parent)
-		if !p.IsValid() {
-			return nil, ErrDomainNameNotValid
-		}
-	}
+
 	return &Domain{
 		OwnerAddress:     ownerAddress,
 		Beneficiary:      accountAddress,
 		Name:             n,
 		CreationHeight:   height, // height of current txn
 		LastUpdateHeight: height, // height of current txn
-		ExpireHeight:     height, // height of current txn
+		ExpireHeight:     expiry, // height of expiry
 		ActiveFlag:       true,   // Active by default
 
 		SalePrice:  balance.Coin{},
 		OnSaleFlag: false,
-		Parent:     p,
 		URI:        uri,
-		Expiry:     expiry,
 	}, nil
 }
 
@@ -130,17 +117,16 @@ func (d Domain) IsActive(height int64) bool {
 	return d.ActiveFlag && d.ExpireHeight > height
 }
 
-func (d Domain) GetParent() Name {
-	return d.Parent
+func (d Domain) IsExpired(height int64) bool {
+	return d.ExpireHeight < height
 }
 
 func (d *Domain) ResetAfterSale(buyer keys.Address, nBlocks, currentHeight int64) {
-	d.Beneficiary = nil
+	d.Beneficiary = buyer
 	d.ExpireHeight = currentHeight + nBlocks
 	d.OwnerAddress = buyer
 	d.SalePrice = balance.Coin{}
 	d.LastUpdateHeight = currentHeight
 	d.ActiveFlag = true
-	d.Parent = Name("")
 	d.URI = ""
 }

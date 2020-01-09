@@ -22,7 +22,6 @@ type domainData struct {
 	OnSaleFlag       bool         `json:"h"`
 
 	SalePriceData *balance.CoinData `json:"i"`
-	Parent        string            `json:"j"`
 	URI           string            `json:"k"`
 }
 
@@ -41,7 +40,6 @@ func (d *Domain) Data() serialize.Data {
 		ActiveFlag:       d.ActiveFlag,
 		OnSaleFlag:       d.OnSaleFlag,
 		SalePriceData:    nil,
-		Parent:           d.Parent.String(),
 		URI:              d.URI,
 	}
 	if d.SalePrice.Amount != nil {
@@ -65,7 +63,6 @@ func (d *Domain) SetData(a interface{}) error {
 	d.ExpireHeight = cd.ExpireHeight
 	d.ActiveFlag = cd.ActiveFlag
 	d.OnSaleFlag = cd.OnSaleFlag
-	d.Parent = GetNameFromString(cd.Parent)
 	d.URI = cd.URI
 
 	if cd.SalePriceData != nil {

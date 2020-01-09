@@ -23,8 +23,7 @@ const (
 	DOMAIN_PURCHASE   Type = 0x24
 	DOMAIN_SEND       Type = 0x25
 	DOMAIN_DELETE_SUB Type = 0x26
-	DOMAIN_CREATE_SUB Type = 0x27
-	DOMAIN_RENEW      Type = 0x28
+	DOMAIN_RENEW      Type = 0x27
 
 	BTC_LOCK                   Type = 0x81
 	BTC_ADD_SIGNATURE          Type = 0x82
