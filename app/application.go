@@ -126,6 +126,10 @@ func (app *App) setupState(stateBytes []byte) error {
 		return errors.Wrap(err, "Setup State")
 	}
 
+	err = app.Context.govern.SetBTCChainDriverOption(initial.BTCCDOption)
+	if err != nil {
+		return errors.Wrap(err, "Setup State")
+	}
 	balanceCtx := app.Context.Balances()
 
 	// (1) Register all the currencies and fee
@@ -143,6 +147,8 @@ func (app *App) setupState(stateBytes []byte) error {
 		return errors.Wrap(err, "Setup State")
 	}
 	app.Context.feePool.SetupOpt(app.Context.feeOption)
+
+	app.Context.btcTrackers.SetConfig(bitcoin.NewBTCConfig(app.Context.cfg.ChainDriver, initial.BTCCDOption.BTCChainType))
 
 	// (2) Set balances to all those mentioned
 	for _, bal := range initial.Balances {
@@ -191,16 +197,16 @@ func (app *App) setupValidators(req RequestInitChain, currencies *balance.Curren
 
 	vu, err := app.Context.validators.WithState(app.Context.deliver).Init(req, currencies)
 
-	params := bitcoin2.GetChainParams(app.Context.cfg.ChainDriver.BitcoinChainType)
+	btcCfg := app.Context.btcTrackers.GetConfig()
 
-	vals, err := app.Context.validators.WithState(app.Context.deliver).GetBitcoinKeys(params)
+	vals, err := app.Context.validators.WithState(app.Context.deliver).GetBitcoinKeys(btcCfg.BTCParams)
 	threshold := (len(vals) * 2 / 3) + 1
 	for i := 0; i < 6; i++ {
 		// appHash := app.genesisDoc.AppHash.Bytes()
 
 		randBytes := []byte("XOLT")
 
-		script, address, addressList, err := bitcoin2.CreateMultiSigAddress(threshold, vals, randBytes, params)
+		script, address, addressList, err := bitcoin2.CreateMultiSigAddress(threshold, vals, randBytes, btcCfg.BTCParams)
 		if err != nil {
 			return nil, err
 		}
@@ -288,6 +294,11 @@ func (app *App) Prepare() error {
 			return err
 		}
 		app.Context.ethTrackers.SetupOption(cdOpt)
+
+		btcOption, err := app.Context.govern.GetBTCChainDriverOption()
+		btcConfig := bitcoin.NewBTCConfig(app.Context.cfg.ChainDriver, btcOption.BTCChainType)
+
+		app.Context.btcTrackers.SetConfig(btcConfig)
 	}
 	return nil
 }

@@ -53,7 +53,7 @@ func (bl Redeem) Tags() common.KVPairs {
 		Value: bl.Redeemer,
 	}
 	tag4 := common.KVPair{
-		Key:   []byte("tx.redeem_curr"),
+		Key:   []byte("tx.redeem_currency"),
 		Value: []byte("BTC"),
 	}
 
@@ -121,7 +121,8 @@ func (btcRedeemTx) Validate(ctx *action.Context, signedTx action.SignedTx) (bool
 		return false, errors.New("txn doesn't match tracker")
 	}
 
-	if !bitcoin2.ValidateRedeem(tx, ctx.BlockCypherToken, ctx.BlockCypherChainType, tracker.CurrentTxId,
+	opt := ctx.BTCTrackers.GetConfig()
+	if !bitcoin2.ValidateRedeem(tx, opt.BlockCypherToken, opt.BlockCypherChainType, tracker.CurrentTxId,
 		tracker.ProcessLockScriptAddress, tracker.CurrentBalance, redeem.RedeemAmount) {
 
 		return false, errors.New("txn doesn't match tracker")

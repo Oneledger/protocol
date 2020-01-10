@@ -8,6 +8,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"strconv"
 
 	"github.com/btcsuite/btcd/wire"
 	"github.com/pkg/errors"
@@ -53,8 +54,21 @@ func (bl Lock) Tags() common.KVPairs {
 		Key:   []byte("tx.locker"),
 		Value: bl.Locker.Bytes(),
 	}
+	tag3 := common.KVPair{
+		Key:   []byte("tx.tracker_name"),
+		Value: []byte(bl.TrackerName),
+	}
+	la := strconv.FormatInt(bl.LockAmount, 10)
+	tag4 := common.KVPair{
+		Key:   []byte("tx.lock_amount"),
+		Value: []byte(la),
+	}
+	tag5 := common.KVPair{
+		Key:   []byte("tx.lock_currency"),
+		Value: []byte("BTC"),
+	}
 
-	tags = append(tags, tag, tag2)
+	tags = append(tags, tag, tag2, tag3, tag4, tag5)
 	return tags
 }
 
@@ -118,7 +132,9 @@ func (btcLockTx) Validate(ctx *action.Context, signedTx action.SignedTx) (bool, 
 		return false, errors.New("txn doesn't match tracker")
 	}
 
-	if !bitcoin2.ValidateLock(tx, ctx.BlockCypherToken, ctx.BlockCypherChainType, tracker.CurrentTxId,
+	opt := ctx.BTCTrackers.GetConfig()
+	if !bitcoin2.ValidateLock(tx, opt.BlockCypherToken,
+		opt.BlockCypherChainType, tracker.CurrentTxId,
 		tracker.ProcessLockScriptAddress, tracker.CurrentBalance, lock.LockAmount) {
 
 		return false, errors.New("txn doesn't match tracker")

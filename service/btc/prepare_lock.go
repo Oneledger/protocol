@@ -27,9 +27,11 @@ const (
 // PrepareLock
 func (s *Service) PrepareLock(args client.BTCLockPrepareRequest, reply *client.BTCLockPrepareResponse) error {
 
-	cd := bitcoin.NewChainDriver(s.blockCypherToken)
+	cfg := s.trackerStore.GetConfig()
 
-	btc := gobcy.API{s.blockCypherToken, "btc", s.btcChainType}
+	cd := bitcoin.NewChainDriver(cfg.BlockCypherToken)
+
+	btc := gobcy.API{cfg.BlockCypherToken, "btc", cfg.BlockCypherChainType}
 
 	tx, err := btc.GetTX(args.Hash, nil)
 	if err != nil {
@@ -82,8 +84,10 @@ func (s *Service) AddUserSignatureAndProcessLock(args client.BTCLockRequest, rep
 		return codes.ErrTrackerBusy
 	}
 
+	cfg := s.trackerStore.GetConfig()
+
 	// initialize a chain driver for adding signature
-	cd := bitcoin.NewChainDriver(s.blockCypherToken)
+	cd := bitcoin.NewChainDriver(cfg.BlockCypherToken)
 
 	// add the users' btc signature to the redeem txn in the appropriate place
 	s.logger.Debug("----", hex.EncodeToString(args.Txn), hex.EncodeToString(args.Signature))
@@ -115,7 +119,7 @@ func (s *Service) AddUserSignatureAndProcessLock(args client.BTCLockRequest, rep
 		return codes.ErrBadBTCTxn
 	}
 
-	if !bitcoin.ValidateLock(newBTCTx, s.blockCypherToken, s.btcChainType, tracker.CurrentTxId,
+	if !bitcoin.ValidateLock(newBTCTx, cfg.BlockCypherToken, cfg.BlockCypherChainType, tracker.CurrentTxId,
 		tracker.ProcessLockScriptAddress, tracker.CurrentBalance, totalLockAmount) {
 
 		return codes.ErrBadBTCTxn
