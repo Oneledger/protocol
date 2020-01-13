@@ -5,10 +5,16 @@ import (
 )
 
 type ChainDriverOption struct {
-	ContractABI      string
-	TestTokenABI     string
-	ERCContractABI   string
-	ContractAddress  common.Address
-	TestTokenAddress common.Address // Not needed ,same as to address in Lock Transaction
- 	ERCContractAddress  common.Address
+	ContractABI     string
+	ContractAddress common.Address
+	TokenList       []ERC20Token
+	ERCContractABI  string
+	//Not needed ,same as to address in Lock Transaction
+	ERCContractAddress common.Address
+}
+
+type ERC20Token struct {
+	TokName string
+	TokAddr common.Address
+	TokAbi  string
 }

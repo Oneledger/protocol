@@ -70,5 +70,5 @@ const (
 	ErrUnmarshalingRedeem              = 400107
 
 	ERC20
-	ExternalErrUnableToCreateErc20OLTLockTX =500100
+	ExternalErrUnableToCreateErc20OLTLockTX = 500100
 )

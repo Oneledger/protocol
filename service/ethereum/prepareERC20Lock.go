@@ -8,7 +8,8 @@ import (
 	"github.com/Oneledger/protocol/serialize"
 	codes "github.com/Oneledger/protocol/status_codes"
 )
-func (svc *Service) PrepareOLTERC20Lock(req *OLTERC20LockRequest,out *OLTLockReply) error {
+
+func (svc *Service) PrepareOLTERC20Lock(req *OLTERC20LockRequest, out *OLTLockReply) error {
 	erc20lock := eth.ERC20Lock{
 		Locker: req.Address,
 		ETHTxn: req.RawTx,
@@ -16,7 +17,7 @@ func (svc *Service) PrepareOLTERC20Lock(req *OLTERC20LockRequest,out *OLTLockRep
 
 	data, err := erc20lock.Marshal()
 	if err != nil {
-		svc.logger.Error(err,codes.ErrPreparingErc20OLTLock.ErrorMsg())
+		svc.logger.Error(err, codes.ErrPreparingErc20OLTLock.ErrorMsg())
 		return codes.ErrPreparingErc20OLTLock
 	}
 

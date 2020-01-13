@@ -4,9 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strconv"
-	"strings"
 
-	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/pkg/errors"
 	"github.com/tendermint/tendermint/libs/common"
 
@@ -211,33 +209,37 @@ func burnTokens(ctx *action.Context, tracker *trackerlib.Tracker, oltTx ReportFi
 }
 
 func mintERC20tokens(ctx *action.Context, tracker *trackerlib.Tracker, oltTx ReportFinality) error {
-	fmt.Println("Mint Tokens of Type Test Token")
-	curr, ok := ctx.Currencies.GetCurrencyByName("TTC")
-	if !ok {
-		return errors.New("TTC currency not allowed")
-	}
 
-	contractAbi, err := abi.JSON(strings.NewReader(ctx.ETHTrackers.GetOption().TestTokenABI))
-	if err != nil {
-		return errors.Wrap(err, "Unable to get contract Abi for Test Token from ChainDriver options")
-	}
-
-	functionSignature,err := ethereum.CetSignfromName(contractAbi,"transfer")
-	erc20Params, err := ethereum.ParseERC20Lock(tracker.SignedETHTx,functionSignature)
+	ethTx, err := ethereum.DecodeTransaction(tracker.SignedETHTx)
 	if err != nil {
 		return err
 	}
-    fmt.Println(erc20Params)
-	oTTCCoin := curr.NewCoinFromAmount(*balance.NewAmountFromBigInt(erc20Params.TokenAmount))
-	err = ctx.Balances.AddToAddress(oltTx.Locker, oTTCCoin)
+	ethOptions := ctx.ETHTrackers.GetOption()
+	token, err := ethereum.GetAbi(ethOptions.TokenList, *ethTx.To())
+	if err != nil {
+		return err
+	}
+	ctx.Logger.Info("Minting Tokens of type : ", token.TokName)
+	curr, ok := ctx.Currencies.GetCurrencyByName(token.TokName)
+	if !ok {
+		return errors.New("Currency not allowed ")
+	}
+	erc20Params,err := ethereum.ParseErc20Lock(ethOptions.TokenList,tracker.SignedETHTx)
+	if err !=nil{
+		return err
+	}
+	otokenCoin := curr.NewCoinFromAmount(*balance.NewAmountFromBigInt(erc20Params.TokenAmount))
+	err = ctx.Balances.AddToAddress(oltTx.Locker, otokenCoin)
 	if err != nil {
 		ctx.Logger.Error(err)
 		return errors.New("Unable to mint")
 	}
 
-	//ethSupply := keys.Address(lockBalanceAddress)
-	//err = ctx.Balances.AddToAddress(ethSupply, oEthCoin)
-	//if err != nil
+	tokenSupply := keys.Address(TTClockBalanceAddress)
+	err = ctx.Balances.AddToAddress(tokenSupply, otokenCoin)
+	if err != nil{
+		return errors.Errorf("Unable to update totalSupply for token : %s",token.TokName)
+	}
 
 	tracker.State = trackerlib.Released
 	err = ctx.ETHTrackers.Set(tracker)

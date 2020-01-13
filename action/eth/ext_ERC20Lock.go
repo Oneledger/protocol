@@ -2,6 +2,7 @@ package eth
 
 import (
 	"encoding/json"
+	"fmt"
 
 	ethcommon "github.com/ethereum/go-ethereum/common"
 	"github.com/pkg/errors"
@@ -14,7 +15,7 @@ import (
 
 type ERC20Lock struct {
 	Locker action.Address
-	ETHTxn []byte  // Raw Transaction for Locking Tokens
+	ETHTxn []byte // Raw Transaction for Locking Tokens
 }
 
 var _ action.Msg = &ERC20Lock{}
@@ -53,6 +54,7 @@ func (E *ERC20Lock) Unmarshal(data []byte) error {
 
 type ethERC20LockTx struct {
 }
+
 var _ action.Tx = ethERC20LockTx{}
 
 func (e ethERC20LockTx) Validate(ctx *action.Context, signedTx action.SignedTx) (bool, error) {
@@ -78,11 +80,11 @@ func (e ethERC20LockTx) Validate(ctx *action.Context, signedTx action.SignedTx) 
 }
 
 func (e ethERC20LockTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
-	return runERC20Lock(ctx,tx)
+	return runERC20Lock(ctx, tx)
 }
 
 func (e ethERC20LockTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
-	return runERC20Lock(ctx,tx)
+	return runERC20Lock(ctx, tx)
 }
 
 func (e ethERC20LockTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas) (bool, action.Response) {
@@ -90,15 +92,14 @@ func (e ethERC20LockTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx
 	return action.BasicFeeHandling(ctx, signedTx, start, size, 1)
 }
 
-
-func runERC20Lock (ctx *action.Context, tx action.RawTx) (bool, action.Response) {
+func runERC20Lock(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	erc20lock := &ERC20Lock{}
 	err := erc20lock.Unmarshal(tx.Data)
 	if err != nil {
 		ctx.Logger.Error("wrong tx type", err)
 		return false, action.Response{Log: "wrong tx type"}
 	}
-	_, err = ethchaindriver.DecodeTransaction(erc20lock.ETHTxn)
+	ethTx, err := ethchaindriver.DecodeTransaction(erc20lock.ETHTxn)
 	if err != nil {
 		ctx.Logger.Error("decode eth txn err", err)
 		return false, action.Response{
@@ -106,37 +107,58 @@ func runERC20Lock (ctx *action.Context, tx action.RawTx) (bool, action.Response)
 		}
 	}
 	ethOptions := ctx.ETHTrackers.GetOption()
-    ok,err := ethchaindriver.VerfiyERC20Lock(erc20lock.ETHTxn,ethOptions.TestTokenABI,ethOptions.ERCContractAddress)
-    if err != nil {
-    	ctx.Logger.Error("Unable to verify ERC LOCK transaction")
-    	return false,action.Response{
-			Log: "Unable to verify trasaction" + err.Error(),
+	token, err := ethchaindriver.GetAbi(ethOptions.TokenList, *ethTx.To())
+	if err != nil {
+		return false, action.Response{
+			Log: err.Error(),
+		}
+	}
+	ok, err := ethchaindriver.VerfiyERC20Lock(erc20lock.ETHTxn, token.TokAbi, ethOptions.ERCContractAddress)
+	if err != nil {
+		ctx.Logger.Error("Unable to verify ERC LOCK transaction")
+		return false, action.Response{
+			Log: "Unable to verify transaction" + err.Error(),
 		}
 	}
 	if !ok {
 		ctx.Logger.Error("To field of Transaction does not match OneLedger Contract Address")
-		return false,action.Response{
+		return false, action.Response{
 			Log: "To field of Transaction does not match OneLedger Contract Address" + err.Error(),
 		}
 	}
+	validatorList, err := ctx.Validators.GetValidatorsAddress()
 	if err != nil {
-		ctx.Logger.Error("Unable to Verify Data for Ethereum Lock")
-		return false, action.Response{
-			Log: "Unable to verify lock trasaction" + err.Error(),
-		}
-	}
-	valdatorlist, err := ctx.Validators.GetValidatorsAddress()
-	if err != nil {
-
 		ctx.Logger.Error("err in getting validator address", err)
 		return false, action.Response{Log: "error in getting validator addresses" + err.Error()}
 	}
+	curr, ok := ctx.Currencies.GetCurrencyByName(token.TokName)
+	if !ok {
+		return false, action.Response{Log: fmt.Sprintf("Token not Supported : %s ", token.TokName)}
+	}
+	erc20Params,err := ethchaindriver.ParseErc20Lock(ethOptions.TokenList,erc20lock.ETHTxn)
+	if err !=nil{
+		return false,action.Response{
+			Log: err.Error(),
+		}
+	}
+	lockToken := curr.NewCoinFromString(erc20Params.TokenAmount.String())
+	tokenSupply := action.Address(TTClockBalanceAddress)
+	balCoin, err := ctx.Balances.GetBalanceForCurr(tokenSupply, &curr)
+	if err != nil {
+		return false, action.Response{Log: fmt.Sprintf("Unable to get Eth lock total balance %s", erc20lock.Locker)}
+	}
+	totalSupplyToken := curr.NewCoinFromString(totalTTCSupply)
+	if !balCoin.Plus(lockToken).LessThanEqualCoin(totalSupplyToken) {
+		return false, action.Response{Log: fmt.Sprintf("Token lock exceeded limit ,for Token : %s ", token.TokName)}
+	}
+	
+	
 	tracker := ethereum.NewTracker(
 		ethereum.ProcessTypeLockERC,
 		erc20lock.Locker,
 		erc20lock.ETHTxn,
 		ethcommon.BytesToHash(erc20lock.ETHTxn),
-		valdatorlist,
+		validatorList,
 	)
 
 	err = ctx.ETHTrackers.Set(tracker)
@@ -149,4 +171,3 @@ func runERC20Lock (ctx *action.Context, tx action.RawTx) (bool, action.Response)
 		Tags: erc20lock.Tags(),
 	}
 }
-

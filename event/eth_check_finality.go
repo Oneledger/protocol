@@ -1,7 +1,6 @@
 package event
 
 import (
-	"fmt"
 	"strconv"
 
 	"github.com/Oneledger/protocol/action"
@@ -65,7 +64,6 @@ func (job *JobETHCheckFinality) DoMyJob(ctx interface{}) {
 		ethCtx.Logger.Error("Error Decoding Bytes from RaxTX :", job.GetJobID(), err)
 		return
 	}
-    fmt.Println("Starting Check Finality")
 	receipt, err := cd.CheckFinality(tx.Hash())
 	if err != nil {
 		ethCtx.Logger.Error("Error in Receiving TX receipt : ", job.GetJobID(), err)

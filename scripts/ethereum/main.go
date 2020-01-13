@@ -33,26 +33,26 @@ import (
 
 var (
 	LockRedeemABI = contract.LockRedeemABI
-    TestTokenABI  = contract.ERC20BasicABI
-   // LockRedeemERC20ABI = contract.ContextABI
-	LockRedeemContractAddr = "0x4ff8d7b79109192B50549D9a4d1Cc60362b9fba8"
-	TestTokenContractAddr = "0x0ABBe32373e47aeADB03F528a66Ce2E704fEBd9D"
-	LockRedeemERC20ContractAddr = "0xe206815653100EEcbBbC96C8dd4E141C10D8785E"
-	cfg               = config.DefaultEthConfig()
-	log               = logger.NewDefaultLogger(os.Stdout).WithPrefix("testeth")
-	UserprivKey       *ecdsa.PrivateKey
-	UserprivKeyRedeem *ecdsa.PrivateKey
+	TestTokenABI  = contract.ERC20BasicABI
+	// LockRedeemERC20ABI = contract.ContextABI
+	LockRedeemContractAddr = "0x3f05b00131A392a9aa1Bd28b015EeF7350c9f06b"
+	TestTokenContractAddr = "0xA351dbAd64564d3A7Bb0E59e7Af1F8aD7171b650"
+	LockRedeemERC20ContractAddr = "0xd36e6299Ed871961ebD62353C872a360B76BC086"
+	cfg                         = config.DefaultEthConfig()
+	log                         = logger.NewDefaultLogger(os.Stdout).WithPrefix("testeth")
+	UserprivKey                 *ecdsa.PrivateKey
+	UserprivKeyRedeem           *ecdsa.PrivateKey
 
 	client                 *ethclient.Client
 	contractAbi            abi.ABI
 	valuelock              = createValue("10000") // in wei (1 eth)
 	valueredeem            = createValue("100")
-	valuelockERC20           = createValue("1000000000000000000")
+	valuelockERC20         = createValue("1000000000000000000")
 	fromAddress            common.Address
 	redeemRecipientAddress common.Address
 
-	toAddress = common.HexToAddress(LockRedeemContractAddr)
-	toAddressTestToken = common.HexToAddress(TestTokenContractAddr)
+	toAddress               = common.HexToAddress(LockRedeemContractAddr)
+	toAddressTestToken      = common.HexToAddress(TestTokenContractAddr)
 	toAdddressLockRedeemERC = common.HexToAddress(LockRedeemERC20ContractAddr)
 )
 
@@ -326,10 +326,9 @@ func redeem() {
 	fmt.Println("broadcast result: ", bresult2.OK)
 }
 
-
 func erc20lock() {
 	tokenAbi, _ := abi.JSON(strings.NewReader(TestTokenABI))
-	bytesData, err := tokenAbi.Pack("transfer",toAdddressLockRedeemERC,valuelockERC20)
+	bytesData, err := tokenAbi.Pack("transfer", toAdddressLockRedeemERC, valuelockERC20)
 	if err != nil {
 		log.Fatal("unable to pack")
 	}
@@ -383,8 +382,8 @@ func erc20lock() {
 		return
 	}
 	olt, ok := result.Currencies.GetCurrencySet().GetCurrencyByName("OLT")
-    if !ok {
-    	fmt.Println(result.Currencies)
+	if !ok {
+		fmt.Println(result.Currencies)
 		return
 	}
 	accReply := &oclient.ListAccountsReply{}
@@ -405,7 +404,7 @@ func erc20lock() {
 	reply := &se.OLTLockReply{}
 	err = rpcclient.Call("eth.PrepareOLTERC20Lock", req, reply)
 	if err != nil {
-		fmt.Println("Error in prepare OLTERCLock " , err)
+		fmt.Println("Error in prepare OLTERCLock ", err)
 		return
 	}
 	signReply := &oclient.SignRawTxResponse{}
@@ -414,7 +413,7 @@ func erc20lock() {
 		Address: acc.Address(),
 	}, signReply)
 	if err != nil {
-		fmt.Println("Error in signing erc lock " ,err)
+		fmt.Println("Error in signing erc lock ", err)
 		return
 	}
 
@@ -434,7 +433,6 @@ func erc20lock() {
 	fmt.Println("broadcast result: ", bresult.OK)
 	fmt.Println(bresult.Log)
 }
-
 
 //func mapkey(m map[string]string, value string) (key string, ok bool) {
 //	for k, v := range m {
@@ -468,9 +466,7 @@ func erc20lock() {
 //fmt.Println(common.HexToAddress(receiver))
 //amt := big.NewInt(0).SetBytes(tokenAmount)
 
-
 //transactionHash := client.SendTransaction(context.Background(), signedTx)
-
 
 //
 //if err != nil {

@@ -11,8 +11,8 @@ type RedeemRequest struct {
 }
 
 type LockErcRequest struct {
-	Receiver common.Address
-  	TokenAmount *big.Int
+	Receiver    common.Address
+	TokenAmount *big.Int
 }
 
 type LockRequest struct {

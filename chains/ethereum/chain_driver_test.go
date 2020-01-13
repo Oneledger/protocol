@@ -24,22 +24,22 @@ import (
 )
 
 var (
-	ethCD         *ETHChainDriver
-	ethConfig     = config.DefaultEthConfig()
-	LockRedeemABI = contract.LockRedeemABI
-	ERCLockRedeemABI =contract.LockRedeemERCABI
-	TestTokenABI   =   contract.ERC20BasicABI
-	contractAddr  = "0xdaF6850A7545705a80AB802f3b951dA0a635CE78"
-	ERCcontractAddr ="0x4c6970C8d6748e21fAe1Bb5A4b7AE9bE2825bdFA"
-	TestTokenContractAddr = "0x28075b7419bAA72420fe6539c95ADB8E8D039841"
-	priv_key      = "0e342e8ad59b75c4dd8af7340b85efb3308a09a54eded1ee194b83132b6b1395"
-	addr          = "0xa9258c306f392380E7A9aCcaD3C35230f7FC42F8"
-	logger        = log.NewLoggerWithPrefix(os.Stdout, "TestChainDRIVER")
-	toAddress = common.HexToAddress(contractAddr)
-	toAddressTestToken = common.HexToAddress(TestTokenContractAddr)
+	ethCD                   *ETHChainDriver
+	ethConfig               = config.DefaultEthConfig()
+	LockRedeemABI           = contract.LockRedeemABI
+	ERCLockRedeemABI        = contract.LockRedeemERCABI
+	TestTokenABI            = contract.ERC20BasicABI
+	contractAddr            = "0xdaF6850A7545705a80AB802f3b951dA0a635CE78"
+	ERCcontractAddr         = "0x4c6970C8d6748e21fAe1Bb5A4b7AE9bE2825bdFA"
+	TestTokenContractAddr   = "0x28075b7419bAA72420fe6539c95ADB8E8D039841"
+	priv_key                = "0e342e8ad59b75c4dd8af7340b85efb3308a09a54eded1ee194b83132b6b1395"
+	addr                    = "0xa9258c306f392380E7A9aCcaD3C35230f7FC42F8"
+	logger                  = log.NewLoggerWithPrefix(os.Stdout, "TestChainDRIVER")
+	toAddress               = common.HexToAddress(contractAddr)
+	toAddressTestToken      = common.HexToAddress(TestTokenContractAddr)
 	toAdddressLockRedeemERC = common.HexToAddress(ERCcontractAddr)
-	valuelockERC20           = big.NewInt(10)
-	client *ethclient.Client
+	valuelockERC20          = big.NewInt(10)
+	client                  *ethclient.Client
 )
 
 func init() {
@@ -49,7 +49,7 @@ func init() {
 		ContractAddress: common.HexToAddress(contractAddr),
 	}
 	ethCD, _ = NewChainDriver(ethConfig, logger, &cdoptions)
-	client,_ = ethConfig.Client()
+	client, _ = ethConfig.Client()
 
 }
 
@@ -91,16 +91,16 @@ func GetSignedLockTX() (*Transaction, error) {
 	return signedTx, nil
 }
 
-func CreateUnsignedERCLock() ([]byte,error){
+func CreateUnsignedERCLock() ([]byte, error) {
 	tokenAbi, _ := abi.JSON(strings.NewReader(TestTokenABI))
-	bytesData, err := tokenAbi.Pack("transfer",toAdddressLockRedeemERC,valuelockERC20)
+	bytesData, err := tokenAbi.Pack("transfer", toAdddressLockRedeemERC, valuelockERC20)
 	nonce, err := client.PendingNonceAt(context.Background(), getAddress())
 	if err != nil {
-		return nil,err
+		return nil, err
 	}
 	gasPrice, err := client.SuggestGasPrice(context.Background())
 	if err != nil {
-		return nil,err
+		return nil, err
 	}
 	gasLimit := uint64(6721974) // in units
 
@@ -113,19 +113,19 @@ func CreateUnsignedERCLock() ([]byte,error){
 	tx := types.NewTransaction(nonce, toAddressTestToken, big.NewInt(0), gasLimit, gasPrice, bytesData)
 	chainID, err := client.ChainID(context.Background())
 	if err != nil {
-		return nil,err
+		return nil, err
 	}
 
 	signedTx, err := types.SignTx(tx, types.NewEIP155Signer(chainID), getPrivKey())
 
 	if err != nil {
-		return nil,err
+		return nil, err
 	}
 	ts := types.Transactions{signedTx}
 	rawTxBytes := ts.GetRlp(0)
 	txNew := &types.Transaction{}
 	err = rlp.DecodeBytes(rawTxBytes, txNew)
-	return rawTxBytes,nil
+	return rawTxBytes, nil
 }
 func BroadCastLock() (*TransactionHash, error) {
 
@@ -190,12 +190,12 @@ func BroadCastLock() (*TransactionHash, error) {
 //}
 
 func TestVerfiyERC20Lock(t *testing.T) {
-	rawERCLock,err := CreateUnsignedERCLock()
+	rawERCLock, err := CreateUnsignedERCLock()
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
-	ok,err:= VerfiyERC20Lock(rawERCLock,TestTokenABI,toAdddressLockRedeemERC)
+	ok, err := VerfiyERC20Lock(rawERCLock, TestTokenABI, toAdddressLockRedeemERC)
 	if err == nil {
 		fmt.Println("VERIFY ERC LOCK :", ok)
 	}

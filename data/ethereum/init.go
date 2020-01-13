@@ -20,9 +20,9 @@ const (
 	REDEEMCONFIRM string = "redeemconfirm"
 	BURN          string = "burn"
 
-	ProcessTypeNone   ProcessType = 0x00
-	ProcessTypeLock   ProcessType = 0x01
-	ProcessTypeRedeem ProcessType = 0x02
+	ProcessTypeNone    ProcessType = 0x00
+	ProcessTypeLock    ProcessType = 0x01
+	ProcessTypeRedeem  ProcessType = 0x02
 	ProcessTypeLockERC ProcessType = 0x03
 )
 

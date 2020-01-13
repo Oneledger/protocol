@@ -313,7 +313,7 @@ func runDevnet(_ *cobra.Command, _ []string) error {
 	}
 
 	cdo := &ethchain.ChainDriverOption{}
-	fmt.Println("Deployment Network :",args.deployETHContract)
+	fmt.Println("Deployment Network :", args.deployETHContract)
 	if len(args.deployETHContract) > 0 {
 		cdo, err = deployethcdcontract(args.deployETHContract, nodeList)
 		if err != nil {
@@ -391,7 +391,7 @@ func initialState(args *testnetConfig, nodeList []node, option ethchain.ChainDri
 	obtc := balance.Currency{Id: 2, Name: "BTC", Chain: chain.BITCOIN, Decimal: 8, Unit: "satoshi"}
 	oeth := balance.Currency{Id: 3, Name: "ETH", Chain: chain.ETHEREUM, Decimal: 18, Unit: "wei"}
 	ottc := balance.Currency{Id: 4, Name: "TTC", Chain: chain.TESTTOKEN, Decimal: 18, Unit: "testUnits"} //Tokens count by number ,Unit 1
-	currencies := []balance.Currency{olt, vt, obtc, oeth,ottc}
+	currencies := []balance.Currency{olt, vt, obtc, oeth, ottc}
 	feeOpt := fees.FeeOption{
 		FeeCurrency:   olt,
 		MinFeeDecimal: 9,
@@ -526,8 +526,8 @@ func deployethcdcontract(conn string, nodeList []node) (*ethchain.ChainDriverOpt
 	input := make([]common.Address, 0, 10)
 	tokenSupplyTestToken := new(big.Int)
 	tokenSupplyTestToken, ok = tokenSupplyTestToken.SetString("1000000000000000000000", 10)
-    if !ok {
-    	return nil,errors.New("Unabe to create total supplu for token")
+	if !ok {
+		return nil, errors.New("Unabe to create total supplu for token")
 	}
 	for _, node := range nodeList {
 		privkey := keys.ETHSECP256K1TOECDSA(node.esdcaPk.Data)
@@ -572,30 +572,33 @@ func deployethcdcontract(conn string, nodeList []node) (*ethchain.ChainDriverOpt
 	if err != nil {
 		return nil, errors.Wrap(err, "Deployement Eth LockRedeem")
 	}
-	auth.Nonce = big.NewInt(int64(nonce+1))
-	tokenAddress,_,_,err := ethcontracts.DeployERC20Basic(auth,cli,tokenSupplyTestToken)
+	auth.Nonce = big.NewInt(int64(nonce + 1))
+	tokenAddress, _, _, err := ethcontracts.DeployERC20Basic(auth, cli, tokenSupplyTestToken)
 	if err != nil {
 		return nil, errors.Wrap(err, "Deployement Test Token")
 	}
-	auth.Nonce = big.NewInt(int64(nonce+2))
-	ercAddress,_,_,err := ethcontracts.DeployLockRedeemERC(auth,cli,input)
+	auth.Nonce = big.NewInt(int64(nonce + 2))
+	ercAddress, _, _, err := ethcontracts.DeployLockRedeemERC(auth, cli, input)
 	if err != nil {
 		return nil, errors.Wrap(err, "Deployement ERC LockRedeem")
 	}
 	if err != nil {
 		return nil, errors.Wrap(err, "Deployement Eth LockRedeem")
 	}
-	fmt.Printf("LockRedeemContractAddr = \"%v\"\n" ,address.Hex())
-	fmt.Printf("TestTokenContractAddr = \"%v\"\n",tokenAddress.Hex())
-	fmt.Printf("LockRedeemERC20ContractAddr = \"%v\"\n",ercAddress.Hex())
-    //tokenAbiMap := make(map[*common.Address]string)
-    //tokenAbiMap[&tokenAddress] = contract.ERC20BasicABI
+	fmt.Printf("LockRedeemContractAddr = \"%v\"\n", address.Hex())
+	fmt.Printf("TestTokenContractAddr = \"%v\"\n", tokenAddress.Hex())
+	fmt.Printf("LockRedeemERC20ContractAddr = \"%v\"\n", ercAddress.Hex())
+	//tokenAbiMap := make(map[*common.Address]string)
+	//tokenAbiMap[&tokenAddress] = contract.ERC20BasicABI
 	return &ethchain.ChainDriverOption{
-		ContractABI:     contract.LockRedeemABI,
-		ERCContractABI:  contract.LockRedeemERCABI,
-		TestTokenABI:    contract.ERC20BasicABI,
-		ContractAddress: address,
-		TestTokenAddress: tokenAddress,
+		ContractABI:    contract.LockRedeemABI,
+		ERCContractABI: contract.LockRedeemERCABI,
+		TokenList: []ethchain.ERC20Token{{
+			TokName: "TTC",
+			TokAddr: tokenAddress,
+			TokAbi:  contract.ERC20BasicABI,
+		}},
+		ContractAddress:    address,
 		ERCContractAddress: ercAddress,
 	}, nil
 

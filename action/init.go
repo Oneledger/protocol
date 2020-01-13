@@ -41,7 +41,7 @@ const (
 	ETH_MINT                 Type = 0x94
 	ETH_REPORT_FINALITY_MINT Type = 0x95
 	ETH_REDEEM               Type = 0x96
-	ERC20_LOCK				 Type = 0x97
+	ERC20_LOCK               Type = 0x97
 )
 
 var logger *log.Logger

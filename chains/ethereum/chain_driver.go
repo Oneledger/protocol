@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/hex"
-	"fmt"
 	"math/big"
 	"strings"
 	"time"
@@ -190,7 +189,7 @@ func (acc *ETHChainDriver) CheckFinality(txHash TransactionHash) (*types.Receipt
 				return nil, errors.Wrap(err, "Unable to extract latest header")
 			}
 			diff := big.NewInt(0).Sub(latestHeader.Number, result.BlockNumber)
-			if big.NewInt(12).Cmp(diff) < 0 {   //Change to > after testing
+			if big.NewInt(12).Cmp(diff) < 0 { //Change to > after testing
 				return nil, errors.New("Waiting for confirmation . Current Block Confirmations : " + diff.String())
 			}
 			return result, nil
@@ -247,6 +246,30 @@ func (acc *ETHChainDriver) ParseRedeem(data []byte) (req *RedeemRequest, err err
 
 	return ParseRedeem(data)
 }
+func ParseErc20Lock(erc20list []ERC20Token, rawEthTx []byte) (*LockErcRequest,error){
+	ercParams := &LockErcRequest{}
+	ethTx, err := DecodeTransaction(rawEthTx)
+	if err != nil {
+		return ercParams,err
+	}
+	token, err := GetAbi(erc20list, *ethTx.To())
+	if err != nil {
+		return ercParams, err
+	}
+	contractAbi, err := abi.JSON(strings.NewReader(token.TokAbi))
+	if err != nil {
+		return ercParams,err
+	}
+	functionSignature, err := getSignfromName(contractAbi, "transfer")
+	if err !=nil {
+		return ercParams,err
+	}
+	ercParams, err = parseERC20Lock(rawEthTx, functionSignature)
+	if err != nil {
+		return ercParams,err
+	}
+	return ercParams,nil
+}
 
 func (acc *ETHChainDriver) VerifyRedeem(validatorAddress common.Address, recipient common.Address) (bool, error) {
 	instance := acc.GetContract()
@@ -273,22 +296,21 @@ func VerifyLock(tx *types.Transaction, contractabi string) (bool, error) {
 
 }
 
-func VerfiyERC20Lock(rawTx []byte,tokenabi_ string,erc20contractaddr common.Address) (bool,error){
+func VerfiyERC20Lock(rawTx []byte, tokenabi_ string, erc20contractaddr common.Address) (bool, error) {
 	contractAbi, err := abi.JSON(strings.NewReader(tokenabi_))
 	if err != nil {
 		return false, errors.Wrap(err, "Unable to get contract Abi for Test Token from ChainDriver options")
 	}
-	methodSignature,err := CetSignfromName(contractAbi,"transfer")
+	methodSignature, err := getSignfromName(contractAbi, "transfer")
 	if err != nil {
-		return false,err
+		return false, err
 	}
-    ercLockParams,err := ParseERC20Lock(rawTx,methodSignature)
-    if err != nil {
-    	return false,err
+	ercLockParams, err := parseERC20Lock(rawTx, methodSignature)
+	if err != nil {
+		return false, err
 	}
 	return bytes.Equal(ercLockParams.Receiver.Bytes(), erc20contractaddr.Bytes()), nil
 }
-
 
 func (acc *ETHChainDriver) HasValidatorSigned(validatorAddress common.Address, recipient common.Address) (bool, error) {
 	instance := acc.GetContract()
@@ -315,21 +337,7 @@ func ParseRedeem(data []byte) (req *RedeemRequest, err error) {
 	return &RedeemRequest{Amount: amt}, nil
 }
 
-func ParseERC20Lock(data []byte,functionSig string) (req *LockErcRequest, err error) {
 
-	ss := strings.Split(hex.EncodeToString(data), functionSig)
-
-	tokenAmount,err := hex.DecodeString(ss[1][64:128])
-	if err != nil {
-		return nil,err
-	}
-	receiver := ss[1][24:64]
-	amt := big.NewInt(0).SetBytes(tokenAmount)
-	return &LockErcRequest{
-		Receiver:    common.HexToAddress(receiver),
-		TokenAmount: amt,
-	},nil
-}
 
 func ParseLock(data []byte) (req *LockRequest, err error) {
 
@@ -351,28 +359,12 @@ func DecodeTransaction(data []byte) (*types.Transaction, error) {
 
 	return tx, nil
 }
-
-func CetSignfromName (contractAbi abi.ABI,methodName string) (string,error){
-	method,exists:=contractAbi.Methods[methodName]
-	if !exists {
-		fmt.Println("Method does not exist ", methodName)
-		return "",errors.New("Function now found in abi ")
-	}
-	signature,ok := mapkey(contract.ERC20BasicFuncSigs,method.Sig())
-	if !ok {
-		return "",errors.New("Method Signature does not exist")
-	}
-	return signature,nil
-}
-
-
-func mapkey(m map[string]string, value string) (key string, ok bool) {
-	for k, v := range m {
-		if v == value {
-			key = k
-			ok = true
-			return
+func GetAbi(erc20list []ERC20Token, tokAddr common.Address) (ERC20Token, error) {
+	for _, token := range erc20list {
+		if token.TokAddr == tokAddr {
+			return token, nil
 		}
 	}
-	return
+	return ERC20Token{}, errors.New("Token not supported")
 }
+

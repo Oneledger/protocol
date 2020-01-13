@@ -9,6 +9,8 @@ import (
 const (
 	totalETHSupply     = "10000000000000000000" // 10 ETH
 	lockBalanceAddress = "13371337"
+	totalTTCSupply        = "10000000000000000000" // 10 ETH
+	TTClockBalanceAddress = "23372337"
 )
 
 func EnableETH(r action.Router) error {

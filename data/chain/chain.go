@@ -40,7 +40,7 @@ func init() {
 	RegisterChainType("OneLedger", int(ONELEDGER))
 	RegisterChainType("Bitcoin", int(BITCOIN))
 	RegisterChainType("Ethereum", int(ETHEREUM))
-	RegisterChainType("TestToken",int(TESTTOKEN))
+	RegisterChainType("TokenList", int(TESTTOKEN))
 
 }
 
