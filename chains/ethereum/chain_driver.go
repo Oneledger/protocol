@@ -252,7 +252,7 @@ func ParseErc20Lock(erc20list []ERC20Token, rawEthTx []byte) (*LockErcRequest,er
 	if err != nil {
 		return ercParams,err
 	}
-	token, err := GetAbi(erc20list, *ethTx.To())
+	token, err := GetToken(erc20list, *ethTx.To())
 	if err != nil {
 		return ercParams, err
 	}
@@ -260,7 +260,7 @@ func ParseErc20Lock(erc20list []ERC20Token, rawEthTx []byte) (*LockErcRequest,er
 	if err != nil {
 		return ercParams,err
 	}
-	functionSignature, err := getSignfromName(contractAbi, "transfer")
+	functionSignature, err := getSignfromName(contractAbi, "transfer",contract.ERC20BasicFuncSigs)
 	if err !=nil {
 		return ercParams,err
 	}
@@ -301,7 +301,7 @@ func VerfiyERC20Lock(rawTx []byte, tokenabi_ string, erc20contractaddr common.Ad
 	if err != nil {
 		return false, errors.Wrap(err, "Unable to get contract Abi for Test Token from ChainDriver options")
 	}
-	methodSignature, err := getSignfromName(contractAbi, "transfer")
+	methodSignature, err := getSignfromName(contractAbi, "transfer",contract.ERC20BasicFuncSigs)
 	if err != nil {
 		return false, err
 	}
@@ -311,6 +311,30 @@ func VerfiyERC20Lock(rawTx []byte, tokenabi_ string, erc20contractaddr common.Ad
 	}
 	return bytes.Equal(ercLockParams.Receiver.Bytes(), erc20contractaddr.Bytes()), nil
 }
+
+func ParseERC20Redeem(rawTx []byte, lockredeemERCAbi string, tokenList []ERC20Token) (*ERC20Token,*RedeemErcRequest, error) {
+	token := &ERC20Token{}
+	ercRedeemParams := &RedeemErcRequest{}
+	contractAbi, err := abi.JSON(strings.NewReader(lockredeemERCAbi))
+	if err != nil {
+		return token,ercRedeemParams, errors.Wrap(err, "Unable to get contract Abi for Test Token from ChainDriver options")
+	}
+	methodSignature, err := getSignfromName(contractAbi, "redeem",contract.LockRedeemERCFuncSigs)
+	if err != nil {
+		return token,ercRedeemParams,err
+	}
+	ercRedeemParams, err = parseERC20Redeem(rawTx, methodSignature)
+	if err != nil {
+		return token,ercRedeemParams, err
+	}
+	token,err = GetToken(tokenList,ercRedeemParams.TokenAddress)
+	if err != nil {
+		return token,ercRedeemParams,err
+	}
+	return token,ercRedeemParams,nil
+}
+
+
 
 func (acc *ETHChainDriver) HasValidatorSigned(validatorAddress common.Address, recipient common.Address) (bool, error) {
 	instance := acc.GetContract()
@@ -323,16 +347,13 @@ func ParseRedeem(data []byte) (req *RedeemRequest, err error) {
 	if len(ss) == 0 {
 		return nil, errors.New("Transaction does not have the required input data")
 	}
-
 	if len(ss[1]) < 64 {
 		return nil, errors.New("Transaction data is invalid")
 	}
-
 	d, err := hex.DecodeString(ss[1][:64])
 	if err != nil {
 		return nil, err
 	}
-
 	amt := big.NewInt(0).SetBytes(d)
 	return &RedeemRequest{Amount: amt}, nil
 }
@@ -359,12 +380,12 @@ func DecodeTransaction(data []byte) (*types.Transaction, error) {
 
 	return tx, nil
 }
-func GetAbi(erc20list []ERC20Token, tokAddr common.Address) (ERC20Token, error) {
+func GetToken(erc20list []ERC20Token, tokAddr common.Address) (*ERC20Token, error) {
 	for _, token := range erc20list {
 		if token.TokAddr == tokAddr {
-			return token, nil
+			return &token, nil
 		}
 	}
-	return ERC20Token{}, errors.New("Token not supported")
+	return &ERC20Token{}, errors.New("Token not supported")
 }
 

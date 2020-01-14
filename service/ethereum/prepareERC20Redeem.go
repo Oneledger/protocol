@@ -9,15 +9,15 @@ import (
 	codes "github.com/Oneledger/protocol/status_codes"
 )
 
-func (svc *Service) CreateRawExtRedeem(req RedeemRequest, out *OLTReply) error {
+func (svc *Service) CreateRawExtERC20Redeem(req RedeemRequest, out *OLTReply) error {
 
-	redeem := eth.Redeem{
+	redeemERC20 := eth.ERC20Redeem{
 		Owner:  req.UserOLTaddress,
 		To:     req.UserETHaddress,
 		ETHTxn: req.ETHTxn,
 	}
 
-	data, err := redeem.Marshal()
+	data, err := redeemERC20.Marshal()
 	if err != nil {
 		svc.logger.Error(codes.ErrUnmarshaling.ErrorMsg())
 		return codes.ErrUnmarshaling
@@ -26,7 +26,7 @@ func (svc *Service) CreateRawExtRedeem(req RedeemRequest, out *OLTReply) error {
 	uuidNew, _ := uuid.NewUUID()
 	fee := action.Fee{Price: req.Fee, Gas: req.Gas}
 	tx := &action.RawTx{
-		Type: action.ETH_REDEEM,
+		Type: action.ERC20_REDEEM,
 		Data: data,
 		Fee:  fee,
 		Memo: uuidNew.String(),

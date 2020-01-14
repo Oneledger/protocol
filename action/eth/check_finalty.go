@@ -142,6 +142,12 @@ func runCheckFinality(ctx *action.Context, tx action.RawTx) (bool, action.Respon
 				return false, action.Response{Log: errors.Wrap(err, "unable to mint tokens").Error()}
 			}
 		}
+		if tracker.Type == trackerlib.ProcessTypeRedeemERC {
+			err := burnERC20Tokens(ctx,tracker, *f)
+			if err != nil {
+				return false, action.Response{Log: errors.Wrap(err, "unable to burn tokens").Error()}
+			}
+		}
 
 		return true, action.Response{Log: "Minting successful"}
 	}
@@ -208,6 +214,17 @@ func burnTokens(ctx *action.Context, tracker *trackerlib.Tracker, oltTx ReportFi
 	return nil
 }
 
+func burnERC20Tokens(ctx *action.Context, tracker *trackerlib.Tracker, oltTx ReportFinality) error {
+    fmt.Println("Burning ERC 20")
+	tracker.State = trackerlib.Released
+	err := ctx.ETHTrackers.Set(tracker)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func mintERC20tokens(ctx *action.Context, tracker *trackerlib.Tracker, oltTx ReportFinality) error {
 
 	ethTx, err := ethereum.DecodeTransaction(tracker.SignedETHTx)
@@ -215,7 +232,7 @@ func mintERC20tokens(ctx *action.Context, tracker *trackerlib.Tracker, oltTx Rep
 		return err
 	}
 	ethOptions := ctx.ETHTrackers.GetOption()
-	token, err := ethereum.GetAbi(ethOptions.TokenList, *ethTx.To())
+	token, err := ethereum.GetToken(ethOptions.TokenList, *ethTx.To())
 	if err != nil {
 		return err
 	}

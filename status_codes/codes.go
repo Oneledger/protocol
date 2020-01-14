@@ -71,4 +71,5 @@ const (
 
 	ERC20
 	ExternalErrUnableToCreateErc20OLTLockTX = 500100
+	ExternalErrTokenNotSuported = 500101
 )

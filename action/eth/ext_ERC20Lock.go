@@ -107,7 +107,7 @@ func runERC20Lock(ctx *action.Context, tx action.RawTx) (bool, action.Response) 
 		}
 	}
 	ethOptions := ctx.ETHTrackers.GetOption()
-	token, err := ethchaindriver.GetAbi(ethOptions.TokenList, *ethTx.To())
+	token, err := ethchaindriver.GetToken(ethOptions.TokenList, *ethTx.To())
 	if err != nil {
 		return false, action.Response{
 			Log: err.Error(),

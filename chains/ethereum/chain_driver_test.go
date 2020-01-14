@@ -127,6 +127,44 @@ func CreateUnsignedERCLock() ([]byte, error) {
 	err = rlp.DecodeBytes(rawTxBytes, txNew)
 	return rawTxBytes, nil
 }
+
+func CreateERC20Redeem() ([]byte,error){
+	ERCLockRedeemAbi, _ := abi.JSON(strings.NewReader(ERCLockRedeemABI))
+	bytesData, err := ERCLockRedeemAbi.Pack("redeem", valuelockERC20,toAddressTestToken)
+	nonce, err := client.PendingNonceAt(context.Background(), getAddress())
+	if err != nil {
+		return nil, err
+	}
+	gasPrice, err := client.SuggestGasPrice(context.Background())
+	if err != nil {
+		return nil, err
+	}
+	gasLimit := uint64(6721974) // in units
+
+	auth := bind.NewKeyedTransactor(getPrivKey())
+	auth.Nonce = big.NewInt(int64(nonce))
+	auth.Value = big.NewInt(0) // in wei
+	auth.GasLimit = gasLimit   // in units
+	auth.GasPrice = gasPrice
+
+	tx := types.NewTransaction(nonce, toAdddressLockRedeemERC, big.NewInt(0), gasLimit, gasPrice, bytesData)
+	chainID, err := client.ChainID(context.Background())
+	if err != nil {
+		return nil, err
+	}
+
+	signedTx, err := types.SignTx(tx, types.NewEIP155Signer(chainID), getPrivKey())
+
+	if err != nil {
+		return nil, err
+	}
+	ts := types.Transactions{signedTx}
+	rawTxBytes := ts.GetRlp(0)
+	txNew := &types.Transaction{}
+	err = rlp.DecodeBytes(rawTxBytes, txNew)
+	return rawTxBytes, nil
+
+}
 func BroadCastLock() (*TransactionHash, error) {
 
 	signedTx, err := GetSignedLockTX()
@@ -200,4 +238,40 @@ func TestVerfiyERC20Lock(t *testing.T) {
 		fmt.Println("VERIFY ERC LOCK :", ok)
 	}
 
+}
+
+func TestVerfiyERC20Redeem(t *testing.T) {
+	rawERCRedeem,err := CreateERC20Redeem()
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	ok,err := ParseERC20Redeem(rawERCRedeem,ERCLockRedeemABI,toAddressTestToken)
+	if err == nil {
+		fmt.Println("VERIFY ERC REDEEM :" ,ok)
+	}
+}
+
+func TestParseERC20Redeem(t *testing.T) {
+    rawERCRedeem,err := CreateERC20Redeem()
+    if err != nil {
+    	fmt.Println(err)
+		return
+	}
+	ERCLockRedeemAbi, err := abi.JSON(strings.NewReader(ERCLockRedeemABI))
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	sig,err := getSignfromName(ERCLockRedeemAbi,"redeem",contract.LockRedeemERCFuncSigs)
+	if err != nil {
+        fmt.Println(err)
+		return
+	}
+    req,err := parseERC20Redeem(rawERCRedeem,sig)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	fmt.Println(req)
 }

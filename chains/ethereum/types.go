@@ -18,3 +18,8 @@ type LockErcRequest struct {
 type LockRequest struct {
 	Amount *big.Int
 }
+
+type RedeemErcRequest struct {
+	Amount *big.Int
+	TokenAddress common.Address
+}

@@ -9,7 +9,7 @@ import (
 	codes "github.com/Oneledger/protocol/status_codes"
 )
 
-func (svc *Service) PrepareOLTERC20Lock(req *OLTERC20LockRequest, out *OLTLockReply) error {
+func (svc *Service) PrepareOLTERC20Lock(req *OLTERC20LockRequest, out *OLTReply) error {
 	erc20lock := eth.ERC20Lock{
 		Locker: req.Address,
 		ETHTxn: req.RawTx,
@@ -34,7 +34,7 @@ func (svc *Service) PrepareOLTERC20Lock(req *OLTERC20LockRequest, out *OLTLockRe
 		return codes.ErrSerialization
 	}
 
-	*out = OLTLockReply{
+	*out = OLTReply{
 		RawTX: packets,
 	}
 	return nil

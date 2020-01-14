@@ -34,10 +34,11 @@ import (
 var (
 	LockRedeemABI = contract.LockRedeemABI
 	TestTokenABI  = contract.ERC20BasicABI
+	LockRedeemERCABI =contract.LockRedeemERCABI
 	// LockRedeemERC20ABI = contract.ContextABI
-	LockRedeemContractAddr = "0x3f05b00131A392a9aa1Bd28b015EeF7350c9f06b"
-	TestTokenContractAddr = "0xA351dbAd64564d3A7Bb0E59e7Af1F8aD7171b650"
-	LockRedeemERC20ContractAddr = "0xd36e6299Ed871961ebD62353C872a360B76BC086"
+	LockRedeemContractAddr = "0xD4735FD267CB7aB196caC27427497C665CDeB040"
+	TestTokenContractAddr = "0x66958f8328Ff7D4fA5CF488E094c84cABc478033"
+	LockRedeemERC20ContractAddr = "0x6132ca310Ff0Da4603cCaF17BCfCA5aD364E093C"
 	cfg                         = config.DefaultEthConfig()
 	log                         = logger.NewDefaultLogger(os.Stdout).WithPrefix("testeth")
 	UserprivKey                 *ecdsa.PrivateKey
@@ -48,6 +49,7 @@ var (
 	valuelock              = createValue("10000") // in wei (1 eth)
 	valueredeem            = createValue("100")
 	valuelockERC20         = createValue("1000000000000000000")
+	valueredeemERC20       = createValue("100000000000000000")
 	fromAddress            common.Address
 	redeemRecipientAddress common.Address
 
@@ -100,7 +102,8 @@ func main() {
 
 	//redeem()
 
-	erc20lock()
+	//erc20lock()
+	erc20Redeem()
 }
 
 func lock() {
@@ -182,7 +185,7 @@ func lock() {
 		Gas:     400000,
 	}
 	//
-	reply := &se.OLTLockReply{}
+	reply := &se.OLTReply{}
 	err = rpcclient.Call("eth.CreateRawExtLock", req, reply)
 	signReply := &oclient.SignRawTxResponse{}
 	err = rpcclient.Call("owner.SignWithAddress", oclient.SignRawTxRequest{
@@ -299,7 +302,7 @@ func redeem() {
 		400000,
 	}
 
-	reply := &se.OLTLockReply{}
+	reply := &se.OLTReply{}
 	err = rpcclient.Call("eth.CreateRawExtRedeem", rr, reply)
 
 	signReply := &oclient.SignRawTxResponse{}
@@ -401,7 +404,7 @@ func erc20lock() {
 		Fee:     action.Amount{Currency: olt.Name, Value: *balance.NewAmountFromInt(10000000000)},
 		Gas:     400000,
 	}
-	reply := &se.OLTLockReply{}
+	reply := &se.OLTReply{}
 	err = rpcclient.Call("eth.PrepareOLTERC20Lock", req, reply)
 	if err != nil {
 		fmt.Println("Error in prepare OLTERCLock ", err)
@@ -433,6 +436,120 @@ func erc20lock() {
 	fmt.Println("broadcast result: ", bresult.OK)
 	fmt.Println(bresult.Log)
 }
+
+func erc20Redeem()  {
+	lockRedeemERCABI, _ := abi.JSON(strings.NewReader(LockRedeemERCABI))
+	bytesData, err := lockRedeemERCABI.Pack("redeem",valueredeemERC20,toAddressTestToken)
+	if err != nil {
+		log.Fatal("unable to pack")
+	}
+	redeemAddress := redeemRecipientAddress.Bytes()
+	nonce, err := client.PendingNonceAt(context.Background(), redeemRecipientAddress)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	gasLimit := uint64(6321974) // in units
+
+	gasPrice, err := client.SuggestGasPrice(context.Background())
+	if err != nil {
+
+		log.Fatal(err)
+	}
+
+	auth2 := bind.NewKeyedTransactor(UserprivKeyRedeem)
+	auth2.Nonce = big.NewInt(int64(nonce))
+	auth2.Value = big.NewInt(0) // in wei
+	auth2.GasLimit = gasLimit   // in units
+	auth2.GasPrice = gasPrice
+
+	value := big.NewInt(0)
+	tx2 := types.NewTransaction(nonce, toAdddressLockRedeemERC, value, gasLimit, gasPrice, bytesData)
+
+	chainID, err := client.ChainID(context.Background())
+	if err != nil {
+
+		log.Fatal(err)
+	}
+
+	signedTx2, err := types.SignTx(tx2, types.NewEIP155Signer(chainID), UserprivKeyRedeem)
+	if err != nil {
+
+		log.Fatal(err)
+	}
+
+	ts2 := types.Transactions{signedTx2}
+
+	rawTxBytes2 := ts2.GetRlp(0)
+	txNew2 := &types.Transaction{}
+	err = rlp.DecodeBytes(rawTxBytes2, txNew2)
+
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	_ = client.SendTransaction(context.Background(), signedTx2)
+	rpcclient, err := rpc.NewClient("http://localhost:26602")
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	accReply := &oclient.ListAccountsReply{}
+	err = rpcclient.Call("owner.ListAccounts", struct{}{}, accReply)
+	if err != nil {
+		fmt.Println("query account failed", err)
+		return
+	}
+
+	acc := accReply.Accounts[0]
+
+	result := &oclient.ListCurrenciesReply{}
+	err = rpcclient.Call("query.ListCurrencies", struct{}{}, result)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	olt, _ := result.Currencies.GetCurrencySet().GetCurrencyByName("OLT")
+
+	rr := se.OLTERC20RedeemRequest{
+		acc.Address(),
+		redeemAddress,
+		rawTxBytes2,
+		action.Amount{Currency: olt.Name, Value: *balance.NewAmountFromInt(10000000000)},
+		400000,
+	}
+
+	reply := &se.OLTReply{}
+	err = rpcclient.Call("eth.CreateRawExtERC20Redeem", rr, reply)
+
+	signReply := &oclient.SignRawTxResponse{}
+	err = rpcclient.Call("owner.SignWithAddress", oclient.SignRawTxRequest{
+		RawTx:   reply.RawTX,
+		Address: acc.Address(),
+	}, signReply)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	bresult := &oclient.BroadcastReply{}
+	err = rpcclient.Call("broadcast.TxCommit", oclient.BroadcastRequest{
+		RawTx:     reply.RawTX,
+		Signature: signReply.Signature.Signed,
+		PublicKey: signReply.Signature.Signer,
+	}, bresult)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	fmt.Println("broadcast result: ", bresult.OK)
+}
+
+
+
 
 //func mapkey(m map[string]string, value string) (key string, ok bool) {
 //	for k, v := range m {
