@@ -125,6 +125,7 @@ func runCheckFinality(ctx *action.Context, tx action.RawTx) (bool, action.Respon
 	}
 
 	if tracker.Finalized() {
+		fmt.Println("Tracker Type :" ,tracker.Type)
 		if tracker.Type == trackerlib.ProcessTypeLock {
 			err := mintTokens(ctx, tracker, *f)
 			if err != nil {
@@ -135,14 +136,12 @@ func runCheckFinality(ctx *action.Context, tx action.RawTx) (bool, action.Respon
 			if err != nil {
 				return false, action.Response{Log: errors.Wrap(err, "unable to burn tokens").Error()}
 			}
-		}
-		if tracker.Type == trackerlib.ProcessTypeLockERC {
+		} else if tracker.Type == trackerlib.ProcessTypeLockERC {
 			err := mintERC20tokens(ctx, tracker, *f)
 			if err != nil {
 				return false, action.Response{Log: errors.Wrap(err, "unable to mint tokens").Error()}
 			}
-		}
-		if tracker.Type == trackerlib.ProcessTypeRedeemERC {
+		} else if tracker.Type == trackerlib.ProcessTypeRedeemERC {
 			err := burnERC20Tokens(ctx,tracker, *f)
 			if err != nil {
 				return false, action.Response{Log: errors.Wrap(err, "unable to burn tokens").Error()}

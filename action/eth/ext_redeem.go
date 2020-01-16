@@ -104,7 +104,7 @@ func processCommon(ctx *action.Context, tx action.RawTx) (bool, action.Response)
 		return false, action.Response{Log: action.ErrUnserializable.Error()}
 	}
 
-	req, err := ethereum.ParseRedeem(redeem.ETHTxn)
+	req, err := ethereum.ParseRedeem(redeem.ETHTxn,ctx.ETHTrackers.GetOption().ContractABI)
 	if err != nil {
 		return false, action.Response{Log: action.ErrInvalidExtTx.Error()}
 	}

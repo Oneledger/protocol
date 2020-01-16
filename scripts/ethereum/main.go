@@ -11,6 +11,7 @@ import (
 	"math/big"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -36,9 +37,10 @@ var (
 	TestTokenABI  = contract.ERC20BasicABI
 	LockRedeemERCABI =contract.LockRedeemERCABI
 	// LockRedeemERC20ABI = contract.ContextABI
-	LockRedeemContractAddr = "0xD4735FD267CB7aB196caC27427497C665CDeB040"
-	TestTokenContractAddr = "0x66958f8328Ff7D4fA5CF488E094c84cABc478033"
-	LockRedeemERC20ContractAddr = "0x6132ca310Ff0Da4603cCaF17BCfCA5aD364E093C"
+	LockRedeemContractAddr = "0x1B56deD528F91B62d4b49eD24d9A6ca5c2b577B8"
+	TestTokenContractAddr = "0x76d7e36086de8a8FF194F1F80E1106142D1aB172"
+	LockRedeemERC20ContractAddr = "0x62edfD8a5B56aAF449CA6ae7Ab05B39CF58cD903"
+
 	cfg                         = config.DefaultEthConfig()
 	log                         = logger.NewDefaultLogger(os.Stdout).WithPrefix("testeth")
 	UserprivKey                 *ecdsa.PrivateKey
@@ -70,9 +72,9 @@ func createValue(str string) *big.Int {
 
 func init() {
 
-	UserprivKey, _ = crypto.HexToECDSA("0e342e8ad59b75c4dd8af7340b85efb3308a09a54eded1ee194b83132b6b1395")
+	UserprivKey, _ = crypto.HexToECDSA("6c24a44424c8182c1e3e995ad3ccfb2797e3f7ca845b99bea8dead7fc9dccd09")
 
-	UserprivKeyRedeem, _ = crypto.HexToECDSA("02038529C9AB706E9F4136F4A4EB51E866DBFE22D5E102FD3A22C14236E1C2EA")
+	UserprivKeyRedeem, _ = crypto.HexToECDSA("bdb082c7e42a946c477fa3efee4fb5bdece508b47592d8cb57f5e811cd840a40")
 
 	client, _ = cfg.Client()
 	contractAbi, _ = abi.JSON(strings.NewReader(LockRedeemABI))
@@ -102,7 +104,8 @@ func main() {
 
 	//redeem()
 
-	//erc20lock()
+	erc20lock()
+	time.Sleep(10 * time.Second)
 	erc20Redeem()
 }
 

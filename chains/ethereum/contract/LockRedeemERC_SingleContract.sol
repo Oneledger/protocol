@@ -623,9 +623,9 @@ contract LockRedeemERC {
             require(validators[v] == 0, "found non-unique validator in initialValidators");
             addValidator(v);
         }
-        votingThreshold = 1; // Take as input
+        votingThreshold = (initialValidators.length * 2 / 3) + 1;
         // Set the initial epochBlockHeight
-        //declareNewEpoch(block.number);
+        //  declareNewEpoch(block.number);
     }
 
     function isValidator(address addr) public view returns(bool) {
@@ -634,7 +634,7 @@ contract LockRedeemERC {
 
 
 
-    //function called by user andcopy of trasaction sent to protocol
+    //function called by user and dcopy of trasaction sent to protocol
     function redeem(uint256 amount_,address tokenAddress_)  public  {
         require(redeemRequests[msg.sender].amount == uint256(0));
         require(amount_ > 0, "amount should be bigger than 0");
@@ -681,6 +681,14 @@ contract LockRedeemERC {
 
     function getOLTErcAddress() public view returns(address){
         return address(this);
+    }
+
+    function hasValidatorSigned(address recipient_) public view returns(bool) {
+        return redeemRequests[recipient_].votes[msg.sender];
+    }
+
+    function verifyRedeem(address recipient_) public view returns(bool){
+        return redeemRequests[recipient_].signature_count >= votingThreshold;
     }
 
     // Proposals

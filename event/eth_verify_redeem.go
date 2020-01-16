@@ -1,6 +1,7 @@
 package event
 
 import (
+	"fmt"
 	"strconv"
 
 	"github.com/Oneledger/protocol/action"
@@ -44,12 +45,24 @@ func (job *JobETHVerifyRedeem) DoMyJob(ctx interface{}) {
 		ethCtx.Logger.Error("Unable to get Tracker", job.JobID)
 		return
 	}
-
-	cd, err := ethereum.NewChainDriver(ethCtx.cfg.EthChainDriver, ethCtx.Logger, trackerStore.GetOption())
-	if err != nil {
-		ethCtx.Logger.Error("Unable to get Chain Driver", job.JobID)
-		return
+	ethconfig := ethCtx.cfg.EthChainDriver
+	ethoptions := trackerStore.GetOption()
+    fmt.Println("Trying to get chaindriver : ",tracker.Type)
+	cd := new(ethereum.ETHChainDriver)
+	if tracker.Type == trackerlib.ProcessTypeRedeem {
+		cd, err = ethereum.NewChainDriver(ethconfig, ethCtx.Logger, ethoptions.ContractAddress,ethoptions.ContractABI,ethereum.ETH)
+		if err != nil {
+			ethCtx.Logger.Error("err trying to get ChainDriver : ", job.GetJobID(), err,tracker.Type)
+			return
+		}
+	} else if tracker.Type == trackerlib.ProcessTypeRedeemERC {
+		cd, err = ethereum.NewChainDriver(ethconfig, ethCtx.Logger, ethoptions.ERCContractAddress,ethoptions.ERCContractABI,ethereum.ERC)
+		if err != nil {
+			ethCtx.Logger.Error("err trying to get ChainDriver : ", job.GetJobID(), err,tracker.Type)
+			return
+		}
 	}
+
 	tx, err := cd.DecodeTransaction(tracker.SignedETHTx)
 	if err != nil {
 		ethCtx.Logger.Error("Unable to decode transaction")
@@ -63,6 +76,7 @@ func (job *JobETHVerifyRedeem) DoMyJob(ctx interface{}) {
 	}
 
 	addr := ethCtx.GetValidatorETHAddress()
+	fmt.Println("Trying to Verify Redeem")
 	success, err := cd.VerifyRedeem(addr, msg.From())
 	if err != nil {
 		ethCtx.Logger.Error("Error in verifying redeem :", job.GetJobID(), err)

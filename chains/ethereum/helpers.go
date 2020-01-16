@@ -52,14 +52,16 @@ func parseERC20Redeem(data []byte, functionSig string) (req *RedeemErcRequest, e
 	}, nil
 }
 
-func getSignfromName(contractAbi abi.ABI, methodName string,funcSigs map[string]string) (string, error) {
+func getSignfromName(contractAbi *abi.ABI, methodName string,funcSigs map[string]string) (string, error) {
 	method, exists := contractAbi.Methods[methodName]
 	if !exists {
 		return "", errors.New("Function not found in abi ")
 	}
+	fmt.Println("method :" ,method )
 	signature, ok := mapkey(funcSigs, method.Sig())
 	if !ok {
 		return "", errors.New("Method Signature does not exist")
 	}
+	fmt.Println("Signature : ",signature)
 	return signature, nil
 }

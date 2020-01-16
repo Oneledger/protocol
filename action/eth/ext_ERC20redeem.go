@@ -107,7 +107,12 @@ func runERC20Reddem(ctx *action.Context, tx action.RawTx) (bool, action.Response
 		return false, action.Response{Log: action.ErrUnserializable.Error()}
 	}
     ethOptions := ctx.ETHTrackers.GetOption()
-	token,redeemParams, err := ethereum.ParseERC20Redeem(erc20redeem.ETHTxn,ethOptions.ERCContractABI,ethOptions.TokenList)
+	redeemParams, err := ethereum.ParseERC20RedeemParams(erc20redeem.ETHTxn,ethOptions.ERCContractABI)
+	if err != nil {
+		ctx.Logger.Error(err)
+		return false, action.Response{Log: action.ErrTokenNotSupported.Error()}
+	}
+	token, err := ethereum.ParseERC20RedeemToken(erc20redeem.ETHTxn,ethOptions.TokenList,ethOptions.ERCContractABI)
 	if err != nil {
 		ctx.Logger.Error(err)
 		return false, action.Response{Log: action.ErrTokenNotSupported.Error()}
@@ -115,12 +120,13 @@ func runERC20Reddem(ctx *action.Context, tx action.RawTx) (bool, action.Response
 
 	c, ok := ctx.Currencies.GetCurrencyByName(token.TokName)
 	if !ok {
-		return false, action.Response{Log: "ETH not registered"}
+		return false, action.Response{Log: "Token not registered "}
 	}
 
 	coin := c.NewCoinFromAmount(*balance.NewAmountFromBigInt(redeemParams.Amount))
 	err = ctx.Balances.MinusFromAddress(erc20redeem.Owner, coin)
 	if err != nil {
+		fmt.Println("Not enough funds")
 		return false, action.Response{Log: action.ErrNotEnoughFund.Error()}
 	}
 
@@ -142,7 +148,7 @@ func runERC20Reddem(ctx *action.Context, tx action.RawTx) (bool, action.Response
 	}
 
 	tracker := trackerlib.NewTracker(
-		trackerlib.ProcessTypeRedeem,
+		trackerlib.ProcessTypeRedeemERC,
 		erc20redeem.Owner,
 		erc20redeem.ETHTxn,
 		name,
