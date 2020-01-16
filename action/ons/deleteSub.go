@@ -106,6 +106,7 @@ func runDeleteSub(ctx *action.Context, tx action.RawTx) (bool, action.Response) 
 	parentName := del.Name
 	isSub := del.Name.IsSub()
 	if isSub {
+
 		parentName, err = del.Name.GetParentName()
 		if err != nil {
 			return false, action.Response{Log: err.Error()}
@@ -117,15 +118,20 @@ func runDeleteSub(ctx *action.Context, tx action.RawTx) (bool, action.Response) 
 	if err != nil {
 		return false, action.Response{Log: "Parent domain doesn't exist, cannot create sub domain!"}
 	}
+
 	if !bytes.Equal(parent.OwnerAddress, del.Owner) {
 		return false, action.Response{Log: "parent domain not owned"}
 	}
+
 	if isSub {
+
 		err = ctx.Domains.DeleteASubdomain(del.Name)
 		if err != nil {
 			return false, action.Response{Log: err.Error()}
 		}
+
 	} else {
+
 		err = ctx.Domains.DeleteAllSubdomains(del.Name)
 		if err != nil {
 			return false, action.Response{Log: err.Error()}

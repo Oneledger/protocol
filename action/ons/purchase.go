@@ -144,7 +144,8 @@ func runPurchaseDomain(ctx *action.Context, tx action.RawTx) (bool, action.Respo
 	remain := buy.Offering.ToCoin(ctx.Currencies)
 
 	if (ctx.State.Version() <= domain.ExpireHeight) && domain.OnSaleFlag {
-		if domain.SalePrice.LessThanEqualCoin(olt.NewCoinFromAmount(buy.Offering.Value)) {
+
+		if !domain.SalePrice.LessThanEqualCoin(olt.NewCoinFromAmount(buy.Offering.Value)) {
 			return false, action.Response{Log: "offering is not enough"}
 		}
 

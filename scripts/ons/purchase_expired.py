@@ -56,7 +56,7 @@ if __name__ == "__main__":
 
 
 
-    print bcolors.WARNING + "*** Buying domain ***" + bcolors.ENDC
+    print bcolors.WARNING + "*** Buying expired domain ***" + bcolors.ENDC
 
     raw_txn = buy_domain(name, addrs[3], (int("20")*10**18))
     print addrs[3]
@@ -71,7 +71,7 @@ if __name__ == "__main__":
     print
 
 
-    print bcolors.WARNING + "*** Buying non-expired domain ***" + bcolors.ENDC
+    print bcolors.WARNING + "*** Buying non-expired domain (should fail) ***" + bcolors.ENDC
 
     raw_txn = buy_domain(name, addrs[3], (int("20")*10**18))
     print addrs[3]

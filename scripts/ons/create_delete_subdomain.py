@@ -11,6 +11,7 @@ if __name__ == "__main__":
     print "create price:", create_price
 
 
+
     name = "xyzzz.ol"
     raw_txn = create_domain(name, addrs[0], create_price)
     print "raw create domain tx:", raw_txn
@@ -27,6 +28,8 @@ if __name__ == "__main__":
     if result["ok"] != True:
         sys.exit(-1)
 
+
+    print "Create subdomain abc.xyzzz.ol"
     name = "abc.xyzzz.ol"
 
     raw_txn = create_sub_domain(name, addrs[0], create_price, '')
@@ -40,6 +43,7 @@ if __name__ == "__main__":
         sys.exit(-1)
 
 
+    print "send to subdomain abc.xyzzz.ol"
     raw_txn = send_domain(name, addrs[0], "10")
     signed = sign(raw_txn, addrs[0])
     result = broadcast_commit(raw_txn, signed['signature']['Signed'], signed['signature']['Signer'])
@@ -51,6 +55,7 @@ if __name__ == "__main__":
     time.sleep(2)
 
 
+    print "delete subdomain abc.xyzzz.ol"
     raw_txn = delete_sub_domain(name, addrs[0])
     signed = sign(raw_txn, addrs[0])
 
@@ -62,6 +67,7 @@ if __name__ == "__main__":
     time.sleep(2)
 
 
+    print " send to a deleted subdomain (this should fail) "
     print name
     raw_txn = send_domain(name, addrs[0], "10")
 
