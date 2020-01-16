@@ -52,43 +52,6 @@ func (s *Service) ONS_CreateRawCreate(args client.ONSCreateRequest, reply *clien
 	return nil
 }
 
-func (s *Service) ONS_CreateRawCreateSub(args client.ONSCreateSubRequest, reply *client.CreateTxReply) error {
-
-	name := ons2.GetNameFromString(args.Name)
-	createSubDomain := ons.CreateSubDomain{
-		Owner:       args.Owner,
-		Beneficiary: args.Account,
-		Name:        name,
-		BuyingPrice: args.BuyingPrice,
-		Uri:         args.Uri,
-	}
-
-	data, err := createSubDomain.Marshal()
-	if err != nil {
-		return err
-	}
-
-	uuidNew, _ := uuid.NewUUID()
-	fee := action.Fee{args.GasPrice, args.Gas}
-	tx := &action.RawTx{
-		Type: action.DOMAIN_CREATE_SUB,
-		Data: data,
-		Fee:  fee,
-		Memo: uuidNew.String(),
-	}
-
-	packet, err := serialize.GetSerializer(serialize.NETWORK).Serialize(tx)
-	if err != nil {
-		return codes.ErrSerialization
-	}
-
-	*reply = client.CreateTxReply{
-		RawTx: packet,
-	}
-
-	return nil
-}
-
 func (s *Service) ONS_CreateRawUpdate(args client.ONSUpdateRequest, reply *client.CreateTxReply) error {
 
 	name := ons2.GetNameFromString(args.Name)

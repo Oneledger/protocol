@@ -180,7 +180,7 @@ def create_sub_domain(name, owner_hex, price, uri):
         "gas": 400000,
     }
 
-    resp = rpc_call('tx.ONS_CreateRawCreateSub', req)
+    resp = rpc_call('tx.ONS_CreateRawCreate', req)
     return resp["result"]["rawTx"]
 
 
