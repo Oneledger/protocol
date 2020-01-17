@@ -92,3 +92,28 @@ func NewStorage(flavor, name string) Store {
 	}
 	return nil
 }
+
+/*
+	SessionedDirectStorage
+*/
+type SessionedDirectStorage interface {
+	Get(StoreKey) ([]byte, error)
+	Set(StoreKey, []byte) error
+	Exists(StoreKey) bool
+	Delete(StoreKey) (bool, error)
+	GetIterator() Iteratable
+
+	BeginSession() Session
+	Close()
+}
+
+// NewSessionedDirectStorage initializes a non sessioned storage
+func NewSessionedDirectStorage(flavor, name string) SessionedDirectStorage {
+	switch flavor {
+	case SESSION_CACHE:
+		return NewSessionCache(name)
+	default:
+		log.Error("incorrect storage: ", flavor)
+	}
+	return nil
+}

@@ -4,10 +4,10 @@ var _ Store = &State{}
 var _ Iteratable = &State{}
 
 type State struct {
-	cs     *ChainState
-	cache  Store
-	gc     GasCalculator
-	delete Store
+	cs        *ChainState
+	cache     SessionedDirectStorage
+	gc        GasCalculator
+	txSession Session
 }
 
 func (s *State) Get(key StoreKey) ([]byte, error) {
@@ -39,10 +39,7 @@ func (s *State) Exists(key StoreKey) bool {
 func (s *State) Delete(key StoreKey) (bool, error) {
 	//cache delete is always true
 	_, _ = s.cache.Delete(key)
-	err := s.delete.Set(key, []byte{127})
-	if err != nil {
-		return false, err
-	}
+
 	return true, nil
 }
 
@@ -93,28 +90,25 @@ func (s *State) IterateRange(start, end []byte, ascending bool, fn func(key, val
 
 func NewState(state *ChainState) *State {
 	return &State{
-		cs:     state,
-		cache:  NewStorage(CACHE, "state"),
-		gc:     NewGasCalculator(0),
-		delete: NewStorage(CACHE, "state_delete"),
+		cs:    state,
+		cache: NewSessionedDirectStorage(SESSION_CACHE, "state"),
+		gc:    NewGasCalculator(0),
 	}
 }
 
 func (s *State) WithGas(gc GasCalculator) *State {
 	gs := NewGasStore(s.cache, gc)
-	del := NewGasStore(s.delete, gc)
 	return &State{
-		cs:     s.cs,
-		cache:  gs,
-		gc:     gc,
-		delete: del,
+		cs:    s.cs,
+		cache: gs,
+		gc:    gc,
 	}
 }
 
 func (s *State) WithoutGas() *State {
-	s.cache = NewStorage(CACHE, "state")
+
+	s.cache = NewSessionedDirectStorage(SESSION_CACHE, "state")
 	//s.gc = NewGasCalculator(0)
-	s.delete = NewStorage(CACHE, "state_delete")
 	return s
 }
 
@@ -127,20 +121,20 @@ func (s State) RootHash() []byte {
 }
 
 func (s State) Write() bool {
+
 	s.cache.GetIterator().Iterate(func(key []byte, value []byte) bool {
 		_ = s.cs.Set(key, value)
 		return false
 	})
-	s.delete.GetIterator().Iterate(func(key, value []byte) bool {
-		_, _ = s.cs.Delete(key)
-		return false
-	})
+
 	return true
 }
 
 func (s *State) Commit() (hash []byte, version int64) {
+
 	s.Write()
-	s.cache = NewStorage(CACHE, "state")
+	s.cache = NewSessionedDirectStorage(SESSION_CACHE, "state")
+
 	return s.cs.Commit()
 }
 
@@ -166,6 +160,7 @@ func (s *State) GetVersioned(version int64, key StoreKey) []byte {
 }
 
 func (s *State) GetPrevious(num int64, key StoreKey) []byte {
+
 	ver := s.cs.Version
 	return s.GetVersioned(ver-num, key)
 }
