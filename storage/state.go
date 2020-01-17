@@ -10,13 +10,47 @@ type State struct {
 	txSession Session
 }
 
+func NewState(state *ChainState) *State {
+	return &State{
+		cs:    state,
+		cache: NewSessionedDirectStorage(SESSION_CACHE, "state"),
+		gc:    NewGasCalculator(0),
+	}
+}
+
+func (s *State) WithGas(gc GasCalculator) *State {
+	gs := NewGasStore(s.cache, gc)
+	return &State{
+		cs:    s.cs,
+		cache: gs,
+		gc:    gc,
+	}
+}
+
+func (s *State) WithoutGas() *State {
+
+	s.cache = NewSessionedDirectStorage(SESSION_CACHE, "state")
+	//s.gc = NewGasCalculator(0)
+	return s
+}
+
+func (s State) Version() int64 {
+	return s.cs.Version
+}
+
+func (s State) RootHash() []byte {
+	return s.cs.Hash
+}
+
 func (s *State) Get(key StoreKey) ([]byte, error) {
+
 	// Get the cache first
 	result, err := s.cache.Get(key)
 	if err == nil {
 		// if got result, return directly
 		return result, err
 	}
+
 	// if didn't get result in cache, get from ChainState
 	return s.cs.Get(key)
 }
@@ -86,38 +120,6 @@ func (s *State) IterateRange(start, end []byte, ascending bool, fn func(key, val
 		}
 	}
 	return true
-}
-
-func NewState(state *ChainState) *State {
-	return &State{
-		cs:    state,
-		cache: NewSessionedDirectStorage(SESSION_CACHE, "state"),
-		gc:    NewGasCalculator(0),
-	}
-}
-
-func (s *State) WithGas(gc GasCalculator) *State {
-	gs := NewGasStore(s.cache, gc)
-	return &State{
-		cs:    s.cs,
-		cache: gs,
-		gc:    gc,
-	}
-}
-
-func (s *State) WithoutGas() *State {
-
-	s.cache = NewSessionedDirectStorage(SESSION_CACHE, "state")
-	//s.gc = NewGasCalculator(0)
-	return s
-}
-
-func (s State) Version() int64 {
-	return s.cs.Version
-}
-
-func (s State) RootHash() []byte {
-	return s.cs.Hash
 }
 
 func (s State) Write() bool {
