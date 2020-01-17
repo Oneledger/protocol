@@ -15,7 +15,6 @@ import (
 	"github.com/Oneledger/protocol/action/staking"
 	"github.com/Oneledger/protocol/action/transfer"
 	"github.com/Oneledger/protocol/app/node"
-	bitcoin2 "github.com/Oneledger/protocol/chains/bitcoin"
 	"github.com/Oneledger/protocol/client"
 	"github.com/Oneledger/protocol/config"
 	"github.com/Oneledger/protocol/data/accounts"
@@ -95,7 +94,9 @@ func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *node.Context) (
 	ctx.domains = ons.NewDomainStore("d", storage.NewState(ctx.chainstate))
 	ctx.feePool = fees.NewStore("f", storage.NewState(ctx.chainstate))
 	ctx.govern = governance.NewStore("g", storage.NewState(ctx.chainstate))
+
 	ctx.btcTrackers = bitcoin.NewTrackerStore("btct", storage.NewState(ctx.chainstate))
+
 	ctx.ethTrackers = ethereum.NewTrackerStore("etht", storage.NewState(ctx.chainstate))
 	ctx.accounts = accounts.NewWallet(cfg, ctx.dbDir())
 
@@ -126,10 +127,6 @@ func (ctx context) dbDir() string {
 
 func (ctx *context) Action(header *Header, state *storage.State) *action.Context {
 
-	params := bitcoin2.GetChainParams(ctx.cfg.ChainDriver.BitcoinChainType)
-
-	bcct := bitcoin2.GetBlockCypherChainType(ctx.cfg.ChainDriver.BitcoinChainType)
-
 	actionCtx := action.NewContext(
 		ctx.actionRouter,
 		header,
@@ -144,10 +141,7 @@ func (ctx *context) Action(header *Header, state *storage.State) *action.Context
 		ctx.btcTrackers.WithState(state),
 		ctx.ethTrackers.WithState(state),
 		ctx.jobStore,
-		params,
 		ctx.lockScriptStore,
-		ctx.cfg.ChainDriver.BlockCypherToken,
-		bcct,
 		log.NewLoggerWithPrefix(ctx.logWriter, "action").WithLevel(log.Level(ctx.cfg.Node.LogLevel)),
 	)
 
@@ -179,6 +173,10 @@ func (ctx *context) Services() (service.Map, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to start service context")
 	}
+
+	btcTrackers := bitcoin.NewTrackerStore("btct", storage.NewState(ctx.chainstate))
+	btcTrackers.SetConfig(ctx.btcTrackers.GetConfig())
+
 	svcCtx := &service.Context{
 		Balances:     ctx.balances,
 		Accounts:     ctx.accounts,
@@ -192,7 +190,7 @@ func (ctx *context) Services() (service.Map, error) {
 		Logger:       log.NewLoggerWithPrefix(ctx.logWriter, "rpc").WithLevel(log.Level(ctx.cfg.Node.LogLevel)),
 		Services:     extSvcs,
 
-		Trackers: ctx.btcTrackers,
+		Trackers: btcTrackers,
 	}
 
 	return service.NewMap(svcCtx)
@@ -268,19 +266,16 @@ func (ctx *context) Replay(version int64) error {
 }
 
 func (ctx *context) JobContext() *event.JobsContext {
-	cdConfig := ctx.cfg.ChainDriver
+
 	return event.NewJobsContext(
 		ctx.cfg,
-		cdConfig.BitcoinChainType,
-		ctx.internalService, ctx.btcTrackers, ctx.validators,
+		ctx.internalService,
+		ctx.btcTrackers,
+		ctx.validators,
 		ctx.node.ValidatorECDSAPrivateKey(),
 		ctx.node.ValidatorECDSAPrivateKey(),
-		ctx.node.ValidatorAddress(), ctx.cfg.ChainDriver.BlockCypherToken,
+		ctx.node.ValidatorAddress(),
 		ctx.lockScriptStore,
-		cdConfig.BitcoinNodeAddress,
-		cdConfig.BitcoinRPCPort,
-		cdConfig.BitcoinRPCUsername,
-		cdConfig.BitcoinRPCPassword,
 		ctx.ethTrackers.WithState(ctx.deliver),
 	)
 }

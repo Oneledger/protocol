@@ -26,9 +26,6 @@ type Service struct {
 
 	validators   *identity.ValidatorStore
 	trackerStore *bitcoin.TrackerStore
-
-	blockCypherToken string
-	btcChainType     string
 }
 
 func NewService(
@@ -39,29 +36,14 @@ func NewService(
 	validators *identity.ValidatorStore,
 	trackerStore *bitcoin.TrackerStore,
 	logger *log.Logger,
-	blockCypherToken, btcChainType string,
 ) *Service {
 
-	chain := "test3"
-	switch btcChainType {
-	case "testnet3":
-		chain = "test3"
-	case "testnet":
-		chain = "test"
-	case "mainnet":
-		chain = "main"
-	}
-
 	return &Service{
-		balances: balances,
-		//		router:       router,
+		balances:     balances,
 		nodeContext:  nodeCtx,
 		accounts:     accounts,
 		validators:   validators,
 		trackerStore: trackerStore,
 		logger:       logger,
-
-		blockCypherToken: blockCypherToken,
-		btcChainType:     chain,
 	}
 }

@@ -5,6 +5,7 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/Oneledger/protocol/chains/bitcoin"
 	ethchain "github.com/Oneledger/protocol/chains/ethereum"
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/fees"
@@ -21,6 +22,8 @@ const (
 	ADMIN_EPOCH_BLOCK_INTERVAL string = "epoch"
 
 	ADMIN_ETH_CHAINDRIVER_OPTION string = "ethcdopt"
+
+	ADMIN_BTC_CHAINDRIVER_OPTION string = "btccdopt"
 	ADMIN_ONS_OPTION             string = "onsopt"
 )
 
@@ -148,27 +151,64 @@ func (st *Store) SetEpoch(epoch int64) error {
 }
 
 func (st *Store) GetETHChainDriverOption() (*ethchain.ChainDriverOption, error) {
+
 	bytes, err := st.Get([]byte(ADMIN_ETH_CHAINDRIVER_OPTION))
 	if err != nil {
 		return nil, err
 	}
+
 	r := &ethchain.ChainDriverOption{}
 	err = serialize.GetSerializer(serialize.PERSISTENT).Deserialize(bytes, r)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to deserialize eth chaindriver option stored")
 	}
+
 	return r, nil
 }
 
 func (st *Store) SetETHChainDriverOption(opt ethchain.ChainDriverOption) error {
+
 	bytes, err := serialize.GetSerializer(serialize.PERSISTENT).Serialize(opt)
 	if err != nil {
 		return errors.Wrap(err, "failed to serialize eth chaindriver option")
 	}
+
 	err = st.Set([]byte(ADMIN_ETH_CHAINDRIVER_OPTION), bytes)
 	if err != nil {
 		return errors.Wrap(err, "failed to set the eth chaindriver option")
 	}
+
+	return nil
+}
+
+func (st *Store) GetBTCChainDriverOption() (*bitcoin.ChainDriverOption, error) {
+
+	bytes, err := st.Get([]byte(ADMIN_BTC_CHAINDRIVER_OPTION))
+	if err != nil {
+		return nil, err
+	}
+
+	r := &bitcoin.ChainDriverOption{}
+	err = serialize.GetSerializer(serialize.PERSISTENT).Deserialize(bytes, r)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to deserialize btc chaindriver option stored")
+	}
+
+	return r, nil
+}
+
+func (st *Store) SetBTCChainDriverOption(opt bitcoin.ChainDriverOption) error {
+
+	bytes, err := serialize.GetSerializer(serialize.PERSISTENT).Serialize(opt)
+	if err != nil {
+		return errors.Wrap(err, "failed to serialize btc chaindriver option")
+	}
+
+	err = st.Set([]byte(ADMIN_BTC_CHAINDRIVER_OPTION), bytes)
+	if err != nil {
+		return errors.Wrap(err, "failed to set the btc chaindriver option")
+	}
+
 	return nil
 }
 

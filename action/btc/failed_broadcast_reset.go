@@ -41,8 +41,36 @@ func (fbr *FailedBroadcastReset) Tags() common.KVPairs {
 		Key:   []byte("tx.validator"),
 		Value: []byte(fbr.ValidatorAddress.String()),
 	}
+	tag3 := common.KVPair{
+		Key:   []byte("tx.tracker_name"),
+		Value: []byte(fbr.TrackerName),
+	}
 
-	tags = append(tags, tag, tag2)
+	tags = append(tags, tag, tag2, tag3)
+	return tags
+}
+
+func (fbr *FailedBroadcastReset) TagsFailed() common.KVPairs {
+	tags := make([]common.KVPair, 0)
+
+	tag := common.KVPair{
+		Key:   []byte("tx.type"),
+		Value: []byte(fbr.Type().String()),
+	}
+	tag2 := common.KVPair{
+		Key:   []byte("tx.validator"),
+		Value: []byte(fbr.ValidatorAddress.String()),
+	}
+	tag3 := common.KVPair{
+		Key:   []byte("tx.tracker_name"),
+		Value: []byte(fbr.TrackerName),
+	}
+	tag4 := common.KVPair{
+		Key:   []byte("tx.lock_redeem_status"),
+		Value: []byte("failure"),
+	}
+
+	tags = append(tags, tag, tag2, tag3, tag4)
 	return tags
 }
 
