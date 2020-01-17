@@ -20,7 +20,6 @@ import (
 	"github.com/Oneledger/protocol/data/accounts"
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/bitcoin"
-	"github.com/Oneledger/protocol/data/chain"
 	"github.com/Oneledger/protocol/data/ethereum"
 	"github.com/Oneledger/protocol/data/fees"
 	"github.com/Oneledger/protocol/data/governance"
@@ -58,7 +57,6 @@ type context struct {
 	ethTrackers *ethereum.TrackerStore // tracker for ethereum tracker store
 
 	currencies *balance.CurrencySet
-	feeOption  *fees.FeeOption
 
 	//storage which is not a chain state
 	accounts accounts.Wallet
@@ -109,10 +107,6 @@ func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *node.Context) (
 	ctx.lockScriptStore = bitcoin.NewLockScriptStore(cfg, ctx.dbDir())
 
 	ctx.actionRouter = action.NewRouter("action")
-	ctx.feeOption = &fees.FeeOption{
-		FeeCurrency:   balance.Currency{Name: "OLT", Chain: chain.Type(0), Decimal: 18},
-		MinFeeDecimal: 0,
-	}
 
 	ctx.jobBus = event.NewJobBus(event.Option{
 		BtcInterval: 30 * time.Second,
@@ -140,7 +134,6 @@ func (ctx *context) Action(header *Header, state *storage.State) *action.Context
 		ctx.accounts,
 		ctx.balances.WithState(state),
 		ctx.currencies,
-		ctx.feeOption,
 		ctx.feePool.WithState(state),
 		ctx.validators.WithState(state),
 		ctx.domains.WithState(state),
@@ -149,8 +142,8 @@ func (ctx *context) Action(header *Header, state *storage.State) *action.Context
 		ctx.ethTrackers.WithState(state),
 		ctx.jobStore,
 		ctx.lockScriptStore,
-
-		log.NewLoggerWithPrefix(ctx.logWriter, "action").WithLevel(log.Level(ctx.cfg.Node.LogLevel)))
+		log.NewLoggerWithPrefix(ctx.logWriter, "action").WithLevel(log.Level(ctx.cfg.Node.LogLevel)),
+	)
 
 	return actionCtx
 }
@@ -188,7 +181,7 @@ func (ctx *context) Services() (service.Map, error) {
 		Balances:     ctx.balances,
 		Accounts:     ctx.accounts,
 		Currencies:   ctx.currencies,
-		FeeOpt:       ctx.feeOption,
+		FeePool:      ctx.feePool,
 		Cfg:          ctx.cfg,
 		NodeContext:  ctx.node,
 		ValidatorSet: ctx.validators,
@@ -212,8 +205,7 @@ func (ctx *context) Restful() (service.RestfulRouter, error) {
 		Balances:     ctx.balances,
 		Accounts:     ctx.accounts,
 		Currencies:   ctx.currencies,
-		FeeOpt:       ctx.feeOption,
-		Cfg:          ctx.cfg,
+		FeePool:      ctx.feePool,
 		NodeContext:  ctx.node,
 		ValidatorSet: ctx.validators,
 		Domains:      ctx.domains,
@@ -249,7 +241,7 @@ func (ctx *context) Storage() StorageCtx {
 		FeePool:    ctx.feePool,
 		Govern:     ctx.govern,
 		Currencies: ctx.currencies,
-		FeeOption:  ctx.feeOption,
+		FeeOption:  ctx.feePool.GetOpt(),
 	}
 }
 

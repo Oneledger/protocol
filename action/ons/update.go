@@ -10,15 +10,17 @@ import (
 	"github.com/tendermint/tendermint/libs/common"
 
 	"github.com/Oneledger/protocol/action"
+	"github.com/Oneledger/protocol/data/ons"
 )
 
 var _ Ons = &DomainUpdate{}
 
 type DomainUpdate struct {
-	Owner   action.Address `json:"owner"`
-	Account action.Address `json:"account"`
-	Name    string         `json:"name"`
-	Active  bool           `json:"active"`
+	Owner       action.Address `json:"owner"`
+	Beneficiary action.Address `json:"account"`
+	Name        ons.Name       `json:"name"`
+	Active      bool           `json:"active"`
+	Uri         string         `json:"uri"`
 }
 
 func (du DomainUpdate) Marshal() ([]byte, error) {
@@ -30,7 +32,7 @@ func (du *DomainUpdate) Unmarshal(data []byte) error {
 }
 
 func (du DomainUpdate) OnsName() string {
-	return du.Name
+	return du.Name.String()
 }
 
 func (du DomainUpdate) Signers() []action.Address {
@@ -74,7 +76,7 @@ func (domainUpdateTx) Validate(ctx *action.Context, tx action.SignedTx) (bool, e
 		return false, err
 	}
 
-	err = action.ValidateFee(ctx.FeeOpt, tx.Fee)
+	err = action.ValidateFee(ctx.FeePool.GetOpt(), tx.Fee)
 	if err != nil {
 		return false, err
 	}
@@ -83,7 +85,11 @@ func (domainUpdateTx) Validate(ctx *action.Context, tx action.SignedTx) (bool, e
 		return false, action.ErrMissingData
 	}
 
-	if update.Active == false && update.Account == nil {
+	if !update.Name.IsValid() {
+		return false, ErrInvalidDomain
+	}
+
+	if update.Active == false && update.Beneficiary == nil {
 		return false, action.ErrMissingData
 	}
 
@@ -91,35 +97,23 @@ func (domainUpdateTx) Validate(ctx *action.Context, tx action.SignedTx) (bool, e
 }
 
 func (domainUpdateTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
-	update := &DomainUpdate{}
-	err := update.Unmarshal(tx.Data)
-	if err != nil {
-		return false, action.Response{Log: err.Error()}
-	}
-
-	if !ctx.Domains.Exists(update.Name) {
-		return false, action.Response{Log: fmt.Sprintf("domain doesn't exist: %s", update.Name)}
-	}
-
-	d, err := ctx.Domains.Get(update.Name)
-	if err != nil {
-		return false, action.Response{Log: fmt.Sprintf("failed to get domain: %s", update.Name)}
-	}
-
-	if !bytes.Equal(d.OwnerAddress, update.Owner) {
-		return false, action.Response{Log: fmt.Sprintf("domain is not owned by: %s", hex.EncodeToString(update.Owner))}
-	}
-
-	return true, action.Response{Tags: update.Tags()}
+	return runUpdate(ctx, tx)
 }
 
 func (domainUpdateTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
+	return runUpdate(ctx, tx)
+}
+
+func (domainUpdateTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas) (bool, action.Response) {
+	return action.BasicFeeHandling(ctx, signedTx, start, size, 1)
+}
+
+func runUpdate(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	update := &DomainUpdate{}
 	err := update.Unmarshal(tx.Data)
 	if err != nil {
 		return false, action.Response{Log: err.Error()}
 	}
-
 	if !ctx.Domains.Exists(update.Name) {
 		return false, action.Response{Log: fmt.Sprintf("domain doesn't exist: %s", update.Name)}
 	}
@@ -130,28 +124,45 @@ func (domainUpdateTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool
 	}
 
 	if !d.IsChangeable(ctx.Header.Height) {
-		return false, action.Response{Log: fmt.Sprintf("domain is not changable: %s, last change: %d", update.Name, d.LastUpdateHeight)}
+		return false, action.Response{Log: fmt.Sprintf("domain is not changable: %s, last change: %d ,current height :%d", update.Name, d.LastUpdateHeight, ctx.Header.Height)}
 	}
 
 	if !bytes.Equal(d.OwnerAddress, update.Owner) {
 		return false, action.Response{Log: fmt.Sprintf("domain is not owned by: %s", hex.EncodeToString(update.Owner))}
 	}
 
-	d.SetAccountAddress(update.Account)
+	d.SetAccountAddress(update.Beneficiary)
 	if update.Active {
 		d.Activate()
 	} else {
 		d.Deactivate()
+		if !d.Name.IsSub() {
+
+			ctx.Domains.IterateSubDomain(d.Name, func(name ons.Name, domain *ons.Domain) bool {
+				domain.Deactivate()
+				err := ctx.Domains.Set(domain)
+				if err != nil {
+					ctx.Logger.Error("failed to update sub domain activate status ", domain.Name, err)
+					return false
+				}
+				return false
+			})
+		}
 	}
 	d.SetLastUpdatedHeight(ctx.Header.Height)
+	opt := ctx.Domains.GetOptions()
+	if len(update.Uri) > 0 {
+		ok := opt.IsValidURI(update.Uri)
+		if !ok {
+			return false, action.Response{
+				Log: "invalid uri provided",
+			}
+		}
+	}
 
 	err = ctx.Domains.Set(d)
 	if err != nil {
 		return false, action.Response{Log: err.Error()}
 	}
 	return true, action.Response{Tags: update.Tags()}
-}
-
-func (domainUpdateTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas) (bool, action.Response) {
-	return action.BasicFeeHandling(ctx, signedTx, start, size, 1)
 }

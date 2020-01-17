@@ -9,6 +9,7 @@ import (
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/bitcoin"
 	"github.com/Oneledger/protocol/data/fees"
+	"github.com/Oneledger/protocol/data/ons"
 	"github.com/Oneledger/protocol/log"
 	"github.com/Oneledger/protocol/rpc"
 	"github.com/Oneledger/protocol/serialize"
@@ -19,19 +20,22 @@ type Service struct {
 	router     action.Router
 	currencies *balance.CurrencySet
 	trackers   *bitcoin.TrackerStore
-	feeOpt     *fees.FeeOption
+	feePool    *fees.Store
+	domains    *ons.DomainStore
 	ext        client.ExtServiceContext
 }
 
 func NewService(ctx client.ExtServiceContext, router action.Router, currencies *balance.CurrencySet,
-	feeOpt *fees.FeeOption, logger *log.Logger, trackers *bitcoin.TrackerStore,
+	feePool *fees.Store, domains *ons.DomainStore,
+	logger *log.Logger, trackers *bitcoin.TrackerStore,
 ) *Service {
 	return &Service{
 		ext:        ctx,
 		router:     router,
 		currencies: currencies,
 		trackers:   trackers,
-		feeOpt:     feeOpt,
+		feePool:    feePool,
+		domains:    domains,
 		logger:     logger,
 	}
 }
@@ -57,7 +61,7 @@ func (svc *Service) validateAndSignTx(req client.BroadcastRequest) ([]byte, erro
 
 	handler := svc.router.Handler(tx.Type)
 	ctx := action.NewContext(svc.router, nil, nil, nil, nil, svc.currencies,
-		svc.feeOpt, nil, nil, nil, svc.trackers, nil, nil, nil,
+		svc.feePool, nil, svc.domains, svc.trackers, nil, nil, nil,
 		svc.logger)
 
 	_, err = handler.Validate(ctx, signedTx)

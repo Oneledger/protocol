@@ -184,13 +184,13 @@ func (acc *ETHChainDriver) CheckFinality(txHash TransactionHash) (*types.Receipt
 	result, err := acc.GetClient().TransactionReceipt(context.Background(), txHash)
 	if err == nil {
 		if result.Status == types.ReceiptStatusSuccessful {
-			latestHeader,err:= acc.client.HeaderByNumber(context.Background(),nil)
+			latestHeader, err := acc.client.HeaderByNumber(context.Background(), nil)
 			if err != nil {
-				return nil,errors.Wrap(err,"Unable to extract latest header")
+				return nil, errors.Wrap(err, "Unable to extract latest header")
 			}
 			diff := big.NewInt(0).Sub(latestHeader.Number, result.BlockNumber)
 			if big.NewInt(12).Cmp(diff) > 0 {
-				return nil,errors.New("Waiting for confirmation . Current Block Confirmations : "+ diff.String())
+				return nil, errors.New("Waiting for confirmation . Current Block Confirmations : " + diff.String())
 			}
 			return result, nil
 		}
@@ -258,17 +258,17 @@ func (acc *ETHChainDriver) VerifyRedeem(validatorAddress common.Address, recipie
 	return ok, nil
 }
 
-func VerifyLock(tx *types.Transaction,contractabi string) (bool,error) {
+func VerifyLock(tx *types.Transaction, contractabi string) (bool, error) {
 
 	contractAbi, err := abi.JSON(strings.NewReader(contractabi))
-	if err!= nil {
-		return false,errors.Wrap(err,"Unable to get contract Abi from ChainDriver options")
+	if err != nil {
+		return false, errors.Wrap(err, "Unable to get contract Abi from ChainDriver options")
 	}
 	bytesData, err := contractAbi.Pack("lock")
-	if err!= nil {
-		return false,errors.Wrap(err,"Unable to to create Bytes data for Lock")
+	if err != nil {
+		return false, errors.Wrap(err, "Unable to to create Bytes data for Lock")
 	}
-	return bytes.Equal(bytesData,tx.Data()),nil
+	return bytes.Equal(bytesData, tx.Data()), nil
 
 }
 
@@ -317,4 +317,3 @@ func DecodeTransaction(data []byte) (*types.Transaction, error) {
 
 	return tx, nil
 }
-

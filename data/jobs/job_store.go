@@ -70,7 +70,7 @@ func (js *JobStore) GetJob(jobID string) (Job, error) {
 		return nil, errors.Wrap(err, key.String())
 	}
 	var job Job
-	err = js.ser.Deserialize(dat,&job)
+	err = js.ser.Deserialize(dat, &job)
 	if err != nil {
 		return nil, err
 	}

@@ -2,6 +2,7 @@ package ons
 
 import (
 	"encoding/json"
+	"math/big"
 
 	"github.com/pkg/errors"
 	"github.com/tendermint/tendermint/libs/common"
@@ -13,7 +14,7 @@ import (
 var _ Ons = &DomainPurchase{}
 
 type DomainPurchase struct {
-	Name     string         `json:"name"`
+	Name     ons.Name       `json:"name"`
 	Buyer    action.Address `json:"buyer"`
 	Account  action.Address `json:"account"`
 	Offering action.Amount  `json:"offering"`
@@ -28,7 +29,7 @@ func (dp *DomainPurchase) Unmarshal(data []byte) error {
 }
 
 func (dp DomainPurchase) OnsName() string {
-	return dp.Name
+	return dp.Name.String()
 }
 
 func (dp DomainPurchase) Signers() []action.Address {
@@ -74,12 +75,13 @@ func (domainPurchaseTx) Validate(ctx *action.Context, tx action.SignedTx) (bool,
 		return false, err
 	}
 
-	err = action.ValidateFee(ctx.FeeOpt, tx.Fee)
+	err = action.ValidateFee(ctx.FeePool.GetOpt(), tx.Fee)
 	if err != nil {
 		return false, err
 	}
 
-	if !buy.Offering.IsValid(ctx.Currencies) {
+	c, _ := ctx.Currencies.GetCurrencyById(0)
+	if c.Name != buy.Offering.Currency {
 		return false, errors.Wrap(action.ErrInvalidAmount, buy.Offering.String())
 	}
 
@@ -88,43 +90,37 @@ func (domainPurchaseTx) Validate(ctx *action.Context, tx action.SignedTx) (bool,
 		return false, action.ErrMissingData
 	}
 
+	if !buy.Name.IsValid() {
+		return false, ErrInvalidDomain
+	}
+
+	if c.Name != buy.Offering.Currency {
+		return false, errors.Wrap(action.ErrInvalidAmount, buy.Offering.String())
+	}
+
+	coin := buy.Offering.ToCoin(ctx.Currencies)
+	if coin.LessThanEqualCoin(coin.Currency.NewCoinFromAmount(ctx.Domains.GetOptions().PerBlockFees)) {
+		return false, action.ErrNotEnoughFund
+	}
+
 	return true, nil
 }
 
 func (domainPurchaseTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 
-	buy := &DomainPurchase{}
-	err := buy.Unmarshal(tx.Data)
-	if err != nil {
-		return false, action.Response{Log: err.Error()}
-	}
-
-	domain, err := ctx.Domains.Get(buy.Name)
-	if err != nil {
-		if err == ons.ErrDomainNotFound {
-			return false, action.Response{Log: "domain not found"}
-		}
-		return false, action.Response{Log: "error getting domain"}
-	}
-
-	if !domain.OnSaleFlag {
-		return false, action.Response{Log: "domain is not on sale"}
-	}
-
-	if !domain.SalePrice.LessThanEqualCoin(buy.Offering.ToCoin(ctx.Currencies)) {
-		return false, action.Response{Log: "offering price not enough"}
-	}
-
-	ctx.Balances.MinusFromAddress(buy.Buyer.Bytes(), buy.Offering.ToCoin(ctx.Currencies))
-	if err != nil {
-		return false, action.Response{Log: errors.Wrap(err, "insufficient buyer balance").Error()}
-	}
-
-	return true, action.Response{Tags: buy.Tags()}
-
+	return runPurchaseDomain(ctx, tx)
 }
 
 func (domainPurchaseTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
+
+	return runPurchaseDomain(ctx, tx)
+}
+
+func (domainPurchaseTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas) (bool, action.Response) {
+	return action.BasicFeeHandling(ctx, signedTx, start, size, 1)
+}
+
+func runPurchaseDomain(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	buy := &DomainPurchase{}
 	err := buy.Unmarshal(tx.Data)
 	if err != nil {
@@ -139,43 +135,58 @@ func (domainPurchaseTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bo
 		return false, action.Response{Log: "error getting domain"}
 	}
 
-	if !domain.OnSaleFlag {
-		return false, action.Response{Log: "domain is not on sale"}
+	if !domain.OnSaleFlag && (ctx.State.Version() <= domain.ExpireHeight) {
+		return false, action.Response{Log: "domain is not on sale or expired"}
 	}
 
-	coin := buy.Offering.ToCoin(ctx.Currencies)
-	if !domain.SalePrice.LessThanEqualCoin(coin) {
-		return false, action.Response{Log: "offering price not enough"}
+	olt, _ := ctx.Currencies.GetCurrencyByName(buy.Offering.Currency)
+
+	remain := buy.Offering.ToCoin(ctx.Currencies)
+
+	if (ctx.State.Version() <= domain.ExpireHeight) && domain.OnSaleFlag {
+
+		if !domain.SalePrice.LessThanEqualCoin(olt.NewCoinFromAmount(buy.Offering.Value)) {
+			return false, action.Response{Log: "offering is not enough"}
+		}
+
+		err := ctx.Balances.MinusFromAddress(buy.Buyer, domain.SalePrice)
+		if err != nil {
+			return false, action.Response{Log: err.Error()}
+		}
+
+		err = ctx.Balances.AddToAddress(domain.Beneficiary, domain.SalePrice)
+		if err != nil {
+			return false, action.Response{Log: err.Error()}
+		}
+		remain, err = remain.Minus(domain.SalePrice)
+		if err != nil {
+			return false, action.Response{Log: err.Error()}
+		}
 	}
 
-	ctx.Balances.MinusFromAddress(buy.Buyer.Bytes(), coin)
+	opt := ctx.Domains.GetOptions()
+	extend := big.NewInt(0).Div(remain.Amount.BigInt(), opt.PerBlockFees.BigInt()).Int64()
+
+	err = ctx.Balances.MinusFromAddress(buy.Buyer, remain)
 	if err != nil {
-		return false, action.Response{Log: errors.Wrap(err, "failed to debit buyer balance").Error()}
+		return false, action.Response{Log: "error deducting balance for purchase expired domain: " + err.Error()}
 	}
 
-	err = ctx.Balances.AddToAddress(domain.OwnerAddress, coin)
+	err = ctx.FeePool.AddToPool(remain)
 	if err != nil {
-		return false, action.Response{Log: errors.Wrap(err, "failed to credit seller balance").Error()}
+		return false, action.Response{Log: "error adding domain purchase: " + err.Error()}
 	}
 
-	domain.OwnerAddress = buy.Buyer
+	domain.ResetAfterSale(buy.Buyer, extend, ctx.State.Version())
 
-	if buy.Account != nil {
-		domain.SetAccountAddress(buy.Account)
-	} else {
-		domain.SetAccountAddress(buy.Buyer)
+	err = ctx.Domains.DeleteAllSubdomains(domain.Name)
+	if err != nil {
+		return false, action.Response{Log: err.Error()}
 	}
-
-	domain.CancelSale()
-	domain.Activate()
 
 	err = ctx.Domains.Set(domain)
 	if err != nil {
 		return false, action.Response{Log: errors.Wrap(err, "failed to update domain").Error()}
 	}
 	return true, action.Response{Tags: buy.Tags()}
-}
-
-func (domainPurchaseTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas) (bool, action.Response) {
-	return action.BasicFeeHandling(ctx, signedTx, start, size, 1)
 }

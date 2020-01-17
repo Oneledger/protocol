@@ -131,7 +131,10 @@ func (app *App) setupState(stateBytes []byte) error {
 		return errors.Wrap(err, "Setup State")
 	}
 	balanceCtx := app.Context.Balances()
-
+	err = app.Context.govern.SetONSOptions(initial.ONSOptions)
+	if err != nil {
+		return errors.Wrap(err, "Error in setting up ONS options")
+	}
 	// (1) Register all the currencies and fee
 	for _, currency := range initial.Currencies {
 		err := balanceCtx.Currencies().Register(currency)
@@ -139,14 +142,13 @@ func (app *App) setupState(stateBytes []byte) error {
 			return errors.Wrapf(err, "failed to register currency %s", currency.Name)
 		}
 	}
-	app.Context.feeOption.FeeCurrency = initial.FeeOption.FeeCurrency
-	app.Context.feeOption.MinFeeDecimal = initial.FeeOption.MinFeeDecimal
 	app.Context.ethTrackers.SetupOption(&initial.ETHCDOption)
 	err = app.Context.govern.SetFeeOption(initial.FeeOption)
 	if err != nil {
 		return errors.Wrap(err, "Setup State")
 	}
-	app.Context.feePool.SetupOpt(app.Context.feeOption)
+	app.Context.feePool.SetupOpt(&initial.FeeOption)
+	app.Context.domains.SetOptions(&initial.ONSOptions)
 
 	app.Context.btcTrackers.SetConfig(bitcoin.NewBTCConfig(app.Context.cfg.ChainDriver, initial.BTCCDOption.BTCChainType))
 
@@ -172,8 +174,11 @@ func (app *App) setupState(stateBytes []byte) error {
 	}
 
 	for _, domain := range initial.Domains {
-		d := ons.NewDomain(domain.OwnerAddress, domain.AccountAddress, domain.Name, 0)
-		err := app.Context.domains.WithState(app.Context.deliver).Set(d)
+		d, err := ons.NewDomain(domain.OwnerAddress, domain.Beneficiary, domain.Name, 0, domain.URI, domain.Expiry)
+		if err != nil {
+			return errors.Wrap(err, "failed to create initial domain")
+		}
+		err = app.Context.domains.WithState(app.Context.deliver).Set(d)
 		if err != nil {
 			return errors.Wrap(err, "failed to setup initial domain")
 		}
@@ -286,8 +291,14 @@ func (app *App) Prepare() error {
 		if err != nil {
 			return err
 		}
-		app.Context.feeOption = feeOpt
+
 		app.Context.feePool.SetupOpt(feeOpt)
+
+		onsOpt, err := app.Context.govern.GetONSOptions()
+		if err != nil {
+			return err
+		}
+		app.Context.domains.SetOptions(onsOpt)
 
 		cdOpt, err := app.Context.govern.GetETHChainDriverOption()
 		if err != nil {

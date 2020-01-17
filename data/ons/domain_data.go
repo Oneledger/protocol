@@ -12,15 +12,17 @@ import (
 )
 
 type domainData struct {
-	OwnerAddress     keys.Address
-	AccountAddress   keys.Address
-	Name             string
-	CreationHeight   int64
-	LastUpdateHeight int64
-	ActiveFlag       bool
-	OnSaleFlag       bool
+	OwnerAddress     keys.Address `json:"a"`
+	Beneficiary      keys.Address `json:"b"`
+	Name             string       `json:"c"`
+	CreationHeight   int64        `json:"d"`
+	LastUpdateHeight int64        `json:"e"`
+	ExpireHeight     int64        `json:"f"`
+	ActiveFlag       bool         `json:"g"`
+	OnSaleFlag       bool         `json:"h"`
 
-	SalePriceData *balance.CoinData
+	SalePriceData *balance.CoinData `json:"i"`
+	URI           string            `json:"k"`
 }
 
 func (d *Domain) NewDataInstance() serialize.Data {
@@ -28,13 +30,17 @@ func (d *Domain) NewDataInstance() serialize.Data {
 }
 
 func (d *Domain) Data() serialize.Data {
-	dd := &domainData{OwnerAddress: d.OwnerAddress,
-		AccountAddress:   d.AccountAddress,
-		Name:             d.Name,
+	dd := &domainData{
+		OwnerAddress:     d.OwnerAddress,
+		Beneficiary:      d.Beneficiary,
+		Name:             d.Name.String(),
 		CreationHeight:   d.CreationHeight,
 		LastUpdateHeight: d.LastUpdateHeight,
+		ExpireHeight:     d.ExpireHeight,
 		ActiveFlag:       d.ActiveFlag,
 		OnSaleFlag:       d.OnSaleFlag,
+		SalePriceData:    nil,
+		URI:              d.URI,
 	}
 	if d.SalePrice.Amount != nil {
 		dd.SalePriceData = d.SalePrice.Data().(*balance.CoinData)
@@ -50,12 +56,14 @@ func (d *Domain) SetData(a interface{}) error {
 	}
 
 	d.OwnerAddress = cd.OwnerAddress
-	d.AccountAddress = cd.AccountAddress
-	d.Name = cd.Name
+	d.Beneficiary = cd.Beneficiary
+	d.Name = GetNameFromString(cd.Name)
 	d.CreationHeight = cd.CreationHeight
 	d.LastUpdateHeight = cd.LastUpdateHeight
+	d.ExpireHeight = cd.ExpireHeight
 	d.ActiveFlag = cd.ActiveFlag
 	d.OnSaleFlag = cd.OnSaleFlag
+	d.URI = cd.URI
 
 	if cd.SalePriceData != nil {
 		err := d.SalePrice.SetData(cd.SalePriceData)

@@ -32,6 +32,7 @@ import (
 	"github.com/Oneledger/protocol/consensus"
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/chain"
+	"github.com/Oneledger/protocol/data/ons"
 
 	"github.com/Oneledger/protocol/data/fees"
 	"github.com/Oneledger/protocol/data/keys"
@@ -313,6 +314,7 @@ func runDevnet(_ *cobra.Command, _ []string) error {
 	}
 
 	cdo := &ethchain.ChainDriverOption{}
+	fmt.Println(args.deployETHContract)
 	if len(args.deployETHContract) > 0 {
 		cdo, err = deployethcdcontract(args.deployETHContract, nodeList)
 		if err != nil {
@@ -320,11 +322,20 @@ func runDevnet(_ *cobra.Command, _ []string) error {
 		}
 	}
 
+	perblock, _ := big.NewInt(0).SetString("100000000000000", 10)
+	baseDomainPrice, _ := big.NewInt(0).SetString("1000000000000000000000", 10)
+	onsOp := &ons.Options{
+		Currency:          "OLT",
+		PerBlockFees:      *balance.NewAmountFromBigInt(perblock),
+		FirstLevelDomains: []string{"ol"},
+		BaseDomainPrice:   *balance.NewAmountFromBigInt(baseDomainPrice),
+	}
+
 	btccdo := bitcoin.ChainDriverOption{
 		"testnet3",
 	}
 
-	states := initialState(args, nodeList, *cdo, btccdo)
+	states := initialState(args, nodeList, *cdo, *onsOp, btccdo)
 
 	genesisDoc, err := consensus.NewGenesisDoc(chainID, states)
 	if err != nil {
@@ -380,9 +391,8 @@ func runDevnet(_ *cobra.Command, _ []string) error {
 	return nil
 }
 
-func initialState(args *testnetConfig, nodeList []node, option ethchain.ChainDriverOption,
+func initialState(args *testnetConfig, nodeList []node, option ethchain.ChainDriverOption, onsOption ons.Options,
 	btcOption bitcoin.ChainDriverOption) consensus.AppState {
-
 	olt := balance.Currency{Id: 0, Name: "OLT", Chain: chain.ONELEDGER, Decimal: 18, Unit: "nue"}
 	vt := balance.Currency{Id: 1, Name: "VT", Chain: chain.ONELEDGER, Unit: "vt"}
 	obtc := balance.Currency{Id: 2, Name: "BTC", Chain: chain.BITCOIN, Decimal: 8, Unit: "satoshi"}
@@ -486,11 +496,13 @@ func initialState(args *testnetConfig, nodeList []node, option ethchain.ChainDri
 		Staking:     staking,
 		Domains:     domains,
 		Fees:        fees_db,
+		ONSOptions:  onsOption,
 	}
 }
 
 func deployethcdcontract(conn string, nodeList []node) (*ethchain.ChainDriverOption, error) {
-	privatekey, err := crypto.HexToECDSA("")
+
+	privatekey, err := crypto.HexToECDSA("6c24a44424c8182c1e3e995ad3ccfb2797e3f7ca845b99bea8dead7fc9dccd09")
 	if err != nil {
 		return nil, err
 	}

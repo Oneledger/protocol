@@ -12,7 +12,7 @@ func (sv *Service) ONS_GetDomainByName(req client.ONSGetDomainsRequest, reply *c
 		return codes.ErrBadName
 	}
 
-	d, err := domains.Get(req.Name)
+	d, err := domains.Get(ons.Name(req.Name))
 	if err != nil {
 		return codes.ErrDomainNotFound
 	}
@@ -35,7 +35,7 @@ func (sv *Service) ONS_GetDomainByOwner(req client.ONSGetDomainsRequest, reply *
 	}
 	ds := make([]ons.Domain, 0)
 
-	domains.Iterate(func(name string, domain *ons.Domain) bool {
+	domains.Iterate(func(name ons.Name, domain *ons.Domain) bool {
 
 		if domain.OwnerAddress.Equal(req.Owner) {
 			if req.OnSale && !domain.OnSaleFlag {
@@ -60,7 +60,7 @@ func (sv *Service) ONS_GetDomainOnSale(req client.ONSGetDomainsRequest, reply *c
 	}
 
 	ds := make([]ons.Domain, 0)
-	domains.Iterate(func(name string, domain *ons.Domain) bool {
+	domains.Iterate(func(name ons.Name, domain *ons.Domain) bool {
 		if domain.OnSaleFlag {
 			ds = append(ds, *domain)
 		}
@@ -80,8 +80,8 @@ func (sv *Service) ONS_GetDomainByBeneficiary(req client.ONSGetDomainsRequest, r
 	}
 
 	ds := make([]ons.Domain, 0)
-	domains.Iterate(func(name string, domain *ons.Domain) bool {
-		if domain.AccountAddress.Equal(req.Beneficiary) {
+	domains.Iterate(func(name ons.Name, domain *ons.Domain) bool {
+		if domain.Beneficiary.Equal(req.Beneficiary) {
 			ds = append(ds, *domain)
 		}
 		return false

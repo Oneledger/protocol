@@ -55,7 +55,7 @@ type SendTxRequest struct {
 	Gas      int64         `json:"gas"`
 }
 
-type SendTxReply struct {
+type CreateTxReply struct {
 	RawTx []byte `json:"rawTx"`
 }
 

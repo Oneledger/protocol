@@ -6,6 +6,7 @@ package main
 
 import (
 	"crypto/ecdsa"
+	"encoding/hex"
 	"fmt"
 	"math/big"
 	"os"
@@ -33,10 +34,9 @@ import (
 var (
 	LockRedeemABI = contract.LockRedeemABI
 
-	contractAddr  = "0x6ec797CDE172F27256F8fF3A817be3D6FBB9CE4E"
+	contractAddr = "0x66d0C996969e3aCDBbA0cE41Aff9cb262b7bcacc"
 
-
-	cfg               = config.DefaultEthConfigRoopsten()
+	cfg               = config.DefaultEthConfig()
 	log               = logger.NewDefaultLogger(os.Stdout).WithPrefix("testeth")
 	UserprivKey       *ecdsa.PrivateKey
 	UserprivKeyRedeem *ecdsa.PrivateKey
@@ -63,7 +63,7 @@ func createValue(str string) *big.Int {
 
 func init() {
 
-	UserprivKey, _ = crypto.HexToECDSA("02038529C9AB706E9F4136F4A4EB51E866DBFE22D5E102FD3A22C14236E1C2EA")
+	UserprivKey, _ = crypto.HexToECDSA("6c24a44424c8182c1e3e995ad3ccfb2797e3f7ca845b99bea8dead7fc9dccd09")
 
 	UserprivKeyRedeem, _ = crypto.HexToECDSA("02038529C9AB706E9F4136F4A4EB51E866DBFE22D5E102FD3A22C14236E1C2EA")
 
@@ -91,9 +91,9 @@ func main() {
 
 	lock()
 
-	time.Sleep(10 * time.Second)
+	//time.Sleep(10 * time.Second)
 
-	redeem()
+	//redeem()
 }
 
 func lock() {
@@ -130,14 +130,12 @@ func lock() {
 		log.Fatal(err)
 	}
 
-
 	signedTx, err := types.SignTx(tx, types.NewEIP155Signer(chainID), UserprivKey)
 	if err != nil {
 
 		log.Fatal(err)
 	}
 	ts := types.Transactions{signedTx}
-
 
 	rawTxBytes := ts.GetRlp(0)
 	txNew := &types.Transaction{}
@@ -148,13 +146,11 @@ func lock() {
 		return
 	}
 
-
 	rpcclient, err := rpc.NewClient("http://localhost:26602")
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
-
 
 	result := &oclient.ListCurrenciesReply{}
 	err = rpcclient.Call("query.ListCurrencies", struct{}{}, result)
@@ -192,7 +188,7 @@ func lock() {
 		return
 	}
 
-	fmt.Println("after sign call")
+	//fmt.Println("after sign call",reply.RawTX)
 
 	bresult := &oclient.BroadcastReply{}
 	err = rpcclient.Call("broadcast.TxCommit", oclient.BroadcastRequest{
@@ -200,6 +196,8 @@ func lock() {
 		Signature: signReply.Signature.Signed,
 		PublicKey: signReply.Signature.Signer,
 	}, bresult)
+
+	fmt.Println(hex.EncodeToString(reply.RawTX))
 	if err != nil {
 		fmt.Println(err)
 		return

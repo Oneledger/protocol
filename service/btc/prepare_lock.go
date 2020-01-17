@@ -72,7 +72,7 @@ func (s *Service) PrepareLock(args client.BTCLockPrepareRequest, reply *client.B
 	return nil
 }
 
-func (s *Service) AddUserSignatureAndProcessLock(args client.BTCLockRequest, reply *client.SendTxReply) error {
+func (s *Service) AddUserSignatureAndProcessLock(args client.BTCLockRequest, reply *client.CreateTxReply) error {
 
 	tracker, err := s.trackerStore.Get(args.TrackerName)
 	if err != nil {
@@ -159,7 +159,7 @@ func (s *Service) AddUserSignatureAndProcessLock(args client.BTCLockRequest, rep
 		return codes.ErrSerialization
 	}
 
-	*reply = client.SendTxReply{
+	*reply = client.CreateTxReply{
 		RawTx: packet,
 	}
 	return nil

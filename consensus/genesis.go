@@ -12,6 +12,7 @@ import (
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/fees"
 	"github.com/Oneledger/protocol/data/keys"
+	"github.com/Oneledger/protocol/data/ons"
 	"github.com/Oneledger/protocol/identity"
 	"github.com/Oneledger/protocol/serialize"
 )
@@ -42,9 +43,12 @@ type BalanceState struct {
 }
 
 type DomainState struct {
-	OwnerAddress   keys.Address `json:"ownerAddress"`
-	AccountAddress keys.Address `json:"accountAddress"`
-	Name           string       `json:"name"`
+	OwnerAddress keys.Address `json:"ownerAddress"`
+	Beneficiary  keys.Address `json:"beneficiary"`
+	Name         string       `json:"name"`
+	Parent       string       `json:"parent"`
+	URI          string       `json:"uri"`
+	Expiry       int64        `json:"expiry"`
 }
 
 type ChainState struct {
@@ -64,6 +68,7 @@ type AppState struct {
 	Staking     []Stake                    `json:"staking"`
 	Domains     []DomainState              `json:"domains"`
 	Fees        []BalanceState             `json:"fees"`
+	ONSOptions  ons.Options                `json:"ons_options"`
 }
 
 func NewAppState(currencies balance.Currencies,
@@ -73,6 +78,7 @@ func NewAppState(currencies balance.Currencies,
 	domains []DomainState,
 	fees []BalanceState,
 	ethoptions ethchain.ChainDriverOption,
+	onsoptions ons.Options,
 	btcOptions bitcoin.ChainDriverOption,
 ) *AppState {
 	return &AppState{
@@ -83,6 +89,7 @@ func NewAppState(currencies balance.Currencies,
 		Domains:     domains,
 		Fees:        fees,
 		ETHCDOption: ethoptions,
+		ONSOptions:  onsoptions,
 		BTCCDOption: btcOptions,
 	}
 }
