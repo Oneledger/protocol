@@ -30,8 +30,26 @@ func (s *State) WithGas(gc GasCalculator) *State {
 func (s *State) WithoutGas() *State {
 
 	s.cache = NewSessionedDirectStorage(SESSION_CACHE, "state")
+	s.txSession = nil
 	//s.gc = NewGasCalculator(0)
 	return s
+}
+
+func (s *State) BeginTxSession() {
+	s.txSession = s.cache.BeginSession()
+}
+
+func (s *State) CommitTxSession() {
+	if s.txSession == nil {
+		panic("no tx session in state")
+	}
+
+	s.txSession.Commit()
+	s.txSession = nil
+}
+
+func (s *State) DiscardTxSession() {
+	s.txSession = nil
 }
 
 func (s State) Version() int64 {
@@ -43,6 +61,15 @@ func (s State) RootHash() []byte {
 }
 
 func (s *State) Get(key StoreKey) ([]byte, error) {
+
+	if s.txSession != nil {
+		// Get the txSession first
+		result, err := s.txSession.Get(key)
+		if err == nil {
+			// if got result, return directly
+			return result, err
+		}
+	}
 
 	// Get the cache first
 	result, err := s.cache.Get(key)
@@ -56,21 +83,39 @@ func (s *State) Get(key StoreKey) ([]byte, error) {
 }
 
 func (s *State) Set(key StoreKey, value []byte) error {
+	if s.txSession != nil {
+		return s.txSession.Set(key, value)
+	}
+
 	// set only for cache, waiting to be committed
 	return s.cache.Set(key, value)
 }
 
 func (s *State) Exists(key StoreKey) bool {
+
+	if s.txSession != nil {
+		// check existence in txSession
+		exist := s.txSession.Exists(key)
+		if exist {
+			return exist
+		}
+	}
+
 	// check existence in cache, because it's cheaper
 	exist := s.cache.Exists(key)
 	if !exist {
 		// if not existed in cache, check ChainState
 		return s.cs.Exists(key)
 	}
+
 	return exist
 }
 
 func (s *State) Delete(key StoreKey) (bool, error) {
+
+	if s.txSession != nil {
+		return s.txSession.Delete(key)
+	}
 	//cache delete is always true
 	_, _ = s.cache.Delete(key)
 
@@ -136,6 +181,7 @@ func (s *State) Commit() (hash []byte, version int64) {
 
 	s.Write()
 	s.cache = NewSessionedDirectStorage(SESSION_CACHE, "state")
+	s.txSession = nil
 
 	return s.cs.Commit()
 }

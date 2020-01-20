@@ -134,6 +134,8 @@ func (app *App) txChecker() txChecker {
 	return func(msg []byte) ResponseCheckTx {
 		defer app.handlePanic()
 
+		app.Context.check.BeginTxSession()
+
 		tx := &action.SignedTx{}
 
 		err := serialize.GetSerializer(serialize.NETWORK).Deserialize(msg, tx)
@@ -168,6 +170,13 @@ func (app *App) txChecker() txChecker {
 			Tags:      response.Tags,
 			Codespace: "",
 		}
+
+		if !ok {
+			app.Context.check.DiscardTxSession()
+		} else {
+			app.Context.check.CommitTxSession()
+		}
+
 		app.logger.Debug("Check Tx: ", result, "log", response.Log)
 		return result
 
@@ -177,6 +186,8 @@ func (app *App) txChecker() txChecker {
 func (app *App) txDeliverer() txDeliverer {
 	return func(msg []byte) ResponseDeliverTx {
 		defer app.handlePanic()
+
+		app.Context.deliver.BeginTxSession()
 
 		tx := &action.SignedTx{}
 
@@ -205,6 +216,13 @@ func (app *App) txDeliverer() txDeliverer {
 			Codespace: "",
 		}
 		app.logger.Debug("Deliver Tx: ", result)
+
+		if !ok {
+			app.Context.deliver.DiscardTxSession()
+		} else {
+			app.Context.deliver.CommitTxSession()
+		}
+
 		return result
 	}
 }
