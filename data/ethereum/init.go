@@ -34,4 +34,15 @@ var (
 
 type ProcessType int8
 
+func GetProcessTypeString (t ProcessType) string {
+	switch t{
+	case 0x00 :return "ProcessTypeNone"
+	case 0x01 :return "ETH LOCK"
+	case 0x02 :return "ETH REDEEM"
+	case 0x03 :return "ERC LOCK"
+	case 0x04 :return "ERC REDEEM"
+	}
+	return "UNKNOWN TYPE"
+}
+
 type Vote uint8

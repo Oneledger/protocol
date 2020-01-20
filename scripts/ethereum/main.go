@@ -37,10 +37,9 @@ var (
 	TestTokenABI  = contract.ERC20BasicABI
 	LockRedeemERCABI =contract.LockRedeemERCABI
 	// LockRedeemERC20ABI = contract.ContextABI
-	LockRedeemContractAddr = "0x1B56deD528F91B62d4b49eD24d9A6ca5c2b577B8"
-	TestTokenContractAddr = "0x76d7e36086de8a8FF194F1F80E1106142D1aB172"
-	LockRedeemERC20ContractAddr = "0x62edfD8a5B56aAF449CA6ae7Ab05B39CF58cD903"
-
+	LockRedeemContractAddr = "0x79e155A2B5e3c2bE46EE646F425B0B9ad6173516"
+	TestTokenContractAddr = "0xBfb09a30F4E4ceEA785f13829E8BB45Bc357FbbA"
+	LockRedeemERC20ContractAddr = "0x339D2A708aB09F80699736d966c09b6BC64CB9DD"
 	cfg                         = config.DefaultEthConfig()
 	log                         = logger.NewDefaultLogger(os.Stdout).WithPrefix("testeth")
 	UserprivKey                 *ecdsa.PrivateKey
@@ -446,6 +445,10 @@ func erc20Redeem()  {
 	if err != nil {
 		log.Fatal("unable to pack")
 	}
+	bytesDataExecuteRedeemd, err := lockRedeemERCABI.Pack("executeredeem",toAddressTestToken)
+	if err != nil {
+		log.Fatal("unable to pack")
+	}
 	redeemAddress := redeemRecipientAddress.Bytes()
 	nonce, err := client.PendingNonceAt(context.Background(), redeemRecipientAddress)
 	if err != nil {
@@ -468,7 +471,7 @@ func erc20Redeem()  {
 
 	value := big.NewInt(0)
 	tx2 := types.NewTransaction(nonce, toAdddressLockRedeemERC, value, gasLimit, gasPrice, bytesData)
-
+	Executetx := types.NewTransaction(nonce+1, toAdddressLockRedeemERC, value, gasLimit, gasPrice, bytesDataExecuteRedeemd)
 	chainID, err := client.ChainID(context.Background())
 	if err != nil {
 
@@ -476,6 +479,11 @@ func erc20Redeem()  {
 	}
 
 	signedTx2, err := types.SignTx(tx2, types.NewEIP155Signer(chainID), UserprivKeyRedeem)
+	if err != nil {
+
+		log.Fatal(err)
+	}
+	signedExecuteRedeem, err := types.SignTx(Executetx, types.NewEIP155Signer(chainID), UserprivKeyRedeem)
 	if err != nil {
 
 		log.Fatal(err)
@@ -549,6 +557,12 @@ func erc20Redeem()  {
 	}
 
 	fmt.Println("broadcast result: ", bresult.OK)
+	time.Sleep(30 * time.Second)
+	err = client.SendTransaction(context.Background(), signedExecuteRedeem)
+	if err != nil {
+		fmt.Println("Executed Redeem  for user : " ,redeemRecipientAddress)
+	}
+
 }
 
 

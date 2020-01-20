@@ -664,9 +664,10 @@ contract LockRedeemERC {
 
     //function called by user
     function executeredeem (address tokenAddress_) public  {
-        require(redeemRequests[msg.sender].recipient == msg.sender);
-        // require(redeemRequests[msg.sender].signature_count >= votingThreshold);
-        require(redeemRequests[msg.sender].tokenAddress == tokenAddress_);
+        require(redeemRequests[msg.sender].recipient == msg.sender,"Request not called from token owner");
+        require(redeemRequests[msg.sender].signature_count >= votingThreshold ,"Not enough Validator votes");
+        require(redeemRequests[msg.sender].tokenAddress == tokenAddress_,"Wrong token selected");
+        require(redeemRequests[msg.sender].isCompleted != true,"Redeem has already been executed");
         IERC20 testToken  =   IERC20(tokenAddress_);
         testToken.transfer(redeemRequests[msg.sender].recipient,redeemRequests[msg.sender].amount);
         redeemRequests[msg.sender].amount = 0;

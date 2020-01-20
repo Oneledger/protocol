@@ -1,7 +1,6 @@
 package event
 
 import (
-	"fmt"
 	"strconv"
 
 	"github.com/Oneledger/protocol/action"
@@ -47,7 +46,6 @@ func (job *JobETHVerifyRedeem) DoMyJob(ctx interface{}) {
 	}
 	ethconfig := ethCtx.cfg.EthChainDriver
 	ethoptions := trackerStore.GetOption()
-    fmt.Println("Trying to get chaindriver : ",tracker.Type)
 	cd := new(ethereum.ETHChainDriver)
 	if tracker.Type == trackerlib.ProcessTypeRedeem {
 		cd, err = ethereum.NewChainDriver(ethconfig, ethCtx.Logger, ethoptions.ContractAddress,ethoptions.ContractABI,ethereum.ETH)
@@ -76,7 +74,6 @@ func (job *JobETHVerifyRedeem) DoMyJob(ctx interface{}) {
 	}
 
 	addr := ethCtx.GetValidatorETHAddress()
-	fmt.Println("Trying to Verify Redeem")
 	success, err := cd.VerifyRedeem(addr, msg.From())
 	if err != nil {
 		ethCtx.Logger.Error("Error in verifying redeem :", job.GetJobID(), err)

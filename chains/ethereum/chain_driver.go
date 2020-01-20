@@ -82,11 +82,8 @@ func (acc *ETHChainDriver) GetClient() *Client {
 
 func (acc *ETHChainDriver) GetContract() Contract {
 	client := acc.GetClient()
-    fmt.Println("Get contract")
-	fmt.Println("ContractType : ",acc.ContractType)
 	if acc.contract == nil {
 		if acc.ContractType == ETH {
-			fmt.Println("Trying to get ETH contract ")
 			ctrct, err := contract.NewLockRedeem(acc.ContractAddress, client)
 			if err != nil {
 				panic(err)
@@ -94,7 +91,6 @@ func (acc *ETHChainDriver) GetContract() Contract {
 			ctr := GetETHContract(*ctrct)
 			acc.contract = ctr
 		} else if acc.ContractType == ERC {
-			fmt.Println("Trying to get ERC contract ")
 			ctrct,err := contract.NewLockRedeemERC(acc.ContractAddress,client)
 			if err != nil {
 				panic(err)
@@ -294,7 +290,6 @@ func ParseErc20Lock(erc20list []ERC20Token, rawEthTx []byte) (*LockErcRequest,er
 
 func (acc *ETHChainDriver) VerifyRedeem(validatorAddress common.Address, recipient common.Address) (bool, error) {
 	instance := acc.GetContract()
-    fmt.Println("got contract: ")
 	ok, err := instance.VerifyRedeem(acc.CallOpts(validatorAddress), recipient)
 	if err != nil {
 		return false, errors.Wrap(err, "Unable to connect to ethereum smart contract")
@@ -351,15 +346,10 @@ func ParseERC20RedeemParams(rawTx []byte, lockredeemERCAbi string) (*RedeemErcRe
 	if err != nil {
 		return nil,err
 	}
-	fmt.Println("Got Abi")
-	fmt.Println("-----------------------------------------------------------------------------------")
-	fmt.Println(contract.LockRedeemERCFuncSigs)
-	fmt.Println("-----------------------------------------------------------------------------------")
 	methodSignature, err := getSignfromName(contractAbi, "redeem",contract.LockRedeemERCFuncSigs)
 	if err != nil {
 		return nil,err
 	}
-	fmt.Println("Starting ParseRedeem")
 	ercRedeemParams, err := parseERC20Redeem(rawTx, methodSignature)
 	if err != nil {
 		return nil, err

@@ -100,7 +100,6 @@ func (e ethERC20RedeemTx) ProcessFee(ctx *action.Context, signedTx action.Signed
 }
 
 func runERC20Reddem(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
-	fmt.Println("runERC20redeem")
 	erc20redeem := &ERC20Redeem{}
 	err := erc20redeem.Unmarshal(tx.Data)
 	if err != nil {

@@ -1,7 +1,6 @@
 package ethereum
 
 import (
-	"fmt"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -56,7 +55,6 @@ func (E ETHLRContract) IsValidator(opts *bind.CallOpts, addr common.Address) (bo
 	return E.contract.IsValidator(opts,addr)
 }
 func (E ETHLRContract) VerifyRedeem(opts *bind.CallOpts, recipient_ common.Address) (bool, error) {
-	fmt.Println("Running ETH Verify Redeem")
 	return E.contract.VerifyRedeem(opts,recipient_)
 }
 func (E ETHLRContract) HasValidatorSigned(opts *bind.CallOpts, recipient_ common.Address) (bool, error) {
@@ -81,11 +79,9 @@ func (E ERC20LRContract) IsValidator(opts *bind.CallOpts, addr common.Address) (
 	return E.contract.IsValidator(opts,addr)
 }
 func (E ERC20LRContract) VerifyRedeem(opts *bind.CallOpts, recipient_ common.Address) (bool, error) {
-	fmt.Println("Running ERC Verify Redeem")
 	return E.contract.VerifyRedeem(opts,recipient_)
 }
 func (E ERC20LRContract) HasValidatorSigned(opts *bind.CallOpts, recipient_ common.Address) (bool, error) {
-	fmt.Println("Running ERC Has validator signed")
 	return E.contract.HasValidatorSigned(opts,recipient_)
 }
 func (E ERC20LRContract) Sign(opts *bind.TransactOpts, amount_ *big.Int, recipient_ common.Address) (*types.Transaction, error){
