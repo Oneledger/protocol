@@ -1,3 +1,4 @@
+//Package for transactions related to Etheruem
 package eth
 
 import (
@@ -13,21 +14,23 @@ import (
 	"github.com/Oneledger/protocol/data/ethereum"
 )
 
+// Lock is a struct for one-Ledger transaction for ERC20 Lock
 type ERC20Lock struct {
 	Locker action.Address
 	ETHTxn []byte // Raw Transaction for Locking Tokens
 }
 
 var _ action.Msg = &ERC20Lock{}
-
+//Signers return the Address of the owner who created the transaction
 func (E ERC20Lock) Signers() []action.Address {
 	return []action.Address{E.Locker}
 }
 
+// Type returns the type of current action
 func (E ERC20Lock) Type() action.Type {
 	return action.ERC20_LOCK
 }
-
+// Tags creates the tags to associate with the transaction
 func (E ERC20Lock) Tags() common.KVPairs {
 	tags := make([]common.KVPair, 0)
 
@@ -44,6 +47,7 @@ func (E ERC20Lock) Tags() common.KVPairs {
 	return tags
 }
 
+//Marshal ERC20Lock to byte array
 func (E ERC20Lock) Marshal() ([]byte, error) {
 	return json.Marshal(E)
 }
@@ -56,7 +60,7 @@ type ethERC20LockTx struct {
 }
 
 var _ action.Tx = ethERC20LockTx{}
-
+// Validate provides basic validation for transaction Type and Fee
 func (e ethERC20LockTx) Validate(ctx *action.Context, signedTx action.SignedTx) (bool, error) {
 	// unmarshal the tx message
 	erclock := &ERC20Lock{}
@@ -78,20 +82,21 @@ func (e ethERC20LockTx) Validate(ctx *action.Context, signedTx action.SignedTx) 
 	}
 	return true, nil
 }
-
+// ProcessCheck runs checks on the transaction without commiting it .
 func (e ethERC20LockTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	return runERC20Lock(ctx, tx)
 }
-
+// ProcessDeliver run checks on transaction and commits it to a new block
 func (e ethERC20LockTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	return runERC20Lock(ctx, tx)
 }
-
+// ProcessFee process the transaction Fee in OLT
 func (e ethERC20LockTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas) (bool, action.Response) {
 	ctx.State.ConsumeUpfront(237600)
 	return action.BasicFeeHandling(ctx, signedTx, start, size, 1)
 }
-
+// runERC20Lock has the common functionality for ProcessCheck and ProcessDeliver
+// Provides security checks for transaction
 func runERC20Lock(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	erc20lock := &ERC20Lock{}
 	err := erc20lock.Unmarshal(tx.Data)
@@ -142,6 +147,7 @@ func runERC20Lock(ctx *action.Context, tx action.RawTx) (bool, action.Response) 
 		}
 	}
 	lockToken := curr.NewCoinFromString(erc20Params.TokenAmount.String())
+	// Adding lock amount to common address to maintain count of total oToken minted
 	tokenSupply := action.Address(TTClockBalanceAddress)
 	balCoin, err := ctx.Balances.GetBalanceForCurr(tokenSupply, &curr)
 	if err != nil {

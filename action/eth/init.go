@@ -1,3 +1,4 @@
+//Package for transactions related to Etheruem
 package eth
 
 import (

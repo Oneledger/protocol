@@ -1,3 +1,4 @@
+//Package for transactions related to Etheruem
 package eth
 
 import (
@@ -13,25 +14,26 @@ import (
 	ethchaindriver "github.com/Oneledger/protocol/chains/ethereum"
 	"github.com/Oneledger/protocol/data/ethereum"
 )
-
+// Lock is a struct for one-Ledger transaction for Ether Lock
 type Lock struct {
 	Locker action.Address
 	ETHTxn []byte
 }
 
+
 var _ action.Msg = &Lock{}
 
-// Signers for the ethereum ext lock is the user who wishes to lock his ether
+//Signers return the Address of the owner who created the transaction
 func (et Lock) Signers() []action.Address {
 	return []action.Address{et.Locker}
 }
 
-// Type for ethlock
+// Type returns the type of current action
 func (et Lock) Type() action.Type {
 	return action.ETH_LOCK
 }
 
-// Tags for ethereum lock
+// Tags creates the tags to associate with the transaction
 func (et Lock) Tags() common.KVPairs {
 	tags := make([]common.KVPair, 0)
 
@@ -47,7 +49,7 @@ func (et Lock) Tags() common.KVPairs {
 	tags = append(tags, tag, tag2)
 	return tags
 }
-
+//Marshal Lock to byte array
 func (et Lock) Marshal() ([]byte, error) {
 	return json.Marshal(et)
 }
@@ -61,7 +63,7 @@ type ethLockTx struct {
 
 var _ action.Tx = ethLockTx{}
 
-// Validate
+// Validate provides basic validation for transaction Type and Fee
 func (ethLockTx) Validate(ctx *action.Context, signedTx action.SignedTx) (bool, error) {
 
 	// unmarshal the tx message
@@ -86,13 +88,13 @@ func (ethLockTx) Validate(ctx *action.Context, signedTx action.SignedTx) (bool, 
 		return false, err
 	}
 
-	// Check lock fields for incoming trasaction
+	// Check lock fields for incoming transaction
 
 	//TODO : Verify beninfiaciary address in ETHTX == locker (Phase 2)
 	return true, nil
 }
 
-// ProcessCheck
+// ProcessCheck runs checks on the transaction without commiting it .
 func (e ethLockTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 
 	lock := &Lock{}
@@ -105,7 +107,7 @@ func (e ethLockTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (bool, act
 	return runLock(ctx, lock)
 }
 
-// ProcessDeliver
+// ProcessDeliver run checks on transaction and commits it to a new block
 func (e ethLockTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 
 	lock := &Lock{}
@@ -125,14 +127,15 @@ func (e ethLockTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, a
 	}
 }
 
-// ProcessFee
+// ProcessFee process the transaction Fee in OLT
 func (ethLockTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas) (bool, action.Response) {
 	ctx.State.ConsumeUpfront(237600)
 	return action.BasicFeeHandling(ctx, signedTx, start, size, 1)
 }
 
-// processCommon
 
+// runLock has the common functionality for ProcessCheck and ProcessDeliver
+// Provides security checks for transaction
 func runLock(ctx *action.Context, lock *Lock) (bool, action.Response) {
 
 	ethTx, err := ethchaindriver.DecodeTransaction(lock.ETHTxn)
@@ -175,6 +178,7 @@ func runLock(ctx *action.Context, lock *Lock) (bool, action.Response) {
 		return false, action.Response{Log: fmt.Sprintf("ETH currency not available", lock.Locker)}
 	}
 	lockCoin := curr.NewCoinFromString(ethTx.Value().String())
+	// Adding lock amount to common address to maintain count of total oEth minted
 	ethSupply := action.Address(lockBalanceAddress)
 	balCoin, err := ctx.Balances.GetBalanceForCurr(ethSupply, &curr)
 	if err != nil {
