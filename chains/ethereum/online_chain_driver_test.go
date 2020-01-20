@@ -128,9 +128,9 @@ func CreateUnsignedERCLock() ([]byte, error) {
 	return rawTxBytes, nil
 }
 
-func CreateERC20Redeem() ([]byte,error){
+func CreateERC20Redeem() ([]byte, error) {
 	ERCLockRedeemAbi, _ := abi.JSON(strings.NewReader(ERCLockRedeemABI))
-	bytesData, err := ERCLockRedeemAbi.Pack("redeem", valuelockERC20,toAddressTestToken)
+	bytesData, err := ERCLockRedeemAbi.Pack("redeem", valuelockERC20, toAddressTestToken)
 	nonce, err := client.PendingNonceAt(context.Background(), getAddress())
 	if err != nil {
 		return nil, err
@@ -240,22 +240,12 @@ func TestVerfiyERC20Lock(t *testing.T) {
 
 }
 
-func TestVerfiyERC20Redeem(t *testing.T) {
-	rawERCRedeem,err := CreateERC20Redeem()
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-	ok,err := ParseERC20Redeem(rawERCRedeem,ERCLockRedeemABI,toAddressTestToken)
-	if err == nil {
-		fmt.Println("VERIFY ERC REDEEM :" ,ok)
-	}
-}
+
 
 func TestParseERC20Redeem(t *testing.T) {
-    rawERCRedeem,err := CreateERC20Redeem()
-    if err != nil {
-    	fmt.Println(err)
+	rawERCRedeem, err := CreateERC20Redeem()
+	if err != nil {
+		fmt.Println(err)
 		return
 	}
 	ERCLockRedeemAbi, err := abi.JSON(strings.NewReader(ERCLockRedeemABI))
@@ -263,12 +253,12 @@ func TestParseERC20Redeem(t *testing.T) {
 		fmt.Println(err)
 		return
 	}
-	sig,err := getSignfromName(ERCLockRedeemAbi,"redeem",contract.LockRedeemERCFuncSigs)
+	sig, err := getSignFromName(ERCLockRedeemAbi, "redeem", contract.LockRedeemERCFuncSigs)
 	if err != nil {
-        fmt.Println(err)
+		fmt.Println(err)
 		return
 	}
-    req,err := parseERC20Redeem(rawERCRedeem,sig)
+	req, err := parseERC20Redeem(rawERCRedeem, sig)
 	if err != nil {
 		fmt.Println(err)
 		return

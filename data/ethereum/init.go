@@ -20,10 +20,10 @@ const (
 	REDEEMCONFIRM string = "redeemconfirm"
 	BURN          string = "burn"
 
-	ProcessTypeNone    ProcessType = 0x00
-	ProcessTypeLock    ProcessType = 0x01
-	ProcessTypeRedeem  ProcessType = 0x02
-	ProcessTypeLockERC ProcessType = 0x03
+	ProcessTypeNone      ProcessType = 0x00
+	ProcessTypeLock      ProcessType = 0x01
+	ProcessTypeRedeem    ProcessType = 0x02
+	ProcessTypeLockERC   ProcessType = 0x03
 	ProcessTypeRedeemERC ProcessType = 0x04
 )
 
@@ -34,13 +34,18 @@ var (
 
 type ProcessType int8
 
-func GetProcessTypeString (t ProcessType) string {
-	switch t{
-	case 0x00 :return "ProcessTypeNone"
-	case 0x01 :return "ETH LOCK"
-	case 0x02 :return "ETH REDEEM"
-	case 0x03 :return "ERC LOCK"
-	case 0x04 :return "ERC REDEEM"
+func GetProcessTypeString(t ProcessType) string {
+	switch t {
+	case 0x00:
+		return "ProcessTypeNone"
+	case 0x01:
+		return "ETH LOCK"
+	case 0x02:
+		return "ETH REDEEM"
+	case 0x03:
+		return "ERC LOCK"
+	case 0x04:
+		return "ERC REDEEM"
 	}
 	return "UNKNOWN TYPE"
 }

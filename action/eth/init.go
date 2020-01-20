@@ -8,8 +8,8 @@ import (
 )
 
 const (
-	totalETHSupply     = "10000000000000000000" // 10 ETH
-	lockBalanceAddress = "13371337"
+	totalETHSupply        = "10000000000000000000" // 10 ETH
+	lockBalanceAddress    = "13371337"
 	totalTTCSupply        = "10000000000000000000" // 10 ETH
 	TTClockBalanceAddress = "23372337"
 )
@@ -35,9 +35,9 @@ func EnableETH(r action.Router) error {
 		return errors.Wrap(err, "ERC20LockTx")
 	}
 
-	err = r.AddHandler(action.ERC20_REDEEM,ethERC20RedeemTx{})
-	if err !=nil {
-		return errors.Wrap(err,"ERC20Redeem)")
+	err = r.AddHandler(action.ERC20_REDEEM, ethERC20RedeemTx{})
+	if err != nil {
+		return errors.Wrap(err, "ERC20Redeem)")
 	}
 	return nil
 }

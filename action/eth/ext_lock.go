@@ -14,12 +14,12 @@ import (
 	ethchaindriver "github.com/Oneledger/protocol/chains/ethereum"
 	"github.com/Oneledger/protocol/data/ethereum"
 )
+
 // Lock is a struct for one-Ledger transaction for Ether Lock
 type Lock struct {
 	Locker action.Address
 	ETHTxn []byte
 }
-
 
 var _ action.Msg = &Lock{}
 
@@ -49,6 +49,7 @@ func (et Lock) Tags() common.KVPairs {
 	tags = append(tags, tag, tag2)
 	return tags
 }
+
 //Marshal Lock to byte array
 func (et Lock) Marshal() ([]byte, error) {
 	return json.Marshal(et)
@@ -132,7 +133,6 @@ func (ethLockTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start
 	ctx.State.ConsumeUpfront(237600)
 	return action.BasicFeeHandling(ctx, signedTx, start, size, 1)
 }
-
 
 // runLock has the common functionality for ProcessCheck and ProcessDeliver
 // Provides security checks for transaction

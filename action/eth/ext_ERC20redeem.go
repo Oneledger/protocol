@@ -24,14 +24,17 @@ type ERC20Redeem struct {
 	To     action.Address //User Ethereum address
 	ETHTxn []byte
 }
+
 //Signers return the Address of the owner who created the transaction
 func (E ERC20Redeem) Signers() []action.Address {
 	return []action.Address{E.Owner}
 }
+
 // Type returns the type of current action
 func (E ERC20Redeem) Type() action.Type {
 	return action.ERC20_REDEEM
 }
+
 // Tags creates the tags to associate with the transaction
 func (E ERC20Redeem) Tags() common.KVPairs {
 	tags := make([]common.KVPair, 0)
@@ -48,6 +51,7 @@ func (E ERC20Redeem) Tags() common.KVPairs {
 	tags = append(tags, tag, tag2)
 	return tags
 }
+
 //Marshal ERC20Redeem to byte array
 func (E ERC20Redeem) Marshal() ([]byte, error) {
 	return json.Marshal(E)
@@ -57,11 +61,11 @@ func (E *ERC20Redeem) Unmarshal(data []byte) error {
 	return json.Unmarshal(data, E)
 }
 
-
 var _ action.Tx = ethERC20RedeemTx{}
 
 type ethERC20RedeemTx struct {
 }
+
 // Validate provides basic validation for transaction Type and Fee
 func (e ethERC20RedeemTx) Validate(ctx *action.Context, signedTx action.SignedTx) (bool, error) {
 	erc20redeem := &ERC20Redeem{}
@@ -86,20 +90,24 @@ func (e ethERC20RedeemTx) Validate(ctx *action.Context, signedTx action.SignedTx
 		ctx.Logger.Error("eth txn is nil")
 		return false, action.ErrMissingData
 	}
-	return true,nil
+	return true, nil
 }
+
 // ProcessCheck runs checks on the transaction without commiting it .
 func (e ethERC20RedeemTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
-	return runERC20Reddem(ctx,tx)
+	return runERC20Reddem(ctx, tx)
 }
+
 // ProcessDeliver run checks on transaction and commits it to a new block
 func (e ethERC20RedeemTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
-	return runERC20Reddem(ctx,tx)
+	return runERC20Reddem(ctx, tx)
 }
+
 // ProcessFee process the transaction Fee in OLT
 func (e ethERC20RedeemTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas) (bool, action.Response) {
-	return true,action.Response{Log:"ProcessFee"}
+	return true, action.Response{Log: "ProcessFee"}
 }
+
 // runERC20Redeem has the common functionality for ProcessCheck and ProcessDeliver
 // Provides security checks for transaction
 func runERC20Reddem(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
@@ -108,13 +116,13 @@ func runERC20Reddem(ctx *action.Context, tx action.RawTx) (bool, action.Response
 	if err != nil {
 		return false, action.Response{Log: action.ErrUnserializable.Error()}
 	}
-    ethOptions := ctx.ETHTrackers.GetOption()
-	redeemParams, err := ethereum.ParseERC20RedeemParams(erc20redeem.ETHTxn,ethOptions.ERCContractABI)
+	ethOptions := ctx.ETHTrackers.GetOption()
+	redeemParams, err := ethereum.ParseERC20RedeemParams(erc20redeem.ETHTxn, ethOptions.ERCContractABI)
 	if err != nil {
 		ctx.Logger.Error(err)
 		return false, action.Response{Log: action.ErrTokenNotSupported.Error()}
 	}
-	token, err := ethereum.ParseERC20RedeemToken(erc20redeem.ETHTxn,ethOptions.TokenList,ethOptions.ERCContractABI)
+	token, err := ethereum.ParseERC20RedeemToken(erc20redeem.ETHTxn, ethOptions.TokenList, ethOptions.ERCContractABI)
 	if err != nil {
 		ctx.Logger.Error(err)
 		return false, action.Response{Log: action.ErrTokenNotSupported.Error()}
@@ -132,7 +140,7 @@ func runERC20Reddem(ctx *action.Context, tx action.RawTx) (bool, action.Response
 		return false, action.Response{Log: action.ErrNotEnoughFund.Error()}
 	}
 	// Subtracting from common address to maintain count of the total oToken minted
-	tokenSupply := keys.Address(TTClockBalanceAddress)  // ^Todo : Put balances Address in Token Struct
+	tokenSupply := keys.Address(TTClockBalanceAddress) // ^Todo : Put balances Address in Token Struct
 	err = ctx.Balances.MinusFromAddress(tokenSupply, coin)
 	if err != nil {
 		return false, action.Response{Log: action.ErrNotEnoughFund.Error()}
@@ -173,4 +181,3 @@ func runERC20Reddem(ctx *action.Context, tx action.RawTx) (bool, action.Response
 		Tags:      nil,
 	}
 }
-

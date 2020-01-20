@@ -90,7 +90,6 @@ type OLTERC20RedeemRequest struct {
 	Gas            int64          `json:"gas"`
 }
 
-
 type ETHLockRequest struct {
 	UserAddress common.Address `json:"user_eth_address"`
 	Amount      *big.Int       `json:"amount"`

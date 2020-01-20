@@ -57,33 +57,31 @@ func (j *JobETHSignRedeem) DoMyJob(ctx interface{}) {
 	cd := new(ethereum.ETHChainDriver)
 	redeemAmount := new(big.Int)
 	if tracker.Type == trackerlib.ProcessTypeRedeem {
-		cd, err = ethereum.NewChainDriver(ethconfig, ethCtx.Logger, ethoptions.ContractAddress,ethoptions.ContractABI,ethereum.ETH)
+		cd, err = ethereum.NewChainDriver(ethconfig, ethCtx.Logger, ethoptions.ContractAddress, ethoptions.ContractABI, ethereum.ETH)
 		if err != nil {
-			ethCtx.Logger.Error("err trying to get ChainDriver : ", j.GetJobID(), err,tracker.Type)
+			ethCtx.Logger.Error("err trying to get ChainDriver : ", j.GetJobID(), err, tracker.Type)
 			return
 		}
-		reqParams, err := cd.ParseRedeem(tracker.SignedETHTx,ethoptions.ContractABI)
+		reqParams, err := cd.ParseRedeem(tracker.SignedETHTx, ethoptions.ContractABI)
 		if err != nil {
 			ethCtx.Logger.Error("Error in Parsing amount from rawTx (Ether Redeem)", j.GetJobID(), err)
 			return
 		}
 		redeemAmount = reqParams.Amount
 
-
 	} else if tracker.Type == trackerlib.ProcessTypeRedeemERC {
-		cd, err = ethereum.NewChainDriver(ethconfig, ethCtx.Logger, ethoptions.ERCContractAddress,ethoptions.ERCContractABI,ethereum.ERC)
+		cd, err = ethereum.NewChainDriver(ethconfig, ethCtx.Logger, ethoptions.ERCContractAddress, ethoptions.ERCContractABI, ethereum.ERC)
 		if err != nil {
-			ethCtx.Logger.Error("err trying to get ChainDriver : ", j.GetJobID(), err,tracker.Type)
+			ethCtx.Logger.Error("err trying to get ChainDriver : ", j.GetJobID(), err, tracker.Type)
 			return
 		}
-		reqParams, err := cd.ParseERC20Redeem(tracker.SignedETHTx,ethoptions.ERCContractABI)
+		reqParams, err := cd.ParseERC20Redeem(tracker.SignedETHTx, ethoptions.ERCContractABI)
 		if err != nil {
 			ethCtx.Logger.Error("Error in Parsing amount from rawTx (ERC20 Redeem)", j.GetJobID(), err)
 			return
 		}
 		redeemAmount = reqParams.Amount
 	}
-
 
 	rawTx := tracker.SignedETHTx
 	tx, err := cd.DecodeTransaction(rawTx)
@@ -149,5 +147,3 @@ func (j *JobETHSignRedeem) GetType() string {
 func (j *JobETHSignRedeem) GetJobID() string {
 	return j.JobID
 }
-
-

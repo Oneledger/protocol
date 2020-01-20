@@ -18,6 +18,6 @@ var (
 	ErrGasOverflow        = codes.ProtocolError{codes.TxErrGasOverflow, "gas used exceed limit"}
 	ErrInvalidExtTx       = codes.ProtocolError{codes.TxErrInvalidExtTx, "invalid external tx"}
 
-	ErrInvalidCurrency = codes.ProtocolError{codes.TxErrInvalidFeeCurrency, "invalid amount"}
-	ErrTokenNotSupported = codes.ProtocolError{codes.ExternalErrTokenNotSuported,"Token not supported"}
+	ErrInvalidCurrency   = codes.ProtocolError{codes.TxErrInvalidFeeCurrency, "invalid amount"}
+	ErrTokenNotSupported = codes.ProtocolError{codes.ExternalErrTokenNotSuported, "Token not supported"}
 )

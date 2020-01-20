@@ -67,7 +67,7 @@ func createRawLock(locker action.Address, rawTx []byte, userfee action.Amount, g
 // Wallet signs and then calls onlinelock
 func (svc *Service) GetRawLockTX(req ETHLockRequest, out *ETHLockRawTX) error {
 	opt := svc.trackerStore.GetOption()
-	cd, err := ethereum.NewChainDriver(svc.config, svc.logger,opt.ContractAddress,opt.ContractABI,ethereum.ERC)
+	cd, err := ethereum.NewChainDriver(svc.config, svc.logger, opt.ContractAddress, opt.ContractABI, ethereum.ERC)
 	if err != nil {
 		return errors.Wrap(err, "GetRawLockTx")
 	}

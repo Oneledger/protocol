@@ -171,7 +171,7 @@ func (t Tracker) NextStep() string {
 			return CLEANUP
 		}
 	}
-	if t.Type == ProcessTypeRedeemERC{
+	if t.Type == ProcessTypeRedeemERC {
 		switch t.State {
 		case New:
 			return SIGNING

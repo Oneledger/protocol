@@ -24,26 +24,23 @@ type LockRequest struct {
 }
 
 type RedeemErcRequest struct {
-	Amount *big.Int
+	Amount       *big.Int
 	TokenAddress common.Address
 }
 
-
-
-
 type ContractType int8
+
 const (
 	ETH ContractType = 0x00
 	ERC ContractType = 0x01
 )
 
 type Contract interface {
-		IsValidator(opts *bind.CallOpts, addr common.Address) (bool, error)
-		VerifyRedeem(opts *bind.CallOpts, recipient_ common.Address) (bool, error)
-	    HasValidatorSigned(opts *bind.CallOpts, recipient_ common.Address) (bool, error)
-		Sign(opts *bind.TransactOpts, amount_ *big.Int, recipient_ common.Address) (*types.Transaction, error)
-	}
-
+	IsValidator(opts *bind.CallOpts, addr common.Address) (bool, error)
+	VerifyRedeem(opts *bind.CallOpts, recipient_ common.Address) (bool, error)
+	HasValidatorSigned(opts *bind.CallOpts, recipient_ common.Address) (bool, error)
+	Sign(opts *bind.TransactOpts, amount_ *big.Int, recipient_ common.Address) (*types.Transaction, error)
+}
 
 var _ Contract = ETHLRContract{}
 
@@ -52,22 +49,21 @@ type ETHLRContract struct {
 }
 
 func (E ETHLRContract) IsValidator(opts *bind.CallOpts, addr common.Address) (bool, error) {
-	return E.contract.IsValidator(opts,addr)
+	return E.contract.IsValidator(opts, addr)
 }
 func (E ETHLRContract) VerifyRedeem(opts *bind.CallOpts, recipient_ common.Address) (bool, error) {
-	return E.contract.VerifyRedeem(opts,recipient_)
+	return E.contract.VerifyRedeem(opts, recipient_)
 }
 func (E ETHLRContract) HasValidatorSigned(opts *bind.CallOpts, recipient_ common.Address) (bool, error) {
-	return E.contract.HasValidatorSigned(opts,recipient_)
+	return E.contract.HasValidatorSigned(opts, recipient_)
 }
-func (E ETHLRContract) Sign(opts *bind.TransactOpts, amount_ *big.Int, recipient_ common.Address) (*types.Transaction, error){
-	return E.contract.Sign(opts,amount_,recipient_)
+func (E ETHLRContract) Sign(opts *bind.TransactOpts, amount_ *big.Int, recipient_ common.Address) (*types.Transaction, error) {
+	return E.contract.Sign(opts, amount_, recipient_)
 }
 
 func GetETHContract(contract contract.LockRedeem) *ETHLRContract {
 	return &ETHLRContract{contract}
 }
-
 
 var _ Contract = &ERC20LRContract{}
 
@@ -76,16 +72,16 @@ type ERC20LRContract struct {
 }
 
 func (E ERC20LRContract) IsValidator(opts *bind.CallOpts, addr common.Address) (bool, error) {
-	return E.contract.IsValidator(opts,addr)
+	return E.contract.IsValidator(opts, addr)
 }
 func (E ERC20LRContract) VerifyRedeem(opts *bind.CallOpts, recipient_ common.Address) (bool, error) {
-	return E.contract.VerifyRedeem(opts,recipient_)
+	return E.contract.VerifyRedeem(opts, recipient_)
 }
 func (E ERC20LRContract) HasValidatorSigned(opts *bind.CallOpts, recipient_ common.Address) (bool, error) {
-	return E.contract.HasValidatorSigned(opts,recipient_)
+	return E.contract.HasValidatorSigned(opts, recipient_)
 }
-func (E ERC20LRContract) Sign(opts *bind.TransactOpts, amount_ *big.Int, recipient_ common.Address) (*types.Transaction, error){
-	return E.contract.Sign(opts,amount_,recipient_)
+func (E ERC20LRContract) Sign(opts *bind.TransactOpts, amount_ *big.Int, recipient_ common.Address) (*types.Transaction, error) {
+	return E.contract.Sign(opts, amount_, recipient_)
 }
 
 func GetERCContract(contract contract.LockRedeemERC) *ERC20LRContract {

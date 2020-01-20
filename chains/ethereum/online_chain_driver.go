@@ -1,9 +1,7 @@
 package ethereum
 
 import (
-	"bytes"
 	"context"
-	"encoding/hex"
 	"fmt"
 	"math/big"
 	"strings"
@@ -13,7 +11,6 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
-	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/pkg/errors"
 
 	"github.com/Oneledger/protocol/chains/ethereum/contract"
@@ -23,10 +20,20 @@ import (
 
 const DefaultTimeout = 5 * time.Second
 
-type ChainDriver interface {
+
+type ETHChainDriver struct {
+	cfg             *config.EthereumChainDriverConfig
+	client          *Client
+	contract        Contract
+	logger          *log.Logger
+	ContractAddress Address
+	ContractABI     string
+	ContractType    ContractType
 }
 
-func NewChainDriver(cfg *config.EthereumChainDriverConfig, logger *log.Logger, contractAddress common.Address,contractAbi string ,contractType ContractType) (*ETHChainDriver, error) {
+// Implements ChainDriver interface
+var _ ChainDriver = &ETHChainDriver{}
+func NewChainDriver(cfg *config.EthereumChainDriverConfig, logger *log.Logger, contractAddress common.Address, contractAbi string, contractType ContractType) (*ETHChainDriver, error) {
 
 	client, err := ethclient.Dial(cfg.Connection)
 	if err != nil {
@@ -54,20 +61,10 @@ func defaultContext() (context.Context, context.CancelFunc) {
 	return context.WithTimeout(context.Background(), DefaultTimeout)
 }
 
-// Implements SContract interface
-var _ ChainDriver = &ETHChainDriver{}
+
 
 // ETHChainDriver provides the core fields required to interact with the Ethereum network. As of this moment (2019-08-21)
 // it should only be used by validator nodes.
-type ETHChainDriver struct {
-	cfg             *config.EthereumChainDriverConfig
-	client          *Client
-	contract        Contract
-	logger          *log.Logger
-	ContractAddress Address
-	ContractABI     string
-	ContractType    ContractType
-}
 
 func (acc *ETHChainDriver) GetClient() *Client {
 	if acc.client == nil {
@@ -79,7 +76,7 @@ func (acc *ETHChainDriver) GetClient() *Client {
 	}
 	return acc.client
 }
-
+// GetContract returns instance of an already deployed ETH/ERC LockRedeem Contract
 func (acc *ETHChainDriver) GetContract() Contract {
 	client := acc.GetClient()
 	if acc.contract == nil {
@@ -91,7 +88,7 @@ func (acc *ETHChainDriver) GetContract() Contract {
 			ctr := GetETHContract(*ctrct)
 			acc.contract = ctr
 		} else if acc.ContractType == ERC {
-			ctrct,err := contract.NewLockRedeemERC(acc.ContractAddress,client)
+			ctrct, err := contract.NewLockRedeemERC(acc.ContractAddress, client)
 			if err != nil {
 				panic(err)
 			}
@@ -103,27 +100,24 @@ func (acc *ETHChainDriver) GetContract() Contract {
 	return acc.contract
 }
 
-// Balance returns the current balance of the
+// Balance returns the current balance of address
 func (acc ETHChainDriver) Balance(addr Address) (*big.Int, error) {
 	c, cancel := defaultContext()
 	defer cancel()
 	return acc.GetClient().BalanceAt(c, addr, nil)
 }
 
-// Nonce returns the nonce to use for our next transaction
+// Nonce returns the nonce of the address
 func (acc ETHChainDriver) Nonce(addr Address) (uint64, error) {
 	c, cancel := defaultContext()
 	defer cancel()
 	return acc.GetClient().PendingNonceAt(c, addr)
 }
-
-// VerifyContract returns true if we can verify that the current contract matches the
-func (acc ETHChainDriver) VerifyContract(vs []Address) (bool, error) {
-	// 1. Make sure good IsValidator
-	// 2. Make sure bad !IsValidator
-	return false, ErrNotImplemented
+// ChainID returns the ID for the current ethereum chain (Mainet/Ropsten/Ganache)
+func (acc *ETHChainDriver) ChainId() (*big.Int, error) {
+	return acc.GetClient().ChainID(context.Background())
 }
-
+// CallOpts creates a CallOpts object for contract calls (Only call no write )
 func (acc *ETHChainDriver) CallOpts(addr Address) *CallOpts {
 	return &CallOpts{
 		Pending:     true,
@@ -133,6 +127,7 @@ func (acc *ETHChainDriver) CallOpts(addr Address) *CallOpts {
 	}
 }
 
+//SignRedeem creates an Ethereum transaction used by Validators to sign a redeem Request
 func (acc *ETHChainDriver) SignRedeem(fromaddr common.Address, redeemAmount *big.Int, recipient common.Address) (*Transaction, error) {
 
 	c, cancel := defaultContext()
@@ -158,6 +153,7 @@ func (acc *ETHChainDriver) SignRedeem(fromaddr common.Address, redeemAmount *big
 
 }
 
+// PrepareUnsignedETHLock creates a raw Transaction to lock ether.
 func (acc *ETHChainDriver) PrepareUnsignedETHLock(addr common.Address, lockAmount *big.Int) ([]byte, error) {
 
 	c, cancel := defaultContext()
@@ -180,10 +176,12 @@ func (acc *ETHChainDriver) PrepareUnsignedETHLock(addr common.Address, lockAmoun
 	return rawTxBytes, nil
 }
 
+// DecodeTransaction is an online wrapper for DecodeTransaction
 func (acc *ETHChainDriver) DecodeTransaction(rawBytes []byte) (*types.Transaction, error) {
 	return DecodeTransaction(rawBytes)
 }
 
+// GetTransactionMessage takes a trasaction as input and returns the message
 func (acc *ETHChainDriver) GetTransactionMessage(tx *types.Transaction) (*types.Message, error) {
 	msg, err := tx.AsMessage(types.NewEIP155Signer(tx.ChainId()))
 	if err != nil {
@@ -192,10 +190,11 @@ func (acc *ETHChainDriver) GetTransactionMessage(tx *types.Transaction) (*types.
 	return &msg, nil
 }
 
+// CheckFinality verifies the finality of a transaction on the ethereum blockchain , waits for 12 block confirmations
 func (acc *ETHChainDriver) CheckFinality(txHash TransactionHash) (*types.Receipt, error) {
 
 	result, err := acc.GetClient().TransactionReceipt(context.Background(), txHash)
-	fmt.Println("Client :" ,acc.GetClient())
+	fmt.Println("Client :", acc.GetClient())
 	if err == nil {
 		if result.Status == types.ReceiptStatusSuccessful {
 			latestHeader, err := acc.client.HeaderByNumber(context.Background(), nil)
@@ -219,10 +218,8 @@ func (acc *ETHChainDriver) CheckFinality(txHash TransactionHash) (*types.Receipt
 	return nil, err
 }
 
-func (acc *ETHChainDriver) ChainId() (*big.Int, error) {
-	return acc.GetClient().ChainID(context.Background())
-}
 
+// BroadcastTx takes a signed transaction as input and broadcasts it to the network
 func (acc *ETHChainDriver) BroadcastTx(tx *types.Transaction) (TransactionHash, error) {
 
 	_, _, err := acc.GetClient().TransactionByHash(context.Background(), tx.Hash())
@@ -238,11 +235,13 @@ func (acc *ETHChainDriver) BroadcastTx(tx *types.Transaction) (TransactionHash, 
 	return tx.Hash(), nil
 
 }
-func (Acc *ETHChainDriver) ParseERC20Redeem (rawTx []byte, lockredeemERCAbi string) (*RedeemErcRequest, error) {
-	return ParseERC20RedeemParams(rawTx,lockredeemERCAbi)
-}
 
-func (acc *ETHChainDriver) ParseRedeem(data []byte,abi string) (req *RedeemRequest, err error) {
+// ParseERC20Redeem is the online wrapper for ParseERC20RedeemParams
+func (Acc *ETHChainDriver) ParseERC20Redeem(rawTx []byte, lockredeemERCAbi string) (*RedeemErcRequest, error) {
+	return ParseERC20RedeemParams(rawTx, lockredeemERCAbi)
+}
+// ParseERC20Redeem is the online wrapper for ParseRedeem
+func (acc *ETHChainDriver) ParseRedeem(data []byte, abi string) (req *RedeemRequest, err error) {
 	//ethTx := &types.Transaction{}
 	//err = rlp.DecodeBytes(data, ethTx)
 	//if err != nil {
@@ -261,168 +260,20 @@ func (acc *ETHChainDriver) ParseRedeem(data []byte,abi string) (req *RedeemReque
 	//}
 	//TODO : Refactor to use UNPACK
 
-	return ParseRedeem(data,abi)
+	return ParseRedeem(data, abi)
 }
-func ParseErc20Lock(erc20list []ERC20Token, rawEthTx []byte) (*LockErcRequest,error){
-	ercParams := &LockErcRequest{}
-	ethTx, err := DecodeTransaction(rawEthTx)
-	if err != nil {
-		return ercParams,err
-	}
-	token, err := GetToken(erc20list, *ethTx.To())
-	if err != nil {
-		return ercParams, err
-	}
-	contractAbi, err := abi.JSON(strings.NewReader(token.TokAbi))
-	if err != nil {
-		return ercParams,err
-	}
-	functionSignature, err := getSignfromName(&contractAbi, "transfer",contract.ERC20BasicFuncSigs)
-	if err !=nil {
-		return ercParams,err
-	}
-	ercParams, err = parseERC20Lock(rawEthTx, functionSignature)
-	if err != nil {
-		return ercParams,err
-	}
-	return ercParams,nil
-}
-
+// VerifyRedeem verifies if the Redeem request is Completed
 func (acc *ETHChainDriver) VerifyRedeem(validatorAddress common.Address, recipient common.Address) (bool, error) {
 	instance := acc.GetContract()
 	ok, err := instance.VerifyRedeem(acc.CallOpts(validatorAddress), recipient)
 	if err != nil {
 		return false, errors.Wrap(err, "Unable to connect to ethereum smart contract")
 	}
-    fmt.Println("Verify Redeem : " ,ok,err)
 	return ok, nil
 }
-
-func VerifyLock(tx *types.Transaction, contractabi string) (bool, error) {
-
-	contractAbi, err := abi.JSON(strings.NewReader(contractabi))
-	if err != nil {
-		return false, errors.Wrap(err, "Unable to get contract Abi from ChainDriver options")
-	}
-	bytesData, err := contractAbi.Pack("lock")
-	if err != nil {
-		return false, errors.Wrap(err, "Unable to to create Bytes data for Lock")
-	}
-	return bytes.Equal(bytesData, tx.Data()), nil
-
-}
-
-func VerfiyERC20Lock(rawTx []byte, tokenabi_ string, erc20contractaddr common.Address) (bool, error) {
-	contractAbi, err := abi.JSON(strings.NewReader(tokenabi_))
-	if err != nil {
-		return false, errors.Wrap(err, "Unable to get contract Abi for Test Token from ChainDriver options")
-	}
-	methodSignature, err := getSignfromName(&contractAbi, "transfer",contract.ERC20BasicFuncSigs)
-	if err != nil {
-		return false, err
-	}
-	ercLockParams, err := parseERC20Lock(rawTx, methodSignature)
-	if err != nil {
-		return false, err
-	}
-	return bytes.Equal(ercLockParams.Receiver.Bytes(), erc20contractaddr.Bytes()), nil
-}
-
-func ParseERC20RedeemToken(rawTx []byte ,tokenList []ERC20Token ,lockredeemERCAbi string) (*ERC20Token,error) {
-	ercRedeemParams, err := ParseERC20RedeemParams(rawTx, lockredeemERCAbi)
-	if err != nil {
-		return nil, err
-	}
-	token,err := GetToken(tokenList,ercRedeemParams.TokenAddress)
-	if err != nil {
-		return nil,err
-	}
-	return token,nil
-}
-
-func ParseERC20RedeemParams(rawTx []byte, lockredeemERCAbi string) (*RedeemErcRequest, error) {
-
-	contractAbi,err := StringTOABI(lockredeemERCAbi)
-	if err != nil {
-		return nil,err
-	}
-	methodSignature, err := getSignfromName(contractAbi, "redeem",contract.LockRedeemERCFuncSigs)
-	if err != nil {
-		return nil,err
-	}
-	ercRedeemParams, err := parseERC20Redeem(rawTx, methodSignature)
-	if err != nil {
-		return nil, err
-	}
-	return ercRedeemParams,nil
-}
-
-func StringTOABI(contractAbi string) (*abi.ABI,error){
-	Abi, err := abi.JSON(strings.NewReader(contractAbi))
-	if err != nil {
-		return nil, errors.Wrap(err, "Unable to get contract Abi for Test Token from ChainDriver options")
-	}
-	return &Abi,nil
-}
-
+// HasValidatorSigned takes validator address and recipient address as input and verifies if the validator has already signed
 func (acc *ETHChainDriver) HasValidatorSigned(validatorAddress common.Address, recipient common.Address) (bool, error) {
 	instance := acc.GetContract()
 
 	return instance.HasValidatorSigned(acc.CallOpts(validatorAddress), recipient)
 }
-
-func ParseRedeem(data []byte ,lockredeemAbi string) (req *RedeemRequest, err error) {
-	contractAbi,err := StringTOABI(lockredeemAbi)
-	if err != nil {
-		return nil,err
-	}
-	methodSignature, err := getSignfromName(contractAbi, "redeem",contract.LockRedeemERCFuncSigs)
-	if err != nil {
-		return nil,err
-	}
-	ss := strings.Split(hex.EncodeToString(data), methodSignature)
-	if len(ss) == 0 {
-		return nil, errors.New("Transaction does not have the required input data")
-	}
-	if len(ss[1]) < 64 {
-		return nil, errors.New("Transaction data is invalid")
-	}
-	d, err := hex.DecodeString(ss[1][:64])
-	if err != nil {
-		return nil, err
-	}
-	amt := big.NewInt(0).SetBytes(d)
-	return &RedeemRequest{Amount: amt}, nil
-}
-
-
-
-func ParseLock(data []byte) (req *LockRequest, err error) {
-
-	tx, err := DecodeTransaction(data)
-	if err != nil {
-		return nil, err
-	}
-
-	return &LockRequest{Amount: tx.Value()}, nil
-}
-
-func DecodeTransaction(data []byte) (*types.Transaction, error) {
-	tx := &types.Transaction{}
-
-	err := rlp.DecodeBytes(data, tx)
-	if err != nil {
-		return nil, errors.Wrap(err, "Unable to decode Bytes")
-	}
-
-	return tx, nil
-}
-func GetToken(erc20list []ERC20Token, tokAddr common.Address) (*ERC20Token, error) {
-	for _, token := range erc20list {
-		if token.TokAddr == tokAddr {
-			return &token, nil
-		}
-	}
-	return &ERC20Token{}, errors.New("Token not supported")
-}
-

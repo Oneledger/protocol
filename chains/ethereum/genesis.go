@@ -18,3 +18,6 @@ type ERC20Token struct {
 	TokAddr common.Address
 	TokAbi  string
 }
+
+type ChainDriver interface {
+}

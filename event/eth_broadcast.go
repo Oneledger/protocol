@@ -52,16 +52,16 @@ func (job *JobETHBroadcast) DoMyJob(ctx interface{}) {
 	ethoptions := trackerStore.GetOption()
 	cd := new(ethereum.ETHChainDriver)
 	if tracker.Type == trackerlib.ProcessTypeLock {
-		cd, err = ethereum.NewChainDriver(ethconfig, ethCtx.Logger, ethoptions.ContractAddress,ethoptions.ContractABI,ethereum.ETH)
+		cd, err = ethereum.NewChainDriver(ethconfig, ethCtx.Logger, ethoptions.ContractAddress, ethoptions.ContractABI, ethereum.ETH)
 		if err != nil {
-			ethCtx.Logger.Error("err trying to get ChainDriver : ", job.GetJobID(), err,tracker.Type)
+			ethCtx.Logger.Error("err trying to get ChainDriver : ", job.GetJobID(), err, tracker.Type)
 			return
 		}
 	}
 	if tracker.Type == trackerlib.ProcessTypeLockERC {
-		cd, err = ethereum.NewChainDriver(ethconfig, ethCtx.Logger, ethoptions.ERCContractAddress,ethoptions.ERCContractABI,ethereum.ERC)
+		cd, err = ethereum.NewChainDriver(ethconfig, ethCtx.Logger, ethoptions.ERCContractAddress, ethoptions.ERCContractABI, ethereum.ERC)
 		if err != nil {
-			ethCtx.Logger.Error("err trying to get ChainDriver : ", job.GetJobID(), err,tracker.Type)
+			ethCtx.Logger.Error("err trying to get ChainDriver : ", job.GetJobID(), err, tracker.Type)
 			return
 		}
 	}

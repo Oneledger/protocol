@@ -21,6 +21,7 @@ type ERC20Lock struct {
 }
 
 var _ action.Msg = &ERC20Lock{}
+
 //Signers return the Address of the owner who created the transaction
 func (E ERC20Lock) Signers() []action.Address {
 	return []action.Address{E.Locker}
@@ -30,6 +31,7 @@ func (E ERC20Lock) Signers() []action.Address {
 func (E ERC20Lock) Type() action.Type {
 	return action.ERC20_LOCK
 }
+
 // Tags creates the tags to associate with the transaction
 func (E ERC20Lock) Tags() common.KVPairs {
 	tags := make([]common.KVPair, 0)
@@ -60,6 +62,7 @@ type ethERC20LockTx struct {
 }
 
 var _ action.Tx = ethERC20LockTx{}
+
 // Validate provides basic validation for transaction Type and Fee
 func (e ethERC20LockTx) Validate(ctx *action.Context, signedTx action.SignedTx) (bool, error) {
 	// unmarshal the tx message
@@ -82,19 +85,23 @@ func (e ethERC20LockTx) Validate(ctx *action.Context, signedTx action.SignedTx) 
 	}
 	return true, nil
 }
+
 // ProcessCheck runs checks on the transaction without commiting it .
 func (e ethERC20LockTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	return runERC20Lock(ctx, tx)
 }
+
 // ProcessDeliver run checks on transaction and commits it to a new block
 func (e ethERC20LockTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	return runERC20Lock(ctx, tx)
 }
+
 // ProcessFee process the transaction Fee in OLT
 func (e ethERC20LockTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas) (bool, action.Response) {
 	ctx.State.ConsumeUpfront(237600)
 	return action.BasicFeeHandling(ctx, signedTx, start, size, 1)
 }
+
 // runERC20Lock has the common functionality for ProcessCheck and ProcessDeliver
 // Provides security checks for transaction
 func runERC20Lock(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
@@ -140,9 +147,9 @@ func runERC20Lock(ctx *action.Context, tx action.RawTx) (bool, action.Response) 
 	if !ok {
 		return false, action.Response{Log: fmt.Sprintf("Token not Supported : %s ", token.TokName)}
 	}
-	erc20Params,err := ethchaindriver.ParseErc20Lock(ethOptions.TokenList,erc20lock.ETHTxn)
-	if err !=nil{
-		return false,action.Response{
+	erc20Params, err := ethchaindriver.ParseErc20Lock(ethOptions.TokenList, erc20lock.ETHTxn)
+	if err != nil {
+		return false, action.Response{
 			Log: err.Error(),
 		}
 	}
@@ -157,8 +164,7 @@ func runERC20Lock(ctx *action.Context, tx action.RawTx) (bool, action.Response) 
 	if !balCoin.Plus(lockToken).LessThanEqualCoin(totalSupplyToken) {
 		return false, action.Response{Log: fmt.Sprintf("Token lock exceeded limit ,for Token : %s ", token.TokName)}
 	}
-	
-	
+
 	tracker := ethereum.NewTracker(
 		ethereum.ProcessTypeLockERC,
 		erc20lock.Locker,

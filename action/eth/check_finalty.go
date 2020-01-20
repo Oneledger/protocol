@@ -142,7 +142,7 @@ func runCheckFinality(ctx *action.Context, tx action.RawTx) (bool, action.Respon
 				return false, action.Response{Log: errors.Wrap(err, "unable to mint tokens").Error()}
 			}
 		} else if tracker.Type == trackerlib.ProcessTypeRedeemERC {
-			err := burnERC20Tokens(ctx,tracker, *f)
+			err := burnERC20Tokens(ctx, tracker, *f)
 			if err != nil {
 				return false, action.Response{Log: errors.Wrap(err, "unable to burn tokens").Error()}
 			}
@@ -167,7 +167,7 @@ func (reportFinalityMintTx) ProcessFee(ctx *action.Context, signedTx action.Sign
 	// check the used gas for the tx
 	final := ctx.Balances.State.ConsumedGas()
 	used := int64(final - start)
-	ctx.Logger.Info("Gas Use : ",used)
+	ctx.Logger.Info("Gas Use : ", used)
 	return true, action.Response{}
 }
 
@@ -223,7 +223,7 @@ func burnERC20Tokens(ctx *action.Context, tracker *trackerlib.Tracker, oltTx Rep
 	if err != nil {
 		return err
 	}
-	ctx.Logger.Info("Burn complete for token : " , token.TokName)
+	ctx.Logger.Info("Burn complete for token : ", token.TokName)
 	tracker.State = trackerlib.Released
 	err = ctx.ETHTrackers.Set(tracker)
 	if err != nil {
@@ -249,8 +249,8 @@ func mintERC20tokens(ctx *action.Context, tracker *trackerlib.Tracker, oltTx Rep
 	if !ok {
 		return errors.New("Currency not allowed ")
 	}
-	erc20Params,err := ethereum.ParseErc20Lock(ethOptions.TokenList,tracker.SignedETHTx)
-	if err !=nil{
+	erc20Params, err := ethereum.ParseErc20Lock(ethOptions.TokenList, tracker.SignedETHTx)
+	if err != nil {
 		return err
 	}
 	otokenCoin := curr.NewCoinFromAmount(*balance.NewAmountFromBigInt(erc20Params.TokenAmount))
@@ -262,8 +262,8 @@ func mintERC20tokens(ctx *action.Context, tracker *trackerlib.Tracker, oltTx Rep
 
 	tokenSupply := keys.Address(TTClockBalanceAddress)
 	err = ctx.Balances.AddToAddress(tokenSupply, otokenCoin)
-	if err != nil{
-		return errors.Errorf("Unable to update totalSupply for token : %s",token.TokName)
+	if err != nil {
+		return errors.Errorf("Unable to update totalSupply for token : %s", token.TokName)
 	}
 
 	tracker.State = trackerlib.Released

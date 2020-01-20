@@ -12,6 +12,7 @@ import (
 )
 
 
+// mapkey iterates over and map ,and returns the key for value provided
 func mapkey(m map[string]string, value string) (key string, ok bool) {
 	for k, v := range m {
 		if v == value {
@@ -22,6 +23,8 @@ func mapkey(m map[string]string, value string) (key string, ok bool) {
 	}
 	return
 }
+// parseERC20Lock it takes in a rawTX byte array for a ERC20Lock and a function signature .
+//It returns the parameters passed when calling the function
 func parseERC20Lock(data []byte, functionSig string) (req *LockErcRequest, err error) {
 	ss := strings.Split(hex.EncodeToString(data), functionSig)
 
@@ -37,22 +40,26 @@ func parseERC20Lock(data []byte, functionSig string) (req *LockErcRequest, err e
 	}, nil
 }
 
+// parseERC20Redeem it takes in a rawTX byte array for a ERC20Redeem and a function signature .
+// It returns the parameters passed when calling the function
 func parseERC20Redeem(data []byte, functionSig string) (req *RedeemErcRequest, err error) {
 	ss := strings.Split(hex.EncodeToString(data), functionSig)
 	tokenAddress := ss[1][88:128]
-	amount,err := hex.DecodeString(ss[1][:64])
+	amount, err := hex.DecodeString(ss[1][:64])
 	if err != nil {
 		return nil, err
 	}
 	amt := big.NewInt(0).SetBytes(amount)
 	fmt.Println(tokenAddress)
 	return &RedeemErcRequest{
-		Amount:    amt,
+		Amount:       amt,
 		TokenAddress: common.HexToAddress(tokenAddress),
 	}, nil
 }
 
-func getSignfromName(contractAbi *abi.ABI, methodName string,funcSigs map[string]string) (string, error) {
+// getSignFromName takes in a a function name,contract abi and a map of the function signatures .
+// It returns the function signature associated with the function name
+func getSignFromName(contractAbi *abi.ABI, methodName string, funcSigs map[string]string) (string, error) {
 	method, exists := contractAbi.Methods[methodName]
 	if !exists {
 		return "", errors.New("Function not found in abi ")

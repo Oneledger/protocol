@@ -33,12 +33,12 @@ import (
 )
 
 var (
-	LockRedeemABI = contract.LockRedeemABI
-	TestTokenABI  = contract.ERC20BasicABI
-	LockRedeemERCABI =contract.LockRedeemERCABI
+	LockRedeemABI    = contract.LockRedeemABI
+	TestTokenABI     = contract.ERC20BasicABI
+	LockRedeemERCABI = contract.LockRedeemERCABI
 	// LockRedeemERC20ABI = contract.ContextABI
-	LockRedeemContractAddr = "0x79e155A2B5e3c2bE46EE646F425B0B9ad6173516"
-	TestTokenContractAddr = "0xBfb09a30F4E4ceEA785f13829E8BB45Bc357FbbA"
+	LockRedeemContractAddr      = "0x79e155A2B5e3c2bE46EE646F425B0B9ad6173516"
+	TestTokenContractAddr       = "0xBfb09a30F4E4ceEA785f13829E8BB45Bc357FbbA"
 	LockRedeemERC20ContractAddr = "0x339D2A708aB09F80699736d966c09b6BC64CB9DD"
 	cfg                         = config.DefaultEthConfig()
 	log                         = logger.NewDefaultLogger(os.Stdout).WithPrefix("testeth")
@@ -439,13 +439,13 @@ func erc20lock() {
 	fmt.Println(bresult.Log)
 }
 
-func erc20Redeem()  {
+func erc20Redeem() {
 	lockRedeemERCABI, _ := abi.JSON(strings.NewReader(LockRedeemERCABI))
-	bytesData, err := lockRedeemERCABI.Pack("redeem",valueredeemERC20,toAddressTestToken)
+	bytesData, err := lockRedeemERCABI.Pack("redeem", valueredeemERC20, toAddressTestToken)
 	if err != nil {
 		log.Fatal("unable to pack")
 	}
-	bytesDataExecuteRedeemd, err := lockRedeemERCABI.Pack("executeredeem",toAddressTestToken)
+	bytesDataExecuteRedeemd, err := lockRedeemERCABI.Pack("executeredeem", toAddressTestToken)
 	if err != nil {
 		log.Fatal("unable to pack")
 	}
@@ -560,13 +560,10 @@ func erc20Redeem()  {
 	time.Sleep(30 * time.Second)
 	err = client.SendTransaction(context.Background(), signedExecuteRedeem)
 	if err != nil {
-		fmt.Println("Executed Redeem  for user : " ,redeemRecipientAddress)
+		fmt.Println("Executed Redeem  for user : ", redeemRecipientAddress)
 	}
 
 }
-
-
-
 
 //func mapkey(m map[string]string, value string) (key string, ok bool) {
 //	for k, v := range m {
