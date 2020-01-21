@@ -495,7 +495,20 @@ func initialState(args *testnetConfig, nodeList []node, option ethchain.ChainDri
 
 func deployethcdcontract(conn string, nodeList []node) (*ethchain.ChainDriverOption, error) {
 
-	privatekey, err := crypto.HexToECDSA("6c24a44424c8182c1e3e995ad3ccfb2797e3f7ca845b99bea8dead7fc9dccd09")
+	//os.Setenv("ETHPKPATH", "/tmp/pkdata")
+	f, err := os.Open(os.Getenv("ETHPKPATH"))
+	if err != nil {
+		return nil, errors.Wrap(err, "Error Reading File")
+	}
+	b1 := make([]byte, 64)
+	pk, err := f.Read(b1)
+	if err != nil {
+		return nil, errors.Wrap(err, "Error reading private key")
+	}
+    //fmt.Println(pk)
+	fmt.Printf("%d bytes: %s\n", pk, string(b1[:pk]))
+	pkStr := string(b1[:pk])
+	privatekey, err := crypto.HexToECDSA(pkStr)
 	if err != nil {
 		return nil, err
 	}
