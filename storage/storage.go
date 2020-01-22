@@ -97,11 +97,7 @@ func NewStorage(flavor, name string) Store {
 	SessionedDirectStorage
 */
 type SessionedDirectStorage interface {
-	Get(StoreKey) ([]byte, error)
-	Set(StoreKey, []byte) error
-	Exists(StoreKey) bool
-	Delete(StoreKey) (bool, error)
-	GetIterator() Iteratable
+	Store
 
 	BeginSession() Session
 	Close()
