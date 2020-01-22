@@ -202,6 +202,7 @@ func (ctx *context) Restful() (service.RestfulRouter, error) {
 		return nil, errors.Wrap(err, "failed to start service context")
 	}
 	svcCtx := &service.Context{
+		Cfg:          ctx.cfg,
 		Balances:     ctx.balances,
 		Accounts:     ctx.accounts,
 		Currencies:   ctx.currencies,
