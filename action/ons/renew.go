@@ -1,6 +1,7 @@
 package ons
 
 import (
+	"bytes"
 	"encoding/json"
 	"math/big"
 
@@ -136,6 +137,10 @@ func runRenew(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 
 	if domain.IsExpired(ctx.State.Version()) {
 		return false, action.Response{Log: "domain already expired, need to purchase again"}
+	}
+
+	if !bytes.Equal(renewDomain.Owner, domain.OwnerAddress) {
+		return false, action.Response{Log: "only domain owner can renew a domain"}
 	}
 
 	//Transfer funds to the fee pool

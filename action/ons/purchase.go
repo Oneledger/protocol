@@ -139,6 +139,10 @@ func runPurchaseDomain(ctx *action.Context, tx action.RawTx) (bool, action.Respo
 		return false, action.Response{Log: "domain is not on sale or expired"}
 	}
 
+	if domain.Name.IsSub() {
+		return false, action.Response{Log: "cannot buy subdomain"}
+	}
+
 	olt, _ := ctx.Currencies.GetCurrencyByName(buy.Offering.Currency)
 
 	remain := buy.Offering.ToCoin(ctx.Currencies)
