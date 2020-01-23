@@ -11,6 +11,13 @@ import (
 	"github.com/Oneledger/protocol/data/ons"
 )
 
+/*
+		DeleteSub
+
+This transaction deletes the specific sub domain if sub domain name is passed. It deletes all the subdomains if a parent
+domain name is passed.
+
+*/
 type DeleteSub struct {
 	Name  ons.Name       `json:"owner"`
 	Owner action.Address `json:"address"`
@@ -76,6 +83,7 @@ func (d deleteSubTx) Validate(ctx *action.Context, signedTx action.SignedTx) (bo
 		return false, action.ErrMissingData
 	}
 
+	// checking if name is valid
 	if !del.Name.IsValid() {
 		return false, ErrInvalidDomain
 	}
@@ -103,9 +111,12 @@ func runDeleteSub(ctx *action.Context, tx action.RawTx) (bool, action.Response) 
 		return false, action.Response{Log: err.Error()}
 	}
 
+	// if the delete name is a parent domain, then it is the parent name
 	parentName := del.Name
+
 	isSub := del.Name.IsSub()
 	if isSub {
+		// if the delete name is a sub domain, the parentName
 
 		parentName, err = del.Name.GetParentName()
 		if err != nil {

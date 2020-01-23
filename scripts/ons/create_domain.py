@@ -36,9 +36,6 @@ if __name__ == "__main__":
 
     result = broadcast_commit(raw_txn, signed['signature']['Signed'], signed['signature']['Signer'])
     print result
-    print "#################" \
-          "##"
-    print
     time.sleep(2)
 
     sell_price = (int("105432")*10**14)
@@ -66,8 +63,6 @@ if __name__ == "__main__":
 
     result = broadcast_commit(raw_txn, signed['signature']['Signed'], signed['signature']['Signer'])
     print result
-    print "#################" \
-          "##"
     print
     if result["ok"] != True:
         sys.exit(-1)
@@ -81,19 +76,13 @@ if __name__ == "__main__":
 
     result = broadcast_commit(raw_txn, signed['signature']['Signed'], signed['signature']['Signer'])
     print result
-    print "#################" \
-          "##"
-    print
+
     if result["ok"] != True:
         sys.exit(-1)
 
     print "Get Domain on Sale"
     resp = get_domain_on_sale()
     print resp
-
-    print "#################" \
-          "##"
-    print
 
     raw_txn = cancel_sell_domain(name, addrs[0], sell_price)
     print raw_txn
@@ -112,7 +101,3 @@ if __name__ == "__main__":
     print "Get Domain on Sale"
     resp = get_domain_on_sale()
     print resp
-
-    print "#################" \
-          "##"
-    print

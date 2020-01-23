@@ -64,4 +64,7 @@ if __name__ == "__main__":
     print "###################"
     print
 
+    if not result["ok"]:
+        sys.exit(-1)
+
     print_all_domains(addrs[0])

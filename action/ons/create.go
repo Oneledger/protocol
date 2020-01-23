@@ -257,6 +257,15 @@ func calculateExpiry(buyingPrice *balance.Amount, basePrice *balance.Amount, pri
 	return big.NewInt(0).Div(remain, pricePerBlock.BigInt()).Int64(), nil
 }
 
+func calculateRenewal(buyingPrice *balance.Amount, pricePerBlock *balance.Amount) (int64, error) {
+
+	if buyingPrice.BigInt().Cmp(pricePerBlock.BigInt()) < 0 {
+		return 0, errors.New("Buying price too less")
+	}
+
+	return big.NewInt(0).Div(buyingPrice.BigInt(), pricePerBlock.BigInt()).Int64(), nil
+}
+
 func verifyDomainName(name ons.Name, feeOpt *ons.Options) bool {
 
 	return feeOpt.IsNameAllowed(name) && name.IsValid()

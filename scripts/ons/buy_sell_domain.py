@@ -45,6 +45,9 @@ if __name__ == "__main__":
           "##"
     print
 
+    if result["ok"] != True:
+        sys.exit(-1)
+
     sell_price = (int("105432")*10**14)
 
     raw_txn = send_domain(name, addrs[0], (int("100")*10**18))
@@ -59,6 +62,10 @@ if __name__ == "__main__":
     print "#################" \
           "##"
     print
+
+    if result["ok"] != True:
+        sys.exit(-1)
+
     time.sleep(2)
     raw_txn = sell_domain(name, addrs[0], sell_price)
     print raw_txn
@@ -73,6 +80,8 @@ if __name__ == "__main__":
     print "############################################"
     print
 
+    if result["ok"] != True:
+        sys.exit(-1)
 
     raw_txn = send(addrs[0], addrs[3], (int("2000")*10**18))
     print result
@@ -85,6 +94,8 @@ if __name__ == "__main__":
     print "############################################"
     print
 
+    if result["ok"] != True:
+        sys.exit(-1)
 
     print bcolors.WARNING + "*** Buying domain ***" + bcolors.ENDC
 
@@ -99,7 +110,8 @@ if __name__ == "__main__":
     print result
     print "############################################"
     print
-
+    if result["ok"] != True:
+        sys.exit(-1)
 
     print bcolors.WARNING + "*** Putting Domain on sale ***" + bcolors.ENDC
     raw_txn = sell_domain(name, addrs[3], (int("993242")*10**14))
