@@ -10,7 +10,7 @@ import (
 const (
 	totalETHSupply        = "10000000000000000000" // 10 ETH
 	lockBalanceAddress    = "13371337"
-	totalTTCSupply        = "10000000000000000000" // 10 ETH
+	totalTTCSupply        = "10000000000000000000" // 10 Token
 	TTClockBalanceAddress = "23372337"
 )
 

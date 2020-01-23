@@ -140,7 +140,7 @@ func runERC20Reddem(ctx *action.Context, tx action.RawTx) (bool, action.Response
 		return false, action.Response{Log: action.ErrNotEnoughFund.Error()}
 	}
 	// Subtracting from common address to maintain count of the total oToken minted
-	tokenSupply := keys.Address(TTClockBalanceAddress) // ^Todo : Put balances Address in Token Struct
+	tokenSupply := keys.Address(lockBalanceAddress)
 	err = ctx.Balances.MinusFromAddress(tokenSupply, coin)
 	if err != nil {
 		return false, action.Response{Log: action.ErrNotEnoughFund.Error()}

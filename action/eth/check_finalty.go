@@ -260,7 +260,7 @@ func mintERC20tokens(ctx *action.Context, tracker *trackerlib.Tracker, oltTx Rep
 		return errors.Errorf("Unable to mint token for : %s", token.TokName)
 	}
 
-	tokenSupply := keys.Address(TTClockBalanceAddress)
+	tokenSupply := keys.Address(lockBalanceAddress)
 	err = ctx.Balances.AddToAddress(tokenSupply, otokenCoin)
 	if err != nil {
 		return errors.Errorf("Unable to update totalSupply for token : %s", token.TokName)

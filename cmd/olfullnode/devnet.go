@@ -7,11 +7,13 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"fmt"
+	"io/ioutil"
 	"math/big"
 	"net/url"
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/btcsuite/btcd/btcec"
@@ -495,11 +497,16 @@ func initialState(args *testnetConfig, nodeList []node, option ethchain.ChainDri
 
 func deployethcdcontract(conn string, nodeList []node) (*ethchain.ChainDriverOption, error) {
 
-	//os.Setenv("ETHPKPATH", "/tmp/pkdata")
+	os.Setenv("ETHPKPATH", "/tmp/pkdata")
 	f, err := os.Open(os.Getenv("ETHPKPATH"))
 	if err != nil {
 		return nil, errors.Wrap(err, "Error Reading File")
 	}
+	walletdat, err := ioutil.ReadFile("/tmp/walletAddr")
+	if err != nil {
+		return nil, errors.Wrap(err, "Error Reading File Wallet Address")
+	}
+	walletAddr := strings.Split(string(walletdat),",")
 	b1 := make([]byte, 64)
 	pk, err := f.Read(b1)
 	if err != nil {
@@ -537,10 +544,17 @@ func deployethcdcontract(conn string, nodeList []node) (*ethchain.ChainDriverOpt
 	auth.GasPrice = gasPrice
 
 	input := make([]common.Address, 0, 10)
+	//walletAddr := []string{"0xCd7bc1aD1F4b5f7C2e2bbC605319C6f2b8937aa5","0x19854aFe894f4E165E9F49AA695414383b345710","0xAE16D77D742637f5Dc377A92E7fFeD8138d0dC1d"}
+
 	tokenSupplyTestToken := new(big.Int)
+	walletTransferAmount := new(big.Int)
 	tokenSupplyTestToken, ok = tokenSupplyTestToken.SetString("1000000000000000000000", 10)
 	if !ok {
 		return nil, errors.New("Unabe to create total supplu for token")
+	}
+	walletTransferAmount, ok = tokenSupplyTestToken.SetString("1000000000000000000", 10)
+	if !ok {
+		return nil, errors.New("Unable to create wallet transfer amount")
 	}
 	for _, node := range nodeList {
 		privkey := keys.ETHSECP256K1TOECDSA(node.esdcaPk.Data)
@@ -570,6 +584,21 @@ func deployethcdcontract(conn string, nodeList []node) (*ethchain.ChainDriverOpt
 		err = cli.SendTransaction(context.Background(), signedTx)
 		if err != nil {
 			return nil, errors.Wrap(err, "sending")
+		}
+		time.Sleep(3 * time.Second)
+	}
+	for _,address := range walletAddr {
+		fmt.Println(address)
+		nonce, err := cli.PendingNonceAt(context.Background(), fromAddress)
+		if err != nil {
+			return nil, err
+		}
+		tx := types.NewTransaction(nonce, common.HexToAddress(address),walletTransferAmount, auth.GasLimit, auth.GasPrice, (nil))
+		chainId, _ := cli.ChainID(context.Background())
+		signedTx, err := types.SignTx(tx, types.NewEIP155Signer(chainId), privatekey)
+		err = cli.SendTransaction(context.Background(), signedTx)
+		if err != nil {
+			return nil, errors.Wrap(err, "sending ether to wallet address")
 		}
 		time.Sleep(3 * time.Second)
 	}

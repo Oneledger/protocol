@@ -98,7 +98,7 @@ func (e ethERC20LockTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bo
 
 // ProcessFee process the transaction Fee in OLT
 func (e ethERC20LockTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas) (bool, action.Response) {
-	ctx.State.ConsumeUpfront(237600)
+	ctx.State.ConsumeUpfront(237600) //TODO : Calculate GAS price
 	return action.BasicFeeHandling(ctx, signedTx, start, size, 1)
 }
 
@@ -155,7 +155,7 @@ func runERC20Lock(ctx *action.Context, tx action.RawTx) (bool, action.Response) 
 	}
 	lockToken := curr.NewCoinFromString(erc20Params.TokenAmount.String())
 	// Adding lock amount to common address to maintain count of total oToken minted
-	tokenSupply := action.Address(TTClockBalanceAddress)
+	tokenSupply := action.Address(lockBalanceAddress)
 	balCoin, err := ctx.Balances.GetBalanceForCurr(tokenSupply, &curr)
 	if err != nil {
 		return false, action.Response{Log: fmt.Sprintf("Unable to get Eth lock total balance %s", erc20lock.Locker)}
