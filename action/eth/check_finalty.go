@@ -218,13 +218,16 @@ func burnERC20Tokens(ctx *action.Context, tracker *trackerlib.Tracker, oltTx Rep
 	if err != nil {
 		return err
 	}
+
 	ethOptions := ctx.ETHTrackers.GetOption()
 	token, err := ethereum.GetToken(ethOptions.TokenList, *ethTx.To())
 	if err != nil {
 		return err
 	}
+
 	ctx.Logger.Info("Burn complete for token : ", token.TokName)
 	tracker.State = trackerlib.Released
+
 	err = ctx.ETHTrackers.Set(tracker)
 	if err != nil {
 		return err
@@ -239,20 +242,24 @@ func mintERC20tokens(ctx *action.Context, tracker *trackerlib.Tracker, oltTx Rep
 	if err != nil {
 		return err
 	}
+
 	ethOptions := ctx.ETHTrackers.GetOption()
 	token, err := ethereum.GetToken(ethOptions.TokenList, *ethTx.To())
 	if err != nil {
 		return err
 	}
+
 	ctx.Logger.Info("Minting Tokens of type : ", token.TokName)
 	curr, ok := ctx.Currencies.GetCurrencyByName(token.TokName)
 	if !ok {
 		return errors.New("Currency not allowed ")
 	}
+
 	erc20Params, err := ethereum.ParseErc20Lock(ethOptions.TokenList, tracker.SignedETHTx)
 	if err != nil {
 		return err
 	}
+
 	otokenCoin := curr.NewCoinFromAmount(*balance.NewAmountFromBigInt(erc20Params.TokenAmount))
 	err = ctx.Balances.AddToAddress(oltTx.Locker, otokenCoin)
 	if err != nil {
