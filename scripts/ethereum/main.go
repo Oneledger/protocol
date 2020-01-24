@@ -37,11 +37,10 @@ var (
 	TestTokenABI     = contract.ERC20BasicABI
 	LockRedeemERCABI = contract.LockRedeemERCABI
 	// LockRedeemERC20ABI = contract.ContextABI
-	LockRedeemContractAddr = "0x992829Cd8bE310BB3212F3b1Dd4dccfe9003f50d"
-	TestTokenContractAddr = "0x4d8E1Fc1bfDD1aD91265741538985412288ba2c1"
-	LockRedeemERC20ContractAddr = "0x1b29FaA8c3459011D91C4c691eEaFdBDa0f2D9b0"
-
-	cfg                         = config.DefaultEthConfig()
+	LockRedeemContractAddr = "0x6fa901A349e912918C0966D7e0203938b8D5131F"
+	TestTokenContractAddr = "0xd793E7775E5B523d359d5cB1D93CDEcfFFB84436"
+	LockRedeemERC20ContractAddr = "0x353Eb937fb723Fd63b952932efd08d16662Dc574"
+	cfg                         = config.DefautEthConfigRinkeby()
 	log                         = logger.NewDefaultLogger(os.Stdout).WithPrefix("testeth")
 	UserprivKey                 *ecdsa.PrivateKey
 	UserprivKeyRedeem           *ecdsa.PrivateKey
@@ -72,9 +71,9 @@ func createValue(str string) *big.Int {
 
 func init() {
 
-	UserprivKey, _ = crypto.HexToECDSA("6c24a44424c8182c1e3e995ad3ccfb2797e3f7ca845b99bea8dead7fc9dccd09")
+	UserprivKey, _ = crypto.HexToECDSA("02038529C9AB706E9F4136F4A4EB51E866DBFE22D5E102FD3A22C14236E1C2EA")
 
-	UserprivKeyRedeem, _ = crypto.HexToECDSA("bdb082c7e42a946c477fa3efee4fb5bdece508b47592d8cb57f5e811cd840a40")
+	UserprivKeyRedeem, _ = crypto.HexToECDSA("02038529C9AB706E9F4136F4A4EB51E866DBFE22D5E102FD3A22C14236E1C2EA")
 
 	client, _ = cfg.Client()
 	contractAbi, _ = abi.JSON(strings.NewReader(LockRedeemABI))
@@ -104,8 +103,8 @@ func main() {
 
 	//redeem()
 
-	erc20lock()
-	time.Sleep(10 * time.Second)
+	//erc20lock()
+	///time.Sleep(10 * time.Second)
 	erc20Redeem()
 }
 
@@ -560,7 +559,7 @@ func erc20Redeem() {
 	fmt.Println("broadcast result: ", bresult.OK)
 	time.Sleep(30 * time.Second)
 	err = client.SendTransaction(context.Background(), signedExecuteRedeem)
-	if err != nil {
+	if err == nil {
 		fmt.Println("Executed Redeem  for user : ", redeemRecipientAddress)
 	}
 

@@ -497,12 +497,13 @@ func initialState(args *testnetConfig, nodeList []node, option ethchain.ChainDri
 
 func deployethcdcontract(conn string, nodeList []node) (*ethchain.ChainDriverOption, error) {
 
-	os.Setenv("ETHPKPATH", "/tmp/pkdata")
+	//os.Setenv("ETHPKPATH", "/tmp/pkdata")
+	//os.Setenv("WALLETADDR", "/tmp/walletAddr")
 	f, err := os.Open(os.Getenv("ETHPKPATH"))
 	if err != nil {
 		return nil, errors.Wrap(err, "Error Reading File")
 	}
-	walletdat, err := ioutil.ReadFile("/tmp/walletAddr")
+	walletdat, err := ioutil.ReadFile(os.Getenv("WALLETADDR"))
 	if err != nil {
 		return nil, errors.Wrap(err, "Error Reading File Wallet Address")
 	}
@@ -513,7 +514,7 @@ func deployethcdcontract(conn string, nodeList []node) (*ethchain.ChainDriverOpt
 		return nil, errors.Wrap(err, "Error reading private key")
 	}
     //fmt.Println(pk)
-	fmt.Printf("%d bytes: %s\n", pk, string(b1[:pk]))
+	fmt.Println("Address used to deploy : ", string(b1[:pk]))
 	pkStr := string(b1[:pk])
 	privatekey, err := crypto.HexToECDSA(pkStr)
 	if err != nil {
@@ -588,7 +589,7 @@ func deployethcdcontract(conn string, nodeList []node) (*ethchain.ChainDriverOpt
 		time.Sleep(3 * time.Second)
 	}
 	for _,address := range walletAddr {
-		fmt.Println(address)
+		fmt.Println("Ether Transferred to address : ", address )
 		nonce, err := cli.PendingNonceAt(context.Background(), fromAddress)
 		if err != nil {
 			return nil, err
