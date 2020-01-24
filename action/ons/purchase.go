@@ -13,6 +13,16 @@ import (
 
 var _ Ons = &DomainPurchase{}
 
+/*
+		DomainPurchase
+
+This transaction lets any buyer purchase a domain which is on sale or has expired.
+
+For on sale domains the Offering should be more than the sale price and for expired domains the offering should be
+more than the base domain price.
+
+The expiry height is reset based on the extra OLT offered.
+*/
 type DomainPurchase struct {
 	Name     ons.Name       `json:"name"`
 	Buyer    action.Address `json:"buyer"`
@@ -80,6 +90,7 @@ func (domainPurchaseTx) Validate(ctx *action.Context, tx action.SignedTx) (bool,
 		return false, err
 	}
 
+	// the currency should be OLT
 	c, _ := ctx.Currencies.GetCurrencyById(0)
 	if c.Name != buy.Offering.Currency {
 		return false, errors.Wrap(action.ErrInvalidAmount, buy.Offering.String())
@@ -90,17 +101,9 @@ func (domainPurchaseTx) Validate(ctx *action.Context, tx action.SignedTx) (bool,
 		return false, action.ErrMissingData
 	}
 
+	// check if name is valid
 	if !buy.Name.IsValid() {
 		return false, ErrInvalidDomain
-	}
-
-	if c.Name != buy.Offering.Currency {
-		return false, errors.Wrap(action.ErrInvalidAmount, buy.Offering.String())
-	}
-
-	coin := buy.Offering.ToCoin(ctx.Currencies)
-	if coin.LessThanEqualCoin(coin.Currency.NewCoinFromAmount(ctx.Domains.GetOptions().PerBlockFees)) {
-		return false, action.ErrNotEnoughFund
 	}
 
 	return true, nil
@@ -127,6 +130,7 @@ func runPurchaseDomain(ctx *action.Context, tx action.RawTx) (bool, action.Respo
 		return false, action.Response{Log: err.Error()}
 	}
 
+	// domain ,ust be already created
 	domain, err := ctx.Domains.Get(buy.Name)
 	if err != nil {
 		if err == ons.ErrDomainNotFound {
@@ -135,43 +139,71 @@ func runPurchaseDomain(ctx *action.Context, tx action.RawTx) (bool, action.Respo
 		return false, action.Response{Log: "error getting domain"}
 	}
 
+	// if domain is not on sale or not expired, return error
 	if !domain.OnSaleFlag && (ctx.State.Version() <= domain.ExpireHeight) {
 		return false, action.Response{Log: "domain is not on sale or expired"}
+	}
+
+	// A sub domain cannot be purchased
+	if domain.Name.IsSub() {
+		return false, action.Response{Log: "cannot buy subdomain"}
 	}
 
 	olt, _ := ctx.Currencies.GetCurrencyByName(buy.Offering.Currency)
 
 	remain := buy.Offering.ToCoin(ctx.Currencies)
 
+	opt := ctx.Domains.GetOptions()
+	var extend int64
+
+	// if the domain is on sale and not expired
 	if (ctx.State.Version() <= domain.ExpireHeight) && domain.OnSaleFlag {
 
+		// offering should be more than sale price
 		if !domain.SalePrice.LessThanEqualCoin(olt.NewCoinFromAmount(buy.Offering.Value)) {
 			return false, action.Response{Log: "offering is not enough"}
 		}
 
+		// debit the sale price from buyer balance
 		err := ctx.Balances.MinusFromAddress(buy.Buyer, domain.SalePrice)
 		if err != nil {
 			return false, action.Response{Log: err.Error()}
 		}
 
+		// credit the sale price to the previous owner
 		err = ctx.Balances.AddToAddress(domain.Beneficiary, domain.SalePrice)
 		if err != nil {
 			return false, action.Response{Log: err.Error()}
 		}
+
+		// deduct the saleprice from the offering
 		remain, err = remain.Minus(domain.SalePrice)
 		if err != nil {
 			return false, action.Response{Log: err.Error()}
 		}
+
+		extend = big.NewInt(0).Div(remain.Amount.BigInt(), opt.PerBlockFees.BigInt()).Int64()
+
+	} else {
+		// calculate expiry from the buying price
+		extend, err = calculateExpiry(&buy.Offering.Value, &opt.BaseDomainPrice, &opt.PerBlockFees)
+		if err != nil {
+			return false, action.Response{
+				Log: err.Error(),
+			}
+		}
+
 	}
 
-	opt := ctx.Domains.GetOptions()
-	extend := big.NewInt(0).Div(remain.Amount.BigInt(), opt.PerBlockFees.BigInt()).Int64()
+	// calculate the number of blocks by which to extend the expiry height
 
+	// minus the domain life charges from the buyer
 	err = ctx.Balances.MinusFromAddress(buy.Buyer, remain)
 	if err != nil {
 		return false, action.Response{Log: "error deducting balance for purchase expired domain: " + err.Error()}
 	}
 
+	// add the remain to fee pool
 	err = ctx.FeePool.AddToPool(remain)
 	if err != nil {
 		return false, action.Response{Log: "error adding domain purchase: " + err.Error()}

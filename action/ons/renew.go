@@ -1,8 +1,8 @@
 package ons
 
 import (
+	"bytes"
 	"encoding/json"
-	"math/big"
 
 	"github.com/pkg/errors"
 	"github.com/tendermint/tendermint/libs/common"
@@ -13,6 +13,10 @@ import (
 
 var _ Ons = &RenewDomain{}
 
+/*
+		RenewDomain
+This transaction is used to renew
+*/
 type RenewDomain struct {
 	//Owner of sub Domain
 	Owner action.Address `json:"owner"`
@@ -84,14 +88,17 @@ func (r RenewDomainTx) Validate(ctx *action.Context, signedTx action.SignedTx) (
 		return false, errors.Wrap(err, err.Error())
 	}
 
+	// basic validation
 	if renewDomain.Owner == nil || len(renewDomain.Name) <= 0 {
 		return false, action.ErrMissingData
 	}
 
+	// check if Name is Valid and not a sub domain
 	if !renewDomain.Name.IsValid() || renewDomain.Name.IsSub() {
 		return false, ErrInvalidDomain
 	}
 
+	// the buying currency must be OLT
 	c, _ := ctx.Currencies.GetCurrencyById(0)
 	if c.Name != renewDomain.BuyingPrice.Currency {
 		return false, errors.Wrap(action.ErrInvalidAmount, renewDomain.BuyingPrice.String())
@@ -125,17 +132,25 @@ func runRenew(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 		return false, action.Response{Log: err.Error()}
 	}
 
+	// domain should not be a sub domain
 	if renewDomain.Name.IsSub() {
 		return false, action.Response{Log: "renew sub domain is not possible"}
 	}
-	//Check if domain is active, return error if it isn't
+
+	// Check if domain is active, return error if it isn't
 	domain, err := ctx.Domains.Get(renewDomain.Name)
 	if err != nil {
 		return false, action.Response{Log: err.Error()}
 	}
 
+	// if domain is expired it can't be renewed
 	if domain.IsExpired(ctx.State.Version()) {
 		return false, action.Response{Log: "domain already expired, need to purchase again"}
+	}
+
+	// the sender must be the owner of the domain
+	if !bytes.Equal(renewDomain.Owner, domain.OwnerAddress) {
+		return false, action.Response{Log: "only domain owner can renew a domain"}
 	}
 
 	//Transfer funds to the fee pool
@@ -150,9 +165,16 @@ func runRenew(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 		return false, action.Response{Log: err.Error()}
 	}
 
+	// calculate the blocks
 	opt := ctx.Domains.GetOptions()
-	extend := big.NewInt(0).Div(renewDomain.BuyingPrice.Value.BigInt(), opt.PerBlockFees.BigInt()).Int64()
+	extend, err := calculateRenewal(&renewDomain.BuyingPrice.Value, &opt.PerBlockFees)
+	if err != nil {
+		return false, action.Response{
+			Log: err.Error(),
+		}
+	}
 
+	// increase the expiry height & save domain
 	domain.AddToExpire(extend)
 
 	err = ctx.Domains.Set(domain)
@@ -160,8 +182,11 @@ func runRenew(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 		return false, action.Response{Log: err.Error()}
 	}
 
+	// set expiry of all subdomains
 	ctx.Domains.IterateSubDomain(domain.Name, func(subname ons.Name, subdomain *ons.Domain) bool {
+
 		subdomain.ExpireHeight = domain.ExpireHeight
+
 		err := ctx.Domains.Set(subdomain)
 		if err != nil {
 			ctx.Logger.Error("failed to update sub domain expiry ", subdomain.Name, err)
@@ -169,5 +194,6 @@ func runRenew(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 		}
 		return false
 	})
+
 	return true, action.Response{Tags: renewDomain.Tags()}
 }
