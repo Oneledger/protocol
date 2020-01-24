@@ -73,6 +73,7 @@ func (e ethERC20RedeemTx) Validate(ctx *action.Context, signedTx action.SignedTx
 	if err != nil {
 		return false, errors.Wrap(err, action.ErrWrongTxType.Error())
 	}
+
 	err = action.ValidateBasic(signedTx.RawBytes(), erc20redeem.Signers(), signedTx.Signatures)
 	if err != nil {
 		ctx.Logger.Error("validate basic failed", err)
@@ -116,12 +117,14 @@ func runERC20Reddem(ctx *action.Context, tx action.RawTx) (bool, action.Response
 	if err != nil {
 		return false, action.Response{Log: action.ErrUnserializable.Error()}
 	}
+
 	ethOptions := ctx.ETHTrackers.GetOption()
 	redeemParams, err := ethereum.ParseERC20RedeemParams(erc20redeem.ETHTxn, ethOptions.ERCContractABI)
 	if err != nil {
 		ctx.Logger.Error(err)
 		return false, action.Response{Log: action.ErrTokenNotSupported.Error()}
 	}
+
 	token, err := ethereum.ParseERC20RedeemToken(erc20redeem.ETHTxn, ethOptions.TokenList, ethOptions.ERCContractABI)
 	if err != nil {
 		ctx.Logger.Error(err)
@@ -139,6 +142,7 @@ func runERC20Reddem(ctx *action.Context, tx action.RawTx) (bool, action.Response
 		fmt.Println("Not enough funds")
 		return false, action.Response{Log: action.ErrNotEnoughFund.Error()}
 	}
+
 	// Subtracting from common address to maintain count of the total oToken minted
 	tokenSupply := keys.Address(lockBalanceAddress)
 	err = ctx.Balances.MinusFromAddress(tokenSupply, coin)

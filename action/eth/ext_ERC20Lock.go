@@ -67,22 +67,26 @@ var _ action.Tx = ethERC20LockTx{}
 func (e ethERC20LockTx) Validate(ctx *action.Context, signedTx action.SignedTx) (bool, error) {
 	// unmarshal the tx message
 	erclock := &ERC20Lock{}
+
 	err := erclock.Unmarshal(signedTx.Data)
 	if err != nil {
 		ctx.Logger.Error("error unmarshalling Data field of ERC LOCK trasaction")
 		return false, errors.Wrap(err, action.ErrWrongTxType.Msg)
 	}
+
 	err = action.ValidateBasic(signedTx.RawBytes(), erclock.Signers(), signedTx.Signatures)
 	if err != nil {
 		ctx.Logger.Error("validate basic failed", err)
 		return false, err
 	}
+
 	// validate fee
 	err = action.ValidateFee(ctx.FeePool.GetOpt(), signedTx.Fee)
 	if err != nil {
 		ctx.Logger.Error("validate fee failed", err)
 		return false, err
 	}
+
 	return true, nil
 }
 
@@ -99,6 +103,7 @@ func (e ethERC20LockTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bo
 // ProcessFee process the transaction Fee in OLT
 func (e ethERC20LockTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas) (bool, action.Response) {
 	ctx.State.ConsumeUpfront(237600) //TODO : Calculate GAS price
+
 	return action.BasicFeeHandling(ctx, signedTx, start, size, 1)
 }
 
@@ -106,11 +111,13 @@ func (e ethERC20LockTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx
 // Provides security checks for transaction
 func runERC20Lock(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	erc20lock := &ERC20Lock{}
+
 	err := erc20lock.Unmarshal(tx.Data)
 	if err != nil {
 		ctx.Logger.Error("wrong tx type", err)
 		return false, action.Response{Log: "wrong tx type"}
 	}
+
 	ethTx, err := ethchaindriver.DecodeTransaction(erc20lock.ETHTxn)
 	if err != nil {
 		ctx.Logger.Error("decode eth txn err", err)
@@ -118,6 +125,7 @@ func runERC20Lock(ctx *action.Context, tx action.RawTx) (bool, action.Response) 
 			Log: "decode eth txn error" + err.Error(),
 		}
 	}
+
 	ethOptions := ctx.ETHTrackers.GetOption()
 	token, err := ethchaindriver.GetToken(ethOptions.TokenList, *ethTx.To())
 	if err != nil {
@@ -125,6 +133,7 @@ func runERC20Lock(ctx *action.Context, tx action.RawTx) (bool, action.Response) 
 			Log: err.Error(),
 		}
 	}
+
 	ok, err := ethchaindriver.VerfiyERC20Lock(erc20lock.ETHTxn, token.TokAbi, ethOptions.ERCContractAddress)
 	if err != nil {
 		ctx.Logger.Error("Unable to verify ERC LOCK transaction")
@@ -132,34 +141,41 @@ func runERC20Lock(ctx *action.Context, tx action.RawTx) (bool, action.Response) 
 			Log: "Unable to verify transaction" + err.Error(),
 		}
 	}
+
 	if !ok {
 		ctx.Logger.Error("To field of Transaction does not match OneLedger Contract Address")
 		return false, action.Response{
 			Log: "To field of Transaction does not match OneLedger Contract Address" + err.Error(),
 		}
 	}
+
 	validatorList, err := ctx.Validators.GetValidatorsAddress()
 	if err != nil {
 		ctx.Logger.Error("err in getting validator address", err)
 		return false, action.Response{Log: "error in getting validator addresses" + err.Error()}
 	}
+
 	curr, ok := ctx.Currencies.GetCurrencyByName(token.TokName)
 	if !ok {
 		return false, action.Response{Log: fmt.Sprintf("Token not Supported : %s ", token.TokName)}
 	}
+
 	erc20Params, err := ethchaindriver.ParseErc20Lock(ethOptions.TokenList, erc20lock.ETHTxn)
 	if err != nil {
 		return false, action.Response{
 			Log: err.Error(),
 		}
 	}
+
 	lockToken := curr.NewCoinFromString(erc20Params.TokenAmount.String())
 	// Adding lock amount to common address to maintain count of total oToken minted
 	tokenSupply := action.Address(lockBalanceAddress)
+
 	balCoin, err := ctx.Balances.GetBalanceForCurr(tokenSupply, &curr)
 	if err != nil {
 		return false, action.Response{Log: fmt.Sprintf("Unable to get Eth lock total balance %s", erc20lock.Locker)}
 	}
+
 	totalSupplyToken := curr.NewCoinFromString(totalTTCSupply)
 	if !balCoin.Plus(lockToken).LessThanEqualCoin(totalSupplyToken) {
 		return false, action.Response{Log: fmt.Sprintf("Token lock exceeded limit ,for Token : %s ", token.TokName)}
