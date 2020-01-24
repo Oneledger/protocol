@@ -171,7 +171,7 @@ func (app *App) txChecker() txChecker {
 			Codespace: "",
 		}
 
-		if !ok {
+		if !(ok && feeOk) {
 			app.Context.check.DiscardTxSession()
 		} else {
 			app.Context.check.CommitTxSession()
@@ -217,7 +217,7 @@ func (app *App) txDeliverer() txDeliverer {
 		}
 		app.logger.Debug("Deliver Tx: ", result)
 
-		if !ok {
+		if !(ok && feeOk) {
 			app.Context.deliver.DiscardTxSession()
 		} else {
 			app.Context.deliver.CommitTxSession()
