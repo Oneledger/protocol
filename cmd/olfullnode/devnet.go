@@ -58,6 +58,7 @@ type testnetConfig struct {
 	initialTokenHolders []string
 
 	deployETHContract string
+	deploySmartcontracts bool
 }
 
 var testnetArgs = &testnetConfig{}
@@ -82,6 +83,7 @@ func init() {
 	testnetCmd.Flags().Int64Var(&testnetArgs.totalFunds, "total_funds", 1000000000, "The total amount of tokens in circulation")
 	testnetCmd.Flags().StringSliceVar(&testnetArgs.initialTokenHolders, "initial_token_holders", []string{}, "Initial list of addresses that hold an equal share of Total funds")
 	testnetCmd.Flags().StringVar(&testnetArgs.deployETHContract, "deploy_eth_contract", "", "deploy the ethereum Contract")
+	testnetCmd.Flags().BoolVar(&testnetArgs.deploySmartcontracts, "deploy_smart_contracts", true, "deploy eth contracts")
 
 }
 
@@ -316,12 +318,13 @@ func runDevnet(_ *cobra.Command, _ []string) error {
 
 	cdo := &ethchain.ChainDriverOption{}
 	fmt.Println("Deployment Network :", args.deployETHContract)
+	if args.deploySmartcontracts{
 	if len(args.deployETHContract) > 0 {
 		cdo, err = deployethcdcontract(args.deployETHContract, nodeList)
 		if err != nil {
 			return errors.Wrap(err, "failed to deploy the initial eth contract")
 		}
-	}
+	}}
 
 	perblock, _ := big.NewInt(0).SetString("100000000000000", 10)
 	baseDomainPrice, _ := big.NewInt(0).SetString("1000000000000000000000", 10)
