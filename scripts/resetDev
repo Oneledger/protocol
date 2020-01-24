@@ -5,7 +5,9 @@ echo
 rm -rf $OLDATA/devnet/*
 
 olfullnode init devnet --dir $OLDATA/devnet --nonvalidators 1 \
---deploy_eth_contract HTTPS://rinkeby.infura.io/v3/de5e96cbb6284d5ea1341bf6cb7fa401
+--deploy_eth_contract HTTPS://rinkeby.infura.io/v3/de5e96cbb6284d5ea1341bf6cb7fa401 \
+--deploy_smart_contracts false
+
 #--deploy_eth_contract HTTP://127.0.0.1:7545 \
   # --empty_blocks
 
