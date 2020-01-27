@@ -7,6 +7,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/tendermint/tendermint/types"
 
+	"github.com/Oneledger/protocol/chains/bitcoin"
 	ethchain "github.com/Oneledger/protocol/chains/ethereum"
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/fees"
@@ -61,6 +62,7 @@ type AppState struct {
 	Currencies  balance.Currencies         `json:"currencies"`
 	FeeOption   fees.FeeOption             `json:"feeOption"`
 	ETHCDOption ethchain.ChainDriverOption `json:"ethchaindriverOption"`
+	BTCCDOption bitcoin.ChainDriverOption  `json:"bitcoinChainDriverOption"`
 	Chain       ChainState                 `json:"state"`
 	Balances    []BalanceState             `json:"balances"`
 	Staking     []Stake                    `json:"staking"`
@@ -77,6 +79,7 @@ func NewAppState(currencies balance.Currencies,
 	fees []BalanceState,
 	ethoptions ethchain.ChainDriverOption,
 	onsoptions ons.Options,
+	btcOptions bitcoin.ChainDriverOption,
 ) *AppState {
 	return &AppState{
 		Currencies:  currencies,
@@ -87,6 +90,7 @@ func NewAppState(currencies balance.Currencies,
 		Fees:        fees,
 		ETHCDOption: ethoptions,
 		ONSOptions:  onsoptions,
+		BTCCDOption: btcOptions,
 	}
 }
 

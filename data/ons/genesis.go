@@ -33,12 +33,19 @@ func (opt *Options) IsNameAllowed(name Name) bool {
 
 func (opt *Options) IsValidURI(uri string) bool {
 	if opt.protocols == nil {
-		opt.protocols = map[string]bool{"http": true, "ipfs": true, "ftp": true}
+		opt.protocols = map[string]bool{
+			"http":  true,
+			"https": true,
+			"ipfs":  true,
+			"ftp":   true,
+		}
 	}
+
 	u, err := url.Parse(uri)
 	if err != nil {
 		return false
 	}
+
 	_, ok := opt.protocols[u.Scheme]
 	return ok
 }

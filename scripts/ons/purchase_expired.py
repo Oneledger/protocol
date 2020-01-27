@@ -1,11 +1,7 @@
 
-
-import sys
-import requests
-import json
 import time
-
 from sdk.actions import *
+import sys
 
 class bcolors:
     HEADER = '\033[95m'
@@ -23,15 +19,17 @@ if __name__ == "__main__":
     result = new_account('charlie')
     print result
 
-    name = "bob2.ol"
-
+    name = "expiring.ol"
     addrs = addresses()
 
     print addrs
 
-    create_price = (int("10002345")*10**14)
+    # expiring after one block
+    create_price = (int("10000001")*10**14)
     print "create price:", create_price
 
+
+    print bcolors.WARNING + "*** Create domain ***" + bcolors.ENDC
     raw_txn = create_domain(name, addrs[0], create_price)
     print raw_txn
 
@@ -41,15 +39,15 @@ if __name__ == "__main__":
 
     result = broadcast_commit(raw_txn, signed['signature']['Signed'], signed['signature']['Signer'])
     print result
-    print "#################" \
-          "##"
-    print
 
-    if result["ok"] != True:
+    if not result["ok"]:
         sys.exit(-1)
 
-    sell_price = (int("105432")*10**14)
+    print "###################"
+    print
 
+
+    print bcolors.WARNING + "*** Send to domain ***" + bcolors.ENDC
     raw_txn = send_domain(name, addrs[0], (int("100")*10**18))
     print raw_txn
 
@@ -59,45 +57,34 @@ if __name__ == "__main__":
 
     result = broadcast_commit(raw_txn, signed['signature']['Signed'], signed['signature']['Signer'])
     print result
-    print "#################" \
-          "##"
-    print
 
-    if result["ok"] != True:
+    if result["ok"]:
         sys.exit(-1)
 
     time.sleep(2)
-    raw_txn = sell_domain(name, addrs[0], sell_price)
-    print raw_txn
-    print
 
-    signed = sign(raw_txn, addrs[0])
+
+
+    print bcolors.WARNING + "*** Buying expired domain ***" + bcolors.ENDC
+
+    raw_txn = buy_domain(name, addrs[3], (int("1200")*10**18))
+    print addrs[3]
+    print addrs
+    print(raw_txn)
+    signed = sign(raw_txn, addrs[3])
     print signed
     print
 
     result = broadcast_commit(raw_txn, signed['signature']['Signed'], signed['signature']['Signer'])
     print result
+
+    if not result["ok"]:
+        sys.exit(-1)
     print "############################################"
     print
 
-    if result["ok"] != True:
-        sys.exit(-1)
 
-    raw_txn = send(addrs[0], addrs[3], (int("2000")*10**18))
-    print result
-    signed = sign(raw_txn, addrs[0])
-    print signed
-    print
-
-    result = broadcast_commit(raw_txn, signed['signature']['Signed'], signed['signature']['Signer'])
-    print result
-    print "############################################"
-    print
-
-    if result["ok"] != True:
-        sys.exit(-1)
-
-    print bcolors.WARNING + "*** Buying domain ***" + bcolors.ENDC
+    print bcolors.WARNING + "*** Buying non-expired domain (should fail) ***" + bcolors.ENDC
 
     raw_txn = buy_domain(name, addrs[3], (int("20")*10**18))
     print addrs[3]
@@ -108,27 +95,8 @@ if __name__ == "__main__":
 
     result = broadcast_commit(raw_txn, signed['signature']['Signed'], signed['signature']['Signer'])
     print result
+
+    if result["ok"]:
+        sys.exit(-1)
     print "############################################"
     print
-    if result["ok"] != True:
-        sys.exit(-1)
-
-    print bcolors.WARNING + "*** Putting Domain on sale ***" + bcolors.ENDC
-    raw_txn = sell_domain(name, addrs[3], (int("993242")*10**14))
-    print raw_txn
-    print
-
-    signed = sign(raw_txn, addrs[3])
-    print signed
-    print
-
-    result = broadcast_commit(raw_txn, signed['signature']['Signed'], signed['signature']['Signer'])
-    print result
-    print "############################################"
-    print
-    if result["ok"] != True:
-        sys.exit(-1)
-
-    print bcolors.WARNING + "*** Get Domains on sale ***" + bcolors.ENDC
-    resp = get_domain_on_sale()
-    print resp

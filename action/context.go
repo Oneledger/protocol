@@ -1,7 +1,6 @@
 package action
 
 import (
-	"github.com/btcsuite/btcd/chaincfg"
 	abci "github.com/tendermint/tendermint/abci/types"
 
 	"github.com/Oneledger/protocol/data/accounts"
@@ -17,23 +16,21 @@ import (
 )
 
 type Context struct {
-	Router               Router
-	State                *storage.State
-	Header               *abci.Header
-	Accounts             accounts.Wallet
-	Balances             *balance.Store
-	Domains              *ons.DomainStore
-	FeePool              *fees.Store
-	Currencies           *balance.CurrencySet
-	Validators           *identity.ValidatorStore
-	BTCTrackers          *bitcoin.TrackerStore
-	ETHTrackers          *ethereum.TrackerStore
-	Logger               *log.Logger
-	JobStore             *jobs.JobStore
-	LockScriptStore      *bitcoin.LockScriptStore
-	BTCChainType         *chaincfg.Params
-	BlockCypherToken     string
-	BlockCypherChainType string
+	Router          Router
+	State           *storage.State
+	Header          *abci.Header
+	Accounts        accounts.Wallet
+	Balances        *balance.Store
+	Domains         *ons.DomainStore
+	FeePool         *fees.Store
+	Currencies      *balance.CurrencySet
+	FeeOpt          *fees.FeeOption
+	Validators      *identity.ValidatorStore
+	BTCTrackers     *bitcoin.TrackerStore
+	ETHTrackers     *ethereum.TrackerStore
+	Logger          *log.Logger
+	JobStore        *jobs.JobStore
+	LockScriptStore *bitcoin.LockScriptStore
 }
 
 func NewContext(r Router, header *abci.Header, state *storage.State,
@@ -41,8 +38,7 @@ func NewContext(r Router, header *abci.Header, state *storage.State,
 	currencies *balance.CurrencySet, feePool *fees.Store,
 	validators *identity.ValidatorStore, domains *ons.DomainStore,
 	btcTrackers *bitcoin.TrackerStore, ethTrackers *ethereum.TrackerStore,
-	jobStore *jobs.JobStore, btcChainType *chaincfg.Params, lockScriptStore *bitcoin.LockScriptStore,
-	blockCypherToken, blockCypherChainType string,
+	jobStore *jobs.JobStore, lockScriptStore *bitcoin.LockScriptStore,
 	logger *log.Logger) *Context {
 
 	return &Context{
@@ -59,10 +55,6 @@ func NewContext(r Router, header *abci.Header, state *storage.State,
 		ETHTrackers:     ethTrackers,
 		Logger:          logger,
 		JobStore:        jobStore,
-		BTCChainType:    btcChainType,
 		LockScriptStore: lockScriptStore,
-
-		BlockCypherToken:     blockCypherToken,
-		BlockCypherChainType: blockCypherChainType,
 	}
 }

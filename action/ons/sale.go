@@ -112,7 +112,7 @@ func (domainSaleTx) Validate(ctx *action.Context, tx action.SignedTx) (bool, err
 		return false, action.ErrMissingData
 	}
 
-	if !sale.Name.IsValid() {
+	if !sale.Name.IsValid() || sale.Name.IsSub() {
 		return false, ErrInvalidDomain
 	}
 	c, _ := ctx.Currencies.GetCurrencyById(0)
@@ -154,9 +154,12 @@ func runDomainSale(ctx *action.Context, tx action.RawTx) (bool, action.Response)
 		return false, action.Response{Log: "invalid price amount"}
 	}
 
-	// validate the sender and receiver are not nil
-	if sale.OwnerAddress == nil || sale.Name == "" {
-		return false, action.Response{Log: "invalid data"}
+	if sale.OwnerAddress == nil {
+		return false, action.Response{Log: "invalid owner"}
+	}
+
+	if sale.Name.IsSub() {
+		return false, action.Response{Log: "put sub domain on sale not allowed"}
 	}
 
 	domain, err := ctx.Domains.Get(sale.Name)

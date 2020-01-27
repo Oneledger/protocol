@@ -44,6 +44,7 @@ func (n Name) IsSub() bool {
 }
 
 func (n Name) GetParentName() (Name, error) {
+
 	if !n.IsSub() {
 		return "", errors.New("this is not a sub domain name")
 	}

@@ -154,7 +154,7 @@ func runDomainSend(ctx *action.Context, tx action.RawTx) (bool, action.Response)
 		log := fmt.Sprint("error getting domain:", err)
 		return false, action.Response{Log: log}
 	}
-	if !domain.ActiveFlag {
+	if !domain.IsActive(ctx.State.Version()) {
 		log := fmt.Sprint("domain inactive")
 		return false, action.Response{Log: log}
 	}

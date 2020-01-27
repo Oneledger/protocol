@@ -48,15 +48,47 @@ func (s *State) Delete(key StoreKey) (bool, error) {
 
 // This only Iterate for the ChainState
 func (s *State) GetIterator() Iteratable {
-	return s.cs.GetIterator()
+	return s
 }
 
 func (s *State) Iterate(fn func(key []byte, value []byte) bool) (stopped bool) {
-	return s.GetIterator().Iterate(fn)
+	keys := make([]StoreKey, 0, 100)
+	s.cs.Iterate(func(key, value []byte) bool {
+		keys = append(keys, key)
+		return false
+	})
+
+	for _, key := range keys {
+		value, err := s.Get(key)
+		if err != nil {
+			continue
+		}
+		stop := fn(key, value)
+		if stop {
+			return true
+		}
+	}
+	return true
 }
 
 func (s *State) IterateRange(start, end []byte, ascending bool, fn func(key, value []byte) bool) (stop bool) {
-	return s.GetIterator().IterateRange(start, end, ascending, fn)
+	keys := make([]StoreKey, 0, 100)
+	s.cs.IterateRange(start, end, ascending, func(key, value []byte) bool {
+		keys = append(keys, key)
+		return false
+	})
+
+	for _, key := range keys {
+		value, err := s.Get(key)
+		if err != nil {
+			continue
+		}
+		stop := fn(key, value)
+		if stop {
+			return true
+		}
+	}
+	return true
 }
 
 func NewState(state *ChainState) *State {

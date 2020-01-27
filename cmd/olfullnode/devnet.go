@@ -27,6 +27,7 @@ import (
 	"github.com/tendermint/tendermint/p2p"
 	"github.com/tendermint/tendermint/privval"
 
+	"github.com/Oneledger/protocol/chains/bitcoin"
 	ethchain "github.com/Oneledger/protocol/chains/ethereum"
 	"github.com/Oneledger/protocol/chains/ethereum/contract"
 	"github.com/Oneledger/protocol/config"
@@ -335,7 +336,12 @@ func runDevnet(_ *cobra.Command, _ []string) error {
 		FirstLevelDomains: []string{"ol"},
 		BaseDomainPrice:   *balance.NewAmountFromBigInt(baseDomainPrice),
 	}
-	states := initialState(args, nodeList, *cdo, *onsOp)
+
+	btccdo := bitcoin.ChainDriverOption{
+		"testnet3",
+	}
+
+	states := initialState(args, nodeList, *cdo, *onsOp, btccdo)
 
 	genesisDoc, err := consensus.NewGenesisDoc(chainID, states)
 	if err != nil {
@@ -391,7 +397,8 @@ func runDevnet(_ *cobra.Command, _ []string) error {
 	return nil
 }
 
-func initialState(args *testnetConfig, nodeList []node, option ethchain.ChainDriverOption, onsOption ons.Options) consensus.AppState {
+func initialState(args *testnetConfig, nodeList []node, option ethchain.ChainDriverOption, onsOption ons.Options,
+	btcOption bitcoin.ChainDriverOption) consensus.AppState {
 	olt := balance.Currency{Id: 0, Name: "OLT", Chain: chain.ONELEDGER, Decimal: 18, Unit: "nue"}
 	vt := balance.Currency{Id: 1, Name: "VT", Chain: chain.ONELEDGER, Unit: "vt"}
 	obtc := balance.Currency{Id: 2, Name: "BTC", Chain: chain.BITCOIN, Decimal: 8, Unit: "satoshi"}
@@ -491,6 +498,7 @@ func initialState(args *testnetConfig, nodeList []node, option ethchain.ChainDri
 		Currencies:  currencies,
 		FeeOption:   feeOpt,
 		ETHCDOption: option,
+		BTCCDOption: btcOption,
 		Balances:    balances,
 		Staking:     staking,
 		Domains:     domains,

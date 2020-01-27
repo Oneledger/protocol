@@ -136,7 +136,24 @@ func runUpdate(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 		d.Activate()
 	} else {
 		d.Deactivate()
+
+		// deactivate all subdomains
+		if !d.Name.IsSub() {
+
+			ctx.Domains.IterateSubDomain(d.Name, func(name ons.Name, domain *ons.Domain) bool {
+				domain.Deactivate()
+				err := ctx.Domains.Set(domain)
+				if err != nil {
+					ctx.Logger.Error("failed to update sub domain activate status ", domain.Name, err)
+					return false
+				}
+
+				d.SetLastUpdatedHeight(ctx.Header.Height)
+				return false
+			})
+		}
 	}
+
 	d.SetLastUpdatedHeight(ctx.Header.Height)
 	opt := ctx.Domains.GetOptions()
 	if len(update.Uri) > 0 {
