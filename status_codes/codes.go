@@ -68,4 +68,8 @@ const (
 	ExternalErrUnableToCreateEthTX     = 400105
 	ExternalErrUnableToCreateOLTLockTX = 400106
 	ErrUnmarshalingRedeem              = 400107
+
+	ERC20
+	ExternalErrUnableToCreateErc20OLTLockTX = 500100
+	ExternalErrTokenNotSuported             = 500101
 )

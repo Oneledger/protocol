@@ -40,6 +40,8 @@ const (
 	ETH_MINT                 Type = 0x94
 	ETH_REPORT_FINALITY_MINT Type = 0x95
 	ETH_REDEEM               Type = 0x96
+	ERC20_LOCK               Type = 0x97
+	ERC20_REDEEM             Type = 0x98
 )
 
 var logger *log.Logger
@@ -81,6 +83,10 @@ func (t Type) String() string {
 		return "ETH_LOCK"
 	case ETH_REPORT_FINALITY_MINT:
 		return "ETH_REPORT_FINALITY_MINT"
+	case ERC20_LOCK:
+		return "ERC20_LOCK"
+	case ERC20_REDEEM:
+		return "ERC20_REDEEM"
 	default:
 		return "UNKNOWN"
 	}

@@ -17,7 +17,7 @@ import (
 // This function might create a loophope that node owner might use the sgned eth lock tx for his own benificiary address.
 // DONT USE IN PRODUCTION
 
-func (svc *Service) CreateRawExtLock(req OLTLockRequest, out *OLTLockReply) error {
+func (svc *Service) CreateRawExtLock(req OLTLockRequest, out *OLTReply) error {
 
 	packets, err := createRawLock(req.Address, req.RawTx, req.Fee, req.Gas)
 	if err != nil {
@@ -25,7 +25,7 @@ func (svc *Service) CreateRawExtLock(req OLTLockRequest, out *OLTLockReply) erro
 		return codes.ErrPreparingOLTLock
 	}
 
-	*out = OLTLockReply{
+	*out = OLTReply{
 		RawTX: packets,
 	}
 	return nil
@@ -67,7 +67,7 @@ func createRawLock(locker action.Address, rawTx []byte, userfee action.Amount, g
 // Wallet signs and then calls onlinelock
 func (svc *Service) GetRawLockTX(req ETHLockRequest, out *ETHLockRawTX) error {
 	opt := svc.trackerStore.GetOption()
-	cd, err := ethereum.NewChainDriver(svc.config, svc.logger, opt)
+	cd, err := ethereum.NewChainDriver(svc.config, svc.logger, opt.ContractAddress, opt.ContractABI, ethereum.ERC)
 	if err != nil {
 		return errors.Wrap(err, "GetRawLockTx")
 	}

@@ -142,7 +142,36 @@ func (t Tracker) NextStep() string {
 		}
 		return transition.NOOP
 	}
+	if t.Type == ProcessTypeLockERC {
+		switch t.State {
+		case New:
+			return BROADCASTING
+		case BusyBroadcasting:
+			return FINALIZING
+		case BusyFinalizing:
+			return FINALIZE
+		case Finalized:
+			return MINTING
+		case Released:
+			return CLEANUP
+		}
+		return transition.NOOP
+	}
 	if t.Type == ProcessTypeRedeem {
+		switch t.State {
+		case New:
+			return SIGNING
+		case BusyBroadcasting:
+			return VERIFYREDEEM
+		case BusyFinalizing:
+			return REDEEMCONFIRM
+		case Finalized:
+			return BURN
+		case Released:
+			return CLEANUP
+		}
+	}
+	if t.Type == ProcessTypeRedeemERC {
 		switch t.State {
 		case New:
 			return SIGNING

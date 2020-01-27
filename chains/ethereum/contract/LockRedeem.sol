@@ -100,7 +100,9 @@ contract LockRedeem {
         require(msg.value >= 0, "Must pay a balance more than 0");
         emit Lock(msg.sender,msg.value);
     }
-
+    function isredeemAvailable (address recepient_) public view returns (bool){
+        return redeemRequests[recepient_].until == 0 || redeemRequests[recepient_].until < block.number;
+    }
     // function called by user
     function redeem(uint256 amount_)  public  {
         require(redeemRequests[msg.sender].amount == uint256(0));
@@ -222,3 +224,4 @@ contract LockRedeem {
         emit DeleteValidator(v);
     }
 }
+//["0x14723A09ACff6D2A60DcdF7aA4AFf308FDDC160C","0x4B0897b0513fdC7C541B6d9D7E929C4e5364D2dB","0x583031D1113aD414F02576BD6afaBfb302140225","0xdD870fA1b7C4700F2BD7f44238821C26f7392148"]

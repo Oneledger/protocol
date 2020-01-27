@@ -6,7 +6,7 @@ import (
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/action/eth"
 	"github.com/Oneledger/protocol/chains/ethereum"
-	ethtracker "github.com/Oneledger/protocol/data/ethereum"
+	trackerlib "github.com/Oneledger/protocol/data/ethereum"
 	"github.com/Oneledger/protocol/data/jobs"
 	"github.com/Oneledger/protocol/storage"
 )
@@ -20,7 +20,7 @@ type JobETHCheckFinality struct {
 	Status      jobs.Status
 }
 
-func NewETHCheckFinality(name ethereum.TrackerName, state ethtracker.TrackerState) *JobETHCheckFinality {
+func NewETHCheckFinality(name ethereum.TrackerName, state trackerlib.TrackerState) *JobETHCheckFinality {
 	return &JobETHCheckFinality{
 		TrackerName: name,
 		JobID:       name.String() + storage.DB_PREFIX + strconv.Itoa(int(state)),
@@ -51,11 +51,20 @@ func (job *JobETHCheckFinality) DoMyJob(ctx interface{}) {
 	}
 
 	ethconfig := ethCtx.cfg.EthChainDriver
-	cd, err := ethereum.NewChainDriver(ethconfig, ethCtx.Logger, trackerStore.GetOption())
-	if err != nil {
-		ethCtx.Logger.Error("err trying to get ChainDriver : ", job.GetJobID(), err)
-		job.RetryCount += 1
-		return
+	ethoptions := trackerStore.GetOption()
+	cd := new(ethereum.ETHChainDriver)
+	if tracker.Type == trackerlib.ProcessTypeLock {
+		cd, err = ethereum.NewChainDriver(ethconfig, ethCtx.Logger, ethoptions.ContractAddress, ethoptions.ContractABI, ethereum.ETH)
+		if err != nil {
+			ethCtx.Logger.Error("err trying to get ChainDriver : ", job.GetJobID(), err, tracker.Type)
+			return
+		}
+	} else if tracker.Type == trackerlib.ProcessTypeLockERC {
+		cd, err = ethereum.NewChainDriver(ethconfig, ethCtx.Logger, ethoptions.ERCContractAddress, ethoptions.ERCContractABI, ethereum.ERC)
+		if err != nil {
+			ethCtx.Logger.Error("err trying to get ChainDriver : ", job.GetJobID(), err, tracker.Type)
+			return
+		}
 	}
 
 	rawTx := tracker.SignedETHTx
@@ -64,7 +73,6 @@ func (job *JobETHCheckFinality) DoMyJob(ctx interface{}) {
 		ethCtx.Logger.Error("Error Decoding Bytes from RaxTX :", job.GetJobID(), err)
 		return
 	}
-
 	receipt, err := cd.CheckFinality(tx.Hash())
 	if err != nil {
 		ethCtx.Logger.Error("Error in Receiving TX receipt : ", job.GetJobID(), err)
