@@ -133,6 +133,11 @@ func portGenerator(startingPort int) func() int {
 	}
 }
 
+func setEnvVariables() {
+	os.Setenv("API_KEY","de5e96cbb6284d5ea1341bf6cb7fa401")
+	os.Setenv("ETHPKPATH", "/tmp/pkdata")
+	os.Setenv("WALLETADDR", "/tmp/walletAddr")
+}
 
 func generateAddress(port int, flags ...bool) string {
 	// flags
@@ -200,7 +205,7 @@ func nodeNamesWithZeros(prefix string, total int) []string {
 }
 
 func getEthUrl(ethUrlArg string)(string,error) {
-	//os.Setenv("API_KEY","de5e96cbb6284d5ea1341bf6cb7fa401")
+
 	u, err := url.Parse(ethUrlArg)
 	if err != nil {
 		return "",err
@@ -213,6 +218,7 @@ func getEthUrl(ethUrlArg string)(string,error) {
 }
 
 func runDevnet(_ *cobra.Command, _ []string) error {
+	setEnvVariables()
 	ctx, err := newDevnetContext(testnetArgs)
 	if err != nil {
 		return errors.Wrap(err, "runDevnet failed")
@@ -530,8 +536,7 @@ func initialState(args *testnetConfig, nodeList []node, option ethchain.ChainDri
 
 func deployethcdcontract(conn string, nodeList []node) (*ethchain.ChainDriverOption, error) {
 
-	//os.Setenv("ETHPKPATH", "/tmp/pkdata")
-	//os.Setenv("WALLETADDR", "/tmp/walletAddr")
+
 	f, err := os.Open(os.Getenv("ETHPKPATH"))
 	if err != nil {
 		return nil, errors.Wrap(err, "Error Reading File")
@@ -546,8 +551,7 @@ func deployethcdcontract(conn string, nodeList []node) (*ethchain.ChainDriverOpt
 	if err != nil {
 		return nil, errors.Wrap(err, "Error reading private key")
 	}
-    //fmt.Println(pk)
-	fmt.Println("Address used to deploy : ", string(b1[:pk]))
+	fmt.Println("Private Key used to deploy : ", string(b1[:pk]))
 	pkStr := string(b1[:pk])
 	privatekey, err := crypto.HexToECDSA(pkStr)
 	if err != nil {
