@@ -1,0 +1,114 @@
+[node]
+  node_name = "3"
+  # Fast sync allows a block to catch up quickly to the chain by downloading blocks in parallel and verifying their commits
+  fast_sync = true
+  # Specify what backend database to use (goleveldb|cleveldb)
+  db = "goleveldb"
+  # Specify the application database directory. This is always relative to the root directory of the app.
+  db_dir = "nodedata"
+  # Specify the log level for olfullnode. 0: Fatal, 1: Error, 2: Warning, 3: Info, 4: Debug, 5: Detail
+  loglevel = 3
+  # List of transaction tags to index in the database, allows them to be searched by the specified tags
+  index_tags = ["tx.owner", "tx.type"]
+  # Tells the indexer to index all available tags, IndexTags has precedence over IndexAllTags
+  index_all_tags = false
+  # List of services used by the current Node. Possible valued [broadcast, node, owner, query, tx]
+  services = ["broadcast", "node", "owner", "query", "tx", "btc", "eth"]
+  # (ED25519 key) This private key will be used to generate a token for authentication through RPC Port.
+  rpc_private_key = ""
+
+[network]
+  rpc_address = "tcp://127.0.0.1:26612"
+  # Main address for P2P connections
+  p2p_address = "tcp://127.0.0.1:26613"
+  # Address to advertise for incoming peers to connect to
+  external_p2p_address = ""
+  sdk_address = "http://127.0.0.1:26614"
+  btc_address = "tcp://127.0.0.1:NONE"
+  eth_address = "NONE"
+  olvm_address = "tcp://127.0.0.1:26615"
+  olvm_protocol = "tcp"
+
+[p2p]
+  # List of seed nodes to connect to
+  seeds = []
+  # Enables seed mode, which will make the node crawl the network looking for peers
+  seed_mode = false
+  # List of peers to maintain a persistent connection to
+  persistent_peers = ["96ce62e9781a41e498b83d772b8bb42790499a57@127.0.0.1:26601", "b207318790a8b60ed89d881936c3915ce6bc12fe@127.0.0.1:26605", "4efa3fa6c1065ff5b249eefb22f9acff37db800d@127.0.0.1:26609", "b0d31d82aee46d716d74878b15a55740d9b0929a@127.0.0.1:26613"]
+  # Enable UPNP port forwarding
+  upnp = false
+  # Set true for strict address routability rules. If true, the node will fail to start if the given P2P address isn't routable'
+  addr_book_strict = false
+  # Max number of inbound peers
+  max_num_inbound_peers = 40
+  # Max number of outbound peers to connect to, excluding persistent peers
+  max_num_outbound_peers = 10
+  # Time to wait before flushing messages out on the connection in milliseconds
+  flush_throttle_timeout = 100
+  # Max size of a message packet payload, in bytes
+  max_packet_msg_payload_size = 1024
+  # Rate at which packets can be sent, in bytes/second
+  send_rate = 5120000
+  # Rate at which packets can be received, in bytes/second
+  recv_rate = 5120000
+  # Set true to enable the peer-exchange reactor
+  pex = true
+  # List of peer IDs to keep private (will not be gossiped to other peers)
+  private_peer_ids = []
+  # Toggle to disable guard against peers connecting from the same IP
+  allow_duplicate_ip = true
+  # In milliseconds
+  handshake_timeout = 20000
+  # In milliseconds
+  dial_timeout = 3000
+
+[mempool]
+  recheck = true
+  broadcast = true
+  # Size of the mempool
+  size = 5000
+  cache_size = 10000
+
+[consensus]
+  # Determines where consensus is logged (stdout|<filename>)
+  log_output = "consensus.log"
+  # Determines the verbosity of consensus logs
+  log_level = "main:info,state:info,*:error"
+  # All timeouts are in milliseconds
+  timeout_propose = 3000
+  timeout_propose_delta = 500
+  timeout_prevote = 1000
+  timeout_prevote_delta = 500
+  timeout_precommit = 1000
+  timeout_precommit_delta = 500
+  timeout_commit = 1000
+  # Make progress as soon as we have all precommits (as if TimeoutCommit = 0)
+  skip_timeout_commit = false
+  # Should this node create empty blocks
+  create_empty_blocks = false
+  # Interval between empty block creation in milliseconds
+  create_empty_blocks_interval = 0
+  # Duration values in milliseconds
+  peer_gossip_sleep_duration = 100
+  peer_query_maj23_sleep_duration = 2000
+  # Block time parameter, corresponds to the minimum time increment between consecutive blocks
+  blocktime_iota = 0
+
+[chain_driver]
+  # bitcoin chain types, mainnet, testnet3, or regtest
+  bitcoin_chain_type = "testnet3"
+  # ip address of bitcoin node
+  bitcoin_node_address = "34.74.207.115"
+  # rpc port of bitcoin node
+  "bitcoin rpc_port" = "18332"
+  # rpc username of bitcoin node
+  bitcoin_rpc_username = "admin1"
+  # rpc password of bitcoin node
+  bitcoin_rpc_password = "password"
+  # token to use blockcypher APIs
+  blockcypher_token = "e61acdee14e749a2b74e366cfc4373dd"
+
+[ethereum_chain_driver]
+  # ethereum node connection url default: http://localhost:7545
+  connection = "https://rinkeby.infura.io/v3/de5e96cbb6284d5ea1341bf6cb7fa401"
