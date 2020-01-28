@@ -210,7 +210,7 @@ func getEthUrl(ethUrlArg string)(string,error) {
 	if err != nil {
 		return "",err
 	}
-	if strings.Contains(u.Host,"infura"){
+	if strings.Contains(u.Host,"infura") && !strings.Contains(u.Path,os.Getenv("API_KEY")){
 		u.Path = u.Path + "/"+ os.Getenv("API_KEY")
 		return u.String(),nil
 	}
@@ -218,7 +218,7 @@ func getEthUrl(ethUrlArg string)(string,error) {
 }
 
 func runDevnet(_ *cobra.Command, _ []string) error {
-	//setEnvVariables()
+	setEnvVariables()
 	ctx, err := newDevnetContext(testnetArgs)
 	if err != nil {
 		return errors.Wrap(err, "runDevnet failed")
@@ -551,7 +551,7 @@ func deployethcdcontract(conn string, nodeList []node) (*ethchain.ChainDriverOpt
 	if err != nil {
 		return nil, errors.Wrap(err, "Error reading private key")
 	}
-	fmt.Println("Private Key used to deploy : ", string(b1[:pk]))
+	//fmt.Println("Private Key used to deploy : ", string(b1[:pk]))
 	pkStr := string(b1[:pk])
 	privatekey, err := crypto.HexToECDSA(pkStr)
 	if err != nil {
