@@ -58,7 +58,7 @@ type testnetConfig struct {
 	totalFunds          int64
 	initialTokenHolders []string
 
-	deployETHContract string
+	ethUrl               string
 	deploySmartcontracts bool
 }
 
@@ -69,6 +69,8 @@ var testnetCmd = &cobra.Command{
 	Short: "Initializes files for a devnet",
 	RunE:  runDevnet,
 }
+
+
 
 func init() {
 	initCmd.AddCommand(testnetCmd)
@@ -83,7 +85,7 @@ func init() {
 	// 1 billion by default
 	testnetCmd.Flags().Int64Var(&testnetArgs.totalFunds, "total_funds", 1000000000, "The total amount of tokens in circulation")
 	testnetCmd.Flags().StringSliceVar(&testnetArgs.initialTokenHolders, "initial_token_holders", []string{}, "Initial list of addresses that hold an equal share of Total funds")
-	testnetCmd.Flags().StringVar(&testnetArgs.deployETHContract, "deploy_eth_contract", "", "deploy the ethereum Contract")
+	testnetCmd.Flags().StringVar(&testnetArgs.ethUrl, "deploy_eth_contract", "", "URL for ethereum network")
 	testnetCmd.Flags().BoolVar(&testnetArgs.deploySmartcontracts, "deploy_smart_contracts", false, "deploy eth contracts")
 
 }
@@ -130,6 +132,7 @@ func portGenerator(startingPort int) func() int {
 		return port
 	}
 }
+
 
 func generateAddress(port int, flags ...bool) string {
 	// flags
@@ -196,6 +199,19 @@ func nodeNamesWithZeros(prefix string, total int) []string {
 	return names
 }
 
+func getEthUrl(ethUrlArg string)(string,error) {
+	//os.Setenv("API_KEY","de5e96cbb6284d5ea1341bf6cb7fa401")
+	u, err := url.Parse(ethUrlArg)
+	if err != nil {
+		return "",err
+	}
+	if strings.Contains(u.Host,"infura"){
+		u.Path = u.Path + "/"+ os.Getenv("API_KEY")
+		return u.String(),nil
+	}
+	return ethUrlArg,nil
+}
+
 func runDevnet(_ *cobra.Command, _ []string) error {
 	ctx, err := newDevnetContext(testnetArgs)
 	if err != nil {
@@ -219,7 +235,10 @@ func runDevnet(_ *cobra.Command, _ []string) error {
 	validatorList := make([]consensus.GenesisValidator, args.numValidators)
 	nodeList := make([]node, totalNodes)
 	persistentPeers := make([]string, totalNodes)
-
+	url,err := getEthUrl(args.ethUrl)
+	if err != nil {
+		return err
+	}
 	// Create the GenesisValidator list and its key files priv_validator_key.json and node_key.json
 	for i := 0; i < totalNodes; i++ {
 		isValidator := i < args.numValidators
@@ -231,6 +250,8 @@ func runDevnet(_ *cobra.Command, _ []string) error {
 
 		// Generate new configuration file
 		cfg := config.DefaultServerConfig()
+		ethConnection := config.EthereumChainDriverConfig{Connection:url}
+		cfg.EthChainDriver = &ethConnection
 		cfg.Node.NodeName = nodeName
 		cfg.Node.DB = args.dbType
 		if args.createEmptyBlock {
@@ -318,11 +339,11 @@ func runDevnet(_ *cobra.Command, _ []string) error {
 	}
 
 	cdo := &ethchain.ChainDriverOption{}
-	fmt.Println("Deployment Network :", args.deployETHContract)
+	fmt.Println("Deployment Network :", url)
 	fmt.Println("Deploy Smart contracts : ",args.deploySmartcontracts)
 	if args.deploySmartcontracts {
-	if len(args.deployETHContract) > 0 {
-		cdo, err = deployethcdcontract(args.deployETHContract, nodeList)
+	if len(args.ethUrl) > 0 {
+		cdo, err = deployethcdcontract(url, nodeList)
 		if err != nil {
 			return errors.Wrap(err, "failed to deploy the initial eth contract")
 		}
