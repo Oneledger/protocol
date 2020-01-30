@@ -37,10 +37,11 @@ var (
 	TestTokenABI     = contract.ERC20BasicABI
 	LockRedeemERCABI = contract.LockRedeemERCABI
 	// LockRedeemERC20ABI = contract.ContextABI
-	LockRedeemContractAddr = "0xfBeA6145b1f2449F9D53C3489A03b5917B9CDDf7"
-	TestTokenContractAddr = "0xA23Aaa36670B7cd16dd0CFd3F05B4bF700C5Fc1e"
-	LockRedeemERC20ContractAddr = "0x93243ab4645be1c5d5145c96E9a8e8328fC64dD9"
-	cfg                         = config.DefaultEthConfig()
+	LockRedeemContractAddr = "0x47E0dA56a2be2feD79F6C62F1380145a551597c0"
+	TestTokenContractAddr = "0x2e9d8F5e11564733B32d7bECe991a4251c94b73f"
+	LockRedeemERC20ContractAddr = "0x72adA481c4D4eF4b05FBb1C218aEdbB572f7A56E"
+
+	cfg                         = config.DefaultEthConfigCloud()
 	log                         = logger.NewDefaultLogger(os.Stdout).WithPrefix("testeth")
 	UserprivKey                 *ecdsa.PrivateKey
 	UserprivKeyRedeem           *ecdsa.PrivateKey
@@ -72,7 +73,7 @@ func createValue(str string) *big.Int {
 func init() {
 
 	//UserprivKey, _ = crypto.HexToECDSA("bdb082c7e42a946c477fa3efee4fb5bdece508b47592d8cb57f5e811cd840a40")
-	UserprivKey, _ = crypto.HexToECDSA("02038529C9AB706E9F4136F4A4EB51E866DBFE22D5E102FD3A22C14236E1C2EA")
+	UserprivKey, _ = crypto.HexToECDSA("090b4cdf3aa20a62aeb3f2bf9f4c679444f605a61ff50cfb5cca26f2d399b1b1")
 
 	UserprivKeyRedeem, _ = crypto.HexToECDSA("02038529C9AB706E9F4136F4A4EB51E866DBFE22D5E102FD3A22C14236E1C2EA")
 
@@ -158,7 +159,8 @@ func lock() {
 		return
 	}
 
-	rpcclient, err := rpc.NewClient("http://localhost:26602")
+	//rpcclient, err := rpc.NewClient("http://localhost:26602") //104.196.191.206:26604
+	rpcclient, err := rpc.NewClient("http://104.196.191.206:26602")
 	if err != nil {
 		fmt.Println(err)
 		return

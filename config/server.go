@@ -444,13 +444,13 @@ func DefautEthConfigRinkeby() *EthereumChainDriverConfig {
 	return &EthereumChainDriverConfig{Connection: "https://rinkeby.infura.io/v3/de5e96cbb6284d5ea1341bf6cb7fa401"}
 }
 
-func DefaultEthConfig() *EthereumChainDriverConfig {
+func DefaultEthConfigCloud() *EthereumChainDriverConfig {
 	return &EthereumChainDriverConfig{
 		Connection: "http://104.197.84.90:8545",
 	}
 }
 
-func DefaultEthConfi() *EthereumChainDriverConfig {
+func DefaultEthConfigLocal() *EthereumChainDriverConfig {
 	return &EthereumChainDriverConfig{
 		Connection: "HTTP://127.0.0.1:7545",
 	}
