@@ -446,7 +446,13 @@ func DefautEthConfigRinkeby() *EthereumChainDriverConfig {
 
 func DefaultEthConfig() *EthereumChainDriverConfig {
 	return &EthereumChainDriverConfig{
-		Connection: "http://localhost:7545",
+		Connection: "http://104.197.84.90:8545",
+	}
+}
+
+func DefaultEthConfi() *EthereumChainDriverConfig {
+	return &EthereumChainDriverConfig{
+		Connection: "HTTP://127.0.0.1:7545",
 	}
 }
 

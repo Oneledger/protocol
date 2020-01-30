@@ -218,7 +218,7 @@ func getEthUrl(ethUrlArg string)(string,error) {
 }
 
 func runDevnet(_ *cobra.Command, _ []string) error {
-	//setEnvVariables()
+	setEnvVariables()
 	ctx, err := newDevnetContext(testnetArgs)
 	if err != nil {
 		return errors.Wrap(err, "runDevnet failed")
