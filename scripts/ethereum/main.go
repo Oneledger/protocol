@@ -11,6 +11,7 @@ import (
 	"math/big"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -32,23 +33,31 @@ import (
 )
 
 var (
-	LockRedeemABI = contract.LockRedeemABI
+	LockRedeemABI    = contract.LockRedeemABI
+	TestTokenABI     = contract.ERC20BasicABI
+	LockRedeemERCABI = contract.LockRedeemERCABI
+	// LockRedeemERC20ABI = contract.ContextABI
+	LockRedeemContractAddr = "0x65F9C82803Fe0f4F7e0b61c81Fae8037C99Baa38"
+	TestTokenContractAddr = "0x2e9d8F5e11564733B32d7bECe991a4251c94b73f"
+	LockRedeemERC20ContractAddr = "0x72adA481c4D4eF4b05FBb1C218aEdbB572f7A56E"
 
-	contractAddr = "0x66d0C996969e3aCDBbA0cE41Aff9cb262b7bcacc"
-
-	cfg               = config.DefaultEthConfig()
-	log               = logger.NewDefaultLogger(os.Stdout).WithPrefix("testeth")
-	UserprivKey       *ecdsa.PrivateKey
-	UserprivKeyRedeem *ecdsa.PrivateKey
+	cfg                         = config.DefautEthConfigRinkeby()
+	log                         = logger.NewDefaultLogger(os.Stdout).WithPrefix("testeth")
+	UserprivKey                 *ecdsa.PrivateKey
+	UserprivKeyRedeem           *ecdsa.PrivateKey
 
 	client                 *ethclient.Client
 	contractAbi            abi.ABI
 	valuelock              = createValue("10000") // in wei (1 eth)
 	valueredeem            = createValue("100")
+	valuelockERC20         = createValue("1000000000000000000")
+	valueredeemERC20       = createValue("100000000000000000")
 	fromAddress            common.Address
 	redeemRecipientAddress common.Address
 
-	toAddress = common.HexToAddress(contractAddr)
+	toAddress               = common.HexToAddress(LockRedeemContractAddr)
+	toAddressTestToken      = common.HexToAddress(TestTokenContractAddr)
+	toAdddressLockRedeemERC = common.HexToAddress(LockRedeemERC20ContractAddr)
 )
 
 func createValue(str string) *big.Int {
@@ -63,7 +72,8 @@ func createValue(str string) *big.Int {
 
 func init() {
 
-	UserprivKey, _ = crypto.HexToECDSA("6c24a44424c8182c1e3e995ad3ccfb2797e3f7ca845b99bea8dead7fc9dccd09")
+	//UserprivKey, _ = crypto.HexToECDSA("bdb082c7e42a946c477fa3efee4fb5bdece508b47592d8cb57f5e811cd840a40")
+	UserprivKey, _ = crypto.HexToECDSA("02038529C9AB706E9F4136F4A4EB51E866DBFE22D5E102FD3A22C14236E1C2EA")
 
 	UserprivKeyRedeem, _ = crypto.HexToECDSA("02038529C9AB706E9F4136F4A4EB51E866DBFE22D5E102FD3A22C14236E1C2EA")
 
@@ -94,6 +104,10 @@ func main() {
 	//time.Sleep(10 * time.Second)
 
 	//redeem()
+
+	//erc20lock()
+	///time.Sleep(10 * time.Second)
+	//erc20Redeem()
 }
 
 func lock() {
@@ -110,11 +124,9 @@ func lock() {
 
 	gasPrice, err := client.SuggestGasPrice(context.Background())
 	if err != nil {
-
 		log.Fatal(err)
 	}
 	gasLimit := uint64(6721974) // in units
-
 	auth := bind.NewKeyedTransactor(UserprivKey)
 	auth.Nonce = big.NewInt(int64(nonce))
 	auth.Value = big.NewInt(0) // in wei
@@ -131,6 +143,7 @@ func lock() {
 	}
 
 	signedTx, err := types.SignTx(tx, types.NewEIP155Signer(chainID), UserprivKey)
+
 	if err != nil {
 
 		log.Fatal(err)
@@ -146,7 +159,8 @@ func lock() {
 		return
 	}
 
-	rpcclient, err := rpc.NewClient("http://localhost:26602")
+	//rpcclient, err := rpc.NewClient("http://localhost:26602") //104.196.191.206:26604
+	rpcclient, err := rpc.NewClient("http://104.196.191.206:26602")
 	if err != nil {
 		fmt.Println(err)
 		return
@@ -176,7 +190,7 @@ func lock() {
 		Gas:     400000,
 	}
 	//
-	reply := &se.OLTLockReply{}
+	reply := &se.OLTReply{}
 	err = rpcclient.Call("eth.CreateRawExtLock", req, reply)
 	signReply := &oclient.SignRawTxResponse{}
 	err = rpcclient.Call("owner.SignWithAddress", oclient.SignRawTxRequest{
@@ -293,7 +307,7 @@ func redeem() {
 		400000,
 	}
 
-	reply := &se.OLTLockReply{}
+	reply := &se.OLTReply{}
 	err = rpcclient.Call("eth.CreateRawExtRedeem", rr, reply)
 
 	signReply := &oclient.SignRawTxResponse{}
@@ -319,3 +333,278 @@ func redeem() {
 
 	fmt.Println("broadcast result: ", bresult2.OK)
 }
+
+func erc20lock() {
+	tokenAbi, _ := abi.JSON(strings.NewReader(TestTokenABI))
+	bytesData, err := tokenAbi.Pack("transfer", toAdddressLockRedeemERC, valuelockERC20)
+	if err != nil {
+		log.Fatal("unable to pack")
+	}
+
+	nonce, err := client.PendingNonceAt(context.Background(), fromAddress)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	gasPrice, err := client.SuggestGasPrice(context.Background())
+	if err != nil {
+		log.Fatal(err)
+	}
+	gasLimit := uint64(6721974) // in units
+
+	auth := bind.NewKeyedTransactor(UserprivKey)
+	auth.Nonce = big.NewInt(int64(nonce))
+	auth.Value = big.NewInt(0) // in wei
+	auth.GasLimit = gasLimit   // in units
+	auth.GasPrice = gasPrice
+
+	tx := types.NewTransaction(nonce, toAddressTestToken, big.NewInt(0), gasLimit, gasPrice, bytesData)
+
+	chainID, err := client.ChainID(context.Background())
+	if err != nil {
+
+		log.Fatal(err)
+	}
+
+	signedTx, err := types.SignTx(tx, types.NewEIP155Signer(chainID), UserprivKey)
+
+	if err != nil {
+
+		log.Fatal(err)
+	}
+	ts := types.Transactions{signedTx}
+	rawTxBytes := ts.GetRlp(0)
+	txNew := &types.Transaction{}
+	err = rlp.DecodeBytes(rawTxBytes, txNew)
+
+	rpcclient, err := rpc.NewClient("http://localhost:26602")
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	result := &oclient.ListCurrenciesReply{}
+	err = rpcclient.Call("query.ListCurrencies", struct{}{}, result)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	olt, ok := result.Currencies.GetCurrencySet().GetCurrencyByName("OLT")
+	if !ok {
+		fmt.Println(result.Currencies)
+		return
+	}
+	accReply := &oclient.ListAccountsReply{}
+	err = rpcclient.Call("owner.ListAccounts", struct{}{}, accReply)
+	if err != nil {
+		fmt.Println("query account failed", err)
+		return
+	}
+
+	acc := accReply.Accounts[0]
+
+	req := se.OLTERC20LockRequest{
+		RawTx:   rawTxBytes,
+		Address: acc.Address(),
+		Fee:     action.Amount{Currency: olt.Name, Value: *balance.NewAmountFromInt(10000000000)},
+		Gas:     400000,
+	}
+	reply := &se.OLTReply{}
+	err = rpcclient.Call("eth.PrepareOLTERC20Lock", req, reply)
+	if err != nil {
+		fmt.Println("Error in prepare OLTERCLock ", err)
+		return
+	}
+	signReply := &oclient.SignRawTxResponse{}
+	err = rpcclient.Call("owner.SignWithAddress", oclient.SignRawTxRequest{
+		RawTx:   reply.RawTX,
+		Address: acc.Address(),
+	}, signReply)
+	if err != nil {
+		fmt.Println("Error in signing erc lock ", err)
+		return
+	}
+
+	bresult := &oclient.BroadcastReply{}
+	err = rpcclient.Call("broadcast.TxCommit", oclient.BroadcastRequest{
+		RawTx:     reply.RawTX,
+		Signature: signReply.Signature.Signed,
+		PublicKey: signReply.Signature.Signer,
+	}, bresult)
+
+	//fmt.Println(hex.EncodeToString(reply.RawTX))
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	fmt.Println("broadcast result: ", bresult.OK)
+	fmt.Println(bresult.Log)
+}
+
+func erc20Redeem() {
+	lockRedeemERCABI, _ := abi.JSON(strings.NewReader(LockRedeemERCABI))
+	bytesData, err := lockRedeemERCABI.Pack("redeem", valueredeemERC20, toAddressTestToken)
+	if err != nil {
+		log.Fatal("unable to pack")
+	}
+	bytesDataExecuteRedeemd, err := lockRedeemERCABI.Pack("executeredeem", toAddressTestToken)
+	if err != nil {
+		log.Fatal("unable to pack")
+	}
+	redeemAddress := redeemRecipientAddress.Bytes()
+	nonce, err := client.PendingNonceAt(context.Background(), redeemRecipientAddress)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	gasLimit := uint64(6321974) // in units
+
+	gasPrice, err := client.SuggestGasPrice(context.Background())
+	if err != nil {
+
+		log.Fatal(err)
+	}
+
+	auth2 := bind.NewKeyedTransactor(UserprivKeyRedeem)
+	auth2.Nonce = big.NewInt(int64(nonce))
+	auth2.Value = big.NewInt(0) // in wei
+	auth2.GasLimit = gasLimit   // in units
+	auth2.GasPrice = gasPrice
+
+	value := big.NewInt(0)
+	tx2 := types.NewTransaction(nonce, toAdddressLockRedeemERC, value, gasLimit, gasPrice, bytesData)
+	Executetx := types.NewTransaction(nonce+1, toAdddressLockRedeemERC, value, gasLimit, gasPrice, bytesDataExecuteRedeemd)
+	chainID, err := client.ChainID(context.Background())
+	if err != nil {
+
+		log.Fatal(err)
+	}
+
+	signedTx2, err := types.SignTx(tx2, types.NewEIP155Signer(chainID), UserprivKeyRedeem)
+	if err != nil {
+
+		log.Fatal(err)
+	}
+	signedExecuteRedeem, err := types.SignTx(Executetx, types.NewEIP155Signer(chainID), UserprivKeyRedeem)
+	if err != nil {
+
+		log.Fatal(err)
+	}
+
+	ts2 := types.Transactions{signedTx2}
+
+	rawTxBytes2 := ts2.GetRlp(0)
+	txNew2 := &types.Transaction{}
+	err = rlp.DecodeBytes(rawTxBytes2, txNew2)
+
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	_ = client.SendTransaction(context.Background(), signedTx2)
+	rpcclient, err := rpc.NewClient("http://localhost:26602")
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	accReply := &oclient.ListAccountsReply{}
+	err = rpcclient.Call("owner.ListAccounts", struct{}{}, accReply)
+	if err != nil {
+		fmt.Println("query account failed", err)
+		return
+	}
+
+	acc := accReply.Accounts[0]
+
+	result := &oclient.ListCurrenciesReply{}
+	err = rpcclient.Call("query.ListCurrencies", struct{}{}, result)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	olt, _ := result.Currencies.GetCurrencySet().GetCurrencyByName("OLT")
+
+	rr := se.OLTERC20RedeemRequest{
+		acc.Address(),
+		redeemAddress,
+		rawTxBytes2,
+		action.Amount{Currency: olt.Name, Value: *balance.NewAmountFromInt(10000000000)},
+		400000,
+	}
+
+	reply := &se.OLTReply{}
+	err = rpcclient.Call("eth.CreateRawExtERC20Redeem", rr, reply)
+
+	signReply := &oclient.SignRawTxResponse{}
+	err = rpcclient.Call("owner.SignWithAddress", oclient.SignRawTxRequest{
+		RawTx:   reply.RawTX,
+		Address: acc.Address(),
+	}, signReply)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	bresult := &oclient.BroadcastReply{}
+	err = rpcclient.Call("broadcast.TxCommit", oclient.BroadcastRequest{
+		RawTx:     reply.RawTX,
+		Signature: signReply.Signature.Signed,
+		PublicKey: signReply.Signature.Signer,
+	}, bresult)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	fmt.Println("broadcast result: ", bresult.OK)
+	time.Sleep(30 * time.Second)
+	err = client.SendTransaction(context.Background(), signedExecuteRedeem)
+	if err == nil {
+		fmt.Println("Executed Redeem  for user : ", redeemRecipientAddress)
+	}
+
+}
+
+//func mapkey(m map[string]string, value string) (key string, ok bool) {
+//	for k, v := range m {
+//		if v == value {
+//			key = k
+//			ok = true
+//			return
+//		}
+//	}
+//	return
+//}
+
+//methodName := "transfer"
+//method,exists:=tokenAbi.Methods[methodName]
+//if !exists {
+//	fmt.Println("Method '%v' not found in the ABI", methodName)
+//	return
+//}
+//_,ok := mapkey(contract.ERC20BasicFuncSigs,method.Sig())
+//if !ok {
+//	log.Fatal("Method Signature does not exist")
+//}
+//
+//ss := strings.Split(hex.EncodeToString(rawTxBytes), "a9059cbb")
+
+//tokenAmount,err := hex.DecodeString(ss[1][64:128])
+//if err != nil {
+//	return nil,err
+//}
+//receiver := ss[1][24:64]
+//fmt.Println(common.HexToAddress(receiver))
+//amt := big.NewInt(0).SetBytes(tokenAmount)
+
+//transactionHash := client.SendTransaction(context.Background(), signedTx)
+
+//
+//if err != nil {
+//	fmt.Println(err)
+//	return
+//}
+//

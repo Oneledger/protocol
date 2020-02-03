@@ -166,7 +166,7 @@ func DefaultServerConfig() *Server {
 		Mempool:        DefaultMempoolConfig(),
 		Consensus:      DefaultConsensusConfig(),
 		ChainDriver:    DefaultChainDriverConfig(),
-		EthChainDriver: DefaultEthConfig(),
+		EthChainDriver: DefautEthConfigRinkeby(),
 	}
 }
 
@@ -437,16 +437,22 @@ func DefaultChainDriverConfig() *ChainDriverConfig {
 
 func DefaultEthConfigRoopsten() *EthereumChainDriverConfig {
 	return &EthereumChainDriverConfig{
-		Connection: "https://ropsten.infura.io/v3/{api_key}}",
+		Connection: "https://ropsten.infura.io/v3/de5e96cbb6284d5ea1341bf6cb7fa401",
 	}
 }
 func DefautEthConfigRinkeby() *EthereumChainDriverConfig {
-	return &EthereumChainDriverConfig{Connection: "https://rinkeby.infura.io/v3/{api_key}}"}
+	return &EthereumChainDriverConfig{Connection: "https://rinkeby.infura.io/v3/de5e96cbb6284d5ea1341bf6cb7fa401"}
 }
 
-func DefaultEthConfig() *EthereumChainDriverConfig {
+func DefaultEthConfigCloud() *EthereumChainDriverConfig {
 	return &EthereumChainDriverConfig{
-		Connection: "http://localhost:7545",
+		Connection: "http://104.197.84.90:8545",
+	}
+}
+
+func DefaultEthConfigLocal() *EthereumChainDriverConfig {
+	return &EthereumChainDriverConfig{
+		Connection: "HTTP://127.0.0.1:7545",
 	}
 }
 

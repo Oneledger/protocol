@@ -63,8 +63,15 @@ type OLTLockRequest struct {
 	Gas     int64         `json:"gas"`
 }
 
-type OLTLockReply struct {
-	RawTX []byte `json:"UnsignedOLTLock"`
+type OLTERC20LockRequest struct {
+	RawTx   []byte `json:"raw_tx"`
+	Address keys.Address
+	Fee     action.Amount `json:"fee"`
+	Gas     int64         `json:"gas"`
+}
+
+type OLTReply struct {
+	RawTX []byte `json:"raw_tx"`
 }
 
 type RedeemRequest struct {
@@ -75,9 +82,14 @@ type RedeemRequest struct {
 	Gas            int64          `json:"gas"`
 }
 
-type RedeemReply struct {
-	OK bool `json:"ok"`
+type OLTERC20RedeemRequest struct {
+	UserOLTaddress action.Address `json:"user_olt_address"`
+	UserETHaddress action.Address `json:"user_eth_address"`
+	ETHTxn         []byte         `json:"eth_txn"`
+	Fee            action.Amount  `json:"fee"`
+	Gas            int64          `json:"gas"`
 }
+
 type ETHLockRequest struct {
 	UserAddress common.Address `json:"user_eth_address"`
 	Amount      *big.Int       `json:"amount"`

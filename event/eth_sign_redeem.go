@@ -1,7 +1,7 @@
 package event
 
 import (
-	"fmt"
+	"math/big"
 	"strconv"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -53,11 +53,34 @@ func (j *JobETHSignRedeem) DoMyJob(ctx interface{}) {
 		return
 	}
 	ethconfig := ethCtx.cfg.EthChainDriver
+	ethoptions := trackerStore.GetOption()
+	cd := new(ethereum.ETHChainDriver)
+	redeemAmount := new(big.Int)
+	if tracker.Type == trackerlib.ProcessTypeRedeem {
+		cd, err = ethereum.NewChainDriver(ethconfig, ethCtx.Logger, ethoptions.ContractAddress, ethoptions.ContractABI, ethereum.ETH)
+		if err != nil {
+			ethCtx.Logger.Error("err trying to get ChainDriver : ", j.GetJobID(), err, tracker.Type)
+			return
+		}
+		reqParams, err := cd.ParseRedeem(tracker.SignedETHTx, ethoptions.ContractABI)
+		if err != nil {
+			ethCtx.Logger.Error("Error in Parsing amount from rawTx (Ether Redeem)", j.GetJobID(), err)
+			return
+		}
+		redeemAmount = reqParams.Amount
 
-	cd, err := ethereum.NewChainDriver(ethconfig, ethCtx.Logger, trackerStore.GetOption())
-	if err != nil {
-		ethCtx.Logger.Error("err trying to get ChainDriver : ", j.GetJobID(), err)
-		return
+	} else if tracker.Type == trackerlib.ProcessTypeRedeemERC {
+		cd, err = ethereum.NewChainDriver(ethconfig, ethCtx.Logger, ethoptions.ERCContractAddress, ethoptions.ERCContractABI, ethereum.ERC)
+		if err != nil {
+			ethCtx.Logger.Error("err trying to get ChainDriver : ", j.GetJobID(), err, tracker.Type)
+			return
+		}
+		reqParams, err := cd.ParseERC20Redeem(tracker.SignedETHTx, ethoptions.ERCContractABI)
+		if err != nil {
+			ethCtx.Logger.Error("Error in Parsing amount from rawTx (ERC20 Redeem)", j.GetJobID(), err)
+			return
+		}
+		redeemAmount = reqParams.Amount
 	}
 
 	rawTx := tracker.SignedETHTx
@@ -84,14 +107,7 @@ func (j *JobETHSignRedeem) DoMyJob(ctx interface{}) {
 		return
 	}
 
-	//check if tx already broadcasted, if yest, job.Status = jobs.Completed
-	req, err := cd.ParseRedeem(rawTx)
-	if err != nil {
-		ethCtx.Logger.Error("Error in Parsing amount from rawTx ", j.GetJobID(), err)
-		return
-	}
-
-	redeemAmount := req.Amount
+	//check if tx already broadcasted, if yes, job.Status = jobs.Completed
 
 	redeemAddr := common.HexToAddress(tracker.To.String())
 	tx, err = cd.SignRedeem(addr, redeemAmount, redeemAddr)
@@ -116,7 +132,6 @@ func (j *JobETHSignRedeem) DoMyJob(ctx interface{}) {
 	}
 
 	ethCtx.Logger.Info("Redeem Transaction broadcasted to network : ", txHash)
-	fmt.Println("Broadcast job completed for ", ethCtx.ValidatorAddress, "Job ID : ", j.GetJobID())
 
 	// j.Status = jobs.Completed
 }

@@ -1,8 +1,8 @@
+//Package for transactions related to Etheruem
 package eth
 
 import (
 	"encoding/json"
-	"fmt"
 	"strconv"
 
 	"github.com/pkg/errors"
@@ -125,6 +125,7 @@ func runCheckFinality(ctx *action.Context, tx action.RawTx) (bool, action.Respon
 	}
 
 	if tracker.Finalized() {
+		ctx.Logger.Info("Finalizing Tracker [ Minting / Burning ]  | Process Type : ", trackerlib.GetProcessTypeString(tracker.Type))
 		if tracker.Type == trackerlib.ProcessTypeLock {
 			err := mintTokens(ctx, tracker, *f)
 			if err != nil {
@@ -135,9 +136,19 @@ func runCheckFinality(ctx *action.Context, tx action.RawTx) (bool, action.Respon
 			if err != nil {
 				return false, action.Response{Log: errors.Wrap(err, "unable to burn tokens").Error()}
 			}
+		} else if tracker.Type == trackerlib.ProcessTypeLockERC {
+			err := mintERC20tokens(ctx, tracker, *f)
+			if err != nil {
+				return false, action.Response{Log: errors.Wrap(err, "unable to mint tokens").Error()}
+			}
+		} else if tracker.Type == trackerlib.ProcessTypeRedeemERC {
+			err := burnERC20Tokens(ctx, tracker, *f)
+			if err != nil {
+				return false, action.Response{Log: errors.Wrap(err, "unable to burn tokens").Error()}
+			}
 		}
 
-		return true, action.Response{Log: "Minting successful"}
+		return true, action.Response{Log: "Operation successful"}
 	}
 
 	err = ctx.ETHTrackers.Set(tracker)
@@ -145,7 +156,7 @@ func runCheckFinality(ctx *action.Context, tx action.RawTx) (bool, action.Respon
 		ctx.Logger.Info("Unable to save the tracker", err)
 		return false, action.Response{Log: errors.Wrap(err, "unable to save the tracker").Error()}
 	}
-	ctx.Logger.Info("Vote added | Validator : ", f.ValidatorAddress, " | Process Type : ", tracker)
+	ctx.Logger.Info("Vote added |  Validator : ", f.ValidatorAddress, " | Process Type : ", trackerlib.GetProcessTypeString(tracker.Type))
 	yes, no := tracker.GetVotes()
 	return true, action.Response{Log: "vote success, not ready to mint: " + strconv.Itoa(yes) + strconv.Itoa(no)}
 }
@@ -156,7 +167,7 @@ func (reportFinalityMintTx) ProcessFee(ctx *action.Context, signedTx action.Sign
 	// check the used gas for the tx
 	final := ctx.Balances.State.ConsumedGas()
 	used := int64(final - start)
-	fmt.Println("gas used:", used)
+	ctx.Logger.Info("Gas Use : ", used)
 	return true, action.Response{}
 }
 
@@ -199,5 +210,73 @@ func burnTokens(ctx *action.Context, tracker *trackerlib.Tracker, oltTx ReportFi
 		return err
 	}
 
+	return nil
+}
+
+func burnERC20Tokens(ctx *action.Context, tracker *trackerlib.Tracker, oltTx ReportFinality) error {
+	ethTx, err := ethereum.DecodeTransaction(tracker.SignedETHTx)
+	if err != nil {
+		return err
+	}
+
+	ethOptions := ctx.ETHTrackers.GetOption()
+	token, err := ethereum.GetToken(ethOptions.TokenList, *ethTx.To())
+	if err != nil {
+		return err
+	}
+
+	ctx.Logger.Info("Burn complete for token : ", token.TokName)
+	tracker.State = trackerlib.Released
+
+	err = ctx.ETHTrackers.Set(tracker)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func mintERC20tokens(ctx *action.Context, tracker *trackerlib.Tracker, oltTx ReportFinality) error {
+
+	ethTx, err := ethereum.DecodeTransaction(tracker.SignedETHTx)
+	if err != nil {
+		return err
+	}
+
+	ethOptions := ctx.ETHTrackers.GetOption()
+	token, err := ethereum.GetToken(ethOptions.TokenList, *ethTx.To())
+	if err != nil {
+		return err
+	}
+
+	ctx.Logger.Info("Minting Tokens of type : ", token.TokName)
+	curr, ok := ctx.Currencies.GetCurrencyByName(token.TokName)
+	if !ok {
+		return errors.New("Currency not allowed ")
+	}
+
+	erc20Params, err := ethereum.ParseErc20Lock(ethOptions.TokenList, tracker.SignedETHTx)
+	if err != nil {
+		return err
+	}
+
+	otokenCoin := curr.NewCoinFromAmount(*balance.NewAmountFromBigInt(erc20Params.TokenAmount))
+	err = ctx.Balances.AddToAddress(oltTx.Locker, otokenCoin)
+	if err != nil {
+		ctx.Logger.Error(err)
+		return errors.Errorf("Unable to mint token for : %s", token.TokName)
+	}
+
+	tokenSupply := keys.Address(lockBalanceAddress)
+	err = ctx.Balances.AddToAddress(tokenSupply, otokenCoin)
+	if err != nil {
+		return errors.Errorf("Unable to update totalSupply for token : %s", token.TokName)
+	}
+
+	tracker.State = trackerlib.Released
+	err = ctx.ETHTrackers.Set(tracker)
+	if err != nil {
+		return err
+	}
 	return nil
 }

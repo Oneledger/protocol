@@ -7,11 +7,13 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"fmt"
+	"io/ioutil"
 	"math/big"
 	"net/url"
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/btcsuite/btcd/btcec"
@@ -56,7 +58,9 @@ type testnetConfig struct {
 	totalFunds          int64
 	initialTokenHolders []string
 
-	deployETHContract string
+	ethUrl               string
+	deploySmartcontracts bool
+	cloud                bool
 }
 
 var testnetArgs = &testnetConfig{}
@@ -66,6 +70,8 @@ var testnetCmd = &cobra.Command{
 	Short: "Initializes files for a devnet",
 	RunE:  runDevnet,
 }
+
+
 
 func init() {
 	initCmd.AddCommand(testnetCmd)
@@ -80,7 +86,9 @@ func init() {
 	// 1 billion by default
 	testnetCmd.Flags().Int64Var(&testnetArgs.totalFunds, "total_funds", 1000000000, "The total amount of tokens in circulation")
 	testnetCmd.Flags().StringSliceVar(&testnetArgs.initialTokenHolders, "initial_token_holders", []string{}, "Initial list of addresses that hold an equal share of Total funds")
-	testnetCmd.Flags().StringVar(&testnetArgs.deployETHContract, "deploy_eth_contract", "", "deploy the ethereum Contract")
+	testnetCmd.Flags().StringVar(&testnetArgs.ethUrl, "eth_rpc", "", "URL for ethereum network")
+	testnetCmd.Flags().BoolVar(&testnetArgs.deploySmartcontracts, "deploy_smart_contracts", false, "deploy eth contracts")
+	testnetCmd.Flags().BoolVar(&testnetArgs.cloud, "cloud_deploy", false, "set true for deploying on cloud")
 
 }
 
@@ -125,6 +133,12 @@ func portGenerator(startingPort int) func() int {
 		count++
 		return port
 	}
+}
+
+func setEnvVariables() {
+	os.Setenv("API_KEY","de5e96cbb6284d5ea1341bf6cb7fa401")
+	os.Setenv("ETHPKPATH", "/tmp/pkdata")
+	os.Setenv("WALLETADDR", "/tmp/walletAddr")
 }
 
 func generateAddress(port int, flags ...bool) string {
@@ -192,13 +206,29 @@ func nodeNamesWithZeros(prefix string, total int) []string {
 	return names
 }
 
+func getEthUrl(ethUrlArg string)(string,error) {
+
+	u, err := url.Parse(ethUrlArg)
+	if err != nil {
+		return "",err
+	}
+	if strings.Contains(u.Host,"infura") && !strings.Contains(u.Path,os.Getenv("API_KEY")){
+		u.Path = u.Path + "/"+ os.Getenv("API_KEY")
+		return u.String(),nil
+	}
+	return ethUrlArg,nil
+}
+
 func runDevnet(_ *cobra.Command, _ []string) error {
+
 	ctx, err := newDevnetContext(testnetArgs)
 	if err != nil {
 		return errors.Wrap(err, "runDevnet failed")
 	}
 	args := testnetArgs
-
+	if ! args.cloud {
+		setEnvVariables()
+	}
 	totalNodes := args.numValidators + args.numNonValidators
 
 	if totalNodes > len(ctx.names) {
@@ -215,7 +245,10 @@ func runDevnet(_ *cobra.Command, _ []string) error {
 	validatorList := make([]consensus.GenesisValidator, args.numValidators)
 	nodeList := make([]node, totalNodes)
 	persistentPeers := make([]string, totalNodes)
-
+	url,err := getEthUrl(args.ethUrl)
+	if err != nil {
+		return err
+	}
 	// Create the GenesisValidator list and its key files priv_validator_key.json and node_key.json
 	for i := 0; i < totalNodes; i++ {
 		isValidator := i < args.numValidators
@@ -227,6 +260,8 @@ func runDevnet(_ *cobra.Command, _ []string) error {
 
 		// Generate new configuration file
 		cfg := config.DefaultServerConfig()
+		ethConnection := config.EthereumChainDriverConfig{Connection:url}
+		cfg.EthChainDriver = &ethConnection
 		cfg.Node.NodeName = nodeName
 		cfg.Node.DB = args.dbType
 		if args.createEmptyBlock {
@@ -314,13 +349,15 @@ func runDevnet(_ *cobra.Command, _ []string) error {
 	}
 
 	cdo := &ethchain.ChainDriverOption{}
-	fmt.Println(args.deployETHContract)
-	if len(args.deployETHContract) > 0 {
-		cdo, err = deployethcdcontract(args.deployETHContract, nodeList)
+	fmt.Println("Deployment Network :", url)
+	fmt.Println("Deploy Smart contracts : ",args.deploySmartcontracts)
+	if args.deploySmartcontracts {
+	if len(args.ethUrl) > 0 {
+		cdo, err = deployethcdcontract(url, nodeList)
 		if err != nil {
 			return errors.Wrap(err, "failed to deploy the initial eth contract")
 		}
-	}
+	}}
 
 	perblock, _ := big.NewInt(0).SetString("100000000000000", 10)
 	baseDomainPrice, _ := big.NewInt(0).SetString("1000000000000000000000", 10)
@@ -397,7 +434,8 @@ func initialState(args *testnetConfig, nodeList []node, option ethchain.ChainDri
 	vt := balance.Currency{Id: 1, Name: "VT", Chain: chain.ONELEDGER, Unit: "vt"}
 	obtc := balance.Currency{Id: 2, Name: "BTC", Chain: chain.BITCOIN, Decimal: 8, Unit: "satoshi"}
 	oeth := balance.Currency{Id: 3, Name: "ETH", Chain: chain.ETHEREUM, Decimal: 18, Unit: "wei"}
-	currencies := []balance.Currency{olt, vt, obtc, oeth}
+	ottc := balance.Currency{Id: 4, Name: "TTC", Chain: chain.TESTTOKEN, Decimal: 18, Unit: "testUnits"} //Tokens count by number ,Unit 1
+	currencies := []balance.Currency{olt, vt, obtc, oeth, ottc}
 	feeOpt := fees.FeeOption{
 		FeeCurrency:   olt,
 		MinFeeDecimal: 9,
@@ -502,7 +540,25 @@ func initialState(args *testnetConfig, nodeList []node, option ethchain.ChainDri
 
 func deployethcdcontract(conn string, nodeList []node) (*ethchain.ChainDriverOption, error) {
 
-	privatekey, err := crypto.HexToECDSA("6c24a44424c8182c1e3e995ad3ccfb2797e3f7ca845b99bea8dead7fc9dccd09")
+
+	f, err := os.Open(os.Getenv("ETHPKPATH"))
+	if err != nil {
+		return nil, errors.Wrap(err, "Error Reading File")
+	}
+	walletdat, err := ioutil.ReadFile(os.Getenv("WALLETADDR"))
+	if err != nil {
+		return nil, errors.Wrap(err, "Error Reading File Wallet Address")
+	}
+	walletAddr := strings.Split(string(walletdat),",")
+	b1 := make([]byte, 64)
+	pk, err := f.Read(b1)
+	if err != nil {
+		return nil, errors.Wrap(err, "Error reading private key")
+	}
+	//fmt.Println("Private Key used to deploy : ", string(b1[:pk]))
+	pkStr := string(b1[:pk])
+	privatekey, err := crypto.HexToECDSA(pkStr)
+
 	if err != nil {
 		return nil, err
 	}
@@ -531,6 +587,18 @@ func deployethcdcontract(conn string, nodeList []node) (*ethchain.ChainDriverOpt
 	auth.GasPrice = gasPrice
 
 	input := make([]common.Address, 0, 10)
+	//walletAddr := []string{"0xCd7bc1aD1F4b5f7C2e2bbC605319C6f2b8937aa5","0x19854aFe894f4E165E9F49AA695414383b345710","0xAE16D77D742637f5Dc377A92E7fFeD8138d0dC1d"}
+
+	tokenSupplyTestToken := new(big.Int)
+	walletTransferAmount := new(big.Int)
+	tokenSupplyTestToken, ok = tokenSupplyTestToken.SetString("1000000000000000000000", 10)
+	if !ok {
+		return nil, errors.New("Unabe to create total supplu for token")
+	}
+	walletTransferAmount, ok = tokenSupplyTestToken.SetString("1000000000000000000", 10)
+	if !ok {
+		return nil, errors.New("Unable to create wallet transfer amount")
+	}
 	for _, node := range nodeList {
 		privkey := keys.ETHSECP256K1TOECDSA(node.esdcaPk.Data)
 		nonce, err := cli.PendingNonceAt(context.Background(), fromAddress)
@@ -550,7 +618,7 @@ func deployethcdcontract(conn string, nodeList []node) (*ethchain.ChainDriverOpt
 		}
 
 		input = append(input, addr)
-		tx := types.NewTransaction(nonce, addr, big.NewInt(100000000000000000), auth.GasLimit, auth.GasPrice, (nil))
+		tx := types.NewTransaction(nonce, addr, big.NewInt(300000000000000000), auth.GasLimit, auth.GasPrice, (nil))
 		chainId, _ := cli.ChainID(context.Background())
 		signedTx, err := types.SignTx(tx, types.NewEIP155Signer(chainId), privatekey)
 		if err != nil {
@@ -562,6 +630,21 @@ func deployethcdcontract(conn string, nodeList []node) (*ethchain.ChainDriverOpt
 		}
 		time.Sleep(3 * time.Second)
 	}
+	for _,address := range walletAddr {
+		fmt.Println("Ether Transferred to address : ", address )
+		nonce, err := cli.PendingNonceAt(context.Background(), fromAddress)
+		if err != nil {
+			return nil, err
+		}
+		tx := types.NewTransaction(nonce, common.HexToAddress(address),walletTransferAmount, auth.GasLimit, auth.GasPrice, (nil))
+		chainId, _ := cli.ChainID(context.Background())
+		signedTx, err := types.SignTx(tx, types.NewEIP155Signer(chainId), privatekey)
+		err = cli.SendTransaction(context.Background(), signedTx)
+		if err != nil {
+			return nil, errors.Wrap(err, "sending ether to wallet address")
+		}
+		time.Sleep(3 * time.Second)
+	}
 
 	nonce, err := cli.PendingNonceAt(context.Background(), fromAddress)
 	if err != nil {
@@ -569,15 +652,39 @@ func deployethcdcontract(conn string, nodeList []node) (*ethchain.ChainDriverOpt
 	}
 
 	auth.Nonce = big.NewInt(int64(nonce))
+
 	address, _, _, err := ethcontracts.DeployLockRedeem(auth, cli, input)
 	if err != nil {
-		return nil, errors.Wrap(err, "deploy")
+		return nil, errors.Wrap(err, "Deployement Eth LockRedeem")
 	}
-	fmt.Println("Contract Address : ", address.Hex())
-
+	auth.Nonce = big.NewInt(int64(nonce + 1))
+	tokenAddress, _, _, err := ethcontracts.DeployERC20Basic(auth, cli, tokenSupplyTestToken)
+	if err != nil {
+		return nil, errors.Wrap(err, "Deployement Test Token")
+	}
+	auth.Nonce = big.NewInt(int64(nonce + 2))
+	ercAddress, _, _, err := ethcontracts.DeployLockRedeemERC(auth, cli, input)
+	if err != nil {
+		return nil, errors.Wrap(err, "Deployement ERC LockRedeem")
+	}
+	if err != nil {
+		return nil, errors.Wrap(err, "Deployement Eth LockRedeem")
+	}
+	fmt.Printf("LockRedeemContractAddr = \"%v\"\n", address.Hex())
+	fmt.Printf("TestTokenContractAddr = \"%v\"\n", tokenAddress.Hex())
+	fmt.Printf("LockRedeemERC20ContractAddr = \"%v\"\n", ercAddress.Hex())
+	//tokenAbiMap := make(map[*common.Address]string)
+	//tokenAbiMap[&tokenAddress] = contract.ERC20BasicABI
 	return &ethchain.ChainDriverOption{
-		ContractABI:     contract.LockRedeemABI,
-		ContractAddress: address,
+		ContractABI:    contract.LockRedeemABI,
+		ERCContractABI: contract.LockRedeemERCABI,
+		TokenList: []ethchain.ERC20Token{{
+			TokName: "TTC",
+			TokAddr: tokenAddress,
+			TokAbi:  contract.ERC20BasicABI,
+		}},
+		ContractAddress:    address,
+		ERCContractAddress: ercAddress,
 	}, nil
 
 }
