@@ -145,9 +145,9 @@ func runLock(ctx *action.Context, lock *Lock) (bool, action.Response) {
 			Log: "decode eth txn error" + err.Error(),
 		}
 	}
-	fmt.Println("ETH options : " , ctx.ETHTrackers.GetOption())
-	ctx.Logger.Info("ETH OPTIONS ABI :" ,ctx.ETHTrackers.GetOption().ContractABI)
-	ctx.Logger.Info("ETH OPTIONS ADDRESS :" ,ctx.ETHTrackers.GetOption().ContractAddress)
+	//fmt.Println("ETH options : " , ctx.ETHTrackers.GetOption())
+	//ctx.Logger.Info("ETH OPTIONS ABI :" ,ctx.ETHTrackers.GetOption().ContractABI)
+	//ctx.Logger.Info("ETH OPTIONS ADDRESS :" ,ctx.ETHTrackers.GetOption().ContractAddress)
 
 	ok, err := ethchaindriver.VerifyLock(ethTx, ctx.ETHTrackers.GetOption().ContractABI)
 	if err != nil {

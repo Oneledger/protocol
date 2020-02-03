@@ -227,7 +227,6 @@ func runDevnet(_ *cobra.Command, _ []string) error {
 	}
 	args := testnetArgs
 	if ! args.cloud {
-		fmt.Println("Deploying Local ,Setting Env Variables")
 		setEnvVariables()
 	}
 	totalNodes := args.numValidators + args.numNonValidators
@@ -619,7 +618,7 @@ func deployethcdcontract(conn string, nodeList []node) (*ethchain.ChainDriverOpt
 		}
 
 		input = append(input, addr)
-		tx := types.NewTransaction(nonce, addr, big.NewInt(1000000000000000000), auth.GasLimit, auth.GasPrice, (nil))
+		tx := types.NewTransaction(nonce, addr, big.NewInt(300000000000000000), auth.GasLimit, auth.GasPrice, (nil))
 		chainId, _ := cli.ChainID(context.Background())
 		signedTx, err := types.SignTx(tx, types.NewEIP155Signer(chainId), privatekey)
 		if err != nil {
