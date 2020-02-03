@@ -145,6 +145,10 @@ func runLock(ctx *action.Context, lock *Lock) (bool, action.Response) {
 			Log: "decode eth txn error" + err.Error(),
 		}
 	}
+	//fmt.Println("ETH options : " , ctx.ETHTrackers.GetOption())
+	//ctx.Logger.Info("ETH OPTIONS ABI :" ,ctx.ETHTrackers.GetOption().ContractABI)
+	//ctx.Logger.Info("ETH OPTIONS ADDRESS :" ,ctx.ETHTrackers.GetOption().ContractAddress)
+
 	ok, err := ethchaindriver.VerifyLock(ethTx, ctx.ETHTrackers.GetOption().ContractABI)
 	if err != nil {
 		ctx.Logger.Error("Unable to Verify Data for Ethereum Lock")
@@ -162,7 +166,7 @@ func runLock(ctx *action.Context, lock *Lock) (bool, action.Response) {
 
 		ctx.Logger.Error("to field does not match contract address")
 		return false, action.Response{
-			Log: "Invalid transaction ,To field of Transaction does not match Contract address",
+			Log: ctx.ETHTrackers.GetOption().ContractAddress.Hex() ,
 		}
 	}
 
