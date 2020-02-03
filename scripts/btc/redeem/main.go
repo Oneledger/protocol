@@ -12,7 +12,7 @@ import (
 func main() {
 
 	addrs := addressess()
-	txn, tname := prepareRedeem(addrs[0], "mpkTNzXNdBjPqYCfok7JGaF8Byc4bpsJxE", 300000)
+	txn, tname := prepareRedeem(addrs[0], "mkW45toPFaa1uyNGV4TXEWWCxyuDC7BbKG", 300000)
 	fmt.Println("Tracker for lock: ", tname)
 
 	// os.Exit(1)
@@ -31,7 +31,7 @@ func prepareRedeem(address, btcAddress string, amount int64) ([]byte, string) {
 		"address":     address,
 		"btc_address": btcAddress,
 		"amount":      amount,
-		"fees_btc":    50000,
+		"fees_btc":    500,
 		"gasprice": map[string]interface{}{
 			"currency": "OLT",
 			"value":    "1000000000",
