@@ -7,6 +7,7 @@ package bitcoin
 import (
 	"bytes"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"sort"
 
@@ -184,6 +185,9 @@ func CreateMultiSigAddress(m int, publicKeys []*btcutil.AddressPubKey, randomByt
 
 	script, address []byte, btcAddressList []string, err error) {
 
+	if len(publicKeys) >= 20 {
+		err = errors.New("signers should be less than 20")
+	}
 	// ideally m should be
 	//	m = len(publicKeys) * 2 /3 ) + 1
 	btcAddressList = make([]string, len(publicKeys))

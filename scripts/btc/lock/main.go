@@ -12,9 +12,9 @@ import (
 )
 
 func main() {
-	sourceBTCHash := "0c2aea49ef40e6c3a95a81b5f09a42ad5a3c129444f4edf1722134197fc53037"
-	sourceBTCIndex := 1
-	wif := "cPwDvkefgLhtWiMJYapEm4MuKhxAiRDjNFZSUHkenChAZVooaVr5"
+	sourceBTCHash := "49182752c27922a454c3a128377b68c636763b049307c0789168791bd71f05c2"
+	sourceBTCIndex := 0
+	wif := "cNVonQDXYShV3PJLHbz6bEs4qkKm6smRUXuYtD2uMseiUubBB25j"
 
 	txn, tname := prepareLock(sourceBTCHash, sourceBTCIndex)
 	fmt.Println("Received response of PrepareLock")
@@ -48,7 +48,7 @@ func prepareLock(txHash string, index int) ([]byte, string) {
 	params := map[string]interface{}{
 		"hash":     txHash,
 		"index":    index,
-		"fees_btc": 50000,
+		"fees_btc": 10000,
 	}
 	resp, err := makeRPCcall("btc.PrepareLock", params)
 	if err != nil {
@@ -98,7 +98,7 @@ func addSignature(txn, sign, addr, trackerName string) []byte {
 			"currency": "OLT",
 			"value":    "1000000000",
 		},
-		"gas": 8000000,
+		"gas": 800000,
 	}
 	resp, err := makeRPCcall("btc.AddUserSignatureAndProcessLock", params)
 	if err != nil {

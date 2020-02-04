@@ -22,13 +22,13 @@ var Client *Version   // Version of the client
 // This should be the only copy of the version numbers, anywhere in the code.
 func init() {
 	// The protocol
-	Protocol = NewVersion(0, 1, 3, "testnet", "Protocol")
+	Protocol = NewVersion(0, 1, 4, "testnet", "Protocol")
 
 	// The backend server (node) code
-	Fullnode = NewVersion(0, 12, 0, "", "Fullnode")
+	Fullnode = NewVersion(0, 13, 0, "", "Fullnode")
 
 	// Any of the clients used to connect
-	Client = NewVersion(0, 12, 0, "", "Client")
+	Client = NewVersion(0, 13, 0, "", "Client")
 }
 
 func NewVersion(major, minor, patch int, release, meta string) *Version {

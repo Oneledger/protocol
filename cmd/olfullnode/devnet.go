@@ -60,6 +60,7 @@ type testnetConfig struct {
 
 	ethUrl               string
 	deploySmartcontracts bool
+	cloud                bool
 }
 
 var testnetArgs = &testnetConfig{}
@@ -85,8 +86,9 @@ func init() {
 	// 1 billion by default
 	testnetCmd.Flags().Int64Var(&testnetArgs.totalFunds, "total_funds", 1000000000, "The total amount of tokens in circulation")
 	testnetCmd.Flags().StringSliceVar(&testnetArgs.initialTokenHolders, "initial_token_holders", []string{}, "Initial list of addresses that hold an equal share of Total funds")
-	testnetCmd.Flags().StringVar(&testnetArgs.ethUrl, "deploy_eth_contract", "", "URL for ethereum network")
+	testnetCmd.Flags().StringVar(&testnetArgs.ethUrl, "eth_rpc", "", "URL for ethereum network")
 	testnetCmd.Flags().BoolVar(&testnetArgs.deploySmartcontracts, "deploy_smart_contracts", false, "deploy eth contracts")
+	testnetCmd.Flags().BoolVar(&testnetArgs.cloud, "cloud_deploy", false, "set true for deploying on cloud")
 
 }
 
@@ -219,12 +221,15 @@ func getEthUrl(ethUrlArg string)(string,error) {
 
 func runDevnet(_ *cobra.Command, _ []string) error {
 	setEnvVariables()
+
 	ctx, err := newDevnetContext(testnetArgs)
 	if err != nil {
 		return errors.Wrap(err, "runDevnet failed")
 	}
 	args := testnetArgs
-
+	if ! args.cloud {
+		setEnvVariables()
+	}
 	totalNodes := args.numValidators + args.numNonValidators
 
 	if totalNodes > len(ctx.names) {
@@ -554,6 +559,7 @@ func deployethcdcontract(conn string, nodeList []node) (*ethchain.ChainDriverOpt
 	//fmt.Println("Private Key used to deploy : ", string(b1[:pk]))
 	pkStr := string(b1[:pk])
 	privatekey, err := crypto.HexToECDSA(pkStr)
+
 	if err != nil {
 		return nil, err
 	}
@@ -613,7 +619,7 @@ func deployethcdcontract(conn string, nodeList []node) (*ethchain.ChainDriverOpt
 		}
 
 		input = append(input, addr)
-		tx := types.NewTransaction(nonce, addr, big.NewInt(1000000000000000000), auth.GasLimit, auth.GasPrice, (nil))
+		tx := types.NewTransaction(nonce, addr, big.NewInt(300000000000000000), auth.GasLimit, auth.GasPrice, (nil))
 		chainId, _ := cli.ChainID(context.Background())
 		signedTx, err := types.SignTx(tx, types.NewEIP155Signer(chainId), privatekey)
 		if err != nil {
