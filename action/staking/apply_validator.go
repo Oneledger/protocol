@@ -74,7 +74,7 @@ func (a applyTx) Validate(ctx *action.Context, tx action.SignedTx) (bool, error)
 	}
 
 	coin := apply.Stake.ToCoin(ctx.Currencies)
-	if coin.LessThanCoin(coin.Currency.NewCoinFromInt(0)) {
+	if coin.LessThanEqualCoin(coin.Currency.NewCoinFromInt(0)) {
 		return false, action.ErrInvalidAmount
 	}
 

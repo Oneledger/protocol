@@ -5,8 +5,11 @@ echo
 rm -rf $OLDATA/devnet/*
 
 olfullnode init devnet --dir $OLDATA/devnet --nonvalidators 1 \
---deploy_eth_contract https://rinkeby.infura.io/v3 \
-#--deploy_smart_contracts true \
+--eth_rpc  HTTP://127.0.0.1:7545 \
+#--deploy_smart_contracts \
+#--cloud_deploy \
+
 #--deploy_eth_contract HTTP://127.0.0.1:7545 \
+
   # --empty_blocks
 
