@@ -11,6 +11,7 @@ contract LockRedeem {
     uint256 constant DEFAULT_VALIDATOR_POWER = 50;
     uint constant MIN_WITNESSES = 0;
     uint256 LOCK_PERIOD = 28800;
+    uint ACTIVE = false;
 
 
 
@@ -65,8 +66,12 @@ contract LockRedeem {
     );
 
 
-    modifier contractActive() {
-        require(activeWitness >= totalWitness);
+    modifier isActive() {
+        require(ACTIVE);
+        _;
+    }
+    modifier isInactive() {
+        require(!ACTIVE);
         _;
     }
 
@@ -86,8 +91,12 @@ contract LockRedeem {
         (bool success, ) = newSmartContractAddress.call.value(transfer_amount)("");
         require(success, "Transfer failed.");
         if (activeWitness < (totalWitness * 1 / 3) + 1){
+            ACTIVE = false ;
+        }
+        if (activeWitness < (totalWitness * 2 / 3) + 1){
 
         }
+
     }
 
 
@@ -95,15 +104,15 @@ contract LockRedeem {
         return witnesses[addr] > 0;
     }
     // function called by user
-    function lock() payable public contractActive {
+    function lock() payable public isActive {
         require(msg.value >= 0, "Must pay a balance more than 0");
         emit Lock(msg.sender,msg.value);
     }
-    function isredeemAvailable (address recepient_) public view returns (bool) {
+    function isredeemAvailable (address recepient_) public view returns (bool)  {
         return redeemRequests[recepient_].until == 0 || redeemRequests[recepient_].until < block.number;
     }
     // function called by user
-    function redeem(uint256 amount_)  public contractActive {
+    function redeem(uint256 amount_)  public isActive {
         require(redeemRequests[msg.sender].amount == uint256(0));
         require(amount_ > 0, "amount should be bigger than 0");
         require(redeemRequests[msg.sender].until < block.number, "request is locked, not available");
@@ -118,7 +127,7 @@ contract LockRedeem {
 
     //function called by go
     // todo: validator sign and if enough vote, transfer directly
-    function sign(uint amount_, address payable recipient_) public contractActive {
+    function sign(uint amount_, address payable recipient_) public isActive {
         require(isWitness(msg.sender),"Witness not present in list");
         require(!redeemRequests[recipient_].isCompleted, "redeem request is completed");
         require(redeemRequests[recipient_].amount == amount_,"redeem amount Compromised" );
@@ -168,6 +177,9 @@ contract LockRedeem {
         require(witnesses[msg.sender] == 0,"Witness already present in list");
         witnesses[msg.sender] = msg.value;
         activeWitness = activeWitness + 1;
+        if(activeWitness==totalWitness){
+            ACTIVE = true ;
+        }
         emit AddWitness(msg.sender, witnesses[msg.sender]);
     }
 
