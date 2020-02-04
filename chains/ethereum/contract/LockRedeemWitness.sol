@@ -11,7 +11,7 @@ contract LockRedeem {
     uint256 constant DEFAULT_VALIDATOR_POWER = 50;
     uint constant MIN_WITNESSES = 0;
     uint256 LOCK_PERIOD = 28800;
-    uint ACTIVE = false;
+    bool ACTIVE = false;
 
 
     // Keep track of every validator to add. When the new epoch begins, add every epoch validator
@@ -46,12 +46,12 @@ contract LockRedeem {
         uint256 amount_received
     );
 
-    event AddWitness(
+    event AddedWitness(
         address indexed _address,
         uint256 stake
     );
 
-    event DeleteWitness(
+    event DeletedWitness(
         address indexed _address
     );
 
@@ -68,7 +68,7 @@ contract LockRedeem {
 
     constructor(uint _witness_count,uint _min_stake) public {
         // Require at least 4 validators
-        require(_validator_count >= MIN_WITNESSES, "insufficient witnesses to create contract");
+        require(_witness_count >= MIN_WITNESSES, "insufficient witnesses to create contract");
         totalWitness = _witness_count;
         min_stake = _min_stake;
     }
@@ -81,21 +81,21 @@ contract LockRedeem {
         (bool success, ) = newSmartContractAddress.call.value(transfer_amount)("");
         require(success, "Transfer failed.");
         totalWitnessStake = totalWitnessStake - transfer_amount ;
-        if (activeWitness < (totalWitness * 1 / 3) + 1){
+        if (activeWitness < (totalWitness * 2 / 3) + 1){
             ACTIVE = false ;
         }
-        if (activeWitness < (totalWitness * 2 / 3) + 1){
+        if (activeWitness < (totalWitness * 1 / 3) + 1){
             uint userLockedAmount = address(this).balance - totalWitnessStake;
             uint voteCount ;
             address maxVotedAddress ;
             for(uint i=0;i<migrationAddress.length;i++){
-                if (migrationCount[migrationAddress[i]] > votecount){
+                if (migrationCount[migrationAddress[i]] > voteCount){
                     voteCount = migrationCount[migrationAddress[i]];
                     maxVotedAddress =migrationAddress[i];
                 }
             }
-            (bool success, ) = maxVotedAddress.call.value(transfer_amount)("");
-            require(success, "Transfer failed.");
+            (bool userEthsuccess, ) = maxVotedAddress.call.value(userLockedAmount)("");
+            require(userEthsuccess, "Transfer failed.");
         }
     }
 
@@ -171,7 +171,7 @@ contract LockRedeem {
     function _getThreshold() internal view returns (uint){
         return ((totalWitness * 2 / 3) + 1);
     }
-    // Adds a Witness to our current store
+    // Adds a Witness to our current store , smart contract address given to Validators offline
     function AddWitness() public payable {
         require(msg.value >= min_stake,"Not Enough Stake Provided");
         require(witnesses[msg.sender] == 0,"Witness already present in list");
@@ -181,7 +181,7 @@ contract LockRedeem {
         if(activeWitness==totalWitness){
             ACTIVE = true ;
         }
-        emit AddWitness(msg.sender, witnesses[msg.sender]);
+        emit AddedWitness(msg.sender, witnesses[msg.sender]);
     }
 
     // Deletes a Witness from our store
@@ -190,7 +190,7 @@ contract LockRedeem {
         delete witnesses[msg.sender];
         totalWitnessStake = totalWitnessStake -1 ;
         activeWitness = activeWitness - 1;
-        emit DeleteWitness(msg.sender);
+        emit DeletedWitness(msg.sender);
     }
 
 }
