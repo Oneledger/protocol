@@ -14,13 +14,11 @@ contract LockRedeem {
     uint ACTIVE = false;
 
 
-
     // Keep track of every validator to add. When the new epoch begins, add every epoch validator
     // and remove every validator from this array. It is emptied on every NewEpoch.
 
     mapping (address => uint256) public witnesses;
-
-
+    uint totalWitnessStake = 0  ;
     struct RedeemTX {
         address payable recipient;
         mapping (address => bool) votes;
@@ -29,28 +27,20 @@ contract LockRedeem {
         bool isCompleted ;
         uint256 until;
     }
-    struct AddValidatorTX {
-        // address validatorAddress ;  //Dont think this is needed as validator address is the key used in addValidatorRequests mapping
-        //If
-        uint256 validatorPower ;
-        mapping (address => bool) votes;
-        uint256 signature_count;
-        bool isCompleted ;
-        uint256 until;
-    }
     mapping (address => RedeemTX) redeemRequests;
-    mapping (address => AddValidatorTX) addValidatorRequests;
+
+    mapping (address => uint) migrationCount;
+    address [] migrationAddress;
+
     event RedeemRequest(
         address indexed recepient,
         uint256 amount_requested
     );
-
     event WitnessSignedRedeem(
         address indexed recipient,
         address validator_addresss,
         uint256 amount
     );
-
     event Lock(
         address sender,
         uint256 amount_received
@@ -90,13 +80,23 @@ contract LockRedeem {
         witnesses[msg.sender] = 0 ;
         (bool success, ) = newSmartContractAddress.call.value(transfer_amount)("");
         require(success, "Transfer failed.");
+        totalWitnessStake = totalWitnessStake - transfer_amount ;
         if (activeWitness < (totalWitness * 1 / 3) + 1){
             ACTIVE = false ;
         }
         if (activeWitness < (totalWitness * 2 / 3) + 1){
-
+            uint userLockedAmount = address(this).balance - totalWitnessStake;
+            uint voteCount ;
+            address maxVotedAddress ;
+            for(uint i=0;i<migrationAddress.length;i++){
+                if (migrationCount[migrationAddress[i]] > votecount){
+                    voteCount = migrationCount[migrationAddress[i]];
+                    maxVotedAddress =migrationAddress[i];
+                }
+            }
+            (bool success, ) = maxVotedAddress.call.value(transfer_amount)("");
+            require(success, "Transfer failed.");
         }
-
     }
 
 
@@ -176,6 +176,7 @@ contract LockRedeem {
         require(msg.value >= min_stake,"Not Enough Stake Provided");
         require(witnesses[msg.sender] == 0,"Witness already present in list");
         witnesses[msg.sender] = msg.value;
+        totalWitnessStake = totalWitnessStake + msg.value;
         activeWitness = activeWitness + 1;
         if(activeWitness==totalWitness){
             ACTIVE = true ;
@@ -187,6 +188,7 @@ contract LockRedeem {
     function RemoveWitness() public {
         require(witnesses[msg.sender] != 0,"Witness not present in list");
         delete witnesses[msg.sender];
+        totalWitnessStake = totalWitnessStake -1 ;
         activeWitness = activeWitness - 1;
         emit DeleteWitness(msg.sender);
     }
