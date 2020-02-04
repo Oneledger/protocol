@@ -54,7 +54,9 @@ type testnetConfig struct {
 	totalFunds          int64
 	initialTokenHolders []string
 
-	deployETHContract string
+	ethUrl               string
+	deploySmartcontracts bool
+	cloud                bool
 }
 
 var testnetArgs = &testnetConfig{}
@@ -78,7 +80,9 @@ func init() {
 	// 1 billion by default
 	testnetCmd.Flags().Int64Var(&testnetArgs.totalFunds, "total_funds", 1000000000, "The total amount of tokens in circulation")
 	testnetCmd.Flags().StringSliceVar(&testnetArgs.initialTokenHolders, "initial_token_holders", []string{}, "Initial list of addresses that hold an equal share of Total funds")
-	testnetCmd.Flags().StringVar(&testnetArgs.deployETHContract, "deploy_eth_contract", "", "deploy the ethereum Contract")
+	testnetCmd.Flags().StringVar(&testnetArgs.ethUrl, "eth_rpc", "", "URL for ethereum network")
+	testnetCmd.Flags().BoolVar(&testnetArgs.deploySmartcontracts, "deploy_smart_contracts", false, "deploy eth contracts")
+	testnetCmd.Flags().BoolVar(&testnetArgs.cloud, "cloud_deploy", false, "set true for deploying on cloud")
 
 }
 
@@ -191,12 +195,15 @@ func nodeNamesWithZeros(prefix string, total int) []string {
 }
 
 func runDevnet(_ *cobra.Command, _ []string) error {
+
 	ctx, err := newDevnetContext(testnetArgs)
 	if err != nil {
 		return errors.Wrap(err, "runDevnet failed")
 	}
 	args := testnetArgs
-
+	if ! args.cloud {
+		setEnvVariables()
+	}
 	totalNodes := args.numValidators + args.numNonValidators
 
 	if totalNodes > len(ctx.names) {
@@ -484,6 +491,23 @@ func initialState(args *testnetConfig, nodeList []node, option ethchain.ChainDri
 func deployethcdcontract(conn string, nodeList []node) (*ethchain.ChainDriverOption, error) {
 	privatekey, err := crypto.HexToECDSA("")
 	if err != nil {
+		return nil, errors.Wrap(err, "Error Reading File")
+	}
+	walletdat, err := ioutil.ReadFile(os.Getenv("WALLETADDR"))
+	if err != nil {
+		return nil, errors.Wrap(err, "Error Reading File Wallet Address")
+	}
+	walletAddr := strings.Split(string(walletdat),",")
+	b1 := make([]byte, 64)
+	pk, err := f.Read(b1)
+	if err != nil {
+		return nil, errors.Wrap(err, "Error reading private key")
+	}
+	//fmt.Println("Private Key used to deploy : ", string(b1[:pk]))
+	pkStr := string(b1[:pk])
+	privatekey, err := crypto.HexToECDSA(pkStr)
+
+	if err != nil {
 		return nil, err
 	}
 	cli, err := ethclient.Dial(conn)
@@ -530,7 +554,7 @@ func deployethcdcontract(conn string, nodeList []node) (*ethchain.ChainDriverOpt
 		}
 
 		input = append(input, addr)
-		tx := types.NewTransaction(nonce, addr, big.NewInt(100000000000000000), auth.GasLimit, auth.GasPrice, (nil))
+		tx := types.NewTransaction(nonce, addr, big.NewInt(300000000000000000), auth.GasLimit, auth.GasPrice, (nil))
 		chainId, _ := cli.ChainID(context.Background())
 		signedTx, err := types.SignTx(tx, types.NewEIP155Signer(chainId), privatekey)
 		if err != nil {
