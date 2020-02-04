@@ -37,7 +37,7 @@ var (
 	TestTokenABI     = contract.ERC20BasicABI
 	LockRedeemERCABI = contract.LockRedeemERCABI
 	// LockRedeemERC20ABI = contract.ContextABI
-	LockRedeemContractAddr = "0x65F9C82803Fe0f4F7e0b61c81Fae8037C99Baa38"
+	LockRedeemContractAddr = "0x852463B1Ff9765a2c1F588a5f69755B1A0323186"
 	TestTokenContractAddr = "0x2e9d8F5e11564733B32d7bECe991a4251c94b73f"
 	LockRedeemERC20ContractAddr = "0x72adA481c4D4eF4b05FBb1C218aEdbB572f7A56E"
 
@@ -160,7 +160,7 @@ func lock() {
 	}
 
 	//rpcclient, err := rpc.NewClient("http://localhost:26602") //104.196.191.206:26604
-	rpcclient, err := rpc.NewClient("http://104.196.191.206:26602")
+	rpcclient, err := rpc.NewClient("https://fullnode-sdk.devnet.oneledger.network/")
 	if err != nil {
 		fmt.Println(err)
 		return
