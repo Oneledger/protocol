@@ -446,7 +446,7 @@ func DefautEthConfigRinkeby() *EthereumChainDriverConfig {
 
 func DefaultEthConfigCloud() *EthereumChainDriverConfig {
 	return &EthereumChainDriverConfig{
-		Connection: "http://104.197.84.90:8545",
+		Connection: "",
 	}
 }
 
