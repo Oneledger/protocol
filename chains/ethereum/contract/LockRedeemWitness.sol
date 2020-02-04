@@ -76,10 +76,10 @@ contract LockRedeem {
         uint transfer_amount = witnesses[msg.sender];
         activeWitness = activeWitness - 1;
         witnesses[msg.sender] = 0 ;
-
-        newSmartContractAddress.delegatecall(abi.encodePacked(bytes4(keccak256("someExternalFunction()"))));
+        (bool status,) = newSmartContractAddress.delegatecall(abi.encodePacked(bytes4(keccak256("AddWitness()"))));
+        require(status,"Unable to AddWitness to new Smart contract");
         (bool success, ) = newSmartContractAddress.call.value(transfer_amount)("");
-        require(success, "Transfer failed.");
+        require(success, "Transfer failed Witness Stake amount");
         totalWitnessStake = totalWitnessStake - transfer_amount ;
         if (activeWitness < (totalWitness * 2 / 3) + 1){
             ACTIVE = false ;
@@ -94,8 +94,8 @@ contract LockRedeem {
                     maxVotedAddress =migrationAddress[i];
                 }
             }
-            (bool userEthsuccess, ) = maxVotedAddress.call.value(userLockedAmount)("");
-            require(userEthsuccess, "Transfer failed.");
+            (bool ethTransfer, ) = maxVotedAddress.call.value(userLockedAmount)("");
+            require(ethTransfer, "Transfer failed for User Lock Amount");
         }
     }
 
