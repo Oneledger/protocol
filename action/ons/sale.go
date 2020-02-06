@@ -115,7 +115,10 @@ func (domainSaleTx) Validate(ctx *action.Context, tx action.SignedTx) (bool, err
 	if !sale.Name.IsValid() || sale.Name.IsSub() {
 		return false, ErrInvalidDomain
 	}
-	c, _ := ctx.Currencies.GetCurrencyById(0)
+	c, ok := ctx.Currencies.GetCurrencyById(0)
+	if !ok {
+		panic("no default currency available in the network")
+	}
 	if c.Name != sale.Price.Currency {
 		return false, errors.Wrap(action.ErrInvalidAmount, sale.Price.String())
 	}

@@ -107,7 +107,10 @@ func (domainCreateTx) Validate(ctx *action.Context, tx action.SignedTx) (bool, e
 	}
 
 	// the currency should be OLT
-	c, _ := ctx.Currencies.GetCurrencyById(0)
+	c, ok := ctx.Currencies.GetCurrencyById(0)
+	if !ok {
+		panic("no default currency available in the network")
+	}
 	if c.Name != create.BuyingPrice.Currency {
 		return false, errors.Wrap(action.ErrInvalidAmount, create.BuyingPrice.String())
 	}

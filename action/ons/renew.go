@@ -99,7 +99,10 @@ func (r RenewDomainTx) Validate(ctx *action.Context, signedTx action.SignedTx) (
 	}
 
 	// the buying currency must be OLT
-	c, _ := ctx.Currencies.GetCurrencyById(0)
+	c, ok := ctx.Currencies.GetCurrencyById(0)
+	if !ok {
+		panic("no default currency available in the network")
+	}
 	if c.Name != renewDomain.BuyingPrice.Currency {
 		return false, errors.Wrap(action.ErrInvalidAmount, renewDomain.BuyingPrice.String())
 	}
