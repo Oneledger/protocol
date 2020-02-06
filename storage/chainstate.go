@@ -95,7 +95,7 @@ func (state *ChainState) Set(key StoreKey, val []byte) error {
 	return nil
 }
 
-func (state *ChainState) GetIterator() Iteratable {
+func (state *ChainState) GetIterable() Iterable {
 	return state.Delivered.ImmutableTree
 }
 

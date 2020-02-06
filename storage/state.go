@@ -1,7 +1,7 @@
 package storage
 
 var _ Store = &State{}
-var _ Iteratable = &State{}
+var _ Iterable = &State{}
 
 type State struct {
 	cs        *ChainState
@@ -123,7 +123,7 @@ func (s *State) Delete(key StoreKey) (bool, error) {
 }
 
 // This only Iterate for the ChainState
-func (s *State) GetIterator() Iteratable {
+func (s *State) GetIterable() Iterable {
 	return s
 }
 
@@ -169,7 +169,7 @@ func (s *State) IterateRange(start, end []byte, ascending bool, fn func(key, val
 
 func (s State) Write() bool {
 
-	s.cache.GetIterator().Iterate(func(key []byte, value []byte) bool {
+	s.cache.GetIterable().Iterate(func(key []byte, value []byte) bool {
 		_ = s.cs.Set(key, value)
 		return false
 	})

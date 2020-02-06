@@ -15,7 +15,7 @@ type sessionCache struct {
 
 // sessionCache satisfies SessionedDirectStorage interface
 var _ SessionedDirectStorage = &sessionCache{}
-var _ Iteratable = &sessionCache{}
+var _ Iterable = &sessionCache{}
 var _ SessionedDirectStorage = &sessionCache{}
 
 func NewSessionCache(name string) *sessionCache {
@@ -63,7 +63,7 @@ func (c *sessionCache) Delete(key StoreKey) (bool, error) {
 	return true, nil
 }
 
-func (c *sessionCache) GetIterator() Iteratable {
+func (c *sessionCache) GetIterable() Iterable {
 	return c
 }
 
@@ -135,7 +135,7 @@ func (c *cacheSession) Delete(key StoreKey) (bool, error) {
 	return true, nil
 }
 
-func (c *cacheSession) GetIterator() Iteratable {
+func (c *cacheSession) GetIterable() Iterable {
 	return c
 }
 

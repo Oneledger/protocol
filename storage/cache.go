@@ -30,7 +30,7 @@ type cache struct {
 
 // cache satisfies Store interface
 var _ Store = &cache{}
-var _ Iteratable = &cache{}
+var _ Iterable = &cache{}
 
 func NewCache(name string) *cache {
 	return &cache{
@@ -74,7 +74,7 @@ func (c *cache) Delete(key StoreKey) (bool, error) {
 	return true, nil
 }
 
-func (c *cache) GetIterator() Iteratable {
+func (c *cache) GetIterable() Iterable {
 	return c
 }
 
@@ -146,11 +146,11 @@ func (c *cacheSafe) Delete(key StoreKey) (bool, error) {
 	return c.cache.Delete(key)
 }
 
-func (c *cacheSafe) GetIterator() Iteratable {
+func (c *cacheSafe) GetIterable() Iterable {
 	c.RLock()
 	defer c.RUnlock()
 
-	return c.cache.GetIterator()
+	return c.cache.GetIterable()
 }
 
 func (c *cacheSafe) Iterate(fn func(key []byte, value []byte) bool) (stopped bool) {
