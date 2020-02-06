@@ -364,6 +364,7 @@ func (app *App) Start() error {
 	err = eth.EnableInternalETH(internalRouter)
 	if err != nil {
 		app.logger.Error("failed to register eth internal transaction")
+		return err
 	}
 
 	app.node = node

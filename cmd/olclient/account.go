@@ -121,6 +121,7 @@ func UpdateAccount(cmd *cobra.Command, args []string) error {
 	out, err := fullnode.AddAccount(acc)
 	if err != nil {
 		Ctx.logger.Error("Problem creating account:", err)
+		return err
 	}
 
 	// print details

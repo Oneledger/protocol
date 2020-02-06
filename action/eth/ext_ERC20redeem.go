@@ -182,6 +182,6 @@ func runERC20Reddem(ctx *action.Context, tx action.RawTx) (bool, action.Response
 		Info:      "Transaction received ,Redeem in progress",
 		GasWanted: 0,
 		GasUsed:   0,
-		Tags:      nil,
+		Tags:      erc20redeem.Tags(),
 	}
 }
