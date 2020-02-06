@@ -117,7 +117,7 @@ func ParseRedeem(data []byte, lockredeemAbi string) (req *RedeemRequest, err err
 	if err != nil {
 		return nil, err
 	}
-	methodSignature, err := getSignFromName(contractAbi, "redeem", contract.LockRedeemERCFuncSigs)
+	methodSignature, err := getSignFromName(contractAbi, "redeem", contract.LockRedeemFuncSigs)
 	if err != nil {
 		return nil, err
 	}

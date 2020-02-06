@@ -112,12 +112,12 @@ func runRedeem(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	err := redeem.Unmarshal(tx.Data)
 	if err != nil {
 		ctx.Logger.Error("")
-		return false, action.Response{Log: action.ErrUnserializable.Error()}
+		return false, action.Response{Log: errors.Wrap(action.ErrUnserializable,err.Error()).Error()}
 	}
 
 	req, err := ethereum.ParseRedeem(redeem.ETHTxn, ctx.ETHTrackers.GetOption().ContractABI)
 	if err != nil {
-		return false, action.Response{Log: action.ErrInvalidExtTx.Error()}
+		return false, action.Response{Log: (errors.Wrap(action.ErrInvalidExtTx,err.Error())).Error()}
 	}
 
 	c, ok := ctx.Currencies.GetCurrencyByName("ETH")
@@ -128,13 +128,13 @@ func runRedeem(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	coin := c.NewCoinFromAmount(*balance.NewAmountFromBigInt(req.Amount))
 	err = ctx.Balances.MinusFromAddress(redeem.Owner, coin)
 	if err != nil {
-		return false, action.Response{Log: action.ErrNotEnoughFund.Error()}
+		return false, action.Response{Log: (errors.Wrap(action.ErrNotEnoughFund,err.Error())).Error()}
 	}
 	// Subtracting from common address to maintain count of the total oEth minted
 	ethSupply := keys.Address(lockBalanceAddress)
 	err = ctx.Balances.MinusFromAddress(ethSupply, coin)
 	if err != nil {
-		return false, action.Response{Log: action.ErrNotEnoughFund.Error()}
+		return false, action.Response{Log: (errors.Wrap(action.ErrNotEnoughFund,err.Error())).Error()}
 	}
 
 	validators, err := ctx.Validators.GetValidatorsAddress()
