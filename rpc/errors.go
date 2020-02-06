@@ -18,6 +18,8 @@ const (
 	CodeNotAllowed = -32001
 
 	CodeNotFound = -32000
+
+	httpHeader = "http://"
 )
 
 type Error = jsonrpc2.Error
