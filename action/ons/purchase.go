@@ -91,7 +91,10 @@ func (domainPurchaseTx) Validate(ctx *action.Context, tx action.SignedTx) (bool,
 	}
 
 	// the currency should be OLT
-	c, _ := ctx.Currencies.GetCurrencyById(0)
+	c, ok := ctx.Currencies.GetCurrencyById(0)
+	if !ok {
+		panic("no default currency available in the network")
+	}
 	if c.Name != buy.Offering.Currency {
 		return false, errors.Wrap(action.ErrInvalidAmount, buy.Offering.String())
 	}
@@ -149,7 +152,10 @@ func runPurchaseDomain(ctx *action.Context, tx action.RawTx) (bool, action.Respo
 		return false, action.Response{Log: "cannot buy subdomain"}
 	}
 
-	olt, _ := ctx.Currencies.GetCurrencyByName(buy.Offering.Currency)
+	olt, ok := ctx.Currencies.GetCurrencyByName(buy.Offering.Currency)
+	if !ok {
+		return false, action.Response{Log: action.ErrInvalidCurrency.Error()}
+	}
 
 	remain := buy.Offering.ToCoin(ctx.Currencies)
 
