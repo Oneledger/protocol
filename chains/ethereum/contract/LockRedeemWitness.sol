@@ -6,7 +6,7 @@ contract LockRedeem {
     uint activeWitness;
     uint min_stake;
     // Default Voting power should be updated at one point
-    uint256 constant DEFAULT_VALIDATOR_POWER = 50;
+    //uint256 constant DEFAULT_VALIDATOR_POWER = 50;
     uint constant MIN_WITNESSES = 0;
     uint256 LOCK_PERIOD = 28800;
     bool ACTIVE = false;

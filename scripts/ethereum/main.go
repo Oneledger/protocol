@@ -37,11 +37,10 @@ var (
 	TestTokenABI     = contract.ERC20BasicABI
 	LockRedeemERCABI = contract.LockRedeemERCABI
 	// LockRedeemERC20ABI = contract.ContextABI
-	LockRedeemContractAddr = "0x852463B1Ff9765a2c1F588a5f69755B1A0323186"
-	TestTokenContractAddr = "0x2e9d8F5e11564733B32d7bECe991a4251c94b73f"
-	LockRedeemERC20ContractAddr = "0x72adA481c4D4eF4b05FBb1C218aEdbB572f7A56E"
-
-	cfg                         = config.DefautEthConfigRinkeby()
+	LockRedeemContractAddr = "0x13307112Eb27721fD39e1B89507D833818e95b07"
+	TestTokenContractAddr = "0x79e155A2B5e3c2bE46EE646F425B0B9ad6173516"
+	LockRedeemERC20ContractAddr = "0xBfb09a30F4E4ceEA785f13829E8BB45Bc357FbbA"
+	cfg                         = config.DefaultEthConfigLocal()
 	log                         = logger.NewDefaultLogger(os.Stdout).WithPrefix("testeth")
 	UserprivKey                 *ecdsa.PrivateKey
 	UserprivKeyRedeem           *ecdsa.PrivateKey
@@ -72,8 +71,8 @@ func createValue(str string) *big.Int {
 
 func init() {
 
-	//UserprivKey, _ = crypto.HexToECDSA("bdb082c7e42a946c477fa3efee4fb5bdece508b47592d8cb57f5e811cd840a40")
-	UserprivKey, _ = crypto.HexToECDSA("02038529C9AB706E9F4136F4A4EB51E866DBFE22D5E102FD3A22C14236E1C2EA")
+	UserprivKey, _ = crypto.HexToECDSA("6c24a44424c8182c1e3e995ad3ccfb2797e3f7ca845b99bea8dead7fc9dccd09")
+	//UserprivKey, _ = crypto.HexToECDSA("02038529C9AB706E9F4136F4A4EB51E866DBFE22D5E102FD3A22C14236E1C2EA")
 
 	UserprivKeyRedeem, _ = crypto.HexToECDSA("02038529C9AB706E9F4136F4A4EB51E866DBFE22D5E102FD3A22C14236E1C2EA")
 
@@ -159,8 +158,8 @@ func lock() {
 		return
 	}
 
-	//rpcclient, err := rpc.NewClient("http://localhost:26602") //104.196.191.206:26604
-	rpcclient, err := rpc.NewClient("https://fullnode-sdk.devnet.oneledger.network/")
+	rpcclient, err := rpc.NewClient("http://localhost:26602") //104.196.191.206:26604
+	//rpcclient, err := rpc.NewClient("https://fullnode-sdk.devnet.oneledger.network/")
 	if err != nil {
 		fmt.Println(err)
 		return
