@@ -48,8 +48,8 @@ func (ts *TrackerStore) Delete(key ethereum.TrackerName) (bool, error) {
 	return ts.state.Delete(prefixed)
 }
 
-func (ts *TrackerStore) GetIterator() storage.Iteratable {
-	return ts.state.GetIterator()
+func (ts *TrackerStore) GetIterable() storage.Iterable {
+	return ts.state.GetIterable()
 }
 
 func (ts *TrackerStore) Iterate(fn func(name *ethereum.TrackerName, tracker *Tracker) bool) (stopped bool) {

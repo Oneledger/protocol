@@ -103,7 +103,7 @@ func (js *JobStore) Iterate(fn func(job Job)) {
 	isAsc := true
 
 	session := js.BeginSession()
-	iter := session.GetIterator()
+	iter := session.GetIterable()
 
 	iter.IterateRange(start, end, isAsc, func(key, val []byte) bool {
 		var job Job

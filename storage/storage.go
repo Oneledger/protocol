@@ -70,12 +70,12 @@ type Store interface {
 	Set(StoreKey, []byte) error
 	Exists(StoreKey) bool
 	Delete(StoreKey) (bool, error)
-	GetIterator() Iteratable
+	GetIterable() Iterable
 }
 
-// The iteratable interface include the function for iteration
-// Iteratable function only be implemented for persistent data, doesn't guaranteed in the cache storage
-type Iteratable interface {
+// The Iterable interface include the function for iteration
+// Iterable function only be implemented for persistent data, doesn't guaranteed in the cache storage
+type Iterable interface {
 	Iterate(fn func(key, value []byte) bool) (stop bool)
 	IterateRange(start, end []byte, ascending bool, fn func(key, value []byte) bool) (stop bool)
 }
