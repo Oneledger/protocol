@@ -1,8 +1,6 @@
 package event
 
 import (
-	"fmt"
-
 	"github.com/pkg/errors"
 
 	"github.com/Oneledger/protocol/data/ethereum"
@@ -151,7 +149,7 @@ func redeemCleanup(ctx interface{}) error {
 		for state := ethereum.BusyBroadcasting; state <= ethereum.Released; state++ {
 			job, err := context.JobStore.GetJob(tracker.GetJobID(state))
 			if err != nil {
-				fmt.Println(err, "failed to get job from state: ", state)
+				//fmt.Println(err, "failed to get job from state: ", state)
 				continue
 			}
 			err = context.JobStore.DeleteJob(job)
