@@ -23,7 +23,9 @@ type FailedBroadcastReset struct {
 }
 
 func (fbr *FailedBroadcastReset) Signers() []action.Address {
-	panic("implement me")
+	return []action.Address{
+		fbr.ValidatorAddress,
+	}
 }
 
 func (fbr *FailedBroadcastReset) Type() action.Type {
@@ -170,7 +172,7 @@ func runBroadcastFailureReset(ctx *action.Context, tx action.RawTx) (bool, actio
 	if len(tracker.ResetVotes) < votesThresholdForReset {
 		err = ctx.BTCTrackers.SetTracker(fbr.TrackerName, tracker)
 		if err != nil {
-			return false, action.Response{Log: "tracker not ready for finalizing"}
+			return false, action.Response{Log: "failed to save tracker"}
 		}
 
 		return true, action.Response{
@@ -191,6 +193,11 @@ func runBroadcastFailureReset(ctx *action.Context, tx action.RawTx) (bool, actio
 
 	tracker.FinalityVotes = []keys.Address{}
 	tracker.ResetVotes = []keys.Address{}
+
+	err = ctx.BTCTrackers.SetTracker(fbr.TrackerName, tracker)
+	if err != nil {
+		return false, action.Response{Log: "failed to save tracker"}
+	}
 
 	return true, action.Response{Tags: fbr.Tags()}
 }

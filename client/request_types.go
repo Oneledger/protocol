@@ -183,18 +183,23 @@ type SignRawTxResponse struct {
 
 type BTCLockRequest struct {
 	Txn         []byte        `json:"txn"`
-	Signature   []byte        `json:"signature"`
 	Address     keys.Address  `json:"address"`
 	TrackerName string        `json:"tracker_name"`
 	GasPrice    action.Amount `json:"gasprice"`
 	Gas         int64         `json:"gas"`
 }
 
-type BTCLockPrepareRequest struct {
-	Hash    string `json:"hash"`
-	Index   uint32 `json:"index"`
-	FeesBTC int64  `json:"fees_btc"`
+type InputTransaction struct {
+	Hash  string `json:"hash"`
+	Index uint32 `json:"index"`
 }
+type BTCLockPrepareRequest struct {
+	Inputs           []InputTransaction `json:"inputs"`
+	AmountSatoshi    int64              `json:"amount"`
+	FeeRate          int64              `json:"fee_rate"`
+	ReturnAddressStr string             `json:"return_address"`
+}
+
 type BTCLockPrepareResponse struct {
 	Txn         string `json:"txn"`
 	TrackerName string `json:"tracker_name"`

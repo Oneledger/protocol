@@ -31,10 +31,11 @@ const (
 type ChainDriver interface {
 	//	PrepareLock(prevLock, input *bitcoin.UTXO, lockScriptAddress []byte) (txBytes []byte)
 
-	PrepareLockNew(*chainhash.Hash, uint32, int64, *chainhash.Hash, uint32, int64, int64, []byte) (txBytes []byte)
+	PrepareLockNew(prevLockTxID *chainhash.Hash, prevLockIndex uint32, prevLockBalance int64,
+		inputs []InputTransaction, feesInSatoshi int64, lockAmount int64, returnAddress []byte,
+		lockScriptAddress []byte) (txBytes []byte, err error)
 
-	AddUserLockSignature([]byte, []byte) *wire.MsgTx
-	AddLockSignature([]byte, []byte) *wire.MsgTx
+	AddLockSignature([]byte, []byte, bool) *wire.MsgTx
 
 	BroadcastTx(*wire.MsgTx, *rpcclient.Client) (*chainhash.Hash, error)
 
@@ -49,6 +50,12 @@ type chainDriver struct {
 	blockCypherToken string
 }
 
+type InputTransaction struct {
+	TxID    *chainhash.Hash
+	Index   uint32
+	Balance int64
+}
+
 var _ ChainDriver = &chainDriver{}
 
 func NewChainDriver(token string) ChainDriver {
@@ -57,8 +64,8 @@ func NewChainDriver(token string) ChainDriver {
 }
 
 func (c *chainDriver) PrepareLockNew(prevLockTxID *chainhash.Hash, prevLockIndex uint32, prevLockBalance int64,
-	inputTxID *chainhash.Hash, inputIndex uint32, inputBalance int64, feesInSatoshi int64,
-	lockScriptAddress []byte) (txBytes []byte) {
+	inputs []InputTransaction, feesRate int64, lockAmount int64, returnAddress []byte,
+	lockScriptAddress []byte) (txBytes []byte, err error) {
 
 	// start a new empty txn
 	tx := wire.NewMsgTx(wire.TxVersion)
@@ -73,16 +80,35 @@ func (c *chainDriver) PrepareLockNew(prevLockTxID *chainhash.Hash, prevLockIndex
 		tx.AddTxIn(vin1)
 	}
 
-	// create users' txin & add to txn
-	userOP := wire.NewOutPoint(inputTxID, inputIndex)
-	vin2 := wire.NewTxIn(userOP, nil, nil)
-	tx.AddTxIn(vin2)
+	var totalInputBalance int64
 
-	var balance = prevLockBalance + inputBalance - feesInSatoshi
+	for _, input := range inputs {
+		// create users' txin & add to txn
+		userOP := wire.NewOutPoint(input.TxID, input.Index)
+		vin2 := wire.NewTxIn(userOP, nil, nil)
+		tx.AddTxIn(vin2)
+
+		totalInputBalance += input.Balance
+	}
+
+	var balance = lockAmount
 
 	// add a txout to the lockscriptaddress
 	out := wire.NewTxOut(balance, lockScriptAddress)
 	tx.AddTxOut(out)
+
+	feesInSatoshi := int64(EstimateTxSizeBeforeUserSign(tx, true)+20) * feesRate
+
+	var returnBalance = prevLockBalance + totalInputBalance - lockAmount - feesInSatoshi
+	if returnBalance < 0 {
+		err = errors.New("not enough balance to lock")
+		return
+	}
+
+	if returnBalance > 0 {
+		returnOut := wire.NewTxOut(returnBalance, returnAddress)
+		tx.AddTxOut(returnOut)
+	}
 
 	buf := bytes.NewBuffer(txBytes)
 	tx.Serialize(buf)
@@ -92,25 +118,14 @@ func (c *chainDriver) PrepareLockNew(prevLockTxID *chainhash.Hash, prevLockIndex
 	return
 }
 
-func (c *chainDriver) AddUserLockSignature(txBytes []byte, sigScript []byte) *wire.MsgTx {
-	tx := wire.NewMsgTx(wire.TxVersion)
-
-	buf := bytes.NewBuffer(txBytes)
-	tx.Deserialize(buf)
-
-	tx.TxIn[0].SignatureScript = sigScript
-
-	return tx
-}
-
-func (c *chainDriver) AddLockSignature(txBytes []byte, sigScript []byte) *wire.MsgTx {
+func (c *chainDriver) AddLockSignature(txBytes []byte, sigScript []byte, isFirstLock bool) *wire.MsgTx {
 	tx := wire.NewMsgTx(wire.TxVersion)
 
 	buf := bytes.NewBuffer(txBytes)
 	tx.Deserialize(buf)
 
 	// if first lock & not redeem
-	if len(tx.TxIn) == 1 && len(tx.TxOut) == 1 {
+	if isFirstLock {
 		return tx
 	}
 

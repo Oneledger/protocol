@@ -160,7 +160,8 @@ func runAddSignature(ctx *action.Context, tx action.RawTx) (bool, action.Respons
 		return false, action.Response{Log: errors.Wrap(err, "error parsing btc txn").Error()}
 	}
 
-	if !(tracker.ProcessType == bitcoin.ProcessTypeLock && len(btcTx.TxIn) == 1) {
+	isFirstLock := tracker.CurrentTxId == nil
+	if !isFirstLock {
 
 		pk, err := btcec.ParsePubKey(addSignature.ValidatorPubKey, btcec.S256())
 		sign, err := btcec.ParseSignature(addSignature.BTCSignature, btcec.S256())

@@ -12,7 +12,7 @@ import (
 	"github.com/btcsuite/btcutil"
 )
 
-func btcSign(txBytes []byte, wifStr string) []byte {
+func btcSign(txBytes []byte, wifStr string, index int) []byte {
 
 	wif, _ := btcutil.DecodeWIF(wifStr)
 
@@ -24,7 +24,7 @@ func btcSign(txBytes []byte, wifStr string) []byte {
 		AddData(btcutil.Hash160(wif.PrivKey.PubKey().SerializeCompressed())).AddOp(txscript.OP_EQUALVERIFY).
 		AddOp(txscript.OP_CHECKSIG).Script()
 
-	sig, err := txscript.RawTxInSignature(tx, 0, sc, txscript.SigHashAll, wif.PrivKey)
+	sig, err := txscript.RawTxInSignature(tx, index, sc, txscript.SigHashAll, wif.PrivKey)
 	if err != nil {
 		panic(err)
 	}
@@ -33,14 +33,15 @@ func btcSign(txBytes []byte, wifStr string) []byte {
 		AddData(sig).AddData(wif.PrivKey.PubKey().SerializeCompressed()).
 		Script()
 
-	tx.TxIn[0].SignatureScript = sigScript
+	tx.TxIn[index].SignatureScript = sigScript
 
 	buf = bytes.NewBuffer(nil)
 	tx.Serialize(buf)
+
 	txBytes = buf.Bytes()
 
 	flags := txscript.StandardVerifyFlags
-	vm, err := txscript.NewEngine(sc, tx, 0, flags, nil, nil, tx.TxOut[0].Value)
+	vm, err := txscript.NewEngine(sc, tx, index, flags, nil, nil, tx.TxOut[index].Value)
 	if err != nil {
 		panic(err)
 	}
@@ -50,5 +51,5 @@ func btcSign(txBytes []byte, wifStr string) []byte {
 		panic(err)
 	}
 
-	return sigScript
+	return txBytes
 }

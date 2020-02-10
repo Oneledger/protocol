@@ -76,6 +76,7 @@ func (job *JobETHBroadcast) DoMyJob(ctx interface{}) {
 	_, err = cd.BroadcastTx(tx)
 	if err != nil {
 		ethCtx.Logger.Error("Error in transaction broadcast : ", job.GetJobID(), err)
+
 		return
 	}
 

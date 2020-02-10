@@ -13,28 +13,7 @@ import (
 	"github.com/btcsuite/btcd/wire"
 )
 
-func ValidateLock(tx *wire.MsgTx, token, chainType string, trackerPrevTxID *chainhash.Hash,
-	lockScriptAddress []byte, currentBalance, lockAmount int64) bool {
-
-	if !(len(tx.TxIn) == 1 || len(tx.TxIn) == 2) {
-		fmt.Println("btc lock validate err, TxIn should be 1 or 2")
-		return false
-	}
-
-	if len(tx.TxOut) != 1 {
-
-		fmt.Println("btc lock validate err, TxOut should be 1 ")
-		return false
-	}
-
-	// 1.0
-	if trackerPrevTxID != nil {
-		if tx.TxIn[0].PreviousOutPoint.Hash != *trackerPrevTxID {
-
-			fmt.Println("btc lock validate err, input 0 hash should match tracker hash")
-			return false
-		}
-	}
+func ValidateLock(tx *wire.MsgTx, token, chainType string, lockScriptAddress []byte, currentBalance, lockAmount int64, isFirstlock bool) bool {
 
 	// 2, 3
 	var input int64
@@ -66,12 +45,29 @@ func ValidateLock(tx *wire.MsgTx, token, chainType string, trackerPrevTxID *chai
 	}
 
 	// 4
+	if len(tx.TxOut) == 0 {
+		fmt.Println("btc lock validate error, output is 0")
+		return false
+	}
+
 	output := tx.TxOut[0].Value
+
+	if len(tx.TxOut) > 2 {
+		fmt.Println("btc lock validate error, tx output is more than 2")
+		return false
+	}
+
+	if len(tx.TxOut) == 2 {
+		output += tx.TxOut[1].Value
+	}
+
 	fees := input - output
+	txSize := estimateTxSize(tx, isFirstlock)
+	fees_per_byte := fees / int64(txSize)
 
-	if fees < 40-000 {
+	if fees_per_byte < 20 || fees_per_byte > 70 {
 
-		fmt.Println("btc lock validate err, fees should be more than 40000")
+		fmt.Println("btc lock validate err, fees should be more than 20 per byte or less than 70 per byte")
 		return false
 	}
 
@@ -132,8 +128,11 @@ func ValidateRedeem(tx *wire.MsgTx, token, chainType string, trackerPrevTxID *ch
 	output := tx.TxOut[0].Value + tx.TxOut[1].Value
 	fees := input - output
 
-	if fees < 40-000 {
-		fmt.Println("redeem validate error, fess should be > 40,000")
+	txSize := estimateTxSize(tx, false)
+	fees_per_byte := fees / int64(txSize)
+
+	if fees_per_byte < 20 || fees_per_byte > 70 {
+		fmt.Println("redeem validate error, fees per byte should be more than 20 and less than 70")
 		return false
 	}
 
@@ -154,4 +153,29 @@ func ValidateRedeem(tx *wire.MsgTx, token, chainType string, trackerPrevTxID *ch
 	}
 
 	return true
+}
+
+func estimateTxSize(tx *wire.MsgTx, isFirstLock bool) int {
+
+	if isFirstLock {
+		return tx.SerializeSize()
+	}
+
+	sigScriptSize := 46 + 74*6 + 34*8
+	return tx.SerializeSize() + sigScriptSize
+}
+
+func EstimateTxSizeBeforeUserSign(tx *wire.MsgTx, isFirstLock bool) int {
+
+	p2pkhSigSize := 146
+
+	inputSigsSize := p2pkhSigSize * len(tx.TxIn)
+
+	if isFirstLock {
+
+		return tx.SerializeSize() + inputSigsSize
+	}
+
+	sigScriptSize := 46 + 74*6 + 34*8
+	return tx.SerializeSize() + sigScriptSize + inputSigsSize
 }

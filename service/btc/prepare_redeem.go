@@ -40,7 +40,7 @@ func (s *Service) PrepareRedeem(args client.BTCRedeemRequest, reply *client.BTCR
 
 	userAddress, err := btcutil.DecodeAddress(args.BTCAddress, cfg.BTCParams)
 	if err != nil {
-		return codes.ErrBadBTCAddress
+		return codes.ErrBadBTCAddress.Wrap(err)
 	}
 
 	btcAddr, err := txscript.PayToAddrScript(userAddress)

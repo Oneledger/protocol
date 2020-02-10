@@ -107,8 +107,10 @@ func (j *JobBTCBroadcast) DoMyJob(ctxI interface{}) {
 	}
 
 	opt := ctx.Trackers.GetConfig()
+
+	isFirstLock := tracker.CurrentTxId == nil
 	cd := bitcoin.NewChainDriver(opt.BlockCypherToken)
-	lockTx = cd.AddLockSignature(tracker.ProcessUnsignedTx, sigScript)
+	lockTx = cd.AddLockSignature(tracker.ProcessUnsignedTx, sigScript, isFirstLock)
 
 	buf := bytes.NewBuffer([]byte{})
 	err = lockTx.Serialize(buf)
@@ -124,7 +126,7 @@ func (j *JobBTCBroadcast) DoMyJob(ctxI interface{}) {
 
 	ctx.Logger.Debug(hex.EncodeToString(txBytes))
 
-	if !(len(lockTx.TxIn) == 1 && tracker.ProcessType == bitcoin2.ProcessTypeLock) {
+	if !isFirstLock {
 
 		vm, err := txscript.NewEngine(tracker.CurrentLockScriptAddress, lockTx, 0, txscript.StandardVerifyFlags, nil, nil, tracker.CurrentBalance)
 		if err != nil {
