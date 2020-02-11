@@ -119,7 +119,6 @@ func (ts *TrackerStore) GetTrackerForRedeem() (*Tracker, error) {
 			highestAmount = d.CurrentBalance
 		}
 
-		// return false
 		return false
 	})
 
@@ -128,6 +127,34 @@ func (ts *TrackerStore) GetTrackerForRedeem() (*Tracker, error) {
 	}
 
 	return tempTracker, nil
+}
+
+func (ts *TrackerStore) GetMaxAvailableBalance() int64 {
+
+	var highestAmount int64 = -1
+	var tempTracker *Tracker = nil
+
+	ts.Iterate(func(k, v []byte) bool {
+
+		d := &Tracker{}
+		err := ts.szlr.Deserialize(v, d)
+		if err != nil {
+			return false
+		}
+
+		if d.IsAvailable() && d.GetBalance() > highestAmount {
+			tempTracker = d
+			highestAmount = d.CurrentBalance
+		}
+
+		return false
+	})
+
+	if tempTracker == nil {
+		return 0
+	}
+
+	return tempTracker.CurrentBalance
 }
 
 func (ts *TrackerStore) Iterate(fn func(k, v []byte) bool) {

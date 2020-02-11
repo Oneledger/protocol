@@ -242,3 +242,10 @@ type CurrencyBalanceReply struct {
 	// The height when this balance was recorded
 	Height int64 `json:"height"`
 }
+
+type EmptyRequest struct {
+}
+
+type MaxTrackerBalanceReply struct {
+	MaxBalance int64 `json:"max_balance"`
+}
