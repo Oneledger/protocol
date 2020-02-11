@@ -180,6 +180,28 @@ func runBroadcastFailureReset(ctx *action.Context, tx action.RawTx) (bool, actio
 		}
 	}
 
+	// if the process is redeem return the user oBTC
+	if tracker.ProcessType == bitcoin.ProcessTypeRedeem {
+		amount := tracker.CurrentBalance - tracker.ProcessBalance
+
+		btcCurr, ok := ctx.Currencies.GetCurrencyByName("BTC")
+		if !ok {
+			return false, action.Response{Log: "failed to find currency BTC"}
+		}
+		coin := btcCurr.NewCoinFromUnit(amount)
+
+		err = ctx.Balances.AddToAddress(tracker.ProcessOwner, coin)
+		if err != nil {
+			return false, action.Response{Log: "failed to add currency err:" + err.Error()}
+		}
+
+		tally := action.Address(lockBalanceAddress)
+		err = ctx.Balances.AddToAddress(tally, coin)
+		if err != nil {
+			return false, action.Response{Log: "failed to add currency err:" + err.Error()}
+		}
+	}
+
 	tracker.Multisig.Msg = nil
 	tracker.Multisig.Signatures = []keys.BTCSignature{}
 
