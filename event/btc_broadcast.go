@@ -104,6 +104,7 @@ func (j *JobBTCBroadcast) DoMyJob(ctxI interface{}) {
 	sigScript, err := builder.Script()
 	if err != nil {
 		ctx.Logger.Error("error in building sig script", err)
+		return
 	}
 
 	opt := ctx.Trackers.GetConfig()
@@ -126,6 +127,7 @@ func (j *JobBTCBroadcast) DoMyJob(ctxI interface{}) {
 
 	ctx.Logger.Debug(hex.EncodeToString(txBytes))
 
+	// verify multisig of validators
 	if !isFirstLock {
 
 		vm, err := txscript.NewEngine(tracker.CurrentLockScriptAddress, lockTx, 0, txscript.StandardVerifyFlags, nil, nil, tracker.CurrentBalance)

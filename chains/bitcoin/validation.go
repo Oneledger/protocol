@@ -173,9 +173,9 @@ func EstimateTxSizeBeforeUserSign(tx *wire.MsgTx, isFirstLock bool) int {
 
 	if isFirstLock {
 
-		return tx.SerializeSize() + inputSigsSize
+		return tx.SerializeSize() + inputSigsSize + 20
 	}
 
 	sigScriptSize := 46 + 74*6 + 34*8
-	return tx.SerializeSize() + sigScriptSize + inputSigsSize
+	return tx.SerializeSize() + sigScriptSize + inputSigsSize + 20
 }

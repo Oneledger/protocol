@@ -6,9 +6,7 @@ package bitcoin
 
 import (
 	"bytes"
-	"encoding/hex"
 	"errors"
-	"fmt"
 	"sort"
 
 	"github.com/blockcypher/gobcy"
@@ -32,14 +30,14 @@ type ChainDriver interface {
 	//	PrepareLock(prevLock, input *bitcoin.UTXO, lockScriptAddress []byte) (txBytes []byte)
 
 	PrepareLockNew(prevLockTxID *chainhash.Hash, prevLockIndex uint32, prevLockBalance int64,
-		inputs []InputTransaction, feesInSatoshi int64, lockAmount int64, returnAddress []byte,
+		inputs []InputTransaction, feesRate int64, lockAmount int64, returnAddress []byte,
 		lockScriptAddress []byte) (txBytes []byte, err error)
 
 	AddLockSignature([]byte, []byte, bool) *wire.MsgTx
 
 	BroadcastTx(*wire.MsgTx, *rpcclient.Client) (*chainhash.Hash, error)
 
-	CheckFinality(*chainhash.Hash, string, string) (bool, error)
+	CheckFinality(hash *chainhash.Hash, token, chain string) (bool, error)
 
 	PrepareRedeemNew(prevLockTxID *chainhash.Hash, prevLockIndex uint32, prevLockBalance int64,
 		userAddress []byte, redeemAmount int64, feesInSatoshi int64,
@@ -73,6 +71,7 @@ func (c *chainDriver) PrepareLockNew(prevLockTxID *chainhash.Hash, prevLockIndex
 	// create tracker txin & add to txn
 	// if this is a newly initialized tracker the prev lock transaction id is nil,
 	// in that case there is no balance in the tracker, so just go ahead without carrying balance
+	isFirstLock := prevLockTxID == nil
 	if prevLockTxID != nil {
 
 		prevLockOP := wire.NewOutPoint(prevLockTxID, prevLockIndex)
@@ -91,17 +90,17 @@ func (c *chainDriver) PrepareLockNew(prevLockTxID *chainhash.Hash, prevLockIndex
 		totalInputBalance += input.Balance
 	}
 
-	var balance = lockAmount
+	var balance = prevLockBalance + lockAmount
 
 	// add a txout to the lockscriptaddress
 	out := wire.NewTxOut(balance, lockScriptAddress)
 	tx.AddTxOut(out)
 
-	feesInSatoshi := int64(EstimateTxSizeBeforeUserSign(tx, true)+20) * feesRate
+	feesInSatoshi := int64(EstimateTxSizeBeforeUserSign(tx, isFirstLock)) * feesRate
 
-	var returnBalance = prevLockBalance + totalInputBalance - lockAmount - feesInSatoshi
+	var returnBalance = prevLockBalance + totalInputBalance - balance - feesInSatoshi
 	if returnBalance < 0 {
-		err = errors.New("not enough balance to lock")
+		err = errors.New("not enough balance to lock and pay fees")
 		return
 	}
 
@@ -114,7 +113,6 @@ func (c *chainDriver) PrepareLockNew(prevLockTxID *chainhash.Hash, prevLockIndex
 	tx.Serialize(buf)
 	txBytes = buf.Bytes()
 
-	fmt.Println(hex.EncodeToString(txBytes))
 	return
 }
 
