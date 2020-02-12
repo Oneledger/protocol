@@ -5,8 +5,6 @@
 package ons
 
 import (
-	"fmt"
-
 	"github.com/pkg/errors"
 
 	"github.com/Oneledger/protocol/data/balance"
@@ -47,7 +45,6 @@ func (d *Domain) Data() serialize.Data {
 	if d.SalePrice != nil {
 		dd.SalePriceData, _ = d.SalePrice.MarshalJSON()
 	}
-	fmt.Println("data:", dd)
 	return dd
 }
 
@@ -75,7 +72,6 @@ func (d *Domain) SetData(a interface{}) error {
 		}
 		d.SalePrice = amt
 	}
-	fmt.Println("set data", d)
 	return nil
 }
 

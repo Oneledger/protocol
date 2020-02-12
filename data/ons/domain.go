@@ -5,8 +5,6 @@
 package ons
 
 import (
-	"fmt"
-
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/keys"
 )
@@ -95,7 +93,6 @@ func (d *Domain) PutOnSale(price balance.Amount) {
 
 	d.OnSaleFlag = true
 	d.SalePrice = &price
-	fmt.Println("put on sale: ", d)
 }
 
 func (d *Domain) IsChangeable(currentHeight int64) bool {
