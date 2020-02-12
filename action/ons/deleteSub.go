@@ -19,8 +19,8 @@ domain name is passed.
 
 */
 type DeleteSub struct {
-	Name  ons.Name       `json:"owner"`
-	Owner action.Address `json:"address"`
+	Name  ons.Name       `json:"name"`
+	Owner action.Address `json:"owner"`
 }
 
 var _ action.Msg = &DeleteSub{}
@@ -130,7 +130,7 @@ func runDeleteSub(ctx *action.Context, tx action.RawTx) (bool, action.Response) 
 		return false, action.Response{Log: "Parent domain doesn't exist, cannot create sub domain!"}
 	}
 
-	if !bytes.Equal(parent.OwnerAddress, del.Owner) {
+	if !bytes.Equal(parent.Owner, del.Owner) {
 		return false, action.Response{Log: "parent domain not owned"}
 	}
 

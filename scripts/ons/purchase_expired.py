@@ -47,7 +47,7 @@ if __name__ == "__main__":
     print
 
 
-    print bcolors.WARNING + "*** Send to domain ***" + bcolors.ENDC
+    print bcolors.WARNING + "*** Send to domain (should fail) ***" + bcolors.ENDC
     raw_txn = send_domain(name, addrs[0], (int("100")*10**18))
     print raw_txn
 

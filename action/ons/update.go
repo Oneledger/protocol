@@ -17,7 +17,7 @@ var _ Ons = &DomainUpdate{}
 
 type DomainUpdate struct {
 	Owner       action.Address `json:"owner"`
-	Beneficiary action.Address `json:"account"`
+	Beneficiary action.Address `json:"beneficiary"`
 	Name        ons.Name       `json:"name"`
 	Active      bool           `json:"active"`
 	Uri         string         `json:"uri"`
@@ -127,7 +127,7 @@ func runUpdate(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 		return false, action.Response{Log: fmt.Sprintf("domain is not changable: %s, last change: %d ,current height :%d", update.Name, d.LastUpdateHeight, ctx.Header.Height)}
 	}
 
-	if !bytes.Equal(d.OwnerAddress, update.Owner) {
+	if !bytes.Equal(d.Owner, update.Owner) {
 		return false, action.Response{Log: fmt.Sprintf("domain is not owned by: %s", hex.EncodeToString(update.Owner))}
 	}
 

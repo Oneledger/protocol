@@ -161,29 +161,29 @@ func runPurchaseDomain(ctx *action.Context, tx action.RawTx) (bool, action.Respo
 
 	opt := ctx.Domains.GetOptions()
 	var extend int64
-
 	// if the domain is on sale and not expired
 	if (ctx.State.Version() <= domain.ExpireHeight) && domain.OnSaleFlag {
 
+		sale := olt.NewCoinFromAmount(*domain.SalePrice)
 		// offering should be more than sale price
-		if !domain.SalePrice.LessThanEqualCoin(olt.NewCoinFromAmount(buy.Offering.Value)) {
+		if !sale.LessThanEqualCoin(olt.NewCoinFromAmount(buy.Offering.Value)) {
 			return false, action.Response{Log: "offering is not enough"}
 		}
 
 		// debit the sale price from buyer balance
-		err := ctx.Balances.MinusFromAddress(buy.Buyer, domain.SalePrice)
+		err := ctx.Balances.MinusFromAddress(buy.Buyer, sale)
 		if err != nil {
 			return false, action.Response{Log: err.Error()}
 		}
 
 		// credit the sale price to the previous owner
-		err = ctx.Balances.AddToAddress(domain.Beneficiary, domain.SalePrice)
+		err = ctx.Balances.AddToAddress(domain.Beneficiary, sale)
 		if err != nil {
 			return false, action.Response{Log: err.Error()}
 		}
 
 		// deduct the saleprice from the offering
-		remain, err = remain.Minus(domain.SalePrice)
+		remain, err = remain.Minus(sale)
 		if err != nil {
 			return false, action.Response{Log: err.Error()}
 		}

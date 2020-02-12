@@ -204,9 +204,9 @@ func (s *Service) ONS_CreateRawSend(args client.ONSSendRequest, reply *client.Cr
 
 	name := ons2.GetNameFromString(args.Name)
 	domainSend := ons.DomainSend{
-		DomainName: name,
-		From:       args.From,
-		Amount:     args.Amount,
+		Name:   name,
+		From:   args.From,
+		Amount: args.Amount,
 	}
 	data, err := domainSend.Marshal()
 	if err != nil {

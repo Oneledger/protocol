@@ -307,9 +307,9 @@ func DumpBalanceToFile(bs *balance.Store, writer io.Writer, fn func(writer io.Wr
 }
 
 type DomainState struct {
-	OwnerAddress   keys.Address `json:"ownerAddress"`
-	AccountAddress keys.Address `json:"accountAddress"`
-	Name           string       `json:"name"`
+	Owner       keys.Address `json:"ownerAddress"`
+	Beneficiary keys.Address `json:"accountAddress"`
+	Name        string       `json:"name"`
 }
 
 func DumpDomainToFile(ds *ons.DomainStore, writer io.Writer, fn func(writer io.Writer, obj interface{}) bool) {
@@ -325,8 +325,8 @@ func DumpDomainToFile(ds *ons.DomainStore, writer io.Writer, fn func(writer io.W
 		}
 		domainState := DomainState{}
 		domainState.Name = domain.Name.String()
-		domainState.AccountAddress = domain.Beneficiary
-		domainState.OwnerAddress = domain.OwnerAddress
+		domainState.Beneficiary = domain.Beneficiary
+		domainState.Owner = domain.Owner
 
 		fn(writer, domainState)
 		iterator++

@@ -25,9 +25,9 @@ var _ Ons = &DomainSend{}
 // DomainSend is a struct which encapsulates information required in a send to domain transaction.
 // This is struct is serialized according to network strategy before sending over network.
 type DomainSend struct {
-	From       action.Address `json:"from"`
-	DomainName ons.Name       `json:"domainName"`
-	Amount     action.Amount  `json:"amount"`
+	From   action.Address `json:"from"`
+	Name   ons.Name       `json:"name"`
+	Amount action.Amount  `json:"amount"`
 }
 
 func (s DomainSend) Marshal() ([]byte, error) {
@@ -39,7 +39,7 @@ func (s *DomainSend) Unmarshal(data []byte) error {
 }
 
 func (s DomainSend) OnsName() string {
-	return s.DomainName.String()
+	return s.Name.String()
 }
 
 // Type method gives the transaction type of the
@@ -65,7 +65,7 @@ func (s DomainSend) Tags() common.KVPairs {
 	}
 	tag3 := common.KVPair{
 		Key:   []byte("tx.domain_name"),
-		Value: []byte(s.DomainName),
+		Value: []byte(s.Name),
 	}
 
 	tags = append(tags, tag, tag2, tag3)
@@ -109,7 +109,7 @@ func (domainSendTx) Validate(ctx *action.Context, tx action.SignedTx) (bool, err
 	}
 
 	// validate the sender and receiver are not nil
-	if send.From == nil || send.DomainName == "" {
+	if send.From == nil || send.Name == "" {
 		return false, action.ErrMissingData
 	}
 
@@ -149,7 +149,7 @@ func runDomainSend(ctx *action.Context, tx action.RawTx) (bool, action.Response)
 
 	coin := send.Amount.ToCoin(ctx.Currencies)
 
-	domain, err := ctx.Domains.Get(send.DomainName)
+	domain, err := ctx.Domains.Get(send.Name)
 	if err != nil {
 		log := fmt.Sprint("error getting domain:", err)
 		return false, action.Response{Log: log}

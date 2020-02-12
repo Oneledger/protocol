@@ -69,6 +69,6 @@ func call(cmd *cobra.Command, args []string) error {
 }
 
 func isJSON(s string) bool {
-	var js map[string]interface{}
+	var js json.RawMessage
 	return json.Unmarshal([]byte(s), &js) == nil
 }

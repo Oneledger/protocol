@@ -5,14 +5,17 @@
 package ons
 
 import (
+	"fmt"
+
+	"github.com/pkg/errors"
+
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/serialize"
-	"github.com/pkg/errors"
 )
 
 type domainData struct {
-	OwnerAddress     keys.Address `json:"a"`
+	Owner            keys.Address `json:"a"`
 	Beneficiary      keys.Address `json:"b"`
 	Name             string       `json:"c"`
 	CreationHeight   int64        `json:"d"`
@@ -20,9 +23,8 @@ type domainData struct {
 	ExpireHeight     int64        `json:"f"`
 	ActiveFlag       bool         `json:"g"`
 	OnSaleFlag       bool         `json:"h"`
-
-	SalePriceData *balance.CoinData `json:"i"`
-	URI           string            `json:"k"`
+	SalePriceData    []byte       `json:"i"`
+	URI              string       `json:"k"`
 }
 
 func (d *Domain) NewDataInstance() serialize.Data {
@@ -31,7 +33,7 @@ func (d *Domain) NewDataInstance() serialize.Data {
 
 func (d *Domain) Data() serialize.Data {
 	dd := &domainData{
-		OwnerAddress:     d.OwnerAddress,
+		Owner:            d.Owner,
 		Beneficiary:      d.Beneficiary,
 		Name:             d.Name.String(),
 		CreationHeight:   d.CreationHeight,
@@ -42,10 +44,10 @@ func (d *Domain) Data() serialize.Data {
 		SalePriceData:    nil,
 		URI:              d.URI,
 	}
-	if d.SalePrice.Amount != nil {
-		dd.SalePriceData = d.SalePrice.Data().(*balance.CoinData)
+	if d.SalePrice != nil {
+		dd.SalePriceData, _ = d.SalePrice.MarshalJSON()
 	}
-
+	fmt.Println("data:", dd)
 	return dd
 }
 
@@ -55,7 +57,7 @@ func (d *Domain) SetData(a interface{}) error {
 		return errors.New("Wrong data type for domain")
 	}
 
-	d.OwnerAddress = cd.OwnerAddress
+	d.Owner = cd.Owner
 	d.Beneficiary = cd.Beneficiary
 	d.Name = GetNameFromString(cd.Name)
 	d.CreationHeight = cd.CreationHeight
@@ -66,12 +68,14 @@ func (d *Domain) SetData(a interface{}) error {
 	d.URI = cd.URI
 
 	if cd.SalePriceData != nil {
-		err := d.SalePrice.SetData(cd.SalePriceData)
+		amt := &balance.Amount{}
+		err := amt.UnmarshalJSON(cd.SalePriceData)
 		if err != nil {
 			return err
 		}
+		d.SalePrice = amt
 	}
-
+	fmt.Println("set data", d)
 	return nil
 }
 

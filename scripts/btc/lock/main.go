@@ -61,7 +61,7 @@ func prepareLock(txHash string, index int) ([]byte, string) {
 		panic(err)
 	}
 
-	tracker_name, _ := resp.Result["tracker_name"].(string)
+	tracker_name, _ := resp.Result["trackerName"].(string)
 	if len(txn) == 0 ||
 		tracker_name == "" {
 
@@ -90,11 +90,11 @@ func addressess() []string {
 
 func addSignature(txn, sign, addr, trackerName string) []byte {
 	params := map[string]interface{}{
-		"txn":          txn,
-		"signature":    sign,
-		"address":      addr,
-		"tracker_name": trackerName,
-		"gasprice": map[string]interface{}{
+		"txn":         txn,
+		"signature":   sign,
+		"address":     addr,
+		"trackerName": trackerName,
+		"gasPrice": map[string]interface{}{
 			"currency": "OLT",
 			"value":    "1000000000",
 		},

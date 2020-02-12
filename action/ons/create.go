@@ -34,7 +34,7 @@ type DomainCreate struct {
 	Beneficiary action.Address `json:"account"`
 	Name        ons.Name       `json:"name"`
 	Uri         string         `json:"uri"`
-	BuyingPrice action.Amount  `json:"buyingprice"`
+	BuyingPrice action.Amount  `json:"buyingPrice"`
 }
 
 func (dc DomainCreate) Marshal() ([]byte, error) {
@@ -199,7 +199,7 @@ func runCreate(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 		}
 
 		// check if sender is owner of Parent Domain
-		if !bytes.Equal(parent.OwnerAddress, create.Owner) {
+		if !bytes.Equal(parent.Owner, create.Owner) {
 			return false, action.Response{Log: "parent domain not owned"}
 		}
 

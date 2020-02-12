@@ -344,7 +344,7 @@ func NewFaucet(cfg *config.Server) (*Faucet, error) {
 		return nil, errors.Wrap(err, "failed to start node conn")
 	}
 
-	logger.Info("Connected to node run by", addr.String())
+	logger.Info("Connected to node run by", addr.Address.String())
 
 	balReply, err := fullnode.Balance(nodeCtx.Address())
 	if err != nil {
