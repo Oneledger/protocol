@@ -218,7 +218,7 @@ type BTCGetTrackerReply struct {
 
 type BTCRedeemRequest struct {
 	Address    keys.Address  `json:"address"`
-	BTCAddress string        `json:"AddressBTC"`
+	BTCAddress string        `json:"addressBTC"`
 	Amount     int64         `json:"amount"`
 	FeesBTC    int64         `json:"feesBTC"`
 	GasPrice   action.Amount `json:"gasPrice"`
