@@ -8,10 +8,10 @@ import (
 )
 
 type Options struct {
-	Currency          string
-	PerBlockFees      balance.Amount
-	BaseDomainPrice   balance.Amount
-	FirstLevelDomains []string
+	Currency          string         `json:"currency"`
+	PerBlockFees      balance.Amount `json:"perBlockFees"`
+	BaseDomainPrice   balance.Amount `json:"baseDomainPrice"`
+	FirstLevelDomains []string       `json:"firstLevelDomains"`
 
 	firstLevel map[string]bool
 	protocols  map[string]bool

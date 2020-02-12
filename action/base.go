@@ -45,8 +45,8 @@ func (s Signature) Verify(msg []byte) bool {
 }
 
 type RawTx struct {
-	Type Type    `json:"tx_type"`
-	Data MsgData `json:"tx_data"`
+	Type Type    `json:"type"`
+	Data MsgData `json:"data"`
 	Fee  Fee     `json:"fee"`
 	Memo string  `json:"memo"`
 }

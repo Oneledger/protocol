@@ -37,7 +37,7 @@ func (sv *Service) ONS_GetDomainByOwner(req client.ONSGetDomainsRequest, reply *
 
 	domains.Iterate(func(name ons.Name, domain *ons.Domain) bool {
 
-		if domain.OwnerAddress.Equal(req.Owner) {
+		if domain.Owner.Equal(req.Owner) {
 			if req.OnSale && !domain.OnSaleFlag {
 				return false
 			}
@@ -89,6 +89,14 @@ func (sv *Service) ONS_GetDomainByBeneficiary(req client.ONSGetDomainsRequest, r
 
 	*reply = client.ONSGetDomainsOnSaleReply{
 		Domains: ds,
+	}
+	return nil
+}
+
+func (svc *Service) ONS_GetOptions(_ struct{}, reply *client.ONSGetOptionsReply) error {
+
+	*reply = client.ONSGetOptionsReply{
+		Options: *svc.ons.GetOptions(),
 	}
 	return nil
 }

@@ -32,12 +32,16 @@ func Name() string {
 }
 
 func (svc *Service) NodeName(_ client.NodeNameRequest, reply *client.NodeNameReply) error {
-	*reply = svc.ctx.NodeName
+	*reply = client.NodeNameReply{
+		Name: svc.ctx.NodeName,
+	}
 	return nil
 }
 
 func (svc *Service) Address(_ client.NodeAddressRequest, reply *client.NodeAddressReply) error {
-	*reply = svc.ctx.Address()
+	*reply = client.NodeAddressReply{
+		Address: svc.ctx.Address(),
+	}
 	return nil
 }
 
@@ -55,9 +59,9 @@ func (svc *Service) ID(req client.NodeIDRequest, reply *client.NodeIDReply) erro
 			return codes.ErrParsingAddress
 		}
 		out := fmt.Sprintf("%s@%s", nodeKey.ID(), u.Host)
-		*reply = out
+		*reply = client.NodeIDReply{Id: out}
 	} else {
-		*reply = string(nodeKey.ID())
+		*reply = client.NodeIDReply{Id: string(nodeKey.ID())}
 	}
 	return nil
 }

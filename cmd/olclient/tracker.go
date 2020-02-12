@@ -42,7 +42,7 @@ func TrackerNode(cmd *cobra.Command, args []string) {
 	if err != nil {
 		logger.Fatal("error in getting balance", err)
 	}
-	printTracker(bal.TrackerData, nodeName)
+	printTracker(bal.TrackerData, nodeName.Name)
 }
 
 func printTracker(tracker string, nodeName string) {

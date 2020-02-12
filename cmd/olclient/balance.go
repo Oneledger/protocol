@@ -68,7 +68,7 @@ func BalanceNode(cmd *cobra.Command, args []string) {
 			logger.Fatal("error in getting balance", err)
 		}
 
-		printBalance(nodeName, balArgs.accountKey, bal)
+		printBalance(nodeName.Name, balArgs.accountKey, bal)
 
 	} else {
 		bal, err := fullnode.CurrBalance(balArgs.accountKey, balArgs.currencyName)
@@ -76,7 +76,7 @@ func BalanceNode(cmd *cobra.Command, args []string) {
 			logger.Fatal("error in getting balance", err)
 		}
 
-		printCurrBalance(nodeName, balArgs.accountKey, bal)
+		printCurrBalance(nodeName.Name, balArgs.accountKey, bal)
 	}
 }
 

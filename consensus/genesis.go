@@ -68,7 +68,7 @@ type AppState struct {
 	Staking     []Stake                    `json:"staking"`
 	Domains     []DomainState              `json:"domains"`
 	Fees        []BalanceState             `json:"fees"`
-	ONSOptions  ons.Options                `json:"ons_options"`
+	ONSOptions  ons.Options                `json:"onsOptions"`
 }
 
 func NewAppState(currencies balance.Currencies,
