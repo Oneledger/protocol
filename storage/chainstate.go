@@ -22,9 +22,10 @@ package storage
 
 import (
 	"encoding/hex"
-	"errors"
+	"strconv"
 	"sync"
 
+	"github.com/pkg/errors"
 	"github.com/tendermint/iavl"
 	tmdb "github.com/tendermint/tendermint/libs/db"
 )
@@ -160,7 +161,7 @@ func (state *ChainState) Commit() ([]byte, int64) {
 	// Persist the Delivered merkle tree
 	hash, version, err := state.Delivered.SaveVersion()
 	if err != nil {
-		log.Fatal("Saving", "err", err)
+		panic(errors.Wrap(err, "failed to commit, version: "+strconv.FormatInt(version, 10)))
 	}
 
 	state.LastVersion, state.Version = state.Version, version
@@ -172,14 +173,14 @@ func (state *ChainState) Commit() ([]byte, int64) {
 		if state.every == 0 || release%state.every != 0 {
 			err := state.Delivered.DeleteVersion(release)
 			if err != nil {
-				log.Error("Failed to delete old version of chainstate", "err", err)
+				log.Error("Failed to delete old version of chainstate", "err:", err, "version:", release)
 			}
 		}
 		if state.cycles != 0 && release%state.every == 0 {
 			release = release - state.cycles*state.every
 			err := state.Delivered.DeleteVersion(release)
 			if err != nil {
-				log.Error("Failed to delete old version of chainstate", "err", err)
+				log.Error("Failed to delete old version of chainstate", "err", err, "version:", release)
 			}
 		}
 
