@@ -241,7 +241,7 @@ func (app *App) blockEnder() blockEnder {
 
 		doTransitions(app.Context.jobStore, app.Context.btcTrackers.WithState(app.Context.deliver), app.Context.validators)
 
-		doEthTransitions(app.Context.jobStore, app.Context.ethTrackers.WithState(app.Context.deliver), app.Context.node.ValidatorAddress(), app.logger, app.Context.validators)
+		doEthTransitions(app.Context.jobStore, app.Context.ethTrackers.WithState(app.Context.deliver), app.Context.node.ValidatorAddress(), app.logger, app.Context.validators,app.Context.deliver)
 
 		app.logger.Debug("End Block: ", result, "height:", req.Height)
 
@@ -338,7 +338,7 @@ func doTransitions(js *jobs.JobStore, ts *bitcoin.TrackerStore, validators *iden
 	}
 }
 
-func doEthTransitions(js *jobs.JobStore, ts *ethereum.TrackerStore, myValAddr keys.Address, logger *log.Logger, validators *identity.ValidatorStore) {
+func doEthTransitions(js *jobs.JobStore, ts *ethereum.TrackerStore, myValAddr keys.Address, logger *log.Logger, validators *identity.ValidatorStore , deliverStore *storage.State) {
 
 	tnames := make([]*ceth.TrackerName, 0, 20)
 	ts.Iterate(func(name *ceth.TrackerName, tracker *ethereum.Tracker) bool {
@@ -346,7 +346,7 @@ func doEthTransitions(js *jobs.JobStore, ts *ethereum.TrackerStore, myValAddr ke
 		return false
 	})
 	for _, name := range tnames {
-		//begin session
+		deliverStore.BeginTxSession()
 		t, _ := ts.Get(*name)
 
 		ctx := ethereum.NewTrackerCtx(t, myValAddr, js.WithChain(chain.ETHEREUM), ts, validators)
@@ -372,7 +372,7 @@ func doEthTransitions(js *jobs.JobStore, ts *ethereum.TrackerStore, myValAddr ke
 			logger.Error("failed to save eth tracker", err)
 			//panic
 		}
-		//end session
+		deliverStore.CommitTxSession()
 	}
 
 }
