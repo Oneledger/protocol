@@ -1,5 +1,9 @@
 package storage
 
+import (
+	"bytes"
+)
+
 var _ Store = &State{}
 var _ Iterable = &State{}
 
@@ -170,7 +174,11 @@ func (s *State) IterateRange(start, end []byte, ascending bool, fn func(key, val
 func (s State) Write() bool {
 
 	s.cache.GetIterable().Iterate(func(key []byte, value []byte) bool {
-		_ = s.cs.Set(key, value)
+		if bytes.Equal(value, []byte(TOMBSTONE)) {
+			s.cs.Delete(key)
+		} else {
+			_ = s.cs.Set(key, value)
+		}
 		return false
 	})
 

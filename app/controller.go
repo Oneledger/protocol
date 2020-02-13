@@ -346,6 +346,7 @@ func doEthTransitions(js *jobs.JobStore, ts *ethereum.TrackerStore, myValAddr ke
 		return false
 	})
 	for _, name := range tnames {
+		//begin session
 		t, _ := ts.Get(*name)
 
 		ctx := ethereum.NewTrackerCtx(t, myValAddr, js.WithChain(chain.ETHEREUM), ts, validators)
@@ -369,7 +370,9 @@ func doEthTransitions(js *jobs.JobStore, ts *ethereum.TrackerStore, myValAddr ke
 		err := ts.Set(ctx.Tracker)
 		if err != nil {
 			logger.Error("failed to save eth tracker", err)
+			//panic
 		}
+		//end session
 	}
 
 }
