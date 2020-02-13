@@ -3,6 +3,7 @@ package keys
 import (
 	"bytes"
 	"crypto/ecdsa"
+	"crypto/sha512"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -276,6 +277,27 @@ type PublicKeyED25519 struct {
 	key ed25519.PubKeyEd25519
 }
 
+//ED25519 Signatures are 64 bytes in length. If it is greater, then we check for the hash prefix.
+func PreHashRequired(sig []byte) bool {
+	if len(sig) > 64 {
+		return bytes.HasPrefix(sig, []byte("SHA512"))
+	} else {
+		return false
+	}
+}
+
+func (k PublicKeyED25519) VerifyPreHashMsg(msg []byte, sig []byte) bool {
+	sha512Hash := sha512.New()
+	length, err := sha512Hash.Write(msg)
+	if length < len(msg) || err != nil {
+		return false
+	}
+	messageHash := sha512Hash.Sum(nil)
+
+	//Signature is only valid after at 6th byte
+	return k.key.VerifyBytes(messageHash, sig[6:])
+}
+
 func (k PublicKeyED25519) Bytes() []byte {
 	return k.key[:]
 }
@@ -286,6 +308,10 @@ func (k PublicKeyED25519) Address() Address {
 }
 
 func (k PublicKeyED25519) VerifyBytes(msg []byte, sig []byte) bool {
+	//PreHash Feature added for Ledger Nano S/X device.
+	if PreHashRequired(sig) {
+		return k.VerifyPreHashMsg(msg, sig)
+	}
 	return k.key.VerifyBytes(msg, sig)
 }
 
