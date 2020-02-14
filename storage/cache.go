@@ -16,6 +16,7 @@ package storage
 
 import (
 	"bytes"
+	"fmt"
 	"sync"
 )
 
@@ -69,7 +70,7 @@ func (c *cache) Set(key StoreKey, dat []byte) error {
 
 // Delete removes any data stored against a key
 func (c *cache) Delete(key StoreKey) (bool, error) {
-
+    fmt.Println("Deleting cache : ",key)
 	delete(c.store, string(key))
 	return true, nil
 }

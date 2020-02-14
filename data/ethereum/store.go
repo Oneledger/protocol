@@ -1,6 +1,8 @@
 package ethereum
 
 import (
+	"fmt"
+
 	"github.com/Oneledger/protocol/chains/ethereum"
 	"github.com/Oneledger/protocol/serialize"
 	"github.com/Oneledger/protocol/storage"
@@ -45,6 +47,7 @@ func (ts *TrackerStore) Exists(key ethereum.TrackerName) bool {
 
 func (ts *TrackerStore) Delete(key ethereum.TrackerName) (bool, error) {
 	prefixed := append(ts.prefix, key.Bytes()...)
+	fmt.Println("Executing tracker Delete : ",key.Hex())
 	return ts.state.Delete(prefixed)
 }
 

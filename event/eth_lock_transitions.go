@@ -1,6 +1,8 @@
 package event
 
 import (
+	"fmt"
+
 	"github.com/pkg/errors"
 
 	"github.com/Oneledger/protocol/data/ethereum"
@@ -211,6 +213,7 @@ func Cleanup(ctx interface{}) error {
 	}
 
 	tracker := context.Tracker
+	fmt.Println("Starting Cleanup : " , tracker.TrackerName.Hex() )
 	//todo: delete the tracker and jobs related
 
 	//Delete Broadcasting Job
@@ -233,7 +236,7 @@ func Cleanup(ctx interface{}) error {
 	if err != nil {
 		return err
 	}
-
+	fmt.Println("Deleting Tracker  : " , tracker.TrackerName.Hex() )
 	//Delete Tracker
 	res, err := context.TrackerStore.Delete(tracker.TrackerName)
 	if err != nil || !res {

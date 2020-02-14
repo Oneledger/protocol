@@ -241,9 +241,12 @@ func (app *App) blockEnder() blockEnder {
 
 		doTransitions(app.Context.jobStore, app.Context.btcTrackers.WithState(app.Context.deliver), app.Context.validators)
 
-		doEthTransitions(app.Context.jobStore, app.Context.ethTrackers.WithState(app.Context.deliver), app.Context.node.ValidatorAddress(), app.logger, app.Context.validators,app.Context.deliver)
+		doEthTransitions(app.Context.jobStore, app.Context.ethTrackers.WithState(app.Context.deliver), app.Context.node.ValidatorAddress(), app.logger, app.Context.validators)
 
+        //app.Context.deliver.Commit()
+		fmt.Println("Block ENDER : Ending block ")
 		app.logger.Debug("End Block: ", result, "height:", req.Height)
+
 
 		return result
 	}
@@ -338,7 +341,7 @@ func doTransitions(js *jobs.JobStore, ts *bitcoin.TrackerStore, validators *iden
 	}
 }
 
-func doEthTransitions(js *jobs.JobStore, ts *ethereum.TrackerStore, myValAddr keys.Address, logger *log.Logger, validators *identity.ValidatorStore , deliverStore *storage.State) {
+func doEthTransitions(js *jobs.JobStore, ts *ethereum.TrackerStore, myValAddr keys.Address, logger *log.Logger, validators *identity.ValidatorStore) {
 
 	tnames := make([]*ceth.TrackerName, 0, 20)
 	ts.Iterate(func(name *ceth.TrackerName, tracker *ethereum.Tracker) bool {
@@ -346,7 +349,7 @@ func doEthTransitions(js *jobs.JobStore, ts *ethereum.TrackerStore, myValAddr ke
 		return false
 	})
 	for _, name := range tnames {
-		deliverStore.BeginTxSession()
+		//deliverStore.BeginTxSession()
 		t, _ := ts.Get(*name)
 
 		ctx := ethereum.NewTrackerCtx(t, myValAddr, js.WithChain(chain.ETHEREUM), ts, validators)
@@ -366,13 +369,12 @@ func doEthTransitions(js *jobs.JobStore, ts *ethereum.TrackerStore, myValAddr ke
 				logger.Error("failed to process eth tracker ProcessTypeRedeem", err)
 			}
 		}
-
+        if ctx.Tracker.State < 5 {
 		err := ts.Set(ctx.Tracker)
 		if err != nil {
 			logger.Error("failed to save eth tracker", err)
-			//panic
-		}
-		deliverStore.CommitTxSession()
+			// ^TODO : ADD PANIC
+		}}
 	}
 
 }

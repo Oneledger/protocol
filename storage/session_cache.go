@@ -4,6 +4,10 @@
 
 package storage
 
+import (
+	"fmt"
+)
+
 /* sessionCache is a simple in-memory keyvalue store, to store binary  This is not thread safe and
 any concurrent read/write might throw panics.
 */
@@ -58,7 +62,7 @@ func (c *sessionCache) Delete(key StoreKey) (bool, error) {
 
 	tombstoneBytes := []byte(TOMBSTONE)
 	c.store[string(key)] = tombstoneBytes
-
+    fmt.Println("MARKED SESSION OBJECT AS TOMBSTONE",key.Bytes() ,":", tombstoneBytes)
 	c.keys = append(c.keys, string(key))
 	return true, nil
 }
