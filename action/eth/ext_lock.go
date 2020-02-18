@@ -166,7 +166,7 @@ func runLock(ctx *action.Context, lock *Lock) (bool, action.Response) {
 
 		ctx.Logger.Error("to field does not match contract address")
 		return false, action.Response{
-			Log: ctx.ETHTrackers.GetOption().ContractAddress.Hex() ,
+			Log: "Contract address does not match" ,
 		}
 	}
 

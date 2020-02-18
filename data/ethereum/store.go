@@ -18,7 +18,7 @@ func (ts *TrackerStore) Get(key ethereum.TrackerName) (*Tracker, error) {
 	prefixed := append(ts.prefix, key.Bytes()...)
 	data, err := ts.state.Get(prefixed)
 	if err != nil {
-		return tracker, err
+		return nil, err
 	}
 
 	err = ts.szlr.Deserialize(data, tracker)
@@ -64,7 +64,7 @@ func (ts *TrackerStore) Iterate(fn func(name *ethereum.TrackerName, tracker *Tra
 			tracker := &Tracker{}
 			err := ts.szlr.Deserialize(value, tracker)
 			if err != nil {
-				return true
+				return false
 			}
 			return fn(name, tracker)
 		},

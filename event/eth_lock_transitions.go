@@ -211,8 +211,6 @@ func Cleanup(ctx interface{}) error {
 	}
 
 	tracker := context.Tracker
-	//todo: delete the tracker and jobs related
-
 	//Delete Broadcasting Job
 	bjob, err := context.JobStore.GetJob(tracker.GetJobID(ethereum.BusyBroadcasting))
 	if err != nil {
@@ -233,7 +231,6 @@ func Cleanup(ctx interface{}) error {
 	if err != nil {
 		return err
 	}
-
 	//Delete Tracker
 	res, err := context.TrackerStore.Delete(tracker.TrackerName)
 	if err != nil || !res {
