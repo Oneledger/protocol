@@ -26,7 +26,7 @@ func (s *Service) GetTracker(args client.BTCGetTrackerRequest, reply *client.BTC
 
 func (s *Service) GetMaxTrackerBalance(args client.EmptyRequest, reply *client.MaxTrackerBalanceReply) error {
 
-	reply.MaxBalance = s.trackerStore.GetMaxAvailableBalance()
+	*reply = client.MaxTrackerBalanceReply{MaxBalance: s.trackerStore.GetMaxAvailableBalance()}
 
 	return nil
 }
