@@ -170,7 +170,7 @@ func (r *Request) ClientDeserialize(name string, obj interface{}) error {
 */
 type Response struct {
 	Data     []byte `json:"data"`
-	ErrorMsg string `json:"error_msg,omitempty"`
+	ErrorMsg string `json:"errorMsg,omitempty"`
 	Success  bool   `json:"success"`
 }
 

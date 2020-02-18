@@ -2,8 +2,9 @@ package ethereum
 
 import (
 	"crypto/ecdsa"
-	"github.com/ethereum/go-ethereum/common"
 	"math/big"
+
+	"github.com/ethereum/go-ethereum/common"
 )
 
 type Service struct {
@@ -23,12 +24,12 @@ type OnlineLockRequest struct {
 	//Amount     int64 `json:"amount"`
 }
 type OfflineLockRequest struct {
-	PublicKey *ecdsa.PublicKey `json:"public_key"`
+	PublicKey *ecdsa.PublicKey `json:"publicKey"`
 	Amount    *big.Int         `json:"amount"`
 }
 
 type OfflineLockRawTX struct {
-	UnsignedRawTx []byte `json:"unsigned_raw_tx"`
+	UnsignedRawTx []byte `json:"unsignedRawTx"`
 }
 type LockReply struct {
 	Amount *big.Int `json:"amount"`
@@ -39,11 +40,11 @@ type LockReply struct {
 
 type SignRequest struct {
 	wei       *big.Int       `json:"wei"`
-	recepient common.Address `json:"recepient"`
+	recipient common.Address `json:"recipient"`
 }
 
 type SignReply struct {
-	txHash common.Hash `json:"tx_hash"`
+	txHash common.Hash `json:"txHash"`
 }
 
 type BalanceRequest struct {

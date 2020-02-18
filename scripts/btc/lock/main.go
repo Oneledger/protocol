@@ -80,7 +80,7 @@ func prepareLock(txHash string, index uint32, txHash2 string, index2 uint32, amo
 		panic(err)
 	}
 
-	tracker_name, _ := resp.Result["tracker_name"].(string)
+	tracker_name, _ := resp.Result["trackerName"].(string)
 	if len(txn) == 0 ||
 		tracker_name == "" {
 

@@ -28,11 +28,11 @@ func main() {
 func prepareRedeem(address, btcAddress string, amount int64) ([]byte, string) {
 
 	params := map[string]interface{}{
-		"address":     address,
-		"btc_address": btcAddress,
-		"amount":      amount,
-		"fees_btc":    500,
-		"gasprice": map[string]interface{}{
+		"address":    address,
+		"addressBTC": btcAddress,
+		"amount":     amount,
+		"feesBTC":    500,
+		"gasPrice": map[string]interface{}{
 			"currency": "OLT",
 			"value":    "1000000000",
 		},
@@ -49,7 +49,7 @@ func prepareRedeem(address, btcAddress string, amount int64) ([]byte, string) {
 		panic(err)
 	}
 
-	tracker_name, _ := resp.Result["tracker_name"].(string)
+	tracker_name, _ := resp.Result["trackerName"].(string)
 	if len(txn) == 0 ||
 		tracker_name == "" {
 

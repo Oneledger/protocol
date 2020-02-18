@@ -25,7 +25,7 @@ type RenewDomain struct {
 	Name ons.Name `json:"name"`
 
 	//Amount Added to extend duration of subscription
-	BuyingPrice action.Amount `json:"price"`
+	BuyingPrice action.Amount `json:"buyingPrice"`
 }
 
 func (r RenewDomain) Signers() []action.Address {
@@ -152,7 +152,7 @@ func runRenew(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	}
 
 	// the sender must be the owner of the domain
-	if !bytes.Equal(renewDomain.Owner, domain.OwnerAddress) {
+	if !bytes.Equal(renewDomain.Owner, domain.Owner) {
 		return false, action.Response{Log: "only domain owner can renew a domain"}
 	}
 

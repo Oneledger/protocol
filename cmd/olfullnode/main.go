@@ -6,23 +6,21 @@
 package main
 
 import (
-	"fmt"
 	"log"
-	"math/rand"
+	"net"
 	"net/http"
 	_ "net/http/pprof"
-	"time"
 )
 
 func main() {
 
 	go func() {
-		s1 := rand.NewSource(time.Now().UnixNano())
-		r1 := rand.New(s1)
-		r := r1.Intn(100)
-		port := 6060 + r
-		addr := fmt.Sprintf("localhost:%d", port)
-		log.Println(http.ListenAndServe(addr, nil))
+		listener, err := net.Listen("tcp", ":0")
+		if err != nil {
+			panic(err)
+		}
+		log.Println("listen to: " + listener.Addr().String())
+		log.Println(http.Serve(listener, nil))
 	}()
 
 	Execute() // Pass control to Cobra

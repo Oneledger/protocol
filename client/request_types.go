@@ -29,7 +29,7 @@ Services:
 	* broadcast
 	* node
 	* owner
-	* query
+	* query`json:"account"`
 	* tx
 */
 
@@ -51,7 +51,7 @@ type SendTxRequest struct {
 	From     keys.Address  `json:"from"`
 	To       keys.Address  `json:"to"`
 	Amount   action.Amount `json:"amount"`
-	GasPrice action.Amount `json:"gasprice"`
+	GasPrice action.Amount `json:"gasPrice"`
 	Gas      int64         `json:"gas"`
 }
 
@@ -75,7 +75,7 @@ type ApplyValidatorReply struct {
 type WithdrawRewardRequest struct {
 	From     keys.Address  `json:"from"`
 	To       keys.Address  `json:"to"`
-	GasPrice action.Amount `json:"gasprice"`
+	GasPrice action.Amount `json:"gasPrice"`
 	Gas      int64         `json:"gas"`
 }
 
@@ -84,17 +84,24 @@ type WithdrawRewardReply struct {
 }
 
 type NodeNameRequest struct{}
-type NodeNameReply = string
+type NodeNameReply struct {
+	Name string `json:"name"`
+}
 
 type NodeAddressRequest struct{}
-type NodeAddressReply = keys.Address
+type NodeAddressReply struct {
+	Address keys.Address `json:"address"`
+}
 
 type NodeIDRequest struct {
 	ShouldShowIP bool `json:"shouldShowIP,omitempty"`
 }
-type NodeIDReply = string
+type NodeIDReply struct {
+	Id string `json:"id"`
+}
 
 type AddAccountRequest = accounts.Account
+
 type AddAccountReply struct {
 	Account accounts.Account `json:"account"`
 }
@@ -106,7 +113,9 @@ type GenerateAccountRequest struct {
 type DeleteAccountRequest struct {
 	Address keys.Address `json:"address"`
 }
-type DeleteAccountReply = bool
+type DeleteAccountReply struct {
+	Deleted bool `json:"deleted"`
+}
 
 type ListAccountsRequest struct{}
 type ListAccountsReply struct {
@@ -184,8 +193,8 @@ type SignRawTxResponse struct {
 type BTCLockRequest struct {
 	Txn         []byte        `json:"txn"`
 	Address     keys.Address  `json:"address"`
-	TrackerName string        `json:"tracker_name"`
-	GasPrice    action.Amount `json:"gasprice"`
+	TrackerName string        `json:"trackerName"`
+	GasPrice    action.Amount `json:"gasPrice"`
 	Gas         int64         `json:"gas"`
 }
 
@@ -202,7 +211,7 @@ type BTCLockPrepareRequest struct {
 
 type BTCLockPrepareResponse struct {
 	Txn         string `json:"txn"`
-	TrackerName string `json:"tracker_name"`
+	TrackerName string `json:"trackerName"`
 }
 
 type BTCGetTrackerRequest struct {
@@ -214,15 +223,15 @@ type BTCGetTrackerReply struct {
 
 type BTCRedeemRequest struct {
 	Address    keys.Address  `json:"address"`
-	BTCAddress string        `json:"btc_address"`
+	BTCAddress string        `json:"addressBTC"`
 	Amount     int64         `json:"amount"`
-	FeesBTC    int64         `json:"fees_btc"`
-	GasPrice   action.Amount `json:"gasprice"`
+	FeesBTC    int64         `json:"feesBTC"`
+	GasPrice   action.Amount `json:"gasPrice"`
 	Gas        int64         `json:"gas"`
 }
 type BTCRedeemPrepareResponse struct {
 	RawTx       []byte `json:"rawTx"`
-	TrackerName string `json:"tracker_name"`
+	TrackerName string `json:"trackerName"`
 }
 
 type ETHLockRequest struct {

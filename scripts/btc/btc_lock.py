@@ -45,8 +45,8 @@ def add_signature(txn, sign, address, tracker_name):
         "txn": txn,
         "signature": sign,
         "address": address,
-        "tracker_name": tracker_name,
-        "gasprice": {
+        "trackerName": tracker_name,
+        "gasPrice": {
             "currency": "OLT",
             "value": "1000000000",
         },
@@ -96,7 +96,7 @@ if __name__ == "__main__":
 
     addrs = addresses()
 
-    result = add_signature(txn, signature, addrs[0], result['tracker_name'])
+    result = add_signature(txn, signature, addrs[0], result['trackerName'])
 
     signed = sign(result['rawTx'], addrs[0])
     print "signed create domain tx:", signed

@@ -285,7 +285,7 @@ func (app *App) getAppHash() (version int64, hash []byte) {
 func (app *App) handlePanic() {
 	if r := recover(); r != nil {
 		fmt.Println("panic in controller: ", r)
-		fmt.Println(debug.Stack())
+		debug.PrintStack()
 		app.Close()
 	}
 }

@@ -64,48 +64,48 @@ type OLTLockRequest struct {
 }
 
 type OLTERC20LockRequest struct {
-	RawTx   []byte `json:"raw_tx"`
+	RawTx   []byte `json:"rawTx"`
 	Address keys.Address
 	Fee     action.Amount `json:"fee"`
 	Gas     int64         `json:"gas"`
 }
 
 type OLTReply struct {
-	RawTX []byte `json:"raw_tx"`
+	RawTX []byte `json:"rawTx"`
 }
 
 type RedeemRequest struct {
-	UserOLTaddress action.Address `json:"user_olt_address"`
-	UserETHaddress action.Address `json:"user_eth_address"`
-	ETHTxn         []byte         `json:"eth_txn"`
+	UserOLTaddress action.Address `json:"userOLTAddress"`
+	UserETHaddress action.Address `json:"userETHAddress"`
+	ETHTxn         []byte         `json:"ethTxn"`
 	Fee            action.Amount  `json:"fee"`
 	Gas            int64          `json:"gas"`
 }
 
 type OLTERC20RedeemRequest struct {
-	UserOLTaddress action.Address `json:"user_olt_address"`
-	UserETHaddress action.Address `json:"user_eth_address"`
-	ETHTxn         []byte         `json:"eth_txn"`
+	UserOLTaddress action.Address `json:"userOLTAddress"`
+	UserETHaddress action.Address `json:"userETHAddress"`
+	ETHTxn         []byte         `json:"ethTxn"`
 	Fee            action.Amount  `json:"fee"`
 	Gas            int64          `json:"gas"`
 }
 
 type ETHLockRequest struct {
-	UserAddress common.Address `json:"user_eth_address"`
+	UserAddress common.Address `json:"userETHAddress"`
 	Amount      *big.Int       `json:"amount"`
 }
 
 type ETHLockRawTX struct {
-	UnsignedRawTx []byte `json:"unsigned_raw_tx"`
+	UnsignedRawTx []byte `json:"unsignedRawTx"`
 }
 
 type SignRequest struct {
 	Wei       *big.Int       `json:"wei"`
-	Recepient common.Address `json:"recepient"`
+	Recipient common.Address `json:"recipient"`
 }
 
 type SignReply struct {
-	TxHash common.Hash `json:"tx_hash"`
+	TxHash common.Hash `json:"txTash"`
 }
 
 type BalanceRequest struct {

@@ -19,7 +19,7 @@ import (
 var _ Ons = &DomainSale{}
 
 type DomainSale struct {
-	Name         ons.Name       `json:"domainName"`
+	Name         ons.Name       `json:"name"`
 	OwnerAddress action.Address `json:"ownerAddress"`
 	Price        action.Amount  `json:"price"`
 	CancelSale   bool           `json:"cancelSale"`
@@ -174,7 +174,7 @@ func runDomainSale(ctx *action.Context, tx action.RawTx) (bool, action.Response)
 	}
 
 	// verify the ownership
-	if bytes.Compare(domain.OwnerAddress, sale.OwnerAddress) != 0 {
+	if bytes.Compare(domain.Owner, sale.OwnerAddress) != 0 {
 		return false, action.Response{Log: "not the owner"}
 	}
 
@@ -187,7 +187,7 @@ func runDomainSale(ctx *action.Context, tx action.RawTx) (bool, action.Response)
 	if sale.CancelSale {
 		domain.CancelSale()
 	} else {
-		domain.PutOnSale(sale.Price.ToCoin(ctx.Currencies))
+		domain.PutOnSale(sale.Price.Value)
 	}
 	domain.LastUpdateHeight = ctx.Header.Height
 

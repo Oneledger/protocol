@@ -86,7 +86,7 @@ func (svc *Service) DeleteAccount(req client.DeleteAccountRequest, reply *client
 		return codes.ErrDeletingAccount
 	}
 
-	*reply = true
+	*reply = client.DeleteAccountReply{Deleted: true}
 	return nil
 }
 
@@ -149,6 +149,6 @@ func (svc *Service) NewAccount(req client.NewAccountRequest, reply *client.NewAc
 		return codes.ErrGeneratingAccount
 	}
 
-	reply = &client.NewAccountReply{acc}
+	*reply = client.NewAccountReply{acc}
 	return nil
 }

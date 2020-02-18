@@ -13,8 +13,8 @@ const HEIGHT_INTERVAL = 1
 
 type Domain struct {
 	// addresses of the owner and the account the domain points to
-	OwnerAddress keys.Address `json:"ownerAddress"`
-	Beneficiary  keys.Address `json:"Beneficiary"`
+	Owner       keys.Address `json:"owner"`
+	Beneficiary keys.Address `json:"beneficiary"`
 
 	// the domain name; this is als a unique identifier of
 	// the domain object over the chain
@@ -34,7 +34,7 @@ type Domain struct {
 	OnSaleFlag bool   `json:"onSaleFlag"`
 	URI        string `json:"uri"`
 	// the asking price in OLT set by the owner
-	SalePrice balance.Coin `json:"salePrice"`
+	SalePrice *balance.Amount `json:"salePrice"`
 }
 
 func NewDomain(ownerAddress, accountAddress keys.Address,
@@ -55,7 +55,7 @@ func NewDomain(ownerAddress, accountAddress keys.Address,
 	}
 
 	return &Domain{
-		OwnerAddress:     ownerAddress,
+		Owner:            ownerAddress,
 		Beneficiary:      accountAddress,
 		Name:             n,
 		CreationHeight:   height, // height of current txn
@@ -63,7 +63,7 @@ func NewDomain(ownerAddress, accountAddress keys.Address,
 		ExpireHeight:     expiry, // height of expiry
 		ActiveFlag:       true,   // Active by default
 
-		SalePrice:  balance.Coin{},
+		SalePrice:  nil,
 		OnSaleFlag: false,
 		URI:        uri,
 	}, nil
@@ -86,13 +86,13 @@ func (d *Domain) SetLastUpdatedHeight(height int64) {
 }
 
 func (d *Domain) ChangeOwner(addr keys.Address) {
-	d.OwnerAddress = addr
+	d.Owner = addr
 }
 
-func (d *Domain) PutOnSale(price balance.Coin) {
+func (d *Domain) PutOnSale(price balance.Amount) {
 
 	d.OnSaleFlag = true
-	d.SalePrice = price
+	d.SalePrice = &price
 }
 
 func (d *Domain) IsChangeable(currentHeight int64) bool {
@@ -106,7 +106,7 @@ func (d *Domain) IsChangeable(currentHeight int64) bool {
 
 func (d *Domain) CancelSale() {
 	d.OnSaleFlag = false
-	d.SalePrice = balance.Coin{}
+	d.SalePrice = nil
 }
 
 func (d *Domain) AddToExpire(h int64) {
@@ -124,9 +124,10 @@ func (d Domain) IsExpired(height int64) bool {
 func (d *Domain) ResetAfterSale(buyer keys.Address, nBlocks, currentHeight int64) {
 	d.Beneficiary = buyer
 	d.ExpireHeight = currentHeight + nBlocks
-	d.OwnerAddress = buyer
-	d.SalePrice = balance.Coin{}
+	d.Owner = buyer
+	d.SalePrice = nil
 	d.LastUpdateHeight = currentHeight
 	d.ActiveFlag = true
 	d.URI = ""
+	d.OnSaleFlag = false
 }

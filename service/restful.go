@@ -67,7 +67,7 @@ func (rs RestfulService) health() http.HandlerFunc {
 }
 
 type clientTokenReq struct {
-	ClientID string `json:"client_id"`
+	ClientID string `json:"clientId"`
 	Username string `json:"username"`
 	Password string `json:"password"`
 }
