@@ -38,6 +38,7 @@ func NewCache(name string) *cache {
 		name:  name,
 		store: make(map[string][]byte),
 		keys:  make([]string, 0, 100),
+		done:  make(map[string]bool),
 	}
 }
 

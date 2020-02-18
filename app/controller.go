@@ -254,7 +254,7 @@ func (app *App) commitor() commitor {
 		defer app.handlePanic()
 
 		hash, ver := app.Context.deliver.Commit()
-		app.logger.Debugf("Committed LockNew Block height[%d], hash[%s], versions[%d]", app.header.Height, hex.EncodeToString(hash), ver)
+		app.logger.Debugf("Committed New Block height[%d], hash[%s], versions[%d]", app.header.Height, hex.EncodeToString(hash), ver)
 
 		// update check state by deliver state
 		gc := getGasCalculator(app.genesisDoc.ConsensusParams)

@@ -174,7 +174,7 @@ func (s *State) IterateRange(start, end []byte, ascending bool, fn func(key, val
 func (s State) Write() bool {
 	s.cache.GetIterable().Iterate(func(key []byte, value []byte) bool {
 		if bytes.Equal(value, []byte(TOMBSTONE)) {
-			s.cs.Delete(key)
+			_, _ = s.cs.Delete(key)
 		} else {
 			_ = s.cs.Set(key, value)
 		}
