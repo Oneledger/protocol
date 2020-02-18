@@ -2,7 +2,6 @@ package storage
 
 import (
 	"bytes"
-	"fmt"
 )
 
 var _ Store = &State{}
@@ -119,11 +118,9 @@ func (s *State) Exists(key StoreKey) bool {
 func (s *State) Delete(key StoreKey) (bool, error) {
 
 	if s.txSession != nil {
-		fmt.Println("TX SESSION IS NOT NIL")
 		return s.txSession.Delete(key)
 	}
 	//cache delete is always true
-	fmt.Println("Starting Deleting from cache : ",key)
 	_, _ = s.cache.Delete(key)
 
 	return true, nil
@@ -175,11 +172,8 @@ func (s *State) IterateRange(start, end []byte, ascending bool, fn func(key, val
 }
 
 func (s State) Write() bool {
-	fmt.Println("Executing Write ")
 	s.cache.GetIterable().Iterate(func(key []byte, value []byte) bool {
-		fmt.Println("Printing Keys : ", key , " : ", value)
 		if bytes.Equal(value, []byte(TOMBSTONE)) {
-			fmt.Println("Deleting key for chainstate :",key)
 			s.cs.Delete(key)
 		} else {
 			_ = s.cs.Set(key, value)

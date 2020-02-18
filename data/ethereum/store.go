@@ -1,8 +1,6 @@
 package ethereum
 
 import (
-	"fmt"
-
 	"github.com/Oneledger/protocol/chains/ethereum"
 	"github.com/Oneledger/protocol/serialize"
 	"github.com/Oneledger/protocol/storage"
@@ -20,7 +18,7 @@ func (ts *TrackerStore) Get(key ethereum.TrackerName) (*Tracker, error) {
 	prefixed := append(ts.prefix, key.Bytes()...)
 	data, err := ts.state.Get(prefixed)
 	if err != nil {
-		return tracker, err
+		return nil, err
 	}
 
 	err = ts.szlr.Deserialize(data, tracker)
@@ -47,7 +45,6 @@ func (ts *TrackerStore) Exists(key ethereum.TrackerName) bool {
 
 func (ts *TrackerStore) Delete(key ethereum.TrackerName) (bool, error) {
 	prefixed := append(ts.prefix, key.Bytes()...)
-	fmt.Println("Executing tracker Delete : ",key.Hex())
 	return ts.state.Delete(prefixed)
 }
 
@@ -67,7 +64,7 @@ func (ts *TrackerStore) Iterate(fn func(name *ethereum.TrackerName, tracker *Tra
 			tracker := &Tracker{}
 			err := ts.szlr.Deserialize(value, tracker)
 			if err != nil {
-				return true
+				return false
 			}
 			return fn(name, tracker)
 		},

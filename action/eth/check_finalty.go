@@ -113,7 +113,7 @@ func runCheckFinality(ctx *action.Context, tx action.RawTx) (bool, action.Respon
 
 	tracker, err := ctx.ETHTrackers.Get(f.TrackerName)
 	if err != nil {
-		ctx.Logger.Error(err, "err getting tracker")
+		return false, action.Response{Log: errors.Wrap(err, "err getting tracker").Error()}
 	}
 
 	if tracker.Finalized() {
@@ -158,7 +158,7 @@ func runCheckFinality(ctx *action.Context, tx action.RawTx) (bool, action.Respon
 	}
 	ctx.Logger.Info("Vote added |  Validator : ", f.ValidatorAddress, " | Process Type : ", trackerlib.GetProcessTypeString(tracker.Type))
 	yes, no := tracker.GetVotes()
-	return true, action.Response{Log: "vote success, not ready to mint: " + strconv.Itoa(yes) + strconv.Itoa(no)}
+	return true, action.Response{Log: "vote success, not ready to mint: " + strconv.Itoa(yes) + "," + strconv.Itoa(no)}
 }
 
 func (reportFinalityMintTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas) (bool, action.Response) {

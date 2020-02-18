@@ -37,9 +37,10 @@ var (
 	TestTokenABI     = contract.ERC20BasicABI
 	LockRedeemERCABI = contract.LockRedeemERCABI
 	// LockRedeemERC20ABI = contract.ContextABI
-	LockRedeemContractAddr = "0x2aD83D75720620093a746A5a0C6010790b86bcf9"
-	TestTokenContractAddr = "0x9e1F5d5d95f7488E940f393dbE5Eedb67b344dc2"
-	LockRedeemERC20ContractAddr = "0x0eb9f09eCb27d3172ef8EbfC401629Aebc47d68f"
+	LockRedeemContractAddr = "0x406Ace6C88c24a3F877F5AC4C12f9Cbca181A066"
+	TestTokenContractAddr = "0x198D6Bbd92a1b47e0d3d46034720dc548d18B480"
+	LockRedeemERC20ContractAddr = "0x8Cb2212A6A06517c778F8E502ab479eE3C7106eA"
+
 	cfg                         = config.DefaultEthConfigLocal()
 	log                         = logger.NewDefaultLogger(os.Stdout).WithPrefix("testeth")
 	UserprivKey                 *ecdsa.PrivateKey
