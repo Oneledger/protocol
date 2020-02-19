@@ -23,9 +23,10 @@ const (
 	// User+Group: rw, Other: r
 	FilePerms = 0664
 	// User+Group: rwx, Other: rx
-	DirPerms   = 0775
-	FileName   = "config.toml"
-	DefaultDir = ".olfullnode"
+	DirPerms               = 0775
+	FileName               = "config.toml"
+	DefaultDir             = ".olfullnode"
+	DefaultRPCStartTimeout = 2
 )
 
 // Duration is a time.Duration that marshals and unmarshals with millisecond values
@@ -215,7 +216,9 @@ func DefaultNodeConfig() *NodeConfig {
 
 // NetworkConfig exposes configuration files for the current
 type NetworkConfig struct {
-	RPCAddress string `toml:"rpc_address"`
+	RPCAddress      string `toml:"rpc_address"`
+	RPCStartTimeout int    `toml:"rpc_start_timeout" desc:"RPC startup timeout in seconds"`
+
 	P2PAddress string `toml:"p2p_address" desc:"Main address for P2P connections"`
 
 	ExternalP2PAddress string `toml:"external_p2p_address" desc:"Address to advertise for incoming peers to connect to"`
@@ -232,6 +235,7 @@ type NetworkConfig struct {
 func DefaultNetworkConfig() *NetworkConfig {
 	return &NetworkConfig{
 		RPCAddress:         "tcp://127.0.0.1:26601",
+		RPCStartTimeout:    DefaultRPCStartTimeout,
 		P2PAddress:         "tcp://127.0.0.1:26611",
 		ExternalP2PAddress: "",
 		SDKAddress:         "http://127.0.0.1:26631",
