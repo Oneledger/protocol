@@ -180,18 +180,22 @@ func (srv *Server) Prepare(u *url.URL) error {
 // should be called before calling this method
 func (srv *Server) Start() error {
 
+	channel := make(chan error)
 	if srv.listener == nil {
 		return errors.New("no listener specified on server, was Prepare called?")
 	}
-	go func(l net.Listener) {
+	go func(l net.Listener, ch chan error) {
 		srv.logger.Info("starting RPC server on " + l.Addr().String())
 		err := srv.http.Serve(l)
 		if err != nil {
 			srv.logger.Fatalf("server: %s", err)
 		}
-	}(srv.listener)
+		ch <- err
+	}(srv.listener, channel)
 
-	return nil
+	err := <-channel
+
+	return err
 }
 
 // Close terminates the underlying HTTP server and listener
