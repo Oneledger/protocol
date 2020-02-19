@@ -137,8 +137,8 @@ func portGenerator(startingPort int) func() int {
 
 func setEnvVariables() {
 	os.Setenv("API_KEY","de5e96cbb6284d5ea1341bf6cb7fa401")
-	os.Setenv("ETHPKPATH", "/tmp/pkdata")
-	os.Setenv("WALLETADDR", "/tmp/walletAddr")
+	os.Setenv("ETHPKPATH", "/home/tanmay/Codebase/pkdata")
+	os.Setenv("WALLETADDR", "/home/tanmay/Codebase/walletAddr")
 }
 
 func generateAddress(port int, flags ...bool) string {
@@ -263,7 +263,7 @@ func runDevnet(_ *cobra.Command, _ []string) error {
 		ethConnection := config.EthereumChainDriverConfig{Connection:url}
 		cfg.EthChainDriver = &ethConnection
 		cfg.Node.NodeName = nodeName
-		cfg.Node.LogLevel = 4
+		//cfg.Node.LogLevel = 4
 		cfg.Node.DB = args.dbType
 		if args.createEmptyBlock {
 			cfg.Consensus.CreateEmptyBlocks = true
