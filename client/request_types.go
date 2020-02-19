@@ -193,18 +193,23 @@ type SignRawTxResponse struct {
 
 type BTCLockRequest struct {
 	Txn         []byte        `json:"txn"`
-	Signature   []byte        `json:"signature"`
 	Address     keys.Address  `json:"address"`
 	TrackerName string        `json:"trackerName"`
 	GasPrice    action.Amount `json:"gasPrice"`
 	Gas         int64         `json:"gas"`
 }
 
-type BTCLockPrepareRequest struct {
-	Hash    string `json:"hash"`
-	Index   uint32 `json:"index"`
-	FeesBTC int64  `json:"feesBTC"`
+type InputTransaction struct {
+	Hash  string `json:"hash"`
+	Index uint32 `json:"index"`
 }
+type BTCLockPrepareRequest struct {
+	Inputs           []InputTransaction `json:"inputs"`
+	AmountSatoshi    int64              `json:"amount"`
+	FeeRate          int64              `json:"fee_rate"`
+	ReturnAddressStr string             `json:"return_address"`
+}
+
 type BTCLockPrepareResponse struct {
 	Txn         string `json:"txn"`
 	TrackerName string `json:"trackerName"`
@@ -246,6 +251,14 @@ type CurrencyBalanceReply struct {
 	Balance  string `json:"balance"`
 	// The height when this balance was recorded
 	Height int64 `json:"height"`
+}
+
+
+type EmptyRequest struct {
+}
+
+type MaxTrackerBalanceReply struct {
+	MaxBalance int64 `json:"max_balance"`
 }
 
 type FeeOptionsReply struct {

@@ -10,6 +10,9 @@ import (
 
 	"github.com/blockcypher/gobcy"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
+	"github.com/btcsuite/btcd/txscript"
+	"github.com/btcsuite/btcd/wire"
+	"github.com/btcsuite/btcutil"
 	"github.com/google/uuid"
 
 	"github.com/Oneledger/protocol/action"
@@ -21,7 +24,8 @@ import (
 )
 
 const (
-	MINIMUM_CONFIRMATIONS_REQ = 1
+	MINIMUM_CONFIRMATIONS_REQ      = 6
+	MINIMUM_CONFIRMATIONS_REQ_TEST = 1
 )
 
 // PrepareLock
@@ -33,26 +37,34 @@ func (s *Service) PrepareLock(args client.BTCLockPrepareRequest, reply *client.B
 
 	btc := gobcy.API{cfg.BlockCypherToken, "btc", cfg.BlockCypherChainType}
 
-	tx, err := btc.GetTX(args.Hash, nil)
-	if err != nil {
-		s.logger.Error("error in getting txn from bitcoin network", err)
-		return codes.ErrBTCReadingTxn
+	cdInput := make([]bitcoin.InputTransaction, 0, len(args.Inputs))
+	var totalInput int64 = 0
+
+	for _, input := range args.Inputs {
+		tx, err := btc.GetTX(input.Hash, nil)
+		if err != nil {
+			s.logger.Error("error in getting txn from bitcoin network", err)
+			return codes.ErrBTCReadingTxn
+		}
+
+		if tx.Confirmations < MINIMUM_CONFIRMATIONS_REQ {
+
+			s.logger.Error("not enough txn confirmations", err)
+			return codes.ErrBTCNotEnoughConfirmations
+		}
+
+		if tx.Outputs[input.Index].SpentBy != "" {
+
+			s.logger.Error("source is not spendable", err)
+			return codes.ErrBTCNotSpendable
+		}
+
+		hashh, _ := chainhash.NewHashFromStr(tx.Hash)
+		inputAmount := int64(tx.Outputs[input.Index].Value)
+		totalInput += inputAmount
+
+		cdInput = append(cdInput, bitcoin.InputTransaction{hashh, input.Index, inputAmount})
 	}
-
-	if tx.Confirmations < MINIMUM_CONFIRMATIONS_REQ {
-
-		s.logger.Error("not enough txn confirmations", err)
-		return codes.ErrBTCNotEnoughConfirmations
-	}
-
-	if tx.Outputs[args.Index].SpentBy != "" {
-
-		s.logger.Error("source is not spendable", err)
-		return codes.ErrBTCNotSpendable
-	}
-
-	hashh, _ := chainhash.NewHashFromStr(tx.Hash)
-	inputAmount := int64(tx.Outputs[args.Index].Value)
 
 	//tracker, err := s.trackerStore.Get("tracker_1")
 	tracker, err := s.trackerStore.GetTrackerForLock()
@@ -63,8 +75,21 @@ func (s *Service) PrepareLock(args client.BTCLockPrepareRequest, reply *client.B
 
 	s.logger.Infof("%#v \n", tracker)
 
-	txnBytes := cd.PrepareLockNew(tracker.CurrentTxId, 0, tracker.CurrentBalance,
-		hashh, args.Index, inputAmount, args.FeesBTC, tracker.ProcessLockScriptAddress)
+	returnAddress, err := btcutil.DecodeAddress(args.ReturnAddressStr, cfg.BTCParams)
+	if err != nil {
+		return codes.ErrBadBTCAddress.Wrap(err)
+	}
+
+	returnAddressBytes, err := txscript.PayToAddrScript(returnAddress)
+	if err != nil {
+		return codes.ErrBadBTCAddress.Wrap(err)
+	}
+
+	txnBytes, err := cd.PrepareLockNew(tracker.CurrentTxId, 0, tracker.CurrentBalance,
+		cdInput, args.FeeRate, args.AmountSatoshi, returnAddressBytes, tracker.ProcessLockScriptAddress)
+	if err != nil {
+		return codes.ErrBadBTCTxn.Wrap(err)
+	}
 
 	reply.Txn = hex.EncodeToString(txnBytes)
 	reply.TrackerName = tracker.Name
@@ -86,26 +111,31 @@ func (s *Service) AddUserSignatureAndProcessLock(args client.BTCLockRequest, rep
 
 	cfg := s.trackerStore.GetConfig()
 
-	// initialize a chain driver for adding signature
-	cd := bitcoin.NewChainDriver(cfg.BlockCypherToken)
-
 	// add the users' btc signature to the redeem txn in the appropriate place
-	s.logger.Debug("----", hex.EncodeToString(args.Txn), hex.EncodeToString(args.Signature))
+	s.logger.Debug("----", hex.EncodeToString(args.Txn))
 
-	newBTCTx := cd.AddUserLockSignature(args.Txn, args.Signature)
+	newBTCTx := wire.NewMsgTx(wire.TxVersion)
+
+	buf := bytes.NewBuffer(args.Txn)
+	newBTCTx.Deserialize(buf)
 
 	totalLockAmount := newBTCTx.TxOut[0].Value - tracker.CurrentBalance
 
-	if len(newBTCTx.TxIn) == 1 { // if new tracker
+	isFirstLock := tracker.CurrentTxId == nil
+	if isFirstLock {
+		// if this is first lock for tracker, then all inputs must be signed
 
-		if tracker.CurrentTxId != nil {
+		for i := range newBTCTx.TxIn {
+			if len(newBTCTx.TxIn[i].SignatureScript) == 0 {
 
-			// incorrect txn
-			s.logger.Error("tracker current txid not nil")
-			return codes.ErrBadBTCTxn
+				s.logger.Error("all user sources for lock are not signed")
+				return codes.ErrBadBTCTxn
+			}
 		}
-	} else if len(newBTCTx.TxIn) == 2 { // if not a new tracker
+	} else {
 
+		// if not the first tracker txn then the first input should be
+		// tracker previous txn
 		if *tracker.CurrentTxId != newBTCTx.TxIn[0].PreviousOutPoint.Hash ||
 			newBTCTx.TxIn[0].PreviousOutPoint.Index != 0 {
 
@@ -113,20 +143,28 @@ func (s *Service) AddUserSignatureAndProcessLock(args client.BTCLockRequest, rep
 			s.logger.Error("btc txn doesn;t match tracker")
 			return codes.ErrBadBTCTxn
 		}
-	} else {
 
-		// incorrect txn
-		return codes.ErrBadBTCTxn
+		for i := range newBTCTx.TxIn {
+			if i == 0 {
+				continue
+			}
+
+			if len(newBTCTx.TxIn[i].SignatureScript) == 0 {
+
+				s.logger.Error("all user sources for lock are not signed")
+				return codes.ErrBadBTCTxn
+			}
+		}
 	}
 
-	if !bitcoin.ValidateLock(newBTCTx, cfg.BlockCypherToken, cfg.BlockCypherChainType, tracker.CurrentTxId,
-		tracker.ProcessLockScriptAddress, tracker.CurrentBalance, totalLockAmount) {
+	if !bitcoin.ValidateLock(newBTCTx, cfg.BlockCypherToken, cfg.BlockCypherChainType,
+		tracker.ProcessLockScriptAddress, tracker.CurrentBalance, totalLockAmount, isFirstLock) {
 
 		return codes.ErrBadBTCTxn
 	}
 
 	var txBytes []byte
-	buf := bytes.NewBuffer(txBytes)
+	buf = bytes.NewBuffer(txBytes)
 	err = newBTCTx.Serialize(buf)
 	if err != nil {
 		return codes.ErrSerialization

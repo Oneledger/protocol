@@ -224,14 +224,15 @@ func runReportFinalityMint(ctx *action.Context, tx action.RawTx) (bool, action.R
 		}
 
 		oBTCCoin := curr.NewCoinFromUnit(tracker.ProcessBalance - tracker.CurrentBalance)
+
 		err = ctx.Balances.AddToAddress(f.OwnerAddress, oBTCCoin)
 		if err != nil {
 			ctx.Logger.Error(err)
 			return false, action.Response{Log: "error adding oBTC to address"}
 		}
 
-		tally := keys.Address(lockBalanceAddress)
-		err = ctx.Balances.AddToAddress(tally, oBTCCoin)
+		circulation := keys.Address(lockBalanceAddress)
+		err = ctx.Balances.AddToAddress(circulation, oBTCCoin)
 		if err != nil {
 			ctx.Logger.Error(err)
 			return false, action.Response{Log: "error adding oBTC to address"}

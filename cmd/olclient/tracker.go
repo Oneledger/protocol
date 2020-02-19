@@ -37,7 +37,6 @@ func TrackerNode(cmd *cobra.Command, args []string) {
 		logger.Fatal(err)
 	}
 
-	// assuming we have public key
 	bal, err := fullnode.GetTracker(trackerArgs.name)
 	if err != nil {
 		logger.Fatal("error in getting balance", err)

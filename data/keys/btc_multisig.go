@@ -124,7 +124,7 @@ func (m BTCMultiSig) HasAddressSigned(addr Address) bool {
 		}
 	}
 
-	if index > len(m.Signers) {
+	if index >= len(m.Signatures) {
 		return false
 	}
 

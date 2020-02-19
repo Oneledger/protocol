@@ -9,19 +9,27 @@ import (
 	"encoding/hex"
 	"fmt"
 	"time"
+
+	"github.com/Oneledger/protocol/client"
 )
 
 func main() {
-	sourceBTCHash := "49182752c27922a454c3a128377b68c636763b049307c0789168791bd71f05c2"
-	sourceBTCIndex := 0
-	wif := "cNVonQDXYShV3PJLHbz6bEs4qkKm6smRUXuYtD2uMseiUubBB25j"
 
-	txn, tname := prepareLock(sourceBTCHash, sourceBTCIndex)
+	sourceBTCHash := "b7c8d66068fccecccd2a9b29bf59fc5eb2f4117378fe53791dc3ee618077d5df"
+	var sourceBTCIndex uint32 = 0
+
+	sourceBTCHash2 := "232a164b54952dbcadb287608500463cd75e6e44d9a936e5ff6cb88edb74f887"
+	var sourceBTCIndex2 uint32 = 1
+
+	wif := "cPwDvkefgLhtWiMJYapEm4MuKhxAiRDjNFZSUHkenChAZVooaVr5"
+
+	txn, tname := prepareLock(sourceBTCHash, sourceBTCIndex, sourceBTCHash2, sourceBTCIndex2,
+		1200000, 30, "mkW45toPFaa1uyNGV4TXEWWCxyuDC7BbKG")
 	fmt.Println("Received response of PrepareLock")
 	fmt.Println("Tracker for lock: ", tname)
 	fmt.Println("BTC Unsigned Txn: ", hex.EncodeToString(txn))
 
-	time.Sleep(30 * time.Second)
+	time.Sleep(3 * time.Second)
 
 	fmt.Println(hex.EncodeToString(txn))
 	// os.Exit(1)
@@ -29,9 +37,12 @@ func main() {
 	addrs := addressess()
 	fmt.Println("Will lock to OLT Address: ", addrs[0])
 
-	btcSignature := btcSign(txn, wif)
-	rawTx := addSignature(base64.StdEncoding.EncodeToString(txn),
-		base64.StdEncoding.EncodeToString(btcSignature),
+	signedTxn := btcSign(txn, wif, 0)
+	fmt.Println(hex.EncodeToString(signedTxn), "======================")
+	signedTxn = btcSign(signedTxn, wif, 1)
+	fmt.Println(hex.EncodeToString(signedTxn), "======================")
+
+	rawTx := addSignature(base64.StdEncoding.EncodeToString(signedTxn),
 		addrs[0], tname)
 
 	signed, signer := sign(base64.StdEncoding.EncodeToString(rawTx), addrs[0])
@@ -44,16 +55,24 @@ func main() {
 	fmt.Println(result)
 }
 
-func prepareLock(txHash string, index int) ([]byte, string) {
+func prepareLock(txHash string, index uint32, txHash2 string, index2 uint32, amount int64, feeRate int64, return_address string) ([]byte, string) {
+
+	inputs := []client.InputTransaction{
+		{txHash, index},
+		{txHash2, index2},
+	}
+
 	params := map[string]interface{}{
-		"hash":     txHash,
-		"index":    index,
-		"fees_btc": 10000,
+		"inputs":         inputs,
+		"amount":         amount,
+		"fee_rate":       feeRate,
+		"return_address": return_address,
 	}
 	resp, err := makeRPCcall("btc.PrepareLock", params)
 	if err != nil {
 		panic(err)
 	}
+	fmt.Println(resp)
 
 	txnHex, _ := resp.Result["txn"].(string)
 	txn, err := hex.DecodeString(txnHex)
@@ -88,13 +107,12 @@ func addressess() []string {
 	return strs
 }
 
-func addSignature(txn, sign, addr, trackerName string) []byte {
+func addSignature(txn, addr, trackerName string) []byte {
 	params := map[string]interface{}{
-		"txn":         txn,
-		"signature":   sign,
-		"address":     addr,
-		"trackerName": trackerName,
-		"gasPrice": map[string]interface{}{
+		"txn":          txn,
+		"address":      addr,
+		"tracker_name": trackerName,
+		"gasprice": map[string]interface{}{
 			"currency": "OLT",
 			"value":    "1000000000",
 		},
