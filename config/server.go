@@ -188,11 +188,16 @@ type NodeConfig struct {
 	//rpc package
 	Services []string `toml:"services" desc:"List of services used by the current Node. Possible valued [broadcast, node, owner, query, tx]"`
 
+	Auth Authorisation `toml:"Auth" desc:"the OwnerCredentials and RPCPrivateKey should be configured together"`
+}
+
+type Authorisation struct {
 	//owner's password
-	OwnerCredentials []string `toml:"owner_credentials" desc:"Username and Password required to access owner services. Format [\"Username:Password\", \"Username:Password\"...]"`
+	OwnerCredentials []string `toml:"owner_credentials" desc:"Username and Password required to access owner services. Format [\"Username:Password\", \"Username:Password\"...]. 
+								if OwnerCredential not configured, anyone can create a public access token with a restful call at /token using the RPCPrivateKey"`
 
 	//Private Key for RPC Authentication
-	RPCPrivateKey string `toml:"rpc_private_key" desc:"(ED25519 key) This private key will be used to generate a token for authentication through RPC Port."`
+	RPCPrivateKey string `toml:"rpc_private_key" desc:"(ED25519 key) This private key will be used to generate a token for authentication through RPC Port; if not configured, anyone can access the SDK rpc port without authentication"`
 }
 
 func DefaultNodeConfig() *NodeConfig {
