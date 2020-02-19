@@ -15,6 +15,7 @@ import (
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/data/accounts"
 	"github.com/Oneledger/protocol/data/balance"
+	"github.com/Oneledger/protocol/data/fees"
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/identity"
 )
@@ -245,4 +246,8 @@ type CurrencyBalanceReply struct {
 	Balance  string `json:"balance"`
 	// The height when this balance was recorded
 	Height int64 `json:"height"`
+}
+
+type FeeOptionsReply struct {
+	FeeOption fees.FeeOption `json:"feeOption"`
 }
