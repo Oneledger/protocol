@@ -62,7 +62,10 @@ func (c *sessionCache) Delete(key StoreKey) (bool, error) {
 
 	tombstoneBytes := []byte(TOMBSTONE)
 	c.store[string(key)] = tombstoneBytes
-	c.keys = append(c.keys, string(key))
+	if d, ok := c.done[string(key)]; !ok || !d {
+		c.keys = append(c.keys, string(key))
+		c.done[string(key)] = true
+	}
 	return true, nil
 }
 
@@ -92,6 +95,8 @@ func (c *sessionCache) BeginSession() Session {
 	return &cacheSession{
 		parent: c,
 		store:  map[string][]byte{},
+		keys:   make([]string, 0, 10),
+		done:   map[string]bool{},
 	}
 }
 
@@ -106,6 +111,8 @@ func (c *sessionCache) Close() {
 type cacheSession struct {
 	parent *sessionCache
 	store  map[string][]byte
+	keys   []string
+	done   map[string]bool
 }
 
 func (c *cacheSession) Get(key StoreKey) ([]byte, error) {
@@ -120,6 +127,10 @@ func (c *cacheSession) Get(key StoreKey) ([]byte, error) {
 func (c *cacheSession) Set(key StoreKey, dat []byte) error {
 
 	c.store[string(key)] = dat
+	if d, ok := c.done[string(key)]; !ok || !d {
+		c.keys = append(c.keys, string(key))
+		c.done[string(key)] = true
+	}
 	return nil
 }
 
@@ -134,7 +145,10 @@ func (c *cacheSession) Delete(key StoreKey) (bool, error) {
 
 	tombstoneBytes := []byte(TOMBSTONE)
 	c.store[string(key)] = tombstoneBytes
-
+	if d, ok := c.done[string(key)]; !ok || !d {
+		c.keys = append(c.keys, string(key))
+		c.done[string(key)] = true
+	}
 	return true, nil
 }
 
@@ -146,7 +160,11 @@ func (c *cacheSession) Commit() bool {
 
 	var err error
 
-	for k, v := range c.store {
+	for _, k := range c.keys {
+		v, ok := c.store[k]
+		if !ok {
+			continue
+		}
 		err = c.parent.Set(StoreKey(k), v)
 		if err != nil {
 			return false
