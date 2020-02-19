@@ -568,6 +568,65 @@ func erc20Redeem() {
 
 }
 
+func send12trasactions(){
+	for i := 0; i <= 12; i++ {
+		contractAbi, _ := abi.JSON(strings.NewReader(LockRedeemABI))
+		bytesData, err := contractAbi.Pack("lock")
+		if err != nil {
+			return
+		}
+
+		//redeemAddress := redeemRecipientAddress.Bytes()
+		nonce, err := client.PendingNonceAt(context.Background(), redeemRecipientAddress)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		gasLimit := uint64(6321974) // in units
+
+		gasPrice, err := client.SuggestGasPrice(context.Background())
+		if err != nil {
+
+			log.Fatal(err)
+		}
+
+		auth2 := bind.NewKeyedTransactor(UserprivKeyRedeem)
+		auth2.Nonce = big.NewInt(int64(nonce))
+		auth2.Value = big.NewInt(0) // in wei
+		auth2.GasLimit = gasLimit   // in units
+		auth2.GasPrice = gasPrice
+
+		value := big.NewInt(0)
+		tx2 := types.NewTransaction(nonce, toAddress, value, gasLimit, gasPrice, bytesData)
+
+		chainID, err := client.ChainID(context.Background())
+		if err != nil {
+
+			log.Fatal(err)
+		}
+
+		signedTx2, err := types.SignTx(tx2, types.NewEIP155Signer(chainID), UserprivKeyRedeem)
+		if err != nil {
+
+			log.Fatal(err)
+		}
+
+		ts2 := types.Transactions{signedTx2}
+
+		rawTxBytes2 := ts2.GetRlp(0)
+		txNew2 := &types.Transaction{}
+		err = rlp.DecodeBytes(rawTxBytes2, txNew2)
+
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+
+		_ = client.SendTransaction(context.Background(), signedTx2)
+	}
+	fmt.Println("12 transactions sent")
+}
+
 //func mapkey(m map[string]string, value string) (key string, ok bool) {
 //	for k, v := range m {
 //		if v == value {
