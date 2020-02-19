@@ -26,6 +26,7 @@ type cache struct {
 	name  string
 	store map[string][]byte
 	keys  []string
+	done  map[string]bool
 }
 
 // cache satisfies Store interface
@@ -37,6 +38,7 @@ func NewCache(name string) *cache {
 		name:  name,
 		store: make(map[string][]byte),
 		keys:  make([]string, 0, 100),
+		done:  make(map[string]bool),
 	}
 }
 
@@ -63,13 +65,15 @@ func (c *cache) Exists(key StoreKey) bool {
 func (c *cache) Set(key StoreKey, dat []byte) error {
 
 	c.store[string(key)] = dat
-	c.keys = append(c.keys, string(key))
+	if d, ok := c.done[string(key)]; !ok || !d {
+		c.keys = append(c.keys, string(key))
+		c.done[string(key)] = true
+	}
 	return nil
 }
 
 // Delete removes any data stored against a key
 func (c *cache) Delete(key StoreKey) (bool, error) {
-
 	delete(c.store, string(key))
 	return true, nil
 }

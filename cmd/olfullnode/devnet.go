@@ -263,6 +263,7 @@ func runDevnet(_ *cobra.Command, _ []string) error {
 		ethConnection := config.EthereumChainDriverConfig{Connection:url}
 		cfg.EthChainDriver = &ethConnection
 		cfg.Node.NodeName = nodeName
+		cfg.Node.LogLevel = 4
 		cfg.Node.DB = args.dbType
 		if args.createEmptyBlock {
 			cfg.Consensus.CreateEmptyBlocks = true

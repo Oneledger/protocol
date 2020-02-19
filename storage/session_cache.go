@@ -11,6 +11,7 @@ type sessionCache struct {
 	name  string
 	store map[string][]byte
 	keys  []string
+	done  map[string]bool
 }
 
 // sessionCache satisfies SessionedDirectStorage interface
@@ -23,6 +24,7 @@ func NewSessionCache(name string) *sessionCache {
 		name:  name,
 		store: make(map[string][]byte),
 		keys:  make([]string, 0, 100),
+		done:  make(map[string]bool),
 	}
 }
 
@@ -47,9 +49,11 @@ func (c *sessionCache) Exists(key StoreKey) bool {
 
 // Set is used to store or update some store with a key
 func (c *sessionCache) Set(key StoreKey, dat []byte) error {
-
 	c.store[string(key)] = dat
-	c.keys = append(c.keys, string(key))
+	if d, ok := c.done[string(key)]; !ok || !d {
+		c.keys = append(c.keys, string(key))
+		c.done[string(key)] = true
+	}
 	return nil
 }
 
@@ -58,7 +62,6 @@ func (c *sessionCache) Delete(key StoreKey) (bool, error) {
 
 	tombstoneBytes := []byte(TOMBSTONE)
 	c.store[string(key)] = tombstoneBytes
-
 	c.keys = append(c.keys, string(key))
 	return true, nil
 }

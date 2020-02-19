@@ -5,7 +5,7 @@ echo
 rm -rf $OLDATA/devnet/*
 
 olfullnode init devnet --dir $OLDATA/devnet --nonvalidators 1 \
-#--eth_rpc  HTTP://127.0.0.1:7545 \
+--eth_rpc  HTTP://127.0.0.1:7545 \
 #--deploy_smart_contracts \
 #--cloud_deploy \
 
