@@ -9,6 +9,7 @@ const (
 	BusyFinalizing
 	Finalized
 	Released
+	Failed
 
 	BROADCASTING  string = "broadcasting"
 	FINALIZING    string = "finalizing"

@@ -116,12 +116,16 @@ func runCheckFinality(ctx *action.Context, tx action.RawTx) (bool, action.Respon
 		return false, action.Response{Log: errors.Wrap(err, "err getting tracker").Error()}
 	}
 
-	if tracker.Finalized() {
-		return true, action.Response{Log: "Tracker already finalized"}
+	if tracker.Finalized() || tracker.Failed() {
+		return true, action.Response{Log: "Tracker already finalized /Failed"}
 	}
-	err = tracker.AddVote(f.ValidatorAddress, f.VoteIndex, true)
-	if err != nil {
-		return false, action.Response{Log: errors.Wrap(err, "failed to add vote").Error()}
+	if tx.Type == action.ETH_REPORT_FAILED {
+		err = tracker.AddVote(f.ValidatorAddress, f.VoteIndex, false)
+	} else {
+		err = tracker.AddVote(f.ValidatorAddress, f.VoteIndex, true)
+		if err != nil {
+			return false, action.Response{Log: errors.Wrap(err, "failed to add vote").Error()}
+		}
 	}
 
 	if tracker.Finalized() {
@@ -150,7 +154,14 @@ func runCheckFinality(ctx *action.Context, tx action.RawTx) (bool, action.Respon
 
 		return true, action.Response{Log: "Operation successful"}
 	}
-
+    if tracker.Failed() {
+		tracker.State = trackerlib.Failed
+		err = ctx.ETHTrackers.Set(tracker)
+		if err != nil {
+			return false, action.Response{Log: errors.Wrap(err, "unable to Fail tracker").Error()}
+		}
+		return true, action.Response{Log: "Operation not successful"}
+    }
 	err = ctx.ETHTrackers.Set(tracker)
 	if err != nil {
 		ctx.Logger.Info("Unable to save the tracker", err)

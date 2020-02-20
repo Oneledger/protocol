@@ -1,6 +1,8 @@
 package event
 
 import (
+	"fmt"
+
 	"github.com/pkg/errors"
 
 	"github.com/Oneledger/protocol/data/ethereum"
@@ -193,6 +195,7 @@ func Minting(ctx interface{}) error {
 	tracker := context.Tracker
 
 	if tracker.State != ethereum.Finalized {
+		fmt.Println("Tracker has been Failed")
 		err := errors.New("Cannot Mint from the current state")
 		return errors.Wrap(err, string(tracker.State))
 	}
@@ -231,6 +234,7 @@ func Cleanup(ctx interface{}) error {
 	if err != nil {
 		return err
 	}
+
 	//Delete Tracker
 	res, err := context.TrackerStore.Delete(tracker.TrackerName)
 	if err != nil || !res {
