@@ -152,12 +152,19 @@ func catchSigTerm(logger *log.Logger, close func(), waiter *sync.WaitGroup) {
 	signal.Notify(sigs, os.Interrupt, os.Kill, syscall.SIGSTOP, syscall.SIGTERM, syscall.SIGQUIT)
 
 	go func() {
+		sigCaught := false
+
 		for sig := range sigs {
 			logger.Info("Stopping due to", sig.String())
+			sigCaught = true
 			close()
-
-			waiter.Done()
 		}
+
+		defer func(sig bool) {
+			if sig {
+				waiter.Done()
+			}
+		}(sigCaught)
 	}()
 
 }
