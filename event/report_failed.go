@@ -21,7 +21,7 @@ func BroadcastReportFailedETHTx(ctx interface{},trackerName ethereum.TrackerName
 		Locker:           tracker.ProcessOwner,
 		ValidatorAddress: ethCtx.ValidatorAddress,
 		VoteIndex:        index,
-		Refund:           false,
+		Refund:           true,
 	}
 
 	txData, err := reportFailed.Marshal()
@@ -31,7 +31,7 @@ func BroadcastReportFailedETHTx(ctx interface{},trackerName ethereum.TrackerName
 	}
 
 	internalFailedTx := action.RawTx{
-		Type: action.ETH_REPORT_FAILED,
+		Type: action.ETH_REPORT_FINALITY_MINT,
 		Data: txData,
 		Fee:  action.Fee{},
 		Memo: jobID,
@@ -44,7 +44,7 @@ func BroadcastReportFailedETHTx(ctx interface{},trackerName ethereum.TrackerName
 	err = ethCtx.Service.InternalBroadcast(req, &rep)
 
 	if err != nil || !rep.OK {
-		ethCtx.Logger.Error("error while broadcasting finality vote and mint txn ", jobID, err, rep.Log)
+		ethCtx.Logger.Error("Error while broadcasting vote to Fail transaction ", jobID, err, rep.Log)
 		return err
 	}
 	return nil

@@ -19,6 +19,8 @@ type JobETHBroadcast struct {
 	Status      jobs.Status
 }
 
+
+
 func NewETHBroadcast(name ethereum.TrackerName, state trackerlib.TrackerState) *JobETHBroadcast {
 
 	return &JobETHBroadcast{
@@ -29,11 +31,14 @@ func NewETHBroadcast(name ethereum.TrackerName, state trackerlib.TrackerState) *
 	}
 }
 
+
+
 func (job *JobETHBroadcast) DoMyJob(ctx interface{}) {
 
 	job.RetryCount += 1
 	if job.RetryCount > jobs.Max_Retry_Count {
 		job.Status = jobs.Failed
+		BroadcastReportFailedETHTx(ctx,job.TrackerName,job.JobID)
 	}
 	if job.Status == jobs.New {
 		job.Status = jobs.InProgress
@@ -95,4 +100,8 @@ func (job *JobETHBroadcast) GetJobID() string {
 
 func (job *JobETHBroadcast) IsDone() bool {
 	return job.Status == jobs.Completed
+}
+
+func (job *JobETHBroadcast) IsFailed() bool {
+	return job.Status == jobs.Failed
 }

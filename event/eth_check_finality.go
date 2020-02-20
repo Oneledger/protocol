@@ -20,6 +20,8 @@ type JobETHCheckFinality struct {
 	Status      jobs.Status
 }
 
+
+
 func NewETHCheckFinality(name ethereum.TrackerName, state trackerlib.TrackerState) *JobETHCheckFinality {
 	return &JobETHCheckFinality{
 		TrackerName: name,
@@ -131,4 +133,8 @@ func (job *JobETHCheckFinality) GetJobID() string {
 
 func (job *JobETHCheckFinality) IsDone() bool {
 	return job.Status == jobs.Completed
+}
+
+func (job *JobETHCheckFinality) IsFailed() bool {
+	return job.Status == jobs.Failed
 }

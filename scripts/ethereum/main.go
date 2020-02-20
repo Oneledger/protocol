@@ -37,9 +37,9 @@ var (
 	TestTokenABI     = contract.ERC20BasicABI
 	LockRedeemERCABI = contract.LockRedeemERCABI
 	// LockRedeemERC20ABI = contract.ContextABI
-	LockRedeemContractAddr = "0xcb839620174c574667593c371829379D02e50d6e"
-	TestTokenContractAddr = "0x282c011917D64f39Bb531024e6991AEd565ce7F6"
-	LockRedeemERC20ContractAddr = "0x069e5CfA52307d069816987dD97eb4E4699CE123"
+	LockRedeemContractAddr = "0xf23c5c6FE0383c9d8D02ef053260eB36c9C2c826"
+	TestTokenContractAddr = "0xA23Aaa36670B7cd16dd0CFd3F05B4bF700C5Fc1e"
+	LockRedeemERC20ContractAddr = "0x93243ab4645be1c5d5145c96E9a8e8328fC64dD9"
 
 
 	cfg                         = config.DefaultEthConfigLocal()

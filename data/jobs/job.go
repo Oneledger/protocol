@@ -7,7 +7,7 @@ package jobs
 type Job interface {
 	DoMyJob(ctx interface{})
 	IsDone() bool
-
+    IsFailed() bool
 	GetType() string
 	GetJobID() string
 }

@@ -20,6 +20,8 @@ type JobETHVerifyRedeem struct {
 	Status      jobs.Status
 }
 
+
+
 func NewETHVerifyRedeem(name ethereum.TrackerName, state trackerlib.TrackerState) *JobETHVerifyRedeem {
 	return &JobETHVerifyRedeem{
 		TrackerName: name,
@@ -130,4 +132,8 @@ func (job *JobETHVerifyRedeem) GetType() string {
 
 func (job *JobETHVerifyRedeem) GetJobID() string {
 	return job.JobID
+}
+
+func (job *JobETHVerifyRedeem) IsFailed() bool {
+	return job.Status == jobs.Failed
 }

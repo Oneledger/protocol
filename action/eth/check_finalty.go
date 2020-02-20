@@ -3,6 +3,7 @@ package eth
 
 import (
 	"encoding/json"
+	"fmt"
 	"strconv"
 
 	"github.com/pkg/errors"
@@ -113,13 +114,15 @@ func runCheckFinality(ctx *action.Context, tx action.RawTx) (bool, action.Respon
 
 	tracker, err := ctx.ETHTrackers.Get(f.TrackerName)
 	if err != nil {
+
 		return false, action.Response{Log: errors.Wrap(err, "err getting tracker").Error()}
 	}
 
 	if tracker.Finalized() || tracker.Failed() {
+		ctx.Logger.Info("Tracker already Finalized / Failed")
 		return true, action.Response{Log: "Tracker already finalized /Failed"}
 	}
-	if tx.Type == action.ETH_REPORT_FAILED {
+	if f.Refund == true {
 		err = tracker.AddVote(f.ValidatorAddress, f.VoteIndex, false)
 	} else {
 		err = tracker.AddVote(f.ValidatorAddress, f.VoteIndex, true)
@@ -154,7 +157,9 @@ func runCheckFinality(ctx *action.Context, tx action.RawTx) (bool, action.Respon
 
 		return true, action.Response{Log: "Operation successful"}
 	}
+	fmt.Println("Tracker Vote count for Failed : " ,tracker.FinalityVotes)
     if tracker.Failed() {
+		ctx.Logger.Info("Failing Tracker  | Process Type : ", trackerlib.GetProcessTypeString(tracker.Type) ,"Tracker Name : ",tracker.TrackerName.String())
 		tracker.State = trackerlib.Failed
 		err = ctx.ETHTrackers.Set(tracker)
 		if err != nil {
@@ -167,8 +172,9 @@ func runCheckFinality(ctx *action.Context, tx action.RawTx) (bool, action.Respon
 		ctx.Logger.Info("Unable to save the tracker", err)
 		return false, action.Response{Log: errors.Wrap(err, "unable to save the tracker").Error()}
 	}
-	ctx.Logger.Info("Vote added |  Validator : ", f.ValidatorAddress, " | Process Type : ", trackerlib.GetProcessTypeString(tracker.Type))
+	ctx.Logger.Info("Vote added |  Validator : ", f.ValidatorAddress, " | Process Type : ", trackerlib.GetProcessTypeString(tracker.Type) ,"VOTED :",f.Refund)
 	yes, no := tracker.GetVotes()
+	fmt.Println("Tracker Vote NO VOTES / YES VOTES : " , strconv.Itoa(no),strconv.Itoa(yes))
 	return true, action.Response{Log: "vote success, not ready to mint: " + strconv.Itoa(yes) + "," + strconv.Itoa(no)}
 }
 

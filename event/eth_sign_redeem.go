@@ -23,6 +23,8 @@ type JobETHSignRedeem struct {
 	TxHash      *ethereum.TransactionHash
 }
 
+
+
 func NewETHSignRedeem(name ethereum.TrackerName, state trackerlib.TrackerState) *JobETHSignRedeem {
 	return &JobETHSignRedeem{
 		TrackerName: name,
@@ -146,4 +148,8 @@ func (j *JobETHSignRedeem) GetType() string {
 
 func (j *JobETHSignRedeem) GetJobID() string {
 	return j.JobID
+}
+
+func (j *JobETHSignRedeem) IsFailed() bool {
+	return j.Status == jobs.Failed
 }

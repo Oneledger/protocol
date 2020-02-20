@@ -158,6 +158,8 @@ func (t Tracker) NextStep() string {
 			return MINTING
 		case Released:
 			return CLEANUP
+		case Failed:
+			return CLEANUPFAILED
 		}
 		return transition.NOOP
 	}
@@ -173,6 +175,8 @@ func (t Tracker) NextStep() string {
 			return MINTING
 		case Released:
 			return CLEANUP
+		case Failed:
+			return CLEANUPFAILED
 		}
 		return transition.NOOP
 	}
@@ -188,6 +192,8 @@ func (t Tracker) NextStep() string {
 			return BURN
 		case Released:
 			return CLEANUP
+		case Failed:
+			return CLEANUPFAILED
 		}
 	}
 	if t.Type == ProcessTypeRedeemERC {
@@ -202,6 +208,8 @@ func (t Tracker) NextStep() string {
 			return BURN
 		case Released:
 			return CLEANUP
+		case Failed:
+			return CLEANUPFAILED
 		}
 	}
 	return transition.NOOP

@@ -17,6 +17,7 @@ func init() {
 			transition.Status(ethereum.BusyFinalizing),
 			transition.Status(ethereum.Finalized),
 			transition.Status(ethereum.Released),
+			transition.Status(ethereum.Failed),
 		})
 
 	err := EthLockEngine.Register(transition.Transition{
@@ -62,6 +63,12 @@ func init() {
 		Name: ethereum.CLEANUP,
 		Fn:   Cleanup,
 		From: transition.Status(ethereum.Released),
+		To:   0,
+	})
+	err = EthLockEngine.Register(transition.Transition{
+		Name: ethereum.CLEANUPFAILED,
+		Fn:   CleanupFailed,
+		From: transition.Status(ethereum.Failed),
 		To:   0,
 	})
 	if err != nil {
@@ -121,7 +128,7 @@ func Finalizing(ctx interface{}) error {
 				return errors.Wrap(err, "failed to get job")
 			}
 
-			if bjob.IsDone() {
+			if bjob.IsDone() && !bjob.IsFailed(){
 
 				job := NewETHCheckFinality(tracker.TrackerName, ethereum.BusyFinalizing)
 				err := context.JobStore.SaveJob(job)
@@ -187,6 +194,8 @@ func Finalization(ctx interface{}) error {
 }
 
 func Minting(ctx interface{}) error {
+
+	//^TODO : MOVE THE MINTING ,BURNING AND FAILING LOGIC FROM ACTION TO HERE ,CURRENTLY THIS FUNCTION IS NOT BEING CALLED
 	context, ok := ctx.(*ethereum.TrackerCtx)
 	if !ok {
 		return errors.New("error casting tracker context")
@@ -224,7 +233,6 @@ func Cleanup(ctx interface{}) error {
 	if err != nil {
 		return err
 	}
-
 	//Delete CheckFinality Job
 	fjob, err := context.JobStore.GetJob(tracker.GetJobID(ethereum.BusyFinalizing))
 	if err != nil {
@@ -235,6 +243,42 @@ func Cleanup(ctx interface{}) error {
 		return err
 	}
 
+	//Delete Tracker
+	fmt.Println("DELETING SUCCESSFULL TRACKER :",tracker.State)
+	res, err := context.TrackerStore.Delete(tracker.TrackerName)
+	if err != nil || !res {
+		return err
+	}
+
+	return nil
+}
+
+func CleanupFailed(ctx interface{}) error {
+	context, ok := ctx.(*ethereum.TrackerCtx)
+	if !ok {
+		return errors.New("error casting tracker context")
+	}
+
+	tracker := context.Tracker
+	//Delete Broadcasting Job It its there
+	bjob, err := context.JobStore.GetJob(tracker.GetJobID(ethereum.BusyBroadcasting))
+	if err == nil {
+		err = context.JobStore.DeleteJob(bjob)
+		if err != nil {
+			return err
+		}
+	}
+
+	//Delete CheckFinality Job If its there
+	fjob, err := context.JobStore.GetJob(tracker.GetJobID(ethereum.BusyFinalizing))
+	if err == nil {
+		err = context.JobStore.DeleteJob(fjob)
+		if err != nil {
+			return err
+		}
+	}
+
+	fmt.Println("DELETING FAILED TRACKER :",tracker.State)
 	//Delete Tracker
 	res, err := context.TrackerStore.Delete(tracker.TrackerName)
 	if err != nil || !res {

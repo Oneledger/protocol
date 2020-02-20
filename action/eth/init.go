@@ -47,5 +47,10 @@ func EnableInternalETH(r action.Router) error {
 	if err != nil {
 		return errors.Wrap(err, "reportFinaityMintTx")
 	}
+
+	err = r.AddHandler(action.ETH_REPORT_FAILED, reportFinalityMintTx{})
+	if err != nil {
+		return errors.Wrap(err, "reportFinaityMintTx")
+	}
 	return nil
 }
