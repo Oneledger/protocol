@@ -1,6 +1,7 @@
 package rpc
 
 import (
+	"github.com/Oneledger/protocol/config"
 	"io/ioutil"
 	"net/url"
 	"testing"
@@ -35,7 +36,8 @@ func (t *Arith) Divide(args *Args, quo *Quotient) error {
 
 // Simple round-trip test
 func TestServer(t *testing.T) {
-	srv := NewServer(ioutil.Discard, nil)
+	cfg := config.DefaultServerConfig()
+	srv := NewServer(ioutil.Discard, cfg)
 	// srv.Close() failed the test with all test cases pass.
 	//defer srv.Close()
 	assert.NotNil(t, srv.rpc)
