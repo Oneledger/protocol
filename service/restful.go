@@ -103,7 +103,7 @@ func (rs RestfulService) GetToken() http.HandlerFunc {
 
 		rs.ctx.Logger.Error("Validating Username and Password")
 		//Validate Username and Password from request
-		if rs.ctx.Cfg.Node.Auth.OwnerCredentials != nil {
+		if len(rs.ctx.Cfg.Node.Auth.OwnerCredentials) > 0 {
 			userList := rs.ctx.Cfg.Node.Auth.OwnerCredentials
 
 			for index, value := range userList {
