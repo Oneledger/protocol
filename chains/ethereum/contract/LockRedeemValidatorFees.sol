@@ -26,6 +26,10 @@ contract LockRedeem {
     uint public migrationSignatures;
     // mapping to store the validators to there power.
     mapping (address => bool) public migrationSigners;
+    mapping (address => uint) migrationAddressMap;
+    address [] migrationAddressList;
+    // mapping to store the validators to there power.
+    mapping (address => bool) public migrationSigners;
     uint constant DEFAULT_VALIDATOR_POWER = 50;
     uint constant MIN_VALIDATORS = 0;
     uint256 LOCK_PERIOD = 28800;
@@ -78,20 +82,35 @@ contract LockRedeem {
     function isValidator(address v) public view returns (bool) {
         return validators[v].votingPower > 0;
     }
-    constructor(address[] memory initialValidators) public {
-        // Require at least 4 validators
-        require(initialValidators.length >= MIN_VALIDATORS, "insufficient validators passed to constructor");
-        // Add the initial validators
-        for (uint i = 0; i < initialValidators.length; i++) {
-            // Ensure these validators are unique
-            address v = initialValidators[i];
-            require(validators[v].votingPower == 0, "found non-unique validator in initialValidators");
-            addValidator(v);
+    function migrate (address newSmartContractAddress) public onlyValidator {
+        require(migrationSigners[msg.sender]==false,"Validator Signed already");
+        migrationSigners[msg.sender] = true ;
+        (bool status,) = newSmartContractAddress.call(abi.encodePacked(bytes4(keccak256("MigrateFromOld()"))));
+        require(status,"Unable to Migrate new Smart contract");
+        migrationSignatures = migrationSignatures + 1;
+        if(migrationAddressMap[newSmartContractAddress]==0)
+        {
+            migrationAddressList.push(newSmartContractAddress);
         }
-        ACTIVE = true ;
-        votingThreshold = (initialValidators.length * 2 / 3) + 1;
-        activeThreshold = (initialValidators.length * 1 / 3) + 1;
-        initialValidatorList = initialValidators;
+        migrationAddressMap[newSmartContractAddress] += 1;
+
+        // Global flag ,needs to be set only once
+        if (migrationSignatures == activeThreshold) {
+            ACTIVE = false ;
+        }
+        // Trasfer needs to be done only once
+        if (migrationSignatures == votingThreshold) {
+            uint voteCount = 0 ;
+            address maxVotedAddress ;
+            for(uint i=0;i< migrationAddressList.length;i++){
+                if (migrationAddressMap[migrationAddressList[i]] > voteCount){
+                    voteCount = migrationAddressMap[migrationAddressList[i]];
+                    maxVotedAddress = migrationAddressList[i];
+                }
+            }
+            (bool success, ) = maxVotedAddress.call.value(address(this).balance)("");
+            require(success, "Transfer failed");
+        }
     }
 
     function migrate (address newSmartContractAddress) public onlyValidator {
