@@ -177,7 +177,7 @@ contract LockRedeem {
         return validators[msg.sender].validatorFee;
     }
 
-    function collectUserFee() public {
+    function collectUserFee() public isActive{
         require(redeemRequests[msg.sender].isCompleted = true, "request signing is still in progress");
         (bool success, ) = msg.sender.call.value(redeemRequests[msg.sender].redeemFee)("");
         require(success, "Transfer failed.");
