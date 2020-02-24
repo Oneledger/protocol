@@ -120,7 +120,7 @@ func runCheckFinality(ctx *action.Context, tx action.RawTx) (bool, action.Respon
 
 	if tracker.Finalized() || tracker.Failed() {
 		ctx.Logger.Info("Tracker already Finalized / Failed")
-		return true, action.Response{Log: "Tracker already finalized /Failed"}
+		return true, action.Response{Log: "Tracker already Finalized /Failed"}
 	}
 	if f.IsFailed == true {
 		err = tracker.AddVote(f.ValidatorAddress, f.VoteIndex, false)
@@ -173,7 +173,7 @@ func runCheckFinality(ctx *action.Context, tx action.RawTx) (bool, action.Respon
 	}
 	ctx.Logger.Info("Vote added |  Validator : ", f.ValidatorAddress, " | Process Type : ", trackerlib.GetProcessTypeString(tracker.Type) ," | Is Failed : ",f.IsFailed)
 	yes, no := tracker.GetVotes()
-	fmt.Println("Tracker Vote NO VOTES / YES VOTES : " , strconv.Itoa(no),strconv.Itoa(yes))
+	fmt.Println("Tracker Votes YES / NO : " , strconv.Itoa(yes),"/",strconv.Itoa(no))
 	return true, action.Response{Log: "vote success, not ready to mint: " + strconv.Itoa(yes) + "," + strconv.Itoa(no)}
 }
 

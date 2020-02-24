@@ -77,7 +77,7 @@ func (job *JobETHCheckFinality) DoMyJob(ctx interface{}) {
 	}
 	receipt, err := cd.CheckFinality(tx.Hash())
 	if err != nil {
-		ethCtx.Logger.Error("Error in Receiving TX receipt : ", job.GetJobID(), err)
+		ethCtx.Logger.Error("Receiving TX receipt : ", job.GetJobID(), err)
 		return
 	}
 	if receipt == nil {

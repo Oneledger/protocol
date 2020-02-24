@@ -217,6 +217,7 @@ func Minting(ctx interface{}) error {
 }
 
 func Cleanup(ctx interface{}) error {
+	fmt.Println("Starting Cleanup")
 	context, ok := ctx.(*ethereum.TrackerCtx)
 	if !ok {
 		return errors.New("error casting tracker context")
@@ -226,7 +227,7 @@ func Cleanup(ctx interface{}) error {
 	//Delete Broadcasting Job
 	bjob, err := context.JobStore.GetJob(tracker.GetJobID(ethereum.BusyBroadcasting))
 	if err != nil {
-		return errors.Wrap(err, "failed to get job")
+		return errors.Wrap(err, "Failed to get Broadcasting Job")
 	}
 
 	err = context.JobStore.DeleteJob(bjob)
@@ -236,7 +237,7 @@ func Cleanup(ctx interface{}) error {
 	//Delete CheckFinality Job
 	fjob, err := context.JobStore.GetJob(tracker.GetJobID(ethereum.BusyFinalizing))
 	if err != nil {
-		return errors.Wrap(err, "failed to get job")
+		return errors.Wrap(err, "Failed to get Finalizing Job")
 	}
 	err = context.JobStore.DeleteJob(fjob)
 	if err != nil {
@@ -244,7 +245,7 @@ func Cleanup(ctx interface{}) error {
 	}
 
 	//Delete Tracker
-	fmt.Println("DELETING SUCCESSFULL TRACKER ETHLOCK:",tracker.State)
+	fmt.Println("Deleting tracker (ethLock):",ethereum.GetTrackerStateString(tracker.State))
 	res, err := context.TrackerStore.Delete(tracker.TrackerName)
 	if err != nil || !res {
 		return err
@@ -278,7 +279,7 @@ func CleanupFailed(ctx interface{}) error {
 		}
 	}
 
-	fmt.Println("DELETING FAILED TRACKER ETHLOCK:",tracker.State)
+	fmt.Println("Deleting tracker (ethLock):",ethereum.GetTrackerStateString(tracker.State))
 	//Delete Tracker
 	res, err := context.TrackerStore.Delete(tracker.TrackerName)
 	if err != nil || !res {

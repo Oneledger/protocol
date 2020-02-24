@@ -1,7 +1,6 @@
 package event
 
 import (
-	"fmt"
 	"strconv"
 
 	"github.com/Oneledger/protocol/chains/ethereum"
@@ -78,7 +77,6 @@ func (job *JobETHBroadcast) DoMyJob(ctx interface{}) {
 		ethCtx.Logger.Error("Error Decoding Bytes from RaxTX :", job.GetJobID(), err)
 		return
 	}
-	fmt.Println("Trying to broadcast")
 	//check if tx already broadcasted, if yest, job.Status = jobs.Completed
 	_, err = cd.BroadcastTx(tx)
 	if err != nil {

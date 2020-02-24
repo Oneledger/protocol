@@ -52,4 +52,24 @@ func GetProcessTypeString(t ProcessType) string {
 	return "UNKNOWN TYPE"
 }
 
+func GetTrackerStateString(t TrackerState) string {
+	switch t {
+	case 0:
+		return "NEWTRACKER"
+	case 1:
+		return "BusyBroadcasting"
+	case 2:
+		return "BroadcastSuccess"
+	case 3:
+		return "BusyFinalizing"
+	case 4:
+		return "Finalized"
+	case 5:
+		return "Released"
+	case 6:
+		return "Failed"
+	}
+	return "UNKNOWN State"
+}
+
 type Vote uint8
