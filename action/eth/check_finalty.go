@@ -21,7 +21,7 @@ type ReportFinality struct {
 	Locker           action.Address
 	ValidatorAddress action.Address
 	VoteIndex        int64
-	Refund           bool
+	IsFailed         bool
 }
 
 var _ action.Msg = &ReportFinality{}
@@ -122,7 +122,7 @@ func runCheckFinality(ctx *action.Context, tx action.RawTx) (bool, action.Respon
 		ctx.Logger.Info("Tracker already Finalized / Failed")
 		return true, action.Response{Log: "Tracker already finalized /Failed"}
 	}
-	if f.Refund == true {
+	if f.IsFailed == true {
 		err = tracker.AddVote(f.ValidatorAddress, f.VoteIndex, false)
 	} else {
 		err = tracker.AddVote(f.ValidatorAddress, f.VoteIndex, true)
@@ -157,7 +157,6 @@ func runCheckFinality(ctx *action.Context, tx action.RawTx) (bool, action.Respon
 
 		return true, action.Response{Log: "Operation successful"}
 	}
-	fmt.Println("Tracker Vote count for Failed : " ,tracker.FinalityVotes)
     if tracker.Failed() {
 		ctx.Logger.Info("Failing Tracker  | Process Type : ", trackerlib.GetProcessTypeString(tracker.Type) ,"Tracker Name : ",tracker.TrackerName.String())
 		tracker.State = trackerlib.Failed
@@ -172,7 +171,7 @@ func runCheckFinality(ctx *action.Context, tx action.RawTx) (bool, action.Respon
 		ctx.Logger.Info("Unable to save the tracker", err)
 		return false, action.Response{Log: errors.Wrap(err, "unable to save the tracker").Error()}
 	}
-	ctx.Logger.Info("Vote added |  Validator : ", f.ValidatorAddress, " | Process Type : ", trackerlib.GetProcessTypeString(tracker.Type) ,"VOTED :",f.Refund)
+	ctx.Logger.Info("Vote added |  Validator : ", f.ValidatorAddress, " | Process Type : ", trackerlib.GetProcessTypeString(tracker.Type) ," | Is Failed : ",f.IsFailed)
 	yes, no := tracker.GetVotes()
 	fmt.Println("Tracker Vote NO VOTES / YES VOTES : " , strconv.Itoa(no),strconv.Itoa(yes))
 	return true, action.Response{Log: "vote success, not ready to mint: " + strconv.Itoa(yes) + "," + strconv.Itoa(no)}

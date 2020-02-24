@@ -38,6 +38,7 @@ func (j *JobETHSignRedeem) DoMyJob(ctx interface{}) {
 	j.RetryCount += 1
 	if j.RetryCount > jobs.Max_Retry_Count {
 		j.Status = jobs.Failed
+		BroadcastReportFailedETHTx(ctx,j.TrackerName,j.JobID)
 	}
 	if j.Status == jobs.New {
 		j.Status = jobs.InProgress

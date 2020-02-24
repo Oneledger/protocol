@@ -244,7 +244,7 @@ func Cleanup(ctx interface{}) error {
 	}
 
 	//Delete Tracker
-	fmt.Println("DELETING SUCCESSFULL TRACKER :",tracker.State)
+	fmt.Println("DELETING SUCCESSFULL TRACKER ETHLOCK:",tracker.State)
 	res, err := context.TrackerStore.Delete(tracker.TrackerName)
 	if err != nil || !res {
 		return err
@@ -278,7 +278,7 @@ func CleanupFailed(ctx interface{}) error {
 		}
 	}
 
-	fmt.Println("DELETING FAILED TRACKER :",tracker.State)
+	fmt.Println("DELETING FAILED TRACKER ETHLOCK:",tracker.State)
 	//Delete Tracker
 	res, err := context.TrackerStore.Delete(tracker.TrackerName)
 	if err != nil || !res {

@@ -21,7 +21,7 @@ func BroadcastReportFailedETHTx(ctx interface{},trackerName ethereum.TrackerName
 		Locker:           tracker.ProcessOwner,
 		ValidatorAddress: ethCtx.ValidatorAddress,
 		VoteIndex:        index,
-		Refund:           true,
+		IsFailed:         true,
 	}
 
 	txData, err := reportFailed.Marshal()

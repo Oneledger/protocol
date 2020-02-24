@@ -1,6 +1,8 @@
 package event
 
 import (
+	"fmt"
+
 	"github.com/pkg/errors"
 
 	"github.com/Oneledger/protocol/data/ethereum"
@@ -16,6 +18,7 @@ func init() {
 			transition.Status(ethereum.BusyFinalizing),
 			transition.Status(ethereum.Finalized),
 			transition.Status(ethereum.Released),
+			transition.Status(ethereum.Failed),
 		})
 
 	err := EthRedeemEngine.Register(transition.Transition{
@@ -49,21 +52,21 @@ func init() {
 		panic(err)
 	}
 
-	//err = EthRedeemEngine.Register(transition.Transition{
-	//	Name: ethereum.BURN,
-	//	Fn:   Burn,
-	//	From: transition.Status(ethereum.Finalized),
-	//	To:   transition.Status(ethereum.Released),
-	//})
-	//if err != nil {
-	//	panic(err)
-	//}
-
 	err = EthRedeemEngine.Register(transition.Transition{
 		Name: ethereum.CLEANUP,
 		Fn:   redeemCleanup,
 		From: transition.Status(ethereum.Released),
 		To:   transition.Status(0),
+	})
+	if err != nil {
+		panic(err)
+	}
+
+	err = EthRedeemEngine.Register(transition.Transition{
+		Name: ethereum.CLEANUPFAILED,
+		Fn:   redeemCleanupFailed,
+		From: transition.Status(ethereum.Failed),
+		To:   0,
 	})
 	if err != nil {
 		panic(err)
@@ -159,6 +162,40 @@ func redeemCleanup(ctx interface{}) error {
 		}
 	}
 	//Delete Tracker
+
+	fmt.Println("DELETING SUCCESSFULL TRACKER FOR ETHREDEEM:",tracker.State)
+	res, err := context.TrackerStore.Delete(tracker.TrackerName)
+	if err != nil || !res {
+		return errors.Wrap(err, "error deleting tracker from store")
+	}
+	return nil
+}
+
+func redeemCleanupFailed(ctx interface{}) error {
+	context, ok := ctx.(*ethereum.TrackerCtx)
+	if !ok {
+		return errors.New("error casting tracker context")
+	}
+	tracker := context.Tracker
+	//delete the tracker related jobs
+	if context.Validators.IsValidator() {
+		for state := ethereum.BusyBroadcasting; state <= ethereum.Failed; state++ {
+			job, err := context.JobStore.GetJob(tracker.GetJobID(state))
+			if err != nil {
+				//fmt.Println(err, "failed to get job from state: ", state)
+				continue
+			}
+			if job != nil {
+				err = context.JobStore.DeleteJob(job)
+				if err != nil {
+					return errors.Wrap(err, "error deleting job from store")
+				}
+			}
+		}
+	}
+	//Delete Tracker
+	fmt.Println("DELETING FAILED TRACKER FOR ETHREDEEM:",tracker.State)
+
 	res, err := context.TrackerStore.Delete(tracker.TrackerName)
 	if err != nil || !res {
 		return errors.Wrap(err, "error deleting tracker from store")

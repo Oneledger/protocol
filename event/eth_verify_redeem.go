@@ -35,6 +35,7 @@ func (job *JobETHVerifyRedeem) DoMyJob(ctx interface{}) {
 	job.RetryCount += 1
 	if job.RetryCount > jobs.Max_Retry_Count {
 		job.Status = jobs.Failed
+		BroadcastReportFailedETHTx(ctx,job.TrackerName,job.JobID)
 	}
 	if job.Status == jobs.New {
 		job.Status = jobs.InProgress
@@ -92,7 +93,7 @@ func (job *JobETHVerifyRedeem) DoMyJob(ctx interface{}) {
 			Locker:           tracker.ProcessOwner,
 			ValidatorAddress: ethCtx.ValidatorAddress,
 			VoteIndex:        index,
-			Refund:           false,
+			IsFailed:         false,
 		}
 
 		txData, err := cf.Marshal()

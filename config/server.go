@@ -461,7 +461,7 @@ func DefaultEthConfigCloud() *EthereumChainDriverConfig {
 
 func DefaultEthConfigLocal() *EthereumChainDriverConfig {
 	return &EthereumChainDriverConfig{
-		Connection: "HTTP://127.0.0.1:8545",
+		Connection: "HTTP://127.0.0.1:7545",
 	}
 }
 

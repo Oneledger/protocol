@@ -93,7 +93,7 @@ func (job *JobETHCheckFinality) DoMyJob(ctx interface{}) {
 		Locker:           tracker.ProcessOwner,
 		ValidatorAddress: ethCtx.ValidatorAddress,
 		VoteIndex:        index,
-		Refund:           false,
+		IsFailed:         false,
 	}
 
 	txData, err := reportFinalityMint.Marshal()

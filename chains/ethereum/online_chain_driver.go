@@ -2,7 +2,6 @@ package ethereum
 
 import (
 	"context"
-	"fmt"
 	"math/big"
 	"strings"
 	"time"
@@ -194,7 +193,6 @@ func (acc *ETHChainDriver) GetTransactionMessage(tx *types.Transaction) (*types.
 func (acc *ETHChainDriver) CheckFinality(txHash TransactionHash) (*types.Receipt, error) {
 
 	result, err := acc.GetClient().TransactionReceipt(context.Background(), txHash)
-	fmt.Println("Client :", acc.GetClient())
 	if err == nil {
 		if result.Status == types.ReceiptStatusSuccessful {
 			latestHeader, err := acc.client.HeaderByNumber(context.Background(), nil)
