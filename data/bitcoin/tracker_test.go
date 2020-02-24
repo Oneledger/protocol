@@ -6,6 +6,7 @@ package bitcoin
 
 import (
 	"encoding/hex"
+	"github.com/Oneledger/protocol/config"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -14,8 +15,13 @@ import (
 	"github.com/Oneledger/protocol/storage"
 )
 
-func TestTrackerMarshal(t *testing.T) {
+var (
+	store   *TrackerStore
+	cs      *storage.State
+	tracker *Tracker
+)
 
+func init() {
 	addrs := []keys.Address{
 		hexDump("aaaaaa"),
 		hexDump("bbbbbb"),
@@ -23,27 +29,45 @@ func TestTrackerMarshal(t *testing.T) {
 		hexDump("dddddd"),
 	}
 
-	tracker, err := NewTracker([]byte("lockscriptaddress"), 3, addrs)
-
-	assert.NoError(t, err)
+	var err error
+	tracker, err = NewTracker([]byte("lockscriptaddress"), 3, addrs)
+	if err != nil {
+		return
+	}
 
 	db, err := storage.GetDatabase("chainstate", "/tmp/btc_test", "goleveldb")
-	assert.NoError(t, err)
+	if err != nil {
+		return
+	}
 
 	cs := storage.NewChainState("testing", db)
 	state := storage.NewState(cs)
-	ts := NewTrackerStore("btct", state)
+	store = NewTrackerStore("btct", state)
+}
 
-	err = ts.SetTracker("test", tracker)
+func TestTrackerMarshal(t *testing.T) {
+
+	err := store.SetTracker("test", tracker)
 	assert.NoError(t, err)
 
-	trackerNew, err := ts.Get("test")
+	trackerNew, err := store.Get("test")
 	assert.NoError(t, err)
 
 	assert.Equal(t, trackerNew.Multisig.Signers[0].String(), tracker.Multisig.Signers[0].String())
 	assert.Equal(t, trackerNew.Multisig.Signers[1].String(), tracker.Multisig.Signers[1].String())
 	assert.Equal(t, trackerNew.Multisig.Signers[2].String(), tracker.Multisig.Signers[2].String())
 	assert.Equal(t, trackerNew.Multisig.Signers[3].String(), tracker.Multisig.Signers[3].String())
+}
+
+func TestNewBTCConfig(t *testing.T) {
+
+	cdConfig := config.DefaultChainDriverConfig()
+
+	btcConfig := NewBTCConfig(cdConfig, "testnet3")
+	store.SetConfig(btcConfig)
+	storedConfig := store.GetConfig()
+
+	assert.Equal(t, storedConfig.BTCParams.Name, "testnet3")
 }
 
 func hexDump(a string) []byte {
