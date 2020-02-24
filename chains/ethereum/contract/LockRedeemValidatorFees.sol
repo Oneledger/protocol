@@ -24,12 +24,11 @@ contract LockRedeem {
     uint redeem_gas_charge = 1000000000000000000;
     // numValidators holds the total number of validators
     uint public migrationSignatures;
-    // mapping to store the validators to there power.
+    // mapping to store the validators to a bool ,which accounts to the fact they have signed.
     mapping (address => bool) public migrationSigners;
     mapping (address => uint) migrationAddressMap;
     address [] migrationAddressList;
-    // mapping to store the validators to there power.
-    mapping (address => bool) public migrationSigners;
+
     uint constant DEFAULT_VALIDATOR_POWER = 50;
     uint constant MIN_VALIDATORS = 0;
     uint256 LOCK_PERIOD = 28800;
@@ -61,6 +60,10 @@ contract LockRedeem {
         address sender,
         uint256 amount_received
     );
+    event ValidatorMigrated(
+       address validator,
+       address NewSmartContractAddress
+    );
 
     event AddValidator(
         address indexed _address
@@ -85,8 +88,10 @@ contract LockRedeem {
     function migrate (address newSmartContractAddress) public onlyValidator {
         require(migrationSigners[msg.sender]==false,"Validator Signed already");
         migrationSigners[msg.sender] = true ;
+        //MigratefromOl can be used to migrate validator to new contract address.
         (bool status,) = newSmartContractAddress.call(abi.encodePacked(bytes4(keccak256("MigrateFromOld()"))));
-        require(status,"Unable to Migrate new Smart contract");
+        require(status,"Unable to Migrate Validator new Smart contract");
+        emit ValidatorMigrated(msg.sender,newSmartContractAddress);
         migrationSignatures = migrationSignatures + 1;
         if(migrationAddressMap[newSmartContractAddress]==0)
         {
@@ -113,24 +118,6 @@ contract LockRedeem {
         }
     }
 
-    function migrate (address newSmartContractAddress) public onlyValidator {
-        require(migrationSigners[msg.sender]==false,"Validator Signed already");
-        migrationSigners[msg.sender] = true ;
-        migrationSignatures = migrationSignatures + 1;
-        (bool status,) = newSmartContractAddress.call(abi.encodePacked(bytes4(keccak256("MigrateFromOld()"))));
-        require(status,"Unable to Migrate new Smart contract");
-
-        // Global flag ,needs to be set only once
-        if (migrationSignatures == activeThreshold) {
-            ACTIVE = false ;
-        }
-        // Trasfer needs to be done only once
-        if (migrationSignatures == votingThreshold) {
-            (bool success, ) = newSmartContractAddress.call.value(address(this).balance)("");
-            require(success, "Transfer failed");
-        }
-    }
-
     // function called by user
     function lock() payable public isActive {
         require(msg.value >= 0, "Must pay a balance more than 0");
@@ -148,7 +135,7 @@ contract LockRedeem {
         redeemRequests[msg.sender].signature_count = uint256(0);
         redeemRequests[msg.sender].recipient = msg.sender;
         redeemRequests[msg.sender].amount = amount_ ;
-        redeemRequests[msg.sender].redeemFee = msg.value;
+        redeemRequests[msg.sender].redeemFee += msg.value;
         redeemRequests[msg.sender].until = block.number + LOCK_PERIOD;
 
         emit RedeemRequest(redeemRequests[msg.sender].recipient,redeemRequests[msg.sender].amount);
@@ -184,11 +171,6 @@ contract LockRedeem {
         require(success, "Transfer back to validator failed");
         redeemRequests[recipient_].redeemFee -= gasFee;
         emit ValidatorSignedRedeem(recipient_, msg.sender, amount_,gasUsed);
-        // if ( redeemRequests[recipient_].isCompleted == true ) {
-        //      for (uint i = 0; i < initialValidatorList.length; i++) {
-        //      (bool success, ) = initialValidatorList[i].call.value(validators[initialValidatorList[i]].validatorFee)("");
-        //      require(success, "Transfer failed.");
-        // }
     }
 
     function validatorFee() public view isActive onlyValidator returns(uint) {
@@ -196,7 +178,6 @@ contract LockRedeem {
     }
 
     function collectUserFee() public {
-        require(redeemRequests[msg.sender].until > block.number, "request has expired");
         require(redeemRequests[msg.sender].isCompleted = true, "request signing is still in progress");
         (bool success, ) = msg.sender.call.value(redeemRequests[msg.sender].redeemFee)("");
         require(success, "Transfer failed.");
