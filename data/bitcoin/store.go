@@ -25,6 +25,7 @@ type TrackerStore struct {
 	szlr   serialize.Serializer
 	prefix []byte
 	config BTCConfig
+	option bitcoin.ChainDriverOption
 }
 
 func NewTrackerStore(prefix string, state *storage.State) *TrackerStore {
@@ -47,6 +48,14 @@ func (ts *TrackerStore) SetConfig(config BTCConfig) {
 
 func (ts *TrackerStore) GetConfig() BTCConfig {
 	return ts.config
+}
+
+func (ts *TrackerStore) SetOption(option bitcoin.ChainDriverOption) {
+	ts.option = option
+}
+
+func (ts *TrackerStore) GetOption() bitcoin.ChainDriverOption {
+	return ts.option
 }
 
 func (ts *TrackerStore) Get(name string) (*Tracker, error) {

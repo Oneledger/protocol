@@ -21,11 +21,6 @@ import (
 
 type TxHash [chainhash.HashSize]byte
 
-const (
-	BLOCK_CONFIRMATIONS      = 6
-	BLOCK_CONFIRMATIONS_TEST = 1
-)
-
 type ChainDriver interface {
 	//	PrepareLock(prevLock, input *bitcoin.UTXO, lockScriptAddress []byte) (txBytes []byte)
 
@@ -37,7 +32,7 @@ type ChainDriver interface {
 
 	BroadcastTx(*wire.MsgTx, *rpcclient.Client) (*chainhash.Hash, error)
 
-	CheckFinality(hash *chainhash.Hash, token, chain string) (bool, error)
+	CheckFinality(hash *chainhash.Hash, blockConfirmations int, token, chain string) (bool, error)
 
 	PrepareRedeemNew(prevLockTxID *chainhash.Hash, prevLockIndex uint32, prevLockBalance int64,
 		userAddress []byte, redeemAmount int64, feesInSatoshi int64,
@@ -144,7 +139,7 @@ func (c *chainDriver) BroadcastTx(tx *wire.MsgTx, clt *rpcclient.Client) (*chain
 	return hash, nil
 }
 
-func (c *chainDriver) CheckFinality(hash *chainhash.Hash, token, chain string) (bool, error) {
+func (c *chainDriver) CheckFinality(hash *chainhash.Hash, blockConfirmations int, token, chain string) (bool, error) {
 
 	btc := gobcy.API{token, "btc", chain}
 
@@ -154,7 +149,7 @@ func (c *chainDriver) CheckFinality(hash *chainhash.Hash, token, chain string) (
 		return false, err
 	}
 
-	if tx.Confirmations >= BLOCK_CONFIRMATIONS {
+	if tx.Confirmations >= blockConfirmations {
 		return true, nil
 	}
 

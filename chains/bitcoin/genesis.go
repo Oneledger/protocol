@@ -5,5 +5,8 @@
 package bitcoin
 
 type ChainDriverOption struct {
-	BTCChainType string
+	ChainType         string
+	TotalSupply       string
+	TotalSupplyAddr   string
+	BlockConfirmation int64
 }
