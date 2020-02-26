@@ -8,8 +8,8 @@ import (
 	"github.com/Oneledger/protocol/chains/ethereum"
 )
 
-func BroadcastReportFailedETHTx(ctx interface{},trackerName ethereum.TrackerName ,jobID string) (error){
-	ethCtx, _ := ctx.(*JobsContext)
+func BroadcastReportFinalityETHTx(ethCtx *JobsContext ,trackerName ethereum.TrackerName ,jobID string,failed bool) (error){
+
 	trackerStore := ethCtx.EthereumTrackers
 	tracker, err := trackerStore.Get(trackerName)
 	index, _ := tracker.CheckIfVoted(ethCtx.ValidatorAddress)
@@ -21,7 +21,7 @@ func BroadcastReportFailedETHTx(ctx interface{},trackerName ethereum.TrackerName
 		Locker:           tracker.ProcessOwner,
 		ValidatorAddress: ethCtx.ValidatorAddress,
 		VoteIndex:        index,
-		IsFailed:         true,
+		Success:          failed,
 	}
 
 	txData, err := reportFailed.Marshal()

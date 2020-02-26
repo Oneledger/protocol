@@ -37,7 +37,7 @@ func (job *JobETHBroadcast) DoMyJob(ctx interface{}) {
 	job.RetryCount += 1
 	if job.RetryCount > jobs.Max_Retry_Count {
 		job.Status = jobs.Failed
-		BroadcastReportFailedETHTx(ctx,job.TrackerName,job.JobID)
+		BroadcastReportFinalityETHTx(ctx.(*JobsContext),job.TrackerName,job.JobID,false)
 	}
 	if job.Status == jobs.New {
 		job.Status = jobs.InProgress

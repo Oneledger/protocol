@@ -35,7 +35,7 @@ func (job *JobETHVerifyRedeem) DoMyJob(ctx interface{}) {
 	job.RetryCount += 1
 	if job.RetryCount > jobs.Max_Retry_Count {
 		job.Status = jobs.Failed
-		BroadcastReportFailedETHTx(ctx,job.TrackerName,job.JobID)
+		BroadcastReportFinalityETHTx(ctx.(*JobsContext),job.TrackerName,job.JobID,false)
 	}
 	if job.Status == jobs.New {
 		job.Status = jobs.InProgress
@@ -88,12 +88,13 @@ func (job *JobETHVerifyRedeem) DoMyJob(ctx interface{}) {
 		if index < 0 {
 			return
 		}
+		//TODO : Replace with BroadcastReportFinalityETHTx(ethCtx,job.TrackerName,job.JobID,true)
 		cf := &eth.ReportFinality{
 			TrackerName:      tracker.TrackerName,
 			Locker:           tracker.ProcessOwner,
 			ValidatorAddress: ethCtx.ValidatorAddress,
 			VoteIndex:        index,
-			IsFailed:         false,
+			Success:          false,
 		}
 
 		txData, err := cf.Marshal()
@@ -119,6 +120,7 @@ func (job *JobETHVerifyRedeem) DoMyJob(ctx interface{}) {
 			ethCtx.Logger.Error("error while broadcasting finality vote and mint txn ", job.GetJobID(), err, rep.Log)
 			return
 		}
+		//TODO END
 		job.Status = jobs.Completed
 	}
 }

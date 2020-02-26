@@ -88,12 +88,13 @@ func (job *JobETHCheckFinality) DoMyJob(ctx interface{}) {
 	if index < 0 {
 		return
 	}
+	////TODO : Replace with BroadcastReportFinalityETHTx(ethCtx,job.TrackerName,job.JobID,true)
 	reportFinalityMint := &eth.ReportFinality{
 		TrackerName:      job.TrackerName,
 		Locker:           tracker.ProcessOwner,
 		ValidatorAddress: ethCtx.ValidatorAddress,
 		VoteIndex:        index,
-		IsFailed:         false,
+		Success:          false,
 	}
 
 	txData, err := reportFinalityMint.Marshal()
@@ -119,7 +120,7 @@ func (job *JobETHCheckFinality) DoMyJob(ctx interface{}) {
 		ethCtx.Logger.Error("error while broadcasting finality vote and mint txn ", job.GetJobID(), err, rep.Log)
 		return
 	}
-
+    //TODO END
 	job.Status = jobs.Completed
 }
 

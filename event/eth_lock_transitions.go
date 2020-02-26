@@ -245,7 +245,7 @@ func Cleanup(ctx interface{}) error {
 	}
 
 	//Delete Tracker
-	fmt.Println("Deleting tracker (ethLock):",ethereum.GetTrackerStateString(tracker.State))
+	fmt.Println("Deleting tracker (ethLock):",tracker.State.String())
 	res, err := context.TrackerStore.Delete(tracker.TrackerName)
 	if err != nil || !res {
 		return err
@@ -279,7 +279,7 @@ func CleanupFailed(ctx interface{}) error {
 		}
 	}
 
-	fmt.Println("Deleting tracker (ethLock):",ethereum.GetTrackerStateString(tracker.State))
+	fmt.Println("Deleting tracker (ethLock):",tracker.State.String())
 	//Delete Tracker
 	res, err := context.TrackerStore.Delete(tracker.TrackerName)
 	if err != nil || !res {

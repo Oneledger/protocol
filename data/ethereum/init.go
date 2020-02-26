@@ -1,6 +1,8 @@
 package ethereum
 
-import "errors"
+import (
+	"errors"
+)
 
 const (
 	New TrackerState = iota
@@ -52,24 +54,27 @@ func GetProcessTypeString(t ProcessType) string {
 	return "UNKNOWN TYPE"
 }
 
-func GetTrackerStateString(t TrackerState) string {
+
+func (t TrackerState) String() string {
 	switch t {
-	case 0:
+	case New:
 		return "NEWTRACKER"
-	case 1:
+	case BusyBroadcasting:
 		return "BusyBroadcasting"
-	case 2:
+	case BroadcastSuccess:
 		return "BroadcastSuccess"
-	case 3:
+	case BusyFinalizing:
 		return "BusyFinalizing"
-	case 4:
+	case Finalized:
 		return "Finalized"
-	case 5:
+	case Released:
 		return "Released"
-	case 6:
+	case Failed:
 		return "Failed"
 	}
 	return "UNKNOWN State"
+
 }
+
 
 type Vote uint8

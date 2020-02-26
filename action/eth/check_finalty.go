@@ -21,7 +21,7 @@ type ReportFinality struct {
 	Locker           action.Address
 	ValidatorAddress action.Address
 	VoteIndex        int64
-	IsFailed         bool
+	Success          bool
 }
 
 var _ action.Msg = &ReportFinality{}
@@ -118,14 +118,21 @@ func runCheckFinality(ctx *action.Context, tx action.RawTx) (bool, action.Respon
 		return false, action.Response{Log: errors.Wrap(err, "err getting tracker").Error()}
 	}
 
-	if tracker.Finalized() || tracker.Failed() {
-		ctx.Logger.Info("Tracker already Finalized / Failed")
-		return true, action.Response{Log: "Tracker already Finalized /Failed"}
+	if tracker.Finalized(){
+		ctx.Logger.Info("Tracker already Finalized")
+		return true, action.Response{Log: "Tracker already Finalized"}
 	}
-	if f.IsFailed == true {
-		err = tracker.AddVote(f.ValidatorAddress, f.VoteIndex, false)
-	} else {
+	if tracker.Failed(){
+		ctx.Logger.Info("Tracker already Failed")
+		return true, action.Response{Log: "Tracker already Failed"}
+	}
+	if f.Success == true {
 		err = tracker.AddVote(f.ValidatorAddress, f.VoteIndex, true)
+		if err != nil {
+			return false, action.Response{Log: errors.Wrap(err, "failed to add vote").Error()}
+		}
+	} else {
+		err = tracker.AddVote(f.ValidatorAddress, f.VoteIndex, false)
 		if err != nil {
 			return false, action.Response{Log: errors.Wrap(err, "failed to add vote").Error()}
 		}
@@ -171,7 +178,7 @@ func runCheckFinality(ctx *action.Context, tx action.RawTx) (bool, action.Respon
 		ctx.Logger.Info("Unable to save the tracker", err)
 		return false, action.Response{Log: errors.Wrap(err, "unable to save the tracker").Error()}
 	}
-	ctx.Logger.Info("Vote added |  Validator : ", f.ValidatorAddress, " | Process Type : ", trackerlib.GetProcessTypeString(tracker.Type) ," | Is Failed : ",f.IsFailed)
+	ctx.Logger.Info("Vote added |  Validator : ", f.ValidatorAddress, " | Process Type : ", trackerlib.GetProcessTypeString(tracker.Type) ," | Is Failed : ",f.Success)
 	yes, no := tracker.GetVotes()
 	fmt.Println("Tracker Votes YES / NO : " , strconv.Itoa(yes),"/",strconv.Itoa(no))
 	return true, action.Response{Log: "vote success, not ready to mint: " + strconv.Itoa(yes) + "," + strconv.Itoa(no)}

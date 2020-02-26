@@ -203,13 +203,13 @@ func (acc *ETHChainDriver) CheckFinality(txHash TransactionHash) (*types.Receipt
 			if big.NewInt(12).Cmp(diff) > 0 {
 				return nil, errors.New("Waiting for confirmation . Current Block Confirmations : " + diff.String())
 			}
-			return result, nil
+			return result, err
 		}
 		if result.Status == types.ReceiptStatusFailed {
-			acc.logger.Warn("Receipt not found ")
+			acc.logger.Warn("Receipt status failed ")
 			b, _ := result.MarshalJSON()
 			acc.logger.Error(string(b))
-			return nil, nil
+			return result, nil
 		}
 	}
 	acc.logger.Error("Transaction not added to Block yet :", err)
