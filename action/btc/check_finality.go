@@ -8,7 +8,6 @@ import (
 	"bytes"
 	"encoding/json"
 
-	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcutil/base58"
 	"github.com/pkg/errors"
 	"github.com/tendermint/tendermint/libs/common"
@@ -243,10 +242,10 @@ func runReportFinalityMint(ctx *action.Context, tx action.RawTx) (bool, action.R
 
 	// set the tracker to the new state
 
-	validatorPubKeys, err := ctx.Validators.GetBitcoinKeys(&chaincfg.TestNet3Params)
+	opt := ctx.BTCTrackers.GetConfig()
+	validatorPubKeys, err := ctx.Validators.GetBitcoinKeys(opt.BTCParams)
 	m := (len(validatorPubKeys) * 2 / 3) + 1
 
-	opt := ctx.BTCTrackers.GetConfig()
 	lockScript, lockScriptAddress, addressList, err := bitcoin2.CreateMultiSigAddress(m, validatorPubKeys,
 		f.RandomBytes, opt.BTCParams)
 
