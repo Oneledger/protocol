@@ -259,12 +259,12 @@ func (f *Faucet) RequestOLT(req Request, reply *Reply) error {
 	rawTx := sendTxResults.RawTx
 	h, err := f.nodeCtx.PrivKey().GetHandler()
 	if err != nil {
-		panic("invalid nodeCtx private key")
+		return errors.New("invalid nodeCtx private key")
 	}
 
 	sig, err := h.Sign(rawTx)
 	if err != nil {
-		panic("failed to sign raw tx " + err.Error())
+		return errors.New("failed to sign raw tx " + err.Error())
 	}
 
 	broadcastResult, err := f.fullnode.TxSync(client.BroadcastRequest{
@@ -320,6 +320,12 @@ func NewFaucet(cfg *config.Server) (*Faucet, error) {
 	nodeCtx, err := node.NewNodeContext(cfg)
 	if err != nil {
 		logger.Error("failed to load nodeContext from configuration")
+		return nil, err
+	}
+
+	_, err = nodeCtx.PrivKey().GetHandler()
+	if err != nil {
+		logger.Error("node private key invalid")
 		return nil, err
 	}
 
