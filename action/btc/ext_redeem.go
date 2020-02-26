@@ -216,7 +216,7 @@ func runExtRedeem(ctx *action.Context, tx action.RawTx) (bool, action.Response) 
 		return false, action.Response{Log: "failed to subtract currency err:" + err.Error()}
 	}
 
-	tally := action.Address(lockBalanceAddress)
+	tally := action.Address(ctx.BTCTrackers.GetOption().TotalSupplyAddr)
 	err = ctx.Balances.MinusFromAddress(tally, coin)
 	if err != nil {
 		return false, action.Response{Log: "failed to subtract currency err:" + err.Error()}

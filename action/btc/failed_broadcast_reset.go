@@ -195,7 +195,7 @@ func runBroadcastFailureReset(ctx *action.Context, tx action.RawTx) (bool, actio
 			return false, action.Response{Log: "failed to add currency err:" + err.Error()}
 		}
 
-		tally := action.Address(lockBalanceAddress)
+		tally := action.Address(ctx.BTCTrackers.GetOption().TotalSupplyAddr)
 		err = ctx.Balances.AddToAddress(tally, coin)
 		if err != nil {
 			return false, action.Response{Log: "failed to add currency err:" + err.Error()}

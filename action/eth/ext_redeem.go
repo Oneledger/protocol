@@ -131,7 +131,7 @@ func runRedeem(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 		return false, action.Response{Log: (errors.Wrap(action.ErrNotEnoughFund, err.Error())).Error()}
 	}
 	// Subtracting from common address to maintain count of the total oEth minted
-	ethSupply := keys.Address(lockBalanceAddress)
+	ethSupply := keys.Address(ctx.ETHTrackers.GetOption().TotalSupplyAddr)
 	err = ctx.Balances.MinusFromAddress(ethSupply, coin)
 	if err != nil {
 		return false, action.Response{Log: (errors.Wrap(action.ErrNotEnoughFund, err.Error())).Error()}

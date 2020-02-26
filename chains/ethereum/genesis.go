@@ -11,12 +11,16 @@ type ChainDriverOption struct {
 	ERCContractABI  string
 	//Not needed ,same as to address in Lock Transaction
 	ERCContractAddress common.Address
+	TotalSupply        string
+	TotalSupplyAddr    string
+	BlockConfirmation  int64
 }
 
 type ERC20Token struct {
-	TokName string
-	TokAddr common.Address
-	TokAbi  string
+	TokName        string
+	TokAddr        common.Address
+	TokAbi         string
+	TokTotalSupply string
 }
 
 type ChainDriver interface {
