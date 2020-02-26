@@ -85,37 +85,48 @@ contract LockRedeem {
     function isValidator(address v) public view returns (bool) {
         return validators[v].votingPower > 0;
     }
-    function migrate (address newSmartContractAddress) public onlyValidator {
-        require(migrationSigners[msg.sender]==false,"Validator Signed already");
-        migrationSigners[msg.sender] = true ;
-        //MigratefromOl can be used to migrate validator to new contract address.
-        (bool status,) = newSmartContractAddress.call(abi.encodePacked(bytes4(keccak256("MigrateFromOld()"))));
-        require(status,"Unable to Migrate Validator new Smart contract");
-        emit ValidatorMigrated(msg.sender,newSmartContractAddress);
-        migrationSignatures = migrationSignatures + 1;
-        if(migrationAddressMap[newSmartContractAddress]==0)
-        {
-            migrationAddressList.push(newSmartContractAddress);
-        }
-        migrationAddressMap[newSmartContractAddress] += 1;
+//    function migrate (address newSmartContractAddress) public onlyValidator {
+//        require(migrationSigners[msg.sender]==false,"Validator Signed already");
+//        migrationSigners[msg.sender] = true ;
+//        //MigratefromOl can be used to migrate validator to new contract address.
+//        (bool status,) = newSmartContractAddress.call(abi.encodePacked(bytes4(keccak256("MigrateFromOld()"))));
+//        require(status,"Unable to Migrate Validator new Smart contract");
+//        emit ValidatorMigrated(msg.sender,newSmartContractAddress);
+//        //migrationSignatures = migrationSignatures + 1;
+//        if(migrationAddressMap[newSmartContractAddress]==0)
+//        {
+//            migrationAddressList.push(newSmartContractAddress);
+//        }
+//        migrationAddressMap[newSmartContractAddress] += 1;
+//
+//        if (migrationAddressMap[newSmartContractAddress] > activeThreshold) {
+//            ACTIVE = false ;
+//        }
+//        if (migrationAddressMap[newSmartContractAddress] > votingThreshold) {
+//            (bool success, ) = maxVotedAddress.call.value(address(this).balance)("");
+//        }
 
         // Global flag ,needs to be set only once
-        if (migrationSignatures == activeThreshold) {
-            ACTIVE = false ;
-        }
-        // Trasfer needs to be done only once
-        if (migrationSignatures == votingThreshold) {
-            uint voteCount = 0 ;
-            address maxVotedAddress ;
-            for(uint i=0;i< migrationAddressList.length;i++){
-                if (migrationAddressMap[migrationAddressList[i]] > voteCount){
-                    voteCount = migrationAddressMap[migrationAddressList[i]];
-                    maxVotedAddress = migrationAddressList[i];
-                }
-            }
-            (bool success, ) = maxVotedAddress.call.value(address(this).balance)("");
-            require(success, "Transfer failed");
-        }
+//        if (migrationSignatures == activeThreshold) {
+//            ACTIVE = false ;
+//        }
+//
+//
+//        // Trasfer needs to be done only once
+//        if (migrationSignatures == votingThreshold) {
+//            uint voteCount = 0 ;
+//            address maxVotedAddress ;
+//            for(uint i=0;i< migrationAddressList.length;i++){
+//                if (migrationAddressMap[migrationAddressList[i]] > voteCount){
+//                    voteCount = migrationAddressMap[migrationAddressList[i]];
+//                    maxVotedAddress = migrationAddressList[i];
+//                }
+//            }
+//            if (voteCount >= votingThreshold) {
+//            (bool success, ) = maxVotedAddress.call.value(address(this).balance)("");
+//            }
+//            require(success, "Transfer failed");
+//        }
     }
 
     // function called by user
