@@ -323,6 +323,12 @@ func NewFaucet(cfg *config.Server) (*Faucet, error) {
 		return nil, err
 	}
 
+	_, err = nodeCtx.PrivKey().GetHandler()
+	if err != nil {
+		logger.Error("node private key invalid")
+		return nil, err
+	}
+
 	logger.Info("Loaded account", nodeCtx.Address().String())
 
 	dbPath := filepath.Join(args.dbDir, "faucet.db")
