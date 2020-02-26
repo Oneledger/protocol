@@ -47,6 +47,15 @@ func (b *Balance) setCoin(coin Coin) *Balance {
 	return b
 }
 
+func (b *Balance) addCoin(coin Coin) *Balance {
+	old, ok := b.Amounts[coin.Currency.Name]
+	if ok {
+		coin = coin.Plus(old)
+	}
+	b.Amounts[coin.Currency.Name] = coin
+	return b
+}
+
 // String method used in fmt and Dump
 func (b Balance) String() string {
 	buffer := ""
