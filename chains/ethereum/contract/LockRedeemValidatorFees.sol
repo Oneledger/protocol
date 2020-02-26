@@ -127,7 +127,7 @@ contract LockRedeem {
 //            }
 //            require(success, "Transfer failed");
 //        }
-    }
+//    }
 
     // function called by user
     function lock() payable public isActive {
