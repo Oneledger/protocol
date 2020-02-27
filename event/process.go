@@ -88,7 +88,7 @@ func RangeJobs(js *jobs.JobStore, pro JobProcess) {
 	jobkeys := make([]string, 0, 20)
 	js.Iterate(func(job jobs.Job) {
 		//fmt.Println("Searching Jobstore",job.GetType())
-		if !job.IsDone() {
+		if !job.IsDone() && !job.IsFailed() {
 			jobkeys = append(jobkeys, job.GetJobID())
 		}
 	})

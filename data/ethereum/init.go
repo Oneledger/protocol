@@ -54,7 +54,6 @@ func GetProcessTypeString(t ProcessType) string {
 	return "UNKNOWN TYPE"
 }
 
-
 func (t TrackerState) String() string {
 	switch t {
 	case New:
@@ -75,6 +74,5 @@ func (t TrackerState) String() string {
 	return "UNKNOWN State"
 
 }
-
 
 type Vote uint8

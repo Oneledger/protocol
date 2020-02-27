@@ -240,8 +240,6 @@ func TestVerfiyERC20Lock(t *testing.T) {
 
 }
 
-
-
 func TestParseERC20Redeem(t *testing.T) {
 	rawERCRedeem, err := CreateERC20Redeem()
 	if err != nil {

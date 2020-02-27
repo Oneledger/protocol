@@ -128,7 +128,7 @@ func Finalizing(ctx interface{}) error {
 				return errors.Wrap(err, "failed to get job")
 			}
 
-			if bjob.IsDone() && !bjob.IsFailed(){
+			if bjob.IsDone() && !bjob.IsFailed() {
 
 				job := NewETHCheckFinality(tracker.TrackerName, ethereum.BusyFinalizing)
 				err := context.JobStore.SaveJob(job)
@@ -245,7 +245,7 @@ func Cleanup(ctx interface{}) error {
 	}
 
 	//Delete Tracker
-	fmt.Println("Deleting tracker (ethLock):",tracker.State.String())
+	fmt.Println("Deleting tracker (ethLock):", tracker.State.String())
 	res, err := context.TrackerStore.Delete(tracker.TrackerName)
 	if err != nil || !res {
 		return err
@@ -279,7 +279,7 @@ func CleanupFailed(ctx interface{}) error {
 		}
 	}
 
-	fmt.Println("Deleting tracker (ethLock):",tracker.State.String())
+	fmt.Println("Deleting tracker (ethLock):", tracker.State.String())
 	//Delete Tracker
 	res, err := context.TrackerStore.Delete(tracker.TrackerName)
 	if err != nil || !res {

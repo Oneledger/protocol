@@ -28,8 +28,6 @@ type JobAddSignature struct {
 	Status jobs.Status
 }
 
-
-
 func NewAddSignatureJob(trackerName, id string) jobs.Job {
 
 	return &JobAddSignature{

@@ -8,7 +8,7 @@ import (
 	"github.com/Oneledger/protocol/chains/ethereum"
 )
 
-func BroadcastReportFinalityETHTx(ethCtx *JobsContext ,trackerName ethereum.TrackerName ,jobID string,failed bool) (error){
+func BroadcastReportFinalityETHTx(ethCtx *JobsContext, trackerName ethereum.TrackerName, jobID string, success bool) error {
 
 	trackerStore := ethCtx.EthereumTrackers
 	tracker, err := trackerStore.Get(trackerName)
@@ -21,12 +21,12 @@ func BroadcastReportFinalityETHTx(ethCtx *JobsContext ,trackerName ethereum.Trac
 		Locker:           tracker.ProcessOwner,
 		ValidatorAddress: ethCtx.ValidatorAddress,
 		VoteIndex:        index,
-		Success:          failed,
+		Success:          success,
 	}
 
 	txData, err := reportFailed.Marshal()
 	if err != nil {
-		ethCtx.Logger.Error("Error while preparing mint txn ",jobID, err)
+		ethCtx.Logger.Error("Error while preparing mint txn ", jobID, err)
 		return err
 	}
 

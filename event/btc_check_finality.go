@@ -33,8 +33,6 @@ type JobBTCCheckFinality struct {
 	Status jobs.Status
 }
 
-
-
 func NewBTCCheckFinalityJob(trackerName, id string) jobs.Job {
 
 	return &JobBTCCheckFinality{

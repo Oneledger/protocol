@@ -338,7 +338,7 @@ func doTransitions(js *jobs.JobStore, ts *bitcoin.TrackerStore, validators *iden
 	}
 }
 
-func doEthTransitions(js *jobs.JobStore, ts *ethereum.TrackerStore, myValAddr keys.Address, logger *log.Logger, validators *identity.ValidatorStore, deliver  *storage.State) {
+func doEthTransitions(js *jobs.JobStore, ts *ethereum.TrackerStore, myValAddr keys.Address, logger *log.Logger, validators *identity.ValidatorStore, deliver *storage.State) {
 	ts = ts.WithState(deliver)
 	tnames := make([]*ceth.TrackerName, 0, 20)
 	ts.Iterate(func(name *ceth.TrackerName, tracker *ethereum.Tracker) bool {

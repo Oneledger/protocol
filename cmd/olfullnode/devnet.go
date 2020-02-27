@@ -71,8 +71,6 @@ var testnetCmd = &cobra.Command{
 	RunE:  runDevnet,
 }
 
-
-
 func init() {
 	initCmd.AddCommand(testnetCmd)
 	testnetCmd.Flags().IntVar(&testnetArgs.numValidators, "validators", 4, "Number of validators to initialize devnet with")
@@ -134,8 +132,6 @@ func portGenerator(startingPort int) func() int {
 		return port
 	}
 }
-
-
 
 func generateAddress(port int, flags ...bool) string {
 	// flags
@@ -202,17 +198,17 @@ func nodeNamesWithZeros(prefix string, total int) []string {
 	return names
 }
 
-func getEthUrl(ethUrlArg string)(string,error) {
+func getEthUrl(ethUrlArg string) (string, error) {
 
 	u, err := url.Parse(ethUrlArg)
 	if err != nil {
-		return "",err
+		return "", err
 	}
-	if strings.Contains(u.Host,"infura") && !strings.Contains(u.Path,os.Getenv("API_KEY")){
-		u.Path = u.Path + "/"+ os.Getenv("API_KEY")
-		return u.String(),nil
+	if strings.Contains(u.Host, "infura") && !strings.Contains(u.Path, os.Getenv("API_KEY")) {
+		u.Path = u.Path + "/" + os.Getenv("API_KEY")
+		return u.String(), nil
 	}
-	return ethUrlArg,nil
+	return ethUrlArg, nil
 }
 
 func runDevnet(_ *cobra.Command, _ []string) error {
@@ -222,7 +218,7 @@ func runDevnet(_ *cobra.Command, _ []string) error {
 		return errors.Wrap(err, "runDevnet failed")
 	}
 	args := testnetArgs
-	if ! args.cloud {
+	if !args.cloud {
 		setEnvVariables()
 	}
 	totalNodes := args.numValidators + args.numNonValidators
@@ -241,7 +237,7 @@ func runDevnet(_ *cobra.Command, _ []string) error {
 	validatorList := make([]consensus.GenesisValidator, args.numValidators)
 	nodeList := make([]node, totalNodes)
 	persistentPeers := make([]string, totalNodes)
-	url,err := getEthUrl(args.ethUrl)
+	url, err := getEthUrl(args.ethUrl)
 	if err != nil {
 		return err
 	}
@@ -256,7 +252,7 @@ func runDevnet(_ *cobra.Command, _ []string) error {
 
 		// Generate new configuration file
 		cfg := config.DefaultServerConfig()
-		ethConnection := config.EthereumChainDriverConfig{Connection:url}
+		ethConnection := config.EthereumChainDriverConfig{Connection: url}
 		cfg.EthChainDriver = &ethConnection
 		cfg.Node.NodeName = nodeName
 		//cfg.Node.LogLevel = 4
@@ -347,14 +343,15 @@ func runDevnet(_ *cobra.Command, _ []string) error {
 
 	cdo := &ethchain.ChainDriverOption{}
 	fmt.Println("Deployment Network :", url)
-	fmt.Println("Deploy Smart contracts : ",args.deploySmartcontracts)
+	fmt.Println("Deploy Smart contracts : ", args.deploySmartcontracts)
 	if args.deploySmartcontracts {
-	if len(args.ethUrl) > 0 {
-		cdo, err = deployethcdcontract(url, nodeList)
-		if err != nil {
-			return errors.Wrap(err, "failed to deploy the initial eth contract")
+		if len(args.ethUrl) > 0 {
+			cdo, err = deployethcdcontract(url, nodeList)
+			if err != nil {
+				return errors.Wrap(err, "failed to deploy the initial eth contract")
+			}
 		}
-	}}
+	}
 
 	perblock, _ := big.NewInt(0).SetString("100000000000000", 10)
 	baseDomainPrice, _ := big.NewInt(0).SetString("1000000000000000000000", 10)
@@ -537,7 +534,6 @@ func initialState(args *testnetConfig, nodeList []node, option ethchain.ChainDri
 
 func deployethcdcontract(conn string, nodeList []node) (*ethchain.ChainDriverOption, error) {
 
-
 	f, err := os.Open(os.Getenv("ETHPKPATH"))
 	if err != nil {
 		return nil, errors.Wrap(err, "Error Reading File")
@@ -546,7 +542,7 @@ func deployethcdcontract(conn string, nodeList []node) (*ethchain.ChainDriverOpt
 	if err != nil {
 		return nil, errors.Wrap(err, "Error Reading File Wallet Address")
 	}
-	walletAddr := strings.Split(string(walletdat),",")
+	walletAddr := strings.Split(string(walletdat), ",")
 	b1 := make([]byte, 64)
 	pk, err := f.Read(b1)
 	if err != nil {
@@ -583,7 +579,8 @@ func deployethcdcontract(conn string, nodeList []node) (*ethchain.ChainDriverOpt
 	auth.GasLimit = gasLimit   // in units
 	auth.GasPrice = gasPrice
 
-	input := make([]common.Address, 0, 10)
+	initialValidatorList := make([]common.Address, 0, 10)
+	lock_period := big.NewInt(25)
 	//walletAddr := []string{"0xCd7bc1aD1F4b5f7C2e2bbC605319C6f2b8937aa5","0x19854aFe894f4E165E9F49AA695414383b345710","0xAE16D77D742637f5Dc377A92E7fFeD8138d0dC1d"}
 
 	tokenSupplyTestToken := new(big.Int)
@@ -614,7 +611,7 @@ func deployethcdcontract(conn string, nodeList []node) (*ethchain.ChainDriverOpt
 			continue
 		}
 
-		input = append(input, addr)
+		initialValidatorList = append(initialValidatorList, addr)
 		tx := types.NewTransaction(nonce, addr, big.NewInt(300000000000000000), auth.GasLimit, auth.GasPrice, (nil))
 		chainId, _ := cli.ChainID(context.Background())
 		signedTx, err := types.SignTx(tx, types.NewEIP155Signer(chainId), privatekey)
@@ -627,13 +624,13 @@ func deployethcdcontract(conn string, nodeList []node) (*ethchain.ChainDriverOpt
 		}
 		time.Sleep(3 * time.Second)
 	}
-	for _,address := range walletAddr {
-		fmt.Println("Ether Transferred to address : ", address )
+	for _, address := range walletAddr {
+		fmt.Println("Ether Transferred to address : ", address)
 		nonce, err := cli.PendingNonceAt(context.Background(), fromAddress)
 		if err != nil {
 			return nil, err
 		}
-		tx := types.NewTransaction(nonce, common.HexToAddress(address),walletTransferAmount, auth.GasLimit, auth.GasPrice, (nil))
+		tx := types.NewTransaction(nonce, common.HexToAddress(address), walletTransferAmount, auth.GasLimit, auth.GasPrice, (nil))
 		chainId, _ := cli.ChainID(context.Background())
 		signedTx, err := types.SignTx(tx, types.NewEIP155Signer(chainId), privatekey)
 		err = cli.SendTransaction(context.Background(), signedTx)
@@ -650,7 +647,7 @@ func deployethcdcontract(conn string, nodeList []node) (*ethchain.ChainDriverOpt
 
 	auth.Nonce = big.NewInt(int64(nonce))
 
-	address, _, _, err := ethcontracts.DeployLockRedeem(auth, cli, input)
+	address, _, _, err := ethcontracts.DeployLockRedeem(auth, cli, initialValidatorList, lock_period)
 	if err != nil {
 		return nil, errors.Wrap(err, "Deployement Eth LockRedeem")
 	}
@@ -660,7 +657,7 @@ func deployethcdcontract(conn string, nodeList []node) (*ethchain.ChainDriverOpt
 		return nil, errors.Wrap(err, "Deployement Test Token")
 	}
 	auth.Nonce = big.NewInt(int64(nonce + 2))
-	ercAddress, _, _, err := ethcontracts.DeployLockRedeemERC(auth, cli, input)
+	ercAddress, _, _, err := ethcontracts.DeployLockRedeemERC(auth, cli, initialValidatorList)
 	if err != nil {
 		return nil, errors.Wrap(err, "Deployement ERC LockRedeem")
 	}

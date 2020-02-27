@@ -253,7 +253,6 @@ type CurrencyBalanceReply struct {
 	Height int64 `json:"height"`
 }
 
-
 type EmptyRequest struct {
 }
 

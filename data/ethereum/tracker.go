@@ -69,8 +69,6 @@ func (t *Tracker) AddVote(addr keys.Address, index int64, vote bool) error {
 	return nil
 }
 
-
-
 func (t *Tracker) GetJobID(state TrackerState) string {
 	return t.TrackerName.String() + storage.DB_PREFIX + strconv.Itoa(int(state))
 }
@@ -113,7 +111,6 @@ func (t *Tracker) CheckIfVoted(node keys.Address) (index int64, voted bool) {
 	return index, false
 }
 
-
 func (t *Tracker) Finalized() bool {
 	l := len(t.Validators)
 	num := (l * 2 / 3) + 1
@@ -128,7 +125,6 @@ func (t *Tracker) Finalized() bool {
 	y, _ := t.GetVotes()
 	return y >= num
 }
-
 
 func (t *Tracker) Failed() bool {
 	l := len(t.Validators)

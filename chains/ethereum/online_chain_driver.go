@@ -2,6 +2,7 @@ package ethereum
 
 import (
 	"context"
+	"fmt"
 	"math/big"
 	"strings"
 	"time"
@@ -19,7 +20,6 @@ import (
 
 const DefaultTimeout = 5 * time.Second
 
-
 type ETHChainDriver struct {
 	cfg             *config.EthereumChainDriverConfig
 	client          *Client
@@ -32,6 +32,7 @@ type ETHChainDriver struct {
 
 // Implements ChainDriver interface
 var _ ChainDriver = &ETHChainDriver{}
+
 func NewChainDriver(cfg *config.EthereumChainDriverConfig, logger *log.Logger, contractAddress common.Address, contractAbi string, contractType ContractType) (*ETHChainDriver, error) {
 
 	client, err := ethclient.Dial(cfg.Connection)
@@ -60,8 +61,6 @@ func defaultContext() (context.Context, context.CancelFunc) {
 	return context.WithTimeout(context.Background(), DefaultTimeout)
 }
 
-
-
 // ETHChainDriver provides the core fields required to interact with the Ethereum network. As of this moment (2019-08-21)
 // it should only be used by validator nodes.
 
@@ -75,6 +74,7 @@ func (acc *ETHChainDriver) GetClient() *Client {
 	}
 	return acc.client
 }
+
 // GetContract returns instance of an already deployed ETH/ERC LockRedeem Contract
 func (acc *ETHChainDriver) GetContract() Contract {
 	client := acc.GetClient()
@@ -112,10 +112,12 @@ func (acc ETHChainDriver) Nonce(addr Address) (uint64, error) {
 	defer cancel()
 	return acc.GetClient().PendingNonceAt(c, addr)
 }
+
 // ChainID returns the ID for the current ethereum chain (Mainet/Ropsten/Ganache)
 func (acc *ETHChainDriver) ChainId() (*big.Int, error) {
 	return acc.GetClient().ChainID(context.Background())
 }
+
 // CallOpts creates a CallOpts object for contract calls (Only call no write )
 func (acc *ETHChainDriver) CallOpts(addr Address) *CallOpts {
 	return &CallOpts{
@@ -216,7 +218,6 @@ func (acc *ETHChainDriver) CheckFinality(txHash TransactionHash) (*types.Receipt
 	return nil, err
 }
 
-
 // BroadcastTx takes a signed transaction as input and broadcasts it to the network
 func (acc *ETHChainDriver) BroadcastTx(tx *types.Transaction) (TransactionHash, error) {
 
@@ -238,6 +239,7 @@ func (acc *ETHChainDriver) BroadcastTx(tx *types.Transaction) (TransactionHash, 
 func (Acc *ETHChainDriver) ParseERC20Redeem(rawTx []byte, lockredeemERCAbi string) (*RedeemErcRequest, error) {
 	return ParseERC20RedeemParams(rawTx, lockredeemERCAbi)
 }
+
 // ParseERC20Redeem is the online wrapper for ParseRedeem
 func (acc *ETHChainDriver) ParseRedeem(data []byte, abi string) (req *RedeemRequest, err error) {
 	//ethTx := &types.Transaction{}
@@ -260,15 +262,28 @@ func (acc *ETHChainDriver) ParseRedeem(data []byte, abi string) (req *RedeemRequ
 
 	return ParseRedeem(data, abi)
 }
+
 // VerifyRedeem verifies if the Redeem request is Completed
-func (acc *ETHChainDriver) VerifyRedeem(validatorAddress common.Address, recipient common.Address) (bool, error) {
+//BeforeRedeem : -1  (amount == 0 and until = 0)
+//Ongoing : 0  (amount > 0 and until > block.number)
+//Success : 1  (amount = 0 and until < block.number)
+//Expired : 2  (amount > 0 and until < block.number)
+
+func (acc *ETHChainDriver) VerifyRedeem(validatorAddress common.Address, recipient common.Address) (int8, error) {
 	instance := acc.GetContract()
-	ok, err := instance.VerifyRedeem(acc.CallOpts(validatorAddress), recipient)
+	fmt.Println("Recipient Address : ", recipient.Hex())
+
+	redeemStatus, err := instance.VerifyRedeem(acc.CallOpts(validatorAddress), recipient)
 	if err != nil {
-		return false, errors.Wrap(err, "Unable to connect to ethereum smart contract")
+		return -2, errors.Wrap(err, "Unable to connect to ethereum smart contract")
 	}
-	return ok, nil
+	if redeemStatus == 2 {
+		return 0, ErrRedeemExpired
+	}
+
+	return redeemStatus, nil
 }
+
 // HasValidatorSigned takes validator address and recipient address as input and verifies if the validator has already signed
 func (acc *ETHChainDriver) HasValidatorSigned(validatorAddress common.Address, recipient common.Address) (bool, error) {
 	instance := acc.GetContract()

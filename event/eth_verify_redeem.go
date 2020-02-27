@@ -20,8 +20,6 @@ type JobETHVerifyRedeem struct {
 	Status      jobs.Status
 }
 
-
-
 func NewETHVerifyRedeem(name ethereum.TrackerName, state trackerlib.TrackerState) *JobETHVerifyRedeem {
 	return &JobETHVerifyRedeem{
 		TrackerName: name,
@@ -33,10 +31,6 @@ func NewETHVerifyRedeem(name ethereum.TrackerName, state trackerlib.TrackerState
 
 func (job *JobETHVerifyRedeem) DoMyJob(ctx interface{}) {
 	job.RetryCount += 1
-	if job.RetryCount > jobs.Max_Retry_Count {
-		job.Status = jobs.Failed
-		BroadcastReportFinalityETHTx(ctx.(*JobsContext),job.TrackerName,job.JobID,false)
-	}
 	if job.Status == jobs.New {
 		job.Status = jobs.InProgress
 	}
@@ -77,13 +71,19 @@ func (job *JobETHVerifyRedeem) DoMyJob(ctx interface{}) {
 	}
 
 	addr := ethCtx.GetValidatorETHAddress()
-	success, err := cd.VerifyRedeem(addr, msg.From())
+	status, err := cd.VerifyRedeem(addr, msg.From())
 	if err != nil {
 		ethCtx.Logger.Error("Error in verifying redeem :", job.GetJobID(), err)
 	}
-
+	if err == ethereum.ErrRedeemExpired {
+		job.Status = jobs.Failed
+		BroadcastReportFinalityETHTx(ctx.(*JobsContext), job.TrackerName, job.JobID, false)
+	}
+	if status == 0 {
+		ethCtx.Logger.Info("Waiting for RedeemTx to be Completed")
+	}
 	// create internal check finality to report that the redeem is done on ethereum chain
-	if success {
+	if status == 1 {
 		index, _ := tracker.CheckIfVoted(ethCtx.ValidatorAddress)
 		if index < 0 {
 			return
@@ -94,7 +94,7 @@ func (job *JobETHVerifyRedeem) DoMyJob(ctx interface{}) {
 			Locker:           tracker.ProcessOwner,
 			ValidatorAddress: ethCtx.ValidatorAddress,
 			VoteIndex:        index,
-			Success:          false,
+			Success:          true,
 		}
 
 		txData, err := cf.Marshal()

@@ -36,8 +36,6 @@ type JobBTCBroadcast struct {
 	RetryCount int
 }
 
-
-
 func NewBTCBroadcastJob(trackerName, id string) jobs.Job {
 
 	return &JobBTCBroadcast{

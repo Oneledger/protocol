@@ -20,8 +20,6 @@ type JobETHCheckFinality struct {
 	Status      jobs.Status
 }
 
-
-
 func NewETHCheckFinality(name ethereum.TrackerName, state trackerlib.TrackerState) *JobETHCheckFinality {
 	return &JobETHCheckFinality{
 		TrackerName: name,
@@ -94,7 +92,7 @@ func (job *JobETHCheckFinality) DoMyJob(ctx interface{}) {
 		Locker:           tracker.ProcessOwner,
 		ValidatorAddress: ethCtx.ValidatorAddress,
 		VoteIndex:        index,
-		Success:          false,
+		Success:          true,
 	}
 
 	txData, err := reportFinalityMint.Marshal()
@@ -120,7 +118,7 @@ func (job *JobETHCheckFinality) DoMyJob(ctx interface{}) {
 		ethCtx.Logger.Error("error while broadcasting finality vote and mint txn ", job.GetJobID(), err, rep.Log)
 		return
 	}
-    //TODO END
+	//TODO END
 	job.Status = jobs.Completed
 }
 

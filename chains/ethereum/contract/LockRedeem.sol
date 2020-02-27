@@ -18,7 +18,13 @@ contract LockRedeem {
     // Default Voting power should be updated at one point
     int constant DEFAULT_VALIDATOR_POWER = 50;
     uint constant MIN_VALIDATORS = 0;
-    uint256 LOCK_PERIOD = 28800;
+
+
+    //Approx
+    // 270 blocks per hour
+    // 5 blocks per min
+    // 28800 old value
+    uint256 LOCK_PERIOD;
 
     // This is the height at which the current epoch was started
     uint public epochBlockHeight;
@@ -35,19 +41,19 @@ contract LockRedeem {
     address[] validatorsToAdd;
     address[] validatorsToRemove;
 
-    mapping (address => int) public validators;
-
+    mapping (address => uint8) public validators;
+    address[] validatorList;
     event AddValidator(
         address indexed _address,
-        int _power
+        uint8 index
     );
 
     struct RedeemTX {
         address payable recipient;
-        mapping (address => bool) votes;
+        uint256 votes;
         uint256 amount;
         uint256 signature_count;
-        bool isCompleted ;
+        bool isProcessing ;
         uint256 until;
     }
     mapping (address => RedeemTX) redeemRequests;
@@ -76,7 +82,7 @@ contract LockRedeem {
 
     event NewThreshold(uint _prevThreshold, uint _newThreshold);
 
-    constructor(address[] memory initialValidators) public {
+    constructor(address[] memory initialValidators,uint _lock_period) public {
         // Require at least 4 validators
         require(initialValidators.length >= MIN_VALIDATORS, "insufficient validators passed to constructor");
 
@@ -90,6 +96,7 @@ contract LockRedeem {
         votingThreshold = (initialValidators.length * 2 / 3) + 1;
         // Set the initial epochBlockHeight
         declareNewEpoch(block.number);
+        LOCK_PERIOD = _lock_period;
     }
 
     function isValidator(address addr) public view returns(bool) {
@@ -101,19 +108,20 @@ contract LockRedeem {
         emit Lock(msg.sender,msg.value);
     }
     function isredeemAvailable (address recepient_) public view returns (bool){
-        return redeemRequests[recepient_].until == 0 || redeemRequests[recepient_].until < block.number;
+        return redeemRequests[recepient_].until < block.number;
     }
+
     // function called by user
     function redeem(uint256 amount_)  public  {
-        require(redeemRequests[msg.sender].amount == uint256(0));
+        require(isredeemAvailable(msg.sender) ,"redeem to this address is not available yet");
         require(amount_ > 0, "amount should be bigger than 0");
-        require(redeemRequests[msg.sender].until < block.number, "request is locked, not available");
 
-        redeemRequests[msg.sender].isCompleted = false;
+        // redeemRequests[msg.sender].isProcessing = true;
         redeemRequests[msg.sender].signature_count = uint256(0);
         redeemRequests[msg.sender].recipient = msg.sender;
         redeemRequests[msg.sender].amount = amount_ ;
         redeemRequests[msg.sender].until = block.number + LOCK_PERIOD;
+        redeemRequests[msg.sender].votes = 0;
         emit RedeemRequest(redeemRequests[msg.sender].recipient,redeemRequests[msg.sender].amount);
     }
 
@@ -121,29 +129,39 @@ contract LockRedeem {
     // todo: validator sign and if enough vote, transfer directly
     function sign(uint amount_, address payable recipient_) public  {
         require(isValidator(msg.sender),"validator not present in list");
-        require(!redeemRequests[recipient_].isCompleted, "redeem request is completed");
-        require(redeemRequests[recipient_].amount == amount_,"redeem amount Compromised" );
-        require(!redeemRequests[recipient_].votes[msg.sender]);
+        require(redeemRequests[recipient_].until > block.number, "redeem request is not available");
+        require(redeemRequests[recipient_].amount == amount_,"redeem amount is different" );
+        require((redeemRequests[recipient_].votes >> validators[msg.sender])% 2 == uint256(0), "validator already vote");
 
         // update votes
-        redeemRequests[recipient_].votes[msg.sender] = true;
+        redeemRequests[recipient_].votes = redeemRequests[recipient_].votes + (uint256(1) << validators[msg.sender]);
         redeemRequests[recipient_].signature_count += 1;
 
         // if reach threshold, transfer
         if (redeemRequests[recipient_].signature_count >= votingThreshold ) {
             redeemRequests[recipient_].recipient.transfer(redeemRequests[recipient_].amount);
             redeemRequests[recipient_].amount = 0;
-            redeemRequests[recipient_].isCompleted = true;
+            // redeemRequests[recipient_].isProcessing = false;
+            redeemRequests[recipient_].until = block.number;
+            // for (uint i =0 ;i < validatorList.length ;i++)
+            // {
+            //     redeemRequests[recipient_].votes[validatorList[i]] = false;
+            // }
+            redeemRequests[recipient_].votes = 0;
         }
         emit ValidatorSignedRedeem(recipient_, msg.sender, amount_);
     }
 
     function hasValidatorSigned(address recipient_) public view returns(bool) {
-        return redeemRequests[recipient_].votes[msg.sender];
+        return redeemRequests[recipient_].votes >> validators[msg.sender] % 2 == uint256(1);
     }
 
-    function verifyRedeem(address recipient_) public view returns(bool){
-        return redeemRequests[recipient_].isCompleted;
+    //BeforeRedeem : -1  (amount == 0 and until = 0)
+    //Ongoing : 0  (amount > 0 and until > block.number)
+    //Success : 1  (amount = 0 and until < block.number)
+    //Expired : 2  (amount > 0 and until < block.number)
+    function verifyRedeem(address recipient_) public view returns(int8){
+        return (redeemRequests[recipient_].until > 0 && redeemRequests[recipient_].until < block.number) ? (redeemRequests[recipient_].amount > 0? int8(2) : int8(1) ): (redeemRequests[recipient_].amount == 0 ? int8(-1) : int8(0));
     }
 
     function getSignatureCount(address recipient_) public view returns(uint256){
@@ -212,7 +230,9 @@ contract LockRedeem {
 
     // Adds a validator to our current store
     function addValidator(address v) internal {
-        validators[v] = DEFAULT_VALIDATOR_POWER;
+
+        uint8 index = uint8(validatorList.push(v));
+        validators[v] = index;
         numValidators += 1;
         emit AddValidator(v, validators[v]);
     }
@@ -224,4 +244,3 @@ contract LockRedeem {
         emit DeleteValidator(v);
     }
 }
-//["0x14723A09ACff6D2A60DcdF7aA4AFf308FDDC160C","0x4B0897b0513fdC7C541B6d9D7E929C4e5364D2dB","0x583031D1113aD414F02576BD6afaBfb302140225","0xdD870fA1b7C4700F2BD7f44238821C26f7392148"]

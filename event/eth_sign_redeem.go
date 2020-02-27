@@ -23,8 +23,6 @@ type JobETHSignRedeem struct {
 	TxHash      *ethereum.TransactionHash
 }
 
-
-
 func NewETHSignRedeem(name ethereum.TrackerName, state trackerlib.TrackerState) *JobETHSignRedeem {
 	return &JobETHSignRedeem{
 		TrackerName: name,
@@ -36,16 +34,15 @@ func NewETHSignRedeem(name ethereum.TrackerName, state trackerlib.TrackerState) 
 
 func (j *JobETHSignRedeem) DoMyJob(ctx interface{}) {
 	j.RetryCount += 1
+	if j.Status == jobs.Completed {
+		return
+	}
 	if j.RetryCount > jobs.Max_Retry_Count {
 		j.Status = jobs.Failed
-		BroadcastReportFinalityETHTx(ctx.(*JobsContext),j.TrackerName,j.JobID,false)
+		BroadcastReportFinalityETHTx(ctx.(*JobsContext), j.TrackerName, j.JobID, false)
 	}
 	if j.Status == jobs.New {
 		j.Status = jobs.InProgress
-	}
-
-	if j.Status == jobs.Completed {
-		return
 	}
 
 	ethCtx, _ := ctx.(*JobsContext)

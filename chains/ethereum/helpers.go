@@ -11,7 +11,6 @@ import (
 	"github.com/pkg/errors"
 )
 
-
 // mapkey iterates over and map ,and returns the key for value provided
 func mapkey(m map[string]string, value string) (key string, ok bool) {
 	for k, v := range m {
@@ -23,6 +22,7 @@ func mapkey(m map[string]string, value string) (key string, ok bool) {
 	}
 	return
 }
+
 // parseERC20Lock it takes in a rawTX byte array for a ERC20Lock and a function signature .
 //It returns the parameters passed when calling the function
 func parseERC20Lock(data []byte, functionSig string) (req *LockErcRequest, err error) {
