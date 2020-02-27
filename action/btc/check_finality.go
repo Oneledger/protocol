@@ -230,7 +230,7 @@ func runReportFinalityMint(ctx *action.Context, tx action.RawTx) (bool, action.R
 			return false, action.Response{Log: "error adding oBTC to address"}
 		}
 
-		circulation := keys.Address(lockBalanceAddress)
+		circulation := keys.Address(ctx.BTCTrackers.GetOption().TotalSupplyAddr)
 		err = ctx.Balances.AddToAddress(circulation, oBTCCoin)
 		if err != nil {
 			ctx.Logger.Error(err)

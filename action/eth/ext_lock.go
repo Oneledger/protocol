@@ -149,7 +149,9 @@ func runLock(ctx *action.Context, lock *Lock) (bool, action.Response) {
 	//ctx.Logger.Info("ETH OPTIONS ABI :" ,ctx.ETHTrackers.GetOption().ContractABI)
 	//ctx.Logger.Info("ETH OPTIONS ADDRESS :" ,ctx.ETHTrackers.GetOption().ContractAddress)
 
-	ok, err := ethchaindriver.VerifyLock(ethTx, ctx.ETHTrackers.GetOption().ContractABI)
+	cdOptions := ctx.ETHTrackers.GetOption()
+
+	ok, err := ethchaindriver.VerifyLock(ethTx, cdOptions.ContractABI)
 	if err != nil {
 		ctx.Logger.Error("Unable to Verify Data for Ethereum Lock")
 		return false, action.Response{
@@ -162,11 +164,11 @@ func runLock(ctx *action.Context, lock *Lock) (bool, action.Response) {
 		}
 	}
 
-	if !bytes.Equal(ethTx.To().Bytes(), ctx.ETHTrackers.GetOption().ContractAddress.Bytes()) {
+	if !bytes.Equal(ethTx.To().Bytes(), cdOptions.ContractAddress.Bytes()) {
 
 		ctx.Logger.Error("to field does not match contract address")
 		return false, action.Response{
-			Log: "Contract address does not match" ,
+			Log: "Contract address does not match",
 		}
 	}
 
@@ -183,13 +185,13 @@ func runLock(ctx *action.Context, lock *Lock) (bool, action.Response) {
 	}
 	lockCoin := curr.NewCoinFromString(ethTx.Value().String())
 	// Adding lock amount to common address to maintain count of total oEth minted
-	ethSupply := action.Address(lockBalanceAddress)
+	ethSupply := action.Address(cdOptions.TotalSupplyAddr)
 	balCoin, err := ctx.Balances.GetBalanceForCurr(ethSupply, &curr)
 	if err != nil {
 		return false, action.Response{Log: fmt.Sprintf("Unable to get Eth lock total balance", lock.Locker)}
 	}
 
-	totalSupplyCoin := curr.NewCoinFromString(totalETHSupply)
+	totalSupplyCoin := curr.NewCoinFromString(cdOptions.TotalSupply)
 
 	if !balCoin.Plus(lockCoin).LessThanEqualCoin(totalSupplyCoin) {
 		return false, action.Response{Log: fmt.Sprintf("Eth lock exceeded limit", lock.Locker)}
