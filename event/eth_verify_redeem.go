@@ -80,7 +80,7 @@ func (job *JobETHVerifyRedeem) DoMyJob(ctx interface{}) {
 		BroadcastReportFinalityETHTx(ctx.(*JobsContext), job.TrackerName, job.JobID, false)
 	}
 	if status == 0 {
-		ethCtx.Logger.Info("Waiting for RedeemTx to be Completed")
+		ethCtx.Logger.Info("Waiting for RedeemTx to be Completed ,67 % Signing Votes")
 	}
 	// create internal check finality to report that the redeem is done on ethereum chain
 	if status == 1 {

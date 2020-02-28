@@ -3,76 +3,64 @@ pragma solidity 0.6.0;
 contract LockRedeem {
     //Flag to pause and unpause contract
     bool ACTIVE = false;
-
     // numValidators holds the total number of validators
     uint public numValidators;
-    //
-    // struct ValidatorDetails {
-    //     uint votingPower;
-    //     uint validatorFee;
-    //     uint8 index;
-    // }
-    mapping (address => uint8) public validators;
-    address[] validatorList;
-
+    // mapping to store the validators to the ether they  have earne from signing trasactions
+    struct ValidatorDetails {
+        uint votingPower;
+        uint validatorFee;
+    }
+    mapping (address => ValidatorDetails) public validators;
+    address [] initialValidatorList;
     // Require this amount of signatures to push a proposal through,Set only in constructor
     uint votingThreshold;
     uint activeThreshold;
-
     //the base cost of a transaction (21000 gas)
     //the cost of a contract deployment (32000 gas) [Not relevant for sign trasaction]
     //the cost for every zero byte of data or code for a transaction.
     //the cost of every non-zero byte of data or code for a transaction.
     uint trasactionCost = 23192 ;
-    uint additionalGasCost = 37692 ;
-    uint redeem_gas_charge = 10000000000000000;
-
+    uint additionalGasCost = 37692 * 2 ;
+    uint redeem_gas_charge = 1000000000000000000;
+    // numValidators holds the total number of validators
     uint public migrationSignatures;
+    // mapping to store the validators to there power.
     mapping (address => bool) public migrationSigners;
     mapping (address => uint) migrationCount;
     address [] migrationAddress;
 
-    // Default Voting power should be updated at one point
-    int constant DEFAULT_VALIDATOR_POWER = 100;
-    uint constant MIN_VALIDATORS = 0;
-    //Approx
-    // 270 blocks per hour
-    // 5 blocks per min
-    // 28800 old value
-    uint256 LOCK_PERIOD;
 
+    uint constant DEFAULT_VALIDATOR_POWER = 50;
+    uint constant MIN_VALIDATORS = 0;
+    uint256 LOCK_PERIOD = 28800;
 
     struct RedeemTX {
         address payable recipient;
-        uint256 votes;
+        mapping (address => bool) votes;
         uint256 amount;
         uint256 signature_count;
+        bool isCompleted ;
         uint256 until;
-        uint256 redeemFee;
+        uint redeemFee;
+        bool feeRefund;
     }
     mapping (address => RedeemTX) redeemRequests;
 
     event RedeemRequest(
         address indexed recepient,
-        uint256 amount_requested,
-        uint256 redeemFeeCharged
+        uint256 amount_requested
     );
 
     event ValidatorSignedRedeem(
         address indexed recipient,
         address validator_addresss,
         uint256 amount,
-        uint256 gasReturned
+        uint gasReturned
     );
 
     event Lock(
         address sender,
         uint256 amount_received
-    );
-
-    event ValidatorMigrated(
-        address validator,
-        address NewSmartContractAddress
     );
 
     event AddValidator(
@@ -83,35 +71,32 @@ contract LockRedeem {
         require(ACTIVE);
         _;
     }
-
     modifier isInactive() {
         require(!ACTIVE);
         _;
     }
-
     modifier onlyValidator() {
-        require(isValidator(msg.sender) ,"validator not present in List");
+        require(validators[msg.sender].votingPower >0 ,"validator not present in List");
         _; // Continues control flow after this is validates
     }
 
-
-
-    constructor(address[] memory initialValidators,uint _lock_period) public {
+    function isValidator(address v) public view returns (bool) {
+        return validators[v].votingPower > 0;
+    }
+    constructor(address[] memory initialValidators) public {
         // Require at least 4 validators
         require(initialValidators.length >= MIN_VALIDATORS, "insufficient validators passed to constructor");
-
         // Add the initial validators
         for (uint i = 0; i < initialValidators.length; i++) {
             // Ensure these validators are unique
             address v = initialValidators[i];
-            require(validators[v] == 0, "found non-unique validator in initialValidators");
+            require(validators[v].votingPower == 0, "found non-unique validator in initialValidators");
             addValidator(v);
         }
         ACTIVE = true ;
-        LOCK_PERIOD = _lock_period;
         votingThreshold = (initialValidators.length * 2 / 3) + 1;
         activeThreshold = (initialValidators.length * 1 / 3) + 1;
-
+        initialValidatorList = initialValidators;
     }
 
     function migrate (address newSmartContractAddress) public onlyValidator {
@@ -140,10 +125,11 @@ contract LockRedeem {
                     maxVotedAddress =migrationAddress[i];
                 }
             }
-            (bool success, ) = maxVotedAddress.call.value(address(this).balance)("");
+            (bool success, ) = newSmartContractAddress.call.value(address(this).balance)("");
             require(success, "Transfer failed");
         }
     }
+
     // function called by user
     function lock() payable public isActive {
         require(msg.value >= 0, "Must pay a balance more than 0");
@@ -152,87 +138,89 @@ contract LockRedeem {
 
     // function called by user
     function redeem(uint256 amount_)  payable public isActive {
-        require(isredeemAvailable(msg.sender) ,"redeem to this address is not available yet");
+        require(redeemRequests[msg.sender].amount == uint256(0));
+        require(msg.value + redeemRequests[msg.sender].redeemFee >= redeem_gas_charge,"Redeem Fees not supplied");
         require(amount_ > 0, "amount should be bigger than 0");
-        require(msg.value >= redeem_gas_charge ,"Redeem fee not provided");
+        require(redeemRequests[msg.sender].until < block.number, "request is locked, not available");
 
-        // redeemRequests[msg.sender].isProcessing = true;
+        redeemRequests[msg.sender].isCompleted = false;
         redeemRequests[msg.sender].signature_count = uint256(0);
         redeemRequests[msg.sender].recipient = msg.sender;
         redeemRequests[msg.sender].amount = amount_ ;
-        redeemRequests[msg.sender].until = block.number + LOCK_PERIOD;
         redeemRequests[msg.sender].redeemFee += msg.value;
-        redeemRequests[msg.sender].votes = 0;
-        emit RedeemRequest(redeemRequests[msg.sender].recipient,redeemRequests[msg.sender].amount,redeemRequests[msg.sender].redeemFee);
+        redeemRequests[msg.sender].until = block.number + LOCK_PERIOD;
+
+        emit RedeemRequest(redeemRequests[msg.sender].recipient,redeemRequests[msg.sender].amount);
     }
 
-    //function called by protocol
+    //function called by Validators using protocol to sign on RedeemRequests
     function sign(uint amount_, address payable recipient_) public isActive onlyValidator {
         uint startGas = gasleft();
-        require(isValidator(msg.sender),"validator not present in list");
-        require(redeemRequests[recipient_].until > block.number, "redeem request is not available");
+        require(!redeemRequests[recipient_].isCompleted, "redeem request is completed");
         require(redeemRequests[recipient_].amount == amount_,"redeem amount is different" );
-        require((redeemRequests[recipient_].votes >> validators[msg.sender])% 2 == uint256(0), "validator already vote");
-
+        require(!redeemRequests[recipient_].votes[msg.sender]);
+        require(redeemRequests[recipient_].until > block.number, "request has expired");
         // update votes
-        redeemRequests[recipient_].votes = redeemRequests[recipient_].votes + (uint256(1) << validators[msg.sender]);
+        redeemRequests[recipient_].votes[msg.sender] = true;
         redeemRequests[recipient_].signature_count += 1;
+        //validators[msg.sender].validatorFee = validators[msg.sender].validatorFee + tx.gasprice * avg_gas;
 
-        // if reach threshold, transfer
+        // if threshold is reached then transfer the amount
         if (redeemRequests[recipient_].signature_count >= votingThreshold ) {
             (bool success, ) = redeemRequests[recipient_].recipient.call.value((redeemRequests[recipient_].amount))("");
             require(success, "Transfer failed.");
             redeemRequests[recipient_].amount = 0;
-            redeemRequests[recipient_].until = block.number;
-
+            redeemRequests[recipient_].isCompleted = true;
+            redeemRequests[msg.sender].feeRefund = false;
         }
+
         // Trasaction Cost is a an average trasaction cost .
         // additionalGasCost is the extra gas used by the lines of code after gas calculation is done.
         // This is an approximate calcualtion and actuall cost might vary sightly .
+        // We used estimated gas * 2 to insentive the validators who has signed for redeem.
         uint gasUsed = startGas - gasleft() + trasactionCost + additionalGasCost ;
-        //validators[msg.sender].validatorFee = gasUsed;
+        validators[msg.sender].validatorFee = gasUsed;
         uint gasFee = gasUsed * tx.gasprice;
         (bool success, ) = msg.sender.call.value(gasFee)("");
-        // require(success, "Transfer back to validator failed");
+        require(success, "Transfer back to validator failed");
         redeemRequests[recipient_].redeemFee -= gasFee;
-        emit ValidatorSignedRedeem(recipient_, msg.sender, amount_,gasFee);
+        emit ValidatorSignedRedeem(recipient_, msg.sender, amount_,gasUsed);
+        // if ( redeemRequests[recipient_].isCompleted == true ) {
+        //      for (uint i = 0; i < initialValidatorList.length; i++) {
+        //      (bool success, ) = initialValidatorList[i].call.value(validators[initialValidatorList[i]].validatorFee)("");
+        //      require(success, "Transfer failed.");
+        // }
+
     }
 
-    // function validatorFee() public view isActive onlyValidator returns(uint) {
-    //     return validators[msg.sender].validatorFee;
-    // }
+    function validatorFee() public view isActive onlyValidator returns(uint) {
+        return validators[msg.sender].validatorFee;
+    }
 
-    function collectUserFee() public isActive {
-        require(verifyRedeem(msg.sender) > 0 , "request signing is still in progress");
+    function collectUserFee() public {
+        require(redeemRequests[msg.sender].until < block.number, "request has expired");
+        require(redeemRequests[msg.sender].isCompleted == true, "request signing is still in progress");
+        require(redeemRequests[msg.sender].feeRefund == false, "fee already refunded");
         (bool success, ) = msg.sender.call.value(redeemRequests[msg.sender].redeemFee)("");
         require(success, "Transfer failed.");
+        redeemRequests[msg.sender].feeRefund = true;
+
     }
 
-    function isValidator(address addr) public view returns(bool) {
-        return validators[addr] > 0;
+    // Function used by protocol and wallet
+    function isredeemAvailable (address recepient_) public view returns (bool){
+        return redeemRequests[recepient_].until == 0 || redeemRequests[recepient_].until < block.number;
     }
-
-    // function isValidator(address v) public view returns (bool) {
-    //     return validators[v].votingPower > 0;
-    // }
-
-    function isredeemAvailable (address recepient_) public isActive view returns (bool)  {
-        return redeemRequests[recepient_].until < block.number;
+    // Function used by protocol
+    function hasValidatorSigned(address recipient_) public view returns(bool) {
+        return redeemRequests[recipient_].votes[msg.sender];
     }
-
-    function hasValidatorSigned(address recipient_) public isActive view returns(bool) {
-        return  ((redeemRequests[recipient_].votes >> validators[msg.sender]) % 2 == uint256(1));
+    // Function used by protocol
+    function verifyRedeem(address recipient_) public view returns(bool){
+        return redeemRequests[recipient_].isCompleted;
     }
-
-    //BeforeRedeem : -1  (amount == 0 and until = 0)
-    //Ongoing : 0  (amount > 0 and until > block.number)
-    //Success : 1  (amount = 0 and until < block.number)
-    //Expired : 2  (amount > 0 and until < block.number)
-    function verifyRedeem(address recipient_) public isActive view returns(int8){
-        return (redeemRequests[recipient_].until > 0 && redeemRequests[recipient_].until < block.number) ? (redeemRequests[recipient_].amount > 0? int8(2) : int8(1) ): (redeemRequests[recipient_].amount == 0 ? int8(-1) : int8(0));
-    }
-
-    function getSignatureCount(address recipient_) public isActive view returns(uint256){
+    // Function used by protocol
+    function getSignatureCount(address recipient_) public view returns(uint256){
         return redeemRequests[recipient_].signature_count;
     }
 
@@ -244,14 +232,14 @@ contract LockRedeem {
         return address(this);
     }
 
-    // internal functions
     function addValidator(address v) internal {
-        validatorList.push(v);
-
-        //validators[v].votingPower = DEFAULT_VALIDATOR_POWER;
-        //validators[v].validatorFee = 0;
-        validators[v] = uint8(validatorList.length);
+        validators[v].votingPower = DEFAULT_VALIDATOR_POWER;
+        validators[v].validatorFee = 0;
+        numValidators += 1;
         emit AddValidator(v);
     }
 
+
 }
+//["0x14723A09ACff6D2A60DcdF7aA4AFf308FDDC160C","0x4B0897b0513fdC7C541B6d9D7E929C4e5364D2dB","0x583031D1113aD414F02576BD6afaBfb302140225","0xdD870fA1b7C4700F2BD7f44238821C26f7392148"]
+//["0xE61A04aabffF75D813200BCa359c5ce8D2AC49B6","0xCd7bc1aD1F4b5f7C2e2bbC605319C6f2b8937aa5","0xdEd2F46C7b8fF37D2C20C879fDE82D2B36212779","0x138aFBDcCAe28D02a0311CcCed55027De3D5DB4e"]

@@ -10,6 +10,29 @@ import (
 	"github.com/Oneledger/protocol/chains/ethereum/contract"
 )
 
+type RedeemStatus int8
+
+const (
+	NewRedeem RedeemStatus = -1
+	Ongoing   RedeemStatus = 0
+	Success   RedeemStatus = 1
+	Expired   RedeemStatus = 2
+)
+
+func (r RedeemStatus) String() string {
+	switch r {
+	case -1:
+		return "NewRedeem"
+	case 0:
+		return "OnGoing"
+	case 1:
+		return "Success"
+	case 2:
+		return "Expired"
+	}
+	return "Unknown Type / Check smart contract implementation"
+}
+
 type RedeemRequest struct {
 	Amount *big.Int
 }

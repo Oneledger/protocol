@@ -47,18 +47,19 @@ var (
 	TestTokenABI     = contract.ERC20BasicABI
 	LockRedeemERCABI = contract.LockRedeemERCABI
 	// LockRedeemERC20ABI = contract.ContextABI
-	LockRedeemContractAddr      = "0x024121D20BF504F7530045150f9130FAF22C6D67"
-	TestTokenContractAddr       = "0x848E7302b3c6791A6A41fF8B374276fB5a7A6A16"
-	LockRedeemERC20ContractAddr = "0xBBa1B966E5cFbA2cae256A707F0BeA2cB69E0d74"
-	cfg                         = config.DefaultEthConfigLocal()
-	log                         = logger.NewDefaultLogger(os.Stdout).WithPrefix("testeth")
-	UserprivKey                 *ecdsa.PrivateKey
-	UserprivKeyRedeem           *ecdsa.PrivateKey
+	LockRedeemContractAddr      = "0x649542EB789448faf185BB5ea217eC0f61EC44f0"
+	TestTokenContractAddr       = "0x471999c6811fdDFEEe1f02EF3504964e76D94DFA"
+	LockRedeemERC20ContractAddr = "0x11BF555de28A4e536F809F13049a8E35b9d06C89"
+
+	cfg               = config.DefaultEthConfigLocal()
+	log               = logger.NewDefaultLogger(os.Stdout).WithPrefix("testeth")
+	UserprivKey       *ecdsa.PrivateKey
+	UserprivKeyRedeem *ecdsa.PrivateKey
 
 	client                 *ethclient.Client
 	contractAbi            abi.ABI
-	valuelock              = createValue("10000000000000000000") // in wei (10 eth)
-	valueredeem            = createValue("1000000000000000000")
+	valuelock              = createValue("1000") // in wei (10 eth)
+	valueredeem            = createValue("10")
 	valuelockERC20         = createValue("1000000000000000000")
 	valueredeemERC20       = createValue("100000000000000000")
 	fromAddress            common.Address
@@ -108,8 +109,8 @@ func init() {
 
 func main() {
 
-	lock()
-	time.Sleep(time.Second * 5)
+	//lock()
+	//time.Sleep(time.Second * 5)
 	send12trasactions()
 	time.Sleep(5 * time.Second)
 
@@ -262,7 +263,7 @@ func redeem() {
 	auth2.GasLimit = gasLimit   // in units
 	auth2.GasPrice = gasPrice
 
-	value := big.NewInt(0)
+	value := big.NewInt(1000000000000000000)
 	tx2 := types.NewTransaction(nonce, toAddress, value, gasLimit, gasPrice, bytesData)
 
 	chainID, err := client.ChainID(context.Background())
@@ -292,7 +293,8 @@ func redeem() {
 	if err != nil {
 		fmt.Println(err)
 	}
-	//time.Sleep(time.Second * 30)
+
+	time.Sleep(time.Second * 15)
 
 	rpcclient, err := rpc.NewClient("http://localhost:26602")
 	if err != nil {

@@ -1,6 +1,7 @@
 package event
 
 import (
+	"fmt"
 	"math/big"
 	"strconv"
 
@@ -98,11 +99,20 @@ func (j *JobETHSignRedeem) DoMyJob(ctx interface{}) {
 
 	addr := ethCtx.GetValidatorETHAddress()
 
+	status, err := cd.VerifyRedeem(addr, msg.From())
+	if err != nil {
+		ethCtx.Logger.Error("Error in verifying redeem :", j.GetJobID(), err, "RetryCount :", j.RetryCount)
+	}
+	if status != 0 {
+		ethCtx.Logger.Info("Redeem TX is not in Ongoing Status | Current Status : ", status.String())
+		return
+	}
 	success, err := cd.HasValidatorSigned(addr, msg.From())
 	if err != nil {
 		ethCtx.Logger.Error("Error in verifying redeem :", j.GetJobID(), err)
 	}
 	if success {
+		fmt.Println("validator sign comfirmed")
 		j.Status = jobs.Completed
 		return
 	}
@@ -112,7 +122,7 @@ func (j *JobETHSignRedeem) DoMyJob(ctx interface{}) {
 	redeemAddr := common.HexToAddress(tracker.To.String())
 	tx, err = cd.SignRedeem(addr, redeemAmount, redeemAddr)
 	if err != nil {
-		ethCtx.Logger.Error("Error in creating signing trasanction : ", j.GetJobID(), err)
+		ethCtx.Logger.Error("Error in creating signing transaction : ", j.GetJobID(), err)
 		return
 	}
 
@@ -122,22 +132,17 @@ func (j *JobETHSignRedeem) DoMyJob(ctx interface{}) {
 		ethCtx.Logger.Error("Failed to get chain id ", err)
 		return
 	}
-	status, err := cd.VerifyRedeem(addr, msg.From())
-	if status != 0 {
-		ethCtx.Logger.Info("Redeem TX is not in Ongoing Status")
-		return
-	}
+
 	signedTx, err := types.SignTx(tx, types.NewEIP155Signer(chainid), privkey)
 	privkey = nil
 	txHash, err := cd.BroadcastTx(signedTx)
 	if err != nil {
-		ethCtx.Logger.Error("Unable to broadcast transaction :", j.GetJobID(), err)
+		ethCtx.Logger.Error("Unable to broadcast transaction :", j.GetJobID(), err, " | RetryCount : ", j.RetryCount)
 		return
 	}
+	ethCtx.Logger.Info("Validator Signed Redeem for | Validator Address :", ethCtx.ValidatorAddress.Humanize(), "| User Eth Address :", msg.From().Hex(), "| ETH Signing TX ", txHash.Hex())
 
-	ethCtx.Logger.Info("Redeem Transaction broadcasted to network : ", txHash)
-
-	// j.Status = jobs.Completed
+	//j.Status = jobs.Completed
 }
 
 func (j *JobETHSignRedeem) IsDone() bool {

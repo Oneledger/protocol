@@ -9,4 +9,5 @@ func setEnvVariables() {
 	os.Setenv("ETHPKPATH", "/home/tanmay/Codebase/pkdata")
 	os.Setenv("WALLETADDR", "/home/tanmay/Codebase/walletAddr")
 	ethBlockConfirmation = 0
+	totalETHSupply = "20000000000000000000"
 }

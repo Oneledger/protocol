@@ -43,9 +43,9 @@ import (
 	"github.com/Oneledger/protocol/log"
 )
 
-const (
+var (
 	//Lock Limits
-	totalETHSupply     = "2000000000000000000" // 2 ETH
+	totalETHSupply     = "2000000000000000000" // 20 ETH
 	totalTTCSupply     = "2000000000000000000" // 2 Token
 	totalBTCSupply     = "1000000000"          // 10 BTC
 	lockBalanceAddress = "oneledgerSupplyAddress"

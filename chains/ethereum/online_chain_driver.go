@@ -269,11 +269,10 @@ func (acc *ETHChainDriver) ParseRedeem(data []byte, abi string) (req *RedeemRequ
 //Success : 1  (amount = 0 and until < block.number)
 //Expired : 2  (amount > 0 and until < block.number)
 
-func (acc *ETHChainDriver) VerifyRedeem(validatorAddress common.Address, recipient common.Address) (int8, error) {
+func (acc *ETHChainDriver) VerifyRedeem(validatorAddress common.Address, recipient common.Address) (RedeemStatus, error) {
 	instance := acc.GetContract()
-	fmt.Println("Recipient Address : ", recipient.Hex())
-
 	redeemStatus, err := instance.VerifyRedeem(acc.CallOpts(validatorAddress), recipient)
+	fmt.Println("RedeemStatus : ", redeemStatus)
 	if err != nil {
 		return -2, errors.Wrap(err, "Unable to connect to ethereum smart contract")
 	}
@@ -281,7 +280,7 @@ func (acc *ETHChainDriver) VerifyRedeem(validatorAddress common.Address, recipie
 		return 0, ErrRedeemExpired
 	}
 
-	return redeemStatus, nil
+	return RedeemStatus(redeemStatus), nil
 }
 
 // HasValidatorSigned takes validator address and recipient address as input and verifies if the validator has already signed
