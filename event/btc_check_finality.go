@@ -66,12 +66,13 @@ func (cf *JobBTCCheckFinality) DoMyJob(ctxI interface{}) {
 	}
 
 	opt := ctx.Trackers.GetConfig()
+	cdOption := ctx.Trackers.GetOption()
 	cd := bitcoin.NewChainDriver(opt.BlockCypherToken)
 
 	chain := bitcoin.GetBlockCypherChainType(opt.BTCChainnet)
 
 	ctx.Logger.Info("checking btc finality for ", tracker.ProcessTxId)
-	ok, err := cd.CheckFinality(tracker.ProcessTxId, opt.BlockCypherToken, chain)
+	ok, err := cd.CheckFinality(tracker.ProcessTxId, int(cdOption.BlockConfirmation), opt.BlockCypherToken, chain)
 	if err != nil {
 		ctx.Logger.Error("error while checking finality", err, cf.TrackerName)
 		return

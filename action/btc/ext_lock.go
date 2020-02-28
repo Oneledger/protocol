@@ -174,6 +174,7 @@ func runBTCLock(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	}
 
 	opt := ctx.BTCTrackers.GetConfig()
+	cdOption := ctx.BTCTrackers.GetOption()
 
 	if !ValidateExtLockStructure(tracker, btcTx, opt.BTCParams) {
 		return false, action.Response{Log: "err in ext lock txn structure"}
@@ -191,13 +192,13 @@ func runBTCLock(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	}
 
 	lockCoin := curr.NewCoinFromUnit(lock.LockAmount)
-	tally := action.Address(lockBalanceAddress)
+	tally := action.Address(cdOption.TotalSupplyAddr)
 	balCoin, err := ctx.Balances.GetBalanceForCurr(tally, &curr)
 	if err != nil {
 		return false, action.Response{Log: fmt.Sprintf("unable to get btc lock total balance", lock.TrackerName)}
 	}
 
-	totalSupplyCoin := curr.NewCoinFromInt(totalBTCSupply)
+	totalSupplyCoin := curr.NewCoinFromString(cdOption.TotalSupply)
 
 	if !balCoin.Plus(lockCoin).LessThanEqualCoin(totalSupplyCoin) {
 		return false, action.Response{Log: fmt.Sprintf("btc lock exceeded limit", lock.TrackerName)}

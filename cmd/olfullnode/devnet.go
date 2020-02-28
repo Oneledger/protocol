@@ -43,6 +43,14 @@ import (
 	"github.com/Oneledger/protocol/log"
 )
 
+const (
+	//Lock Limits
+	totalETHSupply     = "2000000000000000000" // 2 ETH
+	totalTTCSupply     = "2000000000000000000" // 2 Token
+	totalBTCSupply     = "1000000000"          // 10 BTC
+	lockBalanceAddress = "oneledgerSupplyAddress"
+)
+
 type testnetConfig struct {
 	// Number of validators
 	numValidators    int
@@ -62,6 +70,9 @@ type testnetConfig struct {
 	deploySmartcontracts bool
 	cloud                bool
 }
+
+var ethBlockConfirmation = int64(12)
+var btcBlockConfirmation = int64(6)
 
 var testnetArgs = &testnetConfig{}
 
@@ -364,6 +375,9 @@ func runDevnet(_ *cobra.Command, _ []string) error {
 
 	btccdo := bitcoin.ChainDriverOption{
 		"testnet3",
+		totalBTCSupply,
+		lockBalanceAddress,
+		btcBlockConfirmation,
 	}
 
 	states := initialState(args, nodeList, *cdo, *onsOp, btccdo)
@@ -673,12 +687,16 @@ func deployethcdcontract(conn string, nodeList []node) (*ethchain.ChainDriverOpt
 		ContractABI:    contract.LockRedeemABI,
 		ERCContractABI: contract.LockRedeemERCABI,
 		TokenList: []ethchain.ERC20Token{{
-			TokName: "TTC",
-			TokAddr: tokenAddress,
-			TokAbi:  contract.ERC20BasicABI,
+			TokName:        "TTC",
+			TokAddr:        tokenAddress,
+			TokAbi:         contract.ERC20BasicABI,
+			TokTotalSupply: totalTTCSupply,
 		}},
 		ContractAddress:    address,
 		ERCContractAddress: ercAddress,
+		TotalSupply:        totalETHSupply,
+		TotalSupplyAddr:    lockBalanceAddress,
+		BlockConfirmation:  ethBlockConfirmation,
 	}, nil
 
 }

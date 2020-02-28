@@ -169,14 +169,14 @@ func runERC20Lock(ctx *action.Context, tx action.RawTx) (bool, action.Response) 
 
 	lockToken := curr.NewCoinFromString(erc20Params.TokenAmount.String())
 	// Adding lock amount to common address to maintain count of total oToken minted
-	tokenSupply := action.Address(lockBalanceAddress)
+	tokenSupply := action.Address(ethOptions.TotalSupplyAddr)
 
 	balCoin, err := ctx.Balances.GetBalanceForCurr(tokenSupply, &curr)
 	if err != nil {
 		return false, action.Response{Log: fmt.Sprintf("Unable to get Eth lock total balance %s", erc20lock.Locker)}
 	}
 
-	totalSupplyToken := curr.NewCoinFromString(totalTTCSupply)
+	totalSupplyToken := curr.NewCoinFromString(token.TokTotalSupply)
 	if !balCoin.Plus(lockToken).LessThanEqualCoin(totalSupplyToken) {
 		return false, action.Response{Log: fmt.Sprintf("Token lock exceeded limit ,for Token : %s ", token.TokName)}
 	}

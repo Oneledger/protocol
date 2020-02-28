@@ -192,7 +192,7 @@ func (acc *ETHChainDriver) GetTransactionMessage(tx *types.Transaction) (*types.
 }
 
 // CheckFinality verifies the finality of a transaction on the ethereum blockchain , waits for 12 block confirmations
-func (acc *ETHChainDriver) CheckFinality(txHash TransactionHash) (*types.Receipt, error) {
+func (acc *ETHChainDriver) CheckFinality(txHash TransactionHash, blockConfirmation int64) (*types.Receipt, error) {
 
 	result, err := acc.GetClient().TransactionReceipt(context.Background(), txHash)
 	if err == nil {
@@ -202,7 +202,7 @@ func (acc *ETHChainDriver) CheckFinality(txHash TransactionHash) (*types.Receipt
 				return nil, errors.Wrap(err, "Unable to extract latest header")
 			}
 			diff := big.NewInt(0).Sub(latestHeader.Number, result.BlockNumber)
-			if big.NewInt(12).Cmp(diff) > 0 {
+			if big.NewInt(blockConfirmation).Cmp(diff) > 0 {
 				return nil, errors.New("Waiting for confirmation . Current Block Confirmations : " + diff.String())
 			}
 			return result, err

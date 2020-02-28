@@ -160,13 +160,18 @@ func (st *Store) CheckBalanceFromAddress(addr keys.Address, coin Coin) error {
 
 func (st *Store) GetBalance(address keys.Address, list *CurrencySet) (balance *Balance, err error) {
 	balance = NewBalance()
+	fn := balance.setCoin
+	if address.Equal(keys.Address{}) {
+		fn = balance.addCoin
+	}
+
 	st.iterate(address, func(c string, amt Amount) bool {
 		currency, ok := list.GetCurrencyByName(c)
 		if !ok {
 			err = errors.New("currency not expected")
 			return false
 		}
-		balance.setCoin(currency.NewCoinFromAmount(amt))
+		fn(currency.NewCoinFromAmount(amt))
 
 		return false
 	})

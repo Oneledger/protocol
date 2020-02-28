@@ -133,3 +133,10 @@ rpcAuthtest: install
 	python scripts/rpcAuth/rpcTestAuth.py
 	@./scripts/stopDev
 
+
+stop:
+	@./scripts/stopDev
+
+
+start:
+	@./scripts/startDev

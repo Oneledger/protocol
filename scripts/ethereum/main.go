@@ -50,11 +50,10 @@ var (
 	LockRedeemContractAddr      = "0x024121D20BF504F7530045150f9130FAF22C6D67"
 	TestTokenContractAddr       = "0x848E7302b3c6791A6A41fF8B374276fB5a7A6A16"
 	LockRedeemERC20ContractAddr = "0xBBa1B966E5cFbA2cae256A707F0BeA2cB69E0d74"
-
-	cfg               = config.DefaultEthConfigLocal()
-	log               = logger.NewDefaultLogger(os.Stdout).WithPrefix("testeth")
-	UserprivKey       *ecdsa.PrivateKey
-	UserprivKeyRedeem *ecdsa.PrivateKey
+	cfg                         = config.DefaultEthConfigLocal()
+	log                         = logger.NewDefaultLogger(os.Stdout).WithPrefix("testeth")
+	UserprivKey                 *ecdsa.PrivateKey
+	UserprivKeyRedeem           *ecdsa.PrivateKey
 
 	client                 *ethclient.Client
 	contractAbi            abi.ABI
@@ -645,44 +644,3 @@ func send12trasactions() {
 	}
 	fmt.Println("12 transactions sent")
 }
-
-//func mapkey(m map[string]string, value string) (key string, ok bool) {
-//	for k, v := range m {
-//		if v == value {
-//			key = k
-//			ok = true
-//			return
-//		}
-//	}
-//	return
-//}
-
-//methodName := "transfer"
-//method,exists:=tokenAbi.Methods[methodName]
-//if !exists {
-//	fmt.Println("Method '%v' not found in the ABI", methodName)
-//	return
-//}
-//_,ok := mapkey(contract.ERC20BasicFuncSigs,method.Sig())
-//if !ok {
-//	log.Fatal("Method Signature does not exist")
-//}
-//
-//ss := strings.Split(hex.EncodeToString(rawTxBytes), "a9059cbb")
-
-//tokenAmount,err := hex.DecodeString(ss[1][64:128])
-//if err != nil {
-//	return nil,err
-//}
-//receiver := ss[1][24:64]
-//fmt.Println(common.HexToAddress(receiver))
-//amt := big.NewInt(0).SetBytes(tokenAmount)
-
-//transactionHash := client.SendTransaction(context.Background(), signedTx)
-
-//
-//if err != nil {
-//	fmt.Println(err)
-//	return
-//}
-//

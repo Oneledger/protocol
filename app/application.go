@@ -150,7 +150,8 @@ func (app *App) setupState(stateBytes []byte) error {
 	app.Context.feePool.SetupOpt(&initial.FeeOption)
 	app.Context.domains.SetOptions(&initial.ONSOptions)
 
-	app.Context.btcTrackers.SetConfig(bitcoin.NewBTCConfig(app.Context.cfg.ChainDriver, initial.BTCCDOption.BTCChainType))
+	app.Context.btcTrackers.SetConfig(bitcoin.NewBTCConfig(app.Context.cfg.ChainDriver, initial.BTCCDOption.ChainType))
+	app.Context.btcTrackers.SetOption(initial.BTCCDOption)
 
 	// (2) Set balances to all those mentioned
 	for _, bal := range initial.Balances {
@@ -307,7 +308,7 @@ func (app *App) Prepare() error {
 		app.Context.ethTrackers.SetupOption(cdOpt)
 
 		btcOption, err := app.Context.govern.GetBTCChainDriverOption()
-		btcConfig := bitcoin.NewBTCConfig(app.Context.cfg.ChainDriver, btcOption.BTCChainType)
+		btcConfig := bitcoin.NewBTCConfig(app.Context.cfg.ChainDriver, btcOption.ChainType)
 
 		app.Context.btcTrackers.SetConfig(btcConfig)
 	}

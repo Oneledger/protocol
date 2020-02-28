@@ -73,7 +73,7 @@ func (job *JobETHCheckFinality) DoMyJob(ctx interface{}) {
 		ethCtx.Logger.Error("Error Decoding Bytes from RaxTX :", job.GetJobID(), err)
 		return
 	}
-	receipt, err := cd.CheckFinality(tx.Hash())
+	receipt, err := cd.CheckFinality(tx.Hash(), ethoptions.BlockConfirmation)
 	if err != nil {
 		ethCtx.Logger.Error("Receiving TX receipt : ", job.GetJobID(), err)
 		return
