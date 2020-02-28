@@ -47,9 +47,9 @@ var (
 	TestTokenABI     = contract.ERC20BasicABI
 	LockRedeemERCABI = contract.LockRedeemERCABI
 	// LockRedeemERC20ABI = contract.ContextABI
-	LockRedeemContractAddr      = "0xA205de6bEA15C0833E628248B41e7C29962Cc43A"
-	TestTokenContractAddr       = "0xFE356045cc3C9A2EED79139c1E7237bfDD82Be34"
-	LockRedeemERC20ContractAddr = "0xE9B26567f1a2Fc40590D9229f316Fe6785a5327d"
+	LockRedeemContractAddr      = "0x024121D20BF504F7530045150f9130FAF22C6D67"
+	TestTokenContractAddr       = "0x848E7302b3c6791A6A41fF8B374276fB5a7A6A16"
+	LockRedeemERC20ContractAddr = "0xBBa1B966E5cFbA2cae256A707F0BeA2cB69E0d74"
 
 	cfg               = config.DefaultEthConfigLocal()
 	log               = logger.NewDefaultLogger(os.Stdout).WithPrefix("testeth")
@@ -115,9 +115,9 @@ func main() {
 	time.Sleep(5 * time.Second)
 
 	redeem()
-	time.Sleep(5 * time.Second)
-	send12trasactions()
-	redeem()
+	//time.Sleep(5 * time.Second)
+	//send12trasactions()
+	//redeem()
 
 	//erc20lock()
 	///time.Sleep(10 * time.Second)

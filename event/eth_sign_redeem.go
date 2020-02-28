@@ -122,7 +122,11 @@ func (j *JobETHSignRedeem) DoMyJob(ctx interface{}) {
 		ethCtx.Logger.Error("Failed to get chain id ", err)
 		return
 	}
-
+	status, err := cd.VerifyRedeem(addr, msg.From())
+	if status != 0 {
+		ethCtx.Logger.Info("Redeem TX is not in Ongoing Status")
+		return
+	}
 	signedTx, err := types.SignTx(tx, types.NewEIP155Signer(chainid), privkey)
 	privkey = nil
 	txHash, err := cd.BroadcastTx(signedTx)
