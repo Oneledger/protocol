@@ -45,8 +45,12 @@ func (et Lock) Tags() common.KVPairs {
 		Key:   []byte("tx.locker"),
 		Value: et.Locker.Bytes(),
 	}
+	tag3 := common.KVPair{
+		Key:   []byte("tx.tracker"),
+		Value: ethcommon.BytesToHash(et.ETHTxn).Bytes(),
+	}
 
-	tags = append(tags, tag, tag2)
+	tags = append(tags, tag, tag2, tag3)
 	return tags
 }
 

@@ -47,8 +47,12 @@ func (E ERC20Redeem) Tags() common.KVPairs {
 		Key:   []byte("tx.owner"),
 		Value: E.Owner,
 	}
+	tag3 := common.KVPair{
+		Key:   []byte("tx.tracker"),
+		Value: ethcommon.BytesToHash(E.ETHTxn).Bytes(),
+	}
 
-	tags = append(tags, tag, tag2)
+	tags = append(tags, tag, tag2, tag3)
 	return tags
 }
 
