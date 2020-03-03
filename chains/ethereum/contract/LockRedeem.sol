@@ -1,4 +1,4 @@
-pragma solidity 0.6.0;
+pragma solidity >=0.5.0 <0.6.0;
 
 contract LockRedeem {
     //Flag to pause and unpause contract
@@ -172,7 +172,7 @@ contract LockRedeem {
         require(isValidator(msg.sender),"validator not present in list");
         require(redeemRequests[recipient_].until > block.number, "redeem request is not available");
         require(redeemRequests[recipient_].amount == amount_,"redeem amount is different" );
-        require((redeemRequests[recipient_].votes >> validators[msg.sender])% 2 == uint256(0), "validator already vote");
+        require((redeemRequests[recipient_].votes >> validators[msg.sender])% 2 == uint256(0), "validator has already voted");
 
         // update votes
         redeemRequests[recipient_].votes = redeemRequests[recipient_].votes + (uint256(1) << validators[msg.sender]);
