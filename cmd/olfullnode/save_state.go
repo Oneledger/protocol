@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/Oneledger/protocol/data/governance"
 	"io"
 	"os"
 	"path/filepath"
@@ -158,10 +159,6 @@ func SaveChainState(application *app.App, filename string, directory string) {
 	appState := consensus.AppState{}
 	var err error
 	appState.Currencies, err = ctx.Govern.GetCurrencies()
-	appState.FeeOption = fees.FeeOption{
-		FeeCurrency:   ctx.FeeOption.FeeCurrency,
-		MinFeeDecimal: ctx.FeeOption.MinFeeDecimal,
-	}
 	appState.Chain.Hash = ctx.Hash
 	appState.Chain.Version = ctx.Version
 
@@ -203,7 +200,7 @@ func SaveChainState(application *app.App, filename string, directory string) {
 
 	startBlock(writer, "\"app_state\"")
 	writeStructWithTag(writer, appState.Currencies, "currencies")
-	writeStructWithTag(writer, appState.FeeOption, "fee_option")
+	writeStructWithTag(writer, GetGovernance(ctx.Govern), "governance")
 	writeStructWithTag(writer, appState.Chain, "chain")
 	writeListWithTag(ctx, writer, "balances")
 	writeListWithTag(ctx, writer, "staking")
@@ -217,12 +214,6 @@ func SaveChainState(application *app.App, filename string, directory string) {
 	err = writer.Close()
 }
 
-type BalanceState struct {
-	Address  keys.Address   `json:"address"`
-	Currency string         `json:"currency"`
-	Amount   balance.Amount `json:"amount"`
-}
-
 func DumpFeesToFile(st *fees.Store, writer io.Writer, fn func(writer io.Writer, obj interface{}) bool) {
 	iterator := 0
 	delimiter := ","
@@ -233,7 +224,7 @@ func DumpFeesToFile(st *fees.Store, writer io.Writer, fn func(writer io.Writer, 
 				return true
 			}
 		}
-		fee := BalanceState{}
+		fee := consensus.BalanceState{}
 		fee.Address = addr
 		fee.Currency = coin.Currency.Name
 
@@ -248,20 +239,11 @@ func DumpFeesToFile(st *fees.Store, writer io.Writer, fn func(writer io.Writer, 
 	return
 }
 
-type Stake struct {
-	ValidatorAddress keys.Address
-	StakeAddress     keys.Address
-	Pubkey           keys.PublicKey
-	ECDSAPubKey      keys.PublicKey
-	Name             string
-	Amount           balance.Amount
-}
-
 func DumpStakingToFile(vs *identity.ValidatorStore, writer io.Writer, fn func(writer io.Writer, obj interface{}) bool) {
 	iterator := 0
 	delimiter := ","
 	vs.Iterate(func(key keys.Address, validator *identity.Validator) bool {
-		stake := Stake{}
+		stake := consensus.Stake{}
 		if iterator != 0 {
 			_, err := writer.Write([]byte(delimiter))
 			if err != nil {
@@ -274,6 +256,7 @@ func DumpStakingToFile(vs *identity.ValidatorStore, writer io.Writer, fn func(wr
 		stake.ValidatorAddress = validator.Address
 		stake.StakeAddress = validator.StakeAddress
 		stake.Name = validator.Name
+		//stake.Power = validator.Power
 
 		fn(writer, stake)
 		iterator++
@@ -294,7 +277,7 @@ func DumpBalanceToFile(bs *balance.Store, writer io.Writer, fn func(writer io.Wr
 				return true
 			}
 		}
-		balance := BalanceState{}
+		balance := consensus.BalanceState{}
 		balance.Address = addr
 		balance.Amount = amt
 		balance.Currency = coin
@@ -304,12 +287,6 @@ func DumpBalanceToFile(bs *balance.Store, writer io.Writer, fn func(writer io.Wr
 		return false
 	})
 	return
-}
-
-type DomainState struct {
-	Owner       keys.Address `json:"ownerAddress"`
-	Beneficiary keys.Address `json:"accountAddress"`
-	Name        string       `json:"name"`
 }
 
 func DumpDomainToFile(ds *ons.DomainStore, writer io.Writer, fn func(writer io.Writer, obj interface{}) bool) {
@@ -323,14 +300,53 @@ func DumpDomainToFile(ds *ons.DomainStore, writer io.Writer, fn func(writer io.W
 				return true
 			}
 		}
-		domainState := DomainState{}
+		domainState := consensus.DomainState{}
 		domainState.Name = domain.Name.String()
 		domainState.Beneficiary = domain.Beneficiary
 		domainState.Owner = domain.Owner
+		domainState.CreationHeight = domain.CreationHeight
+		domainState.LastUpdateHeight = domain.LastUpdateHeight
+		domainState.ExpireHeight = domain.ExpireHeight
+		domainState.ActiveFlag = domain.ActiveFlag
+		domainState.OnSaleFlag = domain.OnSaleFlag
+		domainState.URI = domain.URI
+		domainState.SalePrice = domain.SalePrice
 
 		fn(writer, domainState)
 		iterator++
 		return false
 	})
 	return
+}
+
+func GetGovernance(gs *governance.Store) *consensus.GovernanceState {
+	btcOption, err := gs.GetBTCChainDriverOption()
+	if err != nil {
+		fmt.Print("Error Reading BTC chain driver options: ", err)
+		return nil
+	}
+
+	ethOption, err := gs.GetETHChainDriverOption()
+	if err != nil {
+		fmt.Print("Error Reading ETH chain driver options: ", err)
+		return nil
+	}
+	onsOption, err := gs.GetONSOptions()
+	if err != nil {
+		fmt.Print("Error Reading ONS Domain options: ", err)
+		return nil
+	}
+
+	feeOption, err := gs.GetFeeOption()
+	if err != nil {
+		fmt.Print("Error Reading Fee options: ", err)
+		return nil
+	}
+
+	return &consensus.GovernanceState{
+		FeeOption:   *feeOption,
+		ETHCDOption: *ethOption,
+		BTCCDOption: *btcOption,
+		ONSOptions:  *onsOption,
+	}
 }

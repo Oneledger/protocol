@@ -540,16 +540,19 @@ func initialState(args *testnetConfig, nodeList []node, option ethchain.ChainDri
 			})
 		}
 	}
+
 	return consensus.AppState{
-		Currencies:  currencies,
-		FeeOption:   feeOpt,
-		ETHCDOption: option,
-		BTCCDOption: btcOption,
-		Balances:    balances,
-		Staking:     staking,
-		Domains:     domains,
-		Fees:        fees_db,
-		ONSOptions:  onsOption,
+		Currencies: currencies,
+		Balances:   balances,
+		Staking:    staking,
+		Domains:    domains,
+		Fees:       fees_db,
+		Governance: consensus.GovernanceState{
+			FeeOption:   feeOpt,
+			ETHCDOption: option,
+			BTCCDOption: btcOption,
+			ONSOptions:  onsOption,
+		},
 	}
 }
 
