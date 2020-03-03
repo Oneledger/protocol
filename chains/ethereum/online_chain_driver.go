@@ -195,7 +195,6 @@ func (acc *ETHChainDriver) GetTransactionMessage(tx *types.Transaction) (*types.
 func (acc *ETHChainDriver) CheckFinality(txHash TransactionHash, blockConfirmation int64) (*types.Receipt, error) {
 
 	result, err := acc.GetClient().TransactionReceipt(context.Background(), txHash)
-	fmt.Println("Client :", acc.GetClient())
 	if err == nil {
 		if result.Status == types.ReceiptStatusSuccessful {
 			latestHeader, err := acc.client.HeaderByNumber(context.Background(), nil)
@@ -206,13 +205,13 @@ func (acc *ETHChainDriver) CheckFinality(txHash TransactionHash, blockConfirmati
 			if big.NewInt(blockConfirmation).Cmp(diff) > 0 {
 				return nil, errors.New("Waiting for confirmation . Current Block Confirmations : " + diff.String())
 			}
-			return result, nil
+			return result, err
 		}
 		if result.Status == types.ReceiptStatusFailed {
-			acc.logger.Warn("Receipt not found ")
+			acc.logger.Warn("Receipt status failed ")
 			b, _ := result.MarshalJSON()
 			acc.logger.Error(string(b))
-			return nil, nil
+			return result, nil
 		}
 	}
 	acc.logger.Error("Transaction not added to Block yet :", err)
@@ -231,7 +230,7 @@ func (acc *ETHChainDriver) BroadcastTx(tx *types.Transaction) (TransactionHash, 
 		acc.logger.Error("Error connecting to Ethereum :", err)
 		return tx.Hash(), err
 	}
-	acc.logger.Info("Transaction Broadcasted to Ethereum ", tx.Hash().Hex())
+	//acc.logger.Info("Transaction Broadcasted to Ethereum ", tx.Hash().Hex())
 	return tx.Hash(), nil
 
 }
@@ -265,13 +264,23 @@ func (acc *ETHChainDriver) ParseRedeem(data []byte, abi string) (req *RedeemRequ
 }
 
 // VerifyRedeem verifies if the Redeem request is Completed
-func (acc *ETHChainDriver) VerifyRedeem(validatorAddress common.Address, recipient common.Address) (bool, error) {
+//BeforeRedeem : -1  (amount == 0 and until = 0)
+//Ongoing : 0  (amount > 0 and until > block.number)
+//Success : 1  (amount = 0 and until < block.number)
+//Expired : 2  (amount > 0 and until < block.number)
+
+func (acc *ETHChainDriver) VerifyRedeem(validatorAddress common.Address, recipient common.Address) (RedeemStatus, error) {
 	instance := acc.GetContract()
-	ok, err := instance.VerifyRedeem(acc.CallOpts(validatorAddress), recipient)
+	redeemStatus, err := instance.VerifyRedeem(acc.CallOpts(validatorAddress), recipient)
+	fmt.Println("RedeemStatus : ", redeemStatus)
 	if err != nil {
-		return false, errors.Wrap(err, "Unable to connect to ethereum smart contract")
+		return -2, errors.Wrap(err, "Unable to connect to ethereum smart contract")
 	}
-	return ok, nil
+	if redeemStatus == 2 {
+		return 0, ErrRedeemExpired
+	}
+
+	return RedeemStatus(redeemStatus), nil
 }
 
 // HasValidatorSigned takes validator address and recipient address as input and verifies if the validator has already signed

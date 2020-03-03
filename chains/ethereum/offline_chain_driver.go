@@ -62,6 +62,7 @@ func VerifyLock(tx *types.Transaction, contractabi string) (bool, error) {
 	return bytes.Equal(bytesData, tx.Data()), nil
 
 }
+
 // VerifyLock verifies ERC lock transaction to check whether the ERC20 Token is being sent to our Smart Contract Address.
 func VerfiyERC20Lock(rawTx []byte, tokenabi_ string, erc20contractaddr common.Address) (bool, error) {
 	contractAbi, err := abi.JSON(strings.NewReader(tokenabi_))
@@ -110,6 +111,7 @@ func ParseERC20RedeemParams(rawTx []byte, lockredeemERCAbi string) (*RedeemErcRe
 	}
 	return ercRedeemParams, nil
 }
+
 // ParseRedeem Parses the ERC Redeem Request and returns the RedeemRequest struct
 // RedeemRequest contains the parameters that were passed when the redeem function in the LOCKREDEEM smart contract was called by the user
 func ParseRedeem(data []byte, lockredeemAbi string) (req *RedeemRequest, err error) {
@@ -135,6 +137,7 @@ func ParseRedeem(data []byte, lockredeemAbi string) (req *RedeemRequest, err err
 	amt := big.NewInt(0).SetBytes(d)
 	return &RedeemRequest{Amount: amt}, nil
 }
+
 // ParseLock takes a rawTX byteArray as input and returns a LockRequest struct
 // LockRequest struct contains the amount which the user is trying to lock .
 func ParseLock(data []byte) (req *LockRequest, err error) {
@@ -158,7 +161,6 @@ func DecodeTransaction(data []byte) (*types.Transaction, error) {
 
 	return tx, nil
 }
-
 
 // GetToken takes a tokenlist and token address as input .
 // It iterates over the Tokenlist and returns the token which matches the token address

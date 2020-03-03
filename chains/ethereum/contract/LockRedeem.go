@@ -28,12 +28,11 @@ var (
 )
 
 // LockRedeemABI is the input ABI used to generate the binding from.
-const LockRedeemABI = "[{\"constant\":true,\"inputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"name\":\"removeValidatorProposals\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"voteCount\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"epochBlockHeight\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"name\":\"newThresholdProposals\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"voteCount\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"internalType\":\"address\",\"name\":\"v\",\"type\":\"address\"}],\"name\":\"proposeRemoveValidator\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"internalType\":\"address\",\"name\":\"recepient_\",\"type\":\"address\"}],\"name\":\"isredeemAvailable\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"getTotalEthBalance\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"internalType\":\"address\",\"name\":\"recipient_\",\"type\":\"address\"}],\"name\":\"hasValidatorSigned\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"internalType\":\"address\",\"name\":\"v\",\"type\":\"address\"}],\"name\":\"proposeAddValidator\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"getOLTEthAddress\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"numValidators\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"votingThreshold\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"internalType\":\"address\",\"name\":\"recipient_\",\"type\":\"address\"}],\"name\":\"getSignatureCount\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"amount_\",\"type\":\"uint256\"},{\"internalType\":\"addresspayable\",\"name\":\"recipient_\",\"type\":\"address\"}],\"name\":\"sign\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"internalType\":\"address\",\"name\":\"recipient_\",\"type\":\"address\"}],\"name\":\"verifyRedeem\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"name\":\"addValidatorProposals\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"voteCount\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"amount_\",\"type\":\"uint256\"}],\"name\":\"redeem\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"threshold\",\"type\":\"uint256\"}],\"name\":\"proposeNewThreshold\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[],\"name\":\"lock\",\"outputs\":[],\"payable\":true,\"stateMutability\":\"payable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"name\":\"validators\",\"outputs\":[{\"internalType\":\"int256\",\"name\":\"\",\"type\":\"int256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"internalType\":\"address\",\"name\":\"addr\",\"type\":\"address\"}],\"name\":\"isValidator\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address[]\",\"name\":\"initialValidators\",\"type\":\"address[]\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"_address\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"int256\",\"name\":\"_power\",\"type\":\"int256\"}],\"name\":\"AddValidator\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"recepient\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"amount_requested\",\"type\":\"uint256\"}],\"name\":\"RedeemRequest\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"recipient\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"address\",\"name\":\"validator_addresss\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"}],\"name\":\"ValidatorSignedRedeem\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"_address\",\"type\":\"address\"}],\"name\":\"DeleteValidator\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"epochHeight\",\"type\":\"uint256\"}],\"name\":\"NewEpoch\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"address\",\"name\":\"sender\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"amount_received\",\"type\":\"uint256\"}],\"name\":\"Lock\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"_prevThreshold\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"_newThreshold\",\"type\":\"uint256\"}],\"name\":\"NewThreshold\",\"type\":\"event\"}]"
+const LockRedeemABI = "[{\"inputs\":[{\"internalType\":\"address[]\",\"name\":\"initialValidators\",\"type\":\"address[]\"},{\"internalType\":\"uint256\",\"name\":\"_lock_period\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"_address\",\"type\":\"address\"}],\"name\":\"AddValidator\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"address\",\"name\":\"sender\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"amount_received\",\"type\":\"uint256\"}],\"name\":\"Lock\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"recepient\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"amount_requested\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"redeemFeeCharged\",\"type\":\"uint256\"}],\"name\":\"RedeemRequest\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"address\",\"name\":\"validator\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"address\",\"name\":\"NewSmartContractAddress\",\"type\":\"address\"}],\"name\":\"ValidatorMigrated\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"recipient\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"address\",\"name\":\"validator_addresss\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"gasReturned\",\"type\":\"uint256\"}],\"name\":\"ValidatorSignedRedeem\",\"type\":\"event\"},{\"constant\":false,\"inputs\":[],\"name\":\"collectUserFee\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"getOLTEthAddress\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"internalType\":\"address\",\"name\":\"recipient_\",\"type\":\"address\"}],\"name\":\"getSignatureCount\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"getTotalEthBalance\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"internalType\":\"address\",\"name\":\"recipient_\",\"type\":\"address\"}],\"name\":\"hasValidatorSigned\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"internalType\":\"address\",\"name\":\"addr\",\"type\":\"address\"}],\"name\":\"isValidator\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"internalType\":\"address\",\"name\":\"recepient_\",\"type\":\"address\"}],\"name\":\"isredeemAvailable\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[],\"name\":\"lock\",\"outputs\":[],\"payable\":true,\"stateMutability\":\"payable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"internalType\":\"address\",\"name\":\"newSmartContractAddress\",\"type\":\"address\"}],\"name\":\"migrate\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"migrationSignatures\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"name\":\"migrationSigners\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"numValidators\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"amount_\",\"type\":\"uint256\"}],\"name\":\"redeem\",\"outputs\":[],\"payable\":true,\"stateMutability\":\"payable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"amount_\",\"type\":\"uint256\"},{\"internalType\":\"addresspayable\",\"name\":\"recipient_\",\"type\":\"address\"}],\"name\":\"sign\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"name\":\"validators\",\"outputs\":[{\"internalType\":\"uint8\",\"name\":\"\",\"type\":\"uint8\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"internalType\":\"address\",\"name\":\"recipient_\",\"type\":\"address\"}],\"name\":\"verifyRedeem\",\"outputs\":[{\"internalType\":\"int8\",\"name\":\"\",\"type\":\"int8\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"}]"
 
 // LockRedeemFuncSigs maps the 4-byte function signature to its string representation.
 var LockRedeemFuncSigs = map[string]string{
-	"bfb9e9f5": "addValidatorProposals(address)",
-	"0d8f6b5b": "epochBlockHeight()",
+	"7edd7ccd": "collectUserFee()",
 	"45dfa415": "getOLTEthAddress()",
 	"6c7d13df": "getSignatureCount(address)",
 	"287cc96b": "getTotalEthBalance()",
@@ -41,30 +40,27 @@ var LockRedeemFuncSigs = map[string]string{
 	"facd743b": "isValidator(address)",
 	"2138c6b9": "isredeemAvailable(address)",
 	"f83d08ba": "lock()",
-	"0e7d275d": "newThresholdProposals(uint256)",
+	"ce5494bb": "migrate(address)",
+	"27882c3a": "migrationSignatures()",
+	"a04d0498": "migrationSigners(address)",
 	"5d593f8d": "numValidators()",
-	"383ea59a": "proposeAddValidator(address)",
-	"e0e887d0": "proposeNewThreshold(uint256)",
-	"101a8538": "proposeRemoveValidator(address)",
 	"db006a75": "redeem(uint256)",
-	"0d00753a": "removeValidatorProposals(address)",
 	"7cacde3f": "sign(uint256,address)",
 	"fa52c7d8": "validators(address)",
 	"91e39868": "verifyRedeem(address)",
-	"62827733": "votingThreshold()",
 }
 
 // LockRedeemBin is the compiled bytecode used for deploying new contracts.
-var LockRedeemBin = "0x60806040526170806002553480156200001757600080fd5b506040516200115d3803806200115d833981810160405260208110156200003d57600080fd5b81019080805160405193929190846401000000008211156200005e57600080fd5b9083019060208201858111156200007457600080fd5b82518660208202830111640100000000821117156200009257600080fd5b82525081516020918201928201910280838360005b83811015620000c1578181015183820152602001620000a7565b505050509190910160405250620000d792505050565b60005b81518110156200019b576000828281518110620000f357fe5b6020026020010151905060096000826001600160a01b03166001600160a01b03168152602001908152602001600020546000146200017d576040517f08c379a000000000000000000000000000000000000000000000000000000000815260040180806020018281038252602f8152602001806200112e602f913960400191505060405180910390fd5b62000191816001600160e01b03620001c516565b50600101620000da565b506003815160020281620001ab57fe5b0460019081019055620001be4362000222565b50620003d9565b6001600160a01b03811660008181526009602090815260408083206032815583546001019093559154825190815291517fb2076c69a79e1dfb01d613dcc63b7c42ae1962daf11d4f2151352135133f824b9281900390910190a250565b60038190556040805182815290517febad8099c467528a56c98b63c8d476d251cf1ffb4c75db94b4d23fa2b6a1e3359181900360200190a160005b600754811015620002c4576000600782815481106200027857fe5b6000918252602090912001546001600160a01b03169050620002a3816001600160e01b03620001c516565b6001600160a01b03166000908152600460205260408120556001016200025d565b50620002d3600760006200039b565b60005b6008548110156200033d57600060088281548110620002f157fe5b6000918252602090912001546001600160a01b031690506200031c816001600160e01b036200034f16565b6001600160a01b0316600090815260056020526040812055600101620002d6565b506200034c600860006200039b565b50565b6001600160a01b0381166000818152600960205260408082208290558154600019018255517f6d70afad774d81e8c32f930c6412789502b16ccf0a20f21679b249bdfac060e59190a250565b50805460008255906000526020600020908101906200034c9190620003d691905b80821115620003d25760008155600101620003bc565b5090565b90565b610d4580620003e96000396000f3fe60806040526004361061011f5760003560e01c806362827733116100a0578063db006a7511610064578063db006a75146103cc578063e0e887d0146103f6578063f83d08ba14610420578063fa52c7d814610428578063facd743b1461045b5761011f565b806362827733146102e55780636c7d13df146102fa5780637cacde3f1461032d57806391e3986814610366578063bfb9e9f5146103995761011f565b8063287cc96b116100e7578063287cc96b1461022457806331b6a6d114610239578063383ea59a1461026c57806345dfa4151461029f5780635d593f8d146102d05761011f565b80630d00753a146101245780630d8f6b5b146101695780630e7d275d1461017e578063101a8538146101a85780632138c6b9146101dd575b600080fd5b34801561013057600080fd5b506101576004803603602081101561014757600080fd5b50356001600160a01b031661048e565b60408051918252519081900360200190f35b34801561017557600080fd5b506101576104a0565b34801561018a57600080fd5b50610157600480360360208110156101a157600080fd5b50356104a6565b3480156101b457600080fd5b506101db600480360360208110156101cb57600080fd5b50356001600160a01b03166104b8565b005b3480156101e957600080fd5b506102106004803603602081101561020057600080fd5b50356001600160a01b031661053e565b604080519115158252519081900360200190f35b34801561023057600080fd5b50610157610586565b34801561024557600080fd5b506102106004803603602081101561025c57600080fd5b50356001600160a01b031661058b565b34801561027857600080fd5b506101db6004803603602081101561028f57600080fd5b50356001600160a01b03166105b7565b3480156102ab57600080fd5b506102b4610664565b604080516001600160a01b039092168252519081900360200190f35b3480156102dc57600080fd5b50610157610668565b3480156102f157600080fd5b5061015761066e565b34801561030657600080fd5b506101576004803603602081101561031d57600080fd5b50356001600160a01b0316610674565b34801561033957600080fd5b506101db6004803603604081101561035057600080fd5b50803590602001356001600160a01b0316610692565b34801561037257600080fd5b506102106004803603602081101561038957600080fd5b50356001600160a01b031661090d565b3480156103a557600080fd5b50610157600480360360208110156103bc57600080fd5b50356001600160a01b031661092e565b3480156103d857600080fd5b506101db600480360360208110156103ef57600080fd5b5035610940565b34801561040257600080fd5b506101db6004803603602081101561041957600080fd5b5035610aa5565b6101db610b82565b34801561043457600080fd5b506101576004803603602081101561044b57600080fd5b50356001600160a01b0316610bbe565b34801561046757600080fd5b506102106004803603602081101561047e57600080fd5b50356001600160a01b0316610bd0565b60056020526000908152604090205481565b60035481565b60066020526000908152604090205481565b33600090815260096020526040812054136104d257600080fd5b6001600160a01b0381166000908152600560209081526040808320338452600181019092529091205460ff161561053a5760405162461bcd60e51b8152600401808060200182810382526030815260200180610cb56030913960400191505060405180910390fd5b5050565b6001600160a01b0381166000908152600a6020526040812060050154158061058057506001600160a01b0382166000908152600a602052604090206005015443115b92915050565b303190565b6001600160a01b03166000908152600a6020908152604080832033845260010190915290205460ff1690565b33600090815260096020526040812054136105d157600080fd5b6001600160a01b0381166000908152600460209081526040808320338452600181019092529091205460ff16156106395760405162461bcd60e51b815260040180806020018281038252602c815260200180610ce5602c913960400191505060405180910390fd5b33600090815260018281016020526040909120805460ff191682179055815401815561053a82610bec565b3090565b60005481565b60015481565b6001600160a01b03166000908152600a602052604090206003015490565b61069b33610bd0565b6106ec576040805162461bcd60e51b815260206004820152601d60248201527f76616c696461746f72206e6f742070726573656e7420696e206c697374000000604482015290519081900360640190fd5b6001600160a01b0381166000908152600a602052604090206004015460ff161561075d576040805162461bcd60e51b815260206004820152601b60248201527f72656465656d207265717565737420697320636f6d706c657465640000000000604482015290519081900360640190fd5b6001600160a01b0381166000908152600a602052604090206002015482146107cc576040805162461bcd60e51b815260206004820152601960248201527f72656465656d20616d6f756e7420436f6d70726f6d6973656400000000000000604482015290519081900360640190fd5b6001600160a01b0381166000908152600a6020908152604080832033845260010190915290205460ff161561080057600080fd5b6001600160a01b0381166000818152600a6020818152604080842033855260018181018452918520805460ff1916831790559490935252600390910180548201908190559054116108c6576001600160a01b038082166000908152600a60205260408082208054600290910154915193169281156108fc0292818181858888f19350505050158015610896573d6000803e3d6000fd5b506001600160a01b0381166000908152600a602052604081206002810191909155600401805460ff191660011790555b604080513381526020810184905281516001600160a01b038416927f3b76df4bf55914fbcbc8b02f6773984cc346db1e6aef40410dcee0f94c6a05db928290030190a25050565b6001600160a01b03166000908152600a602052604090206004015460ff1690565b60046020526000908152604090205481565b336000908152600a60205260409020600201541561095d57600080fd5b600081116109b2576040805162461bcd60e51b815260206004820152601e60248201527f616d6f756e742073686f756c6420626520626967676572207468616e20300000604482015290519081900360640190fd5b336000908152600a60205260409020600501544311610a18576040805162461bcd60e51b815260206004820181905260248201527f72657175657374206973206c6f636b65642c206e6f7420617661696c61626c65604482015290519081900360640190fd5b336000818152600a6020908152604080832060048101805460ff19169055600381019390935582546001600160a01b0319169093178083556002808401869055544301600590930192909255825184815292516001600160a01b03909216927f222dc200773fe9b45015bf792e8fee37d651e3590c215806a5042404b6d741d2929081900390910190a250565b3360009081526009602052604081205413610abf57600080fd5b6000548110610aff5760405162461bcd60e51b8152600401808060200182810382526041815260200180610c4a6041913960600191505060405180910390fd5b6000818152600660209081526040808320338452600181019092529091205460ff1615610b5d5760405162461bcd60e51b815260040180806020018281038252602a815260200180610c8b602a913960400191505060405180910390fd5b33600090815260018281016020526040909120805460ff191682179055815401905550565b6040805133815234602082015281517f625fed9875dada8643f2418b838ae0bc78d9a148a18eee4ee1979ff0f3f5d427929181900390910190a1565b60096020526000908152604090205481565b6001600160a01b03166000908152600960205260408120541390565b6001600160a01b03811660008181526009602090815260408083206032815583546001019093559154825190815291517fb2076c69a79e1dfb01d613dcc63b7c42ae1962daf11d4f2151352135133f824b9281900390910190a25056fe4e6577207468726573686f6c647320286d29206d757374206265206c657373207468616e20746865206e756d626572206f662076616c696461746f727320286e2973656e6465722068617320616c726561647920766f74656420666f7220746869732070726f706f73616c73656e6465722068617320616c726561647920766f74656420746f20616464207468697320746f2070726f706f73616c73656e6465722068617320616c726561647920766f74656420746f2061646420746869732061646472657373a265627a7a723158206ea618ebcbcf3cd2284281021fff9e280fb7a2485e0bc00ddc831cfdbe912b8864736f6c634300050b0032666f756e64206e6f6e2d756e697175652076616c696461746f7220696e20696e697469616c56616c696461746f7273"
+var LockRedeemBin = "0x60806040526000805460ff19169055615a9860065561933c600755662386f26fc100006008553480156200003257600080fd5b50604051620013f0380380620013f0833981810160405260408110156200005857600080fd5b81019080805160405193929190846401000000008211156200007957600080fd5b9083019060208201858111156200008f57600080fd5b8251866020820283011164010000000082111715620000ad57600080fd5b82525081516020918201928201910280838360005b83811015620000dc578181015183820152602001620000c2565b505050509190910160405250602001519150620000f69050565b60005b82518110156200019a5760008382815181106200011257fe5b6020908102919091018101516001600160a01b0381166000908152600290925260409091205490915060ff16156200017c5760405162461bcd60e51b815260040180806020018281038252602f815260200180620013c1602f913960400191505060405180910390fd5b62000190816001600160e01b03620001cd16565b50600101620000f9565b506000805460ff19166001908117909155600d919091559051600360028202819004830160045590040160055562000261565b600380546001810182557fc2575a0e9e593c00f959f8c92f12db2869c3395a3b0502d05e2516446f71f85b0180546001600160a01b0319166001600160a01b0384169081179091559054600082815260026020526040808220805460ff191660ff9094169390931790925590517f6a7a7b9e5967ba1cf76c3d7d5a9b98e96f11754855b04564fada97b94741ad369190a250565b61115080620002716000396000f3fe6080604052600436106100f35760003560e01c80637edd7ccd1161008a578063db006a7511610059578063db006a7514610329578063f83d08ba14610346578063fa52c7d81461034e578063facd743b14610397576100f3565b80637edd7ccd1461026257806391e3986814610277578063a04d0498146102c3578063ce5494bb146102f6576100f3565b806345dfa415116100c657806345dfa415146101ae5780635d593f8d146101df5780636c7d13df146101f45780637cacde3f14610227576100f3565b80632138c6b9146100f857806327882c3a1461013f578063287cc96b1461016657806331b6a6d11461017b575b600080fd5b34801561010457600080fd5b5061012b6004803603602081101561011b57600080fd5b50356001600160a01b03166103ca565b604080519115158252519081900360200190f35b34801561014b57600080fd5b506101546103fb565b60408051918252519081900360200190f35b34801561017257600080fd5b50610154610401565b34801561018757600080fd5b5061012b6004803603602081101561019e57600080fd5b50356001600160a01b0316610405565b3480156101ba57600080fd5b506101c3610450565b604080516001600160a01b039092168252519081900360200190f35b3480156101eb57600080fd5b50610154610454565b34801561020057600080fd5b506101546004803603602081101561021757600080fd5b50356001600160a01b031661045a565b34801561023357600080fd5b506102606004803603604081101561024a57600080fd5b50803590602001356001600160a01b0316610489565b005b34801561026e57600080fd5b506102606108ac565b34801561028357600080fd5b506102aa6004803603602081101561029a57600080fd5b50356001600160a01b03166109a7565b60408051600092830b90920b8252519081900360200190f35b3480156102cf57600080fd5b5061012b600480360360208110156102e657600080fd5b50356001600160a01b0316610a60565b34801561030257600080fd5b506102606004803603602081101561031957600080fd5b50356001600160a01b0316610a75565b6102606004803603602081101561033f57600080fd5b5035610e7e565b610260611028565b34801561035a57600080fd5b506103816004803603602081101561037157600080fd5b50356001600160a01b0316611073565b6040805160ff9092168252519081900360200190f35b3480156103a357600080fd5b5061012b600480360360208110156103ba57600080fd5b50356001600160a01b0316611088565b6000805460ff166103da57600080fd5b506001600160a01b03166000908152600e6020526040902060040154431190565b60095481565b4790565b6000805460ff1661041557600080fd5b336000908152600260208181526040808420546001600160a01b0387168552600e909252909220600190810154909260ff161c061492915050565b3090565b60015481565b6000805460ff1661046a57600080fd5b506001600160a01b03166000908152600e602052604090206003015490565b60005460ff1661049857600080fd5b6104a133611088565b6104f2576040805162461bcd60e51b815260206004820152601d60248201527f76616c696461746f72206e6f742070726573656e7420696e204c697374000000604482015290519081900360640190fd5b60005a905061050033611088565b610551576040805162461bcd60e51b815260206004820152601d60248201527f76616c696461746f72206e6f742070726573656e7420696e206c697374000000604482015290519081900360640190fd5b6001600160a01b0382166000908152600e602052604090206004015443106105c0576040805162461bcd60e51b815260206004820152601f60248201527f72656465656d2072657175657374206973206e6f7420617661696c61626c6500604482015290519081900360640190fd5b6001600160a01b0382166000908152600e6020526040902060020154831461062f576040805162461bcd60e51b815260206004820152601a60248201527f72656465656d20616d6f756e7420697320646966666572656e74000000000000604482015290519081900360640190fd5b336000908152600260208181526040808420546001600160a01b0387168552600e90925283206001015460ff9091161c06146106b2576040805162461bcd60e51b815260206004820152601b60248201527f76616c696461746f722068617320616c726561647920766f7465640000000000604482015290519081900360640190fd5b336000908152600260209081526040808320546001600160a01b0386168452600e9092529091206001808201805460ff90941682901b909301909255600301805490910190819055600454116107d9576001600160a01b038083166000908152600e602052604080822080546002909101549151929316918381818185875af1925050503d8060008114610762576040519150601f19603f3d011682016040523d82523d6000602084013e610767565b606091505b50509050806107b0576040805162461bcd60e51b815260206004820152601060248201526f2a3930b739b332b9103330b4b632b21760811b604482015290519081900360640190fd5b506001600160a01b0382166000908152600e602052604081206002810191909155436004909101555b60006007546006545a604051908503919091019190910191503a820290600090339083908381818185875af1925050503d8060008114610835576040519150601f19603f3d011682016040523d82523d6000602084013e61083a565b606091505b50506001600160a01b0386166000818152600e60209081526040918290206005018054879003905581513381529081018a9052808201869052905192935090917f975a8b0f36f1204c7939f566cea0503ea32284a2768a7f98ede91960b6d158309181900360600190a2505050505050565b60005460ff166108bb57600080fd5b60006108c6336109a7565b60000b136109055760405162461bcd60e51b81526004018080602001828103825260248152602001806110cd6024913960400191505060405180910390fd5b336000818152600e60205260408082206005015490519192918381818185875af1925050503d8060008114610956576040519150601f19603f3d011682016040523d82523d6000602084013e61095b565b606091505b50509050806109a4576040805162461bcd60e51b815260206004820152601060248201526f2a3930b739b332b9103330b4b632b21760811b604482015290519081900360640190fd5b50565b6000805460ff166109b757600080fd5b6001600160a01b0382166000908152600e6020526040902060040154158015906109fb57506001600160a01b0382166000908152600e602052604090206004015443115b610a30576001600160a01b0382166000908152600e602052604090206002015415610a27576000610a2b565b6000195b610a5a565b6001600160a01b0382166000908152600e6020526040902060020154610a57576001610a5a565b60025b92915050565b600a6020526000908152604090205460ff1681565b610a7e33611088565b610acf576040805162461bcd60e51b815260206004820152601d60248201527f76616c696461746f72206e6f742070726573656e7420696e204c697374000000604482015290519081900360640190fd5b336000908152600a602052604090205460ff1615610b34576040805162461bcd60e51b815260206004820152601860248201527f56616c696461746f72205369676e656420616c72656164790000000000000000604482015290519081900360640190fd5b336000908152600a60209081526040808320805460ff1916600117905580516f4d69677261746546726f6d4f6c64282960801b815281519081900360100181206001600160e01b031916818401528151808203600401815260249091019182905280516001600160a01b038616939192918291908401908083835b60208310610bce5780518252601f199092019160209182019101610baf565b6001836020036101000a0380198251168184511680821785525050505050509050019150506000604051808303816000865af19150503d8060008114610c30576040519150601f19603f3d011682016040523d82523d6000602084013e610c35565b606091505b5050905080610c755760405162461bcd60e51b81526004018080602001828103825260248152602001806110a96024913960400191505060405180910390fd5b6009805460010190556001600160a01b0382166000908152600b6020526040902054610ce757600c80546001810182556000919091527fdf6966c971051c3d54ec59162606531493a51404a002842f56009d7e5cf4a8c70180546001600160a01b0319166001600160a01b0384161790555b6001600160a01b0382166000908152600b60205260409020805460010190556005546009541415610d1d576000805460ff191690555b6004546009541415610e7a57600080805b600c54811015610ddd5782600b6000600c8481548110610d4a57fe5b60009182526020808320909101546001600160a01b031683528201929092526040019020541115610dd557600b6000600c8381548110610d8657fe5b60009182526020808320909101546001600160a01b03168352820192909252604001902054600c80549194509082908110610dbd57fe5b6000918252602090912001546001600160a01b031691505b600101610d2e565b506040516000906001600160a01b0383169047908381818185875af1925050503d8060008114610e29576040519150601f19603f3d011682016040523d82523d6000602084013e610e2e565b606091505b5050905080610e76576040805162461bcd60e51b815260206004820152600f60248201526e151c985b9cd9995c8819985a5b1959608a1b604482015290519081900360640190fd5b5050505b5050565b60005460ff16610e8d57600080fd5b610e96336103ca565b610ed15760405162461bcd60e51b815260040180806020018281038252602b8152602001806110f1602b913960400191505060405180910390fd5b60008111610f26576040805162461bcd60e51b815260206004820152601e60248201527f616d6f756e742073686f756c6420626520626967676572207468616e20300000604482015290519081900360640190fd5b600854336000908152600e602052604090206005015434011015610f91576040805162461bcd60e51b815260206004820152601760248201527f52656465656d20666565206e6f742070726f7669646564000000000000000000604482015290519081900360640190fd5b336000818152600e602090815260408083206003810184905580546001600160a01b03191690941780855560028501869055600d544301600486015560058501805434019081905560019095019390935580518581529182019390935282516001600160a01b03909216927feee07ebdabc7ab1dc20be39b715e23aa8a85c6a8ae3c16f8334dace8d76683dc92918290030190a250565b60005460ff1661103757600080fd5b6040805133815234602082015281517f625fed9875dada8643f2418b838ae0bc78d9a148a18eee4ee1979ff0f3f5d427929181900390910190a1565b60026020526000908152604090205460ff1681565b6001600160a01b031660009081526002602052604090205460ff1615159056fe556e61626c6520746f204d696772617465206e657720536d61727420636f6e747261637472657175657374207369676e696e67206973207374696c6c20696e2070726f677265737372656465656d20746f20746869732061646472657373206973206e6f7420617661696c61626c6520796574a265627a7a723158203ba1e62c0d531e487f40bc59bafc506d24a67fbd7eb78210fca0a1932c0fafb164736f6c63430005100032666f756e64206e6f6e2d756e697175652076616c696461746f7220696e20696e697469616c56616c696461746f7273"
 
 // DeployLockRedeem deploys a new Ethereum contract, binding an instance of LockRedeem to it.
-func DeployLockRedeem(auth *bind.TransactOpts, backend bind.ContractBackend, initialValidators []common.Address) (common.Address, *types.Transaction, *LockRedeem, error) {
+func DeployLockRedeem(auth *bind.TransactOpts, backend bind.ContractBackend, initialValidators []common.Address, _lock_period *big.Int) (common.Address, *types.Transaction, *LockRedeem, error) {
 	parsed, err := abi.JSON(strings.NewReader(LockRedeemABI))
 	if err != nil {
 		return common.Address{}, nil, nil, err
 	}
 
-	address, tx, contract, err := bind.DeployContract(auth, parsed, common.FromHex(LockRedeemBin), backend, initialValidators)
+	address, tx, contract, err := bind.DeployContract(auth, parsed, common.FromHex(LockRedeemBin), backend, initialValidators, _lock_period)
 	if err != nil {
 		return common.Address{}, nil, nil, err
 	}
@@ -211,58 +207,6 @@ func (_LockRedeem *LockRedeemTransactorRaw) Transfer(opts *bind.TransactOpts) (*
 // Transact invokes the (paid) contract method with params as input values.
 func (_LockRedeem *LockRedeemTransactorRaw) Transact(opts *bind.TransactOpts, method string, params ...interface{}) (*types.Transaction, error) {
 	return _LockRedeem.Contract.contract.Transact(opts, method, params...)
-}
-
-// AddValidatorProposals is a free data retrieval call binding the contract method 0xbfb9e9f5.
-//
-// Solidity: function addValidatorProposals(address ) constant returns(uint256 voteCount)
-func (_LockRedeem *LockRedeemCaller) AddValidatorProposals(opts *bind.CallOpts, arg0 common.Address) (*big.Int, error) {
-	var (
-		ret0 = new(*big.Int)
-	)
-	out := ret0
-	err := _LockRedeem.contract.Call(opts, out, "addValidatorProposals", arg0)
-	return *ret0, err
-}
-
-// AddValidatorProposals is a free data retrieval call binding the contract method 0xbfb9e9f5.
-//
-// Solidity: function addValidatorProposals(address ) constant returns(uint256 voteCount)
-func (_LockRedeem *LockRedeemSession) AddValidatorProposals(arg0 common.Address) (*big.Int, error) {
-	return _LockRedeem.Contract.AddValidatorProposals(&_LockRedeem.CallOpts, arg0)
-}
-
-// AddValidatorProposals is a free data retrieval call binding the contract method 0xbfb9e9f5.
-//
-// Solidity: function addValidatorProposals(address ) constant returns(uint256 voteCount)
-func (_LockRedeem *LockRedeemCallerSession) AddValidatorProposals(arg0 common.Address) (*big.Int, error) {
-	return _LockRedeem.Contract.AddValidatorProposals(&_LockRedeem.CallOpts, arg0)
-}
-
-// EpochBlockHeight is a free data retrieval call binding the contract method 0x0d8f6b5b.
-//
-// Solidity: function epochBlockHeight() constant returns(uint256)
-func (_LockRedeem *LockRedeemCaller) EpochBlockHeight(opts *bind.CallOpts) (*big.Int, error) {
-	var (
-		ret0 = new(*big.Int)
-	)
-	out := ret0
-	err := _LockRedeem.contract.Call(opts, out, "epochBlockHeight")
-	return *ret0, err
-}
-
-// EpochBlockHeight is a free data retrieval call binding the contract method 0x0d8f6b5b.
-//
-// Solidity: function epochBlockHeight() constant returns(uint256)
-func (_LockRedeem *LockRedeemSession) EpochBlockHeight() (*big.Int, error) {
-	return _LockRedeem.Contract.EpochBlockHeight(&_LockRedeem.CallOpts)
-}
-
-// EpochBlockHeight is a free data retrieval call binding the contract method 0x0d8f6b5b.
-//
-// Solidity: function epochBlockHeight() constant returns(uint256)
-func (_LockRedeem *LockRedeemCallerSession) EpochBlockHeight() (*big.Int, error) {
-	return _LockRedeem.Contract.EpochBlockHeight(&_LockRedeem.CallOpts)
 }
 
 // GetOLTEthAddress is a free data retrieval call binding the contract method 0x45dfa415.
@@ -421,30 +365,56 @@ func (_LockRedeem *LockRedeemCallerSession) IsredeemAvailable(recepient_ common.
 	return _LockRedeem.Contract.IsredeemAvailable(&_LockRedeem.CallOpts, recepient_)
 }
 
-// NewThresholdProposals is a free data retrieval call binding the contract method 0x0e7d275d.
+// MigrationSignatures is a free data retrieval call binding the contract method 0x27882c3a.
 //
-// Solidity: function newThresholdProposals(uint256 ) constant returns(uint256 voteCount)
-func (_LockRedeem *LockRedeemCaller) NewThresholdProposals(opts *bind.CallOpts, arg0 *big.Int) (*big.Int, error) {
+// Solidity: function migrationSignatures() constant returns(uint256)
+func (_LockRedeem *LockRedeemCaller) MigrationSignatures(opts *bind.CallOpts) (*big.Int, error) {
 	var (
 		ret0 = new(*big.Int)
 	)
 	out := ret0
-	err := _LockRedeem.contract.Call(opts, out, "newThresholdProposals", arg0)
+	err := _LockRedeem.contract.Call(opts, out, "migrationSignatures")
 	return *ret0, err
 }
 
-// NewThresholdProposals is a free data retrieval call binding the contract method 0x0e7d275d.
+// MigrationSignatures is a free data retrieval call binding the contract method 0x27882c3a.
 //
-// Solidity: function newThresholdProposals(uint256 ) constant returns(uint256 voteCount)
-func (_LockRedeem *LockRedeemSession) NewThresholdProposals(arg0 *big.Int) (*big.Int, error) {
-	return _LockRedeem.Contract.NewThresholdProposals(&_LockRedeem.CallOpts, arg0)
+// Solidity: function migrationSignatures() constant returns(uint256)
+func (_LockRedeem *LockRedeemSession) MigrationSignatures() (*big.Int, error) {
+	return _LockRedeem.Contract.MigrationSignatures(&_LockRedeem.CallOpts)
 }
 
-// NewThresholdProposals is a free data retrieval call binding the contract method 0x0e7d275d.
+// MigrationSignatures is a free data retrieval call binding the contract method 0x27882c3a.
 //
-// Solidity: function newThresholdProposals(uint256 ) constant returns(uint256 voteCount)
-func (_LockRedeem *LockRedeemCallerSession) NewThresholdProposals(arg0 *big.Int) (*big.Int, error) {
-	return _LockRedeem.Contract.NewThresholdProposals(&_LockRedeem.CallOpts, arg0)
+// Solidity: function migrationSignatures() constant returns(uint256)
+func (_LockRedeem *LockRedeemCallerSession) MigrationSignatures() (*big.Int, error) {
+	return _LockRedeem.Contract.MigrationSignatures(&_LockRedeem.CallOpts)
+}
+
+// MigrationSigners is a free data retrieval call binding the contract method 0xa04d0498.
+//
+// Solidity: function migrationSigners(address ) constant returns(bool)
+func (_LockRedeem *LockRedeemCaller) MigrationSigners(opts *bind.CallOpts, arg0 common.Address) (bool, error) {
+	var (
+		ret0 = new(bool)
+	)
+	out := ret0
+	err := _LockRedeem.contract.Call(opts, out, "migrationSigners", arg0)
+	return *ret0, err
+}
+
+// MigrationSigners is a free data retrieval call binding the contract method 0xa04d0498.
+//
+// Solidity: function migrationSigners(address ) constant returns(bool)
+func (_LockRedeem *LockRedeemSession) MigrationSigners(arg0 common.Address) (bool, error) {
+	return _LockRedeem.Contract.MigrationSigners(&_LockRedeem.CallOpts, arg0)
+}
+
+// MigrationSigners is a free data retrieval call binding the contract method 0xa04d0498.
+//
+// Solidity: function migrationSigners(address ) constant returns(bool)
+func (_LockRedeem *LockRedeemCallerSession) MigrationSigners(arg0 common.Address) (bool, error) {
+	return _LockRedeem.Contract.MigrationSigners(&_LockRedeem.CallOpts, arg0)
 }
 
 // NumValidators is a free data retrieval call binding the contract method 0x5d593f8d.
@@ -473,62 +443,12 @@ func (_LockRedeem *LockRedeemCallerSession) NumValidators() (*big.Int, error) {
 	return _LockRedeem.Contract.NumValidators(&_LockRedeem.CallOpts)
 }
 
-// ProposeRemoveValidator is a free data retrieval call binding the contract method 0x101a8538.
-//
-// Solidity: function proposeRemoveValidator(address v) constant returns()
-func (_LockRedeem *LockRedeemCaller) ProposeRemoveValidator(opts *bind.CallOpts, v common.Address) error {
-	var ()
-	out := &[]interface{}{}
-	err := _LockRedeem.contract.Call(opts, out, "proposeRemoveValidator", v)
-	return err
-}
-
-// ProposeRemoveValidator is a free data retrieval call binding the contract method 0x101a8538.
-//
-// Solidity: function proposeRemoveValidator(address v) constant returns()
-func (_LockRedeem *LockRedeemSession) ProposeRemoveValidator(v common.Address) error {
-	return _LockRedeem.Contract.ProposeRemoveValidator(&_LockRedeem.CallOpts, v)
-}
-
-// ProposeRemoveValidator is a free data retrieval call binding the contract method 0x101a8538.
-//
-// Solidity: function proposeRemoveValidator(address v) constant returns()
-func (_LockRedeem *LockRedeemCallerSession) ProposeRemoveValidator(v common.Address) error {
-	return _LockRedeem.Contract.ProposeRemoveValidator(&_LockRedeem.CallOpts, v)
-}
-
-// RemoveValidatorProposals is a free data retrieval call binding the contract method 0x0d00753a.
-//
-// Solidity: function removeValidatorProposals(address ) constant returns(uint256 voteCount)
-func (_LockRedeem *LockRedeemCaller) RemoveValidatorProposals(opts *bind.CallOpts, arg0 common.Address) (*big.Int, error) {
-	var (
-		ret0 = new(*big.Int)
-	)
-	out := ret0
-	err := _LockRedeem.contract.Call(opts, out, "removeValidatorProposals", arg0)
-	return *ret0, err
-}
-
-// RemoveValidatorProposals is a free data retrieval call binding the contract method 0x0d00753a.
-//
-// Solidity: function removeValidatorProposals(address ) constant returns(uint256 voteCount)
-func (_LockRedeem *LockRedeemSession) RemoveValidatorProposals(arg0 common.Address) (*big.Int, error) {
-	return _LockRedeem.Contract.RemoveValidatorProposals(&_LockRedeem.CallOpts, arg0)
-}
-
-// RemoveValidatorProposals is a free data retrieval call binding the contract method 0x0d00753a.
-//
-// Solidity: function removeValidatorProposals(address ) constant returns(uint256 voteCount)
-func (_LockRedeem *LockRedeemCallerSession) RemoveValidatorProposals(arg0 common.Address) (*big.Int, error) {
-	return _LockRedeem.Contract.RemoveValidatorProposals(&_LockRedeem.CallOpts, arg0)
-}
-
 // Validators is a free data retrieval call binding the contract method 0xfa52c7d8.
 //
-// Solidity: function validators(address ) constant returns(int256)
-func (_LockRedeem *LockRedeemCaller) Validators(opts *bind.CallOpts, arg0 common.Address) (*big.Int, error) {
+// Solidity: function validators(address ) constant returns(uint8)
+func (_LockRedeem *LockRedeemCaller) Validators(opts *bind.CallOpts, arg0 common.Address) (uint8, error) {
 	var (
-		ret0 = new(*big.Int)
+		ret0 = new(uint8)
 	)
 	out := ret0
 	err := _LockRedeem.contract.Call(opts, out, "validators", arg0)
@@ -537,24 +457,24 @@ func (_LockRedeem *LockRedeemCaller) Validators(opts *bind.CallOpts, arg0 common
 
 // Validators is a free data retrieval call binding the contract method 0xfa52c7d8.
 //
-// Solidity: function validators(address ) constant returns(int256)
-func (_LockRedeem *LockRedeemSession) Validators(arg0 common.Address) (*big.Int, error) {
+// Solidity: function validators(address ) constant returns(uint8)
+func (_LockRedeem *LockRedeemSession) Validators(arg0 common.Address) (uint8, error) {
 	return _LockRedeem.Contract.Validators(&_LockRedeem.CallOpts, arg0)
 }
 
 // Validators is a free data retrieval call binding the contract method 0xfa52c7d8.
 //
-// Solidity: function validators(address ) constant returns(int256)
-func (_LockRedeem *LockRedeemCallerSession) Validators(arg0 common.Address) (*big.Int, error) {
+// Solidity: function validators(address ) constant returns(uint8)
+func (_LockRedeem *LockRedeemCallerSession) Validators(arg0 common.Address) (uint8, error) {
 	return _LockRedeem.Contract.Validators(&_LockRedeem.CallOpts, arg0)
 }
 
 // VerifyRedeem is a free data retrieval call binding the contract method 0x91e39868.
 //
-// Solidity: function verifyRedeem(address recipient_) constant returns(bool)
-func (_LockRedeem *LockRedeemCaller) VerifyRedeem(opts *bind.CallOpts, recipient_ common.Address) (bool, error) {
+// Solidity: function verifyRedeem(address recipient_) constant returns(int8)
+func (_LockRedeem *LockRedeemCaller) VerifyRedeem(opts *bind.CallOpts, recipient_ common.Address) (int8, error) {
 	var (
-		ret0 = new(bool)
+		ret0 = new(int8)
 	)
 	out := ret0
 	err := _LockRedeem.contract.Call(opts, out, "verifyRedeem", recipient_)
@@ -563,42 +483,37 @@ func (_LockRedeem *LockRedeemCaller) VerifyRedeem(opts *bind.CallOpts, recipient
 
 // VerifyRedeem is a free data retrieval call binding the contract method 0x91e39868.
 //
-// Solidity: function verifyRedeem(address recipient_) constant returns(bool)
-func (_LockRedeem *LockRedeemSession) VerifyRedeem(recipient_ common.Address) (bool, error) {
+// Solidity: function verifyRedeem(address recipient_) constant returns(int8)
+func (_LockRedeem *LockRedeemSession) VerifyRedeem(recipient_ common.Address) (int8, error) {
 	return _LockRedeem.Contract.VerifyRedeem(&_LockRedeem.CallOpts, recipient_)
 }
 
 // VerifyRedeem is a free data retrieval call binding the contract method 0x91e39868.
 //
-// Solidity: function verifyRedeem(address recipient_) constant returns(bool)
-func (_LockRedeem *LockRedeemCallerSession) VerifyRedeem(recipient_ common.Address) (bool, error) {
+// Solidity: function verifyRedeem(address recipient_) constant returns(int8)
+func (_LockRedeem *LockRedeemCallerSession) VerifyRedeem(recipient_ common.Address) (int8, error) {
 	return _LockRedeem.Contract.VerifyRedeem(&_LockRedeem.CallOpts, recipient_)
 }
 
-// VotingThreshold is a free data retrieval call binding the contract method 0x62827733.
+// CollectUserFee is a paid mutator transaction binding the contract method 0x7edd7ccd.
 //
-// Solidity: function votingThreshold() constant returns(uint256)
-func (_LockRedeem *LockRedeemCaller) VotingThreshold(opts *bind.CallOpts) (*big.Int, error) {
-	var (
-		ret0 = new(*big.Int)
-	)
-	out := ret0
-	err := _LockRedeem.contract.Call(opts, out, "votingThreshold")
-	return *ret0, err
+// Solidity: function collectUserFee() returns()
+func (_LockRedeem *LockRedeemTransactor) CollectUserFee(opts *bind.TransactOpts) (*types.Transaction, error) {
+	return _LockRedeem.contract.Transact(opts, "collectUserFee")
 }
 
-// VotingThreshold is a free data retrieval call binding the contract method 0x62827733.
+// CollectUserFee is a paid mutator transaction binding the contract method 0x7edd7ccd.
 //
-// Solidity: function votingThreshold() constant returns(uint256)
-func (_LockRedeem *LockRedeemSession) VotingThreshold() (*big.Int, error) {
-	return _LockRedeem.Contract.VotingThreshold(&_LockRedeem.CallOpts)
+// Solidity: function collectUserFee() returns()
+func (_LockRedeem *LockRedeemSession) CollectUserFee() (*types.Transaction, error) {
+	return _LockRedeem.Contract.CollectUserFee(&_LockRedeem.TransactOpts)
 }
 
-// VotingThreshold is a free data retrieval call binding the contract method 0x62827733.
+// CollectUserFee is a paid mutator transaction binding the contract method 0x7edd7ccd.
 //
-// Solidity: function votingThreshold() constant returns(uint256)
-func (_LockRedeem *LockRedeemCallerSession) VotingThreshold() (*big.Int, error) {
-	return _LockRedeem.Contract.VotingThreshold(&_LockRedeem.CallOpts)
+// Solidity: function collectUserFee() returns()
+func (_LockRedeem *LockRedeemTransactorSession) CollectUserFee() (*types.Transaction, error) {
+	return _LockRedeem.Contract.CollectUserFee(&_LockRedeem.TransactOpts)
 }
 
 // Lock is a paid mutator transaction binding the contract method 0xf83d08ba.
@@ -622,46 +537,25 @@ func (_LockRedeem *LockRedeemTransactorSession) Lock() (*types.Transaction, erro
 	return _LockRedeem.Contract.Lock(&_LockRedeem.TransactOpts)
 }
 
-// ProposeAddValidator is a paid mutator transaction binding the contract method 0x383ea59a.
+// Migrate is a paid mutator transaction binding the contract method 0xce5494bb.
 //
-// Solidity: function proposeAddValidator(address v) returns()
-func (_LockRedeem *LockRedeemTransactor) ProposeAddValidator(opts *bind.TransactOpts, v common.Address) (*types.Transaction, error) {
-	return _LockRedeem.contract.Transact(opts, "proposeAddValidator", v)
+// Solidity: function migrate(address newSmartContractAddress) returns()
+func (_LockRedeem *LockRedeemTransactor) Migrate(opts *bind.TransactOpts, newSmartContractAddress common.Address) (*types.Transaction, error) {
+	return _LockRedeem.contract.Transact(opts, "migrate", newSmartContractAddress)
 }
 
-// ProposeAddValidator is a paid mutator transaction binding the contract method 0x383ea59a.
+// Migrate is a paid mutator transaction binding the contract method 0xce5494bb.
 //
-// Solidity: function proposeAddValidator(address v) returns()
-func (_LockRedeem *LockRedeemSession) ProposeAddValidator(v common.Address) (*types.Transaction, error) {
-	return _LockRedeem.Contract.ProposeAddValidator(&_LockRedeem.TransactOpts, v)
+// Solidity: function migrate(address newSmartContractAddress) returns()
+func (_LockRedeem *LockRedeemSession) Migrate(newSmartContractAddress common.Address) (*types.Transaction, error) {
+	return _LockRedeem.Contract.Migrate(&_LockRedeem.TransactOpts, newSmartContractAddress)
 }
 
-// ProposeAddValidator is a paid mutator transaction binding the contract method 0x383ea59a.
+// Migrate is a paid mutator transaction binding the contract method 0xce5494bb.
 //
-// Solidity: function proposeAddValidator(address v) returns()
-func (_LockRedeem *LockRedeemTransactorSession) ProposeAddValidator(v common.Address) (*types.Transaction, error) {
-	return _LockRedeem.Contract.ProposeAddValidator(&_LockRedeem.TransactOpts, v)
-}
-
-// ProposeNewThreshold is a paid mutator transaction binding the contract method 0xe0e887d0.
-//
-// Solidity: function proposeNewThreshold(uint256 threshold) returns()
-func (_LockRedeem *LockRedeemTransactor) ProposeNewThreshold(opts *bind.TransactOpts, threshold *big.Int) (*types.Transaction, error) {
-	return _LockRedeem.contract.Transact(opts, "proposeNewThreshold", threshold)
-}
-
-// ProposeNewThreshold is a paid mutator transaction binding the contract method 0xe0e887d0.
-//
-// Solidity: function proposeNewThreshold(uint256 threshold) returns()
-func (_LockRedeem *LockRedeemSession) ProposeNewThreshold(threshold *big.Int) (*types.Transaction, error) {
-	return _LockRedeem.Contract.ProposeNewThreshold(&_LockRedeem.TransactOpts, threshold)
-}
-
-// ProposeNewThreshold is a paid mutator transaction binding the contract method 0xe0e887d0.
-//
-// Solidity: function proposeNewThreshold(uint256 threshold) returns()
-func (_LockRedeem *LockRedeemTransactorSession) ProposeNewThreshold(threshold *big.Int) (*types.Transaction, error) {
-	return _LockRedeem.Contract.ProposeNewThreshold(&_LockRedeem.TransactOpts, threshold)
+// Solidity: function migrate(address newSmartContractAddress) returns()
+func (_LockRedeem *LockRedeemTransactorSession) Migrate(newSmartContractAddress common.Address) (*types.Transaction, error) {
+	return _LockRedeem.Contract.Migrate(&_LockRedeem.TransactOpts, newSmartContractAddress)
 }
 
 // Redeem is a paid mutator transaction binding the contract method 0xdb006a75.
@@ -776,13 +670,12 @@ func (it *LockRedeemAddValidatorIterator) Close() error {
 // LockRedeemAddValidator represents a AddValidator event raised by the LockRedeem contract.
 type LockRedeemAddValidator struct {
 	Address common.Address
-	Power   *big.Int
 	Raw     types.Log // Blockchain specific contextual infos
 }
 
-// FilterAddValidator is a free log retrieval operation binding the contract event 0xb2076c69a79e1dfb01d613dcc63b7c42ae1962daf11d4f2151352135133f824b.
+// FilterAddValidator is a free log retrieval operation binding the contract event 0x6a7a7b9e5967ba1cf76c3d7d5a9b98e96f11754855b04564fada97b94741ad36.
 //
-// Solidity: event AddValidator(address indexed _address, int256 _power)
+// Solidity: event AddValidator(address indexed _address)
 func (_LockRedeem *LockRedeemFilterer) FilterAddValidator(opts *bind.FilterOpts, _address []common.Address) (*LockRedeemAddValidatorIterator, error) {
 
 	var _addressRule []interface{}
@@ -797,9 +690,9 @@ func (_LockRedeem *LockRedeemFilterer) FilterAddValidator(opts *bind.FilterOpts,
 	return &LockRedeemAddValidatorIterator{contract: _LockRedeem.contract, event: "AddValidator", logs: logs, sub: sub}, nil
 }
 
-// WatchAddValidator is a free log subscription operation binding the contract event 0xb2076c69a79e1dfb01d613dcc63b7c42ae1962daf11d4f2151352135133f824b.
+// WatchAddValidator is a free log subscription operation binding the contract event 0x6a7a7b9e5967ba1cf76c3d7d5a9b98e96f11754855b04564fada97b94741ad36.
 //
-// Solidity: event AddValidator(address indexed _address, int256 _power)
+// Solidity: event AddValidator(address indexed _address)
 func (_LockRedeem *LockRedeemFilterer) WatchAddValidator(opts *bind.WatchOpts, sink chan<- *LockRedeemAddValidator, _address []common.Address) (event.Subscription, error) {
 
 	var _addressRule []interface{}
@@ -839,155 +732,12 @@ func (_LockRedeem *LockRedeemFilterer) WatchAddValidator(opts *bind.WatchOpts, s
 	}), nil
 }
 
-// ParseAddValidator is a log parse operation binding the contract event 0xb2076c69a79e1dfb01d613dcc63b7c42ae1962daf11d4f2151352135133f824b.
+// ParseAddValidator is a log parse operation binding the contract event 0x6a7a7b9e5967ba1cf76c3d7d5a9b98e96f11754855b04564fada97b94741ad36.
 //
-// Solidity: event AddValidator(address indexed _address, int256 _power)
+// Solidity: event AddValidator(address indexed _address)
 func (_LockRedeem *LockRedeemFilterer) ParseAddValidator(log types.Log) (*LockRedeemAddValidator, error) {
 	event := new(LockRedeemAddValidator)
 	if err := _LockRedeem.contract.UnpackLog(event, "AddValidator", log); err != nil {
-		return nil, err
-	}
-	return event, nil
-}
-
-// LockRedeemDeleteValidatorIterator is returned from FilterDeleteValidator and is used to iterate over the raw logs and unpacked data for DeleteValidator events raised by the LockRedeem contract.
-type LockRedeemDeleteValidatorIterator struct {
-	Event *LockRedeemDeleteValidator // Event containing the contract specifics and raw log
-
-	contract *bind.BoundContract // Generic contract to use for unpacking event data
-	event    string              // Event name to use for unpacking event data
-
-	logs chan types.Log        // Log channel receiving the found contract events
-	sub  ethereum.Subscription // Subscription for errors, completion and termination
-	done bool                  // Whether the subscription completed delivering logs
-	fail error                 // Occurred error to stop iteration
-}
-
-// Next advances the iterator to the subsequent event, returning whether there
-// are any more events found. In case of a retrieval or parsing error, false is
-// returned and Error() can be queried for the exact failure.
-func (it *LockRedeemDeleteValidatorIterator) Next() bool {
-	// If the iterator failed, stop iterating
-	if it.fail != nil {
-		return false
-	}
-	// If the iterator completed, deliver directly whatever's available
-	if it.done {
-		select {
-		case log := <-it.logs:
-			it.Event = new(LockRedeemDeleteValidator)
-			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
-				it.fail = err
-				return false
-			}
-			it.Event.Raw = log
-			return true
-
-		default:
-			return false
-		}
-	}
-	// Iterator still in progress, wait for either a data or an error event
-	select {
-	case log := <-it.logs:
-		it.Event = new(LockRedeemDeleteValidator)
-		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
-			it.fail = err
-			return false
-		}
-		it.Event.Raw = log
-		return true
-
-	case err := <-it.sub.Err():
-		it.done = true
-		it.fail = err
-		return it.Next()
-	}
-}
-
-// Error returns any retrieval or parsing error occurred during filtering.
-func (it *LockRedeemDeleteValidatorIterator) Error() error {
-	return it.fail
-}
-
-// Close terminates the iteration process, releasing any pending underlying
-// resources.
-func (it *LockRedeemDeleteValidatorIterator) Close() error {
-	it.sub.Unsubscribe()
-	return nil
-}
-
-// LockRedeemDeleteValidator represents a DeleteValidator event raised by the LockRedeem contract.
-type LockRedeemDeleteValidator struct {
-	Address common.Address
-	Raw     types.Log // Blockchain specific contextual infos
-}
-
-// FilterDeleteValidator is a free log retrieval operation binding the contract event 0x6d70afad774d81e8c32f930c6412789502b16ccf0a20f21679b249bdfac060e5.
-//
-// Solidity: event DeleteValidator(address indexed _address)
-func (_LockRedeem *LockRedeemFilterer) FilterDeleteValidator(opts *bind.FilterOpts, _address []common.Address) (*LockRedeemDeleteValidatorIterator, error) {
-
-	var _addressRule []interface{}
-	for _, _addressItem := range _address {
-		_addressRule = append(_addressRule, _addressItem)
-	}
-
-	logs, sub, err := _LockRedeem.contract.FilterLogs(opts, "DeleteValidator", _addressRule)
-	if err != nil {
-		return nil, err
-	}
-	return &LockRedeemDeleteValidatorIterator{contract: _LockRedeem.contract, event: "DeleteValidator", logs: logs, sub: sub}, nil
-}
-
-// WatchDeleteValidator is a free log subscription operation binding the contract event 0x6d70afad774d81e8c32f930c6412789502b16ccf0a20f21679b249bdfac060e5.
-//
-// Solidity: event DeleteValidator(address indexed _address)
-func (_LockRedeem *LockRedeemFilterer) WatchDeleteValidator(opts *bind.WatchOpts, sink chan<- *LockRedeemDeleteValidator, _address []common.Address) (event.Subscription, error) {
-
-	var _addressRule []interface{}
-	for _, _addressItem := range _address {
-		_addressRule = append(_addressRule, _addressItem)
-	}
-
-	logs, sub, err := _LockRedeem.contract.WatchLogs(opts, "DeleteValidator", _addressRule)
-	if err != nil {
-		return nil, err
-	}
-	return event.NewSubscription(func(quit <-chan struct{}) error {
-		defer sub.Unsubscribe()
-		for {
-			select {
-			case log := <-logs:
-				// New log arrived, parse the event and forward to the user
-				event := new(LockRedeemDeleteValidator)
-				if err := _LockRedeem.contract.UnpackLog(event, "DeleteValidator", log); err != nil {
-					return err
-				}
-				event.Raw = log
-
-				select {
-				case sink <- event:
-				case err := <-sub.Err():
-					return err
-				case <-quit:
-					return nil
-				}
-			case err := <-sub.Err():
-				return err
-			case <-quit:
-				return nil
-			}
-		}
-	}), nil
-}
-
-// ParseDeleteValidator is a log parse operation binding the contract event 0x6d70afad774d81e8c32f930c6412789502b16ccf0a20f21679b249bdfac060e5.
-//
-// Solidity: event DeleteValidator(address indexed _address)
-func (_LockRedeem *LockRedeemFilterer) ParseDeleteValidator(log types.Log) (*LockRedeemDeleteValidator, error) {
-	event := new(LockRedeemDeleteValidator)
-	if err := _LockRedeem.contract.UnpackLog(event, "DeleteValidator", log); err != nil {
 		return nil, err
 	}
 	return event, nil
@@ -1127,273 +877,6 @@ func (_LockRedeem *LockRedeemFilterer) ParseLock(log types.Log) (*LockRedeemLock
 	return event, nil
 }
 
-// LockRedeemNewEpochIterator is returned from FilterNewEpoch and is used to iterate over the raw logs and unpacked data for NewEpoch events raised by the LockRedeem contract.
-type LockRedeemNewEpochIterator struct {
-	Event *LockRedeemNewEpoch // Event containing the contract specifics and raw log
-
-	contract *bind.BoundContract // Generic contract to use for unpacking event data
-	event    string              // Event name to use for unpacking event data
-
-	logs chan types.Log        // Log channel receiving the found contract events
-	sub  ethereum.Subscription // Subscription for errors, completion and termination
-	done bool                  // Whether the subscription completed delivering logs
-	fail error                 // Occurred error to stop iteration
-}
-
-// Next advances the iterator to the subsequent event, returning whether there
-// are any more events found. In case of a retrieval or parsing error, false is
-// returned and Error() can be queried for the exact failure.
-func (it *LockRedeemNewEpochIterator) Next() bool {
-	// If the iterator failed, stop iterating
-	if it.fail != nil {
-		return false
-	}
-	// If the iterator completed, deliver directly whatever's available
-	if it.done {
-		select {
-		case log := <-it.logs:
-			it.Event = new(LockRedeemNewEpoch)
-			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
-				it.fail = err
-				return false
-			}
-			it.Event.Raw = log
-			return true
-
-		default:
-			return false
-		}
-	}
-	// Iterator still in progress, wait for either a data or an error event
-	select {
-	case log := <-it.logs:
-		it.Event = new(LockRedeemNewEpoch)
-		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
-			it.fail = err
-			return false
-		}
-		it.Event.Raw = log
-		return true
-
-	case err := <-it.sub.Err():
-		it.done = true
-		it.fail = err
-		return it.Next()
-	}
-}
-
-// Error returns any retrieval or parsing error occurred during filtering.
-func (it *LockRedeemNewEpochIterator) Error() error {
-	return it.fail
-}
-
-// Close terminates the iteration process, releasing any pending underlying
-// resources.
-func (it *LockRedeemNewEpochIterator) Close() error {
-	it.sub.Unsubscribe()
-	return nil
-}
-
-// LockRedeemNewEpoch represents a NewEpoch event raised by the LockRedeem contract.
-type LockRedeemNewEpoch struct {
-	EpochHeight *big.Int
-	Raw         types.Log // Blockchain specific contextual infos
-}
-
-// FilterNewEpoch is a free log retrieval operation binding the contract event 0xebad8099c467528a56c98b63c8d476d251cf1ffb4c75db94b4d23fa2b6a1e335.
-//
-// Solidity: event NewEpoch(uint256 epochHeight)
-func (_LockRedeem *LockRedeemFilterer) FilterNewEpoch(opts *bind.FilterOpts) (*LockRedeemNewEpochIterator, error) {
-
-	logs, sub, err := _LockRedeem.contract.FilterLogs(opts, "NewEpoch")
-	if err != nil {
-		return nil, err
-	}
-	return &LockRedeemNewEpochIterator{contract: _LockRedeem.contract, event: "NewEpoch", logs: logs, sub: sub}, nil
-}
-
-// WatchNewEpoch is a free log subscription operation binding the contract event 0xebad8099c467528a56c98b63c8d476d251cf1ffb4c75db94b4d23fa2b6a1e335.
-//
-// Solidity: event NewEpoch(uint256 epochHeight)
-func (_LockRedeem *LockRedeemFilterer) WatchNewEpoch(opts *bind.WatchOpts, sink chan<- *LockRedeemNewEpoch) (event.Subscription, error) {
-
-	logs, sub, err := _LockRedeem.contract.WatchLogs(opts, "NewEpoch")
-	if err != nil {
-		return nil, err
-	}
-	return event.NewSubscription(func(quit <-chan struct{}) error {
-		defer sub.Unsubscribe()
-		for {
-			select {
-			case log := <-logs:
-				// New log arrived, parse the event and forward to the user
-				event := new(LockRedeemNewEpoch)
-				if err := _LockRedeem.contract.UnpackLog(event, "NewEpoch", log); err != nil {
-					return err
-				}
-				event.Raw = log
-
-				select {
-				case sink <- event:
-				case err := <-sub.Err():
-					return err
-				case <-quit:
-					return nil
-				}
-			case err := <-sub.Err():
-				return err
-			case <-quit:
-				return nil
-			}
-		}
-	}), nil
-}
-
-// ParseNewEpoch is a log parse operation binding the contract event 0xebad8099c467528a56c98b63c8d476d251cf1ffb4c75db94b4d23fa2b6a1e335.
-//
-// Solidity: event NewEpoch(uint256 epochHeight)
-func (_LockRedeem *LockRedeemFilterer) ParseNewEpoch(log types.Log) (*LockRedeemNewEpoch, error) {
-	event := new(LockRedeemNewEpoch)
-	if err := _LockRedeem.contract.UnpackLog(event, "NewEpoch", log); err != nil {
-		return nil, err
-	}
-	return event, nil
-}
-
-// LockRedeemNewThresholdIterator is returned from FilterNewThreshold and is used to iterate over the raw logs and unpacked data for NewThreshold events raised by the LockRedeem contract.
-type LockRedeemNewThresholdIterator struct {
-	Event *LockRedeemNewThreshold // Event containing the contract specifics and raw log
-
-	contract *bind.BoundContract // Generic contract to use for unpacking event data
-	event    string              // Event name to use for unpacking event data
-
-	logs chan types.Log        // Log channel receiving the found contract events
-	sub  ethereum.Subscription // Subscription for errors, completion and termination
-	done bool                  // Whether the subscription completed delivering logs
-	fail error                 // Occurred error to stop iteration
-}
-
-// Next advances the iterator to the subsequent event, returning whether there
-// are any more events found. In case of a retrieval or parsing error, false is
-// returned and Error() can be queried for the exact failure.
-func (it *LockRedeemNewThresholdIterator) Next() bool {
-	// If the iterator failed, stop iterating
-	if it.fail != nil {
-		return false
-	}
-	// If the iterator completed, deliver directly whatever's available
-	if it.done {
-		select {
-		case log := <-it.logs:
-			it.Event = new(LockRedeemNewThreshold)
-			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
-				it.fail = err
-				return false
-			}
-			it.Event.Raw = log
-			return true
-
-		default:
-			return false
-		}
-	}
-	// Iterator still in progress, wait for either a data or an error event
-	select {
-	case log := <-it.logs:
-		it.Event = new(LockRedeemNewThreshold)
-		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
-			it.fail = err
-			return false
-		}
-		it.Event.Raw = log
-		return true
-
-	case err := <-it.sub.Err():
-		it.done = true
-		it.fail = err
-		return it.Next()
-	}
-}
-
-// Error returns any retrieval or parsing error occurred during filtering.
-func (it *LockRedeemNewThresholdIterator) Error() error {
-	return it.fail
-}
-
-// Close terminates the iteration process, releasing any pending underlying
-// resources.
-func (it *LockRedeemNewThresholdIterator) Close() error {
-	it.sub.Unsubscribe()
-	return nil
-}
-
-// LockRedeemNewThreshold represents a NewThreshold event raised by the LockRedeem contract.
-type LockRedeemNewThreshold struct {
-	PrevThreshold *big.Int
-	NewThreshold  *big.Int
-	Raw           types.Log // Blockchain specific contextual infos
-}
-
-// FilterNewThreshold is a free log retrieval operation binding the contract event 0x7a5c0f01d83576763cde96136a1c8a8c1c05ff95d8a184db483894a9b69b8b3a.
-//
-// Solidity: event NewThreshold(uint256 _prevThreshold, uint256 _newThreshold)
-func (_LockRedeem *LockRedeemFilterer) FilterNewThreshold(opts *bind.FilterOpts) (*LockRedeemNewThresholdIterator, error) {
-
-	logs, sub, err := _LockRedeem.contract.FilterLogs(opts, "NewThreshold")
-	if err != nil {
-		return nil, err
-	}
-	return &LockRedeemNewThresholdIterator{contract: _LockRedeem.contract, event: "NewThreshold", logs: logs, sub: sub}, nil
-}
-
-// WatchNewThreshold is a free log subscription operation binding the contract event 0x7a5c0f01d83576763cde96136a1c8a8c1c05ff95d8a184db483894a9b69b8b3a.
-//
-// Solidity: event NewThreshold(uint256 _prevThreshold, uint256 _newThreshold)
-func (_LockRedeem *LockRedeemFilterer) WatchNewThreshold(opts *bind.WatchOpts, sink chan<- *LockRedeemNewThreshold) (event.Subscription, error) {
-
-	logs, sub, err := _LockRedeem.contract.WatchLogs(opts, "NewThreshold")
-	if err != nil {
-		return nil, err
-	}
-	return event.NewSubscription(func(quit <-chan struct{}) error {
-		defer sub.Unsubscribe()
-		for {
-			select {
-			case log := <-logs:
-				// New log arrived, parse the event and forward to the user
-				event := new(LockRedeemNewThreshold)
-				if err := _LockRedeem.contract.UnpackLog(event, "NewThreshold", log); err != nil {
-					return err
-				}
-				event.Raw = log
-
-				select {
-				case sink <- event:
-				case err := <-sub.Err():
-					return err
-				case <-quit:
-					return nil
-				}
-			case err := <-sub.Err():
-				return err
-			case <-quit:
-				return nil
-			}
-		}
-	}), nil
-}
-
-// ParseNewThreshold is a log parse operation binding the contract event 0x7a5c0f01d83576763cde96136a1c8a8c1c05ff95d8a184db483894a9b69b8b3a.
-//
-// Solidity: event NewThreshold(uint256 _prevThreshold, uint256 _newThreshold)
-func (_LockRedeem *LockRedeemFilterer) ParseNewThreshold(log types.Log) (*LockRedeemNewThreshold, error) {
-	event := new(LockRedeemNewThreshold)
-	if err := _LockRedeem.contract.UnpackLog(event, "NewThreshold", log); err != nil {
-		return nil, err
-	}
-	return event, nil
-}
-
 // LockRedeemRedeemRequestIterator is returned from FilterRedeemRequest and is used to iterate over the raw logs and unpacked data for RedeemRequest events raised by the LockRedeem contract.
 type LockRedeemRedeemRequestIterator struct {
 	Event *LockRedeemRedeemRequest // Event containing the contract specifics and raw log
@@ -1463,14 +946,15 @@ func (it *LockRedeemRedeemRequestIterator) Close() error {
 
 // LockRedeemRedeemRequest represents a RedeemRequest event raised by the LockRedeem contract.
 type LockRedeemRedeemRequest struct {
-	Recepient       common.Address
-	AmountRequested *big.Int
-	Raw             types.Log // Blockchain specific contextual infos
+	Recepient        common.Address
+	AmountRequested  *big.Int
+	RedeemFeeCharged *big.Int
+	Raw              types.Log // Blockchain specific contextual infos
 }
 
-// FilterRedeemRequest is a free log retrieval operation binding the contract event 0x222dc200773fe9b45015bf792e8fee37d651e3590c215806a5042404b6d741d2.
+// FilterRedeemRequest is a free log retrieval operation binding the contract event 0xeee07ebdabc7ab1dc20be39b715e23aa8a85c6a8ae3c16f8334dace8d76683dc.
 //
-// Solidity: event RedeemRequest(address indexed recepient, uint256 amount_requested)
+// Solidity: event RedeemRequest(address indexed recepient, uint256 amount_requested, uint256 redeemFeeCharged)
 func (_LockRedeem *LockRedeemFilterer) FilterRedeemRequest(opts *bind.FilterOpts, recepient []common.Address) (*LockRedeemRedeemRequestIterator, error) {
 
 	var recepientRule []interface{}
@@ -1485,9 +969,9 @@ func (_LockRedeem *LockRedeemFilterer) FilterRedeemRequest(opts *bind.FilterOpts
 	return &LockRedeemRedeemRequestIterator{contract: _LockRedeem.contract, event: "RedeemRequest", logs: logs, sub: sub}, nil
 }
 
-// WatchRedeemRequest is a free log subscription operation binding the contract event 0x222dc200773fe9b45015bf792e8fee37d651e3590c215806a5042404b6d741d2.
+// WatchRedeemRequest is a free log subscription operation binding the contract event 0xeee07ebdabc7ab1dc20be39b715e23aa8a85c6a8ae3c16f8334dace8d76683dc.
 //
-// Solidity: event RedeemRequest(address indexed recepient, uint256 amount_requested)
+// Solidity: event RedeemRequest(address indexed recepient, uint256 amount_requested, uint256 redeemFeeCharged)
 func (_LockRedeem *LockRedeemFilterer) WatchRedeemRequest(opts *bind.WatchOpts, sink chan<- *LockRedeemRedeemRequest, recepient []common.Address) (event.Subscription, error) {
 
 	var recepientRule []interface{}
@@ -1527,12 +1011,146 @@ func (_LockRedeem *LockRedeemFilterer) WatchRedeemRequest(opts *bind.WatchOpts, 
 	}), nil
 }
 
-// ParseRedeemRequest is a log parse operation binding the contract event 0x222dc200773fe9b45015bf792e8fee37d651e3590c215806a5042404b6d741d2.
+// ParseRedeemRequest is a log parse operation binding the contract event 0xeee07ebdabc7ab1dc20be39b715e23aa8a85c6a8ae3c16f8334dace8d76683dc.
 //
-// Solidity: event RedeemRequest(address indexed recepient, uint256 amount_requested)
+// Solidity: event RedeemRequest(address indexed recepient, uint256 amount_requested, uint256 redeemFeeCharged)
 func (_LockRedeem *LockRedeemFilterer) ParseRedeemRequest(log types.Log) (*LockRedeemRedeemRequest, error) {
 	event := new(LockRedeemRedeemRequest)
 	if err := _LockRedeem.contract.UnpackLog(event, "RedeemRequest", log); err != nil {
+		return nil, err
+	}
+	return event, nil
+}
+
+// LockRedeemValidatorMigratedIterator is returned from FilterValidatorMigrated and is used to iterate over the raw logs and unpacked data for ValidatorMigrated events raised by the LockRedeem contract.
+type LockRedeemValidatorMigratedIterator struct {
+	Event *LockRedeemValidatorMigrated // Event containing the contract specifics and raw log
+
+	contract *bind.BoundContract // Generic contract to use for unpacking event data
+	event    string              // Event name to use for unpacking event data
+
+	logs chan types.Log        // Log channel receiving the found contract events
+	sub  ethereum.Subscription // Subscription for errors, completion and termination
+	done bool                  // Whether the subscription completed delivering logs
+	fail error                 // Occurred error to stop iteration
+}
+
+// Next advances the iterator to the subsequent event, returning whether there
+// are any more events found. In case of a retrieval or parsing error, false is
+// returned and Error() can be queried for the exact failure.
+func (it *LockRedeemValidatorMigratedIterator) Next() bool {
+	// If the iterator failed, stop iterating
+	if it.fail != nil {
+		return false
+	}
+	// If the iterator completed, deliver directly whatever's available
+	if it.done {
+		select {
+		case log := <-it.logs:
+			it.Event = new(LockRedeemValidatorMigrated)
+			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+				it.fail = err
+				return false
+			}
+			it.Event.Raw = log
+			return true
+
+		default:
+			return false
+		}
+	}
+	// Iterator still in progress, wait for either a data or an error event
+	select {
+	case log := <-it.logs:
+		it.Event = new(LockRedeemValidatorMigrated)
+		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+			it.fail = err
+			return false
+		}
+		it.Event.Raw = log
+		return true
+
+	case err := <-it.sub.Err():
+		it.done = true
+		it.fail = err
+		return it.Next()
+	}
+}
+
+// Error returns any retrieval or parsing error occurred during filtering.
+func (it *LockRedeemValidatorMigratedIterator) Error() error {
+	return it.fail
+}
+
+// Close terminates the iteration process, releasing any pending underlying
+// resources.
+func (it *LockRedeemValidatorMigratedIterator) Close() error {
+	it.sub.Unsubscribe()
+	return nil
+}
+
+// LockRedeemValidatorMigrated represents a ValidatorMigrated event raised by the LockRedeem contract.
+type LockRedeemValidatorMigrated struct {
+	Validator               common.Address
+	NewSmartContractAddress common.Address
+	Raw                     types.Log // Blockchain specific contextual infos
+}
+
+// FilterValidatorMigrated is a free log retrieval operation binding the contract event 0x077478953a7559f9e01b2ceeb429ce87333fb7fc0ec16eb5eb9128463e30fa92.
+//
+// Solidity: event ValidatorMigrated(address validator, address NewSmartContractAddress)
+func (_LockRedeem *LockRedeemFilterer) FilterValidatorMigrated(opts *bind.FilterOpts) (*LockRedeemValidatorMigratedIterator, error) {
+
+	logs, sub, err := _LockRedeem.contract.FilterLogs(opts, "ValidatorMigrated")
+	if err != nil {
+		return nil, err
+	}
+	return &LockRedeemValidatorMigratedIterator{contract: _LockRedeem.contract, event: "ValidatorMigrated", logs: logs, sub: sub}, nil
+}
+
+// WatchValidatorMigrated is a free log subscription operation binding the contract event 0x077478953a7559f9e01b2ceeb429ce87333fb7fc0ec16eb5eb9128463e30fa92.
+//
+// Solidity: event ValidatorMigrated(address validator, address NewSmartContractAddress)
+func (_LockRedeem *LockRedeemFilterer) WatchValidatorMigrated(opts *bind.WatchOpts, sink chan<- *LockRedeemValidatorMigrated) (event.Subscription, error) {
+
+	logs, sub, err := _LockRedeem.contract.WatchLogs(opts, "ValidatorMigrated")
+	if err != nil {
+		return nil, err
+	}
+	return event.NewSubscription(func(quit <-chan struct{}) error {
+		defer sub.Unsubscribe()
+		for {
+			select {
+			case log := <-logs:
+				// New log arrived, parse the event and forward to the user
+				event := new(LockRedeemValidatorMigrated)
+				if err := _LockRedeem.contract.UnpackLog(event, "ValidatorMigrated", log); err != nil {
+					return err
+				}
+				event.Raw = log
+
+				select {
+				case sink <- event:
+				case err := <-sub.Err():
+					return err
+				case <-quit:
+					return nil
+				}
+			case err := <-sub.Err():
+				return err
+			case <-quit:
+				return nil
+			}
+		}
+	}), nil
+}
+
+// ParseValidatorMigrated is a log parse operation binding the contract event 0x077478953a7559f9e01b2ceeb429ce87333fb7fc0ec16eb5eb9128463e30fa92.
+//
+// Solidity: event ValidatorMigrated(address validator, address NewSmartContractAddress)
+func (_LockRedeem *LockRedeemFilterer) ParseValidatorMigrated(log types.Log) (*LockRedeemValidatorMigrated, error) {
+	event := new(LockRedeemValidatorMigrated)
+	if err := _LockRedeem.contract.UnpackLog(event, "ValidatorMigrated", log); err != nil {
 		return nil, err
 	}
 	return event, nil
@@ -1610,12 +1228,13 @@ type LockRedeemValidatorSignedRedeem struct {
 	Recipient         common.Address
 	ValidatorAddresss common.Address
 	Amount            *big.Int
+	GasReturned       *big.Int
 	Raw               types.Log // Blockchain specific contextual infos
 }
 
-// FilterValidatorSignedRedeem is a free log retrieval operation binding the contract event 0x3b76df4bf55914fbcbc8b02f6773984cc346db1e6aef40410dcee0f94c6a05db.
+// FilterValidatorSignedRedeem is a free log retrieval operation binding the contract event 0x975a8b0f36f1204c7939f566cea0503ea32284a2768a7f98ede91960b6d15830.
 //
-// Solidity: event ValidatorSignedRedeem(address indexed recipient, address validator_addresss, uint256 amount)
+// Solidity: event ValidatorSignedRedeem(address indexed recipient, address validator_addresss, uint256 amount, uint256 gasReturned)
 func (_LockRedeem *LockRedeemFilterer) FilterValidatorSignedRedeem(opts *bind.FilterOpts, recipient []common.Address) (*LockRedeemValidatorSignedRedeemIterator, error) {
 
 	var recipientRule []interface{}
@@ -1630,9 +1249,9 @@ func (_LockRedeem *LockRedeemFilterer) FilterValidatorSignedRedeem(opts *bind.Fi
 	return &LockRedeemValidatorSignedRedeemIterator{contract: _LockRedeem.contract, event: "ValidatorSignedRedeem", logs: logs, sub: sub}, nil
 }
 
-// WatchValidatorSignedRedeem is a free log subscription operation binding the contract event 0x3b76df4bf55914fbcbc8b02f6773984cc346db1e6aef40410dcee0f94c6a05db.
+// WatchValidatorSignedRedeem is a free log subscription operation binding the contract event 0x975a8b0f36f1204c7939f566cea0503ea32284a2768a7f98ede91960b6d15830.
 //
-// Solidity: event ValidatorSignedRedeem(address indexed recipient, address validator_addresss, uint256 amount)
+// Solidity: event ValidatorSignedRedeem(address indexed recipient, address validator_addresss, uint256 amount, uint256 gasReturned)
 func (_LockRedeem *LockRedeemFilterer) WatchValidatorSignedRedeem(opts *bind.WatchOpts, sink chan<- *LockRedeemValidatorSignedRedeem, recipient []common.Address) (event.Subscription, error) {
 
 	var recipientRule []interface{}
@@ -1672,9 +1291,9 @@ func (_LockRedeem *LockRedeemFilterer) WatchValidatorSignedRedeem(opts *bind.Wat
 	}), nil
 }
 
-// ParseValidatorSignedRedeem is a log parse operation binding the contract event 0x3b76df4bf55914fbcbc8b02f6773984cc346db1e6aef40410dcee0f94c6a05db.
+// ParseValidatorSignedRedeem is a log parse operation binding the contract event 0x975a8b0f36f1204c7939f566cea0503ea32284a2768a7f98ede91960b6d15830.
 //
-// Solidity: event ValidatorSignedRedeem(address indexed recipient, address validator_addresss, uint256 amount)
+// Solidity: event ValidatorSignedRedeem(address indexed recipient, address validator_addresss, uint256 amount, uint256 gasReturned)
 func (_LockRedeem *LockRedeemFilterer) ParseValidatorSignedRedeem(log types.Log) (*LockRedeemValidatorSignedRedeem, error) {
 	event := new(LockRedeemValidatorSignedRedeem)
 	if err := _LockRedeem.contract.UnpackLog(event, "ValidatorSignedRedeem", log); err != nil {

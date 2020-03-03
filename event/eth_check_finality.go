@@ -75,7 +75,7 @@ func (job *JobETHCheckFinality) DoMyJob(ctx interface{}) {
 	}
 	receipt, err := cd.CheckFinality(tx.Hash(), ethoptions.BlockConfirmation)
 	if err != nil {
-		ethCtx.Logger.Error("Error in Receiving TX receipt : ", job.GetJobID(), err)
+		ethCtx.Logger.Error("Receiving TX receipt : ", job.GetJobID(), err)
 		return
 	}
 	if receipt == nil {
@@ -86,12 +86,13 @@ func (job *JobETHCheckFinality) DoMyJob(ctx interface{}) {
 	if index < 0 {
 		return
 	}
+	////TODO : Replace with BroadcastReportFinalityETHTx(ethCtx,job.TrackerName,job.JobID,true)
 	reportFinalityMint := &eth.ReportFinality{
 		TrackerName:      job.TrackerName,
 		Locker:           tracker.ProcessOwner,
 		ValidatorAddress: ethCtx.ValidatorAddress,
 		VoteIndex:        index,
-		Refund:           false,
+		Success:          true,
 	}
 
 	txData, err := reportFinalityMint.Marshal()
@@ -117,7 +118,7 @@ func (job *JobETHCheckFinality) DoMyJob(ctx interface{}) {
 		ethCtx.Logger.Error("error while broadcasting finality vote and mint txn ", job.GetJobID(), err, rep.Log)
 		return
 	}
-
+	//TODO END
 	job.Status = jobs.Completed
 }
 
@@ -131,4 +132,8 @@ func (job *JobETHCheckFinality) GetJobID() string {
 
 func (job *JobETHCheckFinality) IsDone() bool {
 	return job.Status == jobs.Completed
+}
+
+func (job *JobETHCheckFinality) IsFailed() bool {
+	return job.Status == jobs.Failed
 }

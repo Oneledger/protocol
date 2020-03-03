@@ -13,12 +13,11 @@ contract LockRedeem {
     constructor(address _old_contract,uint noofValidatorsinold) public {
         old_contract = _old_contract;
         signaturesrequiredformigration = (noofValidatorsinold * 2 / 3 + 1);
-        addValidator(tx.origin);
     }
     function MigrateFromOld() public {
         require(msg.sender == old_contract);
         migrationsignaturecount = migrationsignaturecount + 1;
-        val = tx.origin;
+        addValidator(tx.origin);
     }
     function () external payable {
         require(migrationsignaturecount == signaturesrequiredformigration);
@@ -26,6 +25,9 @@ contract LockRedeem {
     }
     function isActive ()public view returns (bool) {
         return ACTIVE;
+    }
+    function getMigrationCount() public view returns (uint) {
+        return migrationsignaturecount;
     }
     function getTotalEthBalance() public view returns(uint) {
         return address(this).balance ;

@@ -1,6 +1,16 @@
 /*
 
- */
+
+transaction cost 	52004 gas
+execution cost 	81135 gas
+
+
+133139-116162
+
+transaction cost 	62027 gas
+ execution cost 	54155 gas
+
+*/
 
 package main
 
@@ -37,23 +47,25 @@ var (
 	TestTokenABI     = contract.ERC20BasicABI
 	LockRedeemERCABI = contract.LockRedeemERCABI
 	// LockRedeemERC20ABI = contract.ContextABI
-	LockRedeemContractAddr = "0x406Ace6C88c24a3F877F5AC4C12f9Cbca181A066"
-	TestTokenContractAddr = "0x198D6Bbd92a1b47e0d3d46034720dc548d18B480"
-	LockRedeemERC20ContractAddr = "0x8Cb2212A6A06517c778F8E502ab479eE3C7106eA"
+	LockRedeemContractAddr      = "0x9DAec956f971bF567D374a438dbE97A78c527dC2"
+	TestTokenContractAddr       = "0x82749344812a866c8df0304f533980DcE17692C3"
+	LockRedeemERC20ContractAddr = "0xd52501d669333A6Ee6eBF8b0Bf5c271cb556F9d3"
 
-	cfg                         = config.DefaultEthConfigLocal()
-	log                         = logger.NewDefaultLogger(os.Stdout).WithPrefix("testeth")
-	UserprivKey                 *ecdsa.PrivateKey
-	UserprivKeyRedeem           *ecdsa.PrivateKey
+	cfg               = config.DefaultEthConfigLocal()
+	log               = logger.NewDefaultLogger(os.Stdout).WithPrefix("testeth")
+	UserprivKey       *ecdsa.PrivateKey
+	UserprivKeyRedeem *ecdsa.PrivateKey
+	spamKey           *ecdsa.PrivateKey
 
 	client                 *ethclient.Client
 	contractAbi            abi.ABI
-	valuelock              = createValue("10000") // in wei (1 eth)
-	valueredeem            = createValue("100")
+	valuelock              = createValue("1000000000000000000") // in wei (1 eth)
+	valueredeem            = createValue("100000000000000000")
 	valuelockERC20         = createValue("1000000000000000000")
 	valueredeemERC20       = createValue("100000000000000000")
 	fromAddress            common.Address
 	redeemRecipientAddress common.Address
+	spamAddress            common.Address
 
 	toAddress               = common.HexToAddress(LockRedeemContractAddr)
 	toAddressTestToken      = common.HexToAddress(TestTokenContractAddr)
@@ -72,10 +84,12 @@ func createValue(str string) *big.Int {
 
 func init() {
 
-	UserprivKey, _ = crypto.HexToECDSA("6c24a44424c8182c1e3e995ad3ccfb2797e3f7ca845b99bea8dead7fc9dccd09")
+	UserprivKey, _ = crypto.HexToECDSA("7243fc23cb02d7612e716d02e151c2d9112d0bb87f2f4ce63984f0abeefd168a")
 	//UserprivKey, _ = crypto.HexToECDSA("02038529C9AB706E9F4136F4A4EB51E866DBFE22D5E102FD3A22C14236E1C2EA")
 
-	UserprivKeyRedeem, _ = crypto.HexToECDSA("6c24a44424c8182c1e3e995ad3ccfb2797e3f7ca845b99bea8dead7fc9dccd09")
+	UserprivKeyRedeem, _ = crypto.HexToECDSA("b4f2f611396dbd3127d9016c08730c3c3d2c764a244fd31d6a93ad060e818bca")
+
+	spamKey, _ = crypto.HexToECDSA("782268357d2a516598a8af5b4b04134a6fbf1dcd1b6a726a3d618358c8d043b4")
 
 	client, _ = cfg.Client()
 	contractAbi, _ = abi.JSON(strings.NewReader(LockRedeemABI))
@@ -95,14 +109,26 @@ func init() {
 
 	}
 	redeemRecipientAddress = crypto.PubkeyToAddress(*publicKeyECDSARedeem)
+
+	spampub := spamKey.Public()
+	spamecdsapub, ok := spampub.(*ecdsa.PublicKey)
+	if !ok {
+		log.Fatal("error casting public key to ECDSA")
+
+	}
+	spamAddress = crypto.PubkeyToAddress(*spamecdsapub)
 }
 
 func main() {
 
 	lock()
+	time.Sleep(time.Second * 5)
+	send12trasactions()
+	time.Sleep(5 * time.Second)
 
-	//time.Sleep(10 * time.Second)
-
+	redeem()
+	//time.Sleep(5 * time.Second)
+	//send12trasactions()
 	//redeem()
 
 	//erc20lock()
@@ -249,7 +275,7 @@ func redeem() {
 	auth2.GasLimit = gasLimit   // in units
 	auth2.GasPrice = gasPrice
 
-	value := big.NewInt(0)
+	value := big.NewInt(10000000000000000)
 	tx2 := types.NewTransaction(nonce, toAddress, value, gasLimit, gasPrice, bytesData)
 
 	chainID, err := client.ChainID(context.Background())
@@ -274,8 +300,14 @@ func redeem() {
 		fmt.Println(err)
 		return
 	}
+	fmt.Println("Sending trasaction ")
+	err = client.SendTransaction(context.Background(), signedTx2)
+	if err != nil {
+		log.Fatal(err)
+	}
 
-	_ = client.SendTransaction(context.Background(), signedTx2)
+	time.Sleep(time.Second * 15)
+
 	rpcclient, err := rpc.NewClient("http://localhost:26602")
 	if err != nil {
 		fmt.Println(err)
@@ -568,43 +600,61 @@ func erc20Redeem() {
 
 }
 
-//func mapkey(m map[string]string, value string) (key string, ok bool) {
-//	for k, v := range m {
-//		if v == value {
-//			key = k
-//			ok = true
-//			return
-//		}
-//	}
-//	return
-//}
+func send12trasactions() {
+	for i := 0; i <= 26; i++ {
+		contractAbi, _ := abi.JSON(strings.NewReader(LockRedeemABI))
+		bytesData, err := contractAbi.Pack("lock")
+		if err != nil {
+			return
+		}
 
-//methodName := "transfer"
-//method,exists:=tokenAbi.Methods[methodName]
-//if !exists {
-//	fmt.Println("Method '%v' not found in the ABI", methodName)
-//	return
-//}
-//_,ok := mapkey(contract.ERC20BasicFuncSigs,method.Sig())
-//if !ok {
-//	log.Fatal("Method Signature does not exist")
-//}
-//
-//ss := strings.Split(hex.EncodeToString(rawTxBytes), "a9059cbb")
+		//redeemAddress := redeemRecipientAddress.Bytes()
+		nonce, err := client.PendingNonceAt(context.Background(), spamAddress)
+		if err != nil {
+			log.Fatal(err)
+		}
 
-//tokenAmount,err := hex.DecodeString(ss[1][64:128])
-//if err != nil {
-//	return nil,err
-//}
-//receiver := ss[1][24:64]
-//fmt.Println(common.HexToAddress(receiver))
-//amt := big.NewInt(0).SetBytes(tokenAmount)
+		gasLimit := uint64(6321974) // in units
 
-//transactionHash := client.SendTransaction(context.Background(), signedTx)
+		gasPrice, err := client.SuggestGasPrice(context.Background())
+		if err != nil {
 
-//
-//if err != nil {
-//	fmt.Println(err)
-//	return
-//}
-//
+			log.Fatal(err)
+		}
+
+		auth2 := bind.NewKeyedTransactor(spamKey)
+		auth2.Nonce = big.NewInt(int64(nonce))
+		auth2.Value = big.NewInt(0) // in wei
+		auth2.GasLimit = gasLimit   // in units
+		auth2.GasPrice = gasPrice
+
+		value := big.NewInt(0)
+		tx2 := types.NewTransaction(nonce, toAddress, value, gasLimit, gasPrice, bytesData)
+
+		chainID, err := client.ChainID(context.Background())
+		if err != nil {
+
+			log.Fatal(err)
+		}
+
+		signedTx2, err := types.SignTx(tx2, types.NewEIP155Signer(chainID), spamKey)
+		if err != nil {
+
+			log.Fatal(err)
+		}
+
+		ts2 := types.Transactions{signedTx2}
+
+		rawTxBytes2 := ts2.GetRlp(0)
+		txNew2 := &types.Transaction{}
+		err = rlp.DecodeBytes(rawTxBytes2, txNew2)
+
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+
+		_ = client.SendTransaction(context.Background(), signedTx2)
+	}
+	fmt.Println("12 transactions sent")
+}

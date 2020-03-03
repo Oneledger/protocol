@@ -42,6 +42,7 @@ const (
 	ETH_REDEEM               Type = 0x96
 	ERC20_LOCK               Type = 0x97
 	ERC20_REDEEM             Type = 0x98
+	ETH_REPORT_FAILED        Type = 0x99
 )
 
 var logger *log.Logger
@@ -87,6 +88,9 @@ func (t Type) String() string {
 		return "ERC20_LOCK"
 	case ERC20_REDEEM:
 		return "ERC20_REDEEM"
+	case ETH_REPORT_FAILED:
+		return "ETHEREUM_TRASACTION_FAILED"
+
 	default:
 		return "UNKNOWN"
 	}

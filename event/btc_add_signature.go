@@ -133,3 +133,7 @@ func (j *JobAddSignature) GetJobID() string {
 func (j JobAddSignature) IsDone() bool {
 	return j.Status == jobs.Completed
 }
+
+func (j *JobAddSignature) IsFailed() bool {
+	return j.Status == jobs.Failed
+}

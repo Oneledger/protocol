@@ -1,12 +1,10 @@
 vendor
-/node/.vendor-new/*
 .glide
 *.sw[op]
 .idea/
-scripts/sequence
 VOLUME/
 .DS_Store
-node/olvm/interpreter/bin/
+olvm/interpreter/bin/
 build/
 playground.go
 *.out
@@ -14,3 +12,4 @@ venv/
 *.pyc
 data/bitcoin/tmp
 /scripts/ons/sdk/__pycache__
+/cmd/olfullnode/localPaths.go

@@ -43,12 +43,11 @@ import (
 	"github.com/Oneledger/protocol/log"
 )
 
-const (
+var (
 	//Lock Limits
-	totalETHSupply = "2000000000000000000" // 2 ETH
-	totalTTCSupply = "2000000000000000000" // 2 Token
-	totalBTCSupply = "1000000000"          // 10 BTC
-
+	totalETHSupply     = "2000000000000000000" // 20 ETH
+	totalTTCSupply     = "2000000000000000000" // 2 Token
+	totalBTCSupply     = "1000000000"          // 10 BTC
 	lockBalanceAddress = "oneledgerSupplyAddress"
 )
 
@@ -143,12 +142,6 @@ func portGenerator(startingPort int) func() int {
 		count++
 		return port
 	}
-}
-
-func setEnvVariables() {
-	os.Setenv("API_KEY", "de5e96cbb6284d5ea1341bf6cb7fa401")
-	os.Setenv("ETHPKPATH", "/tmp/pkdata")
-	os.Setenv("WALLETADDR", "/tmp/walletAddr")
 }
 
 func generateAddress(port int, flags ...bool) string {
@@ -273,7 +266,7 @@ func runDevnet(_ *cobra.Command, _ []string) error {
 		ethConnection := config.EthereumChainDriverConfig{Connection: url}
 		cfg.EthChainDriver = &ethConnection
 		cfg.Node.NodeName = nodeName
-		cfg.Node.LogLevel = 4
+		//cfg.Node.LogLevel = 4
 		cfg.Node.DB = args.dbType
 		if args.createEmptyBlock {
 			cfg.Consensus.CreateEmptyBlocks = true
@@ -600,7 +593,8 @@ func deployethcdcontract(conn string, nodeList []node) (*ethchain.ChainDriverOpt
 	auth.GasLimit = gasLimit   // in units
 	auth.GasPrice = gasPrice
 
-	input := make([]common.Address, 0, 10)
+	initialValidatorList := make([]common.Address, 0, 10)
+	lock_period := big.NewInt(25)
 	//walletAddr := []string{"0xCd7bc1aD1F4b5f7C2e2bbC605319C6f2b8937aa5","0x19854aFe894f4E165E9F49AA695414383b345710","0xAE16D77D742637f5Dc377A92E7fFeD8138d0dC1d"}
 
 	tokenSupplyTestToken := new(big.Int)
@@ -631,7 +625,7 @@ func deployethcdcontract(conn string, nodeList []node) (*ethchain.ChainDriverOpt
 			continue
 		}
 
-		input = append(input, addr)
+		initialValidatorList = append(initialValidatorList, addr)
 		tx := types.NewTransaction(nonce, addr, big.NewInt(300000000000000000), auth.GasLimit, auth.GasPrice, (nil))
 		chainId, _ := cli.ChainID(context.Background())
 		signedTx, err := types.SignTx(tx, types.NewEIP155Signer(chainId), privatekey)
@@ -667,7 +661,7 @@ func deployethcdcontract(conn string, nodeList []node) (*ethchain.ChainDriverOpt
 
 	auth.Nonce = big.NewInt(int64(nonce))
 
-	address, _, _, err := ethcontracts.DeployLockRedeem(auth, cli, input)
+	address, _, _, err := ethcontracts.DeployLockRedeem(auth, cli, initialValidatorList, lock_period)
 	if err != nil {
 		return nil, errors.Wrap(err, "Deployement Eth LockRedeem")
 	}
@@ -677,7 +671,7 @@ func deployethcdcontract(conn string, nodeList []node) (*ethchain.ChainDriverOpt
 		return nil, errors.Wrap(err, "Deployement Test Token")
 	}
 	auth.Nonce = big.NewInt(int64(nonce + 2))
-	ercAddress, _, _, err := ethcontracts.DeployLockRedeemERC(auth, cli, input)
+	ercAddress, _, _, err := ethcontracts.DeployLockRedeemERC(auth, cli, initialValidatorList)
 	if err != nil {
 		return nil, errors.Wrap(err, "Deployement ERC LockRedeem")
 	}

@@ -136,3 +136,7 @@ func (cf *JobBTCCheckFinality) GetJobID() string {
 func (cf *JobBTCCheckFinality) IsDone() bool {
 	return cf.Status == jobs.Completed
 }
+
+func (cf *JobBTCCheckFinality) IsFailed() bool {
+	return cf.Status == jobs.Failed
+}

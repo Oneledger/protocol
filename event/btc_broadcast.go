@@ -218,6 +218,10 @@ func (j JobBTCBroadcast) IsDone() bool {
 	return j.Status == jobs.Completed
 }
 
+func (j *JobBTCBroadcast) IsFailed() bool {
+	return j.Status == jobs.Failed
+}
+
 func resetCall(tracker *bitcoin2.Tracker, ctx *JobsContext, jobID string) bool {
 
 	bs := btc.FailedBroadcastReset{

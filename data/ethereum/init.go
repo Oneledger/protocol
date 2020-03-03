@@ -1,6 +1,8 @@
 package ethereum
 
-import "errors"
+import (
+	"errors"
+)
 
 const (
 	New TrackerState = iota
@@ -9,12 +11,14 @@ const (
 	BusyFinalizing
 	Finalized
 	Released
+	Failed
 
 	BROADCASTING  string = "broadcasting"
 	FINALIZING    string = "finalizing"
 	FINALIZE      string = "finalize"
 	MINTING       string = "minting"
 	CLEANUP       string = "cleanup"
+	CLEANUPFAILED string = "cleanupfailed"
 	SIGNING       string = "signing"
 	VERIFYREDEEM  string = "verifyredeem"
 	REDEEMCONFIRM string = "redeemconfirm"
@@ -48,6 +52,27 @@ func GetProcessTypeString(t ProcessType) string {
 		return "ERC REDEEM"
 	}
 	return "UNKNOWN TYPE"
+}
+
+func (t TrackerState) String() string {
+	switch t {
+	case New:
+		return "NEWTRACKER"
+	case BusyBroadcasting:
+		return "BusyBroadcasting"
+	case BroadcastSuccess:
+		return "BroadcastSuccess"
+	case BusyFinalizing:
+		return "BusyFinalizing"
+	case Finalized:
+		return "Finalized"
+	case Released:
+		return "Released"
+	case Failed:
+		return "Failed"
+	}
+	return "UNKNOWN State"
+
 }
 
 type Vote uint8
