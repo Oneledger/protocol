@@ -154,7 +154,7 @@ contract LockRedeem {
     function redeem(uint256 amount_)  payable public isActive {
         require(isredeemAvailable(msg.sender) ,"redeem to this address is not available yet");
         require(amount_ > 0, "amount should be bigger than 0");
-        require(msg.value >= redeem_gas_charge ,"Redeem fee not provided");
+        require(msg.value + redeemRequests[msg.sender].redeemFee >= redeem_gas_charge ,"Redeem fee not provided");
 
         // redeemRequests[msg.sender].isProcessing = true;
         redeemRequests[msg.sender].signature_count = uint256(0);

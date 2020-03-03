@@ -14,4 +14,3 @@ venv/
 *.pyc
 data/bitcoin/tmp
 /scripts/ons/sdk/__pycache__
-/cmd/olfullnode/localPaths.go
