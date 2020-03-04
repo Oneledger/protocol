@@ -218,6 +218,16 @@ func (acc *ETHChainDriver) CheckFinality(txHash TransactionHash, blockConfirmati
 	return nil, err
 }
 
+func (acc *ETHChainDriver) VerifyReceipt(txHash TransactionHash) (bool, error) {
+	fmt.Println("TX ", txHash, txHash.Hex())
+	result, err := acc.GetClient().TransactionReceipt(context.Background(), txHash)
+	fmt.Println("Receipt Status : ", result.Status)
+	if err == nil && result.Status == types.ReceiptStatusSuccessful {
+		return true, nil
+	}
+	return false, err
+}
+
 // BroadcastTx takes a signed transaction as input and broadcasts it to the network
 func (acc *ETHChainDriver) BroadcastTx(tx *types.Transaction) (TransactionHash, error) {
 

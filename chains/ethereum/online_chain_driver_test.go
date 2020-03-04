@@ -25,7 +25,7 @@ import (
 
 var (
 	ethCD                   *ETHChainDriver
-	ethConfig               = config.DefaultEthConfig()
+	ethConfig               = config.DefaultEthConfigLocal()
 	LockRedeemABI           = contract.LockRedeemABI
 	ERCLockRedeemABI        = contract.LockRedeemERCABI
 	TestTokenABI            = contract.ERC20BasicABI
