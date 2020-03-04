@@ -232,7 +232,7 @@ contract LockRedeem {
         return redeemRequests[recipient_].signature_count;
     }
 
-    function getRedeedDeeBalance(address recipient_) public isActive view returns(uint256){
+    function getRedeemBalance(address recipient_) public isActive view returns(uint256){
         return redeemRequests[recipient_].redeemFee;
     }
 
