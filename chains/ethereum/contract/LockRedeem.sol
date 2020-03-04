@@ -212,10 +212,6 @@ contract LockRedeem {
         return validators[addr] > 0;
     }
 
-    // function isValidator(address v) public view returns (bool) {
-    //     return validators[v].votingPower > 0;
-    // }
-
     function isredeemAvailable (address recepient_) public isActive view returns (bool)  {
         return redeemRequests[recepient_].until < block.number;
     }
@@ -234,6 +230,10 @@ contract LockRedeem {
 
     function getSignatureCount(address recipient_) public isActive view returns(uint256){
         return redeemRequests[recipient_].signature_count;
+    }
+
+    function getRedeedDeeBalance(address recipient_) public isActive view returns(uint256){
+        return redeemRequests[recipient_].redeemFee;
     }
 
     function getTotalEthBalance() public view returns(uint) {
