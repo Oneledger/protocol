@@ -121,17 +121,17 @@ func (app *App) setupState(stateBytes []byte) error {
 		return errors.Wrap(err, "Setup State")
 	}
 
-	err = app.Context.govern.SetETHChainDriverOption(initial.ETHCDOption)
+	err = app.Context.govern.SetETHChainDriverOption(initial.Governance.ETHCDOption)
 	if err != nil {
 		return errors.Wrap(err, "Setup State")
 	}
 
-	err = app.Context.govern.SetBTCChainDriverOption(initial.BTCCDOption)
+	err = app.Context.govern.SetBTCChainDriverOption(initial.Governance.BTCCDOption)
 	if err != nil {
 		return errors.Wrap(err, "Setup State")
 	}
 	balanceCtx := app.Context.Balances()
-	err = app.Context.govern.SetONSOptions(initial.ONSOptions)
+	err = app.Context.govern.SetONSOptions(initial.Governance.ONSOptions)
 	if err != nil {
 		return errors.Wrap(err, "Error in setting up ONS options")
 	}
@@ -142,16 +142,16 @@ func (app *App) setupState(stateBytes []byte) error {
 			return errors.Wrapf(err, "failed to register currency %s", currency.Name)
 		}
 	}
-	app.Context.ethTrackers.SetupOption(&initial.ETHCDOption)
-	err = app.Context.govern.SetFeeOption(initial.FeeOption)
+	app.Context.ethTrackers.SetupOption(&initial.Governance.ETHCDOption)
+	err = app.Context.govern.SetFeeOption(initial.Governance.FeeOption)
 	if err != nil {
 		return errors.Wrap(err, "Setup State")
 	}
-	app.Context.feePool.SetupOpt(&initial.FeeOption)
-	app.Context.domains.SetOptions(&initial.ONSOptions)
+	app.Context.feePool.SetupOpt(&initial.Governance.FeeOption)
+	app.Context.domains.SetOptions(&initial.Governance.ONSOptions)
 
-	app.Context.btcTrackers.SetConfig(bitcoin.NewBTCConfig(app.Context.cfg.ChainDriver, initial.BTCCDOption.ChainType))
-	app.Context.btcTrackers.SetOption(initial.BTCCDOption)
+	app.Context.btcTrackers.SetConfig(bitcoin.NewBTCConfig(app.Context.cfg.ChainDriver, initial.Governance.BTCCDOption.ChainType))
+	app.Context.btcTrackers.SetOption(initial.Governance.BTCCDOption)
 
 	// (2) Set balances to all those mentioned
 	for _, bal := range initial.Balances {
@@ -175,7 +175,7 @@ func (app *App) setupState(stateBytes []byte) error {
 	}
 
 	for _, domain := range initial.Domains {
-		d, err := ons.NewDomain(domain.OwnerAddress, domain.Beneficiary, domain.Name, 0, domain.URI, domain.Expiry)
+		d, err := ons.NewDomain(domain.Owner, domain.Beneficiary, domain.Name, 0, domain.URI, domain.ExpireHeight)
 		if err != nil {
 			return errors.Wrap(err, "failed to create initial domain")
 		}

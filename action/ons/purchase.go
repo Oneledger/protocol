@@ -215,7 +215,7 @@ func runPurchaseDomain(ctx *action.Context, tx action.RawTx) (bool, action.Respo
 		return false, action.Response{Log: "error adding domain purchase: " + err.Error()}
 	}
 
-	domain.ResetAfterSale(buy.Buyer, extend, ctx.State.Version())
+	domain.ResetAfterSale(buy.Buyer, buy.Account, extend, ctx.State.Version())
 
 	err = ctx.Domains.DeleteAllSubdomains(domain.Name)
 	if err != nil {
