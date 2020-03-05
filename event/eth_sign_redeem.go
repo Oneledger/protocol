@@ -135,17 +135,18 @@ func (j *JobETHSignRedeem) DoMyJob(ctx interface{}) {
 		j.Status = jobs.Failed
 		BroadcastReportFinalityETHTx(ctx.(*JobsContext), j.TrackerName, j.JobID, false)
 	}
-	if status != 0 && txReceipt == true {
-		ethCtx.Logger.Info("Redeem Request not created by user | Current Status : ", status.String())
-		j.Status = jobs.Failed
-		BroadcastReportFinalityETHTx(ctx.(*JobsContext), j.TrackerName, j.JobID, false)
-		return
-	}
-
-	if status == 1 && j.RetryCount >= 1 {
-		ethCtx.Logger.Info("Redeem TX successful , 67 % Votes have already been confirmed")
-		j.Status = jobs.Completed
-		return
+	if status != 0 {
+		if status == 1 && j.RetryCount >= 1 {
+			ethCtx.Logger.Info("Redeem TX successful , 67 % Votes have already been confirmed")
+			j.Status = jobs.Completed
+			return
+		}
+		if txReceipt == true {
+			ethCtx.Logger.Info("Redeem Request not created by user | Current Status : ", status.String())
+			j.Status = jobs.Failed
+			BroadcastReportFinalityETHTx(ctx.(*JobsContext), j.TrackerName, j.JobID, false)
+			return
+		}
 	}
 
 	//Sign Request sent only once
