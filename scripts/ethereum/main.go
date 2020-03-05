@@ -16,7 +16,6 @@ package main
 
 import (
 	"crypto/ecdsa"
-	"encoding/hex"
 	"fmt"
 	"math/big"
 	"os"
@@ -47,9 +46,9 @@ var (
 	TestTokenABI     = contract.ERC20BasicABI
 	LockRedeemERCABI = contract.LockRedeemERCABI
 	// LockRedeemERC20ABI = contract.ContextABI
-	LockRedeemContractAddr      = "0x300Eef8ddF1b7473A73Cd6B5150F82797CA3E44c"
-	TestTokenContractAddr       = "0xE6A396b51E105900b136DA31B2FaA125556A961b"
-	LockRedeemERC20ContractAddr = "0x6c049008e4CaE722427F5e4d4B9c72cE8CFE8361"
+	LockRedeemContractAddr      = "0xce0DED17B1133Cba3363B61055D881fd2D8EdACe"
+	TestTokenContractAddr       = "0x6B20E538Fd3a470786367ca4402B040925D2a41b"
+	LockRedeemERC20ContractAddr = "0x2803A0242B7518D266db8cC11d7789ad7CCd3aDe"
 
 	cfg               = config.DefautEthConfigRinkeby()
 	log               = logger.NewDefaultLogger(os.Stdout).WithPrefix("testeth")
@@ -87,7 +86,6 @@ func init() {
 	if strings.Contains(cfg.Connection, "rinkeby") {
 		privKey = "02038529C9AB706E9F4136F4A4EB51E866DBFE22D5E102FD3A22C14236E1C2EA"
 	}
-	fmt.Println(privKey)
 	UserprivKey, _ = crypto.HexToECDSA(privKey)
 	//UserprivKey, _ = crypto.HexToECDSA("02038529C9AB706E9F4136F4A4EB51E866DBFE22D5E102FD3A22C14236E1C2EA")
 
@@ -125,10 +123,10 @@ func init() {
 
 func main() {
 
-	//lock()
+	lock()
 	//time.Sleep(time.Second * 5)
 	//send12trasactions()
-	//time.Sleep(5 * time.Second)
+	time.Sleep(1 * time.Minute)
 	redeem()
 	//time.Sleep(5 * time.Second)
 	//send12trasactions()
@@ -240,14 +238,15 @@ func lock() {
 		PublicKey: signReply.Signature.Signer,
 	}, bresult)
 
-	fmt.Println(hex.EncodeToString(reply.RawTX))
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
 
-	fmt.Println("broadcast result: ", bresult.OK)
-	fmt.Println(bresult.Log)
+	fmt.Println("Lock broadcast result: ", bresult.OK)
+	if !bresult.OK {
+		fmt.Println(bresult.Log)
+	}
 }
 
 func redeem() {
@@ -303,7 +302,6 @@ func redeem() {
 		fmt.Println(err)
 		return
 	}
-	fmt.Println("Sending trasaction ")
 	err = client.SendTransaction(context.Background(), signedTx2)
 	if err != nil {
 		log.Fatal(err)
@@ -356,7 +354,7 @@ func redeem() {
 	}
 
 	bresult2 := &oclient.BroadcastReply{}
-	err = rpcclient.Call("broadcast.TxCommit", oclient.BroadcastRequest{
+	err = rpcclient.Call("broadcast.TxSync", oclient.BroadcastRequest{
 		RawTx:     reply.RawTX,
 		Signature: signReply.Signature.Signed,
 		PublicKey: signReply.Signature.Signer,
@@ -366,7 +364,7 @@ func redeem() {
 		return
 	}
 
-	fmt.Println("broadcast result: ", bresult2.OK)
+	fmt.Println("Redeem broadcast result: ", bresult2.OK)
 }
 
 func erc20lock() {

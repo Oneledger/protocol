@@ -219,10 +219,12 @@ func (acc *ETHChainDriver) CheckFinality(txHash TransactionHash, blockConfirmati
 }
 
 func (acc *ETHChainDriver) VerifyReceipt(txHash TransactionHash) (bool, error) {
-	fmt.Println("TX ", txHash, txHash.Hex())
 	result, err := acc.GetClient().TransactionReceipt(context.Background(), txHash)
-	fmt.Println("Receipt Status : ", result.Status)
-	if err == nil && result.Status == types.ReceiptStatusSuccessful {
+	if err != nil {
+		fmt.Println("Error in getting USER TX receipt", err)
+		return false, err
+	}
+	if result.Status == types.ReceiptStatusSuccessful {
 		return true, nil
 	}
 	return false, err
@@ -282,7 +284,6 @@ func (acc *ETHChainDriver) ParseRedeem(data []byte, abi string) (req *RedeemRequ
 func (acc *ETHChainDriver) VerifyRedeem(validatorAddress common.Address, recipient common.Address) (RedeemStatus, error) {
 	instance := acc.GetContract()
 	redeemStatus, err := instance.VerifyRedeem(acc.CallOpts(validatorAddress), recipient)
-	fmt.Println("RedeemStatus : ", redeemStatus)
 	if err != nil {
 		return -2, errors.Wrap(err, "Unable to connect to ethereum smart contract")
 	}

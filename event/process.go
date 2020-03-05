@@ -66,14 +66,14 @@ func ProcessAllJobs(ctx *JobsContext, js *jobs.JobStore) {
 
 	RangeJobs(js, func(job jobs.Job) jobs.Job {
 
-		fmt.Println("Trying to do job : ", job.GetType())
+		ctx.Logger.Info("Trying to do job : ", job.GetType())
 
 		func() {
 			defer func() {
 				if r := recover(); r != nil {
-					fmt.Println("panic in job: ", job.GetJobID())
-					fmt.Println(r)
-					fmt.Println(string(debug.Stack()))
+					ctx.Logger.Info("panic in job: ", job.GetJobID())
+					ctx.Logger.Info(r)
+					ctx.Logger.Info(string(debug.Stack()))
 				}
 			}()
 			job.DoMyJob(ctx)

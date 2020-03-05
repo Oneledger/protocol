@@ -98,36 +98,58 @@ func (j *JobETHSignRedeem) DoMyJob(ctx interface{}) {
 	}
 
 	addr := ethCtx.GetValidatorETHAddress()
+	txReceipt, err := cd.VerifyReceipt(tx.Hash())
+	if err != nil {
+		ethCtx.Logger.Error("Error in getting tx Receipt :", j.GetJobID(), err)
+		return
+	}
+
+	// Get receipt first ,then status [ other way around might cause ambiguity ]
+	// If expired fail tracker
+
+	// If Success is true and validator has send signature implies , Validator has signed , but his sign got reverted
+	//     as this was the fourth sign . Retrycount > 0 means that the validator did sign , status was 0 before ,implies
+	//     this is not an old redeem
+
+	// Status is not 0 , and txreceipt is true , redeem tx present in Ethereum ,but redeem status is not ongoing .Fail tracker
+
+	// HasValidatorsigned returns success , means signature confirmed
 
 	success, err := cd.HasValidatorSigned(addr, msg.From())
 	if err != nil {
+		ethCtx.Logger.Error("Error connecting to HasValidatorSigned function in Smart Contract  :", j.GetJobID(), err)
+	}
+	status, err := cd.VerifyRedeem(addr, msg.From())
+	if err != nil {
 		ethCtx.Logger.Error("Error in verifying redeem :", j.GetJobID(), err)
+		return
 	}
 	if success {
-		fmt.Println("Validator sign confirmed")
+		ethCtx.Logger.Info("Validator Sign Confirmed | Validator Address :", ethCtx.ValidatorAddress.Humanize(), "| User Eth Address :", msg.From().Hex())
 		j.Status = jobs.Completed
 		return
 	}
 
-	//check if tx already broadcasted, if yes, job.Status = jobs.Completed
+	if err == ethereum.ErrRedeemExpired {
+		fmt.Println("Failing from sign : Redeem Expired")
+		j.Status = jobs.Failed
+		BroadcastReportFinalityETHTx(ctx.(*JobsContext), j.TrackerName, j.JobID, false)
+	}
+	if status != 0 && txReceipt == true {
+		ethCtx.Logger.Info("Redeem Request not created by user | Current Status : ", status.String())
+		j.Status = jobs.Failed
+		BroadcastReportFinalityETHTx(ctx.(*JobsContext), j.TrackerName, j.JobID, false)
+		return
+	}
+
+	if status == 1 && j.RetryCount >= 1 {
+		ethCtx.Logger.Info("Redeem TX successful , 67 % Votes have already been confirmed")
+		j.Status = jobs.Completed
+		return
+	}
+
+	//Sign Request sent only once
 	if j.RetryCount == 0 {
-		status, err := cd.VerifyRedeem(addr, msg.From())
-		if err != nil {
-			ethCtx.Logger.Error("Error in verifying redeem :", j.GetJobID(), err, "RetryCount :", j.RetryCount)
-		}
-		txReceipt, err := cd.VerifyReceipt(tx.Hash())
-		if err != nil {
-			ethCtx.Logger.Error("Error in getting tx Reciept :", j.GetJobID(), err, "RetryCount :", j.RetryCount)
-		}
-		if status != 0 {
-			ethCtx.Logger.Info("Redeem TX is not in Ongoing Status | Current Status : ", status.String())
-			if txReceipt == true {
-				fmt.Println("Failing from sign : TX Receipt")
-				j.Status = jobs.Failed
-				BroadcastReportFinalityETHTx(ctx.(*JobsContext), j.TrackerName, j.JobID, false)
-			}
-			return
-		}
 
 		redeemAddr := common.HexToAddress(tracker.To.String())
 		tx, err = cd.SignRedeem(addr, redeemAmount, redeemAddr)
@@ -145,14 +167,13 @@ func (j *JobETHSignRedeem) DoMyJob(ctx interface{}) {
 
 		signedTx, err := types.SignTx(tx, types.NewEIP155Signer(chainid), privkey)
 		privkey = nil
-		txHash, err := cd.BroadcastTx(signedTx)
+		_, err = cd.BroadcastTx(signedTx)
 		if err != nil {
 			ethCtx.Logger.Error("Unable to broadcast transaction :", j.GetJobID(), err, " | RetryCount : ", j.RetryCount)
 			return
 		}
 		j.RetryCount += 1
-
-		ethCtx.Logger.Info("Validator Signed Redeem for | Validator Address :", ethCtx.ValidatorAddress.Humanize(), "| User Eth Address :", msg.From().Hex(), "| ETH Signing TX ", txHash.Hex())
+		ethCtx.Logger.Info("Validator Signed Redeem | Validator Address :", ethCtx.ValidatorAddress.Humanize())
 	}
 	//j.Status = jobs.Completed
 }
