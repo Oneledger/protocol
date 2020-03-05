@@ -216,6 +216,7 @@ func getEthUrl(ethUrlArg string) (string, error) {
 		return "", err
 	}
 	if strings.Contains(u.Host, "infura") && !strings.Contains(u.Path, os.Getenv("API_KEY")) {
+		setEnvVariablesInfura()
 		u.Path = u.Path + "/" + os.Getenv("API_KEY")
 		return u.String(), nil
 	}
@@ -230,7 +231,7 @@ func runDevnet(_ *cobra.Command, _ []string) error {
 	}
 	args := testnetArgs
 	if !args.cloud {
-		setEnvVariables()
+		setEnvVariablesGanache()
 	}
 	totalNodes := args.numValidators + args.numNonValidators
 

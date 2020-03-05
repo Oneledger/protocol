@@ -16,7 +16,6 @@ package main
 
 import (
 	"crypto/ecdsa"
-	"encoding/hex"
 	"fmt"
 	"math/big"
 	"os"
@@ -47,11 +46,11 @@ var (
 	TestTokenABI     = contract.ERC20BasicABI
 	LockRedeemERCABI = contract.LockRedeemERCABI
 	// LockRedeemERC20ABI = contract.ContextABI
-	LockRedeemContractAddr      = "0x9DAec956f971bF567D374a438dbE97A78c527dC2"
-	TestTokenContractAddr       = "0x82749344812a866c8df0304f533980DcE17692C3"
-	LockRedeemERC20ContractAddr = "0xd52501d669333A6Ee6eBF8b0Bf5c271cb556F9d3"
+	LockRedeemContractAddr      = "0x8bA980D33E8325AD815B03a4F9f642A6ae862F0d"
+	TestTokenContractAddr       = "0xe2d8814DECcE7DF7c4E78bF61b8FaF5DE706A707"
+	LockRedeemERC20ContractAddr = "0x061d8824a0553F34cf1cf48baB54bd585fF300d9"
 
-	cfg               = config.DefaultEthConfigLocal()
+	cfg               = config.DefautEthConfigRinkeby()
 	log               = logger.NewDefaultLogger(os.Stdout).WithPrefix("testeth")
 	UserprivKey       *ecdsa.PrivateKey
 	UserprivKeyRedeem *ecdsa.PrivateKey
@@ -59,8 +58,8 @@ var (
 
 	client                 *ethclient.Client
 	contractAbi            abi.ABI
-	valuelock              = createValue("1000000000000000000") // in wei (1 eth)
-	valueredeem            = createValue("100000000000000000")
+	valuelock              = createValue("1000") // in wei (1 eth)
+	valueredeem            = createValue("10")
 	valuelockERC20         = createValue("1000000000000000000")
 	valueredeemERC20       = createValue("100000000000000000")
 	fromAddress            common.Address
@@ -83,13 +82,16 @@ func createValue(str string) *big.Int {
 }
 
 func init() {
-
-	UserprivKey, _ = crypto.HexToECDSA("7243fc23cb02d7612e716d02e151c2d9112d0bb87f2f4ce63984f0abeefd168a")
+	privKey := "6c24a44424c8182c1e3e995ad3ccfb2797e3f7ca845b99bea8dead7fc9dccd09"
+	if strings.Contains(cfg.Connection, "rinkeby") {
+		privKey = "02038529C9AB706E9F4136F4A4EB51E866DBFE22D5E102FD3A22C14236E1C2EA"
+	}
+	UserprivKey, _ = crypto.HexToECDSA(privKey)
 	//UserprivKey, _ = crypto.HexToECDSA("02038529C9AB706E9F4136F4A4EB51E866DBFE22D5E102FD3A22C14236E1C2EA")
 
-	UserprivKeyRedeem, _ = crypto.HexToECDSA("b4f2f611396dbd3127d9016c08730c3c3d2c764a244fd31d6a93ad060e818bca")
+	UserprivKeyRedeem, _ = crypto.HexToECDSA(privKey)
 
-	spamKey, _ = crypto.HexToECDSA("782268357d2a516598a8af5b4b04134a6fbf1dcd1b6a726a3d618358c8d043b4")
+	spamKey, _ = crypto.HexToECDSA(privKey)
 
 	client, _ = cfg.Client()
 	contractAbi, _ = abi.JSON(strings.NewReader(LockRedeemABI))
@@ -122,10 +124,9 @@ func init() {
 func main() {
 
 	lock()
-	time.Sleep(time.Second * 5)
-	send12trasactions()
-	time.Sleep(5 * time.Second)
-
+	//time.Sleep(time.Second * 5)
+	//send12trasactions()
+	time.Sleep(1 * time.Minute)
 	redeem()
 	//time.Sleep(5 * time.Second)
 	//send12trasactions()
@@ -231,20 +232,21 @@ func lock() {
 	//fmt.Println("after sign call",reply.RawTX)
 
 	bresult := &oclient.BroadcastReply{}
-	err = rpcclient.Call("broadcast.TxCommit", oclient.BroadcastRequest{
+	err = rpcclient.Call("broadcast.TxSync", oclient.BroadcastRequest{
 		RawTx:     reply.RawTX,
 		Signature: signReply.Signature.Signed,
 		PublicKey: signReply.Signature.Signer,
 	}, bresult)
 
-	fmt.Println(hex.EncodeToString(reply.RawTX))
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
 
-	fmt.Println("broadcast result: ", bresult.OK)
-	fmt.Println(bresult.Log)
+	fmt.Println("Lock broadcast result: ", bresult.OK)
+	if !bresult.OK {
+		fmt.Println(bresult.Log)
+	}
 }
 
 func redeem() {
@@ -300,13 +302,12 @@ func redeem() {
 		fmt.Println(err)
 		return
 	}
-	fmt.Println("Sending trasaction ")
 	err = client.SendTransaction(context.Background(), signedTx2)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	time.Sleep(time.Second * 15)
+	//time.Sleep(time.Second * 15)
 
 	rpcclient, err := rpc.NewClient("http://localhost:26602")
 	if err != nil {
@@ -353,7 +354,7 @@ func redeem() {
 	}
 
 	bresult2 := &oclient.BroadcastReply{}
-	err = rpcclient.Call("broadcast.TxCommit", oclient.BroadcastRequest{
+	err = rpcclient.Call("broadcast.TxSync", oclient.BroadcastRequest{
 		RawTx:     reply.RawTX,
 		Signature: signReply.Signature.Signed,
 		PublicKey: signReply.Signature.Signer,
@@ -363,7 +364,7 @@ func redeem() {
 		return
 	}
 
-	fmt.Println("broadcast result: ", bresult2.OK)
+	fmt.Println("Redeem broadcast result: ", bresult2.OK)
 }
 
 func erc20lock() {
@@ -618,7 +619,6 @@ func send12trasactions() {
 
 		gasPrice, err := client.SuggestGasPrice(context.Background())
 		if err != nil {
-
 			log.Fatal(err)
 		}
 

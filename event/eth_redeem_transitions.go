@@ -112,12 +112,18 @@ func VerifyRedeem(ctx interface{}) error {
 
 	// create verify job for the first time from the state of broadcasting
 	if tracker.State == ethereum.BusyBroadcasting && context.Validators.IsValidator() {
-		job := NewETHVerifyRedeem(tracker.TrackerName, ethereum.BusyFinalizing)
-		err := context.JobStore.SaveJob(job)
+		bjob, err := context.JobStore.GetJob(tracker.GetJobID(ethereum.BusyBroadcasting))
 		if err != nil {
-			return errors.Wrap(err, "Failed to save job")
+			return errors.Wrap(err, "failed to get job")
 		}
-		tracker.State = ethereum.BusyFinalizing
+		if bjob.IsDone() && !bjob.IsFailed() {
+			job := NewETHVerifyRedeem(tracker.TrackerName, ethereum.BusyFinalizing)
+			err := context.JobStore.SaveJob(job)
+			if err != nil {
+				return errors.Wrap(err, "Failed to save job")
+			}
+			tracker.State = ethereum.BusyFinalizing
+		}
 	}
 
 	context.Tracker = tracker

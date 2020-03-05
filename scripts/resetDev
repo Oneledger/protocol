@@ -13,3 +13,4 @@ olfullnode init devnet --dir $OLDATA/devnet --nonvalidators 1 \
 
   # --empty_blocks
 
+#https://rinkeby.infura.io/v3 \

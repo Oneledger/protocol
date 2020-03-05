@@ -2,7 +2,6 @@ package ethereum
 
 import (
 	"context"
-	"fmt"
 	"math/big"
 	"strings"
 	"time"
@@ -218,6 +217,17 @@ func (acc *ETHChainDriver) CheckFinality(txHash TransactionHash, blockConfirmati
 	return nil, err
 }
 
+func (acc *ETHChainDriver) VerifyReceipt(txHash TransactionHash) (bool, error) {
+	result, err := acc.GetClient().TransactionReceipt(context.Background(), txHash)
+	if err != nil {
+		return false, err
+	}
+	if result.Status == types.ReceiptStatusSuccessful {
+		return true, nil
+	}
+	return false, err
+}
+
 // BroadcastTx takes a signed transaction as input and broadcasts it to the network
 func (acc *ETHChainDriver) BroadcastTx(tx *types.Transaction) (TransactionHash, error) {
 
@@ -272,7 +282,6 @@ func (acc *ETHChainDriver) ParseRedeem(data []byte, abi string) (req *RedeemRequ
 func (acc *ETHChainDriver) VerifyRedeem(validatorAddress common.Address, recipient common.Address) (RedeemStatus, error) {
 	instance := acc.GetContract()
 	redeemStatus, err := instance.VerifyRedeem(acc.CallOpts(validatorAddress), recipient)
-	fmt.Println("RedeemStatus : ", redeemStatus)
 	if err != nil {
 		return -2, errors.Wrap(err, "Unable to connect to ethereum smart contract")
 	}

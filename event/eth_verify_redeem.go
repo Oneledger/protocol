@@ -1,6 +1,7 @@
 package event
 
 import (
+	"fmt"
 	"strconv"
 
 	"github.com/Oneledger/protocol/action"
@@ -76,6 +77,7 @@ func (job *JobETHVerifyRedeem) DoMyJob(ctx interface{}) {
 		ethCtx.Logger.Error("Error in verifying redeem :", job.GetJobID(), err)
 	}
 	if err == ethereum.ErrRedeemExpired {
+		fmt.Println("Failing from verify : Redeem Expired")
 		job.Status = jobs.Failed
 		BroadcastReportFinalityETHTx(ctx.(*JobsContext), job.TrackerName, job.JobID, false)
 	}
