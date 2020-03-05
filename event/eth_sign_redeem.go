@@ -100,10 +100,10 @@ func (j *JobETHSignRedeem) DoMyJob(ctx interface{}) {
 	addr := ethCtx.GetValidatorETHAddress()
 	txReceipt, err := cd.VerifyReceipt(tx.Hash())
 	if err != nil {
-		ethCtx.Logger.Error("Error in getting tx Receipt :", j.GetJobID(), err)
+		ethCtx.Logger.Error("Trying to confirm RedeemTX sent by User Receipt :", err)
 		return
 	}
-
+	//Failed to delete old version of chainstate err version does not exist version: -900
 	// Get receipt first ,then status [ other way around might cause ambiguity ]
 	// If expired fail tracker
 
@@ -129,7 +129,9 @@ func (j *JobETHSignRedeem) DoMyJob(ctx interface{}) {
 		j.Status = jobs.Completed
 		return
 	}
-
+	if j.RetryCount >= 0 && !success {
+		ethCtx.Logger.Info("Waiting for Validator SignTX to be mined")
+	}
 	if err == ethereum.ErrRedeemExpired {
 		fmt.Println("Failing from sign : Redeem Expired")
 		j.Status = jobs.Failed
@@ -149,7 +151,7 @@ func (j *JobETHSignRedeem) DoMyJob(ctx interface{}) {
 		}
 	}
 
-	//Sign Request sent only once
+	//Signing ony done once Request sent only once
 	if j.RetryCount == 0 {
 
 		redeemAddr := common.HexToAddress(tracker.To.String())

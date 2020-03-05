@@ -66,7 +66,7 @@ func ProcessAllJobs(ctx *JobsContext, js *jobs.JobStore) {
 
 	RangeJobs(js, func(job jobs.Job) jobs.Job {
 
-		ctx.Logger.Info("Trying to do job : ", job.GetType())
+		//ctx.Logger.Info("Trying to do job : ", job.GetType())
 
 		func() {
 			defer func() {

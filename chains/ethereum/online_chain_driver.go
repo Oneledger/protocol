@@ -2,7 +2,6 @@ package ethereum
 
 import (
 	"context"
-	"fmt"
 	"math/big"
 	"strings"
 	"time"
@@ -221,7 +220,6 @@ func (acc *ETHChainDriver) CheckFinality(txHash TransactionHash, blockConfirmati
 func (acc *ETHChainDriver) VerifyReceipt(txHash TransactionHash) (bool, error) {
 	result, err := acc.GetClient().TransactionReceipt(context.Background(), txHash)
 	if err != nil {
-		fmt.Println("Error in getting USER TX receipt", err)
 		return false, err
 	}
 	if result.Status == types.ReceiptStatusSuccessful {
