@@ -117,7 +117,7 @@ func Finalizing(ctx interface{}) error {
 
 	if tracker.State != ethereum.BusyBroadcasting {
 		err := errors.New("Cannot start Finalizing from the current state")
-		return errors.Wrap(err, string(tracker.State))
+		return errors.Wrap(err, tracker.State.String())
 	}
 
 	if context.Validators.IsValidator() {
@@ -139,9 +139,9 @@ func Finalizing(ctx interface{}) error {
 		}
 	}
 
-	numVotes, _ := tracker.GetVotes()
+	y, n := tracker.GetVotes()
 
-	if numVotes > 0 {
+	if y+n > 0 {
 		tracker.State = ethereum.BusyFinalizing
 	}
 

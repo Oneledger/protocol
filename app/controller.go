@@ -349,7 +349,7 @@ func doEthTransitions(js *jobs.JobStore, ts *ethereum.TrackerStore, myValAddr ke
 		deliver.DiscardTxSession()
 		deliver.BeginTxSession()
 		t, _ := ts.Get(*name)
-
+		state := t.State
 		ctx := ethereum.NewTrackerCtx(t, myValAddr, js.WithChain(chain.ETHEREUM), ts, validators)
 
 		if t.Type == ethereum.ProcessTypeLock || t.Type == ethereum.ProcessTypeLockERC {
@@ -369,7 +369,8 @@ func doEthTransitions(js *jobs.JobStore, ts *ethereum.TrackerStore, myValAddr ke
 				continue
 			}
 		}
-		if ctx.Tracker.State < 5 {
+		// only set back to chainstate when transition happened.
+		if ctx.Tracker.State < 5 && state != ctx.Tracker.State {
 			err := ts.Set(ctx.Tracker)
 			if err != nil {
 				logger.Error("failed to save eth tracker", err, ctx.Tracker)
