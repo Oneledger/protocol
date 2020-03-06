@@ -46,11 +46,11 @@ var (
 	TestTokenABI     = contract.ERC20BasicABI
 	LockRedeemERCABI = contract.LockRedeemERCABI
 	// LockRedeemERC20ABI = contract.ContextABI
-	LockRedeemContractAddr      = "0x8bA980D33E8325AD815B03a4F9f642A6ae862F0d"
-	TestTokenContractAddr       = "0xe2d8814DECcE7DF7c4E78bF61b8FaF5DE706A707"
-	LockRedeemERC20ContractAddr = "0x061d8824a0553F34cf1cf48baB54bd585fF300d9"
+	LockRedeemContractAddr      = "0x1cC1B08cF54e332Afe0FC12d643a4A0BDd0E309f"
+	TestTokenContractAddr       = "0x5bd296CcD43ae8d62DA8aE1f6D185aCFd241a75d"
+	LockRedeemERC20ContractAddr = "0x46c7F3D353fE4ac28DE08d26dBB0bD615aC6e18b"
 
-	cfg               = config.DefautEthConfigRinkeby()
+	cfg               = config.DefaultEthConfigLocal()
 	log               = logger.NewDefaultLogger(os.Stdout).WithPrefix("testeth")
 	UserprivKey       *ecdsa.PrivateKey
 	UserprivKeyRedeem *ecdsa.PrivateKey
@@ -58,8 +58,8 @@ var (
 
 	client                 *ethclient.Client
 	contractAbi            abi.ABI
-	valuelock              = createValue("1000") // in wei (1 eth)
-	valueredeem            = createValue("10")
+	valuelock              = createValue("1000000000000000000") // in wei (1 eth)
+	valueredeem            = createValue("100000000000000000")
 	valuelockERC20         = createValue("1000000000000000000")
 	valueredeemERC20       = createValue("100000000000000000")
 	fromAddress            common.Address
@@ -82,16 +82,16 @@ func createValue(str string) *big.Int {
 }
 
 func init() {
-	privKey := "6c24a44424c8182c1e3e995ad3ccfb2797e3f7ca845b99bea8dead7fc9dccd09"
+	privKey := "d18258b9bdcdbd0aa5b5a9717164907e0f22f0917d6da227d8dc1721d22596c5"
 	if strings.Contains(cfg.Connection, "rinkeby") {
 		privKey = "02038529C9AB706E9F4136F4A4EB51E866DBFE22D5E102FD3A22C14236E1C2EA"
 	}
 	UserprivKey, _ = crypto.HexToECDSA(privKey)
 	//UserprivKey, _ = crypto.HexToECDSA("02038529C9AB706E9F4136F4A4EB51E866DBFE22D5E102FD3A22C14236E1C2EA")
 
-	UserprivKeyRedeem, _ = crypto.HexToECDSA(privKey)
+	UserprivKeyRedeem, _ = crypto.HexToECDSA("782268357d2a516598a8af5b4b04134a6fbf1dcd1b6a726a3d618358c8d043b4")
 
-	spamKey, _ = crypto.HexToECDSA(privKey)
+	spamKey, _ = crypto.HexToECDSA("69420dfe6efcb7127872e9a7c0d818c33c1b3cc1c5f8dd68e66164bbae4faf92")
 
 	client, _ = cfg.Client()
 	contractAbi, _ = abi.JSON(strings.NewReader(LockRedeemABI))
@@ -126,11 +126,12 @@ func main() {
 	lock()
 	//time.Sleep(time.Second * 5)
 	//send12trasactions()
-	time.Sleep(1 * time.Minute)
-	redeem()
-	//time.Sleep(5 * time.Second)
-	//send12trasactions()
+	//time.Sleep(1 * time.Minute)
 	//redeem()
+	time.Sleep(15 * time.Second)
+	send12trasactions()
+	time.Sleep(5 * time.Second)
+	redeem()
 
 	//erc20lock()
 	///time.Sleep(10 * time.Second)
@@ -471,7 +472,7 @@ func erc20lock() {
 		return
 	}
 
-	fmt.Println("broadcast result: ", bresult.OK)
+	fmt.Println("broadcast result: ", bresult.OK, bresult.Log)
 	fmt.Println(bresult.Log)
 }
 
@@ -592,7 +593,7 @@ func erc20Redeem() {
 		return
 	}
 
-	fmt.Println("broadcast result: ", bresult.OK)
+	fmt.Println("broadcast result: ", bresult.OK, bresult.Log)
 	time.Sleep(30 * time.Second)
 	err = client.SendTransaction(context.Background(), signedExecuteRedeem)
 	if err == nil {
