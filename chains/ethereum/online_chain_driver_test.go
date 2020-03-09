@@ -7,6 +7,7 @@ import (
 	"os"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -24,31 +25,31 @@ import (
 )
 
 var (
-	ethCD                   *ETHChainDriver
-	ethConfig               = config.DefaultEthConfigLocal()
-	LockRedeemABI           = contract.LockRedeemABI
-	ERCLockRedeemABI        = contract.LockRedeemERCABI
-	TestTokenABI            = contract.ERC20BasicABI
-	contractAddr            = "0xdaF6850A7545705a80AB802f3b951dA0a635CE78"
-	ERCcontractAddr         = "0x4c6970C8d6748e21fAe1Bb5A4b7AE9bE2825bdFA"
-	TestTokenContractAddr   = "0x28075b7419bAA72420fe6539c95ADB8E8D039841"
-	priv_key                = "0e342e8ad59b75c4dd8af7340b85efb3308a09a54eded1ee194b83132b6b1395"
-	addr                    = "0xa9258c306f392380E7A9aCcaD3C35230f7FC42F8"
-	logger                  = log.NewLoggerWithPrefix(os.Stdout, "TestChainDRIVER")
-	toAddress               = common.HexToAddress(contractAddr)
-	toAddressTestToken      = common.HexToAddress(TestTokenContractAddr)
-	toAdddressLockRedeemERC = common.HexToAddress(ERCcontractAddr)
-	valuelockERC20          = big.NewInt(10)
-	client                  *ethclient.Client
+	ethCD                       *ETHChainDriver
+	ethConfig                   = config.DefaultEthConfigLocal()
+	LockRedeemABI               = contract.LockRedeemABI
+	ERCLockRedeemABI            = contract.LockRedeemERCABI
+	TestTokenABI                = contract.ERC20BasicABI
+	LockRedeemContractAddr      = "0xFF51ABac8c8664e83AB0d94baac7312fD59ab873"
+	TestTokenContractAddr       = "0xF055145EC2607feAcdDD732a8338a4311F961eD9"
+	LockRedeemERC20ContractAddr = "0x34Ea04be3aC452BA23d8c56298178C8163674F0d"
+	priv_key                    = "bdb082c7e42a946c477fa3efee4fb5bdece508b47592d8cb57f5e811cd840a40"
+	addr                        = "0xa9258c306f392380E7A9aCcaD3C35230f7FC42F8"
+	logger                      = log.NewLoggerWithPrefix(os.Stdout, "TestChainDRIVER")
+	toAddress                   = common.HexToAddress(LockRedeemContractAddr)
+	toAddressTestToken          = common.HexToAddress(TestTokenContractAddr)
+	toAdddressLockRedeemERC     = common.HexToAddress(LockRedeemERC20ContractAddr)
+	valuelockERC20              = big.NewInt(10)
+	client                      *ethclient.Client
 )
 
 func init() {
 
 	cdoptions := ChainDriverOption{
 		ContractABI:     LockRedeemABI,
-		ContractAddress: common.HexToAddress(contractAddr),
+		ContractAddress: common.HexToAddress(LockRedeemContractAddr),
 	}
-	ethCD, _ = NewChainDriver(ethConfig, logger, &cdoptions)
+	ethCD, _ = NewChainDriver(ethConfig, logger, cdoptions.ContractAddress, cdoptions.ContractABI, ETH)
 	client, _ = ethConfig.Client()
 
 }
@@ -178,26 +179,26 @@ func BroadCastLock() (*TransactionHash, error) {
 	return &txHash, nil
 }
 
-//func TestETHChainDriver_CheckFinality(t *testing.T) {
-//	 txHash,err := BroadCastLock()
-//	 if err !=nil {
-//	 	logger.Error(err)
-//		 return
-//	 }
-//	 isFinalized := false
-//     for !isFinalized {
-//     	rec,err := ethCD.CheckFinality(*txHash)
-//     	if err != nil {
-//     		logger.Error(err)
-//           // BroadCastLock()
-//     		time.Sleep(5*time.Second)
-//		}
-//		if rec != nil {
-//			logger.Info("Transaction confirmed , The transaction had been included at " ,rec.BlockNumber  )
-//			isFinalized = true
-//		}
-//	 }
-//}
+func TestETHChainDriver_CheckFinality(t *testing.T) {
+	txHash, err := BroadCastLock()
+	if err != nil {
+		logger.Error(err)
+		return
+	}
+	isFinalized := false
+	for !isFinalized {
+		rec, err := ethCD.CheckFinality(*txHash, 12)
+		if err != nil {
+			logger.Error(err)
+			BroadCastLock()
+			time.Sleep(1 * time.Second)
+		}
+		if rec != nil {
+			logger.Info("Transaction confirmed , The transaction had been included at ", rec.BlockNumber)
+			isFinalized = true
+		}
+	}
+}
 
 //func TestETHChainDriver_VerifyLock(t *testing.T) {
 //	signedTx,err := GetSignedLockTX()
@@ -251,7 +252,7 @@ func TestParseERC20Redeem(t *testing.T) {
 		fmt.Println(err)
 		return
 	}
-	sig, err := getSignFromName(ERCLockRedeemAbi, "redeem", contract.LockRedeemERCFuncSigs)
+	sig, err := getSignFromName(&ERCLockRedeemAbi, "redeem", contract.LockRedeemERCFuncSigs)
 	if err != nil {
 		fmt.Println(err)
 		return

@@ -640,7 +640,7 @@ func deployethcdcontract(conn string, nodeList []node) (*ethchain.ChainDriverOpt
 		if err != nil {
 			return nil, errors.Wrap(err, "sending")
 		}
-		time.Sleep(3 * time.Second)
+		time.Sleep(1 * time.Second)
 	}
 	for _, address := range walletAddr {
 		fmt.Println("Ether Transferred to address : ", address)
@@ -655,7 +655,7 @@ func deployethcdcontract(conn string, nodeList []node) (*ethchain.ChainDriverOpt
 		if err != nil {
 			return nil, errors.Wrap(err, "sending ether to wallet address")
 		}
-		time.Sleep(3 * time.Second)
+		//time.Sleep(3 * time.Second)
 	}
 
 	nonce, err := cli.PendingNonceAt(context.Background(), fromAddress)
