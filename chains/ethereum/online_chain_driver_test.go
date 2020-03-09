@@ -187,7 +187,7 @@ func TestETHChainDriver_CheckFinality(t *testing.T) {
 	}
 	isFinalized := false
 	for !isFinalized {
-		rec, err := ethCD.CheckFinality(*txHash, 12)
+		rec, err := ethCD.CheckFinality(*txHash, 2)
 		if err != nil {
 			logger.Error(err)
 			BroadCastLock()
