@@ -207,7 +207,7 @@ func (acc *ETHChainDriver) CheckFinality(txHash TransactionHash, blockConfirmati
 			txBlockNumber := big.NewInt(0).Sub(latestHeader.Number, big.NewInt(blockConfirmation))
 			txBlockCalculated, err := acc.client.BlockByNumber(context.Background(), txBlockNumber)
 			if err != nil {
-				return nil, errors.Wrap(err, "Unable to extract latest header")
+				return nil, errors.Wrap(err, "Unable to get block in which TX has been included")
 			}
 			if txBlockCalculated.Hash() != result.BlockHash {
 				return nil, errors.New("BlockHash does not match")
