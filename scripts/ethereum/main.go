@@ -129,7 +129,7 @@ func main() {
 	//time.Sleep(1 * time.Minute)
 	//redeem()
 	time.Sleep(15 * time.Second)
-	send12trasactions()
+	sendTrasactions(12)
 	time.Sleep(5 * time.Second)
 	redeem()
 
@@ -602,8 +602,8 @@ func erc20Redeem() {
 
 }
 
-func send12trasactions() {
-	for i := 0; i <= 26; i++ {
+func sendTrasactions(txCount int) {
+	for i := 0; i <= txCount; i++ {
 		contractAbi, _ := abi.JSON(strings.NewReader(LockRedeemABI))
 		bytesData, err := contractAbi.Pack("lock")
 		if err != nil {

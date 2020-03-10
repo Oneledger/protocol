@@ -204,6 +204,13 @@ func (acc *ETHChainDriver) CheckFinality(txHash TransactionHash, blockConfirmati
 			if big.NewInt(blockConfirmation).Cmp(diff) > 0 {
 				return nil, errors.New("Waiting for confirmation . Current Block Confirmations : " + diff.String())
 			}
+			txHeaderCalculated, err := acc.client.HeaderByNumber(context.Background(), result.BlockNumber)
+			if err != nil {
+				return nil, errors.Wrap(err, "Unable to get block in which TX has been included")
+			}
+			if txHeaderCalculated.Hash() != result.BlockHash {
+				return nil, errors.New("BlockHash does not match")
+			}
 			return result, err
 		}
 		if result.Status == types.ReceiptStatusFailed {
