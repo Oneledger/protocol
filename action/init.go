@@ -29,20 +29,15 @@ const (
 	BTC_ADD_SIGNATURE          Type = 0x82
 	BTC_BROADCAST_SUCCESS      Type = 0x83
 	BTC_REPORT_FINALITY_MINT   Type = 0x84
-	BTC_EXT_MINT               Type = 0x85
-	BTC_REDEEM                 Type = 0x86
-	BTC_FAILED_BROADCAST_RESET Type = 0x87
+	BTC_REDEEM                 Type = 0x85
+	BTC_FAILED_BROADCAST_RESET Type = 0x86
 
 	//Ethereum Actions
 	ETH_LOCK                 Type = 0x91
-	ETH_SIGN                 Type = 0x92
-	ETH_FINALITY             Type = 0x93
-	ETH_MINT                 Type = 0x94
-	ETH_REPORT_FINALITY_MINT Type = 0x95
-	ETH_REDEEM               Type = 0x96
-	ERC20_LOCK               Type = 0x97
-	ERC20_REDEEM             Type = 0x98
-	ETH_REPORT_FAILED        Type = 0x99
+	ETH_REPORT_FINALITY_MINT Type = 0x92
+	ETH_REDEEM               Type = 0x93
+	ERC20_LOCK               Type = 0x94
+	ERC20_REDEEM             Type = 0x95
 )
 
 var logger *log.Logger
@@ -84,8 +79,6 @@ func (t Type) String() string {
 		return "BTC_BROADCAST_SUCCESS"
 	case BTC_REPORT_FINALITY_MINT:
 		return "BTC_REPORT_FINALITY_MINT"
-	case BTC_EXT_MINT:
-		return "BTC_EXT_MINT"
 	case BTC_REDEEM:
 		return "BTC_REDEEM"
 	case BTC_FAILED_BROADCAST_RESET:
@@ -93,12 +86,6 @@ func (t Type) String() string {
 
 	case ETH_LOCK:
 		return "ETH_LOCK"
-	case ETH_SIGN:
-		return "ETH_SIGN"
-	case ETH_FINALITY:
-		return "ETH_FINALITY"
-	case ETH_MINT:
-		return "ETH_MINT"
 	case ETH_REPORT_FINALITY_MINT:
 		return "ETH_REPORT_FINALITY_MINT"
 	case ETH_REDEEM:
@@ -107,8 +94,6 @@ func (t Type) String() string {
 		return "ERC20_LOCK"
 	case ERC20_REDEEM:
 		return "ERC20_REDEEM"
-	case ETH_REPORT_FAILED:
-		return "ETH_REPORT_FAILED"
 
 	default:
 		return "UNKNOWN"
