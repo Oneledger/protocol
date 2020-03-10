@@ -35,14 +35,10 @@ const (
 
 	//Ethereum Actions
 	ETH_LOCK                 Type = 0x91
-	ETH_SIGN                 Type = 0x92
-	ETH_FINALITY             Type = 0x93
-	ETH_MINT                 Type = 0x94
-	ETH_REPORT_FINALITY_MINT Type = 0x95
-	ETH_REDEEM               Type = 0x96
-	ERC20_LOCK               Type = 0x97
-	ERC20_REDEEM             Type = 0x98
-	ETH_REPORT_FAILED        Type = 0x99
+	ETH_REPORT_FINALITY_MINT Type = 0x92
+	ETH_REDEEM               Type = 0x93
+	ERC20_LOCK               Type = 0x94
+	ERC20_REDEEM             Type = 0x95
 )
 
 var logger *log.Logger
@@ -71,25 +67,36 @@ func (t Type) String() string {
 		return "DOMAIN_PURCHASE"
 	case DOMAIN_SEND:
 		return "DOMAIN_SEND"
+	case DOMAIN_DELETE_SUB:
+		return "DOMAIN_DELETE_SUB"
+	case DOMAIN_RENEW:
+		return "DOMAIN_RENEW"
 
 	case BTC_LOCK:
 		return "BTC_LOCK"
 	case BTC_ADD_SIGNATURE:
 		return "BTC_ADD_SIGNATURE"
+	case BTC_BROADCAST_SUCCESS:
+		return "BTC_BROADCAST_SUCCESS"
 	case BTC_REPORT_FINALITY_MINT:
 		return "BTC_REPORT_FINALITY_MINT"
 	case BTC_EXT_MINT:
 		return "BTC_EXT_MINT"
+	case BTC_REDEEM:
+		return "BTC_REDEEM"
+	case BTC_FAILED_BROADCAST_RESET:
+		return "BTC_FAILED_BROADCAST_RESET"
+
 	case ETH_LOCK:
 		return "ETH_LOCK"
 	case ETH_REPORT_FINALITY_MINT:
 		return "ETH_REPORT_FINALITY_MINT"
+	case ETH_REDEEM:
+		return "ETH_REDEEM"
 	case ERC20_LOCK:
 		return "ERC20_LOCK"
 	case ERC20_REDEEM:
 		return "ERC20_REDEEM"
-	case ETH_REPORT_FAILED:
-		return "ETHEREUM_TRASACTION_FAILED"
 
 	default:
 		return "UNKNOWN"
