@@ -71,25 +71,44 @@ func (t Type) String() string {
 		return "DOMAIN_PURCHASE"
 	case DOMAIN_SEND:
 		return "DOMAIN_SEND"
+	case DOMAIN_DELETE_SUB:
+		return "DOMAIN_DELETE_SUB"
+	case DOMAIN_RENEW:
+		return "DOMAIN_RENEW"
 
 	case BTC_LOCK:
 		return "BTC_LOCK"
 	case BTC_ADD_SIGNATURE:
 		return "BTC_ADD_SIGNATURE"
+	case BTC_BROADCAST_SUCCESS:
+		return "BTC_BROADCAST_SUCCESS"
 	case BTC_REPORT_FINALITY_MINT:
 		return "BTC_REPORT_FINALITY_MINT"
 	case BTC_EXT_MINT:
 		return "BTC_EXT_MINT"
+	case BTC_REDEEM:
+		return "BTC_REDEEM"
+	case BTC_FAILED_BROADCAST_RESET:
+		return "BTC_FAILED_BROADCAST_RESET"
+
 	case ETH_LOCK:
 		return "ETH_LOCK"
+	case ETH_SIGN:
+		return "ETH_SIGN"
+	case ETH_FINALITY:
+		return "ETH_FINALITY"
+	case ETH_MINT:
+		return "ETH_MINT"
 	case ETH_REPORT_FINALITY_MINT:
 		return "ETH_REPORT_FINALITY_MINT"
+	case ETH_REDEEM:
+		return "ETH_REDEEM"
 	case ERC20_LOCK:
 		return "ERC20_LOCK"
 	case ERC20_REDEEM:
 		return "ERC20_REDEEM"
 	case ETH_REPORT_FAILED:
-		return "ETHEREUM_TRASACTION_FAILED"
+		return "ETH_REPORT_FAILED"
 
 	default:
 		return "UNKNOWN"
