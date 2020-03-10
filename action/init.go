@@ -29,8 +29,9 @@ const (
 	BTC_ADD_SIGNATURE          Type = 0x82
 	BTC_BROADCAST_SUCCESS      Type = 0x83
 	BTC_REPORT_FINALITY_MINT   Type = 0x84
-	BTC_REDEEM                 Type = 0x85
-	BTC_FAILED_BROADCAST_RESET Type = 0x86
+	BTC_EXT_MINT               Type = 0x85
+	BTC_REDEEM                 Type = 0x86
+	BTC_FAILED_BROADCAST_RESET Type = 0x87
 
 	//Ethereum Actions
 	ETH_LOCK                 Type = 0x91
@@ -79,6 +80,8 @@ func (t Type) String() string {
 		return "BTC_BROADCAST_SUCCESS"
 	case BTC_REPORT_FINALITY_MINT:
 		return "BTC_REPORT_FINALITY_MINT"
+	case BTC_EXT_MINT:
+		return "BTC_EXT_MINT"
 	case BTC_REDEEM:
 		return "BTC_REDEEM"
 	case BTC_FAILED_BROADCAST_RESET:
