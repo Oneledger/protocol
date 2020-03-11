@@ -10,7 +10,7 @@ import (
 	chain "github.com/Oneledger/protocol/chains/ethereum"
 	"github.com/Oneledger/protocol/config"
 	"github.com/Oneledger/protocol/data/accounts"
-	tracker "github.com/Oneledger/protocol/data/ethereum"
+	ethTracker "github.com/Oneledger/protocol/data/ethereum"
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/identity"
 	"github.com/Oneledger/protocol/log"
@@ -27,7 +27,7 @@ type Service struct {
 	logger       *log.Logger
 	nodeContext  node.Context
 	validators   *identity.ValidatorStore
-	trackerStore *tracker.TrackerStore
+	trackerStore *ethTracker.TrackerStore
 }
 
 // Returns a new Service, should be passed as an RPC handler
@@ -38,18 +38,18 @@ func NewService(
 	accounts accounts.Wallet,
 	nodeCtx node.Context,
 	validators *identity.ValidatorStore,
-	//trackerStore *bitcoin.TrackerStore,
+	trackerStore *ethTracker.TrackerStore,
 	logger *log.Logger,
 ) *Service {
 	return &Service{
 		//balances:     balances,
-		config:      config,
-		router:      router,
-		nodeContext: nodeCtx,
-		accounts:    accounts,
-		validators:  validators,
-		//	trackerStore: trackerStore,
-		logger: logger,
+		config:       config,
+		router:       router,
+		nodeContext:  nodeCtx,
+		accounts:     accounts,
+		validators:   validators,
+		trackerStore: trackerStore,
+		logger:       logger,
 	}
 }
 
@@ -115,4 +115,12 @@ type BalanceRequest struct {
 type BalanceReply struct {
 	Address chain.Address `json:"address"`
 	Amount  *big.Int      `json:"amount"`
+}
+
+type TrackerStatusRequest struct {
+	TrackerName chain.TrackerName `json:"tracker_name"`
+}
+
+type TrackerStatusReply struct {
+	Status string `json:"status"`
 }

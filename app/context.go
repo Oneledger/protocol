@@ -189,8 +189,8 @@ func (ctx *context) Services() (service.Map, error) {
 		Router:       ctx.actionRouter,
 		Logger:       log.NewLoggerWithPrefix(ctx.logWriter, "rpc").WithLevel(log.Level(ctx.cfg.Node.LogLevel)),
 		Services:     extSvcs,
-
-		Trackers: btcTrackers,
+		EthTrackers:  ctx.ethTrackers,
+		Trackers:     btcTrackers,
 	}
 
 	return service.NewMap(svcCtx)

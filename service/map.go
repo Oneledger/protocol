@@ -10,6 +10,7 @@ import (
 	"github.com/Oneledger/protocol/data/accounts"
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/bitcoin"
+	ethTracker "github.com/Oneledger/protocol/data/ethereum"
 	"github.com/Oneledger/protocol/data/fees"
 	"github.com/Oneledger/protocol/data/ons"
 	"github.com/Oneledger/protocol/identity"
@@ -32,7 +33,7 @@ type Context struct {
 	FeePool      *fees.Store
 	ValidatorSet *identity.ValidatorStore
 	Trackers     *bitcoin.TrackerStore
-
+	EthTrackers  *ethTracker.TrackerStore
 	// configurations
 	Cfg        config.Server
 	Currencies *balance.CurrencySet
@@ -56,7 +57,7 @@ func NewMap(ctx *Context) (Map, error) {
 		query.Name():     query.NewService(ctx.Services, ctx.Balances, ctx.Currencies, ctx.ValidatorSet, ctx.Domains, ctx.FeePool, ctx.Logger),
 		tx.Name():        tx.NewService(ctx.Balances, ctx.Router, ctx.Accounts, ctx.FeePool.GetOpt(), ctx.NodeContext, ctx.Logger),
 		btc.Name():       btc.NewService(ctx.Balances, ctx.Accounts, ctx.NodeContext, ctx.ValidatorSet, ctx.Trackers, ctx.Logger),
-		ethereum.Name():  ethereum.NewService(ctx.Cfg.EthChainDriver, ctx.Router, ctx.Accounts, ctx.NodeContext, ctx.ValidatorSet, ctx.Logger),
+		ethereum.Name():  ethereum.NewService(ctx.Cfg.EthChainDriver, ctx.Router, ctx.Accounts, ctx.NodeContext, ctx.ValidatorSet, ctx.EthTrackers, ctx.Logger),
 	}
 
 	serviceMap := Map{}
