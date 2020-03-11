@@ -46,9 +46,9 @@ var (
 	TestTokenABI     = contract.ERC20BasicABI
 	LockRedeemERCABI = contract.LockRedeemERCABI
 	// LockRedeemERC20ABI = contract.ContextABI
-	LockRedeemContractAddr      = "0xBac8226EfE09eB3a5B0FFbf346E2c06f37C0555b"
-	TestTokenContractAddr       = "0x6155EaAeA558b0040625576682baaE0089B6652D"
-	LockRedeemERC20ContractAddr = "0x2cdadb0A68Cd55Ad4D5F3B3B14B2f5e0F4b03FCd"
+	LockRedeemContractAddr      = "0xCB9aa43438AB240a80B210c5aB6717C67c57Da5b"
+	TestTokenContractAddr       = "0x0f8D8e15cF2C3a867D87E857eB5b66c2EE996796"
+	LockRedeemERC20ContractAddr = "0x35BeC07a8D5681cC4Af05A4F9c9a080270dB14ef"
 
 	cfg               = config.DefaultEthConfigLocal()
 	log               = logger.NewDefaultLogger(os.Stdout).WithPrefix("testeth")
@@ -124,16 +124,20 @@ func init() {
 func main() {
 
 	rawTxBytes := lock()
-	fmt.Println(common.BytesToHash(rawTxBytes))
+	//fmt.Println(common.BytesToHash(rawTxBytes))
 	//time.Sleep(time.Second * 5)
-	//for trackerStatus(rawTxBytes) != "Released" || trackerStatus(rawTxBytes) != "Failed " {
-	//	time.Sleep(time.Second * 2)
-	//	fmt.Println("Tracker Status :", trackerStatus(rawTxBytes))
-	//	sendTrasactions(1)
-	//}
+	for {
+		time.Sleep(time.Second * 2)
+		status := trackerStatus(rawTxBytes)
+		if status == "Released" || status == "Failed " {
+			break
+		}
+		fmt.Println("Tracker Status :", trackerStatus(rawTxBytes))
+		sendTrasactions(1)
+	}
 
 	//time.Sleep(time.Second * 5)
-	//send12trasactions()
+	//sendTrasactions(12)
 	//time.Sleep(1 * time.Minute)
 	//redeem()
 	//time.Sleep(15 * time.Second)

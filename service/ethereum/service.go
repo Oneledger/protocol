@@ -118,7 +118,7 @@ type BalanceReply struct {
 }
 
 type TrackerStatusRequest struct {
-	TrackerName chain.TrackerName `json:"tracker_name"`
+	TrackerName chain.TrackerName `json:"trackerName"`
 }
 
 type TrackerStatusReply struct {
