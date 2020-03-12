@@ -4,7 +4,7 @@ import (
 	codes "github.com/Oneledger/protocol/status_codes"
 )
 
-func (svc *Service) GetOngoingTrackerStatus(req TrackerStatusRequest, out *TrackerStatusReply) error {
+func (svc *Service) GetTrackerStatus(req TrackerStatusRequest, out *TrackerStatusReply) error {
 	tracker, err := svc.trackersOngoing.Get(req.TrackerName)
 	if err != nil {
 		tracker, err = svc.trackersFailed.Get(req.TrackerName)
