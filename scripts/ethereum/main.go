@@ -46,9 +46,9 @@ var (
 	TestTokenABI     = contract.ERC20BasicABI
 	LockRedeemERCABI = contract.LockRedeemERCABI
 	// LockRedeemERC20ABI = contract.ContextABI
-	LockRedeemContractAddr      = "0xCB9aa43438AB240a80B210c5aB6717C67c57Da5b"
-	TestTokenContractAddr       = "0x0f8D8e15cF2C3a867D87E857eB5b66c2EE996796"
-	LockRedeemERC20ContractAddr = "0x35BeC07a8D5681cC4Af05A4F9c9a080270dB14ef"
+	LockRedeemContractAddr      = "0x47DF306a1659236414E117b25fED709e074dead3"
+	TestTokenContractAddr       = "0xd4457fF1A42d8A53aE09afD27B8f998733929f94"
+	LockRedeemERC20ContractAddr = "0xFc87Dd43c039CAbe342Ead685A143f13fdE2ADb7"
 
 	cfg               = config.DefaultEthConfigLocal()
 	log               = logger.NewDefaultLogger(os.Stdout).WithPrefix("testeth")
@@ -124,19 +124,24 @@ func init() {
 func main() {
 
 	rawTxBytes := lock()
-	//fmt.Println(common.BytesToHash(rawTxBytes))
-	//time.Sleep(time.Second * 5)
+	time.Sleep(time.Second * 5)
 	for {
 		time.Sleep(time.Second * 2)
-		status := trackerStatus(rawTxBytes)
-		if status == "Released" || status == "Failed " {
+		status, err := trackerOngoingStatus(rawTxBytes)
+		if status == "Released" || status == "Failed " || err != nil {
 			break
 		}
-		fmt.Println("Tracker Status :", trackerStatus(rawTxBytes))
+		fmt.Println("Tracker Status :", status)
 		sendTrasactions(1)
 	}
 
-	//time.Sleep(time.Second * 5)
+	time.Sleep(time.Second * 5)
+	status, err := trackerFailedStatus(rawTxBytes)
+	if err != nil {
+		fmt.Println(err)
+	}
+	fmt.Println("Getting from Failed tracker store", status)
+
 	//sendTrasactions(12)
 	//time.Sleep(1 * time.Minute)
 	//redeem()
@@ -264,21 +269,38 @@ func lock() []byte {
 
 }
 
-func trackerStatus(rawTxBytes []byte) string {
+func trackerOngoingStatus(rawTxBytes []byte) (string, error) {
 	rpcclient, err := rpc.NewClient("http://localhost:26602") //104.196.191.206:26604
 	//rpcclient, err := rpc.NewClient("https://fullnode-sdk.devnet.oneledger.network/")
 	if err != nil {
 		fmt.Println("Error in getting rpc ", err)
-		return err.Error()
+		return "nil", err
 	}
 	trackerStatus := se.TrackerStatusRequest{TrackerName: common.BytesToHash(rawTxBytes)}
 	trackerStatusReply := &se.TrackerStatusReply{}
-	err = rpcclient.Call("eth.GetTrackerStatus", trackerStatus, trackerStatusReply)
+	err = rpcclient.Call("eth.GetOngoingTrackerStatus", trackerStatus, trackerStatusReply)
 	if err != nil {
 		fmt.Println("Error in getting status ", err)
-		return err.Error()
+		return "nil", err
 	}
-	return trackerStatusReply.Status
+	return trackerStatusReply.Status, nil
+}
+
+func trackerFailedStatus(rawTxBytes []byte) (string, error) {
+	rpcclient, err := rpc.NewClient("http://localhost:26602") //104.196.191.206:26604
+	//rpcclient, err := rpc.NewClient("https://fullnode-sdk.devnet.oneledger.network/")
+	if err != nil {
+		fmt.Println("Error in getting rpc ", err)
+		return "nil", err
+	}
+	trackerStatus := se.TrackerStatusRequest{TrackerName: common.BytesToHash(rawTxBytes)}
+	trackerStatusReply := &se.TrackerStatusReply{}
+	err = rpcclient.Call("eth.GetFailedTrackerStatus", trackerStatus, trackerStatusReply)
+	if err != nil {
+		fmt.Println("Error in getting status ", err)
+		return "nil", err
+	}
+	return trackerStatusReply.Status, nil
 }
 
 func redeem() {

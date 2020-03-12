@@ -180,7 +180,7 @@ func redeemCleanup(ctx interface{}) error {
 	//Delete Tracker
 
 	fmt.Println("Deleting tracker (ethRedeem):", tracker.State.String())
-	res, err := context.TrackerStore.Delete(tracker.TrackerName)
+	res, err := context.TrackersOngoing.Delete(tracker.TrackerName)
 	if err != nil || !res {
 		return errors.Wrap(err, "error deleting tracker from store")
 	}
@@ -210,9 +210,13 @@ func redeemCleanupFailed(ctx interface{}) error {
 		}
 	}
 	//Delete Tracker
-	fmt.Println("Deleting tracker (ethRedeem):", tracker.State.String())
-
-	res, err := context.TrackerStore.Delete(tracker.TrackerName)
+	context.Logger.Info("Moving Failed tracker (ethLock):", tracker.State.String())
+	err := context.TrackersFailed.Set(tracker)
+	if err != nil {
+		context.Logger.Error("error saving eth tracker", err)
+		return err
+	}
+	res, err := context.TrackersOngoing.Delete(tracker.TrackerName)
 	if err != nil || !res {
 		return errors.Wrap(err, "error deleting tracker from store")
 	}

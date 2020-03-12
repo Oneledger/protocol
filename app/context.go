@@ -48,15 +48,15 @@ type context struct {
 	check      *storage.State
 	deliver    *storage.State
 
-	balances    *balance.Store
-	domains     *ons.DomainStore
-	validators  *identity.ValidatorStore // Set of validators currently active
-	feePool     *fees.Store
-	govern      *governance.Store
-	btcTrackers *bitcoin.TrackerStore  // tracker for bitcoin balance UTXO
-	ethTrackers *ethereum.TrackerStore // tracker for ethereum tracker store
-
-	currencies *balance.CurrencySet
+	balances           *balance.Store
+	domains            *ons.DomainStore
+	validators         *identity.ValidatorStore // Set of validators currently active
+	feePool            *fees.Store
+	govern             *governance.Store
+	btcTrackers        *bitcoin.TrackerStore  // tracker for bitcoin balance UTXO
+	ethTrackersOngoing *ethereum.TrackerStore // Tracker store for ongoing ethereum trackers
+	ethTrackersFailed  *ethereum.TrackerStore // Tracker store for failed ethereum trackers
+	currencies         *balance.CurrencySet
 
 	//storage which is not a chain state
 	accounts accounts.Wallet
@@ -97,7 +97,8 @@ func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *node.Context) (
 
 	ctx.btcTrackers = bitcoin.NewTrackerStore("btct", storage.NewState(ctx.chainstate))
 
-	ctx.ethTrackers = ethereum.NewTrackerStore("etht", storage.NewState(ctx.chainstate))
+	ctx.ethTrackersOngoing = ethereum.NewTrackerStore("etht", storage.NewState(ctx.chainstate))
+	ctx.ethTrackersFailed = ethereum.NewTrackerStore("ethtfailed", storage.NewState(ctx.chainstate))
 	ctx.accounts = accounts.NewWallet(cfg, ctx.dbDir())
 
 	// TODO check if validator
@@ -139,7 +140,7 @@ func (ctx *context) Action(header *Header, state *storage.State) *action.Context
 		ctx.domains.WithState(state),
 
 		ctx.btcTrackers.WithState(state),
-		ctx.ethTrackers.WithState(state),
+		ctx.ethTrackersOngoing.WithState(state),
 		ctx.jobStore,
 		ctx.lockScriptStore,
 		log.NewLoggerWithPrefix(ctx.logWriter, "action").WithLevel(log.Level(ctx.cfg.Node.LogLevel)),
@@ -178,19 +179,20 @@ func (ctx *context) Services() (service.Map, error) {
 	btcTrackers.SetConfig(ctx.btcTrackers.GetConfig())
 
 	svcCtx := &service.Context{
-		Balances:     ctx.balances,
-		Accounts:     ctx.accounts,
-		Currencies:   ctx.currencies,
-		FeePool:      ctx.feePool,
-		Cfg:          ctx.cfg,
-		NodeContext:  ctx.node,
-		ValidatorSet: ctx.validators,
-		Domains:      ctx.domains,
-		Router:       ctx.actionRouter,
-		Logger:       log.NewLoggerWithPrefix(ctx.logWriter, "rpc").WithLevel(log.Level(ctx.cfg.Node.LogLevel)),
-		Services:     extSvcs,
-		EthTrackers:  ctx.ethTrackers,
-		Trackers:     btcTrackers,
+		Balances:           ctx.balances,
+		Accounts:           ctx.accounts,
+		Currencies:         ctx.currencies,
+		FeePool:            ctx.feePool,
+		Cfg:                ctx.cfg,
+		NodeContext:        ctx.node,
+		ValidatorSet:       ctx.validators,
+		Domains:            ctx.domains,
+		Router:             ctx.actionRouter,
+		Logger:             log.NewLoggerWithPrefix(ctx.logWriter, "rpc").WithLevel(log.Level(ctx.cfg.Node.LogLevel)),
+		Services:           extSvcs,
+		EthTrackersOngoing: ctx.ethTrackersOngoing,
+		EthTrackersFailed:  ctx.ethTrackersFailed,
+		Trackers:           btcTrackers,
 	}
 
 	return service.NewMap(svcCtx)
@@ -277,6 +279,6 @@ func (ctx *context) JobContext() *event.JobsContext {
 		ctx.node.ValidatorECDSAPrivateKey(),
 		ctx.node.ValidatorAddress(),
 		ctx.lockScriptStore,
-		ctx.ethTrackers.WithState(ctx.deliver),
+		ctx.ethTrackersOngoing.WithState(ctx.deliver),
 	)
 }

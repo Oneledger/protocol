@@ -142,7 +142,7 @@ func (app *App) setupState(stateBytes []byte) error {
 			return errors.Wrapf(err, "failed to register currency %s", currency.Name)
 		}
 	}
-	app.Context.ethTrackers.SetupOption(&initial.Governance.ETHCDOption)
+	app.Context.ethTrackersOngoing.SetupOption(&initial.Governance.ETHCDOption)
 	err = app.Context.govern.SetFeeOption(initial.Governance.FeeOption)
 	if err != nil {
 		return errors.Wrap(err, "Setup State")
@@ -305,7 +305,7 @@ func (app *App) Prepare() error {
 		if err != nil {
 			return err
 		}
-		app.Context.ethTrackers.SetupOption(cdOpt)
+		app.Context.ethTrackersOngoing.SetupOption(cdOpt)
 
 		btcOption, err := app.Context.govern.GetBTCChainDriverOption()
 		btcConfig := bitcoin.NewBTCConfig(app.Context.cfg.ChainDriver, btcOption.ChainType)

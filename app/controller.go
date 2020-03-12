@@ -241,7 +241,7 @@ func (app *App) blockEnder() blockEnder {
 
 		doTransitions(app.Context.jobStore, app.Context.btcTrackers.WithState(app.Context.deliver), app.Context.validators)
 
-		doEthTransitions(app.Context.jobStore, app.Context.ethTrackers, app.Context.node.ValidatorAddress(), app.logger, app.Context.validators, app.Context.deliver)
+		doEthTransitions(app.Context.jobStore, app.Context.ethTrackersOngoing, app.Context.ethTrackersFailed, app.Context.node.ValidatorAddress(), app.logger, app.Context.validators, app.Context.deliver)
 
 		app.logger.Debug("End Block: ", result, "height:", req.Height)
 
@@ -338,19 +338,19 @@ func doTransitions(js *jobs.JobStore, ts *bitcoin.TrackerStore, validators *iden
 	}
 }
 
-func doEthTransitions(js *jobs.JobStore, ts *ethereum.TrackerStore, myValAddr keys.Address, logger *log.Logger, validators *identity.ValidatorStore, deliver *storage.State) {
-	ts = ts.WithState(deliver)
+func doEthTransitions(js *jobs.JobStore, tsongoing *ethereum.TrackerStore, tsfailed *ethereum.TrackerStore, myValAddr keys.Address, logger *log.Logger, validators *identity.ValidatorStore, deliver *storage.State) {
+	tsongoing = tsongoing.WithState(deliver)
 	tnames := make([]*ceth.TrackerName, 0, 20)
-	ts.Iterate(func(name *ceth.TrackerName, tracker *ethereum.Tracker) bool {
+	tsongoing.Iterate(func(name *ceth.TrackerName, tracker *ethereum.Tracker) bool {
 		tnames = append(tnames, name)
 		return false
 	})
 	for _, name := range tnames {
 		deliver.DiscardTxSession()
 		deliver.BeginTxSession()
-		t, _ := ts.Get(*name)
+		t, _ := tsongoing.Get(*name)
 		state := t.State
-		ctx := ethereum.NewTrackerCtx(t, myValAddr, js.WithChain(chain.ETHEREUM), ts, validators)
+		ctx := ethereum.NewTrackerCtx(t, myValAddr, js.WithChain(chain.ETHEREUM), tsongoing, tsfailed, validators, logger)
 
 		if t.Type == ethereum.ProcessTypeLock || t.Type == ethereum.ProcessTypeLockERC {
 
@@ -370,8 +370,8 @@ func doEthTransitions(js *jobs.JobStore, ts *ethereum.TrackerStore, myValAddr ke
 			}
 		}
 		// only set back to chainstate when transition happened.
-		if ctx.Tracker.State < 5 && state != ctx.Tracker.State {
-			err := ts.Set(ctx.Tracker)
+		if ctx.Tracker.State < 5 || state != ctx.Tracker.State {
+			err := tsongoing.Set(ctx.Tracker)
 			if err != nil {
 				logger.Error("failed to save eth tracker", err, ctx.Tracker)
 				panic(err)
