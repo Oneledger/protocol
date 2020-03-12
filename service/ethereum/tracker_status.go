@@ -7,8 +7,11 @@ import (
 func (svc *Service) GetOngoingTrackerStatus(req TrackerStatusRequest, out *TrackerStatusReply) error {
 	tracker, err := svc.trackersOngoing.Get(req.TrackerName)
 	if err != nil {
-		svc.logger.Error(err, codes.ErrGettingTrackerStatus.ErrorMsg())
-		return codes.ErrGettingTrackerStatus
+		tracker, err = svc.trackersFailed.Get(req.TrackerName)
+		if err != nil {
+			svc.logger.Error(err, codes.ErrGettingTrackerStatus.ErrorMsg())
+			return codes.ErrGettingTrackerStatus
+		}
 	}
 	*out = TrackerStatusReply{
 		Status: tracker.State.String(),
