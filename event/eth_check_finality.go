@@ -1,7 +1,6 @@
 package event
 
 import (
-	"fmt"
 	"strconv"
 
 	"github.com/Oneledger/protocol/action"
@@ -33,7 +32,6 @@ func NewETHCheckFinality(name ethereum.TrackerName, state trackerlib.TrackerStat
 func (job *JobETHCheckFinality) DoMyJob(ctx interface{}) {
 
 	// get tracker
-	fmt.Println("starting Verify ")
 	job.RetryCount += 1
 	if job.RetryCount > jobs.Max_Retry_Count {
 		job.Status = jobs.Failed
@@ -120,7 +118,6 @@ func (job *JobETHCheckFinality) DoMyJob(ctx interface{}) {
 		return
 	}
 	//TODO END
-	fmt.Println("Complete Verify ")
 	job.Status = jobs.Completed
 }
 
