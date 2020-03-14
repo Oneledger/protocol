@@ -219,7 +219,6 @@ func runLock(ctx *action.Context, lock *Lock) (bool, action.Response) {
 		ctx.Logger.Error("error saving eth tracker", err)
 		return false, action.Response{Log: "error saving eth tracker: " + err.Error()}
 	}
-
 	return true, action.Response{
 		Tags: lock.Tags(),
 	}

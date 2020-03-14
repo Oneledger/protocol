@@ -193,7 +193,6 @@ func (acc *ETHChainDriver) GetTransactionMessage(tx *types.Transaction) (*types.
 
 // CheckFinality verifies the finality of a transaction on the ethereum blockchain , waits for 12 block confirmations
 func (acc *ETHChainDriver) CheckFinality(txHash TransactionHash, blockConfirmation int64) (*types.Receipt, error) {
-	fmt.Println("Check finality")
 	result, err := acc.GetClient().TransactionReceipt(context.Background(), txHash)
 	if err == nil {
 		if result.Status == types.ReceiptStatusSuccessful {

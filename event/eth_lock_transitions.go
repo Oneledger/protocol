@@ -246,8 +246,14 @@ func Cleanup(ctx interface{}) error {
 		}
 	}
 	//Delete Tracker
+	context.Logger.Info("Setting tracker to success (ethLock):", tracker.State.String())
+	err := context.TrackerStore.WithPrefixType(ethereum.PrefixPassed).Set(tracker.Clean())
+	if err != nil {
+		context.Logger.Error("error saving eth tracker", err)
+		return err
+	}
 	context.Logger.Info("Deleting tracker (ethLock):", tracker.State.String())
-	res, err := context.TrackersOngoing.Delete(tracker.TrackerName)
+	res, err := context.TrackerStore.Delete(tracker.TrackerName)
 	if err != nil || !res {
 		return err
 	}
@@ -281,13 +287,14 @@ func CleanupFailed(ctx interface{}) error {
 			}
 		}
 	}
-	context.Logger.Info("Moving Failed tracker (ethLock):", tracker.State.String())
-	err := context.TrackersFailed.Set(tracker)
+
+	context.Logger.Info("Setting Tracker to failed (ethLock):", tracker.State.String())
+	err := context.TrackerStore.WithPrefixType(ethereum.PrefixFailed).Set(tracker.Clean())
 	if err != nil {
 		context.Logger.Error("error saving eth tracker", err)
 		return err
 	}
-	res, err := context.TrackersOngoing.Delete(tracker.TrackerName)
+	res, err := context.TrackerStore.Delete(tracker.TrackerName)
 	if err != nil || !res {
 		return err
 	}

@@ -21,14 +21,13 @@ func Name() string {
 }
 
 type Service struct {
-	config          *config.EthereumChainDriverConfig
-	router          action.Router
-	accounts        accounts.Wallet
-	logger          *log.Logger
-	nodeContext     node.Context
-	validators      *identity.ValidatorStore
-	trackersOngoing *ethTracker.TrackerStore
-	trackersFailed  *ethTracker.TrackerStore
+	config      *config.EthereumChainDriverConfig
+	router      action.Router
+	accounts    accounts.Wallet
+	logger      *log.Logger
+	nodeContext node.Context
+	validators  *identity.ValidatorStore
+	trackers    *ethTracker.TrackerStore
 }
 
 // Returns a new Service, should be passed as an RPC handler
@@ -39,21 +38,19 @@ func NewService(
 	accounts accounts.Wallet,
 	nodeCtx node.Context,
 	validators *identity.ValidatorStore,
-	trackerStoreOngoing *ethTracker.TrackerStore,
-	trackerStoreFailed *ethTracker.TrackerStore,
+	trackerStore *ethTracker.TrackerStore,
 
 	logger *log.Logger,
 ) *Service {
 	return &Service{
 		//balances:     balances,
-		config:          config,
-		router:          router,
-		nodeContext:     nodeCtx,
-		accounts:        accounts,
-		validators:      validators,
-		trackersOngoing: trackerStoreOngoing,
-		trackersFailed:  trackerStoreFailed,
-		logger:          logger,
+		config:      config,
+		router:      router,
+		nodeContext: nodeCtx,
+		accounts:    accounts,
+		validators:  validators,
+		trackers:    trackerStore,
+		logger:      logger,
 	}
 }
 

@@ -141,6 +141,15 @@ func (t *Tracker) Failed() bool {
 	return n >= num
 }
 
+func (t *Tracker) Clean() *Tracker {
+
+	return &Tracker{
+		Type:        t.Type,
+		State:       t.State,
+		TrackerName: t.TrackerName,
+	}
+}
+
 func (t Tracker) NextStep() string {
 	if t.Type == ProcessTypeLock {
 		switch t.State {

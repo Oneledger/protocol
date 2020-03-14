@@ -76,3 +76,10 @@ func (t TrackerState) String() string {
 }
 
 type Vote uint8
+
+type PrefixType int8
+
+const (
+	PrefixFailed PrefixType = 0x00
+	PrefixPassed PrefixType = 0x01
+)

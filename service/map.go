@@ -27,14 +27,13 @@ import (
 // Context is the master context for creating new contexts
 type Context struct {
 	//stores
-	Accounts           accounts.Wallet
-	Balances           *balance.Store
-	Domains            *ons.DomainStore
-	FeePool            *fees.Store
-	ValidatorSet       *identity.ValidatorStore
-	Trackers           *bitcoin.TrackerStore
-	EthTrackersOngoing *ethTracker.TrackerStore
-	EthTrackersFailed  *ethTracker.TrackerStore
+	Accounts     accounts.Wallet
+	Balances     *balance.Store
+	Domains      *ons.DomainStore
+	FeePool      *fees.Store
+	ValidatorSet *identity.ValidatorStore
+	Trackers     *bitcoin.TrackerStore
+	EthTrackers  *ethTracker.TrackerStore
 	// configurations
 	Cfg        config.Server
 	Currencies *balance.CurrencySet
@@ -58,7 +57,7 @@ func NewMap(ctx *Context) (Map, error) {
 		query.Name():     query.NewService(ctx.Services, ctx.Balances, ctx.Currencies, ctx.ValidatorSet, ctx.Domains, ctx.FeePool, ctx.Logger),
 		tx.Name():        tx.NewService(ctx.Balances, ctx.Router, ctx.Accounts, ctx.FeePool.GetOpt(), ctx.NodeContext, ctx.Logger),
 		btc.Name():       btc.NewService(ctx.Balances, ctx.Accounts, ctx.NodeContext, ctx.ValidatorSet, ctx.Trackers, ctx.Logger),
-		ethereum.Name():  ethereum.NewService(ctx.Cfg.EthChainDriver, ctx.Router, ctx.Accounts, ctx.NodeContext, ctx.ValidatorSet, ctx.EthTrackersOngoing, ctx.EthTrackersFailed, ctx.Logger),
+		ethereum.Name():  ethereum.NewService(ctx.Cfg.EthChainDriver, ctx.Router, ctx.Accounts, ctx.NodeContext, ctx.ValidatorSet, ctx.EthTrackers, ctx.Logger),
 	}
 
 	serviceMap := Map{}

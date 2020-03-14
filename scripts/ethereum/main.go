@@ -46,9 +46,9 @@ var (
 	TestTokenABI     = contract.ERC20BasicABI
 	LockRedeemERCABI = contract.LockRedeemERCABI
 	// LockRedeemERC20ABI = contract.ContextABI
-	LockRedeemContractAddr      = "0x47DF306a1659236414E117b25fED709e074dead3"
-	TestTokenContractAddr       = "0xd4457fF1A42d8A53aE09afD27B8f998733929f94"
-	LockRedeemERC20ContractAddr = "0xFc87Dd43c039CAbe342Ead685A143f13fdE2ADb7"
+	LockRedeemContractAddr      = "0x9BF7E49daa2eb22C29cED38f7F0CEfE6174EC1ec"
+	TestTokenContractAddr       = "0xA43371AC773e7FE248377851535dbF86e0f2F6B7"
+	LockRedeemERC20ContractAddr = "0xAF103190C63Ae6222b9e4a4792fab056Fa6A2bd1"
 
 	cfg               = config.DefaultEthConfigLocal()
 	log               = logger.NewDefaultLogger(os.Stdout).WithPrefix("testeth")
@@ -58,7 +58,7 @@ var (
 
 	client                 *ethclient.Client
 	contractAbi            abi.ABI
-	valuelock              = createValue("1000000000000000000") // in wei (1 eth)
+	valuelock              = createValue("10") // in wei (1 eth)
 	valueredeem            = createValue("100000000000000000")
 	valuelockERC20         = createValue("1000000000000000000")
 	valueredeemERC20       = createValue("100000000000000000")
@@ -124,23 +124,32 @@ func init() {
 func main() {
 
 	rawTxBytes := lock()
-	time.Sleep(time.Second * 5)
-	for {
+	status, err := trackerOngoingStatus(rawTxBytes)
+	for err != nil {
+		time.Sleep(time.Second * 1)
+		_, err = trackerOngoingStatus(rawTxBytes)
+	}
+
+	for status != "Released" && status != "Failed " && err == nil {
 		time.Sleep(time.Second * 2)
-		status, err := trackerOngoingStatus(rawTxBytes)
-		if status == "Released" || status == "Failed " || err != nil {
-			break
-		}
+		status, err = trackerOngoingStatus(rawTxBytes)
 		fmt.Println("Tracker Status :", status)
 		sendTrasactions(1)
 	}
 
 	time.Sleep(time.Second * 5)
-	status, err := trackerFailedStatus(rawTxBytes)
+	status, err = trackerFailedStatus(rawTxBytes)
 	if err != nil {
 		fmt.Println(err)
 	}
 	fmt.Println("Getting from Failed tracker store", status)
+
+	time.Sleep(time.Second * 5)
+	status, err = trackerSuccessStatus(rawTxBytes)
+	if err != nil {
+		fmt.Println(err)
+	}
+	fmt.Println("Getting from Success tracker store", status)
 
 	//sendTrasactions(12)
 	//time.Sleep(1 * time.Minute)
@@ -278,7 +287,7 @@ func trackerOngoingStatus(rawTxBytes []byte) (string, error) {
 	}
 	trackerStatus := se.TrackerStatusRequest{TrackerName: common.BytesToHash(rawTxBytes)}
 	trackerStatusReply := &se.TrackerStatusReply{}
-	err = rpcclient.Call("eth.GetOngoingTrackerStatus", trackerStatus, trackerStatusReply)
+	err = rpcclient.Call("eth.GetTrackerStatus", trackerStatus, trackerStatusReply)
 	if err != nil {
 		fmt.Println("Error in getting status ", err)
 		return "nil", err
@@ -296,6 +305,23 @@ func trackerFailedStatus(rawTxBytes []byte) (string, error) {
 	trackerStatus := se.TrackerStatusRequest{TrackerName: common.BytesToHash(rawTxBytes)}
 	trackerStatusReply := &se.TrackerStatusReply{}
 	err = rpcclient.Call("eth.GetFailedTrackerStatus", trackerStatus, trackerStatusReply)
+	if err != nil {
+		fmt.Println("Error in getting status ", err)
+		return "nil", err
+	}
+	return trackerStatusReply.Status, nil
+}
+
+func trackerSuccessStatus(rawTxBytes []byte) (string, error) {
+	rpcclient, err := rpc.NewClient("http://localhost:26602") //104.196.191.206:26604
+	//rpcclient, err := rpc.NewClient("https://fullnode-sdk.devnet.oneledger.network/")
+	if err != nil {
+		fmt.Println("Error in getting rpc ", err)
+		return "nil", err
+	}
+	trackerStatus := se.TrackerStatusRequest{TrackerName: common.BytesToHash(rawTxBytes)}
+	trackerStatusReply := &se.TrackerStatusReply{}
+	err = rpcclient.Call("eth.GetSuccessTrackerStatus", trackerStatus, trackerStatusReply)
 	if err != nil {
 		fmt.Println("Error in getting status ", err)
 		return "nil", err

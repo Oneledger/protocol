@@ -178,9 +178,14 @@ func redeemCleanup(ctx interface{}) error {
 		}
 	}
 	//Delete Tracker
-
+	context.Logger.Info("Setting Tracker to succeeded (ethLock):", tracker.State.String())
+	err := context.TrackerStore.WithPrefixType(ethereum.PrefixPassed).Set(tracker.Clean())
+	if err != nil {
+		context.Logger.Error("error saving eth tracker", err)
+		return err
+	}
 	fmt.Println("Deleting tracker (ethRedeem):", tracker.State.String())
-	res, err := context.TrackersOngoing.Delete(tracker.TrackerName)
+	res, err := context.TrackerStore.Delete(tracker.TrackerName)
 	if err != nil || !res {
 		return errors.Wrap(err, "error deleting tracker from store")
 	}
@@ -210,13 +215,13 @@ func redeemCleanupFailed(ctx interface{}) error {
 		}
 	}
 	//Delete Tracker
-	context.Logger.Info("Moving Failed tracker (ethLock):", tracker.State.String())
-	err := context.TrackersFailed.Set(tracker)
+	context.Logger.Info("Setting Tracker to Failed (ethLock):", tracker.State.String())
+	err := context.TrackerStore.WithPrefixType(ethereum.PrefixFailed).Set(tracker.Clean())
 	if err != nil {
 		context.Logger.Error("error saving eth tracker", err)
 		return err
 	}
-	res, err := context.TrackersOngoing.Delete(tracker.TrackerName)
+	res, err := context.TrackerStore.Delete(tracker.TrackerName)
 	if err != nil || !res {
 		return errors.Wrap(err, "error deleting tracker from store")
 	}
