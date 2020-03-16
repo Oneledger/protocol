@@ -73,7 +73,7 @@ func ProcessAllJobs(ctx *JobsContext, js *jobs.JobStore) {
 				if r := recover(); r != nil {
 					ctx.Logger.Info("panic in job: ", job.GetJobID())
 					ctx.Logger.Info(r)
-					ctx.Logger.Info(string(debug.Stack()))
+					debug.PrintStack()
 				}
 			}()
 			job.DoMyJob(ctx)

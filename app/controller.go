@@ -370,7 +370,7 @@ func doEthTransitions(js *jobs.JobStore, ts *ethereum.TrackerStore, myValAddr ke
 			}
 		}
 		// only set back to chainstate when transition happened.
-		if ctx.Tracker.State < 5 || state != ctx.Tracker.State {
+		if ctx.Tracker.State < 5 && state != ctx.Tracker.State {
 			err := ts.WithPrefixType(ethereum.PrefixOngoing).Set(ctx.Tracker)
 			if err != nil {
 				logger.Error("failed to save eth tracker", err, ctx.Tracker)
