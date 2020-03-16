@@ -80,6 +80,7 @@ type Vote uint8
 type PrefixType int8
 
 const (
-	PrefixFailed PrefixType = 0x00
-	PrefixPassed PrefixType = 0x01
+	PrefixFailed  PrefixType = 0x00
+	PrefixPassed  PrefixType = 0x01
+	PrefixOngoing PrefixType = 0x02
 )

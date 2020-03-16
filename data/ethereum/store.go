@@ -12,6 +12,7 @@ type TrackerStore struct {
 	prefix        []byte
 	prefixfailed  []byte
 	prefixsuccess []byte
+	prefixongoing []byte
 	cdOpt         *ethereum.ChainDriverOption
 }
 
@@ -75,10 +76,13 @@ func (ts *TrackerStore) Iterate(fn func(name *ethereum.TrackerName, tracker *Tra
 
 func NewTrackerStore(prefixon string, prefixfail string, prefixsuccess string, state *storage.State) *TrackerStore {
 	return &TrackerStore{
-		state:  state,
-		szlr:   serialize.GetSerializer(serialize.PERSISTENT),
-		prefix: storage.Prefix(prefixon),
-		cdOpt:  &ethereum.ChainDriverOption{},
+		state:         state,
+		szlr:          serialize.GetSerializer(serialize.PERSISTENT),
+		prefix:        storage.Prefix(prefixon),
+		prefixfailed:  storage.Prefix(prefixfail),
+		prefixsuccess: storage.Prefix(prefixsuccess),
+		prefixongoing: storage.Prefix(prefixon),
+		cdOpt:         &ethereum.ChainDriverOption{},
 	}
 }
 
@@ -94,11 +98,14 @@ func (ts *TrackerStore) WithPrefix(prefix []byte) *TrackerStore {
 }
 
 func (ts *TrackerStore) WithPrefixType(prefix PrefixType) *TrackerStore {
+
 	switch prefix {
 	case PrefixFailed:
 		ts.prefix = ts.prefixfailed
 	case PrefixPassed:
 		ts.prefix = ts.prefixsuccess
+	case PrefixOngoing:
+		ts.prefix = ts.prefixongoing
 	}
 	return ts
 }

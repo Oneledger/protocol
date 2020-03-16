@@ -74,5 +74,7 @@ const (
 	ExternalErrTokenNotSuported             = 500101
 
 	Tracker
-	ETHTrackerNotFound = 600100
+	ETHTrackerNotFoundFailed  = 600100
+	ETHTrackerNotFoundSuccess = 600101
+	ETHTrackerNotFoundOngoing = 600102
 )

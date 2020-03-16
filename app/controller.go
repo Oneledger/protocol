@@ -341,14 +341,14 @@ func doTransitions(js *jobs.JobStore, ts *bitcoin.TrackerStore, validators *iden
 func doEthTransitions(js *jobs.JobStore, ts *ethereum.TrackerStore, myValAddr keys.Address, logger *log.Logger, validators *identity.ValidatorStore, deliver *storage.State) {
 	ts = ts.WithState(deliver)
 	tnames := make([]*ceth.TrackerName, 0, 20)
-	ts.Iterate(func(name *ceth.TrackerName, tracker *ethereum.Tracker) bool {
+	ts.WithPrefixType(ethereum.PrefixOngoing).Iterate(func(name *ceth.TrackerName, tracker *ethereum.Tracker) bool {
 		tnames = append(tnames, name)
 		return false
 	})
 	for _, name := range tnames {
 		deliver.DiscardTxSession()
 		deliver.BeginTxSession()
-		t, _ := ts.Get(*name)
+		t, _ := ts.WithPrefixType(ethereum.PrefixOngoing).Get(*name)
 		state := t.State
 		ctx := ethereum.NewTrackerCtx(t, myValAddr, js.WithChain(chain.ETHEREUM), ts, validators, logger)
 
@@ -371,7 +371,7 @@ func doEthTransitions(js *jobs.JobStore, ts *ethereum.TrackerStore, myValAddr ke
 		}
 		// only set back to chainstate when transition happened.
 		if ctx.Tracker.State < 5 || state != ctx.Tracker.State {
-			err := ts.Set(ctx.Tracker)
+			err := ts.WithPrefixType(ethereum.PrefixOngoing).Set(ctx.Tracker)
 			if err != nil {
 				logger.Error("failed to save eth tracker", err, ctx.Tracker)
 				panic(err)

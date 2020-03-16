@@ -6,12 +6,13 @@ import (
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/action/eth"
 	"github.com/Oneledger/protocol/chains/ethereum"
+	ethereum2 "github.com/Oneledger/protocol/data/ethereum"
 )
 
 func BroadcastReportFinalityETHTx(ethCtx *JobsContext, trackerName ethereum.TrackerName, jobID string, success bool) error {
 
 	trackerStore := ethCtx.EthereumTrackers
-	tracker, err := trackerStore.Get(trackerName)
+	tracker, err := trackerStore.WithPrefixType(ethereum2.PrefixOngoing).Get(trackerName)
 	index, _ := tracker.CheckIfVoted(ethCtx.ValidatorAddress)
 	if index < 0 {
 		return errors.New("Validator already Voted")

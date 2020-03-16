@@ -1,7 +1,6 @@
 package event
 
 import (
-	"fmt"
 	"math/big"
 	"strconv"
 
@@ -48,7 +47,7 @@ func (j *JobETHSignRedeem) DoMyJob(ctx interface{}) {
 
 	ethCtx, _ := ctx.(*JobsContext)
 	trackerStore := ethCtx.EthereumTrackers
-	tracker, err := trackerStore.Get(j.TrackerName)
+	tracker, err := trackerStore.WithPrefixType(trackerlib.PrefixOngoing).Get(j.TrackerName)
 	if err != nil {
 		ethCtx.Logger.Error("err trying to deserialize tracker: ", j.TrackerName, err)
 		return
@@ -133,7 +132,7 @@ func (j *JobETHSignRedeem) DoMyJob(ctx interface{}) {
 		ethCtx.Logger.Info("Waiting for Validator SignTX to be mined")
 	}
 	if err == ethereum.ErrRedeemExpired {
-		fmt.Println("Failing from sign : Redeem Expired")
+		ethCtx.Logger.Info("Failing from sign : Redeem Expired")
 		j.Status = jobs.Failed
 		BroadcastReportFinalityETHTx(ctx.(*JobsContext), j.TrackerName, j.JobID, false)
 	}
@@ -176,7 +175,7 @@ func (j *JobETHSignRedeem) DoMyJob(ctx interface{}) {
 			return
 		}
 		j.RetryCount += 1
-		ethCtx.Logger.Info("Validator Signed Redeem | Validator Address :", ethCtx.ValidatorAddress.Humanize())
+		ethCtx.Logger.Info("Validator Sign Broadcasted | Validator Address :", ethCtx.ValidatorAddress.Humanize())
 	}
 	//j.Status = jobs.Completed
 }

@@ -87,5 +87,7 @@ var (
 	ErrUnmarshaling          = ProtocolError{Code: ErrUnmarshalingRedeem, Msg: "Unable to unmarshall the incoming transaction into struct ,Wrong Json data"}
 
 	//Tracker Error
-	ErrGettingTrackerStatus = ProtocolError{Code: ETHTrackerNotFound, Msg: "Tracker not found in the tracker store"}
+	ErrGettingTrackerStatusFailed  = ProtocolError{Code: ETHTrackerNotFoundFailed, Msg: "Ethereum Tracker not found in the Failed tracker store"}
+	ErrGettingTrackerStatusSuccess = ProtocolError{Code: ETHTrackerNotFoundSuccess, Msg: "Ethereum Tracker not found in the Success tracker store"}
+	ErrGettingTrackerStatusOngoing = ProtocolError{Code: ETHTrackerNotFoundOngoing, Msg: "Ethereum Tracker not found in the Ongoing tracker store"}
 )

@@ -3,7 +3,6 @@ package eth
 
 import (
 	"encoding/json"
-	"fmt"
 	"strconv"
 
 	"github.com/pkg/errors"
@@ -112,7 +111,7 @@ func runCheckFinality(ctx *action.Context, tx action.RawTx) (bool, action.Respon
 		return false, action.Response{Log: "wrong tx type"}
 	}
 
-	tracker, err := ctx.ETHTrackers.Get(f.TrackerName)
+	tracker, err := ctx.ETHTrackers.WithPrefixType(trackerlib.PrefixOngoing).Get(f.TrackerName)
 	if err != nil {
 
 		return false, action.Response{Log: errors.Wrap(err, "err getting tracker").Error()}
@@ -139,7 +138,7 @@ func runCheckFinality(ctx *action.Context, tx action.RawTx) (bool, action.Respon
 	}
 
 	if tracker.Finalized() {
-		ctx.Logger.Info("Finalizing Tracker [ Minting / Burning ]  | Process Type : ", trackerlib.GetProcessTypeString(tracker.Type))
+
 		if tracker.Type == trackerlib.ProcessTypeLock {
 			err := mintTokens(ctx, tracker, *f)
 			if err != nil {
@@ -167,20 +166,20 @@ func runCheckFinality(ctx *action.Context, tx action.RawTx) (bool, action.Respon
 	if tracker.Failed() {
 		ctx.Logger.Info("Failing Tracker  | Process Type : ", trackerlib.GetProcessTypeString(tracker.Type), "Tracker Name : ", tracker.TrackerName.String())
 		tracker.State = trackerlib.Failed
-		err = ctx.ETHTrackers.Set(tracker)
+		err = ctx.ETHTrackers.WithPrefixType(trackerlib.PrefixOngoing).Set(tracker)
 		if err != nil {
 			return false, action.Response{Log: errors.Wrap(err, "unable to Fail tracker").Error()}
 		}
 		return true, action.Response{Log: "Operation not successful"}
 	}
-	err = ctx.ETHTrackers.Set(tracker)
+	err = ctx.ETHTrackers.WithPrefixType(trackerlib.PrefixOngoing).Set(tracker)
 	if err != nil {
 		ctx.Logger.Info("Unable to save the tracker", err)
 		return false, action.Response{Log: errors.Wrap(err, "unable to save the tracker").Error()}
 	}
 	ctx.Logger.Info("Vote added |  Validator : ", f.ValidatorAddress, " | Process Type : ", trackerlib.GetProcessTypeString(tracker.Type), " | Success : ", f.Success)
 	yes, no := tracker.GetVotes()
-	fmt.Println("Tracker Votes YES / NO : ", strconv.Itoa(yes), "/", strconv.Itoa(no))
+	ctx.Logger.Info("Tracker Votes YES / NO : ", strconv.Itoa(yes), "/", strconv.Itoa(no))
 	return true, action.Response{Log: "vote success, not ready to mint: " + strconv.Itoa(yes) + "," + strconv.Itoa(no)}
 }
 
@@ -195,6 +194,7 @@ func (reportFinalityMintTx) ProcessFee(ctx *action.Context, signedTx action.Sign
 }
 
 func mintTokens(ctx *action.Context, tracker *trackerlib.Tracker, oltTx ReportFinality) error {
+	ctx.Logger.Info("Finalizing Tracker [ Minting Ether ]  | Process Type : ", trackerlib.GetProcessTypeString(tracker.Type))
 	curr, ok := ctx.Currencies.GetCurrencyByName("ETH")
 	if !ok {
 		return errors.New("ETH currency not allowed")
@@ -218,7 +218,7 @@ func mintTokens(ctx *action.Context, tracker *trackerlib.Tracker, oltTx ReportFi
 	}
 
 	tracker.State = trackerlib.Released
-	err = ctx.ETHTrackers.Set(tracker)
+	err = ctx.ETHTrackers.WithPrefixType(trackerlib.PrefixOngoing).Set(tracker)
 	if err != nil {
 		return err
 	}
@@ -226,9 +226,10 @@ func mintTokens(ctx *action.Context, tracker *trackerlib.Tracker, oltTx ReportFi
 }
 
 func burnTokens(ctx *action.Context, tracker *trackerlib.Tracker, oltTx ReportFinality) error {
+	ctx.Logger.Info("Finalizing Tracker [ Burning Ether ]  | Process Type : ", trackerlib.GetProcessTypeString(tracker.Type))
 
 	tracker.State = trackerlib.Released
-	err := ctx.ETHTrackers.Set(tracker)
+	err := ctx.ETHTrackers.WithPrefixType(trackerlib.PrefixOngoing).Set(tracker)
 	if err != nil {
 		return err
 	}
@@ -248,10 +249,10 @@ func burnERC20Tokens(ctx *action.Context, tracker *trackerlib.Tracker, oltTx Rep
 		return err
 	}
 
-	ctx.Logger.Info("Burn complete for token : ", token.TokName)
+	ctx.Logger.Info("Finalizing Tracker [ Burning Tokens :", token.TokName, "]  | Process Type : ", trackerlib.GetProcessTypeString(tracker.Type))
 	tracker.State = trackerlib.Released
 
-	err = ctx.ETHTrackers.Set(tracker)
+	err = ctx.ETHTrackers.WithPrefixType(trackerlib.PrefixOngoing).Set(tracker)
 	if err != nil {
 		return err
 	}
@@ -271,8 +272,7 @@ func mintERC20tokens(ctx *action.Context, tracker *trackerlib.Tracker, oltTx Rep
 	if err != nil {
 		return err
 	}
-
-	ctx.Logger.Info("Minting Tokens of type : ", token.TokName)
+	ctx.Logger.Info("Finalizing Tracker [ Minting Tokens :", token.TokName, "]  | Process Type : ", trackerlib.GetProcessTypeString(tracker.Type))
 	curr, ok := ctx.Currencies.GetCurrencyByName(token.TokName)
 	if !ok {
 		return errors.New("Currency not allowed ")
@@ -297,7 +297,7 @@ func mintERC20tokens(ctx *action.Context, tracker *trackerlib.Tracker, oltTx Rep
 	}
 
 	tracker.State = trackerlib.Released
-	err = ctx.ETHTrackers.Set(tracker)
+	err = ctx.ETHTrackers.WithPrefixType(trackerlib.PrefixOngoing).Set(tracker)
 	if err != nil {
 		return err
 	}
