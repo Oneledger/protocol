@@ -38,7 +38,7 @@ var (
 
 type ProcessType int8
 
-func GetProcessTypeString(t ProcessType) string {
+func (t ProcessType) String() string {
 	switch t {
 	case 0x00:
 		return "ProcessTypeNone"
@@ -52,6 +52,7 @@ func GetProcessTypeString(t ProcessType) string {
 		return "ERC REDEEM"
 	}
 	return "UNKNOWN TYPE"
+
 }
 
 func (t TrackerState) String() string {
