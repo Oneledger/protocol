@@ -80,6 +80,7 @@ func Signing(ctx interface{}) error {
 	}
 
 	tracker := context.Tracker
+	context.Tracker = tracker
 
 	if tracker.State != ethereum.New {
 		err := errors.New("Cannot Start Sign and Broadcast from Current State")
@@ -96,17 +97,11 @@ func Signing(ctx interface{}) error {
 		}
 
 	}
-	//fmt.Println("Starting loop to wait for Bjob to be done")
-	//context.JobStore.WaitforJob(tracker.GetJobID(ethereum.BusyBroadcasting))
-	//fmt.Println("Setting tracker State ")
-	//tracker.State = ethereum.BusyBroadcasting
-	context.Tracker = tracker
 
 	return nil
 }
 
 func VerifyRedeem(ctx interface{}) error {
-	fmt.Println("Starting Verify")
 	context, ok := ctx.(*ethereum.TrackerCtx)
 	if !ok {
 		return errors.New("error casting tracker context")

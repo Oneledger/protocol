@@ -5,9 +5,7 @@
 package jobs
 
 import (
-	"fmt"
 	"sync"
-	"time"
 
 	"github.com/pkg/errors"
 
@@ -77,19 +75,6 @@ func (js *JobStore) GetJob(jobID string) (Job, error) {
 		return nil, err
 	}
 	return job, err
-}
-
-func (js *JobStore) WaitforJob(jobID string) {
-	for {
-		time.Sleep(time.Second * 3)
-		bjob, err := js.GetJob(jobID)
-		if err != nil {
-			fmt.Println(errors.Wrap(err, "failed to get job"))
-		}
-		if bjob.IsDone() || bjob.IsFailed() {
-			return
-		}
-	}
 }
 
 func (js *JobStore) DeleteJob(job Job) error {

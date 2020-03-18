@@ -103,7 +103,6 @@ func Broadcasting(ctx interface{}) error {
 }
 
 func Finalizing(ctx interface{}) error {
-	fmt.Println("executing finalizing")
 	context, ok := ctx.(*ethereum.TrackerCtx)
 	if !ok {
 		return errors.New("error casting tracker context")
@@ -140,7 +139,6 @@ func Finalizing(ctx interface{}) error {
 		if fjob != nil {
 			return nil
 		}
-		fmt.Println("Starting finality job")
 		job := NewETHCheckFinality(tracker.TrackerName, ethereum.BusyFinalizing)
 		err = context.JobStore.SaveJob(job)
 		if err != nil {
