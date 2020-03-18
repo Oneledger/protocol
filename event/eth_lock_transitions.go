@@ -14,6 +14,7 @@ func init() {
 		[]transition.Status{
 			transition.Status(ethereum.New),
 			transition.Status(ethereum.BusyBroadcasting),
+			//	transition.Status(ethereum.BroadcastSuccess),
 			transition.Status(ethereum.BusyFinalizing),
 			transition.Status(ethereum.Finalized),
 			transition.Status(ethereum.Released),
@@ -35,6 +36,16 @@ func init() {
 		Fn:   Finalizing,
 		From: transition.Status(ethereum.BusyBroadcasting),
 		To:   transition.Status(ethereum.BusyFinalizing),
+	})
+	if err != nil {
+		panic(err)
+	}
+
+	err = EthLockEngine.Register(transition.Transition{
+		Name: ethereum.FINALIZE,
+		Fn:   Finalization,
+		From: transition.Status(ethereum.BusyFinalizing),
+		To:   transition.Status(ethereum.Finalized),
 	})
 	if err != nil {
 		panic(err)
@@ -78,34 +89,32 @@ func Broadcasting(ctx interface{}) error {
 
 	tracker.State = ethereum.BusyBroadcasting
 
-	context.Tracker = tracker
-
 	//create broadcasting
 	if context.Validators.IsValidator() {
 
-		job := NewETHBroadcast((*tracker).TrackerName, tracker.State)
+		job := NewETHBroadcast((*tracker).TrackerName, ethereum.BusyBroadcasting)
 		err := context.JobStore.SaveJob(job)
 		if err != nil {
 			return errors.Wrap(errors.New("job serialization failed err: "), err.Error())
 		}
 	}
 
+	context.Tracker = tracker
 	return nil
 }
 
 func Finalizing(ctx interface{}) error {
-
+	fmt.Println("executing finalizing")
 	context, ok := ctx.(*ethereum.TrackerCtx)
 	if !ok {
 		return errors.New("error casting tracker context")
 	}
 	tracker := context.Tracker
 
-	if tracker.State != ethereum.BusyBroadcasting {
-		err := errors.New("Cannot start Finalizing from the current state")
-		return errors.Wrap(err, tracker.State.String())
-	}
-
+	//if tracker.State != ethereum.BusyBroadcasting {
+	//	err := errors.New("Cannot start Finalizing from the current state")
+	//	return errors.Wrap(err, tracker.State.String())
+	//}
 	y, n := tracker.GetVotes()
 
 	if y+n > 0 {
@@ -113,7 +122,6 @@ func Finalizing(ctx interface{}) error {
 	}
 
 	context.Tracker = tracker
-
 	if context.Validators.IsValidator() {
 		_, voted := tracker.CheckIfVoted(context.CurrNodeAddr)
 		if voted {
@@ -133,7 +141,7 @@ func Finalizing(ctx interface{}) error {
 		if fjob != nil {
 			return nil
 		}
-
+		fmt.Println("Starting finality job")
 		job := NewETHCheckFinality(tracker.TrackerName, ethereum.BusyFinalizing)
 		err = context.JobStore.SaveJob(job)
 		if err != nil {
@@ -144,8 +152,51 @@ func Finalizing(ctx interface{}) error {
 	return nil
 }
 
+func Finalization(ctx interface{}) error {
+
+	context, ok := ctx.(*ethereum.TrackerCtx)
+	if !ok {
+		return errors.New("error casting tracker context")
+	}
+
+	tracker := context.Tracker
+
+	if tracker.State != ethereum.BusyFinalizing {
+		err := errors.New("cannot finalize from the current state")
+		return errors.Wrap(err, string(tracker.State))
+	}
+
+	if tracker.Finalized() {
+		tracker.State = ethereum.Finalized
+		return nil
+	}
+
+	if context.Validators.IsValidator() {
+		//Check if current Node voted
+		_, voted := tracker.CheckIfVoted(context.CurrNodeAddr)
+
+		if !voted {
+			//Create job to check finality
+			fmt.Println("Creating finality job from finalization")
+			job := NewETHCheckFinality(tracker.TrackerName, tracker.State)
+
+			err := context.JobStore.SaveJob(job)
+			if err != nil {
+				return errors.Wrap(errors.New("job serialization failed err: "), err.Error())
+			}
+			//} else {
+			//	job, err := context.JobStore.GetJob(tracker.GetJobID(tracker.State))
+			//	if err != nil {
+			//		return errors.Wrap(errors.LockNew("job serialization failed err: "), err.Error())
+			//	}
+			//	job.
+		}
+	}
+	context.Tracker = tracker
+	return nil
+}
+
 func Cleanup(ctx interface{}) error {
-	fmt.Println("Starting Cleanup")
 	context, ok := ctx.(*ethereum.TrackerCtx)
 	if !ok {
 		return errors.New("error casting tracker context")
@@ -165,12 +216,6 @@ func Cleanup(ctx interface{}) error {
 	if err != nil || !res {
 		return err
 	}
-	tracker, err = context.TrackerStore.WithPrefixType(ethereum.PrefixPassed).Get(tracker.TrackerName)
-	if err != nil {
-		context.Logger.Error("error saving eth tracker", err)
-		return err
-	}
-	fmt.Println("Tracker from Success store", tracker)
 
 	//Delete Broadcasting Job
 	if context.Validators.IsValidator() {

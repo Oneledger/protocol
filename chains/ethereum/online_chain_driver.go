@@ -2,7 +2,6 @@ package ethereum
 
 import (
 	"context"
-	"fmt"
 	"math/big"
 	"strings"
 	"time"
@@ -204,7 +203,6 @@ func (acc *ETHChainDriver) CheckFinality(txHash TransactionHash, blockConfirmati
 			if big.NewInt(blockConfirmation).Cmp(diff) > 0 {
 				return nil, errors.New("Waiting for confirmation . Current Block Confirmations : " + diff.String())
 			}
-			fmt.Println("confirmed ,checking blockhash ")
 			txHeaderCalculated, err := acc.client.HeaderByNumber(context.Background(), result.BlockNumber)
 			if err != nil {
 				return nil, errors.Wrap(err, "Unable to get block in which TX has been included")

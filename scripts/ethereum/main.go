@@ -46,9 +46,9 @@ var (
 	TestTokenABI     = contract.ERC20BasicABI
 	LockRedeemERCABI = contract.LockRedeemERCABI
 	// LockRedeemERC20ABI = contract.ContextABI
-	LockRedeemContractAddr      = "0x11775Fea746c718EBD908aAB46956736075A6d62"
-	TestTokenContractAddr       = "0x1b32CB8810fCe627aca09419CdF495B08285E9ba"
-	LockRedeemERC20ContractAddr = "0x943D0A38eab1C6DE5Ff1b5048e90D66511923D5a"
+	LockRedeemContractAddr      = "0x95D14f6bEe9587bc83BEa7Ea99e3A9E604FE8E5B"
+	TestTokenContractAddr       = "0xe44C209559657927F7f7791ab7303456974F38A6"
+	LockRedeemERC20ContractAddr = "0xa52401FF1de7b8aFbb5803AaEd892950Af4A364f"
 
 	cfg               = config.DefautEthConfigRinkeby()
 	log               = logger.NewDefaultLogger(os.Stdout).WithPrefix("testeth")
@@ -82,7 +82,7 @@ func createValue(str string) *big.Int {
 }
 
 func init() {
-	privKey := "85ed0f5a866323ac7f956b13812ec5203dbba813424f05a9faca30aaca5c6ac5"
+	privKey := "6c24a44424c8182c1e3e995ad3ccfb2797e3f7ca845b99bea8dead7fc9dccd09"
 	if strings.Contains(cfg.Connection, "rinkeby") {
 		privKey = "02038529C9AB706E9F4136F4A4EB51E866DBFE22D5E102FD3A22C14236E1C2EA"
 	}
@@ -91,7 +91,7 @@ func init() {
 
 	UserprivKeyRedeem, _ = crypto.HexToECDSA(privKey)
 
-	spamKey, _ = crypto.HexToECDSA("6c24a44424c8182c1e3e995ad3ccfb2797e3f7ca845b99bea8dead7fc9dccd09")
+	spamKey, _ = crypto.HexToECDSA("ee7af353ce3bc37c01187abae7a2d7d1ca22c2a4b88850fc171b988cad924be0")
 
 	client, _ = cfg.Client()
 	contractAbi, _ = abi.JSON(strings.NewReader(LockRedeemABI))
@@ -125,48 +125,48 @@ func init() {
 
 func main() {
 
-	//rawTxBytes := lock()
-	//status, err := trackerOngoingStatus(rawTxBytes)
-	//for err != nil {
-	//	time.Sleep(time.Second * 1)
-	//	_, err = trackerOngoingStatus(rawTxBytes)
-	//}
-	//
-	//for status != "Released" && status != "Failed " && err == nil {
-	//	time.Sleep(time.Second * 2)
-	//	status, err = trackerOngoingStatus(rawTxBytes)
-	//	fmt.Println("Tracker Status :", status)
-	//	if !strings.Contains(cfg.Connection, "rinkeby") {
-	//		sendTrasactions(6)
-	//	}
-	//}
-	//
-	//time.Sleep(time.Second * 5)
-	//status, err = trackerFailedStatus(rawTxBytes)
-	//if err != nil {
-	//	fmt.Println(err)
-	//}
-	//fmt.Println("Getting from Failed tracker store", status)
-	//
-	//time.Sleep(time.Second * 5)
-	//status, err = trackerSuccessStatus(rawTxBytes)
-	//if err != nil {
-	//	fmt.Println(err)
-	//}
-	//fmt.Println("Getting from Success tracker store", status)
-	//
-	//time.Sleep(15 * time.Second)
-	redeem()
-	//time.Sleep(15 * time.Second)
-	//fmt.Println(rawTxBytes)
-	//time.Sleep(5 * time.Second)
+	getstatus(lock())
+	time.Sleep(time.Second * 10)
+	getstatus(redeem())
+
 	//sendTrasactions(12)
 	//time.Sleep(5 * time.Second)
-	//redeem()
 
 	//erc20lock()
 	///time.Sleep(10 * time.Second)
 	//erc20Redeem()
+}
+
+func getstatus(rawTxBytes []byte) {
+	status, err := trackerOngoingStatus(rawTxBytes)
+	for err != nil {
+		time.Sleep(time.Second * 1)
+		_, err = trackerOngoingStatus(rawTxBytes)
+	}
+
+	for status != "Released" && status != "Failed " && err == nil {
+		time.Sleep(time.Second * 2)
+		status, err = trackerOngoingStatus(rawTxBytes)
+		fmt.Println("Tracker Status :", status)
+
+		//sendTrasactions(6)
+
+	}
+
+	time.Sleep(time.Second * 5)
+	status, err = trackerFailedStatus(rawTxBytes)
+	if err != nil {
+		fmt.Println(err)
+	}
+	fmt.Println("Getting from Failed tracker store", status)
+
+	time.Sleep(time.Second * 5)
+	status, err = trackerSuccessStatus(rawTxBytes)
+	if err != nil {
+		fmt.Println(err)
+	}
+	fmt.Println("Getting from Success tracker store", status)
+
 }
 
 func lock() []byte {
@@ -332,12 +332,12 @@ func trackerSuccessStatus(rawTxBytes []byte) (string, error) {
 	return trackerStatusReply.Status, nil
 }
 
-func redeem() {
+func redeem() []byte {
 
 	bytesData, err := contractAbi.Pack("redeem", valueredeem)
 	if err != nil {
 		fmt.Println(err)
-		return
+		return nil
 	}
 
 	redeemAddress := redeemRecipientAddress.Bytes()
@@ -383,7 +383,7 @@ func redeem() {
 
 	if err != nil {
 		fmt.Println(err)
-		return
+		return nil
 	}
 	err = client.SendTransaction(context.Background(), signedTx2)
 	if err != nil {
@@ -395,14 +395,14 @@ func redeem() {
 	rpcclient, err := rpc.NewClient("http://localhost:26602")
 	if err != nil {
 		fmt.Println(err)
-		return
+		return nil
 	}
 
 	accReply := &oclient.ListAccountsReply{}
 	err = rpcclient.Call("owner.ListAccounts", struct{}{}, accReply)
 	if err != nil {
 		fmt.Println("query account failed", err)
-		return
+		return nil
 	}
 
 	acc := accReply.Accounts[0]
@@ -411,7 +411,7 @@ func redeem() {
 	err = rpcclient.Call("query.ListCurrencies", struct{}{}, result)
 	if err != nil {
 		fmt.Println(err)
-		return
+		return nil
 	}
 	olt, _ := result.Currencies.GetCurrencySet().GetCurrencyByName("OLT")
 
@@ -433,7 +433,7 @@ func redeem() {
 	}, signReply)
 	if err != nil {
 		fmt.Println(err)
-		return
+		return nil
 	}
 
 	bresult2 := &oclient.BroadcastReply{}
@@ -444,10 +444,11 @@ func redeem() {
 	}, bresult2)
 	if err != nil {
 		fmt.Println(err)
-		return
+		return nil
 	}
 
 	fmt.Println("Redeem broadcast result: ", bresult2.OK, bresult2.Log)
+	return rawTxBytes2
 }
 
 func erc20lock() {

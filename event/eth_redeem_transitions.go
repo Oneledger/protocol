@@ -2,6 +2,7 @@ package event
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/pkg/errors"
 
@@ -85,12 +86,10 @@ func Signing(ctx interface{}) error {
 		err := errors.New("Cannot Start Sign and Broadcast from Current State")
 		return errors.Wrap(err, string((*tracker).State))
 	}
-
-	tracker.State = ethereum.BusyBroadcasting
-
+	//tracker.State = ethereum.BusyBroadcasting
 	if context.Validators.IsValidator() {
 
-		job := NewETHSignRedeem(tracker.TrackerName, tracker.State)
+		job := NewETHSignRedeem(tracker.TrackerName, ethereum.BusyBroadcasting)
 		err := context.JobStore.SaveJob(job)
 		if err != nil {
 
@@ -98,12 +97,30 @@ func Signing(ctx interface{}) error {
 		}
 
 	}
+
+	fmt.Println("Starting loop to wait for Bjob to be done")
+
+	for {
+		fmt.Println("Getting Job from tracker store ")
+		time.Sleep(time.Second * 3)
+		bjob, err := context.JobStore.GetJob(tracker.GetJobID(ethereum.BusyBroadcasting))
+		if err != nil {
+			fmt.Println(errors.Wrap(err, "failed to get job"))
+		}
+		if bjob.IsDone() || bjob.IsFailed() {
+			break
+		}
+	}
+	//time.Sleep(time.Second * 30)
+	fmt.Println("Setting tracker State ")
+	tracker.State = ethereum.BusyBroadcasting
 	context.Tracker = tracker
+
 	return nil
 }
 
 func VerifyRedeem(ctx interface{}) error {
-
+	fmt.Println("Starting Verify")
 	context, ok := ctx.(*ethereum.TrackerCtx)
 	if !ok {
 		return errors.New("error casting tracker context")

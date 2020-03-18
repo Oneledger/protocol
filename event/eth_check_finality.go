@@ -32,7 +32,7 @@ func NewETHCheckFinality(name ethereum.TrackerName, state trackerlib.TrackerStat
 func (job *JobETHCheckFinality) DoMyJob(ctx interface{}) {
 
 	// get tracker
-	job.RetryCount += 1
+	//job.RetryCount += 1
 	if job.RetryCount > jobs.Max_Retry_Count {
 		job.Status = jobs.Failed
 	}
