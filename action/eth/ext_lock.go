@@ -214,12 +214,11 @@ func runLock(ctx *action.Context, lock *Lock) (bool, action.Response) {
 	tracker.ProcessOwner = lock.Locker
 	tracker.SignedETHTx = lock.ETHTxn
 	// Save eth Tracker
-	err = ctx.ETHTrackers.Set(tracker)
+	err = ctx.ETHTrackers.WithPrefixType(ethereum.PrefixOngoing).Set(tracker)
 	if err != nil {
 		ctx.Logger.Error("error saving eth tracker", err)
 		return false, action.Response{Log: "error saving eth tracker: " + err.Error()}
 	}
-
 	return true, action.Response{
 		Tags: lock.Tags(),
 	}

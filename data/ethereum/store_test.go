@@ -2,13 +2,14 @@ package ethereum
 
 import (
 	"fmt"
+	"testing"
+
 	"github.com/Oneledger/protocol/chains/ethereum"
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/storage"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/assert"
 	"github.com/tendermint/tendermint/libs/db"
-	"testing"
 )
 
 var (
@@ -49,7 +50,7 @@ func TestTrackerStore_Get(t *testing.T) {
 		fmt.Println("tracker.GetVotes() returns: ", yes)
 
 		fmt.Println("Saving tracker to cache")
-		err := store.Set(tracker)
+		err := store.WithPrefixType(PrefixOngoing).Set(tracker)
 		assert.NoError(t, err, "")
 
 		fmt.Println("Getting tracker from cache")

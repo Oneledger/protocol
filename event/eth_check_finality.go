@@ -32,8 +32,7 @@ func NewETHCheckFinality(name ethereum.TrackerName, state trackerlib.TrackerStat
 func (job *JobETHCheckFinality) DoMyJob(ctx interface{}) {
 
 	// get tracker
-
-	job.RetryCount += 1
+	//job.RetryCount += 1
 	if job.RetryCount > jobs.Max_Retry_Count {
 		job.Status = jobs.Failed
 	}
@@ -43,7 +42,7 @@ func (job *JobETHCheckFinality) DoMyJob(ctx interface{}) {
 	ethCtx, _ := ctx.(*JobsContext)
 
 	trackerStore := ethCtx.EthereumTrackers
-	tracker, err := trackerStore.Get(job.TrackerName)
+	tracker, err := trackerStore.WithPrefixType(trackerlib.PrefixOngoing).Get(job.TrackerName)
 	if err != nil {
 		ethCtx.Logger.Error("err trying to deserialize tracker: ", job.TrackerName, err)
 		job.RetryCount += 1
@@ -75,11 +74,11 @@ func (job *JobETHCheckFinality) DoMyJob(ctx interface{}) {
 	}
 	receipt, err := cd.CheckFinality(tx.Hash(), ethoptions.BlockConfirmation)
 	if err != nil {
-		ethCtx.Logger.Error("Receiving TX receipt : ", job.GetJobID(), err)
+		ethCtx.Logger.Debug("Receiving TX receipt : ", job.GetJobID(), err)
 		return
 	}
 	if receipt == nil {
-		ethCtx.Logger.Info("Transaction not added to Ethereum Network yet ", job.GetJobID())
+		ethCtx.Logger.Debug("Transaction not added to Ethereum Network yet ", job.GetJobID())
 		return
 	}
 	index, _ := tracker.CheckIfVoted(ethCtx.ValidatorAddress)

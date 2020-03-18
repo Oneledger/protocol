@@ -80,17 +80,16 @@ func Signing(ctx interface{}) error {
 	}
 
 	tracker := context.Tracker
+	context.Tracker = tracker
 
 	if tracker.State != ethereum.New {
 		err := errors.New("Cannot Start Sign and Broadcast from Current State")
 		return errors.Wrap(err, string((*tracker).State))
 	}
-
 	tracker.State = ethereum.BusyBroadcasting
-
 	if context.Validators.IsValidator() {
 
-		job := NewETHSignRedeem(tracker.TrackerName, tracker.State)
+		job := NewETHSignRedeem(tracker.TrackerName, ethereum.BusyBroadcasting)
 		err := context.JobStore.SaveJob(job)
 		if err != nil {
 
@@ -98,12 +97,11 @@ func Signing(ctx interface{}) error {
 		}
 
 	}
-	context.Tracker = tracker
+
 	return nil
 }
 
 func VerifyRedeem(ctx interface{}) error {
-
 	context, ok := ctx.(*ethereum.TrackerCtx)
 	if !ok {
 		return errors.New("error casting tracker context")
@@ -178,9 +176,14 @@ func redeemCleanup(ctx interface{}) error {
 		}
 	}
 	//Delete Tracker
-
+	context.Logger.Detail("Setting Tracker to succeeded (ethLock):", tracker.State.String())
+	err := context.TrackerStore.WithPrefixType(ethereum.PrefixPassed).Set(tracker.Clean())
+	if err != nil {
+		context.Logger.Error("error saving eth tracker", err)
+		return err
+	}
 	fmt.Println("Deleting tracker (ethRedeem):", tracker.State.String())
-	res, err := context.TrackerStore.Delete(tracker.TrackerName)
+	res, err := context.TrackerStore.WithPrefixType(ethereum.PrefixOngoing).Delete(tracker.TrackerName)
 	if err != nil || !res {
 		return errors.Wrap(err, "error deleting tracker from store")
 	}
@@ -210,9 +213,13 @@ func redeemCleanupFailed(ctx interface{}) error {
 		}
 	}
 	//Delete Tracker
-	fmt.Println("Deleting tracker (ethRedeem):", tracker.State.String())
-
-	res, err := context.TrackerStore.Delete(tracker.TrackerName)
+	context.Logger.Detail("Setting Tracker to Failed (ethLock):", tracker.State.String())
+	err := context.TrackerStore.WithPrefixType(ethereum.PrefixFailed).Set(tracker.Clean())
+	if err != nil {
+		context.Logger.Error("error saving eth tracker", err)
+		return err
+	}
+	res, err := context.TrackerStore.WithPrefixType(ethereum.PrefixOngoing).Delete(tracker.TrackerName)
 	if err != nil || !res {
 		return errors.Wrap(err, "error deleting tracker from store")
 	}

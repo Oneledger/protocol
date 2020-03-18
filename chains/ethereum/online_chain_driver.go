@@ -192,7 +192,6 @@ func (acc *ETHChainDriver) GetTransactionMessage(tx *types.Transaction) (*types.
 
 // CheckFinality verifies the finality of a transaction on the ethereum blockchain , waits for 12 block confirmations
 func (acc *ETHChainDriver) CheckFinality(txHash TransactionHash, blockConfirmation int64) (*types.Receipt, error) {
-
 	result, err := acc.GetClient().TransactionReceipt(context.Background(), txHash)
 	if err == nil {
 		if result.Status == types.ReceiptStatusSuccessful {
@@ -220,7 +219,7 @@ func (acc *ETHChainDriver) CheckFinality(txHash TransactionHash, blockConfirmati
 			return result, nil
 		}
 	}
-	acc.logger.Error("Transaction not added to Block yet :", err)
+	acc.logger.Debug("Transaction not added to Block yet :", err)
 	return nil, err
 }
 

@@ -1,7 +1,6 @@
 package event
 
 import (
-	"fmt"
 	"math/big"
 	"strconv"
 
@@ -48,7 +47,7 @@ func (j *JobETHSignRedeem) DoMyJob(ctx interface{}) {
 
 	ethCtx, _ := ctx.(*JobsContext)
 	trackerStore := ethCtx.EthereumTrackers
-	tracker, err := trackerStore.Get(j.TrackerName)
+	tracker, err := trackerStore.WithPrefixType(trackerlib.PrefixOngoing).Get(j.TrackerName)
 	if err != nil {
 		ethCtx.Logger.Error("err trying to deserialize tracker: ", j.TrackerName, err)
 		return
@@ -100,7 +99,7 @@ func (j *JobETHSignRedeem) DoMyJob(ctx interface{}) {
 	addr := ethCtx.GetValidatorETHAddress()
 	txReceipt, err := cd.VerifyReceipt(tx.Hash())
 	if err != nil {
-		ethCtx.Logger.Error("Trying to confirm RedeemTX sent by User Receipt :", err)
+		ethCtx.Logger.Debug("Trying to confirm RedeemTX sent by User Receipt :", err)
 		return
 	}
 	//Failed to delete old version of chainstate err version does not exist version: -900
@@ -125,21 +124,21 @@ func (j *JobETHSignRedeem) DoMyJob(ctx interface{}) {
 		return
 	}
 	if success {
-		ethCtx.Logger.Info("Validator Sign Confirmed | Validator Address :", ethCtx.ValidatorAddress.Humanize(), "| User Eth Address :", msg.From().Hex())
+		ethCtx.Logger.Debug("Validator Sign Confirmed | Validator Address :", ethCtx.ValidatorAddress.Humanize(), "| User Eth Address :", msg.From().Hex())
 		j.Status = jobs.Completed
 		return
 	}
 	if j.RetryCount >= 0 && !success {
-		ethCtx.Logger.Info("Waiting for Validator SignTX to be mined")
+		ethCtx.Logger.Debug("Waiting for Validator SignTX to be mined")
 	}
 	if err == ethereum.ErrRedeemExpired {
-		fmt.Println("Failing from sign : Redeem Expired")
+		ethCtx.Logger.Info("Failing from sign : Redeem Expired")
 		j.Status = jobs.Failed
 		BroadcastReportFinalityETHTx(ctx.(*JobsContext), j.TrackerName, j.JobID, false)
 	}
 	if status != 0 {
 		if status == 1 && j.RetryCount >= 1 {
-			ethCtx.Logger.Info("Redeem TX successful , 67 % Votes have already been confirmed")
+			ethCtx.Logger.Debug("Redeem TX successful , 67 % Votes have already been confirmed")
 			j.Status = jobs.Completed
 			return
 		}
@@ -176,7 +175,7 @@ func (j *JobETHSignRedeem) DoMyJob(ctx interface{}) {
 			return
 		}
 		j.RetryCount += 1
-		ethCtx.Logger.Info("Validator Signed Redeem | Validator Address :", ethCtx.ValidatorAddress.Humanize())
+		ethCtx.Logger.Debug("Validator Sign Broadcasted | Validator Address :", ethCtx.ValidatorAddress.Humanize())
 	}
 	//j.Status = jobs.Completed
 }

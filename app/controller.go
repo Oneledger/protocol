@@ -238,10 +238,9 @@ func (app *App) blockEnder() blockEnder {
 			ValidatorUpdates: updates,
 			Tags:             []common.KVPair(nil),
 		}
-
+		ethTrackerlog := log.NewLoggerWithPrefix(app.Context.logWriter, "ethtracker").WithLevel(log.Level(app.Context.cfg.Node.LogLevel))
 		doTransitions(app.Context.jobStore, app.Context.btcTrackers.WithState(app.Context.deliver), app.Context.validators)
-
-		doEthTransitions(app.Context.jobStore, app.Context.ethTrackers, app.Context.node.ValidatorAddress(), app.logger, app.Context.validators, app.Context.deliver)
+		doEthTransitions(app.Context.jobStore, app.Context.ethTrackers, app.Context.node.ValidatorAddress(), ethTrackerlog, app.Context.validators, app.Context.deliver)
 
 		app.logger.Debug("End Block: ", result, "height:", req.Height)
 
@@ -341,20 +340,20 @@ func doTransitions(js *jobs.JobStore, ts *bitcoin.TrackerStore, validators *iden
 func doEthTransitions(js *jobs.JobStore, ts *ethereum.TrackerStore, myValAddr keys.Address, logger *log.Logger, validators *identity.ValidatorStore, deliver *storage.State) {
 	ts = ts.WithState(deliver)
 	tnames := make([]*ceth.TrackerName, 0, 20)
-	ts.Iterate(func(name *ceth.TrackerName, tracker *ethereum.Tracker) bool {
+	ts.WithPrefixType(ethereum.PrefixOngoing).Iterate(func(name *ceth.TrackerName, tracker *ethereum.Tracker) bool {
 		tnames = append(tnames, name)
 		return false
 	})
 	for _, name := range tnames {
 		deliver.DiscardTxSession()
 		deliver.BeginTxSession()
-		t, _ := ts.Get(*name)
+		t, _ := ts.WithPrefixType(ethereum.PrefixOngoing).Get(*name)
 		state := t.State
-		ctx := ethereum.NewTrackerCtx(t, myValAddr, js.WithChain(chain.ETHEREUM), ts, validators)
+		ctx := ethereum.NewTrackerCtx(t, myValAddr, js.WithChain(chain.ETHEREUM), ts, validators, logger)
 
 		if t.Type == ethereum.ProcessTypeLock || t.Type == ethereum.ProcessTypeLockERC {
 
-			logger.Info("Processing Tracker : ", ethereum.GetProcessTypeString(t.Type), " | State :", t.State.String())
+			logger.Detail("Processing Tracker : ", t.Type.String(), " | State :", t.State.String())
 			_, err := event.EthLockEngine.Process(t.NextStep(), ctx, transition.Status(t.State))
 			if err != nil {
 				logger.Error("failed to process eth tracker ProcessTypeLock", err)
@@ -362,7 +361,7 @@ func doEthTransitions(js *jobs.JobStore, ts *ethereum.TrackerStore, myValAddr ke
 			}
 
 		} else if t.Type == ethereum.ProcessTypeRedeem || t.Type == ethereum.ProcessTypeRedeemERC {
-
+			logger.Detail("Processing Tracker : ", t.Type.String(), " | State :", t.State.String())
 			_, err := event.EthRedeemEngine.Process(t.NextStep(), ctx, transition.Status(t.State))
 			if err != nil {
 				logger.Error("failed to process eth tracker ProcessTypeRedeem", err)
@@ -371,7 +370,7 @@ func doEthTransitions(js *jobs.JobStore, ts *ethereum.TrackerStore, myValAddr ke
 		}
 		// only set back to chainstate when transition happened.
 		if ctx.Tracker.State < 5 && state != ctx.Tracker.State {
-			err := ts.Set(ctx.Tracker)
+			err := ts.WithPrefixType(ethereum.PrefixOngoing).Set(ctx.Tracker)
 			if err != nil {
 				logger.Error("failed to save eth tracker", err, ctx.Tracker)
 				panic(err)

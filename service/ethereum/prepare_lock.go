@@ -66,7 +66,7 @@ func createRawLock(locker action.Address, rawTx []byte, userfee action.Amount, g
 // Expects users ethereum address , and creates an unsigned TX to send to wallet .
 // Wallet signs and then calls onlinelock
 func (svc *Service) GetRawLockTX(req ETHLockRequest, out *ETHLockRawTX) error {
-	opt := svc.trackerStore.GetOption()
+	opt := svc.trackers.GetOption()
 	cd, err := ethereum.NewChainDriver(svc.config, svc.logger, opt.ContractAddress, opt.ContractABI, ethereum.ERC)
 	if err != nil {
 		return errors.Wrap(err, "GetRawLockTx")

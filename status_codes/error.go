@@ -85,4 +85,9 @@ var (
 	ErrPreparingOLTLock      = ProtocolError{Code: ExternalErrUnableToCreateOLTLockTX, Msg: "Unable to create OLT lock Tx for Ethereum"}
 	ErrPreparingErc20OLTLock = ProtocolError{Code: ExternalErrUnableToCreateErc20OLTLockTX, Msg: "Unable to create OLT lock Tx for ERC20 Token"}
 	ErrUnmarshaling          = ProtocolError{Code: ErrUnmarshalingRedeem, Msg: "Unable to unmarshall the incoming transaction into struct ,Wrong Json data"}
+
+	//Tracker Error
+	ErrGettingTrackerStatusFailed  = ProtocolError{Code: ETHTrackerNotFoundFailed, Msg: "Ethereum Tracker not found in the Failed tracker store"}
+	ErrGettingTrackerStatusSuccess = ProtocolError{Code: ETHTrackerNotFoundSuccess, Msg: "Ethereum Tracker not found in the Success tracker store"}
+	ErrGettingTrackerStatusOngoing = ProtocolError{Code: ETHTrackerNotFoundOngoing, Msg: "Ethereum Tracker not found in the Ongoing tracker store"}
 )

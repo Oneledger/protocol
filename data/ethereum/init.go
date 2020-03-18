@@ -38,7 +38,7 @@ var (
 
 type ProcessType int8
 
-func GetProcessTypeString(t ProcessType) string {
+func (t ProcessType) String() string {
 	switch t {
 	case 0x00:
 		return "ProcessTypeNone"
@@ -52,6 +52,7 @@ func GetProcessTypeString(t ProcessType) string {
 		return "ERC REDEEM"
 	}
 	return "UNKNOWN TYPE"
+
 }
 
 func (t TrackerState) String() string {
@@ -76,3 +77,11 @@ func (t TrackerState) String() string {
 }
 
 type Vote uint8
+
+type PrefixType int8
+
+const (
+	PrefixFailed  PrefixType = 0x00
+	PrefixPassed  PrefixType = 0x01
+	PrefixOngoing PrefixType = 0x02
+)
