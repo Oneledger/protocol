@@ -6,17 +6,11 @@ import (
 )
 
 func (svc *Service) GetTrackerStatus(req TrackerStatusRequest, out *TrackerStatusReply) error {
-	tracker, err := svc.trackers.WithPrefixType(ethereum.PrefixOngoing).Get(req.TrackerName)
+	tracker, err := svc.trackers.QueryAllStores(req.TrackerName)
 	if err != nil {
-		tracker, err = svc.trackers.WithPrefixType(ethereum.PrefixPassed).Get(req.TrackerName)
-		if err != nil {
-			tracker, err = svc.trackers.WithPrefixType(ethereum.PrefixFailed).Get(req.TrackerName)
-			if err != nil {
-				//svc.logger.Error(err, codes.ErrGettingTrackerStatusSuccess.ErrorMsg())
-				return codes.ErrGettingTrackerStatusSuccess.Wrap(codes.ErrGettingTrackerStatusFailed).Wrap(codes.ErrGettingTrackerStatusOngoing)
-			}
-		}
+		return codes.ErrGettingTrackerStatusSuccess.Wrap(codes.ErrGettingTrackerStatusFailed).Wrap(codes.ErrGettingTrackerStatusOngoing)
 	}
+
 	*out = TrackerStatusReply{
 		Status: tracker.State.String(),
 	}

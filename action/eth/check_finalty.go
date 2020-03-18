@@ -118,11 +118,11 @@ func runCheckFinality(ctx *action.Context, tx action.RawTx) (bool, action.Respon
 	}
 
 	if tracker.Finalized() {
-		ctx.Logger.Info("Tracker already Finalized")
+		ctx.Logger.Debug("Tracker already Finalized")
 		return true, action.Response{Log: "Tracker already Finalized"}
 	}
 	if tracker.Failed() {
-		ctx.Logger.Info("Tracker already Failed")
+		ctx.Logger.Debug("Tracker already Failed")
 		return true, action.Response{Log: "Tracker already Failed"}
 	}
 	if f.Success == true {
@@ -174,12 +174,12 @@ func runCheckFinality(ctx *action.Context, tx action.RawTx) (bool, action.Respon
 	}
 	err = ctx.ETHTrackers.WithPrefixType(trackerlib.PrefixOngoing).Set(tracker)
 	if err != nil {
-		ctx.Logger.Info("Unable to save the tracker", err)
+		ctx.Logger.Error("Unable to save the tracker", err)
 		return false, action.Response{Log: errors.Wrap(err, "unable to save the tracker").Error()}
 	}
-	ctx.Logger.Info("Vote added |  Validator : ", f.ValidatorAddress, " | Process Type : ", tracker.Type.String(), " | Success : ", f.Success)
+	ctx.Logger.Debug("Vote added |  Validator : ", f.ValidatorAddress, " | Process Type : ", tracker.Type.String(), " | Success : ", f.Success)
 	yes, no := tracker.GetVotes()
-	ctx.Logger.Info("Tracker Votes YES / NO : ", strconv.Itoa(yes), "/", strconv.Itoa(no))
+	ctx.Logger.Detail("Tracker Votes YES / NO : ", strconv.Itoa(yes), "/", strconv.Itoa(no))
 	return true, action.Response{Log: "vote success, not ready to mint: " + strconv.Itoa(yes) + "," + strconv.Itoa(no)}
 }
 
@@ -189,7 +189,7 @@ func (reportFinalityMintTx) ProcessFee(ctx *action.Context, signedTx action.Sign
 	// check the used gas for the tx
 	final := ctx.Balances.State.ConsumedGas()
 	used := int64(final - start)
-	ctx.Logger.Info("Gas Use : ", used)
+	ctx.Logger.Detail("Gas Use : ", used)
 	return true, action.Response{}
 }
 

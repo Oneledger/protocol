@@ -1,8 +1,6 @@
 package event
 
 import (
-	"fmt"
-
 	"github.com/pkg/errors"
 
 	"github.com/Oneledger/protocol/data/ethereum"
@@ -174,7 +172,6 @@ func Finalization(ctx interface{}) error {
 
 		if !voted {
 			//Create job to check finality
-			fmt.Println("Creating finality job from finalization")
 			job := NewETHCheckFinality(tracker.TrackerName, tracker.State)
 
 			err := context.JobStore.SaveJob(job)
@@ -202,13 +199,13 @@ func Cleanup(ctx interface{}) error {
 	tracker := context.Tracker
 
 	//Delete Tracker
-	context.Logger.Info("Setting tracker to success (ethLock):", tracker.State.String())
+	context.Logger.Detail("Setting tracker to success (ethLock):", tracker.State.String())
 	err := context.TrackerStore.WithPrefixType(ethereum.PrefixPassed).Set(tracker.Clean())
 	if err != nil {
 		context.Logger.Error("error saving eth tracker", err)
 		return err
 	}
-	context.Logger.Info("Deleting tracker (ethLock):", tracker.State.String())
+	context.Logger.Detail("Deleting tracker (ethLock):", tracker.State.String())
 	res, err := context.TrackerStore.WithPrefixType(ethereum.PrefixOngoing).Delete(tracker.TrackerName)
 	if err != nil || !res {
 		return err
@@ -246,7 +243,7 @@ func CleanupFailed(ctx interface{}) error {
 
 	tracker := context.Tracker
 
-	context.Logger.Info("Setting Tracker to failed (ethLock):", tracker.State.String())
+	context.Logger.Detail("Setting Tracker to failed (ethLock):", tracker.State.String())
 	err := context.TrackerStore.WithPrefixType(ethereum.PrefixFailed).Set(tracker.Clean())
 	if err != nil {
 		context.Logger.Error("error saving eth tracker", err)

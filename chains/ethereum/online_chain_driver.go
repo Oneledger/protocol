@@ -219,7 +219,7 @@ func (acc *ETHChainDriver) CheckFinality(txHash TransactionHash, blockConfirmati
 			return result, nil
 		}
 	}
-	acc.logger.Error("Transaction not added to Block yet :", err)
+	acc.logger.Debug("Transaction not added to Block yet :", err)
 	return nil, err
 }
 

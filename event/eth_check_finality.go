@@ -74,11 +74,11 @@ func (job *JobETHCheckFinality) DoMyJob(ctx interface{}) {
 	}
 	receipt, err := cd.CheckFinality(tx.Hash(), ethoptions.BlockConfirmation)
 	if err != nil {
-		ethCtx.Logger.Error("Receiving TX receipt : ", job.GetJobID(), err)
+		ethCtx.Logger.Debug("Receiving TX receipt : ", job.GetJobID(), err)
 		return
 	}
 	if receipt == nil {
-		ethCtx.Logger.Info("Transaction not added to Ethereum Network yet ", job.GetJobID())
+		ethCtx.Logger.Debug("Transaction not added to Ethereum Network yet ", job.GetJobID())
 		return
 	}
 	index, _ := tracker.CheckIfVoted(ethCtx.ValidatorAddress)

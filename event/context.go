@@ -6,7 +6,6 @@ package event
 
 import (
 	"crypto/ecdsa"
-	"os"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
@@ -45,14 +44,13 @@ func NewJobsContext(cfg config.Server,
 	valAddress keys.Address,
 	lStore *bitcoin.LockScriptStore,
 	ethTracker *ethereum.TrackerStore,
+	logger *log.Logger,
 ) *JobsContext {
-
-	w := os.Stdout
 
 	return &JobsContext{
 		cfg:              cfg,
 		Service:          svc,
-		Logger:           log.NewLoggerWithPrefix(w, "internal_jobs"),
+		Logger:           logger,
 		Trackers:         trackers,
 		Validators:       validators,
 		BTCPrivKey:       privKey,

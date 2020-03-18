@@ -277,5 +277,5 @@ func (ctx *context) JobContext() *event.JobsContext {
 		ctx.node.ValidatorAddress(),
 		ctx.lockScriptStore,
 		ctx.ethTrackers.WithState(ctx.deliver),
-	)
+		log.NewLoggerWithPrefix(ctx.logWriter, "internal_jobs").WithLevel(log.Level(ctx.cfg.Node.LogLevel)))
 }

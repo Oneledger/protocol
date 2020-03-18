@@ -110,6 +110,22 @@ func (ts *TrackerStore) WithPrefixType(prefix PrefixType) *TrackerStore {
 	return ts
 }
 
+func (ts *TrackerStore) QueryAllStores(key ethereum.TrackerName) (*Tracker, error) {
+	tracker, err := ts.WithPrefixType(PrefixOngoing).Get(key)
+	if err == nil {
+		return tracker, nil
+	}
+	tracker, err = ts.WithPrefixType(PrefixPassed).Get(key)
+	if err == nil {
+		return tracker, nil
+	}
+	tracker, err = ts.WithPrefixType(PrefixFailed).Get(key)
+	if err == nil {
+		return tracker, nil
+	}
+	return nil, err
+}
+
 func (ts *TrackerStore) SetupOption(opt *ethereum.ChainDriverOption) {
 	ts.cdOpt = opt
 }
