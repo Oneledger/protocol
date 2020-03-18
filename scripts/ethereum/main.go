@@ -126,7 +126,7 @@ func init() {
 func main() {
 
 	getstatus(lock())
-	time.Sleep(time.Second * 10)
+	time.Sleep(time.Second * 5)
 	getstatus(redeem())
 
 	//sendTrasactions(12)
@@ -153,14 +153,14 @@ func getstatus(rawTxBytes []byte) {
 
 	}
 
-	time.Sleep(time.Second * 5)
+	time.Sleep(time.Second * 1)
 	status, err = trackerFailedStatus(rawTxBytes)
 	if err != nil {
 		fmt.Println(err)
 	}
 	fmt.Println("Getting from Failed tracker store", status)
 
-	time.Sleep(time.Second * 5)
+	time.Sleep(time.Second * 1)
 	status, err = trackerSuccessStatus(rawTxBytes)
 	if err != nil {
 		fmt.Println(err)

@@ -87,8 +87,6 @@ func Broadcasting(ctx interface{}) error {
 		return errors.Wrap(err, string((*tracker).State))
 	}
 
-	tracker.State = ethereum.BusyBroadcasting
-
 	//create broadcasting
 	if context.Validators.IsValidator() {
 
@@ -98,8 +96,9 @@ func Broadcasting(ctx interface{}) error {
 			return errors.Wrap(errors.New("job serialization failed err: "), err.Error())
 		}
 	}
-
-	context.Tracker = tracker
+	//context.JobStore.WaitforJob(tracker.GetJobID(ethereum.BusyBroadcasting))
+	//tracker.State = ethereum.BusyBroadcasting
+	//context.Tracker = tracker
 	return nil
 }
 

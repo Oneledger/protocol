@@ -81,6 +81,7 @@ func (job *JobETHBroadcast) DoMyJob(ctx interface{}) {
 
 		return
 	}
+
 	fmt.Println("Broadcast is done")
 	job.Status = jobs.Completed
 }
