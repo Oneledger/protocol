@@ -89,6 +89,8 @@ func Broadcasting(ctx interface{}) error {
 
 	tracker.State = ethereum.BusyBroadcasting
 
+	context.Tracker = tracker
+
 	//create broadcasting
 	if context.Validators.IsValidator() {
 
@@ -99,7 +101,6 @@ func Broadcasting(ctx interface{}) error {
 		}
 	}
 
-	context.Tracker = tracker
 	return nil
 }
 
@@ -111,10 +112,10 @@ func Finalizing(ctx interface{}) error {
 	}
 	tracker := context.Tracker
 
-	//if tracker.State != ethereum.BusyBroadcasting {
-	//	err := errors.New("Cannot start Finalizing from the current state")
-	//	return errors.Wrap(err, tracker.State.String())
-	//}
+	if tracker.State != ethereum.BusyBroadcasting {
+		err := errors.New("Cannot start Finalizing from the current state")
+		return errors.Wrap(err, tracker.State.String())
+	}
 	y, n := tracker.GetVotes()
 
 	if y+n > 0 {
