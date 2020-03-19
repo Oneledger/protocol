@@ -82,38 +82,6 @@ func (job *JobETHCheckFinality) DoMyJob(ctx interface{}) {
 			return
 		}
 		BroadcastReportFinalityETHTx(ethCtx, job.TrackerName, job.JobID, true)
-		//reportFinalityMint := &eth.ReportFinality{
-		//	TrackerName:      job.TrackerName,
-		//	Locker:           tracker.ProcessOwner,
-		//	ValidatorAddress: ethCtx.ValidatorAddress,
-		//	VoteIndex:        index,
-		//	Success:          true,
-		//}
-		//
-		//txData, err := reportFinalityMint.Marshal()
-		//if err != nil {
-		//	ethCtx.Logger.Error("Error while preparing mint txn ", job.GetJobID(), err)
-		//	return
-		//}
-		//
-		//internalMintTx := action.RawTx{
-		//	Type: action.ETH_REPORT_FINALITY_MINT,
-		//	Data: txData,
-		//	Fee:  action.Fee{},
-		//	Memo: job.GetJobID(),
-		//}
-		//
-		//req := InternalBroadcastRequest{
-		//	RawTx: internalMintTx,
-		//}
-		//rep := BroadcastReply{}
-		//err = ethCtx.Service.InternalBroadcast(req, &rep)
-		//
-		//if err != nil || !rep.OK {
-		//	ethCtx.Logger.Error("error while broadcasting finalityStatus vote and mint txn ", job.GetJobID(), err, rep.Log)
-		//	return
-		//}
-		//TODO END
 		job.Status = jobs.Completed
 	}
 	return
