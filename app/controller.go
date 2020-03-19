@@ -124,7 +124,7 @@ func (app *App) blockBeginner() blockBeginner {
 		//update the header to current block
 		app.header = req.Header
 
-		app.logger.Debug("Begin Block:", result, "height:", req.Header.Height, "AppHash:", hex.EncodeToString(req.Header.AppHash))
+		app.logger.Detail("Begin Block:", result, "height:", req.Header.Height, "AppHash:", hex.EncodeToString(req.Header.AppHash))
 		return result
 	}
 }
@@ -177,7 +177,7 @@ func (app *App) txChecker() txChecker {
 			app.Context.check.CommitTxSession()
 		}
 
-		app.logger.Debug("Check Tx: ", result, "log", response.Log)
+		app.logger.Detail("Check Tx: ", result, "log", response.Log)
 		return result
 
 	}
@@ -215,7 +215,7 @@ func (app *App) txDeliverer() txDeliverer {
 			Tags:      response.Tags,
 			Codespace: "",
 		}
-		app.logger.Debug("Deliver Tx: ", result)
+		app.logger.Detail("Deliver Tx: ", result)
 
 		if !(ok && feeOk) {
 			app.Context.deliver.DiscardTxSession()
@@ -232,7 +232,7 @@ func (app *App) blockEnder() blockEnder {
 		defer app.handlePanic()
 
 		fee, err := app.Context.feePool.WithState(app.Context.deliver).Get([]byte(fees.POOL_KEY))
-		app.logger.Debug("endblock fee", fee, err)
+		app.logger.Detail("endblock fee", fee, err)
 		updates := app.Context.validators.GetEndBlockUpdate(app.Context.ValidatorCtx(), req)
 		result := ResponseEndBlock{
 			ValidatorUpdates: updates,
@@ -242,7 +242,7 @@ func (app *App) blockEnder() blockEnder {
 		doTransitions(app.Context.jobStore, app.Context.btcTrackers.WithState(app.Context.deliver), app.Context.validators)
 		doEthTransitions(app.Context.jobStore, app.Context.ethTrackers, app.Context.node.ValidatorAddress(), ethTrackerlog, app.Context.validators, app.Context.deliver)
 
-		app.logger.Debug("End Block: ", result, "height:", req.Height)
+		app.logger.Detail("End Block: ", result, "height:", req.Height)
 
 		return result
 	}
@@ -253,7 +253,7 @@ func (app *App) commitor() commitor {
 		defer app.handlePanic()
 
 		hash, ver := app.Context.deliver.Commit()
-		app.logger.Debugf("Committed New Block height[%d], hash[%s], versions[%d]", app.header.Height, hex.EncodeToString(hash), ver)
+		app.logger.Detailf("Committed New Block height[%d], hash[%s], versions[%d]", app.header.Height, hex.EncodeToString(hash), ver)
 
 		// update check state by deliver state
 		gc := getGasCalculator(app.genesisDoc.ConsensusParams)
@@ -262,7 +262,7 @@ func (app *App) commitor() commitor {
 			Data: hash,
 		}
 
-		app.logger.Debug("Commit Result", result)
+		app.logger.Detail("Commit Result", result)
 		return result
 	}
 }
@@ -353,7 +353,7 @@ func doEthTransitions(js *jobs.JobStore, ts *ethereum.TrackerStore, myValAddr ke
 
 		if t.Type == ethereum.ProcessTypeLock || t.Type == ethereum.ProcessTypeLockERC {
 
-			logger.Detail("Processing Tracker : ", t.Type.String(), " | State :", t.State.String())
+			logger.Debug("Processing Tracker : ", t.Type.String(), " | State :", t.State.String())
 			_, err := event.EthLockEngine.Process(t.NextStep(), ctx, transition.Status(t.State))
 			if err != nil {
 				logger.Error("failed to process eth tracker ProcessTypeLock", err)
@@ -361,7 +361,7 @@ func doEthTransitions(js *jobs.JobStore, ts *ethereum.TrackerStore, myValAddr ke
 			}
 
 		} else if t.Type == ethereum.ProcessTypeRedeem || t.Type == ethereum.ProcessTypeRedeemERC {
-			logger.Detail("Processing Tracker : ", t.Type.String(), " | State :", t.State.String())
+			logger.Debug("Processing Tracker : ", t.Type.String(), " | State :", t.State.String())
 			_, err := event.EthRedeemEngine.Process(t.NextStep(), ctx, transition.Status(t.State))
 			if err != nil {
 				logger.Error("failed to process eth tracker ProcessTypeRedeem", err)
