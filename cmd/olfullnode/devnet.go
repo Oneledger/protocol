@@ -69,6 +69,7 @@ type testnetConfig struct {
 	ethUrl               string
 	deploySmartcontracts bool
 	cloud                bool
+	loglevel             int
 }
 
 var ethBlockConfirmation = int64(12)
@@ -98,6 +99,7 @@ func init() {
 	testnetCmd.Flags().StringVar(&testnetArgs.ethUrl, "eth_rpc", "", "URL for ethereum network")
 	testnetCmd.Flags().BoolVar(&testnetArgs.deploySmartcontracts, "deploy_smart_contracts", false, "deploy eth contracts")
 	testnetCmd.Flags().BoolVar(&testnetArgs.cloud, "cloud_deploy", false, "set true for deploying on cloud")
+	testnetCmd.Flags().IntVar(&testnetArgs.loglevel, "loglevel", 3, "Specify the log level for olfullnode. 0: Fatal, 1: Error, 2: Warning, 3: Info, 4: Debug, 5: Detail")
 
 }
 
@@ -264,10 +266,11 @@ func runDevnet(_ *cobra.Command, _ []string) error {
 
 		// Generate new configuration file
 		cfg := config.DefaultServerConfig()
+
 		ethConnection := config.EthereumChainDriverConfig{Connection: url}
 		cfg.EthChainDriver = &ethConnection
 		cfg.Node.NodeName = nodeName
-		//cfg.Node.LogLevel = 4
+		cfg.Node.LogLevel = args.loglevel
 		cfg.Node.DB = args.dbType
 		if args.createEmptyBlock {
 			cfg.Consensus.CreateEmptyBlocks = true
@@ -275,6 +278,7 @@ func runDevnet(_ *cobra.Command, _ []string) error {
 		} else {
 			cfg.Consensus.CreateEmptyBlocks = false
 		}
+
 		cfg.Network.RPCAddress = generateAddress(generatePort(), true)
 		cfg.Network.P2PAddress = generateAddress(generatePort(), true)
 		cfg.Network.SDKAddress = generateAddress(generatePort(), true, true)

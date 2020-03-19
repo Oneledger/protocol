@@ -190,37 +190,41 @@ func (acc *ETHChainDriver) GetTransactionMessage(tx *types.Transaction) (*types.
 	return &msg, nil
 }
 
-// CheckFinality verifies the finality of a transaction on the ethereum blockchain , waits for 12 block confirmations
-func (acc *ETHChainDriver) CheckFinality(txHash TransactionHash, blockConfirmation int64) (*types.Receipt, error) {
+// CheckFinalityStatus verifies the finality of a transaction on the ethereum blockchain , waits for 12 block confirmations
+func (acc *ETHChainDriver) CheckFinality(txHash TransactionHash, blockConfirmation int64) CheckFinalityStatus {
 	result, err := acc.GetClient().TransactionReceipt(context.Background(), txHash)
-	if err == nil {
-		if result.Status == types.ReceiptStatusSuccessful {
-			latestHeader, err := acc.client.HeaderByNumber(context.Background(), nil)
-			if err != nil {
-				return nil, errors.Wrap(err, "Unable to extract latest header")
-			}
-			diff := big.NewInt(0).Sub(latestHeader.Number, result.BlockNumber)
-			if big.NewInt(blockConfirmation).Cmp(diff) > 0 {
-				return nil, errors.New("Waiting for confirmation . Current Block Confirmations : " + diff.String())
-			}
-			txHeaderCalculated, err := acc.client.HeaderByNumber(context.Background(), result.BlockNumber)
-			if err != nil {
-				return nil, errors.Wrap(err, "Unable to get block in which TX has been included")
-			}
-			if txHeaderCalculated.Hash() != result.BlockHash {
-				return nil, errors.New("BlockHash does not match")
-			}
-			return result, err
-		}
-		if result.Status == types.ReceiptStatusFailed {
-			acc.logger.Warn("Receipt status failed ")
-			b, _ := result.MarshalJSON()
-			acc.logger.Error(string(b))
-			return result, nil
-		}
+	if err != nil {
+		acc.logger.Debug("Transaction not added to Block yet :", err)
+		return TransactionNotMined
 	}
-	acc.logger.Debug("Transaction not added to Block yet :", err)
-	return nil, err
+	if result.Status == types.ReceiptStatusSuccessful {
+		latestHeader, err := acc.client.HeaderByNumber(context.Background(), nil)
+		if err != nil {
+			acc.logger.Debug("Original Receipt Successful , But unable to get Latest Header (Connection Problem)", err)
+			return UnabletoGetHeader
+		}
+		diff := big.NewInt(0).Sub(latestHeader.Number, result.BlockNumber)
+		if big.NewInt(blockConfirmation).Cmp(diff) > 0 {
+			acc.logger.Debug("Waiting for confirmation . Current Block Confirmations : " + diff.String())
+			return NotEnoughConfirmations
+		}
+		txHeaderCalculated, err := acc.client.HeaderByNumber(context.Background(), result.BlockNumber)
+		if err != nil {
+			acc.logger.Debug("Block Confirmed ,Error in getting Header of Original block at T - "+diff.String(), "  ", err)
+			return TxBlockNotFound
+		}
+		if txHeaderCalculated.Hash() != result.BlockHash {
+			acc.logger.Debug("BlockHash Check Failed ,Uncle block Detected")
+			return BlockHashFailed
+		}
+		return TXSuccess
+	}
+
+	acc.logger.Debug("Receipt status failed ")
+	b, _ := result.MarshalJSON()
+	acc.logger.Debug(string(b))
+	return ReciptNotFound
+
 }
 
 func (acc *ETHChainDriver) VerifyReceipt(txHash TransactionHash) (bool, error) {

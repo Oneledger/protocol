@@ -199,13 +199,13 @@ func Cleanup(ctx interface{}) error {
 	tracker := context.Tracker
 
 	//Delete Tracker
-	context.Logger.Detail("Setting tracker to success (ethLock):", tracker.State.String())
+	context.Logger.Debug("Setting tracker to success (ethLock):", tracker.State.String())
 	err := context.TrackerStore.WithPrefixType(ethereum.PrefixPassed).Set(tracker.Clean())
 	if err != nil {
 		context.Logger.Error("error saving eth tracker", err)
 		return err
 	}
-	context.Logger.Detail("Deleting tracker (ethLock):", tracker.State.String())
+	context.Logger.Debug("Deleting tracker (ethLock):", tracker.State.String())
 	res, err := context.TrackerStore.WithPrefixType(ethereum.PrefixOngoing).Delete(tracker.TrackerName)
 	if err != nil || !res {
 		return err
@@ -222,7 +222,7 @@ func Cleanup(ctx interface{}) error {
 		if err != nil {
 			return err
 		}
-		//Delete CheckFinality Job
+		//Delete CheckFinalityStatus Job
 		fjob, err := context.JobStore.GetJob(tracker.GetJobID(ethereum.BusyFinalizing))
 		if err != nil {
 			return errors.Wrap(err, "Failed to get Finalizing Job")
@@ -243,12 +243,13 @@ func CleanupFailed(ctx interface{}) error {
 
 	tracker := context.Tracker
 
-	context.Logger.Detail("Setting Tracker to failed (ethLock):", tracker.State.String())
+	context.Logger.Debug("Setting Tracker to failed (ethLock):", tracker.State.String())
 	err := context.TrackerStore.WithPrefixType(ethereum.PrefixFailed).Set(tracker.Clean())
 	if err != nil {
 		context.Logger.Error("error saving eth tracker", err)
 		return err
 	}
+	context.Logger.Debug("Deleting tracker (ethLock):", tracker.State.String())
 	res, err := context.TrackerStore.WithPrefixType(ethereum.PrefixOngoing).Delete(tracker.TrackerName)
 	if err != nil || !res {
 		return err
@@ -264,7 +265,7 @@ func CleanupFailed(ctx interface{}) error {
 			}
 		}
 
-		//Delete CheckFinality Job If its there
+		//Delete CheckFinalityStatus Job If its there
 		fjob, err := context.JobStore.GetJob(tracker.GetJobID(ethereum.BusyFinalizing))
 		if err == nil {
 			err = context.JobStore.DeleteJob(fjob)
