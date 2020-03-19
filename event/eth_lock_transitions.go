@@ -222,7 +222,7 @@ func Cleanup(ctx interface{}) error {
 		if err != nil {
 			return err
 		}
-		//Delete CheckFinality Job
+		//Delete CheckFinalityStatus Job
 		fjob, err := context.JobStore.GetJob(tracker.GetJobID(ethereum.BusyFinalizing))
 		if err != nil {
 			return errors.Wrap(err, "Failed to get Finalizing Job")
@@ -265,7 +265,7 @@ func CleanupFailed(ctx interface{}) error {
 			}
 		}
 
-		//Delete CheckFinality Job If its there
+		//Delete CheckFinalityStatus Job If its there
 		fjob, err := context.JobStore.GetJob(tracker.GetJobID(ethereum.BusyFinalizing))
 		if err == nil {
 			err = context.JobStore.DeleteJob(fjob)

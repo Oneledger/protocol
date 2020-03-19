@@ -33,16 +33,16 @@ func (r RedeemStatus) String() string {
 	return "Unknown Type / Check smart contract implementation"
 }
 
-type CheckFinality int8
+type CheckFinalityStatus int8
 
 const (
-	TxBlockNotFound        CheckFinality = 0x01
-	BlockHashFailed        CheckFinality = 0x02
-	UnabletoGetHeader      CheckFinality = 0x03
-	NotEnoughConfirmations CheckFinality = 0x04
-	ReciptNotFound         CheckFinality = 0x05
-	TransactionNotMined    CheckFinality = 0x06
-	TXSuccess              CheckFinality = 0x07
+	TxBlockNotFound        CheckFinalityStatus = 0x01
+	BlockHashFailed        CheckFinalityStatus = 0x02
+	UnabletoGetHeader      CheckFinalityStatus = 0x03
+	NotEnoughConfirmations CheckFinalityStatus = 0x04
+	ReciptNotFound         CheckFinalityStatus = 0x05
+	TransactionNotMined    CheckFinalityStatus = 0x06
+	TXSuccess              CheckFinalityStatus = 0x07
 )
 
 type RedeemRequest struct {
