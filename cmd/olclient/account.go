@@ -67,16 +67,16 @@ var (
 		RunE:  Get,
 	}
 
-	updateArgs = &AddArguments{}
+	addArgs    = &AddArguments{}
 	deleteArgs = &DeleteArguments{}
 	getArgs    = &GetArguments{}
 )
 
 func parseUpdateArgs() {
-	updateCmd.Flags().StringVar(&updateArgs.account, "name", "", "Account Name")
-	updateCmd.Flags().StringVar(&updateArgs.chain, "chain", "OneLedger", "Specify the chain")
-	updateCmd.Flags().BytesHexVar(&updateArgs.pubkey, "pubkey", []byte{}, "Specify a base64 public key")
-	updateCmd.Flags().BytesHexVar(&updateArgs.privkey, "privkey", []byte{}, "Specify a base64 private key")
+	updateCmd.Flags().StringVar(&addArgs.account, "name", "", "Account Name")
+	updateCmd.Flags().StringVar(&addArgs.chain, "chain", "OneLedger", "Specify the chain")
+	updateCmd.Flags().BytesBase64Var(&addArgs.pubkey, "pubkey", []byte{}, "Specify a base64 public key")
+	updateCmd.Flags().BytesBase64Var(&addArgs.privkey, "privkey", []byte{}, "Specify a base64 private key")
 }
 
 func parseDeleteArgs() {
@@ -109,16 +109,16 @@ func Add(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	typ, err := chain.TypeFromName(updateArgs.chain)
+	typ, err := chain.TypeFromName(addArgs.chain)
 	if err != nil {
-		return errors.New("chain not registered: " + updateArgs.chain)
+		return errors.New("chain not registered: " + addArgs.chain)
 	}
 
 	// get the kys for the new account
 	var privKey keys.PrivateKey
 	var pubKey keys.PublicKey
 
-	if len(updateArgs.privkey) == 0 || len(updateArgs.pubkey) == 0 {
+	if len(addArgs.privkey) == 0 || len(addArgs.pubkey) == 0 {
 		// if a public key or a private key is not passed; generate a pair of keys
 		pubKey, privKey, err = keys.NewKeyPairFromTendermint()
 		if err != nil {
@@ -127,13 +127,13 @@ func Add(cmd *cobra.Command, args []string) error {
 	} else {
 		// parse keys passed through commandline
 
-		pubKey, err = keys.GetPublicKeyFromBytes(updateArgs.pubkey, keys.ED25519)
+		pubKey, err = keys.GetPublicKeyFromBytes(addArgs.pubkey, keys.ED25519)
 		if err != nil {
 			fmt.Println("incorrect public key" + err.Error())
 			return err
 		}
 
-		privKey, err = keys.GetPrivateKeyFromBytes(updateArgs.privkey, keys.ED25519)
+		privKey, err = keys.GetPrivateKeyFromBytes(addArgs.privkey, keys.ED25519)
 		if err != nil {
 			fmt.Println("incorrect private key" + err.Error())
 			return err
@@ -141,7 +141,7 @@ func Add(cmd *cobra.Command, args []string) error {
 	}
 
 	// create the account
-	acc, err := accounts.NewAccount(typ, updateArgs.account, &privKey, &pubKey)
+	acc, err := accounts.NewAccount(typ, addArgs.account, &privKey, &pubKey)
 	if err != nil {
 		return errors.New("Error initializing account" + err.Error())
 	}
