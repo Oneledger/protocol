@@ -19,13 +19,15 @@ class bcolors:
 
 
 if __name__ == "__main__":
-    # Create New account
-    result = new_account('charlie')
-    print result
 
     name = "bob2.ol"
 
     addrs = addresses()
+    if len(addrs) < 4:
+        # Create New account
+        result = new_account('charlie2')
+        print result
+        addrs = addresses()
 
     print addrs
 

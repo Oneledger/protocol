@@ -10,7 +10,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/tendermint/tendermint/abci/types"
 
-	"github.com/Oneledger/protocol/config"
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/fees"
 	"github.com/Oneledger/protocol/data/keys"
@@ -28,7 +27,7 @@ type ValidatorStore struct {
 	isValidator bool
 }
 
-func NewValidatorStore(prefix string, cfg config.Server, state *storage.State) *ValidatorStore {
+func NewValidatorStore(prefix string, state *storage.State) *ValidatorStore {
 	// TODO: get the genesis validators when start the node
 	return &ValidatorStore{
 		prefix:     storage.Prefix(prefix),

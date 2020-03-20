@@ -88,7 +88,7 @@ func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *node.Context) (
 	ctx.deliver = storage.NewState(ctx.chainstate)
 	ctx.check = storage.NewState(ctx.chainstate)
 
-	ctx.validators = identity.NewValidatorStore("v", cfg, storage.NewState(ctx.chainstate))
+	ctx.validators = identity.NewValidatorStore("v", storage.NewState(ctx.chainstate))
 	ctx.balances = balance.NewStore("b", storage.NewState(ctx.chainstate))
 	ctx.domains = ons.NewDomainStore("d", storage.NewState(ctx.chainstate))
 	ctx.feePool = fees.NewStore("f", storage.NewState(ctx.chainstate))
@@ -176,19 +176,28 @@ func (ctx *context) Services() (service.Map, error) {
 	btcTrackers := bitcoin.NewTrackerStore("btct", storage.NewState(ctx.chainstate))
 	btcTrackers.SetConfig(ctx.btcTrackers.GetConfig())
 
+	feePool := fees.NewStore("f", storage.NewState(ctx.chainstate))
+	feePool.SetupOpt(ctx.feePool.GetOpt())
+
+	ethTracker := ethereum.NewTrackerStore("etht", "ethfailed", "ethsuccess", storage.NewState(ctx.chainstate))
+	ethTracker.SetupOption(ctx.ethTrackers.GetOption())
+
+	ons := ons.NewDomainStore("d", storage.NewState(ctx.chainstate))
+	ons.SetOptions(ctx.domains.GetOptions())
+
 	svcCtx := &service.Context{
-		Balances:     ctx.balances,
+		Balances:     balance.NewStore("b", storage.NewState(ctx.chainstate)),
 		Accounts:     ctx.accounts,
 		Currencies:   ctx.currencies,
-		FeePool:      ctx.feePool,
+		FeePool:      feePool,
 		Cfg:          ctx.cfg,
 		NodeContext:  ctx.node,
-		ValidatorSet: ctx.validators,
-		Domains:      ctx.domains,
+		ValidatorSet: identity.NewValidatorStore("v", storage.NewState(ctx.chainstate)),
+		Domains:      ons,
 		Router:       ctx.actionRouter,
 		Logger:       log.NewLoggerWithPrefix(ctx.logWriter, "rpc").WithLevel(log.Level(ctx.cfg.Node.LogLevel)),
 		Services:     extSvcs,
-		EthTrackers:  ctx.ethTrackers,
+		EthTrackers:  ethTracker,
 		Trackers:     btcTrackers,
 	}
 
