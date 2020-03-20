@@ -27,12 +27,6 @@ type WalletKeyStore struct {
 	sessionKey   string
 }
 
-var _ Wallet = &WalletKeyStore{}
-
-func (wks *WalletKeyStore) Accounts() []Account {
-	return []Account{}
-}
-
 func (wks *WalletKeyStore) ListAddresses() ([]keys.Address, error) {
 	files, err := ioutil.ReadDir(wks.keyStorePath)
 	if err != nil {
@@ -68,9 +62,9 @@ func (wks *WalletKeyStore) Add(account Account) error {
 	}
 }
 
-func (wks *WalletKeyStore) Delete(account Account) error {
+func (wks *WalletKeyStore) Delete(address keys.Address) error {
 	if wks.status == STATUS_OPEN {
-		return wks.keyStore.DeleteKey(wks.keyStorePath, account.Address(), wks.sessionKey)
+		return wks.keyStore.DeleteKey(wks.keyStorePath, address, wks.sessionKey)
 	} else {
 		return errorWalletClosed
 	}
@@ -89,11 +83,6 @@ func (wks *WalletKeyStore) GetAccount(address keys.Address) (Account, error) {
 	} else {
 		return account, errorWalletClosed
 	}
-}
-
-//Function does not apply to Secure Wallet.
-func (wks *WalletKeyStore) SignWithAccountIndex([]byte, int) (keys.PublicKey, []byte, error) {
-	return keys.PublicKey{}, nil, nil
 }
 
 func (wks *WalletKeyStore) SignWithAddress(data []byte, address keys.Address) (keys.PublicKey, []byte, error) {
@@ -117,16 +106,24 @@ func (wks *WalletKeyStore) VerifyPassphrase(address keys.Address, passphrase str
 	return wks.keyStore.VerifyPassphrase(wks.keyStorePath, address, passphrase)
 }
 
-func (wks *WalletKeyStore) Open(address keys.Address, passphrase string) {
+func (wks *WalletKeyStore) Open(address keys.Address, passphrase string) bool {
 	if wks.keyStore.KeyExists(wks.keyStorePath, address) {
 		if res, _ := wks.VerifyPassphrase(address, passphrase); res {
 			wks.status = STATUS_OPEN
 			wks.sessionKey = passphrase
+			return true
 		}
 	} else {
 		wks.status = STATUS_OPEN
 		wks.sessionKey = passphrase
+		return true
 	}
+
+	return false
+}
+
+func (wks *WalletKeyStore) KeyExists(address keys.Address) bool {
+	return wks.keyStore.KeyExists(wks.keyStorePath, address)
 }
 
 func (wks *WalletKeyStore) Close() {

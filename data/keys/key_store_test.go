@@ -75,6 +75,11 @@ func TestKeyStore_DeleteKey(t *testing.T) {
 	assert.Equal(t, nil, err)
 }
 
+func TestKeyStore_KeyExists(t *testing.T) {
+	exists := keyStore.KeyExists(path, address)
+	assert.Equal(t, true, exists)
+}
+
 func TestKeyStore_TearDown(t *testing.T) {
 	os.Remove(filename)
 	os.RemoveAll(path)

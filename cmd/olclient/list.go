@@ -16,6 +16,7 @@ package main
 
 import (
 	"fmt"
+	accounts2 "github.com/Oneledger/protocol/data/accounts"
 
 	"github.com/spf13/cobra"
 )
@@ -47,18 +48,22 @@ func ListNode(cmd *cobra.Command, args []string) {
 	Ctx := NewContext()
 	fullnode := Ctx.clCtx.FullNodeClient()
 
-	out, err := fullnode.ListAccounts()
+	wallet, err := accounts2.NewWalletKeyStore(keyStorePath)
+	if err != nil {
+		logger.Error("listnode: error creating secure wallet.")
+		return
+	}
+
+	addresses, err := wallet.ListAddresses()
 	if err != nil {
 		logger.Error("error in getting all accounts", err)
 		return
 	}
 
-	accounts := out.Accounts
-
 	logger.Infof("Accounts on node: %s ", Ctx.cfg.Node.NodeName)
-	for _, a := range accounts {
-		fmt.Print(a)
-		rep, err := fullnode.Balance(a.Address())
+	for _, a := range addresses {
+		fmt.Print("Address: ", a, "    ")
+		rep, err := fullnode.Balance(a)
 		if err != nil {
 			continue
 		}

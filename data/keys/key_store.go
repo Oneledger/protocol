@@ -144,13 +144,17 @@ func (ks *KeyStore) GetKeyData(path string, address Address, passphrase string) 
 }
 
 func (ks *KeyStore) DeleteKey(path string, address Address, passphrase string) error {
-	if res, _ := ks.VerifyPassphrase(path, address, passphrase); res {
+	if res, err := ks.VerifyPassphrase(path, address, passphrase); res {
 		err := os.Remove(path + address.Humanize())
 		if err != nil {
 			return err
 		}
 	} else {
-		return errors.New("error: invalid password")
+		if err != nil {
+			return err
+		} else {
+			return errors.New("error: invalid password")
+		}
 	}
 
 	return nil

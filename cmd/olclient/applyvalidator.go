@@ -6,6 +6,10 @@
 package main
 
 import (
+	"github.com/Oneledger/protocol/action"
+	accounts2 "github.com/Oneledger/protocol/data/accounts"
+	"github.com/Oneledger/protocol/data/keys"
+	"github.com/Oneledger/protocol/serialize"
 	"path/filepath"
 	"strconv"
 
@@ -76,6 +80,23 @@ func applyValidator(cmd *cobra.Command, args []string) error {
 
 	cfg := &config.Server{}
 
+	//Prompt for password
+	passphrase := PromptForPassword()
+
+	//Create new Wallet and User Address
+	wallet, err := accounts2.NewWalletKeyStore(keyStorePath)
+	if err != nil {
+		ctx.logger.Error("failed to create secure wallet", err)
+		return err
+	}
+	//Verify User Password
+	usrAddress := keys.Address(applyValidatorArgs.Address)
+	authenticated, err := wallet.VerifyPassphrase(usrAddress, passphrase)
+	if !authenticated {
+		ctx.logger.Error("authentication error", err)
+		return err
+	}
+
 	err = cfg.ReadFile(cfgPath(rootPath))
 	if err != nil {
 		return errors.Wrapf(err, "failed to read configuration file at at %s", cfgPath(rootPath))
@@ -95,9 +116,30 @@ func applyValidator(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	packet := out.RawTx
-	if packet == nil {
-		return errors.New("got nil packet but error was nil")
+	//Sign Transaction with secure wallet, then append signature to signedTx.
+	signedTx := &action.SignedTx{}
+	err = serialize.GetSerializer(serialize.NETWORK).Deserialize(out.RawTx, signedTx)
+	if err != nil {
+		return errors.New("error de-serializing signedTx")
+	}
+
+	if wallet.Open(usrAddress, passphrase) {
+		//Sign Raw "Send" Transaction Using Secure Wallet.
+		pub, signature, err := wallet.SignWithAddress(signedTx.RawTx.RawBytes(), usrAddress)
+		if err != nil {
+			ctx.logger.Error("error signing transaction", err)
+			return err
+		}
+
+		signedTx.Signatures = append(signedTx.Signatures, action.Signature{Signer: pub, Signed: signature})
+	} else {
+		ctx.logger.Error("failed to open secure wallet")
+		return errors.New("failed to open secure wallet")
+	}
+
+	packet, err := serialize.GetSerializer(serialize.NETWORK).Serialize(signedTx)
+	if packet == nil || err != nil {
+		return errors.New("error serializing packet: " + err.Error())
 	}
 
 	result, err := ctx.clCtx.BroadcastTxCommit(packet)
@@ -107,5 +149,4 @@ func applyValidator(cmd *cobra.Command, args []string) error {
 	BroadcastStatus(ctx, result)
 
 	return nil
-
 }

@@ -105,7 +105,6 @@ alltest: install
 	@./scripts/resetDev
 	@./scripts/startDev
 	@./scripts/testsend
-	@./scripts/testapply
 	@./scripts/getValidators
 	@./scripts/testsend
 	python scripts/ons/create_domain.py

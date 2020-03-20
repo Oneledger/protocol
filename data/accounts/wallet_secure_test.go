@@ -109,7 +109,7 @@ func TestWalletKeyStore_Delete(t *testing.T) {
 	for i := 0; i < numAddresses; i++ {
 		walletKeyStore.Open(accounts[i].Address(), passwords[i])
 
-		err := walletKeyStore.Delete(accounts[i])
+		err := walletKeyStore.Delete(accounts[i].Address())
 		assert.Equal(t, nil, err)
 
 		walletKeyStore.Close()
