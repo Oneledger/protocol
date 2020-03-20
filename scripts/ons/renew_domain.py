@@ -1,6 +1,7 @@
 import time
 from sdk.actions import *
 
+
 class bcolors:
     HEADER = '\033[95m'
     OKBLUE = '\033[94m'
@@ -13,17 +14,19 @@ class bcolors:
 
 
 if __name__ == "__main__":
-    # Create New account
-    result = new_account('charlie')
-    print result
 
     name = "expiring.ol"
     addrs = addresses()
+    if len(addrs) < 4:
+        # Create New account
+        result = new_account('charlie2')
+        print result
+        addrs = addresses()
 
     print addrs
 
     # expiring after one block
-    create_price = (int("10000001")*10**14)
+    create_price = (int("10000001") * 10 ** 14)
     print "create price:", create_price
 
     raw_txn = create_domain(name, addrs[0], create_price)
@@ -45,7 +48,7 @@ if __name__ == "__main__":
 
     print bcolors.WARNING + "*** Renewing domain ***" + bcolors.ENDC
 
-    raw_txn = renew_domain(name, addrs[0], (int("20")*10**15))
+    raw_txn = renew_domain(name, addrs[0], (int("20") * 10 ** 15))
     signed = sign(raw_txn, addrs[0])
     print signed
     print

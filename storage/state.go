@@ -157,7 +157,7 @@ func (s *State) IterateRange(start, end []byte, ascending bool, fn func(key, val
 		keys = append(keys, key)
 		return false
 	})
-
+	//todo: we can't get the key for anything that's only in the cache,
 	for _, key := range keys {
 		value, err := s.Get(key)
 		if err != nil {

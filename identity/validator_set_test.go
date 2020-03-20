@@ -5,18 +5,20 @@ import (
 	"os"
 	"testing"
 
-	"github.com/Oneledger/protocol/storage"
 	"github.com/tendermint/tendermint/libs/db"
 
-	"github.com/Oneledger/protocol/utils"
+	"github.com/Oneledger/protocol/storage"
+
 	"github.com/pkg/errors"
 
-	"github.com/Oneledger/protocol/config"
+	"github.com/Oneledger/protocol/utils"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/tendermint/tendermint/abci/types"
+
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/chain"
 	"github.com/Oneledger/protocol/data/keys"
-	"github.com/stretchr/testify/assert"
-	"github.com/tendermint/tendermint/abci/types"
 )
 
 func TestNewValidatorStore(t *testing.T) {
@@ -34,7 +36,7 @@ func setup() *ValidatorStore {
 
 	db := db.NewDB("test", db.MemDBBackend, "")
 	cs := storage.NewState(storage.NewChainState("balance", db))
-	vs := NewValidatorStore("v", config.Server{}, cs)
+	vs := NewValidatorStore("v", cs)
 	return vs
 }
 
