@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math"
 	"runtime/debug"
+	"time"
 
 	"github.com/pkg/errors"
 	"github.com/tendermint/tendermint/libs/common"
@@ -105,6 +106,11 @@ func (app *App) chainInitializer() chainInitializer {
 	}
 }
 
+var startTime time.Time
+var endTime time.Time
+var startTx int64
+var endTx int64
+
 func (app *App) blockBeginner() blockBeginner {
 	return func(req RequestBeginBlock) ResponseBeginBlock {
 		defer app.handlePanic()
@@ -120,6 +126,16 @@ func (app *App) blockBeginner() blockBeginner {
 		result := ResponseBeginBlock{
 			Tags: []common.KVPair(nil),
 		}
+		if req.Header.Height == 3 {
+			startTime = req.Header.Time
+			startTx = req.Header.TotalTxs
+		}
+
+		if math.Mod(float64(req.Header.Height-10), 20) == 0 {
+			endTime = req.Header.Time
+			endTx = req.Header.TotalTxs
+			loadtest(req.Header, app.logger)
+		}
 
 		//update the header to current block
 		app.header = req.Header
@@ -127,6 +143,12 @@ func (app *App) blockBeginner() blockBeginner {
 		app.logger.Detail("Begin Block:", result, "height:", req.Header.Height, "AppHash:", hex.EncodeToString(req.Header.AppHash))
 		return result
 	}
+}
+
+func loadtest(head Header, logger *log.Logger) {
+	tps := float64(endTx-startTx) / (endTime.Sub(startTime).Seconds())
+	blktime := (endTime.Sub(startTime).Seconds()) / float64(head.Height-3)
+	logger.Infof("Loadtest metric height=%d, total_tx =%d, tx/b=%d, blktime=%3f , tps=%3f", head.Height, head.TotalTxs, head.TotalTxs/head.Height, blktime, tps)
 }
 
 // mempool connection: for checking if transactions should be relayed before they are committed

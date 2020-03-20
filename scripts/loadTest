@@ -1,14 +1,20 @@
 #!/bin/bash
 
-echo
+for name in $(ls -l $OLDATA/devnet | awk '(NR >3 && NR < 5){print $9}')
+do
+    echo "start loadtest on node: $name"
+    time olclient loadtest --root $OLDATA/devnet/$name --threads 10 --interval 1 --max-tx 200000 >> /dev/null &
+    sleep 1
+done
 
-rm -rf $OLDATA/devnet/*
+c=0
+while [ $c -lt 4 ]
+do
+    sleep 10
+    name=$(ls -l $OLDATA/devnet | awk '(NR==4){print $9}')
+    c=$(grep Loadtest $OLDATA/devnet/$name/olfullnode.log | wc -l )
+done
 
-olfullnode init devnet --dir $OLDATA/devnet --nonvalidators 1 \
-#--eth_rpc HTTP://127.0.0.1:7545 \
-#--deploy_smart_contracts \
-#--empty_blocks \
-#--loglevel 4 \
-#--cloud_deploy \
+grep Loadtest $OLDATA/devnet/$name/olfullnode.log
 
-#https://rinkeby.infura.io/v3 \
+sleep 1
