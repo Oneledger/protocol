@@ -90,7 +90,7 @@ func (d *Domain) ChangeOwner(addr keys.Address) {
 }
 
 func (d *Domain) PutOnSale(price balance.Amount) {
-
+	d.ActiveFlag = false
 	d.OnSaleFlag = true
 	d.SalePrice = &price
 }
