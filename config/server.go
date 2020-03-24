@@ -377,7 +377,6 @@ type ConsensusConfig struct {
 	CreateEmptyBlocksInterval   Duration `toml:"create_empty_blocks_interval" desc:"Interval between empty block creation in milliseconds"`
 	PeerGossipSleepDuration     Duration `toml:"peer_gossip_sleep_duration" desc:"Duration values in milliseconds"`
 	PeerQueryMaj23SleepDuration Duration `toml:"peer_query_maj23_sleep_duration"`
-	BlockTimeIota               Duration `toml:"blocktime_iota" desc:"Block time parameter, corresponds to the minimum time increment between consecutive blocks"`
 }
 
 func (cfg *ConsensusConfig) TMConfig() *tmconfig.ConsensusConfig {
