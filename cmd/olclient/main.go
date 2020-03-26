@@ -15,12 +15,20 @@
 package main
 
 import (
+	"fmt"
+	"golang.org/x/crypto/ssh/terminal"
 	"os"
 	"path/filepath"
+	"strings"
+	"syscall"
 
 	"github.com/Oneledger/protocol/client"
 	"github.com/Oneledger/protocol/config"
 	"github.com/Oneledger/protocol/log"
+)
+
+const (
+	keyStorePath = "keystore/"
 )
 
 var logger = log.NewLoggerWithPrefix(os.Stdout, "olclient")
@@ -62,4 +70,16 @@ func main() {
 
 func cfgPath(dir string) string {
 	return filepath.Join(dir, config.FileName)
+}
+
+func PromptForPassword() string {
+	fmt.Print("Enter Password: ")
+	bytePassword, err := terminal.ReadPassword(int(syscall.Stdin))
+	if err != nil {
+		return ""
+	}
+
+	password := string(bytePassword)
+
+	return strings.TrimSpace(password)
 }

@@ -186,11 +186,6 @@ func (svc *Service) ApplyValidator(args client.ApplyValidatorRequest, reply *cli
 		Memo: uuidNew.String(),
 	}
 	rawData := tx.RawBytes()
-	pubKey, signed, err := svc.accounts.SignWithAddress(rawData, args.Address)
-	if err != nil {
-		svc.logger.Error("error signing with account ", err, args.Address)
-		return codes.ErrSigningError
-	}
 	h, err := svc.nodeContext.PrivVal().GetHandler()
 	if err != nil {
 		svc.logger.Error("error get validator handler", err)
@@ -199,7 +194,7 @@ func (svc *Service) ApplyValidator(args client.ApplyValidatorRequest, reply *cli
 	vpubkey := h.PubKey()
 	vsinged, err := h.Sign(rawData)
 
-	signatures := []action.Signature{{pubKey, signed}, {vpubkey, vsinged}}
+	signatures := []action.Signature{{vpubkey, vsinged}}
 	signedTx := &action.SignedTx{
 		RawTx:      tx,
 		Signatures: signatures,

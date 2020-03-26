@@ -32,7 +32,7 @@ type Wallet interface {
 
 const rootkey = "rootkey"
 
-// WalletStore keeps a session storage of accounts on the Full Node
+// WalletStore keeps a sessionClose storage of accounts on the Full Node
 type WalletStore struct {
 	store storage.SessionedStorage
 

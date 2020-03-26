@@ -16,10 +16,12 @@ package main
 
 import (
 	"errors"
-	"strconv"
-
+	accounts2 "github.com/Oneledger/protocol/data/accounts"
+	"github.com/Oneledger/protocol/data/keys"
+	"github.com/Oneledger/protocol/serialize"
 	"github.com/spf13/cobra"
 	ctypes "github.com/tendermint/tendermint/rpc/core/types"
+	"strconv"
 
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/client"
@@ -32,6 +34,12 @@ var sendCmd = &cobra.Command{
 	Run:   IssueRequest,
 }
 
+var sendFundsCmd = &cobra.Command{
+	Use:   "sendfunds",
+	Short: "Apply a dynamic validator",
+	RunE:  sendFunds,
+}
+
 type SendArguments struct {
 	Party        []byte `json:"party"`
 	CounterParty []byte `json:"counterParty"`
@@ -39,6 +47,7 @@ type SendArguments struct {
 	Currency     string `json:"currency"`
 	Fee          string `json:"fee"`
 	Gas          int64  `json:"gas"`
+	Password     string `json:"password"`
 }
 
 func (args *SendArguments) ClientRequest(currencies *balance.CurrencySet) (client.SendTxRequest, error) {
@@ -64,17 +73,25 @@ func (args *SendArguments) ClientRequest(currencies *balance.CurrencySet) (clien
 }
 
 var sendargs = &SendArguments{}
+var sendfundsargs = &SendArguments{}
 
 func init() {
 	RootCmd.AddCommand(sendCmd)
+	RootCmd.AddCommand(sendFundsCmd)
 
+	setArgs(sendFundsCmd, sendfundsargs)
+	setArgs(sendCmd, sendargs)
+}
+
+func setArgs(command *cobra.Command, sendArgs *SendArguments) {
 	// Transaction Parameters
-	sendCmd.Flags().BytesHexVar(&sendargs.Party, "party", []byte{}, "send sender")
-	sendCmd.Flags().BytesHexVar(&sendargs.CounterParty, "counterparty", []byte{}, "send recipient")
-	sendCmd.Flags().StringVar(&sendargs.Amount, "amount", "0", "specify an amount")
-	sendCmd.Flags().StringVar(&sendargs.Currency, "currency", "OLT", "the currency")
-	sendCmd.Flags().StringVar(&sendargs.Fee, "fee", "0", "include a fee in OLT")
-	sendCmd.Flags().Int64Var(&sendargs.Gas, "gas", 20000, "gas limit")
+	command.Flags().BytesHexVar(&sendArgs.Party, "party", []byte{}, "send sender")
+	command.Flags().BytesHexVar(&sendArgs.CounterParty, "counterparty", []byte{}, "send recipient")
+	command.Flags().StringVar(&sendArgs.Amount, "amount", "0", "specify an amount")
+	command.Flags().StringVar(&sendArgs.Currency, "currency", "OLT", "the currency")
+	command.Flags().StringVar(&sendArgs.Fee, "fee", "0", "include a fee in OLT")
+	command.Flags().StringVar(&sendArgs.Password, "password", "", "password to access secure wallet.")
+	command.Flags().Int64Var(&sendArgs.Gas, "gas", 20000, "gas limit")
 }
 
 // IssueRequest sends out a sendTx to all of the nodes in the chain
@@ -93,10 +110,92 @@ func IssueRequest(cmd *cobra.Command, args []string) {
 		ctx.logger.Error("failed to get request", err)
 		return
 	}
-	reply, err := fullnode.SendTx(req)
+
+	//Prompt for password
+	if len(sendargs.Password) == 0 {
+		sendargs.Password = PromptForPassword()
+	}
+
+	//Create new Wallet and User Address
+	wallet, err := accounts2.NewWalletKeyStore(keyStorePath)
+	if err != nil {
+		ctx.logger.Error("failed to create secure wallet", err)
+		return
+	}
+
+	//Verify User Password
+	usrAddress := keys.Address(sendargs.Party)
+	authenticated, err := wallet.VerifyPassphrase(usrAddress, sendargs.Password)
+	if !authenticated {
+		ctx.logger.Error("authentication error", err)
+		return
+	}
+
+	//Get Raw "Send" Transaction
+	reply, err := fullnode.CreateRawSend(req)
 	if err != nil {
 		ctx.logger.Error("failed to create SendTx", err)
 		return
+	}
+	rawTx := &action.RawTx{}
+	err = serialize.GetSerializer(serialize.NETWORK).Deserialize(reply.RawTx, rawTx)
+	if err != nil {
+		ctx.logger.Error("failed to deserialize RawTx", err)
+		return
+	}
+
+	if !wallet.Open(usrAddress, sendargs.Password) {
+		ctx.logger.Error("failed to open secure wallet")
+		return
+	}
+
+	//Sign Raw "Send" Transaction Using Secure Wallet.
+	pub, signature, err := wallet.SignWithAddress(reply.RawTx, usrAddress)
+	if err != nil {
+		ctx.logger.Error("error signing transaction", err)
+	}
+
+	signatures := []action.Signature{{pub, signature}}
+	signedTx := &action.SignedTx{
+		RawTx:      *rawTx,
+		Signatures: signatures,
+	}
+
+	packet, err := serialize.GetSerializer(serialize.NETWORK).Serialize(signedTx)
+	if err != nil {
+		ctx.logger.Error("failed to serialize signedTx", err)
+		return
+	}
+
+	//Broadcast Transaction
+	result, err := ctx.clCtx.BroadcastTxCommit(packet)
+	if err != nil {
+		ctx.logger.Error("error in BroadcastTxCommit", err)
+	}
+
+	BroadcastStatus(ctx, result)
+}
+
+// IssueRequest sends out a sendTx to all of the nodes in the chain
+func sendFunds(cmd *cobra.Command, args []string) error {
+
+	ctx := NewContext()
+	fullnode := ctx.clCtx.FullNodeClient()
+	currencies, err := fullnode.ListCurrencies()
+	if err != nil {
+		ctx.logger.Error("failed to get currencies", err)
+		return err
+	}
+	// Create message
+	req, err := sendfundsargs.ClientRequest(currencies.Currencies.GetCurrencySet())
+	if err != nil {
+		ctx.logger.Error("failed to get request", err)
+		return err
+	}
+	reply, err := fullnode.SendTx(req)
+	if err != nil {
+		ctx.logger.Error("failed to create SendTx", err)
+		return err
 	}
 	packet := reply.RawTx
 
@@ -106,6 +205,8 @@ func IssueRequest(cmd *cobra.Command, args []string) {
 	}
 
 	BroadcastStatus(ctx, result)
+
+	return nil
 }
 
 func BroadcastStatus(ctx *Context, result *ctypes.ResultBroadcastTxCommit) {
