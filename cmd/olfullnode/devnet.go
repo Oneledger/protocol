@@ -300,7 +300,7 @@ func runDevnet(_ *cobra.Command, _ []string) error {
 		}
 
 		// Make private validator file
-		pvFile := privval.GenFilePV(filepath.Join(configDir, "priv_validator_key.json"), filepath.Join(dataDir, "priv_validator_state.json"))
+		pvFile := privval.LoadOrGenFilePV(filepath.Join(configDir, "priv_validator_key.json"), filepath.Join(dataDir, "priv_validator_state.json"))
 		pvFile.Save()
 
 		ecdsaPrivKey, _ := btcec.NewPrivateKey(btcec.S256())
