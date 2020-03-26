@@ -6,15 +6,25 @@ import (
 	"crypto/md5"
 	"crypto/rand"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"time"
 )
+
+type AccountKey struct {
+	Version    int    `json:"version"`
+	CipherText string `json:"cipher_text"`
+	Address    string `json:"address"`
+}
 
 const (
 	EmptyStr = ""
+	VERSION  = 1
 )
 
 type keystore interface {
@@ -41,6 +51,9 @@ type keystore interface {
 
 	//Check if Key exists
 	KeyExists(path string, address Address) bool
+
+	//Get address of account given a file name.
+	GetAddress(path string, filename string) (Address, error)
 }
 
 type KeyStore struct {
@@ -119,7 +132,7 @@ func (ks *KeyStore) decrypt(data []byte, passphrase string) ([]byte, error) {
 }
 
 func (ks *KeyStore) SaveKeyData(path string, address Address, data []byte, passphrase string) error {
-	filename, _ := filepath.Abs(path + address.Humanize())
+	filename, _ := filepath.Abs(path + buildFileName(address))
 	f, _ := os.Create(filename)
 
 	defer f.Close()
@@ -128,33 +141,67 @@ func (ks *KeyStore) SaveKeyData(path string, address Address, data []byte, passp
 	if err != nil {
 		return errors.New("error writing encrypted data to file:" + err.Error())
 	}
-	f.Write(data)
+
+	account := AccountKey{
+		Version:    VERSION,
+		CipherText: hex.EncodeToString(data),
+		Address:    address.Humanize(),
+	}
+
+	accData, err := json.Marshal(account)
+	if err != nil {
+		return err
+	}
+
+	f.Write(accData)
 
 	return nil
 }
 
 func (ks *KeyStore) GetKeyData(path string, address Address, passphrase string) ([]byte, error) {
-	filename, _ := filepath.Abs(path + address.Humanize())
-	if ks.KeyExists(path, address) {
-		data, _ := ioutil.ReadFile(filename)
-		return ks.decrypt(data, passphrase)
-	} else {
+	accData := &AccountKey{}
+	filename, err := GetFileName(path, address)
+	if err != nil {
+		return nil, err
+	}
+	if !ks.KeyExists(path, address) {
 		return nil, errors.New("keystore: file doesn't exist")
 	}
+
+	data, err := ioutil.ReadFile(filename)
+	if err != nil {
+		return nil, err
+	}
+
+	err = json.Unmarshal(data, accData)
+	if err != nil {
+		return nil, err
+	}
+
+	cipherData, err := hex.DecodeString(accData.CipherText)
+	if err != nil {
+		return nil, err
+	}
+
+	return ks.decrypt(cipherData, passphrase)
 }
 
 func (ks *KeyStore) DeleteKey(path string, address Address, passphrase string) error {
-	if res, err := ks.VerifyPassphrase(path, address, passphrase); res {
-		err := os.Remove(path + address.Humanize())
+	if res, err := ks.VerifyPassphrase(path, address, passphrase); !res {
 		if err != nil {
 			return err
 		}
-	} else {
-		if err != nil {
-			return err
-		} else {
-			return errors.New("error: invalid password")
-		}
+		return errors.New("error: invalid password")
+	}
+
+	filename, err := GetFileName(path, address)
+	if err != nil {
+		return err
+	}
+
+	err = os.Remove(filename)
+	if err != nil {
+		return err
 	}
 
 	return nil
@@ -174,14 +221,70 @@ func NewKeyStore() *KeyStore {
 }
 
 func (ks *KeyStore) KeyExists(path string, address Address) bool {
-	filename, err := filepath.Abs(path + address.Humanize())
+	filename, err := GetFileName(path, address)
 	if err != nil {
 		return false
 	}
-
 	info, err := os.Stat(filename)
 	if os.IsNotExist(err) {
 		return false
 	}
 	return !info.IsDir()
+}
+
+func (ks *KeyStore) GetAddress(path string, filename string) (Address, error) {
+	accData := &AccountKey{}
+	address := Address{}
+
+	absPath, err := filepath.Abs(path + filename)
+	if err != nil {
+		return nil, err
+	}
+
+	data, err := ioutil.ReadFile(absPath)
+	if err != nil {
+		return nil, err
+	}
+
+	err = json.Unmarshal(data, accData)
+	if err != nil {
+		return nil, err
+	}
+
+	err = address.UnmarshalText([]byte(accData.Address))
+	if err != nil {
+		return nil, err
+	}
+
+	return address, nil
+}
+
+func buildFileName(address Address) string {
+	t := time.Now()
+	zone, _ := t.Zone()
+	formatted := fmt.Sprintf("%d-%02d-%02dT%02d:%02d:%02d.%03d%s",
+		t.Year(),
+		t.Month(),
+		t.Day(),
+		t.Hour(),
+		t.Minute(),
+		t.Second(),
+		t.Nanosecond(),
+		zone)
+
+	return "OL_" + formatted + "_" + address.Humanize()
+}
+
+func GetFileName(path string, address Address) (string, error) {
+	pattern, _ := filepath.Abs(path + "*" + address.Humanize())
+	matches, err := filepath.Glob(pattern)
+	if err != nil {
+		return "", err
+	}
+
+	if len(matches) != 1 {
+		return "", errors.New("invalid address")
+	}
+
+	return matches[0], nil
 }

@@ -69,4 +69,18 @@ func ListNode(cmd *cobra.Command, args []string) {
 		}
 		fmt.Printf("Balance: %s \n\n", rep.Balance)
 	}
+
+	//TODO: Need to remove this in the future.
+	//Listing current Node details
+	nodeAddr, err := fullnode.NodeAddress()
+	if err != nil {
+		return
+	}
+
+	balReply, err := fullnode.Balance(nodeAddr.Address)
+	if err != nil {
+		return
+	}
+	fmt.Print("Address: ", nodeAddr.Address, "    ")
+	fmt.Printf("Balance: %s \n\n", balReply.Balance)
 }

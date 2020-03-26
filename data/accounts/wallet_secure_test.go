@@ -51,6 +51,19 @@ func TestWalletKeyStore_Open(t *testing.T) {
 	walletKeyStore.Close()
 }
 
+func TestWalletKeyStore_Open2(t *testing.T) {
+	res := walletKeyStore.Open(nil, passwords[0])
+	assert.Equal(t, false, res)
+	walletKeyStore.Close()
+}
+
+//Uncomment test case if timeout scenario needs to be tested
+/*
+func TestWalletKeyStore_Close(t *testing.T) {
+	walletKeyStore.Open(accounts[0].Address(), passwords[0])
+	time.Sleep(40*time.Second)
+}*/
+
 func TestWalletKeyStore_Add(t *testing.T) {
 	for i := 0; i < numAddresses; i++ {
 		walletKeyStore.Open(accounts[i].Address(), passwords[i])

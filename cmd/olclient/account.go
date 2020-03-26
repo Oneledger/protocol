@@ -26,20 +26,23 @@ import (
 
 // Arguments to the update command
 type AddArguments struct {
-	account string
-	chain   string
-	pubkey  []byte
-	privkey []byte
+	account  string
+	chain    string
+	password string
+	pubkey   []byte
+	privkey  []byte
 }
 
 //Arguments to the delete command
 type DeleteArguments struct {
-	Address string `json:"address"`
+	Address  string `json:"address"`
+	Password string `json:"password"`
 }
 
 //Arguments to the get command
 type GetArguments struct {
-	Address string `json:"address"`
+	Address  string `json:"address"`
+	Password string `json:"password"`
 }
 
 var (
@@ -55,7 +58,7 @@ var (
 		RunE:  Delete,
 	}
 
-	updateCmd = &cobra.Command{
+	addCmd = &cobra.Command{
 		Use:   "add",
 		Short: "update or create an account",
 		RunE:  Add,
@@ -73,24 +76,27 @@ var (
 )
 
 func parseUpdateArgs() {
-	updateCmd.Flags().StringVar(&addArgs.account, "name", "", "Account Name")
-	updateCmd.Flags().StringVar(&addArgs.chain, "chain", "OneLedger", "Specify the chain")
-	updateCmd.Flags().BytesBase64Var(&addArgs.pubkey, "pubkey", []byte{}, "Specify a base64 public key")
-	updateCmd.Flags().BytesBase64Var(&addArgs.privkey, "privkey", []byte{}, "Specify a base64 private key")
+	addCmd.Flags().StringVar(&addArgs.account, "name", "", "Account Name")
+	addCmd.Flags().StringVar(&addArgs.chain, "chain", "OneLedger", "Specify the chain")
+	addCmd.Flags().BytesBase64Var(&addArgs.pubkey, "pubkey", []byte{}, "Specify a base64 public key")
+	addCmd.Flags().BytesBase64Var(&addArgs.privkey, "privkey", []byte{}, "Specify a base64 private key")
+	addCmd.Flags().StringVar(&addArgs.password, "password", "", "password to access secure wallet")
 }
 
 func parseDeleteArgs() {
 	deleteCmd.Flags().StringVar(&deleteArgs.Address, "address", "", "address to delete")
+	deleteCmd.Flags().StringVar(&deleteArgs.Password, "password", "", "password to access secure wallet")
 }
 
 func parseGetArgs() {
 	getCmd.Flags().StringVar(&getArgs.Address, "address", "", "address of account to retrieve")
+	getCmd.Flags().StringVar(&getArgs.Password, "password", "", "password to access secure wallet")
 }
 
 func init() {
 	RootCmd.AddCommand(accountCmd)
 	accountCmd.AddCommand(deleteCmd)
-	accountCmd.AddCommand(updateCmd)
+	accountCmd.AddCommand(addCmd)
 	accountCmd.AddCommand(getCmd)
 
 	//Add Transaction Parameters
@@ -147,16 +153,21 @@ func Add(cmd *cobra.Command, args []string) error {
 	}
 
 	//Prompt for password update account
-	passphrase := PromptForPassword()
-	if wallet.Open(acc.Address(), passphrase) {
-		err = wallet.Add(acc)
-		if err != nil {
-			return err
-		}
-
-		fmt.Println("Successfully added account to secure wallet.")
-		fmt.Println("Address for the account is: ", acc.Address())
+	if len(addArgs.password) == 0 {
+		addArgs.password = PromptForPassword()
 	}
+
+	if !wallet.Open(acc.Address(), addArgs.password) {
+		return errors.New("error opening wallet")
+	}
+
+	err = wallet.Add(acc)
+	if err != nil {
+		return err
+	}
+
+	fmt.Println("Successfully added account to secure wallet.")
+	fmt.Println("Address for the account is: ", acc.Address())
 
 	wallet.Close()
 
@@ -180,25 +191,31 @@ func Delete(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	if wallet.KeyExists(usrAddress) {
-		//Prompt for password
-		passphrase := PromptForPassword()
-
-		//Verify User Password
-		authenticated, _ := wallet.VerifyPassphrase(usrAddress, passphrase)
-		if !authenticated {
-			return errors.New("authentication error")
-		}
-
-		if wallet.Open(usrAddress, passphrase) {
-			err := wallet.Delete(usrAddress)
-			if err != nil {
-				return err
-			}
-		}
-	} else {
+	if !wallet.KeyExists(usrAddress) {
 		return errors.New("address does not exist")
 	}
+
+	//Prompt for password
+	if len(deleteArgs.Password) == 0 {
+		deleteArgs.Password = PromptForPassword()
+	}
+
+	//Verify User Password
+	authenticated, _ := wallet.VerifyPassphrase(usrAddress, deleteArgs.Password)
+	if !authenticated {
+		return errors.New("authentication error")
+	}
+
+	if !wallet.Open(usrAddress, deleteArgs.Password) {
+		return errors.New("error opening wallet")
+	}
+
+	err = wallet.Delete(usrAddress)
+	if err != nil {
+		return err
+	}
+
+	wallet.Close()
 
 	return nil
 }
@@ -221,24 +238,31 @@ func Get(cmd *cobra.Command, args []string) error {
 	}
 
 	//If Account already exists, Verify Password
-	if wallet.KeyExists(usrAddress) {
-		passphrase := PromptForPassword()
-		auth, _ := wallet.VerifyPassphrase(usrAddress, passphrase)
-		if !auth {
-			return errors.New("authentication failed")
-		}
-
-		if wallet.Open(usrAddress, passphrase) {
-			account, err := wallet.GetAccount(usrAddress)
-			if err != nil {
-				return err
-			}
-
-			out, err := json.MarshalIndent(account, "", " ")
-			fmt.Println("\n" + string(out))
-		}
-	} else {
+	if !wallet.KeyExists(usrAddress) {
 		return errors.New("address not found")
 	}
+
+	if len(getArgs.Password) == 0 {
+		getArgs.Password = PromptForPassword()
+	}
+	auth, _ := wallet.VerifyPassphrase(usrAddress, getArgs.Password)
+	if !auth {
+		return errors.New("authentication failed")
+	}
+
+	if !wallet.Open(usrAddress, getArgs.Password) {
+		return errors.New("error opening wallet")
+	}
+
+	account, err := wallet.GetAccount(usrAddress)
+	if err != nil {
+		return err
+	}
+
+	out, err := json.MarshalIndent(account, "", " ")
+	fmt.Println("\n" + string(out))
+
+	wallet.Close()
+
 	return nil
 }

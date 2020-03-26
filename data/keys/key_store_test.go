@@ -80,6 +80,15 @@ func TestKeyStore_KeyExists(t *testing.T) {
 	assert.Equal(t, true, exists)
 }
 
+func TestKeyStore_GetAddress(t *testing.T) {
+	filename, err := GetFileName(path, address)
+	assert.Equal(t, nil, err)
+
+	addr, err := keyStore.GetAddress("", filename)
+	assert.Equal(t, nil, err)
+	assert.NotEqual(t, nil, addr)
+}
+
 func TestKeyStore_TearDown(t *testing.T) {
 	os.Remove(filename)
 	os.RemoveAll(path)

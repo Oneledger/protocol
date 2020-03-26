@@ -3,15 +3,18 @@ package accounts
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"github.com/Oneledger/protocol/data/keys"
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"time"
 )
 
 const (
-	STATUS_OPEN   = 44
-	STATUS_CLOSED = 45
+	STATUS_OPEN     = 44
+	STATUS_CLOSED   = 45
+	SESSION_TIMEOUT = 30
 )
 
 var (
@@ -20,11 +23,13 @@ var (
 
 // WalletKeyStore keeps a session storage of accounts on the Full Node
 type WalletKeyStore struct {
-	keyStorePath string
-	keyStore     *keys.KeyStore
-	accounts     []keys.Address
-	status       int
-	sessionKey   string
+	keyStorePath   string
+	keyStore       *keys.KeyStore
+	accounts       []keys.Address
+	status         int
+	sessionKey     string
+	sessionClose   chan error
+	sessionTimeout chan error
 }
 
 func (wks *WalletKeyStore) ListAddresses() ([]keys.Address, error) {
@@ -33,9 +38,12 @@ func (wks *WalletKeyStore) ListAddresses() ([]keys.Address, error) {
 		return []keys.Address{}, err
 	}
 
+	//Clear current slice of accounts.
+	wks.accounts = nil
+
+	//Need to range over all files in directory, Cannot depend on number of files to determine if list needs to be updated.
 	for _, f := range files {
-		address := keys.Address{}
-		err := address.UnmarshalText([]byte(f.Name()))
+		address, err := wks.keyStore.GetAddress(wks.keyStorePath, f.Name())
 		if err != nil {
 			return []keys.Address{}, err
 		}
@@ -57,17 +65,16 @@ func (wks *WalletKeyStore) Add(account Account) error {
 		}
 
 		return nil
-	} else {
-		return errorWalletClosed
 	}
+
+	return errorWalletClosed
 }
 
 func (wks *WalletKeyStore) Delete(address keys.Address) error {
 	if wks.status == STATUS_OPEN {
 		return wks.keyStore.DeleteKey(wks.keyStorePath, address, wks.sessionKey)
-	} else {
-		return errorWalletClosed
 	}
+	return errorWalletClosed
 }
 
 func (wks *WalletKeyStore) GetAccount(address keys.Address) (Account, error) {
@@ -80,9 +87,8 @@ func (wks *WalletKeyStore) GetAccount(address keys.Address) (Account, error) {
 		err = json.Unmarshal(data, &account)
 
 		return account, err
-	} else {
-		return account, errorWalletClosed
 	}
+	return account, errorWalletClosed
 }
 
 func (wks *WalletKeyStore) SignWithAddress(data []byte, address keys.Address) (keys.PublicKey, []byte, error) {
@@ -97,9 +103,9 @@ func (wks *WalletKeyStore) SignWithAddress(data []byte, address keys.Address) (k
 		}
 
 		return *account.PublicKey, signature, err
-	} else {
-		return keys.PublicKey{}, nil, errorWalletClosed
 	}
+
+	return keys.PublicKey{}, nil, errorWalletClosed
 }
 
 func (wks *WalletKeyStore) VerifyPassphrase(address keys.Address, passphrase string) (bool, error) {
@@ -108,18 +114,48 @@ func (wks *WalletKeyStore) VerifyPassphrase(address keys.Address, passphrase str
 
 func (wks *WalletKeyStore) Open(address keys.Address, passphrase string) bool {
 	if wks.keyStore.KeyExists(wks.keyStorePath, address) {
-		if res, _ := wks.VerifyPassphrase(address, passphrase); res {
-			wks.status = STATUS_OPEN
-			wks.sessionKey = passphrase
-			return true
+		if res, _ := wks.VerifyPassphrase(address, passphrase); !res {
+			return false
 		}
-	} else {
-		wks.status = STATUS_OPEN
-		wks.sessionKey = passphrase
-		return true
 	}
 
-	return false
+	//Validate input
+	if address == nil || passphrase == "" {
+		return false
+	}
+
+	//Can't open wallet if its already open.
+	if wks.status == STATUS_OPEN {
+		return false
+	}
+
+	wks.status = STATUS_OPEN
+	wks.sessionKey = passphrase
+
+	//Go routine to trigger timeout if session is opened too long.
+	go func(wks *WalletKeyStore) {
+		time.Sleep(SESSION_TIMEOUT * time.Second)
+		if wks.status == STATUS_CLOSED {
+			return
+		}
+		wks.sessionTimeout <- nil
+	}(wks)
+
+	//Go routine to handle any channel signals.
+	go func(wks *WalletKeyStore) {
+		select {
+		case <-wks.sessionTimeout:
+			if wks.status == STATUS_OPEN {
+				wks.status = STATUS_CLOSED
+				wks.sessionKey = ""
+				fmt.Println("WALLET SESSION TIMEOUT!! CLOSING WALLET...")
+			}
+			break
+		case <-wks.sessionClose:
+		}
+	}(wks)
+
+	return true
 }
 
 func (wks *WalletKeyStore) KeyExists(address keys.Address) bool {
@@ -127,6 +163,9 @@ func (wks *WalletKeyStore) KeyExists(address keys.Address) bool {
 }
 
 func (wks *WalletKeyStore) Close() {
+	if wks.status == STATUS_OPEN {
+		wks.sessionClose <- nil
+	}
 	wks.status = STATUS_CLOSED
 	wks.sessionKey = ""
 }
@@ -151,10 +190,12 @@ func NewWalletKeyStore(path string) (*WalletKeyStore, error) {
 	}
 
 	return &WalletKeyStore{
-		keyStorePath: absPath + "/",
-		keyStore:     keys.NewKeyStore(),
-		accounts:     nil,
-		status:       STATUS_CLOSED,
-		sessionKey:   "",
+		keyStorePath:   absPath + "/",
+		keyStore:       keys.NewKeyStore(),
+		accounts:       nil,
+		status:         STATUS_CLOSED,
+		sessionKey:     "",
+		sessionClose:   make(chan error),
+		sessionTimeout: make(chan error),
 	}, nil
 }
