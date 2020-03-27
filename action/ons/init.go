@@ -7,10 +7,6 @@ import (
 	"github.com/Oneledger/protocol/serialize"
 )
 
-const (
-	CREATE_PRICE = 100
-)
-
 var (
 	ErrInvalidDomain = errors.New("invalid domain name")
 )
@@ -22,7 +18,7 @@ func init() {
 	serialize.RegisterConcrete(new(DomainSale), "action_dsale")
 	serialize.RegisterConcrete(new(DomainSend), "action_dsend")
 	serialize.RegisterConcrete(new(DomainPurchase), "action_dp")
-
+	serialize.RegisterConcrete(new(RenewDomain), "action_dr")
 }
 
 func EnableONS(r action.Router) error {
@@ -45,6 +41,14 @@ func EnableONS(r action.Router) error {
 	err = r.AddHandler(action.DOMAIN_SEND, domainSendTx{})
 	if err != nil {
 		return errors.Wrap(err, "domainSendTx")
+	}
+	err = r.AddHandler(action.DOMAIN_RENEW, RenewDomainTx{})
+	if err != nil {
+		return errors.Wrap(err, "domainCreateTx")
+	}
+	err = r.AddHandler(action.DOMAIN_DELETE_SUB, deleteSubTx{})
+	if err != nil {
+		return errors.Wrap(err, "deleteSubTx")
 	}
 
 	return nil

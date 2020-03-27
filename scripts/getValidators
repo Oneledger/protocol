@@ -6,7 +6,7 @@ echo "run list validator set test command on node $name"
 
 cnt=$(olclient validatorset --root $OLDATA/devnet/$name | grep "^Address" | wc -l )
 
-if [ $cnt -ne 5 ]
+if [ $cnt -ne 4 ]
 then
     echo "Validator test failed, only $cnt validators"
     exit  -1

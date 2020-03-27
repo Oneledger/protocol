@@ -90,7 +90,7 @@ func (r rpcAuthHandler) ServeHTTP(respW http.ResponseWriter, req *http.Request) 
 }
 
 func (r *rpcAuthHandler) Authorized(respW http.ResponseWriter, req *http.Request) bool {
-	if r.cfg != nil && r.cfg.Node.RPCPrivateKey != "" {
+	if r.cfg != nil && r.cfg.Node.Auth.RPCPrivateKey != "" {
 		respErr := ""
 		defer func() {
 			if respErr != "" {
@@ -111,7 +111,7 @@ func (r *rpcAuthHandler) Authorized(respW http.ResponseWriter, req *http.Request
 
 		var keyData []byte
 		//Get Private Key for signature verification.
-		keyData, err := base64.StdEncoding.DecodeString(r.cfg.Node.RPCPrivateKey)
+		keyData, err := base64.StdEncoding.DecodeString(r.cfg.Node.Auth.RPCPrivateKey)
 		if err != nil {
 			respErr = err.Error()
 			return false
@@ -180,18 +180,35 @@ func (srv *Server) Prepare(u *url.URL) error {
 // should be called before calling this method
 func (srv *Server) Start() error {
 
+	channel := make(chan error)
+	timeout := make(chan error)
+	var err error
+
 	if srv.listener == nil {
 		return errors.New("no listener specified on server, was Prepare called?")
 	}
-	go func(l net.Listener) {
+
+	//Timeout Go routine
+	go func() {
+		time.Sleep(time.Duration(srv.cfg.Network.RPCStartTimeout) * time.Second)
+		timeout <- nil
+	}()
+
+	go func(l net.Listener, ch chan error) {
 		srv.logger.Info("starting RPC server on " + l.Addr().String())
 		err := srv.http.Serve(l)
 		if err != nil {
 			srv.logger.Fatalf("server: %s", err)
 		}
-	}(srv.listener)
+		ch <- err
+	}(srv.listener, channel)
 
-	return nil
+	select {
+	case err = <-channel:
+	case err = <-timeout:
+	}
+
+	return err
 }
 
 // Close terminates the underlying HTTP server and listener

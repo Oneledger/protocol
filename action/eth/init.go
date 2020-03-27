@@ -1,14 +1,10 @@
+//Package for transactions related to Etheruem
 package eth
 
 import (
 	"github.com/pkg/errors"
 
 	"github.com/Oneledger/protocol/action"
-)
-
-const (
-	totalETHSupply     = "10000000000000000000" // 10 ETH
-	lockBalanceAddress = "13371337"
 )
 
 func EnableETH(r action.Router) error {
@@ -25,6 +21,16 @@ func EnableETH(r action.Router) error {
 	err = r.AddHandler(action.ETH_REDEEM, ethRedeemTx{})
 	if err != nil {
 		return errors.Wrap(err, "ethRedeemTx")
+	}
+
+	err = r.AddHandler(action.ERC20_LOCK, ethERC20LockTx{})
+	if err != nil {
+		return errors.Wrap(err, "ERC20LockTx")
+	}
+
+	err = r.AddHandler(action.ERC20_REDEEM, ethERC20RedeemTx{})
+	if err != nil {
+		return errors.Wrap(err, "ERC20Redeem)")
 	}
 	return nil
 }

@@ -23,9 +23,10 @@ const (
 	// User+Group: rw, Other: r
 	FilePerms = 0664
 	// User+Group: rwx, Other: rx
-	DirPerms   = 0775
-	FileName   = "config.toml"
-	DefaultDir = ".olfullnode"
+	DirPerms               = 0775
+	FileName               = "config.toml"
+	DefaultDir             = ".olfullnode"
+	DefaultRPCStartTimeout = 2
 )
 
 // Duration is a time.Duration that marshals and unmarshals with millisecond values
@@ -166,7 +167,7 @@ func DefaultServerConfig() *Server {
 		Mempool:        DefaultMempoolConfig(),
 		Consensus:      DefaultConsensusConfig(),
 		ChainDriver:    DefaultChainDriverConfig(),
-		EthChainDriver: DefaultEthConfig(),
+		EthChainDriver: DefautEthConfigRinkeby(),
 	}
 }
 
@@ -188,11 +189,15 @@ type NodeConfig struct {
 	//rpc package
 	Services []string `toml:"services" desc:"List of services used by the current Node. Possible valued [broadcast, node, owner, query, tx]"`
 
+	Auth Authorisation `toml:"Auth" desc:"the OwnerCredentials and RPCPrivateKey should be configured together"`
+}
+
+type Authorisation struct {
 	//owner's password
-	OwnerCredentials []string `toml:"owner_credentials" desc:"Username and Password required to access owner services. Format [\"Username:Password\", \"Username:Password\"...]"`
+	OwnerCredentials []string `toml:"owner_credentials" desc:"Username and Password required to access owner services. Format [\"Username:Password\", \"Username:Password\"...]. if OwnerCredential not configured, anyone can create a public access token with a restful call at /token using the RPCPrivateKey"`
 
 	//Private Key for RPC Authentication
-	RPCPrivateKey string `toml:"rpc_private_key" desc:"(ED25519 key) This private key will be used to generate a token for authentication through RPC Port."`
+	RPCPrivateKey string `toml:"rpc_private_key" desc:"(ED25519 key) This private key will be used to generate a token for authentication through RPC Port; if not configured, anyone can access the SDK rpc port without authentication"`
 }
 
 func DefaultNodeConfig() *NodeConfig {
@@ -204,13 +209,19 @@ func DefaultNodeConfig() *NodeConfig {
 		LogLevel:     int(log.Info),
 		IndexTags:    []string{"tx.owner", "tx.type"},
 		IndexAllTags: false,
-		Services:     []string{"broadcast", "node", "owner", "query", "tx", "btc", "eth"},
+		Auth: Authorisation{
+			OwnerCredentials: []string{},
+			RPCPrivateKey:    "",
+		},
+		Services: []string{"broadcast", "node", "owner", "query", "tx", "btc", "eth"},
 	}
 }
 
 // NetworkConfig exposes configuration files for the current
 type NetworkConfig struct {
-	RPCAddress string `toml:"rpc_address"`
+	RPCAddress      string `toml:"rpc_address"`
+	RPCStartTimeout int    `toml:"rpc_start_timeout" desc:"RPC startup timeout in seconds"`
+
 	P2PAddress string `toml:"p2p_address" desc:"Main address for P2P connections"`
 
 	ExternalP2PAddress string `toml:"external_p2p_address" desc:"Address to advertise for incoming peers to connect to"`
@@ -227,6 +238,7 @@ type NetworkConfig struct {
 func DefaultNetworkConfig() *NetworkConfig {
 	return &NetworkConfig{
 		RPCAddress:         "tcp://127.0.0.1:26601",
+		RPCStartTimeout:    DefaultRPCStartTimeout,
 		P2PAddress:         "tcp://127.0.0.1:26611",
 		ExternalP2PAddress: "",
 		SDKAddress:         "http://127.0.0.1:26631",
@@ -365,7 +377,6 @@ type ConsensusConfig struct {
 	CreateEmptyBlocksInterval   Duration `toml:"create_empty_blocks_interval" desc:"Interval between empty block creation in milliseconds"`
 	PeerGossipSleepDuration     Duration `toml:"peer_gossip_sleep_duration" desc:"Duration values in milliseconds"`
 	PeerQueryMaj23SleepDuration Duration `toml:"peer_query_maj23_sleep_duration"`
-	BlockTimeIota               Duration `toml:"blocktime_iota" desc:"Block time parameter, corresponds to the minimum time increment between consecutive blocks"`
 }
 
 func (cfg *ConsensusConfig) TMConfig() *tmconfig.ConsensusConfig {
@@ -437,16 +448,22 @@ func DefaultChainDriverConfig() *ChainDriverConfig {
 
 func DefaultEthConfigRoopsten() *EthereumChainDriverConfig {
 	return &EthereumChainDriverConfig{
-		Connection: "https://ropsten.infura.io/v3/{api_key}}",
+		Connection: "https://ropsten.infura.io/v3/de5e96cbb6284d5ea1341bf6cb7fa401",
 	}
 }
 func DefautEthConfigRinkeby() *EthereumChainDriverConfig {
-	return &EthereumChainDriverConfig{Connection: "https://rinkeby.infura.io/v3/{api_key}}"}
+	return &EthereumChainDriverConfig{Connection: "https://rinkeby.infura.io/v3/de5e96cbb6284d5ea1341bf6cb7fa401"}
 }
 
-func DefaultEthConfig() *EthereumChainDriverConfig {
+func DefaultEthConfigCloud() *EthereumChainDriverConfig {
 	return &EthereumChainDriverConfig{
-		Connection: "http://localhost:7545",
+		Connection: "",
+	}
+}
+
+func DefaultEthConfigLocal() *EthereumChainDriverConfig {
+	return &EthereumChainDriverConfig{
+		Connection: "HTTP://127.0.0.1:7545",
 	}
 }
 

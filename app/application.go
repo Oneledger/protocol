@@ -121,13 +121,20 @@ func (app *App) setupState(stateBytes []byte) error {
 		return errors.Wrap(err, "Setup State")
 	}
 
-	err = app.Context.govern.SetETHChainDriverOption(initial.ETHCDOption)
+	err = app.Context.govern.SetETHChainDriverOption(initial.Governance.ETHCDOption)
 	if err != nil {
 		return errors.Wrap(err, "Setup State")
 	}
 
+	err = app.Context.govern.SetBTCChainDriverOption(initial.Governance.BTCCDOption)
+	if err != nil {
+		return errors.Wrap(err, "Setup State")
+	}
 	balanceCtx := app.Context.Balances()
-
+	err = app.Context.govern.SetONSOptions(initial.Governance.ONSOptions)
+	if err != nil {
+		return errors.Wrap(err, "Error in setting up ONS options")
+	}
 	// (1) Register all the currencies and fee
 	for _, currency := range initial.Currencies {
 		err := balanceCtx.Currencies().Register(currency)
@@ -135,14 +142,16 @@ func (app *App) setupState(stateBytes []byte) error {
 			return errors.Wrapf(err, "failed to register currency %s", currency.Name)
 		}
 	}
-	app.Context.feeOption.FeeCurrency = initial.FeeOption.FeeCurrency
-	app.Context.feeOption.MinFeeDecimal = initial.FeeOption.MinFeeDecimal
-	app.Context.ethTrackers.SetupOption(&initial.ETHCDOption)
-	err = app.Context.govern.SetFeeOption(initial.FeeOption)
+	app.Context.ethTrackers.SetupOption(&initial.Governance.ETHCDOption)
+	err = app.Context.govern.SetFeeOption(initial.Governance.FeeOption)
 	if err != nil {
 		return errors.Wrap(err, "Setup State")
 	}
-	app.Context.feePool.SetupOpt(app.Context.feeOption)
+	app.Context.feePool.SetupOpt(&initial.Governance.FeeOption)
+	app.Context.domains.SetOptions(&initial.Governance.ONSOptions)
+
+	app.Context.btcTrackers.SetConfig(bitcoin.NewBTCConfig(app.Context.cfg.ChainDriver, initial.Governance.BTCCDOption.ChainType))
+	app.Context.btcTrackers.SetOption(initial.Governance.BTCCDOption)
 
 	// (2) Set balances to all those mentioned
 	for _, bal := range initial.Balances {
@@ -166,8 +175,11 @@ func (app *App) setupState(stateBytes []byte) error {
 	}
 
 	for _, domain := range initial.Domains {
-		d := ons.NewDomain(domain.OwnerAddress, domain.AccountAddress, domain.Name, 0)
-		err := app.Context.domains.WithState(app.Context.deliver).Set(d)
+		d, err := ons.NewDomain(domain.Owner, domain.Beneficiary, domain.Name, 0, domain.URI, domain.ExpireHeight)
+		if err != nil {
+			return errors.Wrap(err, "failed to create initial domain")
+		}
+		err = app.Context.domains.WithState(app.Context.deliver).Set(d)
 		if err != nil {
 			return errors.Wrap(err, "failed to setup initial domain")
 		}
@@ -191,16 +203,16 @@ func (app *App) setupValidators(req RequestInitChain, currencies *balance.Curren
 
 	vu, err := app.Context.validators.WithState(app.Context.deliver).Init(req, currencies)
 
-	params := bitcoin2.GetChainParams(app.Context.cfg.ChainDriver.BitcoinChainType)
+	btcCfg := app.Context.btcTrackers.GetConfig()
 
-	vals, err := app.Context.validators.WithState(app.Context.deliver).GetBitcoinKeys(params)
+	vals, err := app.Context.validators.WithState(app.Context.deliver).GetBitcoinKeys(btcCfg.BTCParams)
 	threshold := (len(vals) * 2 / 3) + 1
 	for i := 0; i < 6; i++ {
 		// appHash := app.genesisDoc.AppHash.Bytes()
 
 		randBytes := []byte("XOLT")
 
-		script, address, addressList, err := bitcoin2.CreateMultiSigAddress(threshold, vals, randBytes, params)
+		script, address, addressList, err := bitcoin2.CreateMultiSigAddress(threshold, vals, randBytes, btcCfg.BTCParams)
 		if err != nil {
 			return nil, err
 		}
@@ -280,14 +292,25 @@ func (app *App) Prepare() error {
 		if err != nil {
 			return err
 		}
-		app.Context.feeOption = feeOpt
+
 		app.Context.feePool.SetupOpt(feeOpt)
+
+		onsOpt, err := app.Context.govern.GetONSOptions()
+		if err != nil {
+			return err
+		}
+		app.Context.domains.SetOptions(onsOpt)
 
 		cdOpt, err := app.Context.govern.GetETHChainDriverOption()
 		if err != nil {
 			return err
 		}
 		app.Context.ethTrackers.SetupOption(cdOpt)
+
+		btcOption, err := app.Context.govern.GetBTCChainDriverOption()
+		btcConfig := bitcoin.NewBTCConfig(app.Context.cfg.ChainDriver, btcOption.ChainType)
+
+		app.Context.btcTrackers.SetConfig(btcConfig)
 	}
 	return nil
 }
@@ -342,6 +365,7 @@ func (app *App) Start() error {
 	err = eth.EnableInternalETH(internalRouter)
 	if err != nil {
 		app.logger.Error("failed to register eth internal transaction")
+		return err
 	}
 
 	app.node = node

@@ -3,10 +3,8 @@ package event
 import (
 	"strconv"
 
-	"github.com/Oneledger/protocol/action"
-	"github.com/Oneledger/protocol/action/eth"
 	"github.com/Oneledger/protocol/chains/ethereum"
-	ethtracker "github.com/Oneledger/protocol/data/ethereum"
+	trackerlib "github.com/Oneledger/protocol/data/ethereum"
 	"github.com/Oneledger/protocol/data/jobs"
 	"github.com/Oneledger/protocol/storage"
 )
@@ -20,7 +18,7 @@ type JobETHCheckFinality struct {
 	Status      jobs.Status
 }
 
-func NewETHCheckFinality(name ethereum.TrackerName, state ethtracker.TrackerState) *JobETHCheckFinality {
+func NewETHCheckFinality(name ethereum.TrackerName, state trackerlib.TrackerState) *JobETHCheckFinality {
 	return &JobETHCheckFinality{
 		TrackerName: name,
 		JobID:       name.String() + storage.DB_PREFIX + strconv.Itoa(int(state)),
@@ -32,8 +30,7 @@ func NewETHCheckFinality(name ethereum.TrackerName, state ethtracker.TrackerStat
 func (job *JobETHCheckFinality) DoMyJob(ctx interface{}) {
 
 	// get tracker
-
-	job.RetryCount += 1
+	//job.RetryCount += 1
 	if job.RetryCount > jobs.Max_Retry_Count {
 		job.Status = jobs.Failed
 	}
@@ -43,7 +40,7 @@ func (job *JobETHCheckFinality) DoMyJob(ctx interface{}) {
 	ethCtx, _ := ctx.(*JobsContext)
 
 	trackerStore := ethCtx.EthereumTrackers
-	tracker, err := trackerStore.Get(job.TrackerName)
+	tracker, err := trackerStore.WithPrefixType(trackerlib.PrefixOngoing).Get(job.TrackerName)
 	if err != nil {
 		ethCtx.Logger.Error("err trying to deserialize tracker: ", job.TrackerName, err)
 		job.RetryCount += 1
@@ -51,11 +48,20 @@ func (job *JobETHCheckFinality) DoMyJob(ctx interface{}) {
 	}
 
 	ethconfig := ethCtx.cfg.EthChainDriver
-	cd, err := ethereum.NewChainDriver(ethconfig, ethCtx.Logger, trackerStore.GetOption())
-	if err != nil {
-		ethCtx.Logger.Error("err trying to get ChainDriver : ", job.GetJobID(), err)
-		job.RetryCount += 1
-		return
+	ethoptions := trackerStore.GetOption()
+	cd := new(ethereum.ETHChainDriver)
+	if tracker.Type == trackerlib.ProcessTypeLock {
+		cd, err = ethereum.NewChainDriver(ethconfig, ethCtx.Logger, ethoptions.ContractAddress, ethoptions.ContractABI, ethereum.ETH)
+		if err != nil {
+			ethCtx.Logger.Error("err trying to get ChainDriver : ", job.GetJobID(), err, tracker.Type)
+			return
+		}
+	} else if tracker.Type == trackerlib.ProcessTypeLockERC {
+		cd, err = ethereum.NewChainDriver(ethconfig, ethCtx.Logger, ethoptions.ERCContractAddress, ethoptions.ERCContractABI, ethereum.ERC)
+		if err != nil {
+			ethCtx.Logger.Error("err trying to get ChainDriver : ", job.GetJobID(), err, tracker.Type)
+			return
+		}
 	}
 
 	rawTx := tracker.SignedETHTx
@@ -64,53 +70,21 @@ func (job *JobETHCheckFinality) DoMyJob(ctx interface{}) {
 		ethCtx.Logger.Error("Error Decoding Bytes from RaxTX :", job.GetJobID(), err)
 		return
 	}
-
-	receipt, err := cd.CheckFinality(tx.Hash())
-	if err != nil {
-		ethCtx.Logger.Error("Error in Receiving TX receipt : ", job.GetJobID(), err)
+	finalityStatus := cd.CheckFinality(tx.Hash(), ethoptions.BlockConfirmation)
+	if finalityStatus == ethereum.BlockHashFailed {
+		job.Status = jobs.Failed
+		BroadcastReportFinalityETHTx(ctx.(*JobsContext), job.TrackerName, job.JobID, false)
 		return
 	}
-	if receipt == nil {
-		ethCtx.Logger.Info("Transaction not added to Ethereum Network yet ", job.GetJobID())
-		return
+	if finalityStatus == ethereum.TXSuccess {
+		index, _ := tracker.CheckIfVoted(ethCtx.ValidatorAddress)
+		if index < 0 {
+			return
+		}
+		BroadcastReportFinalityETHTx(ethCtx, job.TrackerName, job.JobID, true)
+		job.Status = jobs.Completed
 	}
-	index, _ := tracker.CheckIfVoted(ethCtx.ValidatorAddress)
-	if index < 0 {
-		return
-	}
-	reportFinalityMint := &eth.ReportFinality{
-		TrackerName:      job.TrackerName,
-		Locker:           tracker.ProcessOwner,
-		ValidatorAddress: ethCtx.ValidatorAddress,
-		VoteIndex:        index,
-		Refund:           false,
-	}
-
-	txData, err := reportFinalityMint.Marshal()
-	if err != nil {
-		ethCtx.Logger.Error("Error while preparing mint txn ", job.GetJobID(), err)
-		return
-	}
-
-	internalMintTx := action.RawTx{
-		Type: action.ETH_REPORT_FINALITY_MINT,
-		Data: txData,
-		Fee:  action.Fee{},
-		Memo: job.GetJobID(),
-	}
-
-	req := InternalBroadcastRequest{
-		RawTx: internalMintTx,
-	}
-	rep := BroadcastReply{}
-	err = ethCtx.Service.InternalBroadcast(req, &rep)
-
-	if err != nil || !rep.OK {
-		ethCtx.Logger.Error("error while broadcasting finality vote and mint txn ", job.GetJobID(), err, rep.Log)
-		return
-	}
-
-	job.Status = jobs.Completed
+	return
 }
 
 func (job *JobETHCheckFinality) GetType() string {
@@ -123,4 +97,8 @@ func (job *JobETHCheckFinality) GetJobID() string {
 
 func (job *JobETHCheckFinality) IsDone() bool {
 	return job.Status == jobs.Completed
+}
+
+func (job *JobETHCheckFinality) IsFailed() bool {
+	return job.Status == jobs.Failed
 }

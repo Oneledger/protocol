@@ -259,12 +259,12 @@ func (f *Faucet) RequestOLT(req Request, reply *Reply) error {
 	rawTx := sendTxResults.RawTx
 	h, err := f.nodeCtx.PrivKey().GetHandler()
 	if err != nil {
-		panic("invalid nodeCtx private key")
+		return errors.New("invalid nodeCtx private key")
 	}
 
 	sig, err := h.Sign(rawTx)
 	if err != nil {
-		panic("failed to sign raw tx " + err.Error())
+		return errors.New("failed to sign raw tx " + err.Error())
 	}
 
 	broadcastResult, err := f.fullnode.TxSync(client.BroadcastRequest{
@@ -323,6 +323,12 @@ func NewFaucet(cfg *config.Server) (*Faucet, error) {
 		return nil, err
 	}
 
+	_, err = nodeCtx.PrivKey().GetHandler()
+	if err != nil {
+		logger.Error("node private key invalid")
+		return nil, err
+	}
+
 	logger.Info("Loaded account", nodeCtx.Address().String())
 
 	dbPath := filepath.Join(args.dbDir, "faucet.db")
@@ -344,7 +350,7 @@ func NewFaucet(cfg *config.Server) (*Faucet, error) {
 		return nil, errors.Wrap(err, "failed to start node conn")
 	}
 
-	logger.Info("Connected to node run by", addr.String())
+	logger.Info("Connected to node run by", addr.Address.String())
 
 	balReply, err := fullnode.Balance(nodeCtx.Address())
 	if err != nil {

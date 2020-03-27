@@ -88,8 +88,11 @@ func printPortStatus(portAddress string, portType string) bool {
 		return false
 	}
 
-	host, port, _ := net.SplitHostPort(url.Host)
-
+	host, port, err := net.SplitHostPort(url.Host)
+	if err != nil {
+		fmt.Println(portType, "error parse url", err)
+		return false
+	}
 	_, errListen := net.Listen("tcp", host+":"+port)
 	if errListen != nil {
 		fmt.Println(portType, "Port:", port, "on", host, " \u2713")

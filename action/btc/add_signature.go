@@ -55,8 +55,12 @@ func (as *AddSignature) Tags() common.KVPairs {
 		Key:   []byte("tx.locker"),
 		Value: []byte(as.ValidatorAddress.String()),
 	}
+	tag3 := common.KVPair{
+		Key:   []byte("tx.tracker_name"),
+		Value: []byte(as.TrackerName),
+	}
 
-	tags = append(tags, tag, tag2)
+	tags = append(tags, tag, tag2, tag3)
 	return tags
 }
 
@@ -143,7 +147,8 @@ func runAddSignature(ctx *action.Context, tx action.RawTx) (bool, action.Respons
 		return false, action.Response{Log: fmt.Sprintf("tracker not accepting signatures: %s", addSignature.TrackerName)}
 	}
 
-	addressPubKey, err := btcutil.NewAddressPubKey(addSignature.ValidatorPubKey, ctx.BTCChainType)
+	opt := ctx.BTCTrackers.GetConfig()
+	addressPubKey, err := btcutil.NewAddressPubKey(addSignature.ValidatorPubKey, opt.BTCParams)
 	if err != nil {
 		return false, action.Response{Log: "error creating validator btc pubkey " + err.Error()}
 	}
@@ -155,7 +160,9 @@ func runAddSignature(ctx *action.Context, tx action.RawTx) (bool, action.Respons
 		return false, action.Response{Log: errors.Wrap(err, "error parsing btc txn").Error()}
 	}
 
-	if !(tracker.ProcessType == bitcoin.ProcessTypeLock && len(btcTx.TxIn) == 1) {
+	// individual signature verification
+	isFirstLock := tracker.CurrentTxId == nil
+	if !isFirstLock {
 
 		pk, err := btcec.ParsePubKey(addSignature.ValidatorPubKey, btcec.S256())
 		sign, err := btcec.ParseSignature(addSignature.BTCSignature, btcec.S256())
@@ -183,11 +190,9 @@ func runAddSignature(ctx *action.Context, tx action.RawTx) (bool, action.Respons
 	if err != nil {
 		return false, action.Response{Log: fmt.Sprintf("error adding signature: %s, error: %s", addSignature.TrackerName, err.Error())}
 	}
-	tracker.Multisig.GetSignaturesInOrder()
 
 	if tracker.HasEnoughSignatures() {
 		tracker.State = bitcoin.BusyScheduleBroadcasting
-
 	}
 
 	err = ctx.BTCTrackers.SetTracker(addSignature.TrackerName, tracker)

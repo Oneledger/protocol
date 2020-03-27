@@ -1,8 +1,6 @@
 package event
 
 import (
-	"fmt"
-
 	"github.com/pkg/errors"
 
 	"github.com/Oneledger/protocol/data/ethereum"
@@ -18,6 +16,7 @@ func init() {
 			transition.Status(ethereum.BusyFinalizing),
 			transition.Status(ethereum.Finalized),
 			transition.Status(ethereum.Released),
+			transition.Status(ethereum.Failed),
 		})
 
 	err := EthRedeemEngine.Register(transition.Transition{
@@ -51,21 +50,21 @@ func init() {
 		panic(err)
 	}
 
-	//err = EthRedeemEngine.Register(transition.Transition{
-	//	Name: ethereum.BURN,
-	//	Fn:   Burn,
-	//	From: transition.Status(ethereum.Finalized),
-	//	To:   transition.Status(ethereum.Released),
-	//})
-	//if err != nil {
-	//	panic(err)
-	//}
-
 	err = EthRedeemEngine.Register(transition.Transition{
 		Name: ethereum.CLEANUP,
 		Fn:   redeemCleanup,
 		From: transition.Status(ethereum.Released),
 		To:   transition.Status(0),
+	})
+	if err != nil {
+		panic(err)
+	}
+
+	err = EthRedeemEngine.Register(transition.Transition{
+		Name: ethereum.CLEANUPFAILED,
+		Fn:   redeemCleanupFailed,
+		From: transition.Status(ethereum.Failed),
+		To:   0,
 	})
 	if err != nil {
 		panic(err)
@@ -79,17 +78,16 @@ func Signing(ctx interface{}) error {
 	}
 
 	tracker := context.Tracker
+	context.Tracker = tracker
 
 	if tracker.State != ethereum.New {
 		err := errors.New("Cannot Start Sign and Broadcast from Current State")
 		return errors.Wrap(err, string((*tracker).State))
 	}
-
 	tracker.State = ethereum.BusyBroadcasting
-
 	if context.Validators.IsValidator() {
 
-		job := NewETHSignRedeem(tracker.TrackerName, tracker.State)
+		job := NewETHSignRedeem(tracker.TrackerName, ethereum.BusyBroadcasting)
 		err := context.JobStore.SaveJob(job)
 		if err != nil {
 
@@ -97,12 +95,11 @@ func Signing(ctx interface{}) error {
 		}
 
 	}
-	context.Tracker = tracker
+
 	return nil
 }
 
 func VerifyRedeem(ctx interface{}) error {
-
 	context, ok := ctx.(*ethereum.TrackerCtx)
 	if !ok {
 		return errors.New("error casting tracker context")
@@ -110,12 +107,28 @@ func VerifyRedeem(ctx interface{}) error {
 	tracker := context.Tracker
 
 	// create verify job for the first time from the state of broadcasting
-	if tracker.State == ethereum.BusyBroadcasting && context.Validators.IsValidator() {
-		job := NewETHVerifyRedeem(tracker.TrackerName, ethereum.BusyFinalizing)
-		err := context.JobStore.SaveJob(job)
+	if tracker.State != ethereum.BusyBroadcasting {
+		err := errors.New("Cannot start Finalizing from the current state")
+		return errors.Wrap(err, tracker.State.String())
+	}
+
+	if context.Validators.IsValidator() {
+		bjob, err := context.JobStore.GetJob(tracker.GetJobID(ethereum.BusyBroadcasting))
 		if err != nil {
-			return errors.Wrap(err, "Failed to save job")
+			return errors.Wrap(err, "failed to get job")
 		}
+		if bjob.IsDone() && !bjob.IsFailed() {
+			job := NewETHVerifyRedeem(tracker.TrackerName, ethereum.BusyFinalizing)
+			err := context.JobStore.SaveJob(job)
+			if err != nil {
+				return errors.Wrap(err, "Failed to save job")
+			}
+		}
+	}
+
+	y, n := tracker.GetVotes()
+
+	if y+n > 0 {
 		tracker.State = ethereum.BusyFinalizing
 	}
 
@@ -151,7 +164,7 @@ func redeemCleanup(ctx interface{}) error {
 		for state := ethereum.BusyBroadcasting; state <= ethereum.Released; state++ {
 			job, err := context.JobStore.GetJob(tracker.GetJobID(state))
 			if err != nil {
-				fmt.Println(err, "failed to get job from state: ", state)
+				//fmt.Println(err, "failed to get job from state: ", state)
 				continue
 			}
 			err = context.JobStore.DeleteJob(job)
@@ -161,7 +174,51 @@ func redeemCleanup(ctx interface{}) error {
 		}
 	}
 	//Delete Tracker
-	res, err := context.TrackerStore.Delete(tracker.TrackerName)
+	context.Logger.Debug("Setting Tracker to succeeded (ethLock):", tracker.State.String())
+	err := context.TrackerStore.WithPrefixType(ethereum.PrefixPassed).Set(tracker.Clean())
+	if err != nil {
+		context.Logger.Error("error saving eth tracker", err)
+		return err
+	}
+	context.Logger.Debug("Deleting tracker (ethRedeem):", tracker.State.String())
+	res, err := context.TrackerStore.WithPrefixType(ethereum.PrefixOngoing).Delete(tracker.TrackerName)
+	if err != nil || !res {
+		return errors.Wrap(err, "error deleting tracker from store")
+	}
+	return nil
+}
+
+func redeemCleanupFailed(ctx interface{}) error {
+	context, ok := ctx.(*ethereum.TrackerCtx)
+	if !ok {
+		return errors.New("error casting tracker context")
+	}
+	tracker := context.Tracker
+	//delete the tracker related jobs
+	if context.Validators.IsValidator() {
+		for state := ethereum.BusyBroadcasting; state <= ethereum.Failed; state++ {
+			job, err := context.JobStore.GetJob(tracker.GetJobID(state))
+			if err != nil {
+				//fmt.Println(err, "failed to get job from state: ", state)
+				continue
+			}
+			if job != nil {
+				err = context.JobStore.DeleteJob(job)
+				if err != nil {
+					return errors.Wrap(err, "error deleting job from store")
+				}
+			}
+		}
+	}
+	//Delete Tracker
+	context.Logger.Debug("Setting Tracker to Failed (ethLock):", tracker.State.String())
+	err := context.TrackerStore.WithPrefixType(ethereum.PrefixFailed).Set(tracker.Clean())
+	if err != nil {
+		context.Logger.Error("error saving eth tracker", err)
+		return err
+	}
+	context.Logger.Debug("Deleting tracker (ethRedeem):", tracker.State.String())
+	res, err := context.TrackerStore.WithPrefixType(ethereum.PrefixOngoing).Delete(tracker.TrackerName)
 	if err != nil || !res {
 		return errors.Wrap(err, "error deleting tracker from store")
 	}

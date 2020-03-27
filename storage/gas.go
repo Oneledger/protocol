@@ -75,15 +75,15 @@ func NewGasCalculator(limit Gas) GasCalculator {
 }
 
 type GasStore struct {
-	Store
+	SessionedDirectStorage
 	GasCalculator
 }
 
-func NewGasStore(store Store, gc GasCalculator) *GasStore {
+func NewGasStore(store SessionedDirectStorage, gc GasCalculator) *GasStore {
 
 	return &GasStore{
-		Store:         store,
-		GasCalculator: gc,
+		SessionedDirectStorage: store,
+		GasCalculator:          gc,
 	}
 }
 
@@ -92,7 +92,7 @@ func (g *GasStore) Set(key StoreKey, value []byte) error {
 	if !ok {
 		return ErrExceedGasLimit
 	}
-	err := g.Store.Set(key, value)
+	err := g.SessionedDirectStorage.Set(key, value)
 	if err != nil {
 		return err
 	}
@@ -106,7 +106,7 @@ func (g *GasStore) Get(key StoreKey) ([]byte, error) {
 		//log.Error(ErrExceedGasLimit.Error())
 		return nil, ErrExceedGasLimit
 	}
-	value, err := g.Store.Get(key)
+	value, err := g.SessionedDirectStorage.Get(key)
 	if err != nil {
 		return nil, err
 	}
@@ -120,7 +120,8 @@ func (g *GasStore) Exists(key StoreKey) bool {
 		log.Error(ErrExceedGasLimit.Error())
 		return false
 	}
-	exist := g.Store.Exists(key)
+
+	exist := g.SessionedDirectStorage.Exists(key)
 	return exist
 }
 
@@ -130,5 +131,6 @@ func (g *GasStore) Delete(key StoreKey) (bool, error) {
 		log.Error(ErrExceedGasLimit.Error())
 		return false, ErrExceedGasLimit
 	}
-	return g.Store.Delete(key)
+
+	return g.SessionedDirectStorage.Delete(key)
 }

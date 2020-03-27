@@ -14,7 +14,7 @@ type Validator struct {
 	Address      keys.Address   `json:"address"`
 	StakeAddress keys.Address   `json:"stakeAddress"`
 	PubKey       keys.PublicKey `json:"pubKey"`
-	ECDSAPubKey  keys.PublicKey `json:"ecdsa_pubkey"`
+	ECDSAPubKey  keys.PublicKey `json:"ecdsaPubkey"`
 	Power        int64          `json:"power"`
 	Name         string         `json:"name"`
 	Staking      balance.Amount `json:"staking,string"`

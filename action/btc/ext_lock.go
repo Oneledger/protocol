@@ -8,6 +8,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"strconv"
 
 	"github.com/btcsuite/btcd/wire"
 	"github.com/pkg/errors"
@@ -53,8 +54,21 @@ func (bl Lock) Tags() common.KVPairs {
 		Key:   []byte("tx.locker"),
 		Value: bl.Locker.Bytes(),
 	}
+	tag3 := common.KVPair{
+		Key:   []byte("tx.tracker_name"),
+		Value: []byte(bl.TrackerName),
+	}
+	la := strconv.FormatInt(bl.LockAmount, 10)
+	tag4 := common.KVPair{
+		Key:   []byte("tx.lock_amount"),
+		Value: []byte(la),
+	}
+	tag5 := common.KVPair{
+		Key:   []byte("tx.lock_currency"),
+		Value: []byte("BTC"),
+	}
 
-	tags = append(tags, tag, tag2)
+	tags = append(tags, tag, tag2, tag3, tag4, tag5)
 	return tags
 }
 
@@ -83,7 +97,7 @@ func (btcLockTx) Validate(ctx *action.Context, signedTx action.SignedTx) (bool, 
 		return false, err
 	}
 
-	err = action.ValidateFee(ctx.FeeOpt, signedTx.Fee)
+	err = action.ValidateFee(ctx.FeePool.GetOpt(), signedTx.Fee)
 	if err != nil {
 		return false, err
 	}
@@ -105,21 +119,15 @@ func (btcLockTx) Validate(ctx *action.Context, signedTx action.SignedTx) (bool, 
 		return false, errors.New("err in deserializing btc txn")
 	}
 
-	isFirstTxn := len(tx.TxIn) == 1
-	op := tx.TxIn[0].PreviousOutPoint
+	opt := ctx.BTCTrackers.GetConfig()
 
-	if !isFirstTxn && op.Hash != *tracker.CurrentTxId {
-		return false, errors.New("txn doesn't match tracker")
-	}
-	if !isFirstTxn && op.Index != 0 {
-		return false, errors.New("txn doesn't match tracker")
-	}
-	if isFirstTxn && tx.TxOut[0].Value != lock.LockAmount+tracker.CurrentBalance {
-		return false, errors.New("txn doesn't match tracker")
+	if !ValidateExtLockStructure(tracker, tx, opt.BTCParams) {
+		return false, errors.New("err in ext lock txn")
 	}
 
-	if !bitcoin2.ValidateLock(tx, ctx.BlockCypherToken, ctx.BlockCypherChainType, tracker.CurrentTxId,
-		tracker.ProcessLockScriptAddress, tracker.CurrentBalance, lock.LockAmount) {
+	isFirstLock := tracker.CurrentTxId == nil
+	if !bitcoin2.ValidateLock(tx, opt.BlockCypherToken, opt.BlockCypherChainType, tracker.ProcessLockScriptAddress,
+		tracker.CurrentBalance, lock.LockAmount, isFirstLock) {
 
 		return false, errors.New("txn doesn't match tracker")
 	}
@@ -165,21 +173,17 @@ func runBTCLock(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 		return false, action.Response{Log: fmt.Sprintf("err desrializing btc txn ", lock.TrackerName)}
 	}
 
-	isFirstTxn := len(btcTx.TxIn) == 1
-	op := btcTx.TxIn[0].PreviousOutPoint
+	opt := ctx.BTCTrackers.GetConfig()
+	cdOption := ctx.BTCTrackers.GetOption()
 
-	if !isFirstTxn && op.Hash != *tracker.CurrentTxId {
-		return false, action.Response{Log: fmt.Sprintf("err incorrect btc txn", lock.TrackerName)}
-	}
-	if !isFirstTxn && op.Index != 0 {
-		return false, action.Response{Log: fmt.Sprintf("err incorrect btc txn ", lock.TrackerName)}
-	}
-	if isFirstTxn && btcTx.TxOut[0].Value != lock.LockAmount+tracker.CurrentBalance {
-		return false, action.Response{Log: fmt.Sprintf("err incorrect btc txn ", lock.TrackerName)}
+	if !ValidateExtLockStructure(tracker, btcTx, opt.BTCParams) {
+		return false, action.Response{Log: "err in ext lock txn structure"}
 	}
 
-	if !bytes.Equal(btcTx.TxOut[0].PkScript, tracker.ProcessLockScriptAddress) {
-		return false, action.Response{Log: fmt.Sprintf("err incorrect btc lock address ", lock.TrackerName)}
+	newTrackerBalance := btcTx.TxOut[0].Value
+	lockAmount := newTrackerBalance - tracker.CurrentBalance
+	if lockAmount != lock.LockAmount {
+		return false, action.Response{Log: "err in lock amount"}
 	}
 
 	curr, ok := ctx.Currencies.GetCurrencyByName("BTC")
@@ -188,13 +192,13 @@ func runBTCLock(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	}
 
 	lockCoin := curr.NewCoinFromUnit(lock.LockAmount)
-	tally := action.Address(lockBalanceAddress)
+	tally := action.Address(cdOption.TotalSupplyAddr)
 	balCoin, err := ctx.Balances.GetBalanceForCurr(tally, &curr)
 	if err != nil {
 		return false, action.Response{Log: fmt.Sprintf("unable to get btc lock total balance", lock.TrackerName)}
 	}
 
-	totalSupplyCoin := curr.NewCoinFromInt(totalBTCSupply)
+	totalSupplyCoin := curr.NewCoinFromString(cdOption.TotalSupply)
 
 	if !balCoin.Plus(lockCoin).LessThanEqualCoin(totalSupplyCoin) {
 		return false, action.Response{Log: fmt.Sprintf("btc lock exceeded limit", lock.TrackerName)}

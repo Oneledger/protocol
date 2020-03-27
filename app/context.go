@@ -15,13 +15,11 @@ import (
 	"github.com/Oneledger/protocol/action/staking"
 	"github.com/Oneledger/protocol/action/transfer"
 	"github.com/Oneledger/protocol/app/node"
-	bitcoin2 "github.com/Oneledger/protocol/chains/bitcoin"
 	"github.com/Oneledger/protocol/client"
 	"github.com/Oneledger/protocol/config"
 	"github.com/Oneledger/protocol/data/accounts"
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/bitcoin"
-	"github.com/Oneledger/protocol/data/chain"
 	"github.com/Oneledger/protocol/data/ethereum"
 	"github.com/Oneledger/protocol/data/fees"
 	"github.com/Oneledger/protocol/data/governance"
@@ -56,10 +54,8 @@ type context struct {
 	feePool     *fees.Store
 	govern      *governance.Store
 	btcTrackers *bitcoin.TrackerStore  // tracker for bitcoin balance UTXO
-	ethTrackers *ethereum.TrackerStore // tracker for ethereum tracker store
-
-	currencies *balance.CurrencySet
-	feeOption  *fees.FeeOption
+	ethTrackers *ethereum.TrackerStore // Tracker store for ongoing ethereum trackers
+	currencies  *balance.CurrencySet
 
 	//storage which is not a chain state
 	accounts accounts.Wallet
@@ -92,13 +88,15 @@ func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *node.Context) (
 	ctx.deliver = storage.NewState(ctx.chainstate)
 	ctx.check = storage.NewState(ctx.chainstate)
 
-	ctx.validators = identity.NewValidatorStore("v", cfg, storage.NewState(ctx.chainstate))
+	ctx.validators = identity.NewValidatorStore("v", storage.NewState(ctx.chainstate))
 	ctx.balances = balance.NewStore("b", storage.NewState(ctx.chainstate))
 	ctx.domains = ons.NewDomainStore("d", storage.NewState(ctx.chainstate))
 	ctx.feePool = fees.NewStore("f", storage.NewState(ctx.chainstate))
 	ctx.govern = governance.NewStore("g", storage.NewState(ctx.chainstate))
+
 	ctx.btcTrackers = bitcoin.NewTrackerStore("btct", storage.NewState(ctx.chainstate))
-	ctx.ethTrackers = ethereum.NewTrackerStore("etht", storage.NewState(ctx.chainstate))
+
+	ctx.ethTrackers = ethereum.NewTrackerStore("etht", "ethfailed", "ethsuccess", storage.NewState(ctx.chainstate))
 	ctx.accounts = accounts.NewWallet(cfg, ctx.dbDir())
 
 	// TODO check if validator
@@ -108,10 +106,6 @@ func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *node.Context) (
 	ctx.lockScriptStore = bitcoin.NewLockScriptStore(cfg, ctx.dbDir())
 
 	ctx.actionRouter = action.NewRouter("action")
-	ctx.feeOption = &fees.FeeOption{
-		FeeCurrency:   balance.Currency{Name: "OLT", Chain: chain.Type(0), Decimal: 18},
-		MinFeeDecimal: 0,
-	}
 
 	ctx.jobBus = event.NewJobBus(event.Option{
 		BtcInterval: 30 * time.Second,
@@ -132,10 +126,6 @@ func (ctx context) dbDir() string {
 
 func (ctx *context) Action(header *Header, state *storage.State) *action.Context {
 
-	params := bitcoin2.GetChainParams(ctx.cfg.ChainDriver.BitcoinChainType)
-
-	bcct := bitcoin2.GetBlockCypherChainType(ctx.cfg.ChainDriver.BitcoinChainType)
-
 	actionCtx := action.NewContext(
 		ctx.actionRouter,
 		header,
@@ -143,7 +133,6 @@ func (ctx *context) Action(header *Header, state *storage.State) *action.Context
 		ctx.accounts,
 		ctx.balances.WithState(state),
 		ctx.currencies,
-		ctx.feeOption,
 		ctx.feePool.WithState(state),
 		ctx.validators.WithState(state),
 		ctx.domains.WithState(state),
@@ -151,12 +140,9 @@ func (ctx *context) Action(header *Header, state *storage.State) *action.Context
 		ctx.btcTrackers.WithState(state),
 		ctx.ethTrackers.WithState(state),
 		ctx.jobStore,
-		params,
 		ctx.lockScriptStore,
-		ctx.cfg.ChainDriver.BlockCypherToken,
-		bcct,
-
-		log.NewLoggerWithPrefix(ctx.logWriter, "action").WithLevel(log.Level(ctx.cfg.Node.LogLevel)))
+		log.NewLoggerWithPrefix(ctx.logWriter, "action").WithLevel(log.Level(ctx.cfg.Node.LogLevel)),
+	)
 
 	return actionCtx
 }
@@ -186,20 +172,33 @@ func (ctx *context) Services() (service.Map, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to start service context")
 	}
+
+	btcTrackers := bitcoin.NewTrackerStore("btct", storage.NewState(ctx.chainstate))
+	btcTrackers.SetConfig(ctx.btcTrackers.GetConfig())
+
+	feePool := fees.NewStore("f", storage.NewState(ctx.chainstate))
+	feePool.SetupOpt(ctx.feePool.GetOpt())
+
+	ethTracker := ethereum.NewTrackerStore("etht", "ethfailed", "ethsuccess", storage.NewState(ctx.chainstate))
+	ethTracker.SetupOption(ctx.ethTrackers.GetOption())
+
+	ons := ons.NewDomainStore("d", storage.NewState(ctx.chainstate))
+	ons.SetOptions(ctx.domains.GetOptions())
+
 	svcCtx := &service.Context{
-		Balances:     ctx.balances,
+		Balances:     balance.NewStore("b", storage.NewState(ctx.chainstate)),
 		Accounts:     ctx.accounts,
 		Currencies:   ctx.currencies,
-		FeeOpt:       ctx.feeOption,
+		FeePool:      feePool,
 		Cfg:          ctx.cfg,
 		NodeContext:  ctx.node,
-		ValidatorSet: ctx.validators,
-		Domains:      ctx.domains,
+		ValidatorSet: identity.NewValidatorStore("v", storage.NewState(ctx.chainstate)),
+		Domains:      ons,
 		Router:       ctx.actionRouter,
 		Logger:       log.NewLoggerWithPrefix(ctx.logWriter, "rpc").WithLevel(log.Level(ctx.cfg.Node.LogLevel)),
 		Services:     extSvcs,
-
-		Trackers: ctx.btcTrackers,
+		EthTrackers:  ethTracker,
+		Trackers:     btcTrackers,
 	}
 
 	return service.NewMap(svcCtx)
@@ -211,11 +210,11 @@ func (ctx *context) Restful() (service.RestfulRouter, error) {
 		return nil, errors.Wrap(err, "failed to start service context")
 	}
 	svcCtx := &service.Context{
+		Cfg:          ctx.cfg,
 		Balances:     ctx.balances,
 		Accounts:     ctx.accounts,
 		Currencies:   ctx.currencies,
-		FeeOpt:       ctx.feeOption,
-		Cfg:          ctx.cfg,
+		FeePool:      ctx.feePool,
 		NodeContext:  ctx.node,
 		ValidatorSet: ctx.validators,
 		Domains:      ctx.domains,
@@ -251,7 +250,7 @@ func (ctx *context) Storage() StorageCtx {
 		FeePool:    ctx.feePool,
 		Govern:     ctx.govern,
 		Currencies: ctx.currencies,
-		FeeOption:  ctx.feeOption,
+		FeeOption:  ctx.feePool.GetOpt(),
 	}
 }
 
@@ -276,19 +275,16 @@ func (ctx *context) Replay(version int64) error {
 }
 
 func (ctx *context) JobContext() *event.JobsContext {
-	cdConfig := ctx.cfg.ChainDriver
+
 	return event.NewJobsContext(
 		ctx.cfg,
-		cdConfig.BitcoinChainType,
-		ctx.internalService, ctx.btcTrackers, ctx.validators,
+		ctx.internalService,
+		ctx.btcTrackers,
+		ctx.validators,
 		ctx.node.ValidatorECDSAPrivateKey(),
 		ctx.node.ValidatorECDSAPrivateKey(),
-		ctx.node.ValidatorAddress(), ctx.cfg.ChainDriver.BlockCypherToken,
+		ctx.node.ValidatorAddress(),
 		ctx.lockScriptStore,
-		cdConfig.BitcoinNodeAddress,
-		cdConfig.BitcoinRPCPort,
-		cdConfig.BitcoinRPCUsername,
-		cdConfig.BitcoinRPCPassword,
 		ctx.ethTrackers.WithState(ctx.deliver),
-	)
+		log.NewLoggerWithPrefix(ctx.logWriter, "internal_jobs").WithLevel(log.Level(ctx.cfg.Node.LogLevel)))
 }

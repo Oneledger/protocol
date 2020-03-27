@@ -124,7 +124,7 @@ func (app *App) blockBeginner() blockBeginner {
 		//update the header to current block
 		app.header = req.Header
 
-		app.logger.Debug("Begin Block:", result, "height:", req.Header.Height, "AppHash:", hex.EncodeToString(req.Header.AppHash))
+		app.logger.Detail("Begin Block:", result, "height:", req.Header.Height, "AppHash:", hex.EncodeToString(req.Header.AppHash))
 		return result
 	}
 }
@@ -133,6 +133,8 @@ func (app *App) blockBeginner() blockBeginner {
 func (app *App) txChecker() txChecker {
 	return func(msg []byte) ResponseCheckTx {
 		defer app.handlePanic()
+
+		app.Context.check.BeginTxSession()
 
 		tx := &action.SignedTx{}
 
@@ -168,7 +170,14 @@ func (app *App) txChecker() txChecker {
 			Tags:      response.Tags,
 			Codespace: "",
 		}
-		app.logger.Debug("Check Tx: ", result, "log", response.Log)
+
+		if !(ok && feeOk) {
+			app.Context.check.DiscardTxSession()
+		} else {
+			app.Context.check.CommitTxSession()
+		}
+
+		app.logger.Detail("Check Tx: ", result, "log", response.Log)
 		return result
 
 	}
@@ -177,6 +186,8 @@ func (app *App) txChecker() txChecker {
 func (app *App) txDeliverer() txDeliverer {
 	return func(msg []byte) ResponseDeliverTx {
 		defer app.handlePanic()
+
+		app.Context.deliver.BeginTxSession()
 
 		tx := &action.SignedTx{}
 
@@ -204,7 +215,14 @@ func (app *App) txDeliverer() txDeliverer {
 			Tags:      response.Tags,
 			Codespace: "",
 		}
-		app.logger.Debug("Deliver Tx: ", result)
+		app.logger.Detail("Deliver Tx: ", result)
+
+		if !(ok && feeOk) {
+			app.Context.deliver.DiscardTxSession()
+		} else {
+			app.Context.deliver.CommitTxSession()
+		}
+
 		return result
 	}
 }
@@ -214,18 +232,17 @@ func (app *App) blockEnder() blockEnder {
 		defer app.handlePanic()
 
 		fee, err := app.Context.feePool.WithState(app.Context.deliver).Get([]byte(fees.POOL_KEY))
-		app.logger.Debug("endblock fee", fee, err)
+		app.logger.Detail("endblock fee", fee, err)
 		updates := app.Context.validators.GetEndBlockUpdate(app.Context.ValidatorCtx(), req)
 		result := ResponseEndBlock{
 			ValidatorUpdates: updates,
 			Tags:             []common.KVPair(nil),
 		}
-
+		ethTrackerlog := log.NewLoggerWithPrefix(app.Context.logWriter, "ethtracker").WithLevel(log.Level(app.Context.cfg.Node.LogLevel))
 		doTransitions(app.Context.jobStore, app.Context.btcTrackers.WithState(app.Context.deliver), app.Context.validators)
+		doEthTransitions(app.Context.jobStore, app.Context.ethTrackers, app.Context.node.ValidatorAddress(), ethTrackerlog, app.Context.validators, app.Context.deliver)
 
-		doEthTransitions(app.Context.jobStore, app.Context.ethTrackers.WithState(app.Context.deliver), app.Context.node.ValidatorAddress(), app.logger, app.Context.validators)
-
-		app.logger.Debug("End Block: ", result, "height:", req.Height)
+		app.logger.Detail("End Block: ", result, "height:", req.Height)
 
 		return result
 	}
@@ -236,7 +253,7 @@ func (app *App) commitor() commitor {
 		defer app.handlePanic()
 
 		hash, ver := app.Context.deliver.Commit()
-		app.logger.Debugf("Committed LockNew Block height[%d], hash[%s], versions[%d]", app.header.Height, hex.EncodeToString(hash), ver)
+		app.logger.Detailf("Committed New Block height[%d], hash[%s], versions[%d]", app.header.Height, hex.EncodeToString(hash), ver)
 
 		// update check state by deliver state
 		gc := getGasCalculator(app.genesisDoc.ConsensusParams)
@@ -245,7 +262,7 @@ func (app *App) commitor() commitor {
 			Data: hash,
 		}
 
-		app.logger.Debug("Commit Result", result)
+		app.logger.Detail("Commit Result", result)
 		return result
 	}
 }
@@ -267,7 +284,7 @@ func (app *App) getAppHash() (version int64, hash []byte) {
 func (app *App) handlePanic() {
 	if r := recover(); r != nil {
 		fmt.Println("panic in controller: ", r)
-		fmt.Println(debug.Stack())
+		debug.PrintStack()
 		app.Close()
 	}
 }
@@ -320,34 +337,46 @@ func doTransitions(js *jobs.JobStore, ts *bitcoin.TrackerStore, validators *iden
 	}
 }
 
-func doEthTransitions(js *jobs.JobStore, ts *ethereum.TrackerStore, myValAddr keys.Address, logger *log.Logger, validators *identity.ValidatorStore) {
-
+func doEthTransitions(js *jobs.JobStore, ts *ethereum.TrackerStore, myValAddr keys.Address, logger *log.Logger, validators *identity.ValidatorStore, deliver *storage.State) {
+	ts = ts.WithState(deliver)
 	tnames := make([]*ceth.TrackerName, 0, 20)
-	ts.Iterate(func(name *ceth.TrackerName, tracker *ethereum.Tracker) bool {
+	ts.WithPrefixType(ethereum.PrefixOngoing).Iterate(func(name *ceth.TrackerName, tracker *ethereum.Tracker) bool {
 		tnames = append(tnames, name)
 		return false
 	})
 	for _, name := range tnames {
-		t, _ := ts.Get(*name)
+		deliver.DiscardTxSession()
+		deliver.BeginTxSession()
+		t, _ := ts.WithPrefixType(ethereum.PrefixOngoing).Get(*name)
+		state := t.State
+		ctx := ethereum.NewTrackerCtx(t, myValAddr, js.WithChain(chain.ETHEREUM), ts, validators, logger)
 
-		ctx := ethereum.NewTrackerCtx(t, myValAddr, js.WithChain(chain.ETHEREUM), ts, validators)
+		if t.Type == ethereum.ProcessTypeLock || t.Type == ethereum.ProcessTypeLockERC {
 
-		if t.Type == ethereum.ProcessTypeLock {
+			logger.Debug("Processing Tracker : ", t.Type.String(), " | State :", t.State.String())
 			_, err := event.EthLockEngine.Process(t.NextStep(), ctx, transition.Status(t.State))
 			if err != nil {
 				logger.Error("failed to process eth tracker ProcessTypeLock", err)
+				continue
 			}
-		} else if t.Type == ethereum.ProcessTypeRedeem {
+
+		} else if t.Type == ethereum.ProcessTypeRedeem || t.Type == ethereum.ProcessTypeRedeemERC {
+			logger.Debug("Processing Tracker : ", t.Type.String(), " | State :", t.State.String())
 			_, err := event.EthRedeemEngine.Process(t.NextStep(), ctx, transition.Status(t.State))
 			if err != nil {
 				logger.Error("failed to process eth tracker ProcessTypeRedeem", err)
+				continue
 			}
 		}
-
-		err := ts.Set(ctx.Tracker)
-		if err != nil {
-			logger.Error("failed to save eth tracker", err)
+		// only set back to chainstate when transition happened.
+		if ctx.Tracker.State < 5 && state != ctx.Tracker.State {
+			err := ts.WithPrefixType(ethereum.PrefixOngoing).Set(ctx.Tracker)
+			if err != nil {
+				logger.Error("failed to save eth tracker", err, ctx.Tracker)
+				panic(err)
+			}
 		}
+		deliver.CommitTxSession()
 	}
 
 }

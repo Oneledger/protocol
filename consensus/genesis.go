@@ -7,12 +7,14 @@ import (
 	"github.com/pkg/errors"
 	"github.com/tendermint/tendermint/types"
 
+	"github.com/Oneledger/protocol/chains/bitcoin"
+	ethchain "github.com/Oneledger/protocol/chains/ethereum"
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/fees"
 	"github.com/Oneledger/protocol/data/keys"
+	"github.com/Oneledger/protocol/data/ons"
 	"github.com/Oneledger/protocol/identity"
 	"github.com/Oneledger/protocol/serialize"
-	ethchain "github.com/Oneledger/protocol/chains/ethereum"
 )
 
 type GenesisDoc = types.GenesisDoc
@@ -34,6 +36,13 @@ func NewGenesisDoc(chainID string, states AppState) (*GenesisDoc, error) {
 	}, nil
 }
 
+type GovernanceState struct {
+	FeeOption   fees.FeeOption             `json:"feeOption"`
+	ETHCDOption ethchain.ChainDriverOption `json:"ethchaindriverOption"`
+	BTCCDOption bitcoin.ChainDriverOption  `json:"bitcoinChainDriverOption"`
+	ONSOptions  ons.Options                `json:"onsOptions"`
+}
+
 type BalanceState struct {
 	Address  keys.Address   `json:"address"`
 	Currency string         `json:"currency"`
@@ -41,9 +50,16 @@ type BalanceState struct {
 }
 
 type DomainState struct {
-	OwnerAddress   keys.Address `json:"ownerAddress"`
-	AccountAddress keys.Address `json:"accountAddress"`
-	Name           string       `json:"name"`
+	Owner            keys.Address    `json:"ownerAddress"`
+	Beneficiary      keys.Address    `json:"beneficiary"`
+	Name             string          `json:"name"`
+	CreationHeight   int64           `json:"creationHeight"`
+	LastUpdateHeight int64           `json:"lastUpdateHeight"`
+	ExpireHeight     int64           `json:"expireHeight"`
+	ActiveFlag       bool            `json:"activeFlag"`
+	OnSaleFlag       bool            `json:"onSaleFlag"`
+	URI              string          `json:"uri"`
+	SalePrice        *balance.Amount `json:"salePrice"`
 }
 
 type ChainState struct {
@@ -55,8 +71,7 @@ type Stake identity.Stake
 
 type AppState struct {
 	Currencies balance.Currencies `json:"currencies"`
-	FeeOption  fees.FeeOption     `json:"feeOption"`
-	ETHCDOption   ethchain.ChainDriverOption `json:"ethchaindriverOption"`
+	Governance GovernanceState    `json:"governance"`
 	Chain      ChainState         `json:"state"`
 	Balances   []BalanceState     `json:"balances"`
 	Staking    []Stake            `json:"staking"`
@@ -65,21 +80,19 @@ type AppState struct {
 }
 
 func NewAppState(currencies balance.Currencies,
-	feeOpt fees.FeeOption,
 	balances []BalanceState,
 	staking []Stake,
 	domains []DomainState,
 	fees []BalanceState,
-	ethoptions ethchain.ChainDriverOption,
+	governance GovernanceState,
 ) *AppState {
 	return &AppState{
 		Currencies: currencies,
-		FeeOption:  feeOpt,
 		Balances:   balances,
 		Staking:    staking,
 		Domains:    domains,
 		Fees:       fees,
-		ETHCDOption:ethoptions,
+		Governance: governance,
 	}
 }
 

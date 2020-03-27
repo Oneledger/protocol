@@ -19,7 +19,7 @@ import (
 var _ Ons = &DomainSale{}
 
 type DomainSale struct {
-	DomainName   string         `json:"domainName"`
+	Name         ons.Name       `json:"name"`
 	OwnerAddress action.Address `json:"ownerAddress"`
 	Price        action.Amount  `json:"price"`
 	CancelSale   bool           `json:"cancelSale"`
@@ -34,7 +34,7 @@ func (s *DomainSale) Unmarshal(data []byte) error {
 }
 
 func (s DomainSale) OnsName() string {
-	return s.DomainName
+	return s.Name.String()
 }
 
 func (DomainSale) Type() action.Type {
@@ -57,7 +57,7 @@ func (s DomainSale) Tags() common.KVPairs {
 	}
 	tag2 := common.KVPair{
 		Key:   []byte("tx.domain_name"),
-		Value: []byte(s.DomainName),
+		Value: []byte(s.Name),
 	}
 
 	tags = append(tags, tag0, tag1, tag2)
@@ -98,7 +98,7 @@ func (domainSaleTx) Validate(ctx *action.Context, tx action.SignedTx) (bool, err
 		return false, err
 	}
 
-	err = action.ValidateFee(ctx.FeeOpt, tx.Fee)
+	err = action.ValidateFee(ctx.FeePool.GetOpt(), tx.Fee)
 	if err != nil {
 		return false, err
 	}
@@ -108,8 +108,24 @@ func (domainSaleTx) Validate(ctx *action.Context, tx action.SignedTx) (bool, err
 	}
 
 	// validate the sender and receiver are not nil
-	if sale.OwnerAddress == nil || len(sale.DomainName) == 0 {
+	if sale.OwnerAddress == nil || len(sale.Name) == 0 {
 		return false, action.ErrMissingData
+	}
+
+	if !sale.Name.IsValid() || sale.Name.IsSub() {
+		return false, ErrInvalidDomain
+	}
+	c, ok := ctx.Currencies.GetCurrencyById(0)
+	if !ok {
+		panic("no default currency available in the network")
+	}
+	if c.Name != sale.Price.Currency {
+		return false, errors.Wrap(action.ErrInvalidAmount, sale.Price.String())
+	}
+
+	coin := sale.Price.ToCoin(ctx.Currencies)
+	if coin.LessThanEqualCoin(coin.Currency.NewCoinFromAmount(ctx.Domains.GetOptions().PerBlockFees)) {
+		return false, action.ErrNotEnoughFund
 	}
 
 	return true, nil
@@ -117,51 +133,20 @@ func (domainSaleTx) Validate(ctx *action.Context, tx action.SignedTx) (bool, err
 
 func (domainSaleTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 
-	sale := &DomainSale{}
-	err := sale.Unmarshal(tx.Data)
-	if err != nil {
-		return false, action.Response{Log: err.Error()}
-	}
-
-	if !sale.Price.IsValid(ctx.Currencies) {
-		return false, action.Response{Log: "invalid price amount"}
-	}
-
-	// validate the sender and receiver are not nil
-	if sale.OwnerAddress == nil || len(sale.DomainName) <= 0 {
-		return false, action.Response{Log: "invalid data"}
-	}
-
-	domain, err := ctx.Domains.Get(sale.DomainName)
-	if err != nil {
-		if err == ons.ErrDomainNotFound {
-			return false, action.Response{Log: "domain not found"}
-		}
-		return false, action.Response{Log: err.Error()}
-	}
-
-	if bytes.Compare(domain.OwnerAddress, sale.OwnerAddress) != 0 {
-		return false, action.Response{Log: "not the owner"}
-	}
-
-	if !domain.IsChangeable(ctx.Header.Height) {
-		log := fmt.Sprintf("domain not changeable; name: %s, lastUpdateheight %d",
-			domain.Name, domain.LastUpdateHeight)
-		return false, action.Response{Log: log}
-	}
-
-	// if action to cancel sale and domain is not on sale
-	// fail the ProcessCheck
-	if sale.CancelSale &&
-		!domain.OnSaleFlag {
-		return false, action.Response{Log: "cannot cancel sale of domain; domain not on sale"}
-	}
-
-	return true, action.Response{Tags: sale.Tags()}
+	return runDomainSale(ctx, tx)
 }
 
 func (domainSaleTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 
+	return runDomainSale(ctx, tx)
+}
+
+func (domainSaleTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas) (bool, action.Response) {
+	return action.BasicFeeHandling(ctx, signedTx, start, size, 1)
+}
+
+func runDomainSale(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
+
 	sale := &DomainSale{}
 	err := sale.Unmarshal(tx.Data)
 	if err != nil {
@@ -172,12 +157,15 @@ func (domainSaleTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, 
 		return false, action.Response{Log: "invalid price amount"}
 	}
 
-	// validate the sender and receiver are not nil
-	if sale.OwnerAddress == nil || sale.DomainName == "" {
-		return false, action.Response{Log: "invalid data"}
+	if sale.OwnerAddress == nil {
+		return false, action.Response{Log: "invalid owner"}
 	}
 
-	domain, err := ctx.Domains.Get(sale.DomainName)
+	if sale.Name.IsSub() {
+		return false, action.Response{Log: "put sub domain on sale not allowed"}
+	}
+
+	domain, err := ctx.Domains.Get(sale.Name)
 	if err != nil {
 		if err == ons.ErrDomainNotFound {
 			return false, action.Response{Log: "domain not found"}
@@ -186,7 +174,7 @@ func (domainSaleTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, 
 	}
 
 	// verify the ownership
-	if bytes.Compare(domain.OwnerAddress, sale.OwnerAddress) != 0 {
+	if bytes.Compare(domain.Owner, sale.OwnerAddress) != 0 {
 		return false, action.Response{Log: "not the owner"}
 	}
 
@@ -196,10 +184,14 @@ func (domainSaleTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, 
 		return false, action.Response{Log: log}
 	}
 
+	if !domain.IsExpired(ctx.Header.Height) {
+		return false, action.Response{Log: "domain expired"}
+	}
+
 	if sale.CancelSale {
 		domain.CancelSale()
 	} else {
-		domain.PutOnSale(sale.Price.ToCoin(ctx.Currencies))
+		domain.PutOnSale(sale.Price.Value)
 	}
 	domain.LastUpdateHeight = ctx.Header.Height
 
@@ -209,8 +201,4 @@ func (domainSaleTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, 
 	}
 
 	return true, action.Response{Tags: sale.Tags()}
-}
-
-func (domainSaleTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas) (bool, action.Response) {
-	return action.BasicFeeHandling(ctx, signedTx, start, size, 1)
 }

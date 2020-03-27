@@ -82,6 +82,8 @@ onstest: install
 	@./scripts/startDev
 	@./scripts/testsend
 	python scripts/ons/create_domain.py
+	python scripts/ons/create_sub_domain.py
+	python scripts/ons/renew_domain.py
 	python scripts/ons/buy_sell_domain.py
 	@./scripts/stopDev
 
@@ -103,11 +105,14 @@ alltest: install
 	@./scripts/resetDev
 	@./scripts/startDev
 	@./scripts/testsend
-	@./scripts/testapply
 	@./scripts/getValidators
 	@./scripts/testsend
 	python scripts/ons/create_domain.py
+	python scripts/ons/create_sub_domain.py
 	python scripts/ons/buy_sell_domain.py
+	python scripts/ons/purchase_expired.py
+	python scripts/ons/create_delete_subdomain.py
+	python scripts/ons/renew_domain.py
 	python scripts/reward/withdraw.py
 	@./scripts/stopDev
 
@@ -128,3 +133,10 @@ rpcAuthtest: install
 	python scripts/rpcAuth/rpcTestAuth.py
 	@./scripts/stopDev
 
+
+stop:
+	@./scripts/stopDev
+
+
+start:
+	@./scripts/startDev

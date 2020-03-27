@@ -46,8 +46,12 @@ func (b *BroadcastSuccess) Tags() common.KVPairs {
 		Key:   []byte("tx.validator"),
 		Value: []byte(b.ValidatorAddress.String()),
 	}
+	tag3 := common.KVPair{
+		Key:   []byte("tx.tracker_name"),
+		Value: []byte(b.TrackerName),
+	}
 
-	tags = append(tags, tag, tag2)
+	tags = append(tags, tag, tag2, tag3)
 	return tags
 }
 

@@ -28,11 +28,13 @@ var (
 )
 
 // LockRedeemABI is the input ABI used to generate the binding from.
-const LockRedeemABI = "[{\"inputs\":[{\"internalType\":\"address[]\",\"name\":\"initialValidators\",\"type\":\"address[]\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"_address\",\"type\":\"address\"}],\"name\":\"AddValidator\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"address\",\"name\":\"sender\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"amount_received\",\"type\":\"uint256\"}],\"name\":\"Lock\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"recepient\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"amount_requested\",\"type\":\"uint256\"}],\"name\":\"RedeemRequest\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"recipient\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"address\",\"name\":\"validator_addresss\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"}],\"name\":\"ValidatorSignedRedeem\",\"type\":\"event\"},{\"constant\":true,\"inputs\":[],\"name\":\"getOLTEthAddress\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"internalType\":\"address\",\"name\":\"recipient_\",\"type\":\"address\"}],\"name\":\"getSignatureCount\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"getTotalEthBalance\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"internalType\":\"address\",\"name\":\"recipient_\",\"type\":\"address\"}],\"name\":\"hasValidatorSigned\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"internalType\":\"address\",\"name\":\"v\",\"type\":\"address\"}],\"name\":\"isValidator\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"internalType\":\"address\",\"name\":\"recepient_\",\"type\":\"address\"}],\"name\":\"isredeemAvailable\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[],\"name\":\"lock\",\"outputs\":[],\"payable\":true,\"stateMutability\":\"payable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"internalType\":\"address\",\"name\":\"newSmartContractAddress\",\"type\":\"address\"}],\"name\":\"migrate\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"migrationSignatures\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"name\":\"migrationSigners\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"numValidators\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"amount_\",\"type\":\"uint256\"}],\"name\":\"redeem\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"amount_\",\"type\":\"uint256\"},{\"internalType\":\"addresspayable\",\"name\":\"recipient_\",\"type\":\"address\"}],\"name\":\"sign\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"name\":\"validators\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"internalType\":\"address\",\"name\":\"recipient_\",\"type\":\"address\"}],\"name\":\"verifyRedeem\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"}]"
+const LockRedeemABI = "[{\"inputs\":[{\"internalType\":\"address[]\",\"name\":\"initialValidators\",\"type\":\"address[]\"},{\"internalType\":\"uint256\",\"name\":\"_lock_period\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"_address\",\"type\":\"address\"}],\"name\":\"AddValidator\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"address\",\"name\":\"sender\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"amount_received\",\"type\":\"uint256\"}],\"name\":\"Lock\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"recepient\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"amount_requested\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"redeemFeeCharged\",\"type\":\"uint256\"}],\"name\":\"RedeemRequest\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"address\",\"name\":\"validator\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"address\",\"name\":\"NewSmartContractAddress\",\"type\":\"address\"}],\"name\":\"ValidatorMigrated\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"recipient\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"address\",\"name\":\"validator_addresss\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"gasReturned\",\"type\":\"uint256\"}],\"name\":\"ValidatorSignedRedeem\",\"type\":\"event\"},{\"constant\":false,\"inputs\":[],\"name\":\"collectUserFee\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"getOLTEthAddress\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"internalType\":\"address\",\"name\":\"recipient_\",\"type\":\"address\"}],\"name\":\"getRedeemBalance\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"internalType\":\"address\",\"name\":\"recipient_\",\"type\":\"address\"}],\"name\":\"getSignatureCount\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"getTotalEthBalance\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"internalType\":\"address\",\"name\":\"recipient_\",\"type\":\"address\"}],\"name\":\"hasValidatorSigned\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"internalType\":\"address\",\"name\":\"addr\",\"type\":\"address\"}],\"name\":\"isValidator\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"internalType\":\"address\",\"name\":\"recepient_\",\"type\":\"address\"}],\"name\":\"isredeemAvailable\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[],\"name\":\"lock\",\"outputs\":[],\"payable\":true,\"stateMutability\":\"payable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"internalType\":\"address\",\"name\":\"newSmartContractAddress\",\"type\":\"address\"}],\"name\":\"migrate\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"migrationSignatures\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"name\":\"migrationSigners\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"numValidators\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"amount_\",\"type\":\"uint256\"}],\"name\":\"redeem\",\"outputs\":[],\"payable\":true,\"stateMutability\":\"payable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"amount_\",\"type\":\"uint256\"},{\"internalType\":\"addresspayable\",\"name\":\"recipient_\",\"type\":\"address\"}],\"name\":\"sign\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"name\":\"validators\",\"outputs\":[{\"internalType\":\"uint8\",\"name\":\"\",\"type\":\"uint8\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"internalType\":\"address\",\"name\":\"recipient_\",\"type\":\"address\"}],\"name\":\"verifyRedeem\",\"outputs\":[{\"internalType\":\"int8\",\"name\":\"\",\"type\":\"int8\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"}]"
 
 // LockRedeemFuncSigs maps the 4-byte function signature to its string representation.
 var LockRedeemFuncSigs = map[string]string{
+	"7edd7ccd": "collectUserFee()",
 	"45dfa415": "getOLTEthAddress()",
+	"e75f7515": "getRedeemBalance(address)",
 	"6c7d13df": "getSignatureCount(address)",
 	"287cc96b": "getTotalEthBalance()",
 	"31b6a6d1": "hasValidatorSigned(address)",
@@ -50,16 +52,16 @@ var LockRedeemFuncSigs = map[string]string{
 }
 
 // LockRedeemBin is the compiled bytecode used for deploying new contracts.
-var LockRedeemBin = "0x60806040526000805460ff1916905561708060075534801561002057600080fd5b50604051610ea8380380610ea88339818101604052602081101561004357600080fd5b810190808051604051939291908464010000000082111561006357600080fd5b90830190602082018581111561007857600080fd5b825186602082028301116401000000008211171561009557600080fd5b82525081516020918201928201910280838360005b838110156100c25781810151838201526020016100aa565b5050505091909101604052506100d792505050565b60005b815181101561017a5760008282815181106100f157fe5b6020026020010151905060026000826001600160a01b03166001600160a01b031681526020019081526020016000205460001461015f5760405162461bcd60e51b815260040180806020018281038252602f815260200180610e79602f913960400191505060405180910390fd5b610171816001600160e01b036101a816565b506001016100da565b506000805460ff191660011790558051600390600202046001016003908155815104600101600455506101f5565b6001600160a01b038116600081815260026020526040808220603290556001805481019055517f6a7a7b9e5967ba1cf76c3d7d5a9b98e96f11754855b04564fada97b94741ad369190a250565b610c75806102046000396000f3fe6080604052600436106100e85760003560e01c80637cacde3f1161008a578063db006a7511610059578063db006a75146102f0578063f83d08ba1461031a578063fa52c7d814610322578063facd743b14610355576100e8565b80637cacde3f1461021c57806391e3986814610257578063a04d04981461028a578063ce5494bb146102bd576100e8565b806331b6a6d1116100c657806331b6a6d11461017057806345dfa415146101a35780635d593f8d146101d45780636c7d13df146101e9576100e8565b80632138c6b9146100ed57806327882c3a14610134578063287cc96b1461015b575b600080fd5b3480156100f957600080fd5b506101206004803603602081101561011057600080fd5b50356001600160a01b0316610388565b604080519115158252519081900360200190f35b34801561014057600080fd5b506101496103d0565b60408051918252519081900360200190f35b34801561016757600080fd5b506101496103d6565b34801561017c57600080fd5b506101206004803603602081101561019357600080fd5b50356001600160a01b03166103da565b3480156101af57600080fd5b506101b8610406565b604080516001600160a01b039092168252519081900360200190f35b3480156101e057600080fd5b5061014961040a565b3480156101f557600080fd5b506101496004803603602081101561020c57600080fd5b50356001600160a01b0316610410565b34801561022857600080fd5b506102556004803603604081101561023f57600080fd5b50803590602001356001600160a01b031661042e565b005b34801561026357600080fd5b506101206004803603602081101561027a57600080fd5b50356001600160a01b0316610723565b34801561029657600080fd5b50610120600480360360208110156102ad57600080fd5b50356001600160a01b0316610744565b3480156102c957600080fd5b50610255600480360360208110156102e057600080fd5b50356001600160a01b0316610759565b3480156102fc57600080fd5b506102556004803603602081101561031357600080fd5b5035610a2d565b610255610ba2565b34801561032e57600080fd5b506101496004803603602081101561034557600080fd5b50356001600160a01b0316610bed565b34801561036157600080fd5b506101206004803603602081101561037857600080fd5b50356001600160a01b0316610bff565b6001600160a01b03811660009081526008602052604081206005015415806103ca57506001600160a01b03821660009081526008602052604090206005015443115b92915050565b60055481565b4790565b6001600160a01b0316600090815260086020908152604080832033845260010190915290205460ff1690565b3090565b60015481565b6001600160a01b031660009081526008602052604090206003015490565b60005460ff1661043d57600080fd5b3360009081526002602052604090205461049e576040805162461bcd60e51b815260206004820152601d60248201527f76616c696461746f72206e6f742070726573656e7420696e204c697374000000604482015290519081900360640190fd5b6001600160a01b03811660009081526008602052604090206004015460ff161561050f576040805162461bcd60e51b815260206004820152601b60248201527f72656465656d207265717565737420697320636f6d706c657465640000000000604482015290519081900360640190fd5b6001600160a01b038116600090815260086020526040902060020154821461057e576040805162461bcd60e51b815260206004820152601960248201527f72656465656d20616d6f756e7420436f6d70726f6d6973656400000000000000604482015290519081900360640190fd5b6001600160a01b038116600090815260086020908152604080832033845260010190915290205460ff16156105b257600080fd5b6001600160a01b038116600081815260086020818152604080842033855260018181018452918520805460ff191683179055949093525260039182018054909101908190559054116106dc576001600160a01b0380821660009081526008602052604080822080546002909101549151929316918381818185875af1925050503d806000811461065e576040519150601f19603f3d011682016040523d82523d6000602084013e610663565b606091505b50509050806106ac576040805162461bcd60e51b815260206004820152601060248201526f2a3930b739b332b9103330b4b632b21760811b604482015290519081900360640190fd5b506001600160a01b03811660009081526008602052604081206002810191909155600401805460ff191660011790555b604080513381526020810184905281516001600160a01b038416927f3b76df4bf55914fbcbc8b02f6773984cc346db1e6aef40410dcee0f94c6a05db928290030190a25050565b6001600160a01b031660009081526008602052604090206004015460ff1690565b60066020526000908152604090205460ff1681565b336000908152600260205260409020546107ba576040805162461bcd60e51b815260206004820152601d60248201527f76616c696461746f72206e6f742070726573656e7420696e204c697374000000604482015290519081900360640190fd5b3360009081526006602052604090205460ff161561081f576040805162461bcd60e51b815260206004820152601860248201527f56616c696461746f72205369676e656420616c72656164790000000000000000604482015290519081900360640190fd5b336000908152600660209081526040808320805460ff1916600190811790915560058054909101905580516f4d69677261746546726f6d4f6c64282960801b815281519081900360100181206001600160e01b031916818401528151808203600401815260249091019182905280516001600160a01b038616939192918291908401908083835b602083106108c55780518252601f1990920191602091820191016108a6565b6001836020036101000a0380198251168184511680821785525050505050509050019150506000604051808303816000865af19150503d8060008114610927576040519150601f19603f3d011682016040523d82523d6000602084013e61092c565b606091505b505090508061096c5760405162461bcd60e51b8152600401808060200182810382526024815260200180610c1d6024913960400191505060405180910390fd5b6004546005541415610983576000805460ff191690555b6003546005541415610a29576040516000906001600160a01b0384169047908381818185875af1925050503d80600081146109da576040519150601f19603f3d011682016040523d82523d6000602084013e6109df565b606091505b5050905080610a27576040805162461bcd60e51b815260206004820152600f60248201526e151c985b9cd9995c8819985a5b1959608a1b604482015290519081900360640190fd5b505b5050565b60005460ff16610a3c57600080fd5b3360009081526008602052604090206002015415610a5957600080fd5b60008111610aae576040805162461bcd60e51b815260206004820152601e60248201527f616d6f756e742073686f756c6420626520626967676572207468616e20300000604482015290519081900360640190fd5b336000908152600860205260409020600501544311610b14576040805162461bcd60e51b815260206004820181905260248201527f72657175657374206973206c6f636b65642c206e6f7420617661696c61626c65604482015290519081900360640190fd5b33600081815260086020908152604080832060048101805460ff19169055600381019390935582546001600160a01b031916909317808355600283018590556007544301600590930192909255825184815292516001600160a01b03909216927f222dc200773fe9b45015bf792e8fee37d651e3590c215806a5042404b6d741d2929081900390910190a250565b60005460ff16610bb157600080fd5b6040805133815234602082015281517f625fed9875dada8643f2418b838ae0bc78d9a148a18eee4ee1979ff0f3f5d427929181900390910190a1565b60026020526000908152604090205481565b6001600160a01b031660009081526002602052604090205415159056fe556e61626c6520746f204d696772617465206e657720536d61727420636f6e7472616374a265627a7a7231582016efac2c97d498deea8150377c74dac62afa930d54f95b0b44526da32739b1dc64736f6c63430005100032666f756e64206e6f6e2d756e697175652076616c696461746f7220696e20696e697469616c56616c696461746f7273"
+var LockRedeemBin = "0x60806040526000805460ff19169055615a9860065561933c600755662386f26fc100006008553480156200003257600080fd5b506040516200145d3803806200145d833981810160405260408110156200005857600080fd5b81019080805160405193929190846401000000008211156200007957600080fd5b9083019060208201858111156200008f57600080fd5b8251866020820283011164010000000082111715620000ad57600080fd5b82525081516020918201928201910280838360005b83811015620000dc578181015183820152602001620000c2565b505050509190910160405250602001519150620000f69050565b60005b82518110156200019a5760008382815181106200011257fe5b6020908102919091018101516001600160a01b0381166000908152600290925260409091205490915060ff16156200017c5760405162461bcd60e51b815260040180806020018281038252602f8152602001806200142e602f913960400191505060405180910390fd5b62000190816001600160e01b03620001cd16565b50600101620000f9565b506000805460ff19166001908117909155600d919091559051600360028202819004830160045590040160055562000261565b600380546001810182557fc2575a0e9e593c00f959f8c92f12db2869c3395a3b0502d05e2516446f71f85b0180546001600160a01b0319166001600160a01b0384169081179091559054600082815260026020526040808220805460ff191660ff9094169390931790925590517f6a7a7b9e5967ba1cf76c3d7d5a9b98e96f11754855b04564fada97b94741ad369190a250565b6111bd80620002716000396000f3fe6080604052600436106100fe5760003560e01c80637edd7ccd11610095578063db006a7511610064578063db006a7514610334578063e75f751514610351578063f83d08ba14610384578063fa52c7d81461038c578063facd743b146103d5576100fe565b80637edd7ccd1461026d57806391e3986814610282578063a04d0498146102ce578063ce5494bb14610301576100fe565b806345dfa415116100d157806345dfa415146101b95780635d593f8d146101ea5780636c7d13df146101ff5780637cacde3f14610232576100fe565b80632138c6b91461010357806327882c3a1461014a578063287cc96b1461017157806331b6a6d114610186575b600080fd5b34801561010f57600080fd5b506101366004803603602081101561012657600080fd5b50356001600160a01b0316610408565b604080519115158252519081900360200190f35b34801561015657600080fd5b5061015f610439565b60408051918252519081900360200190f35b34801561017d57600080fd5b5061015f61043f565b34801561019257600080fd5b50610136600480360360208110156101a957600080fd5b50356001600160a01b0316610443565b3480156101c557600080fd5b506101ce61048e565b604080516001600160a01b039092168252519081900360200190f35b3480156101f657600080fd5b5061015f610492565b34801561020b57600080fd5b5061015f6004803603602081101561022257600080fd5b50356001600160a01b0316610498565b34801561023e57600080fd5b5061026b6004803603604081101561025557600080fd5b50803590602001356001600160a01b03166104c7565b005b34801561027957600080fd5b5061026b6108ea565b34801561028e57600080fd5b506102b5600480360360208110156102a557600080fd5b50356001600160a01b03166109e5565b60408051600092830b90920b8252519081900360200190f35b3480156102da57600080fd5b50610136600480360360208110156102f157600080fd5b50356001600160a01b0316610a9e565b34801561030d57600080fd5b5061026b6004803603602081101561032457600080fd5b50356001600160a01b0316610ab3565b61026b6004803603602081101561034a57600080fd5b5035610ebc565b34801561035d57600080fd5b5061015f6004803603602081101561037457600080fd5b50356001600160a01b0316611066565b61026b611095565b34801561039857600080fd5b506103bf600480360360208110156103af57600080fd5b50356001600160a01b03166110e0565b6040805160ff9092168252519081900360200190f35b3480156103e157600080fd5b50610136600480360360208110156103f857600080fd5b50356001600160a01b03166110f5565b6000805460ff1661041857600080fd5b506001600160a01b03166000908152600e6020526040902060040154431190565b60095481565b4790565b6000805460ff1661045357600080fd5b336000908152600260208181526040808420546001600160a01b0387168552600e909252909220600190810154909260ff161c061492915050565b3090565b60015481565b6000805460ff166104a857600080fd5b506001600160a01b03166000908152600e602052604090206003015490565b60005460ff166104d657600080fd5b6104df336110f5565b610530576040805162461bcd60e51b815260206004820152601d60248201527f76616c696461746f72206e6f742070726573656e7420696e204c697374000000604482015290519081900360640190fd5b60005a905061053e336110f5565b61058f576040805162461bcd60e51b815260206004820152601d60248201527f76616c696461746f72206e6f742070726573656e7420696e206c697374000000604482015290519081900360640190fd5b6001600160a01b0382166000908152600e602052604090206004015443106105fe576040805162461bcd60e51b815260206004820152601f60248201527f72656465656d2072657175657374206973206e6f7420617661696c61626c6500604482015290519081900360640190fd5b6001600160a01b0382166000908152600e6020526040902060020154831461066d576040805162461bcd60e51b815260206004820152601a60248201527f72656465656d20616d6f756e7420697320646966666572656e74000000000000604482015290519081900360640190fd5b336000908152600260208181526040808420546001600160a01b0387168552600e90925283206001015460ff9091161c06146106f0576040805162461bcd60e51b815260206004820152601b60248201527f76616c696461746f722068617320616c726561647920766f7465640000000000604482015290519081900360640190fd5b336000908152600260209081526040808320546001600160a01b0386168452600e9092529091206001808201805460ff90941682901b90930190925560030180549091019081905560045411610817576001600160a01b038083166000908152600e602052604080822080546002909101549151929316918381818185875af1925050503d80600081146107a0576040519150601f19603f3d011682016040523d82523d6000602084013e6107a5565b606091505b50509050806107ee576040805162461bcd60e51b815260206004820152601060248201526f2a3930b739b332b9103330b4b632b21760811b604482015290519081900360640190fd5b506001600160a01b0382166000908152600e602052604081206002810191909155436004909101555b60006007546006545a604051908503919091019190910191503a820290600090339083908381818185875af1925050503d8060008114610873576040519150601f19603f3d011682016040523d82523d6000602084013e610878565b606091505b50506001600160a01b0386166000818152600e60209081526040918290206005018054879003905581513381529081018a9052808201869052905192935090917f975a8b0f36f1204c7939f566cea0503ea32284a2768a7f98ede91960b6d158309181900360600190a2505050505050565b60005460ff166108f957600080fd5b6000610904336109e5565b60000b136109435760405162461bcd60e51b815260040180806020018281038252602481526020018061113a6024913960400191505060405180910390fd5b336000818152600e60205260408082206005015490519192918381818185875af1925050503d8060008114610994576040519150601f19603f3d011682016040523d82523d6000602084013e610999565b606091505b50509050806109e2576040805162461bcd60e51b815260206004820152601060248201526f2a3930b739b332b9103330b4b632b21760811b604482015290519081900360640190fd5b50565b6000805460ff166109f557600080fd5b6001600160a01b0382166000908152600e602052604090206004015415801590610a3957506001600160a01b0382166000908152600e602052604090206004015443115b610a6e576001600160a01b0382166000908152600e602052604090206002015415610a65576000610a69565b6000195b610a98565b6001600160a01b0382166000908152600e6020526040902060020154610a95576001610a98565b60025b92915050565b600a6020526000908152604090205460ff1681565b610abc336110f5565b610b0d576040805162461bcd60e51b815260206004820152601d60248201527f76616c696461746f72206e6f742070726573656e7420696e204c697374000000604482015290519081900360640190fd5b336000908152600a602052604090205460ff1615610b72576040805162461bcd60e51b815260206004820152601860248201527f56616c696461746f72205369676e656420616c72656164790000000000000000604482015290519081900360640190fd5b336000908152600a60209081526040808320805460ff1916600117905580516f4d69677261746546726f6d4f6c64282960801b815281519081900360100181206001600160e01b031916818401528151808203600401815260249091019182905280516001600160a01b038616939192918291908401908083835b60208310610c0c5780518252601f199092019160209182019101610bed565b6001836020036101000a0380198251168184511680821785525050505050509050019150506000604051808303816000865af19150503d8060008114610c6e576040519150601f19603f3d011682016040523d82523d6000602084013e610c73565b606091505b5050905080610cb35760405162461bcd60e51b81526004018080602001828103825260248152602001806111166024913960400191505060405180910390fd5b6009805460010190556001600160a01b0382166000908152600b6020526040902054610d2557600c80546001810182556000919091527fdf6966c971051c3d54ec59162606531493a51404a002842f56009d7e5cf4a8c70180546001600160a01b0319166001600160a01b0384161790555b6001600160a01b0382166000908152600b60205260409020805460010190556005546009541415610d5b576000805460ff191690555b6004546009541415610eb857600080805b600c54811015610e1b5782600b6000600c8481548110610d8857fe5b60009182526020808320909101546001600160a01b031683528201929092526040019020541115610e1357600b6000600c8381548110610dc457fe5b60009182526020808320909101546001600160a01b03168352820192909252604001902054600c80549194509082908110610dfb57fe5b6000918252602090912001546001600160a01b031691505b600101610d6c565b506040516000906001600160a01b0383169047908381818185875af1925050503d8060008114610e67576040519150601f19603f3d011682016040523d82523d6000602084013e610e6c565b606091505b5050905080610eb4576040805162461bcd60e51b815260206004820152600f60248201526e151c985b9cd9995c8819985a5b1959608a1b604482015290519081900360640190fd5b5050505b5050565b60005460ff16610ecb57600080fd5b610ed433610408565b610f0f5760405162461bcd60e51b815260040180806020018281038252602b81526020018061115e602b913960400191505060405180910390fd5b60008111610f64576040805162461bcd60e51b815260206004820152601e60248201527f616d6f756e742073686f756c6420626520626967676572207468616e20300000604482015290519081900360640190fd5b600854336000908152600e602052604090206005015434011015610fcf576040805162461bcd60e51b815260206004820152601760248201527f52656465656d20666565206e6f742070726f7669646564000000000000000000604482015290519081900360640190fd5b336000818152600e602090815260408083206003810184905580546001600160a01b03191690941780855560028501869055600d544301600486015560058501805434019081905560019095019390935580518581529182019390935282516001600160a01b03909216927feee07ebdabc7ab1dc20be39b715e23aa8a85c6a8ae3c16f8334dace8d76683dc92918290030190a250565b6000805460ff1661107657600080fd5b506001600160a01b03166000908152600e602052604090206005015490565b60005460ff166110a457600080fd5b6040805133815234602082015281517f625fed9875dada8643f2418b838ae0bc78d9a148a18eee4ee1979ff0f3f5d427929181900390910190a1565b60026020526000908152604090205460ff1681565b6001600160a01b031660009081526002602052604090205460ff1615159056fe556e61626c6520746f204d696772617465206e657720536d61727420636f6e747261637472657175657374207369676e696e67206973207374696c6c20696e2070726f677265737372656465656d20746f20746869732061646472657373206973206e6f7420617661696c61626c6520796574a265627a7a72315820529c01561dfffb1737fced153e2c3559be41b05354d733dd16185afb3aad9d9e64736f6c63430005100032666f756e64206e6f6e2d756e697175652076616c696461746f7220696e20696e697469616c56616c696461746f7273"
 
 // DeployLockRedeem deploys a new Ethereum contract, binding an instance of LockRedeem to it.
-func DeployLockRedeem(auth *bind.TransactOpts, backend bind.ContractBackend, initialValidators []common.Address) (common.Address, *types.Transaction, *LockRedeem, error) {
+func DeployLockRedeem(auth *bind.TransactOpts, backend bind.ContractBackend, initialValidators []common.Address, _lock_period *big.Int) (common.Address, *types.Transaction, *LockRedeem, error) {
 	parsed, err := abi.JSON(strings.NewReader(LockRedeemABI))
 	if err != nil {
 		return common.Address{}, nil, nil, err
 	}
 
-	address, tx, contract, err := bind.DeployContract(auth, parsed, common.FromHex(LockRedeemBin), backend, initialValidators)
+	address, tx, contract, err := bind.DeployContract(auth, parsed, common.FromHex(LockRedeemBin), backend, initialValidators, _lock_period)
 	if err != nil {
 		return common.Address{}, nil, nil, err
 	}
@@ -232,6 +234,32 @@ func (_LockRedeem *LockRedeemSession) GetOLTEthAddress() (common.Address, error)
 // Solidity: function getOLTEthAddress() constant returns(address)
 func (_LockRedeem *LockRedeemCallerSession) GetOLTEthAddress() (common.Address, error) {
 	return _LockRedeem.Contract.GetOLTEthAddress(&_LockRedeem.CallOpts)
+}
+
+// GetRedeemBalance is a free data retrieval call binding the contract method 0xe75f7515.
+//
+// Solidity: function getRedeemBalance(address recipient_) constant returns(uint256)
+func (_LockRedeem *LockRedeemCaller) GetRedeemBalance(opts *bind.CallOpts, recipient_ common.Address) (*big.Int, error) {
+	var (
+		ret0 = new(*big.Int)
+	)
+	out := ret0
+	err := _LockRedeem.contract.Call(opts, out, "getRedeemBalance", recipient_)
+	return *ret0, err
+}
+
+// GetRedeemBalance is a free data retrieval call binding the contract method 0xe75f7515.
+//
+// Solidity: function getRedeemBalance(address recipient_) constant returns(uint256)
+func (_LockRedeem *LockRedeemSession) GetRedeemBalance(recipient_ common.Address) (*big.Int, error) {
+	return _LockRedeem.Contract.GetRedeemBalance(&_LockRedeem.CallOpts, recipient_)
+}
+
+// GetRedeemBalance is a free data retrieval call binding the contract method 0xe75f7515.
+//
+// Solidity: function getRedeemBalance(address recipient_) constant returns(uint256)
+func (_LockRedeem *LockRedeemCallerSession) GetRedeemBalance(recipient_ common.Address) (*big.Int, error) {
+	return _LockRedeem.Contract.GetRedeemBalance(&_LockRedeem.CallOpts, recipient_)
 }
 
 // GetSignatureCount is a free data retrieval call binding the contract method 0x6c7d13df.
@@ -444,10 +472,10 @@ func (_LockRedeem *LockRedeemCallerSession) NumValidators() (*big.Int, error) {
 
 // Validators is a free data retrieval call binding the contract method 0xfa52c7d8.
 //
-// Solidity: function validators(address ) constant returns(uint256)
-func (_LockRedeem *LockRedeemCaller) Validators(opts *bind.CallOpts, arg0 common.Address) (*big.Int, error) {
+// Solidity: function validators(address ) constant returns(uint8)
+func (_LockRedeem *LockRedeemCaller) Validators(opts *bind.CallOpts, arg0 common.Address) (uint8, error) {
 	var (
-		ret0 = new(*big.Int)
+		ret0 = new(uint8)
 	)
 	out := ret0
 	err := _LockRedeem.contract.Call(opts, out, "validators", arg0)
@@ -456,24 +484,24 @@ func (_LockRedeem *LockRedeemCaller) Validators(opts *bind.CallOpts, arg0 common
 
 // Validators is a free data retrieval call binding the contract method 0xfa52c7d8.
 //
-// Solidity: function validators(address ) constant returns(uint256)
-func (_LockRedeem *LockRedeemSession) Validators(arg0 common.Address) (*big.Int, error) {
+// Solidity: function validators(address ) constant returns(uint8)
+func (_LockRedeem *LockRedeemSession) Validators(arg0 common.Address) (uint8, error) {
 	return _LockRedeem.Contract.Validators(&_LockRedeem.CallOpts, arg0)
 }
 
 // Validators is a free data retrieval call binding the contract method 0xfa52c7d8.
 //
-// Solidity: function validators(address ) constant returns(uint256)
-func (_LockRedeem *LockRedeemCallerSession) Validators(arg0 common.Address) (*big.Int, error) {
+// Solidity: function validators(address ) constant returns(uint8)
+func (_LockRedeem *LockRedeemCallerSession) Validators(arg0 common.Address) (uint8, error) {
 	return _LockRedeem.Contract.Validators(&_LockRedeem.CallOpts, arg0)
 }
 
 // VerifyRedeem is a free data retrieval call binding the contract method 0x91e39868.
 //
-// Solidity: function verifyRedeem(address recipient_) constant returns(bool)
-func (_LockRedeem *LockRedeemCaller) VerifyRedeem(opts *bind.CallOpts, recipient_ common.Address) (bool, error) {
+// Solidity: function verifyRedeem(address recipient_) constant returns(int8)
+func (_LockRedeem *LockRedeemCaller) VerifyRedeem(opts *bind.CallOpts, recipient_ common.Address) (int8, error) {
 	var (
-		ret0 = new(bool)
+		ret0 = new(int8)
 	)
 	out := ret0
 	err := _LockRedeem.contract.Call(opts, out, "verifyRedeem", recipient_)
@@ -482,16 +510,37 @@ func (_LockRedeem *LockRedeemCaller) VerifyRedeem(opts *bind.CallOpts, recipient
 
 // VerifyRedeem is a free data retrieval call binding the contract method 0x91e39868.
 //
-// Solidity: function verifyRedeem(address recipient_) constant returns(bool)
-func (_LockRedeem *LockRedeemSession) VerifyRedeem(recipient_ common.Address) (bool, error) {
+// Solidity: function verifyRedeem(address recipient_) constant returns(int8)
+func (_LockRedeem *LockRedeemSession) VerifyRedeem(recipient_ common.Address) (int8, error) {
 	return _LockRedeem.Contract.VerifyRedeem(&_LockRedeem.CallOpts, recipient_)
 }
 
 // VerifyRedeem is a free data retrieval call binding the contract method 0x91e39868.
 //
-// Solidity: function verifyRedeem(address recipient_) constant returns(bool)
-func (_LockRedeem *LockRedeemCallerSession) VerifyRedeem(recipient_ common.Address) (bool, error) {
+// Solidity: function verifyRedeem(address recipient_) constant returns(int8)
+func (_LockRedeem *LockRedeemCallerSession) VerifyRedeem(recipient_ common.Address) (int8, error) {
 	return _LockRedeem.Contract.VerifyRedeem(&_LockRedeem.CallOpts, recipient_)
+}
+
+// CollectUserFee is a paid mutator transaction binding the contract method 0x7edd7ccd.
+//
+// Solidity: function collectUserFee() returns()
+func (_LockRedeem *LockRedeemTransactor) CollectUserFee(opts *bind.TransactOpts) (*types.Transaction, error) {
+	return _LockRedeem.contract.Transact(opts, "collectUserFee")
+}
+
+// CollectUserFee is a paid mutator transaction binding the contract method 0x7edd7ccd.
+//
+// Solidity: function collectUserFee() returns()
+func (_LockRedeem *LockRedeemSession) CollectUserFee() (*types.Transaction, error) {
+	return _LockRedeem.Contract.CollectUserFee(&_LockRedeem.TransactOpts)
+}
+
+// CollectUserFee is a paid mutator transaction binding the contract method 0x7edd7ccd.
+//
+// Solidity: function collectUserFee() returns()
+func (_LockRedeem *LockRedeemTransactorSession) CollectUserFee() (*types.Transaction, error) {
+	return _LockRedeem.Contract.CollectUserFee(&_LockRedeem.TransactOpts)
 }
 
 // Lock is a paid mutator transaction binding the contract method 0xf83d08ba.
@@ -924,14 +973,15 @@ func (it *LockRedeemRedeemRequestIterator) Close() error {
 
 // LockRedeemRedeemRequest represents a RedeemRequest event raised by the LockRedeem contract.
 type LockRedeemRedeemRequest struct {
-	Recepient       common.Address
-	AmountRequested *big.Int
-	Raw             types.Log // Blockchain specific contextual infos
+	Recepient        common.Address
+	AmountRequested  *big.Int
+	RedeemFeeCharged *big.Int
+	Raw              types.Log // Blockchain specific contextual infos
 }
 
-// FilterRedeemRequest is a free log retrieval operation binding the contract event 0x222dc200773fe9b45015bf792e8fee37d651e3590c215806a5042404b6d741d2.
+// FilterRedeemRequest is a free log retrieval operation binding the contract event 0xeee07ebdabc7ab1dc20be39b715e23aa8a85c6a8ae3c16f8334dace8d76683dc.
 //
-// Solidity: event RedeemRequest(address indexed recepient, uint256 amount_requested)
+// Solidity: event RedeemRequest(address indexed recepient, uint256 amount_requested, uint256 redeemFeeCharged)
 func (_LockRedeem *LockRedeemFilterer) FilterRedeemRequest(opts *bind.FilterOpts, recepient []common.Address) (*LockRedeemRedeemRequestIterator, error) {
 
 	var recepientRule []interface{}
@@ -946,9 +996,9 @@ func (_LockRedeem *LockRedeemFilterer) FilterRedeemRequest(opts *bind.FilterOpts
 	return &LockRedeemRedeemRequestIterator{contract: _LockRedeem.contract, event: "RedeemRequest", logs: logs, sub: sub}, nil
 }
 
-// WatchRedeemRequest is a free log subscription operation binding the contract event 0x222dc200773fe9b45015bf792e8fee37d651e3590c215806a5042404b6d741d2.
+// WatchRedeemRequest is a free log subscription operation binding the contract event 0xeee07ebdabc7ab1dc20be39b715e23aa8a85c6a8ae3c16f8334dace8d76683dc.
 //
-// Solidity: event RedeemRequest(address indexed recepient, uint256 amount_requested)
+// Solidity: event RedeemRequest(address indexed recepient, uint256 amount_requested, uint256 redeemFeeCharged)
 func (_LockRedeem *LockRedeemFilterer) WatchRedeemRequest(opts *bind.WatchOpts, sink chan<- *LockRedeemRedeemRequest, recepient []common.Address) (event.Subscription, error) {
 
 	var recepientRule []interface{}
@@ -988,12 +1038,145 @@ func (_LockRedeem *LockRedeemFilterer) WatchRedeemRequest(opts *bind.WatchOpts, 
 	}), nil
 }
 
-// ParseRedeemRequest is a log parse operation binding the contract event 0x222dc200773fe9b45015bf792e8fee37d651e3590c215806a5042404b6d741d2.
+// ParseRedeemRequest is a log parse operation binding the contract event 0xeee07ebdabc7ab1dc20be39b715e23aa8a85c6a8ae3c16f8334dace8d76683dc.
 //
-// Solidity: event RedeemRequest(address indexed recepient, uint256 amount_requested)
+// Solidity: event RedeemRequest(address indexed recepient, uint256 amount_requested, uint256 redeemFeeCharged)
 func (_LockRedeem *LockRedeemFilterer) ParseRedeemRequest(log types.Log) (*LockRedeemRedeemRequest, error) {
 	event := new(LockRedeemRedeemRequest)
 	if err := _LockRedeem.contract.UnpackLog(event, "RedeemRequest", log); err != nil {
+		return nil, err
+	}
+	return event, nil
+}
+
+// LockRedeemValidatorMigratedIterator is returned from FilterValidatorMigrated and is used to iterate over the raw logs and unpacked data for ValidatorMigrated events raised by the LockRedeem contract.
+type LockRedeemValidatorMigratedIterator struct {
+	Event    *LockRedeemValidatorMigrated // Event containing the contract specifics and raw log
+	contract *bind.BoundContract          // Generic contract to use for unpacking event data
+	event    string                       // Event name to use for unpacking event data
+
+	logs chan types.Log        // Log channel receiving the found contract events
+	sub  ethereum.Subscription // Subscription for errors, completion and termination
+	done bool                  // Whether the subscription completed delivering logs
+	fail error                 // Occurred error to stop iteration
+}
+
+// Next advances the iterator to the subsequent event, returning whether there
+// are any more events found. In case of a retrieval or parsing error, false is
+// returned and Error() can be queried for the exact failure.
+func (it *LockRedeemValidatorMigratedIterator) Next() bool {
+	// If the iterator failed, stop iterating
+	if it.fail != nil {
+		return false
+	}
+	// If the iterator completed, deliver directly whatever's available
+	if it.done {
+		select {
+		case log := <-it.logs:
+			it.Event = new(LockRedeemValidatorMigrated)
+			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+				it.fail = err
+				return false
+			}
+			it.Event.Raw = log
+			return true
+
+		default:
+			return false
+		}
+	}
+	// Iterator still in progress, wait for either a data or an error event
+	select {
+	case log := <-it.logs:
+		it.Event = new(LockRedeemValidatorMigrated)
+		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+			it.fail = err
+			return false
+		}
+		it.Event.Raw = log
+		return true
+
+	case err := <-it.sub.Err():
+		it.done = true
+		it.fail = err
+		return it.Next()
+	}
+}
+
+// Error returns any retrieval or parsing error occurred during filtering.
+func (it *LockRedeemValidatorMigratedIterator) Error() error {
+	return it.fail
+}
+
+// Close terminates the iteration process, releasing any pending underlying
+// resources.
+func (it *LockRedeemValidatorMigratedIterator) Close() error {
+	it.sub.Unsubscribe()
+	return nil
+}
+
+// LockRedeemValidatorMigrated represents a ValidatorMigrated event raised by the LockRedeem contract.
+type LockRedeemValidatorMigrated struct {
+	Validator               common.Address
+	NewSmartContractAddress common.Address
+	Raw                     types.Log // Blockchain specific contextual infos
+}
+
+// FilterValidatorMigrated is a free log retrieval operation binding the contract event 0x077478953a7559f9e01b2ceeb429ce87333fb7fc0ec16eb5eb9128463e30fa92.
+//
+// Solidity: event ValidatorMigrated(address validator, address NewSmartContractAddress)
+func (_LockRedeem *LockRedeemFilterer) FilterValidatorMigrated(opts *bind.FilterOpts) (*LockRedeemValidatorMigratedIterator, error) {
+
+	logs, sub, err := _LockRedeem.contract.FilterLogs(opts, "ValidatorMigrated")
+	if err != nil {
+		return nil, err
+	}
+	return &LockRedeemValidatorMigratedIterator{contract: _LockRedeem.contract, event: "ValidatorMigrated", logs: logs, sub: sub}, nil
+}
+
+// WatchValidatorMigrated is a free log subscription operation binding the contract event 0x077478953a7559f9e01b2ceeb429ce87333fb7fc0ec16eb5eb9128463e30fa92.
+//
+// Solidity: event ValidatorMigrated(address validator, address NewSmartContractAddress)
+func (_LockRedeem *LockRedeemFilterer) WatchValidatorMigrated(opts *bind.WatchOpts, sink chan<- *LockRedeemValidatorMigrated) (event.Subscription, error) {
+
+	logs, sub, err := _LockRedeem.contract.WatchLogs(opts, "ValidatorMigrated")
+	if err != nil {
+		return nil, err
+	}
+	return event.NewSubscription(func(quit <-chan struct{}) error {
+		defer sub.Unsubscribe()
+		for {
+			select {
+			case log := <-logs:
+				// New log arrived, parse the event and forward to the user
+				event := new(LockRedeemValidatorMigrated)
+				if err := _LockRedeem.contract.UnpackLog(event, "ValidatorMigrated", log); err != nil {
+					return err
+				}
+				event.Raw = log
+
+				select {
+				case sink <- event:
+				case err := <-sub.Err():
+					return err
+				case <-quit:
+					return nil
+				}
+			case err := <-sub.Err():
+				return err
+			case <-quit:
+				return nil
+			}
+		}
+	}), nil
+}
+
+// ParseValidatorMigrated is a log parse operation binding the contract event 0x077478953a7559f9e01b2ceeb429ce87333fb7fc0ec16eb5eb9128463e30fa92.
+//
+// Solidity: event ValidatorMigrated(address validator, address NewSmartContractAddress)
+func (_LockRedeem *LockRedeemFilterer) ParseValidatorMigrated(log types.Log) (*LockRedeemValidatorMigrated, error) {
+	event := new(LockRedeemValidatorMigrated)
+	if err := _LockRedeem.contract.UnpackLog(event, "ValidatorMigrated", log); err != nil {
 		return nil, err
 	}
 	return event, nil
@@ -1071,12 +1254,13 @@ type LockRedeemValidatorSignedRedeem struct {
 	Recipient         common.Address
 	ValidatorAddresss common.Address
 	Amount            *big.Int
+	GasReturned       *big.Int
 	Raw               types.Log // Blockchain specific contextual infos
 }
 
-// FilterValidatorSignedRedeem is a free log retrieval operation binding the contract event 0x3b76df4bf55914fbcbc8b02f6773984cc346db1e6aef40410dcee0f94c6a05db.
+// FilterValidatorSignedRedeem is a free log retrieval operation binding the contract event 0x975a8b0f36f1204c7939f566cea0503ea32284a2768a7f98ede91960b6d15830.
 //
-// Solidity: event ValidatorSignedRedeem(address indexed recipient, address validator_addresss, uint256 amount)
+// Solidity: event ValidatorSignedRedeem(address indexed recipient, address validator_addresss, uint256 amount, uint256 gasReturned)
 func (_LockRedeem *LockRedeemFilterer) FilterValidatorSignedRedeem(opts *bind.FilterOpts, recipient []common.Address) (*LockRedeemValidatorSignedRedeemIterator, error) {
 
 	var recipientRule []interface{}
@@ -1091,9 +1275,9 @@ func (_LockRedeem *LockRedeemFilterer) FilterValidatorSignedRedeem(opts *bind.Fi
 	return &LockRedeemValidatorSignedRedeemIterator{contract: _LockRedeem.contract, event: "ValidatorSignedRedeem", logs: logs, sub: sub}, nil
 }
 
-// WatchValidatorSignedRedeem is a free log subscription operation binding the contract event 0x3b76df4bf55914fbcbc8b02f6773984cc346db1e6aef40410dcee0f94c6a05db.
+// WatchValidatorSignedRedeem is a free log subscription operation binding the contract event 0x975a8b0f36f1204c7939f566cea0503ea32284a2768a7f98ede91960b6d15830.
 //
-// Solidity: event ValidatorSignedRedeem(address indexed recipient, address validator_addresss, uint256 amount)
+// Solidity: event ValidatorSignedRedeem(address indexed recipient, address validator_addresss, uint256 amount, uint256 gasReturned)
 func (_LockRedeem *LockRedeemFilterer) WatchValidatorSignedRedeem(opts *bind.WatchOpts, sink chan<- *LockRedeemValidatorSignedRedeem, recipient []common.Address) (event.Subscription, error) {
 
 	var recipientRule []interface{}
@@ -1133,9 +1317,9 @@ func (_LockRedeem *LockRedeemFilterer) WatchValidatorSignedRedeem(opts *bind.Wat
 	}), nil
 }
 
-// ParseValidatorSignedRedeem is a log parse operation binding the contract event 0x3b76df4bf55914fbcbc8b02f6773984cc346db1e6aef40410dcee0f94c6a05db.
+// ParseValidatorSignedRedeem is a log parse operation binding the contract event 0x975a8b0f36f1204c7939f566cea0503ea32284a2768a7f98ede91960b6d15830.
 //
-// Solidity: event ValidatorSignedRedeem(address indexed recipient, address validator_addresss, uint256 amount)
+// Solidity: event ValidatorSignedRedeem(address indexed recipient, address validator_addresss, uint256 amount, uint256 gasReturned)
 func (_LockRedeem *LockRedeemFilterer) ParseValidatorSignedRedeem(log types.Log) (*LockRedeemValidatorSignedRedeem, error) {
 	event := new(LockRedeemValidatorSignedRedeem)
 	if err := _LockRedeem.contract.UnpackLog(event, "ValidatorSignedRedeem", log); err != nil {

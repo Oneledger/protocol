@@ -4,7 +4,7 @@ import (
 	"strconv"
 
 	"github.com/Oneledger/protocol/chains/ethereum"
-	ethereum2 "github.com/Oneledger/protocol/data/ethereum"
+	trackerlib "github.com/Oneledger/protocol/data/ethereum"
 	"github.com/Oneledger/protocol/data/jobs"
 	"github.com/Oneledger/protocol/storage"
 )
@@ -18,7 +18,7 @@ type JobETHBroadcast struct {
 	Status      jobs.Status
 }
 
-func NewETHBroadcast(name ethereum.TrackerName, state ethereum2.TrackerState) *JobETHBroadcast {
+func NewETHBroadcast(name ethereum.TrackerName, state trackerlib.TrackerState) *JobETHBroadcast {
 
 	return &JobETHBroadcast{
 		TrackerName: name,
@@ -33,6 +33,7 @@ func (job *JobETHBroadcast) DoMyJob(ctx interface{}) {
 	job.RetryCount += 1
 	if job.RetryCount > jobs.Max_Retry_Count {
 		job.Status = jobs.Failed
+		BroadcastReportFinalityETHTx(ctx.(*JobsContext), job.TrackerName, job.JobID, false)
 	}
 	if job.Status == jobs.New {
 		job.Status = jobs.InProgress
@@ -41,7 +42,7 @@ func (job *JobETHBroadcast) DoMyJob(ctx interface{}) {
 	ethCtx, _ := ctx.(*JobsContext)
 	trackerStore := ethCtx.EthereumTrackers
 
-	tracker, err := trackerStore.Get(job.TrackerName)
+	tracker, err := trackerStore.WithPrefixType(trackerlib.PrefixOngoing).Get(job.TrackerName)
 	if err != nil {
 		ethCtx.Logger.Error("err trying to deserialize tracker: ", job.TrackerName, err)
 		return
@@ -49,11 +50,21 @@ func (job *JobETHBroadcast) DoMyJob(ctx interface{}) {
 	ethconfig := ethCtx.cfg.EthChainDriver
 
 	//logger := log.NewLoggerWithPrefix(os.Stdout, "JOB_ETHBROADCAST")
-	cd, err := ethereum.NewChainDriver(ethconfig, ethCtx.Logger, trackerStore.GetOption())
-	if err != nil {
-		ethCtx.Logger.Error("err trying to get ChainDriver : ", job.GetJobID(), err)
-
-		return
+	ethoptions := trackerStore.GetOption()
+	cd := new(ethereum.ETHChainDriver)
+	if tracker.Type == trackerlib.ProcessTypeLock {
+		cd, err = ethereum.NewChainDriver(ethconfig, ethCtx.Logger, ethoptions.ContractAddress, ethoptions.ContractABI, ethereum.ETH)
+		if err != nil {
+			ethCtx.Logger.Error("err trying to get ChainDriver : ", job.GetJobID(), err, tracker.Type)
+			return
+		}
+	}
+	if tracker.Type == trackerlib.ProcessTypeLockERC {
+		cd, err = ethereum.NewChainDriver(ethconfig, ethCtx.Logger, ethoptions.ERCContractAddress, ethoptions.ERCContractABI, ethereum.ERC)
+		if err != nil {
+			ethCtx.Logger.Error("err trying to get ChainDriver : ", job.GetJobID(), err, tracker.Type)
+			return
+		}
 	}
 
 	rawTx := tracker.SignedETHTx
@@ -66,6 +77,7 @@ func (job *JobETHBroadcast) DoMyJob(ctx interface{}) {
 	_, err = cd.BroadcastTx(tx)
 	if err != nil {
 		ethCtx.Logger.Error("Error in transaction broadcast : ", job.GetJobID(), err)
+
 		return
 	}
 
@@ -82,4 +94,8 @@ func (job *JobETHBroadcast) GetJobID() string {
 
 func (job *JobETHBroadcast) IsDone() bool {
 	return job.Status == jobs.Completed
+}
+
+func (job *JobETHBroadcast) IsFailed() bool {
+	return job.Status == jobs.Failed
 }

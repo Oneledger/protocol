@@ -21,7 +21,10 @@ import (
 )
 
 func (s *Service) PrepareRedeem(args client.BTCRedeemRequest, reply *client.BTCRedeemPrepareResponse) error {
-	cd := bitcoin.NewChainDriver(s.blockCypherToken)
+
+	cfg := s.trackerStore.GetConfig()
+
+	cd := bitcoin.NewChainDriver(cfg.BlockCypherToken)
 
 	//tracker, err := s.trackerStore.Get("tracker_1")
 	tracker, err := s.trackerStore.GetTrackerForRedeem()
@@ -35,11 +38,9 @@ func (s *Service) PrepareRedeem(args client.BTCRedeemRequest, reply *client.BTCR
 		return codes.ErrTrackerBalance
 	}
 
-	params := bitcoin.GetChainParams(s.btcChainType)
-
-	userAddress, err := btcutil.DecodeAddress(args.BTCAddress, params)
+	userAddress, err := btcutil.DecodeAddress(args.BTCAddress, cfg.BTCParams)
 	if err != nil {
-		return codes.ErrBadBTCAddress
+		return codes.ErrBadBTCAddress.Wrap(err)
 	}
 
 	btcAddr, err := txscript.PayToAddrScript(userAddress)

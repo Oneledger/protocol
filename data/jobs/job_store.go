@@ -70,7 +70,7 @@ func (js *JobStore) GetJob(jobID string) (Job, error) {
 		return nil, errors.Wrap(err, key.String())
 	}
 	var job Job
-	err = js.ser.Deserialize(dat,&job)
+	err = js.ser.Deserialize(dat, &job)
 	if err != nil {
 		return nil, err
 	}
@@ -103,7 +103,7 @@ func (js *JobStore) Iterate(fn func(job Job)) {
 	isAsc := true
 
 	session := js.BeginSession()
-	iter := session.GetIterator()
+	iter := session.GetIterable()
 
 	iter.IterateRange(start, end, isAsc, func(key, val []byte) bool {
 		var job Job

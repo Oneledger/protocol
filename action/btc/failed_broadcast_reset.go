@@ -23,7 +23,9 @@ type FailedBroadcastReset struct {
 }
 
 func (fbr *FailedBroadcastReset) Signers() []action.Address {
-	panic("implement me")
+	return []action.Address{
+		fbr.ValidatorAddress,
+	}
 }
 
 func (fbr *FailedBroadcastReset) Type() action.Type {
@@ -41,8 +43,36 @@ func (fbr *FailedBroadcastReset) Tags() common.KVPairs {
 		Key:   []byte("tx.validator"),
 		Value: []byte(fbr.ValidatorAddress.String()),
 	}
+	tag3 := common.KVPair{
+		Key:   []byte("tx.tracker_name"),
+		Value: []byte(fbr.TrackerName),
+	}
 
-	tags = append(tags, tag, tag2)
+	tags = append(tags, tag, tag2, tag3)
+	return tags
+}
+
+func (fbr *FailedBroadcastReset) TagsFailed() common.KVPairs {
+	tags := make([]common.KVPair, 0)
+
+	tag := common.KVPair{
+		Key:   []byte("tx.type"),
+		Value: []byte(fbr.Type().String()),
+	}
+	tag2 := common.KVPair{
+		Key:   []byte("tx.validator"),
+		Value: []byte(fbr.ValidatorAddress.String()),
+	}
+	tag3 := common.KVPair{
+		Key:   []byte("tx.tracker_name"),
+		Value: []byte(fbr.TrackerName),
+	}
+	tag4 := common.KVPair{
+		Key:   []byte("tx.lock_redeem_status"),
+		Value: []byte("failure"),
+	}
+
+	tags = append(tags, tag, tag2, tag3, tag4)
 	return tags
 }
 
@@ -142,11 +172,33 @@ func runBroadcastFailureReset(ctx *action.Context, tx action.RawTx) (bool, actio
 	if len(tracker.ResetVotes) < votesThresholdForReset {
 		err = ctx.BTCTrackers.SetTracker(fbr.TrackerName, tracker)
 		if err != nil {
-			return false, action.Response{Log: "tracker not ready for finalizing"}
+			return false, action.Response{Log: "failed to save tracker"}
 		}
 
 		return true, action.Response{
 			Tags: fbr.Tags(),
+		}
+	}
+
+	// if the process is redeem return the user oBTC
+	if tracker.ProcessType == bitcoin.ProcessTypeRedeem {
+		amount := tracker.CurrentBalance - tracker.ProcessBalance
+
+		btcCurr, ok := ctx.Currencies.GetCurrencyByName("BTC")
+		if !ok {
+			return false, action.Response{Log: "failed to find currency BTC"}
+		}
+		coin := btcCurr.NewCoinFromUnit(amount)
+
+		err = ctx.Balances.AddToAddress(tracker.ProcessOwner, coin)
+		if err != nil {
+			return false, action.Response{Log: "failed to add currency err:" + err.Error()}
+		}
+
+		tally := action.Address(ctx.BTCTrackers.GetOption().TotalSupplyAddr)
+		err = ctx.Balances.AddToAddress(tally, coin)
+		if err != nil {
+			return false, action.Response{Log: "failed to add currency err:" + err.Error()}
 		}
 	}
 
@@ -163,6 +215,11 @@ func runBroadcastFailureReset(ctx *action.Context, tx action.RawTx) (bool, actio
 
 	tracker.FinalityVotes = []keys.Address{}
 	tracker.ResetVotes = []keys.Address{}
+
+	err = ctx.BTCTrackers.SetTracker(fbr.TrackerName, tracker)
+	if err != nil {
+		return false, action.Response{Log: "failed to save tracker"}
+	}
 
 	return true, action.Response{Tags: fbr.Tags()}
 }
