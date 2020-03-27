@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"math/rand"
 	"os"
+	"os/exec"
 	"os/signal"
 	"strconv"
 	"sync"
@@ -100,7 +101,7 @@ func loadTest(_ *cobra.Command, _ []string) {
 		ctx.logger.Error("failed to get currencies", err)
 		return
 	}
-	fmt.Printf("currencies: %#v", currencies)
+	//fmt.Printf("currencies SFS: %#v", currencies)
 
 	var nodeAddress keys.Address
 	// get address of the node
@@ -115,14 +116,16 @@ func loadTest(_ *cobra.Command, _ []string) {
 	}
 
 	accs := make([]accounts.Account, 0, 10)
+
 	accReply, err := fullnode.ListAccounts()
 	if err != nil {
 		ctx.logger.Fatal("failed to get any address")
 	}
+
 	accs = accReply.Accounts
 	// start threads
-	for i := 0; i < loadTestArgs.threads; i++ {
 
+	for i := 0; i < loadTestArgs.threads; i++ {
 		thLogger := ctx.logger.WithPrefix(fmt.Sprintf("thread: %d", i))
 		acc := accounts.Account{}
 		if len(accs) <= i+1 {
@@ -139,7 +142,7 @@ func loadTest(_ *cobra.Command, _ []string) {
 				return
 			}
 
-			thLogger.Infof("creating account %#v", acc)
+			//thLogger.Infof("creating account %#v", acc)
 			reply, err := fullnode.AddAccount(acc)
 			if err != nil {
 				thLogger.Error(accName, "error creating account", err)
@@ -149,8 +152,8 @@ func loadTest(_ *cobra.Command, _ []string) {
 			accRead := reply.Account
 
 			// praccint details
-			thLogger.Infof("Created account successfully: %#v", accRead)
-			ctx.logger.Infof("Address for the account is: %s", acc.Address().Humanize())
+			thLogger.Infof("Created account successfully: %#s", accRead.Address().Humanize())
+			//ctx.logger.Infof("Address for the New account is: %s", acc.Address().Humanize())
 		} else {
 			acc = accs[i+1]
 		}
@@ -160,9 +163,29 @@ func loadTest(_ *cobra.Command, _ []string) {
 			waitDuration := getWaitDuration(loadTestArgs.interval)
 
 			for true {
-				doSendTransaction(ctx, i, &acc, nodeAddress, loadTestArgs.randomRecv, currencies.Currencies) // send OLT to temp account
+				// send OLT to temp account
+				//doOnsTrasactions()
+				doSendTransaction(ctx, i, &acc, nodeAddress, loadTestArgs.randomRecv, currencies.Currencies)
+
 				counterChan <- 1
 
+				select {
+				case <-stop:
+					waiter.Done()
+					return
+				default:
+					time.Sleep(waitDuration)
+				}
+			}
+
+		}(stopChan)
+
+		go func(stop chan bool) {
+			waitDuration := getWaitDuration(loadTestArgs.interval)
+			for true {
+				// Do ONS Create Domain , Create Sub Domain ,Send To Domain
+				doOnsTrasactions()
+				counterChan <- 3
 				select {
 				case <-stop:
 					waiter.Done()
@@ -184,6 +207,21 @@ func loadTest(_ *cobra.Command, _ []string) {
 	fmt.Println("####################################################################")
 	fmt.Printf("################       Messages sent: % 9d      ###############\n", counter)
 	fmt.Println("####################################################################")
+}
+
+func doOnsTrasactions() {
+	//fmt.Println("Running python script")
+	cmd := exec.Command("python", "ons/create_sub_domain.py")
+	out, err := cmd.Output()
+
+	if err != nil {
+		fmt.Println(string(out))
+		fmt.Println("Error in python script : ", err.Error())
+		return
+	}
+
+	//fmt.Println(string(out))
+
 }
 
 // doSendTransaction takes in an account and currency object and sends random amounts of coin from the
@@ -236,13 +274,13 @@ func doSendTransaction(ctx *Context, threadNo int, acc *accounts.Account, nodeAd
 	}
 
 	// broadcast packet over tendermint
-	result, err := ctx.clCtx.BroadcastTxAsync(packet)
+	_, err = ctx.clCtx.BroadcastTxAsync(packet)
 	if err != nil {
 		ctx.logger.Error(acc.Name, "error in BroadcastTxAsync:", err)
 		return
 	}
 
-	ctx.logger.Info(acc.Name, "Result Data", "log", string(result.Log))
+	//ctx.logger.Info(acc.Name, "Broadcasted TX")
 }
 
 func getWaitDuration(interval int) time.Duration {
@@ -268,9 +306,9 @@ func handleSigTerm(c chan os.Signal, counterChan chan int, stopChan chan bool,
 
 			waiter.Done()
 
-		case <-counterChan:
+		case txsentiniteration := <-counterChan:
 			// increment counter
-			*cnt++
+			*cnt += txsentiniteration
 
 			// send shutdown signal if max no. of transactions is reached
 			if *cnt >= maxTx {
@@ -279,3 +317,14 @@ func handleSigTerm(c chan os.Signal, counterChan chan int, stopChan chan bool,
 		}
 	}
 }
+
+//I[2020-03-26T15:24:10-04:00] app: Loadtest metric height=10, total_tx =6463, tx/b=646, blktime=1.036688 , tps=889.922322
+//I[2020-03-26T15:24:27-04:00] app: Loadtest metric height=30, total_tx =24799, tx/b=826, blktime=1.009512 , tps=909.644127
+//I[2020-03-26T15:24:50-04:00] app: Loadtest metric height=50, total_tx =46567, tx/b=931, blktime=1.005464 , tps=985.297080
+//I[2020-03-26T15:25:11-04:00] app: Loadtest metric height=70, total_tx =65776, tx/b=939, blktime=1.011063 , tps=970.915257
+//I[2020-03-26T15:25:32-04:00] app: Loadtest metric height=90, total_tx =86403, tx/b=960, blktime=1.019297 , tps=974.279540
+//I[2020-03-26T15:25:53-04:00] app: Loadtest metric height=110, total_tx =107656, tx/b=978, blktime=1.033474 , tps=973.497410
+//I[2020-03-26T15:26:15-04:00] app: Loadtest metric height=130, total_tx =128185, tx/b=986, blktime=1.030771 , tps=979.161571
+//I[2020-03-26T15:26:40-04:00] app: Loadtest metric height=150, total_tx =151940, tx/b=1012, blktime=1.060506 , tps=974.602512
+//I[2020-03-26T15:27:02-04:00] app: Loadtest metric height=170, total_tx =172922, tx/b=1017, blktime=1.066872 , tps=970.530044
+//I[2020-03-26T15:27:26-04:00] app: Loadtest metric height=190, total_tx =196138, tx/b=1032, blktime=1.080966 , tps=970.279690

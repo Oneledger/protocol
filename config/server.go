@@ -344,8 +344,8 @@ func (cfg *MempoolConfig) TMConfig() *tmconfig.MempoolConfig {
 	c := tmconfig.DefaultMempoolConfig()
 	c.Recheck = cfg.Recheck
 	c.Broadcast = cfg.Broadcast
-	c.Size = cfg.Size
-	c.CacheSize = cfg.CacheSize
+	c.Size = 20000      //cfg.Size
+	c.CacheSize = 20000 //cfg.CacheSize
 	return c
 }
 

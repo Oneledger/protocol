@@ -3,7 +3,7 @@
 for name in $(ls -l $OLDATA/devnet | awk '(NR >3 && NR < 5){print $9}')
 do
     echo "start loadtest on node: $name"
-    time olclient loadtest --root $OLDATA/devnet/$name --threads 10 --interval 1 --max-tx 200000 >> /dev/null &
+    time olclient loadtest --root $OLDATA/devnet/$name --threads 10 --interval 5 --max-tx 200000 #>> /dev/null &
     sleep 1
 done
 
