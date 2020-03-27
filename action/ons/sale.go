@@ -184,6 +184,10 @@ func runDomainSale(ctx *action.Context, tx action.RawTx) (bool, action.Response)
 		return false, action.Response{Log: log}
 	}
 
+	if !domain.IsExpired(ctx.Header.Height) {
+		return false, action.Response{Log: "domain expired"}
+	}
+
 	if sale.CancelSale {
 		domain.CancelSale()
 	} else {
