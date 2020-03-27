@@ -342,28 +342,28 @@ func (_LockRedeem *LockRedeemCallerSession) HasValidatorSigned(recipient_ common
 
 // IsValidator is a free data retrieval call binding the contract method 0xfacd743b.
 //
-// Solidity: function isValidator(address addr) constant returns(bool)
-func (_LockRedeem *LockRedeemCaller) IsValidator(opts *bind.CallOpts, addr common.Address) (bool, error) {
+// Solidity: function isValidator(address v) constant returns(bool)
+func (_LockRedeem *LockRedeemCaller) IsValidator(opts *bind.CallOpts, v common.Address) (bool, error) {
 	var (
 		ret0 = new(bool)
 	)
 	out := ret0
-	err := _LockRedeem.contract.Call(opts, out, "isValidator", addr)
+	err := _LockRedeem.contract.Call(opts, out, "isValidator", v)
 	return *ret0, err
 }
 
 // IsValidator is a free data retrieval call binding the contract method 0xfacd743b.
 //
-// Solidity: function isValidator(address addr) constant returns(bool)
-func (_LockRedeem *LockRedeemSession) IsValidator(addr common.Address) (bool, error) {
-	return _LockRedeem.Contract.IsValidator(&_LockRedeem.CallOpts, addr)
+// Solidity: function isValidator(address v) constant returns(bool)
+func (_LockRedeem *LockRedeemSession) IsValidator(v common.Address) (bool, error) {
+	return _LockRedeem.Contract.IsValidator(&_LockRedeem.CallOpts, v)
 }
 
 // IsValidator is a free data retrieval call binding the contract method 0xfacd743b.
 //
-// Solidity: function isValidator(address addr) constant returns(bool)
-func (_LockRedeem *LockRedeemCallerSession) IsValidator(addr common.Address) (bool, error) {
-	return _LockRedeem.Contract.IsValidator(&_LockRedeem.CallOpts, addr)
+// Solidity: function isValidator(address v) constant returns(bool)
+func (_LockRedeem *LockRedeemCallerSession) IsValidator(v common.Address) (bool, error) {
+	return _LockRedeem.Contract.IsValidator(&_LockRedeem.CallOpts, v)
 }
 
 // IsredeemAvailable is a free data retrieval call binding the contract method 0x2138c6b9.
@@ -1051,10 +1051,9 @@ func (_LockRedeem *LockRedeemFilterer) ParseRedeemRequest(log types.Log) (*LockR
 
 // LockRedeemValidatorMigratedIterator is returned from FilterValidatorMigrated and is used to iterate over the raw logs and unpacked data for ValidatorMigrated events raised by the LockRedeem contract.
 type LockRedeemValidatorMigratedIterator struct {
-	Event *LockRedeemValidatorMigrated // Event containing the contract specifics and raw log
-
-	contract *bind.BoundContract // Generic contract to use for unpacking event data
-	event    string              // Event name to use for unpacking event data
+	Event    *LockRedeemValidatorMigrated // Event containing the contract specifics and raw log
+	contract *bind.BoundContract          // Generic contract to use for unpacking event data
+	event    string                       // Event name to use for unpacking event data
 
 	logs chan types.Log        // Log channel receiving the found contract events
 	sub  ethereum.Subscription // Subscription for errors, completion and termination
