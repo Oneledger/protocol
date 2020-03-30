@@ -27,10 +27,12 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/tendermint/tendermint/crypto/ed25519"
 
+	"github.com/Oneledger/protocol/client"
 	"github.com/Oneledger/protocol/data/accounts"
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/chain"
 	"github.com/Oneledger/protocol/data/keys"
+	"github.com/Oneledger/protocol/log"
 )
 
 // cobra command to loadtest
@@ -50,6 +52,8 @@ type LoadTestArgs struct {
 	randomRecv bool // whether to send tokens to a random address every time or no, the default is false
 	maxTx      int  // max transactions after which the load test should stop, default is 10000(10k)
 	address    []byte
+	rpcAddress string
+	sdkAddress string
 }
 
 // init function initializes the loadtest command and attaches a bunch of flag parsers
@@ -70,14 +74,31 @@ func init() {
 
 	loadtestCmd.Flags().BytesHexVar(&loadTestArgs.address, "address", []byte(nil),
 		"fund address that loadtest uses")
+	loadtestCmd.Flags().StringVar(&loadTestArgs.rpcAddress, "rpcAddress", "tcp://127.0.0.1:26608", "rpc endpoint which will be used")
+	loadtestCmd.Flags().StringVar(&loadTestArgs.sdkAddress, "sdkAddress", "http://127.0.0.1:26610", "sdk endpoint which will be used")
 }
 
 // loadTest function spawns a few thread which create an account and execute send transactions on the
 // rpc server. This command is used to create a simulated load of send transactions
+
+func getContext(RPCAddress string, SDKAddress string) *Context {
+	ctx := &Context{
+		logger: log.NewLoggerWithPrefix(os.Stdout, "loadtest"),
+	}
+	clientContext, err := client.NewExtServiceContext(RPCAddress, SDKAddress)
+	if err != nil {
+		ctx.logger.Fatal("error starting rpc client", err)
+	}
+	ctx.clCtx = &clientContext
+	return ctx
+}
 func loadTest(_ *cobra.Command, _ []string) {
 
 	// create new connection to RPC server
-	ctx := NewContext()
+
+	//ctx := NewContext()
+	fmt.Println(loadTestArgs.rpcAddress, loadTestArgs.sdkAddress)
+	ctx := getContext(loadTestArgs.rpcAddress, loadTestArgs.sdkAddress)
 	ctx.logger.Info("Starting Loadtest...")
 
 	// create a channel to catch os.Interrupt from a SIGTERM or similar kill signal

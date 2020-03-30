@@ -1,7 +1,9 @@
 import requests
 import json
 
-url = "http://127.0.0.1:26602/jsonrpc"
+#url = "http://127.0.0.1:26602/jsonrpc"
+
+url = "http://130.211.124.62:26606/jsonrpc"
 headers = {
     "Content-Type": "application/json",
     "Accept": "application/json",

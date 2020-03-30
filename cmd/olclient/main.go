@@ -15,6 +15,7 @@
 package main
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 
@@ -45,6 +46,9 @@ func NewContext() *Context {
 	if err != nil {
 		logger.Fatal("failed to read configuration", err)
 	}
+
+	fmt.Println("RPC", Ctx.cfg.Network.RPCAddress)
+	fmt.Println("SDK", Ctx.cfg.Network.SDKAddress)
 
 	clientContext, err := client.NewExtServiceContext(Ctx.cfg.Network.RPCAddress, Ctx.cfg.Network.SDKAddress)
 	if err != nil {

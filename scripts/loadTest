@@ -1,9 +1,10 @@
 #!/bin/bash
 
-for name in $(ls -l $OLDATA/devnet | awk '(NR >3 && NR < 5){print $9}')
+for name in $(ls -l $OLDATA/devnet | awk '(NR >0 && NR < 3){print $9}')
 do
-    echo "start loadtest on node: $name"
-    time olclient loadtest --root $OLDATA/devnet/$name --threads 10 --interval 5 --max-tx 200000 #>> /dev/null &
+    #echo "start loadtest on node: $name"
+    echo "starting loadtest on devnet"
+    time olclient loadtest --root $OLDATA/devnet/$name --threads 10 --interval 5 --max-tx 200000  --rpcAddress http://130.211.124.62:26604 --sdkAddress http://130.211.124.62:26606 #>> /dev/null &
     sleep 1
 done
 
