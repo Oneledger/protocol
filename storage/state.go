@@ -219,3 +219,7 @@ func (s *State) GetPrevious(num int64, key StoreKey) []byte {
 	ver := s.cs.Version
 	return s.GetVersioned(ver-num, key)
 }
+
+func (s *State) LoadVersion(version int64) (int64, error) {
+	return s.cs.LoadVersion(version)
+}
