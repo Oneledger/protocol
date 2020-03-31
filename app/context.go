@@ -238,12 +238,14 @@ type StorageCtx struct {
 	FeeOption  *fees.FeeOption
 	Hash       []byte
 	Version    int64
+	Chainstate *storage.ChainState
 }
 
 func (ctx *context) Storage() StorageCtx {
 	return StorageCtx{
 		Version:    ctx.chainstate.Version,
 		Hash:       ctx.chainstate.Hash,
+		Chainstate: ctx.chainstate,
 		Balances:   ctx.balances,
 		Domains:    ctx.domains,
 		Validators: ctx.validators,

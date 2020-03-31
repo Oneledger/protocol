@@ -189,6 +189,10 @@ func (state *ChainState) Commit() ([]byte, int64) {
 	return hash, version
 }
 
+func (state *ChainState) LoadVersion(version int64) (int64, error) {
+	return state.Delivered.LoadVersion(version)
+}
+
 // Reset the chain state from persistence
 func (state *ChainState) loadDB(db tmdb.DB) ([]byte, int64) {
 	tree := iavl.NewMutableTree(db, CHAINSTATE_CACHE_SIZE) // Do I need a historic tree here?
