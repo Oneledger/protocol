@@ -46,9 +46,9 @@ var (
 	TestTokenABI     = contract.ERC20BasicABI
 	LockRedeemERCABI = contract.LockRedeemERCABI
 	// LockRedeemERC20ABI = contract.ContextABI
-	LockRedeemContractAddr      = "0x0Ee95c135B5CBC3C32fcaDc0E05548e75B9dF6f8"
-	TestTokenContractAddr       = "0xb80B08F2Cee777d55Ecf5139Ec37ff428eD5B0Ea"
-	LockRedeemERC20ContractAddr = "0x2c6eE5B95dF3aFF305CC50049b4f6a572Afa129b"
+	LockRedeemContractAddr      = "0x6EA09Aa8cc07f92Dd137F36d9D1425D7A92a1735"
+	TestTokenContractAddr       = "0x59109646d6545570A1E5Baad36060Cb62C27694B"
+	LockRedeemERC20ContractAddr = "0xeF488999738e1e2273bEA476eC9Dc15f3bE8c7Eb"
 
 	cfg               = config.DefaultEthConfigLocal()
 	log               = logger.NewDefaultLogger(os.Stdout).WithPrefix("testeth")
@@ -86,6 +86,7 @@ func init() {
 	if strings.Contains(cfg.Connection, "rinkeby") {
 		privKey = "02038529C9AB706E9F4136F4A4EB51E866DBFE22D5E102FD3A22C14236E1C2EA"
 	}
+	fmt.Println("Private key :", privKey)
 	UserprivKey, _ = crypto.HexToECDSA(privKey)
 	//UserprivKey, _ = crypto.HexToECDSA("02038529C9AB706E9F4136F4A4EB51E866DBFE22D5E102FD3A22C14236E1C2EA")
 
@@ -124,10 +125,10 @@ func init() {
 // Redeem locked if tracker fails . User redeems more funds than he has .
 
 func main() {
-	//getstatus(lock())
+	getstatus(lock())
 	//time.Sleep(time.Second * 5)
 	//getstatus(redeem())
-	sendTrasactions(12)
+	//sendTrasactions(12)
 	//erc20lock()
 	///time.Sleep(10 * time.Second)
 	//erc20Redeem()
@@ -273,7 +274,6 @@ func lock() []byte {
 	if !bresult.OK {
 		fmt.Println(bresult.Log)
 	}
-
 	return rawTxBytes
 
 }

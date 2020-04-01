@@ -164,13 +164,18 @@ func runCheckFinality(ctx *action.Context, tx action.RawTx) (bool, action.Respon
 		return true, action.Response{Log: "Operation successful"}
 	}
 	if tracker.Failed() {
-		ctx.Logger.Info("Failing Tracker  | Process Type : ", tracker.Type.String(), "Tracker Name : ", tracker.TrackerName.String())
-		tracker.State = trackerlib.Failed
-		err = ctx.ETHTrackers.WithPrefixType(trackerlib.PrefixOngoing).Set(tracker)
-		if err != nil {
-			return false, action.Response{Log: errors.Wrap(err, "unable to Fail tracker").Error()}
+		if tracker.Type == trackerlib.ProcessTypeLock {
+			err := failedLock(ctx, tracker, *f)
+			if err != nil {
+				return false, action.Response{Log: errors.Wrap(err, "unable to finalize lock TX").Error()}
+			}
+		} else if tracker.Type == trackerlib.ProcessTypeRedeem {
+			err := refundTokens(ctx, tracker, *f)
+			if err != nil {
+				return false, action.Response{Log: errors.Wrap(err, "unable to refund tokens").Error()}
+			}
 		}
-		return true, action.Response{Log: "Operation not successful"}
+
 	}
 	err = ctx.ETHTrackers.WithPrefixType(trackerlib.PrefixOngoing).Set(tracker)
 	if err != nil {
@@ -191,6 +196,45 @@ func (reportFinalityMintTx) ProcessFee(ctx *action.Context, signedTx action.Sign
 	used := int64(final - start)
 	ctx.Logger.Detail("Gas Use : ", used)
 	return true, action.Response{}
+}
+
+func failedLock(ctx *action.Context, tracker *trackerlib.Tracker, oltTx ReportFinality) error {
+	ctx.Logger.Info("Failing Tracker  | Process Type : ", tracker.Type.String())
+	tracker.State = trackerlib.Failed
+	err := ctx.ETHTrackers.WithPrefixType(trackerlib.PrefixOngoing).Set(tracker)
+	if err != nil {
+		return errors.Wrap(err, "unable to Fail tracker")
+	}
+	return nil
+}
+
+func refundTokens(ctx *action.Context, tracker *trackerlib.Tracker, oltTx ReportFinality) error {
+	ctx.Logger.Info("Failing Tracker  [ OETH Refund ]| Process Type : ", tracker.Type.String())
+	tracker.State = trackerlib.Failed
+	err := ctx.ETHTrackers.WithPrefixType(trackerlib.PrefixOngoing).Set(tracker)
+	if err != nil {
+		return errors.Wrap(err, "unable to Fail tracker")
+	}
+	c, ok := ctx.Currencies.GetCurrencyByName("ETH")
+	if !ok {
+		return errors.New("ETH not registered")
+	}
+	req, err := ethereum.ParseRedeem(tracker.SignedETHTx, ctx.ETHTrackers.GetOption().ContractABI)
+	oEthRefundCoin := c.NewCoinFromAmount(*balance.NewAmountFromBigInt(req.Amount))
+	if err != nil {
+		return errors.Wrap(action.ErrInvalidExtTx, err.Error())
+	}
+	err = ctx.Balances.AddToAddress(tracker.ProcessOwner, oEthRefundCoin)
+	if err != nil {
+		ctx.Logger.Error(err)
+		return errors.New("Unable to refund OETH , But Tracker has been added to Failed Trackerstore")
+	}
+	ethSupply := keys.Address(ctx.ETHTrackers.GetOption().TotalSupplyAddr)
+	err = ctx.Balances.AddToAddress(ethSupply, oEthRefundCoin)
+	if err != nil {
+		return errors.New("Unable to update total Eth supply")
+	}
+	return nil
 }
 
 func mintTokens(ctx *action.Context, tracker *trackerlib.Tracker, oltTx ReportFinality) error {

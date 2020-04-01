@@ -146,7 +146,7 @@ func runRedeem(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 		return false, action.Response{Log: "error in getting validator addresses" + err.Error()}
 	}
 	name := ethcommon.BytesToHash(redeem.ETHTxn)
-	if ctx.ETHTrackers.WithPrefixType(trackerlib.PrefixOngoing).Exists(name) {
+	if ctx.ETHTrackers.WithPrefixType(trackerlib.PrefixOngoing).Exists(name) || ctx.ETHTrackers.WithPrefixType(trackerlib.PrefixFailed).Exists(name) || ctx.ETHTrackers.WithPrefixType(trackerlib.PrefixPassed).Exists(name) {
 		return false, action.Response{
 			Log: "Tracker already exists",
 		}
