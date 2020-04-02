@@ -356,7 +356,7 @@ func (app *App) Start() error {
 	}
 
 	internalRouter := action.NewRouter("internal")
-	//btc transactions temporarily disabled
+	//"btc" service temporarily disabled
 	//err = btc.EnableBTCInternalTx(internalRouter)
 	//if err != nil {
 	//	app.logger.Error("Failed to register btc internal transactions")

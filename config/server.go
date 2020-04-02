@@ -213,7 +213,7 @@ func DefaultNodeConfig() *NodeConfig {
 			OwnerCredentials: []string{},
 			RPCPrivateKey:    "",
 		},
-		//btc transactions temporarily disabled
+		//"btc" service temporarily disabled
 		Services: []string{"broadcast", "node", "owner", "query", "tx", "eth"},
 	}
 }
