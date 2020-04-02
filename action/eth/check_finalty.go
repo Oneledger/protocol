@@ -116,15 +116,17 @@ func runCheckFinality(ctx *action.Context, tx action.RawTx) (bool, action.Respon
 
 		return false, action.Response{Log: errors.Wrap(err, "err getting tracker").Error()}
 	}
-
+	// Return if 67% Validators have voted Yes
 	if tracker.Finalized() {
 		ctx.Logger.Debug("Tracker already Finalized")
 		return true, action.Response{Log: "Tracker already Finalized"}
 	}
+	// Return if 67% Validators have voted No
 	if tracker.Failed() {
 		ctx.Logger.Debug("Tracker already Failed")
 		return true, action.Response{Log: "Tracker already Failed"}
 	}
+	//Add Validator Vote
 	if f.Success == true {
 		err = tracker.AddVote(f.ValidatorAddress, f.VoteIndex, true)
 		if err != nil {
@@ -136,7 +138,7 @@ func runCheckFinality(ctx *action.Context, tx action.RawTx) (bool, action.Respon
 			return false, action.Response{Log: errors.Wrap(err, "failed to add vote").Error()}
 		}
 	}
-
+	//Handle when tracker has 67% Yes votes
 	if tracker.Finalized() {
 
 		if tracker.Type == trackerlib.ProcessTypeLock {
@@ -144,34 +146,51 @@ func runCheckFinality(ctx *action.Context, tx action.RawTx) (bool, action.Respon
 			if err != nil {
 				return false, action.Response{Log: errors.Wrap(err, "unable to mint tokens").Error()}
 			}
-		} else if tracker.Type == trackerlib.ProcessTypeRedeem {
+			return true, action.Response{Log: "Lock Operation successful"}
+		}
+		if tracker.Type == trackerlib.ProcessTypeRedeem {
 			err := burnTokens(ctx, tracker, *f)
 			if err != nil {
 				return false, action.Response{Log: errors.Wrap(err, "unable to burn tokens").Error()}
 			}
-		} else if tracker.Type == trackerlib.ProcessTypeLockERC {
+			return true, action.Response{Log: "Redeem Operation successful"}
+		}
+		if tracker.Type == trackerlib.ProcessTypeLockERC {
 			err := mintERC20tokens(ctx, tracker, *f)
 			if err != nil {
 				return false, action.Response{Log: errors.Wrap(err, "unable to mint tokens").Error()}
 			}
-		} else if tracker.Type == trackerlib.ProcessTypeRedeemERC {
+			return true, action.Response{Log: "Lock ERC Operation successful"}
+		}
+		if tracker.Type == trackerlib.ProcessTypeRedeemERC {
 			err := burnERC20Tokens(ctx, tracker, *f)
 			if err != nil {
 				return false, action.Response{Log: errors.Wrap(err, "unable to burn tokens").Error()}
 			}
+			return true, action.Response{Log: "Redeem ERC Operation successful"}
 		}
+		return true, action.Response{Log: "Tracker has enough votes to be Finalized , Tracker Type Unknown"}
+	}
 
-		return true, action.Response{Log: "Operation successful"}
-	}
+	//Handle when tracker has 67% No votes
 	if tracker.Failed() {
-		ctx.Logger.Info("Failing Tracker  | Process Type : ", tracker.Type.String(), "Tracker Name : ", tracker.TrackerName.String())
-		tracker.State = trackerlib.Failed
-		err = ctx.ETHTrackers.WithPrefixType(trackerlib.PrefixOngoing).Set(tracker)
-		if err != nil {
-			return false, action.Response{Log: errors.Wrap(err, "unable to Fail tracker").Error()}
+		if tracker.Type == trackerlib.ProcessTypeLock {
+			err := failedLock(ctx, tracker, *f)
+			if err != nil {
+				return false, action.Response{Log: errors.Wrap(err, "unable to finalize lock TX").Error()}
+			}
+			return true, action.Response{Log: "Lock Tracker Failed"}
 		}
-		return true, action.Response{Log: "Operation not successful"}
+		if tracker.Type == trackerlib.ProcessTypeRedeem {
+			err := refundTokens(ctx, tracker, *f)
+			if err != nil {
+				return false, action.Response{Log: errors.Wrap(err, "unable to refund tokens").Error()}
+			}
+			return true, action.Response{Log: "Redeem Tracker Failed"}
+		}
+		return true, action.Response{Log: "Tracker has enough votes to be Failed , Tracker Type Unknown"}
 	}
+
 	err = ctx.ETHTrackers.WithPrefixType(trackerlib.PrefixOngoing).Set(tracker)
 	if err != nil {
 		ctx.Logger.Error("Unable to save the tracker", err)
@@ -193,6 +212,48 @@ func (reportFinalityMintTx) ProcessFee(ctx *action.Context, signedTx action.Sign
 	return true, action.Response{}
 }
 
+// Set Lock Tracker to failed
+func failedLock(ctx *action.Context, tracker *trackerlib.Tracker, oltTx ReportFinality) error {
+	ctx.Logger.Info("Failing Tracker  | Process Type : ", tracker.Type.String())
+	tracker.State = trackerlib.Failed
+	err := ctx.ETHTrackers.WithPrefixType(trackerlib.PrefixOngoing).Set(tracker)
+	if err != nil {
+		return errors.Wrap(err, "unable to Fail tracker")
+	}
+	return nil
+}
+
+//Process oeth Refund if Validators could not sign
+func refundTokens(ctx *action.Context, tracker *trackerlib.Tracker, oltTx ReportFinality) error {
+	ctx.Logger.Info("Failing Tracker  [ OETH Refund ]| Process Type : ", tracker.Type.String())
+	tracker.State = trackerlib.Failed
+	err := ctx.ETHTrackers.WithPrefixType(trackerlib.PrefixOngoing).Set(tracker)
+	if err != nil {
+		return errors.Wrap(err, "unable to Fail tracker")
+	}
+	c, ok := ctx.Currencies.GetCurrencyByName("ETH")
+	if !ok {
+		return errors.New("ETH not registered")
+	}
+	req, err := ethereum.ParseRedeem(tracker.SignedETHTx, ctx.ETHTrackers.GetOption().ContractABI)
+	oEthRefundCoin := c.NewCoinFromAmount(*balance.NewAmountFromBigInt(req.Amount))
+	if err != nil {
+		return errors.Wrap(action.ErrInvalidExtTx, err.Error())
+	}
+	err = ctx.Balances.AddToAddress(tracker.ProcessOwner, oEthRefundCoin)
+	if err != nil {
+		ctx.Logger.Error(err)
+		return errors.New("Unable to refund OETH , But Tracker has been added to Failed Trackerstore")
+	}
+	ethSupply := keys.Address(ctx.ETHTrackers.GetOption().TotalSupplyAddr)
+	err = ctx.Balances.AddToAddress(ethSupply, oEthRefundCoin)
+	if err != nil {
+		return errors.New("Unable to update total Eth supply")
+	}
+	return nil
+}
+
+// Mint oeth After Ether lock is confirmed
 func mintTokens(ctx *action.Context, tracker *trackerlib.Tracker, oltTx ReportFinality) error {
 	ctx.Logger.Info("Finalizing Tracker [ Minting Ether ]  | Process Type : ", tracker.Type.String())
 	curr, ok := ctx.Currencies.GetCurrencyByName("ETH")
@@ -225,6 +286,7 @@ func mintTokens(ctx *action.Context, tracker *trackerlib.Tracker, oltTx ReportFi
 	return nil
 }
 
+// Save tracker Oeth burn already done
 func burnTokens(ctx *action.Context, tracker *trackerlib.Tracker, oltTx ReportFinality) error {
 	ctx.Logger.Info("Finalizing Tracker [ Burning Ether ]  | Process Type : ", tracker.Type.String())
 

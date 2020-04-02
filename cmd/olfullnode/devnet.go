@@ -7,7 +7,6 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"fmt"
-	"io/ioutil"
 	"math/big"
 	"net/url"
 	"os"
@@ -560,11 +559,9 @@ func deployethcdcontract(conn string, nodeList []node) (*ethchain.ChainDriverOpt
 	if err != nil {
 		return nil, errors.Wrap(err, "Error Reading File")
 	}
-	walletdat, err := ioutil.ReadFile(os.Getenv("WALLETADDR"))
 	if err != nil {
 		return nil, errors.Wrap(err, "Error Reading File Wallet Address")
 	}
-	walletAddr := strings.Split(string(walletdat), ",")
 	b1 := make([]byte, 64)
 	pk, err := f.Read(b1)
 	if err != nil {
@@ -589,7 +586,7 @@ func deployethcdcontract(conn string, nodeList []node) (*ethchain.ChainDriverOpt
 	}
 
 	fromAddress := crypto.PubkeyToAddress(*publicKeyECDSA)
-	//fmt.Println("paying addr", fromAddress.Hex())
+
 	gasPrice, err := cli.SuggestGasPrice(context.Background())
 	if err != nil {
 		return nil, err
@@ -603,15 +600,13 @@ func deployethcdcontract(conn string, nodeList []node) (*ethchain.ChainDriverOpt
 
 	initialValidatorList := make([]common.Address, 0, 10)
 	lock_period := big.NewInt(25)
-	//walletAddr := []string{"0xCd7bc1aD1F4b5f7C2e2bbC605319C6f2b8937aa5","0x19854aFe894f4E165E9F49AA695414383b345710","0xAE16D77D742637f5Dc377A92E7fFeD8138d0dC1d"}
 
 	tokenSupplyTestToken := new(big.Int)
-	walletTransferAmount := new(big.Int)
+	validatorInitialFund := big.NewInt(300000000000000000)
 	tokenSupplyTestToken, ok = tokenSupplyTestToken.SetString("1000000000000000000000", 10)
 	if !ok {
 		return nil, errors.New("Unabe to create total supplu for token")
 	}
-	walletTransferAmount, ok = tokenSupplyTestToken.SetString("1000000000000000000", 10)
 	if !ok {
 		return nil, errors.New("Unable to create wallet transfer amount")
 	}
@@ -634,7 +629,8 @@ func deployethcdcontract(conn string, nodeList []node) (*ethchain.ChainDriverOpt
 		}
 
 		initialValidatorList = append(initialValidatorList, addr)
-		tx := types.NewTransaction(nonce, addr, big.NewInt(300000000000000000), auth.GasLimit, auth.GasPrice, (nil))
+		tx := types.NewTransaction(nonce, addr, validatorInitialFund, auth.GasLimit, auth.GasPrice, (nil))
+		fmt.Println(addr.Hex())
 		chainId, _ := cli.ChainID(context.Background())
 		signedTx, err := types.SignTx(tx, types.NewEIP155Signer(chainId), privatekey)
 		if err != nil {
@@ -645,21 +641,6 @@ func deployethcdcontract(conn string, nodeList []node) (*ethchain.ChainDriverOpt
 			return nil, errors.Wrap(err, "sending")
 		}
 		time.Sleep(1 * time.Second)
-	}
-	for _, address := range walletAddr {
-		fmt.Println("Ether Transferred to address : ", address)
-		nonce, err := cli.PendingNonceAt(context.Background(), fromAddress)
-		if err != nil {
-			return nil, err
-		}
-		tx := types.NewTransaction(nonce, common.HexToAddress(address), walletTransferAmount, auth.GasLimit, auth.GasPrice, (nil))
-		chainId, _ := cli.ChainID(context.Background())
-		signedTx, err := types.SignTx(tx, types.NewEIP155Signer(chainId), privatekey)
-		err = cli.SendTransaction(context.Background(), signedTx)
-		if err != nil {
-			return nil, errors.Wrap(err, "sending ether to wallet address")
-		}
-		//time.Sleep(3 * time.Second)
 	}
 
 	nonce, err := cli.PendingNonceAt(context.Background(), fromAddress)
@@ -673,19 +654,19 @@ func deployethcdcontract(conn string, nodeList []node) (*ethchain.ChainDriverOpt
 	if err != nil {
 		return nil, errors.Wrap(err, "Deployement Eth LockRedeem")
 	}
-	auth.Nonce = big.NewInt(int64(nonce + 1))
-	tokenAddress, _, _, err := ethcontracts.DeployERC20Basic(auth, cli, tokenSupplyTestToken)
-	if err != nil {
-		return nil, errors.Wrap(err, "Deployement Test Token")
-	}
-	auth.Nonce = big.NewInt(int64(nonce + 2))
-	ercAddress, _, _, err := ethcontracts.DeployLockRedeemERC(auth, cli, initialValidatorList)
-	if err != nil {
-		return nil, errors.Wrap(err, "Deployement ERC LockRedeem")
-	}
-	if err != nil {
-		return nil, errors.Wrap(err, "Deployement Eth LockRedeem")
-	}
+	tokenAddress := common.Address{}
+	ercAddress := common.Address{}
+	//auth.Nonce = big.NewInt(int64(nonce + 1))
+	//tokenAddress, _, _, err := ethcontracts.DeployERC20Basic(auth, cli, tokenSupplyTestToken)
+	//if err != nil {
+	//	return nil, errors.Wrap(err, "Deployement Test Token")
+	//}
+	//auth.Nonce = big.NewInt(int64(nonce + 2))
+	//ercAddress, _, _, err := ethcontracts.DeployLockRedeemERC(auth, cli, initialValidatorList)
+	//if err != nil {
+	//	return nil, errors.Wrap(err, "Deployement ERC LockRedeem")
+	//}
+
 	fmt.Printf("LockRedeemContractAddr = \"%v\"\n", address.Hex())
 	fmt.Printf("TestTokenContractAddr = \"%v\"\n", tokenAddress.Hex())
 	fmt.Printf("LockRedeemERC20ContractAddr = \"%v\"\n", ercAddress.Hex())
