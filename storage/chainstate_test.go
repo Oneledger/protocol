@@ -16,6 +16,7 @@ package storage
 
 import (
 	"bytes"
+	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -114,4 +115,36 @@ func TestChainState_Commit(t *testing.T) {
 	assert.Equal(t, 0, bytes.Compare(hash, nhash), "hash of persistent after commit not match")
 
 	assert.Equal(t, version+1, nversion, "version of persistent after commit not match")
+}
+
+func TestChainState_Rotation(t *testing.T) {
+	//generate multiple versions
+	state := NewChainState("RotationTest", cacheDB)
+	state.SetupRotation(10, 100, 10)
+
+	//version start from 1
+	for i := 1; i < 10000; i++ {
+
+		key := "Hello " + strconv.Itoa(i)
+		value := "Value " + strconv.Itoa(i)
+
+		state.Delivered.Set(StoreKey(key), []byte(value))
+
+		state.Commit()
+
+		version := state.Delivered.Version()
+		index, result := state.Delivered.GetVersioned(StoreKey(key), version)
+		log.Debug("Commited Fetched", "index", index, "version", version, "result", string(result))
+
+		//assert.Equal(t, []byte(value), result, "These should be equal")
+
+	}
+
+	for i := 1; i < 10000; i++ {
+		if state.Delivered.VersionExists(int64(i)) {
+			log.Debug("remaining version ", i)
+		}
+
+	}
+
 }
