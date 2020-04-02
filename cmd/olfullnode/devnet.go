@@ -559,11 +559,9 @@ func deployethcdcontract(conn string, nodeList []node) (*ethchain.ChainDriverOpt
 	if err != nil {
 		return nil, errors.Wrap(err, "Error Reading File")
 	}
-	//walletdat, err := ioutil.ReadFile(os.Getenv("WALLETADDR"))
 	if err != nil {
 		return nil, errors.Wrap(err, "Error Reading File Wallet Address")
 	}
-	//walletAddr := strings.Split(string(walletdat), ",")
 	b1 := make([]byte, 64)
 	pk, err := f.Read(b1)
 	if err != nil {
@@ -604,12 +602,11 @@ func deployethcdcontract(conn string, nodeList []node) (*ethchain.ChainDriverOpt
 	lock_period := big.NewInt(25)
 
 	tokenSupplyTestToken := new(big.Int)
-	validatorInitialFund := big.NewInt(300000000000000000) //300000000000000000
+	validatorInitialFund := big.NewInt(300000000000000000)
 	tokenSupplyTestToken, ok = tokenSupplyTestToken.SetString("1000000000000000000000", 10)
 	if !ok {
 		return nil, errors.New("Unabe to create total supplu for token")
 	}
-	//walletTransferAmount, ok = tokenSupplyTestToken.SetString("1000000000000000000", 10)
 	if !ok {
 		return nil, errors.New("Unable to create wallet transfer amount")
 	}
@@ -645,21 +642,6 @@ func deployethcdcontract(conn string, nodeList []node) (*ethchain.ChainDriverOpt
 		}
 		time.Sleep(1 * time.Second)
 	}
-	//for _, address := range walletAddr {
-	//	fmt.Println("Ether Transferred to address : ", address)
-	//	nonce, err := cli.PendingNonceAt(context.Background(), fromAddress)
-	//	if err != nil {
-	//		return nil, err
-	//	}
-	//	tx := types.NewTransaction(nonce, common.HexToAddress(address), walletTransferAmount, auth.GasLimit, auth.GasPrice, (nil))
-	//	chainId, _ := cli.ChainID(context.Background())
-	//	signedTx, err := types.SignTx(tx, types.NewEIP155Signer(chainId), privatekey)
-	//	err = cli.SendTransaction(context.Background(), signedTx)
-	//	if err != nil {
-	//		return nil, errors.Wrap(err, "sending ether to wallet address")
-	//	}
-	//	//time.Sleep(3 * time.Second)
-	//}
 
 	nonce, err := cli.PendingNonceAt(context.Background(), fromAddress)
 	if err != nil {
