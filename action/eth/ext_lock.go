@@ -1,3 +1,4 @@
+//Package for transactions related to Etheruem
 package eth
 
 import (
@@ -14,6 +15,7 @@ import (
 	"github.com/Oneledger/protocol/data/ethereum"
 )
 
+// Lock is a struct for one-Ledger transaction for Ether Lock
 type Lock struct {
 	Locker action.Address
 	ETHTxn []byte
@@ -21,17 +23,17 @@ type Lock struct {
 
 var _ action.Msg = &Lock{}
 
-// Signers for the ethereum ext lock is the user who wishes to lock his ether
+//Signers return the Address of the owner who created the transaction
 func (et Lock) Signers() []action.Address {
 	return []action.Address{et.Locker}
 }
 
-// Type for ethlock
+// Type returns the type of current action
 func (et Lock) Type() action.Type {
 	return action.ETH_LOCK
 }
 
-// Tags for ethereum lock
+// Tags creates the tags to associate with the transaction
 func (et Lock) Tags() common.KVPairs {
 	tags := make([]common.KVPair, 0)
 
@@ -43,11 +45,16 @@ func (et Lock) Tags() common.KVPairs {
 		Key:   []byte("tx.locker"),
 		Value: et.Locker.Bytes(),
 	}
+	tag3 := common.KVPair{
+		Key:   []byte("tx.tracker"),
+		Value: ethcommon.BytesToHash(et.ETHTxn).Bytes(),
+	}
 
-	tags = append(tags, tag, tag2)
+	tags = append(tags, tag, tag2, tag3)
 	return tags
 }
 
+//Marshal Lock to byte array
 func (et Lock) Marshal() ([]byte, error) {
 	return json.Marshal(et)
 }
@@ -61,7 +68,7 @@ type ethLockTx struct {
 
 var _ action.Tx = ethLockTx{}
 
-// Validate
+// Validate provides basic validation for transaction Type and Fee
 func (ethLockTx) Validate(ctx *action.Context, signedTx action.SignedTx) (bool, error) {
 
 	// unmarshal the tx message
@@ -80,19 +87,19 @@ func (ethLockTx) Validate(ctx *action.Context, signedTx action.SignedTx) (bool, 
 	}
 
 	// validate fee
-	err = action.ValidateFee(ctx.FeeOpt, signedTx.Fee)
+	err = action.ValidateFee(ctx.FeePool.GetOpt(), signedTx.Fee)
 	if err != nil {
 		ctx.Logger.Error("validate fee failed", err)
 		return false, err
 	}
 
-	// Check lock fields for incoming trasaction
+	// Check lock fields for incoming transaction
 
 	//TODO : Verify beninfiaciary address in ETHTX == locker (Phase 2)
 	return true, nil
 }
 
-// ProcessCheck
+// ProcessCheck runs checks on the transaction without commiting it .
 func (e ethLockTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 
 	lock := &Lock{}
@@ -105,7 +112,7 @@ func (e ethLockTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (bool, act
 	return runLock(ctx, lock)
 }
 
-// ProcessDeliver
+// ProcessDeliver run checks on transaction and commits it to a new block
 func (e ethLockTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 
 	lock := &Lock{}
@@ -125,14 +132,14 @@ func (e ethLockTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, a
 	}
 }
 
-// ProcessFee
+// ProcessFee process the transaction Fee in OLT
 func (ethLockTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas) (bool, action.Response) {
 	ctx.State.ConsumeUpfront(237600)
 	return action.BasicFeeHandling(ctx, signedTx, start, size, 1)
 }
 
-// processCommon
-
+// runLock has the common functionality for ProcessCheck and ProcessDeliver
+// Provides security checks for transaction
 func runLock(ctx *action.Context, lock *Lock) (bool, action.Response) {
 
 	ethTx, err := ethchaindriver.DecodeTransaction(lock.ETHTxn)
@@ -142,24 +149,30 @@ func runLock(ctx *action.Context, lock *Lock) (bool, action.Response) {
 			Log: "decode eth txn error" + err.Error(),
 		}
 	}
-	ok,err := ethchaindriver.VerifyLock(ethTx,ctx.ETHTrackers.GetOption().ContractABI)
+	//fmt.Println("ETH options : " , ctx.ETHTrackers.GetOption())
+	//ctx.Logger.Info("ETH OPTIONS ABI :" ,ctx.ETHTrackers.GetOption().ContractABI)
+	//ctx.Logger.Info("ETH OPTIONS ADDRESS :" ,ctx.ETHTrackers.GetOption().ContractAddress)
+
+	cdOptions := ctx.ETHTrackers.GetOption()
+
+	ok, err := ethchaindriver.VerifyLock(ethTx, cdOptions.ContractABI)
 	if err != nil {
 		ctx.Logger.Error("Unable to Verify Data for Ethereum Lock")
-		return false,action.Response{
+		return false, action.Response{
 			Log: "Unable to verify lock trasaction" + err.Error(),
 		}
 	}
 	if !ok {
-		return false,action.Response{
+		return false, action.Response{
 			Log: "Bytes data does not match (function name field is different)",
 		}
 	}
-	
-	if !bytes.Equal(ethTx.To().Bytes(), ctx.ETHTrackers.GetOption().ContractAddress.Bytes()) {
+
+	if !bytes.Equal(ethTx.To().Bytes(), cdOptions.ContractAddress.Bytes()) {
 
 		ctx.Logger.Error("to field does not match contract address")
 		return false, action.Response{
-			Log: "Invalid transaction ,To field of Transaction does not match Contract address",
+			Log: "Contract address does not match",
 		}
 	}
 
@@ -170,19 +183,19 @@ func runLock(ctx *action.Context, lock *Lock) (bool, action.Response) {
 		return false, action.Response{Log: "error in getting validator addresses" + err.Error()}
 	}
 
-
 	curr, ok := ctx.Currencies.GetCurrencyByName("ETH")
 	if !ok {
 		return false, action.Response{Log: fmt.Sprintf("ETH currency not available", lock.Locker)}
 	}
 	lockCoin := curr.NewCoinFromString(ethTx.Value().String())
-	ethSupply := action.Address(lockBalanceAddress)
+	// Adding lock amount to common address to maintain count of total oEth minted
+	ethSupply := action.Address(cdOptions.TotalSupplyAddr)
 	balCoin, err := ctx.Balances.GetBalanceForCurr(ethSupply, &curr)
 	if err != nil {
 		return false, action.Response{Log: fmt.Sprintf("Unable to get Eth lock total balance", lock.Locker)}
 	}
 
-	totalSupplyCoin := curr.NewCoinFromString(totalETHSupply)
+	totalSupplyCoin := curr.NewCoinFromString(cdOptions.TotalSupply)
 
 	if !balCoin.Plus(lockCoin).LessThanEqualCoin(totalSupplyCoin) {
 		return false, action.Response{Log: fmt.Sprintf("Eth lock exceeded limit", lock.Locker)}
@@ -201,12 +214,11 @@ func runLock(ctx *action.Context, lock *Lock) (bool, action.Response) {
 	tracker.ProcessOwner = lock.Locker
 	tracker.SignedETHTx = lock.ETHTxn
 	// Save eth Tracker
-	err = ctx.ETHTrackers.Set(tracker)
+	err = ctx.ETHTrackers.WithPrefixType(ethereum.PrefixOngoing).Set(tracker)
 	if err != nil {
 		ctx.Logger.Error("error saving eth tracker", err)
 		return false, action.Response{Log: "error saving eth tracker: " + err.Error()}
 	}
-
 	return true, action.Response{
 		Tags: lock.Tags(),
 	}

@@ -72,15 +72,16 @@ func (withdrawTx) Validate(ctx *action.Context, tx action.SignedTx) (bool, error
 		return false, err
 	}
 
-	err = action.ValidateFee(ctx.FeeOpt, tx.Fee)
+	feeOpt := ctx.FeePool.GetOpt()
+	err = action.ValidateFee(feeOpt, tx.Fee)
 	if err != nil {
 		return false, err
 	}
 
-	if tx.Fee.Price.Currency != ctx.FeeOpt.FeeCurrency.Name {
+	if tx.Fee.Price.Currency != feeOpt.FeeCurrency.Name {
 		return false, action.ErrInvalidFeeCurrency
 	}
-	if !ctx.FeeOpt.MinFee().LessThanEqualCoin(tx.Fee.Price.ToCoin(ctx.Currencies)) {
+	if !feeOpt.MinFee().LessThanEqualCoin(tx.Fee.Price.ToCoin(ctx.Currencies)) {
 		return false, action.ErrInvalidFeePrice
 	}
 
@@ -115,7 +116,7 @@ func runWithdraw(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	}
 
 	allow := feePool.GetAllowedWithdraw(draw.From)
-	if allow.LessThanCoin(ctx.FeeOpt.MinFee()) {
+	if allow.LessThanCoin(ctx.FeePool.GetOpt().MinFee()) {
 		return false, action.Response{Log: "No reward is allowed to withdraw"}
 	}
 

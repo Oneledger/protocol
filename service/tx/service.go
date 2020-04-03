@@ -51,7 +51,7 @@ func NewService(
 // SendTx exists for maintaining backwards compatibility with existing olclient implementations. It returns
 // a signed transaction
 // TODO: deprecate this
-func (svc *Service) SendTx(args client.SendTxRequest, reply *client.SendTxReply) error {
+func (svc *Service) SendTx(args client.SendTxRequest, reply *client.CreateTxReply) error {
 	send := transfer.Send{
 		From:   keys.Address(args.From),
 		To:     keys.Address(args.To),
@@ -91,14 +91,14 @@ func (svc *Service) SendTx(args client.SendTxRequest, reply *client.SendTxReply)
 		return codes.ErrSerialization
 	}
 
-	*reply = client.SendTxReply{
+	*reply = client.CreateTxReply{
 		RawTx: packet,
 	}
 
 	return nil
 }
 
-func (svc *Service) CreateRawSend(args client.SendTxRequest, reply *client.SendTxReply) error {
+func (svc *Service) CreateRawSend(args client.SendTxRequest, reply *client.CreateTxReply) error {
 	send := transfer.Send{
 		From:   args.From,
 		To:     args.To,
@@ -126,7 +126,7 @@ func (svc *Service) CreateRawSend(args client.SendTxRequest, reply *client.SendT
 		return codes.ErrSerialization
 	}
 
-	*reply = client.SendTxReply{
+	*reply = client.CreateTxReply{
 		RawTx: packet,
 	}
 
@@ -186,11 +186,6 @@ func (svc *Service) ApplyValidator(args client.ApplyValidatorRequest, reply *cli
 		Memo: uuidNew.String(),
 	}
 	rawData := tx.RawBytes()
-	pubKey, signed, err := svc.accounts.SignWithAddress(rawData, args.Address)
-	if err != nil {
-		svc.logger.Error("error signing with account ", err, args.Address)
-		return codes.ErrSigningError
-	}
 	h, err := svc.nodeContext.PrivVal().GetHandler()
 	if err != nil {
 		svc.logger.Error("error get validator handler", err)
@@ -199,7 +194,7 @@ func (svc *Service) ApplyValidator(args client.ApplyValidatorRequest, reply *cli
 	vpubkey := h.PubKey()
 	vsinged, err := h.Sign(rawData)
 
-	signatures := []action.Signature{{pubKey, signed}, {vpubkey, vsinged}}
+	signatures := []action.Signature{{vpubkey, vsinged}}
 	signedTx := &action.SignedTx{
 		RawTx:      tx,
 		Signatures: signatures,

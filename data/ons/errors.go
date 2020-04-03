@@ -7,5 +7,6 @@ package ons
 import "github.com/pkg/errors"
 
 var (
-	ErrDomainNotFound = errors.New("Domain doesn't exist")
+	ErrDomainNameNotValid = errors.New("Domain name is invalid")
+	ErrDomainNotFound     = errors.New("Domain doesn't exist")
 )

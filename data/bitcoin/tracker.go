@@ -47,8 +47,12 @@ type Tracker struct {
 	// State tracks the current state of the tracker, Also used for locking distributed access
 	State TrackerState `json:"state"`
 
-	CurrentTxId              *chainhash.Hash
-	CurrentBalance           int64
+	// Is the transaction ID of the latest UTXO that has all the tracker bitcoin
+	CurrentTxId *chainhash.Hash
+
+	// the balance of the latest UTXO in satoshi (10^-8 BTC)
+	CurrentBalance int64
+
 	CurrentLockScriptAddress []byte
 
 	ProcessTxId              *chainhash.Hash
@@ -59,8 +63,11 @@ type Tracker struct {
 	ProcessOwner keys.Address
 	ProcessType  int
 
+	// Validator addresses who have voted to finalize the current in process transaction
 	FinalityVotes []keys.Address
-	ResetVotes    []keys.Address
+
+	// Validator addresses who have voted to reset the current in process transaction
+	ResetVotes []keys.Address
 }
 
 func NewTracker(lockScriptAddress []byte, m int, signers []keys.Address) (*Tracker, error) {

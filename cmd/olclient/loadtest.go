@@ -107,10 +107,11 @@ func loadTest(_ *cobra.Command, _ []string) {
 	if loadTestArgs.address != nil {
 		nodeAddress = loadTestArgs.address
 	} else {
-		nodeAddress, err = fullnode.NodeAddress()
+		reply, err := fullnode.NodeAddress()
 		if err != nil {
 			ctx.logger.Fatal("error getting node address", err)
 		}
+		nodeAddress = reply.Address
 	}
 
 	accs := make([]accounts.Account, 0, 10)

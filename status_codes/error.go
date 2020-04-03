@@ -73,7 +73,7 @@ var (
 
 	// External Errors
 	ErrBTCTxNotFound             = ProtocolError{ExternalErrBitcoinTxNotFound, "bitcoin txn not found"}
-	ErrBadBTCAddress 			 = ProtocolError{ParseErrorBTCAddress, "bad btc address"}
+	ErrBadBTCAddress             = ProtocolError{ParseErrorBTCAddress, "bad btc address"}
 	ErrBTCNotEnoughConfirmations = ProtocolError{ExternalErrNotEnoughConfirmations, "not enough btc confirmations"}
 	ErrBTCNotSpendable           = ProtocolError{ExternalErrNotSpendable, "btc source not spendable"}
 	ErrBTCReadingTxn             = ProtocolError{ExternalErrGettingBTCTxn, "err getting btc txn"}
@@ -81,9 +81,13 @@ var (
 	ErrBadBTCTxn = ProtocolError{ParseErrorBadBTCTxn, "bad btc txn"}
 
 	//Ethereum Errors
-	ErrPreparingETHLock        = ProtocolError{Code: ExternalErrUnableToCreateEthTX, Msg:  "Unable to create an unsigned lock transaction for Ethereum",}
-	ErrPreparingOLTLock = ProtocolError{Code: ExternalErrUnableToCreateOLTLockTX, Msg:  "Unable to create OLT lock Tx for Ethereum",}
-	ErrUnmarshaling = ProtocolError{Code: ErrUnmarshalingRedeem, Msg:  "Unable to unmarshall the incoming transaction into struct ,Wrong Json data",}
+	ErrPreparingETHLock      = ProtocolError{Code: ExternalErrUnableToCreateEthTX, Msg: "Unable to create an unsigned lock transaction for Ethereum"}
+	ErrPreparingOLTLock      = ProtocolError{Code: ExternalErrUnableToCreateOLTLockTX, Msg: "Unable to create OLT lock Tx for Ethereum"}
+	ErrPreparingErc20OLTLock = ProtocolError{Code: ExternalErrUnableToCreateErc20OLTLockTX, Msg: "Unable to create OLT lock Tx for ERC20 Token"}
+	ErrUnmarshaling          = ProtocolError{Code: ErrUnmarshalingRedeem, Msg: "Unable to unmarshall the incoming transaction into struct ,Wrong Json data"}
 
-
+	//Tracker Error
+	ErrGettingTrackerStatusFailed  = ProtocolError{Code: ETHTrackerNotFoundFailed, Msg: "Ethereum Tracker not found in the Failed tracker store"}
+	ErrGettingTrackerStatusSuccess = ProtocolError{Code: ETHTrackerNotFoundSuccess, Msg: "Ethereum Tracker not found in the Success tracker store"}
+	ErrGettingTrackerStatusOngoing = ProtocolError{Code: ETHTrackerNotFoundOngoing, Msg: "Ethereum Tracker not found in the Ongoing tracker store"}
 )

@@ -60,12 +60,21 @@ const (
 	TxErrGasOverflow        = 300111
 	TxErrInvalidExtTx       = 300112
 
-	ExternalErr                       = 400100
-	ExternalErrBitcoinTxNotFound      = 400101
-	ExternalErrGettingBTCTxn          = 400102
-	ExternalErrNotEnoughConfirmations = 400103
-	ExternalErrNotSpendable           = 400104
-	ExternalErrUnableToCreateEthTX    = 400105
-	ExternalErrUnableToCreateOLTLockTX =400106
-	ErrUnmarshalingRedeem             = 400107
+	ExternalErr                        = 400100
+	ExternalErrBitcoinTxNotFound       = 400101
+	ExternalErrGettingBTCTxn           = 400102
+	ExternalErrNotEnoughConfirmations  = 400103
+	ExternalErrNotSpendable            = 400104
+	ExternalErrUnableToCreateEthTX     = 400105
+	ExternalErrUnableToCreateOLTLockTX = 400106
+	ErrUnmarshalingRedeem              = 400107
+
+	ERC20
+	ExternalErrUnableToCreateErc20OLTLockTX = 500100
+	ExternalErrTokenNotSuported             = 500101
+
+	Tracker
+	ETHTrackerNotFoundFailed  = 600100
+	ETHTrackerNotFoundSuccess = 600101
+	ETHTrackerNotFoundOngoing = 600102
 )

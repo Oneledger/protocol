@@ -72,7 +72,7 @@ func (sendTx) Validate(ctx *action.Context, tx action.SignedTx) (bool, error) {
 		return false, err
 	}
 
-	err = action.ValidateFee(ctx.FeeOpt, tx.Fee)
+	err = action.ValidateFee(ctx.FeePool.GetOpt(), tx.Fee)
 	if err != nil {
 		return false, err
 	}
@@ -81,8 +81,9 @@ func (sendTx) Validate(ctx *action.Context, tx action.SignedTx) (bool, error) {
 	if !send.Amount.IsValid(ctx.Currencies) {
 		return false, errors.Wrap(action.ErrInvalidAmount, send.Amount.String())
 	}
-	if send.From == nil || send.To == nil {
-		return false, action.ErrMissingData
+
+	if send.From.Err() != nil || send.To.Err() != nil {
+		return false, action.ErrInvalidAddress
 	}
 	return true, nil
 }

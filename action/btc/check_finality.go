@@ -8,7 +8,6 @@ import (
 	"bytes"
 	"encoding/json"
 
-	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcutil/base58"
 	"github.com/pkg/errors"
 	"github.com/tendermint/tendermint/libs/common"
@@ -43,7 +42,7 @@ func (m *ReportFinalityMint) Tags() common.KVPairs {
 
 	tag := common.KVPair{
 		Key:   []byte("tx.type"),
-		Value: []byte(action.BTC_REPORT_FINALITY_MINT.String()),
+		Value: []byte(m.Type().String()),
 	}
 	tag2 := common.KVPair{
 		Key:   []byte("tx.owner"),
@@ -59,6 +58,34 @@ func (m *ReportFinalityMint) Tags() common.KVPairs {
 	}
 
 	tags = append(tags, tag, tag2, tag3, tag4)
+	return tags
+}
+
+func (m *ReportFinalityMint) TagsMinted(processType string) common.KVPairs {
+	tags := make([]common.KVPair, 0)
+
+	tag := common.KVPair{
+		Key:   []byte("tx.type"),
+		Value: []byte(m.Type().String()),
+	}
+	tag2 := common.KVPair{
+		Key:   []byte("tx.owner"),
+		Value: m.OwnerAddress.Bytes(),
+	}
+	tag3 := common.KVPair{
+		Key:   []byte("tx.tracker_name"),
+		Value: []byte(m.TrackerName),
+	}
+	tag4 := common.KVPair{
+		Key:   []byte("tx.validator"),
+		Value: m.ValidatorAddress.Bytes(),
+	}
+	tag5 := common.KVPair{
+		Key:   []byte("tx.lock_redeem_status"),
+		Value: []byte("success"),
+	}
+
+	tags = append(tags, tag, tag2, tag3, tag4, tag5)
 	return tags
 }
 
@@ -196,14 +223,15 @@ func runReportFinalityMint(ctx *action.Context, tx action.RawTx) (bool, action.R
 		}
 
 		oBTCCoin := curr.NewCoinFromUnit(tracker.ProcessBalance - tracker.CurrentBalance)
+
 		err = ctx.Balances.AddToAddress(f.OwnerAddress, oBTCCoin)
 		if err != nil {
 			ctx.Logger.Error(err)
 			return false, action.Response{Log: "error adding oBTC to address"}
 		}
 
-		tally := keys.Address(lockBalanceAddress)
-		err = ctx.Balances.AddToAddress(tally, oBTCCoin)
+		circulation := keys.Address(ctx.BTCTrackers.GetOption().TotalSupplyAddr)
+		err = ctx.Balances.AddToAddress(circulation, oBTCCoin)
 		if err != nil {
 			ctx.Logger.Error(err)
 			return false, action.Response{Log: "error adding oBTC to address"}
@@ -214,11 +242,12 @@ func runReportFinalityMint(ctx *action.Context, tx action.RawTx) (bool, action.R
 
 	// set the tracker to the new state
 
-	validatorPubKeys, err := ctx.Validators.GetBitcoinKeys(&chaincfg.TestNet3Params)
+	opt := ctx.BTCTrackers.GetConfig()
+	validatorPubKeys, err := ctx.Validators.GetBitcoinKeys(opt.BTCParams)
 	m := (len(validatorPubKeys) * 2 / 3) + 1
 
 	lockScript, lockScriptAddress, addressList, err := bitcoin2.CreateMultiSigAddress(m, validatorPubKeys,
-		f.RandomBytes, ctx.BTCChainType)
+		f.RandomBytes, opt.BTCParams)
 
 	// do final reset changes
 	signers := make([]keys.Address, len(addressList))
@@ -256,7 +285,12 @@ func runReportFinalityMint(ctx *action.Context, tx action.RawTx) (bool, action.R
 		return false, action.Response{Log: "error resetting tracker, try again"}
 	}
 
+	processType := "lock"
+	if tracker.ProcessType == bitcoin.ProcessTypeRedeem {
+		processType = "redeem"
+	}
+
 	return true, action.Response{
-		Tags: f.Tags(),
+		Tags: f.TagsMinted(processType),
 	}
 }

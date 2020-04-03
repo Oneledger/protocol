@@ -126,6 +126,30 @@ func (t *Tracker) Finalized() bool {
 	return y >= num
 }
 
+func (t *Tracker) Failed() bool {
+	l := len(t.Validators)
+	num := (l * 2 / 3) + 1
+	//v := t.FinalityVotes
+	//cnt := 0
+	//for v >= 1 {
+	//	if v%2 == 1 {
+	//		cnt++
+	//	}
+	//	v = v >> 1
+	//}
+	_, n := t.GetVotes()
+	return n >= num
+}
+
+func (t *Tracker) Clean() *Tracker {
+
+	return &Tracker{
+		Type:        t.Type,
+		State:       t.State,
+		TrackerName: t.TrackerName,
+	}
+}
+
 func (t Tracker) NextStep() string {
 	if t.Type == ProcessTypeLock {
 		switch t.State {
@@ -139,6 +163,25 @@ func (t Tracker) NextStep() string {
 			return MINTING
 		case Released:
 			return CLEANUP
+		case Failed:
+			return CLEANUPFAILED
+		}
+		return transition.NOOP
+	}
+	if t.Type == ProcessTypeLockERC {
+		switch t.State {
+		case New:
+			return BROADCASTING
+		case BusyBroadcasting:
+			return FINALIZING
+		case BusyFinalizing:
+			return FINALIZE
+		case Finalized:
+			return MINTING
+		case Released:
+			return CLEANUP
+		case Failed:
+			return CLEANUPFAILED
 		}
 		return transition.NOOP
 	}
@@ -154,6 +197,24 @@ func (t Tracker) NextStep() string {
 			return BURN
 		case Released:
 			return CLEANUP
+		case Failed:
+			return CLEANUPFAILED
+		}
+	}
+	if t.Type == ProcessTypeRedeemERC {
+		switch t.State {
+		case New:
+			return SIGNING
+		case BusyBroadcasting:
+			return VERIFYREDEEM
+		case BusyFinalizing:
+			return REDEEMCONFIRM
+		case Finalized:
+			return BURN
+		case Released:
+			return CLEANUP
+		case Failed:
+			return CLEANUPFAILED
 		}
 	}
 	return transition.NOOP

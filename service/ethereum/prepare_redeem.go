@@ -9,7 +9,7 @@ import (
 	codes "github.com/Oneledger/protocol/status_codes"
 )
 
-func (svc *Service) CreateRawExtRedeem(req RedeemRequest, out *OLTLockReply) error {
+func (svc *Service) CreateRawExtRedeem(req RedeemRequest, out *OLTReply) error {
 
 	redeem := eth.Redeem{
 		Owner:  req.UserOLTaddress,
@@ -36,7 +36,7 @@ func (svc *Service) CreateRawExtRedeem(req RedeemRequest, out *OLTLockReply) err
 	if err != nil {
 		return action.ErrUnserializable
 	}
-	*out = OLTLockReply{
+	*out = OLTReply{
 		RawTX: packet,
 	}
 	return nil

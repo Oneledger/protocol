@@ -20,10 +20,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestNewCache(t *testing.T) {
-	assert.Equal(t, &cache{"name", map[string][]byte{}}, NewCache("name"))
-}
-
 func TestCache_SetGet(t *testing.T) {
 	c := NewCache("test")
 

@@ -10,7 +10,7 @@ import (
 	chain "github.com/Oneledger/protocol/chains/ethereum"
 	"github.com/Oneledger/protocol/config"
 	"github.com/Oneledger/protocol/data/accounts"
-	tracker "github.com/Oneledger/protocol/data/ethereum"
+	ethTracker "github.com/Oneledger/protocol/data/ethereum"
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/identity"
 	"github.com/Oneledger/protocol/log"
@@ -21,13 +21,13 @@ func Name() string {
 }
 
 type Service struct {
-	config       *config.EthereumChainDriverConfig
-	router       action.Router
-	accounts     accounts.Wallet
-	logger       *log.Logger
-	nodeContext  node.Context
-	validators   *identity.ValidatorStore
-	trackerStore *tracker.TrackerStore
+	config      *config.EthereumChainDriverConfig
+	router      action.Router
+	accounts    accounts.Wallet
+	logger      *log.Logger
+	nodeContext node.Context
+	validators  *identity.ValidatorStore
+	trackers    *ethTracker.TrackerStore
 }
 
 // Returns a new Service, should be passed as an RPC handler
@@ -38,7 +38,8 @@ func NewService(
 	accounts accounts.Wallet,
 	nodeCtx node.Context,
 	validators *identity.ValidatorStore,
-	//trackerStore *bitcoin.TrackerStore,
+	trackerStore *ethTracker.TrackerStore,
+
 	logger *log.Logger,
 ) *Service {
 	return &Service{
@@ -48,8 +49,8 @@ func NewService(
 		nodeContext: nodeCtx,
 		accounts:    accounts,
 		validators:  validators,
-		//	trackerStore: trackerStore,
-		logger: logger,
+		trackers:    trackerStore,
+		logger:      logger,
 	}
 }
 
@@ -63,37 +64,49 @@ type OLTLockRequest struct {
 	Gas     int64         `json:"gas"`
 }
 
-type OLTLockReply struct {
-	RawTX []byte `json:"UnsignedOLTLock"`
+type OLTERC20LockRequest struct {
+	RawTx   []byte `json:"rawTx"`
+	Address keys.Address
+	Fee     action.Amount `json:"fee"`
+	Gas     int64         `json:"gas"`
+}
+
+type OLTReply struct {
+	RawTX []byte `json:"rawTx"`
 }
 
 type RedeemRequest struct {
-	UserOLTaddress action.Address `json:"user_olt_address"`
-	UserETHaddress action.Address `json:"user_eth_address"`
-	ETHTxn         []byte         `json:"eth_txn"`
+	UserOLTaddress action.Address `json:"userOLTAddress"`
+	UserETHaddress action.Address `json:"userETHAddress"`
+	ETHTxn         []byte         `json:"ethTxn"`
 	Fee            action.Amount  `json:"fee"`
 	Gas            int64          `json:"gas"`
 }
 
-type RedeemReply struct {
-	OK bool `json:"ok"`
+type OLTERC20RedeemRequest struct {
+	UserOLTaddress action.Address `json:"userOLTAddress"`
+	UserETHaddress action.Address `json:"userETHAddress"`
+	ETHTxn         []byte         `json:"ethTxn"`
+	Fee            action.Amount  `json:"fee"`
+	Gas            int64          `json:"gas"`
 }
+
 type ETHLockRequest struct {
-	UserAddress common.Address `json:"user_eth_address"`
+	UserAddress common.Address `json:"userETHAddress"`
 	Amount      *big.Int       `json:"amount"`
 }
 
 type ETHLockRawTX struct {
-	UnsignedRawTx []byte `json:"unsigned_raw_tx"`
+	UnsignedRawTx []byte `json:"unsignedRawTx"`
 }
 
 type SignRequest struct {
 	Wei       *big.Int       `json:"wei"`
-	Recepient common.Address `json:"recepient"`
+	Recipient common.Address `json:"recipient"`
 }
 
 type SignReply struct {
-	TxHash common.Hash `json:"tx_hash"`
+	TxHash common.Hash `json:"txTash"`
 }
 
 type BalanceRequest struct {
@@ -103,4 +116,12 @@ type BalanceRequest struct {
 type BalanceReply struct {
 	Address chain.Address `json:"address"`
 	Amount  *big.Int      `json:"amount"`
+}
+
+type TrackerStatusRequest struct {
+	TrackerName chain.TrackerName `json:"trackerName"`
+}
+
+type TrackerStatusReply struct {
+	Status string `json:"status"`
 }

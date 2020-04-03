@@ -1,13 +1,10 @@
 package ethereum
 
-type Error string
+import (
+	"errors"
+)
 
-func (e Error) Error() string {
-	return string(e)
-}
-
-const (
-	// TODO: Remove this
-	ErrNotImplemented Error = "NOT_IMPLEMENTED"
-	ErrNilConfig      Error = "was given nil ethereum configuration"
+var (
+	ErrTxFailed      = errors.New("ethereum tx status failed")
+	ErrRedeemExpired = errors.New("ethereum redeem request expired")
 )

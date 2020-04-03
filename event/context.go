@@ -6,14 +6,11 @@ package event
 
 import (
 	"crypto/ecdsa"
-	"os"
 
-	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 
 	"github.com/Oneledger/protocol/action"
-	bitcoin2 "github.com/Oneledger/protocol/chains/bitcoin"
 	"github.com/Oneledger/protocol/config"
 	"github.com/Oneledger/protocol/data/bitcoin"
 	"github.com/Oneledger/protocol/data/ethereum"
@@ -32,57 +29,35 @@ type JobsContext struct {
 
 	BTCPrivKey *keys.PrivateKey
 	ETHPrivKey *keys.PrivateKey
-	BTCParams  *chaincfg.Params
 
 	ValidatorAddress action.Address
 	LockScripts      *bitcoin.LockScriptStore
 	EthereumTrackers *ethereum.TrackerStore
-
-	BTCData BTCData
 }
 
-type BTCData struct {
-	BTCNodeAddress   string
-	BTCRPCPort       string
-	BTCRPCUsername   string
-	BTCRPCPassword   string
-	BTCChainnet      string
-	BlockCypherToken string
-}
-
-func NewJobsContext(cfg config.Server, btcChainType string, svc *Service,
-	trackers *bitcoin.TrackerStore, validators *identity.ValidatorStore,
-	privKey *keys.PrivateKey, ethprivKey *keys.PrivateKey,
-	valAddress keys.Address, bcyToken string, lStore *bitcoin.LockScriptStore,
-	btcAddress, btcRPCPort, BTCRPCUsername, BTCRPCPassword string,
+func NewJobsContext(cfg config.Server,
+	svc *Service,
+	trackers *bitcoin.TrackerStore,
+	validators *identity.ValidatorStore,
+	privKey *keys.PrivateKey,
+	ethprivKey *keys.PrivateKey,
+	valAddress keys.Address,
+	lStore *bitcoin.LockScriptStore,
 	ethTracker *ethereum.TrackerStore,
+	logger *log.Logger,
 ) *JobsContext {
-
-	params := bitcoin2.GetChainParams(btcChainType)
-
-	w := os.Stdout
 
 	return &JobsContext{
 		cfg:              cfg,
 		Service:          svc,
-		Logger:           log.NewLoggerWithPrefix(w, "internal_jobs"),
+		Logger:           logger,
 		Trackers:         trackers,
 		Validators:       validators,
 		BTCPrivKey:       privKey,
 		ETHPrivKey:       ethprivKey,
-		BTCParams:        params,
 		ValidatorAddress: valAddress,
 		LockScripts:      lStore,
 		EthereumTrackers: ethTracker,
-
-		BTCData: BTCData{
-			BlockCypherToken: bcyToken,
-			BTCNodeAddress:   btcAddress,
-			BTCRPCPort:       btcRPCPort,
-			BTCRPCUsername:   BTCRPCUsername,
-			BTCRPCPassword:   BTCRPCPassword,
-			BTCChainnet:      btcChainType,
-		},
 	}
 
 }

@@ -15,6 +15,7 @@ import (
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/data/accounts"
 	"github.com/Oneledger/protocol/data/balance"
+	"github.com/Oneledger/protocol/data/fees"
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/identity"
 )
@@ -29,7 +30,7 @@ Services:
 	* broadcast
 	* node
 	* owner
-	* query
+	* query`json:"account"`
 	* tx
 */
 
@@ -51,11 +52,11 @@ type SendTxRequest struct {
 	From     keys.Address  `json:"from"`
 	To       keys.Address  `json:"to"`
 	Amount   action.Amount `json:"amount"`
-	GasPrice action.Amount `json:"gasprice"`
+	GasPrice action.Amount `json:"gasPrice"`
 	Gas      int64         `json:"gas"`
 }
 
-type SendTxReply struct {
+type CreateTxReply struct {
 	RawTx []byte `json:"rawTx"`
 }
 
@@ -75,7 +76,7 @@ type ApplyValidatorReply struct {
 type WithdrawRewardRequest struct {
 	From     keys.Address  `json:"from"`
 	To       keys.Address  `json:"to"`
-	GasPrice action.Amount `json:"gasprice"`
+	GasPrice action.Amount `json:"gasPrice"`
 	Gas      int64         `json:"gas"`
 }
 
@@ -84,17 +85,24 @@ type WithdrawRewardReply struct {
 }
 
 type NodeNameRequest struct{}
-type NodeNameReply = string
+type NodeNameReply struct {
+	Name string `json:"name"`
+}
 
 type NodeAddressRequest struct{}
-type NodeAddressReply = keys.Address
+type NodeAddressReply struct {
+	Address keys.Address `json:"address"`
+}
 
 type NodeIDRequest struct {
 	ShouldShowIP bool `json:"shouldShowIP,omitempty"`
 }
-type NodeIDReply = string
+type NodeIDReply struct {
+	Id string `json:"id"`
+}
 
 type AddAccountRequest = accounts.Account
+
 type AddAccountReply struct {
 	Account accounts.Account `json:"account"`
 }
@@ -106,7 +114,9 @@ type GenerateAccountRequest struct {
 type DeleteAccountRequest struct {
 	Address keys.Address `json:"address"`
 }
-type DeleteAccountReply = bool
+type DeleteAccountReply struct {
+	Deleted bool `json:"deleted"`
+}
 
 type ListAccountsRequest struct{}
 type ListAccountsReply struct {
@@ -183,21 +193,26 @@ type SignRawTxResponse struct {
 
 type BTCLockRequest struct {
 	Txn         []byte        `json:"txn"`
-	Signature   []byte        `json:"signature"`
 	Address     keys.Address  `json:"address"`
-	TrackerName string        `json:"tracker_name"`
-	GasPrice    action.Amount `json:"gasprice"`
+	TrackerName string        `json:"trackerName"`
+	GasPrice    action.Amount `json:"gasPrice"`
 	Gas         int64         `json:"gas"`
 }
 
-type BTCLockPrepareRequest struct {
-	Hash    string `json:"hash"`
-	Index   uint32 `json:"index"`
-	FeesBTC int64  `json:"fees_btc"`
+type InputTransaction struct {
+	Hash  string `json:"hash"`
+	Index uint32 `json:"index"`
 }
+type BTCLockPrepareRequest struct {
+	Inputs           []InputTransaction `json:"inputs"`
+	AmountSatoshi    int64              `json:"amount"`
+	FeeRate          int64              `json:"fee_rate"`
+	ReturnAddressStr string             `json:"return_address"`
+}
+
 type BTCLockPrepareResponse struct {
 	Txn         string `json:"txn"`
-	TrackerName string `json:"tracker_name"`
+	TrackerName string `json:"trackerName"`
 }
 
 type BTCGetTrackerRequest struct {
@@ -209,15 +224,15 @@ type BTCGetTrackerReply struct {
 
 type BTCRedeemRequest struct {
 	Address    keys.Address  `json:"address"`
-	BTCAddress string        `json:"btc_address"`
+	BTCAddress string        `json:"addressBTC"`
 	Amount     int64         `json:"amount"`
-	FeesBTC    int64         `json:"fees_btc"`
-	GasPrice   action.Amount `json:"gasprice"`
+	FeesBTC    int64         `json:"feesBTC"`
+	GasPrice   action.Amount `json:"gasPrice"`
 	Gas        int64         `json:"gas"`
 }
 type BTCRedeemPrepareResponse struct {
 	RawTx       []byte `json:"rawTx"`
-	TrackerName string `json:"tracker_name"`
+	TrackerName string `json:"trackerName"`
 }
 
 type ETHLockRequest struct {
@@ -236,4 +251,15 @@ type CurrencyBalanceReply struct {
 	Balance  string `json:"balance"`
 	// The height when this balance was recorded
 	Height int64 `json:"height"`
+}
+
+type EmptyRequest struct {
+}
+
+type MaxTrackerBalanceReply struct {
+	MaxBalance int64 `json:"max_balance"`
+}
+
+type FeeOptionsReply struct {
+	FeeOption fees.FeeOption `json:"feeOption"`
 }

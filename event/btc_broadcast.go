@@ -104,10 +104,14 @@ func (j *JobBTCBroadcast) DoMyJob(ctxI interface{}) {
 	sigScript, err := builder.Script()
 	if err != nil {
 		ctx.Logger.Error("error in building sig script", err)
+		return
 	}
 
-	cd := bitcoin.NewChainDriver(ctx.BTCData.BlockCypherToken)
-	lockTx = cd.AddLockSignature(tracker.ProcessUnsignedTx, sigScript)
+	opt := ctx.Trackers.GetConfig()
+
+	isFirstLock := tracker.CurrentTxId == nil
+	cd := bitcoin.NewChainDriver(opt.BlockCypherToken)
+	lockTx = cd.AddLockSignature(tracker.ProcessUnsignedTx, sigScript, isFirstLock)
 
 	buf := bytes.NewBuffer([]byte{})
 	err = lockTx.Serialize(buf)
@@ -123,7 +127,8 @@ func (j *JobBTCBroadcast) DoMyJob(ctxI interface{}) {
 
 	ctx.Logger.Debug(hex.EncodeToString(txBytes))
 
-	if !(len(lockTx.TxIn) == 1 && tracker.ProcessType == bitcoin2.ProcessTypeLock) {
+	// verify multisig of validators
+	if !isFirstLock {
 
 		vm, err := txscript.NewEngine(tracker.CurrentLockScriptAddress, lockTx, 0, txscript.StandardVerifyFlags, nil, nil, tracker.CurrentBalance)
 		if err != nil {
@@ -139,9 +144,9 @@ func (j *JobBTCBroadcast) DoMyJob(ctxI interface{}) {
 	}
 
 	connCfg := &rpcclient.ConnConfig{
-		Host:         ctx.BTCData.BTCNodeAddress + ":" + ctx.BTCData.BTCRPCPort,
-		User:         ctx.BTCData.BTCRPCUsername,
-		Pass:         ctx.BTCData.BTCRPCPassword,
+		Host:         opt.BTCAddress + ":" + opt.BTCRPCPort,
+		User:         opt.BTCRPCUsername,
+		Pass:         opt.BTCRPCPassword,
 		HTTPPostMode: true, // Bitcoin core only supports HTTP POST mode
 		DisableTLS:   true, // Bitcoin core does not provide TLS by default
 	}
@@ -211,6 +216,10 @@ func (j *JobBTCBroadcast) GetJobID() string {
 
 func (j JobBTCBroadcast) IsDone() bool {
 	return j.Status == jobs.Completed
+}
+
+func (j *JobBTCBroadcast) IsFailed() bool {
+	return j.Status == jobs.Failed
 }
 
 func resetCall(tracker *bitcoin2.Tracker, ctx *JobsContext, jobID string) bool {

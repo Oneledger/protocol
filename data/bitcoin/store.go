@@ -8,8 +8,11 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/Oneledger/protocol/chains/bitcoin"
+	"github.com/Oneledger/protocol/config"
 	"github.com/Oneledger/protocol/serialize"
 	"github.com/Oneledger/protocol/storage"
+	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/pkg/errors"
 )
 
@@ -21,6 +24,8 @@ type TrackerStore struct {
 	State  *storage.State
 	szlr   serialize.Serializer
 	prefix []byte
+	config BTCConfig
+	option bitcoin.ChainDriverOption
 }
 
 func NewTrackerStore(prefix string, state *storage.State) *TrackerStore {
@@ -35,6 +40,22 @@ func NewTrackerStore(prefix string, state *storage.State) *TrackerStore {
 func (ts *TrackerStore) WithState(state *storage.State) *TrackerStore {
 	ts.State = state
 	return ts
+}
+
+func (ts *TrackerStore) SetConfig(config BTCConfig) {
+	ts.config = config
+}
+
+func (ts *TrackerStore) GetConfig() BTCConfig {
+	return ts.config
+}
+
+func (ts *TrackerStore) SetOption(option bitcoin.ChainDriverOption) {
+	ts.option = option
+}
+
+func (ts *TrackerStore) GetOption() bitcoin.ChainDriverOption {
+	return ts.option
 }
 
 func (ts *TrackerStore) Get(name string) (*Tracker, error) {
@@ -107,7 +128,6 @@ func (ts *TrackerStore) GetTrackerForRedeem() (*Tracker, error) {
 			highestAmount = d.CurrentBalance
 		}
 
-		// return false
 		return false
 	})
 
@@ -116,6 +136,34 @@ func (ts *TrackerStore) GetTrackerForRedeem() (*Tracker, error) {
 	}
 
 	return tempTracker, nil
+}
+
+func (ts *TrackerStore) GetMaxAvailableBalance() int64 {
+
+	var highestAmount int64 = -1
+	var tempTracker *Tracker = nil
+
+	ts.Iterate(func(k, v []byte) bool {
+
+		d := &Tracker{}
+		err := ts.szlr.Deserialize(v, d)
+		if err != nil {
+			return false
+		}
+
+		if d.IsAvailable() && d.GetBalance() > highestAmount {
+			tempTracker = d
+			highestAmount = d.CurrentBalance
+		}
+
+		return false
+	})
+
+	if tempTracker == nil {
+		return 0
+	}
+
+	return tempTracker.CurrentBalance
 }
 
 func (ts *TrackerStore) Iterate(fn func(k, v []byte) bool) {
@@ -157,4 +205,35 @@ func (ts *TrackerStore) GetLockScript(lockAddress []byte) ([]byte, error) {
 
 func keyFromName(name string) []byte {
 	return []byte(strings.ToLower(name))
+}
+
+/*
+	BTC Config
+*/
+
+type BTCConfig struct {
+	BTCAddress     string
+	BTCRPCPort     string
+	BTCRPCUsername string
+	BTCRPCPassword string
+	BTCChainnet    string
+
+	BTCParams *chaincfg.Params
+
+	BlockCypherToken     string
+	BlockCypherChainType string
+}
+
+func NewBTCConfig(cfg *config.ChainDriverConfig, chainType string) BTCConfig {
+	return BTCConfig{
+
+		cfg.BitcoinNodeAddress,
+		cfg.BitcoinRPCPort,
+		cfg.BitcoinRPCUsername,
+		cfg.BitcoinRPCPassword,
+		chainType,
+		bitcoin.GetChainParams(chainType),
+		cfg.BlockCypherToken,
+		bitcoin.GetBlockCypherChainType(chainType),
+	}
 }

@@ -15,13 +15,13 @@ Copyright 2017 - 2019 OneLedger
 package balance
 
 import (
-	"fmt"
 	"strings"
+
+	"github.com/pkg/errors"
 
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/serialize"
 	"github.com/Oneledger/protocol/storage"
-	"github.com/pkg/errors"
 )
 
 type Store struct {
@@ -115,7 +115,7 @@ func (st *Store) AddToAddress(addr keys.Address, coin Coin) error {
 
 	base := coin.Currency.NewCoinFromAmount(*amt)
 
-	fmt.Println("add to", addr.String())
+	//fmt.Println("add to", addr.String())
 	newCoin := base.Plus(coin)
 
 	return st.set(key, *newCoin.Amount)
@@ -131,10 +131,10 @@ func (st *Store) MinusFromAddress(addr keys.Address, coin Coin) error {
 
 	base := coin.Currency.NewCoinFromAmount(*amt)
 
-	fmt.Println("minus from", addr.String())
+	//fmt.Println("minus from", addr.String())
 	newCoin, err := base.Minus(coin)
 	if err != nil {
-		return errors.Wrap(err, "minus from address")
+		return errors.Wrapf(err, "minus from address: %s, balance: %s, coin: %s", addr.String(), base.String(), coin.String())
 	}
 
 	return st.set(key, *newCoin.Amount)
@@ -149,7 +149,7 @@ func (st *Store) CheckBalanceFromAddress(addr keys.Address, coin Coin) error {
 	}
 
 	base := coin.Currency.NewCoinFromAmount(*amt)
-	fmt.Println("check balance", addr.String())
+	//fmt.Println("check balance", addr.String())
 	_, err = base.Minus(coin)
 	if err != nil {
 		return errors.Wrap(err, "minus from address")
@@ -160,13 +160,18 @@ func (st *Store) CheckBalanceFromAddress(addr keys.Address, coin Coin) error {
 
 func (st *Store) GetBalance(address keys.Address, list *CurrencySet) (balance *Balance, err error) {
 	balance = NewBalance()
+	fn := balance.setCoin
+	if address.Equal(keys.Address{}) {
+		fn = balance.addCoin
+	}
+
 	st.iterate(address, func(c string, amt Amount) bool {
 		currency, ok := list.GetCurrencyByName(c)
 		if !ok {
 			err = errors.New("currency not expected")
 			return false
 		}
-		balance.setCoin(currency.NewCoinFromAmount(amt))
+		fn(currency.NewCoinFromAmount(amt))
 
 		return false
 	})

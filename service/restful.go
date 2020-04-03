@@ -67,7 +67,7 @@ func (rs RestfulService) health() http.HandlerFunc {
 }
 
 type clientTokenReq struct {
-	ClientID string `json:"client_id"`
+	ClientID string `json:"clientId"`
 	Username string `json:"username"`
 	Password string `json:"password"`
 }
@@ -103,8 +103,8 @@ func (rs RestfulService) GetToken() http.HandlerFunc {
 
 		rs.ctx.Logger.Error("Validating Username and Password")
 		//Validate Username and Password from request
-		if rs.ctx.Cfg.Node.OwnerCredentials != nil {
-			userList := rs.ctx.Cfg.Node.OwnerCredentials
+		if len(rs.ctx.Cfg.Node.Auth.OwnerCredentials) > 0 {
+			userList := rs.ctx.Cfg.Node.Auth.OwnerCredentials
 
 			for index, value := range userList {
 				//parse value into a pair
@@ -120,14 +120,14 @@ func (rs RestfulService) GetToken() http.HandlerFunc {
 			}
 		}
 
-		if rs.ctx.Cfg.Node.RPCPrivateKey != "" {
+		if rs.ctx.Cfg.Node.Auth.RPCPrivateKey != "" {
 
 			//Hash clientID given in the request and create an encoded token based on the hash
 			h.Write([]byte(clientReq.ClientID))
 			data := h.Sum(nil)[:20]
 
 			//Get Private Key for signature.
-			keyData, err := base64.StdEncoding.DecodeString(rs.ctx.Cfg.Node.RPCPrivateKey)
+			keyData, err := base64.StdEncoding.DecodeString(rs.ctx.Cfg.Node.Auth.RPCPrivateKey)
 			if err != nil {
 				rs.ctx.Logger.Error("Error decoding rpc private key", err)
 				clientResp.Message = err.Error()

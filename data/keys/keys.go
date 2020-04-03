@@ -6,6 +6,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"hash"
 	"math/big"
 
 	"github.com/btcsuite/btcd/btcec"
@@ -276,6 +277,17 @@ type PublicKeyED25519 struct {
 	key ed25519.PubKeyEd25519
 }
 
+func (k PublicKeyED25519) VerifyPreHashMsg(msg []byte, sig []byte, hash hash.Hash) bool {
+	length, err := hash.Write(msg)
+	if length < len(msg) || err != nil {
+		return false
+	}
+	messageHash := hash.Sum(nil)
+
+	//Signature is only valid after at 6th byte
+	return k.key.VerifyBytes(messageHash, sig[TAGLEN:])
+}
+
 func (k PublicKeyED25519) Bytes() []byte {
 	return k.key[:]
 }
@@ -286,6 +298,11 @@ func (k PublicKeyED25519) Address() Address {
 }
 
 func (k PublicKeyED25519) VerifyBytes(msg []byte, sig []byte) bool {
+	//PreHash Feature added for Ledger Nano S/X device.
+	required, hash := PreHashRequired(sig)
+	if required {
+		return k.VerifyPreHashMsg(msg, sig, hash)
+	}
 	return k.key.VerifyBytes(msg, sig)
 }
 

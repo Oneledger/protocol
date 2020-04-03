@@ -66,14 +66,14 @@ func ProcessAllJobs(ctx *JobsContext, js *jobs.JobStore) {
 
 	RangeJobs(js, func(job jobs.Job) jobs.Job {
 
-		fmt.Println("trying to do job:", job.GetType(), job.GetJobID(), job.IsDone())
+		//ctx.Logger.Info("Trying to do job : ", job.GetType())
 
 		func() {
 			defer func() {
 				if r := recover(); r != nil {
-					fmt.Println("panic in job: ", job.GetJobID())
-					fmt.Println(r)
-					fmt.Println(string(debug.Stack()))
+					ctx.Logger.Info("panic in job: ", job.GetJobID())
+					ctx.Logger.Info(r)
+					debug.PrintStack()
 				}
 			}()
 			job.DoMyJob(ctx)
@@ -88,7 +88,7 @@ func RangeJobs(js *jobs.JobStore, pro JobProcess) {
 	jobkeys := make([]string, 0, 20)
 	js.Iterate(func(job jobs.Job) {
 		//fmt.Println("Searching Jobstore",job.GetType())
-		if !job.IsDone() {
+		if !job.IsDone() && !job.IsFailed() {
 			jobkeys = append(jobkeys, job.GetJobID())
 		}
 	})
@@ -99,8 +99,6 @@ func RangeJobs(js *jobs.JobStore, pro JobProcess) {
 			fmt.Println("err get job by key", key)
 			continue
 		}
-
-		fmt.Println("processing job", job)
 		job = pro(job)
 
 		err = js.SaveJob(job)

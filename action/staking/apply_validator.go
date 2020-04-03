@@ -32,7 +32,7 @@ func (apply *ApplyValidator) Unmarshal(data []byte) error {
 }
 
 func (apply ApplyValidator) Signers() []action.Address {
-	return []action.Address{apply.StakeAddress.Bytes(), apply.ValidatorAddress.Bytes()}
+	return []action.Address{apply.ValidatorAddress.Bytes(), apply.StakeAddress.Bytes()}
 }
 
 func (apply ApplyValidator) Type() action.Type {
@@ -56,7 +56,7 @@ func (a applyTx) Validate(ctx *action.Context, tx action.SignedTx) (bool, error)
 		return false, err
 	}
 
-	err = action.ValidateFee(ctx.FeeOpt, tx.Fee)
+	err = action.ValidateFee(ctx.FeePool.GetOpt(), tx.Fee)
 	if err != nil {
 		return false, err
 	}
@@ -74,7 +74,7 @@ func (a applyTx) Validate(ctx *action.Context, tx action.SignedTx) (bool, error)
 	}
 
 	coin := apply.Stake.ToCoin(ctx.Currencies)
-	if coin.LessThanCoin(coin.Currency.NewCoinFromInt(0)) {
+	if coin.LessThanEqualCoin(coin.Currency.NewCoinFromInt(0)) {
 		return false, action.ErrInvalidAmount
 	}
 

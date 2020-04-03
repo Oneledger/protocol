@@ -62,7 +62,7 @@ func (store KeyValue) Delete(StoreKey) (bool, error) {
 	panic("implement me")
 }
 
-func (store KeyValue) GetIterator() Iteratable {
+func (store KeyValue) GetIterable() Iterable {
 	return &KeyValueIterator{
 		store.tree,
 	}
@@ -296,17 +296,17 @@ func (session KeyValueSession) Commit() bool {
 	return true
 }
 
-func (session KeyValueSession) GetIterator() Iteratable {
+func (session KeyValueSession) GetIterable() Iterable {
 	return session
 }
 
-// GetIterator dummy iterator
+// GetIterable dummy iterator
 func (session KeyValueSession) Iterate(fn func(key []byte, value []byte) bool) (stopped bool) {
 	return session.store.Iterate(fn)
 }
 
 func (session KeyValueSession) IterateRange(start, end []byte, ascending bool, fn func(key, value []byte) bool) (stop bool) {
-	return session.store.GetIterator().IterateRange(start, end, ascending, fn)
+	return session.store.GetIterable().IterateRange(start, end, ascending, fn)
 }
 
 // Rollback any changes since the last commit

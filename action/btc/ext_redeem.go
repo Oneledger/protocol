@@ -53,7 +53,7 @@ func (bl Redeem) Tags() common.KVPairs {
 		Value: bl.Redeemer,
 	}
 	tag4 := common.KVPair{
-		Key:   []byte("tx.redeem_curr"),
+		Key:   []byte("tx.redeem_currency"),
 		Value: []byte("BTC"),
 	}
 
@@ -86,7 +86,7 @@ func (btcRedeemTx) Validate(ctx *action.Context, signedTx action.SignedTx) (bool
 		return false, err
 	}
 
-	err = action.ValidateFee(ctx.FeeOpt, signedTx.Fee)
+	err = action.ValidateFee(ctx.FeePool.GetOpt(), signedTx.Fee)
 	if err != nil {
 		return false, err
 	}
@@ -121,7 +121,8 @@ func (btcRedeemTx) Validate(ctx *action.Context, signedTx action.SignedTx) (bool
 		return false, errors.New("txn doesn't match tracker")
 	}
 
-	if !bitcoin2.ValidateRedeem(tx, ctx.BlockCypherToken, ctx.BlockCypherChainType, tracker.CurrentTxId,
+	opt := ctx.BTCTrackers.GetConfig()
+	if !bitcoin2.ValidateRedeem(tx, opt.BlockCypherToken, opt.BlockCypherChainType, tracker.CurrentTxId,
 		tracker.ProcessLockScriptAddress, tracker.CurrentBalance, redeem.RedeemAmount) {
 
 		return false, errors.New("txn doesn't match tracker")
@@ -215,7 +216,7 @@ func runExtRedeem(ctx *action.Context, tx action.RawTx) (bool, action.Response) 
 		return false, action.Response{Log: "failed to subtract currency err:" + err.Error()}
 	}
 
-	tally := action.Address(lockBalanceAddress)
+	tally := action.Address(ctx.BTCTrackers.GetOption().TotalSupplyAddr)
 	err = ctx.Balances.MinusFromAddress(tally, coin)
 	if err != nil {
 		return false, action.Response{Log: "failed to subtract currency err:" + err.Error()}

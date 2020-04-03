@@ -26,17 +26,19 @@ type cache struct {
 	name  string
 	store map[string][]byte
 	keys  []string
+	done  map[string]bool
 }
 
 // cache satisfies Store interface
 var _ Store = &cache{}
-var _ Iteratable = &cache{}
+var _ Iterable = &cache{}
 
 func NewCache(name string) *cache {
 	return &cache{
 		name:  name,
 		store: make(map[string][]byte),
 		keys:  make([]string, 0, 100),
+		done:  make(map[string]bool),
 	}
 }
 
@@ -63,18 +65,20 @@ func (c *cache) Exists(key StoreKey) bool {
 func (c *cache) Set(key StoreKey, dat []byte) error {
 
 	c.store[string(key)] = dat
-	c.keys = append(c.keys, string(key))
+	if d, ok := c.done[string(key)]; !ok || !d {
+		c.keys = append(c.keys, string(key))
+		c.done[string(key)] = true
+	}
 	return nil
 }
 
 // Delete removes any data stored against a key
 func (c *cache) Delete(key StoreKey) (bool, error) {
-
 	delete(c.store, string(key))
 	return true, nil
 }
 
-func (c *cache) GetIterator() Iteratable {
+func (c *cache) GetIterable() Iterable {
 	return c
 }
 
@@ -146,11 +150,11 @@ func (c *cacheSafe) Delete(key StoreKey) (bool, error) {
 	return c.cache.Delete(key)
 }
 
-func (c *cacheSafe) GetIterator() Iteratable {
+func (c *cacheSafe) GetIterable() Iterable {
 	c.RLock()
 	defer c.RUnlock()
 
-	return c.cache.GetIterator()
+	return c.cache.GetIterable()
 }
 
 func (c *cacheSafe) Iterate(fn func(key []byte, value []byte) bool) (stopped bool) {
