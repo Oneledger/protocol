@@ -17,7 +17,7 @@ olfullnode init devnet --dir $OLDATA/devnet --validators 4 --nonvalidators 1 \
 
 
 
-
+#"46c6cd6cb4dbb9675c8c1ff693f62918930d3a35@34.70.164.191"
 
 
 #olfullnode init devnet --dir $OLDATA/devnet --nonvalidators 1 \
