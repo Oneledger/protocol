@@ -124,7 +124,8 @@ func (svc *Service) FeeOptions(_ struct{}, reply *client.FeeOptionsReply) error 
 func (svc *Service) ListTxTypes(_ client.ListTxTypesRequest, reply *client.ListTxTypesReply) error {
 	var txTypes []action.TxTypeDescribe
 	//find all const types that less than EOF marker
-	//and not "UNKNOWN"
+	//and not "UNKNOWN"(this also prevents the potential future const that not be the type: "Type"
+	//from showing up)
 	for i := 0; i < int(action.EOF); i++{
 		if strings.Compare(action.Type(i).String(), "UNKNOWN") != 0 {
 			txTypeDescribe := action.TxTypeDescribe{
