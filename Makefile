@@ -140,3 +140,9 @@ stop:
 
 start:
 	@./scripts/startDev
+
+
+save:
+	@./scripts/stopDev
+	@./scripts/saveState
+	@./scripts/startDev

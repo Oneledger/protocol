@@ -3,15 +3,18 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	ethChain "github.com/Oneledger/protocol/chains/ethereum"
+	"github.com/Oneledger/protocol/data/ethereum"
+
+	"github.com/Oneledger/protocol/data/governance"
+	"github.com/tendermint/tendermint/types"
 	"io"
 	"os"
 	"path/filepath"
 	"strings"
 
-	"github.com/Oneledger/protocol/data/governance"
-
 	"github.com/Oneledger/protocol/app"
-	olnode "github.com/Oneledger/protocol/app/node"
+	olNode "github.com/Oneledger/protocol/app/node"
 	"github.com/Oneledger/protocol/config"
 	"github.com/Oneledger/protocol/consensus"
 	"github.com/Oneledger/protocol/data/balance"
@@ -23,6 +26,36 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 )
+
+// ConsensusParams contains consensus critical parameters that determine the
+// validity of blocks. Originally from Tendermint but redefined here to
+// customize the JSON output as all values need to be encoded as string.
+type ConsensusParams struct {
+	Block     BlockParams     `json:"block"`
+	Evidence  EvidenceParams  `json:"evidence"`
+	Validator ValidatorParams `json:"validator"`
+}
+
+// BlockParams define limits on the block size and gas plus minimum time
+// between blocks.
+type BlockParams struct {
+	MaxBytes int64 `json:"max_bytes,string"`
+	MaxGas   int64 `json:"max_gas,string"`
+	// Minimum time increment between consecutive blocks (in milliseconds)
+	// Not exposed to the application.
+	TimeIotaMs int64 `json:"time_iota_ms,string"`
+}
+
+// EvidenceParams determine how we handle evidence of malfeasance.
+type EvidenceParams struct {
+	MaxAge int64 `json:"max_age,string"` // only accept new evidence more recent than this
+}
+
+// ValidatorParams restrict the public key types validators can use.
+// NOTE: uses ABCI pubkey naming, not Amino names.
+type ValidatorParams struct {
+	PubKeyTypes []string `json:"pub_key_types"`
+}
 
 var saveStateCmd = &cobra.Command{
 	Use:   "save_state",
@@ -76,7 +109,7 @@ func SaveState(cmd *cobra.Command, args []string) error {
 		return errors.Wrap(err, "failed to initialize config")
 	}
 
-	appNodeContext, err := olnode.NewNodeContext(ctx.cfg)
+	appNodeContext, err := olNode.NewNodeContext(ctx.cfg)
 	if err != nil {
 		return errors.Wrap(err, "failed to create app's node context")
 	}
@@ -85,13 +118,22 @@ func SaveState(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return errors.Wrap(err, "failed to create new app")
 	}
+
 	err = application.Prepare()
 	if err != nil {
 		return err
 	}
 
-	return SaveChainState(application, saveStateCtx.outputDir, saveStateCtx.filename)
+	return SaveChainState(application, saveStateCtx.filename, saveStateCtx.outputDir)
+}
 
+func formatConsensusParams(params *types.ConsensusParams) ConsensusParams {
+	cParams := ConsensusParams{
+		Block:     BlockParams(params.Block),
+		Evidence:  EvidenceParams(params.Evidence),
+		Validator: ValidatorParams(params.Validator),
+	}
+	return cParams
 }
 
 func startBlock(writer io.Writer, name string) bool {
@@ -116,7 +158,14 @@ func writeStruct(writer io.Writer, obj interface{}) bool {
 		return false
 	}
 	_, err = writer.Write(str)
+	if err != nil {
+		return false
+	}
 	_, err = writer.Write([]byte("\n"))
+	if err != nil {
+		return false
+	}
+
 	return true
 }
 
@@ -142,6 +191,8 @@ func writeListWithTag(ctx app.StorageCtx, writer io.Writer, tag string) bool {
 		DumpStakingToFile(ctx.Validators, writer, writeStruct)
 	case "domains":
 		DumpDomainToFile(ctx.Domains, ctx.Version, writer, writeStruct)
+	case "trackers":
+		DumpTrackerToFile(ctx.Trackers, writer, writeStruct)
 	case "fees":
 		DumpFeesToFile(ctx.FeePool, writer, writeStruct)
 		delimiter = ""
@@ -184,6 +235,13 @@ func SaveChainState(application *app.App, filename string, directory string) err
 	//Start writing state to output file
 	path := filepath.Join(directory, filename)
 	writer, err := os.Create(path)
+	if err != nil {
+		return err
+	}
+
+	defer func() {
+		_ = writer.Close()
+	}()
 
 	token, err := jsonDecoder.Token()
 	_, err = fmt.Fprint(writer, token)
@@ -194,11 +252,11 @@ func SaveChainState(application *app.App, filename string, directory string) err
 
 		switch value := fmt.Sprintf("%s", token); value {
 		case "genesis_time":
-			writeStructWithTag(writer, genesisDoc.GenesisTime, value)
+			writeStructWithTag(writer, genesisDoc.GenesisTime.UTC(), value)
 		case "chain_id":
 			writeStructWithTag(writer, genesisDoc.ChainID, value)
 		case "consensus_params":
-			writeStructWithTag(writer, genesisDoc.ConsensusParams, value)
+			writeStructWithTag(writer, formatConsensusParams(genesisDoc.ConsensusParams), value)
 		case "validators":
 			writeStructWithTag(writer, genesisDoc.Validators, value)
 		}
@@ -213,6 +271,7 @@ func SaveChainState(application *app.App, filename string, directory string) err
 	writeListWithTag(ctx, writer, "balances")
 	writeListWithTag(ctx, writer, "staking")
 	writeListWithTag(ctx, writer, "domains")
+	writeListWithTag(ctx, writer, "trackers")
 	writeListWithTag(ctx, writer, "fees")
 	endBlock(writer)
 
@@ -221,7 +280,8 @@ func SaveChainState(application *app.App, filename string, directory string) err
 	if err != nil {
 		return err
 	}
-	return writer.Close()
+
+	return nil
 }
 
 func DumpFeesToFile(st *fees.Store, writer io.Writer, fn func(writer io.Writer, obj interface{}) bool) {
@@ -304,15 +364,19 @@ func DumpDomainToFile(ds *ons.DomainStore, height int64, writer io.Writer, fn fu
 	delimiter := ","
 
 	ds.Iterate(func(name ons.Name, domain *ons.Domain) bool {
-		if iterator != 0 {
-			_, err := writer.Write([]byte(delimiter))
-			if err != nil {
-				return true
-			}
-		}
+
 		if domain.ExpireHeight < height {
 			return false
 		}
+
+		if iterator != 0 {
+			_, err := writer.Write([]byte(delimiter))
+			if err != nil {
+
+				return true
+			}
+		}
+
 		domainState := consensus.DomainState{}
 		domainState.Name = domain.Name.String()
 		domainState.Beneficiary = domain.Beneficiary
@@ -325,11 +389,44 @@ func DumpDomainToFile(ds *ons.DomainStore, height int64, writer io.Writer, fn fu
 		domainState.URI = domain.URI
 		domainState.SalePrice = domain.SalePrice
 
-		fn(writer, domainState)
+		if !fn(writer, domainState) {
+			return true
+		}
 		iterator++
 		return false
 	})
 	return
+}
+
+//Save all Current trackers to Genesis file. Currently only supported for Ethereum.
+//TODO: Add support for Bitcoin
+func DumpTrackerToFile(ts *ethereum.TrackerStore, writer io.Writer, fn func(writer io.Writer, obj interface{}) bool) {
+	iterator := 0
+	delimiter := ","
+
+	ts.Iterate(func(name *ethChain.TrackerName, tracker *ethereum.Tracker) bool {
+		if iterator != 0 {
+			_, err := writer.Write([]byte(delimiter))
+			if err != nil {
+				return true
+			}
+		}
+
+		trackerState := consensus.Tracker{}
+		trackerState.Type = tracker.Type
+		trackerState.State = tracker.State
+		trackerState.FinalityVotes = tracker.FinalityVotes
+		trackerState.ProcessOwner = tracker.ProcessOwner
+		trackerState.SignedETHTx = tracker.SignedETHTx
+		trackerState.TrackerName = tracker.TrackerName
+		trackerState.Validators = tracker.Validators
+		trackerState.To = tracker.To
+
+		fn(writer, trackerState)
+		iterator++
+
+		return false
+	})
 }
 
 func GetGovernance(gs *governance.Store) *consensus.GovernanceState {

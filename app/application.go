@@ -2,6 +2,7 @@ package app
 
 import (
 	"fmt"
+	"github.com/Oneledger/protocol/data/ethereum"
 	"net/url"
 	"os"
 
@@ -195,6 +196,15 @@ func (app *App) setupState(stateBytes []byte) error {
 			return errors.Wrap(err, "failed to setup initial fee")
 		}
 	}
+	//TODO: Initialize BTC Trackers in the future.
+	for _, tracker := range initial.Trackers {
+		tr := ethereum.NewTracker(tracker.Type, tracker.ProcessOwner, tracker.SignedETHTx, tracker.TrackerName, tracker.Validators)
+		err = app.Context.ethTrackers.WithState(app.Context.deliver).Set(tr)
+		if err != nil {
+			return errors.Wrap(err, "failed to setup initial Trackers")
+		}
+	}
+
 	app.Context.deliver.Write()
 	return nil
 }
