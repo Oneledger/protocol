@@ -93,7 +93,7 @@ contract LockRedeem {
 
 
 
-    constructor(address[] memory initialValidators,uint _lock_period,uint multiplier) public {
+    constructor(address[] memory initialValidators,uint _lock_period) public {
         // Require at least 4 validators
         require(initialValidators.length >= MIN_VALIDATORS, "insufficient validators passed to constructor");
 
@@ -106,7 +106,7 @@ contract LockRedeem {
         }
         ACTIVE = true ;
         LOCK_PERIOD = _lock_period;
-        validatorEarningMultiplier = multiplier;
+        //validatorEarningMultiplier = multiplier;
         votingThreshold = (initialValidators.length * 2 / 3) + 1;
         activeThreshold = (initialValidators.length * 1 / 3) + 1;
 
