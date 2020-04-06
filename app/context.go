@@ -83,7 +83,7 @@ func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *node.Context) (
 	}
 	ctx.db = db
 	ctx.chainstate = storage.NewChainState("chainstate", db)
-	ctx.chainstate.SetupRotation(10, 100, 10)
+	ctx.chainstate.SetupRotation(ctx.cfg.Node.ChainStateRotation.Recent, ctx.cfg.Node.ChainStateRotation.Every, ctx.cfg.Node.ChainStateRotation.Cycles)
 	ctx.deliver = storage.NewState(ctx.chainstate)
 	ctx.check = storage.NewState(ctx.chainstate)
 
