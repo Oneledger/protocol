@@ -234,14 +234,13 @@ func doOnsTrasactions() {
 	//fmt.Println("Running python script")
 	cmd := exec.Command("python", "ons/create_sub_domain.py")
 	out, err := cmd.Output()
-
 	if err != nil {
 		fmt.Println(string(out))
 		fmt.Println("Error in python script : ", err.Error())
 		return
 	}
 
-	//fmt.Println(string(out))
+	fmt.Println(string(out))
 
 }
 

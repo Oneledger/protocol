@@ -4,18 +4,18 @@ for name in $(ls -l $OLDATA/devnet | awk '(NR >0 && NR < 3){print $9}')
 do
     #echo "start loadtest on node: $name"
     echo "starting loadtest on devnet"
-    time olclient loadtest --root $OLDATA/devnet/$name --threads 10 --interval 5 --max-tx 200000  --rpcAddress http://130.211.124.62:26604 --sdkAddress http://130.211.124.62:26606 #>> /dev/null &
+    time olclient loadtest --root $OLDATA/devnet/$name --threads 10 --interval 5 --max-tx 200000  --rpcAddress http://34.70.164.191:26604 --sdkAddress http://34.70.164.191:26606 #>> /dev/null &
     sleep 1
 done
 
-c=0
-while [ $c -lt 4 ]
-do
-    sleep 10
-    name=$(ls -l $OLDATA/devnet | awk '(NR==4){print $9}')
-    c=$(grep Loadtest $OLDATA/devnet/$name/olfullnode.log | wc -l )
-done
-
-grep Loadtest $OLDATA/devnet/$name/olfullnode.log
+#c=0
+#while [ $c -lt 4 ]
+#do
+#    sleep 10
+#    name=$(ls -l $OLDATA/devnet | awk '(NR==4){print $9}')
+#    c=$(grep Loadtest $OLDATA/devnet/$name/olfullnode.log | wc -l )
+#done
+#
+#grep Loadtest $OLDATA/devnet/$name/olfullnode.log
 
 sleep 1
