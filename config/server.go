@@ -190,6 +190,8 @@ type NodeConfig struct {
 	Services []string `toml:"services" desc:"List of services used by the current Node. Possible valued [broadcast, node, owner, query, tx]"`
 
 	Auth Authorisation `toml:"Auth" desc:"the OwnerCredentials and RPCPrivateKey should be configured together"`
+
+	ChainStateRotation ChainStateRotationCfg `toml:"ChainStateRotation" desc:"the schedule for chain state rotation"`
 }
 
 type Authorisation struct {
@@ -198,6 +200,26 @@ type Authorisation struct {
 
 	//Private Key for RPC Authentication
 	RPCPrivateKey string `toml:"rpc_private_key" desc:"(ED25519 key) This private key will be used to generate a token for authentication through RPC Port; if not configured, anyone can access the SDK rpc port without authentication"`
+}
+
+type ChainStateRotationCfg struct {
+	//persistent data config
+
+	// "recent" : latest number of version to persist
+	// recent = 0 : keep last version only
+	// recent = 3 : keep last 4 version
+	Recent int64
+
+	// "every"  : every X number of version to persist
+	// every = 0 : keep no other epoch version
+	// every = 1 : keep every version
+	// every > 1 : epoch number = every
+	Every int64
+
+	// "cycles" : number of latest cycles for "every" to persist
+	// cycles = 1 : only keep one of latest every
+	// cycles = 0 : keep every "every"
+	Cycles int64
 }
 
 func DefaultNodeConfig() *NodeConfig {
@@ -213,7 +235,17 @@ func DefaultNodeConfig() *NodeConfig {
 			OwnerCredentials: []string{},
 			RPCPrivateKey:    "",
 		},
-		Services: []string{"broadcast", "node", "owner", "query", "tx", "btc", "eth"},
+
+
+		ChainStateRotation: ChainStateRotationCfg{
+			Recent: 10,
+			Every: 100,
+			Cycles: 10,
+		},
+
+		//"btc" service temporarily disabled
+		Services: []string{"broadcast", "node", "owner", "query", "tx", "eth"},
+
 	}
 }
 

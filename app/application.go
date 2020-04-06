@@ -12,7 +12,6 @@ import (
 	"github.com/tendermint/tendermint/libs/common"
 
 	"github.com/Oneledger/protocol/action"
-	"github.com/Oneledger/protocol/action/btc"
 	"github.com/Oneledger/protocol/action/eth"
 	"github.com/Oneledger/protocol/app/node"
 	bitcoin2 "github.com/Oneledger/protocol/chains/bitcoin"
@@ -367,11 +366,12 @@ func (app *App) Start() error {
 	}
 
 	internalRouter := action.NewRouter("internal")
-	err = btc.EnableBTCInternalTx(internalRouter)
-	if err != nil {
-		app.logger.Error("Failed to register btc internal transactions")
-		return err
-	}
+	//"btc" service temporarily disabled
+	//err = btc.EnableBTCInternalTx(internalRouter)
+	//if err != nil {
+	//	app.logger.Error("Failed to register btc internal transactions")
+	//	return err
+	//}
 	err = eth.EnableInternalETH(internalRouter)
 	if err != nil {
 		app.logger.Error("failed to register eth internal transaction")

@@ -149,9 +149,6 @@ func runLock(ctx *action.Context, lock *Lock) (bool, action.Response) {
 			Log: "decode eth txn error" + err.Error(),
 		}
 	}
-	//fmt.Println("ETH options : " , ctx.ETHTrackers.GetOption())
-	//ctx.Logger.Info("ETH OPTIONS ABI :" ,ctx.ETHTrackers.GetOption().ContractABI)
-	//ctx.Logger.Info("ETH OPTIONS ADDRESS :" ,ctx.ETHTrackers.GetOption().ContractAddress)
 
 	cdOptions := ctx.ETHTrackers.GetOption()
 
@@ -200,13 +197,21 @@ func runLock(ctx *action.Context, lock *Lock) (bool, action.Response) {
 	if !balCoin.Plus(lockCoin).LessThanEqualCoin(totalSupplyCoin) {
 		return false, action.Response{Log: fmt.Sprintf("Eth lock exceeded limit", lock.Locker)}
 	}
-
+	name := ethcommon.BytesToHash(lock.ETHTxn)
+	if ctx.ETHTrackers.WithPrefixType(ethereum.PrefixOngoing).Exists(name) || ctx.ETHTrackers.WithPrefixType(ethereum.PrefixPassed).Exists(name) {
+		return false, action.Response{
+			Log: "Tracker already exists / Lock for this ETHTX in progress or has completed successfully",
+		}
+	}
+	if ctx.ETHTrackers.WithPrefixType(ethereum.PrefixFailed).Exists(name) {
+		ctx.ETHTrackers.WithPrefixType(ethereum.PrefixFailed).Delete(name)
+	}
 	// Create ethereum tracker
 	tracker := ethereum.NewTracker(
 		ethereum.ProcessTypeLock,
 		lock.Locker,
 		lock.ETHTxn,
-		ethcommon.BytesToHash(lock.ETHTxn),
+		name,
 		val,
 	)
 

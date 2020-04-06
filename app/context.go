@@ -9,7 +9,6 @@ import (
 	"github.com/tendermint/tendermint/libs/db"
 
 	"github.com/Oneledger/protocol/action"
-	"github.com/Oneledger/protocol/action/btc"
 	"github.com/Oneledger/protocol/action/eth"
 	action_ons "github.com/Oneledger/protocol/action/ons"
 	"github.com/Oneledger/protocol/action/staking"
@@ -84,7 +83,7 @@ func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *node.Context) (
 	}
 	ctx.db = db
 	ctx.chainstate = storage.NewChainState("chainstate", db)
-	ctx.chainstate.SetupRotation(10, 100, 10)
+	ctx.chainstate.SetupRotation(ctx.cfg.Node.ChainStateRotation.Recent, ctx.cfg.Node.ChainStateRotation.Every, ctx.cfg.Node.ChainStateRotation.Cycles)
 	ctx.deliver = storage.NewState(ctx.chainstate)
 	ctx.check = storage.NewState(ctx.chainstate)
 
@@ -115,7 +114,8 @@ func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *node.Context) (
 	_ = transfer.EnableSend(ctx.actionRouter)
 	_ = staking.EnableApplyValidator(ctx.actionRouter)
 	_ = action_ons.EnableONS(ctx.actionRouter)
-	_ = btc.EnableBTC(ctx.actionRouter)
+	//"btc" service temporarily disabled
+	//_ = btc.EnableBTC(ctx.actionRouter)
 	_ = eth.EnableETH(ctx.actionRouter)
 	return ctx, nil
 }
