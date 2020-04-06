@@ -263,3 +263,8 @@ type MaxTrackerBalanceReply struct {
 type FeeOptionsReply struct {
 	FeeOption fees.FeeOption `json:"feeOption"`
 }
+
+type ListTxTypesRequest struct{}
+type ListTxTypesReply struct{
+	TxTypes []action.TxTypeDescribe `json:"txTypes"`
+}
