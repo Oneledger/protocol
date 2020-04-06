@@ -122,7 +122,9 @@ func (app *App) blockBeginner() blockBeginner {
 		if err != nil {
 			app.logger.Error("validator set with error", err)
 		}
-
+		if req.Header.Height >= 10174 {
+			fmt.Println("")
+		}
 		result := ResponseBeginBlock{
 			Tags: []common.KVPair(nil),
 		}
