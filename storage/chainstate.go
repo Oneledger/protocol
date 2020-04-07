@@ -183,7 +183,7 @@ func (state *ChainState) Commit() ([]byte, int64) {
 				log.Error("Failed to delete old version of chainstate", "err:", err, "version:", release)
 			}
 		}
-		if state.chainStateRotation.cycles != 0 && release%state.chainStateRotation.every == 0 {
+		if state.chainStateRotation.cycles != 0 && state.chainStateRotation.every != 0 && release%state.chainStateRotation.every == 0 {
 			release = release - state.chainStateRotation.cycles*state.chainStateRotation.every
 			err := state.Delivered.DeleteVersion(release)
 			if err != nil {
