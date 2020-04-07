@@ -6,12 +6,7 @@ contract LockRedeem {
 
     // numValidators holds the total number of validators
     uint public numValidators;
-    //
-    // struct ValidatorDetails {
-    //     uint votingPower;
-    //     uint validatorFee;
-    //     uint8 index;
-    // }
+
     mapping (address => uint8) public validators;
     address[] validatorList;
 
@@ -23,9 +18,10 @@ contract LockRedeem {
     //the cost of a contract deployment (32000 gas) [Not relevant for sign trasaction]
     //the cost for every zero byte of data or code for a transaction.
     //the cost of every non-zero byte of data or code for a transaction.
-    uint trasactionCost = 23192 ;
+    uint transactionCost = 23192 ;
     uint additionalGasCost = 37692 ;
-    uint redeem_gas_charge = 10000000000000000;
+    uint redeemGasCharge = 10000000000000000;
+    uint validatorEarningMultiplier = 1;
 
     uint public migrationSignatures;
     mapping (address => bool) public migrationSigners;
@@ -33,8 +29,9 @@ contract LockRedeem {
     address [] migrationAddress;
 
     // Default Voting power should be updated at one point
-    int constant DEFAULT_VALIDATOR_POWER = 100;
+    //int constant DEFAULT_VALIDATOR_POWER = 100;
     uint constant MIN_VALIDATORS = 0;
+
     //Approx
     // 270 blocks per hour
     // 5 blocks per min
@@ -109,6 +106,7 @@ contract LockRedeem {
         }
         ACTIVE = true ;
         LOCK_PERIOD = _lock_period;
+        //validatorEarningMultiplier = multiplier;
         votingThreshold = (initialValidators.length * 2 / 3) + 1;
         activeThreshold = (initialValidators.length * 1 / 3) + 1;
 
@@ -130,7 +128,7 @@ contract LockRedeem {
         if (migrationSignatures == activeThreshold) {
             ACTIVE = false ;
         }
-        // Trasfer needs to be done only once
+        // Transfer needs to be done only once
         if (migrationSignatures == votingThreshold) {
             uint voteCount = 0 ;
             address maxVotedAddress ;
@@ -154,9 +152,8 @@ contract LockRedeem {
     function redeem(uint256 amount_)  payable public isActive {
         require(isredeemAvailable(msg.sender) ,"redeem to this address is not available yet");
         require(amount_ > 0, "amount should be bigger than 0");
-        require(msg.value + redeemRequests[msg.sender].redeemFee >= redeem_gas_charge ,"Redeem fee not provided");
+        require(msg.value + redeemRequests[msg.sender].redeemFee >= redeemGasCharge,"Redeem fee not provided");
 
-        // redeemRequests[msg.sender].isProcessing = true;
         redeemRequests[msg.sender].signature_count = uint256(0);
         redeemRequests[msg.sender].recipient = msg.sender;
         redeemRequests[msg.sender].amount = amount_ ;
@@ -178,7 +175,7 @@ contract LockRedeem {
         redeemRequests[recipient_].votes = redeemRequests[recipient_].votes + (uint256(1) << validators[msg.sender]);
         redeemRequests[recipient_].signature_count += 1;
 
-        // if reach threshold, transfer
+        // if threshold is reached, transfer
         if (redeemRequests[recipient_].signature_count >= votingThreshold ) {
             (bool success, ) = redeemRequests[recipient_].recipient.call.value((redeemRequests[recipient_].amount))("");
             require(success, "Transfer failed.");
@@ -189,18 +186,15 @@ contract LockRedeem {
         // Trasaction Cost is a an average trasaction cost .
         // additionalGasCost is the extra gas used by the lines of code after gas calculation is done.
         // This is an approximate calcualtion and actuall cost might vary sightly .
-        uint gasUsed = startGas - gasleft() + trasactionCost + additionalGasCost ;
-        //validators[msg.sender].validatorFee = gasUsed;
+        uint gasUsed = startGas - gasleft() + transactionCost + additionalGasCost ;
         uint gasFee = gasUsed * tx.gasprice;
+        gasFee = gasFee * validatorEarningMultiplier;
         (bool success, ) = msg.sender.call.value(gasFee)("");
-        // require(success, "Transfer back to validator failed");
+        require(success, "Transfer back to validator failed");
         redeemRequests[recipient_].redeemFee -= gasFee;
         emit ValidatorSignedRedeem(recipient_, msg.sender, amount_,gasFee);
     }
 
-    // function validatorFee() public view isActive onlyValidator returns(uint) {
-    //     return validators[msg.sender].validatorFee;
-    // }
 
     function collectUserFee() public isActive {
         require(verifyRedeem(msg.sender) > 0 , "request signing is still in progress");
@@ -247,9 +241,6 @@ contract LockRedeem {
     // internal functions
     function addValidator(address v) internal {
         validatorList.push(v);
-
-        //validators[v].votingPower = DEFAULT_VALIDATOR_POWER;
-        //validators[v].validatorFee = 0;
         validators[v] = uint8(validatorList.length);
         emit AddValidator(v);
     }
