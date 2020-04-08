@@ -16,6 +16,7 @@ package storage
 
 import (
 	"bytes"
+	"github.com/Oneledger/protocol/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/tendermint/tendermint/libs/db"
 	"math"
@@ -124,12 +125,15 @@ func TestChainState_Rotation(t *testing.T) {
 	calculatedRound := testRound - 1
 
 	//set up recent, every, cycles
-	recent := int64(10)
-	every := int64(100)
-	cycles := int64(10)
+	rotation := config.ChainStateRotationCfg{
+		Recent : int64(10),
+		Every : int64(100),
+		Cycles : int64(10),
+	}
+
 	//generate multiple versions
 	state := NewChainState("RotationTest", cacheDB)
-	state.SetupRotation(recent, every, cycles)
+	state.SetupRotation(rotation)
 
 
 	//version start from 1
@@ -158,6 +162,9 @@ func TestChainState_Rotation(t *testing.T) {
 	}
 
 	var correct int64
+	recent := rotation.Recent
+	every := rotation.Every
+	cycles := rotation.Cycles
 
 	// first figure out how many 'every' is reached
 	// here reachedEvery only consider the ones outside 'recent'
