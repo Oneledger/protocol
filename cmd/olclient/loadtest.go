@@ -74,8 +74,8 @@ func init() {
 
 	loadtestCmd.Flags().BytesHexVar(&loadTestArgs.address, "address", []byte(nil),
 		"fund address that loadtest uses")
-	loadtestCmd.Flags().StringVar(&loadTestArgs.rpcAddress, "rpcAddress", "tcp://127.0.0.1:26608", "rpc endpoint which will be used")
-	loadtestCmd.Flags().StringVar(&loadTestArgs.sdkAddress, "sdkAddress", "http://127.0.0.1:26610", "sdk endpoint which will be used")
+	loadtestCmd.Flags().StringVar(&loadTestArgs.rpcAddress, "rpcAddress", "tcp://127.0.0.1:26600", "rpc endpoint which will be used")
+	loadtestCmd.Flags().StringVar(&loadTestArgs.sdkAddress, "sdkAddress", "http://127.0.0.1:26602", "sdk endpoint which will be used")
 }
 
 // loadTest function spawns a few thread which create an account and execute send transactions on the
@@ -241,7 +241,6 @@ func doOnsTrasactions() {
 	}
 
 	fmt.Println(string(out))
-
 }
 
 // doSendTransaction takes in an account and currency object and sends random amounts of coin from the
@@ -337,14 +336,3 @@ func handleSigTerm(c chan os.Signal, counterChan chan int, stopChan chan bool,
 		}
 	}
 }
-
-//I[2020-03-26T15:24:10-04:00] app: Loadtest metric height=10, total_tx =6463, tx/b=646, blktime=1.036688 , tps=889.922322
-//I[2020-03-26T15:24:27-04:00] app: Loadtest metric height=30, total_tx =24799, tx/b=826, blktime=1.009512 , tps=909.644127
-//I[2020-03-26T15:24:50-04:00] app: Loadtest metric height=50, total_tx =46567, tx/b=931, blktime=1.005464 , tps=985.297080
-//I[2020-03-26T15:25:11-04:00] app: Loadtest metric height=70, total_tx =65776, tx/b=939, blktime=1.011063 , tps=970.915257
-//I[2020-03-26T15:25:32-04:00] app: Loadtest metric height=90, total_tx =86403, tx/b=960, blktime=1.019297 , tps=974.279540
-//I[2020-03-26T15:25:53-04:00] app: Loadtest metric height=110, total_tx =107656, tx/b=978, blktime=1.033474 , tps=973.497410
-//I[2020-03-26T15:26:15-04:00] app: Loadtest metric height=130, total_tx =128185, tx/b=986, blktime=1.030771 , tps=979.161571
-//I[2020-03-26T15:26:40-04:00] app: Loadtest metric height=150, total_tx =151940, tx/b=1012, blktime=1.060506 , tps=974.602512
-//I[2020-03-26T15:27:02-04:00] app: Loadtest metric height=170, total_tx =172922, tx/b=1017, blktime=1.066872 , tps=970.530044
-//I[2020-03-26T15:27:26-04:00] app: Loadtest metric height=190, total_tx =196138, tx/b=1032, blktime=1.080966 , tps=970.279690

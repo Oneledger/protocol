@@ -1,4 +1,4 @@
-from rpc_call import rpc_call, converBigInt
+from rpc_call import rpc_call, converBigInt, faucet_call
 import json
 
 def create_domain(name, owner_hex, price):
@@ -117,6 +117,10 @@ def new_account(name):
     resp = rpc_call('owner.GenerateNewAccount', {'name': name})
     return resp['result']
 
+
+def req_olt(address):
+    resp = faucet_call('faucet.RequestOLT', {"address": address, "amount": 30000000})
+    return resp
 
 def addresses():
     resp = rpc_call('owner.ListAccountAddresses', {})

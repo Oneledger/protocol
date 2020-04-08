@@ -4,10 +4,10 @@ for name in $(ls -l $OLDATA/devnet | awk '(NR >0 && NR < 3){print $9}')
 do
     #echo "start loadtest on node: $name"
     echo "starting loadtest on devnet"
-    time olclient loadtest --root $OLDATA/devnet/$name --threads 10 --interval 5 --max-tx 200000  --rpcAddress http://34.70.164.191:26604 --sdkAddress http://34.70.164.191:26606 #>> /dev/null &
+    time olclient loadtest --root $OLDATA/devnet/$name --threads 10 --interval 5 --max-tx 200000  --rpcAddress http://35.184.133.167:26604 --sdkAddress http://35.184.133.167:26606 #>> /dev/null &
     sleep 1
 done
-
+# --rpcAddress http://34.70.164.191:26604 --sdkAddress http://34.70.164.191:26606
 #c=0
 #while [ $c -lt 4 ]
 #do

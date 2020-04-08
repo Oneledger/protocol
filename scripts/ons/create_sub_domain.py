@@ -11,11 +11,14 @@ import sys
 import time
 import  calendar
 import uuid
+import random
 from sdk.actions import *
 
 if __name__ == "__main__":
     addrs = addresses()
-
+    index = random.randrange(10)
+    print req_olt(addrs[index])
+    time.sleep(1)
     """
         ****** Create Initial Domain ******
     """
@@ -25,20 +28,21 @@ if __name__ == "__main__":
    # print name
    # name = "alice2.ol"
     create_price = (int("10002345") * 10 ** 14)
+
    # print "create price:", create_price
 
     # Get raw transaction for domain creation
-    raw_txn = create_domain(name, addrs[0], create_price)
+    raw_txn = create_domain(name, addrs[index], create_price)
     #print "raw create domain tx:", raw_txn
 
     # Sign raw Transaction
-    signed = sign(raw_txn, addrs[0])
+    signed = sign(raw_txn, addrs[index])
     #print "signed create domain tx:", signed
     #print
 
     # Broadcast transaction
     result = broadcast_commit(raw_txn, signed['signature']['Signed'], signed['signature']['Signer'])
-
+    print result
     #print "###################"
     #print
 
@@ -56,11 +60,11 @@ if __name__ == "__main__":
     # Use same create price as above
 
     # Get raw transaction
-    raw_txn = create_sub_domain(sub_name, addrs[0], create_price, "http://myuri.com")
+    raw_txn = create_sub_domain(sub_name, addrs[index], create_price, "http://myuri.com")
     #print "raw create sub domain transaction: ", raw_txn
 
     # Sign Transaction
-    signed = sign(raw_txn, addrs[0])
+    signed = sign(raw_txn, addrs[index])
     #print "signed create sub domain transaction: ", signed
     #print
 
@@ -78,10 +82,10 @@ if __name__ == "__main__":
        ****** Send to sub domain on initial domain above ******
    """
    # print "---Send to Domain---"
-    raw_txn = send_domain(name, addrs[0], "10")
+    raw_txn = send_domain(name, addrs[index], "10")
    # print raw_txn
 
-    signed = sign(raw_txn, addrs[0])
+    signed = sign(raw_txn, addrs[index])
     #print signed
     #print
 
