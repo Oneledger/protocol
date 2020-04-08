@@ -85,11 +85,18 @@ func NewChainState(name string, db tmdb.DB) *ChainState {
 // "recent" : latest number of version to persist
 // "every"  : every X number of version to persist
 // "cycles" : number of latest every version to persist
-func (state *ChainState) SetupRotation(chainStateRotationCfg config.ChainStateRotationCfg) {
+func (state *ChainState) SetupRotation(chainStateRotationCfg config.ChainStateRotationCfg) error {
 
+	isValid := chainStateRotationCfg.Recent >= 0 && chainStateRotationCfg.Every >= 0 && chainStateRotationCfg.Cycles >= 0
+	if isValid != true {
+		err := errors.New("found negative value in chain state rotation config")
+		return err
+	}
 	state.ChainStateRotation.recent = chainStateRotationCfg.Recent
 	state.ChainStateRotation.every = chainStateRotationCfg.Every
 	state.ChainStateRotation.cycles = chainStateRotationCfg.Cycles
+	return nil
+
 }
 
 // Do this only for the Delivery side

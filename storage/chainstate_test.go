@@ -131,11 +131,15 @@ func TestChainState_Rotation(t *testing.T) {
 		Cycles : int64(10),
 	}
 
-	//generate multiple versions
+
 	state := NewChainState("RotationTest", cacheDB)
-	state.SetupRotation(rotation)
+	err := state.SetupRotation(rotation)
+	if err != nil {
+		t.Errorf("error in loading chain state rotation config")
+		return
+	}
 
-
+	//generate multiple versions
 	//version start from 1
 	for i := 1; i <= testRound; i++ {
 
