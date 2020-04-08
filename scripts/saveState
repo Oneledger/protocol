@@ -5,5 +5,11 @@ do
 
     echo "Deleting Node Data"
     rm -rf $OLDATA/devnet/$name/nodedata/*
+    rm -rf $OLDATA/devnet/$name/consensus/data/*.db
+    rm -rf $OLDATA/devnet/$name/consensus/data/*.wal
+    rm -rf $OLDATA/devnet/$name/consensus/config/addrbook.json
+    cp -f $OLDATA/priv_validator_state.json $OLDATA/devnet/$name/consensus/data/
 done
+
+rm -rf /tmp/genTime.tmp
 
