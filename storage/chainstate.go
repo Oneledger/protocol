@@ -22,6 +22,7 @@ package storage
 
 import (
 	"encoding/hex"
+	"github.com/Oneledger/protocol/config"
 	"strconv"
 	"sync"
 
@@ -43,12 +44,12 @@ type ChainState struct {
 	Hash        []byte
 	TreeHeight  int8
 
-	chainStateRotation chainStateRotationCfg
+	ChainStateRotation ChainStateRotationSetting
 
 	sync.RWMutex
 }
 
-type chainStateRotationCfg struct {
+type ChainStateRotationSetting struct {
 	//persistent data config
 
 	// "recent" : latest number of version to persist
@@ -84,13 +85,18 @@ func NewChainState(name string, db tmdb.DB) *ChainState {
 // "recent" : latest number of version to persist
 // "every"  : every X number of version to persist
 // "cycles" : number of latest every version to persist
-func (state *ChainState) SetupRotation(recent, every, cycles int64) {
-	//state.recent = recent
-	//state.every = every
-	//state.cycles = cycles
-	state.chainStateRotation.recent = recent
-	state.chainStateRotation.every = every
-	state.chainStateRotation.cycles = cycles
+func (state *ChainState) SetupRotation(chainStateRotationCfg config.ChainStateRotationCfg) error {
+
+	isValid := chainStateRotationCfg.Recent >= 0 && chainStateRotationCfg.Every >= 0 && chainStateRotationCfg.Cycles >= 0
+	if isValid != true {
+		err := errors.New("found negative value in chain state rotation config")
+		return err
+	}
+	state.ChainStateRotation.recent = chainStateRotationCfg.Recent
+	state.ChainStateRotation.every = chainStateRotationCfg.Every
+	state.ChainStateRotation.cycles = chainStateRotationCfg.Cycles
+	return nil
+
 }
 
 // Do this only for the Delivery side
@@ -174,17 +180,17 @@ func (state *ChainState) Commit() ([]byte, int64) {
 	state.LastVersion, state.Version = state.Version, version
 	state.LastHash, state.Hash = state.Hash, hash
 
-	release := state.LastVersion - state.chainStateRotation.recent
+	release := state.LastVersion - state.ChainStateRotation.recent
 
 	if release > 0 {
-		if state.chainStateRotation.every == 0 || release%state.chainStateRotation.every != 0 {
+		if state.ChainStateRotation.every == 0 || release%state.ChainStateRotation.every != 0 {
 			err := state.Delivered.DeleteVersion(release)
 			if err != nil {
 				log.Error("Failed to delete old version of chainstate", "err:", err, "version:", release)
 			}
 		}
-		if state.chainStateRotation.cycles != 0 && release%state.chainStateRotation.every == 0 {
-			release = release - state.chainStateRotation.cycles*state.chainStateRotation.every
+		if state.ChainStateRotation.cycles != 0 && state.ChainStateRotation.every != 0 && release%state.ChainStateRotation.every == 0 {
+			release = release - state.ChainStateRotation.cycles*state.ChainStateRotation.every
 			err := state.Delivered.DeleteVersion(release)
 			if err != nil {
 				log.Error("Failed to delete old version of chainstate", "err", err, "version:", release)

@@ -16,11 +16,12 @@ package storage
 
 import (
 	"bytes"
-	"strconv"
-	"testing"
-
+	"github.com/Oneledger/protocol/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/tendermint/tendermint/libs/db"
+	"math"
+	"strconv"
+	"testing"
 )
 
 var cacheDB db.DB
@@ -118,12 +119,29 @@ func TestChainState_Commit(t *testing.T) {
 }
 
 func TestChainState_Rotation(t *testing.T) {
-	//generate multiple versions
-	state := NewChainState("RotationTest", cacheDB)
-	state.SetupRotation(10, 100, 10)
+	//set up test round
+	testRound := 10000
+	//the last round is special
+	calculatedRound := testRound - 1
 
+	//set up recent, every, cycles
+	rotation := config.ChainStateRotationCfg{
+		Recent : int64(10),
+		Every : int64(100),
+		Cycles : int64(10),
+	}
+
+
+	state := NewChainState("RotationTest", cacheDB)
+	err := state.SetupRotation(rotation)
+	if err != nil {
+		t.Errorf("error in loading chain state rotation config")
+		return
+	}
+
+	//generate multiple versions
 	//version start from 1
-	for i := 1; i < 10000; i++ {
+	for i := 1; i <= testRound; i++ {
 
 		key := "Hello " + strconv.Itoa(i)
 		value := "Value " + strconv.Itoa(i)
@@ -135,16 +153,54 @@ func TestChainState_Rotation(t *testing.T) {
 		version := state.Delivered.Version()
 		index, result := state.Delivered.GetVersioned(StoreKey(key), version)
 		log.Debug("Commited Fetched", "index", index, "version", version, "result", string(result))
-
-		//assert.Equal(t, []byte(value), result, "These should be equal")
-
 	}
 
-	for i := 1; i < 10000; i++ {
+	//looking for each version
+	counter := int64(0)
+	for i := 1; i <= testRound; i++ {
 		if state.Delivered.VersionExists(int64(i)) {
 			log.Debug("remaining version ", i)
+			counter++
 		}
 
 	}
+
+	var correct int64
+	recent := rotation.Recent
+	every := rotation.Every
+	cycles := rotation.Cycles
+
+	// first figure out how many 'every' is reached
+	// here reachedEvery only consider the ones outside 'recent'
+	var reachedEvery int64
+	if every != 0 {
+		if cycles != 0{
+			if (int64(testRound) - recent) % every == 0 { //'every' overlaps with the oldest in recent
+				reachedEvery = int64(math.Min(float64((int64(testRound) - recent)/every - 1), float64(cycles)))
+			} else {
+				reachedEvery = int64(math.Min(float64((int64(testRound) - recent) / every), float64(cycles)))
+			}
+		} else {
+			if (int64(testRound) - recent) % every == 0 { //'every' overlaps with the oldest in recent
+				reachedEvery = (int64(testRound) - recent)/every - 1
+			} else {
+				reachedEvery = (int64(testRound) - recent)/every
+			}
+		}
+
+	} else {
+		reachedEvery = 0
+	}
+
+
+	if int64(calculatedRound) <= recent {
+		correct = int64(calculatedRound)
+	} else { // if 'every' and last round overlaps
+		correct = recent + reachedEvery
+	}
+
+	correct += 1// add the last round
+
+	assert.Equal(t, correct, counter, "These should be equal")
 
 }
