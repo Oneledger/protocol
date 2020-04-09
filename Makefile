@@ -8,7 +8,7 @@ export GO111MODULE=on
 update:
 	go mod vendor
 #
-# Build and install a copy in bin
+    # Build and install a copy in bin
 #
 install:
 	go install -i github.com/Oneledger/protocol/cmd/...
@@ -38,7 +38,7 @@ status:
 #
 # install and restart the network
 #
-restart: install
+restart: install_c
 	@./scripts/stopDev
 	@./scripts/startDev
 

@@ -201,22 +201,22 @@ func loadTest(_ *cobra.Command, _ []string) {
 
 		}(stopChan)
 
-		go func(stop chan bool) {
-			waitDuration := getWaitDuration(loadTestArgs.interval)
-			for true {
-				// Do ONS Create Domain , Create Sub Domain ,Send To Domain
-				doOnsTrasactions()
-				counterChan <- 3
-				select {
-				case <-stop:
-					waiter.Done()
-					return
-				default:
-					time.Sleep(waitDuration)
-				}
-			}
-
-		}(stopChan)
+		//go func(stop chan bool) {
+		//	waitDuration := getWaitDuration(loadTestArgs.interval)
+		//	for true {
+		//		// Do ONS Create Domain , Create Sub Domain ,Send To Domain
+		//		doOnsTrasactions()
+		//		counterChan <- 3
+		//		select {
+		//		case <-stop:
+		//			waiter.Done()
+		//			return
+		//		default:
+		//			time.Sleep(waitDuration)
+		//		}
+		//	}
+		//
+		//}(stopChan)
 	}
 
 	// wait for all threads to close through sigterm; indefinitely
