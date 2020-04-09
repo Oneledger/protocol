@@ -173,7 +173,7 @@ func runLock(ctx *action.Context, lock *Lock) (bool, action.Response) {
 		}
 	}
 
-	val, err := ctx.Validators.GetValidatorsAddress()
+	witnesses, err := ctx.Witnesses.GetETHWitnessAddresses()
 	if err != nil {
 
 		ctx.Logger.Error("err in getting validator address", err)
@@ -212,7 +212,7 @@ func runLock(ctx *action.Context, lock *Lock) (bool, action.Response) {
 		lock.Locker,
 		lock.ETHTxn,
 		name,
-		val,
+		witnesses,
 	)
 
 	tracker.State = ethereum.New

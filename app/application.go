@@ -171,6 +171,10 @@ func (app *App) setupState(stateBytes []byte) error {
 		if err != nil {
 			return errors.Wrap(err, "failed to handle initial staking")
 		}
+		err = app.Context.ethWitnesses.WithState(app.Context.deliver).AddWitness(identity.Stake(stake))
+		if err != nil {
+			return errors.Wrap(err, "failed to add initial ethereum witness")
+		}
 	}
 
 	for _, domain := range initial.Domains {

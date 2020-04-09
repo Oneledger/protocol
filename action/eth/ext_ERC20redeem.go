@@ -154,7 +154,7 @@ func runERC20Reddem(ctx *action.Context, tx action.RawTx) (bool, action.Response
 		return false, action.Response{Log: action.ErrNotEnoughFund.Error()}
 	}
 
-	validators, err := ctx.Validators.GetValidatorsAddress()
+	witnesses, err := ctx.Witnesses.GetETHWitnessAddresses()
 	if err != nil {
 		return false, action.Response{Log: "error in getting validator addresses" + err.Error()}
 	}
@@ -170,7 +170,7 @@ func runERC20Reddem(ctx *action.Context, tx action.RawTx) (bool, action.Response
 		erc20redeem.Owner,
 		erc20redeem.ETHTxn,
 		name,
-		validators,
+		witnesses,
 	)
 
 	tracker.State = trackerlib.New

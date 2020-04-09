@@ -141,7 +141,7 @@ func runRedeem(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 		return false, action.Response{Log: (errors.Wrap(action.ErrNotEnoughFund, err.Error())).Error()}
 	}
 
-	validators, err := ctx.Validators.GetValidatorsAddress()
+	witnesses, err := ctx.Witnesses.GetETHWitnessAddresses()
 	if err != nil {
 		return false, action.Response{Log: "error in getting validator addresses" + err.Error()}
 	}
@@ -157,7 +157,7 @@ func runRedeem(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 		redeem.Owner,
 		redeem.ETHTxn,
 		name,
-		validators,
+		witnesses,
 	)
 
 	tracker.State = trackerlib.New

@@ -89,7 +89,7 @@ func Broadcasting(ctx interface{}) error {
 	context.Tracker = tracker
 
 	//create broadcasting
-	if context.Validators.IsValidator() {
+	if context.Witnesses.IsETHWitness() {
 
 		job := NewETHBroadcast((*tracker).TrackerName, ethereum.BusyBroadcasting)
 		err := context.JobStore.SaveJob(job)
@@ -118,7 +118,7 @@ func Finalizing(ctx interface{}) error {
 	}
 
 	context.Tracker = tracker
-	if context.Validators.IsValidator() {
+	if context.Witnesses.IsETHWitness() {
 		_, voted := tracker.CheckIfVoted(context.CurrNodeAddr)
 		if voted {
 			return nil
@@ -166,7 +166,7 @@ func Finalization(ctx interface{}) error {
 		return nil
 	}
 
-	if context.Validators.IsValidator() {
+	if context.Witnesses.IsETHWitness() {
 		//Check if current Node voted
 		_, voted := tracker.CheckIfVoted(context.CurrNodeAddr)
 
@@ -212,7 +212,7 @@ func Cleanup(ctx interface{}) error {
 	}
 
 	//Delete Broadcasting Job
-	if context.Validators.IsValidator() {
+	if context.Witnesses.IsETHWitness() {
 		bjob, err := context.JobStore.GetJob(tracker.GetJobID(ethereum.BusyBroadcasting))
 		if err != nil {
 			return errors.Wrap(err, "Failed to get Broadcasting Job")
@@ -256,7 +256,7 @@ func CleanupFailed(ctx interface{}) error {
 	}
 
 	//Delete Broadcasting Job It its there
-	if context.Validators.IsValidator() {
+	if context.Witnesses.IsETHWitness() {
 		bjob, err := context.JobStore.GetJob(tracker.GetJobID(ethereum.BusyBroadcasting))
 		if err == nil {
 			err = context.JobStore.DeleteJob(bjob)

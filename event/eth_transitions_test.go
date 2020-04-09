@@ -2,6 +2,9 @@ package event
 
 import (
 	"fmt"
+	"strconv"
+	"testing"
+
 	"github.com/Oneledger/protocol/config"
 	"github.com/Oneledger/protocol/data/chain"
 	"github.com/Oneledger/protocol/data/ethereum"
@@ -12,8 +15,6 @@ import (
 	"github.com/Oneledger/protocol/utils/transition"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/magiconair/properties/assert"
-	"strconv"
-	"testing"
 )
 
 var (
