@@ -10,6 +10,7 @@ contract LockRedeem {
     uint signaturesrequiredformigration = 0;
     uint migrationsignaturecount = 0 ;
     address val;
+
     constructor(address _old_contract,uint noofValidatorsinold) public {
         old_contract = _old_contract;
         signaturesrequiredformigration = (noofValidatorsinold * 2 / 3 + 1);
@@ -26,6 +27,7 @@ contract LockRedeem {
     function isActive ()public view returns (bool) {
         return ACTIVE;
     }
+
     function getMigrationCount() public view returns (uint) {
         return migrationsignaturecount;
     }

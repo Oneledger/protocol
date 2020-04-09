@@ -127,7 +127,7 @@ func runDeleteSub(ctx *action.Context, tx action.RawTx) (bool, action.Response) 
 	parent, err := ctx.Domains.Get(parentName)
 	//Check if Parent exists in Domain Store
 	if err != nil {
-		return false, action.Response{Log: "Parent domain doesn't exist, cannot create sub domain!"}
+		return false, action.Response{Log: "Parent domain doesn't exist, cannot delete sub domain!"}
 	}
 
 	if !bytes.Equal(parent.Owner, del.Owner) {

@@ -90,10 +90,12 @@ type ONSGetDomainsRequest struct {
 
 type ONSGetDomainsReply struct {
 	Domains []ons.Domain `json:"domains"`
+	Height  int64        `json:"height"`
 }
 
 type ONSGetDomainsOnSaleReply struct {
 	Domains []ons.Domain `json:"domains"`
+	Height  int64        `json:"domains"`
 }
 
 type ONSGetOptionsReply struct {

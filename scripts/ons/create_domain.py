@@ -8,6 +8,7 @@ from sdk.actions import *
 
 if __name__ == "__main__":
     addrs = addresses()
+
     print addrs[random.randrange(10)]
     print req_olt(addrs[1])
 
@@ -103,3 +104,4 @@ if __name__ == "__main__":
     # print "Get Domain on Sale"
     # resp = get_domain_on_sale()
     # print resp
+

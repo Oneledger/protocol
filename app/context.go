@@ -9,7 +9,6 @@ import (
 	"github.com/tendermint/tendermint/libs/db"
 
 	"github.com/Oneledger/protocol/action"
-	"github.com/Oneledger/protocol/action/btc"
 	"github.com/Oneledger/protocol/action/eth"
 	action_ons "github.com/Oneledger/protocol/action/ons"
 	"github.com/Oneledger/protocol/action/staking"
@@ -84,11 +83,14 @@ func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *node.Context) (
 	}
 	ctx.db = db
 	ctx.chainstate = storage.NewChainState("chainstate", db)
-	ctx.chainstate.SetupRotation(10, 100, 10)
+	errRotation := ctx.chainstate.SetupRotation(ctx.cfg.Node.ChainStateRotation)
+	if errRotation != nil {
+		return ctx, errors.Wrap(errRotation, "error in loading chain state rotation config")
+	}
 	ctx.deliver = storage.NewState(ctx.chainstate)
 	ctx.check = storage.NewState(ctx.chainstate)
 
-	ctx.validators = identity.NewValidatorStore("v", cfg, storage.NewState(ctx.chainstate))
+	ctx.validators = identity.NewValidatorStore("v", storage.NewState(ctx.chainstate))
 	ctx.balances = balance.NewStore("b", storage.NewState(ctx.chainstate))
 	ctx.domains = ons.NewDomainStore("d", storage.NewState(ctx.chainstate))
 	ctx.feePool = fees.NewStore("f", storage.NewState(ctx.chainstate))
@@ -115,7 +117,8 @@ func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *node.Context) (
 	_ = transfer.EnableSend(ctx.actionRouter)
 	_ = staking.EnableApplyValidator(ctx.actionRouter)
 	_ = action_ons.EnableONS(ctx.actionRouter)
-	_ = btc.EnableBTC(ctx.actionRouter)
+	//"btc" service temporarily disabled
+	//_ = btc.EnableBTC(ctx.actionRouter)
 	_ = eth.EnableETH(ctx.actionRouter)
 	return ctx, nil
 }
@@ -176,19 +179,28 @@ func (ctx *context) Services() (service.Map, error) {
 	btcTrackers := bitcoin.NewTrackerStore("btct", storage.NewState(ctx.chainstate))
 	btcTrackers.SetConfig(ctx.btcTrackers.GetConfig())
 
+	feePool := fees.NewStore("f", storage.NewState(ctx.chainstate))
+	feePool.SetupOpt(ctx.feePool.GetOpt())
+
+	ethTracker := ethereum.NewTrackerStore("etht", "ethfailed", "ethsuccess", storage.NewState(ctx.chainstate))
+	ethTracker.SetupOption(ctx.ethTrackers.GetOption())
+
+	ons := ons.NewDomainStore("d", storage.NewState(ctx.chainstate))
+	ons.SetOptions(ctx.domains.GetOptions())
+
 	svcCtx := &service.Context{
-		Balances:     ctx.balances,
+		Balances:     balance.NewStore("b", storage.NewState(ctx.chainstate)),
 		Accounts:     ctx.accounts,
 		Currencies:   ctx.currencies,
-		FeePool:      ctx.feePool,
+		FeePool:      feePool,
 		Cfg:          ctx.cfg,
 		NodeContext:  ctx.node,
-		ValidatorSet: ctx.validators,
-		Domains:      ctx.domains,
+		ValidatorSet: identity.NewValidatorStore("v", storage.NewState(ctx.chainstate)),
+		Domains:      ons,
 		Router:       ctx.actionRouter,
 		Logger:       log.NewLoggerWithPrefix(ctx.logWriter, "rpc").WithLevel(log.Level(ctx.cfg.Node.LogLevel)),
 		Services:     extSvcs,
-		EthTrackers:  ctx.ethTrackers,
+		EthTrackers:  ethTracker,
 		Trackers:     btcTrackers,
 	}
 
@@ -229,12 +241,14 @@ type StorageCtx struct {
 	FeeOption  *fees.FeeOption
 	Hash       []byte
 	Version    int64
+	Chainstate *storage.ChainState
 }
 
 func (ctx *context) Storage() StorageCtx {
 	return StorageCtx{
 		Version:    ctx.chainstate.Version,
 		Hash:       ctx.chainstate.Hash,
+		Chainstate: ctx.chainstate,
 		Balances:   ctx.balances,
 		Domains:    ctx.domains,
 		Validators: ctx.validators,

@@ -36,6 +36,12 @@ type Signature struct {
 	Signed []byte
 }
 
+type TxTypeDescribe struct{
+	TxTypeNum       Type
+	TxTypeString string
+
+}
+
 func (s Signature) Verify(msg []byte) bool {
 	handler, err := s.Signer.GetHandler()
 	if err != nil {

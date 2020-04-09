@@ -22,6 +22,7 @@ package storage
 
 import (
 	"encoding/hex"
+	"github.com/Oneledger/protocol/config"
 	"strconv"
 	"sync"
 
@@ -43,6 +44,12 @@ type ChainState struct {
 	Hash        []byte
 	TreeHeight  int8
 
+	ChainStateRotation ChainStateRotationSetting
+
+	sync.RWMutex
+}
+
+type ChainStateRotationSetting struct {
 	//persistent data config
 
 	// "recent" : latest number of version to persist
@@ -60,8 +67,6 @@ type ChainState struct {
 	// cycles = 1 : only keep one of latest every
 	// cycles = 0 : keep every "every"
 	cycles int64
-
-	sync.RWMutex
 }
 
 // NewChainState generates a new ChainState object
@@ -80,10 +85,18 @@ func NewChainState(name string, db tmdb.DB) *ChainState {
 // "recent" : latest number of version to persist
 // "every"  : every X number of version to persist
 // "cycles" : number of latest every version to persist
-func (state *ChainState) SetupRotation(recent, every, cycles int64) {
-	state.recent = recent
-	state.every = every
-	state.cycles = cycles
+func (state *ChainState) SetupRotation(chainStateRotationCfg config.ChainStateRotationCfg) error {
+
+	isValid := chainStateRotationCfg.Recent >= 0 && chainStateRotationCfg.Every >= 0 && chainStateRotationCfg.Cycles >= 0
+	if isValid != true {
+		err := errors.New("found negative value in chain state rotation config")
+		return err
+	}
+	state.ChainStateRotation.recent = chainStateRotationCfg.Recent
+	state.ChainStateRotation.every = chainStateRotationCfg.Every
+	state.ChainStateRotation.cycles = chainStateRotationCfg.Cycles
+	return nil
+
 }
 
 // Do this only for the Delivery side
@@ -167,17 +180,17 @@ func (state *ChainState) Commit() ([]byte, int64) {
 	state.LastVersion, state.Version = state.Version, version
 	state.LastHash, state.Hash = state.Hash, hash
 
-	release := state.LastVersion - state.recent
+	release := state.LastVersion - state.ChainStateRotation.recent
 
 	if release > 0 {
-		if state.every == 0 || release%state.every != 0 {
+		if state.ChainStateRotation.every == 0 || release%state.ChainStateRotation.every != 0 {
 			err := state.Delivered.DeleteVersion(release)
 			if err != nil {
 				log.Error("Failed to delete old version of chainstate", "err:", err, "version:", release)
 			}
 		}
-		if state.cycles != 0 && release%state.every == 0 {
-			release = release - state.cycles*state.every
+		if state.ChainStateRotation.cycles != 0 && state.ChainStateRotation.every != 0 && release%state.ChainStateRotation.every == 0 {
+			release = release - state.ChainStateRotation.cycles*state.ChainStateRotation.every
 			err := state.Delivered.DeleteVersion(release)
 			if err != nil {
 				log.Error("Failed to delete old version of chainstate", "err", err, "version:", release)
@@ -187,6 +200,10 @@ func (state *ChainState) Commit() ([]byte, int64) {
 	}
 	state.RUnlock()
 	return hash, version
+}
+
+func (state *ChainState) LoadVersion(version int64) (int64, error) {
+	return state.Delivered.LoadVersion(version)
 }
 
 // Reset the chain state from persistence

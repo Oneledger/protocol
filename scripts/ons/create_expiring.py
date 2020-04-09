@@ -1,5 +1,6 @@
 import time
 from sdk.actions import *
+import sys
 
 
 class bcolors:
@@ -15,7 +16,7 @@ class bcolors:
 
 if __name__ == "__main__":
 
-    name = "renewing.ol"
+    name = "expiring2.ol"
     addrs = addresses()
     if len(addrs) < 4:
         # Create New account
@@ -26,9 +27,10 @@ if __name__ == "__main__":
     print addrs
 
     # expiring after one block
-    create_price = (int("10000001") * 10 ** 14)
+    create_price = (int("10000010") * 10 ** 14)
     print "create price:", create_price
 
+    print bcolors.WARNING + "*** Create domain ***" + bcolors.ENDC
     raw_txn = create_domain(name, addrs[0], create_price)
     print raw_txn
 
@@ -38,24 +40,9 @@ if __name__ == "__main__":
 
     result = broadcast_commit(raw_txn, signed['signature']['Signed'], signed['signature']['Signer'])
     print result
-    print "#################" \
-          "##"
+
+    if not result["ok"]:
+        sys.exit(-1)
+
+    print "###################"
     print
-
-    time.sleep(2)
-
-    print_all_domains(addrs[0])
-
-    print bcolors.WARNING + "*** Renewing domain ***" + bcolors.ENDC
-
-    raw_txn = renew_domain(name, addrs[0], (int("20") * 10 ** 15))
-    signed = sign(raw_txn, addrs[0])
-    print signed
-    print
-
-    result = broadcast_commit(raw_txn, signed['signature']['Signed'], signed['signature']['Signer'])
-    print result
-    print "############################################"
-    print
-
-    print_all_domains(addrs[0])

@@ -105,7 +105,6 @@ alltest: install
 	@./scripts/resetDev
 	@./scripts/startDev
 	@./scripts/testsend
-	@./scripts/testapply
 	@./scripts/getValidators
 	@./scripts/testsend
 	python scripts/ons/create_domain.py
@@ -113,7 +112,9 @@ alltest: install
 	python scripts/ons/buy_sell_domain.py
 	python scripts/ons/purchase_expired.py
 	python scripts/ons/create_delete_subdomain.py
+	python scripts/ons/renew_domain.py
 	python scripts/reward/withdraw.py
+	python scripts/txTypes/listTxTypes.py
 	@./scripts/stopDev
 
 

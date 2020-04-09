@@ -15,12 +15,14 @@ class bcolors:
 
 
 if __name__ == "__main__":
-    # Create New account
-    result = new_account('charlie')
-    print result
 
     name = "expiring.ol"
     addrs = addresses()
+    if len(addrs) < 4:
+        # Create New account
+        result = new_account('charlie2')
+        print result
+        addrs = addresses()
 
     print addrs
 
@@ -100,3 +102,11 @@ if __name__ == "__main__":
         sys.exit(-1)
     print "############################################"
     print
+
+    print "############# dommain for addrs[0] ################"
+    print "addrs[0]", addrs[0]
+    print_all_domains(addrs[0])
+
+    print "############# domain for addrs[3] #################"
+    print "addrs[3]", addrs[3]
+    print_all_domains(addrs[3])

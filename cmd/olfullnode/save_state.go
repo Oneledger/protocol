@@ -3,11 +3,12 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/Oneledger/protocol/data/governance"
 	"io"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/Oneledger/protocol/data/governance"
 
 	"github.com/Oneledger/protocol/app"
 	olnode "github.com/Oneledger/protocol/app/node"
@@ -35,6 +36,7 @@ type saveStateCmdContext struct {
 	outputDir string
 	filename  string
 	rootDir   string
+	version   int64
 }
 
 var saveStateCtx = &saveStateCmdContext{}
@@ -62,8 +64,9 @@ func (ctx *saveStateCmdContext) init(rootDir string) error {
 
 func init() {
 	RootCmd.AddCommand(saveStateCmd)
-	testnetCmd.Flags().StringVarP(&saveStateCtx.outputDir, "outDir", "c", "./", "Directory to store Chain State File, default current folder.")
-	testnetCmd.Flags().StringVarP(&saveStateCtx.filename, "filename", "f", "genesis_dump.json", "Name of file that stores the Chain State.")
+	saveStateCmd.Flags().StringVarP(&saveStateCtx.outputDir, "outDir", "c", "./", "Directory to store Chain State File, default current folder.")
+	saveStateCmd.Flags().StringVarP(&saveStateCtx.filename, "filename", "f", "genesis_dump.json", "Name of file that stores the Chain State.")
+	saveStateCmd.Flags().Int64Var(&saveStateCtx.version, "version", 0, "the version that need to be dumped, default the latest version")
 }
 
 func SaveState(cmd *cobra.Command, args []string) error {
@@ -87,9 +90,8 @@ func SaveState(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	SaveChainState(application, saveStateCtx.outputDir, saveStateCtx.filename)
+	return SaveChainState(application, saveStateCtx.outputDir, saveStateCtx.filename)
 
-	return nil
 }
 
 func startBlock(writer io.Writer, name string) bool {
@@ -139,7 +141,7 @@ func writeListWithTag(ctx app.StorageCtx, writer io.Writer, tag string) bool {
 	case "staking":
 		DumpStakingToFile(ctx.Validators, writer, writeStruct)
 	case "domains":
-		DumpDomainToFile(ctx.Domains, writer, writeStruct)
+		DumpDomainToFile(ctx.Domains, ctx.Version, writer, writeStruct)
 	case "fees":
 		DumpFeesToFile(ctx.FeePool, writer, writeStruct)
 		delimiter = ""
@@ -154,10 +156,14 @@ func writeListWithTag(ctx app.StorageCtx, writer io.Writer, tag string) bool {
 	return true
 }
 
-func SaveChainState(application *app.App, filename string, directory string) {
+func SaveChainState(application *app.App, filename string, directory string) error {
 	ctx := application.Context.Storage()
+	version, err := ctx.Chainstate.LoadVersion(saveStateCtx.version)
+	if err != nil {
+		return err
+	}
+	ctx.Version = version
 	appState := consensus.AppState{}
-	var err error
 	appState.Currencies, err = ctx.Govern.GetCurrencies()
 	appState.Chain.Hash = ctx.Hash
 	appState.Chain.Version = ctx.Version
@@ -165,7 +171,9 @@ func SaveChainState(application *app.App, filename string, directory string) {
 	chainID := "OneLedger-" + randStr(2)
 	genesisDoc, err := consensus.NewGenesisDoc(chainID, appState)
 	if err != nil {
-		fmt.Println(errors.Wrap(err, "Failed to create Genesis object"))
+		err = errors.Wrap(err, "Failed to create Genesis object")
+		fmt.Println(err)
+		return err
 	}
 
 	genesisDoc.AppHash = ctx.Hash
@@ -210,8 +218,10 @@ func SaveChainState(application *app.App, filename string, directory string) {
 
 	token, err = jsonDecoder.Token()
 	_, err = fmt.Fprint(writer, token)
-
-	err = writer.Close()
+	if err != nil {
+		return err
+	}
+	return writer.Close()
 }
 
 func DumpFeesToFile(st *fees.Store, writer io.Writer, fn func(writer io.Writer, obj interface{}) bool) {
@@ -289,7 +299,7 @@ func DumpBalanceToFile(bs *balance.Store, writer io.Writer, fn func(writer io.Wr
 	return
 }
 
-func DumpDomainToFile(ds *ons.DomainStore, writer io.Writer, fn func(writer io.Writer, obj interface{}) bool) {
+func DumpDomainToFile(ds *ons.DomainStore, height int64, writer io.Writer, fn func(writer io.Writer, obj interface{}) bool) {
 	iterator := 0
 	delimiter := ","
 
@@ -300,13 +310,16 @@ func DumpDomainToFile(ds *ons.DomainStore, writer io.Writer, fn func(writer io.W
 				return true
 			}
 		}
+		if domain.ExpireHeight < height {
+			return false
+		}
 		domainState := consensus.DomainState{}
 		domainState.Name = domain.Name.String()
 		domainState.Beneficiary = domain.Beneficiary
 		domainState.Owner = domain.Owner
-		domainState.CreationHeight = domain.CreationHeight
-		domainState.LastUpdateHeight = domain.LastUpdateHeight
-		domainState.ExpireHeight = domain.ExpireHeight
+		domainState.CreationHeight = 0
+		domainState.LastUpdateHeight = 0
+		domainState.ExpireHeight = domain.ExpireHeight - height
 		domainState.ActiveFlag = domain.ActiveFlag
 		domainState.OnSaleFlag = domain.OnSaleFlag
 		domainState.URI = domain.URI

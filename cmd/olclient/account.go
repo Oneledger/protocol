@@ -15,164 +15,254 @@
 package main
 
 import (
-	"encoding/base64"
+	"encoding/json"
+	"errors"
 	"fmt"
-	"os"
-
-	"github.com/spf13/cobra"
-
-	"github.com/Oneledger/protocol/client"
 	"github.com/Oneledger/protocol/data/accounts"
 	"github.com/Oneledger/protocol/data/chain"
 	"github.com/Oneledger/protocol/data/keys"
+	"github.com/spf13/cobra"
 )
 
-var updateCmd = &cobra.Command{
-	Use:   "account",
-	Short: "handling an account",
-	RunE:  UpdateAccount,
+// Arguments to the update command
+type AddArguments struct {
+	account  string
+	chain    string
+	password string
+	pubkey   []byte
+	privkey  []byte
 }
 
-// Arguments to the command
-type UpdateArguments struct {
-	account         string
-	chain           string
-	pubkey          []byte
-	privkey         []byte
-	privKeyFilePath string
-	delete          []byte
+//Arguments to the delete command
+type DeleteArguments struct {
+	Address  string `json:"address"`
+	Password string `json:"password"`
 }
 
-var updateArgs = &UpdateArguments{}
+//Arguments to the get command
+type GetArguments struct {
+	Address  string `json:"address"`
+	Password string `json:"password"`
+}
+
+var (
+	accountCmd = &cobra.Command{
+		Use:   "account",
+		Short: "handling an account",
+		Long:  "local account handling through secure wallet",
+	}
+
+	deleteCmd = &cobra.Command{
+		Use:   "delete",
+		Short: "delete an account",
+		RunE:  Delete,
+	}
+
+	addCmd = &cobra.Command{
+		Use:   "add",
+		Short: "update or create an account",
+		RunE:  Add,
+	}
+
+	getCmd = &cobra.Command{
+		Use:   "get",
+		Short: "retrieve account data",
+		RunE:  Get,
+	}
+
+	addArgs    = &AddArguments{}
+	deleteArgs = &DeleteArguments{}
+	getArgs    = &GetArguments{}
+)
+
+func parseUpdateArgs() {
+	addCmd.Flags().StringVar(&addArgs.account, "name", "", "Account Name")
+	addCmd.Flags().StringVar(&addArgs.chain, "chain", "OneLedger", "Specify the chain")
+	addCmd.Flags().BytesBase64Var(&addArgs.pubkey, "pubkey", []byte{}, "Specify a base64 public key")
+	addCmd.Flags().BytesBase64Var(&addArgs.privkey, "privkey", []byte{}, "Specify a base64 private key")
+	addCmd.Flags().StringVar(&addArgs.password, "password", "", "password to access secure wallet")
+}
+
+func parseDeleteArgs() {
+	deleteCmd.Flags().StringVar(&deleteArgs.Address, "address", "", "address to delete")
+	deleteCmd.Flags().StringVar(&deleteArgs.Password, "password", "", "password to access secure wallet")
+}
+
+func parseGetArgs() {
+	getCmd.Flags().StringVar(&getArgs.Address, "address", "", "address of account to retrieve")
+	getCmd.Flags().StringVar(&getArgs.Password, "password", "", "password to access secure wallet")
+}
 
 func init() {
-	RootCmd.AddCommand(updateCmd)
+	RootCmd.AddCommand(accountCmd)
+	accountCmd.AddCommand(deleteCmd)
+	accountCmd.AddCommand(addCmd)
+	accountCmd.AddCommand(getCmd)
 
-	// Transaction Parameters
-	updateCmd.Flags().StringVar(&updateArgs.account, "name", "", "Account Name")
-	updateCmd.Flags().StringVar(&updateArgs.chain, "chain", "OneLedger", "Specify the chain")
+	//Add Transaction Parameters
+	parseUpdateArgs()
 
-	updateCmd.Flags().BytesHexVar(&updateArgs.pubkey, "pubkey", []byte{}, "Specify a base64 public key")
-	updateCmd.Flags().BytesHexVar(&updateArgs.privkey, "privkey", []byte{}, "Specify a base64 private key")
-	updateCmd.Flags().StringVar(&updateArgs.privKeyFilePath, "privKeyFilePath", "", "filepath to save the private key")
-	updateCmd.Flags().BytesHexVar(&updateArgs.delete, "delete", []byte{},
-		"specify the address of the account to be delete, warning: you can't get back the token it holds")
+	//Delete Transaction Parameters
+	parseDeleteArgs()
 
+	//Get Transaction Parameters
+	parseGetArgs()
 }
 
-func UpdateAccount(cmd *cobra.Command, args []string) error {
-
-	Ctx := NewContext()
-	Ctx.logger.Debug("UPDATING ACCOUNT")
-
-	typ, err := chain.TypeFromName(updateArgs.chain)
+func Add(cmd *cobra.Command, args []string) error {
+	wallet, err := accounts.NewWalletKeyStore(keyStorePath)
 	if err != nil {
-		Ctx.logger.Error("chain not registered: ", updateArgs.chain)
-		//return
+		return err
 	}
 
-	fullnode := Ctx.clCtx.FullNodeClient()
-
-	if len(updateArgs.delete) > 0 {
-		_, err := fullnode.DeleteAccount(client.DeleteAccountRequest{Address: updateArgs.delete})
-		if err != nil {
-			Ctx.logger.Error("delete error", err)
-			return err
-		}
-		Ctx.logger.Info("delete success: ", keys.Address(updateArgs.delete).String())
-		return nil
+	typ, err := chain.TypeFromName(addArgs.chain)
+	if err != nil {
+		return errors.New("chain not registered: " + addArgs.chain)
 	}
+
 	// get the kys for the new account
 	var privKey keys.PrivateKey
 	var pubKey keys.PublicKey
-	generatedKeysFlag := false
-	if len(updateArgs.privkey) == 0 || len(updateArgs.pubkey) == 0 {
+
+	if len(addArgs.privkey) == 0 || len(addArgs.pubkey) == 0 {
 		// if a public key or a private key is not passed; generate a pair of keys
 		pubKey, privKey, err = keys.NewKeyPairFromTendermint()
 		if err != nil {
-			Ctx.logger.Error("error generating key from tendermint", err)
+			return errors.New("error generating key from tendermint" + err.Error())
 		}
-
-		generatedKeysFlag = true
 	} else {
 		// parse keys passed through commandline
 
-		pubKey, err = keys.GetPublicKeyFromBytes(updateArgs.pubkey, keys.ED25519)
+		pubKey, err = keys.GetPublicKeyFromBytes(addArgs.pubkey, keys.ED25519)
 		if err != nil {
-			Ctx.logger.Error("incorrect public key", err)
+			fmt.Println("incorrect public key" + err.Error())
 			return err
 		}
 
-		privKey, err = keys.GetPrivateKeyFromBytes(updateArgs.privkey, keys.ED25519)
+		privKey, err = keys.GetPrivateKeyFromBytes(addArgs.privkey, keys.ED25519)
 		if err != nil {
-			Ctx.logger.Error("incorrect private key", err)
+			fmt.Println("incorrect private key" + err.Error())
 			return err
 		}
 	}
 
 	// create the account
-	acc, err := accounts.NewAccount(typ, updateArgs.account, &privKey, &pubKey)
+	acc, err := accounts.NewAccount(typ, addArgs.account, &privKey, &pubKey)
 	if err != nil {
-		Ctx.logger.Error("Error initializing account", err)
+		return errors.New("Error initializing account" + err.Error())
+	}
+
+	//Prompt for password update account
+	if len(addArgs.password) == 0 {
+		addArgs.password = PromptForPassword()
+	}
+
+	if !wallet.Open(acc.Address(), addArgs.password) {
+		return errors.New("error opening wallet")
+	}
+
+	err = wallet.Add(acc)
+	if err != nil {
 		return err
 	}
 
-	Ctx.logger.Infof("creating account %#v", acc)
-	out, err := fullnode.AddAccount(acc)
-	if err != nil {
-		Ctx.logger.Error("Problem creating account:", err)
-		return err
-	}
+	fmt.Println("Successfully added account to secure wallet.")
+	fmt.Println("Address for the account is: ", acc.Address())
 
-	// print details
-	Ctx.logger.Infof("Created account successfully: %#v", out)
-	Ctx.logger.Infof("Address for the account is: %s", acc.Address().Humanize())
+	wallet.Close()
 
-	// if keys are not autogenerated, skip writing private key to file
-	if !generatedKeysFlag {
-		return nil
-	}
-
-	filename := updateArgs.privKeyFilePath
-	if filename == "" {
-		filename = fmt.Sprintf("./%s_secret", acc.Name)
-	}
-	writePrivateKeyToFile(Ctx, acc, filename)
 	return nil
 }
 
-// writePrivateKeyToFile saves a base64 encoded copy of an account secret key to a filepath
-func writePrivateKeyToFile(Ctx *Context, acc accounts.Account, filepath string) {
-
-	pkHandler, err := acc.PrivateKey.GetHandler()
-	if err != nil {
-		Ctx.logger.Error("error getting private key handler", err)
-		return
+func Delete(cmd *cobra.Command, args []string) error {
+	if len(deleteArgs.Address) <= 0 {
+		return errors.New("error: invalid address")
 	}
 
-	// open file
-	f, err := os.Create(filepath)
+	wallet, err := accounts.NewWalletKeyStore(keyStorePath)
 	if err != nil {
-		Ctx.logger.Error("error opening file for secret", err)
-		return
+		return err
 	}
 
-	// pipe base64 encoder to file
-	encoder := base64.NewEncoder(base64.StdEncoding, f)
-	_, err = encoder.Write(pkHandler.Bytes())
+	//Get Address
+	usrAddress := keys.Address{}
+	err = usrAddress.UnmarshalText([]byte(deleteArgs.Address))
 	if err != nil {
-		Ctx.logger.Error("error writing bytes to file", err)
-		return
-	}
-	err = encoder.Close()
-	if err != nil {
-		Ctx.logger.Error("error closing ", err)
+		return err
 	}
 
-	err = f.Close()
-	if err != nil {
-		Ctx.logger.Error("error closing file ", filepath, "err", err)
+	if !wallet.KeyExists(usrAddress) {
+		return errors.New("address does not exist")
 	}
 
-	Ctx.logger.Info("Private key wrote to file ", filepath, " successfully.")
+	//Prompt for password
+	if len(deleteArgs.Password) == 0 {
+		deleteArgs.Password = PromptForPassword()
+	}
+
+	//Verify User Password
+	authenticated, _ := wallet.VerifyPassphrase(usrAddress, deleteArgs.Password)
+	if !authenticated {
+		return errors.New("authentication error")
+	}
+
+	if !wallet.Open(usrAddress, deleteArgs.Password) {
+		return errors.New("error opening wallet")
+	}
+
+	err = wallet.Delete(usrAddress)
+	if err != nil {
+		return err
+	}
+
+	wallet.Close()
+
+	return nil
+}
+
+func Get(cmd *cobra.Command, args []string) error {
+	if len(getArgs.Address) <= 0 {
+		return errors.New("error: invalid address")
+	}
+
+	wallet, err := accounts.NewWalletKeyStore(keyStorePath)
+	if err != nil {
+		return err
+	}
+
+	//Get Address
+	usrAddress := keys.Address{}
+	err = usrAddress.UnmarshalText([]byte(getArgs.Address))
+	if err != nil {
+		return err
+	}
+
+	//If Account already exists, Verify Password
+	if !wallet.KeyExists(usrAddress) {
+		return errors.New("address not found")
+	}
+
+	if len(getArgs.Password) == 0 {
+		getArgs.Password = PromptForPassword()
+	}
+	auth, _ := wallet.VerifyPassphrase(usrAddress, getArgs.Password)
+	if !auth {
+		return errors.New("authentication failed")
+	}
+
+	if !wallet.Open(usrAddress, getArgs.Password) {
+		return errors.New("error opening wallet")
+	}
+
+	account, err := wallet.GetAccount(usrAddress)
+	if err != nil {
+		return err
+	}
+
+	out, err := json.MarshalIndent(account, "", " ")
+	fmt.Println("\n" + string(out))
+
+	wallet.Close()
+
+	return nil
 }
