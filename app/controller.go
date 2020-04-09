@@ -150,7 +150,7 @@ func (app *App) blockBeginner() blockBeginner {
 func loadtest(head Header, logger *log.Logger) {
 	tps := float64(endTx-startTx) / (endTime.Sub(startTime).Seconds())
 	blktime := (endTime.Sub(startTime).Seconds()) / float64(head.Height-3)
-	logger.Infof("Loadtest metric height=%d, total_tx =%d, tx/b=%d, blktime=%3f , tps=%3f", head.Height, head.TotalTxs, head.TotalTxs/head.Height, blktime, tps)
+	logger.Infof("Loadtest metric height=%d, total_tx =%d, tx/b=%d, blktime=%3f , tps=%3f ,tx_current=%d", head.Height, head.TotalTxs, head.TotalTxs/head.Height, blktime, tps, head.NumTxs)
 }
 
 // mempool connection: for checking if transactions should be relayed before they are committed
