@@ -197,8 +197,29 @@ func (app *App) setupState(stateBytes []byte) error {
 	}
 	//TODO: Initialize BTC Trackers in the future.
 	for _, tracker := range initial.Trackers {
-		tr := ethereum.NewTracker(tracker.Type, tracker.ProcessOwner, tracker.SignedETHTx, tracker.TrackerName, tracker.Validators)
-		err = app.Context.ethTrackers.WithState(app.Context.deliver).Set(tr)
+		if tracker.State == ethereum.BusyBroadcasting {
+			tracker.State = ethereum.New
+		}
+		tr := &ethereum.Tracker{
+			Type:          tracker.Type,
+			State:         tracker.State,
+			TrackerName:   tracker.TrackerName,
+			SignedETHTx:   tracker.SignedETHTx,
+			Validators:    tracker.Validators,
+			ProcessOwner:  tracker.ProcessOwner,
+			FinalityVotes: make([]ethereum.Vote, len(tracker.Validators)),
+			To:            tracker.To,
+		}
+		switch tracker.State {
+		case ethereum.Released:
+			err = app.Context.ethTrackers.WithState(app.Context.deliver).WithPrefixType(ethereum.PrefixPassed).Set(tr)
+		case ethereum.Failed:
+			err = app.Context.ethTrackers.WithState(app.Context.deliver).WithPrefixType(ethereum.PrefixFailed).Set(tr)
+		default:
+			fmt.Println("Adding Tracker to Ongoing DB")
+			err = app.Context.ethTrackers.WithState(app.Context.deliver).WithPrefixType(ethereum.PrefixOngoing).Set(tr)
+		}
+
 		if err != nil {
 			return errors.Wrap(err, "failed to setup initial Trackers")
 		}
