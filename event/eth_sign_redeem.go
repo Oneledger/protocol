@@ -102,7 +102,7 @@ func (j *JobETHSignRedeem) DoMyJob(ctx interface{}) {
 		ethCtx.Logger.Debug("Trying to confirm RedeemTX sent by User Receipt :", err)
 		return
 	}
-	//Failed to delete old version of chainstate err version does not exist version: -900
+
 	// Get receipt first ,then status [ other way around might cause ambiguity ]
 	// If expired fail tracker
 

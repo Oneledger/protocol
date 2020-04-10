@@ -5,8 +5,8 @@ do
     #echo "start loadtest on node: $name"
     echo "starting loadtest on devnet"
    # time olclient loadtest --root $OLDATA/devnet/$name --threads 100 --interval 5 --max-tx 100000  --rpcAddress http://34.66.255.58:26604  sdkAddress http://34.66.255.58:26606 &
-   # time olclient loadtest --root $OLDATA/devnet/$name --threads 100 --interval 5 --max-tx 100000  --rpcAddress http://35.184.133.167:26604  sdkAddress http://35.184.133.167:26606
-    time olclient loadtest --root $OLDATA/fullnode --threads 100 --interval 5 --max-tx 100000
+    #time olclient loadtest --root $OLDATA/devnet/$name --threads 10 --interval 1 --max-tx 100000  --rpcAddress http://35.184.133.167:26604  sdkAddress http://35.184.133.167:26606
+    time olclient loadtest --root $OLDATA/fullnode --threads 10 --interval 5 --max-tx 100000
     #--rpcAddress http://35.184.133.167:26604 --sdkAddress http://35.184.133.167:26606 #>> /dev/null &
     sleep 1
 done
@@ -22,3 +22,41 @@ done
 #grep Loadtest $OLDATA/devnet/$name/olfullnode.log
 
 sleep 1
+
+
+
+
+
+
+#Loadtest metric height=2210, total_tx =19273, tx/b=8, avgblktime=0.035519 , tps=1918.669727 ,Txinlast20=1363 ,timelast20=0.710388
+#Loadtest metric height=2230, total_tx =20616, tx/b=9, avgblktime=0.030630 , tps=2192.275263 ,Txinlast20=1343 ,timelast20=0.612606
+#Loadtest metric height=2250, total_tx =22000, tx/b=9, avgblktime=0.033383 , tps=2072.908419 ,Txinlast20=1384 ,timelast20=0.667661
+#Loadtest metric height=2270, total_tx =23376, tx/b=10, avgblktime=0.029445 , tps=2336.570309 ,Txinlast20=1376 ,timelast20=0.588897
+#Loadtest metric height=2290, total_tx =24783, tx/b=10, avgblktime=0.031970 , tps=2200.495964 ,Txinlast20=1407 ,timelast20=0.639401
+#Loadtest metric height=2310, total_tx =26183, tx/b=11, avgblktime=0.035090 , tps=1994.849947 ,Txinlast20=1400 ,timelast20=0.701807
+#Loadtest metric height=2330, total_tx =27566, tx/b=11, avgblktime=0.029260 , tps=2363.273176 ,Txinlast20=1383 ,timelast20=0.585205
+#Loadtest metric height=2350, total_tx =28857, tx/b=12, avgblktime=0.033208 , tps=1943.827118 ,Txinlast20=1291 ,timelast20=0.664154
+#Loadtest metric height=2370, total_tx =30204, tx/b=12, avgblktime=0.034032 , tps=1979.029696 ,Txinlast20=1347 ,timelast20=0.680637
+#Loadtest metric height=2390, total_tx =31570, tx/b=13, avgblktime=0.035820 , tps=1906.750751 ,Txinlast20=1366 ,timelast20=0.716402
+#Loadtest metric height=2410, total_tx =32929, tx/b=13, avgblktime=0.038094 , tps=1783.761549 ,Txinlast20=1359 ,timelast20=0.761873
+#Loadtest metric height=2430, total_tx =34333, tx/b=14, avgblktime=0.032795 , tps=2140.574908 ,Txinlast20=1404 ,timelast20=0.655899
+#Loadtest metric height=2450, total_tx =35535, tx/b=14, avgblktime=0.035816 , tps=1678.019977 ,Txinlast20=1202 ,timelast20=0.716320
+#Loadtest metric height=2470, total_tx =36928, tx/b=14, avgblktime=0.034389 , tps=2025.368121 ,Txinlast20=1393 ,timelast20=0.687776
+#Loadtest metric height=2490, total_tx =38221, tx/b=15, avgblktime=0.037040 , tps=1745.407295 ,Txinlast20=1293 ,timelast20=0.740801
+#Loadtest metric height=2510, total_tx =41502, tx/b=16, avgblktime=0.042974 , tps=3817.436219 ,Txinlast20=3281 ,timelast20=0.859477
+#Loadtest metric height=2530, total_tx =45927, tx/b=18, avgblktime=0.042450 , tps=5211.969848 ,Txinlast20=4425 ,timelast20=0.849007
+#Loadtest metric height=2550, total_tx =50392, tx/b=19, avgblktime=0.051530 , tps=4332.443241 ,Txinlast20=4465 ,timelast20=1.030596
+#Loadtest metric height=2570, total_tx =55008, tx/b=21, avgblktime=0.038950 , tps=5925.564261 ,Txinlast20=4616 ,timelast20=0.778998
+#Loadtest metric height=2590, total_tx =58981, tx/b=22, avgblktime=0.037320 , tps=5322.837803 ,Txinlast20=3973 ,timelast20=0.746406
+#Loadtest metric height=2610, total_tx =63107, tx/b=24, avgblktime=0.037898 , tps=5443.575215 ,Txinlast20=4126 ,timelast20=0.757958
+#Loadtest metric height=2630, total_tx =67458, tx/b=25, avgblktime=0.042831 , tps=5079.256047 ,Txinlast20=4351 ,timelast20=0.856622
+#Loadtest metric height=2650, total_tx =71649, tx/b=27, avgblktime=0.038894 , tps=5387.721427 ,Txinlast20=4191 ,timelast20=0.777880
+#Loadtest metric height=2670, total_tx =76010, tx/b=28, avgblktime=0.042720 , tps=5104.202511 ,Txinlast20=4361 ,timelast20=0.854394
+#Loadtest metric height=2690, total_tx =80146, tx/b=29, avgblktime=0.039691 , tps=5210.210339 ,Txinlast20=4136 ,timelast20=0.793826
+#Loadtest metric height=2710, total_tx =84205, tx/b=31, avgblktime=0.039050 , tps=5197.173603 ,Txinlast20=4059 ,timelast20=0.781001
+#Loadtest metric height=2730, total_tx =88206, tx/b=32, avgblktime=0.044028 , tps=4543.694655 ,Txinlast20=4001 ,timelast20=0.880561
+#Loadtest metric height=2750, total_tx =92419, tx/b=33, avgblktime=0.048420 , tps=4350.510442 ,Txinlast20=4213 ,timelast20=0.968392
+#Loadtest metric height=2770, total_tx =96763, tx/b=34, avgblktime=0.043479 , tps=4995.571272 ,Txinlast20=4344 ,timelast20=0.869570
+#Loadtest metric height=2790, total_tx =100684, tx/b=36, avgblktime=0.039362 , tps=4980.754731 ,Txinlast20=3921 ,timelast20=0.787230
+#Loadtest metric height=2810, total_tx =105826, tx/b=37, avgblktime=0.048741 , tps=5274.842623 ,Txinlast20=5142 ,timelast20=0.974816
+#Loadtest metric height=2830, total_tx =110581, tx/b=39, avgblktime=0.051576 , tps=4609.721064 ,Txinlast20=4755 ,timelast20=1.031516

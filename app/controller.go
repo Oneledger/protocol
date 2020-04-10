@@ -122,21 +122,21 @@ func (app *App) blockBeginner() blockBeginner {
 		if err != nil {
 			app.logger.Error("validator set with error", err)
 		}
-		if req.Header.Height >= 10174 {
-			fmt.Println("")
-		}
+
 		result := ResponseBeginBlock{
 			Tags: []common.KVPair(nil),
 		}
 		if req.Header.Height == 3 {
-			startTime = req.Header.Time
+			startTime = time.Now()
 			startTx = req.Header.TotalTxs
 		}
 
 		if math.Mod(float64(req.Header.Height-10), 20) == 0 {
-			endTime = req.Header.Time
+			endTime = time.Now()
 			endTx = req.Header.TotalTxs
 			loadtest(req.Header, app.logger)
+			startTx = endTx
+			startTime = endTime
 		}
 
 		//update the header to current block
@@ -149,8 +149,8 @@ func (app *App) blockBeginner() blockBeginner {
 
 func loadtest(head Header, logger *log.Logger) {
 	tps := float64(endTx-startTx) / (endTime.Sub(startTime).Seconds())
-	blktime := (endTime.Sub(startTime).Seconds()) / float64(head.Height-3)
-	logger.Infof("Loadtest metric height=%d, total_tx =%d, tx/b=%d, blktime=%3f , tps=%3f ,tx_current=%d", head.Height, head.TotalTxs, head.TotalTxs/head.Height, blktime, tps, head.NumTxs)
+	blktime := (endTime.Sub(startTime).Seconds()) / 20
+	logger.Infof("Loadtest metric height=%d, total_tx =%d, tx/b=%d, avgblktime=%3f , tps=%3f ,Txinlast20=%d ,timelast20=%f", head.Height, head.TotalTxs, head.TotalTxs/head.Height, blktime, tps, endTx-startTx, endTime.Sub(startTime).Seconds())
 }
 
 // mempool connection: for checking if transactions should be relayed before they are committed

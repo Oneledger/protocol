@@ -74,8 +74,8 @@ func init() {
 
 	loadtestCmd.Flags().BytesHexVar(&loadTestArgs.address, "address", []byte(nil),
 		"fund address that loadtest uses")
-	loadtestCmd.Flags().StringVar(&loadTestArgs.rpcAddress, "rpcAddress", "tcp://127.0.0.1:26604", "rpc endpoint which will be used")
-	loadtestCmd.Flags().StringVar(&loadTestArgs.sdkAddress, "sdkAddress", "http://127.0.0.1:26606", "sdk endpoint which will be used")
+	loadtestCmd.Flags().StringVar(&loadTestArgs.rpcAddress, "rpcAddress", "tcp://127.0.0.1:26600", "rpc endpoint which will be used")
+	loadtestCmd.Flags().StringVar(&loadTestArgs.sdkAddress, "sdkAddress", "http://127.0.0.1:26602", "sdk endpoint which will be used")
 }
 
 // loadTest function spawns a few thread which create an account and execute send transactions on the
