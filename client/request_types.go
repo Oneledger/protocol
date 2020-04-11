@@ -266,5 +266,5 @@ type FeeOptionsReply struct {
 
 type ListTxTypesRequest struct{}
 type ListTxTypesReply struct{
-	TxTypes []action.TxTypeDescribe `json:"txTypes"`
+	TxTypes []action.TxTypeDescribe `json:"txType"`
 }
