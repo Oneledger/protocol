@@ -6,7 +6,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-var isETHWitness bool
+var fnIsETHWitness func() bool
 
 type EthWitnessStore struct {
 	prefix []byte
@@ -26,7 +26,10 @@ func (ws *EthWitnessStore) WithState(state *storage.State) *EthWitnessStore {
 }
 
 func (ws *EthWitnessStore) Init(nodeValidatorAddress keys.Address) {
-	isETHWitness = ws.Exists(nodeValidatorAddress)
+	isETHWitness := ws.Exists(nodeValidatorAddress)
+	fnIsETHWitness = func() bool {
+		return isETHWitness
+	}
 }
 
 func (ws *EthWitnessStore) Get(addr keys.Address) (*EthWitness, error) {
@@ -77,7 +80,7 @@ func (ws *EthWitnessStore) GetETHWitnessAddresses() ([]keys.Address, error) {
 
 // This node is a ethereum witness or not
 func (ws *EthWitnessStore) IsETHWitness() bool {
-	return isETHWitness
+	return fnIsETHWitness()
 }
 
 func (ws *EthWitnessStore) IsETHWitnessAddress(addr keys.Address) bool {

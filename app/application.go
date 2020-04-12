@@ -342,6 +342,10 @@ func (app *App) Start() error {
 		app.logger.Error("Failed to create consensus.Node")
 		return errors.Wrap(err, "failed to create new consensus.Node")
 	}
+
+	// Init isWitness flag after genesis witnesses loaded in NewNode
+	app.Context.ethWitnesses.Init(app.Context.node.ValidatorAddress())
+
 	err = node.Start()
 	if err != nil {
 		app.logger.Error("Failed to start consensus.Node")
