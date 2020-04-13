@@ -11,5 +11,3 @@ do
     cp -f $OLDATA/priv_validator_state.json $OLDATA/devnet/$name/consensus/data/
 done
 
-rm -rf /tmp/genTime.tmp
-
