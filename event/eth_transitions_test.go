@@ -2,6 +2,7 @@ package event
 
 import (
 	"fmt"
+	"os"
 	"strconv"
 	"testing"
 
@@ -11,6 +12,7 @@ import (
 	"github.com/Oneledger/protocol/data/jobs"
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/identity"
+	"github.com/Oneledger/protocol/log"
 	"github.com/Oneledger/protocol/storage"
 	"github.com/Oneledger/protocol/utils/transition"
 	"github.com/ethereum/go-ethereum/common"
@@ -27,7 +29,8 @@ var (
 	chainState  storage.ChainState
 	ethTrackers ethereum.TrackerStore
 	jobStore    jobs.JobStore
-	valStore    identity.ValidatorStore
+	witStore    identity.EthWitnessStore
+	logger      *log.Logger
 
 	testCases map[int]Case
 )
@@ -53,9 +56,10 @@ func setup() {
 	}
 
 	chainState = *storage.NewChainState("chainstate", db)
-	ethTrackers = *ethereum.NewTrackerStore("etht", storage.NewState(&chainState))
+	ethTrackers = *ethereum.NewTrackerStore("etht", "ethfail", "ethsuccess", storage.NewState(&chainState))
 	jobStore = *jobs.NewJobStore(*config.DefaultServerConfig(), "test_dbpath")
-	valStore = *identity.NewValidatorStore("val", *config.DefaultServerConfig(), storage.NewState(&chainState))
+	witStore = *identity.NewEthWitnessStore("wit", storage.NewState(&chainState))
+	logger = log.NewDefaultLogger(os.Stdout).WithPrefix("test")
 }
 
 func init() {
@@ -109,7 +113,7 @@ func TestTransitions(t *testing.T) {
 
 			fmt.Println("In State:", transition.Status(tracker.State))
 
-			ctx := ethereum.NewTrackerCtx(&tracker, testCase.CurrNodeAddr, jobStore.WithChain(chain.ETHEREUM), &ethTrackers, &valStore)
+			ctx := ethereum.NewTrackerCtx(&tracker, testCase.CurrNodeAddr, jobStore.WithChain(chain.ETHEREUM), &ethTrackers, &witStore, logger)
 			_, err := EthLockEngine.Process(tracker.NextStep(), ctx, transition.Status(tracker.State))
 			if err != nil {
 				t.Errorf(err.Error())
