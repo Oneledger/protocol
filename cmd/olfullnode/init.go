@@ -117,14 +117,14 @@ func runInitNode(cmd *cobra.Command, _ []string) error {
 	if err != nil {
 		return errors.Wrap(err, "Failed to generate node key")
 	}
-	fmt.Println("node key address: ", nodekey.PubKey().Address().String())
+	fmt.Println("node_key_address: ", nodekey.PubKey().Address().String())
 
 	// Make private validator file
 	pvFile := privval.GenFilePV(filepath.Join(configDir, consensus.PrivValidatorKeyFilename),
 		filepath.Join(dataDir, consensus.PrivValidatorStateFilename))
 	pvFile.Save()
-	fmt.Println("validator key address: ", pvFile.GetAddress().String())
-	fmt.Println("validator public key: ", pvFile.GetPubKey())
+	fmt.Println("validator_key_address: ", pvFile.GetAddress().String())
+	fmt.Println("validator_public_key: ", pvFile.GetPubKey())
 
 	ecdsaPrivKey := secp256k1.GenPrivKey()
 	ecdsaPrivKeyBytes := base64.StdEncoding.EncodeToString([]byte(ecdsaPrivKey[:]))
@@ -147,7 +147,7 @@ func runInitNode(cmd *cobra.Command, _ []string) error {
 	if err != nil && n != len(ecdsaPrivKeyBytes) {
 		return errors.Wrap(err, "failed to save validator ecdsa private key")
 	}
-	fmt.Println("witness key address: ", ecdsaPrivKey.PubKey().Address().String())
+	fmt.Println("witness_key_address: ", ecdsaPrivKey.PubKey().Address().String())
 
 	return nil
 }
