@@ -4,29 +4,26 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	ethChain "github.com/Oneledger/protocol/chains/ethereum"
-	"github.com/Oneledger/protocol/data/ethereum"
-	"github.com/Oneledger/protocol/data/governance"
-	"github.com/tendermint/tendermint/types"
-	"io"
-	"io/ioutil"
-	"os"
-	"path/filepath"
-	"strings"
-	"time"
-
 	"github.com/Oneledger/protocol/app"
 	olNode "github.com/Oneledger/protocol/app/node"
+	ethChain "github.com/Oneledger/protocol/chains/ethereum"
 	"github.com/Oneledger/protocol/config"
 	"github.com/Oneledger/protocol/consensus"
 	"github.com/Oneledger/protocol/data/balance"
+	"github.com/Oneledger/protocol/data/ethereum"
 	"github.com/Oneledger/protocol/data/fees"
+	"github.com/Oneledger/protocol/data/governance"
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/data/ons"
 	"github.com/Oneledger/protocol/identity"
 	"github.com/Oneledger/protocol/log"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+	"github.com/tendermint/tendermint/types"
+	"io"
+	"os"
+	"path/filepath"
+	"strings"
 )
 
 // ConsensusParams contains consensus critical parameters that determine the
@@ -88,8 +85,7 @@ type saveStateCmdContext struct {
 }
 
 var (
-	saveStateCtx    = &saveStateCmdContext{}
-	genesisTimeFile = "/tmp/genTime.tmp"
+	saveStateCtx = &saveStateCmdContext{}
 )
 
 func (ctx *saveStateCmdContext) init(rootDir string) error {
@@ -146,14 +142,6 @@ func SaveState(cmd *cobra.Command, args []string) error {
 	return SaveChainState(application, saveStateCtx.filename, saveStateCtx.outputDir)
 }
 
-func fileExists(filename string) bool {
-	info, err := os.Stat(filename)
-	if os.IsNotExist(err) {
-		return false
-	}
-	return !info.IsDir()
-}
-
 func formatConsensusParams(params *types.ConsensusParams) ConsensusParams {
 	cParams := ConsensusParams{
 		Block:     BlockParams(params.Block),
@@ -161,23 +149,6 @@ func formatConsensusParams(params *types.ConsensusParams) ConsensusParams {
 		Validator: ValidatorParams(params.Validator),
 	}
 	return cParams
-}
-
-func setGenesisTime(genesisTime *time.Time) error {
-	if fileExists(genesisTimeFile) {
-		file, _ := ioutil.ReadFile(genesisTimeFile)
-		err := json.Unmarshal(file, genesisTime)
-		if err != nil {
-			return err
-		}
-	} else {
-		file, _ := json.Marshal(genesisTime)
-		err := ioutil.WriteFile(genesisTimeFile, file, 0644)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
 }
 
 func startBlock(writer io.Writer, name string) bool {
@@ -238,9 +209,7 @@ func writeListWithTag(ctx app.StorageCtx, writer io.Writer, tag string) bool {
 	case "domains":
 		DumpDomainToFile(ctx.Domains, ctx.Version, writer, writeStruct)
 	case "trackers":
-		DumpTrackerToFile(ctx.Trackers.WithPrefixType(ethereum.PrefixOngoing), writer, writeStruct)
-		DumpTrackerToFile(ctx.Trackers.WithPrefixType(ethereum.PrefixPassed), writer, writeStruct)
-		DumpTrackerToFile(ctx.Trackers.WithPrefixType(ethereum.PrefixFailed), writer, writeStruct)
+		DumpTrackerToFile(ctx.Trackers, writer, writeStruct)
 	case "fees":
 		DumpFeesToFile(ctx.FeePool, writer, writeStruct)
 		delimiter = ""
@@ -261,6 +230,9 @@ func SaveChainState(application *app.App, filename string, directory string) err
 	if err != nil {
 		return err
 	}
+
+	blockMeta := application.Node().BlockStore().LoadBlockMeta(version)
+
 	ctx.Version = version
 	appState := consensus.AppState{}
 	appState.Currencies, err = ctx.Govern.GetCurrencies()
@@ -275,12 +247,10 @@ func SaveChainState(application *app.App, filename string, directory string) err
 		return err
 	}
 
-	//Get Genesis Time if temp file created. Otherwise save Genesis time to file.
-	err = setGenesisTime(&genesisDoc.GenesisTime)
-	if err != nil {
-		return err
-	}
+	//Set Genesis Time
+	genesisDoc.GenesisTime = blockMeta.Header.Time
 
+	//Initialize with empty hash
 	genesisDoc.AppHash = []byte{}
 
 	genesis, err := json.Marshal(genesisDoc)
@@ -456,31 +426,39 @@ func DumpDomainToFile(ds *ons.DomainStore, height int64, writer io.Writer, fn fu
 //TODO: Add support for Bitcoin
 func DumpTrackerToFile(ts *ethereum.TrackerStore, writer io.Writer, fn func(writer io.Writer, obj interface{}) bool) {
 	iterator := 0
+	prevIter := 0
 	delimiter := ","
+	prefixList := []ethereum.PrefixType{ethereum.PrefixOngoing, ethereum.PrefixFailed, ethereum.PrefixPassed}
 
-	ts.Iterate(func(name *ethChain.TrackerName, tracker *ethereum.Tracker) bool {
-		if iterator != 0 {
-			_, err := writer.Write([]byte(delimiter))
-			if err != nil {
-				return true
+	for _, prefix := range prefixList {
+		//Iterate through tracker store with the given prefix.
+		trackerStore := ts.WithPrefixType(prefix)
+		trackerStore.Iterate(func(name *ethChain.TrackerName, tracker *ethereum.Tracker) bool {
+			//If There is data in this store and the previous one, then add a delimiter.
+			//Also If there is more than one item in this store then we need to add a delimiter.
+			if iterator != 0 {
+				_, err := writer.Write([]byte(delimiter))
+				if err != nil {
+					return true
+				}
 			}
-		}
 
-		trackerState := consensus.Tracker{}
-		trackerState.Type = tracker.Type
-		trackerState.State = tracker.State
-		trackerState.FinalityVotes = tracker.FinalityVotes
-		trackerState.ProcessOwner = tracker.ProcessOwner
-		trackerState.SignedETHTx = tracker.SignedETHTx
-		trackerState.TrackerName = tracker.TrackerName
-		trackerState.Validators = tracker.Validators
-		trackerState.To = tracker.To
+			trackerState := consensus.Tracker{}
+			trackerState.Type = tracker.Type
+			trackerState.State = tracker.State
+			trackerState.FinalityVotes = tracker.FinalityVotes
+			trackerState.ProcessOwner = tracker.ProcessOwner
+			trackerState.SignedETHTx = tracker.SignedETHTx
+			trackerState.TrackerName = tracker.TrackerName
+			trackerState.Validators = tracker.Validators
+			trackerState.To = tracker.To
 
-		fn(writer, trackerState)
-		iterator++
+			fn(writer, trackerState)
+			iterator++
 
-		return false
-	})
+			return false
+		})
+	}
 }
 
 func GetGovernance(gs *governance.Store) *consensus.GovernanceState {

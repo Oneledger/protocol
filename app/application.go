@@ -216,7 +216,6 @@ func (app *App) setupState(stateBytes []byte) error {
 		case ethereum.Failed:
 			err = app.Context.ethTrackers.WithState(app.Context.deliver).WithPrefixType(ethereum.PrefixFailed).Set(tr)
 		default:
-			fmt.Println("Adding Tracker to Ongoing DB")
 			err = app.Context.ethTrackers.WithState(app.Context.deliver).WithPrefixType(ethereum.PrefixOngoing).Set(tr)
 		}
 
@@ -342,6 +341,23 @@ func (app *App) Prepare() error {
 
 		app.Context.btcTrackers.SetConfig(btcConfig)
 	}
+
+	nodecfg, err := consensus.ParseConfig(&app.Context.cfg)
+	if err != nil {
+		return errors.Wrap(err, "failed parse NodeConfig")
+	}
+	genesisDoc, err := nodecfg.GetGenesisDoc()
+	if err != nil {
+		return errors.Wrap(err, "failed get genesisDoc")
+	}
+	app.genesisDoc = genesisDoc
+
+	app.node, err = consensus.NewNode(app.ABCI(), nodecfg)
+	if err != nil {
+		app.logger.Error("Failed to create consensus.Node")
+		return errors.Wrap(err, "failed to create new consensus.Node")
+	}
+
 	return nil
 }
 
@@ -354,22 +370,7 @@ func (app *App) Start() error {
 		return err
 	}
 
-	nodecfg, err := consensus.ParseConfig(&app.Context.cfg)
-	if err != nil {
-		return errors.Wrap(err, "failed parse NodeConfig")
-	}
-	genesisDoc, err := nodecfg.GetGenesisDoc()
-	if err != nil {
-		return errors.Wrap(err, "failed get genesisDoc")
-	}
-	app.genesisDoc = genesisDoc
-
-	node, err := consensus.NewNode(app.ABCI(), nodecfg)
-	if err != nil {
-		app.logger.Error("Failed to create consensus.Node")
-		return errors.Wrap(err, "failed to create new consensus.Node")
-	}
-	err = node.Start()
+	err = app.node.Start()
 	if err != nil {
 		app.logger.Error("Failed to start consensus.Node")
 		return errors.Wrap(err, "failed to start new consensus.Node")
@@ -399,9 +400,8 @@ func (app *App) Start() error {
 		return err
 	}
 
-	app.node = node
 	app.Context.internalService = event.NewService(app.Context.node,
-		log.NewLoggerWithPrefix(app.Context.logWriter, "internal_service"), internalRouter, node)
+		log.NewLoggerWithPrefix(app.Context.logWriter, "internal_service"), internalRouter, app.node)
 
 	_ = app.Context.jobBus.Start(app.Context.JobContext())
 
