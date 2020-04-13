@@ -426,7 +426,6 @@ func DumpDomainToFile(ds *ons.DomainStore, height int64, writer io.Writer, fn fu
 //TODO: Add support for Bitcoin
 func DumpTrackerToFile(ts *ethereum.TrackerStore, writer io.Writer, fn func(writer io.Writer, obj interface{}) bool) {
 	iterator := 0
-	prevIter := 0
 	delimiter := ","
 	prefixList := []ethereum.PrefixType{ethereum.PrefixOngoing, ethereum.PrefixFailed, ethereum.PrefixPassed}
 
