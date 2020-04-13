@@ -65,7 +65,6 @@ func runInitNode(cmd *cobra.Command, _ []string) error {
 			return errors.Wrap(err, fmt.Sprintf("Failed to create the specified rootdir at %s", rootDir))
 		}
 	}
-	logger := log.NewLoggerWithPrefix(os.Stdout, "olfullnode init")
 
 	// Generate new configuration file
 	cfg := config.DefaultServerConfig()
@@ -99,7 +98,7 @@ func runInitNode(cmd *cobra.Command, _ []string) error {
 		if err != nil {
 			return errors.Wrap(err, "invalid genesis file path")
 		}
-		logger.Info("verifying genesis file provided")
+		fmt.Println("verifying genesis file provided")
 		genesis, err := types.GenesisDocFromFile(genesisPath)
 		if err != nil {
 			return err
@@ -111,17 +110,21 @@ func runInitNode(cmd *cobra.Command, _ []string) error {
 		// Make node key
 
 	} else {
-		logger.Info("no genesis file provided, node is not runnable until genesis file is provided at: ", filepath.Join(configDir, consensus.GenesisFilename))
+		fmt.Println("no genesis file provided, node is not runnable until genesis file is provided at: ", filepath.Join(configDir, consensus.GenesisFilename))
 	}
 
-	_, err = p2p.LoadOrGenNodeKey(filepath.Join(configDir, consensus.NodeKeyFilename))
+	nodekey, err := p2p.LoadOrGenNodeKey(filepath.Join(configDir, consensus.NodeKeyFilename))
 	if err != nil {
 		return errors.Wrap(err, "Failed to generate node key")
 	}
+	fmt.Println("node key address: ", nodekey.PubKey().Address().String())
+
 	// Make private validator file
 	pvFile := privval.GenFilePV(filepath.Join(configDir, consensus.PrivValidatorKeyFilename),
 		filepath.Join(dataDir, consensus.PrivValidatorStateFilename))
 	pvFile.Save()
+	fmt.Println("validator key address: ", pvFile.GetAddress().String())
+	fmt.Println("validator public key: ", pvFile.GetPubKey())
 
 	ecdsaPrivKey := secp256k1.GenPrivKey()
 	ecdsaPrivKeyBytes := base64.StdEncoding.EncodeToString([]byte(ecdsaPrivKey[:]))
@@ -144,6 +147,7 @@ func runInitNode(cmd *cobra.Command, _ []string) error {
 	if err != nil && n != len(ecdsaPrivKeyBytes) {
 		return errors.Wrap(err, "failed to save validator ecdsa private key")
 	}
+	fmt.Println("witness key address: ", ecdsaPrivKey.PubKey().Address().String())
 
 	return nil
 }
