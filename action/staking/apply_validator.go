@@ -32,7 +32,7 @@ func (apply *ApplyValidator) Unmarshal(data []byte) error {
 }
 
 func (apply ApplyValidator) Signers() []action.Address {
-	return []action.Address{apply.ValidatorAddress.Bytes(), apply.StakeAddress.Bytes()}
+	return []action.Address{apply.StakeAddress.Bytes(), apply.ValidatorAddress.Bytes()}
 }
 
 func (apply ApplyValidator) Type() action.Type {
