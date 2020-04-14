@@ -8,13 +8,11 @@ require (
 	github.com/blockcypher/gobcy v1.3.1
 	github.com/btcsuite/btcd v0.0.0-20190424234938-150379531efe
 	github.com/btcsuite/btcutil v0.0.0-20190207003914-4c204d697803
-	github.com/cespare/cp v1.1.1 // indirect
 	github.com/davecgh/go-spew v1.1.1
 	github.com/deckarep/golang-set v1.7.1 // indirect
 	github.com/edsrzf/mmap-go v1.0.0 // indirect
 	github.com/elastic/gosigar v0.10.5 // indirect
 	github.com/ethereum/go-ethereum v1.9.6
-	github.com/fjl/memsize v0.0.0-20190710130421-bcb5799ab5e5 // indirect
 	github.com/fortytw2/leaktest v1.3.0 // indirect
 	github.com/gballet/go-libpcsclite v0.0.0-20190607065134-2772fd86a8ff // indirect
 	github.com/go-kit/kit v0.8.0
@@ -27,7 +25,6 @@ require (
 	github.com/jmhodges/levigo v1.0.0 // indirect
 	github.com/karalabe/usb v0.0.0-20190919080040-51dc0efba356 // indirect
 	github.com/magiconair/properties v1.8.1
-	github.com/mattn/go-colorable v0.1.4 // indirect
 	github.com/mattn/go-isatty v0.0.10 // indirect
 	github.com/mattn/go-runewidth v0.0.5 // indirect
 	github.com/olekukonko/tablewriter v0.0.1 // indirect
@@ -54,9 +51,7 @@ require (
 	google.golang.org/appengine v1.6.0 // indirect
 	google.golang.org/genproto v0.0.0-20190522204451-c2c4e71fbf69 // indirect
 	gopkg.in/natefinch/npipe.v2 v2.0.0-20160621034901-c1b8fa8bdcce // indirect
-	gopkg.in/olebedev/go-duktape.v3 v3.0.0-20190709231704-1e4459ed25ff // indirect
 	gopkg.in/sourcemap.v1 v1.0.5 // indirect
-	gopkg.in/urfave/cli.v1 v1.20.0 // indirect
 )
 
 go 1.13

@@ -76,7 +76,7 @@ if __name__ == "__main__":
     addrs = addresses()
     print addrs
 
-    dest_addr = "0xdeadbeafdeadbeafdeadbeafdeadbeafdeadbeaf"
+    dest_addr = "0ldeadbeafdeadbeafdeadbeafdeadbeafdeadbeaf"
     raw_txn = withdraw(addrs[0], dest_addr)
     print "raw withdraw tx:", raw_txn
 

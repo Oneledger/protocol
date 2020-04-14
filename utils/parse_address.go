@@ -20,7 +20,7 @@ import (
 )
 
 // Hex prefix
-const HexPrefix = "0x"
+const HexPrefix = "0l"
 
 func PrefixHex(in string) string {
 	return HexPrefix + in
