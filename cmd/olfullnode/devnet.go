@@ -391,6 +391,7 @@ func runDevnet(_ *cobra.Command, _ []string) error {
 		return errors.Wrap(err, "failed to create new genesis file")
 	}
 	genesisDoc.Validators = validatorList
+	genesisDoc.ConsensusParams.Block.TimeIotaMs = 10000
 
 	for i := 0; i < totalNodes; i++ {
 		nodeName := ctx.names[i]
