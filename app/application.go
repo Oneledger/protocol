@@ -2,9 +2,10 @@ package app
 
 import (
 	"fmt"
-	"github.com/Oneledger/protocol/data/ethereum"
 	"net/url"
 	"os"
+
+	"github.com/Oneledger/protocol/data/ethereum"
 
 	"github.com/btcsuite/btcutil/base58"
 	"github.com/pkg/errors"
@@ -209,7 +210,7 @@ func (app *App) setupState(stateBytes []byte) error {
 			State:         tracker.State,
 			TrackerName:   tracker.TrackerName,
 			SignedETHTx:   tracker.SignedETHTx,
-			Validators:    tracker.Validators,
+			Witnesses:     tracker.Validators,
 			ProcessOwner:  tracker.ProcessOwner,
 			FinalityVotes: make([]ethereum.Vote, len(tracker.Validators)),
 			To:            tracker.To,

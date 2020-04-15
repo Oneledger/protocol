@@ -12,6 +12,7 @@ import (
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/chains/ethereum"
 	"github.com/Oneledger/protocol/data/balance"
+	"github.com/Oneledger/protocol/data/chain"
 	trackerlib "github.com/Oneledger/protocol/data/ethereum"
 	"github.com/Oneledger/protocol/data/keys"
 )
@@ -154,7 +155,7 @@ func runERC20Reddem(ctx *action.Context, tx action.RawTx) (bool, action.Response
 		return false, action.Response{Log: action.ErrNotEnoughFund.Error()}
 	}
 
-	witnesses, err := ctx.Witnesses.GetETHWitnessAddresses()
+	witnesses, err := ctx.Witnesses.GetWitnessAddresses(chain.ETHEREUM)
 	if err != nil {
 		return false, action.Response{Log: "error in getting validator addresses" + err.Error()}
 	}

@@ -10,7 +10,7 @@ import (
 
 var (
 	nodeAddr, _ = hex.DecodeString("F2143ADE3D941025468792311A0AB38D5085E15A")
-	witness     = &EthWitness{
+	witness     = &Witness{
 		Address: nodeAddr,
 		PubKey: keys.PublicKey{
 			KeyType: keys.ED25519,
@@ -26,7 +26,7 @@ func TestETHWitness_Bytes(t *testing.T) {
 
 func TestETHWitness_FromBytes(t *testing.T) {
 	value := witness.Bytes()
-	witness_after := &EthWitness{}
+	witness_after := &Witness{}
 	witness_after, err := witness_after.FromBytes(value)
 	if assert.NoError(t, err) {
 		assert.Equal(t, witness, witness_after)

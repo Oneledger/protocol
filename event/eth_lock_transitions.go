@@ -212,7 +212,7 @@ func Cleanup(ctx interface{}) error {
 	}
 
 	//Delete Jobs
-	if context.Validators.IsETHWitness() {
+	if context.Witnesses.IsETHWitness() {
 		for state := ethereum.BusyBroadcasting; state <= ethereum.Released; state++ {
 			job, err := context.JobStore.GetJob(tracker.GetJobID(state))
 			if err != nil {
@@ -249,7 +249,7 @@ func CleanupFailed(ctx interface{}) error {
 	}
 
 	//Delete Broadcasting Job It its there
-	if context.Validators.IsETHWitness() {
+	if context.Witnesses.IsETHWitness() {
 		for state := ethereum.BusyBroadcasting; state <= ethereum.Released; state++ {
 			job, err := context.JobStore.GetJob(tracker.GetJobID(state))
 			if err != nil {

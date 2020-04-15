@@ -1,65 +1,68 @@
 package identity
 
 import (
+	"github.com/Oneledger/protocol/data/chain"
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/storage"
 	"github.com/pkg/errors"
 )
 
-var fnIsETHWitness func() bool
+var isETHWitness bool
 
-type EthWitnessStore struct {
+type WitnessStore struct {
 	prefix []byte
 	store  *storage.State
 }
 
-func NewEthWitnessStore(prefix string, state *storage.State) *EthWitnessStore {
-	return &EthWitnessStore{
+func NewWitnessStore(prefix string, state *storage.State) *WitnessStore {
+	return &WitnessStore{
 		prefix: storage.Prefix(prefix),
 		store:  state,
 	}
 }
 
-func (ws *EthWitnessStore) WithState(state *storage.State) *EthWitnessStore {
+func (ws *WitnessStore) WithState(state *storage.State) *WitnessStore {
 	ws.store = state
 	return ws
 }
 
-func (ws *EthWitnessStore) Init(nodeValidatorAddress keys.Address) {
-	isETHWitness := ws.Exists(nodeValidatorAddress)
-	fnIsETHWitness = func() bool {
-		return isETHWitness
-	}
+func (ws *WitnessStore) Init(chain chain.Type, nodeValidatorAddress keys.Address) {
+	isETHWitness = ws.Exists(chain, nodeValidatorAddress)
 }
 
-func (ws *EthWitnessStore) Get(addr keys.Address) (*EthWitness, error) {
+func (ws *WitnessStore) Get(chain chain.Type, addr keys.Address) (*Witness, error) {
 	key := append(ws.prefix, addr...)
 	value, _ := ws.store.Get(key)
 	if value == nil {
-		return nil, errors.New("failed to get ethereum witness from store")
+		return nil, errors.New("failed to get witness from store")
 	}
-	witness := &EthWitness{}
+	witness := &Witness{}
 	witness, err := witness.FromBytes(value)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to deserialize ethereum witness")
+		return nil, errors.Wrap(err, "failed to deserialize witness")
 	}
+
+	if witness.Chain != chain {
+		return nil, errors.Wrap(err, "witness does not match")
+	}
+
 	return witness, nil
 }
 
-func (ws *EthWitnessStore) Exists(addr keys.Address) bool {
-	key := append(ws.prefix, addr...)
-	return ws.store.Exists(key)
+func (ws *WitnessStore) Exists(chain chain.Type, addr keys.Address) bool {
+	_, err := ws.Get(chain, addr)
+	return err == nil
 }
 
-func (ws *EthWitnessStore) Iterate(fn func(addr keys.Address, witness *EthWitness) bool) (stopped bool) {
+func (ws *WitnessStore) Iterate(fn func(addr keys.Address, witness *Witness) bool) (stopped bool) {
 	return ws.store.IterateRange(
 		ws.prefix,
 		storage.Rangefix(string(ws.prefix)),
 		true,
 		func(key, value []byte) bool {
-			witness, err := (&EthWitness{}).FromBytes(value)
+			witness, err := (&Witness{}).FromBytes(value)
 			if err != nil {
-				logger.Error("failed to deserialize ethereum witness")
+				logger.Error("failed to deserialize witness")
 				return false
 			}
 			addr := key[len(ws.prefix):]
@@ -68,43 +71,46 @@ func (ws *EthWitnessStore) Iterate(fn func(addr keys.Address, witness *EthWitnes
 	)
 }
 
-// Get Ethereum witness addresses
-func (ws *EthWitnessStore) GetETHWitnessAddresses() ([]keys.Address, error) {
+// Get witness addresses
+func (ws *WitnessStore) GetWitnessAddresses(chain chain.Type) ([]keys.Address, error) {
 	witnessList := make([]keys.Address, 0)
-	ws.Iterate(func(addr keys.Address, witness *EthWitness) bool {
-		witnessList = append(witnessList, addr)
+	ws.Iterate(func(addr keys.Address, witness *Witness) bool {
+		if witness.Chain == chain {
+			witnessList = append(witnessList, addr)
+		}
 		return false
 	})
 	return witnessList, nil
 }
 
 // This node is a ethereum witness or not
-func (ws *EthWitnessStore) IsETHWitness() bool {
-	return fnIsETHWitness()
+func (ws *WitnessStore) IsETHWitness() bool {
+	return isETHWitness
 }
 
-func (ws *EthWitnessStore) IsETHWitnessAddress(addr keys.Address) bool {
-	return ws.Exists(addr)
+func (ws *WitnessStore) IsWitnessAddress(chain chain.Type, addr keys.Address) bool {
+	return ws.Exists(chain, addr)
 }
 
-// Add a ethereum witness to store
-func (ws *EthWitnessStore) AddWitness(apply Stake) error {
-	if ws.Exists(apply.ValidatorAddress) {
+// Add a witness to store
+func (ws *WitnessStore) AddWitness(chain chain.Type, apply Stake) error {
+	if ws.Exists(chain, apply.ValidatorAddress) {
 		return nil
 	}
 
-	witness := &EthWitness{
+	witness := &Witness{
 		Address:     apply.ValidatorAddress,
 		PubKey:      apply.Pubkey,
 		ECDSAPubKey: apply.ECDSAPubKey,
 		Name:        apply.Name,
+		Chain:       chain,
 	}
 
 	value := witness.Bytes()
 	vkey := append(ws.prefix, witness.Address.Bytes()...)
 	err := ws.store.Set(vkey, value)
 	if err != nil {
-		return errors.Wrap(err, "failed to add ethereum witness")
+		return errors.Wrap(err, "failed to add witness")
 	}
 
 	return nil

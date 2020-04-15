@@ -1,18 +1,20 @@
 package identity
 
 import (
+	"github.com/Oneledger/protocol/data/chain"
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/serialize"
 )
 
-type EthWitness struct {
+type Witness struct {
 	Address     keys.Address   `json:"address"`
 	PubKey      keys.PublicKey `json:"pubKey"`
 	ECDSAPubKey keys.PublicKey `json:"ecdsaPubkey"`
 	Name        string         `json:"name"`
+	Chain       chain.Type     `json:"chain"`
 }
 
-func (w *EthWitness) Bytes() []byte {
+func (w *Witness) Bytes() []byte {
 	value, err := serialize.GetSerializer(serialize.PERSISTENT).Serialize(w)
 	if err != nil {
 		logger.Error("ethereum witness not serializable", err)
@@ -21,7 +23,7 @@ func (w *EthWitness) Bytes() []byte {
 	return value
 }
 
-func (w *EthWitness) FromBytes(msg []byte) (*EthWitness, error) {
+func (w *Witness) FromBytes(msg []byte) (*Witness, error) {
 	err := serialize.GetSerializer(serialize.PERSISTENT).Deserialize(msg, w)
 	if err != nil {
 		logger.Error("failed to deserialize ethereum witness from bytes", err)

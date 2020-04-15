@@ -12,11 +12,11 @@ type TrackerCtx struct {
 	TrackerStore *TrackerStore
 	JobStore     *jobs.JobStore
 	CurrNodeAddr keys.Address
-	Witnesses    *identity.EthWitnessStore
+	Witnesses    *identity.WitnessStore
 	Logger       *log.Logger
 }
 
-func NewTrackerCtx(t *Tracker, addr keys.Address, js *jobs.JobStore, ts *TrackerStore, ws *identity.EthWitnessStore, log *log.Logger) *TrackerCtx {
+func NewTrackerCtx(t *Tracker, addr keys.Address, js *jobs.JobStore, ts *TrackerStore, ws *identity.WitnessStore, log *log.Logger) *TrackerCtx {
 	return &TrackerCtx{
 		Tracker:      t,
 		CurrNodeAddr: addr,

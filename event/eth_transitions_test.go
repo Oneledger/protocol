@@ -29,7 +29,7 @@ var (
 	chainState  storage.ChainState
 	ethTrackers ethereum.TrackerStore
 	jobStore    jobs.JobStore
-	witStore    identity.EthWitnessStore
+	witStore    identity.WitnessStore
 	logger      *log.Logger
 
 	testCases map[int]Case
@@ -58,7 +58,7 @@ func setup() {
 	chainState = *storage.NewChainState("chainstate", db)
 	ethTrackers = *ethereum.NewTrackerStore("etht", "ethfail", "ethsuccess", storage.NewState(&chainState))
 	jobStore = *jobs.NewJobStore(*config.DefaultServerConfig(), "test_dbpath")
-	witStore = *identity.NewEthWitnessStore("wit", storage.NewState(&chainState))
+	witStore = *identity.NewWitnessStore("wit", storage.NewState(&chainState))
 	logger = log.NewDefaultLogger(os.Stdout).WithPrefix("test")
 }
 

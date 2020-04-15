@@ -26,7 +26,7 @@ type Context struct {
 	Currencies      *balance.CurrencySet
 	FeeOpt          *fees.FeeOption
 	Validators      *identity.ValidatorStore
-	Witnesses       *identity.EthWitnessStore
+	Witnesses       *identity.WitnessStore
 	BTCTrackers     *bitcoin.TrackerStore
 	ETHTrackers     *ethereum.TrackerStore
 	Logger          *log.Logger
@@ -37,7 +37,7 @@ type Context struct {
 func NewContext(r Router, header *abci.Header, state *storage.State,
 	wallet accounts.Wallet, balances *balance.Store,
 	currencies *balance.CurrencySet, feePool *fees.Store,
-	validators *identity.ValidatorStore, witnesses *identity.EthWitnessStore,
+	validators *identity.ValidatorStore, witnesses *identity.WitnessStore,
 	domains *ons.DomainStore, btcTrackers *bitcoin.TrackerStore,
 	ethTrackers *ethereum.TrackerStore, jobStore *jobs.JobStore,
 	lockScriptStore *bitcoin.LockScriptStore, logger *log.Logger) *Context {

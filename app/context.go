@@ -47,15 +47,15 @@ type context struct {
 	check      *storage.State
 	deliver    *storage.State
 
-	balances     *balance.Store
-	domains      *ons.DomainStore
-	validators   *identity.ValidatorStore  // Set of validators currently active
-	ethWitnesses *identity.EthWitnessStore // Set of ethereum witnesses currently active
-	feePool      *fees.Store
-	govern       *governance.Store
-	btcTrackers  *bitcoin.TrackerStore  // tracker for bitcoin balance UTXO
-	ethTrackers  *ethereum.TrackerStore // Tracker store for ongoing ethereum trackers
-	currencies   *balance.CurrencySet
+	balances    *balance.Store
+	domains     *ons.DomainStore
+	validators  *identity.ValidatorStore // Set of validators currently active
+	witnesses   *identity.WitnessStore   // Set of witnesses currently active
+	feePool     *fees.Store
+	govern      *governance.Store
+	btcTrackers *bitcoin.TrackerStore  // tracker for bitcoin balance UTXO
+	ethTrackers *ethereum.TrackerStore // Tracker store for ongoing ethereum trackers
+	currencies  *balance.CurrencySet
 
 	//storage which is not a chain state
 	accounts accounts.Wallet
@@ -92,7 +92,7 @@ func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *node.Context) (
 	ctx.check = storage.NewState(ctx.chainstate)
 
 	ctx.validators = identity.NewValidatorStore("v", storage.NewState(ctx.chainstate))
-	ctx.ethWitnesses = identity.NewEthWitnessStore("etw", storage.NewState(ctx.chainstate))
+	ctx.witnesses = identity.NewWitnessStore("w", storage.NewState(ctx.chainstate))
 	ctx.balances = balance.NewStore("b", storage.NewState(ctx.chainstate))
 	ctx.domains = ons.NewDomainStore("d", storage.NewState(ctx.chainstate))
 	ctx.feePool = fees.NewStore("f", storage.NewState(ctx.chainstate))
@@ -140,7 +140,7 @@ func (ctx *context) Action(header *Header, state *storage.State) *action.Context
 		ctx.currencies,
 		ctx.feePool.WithState(state),
 		ctx.validators.WithState(state),
-		ctx.ethWitnesses.WithState(state),
+		ctx.witnesses.WithState(state),
 		ctx.domains.WithState(state),
 
 		ctx.btcTrackers.WithState(state),

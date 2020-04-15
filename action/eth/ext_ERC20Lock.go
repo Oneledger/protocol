@@ -11,6 +11,7 @@ import (
 
 	"github.com/Oneledger/protocol/action"
 	ethchaindriver "github.com/Oneledger/protocol/chains/ethereum"
+	"github.com/Oneledger/protocol/data/chain"
 	"github.com/Oneledger/protocol/data/ethereum"
 )
 
@@ -153,7 +154,7 @@ func runERC20Lock(ctx *action.Context, tx action.RawTx) (bool, action.Response) 
 		}
 	}
 
-	witnesses, err := ctx.Witnesses.GetETHWitnessAddresses()
+	witnesses, err := ctx.Witnesses.GetWitnessAddresses(chain.ETHEREUM)
 	if err != nil {
 		ctx.Logger.Error("err in getting witness address", err)
 		return false, action.Response{Log: "error in getting validator addresses" + err.Error()}

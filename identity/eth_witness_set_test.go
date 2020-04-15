@@ -10,18 +10,19 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	"github.com/Oneledger/protocol/data/chain"
 	"github.com/Oneledger/protocol/data/keys"
 )
 
 // test setup
-func setupEthWitnessStore() *EthWitnessStore {
+func setupEthWitnessStore() *WitnessStore {
 	db := db.NewDB("test", db.MemDBBackend, "")
 	cs := storage.NewChainState("chainstate", db)
-	ws := NewEthWitnessStore("etw", storage.NewState(cs))
+	ws := NewWitnessStore("etw", storage.NewState(cs))
 	return ws
 }
 
-func setupInitialEthWitness(ws *EthWitnessStore) []keys.Address {
+func setupInitialWitness(ws *WitnessStore) []keys.Address {
 	addresses := make([]keys.Address, 4)
 	addr0, _ := hex.DecodeString("72143ADE3D941025468792311A0AB38D5085E15A")
 	addr1, _ := hex.DecodeString("A21437DF3C9410254A8792311A0A13255085E157")
@@ -53,7 +54,7 @@ func setupInitialEthWitness(ws *EthWitnessStore) []keys.Address {
 	}
 
 	for _, stake := range stakes {
-		ws.AddWitness(stake)
+		ws.AddWitness(chain.ETHEREUM, stake)
 	}
 
 	ws.store.Commit()
@@ -69,14 +70,14 @@ func TestNewEthWitnessStore(t *testing.T) {
 func TestEthWitnessStore_Init_IsETHWitness(t *testing.T) {
 	t.Run("run with witness node, should return true", func(t *testing.T) {
 		ws := setupEthWitnessStore()
-		addrs := setupInitialEthWitness(ws)
-		ws.Init(addrs[0])
+		addrs := setupInitialWitness(ws)
+		ws.Init(chain.ETHEREUM, addrs[0])
 		assert.Equal(t, true, ws.IsETHWitness())
 	})
 	t.Run("run with non-witness node, should return false", func(t *testing.T) {
 		ws := setupEthWitnessStore()
-		addrs := setupInitialEthWitness(ws)
-		ws.Init(addrs[2])
+		addrs := setupInitialWitness(ws)
+		ws.Init(chain.ETHEREUM, addrs[2])
 		assert.Equal(t, false, ws.IsETHWitness())
 	})
 }
@@ -84,34 +85,34 @@ func TestEthWitnessStore_Init_IsETHWitness(t *testing.T) {
 func TestEthWitnessStore_Get_Exists(t *testing.T) {
 	t.Run("get by valid witness address", func(t *testing.T) {
 		ws := setupEthWitnessStore()
-		addrs := setupInitialEthWitness(ws)
-		exist := ws.Exists(addrs[0])
+		addrs := setupInitialWitness(ws)
+		exist := ws.Exists(chain.ETHEREUM, addrs[0])
 		assert.True(t, exist)
 
-		witness, err := ws.Get(addrs[0])
+		witness, err := ws.Get(chain.ETHEREUM, addrs[0])
 		assert.Nil(t, err)
 		assert.NotNil(t, witness)
 		assert.Equal(t, witness.Address, addrs[0])
 	})
 	t.Run("get by invalid witness address", func(t *testing.T) {
 		ws := setupEthWitnessStore()
-		addrs := setupInitialEthWitness(ws)
-		exist := ws.Exists(addrs[2])
+		addrs := setupInitialWitness(ws)
+		exist := ws.Exists(chain.ETHEREUM, addrs[2])
 		assert.False(t, exist)
 
-		witness, err := ws.Get(addrs[2])
+		witness, err := ws.Get(chain.ETHEREUM, addrs[2])
 		assert.Nil(t, witness)
-		assert.EqualError(t, err, "failed to get ethereum witness from store")
+		assert.EqualError(t, err, "failed to get witness from store")
 	})
 }
 
 func TestEthWitnessStore_Iterate(t *testing.T) {
 	ws := setupEthWitnessStore()
-	addrs := setupInitialEthWitness(ws)
+	addrs := setupInitialWitness(ws)
 	addrs_expected := addrs[:2]
 
 	addrs_actual := []keys.Address{}
-	ws.Iterate(func(addr keys.Address, witness *EthWitness) bool {
+	ws.Iterate(func(addr keys.Address, witness *Witness) bool {
 		addrs_actual = append(addrs_actual, addr)
 		return false
 	})
@@ -120,19 +121,19 @@ func TestEthWitnessStore_Iterate(t *testing.T) {
 
 func TestEthWitnessStore_GetETHWitnessAddresses(t *testing.T) {
 	ws := setupEthWitnessStore()
-	addrs := setupInitialEthWitness(ws)
+	addrs := setupInitialWitness(ws)
 	addrs_expected := addrs[:2]
-	addrs_actual, _ := ws.GetETHWitnessAddresses()
+	addrs_actual, _ := ws.GetWitnessAddresses(chain.ETHEREUM)
 	assert.EqualValues(t, addrs_expected, addrs_actual)
 }
 
 func TestEthWitnessStore_IsETHWitnessAddress(t *testing.T) {
 	ws := setupEthWitnessStore()
-	addrs := setupInitialEthWitness(ws)
-	assert.True(t, ws.IsETHWitnessAddress(addrs[0]))
-	assert.True(t, ws.IsETHWitnessAddress(addrs[1]))
-	assert.False(t, ws.IsETHWitnessAddress(addrs[2]))
-	assert.False(t, ws.IsETHWitnessAddress(addrs[3]))
+	addrs := setupInitialWitness(ws)
+	assert.True(t, ws.IsWitnessAddress(chain.ETHEREUM, addrs[0]))
+	assert.True(t, ws.IsWitnessAddress(chain.ETHEREUM, addrs[1]))
+	assert.False(t, ws.IsWitnessAddress(chain.ETHEREUM, addrs[2]))
+	assert.False(t, ws.IsWitnessAddress(chain.ETHEREUM, addrs[3]))
 }
 
 func TestEthWitnessStore_AddWitness(t *testing.T) {
@@ -147,9 +148,9 @@ func TestEthWitnessStore_AddWitness(t *testing.T) {
 		},
 		Name: "test_node_new",
 	}
-	err := ws.AddWitness(stake)
+	err := ws.AddWitness(chain.ETHEREUM, stake)
 	assert.Nil(t, err)
-	witness, err = ws.Get(addr)
+	witness, err = ws.Get(chain.ETHEREUM, addr)
 	assert.Nil(t, err)
 	assert.Equal(t, keys.Address(addr), witness.Address)
 }
