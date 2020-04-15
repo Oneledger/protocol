@@ -211,25 +211,18 @@ func Cleanup(ctx interface{}) error {
 		return err
 	}
 
-	//Delete Broadcasting Job
-	if context.Witnesses.IsETHWitness() {
-		bjob, err := context.JobStore.GetJob(tracker.GetJobID(ethereum.BusyBroadcasting))
-		if err != nil {
-			return errors.Wrap(err, "Failed to get Broadcasting Job")
-		}
-
-		err = context.JobStore.DeleteJob(bjob)
-		if err != nil {
-			return err
-		}
-		//Delete CheckFinalityStatus Job
-		fjob, err := context.JobStore.GetJob(tracker.GetJobID(ethereum.BusyFinalizing))
-		if err != nil {
-			return errors.Wrap(err, "Failed to get Finalizing Job")
-		}
-		err = context.JobStore.DeleteJob(fjob)
-		if err != nil {
-			return err
+	//Delete Jobs
+	if context.Validators.IsETHWitness() {
+		for state := ethereum.BusyBroadcasting; state <= ethereum.Released; state++ {
+			job, err := context.JobStore.GetJob(tracker.GetJobID(state))
+			if err != nil {
+				//fmt.Println(err, "failed to get job from state: ", state)
+				continue
+			}
+			err = context.JobStore.DeleteJob(job)
+			if err != nil {
+				return errors.Wrap(err, "error deleting job from store")
+			}
 		}
 	}
 	return nil
@@ -256,21 +249,16 @@ func CleanupFailed(ctx interface{}) error {
 	}
 
 	//Delete Broadcasting Job It its there
-	if context.Witnesses.IsETHWitness() {
-		bjob, err := context.JobStore.GetJob(tracker.GetJobID(ethereum.BusyBroadcasting))
-		if err == nil {
-			err = context.JobStore.DeleteJob(bjob)
+	if context.Validators.IsETHWitness() {
+		for state := ethereum.BusyBroadcasting; state <= ethereum.Released; state++ {
+			job, err := context.JobStore.GetJob(tracker.GetJobID(state))
 			if err != nil {
-				return err
+				//fmt.Println(err, "failed to get job from state: ", state)
+				continue
 			}
-		}
-
-		//Delete CheckFinalityStatus Job If its there
-		fjob, err := context.JobStore.GetJob(tracker.GetJobID(ethereum.BusyFinalizing))
-		if err == nil {
-			err = context.JobStore.DeleteJob(fjob)
+			err = context.JobStore.DeleteJob(job)
 			if err != nil {
-				return err
+				return errors.Wrap(err, "error deleting job from store")
 			}
 		}
 	}

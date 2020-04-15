@@ -10,6 +10,7 @@ import (
 	"github.com/Oneledger/protocol/chains/bitcoin"
 	ethchain "github.com/Oneledger/protocol/chains/ethereum"
 	"github.com/Oneledger/protocol/data/balance"
+	ethData "github.com/Oneledger/protocol/data/ethereum"
 	"github.com/Oneledger/protocol/data/fees"
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/data/ons"
@@ -62,6 +63,18 @@ type DomainState struct {
 	SalePrice        *balance.Amount `json:"salePrice"`
 }
 
+//TODO: Create More Generic Struct to contain all tracker types.
+type Tracker struct {
+	Type          ethData.ProcessType  `json:"type"`
+	State         ethData.TrackerState `json:"state"`
+	TrackerName   ethchain.TrackerName `json:"trackerName"`
+	SignedETHTx   []byte               `json:"signedEthTx"`
+	Validators    []keys.Address       `json:"validators"`
+	ProcessOwner  keys.Address         `json:"processOwner"`
+	FinalityVotes []ethData.Vote       `json:"finalityVotes"`
+	To            keys.Address         `json:"to"`
+}
+
 type ChainState struct {
 	Version int64
 	Hash    []byte
@@ -76,6 +89,7 @@ type AppState struct {
 	Balances   []BalanceState     `json:"balances"`
 	Staking    []Stake            `json:"staking"`
 	Domains    []DomainState      `json:"domains"`
+	Trackers   []Tracker          `json:"trackers"`
 	Fees       []BalanceState     `json:"fees"`
 }
 
