@@ -1,0 +1,13 @@
+for name in $(ls -l $OLDATA/devnet | grep Node  | awk '(NR>0){print $9}')
+do
+    echo "Saving Data From Node: $name"
+    olfullnode save_state --root $OLDATA/devnet/$name --filename genesis.json --outDir $OLDATA/devnet/$name/consensus/config/
+
+    echo "Deleting Node Data"
+    rm -rf $OLDATA/devnet/$name/nodedata/*
+    rm -rf $OLDATA/devnet/$name/consensus/data/*.db
+    rm -rf $OLDATA/devnet/$name/consensus/data/*.wal
+    rm -rf $OLDATA/devnet/$name/consensus/config/addrbook.json
+    cp -f $OLDATA/priv_validator_state.json $OLDATA/devnet/$name/consensus/data/
+done
+

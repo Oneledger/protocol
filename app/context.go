@@ -236,6 +236,7 @@ type StorageCtx struct {
 	Validators *identity.ValidatorStore // Set of validators currently active
 	FeePool    *fees.Store
 	Govern     *governance.Store
+	Trackers   *ethereum.TrackerStore //TODO: Create struct to contain all tracker types including Bitcoin.
 
 	Currencies *balance.CurrencySet
 	FeeOption  *fees.FeeOption
@@ -256,6 +257,7 @@ func (ctx *context) Storage() StorageCtx {
 		Govern:     ctx.govern,
 		Currencies: ctx.currencies,
 		FeeOption:  ctx.feePool.GetOpt(),
+		Trackers:   ctx.ethTrackers,
 	}
 }
 
