@@ -450,7 +450,7 @@ func DumpTrackerToFile(ts *ethereum.TrackerStore, writer io.Writer, fn func(writ
 			trackerState.ProcessOwner = tracker.ProcessOwner
 			trackerState.SignedETHTx = tracker.SignedETHTx
 			trackerState.TrackerName = tracker.TrackerName
-			trackerState.Validators = tracker.Witnesses
+			trackerState.Witnesses = tracker.Witnesses
 			trackerState.To = tracker.To
 
 			fn(writer, trackerState)

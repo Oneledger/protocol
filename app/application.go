@@ -210,9 +210,9 @@ func (app *App) setupState(stateBytes []byte) error {
 			State:         tracker.State,
 			TrackerName:   tracker.TrackerName,
 			SignedETHTx:   tracker.SignedETHTx,
-			Witnesses:     tracker.Validators,
+			Witnesses:     tracker.Witnesses,
 			ProcessOwner:  tracker.ProcessOwner,
-			FinalityVotes: make([]ethereum.Vote, len(tracker.Validators)),
+			FinalityVotes: make([]ethereum.Vote, len(tracker.Witnesses)),
 			To:            tracker.To,
 		}
 		switch tracker.State {
