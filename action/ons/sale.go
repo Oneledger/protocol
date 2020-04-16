@@ -199,5 +199,5 @@ func runDomainSale(ctx *action.Context, tx action.RawTx) (bool, action.Response)
 		return false, action.Response{Log: "error updating domain store"}
 	}
 
-	return true, action.Response{Tags: sale.Tags()}
+	return true, action.Response{Events: action.GetEvent(sale.Tags(), "domain_on_sale")}
 }

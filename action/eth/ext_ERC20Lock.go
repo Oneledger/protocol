@@ -199,6 +199,6 @@ func runERC20Lock(ctx *action.Context, tx action.RawTx) (bool, action.Response) 
 	}
 
 	return true, action.Response{
-		Tags: erc20lock.Tags(),
+		Events: action.GetEvent(erc20lock.Tags(), "erc20_lock"),
 	}
 }

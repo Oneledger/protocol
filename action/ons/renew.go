@@ -197,5 +197,5 @@ func runRenew(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 		return false
 	})
 
-	return true, action.Response{Tags: renewDomain.Tags()}
+	return true, action.Response{Events: action.GetEvent(renewDomain.Tags(), "renew_domain")}
 }

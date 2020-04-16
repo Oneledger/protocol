@@ -166,7 +166,7 @@ func (app *App) txChecker() txChecker {
 			Info:      response.Info,
 			GasWanted: feeResponse.GasWanted,
 			GasUsed:   feeResponse.GasUsed,
-			//Tags:      response.Tags,
+			Events:    response.Events,
 			Codespace: "",
 		}
 
@@ -211,7 +211,7 @@ func (app *App) txDeliverer() txDeliverer {
 			Info:      response.Info,
 			GasWanted: feeResponse.GasWanted,
 			GasUsed:   feeResponse.GasUsed,
-			//Tags:      response.Tags,
+			Events:    response.Events,
 			Codespace: "",
 		}
 		app.logger.Detail("Deliver Tx: ", result)

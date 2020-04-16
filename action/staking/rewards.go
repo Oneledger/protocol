@@ -129,5 +129,5 @@ func runWithdraw(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 		return false, action.Response{Log: errors.Wrap(err, "add to balance").Error()}
 	}
 
-	return true, action.Response{Tags: draw.Tags(), Info: allow.String()}
+	return true, action.Response{Events: action.GetEvent(draw.Tags(), "rewards"), Info: allow.String()}
 }

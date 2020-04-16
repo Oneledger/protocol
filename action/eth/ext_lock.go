@@ -127,7 +127,7 @@ func (e ethLockTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, a
 	}
 
 	return true, action.Response{
-		Tags: lock.Tags(),
+		Events: action.GetEvent(lock.Tags(), "eth_lock"),
 	}
 }
 
@@ -224,6 +224,6 @@ func runLock(ctx *action.Context, lock *Lock) (bool, action.Response) {
 		return false, action.Response{Log: "error saving eth tracker: " + err.Error()}
 	}
 	return true, action.Response{
-		Tags: lock.Tags(),
+		Events: action.GetEvent(lock.Tags(), "eth_lock"),
 	}
 }

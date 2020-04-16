@@ -138,6 +138,6 @@ func (b *btcBroadcastSuccessTx) process(ctx *action.Context, tx action.RawTx) (b
 	}
 
 	return true, action.Response{
-		Tags: broadcastSuccess.Tags(),
+		Events: action.GetEvent(broadcastSuccess.Tags(), "btc_broadcast_success"),
 	}
 }

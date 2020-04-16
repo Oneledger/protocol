@@ -225,5 +225,5 @@ func runPurchaseDomain(ctx *action.Context, tx action.RawTx) (bool, action.Respo
 	if err != nil {
 		return false, action.Response{Log: errors.Wrap(err, "failed to update domain").Error()}
 	}
-	return true, action.Response{Tags: buy.Tags()}
+	return true, action.Response{Events: action.GetEvent(buy.Tags(), "purchase_domain")}
 }

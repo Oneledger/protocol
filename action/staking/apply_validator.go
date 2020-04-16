@@ -171,5 +171,5 @@ func runApply(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	if err != nil {
 		return false, action.Response{Log: err.Error()}
 	}
-	return true, action.Response{Tags: apply.Tags()}
+	return true, action.Response{Events: action.GetEvent(apply.Tags(), "apply_validator")}
 }

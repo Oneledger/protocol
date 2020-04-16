@@ -242,7 +242,7 @@ func runCreate(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	}
 
 	result := action.Response{
-		Tags: create.Tags(),
+		Events: action.GetEvent(create.Tags(), "create_domain"),
 	}
 	return true, result
 

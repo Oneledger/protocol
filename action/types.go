@@ -2,11 +2,10 @@ package action
 
 import (
 	"encoding/json"
-	"github.com/tendermint/tendermint/libs/kv"
-
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/storage"
+	"github.com/tendermint/tendermint/abci/types"
 )
 
 // Address an action package over Address in data/keys package
@@ -64,9 +63,9 @@ func (a Amount) ToCoin(list *balance.CurrencySet) balance.Coin {
 
 type Response struct {
 	Data      []byte
+	Events    []types.Event
 	Log       string
 	Info      string
 	GasWanted int64
 	GasUsed   int64
-	Tags      []kv.Pair
 }

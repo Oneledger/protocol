@@ -173,5 +173,5 @@ func runDomainSend(ctx *action.Context, tx action.RawTx) (bool, action.Response)
 		return false, action.Response{Log: "failed to credit balance of domain address"}
 	}
 
-	return true, action.Response{Tags: send.Tags(), Info: to.String()}
+	return true, action.Response{Events: action.GetEvent(send.Tags(), "send_to_domain"), Info: to.String()}
 }

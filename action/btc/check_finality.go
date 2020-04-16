@@ -208,7 +208,7 @@ func runReportFinalityMint(ctx *action.Context, tx action.RawTx) (bool, action.R
 		}
 
 		return true, action.Response{
-			Tags: f.Tags(),
+			Events: action.GetEvent(f.Tags(), "btc_check_finality_pending"),
 		}
 	}
 
@@ -290,6 +290,6 @@ func runReportFinalityMint(ctx *action.Context, tx action.RawTx) (bool, action.R
 	}
 
 	return true, action.Response{
-		Tags: f.TagsMinted(processType),
+		Events: action.GetEvent(f.TagsMinted(processType), "btc_check_finality_complete"),
 	}
 }

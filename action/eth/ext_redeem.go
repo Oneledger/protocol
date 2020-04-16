@@ -172,7 +172,7 @@ func runRedeem(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 		Info:      "Transaction received ,Redeem in progress",
 		GasWanted: 0,
 		GasUsed:   0,
-		Tags:      redeem.Tags(),
+		Events:    action.GetEvent(redeem.Tags(), "eth_redeem"),
 	}
 }
 

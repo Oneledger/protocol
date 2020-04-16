@@ -222,6 +222,6 @@ func runExtRedeem(ctx *action.Context, tx action.RawTx) (bool, action.Response) 
 	}
 
 	return true, action.Response{
-		Tags: redeem.Tags(),
+		Events: action.GetEvent(redeem.Tags(), "btc_redeem"),
 	}
 }

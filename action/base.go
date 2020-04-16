@@ -2,6 +2,7 @@ package action
 
 import (
 	"encoding/hex"
+	"github.com/tendermint/tendermint/abci/types"
 	"github.com/tendermint/tendermint/libs/kv"
 
 	"github.com/Oneledger/protocol/data/fees"
@@ -133,4 +134,17 @@ func BasicFeeHandling(ctx *Context, signedTx SignedTx, start Gas, size Gas, sign
 		return false, Response{Log: err.Error()}
 	}
 	return true, Response{GasWanted: signedTx.Fee.Gas, GasUsed: used}
+}
+
+func GetEvent(pairs kv.Pairs, eventType string) []types.Event {
+	var eventList []types.Event
+	event := types.Event{
+		Type:                 eventType,
+		Attributes:           pairs,
+		XXX_NoUnkeyedLiteral: struct{}{},
+		XXX_unrecognized:     nil,
+		XXX_sizecache:        0,
+	}
+
+	return append(eventList, event)
 }

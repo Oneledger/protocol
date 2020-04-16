@@ -148,5 +148,5 @@ func runDeleteSub(ctx *action.Context, tx action.RawTx) (bool, action.Response) 
 		}
 	}
 
-	return true, action.Response{Tags: del.Tags()}
+	return true, action.Response{Events: action.GetEvent(del.Tags(), "delete_subDomain")}
 }

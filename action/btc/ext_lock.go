@@ -217,6 +217,6 @@ func runBTCLock(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	}
 
 	return true, action.Response{
-		Tags: lock.Tags(),
+		Events: action.GetEvent(lock.Tags(), "btc_lock"),
 	}
 }

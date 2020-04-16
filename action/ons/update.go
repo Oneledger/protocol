@@ -168,5 +168,5 @@ func runUpdate(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	if err != nil {
 		return false, action.Response{Log: err.Error()}
 	}
-	return true, action.Response{Tags: update.Tags()}
+	return true, action.Response{Events: action.GetEvent(update.Tags(), "update_domain")}
 }

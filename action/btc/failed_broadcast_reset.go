@@ -175,7 +175,7 @@ func runBroadcastFailureReset(ctx *action.Context, tx action.RawTx) (bool, actio
 		}
 
 		return true, action.Response{
-			Tags: fbr.Tags(),
+			Events: action.GetEvent(fbr.Tags(), "btc_broadcast_reset_pending"),
 		}
 	}
 
@@ -220,5 +220,5 @@ func runBroadcastFailureReset(ctx *action.Context, tx action.RawTx) (bool, actio
 		return false, action.Response{Log: "failed to save tracker"}
 	}
 
-	return true, action.Response{Tags: fbr.Tags()}
+	return true, action.Response{Events: action.GetEvent(fbr.Tags(), "btc_broadcast_reset_complete")}
 }

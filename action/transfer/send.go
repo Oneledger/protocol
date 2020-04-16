@@ -132,5 +132,5 @@ func runTx(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 		return false, action.Response{Log: log}
 	}
 
-	return true, action.Response{Tags: send.Tags()}
+	return true, action.Response{Events: action.GetEvent(send.Tags(), "send_tx")}
 }

@@ -201,7 +201,7 @@ func runAddSignature(ctx *action.Context, tx action.RawTx) (bool, action.Respons
 	}
 
 	return true, action.Response{
-		Tags: addSignature.Tags(),
+		Events: action.GetEvent(addSignature.Tags(), "btc_add_signature"),
 	}
 
 }
