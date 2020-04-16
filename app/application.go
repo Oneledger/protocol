@@ -2,9 +2,10 @@ package app
 
 import (
 	"fmt"
-	"github.com/Oneledger/protocol/data/ethereum"
 	"net/url"
 	"os"
+
+	"github.com/Oneledger/protocol/data/ethereum"
 
 	"github.com/btcsuite/btcutil/base58"
 	"github.com/pkg/errors"
@@ -172,6 +173,10 @@ func (app *App) setupState(stateBytes []byte) error {
 		if err != nil {
 			return errors.Wrap(err, "failed to handle initial staking")
 		}
+		err = app.Context.witnesses.WithState(app.Context.deliver).AddWitness(chain.ETHEREUM, identity.Stake(stake))
+		if err != nil {
+			return errors.Wrap(err, "failed to add initial ethereum witness")
+		}
 	}
 
 	for _, domain := range initial.Domains {
@@ -205,9 +210,9 @@ func (app *App) setupState(stateBytes []byte) error {
 			State:         tracker.State,
 			TrackerName:   tracker.TrackerName,
 			SignedETHTx:   tracker.SignedETHTx,
-			Validators:    tracker.Validators,
+			Witnesses:     tracker.Witnesses,
 			ProcessOwner:  tracker.ProcessOwner,
-			FinalityVotes: make([]ethereum.Vote, len(tracker.Validators)),
+			FinalityVotes: make([]ethereum.Vote, len(tracker.Witnesses)),
 			To:            tracker.To,
 		}
 		switch tracker.State {
@@ -357,6 +362,9 @@ func (app *App) Prepare() error {
 		app.logger.Error("Failed to create consensus.Node")
 		return errors.Wrap(err, "failed to create new consensus.Node")
 	}
+
+	// Init witness store after genesis witnesses loaded in above NewNode
+	app.Context.witnesses.Init(chain.ETHEREUM, app.Context.node.ValidatorAddress())
 
 	return nil
 }

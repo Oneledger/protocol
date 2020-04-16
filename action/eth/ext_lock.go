@@ -12,6 +12,7 @@ import (
 
 	"github.com/Oneledger/protocol/action"
 	ethchaindriver "github.com/Oneledger/protocol/chains/ethereum"
+	"github.com/Oneledger/protocol/data/chain"
 	"github.com/Oneledger/protocol/data/ethereum"
 )
 
@@ -173,7 +174,7 @@ func runLock(ctx *action.Context, lock *Lock) (bool, action.Response) {
 		}
 	}
 
-	val, err := ctx.Validators.GetValidatorsAddress()
+	witnesses, err := ctx.Witnesses.GetWitnessAddresses(chain.ETHEREUM)
 	if err != nil {
 
 		ctx.Logger.Error("err in getting validator address", err)
@@ -212,7 +213,7 @@ func runLock(ctx *action.Context, lock *Lock) (bool, action.Response) {
 		lock.Locker,
 		lock.ETHTxn,
 		name,
-		val,
+		witnesses,
 	)
 
 	tracker.State = ethereum.New

@@ -11,6 +11,7 @@ import (
 
 	"github.com/Oneledger/protocol/action"
 	ethchaindriver "github.com/Oneledger/protocol/chains/ethereum"
+	"github.com/Oneledger/protocol/data/chain"
 	"github.com/Oneledger/protocol/data/ethereum"
 )
 
@@ -153,9 +154,9 @@ func runERC20Lock(ctx *action.Context, tx action.RawTx) (bool, action.Response) 
 		}
 	}
 
-	validatorList, err := ctx.Validators.GetValidatorsAddress()
+	witnesses, err := ctx.Witnesses.GetWitnessAddresses(chain.ETHEREUM)
 	if err != nil {
-		ctx.Logger.Error("err in getting validator address", err)
+		ctx.Logger.Error("err in getting witness address", err)
 		return false, action.Response{Log: "error in getting validator addresses" + err.Error()}
 	}
 
@@ -190,7 +191,7 @@ func runERC20Lock(ctx *action.Context, tx action.RawTx) (bool, action.Response) 
 		erc20lock.Locker,
 		erc20lock.ETHTxn,
 		ethcommon.BytesToHash(erc20lock.ETHTxn),
-		validatorList,
+		witnesses,
 	)
 
 	err = ctx.ETHTrackers.WithPrefixType(ethereum.PrefixOngoing).Set(tracker)
