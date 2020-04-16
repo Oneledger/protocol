@@ -80,6 +80,11 @@ func (c *ServiceClient) ApplyValidator(req ApplyValidatorRequest) (out ApplyVali
 	return
 }
 
+func (c *ServiceClient) PurgeValidator(req PurgeValidatorRequest) (out PurgeValidatorReply, err error) {
+	err = c.Call("tx.PurgeValidator", req, &out)
+	return
+}
+
 func (c *ServiceClient) WithdrawReward(req WithdrawRewardRequest) (out WithdrawRewardReply, err error) {
 	err = c.Call("tx.WithdrawReward", req, &out)
 	return
