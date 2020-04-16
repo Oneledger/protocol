@@ -74,13 +74,21 @@ func purgeValidator(cmd *cobra.Command, args []string) error {
 	}
 
 	// Check the reply
-	rawTx := &action.RawTx{}
-	err = serialize.GetSerializer(serialize.NETWORK).Deserialize(out.RawTx, rawTx)
+	rawTx := action.RawTx{}
+	err = serialize.GetSerializer(serialize.NETWORK).Deserialize(out.RawTx, &rawTx)
 	if err != nil {
 		return errors.New("error de-serializing rawTx")
 	}
 
-	packet, err := serialize.GetSerializer(serialize.NETWORK).Serialize(rawTx)
+	//Get Signature and public key of Admin account.
+	signatures := []action.Signature{action.Signature{}}
+
+	signedTx := &action.SignedTx{
+		RawTx:      rawTx,
+		Signatures: signatures,
+	}
+
+	packet, err := serialize.GetSerializer(serialize.NETWORK).Serialize(signedTx)
 	if packet == nil || err != nil {
 		return errors.New("error serializing packet: " + err.Error())
 	}
