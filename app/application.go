@@ -363,6 +363,9 @@ func (app *App) Prepare() error {
 		return errors.Wrap(err, "failed to create new consensus.Node")
 	}
 
+	// Init witness store after genesis witnesses loaded in above NewNode
+	app.Context.witnesses.Init(chain.ETHEREUM, app.Context.node.ValidatorAddress())
+
 	return nil
 }
 
