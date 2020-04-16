@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/magiconair/properties/assert"
-	"github.com/tendermint/tendermint/libs/db"
+	"github.com/tendermint/tm-db"
 )
 
 var testcase = make(map[string][]byte)

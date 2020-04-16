@@ -21,7 +21,7 @@
 package storage
 
 import (
-	"github.com/tendermint/tendermint/libs/db"
+	"github.com/tendermint/tm-db"
 )
 
 func init() {

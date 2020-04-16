@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 
 	"github.com/pkg/errors"
-	"github.com/tendermint/tendermint/libs/common"
+	"github.com/tendermint/tendermint/libs/kv"
 
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/data/keys"
@@ -115,14 +115,14 @@ func (a applyTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start
 	return action.BasicFeeHandling(ctx, signedTx, start, size, 2)
 }
 
-func (apply ApplyValidator) Tags() common.KVPairs {
-	tags := make([]common.KVPair, 0)
+func (apply ApplyValidator) Tags() kv.Pairs {
+	tags := make([]kv.Pair, 0)
 
-	tag := common.KVPair{
+	tag := kv.Pair{
 		Key:   []byte("tx.type"),
 		Value: []byte(apply.Type().String()),
 	}
-	tag2 := common.KVPair{
+	tag2 := kv.Pair{
 		Key:   []byte("tx.owner"),
 		Value: apply.StakeAddress.Bytes(),
 	}

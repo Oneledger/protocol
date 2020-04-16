@@ -2,13 +2,12 @@ package ons
 
 import (
 	"encoding/json"
+	"github.com/tendermint/tendermint/libs/kv"
 	"math/big"
-
-	"github.com/pkg/errors"
-	"github.com/tendermint/tendermint/libs/common"
 
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/data/ons"
+	"github.com/pkg/errors"
 )
 
 var _ Ons = &DomainPurchase{}
@@ -50,17 +49,17 @@ func (dp DomainPurchase) Type() action.Type {
 	return action.DOMAIN_PURCHASE
 }
 
-func (dp DomainPurchase) Tags() common.KVPairs {
-	tags := make([]common.KVPair, 0)
-	tag0 := common.KVPair{
+func (dp DomainPurchase) Tags() kv.Pairs {
+	tags := make([]kv.Pair, 0)
+	tag0 := kv.Pair{
 		Key:   []byte("tx.type"),
 		Value: []byte(dp.Type().String()),
 	}
-	tag1 := common.KVPair{
+	tag1 := kv.Pair{
 		Key:   []byte("tx.owner"),
 		Value: dp.Buyer,
 	}
-	tag2 := common.KVPair{
+	tag2 := kv.Pair{
 		Key:   []byte("tx.domain_name"),
 		Value: []byte(dp.Name),
 	}

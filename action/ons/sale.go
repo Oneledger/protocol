@@ -8,12 +8,11 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-
-	"github.com/pkg/errors"
-	"github.com/tendermint/tendermint/libs/common"
+	"github.com/tendermint/tendermint/libs/kv"
 
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/data/ons"
+	"github.com/pkg/errors"
 )
 
 var _ Ons = &DomainSale{}
@@ -45,24 +44,24 @@ func (s DomainSale) Signers() []action.Address {
 	return []action.Address{s.OwnerAddress}
 }
 
-func (s DomainSale) Tags() common.KVPairs {
-	tags := make([]common.KVPair, 0)
-	tag0 := common.KVPair{
+func (s DomainSale) Tags() kv.Pairs {
+	tags := make([]kv.Pair, 0)
+	tag0 := kv.Pair{
 		Key:   []byte("tx.type"),
 		Value: []byte(action.DOMAIN_SELL.String()),
 	}
-	tag1 := common.KVPair{
+	tag1 := kv.Pair{
 		Key:   []byte("tx.owner"),
 		Value: s.OwnerAddress,
 	}
-	tag2 := common.KVPair{
+	tag2 := kv.Pair{
 		Key:   []byte("tx.domain_name"),
 		Value: []byte(s.Name),
 	}
 
 	tags = append(tags, tag0, tag1, tag2)
 	if s.CancelSale {
-		tag3 := common.KVPair{
+		tag3 := kv.Pair{
 			Key:   []byte("tx.is_cancel"),
 			Value: []byte{0xff},
 		}

@@ -7,15 +7,14 @@ package btc
 import (
 	"bytes"
 	"encoding/json"
-
-	"github.com/btcsuite/btcutil/base58"
-	"github.com/pkg/errors"
-	"github.com/tendermint/tendermint/libs/common"
+	"github.com/tendermint/tendermint/libs/kv"
 
 	"github.com/Oneledger/protocol/action"
 	bitcoin2 "github.com/Oneledger/protocol/chains/bitcoin"
 	"github.com/Oneledger/protocol/data/bitcoin"
 	"github.com/Oneledger/protocol/data/keys"
+	"github.com/btcsuite/btcutil/base58"
+	"github.com/pkg/errors"
 )
 
 type ReportFinalityMint struct {
@@ -37,22 +36,22 @@ func (m *ReportFinalityMint) Type() action.Type {
 	return action.BTC_REPORT_FINALITY_MINT
 }
 
-func (m *ReportFinalityMint) Tags() common.KVPairs {
-	tags := make([]common.KVPair, 0)
+func (m *ReportFinalityMint) Tags() kv.Pairs {
+	tags := make([]kv.Pair, 0)
 
-	tag := common.KVPair{
+	tag := kv.Pair{
 		Key:   []byte("tx.type"),
 		Value: []byte(m.Type().String()),
 	}
-	tag2 := common.KVPair{
+	tag2 := kv.Pair{
 		Key:   []byte("tx.owner"),
 		Value: m.OwnerAddress.Bytes(),
 	}
-	tag3 := common.KVPair{
+	tag3 := kv.Pair{
 		Key:   []byte("tx.tracker_name"),
 		Value: []byte(m.TrackerName),
 	}
-	tag4 := common.KVPair{
+	tag4 := kv.Pair{
 		Key:   []byte("tx.validator"),
 		Value: m.ValidatorAddress.Bytes(),
 	}
@@ -61,26 +60,26 @@ func (m *ReportFinalityMint) Tags() common.KVPairs {
 	return tags
 }
 
-func (m *ReportFinalityMint) TagsMinted(processType string) common.KVPairs {
-	tags := make([]common.KVPair, 0)
+func (m *ReportFinalityMint) TagsMinted(processType string) kv.Pairs {
+	tags := make([]kv.Pair, 0)
 
-	tag := common.KVPair{
+	tag := kv.Pair{
 		Key:   []byte("tx.type"),
 		Value: []byte(m.Type().String()),
 	}
-	tag2 := common.KVPair{
+	tag2 := kv.Pair{
 		Key:   []byte("tx.owner"),
 		Value: m.OwnerAddress.Bytes(),
 	}
-	tag3 := common.KVPair{
+	tag3 := kv.Pair{
 		Key:   []byte("tx.tracker_name"),
 		Value: []byte(m.TrackerName),
 	}
-	tag4 := common.KVPair{
+	tag4 := kv.Pair{
 		Key:   []byte("tx.validator"),
 		Value: m.ValidatorAddress.Bytes(),
 	}
-	tag5 := common.KVPair{
+	tag5 := kv.Pair{
 		Key:   []byte("tx.lock_redeem_status"),
 		Value: []byte("success"),
 	}

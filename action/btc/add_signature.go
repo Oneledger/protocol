@@ -8,13 +8,13 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/tendermint/tendermint/libs/kv"
 
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/btcsuite/btcd/txscript"
 	"github.com/btcsuite/btcd/wire"
 	"github.com/btcsuite/btcutil"
 	"github.com/pkg/errors"
-	"github.com/tendermint/tendermint/libs/common"
 
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/data/bitcoin"
@@ -44,18 +44,18 @@ func (AddSignature) Type() action.Type {
 	return action.BTC_ADD_SIGNATURE
 }
 
-func (as *AddSignature) Tags() common.KVPairs {
-	tags := make([]common.KVPair, 0)
+func (as *AddSignature) Tags() kv.Pairs {
+	tags := make([]kv.Pair, 0)
 
-	tag := common.KVPair{
+	tag := kv.Pair{
 		Key:   []byte("tx.type"),
 		Value: []byte(as.Type().String()),
 	}
-	tag2 := common.KVPair{
+	tag2 := kv.Pair{
 		Key:   []byte("tx.locker"),
 		Value: []byte(as.ValidatorAddress.String()),
 	}
-	tag3 := common.KVPair{
+	tag3 := kv.Pair{
 		Key:   []byte("tx.tracker_name"),
 		Value: []byte(as.TrackerName),
 	}

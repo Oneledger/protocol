@@ -9,7 +9,7 @@ import (
 	"github.com/btcsuite/btcutil/base58"
 	"github.com/pkg/errors"
 	"github.com/tendermint/tendermint/abci/types"
-	"github.com/tendermint/tendermint/libs/common"
+	"github.com/tendermint/tendermint/libs/service"
 
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/action/eth"
@@ -39,7 +39,7 @@ type App struct {
 	name     string
 	nodeName string
 	logger   *log.Logger
-	sdk      common.Service // Probably needs to be changed
+	sdk      service.Service // Probably needs to be changed
 
 	header Header // Tendermint last header info
 
@@ -455,5 +455,5 @@ func (app *App) rpcStarter() (func() error, error) {
 }
 
 type closer interface {
-	Close()
+	Close() error
 }

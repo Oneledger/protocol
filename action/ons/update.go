@@ -5,12 +5,11 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-
-	"github.com/pkg/errors"
-	"github.com/tendermint/tendermint/libs/common"
+	"github.com/tendermint/tendermint/libs/kv"
 
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/data/ons"
+	"github.com/pkg/errors"
 )
 
 var _ Ons = &DomainUpdate{}
@@ -43,14 +42,14 @@ func (du DomainUpdate) Type() action.Type {
 	return action.DOMAIN_UPDATE
 }
 
-func (du DomainUpdate) Tags() common.KVPairs {
-	tags := make([]common.KVPair, 0)
+func (du DomainUpdate) Tags() kv.Pairs {
+	tags := make([]kv.Pair, 0)
 
-	tag := common.KVPair{
+	tag := kv.Pair{
 		Key:   []byte("tx.type"),
 		Value: []byte(du.Type().String()),
 	}
-	tag2 := common.KVPair{
+	tag2 := kv.Pair{
 		Key:   []byte("tx.from"),
 		Value: du.Owner.Bytes(),
 	}

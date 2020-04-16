@@ -4,14 +4,13 @@ package eth
 import (
 	"encoding/json"
 	"fmt"
-
-	ethcommon "github.com/ethereum/go-ethereum/common"
-	"github.com/pkg/errors"
-	"github.com/tendermint/tendermint/libs/common"
+	"github.com/tendermint/tendermint/libs/kv"
 
 	"github.com/Oneledger/protocol/action"
 	ethchaindriver "github.com/Oneledger/protocol/chains/ethereum"
 	"github.com/Oneledger/protocol/data/ethereum"
+	ethcommon "github.com/ethereum/go-ethereum/common"
+	"github.com/pkg/errors"
 )
 
 // Lock is a struct for one-Ledger transaction for ERC20 Lock
@@ -33,18 +32,18 @@ func (E ERC20Lock) Type() action.Type {
 }
 
 // Tags creates the tags to associate with the transaction
-func (E ERC20Lock) Tags() common.KVPairs {
-	tags := make([]common.KVPair, 0)
+func (E ERC20Lock) Tags() kv.Pairs {
+	tags := make([]kv.Pair, 0)
 
-	tag := common.KVPair{
+	tag := kv.Pair{
 		Key:   []byte("tx.type"),
 		Value: []byte(E.Type().String()),
 	}
-	tag2 := common.KVPair{
+	tag2 := kv.Pair{
 		Key:   []byte("tx.locker"),
 		Value: E.Locker.Bytes(),
 	}
-	tag3 := common.KVPair{
+	tag3 := kv.Pair{
 		Key:   []byte("tx.tracker"),
 		Value: ethcommon.BytesToHash(E.ETHTxn).Bytes(),
 	}

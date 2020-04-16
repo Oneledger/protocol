@@ -5,14 +5,13 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"github.com/tendermint/tendermint/libs/kv"
 	"math/big"
-
-	"github.com/pkg/errors"
-	"github.com/tendermint/tendermint/libs/common"
 
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/ons"
+	"github.com/pkg/errors"
 )
 
 var _ Ons = &DomainCreate{}
@@ -57,14 +56,14 @@ func (dc DomainCreate) Type() action.Type {
 	return action.DOMAIN_CREATE
 }
 
-func (dc DomainCreate) Tags() common.KVPairs {
-	tags := make([]common.KVPair, 0)
+func (dc DomainCreate) Tags() kv.Pairs {
+	tags := make([]kv.Pair, 0)
 
-	tag := common.KVPair{
+	tag := kv.Pair{
 		Key:   []byte("tx.type"),
 		Value: []byte(dc.Type().String()),
 	}
-	tag2 := common.KVPair{
+	tag2 := kv.Pair{
 		Key:   []byte("tx.owner"),
 		Value: dc.Owner.Bytes(),
 	}

@@ -4,16 +4,15 @@ package eth
 import (
 	"encoding/json"
 	"fmt"
-
-	ethcommon "github.com/ethereum/go-ethereum/common"
-	"github.com/pkg/errors"
-	"github.com/tendermint/tendermint/libs/common"
+	"github.com/tendermint/tendermint/libs/kv"
 
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/chains/ethereum"
 	"github.com/Oneledger/protocol/data/balance"
 	trackerlib "github.com/Oneledger/protocol/data/ethereum"
 	"github.com/Oneledger/protocol/data/keys"
+	ethcommon "github.com/ethereum/go-ethereum/common"
+	"github.com/pkg/errors"
 )
 
 var _ action.Msg = &ERC20Redeem{}
@@ -36,18 +35,18 @@ func (E ERC20Redeem) Type() action.Type {
 }
 
 // Tags creates the tags to associate with the transaction
-func (E ERC20Redeem) Tags() common.KVPairs {
-	tags := make([]common.KVPair, 0)
+func (E ERC20Redeem) Tags() kv.Pairs {
+	tags := make([]kv.Pair, 0)
 
-	tag := common.KVPair{
+	tag := kv.Pair{
 		Key:   []byte("tx.type"),
 		Value: []byte(E.Type().String()),
 	}
-	tag2 := common.KVPair{
+	tag2 := kv.Pair{
 		Key:   []byte("tx.owner"),
 		Value: E.Owner,
 	}
-	tag3 := common.KVPair{
+	tag3 := kv.Pair{
 		Key:   []byte("tx.tracker"),
 		Value: ethcommon.BytesToHash(E.ETHTxn).Bytes(),
 	}

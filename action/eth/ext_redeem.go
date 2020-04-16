@@ -3,16 +3,15 @@ package eth
 
 import (
 	"encoding/json"
-
-	ethcommon "github.com/ethereum/go-ethereum/common"
-	"github.com/pkg/errors"
-	"github.com/tendermint/tendermint/libs/common"
+	"github.com/tendermint/tendermint/libs/kv"
 
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/chains/ethereum"
 	"github.com/Oneledger/protocol/data/balance"
 	trackerlib "github.com/Oneledger/protocol/data/ethereum"
 	"github.com/Oneledger/protocol/data/keys"
+	ethcommon "github.com/ethereum/go-ethereum/common"
+	"github.com/pkg/errors"
 )
 
 var _ action.Msg = &Redeem{}
@@ -35,18 +34,18 @@ func (r Redeem) Type() action.Type {
 }
 
 // Tags creates the tags to associate with the transaction
-func (r Redeem) Tags() common.KVPairs {
-	tags := make([]common.KVPair, 0)
+func (r Redeem) Tags() kv.Pairs {
+	tags := make([]kv.Pair, 0)
 
-	tag := common.KVPair{
+	tag := kv.Pair{
 		Key:   []byte("tx.type"),
 		Value: []byte(r.Type().String()),
 	}
-	tag2 := common.KVPair{
+	tag2 := kv.Pair{
 		Key:   []byte("tx.owner"),
 		Value: r.Owner,
 	}
-	tag3 := common.KVPair{
+	tag3 := kv.Pair{
 		Key:   []byte("tx.tracker"),
 		Value: ethcommon.BytesToHash(r.ETHTxn).Bytes(),
 	}

@@ -56,8 +56,9 @@ func (j *JobBus) Start(ctx *JobsContext) error {
 	return nil
 }
 
-func (j *JobBus) Close() {
+func (j *JobBus) Close() error {
 	close(j.quit)
+	return nil
 }
 
 type JobProcess func(job jobs.Job) jobs.Job

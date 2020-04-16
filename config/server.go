@@ -69,14 +69,11 @@ func (cfg *Server) setChainID(doc GenesisDoc) {
 
 func (cfg *Server) TMConfig() tmconfig.Config {
 	leveldb := cfg.Node.DB
-	if cfg.Node.DB == "goleveldb" {
-		leveldb = "leveldb"
-	}
 
 	baseConfig := tmconfig.DefaultBaseConfig()
 	baseConfig.ProxyApp = "OneLedgerProtocol"
 	baseConfig.Moniker = cfg.Node.NodeName
-	baseConfig.FastSync = cfg.Node.FastSync
+	baseConfig.FastSyncMode = cfg.Node.FastSync
 	baseConfig.DBBackend = leveldb
 	baseConfig.DBPath = "data"
 	baseConfig.LogLevel = cfg.Consensus.LogLevel
@@ -101,11 +98,12 @@ func (cfg *Server) TMConfig() tmconfig.Config {
 		RPC:        rpcConfig,
 		P2P:        p2pConfig,
 		Mempool:    cfg.Mempool.TMConfig(),
+		FastSync:   tmconfig.DefaultFastSyncConfig(),
 		Consensus:  csConfig,
 		TxIndex: &tmconfig.TxIndexConfig{
 			Indexer:      "kv",
-			IndexTags:    strings.Join(cfg.Node.IndexTags, ","),
-			IndexAllTags: cfg.Node.IndexAllTags,
+			IndexKeys:    strings.Join(cfg.Node.IndexTags, ","),
+			IndexAllKeys: cfg.Node.IndexAllTags,
 		},
 		Instrumentation: &nilMetricsConfig,
 	}
@@ -236,16 +234,14 @@ func DefaultNodeConfig() *NodeConfig {
 			RPCPrivateKey:    "",
 		},
 
-
 		ChainStateRotation: ChainStateRotationCfg{
 			Recent: 10,
-			Every: 100,
+			Every:  100,
 			Cycles: 10,
 		},
 
 		//"btc" service temporarily disabled
 		Services: []string{"broadcast", "node", "owner", "query", "tx", "eth"},
-
 	}
 }
 

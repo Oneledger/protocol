@@ -7,12 +7,11 @@ package ons
 import (
 	"encoding/json"
 	"fmt"
-
-	"github.com/pkg/errors"
-	"github.com/tendermint/tendermint/libs/common"
+	"github.com/tendermint/tendermint/libs/kv"
 
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/data/ons"
+	"github.com/pkg/errors"
 )
 
 /*
@@ -52,18 +51,18 @@ func (s DomainSend) Signers() []action.Address {
 	return []action.Address{s.From.Bytes()}
 }
 
-func (s DomainSend) Tags() common.KVPairs {
-	tags := make([]common.KVPair, 0)
+func (s DomainSend) Tags() kv.Pairs {
+	tags := make([]kv.Pair, 0)
 
-	tag := common.KVPair{
+	tag := kv.Pair{
 		Key:   []byte("tx.type"),
 		Value: []byte(action.DOMAIN_SEND.String()),
 	}
-	tag2 := common.KVPair{
+	tag2 := kv.Pair{
 		Key:   []byte("tx.owner"),
 		Value: s.From.Bytes(),
 	}
-	tag3 := common.KVPair{
+	tag3 := kv.Pair{
 		Key:   []byte("tx.domain_name"),
 		Value: []byte(s.Name),
 	}

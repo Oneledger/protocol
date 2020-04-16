@@ -2,13 +2,12 @@ package action
 
 import (
 	"encoding/hex"
-
-	"github.com/pkg/errors"
-	"github.com/tendermint/tendermint/libs/common"
+	"github.com/tendermint/tendermint/libs/kv"
 
 	"github.com/Oneledger/protocol/data/fees"
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/serialize"
+	"github.com/pkg/errors"
 )
 
 type MsgData []byte
@@ -19,7 +18,7 @@ type Msg interface {
 
 	Type() Type
 
-	Tags() common.KVPairs
+	Tags() kv.Pairs
 
 	Marshal() ([]byte, error)
 
@@ -36,10 +35,9 @@ type Signature struct {
 	Signed []byte
 }
 
-type TxTypeDescribe struct{
-	TxTypeNum       Type
+type TxTypeDescribe struct {
+	TxTypeNum    Type
 	TxTypeString string
-
 }
 
 func (s Signature) Verify(msg []byte) bool {

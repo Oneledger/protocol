@@ -2,8 +2,7 @@ package action
 
 import (
 	"encoding/json"
-
-	"github.com/tendermint/tendermint/libs/common"
+	"github.com/tendermint/tendermint/libs/kv"
 
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/keys"
@@ -69,5 +68,5 @@ type Response struct {
 	Info      string
 	GasWanted int64
 	GasUsed   int64
-	Tags      []common.KVPair
+	Tags      []kv.Pair
 }

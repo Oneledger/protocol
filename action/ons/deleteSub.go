@@ -3,12 +3,11 @@ package ons
 import (
 	"bytes"
 	"encoding/json"
-
-	"github.com/pkg/errors"
-	"github.com/tendermint/tendermint/libs/common"
+	"github.com/tendermint/tendermint/libs/kv"
 
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/data/ons"
+	"github.com/pkg/errors"
 )
 
 /*
@@ -33,14 +32,14 @@ func (d DeleteSub) Type() action.Type {
 	return action.DOMAIN_DELETE_SUB
 }
 
-func (d DeleteSub) Tags() common.KVPairs {
-	tags := make([]common.KVPair, 0)
+func (d DeleteSub) Tags() kv.Pairs {
+	tags := make([]kv.Pair, 0)
 
-	tag := common.KVPair{
+	tag := kv.Pair{
 		Key:   []byte("tx.type"),
 		Value: []byte(d.Type().String()),
 	}
-	tag2 := common.KVPair{
+	tag2 := kv.Pair{
 		Key:   []byte("tx.owner"),
 		Value: d.Owner.Bytes(),
 	}
