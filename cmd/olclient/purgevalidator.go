@@ -89,7 +89,7 @@ func purgeValidator(cmd *cobra.Command, args []string) error {
 	}
 
 	packet, err := serialize.GetSerializer(serialize.NETWORK).Serialize(signedTx)
-	if packet == nil || err != nil {
+	if err != nil {
 		return errors.New("error serializing packet: " + err.Error())
 	}
 
