@@ -124,7 +124,7 @@ func (j *JobETHSignRedeem) DoMyJob(ctx interface{}) {
 		return
 	}
 	if success {
-		ethCtx.Logger.Debug("Validator Sign Confirmed | Validator Address :", ethCtx.ValidatorAddress.Humanize(), "| User Eth Address :", msg.From().Hex())
+		ethCtx.Logger.Debug("Validator Sign Confirmed | Validator Address (SIGNER):", ethCtx.GetValidatorETHAddress().Hex(), "| User Eth Address :", msg.From().Hex())
 		j.Status = jobs.Completed
 		return
 	}

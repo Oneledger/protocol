@@ -286,9 +286,9 @@ func (ctx *context) JobContext() *event.JobsContext {
 		ctx.internalService,
 		ctx.btcTrackers,
 		ctx.validators,
-		ctx.node.ValidatorECDSAPrivateKey(),
-		ctx.node.ValidatorECDSAPrivateKey(),
-		ctx.node.ValidatorAddress(),
+		ctx.node.ValidatorECDSAPrivateKey(), // BTC private key
+		ctx.node.ValidatorECDSAPrivateKey(), // ETH private key
+		ctx.node.ValidatorAddress(),         // Validator address generated from Validator key
 		ctx.lockScriptStore,
 		ctx.ethTrackers.WithState(ctx.deliver),
 		log.NewLoggerWithPrefix(ctx.logWriter, "internal_jobs").WithLevel(log.Level(ctx.cfg.Node.LogLevel)))

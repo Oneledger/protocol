@@ -74,7 +74,6 @@ func runInitNode(cmd *cobra.Command, _ []string) error {
 	if err != nil {
 		return errors.Wrap(err, fmt.Sprintf("Failed to create config file at %s", cfgPath))
 	}
-
 	csRoot := consensus.RootDirName
 	csConfig := consensus.ConfigDirName
 	csData := consensus.DataDirName
@@ -90,7 +89,6 @@ func runInitNode(cmd *cobra.Command, _ []string) error {
 			return errors.Wrap(err, fmt.Sprintf("Dir creation failed at %s", dir))
 		}
 	}
-
 	// Put the genesis file in the right place
 	if initCmdArgs.genesis != "" {
 
@@ -117,6 +115,7 @@ func runInitNode(cmd *cobra.Command, _ []string) error {
 	if err != nil {
 		return errors.Wrap(err, "Failed to generate node key")
 	}
+
 	fmt.Println("node_key_address: ", nodekey.PubKey().Address().String())
 
 	// Make private validator file
@@ -133,7 +132,7 @@ func runInitNode(cmd *cobra.Command, _ []string) error {
 		return errors.Wrap(err, "error generating secp256k1 private key")
 	}
 
-	ecdsaFile := strings.Replace(consensus.PrivValidatorKeyFilename, ".json", "_ecdsa.json", 1)
+	ecdsaFile := strings.Replace(consensus.PrivValidatorKeyFilename, ".json", "_ecdsa.jsonT", 1)
 
 	f, err := os.Create(filepath.Join(configDir, ecdsaFile))
 	if err != nil {

@@ -1,21 +1,31 @@
 package main
 
 import (
+	"context"
+	"crypto/ecdsa"
 	"encoding/base64"
 	"fmt"
 	"math/big"
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
+	"time"
 
-	"github.com/btcsuite/btcd/btcec"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+	"github.com/tendermint/tendermint/crypto/secp256k1"
 	"github.com/tendermint/tendermint/p2p"
 	"github.com/tendermint/tendermint/privval"
 
 	"github.com/Oneledger/protocol/chains/bitcoin"
 	ethchain "github.com/Oneledger/protocol/chains/ethereum"
+	"github.com/Oneledger/protocol/chains/ethereum/contract"
 	"github.com/Oneledger/protocol/config"
 	"github.com/Oneledger/protocol/consensus"
 	"github.com/Oneledger/protocol/data/balance"
@@ -56,32 +66,32 @@ var genesisCmd = &cobra.Command{
 }
 
 func init() {
-	initCmd.AddCommand(testnetCmd)
-	testnetCmd.Flags().IntVar(&testnetArgs.numValidators, "validators", 4, "Number of validators to initialize devnet with")
-	testnetCmd.Flags().IntVar(&testnetArgs.numNonValidators, "nonvalidators", 0, "Number of non-validators to initialize the devnet with")
-	testnetCmd.Flags().StringVarP(&testnetArgs.outputDir, "dir", "o", "./", "Directory to store initialization files for the devnet, default current folder")
-	testnetCmd.Flags().BoolVar(&testnetArgs.allowSwap, "enable_swaps", false, "Allow swaps")
-	testnetCmd.Flags().BoolVar(&testnetArgs.createEmptyBlock, "empty_blocks", false, "Allow creating empty blocks")
-	testnetCmd.Flags().StringVar(&testnetArgs.chainID, "chain_id", "", "Specify a chain ID, a random one is generated if not given")
-	testnetCmd.Flags().StringVar(&testnetArgs.dbType, "db_type", "goleveldb", "Specify the type of DB backend to use: (goleveldb|cleveldb)")
-	testnetCmd.Flags().StringVar(&testnetArgs.namesPath, "names", "", "Specify a path to a file containing a list of names separated by newlines if you want the nodes to be generated with human-readable names")
+	initCmd.AddCommand(genesisCmd)
+	genesisCmd.Flags().IntVar(&genesisCmdArgs.numValidators, "validators", 4, "Number of validators to initialize devnet with")
+	genesisCmd.Flags().IntVar(&genesisCmdArgs.numNonValidators, "nonvalidators", 0, "Number of non-validators to initialize the devnet with")
+	genesisCmd.Flags().StringVarP(&genesisCmdArgs.outputDir, "dir", "o", "./", "Directory to store initialization files for the devnet, default current folder")
+	genesisCmd.Flags().BoolVar(&genesisCmdArgs.allowSwap, "enable_swaps", false, "Allow swaps")
+	genesisCmd.Flags().BoolVar(&genesisCmdArgs.createEmptyBlock, "empty_blocks", false, "Allow creating empty blocks")
+	genesisCmd.Flags().StringVar(&genesisCmdArgs.chainID, "chain_id", "", "Specify a chain ID, a random one is generated if not given")
+	genesisCmd.Flags().StringVar(&genesisCmdArgs.dbType, "db_type", "goleveldb", "Specify the type of DB backend to use: (goleveldb|cleveldb)")
+	genesisCmd.Flags().StringVar(&genesisCmdArgs.namesPath, "names", "", "Specify a path to a file containing a list of names separated by newlines if you want the nodes to be generated with human-readable names")
 	// 1 billion by default
-	testnetCmd.Flags().Int64Var(&testnetArgs.totalFunds, "total_funds", 1000000000, "The total amount of tokens in circulation")
-	testnetCmd.Flags().StringSliceVar(&testnetArgs.initialTokenHolders, "initial_token_holders", []string{}, "Initial list of addresses that hold an equal share of Total funds")
-	testnetCmd.Flags().StringVar(&testnetArgs.ethUrl, "eth_rpc", "", "URL for ethereum network")
-	testnetCmd.Flags().BoolVar(&testnetArgs.deploySmartcontracts, "deploy_smart_contracts", false, "deploy eth contracts")
-	testnetCmd.Flags().BoolVar(&testnetArgs.cloud, "cloud_deploy", false, "set true for deploying on cloud")
-	testnetCmd.Flags().IntVar(&testnetArgs.loglevel, "loglevel", 3, "Specify the log level for olfullnode. 0: Fatal, 1: Error, 2: Warning, 3: Info, 4: Debug, 5: Detail")
+	genesisCmd.Flags().Int64Var(&genesisCmdArgs.totalFunds, "total_funds", 1000000000, "The total amount of tokens in circulation")
+	genesisCmd.Flags().StringSliceVar(&genesisCmdArgs.initialTokenHolders, "initial_token_holders", []string{}, "Initial list of addresses that hold an equal share of Total funds")
+	genesisCmd.Flags().StringVar(&genesisCmdArgs.ethUrl, "eth_rpc", "", "URL for ethereum network")
+	genesisCmd.Flags().BoolVar(&genesisCmdArgs.deploySmartcontracts, "deploy_smart_contracts", false, "deploy eth contracts")
+	genesisCmd.Flags().BoolVar(&genesisCmdArgs.cloud, "cloud_deploy", false, "set true for deploying on cloud")
+	genesisCmd.Flags().IntVar(&genesisCmdArgs.loglevel, "loglevel", 3, "Specify the log level for olfullnode. 0: Fatal, 1: Error, 2: Warning, 3: Info, 4: Debug, 5: Detail")
 
 }
 
 func runGenesis(_ *cobra.Command, _ []string) error {
 
-	ctx, err := newDevnetContext(testnetArgs)
+	ctx, err := newMainetContext(genesisCmdArgs)
 	if err != nil {
 		return errors.Wrap(err, "runDevnet failed")
 	}
-	args := testnetArgs
+	args := genesisCmdArgs
 	if !args.cloud {
 		setEnvVariablesGanache()
 	}
@@ -143,37 +153,37 @@ func runGenesis(_ *cobra.Command, _ []string) error {
 		}
 
 		// Make node key
-		nodeKey, err := p2p.LoadOrGenNodeKey(filepath.Join(configDir, "node_key.json"))
+		nodeKey, err := p2p.LoadOrGenNodeKey(filepath.Join(configDir, consensus.NodeKeyFilename))
 		if err != nil {
-			ctx.logger.Error("error load or genning node key", "err", err)
-			return err
+			return errors.Wrap(err, "Failed to generate node key")
 		}
 
 		// Make private validator file
-		pvFile := privval.LoadOrGenFilePV(filepath.Join(configDir, "priv_validator_key.json"), filepath.Join(dataDir, "priv_validator_state.json"))
+		pvFile := privval.GenFilePV(filepath.Join(configDir, consensus.PrivValidatorKeyFilename),
+			filepath.Join(dataDir, consensus.PrivValidatorStateFilename))
 		pvFile.Save()
 
-		ecdsaPrivKey, _ := btcec.NewPrivateKey(btcec.S256())
-		ecdsaPrivKeyBytes := base64.StdEncoding.EncodeToString([]byte(ecdsaPrivKey.Serialize()))
-
-		ecdsaPk, err := keys.GetPrivateKeyFromBytes([]byte(ecdsaPrivKey.Serialize()), keys.BTCECSECP)
+		ecdsaPrivKey := secp256k1.GenPrivKey()
+		ecdsaPrivKeyBytes := base64.StdEncoding.EncodeToString([]byte(ecdsaPrivKey[:]))
+		ecdsaPk, err := keys.GetPrivateKeyFromBytes([]byte(ecdsaPrivKey[:]), keys.SECP256K1)
 		if err != nil {
-			return errors.Wrap(err, "error generating BTCECSECP private key")
+			return errors.Wrap(err, "error generating secp256k1 private key")
 		}
+		ecdsaFile := strings.Replace(consensus.PrivValidatorKeyFilename, ".json", "_ecdsa.json", 1)
+		f, err := os.Create(filepath.Join(configDir, ecdsaFile))
 
-		f, err := os.Create(filepath.Join(configDir, "priv_validator_key_ecdsa.json"))
 		if err != nil {
 			return errors.Wrap(err, "failed to open file to write validator ecdsa private key")
 		}
-		nPrivKeyBytes, err := f.WriteString(ecdsaPrivKeyBytes)
-		if err != nil && nPrivKeyBytes != len(ecdsaPrivKeyBytes) {
+		noofbytes, err := f.Write([]byte(ecdsaPrivKeyBytes))
+		if err != nil && noofbytes != len(ecdsaPrivKeyBytes) {
 			return errors.Wrap(err, "failed to write validator ecdsa private key")
 		}
 		err = f.Close()
-		if err != nil {
+		if err != nil && noofbytes != len(ecdsaPrivKeyBytes) {
 			return errors.Wrap(err, "failed to save validator ecdsa private key")
 		}
-
+		//fmt.Println("witness_key_address: ", ecdsaPrivKey.PubKey().Address().String())
 		// Save the nodes to a list so we can iterate again and
 		n := node{isValidator: isValidator, cfg: cfg, dir: nodeDir, key: nodeKey, esdcaPk: ecdsaPk}
 		if isValidator {
@@ -204,7 +214,7 @@ func runGenesis(_ *cobra.Command, _ []string) error {
 	fmt.Println("Deploy Smart contracts : ", args.deploySmartcontracts)
 	if args.deploySmartcontracts {
 		if len(args.ethUrl) > 0 {
-			cdo, err = deployethcdcontract(url, nodeList)
+			cdo, err = ethContractMainnet(url, nodeList)
 			if err != nil {
 				return errors.Wrap(err, "failed to deploy the initial eth contract")
 			}
@@ -227,7 +237,7 @@ func runGenesis(_ *cobra.Command, _ []string) error {
 		btcBlockConfirmation,
 	}
 
-	states := initialState(args, nodeList, *cdo, *onsOp, btccdo)
+	states := mainnetInitialState(args, nodeList, *cdo, *onsOp, btccdo)
 
 	genesisDoc, err := consensus.NewGenesisDoc(chainID, states)
 	if err != nil {
@@ -263,7 +273,6 @@ func runGenesis(_ *cobra.Command, _ []string) error {
 	}
 
 	//deploy contract and get contract addr
-
 	for _, node := range nodeList {
 		node.cfg.P2P.PersistentPeers = persistentPeers
 		// Modify the btc and eth ports
@@ -394,4 +403,138 @@ func mainnetInitialState(args *genesisCmdArgument, nodeList []node, option ethch
 			ONSOptions:  onsOption,
 		},
 	}
+}
+
+func ethContractMainnet(conn string, nodeList []node) (*ethchain.ChainDriverOption, error) {
+
+	f, err := os.Open(os.Getenv("ETHPKPATH"))
+	if err != nil {
+		return nil, errors.Wrap(err, "Error Reading File")
+	}
+	b1 := make([]byte, 64)
+	pk, err := f.Read(b1)
+	if err != nil {
+		return nil, errors.Wrap(err, "Error reading private key")
+	}
+	//fmt.Println("Private Key used to deploy : ", string(b1[:pk]))
+	pkStr := string(b1[:pk])
+	privatekey, err := crypto.HexToECDSA(pkStr)
+
+	if err != nil {
+		return nil, err
+	}
+	cli, err := ethclient.Dial(conn)
+	if err != nil {
+		return nil, err
+	}
+
+	publicKey := privatekey.Public()
+	publicKeyECDSA, ok := publicKey.(*ecdsa.PublicKey)
+	if !ok {
+		return nil, err
+	}
+
+	fromAddress := crypto.PubkeyToAddress(*publicKeyECDSA)
+
+	gasPrice, err := cli.SuggestGasPrice(context.Background())
+	if err != nil {
+		return nil, err
+	}
+	gasLimit := uint64(6721974) // in units
+
+	auth := bind.NewKeyedTransactor(privatekey)
+	auth.Value = big.NewInt(0) // in wei
+	auth.GasLimit = gasLimit   // in units
+	auth.GasPrice = gasPrice
+
+	initialValidatorList := make([]common.Address, 0, 10)
+	lock_period := big.NewInt(25)
+
+	tokenSupplyTestToken := new(big.Int)
+	validatorInitialFund := big.NewInt(300000000000000000)
+	tokenSupplyTestToken, ok = tokenSupplyTestToken.SetString("1000000000000000000000", 10)
+	if !ok {
+		return nil, errors.New("Unabe to create total supplu for token")
+	}
+	if !ok {
+		return nil, errors.New("Unable to create wallet transfer amount")
+	}
+	for _, node := range nodeList {
+		privkey := keys.ETHSECP256K1TOECDSA(node.esdcaPk.Data)
+		nonce, err := cli.PendingNonceAt(context.Background(), fromAddress)
+		if err != nil {
+			return nil, err
+		}
+
+		//fmt.Println("nonce", nonce)
+		pubkey := privkey.Public()
+		ecdsapubkey, ok := pubkey.(*ecdsa.PublicKey)
+		if !ok {
+			return nil, errors.New("failed to cast pubkey")
+		}
+		addr := crypto.PubkeyToAddress(*ecdsapubkey)
+		if node.validator.Address.String() == "" {
+			continue
+		}
+
+		initialValidatorList = append(initialValidatorList, addr)
+		tx := types.NewTransaction(nonce, addr, validatorInitialFund, auth.GasLimit, auth.GasPrice, (nil))
+		fmt.Println("Validator Address :", addr.Hex(), ":", validatorInitialFund)
+		chainId, _ := cli.ChainID(context.Background())
+		signedTx, err := types.SignTx(tx, types.NewEIP155Signer(chainId), privatekey)
+		if err != nil {
+			return nil, errors.Wrap(err, "signing tx")
+		}
+		err = cli.SendTransaction(context.Background(), signedTx)
+		if err != nil {
+			return nil, errors.Wrap(err, "sending")
+		}
+		time.Sleep(1 * time.Second)
+	}
+
+	nonce, err := cli.PendingNonceAt(context.Background(), fromAddress)
+	if err != nil {
+		return nil, err
+	}
+
+	auth.Nonce = big.NewInt(int64(nonce))
+
+	address, _, _, err := contract.DeployLockRedeem(auth, cli, initialValidatorList, lock_period)
+	if err != nil {
+		return nil, errors.Wrap(err, "Deployement Eth LockRedeem")
+	}
+	tokenAddress := common.Address{}
+	ercAddress := common.Address{}
+	//auth.Nonce = big.NewInt(int64(nonce + 1))
+	//tokenAddress, _, _, err := ethcontracts.DeployERC20Basic(auth, cli, tokenSupplyTestToken)
+	//if err != nil {
+	//	return nil, errors.Wrap(err, "Deployement Test Token")
+	//}
+	//auth.Nonce = big.NewInt(int64(nonce + 2))
+	//ercAddress, _, _, err := ethcontracts.DeployLockRedeemERC(auth, cli, initialValidatorList)
+	//if err != nil {
+	//	return nil, errors.Wrap(err, "Deployement ERC LockRedeem")
+	//}
+
+	fmt.Printf("LockRedeemContractAddr = \"%v\"\n", address.Hex())
+	fmt.Printf("TestTokenContractAddr = \"%v\"\n", tokenAddress.Hex())
+	fmt.Printf("LockRedeemERC20ContractAddr = \"%v\"\n", ercAddress.Hex())
+	//tokenAbiMap := make(map[*common.Address]string)
+	//tokenAbiMap[&tokenAddress] = contract.ERC20BasicABI
+	return &ethchain.ChainDriverOption{
+		ContractABI:    contract.LockRedeemABI,
+		ERCContractABI: contract.LockRedeemERCABI,
+		TokenList: []ethchain.ERC20Token{{
+			TokName:        "TTC",
+			TokAddr:        tokenAddress,
+			TokAbi:         contract.ERC20BasicABI,
+			TokTotalSupply: totalTTCSupply,
+		}},
+		ContractAddress:    address,
+		ERCContractAddress: ercAddress,
+		TotalSupply:        totalETHSupply,
+		TotalSupplyAddr:    lockBalanceAddress,
+		BlockConfirmation:  ethBlockConfirmation,
+	}, nil
+
 }

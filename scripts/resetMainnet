@@ -1,0 +1,14 @@
+#!/bin/bash
+
+echo
+
+rm -rf $OLDATA/mainnet/*
+
+olfullnode init genesis --dir $OLDATA/mainnet --nonvalidators 1 --validators 1 \
+--empty_blocks \
+--eth_rpc https://rinkeby.infura.io/v3 \
+--loglevel 4 \
+--deploy_smart_contracts \
+
+#--eth_rpc https://rinkeby.infura.io/v3 \
+#--eth_rpc HTTP://127.0.0.1:7545 \
