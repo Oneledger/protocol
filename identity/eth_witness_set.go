@@ -31,7 +31,7 @@ func (ws *WitnessStore) Init(chain chain.Type, nodeValidatorAddress keys.Address
 }
 
 func (ws *WitnessStore) Get(chain chain.Type, addr keys.Address) (*Witness, error) {
-	key := append(ws.prefix, addr...)
+	key := storage.StoreKey(string(ws.prefix) + chain.String() + storage.DB_PREFIX + string(addr))
 	value, _ := ws.store.Get(key)
 	if value == nil {
 		return nil, errors.New("failed to get witness from store")
@@ -42,19 +42,14 @@ func (ws *WitnessStore) Get(chain chain.Type, addr keys.Address) (*Witness, erro
 		return nil, errors.Wrap(err, "failed to deserialize witness")
 	}
 
-	if witness.Chain != chain {
-		return nil, errors.Wrap(err, "witness does not match")
-	}
-
 	return witness, nil
 }
 
 func (ws *WitnessStore) Exists(chain chain.Type, addr keys.Address) bool {
-	_, err := ws.Get(chain, addr)
-	return err == nil
+	return ws.IsWitnessAddress(chain, addr)
 }
 
-func (ws *WitnessStore) Iterate(fn func(addr keys.Address, witness *Witness) bool) (stopped bool) {
+func (ws *WitnessStore) Iterate(chain chain.Type, fn func(addr keys.Address, witness *Witness) bool) (stopped bool) {
 	return ws.store.IterateRange(
 		ws.prefix,
 		storage.Rangefix(string(ws.prefix)),
@@ -65,7 +60,8 @@ func (ws *WitnessStore) Iterate(fn func(addr keys.Address, witness *Witness) boo
 				logger.Error("failed to deserialize witness")
 				return false
 			}
-			addr := key[len(ws.prefix):]
+			prefix_len := len(storage.StoreKey(string(ws.prefix) + chain.String() + storage.DB_PREFIX))
+			addr := key[prefix_len:]
 			return fn(addr, witness)
 		},
 	)
@@ -74,10 +70,8 @@ func (ws *WitnessStore) Iterate(fn func(addr keys.Address, witness *Witness) boo
 // Get witness addresses
 func (ws *WitnessStore) GetWitnessAddresses(chain chain.Type) ([]keys.Address, error) {
 	witnessList := make([]keys.Address, 0)
-	ws.Iterate(func(addr keys.Address, witness *Witness) bool {
-		if witness.Chain == chain {
-			witnessList = append(witnessList, addr)
-		}
+	ws.Iterate(chain, func(addr keys.Address, witness *Witness) bool {
+		witnessList = append(witnessList, addr)
 		return false
 	})
 	return witnessList, nil
@@ -89,7 +83,8 @@ func (ws *WitnessStore) IsETHWitness() bool {
 }
 
 func (ws *WitnessStore) IsWitnessAddress(chain chain.Type, addr keys.Address) bool {
-	return ws.Exists(chain, addr)
+	key := storage.StoreKey(string(ws.prefix) + chain.String() + storage.DB_PREFIX + string(addr))
+	return ws.store.Exists(key)
 }
 
 // Add a witness to store
@@ -103,11 +98,10 @@ func (ws *WitnessStore) AddWitness(chain chain.Type, apply Stake) error {
 		PubKey:      apply.Pubkey,
 		ECDSAPubKey: apply.ECDSAPubKey,
 		Name:        apply.Name,
-		Chain:       chain,
 	}
 
 	value := witness.Bytes()
-	vkey := append(ws.prefix, witness.Address.Bytes()...)
+	vkey := storage.StoreKey(string(ws.prefix) + chain.String() + storage.DB_PREFIX + string(witness.Address))
 	err := ws.store.Set(vkey, value)
 	if err != nil {
 		return errors.Wrap(err, "failed to add witness")
