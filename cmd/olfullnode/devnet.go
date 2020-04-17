@@ -178,7 +178,7 @@ type devnetContext struct {
 }
 
 func newDevnetContext(args *testnetConfig) (*devnetContext, error) {
-	logger := log.NewLoggerWithPrefix(os.Stdout, "olfullnode devnet")
+	logger := log.NewLoggerWithPrefix(os.Stdout, "olfullnode mainnet")
 
 	names := nodeNamesWithZeros("", args.numNonValidators+args.numValidators)
 	// TODO: Reading from a file is actually unimplemented right now
@@ -192,7 +192,7 @@ func newDevnetContext(args *testnetConfig) (*devnetContext, error) {
 	}, nil
 }
 
-func newMainetContext(args *genesisCmdArgument) (*devnetContext, error) {
+func newMainetContext(args *mainnetArgument) (*devnetContext, error) {
 	logger := log.NewLoggerWithPrefix(os.Stdout, "olfullnode devnet")
 
 	names := nodeNamesWithZeros("", args.numNonValidators+args.numValidators)

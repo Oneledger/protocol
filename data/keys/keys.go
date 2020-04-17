@@ -176,7 +176,7 @@ func PubKeyFromTendermint(key []byte) (PublicKey, error) {
 
 func (pubKey PublicKey) GetABCIPubKey() types.PubKey {
 	return types.PubKey{
-		Type: pubKey.KeyType.Name(),
+		Type: pubKey.KeyType.String(),
 		Data: pubKey.Data,
 	}
 }
@@ -188,7 +188,7 @@ func (pubKey PublicKey) GetHandler() (PublicKeyHandler, error) {
 		size := ed25519.PubKeyEd25519Size
 		if len(pubKey.Data) != size {
 			return new(PublicKeyED25519),
-				fmt.Errorf("given key doesn't match the size of the key algorithm %s length %d", pubKey.KeyType.Name(), len(pubKey.Data))
+				fmt.Errorf("given key doesn't match the size of the key algorithm %s length %d", pubKey.KeyType.String(), len(pubKey.Data))
 		}
 		var key [ED25519_PUB_SIZE]byte
 		copy(key[:], pubKey.Data)
@@ -198,7 +198,7 @@ func (pubKey PublicKey) GetHandler() (PublicKeyHandler, error) {
 		size := SECP256K1_PUB_SIZE
 		if len(pubKey.Data) != size {
 			return new(PublicKeySECP256K1),
-				fmt.Errorf("given key doesn't match the size of the key algorithm %s length %d", pubKey.KeyType.Name(), len(pubKey.Data))
+				fmt.Errorf("given key doesn't match the size of the key algorithm %s length %d", pubKey.KeyType.String(), len(pubKey.Data))
 		}
 		var key [SECP256K1_PUB_SIZE]byte
 		copy(key[:], pubKey.Data)
@@ -208,7 +208,7 @@ func (pubKey PublicKey) GetHandler() (PublicKeyHandler, error) {
 		pkey, err := crypto.DecompressPubkey(pubKey.Data)
 		if err != nil {
 			return new(PublicKeyETHSECP),
-				fmt.Errorf("given key can not be decompressed to the keytype algorithm %s, err %s", pubKey.KeyType.Name(), err.Error())
+				fmt.Errorf("given key can not be decompressed to the keytype algorithm %s, err %s", pubKey.KeyType.String(), err.Error())
 		}
 		return PublicKeyETHSECP{key: pkey}, nil
 

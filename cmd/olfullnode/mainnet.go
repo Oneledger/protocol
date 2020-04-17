@@ -36,7 +36,7 @@ import (
 	"github.com/Oneledger/protocol/data/keys"
 )
 
-type genesisCmdArgument struct {
+type mainnetArgument struct {
 	// Number of validators
 	numValidators    int
 	numNonValidators int
@@ -57,41 +57,41 @@ type genesisCmdArgument struct {
 	loglevel             int
 }
 
-var genesisCmdArgs = &genesisCmdArgument{}
+var mainnetCmdArgs = &mainnetArgument{}
 
-var genesisCmd = &cobra.Command{
-	Use:   "genesis",
+var mainnetCmd = &cobra.Command{
+	Use:   "mainnet",
 	Short: "Initializes a genesis file for OneLedger network",
-	RunE:  runGenesis,
+	RunE:  runMainnet,
 }
 
 func init() {
-	initCmd.AddCommand(genesisCmd)
-	genesisCmd.Flags().IntVar(&genesisCmdArgs.numValidators, "validators", 4, "Number of validators to initialize devnet with")
-	genesisCmd.Flags().IntVar(&genesisCmdArgs.numNonValidators, "nonvalidators", 0, "Number of non-validators to initialize the devnet with")
-	genesisCmd.Flags().StringVarP(&genesisCmdArgs.outputDir, "dir", "o", "./", "Directory to store initialization files for the devnet, default current folder")
-	genesisCmd.Flags().BoolVar(&genesisCmdArgs.allowSwap, "enable_swaps", false, "Allow swaps")
-	genesisCmd.Flags().BoolVar(&genesisCmdArgs.createEmptyBlock, "empty_blocks", false, "Allow creating empty blocks")
-	genesisCmd.Flags().StringVar(&genesisCmdArgs.chainID, "chain_id", "", "Specify a chain ID, a random one is generated if not given")
-	genesisCmd.Flags().StringVar(&genesisCmdArgs.dbType, "db_type", "goleveldb", "Specify the type of DB backend to use: (goleveldb|cleveldb)")
-	genesisCmd.Flags().StringVar(&genesisCmdArgs.namesPath, "names", "", "Specify a path to a file containing a list of names separated by newlines if you want the nodes to be generated with human-readable names")
+	initCmd.AddCommand(mainnetCmd)
+	mainnetCmd.Flags().IntVar(&mainnetCmdArgs.numValidators, "validators", 4, "Number of validators to initialize devnet with")
+	mainnetCmd.Flags().IntVar(&mainnetCmdArgs.numNonValidators, "nonvalidators", 0, "Number of non-validators to initialize the devnet with")
+	mainnetCmd.Flags().StringVarP(&mainnetCmdArgs.outputDir, "dir", "o", "./", "Directory to store initialization files for the devnet, default current folder")
+	mainnetCmd.Flags().BoolVar(&mainnetCmdArgs.allowSwap, "enable_swaps", false, "Allow swaps")
+	mainnetCmd.Flags().BoolVar(&mainnetCmdArgs.createEmptyBlock, "empty_blocks", false, "Allow creating empty blocks")
+	mainnetCmd.Flags().StringVar(&mainnetCmdArgs.chainID, "chain_id", "", "Specify a chain ID, a random one is generated if not given")
+	mainnetCmd.Flags().StringVar(&mainnetCmdArgs.dbType, "db_type", "goleveldb", "Specify the type of DB backend to use: (goleveldb|cleveldb)")
+	mainnetCmd.Flags().StringVar(&mainnetCmdArgs.namesPath, "names", "", "Specify a path to a file containing a list of names separated by newlines if you want the nodes to be generated with human-readable names")
 	// 1 billion by default
-	genesisCmd.Flags().Int64Var(&genesisCmdArgs.totalFunds, "total_funds", 1000000000, "The total amount of tokens in circulation")
-	genesisCmd.Flags().StringSliceVar(&genesisCmdArgs.initialTokenHolders, "initial_token_holders", []string{}, "Initial list of addresses that hold an equal share of Total funds")
-	genesisCmd.Flags().StringVar(&genesisCmdArgs.ethUrl, "eth_rpc", "", "URL for ethereum network")
-	genesisCmd.Flags().BoolVar(&genesisCmdArgs.deploySmartcontracts, "deploy_smart_contracts", false, "deploy eth contracts")
-	genesisCmd.Flags().BoolVar(&genesisCmdArgs.cloud, "cloud_deploy", false, "set true for deploying on cloud")
-	genesisCmd.Flags().IntVar(&genesisCmdArgs.loglevel, "loglevel", 3, "Specify the log level for olfullnode. 0: Fatal, 1: Error, 2: Warning, 3: Info, 4: Debug, 5: Detail")
+	mainnetCmd.Flags().Int64Var(&mainnetCmdArgs.totalFunds, "total_funds", 1000000000, "The total amount of tokens in circulation")
+	mainnetCmd.Flags().StringSliceVar(&mainnetCmdArgs.initialTokenHolders, "initial_token_holders", []string{}, "Initial list of addresses that hold an equal share of Total funds")
+	mainnetCmd.Flags().StringVar(&mainnetCmdArgs.ethUrl, "eth_rpc", "", "URL for ethereum network")
+	mainnetCmd.Flags().BoolVar(&mainnetCmdArgs.deploySmartcontracts, "deploy_smart_contracts", false, "deploy eth contracts")
+	mainnetCmd.Flags().BoolVar(&mainnetCmdArgs.cloud, "cloud_deploy", false, "set true for deploying on cloud")
+	mainnetCmd.Flags().IntVar(&mainnetCmdArgs.loglevel, "loglevel", 3, "Specify the log level for olfullnode. 0: Fatal, 1: Error, 2: Warning, 3: Info, 4: Debug, 5: Detail")
 
 }
 
-func runGenesis(_ *cobra.Command, _ []string) error {
+func runMainnet(_ *cobra.Command, _ []string) error {
 
-	ctx, err := newMainetContext(genesisCmdArgs)
+	ctx, err := newMainetContext(mainnetCmdArgs)
 	if err != nil {
 		return errors.Wrap(err, "runDevnet failed")
 	}
-	args := genesisCmdArgs
+	args := mainnetCmdArgs
 	if !args.cloud {
 		setEnvVariablesGanache()
 	}
@@ -273,6 +273,7 @@ func runGenesis(_ *cobra.Command, _ []string) error {
 	}
 
 	//deploy contract and get contract addr
+	//Saving config.toml for each node
 	for _, node := range nodeList {
 		node.cfg.P2P.PersistentPeers = persistentPeers
 		// Modify the btc and eth ports
@@ -292,7 +293,7 @@ func runGenesis(_ *cobra.Command, _ []string) error {
 	return nil
 }
 
-func mainnetInitialState(args *genesisCmdArgument, nodeList []node, option ethchain.ChainDriverOption, onsOption ons.Options,
+func mainnetInitialState(args *mainnetArgument, nodeList []node, option ethchain.ChainDriverOption, onsOption ons.Options,
 	btcOption bitcoin.ChainDriverOption) consensus.AppState {
 	olt := balance.Currency{Id: 0, Name: "OLT", Chain: chain.ONELEDGER, Decimal: 18, Unit: "nue"}
 	vt := balance.Currency{Id: 1, Name: "VT", Chain: chain.ONELEDGER, Unit: "vt"}
