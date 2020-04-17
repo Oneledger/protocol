@@ -50,6 +50,7 @@ type context struct {
 	balances    *balance.Store
 	domains     *ons.DomainStore
 	validators  *identity.ValidatorStore // Set of validators currently active
+	witnesses   *identity.WitnessStore   // Set of witnesses currently active
 	feePool     *fees.Store
 	govern      *governance.Store
 	btcTrackers *bitcoin.TrackerStore  // tracker for bitcoin balance UTXO
@@ -91,6 +92,7 @@ func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *node.Context) (
 	ctx.check = storage.NewState(ctx.chainstate)
 
 	ctx.validators = identity.NewValidatorStore("v", storage.NewState(ctx.chainstate))
+	ctx.witnesses = identity.NewWitnessStore("w", storage.NewState(ctx.chainstate))
 	ctx.balances = balance.NewStore("b", storage.NewState(ctx.chainstate))
 	ctx.domains = ons.NewDomainStore("d", storage.NewState(ctx.chainstate))
 	ctx.feePool = fees.NewStore("f", storage.NewState(ctx.chainstate))
@@ -141,6 +143,7 @@ func (ctx *context) Action(header *Header, state *storage.State) *action.Context
 		ctx.currencies,
 		ctx.feePool.WithState(state),
 		ctx.validators.WithState(state),
+		ctx.witnesses.WithState(state),
 		ctx.domains.WithState(state),
 
 		ctx.btcTrackers.WithState(state),
@@ -239,6 +242,7 @@ type StorageCtx struct {
 	Validators *identity.ValidatorStore // Set of validators currently active
 	FeePool    *fees.Store
 	Govern     *governance.Store
+	Trackers   *ethereum.TrackerStore //TODO: Create struct to contain all tracker types including Bitcoin.
 
 	Currencies *balance.CurrencySet
 	FeeOption  *fees.FeeOption
@@ -259,6 +263,7 @@ func (ctx *context) Storage() StorageCtx {
 		Govern:     ctx.govern,
 		Currencies: ctx.currencies,
 		FeeOption:  ctx.feePool.GetOpt(),
+		Trackers:   ctx.ethTrackers,
 	}
 }
 

@@ -8,7 +8,7 @@ olfullnode init devnet --dir $OLDATA/devnet --nonvalidators 1 \
 --eth_rpc https://rinkeby.infura.io/v3 \
 --deploy_smart_contracts \
 --empty_blocks \
---loglevel 4 \
+#--loglevel 4 \
 #--cloud_deploy \
 
 #--eth_rpc https://rinkeby.infura.io/v3 \

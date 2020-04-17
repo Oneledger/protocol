@@ -5,6 +5,8 @@ import (
 	"net/url"
 	"os"
 
+	"github.com/Oneledger/protocol/data/ethereum"
+
 	"github.com/btcsuite/btcutil/base58"
 	"github.com/pkg/errors"
 	"github.com/tendermint/tendermint/abci/types"
@@ -171,6 +173,10 @@ func (app *App) setupState(stateBytes []byte) error {
 		if err != nil {
 			return errors.Wrap(err, "failed to handle initial staking")
 		}
+		err = app.Context.witnesses.WithState(app.Context.deliver).AddWitness(chain.ETHEREUM, identity.Stake(stake))
+		if err != nil {
+			return errors.Wrap(err, "failed to add initial ethereum witness")
+		}
 	}
 
 	for _, domain := range initial.Domains {
@@ -194,6 +200,35 @@ func (app *App) setupState(stateBytes []byte) error {
 			return errors.Wrap(err, "failed to setup initial fee")
 		}
 	}
+	//TODO: Initialize BTC Trackers in the future.
+	for _, tracker := range initial.Trackers {
+		if tracker.State == ethereum.BusyBroadcasting {
+			tracker.State = ethereum.New
+		}
+		tr := &ethereum.Tracker{
+			Type:          tracker.Type,
+			State:         tracker.State,
+			TrackerName:   tracker.TrackerName,
+			SignedETHTx:   tracker.SignedETHTx,
+			Witnesses:     tracker.Witnesses,
+			ProcessOwner:  tracker.ProcessOwner,
+			FinalityVotes: make([]ethereum.Vote, len(tracker.Witnesses)),
+			To:            tracker.To,
+		}
+		switch tracker.State {
+		case ethereum.Released:
+			err = app.Context.ethTrackers.WithState(app.Context.deliver).WithPrefixType(ethereum.PrefixPassed).Set(tr)
+		case ethereum.Failed:
+			err = app.Context.ethTrackers.WithState(app.Context.deliver).WithPrefixType(ethereum.PrefixFailed).Set(tr)
+		default:
+			err = app.Context.ethTrackers.WithState(app.Context.deliver).WithPrefixType(ethereum.PrefixOngoing).Set(tr)
+		}
+
+		if err != nil {
+			return errors.Wrap(err, "failed to setup initial Trackers")
+		}
+	}
+
 	app.Context.deliver.Write()
 	return nil
 }
@@ -311,6 +346,26 @@ func (app *App) Prepare() error {
 
 		app.Context.btcTrackers.SetConfig(btcConfig)
 	}
+
+	nodecfg, err := consensus.ParseConfig(&app.Context.cfg)
+	if err != nil {
+		return errors.Wrap(err, "failed parse NodeConfig")
+	}
+	genesisDoc, err := nodecfg.GetGenesisDoc()
+	if err != nil {
+		return errors.Wrap(err, "failed get genesisDoc")
+	}
+	app.genesisDoc = genesisDoc
+
+	app.node, err = consensus.NewNode(app.ABCI(), nodecfg)
+	if err != nil {
+		app.logger.Error("Failed to create consensus.Node")
+		return errors.Wrap(err, "failed to create new consensus.Node")
+	}
+
+	// Init witness store after genesis witnesses loaded in above NewNode
+	app.Context.witnesses.Init(chain.ETHEREUM, app.Context.node.ValidatorAddress())
+
 	return nil
 }
 
@@ -323,22 +378,7 @@ func (app *App) Start() error {
 		return err
 	}
 
-	nodecfg, err := consensus.ParseConfig(&app.Context.cfg)
-	if err != nil {
-		return errors.Wrap(err, "failed parse NodeConfig")
-	}
-	genesisDoc, err := nodecfg.GetGenesisDoc()
-	if err != nil {
-		return errors.Wrap(err, "failed get genesisDoc")
-	}
-	app.genesisDoc = genesisDoc
-
-	node, err := consensus.NewNode(app.ABCI(), nodecfg)
-	if err != nil {
-		app.logger.Error("Failed to create consensus.Node")
-		return errors.Wrap(err, "failed to create new consensus.Node")
-	}
-	err = node.Start()
+	err = app.node.Start()
 	if err != nil {
 		app.logger.Error("Failed to start consensus.Node")
 		return errors.Wrap(err, "failed to start new consensus.Node")
@@ -368,9 +408,8 @@ func (app *App) Start() error {
 		return err
 	}
 
-	app.node = node
 	app.Context.internalService = event.NewService(app.Context.node,
-		log.NewLoggerWithPrefix(app.Context.logWriter, "internal_service"), internalRouter, node)
+		log.NewLoggerWithPrefix(app.Context.logWriter, "internal_service"), internalRouter, app.node)
 
 	_ = app.Context.jobBus.Start(app.Context.JobContext())
 
