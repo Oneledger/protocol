@@ -6,21 +6,19 @@
 package main
 
 import (
-	"path/filepath"
-
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/client"
+	accounts2 "github.com/Oneledger/protocol/data/accounts"
+	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/serialize"
-
-	"github.com/Oneledger/protocol/config"
 )
 
 type PurgeValidatorArguments struct {
-	Validator []byte `json:"validator"`
 	Admin     []byte `json:"admin"`
+	Validator []byte `json:"validator"`
 }
 
 func (args *PurgeValidatorArguments) ClientRequest() client.PurgeValidatorRequest {
@@ -54,15 +52,20 @@ func purgeValidator(cmd *cobra.Command, args []string) error {
 	ctx := NewContext()
 	ctx.logger.Debug("Have PurgeValidator Request", "purgeValidatorArgs", purgeValidatorArgs)
 
-	rootPath, err := filepath.Abs(rootArgs.rootDir)
+	//Create new Wallet and User Address
+	wallet, err := accounts2.NewWalletKeyStore(keyStorePath)
 	if err != nil {
+		ctx.logger.Error("failed to create secure wallet", err)
 		return err
 	}
 
-	cfg := &config.Server{}
-	err = cfg.ReadFile(cfgPath(rootPath))
-	if err != nil {
-		return errors.Wrapf(err, "failed to read configuration file at at %s", cfgPath(rootPath))
+	//Verify User Password
+	usrAddress := keys.Address(purgeValidatorArgs.Admin)
+	password := PromptForPassword()
+	authenticated, err := wallet.VerifyPassphrase(usrAddress, password)
+	if !authenticated {
+		ctx.logger.Error("authentication error", err)
+		return err
 	}
 
 	// Create message
@@ -73,16 +76,25 @@ func purgeValidator(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	// Check the reply
 	rawTx := action.RawTx{}
 	err = serialize.GetSerializer(serialize.NETWORK).Deserialize(out.RawTx, &rawTx)
 	if err != nil {
-		return errors.New("error de-serializing rawTx")
+		return errors.New("error de-serializing RawTx")
 	}
 
-	//Get Signature and public key of Admin account.
-	signatures := []action.Signature{action.Signature{}}
+	// Open wallet
+	if !wallet.Open(usrAddress, password) {
+		ctx.logger.Error("failed to open secure wallet")
+		return errors.New("failed to open secure wallet")
+	}
 
+	// Sign Raw "Send" Transaction Using Secure Wallet.
+	pub, signature, err := wallet.SignWithAddress(out.RawTx, usrAddress)
+	if err != nil {
+		ctx.logger.Error("error signing transaction", err)
+	}
+
+	signatures := []action.Signature{{Signer: pub, Signed: signature}}
 	signedTx := &action.SignedTx{
 		RawTx:      rawTx,
 		Signatures: signatures,
