@@ -12,7 +12,6 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/btcsuite/btcd/btcec"
@@ -135,6 +134,18 @@ func (n node) connectionDetails() string {
 	return fmt.Sprintf("%s@%s", n.Key.ID(), u.Host)
 }
 
+func connectionDetails(cfg *config.Server, id p2p.ID) string {
+	var addr string
+	if cfg.Network.ExternalP2PAddress == "" {
+		addr = cfg.Network.P2PAddress
+	} else {
+		addr = cfg.Network.ExternalP2PAddress
+	}
+
+	u, _ := url.Parse(addr)
+	return fmt.Sprintf("%s@%s", id, u.Host)
+}
+
 // This function maintains a running counter of ports
 func portGenerator(startingPort int) func() int {
 	count := startingPort
@@ -192,21 +203,6 @@ func newDevnetContext(args *testnetConfig) (*devnetContext, error) {
 	}, nil
 }
 
-func newMainetContext(args *mainnetArgument) (*devnetContext, error) {
-	logger := log.NewLoggerWithPrefix(os.Stdout, "olfullnode devnet")
-
-	names := nodeNamesWithZeros("", args.numNonValidators+args.numValidators)
-	// TODO: Reading from a file is actually unimplemented right now
-	if args.namesPath != "" {
-		logger.Warn("--names parameter is unimplemented")
-	}
-
-	return &devnetContext{
-		names:  names,
-		logger: logger,
-	}, nil
-}
-
 // Returns a list of names with the given prefix and a number after the prefix afterwards
 func nodeNamesWithZeros(prefix string, total int) []string {
 	names := make([]string, total)
@@ -223,20 +219,6 @@ func nodeNamesWithZeros(prefix string, total int) []string {
 		names[i] = generateName(i)
 	}
 	return names
-}
-
-func getEthUrl(ethUrlArg string) (string, error) {
-
-	u, err := url.Parse(ethUrlArg)
-	if err != nil {
-		return "", err
-	}
-	if strings.Contains(u.Host, "infura") && !strings.Contains(u.Path, os.Getenv("API_KEY")) {
-		setEnvVariablesInfura()
-		u.Path = u.Path + "/" + os.Getenv("API_KEY")
-		return u.String(), nil
-	}
-	return ethUrlArg, nil
 }
 
 func runDevnet(_ *cobra.Command, _ []string) error {

@@ -114,3 +114,13 @@ func (a AppState) RawJSON() ([]byte, error) {
 	szr := serialize.GetSerializer(serialize.JSON)
 	return szr.Serialize(a)
 }
+
+func GenerateState(rawState []byte) (*AppState, error) {
+	state := AppState{}
+	szr := serialize.GetSerializer(serialize.JSON)
+	err := szr.Deserialize(rawState, state)
+	if err != nil {
+		return &state, err
+	}
+	return &state, nil
+}

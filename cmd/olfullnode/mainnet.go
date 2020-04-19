@@ -1,39 +1,19 @@
 package main
 
 import (
-	"context"
-	"crypto/ecdsa"
-	"encoding/base64"
 	"fmt"
-	"math/big"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strconv"
-	"strings"
-	"time"
 
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
-	"github.com/tendermint/tendermint/crypto/secp256k1"
 	"github.com/tendermint/tendermint/p2p"
-	"github.com/tendermint/tendermint/privval"
+	tendermint "github.com/tendermint/tendermint/types"
 
-	"github.com/Oneledger/protocol/chains/bitcoin"
-	ethchain "github.com/Oneledger/protocol/chains/ethereum"
-	"github.com/Oneledger/protocol/chains/ethereum/contract"
 	"github.com/Oneledger/protocol/config"
-	"github.com/Oneledger/protocol/consensus"
-	"github.com/Oneledger/protocol/data/balance"
-	"github.com/Oneledger/protocol/data/chain"
-	"github.com/Oneledger/protocol/data/ons"
-
-	"github.com/Oneledger/protocol/data/fees"
-	"github.com/Oneledger/protocol/data/keys"
+	"github.com/Oneledger/protocol/log"
 )
 
 type mainnetArgument struct {
@@ -41,6 +21,7 @@ type mainnetArgument struct {
 	numValidators    int
 	numNonValidators int
 	outputDir        string
+	genesisDir       string
 	p2pPort          int
 	allowSwap        bool
 	chainID          string
@@ -65,41 +46,82 @@ var mainnetCmd = &cobra.Command{
 	RunE:  runMainnet,
 }
 
+type mainetContext struct {
+	logger *log.Logger
+	names  []string
+}
+
 func init() {
 	initCmd.AddCommand(mainnetCmd)
-	mainnetCmd.Flags().IntVar(&mainnetCmdArgs.numValidators, "validators", 4, "Number of validators to initialize devnet with")
-	mainnetCmd.Flags().IntVar(&mainnetCmdArgs.numNonValidators, "nonvalidators", 0, "Number of non-validators to initialize the devnet with")
+	mainnetCmd.Flags().StringVarP(&mainnetCmdArgs.genesisDir, "genesis_path", "g", "/home/tanmay/Codebase/Test/mainnet", "Directory which contains Genesis File and NodeList")
 	mainnetCmd.Flags().StringVarP(&mainnetCmdArgs.outputDir, "Dir", "o", "./", "Directory to store initialization files for the devnet, default current folder")
 	mainnetCmd.Flags().BoolVar(&mainnetCmdArgs.allowSwap, "enable_swaps", false, "Allow swaps")
 	mainnetCmd.Flags().BoolVar(&mainnetCmdArgs.createEmptyBlock, "empty_blocks", false, "Allow creating empty blocks")
-	mainnetCmd.Flags().StringVar(&mainnetCmdArgs.chainID, "chain_id", "", "Specify a chain ID, a random one is generated if not given")
 	mainnetCmd.Flags().StringVar(&mainnetCmdArgs.dbType, "db_type", "goleveldb", "Specify the type of DB backend to use: (goleveldb|cleveldb)")
 	mainnetCmd.Flags().StringVar(&mainnetCmdArgs.namesPath, "names", "", "Specify a path to a file containing a list of names separated by newlines if you want the nodes to be generated with human-readable names")
 	// 1 billion by default
-	mainnetCmd.Flags().Int64Var(&mainnetCmdArgs.totalFunds, "total_funds", 1000000000, "The total amount of tokens in circulation")
-	mainnetCmd.Flags().StringSliceVar(&mainnetCmdArgs.initialTokenHolders, "initial_token_holders", []string{}, "Initial list of addresses that hold an equal share of Total funds")
-	mainnetCmd.Flags().StringVar(&mainnetCmdArgs.ethUrl, "eth_rpc", "", "URL for ethereum network")
-	mainnetCmd.Flags().BoolVar(&mainnetCmdArgs.deploySmartcontracts, "deploy_smart_contracts", false, "deploy eth contracts")
-	mainnetCmd.Flags().BoolVar(&mainnetCmdArgs.cloud, "cloud_deploy", false, "set true for deploying on cloud")
+	mainnetCmd.Flags().StringVar(&mainnetCmdArgs.ethUrl, "eth_rpc", "HTTP://127.0.0.1:7545", "Specify a path to a file containing a list of names separated by newlines if you want the nodes to be generated with human-readable names")
 	mainnetCmd.Flags().IntVar(&mainnetCmdArgs.loglevel, "loglevel", 3, "Specify the log level for olfullnode. 0: Fatal, 1: Error, 2: Warning, 3: Info, 4: Debug, 5: Detail")
 
 }
 
-func runMainnet(_ *cobra.Command, _ []string) error {
+func newMainetContext(args *mainnetArgument) (*mainetContext, error) {
+	logger := log.NewLoggerWithPrefix(os.Stdout, "olfullnode mainnet")
+	var names []string
+	files, err := ioutil.ReadDir(args.genesisDir)
+	if err != nil {
+		return nil, err
+	}
+	for _, file := range files {
+		if file.IsDir() {
+			names = append(names, file.Name())
+		}
+	}
+	return &mainetContext{
+		names:  names,
+		logger: logger,
+	}, nil
 
+}
+
+func runMainnet(_ *cobra.Command, _ []string) error {
+	genesisfile, err := ioutil.ReadFile(filepath.Join(mainnetCmdArgs.genesisDir, "genesis.json"))
+	if err != nil {
+		return err
+	}
+	genesisDoc, err := tendermint.GenesisDocFromJSON(genesisfile)
+	if err != nil {
+		return err
+	}
+	if err != nil {
+		return err
+	}
 	ctx, err := newMainetContext(mainnetCmdArgs)
 	if err != nil {
-		return errors.Wrap(err, "runDevnet failed")
+		return err
+	}
+	//state, err := consensus.GenerateState(genesisDoc.AppState)
+	//fmt.Println("State", state)
+	//var nodeList []node
+	//nodelistfile, err := ioutil.ReadFile(filepath.Join(mainnetCmdArgs.genesisDir, "nodelist.json"))
+	//if err != nil {
+	//	return err
+	//}
+	//err = json.Unmarshal(nodelistfile, &nodeList)
+	//if err != nil {
+	//	return err
+	//}
+
+	if err != nil {
+		return errors.Wrap(err, "runMainet failed")
 	}
 	args := mainnetCmdArgs
-	if !args.cloud {
-		setEnvVariablesGanache()
-	}
-	totalNodes := args.numValidators + args.numNonValidators
 
-	if totalNodes > len(ctx.names) {
-		return fmt.Errorf("Don't have enough node names, can't specify more than %d nodes", len(ctx.names))
-	}
+	totalNodes := len(ctx.names)
+
+	//if totalNodes > len(ctx.names) {
+	//	return fmt.Errorf("Don't have enough node names, can't specify more than %d nodes", len(ctx.names))
+	//}
 
 	if args.dbType != "cleveldb" && args.dbType != "goleveldb" {
 		ctx.logger.Error("Invalid dbType specified, using goleveldb...", "dbType", args.dbType)
@@ -108,26 +130,44 @@ func runMainnet(_ *cobra.Command, _ []string) error {
 
 	generatePort := portGenerator(26600)
 
-	validatorList := make([]consensus.GenesisValidator, args.numValidators)
-	nodeList := make([]node, totalNodes)
 	persistentPeers := make([]string, totalNodes)
-	url, err := getEthUrl(args.ethUrl)
-	if err != nil {
-		return err
-	}
+	configList := make([]*config.Server, totalNodes)
+
 	// Create the GenesisValidator list and its Key files priv_validator_key.json and node_key.json
-	for i := 0; i < totalNodes; i++ {
-		isValidator := i < args.numValidators
-		nodeName := ctx.names[i]
-		nodeDir := filepath.Join(args.outputDir, nodeName+"-Node")
+	for i, nodeName := range ctx.names {
+		//isValidator := nodeList[i].IsValidator
+		readDir := filepath.Join(args.genesisDir, nodeName)
+		nodeDir := filepath.Join(args.outputDir, nodeName)
 		configDir := filepath.Join(nodeDir, "consensus", "config")
 		dataDir := filepath.Join(nodeDir, "consensus", "data")
 		nodeDataDir := filepath.Join(nodeDir, "nodedata")
-
+		dirs := []string{configDir, dataDir, nodeDataDir}
+		for _, dir := range dirs {
+			err := os.MkdirAll(dir, config.DirPerms)
+			if err != nil {
+				return err
+			}
+		}
+		err := copy(filepath.Join(readDir, "priv_validator_state.json"), filepath.Join(dataDir, "priv_validator_state.json"))
+		if err != nil {
+			return err
+		}
+		err = copy(filepath.Join(readDir, "priv_validator_key.json"), filepath.Join(configDir, "priv_validator_key.json"))
+		if err != nil {
+			return err
+		}
+		err = copy(filepath.Join(readDir, "priv_validator_key_ecdsa.json"), filepath.Join(configDir, "priv_validator_key_ecdsa.json"))
+		if err != nil {
+			return err
+		}
+		err = copy(filepath.Join(readDir, "node_key.json"), filepath.Join(configDir, "node_key.json"))
+		if err != nil {
+			return err
+		}
 		// Generate new configuration file
 		cfg := config.DefaultServerConfig()
 
-		ethConnection := config.EthereumChainDriverConfig{Connection: url}
+		ethConnection := config.EthereumChainDriverConfig{Connection: args.ethUrl}
 		cfg.EthChainDriver = &ethConnection
 		cfg.Node.NodeName = nodeName
 		cfg.Node.LogLevel = args.loglevel
@@ -144,117 +184,24 @@ func runMainnet(_ *cobra.Command, _ []string) error {
 		cfg.Network.SDKAddress = generateAddress(generatePort(), true, true)
 		cfg.Network.OLVMAddress = generateAddress(generatePort(), true)
 
-		dirs := []string{configDir, dataDir, nodeDataDir}
-		for _, dir := range dirs {
-			err := os.MkdirAll(dir, config.DirPerms)
-			if err != nil {
-				return err
-			}
-		}
-
-		// Make node Key
-		nodeKey, err := p2p.LoadOrGenNodeKey(filepath.Join(configDir, consensus.NodeKeyFilename))
+		configList[i] = cfg
+		nodekeyID, err := ioutil.ReadFile(filepath.Join(readDir, "nodeKeyID.data"))
 		if err != nil {
-			return errors.Wrap(err, "Failed to generate node Key")
+			return err
 		}
-
-		// Make private Validator file
-		pvFile := privval.GenFilePV(filepath.Join(configDir, consensus.PrivValidatorKeyFilename),
-			filepath.Join(dataDir, consensus.PrivValidatorStateFilename))
-		pvFile.Save()
-
-		ecdsaPrivKey := secp256k1.GenPrivKey()
-		ecdsaPrivKeyBytes := base64.StdEncoding.EncodeToString([]byte(ecdsaPrivKey[:]))
-		ecdsaPk, err := keys.GetPrivateKeyFromBytes([]byte(ecdsaPrivKey[:]), keys.SECP256K1)
-		if err != nil {
-			return errors.Wrap(err, "error generating secp256k1 private Key")
-		}
-		ecdsaFile := strings.Replace(consensus.PrivValidatorKeyFilename, ".json", "_ecdsa.json", 1)
-		f, err := os.Create(filepath.Join(configDir, ecdsaFile))
-
-		if err != nil {
-			return errors.Wrap(err, "failed to open file to write Validator ecdsa private Key")
-		}
-		noofbytes, err := f.Write([]byte(ecdsaPrivKeyBytes))
-		if err != nil && noofbytes != len(ecdsaPrivKeyBytes) {
-			return errors.Wrap(err, "failed to write Validator ecdsa private Key")
-		}
-		err = f.Close()
-		if err != nil && noofbytes != len(ecdsaPrivKeyBytes) {
-			return errors.Wrap(err, "failed to save Validator ecdsa private Key")
-		}
-		//fmt.Println("witness_key_address: ", ecdsaPrivKey.PubKey().Address().String())
-		// Save the nodes to a list so we can iterate again and
-		n := node{IsValidator: isValidator, Cfg: cfg, Dir: nodeDir, Key: nodeKey, EsdcaPk: ecdsaPk}
-		if isValidator {
-			validator := consensus.GenesisValidator{
-				Address: pvFile.GetAddress(),
-				PubKey:  pvFile.GetPubKey(),
-				Name:    nodeName,
-				Power:   1,
-			}
-			validatorList[i] = validator
-			n.Validator = validator
-		}
-		nodeList[i] = n
-		persistentPeers[i] = n.connectionDetails()
+		persistentPeers[i] = connectionDetails(cfg, p2p.ID(nodekeyID))
+		fmt.Println(persistentPeers[i])
 
 	}
 
-	// Create the non Validator nodes
-
-	// Create the genesis file
-	chainID := "OneLedger-" + randStr(2)
-	if args.chainID != "" {
-		chainID = args.chainID
-	}
-
-	cdo := &ethchain.ChainDriverOption{}
-	fmt.Println("Deployment Network :", url)
-	fmt.Println("Deploy Smart contracts : ", args.deploySmartcontracts)
-	if args.deploySmartcontracts {
-		if len(args.ethUrl) > 0 {
-			cdo, err = ethContractMainnet(url, nodeList)
-			if err != nil {
-				return errors.Wrap(err, "failed to deploy the initial eth contract")
-			}
-		}
-	}
-
-	perblock, _ := big.NewInt(0).SetString("100000000000000", 10)
-	baseDomainPrice, _ := big.NewInt(0).SetString("1000000000000000000000", 10)
-	onsOp := &ons.Options{
-		Currency:          "OLT",
-		PerBlockFees:      *balance.NewAmountFromBigInt(perblock),
-		FirstLevelDomains: []string{"ol"},
-		BaseDomainPrice:   *balance.NewAmountFromBigInt(baseDomainPrice),
-	}
-
-	btccdo := bitcoin.ChainDriverOption{
-		"testnet3",
-		totalBTCSupply,
-		lockBalanceAddress,
-		btcBlockConfirmation,
-	}
-
-	states := mainnetInitialState(args, nodeList, *cdo, *onsOp, btccdo)
-
-	genesisDoc, err := consensus.NewGenesisDoc(chainID, states)
-	if err != nil {
-		return errors.Wrap(err, "failed to create new genesis file")
-	}
-	genesisDoc.Validators = validatorList
-
-	for i := 0; i < totalNodes; i++ {
-		nodeName := ctx.names[i]
-		nodeDir := filepath.Join(args.outputDir, nodeName+"-Node")
+	for _, nodeName := range ctx.names {
+		nodeDir := filepath.Join(args.outputDir, nodeName)
 		configDir := filepath.Join(nodeDir, "consensus", "config")
 		err := genesisDoc.SaveAs(filepath.Join(configDir, "genesis.json"))
 		if err != nil {
 			return err
 		}
 	}
-
 	// Save the files to the node's relevant directory
 	generateBTCPort := portGenerator(18831)
 	generateETHPort := portGenerator(28101)
@@ -274,15 +221,15 @@ func runMainnet(_ *cobra.Command, _ []string) error {
 
 	//deploy contract and get contract addr
 	//Saving config.toml for each node
-	for _, node := range nodeList {
-		node.Cfg.P2P.PersistentPeers = persistentPeers
+	for _, nodeConfig := range configList {
+		nodeConfig.P2P.PersistentPeers = persistentPeers
 		// Modify the btc and eth ports
-		if args.allowSwap && isSwapNode(node.Cfg.Node.NodeName) {
-			node.Cfg.Network.BTCAddress = generateAddress(generateBTCPort(), false)
-			node.Cfg.Network.ETHAddress = generateAddress(generateETHPort(), false)
+		if args.allowSwap && isSwapNode(nodeConfig.Node.NodeName) {
+			nodeConfig.Network.BTCAddress = generateAddress(generateBTCPort(), false)
+			nodeConfig.Network.ETHAddress = generateAddress(generateETHPort(), false)
 		}
 		//	node.Cfg.EthChainDriver.ContractAddress = contractaddr
-		err := node.Cfg.SaveFile(filepath.Join(node.Dir, config.FileName))
+		err := nodeConfig.SaveFile(filepath.Join(args.outputDir, nodeConfig.Node.NodeName, config.FileName))
 		if err != nil {
 			return err
 		}
@@ -293,249 +240,17 @@ func runMainnet(_ *cobra.Command, _ []string) error {
 	return nil
 }
 
-func mainnetInitialState(args *mainnetArgument, nodeList []node, option ethchain.ChainDriverOption, onsOption ons.Options,
-	btcOption bitcoin.ChainDriverOption) consensus.AppState {
-	olt := balance.Currency{Id: 0, Name: "OLT", Chain: chain.ONELEDGER, Decimal: 18, Unit: "nue"}
-	vt := balance.Currency{Id: 1, Name: "VT", Chain: chain.ONELEDGER, Unit: "vt"}
-	obtc := balance.Currency{Id: 2, Name: "BTC", Chain: chain.BITCOIN, Decimal: 8, Unit: "satoshi"}
-	oeth := balance.Currency{Id: 3, Name: "ETH", Chain: chain.ETHEREUM, Decimal: 18, Unit: "wei"}
-	ottc := balance.Currency{Id: 4, Name: "TTC", Chain: chain.TESTTOKEN, Decimal: 18, Unit: "testUnits"} //Tokens count by number ,Unit 1
-	currencies := []balance.Currency{olt, vt, obtc, oeth, ottc}
-	feeOpt := fees.FeeOption{
-		FeeCurrency:   olt,
-		MinFeeDecimal: 9,
-	}
-	balances := make([]consensus.BalanceState, 0, len(nodeList))
-	staking := make([]consensus.Stake, 0, len(nodeList))
-	domains := make([]consensus.DomainState, 0, len(nodeList))
-	fees_db := make([]consensus.BalanceState, 0, len(nodeList))
-	total := olt.NewCoinFromInt(args.totalFunds)
-
-	var initialAddrs []keys.Address
-	initAddrIndex := 0
-	for _, addr := range args.initialTokenHolders {
-		tmpAddr := keys.Address{}
-		err := tmpAddr.UnmarshalText([]byte(addr))
-		if err != nil {
-			fmt.Println("Error adding initial address:", addr)
-			continue
-		}
-		initialAddrs = append(initialAddrs, tmpAddr)
-	}
-
-	for _, node := range nodeList {
-		if !node.IsValidator {
-			continue
-		}
-
-		h, err := node.EsdcaPk.GetHandler()
-		if err != nil {
-			fmt.Println("err")
-			panic(err)
-		}
-
-		var stakeAddr keys.Address
-		if len(initialAddrs) > 0 {
-			if initAddrIndex > (len(initialAddrs) - 1) {
-				initAddrIndex = 0
-			}
-			stakeAddr = initialAddrs[initAddrIndex]
-			initAddrIndex++
-		} else {
-			stakeAddr = node.Key.PubKey().Address().Bytes()
-		}
-
-		pubkey, _ := keys.PubKeyFromTendermint(node.Validator.PubKey.Bytes())
-		st := consensus.Stake{
-			ValidatorAddress: node.Validator.Address.Bytes(),
-			StakeAddress:     stakeAddr,
-			Pubkey:           pubkey,
-			ECDSAPubKey:      h.PubKey(),
-			Name:             node.Validator.Name,
-			Amount:           *vt.NewCoinFromInt(node.Validator.Power).Amount,
-		}
-		staking = append(staking, st)
-	}
-
-	if len(args.initialTokenHolders) > 0 {
-		for _, acct := range initialAddrs {
-			share := total.DivideInt64(int64(len(args.initialTokenHolders)))
-			balances = append(balances, consensus.BalanceState{
-				Address:  acct,
-				Currency: olt.Name,
-				Amount:   *olt.NewCoinFromAmount(*share.Amount).Amount,
-			})
-			balances = append(balances, consensus.BalanceState{
-				Address:  acct,
-				Currency: vt.Name,
-				Amount:   *vt.NewCoinFromInt(100).Amount,
-			})
-		}
-	} else {
-		for _, node := range nodeList {
-			amt := int64(100)
-			if !node.IsValidator {
-				amt = 1
-			}
-			share := total.DivideInt64(int64(len(nodeList)))
-			balances = append(balances, consensus.BalanceState{
-				Address:  node.Key.PubKey().Address().Bytes(),
-				Currency: olt.Name,
-				Amount:   *olt.NewCoinFromAmount(*share.Amount).Amount,
-			})
-			balances = append(balances, consensus.BalanceState{
-				Address:  node.Key.PubKey().Address().Bytes(),
-				Currency: vt.Name,
-				Amount:   *vt.NewCoinFromInt(amt).Amount,
-			})
-		}
-	}
-
-	return consensus.AppState{
-		Currencies: currencies,
-		Balances:   balances,
-		Staking:    staking,
-		Domains:    domains,
-		Fees:       fees_db,
-		Governance: consensus.GovernanceState{
-			FeeOption:   feeOpt,
-			ETHCDOption: option,
-			BTCCDOption: btcOption,
-			ONSOptions:  onsOption,
-		},
-	}
-}
-
-func ethContractMainnet(conn string, nodeList []node) (*ethchain.ChainDriverOption, error) {
-
-	f, err := os.Open(os.Getenv("ETHPKPATH"))
+func copy(source string, destination string) error {
+	input, err := ioutil.ReadFile(source)
 	if err != nil {
-		return nil, errors.Wrap(err, "Error Reading File")
+		fmt.Println(err)
+		return err
 	}
-	b1 := make([]byte, 64)
-	pk, err := f.Read(b1)
+
+	err = ioutil.WriteFile(destination, input, 0644)
 	if err != nil {
-		return nil, errors.Wrap(err, "Error reading private Key")
+		return err
 	}
-	//fmt.Println("Private Key used to deploy : ", string(b1[:pk]))
-	pkStr := string(b1[:pk])
-	privatekey, err := crypto.HexToECDSA(pkStr)
-
-	if err != nil {
-		return nil, err
-	}
-	cli, err := ethclient.Dial(conn)
-	if err != nil {
-		return nil, err
-	}
-
-	publicKey := privatekey.Public()
-	publicKeyECDSA, ok := publicKey.(*ecdsa.PublicKey)
-	if !ok {
-		return nil, err
-	}
-
-	fromAddress := crypto.PubkeyToAddress(*publicKeyECDSA)
-
-	gasPrice, err := cli.SuggestGasPrice(context.Background())
-	if err != nil {
-		return nil, err
-	}
-	gasLimit := uint64(6721974) // in units
-
-	auth := bind.NewKeyedTransactor(privatekey)
-	auth.Value = big.NewInt(0) // in wei
-	auth.GasLimit = gasLimit   // in units
-	auth.GasPrice = gasPrice
-
-	initialValidatorList := make([]common.Address, 0, 10)
-	lock_period := big.NewInt(25)
-
-	tokenSupplyTestToken := new(big.Int)
-	validatorInitialFund := big.NewInt(300000000000000000)
-	tokenSupplyTestToken, ok = tokenSupplyTestToken.SetString("1000000000000000000000", 10)
-	if !ok {
-		return nil, errors.New("Unabe to create total supplu for token")
-	}
-	if !ok {
-		return nil, errors.New("Unable to create wallet transfer amount")
-	}
-	for _, node := range nodeList {
-		privkey := keys.ETHSECP256K1TOECDSA(node.EsdcaPk.Data)
-		nonce, err := cli.PendingNonceAt(context.Background(), fromAddress)
-		if err != nil {
-			return nil, err
-		}
-
-		//fmt.Println("nonce", nonce)
-		pubkey := privkey.Public()
-		ecdsapubkey, ok := pubkey.(*ecdsa.PublicKey)
-		if !ok {
-			return nil, errors.New("failed to cast pubkey")
-		}
-		addr := crypto.PubkeyToAddress(*ecdsapubkey)
-		if node.Validator.Address.String() == "" {
-			continue
-		}
-
-		initialValidatorList = append(initialValidatorList, addr)
-		tx := types.NewTransaction(nonce, addr, validatorInitialFund, auth.GasLimit, auth.GasPrice, (nil))
-		fmt.Println("Validator Address :", addr.Hex(), ":", validatorInitialFund)
-		chainId, _ := cli.ChainID(context.Background())
-		signedTx, err := types.SignTx(tx, types.NewEIP155Signer(chainId), privatekey)
-		if err != nil {
-			return nil, errors.Wrap(err, "signing tx")
-		}
-		err = cli.SendTransaction(context.Background(), signedTx)
-		if err != nil {
-			return nil, errors.Wrap(err, "sending")
-		}
-		time.Sleep(1 * time.Second)
-	}
-
-	nonce, err := cli.PendingNonceAt(context.Background(), fromAddress)
-	if err != nil {
-		return nil, err
-	}
-
-	auth.Nonce = big.NewInt(int64(nonce))
-
-	address, _, _, err := contract.DeployLockRedeem(auth, cli, initialValidatorList, lock_period)
-	if err != nil {
-		return nil, errors.Wrap(err, "Deployement Eth LockRedeem")
-	}
-	tokenAddress := common.Address{}
-	ercAddress := common.Address{}
-	//auth.Nonce = big.NewInt(int64(nonce + 1))
-	//tokenAddress, _, _, err := ethcontracts.DeployERC20Basic(auth, cli, tokenSupplyTestToken)
-	//if err != nil {
-	//	return nil, errors.Wrap(err, "Deployement Test Token")
-	//}
-	//auth.Nonce = big.NewInt(int64(nonce + 2))
-	//ercAddress, _, _, err := ethcontracts.DeployLockRedeemERC(auth, cli, initialValidatorList)
-	//if err != nil {
-	//	return nil, errors.Wrap(err, "Deployement ERC LockRedeem")
-	//}
-
-	fmt.Printf("LockRedeemContractAddr = \"%v\"\n", address.Hex())
-	fmt.Printf("TestTokenContractAddr = \"%v\"\n", tokenAddress.Hex())
-	fmt.Printf("LockRedeemERC20ContractAddr = \"%v\"\n", ercAddress.Hex())
-	//tokenAbiMap := make(map[*common.Address]string)
-	//tokenAbiMap[&tokenAddress] = contract.ERC20BasicABI
-	return &ethchain.ChainDriverOption{
-		ContractABI:    contract.LockRedeemABI,
-		ERCContractABI: contract.LockRedeemERCABI,
-		TokenList: []ethchain.ERC20Token{{
-			TokName:        "TTC",
-			TokAddr:        tokenAddress,
-			TokAbi:         contract.ERC20BasicABI,
-			TokTotalSupply: totalTTCSupply,
-		}},
-		ContractAddress:    address,
-		ERCContractAddress: ercAddress,
-		TotalSupply:        totalETHSupply,
-		TotalSupplyAddr:    lockBalanceAddress,
-		BlockConfirmation:  ethBlockConfirmation,
-	}, nil
-
+	os.Remove(source)
+	return nil
 }
