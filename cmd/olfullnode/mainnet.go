@@ -190,7 +190,7 @@ func runMainnet(_ *cobra.Command, _ []string) error {
 			return err
 		}
 		persistentPeers[i] = connectionDetails(cfg, p2p.ID(nodekeyID))
-		fmt.Println(persistentPeers[i])
+		os.Remove(filepath.Join(readDir, "nodeKeyID.data"))
 
 	}
 

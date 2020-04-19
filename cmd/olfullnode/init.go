@@ -70,7 +70,7 @@ var initCmdArgs = &InitCmdArguments{}
 
 func init() {
 	RootCmd.AddCommand(initCmd)
-	initCmd.Flags().StringVar(&initCmdArgs.nodeName, "node_name", "Newton-Node", "Name of the node")
+	initCmd.Flags().StringVar(&initCmdArgs.nodeName, "node_name", "Node", "Name of the node")
 	initCmd.Flags().StringVar(&initCmdArgs.genesis, "genesis", "", "Genesis file to use to generate new node Key file")
 	initCmd.Flags().IntVar(&initCmdArgs.numValidators, "validators", 4, "Number of validators to initialize mainnetnet with")
 	initCmd.Flags().IntVar(&initCmdArgs.numFullnodes, "fullnodes", 1, "Number of fullnodes to initialize mainnetnet with")
@@ -148,7 +148,8 @@ func runInitNode(cmd *cobra.Command, _ []string) error {
 		// Make node Key
 
 	} else {
-		fmt.Println("no genesis file provided, node is not runnable until genesis file is provided at: ", filepath.Join(configDir, consensus.GenesisFilename))
+		//fmt.Println("No genesis file provided, node is not runnable until genesis file is provided at: ", filepath.Join(configDir, consensus.GenesisFilename))
+		fmt.Println("Genarating Genesis file  : ")
 	}
 	nodeList, validatorList, err := generatePVKeys(rootDir)
 	if err != nil {

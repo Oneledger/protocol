@@ -415,7 +415,6 @@ func runDevnet(_ *cobra.Command, _ []string) error {
 		}
 		return false
 	}
-
 	//deploy contract and get contract addr
 
 	for _, node := range nodeList {
