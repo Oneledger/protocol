@@ -166,8 +166,6 @@ func runLock(ctx *action.Context, lock *Lock) (bool, action.Response) {
 	}
 
 	if !bytes.Equal(ethTx.To().Bytes(), cdOptions.ContractAddress.Bytes()) {
-		ctx.Logger.Error("Contract address from eth Options : ", cdOptions.ContractAddress.Hex())
-		ctx.Logger.Error("Contract address from eth TX : ", ethTx.To().Hex())
 		ctx.Logger.Error("to field does not match contract address")
 		return false, action.Response{
 			Log: "Contract address does not match",
