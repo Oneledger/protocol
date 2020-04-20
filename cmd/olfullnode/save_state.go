@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/Oneledger/protocol/app"
 	olNode "github.com/Oneledger/protocol/app/node"
@@ -48,7 +49,8 @@ type BlockParams struct {
 
 // EvidenceParams determine how we handle evidence of malfeasance.
 type EvidenceParams struct {
-	MaxAge int64 `json:"max_age,string"` // only accept new evidence more recent than this
+	MaxAgeNumBlocks int64         `json:"max_age_num_blocks,string"` // only accept new evidence more recent than this
+	MaxAgeDuration  time.Duration `json:"max_age_duration,string"`
 }
 
 // ValidatorParams restrict the public key types validators can use.
@@ -450,7 +452,7 @@ func DumpTrackerToFile(ts *ethereum.TrackerStore, writer io.Writer, fn func(writ
 			trackerState.ProcessOwner = tracker.ProcessOwner
 			trackerState.SignedETHTx = tracker.SignedETHTx
 			trackerState.TrackerName = tracker.TrackerName
-			trackerState.Validators = tracker.Validators
+			trackerState.Witnesses = tracker.Witnesses
 			trackerState.To = tracker.To
 
 			fn(writer, trackerState)
