@@ -4,8 +4,7 @@ import (
 	"encoding/json"
 
 	"github.com/pkg/errors"
-	"github.com/tendermint/tendermint/libs/common"
-	cmn "github.com/tendermint/tendermint/libs/common"
+	"github.com/tendermint/tendermint/libs/kv"
 
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/identity"
@@ -26,14 +25,14 @@ func (p Purge) Type() action.Type {
 	return action.PURGE
 }
 
-func (p Purge) Tags() cmn.KVPairs {
-	tags := make([]common.KVPair, 0)
+func (p Purge) Tags() kv.Pairs {
+	tags := make([]kv.Pair, 0)
 
-	tag := common.KVPair{
+	tag := kv.Pair{
 		Key:   []byte("tx.type"),
 		Value: []byte(p.Type().String()),
 	}
-	tag2 := common.KVPair{
+	tag2 := kv.Pair{
 		Key:   []byte("tx.owner"),
 		Value: p.AdminAddress.Bytes(),
 	}
@@ -113,6 +112,6 @@ func runPurge(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 		return false, action.Response{Log: errors.Wrap(err, "failed to unstake specified validator at address: "+purge.ValidatorAddress.String()).Error()}
 	}
 	return true, action.Response{
-		Tags: purge.Tags(),
+		Events: action.GetEvent(purge.Tags(), "purge_validator"),
 	}
 }
