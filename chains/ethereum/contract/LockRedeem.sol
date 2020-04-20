@@ -22,6 +22,7 @@ contract LockRedeem {
     uint additionalGasCost = 37692 ;
     uint redeemGasCharge = 10000000000000000;
     uint validatorEarningMultiplier = 1;
+    uint rewardGas = 10000;
 
     uint public migrationSignatures;
     mapping (address => bool) public migrationSigners;
@@ -186,9 +187,9 @@ contract LockRedeem {
         // Trasaction Cost is a an average trasaction cost .
         // additionalGasCost is the extra gas used by the lines of code after gas calculation is done.
         // This is an approximate calcualtion and actuall cost might vary sightly .
+
         uint gasUsed = startGas - gasleft() + transactionCost + additionalGasCost ;
-        uint gasFee = gasUsed * tx.gasprice;
-        gasFee = gasFee * validatorEarningMultiplier;
+        uint gasFee = gasUsed * tx.gasprice + (rewardGas * validatorEarningMultiplier);
         (bool success, ) = msg.sender.call.value(gasFee)("");
         require(success, "Transfer back to validator failed");
         redeemRequests[recipient_].redeemFee -= gasFee;

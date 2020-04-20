@@ -4,16 +4,16 @@ package eth
 import (
 	"encoding/json"
 	"fmt"
-
-	ethcommon "github.com/ethereum/go-ethereum/common"
-	"github.com/pkg/errors"
-	"github.com/tendermint/tendermint/libs/common"
+	"github.com/tendermint/tendermint/libs/kv"
 
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/chains/ethereum"
 	"github.com/Oneledger/protocol/data/balance"
+	"github.com/Oneledger/protocol/data/chain"
 	trackerlib "github.com/Oneledger/protocol/data/ethereum"
 	"github.com/Oneledger/protocol/data/keys"
+	ethcommon "github.com/ethereum/go-ethereum/common"
+	"github.com/pkg/errors"
 )
 
 var _ action.Msg = &ERC20Redeem{}
@@ -36,18 +36,18 @@ func (E ERC20Redeem) Type() action.Type {
 }
 
 // Tags creates the tags to associate with the transaction
-func (E ERC20Redeem) Tags() common.KVPairs {
-	tags := make([]common.KVPair, 0)
+func (E ERC20Redeem) Tags() kv.Pairs {
+	tags := make([]kv.Pair, 0)
 
-	tag := common.KVPair{
+	tag := kv.Pair{
 		Key:   []byte("tx.type"),
 		Value: []byte(E.Type().String()),
 	}
-	tag2 := common.KVPair{
+	tag2 := kv.Pair{
 		Key:   []byte("tx.owner"),
 		Value: E.Owner,
 	}
-	tag3 := common.KVPair{
+	tag3 := kv.Pair{
 		Key:   []byte("tx.tracker"),
 		Value: ethcommon.BytesToHash(E.ETHTxn).Bytes(),
 	}
@@ -154,7 +154,7 @@ func runERC20Reddem(ctx *action.Context, tx action.RawTx) (bool, action.Response
 		return false, action.Response{Log: action.ErrNotEnoughFund.Error()}
 	}
 
-	validators, err := ctx.Validators.GetValidatorsAddress()
+	witnesses, err := ctx.Witnesses.GetWitnessAddresses(chain.ETHEREUM)
 	if err != nil {
 		return false, action.Response{Log: "error in getting validator addresses" + err.Error()}
 	}
@@ -170,7 +170,7 @@ func runERC20Reddem(ctx *action.Context, tx action.RawTx) (bool, action.Response
 		erc20redeem.Owner,
 		erc20redeem.ETHTxn,
 		name,
-		validators,
+		witnesses,
 	)
 
 	tracker.State = trackerlib.New
@@ -186,6 +186,6 @@ func runERC20Reddem(ctx *action.Context, tx action.RawTx) (bool, action.Response
 		Info:      "Transaction received ,Redeem in progress",
 		GasWanted: 0,
 		GasUsed:   0,
-		Tags:      erc20redeem.Tags(),
+		Events:    action.GetEvent(erc20redeem.Tags(), "erc20_redeem"),
 	}
 }

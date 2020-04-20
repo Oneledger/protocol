@@ -29,7 +29,7 @@ import (
 	"sync"
 
 	"github.com/tendermint/iavl"
-	"github.com/tendermint/tendermint/libs/db"
+	"github.com/tendermint/tm-db"
 )
 
 var k SessionedStorage = KeyValue{}
@@ -100,7 +100,7 @@ func newKeyValue(name, dbDir, configDB string, newType StorageType) *KeyValue {
 			panic("Can't create a database " + dbDir + "/" + name)
 		}
 
-		tree := iavl.NewMutableTree(storage, 100)
+		tree, _ := iavl.NewMutableTree(storage, 100)
 
 		// Note: the tree is empty, until at least one version is loaded
 		tree.LoadVersion(0)
@@ -133,7 +133,7 @@ func (store KeyValue) Dump() {
 		log.Debug("Stat", key, value)
 	}
 
-	iter := store.database.Iterator(nil, nil)
+	iter, _ := store.database.Iterator(nil, nil)
 	for ; iter.Valid(); iter.Next() {
 		hash := iter.Key()
 		node := iter.Value()
@@ -321,7 +321,7 @@ func (session KeyValueSession) Dump() {
 		log.Debug("Stat", key, value)
 	}
 
-	iter := session.store.database.Iterator(nil, nil)
+	iter, _ := session.store.database.Iterator(nil, nil)
 	for ; iter.Valid(); iter.Next() {
 		hash := iter.Key()
 		node := iter.Value()

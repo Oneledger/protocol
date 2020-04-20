@@ -4,10 +4,10 @@ package app
 type infoServer func(RequestInfo) ResponseInfo
 type optionSetter func(RequestSetOption) ResponseSetOption
 type queryer func(RequestQuery) ResponseQuery
-type txChecker func([]byte) ResponseCheckTx
+type txChecker func(RequestCheckTx) ResponseCheckTx
 type chainInitializer func(RequestInitChain) ResponseInitChain
 type blockBeginner func(RequestBeginBlock) ResponseBeginBlock
-type txDeliverer func([]byte) ResponseDeliverTx
+type txDeliverer func(RequestDeliverTx) ResponseDeliverTx
 type blockEnder func(RequestEndBlock) ResponseEndBlock
 type commitor func() ResponseCommit
 
@@ -51,7 +51,7 @@ func (app *ABCI) Query(request RequestQuery) ResponseQuery {
 	return app.queryer(request)
 }
 
-func (app *ABCI) CheckTx(tx []byte) ResponseCheckTx {
+func (app *ABCI) CheckTx(tx RequestCheckTx) ResponseCheckTx {
 	return app.txChecker(tx)
 }
 
@@ -63,7 +63,7 @@ func (app *ABCI) BeginBlock(request RequestBeginBlock) ResponseBeginBlock {
 	return app.blockBeginner(request)
 }
 
-func (app *ABCI) DeliverTx(tx []byte) ResponseDeliverTx {
+func (app *ABCI) DeliverTx(tx RequestDeliverTx) ResponseDeliverTx {
 	return app.txDeliverer(tx)
 }
 
