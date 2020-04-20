@@ -139,11 +139,8 @@ func BasicFeeHandling(ctx *Context, signedTx SignedTx, start Gas, size Gas, sign
 func GetEvent(pairs kv.Pairs, eventType string) []types.Event {
 	var eventList []types.Event
 	event := types.Event{
-		Type:                 eventType,
-		Attributes:           pairs,
-		XXX_NoUnkeyedLiteral: struct{}{},
-		XXX_unrecognized:     nil,
-		XXX_sizecache:        0,
+		Type:       eventType,
+		Attributes: pairs,
 	}
 
 	return append(eventList, event)
