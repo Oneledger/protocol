@@ -30,11 +30,7 @@ import (
 	"github.com/Oneledger/protocol/chains/bitcoin"
 	ethchain "github.com/Oneledger/protocol/chains/ethereum"
 	"github.com/Oneledger/protocol/chains/ethereum/contract"
-	"github.com/Oneledger/protocol/data/balance"
-	"github.com/Oneledger/protocol/data/chain"
-	"github.com/Oneledger/protocol/data/fees"
 	"github.com/Oneledger/protocol/data/keys"
-	"github.com/Oneledger/protocol/data/ons"
 
 	"github.com/tendermint/tendermint/crypto/secp256k1"
 
@@ -55,10 +51,10 @@ var initCmd = &cobra.Command{
 }
 
 type InitCmdArguments struct {
-	genesis       string
-	nodeName      string
-	numValidators int
-	numFullnodes  int
+	genesis    string
+	nodeName   string
+	numWitness int
+	numofNodes int
 	// Total amount of funds to be shared across each node
 	totalFunds           int64
 	initialTokenHolders  []string
@@ -72,16 +68,13 @@ var initCmdArgs = &InitCmdArguments{}
 
 func init() {
 	RootCmd.AddCommand(initCmd)
-	initCmd.Flags().StringVar(&initCmdArgs.nodeName, "node_name", "Node", "Name of the node")
+	initCmd.Flags().StringVar(&initCmdArgs.nodeName, "node_name_prefix", "Node", "Name of the node")
 	initCmd.Flags().StringVar(&initCmdArgs.genesis, "genesis", "", "Genesis file to use to generate new node Key file")
-	initCmd.Flags().IntVar(&initCmdArgs.numValidators, "validators", 4, "Number of validators to initialize mainnetnet with")
-	initCmd.Flags().IntVar(&initCmdArgs.numFullnodes, "fullnodes", 1, "Number of fullnodes to initialize mainnetnet with")
-	initCmd.Flags().Int64Var(&initCmdArgs.totalFunds, "total_funds", 1000000000, "The total amount of tokens in circulation")
-	initCmd.Flags().StringSliceVar(&initCmdArgs.initialTokenHolders, "initial_token_holders", []string{}, "Initial list of addresses that hold an equal share of Total funds")
+	initCmd.Flags().IntVar(&initCmdArgs.numWitness, "witness", 4, "Number of Witness for ethereum chain")
+	initCmd.Flags().IntVar(&initCmdArgs.numofNodes, "nodes", 5, "total number of Nodes ,Including Validators and Non Validators")
 	initCmd.Flags().StringVar(&initCmdArgs.chainID, "chain_id", "", "Specify a chain ID, a random one is generated if not given")
 	initCmd.Flags().StringVar(&initCmdArgs.ethUrl, "eth_rpc", "HTTP://127.0.0.1:7545", "URL for ethereum network")
 	initCmd.Flags().BoolVar(&initCmdArgs.deploySmartcontracts, "deploy_smart_contracts", true, "deploy eth contracts")
-	initCmd.Flags().BoolVar(&initCmdArgs.cloud, "cloud_deploy", false, "set true for deploying on cloud")
 }
 
 type initContext struct {
@@ -153,7 +146,7 @@ func runInitNode(cmd *cobra.Command, _ []string) error {
 		//fmt.Println("No genesis file provided, node is not runnable until genesis file is provided at: ", filepath.Join(configDir, consensus.GenesisFilename))
 		fmt.Println("Genarating Genesis file  : ")
 	}
-	nodeList, _, err := generatePVKeys(rootDir)
+	witnessList, err := generatePVKeys(rootDir)
 	if err != nil {
 		return errors.Wrap(err, "Failed to Get NodeList")
 	}
@@ -166,7 +159,7 @@ func runInitNode(cmd *cobra.Command, _ []string) error {
 	fmt.Println("Deploy Smart contracts : ", initCmdArgs.deploySmartcontracts)
 	if initCmdArgs.deploySmartcontracts {
 		if len(initCmdArgs.ethUrl) > 0 {
-			cdo, err = getEthOpt(url, nodeList)
+			cdo, err = getEthOpt(url, witnessList)
 			if err != nil {
 				return errors.Wrap(err, "failed to deploy the initial eth contract")
 			}
@@ -186,23 +179,22 @@ func runInitNode(cmd *cobra.Command, _ []string) error {
 	return nil
 }
 
-func generatePVKeys(rootDir string) ([]node, []consensus.GenesisValidator, error) {
-	totalNodes := initCmdArgs.numValidators + initCmdArgs.numFullnodes
-	nodeList := make([]node, totalNodes)
-	validatorList := make([]consensus.GenesisValidator, initCmdArgs.numValidators)
+func generatePVKeys(rootDir string) ([]node, error) {
+	totalNodes := initCmdArgs.numofNodes
+	witnessList := make([]node, initCmdArgs.numWitness)
 	for i := 0; i < totalNodes; i++ {
 		// Make node Key
 		nodename := initCmdArgs.nodeName + strconv.Itoa(i)
 		folder := filepath.Join(rootDir, nodename)
 		err := os.MkdirAll(folder, config.DirPerms)
 		if err != nil {
-			return nil, nil, err
+			return nil, err
 		}
 
-		isValidator := i < initCmdArgs.numValidators
-		nodekey, err := p2p.LoadOrGenNodeKey(filepath.Join(folder, consensus.NodeKeyFilename))
+		isWitness := i < initCmdArgs.numWitness
+		_, err = p2p.LoadOrGenNodeKey(filepath.Join(folder, consensus.NodeKeyFilename))
 		if err != nil {
-			return nil, nil, errors.Wrap(err, "Failed to generate node Key")
+			return nil, errors.Wrap(err, "Failed to generate node Key")
 		}
 		// Make private Validator file
 		pvFile := privval.GenFilePV(filepath.Join(folder, consensus.PrivValidatorKeyFilename),
@@ -213,43 +205,33 @@ func generatePVKeys(rootDir string) ([]node, []consensus.GenesisValidator, error
 		ecdsaPrivKeyBytes := base64.StdEncoding.EncodeToString([]byte(ecdsaPrivKey[:]))
 		ecdsaPk, err := keys.GetPrivateKeyFromBytes([]byte(ecdsaPrivKey[:]), keys.SECP256K1)
 		if err != nil {
-			return nil, nil, errors.Wrap(err, "error generating secp256k1 private Key")
+			return nil, errors.Wrap(err, "error generating secp256k1 private Key")
 		}
-		fmt.Println("ecdsaPK :", nodekey)
 		ecdsaFile := strings.Replace(consensus.PrivValidatorKeyFilename, ".json", "_ecdsa.json", 1)
 		f, err := os.Create(filepath.Join(folder, ecdsaFile))
 
 		if err != nil {
-			return nil, nil, errors.Wrap(err, "failed to open file to write Validator ecdsa private Key")
+			return nil, errors.Wrap(err, "failed to open file to write Validator ecdsa private Key")
 		}
 		noofbytes, err := f.Write([]byte(ecdsaPrivKeyBytes))
 		if err != nil && noofbytes != len(ecdsaPrivKeyBytes) {
-			return nil, nil, errors.Wrap(err, "failed to write Validator ecdsa private Key")
+			return nil, errors.Wrap(err, "failed to write Validator ecdsa private Key")
 		}
 		err = f.Close()
 		if err != nil && noofbytes != len(ecdsaPrivKeyBytes) {
-			return nil, nil, errors.Wrap(err, "failed to save Validator ecdsa private Key")
+			return nil, errors.Wrap(err, "failed to save Validator ecdsa private Key")
 		}
-		n := node{IsValidator: isValidator, Key: nodekey, EsdcaPk: ecdsaPk}
-		if isValidator {
-			validator := consensus.GenesisValidator{
-				Address: pvFile.GetAddress(),
-				PubKey:  pvFile.GetPubKey(),
-				Name:    nodename,
-				Power:   1,
-			}
-			n.Validator = validator
-			validatorList[i] = validator
+		if isWitness {
+			n := node{EsdcaPk: ecdsaPk}
+			witnessList[i] = n
 		}
-		nodeList[i] = n
-
 	}
 	//jsonData, err := json.Marshal(persistentPeers)
 	//if err != nil {
 	//	return nil, nil, errors.Wrap(err, "Error in marshalling nodeList to Json")
 	//}
 	//ioutil.WriteFile("persistantpeers.json", jsonData, 0600)
-	return nodeList, validatorList, nil
+	return witnessList, nil
 }
 
 func getEthOpt(conn string, nodeList []node) (*ethchain.ChainDriverOption, error) {
@@ -318,9 +300,6 @@ func getEthOpt(conn string, nodeList []node) (*ethchain.ChainDriverOption, error
 			return nil, errors.New("failed to cast pubkey")
 		}
 		addr := crypto.PubkeyToAddress(*ecdsapubkey)
-		if node.Validator.Address.String() == "" {
-			continue
-		}
 
 		initialValidatorList = append(initialValidatorList, addr)
 		tx := types.NewTransaction(nonce, addr, validatorInitialFund, auth.GasLimit, auth.GasPrice, (nil))
@@ -405,117 +384,4 @@ func getEthUrl(ethUrlArg string) (string, error) {
 		return u.String(), nil
 	}
 	return ethUrlArg, nil
-}
-
-func getInitialState(args *InitCmdArguments, nodeList []node, option ethchain.ChainDriverOption, onsOption ons.Options,
-	btcOption bitcoin.ChainDriverOption) consensus.AppState {
-	olt := balance.Currency{Id: 0, Name: "OLT", Chain: chain.ONELEDGER, Decimal: 18, Unit: "nue"}
-	vt := balance.Currency{Id: 1, Name: "VT", Chain: chain.ONELEDGER, Unit: "vt"}
-	obtc := balance.Currency{Id: 2, Name: "BTC", Chain: chain.BITCOIN, Decimal: 8, Unit: "satoshi"}
-	oeth := balance.Currency{Id: 3, Name: "ETH", Chain: chain.ETHEREUM, Decimal: 18, Unit: "wei"}
-	ottc := balance.Currency{Id: 4, Name: "TTC", Chain: chain.TESTTOKEN, Decimal: 18, Unit: "testUnits"} //Tokens count by number ,Unit 1
-	currencies := []balance.Currency{olt, vt, obtc, oeth, ottc}
-	feeOpt := fees.FeeOption{
-		FeeCurrency:   olt,
-		MinFeeDecimal: 9,
-	}
-	balances := make([]consensus.BalanceState, 0, len(nodeList))
-	staking := make([]consensus.Stake, 0, len(nodeList))
-	domains := make([]consensus.DomainState, 0, len(nodeList))
-	fees_db := make([]consensus.BalanceState, 0, len(nodeList))
-	total := olt.NewCoinFromInt(args.totalFunds)
-
-	var initialAddrs []keys.Address
-	initAddrIndex := 0
-	for _, addr := range args.initialTokenHolders {
-		tmpAddr := keys.Address{}
-		err := tmpAddr.UnmarshalText([]byte(addr))
-		if err != nil {
-			fmt.Println("Error adding initial address:", addr)
-			continue
-		}
-		initialAddrs = append(initialAddrs, tmpAddr)
-	}
-
-	for _, node := range nodeList {
-		if !node.IsValidator {
-			continue
-		}
-
-		h, err := node.EsdcaPk.GetHandler()
-		if err != nil {
-			fmt.Println("err")
-			panic(err)
-		}
-
-		var stakeAddr keys.Address
-		if len(initialAddrs) > 0 {
-			if initAddrIndex > (len(initialAddrs) - 1) {
-				initAddrIndex = 0
-			}
-			stakeAddr = initialAddrs[initAddrIndex]
-			initAddrIndex++
-		} else {
-			stakeAddr = node.Key.PubKey().Address().Bytes()
-		}
-
-		pubkey, _ := keys.PubKeyFromTendermint(node.Validator.PubKey.Bytes())
-		st := consensus.Stake{
-			ValidatorAddress: node.Validator.Address.Bytes(),
-			StakeAddress:     stakeAddr,
-			Pubkey:           pubkey,
-			ECDSAPubKey:      h.PubKey(),
-			Name:             node.Validator.Name,
-			Amount:           *vt.NewCoinFromInt(node.Validator.Power).Amount,
-		}
-		staking = append(staking, st)
-	}
-
-	if len(args.initialTokenHolders) > 0 {
-		for _, acct := range initialAddrs {
-			share := total.DivideInt64(int64(len(args.initialTokenHolders)))
-			balances = append(balances, consensus.BalanceState{
-				Address:  acct,
-				Currency: olt.Name,
-				Amount:   *olt.NewCoinFromAmount(*share.Amount).Amount,
-			})
-			balances = append(balances, consensus.BalanceState{
-				Address:  acct,
-				Currency: vt.Name,
-				Amount:   *vt.NewCoinFromInt(100).Amount,
-			})
-		}
-	} else {
-		for _, node := range nodeList {
-			amt := int64(100)
-			if !node.IsValidator {
-				amt = 1
-			}
-			share := total.DivideInt64(int64(len(nodeList)))
-			balances = append(balances, consensus.BalanceState{
-				Address:  node.Key.PubKey().Address().Bytes(),
-				Currency: olt.Name,
-				Amount:   *olt.NewCoinFromAmount(*share.Amount).Amount,
-			})
-			balances = append(balances, consensus.BalanceState{
-				Address:  node.Key.PubKey().Address().Bytes(),
-				Currency: vt.Name,
-				Amount:   *vt.NewCoinFromInt(amt).Amount,
-			})
-		}
-	}
-
-	return consensus.AppState{
-		Currencies: currencies,
-		Balances:   balances,
-		Staking:    staking,
-		Domains:    domains,
-		Fees:       fees_db,
-		Governance: consensus.GovernanceState{
-			FeeOption:   feeOpt,
-			ETHCDOption: option,
-			BTCCDOption: btcOption,
-			ONSOptions:  onsOption,
-		},
-	}
 }
