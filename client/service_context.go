@@ -51,7 +51,10 @@ func NewExtServiceContext(rpcAddress, sdkAddress string) (cliCtx ExtServiceConte
 	}()
 
 	// tm rpc ExtServiceContext
-	var tmRPCClient = rpcclient.NewHTTP(rpcAddress, "/websocket")
+	tmRPCClient, err := rpcclient.NewHTTP(rpcAddress, "/websocket")
+	if err != nil {
+		return ExtServiceContext{}, err
+	}
 
 	// try starting tmRPCClient client
 	err = tmRPCClient.Start()
@@ -125,7 +128,7 @@ func (ctx ExtServiceContext) Block(height int64) (res *ctypes.ResultBlock) {
 
 func (ctx ExtServiceContext) Search(query string, prove bool, page, perPage int) (res *ctypes.ResultTxSearch) {
 
-	result, err := ctx.rpcClient.TxSearch(query, prove, page, perPage)
+	result, err := ctx.rpcClient.TxSearch(query, prove, page, perPage, "")
 	if err != nil {
 		logger.Error("TxSearch Error", "err", err)
 		return nil

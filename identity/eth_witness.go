@@ -1,7 +1,6 @@
 package identity
 
 import (
-	"github.com/Oneledger/protocol/data/chain"
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/serialize"
 )
@@ -11,7 +10,6 @@ type Witness struct {
 	PubKey      keys.PublicKey `json:"pubKey"`
 	ECDSAPubKey keys.PublicKey `json:"ecdsaPubkey"`
 	Name        string         `json:"name"`
-	Chain       chain.Type     `json:"chain"`
 }
 
 func (w *Witness) Bytes() []byte {

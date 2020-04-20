@@ -4,7 +4,7 @@ import (
 	"encoding/hex"
 	"testing"
 
-	"github.com/tendermint/tendermint/libs/db"
+	"github.com/tendermint/tm-db"
 
 	"github.com/Oneledger/protocol/storage"
 
@@ -112,7 +112,7 @@ func TestEthWitnessStore_Iterate(t *testing.T) {
 	addrs_expected := addrs[:2]
 
 	addrs_actual := []keys.Address{}
-	ws.Iterate(func(addr keys.Address, witness *Witness) bool {
+	ws.Iterate(chain.ETHEREUM, func(addr keys.Address, witness *Witness) bool {
 		addrs_actual = append(addrs_actual, addr)
 		return false
 	})

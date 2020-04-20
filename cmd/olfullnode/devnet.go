@@ -576,7 +576,7 @@ func deployethcdcontract(conn string, nodeList []node) (*ethchain.ChainDriverOpt
 	lock_period := big.NewInt(25)
 
 	tokenSupplyTestToken := new(big.Int)
-	validatorInitialFund := big.NewInt(300000000000000000)
+	validatorInitialFund := big.NewInt(300000000000000000) //300000000000000000
 	tokenSupplyTestToken, ok = tokenSupplyTestToken.SetString("1000000000000000000000", 10)
 	if !ok {
 		return nil, errors.New("Unabe to create total supplu for token")
@@ -603,8 +603,8 @@ func deployethcdcontract(conn string, nodeList []node) (*ethchain.ChainDriverOpt
 		}
 
 		initialValidatorList = append(initialValidatorList, addr)
-		tx := types.NewTransaction(nonce, addr, validatorInitialFund, auth.GasLimit, auth.GasPrice, (nil))
-		fmt.Println(addr.Hex())
+		tx := types.NewTransaction(nonce, addr, validatorInitialFund, auth.GasLimit, auth.GasPrice, nil)
+		fmt.Println(addr.Hex(), ":", validatorInitialFund, "wei")
 		chainId, _ := cli.ChainID(context.Background())
 		signedTx, err := types.SignTx(tx, types.NewEIP155Signer(chainId), privatekey)
 		if err != nil {

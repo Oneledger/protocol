@@ -46,7 +46,7 @@ var (
 	TestTokenABI     = contract.ERC20BasicABI
 	LockRedeemERCABI = contract.LockRedeemERCABI
 	// LockRedeemERC20ABI = contract.ContextABI
-	LockRedeemContractAddr      = "0x10b209d25599a14B5f7282319Eb03f2c07d021ae"
+	LockRedeemContractAddr      = "0xe3CE68150bb5AC8A969ff2FB2d4d24238230678e"
 	TestTokenContractAddr       = "0x0000000000000000000000000000000000000000"
 	LockRedeemERC20ContractAddr = "0x0000000000000000000000000000000000000000"
 
@@ -124,8 +124,8 @@ func init() {
 // Redeem locked if tracker fails . User redeems more funds than he has .
 
 func main() {
-	//getstatus(lock())
-	//time.Sleep(time.Second * 5)
+	getstatus(lock())
+	time.Sleep(time.Second * 5)
 	getstatus(redeem())
 	//sendTrasactions(12)
 	//erc20lock()
