@@ -340,7 +340,7 @@ func (_LockRedeem *LockRedeemCallerSession) HasValidatorSigned(recipient_ common
 	return _LockRedeem.Contract.HasValidatorSigned(&_LockRedeem.CallOpts, recipient_)
 }
 
-// isValidator is a free data retrieval call binding the contract method 0xfacd743b.
+// IsValidator is a free data retrieval call binding the contract method 0xfacd743b.
 //
 // Solidity: function isValidator(address addr) constant returns(bool)
 func (_LockRedeem *LockRedeemCaller) IsValidator(opts *bind.CallOpts, addr common.Address) (bool, error) {
@@ -352,14 +352,14 @@ func (_LockRedeem *LockRedeemCaller) IsValidator(opts *bind.CallOpts, addr commo
 	return *ret0, err
 }
 
-// isValidator is a free data retrieval call binding the contract method 0xfacd743b.
+// IsValidator is a free data retrieval call binding the contract method 0xfacd743b.
 //
 // Solidity: function isValidator(address addr) constant returns(bool)
 func (_LockRedeem *LockRedeemSession) IsValidator(addr common.Address) (bool, error) {
 	return _LockRedeem.Contract.IsValidator(&_LockRedeem.CallOpts, addr)
 }
 
-// isValidator is a free data retrieval call binding the contract method 0xfacd743b.
+// IsValidator is a free data retrieval call binding the contract method 0xfacd743b.
 //
 // Solidity: function isValidator(address addr) constant returns(bool)
 func (_LockRedeem *LockRedeemCallerSession) IsValidator(addr common.Address) (bool, error) {
