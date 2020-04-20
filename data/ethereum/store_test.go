@@ -9,7 +9,7 @@ import (
 	"github.com/Oneledger/protocol/storage"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/assert"
-	"github.com/tendermint/tendermint/libs/db"
+	"github.com/tendermint/tm-db"
 )
 
 var (

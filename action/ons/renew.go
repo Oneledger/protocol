@@ -3,12 +3,11 @@ package ons
 import (
 	"bytes"
 	"encoding/json"
-
-	"github.com/pkg/errors"
-	"github.com/tendermint/tendermint/libs/common"
+	"github.com/tendermint/tendermint/libs/kv"
 
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/data/ons"
+	"github.com/pkg/errors"
 )
 
 var _ Ons = &RenewDomain{}
@@ -36,14 +35,14 @@ func (r RenewDomain) Type() action.Type {
 	return action.DOMAIN_RENEW
 }
 
-func (r RenewDomain) Tags() common.KVPairs {
-	tags := make([]common.KVPair, 0)
+func (r RenewDomain) Tags() kv.Pairs {
+	tags := make([]kv.Pair, 0)
 
-	tag := common.KVPair{
+	tag := kv.Pair{
 		Key:   []byte("tx.type"),
 		Value: []byte(r.Type().String()),
 	}
-	tag2 := common.KVPair{
+	tag2 := kv.Pair{
 		Key:   []byte("tx.owner"),
 		Value: r.Owner.Bytes(),
 	}
@@ -198,5 +197,5 @@ func runRenew(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 		return false
 	})
 
-	return true, action.Response{Tags: renewDomain.Tags()}
+	return true, action.Response{Events: action.GetEvent(renewDomain.Tags(), "renew_domain")}
 }

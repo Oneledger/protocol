@@ -5,7 +5,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/tendermint/tendermint/libs/db"
+	"github.com/tendermint/tm-db"
 
 	"github.com/Oneledger/protocol/storage"
 
