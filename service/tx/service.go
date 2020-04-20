@@ -261,10 +261,14 @@ func (svc Service) PurgeValidator(req client.PurgeValidatorRequest, reply *clien
 	}
 
 	uuidNew, _ := uuid.NewUUID()
+	feeAmount := svc.feeOpt.MinFee()
 	tx := action.RawTx{
 		Type: action.PURGE,
 		Data: data,
-		Fee:  action.Fee{},
+		Fee: action.Fee{
+			Price: action.Amount{Currency: "OLT", Value: *feeAmount.Amount},
+			Gas:   80000,
+		},
 		Memo: uuidNew.String(),
 	}
 
