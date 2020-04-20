@@ -7,7 +7,6 @@ import (
 	"os"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -26,7 +25,7 @@ import (
 
 var (
 	ethCD                       *ETHChainDriver
-	ethConfig                   = config.DefaultEthConfigLocal()
+	ethConfig                   = config.DefaultEthConfig("", "")
 	LockRedeemABI               = contract.LockRedeemABI
 	ERCLockRedeemABI            = contract.LockRedeemERCABI
 	TestTokenABI                = contract.ERC20BasicABI
@@ -50,7 +49,7 @@ func init() {
 		ContractAddress: common.HexToAddress(LockRedeemContractAddr),
 	}
 	ethCD, _ = NewChainDriver(ethConfig, logger, cdoptions.ContractAddress, cdoptions.ContractABI, ETH)
-	client, _ = ethConfig.Client()
+	client, _ = ethclient.Dial(ethConfig.Connection)
 
 }
 
@@ -187,14 +186,9 @@ func TestETHChainDriver_CheckFinality(t *testing.T) {
 	}
 	isFinalized := false
 	for !isFinalized {
-		rec, err := ethCD.CheckFinality(*txHash, 2)
-		if err != nil {
-			logger.Error(err)
-			BroadCastLock()
-			time.Sleep(1 * time.Second)
-		}
-		if rec != nil {
-			logger.Info("Transaction confirmed , The transaction had been included at ", rec.BlockNumber)
+		status := ethCD.CheckFinality(*txHash, 2)
+		if status == TXSuccess {
+			logger.Info("Transaction confirmed")
 			isFinalized = true
 		}
 	}

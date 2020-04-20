@@ -10,7 +10,7 @@ import (
 
 	"github.com/magiconair/properties/assert"
 	abci "github.com/tendermint/tendermint/abci/types"
-	db2 "github.com/tendermint/tendermint/libs/db"
+	db2 "github.com/tendermint/tm-db"
 
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/data/balance"

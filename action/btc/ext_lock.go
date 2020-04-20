@@ -8,15 +8,14 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/tendermint/tendermint/libs/kv"
 	"strconv"
-
-	"github.com/btcsuite/btcd/wire"
-	"github.com/pkg/errors"
-	"github.com/tendermint/tendermint/libs/common"
 
 	"github.com/Oneledger/protocol/action"
 	bitcoin2 "github.com/Oneledger/protocol/chains/bitcoin"
 	"github.com/Oneledger/protocol/data/bitcoin"
+	"github.com/btcsuite/btcd/wire"
+	"github.com/pkg/errors"
 )
 
 type Lock struct {
@@ -43,27 +42,27 @@ func (bl Lock) Type() action.Type {
 	return action.BTC_LOCK
 }
 
-func (bl Lock) Tags() common.KVPairs {
-	tags := make([]common.KVPair, 0)
+func (bl Lock) Tags() kv.Pairs {
+	tags := make([]kv.Pair, 0)
 
-	tag := common.KVPair{
+	tag := kv.Pair{
 		Key:   []byte("tx.type"),
 		Value: []byte(bl.Type().String()),
 	}
-	tag2 := common.KVPair{
+	tag2 := kv.Pair{
 		Key:   []byte("tx.locker"),
 		Value: bl.Locker.Bytes(),
 	}
-	tag3 := common.KVPair{
+	tag3 := kv.Pair{
 		Key:   []byte("tx.tracker_name"),
 		Value: []byte(bl.TrackerName),
 	}
 	la := strconv.FormatInt(bl.LockAmount, 10)
-	tag4 := common.KVPair{
+	tag4 := kv.Pair{
 		Key:   []byte("tx.lock_amount"),
 		Value: []byte(la),
 	}
-	tag5 := common.KVPair{
+	tag5 := kv.Pair{
 		Key:   []byte("tx.lock_currency"),
 		Value: []byte("BTC"),
 	}
@@ -218,6 +217,6 @@ func runBTCLock(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	}
 
 	return true, action.Response{
-		Tags: lock.Tags(),
+		Events: action.GetEvent(lock.Tags(), "btc_lock"),
 	}
 }

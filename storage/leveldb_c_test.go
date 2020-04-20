@@ -20,7 +20,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/tendermint/tendermint/libs/db"
+	"github.com/tendermint/tm-db"
 )
 
 // TestCLevelDB is just a basic test to see if cleveldb is being used properly

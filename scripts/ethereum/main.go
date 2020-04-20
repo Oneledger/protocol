@@ -46,11 +46,13 @@ var (
 	TestTokenABI     = contract.ERC20BasicABI
 	LockRedeemERCABI = contract.LockRedeemERCABI
 	// LockRedeemERC20ABI = contract.ContextABI
-	LockRedeemContractAddr      = "0xf2003a4b8cE5CC06a29aEa349E38C3B8EA695042"
+
+	LockRedeemContractAddr = "0xf2003a4b8cE5CC06a29aEa349E38C3B8EA695042"
+
 	TestTokenContractAddr       = "0x0000000000000000000000000000000000000000"
 	LockRedeemERC20ContractAddr = "0x0000000000000000000000000000000000000000"
 
-	cfg               = config.DefautEthConfigRinkeby()
+	cfg               = config.DefaultEthConfig("rinkeby", "de5e96cbb6284d5ea1341bf6cb7fa401")
 	log               = logger.NewDefaultLogger(os.Stdout).WithPrefix("testeth")
 	UserprivKey       *ecdsa.PrivateKey
 	UserprivKeyRedeem *ecdsa.PrivateKey
@@ -93,7 +95,7 @@ func init() {
 
 	spamKey, _ = crypto.HexToECDSA("ee7af353ce3bc37c01187abae7a2d7d1ca22c2a4b88850fc171b988cad924be0")
 
-	client, _ = cfg.Client()
+	client, _ = ethclient.Dial(cfg.Connection)
 	contractAbi, _ = abi.JSON(strings.NewReader(LockRedeemABI))
 
 	publicKey := UserprivKey.Public()

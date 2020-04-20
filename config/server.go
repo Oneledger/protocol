@@ -8,8 +8,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/ethereum/go-ethereum/ethclient"
-
 	"github.com/Oneledger/toml"
 	"github.com/pkg/errors"
 	tmconfig "github.com/tendermint/tendermint/config"
@@ -69,14 +67,11 @@ func (cfg *Server) setChainID(doc GenesisDoc) {
 
 func (cfg *Server) TMConfig() tmconfig.Config {
 	leveldb := cfg.Node.DB
-	if cfg.Node.DB == "goleveldb" {
-		leveldb = "leveldb"
-	}
 
 	baseConfig := tmconfig.DefaultBaseConfig()
 	baseConfig.ProxyApp = "OneLedgerProtocol"
 	baseConfig.Moniker = cfg.Node.NodeName
-	baseConfig.FastSync = cfg.Node.FastSync
+	baseConfig.FastSyncMode = cfg.Node.FastSync
 	baseConfig.DBBackend = leveldb
 	baseConfig.DBPath = "data"
 	baseConfig.LogLevel = cfg.Consensus.LogLevel
@@ -101,11 +96,12 @@ func (cfg *Server) TMConfig() tmconfig.Config {
 		RPC:        rpcConfig,
 		P2P:        p2pConfig,
 		Mempool:    cfg.Mempool.TMConfig(),
+		FastSync:   tmconfig.DefaultFastSyncConfig(),
 		Consensus:  csConfig,
 		TxIndex: &tmconfig.TxIndexConfig{
 			Indexer:      "kv",
-			IndexTags:    strings.Join(cfg.Node.IndexTags, ","),
-			IndexAllTags: cfg.Node.IndexAllTags,
+			IndexKeys:    strings.Join(cfg.Node.IndexTags, ","),
+			IndexAllKeys: cfg.Node.IndexAllTags,
 		},
 		Instrumentation: &nilMetricsConfig,
 	}
@@ -167,7 +163,7 @@ func DefaultServerConfig() *Server {
 		Mempool:        DefaultMempoolConfig(),
 		Consensus:      DefaultConsensusConfig(),
 		ChainDriver:    DefaultChainDriverConfig(),
-		EthChainDriver: DefautEthConfigRinkeby(),
+		EthChainDriver: DefaultEthConfig("", ""),
 	}
 }
 
@@ -229,7 +225,7 @@ func DefaultNodeConfig() *NodeConfig {
 		DB:           "goleveldb",
 		DBDir:        "nodedata",
 		LogLevel:     int(log.Info),
-		IndexTags:    []string{"tx.owner", "tx.type"},
+		IndexTags:    []string{},
 		IndexAllTags: false,
 		Auth: Authorisation{
 			OwnerCredentials: []string{},
@@ -257,12 +253,6 @@ type NetworkConfig struct {
 	ExternalP2PAddress string `toml:"external_p2p_address" desc:"Address to advertise for incoming peers to connect to"`
 
 	SDKAddress string `toml:"sdk_address"`
-
-	BTCAddress string `toml:"btc_address"`
-	ETHAddress string `toml:"eth_address"`
-
-	OLVMAddress  string `toml:"olvm_address"`
-	OLVMProtocol string `toml:"olvm_protocol"`
 }
 
 func DefaultNetworkConfig() *NetworkConfig {
@@ -272,10 +262,6 @@ func DefaultNetworkConfig() *NetworkConfig {
 		P2PAddress:         "tcp://127.0.0.1:26611",
 		ExternalP2PAddress: "",
 		SDKAddress:         "http://127.0.0.1:26631",
-		OLVMAddress:        "tcp://127.0.0.1:26641",
-		OLVMProtocol:       "tcp",
-		BTCAddress:         "tcp://127.0.0.1:NONE",
-		ETHAddress:         "NONE",
 	}
 }
 
@@ -463,40 +449,32 @@ type EthereumChainDriverConfig struct {
 func DefaultChainDriverConfig() *ChainDriverConfig {
 
 	var cfg ChainDriverConfig
-
-	cfg.BitcoinChainType = "testnet3"
-
-	cfg.BlockCypherToken = "e61acdee14e749a2b74e366cfc4373dd"
-
-	cfg.BitcoinNodeAddress = "34.74.207.115"
+	cfg.BitcoinChainType = ""
+	cfg.BlockCypherToken = ""
+	cfg.BitcoinNodeAddress = ""
 	cfg.BitcoinRPCPort = "18332"
-	cfg.BitcoinRPCUsername = "admin1"
-	cfg.BitcoinRPCPassword = "password"
+	cfg.BitcoinRPCUsername = ""
+	cfg.BitcoinRPCPassword = ""
 
 	return &cfg
 }
 
-func DefaultEthConfigRoopsten() *EthereumChainDriverConfig {
-	return &EthereumChainDriverConfig{
-		Connection: "https://ropsten.infura.io/v3/de5e96cbb6284d5ea1341bf6cb7fa401",
+func DefaultEthConfig(network string, key string) *EthereumChainDriverConfig {
+	var connection string
+	switch strings.ToLower(network) {
+	case "rinkeby":
+		connection = "https://rinkeby.infura.io/v3/" + key
+	case "ropsten":
+		connection = "https://ropsten.infura.io/v3/" + key
+	case "koven":
+		connection = "https://koven.infura.io/v3/" + key
+	case "mainnet":
+		connection = "https://mainnet.infura.io/v3/" + key
+	default:
+		connection = "http://127.0.0.1:7545"
 	}
-}
-func DefautEthConfigRinkeby() *EthereumChainDriverConfig {
-	return &EthereumChainDriverConfig{Connection: "https://rinkeby.infura.io/v3/de5e96cbb6284d5ea1341bf6cb7fa401"}
-}
 
-func DefaultEthConfigCloud() *EthereumChainDriverConfig {
 	return &EthereumChainDriverConfig{
-		Connection: "",
+		Connection: connection,
 	}
-}
-
-func DefaultEthConfigLocal() *EthereumChainDriverConfig {
-	return &EthereumChainDriverConfig{
-		Connection: "HTTP://127.0.0.1:7545",
-	}
-}
-
-func (cfg *EthereumChainDriverConfig) Client() (*ethclient.Client, error) {
-	return ethclient.Dial(cfg.Connection)
 }

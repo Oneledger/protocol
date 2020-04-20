@@ -145,3 +145,10 @@ stop:
 
 start:
 	@./scripts/startDev
+
+
+save:
+	@./scripts/stopDev
+	go install -i github.com/Oneledger/protocol/cmd/...
+	@./scripts/saveState
+	@./scripts/startDev

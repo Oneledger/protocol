@@ -27,7 +27,7 @@ type Wallet interface {
 
 	SignWithAddress([]byte, keys.Address) (keys.PublicKey, []byte, error)
 
-	Close()
+	Close() error
 }
 
 const rootkey = "rootkey"
@@ -180,6 +180,7 @@ func NewWallet(config config.Server, dbDir string) Wallet {
 	}
 }
 
-func (ws WalletStore) Close() {
+func (ws WalletStore) Close() error {
 	ws.store.Close()
+	return nil
 }
