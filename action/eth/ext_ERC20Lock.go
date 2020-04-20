@@ -147,7 +147,6 @@ func runERC20Lock(ctx *action.Context, tx action.RawTx) (bool, action.Response) 
 	}
 
 	if !ok {
-
 		ctx.Logger.Error("To field of Transaction does not match OneLedger Contract Address")
 		return false, action.Response{
 			Log: "To field of Transaction does not match OneLedger Contract Address" + err.Error(),
