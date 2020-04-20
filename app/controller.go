@@ -3,7 +3,7 @@ package app
 import (
 	"encoding/hex"
 	"fmt"
-	//"github.com/tendermint/tendermint/libs/kv"
+
 	"math"
 	"runtime/debug"
 
