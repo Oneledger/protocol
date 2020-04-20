@@ -3,11 +3,12 @@ package app
 import (
 	"encoding/hex"
 	"fmt"
+
 	"math"
 	"runtime/debug"
 
 	"github.com/pkg/errors"
-	"github.com/tendermint/tendermint/libs/common"
+
 	"github.com/tendermint/tendermint/types"
 
 	"github.com/Oneledger/protocol/action"
@@ -117,9 +118,7 @@ func (app *App) blockBeginner() blockBeginner {
 			app.logger.Error("validator set with error", err)
 		}
 
-		result := ResponseBeginBlock{
-			Tags: []common.KVPair(nil),
-		}
+		result := ResponseBeginBlock{}
 
 		//update the header to current block
 		app.header = req.Header
@@ -131,16 +130,16 @@ func (app *App) blockBeginner() blockBeginner {
 
 // mempool connection: for checking if transactions should be relayed before they are committed
 func (app *App) txChecker() txChecker {
-	return func(msg []byte) ResponseCheckTx {
+	return func(msg RequestCheckTx) ResponseCheckTx {
 		defer app.handlePanic()
 
 		app.Context.check.BeginTxSession()
 
 		tx := &action.SignedTx{}
 
-		err := serialize.GetSerializer(serialize.NETWORK).Deserialize(msg, tx)
+		err := serialize.GetSerializer(serialize.NETWORK).Deserialize(msg.Tx, tx)
 		if err != nil {
-			app.logger.Errorf("checkTx failed to deserialize msg: %s, error: %s ", msg, err)
+			app.logger.Errorf("checkTx failed to deserialize msg: %v, error: %s ", msg, err)
 		}
 
 		txCtx := app.Context.Action(&app.header, app.Context.check)
@@ -158,7 +157,7 @@ func (app *App) txChecker() txChecker {
 		}
 		ok, response := handler.ProcessCheck(txCtx, tx.RawTx)
 
-		feeOk, feeResponse := handler.ProcessFee(txCtx, *tx, gas, storage.Gas(len(msg)))
+		feeOk, feeResponse := handler.ProcessFee(txCtx, *tx, gas, storage.Gas(len(msg.Tx)))
 
 		result := ResponseCheckTx{
 			Code:      getCode(ok && feeOk).uint32(),
@@ -167,7 +166,7 @@ func (app *App) txChecker() txChecker {
 			Info:      response.Info,
 			GasWanted: feeResponse.GasWanted,
 			GasUsed:   feeResponse.GasUsed,
-			Tags:      response.Tags,
+			Events:    response.Events,
 			Codespace: "",
 		}
 
@@ -184,16 +183,16 @@ func (app *App) txChecker() txChecker {
 }
 
 func (app *App) txDeliverer() txDeliverer {
-	return func(msg []byte) ResponseDeliverTx {
+	return func(msg RequestDeliverTx) ResponseDeliverTx {
 		defer app.handlePanic()
 
 		app.Context.deliver.BeginTxSession()
 
 		tx := &action.SignedTx{}
 
-		err := serialize.GetSerializer(serialize.NETWORK).Deserialize(msg, tx)
+		err := serialize.GetSerializer(serialize.NETWORK).Deserialize(msg.Tx, tx)
 		if err != nil {
-			app.logger.Errorf("deliverTx failed to deserialize msg: %s, error: %s ", msg, err)
+			app.logger.Errorf("deliverTx failed to deserialize msg: %v, error: %s ", msg, err)
 		}
 		txCtx := app.Context.Action(&app.header, app.Context.deliver)
 
@@ -203,7 +202,7 @@ func (app *App) txDeliverer() txDeliverer {
 
 		ok, response := handler.ProcessDeliver(txCtx, tx.RawTx)
 
-		feeOk, feeResponse := handler.ProcessFee(txCtx, *tx, gas, storage.Gas(len(msg)))
+		feeOk, feeResponse := handler.ProcessFee(txCtx, *tx, gas, storage.Gas(len(msg.Tx)))
 
 		result := ResponseDeliverTx{
 			Code:      getCode(ok && feeOk).uint32(),
@@ -212,7 +211,7 @@ func (app *App) txDeliverer() txDeliverer {
 			Info:      response.Info,
 			GasWanted: feeResponse.GasWanted,
 			GasUsed:   feeResponse.GasUsed,
-			Tags:      response.Tags,
+			Events:    response.Events,
 			Codespace: "",
 		}
 		app.logger.Detail("Deliver Tx: ", result)
@@ -236,7 +235,7 @@ func (app *App) blockEnder() blockEnder {
 		updates := app.Context.validators.GetEndBlockUpdate(app.Context.ValidatorCtx(), req)
 		result := ResponseEndBlock{
 			ValidatorUpdates: updates,
-			Tags:             []common.KVPair(nil),
+			//Tags:             []kv.Pair(nil),
 		}
 		ethTrackerlog := log.NewLoggerWithPrefix(app.Context.logWriter, "ethtracker").WithLevel(log.Level(app.Context.cfg.Node.LogLevel))
 		doTransitions(app.Context.jobStore, app.Context.btcTrackers.WithState(app.Context.deliver), app.Context.validators)

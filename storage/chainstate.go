@@ -28,7 +28,7 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/tendermint/iavl"
-	tmdb "github.com/tendermint/tendermint/libs/db"
+	tmdb "github.com/tendermint/tm-db"
 )
 
 // Chainstate is a storage for balances on the chain, a snapshot of all accounts
@@ -208,7 +208,7 @@ func (state *ChainState) LoadVersion(version int64) (int64, error) {
 
 // Reset the chain state from persistence
 func (state *ChainState) loadDB(db tmdb.DB) ([]byte, int64) {
-	tree := iavl.NewMutableTree(db, CHAINSTATE_CACHE_SIZE) // Do I need a historic tree here?
+	tree, _ := iavl.NewMutableTree(db, CHAINSTATE_CACHE_SIZE) // Do I need a historic tree here?
 	version, err := tree.Load()
 	if err != nil {
 		log.Error("error in loading tree version", "version", version, "err", err)

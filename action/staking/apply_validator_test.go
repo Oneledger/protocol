@@ -8,7 +8,7 @@ import (
 
 	"github.com/Oneledger/protocol/data/fees"
 
-	db2 "github.com/tendermint/tendermint/libs/db"
+	db2 "github.com/tendermint/tm-db"
 
 	"github.com/Oneledger/protocol/serialize"
 
