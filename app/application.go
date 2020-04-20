@@ -1,11 +1,9 @@
 package app
 
 import (
-	"fmt"
 	"net/url"
 	"os"
 
-	"github.com/btcsuite/btcutil/base58"
 	"github.com/pkg/errors"
 	"github.com/tendermint/tendermint/abci/types"
 	"github.com/tendermint/tendermint/libs/common"
@@ -13,14 +11,12 @@ import (
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/action/eth"
 	"github.com/Oneledger/protocol/app/node"
-	bitcoin2 "github.com/Oneledger/protocol/chains/bitcoin"
 	"github.com/Oneledger/protocol/config"
 	"github.com/Oneledger/protocol/consensus"
 	"github.com/Oneledger/protocol/data/accounts"
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/bitcoin"
 	"github.com/Oneledger/protocol/data/chain"
-	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/data/ons"
 	"github.com/Oneledger/protocol/event"
 	"github.com/Oneledger/protocol/identity"
@@ -202,42 +198,42 @@ func (app *App) setupValidators(req RequestInitChain, currencies *balance.Curren
 
 	vu, err := app.Context.validators.WithState(app.Context.deliver).Init(req, currencies)
 
-	btcCfg := app.Context.btcTrackers.GetConfig()
+	//btcCfg := app.Context.btcTrackers.GetConfig()
 
-	vals, err := app.Context.validators.WithState(app.Context.deliver).GetBitcoinKeys(btcCfg.BTCParams)
-	threshold := (len(vals) * 2 / 3) + 1
-	for i := 0; i < 6; i++ {
-		// appHash := app.genesisDoc.AppHash.Bytes()
-
-		randBytes := []byte("XOLT")
-
-		script, address, addressList, err := bitcoin2.CreateMultiSigAddress(threshold, vals, randBytes, btcCfg.BTCParams)
-		if err != nil {
-			return nil, err
-		}
-
-		signers := make([]keys.Address, len(addressList))
-		for i := range addressList {
-			addr := base58.Decode(addressList[i])
-			signers[i] = keys.Address(addr)
-		}
-
-		tracker, err := bitcoin.NewTracker(address, threshold, signers)
-		if err != nil {
-			return nil, err
-		}
-
-		name := fmt.Sprintf("tracker_%d", i)
-		err = app.Context.btcTrackers.SetTracker(name, tracker)
-		if err != nil {
-			return nil, err
-		}
-
-		err = app.Context.lockScriptStore.SaveLockScript(address, script)
-		if err != nil {
-			return nil, err
-		}
-	}
+	//vals, err := app.Context.validators.WithState(app.Context.deliver).GetBitcoinKeys(btcCfg.BTCParams)
+	//threshold := (len(vals) * 2 / 3) + 1
+	//for i := 0; i < 6; i++ {
+	//	// appHash := app.genesisDoc.AppHash.Bytes()
+	//
+	//	randBytes := []byte("XOLT")
+	//
+	//	script, address, addressList, err := bitcoin2.CreateMultiSigAddress(threshold, vals, randBytes, btcCfg.BTCParams)
+	//	if err != nil {
+	//		return nil, err
+	//	}
+	//
+	//	signers := make([]keys.Address, len(addressList))
+	//	for i := range addressList {
+	//		addr := base58.Decode(addressList[i])
+	//		signers[i] = keys.Address(addr)
+	//	}
+	//
+	//	tracker, err := bitcoin.NewTracker(address, threshold, signers)
+	//	if err != nil {
+	//		return nil, err
+	//	}
+	//
+	//	name := fmt.Sprintf("tracker_%d", i)
+	//	err = app.Context.btcTrackers.SetTracker(name, tracker)
+	//	if err != nil {
+	//		return nil, err
+	//	}
+	//
+	//	err = app.Context.lockScriptStore.SaveLockScript(address, script)
+	//	if err != nil {
+	//		return nil, err
+	//	}
+	//}
 
 	return vu, err
 }

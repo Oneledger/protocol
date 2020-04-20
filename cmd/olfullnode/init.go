@@ -52,6 +52,7 @@ var initCmd = &cobra.Command{
 
 type InitCmdArguments struct {
 	genesis    string
+	outputDir  string
 	nodeName   string
 	numWitness int
 	numofNodes int
@@ -69,6 +70,7 @@ var initCmdArgs = &InitCmdArguments{}
 func init() {
 	RootCmd.AddCommand(initCmd)
 	initCmd.Flags().StringVar(&initCmdArgs.nodeName, "node_name_prefix", "Node", "Name of the node")
+	initCmd.Flags().StringVarP(&initCmdArgs.outputDir, "dir", "o", "./", "Directory to store initialization files for the devnet, default current folder")
 	initCmd.Flags().StringVar(&initCmdArgs.genesis, "genesis", "", "Genesis file to use to generate new node Key file")
 	initCmd.Flags().IntVar(&initCmdArgs.numWitness, "witness", 4, "Number of Witness for ethereum chain")
 	initCmd.Flags().IntVar(&initCmdArgs.numofNodes, "nodes", 5, "total number of Nodes ,Including Validators and Non Validators")
@@ -146,7 +148,7 @@ func runInitNode(cmd *cobra.Command, _ []string) error {
 		//fmt.Println("No genesis file provided, node is not runnable until genesis file is provided at: ", filepath.Join(configDir, consensus.GenesisFilename))
 		fmt.Println("Genarating Genesis file  : ")
 	}
-	witnessList, err := generatePVKeys(rootDir)
+	witnessList, err := generatePVKeys(initCmdArgs.outputDir)
 	if err != nil {
 		return errors.Wrap(err, "Failed to Get NodeList")
 	}
@@ -170,7 +172,7 @@ func runInitNode(cmd *cobra.Command, _ []string) error {
 	if err != nil {
 		return err
 	}
-	ioutil.WriteFile(filepath.Join(rootDir, "cdOpts.json"), cdoBytes, os.ModePerm)
+	ioutil.WriteFile(filepath.Join(initCmdArgs.outputDir, "cdOpts.json"), cdoBytes, os.ModePerm)
 
 	//err = genesisDoc.SaveAs(filepath.Join(rootDir, "genesis.json"))
 	//if err != nil {
@@ -373,14 +375,15 @@ func getBtcOpt() bitcoin.ChainDriverOption {
 }
 
 func getEthUrl(ethUrlArg string) (string, error) {
-
 	u, err := url.Parse(ethUrlArg)
 	if err != nil {
 		return "", err
 	}
-	if strings.Contains(u.Host, "infura") && !strings.Contains(u.Path, os.Getenv("API_KEY")) {
+	//&& !strings.Contains(u.Path, os.Getenv("API_KEY"))
+	if strings.Contains(u.Host, "infura") {
 		setEnvVariablesInfura()
 		u.Path = u.Path + "/" + os.Getenv("API_KEY")
+		fmt.Println(u.String())
 		return u.String(), nil
 	}
 	return ethUrlArg, nil

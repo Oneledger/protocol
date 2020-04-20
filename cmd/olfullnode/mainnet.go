@@ -27,7 +27,7 @@ import (
 	"github.com/Oneledger/protocol/log"
 )
 
-type mainnetArgument struct {
+type genesisArgument struct {
 	// Number of validators
 	numValidators    int
 	numNonValidators int
@@ -37,24 +37,23 @@ type mainnetArgument struct {
 	allowSwap        bool
 	chainID          string
 	dbType           string
-	namesPath        string
+	//namesPath        string
 	createEmptyBlock bool
 	// Total amount of funds to be shared across each node
 	totalFunds          int64
 	initialTokenHolders []string
 
-	ethUrl               string
-	deploySmartcontracts bool
-	cloud                bool
-	loglevel             int
+	ethUrl   string
+	cloud    bool
+	loglevel int
 }
 
-var mainnetCmdArgs = &mainnetArgument{}
+var genesisCmdArgs = &genesisArgument{}
 
-var mainnetCmd = &cobra.Command{
-	Use:   "mainnet",
+var genesisCmd = &cobra.Command{
+	Use:   "genesis",
 	Short: "Initializes a genesis file for OneLedger network",
-	RunE:  runMainnet,
+	RunE:  runGenesis,
 }
 
 type mainetContext struct {
@@ -63,24 +62,24 @@ type mainetContext struct {
 }
 
 func init() {
-	initCmd.AddCommand(mainnetCmd)
-	mainnetCmd.Flags().StringVarP(&mainnetCmdArgs.pvkey_Dir, "pv_dir", "p", "/home/tanmay/Codebase/Test/mainnet", "Directory which contains Genesis File and NodeList")
-	mainnetCmd.Flags().StringVarP(&mainnetCmdArgs.outputDir, "output_dir", "o", "./", "Directory to store initialization files for the mainet, default current folder")
-	mainnetCmd.Flags().BoolVar(&mainnetCmdArgs.allowSwap, "enable_swaps", false, "Allow swaps")
-	mainnetCmd.Flags().IntVar(&mainnetCmdArgs.numValidators, "validators", 4, "Number of validators to initialize mainnetnet with")
-	mainnetCmd.Flags().IntVar(&mainnetCmdArgs.numNonValidators, "nonvalidators", 1, "Number of fullnodes to initialize mainnetnet with")
-	mainnetCmd.Flags().BoolVar(&mainnetCmdArgs.createEmptyBlock, "empty_blocks", false, "Allow creating empty blocks")
-	mainnetCmd.Flags().StringVar(&mainnetCmdArgs.dbType, "db_type", "goleveldb", "Specify the type of DB backend to use: (goleveldb|cleveldb)")
-	//mainnetCmd.Flags().StringVar(&mainnetCmdArgs.namesPath, "names", "", "Specify a path to a file containing a list of names separated by newlines if you want the nodes to be generated with human-readable names")
+	initCmd.AddCommand(genesisCmd)
+	genesisCmd.Flags().StringVarP(&genesisCmdArgs.pvkey_Dir, "pv_dir", "p", "$OLDATA/mainnet/", "Directory which contains Genesis File and NodeList")
+	genesisCmd.Flags().StringVarP(&genesisCmdArgs.outputDir, "dir", "o", "$OLDATA/mainnet/", "Directory to store initialization files for the mainet, default current folder")
+	genesisCmd.Flags().BoolVar(&genesisCmdArgs.allowSwap, "enable_swaps", false, "Allow swaps")
+	genesisCmd.Flags().IntVar(&genesisCmdArgs.numValidators, "validators", 4, "Number of validators to initialize mainnetnet with")
+	genesisCmd.Flags().IntVar(&genesisCmdArgs.numNonValidators, "nonvalidators", 1, "Number of fullnodes to initialize mainnetnet with")
+	genesisCmd.Flags().BoolVar(&genesisCmdArgs.createEmptyBlock, "empty_blocks", false, "Allow creating empty blocks")
+	genesisCmd.Flags().StringVar(&genesisCmdArgs.dbType, "db_type", "goleveldb", "Specify the type of DB backend to use: (goleveldb|cleveldb)")
+	//genesisCmd.Flags().StringVar(&genesisCmdArgs.namesPath, "names", "", "Specify a path to a file containing a list of names separated by newlines if you want the nodes to be generated with human-readable names")
 	// 1 billion by default
-	mainnetCmd.Flags().StringVar(&mainnetCmdArgs.ethUrl, "eth_rpc", "HTTP://127.0.0.1:7545", "Specify a path to a file containing a list of names separated by newlines if you want the nodes to be generated with human-readable names")
-	mainnetCmd.Flags().IntVar(&mainnetCmdArgs.loglevel, "loglevel", 3, "Specify the log level for olfullnode. 0: Fatal, 1: Error, 2: Warning, 3: Info, 4: Debug, 5: Detail")
-	mainnetCmd.Flags().Int64Var(&mainnetCmdArgs.totalFunds, "total_funds", 1000000000, "The total amount of tokens in circulation")
-	mainnetCmd.Flags().StringSliceVar(&mainnetCmdArgs.initialTokenHolders, "initial_token_holders", []string{}, "Initial list of addresses that hold an equal share of Total funds")
+	genesisCmd.Flags().StringVar(&genesisCmdArgs.ethUrl, "eth_rpc", "HTTP://127.0.0.1:7545", "Specify a path to a file containing a list of names separated by newlines if you want the nodes to be generated with human-readable names")
+	genesisCmd.Flags().IntVar(&genesisCmdArgs.loglevel, "loglevel", 3, "Specify the log level for olfullnode. 0: Fatal, 1: Error, 2: Warning, 3: Info, 4: Debug, 5: Detail")
+	genesisCmd.Flags().Int64Var(&genesisCmdArgs.totalFunds, "total_funds", 1000000000, "The total amount of tokens in circulation")
+	genesisCmd.Flags().StringSliceVar(&genesisCmdArgs.initialTokenHolders, "initial_token_holders", []string{}, "Initial list of addresses that hold an equal share of Total funds")
 
 }
 
-func newMainetContext(args *mainnetArgument) (*mainetContext, error) {
+func newMainetContext(args *genesisArgument) (*mainetContext, error) {
 	logger := log.NewLoggerWithPrefix(os.Stdout, "olfullnode mainnet")
 	var names []string
 	files, err := ioutil.ReadDir(args.pvkey_Dir)
@@ -102,15 +101,15 @@ func newMainetContext(args *mainnetArgument) (*mainetContext, error) {
 
 }
 
-func runMainnet(_ *cobra.Command, _ []string) error {
-	ctx, err := newMainetContext(mainnetCmdArgs)
+func runGenesis(_ *cobra.Command, _ []string) error {
+	ctx, err := newMainetContext(genesisCmdArgs)
 	if err != nil {
 		return err
 	}
 	if err != nil {
 		return errors.Wrap(err, "runMainet failed")
 	}
-	args := mainnetCmdArgs
+	args := genesisCmdArgs
 
 	totalNodes := len(ctx.names)
 
@@ -124,7 +123,10 @@ func runMainnet(_ *cobra.Command, _ []string) error {
 	persistentPeers := make([]string, totalNodes)
 	nodeList := make([]node, totalNodes)
 	validatorList := make([]consensus.GenesisValidator, args.numValidators)
-
+	url, err := getEthUrl(args.ethUrl)
+	if err != nil {
+		return err
+	}
 	// Create the GenesisValidator list and its Key files priv_validator_key.json and node_key.json
 	for i, nodeName := range ctx.names {
 		isValidator := i < args.numValidators
@@ -158,7 +160,7 @@ func runMainnet(_ *cobra.Command, _ []string) error {
 		// Generate new configuration file
 		cfg := config.DefaultServerConfig()
 
-		ethConnection := config.EthereumChainDriverConfig{Connection: args.ethUrl}
+		ethConnection := config.EthereumChainDriverConfig{Connection: url}
 		cfg.EthChainDriver = &ethConnection
 		cfg.Node.NodeName = nodeName
 		cfg.Node.LogLevel = args.loglevel
@@ -192,7 +194,7 @@ func runMainnet(_ *cobra.Command, _ []string) error {
 
 	onsOp := getOnsOpt()
 	btccdo := getBtcOpt()
-	cdoBytes, err := ioutil.ReadFile(filepath.Join(mainnetCmdArgs.pvkey_Dir, "cdOpts.json"))
+	cdoBytes, err := ioutil.ReadFile(filepath.Join(genesisCmdArgs.pvkey_Dir, "cdOpts.json"))
 	if err != nil {
 		return err
 	}
@@ -201,6 +203,7 @@ func runMainnet(_ *cobra.Command, _ []string) error {
 	if err != nil {
 		return err
 	}
+	//os.Remove(filepath.Join(genesisCmdArgs.pvkey_Dir, "cdOpts.json"))
 	states := getInitialState(args, nodeList, cdo, *onsOp, btccdo)
 
 	genesisDoc, err := consensus.NewGenesisDoc(getChainID(), states)
@@ -218,31 +221,31 @@ func runMainnet(_ *cobra.Command, _ []string) error {
 		}
 	}
 	// Save the files to the node's relevant directory
-	generateBTCPort := portGenerator(18831)
-	generateETHPort := portGenerator(28101)
+	//generateBTCPort := portGenerator(18831)
+	//generateETHPort := portGenerator(28101)
 
-	var swapNodes []string
-	if args.allowSwap {
-		swapNodes = ctx.names[1:4]
-	}
-	isSwapNode := func(name string) bool {
-		for _, nodeName := range swapNodes {
-			if nodeName == name {
-				return true
-			}
-		}
-		return false
-	}
+	//var swapNodes []string
+	//if args.allowSwap {
+	//	swapNodes = ctx.names[1:4]
+	//}
+	//isSwapNode := func(name string) bool {
+	//	for _, nodeName := range swapNodes {
+	//		if nodeName == name {
+	//			return true
+	//		}
+	//	}
+	//	return false
+	//}
 
 	//deploy contract and get contract addr
 	//Saving config.toml for each node
 	for _, node := range nodeList {
 		node.Cfg.P2P.PersistentPeers = persistentPeers
 		// Modify the btc and eth ports
-		if args.allowSwap && isSwapNode(node.Cfg.Node.NodeName) {
-			node.Cfg.Network.BTCAddress = generateAddress(generateBTCPort(), false)
-			node.Cfg.Network.ETHAddress = generateAddress(generateETHPort(), false)
-		}
+		//if args.allowSwap && isSwapNode(node.Cfg.Node.NodeName) {
+		//	node.Cfg.Network.BTCAddress = generateAddress(generateBTCPort(), false)
+		//	node.Cfg.Network.ETHAddress = generateAddress(generateETHPort(), false)
+		//}
 		//	node.Cfg.EthChainDriver.ContractAddress = contractaddr
 		err := node.Cfg.SaveFile(filepath.Join(args.outputDir, node.Cfg.Node.NodeName, config.FileName))
 		if err != nil {
@@ -317,7 +320,7 @@ func getOnsOpt() *ons.Options {
 	}
 }
 
-func getInitialState(args *mainnetArgument, nodeList []node, option ethchain.ChainDriverOption, onsOption ons.Options,
+func getInitialState(args *genesisArgument, nodeList []node, option ethchain.ChainDriverOption, onsOption ons.Options,
 	btcOption bitcoin.ChainDriverOption) consensus.AppState {
 	olt := balance.Currency{Id: 0, Name: "OLT", Chain: chain.ONELEDGER, Decimal: 18, Unit: "nue"}
 	vt := balance.Currency{Id: 1, Name: "VT", Chain: chain.ONELEDGER, Unit: "vt"}
