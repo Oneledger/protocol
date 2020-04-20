@@ -56,7 +56,6 @@ type testnetConfig struct {
 	numNonValidators int
 	outputDir        string
 	p2pPort          int
-	allowSwap        bool
 	chainID          string
 	dbType           string
 	namesPath        string
@@ -87,7 +86,6 @@ func init() {
 	testnetCmd.Flags().IntVar(&testnetArgs.numValidators, "validators", 4, "Number of validators to initialize devnet with")
 	testnetCmd.Flags().IntVar(&testnetArgs.numNonValidators, "nonvalidators", 0, "Number of non-validators to initialize the devnet with")
 	testnetCmd.Flags().StringVarP(&testnetArgs.outputDir, "dir", "o", "./", "Directory to store initialization files for the devnet, default current folder")
-	testnetCmd.Flags().BoolVar(&testnetArgs.allowSwap, "enable_swaps", false, "Allow swaps")
 	testnetCmd.Flags().BoolVar(&testnetArgs.createEmptyBlock, "empty_blocks", false, "Allow creating empty blocks")
 	testnetCmd.Flags().StringVar(&testnetArgs.chainID, "chain_id", "", "Specify a chain ID, a random one is generated if not given")
 	testnetCmd.Flags().StringVar(&testnetArgs.dbType, "db_type", "goleveldb", "Specify the type of DB backend to use: (goleveldb|cleveldb)")
@@ -281,7 +279,6 @@ func runDevnet(_ *cobra.Command, _ []string) error {
 		cfg.Network.RPCAddress = generateAddress(generatePort(), true)
 		cfg.Network.P2PAddress = generateAddress(generatePort(), true)
 		cfg.Network.SDKAddress = generateAddress(generatePort(), true, true)
-		cfg.Network.OLVMAddress = generateAddress(generatePort(), true)
 
 		dirs := []string{configDir, dataDir, nodeDataDir}
 		for _, dir := range dirs {
@@ -402,33 +399,10 @@ func runDevnet(_ *cobra.Command, _ []string) error {
 		}
 	}
 
-	// Save the files to the node's relevant directory
-	generateBTCPort := portGenerator(18831)
-	generateETHPort := portGenerator(28101)
-
-	var swapNodes []string
-	if args.allowSwap {
-		swapNodes = ctx.names[1:4]
-	}
-	isSwapNode := func(name string) bool {
-		for _, nodeName := range swapNodes {
-			if nodeName == name {
-				return true
-			}
-		}
-		return false
-	}
-
 	//deploy contract and get contract addr
 
 	for _, node := range nodeList {
 		node.cfg.P2P.PersistentPeers = persistentPeers
-		// Modify the btc and eth ports
-		if args.allowSwap && isSwapNode(node.cfg.Node.NodeName) {
-			node.cfg.Network.BTCAddress = generateAddress(generateBTCPort(), false)
-			node.cfg.Network.ETHAddress = generateAddress(generateETHPort(), false)
-		}
-		//	node.cfg.EthChainDriver.ContractAddress = contractaddr
 		err := node.cfg.SaveFile(filepath.Join(node.dir, config.FileName))
 		if err != nil {
 			return err
