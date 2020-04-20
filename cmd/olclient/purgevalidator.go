@@ -30,7 +30,7 @@ func (args *PurgeValidatorArguments) ClientRequest() client.PurgeValidatorReques
 
 var purgevalidatorCmd = &cobra.Command{
 	Use:   "purgevalidator",
-	Short: "Apply a dynamic validator",
+	Short: "Purge a validator",
 	RunE:  purgeValidator,
 }
 
