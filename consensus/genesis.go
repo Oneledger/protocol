@@ -69,7 +69,7 @@ type Tracker struct {
 	State         ethData.TrackerState `json:"state"`
 	TrackerName   ethchain.TrackerName `json:"trackerName"`
 	SignedETHTx   []byte               `json:"signedEthTx"`
-	Validators    []keys.Address       `json:"validators"`
+	Witnesses     []keys.Address       `json:"witnesses"`
 	ProcessOwner  keys.Address         `json:"processOwner"`
 	FinalityVotes []ethData.Vote       `json:"finalityVotes"`
 	To            keys.Address         `json:"to"`

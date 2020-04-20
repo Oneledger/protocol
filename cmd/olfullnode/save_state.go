@@ -4,6 +4,11 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"io"
+	"os"
+	"path/filepath"
+	"strings"
+
 	"github.com/Oneledger/protocol/app"
 	olNode "github.com/Oneledger/protocol/app/node"
 	ethChain "github.com/Oneledger/protocol/chains/ethereum"
@@ -20,11 +25,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/tendermint/tendermint/types"
-	"io"
-	"os"
-	"path/filepath"
-	"strings"
-	"time"
 )
 
 // ConsensusParams contains consensus critical parameters that determine the
@@ -48,8 +48,7 @@ type BlockParams struct {
 
 // EvidenceParams determine how we handle evidence of malfeasance.
 type EvidenceParams struct {
-	MaxAgeNumBlocks int64         `json:"max_age_num_blocks,string"` // only accept new evidence more recent than this
-	MaxAgeDuration  time.Duration `json:"max_age_duration,string"`
+	MaxAge int64 `json:"max_age,string"` // only accept new evidence more recent than this
 }
 
 // ValidatorParams restrict the public key types validators can use.

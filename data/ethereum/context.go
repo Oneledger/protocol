@@ -12,17 +12,17 @@ type TrackerCtx struct {
 	TrackerStore *TrackerStore
 	JobStore     *jobs.JobStore
 	CurrNodeAddr keys.Address
-	Validators   *identity.ValidatorStore
+	Witnesses    *identity.WitnessStore
 	Logger       *log.Logger
 }
 
-func NewTrackerCtx(t *Tracker, addr keys.Address, js *jobs.JobStore, ts *TrackerStore, vs *identity.ValidatorStore, log *log.Logger) *TrackerCtx {
+func NewTrackerCtx(t *Tracker, addr keys.Address, js *jobs.JobStore, ts *TrackerStore, ws *identity.WitnessStore, log *log.Logger) *TrackerCtx {
 	return &TrackerCtx{
 		Tracker:      t,
 		CurrNodeAddr: addr,
 		JobStore:     js,
 		TrackerStore: ts,
-		Validators:   vs,
+		Witnesses:    ws,
 		Logger:       log,
 	}
 }
