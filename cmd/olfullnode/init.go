@@ -9,7 +9,9 @@ import (
 	"context"
 	"crypto/ecdsa"
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"math/big"
 	"net/url"
 	"os"
@@ -151,7 +153,7 @@ func runInitNode(cmd *cobra.Command, _ []string) error {
 		//fmt.Println("No genesis file provided, node is not runnable until genesis file is provided at: ", filepath.Join(configDir, consensus.GenesisFilename))
 		fmt.Println("Genarating Genesis file  : ")
 	}
-	nodeList, validatorList, err := generatePVKeys(rootDir)
+	nodeList, _, err := generatePVKeys(rootDir)
 	if err != nil {
 		return errors.Wrap(err, "Failed to Get NodeList")
 	}
@@ -170,18 +172,17 @@ func runInitNode(cmd *cobra.Command, _ []string) error {
 			}
 		}
 	}
-	onsOp := getOnsOpt()
-	btccdo := getBtcOpt()
-	states := getInitialState(&InitCmdArguments{}, nodeList, *cdo, *onsOp, btccdo)
-	genesisDoc, err := consensus.NewGenesisDoc(getChainID(), states)
-	if err != nil {
-		return errors.Wrap(err, "failed to create new genesis file")
-	}
-	genesisDoc.Validators = validatorList
-	err = genesisDoc.SaveAs(filepath.Join(rootDir, "genesis.json"))
+
+	cdoBytes, err := json.Marshal(cdo)
 	if err != nil {
 		return err
 	}
+	ioutil.WriteFile(filepath.Join(rootDir, "cdOpts.json"), cdoBytes, os.ModePerm)
+
+	//err = genesisDoc.SaveAs(filepath.Join(rootDir, "genesis.json"))
+	//if err != nil {
+	//	return err
+	//}
 	return nil
 }
 
@@ -214,6 +215,7 @@ func generatePVKeys(rootDir string) ([]node, []consensus.GenesisValidator, error
 		if err != nil {
 			return nil, nil, errors.Wrap(err, "error generating secp256k1 private Key")
 		}
+		fmt.Println("ecdsaPK :", nodekey)
 		ecdsaFile := strings.Replace(consensus.PrivValidatorKeyFilename, ".json", "_ecdsa.json", 1)
 		f, err := os.Create(filepath.Join(folder, ecdsaFile))
 
@@ -238,14 +240,8 @@ func generatePVKeys(rootDir string) ([]node, []consensus.GenesisValidator, error
 			}
 			n.Validator = validator
 			validatorList[i] = validator
-
 		}
 		nodeList[i] = n
-		f, _ = os.Create(filepath.Join(folder, "nodeKeyID.data"))
-		_, err = f.Write([]byte(n.Key.ID()))
-		if err != nil {
-			return nil, nil, err
-		}
 
 	}
 	//jsonData, err := json.Marshal(persistentPeers)
@@ -254,27 +250,6 @@ func generatePVKeys(rootDir string) ([]node, []consensus.GenesisValidator, error
 	//}
 	//ioutil.WriteFile("persistantpeers.json", jsonData, 0600)
 	return nodeList, validatorList, nil
-}
-
-func getChainID() string {
-	chainID := "OneLedger-" + randStr(2)
-	if initCmdArgs.chainID != "" {
-		chainID = initCmdArgs.chainID
-	}
-	return chainID
-}
-
-func getOnsOpt() *ons.Options {
-
-	perblock, _ := big.NewInt(0).SetString("100000000000000", 10)
-	baseDomainPrice, _ := big.NewInt(0).SetString("1000000000000000000000", 10)
-	return &ons.Options{
-		Currency:          "OLT",
-		PerBlockFees:      *balance.NewAmountFromBigInt(perblock),
-		FirstLevelDomains: []string{"ol"},
-		BaseDomainPrice:   *balance.NewAmountFromBigInt(baseDomainPrice),
-	}
-
 }
 
 func getEthOpt(conn string, nodeList []node) (*ethchain.ChainDriverOption, error) {

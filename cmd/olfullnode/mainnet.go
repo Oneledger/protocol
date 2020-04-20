@@ -1,8 +1,11 @@
 package main
 
 import (
+	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"math/big"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -10,9 +13,14 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/tendermint/tendermint/p2p"
-	tendermint "github.com/tendermint/tendermint/types"
+	"github.com/tendermint/tendermint/privval"
 
+	ethchain "github.com/Oneledger/protocol/chains/ethereum"
 	"github.com/Oneledger/protocol/config"
+	"github.com/Oneledger/protocol/consensus"
+	"github.com/Oneledger/protocol/data/balance"
+	"github.com/Oneledger/protocol/data/keys"
+	"github.com/Oneledger/protocol/data/ons"
 	"github.com/Oneledger/protocol/log"
 )
 
@@ -85,17 +93,17 @@ func newMainetContext(args *mainnetArgument) (*mainetContext, error) {
 }
 
 func runMainnet(_ *cobra.Command, _ []string) error {
-	genesisfile, err := ioutil.ReadFile(filepath.Join(mainnetCmdArgs.genesisDir, "genesis.json"))
-	if err != nil {
-		return err
-	}
-	genesisDoc, err := tendermint.GenesisDocFromJSON(genesisfile)
-	if err != nil {
-		return err
-	}
-	if err != nil {
-		return err
-	}
+	//genesisfile, err := ioutil.ReadFile(filepath.Join(mainnetCmdArgs.genesisDir, "genesis.json"))
+	//if err != nil {
+	//	return err
+	//}
+	//genesisDoc, err := tendermint.GenesisDocFromJSON(genesisfile)
+	//if err != nil {
+	//	return err
+	//}
+	//if err != nil {
+	//	return err
+	//}
 	ctx, err := newMainetContext(mainnetCmdArgs)
 	if err != nil {
 		return err
@@ -132,10 +140,12 @@ func runMainnet(_ *cobra.Command, _ []string) error {
 
 	persistentPeers := make([]string, totalNodes)
 	configList := make([]*config.Server, totalNodes)
+	nodeList := make([]node, totalNodes)
+	validatorList := make([]consensus.GenesisValidator, initCmdArgs.numValidators)
 
 	// Create the GenesisValidator list and its Key files priv_validator_key.json and node_key.json
 	for i, nodeName := range ctx.names {
-		//isValidator := nodeList[i].IsValidator
+		isValidator := i < args.numValidators
 		readDir := filepath.Join(args.genesisDir, nodeName)
 		nodeDir := filepath.Join(args.outputDir, nodeName)
 		configDir := filepath.Join(nodeDir, "consensus", "config")
@@ -148,19 +158,24 @@ func runMainnet(_ *cobra.Command, _ []string) error {
 				return err
 			}
 		}
-		err := copy(filepath.Join(readDir, "priv_validator_state.json"), filepath.Join(dataDir, "priv_validator_state.json"))
+		ecdspkbytes, err := ioutil.ReadFile(filepath.Join(readDir, "priv_validator_key_ecdsa.json"))
 		if err != nil {
 			return err
 		}
-		err = copy(filepath.Join(readDir, "priv_validator_key.json"), filepath.Join(configDir, "priv_validator_key.json"))
+		ecdsPrivKey, err := base64.StdEncoding.DecodeString(string(ecdspkbytes))
 		if err != nil {
 			return err
 		}
-		err = copy(filepath.Join(readDir, "priv_validator_key_ecdsa.json"), filepath.Join(configDir, "priv_validator_key_ecdsa.json"))
+		ecdsaPk, err := keys.GetPrivateKeyFromBytes(ecdsPrivKey[:], keys.SECP256K1)
 		if err != nil {
 			return err
 		}
-		err = copy(filepath.Join(readDir, "node_key.json"), filepath.Join(configDir, "node_key.json"))
+		nodekey, err := p2p.LoadOrGenNodeKey(filepath.Join(readDir, consensus.NodeKeyFilename))
+		pvFile := privval.LoadOrGenFilePV(filepath.Join(readDir, "priv_validator_key.json"), filepath.Join(readDir, "priv_validator_state.json"))
+		if err != nil {
+			return errors.Wrap(err, "Failed to generate node Key")
+		}
+		err = copyTofolders(readDir, dataDir, configDir)
 		if err != nil {
 			return err
 		}
@@ -184,15 +199,38 @@ func runMainnet(_ *cobra.Command, _ []string) error {
 		cfg.Network.SDKAddress = generateAddress(generatePort(), true, true)
 		cfg.Network.OLVMAddress = generateAddress(generatePort(), true)
 
-		configList[i] = cfg
-		nodekeyID, err := ioutil.ReadFile(filepath.Join(readDir, "nodeKeyID.data"))
-		if err != nil {
-			return err
+		n := node{IsValidator: isValidator, Cfg: cfg, Key: nodekey, EsdcaPk: ecdsaPk}
+		if isValidator {
+			validator := consensus.GenesisValidator{
+				Address: pvFile.GetAddress(),
+				PubKey:  pvFile.GetPubKey(),
+				Name:    nodeName,
+				Power:   1,
+			}
+			n.Validator = validator
+			validatorList[i] = validator
 		}
-		persistentPeers[i] = connectionDetails(cfg, p2p.ID(nodekeyID))
-		os.Remove(filepath.Join(readDir, "nodeKeyID.data"))
-
+		nodeList[i] = n
+		persistentPeers[i] = n.connectionDetails()
 	}
+	onsOp := getOnsOpt()
+	btccdo := getBtcOpt()
+	cdoBytes, err := ioutil.ReadFile(filepath.Join(mainnetCmdArgs.genesisDir, "cdOpts.json"))
+	if err != nil {
+		return err
+	}
+	cdo := ethchain.ChainDriverOption{}
+	err = json.Unmarshal(cdoBytes, &cdo)
+	if err != nil {
+		return err
+	}
+	states := getInitialState(&InitCmdArguments{}, nodeList, cdo, *onsOp, btccdo)
+
+	genesisDoc, err := consensus.NewGenesisDoc(getChainID(), states)
+	if err != nil {
+		return errors.Wrap(err, "failed to create new genesis file")
+	}
+	genesisDoc.Validators = validatorList
 
 	for _, nodeName := range ctx.names {
 		nodeDir := filepath.Join(args.outputDir, nodeName)
@@ -239,7 +277,25 @@ func runMainnet(_ *cobra.Command, _ []string) error {
 
 	return nil
 }
-
+func copyTofolders(readDir string, dataDir string, configDir string) error {
+	err := copy(filepath.Join(readDir, "priv_validator_state.json"), filepath.Join(dataDir, "priv_validator_state.json"))
+	if err != nil {
+		return err
+	}
+	err = copy(filepath.Join(readDir, "priv_validator_key.json"), filepath.Join(configDir, "priv_validator_key.json"))
+	if err != nil {
+		return err
+	}
+	err = copy(filepath.Join(readDir, "priv_validator_key_ecdsa.json"), filepath.Join(configDir, "priv_validator_key_ecdsa.json"))
+	if err != nil {
+		return err
+	}
+	err = copy(filepath.Join(readDir, "node_key.json"), filepath.Join(configDir, "node_key.json"))
+	if err != nil {
+		return err
+	}
+	return nil
+}
 func copy(source string, destination string) error {
 	input, err := ioutil.ReadFile(source)
 	if err != nil {
@@ -253,4 +309,24 @@ func copy(source string, destination string) error {
 	}
 	os.Remove(source)
 	return nil
+}
+
+func getChainID() string {
+	chainID := "OneLedger-" + randStr(2)
+	if initCmdArgs.chainID != "" {
+		chainID = initCmdArgs.chainID
+	}
+	return chainID
+}
+
+func getOnsOpt() *ons.Options {
+
+	perblock, _ := big.NewInt(0).SetString("100000000000000", 10)
+	baseDomainPrice, _ := big.NewInt(0).SetString("1000000000000000000000", 10)
+	return &ons.Options{
+		Currency:          "OLT",
+		PerBlockFees:      *balance.NewAmountFromBigInt(perblock),
+		FirstLevelDomains: []string{"ol"},
+		BaseDomainPrice:   *balance.NewAmountFromBigInt(baseDomainPrice),
+	}
 }
