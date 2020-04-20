@@ -134,18 +134,6 @@ func (n node) connectionDetails() string {
 	return fmt.Sprintf("%s@%s", n.key.ID(), u.Host)
 }
 
-func connectionDetails(cfg *config.Server, id p2p.ID) string {
-	var addr string
-	if cfg.Network.ExternalP2PAddress == "" {
-		addr = cfg.Network.P2PAddress
-	} else {
-		addr = cfg.Network.ExternalP2PAddress
-	}
-
-	u, _ := url.Parse(addr)
-	return fmt.Sprintf("%s@%s", id, u.Host)
-}
-
 // This function maintains a running counter of ports
 func portGenerator(startingPort int) func() int {
 	count := startingPort
