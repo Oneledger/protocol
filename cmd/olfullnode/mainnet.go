@@ -92,7 +92,7 @@ func newMainetContext(args *genesisArgument) (*mainetContext, error) {
 		}
 	}
 	if len(names) != args.numValidators+args.numNonValidators {
-		return nil, errors.New("Not enough Key Pairs present the the directory ")
+		return nil, errors.New("Not enough key Pairs present the the directory ")
 	}
 	return &mainetContext{
 		names:  names,
@@ -127,7 +127,7 @@ func runGenesis(_ *cobra.Command, _ []string) error {
 	if err != nil {
 		return err
 	}
-	// Create the GenesisValidator list and its Key files priv_validator_key.json and node_key.json
+	// Create the GenesisValidator list and its key files priv_validator_key.json and node_key.json
 	for i, nodeName := range ctx.names {
 		isValidator := i < args.numValidators
 		readDir := filepath.Join(args.pvkey_Dir, nodeName)
@@ -151,7 +151,7 @@ func runGenesis(_ *cobra.Command, _ []string) error {
 		nodekey, err := p2p.LoadOrGenNodeKey(filepath.Join(readDir, consensus.NodeKeyFilename))
 		pvFile := privval.LoadOrGenFilePV(filepath.Join(readDir, "priv_validator_key.json"), filepath.Join(readDir, "priv_validator_state.json"))
 		if err != nil {
-			return errors.Wrap(err, "Failed to generate node Key")
+			return errors.Wrap(err, "Failed to generate node key")
 		}
 		err = copyTofolders(readDir, dataDir, configDir)
 		if err != nil {
@@ -177,7 +177,7 @@ func runGenesis(_ *cobra.Command, _ []string) error {
 		cfg.Network.SDKAddress = generateAddress(generatePort(), true, true)
 		cfg.Network.OLVMAddress = generateAddress(generatePort(), true)
 
-		n := node{IsValidator: isValidator, Cfg: cfg, Key: nodekey, EsdcaPk: ecdsaPk}
+		n := node{isValidator: isValidator, cfg: cfg, key: nodekey, esdcaPk: ecdsaPk}
 		if isValidator {
 			validator := consensus.GenesisValidator{
 				Address: pvFile.GetAddress(),
@@ -185,7 +185,7 @@ func runGenesis(_ *cobra.Command, _ []string) error {
 				Name:    nodeName,
 				Power:   1,
 			}
-			n.Validator = validator
+			n.validator = validator
 			validatorList[i] = validator
 		}
 		nodeList[i] = n
@@ -240,14 +240,14 @@ func runGenesis(_ *cobra.Command, _ []string) error {
 	//deploy contract and get contract addr
 	//Saving config.toml for each node
 	for _, node := range nodeList {
-		node.Cfg.P2P.PersistentPeers = persistentPeers
+		node.cfg.P2P.PersistentPeers = persistentPeers
 		// Modify the btc and eth ports
-		//if args.allowSwap && isSwapNode(node.Cfg.Node.NodeName) {
-		//	node.Cfg.Network.BTCAddress = generateAddress(generateBTCPort(), false)
-		//	node.Cfg.Network.ETHAddress = generateAddress(generateETHPort(), false)
+		//if args.allowSwap && isSwapNode(node.cfg.Node.NodeName) {
+		//	node.cfg.Network.BTCAddress = generateAddress(generateBTCPort(), false)
+		//	node.cfg.Network.ETHAddress = generateAddress(generateETHPort(), false)
 		//}
-		//	node.Cfg.EthChainDriver.ContractAddress = contractaddr
-		err := node.Cfg.SaveFile(filepath.Join(args.outputDir, node.Cfg.Node.NodeName, config.FileName))
+		//	node.cfg.EthChainDriver.ContractAddress = contractaddr
+		err := node.cfg.SaveFile(filepath.Join(args.outputDir, node.cfg.Node.NodeName, config.FileName))
 		if err != nil {
 			return err
 		}
@@ -351,11 +351,11 @@ func getInitialState(args *genesisArgument, nodeList []node, option ethchain.Cha
 	}
 
 	for _, node := range nodeList {
-		if !node.IsValidator {
+		if !node.isValidator {
 			continue
 		}
 
-		h, err := node.EsdcaPk.GetHandler()
+		h, err := node.esdcaPk.GetHandler()
 		if err != nil {
 			fmt.Println("err")
 			panic(err)
@@ -369,17 +369,17 @@ func getInitialState(args *genesisArgument, nodeList []node, option ethchain.Cha
 			stakeAddr = initialAddrs[initAddrIndex]
 			initAddrIndex++
 		} else {
-			stakeAddr = node.Key.PubKey().Address().Bytes()
+			stakeAddr = node.key.PubKey().Address().Bytes()
 		}
 
-		pubkey, _ := keys.PubKeyFromTendermint(node.Validator.PubKey.Bytes())
+		pubkey, _ := keys.PubKeyFromTendermint(node.validator.PubKey.Bytes())
 		st := consensus.Stake{
-			ValidatorAddress: node.Validator.Address.Bytes(),
+			ValidatorAddress: node.validator.Address.Bytes(),
 			StakeAddress:     stakeAddr,
 			Pubkey:           pubkey,
 			ECDSAPubKey:      h.PubKey(),
-			Name:             node.Validator.Name,
-			Amount:           *vt.NewCoinFromInt(node.Validator.Power).Amount,
+			Name:             node.validator.Name,
+			Amount:           *vt.NewCoinFromInt(node.validator.Power).Amount,
 		}
 		staking = append(staking, st)
 	}
@@ -401,17 +401,17 @@ func getInitialState(args *genesisArgument, nodeList []node, option ethchain.Cha
 	} else {
 		for _, node := range nodeList {
 			amt := int64(100)
-			if !node.IsValidator {
+			if !node.isValidator {
 				amt = 1
 			}
 			share := total.DivideInt64(int64(len(nodeList)))
 			balances = append(balances, consensus.BalanceState{
-				Address:  node.Key.PubKey().Address().Bytes(),
+				Address:  node.key.PubKey().Address().Bytes(),
 				Currency: olt.Name,
 				Amount:   *olt.NewCoinFromAmount(*share.Amount).Amount,
 			})
 			balances = append(balances, consensus.BalanceState{
-				Address:  node.Key.PubKey().Address().Bytes(),
+				Address:  node.key.PubKey().Address().Bytes(),
 				Currency: vt.Name,
 				Amount:   *vt.NewCoinFromInt(amt).Amount,
 			})

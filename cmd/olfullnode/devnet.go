@@ -114,24 +114,24 @@ func randStr(size int) string {
 // (1) Keep track of all of their P2P addresses including their addresses
 // (2) Modify their configurations to have each one have its persistent peer set
 type node struct {
-	IsValidator bool
-	Cfg         *config.Server
-	Dir         string
-	Key         *p2p.NodeKey
-	EsdcaPk     keys.PrivateKey
-	Validator   consensus.GenesisValidator
+	isValidator bool
+	cfg         *config.Server
+	dir         string
+	key         *p2p.NodeKey
+	esdcaPk     keys.PrivateKey
+	validator   consensus.GenesisValidator
 }
 
 func (n node) connectionDetails() string {
 	var addr string
-	if n.Cfg.Network.ExternalP2PAddress == "" {
-		addr = n.Cfg.Network.P2PAddress
+	if n.cfg.Network.ExternalP2PAddress == "" {
+		addr = n.cfg.Network.P2PAddress
 	} else {
-		addr = n.Cfg.Network.ExternalP2PAddress
+		addr = n.cfg.Network.ExternalP2PAddress
 	}
 
 	u, _ := url.Parse(addr)
-	return fmt.Sprintf("%s@%s", n.Key.ID(), u.Host)
+	return fmt.Sprintf("%s@%s", n.key.ID(), u.Host)
 }
 
 func connectionDetails(cfg *config.Server, id p2p.ID) string {
@@ -251,7 +251,7 @@ func runDevnet(_ *cobra.Command, _ []string) error {
 	if err != nil {
 		return err
 	}
-	// Create the GenesisValidator list and its Key files priv_validator_key.json and node_key.json
+	// Create the GenesisValidator list and its key files priv_validator_key.json and node_key.json
 	for i := 0; i < totalNodes; i++ {
 		isValidator := i < args.numValidators
 		nodeName := ctx.names[i]
@@ -288,14 +288,14 @@ func runDevnet(_ *cobra.Command, _ []string) error {
 			}
 		}
 
-		// Make node Key
+		// Make node key
 		nodeKey, err := p2p.LoadOrGenNodeKey(filepath.Join(configDir, "node_key.json"))
 		if err != nil {
-			ctx.logger.Error("error load or genning node Key", "err", err)
+			ctx.logger.Error("error load or genning node key", "err", err)
 			return err
 		}
 
-		// Make private Validator file
+		// Make private validator file
 		pvFile := privval.LoadOrGenFilePV(filepath.Join(configDir, "priv_validator_key.json"), filepath.Join(dataDir, "priv_validator_state.json"))
 		pvFile.Save()
 
@@ -304,32 +304,32 @@ func runDevnet(_ *cobra.Command, _ []string) error {
 
 		ecdsaPk, err := keys.GetPrivateKeyFromBytes([]byte(ecdsaPrivKey.Serialize()), keys.BTCECSECP)
 		if err != nil {
-			return errors.Wrap(err, "error generating BTCECSECP private Key")
+			return errors.Wrap(err, "error generating BTCECSECP private key")
 		}
 		//ethecdsaPrivKey, err := crypto.GenerateKey()
 		//if err != nil {
-		//	return errors.Wrap(err, "error generating ETHSECP Key")
+		//	return errors.Wrap(err, "error generating ETHSECP key")
 		//}
 		//ethecdsaPk, err := keys.GetPrivateKeyFromBytes(ethecdsaPrivKey.D.Bytes(), keys.ETHSECP)
 		//if err != nil {
-		//	return errors.Wrap(err, "error generating BTCECSECP private Key")
+		//	return errors.Wrap(err, "error generating BTCECSECP private key")
 		//}
 
 		f, err := os.Create(filepath.Join(configDir, "priv_validator_key_ecdsa.json"))
 		if err != nil {
-			return errors.Wrap(err, "failed to open file to write Validator ecdsa private Key")
+			return errors.Wrap(err, "failed to open file to write validator ecdsa private key")
 		}
 		nPrivKeyBytes, err := f.WriteString(ecdsaPrivKeyBytes)
 		if err != nil && nPrivKeyBytes != len(ecdsaPrivKeyBytes) {
-			return errors.Wrap(err, "failed to write Validator ecdsa private Key")
+			return errors.Wrap(err, "failed to write validator ecdsa private key")
 		}
 		err = f.Close()
 		if err != nil {
-			return errors.Wrap(err, "failed to save Validator ecdsa private Key")
+			return errors.Wrap(err, "failed to save validator ecdsa private key")
 		}
 
 		// Save the nodes to a list so we can iterate again and
-		n := node{IsValidator: isValidator, Cfg: cfg, Dir: nodeDir, Key: nodeKey, EsdcaPk: ecdsaPk}
+		n := node{isValidator: isValidator, cfg: cfg, dir: nodeDir, key: nodeKey, esdcaPk: ecdsaPk}
 		if isValidator {
 			validator := consensus.GenesisValidator{
 				Address: pvFile.GetAddress(),
@@ -338,14 +338,14 @@ func runDevnet(_ *cobra.Command, _ []string) error {
 				Power:   1,
 			}
 			validatorList[i] = validator
-			n.Validator = validator
+			n.validator = validator
 		}
 		nodeList[i] = n
 		persistentPeers[i] = n.connectionDetails()
 
 	}
 
-	// Create the non Validator nodes
+	// Create the non validator nodes
 
 	// Create the genesis file
 	chainID := "OneLedger-" + randStr(2)
@@ -418,14 +418,14 @@ func runDevnet(_ *cobra.Command, _ []string) error {
 	//deploy contract and get contract addr
 
 	for _, node := range nodeList {
-		node.Cfg.P2P.PersistentPeers = persistentPeers
+		node.cfg.P2P.PersistentPeers = persistentPeers
 		// Modify the btc and eth ports
-		if args.allowSwap && isSwapNode(node.Cfg.Node.NodeName) {
-			node.Cfg.Network.BTCAddress = generateAddress(generateBTCPort(), false)
-			node.Cfg.Network.ETHAddress = generateAddress(generateETHPort(), false)
+		if args.allowSwap && isSwapNode(node.cfg.Node.NodeName) {
+			node.cfg.Network.BTCAddress = generateAddress(generateBTCPort(), false)
+			node.cfg.Network.ETHAddress = generateAddress(generateETHPort(), false)
 		}
-		//	node.Cfg.EthChainDriver.ContractAddress = contractaddr
-		err := node.Cfg.SaveFile(filepath.Join(node.Dir, config.FileName))
+		//	node.cfg.EthChainDriver.ContractAddress = contractaddr
+		err := node.cfg.SaveFile(filepath.Join(node.dir, config.FileName))
 		if err != nil {
 			return err
 		}
@@ -467,11 +467,11 @@ func initialState(args *testnetConfig, nodeList []node, option ethchain.ChainDri
 	}
 
 	for _, node := range nodeList {
-		if !node.IsValidator {
+		if !node.isValidator {
 			continue
 		}
 
-		h, err := node.EsdcaPk.GetHandler()
+		h, err := node.esdcaPk.GetHandler()
 		if err != nil {
 			fmt.Println("err")
 			panic(err)
@@ -485,17 +485,17 @@ func initialState(args *testnetConfig, nodeList []node, option ethchain.ChainDri
 			stakeAddr = initialAddrs[initAddrIndex]
 			initAddrIndex++
 		} else {
-			stakeAddr = node.Key.PubKey().Address().Bytes()
+			stakeAddr = node.key.PubKey().Address().Bytes()
 		}
 
-		pubkey, _ := keys.PubKeyFromTendermint(node.Validator.PubKey.Bytes())
+		pubkey, _ := keys.PubKeyFromTendermint(node.validator.PubKey.Bytes())
 		st := consensus.Stake{
-			ValidatorAddress: node.Validator.Address.Bytes(),
+			ValidatorAddress: node.validator.Address.Bytes(),
 			StakeAddress:     stakeAddr,
 			Pubkey:           pubkey,
 			ECDSAPubKey:      h.PubKey(),
-			Name:             node.Validator.Name,
-			Amount:           *vt.NewCoinFromInt(node.Validator.Power).Amount,
+			Name:             node.validator.Name,
+			Amount:           *vt.NewCoinFromInt(node.validator.Power).Amount,
 		}
 		staking = append(staking, st)
 	}
@@ -517,17 +517,17 @@ func initialState(args *testnetConfig, nodeList []node, option ethchain.ChainDri
 	} else {
 		for _, node := range nodeList {
 			amt := int64(100)
-			if !node.IsValidator {
+			if !node.isValidator {
 				amt = 1
 			}
 			share := total.DivideInt64(int64(len(nodeList)))
 			balances = append(balances, consensus.BalanceState{
-				Address:  node.Key.PubKey().Address().Bytes(),
+				Address:  node.key.PubKey().Address().Bytes(),
 				Currency: olt.Name,
 				Amount:   *olt.NewCoinFromAmount(*share.Amount).Amount,
 			})
 			balances = append(balances, consensus.BalanceState{
-				Address:  node.Key.PubKey().Address().Bytes(),
+				Address:  node.key.PubKey().Address().Bytes(),
 				Currency: vt.Name,
 				Amount:   *vt.NewCoinFromInt(amt).Amount,
 			})
@@ -561,9 +561,9 @@ func deployethcdcontract(conn string, nodeList []node) (*ethchain.ChainDriverOpt
 	b1 := make([]byte, 64)
 	pk, err := f.Read(b1)
 	if err != nil {
-		return nil, errors.Wrap(err, "Error reading private Key")
+		return nil, errors.Wrap(err, "Error reading private key")
 	}
-	//fmt.Println("Private Key used to deploy : ", string(b1[:pk]))
+	//fmt.Println("Private key used to deploy : ", string(b1[:pk]))
 	pkStr := string(b1[:pk])
 	privatekey, err := crypto.HexToECDSA(pkStr)
 
@@ -607,7 +607,7 @@ func deployethcdcontract(conn string, nodeList []node) (*ethchain.ChainDriverOpt
 		return nil, errors.New("Unable to create wallet transfer amount")
 	}
 	for _, node := range nodeList {
-		privkey := keys.ETHSECP256K1TOECDSA(node.EsdcaPk.Data)
+		privkey := keys.ETHSECP256K1TOECDSA(node.esdcaPk.Data)
 		nonce, err := cli.PendingNonceAt(context.Background(), fromAddress)
 		if err != nil {
 			return nil, err
@@ -620,7 +620,7 @@ func deployethcdcontract(conn string, nodeList []node) (*ethchain.ChainDriverOpt
 			return nil, errors.New("failed to cast pubkey")
 		}
 		addr := crypto.PubkeyToAddress(*ecdsapubkey)
-		if node.Validator.Address.String() == "" {
+		if node.validator.Address.String() == "" {
 			continue
 		}
 

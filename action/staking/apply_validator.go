@@ -86,7 +86,7 @@ func (a applyTx) Validate(ctx *action.Context, tx action.SignedTx) (bool, error)
 }
 
 func (a applyTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
-	ctx.Logger.Debug("Processing Apply Validator Transaction for CheckTx", tx)
+	ctx.Logger.Debug("Processing Apply validator Transaction for CheckTx", tx)
 	return runApply(ctx, tx)
 }
 
@@ -107,7 +107,7 @@ func checkBalances(ctx *action.Context, address action.Address, stake action.Amo
 }
 
 func (a applyTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
-	ctx.Logger.Debug("Processing Apply Validator Transaction for DeliverTx", tx)
+	ctx.Logger.Debug("Processing Apply validator Transaction for DeliverTx", tx)
 	return runApply(ctx, tx)
 }
 

@@ -25,10 +25,10 @@ type Context struct {
 	// Node keys
 	privateKey keys.PrivateKey
 
-	// Validator key
+	// validator key
 	privval keys.PrivateKey
 
-	// Validator ECDSA key
+	// validator ECDSA key
 	ecdsaPrivVal keys.PrivateKey //Used BY ETHEREUM TX
 }
 

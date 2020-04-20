@@ -49,7 +49,7 @@ type keystore interface {
 	//Verify client has correct password for the given address.
 	VerifyPassphrase(path string, address Address, passphrase string) (bool, error)
 
-	//Check if Key exists
+	//Check if key exists
 	KeyExists(path string, address Address) bool
 
 	//Get address of account given a file name.

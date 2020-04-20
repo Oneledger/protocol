@@ -37,7 +37,7 @@ type PrivateKeyHandler interface {
 }
 
 /*
-	Key Types
+	key Types
 */
 type PublicKey struct {
 	KeyType Algorithm `json:"keyType"`

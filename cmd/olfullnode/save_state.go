@@ -266,7 +266,7 @@ func DumpStakingToFile(vs *identity.ValidatorStore, writer io.Writer, fn func(wr
 		stake.ValidatorAddress = validator.Address
 		stake.StakeAddress = validator.StakeAddress
 		stake.Name = validator.Name
-		//stake.Power = Validator.Power
+		//stake.Power = validator.Power
 
 		fn(writer, stake)
 		iterator++

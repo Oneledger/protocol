@@ -126,7 +126,7 @@ func runCheckFinality(ctx *action.Context, tx action.RawTx) (bool, action.Respon
 		ctx.Logger.Debug("Tracker already Failed")
 		return true, action.Response{Log: "Tracker already Failed"}
 	}
-	//Add Validator Vote
+	//Add validator Vote
 	if f.Success == true {
 		err = tracker.AddVote(f.ValidatorAddress, f.VoteIndex, true)
 		if err != nil {
@@ -196,7 +196,7 @@ func runCheckFinality(ctx *action.Context, tx action.RawTx) (bool, action.Respon
 		ctx.Logger.Error("Unable to save the tracker", err)
 		return false, action.Response{Log: errors.Wrap(err, "unable to save the tracker").Error()}
 	}
-	ctx.Logger.Debug("Vote added |  Validator : ", f.ValidatorAddress, " | Process Type : ", tracker.Type.String(), " | Success : ", f.Success)
+	ctx.Logger.Debug("Vote added |  validator : ", f.ValidatorAddress, " | Process Type : ", tracker.Type.String(), " | Success : ", f.Success)
 	yes, no := tracker.GetVotes()
 	ctx.Logger.Detail("Tracker Votes YES / NO : ", strconv.Itoa(yes), "/", strconv.Itoa(no))
 	return true, action.Response{Log: "vote success, not ready to mint: " + strconv.Itoa(yes) + "," + strconv.Itoa(no)}

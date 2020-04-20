@@ -110,7 +110,7 @@ func (r *rpcAuthHandler) Authorized(respW http.ResponseWriter, req *http.Request
 		signature := data[20:]
 
 		var keyData []byte
-		//Get Private Key for signature verification.
+		//Get Private key for signature verification.
 		keyData, err := base64.StdEncoding.DecodeString(r.cfg.Node.Auth.RPCPrivateKey)
 		if err != nil {
 			respErr = err.Error()
@@ -123,7 +123,7 @@ func (r *rpcAuthHandler) Authorized(respW http.ResponseWriter, req *http.Request
 			return false
 		}
 
-		//Private Key Handler
+		//Private key Handler
 		privateKeyHandler, err := privateKey.GetHandler()
 		if err != nil {
 			respErr = err.Error()
