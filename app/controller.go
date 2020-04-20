@@ -139,7 +139,7 @@ func (app *App) txChecker() txChecker {
 
 		err := serialize.GetSerializer(serialize.NETWORK).Deserialize(msg.Tx, tx)
 		if err != nil {
-			app.logger.Errorf("checkTx failed to deserialize msg: %s, error: %s ", msg, err)
+			app.logger.Errorf("checkTx failed to deserialize msg: %v, error: %s ", msg, err)
 		}
 
 		txCtx := app.Context.Action(&app.header, app.Context.check)
@@ -192,7 +192,7 @@ func (app *App) txDeliverer() txDeliverer {
 
 		err := serialize.GetSerializer(serialize.NETWORK).Deserialize(msg.Tx, tx)
 		if err != nil {
-			app.logger.Errorf("deliverTx failed to deserialize msg: %s, error: %s ", msg, err)
+			app.logger.Errorf("deliverTx failed to deserialize msg: %v, error: %s ", msg, err)
 		}
 		txCtx := app.Context.Action(&app.header, app.Context.deliver)
 
