@@ -19,6 +19,7 @@ import (
 type PurgeValidatorArguments struct {
 	Admin     []byte `json:"admin"`
 	Validator []byte `json:"validator"`
+	Password  string `json:"password"`
 }
 
 func (args *PurgeValidatorArguments) ClientRequest() client.PurgeValidatorRequest {
@@ -40,6 +41,7 @@ func setPurgeValidatorArgs() {
 	// Transaction Parameters
 	purgevalidatorCmd.Flags().BytesHexVar(&purgeValidatorArgs.Admin, "admin", []byte{}, "specify the admin address to use")
 	purgevalidatorCmd.Flags().BytesHexVar(&purgeValidatorArgs.Validator, "validator", []byte{}, "remove the validator")
+	purgevalidatorCmd.Flags().StringVar(&purgeValidatorArgs.Password, "password", "", "password to access secure wallet")
 }
 
 func init() {
@@ -59,10 +61,14 @@ func purgeValidator(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
+	//Prompt for password
+	if len(purgeValidatorArgs.Password) == 0 {
+		purgeValidatorArgs.Password = PromptForPassword()
+	}
+
 	//Verify User Password
 	usrAddress := keys.Address(purgeValidatorArgs.Admin)
-	password := PromptForPassword()
-	authenticated, err := wallet.VerifyPassphrase(usrAddress, password)
+	authenticated, err := wallet.VerifyPassphrase(usrAddress, purgeValidatorArgs.Password)
 	if !authenticated {
 		ctx.logger.Error("authentication error", err)
 		return err
@@ -83,7 +89,7 @@ func purgeValidator(cmd *cobra.Command, args []string) error {
 	}
 
 	// Open wallet
-	if !wallet.Open(usrAddress, password) {
+	if !wallet.Open(usrAddress, purgeValidatorArgs.Password) {
 		ctx.logger.Error("failed to open secure wallet")
 		return errors.New("failed to open secure wallet")
 	}
