@@ -48,7 +48,7 @@ var (
 
 	sendFundsCmd = &cobra.Command{
 		Use:   "sendfunds",
-		Short: "Apply a dynamic validator",
+		Short: "Send funds to a given address",
 		RunE:  sendFunds,
 	}
 
