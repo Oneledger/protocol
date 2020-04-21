@@ -17,6 +17,7 @@ package main
 import (
 	"fmt"
 	accounts2 "github.com/Oneledger/protocol/data/accounts"
+	"github.com/Oneledger/protocol/data/keys"
 
 	"github.com/spf13/cobra"
 )
@@ -61,6 +62,7 @@ func ListNode(cmd *cobra.Command, args []string) {
 	}
 
 	logger.Infof("Accounts on node: %s ", Ctx.cfg.Node.NodeName)
+	fmt.Println("Accounts from Secure Wallet:")
 	for _, a := range addresses {
 		fmt.Print("Address: ", a, "    ")
 		rep, err := fullnode.Balance(a)
@@ -70,17 +72,26 @@ func ListNode(cmd *cobra.Command, args []string) {
 		fmt.Printf("Balance: %s \n\n", rep.Balance)
 	}
 
-	//TODO: Need to remove this in the future.
-	//Listing current Node details
-	nodeAddr, err := fullnode.NodeAddress()
+	addressListReply, err := fullnode.ListAccountAddresses()
 	if err != nil {
+		logger.Error("listnode: error getting address list from node wallet.", err)
 		return
 	}
 
-	balReply, err := fullnode.Balance(nodeAddr.Address)
-	if err != nil {
-		return
+	nodeWalletAddresses := addressListReply.Addresses
+
+	fmt.Println("Accounts from Node Wallet:")
+	for _, a := range nodeWalletAddresses {
+		fmt.Print("Address: ", a, "    ")
+		addr := keys.Address{}
+		err = addr.UnmarshalText([]byte(a))
+		if err != nil {
+			return
+		}
+		rep, err := fullnode.Balance(addr)
+		if err != nil {
+			continue
+		}
+		fmt.Printf("Balance: %s \n\n", rep.Balance)
 	}
-	fmt.Print("Address: ", nodeAddr.Address, "    ")
-	fmt.Printf("Balance: %s \n\n", balReply.Balance)
 }

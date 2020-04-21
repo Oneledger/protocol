@@ -21,24 +21,13 @@ import (
 	"github.com/Oneledger/protocol/serialize"
 	"github.com/spf13/cobra"
 	ctypes "github.com/tendermint/tendermint/rpc/core/types"
+	"os"
 	"strconv"
 
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/client"
 	"github.com/Oneledger/protocol/data/balance"
 )
-
-var sendCmd = &cobra.Command{
-	Use:   "send",
-	Short: "Issue send transaction",
-	Run:   IssueRequest,
-}
-
-var sendFundsCmd = &cobra.Command{
-	Use:   "sendfunds",
-	Short: "Apply a dynamic validator",
-	RunE:  sendFunds,
-}
 
 type SendArguments struct {
 	Party        []byte `json:"party"`
@@ -49,6 +38,25 @@ type SendArguments struct {
 	Gas          int64  `json:"gas"`
 	Password     string `json:"password"`
 }
+
+var (
+	sendCmd = &cobra.Command{
+		Use:   "send",
+		Short: "Issue send transaction",
+		Run:   IssueRequest,
+	}
+
+	sendFundsCmd = &cobra.Command{
+		Use:   "sendfunds",
+		Short: "Send funds to a given address",
+		RunE:  sendFunds,
+	}
+
+	sendargs      = &SendArguments{}
+	sendfundsargs = &SendArguments{}
+
+	testenv = "OLTEST"
+)
 
 func (args *SendArguments) ClientRequest(currencies *balance.CurrencySet) (client.SendTxRequest, error) {
 	c, ok := currencies.GetCurrencyByName(args.Currency)
@@ -72,15 +80,16 @@ func (args *SendArguments) ClientRequest(currencies *balance.CurrencySet) (clien
 	}, nil
 }
 
-var sendargs = &SendArguments{}
-var sendfundsargs = &SendArguments{}
-
 func init() {
-	RootCmd.AddCommand(sendCmd)
-	RootCmd.AddCommand(sendFundsCmd)
 
-	setArgs(sendFundsCmd, sendfundsargs)
+	RootCmd.AddCommand(sendCmd)
 	setArgs(sendCmd, sendargs)
+
+	testEnv := os.Getenv(testenv)
+	if testEnv == "1" {
+		RootCmd.AddCommand(sendFundsCmd)
+		setArgs(sendFundsCmd, sendfundsargs)
+	}
 }
 
 func setArgs(command *cobra.Command, sendArgs *SendArguments) {
