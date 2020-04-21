@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -102,6 +103,18 @@ func newMainetContext(args *genesisArgument) (*mainetContext, error) {
 }
 
 func runGenesis(_ *cobra.Command, _ []string) error {
+	reserved_domains, err := os.Open(filepath.Join("/home/tanmay/Codebase/Test/", "reserved_domains.dat"))
+	if err != nil {
+		fmt.Println("Error")
+		return err
+	}
+	fileScanner := bufio.NewScanner(reserved_domains)
+	fileScanner.Split(bufio.ScanLines)
+	var reservedDomains []string
+	for fileScanner.Scan() {
+		reservedDomains = append(reservedDomains, fileScanner.Text())
+	}
+
 	ctx, err := newMainetContext(genesisCmdArgs)
 	if err != nil {
 		return err
@@ -175,7 +188,7 @@ func runGenesis(_ *cobra.Command, _ []string) error {
 		cfg.Network.RPCAddress = generateAddress(generatePort(), true)
 		cfg.Network.P2PAddress = generateAddress(generatePort(), true)
 		cfg.Network.SDKAddress = generateAddress(generatePort(), true, true)
-		cfg.Network.OLVMAddress = generateAddress(generatePort(), true)
+		// cfg.Network.OLVMAddress = generateAddress(generatePort(), true)
 
 		n := node{isValidator: isValidator, cfg: cfg, key: nodekey, esdcaPk: ecdsaPk}
 		if isValidator {
@@ -204,7 +217,7 @@ func runGenesis(_ *cobra.Command, _ []string) error {
 		return err
 	}
 	//os.Remove(filepath.Join(genesisCmdArgs.pvkey_Dir, "cdOpts.json"))
-	states := getInitialState(args, nodeList, cdo, *onsOp, btccdo)
+	states := getInitialState(args, nodeList, cdo, *onsOp, btccdo, reservedDomains)
 
 	genesisDoc, err := consensus.NewGenesisDoc(getChainID(), states)
 	if err != nil {
@@ -220,39 +233,13 @@ func runGenesis(_ *cobra.Command, _ []string) error {
 			return err
 		}
 	}
-	// Save the files to the node's relevant directory
-	//generateBTCPort := portGenerator(18831)
-	//generateETHPort := portGenerator(28101)
-
-	//var swapNodes []string
-	//if args.allowSwap {
-	//	swapNodes = ctx.names[1:4]
-	//}
-	//isSwapNode := func(name string) bool {
-	//	for _, nodeName := range swapNodes {
-	//		if nodeName == name {
-	//			return true
-	//		}
-	//	}
-	//	return false
-	//}
-
-	//deploy contract and get contract addr
-	//Saving config.toml for each node
 	for _, node := range nodeList {
 		node.cfg.P2P.PersistentPeers = persistentPeers
-		// Modify the btc and eth ports
-		//if args.allowSwap && isSwapNode(node.cfg.Node.NodeName) {
-		//	node.cfg.Network.BTCAddress = generateAddress(generateBTCPort(), false)
-		//	node.cfg.Network.ETHAddress = generateAddress(generateETHPort(), false)
-		//}
-		//	node.cfg.EthChainDriver.ContractAddress = contractaddr
 		err := node.cfg.SaveFile(filepath.Join(args.outputDir, node.cfg.Node.NodeName, config.FileName))
 		if err != nil {
 			return err
 		}
 	}
-
 	ctx.logger.Info("Created configuration files for", strconv.Itoa(totalNodes), "nodes in", args.outputDir)
 	return nil
 }
@@ -321,7 +308,7 @@ func getOnsOpt() *ons.Options {
 }
 
 func getInitialState(args *genesisArgument, nodeList []node, option ethchain.ChainDriverOption, onsOption ons.Options,
-	btcOption bitcoin.ChainDriverOption) consensus.AppState {
+	btcOption bitcoin.ChainDriverOption, reservedDomains []string) consensus.AppState {
 	olt := balance.Currency{Id: 0, Name: "OLT", Chain: chain.ONELEDGER, Decimal: 18, Unit: "nue"}
 	vt := balance.Currency{Id: 1, Name: "VT", Chain: chain.ONELEDGER, Unit: "vt"}
 	obtc := balance.Currency{Id: 2, Name: "BTC", Chain: chain.BITCOIN, Decimal: 8, Unit: "satoshi"}
@@ -334,7 +321,7 @@ func getInitialState(args *genesisArgument, nodeList []node, option ethchain.Cha
 	}
 	balances := make([]consensus.BalanceState, 0, len(nodeList))
 	staking := make([]consensus.Stake, 0, len(nodeList))
-	domains := make([]consensus.DomainState, 0, len(nodeList))
+	domains := make([]consensus.DomainState, 0, len(reservedDomains))
 	fees_db := make([]consensus.BalanceState, 0, len(nodeList))
 	total := olt.NewCoinFromInt(args.totalFunds)
 
@@ -415,6 +402,31 @@ func getInitialState(args *genesisArgument, nodeList []node, option ethchain.Cha
 				Currency: vt.Name,
 				Amount:   *vt.NewCoinFromInt(amt).Amount,
 			})
+		}
+	}
+	if len(args.initialTokenHolders) > 0 {
+		domainsPerHolder := len(reservedDomains) / len(args.initialTokenHolders)
+		start := 0
+		end := 0
+		for _, addr := range initialAddrs {
+			start = end
+			end = end + domainsPerHolder
+			domain := reservedDomains[start:end]
+			for _, d := range domain {
+				//ds := strings.Split(d, ".")
+				domains = append(domains, consensus.DomainState{
+					Owner:            addr,
+					Beneficiary:      addr,
+					Name:             d,
+					CreationHeight:   0,
+					LastUpdateHeight: 0,
+					ExpireHeight:     30000,
+					ActiveFlag:       false,
+					OnSaleFlag:       true,
+					URI:              d,
+					SalePrice:        nil,
+				})
+			}
 		}
 	}
 

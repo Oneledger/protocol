@@ -8,7 +8,7 @@ rm -rf $OLDATA/mainnet/*
 olfullnode init --dir $OLDATA/mainnet \
 --nodes 5 \
 --witness 4 \
---eth_rpc https://rinkeby.infura.io/v3 \
+--eth_rpc HTTP://127.0.0.1:7545 \
 --deploy_smart_contracts \
 
 olfullnode init genesis --dir $OLDATA/mainnet \
@@ -16,8 +16,9 @@ olfullnode init genesis --dir $OLDATA/mainnet \
 --nonvalidators 1 \
 --validators 4 \
 --empty_blocks \
---eth_rpc https://rinkeby.infura.io/v3 \
+--eth_rpc HTTP://127.0.0.1:7545 \
 --loglevel 4 \
+--initial_token_holders 0xccaCe5E7bEA2AE799D821da3D98CbdbE2D99E6Bb \
 
 #--eth_rpc https://rinkeby.infura.io/v3 \
 #--eth_rpc HTTP://127.0.0.1:7545 \
