@@ -100,7 +100,7 @@ withdrawtest: install
 	@./scripts/stopDev
 
 
-alltest: install
+alltest: install_c
 	@./scripts/stopDev
 	@./scripts/resetDev
 	@./scripts/startDev
