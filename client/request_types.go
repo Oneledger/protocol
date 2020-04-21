@@ -84,6 +84,15 @@ type WithdrawRewardReply struct {
 	RawTx []byte `json:"rawTx"`
 }
 
+type PurgeValidatorRequest struct {
+	Admin     keys.Address `json:"admin"`
+	Validator keys.Address `json:"validator"`
+}
+
+type PurgeValidatorReply struct {
+	RawTx []byte `json:"rawTx"`
+}
+
 type NodeNameRequest struct{}
 type NodeNameReply struct {
 	Name string `json:"name"`
@@ -265,6 +274,6 @@ type FeeOptionsReply struct {
 }
 
 type ListTxTypesRequest struct{}
-type ListTxTypesReply struct{
+type ListTxTypesReply struct {
 	TxTypes []action.TxTypeDescribe `json:"txTypes"`
 }
