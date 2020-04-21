@@ -24,3 +24,11 @@ func EnableApplyValidator(r action.Router) error {
 	}
 	return nil
 }
+
+func EnablePurgeValidator(r action.Router) error {
+	err := r.AddHandler(action.PURGE, purgeTx{})
+	if err != nil {
+		return errors.Wrap(err, "purgeTx")
+	}
+	return nil
+}

@@ -278,9 +278,10 @@ func (app *App) setupValidators(req RequestInitChain, currencies *balance.Curren
 }
 
 func (app *App) Prepare() error {
-	//get currencies from governance db
+	testEnv := os.Getenv("OLTEST")
 
-	if app.Context.govern.InitialChain() {
+	//get currencies from governance db
+	if app.Context.govern.InitialChain() || testEnv == "1" {
 		app.logger.Debug("didn't get the currencies from db,  register self")
 		nodeCtx := app.Context.Node()
 		walletCtx := app.Context.Accounts()
