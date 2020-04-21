@@ -181,6 +181,5 @@ func NewWallet(config config.Server, dbDir string) Wallet {
 }
 
 func (ws WalletStore) Close() error {
-	ws.store.Close()
-	return nil
+	return ws.store.Close()
 }

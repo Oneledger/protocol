@@ -147,7 +147,8 @@ func (store KeyValue) Errors() string {
 }
 
 // Close the database
-func (store KeyValue) Close() {
+func (store KeyValue) Close() error {
+	var err error = nil
 	switch store.Type {
 
 	case MEMORY:
@@ -155,12 +156,13 @@ func (store KeyValue) Close() {
 
 	case PERSISTENT:
 		store.tree = nil
-		store.database.Close()
+		err = store.database.Close()
 		store.database = nil
 
 	default:
 		panic("Unknown Type")
 	}
+	return err
 }
 
 // FindAll of the keys in the database
