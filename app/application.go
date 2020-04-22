@@ -280,8 +280,8 @@ func (app *App) setupValidators(req RequestInitChain, currencies *balance.Curren
 func (app *App) Prepare() error {
 	testEnv := os.Getenv("OLTEST")
 
-	//get currencies from governance db
-	if app.Context.govern.InitialChain() || testEnv == "1" {
+	//Register address for current node if in test environment.
+	if app.Context.govern.InitialChain() && testEnv == "1" {
 		app.logger.Debug("didn't get the currencies from db,  register self")
 		nodeCtx := app.Context.Node()
 		walletCtx := app.Context.Accounts()
@@ -308,8 +308,10 @@ func (app *App) Prepare() error {
 			}
 		}
 		app.logger.Infof("Successfully registered myself: %s", acct.Address())
+	}
 
-	} else {
+	//get currencies from governance db
+	if !app.Context.govern.InitialChain() {
 		currencies, err := app.Context.govern.GetCurrencies()
 		if err != nil {
 			return err

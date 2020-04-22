@@ -63,14 +63,21 @@ func (args *SendArguments) ClientRequest(currencies *balance.CurrencySet) (clien
 	if !ok {
 		return client.SendTxRequest{}, errors.New("currency not support:" + args.Currency)
 	}
+
 	f, err := strconv.ParseFloat(args.Amount, 64)
 	if err != nil {
 		return client.SendTxRequest{}, err
 	}
 	amt := c.NewCoinFromFloat64(f).Amount
+
 	olt, _ := currencies.GetCurrencyByName("OLT")
+
 	fee, err := strconv.ParseFloat(args.Fee, 64)
+	if err != nil {
+		return client.SendTxRequest{}, err
+	}
 	feeAmt := olt.NewCoinFromFloat64(fee).Amount
+
 	return client.SendTxRequest{
 		From:     args.Party,
 		To:       args.CounterParty,
