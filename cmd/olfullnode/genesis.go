@@ -230,6 +230,7 @@ func runGenesis(_ *cobra.Command, _ []string) error {
 	//	return err
 	//}
 	//os.Remove(filepath.Join(genesisCmdArgs.pvkey_Dir, "cdOpts.json"))
+	fmt.Println("Validators : ", validatorList)
 	states := getInitialState(args, nodeList, *cdo, *onsOp, btccdo, reserveDomains, initialAddrs)
 
 	genesisDoc, err := consensus.NewGenesisDoc(getChainID(), states)
@@ -448,7 +449,7 @@ func getInitialState(args *genesisArgument, nodeList []node, option ethchain.Cha
 			}
 		}
 	}
-	fmt.Println("Balnces ", balances)
+
 	return consensus.AppState{
 		Currencies: currencies,
 		Balances:   balances,

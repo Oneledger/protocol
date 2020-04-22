@@ -279,31 +279,33 @@ func getEthOpt(conn string, nodeList []node) (*ethchain.ChainDriverOption, error
 		return nil, errors.New("Unable to create wallet transfer amount")
 	}
 	for _, node := range nodeList {
-		privkey := keys.ETHSECP256K1TOECDSA(node.esdcaPk.Data)
-		nonce, err := cli.PendingNonceAt(context.Background(), fromAddress)
-		if err != nil {
-			return nil, err
-		}
-		pubkey := privkey.Public()
-		ecdsapubkey, ok := pubkey.(*ecdsa.PublicKey)
-		if !ok {
-			return nil, errors.New("failed to cast pubkey")
-		}
-		addr := crypto.PubkeyToAddress(*ecdsapubkey)
+		if node.isValidator {
+			privkey := keys.ETHSECP256K1TOECDSA(node.esdcaPk.Data)
+			nonce, err := cli.PendingNonceAt(context.Background(), fromAddress)
+			if err != nil {
+				return nil, err
+			}
+			pubkey := privkey.Public()
+			ecdsapubkey, ok := pubkey.(*ecdsa.PublicKey)
+			if !ok {
+				return nil, errors.New("failed to cast pubkey")
+			}
+			addr := crypto.PubkeyToAddress(*ecdsapubkey)
 
-		initialValidatorList = append(initialValidatorList, addr)
-		tx := types.NewTransaction(nonce, addr, validatorInitialFund, auth.GasLimit, auth.GasPrice, (nil))
-		fmt.Println("validator Address :", addr.Hex(), ":", validatorInitialFund)
-		chainId, _ := cli.ChainID(context.Background())
-		signedTx, err := types.SignTx(tx, types.NewEIP155Signer(chainId), privatekey)
-		if err != nil {
-			return nil, errors.Wrap(err, "signing tx")
+			initialValidatorList = append(initialValidatorList, addr)
+			tx := types.NewTransaction(nonce, addr, validatorInitialFund, auth.GasLimit, auth.GasPrice, (nil))
+			fmt.Println("validator Address :", addr.Hex(), ":", validatorInitialFund)
+			chainId, _ := cli.ChainID(context.Background())
+			signedTx, err := types.SignTx(tx, types.NewEIP155Signer(chainId), privatekey)
+			if err != nil {
+				return nil, errors.Wrap(err, "signing tx")
+			}
+			err = cli.SendTransaction(context.Background(), signedTx)
+			if err != nil {
+				return nil, errors.Wrap(err, "sending")
+			}
+			time.Sleep(1 * time.Second)
 		}
-		err = cli.SendTransaction(context.Background(), signedTx)
-		if err != nil {
-			return nil, errors.Wrap(err, "sending")
-		}
-		time.Sleep(1 * time.Second)
 	}
 
 	nonce, err := cli.PendingNonceAt(context.Background(), fromAddress)

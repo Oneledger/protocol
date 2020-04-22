@@ -10,7 +10,7 @@ olfullnode init --dir $OLDATA/mainnet \
 --witness 4 \
 --eth_rpc HTTP://127.0.0.1:7545 \
 --deploy_smart_contracts \
---node_list "Validator","Validator2","Validator3","Validator4","FullNode" \
+--node_list "Node0","Node1","Node2","Node3","Node4" \
 
 olfullnode init genesis --dir $OLDATA/mainnet \
 --pv_dir $OLDATA/mainnet \

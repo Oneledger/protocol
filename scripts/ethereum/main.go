@@ -49,7 +49,7 @@ var (
 	LockRedeemERCABI = contract.LockRedeemERCABI
 	// LockRedeemERC20ABI = contract.ContextABI
 
-	LockRedeemContractAddr = "0xB43173109BEe296aC2a5a8caC9780734cEB3341C"
+	LockRedeemContractAddr = "0x2cd76b75813c1BeDdD9797aD43dA1E7E9C07831A"
 
 	TestTokenContractAddr       = "0x0000000000000000000000000000000000000000"
 	LockRedeemERC20ContractAddr = "0x0000000000000000000000000000000000000000"
