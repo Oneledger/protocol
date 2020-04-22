@@ -281,7 +281,7 @@ func (app *App) Prepare() error {
 	testEnv := os.Getenv("OLTEST")
 
 	//Register address for current node if in test environment.
-	if testEnv == "1" {
+	if app.Context.govern.InitialChain() && testEnv == "1" {
 		app.logger.Debug("didn't get the currencies from db,  register self")
 		nodeCtx := app.Context.Node()
 		walletCtx := app.Context.Accounts()
