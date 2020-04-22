@@ -387,7 +387,7 @@ func getInitialState(args *genesisArgument, nodeList []node, option ethchain.Cha
 			balances = append(balances, consensus.BalanceState{
 				Address:  acct,
 				Currency: vt.Name,
-				Amount:   *vt.NewCoinFromInt(100).Amount,
+				Amount:   *vt.NewCoinFromInt(1000).Amount,
 			})
 		}
 	} else {
