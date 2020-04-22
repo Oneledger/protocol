@@ -9,9 +9,7 @@ import (
 	"context"
 	"crypto/ecdsa"
 	"encoding/base64"
-	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"math/big"
 	"net/url"
 	"os"
@@ -154,31 +152,17 @@ func runInitNode(cmd *cobra.Command, _ []string) error {
 		return errors.New("Number of Witness cannot be more than the number of total nodes")
 	}
 	nodeNames := getNodeNames()
-	witnessList, err := generatePVKeys(initCmdArgs.outputDir, nodeNames)
+	_, err = generatePVKeys(initCmdArgs.outputDir, nodeNames)
 	if err != nil {
 		return errors.Wrap(err, "Failed to Get NodeList")
 	}
-	cdo := &ethchain.ChainDriverOption{}
-	url, err := getEthUrl(initCmdArgs.ethUrl)
-	if err != nil {
-		return err
-	}
-	fmt.Println("Ethereum Deployment Network :", url)
-	if initCmdArgs.deploySmartcontracts {
-		if len(initCmdArgs.ethUrl) > 0 {
-			cdo, err = getEthOpt(url, witnessList)
-			if err != nil {
-				return errors.Wrap(err, "failed to deploy the initial eth contract")
-			}
-		}
-	}
 
-	cdoBytes, err := json.Marshal(cdo)
-	if err != nil {
-		return err
-	}
-	ioutil.WriteFile(filepath.Join(initCmdArgs.outputDir, "cdOpts.json"), cdoBytes, os.ModePerm)
-	fmt.Println("Nodes folder  : ", initCmdArgs.outputDir)
+	//cdoBytes, err := json.Marshal(cdo)
+	//if err != nil {
+	//	return err
+	//}
+	//ioutil.WriteFile(filepath.Join(initCmdArgs.outputDir, "cdOpts.json"), cdoBytes, os.ModePerm)
+	//fmt.Println("Nodes folder  : ", initCmdArgs.outputDir)
 	//err = genesisDoc.SaveAs(filepath.Join(rootDir, "genesis.json"))
 	//if err != nil {
 	//	return err
@@ -389,18 +373,16 @@ func getEthUrl(ethUrlArg string) (string, error) {
 
 func getNodeNames() []string {
 	nodeNames := make([]string, initCmdArgs.numofNodes)
-
-	if len(initCmdArgs.nodeNames) < initCmdArgs.numofNodes {
-		i := 0
-		for i < len(initCmdArgs.nodeNames) {
-			nodeNames[i] = initCmdArgs.nodeNames[i]
-			i++
-		}
-
-		for i < len(nodeNames) {
-			nodeNames[i] = initCmdArgs.nodeName + strconv.Itoa(i)
-			i++
-		}
+	i := 0
+	for i < len(initCmdArgs.nodeNames) {
+		nodeNames[i] = initCmdArgs.nodeNames[i]
+		i++
 	}
+
+	for i < len(nodeNames) {
+		nodeNames[i] = initCmdArgs.nodeName + strconv.Itoa(i-len(initCmdArgs.nodeNames))
+		i++
+	}
+
 	return nodeNames
 }

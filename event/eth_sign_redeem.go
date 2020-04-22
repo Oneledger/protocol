@@ -175,7 +175,7 @@ func (j *JobETHSignRedeem) DoMyJob(ctx interface{}) {
 			return
 		}
 		j.RetryCount += 1
-		ethCtx.Logger.Debug("validator Sign Broadcasted | validator Address :", ethCtx.ValidatorAddress.Humanize())
+		ethCtx.Logger.Debug("Validator Sign Broadcasted | validator Address | (OL):", ethCtx.ValidatorAddress.Humanize(), "ETH ", ethCtx.GetValidatorETHAddress().Hex())
 	}
 	//j.Status = jobs.Completed
 }

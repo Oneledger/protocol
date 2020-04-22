@@ -1,7 +1,6 @@
 package app
 
 import (
-	"fmt"
 	"net/url"
 	"os"
 
@@ -181,7 +180,6 @@ func (app *App) setupState(stateBytes []byte) error {
 			if err != nil {
 				return errors.Wrap(err, "failed to create initial domain")
 			}
-			fmt.Println(d)
 			err = app.Context.domains.WithState(app.Context.deliver).Set(d)
 			if err != nil {
 				return errors.Wrap(err, "failed to setup initial domain")

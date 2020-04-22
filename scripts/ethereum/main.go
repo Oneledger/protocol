@@ -35,7 +35,9 @@ import (
 	"github.com/Oneledger/protocol/chains/ethereum/contract"
 	oclient "github.com/Oneledger/protocol/client"
 	"github.com/Oneledger/protocol/config"
+	"github.com/Oneledger/protocol/data/accounts"
 	"github.com/Oneledger/protocol/data/balance"
+	"github.com/Oneledger/protocol/data/keys"
 	logger "github.com/Oneledger/protocol/log"
 	"github.com/Oneledger/protocol/rpc"
 	se "github.com/Oneledger/protocol/service/ethereum"
@@ -47,12 +49,13 @@ var (
 	LockRedeemERCABI = contract.LockRedeemERCABI
 	// LockRedeemERC20ABI = contract.ContextABI
 
-	LockRedeemContractAddr = "0xf2003a4b8cE5CC06a29aEa349E38C3B8EA695042"
+	LockRedeemContractAddr = "0xB43173109BEe296aC2a5a8caC9780734cEB3341C"
 
 	TestTokenContractAddr       = "0x0000000000000000000000000000000000000000"
 	LockRedeemERC20ContractAddr = "0x0000000000000000000000000000000000000000"
 
-	cfg               = config.DefaultEthConfig("rinkeby", "de5e96cbb6284d5ea1341bf6cb7fa401")
+	//cfg               = config.DefaultEthConfig("rinkeby", "de5e96cbb6284d5ea1341bf6cb7fa401")
+	cfg               = config.DefaultEthConfig("", "")
 	log               = logger.NewDefaultLogger(os.Stdout).WithPrefix("testeth")
 	UserprivKey       *ecdsa.PrivateKey
 	UserprivKeyRedeem *ecdsa.PrivateKey
@@ -93,7 +96,7 @@ func init() {
 
 	UserprivKeyRedeem, _ = crypto.HexToECDSA(privKey)
 
-	spamKey, _ = crypto.HexToECDSA("ee7af353ce3bc37c01187abae7a2d7d1ca22c2a4b88850fc171b988cad924be0")
+	spamKey, _ = crypto.HexToECDSA("6c24a44424c8182c1e3e995ad3ccfb2797e3f7ca845b99bea8dead7fc9dccd09")
 
 	client, _ = ethclient.Dial(cfg.Connection)
 	contractAbi, _ = abi.JSON(strings.NewReader(LockRedeemABI))
@@ -127,8 +130,8 @@ func init() {
 
 func main() {
 	getstatus(lock())
-	time.Sleep(time.Second * 5)
-	getstatus(redeem())
+	//time.Sleep(time.Second * 5)
+	//getstatus(redeem())
 	//sendTrasactions(12)
 	//erc20lock()
 	///time.Sleep(10 * time.Second)
@@ -146,7 +149,7 @@ func getstatus(rawTxBytes []byte) {
 		time.Sleep(time.Second * 2)
 		status, err = trackerOngoingStatus(rawTxBytes)
 		fmt.Println("Tracker Status :", status)
-		//sendTrasactions(6)
+		sendTrasactions(6)
 
 	}
 
@@ -214,18 +217,17 @@ func lock() []byte {
 		fmt.Println(err)
 		return nil
 	}
-
 	rpcclient, err := rpc.NewClient("http://localhost:26602") //104.196.191.206:26604
 	//rpcclient, err := rpc.NewClient("https://fullnode-sdk.devnet.oneledger.network/")
 	if err != nil {
-		fmt.Println(err)
+		fmt.Println("err", err)
 		return nil
 	}
 
 	result := &oclient.ListCurrenciesReply{}
 	err = rpcclient.Call("query.ListCurrencies", struct{}{}, result)
 	if err != nil {
-		fmt.Println(err)
+		fmt.Println("err", err)
 		return nil
 	}
 	olt, _ := result.Currencies.GetCurrencySet().GetCurrencyByName("OLT")
@@ -235,25 +237,38 @@ func lock() []byte {
 		fmt.Println("query account failed", err)
 		return nil
 	}
-
-	acc := accReply.Accounts[0]
+	//acc := accReply.Accounts[0]
+	acc := keys.Address{}
+	err = acc.UnmarshalText([]byte("0x416e9cc0abc4ea98b4066823a62bfa6515180582"))
+	if err != nil {
+		return nil
+	}
+	wallet, err := accounts.NewWalletKeyStore("/home/tanmay/Codebase/Test/WalletStore/keystore")
+	if err != nil {
+		return nil
+	}
+	wallet.Open(acc, "123")
 
 	req := se.OLTLockRequest{
 		RawTx:   rawTxBytes,
-		Address: acc.Address(),
+		Address: acc,
 		Fee:     action.Amount{Currency: olt.Name, Value: *balance.NewAmountFromInt(10000000000)},
 		Gas:     400000,
 	}
 	//
+
 	reply := &se.OLTReply{}
+
 	err = rpcclient.Call("eth.CreateRawExtLock", req, reply)
-	signReply := &oclient.SignRawTxResponse{}
-	err = rpcclient.Call("owner.SignWithAddress", oclient.SignRawTxRequest{
-		RawTx:   reply.RawTX,
-		Address: acc.Address(),
-	}, signReply)
+
+	//signReply := &oclient.SignRawTxResponse{}
+	pubkey, signature, err := wallet.SignWithAddress(reply.RawTX, acc)
+	//err = rpcclient.Call("owner.SignWithAddress", oclient.SignRawTxRequest{
+	//	RawTx:   reply.RawTX,
+	//	Address: acc,
+	//}, signReply)
 	if err != nil {
-		fmt.Println(err)
+		fmt.Println("Errors sisgning ", err)
 		return nil
 	}
 
@@ -262,8 +277,8 @@ func lock() []byte {
 	bresult := &oclient.BroadcastReply{}
 	err = rpcclient.Call("broadcast.TxSync", oclient.BroadcastRequest{
 		RawTx:     reply.RawTX,
-		Signature: signReply.Signature.Signed,
-		PublicKey: signReply.Signature.Signer,
+		Signature: signature,
+		PublicKey: pubkey,
 	}, bresult)
 
 	if err != nil {
@@ -603,6 +618,7 @@ func erc20Redeem() {
 	err = rpcclient.Call("eth.CreateRawExtERC20Redeem", rr, reply)
 
 	signReply := &oclient.SignRawTxResponse{}
+
 	err = rpcclient.Call("owner.SignWithAddress", oclient.SignRawTxRequest{
 		RawTx:   reply.RawTX,
 		Address: acc.Address(),

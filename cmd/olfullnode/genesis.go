@@ -3,7 +3,6 @@ package main
 import (
 	"bufio"
 	"encoding/base64"
-	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"math/big"
@@ -77,7 +76,7 @@ func init() {
 	// 1 billion by default
 	genesisCmd.Flags().StringVar(&genesisCmdArgs.ethUrl, "eth_rpc", "HTTP://127.0.0.1:7545", "Specify a path to a file containing a list of names separated by newlines if you want the nodes to be generated with human-readable names")
 	genesisCmd.Flags().IntVar(&genesisCmdArgs.loglevel, "loglevel", 3, "Specify the log level for olfullnode. 0: Fatal, 1: Error, 2: Warning, 3: Info, 4: Debug, 5: Detail")
-	genesisCmd.Flags().Int64Var(&genesisCmdArgs.totalFunds, "total_funds", 1000000000, "The total amount of tokens in circulation")
+	genesisCmd.Flags().Int64Var(&genesisCmdArgs.totalFunds, "total_funds", 400000000, "The total amount of tokens in circulation")
 	genesisCmd.Flags().StringSliceVar(&genesisCmdArgs.initialTokenHolders, "initial_token_holders", []string{}, "Initial list of addresses that hold an equal share of Total funds")
 
 }
@@ -125,7 +124,6 @@ func runGenesis(_ *cobra.Command, _ []string) error {
 	}
 	args := genesisCmdArgs
 	totalNodes := len(ctx.names)
-
 	if args.dbType != "cleveldb" && args.dbType != "goleveldb" {
 		ctx.logger.Error("Invalid dbType specified, using goleveldb...", "dbType", args.dbType)
 		args.dbType = "goleveldb"
@@ -207,17 +205,32 @@ func runGenesis(_ *cobra.Command, _ []string) error {
 
 	onsOp := getOnsOpt()
 	btccdo := getBtcOpt()
-	cdoBytes, err := ioutil.ReadFile(filepath.Join(genesisCmdArgs.pvkey_Dir, "cdOpts.json"))
+	//cdoBytes, err := ioutil.ReadFile(filepath.Join(genesisCmdArgs.pvkey_Dir, "cdOpts.json"))
+	cdo := &ethchain.ChainDriverOption{}
+	url, err = getEthUrl(initCmdArgs.ethUrl)
 	if err != nil {
 		return err
 	}
-	cdo := ethchain.ChainDriverOption{}
-	err = json.Unmarshal(cdoBytes, &cdo)
-	if err != nil {
-		return err
+	fmt.Println("Ethereum Deployment Network :", url)
+	if initCmdArgs.deploySmartcontracts {
+		if len(initCmdArgs.ethUrl) > 0 {
+			cdo, err = getEthOpt(url, nodeList)
+			if err != nil {
+				return errors.Wrap(err, "failed to deploy the initial eth contract")
+			}
+		}
 	}
+
+	//if err != nil {
+	//	return err
+	//}
+	//cdo := ethchain.ChainDriverOption{}
+	//err = json.Unmarshal(cdoBytes, &cdo)
+	//if err != nil {
+	//	return err
+	//}
 	//os.Remove(filepath.Join(genesisCmdArgs.pvkey_Dir, "cdOpts.json"))
-	states := getInitialState(args, nodeList, cdo, *onsOp, btccdo, reserveDomains, initialAddrs)
+	states := getInitialState(args, nodeList, *cdo, *onsOp, btccdo, reserveDomains, initialAddrs)
 
 	genesisDoc, err := consensus.NewGenesisDoc(getChainID(), states)
 	if err != nil {
@@ -378,6 +391,7 @@ func getInitialState(args *genesisArgument, nodeList []node, option ethchain.Cha
 
 	if len(args.initialTokenHolders) > 0 {
 		for _, acct := range initialAddrs {
+			amt := int64(100)
 			share := total.DivideInt64(int64(len(args.initialTokenHolders)))
 			balances = append(balances, consensus.BalanceState{
 				Address:  acct,
@@ -387,7 +401,7 @@ func getInitialState(args *genesisArgument, nodeList []node, option ethchain.Cha
 			balances = append(balances, consensus.BalanceState{
 				Address:  acct,
 				Currency: vt.Name,
-				Amount:   *vt.NewCoinFromInt(1000).Amount,
+				Amount:   *vt.NewCoinFromInt(amt).Amount,
 			})
 		}
 	} else {
@@ -409,6 +423,7 @@ func getInitialState(args *genesisArgument, nodeList []node, option ethchain.Cha
 			})
 		}
 	}
+
 	if len(args.initialTokenHolders) > 0 {
 		domainsPerHolder := len(reservedDomains) / len(args.initialTokenHolders)
 		start := 0
@@ -433,7 +448,7 @@ func getInitialState(args *genesisArgument, nodeList []node, option ethchain.Cha
 			}
 		}
 	}
-
+	fmt.Println("Balnces ", balances)
 	return consensus.AppState{
 		Currencies: currencies,
 		Balances:   balances,
