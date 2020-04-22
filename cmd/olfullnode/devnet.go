@@ -215,7 +215,7 @@ func runDevnet(_ *cobra.Command, _ []string) error {
 	}
 	args := testnetArgs
 	if !args.cloud {
-		setEnvVariablesGanache()
+		setEnvVariables()
 	}
 	totalNodes := args.numValidators + args.numNonValidators
 

@@ -34,6 +34,7 @@ type genesisArgument struct {
 	numNonValidators int
 	outputDir        string
 	pvkey_Dir        string
+	reserved_domains string
 	p2pPort          int
 	allowSwap        bool
 	chainID          string
@@ -65,8 +66,9 @@ type mainetContext struct {
 func init() {
 	initCmd.AddCommand(genesisCmd)
 	genesisCmd.Flags().StringVarP(&genesisCmdArgs.pvkey_Dir, "pv_dir", "p", "$OLDATA/mainnet/", "Directory which contains Genesis File and NodeList")
-	genesisCmd.Flags().StringVarP(&genesisCmdArgs.outputDir, "dir", "o", "$OLDATA/mainnet/", "Directory to store initialization files for the mainet, default current folder")
-	genesisCmd.Flags().BoolVar(&genesisCmdArgs.allowSwap, "enable_swaps", false, "Allow swaps")
+	genesisCmd.Flags().StringVarP(&genesisCmdArgs.reserved_domains, "reserved_domains", "r", "$OLDATA/mainnet/", "Directory which contains Reserved domains list")
+	genesisCmd.Flags().StringVarP(&genesisCmdArgs.outputDir, "dir", "o", "$OLDATA/mainnet/", "Directory to store initialization files for the ")
+	//genesisCmd.Flags().BoolVar(&genesisCmdArgs.allowSwap, "enable_swaps", false, "Allow swaps")
 	genesisCmd.Flags().IntVar(&genesisCmdArgs.numValidators, "validators", 4, "Number of validators to initialize mainnetnet with")
 	genesisCmd.Flags().IntVar(&genesisCmdArgs.numNonValidators, "nonvalidators", 1, "Number of fullnodes to initialize mainnetnet with")
 	genesisCmd.Flags().BoolVar(&genesisCmdArgs.createEmptyBlock, "empty_blocks", false, "Allow creating empty blocks")
@@ -81,6 +83,7 @@ func init() {
 }
 
 func newMainetContext(args *genesisArgument) (*mainetContext, error) {
+
 	logger := log.NewLoggerWithPrefix(os.Stdout, "olfullnode mainnet")
 	var names []string
 	files, err := ioutil.ReadDir(args.pvkey_Dir)
@@ -103,27 +106,24 @@ func newMainetContext(args *genesisArgument) (*mainetContext, error) {
 }
 
 func runGenesis(_ *cobra.Command, _ []string) error {
-	reserved_domains, err := os.Open(filepath.Join("/home/tanmay/Codebase/Test/", "reserved_domains.dat"))
-	if err != nil {
-		fmt.Println("Error")
-		return err
-	}
-	fileScanner := bufio.NewScanner(reserved_domains)
-	fileScanner.Split(bufio.ScanLines)
-	var reservedDomains []string
-	for fileScanner.Scan() {
-		reservedDomains = append(reservedDomains, fileScanner.Text())
-	}
-
+	var reserveDomains []string
+	var initialAddrs []keys.Address
+	setEnvVariables()
 	ctx, err := newMainetContext(genesisCmdArgs)
 	if err != nil {
 		return err
 	}
-	if err != nil {
-		return errors.Wrap(err, "runMainet failed")
+	if len(genesisCmdArgs.initialTokenHolders) > 0 {
+		reserveDomains, err = getReservedDomains(genesisCmdArgs.reserved_domains)
+		if err != nil {
+			return err
+		}
+		initialAddrs, err = getInitialAddress(initialAddrs, genesisCmdArgs.initialTokenHolders)
+		if err != nil {
+			return err
+		}
 	}
 	args := genesisCmdArgs
-
 	totalNodes := len(ctx.names)
 
 	if args.dbType != "cleveldb" && args.dbType != "goleveldb" {
@@ -217,7 +217,7 @@ func runGenesis(_ *cobra.Command, _ []string) error {
 		return err
 	}
 	//os.Remove(filepath.Join(genesisCmdArgs.pvkey_Dir, "cdOpts.json"))
-	states := getInitialState(args, nodeList, cdo, *onsOp, btccdo, reservedDomains)
+	states := getInitialState(args, nodeList, cdo, *onsOp, btccdo, reserveDomains, initialAddrs)
 
 	genesisDoc, err := consensus.NewGenesisDoc(getChainID(), states)
 	if err != nil {
@@ -295,6 +295,22 @@ func getChainID() string {
 	return chainID
 }
 
+func getReservedDomains(domainlistPath string) ([]string, error) {
+	reservedDomainsBytes, err := os.Open(filepath.Join(domainlistPath, "reserved_domains.dat"))
+	var reservedDomains []string
+	if err != nil {
+		fmt.Println("Error")
+		return reservedDomains, err
+	}
+	fileScanner := bufio.NewScanner(reservedDomainsBytes)
+	fileScanner.Split(bufio.ScanLines)
+
+	for fileScanner.Scan() {
+		reservedDomains = append(reservedDomains, fileScanner.Text())
+	}
+	return reservedDomains, err
+}
+
 func getOnsOpt() *ons.Options {
 
 	perblock, _ := big.NewInt(0).SetString("100000000000000", 10)
@@ -308,7 +324,7 @@ func getOnsOpt() *ons.Options {
 }
 
 func getInitialState(args *genesisArgument, nodeList []node, option ethchain.ChainDriverOption, onsOption ons.Options,
-	btcOption bitcoin.ChainDriverOption, reservedDomains []string) consensus.AppState {
+	btcOption bitcoin.ChainDriverOption, reservedDomains []string, initialAddrs []keys.Address) consensus.AppState {
 	olt := balance.Currency{Id: 0, Name: "OLT", Chain: chain.ONELEDGER, Decimal: 18, Unit: "nue"}
 	vt := balance.Currency{Id: 1, Name: "VT", Chain: chain.ONELEDGER, Unit: "vt"}
 	obtc := balance.Currency{Id: 2, Name: "BTC", Chain: chain.BITCOIN, Decimal: 8, Unit: "satoshi"}
@@ -324,18 +340,7 @@ func getInitialState(args *genesisArgument, nodeList []node, option ethchain.Cha
 	domains := make([]consensus.DomainState, 0, len(reservedDomains))
 	fees_db := make([]consensus.BalanceState, 0, len(nodeList))
 	total := olt.NewCoinFromInt(args.totalFunds)
-
-	var initialAddrs []keys.Address
 	initAddrIndex := 0
-	for _, addr := range args.initialTokenHolders {
-		tmpAddr := keys.Address{}
-		err := tmpAddr.UnmarshalText([]byte(addr))
-		if err != nil {
-			fmt.Println("Error adding initial address:", addr)
-			continue
-		}
-		initialAddrs = append(initialAddrs, tmpAddr)
-	}
 
 	for _, node := range nodeList {
 		if !node.isValidator {
@@ -413,16 +418,15 @@ func getInitialState(args *genesisArgument, nodeList []node, option ethchain.Cha
 			end = end + domainsPerHolder
 			domain := reservedDomains[start:end]
 			for _, d := range domain {
-				//ds := strings.Split(d, ".")
 				domains = append(domains, consensus.DomainState{
 					Owner:            addr,
 					Beneficiary:      addr,
 					Name:             d,
 					CreationHeight:   0,
 					LastUpdateHeight: 0,
-					ExpireHeight:     30000,
+					ExpireHeight:     4204800000, // 2000 Years . Taking one block every 15s
 					ActiveFlag:       false,
-					OnSaleFlag:       true,
+					OnSaleFlag:       false,
 					URI:              d,
 					SalePrice:        nil,
 				})
@@ -443,4 +447,20 @@ func getInitialState(args *genesisArgument, nodeList []node, option ethchain.Cha
 			ONSOptions:  onsOption,
 		},
 	}
+}
+
+func getInitialAddress(initialAddrs []keys.Address, initialTokenHolders []string) ([]keys.Address, error) {
+	if len(initialTokenHolders) == 0 {
+		return nil, errors.New("No address provided for intital token holders")
+	}
+	for _, addr := range initialTokenHolders {
+		tmpAddr := keys.Address{}
+		err := tmpAddr.UnmarshalText([]byte(addr))
+		if err != nil {
+			fmt.Println("Error adding initial address:", addr)
+			return nil, err
+		}
+		initialAddrs = append(initialAddrs, tmpAddr)
+	}
+	return initialAddrs, nil
 }

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-for name in $(ls -l $OLDATA/mainnet | grep Node  | awk '(NR>0){print $9}')
+for name in $(ls -l $OLDATA/mainnet  | awk '(NR>0){print $9}')
 do
     echo "Start Node: $name"
     olfullnode node --root $OLDATA/mainnet/$name >> $OLDATA/mainnet/$name/olfullnode.log 2>&1  &

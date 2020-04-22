@@ -54,6 +54,7 @@ type InitCmdArguments struct {
 	genesis    string
 	outputDir  string
 	nodeName   string
+	nodeNames  []string
 	numWitness int
 	numofNodes int
 	// Total amount of funds to be shared across each node
@@ -70,6 +71,7 @@ var initCmdArgs = &InitCmdArguments{}
 func init() {
 	RootCmd.AddCommand(initCmd)
 	initCmd.Flags().StringVar(&initCmdArgs.nodeName, "node_name_prefix", "Node", "Name of the node")
+	initCmd.Flags().StringSliceVar(&initCmdArgs.nodeNames, "node_list", []string{}, "List of names for the node")
 	initCmd.Flags().StringVarP(&initCmdArgs.outputDir, "dir", "o", "./", "Directory to store initialization files for the devnet, default current folder")
 	initCmd.Flags().StringVar(&initCmdArgs.genesis, "genesis", "", "Genesis file to use to generate new node key file")
 	initCmd.Flags().IntVar(&initCmdArgs.numWitness, "witness", 4, "Number of Witness for ethereum chain")
@@ -89,7 +91,7 @@ type initContext struct {
 // Given the path of a genesis file and a specified root directory, initNode creates all the configuration files
 // needed to run a fullnode inside that specified directory
 func runInitNode(cmd *cobra.Command, _ []string) error {
-	setEnvVariablesGanache()
+	setEnvVariables()
 	rootDir, err := filepath.Abs(rootArgs.rootDir)
 	if err != nil {
 		return errors.Wrap(err, fmt.Sprintf("Invalid root directory specified %s", rootArgs))
@@ -146,9 +148,13 @@ func runInitNode(cmd *cobra.Command, _ []string) error {
 
 	} else {
 		//fmt.Println("No genesis file provided, node is not runnable until genesis file is provided at: ", filepath.Join(configDir, consensus.GenesisFilename))
-		fmt.Println("Genarating Genesis file  : ")
+		fmt.Println("Generating Genesis file  for : ", initCmdArgs.numofNodes, " Nodes")
 	}
-	witnessList, err := generatePVKeys(initCmdArgs.outputDir)
+	if initCmdArgs.numofNodes < initCmdArgs.numWitness {
+		return errors.New("Number of Witness cannot be more than the number of total nodes")
+	}
+	nodeNames := getNodeNames()
+	witnessList, err := generatePVKeys(initCmdArgs.outputDir, nodeNames)
 	if err != nil {
 		return errors.Wrap(err, "Failed to Get NodeList")
 	}
@@ -157,8 +163,7 @@ func runInitNode(cmd *cobra.Command, _ []string) error {
 	if err != nil {
 		return err
 	}
-	fmt.Println("Deployment Network :", url)
-	fmt.Println("Deploy Smart contracts : ", initCmdArgs.deploySmartcontracts)
+	fmt.Println("Ethereum Deployment Network :", url)
 	if initCmdArgs.deploySmartcontracts {
 		if len(initCmdArgs.ethUrl) > 0 {
 			cdo, err = getEthOpt(url, witnessList)
@@ -173,7 +178,7 @@ func runInitNode(cmd *cobra.Command, _ []string) error {
 		return err
 	}
 	ioutil.WriteFile(filepath.Join(initCmdArgs.outputDir, "cdOpts.json"), cdoBytes, os.ModePerm)
-
+	fmt.Println("Nodes folder  : ", initCmdArgs.outputDir)
 	//err = genesisDoc.SaveAs(filepath.Join(rootDir, "genesis.json"))
 	//if err != nil {
 	//	return err
@@ -181,12 +186,11 @@ func runInitNode(cmd *cobra.Command, _ []string) error {
 	return nil
 }
 
-func generatePVKeys(rootDir string) ([]node, error) {
-	totalNodes := initCmdArgs.numofNodes
+func generatePVKeys(rootDir string, nodeNames []string) ([]node, error) {
 	witnessList := make([]node, initCmdArgs.numWitness)
-	for i := 0; i < totalNodes; i++ {
+	for i, name := range nodeNames {
 		// Make node key
-		nodename := initCmdArgs.nodeName + strconv.Itoa(i)
+		nodename := name
 		folder := filepath.Join(rootDir, nodename)
 		err := os.MkdirAll(folder, config.DirPerms)
 		if err != nil {
@@ -349,14 +353,9 @@ func getEthOpt(conn string, nodeList []node) (*ethchain.ChainDriverOption, error
 	//tokenAbiMap := make(map[*common.Address]string)
 	//tokenAbiMap[&tokenAddress] = contract.ERC20BasicABI
 	return &ethchain.ChainDriverOption{
-		ContractABI:    contract.LockRedeemABI,
-		ERCContractABI: contract.LockRedeemERCABI,
-		TokenList: []ethchain.ERC20Token{{
-			TokName:        "TTC",
-			TokAddr:        tokenAddress,
-			TokAbi:         contract.ERC20BasicABI,
-			TokTotalSupply: totalTTCSupply,
-		}},
+		ContractABI:        contract.LockRedeemABI,
+		ERCContractABI:     "",
+		TokenList:          []ethchain.ERC20Token{},
 		ContractAddress:    address,
 		ERCContractAddress: ercAddress,
 		TotalSupply:        totalETHSupply,
@@ -381,10 +380,27 @@ func getEthUrl(ethUrlArg string) (string, error) {
 	}
 	//&& !strings.Contains(u.Path, os.Getenv("API_KEY"))
 	if strings.Contains(u.Host, "infura") {
-		setEnvVariablesInfura()
 		u.Path = u.Path + "/" + os.Getenv("API_KEY")
 		fmt.Println(u.String())
 		return u.String(), nil
 	}
 	return ethUrlArg, nil
+}
+
+func getNodeNames() []string {
+	nodeNames := make([]string, initCmdArgs.numofNodes)
+
+	if len(initCmdArgs.nodeNames) < initCmdArgs.numofNodes {
+		i := 0
+		for i < len(initCmdArgs.nodeNames) {
+			nodeNames[i] = initCmdArgs.nodeNames[i]
+			i++
+		}
+
+		for i < len(nodeNames) {
+			nodeNames[i] = initCmdArgs.nodeName + strconv.Itoa(i)
+			i++
+		}
+	}
+	return nodeNames
 }
