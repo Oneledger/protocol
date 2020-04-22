@@ -101,16 +101,16 @@ func (ctx ExtServiceContext) Query(serviceMethod string, args interface{}, respo
 	return err
 }
 
-func (ctx ExtServiceContext) Tx(hash []byte, prove bool) (res *ctypes.ResultTx) {
+func (ctx ExtServiceContext) Tx(hash []byte, prove bool) (res *ctypes.ResultTx, err error) {
 
 	result, err := ctx.rpcClient.Tx(hash, prove)
 	if err != nil {
 		logger.Error("TxSearch Error", "err", err)
-		return nil
+		return nil, err
 	}
 
 	logger.Debug("TxSearch", "hash", hash, "prove", prove, "result", result)
-	return result
+	return result, nil
 }
 
 func (ctx ExtServiceContext) Block(height int64) (res *ctypes.ResultBlock) {

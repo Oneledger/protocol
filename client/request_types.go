@@ -265,6 +265,15 @@ type FeeOptionsReply struct {
 }
 
 type ListTxTypesRequest struct{}
-type ListTxTypesReply struct{
+type ListTxTypesReply struct {
 	TxTypes []action.TxTypeDescribe `json:"txTypes"`
+}
+
+type TxRequest struct {
+	Hash  string `json:"hash"`
+	Prove bool   `json:"prove"`
+}
+
+type TxResponse struct {
+	Result ctypes.ResultTx `json:"result"`
 }

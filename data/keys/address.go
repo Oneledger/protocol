@@ -15,7 +15,7 @@ import (
 type Address []byte
 
 func (a Address) String() string {
-	return utils.PrefixHex(hex.EncodeToString(a))
+	return utils.PrefixAddress(hex.EncodeToString(a))
 }
 
 func (a Address) Bytes() []byte {
@@ -27,7 +27,7 @@ func (a Address) Equal(b Address) bool {
 }
 
 func (a Address) Humanize() string {
-	return utils.PrefixHex(strings.ToLower(hex.EncodeToString(a)))
+	return utils.PrefixAddress(strings.ToLower(hex.EncodeToString(a)))
 }
 
 func (a Address) Err() error {
@@ -47,7 +47,7 @@ var _ encoding.TextUnmarshaler = &Address{}
 // of the address including the 0x prefix
 func (a Address) MarshalText() ([]byte, error) {
 	addrHex := hex.EncodeToString(a)
-	return []byte(utils.PrefixHex(addrHex)), nil
+	return []byte(utils.PrefixAddress(addrHex)), nil
 }
 
 // UnmarshalText decodes the given text in a byteslice of characters,
@@ -59,9 +59,7 @@ func (a *Address) UnmarshalText(text []byte) error {
 	addrStr := string(text)
 
 	// Cut off the hex prefix if it exists
-	if strings.HasPrefix(addrStr, utils.HexPrefix) {
-		addrStr = addrStr[len(utils.HexPrefix):]
-	}
+	addrStr = utils.TrimAddress(addrStr)
 
 	addrRaw, err := hex.DecodeString(addrStr)
 	if err != nil {
