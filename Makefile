@@ -15,7 +15,7 @@ install:
 
 # Enable the clevelDB
 install_c:  
-	CGO_ENABLED=1 CGO_LDFLAGS="-lsnappy" go install -tags "gcc" github.com/Oneledger/protocol/cmd/...
+	CGO_ENABLED=1 CGO_LDFLAGS="-lsnappy" go install -tags "cleveldb" github.com/Oneledger/protocol/cmd/...
 
 #
 # test with send transaction in loadtest
@@ -107,7 +107,7 @@ withdrawtest: install
 	@./scripts/stopDev
 
 
-alltest: install
+alltest: install_c
 	@./scripts/stopDev
 	@./scripts/resetDev
 	@./scripts/startDev

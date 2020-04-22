@@ -126,9 +126,9 @@ func (ctx ExtServiceContext) Block(height int64) (res *ctypes.ResultBlock) {
 	return result
 }
 
-func (ctx ExtServiceContext) Search(query string, prove bool, page, perPage int) (res *ctypes.ResultTxSearch) {
+func (ctx ExtServiceContext) Search(query string, prove bool, page, perPage int, orderBy string) (res *ctypes.ResultTxSearch) {
 
-	result, err := ctx.rpcClient.TxSearch(query, prove, page, perPage, "")
+	result, err := ctx.rpcClient.TxSearch(query, prove, page, perPage, orderBy)
 	if err != nil {
 		logger.Error("TxSearch Error", "err", err)
 		return nil
