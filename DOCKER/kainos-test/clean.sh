@@ -8,7 +8,7 @@ rm -rf consensus/data/*.db
 rm -rf consensus/data/cs.wal
 rm -rf consensus/config/write*
 rm -rf consensus/config/genesis.json
-wget https://github.com/Oneledger/protocol/blob/develop/DOCKER/kainos-test/genesis.json
+wget https://raw.githubusercontent.com/Oneledger/protocol/develop/DOCKER/kainos-test/genesis.json
 
 mv genesis.json ./consensus/config/
 echo '{
