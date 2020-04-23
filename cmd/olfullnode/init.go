@@ -161,8 +161,10 @@ func runInitNode(cmd *cobra.Command, _ []string) error {
 type nodeKeys struct {
 	Validator_addr   tendermint.Address
 	Validator_pubKey crypto2.PublicKey
-	Witness_addr     keys.Address
-	Witness_pubKey   keys.PublicKey
+	//Witness_addr     keys.Address
+	//Witness_pubKey   keys.PublicKey
+	Witness_addr   common.Address
+	Witness_pubKey *ecdsa.PublicKey
 }
 
 func generatePVKeys(configDir string, dataDir string) error {
@@ -217,25 +219,24 @@ func generatePVKeys(configDir string, dataDir string) error {
 
 	}
 
-	priv, err := ecdsaPk.GetHandler()
-	if err != nil {
-		return err
-	}
-	fmt.Println(ecdsaPk.Data)
-	pub, err := priv.PubKey().GetHandler()
-	if err != nil {
-		return err
-	}
-	//privkey := keys.ETHSECP256K1TOECDSA(ecdsaPk.Data)
-	//pubkey := priv.Public()
-	//witnesspubkey, ok := pubkey.(*ecdsa.PublicKey)
-	//if !ok {
-	//	return errors.New("failed to cast pubkey")
+	//priv, err := ecdsaPk.GetHandler()
+	//if err != nil {
+	//	return err
 	//}
-	//
-	witnesspubkey := priv.PubKey()
-
-	witnessaddr := pub.Address()
+	//fmt.Println(ecdsaPk.Data)
+	//pub, err := priv.PubKey().GetHandler()
+	//if err != nil {
+	//	return err
+	//}
+	//witnesspubkey := priv.PubKey()
+	//witnessaddr := pub.Address()
+	privkey := keys.ETHSECP256K1TOECDSA(ecdsaPk.Data)
+	pubkey := privkey.Public()
+	witnesspubkey, ok := pubkey.(*ecdsa.PublicKey)
+	if !ok {
+		return errors.New("failed to cast pubkey")
+	}
+	witnessaddr := crypto.PubkeyToAddress(*witnesspubkey)
 
 	node :=
 		nodeKeys{
