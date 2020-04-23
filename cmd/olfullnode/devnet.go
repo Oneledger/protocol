@@ -475,7 +475,6 @@ func initialState(args *testnetConfig, nodeList []node, option ethchain.ChainDri
 		}
 		staking = append(staking, st)
 	}
-	fmt.Println(initialAddrs)
 	if len(args.initialTokenHolders) > 0 {
 		for _, acct := range initialAddrs {
 			share := total.DivideInt64(int64(len(args.initialTokenHolders)))
@@ -534,7 +533,6 @@ func initialState(args *testnetConfig, nodeList []node, option ethchain.ChainDri
 			}
 		}
 	}
-	fmt.Println("Balances : ", balances)
 	return consensus.AppState{
 		Currencies: currencies,
 		Balances:   balances,
