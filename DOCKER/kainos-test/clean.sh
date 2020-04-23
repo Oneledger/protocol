@@ -14,6 +14,6 @@ mv genesis.json ./consensus/config/
 echo '{
   "height": "0",
   "round": "0",
-  "step": 0,
+  "step": 0
 }'  > ./consensus/data/priv_validator_state.json
 
