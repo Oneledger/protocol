@@ -72,7 +72,7 @@ type Tracker struct {
 	Witnesses     []keys.Address       `json:"witnesses"`
 	ProcessOwner  keys.Address         `json:"processOwner"`
 	FinalityVotes []ethData.Vote       `json:"finalityVotes"`
-	To            keys.Address         `json:"to"`
+	To            []byte               `json:"to"`
 }
 
 type ChainState struct {

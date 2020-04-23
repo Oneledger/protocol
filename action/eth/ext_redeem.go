@@ -3,7 +3,11 @@ package eth
 
 import (
 	"encoding/json"
+
 	"github.com/tendermint/tendermint/libs/kv"
+
+	ethcommon "github.com/ethereum/go-ethereum/common"
+	"github.com/pkg/errors"
 
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/chains/ethereum"
@@ -11,16 +15,14 @@ import (
 	"github.com/Oneledger/protocol/data/chain"
 	trackerlib "github.com/Oneledger/protocol/data/ethereum"
 	"github.com/Oneledger/protocol/data/keys"
-	ethcommon "github.com/ethereum/go-ethereum/common"
-	"github.com/pkg/errors"
 )
 
 var _ action.Msg = &Redeem{}
 
 // Redeem is a struct for one-Ledger transaction for Ether Redeem
 type Redeem struct {
-	Owner  action.Address //User Oneledger address
-	To     action.Address //User Ethereum address
+	Owner  action.Address    //User Oneledger address
+	To     ethcommon.Address //User Ethereum address
 	ETHTxn []byte
 }
 
@@ -163,7 +165,7 @@ func runRedeem(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	tracker.State = trackerlib.New
 	tracker.ProcessOwner = redeem.Owner
 	tracker.SignedETHTx = redeem.ETHTxn
-	tracker.To = redeem.To
+	tracker.To = redeem.To.Bytes()
 
 	// Save eth Tracker
 	err = ctx.ETHTrackers.WithPrefixType(trackerlib.PrefixOngoing).Set(tracker)

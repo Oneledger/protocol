@@ -23,7 +23,7 @@ type Tracker struct {
 	Witnesses     []keys.Address
 	ProcessOwner  keys.Address
 	FinalityVotes []Vote
-	To            keys.Address
+	To            []byte
 }
 
 //number of validator should be smaller than 64

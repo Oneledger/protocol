@@ -4,6 +4,7 @@ package eth
 import (
 	"encoding/json"
 	"fmt"
+
 	"github.com/tendermint/tendermint/libs/kv"
 
 	"github.com/Oneledger/protocol/action"
@@ -20,8 +21,8 @@ var _ action.Msg = &ERC20Redeem{}
 
 // Lock is a struct for one-Ledger transaction for ERC20 Redeem
 type ERC20Redeem struct {
-	Owner  action.Address //User Oneledger address
-	To     action.Address //User Ethereum address
+	Owner  action.Address    //User Oneledger address
+	To     ethcommon.Address //User Ethereum address
 	ETHTxn []byte
 }
 
@@ -176,7 +177,7 @@ func runERC20Reddem(ctx *action.Context, tx action.RawTx) (bool, action.Response
 	tracker.State = trackerlib.New
 	tracker.ProcessOwner = erc20redeem.Owner
 	tracker.SignedETHTx = erc20redeem.ETHTxn
-	tracker.To = erc20redeem.To
+	tracker.To = erc20redeem.To.Bytes()
 
 	// Save eth Tracker
 	err = ctx.ETHTrackers.WithPrefixType(trackerlib.PrefixOngoing).Set(tracker)
