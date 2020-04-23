@@ -49,12 +49,12 @@ var (
 	LockRedeemERCABI = contract.LockRedeemERCABI
 	// LockRedeemERC20ABI = contract.ContextABI
 
-	LockRedeemContractAddr      = "0xd16Acb1dbe39142A7290acC0a784Ce03A8E8CE28"
+	LockRedeemContractAddr      = "0xd2629c4282E2946a6d762120164887e8f48C6AeB"
 	TestTokenContractAddr       = "0x0000000000000000000000000000000000000000"
 	LockRedeemERC20ContractAddr = "0x0000000000000000000000000000000000000000"
 
-	//cfg               = config.DefaultEthConfig("rinkeby", "de5e96cbb6284d5ea1341bf6cb7fa401")
-	cfg               = config.DefaultEthConfig("", "")
+	cfg = config.DefaultEthConfig("rinkeby", "de5e96cbb6284d5ea1341bf6cb7fa401")
+	//cfg               = config.DefaultEthConfig("", "")
 	log               = logger.NewDefaultLogger(os.Stdout).WithPrefix("testeth")
 	UserprivKey       *ecdsa.PrivateKey
 	UserprivKeyRedeem *ecdsa.PrivateKey
@@ -128,9 +128,9 @@ func init() {
 // Redeem locked if tracker fails . User redeems more funds than he has .
 
 func main() {
-	getstatus(lock())
+	//getstatus(lock())
 	//time.Sleep(time.Second * 5)
-	//getstatus(redeem())
+	getstatus(redeem())
 	//sendTrasactions(12)
 	//erc20lock()
 	///time.Sleep(10 * time.Second)
@@ -148,7 +148,7 @@ func getstatus(rawTxBytes []byte) {
 		time.Sleep(time.Second * 2)
 		status, err = trackerOngoingStatus(rawTxBytes)
 		fmt.Println("Tracker Status :", status)
-		sendTrasactions(6)
+		//sendTrasactions(6)
 
 	}
 
@@ -366,7 +366,18 @@ func redeem() []byte {
 		return nil
 	}
 
-	acc := accReply.Accounts[0]
+	//acc := accReply.Accounts[0]
+
+	acc := keys.Address{}
+	err = acc.UnmarshalText([]byte("0x416e9cc0abc4ea98b4066823a62bfa6515180582"))
+	if err != nil {
+		return nil
+	}
+	wallet, err := accounts.NewWalletKeyStore("/home/tanmay/Codebase/Test/WalletStore/keystore")
+	if err != nil {
+		return nil
+	}
+	wallet.Open(acc, "123")
 
 	result := &oclient.ListCurrenciesReply{}
 	err = rpcclient.Call("query.ListCurrencies", struct{}{}, result)
@@ -377,7 +388,7 @@ func redeem() []byte {
 	olt, _ := result.Currencies.GetCurrencySet().GetCurrencyByName("OLT")
 
 	rr := se.RedeemRequest{
-		acc.Address(),
+		acc,
 		redeemAddress,
 		rawTxBytes2,
 		action.Amount{Currency: olt.Name, Value: *balance.NewAmountFromInt(10000000000)},
@@ -390,7 +401,7 @@ func redeem() []byte {
 	signReply := &oclient.SignRawTxResponse{}
 	err = rpcclient.Call("owner.SignWithAddress", oclient.SignRawTxRequest{
 		RawTx:   reply.RawTX,
-		Address: acc.Address(),
+		Address: acc,
 	}, signReply)
 	if err != nil {
 		fmt.Println(err)

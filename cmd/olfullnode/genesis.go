@@ -469,7 +469,7 @@ func getInitialAddress(initialAddrs []keys.Address, initialTokenHolders []string
 	if len(initialTokenHolders) == 0 {
 		return nil, errors.New("No address provided for intital token holders")
 	}
-	fmt.Println("Initial token holders :", initialTokenHolders)
+	//fmt.Println("Initial token holders :", initialTokenHolders)
 	for _, addr := range initialTokenHolders {
 		tmpAddr := keys.Address{}
 		err := tmpAddr.UnmarshalText([]byte(addr))
