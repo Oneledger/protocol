@@ -7,9 +7,11 @@ package main
 
 import (
 	"context"
+	crypto2 "crypto"
 	"crypto/ecdsa"
 	"encoding/base64"
 	"fmt"
+	"io/ioutil"
 	"math/big"
 	"net/url"
 	"os"
@@ -69,7 +71,7 @@ var initCmdArgs = &InitCmdArguments{}
 func init() {
 	RootCmd.AddCommand(initCmd)
 	initCmd.Flags().StringVar(&initCmdArgs.nodeName, "node_name_prefix", "Node", "Name of the node")
-	initCmd.Flags().StringSliceVar(&initCmdArgs.nodeNames, "node_list", []string{}, "List of names for the node")
+	//initCmd.Flags().StringSliceVar(&initCmdArgs.nodeNames, "node_list", []string{}, "List of names for the node")
 	initCmd.Flags().StringVarP(&initCmdArgs.outputDir, "dir", "o", "./", "Directory to store initialization files for the devnet, default current folder")
 	initCmd.Flags().StringVar(&initCmdArgs.genesis, "genesis", "", "Genesis file to use to generate new node key file")
 	initCmd.Flags().IntVar(&initCmdArgs.numWitness, "witness", 4, "Number of Witness for ethereum chain")
@@ -117,17 +119,17 @@ func runInitNode(cmd *cobra.Command, _ []string) error {
 	configDir := filepath.Join(rootDir, csRoot, csConfig)
 	dataDir := filepath.Join(rootDir, csRoot, csData)
 	nodeDataDir := filepath.Join(rootDir, "nodedata")
+	err = cfg.SaveFile(cfgPath)
+	dirs := []string{configDir, dataDir, nodeDataDir}
+	for _, dir := range dirs {
+		err = os.MkdirAll(dir, config.DirPerms)
+		if err != nil {
+			return errors.Wrap(err, fmt.Sprintf("dir creation failed at %s", dir))
+		}
+	}
 
 	// Put the genesis file in the right place
 	if initCmdArgs.genesis != "" {
-		err = cfg.SaveFile(cfgPath)
-		dirs := []string{configDir, dataDir, nodeDataDir}
-		for _, dir := range dirs {
-			err = os.MkdirAll(dir, config.DirPerms)
-			if err != nil {
-				return errors.Wrap(err, fmt.Sprintf("dir creation failed at %s", dir))
-			}
-		}
 
 		genesisPath, err := filepath.Abs(initCmdArgs.genesis)
 		if err != nil {
@@ -142,88 +144,139 @@ func runInitNode(cmd *cobra.Command, _ []string) error {
 		if err != nil {
 			return errors.Wrap(err, "Failed to save genesis file")
 		}
-		// Make node key
 
 	} else {
-		//fmt.Println("No genesis file provided, node is not runnable until genesis file is provided at: ", filepath.Join(configDir, consensus.GenesisFilename))
-		fmt.Println("Generating Genesis file  for : ", initCmdArgs.numofNodes, " Nodes")
+		fmt.Println("No genesis file provided, node is not runnable until genesis file is provided at: ", filepath.Join(configDir, consensus.GenesisFilename))
 	}
 	if initCmdArgs.numofNodes < initCmdArgs.numWitness {
 		return errors.New("Number of Witness cannot be more than the number of total nodes")
 	}
-	nodeNames := getNodeNames()
-	_, err = generatePVKeys(initCmdArgs.outputDir, nodeNames)
+	err = generatePVKeys(configDir, dataDir)
 	if err != nil {
 		return errors.Wrap(err, "Failed to Get NodeList")
 	}
-
-	//cdoBytes, err := json.Marshal(cdo)
-	//if err != nil {
-	//	return err
-	//}
-	//ioutil.WriteFile(filepath.Join(initCmdArgs.outputDir, "cdOpts.json"), cdoBytes, os.ModePerm)
-	//fmt.Println("Nodes folder  : ", initCmdArgs.outputDir)
-	//err = genesisDoc.SaveAs(filepath.Join(rootDir, "genesis.json"))
-	//if err != nil {
-	//	return err
-	//}
 	return nil
 }
 
-func generatePVKeys(rootDir string, nodeNames []string) ([]node, error) {
-	witnessList := make([]node, initCmdArgs.numWitness)
-	for i, name := range nodeNames {
-		// Make node key
-		nodename := name
-		folder := filepath.Join(rootDir, nodename)
-		err := os.MkdirAll(folder, config.DirPerms)
-		if err != nil {
-			return nil, err
-		}
+type nodeKeys struct {
+	Validator_addr   tendermint.Address
+	Validator_pubKey crypto2.PublicKey
+	Witness_addr     keys.Address
+	Witness_pubKey   keys.PublicKey
+}
 
-		isWitness := i < initCmdArgs.numWitness
-		_, err = p2p.LoadOrGenNodeKey(filepath.Join(folder, consensus.NodeKeyFilename))
-		if err != nil {
-			return nil, errors.Wrap(err, "Failed to generate node key")
-		}
-		// Make private validator file
-		pvFile := privval.GenFilePV(filepath.Join(folder, consensus.PrivValidatorKeyFilename),
-			filepath.Join(folder, consensus.PrivValidatorStateFilename))
-		pvFile.Save()
+func generatePVKeys(configDir string, dataDir string) error {
+	_, err := p2p.LoadOrGenNodeKey(filepath.Join(configDir, consensus.NodeKeyFilename))
+	if err != nil {
+		return errors.Wrap(err, "Failed to generate node key")
+	}
+	// Make private validator file
+	pvFile := privval.LoadOrGenFilePV(filepath.Join(configDir, consensus.PrivValidatorKeyFilename),
+		filepath.Join(dataDir, consensus.PrivValidatorStateFilename))
+	pvFile.Save()
 
+	//Check if folder already has ECDSA KEY ,if it has use existing else generate new
+	ecdsaPk := keys.PrivateKey{}
+	ecdsaFile := strings.Replace(consensus.PrivValidatorKeyFilename, ".json", "_ecdsa.json", 1)
+	if _, err := os.Stat(filepath.Join(configDir, ecdsaFile)); err == nil {
+		fmt.Println("using existing ecdsa key")
+		ecdspkbytes, err := ioutil.ReadFile(filepath.Join(configDir, ecdsaFile))
+		if err != nil {
+			return err
+		}
+		ecdsPrivKey, err := base64.StdEncoding.DecodeString(string(ecdspkbytes))
+		if err != nil {
+			return err
+		}
+		ecdsaPk, err = keys.GetPrivateKeyFromBytes(ecdsPrivKey[:], keys.SECP256K1)
+		if err != nil {
+			return err
+		}
+	} else {
+		fmt.Println("Generating New ecdsa key")
 		ecdsaPrivKey := secp256k1.GenPrivKey()
 		ecdsaPrivKeyBytes := base64.StdEncoding.EncodeToString([]byte(ecdsaPrivKey[:]))
-		ecdsaPk, err := keys.GetPrivateKeyFromBytes([]byte(ecdsaPrivKey[:]), keys.SECP256K1)
+		ecdsaPk, err = keys.GetPrivateKeyFromBytes([]byte(ecdsaPrivKey[:]), keys.SECP256K1)
 		if err != nil {
-			return nil, errors.Wrap(err, "error generating secp256k1 private key")
+			return errors.Wrap(err, "error generating secp256k1 private key")
 		}
-		ecdsaFile := strings.Replace(consensus.PrivValidatorKeyFilename, ".json", "_ecdsa.json", 1)
-		f, err := os.Create(filepath.Join(folder, ecdsaFile))
+
+		f, err := os.Create(filepath.Join(configDir, ecdsaFile))
 
 		if err != nil {
-			return nil, errors.Wrap(err, "failed to open file to write validator ecdsa private key")
+			return errors.Wrap(err, "failed to open file to write validator ecdsa private key")
 		}
 		noofbytes, err := f.Write([]byte(ecdsaPrivKeyBytes))
 		if err != nil && noofbytes != len(ecdsaPrivKeyBytes) {
-			return nil, errors.Wrap(err, "failed to write validator ecdsa private key")
+			return errors.Wrap(err, "failed to write validator ecdsa private key")
 		}
 		err = f.Close()
 		if err != nil && noofbytes != len(ecdsaPrivKeyBytes) {
-			return nil, errors.Wrap(err, "failed to save validator ecdsa private key")
+			return errors.Wrap(err, "failed to save validator ecdsa private key")
 		}
-		if isWitness {
-			n := node{esdcaPk: ecdsaPk}
-			witnessList[i] = n
-		}
+
 	}
-	//jsonData, err := json.Marshal(persistentPeers)
-	//if err != nil {
-	//	return nil, nil, errors.Wrap(err, "Error in marshalling nodeList to Json")
+
+	priv, err := ecdsaPk.GetHandler()
+	if err != nil {
+		return err
+	}
+	fmt.Println(ecdsaPk.Data)
+	pub, err := priv.PubKey().GetHandler()
+	if err != nil {
+		return err
+	}
+	//privkey := keys.ETHSECP256K1TOECDSA(ecdsaPk.Data)
+	//pubkey := priv.Public()
+	//witnesspubkey, ok := pubkey.(*ecdsa.PublicKey)
+	//if !ok {
+	//	return errors.New("failed to cast pubkey")
 	//}
-	//ioutil.WriteFile("persistantpeers.json", jsonData, 0600)
-	return witnessList, nil
+	//
+	witnesspubkey := priv.PubKey()
+
+	witnessaddr := pub.Address()
+
+	node :=
+		nodeKeys{
+			Validator_addr:   pvFile.GetAddress(),
+			Validator_pubKey: pvFile.GetPubKey(),
+			Witness_addr:     witnessaddr,
+			Witness_pubKey:   witnesspubkey,
+		}
+	fmt.Printf("%+v\n", node)
+	return nil
 }
 
+func getEthUrl(ethUrlArg string) (string, error) {
+	u, err := url.Parse(ethUrlArg)
+	if err != nil {
+		return "", err
+	}
+	//&& !strings.Contains(u.Path, os.Getenv("API_KEY"))
+	if strings.Contains(u.Host, "infura") {
+		u.Path = u.Path + "/" + os.Getenv("API_KEY")
+		fmt.Println(u.String())
+		return u.String(), nil
+	}
+	return ethUrlArg, nil
+}
+
+func getNodeNames() []string {
+	nodeNames := make([]string, initCmdArgs.numofNodes)
+	i := 0
+	for i < len(initCmdArgs.nodeNames) {
+		nodeNames[i] = initCmdArgs.nodeNames[i]
+		i++
+	}
+
+	for i < len(nodeNames) {
+		nodeNames[i] = initCmdArgs.nodeName + strconv.Itoa(i-len(initCmdArgs.nodeNames))
+		i++
+	}
+
+	return nodeNames
+}
 func getEthOpt(conn string, nodeList []node) (*ethchain.ChainDriverOption, error) {
 
 	f, err := os.Open(os.Getenv("ETHPKPATH"))
@@ -357,34 +410,4 @@ func getBtcOpt() bitcoin.ChainDriverOption {
 		lockBalanceAddress,
 		btcBlockConfirmation,
 	}
-}
-
-func getEthUrl(ethUrlArg string) (string, error) {
-	u, err := url.Parse(ethUrlArg)
-	if err != nil {
-		return "", err
-	}
-	//&& !strings.Contains(u.Path, os.Getenv("API_KEY"))
-	if strings.Contains(u.Host, "infura") {
-		u.Path = u.Path + "/" + os.Getenv("API_KEY")
-		fmt.Println(u.String())
-		return u.String(), nil
-	}
-	return ethUrlArg, nil
-}
-
-func getNodeNames() []string {
-	nodeNames := make([]string, initCmdArgs.numofNodes)
-	i := 0
-	for i < len(initCmdArgs.nodeNames) {
-		nodeNames[i] = initCmdArgs.nodeNames[i]
-		i++
-	}
-
-	for i < len(nodeNames) {
-		nodeNames[i] = initCmdArgs.nodeName + strconv.Itoa(i-len(initCmdArgs.nodeNames))
-		i++
-	}
-
-	return nodeNames
 }

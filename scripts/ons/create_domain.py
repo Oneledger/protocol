@@ -6,8 +6,9 @@ from sdk.actions import *
 
 
 if __name__ == "__main__":
-#     print_all_domains("0xccace5e7bea2ae799d821da3d98cbdbe2d99e6bb")
-#     print get_domain_on_sale()
+    print_all_domains("0xd72c6a5b12dcc13a542acfef023b9f86ca0c3928")
+    sys.exit(-1)
+    print get_domain_on_sale()
     addrs = addresses()
     print addrs
 

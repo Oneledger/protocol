@@ -67,6 +67,7 @@ type testnetConfig struct {
 	deploySmartcontracts bool
 	cloud                bool
 	loglevel             int
+	reserved_domains     string
 }
 
 var ethBlockConfirmation = int64(12)
@@ -96,6 +97,7 @@ func init() {
 	testnetCmd.Flags().BoolVar(&testnetArgs.deploySmartcontracts, "deploy_smart_contracts", false, "deploy eth contracts")
 	testnetCmd.Flags().BoolVar(&testnetArgs.cloud, "cloud_deploy", false, "set true for deploying on cloud")
 	testnetCmd.Flags().IntVar(&testnetArgs.loglevel, "loglevel", 3, "Specify the log level for olfullnode. 0: Fatal, 1: Error, 2: Warning, 3: Info, 4: Debug, 5: Detail")
+	testnetCmd.Flags().StringVarP(&testnetArgs.reserved_domains, "reserved_domains", "r", "$OLDATA/mainnet/", "Directory which contains Reserved domains list")
 
 }
 
@@ -222,7 +224,18 @@ func runDevnet(_ *cobra.Command, _ []string) error {
 	if totalNodes > len(ctx.names) {
 		return fmt.Errorf("Don't have enough node names, can't specify more than %d nodes", len(ctx.names))
 	}
-
+	var reserveDomains []string
+	var initialAddrs []keys.Address
+	if len(testnetArgs.initialTokenHolders) > 0 {
+		reserveDomains, err = getReservedDomains(testnetArgs.reserved_domains)
+		if err != nil {
+			return err
+		}
+		initialAddrs, err = getInitialAddress(initialAddrs, testnetArgs.initialTokenHolders)
+		if err != nil {
+			return err
+		}
+	}
 	if args.dbType != "cleveldb" && args.dbType != "goleveldb" {
 		ctx.logger.Error("Invalid dbType specified, using goleveldb...", "dbType", args.dbType)
 		args.dbType = "goleveldb"
@@ -366,7 +379,7 @@ func runDevnet(_ *cobra.Command, _ []string) error {
 		btcBlockConfirmation,
 	}
 
-	states := initialState(args, nodeList, *cdo, *onsOp, btccdo)
+	states := initialState(args, nodeList, *cdo, *onsOp, btccdo, reserveDomains, initialAddrs)
 
 	genesisDoc, err := consensus.NewGenesisDoc(chainID, states)
 	if err != nil {
@@ -400,7 +413,7 @@ func runDevnet(_ *cobra.Command, _ []string) error {
 }
 
 func initialState(args *testnetConfig, nodeList []node, option ethchain.ChainDriverOption, onsOption ons.Options,
-	btcOption bitcoin.ChainDriverOption) consensus.AppState {
+	btcOption bitcoin.ChainDriverOption, reservedDomains []string, initialAddrs []keys.Address) consensus.AppState {
 	olt := balance.Currency{Id: 0, Name: "OLT", Chain: chain.ONELEDGER, Decimal: 18, Unit: "nue"}
 	vt := balance.Currency{Id: 1, Name: "VT", Chain: chain.ONELEDGER, Unit: "vt"}
 	obtc := balance.Currency{Id: 2, Name: "BTC", Chain: chain.BITCOIN, Decimal: 8, Unit: "satoshi"}
@@ -417,17 +430,17 @@ func initialState(args *testnetConfig, nodeList []node, option ethchain.ChainDri
 	fees_db := make([]consensus.BalanceState, 0, len(nodeList))
 	total := olt.NewCoinFromInt(args.totalFunds)
 
-	var initialAddrs []keys.Address
+	//var initialAddrs []keys.Address
 	initAddrIndex := 0
-	for _, addr := range args.initialTokenHolders {
-		tmpAddr := keys.Address{}
-		err := tmpAddr.UnmarshalText([]byte(addr))
-		if err != nil {
-			fmt.Println("Error adding initial address:", addr)
-			continue
-		}
-		initialAddrs = append(initialAddrs, tmpAddr)
-	}
+	//for _, addr := range args.initialTokenHolders {
+	//	tmpAddr := keys.Address{}
+	//	err := tmpAddr.UnmarshalText([]byte(addr))
+	//	if err != nil {
+	//		fmt.Println("Error adding initial address:", addr)
+	//		continue
+	//	}
+	//	initialAddrs = append(initialAddrs, tmpAddr)
+	//}
 
 	for _, node := range nodeList {
 		if !node.isValidator {
@@ -462,7 +475,7 @@ func initialState(args *testnetConfig, nodeList []node, option ethchain.ChainDri
 		}
 		staking = append(staking, st)
 	}
-
+	fmt.Println(initialAddrs)
 	if len(args.initialTokenHolders) > 0 {
 		for _, acct := range initialAddrs {
 			share := total.DivideInt64(int64(len(args.initialTokenHolders)))
@@ -497,6 +510,31 @@ func initialState(args *testnetConfig, nodeList []node, option ethchain.ChainDri
 		}
 	}
 
+	if len(args.initialTokenHolders) > 0 {
+		domainsPerHolder := len(reservedDomains) / len(args.initialTokenHolders)
+		start := 0
+		end := 0
+		for _, addr := range initialAddrs {
+			start = end
+			end = end + domainsPerHolder
+			domain := reservedDomains[start:end]
+			for _, d := range domain {
+				domains = append(domains, consensus.DomainState{
+					Owner:            addr,
+					Beneficiary:      addr,
+					Name:             d,
+					CreationHeight:   0,
+					LastUpdateHeight: 0,
+					ExpireHeight:     4204800000, // 2000 Years . Taking one block every 15s
+					ActiveFlag:       false,
+					OnSaleFlag:       false,
+					URI:              d,
+					SalePrice:        nil,
+				})
+			}
+		}
+	}
+	fmt.Println("Balances : ", balances)
 	return consensus.AppState{
 		Currencies: currencies,
 		Balances:   balances,
