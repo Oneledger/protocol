@@ -46,7 +46,7 @@ var (
 	TestTokenABI     = contract.ERC20BasicABI
 	LockRedeemERCABI = contract.LockRedeemERCABI
 	// LockRedeemERC20ABI = contract.ContextABI
-	LockRedeemContractAddr      = "0xe3CE68150bb5AC8A969ff2FB2d4d24238230678e"
+	LockRedeemContractAddr      = "0xC0Bf2552dE49974B5bA0d50f2dD6E837C19dbB67"
 	TestTokenContractAddr       = "0x0000000000000000000000000000000000000000"
 	LockRedeemERC20ContractAddr = "0x0000000000000000000000000000000000000000"
 
@@ -362,7 +362,7 @@ func redeem() []byte {
 
 	rr := se.RedeemRequest{
 		acc.Address(),
-		redeemAddress,
+		common.BytesToAddress(redeemAddress),
 		rawTxBytes2,
 		action.Amount{Currency: olt.Name, Value: *balance.NewAmountFromInt(10000000000)},
 		400000,
@@ -591,7 +591,7 @@ func erc20Redeem() {
 
 	rr := se.OLTERC20RedeemRequest{
 		acc.Address(),
-		redeemAddress,
+		common.BytesToAddress(redeemAddress),
 		rawTxBytes2,
 		action.Amount{Currency: olt.Name, Value: *balance.NewAmountFromInt(10000000000)},
 		400000,

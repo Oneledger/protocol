@@ -118,7 +118,7 @@ alltest: install_c
 	@./scripts/stopDev
 
 
-reset: install
+reset: install_c
 	@./scripts/stopDev
 	@./scripts/resetDev
 	@./scripts/startDev
