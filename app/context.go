@@ -2,11 +2,12 @@ package app
 
 import (
 	"io"
+	"os"
 	"path/filepath"
 	"time"
 
 	"github.com/pkg/errors"
-	"github.com/tendermint/tm-db"
+	db "github.com/tendermint/tm-db"
 
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/action/eth"
@@ -111,9 +112,17 @@ func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *node.Context) (
 
 	ctx.actionRouter = action.NewRouter("action")
 
+	testEnv := os.Getenv("OLTEST")
+
+	btime := 600 * time.Second
+	ttime := 30 * time.Second
+	if testEnv == "1" {
+		btime = 30 * time.Second
+		ttime = 3 * time.Second
+	}
 	ctx.jobBus = event.NewJobBus(event.Option{
-		BtcInterval: 30 * time.Second,
-		EthInterval: 3 * time.Second,
+		BtcInterval: btime,
+		EthInterval: ttime,
 	}, ctx.jobStore)
 
 	_ = transfer.EnableSend(ctx.actionRouter)
