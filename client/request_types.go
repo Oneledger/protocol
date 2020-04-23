@@ -84,6 +84,15 @@ type WithdrawRewardReply struct {
 	RawTx []byte `json:"rawTx"`
 }
 
+type PurgeValidatorRequest struct {
+	Admin     keys.Address `json:"admin"`
+	Validator keys.Address `json:"validator"`
+}
+
+type PurgeValidatorReply struct {
+	RawTx []byte `json:"rawTx"`
+}
+
 type NodeNameRequest struct{}
 type NodeNameReply struct {
 	Name string `json:"name"`

@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+
 	"github.com/tendermint/tendermint/libs/kv"
 
 	"github.com/Oneledger/protocol/action"
@@ -162,6 +163,7 @@ func runUpdate(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 				Log: "invalid uri provided",
 			}
 		}
+		d.URI = update.Uri
 	}
 
 	err = ctx.Domains.Set(d)
