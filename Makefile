@@ -73,6 +73,13 @@ applytest: install
 	@./scripts/getValidators
 	@./scripts/stopNodes
 
+purgetest: install
+	@./scripts/stopDev
+	@./scripts/resetDev
+	@./scripts/startDev
+	@./scripts/testpurgevalidator
+	@./scripts/stopDev
+
 #
 # run ons tests
 #
