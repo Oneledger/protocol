@@ -310,8 +310,8 @@ func getChainID() string {
 }
 
 func getReservedDomains(domainlistPath string) ([]string, error) {
-	reservedDomainsBytes, err := os.Open(domainlistPath)
 	var reservedDomains []string
+	reservedDomainsBytes, err := os.Open(domainlistPath)
 	if err != nil {
 		fmt.Println("Error")
 		return reservedDomains, err

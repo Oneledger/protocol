@@ -97,7 +97,7 @@ func init() {
 	testnetCmd.Flags().BoolVar(&testnetArgs.deploySmartcontracts, "deploy_smart_contracts", false, "deploy eth contracts")
 	testnetCmd.Flags().BoolVar(&testnetArgs.cloud, "cloud_deploy", false, "set true for deploying on cloud")
 	testnetCmd.Flags().IntVar(&testnetArgs.loglevel, "loglevel", 3, "Specify the log level for olfullnode. 0: Fatal, 1: Error, 2: Warning, 3: Info, 4: Debug, 5: Detail")
-	testnetCmd.Flags().StringVarP(&testnetArgs.reserved_domains, "reserved_domains", "r", "$OLDATA/reserved_domains.dat", "Directory which contains Reserved domains list")
+	testnetCmd.Flags().StringVar(&testnetArgs.reserved_domains, "reserved_domains", "", "Directory which contains Reserved domains list")
 
 }
 
