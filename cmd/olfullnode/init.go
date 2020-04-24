@@ -257,7 +257,6 @@ func getEthUrl(ethUrlArg string) (string, error) {
 	//&& !strings.Contains(u.Path, os.Getenv("API_KEY"))
 	if strings.Contains(u.Host, "infura") {
 		u.Path = u.Path + "/" + os.Getenv("API_KEY")
-		fmt.Println(u.String())
 		return u.String(), nil
 	}
 	return ethUrlArg, nil

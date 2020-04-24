@@ -65,7 +65,7 @@ type mainetContext struct {
 func init() {
 	initCmd.AddCommand(genesisCmd)
 	genesisCmd.Flags().StringVarP(&genesisCmdArgs.pvkey_Dir, "pv_dir", "p", "$OLDATA/mainnet/", "Directory which contains Genesis File and NodeList")
-	genesisCmd.Flags().StringVarP(&genesisCmdArgs.reserved_domains, "reserved_domains", "r", "$OLDATA/mainnet/", "Directory which contains Reserved domains list")
+	genesisCmd.Flags().StringVarP(&genesisCmdArgs.reserved_domains, "reserved_domains", "r", "$OLDATA/mainnet/", "Path to the file which contains the domainlist")
 	genesisCmd.Flags().StringVarP(&genesisCmdArgs.outputDir, "dir", "o", "$OLDATA/mainnet/", "Directory to store initialization files for the ")
 	//genesisCmd.Flags().BoolVar(&genesisCmdArgs.allowSwap, "enable_swaps", false, "Allow swaps")
 	genesisCmd.Flags().IntVar(&genesisCmdArgs.numValidators, "validators", 4, "Number of validators to initialize mainnetnet with")
@@ -230,7 +230,6 @@ func runGenesis(_ *cobra.Command, _ []string) error {
 	//	return err
 	//}
 	//os.Remove(filepath.Join(genesisCmdArgs.pvkey_Dir, "cdOpts.json"))
-	fmt.Println("Validators : ", validatorList)
 	states := getInitialState(args, nodeList, *cdo, *onsOp, btccdo, reserveDomains, initialAddrs)
 
 	genesisDoc, err := consensus.NewGenesisDoc(getChainID(), states)
@@ -310,7 +309,7 @@ func getChainID() string {
 }
 
 func getReservedDomains(domainlistPath string) ([]string, error) {
-	reservedDomainsBytes, err := os.Open(filepath.Join(domainlistPath, "reserved_domains.dat"))
+	reservedDomainsBytes, err := os.Open(domainlistPath)
 	var reservedDomains []string
 	if err != nil {
 		fmt.Println("Error")

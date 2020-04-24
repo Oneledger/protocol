@@ -97,7 +97,7 @@ func init() {
 	testnetCmd.Flags().BoolVar(&testnetArgs.deploySmartcontracts, "deploy_smart_contracts", false, "deploy eth contracts")
 	testnetCmd.Flags().BoolVar(&testnetArgs.cloud, "cloud_deploy", false, "set true for deploying on cloud")
 	testnetCmd.Flags().IntVar(&testnetArgs.loglevel, "loglevel", 3, "Specify the log level for olfullnode. 0: Fatal, 1: Error, 2: Warning, 3: Info, 4: Debug, 5: Detail")
-	testnetCmd.Flags().StringVarP(&testnetArgs.reserved_domains, "reserved_domains", "r", "$OLDATA/mainnet/", "Directory which contains Reserved domains list")
+	testnetCmd.Flags().StringVarP(&testnetArgs.reserved_domains, "reserved_domains", "r", "$OLDATA/reserved_domains.dat", "Directory which contains Reserved domains list")
 
 }
 
@@ -227,15 +227,18 @@ func runDevnet(_ *cobra.Command, _ []string) error {
 	var reserveDomains []string
 	var initialAddrs []keys.Address
 	if len(testnetArgs.initialTokenHolders) > 0 {
-		reserveDomains, err = getReservedDomains(testnetArgs.reserved_domains)
-		if err != nil {
-			return err
-		}
 		initialAddrs, err = getInitialAddress(initialAddrs, testnetArgs.initialTokenHolders)
 		if err != nil {
 			return err
 		}
 	}
+	if _, err := os.Stat(testnetArgs.reserved_domains); err == nil {
+		reserveDomains, err = getReservedDomains(testnetArgs.reserved_domains)
+		if err != nil {
+			return err
+		}
+	}
+
 	if args.dbType != "cleveldb" && args.dbType != "goleveldb" {
 		ctx.logger.Error("Invalid dbType specified, using goleveldb...", "dbType", args.dbType)
 		args.dbType = "goleveldb"
