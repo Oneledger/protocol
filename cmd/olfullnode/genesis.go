@@ -44,9 +44,10 @@ type genesisArgument struct {
 	totalFunds          int64
 	initialTokenHolders []string
 
-	ethUrl   string
-	cloud    bool
-	loglevel int
+	ethUrl               string
+	deploySmartcontracts bool
+	cloud                bool
+	loglevel             int
 }
 
 var genesisCmdArgs = &genesisArgument{}
@@ -78,7 +79,7 @@ func init() {
 	genesisCmd.Flags().IntVar(&genesisCmdArgs.loglevel, "loglevel", 3, "Specify the log level for olfullnode. 0: Fatal, 1: Error, 2: Warning, 3: Info, 4: Debug, 5: Detail")
 	genesisCmd.Flags().Int64Var(&genesisCmdArgs.totalFunds, "total_funds", 400000000, "The total amount of tokens in circulation")
 	genesisCmd.Flags().StringSliceVar(&genesisCmdArgs.initialTokenHolders, "initial_token_holders", []string{}, "Initial list of addresses that hold an equal share of Total funds")
-
+	genesisCmd.Flags().BoolVar(&genesisCmdArgs.deploySmartcontracts, "deploy_smart_contracts", false, "deploy eth contracts")
 }
 
 func newMainetContext(args *genesisArgument) (*mainetContext, error) {
@@ -207,13 +208,13 @@ func runGenesis(_ *cobra.Command, _ []string) error {
 	btccdo := getBtcOpt()
 	//cdoBytes, err := ioutil.ReadFile(filepath.Join(genesisCmdArgs.pvkey_Dir, "cdOpts.json"))
 	cdo := &ethchain.ChainDriverOption{}
-	url, err = getEthUrl(initCmdArgs.ethUrl)
+	url, err = getEthUrl(genesisCmdArgs.ethUrl)
 	if err != nil {
 		return err
 	}
 	fmt.Println("Ethereum Deployment Network :", url)
-	if initCmdArgs.deploySmartcontracts {
-		if len(initCmdArgs.ethUrl) > 0 {
+	if genesisCmdArgs.deploySmartcontracts {
+		if len(genesisCmdArgs.ethUrl) > 0 {
 			cdo, err = getEthOpt(url, nodeList)
 			if err != nil {
 				return errors.Wrap(err, "failed to deploy the initial eth contract")
@@ -302,8 +303,8 @@ func move(source string, destination string) error {
 
 func getChainID() string {
 	chainID := "OneLedger-" + randStr(2)
-	if initCmdArgs.chainID != "" {
-		chainID = initCmdArgs.chainID
+	if genesisCmdArgs.chainID != "" {
+		chainID = genesisCmdArgs.chainID
 	}
 	return chainID
 }

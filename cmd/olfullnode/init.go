@@ -16,7 +16,6 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
-	"strconv"
 	"strings"
 	"time"
 
@@ -51,34 +50,16 @@ var initCmd = &cobra.Command{
 }
 
 type InitCmdArguments struct {
-	genesis    string
-	outputDir  string
-	nodeName   string
-	nodeNames  []string
-	numWitness int
-	numofNodes int
-	// Total amount of funds to be shared across each node
-	totalFunds           int64
-	initialTokenHolders  []string
-	chainID              string
-	ethUrl               string
-	deploySmartcontracts bool
-	cloud                bool
+	genesis  string
+	nodeName string
 }
 
 var initCmdArgs = &InitCmdArguments{}
 
 func init() {
 	RootCmd.AddCommand(initCmd)
-	initCmd.Flags().StringVar(&initCmdArgs.nodeName, "node_name_prefix", "Node", "Name of the node")
-	//initCmd.Flags().StringSliceVar(&initCmdArgs.nodeNames, "node_list", []string{}, "List of names for the node")
-	initCmd.Flags().StringVarP(&initCmdArgs.outputDir, "dir", "o", "./", "Directory to store initialization files for the devnet, default current folder")
+	initCmd.Flags().StringVar(&initCmdArgs.nodeName, "node_name", "Node", "Name of the node")
 	initCmd.Flags().StringVar(&initCmdArgs.genesis, "genesis", "", "Genesis file to use to generate new node key file")
-	initCmd.Flags().IntVar(&initCmdArgs.numWitness, "witness", 4, "Number of Witness for ethereum chain")
-	initCmd.Flags().IntVar(&initCmdArgs.numofNodes, "nodes", 5, "total number of Nodes ,Including Validators and Non Validators")
-	initCmd.Flags().StringVar(&initCmdArgs.chainID, "chain_id", "", "Specify a chain ID, a random one is generated if not given")
-	initCmd.Flags().StringVar(&initCmdArgs.ethUrl, "eth_rpc", "HTTP://127.0.0.1:7545", "URL for ethereum network")
-	initCmd.Flags().BoolVar(&initCmdArgs.deploySmartcontracts, "deploy_smart_contracts", true, "deploy eth contracts")
 }
 
 type initContext struct {
@@ -148,9 +129,6 @@ func runInitNode(cmd *cobra.Command, _ []string) error {
 	} else {
 		fmt.Println("No genesis file provided, node is not runnable until genesis file is provided at: ", filepath.Join(configDir, consensus.GenesisFilename))
 	}
-	if initCmdArgs.numofNodes < initCmdArgs.numWitness {
-		return errors.New("Number of Witness cannot be more than the number of total nodes")
-	}
 	err = generatePVKeys(configDir, dataDir)
 	if err != nil {
 		return errors.Wrap(err, "Failed to Get NodeList")
@@ -181,7 +159,6 @@ func generatePVKeys(configDir string, dataDir string) error {
 	ecdsaPk := keys.PrivateKey{}
 	ecdsaFile := strings.Replace(consensus.PrivValidatorKeyFilename, ".json", "_ecdsa.json", 1)
 	if _, err := os.Stat(filepath.Join(configDir, ecdsaFile)); err == nil {
-		fmt.Println("using existing ecdsa key")
 		ecdspkbytes, err := ioutil.ReadFile(filepath.Join(configDir, ecdsaFile))
 		if err != nil {
 			return err
@@ -195,7 +172,6 @@ func generatePVKeys(configDir string, dataDir string) error {
 			return err
 		}
 	} else {
-		fmt.Println("Generating New ecdsa key")
 		ecdsaPrivKey := secp256k1.GenPrivKey()
 		ecdsaPrivKeyBytes := base64.StdEncoding.EncodeToString([]byte(ecdsaPrivKey[:]))
 		ecdsaPk, err = keys.GetPrivateKeyFromBytes([]byte(ecdsaPrivKey[:]), keys.SECP256K1)
@@ -262,21 +238,6 @@ func getEthUrl(ethUrlArg string) (string, error) {
 	return ethUrlArg, nil
 }
 
-func getNodeNames() []string {
-	nodeNames := make([]string, initCmdArgs.numofNodes)
-	i := 0
-	for i < len(initCmdArgs.nodeNames) {
-		nodeNames[i] = initCmdArgs.nodeNames[i]
-		i++
-	}
-
-	for i < len(nodeNames) {
-		nodeNames[i] = initCmdArgs.nodeName + strconv.Itoa(i-len(initCmdArgs.nodeNames))
-		i++
-	}
-
-	return nodeNames
-}
 func getEthOpt(conn string, nodeList []node) (*ethchain.ChainDriverOption, error) {
 
 	f, err := os.Open(os.Getenv("ETHPKPATH"))
