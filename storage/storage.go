@@ -29,7 +29,7 @@ type SessionedStorage interface {
 	Exists(StoreKey) (bool, error)
 
 	BeginSession() Session
-	Close()
+	Close() error
 }
 
 // Session defines a session-ed storage object of your choice

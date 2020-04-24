@@ -15,7 +15,7 @@ install:
 
 # Enable the clevelDB
 install_c:  
-	CGO_ENABLED=1 CGO_LDFLAGS="-lsnappy" go install -tags "gcc" github.com/Oneledger/protocol/cmd/...
+	CGO_ENABLED=1 CGO_LDFLAGS="-lsnappy" go install -tags "cleveldb" github.com/Oneledger/protocol/cmd/...
 
 #
 # test with send transaction in loadtest
@@ -100,7 +100,7 @@ withdrawtest: install
 	@./scripts/stopNodes
 
 
-alltest: install
+alltest: install_c
 	@./scripts/stopNodes
 	@./scripts/resetDev
 	@./scripts/startDev
@@ -116,6 +116,7 @@ alltest: install
 	python scripts/reward/withdraw.py
 	python scripts/txTypes/listTxTypes.py
 	@./scripts/stopNodes
+
 
 
 reset: install
@@ -148,7 +149,7 @@ start:
 
 
 save:
-	@./scripts/stopDev
+	@./scripts/stopNodes
 	go install -i github.com/Oneledger/protocol/cmd/...
 	@./scripts/saveState
 	@./scripts/startDev
