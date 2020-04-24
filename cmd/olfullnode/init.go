@@ -10,6 +10,7 @@ import (
 	crypto2 "crypto"
 	"crypto/ecdsa"
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"math/big"
@@ -139,10 +140,8 @@ func runInitNode(cmd *cobra.Command, _ []string) error {
 type nodeKeys struct {
 	Validator_addr   tendermint.Address
 	Validator_pubKey crypto2.PublicKey
-	//Witness_addr     keys.Address
-	//Witness_pubKey   keys.PublicKey
-	Witness_addr   string
-	Witness_pubKey ecdsa.PublicKey
+	Witness_addr     string
+	Witness_pubKey   ecdsa.PublicKey
 }
 
 func generatePVKeys(configDir string, dataDir string) error {
@@ -223,6 +222,11 @@ func generatePVKeys(configDir string, dataDir string) error {
 		}
 	fmt.Printf("%+v\n", node)
 	return nil
+}
+
+func prettyPrint(i interface{}) string {
+	s, _ := json.MarshalIndent(i, "", "\t")
+	return string(s)
 }
 
 func getEthUrl(ethUrlArg string) (string, error) {
