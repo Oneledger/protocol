@@ -7,14 +7,13 @@ package btc
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/tendermint/tendermint/libs/kv"
 
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 
 	"github.com/pkg/errors"
 
 	"github.com/Oneledger/protocol/data/bitcoin"
-
-	"github.com/tendermint/tendermint/libs/common"
 
 	"github.com/Oneledger/protocol/action"
 )
@@ -35,18 +34,18 @@ func (b *BroadcastSuccess) Type() action.Type {
 	return action.BTC_BROADCAST_SUCCESS
 }
 
-func (b *BroadcastSuccess) Tags() common.KVPairs {
-	tags := make([]common.KVPair, 0)
+func (b *BroadcastSuccess) Tags() kv.Pairs {
+	tags := make([]kv.Pair, 0)
 
-	tag := common.KVPair{
+	tag := kv.Pair{
 		Key:   []byte("tx.type"),
 		Value: []byte(b.Type().String()),
 	}
-	tag2 := common.KVPair{
+	tag2 := kv.Pair{
 		Key:   []byte("tx.validator"),
 		Value: []byte(b.ValidatorAddress.String()),
 	}
-	tag3 := common.KVPair{
+	tag3 := kv.Pair{
 		Key:   []byte("tx.tracker_name"),
 		Value: []byte(b.TrackerName),
 	}
@@ -139,6 +138,6 @@ func (b *btcBroadcastSuccessTx) process(ctx *action.Context, tx action.RawTx) (b
 	}
 
 	return true, action.Response{
-		Tags: broadcastSuccess.Tags(),
+		Events: action.GetEvent(broadcastSuccess.Tags(), "btc_broadcast_success"),
 	}
 }

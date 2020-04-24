@@ -15,6 +15,7 @@ const (
 	//staking related transaction
 	APPLYVALIDATOR Type = 0x11
 	WITHDRAW       Type = 0x12
+	PURGE          Type = 0x13
 
 	//ons related transaction
 	DOMAIN_CREATE     Type = 0x21
@@ -39,6 +40,12 @@ const (
 	ETH_REDEEM               Type = 0x93
 	ERC20_LOCK               Type = 0x94
 	ERC20_REDEEM             Type = 0x95
+
+	//EOF here Only used as a marker to mark the end of Type list
+	//So that the query for Types can return all Types dynamically
+	//, when there is a change made in Type list
+	//This value should be manually set as the largest among the list
+	EOF Type = 0xFF
 )
 
 var logger *log.Logger

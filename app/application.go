@@ -1,27 +1,23 @@
 package app
 
 import (
-	"fmt"
 	"net/url"
 	"os"
 
-	"github.com/btcsuite/btcutil/base58"
 	"github.com/pkg/errors"
 	"github.com/tendermint/tendermint/abci/types"
-	"github.com/tendermint/tendermint/libs/common"
+	"github.com/tendermint/tendermint/libs/service"
 
 	"github.com/Oneledger/protocol/action"
-	"github.com/Oneledger/protocol/action/btc"
 	"github.com/Oneledger/protocol/action/eth"
 	"github.com/Oneledger/protocol/app/node"
-	bitcoin2 "github.com/Oneledger/protocol/chains/bitcoin"
 	"github.com/Oneledger/protocol/config"
 	"github.com/Oneledger/protocol/consensus"
 	"github.com/Oneledger/protocol/data/accounts"
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/bitcoin"
 	"github.com/Oneledger/protocol/data/chain"
-	"github.com/Oneledger/protocol/data/keys"
+	"github.com/Oneledger/protocol/data/ethereum"
 	"github.com/Oneledger/protocol/data/ons"
 	"github.com/Oneledger/protocol/event"
 	"github.com/Oneledger/protocol/identity"
@@ -39,7 +35,7 @@ type App struct {
 	name     string
 	nodeName string
 	logger   *log.Logger
-	sdk      common.Service // Probably needs to be changed
+	sdk      service.Service // Probably needs to be changed
 
 	header Header // Tendermint last header info
 
@@ -172,16 +168,22 @@ func (app *App) setupState(stateBytes []byte) error {
 		if err != nil {
 			return errors.Wrap(err, "failed to handle initial staking")
 		}
+		err = app.Context.witnesses.WithState(app.Context.deliver).AddWitness(chain.ETHEREUM, identity.Stake(stake))
+		if err != nil {
+			return errors.Wrap(err, "failed to add initial ethereum witness")
+		}
 	}
 
 	for _, domain := range initial.Domains {
-		d, err := ons.NewDomain(domain.Owner, domain.Beneficiary, domain.Name, 0, domain.URI, domain.ExpireHeight)
-		if err != nil {
-			return errors.Wrap(err, "failed to create initial domain")
-		}
-		err = app.Context.domains.WithState(app.Context.deliver).Set(d)
-		if err != nil {
-			return errors.Wrap(err, "failed to setup initial domain")
+		if ons.GetNameFromString(domain.Name).IsValid() {
+			d, err := ons.NewDomain(domain.Owner, domain.Beneficiary, domain.Name, 0, domain.URI, domain.ExpireHeight)
+			if err != nil {
+				return errors.Wrap(err, "failed to create initial domain")
+			}
+			err = app.Context.domains.WithState(app.Context.deliver).Set(d)
+			if err != nil {
+				return errors.Wrap(err, "failed to setup initial domain")
+			}
 		}
 	}
 
@@ -195,6 +197,35 @@ func (app *App) setupState(stateBytes []byte) error {
 			return errors.Wrap(err, "failed to setup initial fee")
 		}
 	}
+	//TODO: Initialize BTC Trackers in the future.
+	for _, tracker := range initial.Trackers {
+		if tracker.State == ethereum.BusyBroadcasting {
+			tracker.State = ethereum.New
+		}
+		tr := &ethereum.Tracker{
+			Type:          tracker.Type,
+			State:         tracker.State,
+			TrackerName:   tracker.TrackerName,
+			SignedETHTx:   tracker.SignedETHTx,
+			Witnesses:     tracker.Witnesses,
+			ProcessOwner:  tracker.ProcessOwner,
+			FinalityVotes: make([]ethereum.Vote, len(tracker.Witnesses)),
+			To:            tracker.To,
+		}
+		switch tracker.State {
+		case ethereum.Released:
+			err = app.Context.ethTrackers.WithState(app.Context.deliver).WithPrefixType(ethereum.PrefixPassed).Set(tr)
+		case ethereum.Failed:
+			err = app.Context.ethTrackers.WithState(app.Context.deliver).WithPrefixType(ethereum.PrefixFailed).Set(tr)
+		default:
+			err = app.Context.ethTrackers.WithState(app.Context.deliver).WithPrefixType(ethereum.PrefixOngoing).Set(tr)
+		}
+
+		if err != nil {
+			return errors.Wrap(err, "failed to setup initial Trackers")
+		}
+	}
+
 	app.Context.deliver.Write()
 	return nil
 }
@@ -203,50 +234,51 @@ func (app *App) setupValidators(req RequestInitChain, currencies *balance.Curren
 
 	vu, err := app.Context.validators.WithState(app.Context.deliver).Init(req, currencies)
 
-	btcCfg := app.Context.btcTrackers.GetConfig()
+	//btcCfg := app.Context.btcTrackers.GetConfig()
 
-	vals, err := app.Context.validators.WithState(app.Context.deliver).GetBitcoinKeys(btcCfg.BTCParams)
-	threshold := (len(vals) * 2 / 3) + 1
-	for i := 0; i < 6; i++ {
-		// appHash := app.genesisDoc.AppHash.Bytes()
-
-		randBytes := []byte("XOLT")
-
-		script, address, addressList, err := bitcoin2.CreateMultiSigAddress(threshold, vals, randBytes, btcCfg.BTCParams)
-		if err != nil {
-			return nil, err
-		}
-
-		signers := make([]keys.Address, len(addressList))
-		for i := range addressList {
-			addr := base58.Decode(addressList[i])
-			signers[i] = keys.Address(addr)
-		}
-
-		tracker, err := bitcoin.NewTracker(address, threshold, signers)
-		if err != nil {
-			return nil, err
-		}
-
-		name := fmt.Sprintf("tracker_%d", i)
-		err = app.Context.btcTrackers.SetTracker(name, tracker)
-		if err != nil {
-			return nil, err
-		}
-
-		err = app.Context.lockScriptStore.SaveLockScript(address, script)
-		if err != nil {
-			return nil, err
-		}
-	}
+	//vals, err := app.Context.validators.WithState(app.Context.deliver).GetBitcoinKeys(btcCfg.BTCParams)
+	//threshold := (len(vals) * 2 / 3) + 1
+	//for i := 0; i < 6; i++ {
+	//	// appHash := app.genesisDoc.AppHash.Bytes()
+	//
+	//	randBytes := []byte("XOLT")
+	//
+	//	script, address, addressList, err := bitcoin2.CreateMultiSigAddress(threshold, vals, randBytes, btcCfg.BTCParams)
+	//	if err != nil {
+	//		return nil, err
+	//	}
+	//
+	//	signers := make([]keys.Address, len(addressList))
+	//	for i := range addressList {
+	//		addr := base58.Decode(addressList[i])
+	//		signers[i] = keys.Address(addr)
+	//	}
+	//
+	//	tracker, err := bitcoin.NewTracker(address, threshold, signers)
+	//	if err != nil {
+	//		return nil, err
+	//	}
+	//
+	//	name := fmt.Sprintf("tracker_%d", i)
+	//	err = app.Context.btcTrackers.SetTracker(name, tracker)
+	//	if err != nil {
+	//		return nil, err
+	//	}
+	//
+	//	err = app.Context.lockScriptStore.SaveLockScript(address, script)
+	//	if err != nil {
+	//		return nil, err
+	//	}
+	//}
 
 	return vu, err
 }
 
 func (app *App) Prepare() error {
-	//get currencies from governance db
+	testEnv := os.Getenv("OLTEST")
 
-	if app.Context.govern.InitialChain() {
+	//Register address for current node if in test environment.
+	if app.Context.govern.InitialChain() && testEnv == "1" {
 		app.logger.Debug("didn't get the currencies from db,  register self")
 		nodeCtx := app.Context.Node()
 		walletCtx := app.Context.Accounts()
@@ -273,8 +305,10 @@ func (app *App) Prepare() error {
 			}
 		}
 		app.logger.Infof("Successfully registered myself: %s", acct.Address())
+	}
 
-	} else {
+	//get currencies from governance db
+	if !app.Context.govern.InitialChain() {
 		currencies, err := app.Context.govern.GetCurrencies()
 		if err != nil {
 			return err
@@ -312,6 +346,26 @@ func (app *App) Prepare() error {
 
 		app.Context.btcTrackers.SetConfig(btcConfig)
 	}
+
+	nodecfg, err := consensus.ParseConfig(&app.Context.cfg)
+	if err != nil {
+		return errors.Wrap(err, "failed parse NodeConfig")
+	}
+	genesisDoc, err := nodecfg.GetGenesisDoc()
+	if err != nil {
+		return errors.Wrap(err, "failed get genesisDoc")
+	}
+	app.genesisDoc = genesisDoc
+
+	app.node, err = consensus.NewNode(app.ABCI(), nodecfg)
+	if err != nil {
+		app.logger.Error("Failed to create consensus.Node")
+		return errors.Wrap(err, "failed to create new consensus.Node")
+	}
+
+	// Init witness store after genesis witnesses loaded in above NewNode
+	app.Context.witnesses.Init(chain.ETHEREUM, app.Context.node.ValidatorAddress())
+
 	return nil
 }
 
@@ -324,22 +378,7 @@ func (app *App) Start() error {
 		return err
 	}
 
-	nodecfg, err := consensus.ParseConfig(&app.Context.cfg)
-	if err != nil {
-		return errors.Wrap(err, "failed parse NodeConfig")
-	}
-	genesisDoc, err := nodecfg.GetGenesisDoc()
-	if err != nil {
-		return errors.Wrap(err, "failed get genesisDoc")
-	}
-	app.genesisDoc = genesisDoc
-
-	node, err := consensus.NewNode(app.ABCI(), nodecfg)
-	if err != nil {
-		app.logger.Error("Failed to create consensus.Node")
-		return errors.Wrap(err, "failed to create new consensus.Node")
-	}
-	err = node.Start()
+	err = app.node.Start()
 	if err != nil {
 		app.logger.Error("Failed to start consensus.Node")
 		return errors.Wrap(err, "failed to start new consensus.Node")
@@ -357,20 +396,20 @@ func (app *App) Start() error {
 	}
 
 	internalRouter := action.NewRouter("internal")
-	err = btc.EnableBTCInternalTx(internalRouter)
-	if err != nil {
-		app.logger.Error("Failed to register btc internal transactions")
-		return err
-	}
+	//"btc" service temporarily disabled
+	//err = btc.EnableBTCInternalTx(internalRouter)
+	//if err != nil {
+	//	app.logger.Error("Failed to register btc internal transactions")
+	//	return err
+	//}
 	err = eth.EnableInternalETH(internalRouter)
 	if err != nil {
 		app.logger.Error("failed to register eth internal transaction")
 		return err
 	}
 
-	app.node = node
 	app.Context.internalService = event.NewService(app.Context.node,
-		log.NewLoggerWithPrefix(app.Context.logWriter, "internal_service"), internalRouter, node)
+		log.NewLoggerWithPrefix(app.Context.logWriter, "internal_service"), internalRouter, app.node)
 
 	_ = app.Context.jobBus.Start(app.Context.JobContext())
 
@@ -424,5 +463,5 @@ func (app *App) rpcStarter() (func() error, error) {
 }
 
 type closer interface {
-	Close()
+	Close() error
 }

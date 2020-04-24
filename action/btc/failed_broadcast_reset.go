@@ -8,13 +8,12 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-
-	"github.com/pkg/errors"
-	"github.com/tendermint/tendermint/libs/common"
+	"github.com/tendermint/tendermint/libs/kv"
 
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/data/bitcoin"
 	"github.com/Oneledger/protocol/data/keys"
+	"github.com/pkg/errors"
 )
 
 type FailedBroadcastReset struct {
@@ -32,18 +31,18 @@ func (fbr *FailedBroadcastReset) Type() action.Type {
 	return action.BTC_FAILED_BROADCAST_RESET
 }
 
-func (fbr *FailedBroadcastReset) Tags() common.KVPairs {
-	tags := make([]common.KVPair, 0)
+func (fbr *FailedBroadcastReset) Tags() kv.Pairs {
+	tags := make([]kv.Pair, 0)
 
-	tag := common.KVPair{
+	tag := kv.Pair{
 		Key:   []byte("tx.type"),
 		Value: []byte(fbr.Type().String()),
 	}
-	tag2 := common.KVPair{
+	tag2 := kv.Pair{
 		Key:   []byte("tx.validator"),
 		Value: []byte(fbr.ValidatorAddress.String()),
 	}
-	tag3 := common.KVPair{
+	tag3 := kv.Pair{
 		Key:   []byte("tx.tracker_name"),
 		Value: []byte(fbr.TrackerName),
 	}
@@ -52,22 +51,22 @@ func (fbr *FailedBroadcastReset) Tags() common.KVPairs {
 	return tags
 }
 
-func (fbr *FailedBroadcastReset) TagsFailed() common.KVPairs {
-	tags := make([]common.KVPair, 0)
+func (fbr *FailedBroadcastReset) TagsFailed() kv.Pairs {
+	tags := make([]kv.Pair, 0)
 
-	tag := common.KVPair{
+	tag := kv.Pair{
 		Key:   []byte("tx.type"),
 		Value: []byte(fbr.Type().String()),
 	}
-	tag2 := common.KVPair{
+	tag2 := kv.Pair{
 		Key:   []byte("tx.validator"),
 		Value: []byte(fbr.ValidatorAddress.String()),
 	}
-	tag3 := common.KVPair{
+	tag3 := kv.Pair{
 		Key:   []byte("tx.tracker_name"),
 		Value: []byte(fbr.TrackerName),
 	}
-	tag4 := common.KVPair{
+	tag4 := kv.Pair{
 		Key:   []byte("tx.lock_redeem_status"),
 		Value: []byte("failure"),
 	}
@@ -176,7 +175,7 @@ func runBroadcastFailureReset(ctx *action.Context, tx action.RawTx) (bool, actio
 		}
 
 		return true, action.Response{
-			Tags: fbr.Tags(),
+			Events: action.GetEvent(fbr.Tags(), "btc_broadcast_reset_pending"),
 		}
 	}
 
@@ -221,5 +220,5 @@ func runBroadcastFailureReset(ctx *action.Context, tx action.RawTx) (bool, actio
 		return false, action.Response{Log: "failed to save tracker"}
 	}
 
-	return true, action.Response{Tags: fbr.Tags()}
+	return true, action.Response{Events: action.GetEvent(fbr.Tags(), "btc_broadcast_reset_complete")}
 }

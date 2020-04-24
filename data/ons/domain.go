@@ -5,6 +5,8 @@
 package ons
 
 import (
+	"fmt"
+
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/keys"
 )
@@ -51,6 +53,7 @@ func NewDomain(ownerAddress, accountAddress keys.Address,
 
 	n := GetNameFromString(name)
 	if !n.IsValid() {
+		fmt.Println("Inavlid Name :", n.String())
 		return nil, ErrDomainNameNotValid
 	}
 

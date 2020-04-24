@@ -77,7 +77,7 @@ type OLTReply struct {
 
 type RedeemRequest struct {
 	UserOLTaddress action.Address `json:"userOLTAddress"`
-	UserETHaddress action.Address `json:"userETHAddress"`
+	UserETHaddress common.Address `json:"userETHAddress"`
 	ETHTxn         []byte         `json:"ethTxn"`
 	Fee            action.Amount  `json:"fee"`
 	Gas            int64          `json:"gas"`
@@ -85,7 +85,7 @@ type RedeemRequest struct {
 
 type OLTERC20RedeemRequest struct {
 	UserOLTaddress action.Address `json:"userOLTAddress"`
-	UserETHaddress action.Address `json:"userETHAddress"`
+	UserETHaddress common.Address `json:"userETHAddress"`
 	ETHTxn         []byte         `json:"ethTxn"`
 	Fee            action.Amount  `json:"fee"`
 	Gas            int64          `json:"gas"`

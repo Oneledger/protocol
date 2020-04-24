@@ -1,6 +1,10 @@
 package query
 
 import (
+	"encoding/hex"
+	"strings"
+
+	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/client"
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/fees"
@@ -8,6 +12,7 @@ import (
 	"github.com/Oneledger/protocol/identity"
 	"github.com/Oneledger/protocol/log"
 	codes "github.com/Oneledger/protocol/status_codes"
+	"github.com/Oneledger/protocol/utils"
 )
 
 type Service struct {
@@ -19,6 +24,7 @@ type Service struct {
 	ons        *ons.DomainStore
 	feePool    *fees.Store
 	logger     *log.Logger
+	txTypes    *[]action.TxTypeDescribe
 }
 
 func Name() string {
@@ -26,7 +32,7 @@ func Name() string {
 }
 
 func NewService(ctx client.ExtServiceContext, balances *balance.Store, currencies *balance.CurrencySet, validators *identity.ValidatorStore,
-	domains *ons.DomainStore, feePool *fees.Store, logger *log.Logger) *Service {
+	domains *ons.DomainStore, feePool *fees.Store, logger *log.Logger, txTypes *[]action.TxTypeDescribe) *Service {
 	return &Service{
 		name:       "query",
 		ext:        ctx,
@@ -36,6 +42,7 @@ func NewService(ctx client.ExtServiceContext, balances *balance.Store, currencie
 		ons:        domains,
 		feePool:    feePool,
 		logger:     logger,
+		txTypes:    txTypes,
 	}
 }
 
@@ -114,5 +121,40 @@ func (svc *Service) FeeOptions(_ struct{}, reply *client.FeeOptionsReply) error 
 	*reply = client.FeeOptionsReply{
 		FeeOption: *svc.feePool.GetOpt(),
 	}
+	return nil
+}
+
+func (svc *Service) ListTxTypes(_ client.ListTxTypesRequest, reply *client.ListTxTypesReply) error {
+	var txTypes []action.TxTypeDescribe
+	//find all const types that less than EOF marker
+	//and not "UNKNOWN"(this also prevents the potential future const that not be the type: "Type"
+	//from showing up)
+	for i := 0; i < int(action.EOF); i++ {
+		if strings.Compare(action.Type(i).String(), "UNKNOWN") != 0 {
+			txTypeDescribe := action.TxTypeDescribe{
+				TxTypeNum:    action.Type(i),
+				TxTypeString: action.Type(i).String(),
+			}
+			txTypes = append(txTypes, txTypeDescribe)
+		}
+	}
+
+	*reply = client.ListTxTypesReply{
+		TxTypes: txTypes,
+	}
+	return nil
+}
+
+func (svc *Service) Tx(req client.TxRequest, reply *client.TxResponse) error {
+	hash, err := hex.DecodeString(utils.TrimHex(req.Hash))
+	res, err := svc.ext.Tx(hash, req.Prove)
+	if err != nil {
+		return codes.ErrGetTx.Wrap(err)
+	}
+
+	*reply = client.TxResponse{
+		Result: *res,
+	}
+
 	return nil
 }

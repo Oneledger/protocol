@@ -17,7 +17,7 @@ const (
 	DataDirName   = "data"
 )
 
-// Dir returns the root folder for consensus files
+// dir returns the root folder for consensus files
 func Dir(rootDir string) string {
 	if !filepath.IsAbs(rootDir) {
 		// Please don't pass an invalid rootdir

@@ -17,13 +17,35 @@ package utils
 import (
 	"errors"
 	"net/url"
+	"strings"
 )
 
 // Hex prefix
-const HexPrefix = "0x"
+const (
+	AddrPrefix = "0lt"
+	HexPrefix  = "0x"
+)
+
+func PrefixAddress(in string) string {
+	return AddrPrefix + in
+}
+
+func TrimAddress(in string) string {
+	if strings.HasPrefix(in, AddrPrefix) {
+		in = in[len(AddrPrefix):]
+	}
+	return in
+}
 
 func PrefixHex(in string) string {
 	return HexPrefix + in
+}
+
+func TrimHex(in string) string {
+	if strings.HasPrefix(in, HexPrefix) {
+		in = in[len(HexPrefix):]
+	}
+	return in
 }
 
 var ErrParsingAddress = errors.New("failed to parse network address")

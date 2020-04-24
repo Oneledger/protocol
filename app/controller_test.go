@@ -84,7 +84,7 @@ func TestApp_txChecker(t *testing.T) {
 	assert.Nil(t, err)
 
 	txChecker := app.txChecker()
-	tc := txChecker(rawTx)
+	tc := txChecker(RequestCheckTx{Tx: rawTx})
 	assert.False(t, tc.IsOK())
 }
 
@@ -96,7 +96,7 @@ func TestApp_txDeliverer(t *testing.T) {
 	assert.Nil(t, err)
 
 	txDeliverer := app.txDeliverer()
-	td := txDeliverer(rawTx)
+	td := txDeliverer(RequestDeliverTx{Tx: rawTx})
 
 	assert.False(t, td.IsOK())
 }

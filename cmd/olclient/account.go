@@ -215,6 +215,8 @@ func Delete(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
+	fmt.Printf("Successfully deleted account from secure wallet: %v\n", deleteArgs.Address)
+
 	wallet.Close()
 
 	return nil

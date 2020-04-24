@@ -244,3 +244,37 @@ func (svc *Service) WithdrawReward(args client.WithdrawRewardRequest, reply *cli
 	*reply = client.WithdrawRewardReply{RawTx: packet}
 	return nil
 }
+
+func (svc Service) PurgeValidator(req client.PurgeValidatorRequest, reply *client.PurgeValidatorReply) error {
+
+	if req.Validator.Err() != nil || req.Admin.Err() != nil {
+		return codes.ErrBadAddress
+	}
+
+	purge := staking.Purge{
+		AdminAddress:     req.Admin,
+		ValidatorAddress: req.Validator,
+	}
+	data, err := purge.Marshal()
+	if err != nil {
+		return codes.ErrSerialization
+	}
+
+	uuidNew, _ := uuid.NewUUID()
+	feeAmount := svc.feeOpt.MinFee()
+	tx := action.RawTx{
+		Type: purge.Type(),
+		Data: data,
+		Fee: action.Fee{
+			Price: action.Amount{Currency: "OLT", Value: *feeAmount.Amount},
+			Gas:   80000,
+		},
+		Memo: uuidNew.String(),
+	}
+
+	packet := tx.RawBytes()
+	*reply = client.PurgeValidatorReply{
+		RawTx: packet,
+	}
+	return nil
+}
