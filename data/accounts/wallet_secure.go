@@ -4,11 +4,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/Oneledger/protocol/data/keys"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"time"
+
+	"github.com/Oneledger/protocol/data/keys"
 )
 
 const (

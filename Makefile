@@ -21,11 +21,11 @@ install_c:
 # test with send transaction in loadtest
 #
 fulltest: install
-	@./scripts/stopDev
+	@./scripts/stopNodes
 	@./scripts/resetDev
 	@./scripts/startDev
 	@./scripts/testsend
-	@./scripts/stopDev
+	@./scripts/stopNodes
 
 #
 # Check out the running status
@@ -39,7 +39,7 @@ status:
 # install and restart the network
 #
 restart: install
-	@./scripts/stopDev
+	@./scripts/stopNodes
 	@./scripts/startDev
 
 #
@@ -66,18 +66,18 @@ coverage:
 # run apply validator tests
 #
 applytest: install
-	@./scripts/stopDev
+	@./scripts/stopNodes
 	@./scripts/resetDev
 	@./scripts/startDev
 	@./scripts/testapply
 	@./scripts/getValidators
-	@./scripts/stopDev
+	@./scripts/stopNodes
 
 #
 # run ons tests
 #
 onstest: install
-	@./scripts/stopDev
+	@./scripts/stopNodes
 	@./scripts/resetDev
 	@./scripts/startDev
 	@./scripts/testsend
@@ -85,23 +85,23 @@ onstest: install
 	python scripts/ons/create_sub_domain.py
 	python scripts/ons/renew_domain.py
 	python scripts/ons/buy_sell_domain.py
-	@./scripts/stopDev
+	@./scripts/stopNodes
 
 #
 # run ons tests
 #
 withdrawtest: install
-	@./scripts/stopDev
+	@./scripts/stopNodes
 	@./scripts/resetDev
 	@./scripts/startDev
 	@./scripts/testsend
 	@./scripts/testsend
 	python scripts/reward/withdraw.py
-	@./scripts/stopDev
+	@./scripts/stopNodes
 
 
 alltest: install_c
-	@./scripts/stopDev
+	@./scripts/stopNodes
 	@./scripts/resetDev
 	@./scripts/startDev
 	@./scripts/testsend
@@ -115,28 +115,33 @@ alltest: install_c
 	python scripts/ons/renew_domain.py
 	python scripts/reward/withdraw.py
 	python scripts/txTypes/listTxTypes.py
-	@./scripts/stopDev
+	@./scripts/stopNodes
 
 
-reset: install_c
-	@./scripts/stopDev
+
+reset: install
+	@./scripts/stopNodes
 	@./scripts/resetDev
 	@./scripts/startDev
 # 	@./scripts/testapply
 # 	@./scripts/testsend
 
+resetMain: install
+	@./scripts/stopNodes
+	@./scripts/resetMainnet
+	@./scripts/startMainnet
 
 rpcAuthtest: install
-	@./scripts/stopDev
+	@./scripts/stopNodes
 	@./scripts/resetDev
 	python scripts/rpcAuth/setup.py
 	@./scripts/startDev
 	python scripts/rpcAuth/rpcTestAuth.py
-	@./scripts/stopDev
+	@./scripts/stopNodes
 
 
 stop:
-	@./scripts/stopDev
+	@./scripts/stopNodes
 
 
 start:
@@ -144,7 +149,7 @@ start:
 
 
 save:
-	@./scripts/stopDev
+	@./scripts/stopNodes
 	go install -i github.com/Oneledger/protocol/cmd/...
 	@./scripts/saveState
 	@./scripts/startDev

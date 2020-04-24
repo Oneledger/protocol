@@ -19,7 +19,7 @@ func main() {
 		if err != nil {
 			panic(err)
 		}
-		log.Println("listen to: " + listener.Addr().String())
+		log.Println("Profiling listen to: " + listener.Addr().String())
 		log.Println(http.Serve(listener, nil))
 	}()
 

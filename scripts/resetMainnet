@@ -1,0 +1,26 @@
+#!/bin/bash
+
+echo
+
+rm -rf $OLDATA/mainnet/*
+
+##Nodes Field for first command includes all nodes , Validators/Witness and fullnodes
+olfullnode init --dir $OLDATA/mainnet \
+--nodes 5 \
+--witness 4 \
+--eth_rpc HTTP://127.0.0.1:7545 \
+--deploy_smart_contracts \
+--node_list "Node0","Node1","Node2","Node3","Node4" \
+
+olfullnode init genesis --dir $OLDATA/mainnet \
+--pv_dir $OLDATA/mainnet \
+--nonvalidators 1 \
+--validators 4 \
+--empty_blocks \
+--eth_rpc HTTP://127.0.0.1:7545 \
+--loglevel 4 \
+--reserved_domains $OLDATA \
+--initial_token_holders "0x416e9cc0abc4ea98b4066823a62bfa6515180582,0xd72c6a5b12dcc13a542acfef023b9f86ca0c3928" \
+
+#--eth_rpc https://rinkeby.infura.io/v3 \
+#--eth_rpc HTTP://127.0.0.1:7545 \

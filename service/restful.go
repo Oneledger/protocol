@@ -126,7 +126,7 @@ func (rs RestfulService) GetToken() http.HandlerFunc {
 			h.Write([]byte(clientReq.ClientID))
 			data := h.Sum(nil)[:20]
 
-			//Get Private Key for signature.
+			//Get Private key for signature.
 			keyData, err := base64.StdEncoding.DecodeString(rs.ctx.Cfg.Node.Auth.RPCPrivateKey)
 			if err != nil {
 				rs.ctx.Logger.Error("Error decoding rpc private key", err)
@@ -141,7 +141,7 @@ func (rs RestfulService) GetToken() http.HandlerFunc {
 				return
 			}
 
-			//Get Key handler
+			//Get key handler
 			privateKeyHandler, err := privateKey.GetHandler()
 			if err != nil {
 				rs.ctx.Logger.Error("Error Getting private key Handler", err)
@@ -158,7 +158,7 @@ func (rs RestfulService) GetToken() http.HandlerFunc {
 			clientResp.Message = "Token generated successfully"
 
 		} else {
-			clientResp.Message = "No Private Key configured for this NODE"
+			clientResp.Message = "No Private key configured for this NODE"
 		}
 	}
 }

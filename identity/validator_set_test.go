@@ -170,7 +170,7 @@ func TestValidatorStore_Set(t *testing.T) {
 	//	vs := setup()
 	//	req, validator, voteInfo, _ := setupForSet()
 	//	vi := types.VoteInfo{
-	//		Validator:       validator,
+	//		validator:       validator,
 	//		SignedLastBlock: true,
 	//	}
 	//	voteInfo = append(voteInfo, vi)

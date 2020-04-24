@@ -63,10 +63,10 @@ type Tracker struct {
 	ProcessOwner keys.Address
 	ProcessType  int
 
-	// Validator addresses who have voted to finalize the current in process transaction
+	// validator addresses who have voted to finalize the current in process transaction
 	FinalityVotes []keys.Address
 
-	// Validator addresses who have voted to reset the current in process transaction
+	// validator addresses who have voted to reset the current in process transaction
 	ResetVotes []keys.Address
 }
 

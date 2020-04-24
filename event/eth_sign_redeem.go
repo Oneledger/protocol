@@ -106,7 +106,7 @@ func (j *JobETHSignRedeem) DoMyJob(ctx interface{}) {
 	// Get receipt first ,then status [ other way around might cause ambiguity ]
 	// If expired fail tracker
 
-	// If Success is true and validator has send signature implies , Validator has signed , but his sign got reverted
+	// If Success is true and validator has send signature implies , validator has signed , but his sign got reverted
 	//     as this was the fourth sign . Retrycount > 0 means that the validator did sign , status was 0 before ,implies
 	//     this is not an old redeem
 
@@ -124,12 +124,12 @@ func (j *JobETHSignRedeem) DoMyJob(ctx interface{}) {
 		return
 	}
 	if success {
-		ethCtx.Logger.Debug("Validator Sign Confirmed | Validator Address :", ethCtx.ValidatorAddress.Humanize(), "| User Eth Address :", msg.From().Hex())
+		ethCtx.Logger.Debug("validator Sign Confirmed | validator Address (SIGNER):", ethCtx.GetValidatorETHAddress().Hex(), "| User Eth Address :", msg.From().Hex())
 		j.Status = jobs.Completed
 		return
 	}
 	if j.RetryCount >= 0 && !success {
-		ethCtx.Logger.Debug("Waiting for Validator SignTX to be mined")
+		ethCtx.Logger.Debug("Waiting for validator SignTX to be mined")
 	}
 	if err == ethereum.ErrRedeemExpired {
 		ethCtx.Logger.Info("Failing from sign : Redeem Expired")
@@ -175,7 +175,7 @@ func (j *JobETHSignRedeem) DoMyJob(ctx interface{}) {
 			return
 		}
 		j.RetryCount += 1
-		ethCtx.Logger.Debug("Validator Sign Broadcasted | Validator Address :", ethCtx.ValidatorAddress.Humanize())
+		ethCtx.Logger.Debug("Validator Sign Broadcasted | validator Address | (OL):", ethCtx.ValidatorAddress.Humanize(), "ETH ", ethCtx.GetValidatorETHAddress().Hex())
 	}
 	//j.Status = jobs.Completed
 }
