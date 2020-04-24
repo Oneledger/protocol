@@ -87,13 +87,16 @@ func runInitNode(cmd *cobra.Command, _ []string) error {
 	}
 
 	// Generate new configuration file
-	cfg := config.DefaultServerConfig()
-	cfg.Node.NodeName = initCmdArgs.nodeName
+	cfg := &config.Server{}
 	cfgPath := filepath.Join(rootDir, config.FileName)
-
+	err = cfg.ReadFile(cfgPath)
 	if err != nil {
-		return errors.Wrap(err, fmt.Sprintf("Failed to create config file at %s", cfgPath))
+		fmt.Println("failed to read config.toml: ", err)
+		fmt.Println("generating default configuration, need manual configure to run the node")
+		cfg = config.DefaultServerConfig()
 	}
+
+	cfg.Node.NodeName = initCmdArgs.nodeName
 	csRoot := consensus.RootDirName
 	csConfig := consensus.ConfigDirName
 	csData := consensus.DataDirName
