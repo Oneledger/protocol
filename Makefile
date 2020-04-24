@@ -15,17 +15,17 @@ install:
 
 # Enable the clevelDB
 install_c:  
-	CGO_ENABLED=1 CGO_LDFLAGS="-lsnappy" go install -tags "gcc" github.com/Oneledger/protocol/cmd/...
+	CGO_ENABLED=1 CGO_LDFLAGS="-lsnappy" go install -tags "cleveldb" github.com/Oneledger/protocol/cmd/...
 
 #
 # test with send transaction in loadtest
 #
 fulltest: install
-	@./scripts/stopDev
+	@./scripts/stopNodes
 	@./scripts/resetDev
 	@./scripts/startDev
 	@./scripts/testsend
-	@./scripts/stopDev
+	@./scripts/stopNodes
 
 #
 # Check out the running status
@@ -39,7 +39,7 @@ status:
 # install and restart the network
 #
 restart: install
-	@./scripts/stopDev
+	@./scripts/stopNodes
 	@./scripts/startDev
 
 #
@@ -66,18 +66,25 @@ coverage:
 # run apply validator tests
 #
 applytest: install
-	@./scripts/stopDev
+	@./scripts/stopNodes
 	@./scripts/resetDev
 	@./scripts/startDev
 	@./scripts/testapply
 	@./scripts/getValidators
+	@./scripts/stopNodes
+
+purgetest: install
+	@./scripts/stopDev
+	@./scripts/resetDev
+	@./scripts/startDev
+	@./scripts/testpurgevalidator
 	@./scripts/stopDev
 
 #
 # run ons tests
 #
 onstest: install
-	@./scripts/stopDev
+	@./scripts/stopNodes
 	@./scripts/resetDev
 	@./scripts/startDev
 	@./scripts/testsend
@@ -85,23 +92,23 @@ onstest: install
 	python scripts/ons/create_sub_domain.py
 	python scripts/ons/renew_domain.py
 	python scripts/ons/buy_sell_domain.py
-	@./scripts/stopDev
+	@./scripts/stopNodes
 
 #
 # run ons tests
 #
 withdrawtest: install
-	@./scripts/stopDev
+	@./scripts/stopNodes
 	@./scripts/resetDev
 	@./scripts/startDev
 	@./scripts/testsend
 	@./scripts/testsend
 	python scripts/reward/withdraw.py
-	@./scripts/stopDev
+	@./scripts/stopNodes
 
 
-alltest: install
-	@./scripts/stopDev
+alltest: install_c
+	@./scripts/stopNodes
 	@./scripts/resetDev
 	@./scripts/startDev
 	@./scripts/testsend
@@ -114,29 +121,42 @@ alltest: install
 	python scripts/ons/create_delete_subdomain.py
 	python scripts/ons/renew_domain.py
 	python scripts/reward/withdraw.py
-	@./scripts/stopDev
+	python scripts/txTypes/listTxTypes.py
+	@./scripts/stopNodes
+
 
 
 reset: install
-	@./scripts/stopDev
+	@./scripts/stopNodes
 	@./scripts/resetDev
 	@./scripts/startDev
 # 	@./scripts/testapply
 # 	@./scripts/testsend
 
+resetMain: install
+	@./scripts/stopNodes
+	@./scripts/resetMainnet
+	@./scripts/startMainnet
 
 rpcAuthtest: install
-	@./scripts/stopDev
+	@./scripts/stopNodes
 	@./scripts/resetDev
 	python scripts/rpcAuth/setup.py
 	@./scripts/startDev
 	python scripts/rpcAuth/rpcTestAuth.py
-	@./scripts/stopDev
+	@./scripts/stopNodes
 
 
 stop:
-	@./scripts/stopDev
+	@./scripts/stopNodes
 
 
 start:
+	@./scripts/startDev
+
+
+save:
+	@./scripts/stopNodes
+	go install -i github.com/Oneledger/protocol/cmd/...
+	@./scripts/saveState
 	@./scripts/startDev

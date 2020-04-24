@@ -89,7 +89,7 @@ func Broadcasting(ctx interface{}) error {
 	context.Tracker = tracker
 
 	//create broadcasting
-	if context.Validators.IsValidator() {
+	if context.Witnesses.IsETHWitness() {
 
 		job := NewETHBroadcast((*tracker).TrackerName, ethereum.BusyBroadcasting)
 		err := context.JobStore.SaveJob(job)
@@ -118,7 +118,7 @@ func Finalizing(ctx interface{}) error {
 	}
 
 	context.Tracker = tracker
-	if context.Validators.IsValidator() {
+	if context.Witnesses.IsETHWitness() {
 		_, voted := tracker.CheckIfVoted(context.CurrNodeAddr)
 		if voted {
 			return nil
@@ -166,7 +166,7 @@ func Finalization(ctx interface{}) error {
 		return nil
 	}
 
-	if context.Validators.IsValidator() {
+	if context.Witnesses.IsETHWitness() {
 		//Check if current Node voted
 		_, voted := tracker.CheckIfVoted(context.CurrNodeAddr)
 
@@ -211,25 +211,18 @@ func Cleanup(ctx interface{}) error {
 		return err
 	}
 
-	//Delete Broadcasting Job
-	if context.Validators.IsValidator() {
-		bjob, err := context.JobStore.GetJob(tracker.GetJobID(ethereum.BusyBroadcasting))
-		if err != nil {
-			return errors.Wrap(err, "Failed to get Broadcasting Job")
-		}
-
-		err = context.JobStore.DeleteJob(bjob)
-		if err != nil {
-			return err
-		}
-		//Delete CheckFinalityStatus Job
-		fjob, err := context.JobStore.GetJob(tracker.GetJobID(ethereum.BusyFinalizing))
-		if err != nil {
-			return errors.Wrap(err, "Failed to get Finalizing Job")
-		}
-		err = context.JobStore.DeleteJob(fjob)
-		if err != nil {
-			return err
+	//Delete Jobs
+	if context.Witnesses.IsETHWitness() {
+		for state := ethereum.BusyBroadcasting; state <= ethereum.Released; state++ {
+			job, err := context.JobStore.GetJob(tracker.GetJobID(state))
+			if err != nil {
+				//fmt.Println(err, "failed to get job from state: ", state)
+				continue
+			}
+			err = context.JobStore.DeleteJob(job)
+			if err != nil {
+				return errors.Wrap(err, "error deleting job from store")
+			}
 		}
 	}
 	return nil
@@ -256,21 +249,16 @@ func CleanupFailed(ctx interface{}) error {
 	}
 
 	//Delete Broadcasting Job It its there
-	if context.Validators.IsValidator() {
-		bjob, err := context.JobStore.GetJob(tracker.GetJobID(ethereum.BusyBroadcasting))
-		if err == nil {
-			err = context.JobStore.DeleteJob(bjob)
+	if context.Witnesses.IsETHWitness() {
+		for state := ethereum.BusyBroadcasting; state <= ethereum.Released; state++ {
+			job, err := context.JobStore.GetJob(tracker.GetJobID(state))
 			if err != nil {
-				return err
+				//fmt.Println(err, "failed to get job from state: ", state)
+				continue
 			}
-		}
-
-		//Delete CheckFinalityStatus Job If its there
-		fjob, err := context.JobStore.GetJob(tracker.GetJobID(ethereum.BusyFinalizing))
-		if err == nil {
-			err = context.JobStore.DeleteJob(fjob)
+			err = context.JobStore.DeleteJob(job)
 			if err != nil {
-				return err
+				return errors.Wrap(err, "error deleting job from store")
 			}
 		}
 	}

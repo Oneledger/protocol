@@ -15,7 +15,7 @@ class bcolors:
 
 if __name__ == "__main__":
 
-    name = "expiring.ol"
+    name = "renewing.ol"
     addrs = addresses()
     if len(addrs) < 4:
         # Create New account

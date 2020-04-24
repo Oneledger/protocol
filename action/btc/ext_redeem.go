@@ -8,14 +8,13 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/tendermint/tendermint/libs/kv"
 
 	"github.com/btcsuite/btcd/wire"
 	"github.com/pkg/errors"
 
 	bitcoin2 "github.com/Oneledger/protocol/chains/bitcoin"
 	"github.com/Oneledger/protocol/data/bitcoin"
-
-	"github.com/tendermint/tendermint/libs/common"
 
 	"github.com/Oneledger/protocol/action"
 )
@@ -37,22 +36,22 @@ func (bl Redeem) Type() action.Type {
 	return action.BTC_REDEEM
 }
 
-func (bl Redeem) Tags() common.KVPairs {
-	tags := make([]common.KVPair, 0)
+func (bl Redeem) Tags() kv.Pairs {
+	tags := make([]kv.Pair, 0)
 
-	tag := common.KVPair{
+	tag := kv.Pair{
 		Key:   []byte("tx.type"),
 		Value: []byte(bl.Type().String()),
 	}
-	tag2 := common.KVPair{
+	tag2 := kv.Pair{
 		Key:   []byte("tx.redeem"),
 		Value: bl.Redeemer.Bytes(),
 	}
-	tag3 := common.KVPair{
+	tag3 := kv.Pair{
 		Key:   []byte("tx.redeemer"),
 		Value: bl.Redeemer,
 	}
-	tag4 := common.KVPair{
+	tag4 := kv.Pair{
 		Key:   []byte("tx.redeem_currency"),
 		Value: []byte("BTC"),
 	}
@@ -223,6 +222,6 @@ func runExtRedeem(ctx *action.Context, tx action.RawTx) (bool, action.Response) 
 	}
 
 	return true, action.Response{
-		Tags: redeem.Tags(),
+		Events: action.GetEvent(redeem.Tags(), "btc_redeem"),
 	}
 }

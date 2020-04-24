@@ -20,14 +20,14 @@ type Tracker struct {
 	State         TrackerState
 	TrackerName   ethereum.TrackerName
 	SignedETHTx   []byte
-	Validators    []keys.Address
+	Witnesses     []keys.Address
 	ProcessOwner  keys.Address
 	FinalityVotes []Vote
-	To            keys.Address
+	To            []byte
 }
 
 //number of validator should be smaller than 64
-func NewTracker(typ ProcessType, owner keys.Address, signedEthTx []byte, name ethereum.TrackerName, validators []keys.Address) *Tracker {
+func NewTracker(typ ProcessType, owner keys.Address, signedEthTx []byte, name ethereum.TrackerName, witnesses []keys.Address) *Tracker {
 
 	return &Tracker{
 		Type:          typ,
@@ -35,14 +35,14 @@ func NewTracker(typ ProcessType, owner keys.Address, signedEthTx []byte, name et
 		TrackerName:   name,
 		ProcessOwner:  owner,
 		SignedETHTx:   signedEthTx,
-		Validators:    validators,
-		FinalityVotes: make([]Vote, len(validators)),
+		Witnesses:     witnesses,
+		FinalityVotes: make([]Vote, len(witnesses)),
 	}
 }
 
 func (t *Tracker) AddVote(addr keys.Address, index int64, vote bool) error {
 
-	if len(t.Validators) <= int(index) {
+	if len(t.Witnesses) <= int(index) {
 		return errTrackerInvalidVote
 	}
 
@@ -50,7 +50,7 @@ func (t *Tracker) AddVote(addr keys.Address, index int64, vote bool) error {
 	if voted {
 		return errTrackerInvalidVote
 	}
-	if t.Validators[index].Equal(addr) {
+	if t.Witnesses[index].Equal(addr) {
 		//		t.FinalityVotes = (t.FinalityVotes | (1 << index))
 		//		return nil
 
@@ -90,13 +90,13 @@ func (t *Tracker) GetVotes() (yes, no int) {
 
 func (t *Tracker) CheckIfVoted(node keys.Address) (index int64, voted bool) {
 	index = int64(-1)
-	for i, addr := range t.Validators {
+	for i, addr := range t.Witnesses {
 		if addr.Equal(node) {
 			index = int64(i)
 			break
 		}
 	}
-	//if index < int64(len(t.Validators)) && index >= 0 {
+	//if index < int64(len(t.Witnesses)) && index >= 0 {
 	//	var mybit uint64 = 1 << index
 	//	and := t.FinalityVotes & mybit
 	//	v = and == mybit
@@ -112,7 +112,7 @@ func (t *Tracker) CheckIfVoted(node keys.Address) (index int64, voted bool) {
 }
 
 func (t *Tracker) Finalized() bool {
-	l := len(t.Validators)
+	l := len(t.Witnesses)
 	num := (l * 2 / 3) + 1
 	//v := t.FinalityVotes
 	//cnt := 0
@@ -127,7 +127,7 @@ func (t *Tracker) Finalized() bool {
 }
 
 func (t *Tracker) Failed() bool {
-	l := len(t.Validators)
+	l := len(t.Witnesses)
 	num := (l * 2 / 3) + 1
 	//v := t.FinalityVotes
 	//cnt := 0

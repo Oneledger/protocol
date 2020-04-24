@@ -25,11 +25,11 @@ type Context struct {
 	// Node keys
 	privateKey keys.PrivateKey
 
-	// Validator key
+	// validator key
 	privval keys.PrivateKey
 
-	// Validator ECDSA key
-	ecdsaPrivVal keys.PrivateKey
+	// validator ECDSA key
+	ecdsaPrivVal keys.PrivateKey //Used BY ETHEREUM TX
 }
 
 // PrivVal returns the private validator file
@@ -196,7 +196,8 @@ func readKeyFiles(cfg *consensus.Config) (*Context, error) {
 		return nil, err
 	}
 
-	ecdsaPrivKey, err := keys.GetPrivateKeyFromBytes(ecdsaPrivateKey, keys.BTCECSECP)
+	//, err := keys.GetPrivateKeyFromBytes(ecdsaPrivateKey, keys.BTCECSECP)
+	ecdsaPrivKey, err := keys.GetPrivateKeyFromBytes([]byte(ecdsaPrivateKey[:]), keys.SECP256K1)
 	if err != nil {
 		return nil, err
 	}

@@ -5,14 +5,14 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-
-	ethcommon "github.com/ethereum/go-ethereum/common"
-	"github.com/pkg/errors"
-	"github.com/tendermint/tendermint/libs/common"
+	"github.com/tendermint/tendermint/libs/kv"
 
 	"github.com/Oneledger/protocol/action"
 	ethchaindriver "github.com/Oneledger/protocol/chains/ethereum"
+	"github.com/Oneledger/protocol/data/chain"
 	"github.com/Oneledger/protocol/data/ethereum"
+	ethcommon "github.com/ethereum/go-ethereum/common"
+	"github.com/pkg/errors"
 )
 
 // Lock is a struct for one-Ledger transaction for Ether Lock
@@ -34,18 +34,18 @@ func (et Lock) Type() action.Type {
 }
 
 // Tags creates the tags to associate with the transaction
-func (et Lock) Tags() common.KVPairs {
-	tags := make([]common.KVPair, 0)
+func (et Lock) Tags() kv.Pairs {
+	tags := make([]kv.Pair, 0)
 
-	tag := common.KVPair{
+	tag := kv.Pair{
 		Key:   []byte("tx.type"),
 		Value: []byte(et.Type().String()),
 	}
-	tag2 := common.KVPair{
+	tag2 := kv.Pair{
 		Key:   []byte("tx.locker"),
 		Value: et.Locker.Bytes(),
 	}
-	tag3 := common.KVPair{
+	tag3 := kv.Pair{
 		Key:   []byte("tx.tracker"),
 		Value: ethcommon.BytesToHash(et.ETHTxn).Bytes(),
 	}
@@ -128,7 +128,7 @@ func (e ethLockTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, a
 	}
 
 	return true, action.Response{
-		Tags: lock.Tags(),
+		Events: action.GetEvent(lock.Tags(), "eth_lock"),
 	}
 }
 
@@ -149,9 +149,6 @@ func runLock(ctx *action.Context, lock *Lock) (bool, action.Response) {
 			Log: "decode eth txn error" + err.Error(),
 		}
 	}
-	//fmt.Println("ETH options : " , ctx.ETHTrackers.GetOption())
-	//ctx.Logger.Info("ETH OPTIONS ABI :" ,ctx.ETHTrackers.GetOption().ContractABI)
-	//ctx.Logger.Info("ETH OPTIONS ADDRESS :" ,ctx.ETHTrackers.GetOption().ContractAddress)
 
 	cdOptions := ctx.ETHTrackers.GetOption()
 
@@ -169,14 +166,13 @@ func runLock(ctx *action.Context, lock *Lock) (bool, action.Response) {
 	}
 
 	if !bytes.Equal(ethTx.To().Bytes(), cdOptions.ContractAddress.Bytes()) {
-
 		ctx.Logger.Error("to field does not match contract address")
 		return false, action.Response{
 			Log: "Contract address does not match",
 		}
 	}
 
-	val, err := ctx.Validators.GetValidatorsAddress()
+	witnesses, err := ctx.Witnesses.GetWitnessAddresses(chain.ETHEREUM)
 	if err != nil {
 
 		ctx.Logger.Error("err in getting validator address", err)
@@ -200,14 +196,22 @@ func runLock(ctx *action.Context, lock *Lock) (bool, action.Response) {
 	if !balCoin.Plus(lockCoin).LessThanEqualCoin(totalSupplyCoin) {
 		return false, action.Response{Log: fmt.Sprintf("Eth lock exceeded limit", lock.Locker)}
 	}
-
+	name := ethcommon.BytesToHash(lock.ETHTxn)
+	if ctx.ETHTrackers.WithPrefixType(ethereum.PrefixOngoing).Exists(name) || ctx.ETHTrackers.WithPrefixType(ethereum.PrefixPassed).Exists(name) {
+		return false, action.Response{
+			Log: "Tracker already exists / Lock for this ETHTX in progress or has completed successfully",
+		}
+	}
+	if ctx.ETHTrackers.WithPrefixType(ethereum.PrefixFailed).Exists(name) {
+		ctx.ETHTrackers.WithPrefixType(ethereum.PrefixFailed).Delete(name)
+	}
 	// Create ethereum tracker
 	tracker := ethereum.NewTracker(
 		ethereum.ProcessTypeLock,
 		lock.Locker,
 		lock.ETHTxn,
-		ethcommon.BytesToHash(lock.ETHTxn),
-		val,
+		name,
+		witnesses,
 	)
 
 	tracker.State = ethereum.New
@@ -220,6 +224,6 @@ func runLock(ctx *action.Context, lock *Lock) (bool, action.Response) {
 		return false, action.Response{Log: "error saving eth tracker: " + err.Error()}
 	}
 	return true, action.Response{
-		Tags: lock.Tags(),
+		Events: action.GetEvent(lock.Tags(), "eth_lock"),
 	}
 }

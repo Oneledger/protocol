@@ -12,6 +12,7 @@ import (
 	"github.com/Oneledger/protocol/consensus"
 	ethereum2 "github.com/Oneledger/protocol/data/ethereum"
 	"github.com/Oneledger/protocol/log"
+	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	tmclient "github.com/tendermint/tendermint/rpc/client"
 	ctypes "github.com/tendermint/tendermint/rpc/core/types"
@@ -113,7 +114,7 @@ func BroadcastReportFinalityETHTx(ethCtx *JobsContext, trackerName ethereum.Trac
 	tracker, err := trackerStore.WithPrefixType(ethereum2.PrefixOngoing).Get(trackerName)
 	index, _ := tracker.CheckIfVoted(ethCtx.ValidatorAddress)
 	if index < 0 {
-		return errors.New("Validator already Voted")
+		return errors.New("validator already Voted")
 	}
 	reportFailed := &eth.ReportFinality{
 		TrackerName:      trackerName,
@@ -128,12 +129,12 @@ func BroadcastReportFinalityETHTx(ethCtx *JobsContext, trackerName ethereum.Trac
 		ethCtx.Logger.Error("Error while preparing mint txn ", jobID, err)
 		return err
 	}
-
+	uuidNew, _ := uuid.NewUUID()
 	internalFailedTx := action.RawTx{
 		Type: action.ETH_REPORT_FINALITY_MINT,
 		Data: txData,
 		Fee:  action.Fee{},
-		Memo: jobID,
+		Memo: jobID + uuidNew.String(),
 	}
 
 	req := InternalBroadcastRequest{

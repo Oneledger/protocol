@@ -142,7 +142,7 @@ func applyValidator(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	signedTx.Signatures = append(signedTx.Signatures, action.Signature{Signer: pub, Signed: signature})
+	signedTx.Signatures = append([]action.Signature{{Signer: pub, Signed: signature}}, signedTx.Signatures...)
 
 	packet, err := serialize.GetSerializer(serialize.NETWORK).Serialize(signedTx)
 	if packet == nil || err != nil {

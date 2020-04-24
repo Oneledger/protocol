@@ -1,8 +1,10 @@
 package client
 
 import (
+	"errors"
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/rpc"
+	"os"
 )
 
 // A type-safe client for accessing rpc services.
@@ -51,7 +53,11 @@ func (c *ServiceClient) NodeID(req NodeIDRequest) (out NodeIDReply, err error) {
 }
 
 func (c *ServiceClient) SendTx(req SendTxRequest) (out CreateTxReply, err error) {
-	err = c.Call("tx.SendTx", req, &out)
+	if os.Getenv("OLTEST") == "1" {
+		err = c.Call("tx.SendTx", req, &out)
+	} else {
+		err = errors.New("SendTx disabled")
+	}
 	return
 }
 
@@ -71,12 +77,17 @@ func (c *ServiceClient) ListAccounts() (out ListAccountsReply, err error) {
 }
 
 func (c *ServiceClient) ListAccountAddresses() (out ListAccountAddressesReply, err error) {
-	err = c.Call("owner.ListAccountAddress", struct{}{}, &out)
+	err = c.Call("owner.ListAccountAddresses", struct{}{}, &out)
 	return
 }
 
 func (c *ServiceClient) ApplyValidator(req ApplyValidatorRequest) (out ApplyValidatorReply, err error) {
 	err = c.Call("tx.ApplyValidator", req, &out)
+	return
+}
+
+func (c *ServiceClient) PurgeValidator(req PurgeValidatorRequest) (out PurgeValidatorReply, err error) {
+	err = c.Call("tx.PurgeValidator", req, &out)
 	return
 }
 

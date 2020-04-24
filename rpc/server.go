@@ -110,7 +110,7 @@ func (r *rpcAuthHandler) Authorized(respW http.ResponseWriter, req *http.Request
 		signature := data[20:]
 
 		var keyData []byte
-		//Get Private Key for signature verification.
+		//Get Private key for signature verification.
 		keyData, err := base64.StdEncoding.DecodeString(r.cfg.Node.Auth.RPCPrivateKey)
 		if err != nil {
 			respErr = err.Error()
@@ -123,7 +123,7 @@ func (r *rpcAuthHandler) Authorized(respW http.ResponseWriter, req *http.Request
 			return false
 		}
 
-		//Private Key Handler
+		//Private key Handler
 		privateKeyHandler, err := privateKey.GetHandler()
 		if err != nil {
 			respErr = err.Error()
@@ -212,12 +212,14 @@ func (srv *Server) Start() error {
 }
 
 // Close terminates the underlying HTTP server and listener
-func (srv *Server) Close() {
+func (srv *Server) Close() error {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	srv.logger.Info("closing server")
 	err := srv.http.Shutdown(ctx)
 	if err != nil {
 		srv.logger.Error("Error shutting down", err)
+		return err
 	}
+	return nil
 }

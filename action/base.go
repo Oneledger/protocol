@@ -2,13 +2,13 @@ package action
 
 import (
 	"encoding/hex"
-
-	"github.com/pkg/errors"
-	"github.com/tendermint/tendermint/libs/common"
+	"github.com/tendermint/tendermint/abci/types"
+	"github.com/tendermint/tendermint/libs/kv"
 
 	"github.com/Oneledger/protocol/data/fees"
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/serialize"
+	"github.com/pkg/errors"
 )
 
 type MsgData []byte
@@ -19,7 +19,7 @@ type Msg interface {
 
 	Type() Type
 
-	Tags() common.KVPairs
+	Tags() kv.Pairs
 
 	Marshal() ([]byte, error)
 
@@ -34,6 +34,11 @@ type Fee struct {
 type Signature struct {
 	Signer keys.PublicKey
 	Signed []byte
+}
+
+type TxTypeDescribe struct {
+	TxTypeNum    Type
+	TxTypeString string
 }
 
 func (s Signature) Verify(msg []byte) bool {
@@ -129,4 +134,14 @@ func BasicFeeHandling(ctx *Context, signedTx SignedTx, start Gas, size Gas, sign
 		return false, Response{Log: err.Error()}
 	}
 	return true, Response{GasWanted: signedTx.Fee.Gas, GasUsed: used}
+}
+
+func GetEvent(pairs kv.Pairs, eventType string) []types.Event {
+	var eventList []types.Event
+	event := types.Event{
+		Type:       eventType,
+		Attributes: pairs,
+	}
+
+	return append(eventList, event)
 }

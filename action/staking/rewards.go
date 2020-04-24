@@ -2,11 +2,10 @@ package staking
 
 import (
 	"encoding/json"
-
-	"github.com/pkg/errors"
-	"github.com/tendermint/tendermint/libs/common"
+	"github.com/tendermint/tendermint/libs/kv"
 
 	"github.com/Oneledger/protocol/action"
+	"github.com/pkg/errors"
 )
 
 var _ action.Msg = &Withdraw{}
@@ -34,18 +33,18 @@ func (s Withdraw) Type() action.Type {
 	return action.WITHDRAW
 }
 
-func (s Withdraw) Tags() common.KVPairs {
-	tags := make([]common.KVPair, 0)
+func (s Withdraw) Tags() kv.Pairs {
+	tags := make([]kv.Pair, 0)
 
-	tag := common.KVPair{
+	tag := kv.Pair{
 		Key:   []byte("tx.type"),
 		Value: []byte(s.Type().String()),
 	}
-	tag2 := common.KVPair{
+	tag2 := kv.Pair{
 		Key:   []byte("tx.owner"),
 		Value: s.From.Bytes(),
 	}
-	tag3 := common.KVPair{
+	tag3 := kv.Pair{
 		Key:   []byte("tx.to"),
 		Value: s.To.Bytes(),
 	}
@@ -130,5 +129,5 @@ func runWithdraw(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 		return false, action.Response{Log: errors.Wrap(err, "add to balance").Error()}
 	}
 
-	return true, action.Response{Tags: draw.Tags(), Info: allow.String()}
+	return true, action.Response{Events: action.GetEvent(draw.Tags(), "rewards"), Info: allow.String()}
 }
