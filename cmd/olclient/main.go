@@ -84,7 +84,9 @@ func PromptForPassword() string {
 		return ""
 	}
 
-	password := string(bytePassword)
+	//New line after password prompt.
+	fmt.Println("")
 
+	password := string(bytePassword)
 	return strings.TrimSpace(password)
 }

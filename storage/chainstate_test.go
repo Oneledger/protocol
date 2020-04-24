@@ -18,7 +18,7 @@ import (
 	"bytes"
 	"github.com/Oneledger/protocol/config"
 	"github.com/stretchr/testify/assert"
-	"github.com/tendermint/tendermint/libs/db"
+	"github.com/tendermint/tm-db"
 	"math"
 	"strconv"
 	"testing"
@@ -126,11 +126,10 @@ func TestChainState_Rotation(t *testing.T) {
 
 	//set up recent, every, cycles
 	rotation := config.ChainStateRotationCfg{
-		Recent : int64(10),
-		Every : int64(100),
-		Cycles : int64(10),
+		Recent: int64(10),
+		Every:  int64(100),
+		Cycles: int64(10),
 	}
-
 
 	state := NewChainState("RotationTest", cacheDB)
 	err := state.SetupRotation(rotation)
@@ -174,17 +173,17 @@ func TestChainState_Rotation(t *testing.T) {
 	// here reachedEvery only consider the ones outside 'recent'
 	var reachedEvery int64
 	if every != 0 {
-		if cycles != 0{
-			if (int64(testRound) - recent) % every == 0 { //'every' overlaps with the oldest in recent
-				reachedEvery = int64(math.Min(float64((int64(testRound) - recent)/every - 1), float64(cycles)))
+		if cycles != 0 {
+			if (int64(testRound)-recent)%every == 0 { //'every' overlaps with the oldest in recent
+				reachedEvery = int64(math.Min(float64((int64(testRound)-recent)/every-1), float64(cycles)))
 			} else {
-				reachedEvery = int64(math.Min(float64((int64(testRound) - recent) / every), float64(cycles)))
+				reachedEvery = int64(math.Min(float64((int64(testRound)-recent)/every), float64(cycles)))
 			}
 		} else {
-			if (int64(testRound) - recent) % every == 0 { //'every' overlaps with the oldest in recent
-				reachedEvery = (int64(testRound) - recent)/every - 1
+			if (int64(testRound)-recent)%every == 0 { //'every' overlaps with the oldest in recent
+				reachedEvery = (int64(testRound)-recent)/every - 1
 			} else {
-				reachedEvery = (int64(testRound) - recent)/every
+				reachedEvery = (int64(testRound) - recent) / every
 			}
 		}
 
@@ -192,14 +191,13 @@ func TestChainState_Rotation(t *testing.T) {
 		reachedEvery = 0
 	}
 
-
 	if int64(calculatedRound) <= recent {
 		correct = int64(calculatedRound)
 	} else { // if 'every' and last round overlaps
 		correct = recent + reachedEvery
 	}
 
-	correct += 1// add the last round
+	correct += 1 // add the last round
 
 	assert.Equal(t, correct, counter, "These should be equal")
 

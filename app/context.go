@@ -2,11 +2,12 @@ package app
 
 import (
 	"io"
+	"os"
 	"path/filepath"
 	"time"
 
 	"github.com/pkg/errors"
-	"github.com/tendermint/tendermint/libs/db"
+	db "github.com/tendermint/tm-db"
 
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/action/eth"
@@ -50,6 +51,7 @@ type context struct {
 	balances    *balance.Store
 	domains     *ons.DomainStore
 	validators  *identity.ValidatorStore // Set of validators currently active
+	witnesses   *identity.WitnessStore   // Set of witnesses currently active
 	feePool     *fees.Store
 	govern      *governance.Store
 	btcTrackers *bitcoin.TrackerStore  // tracker for bitcoin balance UTXO
@@ -91,6 +93,7 @@ func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *node.Context) (
 	ctx.check = storage.NewState(ctx.chainstate)
 
 	ctx.validators = identity.NewValidatorStore("v", storage.NewState(ctx.chainstate))
+	ctx.witnesses = identity.NewWitnessStore("w", storage.NewState(ctx.chainstate))
 	ctx.balances = balance.NewStore("b", storage.NewState(ctx.chainstate))
 	ctx.domains = ons.NewDomainStore("d", storage.NewState(ctx.chainstate))
 	ctx.feePool = fees.NewStore("f", storage.NewState(ctx.chainstate))
@@ -109,9 +112,17 @@ func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *node.Context) (
 
 	ctx.actionRouter = action.NewRouter("action")
 
+	testEnv := os.Getenv("OLTEST")
+
+	btime := 600 * time.Second
+	ttime := 30 * time.Second
+	if testEnv == "1" {
+		btime = 30 * time.Second
+		ttime = 3 * time.Second
+	}
 	ctx.jobBus = event.NewJobBus(event.Option{
-		BtcInterval: 30 * time.Second,
-		EthInterval: 3 * time.Second,
+		BtcInterval: btime,
+		EthInterval: ttime,
 	}, ctx.jobStore)
 
 	_ = transfer.EnableSend(ctx.actionRouter)
@@ -120,6 +131,9 @@ func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *node.Context) (
 	//"btc" service temporarily disabled
 	//_ = btc.EnableBTC(ctx.actionRouter)
 	_ = eth.EnableETH(ctx.actionRouter)
+	// temporarily add purge validator before staking with OLT is full ready
+	_ = staking.EnablePurgeValidator(ctx.actionRouter)
+
 	return ctx, nil
 }
 
@@ -138,6 +152,7 @@ func (ctx *context) Action(header *Header, state *storage.State) *action.Context
 		ctx.currencies,
 		ctx.feePool.WithState(state),
 		ctx.validators.WithState(state),
+		ctx.witnesses.WithState(state),
 		ctx.domains.WithState(state),
 
 		ctx.btcTrackers.WithState(state),
@@ -236,6 +251,7 @@ type StorageCtx struct {
 	Validators *identity.ValidatorStore // Set of validators currently active
 	FeePool    *fees.Store
 	Govern     *governance.Store
+	Trackers   *ethereum.TrackerStore //TODO: Create struct to contain all tracker types including Bitcoin.
 
 	Currencies *balance.CurrencySet
 	FeeOption  *fees.FeeOption
@@ -256,6 +272,7 @@ func (ctx *context) Storage() StorageCtx {
 		Govern:     ctx.govern,
 		Currencies: ctx.currencies,
 		FeeOption:  ctx.feePool.GetOpt(),
+		Trackers:   ctx.ethTrackers,
 	}
 }
 
@@ -286,9 +303,9 @@ func (ctx *context) JobContext() *event.JobsContext {
 		ctx.internalService,
 		ctx.btcTrackers,
 		ctx.validators,
-		ctx.node.ValidatorECDSAPrivateKey(),
-		ctx.node.ValidatorECDSAPrivateKey(),
-		ctx.node.ValidatorAddress(),
+		ctx.node.ValidatorECDSAPrivateKey(), // BTC private key
+		ctx.node.ValidatorECDSAPrivateKey(), // ETH private key
+		ctx.node.ValidatorAddress(),         // validator address generated from validator key
 		ctx.lockScriptStore,
 		ctx.ethTrackers.WithState(ctx.deliver),
 		log.NewLoggerWithPrefix(ctx.logWriter, "internal_jobs").WithLevel(log.Level(ctx.cfg.Node.LogLevel)))

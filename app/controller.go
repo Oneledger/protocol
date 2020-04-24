@@ -3,9 +3,10 @@ package app
 import (
 	"encoding/hex"
 	"fmt"
+	"time"
+
 	"math"
 	"runtime/debug"
-	"time"
 
 	"github.com/pkg/errors"
 	"github.com/tendermint/tendermint/libs/common"
@@ -105,11 +106,6 @@ func (app *App) chainInitializer() chainInitializer {
 		return ResponseInitChain{Validators: validators}
 	}
 }
-
-var startTime time.Time
-var endTime time.Time
-var startTx int64
-var endTx int64
 
 func (app *App) blockBeginner() blockBeginner {
 	return func(req RequestBeginBlock) ResponseBeginBlock {

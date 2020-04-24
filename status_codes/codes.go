@@ -26,6 +26,7 @@ const (
 	AccountNotFound       = 100501
 	DomainNotFound        = 100502
 	CurrencyNotFound      = 100503
+	TxNotFound            = 100504
 
 	InternalError                           = 1006
 	InternalErrorSerialization              = 100601

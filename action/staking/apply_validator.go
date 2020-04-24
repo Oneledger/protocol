@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 
 	"github.com/pkg/errors"
-	"github.com/tendermint/tendermint/libs/common"
+	"github.com/tendermint/tendermint/libs/kv"
 
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/data/keys"
@@ -32,7 +32,7 @@ func (apply *ApplyValidator) Unmarshal(data []byte) error {
 }
 
 func (apply ApplyValidator) Signers() []action.Address {
-	return []action.Address{apply.ValidatorAddress.Bytes(), apply.StakeAddress.Bytes()}
+	return []action.Address{apply.StakeAddress.Bytes(), apply.ValidatorAddress.Bytes()}
 }
 
 func (apply ApplyValidator) Type() action.Type {
@@ -86,7 +86,7 @@ func (a applyTx) Validate(ctx *action.Context, tx action.SignedTx) (bool, error)
 }
 
 func (a applyTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
-	ctx.Logger.Debug("Processing Apply Validator Transaction for CheckTx", tx)
+	ctx.Logger.Debug("Processing Apply validator Transaction for CheckTx", tx)
 	return runApply(ctx, tx)
 }
 
@@ -107,7 +107,7 @@ func checkBalances(ctx *action.Context, address action.Address, stake action.Amo
 }
 
 func (a applyTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
-	ctx.Logger.Debug("Processing Apply Validator Transaction for DeliverTx", tx)
+	ctx.Logger.Debug("Processing Apply validator Transaction for DeliverTx", tx)
 	return runApply(ctx, tx)
 }
 
@@ -115,14 +115,14 @@ func (a applyTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start
 	return action.BasicFeeHandling(ctx, signedTx, start, size, 2)
 }
 
-func (apply ApplyValidator) Tags() common.KVPairs {
-	tags := make([]common.KVPair, 0)
+func (apply ApplyValidator) Tags() kv.Pairs {
+	tags := make([]kv.Pair, 0)
 
-	tag := common.KVPair{
+	tag := kv.Pair{
 		Key:   []byte("tx.type"),
 		Value: []byte(apply.Type().String()),
 	}
-	tag2 := common.KVPair{
+	tag2 := kv.Pair{
 		Key:   []byte("tx.owner"),
 		Value: apply.StakeAddress.Bytes(),
 	}
@@ -171,5 +171,5 @@ func runApply(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	if err != nil {
 		return false, action.Response{Log: err.Error()}
 	}
-	return true, action.Response{Tags: apply.Tags()}
+	return true, action.Response{Events: action.GetEvent(apply.Tags(), "apply_validator")}
 }

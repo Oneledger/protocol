@@ -5,7 +5,7 @@ import sys
 import struct
 import binascii
 
-url = "http://127.0.0.1:26606/jsonrpc"
+url = "http://127.0.0.1:26605/jsonrpc"
 headers = {
     "Content-Type": "application/json",
     "Accept": "application/json",
@@ -30,6 +30,7 @@ def rpc_call(method, params):
 
 def addresses():
     resp = rpc_call('owner.ListAccountAddresses', {})
+    print "resutl", resp
     return resp["result"]["addresses"]
 
 def sign(rawTx, address):
@@ -76,7 +77,7 @@ if __name__ == "__main__":
     addrs = addresses()
     print addrs
 
-    dest_addr = "0xdeadbeafdeadbeafdeadbeafdeadbeafdeadbeaf"
+    dest_addr = "0ltdeadbeafdeadbeafdeadbeafdeadbeafdeadbeaf"
     raw_txn = withdraw(addrs[0], dest_addr)
     print "raw withdraw tx:", raw_txn
 

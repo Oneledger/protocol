@@ -3,16 +3,15 @@ package eth
 
 import (
 	"encoding/json"
+	"github.com/tendermint/tendermint/libs/kv"
 	"strconv"
-
-	"github.com/pkg/errors"
-	"github.com/tendermint/tendermint/libs/common"
 
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/chains/ethereum"
 	"github.com/Oneledger/protocol/data/balance"
 	trackerlib "github.com/Oneledger/protocol/data/ethereum"
 	"github.com/Oneledger/protocol/data/keys"
+	"github.com/pkg/errors"
 )
 
 type ReportFinality struct {
@@ -35,22 +34,22 @@ func (m *ReportFinality) Type() action.Type {
 	return action.ETH_REPORT_FINALITY_MINT
 }
 
-func (m *ReportFinality) Tags() common.KVPairs {
-	tags := make([]common.KVPair, 0)
+func (m *ReportFinality) Tags() kv.Pairs {
+	tags := make([]kv.Pair, 0)
 
-	tag := common.KVPair{
+	tag := kv.Pair{
 		Key:   []byte("tx.type"),
 		Value: []byte(action.ETH_REPORT_FINALITY_MINT.String()),
 	}
-	tag2 := common.KVPair{
+	tag2 := kv.Pair{
 		Key:   []byte("tx.owner"),
 		Value: m.Locker.Bytes(),
 	}
-	tag3 := common.KVPair{
+	tag3 := kv.Pair{
 		Key:   []byte("tx.tracker_name"),
 		Value: []byte(m.TrackerName.Hex()),
 	}
-	tag4 := common.KVPair{
+	tag4 := kv.Pair{
 		Key:   []byte("tx.validator"),
 		Value: m.ValidatorAddress.Bytes(),
 	}
@@ -126,7 +125,7 @@ func runCheckFinality(ctx *action.Context, tx action.RawTx) (bool, action.Respon
 		ctx.Logger.Debug("Tracker already Failed")
 		return true, action.Response{Log: "Tracker already Failed"}
 	}
-	//Add Validator Vote
+	//Add validator Vote
 	if f.Success == true {
 		err = tracker.AddVote(f.ValidatorAddress, f.VoteIndex, true)
 		if err != nil {
@@ -196,7 +195,7 @@ func runCheckFinality(ctx *action.Context, tx action.RawTx) (bool, action.Respon
 		ctx.Logger.Error("Unable to save the tracker", err)
 		return false, action.Response{Log: errors.Wrap(err, "unable to save the tracker").Error()}
 	}
-	ctx.Logger.Debug("Vote added |  Validator : ", f.ValidatorAddress, " | Process Type : ", tracker.Type.String(), " | Success : ", f.Success)
+	ctx.Logger.Debug("Vote added |  validator : ", f.ValidatorAddress, " | Process Type : ", tracker.Type.String(), " | Success : ", f.Success)
 	yes, no := tracker.GetVotes()
 	ctx.Logger.Detail("Tracker Votes YES / NO : ", strconv.Itoa(yes), "/", strconv.Itoa(no))
 	return true, action.Response{Log: "vote success, not ready to mint: " + strconv.Itoa(yes) + "," + strconv.Itoa(no)}

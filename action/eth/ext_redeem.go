@@ -4,13 +4,15 @@ package eth
 import (
 	"encoding/json"
 
+	"github.com/tendermint/tendermint/libs/kv"
+
 	ethcommon "github.com/ethereum/go-ethereum/common"
 	"github.com/pkg/errors"
-	"github.com/tendermint/tendermint/libs/common"
 
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/chains/ethereum"
 	"github.com/Oneledger/protocol/data/balance"
+	"github.com/Oneledger/protocol/data/chain"
 	trackerlib "github.com/Oneledger/protocol/data/ethereum"
 	"github.com/Oneledger/protocol/data/keys"
 )
@@ -19,8 +21,8 @@ var _ action.Msg = &Redeem{}
 
 // Redeem is a struct for one-Ledger transaction for Ether Redeem
 type Redeem struct {
-	Owner  action.Address //User Oneledger address
-	To     action.Address //User Ethereum address
+	Owner  action.Address    //User Oneledger address
+	To     ethcommon.Address //User Ethereum address
 	ETHTxn []byte
 }
 
@@ -35,18 +37,18 @@ func (r Redeem) Type() action.Type {
 }
 
 // Tags creates the tags to associate with the transaction
-func (r Redeem) Tags() common.KVPairs {
-	tags := make([]common.KVPair, 0)
+func (r Redeem) Tags() kv.Pairs {
+	tags := make([]kv.Pair, 0)
 
-	tag := common.KVPair{
+	tag := kv.Pair{
 		Key:   []byte("tx.type"),
 		Value: []byte(r.Type().String()),
 	}
-	tag2 := common.KVPair{
+	tag2 := kv.Pair{
 		Key:   []byte("tx.owner"),
 		Value: r.Owner,
 	}
-	tag3 := common.KVPair{
+	tag3 := kv.Pair{
 		Key:   []byte("tx.tracker"),
 		Value: ethcommon.BytesToHash(r.ETHTxn).Bytes(),
 	}
@@ -141,7 +143,7 @@ func runRedeem(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 		return false, action.Response{Log: (errors.Wrap(action.ErrNotEnoughFund, err.Error())).Error()}
 	}
 
-	validators, err := ctx.Validators.GetValidatorsAddress()
+	witnesses, err := ctx.Witnesses.GetWitnessAddresses(chain.ETHEREUM)
 	if err != nil {
 		return false, action.Response{Log: "error in getting validator addresses" + err.Error()}
 	}
@@ -157,13 +159,13 @@ func runRedeem(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 		redeem.Owner,
 		redeem.ETHTxn,
 		name,
-		validators,
+		witnesses,
 	)
 
 	tracker.State = trackerlib.New
 	tracker.ProcessOwner = redeem.Owner
 	tracker.SignedETHTx = redeem.ETHTxn
-	tracker.To = redeem.To
+	tracker.To = redeem.To.Bytes()
 
 	// Save eth Tracker
 	err = ctx.ETHTrackers.WithPrefixType(trackerlib.PrefixOngoing).Set(tracker)
@@ -173,7 +175,7 @@ func runRedeem(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 		Info:      "Transaction received ,Redeem in progress",
 		GasWanted: 0,
 		GasUsed:   0,
-		Tags:      redeem.Tags(),
+		Events:    action.GetEvent(redeem.Tags(), "eth_redeem"),
 	}
 }
 

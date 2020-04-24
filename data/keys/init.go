@@ -23,7 +23,7 @@ const (
 	SECP256K1_PRIV_SIZE int = 32
 )
 
-func (a Algorithm) Name() string {
+func (a Algorithm) String() string {
 	switch a {
 	case ED25519:
 		return "ed25519"
@@ -38,7 +38,7 @@ func (a Algorithm) Name() string {
 func (a Algorithm) MarshalText() ([]byte, error) {
 	switch a {
 	case ED25519, SECP256K1, BTCECSECP:
-		return []byte(a.Name()), nil
+		return []byte(a.String()), nil
 	case UNKNOWN:
 		return []byte{}, nil
 	default:

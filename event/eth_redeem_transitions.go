@@ -85,7 +85,7 @@ func Signing(ctx interface{}) error {
 		return errors.Wrap(err, string((*tracker).State))
 	}
 	tracker.State = ethereum.BusyBroadcasting
-	if context.Validators.IsValidator() {
+	if context.Witnesses.IsETHWitness() {
 
 		job := NewETHSignRedeem(tracker.TrackerName, ethereum.BusyBroadcasting)
 		err := context.JobStore.SaveJob(job)
@@ -112,7 +112,7 @@ func VerifyRedeem(ctx interface{}) error {
 		return errors.Wrap(err, tracker.State.String())
 	}
 
-	if context.Validators.IsValidator() {
+	if context.Witnesses.IsETHWitness() {
 		bjob, err := context.JobStore.GetJob(tracker.GetJobID(ethereum.BusyBroadcasting))
 		if err != nil {
 			return errors.Wrap(err, "failed to get job")
@@ -160,7 +160,7 @@ func redeemCleanup(ctx interface{}) error {
 	}
 	tracker := context.Tracker
 	//delete the tracker related jobs
-	if context.Validators.IsValidator() {
+	if context.Witnesses.IsETHWitness() {
 		for state := ethereum.BusyBroadcasting; state <= ethereum.Released; state++ {
 			job, err := context.JobStore.GetJob(tracker.GetJobID(state))
 			if err != nil {
@@ -195,7 +195,7 @@ func redeemCleanupFailed(ctx interface{}) error {
 	}
 	tracker := context.Tracker
 	//delete the tracker related jobs
-	if context.Validators.IsValidator() {
+	if context.Witnesses.IsETHWitness() {
 		for state := ethereum.BusyBroadcasting; state <= ethereum.Failed; state++ {
 			job, err := context.JobStore.GetJob(tracker.GetJobID(state))
 			if err != nil {
