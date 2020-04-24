@@ -141,8 +141,8 @@ type nodeKeys struct {
 	Validator_pubKey crypto2.PublicKey
 	//Witness_addr     keys.Address
 	//Witness_pubKey   keys.PublicKey
-	Witness_addr   common.Address
-	Witness_pubKey *ecdsa.PublicKey
+	Witness_addr   string
+	Witness_pubKey ecdsa.PublicKey
 }
 
 func generatePVKeys(configDir string, dataDir string) error {
@@ -218,8 +218,8 @@ func generatePVKeys(configDir string, dataDir string) error {
 		nodeKeys{
 			Validator_addr:   pvFile.GetAddress(),
 			Validator_pubKey: pvFile.GetPubKey(),
-			Witness_addr:     witnessaddr,
-			Witness_pubKey:   witnesspubkey,
+			Witness_addr:     witnessaddr.Hex(),
+			Witness_pubKey:   *witnesspubkey,
 		}
 	fmt.Printf("%+v\n", node)
 	return nil
