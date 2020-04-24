@@ -527,7 +527,7 @@ func initialState(args *testnetConfig, nodeList []node, option ethchain.ChainDri
 					Name:             d,
 					CreationHeight:   0,
 					LastUpdateHeight: 0,
-					ExpireHeight:     4204800000, // 2000 Years . Taking one block every 15s
+					ExpireHeight:     42048000, // 20 Years . Taking one block every 15s
 					ActiveFlag:       false,
 					OnSaleFlag:       false,
 					URI:              d,
@@ -671,14 +671,9 @@ func deployethcdcontract(conn string, nodeList []node) (*ethchain.ChainDriverOpt
 	//tokenAbiMap := make(map[*common.Address]string)
 	//tokenAbiMap[&tokenAddress] = contract.ERC20BasicABI
 	return &ethchain.ChainDriverOption{
-		ContractABI:    contract.LockRedeemABI,
-		ERCContractABI: contract.LockRedeemERCABI,
-		TokenList: []ethchain.ERC20Token{{
-			TokName:        "TTC",
-			TokAddr:        tokenAddress,
-			TokAbi:         contract.ERC20BasicABI,
-			TokTotalSupply: totalTTCSupply,
-		}},
+		ContractABI:        contract.LockRedeemABI,
+		ERCContractABI:     "",
+		TokenList:          []ethchain.ERC20Token{},
 		ContractAddress:    address,
 		ERCContractAddress: ercAddress,
 		TotalSupply:        totalETHSupply,
