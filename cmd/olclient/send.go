@@ -16,13 +16,16 @@ package main
 
 import (
 	"errors"
+	"fmt"
+	"os"
+	"strconv"
+	"strings"
+
 	accounts2 "github.com/Oneledger/protocol/data/accounts"
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/serialize"
 	"github.com/spf13/cobra"
 	ctypes "github.com/tendermint/tendermint/rpc/core/types"
-	"os"
-	"strconv"
 
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/client"
@@ -63,20 +66,29 @@ func (args *SendArguments) ClientRequest(currencies *balance.CurrencySet) (clien
 	if !ok {
 		return client.SendTxRequest{}, errors.New("currency not support:" + args.Currency)
 	}
-
-	f, err := strconv.ParseFloat(args.Amount, 64)
+	padZero := func(s string) string {
+		ss := strings.Split(s, ".")
+		if len(ss) == 2 {
+			ss = []string{strings.TrimLeft(ss[0], "0"), strings.TrimLeft(ss[1], "0"), strings.Repeat("0", 18-len(ss[1]))}
+		} else {
+			ss = []string{strings.TrimLeft(ss[0], "0"), strings.Repeat("0", 18)}
+		}
+		s = strings.Join(ss, "")
+		return s
+	}
+	_, err := strconv.ParseFloat(args.Amount, 64)
 	if err != nil {
 		return client.SendTxRequest{}, err
 	}
-	amt := c.NewCoinFromFloat64(f).Amount
+	amt := c.NewCoinFromString(padZero(args.Amount)).Amount
 
 	olt, _ := currencies.GetCurrencyByName("OLT")
 
-	fee, err := strconv.ParseFloat(args.Fee, 64)
+	_, err = strconv.ParseFloat(args.Fee, 64)
 	if err != nil {
 		return client.SendTxRequest{}, err
 	}
-	feeAmt := olt.NewCoinFromFloat64(fee).Amount
+	feeAmt := olt.NewCoinFromString(padZero(args.Fee)).Amount
 
 	return client.SendTxRequest{
 		From:     args.Party,
@@ -126,6 +138,7 @@ func IssueRequest(cmd *cobra.Command, args []string) {
 		ctx.logger.Error("failed to get request", err)
 		return
 	}
+	fmt.Println(req)
 
 	//Prompt for password
 	if len(sendargs.Password) == 0 {
@@ -208,6 +221,7 @@ func sendFunds(cmd *cobra.Command, args []string) error {
 		ctx.logger.Error("failed to get request", err)
 		return err
 	}
+	fmt.Println(req)
 	reply, err := fullnode.SendTx(req)
 	if err != nil {
 		ctx.logger.Error("failed to create SendTx", err)
