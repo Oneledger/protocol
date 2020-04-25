@@ -10,6 +10,7 @@
 package client
 
 import (
+	"github.com/tendermint/tendermint/libs/bytes"
 	ctypes "github.com/tendermint/tendermint/rpc/core/types"
 
 	"github.com/Oneledger/protocol/action"
@@ -156,7 +157,7 @@ type BroadcastRequest struct {
 }
 
 type BroadcastReply struct {
-	TxHash action.Address `json:"txHash"`
+	TxHash bytes.HexBytes `json:"txHash"`
 	// OK indicates whether this broadcast was a request.
 	// For TxSync, it indicates success of CheckTx. Does not guarantee inclusion of a block
 	// For TxAsync, it always returns true
@@ -167,14 +168,14 @@ type BroadcastReply struct {
 }
 
 func (reply *BroadcastReply) FromResultBroadcastTx(result *ctypes.ResultBroadcastTx) {
-	reply.TxHash = action.Address(result.Hash)
+	reply.TxHash = result.Hash
 	reply.OK = result.Code == 0
 	reply.Height = nil
 	reply.Log = result.Log
 }
 
 func (reply *BroadcastReply) FromResultBroadcastTxCommit(result *ctypes.ResultBroadcastTxCommit) {
-	reply.TxHash = action.Address(result.Hash)
+	reply.TxHash = result.Hash
 	reply.OK = result.CheckTx.Code == 0 && result.DeliverTx.Code == 0
 	reply.Height = &result.Height
 	if len(result.CheckTx.Log) > 0 {
