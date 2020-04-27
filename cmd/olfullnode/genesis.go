@@ -59,7 +59,7 @@ var genesisCmd = &cobra.Command{
 	RunE:  runGenesis,
 }
 
-type reservedDomains struct {
+type reservedDomain struct {
 	domainName string
 	domainUrl  string
 }
@@ -111,7 +111,7 @@ func newMainetContext(args *genesisArgument) (*mainetContext, error) {
 }
 
 func runGenesis(_ *cobra.Command, _ []string) error {
-	var reserveDomains []reservedDomains
+	var reserveDomains []reservedDomain
 	var initialAddrs []keys.Address
 	setEnvVariables()
 	ctx, err := newMainetContext(genesisCmdArgs)
@@ -314,8 +314,8 @@ func getChainID() string {
 	return chainID
 }
 
-func getReservedDomains(domainlistPath string) ([]reservedDomains, error) {
-	var reserved []reservedDomains
+func getReservedDomains(domainlistPath string) ([]reservedDomain, error) {
+	var reserved []reservedDomain
 	reservedDomainsBytes, err := os.Open(domainlistPath)
 	if err != nil {
 		fmt.Println("Error")
@@ -326,7 +326,7 @@ func getReservedDomains(domainlistPath string) ([]reservedDomains, error) {
 
 	for fileScanner.Scan() {
 		dom := strings.Split(fileScanner.Text(), ",")
-		domain := reservedDomains{
+		domain := reservedDomain{
 			domainName: dom[0],
 			domainUrl:  dom[1],
 		}
@@ -348,7 +348,7 @@ func getOnsOpt() *ons.Options {
 }
 
 func getInitialState(args *genesisArgument, nodeList []node, option ethchain.ChainDriverOption, onsOption ons.Options,
-	btcOption bitcoin.ChainDriverOption, reservedDomains []reservedDomains, initialAddrs []keys.Address) consensus.AppState {
+	btcOption bitcoin.ChainDriverOption, reservedDomains []reservedDomain, initialAddrs []keys.Address) consensus.AppState {
 	olt := balance.Currency{Id: 0, Name: "OLT", Chain: chain.ONELEDGER, Decimal: 18, Unit: "nue"}
 	vt := balance.Currency{Id: 1, Name: "VT", Chain: chain.ONELEDGER, Unit: "vt"}
 	obtc := balance.Currency{Id: 2, Name: "BTC", Chain: chain.BITCOIN, Decimal: 8, Unit: "satoshi"}
