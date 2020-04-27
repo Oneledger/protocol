@@ -224,7 +224,7 @@ func runDevnet(_ *cobra.Command, _ []string) error {
 	if totalNodes > len(ctx.names) {
 		return fmt.Errorf("Don't have enough node names, can't specify more than %d nodes", len(ctx.names))
 	}
-	var reserveDomains []string
+	var reserveDomains []reservedDomains
 	var initialAddrs []keys.Address
 	if len(testnetArgs.initialTokenHolders) > 0 {
 		initialAddrs, err = getInitialAddress(initialAddrs, testnetArgs.initialTokenHolders)
@@ -416,7 +416,7 @@ func runDevnet(_ *cobra.Command, _ []string) error {
 }
 
 func initialState(args *testnetConfig, nodeList []node, option ethchain.ChainDriverOption, onsOption ons.Options,
-	btcOption bitcoin.ChainDriverOption, reservedDomains []string, initialAddrs []keys.Address) consensus.AppState {
+	btcOption bitcoin.ChainDriverOption, reservedDomains []reservedDomains, initialAddrs []keys.Address) consensus.AppState {
 	olt := balance.Currency{Id: 0, Name: "OLT", Chain: chain.ONELEDGER, Decimal: 18, Unit: "nue"}
 	vt := balance.Currency{Id: 1, Name: "VT", Chain: chain.ONELEDGER, Unit: "vt"}
 	obtc := balance.Currency{Id: 2, Name: "BTC", Chain: chain.BITCOIN, Decimal: 8, Unit: "satoshi"}
@@ -524,13 +524,13 @@ func initialState(args *testnetConfig, nodeList []node, option ethchain.ChainDri
 				domains = append(domains, consensus.DomainState{
 					Owner:            addr,
 					Beneficiary:      addr,
-					Name:             d,
+					Name:             d.domainName,
 					CreationHeight:   0,
 					LastUpdateHeight: 0,
 					ExpireHeight:     42048000, // 20 Years . Taking one block every 15s
 					ActiveFlag:       false,
 					OnSaleFlag:       false,
-					URI:              d,
+					URI:              d.domainUrl,
 					SalePrice:        nil,
 				})
 			}

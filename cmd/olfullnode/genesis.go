@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -58,6 +59,10 @@ var genesisCmd = &cobra.Command{
 	RunE:  runGenesis,
 }
 
+type reservedDomains struct {
+	domainName string
+	domainUrl  string
+}
 type mainetContext struct {
 	logger *log.Logger
 	names  []string
@@ -106,7 +111,7 @@ func newMainetContext(args *genesisArgument) (*mainetContext, error) {
 }
 
 func runGenesis(_ *cobra.Command, _ []string) error {
-	var reserveDomains []string
+	var reserveDomains []reservedDomains
 	var initialAddrs []keys.Address
 	setEnvVariables()
 	ctx, err := newMainetContext(genesisCmdArgs)
@@ -309,20 +314,25 @@ func getChainID() string {
 	return chainID
 }
 
-func getReservedDomains(domainlistPath string) ([]string, error) {
-	var reservedDomains []string
+func getReservedDomains(domainlistPath string) ([]reservedDomains, error) {
+	var reserved []reservedDomains
 	reservedDomainsBytes, err := os.Open(domainlistPath)
 	if err != nil {
 		fmt.Println("Error")
-		return reservedDomains, err
+		return reserved, err
 	}
 	fileScanner := bufio.NewScanner(reservedDomainsBytes)
 	fileScanner.Split(bufio.ScanLines)
 
 	for fileScanner.Scan() {
-		reservedDomains = append(reservedDomains, fileScanner.Text())
+		dom := strings.Split(fileScanner.Text(), ",")
+		domain := reservedDomains{
+			domainName: dom[0],
+			domainUrl:  dom[1],
+		}
+		reserved = append(reserved, domain)
 	}
-	return reservedDomains, err
+	return reserved, err
 }
 
 func getOnsOpt() *ons.Options {
@@ -338,7 +348,7 @@ func getOnsOpt() *ons.Options {
 }
 
 func getInitialState(args *genesisArgument, nodeList []node, option ethchain.ChainDriverOption, onsOption ons.Options,
-	btcOption bitcoin.ChainDriverOption, reservedDomains []string, initialAddrs []keys.Address) consensus.AppState {
+	btcOption bitcoin.ChainDriverOption, reservedDomains []reservedDomains, initialAddrs []keys.Address) consensus.AppState {
 	olt := balance.Currency{Id: 0, Name: "OLT", Chain: chain.ONELEDGER, Decimal: 18, Unit: "nue"}
 	vt := balance.Currency{Id: 1, Name: "VT", Chain: chain.ONELEDGER, Unit: "vt"}
 	obtc := balance.Currency{Id: 2, Name: "BTC", Chain: chain.BITCOIN, Decimal: 8, Unit: "satoshi"}
@@ -437,13 +447,13 @@ func getInitialState(args *genesisArgument, nodeList []node, option ethchain.Cha
 				domains = append(domains, consensus.DomainState{
 					Owner:            addr,
 					Beneficiary:      addr,
-					Name:             d,
+					Name:             d.domainName,
 					CreationHeight:   0,
 					LastUpdateHeight: 0,
 					ExpireHeight:     4204800000, // 2000 Years . Taking one block every 15s
 					ActiveFlag:       false,
 					OnSaleFlag:       false,
-					URI:              d,
+					URI:              d.domainUrl,
 					SalePrice:        nil,
 				})
 			}
