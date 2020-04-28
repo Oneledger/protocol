@@ -3,12 +3,11 @@ package app
 import (
 	"encoding/hex"
 	"fmt"
-
 	"math"
 	"runtime/debug"
+	"time"
 
 	"github.com/pkg/errors"
-
 	"github.com/tendermint/tendermint/types"
 
 	"github.com/Oneledger/protocol/action"
@@ -106,6 +105,12 @@ func (app *App) chainInitializer() chainInitializer {
 	}
 }
 
+var startTime time.Time
+var endTime time.Time
+var txCountTemp int64
+var txCountTotal int64
+var commited = true
+
 func (app *App) blockBeginner() blockBeginner {
 	return func(req RequestBeginBlock) ResponseBeginBlock {
 		defer app.handlePanic()
@@ -120,8 +125,26 @@ func (app *App) blockBeginner() blockBeginner {
 
 		result := ResponseBeginBlock{}
 
+		//if req.Header.Height == 3 {
+		//	startTime = time.Now()
+		//	startTx = req.Size()
+		//}
+		//
+		//if math.Mod(float64(req.Header.Height-10), 20) == 0 {
+		//	endTime = time.Now()
+		//	endTx = req.Size()
+		//	loadtest(req.Header, app.logger)
+		//	startTx = endTx
+		//	startTime = endTime
+		//}
+
 		//update the header to current block
 		app.header = req.Header
+		if commited == true {
+			txCountTemp = 0
+			startTime = time.Now()
+			commited = false
+		}
 
 		app.logger.Detail("Begin Block:", result, "height:", req.Header.Height, "AppHash:", hex.EncodeToString(req.Header.AppHash))
 		return result
@@ -182,6 +205,11 @@ func (app *App) txChecker() txChecker {
 	}
 }
 
+//func loadtest(head Header, logger *log.Logger) {
+//	tps := float64(endTx-startTx) / (endTime.Sub(startTime).Seconds())
+//	blktime := (endTime.Sub(startTime).Seconds()) / 20
+//	logger.Infof("Loadtest metric height=%d, avgblktime=%3f , tps=%3f ,Txinlast20=%d ,timelast20=%f", head.Height, blktime, tps, endTx-startTx, endTime.Sub(startTime).Seconds())
+//}
 func (app *App) txDeliverer() txDeliverer {
 	return func(msg RequestDeliverTx) ResponseDeliverTx {
 		defer app.handlePanic()
@@ -215,7 +243,8 @@ func (app *App) txDeliverer() txDeliverer {
 			Codespace: "",
 		}
 		app.logger.Detail("Deliver Tx: ", result)
-
+		txCountTemp++
+		txCountTotal++
 		if !(ok && feeOk) {
 			app.Context.deliver.DiscardTxSession()
 		} else {
@@ -235,7 +264,6 @@ func (app *App) blockEnder() blockEnder {
 		updates := app.Context.validators.GetEndBlockUpdate(app.Context.ValidatorCtx(), req)
 		result := ResponseEndBlock{
 			ValidatorUpdates: updates,
-			//Tags:             []kv.Pair(nil),
 		}
 		ethTrackerlog := log.NewLoggerWithPrefix(app.Context.logWriter, "ethtracker").WithLevel(log.Level(app.Context.cfg.Node.LogLevel))
 		doTransitions(app.Context.jobStore, app.Context.btcTrackers.WithState(app.Context.deliver), app.Context.validators)
@@ -253,15 +281,20 @@ func (app *App) commitor() commitor {
 
 		hash, ver := app.Context.deliver.Commit()
 		app.logger.Detailf("Committed New Block height[%d], hash[%s], versions[%d]", app.header.Height, hex.EncodeToString(hash), ver)
-
+		if math.Mod(float64(app.header.Height-10), 20) == 0 {
+			endTime = time.Now()
+			timediff := endTime.Sub(startTime).Seconds()
+			fmt.Println("TX total:", txCountTotal, "|TX range:", txCountTemp, "|Block Height", app.header.Height, "|Avg Block time", timediff/20, "|TPS :", float64(txCountTemp)/timediff)
+			commited = true
+		}
 		// update check state by deliver state
 		gc := getGasCalculator(app.genesisDoc.ConsensusParams)
 		app.Context.check = storage.NewState(app.Context.chainstate).WithGas(gc)
 		result := ResponseCommit{
 			Data: hash,
 		}
-
 		app.logger.Detail("Commit Result", result)
+		result.GetData()
 		return result
 	}
 }
@@ -377,5 +410,4 @@ func doEthTransitions(js *jobs.JobStore, ts *ethereum.TrackerStore, myValAddr ke
 		}
 		deliver.CommitTxSession()
 	}
-
 }
