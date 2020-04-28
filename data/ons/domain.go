@@ -125,8 +125,12 @@ func (d Domain) IsExpired(height int64) bool {
 }
 
 func (d *Domain) ResetAfterSale(buyer, account keys.Address, nBlocks, currentHeight int64) {
+	newExpiry := currentHeight
+	if d.ExpireHeight > currentHeight {
+		newExpiry = d.ExpireHeight
+	}
 	d.Beneficiary = account
-	d.ExpireHeight = d.ExpireHeight + nBlocks
+	d.ExpireHeight = newExpiry + nBlocks
 	d.Owner = buyer
 	d.SalePrice = nil
 	d.LastUpdateHeight = currentHeight
