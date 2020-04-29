@@ -14,6 +14,7 @@ import (
 	"github.com/Oneledger/protocol/log"
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
+	"github.com/tendermint/tendermint/libs/bytes"
 	tmclient "github.com/tendermint/tendermint/rpc/client"
 	ctypes "github.com/tendermint/tendermint/rpc/core/types"
 )
@@ -50,7 +51,7 @@ type InternalBroadcastRequest struct {
 }
 
 type BroadcastReply struct {
-	TxHash action.Address `json:"txHash"`
+	TxHash bytes.HexBytes `json:"txHash"`
 	// OK indicates whether this broadcast was a request.
 	// For TxSync, it indicates success of CheckTx. Does not guarantee inclusion of a block
 	// For TxAsync, it always returns true
@@ -61,17 +62,10 @@ type BroadcastReply struct {
 }
 
 func (reply *BroadcastReply) FromResultBroadcastTx(result *ctypes.ResultBroadcastTx) {
-	reply.TxHash = action.Address(result.Hash)
+	reply.TxHash = result.Hash
 	reply.OK = result.Code == 0
 	reply.Height = nil
 	reply.Log = result.Log
-}
-
-func (reply *BroadcastReply) FromResultBroadcastTxCommit(result *ctypes.ResultBroadcastTxCommit) {
-	reply.TxHash = action.Address(result.Hash)
-	reply.OK = result.CheckTx.Code == 0 && result.DeliverTx.Code == 0
-	reply.Height = &result.Height
-	reply.Log = "check: " + result.CheckTx.Log + ", deliver: " + result.DeliverTx.Log
 }
 
 func (svc Service) InternalBroadcast(request InternalBroadcastRequest, reply *BroadcastReply) error {
@@ -148,4 +142,12 @@ func BroadcastReportFinalityETHTx(ethCtx *JobsContext, trackerName ethereum.Trac
 		return err
 	}
 	return nil
+}
+
+func (svc Service) ExistTx(hash []byte) bool {
+	reply, _ := svc.tmrpc.Tx(hash, false)
+	if reply != nil && reply.Height > 0 {
+		return true
+	}
+	return false
 }
