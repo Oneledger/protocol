@@ -7,6 +7,7 @@ package ons
 import (
 	"encoding/json"
 	"fmt"
+
 	"github.com/tendermint/tendermint/libs/kv"
 
 	"github.com/Oneledger/protocol/action"
@@ -151,6 +152,10 @@ func runDomainSend(ctx *action.Context, tx action.RawTx) (bool, action.Response)
 	domain, err := ctx.Domains.Get(send.Name)
 	if err != nil {
 		log := fmt.Sprint("error getting domain:", err)
+		return false, action.Response{Log: log}
+	}
+	if domain.IsExpired(ctx.State.Version()) {
+		log := fmt.Sprint("domain expired")
 		return false, action.Response{Log: log}
 	}
 	if !domain.IsActive(ctx.State.Version()) {
