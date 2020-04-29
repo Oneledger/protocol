@@ -25,6 +25,7 @@ import (
 	"github.com/Oneledger/protocol/log"
 	"github.com/Oneledger/protocol/serialize"
 	"github.com/Oneledger/protocol/storage"
+	"github.com/Oneledger/protocol/utils"
 	"github.com/Oneledger/protocol/utils/transition"
 	"github.com/Oneledger/protocol/version"
 )
@@ -133,6 +134,15 @@ func (app *App) txChecker() txChecker {
 	return func(msg RequestCheckTx) ResponseCheckTx {
 		defer app.handlePanic()
 
+		if app.VerifyCache(msg.Tx) {
+			loginfo := fmt.Sprintf("checkTx duplicated tx: %s", hex.EncodeToString(utils.SHA2(msg.Tx)))
+			app.logger.Detail(loginfo)
+			return ResponseCheckTx{
+				Code: CodeNotOK.uint32(),
+				Log:  loginfo,
+			}
+		}
+
 		app.Context.check.BeginTxSession()
 
 		tx := &action.SignedTx{}
@@ -185,6 +195,15 @@ func (app *App) txChecker() txChecker {
 func (app *App) txDeliverer() txDeliverer {
 	return func(msg RequestDeliverTx) ResponseDeliverTx {
 		defer app.handlePanic()
+
+		if app.VerifyCache(msg.Tx) {
+			loginfo := fmt.Sprintf("deliverTx duplicated tx: %s", hex.EncodeToString(utils.SHA2(msg.Tx)))
+			app.logger.Detail(loginfo)
+			return ResponseDeliverTx{
+				Code: CodeNotOK.uint32(),
+				Log:  loginfo,
+			}
+		}
 
 		app.Context.deliver.BeginTxSession()
 
@@ -378,4 +397,9 @@ func doEthTransitions(js *jobs.JobStore, ts *ethereum.TrackerStore, myValAddr ke
 		deliver.CommitTxSession()
 	}
 
+}
+
+func (app *App) VerifyCache(tx []byte) bool {
+	hash := utils.SHA2(tx)
+	return app.Context.internalService.ExistTx(hash)
 }

@@ -361,6 +361,9 @@ func (cfg *MempoolConfig) TMConfig() *tmconfig.MempoolConfig {
 	c.Recheck = cfg.Recheck
 	c.Broadcast = cfg.Broadcast
 	c.Size = cfg.Size
+	if cfg.CacheSize < cfg.Size {
+		cfg.CacheSize = cfg.Size
+	}
 	c.CacheSize = cfg.CacheSize
 	return c
 }

@@ -14,11 +14,20 @@ Copyright 2017 - 2019 OneLedger
 
 package utils
 
-import "golang.org/x/crypto/ripemd160"
+import (
+	"crypto/sha256"
+
+	"golang.org/x/crypto/ripemd160"
+)
 
 // Hash returns ripemd160 hash of the given input
 func Hash(result []byte) []byte {
 	hasher := ripemd160.New()
 	hasher.Write(result)
 	return hasher.Sum(nil)
+}
+
+func SHA2(data []byte) []byte {
+	h := sha256.Sum256(data)
+	return h[:]
 }
