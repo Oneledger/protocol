@@ -131,8 +131,6 @@ func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *node.Context) (
 	//"btc" service temporarily disabled
 	//_ = btc.EnableBTC(ctx.actionRouter)
 	_ = eth.EnableETH(ctx.actionRouter)
-	// temporarily add purge validator before staking with OLT is full ready
-	_ = staking.EnablePurgeValidator(ctx.actionRouter)
 
 	return ctx, nil
 }
