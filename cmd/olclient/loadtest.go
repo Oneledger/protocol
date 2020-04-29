@@ -19,6 +19,7 @@ import (
 	"math/rand"
 	"os"
 	"os/exec"
+	"strconv"
 	"sync"
 	"time"
 
@@ -83,7 +84,6 @@ func getContext(RPCAddress string, SDKAddress string) *Context {
 	ctx := &Context{
 		logger: log.NewLoggerWithPrefix(os.Stdout, "loadtest"),
 	}
-	fmt.Println("Getting context")
 	clientContext, err := client.NewExtServiceContext(RPCAddress, SDKAddress)
 	if err != nil {
 		ctx.logger.Fatal("error starting rpc client", err)
@@ -92,12 +92,12 @@ func getContext(RPCAddress string, SDKAddress string) *Context {
 	return ctx
 }
 
-var txPerThread = loadTestArgs.maxTx / loadTestArgs.threads
+var txPerThread int
 
 func loadTest(_ *cobra.Command, _ []string) {
-
+	fmt.Println(loadTestArgs.maxTx, "      ", loadTestArgs.threads)
 	// create new connection to RPC server
-
+	txPerThread = loadTestArgs.maxTx / loadTestArgs.threads
 	//ctx := NewContext()
 	fmt.Println("END POINTS :", loadTestArgs.rpcAddress, loadTestArgs.sdkAddress)
 	ctx := getContext(loadTestArgs.rpcAddress, loadTestArgs.sdkAddress)
@@ -109,7 +109,8 @@ func loadTest(_ *cobra.Command, _ []string) {
 
 	// create vars for concurrency management
 	//stopChan := make(chan bool, loadTestArgs.threads)
-	//waiter := sync.WaitGroup{}
+	waiter := sync.WaitGroup{}
+
 	//counterChan := make(chan int, loadTestArgs.threads)
 
 	// spawn a goroutine to handle sigterm and max transactions
@@ -147,7 +148,7 @@ func loadTest(_ *cobra.Command, _ []string) {
 
 	accs = accReply.Accounts
 	// start threads
-
+	//nodeAddress = accs[0].Address()
 	for i := 0; i < loadTestArgs.threads; i++ {
 		thLogger := ctx.logger.WithPrefix(fmt.Sprintf("thread: %d", i))
 		acc := accounts.Account{}
@@ -184,13 +185,16 @@ func loadTest(_ *cobra.Command, _ []string) {
 			acc = accs[0]
 		}
 		nodeAddress = accs[i].Address()
-		fmt.Println("============================================")
-		fmt.Println("Thread  :", i)
-		fmt.Println("to account   :", acc.Address())
-		fmt.Println("from account :", nodeAddress)
-		fmt.Println("============================================")
+		//fmt.Println("============================================")
+		//fmt.Println("Thread  :", i)
+		//fmt.Println("to account   :", acc.Address())
+		//fmt.Println("from account :", nodeAddress)
+		//fmt.Println("============================================")
 		//waiter.Add(1)
-		go doSendTransaction(ctx, i, &acc, nodeAddress, loadTestArgs.randomRecv, currencies.Currencies)
+		fmt.Println("\nStarting transfer |", nodeAddress.String(), " => ", acc.Address().String())
+		go doSendTransaction(ctx, i, &acc, nodeAddress, loadTestArgs.randomRecv, currencies.Currencies, &waiter)
+		waiter.Add(1)
+
 		// start a thread to keep sending transactions after some interval
 		//go func(stop chan bool) {
 		//waitDuration := getWaitDuration(loadTestArgs.interval)
@@ -232,13 +236,13 @@ func loadTest(_ *cobra.Command, _ []string) {
 	}
 
 	// wait for all threads to close through sigterm; indefinitely
-	//waiter.Wait()
+	waiter.Wait()
 
 	// print stats
 	fmt.Println("####################################################################")
 	fmt.Println("################        Terminating load test        ###############")
 	fmt.Println("####################################################################")
-	fmt.Printf("################       Messages sent: % 9d      ###############\n", txPerThread*loadTestArgs.threads)
+	fmt.Printf("################       Messages sent: % 9d      ###############\n", loadTestArgs.threads*txPerThread)
 	fmt.Println("####################################################################")
 }
 
@@ -257,7 +261,7 @@ func doOnsTrasactions() {
 
 // doSendTransaction takes in an account and currency object and sends random amounts of coin from the
 // node account. It prints any errors to ctx.logger and returns
-func doSendTransaction(ctx *Context, threadNo int, acc *accounts.Account, nodeAddress keys.Address, randomRev bool, currencies balance.Currencies) {
+func doSendTransaction(ctx *Context, threadNo int, acc *accounts.Account, nodeAddress keys.Address, randomRev bool, currencies balance.Currencies, wg *sync.WaitGroup) {
 	waitDuration := getWaitDuration(loadTestArgs.interval)
 	for i := 0; i < txPerThread; i++ {
 		defer func() {
@@ -278,48 +282,54 @@ func doSendTransaction(ctx *Context, threadNo int, acc *accounts.Account, nodeAd
 		} else {
 			sendArgsLocal.CounterParty = []byte(acc.Address()) // receiver is the temp account
 		}
-		fmt.Println("Thread no :", threadNo)
-		fmt.Println("Party :", nodeAddress)
-		fmt.Println("CounterParty :", acc.Address())
-		fmt.Println("Amount :", num)
+		//fmt.Println("Thread no :", threadNo)
+		//fmt.Println("Party :", nodeAddress)
+		//fmt.Println("CounterParty :", acc.Address())
+		//fmt.Println("Amount :", num)
 
 		// set amount and fee
-		//sendArgsLocal.Amount = strconv.FormatFloat(num, 'f', 6, 64)
-		//sendArgsLocal.Fee = strconv.FormatFloat(0.0000003, 'f', 9, 64)
-		//sendArgsLocal.Currency = "OLT"
-		//sendArgsLocal.Gas = 200030
+		sendArgsLocal.Amount = strconv.FormatFloat(num, 'f', 6, 64)
+		sendArgsLocal.Fee = strconv.FormatFloat(0.0000003, 'f', 9, 64)
+		sendArgsLocal.Currency = "OLT"
+		sendArgsLocal.Gas = 200030
 		//
 		//// Create message
-		//fullnode := ctx.clCtx.FullNodeClient()
-		//
-		//req, err := sendArgsLocal.ClientRequest(currencies.GetCurrencySet())
-		//if err != nil {
-		//	ctx.logger.Error("failed to get request", err)
-		//}
-		//
-		//reply, err := fullnode.SendTx(req)
-		//if err != nil {
-		//	ctx.logger.Error(acc.Name, "error executing SendTx", err)
-		//	return
-		//}
+		fullnode := ctx.clCtx.FullNodeClient()
+
+		req, err := sendArgsLocal.ClientRequest(currencies.GetCurrencySet())
+		if err != nil {
+			ctx.logger.Error("failed to get request", err)
+			return
+		}
+		fmt.Println("Get currency set")
+		reply, err := fullnode.SendTx(req)
+		if err != nil {
+			ctx.logger.Error(acc.Name, "error executing SendTx", err)
+			return
+		}
+		fmt.Println("Send TX")
 		//
 		//// check packet
-		//packet := reply.RawTx
-		//if packet == nil {
-		//	ctx.logger.Error(acc.Name, "error in creating new SendTx but server responded with no error")
-		//	return
-		//}
+		packet := reply.RawTx
+		if packet == nil {
+			ctx.logger.Error(acc.Name, "error in creating new SendTx but server responded with no error")
+			return
+		}
+		fmt.Println("RawTX")
 		//
 		//// broadcast packet over tendermint
-		//_, err = ctx.clCtx.BroadcastTxSync(packet)
-		//if err != nil {
-		//	ctx.logger.Error(acc.Name, "error in BroadcastTxSync:", err)
-		//	return
-		//}
-
-		//ctx.logger.Info(acc.Name, "Broadcasted TX")
+		_, err = ctx.clCtx.BroadcastTxSync(packet)
+		if err != nil {
+			fmt.Println(err)
+			ctx.logger.Error(acc.Name, "error in BroadcastTxSync:", err)
+			return
+		} else {
+			ctx.logger.Info("Broadcasted TX to :", ctx.cfg.Node.NodeName)
+		}
+		fmt.Println("Broadcast")
 		time.Sleep(waitDuration)
 	}
+	wg.Done()
 }
 
 func getWaitDuration(interval int) time.Duration {

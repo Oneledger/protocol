@@ -107,8 +107,9 @@ func (app *App) chainInitializer() chainInitializer {
 
 var startTime time.Time
 var endTime time.Time
-var txCountTemp int64
-var txCountTotal int64
+var txCountDeliver int64
+var txCount20BlockCommit int64
+var txCountTotalCommit int64
 var commited = true
 
 func (app *App) blockBeginner() blockBeginner {
@@ -137,12 +138,12 @@ func (app *App) blockBeginner() blockBeginner {
 		//	startTx = endTx
 		//	startTime = endTime
 		//}
-
+		txCountDeliver = 0
 		//update the header to current block
 		app.header = req.Header
 		if commited == true {
-			txCountTemp = 0
-			startTime = time.Now()
+			txCount20BlockCommit = 0
+			startTime = req.Header.Time
 			commited = false
 		}
 
@@ -242,8 +243,7 @@ func (app *App) txDeliverer() txDeliverer {
 			Codespace: "",
 		}
 		app.logger.Detail("Deliver Tx: ", result)
-		txCountTemp++
-		txCountTotal++
+		txCountDeliver++
 		if !(ok && feeOk) {
 			app.Context.deliver.DiscardTxSession()
 		} else {
@@ -279,10 +279,12 @@ func (app *App) commitor() commitor {
 		defer app.handlePanic()
 		hash, ver := app.Context.deliver.Commit()
 		app.logger.Detailf("Committed New Block height[%d], hash[%s], versions[%d]", app.header.Height, hex.EncodeToString(hash), ver)
+		txCount20BlockCommit += txCountDeliver
+		txCountTotalCommit += txCountDeliver
 		if math.Mod(float64(app.header.Height-10), 20) == 0 {
-			endTime = time.Now()
+			endTime = app.header.Time
 			timediff := endTime.Sub(startTime).Seconds()
-			fmt.Println("TX total:", txCountTotal, "|TX range:", txCountTemp, "|Block Height", app.header.Height, "|Avg Block time", timediff/20, "|TPS :", float64(txCountTemp)/timediff)
+			fmt.Println("TX total:", txCountTotalCommit, "|TX range:", txCount20BlockCommit, "|Block Height", app.header.Height, "|Avg Block time", timediff/20, "|TPS :", float64(txCount20BlockCommit)/timediff)
 			commited = true
 		}
 		// update check state by deliver state

@@ -6,7 +6,8 @@ do
     echo "starting loadtest on kainos"
     #time olclient loadtest --root $OLDATA/devnet/$name --threads 10 --interval 1 --max-tx 100000  --rpcAddress tcp://35.245.28.178:38604  --sdkAddress http://35.245.28.178:38606
     #time olclient loadtest --root $OLDATA/devnet/$name --threads 10 --interval 1 --max-tx 100000  --rpcAddress http://35.184.133.167:26604  sdkAddress http://35.184.133.167:26606
-    time olclient loadtest --root $OLDATA/fullnode --threads 10 --interval 5 --max-tx 10
+    #time olclient loadtest --root $OLDATA/fullnode --threads 10 --interval 1 --max-tx 100000 --rpcAddress tcp://127.0.0.1:38607  --sdkAddress http://127.0.0.1:38609
+    time olclient loadtest --root $OLDATA/fullnode --threads 1 --interval 1 --max-tx 10000 --rpcAddress tcp://127.0.0.1:38604  --sdkAddress http://127.0.0.1:38606
     #--rpcAddress http://35.184.133.167:26604 --sdkAddress http://35.184.133.167:26606 #>> /dev/null &
     sleep 1
 done

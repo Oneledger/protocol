@@ -95,7 +95,7 @@ func (s sendTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (ok bool, res
 }
 
 func (s sendTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (ok bool, result action.Response) {
-	ctx.Logger.Detailf("Processing Send Transaction for DeliverTx", tx)
+	ctx.Logger.Debug("Processing Send Transaction for DeliverTx")
 	ok, result = runTx(ctx, tx)
 	return
 }
@@ -118,15 +118,15 @@ func runTx(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 		log := fmt.Sprint("amount is invalid", send.Amount, ctx.Currencies)
 		return false, action.Response{Log: log}
 	}
-
 	coin := send.Amount.ToCoin(ctx.Currencies)
 
 	err = balances.MinusFromAddress(send.From.Bytes(), coin)
 	if err != nil {
+
 		log := fmt.Sprint("error debiting balance in send transaction ", send.From, "err", err)
-		fmt.Println("Error : ", send.From, err)
 		return false, action.Response{Log: log}
 	}
+	fmt.Println("Minus from address")
 	err = balances.AddToAddress(send.To.Bytes(), coin)
 	if err != nil {
 		log := fmt.Sprint("error crediting balance in send transaction ", send.From, "err", err)

@@ -15,6 +15,8 @@ Copyright 2017 - 2019 OneLedger
 package client
 
 import (
+	"fmt"
+
 	"github.com/pkg/errors"
 	ctypes "github.com/tendermint/tendermint/rpc/core/types"
 )
@@ -26,7 +28,7 @@ func (ctx ExtServiceContext) BroadcastTxSync(packet []byte) (res *ctypes.ResultB
 	if len(packet) < 1 {
 		return res, ErrEmptyTransaction
 	}
-
+	fmt.Println("Sync broadcast to NODE")
 	client := ctx.rpcClient
 	result, err := client.BroadcastTxSync(packet)
 	if err != nil {

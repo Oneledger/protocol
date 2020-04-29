@@ -16,13 +16,14 @@ package main
 
 import (
 	"errors"
+	"os"
+	"strconv"
+
 	accounts2 "github.com/Oneledger/protocol/data/accounts"
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/serialize"
 	"github.com/spf13/cobra"
 	ctypes "github.com/tendermint/tendermint/rpc/core/types"
-	"os"
-	"strconv"
 
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/client"
