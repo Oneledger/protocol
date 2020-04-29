@@ -27,6 +27,10 @@ fulltest: install
 	@./scripts/testsend
 	@./scripts/stopDev
 
+
+load: install_c
+	@./scripts/stopDev
+	@./scripts/startDev
 #
 # Check out the running status
 #

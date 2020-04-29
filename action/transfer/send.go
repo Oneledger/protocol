@@ -3,6 +3,7 @@ package transfer
 import (
 	"encoding/json"
 	"fmt"
+
 	"github.com/tendermint/tendermint/libs/kv"
 
 	"github.com/Oneledger/protocol/action"
@@ -88,13 +89,13 @@ func (sendTx) Validate(ctx *action.Context, tx action.SignedTx) (bool, error) {
 }
 
 func (s sendTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (ok bool, result action.Response) {
-	ctx.Logger.Debug("Processing Send Transaction for CheckTx", tx)
+	ctx.Logger.Detailf("Processing Send Transaction for CheckTx", tx)
 	ok, result = runTx(ctx, tx)
 	return
 }
 
 func (s sendTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (ok bool, result action.Response) {
-	ctx.Logger.Debug("Processing Send Transaction for DeliverTx", tx)
+	ctx.Logger.Detailf("Processing Send Transaction for DeliverTx", tx)
 	ok, result = runTx(ctx, tx)
 	return
 }
@@ -123,14 +124,13 @@ func runTx(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	err = balances.MinusFromAddress(send.From.Bytes(), coin)
 	if err != nil {
 		log := fmt.Sprint("error debiting balance in send transaction ", send.From, "err", err)
+		fmt.Println("Error : ", send.From, err)
 		return false, action.Response{Log: log}
 	}
-
 	err = balances.AddToAddress(send.To.Bytes(), coin)
 	if err != nil {
 		log := fmt.Sprint("error crediting balance in send transaction ", send.From, "err", err)
 		return false, action.Response{Log: log}
 	}
-
 	return true, action.Response{Events: action.GetEvent(send.Tags(), "send_tx")}
 }

@@ -213,7 +213,6 @@ func (app *App) txChecker() txChecker {
 func (app *App) txDeliverer() txDeliverer {
 	return func(msg RequestDeliverTx) ResponseDeliverTx {
 		defer app.handlePanic()
-
 		app.Context.deliver.BeginTxSession()
 
 		tx := &action.SignedTx{}
@@ -278,7 +277,6 @@ func (app *App) blockEnder() blockEnder {
 func (app *App) commitor() commitor {
 	return func() ResponseCommit {
 		defer app.handlePanic()
-
 		hash, ver := app.Context.deliver.Commit()
 		app.logger.Detailf("Committed New Block height[%d], hash[%s], versions[%d]", app.header.Height, hex.EncodeToString(hash), ver)
 		if math.Mod(float64(app.header.Height-10), 20) == 0 {
