@@ -136,6 +136,7 @@ func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *node.Context) (
 	//_ = btc.EnableBTC(ctx.actionRouter)
 	_ = eth.EnableETH(ctx.actionRouter)
 	ctx.extRouter = action.NewRouter("external")
+	ctx.extStores = data.NewStorageRouter()
 	return ctx, nil
 }
 
@@ -311,4 +312,12 @@ func (ctx *context) JobContext() *event.JobsContext {
 		ctx.lockScriptStore,
 		ctx.ethTrackers.WithState(ctx.deliver),
 		log.NewLoggerWithPrefix(ctx.logWriter, "internal_jobs").WithLevel(log.Level(ctx.cfg.Node.LogLevel)))
+}
+
+func (ctx *context) AddExternalRouter(t action.Type, h action.Tx) error {
+	return ctx.extRouter.AddHandler(t, h)
+}
+
+func (ctx *context) AddExternalStorage(storeType data.Type, storeObj interface{}) error {
+	return ctx.extStores.Add(storeType, storeObj)
 }

@@ -44,8 +44,7 @@ type Context struct {
 	Services client.ExtServiceContext
 	Logger   *log.Logger
 
-	TxTypes  *[]action.TxTypeDescribe
-
+	TxTypes *[]action.TxTypeDescribe
 }
 
 // Map of services, keyed by the name/prefix of the service
