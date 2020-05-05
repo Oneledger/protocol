@@ -61,6 +61,7 @@ func NewApp(cfg *config.Server, nodeContext *node.Context) (*App, error) {
 	app.nodeName = cfg.Node.NodeName
 
 	ctx, err := newContext(w, *cfg, nodeContext)
+
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create new app context")
 	}

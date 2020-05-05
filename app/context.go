@@ -1,11 +1,12 @@
 package app
 
 import (
-	"github.com/Oneledger/protocol/data"
 	"io"
 	"os"
 	"path/filepath"
 	"time"
+
+	"github.com/Oneledger/protocol/data"
 
 	"github.com/pkg/errors"
 	db "github.com/tendermint/tm-db"
@@ -49,8 +50,8 @@ type context struct {
 	check      *storage.State
 	deliver    *storage.State
 
-	extStores data.Router //External Stores
-
+	extStores   data.Router //External Stores
+	extRouter   action.Router
 	balances    *balance.Store
 	domains     *ons.DomainStore
 	validators  *identity.ValidatorStore // Set of validators currently active
@@ -134,7 +135,7 @@ func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *node.Context) (
 	//"btc" service temporarily disabled
 	//_ = btc.EnableBTC(ctx.actionRouter)
 	_ = eth.EnableETH(ctx.actionRouter)
-
+	ctx.extRouter = action.NewRouter("external")
 	return ctx, nil
 }
 
