@@ -96,8 +96,6 @@ func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *node.Context) (
 	ctx.deliver = storage.NewState(ctx.chainstate)
 	ctx.check = storage.NewState(ctx.chainstate)
 
-	ctx.extStores = data.NewStorageRouter()
-
 	ctx.validators = identity.NewValidatorStore("v", storage.NewState(ctx.chainstate))
 	ctx.witnesses = identity.NewWitnessStore("w", storage.NewState(ctx.chainstate))
 	ctx.balances = balance.NewStore("b", storage.NewState(ctx.chainstate))
@@ -320,6 +318,6 @@ func (ctx *context) AddExternalTx(t action.Type, h action.Tx) error {
 	return ctx.extRouter.AddHandler(t, h)
 }
 
-func (ctx *context) AddExternalStorage(storeType data.Type, storeObj interface{}) error {
+func (ctx *context) AddExternalStore(storeType data.Type, storeObj interface{}) error {
 	return ctx.extStores.Add(storeType, storeObj)
 }
