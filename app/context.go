@@ -1,6 +1,7 @@
 package app
 
 import (
+	"github.com/Oneledger/protocol/data"
 	"io"
 	"os"
 	"path/filepath"
@@ -47,6 +48,8 @@ type context struct {
 	chainstate *storage.ChainState
 	check      *storage.State
 	deliver    *storage.State
+
+	extStores data.Router //External Stores
 
 	balances    *balance.Store
 	domains     *ons.DomainStore
