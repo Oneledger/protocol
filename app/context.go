@@ -96,6 +96,8 @@ func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *node.Context) (
 	ctx.deliver = storage.NewState(ctx.chainstate)
 	ctx.check = storage.NewState(ctx.chainstate)
 
+	ctx.extStores = data.NewStorageRouter()
+
 	ctx.validators = identity.NewValidatorStore("v", storage.NewState(ctx.chainstate))
 	ctx.witnesses = identity.NewWitnessStore("w", storage.NewState(ctx.chainstate))
 	ctx.balances = balance.NewStore("b", storage.NewState(ctx.chainstate))
@@ -314,7 +316,7 @@ func (ctx *context) JobContext() *event.JobsContext {
 		log.NewLoggerWithPrefix(ctx.logWriter, "internal_jobs").WithLevel(log.Level(ctx.cfg.Node.LogLevel)))
 }
 
-func (ctx *context) AddExternalRouter(t action.Type, h action.Tx) error {
+func (ctx *context) AddExternalTx(t action.Type, h action.Tx) error {
 	return ctx.extRouter.AddHandler(t, h)
 }
 
