@@ -8,6 +8,7 @@ import (
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/storage"
 	"github.com/magiconair/properties/assert"
+	db2 "github.com/tendermint/tm-db"
 	"testing"
 )
 
@@ -28,7 +29,7 @@ var (
 
 func init() {
 	//Create a few stores
-	db, _ := storage.GetDatabase("testDB", ".", "")
+	db := db2.NewDB("testDB", db2.MemDBBackend, "")
 	chainstate = storage.NewChainState("chainstate", db)
 
 	balanceStore = balance.NewStore(balanceType, storage.NewState(chainstate))
