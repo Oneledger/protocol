@@ -51,7 +51,6 @@ type context struct {
 	deliver    *storage.State
 
 	extStores   data.Router //External Stores
-	extRouter   action.Router
 	balances    *balance.Store
 	domains     *ons.DomainStore
 	validators  *identity.ValidatorStore // Set of validators currently active
@@ -115,6 +114,7 @@ func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *node.Context) (
 	ctx.lockScriptStore = bitcoin.NewLockScriptStore(cfg, ctx.dbDir())
 
 	ctx.actionRouter = action.NewRouter("action")
+	ctx.extStores = data.NewStorageRouter()
 
 	testEnv := os.Getenv("OLTEST")
 
@@ -135,8 +135,7 @@ func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *node.Context) (
 	//"btc" service temporarily disabled
 	//_ = btc.EnableBTC(ctx.actionRouter)
 	_ = eth.EnableETH(ctx.actionRouter)
-	ctx.extRouter = action.NewRouter("external")
-	ctx.extStores = data.NewStorageRouter()
+
 	return ctx, nil
 }
 
@@ -163,6 +162,7 @@ func (ctx *context) Action(header *Header, state *storage.State) *action.Context
 		ctx.jobStore,
 		ctx.lockScriptStore,
 		log.NewLoggerWithPrefix(ctx.logWriter, "action").WithLevel(log.Level(ctx.cfg.Node.LogLevel)),
+		ctx.extStores,
 	)
 
 	return actionCtx
@@ -315,7 +315,7 @@ func (ctx *context) JobContext() *event.JobsContext {
 }
 
 func (ctx *context) AddExternalTx(t action.Type, h action.Tx) error {
-	return ctx.extRouter.AddHandler(t, h)
+	return ctx.actionRouter.AddHandler(t, h)
 }
 
 func (ctx *context) AddExternalStore(storeType data.Type, storeObj interface{}) error {
