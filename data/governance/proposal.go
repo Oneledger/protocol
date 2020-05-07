@@ -8,14 +8,6 @@ import (
 
 const EmptyStr = ""
 
-type (
-	ProposalType    int
-	ProposalStatus  int
-	ProposalOutcome int
-	ProposalID      string
-	ProposalState   int
-)
-
 type options struct {
 	FundingDeadline int64
 	FundingGoal     int64

@@ -1,4 +1,10 @@
 package governance
 
-type ProposalAmount int
-type ProposalID int
+type (
+	ProposalAmount  int
+	ProposalID      string
+	ProposalType    int
+	ProposalStatus  int
+	ProposalOutcome int
+	ProposalState   int
+)
