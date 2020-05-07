@@ -5,12 +5,17 @@ const (
 	ProposalTypeCodeChange
 	ProposalTypeGeneral
 
-	ProposalStateActive ProposalState = iota
-	ProposalStatePassed
-	ProposalStateFailed
+	ProposalStatusFunding ProposalStatus = iota
+	ProposalStatusVoting
+	ProposalStatusCompleted
 
 	ProposalOutcomeInProgress ProposalOutcome = iota
 	ProposalOutcomeInsufficientFunds
 	ProposalOutcomeInsufficientVotes
+	ProposalOutcomeCancelled
 	ProposalOutcomeCompleted
+
+	ProposalStateActive ProposalState = iota
+	ProposalStatePassed
+	ProposalStateFailed
 )

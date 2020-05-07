@@ -1,12 +1,32 @@
 package governance
 
-import "github.com/Oneledger/protocol/data/keys"
+import (
+	"crypto/md5"
+	"encoding/hex"
+	"github.com/Oneledger/protocol/data/keys"
+)
+
+const EmptyStr = ""
 
 type (
 	ProposalType    int
-	ProposalState   int
+	ProposalStatus  int
 	ProposalOutcome int
+	ProposalID      string
+	ProposalState   int
 )
+
+type options struct {
+	FundingDeadline int64
+	FundingGoal     int64
+	VotingDeadline  int64
+}
+
+type ProposalOptions struct {
+	ConfigUpdate options
+	CodeChange   options
+	General      options
+}
 
 type ProposerInfo struct {
 	address keys.Address
@@ -14,8 +34,9 @@ type ProposerInfo struct {
 }
 
 type Proposal struct {
+	ProposalID      ProposalID
 	Type            ProposalType
-	State           ProposalState
+	Status          ProposalStatus
 	Outcome         ProposalOutcome
 	Description     string
 	Proposer        ProposerInfo
@@ -28,8 +49,9 @@ func NewProposal(propType ProposalType, desc string, proposer ProposerInfo, fund
 	votingDeadline int64) *Proposal {
 
 	return &Proposal{
+		ProposalID:      GenerateProposalID(proposer.address.String() + desc),
 		Type:            propType,
-		State:           ProposalStateActive,
+		Status:          ProposalStatusFunding,
 		Outcome:         ProposalOutcomeInProgress,
 		Description:     desc,
 		Proposer:        proposer,
@@ -37,4 +59,13 @@ func NewProposal(propType ProposalType, desc string, proposer ProposerInfo, fund
 		FundingGoal:     fundingGoal,
 		VotingDeadline:  votingDeadline,
 	}
+}
+
+func GenerateProposalID(key string) ProposalID {
+	hashHandler := md5.New()
+	_, err := hashHandler.Write([]byte(key))
+	if err != nil {
+		return EmptyStr
+	}
+	return ProposalID(hex.EncodeToString(hashHandler.Sum(nil)))
 }
