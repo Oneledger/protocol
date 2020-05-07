@@ -160,7 +160,7 @@ func runFundProposal(ctx *action.Context, tx action.RawTx) (bool, action.Respons
 	//   Change the state of the proposal to VOTING, if funding goal is met
 	fundingAmount := balance.NewAmountFromBigInt(fundProposal.FundValue.Value.BigInt())
 	currentFundsforProposal := governance.GetCurrentFunds(proposal.ProposalID, ctx.ProposalMasterStore.ProposalFund)
-	newAmount := fundingAmount.Plus(currentFundsforProposal)
+	newAmount := fundingAmount.Plus(*currentFundsforProposal)
 	if newAmount.BigInt().Cmp(proposal.FundingGoal.BigInt()) >= 0 {
 		//5. Update status and set voting deadline
 		proposal.Status = governance.ProposalStatusVoting

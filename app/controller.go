@@ -3,6 +3,7 @@ package app
 import (
 	"encoding/hex"
 	"fmt"
+
 	"github.com/Oneledger/protocol/data/governance"
 
 	"math"
@@ -116,7 +117,7 @@ func (app *App) blockBeginner() blockBeginner {
 		app.Context.deliver = storage.NewState(app.Context.chainstate).WithGas(gc)
 
 		// update the validator set
-		err := app.Context.validators.Setup(req, app.Context.node.ValidatorAddress())
+		err := app.Context.validators.Setup(req)
 		if err != nil {
 			app.logger.Error("validator set with error", err)
 		}
@@ -257,7 +258,8 @@ func (app *App) blockEnder() blockEnder {
 
 		fee, err := app.Context.feePool.WithState(app.Context.deliver).Get([]byte(fees.POOL_KEY))
 		app.logger.Detail("endblock fee", fee, err)
-		updates := app.Context.validators.GetEndBlockUpdate(app.Context.ValidatorCtx(), req)
+		updates := app.Context.validators.GetEndBlockUpdate(app.Context.ValidatorCtx(), req, app.Context.node.ValidatorAddress())
+		fmt.Printf("updates: %+v", updates)
 		result := ResponseEndBlock{
 			ValidatorUpdates: updates,
 			//Tags:             []kv.Pair(nil),

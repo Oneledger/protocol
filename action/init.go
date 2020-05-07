@@ -13,9 +13,9 @@ const (
 	SEND Type = 0x01
 
 	//staking related transaction
-	APPLYVALIDATOR Type = 0x11
-	WITHDRAW       Type = 0x12
-	PURGE          Type = 0x13
+	STAKE    Type = 0x11
+	UNSTAKE  Type = 0x12
+	WITHDRAW Type = 0x13
 
 	//ons related transaction
 	DOMAIN_CREATE     Type = 0x21
@@ -69,8 +69,10 @@ func (t Type) String() string {
 	switch t {
 	case SEND:
 		return "SEND"
-	case APPLYVALIDATOR:
-		return "APPLY_VALIDATOR"
+	case STAKE:
+		return "STAKE"
+	case UNSTAKE:
+		return "UNSTAKE"
 	case WITHDRAW:
 		return "WITHDRAW"
 	case DOMAIN_CREATE:

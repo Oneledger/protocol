@@ -57,29 +57,12 @@ utest:
 		github.com/Oneledger/protocol/rpc \
 		github.com/Oneledger/protocol/identity \
 		github.com/Oneledger/protocol/app \
+		github.com/Oneledger/protocol/action/staking \
 		-coverprofile a.out
 
 coverage:
 	go tool cover -html=a.out -o cover.html
 
-
-#
-# run apply validator tests
-#
-applytest: install
-	@./scripts/stopNodes
-	@./scripts/resetDev
-	@./scripts/startDev
-	@./scripts/testapply
-	@./scripts/getValidators
-	@./scripts/stopNodes
-
-purgetest: install
-	@./scripts/stopDev
-	@./scripts/resetDev
-	@./scripts/startDev
-	@./scripts/testpurgevalidator
-	@./scripts/stopDev
 
 #
 # run ons tests

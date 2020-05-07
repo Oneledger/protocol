@@ -27,7 +27,7 @@ func GetCurrentFunds(id ProposalID, store *ProposalFundStore) *balance.Amount {
 	})
 	totalBalance := balance.NewAmountFromInt(0)
 	for _, fund := range funds {
-		totalBalance = totalBalance.Plus(fund.fundingAmount)
+		totalBalance = totalBalance.Plus(*fund.fundingAmount)
 	}
 	return totalBalance
 }
@@ -43,7 +43,7 @@ func GetCurrentFundsByFunder(id ProposalID, funder keys.Address, store *Proposal
 	funderBalance := balance.NewAmountFromInt(0)
 	for _, fund := range funds {
 		if fund.address.Equal(funder) {
-			funderBalance = funderBalance.Plus(fund.fundingAmount)
+			funderBalance = funderBalance.Plus(*fund.fundingAmount)
 			return funderBalance, nil
 		}
 	}

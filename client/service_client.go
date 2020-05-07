@@ -29,6 +29,16 @@ func (c *ServiceClient) Balance(addr keys.Address) (out BalanceReply, err error)
 	return
 }
 
+func (c *ServiceClient) ValidatorStatus(request ValidatorStatusRequest) (out ValidatorStatusReply, err error) {
+	err = c.Call("query.ValidatorStatus", &request, &out)
+	return
+}
+
+func (c *ServiceClient) DelegationStatus(request DelegationStatusRequest) (out DelegationStatusReply, err error) {
+	err = c.Call("query.DelegationStatus", &request, &out)
+	return
+}
+
 func (c *ServiceClient) CurrBalance(addr keys.Address, currency string) (out CurrencyBalanceReply, err error) {
 	/*if len(request) <= 20 {
 		return out, errors.New("address has insufficient length")
@@ -82,18 +92,18 @@ func (c *ServiceClient) ListAccountAddresses() (out ListAccountAddressesReply, e
 	return
 }
 
-func (c *ServiceClient) ApplyValidator(req ApplyValidatorRequest) (out ApplyValidatorReply, err error) {
-	err = c.Call("tx.ApplyValidator", req, &out)
+func (c *ServiceClient) Stake(req StakeRequest) (out StakeReply, err error) {
+	err = c.Call("tx.Stake", req, &out)
 	return
 }
 
-func (c *ServiceClient) PurgeValidator(req PurgeValidatorRequest) (out PurgeValidatorReply, err error) {
-	err = c.Call("tx.PurgeValidator", req, &out)
+func (c *ServiceClient) Unstake(req UnstakeRequest) (out UnstakeReply, err error) {
+	err = c.Call("tx.Unstake", req, &out)
 	return
 }
 
-func (c *ServiceClient) WithdrawReward(req WithdrawRewardRequest) (out WithdrawRewardReply, err error) {
-	err = c.Call("tx.WithdrawReward", req, &out)
+func (c *ServiceClient) Withdraw(req WithdrawRequest) (out WithdrawReply, err error) {
+	err = c.Call("tx.Withdraw", req, &out)
 	return
 }
 

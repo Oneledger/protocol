@@ -34,6 +34,7 @@ import (
 	"github.com/Oneledger/protocol/consensus"
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/chain"
+	"github.com/Oneledger/protocol/data/delegation"
 	"github.com/Oneledger/protocol/data/ons"
 
 	"github.com/Oneledger/protocol/data/fees"
@@ -490,6 +491,14 @@ func initialState(args *testnetConfig, nodeList []node, option ethchain.ChainDri
 	fees_db := make([]consensus.BalanceState, 0, len(nodeList))
 	total := olt.NewCoinFromInt(args.totalFunds)
 
+	// staking
+	stakingOption := delegation.Options{
+		MinSelfDelegationAmount: *balance.NewAmount(5),
+		MinDelegationAmount:     *balance.NewAmount(5),
+		TopValidatorCount:       3,
+		MaturityTime:            10,
+	}
+
 	//var initialAddrs []keys.Address
 	initAddrIndex := 0
 	//for _, addr := range args.initialTokenHolders {
@@ -600,11 +609,12 @@ func initialState(args *testnetConfig, nodeList []node, option ethchain.ChainDri
 		Domains:    domains,
 		Fees:       fees_db,
 		Governance: consensus.GovernanceState{
-			FeeOption:   feeOpt,
-			ETHCDOption: option,
-			BTCCDOption: btcOption,
-			ONSOptions:  onsOption,
-			PropOptions: propOpt,
+			FeeOption:      feeOpt,
+			ETHCDOption:    option,
+			BTCCDOption:    btcOption,
+			ONSOptions:     onsOption,
+			PropOptions:    propOpt,
+			StakingOptions: stakingOption,
 		},
 	}
 }

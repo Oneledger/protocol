@@ -2,11 +2,13 @@ package transfer
 
 import (
 	"errors"
-	"github.com/Oneledger/protocol/data/fees"
 	"os"
 	"testing"
 
-	"github.com/tendermint/tm-db"
+	"github.com/Oneledger/protocol/data/fees"
+	"github.com/Oneledger/protocol/data/governance"
+
+	db "github.com/tendermint/tm-db"
 
 	"github.com/Oneledger/protocol/log"
 	"github.com/Oneledger/protocol/storage"
@@ -145,6 +147,7 @@ func assemblyCtxData(currencyName string, currencyDecimal int, setStore bool, se
 		},
 		MinFeeDecimal: 9,
 	}
+	ctx.Govern = governance.NewStore("tg", cs)
 	return ctx
 }
 
