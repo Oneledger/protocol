@@ -32,6 +32,7 @@ type Context struct {
 	Domains      *ons.DomainStore
 	FeePool      *fees.Store
 	ValidatorSet *identity.ValidatorStore
+	WitnessSet   *identity.WitnessStore
 	Trackers     *bitcoin.TrackerStore
 	EthTrackers  *ethTracker.TrackerStore
 	// configurations
@@ -44,8 +45,7 @@ type Context struct {
 	Services client.ExtServiceContext
 	Logger   *log.Logger
 
-	TxTypes  *[]action.TxTypeDescribe
-
+	TxTypes *[]action.TxTypeDescribe
 }
 
 // Map of services, keyed by the name/prefix of the service
@@ -57,7 +57,7 @@ func NewMap(ctx *Context) (Map, error) {
 		broadcast.Name(): broadcast.NewService(ctx.Services, ctx.Router, ctx.Currencies, ctx.FeePool, ctx.Domains, ctx.Logger, ctx.Trackers),
 		nodesvc.Name():   nodesvc.NewService(ctx.NodeContext, &ctx.Cfg, ctx.Logger),
 		owner.Name():     owner.NewService(ctx.Accounts, ctx.Logger),
-		query.Name():     query.NewService(ctx.Services, ctx.Balances, ctx.Currencies, ctx.ValidatorSet, ctx.Domains, ctx.FeePool, ctx.Logger, ctx.TxTypes),
+		query.Name():     query.NewService(ctx.Services, ctx.Balances, ctx.Currencies, ctx.ValidatorSet, ctx.WitnessSet, ctx.Domains, ctx.FeePool, ctx.Logger, ctx.TxTypes),
 		tx.Name():        tx.NewService(ctx.Balances, ctx.Router, ctx.Accounts, ctx.FeePool.GetOpt(), ctx.NodeContext, ctx.Logger),
 		btc.Name():       btc.NewService(ctx.Balances, ctx.Accounts, ctx.NodeContext, ctx.ValidatorSet, ctx.Trackers, ctx.Logger),
 		ethereum.Name():  ethereum.NewService(ctx.Cfg.EthChainDriver, ctx.Router, ctx.Accounts, ctx.NodeContext, ctx.ValidatorSet, ctx.EthTrackers, ctx.Logger),
