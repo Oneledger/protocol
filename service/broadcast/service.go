@@ -61,7 +61,7 @@ func (svc *Service) validateAndSignTx(req client.BroadcastRequest) ([]byte, erro
 	handler := svc.router.Handler(tx.Type)
 	ctx := action.NewContext(svc.router, nil, nil, nil, nil, svc.currencies,
 		svc.feePool, nil, nil, svc.domains, svc.trackers, nil, nil, nil,
-		svc.logger)
+		svc.logger, nil)
 
 	_, err = handler.Validate(ctx, signedTx)
 	if err != nil {

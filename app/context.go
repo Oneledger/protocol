@@ -321,3 +321,7 @@ func (ctx *context) AddExternalTx(t action.Type, h action.Tx) error {
 func (ctx *context) AddExternalStore(storeType data.Type, storeObj interface{}) error {
 	return ctx.extStores.Add(storeType, storeObj)
 }
+
+func (ctx *context) GetChainState() *storage.ChainState {
+	return ctx.chainstate
+}
