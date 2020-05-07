@@ -16,10 +16,10 @@ require (
 	github.com/ethereum/go-ethereum v1.9.6
 	github.com/fjl/memsize v0.0.0-20190710130421-bcb5799ab5e5 // indirect
 	github.com/gballet/go-libpcsclite v0.0.0-20190607065134-2772fd86a8ff // indirect
+	github.com/go-delve/delve v1.4.1 // indirect
 	github.com/go-kit/kit v0.10.0
 	github.com/go-language-server/uri v0.2.0 // indirect
 	github.com/google/uuid v1.1.1
-	github.com/hashicorp/golang-lru v0.5.3 // indirect
 	github.com/huin/goupnp v1.0.0 // indirect
 	github.com/jackpal/go-nat-pmp v1.0.1 // indirect
 	github.com/karalabe/usb v0.0.0-20190919080040-51dc0efba356 // indirect

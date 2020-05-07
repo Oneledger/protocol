@@ -2,19 +2,20 @@ package staking
 
 import (
 	"encoding/json"
+
 	"github.com/tendermint/tendermint/libs/kv"
 
 	"github.com/Oneledger/protocol/action"
+	"github.com/Oneledger/protocol/data/keys"
 	"github.com/pkg/errors"
 )
 
 var _ action.Msg = &Withdraw{}
 
 type Withdraw struct {
-	// staking account from which the reward is withdraw
-	From action.Address `json:"from"`
-	// beneficiary account to which the reward is withdraw to
-	To action.Address `json:"to"`
+	ValidatorAddress keys.Address
+	StakeAddress     keys.Address
+	Stake            action.Amount
 }
 
 func (s Withdraw) Marshal() ([]byte, error) {
@@ -26,7 +27,7 @@ func (s *Withdraw) Unmarshal(data []byte) error {
 }
 
 func (s Withdraw) Signers() []action.Address {
-	return []action.Address{s.From.Bytes()}
+	return []action.Address{s.StakeAddress.Bytes(), s.ValidatorAddress.Bytes()}
 }
 
 func (s Withdraw) Type() action.Type {
@@ -41,15 +42,19 @@ func (s Withdraw) Tags() kv.Pairs {
 		Value: []byte(s.Type().String()),
 	}
 	tag2 := kv.Pair{
-		Key:   []byte("tx.owner"),
-		Value: s.From.Bytes(),
+		Key:   []byte("tx.validator"),
+		Value: s.ValidatorAddress.Bytes(),
 	}
 	tag3 := kv.Pair{
-		Key:   []byte("tx.to"),
-		Value: s.To.Bytes(),
+		Key:   []byte("tx.delegator"),
+		Value: s.StakeAddress.Bytes(),
+	}
+	tag4 := kv.Pair{
+		Key:   []byte("tx.amount"),
+		Value: s.Stake.Value.BigInt().Bytes(),
 	}
 
-	tags = append(tags, tag, tag2, tag3)
+	tags = append(tags, tag, tag2, tag3, tag4)
 	return tags
 }
 
@@ -59,29 +64,38 @@ type withdrawTx struct {
 }
 
 func (withdrawTx) Validate(ctx *action.Context, tx action.SignedTx) (bool, error) {
-	Withdraw := &Withdraw{}
-	err := Withdraw.Unmarshal(tx.Data)
+	apply := &Withdraw{}
+	err := apply.Unmarshal(tx.Data)
 	if err != nil {
 		return false, errors.Wrap(action.ErrWrongTxType, err.Error())
 	}
 
 	//validate basic signature
-	err = action.ValidateBasic(tx.RawBytes(), Withdraw.Signers(), tx.Signatures)
+	err = action.ValidateBasic(tx.RawBytes(), apply.Signers(), tx.Signatures)
 	if err != nil {
 		return false, err
 	}
 
-	feeOpt := ctx.FeePool.GetOpt()
-	err = action.ValidateFee(feeOpt, tx.Fee)
+	err = action.ValidateFee(ctx.FeePool.GetOpt(), tx.Fee)
 	if err != nil {
 		return false, err
 	}
 
-	if tx.Fee.Price.Currency != feeOpt.FeeCurrency.Name {
-		return false, action.ErrInvalidFeeCurrency
+	if err := apply.StakeAddress.Err(); err != nil {
+		return false, err
 	}
-	if !feeOpt.MinFee().LessThanEqualCoin(tx.Fee.Price.ToCoin(ctx.Currencies)) {
-		return false, action.ErrInvalidFeePrice
+
+	if apply.ValidatorAddress == nil {
+		return false, action.ErrMissingData
+	}
+
+	coin := apply.Stake.ToCoinWithBase(ctx.Currencies)
+	if coin.LessThanEqualCoin(coin.Currency.NewCoinFromInt(0)) {
+		return false, action.ErrInvalidAmount
+	}
+
+	if coin.Currency.Name != "OLT" {
+		return false, action.ErrInvalidAmount
 	}
 
 	return true, nil
@@ -100,34 +114,27 @@ func (s withdrawTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (ok boo
 }
 
 func (withdrawTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas) (bool, action.Response) {
-	return action.BasicFeeHandling(ctx, signedTx, start, size, 1)
+	return action.BasicFeeHandling(ctx, signedTx, start, size, 2)
 }
 
 func runWithdraw(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
-
-	balances := ctx.Balances
-	feePool := ctx.FeePool
-
 	draw := &Withdraw{}
 	err := draw.Unmarshal(tx.Data)
 	if err != nil {
 		return false, action.Response{Log: err.Error()}
 	}
 
-	allow := feePool.GetAllowedWithdraw(draw.From)
-	if allow.LessThanCoin(ctx.FeePool.GetOpt().MinFee()) {
-		return false, action.Response{Log: "No reward is allowed to withdraw"}
-	}
+	coin := draw.Stake.ToCoinWithBase(ctx.Currencies)
 
-	err = feePool.MinusFromAddress(draw.From, allow)
+	err = ctx.Delegators.Withdraw(draw.ValidatorAddress, draw.StakeAddress, draw.Stake.Value)
 	if err != nil {
-		return false, action.Response{Log: errors.Wrap(err, "minus from pool").Error()}
+		return false, action.Response{Log: errors.Wrap(err, draw.StakeAddress.String()).Error()}
 	}
 
-	err = balances.AddToAddress(draw.To, allow)
+	err = ctx.Balances.AddToAddress(draw.StakeAddress, coin)
 	if err != nil {
 		return false, action.Response{Log: errors.Wrap(err, "add to balance").Error()}
 	}
 
-	return true, action.Response{Events: action.GetEvent(draw.Tags(), "rewards"), Info: allow.String()}
+	return true, action.Response{Events: action.GetEvent(draw.Tags(), "apply_withdraw"), Info: coin.String()}
 }

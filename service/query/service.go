@@ -2,13 +2,15 @@ package query
 
 import (
 	"encoding/hex"
-	"github.com/Oneledger/protocol/data/governance"
 	"strings"
 
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/client"
 	"github.com/Oneledger/protocol/data/balance"
+	"github.com/Oneledger/protocol/data/delegation"
 	"github.com/Oneledger/protocol/data/fees"
+	"github.com/Oneledger/protocol/data/governance"
+	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/data/ons"
 	"github.com/Oneledger/protocol/identity"
 	"github.com/Oneledger/protocol/log"
@@ -23,6 +25,8 @@ type Service struct {
 	currencies     *balance.CurrencySet
 	validators     *identity.ValidatorStore
 	witnesses      *identity.WitnessStore
+	delegators     *delegation.DelegationStore
+	govern         *governance.Store
 	ons            *ons.DomainStore
 	feePool        *fees.Store
 	proposalMaster *governance.ProposalMasterStore
@@ -35,7 +39,7 @@ func Name() string {
 }
 
 func NewService(ctx client.ExtServiceContext, balances *balance.Store, currencies *balance.CurrencySet, validators *identity.ValidatorStore, witnesses *identity.WitnessStore,
-	domains *ons.DomainStore, feePool *fees.Store, proposalMaster *governance.ProposalMasterStore, logger *log.Logger, txTypes *[]action.TxTypeDescribe) *Service {
+	domains *ons.DomainStore, delegators *delegation.DelegationStore, govern *governance.Store, feePool *fees.Store, proposalMaster *governance.ProposalMasterStore, logger *log.Logger, txTypes *[]action.TxTypeDescribe) *Service {
 	return &Service{
 		name:           "query",
 		ext:            ctx,
@@ -43,6 +47,8 @@ func NewService(ctx client.ExtServiceContext, balances *balance.Store, currencie
 		balances:       balances,
 		validators:     validators,
 		witnesses:      witnesses,
+		delegators:     delegators,
+		govern:         govern,
 		ons:            domains,
 		feePool:        feePool,
 		proposalMaster: proposalMaster,
@@ -80,9 +86,44 @@ func (svc *Service) ListValidators(_ client.ListValidatorsRequest, reply *client
 		return codes.ErrListValidators
 	}
 
+	stakingOptions, err := svc.govern.GetStakingOptions()
+	if err != nil {
+		svc.logger.Error("error to fetch staking options")
+		return codes.ErrListValidators
+	}
+
+	vMap := make(map[string]bool)
+	cnt := int64(0)
+
+	i := 0
+	queue := &identity.ValidatorQueue{PriorityQueue: make(utils.PriorityQueue, 0, 100)}
+	svc.validators.Iterate(func(addr keys.Address, validator *identity.Validator) bool {
+		queued := utils.NewQueued(addr, validator.Power, i)
+		queue.Push(queued)
+		i++
+		return false
+	})
+	queue.Init()
+
+	for queue.Len() > 0 && cnt < stakingOptions.TopValidatorCount {
+		queued := queue.Pop()
+		addr := queued.Value()
+		validator, err := svc.validators.Get(addr)
+		if err != nil {
+			svc.logger.Error(err, "error deserialize validator")
+			continue
+		}
+		if validator.Power < stakingOptions.MinSelfDelegationAmount.BigInt().Int64() {
+			break
+		}
+		vMap[validator.Address.String()] = true
+		cnt++
+	}
+
 	*reply = client.ListValidatorsReply{
 		Validators: validators,
 		Height:     svc.balances.State.Version(),
+		VMap:       vMap,
 	}
 	return nil
 }
@@ -133,6 +174,83 @@ func (svc *Service) CurrencyBalance(req client.CurrencyBalanceRequest, resp *cli
 		Balance:  coin.Humanize(),
 		Height:   svc.balances.State.Version(),
 	}
+	return nil
+}
+
+func (svc *Service) ValidatorStatus(req client.ValidatorStatusRequest, resp *client.ValidatorStatusReply) error {
+	err := req.Address.Err()
+	if err != nil {
+		return codes.ErrBadAddress
+	}
+
+	exists := false
+	validator, err := svc.validators.Get(req.Address)
+	if err != nil {
+		*resp = client.ValidatorStatusReply{
+			Exists:                exists,
+			Height:                svc.balances.State.Version(),
+			Staking:               "0",
+			TotalDelegationAmount: "0",
+			SelfDelegationAmount:  "0",
+			DelegationAmount:      "0",
+		}
+		return nil
+	}
+
+	svc.logger.Infof("Validator - %s, delegator - %s\n", validator.Address.Humanize(), validator.StakeAddress.Humanize())
+
+	totalDelegationAmount, _ := svc.delegators.GetValidatorAmount(validator.Address)
+	selfDelegationAmount, _ := svc.delegators.GetValidatorDelegationAmount(validator.Address, validator.StakeAddress)
+	delegationAmount, _ := totalDelegationAmount.Minus(*selfDelegationAmount)
+
+	if validator.Power > 0 {
+		exists = true
+	}
+
+	*resp = client.ValidatorStatusReply{
+		Exists:                exists,
+		Height:                svc.balances.State.Version(),
+		Power:                 validator.Power,
+		Staking:               validator.Staking.String(),
+		TotalDelegationAmount: totalDelegationAmount.String(),
+		SelfDelegationAmount:  selfDelegationAmount.String(),
+		DelegationAmount:      delegationAmount.String(),
+	}
+
+	return nil
+}
+
+func (svc *Service) DelegationStatus(req client.DelegationStatusRequest, resp *client.DelegationStatusReply) error {
+	err := req.Address.Err()
+	if err != nil {
+		return codes.ErrBadAddress
+	}
+
+	options, _ := svc.govern.GetStakingOptions()
+	if options == nil {
+		return codes.ErrFlagNotSet
+	}
+
+	effectiveDelegationAmount, _ := svc.delegators.GetDelegatorEffectiveAmount(req.Address)
+	withdrawableAmount, _ := svc.delegators.GetDelegatorBoundedAmount(req.Address)
+
+	height := svc.balances.State.Version()
+	maturedAmounts := svc.delegators.GetMaturedPendingAmount(req.Address, height, options.MaturityTime+1)
+
+	bal, err := svc.balances.GetBalance(req.Address, svc.currencies)
+
+	if err != nil {
+		svc.logger.Error("error getting balance", err)
+		return codes.ErrGettingBalance
+	}
+
+	*resp = client.DelegationStatusReply{
+		Balance:                   bal.String(),
+		EffectiveDelegationAmount: effectiveDelegationAmount.String(),
+		WithdrawableAmount:        withdrawableAmount.String(),
+		MaturedAmounts:            maturedAmounts,
+	}
+
 	return nil
 }
 

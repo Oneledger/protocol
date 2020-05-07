@@ -20,7 +20,7 @@ func (fund *ProposalFund) Print() {
 func (pf *ProposalFundStore) GetCurrentFundsForProposal(id ProposalID) *balance.Amount {
 	totalBalance := balance.NewAmountFromInt(0)
 	pf.GetFundsForProposalID(id, func(proposalID ProposalID, fundingAddr keys.Address, amt *balance.Amount) ProposalFund {
-		totalBalance = totalBalance.Plus(amt)
+		totalBalance = totalBalance.Plus(*amt)
 		return ProposalFund{}
 	})
 	return totalBalance

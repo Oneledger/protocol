@@ -7,6 +7,7 @@ import (
 	"github.com/Oneledger/protocol/data/accounts"
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/bitcoin"
+	"github.com/Oneledger/protocol/data/delegation"
 	"github.com/Oneledger/protocol/data/ethereum"
 	"github.com/Oneledger/protocol/data/fees"
 	"github.com/Oneledger/protocol/data/governance"
@@ -24,6 +25,8 @@ type Context struct {
 	Accounts            accounts.Wallet
 	Balances            *balance.Store
 	Domains             *ons.DomainStore
+	Govern              *governance.Store
+	Delegators          *delegation.DelegationStore
 	FeePool             *fees.Store
 	Currencies          *balance.CurrencySet
 	FeeOpt              *fees.FeeOption
@@ -42,7 +45,7 @@ func NewContext(r Router, header *abci.Header, state *storage.State,
 	wallet accounts.Wallet, balances *balance.Store,
 	currencies *balance.CurrencySet, feePool *fees.Store,
 	validators *identity.ValidatorStore, witnesses *identity.WitnessStore,
-	domains *ons.DomainStore, btcTrackers *bitcoin.TrackerStore,
+	domains *ons.DomainStore, govern *governance.Store, delegators *delegation.DelegationStore, btcTrackers *bitcoin.TrackerStore,
 	ethTrackers *ethereum.TrackerStore, jobStore *jobs.JobStore,
 	lockScriptStore *bitcoin.LockScriptStore, logger *log.Logger, proposalmaster *governance.ProposalMasterStore,
 	extStores data.Router) *Context {
@@ -54,6 +57,8 @@ func NewContext(r Router, header *abci.Header, state *storage.State,
 		Accounts:            wallet,
 		Balances:            balances,
 		Domains:             domains,
+		Govern:              govern,
+		Delegators:          delegators,
 		FeePool:             feePool,
 		Currencies:          currencies,
 		Validators:          validators,

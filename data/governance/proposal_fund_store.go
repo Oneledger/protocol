@@ -131,7 +131,7 @@ func (pf *ProposalFundStore) AddFunds(proposalId ProposalID, fundingAddress keys
 	if err != nil {
 		return errors.Wrap(err, errorGettingRecord)
 	}
-	return pf.set(key, *amt.Plus(amount))
+	return pf.set(key, *amt.Plus(*amount))
 }
 
 func (pf *ProposalFundStore) DeductFunds(proposalId ProposalID, fundingAddress keys.Address, amount *balance.Amount) error {
@@ -140,7 +140,7 @@ func (pf *ProposalFundStore) DeductFunds(proposalId ProposalID, fundingAddress k
 	if err != nil {
 		return errors.Wrap(err, errorGettingRecord)
 	}
-	result, err := amt.Minus(amount)
+	result, err := amt.Minus(*amount)
 	if err != nil {
 		return errors.Wrap(err, errorGettingRecord)
 	}

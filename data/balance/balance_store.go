@@ -105,6 +105,11 @@ func (st *Store) IterateAll(fn func(addr keys.Address, c string, amt Amount) boo
 //	return st.State.Exists(key)
 //}
 
+func (st *Store) SetBalance(addr keys.Address, coin Coin) error {
+	key := storage.StoreKey(string(addr) + storage.DB_PREFIX + coin.Currency.Name)
+	return st.set(key, *coin.Amount)
+}
+
 func (st *Store) AddToAddress(addr keys.Address, coin Coin) error {
 	key := storage.StoreKey(string(addr) + storage.DB_PREFIX + coin.Currency.Name)
 
