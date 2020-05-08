@@ -96,7 +96,6 @@ func (pf *ProposalFundStore) GetProposalsForFunder(funderAddress keys.Address, f
 
 func (pf *ProposalFundStore) AddFunds(proposalId ProposalID, fundingAddress keys.Address, amount *ProposalAmount) error {
 	key := storage.StoreKey(string(proposalId) + storage.DB_PREFIX + fundingAddress.String())
-	fmt.Println("Add Key : ", key)
 	amt, err := pf.get(key)
 	if err != nil {
 		return errors.Wrapf(err, "Error in getting proposer %s", fundingAddress.String())
@@ -106,7 +105,6 @@ func (pf *ProposalFundStore) AddFunds(proposalId ProposalID, fundingAddress keys
 
 func (pf *ProposalFundStore) DeleteFunds(proposalId ProposalID, fundingAddress keys.Address) (bool, error) {
 	key := storage.StoreKey(string(proposalId) + storage.DB_PREFIX + fundingAddress.String())
-	fmt.Println("Delete Key : ", key)
 	_, err := pf.get(key)
 	if err != nil {
 		return false, errors.Wrapf(err, "Error in getting funds %s", fundingAddress.String())

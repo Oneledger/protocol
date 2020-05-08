@@ -21,6 +21,7 @@ var (
 )
 
 func init() {
+	fmt.Println("####### TESTING PROPOSAL FUND STORE #######")
 	db := db.NewDB("test", db.MemDBBackend, "")
 	cs = storage.NewState(storage.NewChainState("balance", db))
 	store = NewProposalFundStore("test", cs)
@@ -31,8 +32,8 @@ func init() {
 	pub2, _, _ := keys.NewKeyPairFromTendermint()
 	h2, _ := pub2.GetHandler()
 	address2 = h2.Address()
-	ID1 = "ID1"
-	ID2 = "ID2"
+	ID1 = generateProposalID("Test")
+	ID2 = generateProposalID("Test")
 }
 
 func TestProposalFundStore_AddFunds(t *testing.T) {
@@ -55,7 +56,7 @@ func TestProposalFundStore_AddFunds(t *testing.T) {
 }
 
 func TestNewProposalFundStore_Delete(t *testing.T) {
-	fmt.Println("Deleting fund record : ", ID1, "| address :", address)
+	fmt.Println("Deleting fund record ID : ", ID1, "| address :", address)
 	ok, err := store.DeleteFunds(ID1, address)
 	if err != nil {
 		fmt.Println("Error Deleting : ", err)
