@@ -37,7 +37,7 @@ func NewProposal(propType ProposalType, desc string, proposer keys.Address, fund
 	votingDeadline int64) *Proposal {
 
 	return &Proposal{
-		ProposalID:      GenerateProposalID(proposer.String()),
+		ProposalID:      generateProposalID(proposer.String()),
 		Type:            propType,
 		Status:          ProposalStatusFunding,
 		Outcome:         ProposalOutcomeInProgress,
@@ -49,7 +49,7 @@ func NewProposal(propType ProposalType, desc string, proposer keys.Address, fund
 	}
 }
 
-func GenerateProposalID(key string) ProposalID {
+func generateProposalID(key string) ProposalID {
 	uniqueKey := key + time.Now().String()
 	hashHandler := md5.New()
 	_, err := hashHandler.Write([]byte(uniqueKey))
