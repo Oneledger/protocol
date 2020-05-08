@@ -36,12 +36,12 @@ func TestProposalFundStore_AddFunds(t *testing.T) {
 	err := store.AddFunds("ID1", address, NewAmount(10))
 	assert.NoError(t, err, "")
 	cs.Commit()
-	err = store.AddFunds("ID1", address, NewAmount(100))
-	assert.NoError(t, err, "")
-	cs.Commit()
-	err = store.AddFunds("ID2", address2, NewAmount(120))
-	assert.NoError(t, err, "")
-	cs.Commit()
+	//err = store.AddFunds("ID1", address, NewAmount(100))
+	//assert.NoError(t, err, "")
+	//cs.Commit()
+	//err = store.AddFunds("ID2", address2, NewAmount(120))
+	//assert.NoError(t, err, "")
+	//cs.Commit()
 
 }
 
@@ -63,6 +63,18 @@ func TestProposalFundStore_GetFundersForProposalID(t *testing.T) {
 			fundingAmount: amt.String(),
 		}
 	})
-	fmt.Println("Found Proposals :", foundProposals)
-	assert.True(t, ok, "")
+	fmt.Println("Found Proposals :", ok)
+}
+
+func TestProposalFundStore_GetProposalForFunder(t *testing.T) {
+	fmt.Println("Get Funders for Address :", address)
+
+	proposals := GetProposalsForFunder(store, address, func(proposalID ProposalID, fundingAddr keys.Address, amt *ProposalAmount) Funder {
+		return Funder{
+			id:            proposalID,
+			address:       fundingAddr.String(),
+			fundingAmount: amt.String(),
+		}
+	})
+	fmt.Println("Found Proposals :", proposals)
 }
