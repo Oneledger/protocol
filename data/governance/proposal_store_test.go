@@ -169,6 +169,5 @@ func TestProposalStore_SetOptions(t *testing.T) {
 	assert.Equal(t, nil, err)
 
 	propOpt, err := govStore.GetProposalOptions()
-
 	assert.Exactly(t, &proposalOpt, propOpt)
 }
