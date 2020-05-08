@@ -12,9 +12,10 @@ import (
 )
 
 var (
-	store   *ProposalFundStore
-	cs      *storage.State
-	address keys.Address
+	store    *ProposalFundStore
+	cs       *storage.State
+	address  keys.Address
+	address2 keys.Address
 )
 
 func init() {
@@ -24,12 +25,44 @@ func init() {
 	pub, _, _ := keys.NewKeyPairFromTendermint()
 	h, _ := pub.GetHandler()
 	address = h.Address()
+
+	pub2, _, _ := keys.NewKeyPairFromTendermint()
+	h2, _ := pub2.GetHandler()
+	address2 = h2.Address()
 }
 
-func TestProposalFundStore_AddNewPropososer(t *testing.T) {
+func TestProposalFundStore_AddFunds(t *testing.T) {
 	fmt.Println("Adding New Proposer for funding")
-	err := store.AddNewPropososer(0, address, 100)
+	err := store.AddFunds("ID1", address, NewAmount(10))
 	assert.NoError(t, err, "")
-	err = store.AddNewPropososer(0, address, 100)
-	assert.Error(t, err, "")
+	cs.Commit()
+	err = store.AddFunds("ID1", address, NewAmount(100))
+	assert.NoError(t, err, "")
+	cs.Commit()
+	err = store.AddFunds("ID2", address2, NewAmount(120))
+	assert.NoError(t, err, "")
+	cs.Commit()
+
+}
+
+func TestProposalFundStore_Iterate(t *testing.T) {
+	fmt.Println("Iterating Stores")
+	store.Iterate(func(proposalID ProposalID, fundingAddr keys.Address, amt *ProposalAmount) bool {
+		fmt.Println("ProposalID : ", proposalID, "ProposalAddress :", fundingAddr, "Proposal Amount :", amt.BigInt())
+		return false
+	})
+}
+
+func TestProposalFundStore_GetFundersForProposalID(t *testing.T) {
+	fmt.Println("Get Funders for ID")
+
+	ok := GetFundersForProposalID(store, "ID1", func(proposalID ProposalID, fundingAddr keys.Address, amt *ProposalAmount) Funder {
+		return Funder{
+			id:            proposalID,
+			address:       fundingAddr.String(),
+			fundingAmount: amt.String(),
+		}
+	})
+	fmt.Println("Found Proposals :", foundProposals)
+	assert.True(t, ok, "")
 }
