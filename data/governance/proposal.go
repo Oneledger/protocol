@@ -4,6 +4,7 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 	"github.com/Oneledger/protocol/data/keys"
+	"time"
 )
 
 const EmptyStr = ""
@@ -20,28 +21,23 @@ type ProposalOptions struct {
 	General      options
 }
 
-type ProposerInfo struct {
-	address keys.Address
-	name    string
-}
-
 type Proposal struct {
 	ProposalID      ProposalID
 	Type            ProposalType
 	Status          ProposalStatus
 	Outcome         ProposalOutcome
 	Description     string
-	Proposer        ProposerInfo
+	Proposer        keys.Address
 	FundingDeadline int64
 	FundingGoal     int64
 	VotingDeadline  int64
 }
 
-func NewProposal(propType ProposalType, desc string, proposer ProposerInfo, fundingDeadline int64, fundingGoal int64,
+func NewProposal(propType ProposalType, desc string, proposer keys.Address, fundingDeadline int64, fundingGoal int64,
 	votingDeadline int64) *Proposal {
 
 	return &Proposal{
-		ProposalID:      GenerateProposalID(proposer.address.String() + desc),
+		ProposalID:      GenerateProposalID(proposer.String()),
 		Type:            propType,
 		Status:          ProposalStatusFunding,
 		Outcome:         ProposalOutcomeInProgress,
@@ -54,8 +50,9 @@ func NewProposal(propType ProposalType, desc string, proposer ProposerInfo, fund
 }
 
 func GenerateProposalID(key string) ProposalID {
+	uniqueKey := key + time.Now().String()
 	hashHandler := md5.New()
-	_, err := hashHandler.Write([]byte(key))
+	_, err := hashHandler.Write([]byte(uniqueKey))
 	if err != nil {
 		return EmptyStr
 	}

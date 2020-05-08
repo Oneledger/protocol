@@ -1,6 +1,7 @@
 package governance
 
 import (
+	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/serialize"
 	"github.com/Oneledger/protocol/storage"
 )
@@ -64,7 +65,7 @@ func (ps *ProposalStore) Iterate(fn func(id ProposalID, proposal *Proposal) bool
 		ps.prefix,
 		storage.Rangefix(string(ps.prefix)),
 		true,
-		func(key []byte, value []byte) bool {
+		func(key, value []byte) bool {
 			proposalID := ProposalID(key)
 			proposal := &Proposal{}
 
@@ -77,9 +78,9 @@ func (ps *ProposalStore) Iterate(fn func(id ProposalID, proposal *Proposal) bool
 	)
 }
 
-func (ps *ProposalStore) IterateProposer(fn func(id ProposalID, proposal *Proposal) bool, proposer ProposerInfo) (stopped bool) {
+func (ps *ProposalStore) IterateProposer(fn func(id ProposalID, proposal *Proposal) bool, proposer keys.Address) (stopped bool) {
 	return ps.Iterate(func(id ProposalID, proposal *Proposal) bool {
-		if proposal.Proposer.address.Equal(proposer.address) {
+		if proposal.Proposer.Equal(proposer) {
 			return fn(id, proposal)
 		}
 		return false
@@ -117,20 +118,20 @@ func (ps *ProposalStore) WithPrefixType(prefixType ProposalState) *ProposalStore
 	return ps
 }
 
-func (ps *ProposalStore) QueryAllStores(key ProposalID) (*Proposal, error) {
+func (ps *ProposalStore) QueryAllStores(key ProposalID) (*Proposal, ProposalState, error) {
 	proposal, err := ps.WithPrefixType(ProposalStateActive).Get(key)
 	if err == nil {
-		return proposal, nil
+		return proposal, ProposalStateActive, nil
 	}
 	proposal, err = ps.WithPrefixType(ProposalStatePassed).Get(key)
 	if err == nil {
-		return proposal, nil
+		return proposal, ProposalStatePassed, nil
 	}
 	proposal, err = ps.WithPrefixType(ProposalStateFailed).Get(key)
 	if err == nil {
-		return proposal, nil
+		return proposal, ProposalStateFailed, nil
 	}
-	return nil, err
+	return nil, -1, err
 }
 
 func (ps *ProposalStore) SetOptions(pOpt *ProposalOptions) {
