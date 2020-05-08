@@ -16,6 +16,8 @@ var (
 	cs       *storage.State
 	address  keys.Address
 	address2 keys.Address
+	ID1      ProposalID
+	ID2      ProposalID
 )
 
 func init() {
@@ -29,52 +31,78 @@ func init() {
 	pub2, _, _ := keys.NewKeyPairFromTendermint()
 	h2, _ := pub2.GetHandler()
 	address2 = h2.Address()
+	ID1 = "ID1"
+	ID2 = "ID2"
 }
 
 func TestProposalFundStore_AddFunds(t *testing.T) {
 	fmt.Println("Adding New Proposer for funding")
-	err := store.AddFunds("ID1", address, NewAmount(10))
+	err := store.AddFunds(ID1, address, NewAmount(100))
 	assert.NoError(t, err, "")
 	cs.Commit()
 	//err = store.AddFunds("ID1", address, NewAmount(100))
 	//assert.NoError(t, err, "")
 	//cs.Commit()
-	//err = store.AddFunds("ID2", address2, NewAmount(120))
-	//assert.NoError(t, err, "")
-	//cs.Commit()
+	err = store.AddFunds(ID2, address, NewAmount(100))
+	assert.NoError(t, err, "")
+	cs.Commit()
+	err = store.AddFunds(ID1, address2, NewAmount(1000))
+	assert.NoError(t, err, "")
+	err = store.AddFunds(ID2, address2, NewAmount(120))
+	assert.NoError(t, err, "")
+	cs.Commit()
 
+}
+
+func TestNewProposalFundStore_Delete(t *testing.T) {
+	fmt.Println("Deleting fund record : ", ID1, "| address :", address)
+	ok, err := store.DeleteFunds(ID1, address)
+	if err != nil {
+		fmt.Println("Error Deleting : ", err)
+		return
+	}
+	fmt.Println("OK :", ok)
+	cs.Commit()
+	assert.True(t, ok, "")
 }
 
 func TestProposalFundStore_Iterate(t *testing.T) {
 	fmt.Println("Iterating Stores")
-	store.Iterate(func(proposalID ProposalID, fundingAddr keys.Address, amt *ProposalAmount) bool {
+	store.iterate(func(proposalID ProposalID, fundingAddr keys.Address, amt *ProposalAmount) bool {
 		fmt.Println("ProposalID : ", proposalID, "ProposalAddress :", fundingAddr, "Proposal Amount :", amt.BigInt())
 		return false
 	})
 }
 
+//
 func TestProposalFundStore_GetFundersForProposalID(t *testing.T) {
-	fmt.Println("Get Funders for ID")
-
-	ok := GetFundersForProposalID(store, "ID1", func(proposalID ProposalID, fundingAddr keys.Address, amt *ProposalAmount) Funder {
-		return Funder{
+	fmt.Println("Get Funders for ID :  ", ID1)
+	funds := store.GetFundersForProposalID(ID1, func(proposalID ProposalID, fundingAddr keys.Address, amt *ProposalAmount) ProposalFund {
+		return ProposalFund{
 			id:            proposalID,
-			address:       fundingAddr.String(),
-			fundingAmount: amt.String(),
+			address:       fundingAddr,
+			fundingAmount: *amt,
 		}
 	})
-	fmt.Println("Found Proposals :", ok)
+	for _, fund := range funds {
+		fund.Print()
+	}
+	assert.EqualValues(t, 1, len(funds), "")
 }
 
+//
 func TestProposalFundStore_GetProposalForFunder(t *testing.T) {
-	fmt.Println("Get Funders for Address :", address)
+	fmt.Println("Get Funders for Address :", address2)
 
-	proposals := GetProposalsForFunder(store, address, func(proposalID ProposalID, fundingAddr keys.Address, amt *ProposalAmount) Funder {
-		return Funder{
+	funds := store.GetProposalsForFunder(address2, func(proposalID ProposalID, fundingAddr keys.Address, amt *ProposalAmount) ProposalFund {
+		return ProposalFund{
 			id:            proposalID,
-			address:       fundingAddr.String(),
-			fundingAmount: amt.String(),
+			address:       fundingAddr,
+			fundingAmount: *amt,
 		}
 	})
-	fmt.Println("Found Proposals :", proposals)
+	for _, fund := range funds {
+		fund.Print()
+	}
+	assert.EqualValues(t, 2, len(funds), "")
 }

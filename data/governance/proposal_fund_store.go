@@ -1,26 +1,20 @@
 package governance
 
 import (
+	"bytes"
 	"fmt"
 	"strings"
+
+	"github.com/pkg/errors"
 
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/serialize"
 	"github.com/Oneledger/protocol/storage"
-
-	"github.com/pkg/errors"
 )
 
 type ProposalFundStore struct {
 	State  *storage.State
 	prefix []byte
-}
-
-func NewProposalFundStore(prefix string, state *storage.State) *ProposalFundStore {
-	return &ProposalFundStore{
-		State:  state,
-		prefix: storage.Prefix(prefix),
-	}
 }
 
 func (st *ProposalFundStore) set(key storage.StoreKey, amt ProposalAmount) error {
@@ -44,20 +38,12 @@ func (st *ProposalFundStore) get(key storage.StoreKey) (amt *ProposalAmount, err
 	return
 }
 
-func (pf *ProposalFundStore) getIterable() storage.Iterable {
-	return pf.State.GetIterable()
+func (pf *ProposalFundStore) delete(key storage.StoreKey) (bool, error) {
+	prefixed := append(pf.prefix, key...)
+	return pf.State.Delete(prefixed)
 }
 
-func (pf *ProposalFundStore) AddFunds(proposalId ProposalID, fundingAddress keys.Address, amount *ProposalAmount) error {
-	key := storage.StoreKey(string(proposalId) + storage.DB_PREFIX + fundingAddress.String())
-	amt, err := pf.get(key)
-	if err != nil {
-		return errors.Wrapf(err, "proposer already exists %s", fundingAddress.String())
-	}
-	return pf.set(key, *amt.Plus(amount))
-}
-
-func (pf *ProposalFundStore) Iterate(fn func(proposalID ProposalID, addr keys.Address, amt *ProposalAmount) bool) bool {
+func (pf *ProposalFundStore) iterate(fn func(proposalID ProposalID, addr keys.Address, amt *ProposalAmount) bool) bool {
 	return pf.State.IterateRange(
 		pf.prefix,
 		storage.Rangefix(string(pf.prefix)),
@@ -72,9 +58,62 @@ func (pf *ProposalFundStore) Iterate(fn func(proposalID ProposalID, addr keys.Ad
 			}
 			arr := strings.Split(string(key), storage.DB_PREFIX)
 			proposalID := arr[1]
-			fmt.Println("Address :", arr[2])
-			fundingAddress := keys.Address(arr[2]) //arr[len(arr)-1]
+			fundingAddress := keys.Address(arr[len(arr)-1])
 			return fn(ProposalID(proposalID), fundingAddress, amt)
 		},
 	)
+}
+
+// Store Function Called my external Layers
+func NewProposalFundStore(prefix string, state *storage.State) *ProposalFundStore {
+	return &ProposalFundStore{
+		State:  state,
+		prefix: storage.Prefix(prefix),
+	}
+}
+
+func (pf *ProposalFundStore) GetFundersForProposalID(id ProposalID, fn func(proposalID ProposalID, fundingAddr keys.Address, amt *ProposalAmount) ProposalFund) []ProposalFund {
+	var foundProposals []ProposalFund
+	pf.iterate(func(proposalID ProposalID, fundingAddr keys.Address, amt *ProposalAmount) bool {
+		if proposalID == id {
+			foundProposals = append(foundProposals, fn(proposalID, fundingAddr, amt))
+		}
+		return false
+	})
+	return foundProposals
+}
+
+func (pf *ProposalFundStore) GetProposalsForFunder(funderAddress keys.Address, fn func(proposalID ProposalID, fundingAddr keys.Address, amt *ProposalAmount) ProposalFund) []ProposalFund {
+	var foundProposals []ProposalFund
+	pf.iterate(func(proposalID ProposalID, fundingAddr keys.Address, amt *ProposalAmount) bool {
+		if bytes.Equal(keys.Address(funderAddress.String()), fundingAddr) {
+			foundProposals = append(foundProposals, fn(proposalID, fundingAddr, amt))
+		}
+		return false
+	})
+	return foundProposals
+}
+
+func (pf *ProposalFundStore) AddFunds(proposalId ProposalID, fundingAddress keys.Address, amount *ProposalAmount) error {
+	key := storage.StoreKey(string(proposalId) + storage.DB_PREFIX + fundingAddress.String())
+	fmt.Println("Add Key : ", key)
+	amt, err := pf.get(key)
+	if err != nil {
+		return errors.Wrapf(err, "Error in getting proposer %s", fundingAddress.String())
+	}
+	return pf.set(key, *amt.Plus(amount))
+}
+
+func (pf *ProposalFundStore) DeleteFunds(proposalId ProposalID, fundingAddress keys.Address) (bool, error) {
+	key := storage.StoreKey(string(proposalId) + storage.DB_PREFIX + fundingAddress.String())
+	fmt.Println("Delete Key : ", key)
+	_, err := pf.get(key)
+	if err != nil {
+		return false, errors.Wrapf(err, "Error in getting funds %s", fundingAddress.String())
+	}
+	ok, err := pf.delete(key)
+	if err != nil {
+		return false, errors.Wrapf(err, "Error delete %s ,%s ", proposalId, fundingAddress.String())
+	}
+	return ok, nil
 }

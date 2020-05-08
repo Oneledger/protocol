@@ -1,10 +1,10 @@
 package governance
 
 import (
-	"encoding/json"
+	"fmt"
 	"math/big"
 
-	"github.com/pkg/errors"
+	"github.com/Oneledger/protocol/data/keys"
 )
 
 type (
@@ -16,40 +16,12 @@ type (
 	ProposalState   int
 )
 
-func (p ProposalAmount) MarshalJSON() ([]byte, error) {
-	v := p.BigInt().String()
-	return json.Marshal(v)
-}
-
-func (p *ProposalAmount) UnmarshalJSON(b []byte) error {
-	v := ""
-	err := json.Unmarshal(b, &v)
-	if err != nil {
-		return err
-	}
-	i, ok := big.NewInt(0).SetString(v, 0)
-	if !ok {
-		return errors.New("failed to unmarshal amount" + v)
-	}
-	*p = *(*ProposalAmount)(i)
-	return nil
-}
-
-func (p *ProposalAmount) BigInt() *big.Int {
-	return (*big.Int)(p)
-}
-
-func (p ProposalAmount) String() string {
-	return p.BigInt().String()
-}
-
-func (p ProposalAmount) Plus(add *ProposalAmount) *ProposalAmount {
-	base := big.NewInt(0)
-	return (*ProposalAmount)(base.Add(p.BigInt(), add.BigInt()))
-}
-
-type Funder struct {
+type ProposalFund struct {
 	id            ProposalID
-	address       string
-	fundingAmount string
+	address       keys.Address
+	fundingAmount ProposalAmount
+}
+
+func (fund *ProposalFund) Print() {
+	fmt.Printf("Proposal ID : %s | Funding Address : %s  | Funding Amount  : %s \n", fund.id, fund.address.String(), fund.fundingAmount.String())
 }
