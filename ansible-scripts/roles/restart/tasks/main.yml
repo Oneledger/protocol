@@ -1,0 +1,5 @@
+---
+- name: Restart service olfullnode, in all cases
+  service:
+    name: olfullnode
+    state: restarted

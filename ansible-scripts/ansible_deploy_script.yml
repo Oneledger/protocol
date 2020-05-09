@@ -1,0 +1,7 @@
+---
+- hosts: all
+  remote_user: mani
+  become: true
+  become_user: root
+  roles:
+  - role: restart

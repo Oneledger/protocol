@@ -1,0 +1,32 @@
+---
+- name: create a systemd olfullnode service file
+  copy:
+    dest: "/etc/systemd/system/olfullnode.service"
+    owner: "root"
+    group: "root"
+    mode: 0644
+    content: |
+      [Unit]
+      Description=olfullnode
+      Wants=network-online.target
+      After=network-online.target
+
+      [Service]
+      Type=simple
+      #User=alertmanager
+      #Group=alertmanager
+      ExecStart=/root/go/bin/olfullnode node --root /opt/data/fullnode > /opt/data/fullnode/fullnode.log &
+
+      #Restart=on-failure
+
+      [Install]
+      WantedBy=multi-user.target
+
+- name: enabling fullnode service
+  command: systemctl enable olfullnode.service
+  when: systemd_service == "true"
+
+- name: Start service olfullnode, if not started
+  service:
+    name: olfullnode
+    state: started
