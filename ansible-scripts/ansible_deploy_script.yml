@@ -4,4 +4,4 @@
   become: true
   become_user: root
   roles:
-  - role: restart
+  - role: fullnode-service

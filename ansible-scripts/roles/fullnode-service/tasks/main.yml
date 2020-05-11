@@ -24,9 +24,7 @@
 
 - name: enabling fullnode service
   command: systemctl enable olfullnode.service
-  when: systemd_service == "true"
+  #when: systemd_service == "true"
 
-- name: Start service olfullnode, if not started
-  service:
-    name: olfullnode
-    state: started
+- name: Start service olfullnode
+  command: service olfullnode start
