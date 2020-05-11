@@ -19,7 +19,6 @@ import (
 
 const DefaultTimeout = 5 * time.Second
 const gasLimit = 700000
-const GasPriceMultiplier = "2"
 
 type ETHChainDriver struct {
 	cfg             *config.EthereumChainDriverConfig
@@ -145,7 +144,7 @@ func (acc *ETHChainDriver) SignRedeem(fromaddr common.Address, redeemAmount *big
 	if !ok {
 		return nil, errors.New("Unable to get multiplier for gas price")
 	}
-	gasPrice.Mul(gasPrice, n)
+	gasPrice = big.NewInt(0).Add(gasPrice, big.NewInt(0).Div(gasPrice, big.NewInt(2)))
 	if err != nil {
 		return nil, err
 	}
