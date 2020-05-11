@@ -20,27 +20,37 @@ type ProposalFundStore struct {
 func (st *ProposalFundStore) set(key storage.StoreKey, amt ProposalAmount) error {
 	dat, err := serialize.GetSerializer(serialize.PERSISTENT).Serialize(amt)
 	if err != nil {
-		return err
+		return errors.Wrap(err, errorSerialization)
 	}
 	prefixed := append(st.prefix, key...)
 	err = st.State.Set(prefixed, dat)
-	return err
+	return errors.Wrap(err, errorSettingRecord)
 }
 
 func (st *ProposalFundStore) get(key storage.StoreKey) (amt *ProposalAmount, err error) {
 	prefixed := append(st.prefix, storage.StoreKey(key)...)
-	dat, _ := st.State.Get(prefixed)
+	dat, err := st.State.Get(prefixed)
+	if err != nil {
+		return nil, errors.Wrap(err, errorGettingRecord)
+	}
 	amt = NewAmount(0)
 	if len(dat) == 0 {
 		return
 	}
 	err = serialize.GetSerializer(serialize.PERSISTENT).Deserialize(dat, amt)
+	if err != nil {
+		err = errors.Wrap(err, errorDeSerialization)
+	}
 	return
 }
 
 func (pf *ProposalFundStore) delete(key storage.StoreKey) (bool, error) {
 	prefixed := append(pf.prefix, key...)
-	return pf.State.Delete(prefixed)
+	res, err := pf.State.Delete(prefixed)
+	if err != nil {
+		return false, errors.Wrap(err, errorDeletingRecord)
+	}
+	return res, err
 }
 
 func (pf *ProposalFundStore) iterate(fn func(proposalID ProposalID, addr keys.Address, amt *ProposalAmount) bool) bool {
@@ -98,7 +108,7 @@ func (pf *ProposalFundStore) AddFunds(proposalId ProposalID, fundingAddress keys
 	key := storage.StoreKey(string(proposalId) + storage.DB_PREFIX + fundingAddress.String())
 	amt, err := pf.get(key)
 	if err != nil {
-		return errors.Wrapf(err, "Error in getting proposer %s", fundingAddress.String())
+		return errors.Wrap(err, errorGettingRecord)
 	}
 	return pf.set(key, *amt.Plus(amount))
 }
@@ -107,11 +117,11 @@ func (pf *ProposalFundStore) DeleteFunds(proposalId ProposalID, fundingAddress k
 	key := storage.StoreKey(string(proposalId) + storage.DB_PREFIX + fundingAddress.String())
 	_, err := pf.get(key)
 	if err != nil {
-		return false, errors.Wrapf(err, "Error in getting funds %s", fundingAddress.String())
+		return false, errors.Wrap(err, errorGettingRecord)
 	}
 	ok, err := pf.delete(key)
 	if err != nil {
-		return false, errors.Wrapf(err, "Error delete %s ,%s ", proposalId, fundingAddress.String())
+		return false, errors.Wrap(err, errorDeletingRecord)
 	}
 	return ok, nil
 }

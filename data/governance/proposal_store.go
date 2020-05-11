@@ -4,6 +4,7 @@ import (
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/serialize"
 	"github.com/Oneledger/protocol/storage"
+	"github.com/pkg/errors"
 )
 
 type ProposalStore struct {
@@ -23,12 +24,12 @@ func (ps *ProposalStore) Set(proposal *Proposal) error {
 	prefixed := append(ps.prefix, proposal.ProposalID...)
 	data, err := ps.szlr.Serialize(proposal)
 	if err != nil {
-		return err
+		return errors.Wrap(err, errorSerialization)
 	}
 
 	err = ps.state.Set(prefixed, data)
 
-	return err
+	return errors.Wrap(err, errorSettingRecord)
 }
 
 func (ps *ProposalStore) Get(proposalID ProposalID) (*Proposal, error) {
@@ -36,11 +37,11 @@ func (ps *ProposalStore) Get(proposalID ProposalID) (*Proposal, error) {
 	prefixed := append(ps.prefix, proposalID...)
 	data, err := ps.state.Get(prefixed)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, errorGettingRecord)
 	}
 	err = ps.szlr.Deserialize(data, proposal)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, errorDeSerialization)
 	}
 
 	return proposal, nil
@@ -53,7 +54,11 @@ func (ps *ProposalStore) Exists(key ProposalID) bool {
 
 func (ps *ProposalStore) Delete(key ProposalID) (bool, error) {
 	prefixed := append(ps.prefix, key...)
-	return ps.state.Delete(prefixed)
+	res, err := ps.state.Delete(prefixed)
+	if err != nil {
+		return false, errors.Wrap(err, errorDeletingRecord)
+	}
+	return res, err
 }
 
 func (ps *ProposalStore) GetIterable() storage.Iterable {
@@ -131,7 +136,7 @@ func (ps *ProposalStore) QueryAllStores(key ProposalID) (*Proposal, ProposalStat
 	if err == nil {
 		return proposal, ProposalStateFailed, nil
 	}
-	return nil, -1, err
+	return nil, ProposalStateError, errors.Wrap(err, errorGettingRecord)
 }
 
 func (ps *ProposalStore) SetOptions(pOpt *ProposalOptions) {
