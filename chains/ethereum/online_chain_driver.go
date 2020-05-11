@@ -288,6 +288,7 @@ func (acc *ETHChainDriver) ParseRedeem(data []byte, abi string) (req *RedeemRequ
 //Ongoing : 0  (amount > 0 and until > block.number)
 //Success : 1  (amount = 0 and until < block.number)
 //Expired : 2  (amount > 0 and until < block.number)
+//ErrConnecting  : - 2  (Ethereum connection cannot be established)
 
 func (acc *ETHChainDriver) VerifyRedeem(validatorAddress common.Address, recipient common.Address) RedeemStatus {
 	instance := acc.GetContract()
