@@ -4,13 +4,10 @@ import (
 	"encoding/hex"
 	"testing"
 
-	db "github.com/tendermint/tm-db"
-
-	"github.com/Oneledger/protocol/storage"
-
-	"github.com/stretchr/testify/assert"
-
 	"github.com/Oneledger/protocol/data/keys"
+	"github.com/Oneledger/protocol/storage"
+	"github.com/stretchr/testify/assert"
+	db "github.com/tendermint/tm-db"
 )
 
 const (
@@ -27,7 +24,7 @@ const (
 )
 
 // test setup
-func setupProposalVoteStore() (*ProposalVoteStore, []keys.Address) {
+func setupProposalVoteStore(t *testing.T) (*ProposalVoteStore, []keys.Address) {
 	db := db.NewDB("test", db.MemDBBackend, "")
 	cs := storage.NewChainState("chainstate", db)
 	pvs := NewProposalVoteStore("pvs", storage.NewState(cs))
@@ -52,12 +49,15 @@ func setupProposalVoteStore() (*ProposalVoteStore, []keys.Address) {
 	addrs[7] = addr7
 	// init voting validators
 	for i := 0; i < totalNum; i++ {
-		pvs.Setup(proposalID, addrs[i], 1)
+		err := pvs.Setup(proposalID, addrs[i], 1)
+		assert.Nil(t, err)
 	}
+	pvs.store.Commit()
+
 	return pvs, addrs
 }
 
-func setupProposalVotes(pvs *ProposalVoteStore, addrs []keys.Address, positive, negative, giveup, power int) {
+func setupProposalVotes(t *testing.T, pvs *ProposalVoteStore, addrs []keys.Address, positive, negative, giveup, power int) {
 	// create vote objects
 	votes := make([]*ProposalVote, totalNum)
 	for i := 0; i < totalNum; i++ {
@@ -68,124 +68,137 @@ func setupProposalVotes(pvs *ProposalVoteStore, addrs []keys.Address, positive, 
 		}
 		votes[i] = vote
 	}
-	// setup positive votes
+	// setup POSITIVE votes
 	curIndex := 0
-	for j := 0; j < positive; j, curIndex = j+1, curIndex+1 {
+	for j := 0; j < positive; j++ {
 		vote := votes[curIndex+j]
 		vote.Opinion = POSITIVE
-		pvs.Update(proposalID, addrs[j], vote)
+		err := pvs.Update(proposalID, addrs[curIndex+j], vote)
+		assert.Nil(t, err)
 	}
-	// setup negative votes
-	for j := 0; j < negative; j, curIndex = j+1, curIndex+1 {
+	// setup NEGATIVE votes
+	curIndex += positive
+	for j := 0; j < negative; j++ {
 		vote := votes[curIndex+j]
 		vote.Opinion = NEGATIVE
-		pvs.Update(proposalID, addrs[j], vote)
+		err := pvs.Update(proposalID, addrs[curIndex+j], vote)
+		assert.Nil(t, err)
 	}
-	// setup giveup votes
-	for j := 0; j < giveup; j, curIndex = j+1, curIndex+1 {
+	// setup GIVEUP votes
+	curIndex += negative
+	for j := 0; j < giveup; j++ {
 		vote := votes[curIndex+j]
 		vote.Opinion = GIVEUP
-		pvs.Update(proposalID, addrs[j], vote)
+		err := pvs.Update(proposalID, addrs[curIndex+j], vote)
+		assert.Nil(t, err)
 	}
 }
 
 func checkProposalVotes(t *testing.T, pvs *ProposalVoteStore, addrs []keys.Address, positive, negative, giveup, power int) {
 	validators, votes, err := pvs.GetVotesByID(proposalID)
 	assert.Nil(t, err)
-	// check positive votes
+	// check POSITIVE votes
 	power64 := int64(power)
 	curIndex := 0
-	for j := 0; j < positive; j, curIndex = j+1, curIndex+1 {
+	for j := 0; j < positive; j++ {
 		vote := votes[curIndex+j]
 		assert.Equal(t, POSITIVE, vote.Opinion)
 		assert.Equal(t, power64, vote.Power)
-		assert.Equal(t, addrs[j], validators[j])
+		assert.Equal(t, addrs[curIndex+j], validators[curIndex+j])
 	}
-	// check negative votes
-	for j := 0; j < negative; j, curIndex = j+1, curIndex+1 {
+	// check NEGATIVE votes
+	curIndex += positive
+	for j := 0; j < negative; j++ {
 		vote := votes[curIndex+j]
 		assert.Equal(t, NEGATIVE, vote.Opinion)
 		assert.Equal(t, power64, vote.Power)
-		assert.Equal(t, addrs[j], validators[j])
+		assert.Equal(t, addrs[curIndex+j], validators[curIndex+j])
 	}
-	// check giveup votes
-	for j := 0; j < giveup; j, curIndex = j+1, curIndex+1 {
+	// check GIVEUP votes
+	curIndex += negative
+	for j := 0; j < giveup; j++ {
 		vote := votes[curIndex+j]
 		assert.Equal(t, GIVEUP, vote.Opinion)
 		assert.Equal(t, power64, vote.Power)
-		assert.Equal(t, addrs[j], validators[j])
+		assert.Equal(t, addrs[curIndex+j], validators[curIndex+j])
+	}
+	// check UNKNOWN votes
+	curIndex += giveup
+	unknown := totalNum - positive - negative - giveup
+	for j := 0; j < unknown; j++ {
+		vote := votes[curIndex+j]
+		assert.Equal(t, UNKNOWN, vote.Opinion)
+		assert.Equal(t, power64, vote.Power)
+		assert.Equal(t, addrs[curIndex+j], validators[curIndex+j])
 	}
 }
 
 func TestNewProposalVoteStore(t *testing.T) {
-	pvs, _ := setupProposalVoteStore()
+	pvs, _ := setupProposalVoteStore(t)
 	assert.NotEmpty(t, pvs)
 }
 
 func TestProposalVoteStore_Setup(t *testing.T) {
 	t.Run("test setup initial voting validators", func(t *testing.T) {
-		pvs, addrs := setupProposalVoteStore()
-		addrsActual, _, err := pvs.GetVotesByID(proposalID)
-		assert.Nil(t, err)
-		assert.EqualValues(t, addrs, addrsActual)
+		pvs, addrs := setupProposalVoteStore(t)
 		checkProposalVotes(t, pvs, addrs, 0, 0, 0, 1)
 	})
 }
 
 func TestProposalVoteStore_Update(t *testing.T) {
 	t.Run("test updated vote records of a proposal, should match", func(t *testing.T) {
-		pvs, addrs := setupProposalVoteStore()
-		setupProposalVotes(pvs, addrs, 5, 3, 0, 2)
+		pvs, addrs := setupProposalVoteStore(t)
+		setupProposalVotes(t, pvs, addrs, 5, 3, 0, 2)
 		checkProposalVotes(t, pvs, addrs, 5, 3, 0, 2)
 	})
 }
 
 func TestProposalVoteStore_Delete(t *testing.T) {
 	t.Run("test deleting vote records of an initial proposal", func(t *testing.T) {
-		pvs, _ := setupProposalVoteStore()
+		pvs, _ := setupProposalVoteStore(t)
 		err := pvs.Delete(proposalID)
 
 		assert.Nil(t, err)
 		addrs, votes, err := pvs.GetVotesByID(proposalID)
-		assert.Nil(t, err)
-		assert.Len(t, addrs, 0)
-		assert.Len(t, votes, 0)
+		assert.Error(t, err)
+		assert.Nil(t, addrs)
+		assert.Nil(t, votes)
 	})
 	t.Run("test deleting vote records of a voted proposal", func(t *testing.T) {
-		pvs, addrs := setupProposalVoteStore()
-		setupProposalVotes(pvs, addrs, 5, 3, 0, 2)
+		pvs, addrs := setupProposalVoteStore(t)
+		setupProposalVotes(t, pvs, addrs, 5, 3, 0, 2)
 		err := pvs.Delete(proposalID)
 
 		assert.Nil(t, err)
 		addrs, votes, err := pvs.GetVotesByID(proposalID)
-		assert.Nil(t, err)
-		assert.Len(t, addrs, 0)
-		assert.Len(t, votes, 0)
+		assert.Error(t, err)
+		assert.Nil(t, addrs)
+		assert.Nil(t, votes)
 	})
 }
 
 func TestProposalVoteStore_ProposalPassed(t *testing.T) {
 	t.Run("test a proposal that passed successfully, nobody give up", func(t *testing.T) {
-		pvs, addrs := setupProposalVoteStore()
-		setupProposalVotes(pvs, addrs, 6, 2, 0, 2)
+		pvs, addrs := setupProposalVoteStore(t)
+		setupProposalVotes(t, pvs, addrs, 6, 2, 0, 2)
 		passed := pvs.IsPassed(proposalID)
 		assert.True(t, passed)
 	})
 	t.Run("test a proposal that passed successfully, somebody give up", func(t *testing.T) {
-		pvs, addrs := setupProposalVoteStore()
-		setupProposalVotes(pvs, addrs, 5, 2, 1, 2)
+		pvs, addrs := setupProposalVoteStore(t)
+		setupProposalVotes(t, pvs, addrs, 5, 2, 1, 2)
 		passed := pvs.IsPassed(proposalID)
 		assert.True(t, passed)
 	})
 	t.Run("test a proposal that passed successfully, somebody give up & somebody give no response", func(t *testing.T) {
-		pvs, addrs := setupProposalVoteStore()
-		setupProposalVotes(pvs, addrs, 5, 1, 1, 2)
+		pvs, addrs := setupProposalVoteStore(t)
+		setupProposalVotes(t, pvs, addrs, 5, 1, 1, 2)
 		passed := pvs.IsPassed(proposalID)
 		assert.True(t, passed)
 	})
 	t.Run("test a proposal that passed successfully, all support", func(t *testing.T) {
-		pvs, addrs := setupProposalVoteStore()
-		setupProposalVotes(pvs, addrs, 8, 0, 0, 2)
+		pvs, addrs := setupProposalVoteStore(t)
+		setupProposalVotes(t, pvs, addrs, 8, 0, 0, 2)
 		passed := pvs.IsPassed(proposalID)
 		assert.True(t, passed)
 	})
@@ -193,44 +206,44 @@ func TestProposalVoteStore_ProposalPassed(t *testing.T) {
 
 func TestProposalVoteStore_ProposalNotPassed(t *testing.T) {
 	t.Run("test a proposal that failed to pass, nobody give up", func(t *testing.T) {
-		pvs, addrs := setupProposalVoteStore()
-		setupProposalVotes(pvs, addrs, 5, 3, 0, 2)
+		pvs, addrs := setupProposalVoteStore(t)
+		setupProposalVotes(t, pvs, addrs, 5, 3, 0, 2)
 		passed := pvs.IsPassed(proposalID)
 		assert.False(t, passed)
 	})
 	t.Run("test a proposal that failed to pass, somebody give up", func(t *testing.T) {
-		pvs, addrs := setupProposalVoteStore()
-		setupProposalVotes(pvs, addrs, 4, 3, 1, 2)
+		pvs, addrs := setupProposalVoteStore(t)
+		setupProposalVotes(t, pvs, addrs, 4, 3, 1, 2)
 		passed := pvs.IsPassed(proposalID)
 		assert.False(t, passed)
 	})
 	t.Run("test a proposal that failed to pass, somebody give up & somebody give no response", func(t *testing.T) {
-		pvs, addrs := setupProposalVoteStore()
-		setupProposalVotes(pvs, addrs, 3, 3, 1, 2)
+		pvs, addrs := setupProposalVoteStore(t)
+		setupProposalVotes(t, pvs, addrs, 3, 3, 1, 2)
 		passed := pvs.IsPassed(proposalID)
 		assert.False(t, passed)
 	})
 	t.Run("test a proposal that failed to pass, all give or no response", func(t *testing.T) {
-		pvs, addrs := setupProposalVoteStore()
-		setupProposalVotes(pvs, addrs, 0, 0, 2, 2)
+		pvs, addrs := setupProposalVoteStore(t)
+		setupProposalVotes(t, pvs, addrs, 0, 0, 2, 2)
 		passed := pvs.IsPassed(proposalID)
 		assert.False(t, passed)
 	})
 	t.Run("test a proposal that failed to pass, all give up", func(t *testing.T) {
-		pvs, addrs := setupProposalVoteStore()
-		setupProposalVotes(pvs, addrs, 0, 0, 8, 2)
+		pvs, addrs := setupProposalVoteStore(t)
+		setupProposalVotes(t, pvs, addrs, 0, 0, 8, 2)
 		passed := pvs.IsPassed(proposalID)
 		assert.False(t, passed)
 	})
 	t.Run("test a proposal that failed to pass, all no response", func(t *testing.T) {
-		pvs, addrs := setupProposalVoteStore()
-		setupProposalVotes(pvs, addrs, 0, 0, 0, 2)
+		pvs, addrs := setupProposalVoteStore(t)
+		setupProposalVotes(t, pvs, addrs, 0, 0, 0, 2)
 		passed := pvs.IsPassed(proposalID)
 		assert.False(t, passed)
 	})
 	t.Run("test a proposal that failed to pass, all disagree", func(t *testing.T) {
-		pvs, addrs := setupProposalVoteStore()
-		setupProposalVotes(pvs, addrs, 8, 0, 0, 2)
+		pvs, addrs := setupProposalVoteStore(t)
+		setupProposalVotes(t, pvs, addrs, 0, 8, 0, 2)
 		passed := pvs.IsPassed(proposalID)
 		assert.False(t, passed)
 	})

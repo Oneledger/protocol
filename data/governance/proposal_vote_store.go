@@ -91,7 +91,7 @@ func (pvs *ProposalVoteStore) Delete(proposalID string) error {
 		return false
 	})
 
-	if succeed {
+	if !succeed {
 		errMsg := fmt.Sprintf("failed to delete voting record under proposalID: %v", proposalID)
 		return errors.New(errMsg)
 	}
@@ -131,7 +131,7 @@ func (pvs *ProposalVoteStore) GetVotesByID(proposalID string) ([]keys.Address, [
 		if err != nil {
 			logger.Error(fmt.Sprintf("failed to deserialize proposal vote under proposalID: %v", proposalID))
 			succeed = false
-			return true
+			return false
 		}
 		votes = append(votes, vote)
 		prefix_len := len(append(pvs.prefix, (proposalID + storage.DB_PREFIX)...))
@@ -140,7 +140,7 @@ func (pvs *ProposalVoteStore) GetVotesByID(proposalID string) ([]keys.Address, [
 		return false
 	})
 
-	if succeed {
+	if !succeed {
 		errMsg := fmt.Sprintf("failed to get voting records under proposalID: %v", proposalID)
 		return nil, nil, errors.New(errMsg)
 	}
