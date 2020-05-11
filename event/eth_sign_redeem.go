@@ -87,20 +87,20 @@ func (j *JobETHSignRedeem) DoMyJob(ctx interface{}) {
 	tx, err := cd.DecodeTransaction(rawTx)
 	if err != nil {
 		ethCtx.Logger.Error("Error Decoding Bytes from RaxTX :", j.GetJobID(), err)
-		return
+		//return
 	}
 
 	msg, err := cd.GetTransactionMessage(tx)
 	if err != nil {
 		ethCtx.Logger.Error("Error in decoding transaction as message : ", j.GetJobID(), err)
-		return
+		//return
 	}
 
 	addr := ethCtx.GetValidatorETHAddress()
 	txReceipt, err := cd.VerifyReceipt(tx.Hash())
 	if err != nil {
 		ethCtx.Logger.Debug("Trying to confirm RedeemTX sent by User Receipt :", err)
-		return
+		//return
 	}
 	//Failed to delete old version of chainstate err version does not exist version: -900
 	// Get receipt first ,then status [ other way around might cause ambiguity ]
@@ -122,24 +122,29 @@ func (j *JobETHSignRedeem) DoMyJob(ctx interface{}) {
 	if err != nil {
 		ethCtx.Logger.Error("Error in verifying redeem :", j.GetJobID(), err)
 	}
+	//Ethereum connectivity issue
 	if status == -2 {
 		ethCtx.Logger.Error("Unable to connect to ethereum smartcontract")
 		j.Status = jobs.Failed
 		BroadcastReportFinalityETHTx(ctx.(*JobsContext), j.TrackerName, j.JobID, false)
 	}
+	//Signature confirmed
 	if success {
 		ethCtx.Logger.Debug("validator Sign Confirmed | validator Address (SIGNER):", ethCtx.GetValidatorETHAddress().Hex(), "| User Eth Address :", msg.From().Hex())
 		j.Status = jobs.Completed
 		return
 	}
+
 	if j.RetryCount >= 0 && !success {
 		ethCtx.Logger.Debug("Waiting for validator SignTX to be mined")
 	}
+	// Redeem request has expired
 	if err == ethereum.ErrRedeemExpired {
 		ethCtx.Logger.Info("Failing from sign : Redeem Expired")
 		j.Status = jobs.Failed
 		BroadcastReportFinalityETHTx(ctx.(*JobsContext), j.TrackerName, j.JobID, false)
 	}
+	//Status is not ongoing
 	if status != 0 {
 		if status == 1 && j.RetryCount >= 1 {
 			ethCtx.Logger.Debug("Redeem TX successful , 67 % Votes have already been confirmed")
