@@ -141,7 +141,7 @@ func (j *JobETHSignRedeem) DoMyJob(ctx interface{}) {
 	//Ethereum connectivity issue
 	if status == ethereum.ErrorConnecting {
 		ethCtx.Logger.Error("Unable to connect to ethereum smartcontract")
-		panic("SHUTTING NODE ERROR CONNECTING TO ETHEREUM ")
+		return
 	}
 
 	// Redeem request has expired
