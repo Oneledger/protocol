@@ -87,20 +87,20 @@ func (j *JobETHSignRedeem) DoMyJob(ctx interface{}) {
 	tx, err := cd.DecodeTransaction(rawTx)
 	if err != nil {
 		ethCtx.Logger.Error("Error Decoding Bytes from RaxTX :", j.GetJobID(), err)
-		//return
+		return
 	}
 
 	msg, err := cd.GetTransactionMessage(tx)
 	if err != nil {
 		ethCtx.Logger.Error("Error in decoding transaction as message : ", j.GetJobID(), err)
-		//return
+		return
 	}
 
 	addr := ethCtx.GetValidatorETHAddress()
 	txReceipt, err := cd.VerifyReceipt(tx.Hash())
 	if err != nil {
 		ethCtx.Logger.Debug("Trying to confirm RedeemTX sent by User Receipt :", err)
-		//return
+		return
 	}
 	//Failed to delete old version of chainstate err version does not exist version: -900
 	// Get receipt first ,then status [ other way around might cause ambiguity ]
