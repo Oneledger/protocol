@@ -295,10 +295,6 @@ func (acc *ETHChainDriver) VerifyRedeem(validatorAddress common.Address, recipie
 	if err != nil {
 		return ErrorConnecting
 	}
-	if redeemStatus == 2 {
-		return Expired
-	}
-
 	return RedeemStatus(redeemStatus)
 }
 

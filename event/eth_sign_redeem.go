@@ -141,7 +141,7 @@ func (j *JobETHSignRedeem) DoMyJob(ctx interface{}) {
 	}
 
 	// Redeem request has expired
-	if err == ethereum.ErrRedeemExpired {
+	if status == ethereum.Expired {
 		ethCtx.Logger.Info("Failing from sign : Redeem Expired")
 		j.Status = jobs.Failed
 		BroadcastReportFinalityETHTx(ctx.(*JobsContext), j.TrackerName, j.JobID, false)
