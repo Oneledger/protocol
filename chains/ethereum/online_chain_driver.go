@@ -18,6 +18,7 @@ import (
 )
 
 const DefaultTimeout = 5 * time.Second
+const gasLimit = 700000
 
 type ETHChainDriver struct {
 	cfg             *config.EthereumChainDriverConfig
@@ -136,7 +137,7 @@ func (acc *ETHChainDriver) SignRedeem(fromaddr common.Address, redeemAmount *big
 	if err != nil {
 		return nil, err
 	}
-	gasLimit := uint64(700000)
+	gasLimit := uint64(gasLimit)
 	gasPrice, err := acc.GetClient().SuggestGasPrice(c)
 	if err != nil {
 		return nil, err
@@ -162,7 +163,7 @@ func (acc *ETHChainDriver) PrepareUnsignedETHLock(addr common.Address, lockAmoun
 	if err != nil {
 		return nil, err
 	}
-	gasLimit := uint64(700000)
+	gasLimit := uint64(gasLimit)
 	gasPrice, err := acc.GetClient().SuggestGasPrice(c)
 	if err != nil {
 		return nil, err
