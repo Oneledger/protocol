@@ -13,10 +13,11 @@ import (
 type RedeemStatus int8
 
 const (
-	NewRedeem RedeemStatus = -1
-	Ongoing   RedeemStatus = 0
-	Success   RedeemStatus = 1
-	Expired   RedeemStatus = 2
+	NewRedeem       RedeemStatus = -1
+	Ongoing         RedeemStatus = 0
+	Success         RedeemStatus = 1
+	Expired         RedeemStatus = 2
+	ErrorConnecting RedeemStatus = -2
 )
 
 func (r RedeemStatus) String() string {
@@ -29,6 +30,8 @@ func (r RedeemStatus) String() string {
 		return "Success"
 	case 2:
 		return "Expired"
+	case 3:
+		return "Error connecting to ethereum"
 	}
 	return "Unknown Type / Check smart contract implementation"
 }

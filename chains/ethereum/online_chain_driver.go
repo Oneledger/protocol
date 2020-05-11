@@ -136,7 +136,7 @@ func (acc *ETHChainDriver) SignRedeem(fromaddr common.Address, redeemAmount *big
 	if err != nil {
 		return nil, err
 	}
-	gasLimit := uint64(6721974)
+	gasLimit := uint64(700000)
 	gasPrice, err := acc.GetClient().SuggestGasPrice(c)
 	if err != nil {
 		return nil, err
@@ -162,7 +162,7 @@ func (acc *ETHChainDriver) PrepareUnsignedETHLock(addr common.Address, lockAmoun
 	if err != nil {
 		return nil, err
 	}
-	gasLimit := uint64(6721974)
+	gasLimit := uint64(700000)
 	gasPrice, err := acc.GetClient().SuggestGasPrice(c)
 	if err != nil {
 		return nil, err
@@ -289,17 +289,17 @@ func (acc *ETHChainDriver) ParseRedeem(data []byte, abi string) (req *RedeemRequ
 //Success : 1  (amount = 0 and until < block.number)
 //Expired : 2  (amount > 0 and until < block.number)
 
-func (acc *ETHChainDriver) VerifyRedeem(validatorAddress common.Address, recipient common.Address) (RedeemStatus, error) {
+func (acc *ETHChainDriver) VerifyRedeem(validatorAddress common.Address, recipient common.Address) RedeemStatus {
 	instance := acc.GetContract()
 	redeemStatus, err := instance.VerifyRedeem(acc.CallOpts(validatorAddress), recipient)
 	if err != nil {
-		return -2, errors.Wrap(err, "Unable to connect to ethereum smart contract")
+		return ErrorConnecting
 	}
 	if redeemStatus == 2 {
-		return 0, ErrRedeemExpired
+		return Expired
 	}
 
-	return RedeemStatus(redeemStatus), nil
+	return RedeemStatus(redeemStatus)
 }
 
 // HasValidatorSigned takes validator address and recipient address as input and verifies if the validator has already signed

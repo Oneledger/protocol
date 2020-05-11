@@ -97,60 +97,70 @@ func (j *JobETHSignRedeem) DoMyJob(ctx interface{}) {
 	}
 
 	addr := ethCtx.GetValidatorETHAddress()
+	//Get receipt first ,then status [ other way around might cause ambiguity ]
+	//Confirm redeem tx has been sent by user
 	txReceipt, err := cd.VerifyReceipt(tx.Hash())
 	if err != nil {
 		ethCtx.Logger.Debug("Trying to confirm RedeemTX sent by User Receipt :", err)
 		return
 	}
-	//Failed to delete old version of chainstate err version does not exist version: -900
-	// Get receipt first ,then status [ other way around might cause ambiguity ]
-	// If expired fail tracker
+	/*
+		If expired fail tracker
 
-	// If Success is true and validator has send signature implies , validator has signed , but his sign got reverted
-	//     as this was the fourth sign . Retrycount > 0 means that the validator did sign , status was 0 before ,implies
-	//     this is not an old redeem
+		If Success is true and validator has send signature implies , validator has signed , but his sign got reverted
+		as this was the fourth sign . Retrycount > 0 means that the validator did sign , status was 0 before ,implies
+		this is not an old redeem
 
-	// Status is not 0 , and txreceipt is true , redeem tx present in Ethereum ,but redeem status is not ongoing .Fail tracker
+		Status is not 0 , and txreceipt is true , redeem tx present in Ethereum ,but redeem status is not ongoing .Fail tracker
 
-	// HasValidatorsigned returns success , means signature confirmed
+		HasValidatorsigned returns success , means signature confirmed */
 
+	//Checking for confirmation of Vote
 	success, err := cd.HasValidatorSigned(addr, msg.From())
 	if err != nil {
 		ethCtx.Logger.Error("Error connecting to HasValidatorSigned function in Smart Contract  :", j.GetJobID(), err)
 	}
-	status, err := cd.VerifyRedeem(addr, msg.From())
-	if err != nil {
-		ethCtx.Logger.Error("Error in verifying redeem :", j.GetJobID(), err)
-		return
-	}
+	//Signature confirmed
 	if success {
 		ethCtx.Logger.Debug("validator Sign Confirmed | validator Address (SIGNER):", ethCtx.GetValidatorETHAddress().Hex(), "| User Eth Address :", msg.From().Hex())
 		j.Status = jobs.Completed
 		return
 	}
+	//Log print debugger
 	if j.RetryCount >= 0 && !success {
 		ethCtx.Logger.Debug("Waiting for validator SignTX to be mined")
 	}
+
+	//Checking for Status of redeem request (From Ethereum smart contract)
+	status := cd.VerifyRedeem(addr, msg.From())
+
+	//Ethereum connectivity issue
+	if status == ethereum.ErrorConnecting {
+		ethCtx.Logger.Error("Unable to connect to ethereum smartcontract")
+		panic("SHUTTING NODE ERROR CONNECTING TO ETHEREUM ")
+	}
+
+	// Redeem request has expired
 	if err == ethereum.ErrRedeemExpired {
 		ethCtx.Logger.Info("Failing from sign : Redeem Expired")
 		j.Status = jobs.Failed
 		BroadcastReportFinalityETHTx(ctx.(*JobsContext), j.TrackerName, j.JobID, false)
 	}
-	if status != 0 {
-		if status == 1 && j.RetryCount >= 1 {
-			ethCtx.Logger.Debug("Redeem TX successful , 67 % Votes have already been confirmed")
-			j.Status = jobs.Completed
-			return
-		}
-		if txReceipt == true {
-			ethCtx.Logger.Info("Redeem Request not created by user | Current Status : ", status.String())
-			j.Status = jobs.Failed
-			BroadcastReportFinalityETHTx(ctx.(*JobsContext), j.TrackerName, j.JobID, false)
-			return
-		}
+	// Status of redeem is Success but USER's Sign has not been confirmed (success is not true yet) = Redeem has been confirmed but this validators vote was reverted .
+	if status == ethereum.Success && j.RetryCount >= 1 {
+		ethCtx.Logger.Debug("Redeem TX successful , 67 % Votes have already been confirmed")
+		j.Status = jobs.Completed
+		return
+	}
+	// Status in not ongoing ,but User Redeem Request is verifiable on etherum = User is sending in an old redeem transaction
+	if status != ethereum.Ongoing && txReceipt == true {
+		ethCtx.Logger.Info("Redeem Request not created by user | Current Status : ", status.String())
+		j.Status = jobs.Failed
+		BroadcastReportFinalityETHTx(ctx.(*JobsContext), j.TrackerName, j.JobID, false)
+		return
 	}
 
-	//Signing ony done once Request sent only once
+	//Signing done only once
 	if j.RetryCount == 0 {
 
 		redeemAddr := common.BytesToAddress(tracker.To)

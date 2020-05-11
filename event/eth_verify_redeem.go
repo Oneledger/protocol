@@ -71,19 +71,19 @@ func (job *JobETHVerifyRedeem) DoMyJob(ctx interface{}) {
 	}
 
 	addr := ethCtx.GetValidatorETHAddress()
-	status, err := cd.VerifyRedeem(addr, msg.From())
-	if err != nil {
-		ethCtx.Logger.Error("Error in verifying redeem :", job.GetJobID(), err)
+	status := cd.VerifyRedeem(addr, msg.From())
+	if status == ethereum.ErrorConnecting {
+		panic("Shutting down Node , Ethereum connection not available")
 	}
-	if err == ethereum.ErrRedeemExpired {
+	if status == ethereum.Expired {
 		job.Status = jobs.Failed
 		BroadcastReportFinalityETHTx(ctx.(*JobsContext), job.TrackerName, job.JobID, false)
 	}
-	if status == 0 {
+	if status == ethereum.Ongoing {
 		ethCtx.Logger.Info("Waiting for RedeemTx to be Completed ,67 % Signing Votes")
 	}
 	// create internal check finality to report that the redeem is done on ethereum chain
-	if status == 1 {
+	if status == ethereum.Success {
 		index, _ := tracker.CheckIfVoted(ethCtx.ValidatorAddress)
 		if index < 0 {
 			return
