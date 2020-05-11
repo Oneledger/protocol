@@ -68,6 +68,7 @@ type testnetConfig struct {
 	cloud                bool
 	loglevel             int
 	reserved_domains     string
+	gasLimit             int64
 }
 
 var ethBlockConfirmation = int64(12)
@@ -98,6 +99,7 @@ func init() {
 	testnetCmd.Flags().BoolVar(&testnetArgs.cloud, "cloud_deploy", false, "set true for deploying on cloud")
 	testnetCmd.Flags().IntVar(&testnetArgs.loglevel, "loglevel", 3, "Specify the log level for olfullnode. 0: Fatal, 1: Error, 2: Warning, 3: Info, 4: Debug, 5: Detail")
 	testnetCmd.Flags().StringVar(&testnetArgs.reserved_domains, "reserved_domains", "", "Directory which contains Reserved domains list")
+	testnetCmd.Flags().Int64Var(&testnetArgs.gasLimit, "gas_limit", 7000000, "The gaslimit used by Valiator Sign TX")
 
 }
 
@@ -359,7 +361,7 @@ func runDevnet(_ *cobra.Command, _ []string) error {
 	fmt.Println("Deploy Smart contracts : ", args.deploySmartcontracts)
 	if args.deploySmartcontracts {
 		if len(args.ethUrl) > 0 {
-			cdo, err = deployethcdcontract(url, nodeList)
+			cdo, err = deployethcdcontract(url, nodeList, args.gasLimit)
 			if err != nil {
 				return errors.Wrap(err, "failed to deploy the initial eth contract")
 			}
@@ -551,7 +553,7 @@ func initialState(args *testnetConfig, nodeList []node, option ethchain.ChainDri
 	}
 }
 
-func deployethcdcontract(conn string, nodeList []node) (*ethchain.ChainDriverOption, error) {
+func deployethcdcontract(conn string, nodeList []node, gasLimit int64) (*ethchain.ChainDriverOption, error) {
 
 	f, err := os.Open(os.Getenv("ETHPKPATH"))
 	if err != nil {
@@ -679,6 +681,7 @@ func deployethcdcontract(conn string, nodeList []node) (*ethchain.ChainDriverOpt
 		TotalSupply:        totalETHSupply,
 		TotalSupplyAddr:    lockBalanceAddress,
 		BlockConfirmation:  ethBlockConfirmation,
+		GasLimit:           gasLimit,
 	}, nil
 
 }

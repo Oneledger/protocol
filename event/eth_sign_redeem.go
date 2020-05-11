@@ -154,7 +154,7 @@ func (j *JobETHSignRedeem) DoMyJob(ctx interface{}) {
 	if j.RetryCount == 0 {
 
 		redeemAddr := common.BytesToAddress(tracker.To)
-		tx, err = cd.SignRedeem(addr, redeemAmount, redeemAddr)
+		tx, err = cd.SignRedeem(addr, redeemAmount, redeemAddr, ethoptions.GasLimit)
 		if err != nil {
 			ethCtx.Logger.Error("Error in creating signing transaction : ", j.GetJobID(), err)
 			return

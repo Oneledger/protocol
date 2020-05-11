@@ -14,6 +14,7 @@ type ChainDriverOption struct {
 	TotalSupply        string
 	TotalSupplyAddr    string
 	BlockConfirmation  int64
+	GasLimit           int64
 }
 
 type ERC20Token struct {

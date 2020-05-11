@@ -2,6 +2,7 @@ package ethereum
 
 import (
 	"context"
+	"fmt"
 	"math/big"
 	"strings"
 	"time"
@@ -128,7 +129,7 @@ func (acc *ETHChainDriver) CallOpts(addr Address) *CallOpts {
 }
 
 //SignRedeem creates an Ethereum transaction used by Validators to sign a redeem Request
-func (acc *ETHChainDriver) SignRedeem(fromaddr common.Address, redeemAmount *big.Int, recipient common.Address) (*Transaction, error) {
+func (acc *ETHChainDriver) SignRedeem(fromaddr common.Address, redeemAmount *big.Int, recipient common.Address, gaslimit int64) (*Transaction, error) {
 
 	c, cancel := defaultContext()
 	defer cancel()
@@ -136,7 +137,7 @@ func (acc *ETHChainDriver) SignRedeem(fromaddr common.Address, redeemAmount *big
 	if err != nil {
 		return nil, err
 	}
-	gasLimit := uint64(6721974)
+	gasLimit := gaslimit
 	gasPrice, err := acc.GetClient().SuggestGasPrice(c)
 	if err != nil {
 		return nil, err
@@ -246,6 +247,15 @@ func (acc *ETHChainDriver) BroadcastTx(tx *types.Transaction) (TransactionHash, 
 		return tx.Hash(), nil
 	}
 	err = acc.GetClient().SendTransaction(context.Background(), tx)
+
+	msg, err := acc.GetTransactionMessage(tx)
+	if err != nil {
+		fmt.Println(err)
+		return tx.Hash(), err
+	}
+	fmt.Println("TX cost ", tx.Cost().String())
+	fmt.Println("Trasaction GAS : ", tx.Gas(), "   ", msg.Gas())
+	fmt.Println("Sender : ")
 	if err != nil {
 		acc.logger.Error("Error connecting to Ethereum :", err)
 		return tx.Hash(), err
