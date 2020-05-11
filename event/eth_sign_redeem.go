@@ -105,18 +105,19 @@ func (j *JobETHSignRedeem) DoMyJob(ctx interface{}) {
 		return
 	}
 	/*
-			Points to note
+		              Points to note
 
-		    If expired fail tracker
+		              If expired fail tracker
 
-			If Success is true and validator has send signature implies , validator has signed , but his sign got reverted
-			as this was the fourth sign .
+		              Success ( Validator sign has been broadcasted and cofirmed on the ethereum blockchain)
+					        If Success is true and validator has send signature implies , validator has signed , but his sign got reverted
+							as this was the fourth sign .
 
-		    Retrycount > 0 means that the validator did sign , status was 0 before ,implies this is not an old redeem
+			          Retrycount incremented only when validator broadacasts signature
 
-			Status is not 0 , and txreceipt is true , redeem tx present in Ethereum ,but redeem status is not ongoing Fail tracker .
+				      Status is not ongoing , and txreceipt is true , redeem tx present in Ethereum ,but redeem status is not ongoing Fail tracker .
 
-			HasValidatorsigned returns success , means signature confirmed
+		              HasValidatorsigned returns success , means signature confirmed
 	*/
 
 	//Checking for confirmation of Vote
@@ -131,7 +132,7 @@ func (j *JobETHSignRedeem) DoMyJob(ctx interface{}) {
 		return
 	}
 	//Log print debugger
-	if j.RetryCount >= 0 && !success {
+	if j.RetryCount >= 0 {
 		ethCtx.Logger.Debug("Waiting for validator SignTX to be mined")
 	}
 
