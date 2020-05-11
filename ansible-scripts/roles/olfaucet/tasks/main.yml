@@ -1,0 +1,60 @@
+---
+- name: create a systemd olfullnode service file
+  copy:
+    dest: "/etc/systemd/system/olfullnode.service"
+    owner: "root"
+    group: "root"
+    mode: 0644
+    content: |
+      [Unit]
+      Description=olfullnode
+      Wants=network-online.target
+      After=network-online.target
+
+      [Service]
+      Type=simple
+      #User=alertmanager
+      #Group=alertmanager
+      ExecStart=/root/go/bin/olfullnode node --root /opt/data/fullnode > /opt/data/fullnode/fullnode.log &
+
+      #Restart=on-failure
+
+      [Install]
+      WantedBy=multi-user.target
+
+- name: enabling fullnode service
+  command: systemctl enable olfullnode.service
+  #when: systemd_service == "true"
+
+- name: Start service olfullnode
+  command: service olfullnode start
+
+- name: create a systemd olfaucet service file
+  copy:
+    dest: "/etc/systemd/system/olfaucet.service"
+    owner: "root"
+    group: "root"
+    mode: 0644
+    content: |
+      [Unit]
+      Description=olfaucet server
+      After=network.target
+      
+      [Service]
+      WorkingDirectory={{APP_HOME}}
+      ExecStart=/usr/local/bin/olfaucet --listen_address http://{{internal_ip}}:26607 --lock_time 0 --max_req_amount=10000 --root {{APP_HOME}}
+      # Other Restart options: or always, on-abort, etc
+      
+      [Install]
+      WantedBy=multi-user.target
+
+- name: enabling olfaucet service
+  command: systemctl enable olfaucet.service
+
+- name: start systemd olfaucet service
+  systemd:
+    name: olfaucet.service
+    scope: system
+    state: restarted
+    daemon_reload: yes
+    enabled: yes
