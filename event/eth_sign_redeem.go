@@ -118,6 +118,12 @@ func (j *JobETHSignRedeem) DoMyJob(ctx interface{}) {
 	if err != nil {
 		ethCtx.Logger.Error("Error connecting to HasValidatorSigned function in Smart Contract  :", j.GetJobID(), err)
 	}
+	//Signature confirmed
+	if success {
+		ethCtx.Logger.Debug("validator Sign Confirmed | validator Address (SIGNER):", ethCtx.GetValidatorETHAddress().Hex(), "| User Eth Address :", msg.From().Hex())
+		j.Status = jobs.Completed
+		return
+	}
 	status, err := cd.VerifyRedeem(addr, msg.From())
 	if err != nil {
 		ethCtx.Logger.Error("Error in verifying redeem :", j.GetJobID(), err)
@@ -127,12 +133,6 @@ func (j *JobETHSignRedeem) DoMyJob(ctx interface{}) {
 		ethCtx.Logger.Error("Unable to connect to ethereum smartcontract")
 		j.Status = jobs.Failed
 		BroadcastReportFinalityETHTx(ctx.(*JobsContext), j.TrackerName, j.JobID, false)
-	}
-	//Signature confirmed
-	if success {
-		ethCtx.Logger.Debug("validator Sign Confirmed | validator Address (SIGNER):", ethCtx.GetValidatorETHAddress().Hex(), "| User Eth Address :", msg.From().Hex())
-		j.Status = jobs.Completed
-		return
 	}
 
 	if j.RetryCount >= 0 && !success {
