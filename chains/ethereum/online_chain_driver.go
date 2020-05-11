@@ -2,7 +2,6 @@ package ethereum
 
 import (
 	"context"
-	"fmt"
 	"math/big"
 	"strings"
 	"time"
@@ -20,7 +19,7 @@ import (
 
 const DefaultTimeout = 5 * time.Second
 const gasLimit = 700000
-const GasPriceMultiplier = "1"
+const GasPriceMultiplier = "2"
 
 type ETHChainDriver struct {
 	cfg             *config.EthereumChainDriverConfig
@@ -144,14 +143,12 @@ func (acc *ETHChainDriver) SignRedeem(fromaddr common.Address, redeemAmount *big
 	n := new(big.Int)
 	n, ok := n.SetString(GasPriceMultiplier, 10)
 	if !ok {
-		fmt.Println("SetString: error")
 		return nil, errors.New("Unable to get multiplier for gas price")
 	}
 	gasPrice.Mul(gasPrice, n)
 	if err != nil {
 		return nil, err
 	}
-
 	contractAbi, _ := abi.JSON(strings.NewReader(acc.ContractABI))
 	bytesData, err := contractAbi.Pack("sign", redeemAmount, recipient)
 	if err != nil {
