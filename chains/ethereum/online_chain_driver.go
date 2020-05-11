@@ -136,7 +136,7 @@ func (acc *ETHChainDriver) SignRedeem(fromaddr common.Address, redeemAmount *big
 	if err != nil {
 		return nil, err
 	}
-	gasLimit := uint64(6721974)
+	gasLimit := uint64(700000)
 	gasPrice, err := acc.GetClient().SuggestGasPrice(c)
 	if err != nil {
 		return nil, err

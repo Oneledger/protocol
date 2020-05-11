@@ -35,9 +35,7 @@ import (
 	"github.com/Oneledger/protocol/chains/ethereum/contract"
 	oclient "github.com/Oneledger/protocol/client"
 	"github.com/Oneledger/protocol/config"
-	"github.com/Oneledger/protocol/data/accounts"
 	"github.com/Oneledger/protocol/data/balance"
-	"github.com/Oneledger/protocol/data/keys"
 	logger "github.com/Oneledger/protocol/log"
 	"github.com/Oneledger/protocol/rpc"
 	se "github.com/Oneledger/protocol/service/ethereum"
@@ -48,7 +46,7 @@ var (
 	TestTokenABI     = contract.ERC20BasicABI
 	LockRedeemERCABI = contract.LockRedeemERCABI
 	// LockRedeemERC20ABI = contract.ContextABI
-	LockRedeemContractAddr      = "0xd2629c4282E2946a6d762120164887e8f48C6AeB"
+	LockRedeemContractAddr      = "0xDc9F35C56344A769D4908044Ab35AE00Faa01f1A"
 	TestTokenContractAddr       = "0x0000000000000000000000000000000000000000"
 	LockRedeemERC20ContractAddr = "0x0000000000000000000000000000000000000000"
 
@@ -235,21 +233,21 @@ func lock() []byte {
 		fmt.Println("query account failed", err)
 		return nil
 	}
-	//acc := accReply.Accounts[0]
-	acc := keys.Address{}
-	err = acc.UnmarshalText([]byte("0x416e9cc0abc4ea98b4066823a62bfa6515180582"))
-	if err != nil {
-		return nil
-	}
-	wallet, err := accounts.NewWalletKeyStore("/home/tanmay/Codebase/Test/WalletStore/keystore")
-	if err != nil {
-		return nil
-	}
-	wallet.Open(acc, "123")
+	acc := accReply.Accounts[0]
+	//acc := keys.Address{}
+	//err = acc.UnmarshalText([]byte("0x416e9cc0abc4ea98b4066823a62bfa6515180582"))
+	//if err != nil {
+	//	return nil
+	//}
+	//wallet, err := accounts.NewWalletKeyStore("/home/tanmay/Codebase/Test/WalletStore/keystore")
+	//if err != nil {
+	//	return nil
+	//}
+	//wallet.Open(acc, "123")
 
 	req := se.OLTLockRequest{
 		RawTx:   rawTxBytes,
-		Address: acc,
+		Address: acc.Address(),
 		Fee:     action.Amount{Currency: olt.Name, Value: *balance.NewAmountFromInt(10000000000)},
 		Gas:     400000,
 	}
@@ -259,12 +257,12 @@ func lock() []byte {
 
 	err = rpcclient.Call("eth.CreateRawExtLock", req, reply)
 
-	//signReply := &oclient.SignRawTxResponse{}
-	pubkey, signature, err := wallet.SignWithAddress(reply.RawTX, acc)
-	//err = rpcclient.Call("owner.SignWithAddress", oclient.SignRawTxRequest{
-	//	RawTx:   reply.RawTX,
-	//	Address: acc,
-	//}, signReply)
+	signReply := &oclient.SignRawTxResponse{}
+	//pubkey, signature, err := wallet.SignWithAddress(reply.RawTX, acc)
+	err = rpcclient.Call("owner.SignWithAddress", oclient.SignRawTxRequest{
+		RawTx:   reply.RawTX,
+		Address: acc.Address(),
+	}, signReply)
 	if err != nil {
 		fmt.Println("Errors sisgning ", err)
 		return nil
@@ -275,8 +273,8 @@ func lock() []byte {
 	bresult := &oclient.BroadcastReply{}
 	err = rpcclient.Call("broadcast.TxSync", oclient.BroadcastRequest{
 		RawTx:     reply.RawTX,
-		Signature: signature,
-		PublicKey: pubkey,
+		Signature: signReply.Signature.Signed,
+		PublicKey: signReply.Signature.Signer,
 	}, bresult)
 
 	if err != nil {
@@ -365,18 +363,18 @@ func redeem() []byte {
 		return nil
 	}
 
-	//acc := accReply.Accounts[0]
+	acc := accReply.Accounts[0]
 
-	acc := keys.Address{}
-	err = acc.UnmarshalText([]byte("0x416e9cc0abc4ea98b4066823a62bfa6515180582"))
-	if err != nil {
-		return nil
-	}
-	wallet, err := accounts.NewWalletKeyStore("/home/tanmay/Codebase/Test/WalletStore/keystore")
-	if err != nil {
-		return nil
-	}
-	wallet.Open(acc, "123")
+	//acc := keys.Address{}
+	//err = acc.UnmarshalText([]byte("0x416e9cc0abc4ea98b4066823a62bfa6515180582"))
+	//if err != nil {
+	//	return nil
+	//}
+	//wallet, err := accounts.NewWalletKeyStore("/home/tanmay/Codebase/Test/WalletStore/keystore")
+	//if err != nil {
+	//	return nil
+	//}
+	//wallet.Open(acc, "123")
 
 	result := &oclient.ListCurrenciesReply{}
 	err = rpcclient.Call("query.ListCurrencies", struct{}{}, result)
@@ -387,7 +385,7 @@ func redeem() []byte {
 	olt, _ := result.Currencies.GetCurrencySet().GetCurrencyByName("OLT")
 
 	rr := se.RedeemRequest{
-		acc,
+		acc.Address(),
 		common.BytesToAddress(redeemAddress),
 		rawTxBytes2,
 		action.Amount{Currency: olt.Name, Value: *balance.NewAmountFromInt(10000000000)},
@@ -400,7 +398,7 @@ func redeem() []byte {
 	signReply := &oclient.SignRawTxResponse{}
 	err = rpcclient.Call("owner.SignWithAddress", oclient.SignRawTxRequest{
 		RawTx:   reply.RawTX,
-		Address: acc,
+		Address: acc.Address(),
 	}, signReply)
 	if err != nil {
 		fmt.Println(err)
