@@ -28,3 +28,15 @@
 
 - name: Start service olfullnode
   command: service olfullnode start
+
+- name: git pull
+  git:
+    repo: https://github.com/Oneledger/protocol.git
+    dest: /opt/protocol
+    version: "master"
+    refspec: '+refs/pull/*:refs/heads/*'
+  tags: update
+
+- name: compile binary
+  shell: chdir=/opt/protocol make update install_c
+  tags: update
