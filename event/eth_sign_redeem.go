@@ -105,15 +105,19 @@ func (j *JobETHSignRedeem) DoMyJob(ctx interface{}) {
 		return
 	}
 	/*
-		If expired fail tracker
+			Points to note
 
-		If Success is true and validator has send signature implies , validator has signed , but his sign got reverted
-		as this was the fourth sign . Retrycount > 0 means that the validator did sign , status was 0 before ,implies
-		this is not an old redeem
+		    If expired fail tracker
 
-		Status is not 0 , and txreceipt is true , redeem tx present in Ethereum ,but redeem status is not ongoing .Fail tracker
+			If Success is true and validator has send signature implies , validator has signed , but his sign got reverted
+			as this was the fourth sign .
 
-		HasValidatorsigned returns success , means signature confirmed */
+		    Retrycount > 0 means that the validator did sign , status was 0 before ,implies this is not an old redeem
+
+			Status is not 0 , and txreceipt is true , redeem tx present in Ethereum ,but redeem status is not ongoing Fail tracker .
+
+			HasValidatorsigned returns success , means signature confirmed
+	*/
 
 	//Checking for confirmation of Vote
 	success, err := cd.HasValidatorSigned(addr, msg.From())
