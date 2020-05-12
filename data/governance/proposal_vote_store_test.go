@@ -151,6 +151,13 @@ func TestProposalVoteStore_Update(t *testing.T) {
 		setupProposalVotes(t, pvs, addrs, 5, 3, 0, 2)
 		checkProposalVotes(t, pvs, addrs, 5, 3, 0, 2)
 	})
+	t.Run("test vote using invalid address, should fail", func(t *testing.T) {
+		pvs, _ := setupProposalVoteStore(t)
+		hexNotExist := "1111111111111111111792311A0AB38D5085E15A"
+		addrInvalid, _ := hex.DecodeString(hexNotExist)
+		err := pvs.Update(proposalID, addrInvalid, &ProposalVote{proposalID, NEGATIVE, 1})
+		assert.NotNil(t, err)
+	})
 }
 
 func TestProposalVoteStore_Delete(t *testing.T) {
@@ -175,32 +182,44 @@ func TestProposalVoteStore_Delete(t *testing.T) {
 		assert.Nil(t, addrs)
 		assert.Nil(t, votes)
 	})
+	t.Run("test deleting vote records of invalid proposal", func(t *testing.T) {
+		pvs, addrs := setupProposalVoteStore(t)
+		setupProposalVotes(t, pvs, addrs, 5, 3, 0, 2)
+		err := pvs.Delete("fake_proposal_id")
+		assert.NotNil(t, err)
+	})
 }
 
 func TestProposalVoteStore_ProposalPassed(t *testing.T) {
 	t.Run("test a proposal that passed successfully, nobody give up", func(t *testing.T) {
 		pvs, addrs := setupProposalVoteStore(t)
 		setupProposalVotes(t, pvs, addrs, 6, 2, 0, 2)
-		passed := pvs.IsPassed(proposalID)
+		passed, _ := pvs.IsPassed(proposalID)
 		assert.True(t, passed)
 	})
 	t.Run("test a proposal that passed successfully, somebody give up", func(t *testing.T) {
 		pvs, addrs := setupProposalVoteStore(t)
 		setupProposalVotes(t, pvs, addrs, 5, 2, 1, 2)
-		passed := pvs.IsPassed(proposalID)
+		passed, _ := pvs.IsPassed(proposalID)
 		assert.True(t, passed)
 	})
 	t.Run("test a proposal that passed successfully, somebody give up & somebody give no response", func(t *testing.T) {
 		pvs, addrs := setupProposalVoteStore(t)
 		setupProposalVotes(t, pvs, addrs, 5, 1, 1, 2)
-		passed := pvs.IsPassed(proposalID)
+		passed, _ := pvs.IsPassed(proposalID)
 		assert.True(t, passed)
 	})
 	t.Run("test a proposal that passed successfully, all support", func(t *testing.T) {
 		pvs, addrs := setupProposalVoteStore(t)
 		setupProposalVotes(t, pvs, addrs, 8, 0, 0, 2)
-		passed := pvs.IsPassed(proposalID)
+		passed, _ := pvs.IsPassed(proposalID)
 		assert.True(t, passed)
+	})
+	t.Run("test a proposal that does not exist, should return error", func(t *testing.T) {
+		pvs, addrs := setupProposalVoteStore(t)
+		setupProposalVotes(t, pvs, addrs, 8, 0, 0, 2)
+		_, err := pvs.IsPassed("fake_proposal_id")
+		assert.NotNil(t, err)
 	})
 }
 
@@ -208,43 +227,43 @@ func TestProposalVoteStore_ProposalNotPassed(t *testing.T) {
 	t.Run("test a proposal that failed to pass, nobody give up", func(t *testing.T) {
 		pvs, addrs := setupProposalVoteStore(t)
 		setupProposalVotes(t, pvs, addrs, 5, 3, 0, 2)
-		passed := pvs.IsPassed(proposalID)
+		passed, _ := pvs.IsPassed(proposalID)
 		assert.False(t, passed)
 	})
 	t.Run("test a proposal that failed to pass, somebody give up", func(t *testing.T) {
 		pvs, addrs := setupProposalVoteStore(t)
 		setupProposalVotes(t, pvs, addrs, 4, 3, 1, 2)
-		passed := pvs.IsPassed(proposalID)
+		passed, _ := pvs.IsPassed(proposalID)
 		assert.False(t, passed)
 	})
 	t.Run("test a proposal that failed to pass, somebody give up & somebody give no response", func(t *testing.T) {
 		pvs, addrs := setupProposalVoteStore(t)
 		setupProposalVotes(t, pvs, addrs, 3, 3, 1, 2)
-		passed := pvs.IsPassed(proposalID)
+		passed, _ := pvs.IsPassed(proposalID)
 		assert.False(t, passed)
 	})
 	t.Run("test a proposal that failed to pass, all give or no response", func(t *testing.T) {
 		pvs, addrs := setupProposalVoteStore(t)
 		setupProposalVotes(t, pvs, addrs, 0, 0, 2, 2)
-		passed := pvs.IsPassed(proposalID)
+		passed, _ := pvs.IsPassed(proposalID)
 		assert.False(t, passed)
 	})
 	t.Run("test a proposal that failed to pass, all give up", func(t *testing.T) {
 		pvs, addrs := setupProposalVoteStore(t)
 		setupProposalVotes(t, pvs, addrs, 0, 0, 8, 2)
-		passed := pvs.IsPassed(proposalID)
+		passed, _ := pvs.IsPassed(proposalID)
 		assert.False(t, passed)
 	})
 	t.Run("test a proposal that failed to pass, all no response", func(t *testing.T) {
 		pvs, addrs := setupProposalVoteStore(t)
 		setupProposalVotes(t, pvs, addrs, 0, 0, 0, 2)
-		passed := pvs.IsPassed(proposalID)
+		passed, _ := pvs.IsPassed(proposalID)
 		assert.False(t, passed)
 	})
 	t.Run("test a proposal that failed to pass, all disagree", func(t *testing.T) {
 		pvs, addrs := setupProposalVoteStore(t)
 		setupProposalVotes(t, pvs, addrs, 0, 8, 0, 2)
-		passed := pvs.IsPassed(proposalID)
+		passed, _ := pvs.IsPassed(proposalID)
 		assert.False(t, passed)
 	})
 }
