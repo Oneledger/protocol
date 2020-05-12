@@ -3,6 +3,7 @@ package main
 import (
 	"crypto/ecdsa"
 	"encoding/base64"
+	"flag"
 	"fmt"
 	"io/ioutil"
 	"math/big"
@@ -32,8 +33,8 @@ import (
 var (
 	lockRedeemABI          = contract.LockRedeemABI
 	lockRedeemFutureABI    = contract.LockRedeemFutureABI
-	lockRedeemContractAddr = "0xdCF4cA39890B73b243850d87317fb5d3D31985cd"
-	newSmartcontract       = "0x7fef1061Ea2789E04b125A52f1DEa2fF9Eb9e198"
+	lockRedeemContractAddr string //"0xdCF4cA39890B73b243850d87317fb5d3D31985cd"
+	newSmartcontract       string //"0x7fef1061Ea2789E04b125A52f1DEa2fF9Eb9e198"
 	//cfg = config.DefaultEthConfig("rinkeby", "de5e96cbb6284d5ea1341bf6cb7fa401")
 	Cfg                     = config.DefaultEthConfig("rinkeby", "de5e96cbb6284d5ea1341bf6cb7fa401")
 	Log                     = logger.NewDefaultLogger(os.Stdout).WithPrefix("Migrate")
@@ -42,17 +43,30 @@ var (
 	FutureContractAbi       abi.ABI
 	OldSmartContractAddress = common.HexToAddress(lockRedeemContractAddr)
 	NEWsmartContract        = common.HexToAddress(newSmartcontract)
-	readDir                 = os.Getenv("OLDATA") + "/devnet/"
-	lock_period             = new(big.Int)
+	readDir                 string
+	lock_period             *big.Int
+	lock_blocks             int64
 	auth                    *bind.TransactOpts
+	deployContract          bool
+	migratetoNewContract    bool
+	gaslimit                uint64
 )
 
 //auth                    *bind.TransactOpts
 //)
 
 func init() {
-	gasLimit := uint64(2000000) // in units
-	lock_period = big.NewInt(25)
+	flag.StringVar(&readDir, "readDir", "os.Getenv(\"OLDATA\") + \"/devnet/\"", "Input Directory for Nodes")
+	flag.StringVar(&lockRedeemContractAddr, "oldContract", "", "Old Smart contract Address")
+	flag.StringVar(&newSmartcontract, "newContract", "", "New Smart contract Address")
+	flag.Int64Var(&lock_blocks, "lockPeriod", 0, "Lock Period for Redeem")
+	flag.Uint64Var(&gaslimit, "gaslimit", 0, "Lock Period for Redeem")
+	flag.BoolVar(&deployContract, "deploy", false, "Switch on to deploy contract")
+	flag.BoolVar(&migratetoNewContract, "migrate", true, "Migrate to new contract")
+	flag.Parse()
+
+	gasLimit := gaslimit // in units
+	lock_period = big.NewInt(lock_blocks)
 	gasPrice := big.NewInt(1000000000)
 
 	os.Setenv("ETHPKPATH", "/tmp/pkdata")
@@ -88,6 +102,29 @@ func main() {
 	checkContract()
 	verifyValidators()
 
+}
+
+func verifyFlags() {
+	if deployContract && migratetoNewContract {
+		Log.Fatal("Cannot Deploy and Migrate contract in single step")
+		return
+	}
+	if lock_blocks == 0 {
+		Log.Fatal("Please Provide the lock period")
+		return
+	}
+	if gaslimit == 0 {
+		Log.Fatal("Please Provide gas limit")
+		return
+	}
+	if deployContract && lockRedeemContractAddr == "" {
+		Log.Fatal("Please provide old smart contract address for deployment")
+		return
+	}
+	if migratetoNewContract && newSmartcontract == "" {
+		Log.Fatal("Please provide new smart contract address for migration")
+		return
+	}
 }
 
 // Redeem locked if tracker fails . User redeems more funds than he has .
