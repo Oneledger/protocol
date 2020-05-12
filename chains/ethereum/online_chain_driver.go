@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	ethereum2 "github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -228,15 +229,23 @@ func (acc *ETHChainDriver) CheckFinality(txHash TransactionHash, blockConfirmati
 
 }
 
-func (acc *ETHChainDriver) VerifyReceipt(txHash TransactionHash) (bool, error) {
+// Bool value is for recipt status
+// Err is to handle error , we need to ignore NotFound and wait for the tx
+func (acc *ETHChainDriver) VerifyReceipt(txHash TransactionHash) VerifyReceiptStatus {
 	result, err := acc.GetClient().TransactionReceipt(context.Background(), txHash)
+	if err == ethereum2.NotFound {
+		return NotFound
+	}
+	if result.Status == types.ReceiptStatusFailed {
+		return Failed
+	}
 	if err != nil {
-		return false, err
+		return ConnectionError
 	}
 	if result.Status == types.ReceiptStatusSuccessful {
-		return true, nil
+		return Found
 	}
-	return false, err
+	return Other
 }
 
 // BroadcastTx takes a signed transaction as input and broadcasts it to the network

@@ -1,6 +1,7 @@
 package event
 
 import (
+	"fmt"
 	"strconv"
 
 	"github.com/Oneledger/protocol/chains/ethereum"
@@ -71,11 +72,16 @@ func (job *JobETHVerifyRedeem) DoMyJob(ctx interface{}) {
 	addr := ethCtx.GetValidatorETHAddress()
 	status := cd.VerifyRedeem(addr, msg.From())
 	if status == ethereum.ErrorConnecting {
-		ethCtx.Logger.Error("Error connecting to HasValidatorSigned function in Smart Contract  :", job.JobID, err) //TODO : Possible panic
+		ethCtx.Logger.Error("Error connecting to HasValidatorSigned function in Smart Contract  :", job.JobID, err)
+		panic("Error connecting  to Smart Contract ") //TODO : Possible panic
 	}
 	if status == ethereum.Expired {
 		job.Status = jobs.Failed
-		BroadcastReportFinalityETHTx(ctx.(*JobsContext), job.TrackerName, job.JobID, false)
+		err := BroadcastReportFinalityETHTx(ctx.(*JobsContext), job.TrackerName, job.JobID, false)
+		if err != nil {
+			panic(fmt.Sprintf("Unable to broadcast failed TX for : %s ", job.JobID))
+		}
+
 		return
 	}
 	if status == ethereum.Ongoing {
@@ -87,7 +93,10 @@ func (job *JobETHVerifyRedeem) DoMyJob(ctx interface{}) {
 		if index < 0 {
 			return
 		}
-		BroadcastReportFinalityETHTx(ethCtx, job.TrackerName, job.JobID, true)
+		err := BroadcastReportFinalityETHTx(ethCtx, job.TrackerName, job.JobID, true)
+		if err != nil {
+			panic(fmt.Sprintf("Unable to broadcast success TX for : %s ", job.JobID))
+		}
 		job.Status = jobs.Completed
 		return
 	}

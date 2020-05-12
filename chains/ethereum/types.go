@@ -48,6 +48,16 @@ const (
 	TXSuccess              CheckFinalityStatus = 0x07
 )
 
+type VerifyReceiptStatus int8
+
+const (
+	NotFound        VerifyReceiptStatus = 0
+	Found           VerifyReceiptStatus = 1
+	Failed          VerifyReceiptStatus = 2
+	ConnectionError VerifyReceiptStatus = 3
+	Other           VerifyReceiptStatus = 4
+)
+
 type RedeemRequest struct {
 	Amount *big.Int
 }
