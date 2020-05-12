@@ -3,8 +3,6 @@ package event
 import (
 	"strconv"
 
-	"github.com/Oneledger/protocol/action"
-	"github.com/Oneledger/protocol/action/eth"
 	"github.com/Oneledger/protocol/chains/ethereum"
 	trackerlib "github.com/Oneledger/protocol/data/ethereum"
 	"github.com/Oneledger/protocol/data/jobs"
@@ -73,11 +71,12 @@ func (job *JobETHVerifyRedeem) DoMyJob(ctx interface{}) {
 	addr := ethCtx.GetValidatorETHAddress()
 	status := cd.VerifyRedeem(addr, msg.From())
 	if status == ethereum.ErrorConnecting {
-		panic("Unable to connect to ethereum")
+		ethCtx.Logger.Error("Error connecting to HasValidatorSigned function in Smart Contract  :", job.JobID, err) //TODO : Possible panic
 	}
 	if status == ethereum.Expired {
 		job.Status = jobs.Failed
 		BroadcastReportFinalityETHTx(ctx.(*JobsContext), job.TrackerName, job.JobID, false)
+		return
 	}
 	if status == ethereum.Ongoing {
 		ethCtx.Logger.Info("Waiting for RedeemTx to be Completed ,67 % Signing Votes")
@@ -88,40 +87,9 @@ func (job *JobETHVerifyRedeem) DoMyJob(ctx interface{}) {
 		if index < 0 {
 			return
 		}
-		//TODO : Replace with BroadcastReportFinalityETHTx(ethCtx,job.TrackerName,job.JobID,true)
-		cf := &eth.ReportFinality{
-			TrackerName:      tracker.TrackerName,
-			Locker:           tracker.ProcessOwner,
-			ValidatorAddress: ethCtx.ValidatorAddress,
-			VoteIndex:        index,
-			Success:          true,
-		}
-
-		txData, err := cf.Marshal()
-		if err != nil {
-			ethCtx.Logger.Error("Error while preparing mint txn ", job.GetJobID(), err)
-			return
-		}
-
-		internalMintTx := action.RawTx{
-			Type: action.ETH_REPORT_FINALITY_MINT,
-			Data: txData,
-			Fee:  action.Fee{},
-			Memo: job.GetJobID(),
-		}
-
-		req := InternalBroadcastRequest{
-			RawTx: internalMintTx,
-		}
-		rep := BroadcastReply{}
-		err = ethCtx.Service.InternalBroadcast(req, &rep)
-
-		if err != nil || !rep.OK {
-			ethCtx.Logger.Error("error while broadcasting finality vote and mint txn ", job.GetJobID(), err, rep.Log)
-			return
-		}
-		//TODO END
+		BroadcastReportFinalityETHTx(ethCtx, job.TrackerName, job.JobID, true)
 		job.Status = jobs.Completed
+		return
 	}
 }
 

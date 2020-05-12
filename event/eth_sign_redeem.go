@@ -101,7 +101,7 @@ func (j *JobETHSignRedeem) DoMyJob(ctx interface{}) {
 	//Confirm redeem tx has been sent by user
 	txReceipt, err := cd.VerifyReceipt(tx.Hash())
 	if err != nil {
-		ethCtx.Logger.Debug("Trying to confirm RedeemTX sent by User Receipt :", err)
+		ethCtx.Logger.Debug("Trying to confirm RedeemTX sent by User Receipt :", err) //TODO : Possible panic
 		return
 	}
 	/*
@@ -123,7 +123,7 @@ func (j *JobETHSignRedeem) DoMyJob(ctx interface{}) {
 	//Checking for confirmation of Vote
 	success, err := cd.HasValidatorSigned(addr, msg.From())
 	if err != nil {
-		ethCtx.Logger.Error("Error connecting to HasValidatorSigned function in Smart Contract  :", j.GetJobID(), err)
+		ethCtx.Logger.Error("Error connecting to HasValidatorSigned function in Smart Contract  :", j.GetJobID(), err) //TODO : Possible panic
 	}
 	//Signature confirmed
 	if success {
@@ -141,7 +141,7 @@ func (j *JobETHSignRedeem) DoMyJob(ctx interface{}) {
 
 	//Ethereum connectivity issue
 	if status == ethereum.ErrorConnecting {
-		panic("Unable to connect to ethereum")
+		ethCtx.Logger.Error("Error connecting to HasValidatorSigned function in Smart Contract  :", j.GetJobID(), err) //TODO : Possible panic
 	}
 
 	// Redeem request has expired
@@ -149,6 +149,7 @@ func (j *JobETHSignRedeem) DoMyJob(ctx interface{}) {
 		ethCtx.Logger.Info("Failing from sign : Redeem Expired")
 		j.Status = jobs.Failed
 		BroadcastReportFinalityETHTx(ctx.(*JobsContext), j.TrackerName, j.JobID, false)
+		return
 	}
 	// Status of redeem is Success but USER's Sign has not been confirmed (success is not true yet) = Redeem has been confirmed but this validators vote was reverted .
 	if status == ethereum.Success && j.RetryCount >= 1 {
@@ -157,7 +158,7 @@ func (j *JobETHSignRedeem) DoMyJob(ctx interface{}) {
 		return
 	}
 	// Status in not ongoing ,but User Redeem Request is verifiable on etherum = User is sending in an old redeem transaction
-	if status != ethereum.Ongoing && txReceipt == true {
+	if status != ethereum.Ongoing && txReceipt {
 		ethCtx.Logger.Info("Redeem Request not created by user | Current Status : ", status.String())
 		j.Status = jobs.Failed
 		BroadcastReportFinalityETHTx(ctx.(*JobsContext), j.TrackerName, j.JobID, false)
