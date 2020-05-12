@@ -21,6 +21,7 @@ type Service struct {
 	balances   *balance.Store
 	currencies *balance.CurrencySet
 	validators *identity.ValidatorStore
+	witnesses  *identity.WitnessStore
 	ons        *ons.DomainStore
 	feePool    *fees.Store
 	logger     *log.Logger
@@ -31,7 +32,7 @@ func Name() string {
 	return "query"
 }
 
-func NewService(ctx client.ExtServiceContext, balances *balance.Store, currencies *balance.CurrencySet, validators *identity.ValidatorStore,
+func NewService(ctx client.ExtServiceContext, balances *balance.Store, currencies *balance.CurrencySet, validators *identity.ValidatorStore, witnesses *identity.WitnessStore,
 	domains *ons.DomainStore, feePool *fees.Store, logger *log.Logger, txTypes *[]action.TxTypeDescribe) *Service {
 	return &Service{
 		name:       "query",
@@ -39,6 +40,7 @@ func NewService(ctx client.ExtServiceContext, balances *balance.Store, currencie
 		currencies: currencies,
 		balances:   balances,
 		validators: validators,
+		witnesses:  witnesses,
 		ons:        domains,
 		feePool:    feePool,
 		logger:     logger,
@@ -79,7 +81,21 @@ func (svc *Service) ListValidators(_ client.ListValidatorsRequest, reply *client
 		Validators: validators,
 		Height:     svc.balances.State.Version(),
 	}
+	return nil
+}
 
+// ListWitnesses returns a list of all witness
+func (svc *Service) ListWitnesses(req client.ListWitnessesRequest, reply *client.ListWitnessesReply) error {
+	witnesses, err := svc.witnesses.GetWitnessAddresses(req.ChainType)
+	if err != nil {
+		svc.logger.Error("error listing witnesses")
+		return codes.ErrListWitnesses
+	}
+
+	*reply = client.ListWitnessesReply{
+		Witnesses: witnesses,
+		Height:    svc.balances.State.Version(),
+	}
 	return nil
 }
 

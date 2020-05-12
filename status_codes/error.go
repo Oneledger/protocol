@@ -61,6 +61,7 @@ var (
 	ErrBadAddress      = ProtocolError{IncorrectAddress, "address incorrect"}
 	ErrGettingBalance  = ProtocolError{InternalErrorGettingBalance, "error  getting balance"}
 	ErrListValidators  = ProtocolError{InternalErrorListValidators, "error getting list of validators"}
+	ErrListWitnesses  = ProtocolError{InternalErrorListWitnesses, "error getting list of witnesses"}
 	ErrFindingCurrency = ProtocolError{CurrencyNotFound, "error finding currency"}
 	ErrGetTx           = ProtocolError{TxNotFound, "error get tx from tendermint"}
 

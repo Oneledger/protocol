@@ -1,6 +1,4 @@
-[![Build Status](https://travis-ci.org/Oneledger/protocol.svg?branch=master)](https://travis-ci.org/Oneledger/protocol)
-[![Build Status](https://travis-ci.org/Oneledger/protocol.svg?branch=release)](https://travis-ci.org/Oneledger/protocol)
-[![Build Status](https://travis-ci.org/Oneledger/protocol.svg?branch=develop)](https://travis-ci.org/Oneledger/protocol)
+
 # OneLedger Protocol 
 
 This repo is the OneLedger blockchain full-node, which is currently an ABCi app based on low-level parts of the Tendermint consensus library
