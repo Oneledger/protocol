@@ -73,7 +73,7 @@ func (job *JobETHVerifyRedeem) DoMyJob(ctx interface{}) {
 	status := cd.VerifyRedeem(addr, msg.From())
 	if status == ethereum.ErrorConnecting {
 		ethCtx.Logger.Error("Error connecting to HasValidatorSigned function in Smart Contract  :", job.JobID, err)
-		panic("Error connecting  to Smart Contract ") //TODO : Possible panic
+		panic("Error connecting  to Smart Contract ")
 	}
 	if status == ethereum.Expired {
 		job.Status = jobs.Failed
