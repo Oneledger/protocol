@@ -101,10 +101,10 @@ func (j *JobETHSignRedeem) DoMyJob(ctx interface{}) {
 	//Get receipt first ,then status [ other way around might cause ambiguity ]
 	//Confirm redeem tx has been sent by user
 	//Verify Redeem should only be checked after Verify Receipt is confirmed , otherwise we might get stale verify redeem
-	//Verify Recipt returns
-	txReceipt := cd.VerifyReceipt(tx.Hash())
-	if txReceipt != ethereum.ConnectionError {
-		ethCtx.Logger.Debug("Error in Getting TX receipt:")
+	//Verify Receipt returns
+	txReceipt, err := cd.VerifyReceipt(tx.Hash())
+	if err != nil {
+		ethCtx.Logger.Debug("Error in Getting TX receipt:", err)
 		panic("Shutting down node ,unable to process redeem Transaction")
 	}
 	if txReceipt == ethereum.Failed {

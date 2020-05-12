@@ -2,6 +2,7 @@ package ethereum
 
 import (
 	"context"
+	"fmt"
 	"math/big"
 	"strings"
 	"time"
@@ -231,21 +232,25 @@ func (acc *ETHChainDriver) CheckFinality(txHash TransactionHash, blockConfirmati
 
 // Bool value is for recipt status
 // Err is to handle error , we need to ignore NotFound and wait for the tx
-func (acc *ETHChainDriver) VerifyReceipt(txHash TransactionHash) VerifyReceiptStatus {
+func (acc *ETHChainDriver) VerifyReceipt(txHash TransactionHash) (VerifyReceiptStatus, error) {
+
 	result, err := acc.GetClient().TransactionReceipt(context.Background(), txHash)
-	if err == ethereum2.NotFound {
-		return NotFound
-	}
-	if result.Status == types.ReceiptStatusFailed {
-		return Failed
+	fmt.Println("Err : ", err)
+	fmt.Println("Result :", result)
+	if err == ethereum2.NotFound && result == nil {
+		return NotFound, nil
 	}
 	if err != nil {
-		return ConnectionError
+		return Other, err
+	}
+	if result.Status == types.ReceiptStatusFailed {
+		return Failed, nil
 	}
 	if result.Status == types.ReceiptStatusSuccessful {
-		return Found
+		return Found, nil
 	}
-	return Other
+	// Returning generic result ( no err )
+	return Other, nil
 }
 
 // BroadcastTx takes a signed transaction as input and broadcasts it to the network
