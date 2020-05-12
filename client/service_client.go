@@ -129,6 +129,11 @@ func (c *ServiceClient) ListValidators() (out ListValidatorsReply, err error) {
 	return
 }
 
+func (c *ServiceClient) ListWitnesses(req ListWitnessesRequest) (out ListWitnessesReply, err error) {
+	err = c.Call("query.ListWitnesses", req, &out)
+	return
+}
+
 func (c *ServiceClient) ListCurrencies() (out *ListCurrenciesReply, err error) {
 	err = c.Call("query.ListCurrencies", struct{}{}, &out)
 	return
