@@ -139,11 +139,6 @@ func (acc *ETHChainDriver) SignRedeem(fromaddr common.Address, redeemAmount *big
 	}
 	gasLimit := uint64(gasLimit)
 	gasPrice, err := acc.GetClient().SuggestGasPrice(c)
-	n := new(big.Int)
-	n, ok := n.SetString(GasPriceMultiplier, 10)
-	if !ok {
-		return nil, errors.New("Unable to get multiplier for gas price")
-	}
 	gasPrice = big.NewInt(0).Add(gasPrice, big.NewInt(0).Div(gasPrice, big.NewInt(2)))
 	if err != nil {
 		return nil, err
