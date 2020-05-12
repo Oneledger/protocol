@@ -1,6 +1,6 @@
 pragma solidity >=0.5.0 <0.6.0;
 
-contract LockRedeem {
+contract LockRedeemV2 {
     //Flag to pause and unpause contract
     bool ACTIVE = false;
 
@@ -33,6 +33,10 @@ contract LockRedeem {
     //int constant DEFAULT_VALIDATOR_POWER = 100;
     uint constant MIN_VALIDATORS = 0;
 
+    //Approx
+    // 270 blocks per hour
+    // 5 blocks per min
+    // 28800 old value
     uint256 LOCK_PERIOD;
 
 
@@ -88,27 +92,50 @@ contract LockRedeem {
         _; // Continues control flow after this is validates
     }
 
+    /////// Added for migration //////////////////////////////////////////////////////////////////////////
+    address old_contract ;
+    uint signaturesrequiredformigration = 0;
+    uint migrationsignaturecount = 0 ;
 
-
-    constructor(address[] memory initialValidators,uint _lock_period) public {
-        // Require at least 4 validators
-        require(initialValidators.length >= MIN_VALIDATORS, "insufficient validators passed to constructor");
-
-        // Add the initial validators
-        for (uint i = 0; i < initialValidators.length; i++) {
-            // Ensure these validators are unique
-            address v = initialValidators[i];
-            require(validators[v] == 0, "found non-unique validator in initialValidators");
-            addValidator(v);
-        }
-        ACTIVE = true ;
-        LOCK_PERIOD = _lock_period;
-        //validatorEarningMultiplier = multiplier;
-        votingThreshold = (initialValidators.length * 2 / 3) + 1;
-        activeThreshold = (initialValidators.length * 1 / 3) + 1;
-
+    function MigrateFromOld() public {
+        require(msg.sender == old_contract);
+        migrationsignaturecount = migrationsignaturecount + 1;
+        addValidator(tx.origin);
+    }
+    function () external payable {
+        require(migrationsignaturecount == signaturesrequiredformigration);
+        ACTIVE = true;
     }
 
+    function getMigrationCount() public view returns (uint) {
+        return migrationsignaturecount;
+    }
+
+    function verifyValidator () public view returns(bool) {
+        return (isValidator(msg.sender));
+    }
+
+    constructor(uint _lock_period,address _old_contract,uint noofValidatorsinold) public {
+        // Require at least 4 validators
+        require(noofValidatorsinold >= MIN_VALIDATORS, "insufficient validators passed to constructor");
+
+        // Add the initial validators
+        //Add Validators from old contract
+//        for (uint i = 0; i < initialValidators.length; i++) {
+//            // Ensure these validators are unique
+//            address v = initialValidators[i];
+//            require(validators[v] == 0, "found non-unique validator in initialValidators");
+//            addValidator(v);
+//        }
+        LOCK_PERIOD = _lock_period;
+        //validatorEarningMultiplier = multiplier;
+        votingThreshold = (noofValidatorsinold * 2 / 3) + 1;
+        activeThreshold = (noofValidatorsinold * 1 / 3) + 1;
+        old_contract = _old_contract;
+        signaturesrequiredformigration = (noofValidatorsinold * 2 / 3 + 1);
+
+    }
+    //////////////END OF ADDED FOR MIGRATE //////////////////////////////////////////////////////////////////////
     function migrate (address newSmartContractAddress) public onlyValidator {
         require(migrationSigners[msg.sender]==false,"Validator Signed already");
         migrationSigners[msg.sender] = true ;
@@ -144,6 +171,7 @@ contract LockRedeem {
         require(msg.value >= 0, "Must pay a balance more than 0");
         emit Lock(msg.sender,msg.value);
     }
+
 
     // function called by user
     function redeem(uint256 amount_)  payable public isActive {
