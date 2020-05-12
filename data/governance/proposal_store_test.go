@@ -39,18 +39,21 @@ func init() {
 
 	//Create new proposal options
 	proposalOpt.CodeChange = options{
+		InitialFunding:  codeChange,
 		FundingDeadline: codeChange,
 		FundingGoal:     codeChange,
 		VotingDeadline:  codeChange,
 	}
 
 	proposalOpt.ConfigUpdate = options{
+		InitialFunding:  configUpdate,
 		FundingDeadline: configUpdate,
 		FundingGoal:     configUpdate,
 		VotingDeadline:  configUpdate,
 	}
 
 	proposalOpt.General = options{
+		InitialFunding:  general,
 		FundingDeadline: general,
 		FundingGoal:     general,
 		VotingDeadline:  general,
@@ -58,8 +61,8 @@ func init() {
 
 	//Create new proposals
 	for i := 0; i < numProposals; i++ {
-		j := i / 2 //address list ranges from 0 - 4
-		k := i / 4 //proposal type ranges from 0 - 2
+		j := i / 2      //address list ranges from 0 - 4
+		k := i/4 + 0x20 //proposal type ranges from 0x20 - 0x22
 
 		proposer := addrList[j]
 

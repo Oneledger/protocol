@@ -10,6 +10,7 @@ import (
 const EmptyStr = ""
 
 type options struct {
+	InitialFunding  int64
 	FundingDeadline int64
 	FundingGoal     int64
 	VotingDeadline  int64
