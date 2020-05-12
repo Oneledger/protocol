@@ -1,6 +1,6 @@
 pragma solidity >=0.5.0 <0.6.0;
 
-contract LockRedeem {
+contract LockRedeemFuture {
     //Flag to pause and unpause contract
     bool ACTIVE = false;
     uint DEFAULT_VALIDATOR_POWER = 50;
