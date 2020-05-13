@@ -81,6 +81,7 @@ type ChainState struct {
 }
 
 type Stake identity.Stake
+type Witness identity.Witness
 
 type AppState struct {
 	Currencies balance.Currencies `json:"currencies"`
@@ -88,8 +89,9 @@ type AppState struct {
 	Chain      ChainState         `json:"state"`
 	Balances   []BalanceState     `json:"balances"`
 	Staking    []Stake            `json:"staking"`
+	Witness    []Witness          `json:"witness"`
 	Domains    []DomainState      `json:"domains"`
-	Trackers   []Tracker          `json:"trackers"`
+	Trackers   []Tracker          `json:"trackers,omitempty"`
 	Fees       []BalanceState     `json:"fees"`
 }
 

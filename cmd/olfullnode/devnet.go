@@ -53,6 +53,7 @@ type testnetConfig struct {
 	// Number of validators
 	numValidators    int
 	numNonValidators int
+	numWitness       int
 	outputDir        string
 	p2pPort          int
 	chainID          string
@@ -85,6 +86,8 @@ func init() {
 	initCmd.AddCommand(testnetCmd)
 	testnetCmd.Flags().IntVar(&testnetArgs.numValidators, "validators", 4, "Number of validators to initialize devnet with")
 	testnetCmd.Flags().IntVar(&testnetArgs.numNonValidators, "nonvalidators", 0, "Number of non-validators to initialize the devnet with")
+	testnetCmd.Flags().IntVar(&testnetArgs.numWitness, "witness", 0, "number of witness to initialize mainnet with")
+
 	testnetCmd.Flags().StringVarP(&testnetArgs.outputDir, "dir", "o", "./", "Directory to store initialization files for the devnet, default current folder")
 	testnetCmd.Flags().BoolVar(&testnetArgs.createEmptyBlock, "empty_blocks", false, "Allow creating empty blocks")
 	testnetCmd.Flags().StringVar(&testnetArgs.chainID, "chain_id", "", "Specify a chain ID, a random one is generated if not given")
@@ -115,6 +118,7 @@ func randStr(size int) string {
 // (2) Modify their configurations to have each one have its persistent peer set
 type node struct {
 	isValidator bool
+	isWitness   bool
 	cfg         *config.Server
 	dir         string
 	key         *p2p.NodeKey
@@ -179,7 +183,7 @@ type devnetContext struct {
 func newDevnetContext(args *testnetConfig) (*devnetContext, error) {
 	logger := log.NewLoggerWithPrefix(os.Stdout, "olfullnode devnet")
 
-	names := nodeNamesWithZeros("", args.numNonValidators+args.numValidators)
+	names := nodeNamesWithZeros("", args.numNonValidators+args.numValidators+args.numWitness)
 	// TODO: Reading from a file is actually unimplemented right now
 	if args.namesPath != "" {
 		logger.Warn("--names parameter is unimplemented")
@@ -219,7 +223,7 @@ func runDevnet(_ *cobra.Command, _ []string) error {
 	if !args.cloud {
 		setEnvVariables()
 	}
-	totalNodes := args.numValidators + args.numNonValidators
+	totalNodes := args.numValidators + args.numNonValidators + args.numWitness
 
 	if totalNodes > len(ctx.names) {
 		return fmt.Errorf("Don't have enough node names, can't specify more than %d nodes", len(ctx.names))
@@ -256,6 +260,7 @@ func runDevnet(_ *cobra.Command, _ []string) error {
 	// Create the GenesisValidator list and its key files priv_validator_key.json and node_key.json
 	for i := 0; i < totalNodes; i++ {
 		isValidator := i < args.numValidators
+		isWitness := i >= args.numValidators && i < args.numValidators+args.numWitness
 		nodeName := ctx.names[i]
 		nodeDir := filepath.Join(args.outputDir, nodeName+"-Node")
 		configDir := filepath.Join(nodeDir, "consensus", "config")
@@ -328,9 +333,8 @@ func runDevnet(_ *cobra.Command, _ []string) error {
 		if err != nil {
 			return errors.Wrap(err, "failed to save validator ecdsa private key")
 		}
-
 		// Save the nodes to a list so we can iterate again and
-		n := node{isValidator: isValidator, cfg: cfg, dir: nodeDir, key: nodeKey, esdcaPk: ecdsaPk}
+		n := node{isValidator: isValidator, isWitness: isWitness, cfg: cfg, dir: nodeDir, key: nodeKey, esdcaPk: ecdsaPk}
 		if isValidator {
 			validator := consensus.GenesisValidator{
 				Address: pvFile.GetAddress(),
@@ -339,6 +343,15 @@ func runDevnet(_ *cobra.Command, _ []string) error {
 				Power:   1,
 			}
 			validatorList[i] = validator
+			n.validator = validator
+		}
+		if isWitness {
+			validator := consensus.GenesisValidator{
+				Address: pvFile.GetAddress(),
+				PubKey:  pvFile.GetPubKey(),
+				Name:    nodeName,
+				Power:   0,
+			}
 			n.validator = validator
 		}
 		nodeList[i] = n
@@ -429,6 +442,7 @@ func initialState(args *testnetConfig, nodeList []node, option ethchain.ChainDri
 	}
 	balances := make([]consensus.BalanceState, 0, len(nodeList))
 	staking := make([]consensus.Stake, 0, len(nodeList))
+	witness := make([]consensus.Witness, 0, len(nodeList))
 	domains := make([]consensus.DomainState, 0, len(nodeList))
 	fees_db := make([]consensus.BalanceState, 0, len(nodeList))
 	total := olt.NewCoinFromInt(args.totalFunds)
@@ -446,7 +460,7 @@ func initialState(args *testnetConfig, nodeList []node, option ethchain.ChainDri
 	//}
 
 	for _, node := range nodeList {
-		if !node.isValidator {
+		if !node.isValidator && !node.isWitness {
 			continue
 		}
 
@@ -468,16 +482,30 @@ func initialState(args *testnetConfig, nodeList []node, option ethchain.ChainDri
 		}
 
 		pubkey, _ := keys.PubKeyFromTendermint(node.validator.PubKey.Bytes())
-		st := consensus.Stake{
-			ValidatorAddress: node.validator.Address.Bytes(),
-			StakeAddress:     stakeAddr,
-			Pubkey:           pubkey,
-			ECDSAPubKey:      h.PubKey(),
-			Name:             node.validator.Name,
-			Amount:           *vt.NewCoinFromInt(node.validator.Power).Amount,
+
+		if node.isValidator {
+			st := consensus.Stake{
+				ValidatorAddress: node.validator.Address.Bytes(),
+				StakeAddress:     stakeAddr,
+				Pubkey:           pubkey,
+				ECDSAPubKey:      h.PubKey(),
+				Name:             node.validator.Name,
+				Amount:           *vt.NewCoinFromInt(node.validator.Power).Amount,
+			}
+			staking = append(staking, st)
 		}
-		staking = append(staking, st)
+
+		if node.isWitness {
+			wt := consensus.Witness{
+				Address:     node.validator.Address.Bytes(),
+				PubKey:      pubkey,
+				ECDSAPubKey: h.PubKey(),
+				Name:        node.validator.Name,
+			}
+			witness = append(witness, wt)
+		}
 	}
+
 	if len(args.initialTokenHolders) > 0 {
 		for _, acct := range initialAddrs {
 			share := total.DivideInt64(int64(len(args.initialTokenHolders)))
@@ -540,6 +568,7 @@ func initialState(args *testnetConfig, nodeList []node, option ethchain.ChainDri
 		Currencies: currencies,
 		Balances:   balances,
 		Staking:    staking,
+		Witness:    witness,
 		Domains:    domains,
 		Fees:       fees_db,
 		Governance: consensus.GovernanceState{
@@ -609,6 +638,9 @@ func deployethcdcontract(conn string, nodeList []node) (*ethchain.ChainDriverOpt
 		return nil, errors.New("Unable to create wallet transfer amount")
 	}
 	for _, node := range nodeList {
+		if !node.isWitness {
+			continue
+		}
 		privkey := keys.ETHSECP256K1TOECDSA(node.esdcaPk.Data)
 		nonce, err := cli.PendingNonceAt(context.Background(), fromAddress)
 		if err != nil {
@@ -622,9 +654,6 @@ func deployethcdcontract(conn string, nodeList []node) (*ethchain.ChainDriverOpt
 			return nil, errors.New("failed to cast pubkey")
 		}
 		addr := crypto.PubkeyToAddress(*ecdsapubkey)
-		if node.validator.Address.String() == "" {
-			continue
-		}
 
 		initialValidatorList = append(initialValidatorList, addr)
 		tx := types.NewTransaction(nonce, addr, validatorInitialFund, auth.GasLimit, auth.GasPrice, nil)

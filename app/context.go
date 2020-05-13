@@ -248,6 +248,7 @@ type StorageCtx struct {
 	Balances   *balance.Store
 	Domains    *ons.DomainStore
 	Validators *identity.ValidatorStore // Set of validators currently active
+	Witnesses  *identity.WitnessStore
 	FeePool    *fees.Store
 	Govern     *governance.Store
 	Trackers   *ethereum.TrackerStore //TODO: Create struct to contain all tracker types including Bitcoin.
@@ -267,6 +268,7 @@ func (ctx *context) Storage() StorageCtx {
 		Balances:   ctx.balances,
 		Domains:    ctx.domains,
 		Validators: ctx.validators,
+		Witnesses:  ctx.witnesses,
 		FeePool:    ctx.feePool,
 		Govern:     ctx.govern,
 		Currencies: ctx.currencies,

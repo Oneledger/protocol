@@ -16,6 +16,7 @@ import (
 	"github.com/Oneledger/protocol/config"
 	"github.com/Oneledger/protocol/consensus"
 	"github.com/Oneledger/protocol/data/balance"
+	"github.com/Oneledger/protocol/data/chain"
 	"github.com/Oneledger/protocol/data/ethereum"
 	"github.com/Oneledger/protocol/data/fees"
 	"github.com/Oneledger/protocol/data/governance"
@@ -209,6 +210,8 @@ func writeListWithTag(ctx app.StorageCtx, writer io.Writer, tag string) bool {
 		DumpBalanceToFile(ctx.Balances, writer, writeStruct)
 	case "staking":
 		DumpStakingToFile(ctx.Validators, writer, writeStruct)
+	case "witness":
+		DumpWitnessToFile(ctx.Witnesses, writer, writeStruct)
 	case "domains":
 		DumpDomainToFile(ctx.Domains, ctx.Version, writer, writeStruct)
 	case "trackers":
@@ -297,6 +300,7 @@ func SaveChainState(application *app.App, filename string, directory string) err
 	writeStructWithTag(writer, appState.Chain, "state")
 	writeListWithTag(ctx, writer, "balances")
 	writeListWithTag(ctx, writer, "staking")
+	writeListWithTag(ctx, writer, "witness")
 	writeListWithTag(ctx, writer, "domains")
 	writeListWithTag(ctx, writer, "trackers")
 	writeListWithTag(ctx, writer, "fees")
@@ -333,6 +337,31 @@ func DumpFeesToFile(st *fees.Store, writer io.Writer, fn func(writer io.Writer, 
 		iterator++
 		return false
 	})
+	return
+}
+
+func DumpWitnessToFile(ws *identity.WitnessStore, writer io.Writer, fn func(writer io.Writer, obj interface{}) bool) {
+	iterator := 0
+	delimiter := ","
+	ws.Iterate(chain.ETHEREUM, func(key keys.Address, witness *identity.Witness) bool {
+		wit := consensus.Witness{}
+		if iterator != 0 {
+			_, err := writer.Write([]byte(delimiter))
+			if err != nil {
+				return true
+			}
+		}
+
+		wit.ECDSAPubKey = witness.ECDSAPubKey
+		wit.PubKey = witness.PubKey
+		wit.Address = witness.Address
+		wit.Name = witness.Name
+
+		fn(writer, wit)
+		iterator++
+		return false
+	})
+
 	return
 }
 

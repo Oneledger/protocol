@@ -32,6 +32,8 @@ type genesisArgument struct {
 	// Number of validators
 	numValidators    int
 	numNonValidators int
+	numWitness       int
+
 	outputDir        string
 	pvkey_Dir        string
 	reserved_domains string
@@ -76,6 +78,8 @@ func init() {
 	//genesisCmd.Flags().BoolVar(&genesisCmdArgs.allowSwap, "enable_swaps", false, "Allow swaps")
 	genesisCmd.Flags().IntVar(&genesisCmdArgs.numValidators, "validators", 4, "Number of validators to initialize mainnetnet with")
 	genesisCmd.Flags().IntVar(&genesisCmdArgs.numNonValidators, "nonvalidators", 1, "Number of fullnodes to initialize mainnetnet with")
+	genesisCmd.Flags().IntVar(&genesisCmdArgs.numWitness, "witness", 0, "number of witness to initialize mainnet with")
+
 	genesisCmd.Flags().BoolVar(&genesisCmdArgs.createEmptyBlock, "empty_blocks", false, "Allow creating empty blocks")
 	genesisCmd.Flags().StringVar(&genesisCmdArgs.dbType, "db_type", "goleveldb", "Specify the type of DB backend to use: (goleveldb|cleveldb)")
 	//genesisCmd.Flags().StringVar(&genesisCmdArgs.namesPath, "names", "", "Specify a path to a file containing a list of names separated by newlines if you want the nodes to be generated with human-readable names")
@@ -100,7 +104,7 @@ func newMainetContext(args *genesisArgument) (*mainetContext, error) {
 			names = append(names, file.Name())
 		}
 	}
-	if len(names) != args.numValidators+args.numNonValidators {
+	if len(names) != args.numValidators+args.numNonValidators+args.numWitness {
 		return nil, errors.New("Not enough key Pairs present the the directory ")
 	}
 	return &mainetContext{
@@ -262,6 +266,7 @@ func runGenesis(_ *cobra.Command, _ []string) error {
 	ctx.logger.Info("Created configuration files for", strconv.Itoa(totalNodes), "nodes in", args.outputDir)
 	return nil
 }
+
 func createDirectories(configDir string, dataDir string, nodeDataDir string) error {
 	dirs := []string{configDir, dataDir, nodeDataDir}
 	for _, dir := range dirs {
@@ -361,15 +366,13 @@ func getInitialState(args *genesisArgument, nodeList []node, option ethchain.Cha
 	}
 	balances := make([]consensus.BalanceState, 0, len(nodeList))
 	staking := make([]consensus.Stake, 0, len(nodeList))
+	witness := make([]consensus.Witness, 0, len(nodeList))
 	domains := make([]consensus.DomainState, 0, len(reservedDomains))
 	fees_db := make([]consensus.BalanceState, 0, len(nodeList))
 	total := olt.NewCoinFromInt(args.totalFunds)
 	initAddrIndex := 0
 
 	for _, node := range nodeList {
-		if !node.isValidator {
-			continue
-		}
 
 		h, err := node.esdcaPk.GetHandler()
 		if err != nil {
@@ -389,15 +392,28 @@ func getInitialState(args *genesisArgument, nodeList []node, option ethchain.Cha
 		}
 
 		pubkey, _ := keys.PubKeyFromTendermint(node.validator.PubKey.Bytes())
-		st := consensus.Stake{
-			ValidatorAddress: node.validator.Address.Bytes(),
-			StakeAddress:     stakeAddr,
-			Pubkey:           pubkey,
-			ECDSAPubKey:      h.PubKey(),
-			Name:             node.validator.Name,
-			Amount:           *vt.NewCoinFromInt(node.validator.Power).Amount,
+
+		if node.isValidator {
+			st := consensus.Stake{
+				ValidatorAddress: node.validator.Address.Bytes(),
+				StakeAddress:     stakeAddr,
+				Pubkey:           pubkey,
+				ECDSAPubKey:      h.PubKey(),
+				Name:             node.validator.Name,
+				Amount:           *vt.NewCoinFromInt(node.validator.Power).Amount,
+			}
+			staking = append(staking, st)
 		}
-		staking = append(staking, st)
+
+		if node.isWitness {
+			wt := consensus.Witness{
+				Address:     node.validator.Address.Bytes(),
+				PubKey:      pubkey,
+				ECDSAPubKey: h.PubKey(),
+				Name:        node.validator.Name,
+			}
+			witness = append(witness, wt)
+		}
 	}
 
 	if len(args.initialTokenHolders) > 0 {

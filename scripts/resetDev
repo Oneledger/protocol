@@ -4,12 +4,12 @@ echo
 
 rm -rf $OLDATA/devnet/*
 
-olfullnode init devnet --dir $OLDATA/devnet --nonvalidators 1 \
+olfullnode init devnet --dir $OLDATA/devnet --nonvalidators 2  --witness 4 \
 --empty_blocks \
 --loglevel 4 \
 --eth_rpc HTTP://127.0.0.1:7545 \
 #--total_funds 1000000000 \
-#--deploy_smart_contracts \
+#--deploy_smart_contracts
 #--initial_token_holders "0lt017548f8774f9602b4e25743050d3a8ab37f1341,0ltd97c69531169bf142ef40279ff2a00a0802e5df2" \
 #--reserved_domains $OLDATA/domains.csv\
 
