@@ -25,6 +25,8 @@ const (
 
 	ADMIN_BTC_CHAINDRIVER_OPTION string = "btccdopt"
 	ADMIN_ONS_OPTION             string = "onsopt"
+
+	ADMIN_PROPOSAL_OPTION string = "proposal"
 )
 
 type Store struct {
@@ -235,4 +237,29 @@ func (st *Store) GetONSOptions() (*ons.Options, error) {
 		return nil, errors.Wrap(err, "failed to deserialize ons options")
 	}
 	return r, nil
+}
+
+func (st *Store) SetProposalOptions(propOpt ProposalOptions) error {
+	bytes, err := serialize.GetSerializer(serialize.PERSISTENT).Serialize(propOpt)
+	if err != nil {
+		return errors.Wrap(err, "failed to serialize proposal options")
+	}
+	err = st.Set([]byte(ADMIN_PROPOSAL_OPTION), bytes)
+	if err != nil {
+		return errors.Wrap(err, "failed to set the proposal options")
+	}
+	return nil
+}
+
+func (st *Store) GetProposalOptions() (*ProposalOptions, error) {
+	bytes, err := st.Get([]byte(ADMIN_PROPOSAL_OPTION))
+	if err != nil {
+		return nil, err
+	}
+	propOpt := &ProposalOptions{}
+	err = serialize.GetSerializer(serialize.PERSISTENT).Deserialize(bytes, propOpt)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to deserialize proposal options")
+	}
+	return propOpt, nil
 }
