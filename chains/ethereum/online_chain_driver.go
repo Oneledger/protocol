@@ -2,7 +2,6 @@ package ethereum
 
 import (
 	"context"
-	"fmt"
 	"math/big"
 	"strings"
 	"time"
@@ -235,8 +234,6 @@ func (acc *ETHChainDriver) CheckFinality(txHash TransactionHash, blockConfirmati
 func (acc *ETHChainDriver) VerifyReceipt(txHash TransactionHash) (VerifyReceiptStatus, error) {
 
 	result, err := acc.GetClient().TransactionReceipt(context.Background(), txHash)
-	fmt.Println("Err : ", err)
-	fmt.Println("Result :", result)
 	if err == ethereum2.NotFound && result == nil {
 		return NotFound, nil
 	}
@@ -317,6 +314,5 @@ func (acc *ETHChainDriver) VerifyRedeem(validatorAddress common.Address, recipie
 // HasValidatorSigned takes validator address and recipient address as input and verifies if the validator has already signed
 func (acc *ETHChainDriver) HasValidatorSigned(validatorAddress common.Address, recipient common.Address) (bool, error) {
 	instance := acc.GetContract()
-
 	return instance.HasValidatorSigned(acc.CallOpts(validatorAddress), recipient)
 }
