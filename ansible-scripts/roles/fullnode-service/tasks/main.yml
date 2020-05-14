@@ -29,6 +29,10 @@
 - name: Start service olfullnode
   command: service olfullnode start
 
+- name: stopping fullnode
+  command: pkill olfullnode
+  tags: update
+
 - name: git pull
   git:
     repo: https://github.com/Oneledger/protocol.git
@@ -39,4 +43,8 @@
 
 - name: compile binary
   shell: chdir=/opt/protocol make update install_c
+  tags: update
+
+- name: starting fullnode
+  shell: /opt/data/fullnode/start.sh
   tags: update
