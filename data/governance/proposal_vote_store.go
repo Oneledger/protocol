@@ -130,7 +130,7 @@ func (pvs *ProposalVoteStore) Delete(proposalID string) error {
 }
 
 // Check and see if a proposal has passed
-func (pvs *ProposalVoteStore) IsPassed(proposalID string, passPercent float64) (bool, error) {
+func (pvs *ProposalVoteStore) IsPassed(proposalID string, passPercent int64) (bool, error) {
 	info := fmt.Sprintf("Vote IsPassed: proposalID= %v", proposalID)
 
 	_, votes, err := pvs.GetVotesByID(proposalID)
@@ -152,7 +152,7 @@ func (pvs *ProposalVoteStore) IsPassed(proposalID string, passPercent float64) (
 	if total > 0 {
 		percent = float64(voteResult[POSITIVE]) / float64(total)
 	}
-	if percent >= passPercent {
+	if percent >= float64(passPercent)/100.0 {
 		passed = true
 	}
 	logger.Infof("%v, passed= %v", info, passed)

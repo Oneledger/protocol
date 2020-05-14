@@ -13,7 +13,7 @@ import (
 const (
 	totalNum    = 8
 	proposalID  = "id_test_proposal"
-	passPercent = 0.67
+	passPercent = 67
 	hex0        = "72143ADE3D941025468792311A0AB38D5085E15A"
 	hex1        = "821437DF3C9410254A8792311A0A13255085E157"
 	hex2        = "92143CDE3D941025468792311A0AB38D5085E151"
