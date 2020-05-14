@@ -239,7 +239,7 @@ func (st *Store) GetONSOptions() (*ons.Options, error) {
 	return r, nil
 }
 
-func (st *Store) SetProposalOptions(propOpt ProposalOptions) error {
+func (st *Store) SetProposalOptions(propOpt ProposalOptionSet) error {
 	bytes, err := serialize.GetSerializer(serialize.PERSISTENT).Serialize(propOpt)
 	if err != nil {
 		return errors.Wrap(err, "failed to serialize proposal options")
@@ -251,12 +251,12 @@ func (st *Store) SetProposalOptions(propOpt ProposalOptions) error {
 	return nil
 }
 
-func (st *Store) GetProposalOptions() (*ProposalOptions, error) {
+func (st *Store) GetProposalOptions() (*ProposalOptionSet, error) {
 	bytes, err := st.Get([]byte(ADMIN_PROPOSAL_OPTION))
 	if err != nil {
 		return nil, err
 	}
-	propOpt := &ProposalOptions{}
+	propOpt := &ProposalOptionSet{}
 	err = serialize.GetSerializer(serialize.PERSISTENT).Deserialize(bytes, propOpt)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to deserialize proposal options")

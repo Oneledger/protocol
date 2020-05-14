@@ -17,7 +17,7 @@ type ProposalStore struct {
 	prefixPassed []byte
 	prefixFailed []byte
 
-	proposalOptions *ProposalOptions
+	proposalOptions *ProposalOptionSet
 }
 
 func (ps *ProposalStore) Set(proposal *Proposal) error {
@@ -139,15 +139,15 @@ func (ps *ProposalStore) QueryAllStores(key ProposalID) (*Proposal, ProposalStat
 	return nil, ProposalStateError, errors.Wrap(err, errorGettingRecord)
 }
 
-func (ps *ProposalStore) SetOptions(pOpt *ProposalOptions) {
+func (ps *ProposalStore) SetOptions(pOpt *ProposalOptionSet) {
 	ps.proposalOptions = pOpt
 }
 
-func (ps *ProposalStore) GetOptions() *ProposalOptions {
+func (ps *ProposalStore) GetOptions() *ProposalOptionSet {
 	return ps.proposalOptions
 }
 
-func (ps *ProposalStore) GetOptionsByType(typ ProposalType) *options {
+func (ps *ProposalStore) GetOptionsByType(typ ProposalType) *ProposalOption {
 	switch typ {
 	case ProposalTypeConfigUpdate:
 		return &ps.proposalOptions.ConfigUpdate
@@ -167,6 +167,6 @@ func NewProposalStore(prefixActive string, prefixPassed string, prefixFailed str
 		prefixActive:    []byte(prefixActive),
 		prefixPassed:    []byte(prefixPassed),
 		prefixFailed:    []byte(prefixFailed),
-		proposalOptions: &ProposalOptions{},
+		proposalOptions: &ProposalOptionSet{},
 	}
 }
