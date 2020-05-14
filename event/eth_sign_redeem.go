@@ -108,7 +108,8 @@ func (j *JobETHSignRedeem) DoMyJob(ctx interface{}) {
 		panic("Shutting down node ,unable to process redeem Transaction")
 	}
 	if txReceipt == ethereum.Failed {
-		ethCtx.Logger.Debug("Transaction receipt not found | Failing Tracker:", err)
+		// TX included in uncle block , or TX reverted ( not enough redeem fee)
+		ethCtx.Logger.Debug("Transaction receipt Failed  | Failing Tracker:", err)
 		j.Status = jobs.Failed
 		err := BroadcastReportFinalityETHTx(ctx.(*JobsContext), j.TrackerName, j.JobID, false)
 		if err != nil {
@@ -117,7 +118,7 @@ func (j *JobETHSignRedeem) DoMyJob(ctx interface{}) {
 		return
 	}
 	if txReceipt == ethereum.NotFound {
-		ethCtx.Logger.Debug("Transaction receipt not found ,Waiting for TX receipt", err)
+		ethCtx.Logger.Debug("Waiting for User Redeem TX to be mined", err)
 		return
 	}
 
@@ -149,9 +150,9 @@ func (j *JobETHSignRedeem) DoMyJob(ctx interface{}) {
 		j.Status = jobs.Completed
 		return
 	}
-	//Log print debugger
+	//Log print debugger , Sign has been broadcast but not mined yet
 	if j.RetryCount >= 0 {
-		ethCtx.Logger.Debug("Waiting for validator SignTX to be mined")
+		ethCtx.Logger.Debug("Waiting for Validator SignTX to be mined")
 	}
 
 	//Checking for Status of redeem request (From Ethereum smart contract)
