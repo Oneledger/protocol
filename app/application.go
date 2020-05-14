@@ -111,8 +111,12 @@ func (app *App) setupState(stateBytes []byte) error {
 	}
 
 	// commit the initial currencies to the governance db
-
 	err = app.Context.govern.SetCurrencies(initial.Currencies)
+	if err != nil {
+		return errors.Wrap(err, "Setup State")
+	}
+
+	err = app.Context.govern.SetProposalOptions(initial.Governance.PropOptions)
 	if err != nil {
 		return errors.Wrap(err, "Setup State")
 	}
@@ -138,6 +142,9 @@ func (app *App) setupState(stateBytes []byte) error {
 			return errors.Wrapf(err, "failed to register currency %s", currency.Name)
 		}
 	}
+
+	app.Context.Proposals.SetOptions(&initial.Governance.PropOptions)
+
 	app.Context.ethTrackers.SetupOption(&initial.Governance.ETHCDOption)
 	err = app.Context.govern.SetFeeOption(initial.Governance.FeeOption)
 	if err != nil {

@@ -147,6 +147,18 @@ func (ps *ProposalStore) GetOptions() *ProposalOptions {
 	return ps.proposalOptions
 }
 
+func (ps *ProposalStore) GetOptionsByType(typ ProposalType) *options {
+	switch typ {
+	case ProposalTypeConfigUpdate:
+		return &ps.proposalOptions.ConfigUpdate
+	case ProposalTypeCodeChange:
+		return &ps.proposalOptions.CodeChange
+	case ProposalTypeGeneral:
+		return &ps.proposalOptions.General
+	}
+	return nil
+}
+
 func NewProposalStore(prefixActive string, prefixPassed string, prefixFailed string, state *storage.State) *ProposalStore {
 	return &ProposalStore{
 		state:           state,

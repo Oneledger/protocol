@@ -2,6 +2,7 @@ package consensus
 
 import (
 	"encoding/json"
+	"github.com/Oneledger/protocol/data/governance"
 	"time"
 
 	"github.com/pkg/errors"
@@ -42,6 +43,7 @@ type GovernanceState struct {
 	ETHCDOption ethchain.ChainDriverOption `json:"ethchaindriverOption"`
 	BTCCDOption bitcoin.ChainDriverOption  `json:"bitcoinChainDriverOption"`
 	ONSOptions  ons.Options                `json:"onsOptions"`
+	PropOptions governance.ProposalOptions `json:"propOptions"`
 }
 
 type BalanceState struct {

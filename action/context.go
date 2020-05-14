@@ -1,6 +1,7 @@
 package action
 
 import (
+	"github.com/Oneledger/protocol/data/governance"
 	abci "github.com/tendermint/tendermint/abci/types"
 
 	"github.com/Oneledger/protocol/data/accounts"
@@ -25,6 +26,8 @@ type Context struct {
 	FeePool         *fees.Store
 	Currencies      *balance.CurrencySet
 	FeeOpt          *fees.FeeOption
+	Proposals       *governance.ProposalStore
+	ProposalFunds   *governance.ProposalFundStore
 	Validators      *identity.ValidatorStore
 	Witnesses       *identity.WitnessStore
 	BTCTrackers     *bitcoin.TrackerStore
@@ -40,7 +43,8 @@ func NewContext(r Router, header *abci.Header, state *storage.State,
 	validators *identity.ValidatorStore, witnesses *identity.WitnessStore,
 	domains *ons.DomainStore, btcTrackers *bitcoin.TrackerStore,
 	ethTrackers *ethereum.TrackerStore, jobStore *jobs.JobStore,
-	lockScriptStore *bitcoin.LockScriptStore, logger *log.Logger) *Context {
+	lockScriptStore *bitcoin.LockScriptStore, proposals *governance.ProposalStore,
+	propFunds *governance.ProposalFundStore, logger *log.Logger) *Context {
 
 	return &Context{
 		Router:          r,
@@ -58,5 +62,7 @@ func NewContext(r Router, header *abci.Header, state *storage.State,
 		Logger:          logger,
 		JobStore:        jobStore,
 		LockScriptStore: lockScriptStore,
+		ProposalFunds:   propFunds,
+		Proposals:       proposals,
 	}
 }
