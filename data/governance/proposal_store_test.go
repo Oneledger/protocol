@@ -2,11 +2,12 @@ package governance
 
 import (
 	"fmt"
+	"testing"
+
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/storage"
 	"github.com/stretchr/testify/assert"
 	db "github.com/tendermint/tm-db"
-	"testing"
 )
 
 const (
@@ -16,6 +17,7 @@ const (
 	codeChange   = 2
 	configUpdate = 3
 	general      = 4
+	passPercent  = 0.51
 )
 
 var (
@@ -43,6 +45,7 @@ func init() {
 		FundingDeadline: codeChange,
 		FundingGoal:     codeChange,
 		VotingDeadline:  codeChange,
+		PassPercentage:  passPercent,
 	}
 
 	proposalOpt.ConfigUpdate = options{
@@ -50,6 +53,7 @@ func init() {
 		FundingDeadline: configUpdate,
 		FundingGoal:     configUpdate,
 		VotingDeadline:  configUpdate,
+		PassPercentage:  passPercent,
 	}
 
 	proposalOpt.General = options{
@@ -57,6 +61,7 @@ func init() {
 		FundingDeadline: general,
 		FundingGoal:     general,
 		VotingDeadline:  general,
+		PassPercentage:  passPercent,
 	}
 
 	//Create new proposals

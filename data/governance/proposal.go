@@ -3,8 +3,9 @@ package governance
 import (
 	"crypto/md5"
 	"encoding/hex"
-	"github.com/Oneledger/protocol/data/keys"
 	"time"
+
+	"github.com/Oneledger/protocol/data/keys"
 )
 
 const EmptyStr = ""
@@ -14,6 +15,7 @@ type options struct {
 	FundingDeadline int64
 	FundingGoal     int64
 	VotingDeadline  int64
+	PassPercentage  float64
 }
 
 type ProposalOptions struct {
