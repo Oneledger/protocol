@@ -12,6 +12,7 @@ import (
 	"github.com/Oneledger/protocol/consensus"
 	ethereum2 "github.com/Oneledger/protocol/data/ethereum"
 	"github.com/Oneledger/protocol/log"
+
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	"github.com/tendermint/tendermint/libs/bytes"
@@ -102,6 +103,7 @@ func (svc Service) InternalBroadcast(request InternalBroadcastRequest, reply *Br
 
 }
 
+//^TODO Replace error with InternalBroadcastStatus
 func BroadcastReportFinalityETHTx(ethCtx *JobsContext, trackerName ethereum.TrackerName, jobID string, success bool) error {
 
 	trackerStore := ethCtx.EthereumTrackers
