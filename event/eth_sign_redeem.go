@@ -118,7 +118,7 @@ func (j *JobETHSignRedeem) DoMyJob(ctx interface{}) {
 		return
 	}
 	if txReceipt == ethereum.NotFound {
-		ethCtx.Logger.Debug("Waiting for User Redeem TX to be mined", err)
+		ethCtx.Logger.Debug("Waiting for User Redeem TX to be mined")
 		return
 	}
 
