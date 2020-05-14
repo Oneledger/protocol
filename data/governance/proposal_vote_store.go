@@ -34,8 +34,6 @@ func (opinion VoteOpinion) String() string {
 	}
 }
 
-var PASSPERCENT float64 = 2.0 / 3.0
-
 type ProposalVoteStore struct {
 	prefix []byte
 	store  *storage.State
@@ -132,7 +130,7 @@ func (pvs *ProposalVoteStore) Delete(proposalID string) error {
 }
 
 // Check and see if a proposal has passed
-func (pvs *ProposalVoteStore) IsPassed(proposalID string) (bool, error) {
+func (pvs *ProposalVoteStore) IsPassed(proposalID string, passPercent float64) (bool, error) {
 	info := fmt.Sprintf("Vote IsPassed: proposalID= %v", proposalID)
 
 	_, votes, err := pvs.GetVotesByID(proposalID)
@@ -154,7 +152,7 @@ func (pvs *ProposalVoteStore) IsPassed(proposalID string) (bool, error) {
 	if total > 0 {
 		percent = float64(voteResult[POSITIVE]) / float64(total)
 	}
-	if percent >= PASSPERCENT {
+	if percent >= passPercent {
 		passed = true
 	}
 	logger.Infof("%v, passed= %v", info, passed)
