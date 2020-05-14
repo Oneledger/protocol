@@ -144,7 +144,7 @@ func (j *JobETHSignRedeem) DoMyJob(ctx interface{}) {
 		panic("Error connecting to HasValidatorSigned function in Smart Contract ")
 	}
 	//Signature confirmed
-	if success && err != nil {
+	if success {
 		ethCtx.Logger.Debug("validator Sign Confirmed | validator Address (SIGNER):", ethCtx.GetValidatorETHAddress().Hex(), "| User Eth Address :", msg.From().Hex())
 		j.Status = jobs.Completed
 		return
@@ -158,7 +158,8 @@ func (j *JobETHSignRedeem) DoMyJob(ctx interface{}) {
 	status := cd.VerifyRedeem(addr, msg.From())
 	//Ethereum connectivity issue
 	if status == ethereum.ErrorConnecting {
-		ethCtx.Logger.Error("Error connecting to HasValidatorSigned function in Smart Contract  :", j.GetJobID(), err) //TODO : Possible panic
+		ethCtx.Logger.Error("Error connecting to HasValidatorSigned function in Smart Contract  :", j.GetJobID(), err)
+		panic(fmt.Sprintf("Error connecting to HasValidatorSigned function in Smart Contract %s, %s :", j.GetJobID(), err))
 	}
 
 	// Redeem request has expired
@@ -188,7 +189,7 @@ func (j *JobETHSignRedeem) DoMyJob(ctx interface{}) {
 		return
 	}
 
-	//Signing done only once
+	//Signing done only once after redeem receipt has been confirmed
 	if j.RetryCount == 0 && txReceipt == ethereum.Found {
 
 		redeemAddr := common.BytesToAddress(tracker.To)

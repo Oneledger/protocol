@@ -79,7 +79,7 @@ func (job *JobETHVerifyRedeem) DoMyJob(ctx interface{}) {
 		job.Status = jobs.Failed
 		err := BroadcastReportFinalityETHTx(ctx.(*JobsContext), job.TrackerName, job.JobID, false)
 		if err != nil {
-			panic(fmt.Sprintf("Unable to broadcast failed TX for : %s ", job.JobID))
+			panic(fmt.Sprintf("Unable to broadcast failed TX for : %s %s", job.JobID, err))
 		}
 
 		return
