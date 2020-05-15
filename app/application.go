@@ -143,7 +143,7 @@ func (app *App) setupState(stateBytes []byte) error {
 		}
 	}
 
-	app.Context.Proposals.SetOptions(&initial.Governance.PropOptions)
+	app.Context.proposalMaster.Proposal.SetOptions(&initial.Governance.PropOptions)
 
 	app.Context.ethTrackers.SetupOption(&initial.Governance.ETHCDOption)
 	err = app.Context.govern.SetFeeOption(initial.Governance.FeeOption)

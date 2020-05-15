@@ -48,18 +48,15 @@ type context struct {
 	check      *storage.State
 	deliver    *storage.State
 
-	balances      *balance.Store
-	domains       *ons.DomainStore
-	validators    *identity.ValidatorStore // Set of validators currently active
-	witnesses     *identity.WitnessStore   // Set of witnesses currently active
-	feePool       *fees.Store
-	govern        *governance.Store
-	btcTrackers   *bitcoin.TrackerStore  // tracker for bitcoin balance UTXO
-	ethTrackers   *ethereum.TrackerStore // Tracker store for ongoing ethereum trackers
-	currencies    *balance.CurrencySet
-	Proposals     *governance.ProposalStore
-	ProposalFunds *governance.ProposalFundStore
-
+	balances    *balance.Store
+	domains     *ons.DomainStore
+	validators  *identity.ValidatorStore // Set of validators currently active
+	witnesses   *identity.WitnessStore   // Set of witnesses currently active
+	feePool     *fees.Store
+	govern      *governance.Store
+	btcTrackers *bitcoin.TrackerStore  // tracker for bitcoin balance UTXO
+	ethTrackers *ethereum.TrackerStore // Tracker store for ongoing ethereum trackers
+	currencies  *balance.CurrencySet
 	//storage which is not a chain state
 	accounts accounts.Wallet
 
@@ -100,9 +97,7 @@ func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *node.Context) (
 	ctx.domains = ons.NewDomainStore("d", storage.NewState(ctx.chainstate))
 	ctx.feePool = fees.NewStore("f", storage.NewState(ctx.chainstate))
 	ctx.govern = governance.NewStore("g", storage.NewState(ctx.chainstate))
-	ctx.Proposals = governance.NewProposalStore("propActive", "propPassed", "propFailed", storage.NewState(ctx.chainstate))
-	ctx.ProposalFunds = governance.NewProposalFundStore("propFunds", storage.NewState(ctx.chainstate))
-
+	ctx.proposalMaster = NewProposalMasterStore(ctx.chainstate)
 	ctx.btcTrackers = bitcoin.NewTrackerStore("btct", storage.NewState(ctx.chainstate))
 
 	ctx.ethTrackers = ethereum.NewTrackerStore("etht", "ethfailed", "ethsuccess", storage.NewState(ctx.chainstate))
@@ -162,13 +157,10 @@ func (ctx *context) Action(header *Header, state *storage.State) *action.Context
 		ctx.validators.WithState(state),
 		ctx.witnesses.WithState(state),
 		ctx.domains.WithState(state),
-
 		ctx.btcTrackers.WithState(state),
 		ctx.ethTrackers.WithState(state),
 		ctx.jobStore,
 		ctx.lockScriptStore,
-		ctx.Proposals,
-		ctx.ProposalFunds,
 		log.NewLoggerWithPrefix(ctx.logWriter, "action").WithLevel(log.Level(ctx.cfg.Node.LogLevel)),
 		ctx.proposalMaster,
 	)

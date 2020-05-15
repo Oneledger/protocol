@@ -2,11 +2,13 @@ package governance
 
 import (
 	"encoding/json"
+
+	"github.com/pkg/errors"
+	"github.com/tendermint/tendermint/libs/kv"
+
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/data/governance"
 	"github.com/Oneledger/protocol/data/keys"
-	"github.com/pkg/errors"
-	"github.com/tendermint/tendermint/libs/kv"
 )
 
 var _ action.Msg = &CreateProposal{}
@@ -36,7 +38,7 @@ func (c CreateProposal) Validate(ctx *action.Context, signedTx action.SignedTx) 
 		return false, err
 	}
 
-	options := ctx.Proposals.GetOptionsByType(createProposal.proposalType)
+	options := ctx.ProposalMasterStore.Proposal.GetOptionsByType(createProposal.proposalType)
 
 	// the currency should be OLT
 	currency, ok := ctx.Currencies.GetCurrencyById(0)
@@ -96,7 +98,7 @@ func runTx(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 		return false, action.Response{}
 	}
 
-	options := ctx.Proposals.GetOptionsByType(createProposal.proposalType)
+	options := ctx.ProposalMasterStore.Proposal.GetOptionsByType(createProposal.proposalType)
 
 	//Check if initial funding is greater than minimum amount based on type.
 	coin := createProposal.initialFunding.ToCoin(ctx.Currencies)
@@ -119,7 +121,7 @@ func runTx(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 		options.VotingDeadline,
 		options.PassPercentage)
 
-	err = ctx.Proposals.Set(proposal)
+	err = ctx.ProposalMasterStore.Proposal.Set(proposal)
 	if err != nil {
 		result := action.Response{
 			Events: action.GetEvent(createProposal.Tags(), "create_proposal_failed"),
@@ -139,7 +141,7 @@ func runTx(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 
 	//Add initial funds to the Proposal Fund store
 	initialFunding := governance.NewAmountFromBigInt(createProposal.initialFunding.Value.BigInt())
-	err = ctx.ProposalFunds.AddFunds(proposal.ProposalID, proposal.Proposer, initialFunding)
+	err = ctx.ProposalMasterStore.ProposalFund.AddFunds(proposal.ProposalID, proposal.Proposer, initialFunding)
 	if err != nil {
 		//return Funds back to proposer.
 		err = ctx.Balances.AddToAddress(createProposal.proposer, funds)
