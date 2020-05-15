@@ -7,6 +7,7 @@ import (
 	"github.com/tendermint/tendermint/libs/kv"
 
 	"github.com/Oneledger/protocol/action"
+	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/governance"
 	"github.com/Oneledger/protocol/data/keys"
 )
@@ -109,7 +110,7 @@ func runTx(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 		return false, result
 	}
 
-	fundingGoal := *governance.NewAmountFromBigInt(options.FundingGoal.BigInt())
+	fundingGoal := *balance.NewAmountFromBigInt(options.FundingGoal.BigInt())
 
 	//Create Proposal and save to Proposal Store
 	proposal := governance.NewProposal(
@@ -140,7 +141,7 @@ func runTx(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	}
 
 	//Add initial funds to the Proposal Fund store
-	initialFunding := governance.NewAmountFromBigInt(createProposal.initialFunding.Value.BigInt())
+	initialFunding := balance.NewAmountFromBigInt(createProposal.initialFunding.Value.BigInt())
 	err = ctx.ProposalMasterStore.ProposalFund.AddFunds(proposal.ProposalID, proposal.Proposer, initialFunding)
 	if err != nil {
 		//return Funds back to proposer.

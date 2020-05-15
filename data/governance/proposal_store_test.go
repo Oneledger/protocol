@@ -2,13 +2,15 @@ package governance
 
 import (
 	"fmt"
-	"github.com/Oneledger/protocol/data/balance"
 	"testing"
+
+	"github.com/Oneledger/protocol/data/balance"
+
+	"github.com/stretchr/testify/assert"
+	db "github.com/tendermint/tm-db"
 
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/storage"
-	"github.com/stretchr/testify/assert"
-	db "github.com/tendermint/tm-db"
 )
 
 const (
@@ -89,7 +91,7 @@ func init() {
 			opt = proposalOpt.General
 		}
 
-		fundingGoal := *NewAmountFromBigInt(opt.FundingGoal.BigInt())
+		fundingGoal := *balance.NewAmountFromBigInt(opt.FundingGoal.BigInt())
 
 		proposals = append(proposals, NewProposal(ProposalType(k), "Test Proposal", proposer,
 			opt.FundingDeadline, fundingGoal, opt.VotingDeadline, opt.PassPercentage))

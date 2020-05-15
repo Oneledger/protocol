@@ -3,8 +3,9 @@ package governance
 import (
 	"crypto/md5"
 	"encoding/hex"
-	"github.com/Oneledger/protocol/data/balance"
 	"time"
+
+	"github.com/Oneledger/protocol/data/balance"
 
 	"github.com/Oneledger/protocol/data/keys"
 )
@@ -33,12 +34,12 @@ type Proposal struct {
 	Description     string
 	Proposer        keys.Address
 	FundingDeadline int64
-	FundingGoal     ProposalAmount
+	FundingGoal     balance.Amount
 	VotingDeadline  int64
 	PassPercentage  int
 }
 
-func NewProposal(propType ProposalType, desc string, proposer keys.Address, fundingDeadline int64, fundingGoal ProposalAmount,
+func NewProposal(propType ProposalType, desc string, proposer keys.Address, fundingDeadline int64, fundingGoal balance.Amount,
 	votingDeadline int64, passPercentage int) *Proposal {
 
 	return &Proposal{

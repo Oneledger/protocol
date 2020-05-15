@@ -3,13 +3,14 @@ package governance
 import (
 	"fmt"
 
+	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/keys"
 )
 
 type ProposalFund struct {
 	id            ProposalID
 	address       keys.Address
-	fundingAmount ProposalAmount
+	fundingAmount balance.Amount
 }
 
 func (fund *ProposalFund) Print() {

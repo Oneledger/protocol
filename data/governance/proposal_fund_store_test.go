@@ -7,6 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	db "github.com/tendermint/tm-db"
 
+	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/storage"
 )
@@ -16,15 +17,22 @@ var (
 	cs       *storage.State
 	address  keys.Address
 	address2 keys.Address
+	address3 keys.Address
 	ID1      ProposalID
 	ID2      ProposalID
+	ID3      ProposalID
 )
 
 func init() {
 	fmt.Println("####### TESTING PROPOSAL FUND STORE #######")
-	db := db.NewDB("test", db.MemDBBackend, "")
-	cs = storage.NewState(storage.NewChainState("balance", db))
+	memDb := db.NewDB("test", db.MemDBBackend, "")
+	cs = storage.NewState(storage.NewChainState("balance", memDb))
 	store = NewProposalFundStore("test", cs)
+	generateAddresses()
+	generateIDs()
+}
+
+func generateAddresses() {
 	pub, _, _ := keys.NewKeyPairFromTendermint()
 	h, _ := pub.GetHandler()
 	address = h.Address()
@@ -32,24 +40,28 @@ func init() {
 	pub2, _, _ := keys.NewKeyPairFromTendermint()
 	h2, _ := pub2.GetHandler()
 	address2 = h2.Address()
-	ID1 = generateProposalID("Test")
-	ID2 = generateProposalID("Test")
+	pub3, _, _ := keys.NewKeyPairFromTendermint()
+	h3, _ := pub3.GetHandler()
+	address3 = h3.Address()
 }
 
+func generateIDs() {
+	ID1 = generateProposalID("Test")
+	ID2 = generateProposalID("Test")
+	ID3 = generateProposalID("Test")
+
+}
 func TestProposalFundStore_AddFunds(t *testing.T) {
 	fmt.Println("Adding New Proposer for funding")
-	err := store.AddFunds(ID1, address, NewAmount(100))
+	err := store.AddFunds(ID1, address, balance.NewAmount(100))
 	assert.NoError(t, err, "")
 	cs.Commit()
-	//err = store.AddFunds("ID1", address, NewAmount(100))
-	//assert.NoError(t, err, "")
-	//cs.Commit()
-	err = store.AddFunds(ID2, address, NewAmount(100))
+	err = store.AddFunds(ID2, address, balance.NewAmount(100))
 	assert.NoError(t, err, "")
 	cs.Commit()
-	err = store.AddFunds(ID1, address2, NewAmount(1000))
+	err = store.AddFunds(ID1, address2, balance.NewAmount(1000))
 	assert.NoError(t, err, "")
-	err = store.AddFunds(ID2, address2, NewAmount(120))
+	err = store.AddFunds(ID2, address2, balance.NewAmount(120))
 	assert.NoError(t, err, "")
 	cs.Commit()
 
@@ -69,7 +81,7 @@ func TestNewProposalFundStore_Delete(t *testing.T) {
 
 func TestProposalFundStore_Iterate(t *testing.T) {
 	fmt.Println("Iterating Stores")
-	store.iterate(func(proposalID ProposalID, fundingAddr keys.Address, amt *ProposalAmount) bool {
+	store.iterate(func(proposalID ProposalID, fundingAddr keys.Address, amt *balance.Amount) bool {
 		fmt.Println("ProposalID : ", proposalID, "ProposalAddress :", fundingAddr, "Proposal Amount :", amt.BigInt())
 		return false
 	})
@@ -78,7 +90,7 @@ func TestProposalFundStore_Iterate(t *testing.T) {
 //
 func TestProposalFundStore_GetFundersForProposalID(t *testing.T) {
 	fmt.Println("Get Funders for ID :  ", ID1)
-	funds := store.GetFundersForProposalID(ID1, func(proposalID ProposalID, fundingAddr keys.Address, amt *ProposalAmount) ProposalFund {
+	funds := store.GetFundersForProposalID(ID1, func(proposalID ProposalID, fundingAddr keys.Address, amt *balance.Amount) ProposalFund {
 		return ProposalFund{
 			id:            proposalID,
 			address:       fundingAddr,
@@ -95,7 +107,7 @@ func TestProposalFundStore_GetFundersForProposalID(t *testing.T) {
 func TestProposalFundStore_GetProposalForFunder(t *testing.T) {
 	fmt.Println("Get Funders for Address :", address2)
 
-	funds := store.GetProposalsForFunder(address2, func(proposalID ProposalID, fundingAddr keys.Address, amt *ProposalAmount) ProposalFund {
+	funds := store.GetProposalsForFunder(address2, func(proposalID ProposalID, fundingAddr keys.Address, amt *balance.Amount) ProposalFund {
 		return ProposalFund{
 			id:            proposalID,
 			address:       fundingAddr,
