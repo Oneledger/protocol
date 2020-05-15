@@ -32,9 +32,9 @@ var (
 	govStore      *Store
 	proposalStore *ProposalStore
 
-	codeChangeAmount   = *balance.NewAmount(codeChange)
-	generalAmount      = *balance.NewAmount(general)
-	configUpdateAmount = *balance.NewAmount(configUpdate)
+	codeChangeAmount   = balance.NewAmount(codeChange)
+	generalAmount      = balance.NewAmount(general)
+	configUpdateAmount = balance.NewAmount(configUpdate)
 )
 
 func init() {
