@@ -52,7 +52,7 @@ func generateIDs() {
 
 }
 func TestProposalFundStore_AddFunds(t *testing.T) {
-	fmt.Println("Adding New Proposer for funding")
+	//fmt.Println("Adding New Proposer for funding")
 	err := store.AddFunds(ID1, address, balance.NewAmount(100))
 	assert.NoError(t, err, "")
 	cs.Commit()
