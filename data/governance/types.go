@@ -53,3 +53,7 @@ func NewAmount(x int64) *ProposalAmount {
 func NewAmountFromInt(x int64) *ProposalAmount {
 	return (*ProposalAmount)(big.NewInt(x))
 }
+
+func NewAmountFromBigInt(x *big.Int) *ProposalAmount {
+	return (*ProposalAmount)(x)
+}

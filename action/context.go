@@ -1,6 +1,7 @@
 package action
 
 import (
+	"github.com/Oneledger/protocol/data/governance"
 	abci "github.com/tendermint/tendermint/abci/types"
 
 	"github.com/Oneledger/protocol/data/accounts"

@@ -3,23 +3,26 @@ package governance
 import (
 	"crypto/md5"
 	"encoding/hex"
-	"github.com/Oneledger/protocol/data/keys"
+	"github.com/Oneledger/protocol/data/balance"
 	"time"
+
+	"github.com/Oneledger/protocol/data/keys"
 )
 
 const EmptyStr = ""
 
-type options struct {
-	InitialFunding  int64
-	FundingDeadline int64
-	FundingGoal     int64
-	VotingDeadline  int64
+type ProposalOption struct {
+	InitialFunding  balance.Amount `json:"baseDomainPrice"`
+	FundingGoal     balance.Amount `json:"fundingGoal"`
+	FundingDeadline int64          `json:"fundingDeadline"`
+	VotingDeadline  int64          `json:"votingDeadline"`
+	PassPercentage  int            `json:"passPercentage"`
 }
 
-type ProposalOptions struct {
-	ConfigUpdate options
-	CodeChange   options
-	General      options
+type ProposalOptionSet struct {
+	ConfigUpdate ProposalOption
+	CodeChange   ProposalOption
+	General      ProposalOption
 }
 
 type Proposal struct {
@@ -30,12 +33,13 @@ type Proposal struct {
 	Description     string
 	Proposer        keys.Address
 	FundingDeadline int64
-	FundingGoal     int64
+	FundingGoal     ProposalAmount
 	VotingDeadline  int64
+	PassPercentage  int
 }
 
-func NewProposal(propType ProposalType, desc string, proposer keys.Address, fundingDeadline int64, fundingGoal int64,
-	votingDeadline int64) *Proposal {
+func NewProposal(propType ProposalType, desc string, proposer keys.Address, fundingDeadline int64, fundingGoal ProposalAmount,
+	votingDeadline int64, passPercentage int) *Proposal {
 
 	return &Proposal{
 		ProposalID:      generateProposalID(proposer.String()),
@@ -47,6 +51,7 @@ func NewProposal(propType ProposalType, desc string, proposer keys.Address, fund
 		FundingDeadline: fundingDeadline,
 		FundingGoal:     fundingGoal,
 		VotingDeadline:  votingDeadline,
+		PassPercentage:  passPercentage,
 	}
 }
 

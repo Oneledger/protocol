@@ -41,6 +41,9 @@ const (
 	ERC20_LOCK               Type = 0x94
 	ERC20_REDEEM             Type = 0x95
 
+	//Governance Action
+	PROPOSAL_CREATE Type = 0x96
+
 	//Governanace Actions
 	PROPOSAL_FUND Type = 0x31
 	//EOF here Only used as a marker to mark the end of Type list
