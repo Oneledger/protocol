@@ -52,7 +52,7 @@ func (c CreateProposal) Validate(ctx *action.Context, signedTx action.SignedTx) 
 
 	//Check if initial funding is greater than minimum amount based on type.
 	coin := createProposal.InitialFunding.ToCoin(ctx.Currencies)
-	if coin.LessThanEqualCoin(coin.Currency.NewCoinFromAmount(options.InitialFunding)) {
+	if coin.LessThanEqualCoin(coin.Currency.NewCoinFromAmount(*options.InitialFunding)) {
 		return false, action.ErrInvalidAmount
 	}
 
@@ -107,7 +107,7 @@ func runTx(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 
 	//Check if initial funding is greater than minimum amount based on type.
 	coin := createProposal.InitialFunding.ToCoin(ctx.Currencies)
-	if coin.LessThanEqualCoin(coin.Currency.NewCoinFromAmount(options.InitialFunding)) {
+	if coin.LessThanEqualCoin(coin.Currency.NewCoinFromAmount(*options.InitialFunding)) {
 		result := action.Response{
 			Events: action.GetEvent(createProposal.Tags(), "create_proposal_insufficient_funds"),
 		}

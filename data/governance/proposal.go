@@ -13,11 +13,11 @@ import (
 const EmptyStr = ""
 
 type ProposalOption struct {
-	InitialFunding  balance.Amount `json:"baseDomainPrice"`
-	FundingGoal     balance.Amount `json:"fundingGoal"`
-	FundingDeadline int64          `json:"fundingDeadline"`
-	VotingDeadline  int64          `json:"votingDeadline"`
-	PassPercentage  int            `json:"passPercentage"`
+	InitialFunding  *balance.Amount `json:"baseDomainPrice"`
+	FundingGoal     *balance.Amount `json:"fundingGoal"`
+	FundingDeadline int64           `json:"fundingDeadline"`
+	VotingDeadline  int64           `json:"votingDeadline"`
+	PassPercentage  int             `json:"passPercentage"`
 }
 
 type ProposalOptionSet struct {

@@ -7,13 +7,14 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"fmt"
-	"github.com/Oneledger/protocol/data/governance"
 	"math/big"
 	"net/url"
 	"os"
 	"path/filepath"
 	"strconv"
 	"time"
+
+	"github.com/Oneledger/protocol/data/governance"
 
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -391,22 +392,22 @@ func runDevnet(_ *cobra.Command, _ []string) error {
 
 	propOpt := governance.ProposalOptionSet{
 		ConfigUpdate: governance.ProposalOption{
-			InitialFunding:  *proposalInitialFunding,
-			FundingGoal:     *proposalFundingGoal,
+			InitialFunding:  proposalInitialFunding,
+			FundingGoal:     proposalFundingGoal,
 			FundingDeadline: proposalFundingDeadline,
 			VotingDeadline:  proposalVotingDeadline,
 			PassPercentage:  proposalPassPercentage,
 		},
 		CodeChange: governance.ProposalOption{
-			InitialFunding:  *proposalInitialFunding,
-			FundingGoal:     *proposalFundingGoal,
+			InitialFunding:  proposalInitialFunding,
+			FundingGoal:     proposalFundingGoal,
 			FundingDeadline: proposalFundingDeadline,
 			VotingDeadline:  proposalVotingDeadline,
 			PassPercentage:  proposalPassPercentage,
 		},
 		General: governance.ProposalOption{
-			InitialFunding:  *proposalInitialFunding,
-			FundingGoal:     *proposalFundingGoal,
+			InitialFunding:  proposalInitialFunding,
+			FundingGoal:     proposalFundingGoal,
 			FundingDeadline: proposalFundingDeadline,
 			VotingDeadline:  proposalVotingDeadline,
 			PassPercentage:  proposalPassPercentage,
