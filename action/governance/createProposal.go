@@ -15,10 +15,10 @@ import (
 var _ action.Msg = &CreateProposal{}
 
 type CreateProposal struct {
-	proposalType   governance.ProposalType
-	description    string
-	proposer       keys.Address
-	initialFunding action.Amount
+	ProposalType   governance.ProposalType
+	Description    string
+	Proposer       keys.Address
+	InitialFunding action.Amount
 }
 
 func (c CreateProposal) Validate(ctx *action.Context, signedTx action.SignedTx) (bool, error) {
@@ -39,25 +39,25 @@ func (c CreateProposal) Validate(ctx *action.Context, signedTx action.SignedTx) 
 		return false, err
 	}
 
-	options := ctx.ProposalMasterStore.Proposal.GetOptionsByType(createProposal.proposalType)
+	options := ctx.ProposalMasterStore.Proposal.GetOptionsByType(createProposal.ProposalType)
 
 	// the currency should be OLT
 	currency, ok := ctx.Currencies.GetCurrencyById(0)
 	if !ok {
 		panic("no default currency available in the network")
 	}
-	if currency.Name != createProposal.initialFunding.Currency {
-		return false, errors.Wrap(action.ErrInvalidAmount, createProposal.initialFunding.String())
+	if currency.Name != createProposal.InitialFunding.Currency {
+		return false, errors.Wrap(action.ErrInvalidAmount, createProposal.InitialFunding.String())
 	}
 
 	//Check if initial funding is greater than minimum amount based on type.
-	coin := createProposal.initialFunding.ToCoin(ctx.Currencies)
+	coin := createProposal.InitialFunding.ToCoin(ctx.Currencies)
 	if coin.LessThanEqualCoin(coin.Currency.NewCoinFromAmount(options.InitialFunding)) {
 		return false, action.ErrInvalidAmount
 	}
 
 	//Check if Proposal Type is valid
-	switch createProposal.proposalType {
+	switch createProposal.ProposalType {
 	case governance.ProposalTypeGeneral:
 	case governance.ProposalTypeCodeChange:
 	case governance.ProposalTypeConfigUpdate:
@@ -66,12 +66,12 @@ func (c CreateProposal) Validate(ctx *action.Context, signedTx action.SignedTx) 
 	}
 
 	//Check if proposer address is valid oneLedger address
-	err = createProposal.proposer.Err()
+	err = createProposal.Proposer.Err()
 	if err != nil {
 		return false, errors.Wrap(err, "invalid proposer address")
 	}
 
-	if len(createProposal.description) == 0 {
+	if len(createProposal.Description) == 0 {
 		return false, errors.New("invalid description of proposal")
 	}
 
@@ -96,13 +96,17 @@ func runTx(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	createProposal := CreateProposal{}
 	err := createProposal.Unmarshal(tx.Data)
 	if err != nil {
-		return false, action.Response{}
+		result := action.Response{
+			Events: action.GetEvent(createProposal.Tags(), "create_proposal_failed_deserialize"),
+		}
+		return false, result
 	}
 
-	options := ctx.ProposalMasterStore.Proposal.GetOptionsByType(createProposal.proposalType)
+	//Get Proposal options based on type.
+	options := ctx.ProposalMasterStore.Proposal.GetOptionsByType(createProposal.ProposalType)
 
 	//Check if initial funding is greater than minimum amount based on type.
-	coin := createProposal.initialFunding.ToCoin(ctx.Currencies)
+	coin := createProposal.InitialFunding.ToCoin(ctx.Currencies)
 	if coin.LessThanEqualCoin(coin.Currency.NewCoinFromAmount(options.InitialFunding)) {
 		result := action.Response{
 			Events: action.GetEvent(createProposal.Tags(), "create_proposal_insufficient_funds"),
@@ -110,15 +114,13 @@ func runTx(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 		return false, result
 	}
 
-	fundingGoal := *balance.NewAmountFromBigInt(options.FundingGoal.BigInt())
-
 	//Create Proposal and save to Proposal Store
 	proposal := governance.NewProposal(
-		createProposal.proposalType,
-		createProposal.description,
-		createProposal.proposer,
+		createProposal.ProposalType,
+		createProposal.Description,
+		createProposal.Proposer,
 		options.FundingDeadline,
-		fundingGoal,
+		options.FundingGoal,
 		options.VotingDeadline,
 		options.PassPercentage)
 
@@ -131,8 +133,8 @@ func runTx(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	}
 
 	//Deduct initial funding from proposer's address
-	funds := createProposal.initialFunding.ToCoin(ctx.Currencies)
-	err = ctx.Balances.MinusFromAddress(createProposal.proposer.Bytes(), funds)
+	funds := createProposal.InitialFunding.ToCoin(ctx.Currencies)
+	err = ctx.Balances.MinusFromAddress(createProposal.Proposer.Bytes(), funds)
 	if err != nil {
 		result := action.Response{
 			Events: action.GetEvent(createProposal.Tags(), "create_proposal_deduction_failed"),
@@ -141,11 +143,11 @@ func runTx(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	}
 
 	//Add initial funds to the Proposal Fund store
-	initialFunding := balance.NewAmountFromBigInt(createProposal.initialFunding.Value.BigInt())
+	initialFunding := balance.NewAmountFromBigInt(createProposal.InitialFunding.Value.BigInt())
 	err = ctx.ProposalMasterStore.ProposalFund.AddFunds(proposal.ProposalID, proposal.Proposer, initialFunding)
 	if err != nil {
 		//return Funds back to proposer.
-		err = ctx.Balances.AddToAddress(createProposal.proposer, funds)
+		err = ctx.Balances.AddToAddress(createProposal.Proposer, funds)
 		if err != nil {
 			panic("error returning funds to balance store")
 		}
@@ -163,7 +165,7 @@ func runTx(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 }
 
 func (c CreateProposal) Signers() []action.Address {
-	return []action.Address{c.proposer}
+	return []action.Address{c.Proposer}
 }
 
 func (c CreateProposal) Type() action.Type {
@@ -179,15 +181,15 @@ func (c CreateProposal) Tags() kv.Pairs {
 	}
 	tag2 := kv.Pair{
 		Key:   []byte("tx.proposer"),
-		Value: c.proposer.Bytes(),
+		Value: c.Proposer.Bytes(),
 	}
 	tag3 := kv.Pair{
 		Key:   []byte("tx.proposalType"),
-		Value: []byte(string(c.proposalType)),
+		Value: []byte(string(c.ProposalType)),
 	}
 	tag4 := kv.Pair{
 		Key:   []byte("tx.initialFunding"),
-		Value: []byte(c.initialFunding.String()),
+		Value: []byte(c.InitialFunding.String()),
 	}
 
 	tags = append(tags, tag, tag2, tag3, tag4)
