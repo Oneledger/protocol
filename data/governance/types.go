@@ -13,6 +13,7 @@ type (
 	ProposalStatus  int
 	ProposalOutcome int
 	ProposalState   int
+	VoteOpinion     int
 )
 
 func (p ProposalAmount) MarshalJSON() ([]byte, error) {
@@ -52,4 +53,19 @@ func NewAmount(x int64) *ProposalAmount {
 
 func NewAmountFromInt(x int64) *ProposalAmount {
 	return (*ProposalAmount)(big.NewInt(x))
+}
+
+func (opinion VoteOpinion) String() string {
+	switch opinion {
+	case OPIN_UNKNOWN:
+		return "Unknown"
+	case OPIN_POSITIVE:
+		return "Positive"
+	case OPIN_NEGATIVE:
+		return "Negative"
+	case OPIN_GIVEUP:
+		return "Giveup"
+	default:
+		return "Invalid opinion"
+	}
 }

@@ -50,7 +50,8 @@ func setupProposalVoteStore(t *testing.T) (*ProposalVoteStore, []keys.Address) {
 	addrs[7] = addr7
 	// init voting validators
 	for i := 0; i < totalNum; i++ {
-		err := pvs.Setup(proposalID, addrs[i], 1)
+		vote := NewProposalVote(addrs[i], OPIN_POSITIVE, 1)
+		err := pvs.Setup(proposalID, vote)
 		assert.Nil(t, err)
 	}
 	pvs.store.Commit()
@@ -62,35 +63,31 @@ func setupProposalVotes(t *testing.T, pvs *ProposalVoteStore, addrs []keys.Addre
 	// create vote objects
 	votes := make([]*ProposalVote, totalNum)
 	for i := 0; i < totalNum; i++ {
-		vote := &ProposalVote{
-			ProposalID: proposalID,
-			Opinion:    UNKNOWN,
-			Power:      int64(power),
-		}
+		vote := NewProposalVote(addrs[i], OPIN_UNKNOWN, int64(power))
 		votes[i] = vote
 	}
 	// setup POSITIVE votes
 	curIndex := 0
 	for j := 0; j < positive; j++ {
 		vote := votes[curIndex+j]
-		vote.Opinion = POSITIVE
-		err := pvs.Update(proposalID, addrs[curIndex+j], vote)
+		vote.Opinion = OPIN_POSITIVE
+		err := pvs.Update(proposalID, vote)
 		assert.Nil(t, err)
 	}
 	// setup NEGATIVE votes
 	curIndex += positive
 	for j := 0; j < negative; j++ {
 		vote := votes[curIndex+j]
-		vote.Opinion = NEGATIVE
-		err := pvs.Update(proposalID, addrs[curIndex+j], vote)
+		vote.Opinion = OPIN_NEGATIVE
+		err := pvs.Update(proposalID, vote)
 		assert.Nil(t, err)
 	}
 	// setup GIVEUP votes
 	curIndex += negative
 	for j := 0; j < giveup; j++ {
 		vote := votes[curIndex+j]
-		vote.Opinion = GIVEUP
-		err := pvs.Update(proposalID, addrs[curIndex+j], vote)
+		vote.Opinion = OPIN_GIVEUP
+		err := pvs.Update(proposalID, vote)
 		assert.Nil(t, err)
 	}
 }
@@ -103,7 +100,7 @@ func checkProposalVotes(t *testing.T, pvs *ProposalVoteStore, addrs []keys.Addre
 	curIndex := 0
 	for j := 0; j < positive; j++ {
 		vote := votes[curIndex+j]
-		assert.Equal(t, POSITIVE, vote.Opinion)
+		assert.Equal(t, OPIN_POSITIVE, vote.Opinion)
 		assert.Equal(t, power64, vote.Power)
 		assert.Equal(t, addrs[curIndex+j], validators[curIndex+j])
 	}
@@ -111,7 +108,7 @@ func checkProposalVotes(t *testing.T, pvs *ProposalVoteStore, addrs []keys.Addre
 	curIndex += positive
 	for j := 0; j < negative; j++ {
 		vote := votes[curIndex+j]
-		assert.Equal(t, NEGATIVE, vote.Opinion)
+		assert.Equal(t, OPIN_NEGATIVE, vote.Opinion)
 		assert.Equal(t, power64, vote.Power)
 		assert.Equal(t, addrs[curIndex+j], validators[curIndex+j])
 	}
@@ -119,7 +116,7 @@ func checkProposalVotes(t *testing.T, pvs *ProposalVoteStore, addrs []keys.Addre
 	curIndex += negative
 	for j := 0; j < giveup; j++ {
 		vote := votes[curIndex+j]
-		assert.Equal(t, GIVEUP, vote.Opinion)
+		assert.Equal(t, OPIN_GIVEUP, vote.Opinion)
 		assert.Equal(t, power64, vote.Power)
 		assert.Equal(t, addrs[curIndex+j], validators[curIndex+j])
 	}
@@ -128,7 +125,7 @@ func checkProposalVotes(t *testing.T, pvs *ProposalVoteStore, addrs []keys.Addre
 	unknown := totalNum - positive - negative - giveup
 	for j := 0; j < unknown; j++ {
 		vote := votes[curIndex+j]
-		assert.Equal(t, UNKNOWN, vote.Opinion)
+		assert.Equal(t, OPIN_UNKNOWN, vote.Opinion)
 		assert.Equal(t, power64, vote.Power)
 		assert.Equal(t, addrs[curIndex+j], validators[curIndex+j])
 	}
@@ -156,7 +153,8 @@ func TestProposalVoteStore_Update(t *testing.T) {
 		pvs, _ := setupProposalVoteStore(t)
 		hexNotExist := "1111111111111111111792311A0AB38D5085E15A"
 		addrInvalid, _ := hex.DecodeString(hexNotExist)
-		err := pvs.Update(proposalID, addrInvalid, &ProposalVote{proposalID, NEGATIVE, 1})
+		vote := NewProposalVote(addrInvalid, OPIN_NEGATIVE, 1)
+		err := pvs.Update(proposalID, vote)
 		assert.NotNil(t, err)
 	})
 }
@@ -165,8 +163,8 @@ func TestProposalVoteStore_Delete(t *testing.T) {
 	t.Run("test deleting vote records of an initial proposal", func(t *testing.T) {
 		pvs, _ := setupProposalVoteStore(t)
 		err := pvs.Delete(proposalID)
-
 		assert.Nil(t, err)
+
 		addrs, votes, err := pvs.GetVotesByID(proposalID)
 		assert.Error(t, err)
 		assert.Nil(t, addrs)
@@ -187,7 +185,7 @@ func TestProposalVoteStore_Delete(t *testing.T) {
 		pvs, addrs := setupProposalVoteStore(t)
 		setupProposalVotes(t, pvs, addrs, 5, 3, 0, 2)
 		err := pvs.Delete("fake_proposal_id")
-		assert.NotNil(t, err)
+		assert.Nil(t, err)
 	})
 }
 

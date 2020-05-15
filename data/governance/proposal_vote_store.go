@@ -1,48 +1,16 @@
 package governance
 
 import (
-	"encoding/hex"
 	"fmt"
 
 	"github.com/Oneledger/protocol/data/keys"
-	"github.com/Oneledger/protocol/serialize"
 	"github.com/Oneledger/protocol/storage"
 	"github.com/pkg/errors"
 )
 
-type VoteOpinion int
-
-const (
-	UNKNOWN  VoteOpinion = 0
-	POSITIVE VoteOpinion = 1
-	NEGATIVE VoteOpinion = 2
-	GIVEUP   VoteOpinion = 3
-)
-
-func (opinion VoteOpinion) String() string {
-	switch opinion {
-	case UNKNOWN:
-		return "Unknown"
-	case POSITIVE:
-		return "Positive"
-	case NEGATIVE:
-		return "Negative"
-	case GIVEUP:
-		return "Giveup"
-	default:
-		return "Invalid opinion"
-	}
-}
-
 type ProposalVoteStore struct {
 	prefix []byte
 	store  *storage.State
-}
-
-type ProposalVote struct {
-	ProposalID string
-	Opinion    VoteOpinion
-	Power      int64
 }
 
 func NewProposalVoteStore(prefix string, state *storage.State) *ProposalVoteStore {
@@ -58,16 +26,16 @@ func (pvs *ProposalVoteStore) WithState(state *storage.State) *ProposalVoteStore
 }
 
 // Setup an initial voting validator to proposalID
-func (pvs *ProposalVoteStore) Setup(proposalID string, validator keys.Address, power int64) error {
-	info := fmt.Sprintf("Vote Setup: proposalID= %v, validator= %v, power= %v", proposalID, hex.EncodeToString(validator), power)
+func (pvs *ProposalVoteStore) Setup(proposalID ProposalID, vote *ProposalVote) error {
+	info := fmt.Sprintf("Vote Setup: proposalID= %v, %v", proposalID, vote.String())
 
 	if proposalID == "" {
 		logger.Errorf("%v, empty proposalID", info)
 		return ErrVoteSetupValidatorFailed
 	}
 
-	key := storage.StoreKey(string(pvs.prefix) + proposalID + storage.DB_PREFIX + string(validator))
-	vote := &ProposalVote{ProposalID: proposalID, Opinion: UNKNOWN, Power: power}
+	vote.Opinion = OPIN_UNKNOWN // initialize as OPIN_UNKNOWN
+	key := GetKey(pvs.prefix, proposalID, vote)
 	value := vote.Bytes()
 	err := pvs.store.Set(key, value)
 	if err != nil {
@@ -80,10 +48,10 @@ func (pvs *ProposalVoteStore) Setup(proposalID string, validator keys.Address, p
 }
 
 // Update a validator's voting opinion to proposalID
-func (pvs *ProposalVoteStore) Update(proposalID string, validator keys.Address, vote *ProposalVote) error {
-	info := fmt.Sprintf("Vote Update: %v, validator= %v", vote.String(), hex.EncodeToString(validator))
+func (pvs *ProposalVoteStore) Update(proposalID ProposalID, vote *ProposalVote) error {
+	info := fmt.Sprintf("Vote Update: proposalID= %v, %v", proposalID, vote.String())
 
-	key := storage.StoreKey(string(pvs.prefix) + proposalID + storage.DB_PREFIX + string(validator))
+	key := GetKey(pvs.prefix, proposalID, vote)
 	exist := pvs.store.Exists(key)
 	if !exist {
 		logger.Errorf("%v, can't participate in voting", info)
@@ -102,13 +70,8 @@ func (pvs *ProposalVoteStore) Update(proposalID string, validator keys.Address, 
 }
 
 // Delete all voting records under a proposalID
-func (pvs *ProposalVoteStore) Delete(proposalID string) error {
+func (pvs *ProposalVoteStore) Delete(proposalID ProposalID) error {
 	info := fmt.Sprintf("Vote Delete: proposalID= %v", proposalID)
-
-	if !pvs.Exists(proposalID) {
-		logger.Errorf("%v, proposal does not exist", info)
-		return ErrVoteDeleteVoteRecordsFailed
-	}
 
 	succeed := true
 	pvs.IterateByID(proposalID, func(key []byte, value []byte) bool {
@@ -130,7 +93,7 @@ func (pvs *ProposalVoteStore) Delete(proposalID string) error {
 }
 
 // Check and see if a proposal has passed
-func (pvs *ProposalVoteStore) IsPassed(proposalID string, passPercent int64) (bool, error) {
+func (pvs *ProposalVoteStore) IsPassed(proposalID ProposalID, passPercent int64) (bool, error) {
 	info := fmt.Sprintf("Vote IsPassed: proposalID= %v", proposalID)
 
 	_, votes, err := pvs.GetVotesByID(proposalID)
@@ -139,18 +102,22 @@ func (pvs *ProposalVoteStore) IsPassed(proposalID string, passPercent int64) (bo
 		return false, ErrVoteCheckVoteResultFailed
 	}
 
-	// Currently each validator is treated equally in voting power
-	voteResult := make([]int64, 4)
+	// Accumulates power of each opinion
+	totalPower := int64(0)
+	eachPower := make([]int64, 4)
 	for _, vote := range votes {
-		voteResult[vote.Opinion] += 1
+		totalPower += vote.Power
+		eachPower[vote.Opinion] += vote.Power
 	}
 
 	// Excludes validators that give up voting in percent calculation
+	totalPower -= eachPower[OPIN_GIVEUP]
+
+	// Calculate actual percentage
 	percent := 0.0
 	passed := false
-	total := int64(len(votes)) - voteResult[GIVEUP]
-	if total > 0 {
-		percent = float64(voteResult[POSITIVE]) / float64(total)
+	if totalPower > 0 {
+		percent = float64(eachPower[OPIN_POSITIVE]) / float64(totalPower)
 	}
 	if percent >= float64(passPercent)/100.0 {
 		passed = true
@@ -161,7 +128,7 @@ func (pvs *ProposalVoteStore) IsPassed(proposalID string, passPercent int64) (bo
 }
 
 // Iterate voting records by proposalID
-func (pvs *ProposalVoteStore) IterateByID(proposalID string, fn func(key []byte, value []byte) bool) (stopped bool) {
+func (pvs *ProposalVoteStore) IterateByID(proposalID ProposalID, fn func(key []byte, value []byte) bool) (stopped bool) {
 	prefix := append(pvs.prefix, (proposalID + storage.DB_PREFIX)...)
 	return pvs.store.IterateRange(
 		prefix,
@@ -174,14 +141,8 @@ func (pvs *ProposalVoteStore) IterateByID(proposalID string, fn func(key []byte,
 }
 
 // get voting votes by proposalID
-func (pvs *ProposalVoteStore) GetVotesByID(proposalID string) ([]keys.Address, []*ProposalVote, error) {
+func (pvs *ProposalVoteStore) GetVotesByID(proposalID ProposalID) ([]keys.Address, []*ProposalVote, error) {
 	info := fmt.Sprintf("Vote getVotesByID: proposalID= %v", proposalID)
-
-	if !pvs.Exists(proposalID) {
-		errMsg := fmt.Sprintf("%v, proposal does not exist", info)
-		logger.Error(errMsg)
-		return nil, nil, errors.New(errMsg)
-	}
 
 	succeed := true
 	addrs := make([]keys.Address, 0)
@@ -191,7 +152,7 @@ func (pvs *ProposalVoteStore) GetVotesByID(proposalID string) ([]keys.Address, [
 		if err != nil {
 			logger.Errorf("%v, key= %v, deserialize proposal vote failed", info, key)
 			succeed = false
-			return false
+			return true
 		}
 		votes = append(votes, vote)
 		prefix_len := len(append(pvs.prefix, (proposalID + storage.DB_PREFIX)...))
@@ -205,44 +166,16 @@ func (pvs *ProposalVoteStore) GetVotesByID(proposalID string) ([]keys.Address, [
 		logger.Error(errMsg)
 		return nil, nil, errors.New(errMsg)
 	}
+	// Caused by invalid/deleted proposalID
+	if len(votes) == 0 {
+		errMsg := fmt.Sprintf("%v, no votes records found", info)
+		logger.Error(errMsg)
+		return nil, nil, errors.New(errMsg)
+	}
+
 	return addrs, votes, nil
 }
 
-// check existance of proposal
-// a proposal does not exist if there is no vote records
-func (pvs *ProposalVoteStore) Exists(proposalID string) bool {
-	prefix := append(pvs.prefix, (proposalID + storage.DB_PREFIX)...)
-	exist := false
-	pvs.store.IterateRange(
-		prefix,
-		storage.Rangefix(string(prefix)),
-		true,
-		func(key, value []byte) bool {
-			exist = true
-			return true
-		},
-	)
-	return exist
-}
-
-func (vote *ProposalVote) Bytes() []byte {
-	value, err := serialize.GetSerializer(serialize.PERSISTENT).Serialize(vote)
-	if err != nil {
-		logger.Error("proposal vote not serializable", err)
-		return []byte{}
-	}
-	return value
-}
-
-func (vote *ProposalVote) FromBytes(msg []byte) (*ProposalVote, error) {
-	err := serialize.GetSerializer(serialize.PERSISTENT).Deserialize(msg, vote)
-	if err != nil {
-		logger.Error("failed to deserialize a proposal vote from bytes", err)
-		return nil, err
-	}
-	return vote, nil
-}
-
-func (pv *ProposalVote) String() string {
-	return fmt.Sprintf("proposalID= %v, Opinion= %v, Power= %v", pv.ProposalID, pv.Opinion.String(), pv.Power)
+func GetKey(prefix []byte, proposalID ProposalID, vote *ProposalVote) []byte {
+	return storage.StoreKey(string(prefix) + string(proposalID) + storage.DB_PREFIX + string(vote.Validator))
 }
