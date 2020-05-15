@@ -107,13 +107,15 @@ func runTx(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 		return false, result
 	}
 
+	fundingGoal := *governance.NewAmountFromBigInt(options.FundingGoal.BigInt())
+
 	//Create Proposal and save to Proposal Store
 	proposal := governance.NewProposal(
 		createProposal.proposalType,
 		createProposal.description,
 		createProposal.proposer,
 		options.FundingDeadline,
-		options.FundingGoal,
+		fundingGoal,
 		options.VotingDeadline,
 		options.PassPercentage)
 
