@@ -42,7 +42,7 @@ const (
 	ERC20_REDEEM             Type = 0x95
 
 	//Governance Action
-	PROPOSAL_CREATE Type = 0x96
+	PROPOSAL_CREATE Type = 0x30
 
 	//Governanace Actions
 	PROPOSAL_FUND Type = 0x31
