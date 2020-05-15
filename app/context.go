@@ -65,8 +65,8 @@ type context struct {
 	lockScriptStore *bitcoin.LockScriptStore
 	internalService *event.Service
 	jobBus          *event.JobBus
-
-	logWriter io.Writer
+	proposalMaster  *governance.ProposalMasterStore
+	logWriter       io.Writer
 }
 
 func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *node.Context) (context, error) {
@@ -109,7 +109,7 @@ func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *node.Context) (
 
 	ctx.jobStore = jobs.NewJobStore(cfg, ctx.dbDir())
 	ctx.lockScriptStore = bitcoin.NewLockScriptStore(cfg, ctx.dbDir())
-
+	ctx.proposalMaster = NewProposalMasterStore(ctx.chainstate)
 	ctx.actionRouter = action.NewRouter("action")
 
 	testEnv := os.Getenv("OLTEST")
@@ -135,6 +135,12 @@ func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *node.Context) (
 	return ctx, nil
 }
 
+func NewProposalMasterStore(chainstate *storage.ChainState) *governance.ProposalMasterStore {
+	proposals := governance.NewProposalStore("propActive", "propPassed", "propFailed", storage.NewState(chainstate))
+	proposalFunds := governance.NewProposalFundStore("propFunds", storage.NewState(chainstate))
+	return governance.NewProposalMasterStore(proposals, proposalFunds)
+}
+
 func (ctx context) dbDir() string {
 	return filepath.Join(ctx.cfg.RootDir(), ctx.cfg.Node.DBDir)
 }
@@ -158,6 +164,7 @@ func (ctx *context) Action(header *Header, state *storage.State) *action.Context
 		ctx.jobStore,
 		ctx.lockScriptStore,
 		log.NewLoggerWithPrefix(ctx.logWriter, "action").WithLevel(log.Level(ctx.cfg.Node.LogLevel)),
+		ctx.proposalMaster,
 	)
 
 	return actionCtx

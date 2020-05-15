@@ -31,3 +31,15 @@ const (
 	errorGettingRecord   = "324"
 	errorDeletingRecord  = "325"
 )
+
+type ProposalMasterStore struct {
+	Proposal     *ProposalStore
+	ProposalFund *ProposalFundStore
+}
+
+func NewProposalMasterStore(p *ProposalStore, pf *ProposalFundStore) *ProposalMasterStore {
+	return &ProposalMasterStore{
+		Proposal:     p,
+		ProposalFund: pf,
+	}
+}
