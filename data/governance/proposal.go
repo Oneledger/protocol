@@ -34,12 +34,12 @@ type Proposal struct {
 	Description     string
 	Proposer        keys.Address
 	FundingDeadline int64
-	FundingGoal     balance.Amount
+	FundingGoal     *balance.Amount
 	VotingDeadline  int64
 	PassPercentage  int
 }
 
-func NewProposal(propType ProposalType, desc string, proposer keys.Address, fundingDeadline int64, fundingGoal balance.Amount,
+func NewProposal(propType ProposalType, desc string, proposer keys.Address, fundingDeadline int64, fundingGoal *balance.Amount,
 	votingDeadline int64, passPercentage int) *Proposal {
 
 	return &Proposal{

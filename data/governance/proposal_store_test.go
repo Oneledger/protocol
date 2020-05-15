@@ -91,7 +91,7 @@ func init() {
 			opt = proposalOpt.General
 		}
 
-		fundingGoal := *balance.NewAmountFromBigInt(opt.FundingGoal.BigInt())
+		fundingGoal := balance.NewAmountFromBigInt(opt.FundingGoal.BigInt())
 
 		proposals = append(proposals, NewProposal(ProposalType(k), "Test Proposal", proposer,
 			opt.FundingDeadline, fundingGoal, opt.VotingDeadline, opt.PassPercentage))

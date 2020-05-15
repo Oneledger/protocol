@@ -68,54 +68,63 @@ func TestProposalFundStore_AddFunds(t *testing.T) {
 }
 
 func TestNewProposalFundStore_Delete(t *testing.T) {
-	fmt.Println("Deleting fund record ID : ", ID1, "| address :", address)
+	//fmt.Println("Deleting fund record ID : ", ID1, "| address :", address)
 	ok, err := store.DeleteFunds(ID1, address)
 	if err != nil {
 		fmt.Println("Error Deleting : ", err)
 		return
 	}
-	fmt.Println("OK :", ok)
 	cs.Commit()
 	assert.True(t, ok, "")
 }
 
 func TestProposalFundStore_Iterate(t *testing.T) {
-	fmt.Println("Iterating Stores")
-	store.iterate(func(proposalID ProposalID, fundingAddr keys.Address, amt *balance.Amount) bool {
-		fmt.Println("ProposalID : ", proposalID, "ProposalAddress :", fundingAddr, "Proposal Amount :", amt.BigInt())
+	//fmt.Println("Iterating Stores")
+	IDLIST := []ProposalID{ID2, ID1}
+	ok := store.iterate(func(proposalID ProposalID, fundingAddr keys.Address, amt *balance.Amount) bool {
+		//fmt.Println("ProposalID : ", proposalID, "ProposalAddress :", fundingAddr, "Proposal Amount :", amt.BigInt())
+		assert.Contains(t, IDLIST, proposalID, "")
 		return false
 	})
+	assert.True(t, ok, "")
 }
 
 //
 func TestProposalFundStore_GetFundersForProposalID(t *testing.T) {
-	fmt.Println("Get Funders for ID :  ", ID1)
+	//fmt.Println("Get Funders for ID :  ", ID1)
 	funds := store.GetFundersForProposalID(ID1, func(proposalID ProposalID, fundingAddr keys.Address, amt *balance.Amount) ProposalFund {
 		return ProposalFund{
 			id:            proposalID,
 			address:       fundingAddr,
-			fundingAmount: *amt,
+			fundingAmount: amt,
 		}
 	})
-	for _, fund := range funds {
-		fund.Print()
-	}
+	//for _, fund := range funds {
+	//	fund.Print()
+	//}
 	assert.EqualValues(t, 1, len(funds), "")
 }
 
 //
 func TestProposalFundStore_GetProposalForFunder(t *testing.T) {
-	fmt.Println("Get Funders for Address :", address2)
+	//fmt.Println("Get Funders for Address :", address2)
 
 	funds := store.GetProposalsForFunder(address2, func(proposalID ProposalID, fundingAddr keys.Address, amt *balance.Amount) ProposalFund {
 		return ProposalFund{
 			id:            proposalID,
 			address:       fundingAddr,
-			fundingAmount: *amt,
+			fundingAmount: amt,
 		}
 	})
-	for _, fund := range funds {
-		fund.Print()
-	}
+	//for _, fund := range funds {
+	//	fund.Print()
+	//}
 	assert.EqualValues(t, 2, len(funds), "")
+}
+
+func TestProposalFund_getCurrentFunds(t *testing.T) {
+	//fmt.Println("Getting Total fund for ProposalID")
+	currentFunds := GetCurrentFunds(ID1, store)
+	funds := currentFunds.BigInt().Int64()
+	assert.EqualValues(t, int64(1000), funds, "")
 }

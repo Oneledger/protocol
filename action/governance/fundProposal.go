@@ -7,6 +7,7 @@ import (
 	"github.com/tendermint/tendermint/libs/kv"
 
 	"github.com/Oneledger/protocol/action"
+	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/governance"
 	"github.com/Oneledger/protocol/data/keys"
 )
@@ -64,7 +65,7 @@ type fundProposalTx struct {
 
 var _ action.Tx = fundProposalTx{}
 
-func (fp fundProposalTx) Validate(ctx *action.Context, signedTx action.SignedTx) (bool, error) {
+func (fundProposalTx) Validate(ctx *action.Context, signedTx action.SignedTx) (bool, error) {
 	fundProposal := FundProposal{}
 	err := fundProposal.Unmarshal(signedTx.Data)
 	if err != nil {
@@ -120,23 +121,18 @@ func runFundProposal(ctx *action.Context, tx action.RawTx) (bool, action.Respons
 	if err != nil {
 		return false, action.Response{}
 	}
-	//2. Check if the Proposal is in funding stage
+	// 1 check if proposal exists
 	proposal, err := ctx.ProposalMasterStore.Proposal.Get(fundProposal.proposalId)
 	if err != nil {
 		ctx.Logger.Error("Proposal does not exist :", fundProposal.proposalId)
 		result := action.Response{
-			Events: action.GetEvent(fundProposal.Tags(), "fund_proposal_not_failed"),
+			Events: action.GetEvent(fundProposal.Tags(), "fund_proposal_does_not_exist"),
 		}
 		return false, result
 	}
-	if proposal.Status != governance.ProposalStatusFunding {
-		ctx.Logger.Debug("Cannot fund proposal , Current proposal state : ", proposal.Status)
-		result := action.Response{
-			Events: action.GetEvent(fundProposal.Tags(), "fund_proposal_not_funding"),
-		}
-		return false, result
-	}
+
 	//3. Check if the Funding height is already reached
+	//6. If the proposal has already passed Funding height, reject the transaction
 	if ctx.Header.Height > proposal.FundingDeadline {
 		ctx.Logger.Debug("Funding Height has already been reached")
 		result := action.Response{
@@ -145,16 +141,38 @@ func runFundProposal(ctx *action.Context, tx action.RawTx) (bool, action.Respons
 		return false, result
 
 	}
-	//3. Check if the Proposal has reached funding goal, when this contribution is added
-	//	funds := governance.NewAmountFromBigInt(fundProposal.initialFunding.Value.BigInt())
-	//4. Change the state of the proposal to VOTING, if funding goal is met
+	//2. Check if the Proposal is in funding stage
 	//5. If the proposal is not in FUNDING state, reject the transaction
-	//6. If the proposal has already passed Funding height, reject the transaction
-	//Check if initial funding is greater than minimum amount based on type.
-
-	result := action.Response{
-		Events: action.GetEvent(fundProposal.Tags(), "create_proposal_success"),
+	if proposal.Status != governance.ProposalStatusFunding {
+		ctx.Logger.Debug("Cannot fund proposal , Current proposal state : ", proposal.Status)
+		result := action.Response{
+			Events: action.GetEvent(fundProposal.Tags(), "fund_proposal_not_funding_state"),
+		}
+		return false, result
+	}
+	//3. Check if the Proposal has reached funding goal, when this contribution is added
+	//4. Change the state of the proposal to VOTING, if funding goal is met
+	fundingAmount := balance.NewAmountFromBigInt(fundProposal.fundValue.Value.BigInt())
+	currentFundsforProposal := governance.GetCurrentFunds(proposal.ProposalID, ctx.ProposalMasterStore.ProposalFund)
+	newAmount := fundingAmount.Plus(currentFundsforProposal)
+	if newAmount.BigInt().Cmp(proposal.FundingGoal.BigInt()) >= 0 {
+		proposal.Status = governance.ProposalStatusVoting
+		//7. If the proposal moves into Voting state, take a snap shot of Validator Set,
+		//at that instinct and add entries for each and every validator at the point into the Proposal_Vote_Store.
+		//In the value, we will just update the Voting power. The vote / opinion field remains empty for now
 	}
 
+	//8. If the Proposal is still in Funding Stage (Or just moved to Voting) and Funding Goal is not met, add an entry into Proposal Fund Store. No change of State required
+	err = ctx.ProposalMasterStore.ProposalFund.AddFunds(proposal.ProposalID, fundProposal.funderAddress, fundingAmount)
+	if err != nil {
+		ctx.Logger.Error("Faied to add funds to proposal:", fundProposal.proposalId)
+		result := action.Response{
+			Events: action.GetEvent(fundProposal.Tags(), "fund_proposal_AddFund_failed"),
+		}
+		return false, result
+	}
+	result := action.Response{
+		Events: action.GetEvent(fundProposal.Tags(), "fund_proposal_success"),
+	}
 	return true, result
 }
