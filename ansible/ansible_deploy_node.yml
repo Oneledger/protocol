@@ -9,4 +9,4 @@
     GOLANG_INSTALL_DIR: /usr/local/go
     OLDATA: "{{GOPATH}}/data"
   roles:
-    - role: dev-setup
+    - role: fullnode
