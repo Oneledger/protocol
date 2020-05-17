@@ -1,8 +1,6 @@
 ---
 - name: killing olfullnode process
   command: pkill olfullnode
-  tags: restart
 
 - name: starting olfullnode process
   command: /opt/data/fullnode/start.sh
-  tags: restart

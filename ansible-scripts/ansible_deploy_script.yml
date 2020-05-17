@@ -8,4 +8,4 @@
   become: true
   become_user: root
   roles:
-  - role: fullnode-service
+  - role: restart
