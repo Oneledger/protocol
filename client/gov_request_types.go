@@ -14,3 +14,11 @@ type CreateProposalRequest struct {
 	GasPrice       action.Amount           `json:"gasPrice"`
 	Gas            int64                   `json:"gas"`
 }
+
+type FundProposalRequest struct {
+	ProposalId    governance.ProposalID `json:"proposal_id"`
+	FundValue     action.Amount         `json:"fund_value"`
+	FunderAddress action.Address        `json:"funder_address"`
+	GasPrice      action.Amount         `json:"gasPrice"`
+	Gas           int64                 `json:"gas"`
+}
