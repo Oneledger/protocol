@@ -13,11 +13,22 @@ import (
 const EmptyStr = ""
 
 type ProposalOption struct {
-	InitialFunding  *balance.Amount `json:"baseDomainPrice"`
-	FundingGoal     *balance.Amount `json:"fundingGoal"`
-	FundingDeadline int64           `json:"fundingDeadline"`
-	VotingDeadline  int64           `json:"votingDeadline"`
-	PassPercentage  int             `json:"passPercentage"`
+	InitialFunding         *balance.Amount          `json:"baseDomainPrice"`
+	FundingGoal            *balance.Amount          `json:"fundingGoal"`
+	FundingDeadline        int64                    `json:"fundingDeadline"`
+	VotingDeadline         int64                    `json:"votingDeadline"`
+	PassPercentage         int                      `json:"passPercentage"`
+	PassedFundDistribution ProposalFundDistribution `json:"passed_fund_dustribution"`
+	FailedFundDistribution ProposalFundDistribution `json:"failed_fund_distribution"`
+}
+
+type ProposalFundDistribution struct {
+	Validators     float64 `json:"validators"`
+	FeePool        float64 `json:"fee_pool"`
+	Burn           float64 `json:"burn"`
+	ExecutionFees  float64 `json:"execution_fees"`
+	BountyPool     float64 `json:"bounty_pool"`
+	ProposerReward float64 `json:"proposer_reward"`
 }
 
 type ProposalOptionSet struct {

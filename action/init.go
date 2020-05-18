@@ -45,7 +45,8 @@ const (
 	PROPOSAL_CREATE Type = 0x30
 
 	//Governanace Actions
-	PROPOSAL_FUND Type = 0x31
+	PROPOSAL_FUND   Type = 0x31
+	PROPOSAL_PASSED Type = 0x31
 	//EOF here Only used as a marker to mark the end of Type list
 	//So that the query for Types can return all Types dynamically
 	//, when there is a change made in Type list
