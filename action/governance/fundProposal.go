@@ -2,6 +2,7 @@ package governance
 
 import (
 	"encoding/json"
+	"fmt"
 
 	"github.com/pkg/errors"
 	"github.com/tendermint/tendermint/libs/kv"
@@ -15,13 +16,13 @@ import (
 var _ action.Msg = &FundProposal{}
 
 type FundProposal struct {
-	proposalId    governance.ProposalID
-	funderAddress keys.Address
-	fundValue     action.Amount
+	ProposalId    governance.ProposalID
+	FunderAddress keys.Address
+	FundValue     action.Amount
 }
 
 func (fp FundProposal) Signers() []action.Address {
-	return []action.Address{fp.funderAddress}
+	return []action.Address{fp.FunderAddress}
 }
 
 func (fp FundProposal) Type() action.Type {
@@ -36,16 +37,16 @@ func (fp FundProposal) Tags() kv.Pairs {
 		Value: []byte(fp.Type().String()),
 	}
 	tag2 := kv.Pair{
-		Key:   []byte("tx.proposer"),
-		Value: fp.funderAddress.Bytes(),
+		Key:   []byte("tx.funder"),
+		Value: fp.FunderAddress.Bytes(),
 	}
 	tag3 := kv.Pair{
 		Key:   []byte("tx.proposalID"),
-		Value: []byte(string(fp.proposalId)),
+		Value: []byte(string(fp.ProposalId)),
 	}
 	tag4 := kv.Pair{
-		Key:   []byte("tx.fundValue"),
-		Value: []byte(fp.fundValue.String()),
+		Key:   []byte("tx.FundValue"),
+		Value: []byte(fp.FundValue.String()),
 	}
 
 	tags = append(tags, tag, tag2, tag3, tag4)
@@ -88,14 +89,14 @@ func (fundProposalTx) Validate(ctx *action.Context, signedTx action.SignedTx) (b
 	if !ok {
 		panic("no default currency available in the network")
 	}
-	if currency.Name != fundProposal.fundValue.Currency {
-		return false, errors.Wrap(action.ErrInvalidAmount, fundProposal.fundValue.String())
+	if currency.Name != fundProposal.FundValue.Currency {
+		return false, errors.Wrap(action.ErrInvalidAmount, fundProposal.FundValue.String())
 	}
 
 	//Check if Funder address is valid oneLedger address
-	err = fundProposal.funderAddress.Err()
+	err = fundProposal.FunderAddress.Err()
 	if err != nil {
-		return false, errors.Wrap(err, "invalid proposer address")
+		return false, errors.Wrap(err, "invalid funder address")
 	}
 
 	return true, nil
@@ -122,9 +123,9 @@ func runFundProposal(ctx *action.Context, tx action.RawTx) (bool, action.Respons
 		return false, action.Response{}
 	}
 	// 1 check if proposal exists
-	proposal, err := ctx.ProposalMasterStore.Proposal.Get(fundProposal.proposalId)
+	proposal, err := ctx.ProposalMasterStore.Proposal.Get(fundProposal.ProposalId)
 	if err != nil {
-		ctx.Logger.Error("Proposal does not exist :", fundProposal.proposalId)
+		ctx.Logger.Error("Proposal does not exist :", fundProposal.ProposalId)
 		result := action.Response{
 			Events: action.GetEvent(fundProposal.Tags(), "fund_proposal_does_not_exist"),
 		}
@@ -152,20 +153,29 @@ func runFundProposal(ctx *action.Context, tx action.RawTx) (bool, action.Respons
 	}
 	//3. Check if the Proposal has reached funding goal, when this contribution is added
 	//4. Change the state of the proposal to VOTING, if funding goal is met
-	fundingAmount := balance.NewAmountFromBigInt(fundProposal.fundValue.Value.BigInt())
+	fundingAmount := balance.NewAmountFromBigInt(fundProposal.FundValue.Value.BigInt())
 	currentFundsforProposal := governance.GetCurrentFunds(proposal.ProposalID, ctx.ProposalMasterStore.ProposalFund)
 	newAmount := fundingAmount.Plus(currentFundsforProposal)
 	if newAmount.BigInt().Cmp(proposal.FundingGoal.BigInt()) >= 0 {
 		proposal.Status = governance.ProposalStatusVoting
 		//7. If the proposal moves into Voting state, take a snap shot of Validator Set,
-		//at that instinct and add entries for each and every validator at the point into the Proposal_Vote_Store.
+		//at that instant and add entries for each and every validator at the point into the Proposal_Vote_Store.
 		//In the value, we will just update the Voting power. The vote / opinion field remains empty for now
+		validatorList, err := ctx.Validators.GetValidatorSet()
+		if err != nil {
+			ctx.Logger.Error("Unable to fetch Validator list from Validator store")
+			result := action.Response{
+				Events: action.GetEvent(fundProposal.Tags(), "fund_proposal_validator_list_unavailable"),
+			}
+			return false, result
+		}
+		fmt.Println("Adding Validator Votes", validatorList)
 	}
 
 	//8. If the Proposal is still in Funding Stage (Or just moved to Voting) and Funding Goal is not met, add an entry into Proposal Fund Store. No change of State required
-	err = ctx.ProposalMasterStore.ProposalFund.AddFunds(proposal.ProposalID, fundProposal.funderAddress, fundingAmount)
+	err = ctx.ProposalMasterStore.ProposalFund.AddFunds(proposal.ProposalID, fundProposal.FunderAddress, fundingAmount)
 	if err != nil {
-		ctx.Logger.Error("Faied to add funds to proposal:", fundProposal.proposalId)
+		ctx.Logger.Error("Failed to add funds to proposal:", fundProposal.ProposalId)
 		result := action.Response{
 			Events: action.GetEvent(fundProposal.Tags(), "fund_proposal_AddFund_failed"),
 		}
