@@ -1,7 +1,10 @@
 package governance
 
+import "github.com/Oneledger/protocol/storage"
+
 const (
 	//Proposal Types
+	ProposalTypeError        ProposalType = 0xEE
 	ProposalTypeConfigUpdate ProposalType = 0x20
 	ProposalTypeCodeChange   ProposalType = 0x21
 	ProposalTypeGeneral      ProposalType = 0x22
@@ -35,6 +38,12 @@ const (
 type ProposalMasterStore struct {
 	Proposal     *ProposalStore
 	ProposalFund *ProposalFundStore
+}
+
+func (p *ProposalMasterStore) WithState(state *storage.State) *ProposalMasterStore {
+	p.Proposal.WithState(state)
+	p.ProposalFund.WithState(state)
+	return p
 }
 
 func NewProposalMasterStore(p *ProposalStore, pf *ProposalFundStore) *ProposalMasterStore {

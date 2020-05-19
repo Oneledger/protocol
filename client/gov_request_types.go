@@ -7,10 +7,21 @@ import (
 )
 
 type CreateProposalRequest struct {
-	ProposalType   governance.ProposalType `json:"proposal_type"`
-	Description    string                  `json:"description"`
-	Proposer       keys.Address            `json:"proposer"`
-	InitialFunding action.Amount           `json:"initial_funding"`
-	GasPrice       action.Amount           `json:"gasPrice"`
-	Gas            int64                   `json:"gas"`
+	ProposalType   string        `json:"proposal_type"`
+	Description    string        `json:"description"`
+	Proposer       keys.Address  `json:"proposer"`
+	InitialFunding action.Amount `json:"initial_funding"`
+	GasPrice       action.Amount `json:"gasPrice"`
+	Gas            int64         `json:"gas"`
+}
+
+type GetProposalsRequest struct {
+	Prefix   string        `json:"prefix"`
+	GasPrice action.Amount `json:"gasPrice"`
+	Gas      int64         `json:"gas"`
+}
+
+type GetProposalsResponse struct {
+	Proposals []governance.Proposal `json:"proposals"`
+	Height    int64                 `json:"height"`
 }

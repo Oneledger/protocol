@@ -110,6 +110,9 @@ func (t Type) String() string {
 	case ERC20_REDEEM:
 		return "ERC20_REDEEM"
 
+	case PROPOSAL_CREATE:
+		return "PROPOSAL_CREATE"
+
 	default:
 		return "UNKNOWN"
 	}

@@ -352,6 +352,12 @@ func (app *App) Prepare() error {
 		btcConfig := bitcoin.NewBTCConfig(app.Context.cfg.ChainDriver, btcOption.ChainType)
 
 		app.Context.btcTrackers.SetConfig(btcConfig)
+
+		propOpt, err := app.Context.govern.GetProposalOptions()
+		if err != nil {
+			return err
+		}
+		app.Context.proposalMaster.Proposal.SetOptions(propOpt)
 	}
 
 	nodecfg, err := consensus.ParseConfig(&app.Context.cfg)

@@ -40,6 +40,9 @@ func (c CreateProposal) Validate(ctx *action.Context, signedTx action.SignedTx) 
 	}
 
 	options := ctx.ProposalMasterStore.Proposal.GetOptionsByType(createProposal.ProposalType)
+	if options == nil {
+		return false, errors.New("failed to get proposal options")
+	}
 
 	// the currency should be OLT
 	currency, ok := ctx.Currencies.GetCurrencyById(0)

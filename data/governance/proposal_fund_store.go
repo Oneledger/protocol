@@ -76,6 +76,11 @@ func (pf *ProposalFundStore) iterate(fn func(proposalID ProposalID, addr keys.Ad
 	)
 }
 
+func (pf *ProposalFundStore) WithState(state *storage.State) *ProposalFundStore {
+	pf.State = state
+	return pf
+}
+
 // Store Function Called my external Layers
 func NewProposalFundStore(prefix string, state *storage.State) *ProposalFundStore {
 	return &ProposalFundStore{

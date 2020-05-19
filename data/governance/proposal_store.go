@@ -101,6 +101,10 @@ func (ps *ProposalStore) IterateProposalType(fn func(id ProposalID, proposal *Pr
 	})
 }
 
+func (ps *ProposalStore) GetState() *storage.State {
+	return ps.state
+}
+
 func (ps *ProposalStore) WithState(state *storage.State) *ProposalStore {
 	ps.state = state
 	return ps
