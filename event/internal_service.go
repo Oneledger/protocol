@@ -107,13 +107,11 @@ func (svc Service) InternalBroadcast(request InternalBroadcastRequest, reply *Br
 func BroadcastReportFinalityETHTx(ethCtx *JobsContext, trackerName ethereum.TrackerName, jobID string, success bool) error {
 
 	trackerStore := ethCtx.EthereumTrackers
-	tracker, err := trackerStore.WithPrefixType(ethereum2.PrefixOngoing).Get(trackerName)
+	tracker, err := trackerStore.QueryAllStores(trackerName)
 	if err != nil {
-		tracker, err := trackerStore.QueryAllStores(trackerName)
-		if err != nil {
-			return err
-		}
-		ethCtx.Logger.Debug("Tracker already : ", tracker.State.String())
+		return err
+	}
+	if tracker.State == ethereum2.Released || tracker.State == ethereum2.Failed {
 		return nil
 	}
 	index, voted := tracker.CheckIfVoted(ethCtx.ValidatorAddress)
