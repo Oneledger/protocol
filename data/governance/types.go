@@ -9,6 +9,21 @@ type (
 	VoteOpinion     int
 )
 
+func (opinion VoteOpinion) String() string {
+	switch opinion {
+	case OPIN_UNKNOWN:
+		return "Unknown"
+	case OPIN_POSITIVE:
+		return "Positive"
+	case OPIN_NEGATIVE:
+		return "Negative"
+	case OPIN_GIVEUP:
+		return "Giveup"
+	default:
+		return "Invalid opinion"
+	}
+}
+
 //func (p ProposalAmount) MarshalJSON() ([]byte, error) {
 //	v := p.BigInt().String()
 //	return json.Marshal(v)
