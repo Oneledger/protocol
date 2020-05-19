@@ -53,11 +53,13 @@ const (
 type ProposalMasterStore struct {
 	Proposal     *ProposalStore
 	ProposalFund *ProposalFundStore
+	ProposalVote *ProposalVoteStore
 }
 
-func NewProposalMasterStore(p *ProposalStore, pf *ProposalFundStore) *ProposalMasterStore {
+func NewProposalMasterStore(p *ProposalStore, pf *ProposalFundStore, pv *ProposalVoteStore) *ProposalMasterStore {
 	return &ProposalMasterStore{
 		Proposal:     p,
 		ProposalFund: pf,
+		ProposalVote: pv,
 	}
 }

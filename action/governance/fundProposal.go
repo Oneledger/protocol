@@ -2,7 +2,6 @@ package governance
 
 import (
 	"encoding/json"
-	"fmt"
 
 	"github.com/pkg/errors"
 	"github.com/tendermint/tendermint/libs/kv"
@@ -11,6 +10,7 @@ import (
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/governance"
 	"github.com/Oneledger/protocol/data/keys"
+	"github.com/Oneledger/protocol/identity"
 )
 
 var _ action.Msg = &FundProposal{}
@@ -161,15 +161,20 @@ func runFundProposal(ctx *action.Context, tx action.RawTx) (bool, action.Respons
 		//7. If the proposal moves into Voting state, take a snap shot of Validator Set,
 		//at that instant and add entries for each and every validator at the point into the Proposal_Vote_Store.
 		//In the value, we will just update the Voting power. The vote / opinion field remains empty for now
-		validatorList, err := ctx.Validators.GetValidatorSet()
-		if err != nil {
-			ctx.Logger.Error("Unable to fetch Validator list from Validator store")
-			result := action.Response{
-				Events: action.GetEvent(fundProposal.Tags(), "fund_proposal_validator_list_unavailable"),
-			}
-			return false, result
-		}
-		fmt.Println("Adding Validator Votes", validatorList)
+		//validatorList, err := ctx.Validators.GetValidatorSet()
+		//if err != nil {
+		//	ctx.Logger.Error("Unable to fetch Validator list from Validator store")
+		//	result := action.Response{
+		//		Events: action.GetEvent(fundProposal.Tags(), "fund_proposal_validator_list_unavailable"),
+		//	}
+		//	return false, result
+		//}
+
+		ctx.Validators.Iterate(func(addr keys.Address, validator *identity.Validator) bool {
+			validatorVote := governance.NewProposalVote(addr, governance.OPIN_UNKNOWN, validator.Power)
+			ctx.ProposalMasterStore.ProposalVote.Update(proposal.ProposalID, validatorVote)
+			return false
+		})
 	}
 
 	//8. If the Proposal is still in Funding Stage (Or just moved to Voting) and Funding Goal is not met, add an entry into Proposal Fund Store. No change of State required
