@@ -55,7 +55,7 @@ func (sv *Service) ONS_GetDomainByOwner(req client.ONSGetDomainsRequest, reply *
 	return nil
 }
 
-func (sv *Service) ONS_GetDomainOnSale(req client.ONSGetDomainsRequest, reply *client.ONSGetDomainsOnSaleReply) error {
+func (sv *Service) ONS_GetDomainOnSale(req client.ONSGetDomainsRequest, reply *client.ONSGetDomainsReply) error {
 	domains := sv.ons
 	if req.OnSale == false {
 		return codes.ErrFlagNotSet
@@ -69,14 +69,14 @@ func (sv *Service) ONS_GetDomainOnSale(req client.ONSGetDomainsRequest, reply *c
 		return false
 	})
 
-	*reply = client.ONSGetDomainsOnSaleReply{
+	*reply = client.ONSGetDomainsReply{
 		Domains: ds,
 		Height:  sv.balances.State.Version(),
 	}
 	return nil
 }
 
-func (sv *Service) ONS_GetDomainByBeneficiary(req client.ONSGetDomainsRequest, reply *client.ONSGetDomainsOnSaleReply) error {
+func (sv *Service) ONS_GetDomainByBeneficiary(req client.ONSGetDomainsRequest, reply *client.ONSGetDomainsReply) error {
 	domains := sv.ons
 	if req.Beneficiary == nil {
 		return codes.ErrBadAddress
@@ -90,7 +90,7 @@ func (sv *Service) ONS_GetDomainByBeneficiary(req client.ONSGetDomainsRequest, r
 		return false
 	})
 
-	*reply = client.ONSGetDomainsOnSaleReply{
+	*reply = client.ONSGetDomainsReply{
 		Domains: ds,
 		Height:  sv.balances.State.Version(),
 	}
