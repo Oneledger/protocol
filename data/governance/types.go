@@ -14,6 +14,7 @@ type (
 	ProposalOutcome int
 	ProposalState   int
 	VoteOpinion     int
+	VoteResult      int
 )
 
 func (p ProposalAmount) MarshalJSON() ([]byte, error) {
@@ -68,4 +69,12 @@ func (opinion VoteOpinion) String() string {
 	default:
 		return "Invalid opinion"
 	}
+}
+
+func (opinion VoteOpinion) Err() error {
+	opName := opinion.String()
+	if opName == "" {
+		return errors.New("vote opinion must be one of [UNKNOWN, POSITIVE, NEGATIVE, GIVEUP]")
+	}
+	return nil
 }
