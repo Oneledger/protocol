@@ -108,8 +108,17 @@ func BroadcastReportFinalityETHTx(ethCtx *JobsContext, trackerName ethereum.Trac
 
 	trackerStore := ethCtx.EthereumTrackers
 	tracker, err := trackerStore.WithPrefixType(ethereum2.PrefixOngoing).Get(trackerName)
-	index, _ := tracker.CheckIfVoted(ethCtx.ValidatorAddress)
-	if index < 0 {
+	if err != nil {
+		tracker, err := trackerStore.QueryAllStores(trackerName)
+		if err != nil {
+			return err
+		}
+		ethCtx.Logger.Debug("Tracker already : ", tracker.State.String())
+		return nil
+	}
+	index, voted := tracker.CheckIfVoted(ethCtx.ValidatorAddress)
+	if voted {
+		//Validator has already Voted
 		return nil
 	}
 	reportFailed := &eth.ReportFinality{
