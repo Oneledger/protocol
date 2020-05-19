@@ -173,6 +173,14 @@ func runFundProposal(ctx *action.Context, tx action.RawTx) (bool, action.Respons
 	}
 
 	//8. If the Proposal is still in Funding Stage (Or just moved to Voting) and Funding Goal is not met, add an entry into Proposal Fund Store. No change of State required
+	coin := fundProposal.FundValue.ToCoin(ctx.Currencies)
+	err = ctx.Balances.MinusFromAddress(fundProposal.FunderAddress.Bytes(), coin)
+	if err != nil {
+		result := action.Response{
+			Events: action.GetEvent(fundProposal.Tags(), "fund_proposal_deduction_failed"),
+		}
+		return false, result
+	}
 	err = ctx.ProposalMasterStore.ProposalFund.AddFunds(proposal.ProposalID, fundProposal.FunderAddress, fundingAmount)
 	if err != nil {
 		ctx.Logger.Error("Failed to add funds to proposal:", fundProposal.ProposalId)
