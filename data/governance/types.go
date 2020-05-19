@@ -6,6 +6,7 @@ type (
 	ProposalStatus  int
 	ProposalOutcome int
 	ProposalState   int
+	VoteOpinion     int
 )
 
 //func (p ProposalAmount) MarshalJSON() ([]byte, error) {
