@@ -131,12 +131,16 @@ func distributeFunds(ctx *action.Context, proposal *governance.Proposal) error {
 	//Burn
 	// TODO : How to deal with accuracy
 	burnAmount, _ := getPercentageValue(totalFunding, proposalDistribution.Burn).Float64()
-	c, ok := ctx.Currencies.GetCurrencyByName("OLT")
-	if !ok {
-		return errors.New("fund_proposal_olt_unavailable")
-	}
+	fmt.Println(burnAmount)
+	//c, ok := ctx.Currencies.GetCurrencyByName("OLT")
+	//if !ok {
+	//	return errors.New("fund_proposal_olt_unavailable")
+	//}
 
+	//
+	//
 	//Reward for Propose
+	return nil
 
 }
 
