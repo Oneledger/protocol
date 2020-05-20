@@ -92,14 +92,16 @@ func (pvs *ProposalVoteStore) Delete(proposalID ProposalID) error {
 	return nil
 }
 
-// Check and see if a proposal has passed
-func (pvs *ProposalVoteStore) IsPassed(proposalID ProposalID, passPercent int64) (bool, error) {
+//ResultSoFar check and see if a proposal has already passed or failed
+//Proposal passed if passPercent already achieved
+//Proposal never pass if received enough NEGATIVE votes
+func (pvs *ProposalVoteStore) ResultSoFar(proposalID ProposalID, passPercent int) (VoteResult, error) {
 	info := fmt.Sprintf("Vote IsPassed: proposalID= %v", proposalID)
 
 	_, votes, err := pvs.GetVotesByID(proposalID)
 	if err != nil {
 		logger.Errorf("%v, getVotesByID failed", info)
-		return false, ErrVoteCheckVoteResultFailed
+		return VOTE_RESULT_TBD, ErrVoteCheckVoteResultFailed
 	}
 
 	// Accumulates power of each opinion
@@ -114,17 +116,27 @@ func (pvs *ProposalVoteStore) IsPassed(proposalID ProposalID, passPercent int64)
 	totalPower -= eachPower[OPIN_GIVEUP]
 
 	// Calculate actual percentage
-	percent := 0.0
-	passed := false
+	yesPercentage := 0.0
+	noPercentage := 0.0
+	passPercentage := float64(passPercent) / 100.0
 	if totalPower > 0 {
-		percent = float64(eachPower[OPIN_POSITIVE]) / float64(totalPower)
+		yesPercentage = float64(eachPower[OPIN_POSITIVE]) / float64(totalPower)
+		noPercentage = float64(eachPower[OPIN_NEGATIVE]) / float64(totalPower)
 	}
-	if percent >= float64(passPercent)/100.0 {
-		passed = true
-	}
-	logger.Infof("%v, passed= %v", info, passed)
 
-	return passed, nil
+	// Proposal passed if received enough votes of YES
+	if yesPercentage >= passPercentage {
+		logger.Infof("%v, passed, YES percentage= %v", info, yesPercentage)
+		return VOTE_RESULT_PASSED, nil
+	}
+	// Proposal failed if received enough votes of NO
+	if (1.0 - noPercentage) < passPercentage {
+		logger.Infof("%v, failed, NO percentage= %v", info, noPercentage)
+		return VOTE_RESULT_FAILED, nil
+	}
+
+	// Result to be dertermined
+	return VOTE_RESULT_TBD, nil
 }
 
 // Iterate voting records by proposalID
