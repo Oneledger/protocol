@@ -43,9 +43,10 @@ const (
 
 	//Governance Action
 	PROPOSAL_CREATE Type = 0x30
+	PROPOSAL_CANCEL Type = 0x31
+	PROPOSAL_FUND   Type = 0x32
+	PROPOSAL_VOTE   Type = 0x33
 
-	//Governanace Actions
-	PROPOSAL_FUND Type = 0x31
 	//EOF here Only used as a marker to mark the end of Type list
 	//So that the query for Types can return all Types dynamically
 	//, when there is a change made in Type list
@@ -112,6 +113,12 @@ func (t Type) String() string {
 
 	case PROPOSAL_CREATE:
 		return "PROPOSAL_CREATE"
+	case PROPOSAL_CANCEL:
+		return "PROPOSAL_CANCEL"
+	case PROPOSAL_FUND:
+		return "PROPOSAL_FUND"
+	case PROPOSAL_VOTE:
+		return "PROPOSAL_VOTE"
 
 	default:
 		return "UNKNOWN"
