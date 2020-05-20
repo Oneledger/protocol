@@ -9,9 +9,9 @@ import (
 	"github.com/tendermint/tendermint/libs/kv"
 
 	"github.com/Oneledger/protocol/action"
+	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/governance"
 	"github.com/Oneledger/protocol/data/keys"
-	"github.com/Oneledger/protocol/identity"
 )
 
 type PassedProposal struct {
@@ -107,12 +107,22 @@ func runPassedProposal(ctx *action.Context, tx action.RawTx) (bool, action.Respo
 	}
 	proposal, err := ctx.ProposalMasterStore.Proposal.Get(passedProposal.ProposalID)
 	if err != nil {
-
+		result := action.Response{
+			Events: action.GetEvent(passedProposal.Tags(), "finalize_proposal_not_found"),
+		}
+		return false, result
+	}
+	if proposal.Status != governance.ProposalStatusCompleted {
+		result := action.Response{
+			Events: action.GetEvent(passedProposal.Tags(), "finalize_proposal_not_completed"),
+		}
+		return false, result
 	}
 
+	ctx.ProposalMasterStore.ProposalVote.IsPassed(proposal.ProposalID, proposal.PassPercentage)
 	distributeFunds(ctx, proposal)
 	result := action.Response{
-		Events: action.GetEvent(passedProposal.Tags(), "fund_proposal_success"),
+		Events: action.GetEvent(passedProposal.Tags(), "finalize_proposal_success"),
 	}
 	return true, result
 }
@@ -121,29 +131,44 @@ func distributeFunds(ctx *action.Context, proposal *governance.Proposal) error {
 	// Required Perimeters for Fund Distribution
 	proposalDistribution := ctx.ProposalMasterStore.Proposal.GetOptionsByType(proposal.Type).PassedFundDistribution
 	totalFunding := governance.GetCurrentFunds(proposal.ProposalID, ctx.ProposalMasterStore.ProposalFund).Float()
+	c, ok := ctx.Currencies.GetCurrencyByName("OLT")
+	if !ok {
+		return errors.New("fund_proposal_olt_unavailable")
+	}
+	//Fund Distribution
 	//Validators
-	ctx.Validators.Iterate(func(addr keys.Address, validator *identity.Validator) bool {
-		// Send fund to validators
-		fmt.Println("validator", validator, addr)
-		return false
-	})
-	//Fee Pool
-	//Burn
-	// TODO : How to deal with accuracy
-	burnAmount, _ := getPercentageValue(totalFunding, proposalDistribution.Burn).Float64()
-	fmt.Println(burnAmount)
-	//c, ok := ctx.Currencies.GetCurrencyByName("OLT")
-	//if !ok {
-	//	return errors.New("fund_proposal_olt_unavailable")
-	//}
+	validatorList, err := ctx.Validators.GetValidatorSet()
+	if err != nil {
+		return err
+	}
+	validatorEarningOLT := getPercentageCoin(c, totalFunding, proposalDistribution.Validators).Divide(len(validatorList))
+	//TODO:Instead of break continue sending to rest of the validators ,and report failed Validator
+	for _, v := range validatorList {
+		err = ctx.Balances.AddToAddress(v.Address, validatorEarningOLT)
+		if err != nil {
+			return errors.Wrap(err, fmt.Sprintf("Unable to send funds to Validator :%s", v.Name))
+		}
+	}
 
-	//
-	//
-	//Reward for Propose
+	//Fee Pool
+	ctx.FeePool.AddToPool(getPercentageCoin(c, totalFunding, proposalDistribution.FeePool))
+
+	//Reward for Proposer
+	ctx.Balances.AddToAddress(proposal.Proposer, getPercentageCoin(c, totalFunding, proposalDistribution.ProposerReward))
+
+	//Bounty Program
+	bountyAddress := action.Address(ctx.ProposalMasterStore.Proposal.GetOptions().BountyProgramAddr)
+	ctx.Balances.AddToAddress(bountyAddress, getPercentageCoin(c, totalFunding, proposalDistribution.BountyPool))
+
+	//Burn
+	burnAmount := getPercentageCoin(c, totalFunding, proposalDistribution.Burn)
+	fmt.Println(burnAmount)
 	return nil
 
 }
 
-func getPercentageValue(totalFunding *big.Float, percentage float64) *big.Float {
-	return totalFunding.Mul(totalFunding, big.NewFloat(percentage/100))
+func getPercentageCoin(c balance.Currency, totalFunding *big.Float, percentage float64) balance.Coin {
+	// TODO : How to deal with accuracy
+	amount, _ := totalFunding.Mul(totalFunding, big.NewFloat(percentage/100)).Float64()
+	return c.NewCoinFromFloat64(amount)
 }

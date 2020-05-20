@@ -32,9 +32,10 @@ type ProposalFundDistribution struct {
 }
 
 type ProposalOptionSet struct {
-	ConfigUpdate ProposalOption
-	CodeChange   ProposalOption
-	General      ProposalOption
+	ConfigUpdate      ProposalOption
+	CodeChange        ProposalOption
+	General           ProposalOption
+	BountyProgramAddr string
 }
 
 type Proposal struct {

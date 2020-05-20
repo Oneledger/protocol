@@ -151,6 +151,7 @@ func runFundProposal(ctx *action.Context, tx action.RawTx) (bool, action.Respons
 		}
 		return false, result
 	}
+
 	//3. Check if the Proposal has reached funding goal, when this contribution is added
 	//4. Change the state of the proposal to VOTING, if funding goal is met
 	fundingAmount := balance.NewAmountFromBigInt(fundProposal.FundValue.Value.BigInt())

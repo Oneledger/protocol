@@ -58,6 +58,7 @@ var (
 	proposalFundingDeadline    = int64(12)
 	proposalVotingDeadline     = int64(12)
 	proposalPassPercentage     = 51
+	bountyProgramAddr          = "oneledgerBountyProgram"
 	passedProposalDistribution = governance.ProposalFundDistribution{
 		Validators:     18.00,
 		FeePool:        18.00,
@@ -434,6 +435,7 @@ func runDevnet(_ *cobra.Command, _ []string) error {
 			PassedFundDistribution: passedProposalDistribution,
 			FailedFundDistribution: failedProposalDistribution,
 		},
+		BountyProgramAddr: bountyProgramAddr,
 	}
 
 	states := initialState(args, nodeList, *cdo, *onsOp, btccdo, propOpt, reserveDomains, initialAddrs)
