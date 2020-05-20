@@ -14,20 +14,20 @@ import (
 	"github.com/Oneledger/protocol/data/keys"
 )
 
-type PassedProposal struct {
+type FinalizeProposal struct {
 	ProposalID governance.ProposalID
 	Proposer   keys.Address
 }
 
-func (p PassedProposal) Signers() []action.Address {
+func (p FinalizeProposal) Signers() []action.Address {
 	return []action.Address{p.Proposer}
 }
 
-func (p PassedProposal) Type() action.Type {
-	return action.PROPOSAL_PASSED
+func (p FinalizeProposal) Type() action.Type {
+	return action.PROPOSAL_FINALIZE
 }
 
-func (p PassedProposal) Tags() kv.Pairs {
+func (p FinalizeProposal) Tags() kv.Pairs {
 	tags := make([]kv.Pair, 0)
 
 	tag := kv.Pair{
@@ -47,21 +47,21 @@ func (p PassedProposal) Tags() kv.Pairs {
 	return tags
 }
 
-func (p PassedProposal) Marshal() ([]byte, error) {
+func (p FinalizeProposal) Marshal() ([]byte, error) {
 	return json.Marshal(p)
 }
 
-func (p *PassedProposal) Unmarshal(bytes []byte) error {
+func (p *FinalizeProposal) Unmarshal(bytes []byte) error {
 	return json.Unmarshal(bytes, p)
 }
 
-type passedProposalTx struct {
+type finalizeProposalTx struct {
 }
 
-var _ action.Tx = &passedProposalTx{}
+var _ action.Tx = &finalizeProposalTx{}
 
-func (passedProposalTx) Validate(ctx *action.Context, signedTx action.SignedTx) (bool, error) {
-	passedProposal := PassedProposal{}
+func (finalizeProposalTx) Validate(ctx *action.Context, signedTx action.SignedTx) (bool, error) {
+	passedProposal := FinalizeProposal{}
 	err := passedProposal.Unmarshal(signedTx.Data)
 	if err != nil {
 		return false, errors.Wrap(action.ErrWrongTxType, err.Error())
@@ -87,20 +87,20 @@ func (passedProposalTx) Validate(ctx *action.Context, signedTx action.SignedTx) 
 	return true, nil
 }
 
-func (passedProposalTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
-	return runPassedProposal(ctx, tx)
+func (finalizeProposalTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
+	return runFinalizeProposal(ctx, tx)
 }
 
-func (passedProposalTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
-	return runPassedProposal(ctx, tx)
+func (finalizeProposalTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
+	return runFinalizeProposal(ctx, tx)
 }
 
-func (passedProposalTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas) (bool, action.Response) {
+func (finalizeProposalTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas) (bool, action.Response) {
 	return action.BasicFeeHandling(ctx, signedTx, start, size, 1)
 }
 
-func runPassedProposal(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
-	passedProposal := PassedProposal{}
+func runFinalizeProposal(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
+	passedProposal := FinalizeProposal{}
 	err := passedProposal.Unmarshal(tx.Data)
 	if err != nil {
 		return false, action.Response{}
@@ -119,17 +119,48 @@ func runPassedProposal(ctx *action.Context, tx action.RawTx) (bool, action.Respo
 		return false, result
 	}
 
-	ctx.ProposalMasterStore.ProposalVote.IsPassed(proposal.ProposalID, proposal.PassPercentage)
-	distributeFunds(ctx, proposal)
+	voteResult, err := ctx.ProposalMasterStore.ProposalVote.ResultSoFar(proposal.ProposalID, proposal.PassPercentage)
+	if err != nil {
+		result := action.Response{
+			Events: action.GetEvent(passedProposal.Tags(), "finalize_proposal_vote_result_unavailable"),
+		}
+		return false, result
+	}
+	if voteResult == governance.VOTE_RESULT_TBD {
+		result := action.Response{
+			Events: action.GetEvent(passedProposal.Tags(), "finalize_proposal_vote_result_TBD"),
+		}
+		return false, result
+	}
+	if voteResult == governance.VOTE_RESULT_PASSED {
+		proposalDistribution := ctx.ProposalMasterStore.Proposal.GetOptionsByType(proposal.Type).PassedFundDistribution
+		err := distributeFunds(ctx, proposal, &proposalDistribution)
+		if err != nil {
+			result := action.Response{
+				Events: action.GetEvent(passedProposal.Tags(), "finalize_proposal_passed_distribution_failed"),
+			}
+			return false, result
+		}
+	}
+	if voteResult == governance.VOTE_RESULT_FAILED {
+		proposalDistribution := ctx.ProposalMasterStore.Proposal.GetOptionsByType(proposal.Type).FailedFundDistribution
+		err := distributeFunds(ctx, proposal, &proposalDistribution)
+		if err != nil {
+			result := action.Response{
+				Events: action.GetEvent(passedProposal.Tags(), "finalize_proposal_failed_distribution_failed"),
+			}
+			return false, result
+		}
+	}
 	result := action.Response{
 		Events: action.GetEvent(passedProposal.Tags(), "finalize_proposal_success"),
 	}
 	return true, result
 }
 
-func distributeFunds(ctx *action.Context, proposal *governance.Proposal) error {
+func distributeFunds(ctx *action.Context, proposal *governance.Proposal, proposalDistribution *governance.ProposalFundDistribution) error {
 	// Required Perimeters for Fund Distribution
-	proposalDistribution := ctx.ProposalMasterStore.Proposal.GetOptionsByType(proposal.Type).PassedFundDistribution
+	//proposalDistribution := ctx.ProposalMasterStore.Proposal.GetOptionsByType(proposal.Type).PassedFundDistribution
 	totalFunding := governance.GetCurrentFunds(proposal.ProposalID, ctx.ProposalMasterStore.ProposalFund).Float()
 	c, ok := ctx.Currencies.GetCurrencyByName("OLT")
 	if !ok {
@@ -151,15 +182,21 @@ func distributeFunds(ctx *action.Context, proposal *governance.Proposal) error {
 	}
 
 	//Fee Pool
-	ctx.FeePool.AddToPool(getPercentageCoin(c, totalFunding, proposalDistribution.FeePool))
-
+	err = ctx.FeePool.AddToPool(getPercentageCoin(c, totalFunding, proposalDistribution.FeePool))
+	if err != nil {
+		return errors.Wrap(err, "Failed in adding to feepool")
+	}
 	//Reward for Proposer
-	ctx.Balances.AddToAddress(proposal.Proposer, getPercentageCoin(c, totalFunding, proposalDistribution.ProposerReward))
-
+	err = ctx.Balances.AddToAddress(proposal.Proposer, getPercentageCoin(c, totalFunding, proposalDistribution.ProposerReward))
+	if err != nil {
+		return errors.Wrap(err, "Failed in rewarding Proposer")
+	}
 	//Bounty Program
 	bountyAddress := action.Address(ctx.ProposalMasterStore.Proposal.GetOptions().BountyProgramAddr)
-	ctx.Balances.AddToAddress(bountyAddress, getPercentageCoin(c, totalFunding, proposalDistribution.BountyPool))
-
+	err = ctx.Balances.AddToAddress(bountyAddress, getPercentageCoin(c, totalFunding, proposalDistribution.BountyPool))
+	if err != nil {
+		return errors.Wrap(err, "Failed in adding to Adding to bounty program")
+	}
 	//Burn
 	burnAmount := getPercentageCoin(c, totalFunding, proposalDistribution.Burn)
 	fmt.Println(burnAmount)
