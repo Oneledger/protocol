@@ -109,7 +109,6 @@ func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *node.Context) (
 
 	ctx.jobStore = jobs.NewJobStore(cfg, ctx.dbDir())
 	ctx.lockScriptStore = bitcoin.NewLockScriptStore(cfg, ctx.dbDir())
-	ctx.proposalMaster = NewProposalMasterStore(ctx.chainstate)
 	ctx.actionRouter = action.NewRouter("action")
 
 	testEnv := os.Getenv("OLTEST")
@@ -164,7 +163,7 @@ func (ctx *context) Action(header *Header, state *storage.State) *action.Context
 		ctx.jobStore,
 		ctx.lockScriptStore,
 		log.NewLoggerWithPrefix(ctx.logWriter, "action").WithLevel(log.Level(ctx.cfg.Node.LogLevel)),
-		ctx.proposalMaster,
+		ctx.proposalMaster.WithState(state),
 	)
 
 	return actionCtx

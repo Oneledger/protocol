@@ -1,6 +1,7 @@
 from rpc_call import rpc_call, convertBigInt
 import json
 
+
 def addresses():
     resp = rpc_call('owner.ListAccountAddresses', {})
     return resp["result"]["addresses"]
@@ -29,6 +30,7 @@ def broadcast_sync(rawTx, signature, pub_key):
     })
     return resp["result"]
 
+
 def create_proposal(type, proposer, desc, initialFunding):
     req = {
         "description": desc,
@@ -48,6 +50,7 @@ def create_proposal(type, proposer, desc, initialFunding):
     print resp
     return resp["result"]["rawTx"]
 
+
 def query_proposals(prefix):
     req = {
         "prefix": prefix,
@@ -60,4 +63,4 @@ def query_proposals(prefix):
     }
 
     resp = rpc_call('query.GetProposals', req)
-    print resp
+    print json.dumps(resp, indent=4)
