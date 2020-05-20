@@ -365,6 +365,15 @@ func (app *App) Prepare() error {
 
 	// Init witness store after genesis witnesses loaded in above NewNode
 	app.Context.witnesses.Init(chain.ETHEREUM, app.Context.node.ValidatorAddress())
+	// Adding internal Router
+	internalRouter := action.NewRouter("internal")
+	err = eth.EnableInternalETH(internalRouter)
+	if err != nil {
+		app.logger.Error("failed to register eth internal transaction")
+		return err
+	}
+	app.Context.internalService = event.NewService(app.Context.node,
+		log.NewLoggerWithPrefix(app.Context.logWriter, "internal_service"), internalRouter, app.node)
 
 	return nil
 }
@@ -376,15 +385,6 @@ func (app *App) Start() error {
 	if err != nil {
 		return err
 	}
-	// Adding internal Router
-	internalRouter := action.NewRouter("internal")
-	err = eth.EnableInternalETH(internalRouter)
-	if err != nil {
-		app.logger.Error("failed to register eth internal transaction")
-		return err
-	}
-	app.Context.internalService = event.NewService(app.Context.node,
-		log.NewLoggerWithPrefix(app.Context.logWriter, "internal_service"), internalRouter, app.node)
 
 	// Starting App
 	err = app.node.Start()
