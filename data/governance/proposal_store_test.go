@@ -2,29 +2,39 @@ package governance
 
 import (
 	"fmt"
-	"github.com/Oneledger/protocol/data/keys"
-	"github.com/Oneledger/protocol/storage"
+	"testing"
+
+	"github.com/Oneledger/protocol/data/balance"
+
 	"github.com/stretchr/testify/assert"
 	db "github.com/tendermint/tm-db"
-	"testing"
+
+	"github.com/Oneledger/protocol/data/keys"
+	"github.com/Oneledger/protocol/storage"
 )
 
 const (
 	numPrivateKeys = 5
 	numProposals   = 10
 
-	codeChange   = 2
+	codeChange = 2
+
 	configUpdate = 3
 	general      = 4
+	passPercent  = 51
 )
 
 var (
 	addrList    []keys.Address
 	proposals   []*Proposal
-	proposalOpt ProposalOptions
+	proposalOpt ProposalOptionSet
 
 	govStore      *Store
 	proposalStore *ProposalStore
+
+	codeChangeAmount   = balance.NewAmount(codeChange)
+	generalAmount      = balance.NewAmount(general)
+	configUpdateAmount = balance.NewAmount(configUpdate)
 )
 
 func init() {
@@ -38,25 +48,28 @@ func init() {
 	}
 
 	//Create new proposal options
-	proposalOpt.CodeChange = options{
-		InitialFunding:  codeChange,
+	proposalOpt.CodeChange = ProposalOption{
+		InitialFunding:  codeChangeAmount,
 		FundingDeadline: codeChange,
-		FundingGoal:     codeChange,
+		FundingGoal:     codeChangeAmount,
 		VotingDeadline:  codeChange,
+		PassPercentage:  passPercent,
 	}
 
-	proposalOpt.ConfigUpdate = options{
-		InitialFunding:  configUpdate,
+	proposalOpt.ConfigUpdate = ProposalOption{
+		InitialFunding:  configUpdateAmount,
 		FundingDeadline: configUpdate,
-		FundingGoal:     configUpdate,
+		FundingGoal:     configUpdateAmount,
 		VotingDeadline:  configUpdate,
+		PassPercentage:  passPercent,
 	}
 
-	proposalOpt.General = options{
-		InitialFunding:  general,
+	proposalOpt.General = ProposalOption{
+		InitialFunding:  generalAmount,
 		FundingDeadline: general,
-		FundingGoal:     general,
+		FundingGoal:     generalAmount,
 		VotingDeadline:  general,
+		PassPercentage:  passPercent,
 	}
 
 	//Create new proposals
@@ -66,7 +79,7 @@ func init() {
 
 		proposer := addrList[j]
 
-		var opt options
+		var opt ProposalOption
 		switch ProposalType(k) {
 		case ProposalTypeConfigUpdate:
 			opt = proposalOpt.ConfigUpdate
@@ -78,8 +91,10 @@ func init() {
 			opt = proposalOpt.General
 		}
 
+		fundingGoal := balance.NewAmountFromBigInt(opt.FundingGoal.BigInt())
+
 		proposals = append(proposals, NewProposal(ProposalType(k), "Test Proposal", proposer,
-			opt.FundingDeadline, opt.FundingGoal, opt.VotingDeadline))
+			opt.FundingDeadline, fundingGoal, opt.VotingDeadline, opt.PassPercentage))
 	}
 
 	//Create Test DB
