@@ -1,5 +1,9 @@
 package governance
 
+import (
+	"github.com/pkg/errors"
+)
+
 type (
 	ProposalID      string
 	ProposalType    int
