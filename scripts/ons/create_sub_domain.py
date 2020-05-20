@@ -10,6 +10,16 @@ Create Sub Domain
 import sys
 from sdk.actions import *
 
+class bcolors:
+    HEADER = '\033[95m'
+    OKBLUE = '\033[94m'
+    OKGREEN = '\033[92m'
+    WARNING = '\033[93m'
+    FAIL = '\033[91m'
+    ENDC = '\033[0m'
+    BOLD = '\033[1m'
+    UNDERLINE = '\033[4m'
+
 if __name__ == "__main__":
     addrs = addresses()
 
@@ -68,3 +78,7 @@ if __name__ == "__main__":
         sys.exit(-1)
 
     print_all_domains(addrs[0])
+
+    print bcolors.WARNING + "*** Get All Parent Domains ***" + bcolors.ENDC
+    print_all_parent_domains(addrs[0])
+

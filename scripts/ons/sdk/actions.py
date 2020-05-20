@@ -156,9 +156,23 @@ def get_domains(owner_hex, onsale):
     resp = rpc_call('query.ONS_GetDomainByOwner', req)
     return resp["result"]["domains"]
 
+def get_parent_domains(owner_hex, onsale):
+    req = {
+        "owner": owner_hex,
+        "onSale": onsale,
+    }
+
+    resp = rpc_call('query.ONS_GetParentDomainByOwner', req)
+    return resp["result"]["domains"]
+
 
 def print_all_domains(owner_addr):
     result = get_domains(owner_addr, False)
+    print json.dumps(result, indent=4)
+    print
+
+def print_all_parent_domains(owner_addr):
+    result = get_parent_domains(owner_addr, False)
     print json.dumps(result, indent=4)
     print
 
