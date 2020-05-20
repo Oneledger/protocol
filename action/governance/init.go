@@ -1,9 +1,10 @@
 package governance
 
 import (
+	"github.com/pkg/errors"
+
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/serialize"
-	"github.com/pkg/errors"
 )
 
 func init() {
@@ -18,6 +19,10 @@ func EnableGovernance(r action.Router) error {
 	err = r.AddHandler(action.PROPOSAL_FUND, fundProposalTx{})
 	if err != nil {
 		return errors.Wrap(err, "fundProposalTx")
+	}
+	err = r.AddHandler(action.PROPOSAL_FUND, finalizeProposalTx{})
+	if err != nil {
+		return errors.Wrap(err, "finalizeProposalTx")
 	}
 
 	return nil
