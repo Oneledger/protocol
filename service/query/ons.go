@@ -89,6 +89,12 @@ func (sv *Service) ONS_GetSubDomainByName(req client.ONSGetDomainsRequest, reply
 	if len(req.Name) <= 0 {
 		return codes.ErrBadName
 	}
+
+	_, err := domains.Get(ons.Name(req.Name))
+	if err != nil {
+		return codes.ErrDomainNotFound
+	}
+
 	reqName := ons.GetNameFromString(req.Name)
 
 	ds := make([]ons.Domain, 0)
