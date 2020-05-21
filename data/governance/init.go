@@ -1,6 +1,16 @@
 package governance
 
-import "github.com/Oneledger/protocol/storage"
+import (
+	"github.com/Oneledger/protocol/log"
+	"github.com/Oneledger/protocol/storage"
+	"os"
+)
+
+var logger *log.Logger
+
+func init() {
+	logger = log.NewDefaultLogger(os.Stdout).WithPrefix("governance")
+}
 
 const (
 	//Proposal Types
@@ -26,6 +36,12 @@ const (
 	ProposalStateActive ProposalState = 0x31
 	ProposalStatePassed ProposalState = 0x32
 	ProposalStateFailed ProposalState = 0x33
+
+	//Vote Opinions
+	OPIN_UNKNOWN  VoteOpinion = 0
+	OPIN_POSITIVE VoteOpinion = 1
+	OPIN_NEGATIVE VoteOpinion = 2
+	OPIN_GIVEUP   VoteOpinion = 3
 
 	//Error Codes
 	errorSerialization   = "321"
