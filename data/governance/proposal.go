@@ -3,23 +3,25 @@ package governance
 import (
 	"crypto/md5"
 	"encoding/hex"
+	"github.com/Oneledger/protocol/data/balance"
+
 	"github.com/Oneledger/protocol/data/keys"
-	"time"
 )
 
 const EmptyStr = ""
 
-type options struct {
-	InitialFunding  int64
-	FundingDeadline int64
-	FundingGoal     int64
-	VotingDeadline  int64
+type ProposalOption struct {
+	InitialFunding  *balance.Amount `json:"baseDomainPrice"`
+	FundingGoal     *balance.Amount `json:"fundingGoal"`
+	FundingDeadline int64           `json:"fundingDeadline"`
+	VotingDeadline  int64           `json:"votingDeadline"`
+	PassPercentage  int             `json:"passPercentage"`
 }
 
-type ProposalOptions struct {
-	ConfigUpdate options
-	CodeChange   options
-	General      options
+type ProposalOptionSet struct {
+	ConfigUpdate ProposalOption
+	CodeChange   ProposalOption
+	General      ProposalOption
 }
 
 type Proposal struct {
@@ -30,15 +32,16 @@ type Proposal struct {
 	Description     string
 	Proposer        keys.Address
 	FundingDeadline int64
-	FundingGoal     int64
+	FundingGoal     *balance.Amount
 	VotingDeadline  int64
+	PassPercentage  int
 }
 
-func NewProposal(propType ProposalType, desc string, proposer keys.Address, fundingDeadline int64, fundingGoal int64,
-	votingDeadline int64) *Proposal {
+func NewProposal(proposalID ProposalID, propType ProposalType, desc string, proposer keys.Address, fundingDeadline int64, fundingGoal *balance.Amount,
+	votingDeadline int64, passPercentage int) *Proposal {
 
 	return &Proposal{
-		ProposalID:      generateProposalID(proposer.String()),
+		ProposalID:      generateProposalID(proposalID),
 		Type:            propType,
 		Status:          ProposalStatusFunding,
 		Outcome:         ProposalOutcomeInProgress,
@@ -47,13 +50,13 @@ func NewProposal(propType ProposalType, desc string, proposer keys.Address, fund
 		FundingDeadline: fundingDeadline,
 		FundingGoal:     fundingGoal,
 		VotingDeadline:  votingDeadline,
+		PassPercentage:  passPercentage,
 	}
 }
 
-func generateProposalID(key string) ProposalID {
-	uniqueKey := key + time.Now().String()
+func generateProposalID(key ProposalID) ProposalID {
 	hashHandler := md5.New()
-	_, err := hashHandler.Write([]byte(uniqueKey))
+	_, err := hashHandler.Write([]byte(key))
 	if err != nil {
 		return EmptyStr
 	}

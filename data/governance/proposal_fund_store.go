@@ -7,6 +7,7 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/serialize"
 	"github.com/Oneledger/protocol/storage"
@@ -17,7 +18,7 @@ type ProposalFundStore struct {
 	prefix []byte
 }
 
-func (st *ProposalFundStore) set(key storage.StoreKey, amt ProposalAmount) error {
+func (st *ProposalFundStore) set(key storage.StoreKey, amt balance.Amount) error {
 	dat, err := serialize.GetSerializer(serialize.PERSISTENT).Serialize(amt)
 	if err != nil {
 		return errors.Wrap(err, errorSerialization)
@@ -27,13 +28,14 @@ func (st *ProposalFundStore) set(key storage.StoreKey, amt ProposalAmount) error
 	return errors.Wrap(err, errorSettingRecord)
 }
 
-func (st *ProposalFundStore) get(key storage.StoreKey) (amt *ProposalAmount, err error) {
+func (st *ProposalFundStore) get(key storage.StoreKey) (amt *balance.Amount, err error) {
 	prefixed := append(st.prefix, storage.StoreKey(key)...)
 	dat, err := st.State.Get(prefixed)
+	//fmt.Println("dat :", dat, "err", err)
 	if err != nil {
 		return nil, errors.Wrap(err, errorGettingRecord)
 	}
-	amt = NewAmount(0)
+	amt = balance.NewAmount(0)
 	if len(dat) == 0 {
 		return
 	}
@@ -53,14 +55,14 @@ func (pf *ProposalFundStore) delete(key storage.StoreKey) (bool, error) {
 	return res, err
 }
 
-func (pf *ProposalFundStore) iterate(fn func(proposalID ProposalID, addr keys.Address, amt *ProposalAmount) bool) bool {
+func (pf *ProposalFundStore) iterate(fn func(proposalID ProposalID, addr keys.Address, amt *balance.Amount) bool) bool {
 	return pf.State.IterateRange(
 		pf.prefix,
 		storage.Rangefix(string(pf.prefix)),
 		true,
 		func(key, value []byte) bool {
 
-			amt := NewAmount(0)
+			amt := balance.NewAmount(0)
 			err := serialize.GetSerializer(serialize.PERSISTENT).Deserialize(value, amt)
 			if err != nil {
 				fmt.Println("err", err)
@@ -74,6 +76,11 @@ func (pf *ProposalFundStore) iterate(fn func(proposalID ProposalID, addr keys.Ad
 	)
 }
 
+func (pf *ProposalFundStore) WithState(state *storage.State) *ProposalFundStore {
+	pf.State = state
+	return pf
+}
+
 // Store Function Called my external Layers
 func NewProposalFundStore(prefix string, state *storage.State) *ProposalFundStore {
 	return &ProposalFundStore{
@@ -82,9 +89,9 @@ func NewProposalFundStore(prefix string, state *storage.State) *ProposalFundStor
 	}
 }
 
-func (pf *ProposalFundStore) GetFundersForProposalID(id ProposalID, fn func(proposalID ProposalID, fundingAddr keys.Address, amt *ProposalAmount) ProposalFund) []ProposalFund {
+func (pf *ProposalFundStore) GetFundersForProposalID(id ProposalID, fn func(proposalID ProposalID, fundingAddr keys.Address, amt *balance.Amount) ProposalFund) []ProposalFund {
 	var foundProposals []ProposalFund
-	pf.iterate(func(proposalID ProposalID, fundingAddr keys.Address, amt *ProposalAmount) bool {
+	pf.iterate(func(proposalID ProposalID, fundingAddr keys.Address, amt *balance.Amount) bool {
 		if proposalID == id {
 			foundProposals = append(foundProposals, fn(proposalID, fundingAddr, amt))
 		}
@@ -93,9 +100,9 @@ func (pf *ProposalFundStore) GetFundersForProposalID(id ProposalID, fn func(prop
 	return foundProposals
 }
 
-func (pf *ProposalFundStore) GetProposalsForFunder(funderAddress keys.Address, fn func(proposalID ProposalID, fundingAddr keys.Address, amt *ProposalAmount) ProposalFund) []ProposalFund {
+func (pf *ProposalFundStore) GetProposalsForFunder(funderAddress keys.Address, fn func(proposalID ProposalID, fundingAddr keys.Address, amt *balance.Amount) ProposalFund) []ProposalFund {
 	var foundProposals []ProposalFund
-	pf.iterate(func(proposalID ProposalID, fundingAddr keys.Address, amt *ProposalAmount) bool {
+	pf.iterate(func(proposalID ProposalID, fundingAddr keys.Address, amt *balance.Amount) bool {
 		if bytes.Equal(keys.Address(funderAddress.String()), fundingAddr) {
 			foundProposals = append(foundProposals, fn(proposalID, fundingAddr, amt))
 		}
@@ -104,7 +111,7 @@ func (pf *ProposalFundStore) GetProposalsForFunder(funderAddress keys.Address, f
 	return foundProposals
 }
 
-func (pf *ProposalFundStore) AddFunds(proposalId ProposalID, fundingAddress keys.Address, amount *ProposalAmount) error {
+func (pf *ProposalFundStore) AddFunds(proposalId ProposalID, fundingAddress keys.Address, amount *balance.Amount) error {
 	key := storage.StoreKey(string(proposalId) + storage.DB_PREFIX + fundingAddress.String())
 	amt, err := pf.get(key)
 	if err != nil {
