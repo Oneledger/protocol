@@ -94,7 +94,7 @@ func (sv *Service) ONS_GetSubDomainByName(req client.ONSGetDomainsRequest, reply
 	ds := make([]ons.Domain, 0)
 
 	domains.Iterate(func(name ons.Name, domain *ons.Domain) bool {
-		// iterate all domains and try to find the subs to the request one
+
 		if !domain.Name.IsSub() {
 			return false
 		}
