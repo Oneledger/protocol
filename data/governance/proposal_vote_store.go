@@ -42,7 +42,7 @@ func (pvs *ProposalVoteStore) Setup(proposalID ProposalID, vote *ProposalVote) e
 		logger.Errorf("%v, storage failure", info)
 		return ErrVoteSetupValidatorFailed
 	}
-	logger.Info(info)
+	logger.Debug(info)
 
 	return nil
 }
@@ -64,7 +64,7 @@ func (pvs *ProposalVoteStore) Update(proposalID ProposalID, vote *ProposalVote) 
 		logger.Errorf("%v, storage failure", info)
 		return ErrVoteUpdateVoteFailed
 	}
-	logger.Info(info)
+	logger.Debug(info)
 
 	return nil
 }
@@ -87,7 +87,7 @@ func (pvs *ProposalVoteStore) Delete(proposalID ProposalID) error {
 		logger.Errorf("%v, delete failed", info)
 		return ErrVoteDeleteVoteRecordsFailed
 	}
-	logger.Info(info)
+	logger.Debug(info)
 
 	return nil
 }
@@ -126,12 +126,12 @@ func (pvs *ProposalVoteStore) ResultSoFar(proposalID ProposalID, passPercent int
 
 	// Proposal passed if received enough votes of YES
 	if yesPercentage >= passPercentage {
-		logger.Infof("%v, passed, YES percentage= %v", info, yesPercentage)
+		logger.Debugf("%v, passed, YES percentage= %v", info, yesPercentage)
 		return VOTE_RESULT_PASSED, nil
 	}
 	// Proposal failed if received enough votes of NO
 	if (1.0 - noPercentage) < passPercentage {
-		logger.Infof("%v, failed, NO percentage= %v", info, noPercentage)
+		logger.Debugf("%v, failed, NO percentage= %v", info, noPercentage)
 		return VOTE_RESULT_FAILED, nil
 	}
 

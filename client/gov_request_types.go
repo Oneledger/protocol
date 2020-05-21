@@ -25,3 +25,15 @@ type GetProposalsResponse struct {
 	Proposals []governance.Proposal `json:"proposals"`
 	Height    int64                 `json:"height"`
 }
+
+type CreateVoteRequest struct {
+	ProposalID string        `json:"proposalID"`
+	Address    keys.Address  `json:"address"`
+	Opinion    string        `json:"opinopn"`
+	GasPrice   action.Amount `json:"gasPrice"`
+	Gas        int64         `json:"gas"`
+}
+
+type CreateVoteReply struct {
+	RawTx []byte `json:"rawTx"`
+}

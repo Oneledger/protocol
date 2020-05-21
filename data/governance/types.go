@@ -12,6 +12,10 @@ type (
 	VoteResult      int
 )
 
+func IDFromString(s string) ProposalID {
+	return ProposalID(s)
+}
+
 func (opinion VoteOpinion) String() string {
 	switch opinion {
 	case OPIN_UNKNOWN:
