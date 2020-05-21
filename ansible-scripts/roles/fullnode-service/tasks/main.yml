@@ -46,5 +46,5 @@
   tags: update
 
 - name: starting fullnode
-  shell: /opt/data/fullnode/start.sh
+  command: chdir=/opt/data/fullnode ./start.sh
   tags: update

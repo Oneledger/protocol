@@ -3,4 +3,13 @@
   command: pkill olfullnode
 
 - name: starting olfullnode process
-  command: /opt/data/fullnode/start.sh
+  command: chdir=/opt/data/fullnode ./start.sh
+  become_user: ubuntu
+
+- name: Get olfullnode running processes
+  shell: "ps -ef | grep -v grep | grep -w olfullnode | awk '{print $2}'"
+  register: running_processes
+
+- name: Printing the process IDs obtained
+  debug:
+    msg: "PIDS of olfullnode:{{pids_of_olfullnode.pids}}"
