@@ -84,6 +84,36 @@ func (sv *Service) ONS_GetParentDomainByOwner(req client.ONSGetDomainsRequest, r
 	return nil
 }
 
+func (sv *Service) ONS_GetSubDomainByName(req client.ONSGetDomainsRequest, reply *client.ONSGetDomainsReply) error {
+	domains := sv.ons
+	if len(req.Name) <= 0 {
+		return codes.ErrBadName
+	}
+	reqName := ons.GetNameFromString(req.Name)
+
+	ds := make([]ons.Domain, 0)
+
+	domains.Iterate(func(name ons.Name, domain *ons.Domain) bool {
+		// iterate all domains and try to find the subs to the request one
+		if !domain.Name.IsSub() {
+			return false
+		}
+		if !domain.Name.EqualTo(reqName) && domain.Name.IsSubTo(reqName) {
+			ds = append(ds, *domain)
+		}
+
+		return false
+	})
+
+	*reply = client.ONSGetDomainsReply{
+		Domains: ds,
+		Height:  sv.ons.State.Version(),
+	}
+
+	return nil
+}
+
+
 func (sv *Service) ONS_GetDomainOnSale(req client.ONSGetDomainsRequest, reply *client.ONSGetDomainsReply) error {
 	domains := sv.ons
 	if req.OnSale == false {
