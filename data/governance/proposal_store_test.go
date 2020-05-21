@@ -3,6 +3,7 @@ package governance
 import (
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/Oneledger/protocol/data/balance"
 
@@ -19,9 +20,9 @@ const (
 
 	codeChange = 2
 
-	configUpdate = 3
-	general      = 4
-	passPercent  = 51
+	configUpdate   = 3
+	general        = 4
+	passPercentage = 51
 )
 
 var (
@@ -53,7 +54,7 @@ func init() {
 		FundingDeadline: codeChange,
 		FundingGoal:     codeChangeAmount,
 		VotingDeadline:  codeChange,
-		PassPercentage:  passPercent,
+		PassPercentage:  passPercentage,
 	}
 
 	proposalOpt.ConfigUpdate = ProposalOption{
@@ -61,7 +62,7 @@ func init() {
 		FundingDeadline: configUpdate,
 		FundingGoal:     configUpdateAmount,
 		VotingDeadline:  configUpdate,
-		PassPercentage:  passPercent,
+		PassPercentage:  passPercentage,
 	}
 
 	proposalOpt.General = ProposalOption{
@@ -69,7 +70,7 @@ func init() {
 		FundingDeadline: general,
 		FundingGoal:     generalAmount,
 		VotingDeadline:  general,
-		PassPercentage:  passPercent,
+		PassPercentage:  passPercentage,
 	}
 
 	//Create new proposals
@@ -93,7 +94,7 @@ func init() {
 
 		fundingGoal := balance.NewAmountFromBigInt(opt.FundingGoal.BigInt())
 
-		proposals = append(proposals, NewProposal(ProposalType(k), "Test Proposal", proposer,
+		proposals = append(proposals, NewProposal(ProposalID(time.Now().String()), ProposalType(k), "Test Proposal", proposer,
 			opt.FundingDeadline, fundingGoal, opt.VotingDeadline, opt.PassPercentage))
 	}
 

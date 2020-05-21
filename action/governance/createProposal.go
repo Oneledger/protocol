@@ -54,6 +54,11 @@ func (c CreateProposal) Validate(ctx *action.Context, signedTx action.SignedTx) 
 		return false, errors.Wrap(action.ErrInvalidAmount, createProposal.InitialFunding.String())
 	}
 
+	//Check if Proposal ID is valid
+	if len(createProposal.ProposalID) <= 0 {
+		return false, errors.New("invalid proposal id")
+	}
+
 	//Check if initial funding is greater than minimum amount based on type.
 	coin := createProposal.InitialFunding.ToCoin(ctx.Currencies)
 	if coin.LessThanEqualCoin(coin.Currency.NewCoinFromAmount(*options.InitialFunding)) {
@@ -128,6 +133,14 @@ func runTx(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 		options.FundingGoal,
 		options.VotingDeadline,
 		options.PassPercentage)
+
+	//Check if Proposal already exists
+	if ctx.ProposalMasterStore.Proposal.Exists(proposal.ProposalID) {
+		result := action.Response{
+			Events: action.GetEvent(createProposal.Tags(), "create_proposal_failed"),
+		}
+		return false, result
+	}
 
 	err = ctx.ProposalMasterStore.Proposal.Set(proposal)
 	if err != nil {

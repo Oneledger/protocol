@@ -47,8 +47,8 @@ func generateAddresses() {
 
 func generateIDs() {
 	ID1 = generateProposalID("Test")
-	ID2 = generateProposalID("Test")
-	ID3 = generateProposalID("Test")
+	ID2 = generateProposalID("Test1")
+	ID3 = generateProposalID("Test2")
 
 }
 func TestProposalFundStore_AddFunds(t *testing.T) {
