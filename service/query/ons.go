@@ -23,7 +23,7 @@ func (sv *Service) ONS_GetDomainByName(req client.ONSGetDomainsRequest, reply *c
 
 	*reply = client.ONSGetDomainsReply{
 		Domains: ds,
-		Height:  sv.balances.State.Version(),
+		Height:  sv.ons.State.Version(),
 	}
 
 	return nil
@@ -49,7 +49,7 @@ func (sv *Service) ONS_GetDomainByOwner(req client.ONSGetDomainsRequest, reply *
 
 	*reply = client.ONSGetDomainsReply{
 		Domains: ds,
-		Height:  sv.balances.State.Version(),
+		Height:  sv.ons.State.Version(),
 	}
 
 	return nil
@@ -78,7 +78,7 @@ func (sv *Service) ONS_GetParentDomainByOwner(req client.ONSGetDomainsRequest, r
 
 	*reply = client.ONSGetDomainsReply{
 		Domains: ds,
-		Height:  sv.balances.State.Version(),
+		Height:  sv.ons.State.Version(),
 	}
 
 	return nil
@@ -100,7 +100,7 @@ func (sv *Service) ONS_GetDomainOnSale(req client.ONSGetDomainsRequest, reply *c
 
 	*reply = client.ONSGetDomainsReply{
 		Domains: ds,
-		Height:  sv.balances.State.Version(),
+		Height:  sv.ons.State.Version(),
 	}
 	return nil
 }
@@ -121,7 +121,7 @@ func (sv *Service) ONS_GetDomainByBeneficiary(req client.ONSGetDomainsRequest, r
 
 	*reply = client.ONSGetDomainsReply{
 		Domains: ds,
-		Height:  sv.balances.State.Version(),
+		Height:  sv.ons.State.Version(),
 	}
 	return nil
 }
