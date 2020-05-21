@@ -7,6 +7,7 @@ headers = {
     "Accept": "application/json",
 }
 
+
 def rpc_call(method, params):
     payload = {
         "method": method,
@@ -22,6 +23,7 @@ def rpc_call(method, params):
 
     resp = json.loads(response.text)
     return resp
+
 
 def convertBigInt(value):
     return str(value)

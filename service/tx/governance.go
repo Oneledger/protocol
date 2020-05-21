@@ -9,6 +9,7 @@ import (
 	"github.com/Oneledger/protocol/serialize"
 	codes "github.com/Oneledger/protocol/status_codes"
 	"github.com/google/uuid"
+	"time"
 )
 
 func translateProposalType(propType string) governance.ProposalType {
@@ -30,7 +31,10 @@ func (s *Service) CreateProposal(args client.CreateProposalRequest, reply *clien
 		return errors.New("invalid proposal type")
 	}
 
+	uniqueStr := args.ProposalID + time.Now().String()
+
 	createProposal := gov.CreateProposal{
+		ProposalID:     governance.ProposalID(uniqueStr),
 		ProposalType:   proposalType,
 		Description:    args.Description,
 		Proposer:       args.Proposer,

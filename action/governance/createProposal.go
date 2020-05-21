@@ -15,6 +15,7 @@ import (
 var _ action.Msg = &CreateProposal{}
 
 type CreateProposal struct {
+	ProposalID     governance.ProposalID
 	ProposalType   governance.ProposalType
 	Description    string
 	Proposer       keys.Address
@@ -119,6 +120,7 @@ func runTx(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 
 	//Create Proposal and save to Proposal Store
 	proposal := governance.NewProposal(
+		createProposal.ProposalID,
 		createProposal.ProposalType,
 		createProposal.Description,
 		createProposal.Proposer,
@@ -134,6 +136,9 @@ func runTx(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 		}
 		return false, result
 	}
+
+	//Set generated Proposal ID in transaction response
+	createProposal.ProposalID = proposal.ProposalID
 
 	//Deduct initial funding from proposer's address
 	funds := createProposal.InitialFunding.ToCoin(ctx.Currencies)
@@ -179,6 +184,10 @@ func (c CreateProposal) Tags() kv.Pairs {
 	tags := make([]kv.Pair, 0)
 
 	tag := kv.Pair{
+		Key:   []byte("tx.proposalID"),
+		Value: []byte(c.ProposalID),
+	}
+	tag1 := kv.Pair{
 		Key:   []byte("tx.type"),
 		Value: []byte(c.Type().String()),
 	}
@@ -195,7 +204,7 @@ func (c CreateProposal) Tags() kv.Pairs {
 		Value: []byte(c.InitialFunding.String()),
 	}
 
-	tags = append(tags, tag, tag2, tag3, tag4)
+	tags = append(tags, tag, tag1, tag2, tag3, tag4)
 	return tags
 }
 
