@@ -74,6 +74,9 @@ if __name__ == "__main__":
     print "###################"
     print
 
+    if not result["ok"]:
+        sys.exit(-1)
+
     """
     ****** Create Sub domain based on sub domain above ******
     """
