@@ -3,8 +3,6 @@ package governance
 import (
 	"crypto/md5"
 	"encoding/hex"
-	"time"
-
 	"github.com/Oneledger/protocol/data/balance"
 
 	"github.com/Oneledger/protocol/data/keys"
@@ -39,11 +37,11 @@ type Proposal struct {
 	PassPercentage  int
 }
 
-func NewProposal(propType ProposalType, desc string, proposer keys.Address, fundingDeadline int64, fundingGoal *balance.Amount,
+func NewProposal(proposalID ProposalID, propType ProposalType, desc string, proposer keys.Address, fundingDeadline int64, fundingGoal *balance.Amount,
 	votingDeadline int64, passPercentage int) *Proposal {
 
 	return &Proposal{
-		ProposalID:      generateProposalID(proposer.String()),
+		ProposalID:      generateProposalID(proposalID),
 		Type:            propType,
 		Status:          ProposalStatusFunding,
 		Outcome:         ProposalOutcomeInProgress,
@@ -56,10 +54,9 @@ func NewProposal(propType ProposalType, desc string, proposer keys.Address, fund
 	}
 }
 
-func generateProposalID(key string) ProposalID {
-	uniqueKey := key + time.Now().String()
+func generateProposalID(key ProposalID) ProposalID {
 	hashHandler := md5.New()
-	_, err := hashHandler.Write([]byte(uniqueKey))
+	_, err := hashHandler.Write([]byte(key))
 	if err != nil {
 		return EmptyStr
 	}
