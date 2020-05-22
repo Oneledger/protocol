@@ -1,6 +1,7 @@
 from rpc_call import rpc_call, converBigInt
 import json
 
+
 def create_domain(name, owner_hex, price):
     req = {
         "name": name,
@@ -147,6 +148,15 @@ def broadcast_sync(rawTx, signature, pub_key):
     return resp["result"]
 
 
+def get_domain_by_name(name):
+    req = {
+        "name": name,
+    }
+
+    resp = rpc_call('query.ONS_GetDomainByName', req)
+    return resp["result"]["domains"]
+
+
 def get_domains(owner_hex, onsale):
     req = {
         "owner": owner_hex,
@@ -155,6 +165,7 @@ def get_domains(owner_hex, onsale):
 
     resp = rpc_call('query.ONS_GetDomainByOwner', req)
     return resp["result"]["domains"]
+
 
 def get_parent_domains(owner_hex, onsale):
     req = {
@@ -165,6 +176,7 @@ def get_parent_domains(owner_hex, onsale):
     resp = rpc_call('query.ONS_GetParentDomainByOwner', req)
     return resp["result"]["domains"]
 
+
 def get_sub_domains(name):
     req = {
         "name": name,
@@ -173,15 +185,24 @@ def get_sub_domains(name):
     resp = rpc_call('query.ONS_GetSubDomainByName', req)
     return resp["result"]["domains"]
 
+
+def print_domain(name):
+    result = get_domain_by_name(name)
+    print json.dumps(result, indent=4)
+    print
+
+
 def print_all_domains(owner_addr):
     result = get_domains(owner_addr, False)
     print json.dumps(result, indent=4)
     print
 
+
 def print_all_parent_domains(owner_addr):
     result = get_parent_domains(owner_addr, False)
     print json.dumps(result, indent=4)
     print
+
 
 def print_all_sub_domains(owner_addr):
     result = get_sub_domains(owner_addr)
