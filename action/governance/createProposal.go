@@ -123,15 +123,19 @@ func runTx(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 		return false, result
 	}
 
+	//Calculate Deadlines
+	fundingDeadline := ctx.State.Version() + options.FundingDeadline
+	votingDeadline := ctx.State.Version() + options.VotingDeadline
+
 	//Create Proposal and save to Proposal Store
 	proposal := governance.NewProposal(
 		createProposal.ProposalID,
 		createProposal.ProposalType,
 		createProposal.Description,
 		createProposal.Proposer,
-		options.FundingDeadline,
+		fundingDeadline,
 		options.FundingGoal,
-		options.VotingDeadline,
+		votingDeadline,
 		options.PassPercentage)
 
 	//Check if Proposal already exists
@@ -176,6 +180,19 @@ func runTx(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 			Events: action.GetEvent(createProposal.Tags(), "create_proposal_funding_failed"),
 		}
 		return false, result
+	}
+
+	//Setup voting validator list to Proposal Vote store
+	validatorList, _ := ctx.Validators.GetValidatorSet()
+	if err != nil {
+		return false, action.Response{Log: "create proposal failed in getting validator list"}
+	}
+	for _, v := range validatorList {
+		vote := governance.NewProposalVote(v.Address, governance.OPIN_UNKNOWN, v.Power)
+		err = ctx.ProposalMasterStore.ProposalVote.Setup(proposal.ProposalID, vote)
+		if err != nil {
+			return false, action.Response{Log: "setup voting validator failed"}
+		}
 	}
 
 	result := action.Response{
