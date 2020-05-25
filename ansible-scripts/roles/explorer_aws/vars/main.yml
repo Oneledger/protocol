@@ -1,0 +1,4 @@
+ip: 10.91.224.3
+username: postgres
+password: postgredb
+my_database_name: explorer_testdb
