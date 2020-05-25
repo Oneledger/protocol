@@ -1,15 +1,27 @@
 ---
 - name: killing olfullnode process
   command: pkill olfullnode
+  tags: restart
 
 - name: starting olfullnode process
   command: chdir=/opt/data/fullnode ./start.sh
   become_user: ubuntu
+  tags: restart
 
-- name: Get olfullnode running processes
-  shell: "ps -ef | grep -v grep | grep -w olfullnode | awk '{print $2}'"
-  register: running_processes
+- name: Installing pip package    
+  shell: apt install -y python-pip
+
+- name: Installing psutil python package
+  pip:
+    name: psutil
+
+- name: Getting process IDs of the process
+  pids:
+      name: olfullnode
+  register: pids_of_olfullnode
+  tags: restart
 
 - name: Printing the process IDs obtained
   debug:
-    msg: "PIDS of olfullnode:{{pids_of_olfullnode.pids}}"
+    msg: "PIDS of olfullnode:{{pids_of_olfullnode.pids|join(',')}}"
+  tags: restart
