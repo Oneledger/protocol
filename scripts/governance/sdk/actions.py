@@ -40,9 +40,11 @@ class Proposal:
         # broadcast Tx
         result = broadcast_commit(raw_txn, signed['signature']['Signed'], signed['signature']['Signer'])
 
-        if "ok" not in result or not result["ok"]:
-            sys.exit(-1)
-        print "################### proposal created:" + self.pid
+        if "ok" in result:
+            if not result["ok"]:
+                sys.exit(-1)
+            else:
+                print "################### proposal created:" + self.pid
 
 class ProposalFund:
     def __init__(self, pid, value, address):
@@ -155,6 +157,7 @@ def query_proposals(prefix):
 
     resp = rpc_call('query.GetProposals', req)
     print json.dumps(resp, indent=4)
+    return resp["result"]["proposals"]
 
 def query_proposal(proposal_id):
     req = {"proposal_id": proposal_id}
