@@ -59,21 +59,21 @@ const (
 
 type ProposalMasterStore struct {
 	Proposal     *ProposalStore
-	ProposalVote *ProposalVoteStore
 	ProposalFund *ProposalFundStore
+	ProposalVote *ProposalVoteStore
 }
 
 func (p *ProposalMasterStore) WithState(state *storage.State) *ProposalMasterStore {
 	p.Proposal.WithState(state)
-	p.ProposalVote.WithState(state)
 	p.ProposalFund.WithState(state)
+	p.ProposalVote.WithState(state)
 	return p
 }
 
 func NewProposalMasterStore(p *ProposalStore, pv *ProposalVoteStore, pf *ProposalFundStore) *ProposalMasterStore {
 	return &ProposalMasterStore{
 		Proposal:     p,
-		ProposalVote: pv,
 		ProposalFund: pf,
+		ProposalVote: pv,
 	}
 }

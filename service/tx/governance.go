@@ -4,7 +4,7 @@ import (
 	"errors"
 	"strings"
 
-	"time"
+	"github.com/google/uuid"
 
 	"github.com/Oneledger/protocol/action"
 	gov "github.com/Oneledger/protocol/action/governance"
@@ -12,33 +12,12 @@ import (
 	"github.com/Oneledger/protocol/data/governance"
 	"github.com/Oneledger/protocol/serialize"
 	codes "github.com/Oneledger/protocol/status_codes"
-	"github.com/google/uuid"
 )
 
-func translateProposalType(propType string) governance.ProposalType {
-	switch propType {
-	case "codeChange":
-		return governance.ProposalTypeCodeChange
-	case "configUpdate":
-		return governance.ProposalTypeConfigUpdate
-	case "general":
-		return governance.ProposalTypeGeneral
-	default:
-		return governance.ProposalTypeError
-	}
-}
-
 func (s *Service) CreateProposal(args client.CreateProposalRequest, reply *client.CreateTxReply) error {
-	proposalType := translateProposalType(args.ProposalType)
-	if proposalType == governance.ProposalTypeError {
-		return errors.New("invalid proposal type")
-	}
-
-	uniqueStr := args.ProposalID + time.Now().String()
 
 	createProposal := gov.CreateProposal{
-		ProposalID:     governance.ProposalID(uniqueStr),
-		ProposalType:   proposalType,
+		ProposalType:   args.ProposalType,
 		Description:    args.Description,
 		Proposer:       args.Proposer,
 		InitialFunding: args.InitialFunding,
@@ -57,6 +36,42 @@ func (s *Service) CreateProposal(args client.CreateProposalRequest, reply *clien
 
 	tx := &action.RawTx{
 		Type: action.PROPOSAL_CREATE,
+		Data: data,
+		Fee:  fee,
+		Memo: uuidNew.String(),
+	}
+
+	packet, err := serialize.GetSerializer(serialize.NETWORK).Serialize(tx)
+	if err != nil {
+		return codes.ErrSerialization
+	}
+
+	*reply = client.CreateTxReply{RawTx: packet}
+
+	return nil
+}
+
+func (s *Service) FundProposal(args client.FundProposalRequest, reply *client.CreateTxReply) error {
+
+	fundProposal := gov.FundProposal{
+		ProposalId:    args.ProposalId,
+		FunderAddress: args.FunderAddress,
+		FundValue:     args.FundValue,
+	}
+
+	data, err := fundProposal.Marshal()
+	if err != nil {
+		return err
+	}
+
+	uuidNew, _ := uuid.NewUUID()
+	fee := action.Fee{
+		Price: args.GasPrice,
+		Gas:   args.Gas,
+	}
+
+	tx := &action.RawTx{
+		Type: action.PROPOSAL_FUND,
 		Data: data,
 		Fee:  fee,
 		Memo: uuidNew.String(),

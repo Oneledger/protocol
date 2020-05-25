@@ -109,6 +109,7 @@ func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *node.Context) (
 
 	ctx.jobStore = jobs.NewJobStore(cfg, ctx.dbDir())
 	ctx.lockScriptStore = bitcoin.NewLockScriptStore(cfg, ctx.dbDir())
+	ctx.proposalMaster = NewProposalMasterStore(ctx.chainstate)
 	ctx.actionRouter = action.NewRouter("action")
 
 	testEnv := os.Getenv("OLTEST")
@@ -137,9 +138,9 @@ func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *node.Context) (
 
 func NewProposalMasterStore(chainstate *storage.ChainState) *governance.ProposalMasterStore {
 	proposals := governance.NewProposalStore("propActive", "propPassed", "propFailed", storage.NewState(chainstate))
-	proposalVotes := governance.NewProposalVoteStore("propVotes", storage.NewState(chainstate))
 	proposalFunds := governance.NewProposalFundStore("propFunds", storage.NewState(chainstate))
-	return governance.NewProposalMasterStore(proposals, proposalVotes, proposalFunds)
+	proposalVotes := governance.NewProposalVoteStore("propVotes", storage.NewState(chainstate))
+	return governance.NewProposalMasterStore(proposals, proposalFunds, proposalVotes)
 }
 
 func (ctx context) dbDir() string {
@@ -164,7 +165,7 @@ func (ctx *context) Action(header *Header, state *storage.State) *action.Context
 		ctx.jobStore,
 		ctx.lockScriptStore,
 		log.NewLoggerWithPrefix(ctx.logWriter, "action").WithLevel(log.Level(ctx.cfg.Node.LogLevel)),
-		ctx.proposalMaster.WithState(state),
+		ctx.proposalMaster,
 	)
 
 	return actionCtx
@@ -208,25 +209,21 @@ func (ctx *context) Services() (service.Map, error) {
 	ons := ons.NewDomainStore("d", storage.NewState(ctx.chainstate))
 	ons.SetOptions(ctx.domains.GetOptions())
 
-	proposalMaster := NewProposalMasterStore(ctx.chainstate)
-	proposalMaster.Proposal.SetOptions(ctx.proposalMaster.Proposal.GetOptions())
-
 	svcCtx := &service.Context{
-		Balances:       balance.NewStore("b", storage.NewState(ctx.chainstate)),
-		Accounts:       ctx.accounts,
-		Currencies:     ctx.currencies,
-		FeePool:        feePool,
-		Cfg:            ctx.cfg,
-		NodeContext:    ctx.node,
-		ValidatorSet:   identity.NewValidatorStore("v", storage.NewState(ctx.chainstate)),
-		WitnessSet:     identity.NewWitnessStore("w", storage.NewState(ctx.chainstate)),
-		Domains:        ons,
-		ProposalMaster: proposalMaster,
-		Router:         ctx.actionRouter,
-		Logger:         log.NewLoggerWithPrefix(ctx.logWriter, "rpc").WithLevel(log.Level(ctx.cfg.Node.LogLevel)),
-		Services:       extSvcs,
-		EthTrackers:    ethTracker,
-		Trackers:       btcTrackers,
+		Balances:     balance.NewStore("b", storage.NewState(ctx.chainstate)),
+		Accounts:     ctx.accounts,
+		Currencies:   ctx.currencies,
+		FeePool:      feePool,
+		Cfg:          ctx.cfg,
+		NodeContext:  ctx.node,
+		ValidatorSet: identity.NewValidatorStore("v", storage.NewState(ctx.chainstate)),
+		WitnessSet:   identity.NewWitnessStore("w", storage.NewState(ctx.chainstate)),
+		Domains:      ons,
+		Router:       ctx.actionRouter,
+		Logger:       log.NewLoggerWithPrefix(ctx.logWriter, "rpc").WithLevel(log.Level(ctx.cfg.Node.LogLevel)),
+		Services:     extSvcs,
+		EthTrackers:  ethTracker,
+		Trackers:     btcTrackers,
 	}
 
 	return service.NewMap(svcCtx)
@@ -238,18 +235,17 @@ func (ctx *context) Restful() (service.RestfulRouter, error) {
 		return nil, errors.Wrap(err, "failed to start service context")
 	}
 	svcCtx := &service.Context{
-		Cfg:            ctx.cfg,
-		Balances:       ctx.balances,
-		Accounts:       ctx.accounts,
-		Currencies:     ctx.currencies,
-		FeePool:        ctx.feePool,
-		NodeContext:    ctx.node,
-		ValidatorSet:   ctx.validators,
-		Domains:        ctx.domains,
-		ProposalMaster: ctx.proposalMaster,
-		Router:         ctx.actionRouter,
-		Logger:         log.NewLoggerWithPrefix(ctx.logWriter, "restful").WithLevel(log.Level(ctx.cfg.Node.LogLevel)),
-		Services:       extSvcs,
+		Cfg:          ctx.cfg,
+		Balances:     ctx.balances,
+		Accounts:     ctx.accounts,
+		Currencies:   ctx.currencies,
+		FeePool:      ctx.feePool,
+		NodeContext:  ctx.node,
+		ValidatorSet: ctx.validators,
+		Domains:      ctx.domains,
+		Router:       ctx.actionRouter,
+		Logger:       log.NewLoggerWithPrefix(ctx.logWriter, "restful").WithLevel(log.Level(ctx.cfg.Node.LogLevel)),
+		Services:     extSvcs,
 
 		Trackers: ctx.btcTrackers,
 	}

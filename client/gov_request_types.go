@@ -47,3 +47,11 @@ type CreateVoteReply struct {
 	RawTx     []byte           `json:"rawTx"`
 	Signature action.Signature `json:"signature"`
 }
+
+type FundProposalRequest struct {
+	ProposalId    governance.ProposalID `json:"proposal_id"`
+	FundValue     action.Amount         `json:"fund_value"`
+	FunderAddress action.Address        `json:"funder_address"`
+	GasPrice      action.Amount         `json:"gasPrice"`
+	Gas           int64                 `json:"gas"`
+}
