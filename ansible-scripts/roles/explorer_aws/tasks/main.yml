@@ -1,0 +1,4 @@
+---
+- name: connecting to database
+  command: psql "host={{ ip }}  user={{ username }} password={{ password }}" -c "CREATE DATABASE {{ my_database_name }};"
+  become: true
