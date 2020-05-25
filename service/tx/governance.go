@@ -122,7 +122,7 @@ func translateVoteOpinion(opin string) governance.VoteOpinion {
 	}
 }
 
-func (s *Service) CreateVote(args client.CreateVoteRequest, reply *client.CreateVoteReply) error {
+func (s *Service) VoteProposal(args client.CreateVoteRequest, reply *client.CreateVoteReply) error {
 	// this node address is voter
 	hPub, err := s.nodeContext.PubKey().GetHandler()
 	if err != nil {

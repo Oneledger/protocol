@@ -1,5 +1,115 @@
 import json
+import sys
 from rpc_call import *
+
+class Proposal:
+    def __init__(self, pid, pType, description, proposer, init_fund):
+        self.pid = pid
+        self.pty = pType
+        self.des = description
+        self.proposer = proposer
+        self.init_fund = init_fund
+
+    def _create_proposal(self):
+        req = {
+            "proposal_id": self.pid,
+            "description": self.des,
+            "proposer": self.proposer,
+            "proposal_type": self.pty,
+            "initial_funding": {
+                "currency": "OLT",
+                "value": convertBigInt(self.init_fund),
+            },
+            "gasPrice": {
+                "currency": "OLT",
+                "value": "1000000000",
+            },
+            "gas": 40000,
+        }
+        resp = rpc_call('tx.CreateProposal', req)
+        print resp
+        return resp["result"]["rawTx"]
+
+    def send_create(self):
+        # createTx
+        raw_txn = self._create_proposal()
+
+        # sign Tx
+        signed = sign(raw_txn, self.proposer)
+
+        # broadcast Tx
+        result = broadcast_commit(raw_txn, signed['signature']['Signed'], signed['signature']['Signer'])
+
+        if "ok" not in result or not result["ok"]:
+            sys.exit(-1)
+        print "################### proposal created:" + self.pid
+
+class ProposalFund:
+    def __init__(self, pid, value, address):
+        self.pid = pid
+        self.value = value
+        self.funder = address
+
+    def _fund_proposal(self):
+        req = {
+            "proposal_id": self.pid,
+            "fund_value": self.value,
+            "funder_address": self.funder,
+            "gasPrice": {
+                "currency": "OLT",
+                "value": "1000000000",
+            },
+            "gas": 40000,
+        }
+        resp = rpc_call('tx.FundProposal', req)
+        print resp
+        return resp["result"]["rawTx"]
+
+    def send_fund(self):
+        # create Tx
+        raw_txn = self._fund_proposal()
+
+        # sign Tx
+        signed = sign(raw_txn, self.funder)
+
+        # broadcast Tx
+        result = broadcast_commit(raw_txn, signed['signature']['Signed'], signed['signature']['Signer'])
+
+        if "ok" not in result or not result["ok"]:
+            sys.exit(-1)
+        print "################### proposal funded:" + Proposal
+
+class ProposalVote:
+    def __init__(self, pid, opinion, address):
+        self.pid = pid
+        self.opin = opinion
+        self.voter = address
+
+    def _vote_proposal(self):
+        req = {
+            "proposal_id": self.pid,
+            "opinion": self.opin,
+            "gasPrice": {
+                "currency": "OLT",
+                "value": "1000000000",
+            },
+            "gas": 40000,
+        }
+        resp = rpc_call('tx.VoteProposal', req, self.voter)
+        result = resp["result"]
+        print resp
+        return result["rawTx"], result['signature']['Signed'], result['signature']['Signer']
+
+    def send_vote(self):
+        # create and sign Tx
+        raw_txn, signed, signer = self._vote_proposal()
+
+        # broadcast Tx
+        result = broadcast_commit(signed["rawTx"], signed['signature']['Signed'], signed['signature']['Signer'])
+
+        if "ok" not in result or not result["ok"]:
+            sys.exit(-1)
+        print "################### proposal voted:" + self.pid + "opinion: " + self.opin
 
 def addresses():
     resp = rpc_call('owner.ListAccountAddresses', {})
@@ -31,42 +141,6 @@ def broadcast_sync(raw_tx, signature, pub_key):
         "publicKey": pub_key,
     })
     return resp["result"]
-
-
-def create_proposal(proposal_id, prop_type, proposer, desc, initial_funding):
-    req = {
-        "proposal_id": proposal_id,
-        "description": desc,
-        "proposer": proposer,
-        "proposal_type": prop_type,
-        "initial_funding": {
-            "currency": "OLT",
-            "value": convertBigInt(initial_funding),
-        },
-        "gasPrice": {
-            "currency": "OLT",
-            "value": "1000000000",
-        },
-        "gas": 40000,
-    }
-    resp = rpc_call('tx.CreateProposal', req)
-    print resp
-    return resp["result"]["rawTx"]
-
-def vote_proposal(proposal_id, opinion, node_url):
-    req = {
-        "proposal_id": proposal_id,
-        "opinion": opinion,
-        "gasPrice": {
-            "currency": "OLT",
-            "value": "1000000000",
-        },
-        "gas": 40000,
-    }
-    resp = rpc_call('tx.CreateVote', req, node_url)
-    result = resp["result"]
-    print resp
-    return result["rawTx"], result['signature']['Signed'], result['signature']['Signer']
 
 def query_proposals(prefix):
     req = {

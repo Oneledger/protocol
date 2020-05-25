@@ -1,40 +1,27 @@
 import sys
 import time
 
-from sdk import *
+from sdk.actions import *
 
-initial_funding = (int("10023450") * 10 ** 14)
-initial_funding_insufficient = (int("1000"))
-proposals = [["proposal description A", "codeChange", "10001", initial_funding],
-             ["proposal description B", "codeChange", "10002", initial_funding],
-             ["proposal description C", "configUpdate", "10003", initial_funding],
-             ["proposal description D", "configUpdate", "10004", initial_funding_insufficient],
-             ["proposal description E", "general", "10005", initial_funding],
-             ["proposal description F", "general", "10006", initial_funding]
+addr_list = addresses()
+
+_pid = "id_20000"
+_proposer = addr_list[0]
+_initial_funding = (int("10023450") * 10 ** 14)
+_initial_funding_insufficient = (int("1000"))
+
+proposals = [Proposal("proposal description A", "codeChange", "10001", _initial_funding),
+             Proposal("proposal description B", "codeChange", "10002", _initial_funding),
+             Proposal("proposal description C", "configUpdate", "10003", _initial_funding),
+             Proposal("proposal description D", "configUpdate", "10004", _initial_funding_insufficient),
+             Proposal("proposal description E", "general", "10005", _initial_funding),
+             Proposal("proposal description F", "general", "10006", _initial_funding)
              ]
 
-
-def send_create_proposal(proposal):
-    addr_list = addresses()
-    print addr_list[0]
-
-    raw_txn = create_proposal(proposal[2], proposal[1], addr_list[0], proposal[0], proposal[3])
-
-    signed = sign(raw_txn, addr_list[0])
-
-    result = broadcast_commit(raw_txn, signed['signature']['Signed'], signed['signature']['Signer'])
-    print "###################"
-    print
-
-    if "ok" in result:
-        if not result["ok"]:
-            sys.exit(-1)
-
-
 if __name__ == "__main__":
-
+    # create proposals
     for prop in proposals:
-        send_create_proposal(prop)
+        prop.send_create()
 
     time.sleep(5)
 

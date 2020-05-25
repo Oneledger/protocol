@@ -9,9 +9,8 @@ _pid = "id_20000"
 _proposer = addr_list[0]
 _initial_funding = (int("10023450") * 10 ** 14)
 
-_prop = Proposal(_pid, "general", "proposal for vote", _proposer, _initial_funding)
+_prop = Proposal(_pid, "general", "proposal for fund", _proposer, _initial_funding)
 _prop_fund = ProposalFund(_pid, 10000, addr_list[1])
-_prop_vote = ProposalVote(_pid, "YES", url_0)
 
 if __name__ == "__main__":
     # create proposal
@@ -20,10 +19,6 @@ if __name__ == "__main__":
 
     # fund proposal
     _prop_fund.send_fund()
-    time.sleep(5)
-
-    # vote proposal
-    _prop_fund.send_vote()
     time.sleep(5)
 
     print "#### ACTIVE PROPOSALS: ####"
