@@ -1,6 +1,5 @@
-from rpc_call import rpc_call, convertBigInt
 import json
-
+from rpc_call import *
 
 def addresses():
     resp = rpc_call('owner.ListAccountAddresses', {})
@@ -54,6 +53,20 @@ def create_proposal(proposal_id, prop_type, proposer, desc, initial_funding):
     print resp
     return resp["result"]["rawTx"]
 
+def vote_proposal(proposal_id, opinion, node_url):
+    req = {
+        "proposal_id": proposal_id,
+        "opinion": opinion,
+        "gasPrice": {
+            "currency": "OLT",
+            "value": "1000000000",
+        },
+        "gas": 40000,
+    }
+    resp = rpc_call('tx.CreateVote', req, node_url)
+    result = resp["result"]
+    print resp
+    return result["rawTx"], result['signature']['Signed'], result['signature']['Signer']
 
 def query_proposals(prefix):
     req = {
@@ -68,3 +81,9 @@ def query_proposals(prefix):
 
     resp = rpc_call('query.GetProposals', req)
     print json.dumps(resp, indent=4)
+
+def query_proposal(proposal_id):
+    req = {"proposal_id": proposal_id}
+    resp = rpc_call('query.GetProposalByID', req)
+    print json.dumps(resp, indent=4)
+    return resp["result"]

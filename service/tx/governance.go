@@ -4,6 +4,8 @@ import (
 	"errors"
 	"strings"
 
+	"time"
+
 	"github.com/Oneledger/protocol/action"
 	gov "github.com/Oneledger/protocol/action/governance"
 	"github.com/Oneledger/protocol/client"
@@ -11,7 +13,6 @@ import (
 	"github.com/Oneledger/protocol/serialize"
 	codes "github.com/Oneledger/protocol/status_codes"
 	"github.com/google/uuid"
-	"time"
 )
 
 func translateProposalType(propType string) governance.ProposalType {
@@ -86,6 +87,22 @@ func translateVoteOpinion(opin string) governance.VoteOpinion {
 }
 
 func (s *Service) CreateVote(args client.CreateVoteRequest, reply *client.CreateVoteReply) error {
+	// this node address is voter
+	hPub, err := s.nodeContext.PubKey().GetHandler()
+	if err != nil {
+		s.logger.Error("error get public key handler", err)
+		return codes.ErrLoadingNodeKey
+	}
+	address := hPub.Address()
+
+	// get private key
+	hPri, err := s.nodeContext.PrivVal().GetHandler()
+	if err != nil {
+		s.logger.Error("error get private key handler", err)
+		return codes.ErrLoadingNodeKey
+	}
+
+	// prepare Tx struct
 	opin := translateVoteOpinion(args.Opinion)
 	if opin == governance.OPIN_UNKNOWN {
 		return errors.New("invalid vote opinion")
@@ -93,7 +110,7 @@ func (s *Service) CreateVote(args client.CreateVoteRequest, reply *client.Create
 
 	voteProposal := gov.VoteProposal{
 		ProposalID: governance.IDFromString(args.ProposalID),
-		Address:    args.Address,
+		Address:    address,
 		Opinion:    opin,
 	}
 
@@ -108,7 +125,7 @@ func (s *Service) CreateVote(args client.CreateVoteRequest, reply *client.Create
 		Gas:   args.Gas,
 	}
 
-	tx := &action.RawTx{
+	tx := action.RawTx{
 		Type: action.PROPOSAL_VOTE,
 		Data: data,
 		Fee:  fee,
@@ -120,7 +137,14 @@ func (s *Service) CreateVote(args client.CreateVoteRequest, reply *client.Create
 		return codes.ErrSerialization
 	}
 
-	*reply = client.CreateVoteReply{RawTx: packet}
+	// validator signs Tx
+	rawData := tx.RawBytes()
+	pubkey := hPri.PubKey()
+	signed, _ := hPri.Sign(rawData)
+
+	// reply
+	signature := action.Signature{Signed: signed, Signer: pubkey}
+	*reply = client.CreateVoteReply{RawTx: packet, Signature: signature}
 
 	return nil
 }

@@ -27,14 +27,23 @@ type GetProposalsResponse struct {
 	Height    int64                 `json:"height"`
 }
 
+type GetProposalByIDRequest struct {
+	ProposalID string `json:"proposal_id"`
+}
+
+type GetProposalByIDReply struct {
+	Proposal governance.Proposal      `json:"proposal"`
+	State    governance.ProposalState `json:"state"`
+}
+
 type CreateVoteRequest struct {
-	ProposalID string        `json:"proposalID"`
-	Address    keys.Address  `json:"address"`
+	ProposalID string        `json:"proposal_id"`
 	Opinion    string        `json:"opinopn"`
 	GasPrice   action.Amount `json:"gasPrice"`
 	Gas        int64         `json:"gas"`
 }
 
 type CreateVoteReply struct {
-	RawTx []byte `json:"rawTx"`
+	RawTx     []byte           `json:"rawTx"`
+	Signature action.Signature `json:"signature"`
 }

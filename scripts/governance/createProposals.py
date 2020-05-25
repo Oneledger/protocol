@@ -1,7 +1,7 @@
 import sys
-
-from sdk.actions import *
 import time
+
+from sdk import *
 
 initial_funding = (int("10023450") * 10 ** 14)
 initial_funding_insufficient = (int("1000"))

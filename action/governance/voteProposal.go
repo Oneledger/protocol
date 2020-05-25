@@ -51,6 +51,9 @@ func (a voteProposalTx) Validate(ctx *action.Context, tx action.SignedTx) (bool,
 	if err = vote.Address.Err(); err != nil {
 		return false, errors.Wrap(err, "invalid voter address")
 	}
+	if !ctx.Validators.IsValidatorAddress(vote.Address) {
+		return false, errors.Wrap(err, "not a validator address")
+	}
 	if err = vote.Opinion.Err(); err != nil {
 		return false, errors.Wrap(err, "invalid vote opinion")
 	}
