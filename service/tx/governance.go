@@ -3,6 +3,7 @@ package tx
 import (
 	"errors"
 	"strings"
+	"time"
 
 	"github.com/google/uuid"
 
@@ -14,10 +15,30 @@ import (
 	codes "github.com/Oneledger/protocol/status_codes"
 )
 
+func translateProposalType(propType string) governance.ProposalType {
+	switch propType {
+	case "codeChange":
+		return governance.ProposalTypeCodeChange
+	case "configUpdate":
+		return governance.ProposalTypeConfigUpdate
+	case "general":
+		return governance.ProposalTypeGeneral
+	default:
+		return governance.ProposalTypeError
+	}
+}
+
 func (s *Service) CreateProposal(args client.CreateProposalRequest, reply *client.CreateTxReply) error {
+	proposalType := translateProposalType(args.ProposalType)
+	if proposalType == governance.ProposalTypeError {
+		return errors.New("invalid proposal type")
+	}
+
+	uniqueStr := args.ProposalID + time.Now().String()
 
 	createProposal := gov.CreateProposal{
-		ProposalType:   args.ProposalType,
+		ProposalID:     governance.ProposalID(uniqueStr),
+		ProposalType:   proposalType,
 		Description:    args.Description,
 		Proposer:       args.Proposer,
 		InitialFunding: args.InitialFunding,
@@ -124,7 +145,7 @@ func (s *Service) CreateVote(args client.CreateVoteRequest, reply *client.Create
 	}
 
 	voteProposal := gov.VoteProposal{
-		ProposalID: governance.IDFromString(args.ProposalID),
+		ProposalID: governance.ProposalID(args.ProposalID),
 		Address:    address,
 		Opinion:    opin,
 	}

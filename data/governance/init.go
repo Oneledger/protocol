@@ -70,7 +70,7 @@ func (p *ProposalMasterStore) WithState(state *storage.State) *ProposalMasterSto
 	return p
 }
 
-func NewProposalMasterStore(p *ProposalStore, pv *ProposalVoteStore, pf *ProposalFundStore) *ProposalMasterStore {
+func NewProposalMasterStore(p *ProposalStore, pf *ProposalFundStore, pv *ProposalVoteStore) *ProposalMasterStore {
 	return &ProposalMasterStore{
 		Proposal:     p,
 		ProposalFund: pf,

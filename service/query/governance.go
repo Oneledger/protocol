@@ -43,7 +43,7 @@ func (svc *Service) GetProposals(req client.GetProposalsRequest, reply *client.G
 }
 
 func (svc *Service) GetProposalByID(req client.GetProposalByIDRequest, reply *client.GetProposalByIDReply) error {
-	proposalID := governance.IDFromString(req.ProposalID)
+	proposalID := governance.ProposalID(req.ProposalID)
 	proposal, state, err := svc.proposalMaster.Proposal.QueryAllStores(proposalID)
 	if err != nil {
 		svc.logger.Error("error getting proposal", err)
