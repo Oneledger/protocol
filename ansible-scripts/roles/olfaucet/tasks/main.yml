@@ -27,7 +27,13 @@
   #when: systemd_service == "true"
 
 - name: Start service olfullnode
-  command: service olfullnode start
+  systemd:
+    name: olfullnode.service
+    scope: system
+    state: restarted
+    daemon_reload: yes
+    enabled: yes
+  #command: service olfullnode start
 
 - name: create a systemd olfaucet service file
   copy:
@@ -38,12 +44,13 @@
     content: |
       [Unit]
       Description=olfaucet server
-      After=network.target
+      Wants=network-online.target
+      After=network-online.target
       
       [Service]
-      WorkingDirectory={{APP_HOME}}
-      ExecStart=/usr/local/bin/olfaucet --listen_address http://{{internal_ip}}:26607 --lock_time 0 --max_req_amount=10000 --root {{APP_HOME}}
-      # Other Restart options: or always, on-abort, etc
+      Type=simple
+      ExecStart=/root/go/bin/olfaucet --listen_address http://{{internal_ip}}:26607 --lock_time 0 --max_req_amount=10000 --root /opt/data/fullnode > /opt/data/fullnode/faucet.log &
+      #Other Restart options: or always, on-abort, etc
       
       [Install]
       WantedBy=multi-user.target

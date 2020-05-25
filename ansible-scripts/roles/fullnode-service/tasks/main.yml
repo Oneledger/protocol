@@ -21,13 +21,21 @@
 
       [Install]
       WantedBy=multi-user.target
+  tags: create
 
 - name: enabling fullnode service
   command: systemctl enable olfullnode.service
+  tags: create
   #when: systemd_service == "true"
 
 - name: Start service olfullnode
-  command: service olfullnode start
+  systemd:
+    name: olfullnode.service
+    scope: system
+    state: restarted
+    daemon_reload: yes
+    enabled: yes
+  tags: create
 
 - name: stopping fullnode
   command: pkill olfullnode
@@ -37,8 +45,8 @@
   git:
     repo: https://github.com/Oneledger/protocol.git
     dest: /opt/protocol
-    version: "master"
-    refspec: '+refs/pull/*:refs/heads/*'
+    version: "develop"
+    #refspec: '+refs/pull/*:refs/heads/*'
   tags: update
 
 - name: compile binary
