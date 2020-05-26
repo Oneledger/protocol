@@ -120,6 +120,19 @@ func (pf *ProposalFundStore) AddFunds(proposalId ProposalID, fundingAddress keys
 	return pf.set(key, *amt.Plus(amount))
 }
 
+func (pf *ProposalFundStore) DeductFunds(proposalId ProposalID, fundingAddress keys.Address, amount *balance.Amount) error {
+	key := storage.StoreKey(string(proposalId) + storage.DB_PREFIX + fundingAddress.String())
+	amt, err := pf.get(key)
+	if err != nil {
+		return errors.Wrap(err, errorGettingRecord)
+	}
+	result, err := amt.Minus(amount)
+	if err != nil {
+		return errors.Wrap(err, errorGettingRecord)
+	}
+	return pf.set(key, *result)
+}
+
 func (pf *ProposalFundStore) DeleteFunds(proposalId ProposalID, fundingAddress keys.Address) (bool, error) {
 	key := storage.StoreKey(string(proposalId) + storage.DB_PREFIX + fundingAddress.String())
 	_, err := pf.get(key)
