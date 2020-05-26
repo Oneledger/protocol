@@ -108,6 +108,17 @@ withdrawtest: install
 	python scripts/reward/withdraw.py
 	@./scripts/stopNodes
 
+#
+# run governance tests
+#
+govtest: install
+	@./scripts/stopNodes
+	@./scripts/resetDev
+	@./scripts/startDev
+	python scripts/governance/createProposals.py
+	python scripts/governance/fundProposals.py
+	python scripts/governance/voteProposals.py
+	@./scripts/stopNodes
 
 alltest: install_c
 	@./scripts/stopNodes
