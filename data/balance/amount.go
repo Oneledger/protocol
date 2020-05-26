@@ -84,6 +84,14 @@ func (a Amount) Plus(add *Amount) *Amount {
 	return (*Amount)(base.Add(a.BigInt(), add.BigInt()))
 }
 
+func (a Amount) Minus(minus *Amount) (*Amount, error) {
+	base := big.NewInt(0)
+	if base.Sub(a.BigInt(), minus.BigInt()).Cmp(big.NewInt(0)) == -1 {
+		return nil, ErrInsufficientBalance
+	}
+	return (*Amount)(base.Sub(a.BigInt(), minus.BigInt())), nil
+}
+
 func (a Amount) Float() *big.Float {
 	return new(big.Float).SetInt(a.BigInt())
 }
