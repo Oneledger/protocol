@@ -138,7 +138,9 @@ func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *node.Context) (
 func NewProposalMasterStore(chainstate *storage.ChainState) *governance.ProposalMasterStore {
 	proposals := governance.NewProposalStore("propActive", "propPassed", "propFailed", storage.NewState(chainstate))
 	proposalFunds := governance.NewProposalFundStore("propFunds", storage.NewState(chainstate))
-	return governance.NewProposalMasterStore(proposals, proposalFunds)
+	proposalVotes := governance.NewProposalVoteStore("propVotes", storage.NewState(chainstate))
+
+	return governance.NewProposalMasterStore(proposals, proposalFunds, proposalVotes)
 }
 
 func (ctx context) dbDir() string {
@@ -318,5 +320,6 @@ func (ctx *context) JobContext() *event.JobsContext {
 		ctx.node.ValidatorAddress(),         // validator address generated from validator key
 		ctx.lockScriptStore,
 		ctx.ethTrackers.WithState(ctx.deliver),
+		ctx.proposalMaster.WithState(ctx.deliver),
 		log.NewLoggerWithPrefix(ctx.logWriter, "internal_jobs").WithLevel(log.Level(ctx.cfg.Node.LogLevel)))
 }

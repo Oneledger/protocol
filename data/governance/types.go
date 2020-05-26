@@ -66,3 +66,7 @@ func (opinion VoteOpinion) String() string {
 		return "Invalid opinion"
 	}
 }
+
+func (prop ProposalID) String() string {
+	return string(prop)
+}

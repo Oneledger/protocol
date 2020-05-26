@@ -123,15 +123,19 @@ func runTx(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 		return false, result
 	}
 
+	//Calculate Deadlines
+	votingDeadline := ctx.State.Version() + options.VotingDeadline
+	fundingDeadline := ctx.State.Version() + options.FundingDeadline
+
 	//Create Proposal and save to Proposal Store
 	proposal := governance.NewProposal(
 		createProposal.ProposalID,
 		createProposal.ProposalType,
 		createProposal.Description,
 		createProposal.Proposer,
-		options.FundingDeadline,
+		fundingDeadline,
 		options.FundingGoal,
-		options.VotingDeadline,
+		votingDeadline,
 		options.PassPercentage)
 
 	//Check if Proposal already exists
