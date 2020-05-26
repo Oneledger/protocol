@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/tendermint/tendermint/libs/kv"
 
@@ -164,6 +165,9 @@ func runUpdate(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 			}
 		}
 		d.URI = update.Uri
+	} else if strings.Compare(update.Uri, "") == 0 {
+		// reset uri
+		d.URI = ""
 	}
 
 	err = ctx.Domains.Set(d)
