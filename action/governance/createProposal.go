@@ -111,12 +111,21 @@ func runTx(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 		return false, result
 	}
 
+	//Check if proposal already exists
+	p, _, _ := ctx.ProposalMasterStore.Proposal.QueryAllStores(governance.GenerateProposalID(createProposal.ProposalID))
+	if p != nil {
+		result := action.Response{
+			Events: action.GetEvent(createProposal.Tags(), "create_proposal_already_exists"),
+		}
+		return false, result
+	}
+
 	//Get Proposal options based on type.
 	options := ctx.ProposalMasterStore.Proposal.GetOptionsByType(createProposal.ProposalType)
 
-	//Check if initial funding is greater than minimum amount based on type.
+	//Check if initial funding is not less than minimum amount based on type.
 	coin := createProposal.InitialFunding.ToCoin(ctx.Currencies)
-	if coin.LessThanEqualCoin(coin.Currency.NewCoinFromAmount(*options.InitialFunding)) {
+	if coin.LessThanCoin(coin.Currency.NewCoinFromAmount(*options.InitialFunding)) {
 		result := action.Response{
 			Events: action.GetEvent(createProposal.Tags(), "create_proposal_insufficient_funds"),
 		}
@@ -138,14 +147,7 @@ func runTx(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 		votingDeadline,
 		options.PassPercentage)
 
-	//Check if Proposal already exists
-	if ctx.ProposalMasterStore.Proposal.Exists(proposal.ProposalID) {
-		result := action.Response{
-			Events: action.GetEvent(createProposal.Tags(), "create_proposal_failed"),
-		}
-		return false, result
-	}
-
+	//Add proposal to DB
 	err = ctx.ProposalMasterStore.Proposal.Set(proposal)
 	if err != nil {
 		result := action.Response{

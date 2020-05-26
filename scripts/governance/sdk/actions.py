@@ -4,6 +4,18 @@ import hashlib
 from rpc_call import *
 
 
+#Proposal Status
+ProposalStatusFunding    = 0x23
+ProposalStatusVoting     = 0x24
+ProposalStatusCompleted  = 0x25
+
+#Proposal States
+ProposalStateError   = 0xEE
+ProposalStateActive  = 0x31
+ProposalStatePassed  = 0x32
+ProposalStateFailed  = 0x33
+
+
 class Proposal:
     def __init__(self, pid, pType, description, proposer, init_fund):
         self.pid = pid
@@ -49,7 +61,7 @@ class Proposal:
                 print "################### proposal created:" + self.pid
                 self.txHash = "0x" + result["txHash"]
 
-    def get_proposal_id(self):
+    def get_encoded_pid(self):
         hash_handler = hashlib.md5()
         hash_handler.update(self.pid)
         hash_val = hash_handler.digest()
@@ -69,7 +81,10 @@ class ProposalFund:
     def _fund_proposal(self):
         req = {
             "proposal_id": self.pid,
-            "fund_value": self.value,
+            "fund_value": {
+                "currency": "OLT",
+                "value": convertBigInt(self.value),
+            },
             "funder_address": self.funder,
             "gasPrice": {
                 "currency": "OLT",
@@ -77,6 +92,7 @@ class ProposalFund:
             },
             "gas": 40000,
         }
+    
         resp = rpc_call('tx.FundProposal', req)
         print resp
         return resp["result"]["rawTx"]
@@ -95,7 +111,7 @@ class ProposalFund:
             if not result["ok"]:
                 sys.exit(-1)
             else:
-                print "################### proposal funded:" + Proposal
+                print "################### proposal funded:" + self.pid
                 return result["txHash"]
 
 

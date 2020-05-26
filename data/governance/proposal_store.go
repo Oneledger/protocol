@@ -128,6 +128,9 @@ func (ps *ProposalStore) WithPrefixType(prefixType ProposalState) *ProposalStore
 }
 
 func (ps *ProposalStore) QueryAllStores(key ProposalID) (*Proposal, ProposalState, error) {
+	prefix := ps.prefix
+	defer func() { ps.prefix = prefix }()
+
 	proposal, err := ps.WithPrefixType(ProposalStateActive).Get(key)
 	if err == nil {
 		return proposal, ProposalStateActive, nil
