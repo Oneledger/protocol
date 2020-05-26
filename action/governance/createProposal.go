@@ -59,9 +59,18 @@ func (c CreateProposal) Validate(ctx *action.Context, signedTx action.SignedTx) 
 		return false, errors.New("invalid proposal id")
 	}
 
-	//Check if initial funding is greater than minimum amount based on type.
+	//Get Proposal options based on type.
 	coin := createProposal.InitialFunding.ToCoin(ctx.Currencies)
-	if coin.LessThanEqualCoin(coin.Currency.NewCoinFromAmount(*options.InitialFunding)) {
+	coin_init := coin.Currency.NewCoinFromAmount(*options.InitialFunding)
+	coin_goal := coin.Currency.NewCoinFromAmount(*options.FundingGoal)
+
+	//Check if initial funding is not less than minimum amount based on type.
+	if coin.LessThanCoin(coin_init) {
+		return false, action.ErrInvalidAmount
+	}
+
+	//Check if initial funding is more than funding goal.
+	if coin_goal.LessThanEqualCoin(coin) {
 		return false, action.ErrInvalidAmount
 	}
 

@@ -41,7 +41,6 @@ class Proposal:
             "gas": 40000,
         }
         resp = rpc_call('tx.CreateProposal', req)
-        print resp
         return resp["result"]["rawTx"]
 
     def send_create(self):
@@ -58,8 +57,9 @@ class Proposal:
             if not result["ok"]:
                 sys.exit(-1)
             else:
-                print "################### proposal created:" + self.pid
+                self.pid = self.get_encoded_pid()
                 self.txHash = "0x" + result["txHash"]
+                print "################### proposal created: " + self.pid
 
     def get_encoded_pid(self):
         hash_handler = hashlib.md5()
@@ -94,7 +94,6 @@ class ProposalFund:
         }
     
         resp = rpc_call('tx.FundProposal', req)
-        print resp
         return resp["result"]["rawTx"]
 
     def send_fund(self):
@@ -111,7 +110,7 @@ class ProposalFund:
             if not result["ok"]:
                 sys.exit(-1)
             else:
-                print "################### proposal funded:" + self.pid
+                print "################### proposal funded: " + self.pid
                 return result["txHash"]
 
 
@@ -133,7 +132,6 @@ class ProposalVote:
         }
         resp = rpc_call('tx.VoteProposal', req, self.voter)
         result = resp["result"]
-        print resp
         return result["rawTx"], result['signature']['Signed'], result['signature']['Signer']
 
     def send_vote(self):

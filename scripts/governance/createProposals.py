@@ -8,7 +8,7 @@ addr_list = addresses()
 _pid = "id_20000"
 _proposer = addr_list[0]
 _initial_funding = (int("2") * 10 ** 9)
-_initial_funding_insufficient = (int("1000"))
+_initial_funding_insufficient = (int("1") * 10 ** 8)
 _initial_funding_too_much = (int("100") * 10 ** 9)
 _funding_goal = (int("10") * 10 ** 9)
 
@@ -25,7 +25,7 @@ if __name__ == "__main__":
     # create normal proposals
     for prop in proposals:
         prop.send_create()
-        print "proposal id:", prop.get_encoded_pid()
+        print "proposal id:", prop.pid
 
     # create proposal with little initial fund
     proposal_littleInitFund.send_create()
