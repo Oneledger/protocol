@@ -5,7 +5,7 @@ from sdk.actions import *
 
 addr_list = addresses()
 
-_pid = "id_20000"
+_pid = "id_20010"
 _proposer = addr_list[0]
 _initial_funding = (int("10023450") * 10 ** 14)
 

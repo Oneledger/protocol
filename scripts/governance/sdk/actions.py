@@ -45,6 +45,11 @@ class Proposal:
                 sys.exit(-1)
             else:
                 print "################### proposal created:" + self.pid
+                self.txHash = "0x" + result["txHash"]
+
+    def tx_created(self):
+        resp = tx_by_hash(self.txHash)
+        return resp["result"]["tx_result"]
 
 class ProposalFund:
     def __init__(self, pid, value, address):
@@ -77,9 +82,12 @@ class ProposalFund:
         # broadcast Tx
         result = broadcast_commit(raw_txn, signed['signature']['Signed'], signed['signature']['Signer'])
 
-        if "ok" not in result or not result["ok"]:
-            sys.exit(-1)
-        print "################### proposal funded:" + Proposal
+        if "ok" in result:
+            if not result["ok"]:
+                sys.exit(-1)
+            else:
+                print "################### proposal funded:" + Proposal
+                return result["txHash"]
 
 class ProposalVote:
     def __init__(self, pid, opinion, address):
@@ -108,10 +116,13 @@ class ProposalVote:
 
         # broadcast Tx
         result = broadcast_commit(signed["rawTx"], signed['signature']['Signed'], signed['signature']['Signer'])
-
-        if "ok" not in result or not result["ok"]:
-            sys.exit(-1)
-        print "################### proposal voted:" + self.pid + "opinion: " + self.opin
+        
+        if "ok" in result:
+            if not result["ok"]:
+                sys.exit(-1)
+            else:
+                print "################### proposal voted:" + self.pid + "opinion: " + self.opin
+                return result["txHash"]
 
 def addresses():
     resp = rpc_call('owner.ListAccountAddresses', {})
