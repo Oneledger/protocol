@@ -93,6 +93,7 @@ onstest: install
 	python scripts/ons/create_sub_domain.py
 	python scripts/ons/renew_domain.py
 	python scripts/ons/buy_sell_domain.py
+	python scripts/ons/update_domain.py
 	@./scripts/stopNodes
 
 #
