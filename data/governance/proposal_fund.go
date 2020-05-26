@@ -31,3 +31,8 @@ func GetCurrentFunds(id ProposalID, store *ProposalFundStore) *balance.Amount {
 	}
 	return totalBalance
 }
+
+func DeleteAllFunds(id ProposalID, store *ProposalFundStore) error {
+	panic("Implement function to delete all funds")
+	return nil
+}
