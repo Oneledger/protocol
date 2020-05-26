@@ -21,24 +21,22 @@ const (
 	ProposalTypeGeneral      ProposalType = 0x22
 
 	//Proposal Status
-	ProposalStatusFunding   		ProposalStatus = 0x23
-	ProposalStatusVoting    		ProposalStatus = 0x24
-	ProposalStatusCompleted 		ProposalStatus = 0x25
-	ProposalStatusWithdrawing 		ProposalStatus = 0x26
-	ProposalStatusWithdrawCompleted ProposalStatus = 0x27
+	ProposalStatusFunding   ProposalStatus = 0x23
+	ProposalStatusVoting    ProposalStatus = 0x24
+	ProposalStatusCompleted ProposalStatus = 0x25
 
 	//Proposal Outcome
-	ProposalOutcomeInProgress        ProposalOutcome = 0x40
-	ProposalOutcomeInsufficientFunds ProposalOutcome = 0x41
-	ProposalOutcomeInsufficientVotes ProposalOutcome = 0x42
-	ProposalOutcomeCancelled         ProposalOutcome = 0x43
-	ProposalOutcomeCompleted         ProposalOutcome = 0x44
+	ProposalOutcomeInProgress        ProposalOutcome = 0x26
+	ProposalOutcomeInsufficientFunds ProposalOutcome = 0x27
+	ProposalOutcomeInsufficientVotes ProposalOutcome = 0x28
+	ProposalOutcomeCancelled         ProposalOutcome = 0x29
+	ProposalOutcomeCompleted         ProposalOutcome = 0x30
 
 	//Proposal States
 	ProposalStateError  ProposalState = 0xEE
-	ProposalStateActive ProposalState = 0x30
-	ProposalStatePassed ProposalState = 0x31
-	ProposalStateFailed ProposalState = 0x32
+	ProposalStateActive ProposalState = 0x31
+	ProposalStatePassed ProposalState = 0x32
+	ProposalStateFailed ProposalState = 0x33
 
 	//Vote Opinions
 	OPIN_UNKNOWN  VoteOpinion = 0x0

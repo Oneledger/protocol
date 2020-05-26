@@ -105,8 +105,7 @@ func runWithdraw(ctx *action.Context, signedTx action.RawTx) (bool, action.Respo
 		}
 		return false, result
 	}
-	// 2. change status and outcome
-	proposal.Status = governance.ProposalStatusWithdrawing
+	// 2. change outcome
 	proposal.Outcome = governance.ProposalOutcomeInsufficientFunds
 
 
@@ -155,9 +154,8 @@ func runWithdraw(ctx *action.Context, signedTx action.RawTx) (bool, action.Respo
 	}
 
 	// check proposal funds:
-	// if all funds for this proposal has been withdrawn, mark withdraw complete
+	// if all funds for this proposal has been withdrawn, mark outcome cancelled
 	if currentFundsForProposal.BigInt().Cmp(big.NewInt(0)) == 0 {
-		proposal.Status = governance.ProposalStatusWithdrawCompleted
 		proposal.Outcome = governance.ProposalOutcomeCancelled
 	}
 

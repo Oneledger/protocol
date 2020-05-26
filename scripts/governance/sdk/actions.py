@@ -159,6 +159,49 @@ class ProposalVote:
                 print "################### proposal voted:" + self.pid + "opinion: " + self.opin
                 return result["txHash"]
 
+
+class ProposalFundsWithdraw:
+    def __init__(self, pid, contributor, value, beneficiary):
+        self.pid = pid
+        self.contr = contributor
+        self.value = value
+        self.benefi = beneficiary
+
+    def _withdraw_funds(self):
+        req = {
+            "proposal_id": self.pid,
+            "contributor_address": self.contr,
+            "withdraw_value": self.value,
+            "beneficiary_address": self.benefi,
+            "gasPrice": {
+                "currency": "OLT",
+                "value": "1000000000",
+            },
+            "gas": 40000,
+        }
+        resp = rpc_call('tx.WithdrawProposalFunds', req)
+        result = resp["result"]
+        print resp
+        return resp["result"]["rawTx"]
+
+    def withdraw_fund(self):
+        # create Tx
+        raw_txn = self._withdraw_funds()
+
+        # sign Tx
+        signed = sign(raw_txn, self.contr)
+
+        # broadcast Tx
+        result = broadcast_commit(raw_txn, signed['signature']['Signed'], signed['signature']['Signer'])
+
+        if "ok" in result:
+            if not result["ok"]:
+                sys.exit(-1)
+            else:
+                print "################### proposal funds withdrawed:" + self.pid
+                return result["txHash"]
+
+
 def addresses():
     resp = rpc_call('owner.ListAccountAddresses', {})
     return resp["result"]["addresses"]
