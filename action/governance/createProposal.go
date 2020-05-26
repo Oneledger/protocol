@@ -182,19 +182,6 @@ func runTx(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 		return false, result
 	}
 
-	//Setup voting validator list to Proposal Vote store
-	validatorList, _ := ctx.Validators.GetValidatorSet()
-	if err != nil {
-		return false, action.Response{Log: "create proposal failed in getting validator list"}
-	}
-	for _, v := range validatorList {
-		vote := governance.NewProposalVote(v.Address, governance.OPIN_UNKNOWN, v.Power)
-		err = ctx.ProposalMasterStore.ProposalVote.Setup(proposal.ProposalID, vote)
-		if err != nil {
-			return false, action.Response{Log: "setup voting validator failed"}
-		}
-	}
-
 	result := action.Response{
 		Events: action.GetEvent(createProposal.Tags(), "create_proposal_success"),
 	}

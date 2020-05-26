@@ -171,6 +171,7 @@ func runFundProposal(ctx *action.Context, tx action.RawTx) (bool, action.Respons
 		//	return false, result
 		//}
 
+		//Setup voting validator list to Proposal Vote store
 		ctx.Validators.Iterate(func(addr keys.Address, validator *identity.Validator) bool {
 			validatorVote := governance.NewProposalVote(addr, governance.OPIN_UNKNOWN, validator.Power)
 			ctx.ProposalMasterStore.ProposalVote.Update(proposal.ProposalID, validatorVote)
