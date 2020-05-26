@@ -53,17 +53,20 @@ var (
 	ethBlockConfirmation = int64(12)
 	btcBlockConfirmation = int64(6)
 
-	proposalInitialFunding, _  = balance.NewAmountFromString("1000000000", 10)
-	proposalFundingGoal, _     = balance.NewAmountFromString("10000000000", 10)
-	proposalFundingDeadline    = int64(12)
-	proposalVotingDeadline     = int64(12)
-	proposalPassPercentage     = 51
-	bountyProgramAddr          = "oneledgerBountyProgram"
-	passedProposalDistribution = governance.ProposalFundDistribution{
+	proposalInitialFunding, _   = balance.NewAmountFromString("1000000000", 10)
+	proposalFundingGoal, _      = balance.NewAmountFromString("10000000000", 10)
+	proposalFundingDeadline     = int64(12)
+	proposalVotingDeadline      = int64(12)
+	proposalPassPercentage      = 51
+	bountyProgramAddr           = "oneledgerBountyProgram"
+	executionCostAddrConfig     = "executionCostConfig"
+	executionCostAddrCodeChange = "executionCostCodeChange"
+	executionCostAddrGeneral    = "executionCostGeneral"
+	passedProposalDistribution  = governance.ProposalFundDistribution{
 		Validators:     18.00,
 		FeePool:        18.00,
 		Burn:           18.00,
-		ExecutionFees:  18.00,
+		ExecutionCost:  18.00,
 		BountyPool:     10.00,
 		ProposerReward: 18.00,
 	}
@@ -71,7 +74,7 @@ var (
 		Validators:     10.00,
 		FeePool:        10.00,
 		Burn:           10.00,
-		ExecutionFees:  20.00,
+		ExecutionCost:  20.00,
 		BountyPool:     50.00,
 		ProposerReward: 00.00,
 	}
@@ -416,6 +419,7 @@ func runDevnet(_ *cobra.Command, _ []string) error {
 			PassPercentage:         proposalPassPercentage,
 			PassedFundDistribution: passedProposalDistribution,
 			FailedFundDistribution: failedProposalDistribution,
+			ProposalExecutionCost:  executionCostAddrConfig,
 		},
 		CodeChange: governance.ProposalOption{
 			InitialFunding:         proposalInitialFunding,
@@ -425,6 +429,7 @@ func runDevnet(_ *cobra.Command, _ []string) error {
 			PassPercentage:         proposalPassPercentage,
 			PassedFundDistribution: passedProposalDistribution,
 			FailedFundDistribution: failedProposalDistribution,
+			ProposalExecutionCost:  executionCostAddrCodeChange,
 		},
 		General: governance.ProposalOption{
 			InitialFunding:         proposalInitialFunding,
@@ -434,6 +439,7 @@ func runDevnet(_ *cobra.Command, _ []string) error {
 			PassPercentage:         proposalPassPercentage,
 			PassedFundDistribution: passedProposalDistribution,
 			FailedFundDistribution: failedProposalDistribution,
+			ProposalExecutionCost:  executionCostAddrGeneral,
 		},
 		BountyProgramAddr: bountyProgramAddr,
 	}

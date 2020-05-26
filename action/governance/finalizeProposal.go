@@ -173,7 +173,7 @@ func distributeFunds(ctx *action.Context, proposal *governance.Proposal, proposa
 		return err
 	}
 	validatorEarningOLT := getPercentageCoin(c, totalFunding, proposalDistribution.Validators).Divide(len(validatorList))
-	//TODO:Instead of break continue sending to rest of the validators ,and report failed Validator
+
 	for _, v := range validatorList {
 		err = ctx.Balances.AddToAddress(v.Address, validatorEarningOLT)
 		if err != nil {
@@ -197,8 +197,12 @@ func distributeFunds(ctx *action.Context, proposal *governance.Proposal, proposa
 	if err != nil {
 		return errors.Wrap(err, "Failed in adding to Adding to bounty program")
 	}
+	//ExecutionCost
+	executionAddress := action.Address(ctx.ProposalMasterStore.Proposal.GetOptionsByType(proposal.Type).ProposalExecutionCost)
+	err = ctx.Balances.AddToAddress(executionAddress, getPercentageCoin(c, totalFunding, proposalDistribution.ExecutionCost))
 	//Burn
 	burnAmount := getPercentageCoin(c, totalFunding, proposalDistribution.Burn)
+
 	fmt.Println(burnAmount)
 	return nil
 

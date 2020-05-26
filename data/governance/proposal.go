@@ -3,6 +3,7 @@ package governance
 import (
 	"crypto/md5"
 	"encoding/hex"
+
 	"github.com/Oneledger/protocol/data/balance"
 
 	"github.com/Oneledger/protocol/data/keys"
@@ -18,13 +19,14 @@ type ProposalOption struct {
 	PassPercentage         int                      `json:"passPercentage"`
 	PassedFundDistribution ProposalFundDistribution `json:"passed_fund_dustribution"`
 	FailedFundDistribution ProposalFundDistribution `json:"failed_fund_distribution"`
+	ProposalExecutionCost  string                   `json:"proposal_execution_cost"`
 }
 
 type ProposalFundDistribution struct {
 	Validators     float64 `json:"validators"`
 	FeePool        float64 `json:"fee_pool"`
 	Burn           float64 `json:"burn"`
-	ExecutionFees  float64 `json:"execution_fees"`
+	ExecutionCost  float64 `json:"execution_cost"`
 	BountyPool     float64 `json:"bounty_pool"`
 	ProposerReward float64 `json:"proposer_reward"`
 }
