@@ -1,6 +1,8 @@
 import json
 import sys
+import hashlib
 from rpc_call import *
+
 
 class Proposal:
     def __init__(self, pid, pType, description, proposer, init_fund):
@@ -47,9 +49,16 @@ class Proposal:
                 print "################### proposal created:" + self.pid
                 self.txHash = "0x" + result["txHash"]
 
+    def get_proposal_id(self):
+        hash_handler = hashlib.md5()
+        hash_handler.update(self.pid)
+        hash_val = hash_handler.digest()
+        return hash_val.encode('hex')
+
     def tx_created(self):
         resp = tx_by_hash(self.txHash)
         return resp["result"]["tx_result"]
+
 
 class ProposalFund:
     def __init__(self, pid, value, address):
@@ -88,6 +97,7 @@ class ProposalFund:
             else:
                 print "################### proposal funded:" + Proposal
                 return result["txHash"]
+
 
 class ProposalVote:
     def __init__(self, pid, opinion, address):

@@ -2,10 +2,8 @@ package tx
 
 import (
 	"errors"
-	"strings"
-	"time"
-
 	"github.com/google/uuid"
+	"strings"
 
 	"github.com/Oneledger/protocol/action"
 	gov "github.com/Oneledger/protocol/action/governance"
@@ -34,10 +32,8 @@ func (s *Service) CreateProposal(args client.CreateProposalRequest, reply *clien
 		return errors.New("invalid proposal type")
 	}
 
-	uniqueStr := args.ProposalID + time.Now().String()
-
 	createProposal := gov.CreateProposal{
-		ProposalID:     governance.ProposalID(uniqueStr),
+		ProposalID:     governance.ProposalID(args.ProposalID),
 		ProposalType:   proposalType,
 		Description:    args.Description,
 		Proposer:       args.Proposer,

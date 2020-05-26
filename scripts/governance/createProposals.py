@@ -22,8 +22,9 @@ if __name__ == "__main__":
     # create normal proposals
     for prop in proposals:
         prop.send_create()
+        print "proposal id:", prop.get_proposal_id()
 
-    #create proposal with little initial fund
+    # create proposal with little initial fund
     proposal_littleInitFund.send_create()
 
     time.sleep(5)
