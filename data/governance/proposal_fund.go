@@ -47,5 +47,5 @@ func GetCurrentFundsByContributor(id ProposalID, contributor keys.Address, store
 			return contributorBalance, nil
 		}
 	}
-	return nil, ErrWithdrawCheckFundFailed
+	return nil, ErrWithdrawCheckFundsFailed
 }
