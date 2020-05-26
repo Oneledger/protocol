@@ -104,6 +104,42 @@ func (s *Service) FundProposal(args client.FundProposalRequest, reply *client.Cr
 	return nil
 }
 
+func (s *Service) WithdrawProposalFunds(args client.WithdrawFundsRequest, reply *client.CreateTxReply) error {
+
+	withdrawProposal := gov.WithdrawFunds{
+		ProposalID:      args.ProposalID,
+		Contributor:     args.Contributor,
+		WithdrawValue:   args.WithdrawValue,
+	}
+
+	data, err := withdrawProposal.Marshal()
+	if err != nil {
+		return err
+	}
+
+	uuidNew, _ := uuid.NewUUID()
+	fee := action.Fee{
+		Price: args.GasPrice,
+		Gas:   args.Gas,
+	}
+
+	tx := &action.RawTx{
+		Type: action.PROPOSAL_WITHDRAW_FUNDS,
+		Data: data,
+		Fee:  fee,
+		Memo: uuidNew.String(),
+	}
+
+	packet, err := serialize.GetSerializer(serialize.NETWORK).Serialize(tx)
+	if err != nil {
+		return codes.ErrSerialization
+	}
+
+	*reply = client.CreateTxReply{RawTx: packet}
+
+	return nil
+}
+
 func translateVoteOpinion(opin string) governance.VoteOpinion {
 	opin = strings.ToUpper(opin)
 	switch opin {

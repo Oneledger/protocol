@@ -11,9 +11,9 @@ import (
 	"math/big"
 )
 
-var _ action.Msg = &WithdrawProposal{}
+var _ action.Msg = &WithdrawFunds{}
 
-type WithdrawProposal struct {
+type WithdrawFunds struct {
 	ProposalID    governance.ProposalID
 	Contributor   keys.Address
 	WithdrawValue action.Amount
@@ -21,15 +21,15 @@ type WithdrawProposal struct {
 
 }
 
-func (wp WithdrawProposal) Validate(ctx *action.Context, signedTx action.SignedTx) (bool, error) {
-	withdrawProposal := WithdrawProposal{}
-	err := withdrawProposal.Unmarshal(signedTx.Data)
+func (wp WithdrawFunds) Validate(ctx *action.Context, signedTx action.SignedTx) (bool, error) {
+	withdrawFunds := WithdrawFunds{}
+	err := withdrawFunds.Unmarshal(signedTx.Data)
 	if err != nil {
 		return false, errors.Wrap(action.ErrWrongTxType, err.Error())
 	}
 
 	//validate basic signature
-	err = action.ValidateBasic(signedTx.RawBytes(), withdrawProposal.Signers(), signedTx.Signatures)
+	err = action.ValidateBasic(signedTx.RawBytes(), withdrawFunds.Signers(), signedTx.Signatures)
 	if err != nil {
 		return false, err
 	}
@@ -44,18 +44,18 @@ func (wp WithdrawProposal) Validate(ctx *action.Context, signedTx action.SignedT
 	if !ok {
 		panic("no default currency available in the network")
 	}
-	if currency.Name != withdrawProposal.WithdrawValue.Currency {
-		return false, errors.Wrap(action.ErrInvalidAmount, withdrawProposal.WithdrawValue.String())
+	if currency.Name != withdrawFunds.WithdrawValue.Currency {
+		return false, errors.Wrap(action.ErrInvalidAmount, withdrawFunds.WithdrawValue.String())
 	}
 
 	//Check if fund contributor address is valid oneLedger address
-	err = withdrawProposal.Contributor.Err()
+	err = withdrawFunds.Contributor.Err()
 	if err != nil {
 		return false, errors.Wrap(err, "invalid withdraw contributor address")
 	}
 
 	//Check if withdraw beneficiary address is valid oneLedger address
-	err = withdrawProposal.Beneficiary.Err()
+	err = withdrawFunds.Beneficiary.Err()
 	if err != nil {
 		return false, errors.Wrap(err, "invalid withdraw beneficiary address")
 	}
@@ -63,22 +63,22 @@ func (wp WithdrawProposal) Validate(ctx *action.Context, signedTx action.SignedT
 	return true, nil
 }
 
-func (wp WithdrawProposal) ProcessCheck(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
-	ctx.Logger.Debug("Processing WithdrawProposal Transaction for CheckTx", tx)
+func (wp WithdrawFunds) ProcessCheck(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
+	ctx.Logger.Debug("Processing WithdrawFunds Transaction for CheckTx", tx)
 	return runWithdraw(ctx, tx)
 }
 
-func (wp WithdrawProposal) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
-	ctx.Logger.Debug("Processing WithdrawProposal Transaction for DeliverTx", tx)
+func (wp WithdrawFunds) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
+	ctx.Logger.Debug("Processing WithdrawFunds Transaction for DeliverTx", tx)
 	return runWithdraw(ctx, tx)
 }
 
-func (wp WithdrawProposal) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas) (bool, action.Response) {
+func (wp WithdrawFunds) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas) (bool, action.Response) {
 	return action.BasicFeeHandling(ctx, signedTx, start, size, 1)
 }
 
 func runWithdraw(ctx *action.Context, signedTx action.RawTx) (bool, action.Response) {
-	withdrawProposal := WithdrawProposal{}
+	withdrawProposal := WithdrawFunds{}
 	err := withdrawProposal.Unmarshal(signedTx.Data)
 	if err != nil {
 		return false, action.Response{}
@@ -164,15 +164,15 @@ func runWithdraw(ctx *action.Context, signedTx action.RawTx) (bool, action.Respo
 	return true, result
 }
 
-func (wp WithdrawProposal) Signers() []action.Address {
+func (wp WithdrawFunds) Signers() []action.Address {
 	return []action.Address{wp.Contributor}
 }
 
-func (wp WithdrawProposal) Type() action.Type {
-	return action.PROPOSAL_WITHDRAW
+func (wp WithdrawFunds) Type() action.Type {
+	return action.PROPOSAL_WITHDRAW_FUNDS
 }
 
-func (wp WithdrawProposal) Tags() kv.Pairs {
+func (wp WithdrawFunds) Tags() kv.Pairs {
 	tags := make([]kv.Pair, 0)
 
 	tag := kv.Pair{
@@ -201,10 +201,10 @@ func (wp WithdrawProposal) Tags() kv.Pairs {
 	return tags
 }
 
-func (wp WithdrawProposal) Marshal() ([]byte, error) {
+func (wp WithdrawFunds) Marshal() ([]byte, error) {
 	return json.Marshal(wp)
 }
 
-func (wp WithdrawProposal) Unmarshal(bytes []byte) error {
+func (wp WithdrawFunds) Unmarshal(bytes []byte) error {
 	return json.Unmarshal(bytes, wp)
 }

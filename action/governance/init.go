@@ -29,7 +29,7 @@ func EnableGovernance(r action.Router) error {
 	if err != nil {
 		return errors.Wrap(err, "finalizeProposalTx")
 	}
-	err = r.AddHandler(action.PROPOSAL_WITHDRAW, WithdrawProposal{})
+	err = r.AddHandler(action.PROPOSAL_WITHDRAW_FUNDS, WithdrawFunds{})
 	if err != nil {
 		return errors.Wrap(err, "WithdrawProposalTx")
 	}
