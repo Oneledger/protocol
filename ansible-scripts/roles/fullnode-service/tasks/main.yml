@@ -39,14 +39,20 @@
 
 - name: stopping fullnode
   command: pkill olfullnode
+  tags: full
+
+- name: Deleting protocol directory
+  file:
+    path: /opt/protocol
+    state: absent
   tags: update
 
-- name: git pull
+- name: git clone
   git:
-    repo: https://github.com/Oneledger/protocol.git
+    repo: https://{{git_token}}@github.com/Oneledger/protocol.git
     dest: /opt/protocol
-    version: "develop"
-    #refspec: '+refs/pull/*:refs/heads/*'
+    version: "{{version}}"
+    refspec: '+refs/pull/*:refs/heads/*'
   tags: update
 
 - name: compile binary

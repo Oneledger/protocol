@@ -1,0 +1,13 @@
+git_token: 537f5c6434929f37d0716c88cebda528ac9c71f9
+
+# Database variables
+database_ip: kainos-db-3.ckpp7d6upgcl.us-east-1.rds.amazonaws.com
+my_database_name: explorer_testnet1_db
+username: postgres
+fullnode_sdk_port: http://10.0.1.86:26606
+password: postgredb
+fullnode_rpc_port: tcp://10.0.1.86:26604
+tendermint_port: tcp://10.0.1.86:26604
+
+# explorer tag version
+tag: v0.3.1

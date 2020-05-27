@@ -1,8 +1,8 @@
 ---
 - hosts:
     - fullnode
-  remote_user: mani
+  remote_user: ubuntu
   become: true
   become_user: root
   roles:
-  - role: olfaucet
+  - role: explorer-aws

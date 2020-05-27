@@ -1,0 +1,14 @@
+---
+git_token: 7bde42fd5d0cd294dbb77806e1b5c2fcfa02d4dd
+
+# Database variables
+database_ip: 10.91.224.3
+my_database_name: explorer_testnet1_db
+username: postgres
+fullnode_sdk_port: http://10.20.0.9:26606
+password: postgredb
+fullnode_rpc_port: tcp://10.20.0.9:26604
+tendermint_port: tcp://10.20.0.9:26604
+
+#explorer tag version
+tag: v0.3.1

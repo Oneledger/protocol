@@ -1,0 +1,151 @@
+---
+- name: Get explorer running processes
+  shell: "ps -ef | grep -v grep | grep -w explorer | awk '{print $2}'"
+  register: running_processes
+
+- name: Kill running processes
+  shell: "kill {{ item }}"
+  with_items: "{{ running_processes.stdout_lines }}"
+  become_user: root
+
+- name: Deleting explorer directory
+  file:
+    path: /opt/explorer
+    state: absent
+  become_user: root
+
+- name: git clone
+  git:
+    repo: https://{{git_token}}@github.com/Oneledger/explorer.git
+    dest: /opt/explorer
+    version: "{{ tag }}"
+    refspec: '+refs/pull/*:refs/heads/*'
+  become_user: root
+
+- name: compile binary
+  shell: chdir=/opt/explorer go build -o explorer ./
+  become_user: root
+
+- name: Deleting explorer binary file
+  file:
+    path: /opt/data/explorer_watcher_protector/explorer
+    state: absent
+  become_user: root
+
+- name: Copy file with owner and permissions
+  copy:
+    src: /opt/explorer/explorer
+    dest: /opt/data/explorer_watcher_protector
+    owner: root
+    group: root
+    mode: '0755'
+    remote_src: true
+
+- name: watcher script setup
+  copy:  
+    dest: "/opt/data/explorer_watcher_protector/watcher.sh"
+    owner: "root"
+    group: "root"
+    mode: 0744      
+    content: |
+      #!/bin/sh
+      /opt/data/explorer_watcher_protector/explorer watch --db {{ database_ip }}:5432/{{ my_database_name }}?sslmode=disable --dbuser {{ username }} --sdk {{ fullnode_sdk_port }} --dbpassword {{ password }} --tendermint {{ tendermint_port }} 2>&1 >> /opt/data/explorer_watcher_protector/watcher.log &
+
+- name: server script setup
+  copy:  
+    dest: "/opt/data/explorer_watcher_protector/server.sh"
+    owner: "root"
+    group: "root"
+    mode: 0744      
+    content: |
+      #!/bin/sh
+      /opt/data/explorer_watcher_protector/explorer serve --db {{ database_ip }}:5432/{{ my_database_name }}?sslmode=disable --dbuser {{ username }} --sdk {{ fullnode_sdk_port }} --dbpassword {{ password }} --tendermint {{ tendermint_port }} -p 8080 2>&1 >> /opt/data/explorer_watcher_protector/server.log &
+
+- name: create a systemd watcher service file
+  copy:
+    dest: "/etc/systemd/system/watcher.service"
+    owner: "root"
+    group: "root"
+    mode: 0644
+    content: |
+      [Unit]
+      Description=watcher
+      Wants=network-online.target
+      After=network-online.target
+
+      [Service]
+      Type=forking
+      #User=alertmanager
+      #Group=alertmanager
+      WorkingDirectory=/opt/data/explorer_watcher_protector
+      ExecStart=/bin/bash -c "/opt/data/explorer_watcher_protector/watcher.sh > /opt/data/explorer_watcher_protector/watcher.log 2>&1"
+      EnvironmentFile=/etc/environment
+      #Restart=on-failure
+
+      [Install]
+      WantedBy=multi-user.target
+
+- name: enabling watcher service
+  command: systemctl enable watcher.service
+  #when: systemd_service == "true"
+
+- name: Start service watcher
+  systemd:
+    name: watcher.service
+    scope: system
+    state: restarted
+    daemon_reload: yes
+    enabled: yes
+
+- name: create a systemd server service file
+  copy:
+    dest: "/etc/systemd/system/server.service"
+    owner: "root"
+    group: "root"
+    mode: 0644
+    content: |
+      [Unit]
+      Description=server
+      Wants=network-online.target
+      After=network-online.target
+
+      [Service]
+      Type=forking
+      #User=alertmanager
+      #Group=alertmanager
+      WorkingDirectory=/opt/data/explorer_watcher_protector
+      ExecStart=/bin/bash -c "/opt/data/explorer_watcher_protector/server.sh > /opt/data/explorer_watcher_protector/server.log 2>&1"
+      EnvironmentFile=/etc/environment
+      #Restart=on-failure
+
+      [Install]
+      WantedBy=multi-user.target
+
+- name: enabling server service
+  command: systemctl enable server.service
+  #when: systemd_service == "true"
+
+- name: Start service server
+  systemd:
+    name: server.service
+    scope: system
+    state: restarted
+    daemon_reload: yes
+    enabled: yes
+
+- name: Installing pip package    
+  shell: apt install -y python-pip
+
+- name: Installing psutil python package
+  pip:
+    name: psutil
+
+- name: Getting process IDs of the process
+  pids:
+      name: explorer
+  register: pids_of_explorer
+
+- name: Printing the process IDs obtained
+  debug:
+    msg: "PIDS of explorer:{{pids_of_explorer.pids|join(',')}}" 
+  

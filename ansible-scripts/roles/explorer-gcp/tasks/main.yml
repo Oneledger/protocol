@@ -1,0 +1,77 @@
+---
+- name: Get explorer running processes
+  shell: "ps -ef | grep -v grep | grep -w explorer | awk '{print $2}'"
+  register: running_processes
+
+- name: Kill running processes
+  shell: "kill {{ item }}"
+  with_items: "{{ running_processes.stdout_lines }}"
+  become_user: root
+
+- name: Deleting explorer directory
+  file:
+    path: /opt/explorer
+    state: absent
+  become_user: root
+
+- name: git clone
+  git:
+    repo: https://{{git_token}}@github.com/Oneledger/explorer.git
+    dest: /opt/explorer
+    version: "v0.3.1"
+    refspec: '+refs/pull/*:refs/heads/*'
+  become_user: root
+
+- name: compile binary
+  shell: chdir=/opt/explorer go build -o explorer ./
+  become_user: root
+
+- name: Deleting explorer binary file
+  file:
+    path: /opt/data/explorer_watcher_protector/explorer
+    state: absent
+  become_user: root
+
+- name: Copy file with owner and permissions
+  copy:
+    src: /opt/explorer/explorer
+    dest: /opt/data/explorer_watcher_protector
+    owner: root
+    group: root
+    mode: '0755'
+    remote_src: true
+
+- name: Installing psql package
+  command: apt install postgresql-client
+
+- name: connecting to database
+  command: psql "host={{ ip }}  user={{ username }} password={{ password }}" -c "CREATE DATABASE {{ my_database_name }};"
+  become: true
+
+#- name: Create a new database with name "explorer_testnet_db"
+#  command: createdb -h localhost -p 5432 -U {{ username }} {{ my_database_name }}
+ # postgresql_db:
+ #   name: "{{ my_database_name }}"
+
+- name: setup database
+  command: chdir=/opt/data/explorer_watcher_protector ./explorer setup --db {{ ip }}:5432/{{ my_database_name }}\?sslmode=disable --dbuser {{ username }} --sdk {{ fullnode_sdk_port }} --dbpassword {{ password }}
+
+- name: initialize database
+  command: chdir=/opt/data/explorer_watcher_protector ./explorer init --db {{ ip }}:5432/{{ my_database_name }}\?sslmode=disable --dbuser {{ username }} --sdk {{ fullnode_sdk_port }} --dbpassword {{ password }} --tendermint {{ tendermint_port }}
+
+#- name: changing owner
+#  command: chown -R ubuntu:ubuntu /opt/data/explorer_watcher_protector
+
+#- name: Installing pip package    
+#  shell: apt install -y python-pip
+
+#- name: Installing psutil python package
+#  pip:
+#    name: psutil
+
+- name:  start service server
+  command: service server start
+
+- name: start service watcher
+  command: service watcher start
+  

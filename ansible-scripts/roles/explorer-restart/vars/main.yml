@@ -1,0 +1,10 @@
+# Database variables
+ip: 34.67.95.95
+my_database_name: explorer_devnet3_20200511
+username: postgres
+fullnode_sdk_port: http://10.128.0.6:26606
+password: Manikanta472
+fullnode_rpc_port: tcp://10.128.0.6:26604
+
+# Explorer version tag
+tag: v0.3.1
