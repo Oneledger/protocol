@@ -6,7 +6,7 @@ pipeline {
         stage('Deploy') {
             steps {
                 dir(env.DEPLOY_DIR) {
-                    sh 'ansible-playbook -i hosts_devnet2.yml devnet_deploy_script.yml --tags "update"'
+                    sh 'ansible-playbook -i hosts_devnet3.yml devnet_deploy_script.yml --tags "update"'
                 }
             }
         }
