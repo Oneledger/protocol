@@ -146,7 +146,7 @@ type ListValidatorsReply struct {
 	Height int64 `json:"height"`
 }
 
-type ListWitnessesRequest struct{
+type ListWitnessesRequest struct {
 	ChainType chain.Type `json:"chainType"`
 }
 type ListWitnessesReply struct {

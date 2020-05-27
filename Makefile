@@ -51,6 +51,7 @@ utest:
 		github.com/Oneledger/protocol/data/accounts \
 		github.com/Oneledger/protocol/data/balance \
 		github.com/Oneledger/protocol/data/keys \
+		github.com/Oneledger/protocol/data/governance \
 		github.com/Oneledger/protocol/serialize \
 		github.com/Oneledger/protocol/utils \
 		github.com/Oneledger/protocol/rpc \

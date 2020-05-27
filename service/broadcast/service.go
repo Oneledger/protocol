@@ -2,6 +2,8 @@ package broadcast
 
 import (
 	"errors"
+	"github.com/Oneledger/protocol/data"
+	"github.com/Oneledger/protocol/data/governance"
 
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/client"
@@ -15,27 +17,31 @@ import (
 )
 
 type Service struct {
-	logger     *log.Logger
-	router     action.Router
-	currencies *balance.CurrencySet
-	trackers   *bitcoin.TrackerStore
-	feePool    *fees.Store
-	domains    *ons.DomainStore
-	ext        client.ExtServiceContext
+	logger         *log.Logger
+	router         action.Router
+	currencies     *balance.CurrencySet
+	trackers       *bitcoin.TrackerStore
+	feePool        *fees.Store
+	domains        *ons.DomainStore
+	proposalMaster *governance.ProposalMasterStore
+	extStores      data.Router
+	ext            client.ExtServiceContext
 }
 
 func NewService(ctx client.ExtServiceContext, router action.Router, currencies *balance.CurrencySet,
 	feePool *fees.Store, domains *ons.DomainStore,
-	logger *log.Logger, trackers *bitcoin.TrackerStore,
+	logger *log.Logger, trackers *bitcoin.TrackerStore, proposalMaster *governance.ProposalMasterStore, extStores data.Router,
 ) *Service {
 	return &Service{
-		ext:        ctx,
-		router:     router,
-		currencies: currencies,
-		trackers:   trackers,
-		feePool:    feePool,
-		domains:    domains,
-		logger:     logger,
+		ext:            ctx,
+		router:         router,
+		currencies:     currencies,
+		trackers:       trackers,
+		feePool:        feePool,
+		domains:        domains,
+		proposalMaster: proposalMaster,
+		extStores:      extStores,
+		logger:         logger,
 	}
 }
 
@@ -60,8 +66,8 @@ func (svc *Service) validateAndSignTx(req client.BroadcastRequest) ([]byte, erro
 
 	handler := svc.router.Handler(tx.Type)
 	ctx := action.NewContext(svc.router, nil, nil, nil, nil, svc.currencies,
-		svc.feePool, nil, nil, svc.domains, svc.trackers, nil, nil, nil,
-		svc.logger)
+		svc.feePool, nil, nil, svc.domains, svc.trackers, nil, nil, nil, svc.logger,
+		svc.proposalMaster, svc.extStores)
 
 	_, err = handler.Validate(ctx, signedTx)
 	if err != nil {

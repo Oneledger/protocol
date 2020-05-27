@@ -2,6 +2,7 @@ package query
 
 import (
 	"encoding/hex"
+	"github.com/Oneledger/protocol/data/governance"
 	"strings"
 
 	"github.com/Oneledger/protocol/action"
@@ -16,16 +17,17 @@ import (
 )
 
 type Service struct {
-	name       string
-	ext        client.ExtServiceContext
-	balances   *balance.Store
-	currencies *balance.CurrencySet
-	validators *identity.ValidatorStore
-	witnesses  *identity.WitnessStore
-	ons        *ons.DomainStore
-	feePool    *fees.Store
-	logger     *log.Logger
-	txTypes    *[]action.TxTypeDescribe
+	name           string
+	ext            client.ExtServiceContext
+	balances       *balance.Store
+	currencies     *balance.CurrencySet
+	validators     *identity.ValidatorStore
+	witnesses      *identity.WitnessStore
+	ons            *ons.DomainStore
+	feePool        *fees.Store
+	proposalMaster *governance.ProposalMasterStore
+	logger         *log.Logger
+	txTypes        *[]action.TxTypeDescribe
 }
 
 func Name() string {
@@ -33,18 +35,19 @@ func Name() string {
 }
 
 func NewService(ctx client.ExtServiceContext, balances *balance.Store, currencies *balance.CurrencySet, validators *identity.ValidatorStore, witnesses *identity.WitnessStore,
-	domains *ons.DomainStore, feePool *fees.Store, logger *log.Logger, txTypes *[]action.TxTypeDescribe) *Service {
+	domains *ons.DomainStore, feePool *fees.Store, proposalMaster *governance.ProposalMasterStore, logger *log.Logger, txTypes *[]action.TxTypeDescribe) *Service {
 	return &Service{
-		name:       "query",
-		ext:        ctx,
-		currencies: currencies,
-		balances:   balances,
-		validators: validators,
-		witnesses:  witnesses,
-		ons:        domains,
-		feePool:    feePool,
-		logger:     logger,
-		txTypes:    txTypes,
+		name:           "query",
+		ext:            ctx,
+		currencies:     currencies,
+		balances:       balances,
+		validators:     validators,
+		witnesses:      witnesses,
+		ons:            domains,
+		feePool:        feePool,
+		proposalMaster: proposalMaster,
+		logger:         logger,
+		txTypes:        txTypes,
 	}
 }
 

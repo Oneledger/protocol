@@ -5,9 +5,8 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"strings"
-
 	"github.com/tendermint/tendermint/libs/kv"
+	"strings"
 
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/data/ons"

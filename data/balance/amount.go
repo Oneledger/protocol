@@ -6,8 +6,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/Oneledger/protocol/utils"
 	"github.com/pkg/errors"
+
+	"github.com/Oneledger/protocol/utils"
 )
 
 // Amount represents an amount of a currency
@@ -76,4 +77,9 @@ func (a *Amount) BigInt() *big.Int {
 
 func (a Amount) String() string {
 	return a.BigInt().String()
+}
+
+func (p Amount) Plus(add *Amount) *Amount {
+	base := big.NewInt(0)
+	return (*Amount)(base.Add(p.BigInt(), add.BigInt()))
 }
