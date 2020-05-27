@@ -5,6 +5,18 @@ import sys
 import struct
 import binascii
 
+from sdk.actions import *
+
+class bcolors:
+    HEADER = '\033[95m'
+    OKBLUE = '\033[94m'
+    OKGREEN = '\033[92m'
+    WARNING = '\033[93m'
+    FAIL = '\033[91m'
+    ENDC = '\033[0m'
+    BOLD = '\033[1m'
+    UNDERLINE = '\033[4m'
+
 url = "http://127.0.0.1:26602/jsonrpc"
 headers = {
     "Content-Type": "application/json",
@@ -53,12 +65,13 @@ def create_domain(name, owner_hex, price):
     return resp["result"]["rawTx"]
 
 
-def update_domain(name, owner_hex, set_active):
+def update_domain(name, owner_hex, set_active, uri):
     req = {
         "owner": owner_hex,
         "account": owner_hex,
         "name": name,
         "active": set_active,
+        "uri": uri,
         "gasprice": {
             "currency": "OLT",
             "value": "1000000000"
@@ -137,11 +150,14 @@ if __name__ == "__main__":
 
     if not result["ok"]:
         sys.exit(-1)
+    print_domain(name)
 
     time.sleep(2)
 
+    print bcolors.WARNING + "*** Update Domain With Inactive Flag ***" + bcolors.ENDC
     active_state = False
-    raw_txn = update_domain(name, addrs[0], active_state)
+    uri = ""
+    raw_txn = update_domain(name, addrs[0], active_state, uri)
     print "rax update domain tx:", raw_txn
     print
 
@@ -156,11 +172,13 @@ if __name__ == "__main__":
 
     if result["ok"] != True:
         sys.exit(-1)
+    print_domain(name)
 
     time.sleep(2)
 
+    print bcolors.WARNING + "*** Update Domain With Active Flag ***" + bcolors.ENDC
     active_state = True
-    raw_txn = update_domain(name, addrs[0], active_state)
+    raw_txn = update_domain(name, addrs[0], active_state, uri)
     print "rax update domain tx:", raw_txn
     print
 
@@ -175,3 +193,48 @@ if __name__ == "__main__":
 
     if result["ok"] != True:
         sys.exit(-1)
+    print_domain(name)
+
+    time.sleep(2)
+
+    print bcolors.WARNING + "*** Update Domain With Uri ***" + bcolors.ENDC
+    active_state = True
+    uri = "http://192.168.0.1"
+    raw_txn = update_domain(name, addrs[0], active_state, uri)
+    print "rax update domain tx:", raw_txn
+    print
+
+    signed = sign(raw_txn, addrs[0])
+    print "signed update TX :", signed
+    print
+
+    result = broadcast_commit(raw_txn, signed['signature']['Signed'], signed['signature']['Signer'])
+    print result
+    print "###################"
+    print
+
+    if result["ok"] != True:
+        sys.exit(-1)
+    print_domain(name)
+
+    time.sleep(2)
+
+    print bcolors.WARNING + "*** Update Domain to Reset Uri ***" + bcolors.ENDC
+    active_state = True
+    uri = ""
+    raw_txn = update_domain(name, addrs[0], active_state, uri)
+    print "rax update domain tx:", raw_txn
+    print
+
+    signed = sign(raw_txn, addrs[0])
+    print "signed update TX :", signed
+    print
+
+    result = broadcast_commit(raw_txn, signed['signature']['Signed'], signed['signature']['Signer'])
+    print result
+    print "###################"
+    print
+
+    if result["ok"] != True:
+        sys.exit(-1)
+    print_domain(name)
