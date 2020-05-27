@@ -61,16 +61,16 @@ func (c CreateProposal) Validate(ctx *action.Context, signedTx action.SignedTx) 
 
 	//Get Proposal options based on type.
 	coin := createProposal.InitialFunding.ToCoin(ctx.Currencies)
-	coin_init := coin.Currency.NewCoinFromAmount(*options.InitialFunding)
-	coin_goal := coin.Currency.NewCoinFromAmount(*options.FundingGoal)
+	coinInit := coin.Currency.NewCoinFromAmount(*options.InitialFunding)
+	coinGoal := coin.Currency.NewCoinFromAmount(*options.FundingGoal)
 
 	//Check if initial funding is not less than minimum amount based on type.
-	if coin.LessThanCoin(coin_init) {
+	if coin.LessThanCoin(coinInit) {
 		return false, action.ErrInvalidAmount
 	}
 
 	//Check if initial funding is more than funding goal.
-	if coin_goal.LessThanEqualCoin(coin) {
+	if coinGoal.LessThanEqualCoin(coin) {
 		return false, action.ErrInvalidAmount
 	}
 
@@ -132,11 +132,11 @@ func runTx(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	//Get Proposal options based on type.
 	options := ctx.ProposalMasterStore.Proposal.GetOptionsByType(createProposal.ProposalType)
 	coin := createProposal.InitialFunding.ToCoin(ctx.Currencies)
-	coin_init := coin.Currency.NewCoinFromAmount(*options.InitialFunding)
-	coin_goal := coin.Currency.NewCoinFromAmount(*options.FundingGoal)
+	coinInit := coin.Currency.NewCoinFromAmount(*options.InitialFunding)
+	coinGoal := coin.Currency.NewCoinFromAmount(*options.FundingGoal)
 
 	//Check if initial funding is not less than minimum amount based on type.
-	if coin.LessThanCoin(coin_init) {
+	if coin.LessThanCoin(coinInit) {
 		result := action.Response{
 			Events: action.GetEvent(createProposal.Tags(), "create_proposal_insufficient_funds"),
 		}
@@ -144,7 +144,7 @@ func runTx(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	}
 
 	//Check if initial funding is more than funding goal.
-	if coin_goal.LessThanEqualCoin(coin) {
+	if coinGoal.LessThanEqualCoin(coin) {
 		result := action.Response{
 			Events: action.GetEvent(createProposal.Tags(), "create_proposal_too_much_funds"),
 		}
