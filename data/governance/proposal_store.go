@@ -48,8 +48,10 @@ func (ps *ProposalStore) Get(proposalID ProposalID) (*Proposal, error) {
 }
 
 func (ps *ProposalStore) Exists(key ProposalID) bool {
-	prefixed := append(ps.prefix, key...)
-	return ps.state.Exists(prefixed)
+	active := append(ps.prefixActive, key...)
+	passed := append(ps.prefixPassed, key...)
+	failed := append(ps.prefixFailed, key...)
+	return ps.state.Exists(active) || ps.state.Exists(passed) || ps.state.Exists(failed)
 }
 
 func (ps *ProposalStore) Delete(key ProposalID) (bool, error) {

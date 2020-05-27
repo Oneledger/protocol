@@ -167,7 +167,8 @@ func runTx(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 		options.PassPercentage)
 
 	//Add proposal to DB
-	err = ctx.ProposalMasterStore.Proposal.Set(proposal)
+	activeProposals := ctx.ProposalMasterStore.Proposal.WithPrefixType(governance.ProposalStateActive)
+	err = activeProposals.Set(proposal)
 	if err != nil {
 		result := action.Response{
 			Events: action.GetEvent(createProposal.Tags(), "create_proposal_failed"),
