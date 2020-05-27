@@ -1,15 +1,15 @@
 [validators]
-35.192.218.9  ansible_ssh_private_key_file=./id_rsa
-34.70.67.244  ansible_ssh_private_key_file=./id_rsa
-35.238.157.104  ansible_ssh_private_key_file=./id_rsa
-104.154.102.230 ansible_ssh_private_key_file=./id_rsa
+35.192.218.9  ansible_ssh_private_key_file=id_rsa
+34.70.67.244  ansible_ssh_private_key_file=id_rsa
+35.238.157.104  ansible_ssh_private_key_file=id_rsa
+104.154.102.230 ansible_ssh_private_key_file=id_rsa
 
 [seed]
-34.70.161.83  ansible_ssh_private_key_file=./id_rsa
+34.70.161.83  ansible_ssh_private_key_file=id_rsa
 
 [sentry]
-35.238.31.187 ansible_ssh_private_key_file=./id_rsa
+35.238.31.187 ansible_ssh_private_key_file=id_rsa
     
 [fullnode]
-104.198.64.51 ansible_ssh_private_key_file=./id_rsa
-34.71.135.113 ansible_ssh_private_key_file=./id_rsa
+104.198.64.51 ansible_ssh_private_key_file=id_rsa
+34.71.135.113 ansible_ssh_private_key_file=id_rsa
