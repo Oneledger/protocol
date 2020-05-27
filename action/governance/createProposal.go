@@ -120,15 +120,6 @@ func runTx(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 		return false, result
 	}
 
-	//Check if proposal already exists
-	p, _, _ := ctx.ProposalMasterStore.Proposal.QueryAllStores(governance.GenerateProposalID(createProposal.ProposalID))
-	if p != nil {
-		result := action.Response{
-			Events: action.GetEvent(createProposal.Tags(), "create_proposal_already_exists"),
-		}
-		return false, result
-	}
-
 	//Get Proposal options based on type.
 	options := ctx.ProposalMasterStore.Proposal.GetOptionsByType(createProposal.ProposalType)
 	coin := createProposal.InitialFunding.ToCoin(ctx.Currencies)
@@ -165,6 +156,14 @@ func runTx(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 		options.FundingGoal,
 		votingDeadline,
 		options.PassPercentage)
+
+	//Check if Proposal already exists
+	if ctx.ProposalMasterStore.Proposal.Exists(proposal.ProposalID) {
+		result := action.Response{
+			Events: action.GetEvent(createProposal.Tags(), "create_proposal_already_exists"),
+		}
+		return false, result
+	}
 
 	//Add proposal to DB
 	activeProposals := ctx.ProposalMasterStore.Proposal.WithPrefixType(governance.ProposalStateActive)

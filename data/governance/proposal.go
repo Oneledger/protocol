@@ -54,7 +54,7 @@ func NewProposal(proposalID ProposalID, propType ProposalType, desc string, prop
 	votingDeadline int64, passPercentage int) *Proposal {
 
 	return &Proposal{
-		ProposalID:      GenerateProposalID(proposalID),
+		ProposalID:      generateProposalID(proposalID),
 		Type:            propType,
 		Status:          ProposalStatusFunding,
 		Outcome:         ProposalOutcomeInProgress,
@@ -67,7 +67,7 @@ func NewProposal(proposalID ProposalID, propType ProposalType, desc string, prop
 	}
 }
 
-func GenerateProposalID(key ProposalID) ProposalID {
+func generateProposalID(key ProposalID) ProposalID {
 	hashHandler := md5.New()
 	_, err := hashHandler.Write([]byte(key))
 	if err != nil {
