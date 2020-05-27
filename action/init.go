@@ -121,6 +121,8 @@ func (t Type) String() string {
 		return "PROPOSAL_FUND"
 	case PROPOSAL_VOTE:
 		return "PROPOSAL_VOTE"
+	case PROPOSAL_WITHDRAW_FUNDS:
+		return "PROPOSAL_WITHDRAW_FUNDS"
 
 	default:
 		return "UNKNOWN"

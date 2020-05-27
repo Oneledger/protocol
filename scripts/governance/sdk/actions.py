@@ -15,6 +15,16 @@ ProposalStateActive  = 0x31
 ProposalStatePassed  = 0x32
 ProposalStateFailed  = 0x33
 
+class bcolors:
+    HEADER = '\033[95m'
+    OKBLUE = '\033[94m'
+    OKGREEN = '\033[92m'
+    WARNING = '\033[93m'
+    FAIL = '\033[91m'
+    ENDC = '\033[0m'
+    BOLD = '\033[1m'
+    UNDERLINE = '\033[4m'
+
 
 class Proposal:
     def __init__(self, pid, pType, description, proposer, init_fund):
@@ -160,7 +170,10 @@ class ProposalFundsWithdraw:
         req = {
             "proposal_id": self.pid,
             "contributor_address": self.contr,
-            "withdraw_value": self.value,
+            "withdraw_value": {
+                "currency": "OLT",
+                "value": convertBigInt(self.value),
+            },
             "beneficiary_address": self.benefi,
             "gasPrice": {
                 "currency": "OLT",
@@ -169,7 +182,6 @@ class ProposalFundsWithdraw:
             "gas": 40000,
         }
         resp = rpc_call('tx.WithdrawProposalFunds', req)
-        result = resp["result"]
         print resp
         return resp["result"]["rawTx"]
 
@@ -193,6 +205,11 @@ class ProposalFundsWithdraw:
 
 def addresses():
     resp = rpc_call('owner.ListAccountAddresses', {})
+    return resp["result"]["addresses"]
+
+
+def addresses_from_second_node():
+    resp = rpc_call('owner.ListAccountAddresses', {}, url_1)
     return resp["result"]["addresses"]
 
 

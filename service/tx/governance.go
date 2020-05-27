@@ -110,6 +110,7 @@ func (s *Service) WithdrawProposalFunds(args client.WithdrawFundsRequest, reply 
 		ProposalID:      args.ProposalID,
 		Contributor:     args.Contributor,
 		WithdrawValue:   args.WithdrawValue,
+		Beneficiary:     args.Beneficiary,
 	}
 
 	data, err := withdrawProposal.Marshal()

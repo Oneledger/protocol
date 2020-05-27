@@ -203,6 +203,6 @@ func (wp WithdrawFunds) Marshal() ([]byte, error) {
 	return json.Marshal(wp)
 }
 
-func (wp WithdrawFunds) Unmarshal(bytes []byte) error {
+func (wp *WithdrawFunds) Unmarshal(bytes []byte) error {
 	return json.Unmarshal(bytes, wp)
 }

@@ -70,7 +70,12 @@ func (pf *ProposalFundStore) iterate(fn func(proposalID ProposalID, addr keys.Ad
 			}
 			arr := strings.Split(string(key), storage.DB_PREFIX)
 			proposalID := arr[1]
-			fundingAddress := keys.Address(arr[len(arr)-1])
+			fundingAddress:= keys.Address{}
+			err = fundingAddress.UnmarshalText([]byte(arr[len(arr)-1]))
+			if err != nil {
+				fmt.Println("err", err)
+				return true
+			}
 			return fn(ProposalID(proposalID), fundingAddress, amt)
 		},
 	)
