@@ -1,9 +1,4 @@
 pipeline {
-
-    options {
-        disableConcurrentBuilds()
-        ansiColor('xterm')
-    }
     environment {
         DEPLOY_DIR = 'infrastructure/ansible-scripts'
     }
