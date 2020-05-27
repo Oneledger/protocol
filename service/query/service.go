@@ -2,6 +2,7 @@ package query
 
 import (
 	"encoding/hex"
+	"github.com/Oneledger/protocol/data/governance"
 	"strings"
 
 	"github.com/Oneledger/protocol/action"
@@ -16,33 +17,37 @@ import (
 )
 
 type Service struct {
-	name       string
-	ext        client.ExtServiceContext
-	balances   *balance.Store
-	currencies *balance.CurrencySet
-	validators *identity.ValidatorStore
-	ons        *ons.DomainStore
-	feePool    *fees.Store
-	logger     *log.Logger
-	txTypes    *[]action.TxTypeDescribe
+	name           string
+	ext            client.ExtServiceContext
+	balances       *balance.Store
+	currencies     *balance.CurrencySet
+	validators     *identity.ValidatorStore
+	witnesses      *identity.WitnessStore
+	ons            *ons.DomainStore
+	feePool        *fees.Store
+	proposalMaster *governance.ProposalMasterStore
+	logger         *log.Logger
+	txTypes        *[]action.TxTypeDescribe
 }
 
 func Name() string {
 	return "query"
 }
 
-func NewService(ctx client.ExtServiceContext, balances *balance.Store, currencies *balance.CurrencySet, validators *identity.ValidatorStore,
-	domains *ons.DomainStore, feePool *fees.Store, logger *log.Logger, txTypes *[]action.TxTypeDescribe) *Service {
+func NewService(ctx client.ExtServiceContext, balances *balance.Store, currencies *balance.CurrencySet, validators *identity.ValidatorStore, witnesses *identity.WitnessStore,
+	domains *ons.DomainStore, feePool *fees.Store, proposalMaster *governance.ProposalMasterStore, logger *log.Logger, txTypes *[]action.TxTypeDescribe) *Service {
 	return &Service{
-		name:       "query",
-		ext:        ctx,
-		currencies: currencies,
-		balances:   balances,
-		validators: validators,
-		ons:        domains,
-		feePool:    feePool,
-		logger:     logger,
-		txTypes:    txTypes,
+		name:           "query",
+		ext:            ctx,
+		currencies:     currencies,
+		balances:       balances,
+		validators:     validators,
+		witnesses:      witnesses,
+		ons:            domains,
+		feePool:        feePool,
+		proposalMaster: proposalMaster,
+		logger:         logger,
+		txTypes:        txTypes,
 	}
 }
 
@@ -79,7 +84,21 @@ func (svc *Service) ListValidators(_ client.ListValidatorsRequest, reply *client
 		Validators: validators,
 		Height:     svc.balances.State.Version(),
 	}
+	return nil
+}
 
+// ListWitnesses returns a list of all witness
+func (svc *Service) ListWitnesses(req client.ListWitnessesRequest, reply *client.ListWitnessesReply) error {
+	witnesses, err := svc.witnesses.GetWitnessAddresses(req.ChainType)
+	if err != nil {
+		svc.logger.Error("error listing witnesses")
+		return codes.ErrListWitnesses
+	}
+
+	*reply = client.ListWitnessesReply{
+		Witnesses: witnesses,
+		Height:    svc.balances.State.Version(),
+	}
 	return nil
 }
 

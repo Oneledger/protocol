@@ -12,6 +12,7 @@ import (
 	"github.com/Oneledger/protocol/consensus"
 	ethereum2 "github.com/Oneledger/protocol/data/ethereum"
 	"github.com/Oneledger/protocol/log"
+
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	"github.com/tendermint/tendermint/libs/bytes"
@@ -102,13 +103,21 @@ func (svc Service) InternalBroadcast(request InternalBroadcastRequest, reply *Br
 
 }
 
+//^TODO Replace error with InternalBroadcastStatus
 func BroadcastReportFinalityETHTx(ethCtx *JobsContext, trackerName ethereum.TrackerName, jobID string, success bool) error {
 
 	trackerStore := ethCtx.EthereumTrackers
-	tracker, err := trackerStore.WithPrefixType(ethereum2.PrefixOngoing).Get(trackerName)
-	index, _ := tracker.CheckIfVoted(ethCtx.ValidatorAddress)
-	if index < 0 {
-		return errors.New("validator already Voted")
+	tracker, err := trackerStore.QueryAllStores(trackerName)
+	if err != nil {
+		return err
+	}
+	if tracker.State == ethereum2.Released || tracker.State == ethereum2.Failed {
+		return nil
+	}
+	index, voted := tracker.CheckIfVoted(ethCtx.ValidatorAddress)
+	if voted {
+		//Validator has already Voted
+		return nil
 	}
 	reportFailed := &eth.ReportFinality{
 		TrackerName:      trackerName,

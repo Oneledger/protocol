@@ -9,6 +9,7 @@ import (
 	"github.com/Oneledger/protocol/data/bitcoin"
 	"github.com/Oneledger/protocol/data/ethereum"
 	"github.com/Oneledger/protocol/data/fees"
+	"github.com/Oneledger/protocol/data/governance"
 	"github.com/Oneledger/protocol/data/jobs"
 	"github.com/Oneledger/protocol/data/ons"
 	"github.com/Oneledger/protocol/identity"
@@ -17,23 +18,24 @@ import (
 )
 
 type Context struct {
-	Router          Router
-	State           *storage.State
-	Header          *abci.Header
-	Accounts        accounts.Wallet
-	Balances        *balance.Store
-	Domains         *ons.DomainStore
-	FeePool         *fees.Store
-	Currencies      *balance.CurrencySet
-	FeeOpt          *fees.FeeOption
-	Validators      *identity.ValidatorStore
-	Witnesses       *identity.WitnessStore
-	BTCTrackers     *bitcoin.TrackerStore
-	ETHTrackers     *ethereum.TrackerStore
-	Logger          *log.Logger
-	JobStore        *jobs.JobStore
-	LockScriptStore *bitcoin.LockScriptStore
-	ExtStores       data.Router
+	Router              Router
+	State               *storage.State
+	Header              *abci.Header
+	Accounts            accounts.Wallet
+	Balances            *balance.Store
+	Domains             *ons.DomainStore
+	FeePool             *fees.Store
+	Currencies          *balance.CurrencySet
+	FeeOpt              *fees.FeeOption
+	Validators          *identity.ValidatorStore
+	Witnesses           *identity.WitnessStore
+	BTCTrackers         *bitcoin.TrackerStore
+	ETHTrackers         *ethereum.TrackerStore
+	Logger              *log.Logger
+	JobStore            *jobs.JobStore
+	LockScriptStore     *bitcoin.LockScriptStore
+	ProposalMasterStore *governance.ProposalMasterStore
+	ExtStores           data.Router
 }
 
 func NewContext(r Router, header *abci.Header, state *storage.State,
@@ -42,24 +44,26 @@ func NewContext(r Router, header *abci.Header, state *storage.State,
 	validators *identity.ValidatorStore, witnesses *identity.WitnessStore,
 	domains *ons.DomainStore, btcTrackers *bitcoin.TrackerStore,
 	ethTrackers *ethereum.TrackerStore, jobStore *jobs.JobStore,
-	lockScriptStore *bitcoin.LockScriptStore, logger *log.Logger, extStores data.Router) *Context {
+	lockScriptStore *bitcoin.LockScriptStore, logger *log.Logger, proposalmaster *governance.ProposalMasterStore,
+	extStores data.Router) *Context {
 
 	return &Context{
-		Router:          r,
-		State:           state,
-		Header:          header,
-		Accounts:        wallet,
-		Balances:        balances,
-		Domains:         domains,
-		FeePool:         feePool,
-		Currencies:      currencies,
-		Validators:      validators,
-		Witnesses:       witnesses,
-		BTCTrackers:     btcTrackers,
-		ETHTrackers:     ethTrackers,
-		Logger:          logger,
-		JobStore:        jobStore,
-		LockScriptStore: lockScriptStore,
-		ExtStores:       extStores,
+		Router:              r,
+		State:               state,
+		Header:              header,
+		Accounts:            wallet,
+		Balances:            balances,
+		Domains:             domains,
+		FeePool:             feePool,
+		Currencies:          currencies,
+		Validators:          validators,
+		Witnesses:           witnesses,
+		BTCTrackers:         btcTrackers,
+		ETHTrackers:         ethTrackers,
+		Logger:              logger,
+		JobStore:            jobStore,
+		LockScriptStore:     lockScriptStore,
+		ProposalMasterStore: proposalmaster,
+		ExtStores:           extStores,
 	}
 }

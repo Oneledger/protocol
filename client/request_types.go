@@ -10,6 +10,7 @@
 package client
 
 import (
+	"github.com/Oneledger/protocol/data/chain"
 	"github.com/tendermint/tendermint/libs/bytes"
 	ctypes "github.com/tendermint/tendermint/rpc/core/types"
 
@@ -142,6 +143,16 @@ type ListValidatorsReply struct {
 	// The list of active validators
 	Validators []identity.Validator `json:"validators"`
 	// Height at which this validator set was active
+	Height int64 `json:"height"`
+}
+
+type ListWitnessesRequest struct {
+	ChainType chain.Type `json:"chainType"`
+}
+type ListWitnessesReply struct {
+	// The list of active witnesses
+	Witnesses []keys.Address `json:"witnesses"`
+	// Height at which this witness set was active
 	Height int64 `json:"height"`
 }
 

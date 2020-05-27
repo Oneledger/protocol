@@ -2,6 +2,7 @@ vendor
 .glide
 *.sw[op]
 .idea/
+.vscode/
 VOLUME/
 .DS_Store
 olvm/interpreter/bin/

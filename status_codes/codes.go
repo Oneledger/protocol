@@ -38,6 +38,7 @@ const (
 	InternalErrorTrackerNotFound            = 100607
 	InternalErrorTrackerBusy                = 100608
 	InternalErrorTrackerInsufficientBalance = 100609
+	InternalErrorListWitnesses              = 100610
 
 	WalletError               = 2006
 	WalletErrorAddingAccount  = 200601
@@ -78,4 +79,10 @@ const (
 	ETHTrackerNotFoundFailed  = 600100
 	ETHTrackerNotFoundSuccess = 600101
 	ETHTrackerNotFoundOngoing = 600102
+
+	Governance
+	GovErrVoteSetupValidator    = 700100
+	GovErrVoteUpdateVote        = 700101
+	GovErrVoteDeleteVoteRecords = 700102
+	GovErrVoteCheckVoteResult   = 700103
 )
