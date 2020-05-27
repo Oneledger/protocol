@@ -1,6 +1,7 @@
 package service
 
 import (
+	"github.com/Oneledger/protocol/data"
 	"github.com/Oneledger/protocol/data/governance"
 	"github.com/pkg/errors"
 
@@ -40,6 +41,7 @@ type Context struct {
 	Cfg            config.Server
 	Currencies     *balance.CurrencySet
 	ProposalMaster *governance.ProposalMasterStore
+	ExtStores      data.Router
 
 	NodeContext node.Context
 
@@ -56,7 +58,7 @@ type Map map[string]interface{}
 func NewMap(ctx *Context) (Map, error) {
 
 	defaultMap := Map{
-		broadcast.Name(): broadcast.NewService(ctx.Services, ctx.Router, ctx.Currencies, ctx.FeePool, ctx.Domains, ctx.Logger, ctx.Trackers, ctx.ProposalMaster),
+		broadcast.Name(): broadcast.NewService(ctx.Services, ctx.Router, ctx.Currencies, ctx.FeePool, ctx.Domains, ctx.Logger, ctx.Trackers, ctx.ProposalMaster, ctx.ExtStores),
 		nodesvc.Name():   nodesvc.NewService(ctx.NodeContext, &ctx.Cfg, ctx.Logger),
 		owner.Name():     owner.NewService(ctx.Accounts, ctx.Logger),
 		query.Name(): query.NewService(ctx.Services, ctx.Balances, ctx.Currencies, ctx.ValidatorSet, ctx.WitnessSet, ctx.Domains,
