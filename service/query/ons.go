@@ -119,7 +119,6 @@ func (sv *Service) ONS_GetSubDomainByName(req client.ONSGetDomainsRequest, reply
 	return nil
 }
 
-
 func (sv *Service) ONS_GetDomainOnSale(req client.ONSGetDomainsRequest, reply *client.ONSGetDomainsReply) error {
 	domains := sv.ons
 	if req.OnSale == false {
