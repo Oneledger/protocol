@@ -43,6 +43,7 @@ const (
 
 	//Governance Action
 	PROPOSAL_CREATE Type = 0x30
+	EXPIRE_VOTES    Type = 0x39
 
 	//Governanace Actions
 	PROPOSAL_FUND Type = 0x31
@@ -112,6 +113,8 @@ func (t Type) String() string {
 
 	case PROPOSAL_CREATE:
 		return "PROPOSAL_CREATE"
+	case EXPIRE_VOTES:
+		return "EXPIRE_VOTES"
 
 	default:
 		return "UNKNOWN"
