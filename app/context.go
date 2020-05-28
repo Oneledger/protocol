@@ -112,7 +112,6 @@ func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *node.Context) (
 
 	ctx.jobStore = jobs.NewJobStore(cfg, ctx.dbDir())
 	ctx.lockScriptStore = bitcoin.NewLockScriptStore(cfg, ctx.dbDir())
-	ctx.proposalMaster = NewProposalMasterStore(ctx.chainstate)
 	ctx.actionRouter = action.NewRouter("action")
 	ctx.extStores = data.NewStorageRouter()
 

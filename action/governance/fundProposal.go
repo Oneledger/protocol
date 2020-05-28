@@ -157,8 +157,12 @@ func runFundProposal(ctx *action.Context, tx action.RawTx) (bool, action.Respons
 	currentFundsforProposal := governance.GetCurrentFunds(proposal.ProposalID, ctx.ProposalMasterStore.ProposalFund)
 	newAmount := fundingAmount.Plus(currentFundsforProposal)
 	if newAmount.BigInt().Cmp(proposal.FundingGoal.BigInt()) >= 0 {
+		//5. Update status and set voting deadline
 		proposal.Status = governance.ProposalStatusVoting
-		//5. If the proposal moves into Voting state, take a snap shot of Validator Set,
+		options := ctx.ProposalMasterStore.Proposal.GetOptionsByType(proposal.Type)
+		proposal.VotingDeadline = ctx.Header.Height + options.VotingDeadline
+
+		//6. If the proposal moves into Voting state, take a snap shot of Validator Set,
 		//at that instant and add entries for each and every validator at the point into the Proposal_Vote_Store.
 		//In the value, we will just update the Voting power. The vote / opinion field remains empty for now
 		validatorList, err := ctx.Validators.GetValidatorSet()
@@ -173,7 +177,7 @@ func runFundProposal(ctx *action.Context, tx action.RawTx) (bool, action.Respons
 			}
 		}
 
-		//6. Update proposal status to VOTING
+		//7. Update proposal status to VOTING
 		err = ctx.ProposalMasterStore.Proposal.Set(proposal)
 		if err != nil {
 			result := action.Response{
@@ -183,7 +187,7 @@ func runFundProposal(ctx *action.Context, tx action.RawTx) (bool, action.Respons
 		}
 	}
 
-	//7. If the Proposal is still in Funding Stage (Or just moved to Voting) and Funding Goal is not met, add an entry into Proposal Fund Store. No change of State required
+	//8. If the Proposal is still in Funding Stage (Or just moved to Voting) and Funding Goal is not met, add an entry into Proposal Fund Store. No change of State required
 	coin := fundProposal.FundValue.ToCoin(ctx.Currencies)
 	err = ctx.Balances.MinusFromAddress(fundProposal.FunderAddress.Bytes(), coin)
 	if err != nil {

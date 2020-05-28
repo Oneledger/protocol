@@ -183,6 +183,7 @@ func (svc *Service) TxCommit(req client.BroadcastRequest, reply *client.Broadcas
 
 // TxCommit returns when the transaction has been committed to a block.
 func (svc *Service) TxCommitMtSig(req client.BroadcastMtSigRequest, reply *client.BroadcastReply) error {
+	// TODO: we need TxCommitMtSigSync as well
 	makeErr := func(err error) error { return rpc.InternalError(err.Error()) }
 	rawSignedTx, err := svc.validateAndMtSignTx(req)
 	if err != nil {

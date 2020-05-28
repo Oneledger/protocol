@@ -98,7 +98,7 @@ func runVote(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	}
 
 	// Check if proposal voting height is passed
-	if proposal.VotingDeadline < ctx.Header.Height {
+	if ctx.Header.Height > proposal.VotingDeadline {
 		return false, action.Response{
 			Log: fmt.Sprintf("vote proposal failed, id= %v, voting height passed", vote.ProposalID)}
 	}

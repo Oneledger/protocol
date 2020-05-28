@@ -122,29 +122,9 @@ func runTx(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 
 	//Get Proposal options based on type.
 	options := ctx.ProposalMasterStore.Proposal.GetOptionsByType(createProposal.ProposalType)
-	coin := createProposal.InitialFunding.ToCoin(ctx.Currencies)
-	coinInit := coin.Currency.NewCoinFromAmount(*options.InitialFunding)
-	coinGoal := coin.Currency.NewCoinFromAmount(*options.FundingGoal)
-
-	//Check if initial funding is not less than minimum amount based on type.
-	if coin.LessThanCoin(coinInit) {
-		result := action.Response{
-			Events: action.GetEvent(createProposal.Tags(), "create_proposal_insufficient_funds"),
-		}
-		return false, result
-	}
-
-	//Check if initial funding is more than funding goal.
-	if coinGoal.LessThanEqualCoin(coin) {
-		result := action.Response{
-			Events: action.GetEvent(createProposal.Tags(), "create_proposal_too_much_funds"),
-		}
-		return false, result
-	}
 
 	//Calculate Deadlines
 	fundingDeadline := ctx.Header.Height + options.FundingDeadline
-	votingDeadline := fundingDeadline + options.VotingDeadline
 
 	//Create Proposal and save to Proposal Store
 	proposal := governance.NewProposal(
