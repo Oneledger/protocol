@@ -143,8 +143,8 @@ func runTx(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	}
 
 	//Calculate Deadlines
-	fundingDeadline := ctx.State.Version() + options.FundingDeadline
-	votingDeadline := ctx.State.Version() + options.VotingDeadline
+	fundingDeadline := ctx.Header.Height + options.FundingDeadline
+	votingDeadline := fundingDeadline + options.VotingDeadline
 
 	//Create Proposal and save to Proposal Store
 	proposal := governance.NewProposal(

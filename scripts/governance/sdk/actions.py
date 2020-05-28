@@ -3,7 +3,6 @@ import sys
 import hashlib
 from rpc_call import *
 
-
 #Proposal Status
 ProposalStatusFunding    = 0x23
 ProposalStatusVoting     = 0x24
@@ -115,15 +114,17 @@ class ProposalFund:
 
 
 class ProposalVote:
-    def __init__(self, pid, opinion, address):
+    def __init__(self, pid, opinion, url, address):
         self.pid = pid
         self.opin = opinion
-        self.voter = address
+        self.voter = url
+        self.address = address
 
     def _vote_proposal(self):
         req = {
             "proposal_id": self.pid,
             "opinion": self.opin,
+            "address": self.address,
             "gasPrice": {
                 "currency": "OLT",
                 "value": "1000000000",
@@ -135,11 +136,21 @@ class ProposalVote:
         return result["rawTx"], result['signature']['Signed'], result['signature']['Signer']
 
     def send_vote(self):
-        # create and sign Tx
-        raw_txn, signed, signer = self._vote_proposal()
+        # create and let validator sign Tx
+        raw_txn, signed_0, signer_0 = self._vote_proposal()
+
+        # payer sign Tx
+        res = sign(raw_txn, self.address)
+        signed_1 = res['signature']['Signed']
+        signer_1 = res['signature']['Signer']
+
+        # signatures
+        sig0 = {"Signer": signer_0, "Signed": signed_0}
+        sig1 = {"Signer": signer_1, "Signed": signed_1}
+        sigs = [sig1, sig0]
 
         # broadcast Tx
-        result = broadcast_commit(signed["rawTx"], signed['signature']['Signed'], signed['signature']['Signer'])
+        result = broadcast_commit_mtsig(raw_txn, sigs)
         
         if "ok" in result:
             if not result["ok"]:
@@ -163,6 +174,17 @@ def broadcast_commit(raw_tx, signature, pub_key):
         "rawTx": raw_tx,
         "signature": signature,
         "publicKey": pub_key,
+    })
+    print resp
+    if "result" in resp:
+        return resp["result"]
+    else:
+        return resp
+
+def broadcast_commit_mtsig(raw_tx, sigs):
+    resp = rpc_call('broadcast.TxCommitMtSig', {
+        "rawTx": raw_tx,
+        "signatures": sigs,
     })
     print resp
     if "result" in resp:

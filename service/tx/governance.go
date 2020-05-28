@@ -2,8 +2,9 @@ package tx
 
 import (
 	"errors"
-	"github.com/google/uuid"
 	"strings"
+
+	"github.com/google/uuid"
 
 	"github.com/Oneledger/protocol/action"
 	gov "github.com/Oneledger/protocol/action/governance"
@@ -120,7 +121,7 @@ func translateVoteOpinion(opin string) governance.VoteOpinion {
 
 func (s *Service) VoteProposal(args client.CreateVoteRequest, reply *client.CreateVoteReply) error {
 	// this node address is voter
-	hPub, err := s.nodeContext.PubKey().GetHandler()
+	hPub, err := s.nodeContext.ValidatorPubKey().GetHandler()
 	if err != nil {
 		s.logger.Error("error get public key handler", err)
 		return codes.ErrLoadingNodeKey
@@ -141,9 +142,10 @@ func (s *Service) VoteProposal(args client.CreateVoteRequest, reply *client.Crea
 	}
 
 	voteProposal := gov.VoteProposal{
-		ProposalID: governance.ProposalID(args.ProposalID),
-		Address:    address,
-		Opinion:    opin,
+		ProposalID:       governance.ProposalID(args.ProposalID),
+		Address:          args.Address,
+		ValidatorAddress: address,
+		Opinion:          opin,
 	}
 
 	data, err := voteProposal.Marshal()
@@ -164,11 +166,6 @@ func (s *Service) VoteProposal(args client.CreateVoteRequest, reply *client.Crea
 		Memo: uuidNew.String(),
 	}
 
-	packet, err := serialize.GetSerializer(serialize.NETWORK).Serialize(tx)
-	if err != nil {
-		return codes.ErrSerialization
-	}
-
 	// validator signs Tx
 	rawData := tx.RawBytes()
 	pubkey := hPri.PubKey()
@@ -176,7 +173,7 @@ func (s *Service) VoteProposal(args client.CreateVoteRequest, reply *client.Crea
 
 	// reply
 	signature := action.Signature{Signed: signed, Signer: pubkey}
-	*reply = client.CreateVoteReply{RawTx: packet, Signature: signature}
+	*reply = client.CreateVoteReply{RawTx: rawData, Signature: signature}
 
 	return nil
 }

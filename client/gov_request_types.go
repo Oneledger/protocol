@@ -38,7 +38,8 @@ type GetProposalByIDReply struct {
 
 type CreateVoteRequest struct {
 	ProposalID string        `json:"proposal_id"`
-	Opinion    string        `json:"opinopn"`
+	Opinion    string        `json:"opinion"`
+	Address    keys.Address  `json:"address"`
 	GasPrice   action.Amount `json:"gasPrice"`
 	Gas        int64         `json:"gas"`
 }

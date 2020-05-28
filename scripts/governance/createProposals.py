@@ -1,7 +1,6 @@
 import sys
 import time
-
-from sdk.actions import *
+from sdk import *
 
 addr_list = addresses()
 
