@@ -1,13 +1,13 @@
 import time
 from actions import *
 
-def fund_proposal(pid, amount, funder, secs=2):
+def fund_proposal(pid, amount, funder, secs=1):
     # fund the proposal
     prop_fund = ProposalFund(pid, amount, funder)
     prop_fund.send_fund()
     time.sleep(secs)
 
-def vote_proposal(pid, opinion, url, address, secs=2):
+def vote_proposal(pid, opinion, url, address, secs=1):
     # fund the proposal
     prop_vote = ProposalVote(pid, opinion, url, address)
     prop_vote.send_vote()
