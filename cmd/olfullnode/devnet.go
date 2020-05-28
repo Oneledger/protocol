@@ -53,11 +53,28 @@ var (
 	ethBlockConfirmation = int64(12)
 	btcBlockConfirmation = int64(6)
 
-	proposalInitialFunding, _ = balance.NewAmountFromString("1000000000", 10)
-	proposalFundingGoal, _    = balance.NewAmountFromString("10000000000", 10)
-	proposalFundingDeadline   = int64(12)
-	proposalVotingDeadline    = int64(12)
-	proposalPassPercentage    = 51
+	proposalInitialFunding, _  = balance.NewAmountFromString("1000000000", 10)
+	proposalFundingGoal, _     = balance.NewAmountFromString("10000000000", 10)
+	proposalFundingDeadline    = int64(12)
+	proposalVotingDeadline     = int64(12)
+	proposalPassPercentage     = 51
+	bountyProgramAddr          = "oneledgerBountyProgram"
+	passedProposalDistribution = governance.ProposalFundDistribution{
+		Validators:     18.00,
+		FeePool:        18.00,
+		Burn:           18.00,
+		ExecutionFees:  18.00,
+		BountyPool:     10.00,
+		ProposerReward: 18.00,
+	}
+	failedProposalDistribution = governance.ProposalFundDistribution{
+		Validators:     10.00,
+		FeePool:        10.00,
+		Burn:           10.00,
+		ExecutionFees:  20.00,
+		BountyPool:     50.00,
+		ProposerReward: 00.00,
+	}
 
 	testnetArgs = &testnetConfig{}
 
@@ -392,26 +409,33 @@ func runDevnet(_ *cobra.Command, _ []string) error {
 
 	propOpt := governance.ProposalOptionSet{
 		ConfigUpdate: governance.ProposalOption{
-			InitialFunding:  proposalInitialFunding,
-			FundingGoal:     proposalFundingGoal,
-			FundingDeadline: proposalFundingDeadline,
-			VotingDeadline:  proposalVotingDeadline,
-			PassPercentage:  proposalPassPercentage,
+			InitialFunding:         proposalInitialFunding,
+			FundingGoal:            proposalFundingGoal,
+			FundingDeadline:        proposalFundingDeadline,
+			VotingDeadline:         proposalVotingDeadline,
+			PassPercentage:         proposalPassPercentage,
+			PassedFundDistribution: passedProposalDistribution,
+			FailedFundDistribution: failedProposalDistribution,
 		},
 		CodeChange: governance.ProposalOption{
-			InitialFunding:  proposalInitialFunding,
-			FundingGoal:     proposalFundingGoal,
-			FundingDeadline: proposalFundingDeadline,
-			VotingDeadline:  proposalVotingDeadline,
-			PassPercentage:  proposalPassPercentage,
+			InitialFunding:         proposalInitialFunding,
+			FundingGoal:            proposalFundingGoal,
+			FundingDeadline:        proposalFundingDeadline,
+			VotingDeadline:         proposalVotingDeadline,
+			PassPercentage:         proposalPassPercentage,
+			PassedFundDistribution: passedProposalDistribution,
+			FailedFundDistribution: failedProposalDistribution,
 		},
 		General: governance.ProposalOption{
-			InitialFunding:  proposalInitialFunding,
-			FundingGoal:     proposalFundingGoal,
-			FundingDeadline: proposalFundingDeadline,
-			VotingDeadline:  proposalVotingDeadline,
-			PassPercentage:  proposalPassPercentage,
+			InitialFunding:         proposalInitialFunding,
+			FundingGoal:            proposalFundingGoal,
+			FundingDeadline:        proposalFundingDeadline,
+			VotingDeadline:         proposalVotingDeadline,
+			PassPercentage:         proposalPassPercentage,
+			PassedFundDistribution: passedProposalDistribution,
+			FailedFundDistribution: failedProposalDistribution,
 		},
+		BountyProgramAddr: bountyProgramAddr,
 	}
 
 	states := initialState(args, nodeList, *cdo, *onsOp, btccdo, propOpt, reserveDomains, initialAddrs)

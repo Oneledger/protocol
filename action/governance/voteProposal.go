@@ -14,9 +14,10 @@ import (
 var _ action.Msg = &VoteProposal{}
 
 type VoteProposal struct {
-	ProposalID gov.ProposalID
-	Address    action.Address
-	Opinion    gov.VoteOpinion
+	ProposalID       gov.ProposalID
+	Address          action.Address
+	ValidatorAddress action.Address
+	Opinion          gov.VoteOpinion
 }
 
 var _ action.Tx = voteProposalTx{}
@@ -50,6 +51,9 @@ func (a voteProposalTx) Validate(ctx *action.Context, tx action.SignedTx) (bool,
 	}
 	if err = vote.Address.Err(); err != nil {
 		return false, errors.Wrap(err, "invalid voter address")
+	}
+	if !ctx.Validators.IsValidatorAddress(vote.ValidatorAddress) {
+		return false, errors.Wrap(err, "not a validator address")
 	}
 	if err = vote.Opinion.Err(); err != nil {
 		return false, errors.Wrap(err, "invalid vote opinion")
@@ -100,14 +104,14 @@ func runVote(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	}
 
 	// Get validator's voting power
-	validator, err := ctx.Validators.Get(vote.Address)
+	validator, err := ctx.Validators.Get(vote.ValidatorAddress)
 	if err != nil {
 		return false, action.Response{
 			Log: fmt.Sprintf("vote proposal failed, id= %v, validator not found", vote.ProposalID)}
 	}
 
 	// Add this vote to proposal vote store
-	pv := gov.NewProposalVote(vote.Address, vote.Opinion, validator.Power)
+	pv := gov.NewProposalVote(vote.ValidatorAddress, vote.Opinion, validator.Power)
 	err = ctx.ProposalMasterStore.ProposalVote.Update(vote.ProposalID, pv)
 	if err != nil {
 		return false, action.Response{
@@ -154,7 +158,7 @@ func runVote(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 }
 
 func (vote VoteProposal) Signers() []action.Address {
-	return []action.Address{vote.Address.Bytes()}
+	return []action.Address{vote.Address.Bytes(), vote.ValidatorAddress.Bytes()}
 }
 
 func (vote VoteProposal) Type() action.Type {
@@ -177,11 +181,15 @@ func (vote VoteProposal) Tags() kv.Pairs {
 		Value: vote.Address.Bytes(),
 	}
 	tag4 := kv.Pair{
+		Key:   []byte("tx.address"),
+		Value: vote.ValidatorAddress.Bytes(),
+	}
+	tag5 := kv.Pair{
 		Key:   []byte("tx.opinion"),
 		Value: []byte(string(vote.Opinion)),
 	}
 
-	tags = append(tags, tag, tag2, tag3, tag4)
+	tags = append(tags, tag, tag2, tag3, tag4, tag5)
 	return tags
 }
 
