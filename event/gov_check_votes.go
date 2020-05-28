@@ -33,12 +33,14 @@ func (j JobGovCheckVotes) DoMyJob(ctx interface{}) {
 	//Get Proposal
 	proposal, err := proposalMaster.Proposal.Get(j.ProposalID)
 	if err != nil {
+		j.Status = jobs.Failed
 		govCtx.Logger.Error("gov_check_votes: failed to get proposal")
 		return
 	}
 
 	//Check if proposal is in voting state
 	if proposal.Status != governance.ProposalStatusVoting {
+		j.Status = jobs.Failed
 		govCtx.Logger.Error("gov_check_votes: proposal is not in a voting state")
 		return
 	}
@@ -46,20 +48,32 @@ func (j JobGovCheckVotes) DoMyJob(ctx interface{}) {
 	//Check number of votes
 	passed, err := proposalMaster.ProposalVote.IsPassed(j.ProposalID, int64(proposal.PassPercentage))
 	if err != nil {
+		j.Status = jobs.Failed
 		govCtx.Logger.Error(errors.Wrap(err, "gov_check_votes:"))
 		return
 	}
 	if passed {
+		j.Status = jobs.Failed
 		govCtx.Logger.Error("gov_check_votes: proposal has already been passed")
 		return
 	}
 
 	//Check vote expiry
 	if proposalMaster.Proposal.GetState().Version() <= proposal.VotingDeadline {
+		j.Status = jobs.Failed
 		govCtx.Logger.Error("gov_check_votes: voting period is not over yet")
+		return
 	}
 
 	//Create internal transaction and broadcast
+	err = BroadcastGovExpireVotesTx(govCtx, j.ProposalID, j.JobID)
+	if err != nil {
+		j.Status = jobs.Failed
+		govCtx.Logger.Error("gov_check_votes: error broadcasting" + err.Error())
+		return
+	}
+
+	j.Status = jobs.Completed
 }
 
 func (j JobGovCheckVotes) IsDone() bool {
