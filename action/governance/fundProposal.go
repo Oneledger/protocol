@@ -10,7 +10,6 @@ import (
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/governance"
 	"github.com/Oneledger/protocol/data/keys"
-	"github.com/Oneledger/protocol/identity"
 )
 
 var _ action.Msg = &FundProposal{}
@@ -122,7 +121,7 @@ func runFundProposal(ctx *action.Context, tx action.RawTx) (bool, action.Respons
 	if err != nil {
 		return false, action.Response{}
 	}
-	// 1 check if proposal exists
+	//1. check if proposal exists
 	proposal, err := ctx.ProposalMasterStore.Proposal.Get(fundProposal.ProposalId)
 	if err != nil {
 		ctx.Logger.Error("Proposal does not exist :", fundProposal.ProposalId)
@@ -132,8 +131,8 @@ func runFundProposal(ctx *action.Context, tx action.RawTx) (bool, action.Respons
 		return false, result
 	}
 
-	//3. Check if the Funding height is already reached
-	//6. If the proposal has already passed Funding height, reject the transaction
+	//2. Check if the Funding height is already reached
+	//  If the proposal has already passed Funding height, reject the transaction
 	if ctx.Header.Height > proposal.FundingDeadline {
 		ctx.Logger.Debug("Funding Height has already been reached")
 		result := action.Response{
@@ -142,8 +141,8 @@ func runFundProposal(ctx *action.Context, tx action.RawTx) (bool, action.Respons
 		return false, result
 
 	}
-	//2. Check if the Proposal is in funding stage
-	//5. If the proposal is not in FUNDING state, reject the transaction
+	//3. Check if the Proposal is in funding stage
+	//  If the proposal is not in FUNDING state, reject the transaction
 	if proposal.Status != governance.ProposalStatusFunding {
 		ctx.Logger.Debug("Cannot fund proposal , Current proposal state : ", proposal.Status)
 		result := action.Response{
@@ -152,30 +151,40 @@ func runFundProposal(ctx *action.Context, tx action.RawTx) (bool, action.Respons
 		return false, result
 	}
 
-	//3. Check if the Proposal has reached funding goal, when this contribution is added
-	//4. Change the state of the proposal to VOTING, if funding goal is met
+	//4. Check if the Proposal has reached funding goal, when this contribution is added
+	//   Change the state of the proposal to VOTING, if funding goal is met
 	fundingAmount := balance.NewAmountFromBigInt(fundProposal.FundValue.Value.BigInt())
 	currentFundsforProposal := governance.GetCurrentFunds(proposal.ProposalID, ctx.ProposalMasterStore.ProposalFund)
 	newAmount := fundingAmount.Plus(currentFundsforProposal)
 	if newAmount.BigInt().Cmp(proposal.FundingGoal.BigInt()) >= 0 {
+		//5. Update status and set voting deadline
 		proposal.Status = governance.ProposalStatusVoting
-		//7. If the proposal moves into Voting state, take a snap shot of Validator Set,
+		options := ctx.ProposalMasterStore.Proposal.GetOptionsByType(proposal.Type)
+		proposal.VotingDeadline = ctx.Header.Height + options.VotingDeadline
+
+		//6. If the proposal moves into Voting state, take a snap shot of Validator Set,
 		//at that instant and add entries for each and every validator at the point into the Proposal_Vote_Store.
 		//In the value, we will just update the Voting power. The vote / opinion field remains empty for now
-		//validatorList, err := ctx.Validators.GetValidatorSet()
-		//if err != nil {
-		//	ctx.Logger.Error("Unable to fetch Validator list from Validator store")
-		//	result := action.Response{
-		//		Events: action.GetEvent(fundProposal.Tags(), "fund_proposal_validator_list_unavailable"),
-		//	}
-		//	return false, result
-		//}
+		validatorList, err := ctx.Validators.GetValidatorSet()
+		if err != nil {
+			return false, action.Response{Log: "Fund proposal failed in getting validator list"}
+		}
+		for _, v := range validatorList {
+			vote := governance.NewProposalVote(v.Address, governance.OPIN_UNKNOWN, v.Power)
+			err = ctx.ProposalMasterStore.ProposalVote.Setup(proposal.ProposalID, vote)
+			if err != nil {
+				return false, action.Response{Log: "setup voting validator failed"}
+			}
+		}
 
-		ctx.Validators.Iterate(func(addr keys.Address, validator *identity.Validator) bool {
-			validatorVote := governance.NewProposalVote(addr, governance.OPIN_UNKNOWN, validator.Power)
-			ctx.ProposalMasterStore.ProposalVote.Update(proposal.ProposalID, validatorVote)
-			return false
-		})
+		//7. Update proposal status to VOTING
+		err = ctx.ProposalMasterStore.Proposal.Set(proposal)
+		if err != nil {
+			result := action.Response{
+				Events: action.GetEvent(fundProposal.Tags(), "update_proposal_failed"),
+			}
+			return false, result
+		}
 	}
 
 	//8. If the Proposal is still in Funding Stage (Or just moved to Voting) and Funding Goal is not met, add an entry into Proposal Fund Store. No change of State required

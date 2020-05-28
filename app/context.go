@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/Oneledger/protocol/data"
+
 	"github.com/pkg/errors"
 	db "github.com/tendermint/tm-db"
 
@@ -49,6 +51,7 @@ type context struct {
 	check      *storage.State
 	deliver    *storage.State
 
+	extStores   data.Router //External Stores
 	balances    *balance.Store
 	domains     *ons.DomainStore
 	validators  *identity.ValidatorStore // Set of validators currently active
@@ -109,8 +112,8 @@ func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *node.Context) (
 
 	ctx.jobStore = jobs.NewJobStore(cfg, ctx.dbDir())
 	ctx.lockScriptStore = bitcoin.NewLockScriptStore(cfg, ctx.dbDir())
-	ctx.proposalMaster = NewProposalMasterStore(ctx.chainstate)
 	ctx.actionRouter = action.NewRouter("action")
+	ctx.extStores = data.NewStorageRouter()
 
 	testEnv := os.Getenv("OLTEST")
 
@@ -166,6 +169,7 @@ func (ctx *context) Action(header *Header, state *storage.State) *action.Context
 		ctx.lockScriptStore,
 		log.NewLoggerWithPrefix(ctx.logWriter, "action").WithLevel(log.Level(ctx.cfg.Node.LogLevel)),
 		ctx.proposalMaster.WithState(state),
+		ctx.extStores,
 	)
 
 	return actionCtx
@@ -223,6 +227,7 @@ func (ctx *context) Services() (service.Map, error) {
 		WitnessSet:     identity.NewWitnessStore("w", storage.NewState(ctx.chainstate)),
 		Domains:        ons,
 		ProposalMaster: proposalMaster,
+		ExtStores:      ctx.extStores,
 		Router:         ctx.actionRouter,
 		Logger:         log.NewLoggerWithPrefix(ctx.logWriter, "rpc").WithLevel(log.Level(ctx.cfg.Node.LogLevel)),
 		Services:       extSvcs,
@@ -321,4 +326,16 @@ func (ctx *context) JobContext() *event.JobsContext {
 		ctx.lockScriptStore,
 		ctx.ethTrackers.WithState(ctx.deliver),
 		log.NewLoggerWithPrefix(ctx.logWriter, "internal_jobs").WithLevel(log.Level(ctx.cfg.Node.LogLevel)))
+}
+
+func (ctx *context) AddExternalTx(t action.Type, h action.Tx) error {
+	return ctx.actionRouter.AddHandler(t, h)
+}
+
+func (ctx *context) AddExternalStore(storeType data.Type, storeObj interface{}) error {
+	return ctx.extStores.Add(storeType, storeObj)
+}
+
+func (ctx *context) GetChainState() *storage.ChainState {
+	return ctx.chainstate
 }

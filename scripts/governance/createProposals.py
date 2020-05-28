@@ -1,14 +1,15 @@
 import sys
 import time
-
-from sdk.actions import *
+from sdk import *
 
 addr_list = addresses()
 
 _pid = "id_20000"
 _proposer = addr_list[0]
-_initial_funding = (int("10023450") * 10 ** 14)
-_initial_funding_insufficient = (int("1000"))
+_initial_funding = (int("2") * 10 ** 9)
+_initial_funding_insufficient = (int("1") * 10 ** 8)
+_initial_funding_too_much = (int("100") * 10 ** 9)
+_funding_goal = (int("10") * 10 ** 9)
 
 proposals = [Proposal("proposal description A", "codeChange", "10001", _proposer, _initial_funding),
              Proposal("proposal description B", "codeChange", "10002", _proposer, _initial_funding),
@@ -17,14 +18,19 @@ proposals = [Proposal("proposal description A", "codeChange", "10001", _proposer
              Proposal("proposal description F", "general", "10006", _proposer, _initial_funding)
              ]
 proposal_littleInitFund = Proposal("proposal description D", "configUpdate", "10004", _proposer, _initial_funding_insufficient)
+proposal_hugeInitFund = Proposal("proposal description G", "general", "10007", _proposer, _initial_funding_too_much)
 
 if __name__ == "__main__":
     # create normal proposals
     for prop in proposals:
         prop.send_create()
+        print "proposal id:", prop.pid
 
-    #create proposal with little initial fund
+    # create proposal with little initial fund
     proposal_littleInitFund.send_create()
+
+    # create proposal with huge initial fund
+    proposal_hugeInitFund.send_create()
 
     time.sleep(5)
 

@@ -146,7 +146,7 @@ type ListValidatorsReply struct {
 	Height int64 `json:"height"`
 }
 
-type ListWitnessesRequest struct{
+type ListWitnessesRequest struct {
 	ChainType chain.Type `json:"chainType"`
 }
 type ListWitnessesReply struct {
@@ -176,6 +176,11 @@ type BroadcastReply struct {
 	OK     bool   `json:"ok"`
 	Height *int64 `json:"height,omitempty"`
 	Log    string `json:"log"`
+}
+
+type BroadcastMtSigRequest struct {
+	RawTx      []byte             `json:"rawTx"`
+	Signatures []action.Signature `json:"signatures"`
 }
 
 func (reply *BroadcastReply) FromResultBroadcastTx(result *ctypes.ResultBroadcastTx) {
