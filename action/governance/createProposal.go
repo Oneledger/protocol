@@ -124,7 +124,9 @@ func runTx(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	options := ctx.ProposalMasterStore.Proposal.GetOptionsByType(createProposal.ProposalType)
 
 	//Calculate Deadlines
+	//Actual voting deadline will be setup in funding Tx
 	fundingDeadline := ctx.Header.Height + options.FundingDeadline
+	votingDeadline := fundingDeadline + options.VotingDeadline
 
 	//Create Proposal and save to Proposal Store
 	proposal := governance.NewProposal(
