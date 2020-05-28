@@ -5,4 +5,4 @@
   become: true
   become_user: root
   roles:
-  - role: explorer-aws
+  - role: explorer-restart
