@@ -124,6 +124,12 @@ func VerifyRedeem(ctx interface{}) error {
 			}
 		}
 	}
+
+	y, n := tracker.GetVotes()
+	if y+n > 0 {
+		tracker.State = ethereum.BusyFinalizing
+	}
+
 	context.Tracker = tracker
 	return nil
 }
