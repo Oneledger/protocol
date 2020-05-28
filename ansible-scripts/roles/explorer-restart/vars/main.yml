@@ -1,5 +1,5 @@
 # Database variables
-ip: 34.67.95.95
+database_ip: 34.67.95.95
 my_database_name: explorer_devnet3_20200511
 username: postgres
 fullnode_sdk_port: http://10.128.0.6:26606
