@@ -219,11 +219,6 @@ def addresses():
     return resp["result"]["addresses"]
 
 
-def addresses_from_second_node():
-    resp = rpc_call('owner.ListAccountAddresses', {}, url_1)
-    return resp["result"]["addresses"]
-
-
 def sign(raw_tx, address):
     resp = rpc_call('owner.SignWithAddress', {"rawTx": raw_tx, "address": address})
     return resp["result"]
@@ -279,4 +274,11 @@ def query_proposals(prefix):
 def query_proposal(proposal_id):
     req = {"proposal_id": proposal_id}
     resp = rpc_call('query.GetProposalByID', req)
+    return resp["result"]
+
+
+def query_balance(address):
+    req = {"address": address}
+    resp = rpc_call('query.Balance', req)
+    print json.dumps(resp, indent=4)
     return resp["result"]

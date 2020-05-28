@@ -105,9 +105,26 @@ func runWithdraw(ctx *action.Context, signedTx action.RawTx) (bool, action.Respo
 		}
 		return false, result
 	}
-	// 2. change outcome
+	// 2. change outcome, status, state
+	// todo not sure this part should be done here or in blockender
 	proposal.Outcome = governance.ProposalOutcomeInsufficientFunds
-
+	proposal.Status = governance.ProposalStatusCompleted
+	err = ctx.ProposalMasterStore.Proposal.WithPrefixType(governance.ProposalStateFailed).Set(proposal)
+	if err != nil {
+		ctx.Logger.Error("Failed to add proposal to FAILED store :", proposal.ProposalID)
+		result := action.Response{
+			Events: action.GetEvent(withdrawProposal.Tags(), "failed_to_add_proposal_to_failed_store"),
+		}
+		return false, result
+	}
+	ok, err := ctx.ProposalMasterStore.Proposal.WithPrefixType(governance.ProposalStateActive).Delete(proposal.ProposalID)
+	if err != nil || !ok {
+		ctx.Logger.Error("Failed to delete proposal from ACTIVE store :", proposal.ProposalID)
+		result := action.Response{
+			Events: action.GetEvent(withdrawProposal.Tags(), "failed_to_delete_proposal_from_active_store"),
+		}
+		return false, result
+	}
 
 	// 3. Check if the contributor has funded this proposal, if so, get the amount of funds
 	proposalFund, err := governance.GetCurrentFundsByContributor(proposal.ProposalID, withdrawProposal.Contributor, ctx.ProposalMasterStore.ProposalFund)
