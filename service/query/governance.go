@@ -50,8 +50,11 @@ func (svc *Service) GetProposalByID(req client.GetProposalByIDRequest, reply *cl
 		return codes.ErrGetProposal
 	}
 
+	proposalFunds := governance.GetCurrentFunds(proposalID, svc.proposalMaster.ProposalFund)
+
 	*reply = client.GetProposalByIDReply{
 		Proposal: *proposal,
+		ProposalFunds: *proposalFunds,
 		State:    state,
 	}
 
