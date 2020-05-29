@@ -108,17 +108,18 @@ if __name__ == "__main__":
     withdraw_fund_malicious(_proposer, _encoded_pid, _contributor, _withdraw_amount, _contributor)
     time.sleep(5)
 
-    print "#### ACTIVE PROPOSALS: ####"
-    activeList = query_proposals("active")
-    if len(activeList) != 0:
-        sys.exit(-1)
-
-    print "#### PASSED PROPOSALS: ####"
-    passedList = query_proposals("passed")
-    if len(passedList) != 0:
-        sys.exit(-1)
+    # below applied when run withdrawFunds.py only
+    # print "#### ACTIVE PROPOSALS: ####"
+    # activeList = query_proposals("active")
+    # if len(activeList) != 0:
+    #     sys.exit(-1)
+    #
+    # print "#### PASSED PROPOSALS: ####"
+    # passedList = query_proposals("passed")
+    # if len(passedList) != 0:
+    #     sys.exit(-1)
 
     print "#### FAILED PROPOSALS: ####"
     failedList = query_proposals("failed")
-    if len(failedList) != 1:
+    if len(failedList) == 0:
         sys.exit(-1)
