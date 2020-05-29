@@ -46,13 +46,13 @@ func (j JobGovCheckVotes) DoMyJob(ctx interface{}) {
 	}
 
 	//Check number of votes
-	passed, err := proposalMaster.ProposalVote.IsPassed(j.ProposalID, int64(proposal.PassPercentage))
+	passed, err := proposalMaster.ProposalVote.ResultSoFar(j.ProposalID, proposal.PassPercentage)
 	if err != nil {
 		j.Status = jobs.Failed
 		govCtx.Logger.Error(errors.Wrap(err, "gov_check_votes:"))
 		return
 	}
-	if passed {
+	if passed == governance.VOTE_RESULT_PASSED {
 		j.Status = jobs.Failed
 		govCtx.Logger.Error("gov_check_votes: proposal has already been passed")
 		return
