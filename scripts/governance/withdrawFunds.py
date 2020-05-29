@@ -6,10 +6,10 @@ addr_list = addresses()
 
 _pid = "id_30034"
 _proposer = addr_list[0]
-_initial_funding = (int("2") * 10 ** 18)
+_initial_funding = (int("2") * 10 ** 9)
 _contributor = addr_list[1]
-_funds_amount = (int("2") * 10 ** 18)
-_withdraw_amount = (int("2") * 10 ** 18)
+_funds_amount = (int("2") * 10 ** 9)
+_withdraw_amount = (int("2") * 10 ** 9)
 
 _prop = Proposal(_pid, "general", "proposal for funds withdrawing", _proposer, _initial_funding)
 _encoded_pid = _prop.get_encoded_pid()
