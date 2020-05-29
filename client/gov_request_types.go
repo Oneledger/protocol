@@ -2,6 +2,7 @@ package client
 
 import (
 	"github.com/Oneledger/protocol/action"
+	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/governance"
 	"github.com/Oneledger/protocol/data/keys"
 )
@@ -33,6 +34,7 @@ type GetProposalByIDRequest struct {
 
 type GetProposalByIDReply struct {
 	Proposal governance.Proposal      `json:"proposal"`
+	ProposalFunds balance.Amount	  `json:"proposal_funds"`
 	State    governance.ProposalState `json:"state"`
 }
 

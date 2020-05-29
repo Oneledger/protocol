@@ -166,10 +166,10 @@ class ProposalFundsWithdraw:
         self.value = value
         self.benefi = beneficiary
 
-    def _withdraw_funds(self):
+    def _withdraw_funds(self, contr_address):
         req = {
             "proposal_id": self.pid,
-            "contributor_address": self.contr,
+            "contributor_address": contr_address,
             "withdraw_value": {
                 "currency": "OLT",
                 "value": convertBigInt(self.value),
@@ -185,9 +185,9 @@ class ProposalFundsWithdraw:
         print resp
         return resp["result"]["rawTx"]
 
-    def withdraw_fund(self):
+    def withdraw_fund(self, contr_address):
         # create Tx
-        raw_txn = self._withdraw_funds()
+        raw_txn = self._withdraw_funds(contr_address)
 
         # sign Tx
         signed = sign(raw_txn, self.contr)
@@ -197,10 +197,13 @@ class ProposalFundsWithdraw:
 
         if "ok" in result:
             if not result["ok"]:
-                sys.exit(-1)
-            else:
-                print "################### proposal funds withdrawed:" + self.pid
+                print bcolors.FAIL + "################### proposal funds withdrawed failed:" + result["log"] + bcolors.ENDC
                 return result["txHash"]
+            else:
+                print "################### proposal funds withdrawn:" + self.pid
+                return result["txHash"]
+        else:
+            print bcolors.FAIL + "################### proposal funds withdrawed failed:" + result["error"]["message"] + bcolors.ENDC
 
 
 def addresses():

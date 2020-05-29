@@ -106,7 +106,6 @@ func runWithdraw(ctx *action.Context, signedTx action.RawTx) (bool, action.Respo
 		return false, result
 	}
 	// 2. change outcome, status, state
-	// todo not sure this part should be done here or in blockender
 	proposal.Outcome = governance.ProposalOutcomeInsufficientFunds
 	proposal.Status = governance.ProposalStatusCompleted
 	err = ctx.ProposalMasterStore.Proposal.WithPrefixType(governance.ProposalStateFailed).Set(proposal)
@@ -142,6 +141,7 @@ func runWithdraw(ctx *action.Context, signedTx action.RawTx) (bool, action.Respo
 		ctx.Logger.Error("Insufficient funds to withdraw for this contributor :", withdrawProposal.Contributor)
 		result := action.Response{
 			Events: action.GetEvent(withdrawProposal.Tags(), "no_available__fund_to_withdraw_for_this_contributor"),
+			Log: action.ErrNotEnoughFund.Msg,
 		}
 		return false, result
 	}
@@ -152,7 +152,7 @@ func runWithdraw(ctx *action.Context, signedTx action.RawTx) (bool, action.Respo
 	if err != nil {
 		ctx.Logger.Error("Failed to deduct funds from proposal:", withdrawProposal.ProposalID)
 		result := action.Response{
-			Events: action.GetEvent(withdrawProposal.Tags(), "withdraw_proposal_DeductFund_failed"),
+			Events: action.GetEvent(withdrawProposal.Tags(), "withdraw_proposal_deduct_fund_failed"),
 		}
 		return false, result
 	}
@@ -160,6 +160,15 @@ func runWithdraw(ctx *action.Context, signedTx action.RawTx) (bool, action.Respo
 	coin := withdrawProposal.WithdrawValue.ToCoin(ctx.Currencies)
 	err = ctx.Balances.AddToAddress(withdrawProposal.Beneficiary.Bytes(), coin)
 	if err != nil {
+		// return funds to proposal
+		err = ctx.ProposalMasterStore.ProposalFund.AddFunds(proposal.ProposalID, withdrawProposal.Contributor, withdrawAmount)
+		if err != nil {
+			ctx.Logger.Error("Failed to return funds to proposal:", withdrawProposal.ProposalID)
+			result := action.Response{
+				Events: action.GetEvent(withdrawProposal.Tags(), "withdraw_proposal_return_fund_failed"),
+			}
+			return false, result
+		}
 		result := action.Response{
 			Events: action.GetEvent(withdrawProposal.Tags(), "withdraw_proposal_addition_failed"),
 		}
