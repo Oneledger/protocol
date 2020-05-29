@@ -1,5 +1,5 @@
 [validators]
-130.211.124.62
+130.211.124.62  ansible_ssh_private_key_file=/home/mani/.ssh/id_rsa
 34.71.101.120
 34.69.155.30
 35.222.53.243
