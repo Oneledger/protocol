@@ -2,9 +2,10 @@ package client
 
 import (
 	"errors"
+	"os"
+
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/rpc"
-	"os"
 )
 
 // A type-safe client for accessing rpc services.
@@ -121,6 +122,12 @@ func (c *ServiceClient) ONS_CreateRawSend(req ONSSendRequest) (out CreateTxReply
 
 func (c *ServiceClient) CreateRawSend(req SendTxRequest) (out *CreateTxReply, err error) {
 	err = c.Call("tx.CreateRawSend", req, &out)
+	return
+}
+
+/* Governance */
+func (c *ServiceClient) CreateVote(req CreateVoteRequest) (out *CreateVoteReply, err error) {
+	err = c.Call("tx.CreateVote", req, &out)
 	return
 }
 

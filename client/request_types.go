@@ -178,6 +178,11 @@ type BroadcastReply struct {
 	Log    string `json:"log"`
 }
 
+type BroadcastMtSigRequest struct {
+	RawTx      []byte             `json:"rawTx"`
+	Signatures []action.Signature `json:"signatures"`
+}
+
 func (reply *BroadcastReply) FromResultBroadcastTx(result *ctypes.ResultBroadcastTx) {
 	reply.TxHash = result.Hash
 	reply.OK = result.Code == 0

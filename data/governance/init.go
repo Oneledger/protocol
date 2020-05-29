@@ -1,9 +1,10 @@
 package governance
 
 import (
+	"os"
+
 	"github.com/Oneledger/protocol/log"
 	"github.com/Oneledger/protocol/storage"
-	"os"
 )
 
 var logger *log.Logger
@@ -38,10 +39,15 @@ const (
 	ProposalStateFailed ProposalState = 0x33
 
 	//Vote Opinions
-	OPIN_UNKNOWN  VoteOpinion = 0
-	OPIN_POSITIVE VoteOpinion = 1
-	OPIN_NEGATIVE VoteOpinion = 2
-	OPIN_GIVEUP   VoteOpinion = 3
+	OPIN_UNKNOWN  VoteOpinion = 0x0
+	OPIN_POSITIVE VoteOpinion = 0x1
+	OPIN_NEGATIVE VoteOpinion = 0x2
+	OPIN_GIVEUP   VoteOpinion = 0x3
+
+	//Vote Result
+	VOTE_RESULT_PASSED VoteResult = 0x10
+	VOTE_RESULT_FAILED VoteResult = 0x11
+	VOTE_RESULT_TBD    VoteResult = 0x12
 
 	//Error Codes
 	errorSerialization   = "321"
@@ -54,17 +60,20 @@ const (
 type ProposalMasterStore struct {
 	Proposal     *ProposalStore
 	ProposalFund *ProposalFundStore
+	ProposalVote *ProposalVoteStore
 }
 
 func (p *ProposalMasterStore) WithState(state *storage.State) *ProposalMasterStore {
 	p.Proposal.WithState(state)
 	p.ProposalFund.WithState(state)
+	p.ProposalVote.WithState(state)
 	return p
 }
 
-func NewProposalMasterStore(p *ProposalStore, pf *ProposalFundStore) *ProposalMasterStore {
+func NewProposalMasterStore(p *ProposalStore, pf *ProposalFundStore, pv *ProposalVoteStore) *ProposalMasterStore {
 	return &ProposalMasterStore{
 		Proposal:     p,
 		ProposalFund: pf,
+		ProposalVote: pv,
 	}
 }
