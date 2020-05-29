@@ -285,3 +285,10 @@ def query_balance(address):
     resp = rpc_call('query.Balance', req)
     print json.dumps(resp, indent=4)
     return resp["result"]
+
+
+def query_balance(address):
+    req = {"address": address}
+    resp = rpc_call('query.Balance', req)
+    print json.dumps(resp, indent=4)
+    return resp["result"]
