@@ -48,6 +48,7 @@ func (st *ProposalFundStore) get(key storage.StoreKey) (amt *balance.Amount, err
 
 func (pf *ProposalFundStore) delete(key storage.StoreKey) (bool, error) {
 	prefixed := append(pf.prefix, key...)
+
 	res, err := pf.State.Delete(prefixed)
 	if err != nil {
 		return false, errors.Wrap(err, errorDeletingRecord)
@@ -61,11 +62,9 @@ func (pf *ProposalFundStore) iterate(fn func(proposalID ProposalID, addr keys.Ad
 		storage.Rangefix(string(pf.prefix)),
 		true,
 		func(key, value []byte) bool {
-
 			amt := balance.NewAmount(0)
 			err := serialize.GetSerializer(serialize.PERSISTENT).Deserialize(value, amt)
 			if err != nil {
-				fmt.Println("err", err)
 				return true
 			}
 			arr := strings.Split(string(key), storage.DB_PREFIX)
@@ -73,7 +72,7 @@ func (pf *ProposalFundStore) iterate(fn func(proposalID ProposalID, addr keys.Ad
 			fundingAddress := keys.Address(arr[len(arr)-1])
 			err = fundingAddress.UnmarshalText([]byte(arr[len(arr)-1]))
 			if err != nil {
-				fmt.Println("err", err)
+				fmt.Println("Error Unmarshalling ", err)
 				return true
 			}
 			return fn(ProposalID(proposalID), fundingAddress, amt)
@@ -127,8 +126,10 @@ func (pf *ProposalFundStore) AddFunds(proposalId ProposalID, fundingAddress keys
 
 func (pf *ProposalFundStore) DeleteFunds(proposalId ProposalID, fundingAddress keys.Address) (bool, error) {
 	key := storage.StoreKey(string(proposalId) + storage.DB_PREFIX + fundingAddress.String())
+
 	_, err := pf.get(key)
 	if err != nil {
+
 		return false, errors.Wrap(err, errorGettingRecord)
 	}
 	ok, err := pf.delete(key)

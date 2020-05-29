@@ -26,6 +26,7 @@ func GetCurrentFunds(id ProposalID, store *ProposalFundStore) *balance.Amount {
 			fundingAmount: amt,
 		}
 	})
+
 	totalBalance := balance.NewAmountFromInt(0)
 	for _, fund := range funds {
 		totalBalance = totalBalance.Plus(fund.fundingAmount)
@@ -42,6 +43,8 @@ func DeleteAllFunds(id ProposalID, store *ProposalFundStore) error {
 		}
 	})
 	for _, fund := range funds {
+		//fund.Print()
+
 		ok, err := store.DeleteFunds(fund.id, fund.address)
 		if err != nil {
 			return err
