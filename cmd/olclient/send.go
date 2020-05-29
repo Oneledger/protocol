@@ -19,7 +19,6 @@ import (
 	"fmt"
 	"os"
 	"strconv"
-	"strings"
 
 	accounts2 "github.com/Oneledger/protocol/data/accounts"
 	"github.com/Oneledger/protocol/data/keys"
@@ -65,16 +64,6 @@ func (args *SendArguments) ClientRequest(currencies *balance.CurrencySet) (clien
 	c, ok := currencies.GetCurrencyByName(args.Currency)
 	if !ok {
 		return client.SendTxRequest{}, errors.New("currency not support:" + args.Currency)
-	}
-	padZero := func(s string) string {
-		ss := strings.Split(s, ".")
-		if len(ss) == 2 {
-			ss = []string{strings.TrimLeft(ss[0], "0"), strings.TrimLeft(ss[1], "0"), strings.Repeat("0", 18-len(ss[1]))}
-		} else {
-			ss = []string{strings.TrimLeft(ss[0], "0"), strings.Repeat("0", 18)}
-		}
-		s = strings.Join(ss, "")
-		return s
 	}
 	_, err := strconv.ParseFloat(args.Amount, 64)
 	if err != nil {

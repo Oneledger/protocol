@@ -59,9 +59,18 @@ func (c CreateProposal) Validate(ctx *action.Context, signedTx action.SignedTx) 
 		return false, errors.New("invalid proposal id")
 	}
 
-	//Check if initial funding is greater than minimum amount based on type.
+	//Get Proposal options based on type.
 	coin := createProposal.InitialFunding.ToCoin(ctx.Currencies)
-	if coin.LessThanEqualCoin(coin.Currency.NewCoinFromAmount(*options.InitialFunding)) {
+	coinInit := coin.Currency.NewCoinFromAmount(*options.InitialFunding)
+	coinGoal := coin.Currency.NewCoinFromAmount(*options.FundingGoal)
+
+	//Check if initial funding is not less than minimum amount based on type.
+	if coin.LessThanCoin(coinInit) {
+		return false, action.ErrInvalidAmount
+	}
+
+	//Check if initial funding is more than funding goal.
+	if coinGoal.LessThanEqualCoin(coin) {
 		return false, action.ErrInvalidAmount
 	}
 
@@ -114,14 +123,10 @@ func runTx(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	//Get Proposal options based on type.
 	options := ctx.ProposalMasterStore.Proposal.GetOptionsByType(createProposal.ProposalType)
 
-	//Check if initial funding is greater than minimum amount based on type.
-	coin := createProposal.InitialFunding.ToCoin(ctx.Currencies)
-	if coin.LessThanEqualCoin(coin.Currency.NewCoinFromAmount(*options.InitialFunding)) {
-		result := action.Response{
-			Events: action.GetEvent(createProposal.Tags(), "create_proposal_insufficient_funds"),
-		}
-		return false, result
-	}
+	//Calculate Deadlines
+	//Actual voting deadline will be setup in funding Tx
+	fundingDeadline := ctx.Header.Height + options.FundingDeadline
+	votingDeadline := fundingDeadline + options.VotingDeadline
 
 	//Calculate Deadlines
 	votingDeadline := ctx.State.Version() + options.VotingDeadline
@@ -141,12 +146,14 @@ func runTx(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	//Check if Proposal already exists
 	if ctx.ProposalMasterStore.Proposal.Exists(proposal.ProposalID) {
 		result := action.Response{
-			Events: action.GetEvent(createProposal.Tags(), "create_proposal_failed"),
+			Events: action.GetEvent(createProposal.Tags(), "create_proposal_already_exists"),
 		}
 		return false, result
 	}
 
-	err = ctx.ProposalMasterStore.Proposal.Set(proposal)
+	//Add proposal to DB
+	activeProposals := ctx.ProposalMasterStore.Proposal.WithPrefixType(governance.ProposalStateActive)
+	err = activeProposals.Set(proposal)
 	if err != nil {
 		result := action.Response{
 			Events: action.GetEvent(createProposal.Tags(), "create_proposal_failed"),

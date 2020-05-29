@@ -2,8 +2,10 @@ package query
 
 import (
 	"errors"
+
 	"github.com/Oneledger/protocol/client"
 	"github.com/Oneledger/protocol/data/governance"
+	codes "github.com/Oneledger/protocol/status_codes"
 )
 
 func translatePrefix(prefix string) governance.ProposalState {
@@ -35,6 +37,22 @@ func (svc *Service) GetProposals(req client.GetProposalsRequest, reply *client.G
 	*reply = client.GetProposalsResponse{
 		Proposals: proposals,
 		Height:    svc.proposalMaster.Proposal.GetState().Version(),
+	}
+
+	return nil
+}
+
+func (svc *Service) GetProposalByID(req client.GetProposalByIDRequest, reply *client.GetProposalByIDReply) error {
+	proposalID := governance.ProposalID(req.ProposalID)
+	proposal, state, err := svc.proposalMaster.Proposal.QueryAllStores(proposalID)
+	if err != nil {
+		svc.logger.Error("error getting proposal", err)
+		return codes.ErrGetProposal
+	}
+
+	*reply = client.GetProposalByIDReply{
+		Proposal: *proposal,
+		State:    state,
 	}
 
 	return nil

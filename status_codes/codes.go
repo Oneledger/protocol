@@ -39,6 +39,7 @@ const (
 	InternalErrorTrackerBusy                = 100608
 	InternalErrorTrackerInsufficientBalance = 100609
 	InternalErrorListWitnesses              = 100610
+	InternalErrorGettingProposal            = 100611
 
 	WalletError               = 2006
 	WalletErrorAddingAccount  = 200601

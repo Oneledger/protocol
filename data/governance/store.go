@@ -240,6 +240,7 @@ func (st *Store) GetONSOptions() (*ons.Options, error) {
 }
 
 func (st *Store) SetProposalOptions(propOpt ProposalOptionSet) error {
+	//TODO :Add Validations for proposal options . EX : Sum of proposal fund distribution must be 100
 	bytes, err := serialize.GetSerializer(serialize.PERSISTENT).Serialize(propOpt)
 	if err != nil {
 		return errors.Wrap(err, "failed to serialize proposal options")

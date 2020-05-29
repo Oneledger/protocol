@@ -79,7 +79,11 @@ func (a Amount) String() string {
 	return a.BigInt().String()
 }
 
-func (p Amount) Plus(add *Amount) *Amount {
+func (a Amount) Plus(add *Amount) *Amount {
 	base := big.NewInt(0)
-	return (*Amount)(base.Add(p.BigInt(), add.BigInt()))
+	return (*Amount)(base.Add(a.BigInt(), add.BigInt()))
+}
+
+func (a Amount) Float() *big.Float {
+	return new(big.Float).SetInt(a.BigInt())
 }
