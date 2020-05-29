@@ -178,7 +178,7 @@ func runFundProposal(ctx *action.Context, tx action.RawTx) (bool, action.Respons
 		}
 
 		//7. Update proposal status to VOTING
-		err = ctx.ProposalMasterStore.Proposal.Set(proposal)
+		err = ctx.ProposalMasterStore.Proposal.WithPrefixType(governance.ProposalStateActive).Set(proposal)
 		if err != nil {
 			result := action.Response{
 				Events: action.GetEvent(fundProposal.Tags(), "update_proposal_failed"),
