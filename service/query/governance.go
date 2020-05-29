@@ -21,8 +21,15 @@ func translatePrefix(prefix string) governance.ProposalState {
 	}
 }
 
-func (svc *Service) GetProposals(req client.GetProposalsRequest, reply *client.GetProposalsResponse) error {
-	proposalState := translatePrefix(req.Prefix)
+// list single proposal by id or list proposals by state
+func (svc *Service) ListProposals(req client.ListProposalsRequest, reply *client.ListProposalsReply) error {
+	// List single proposal if ID is given
+	if req.ProposalId != "" {
+		return svc.ListProposal(req, reply)
+	}
+
+	// List proposals by given state
+	proposalState := translatePrefix(req.State)
 	if proposalState == governance.ProposalStateError {
 		return errors.New("invalid proposal state")
 	}
@@ -34,25 +41,28 @@ func (svc *Service) GetProposals(req client.GetProposalsRequest, reply *client.G
 		return false
 	})
 
-	*reply = client.GetProposalsResponse{
+	*reply = client.ListProposalsReply{
 		Proposals: proposals,
+		State:     proposalState,
 		Height:    svc.proposalMaster.Proposal.GetState().Version(),
 	}
 
 	return nil
 }
 
-func (svc *Service) GetProposalByID(req client.GetProposalByIDRequest, reply *client.GetProposalByIDReply) error {
-	proposalID := governance.ProposalID(req.ProposalID)
+// list single proposal by id
+func (svc *Service) ListProposal(req client.ListProposalsRequest, reply *client.ListProposalsReply) error {
+	proposalID := governance.ProposalID(req.ProposalId)
 	proposal, state, err := svc.proposalMaster.Proposal.QueryAllStores(proposalID)
 	if err != nil {
 		svc.logger.Error("error getting proposal", err)
 		return codes.ErrGetProposal
 	}
 
-	*reply = client.GetProposalByIDReply{
-		Proposal: *proposal,
-		State:    state,
+	*reply = client.ListProposalsReply{
+		Proposals: []governance.Proposal{*proposal},
+		State:     state,
+		Height:    svc.proposalMaster.Proposal.GetState().Version(),
 	}
 
 	return nil

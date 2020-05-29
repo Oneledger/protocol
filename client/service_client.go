@@ -126,8 +126,8 @@ func (c *ServiceClient) CreateRawSend(req SendTxRequest) (out *CreateTxReply, er
 }
 
 /* Governance */
-func (c *ServiceClient) CreateVote(req CreateVoteRequest) (out *CreateVoteReply, err error) {
-	err = c.Call("tx.CreateVote", req, &out)
+func (c *ServiceClient) VoteProposal(req VoteProposalRequest) (out *VoteProposalReply, err error) {
+	err = c.Call("tx.VoteProposal", req, &out)
 	return
 }
 
@@ -143,6 +143,11 @@ func (c *ServiceClient) ListWitnesses(req ListWitnessesRequest) (out ListWitness
 
 func (c *ServiceClient) ListCurrencies() (out *ListCurrenciesReply, err error) {
 	err = c.Call("query.ListCurrencies", struct{}{}, &out)
+	return
+}
+
+func (c *ServiceClient) ListProposals(req ListProposalsRequest) (out *ListProposalsReply, err error) {
+	err = c.Call("query.ListProposals", req, &out)
 	return
 }
 

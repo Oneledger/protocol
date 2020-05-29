@@ -1,3 +1,4 @@
+import os
 import requests
 import json
 
@@ -7,6 +8,13 @@ url_1 = "http://127.0.0.1:26605/jsonrpc"
 url_2 = "http://127.0.0.1:26608/jsonrpc"
 url_3 = "http://127.0.0.1:26611/jsonrpc"
 url_4 = "http://127.0.0.1:26614/jsonrpc"
+
+devnet = os.path.join(os.environ['GOPATH'], "data", "devnet")
+node_0 = os.path.join(devnet, "0-Node")
+node_1 = os.path.join(devnet, "1-Node")
+node_2 = os.path.join(devnet, "2-Node")
+node_3 = os.path.join(devnet, "3-Node")
+node_4 = os.path.join(devnet, "4-Node")
 
 headers = {
     "Content-Type": "application/json",

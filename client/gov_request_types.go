@@ -16,35 +16,26 @@ type CreateProposalRequest struct {
 	Gas            int64         `json:"gas"`
 }
 
-type GetProposalsRequest struct {
-	Prefix   string        `json:"prefix"`
-	GasPrice action.Amount `json:"gasPrice"`
-	Gas      int64         `json:"gas"`
+type ListProposalsRequest struct {
+	ProposalId governance.ProposalID `json:"proposal_id"`
+	State      string                `json:"state"`
 }
 
-type GetProposalsResponse struct {
-	Proposals []governance.Proposal `json:"proposals"`
-	Height    int64                 `json:"height"`
+type ListProposalsReply struct {
+	Proposals []governance.Proposal    `json:"proposals"`
+	State     governance.ProposalState `json:"state"`
+	Height    int64                    `json:"height"`
 }
 
-type GetProposalByIDRequest struct {
-	ProposalID string `json:"proposal_id"`
-}
-
-type GetProposalByIDReply struct {
-	Proposal governance.Proposal      `json:"proposal"`
-	State    governance.ProposalState `json:"state"`
-}
-
-type CreateVoteRequest struct {
-	ProposalID string        `json:"proposal_id"`
+type VoteProposalRequest struct {
+	ProposalId string        `json:"proposal_id"`
 	Opinion    string        `json:"opinion"`
 	Address    keys.Address  `json:"address"`
 	GasPrice   action.Amount `json:"gasPrice"`
 	Gas        int64         `json:"gas"`
 }
 
-type CreateVoteReply struct {
+type VoteProposalReply struct {
 	RawTx     []byte           `json:"rawTx"`
 	Signature action.Signature `json:"signature"`
 }

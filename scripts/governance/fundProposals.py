@@ -15,7 +15,7 @@ _prop = Proposal(_pid, "general", "proposal for fund", _proposer, _initial_fundi
 if __name__ == "__main__":
     # create proposal
     _prop.send_create()
-    time.sleep(3)
+    time.sleep(1)
     encoded_pid = _prop.pid
 
     # check proposal state

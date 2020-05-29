@@ -119,7 +119,7 @@ func translateVoteOpinion(opin string) governance.VoteOpinion {
 	}
 }
 
-func (s *Service) VoteProposal(args client.CreateVoteRequest, reply *client.CreateVoteReply) error {
+func (s *Service) VoteProposal(args client.VoteProposalRequest, reply *client.VoteProposalReply) error {
 	// this node address is voter
 	hPub, err := s.nodeContext.ValidatorPubKey().GetHandler()
 	if err != nil {
@@ -142,7 +142,7 @@ func (s *Service) VoteProposal(args client.CreateVoteRequest, reply *client.Crea
 	}
 
 	voteProposal := gov.VoteProposal{
-		ProposalID:       governance.ProposalID(args.ProposalID),
+		ProposalID:       governance.ProposalID(args.ProposalId),
 		Address:          args.Address,
 		ValidatorAddress: address,
 		Opinion:          opin,
@@ -173,7 +173,7 @@ func (s *Service) VoteProposal(args client.CreateVoteRequest, reply *client.Crea
 
 	// reply
 	signature := action.Signature{Signed: signed, Signer: pubkey}
-	*reply = client.CreateVoteReply{RawTx: rawData, Signature: signature}
+	*reply = client.VoteProposalReply{RawTx: rawData, Signature: signature}
 
 	return nil
 }

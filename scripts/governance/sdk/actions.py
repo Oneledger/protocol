@@ -203,20 +203,18 @@ def broadcast_sync(raw_tx, signature, pub_key):
 
 def query_proposals(prefix):
     req = {
-        "prefix": prefix,
-        "gasPrice":
-        {
-            "currency": "OLT",
-            "value": "1000000000",
-        },
-        "gas": 40000,
+        "proposal_id": "",
+        "state": prefix,
     }
 
-    resp = rpc_call('query.GetProposals', req)
+    resp = rpc_call('query.ListProposals', req)
     print json.dumps(resp, indent=4)
     return resp["result"]["proposals"]
 
 def query_proposal(proposal_id):
-    req = {"proposal_id": proposal_id}
-    resp = rpc_call('query.GetProposalByID', req)
-    return resp["result"]
+    req = {
+        "proposal_id": proposal_id,
+        "state": "",
+    }
+    resp = rpc_call('query.ListProposal', req)
+    return resp["result"]["proposals"][0], resp["result"]["state"]
