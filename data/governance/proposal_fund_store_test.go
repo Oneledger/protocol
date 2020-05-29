@@ -107,7 +107,7 @@ func TestProposalFundStore_GetFundersForProposalID(t *testing.T) {
 
 //
 func TestProposalFundStore_GetProposalForFunder(t *testing.T) {
-	//fmt.Println("Get Funders for Address :", address2)
+	fmt.Println("Get Funders for Address :", address2)
 
 	funds := store.GetProposalsForFunder(address2, func(proposalID ProposalID, fundingAddr keys.Address, amt *balance.Amount) ProposalFund {
 		return ProposalFund{
@@ -122,9 +122,13 @@ func TestProposalFundStore_GetProposalForFunder(t *testing.T) {
 	assert.EqualValues(t, 2, len(funds), "")
 }
 
-func TestProposalFund_getCurrentFunds(t *testing.T) {
+func TestGetCurrentFunds(t *testing.T) {
 	//fmt.Println("Getting Total fund for ProposalID")
 	currentFunds := GetCurrentFunds(ID1, store)
 	funds := currentFunds.BigInt().Int64()
 	assert.EqualValues(t, int64(1000), funds, "")
+}
+
+func TestDeleteAllFunds(t *testing.T) {
+
 }

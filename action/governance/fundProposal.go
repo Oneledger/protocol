@@ -84,7 +84,7 @@ func (fundProposalTx) Validate(ctx *action.Context, signedTx action.SignedTx) (b
 	}
 
 	// Funding currency should be OLT
-	currency, ok := ctx.Currencies.GetCurrencyById(0)
+	currency, ok := ctx.Currencies.GetCurrencyByName("OLT")
 	if !ok {
 		panic("no default currency available in the network")
 	}
@@ -178,7 +178,7 @@ func runFundProposal(ctx *action.Context, tx action.RawTx) (bool, action.Respons
 		}
 
 		//7. Update proposal status to VOTING
-		err = ctx.ProposalMasterStore.Proposal.Set(proposal)
+		err = ctx.ProposalMasterStore.Proposal.WithPrefixType(governance.ProposalStateActive).Set(proposal)
 		if err != nil {
 			result := action.Response{
 				Events: action.GetEvent(fundProposal.Tags(), "update_proposal_failed"),

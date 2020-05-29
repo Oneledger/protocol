@@ -71,6 +71,11 @@ func (pf *ProposalFundStore) iterate(fn func(proposalID ProposalID, addr keys.Ad
 			arr := strings.Split(string(key), storage.DB_PREFIX)
 			proposalID := arr[1]
 			fundingAddress := keys.Address(arr[len(arr)-1])
+			err = fundingAddress.UnmarshalText([]byte(arr[len(arr)-1]))
+			if err != nil {
+				fmt.Println("err", err)
+				return true
+			}
 			return fn(ProposalID(proposalID), fundingAddress, amt)
 		},
 	)
@@ -103,7 +108,7 @@ func (pf *ProposalFundStore) GetFundersForProposalID(id ProposalID, fn func(prop
 func (pf *ProposalFundStore) GetProposalsForFunder(funderAddress keys.Address, fn func(proposalID ProposalID, fundingAddr keys.Address, amt *balance.Amount) ProposalFund) []ProposalFund {
 	var foundProposals []ProposalFund
 	pf.iterate(func(proposalID ProposalID, fundingAddr keys.Address, amt *balance.Amount) bool {
-		if bytes.Equal(keys.Address(funderAddress.String()), fundingAddr) {
+		if bytes.Equal(funderAddress, fundingAddr) {
 			foundProposals = append(foundProposals, fn(proposalID, fundingAddr, amt))
 		}
 		return false

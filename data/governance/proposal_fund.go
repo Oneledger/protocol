@@ -1,6 +1,7 @@
 package governance
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/Oneledger/protocol/data/balance"
@@ -33,6 +34,21 @@ func GetCurrentFunds(id ProposalID, store *ProposalFundStore) *balance.Amount {
 }
 
 func DeleteAllFunds(id ProposalID, store *ProposalFundStore) error {
-	panic("Implement function to delete all funds")
+	funds := store.GetFundersForProposalID(id, func(proposalID ProposalID, fundingAddr keys.Address, amt *balance.Amount) ProposalFund {
+		return ProposalFund{
+			id:            proposalID,
+			address:       fundingAddr,
+			fundingAmount: amt,
+		}
+	})
+	for _, fund := range funds {
+		ok, err := store.DeleteFunds(fund.id, fund.address)
+		if err != nil {
+			return err
+		}
+		if !ok {
+			return errors.New(errorDeletingRecord)
+		}
+	}
 	return nil
 }
