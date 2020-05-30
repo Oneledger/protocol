@@ -39,7 +39,7 @@
 
 - name: stopping fullnode
   command: pkill olfullnode
-  tags: full
+  tags: update
 
 - name: Deleting protocol directory
   file:
