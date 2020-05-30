@@ -39,13 +39,13 @@
 
 - name: stopping fullnode
   command: pkill olfullnode
-  tags: update
+  tags: full
 
 - name: Deleting protocol directory
   file:
     path: /opt/protocol
     state: absent
-  tags: full
+  tags: update
 
 - name: git clone
   git:
