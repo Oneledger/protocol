@@ -24,6 +24,7 @@ const (
 	ProposalStatusFunding   ProposalStatus = 0x23
 	ProposalStatusVoting    ProposalStatus = 0x24
 	ProposalStatusCompleted ProposalStatus = 0x25
+	ProposalStatusFinalized ProposalStatus = 0x26
 
 	//Proposal Outcome
 	ProposalOutcomeInProgress        ProposalOutcome = 0x26

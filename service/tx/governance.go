@@ -177,3 +177,38 @@ func (s *Service) VoteProposal(args client.CreateVoteRequest, reply *client.Crea
 
 	return nil
 }
+
+func (s *Service) FinalizeProposal(args client.FinalizeProposalRequest, reply *client.CreateTxReply) error {
+
+	finalizeProposal := gov.FinalizeProposal{
+		ProposalID: args.ProposalId,
+		Proposer:   args.Proposer,
+	}
+
+	data, err := finalizeProposal.Marshal()
+	if err != nil {
+		return err
+	}
+
+	uuidNew, _ := uuid.NewUUID()
+	fee := action.Fee{
+		Price: args.GasPrice,
+		Gas:   args.Gas,
+	}
+
+	tx := &action.RawTx{
+		Type: action.PROPOSAL_FINALIZE,
+		Data: data,
+		Fee:  fee,
+		Memo: uuidNew.String(),
+	}
+
+	packet, err := serialize.GetSerializer(serialize.NETWORK).Serialize(tx)
+	if err != nil {
+		return codes.ErrSerialization
+	}
+
+	*reply = client.CreateTxReply{RawTx: packet}
+
+	return nil
+}

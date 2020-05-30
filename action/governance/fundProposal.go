@@ -122,7 +122,7 @@ func runFundProposal(ctx *action.Context, tx action.RawTx) (bool, action.Respons
 		return false, action.Response{}
 	}
 	//1. check if proposal exists
-	proposal, err := ctx.ProposalMasterStore.Proposal.Get(fundProposal.ProposalId)
+	proposal, err := ctx.ProposalMasterStore.Proposal.WithPrefixType(governance.ProposalStateActive).Get(fundProposal.ProposalId)
 	if err != nil {
 		ctx.Logger.Error("Proposal does not exist :", fundProposal.ProposalId)
 		result := action.Response{
