@@ -49,9 +49,9 @@
 
 - name: git clone
   git:
-    repo: https://{{git_token}}@github.com/Oneledger/protocol.git
+    repo: https://{{ git_token }}@github.com/Oneledger/protocol.git
     dest: /opt/protocol
-    version: "{{version}}"
+    version: "{{ version }}"
     refspec: '+refs/pull/*:refs/heads/*'
   tags: update
 
