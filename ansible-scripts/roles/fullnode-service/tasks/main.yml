@@ -45,7 +45,7 @@
   file:
     path: /opt/protocol
     state: absent
-  tags: update
+  tags: full
 
 - name: git clone
   git:
