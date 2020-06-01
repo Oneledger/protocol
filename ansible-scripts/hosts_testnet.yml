@@ -1,0 +1,14 @@
+[validators]
+34.72.236.219   ansible_user=root
+104.155.137.230 ansible_user=root
+35.239.40.32    ansible_user=root
+35.239.47.231   ansible_user=root
+
+[seed]
+35.202.189.140  ansible_user=root
+
+[sentry]
+104.154.181.96  ansible_user=root
+    
+[fullnode]
+35.225.110.105  ansible_user=root

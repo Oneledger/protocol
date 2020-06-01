@@ -1,0 +1,11 @@
+---
+- hosts:
+    - validators
+    - seed
+    - sentry
+    - fullnode
+  remote_user: jenkins
+  become: true
+  become_user: root
+  roles:
+  - role: fullnode-service
