@@ -410,11 +410,10 @@ func updateProposals(proposalMaster *governance.ProposalMasterStore, jobStore *j
 
 	activeProposals.Iterate(func(id governance.ProposalID, proposal *governance.Proposal) bool {
 		height := deliver.Version()
-
 		//If the proposal is in Voting state and voting period expired, trigger internal tx to handle expiry
 		if proposal.Status == governance.ProposalStatusVoting && proposal.VotingDeadline < height {
-			checkVotesJob := event.NewGovCheckVotes(id, proposal.Status)
-			err := jobStore.SaveJob(checkVotesJob)
+			checkVotesJob := event.NewGovCheckVotesJob(proposal.ProposalID, proposal.Status)
+			err := jobStore.WithChain(chain.ETHEREUM).SaveJob(checkVotesJob)
 			if err != nil {
 				return false
 			}

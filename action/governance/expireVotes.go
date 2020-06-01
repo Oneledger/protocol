@@ -28,19 +28,9 @@ func (e ExpireVotes) Validate(ctx *action.Context, signedTx action.SignedTx) (bo
 		return false, err
 	}
 
-	err = action.ValidateFee(ctx.FeePool.GetOpt(), signedTx.Fee)
-	if err != nil {
-		return false, err
-	}
-
 	//Check if proposal id is valid
 	if len(expireVotes.ProposalID) <= 0 {
 		return false, errors.New("invalid proposal id")
-	}
-
-	//Check if validator address is valid
-	if !ctx.Validators.Exists(e.ValidatorAddress) {
-		return false, errors.New("signer is not a validator")
 	}
 
 	return true, nil
@@ -51,14 +41,26 @@ func (e ExpireVotes) ProcessCheck(ctx *action.Context, tx action.RawTx) (bool, a
 }
 
 func (e ExpireVotes) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
+	ctx.Logger.Debug("Processing ExpireVotes Transaction for DeliverTx", tx)
 	return runExpireVotes(ctx, tx)
 }
 
 func (e ExpireVotes) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas) (bool, action.Response) {
-	return action.BasicFeeHandling(ctx, signedTx, start, size, 1)
+	ctx.State.ConsumeVerifySigGas(1)
+	ctx.State.ConsumeStorageGas(size)
+
+	// check the used gas for the tx
+	final := ctx.Balances.State.ConsumedGas()
+	used := int64(final - start)
+	ctx.Logger.Detail("Gas Used : ", used)
+
+	return true, action.Response{}
 }
 
 func runExpireVotes(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
+	active := governance.ProposalStateActive
+	failed := governance.ProposalStateFailed
+
 	expireVotes := ExpireVotes{}
 	err := expireVotes.Unmarshal(tx.Data)
 	if err != nil {
@@ -69,8 +71,7 @@ func runExpireVotes(ctx *action.Context, tx action.RawTx) (bool, action.Response
 	}
 
 	//Get proposal from active prefix
-	activeProposals := ctx.ProposalMasterStore.Proposal.WithPrefixType(governance.ProposalStateActive)
-	proposal, err := activeProposals.Get(expireVotes.ProposalID)
+	proposal, err := ctx.ProposalMasterStore.Proposal.WithPrefixType(active).Get(expireVotes.ProposalID)
 	if err != nil {
 		result := action.Response{
 			Events: action.GetEvent(expireVotes.Tags(), "expire_votes_failed"),
@@ -83,8 +84,7 @@ func runExpireVotes(ctx *action.Context, tx action.RawTx) (bool, action.Response
 	proposal.Outcome = governance.ProposalOutcomeInsufficientVotes
 
 	//Set proposal in Failed prefix
-	failedProposals := ctx.ProposalMasterStore.Proposal.WithPrefixType(governance.ProposalStateFailed)
-	err = failedProposals.Set(proposal)
+	err = ctx.ProposalMasterStore.Proposal.WithPrefixType(failed).Set(proposal)
 	if err != nil {
 		result := action.Response{
 			Events: action.GetEvent(expireVotes.Tags(), "expire_votes_failed"),
@@ -93,10 +93,10 @@ func runExpireVotes(ctx *action.Context, tx action.RawTx) (bool, action.Response
 	}
 
 	//Delete proposal from active prefix
-	deleted, err := activeProposals.Delete(proposal.ProposalID)
+	deleted, err := ctx.ProposalMasterStore.Proposal.WithPrefixType(active).Delete(proposal.ProposalID)
 	if !deleted {
 		//Need to delete proposal from failed prefix
-		deleted, err = failedProposals.Delete(proposal.ProposalID)
+		deleted, err = ctx.ProposalMasterStore.Proposal.WithPrefixType(failed).Delete(proposal.ProposalID)
 		if !deleted {
 			panic(errors.Wrap(err, "error deleting proposal from failed prefix."))
 		}

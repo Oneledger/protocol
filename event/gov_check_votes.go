@@ -17,7 +17,7 @@ type JobGovCheckVotes struct {
 	Status     jobs.Status
 }
 
-func NewGovCheckVotes(proposalID governance.ProposalID, status governance.ProposalStatus) *JobGovCheckVotes {
+func NewGovCheckVotesJob(proposalID governance.ProposalID, status governance.ProposalStatus) *JobGovCheckVotes {
 	return &JobGovCheckVotes{
 		ProposalID: proposalID,
 		JobID:      proposalID.String() + storage.DB_PREFIX + strconv.Itoa(int(status)),
@@ -26,15 +26,15 @@ func NewGovCheckVotes(proposalID governance.ProposalID, status governance.Propos
 	}
 }
 
-func (j JobGovCheckVotes) DoMyJob(ctx interface{}) {
+func (j *JobGovCheckVotes) DoMyJob(ctx interface{}) {
 	govCtx, _ := ctx.(*JobsContext)
 	proposalMaster := govCtx.ProposalMaster
 
 	//Get Proposal
-	proposal, err := proposalMaster.Proposal.Get(j.ProposalID)
+	proposal, err := proposalMaster.Proposal.WithPrefixType(governance.ProposalStateActive).Get(j.ProposalID)
 	if err != nil {
 		j.Status = jobs.Failed
-		govCtx.Logger.Error("gov_check_votes: failed to get proposal")
+		govCtx.Logger.Error("gov_check_votes: proposal not found in active prefix")
 		return
 	}
 
@@ -46,13 +46,13 @@ func (j JobGovCheckVotes) DoMyJob(ctx interface{}) {
 	}
 
 	//Check number of votes
-	passed, err := proposalMaster.ProposalVote.ResultSoFar(j.ProposalID, proposal.PassPercentage)
+	voteResult, err := proposalMaster.ProposalVote.ResultSoFar(j.ProposalID, proposal.PassPercentage)
 	if err != nil {
 		j.Status = jobs.Failed
 		govCtx.Logger.Error(errors.Wrap(err, "gov_check_votes:"))
 		return
 	}
-	if passed == governance.VOTE_RESULT_PASSED {
+	if voteResult == governance.VOTE_RESULT_PASSED {
 		j.Status = jobs.Failed
 		govCtx.Logger.Error("gov_check_votes: proposal has already been passed")
 		return
@@ -76,18 +76,18 @@ func (j JobGovCheckVotes) DoMyJob(ctx interface{}) {
 	j.Status = jobs.Completed
 }
 
-func (j JobGovCheckVotes) IsDone() bool {
+func (j *JobGovCheckVotes) IsDone() bool {
 	return j.Status == jobs.Completed
 }
 
-func (j JobGovCheckVotes) IsFailed() bool {
+func (j *JobGovCheckVotes) IsFailed() bool {
 	return j.Status == jobs.Failed
 }
 
-func (j JobGovCheckVotes) GetType() string {
+func (j *JobGovCheckVotes) GetType() string {
 	return JobTypeGOVCheckVotes
 }
 
-func (j JobGovCheckVotes) GetJobID() string {
+func (j *JobGovCheckVotes) GetJobID() string {
 	return j.JobID
 }

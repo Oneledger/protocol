@@ -66,6 +66,7 @@ type context struct {
 
 	jobStore        *jobs.JobStore
 	lockScriptStore *bitcoin.LockScriptStore
+	internalRouter  action.Router
 	internalService *event.Service
 	jobBus          *event.JobBus
 	proposalMaster  *governance.ProposalMasterStore
@@ -113,6 +114,7 @@ func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *node.Context) (
 	ctx.jobStore = jobs.NewJobStore(cfg, ctx.dbDir())
 	ctx.lockScriptStore = bitcoin.NewLockScriptStore(cfg, ctx.dbDir())
 	ctx.actionRouter = action.NewRouter("action")
+	ctx.internalRouter = action.NewRouter("internal")
 	ctx.extStores = data.NewStorageRouter()
 
 	testEnv := os.Getenv("OLTEST")
@@ -131,10 +133,15 @@ func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *node.Context) (
 	_ = transfer.EnableSend(ctx.actionRouter)
 	_ = staking.EnableApplyValidator(ctx.actionRouter)
 	_ = action_ons.EnableONS(ctx.actionRouter)
+
 	//"btc" service temporarily disabled
 	//_ = btc.EnableBTC(ctx.actionRouter)
+
 	_ = eth.EnableETH(ctx.actionRouter)
+	_ = eth.EnableInternalETH(ctx.internalRouter)
+
 	_ = action_gov.EnableGovernance(ctx.actionRouter)
+	_ = action_gov.EnableInternalGovernance(ctx.internalRouter)
 
 	return ctx, nil
 }
