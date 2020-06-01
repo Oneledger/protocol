@@ -208,13 +208,13 @@ class ProposalFundsWithdraw:
 
         if "ok" in result:
             if not result["ok"]:
-                print bcolors.FAIL + "################### proposal funds withdrawed failed:" + result["log"] + bcolors.ENDC
+                print bcolors.FAIL + "################### proposal funds withdraw failed:" + result["log"] + bcolors.ENDC
                 return result["txHash"]
             else:
                 print "################### proposal funds withdrawn:" + self.pid
                 return result["txHash"]
         else:
-            print bcolors.FAIL + "################### proposal funds withdrawed failed:" + result["error"]["message"] + bcolors.ENDC
+            print bcolors.FAIL + "################### proposal funds withdraw failed:" + result["error"]["message"] + bcolors.ENDC
 
 
 def addresses():
@@ -277,13 +277,6 @@ def query_proposals(prefix):
 def query_proposal(proposal_id):
     req = {"proposal_id": proposal_id}
     resp = rpc_call('query.GetProposalByID', req)
-    return resp["result"]
-
-
-def query_balance(address):
-    req = {"address": address}
-    resp = rpc_call('query.Balance', req)
-    print json.dumps(resp, indent=4)
     return resp["result"]
 
 

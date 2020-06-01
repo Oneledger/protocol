@@ -8,7 +8,6 @@ import (
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/pkg/errors"
 	"github.com/tendermint/tendermint/libs/kv"
-	"math/big"
 )
 
 var _ action.Msg = &WithdrawFunds{}
@@ -177,12 +176,6 @@ func runWithdraw(ctx *action.Context, signedTx action.RawTx) (bool, action.Respo
 
 	result := action.Response{
 		Events: action.GetEvent(withdrawProposal.Tags(), "withdraw_proposal_success"),
-	}
-
-	// check proposal funds:
-	// if all funds for this proposal has been withdrawn, mark outcome cancelled
-	if currentFundsForProposal.BigInt().Cmp(big.NewInt(0)) == 0 {
-		proposal.Outcome = governance.ProposalOutcomeCancelled
 	}
 
 	return true, result
