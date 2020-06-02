@@ -20,6 +20,8 @@ const (
 	JobTypeETHSignRedeem    = "ethsignredeem"
 	JobTypeETHVerifyRedeem  = "verifyredeem"
 
+	JobTypeGOVCheckVotes = "govCheckVotes"
+
 	MaxJobRetries = 10
 )
 
@@ -31,4 +33,5 @@ func init() {
 	serialize.RegisterConcrete(new(JobETHCheckFinality), "eth_cf")
 	serialize.RegisterConcrete(new(JobETHSignRedeem), "eth_sign")
 	serialize.RegisterConcrete(new(JobETHVerifyRedeem), "eth_verify")
+	serialize.RegisterConcrete(new(JobGovCheckVotes), "gov_check")
 }

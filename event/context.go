@@ -6,6 +6,7 @@ package event
 
 import (
 	"crypto/ecdsa"
+	"github.com/Oneledger/protocol/data/governance"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
@@ -33,6 +34,8 @@ type JobsContext struct {
 	ValidatorAddress action.Address
 	LockScripts      *bitcoin.LockScriptStore
 	EthereumTrackers *ethereum.TrackerStore
+
+	ProposalMaster *governance.ProposalMasterStore
 }
 
 func NewJobsContext(cfg config.Server,
@@ -44,6 +47,7 @@ func NewJobsContext(cfg config.Server,
 	valAddress keys.Address,
 	lStore *bitcoin.LockScriptStore,
 	ethTracker *ethereum.TrackerStore,
+	proposalMaster *governance.ProposalMasterStore,
 	logger *log.Logger,
 ) *JobsContext {
 
@@ -58,6 +62,7 @@ func NewJobsContext(cfg config.Server,
 		ValidatorAddress: valAddress,
 		LockScripts:      lStore,
 		EthereumTrackers: ethTracker,
+		ProposalMaster:   proposalMaster,
 	}
 
 }
