@@ -163,10 +163,7 @@ func runWithdraw(ctx *action.Context, signedTx action.RawTx) (bool, action.Respo
 		err = ctx.ProposalMasterStore.ProposalFund.AddFunds(proposal.ProposalID, withdrawProposal.Contributor, withdrawAmount)
 		if err != nil {
 			ctx.Logger.Error("Failed to return funds to proposal:", withdrawProposal.ProposalID)
-			result := action.Response{
-				Events: action.GetEvent(withdrawProposal.Tags(), "withdraw_proposal_return_fund_failed"),
-			}
-			return false, result
+			panic("error returning funds to proposal")
 		}
 		result := action.Response{
 			Events: action.GetEvent(withdrawProposal.Tags(), "withdraw_proposal_addition_failed"),
