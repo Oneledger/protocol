@@ -66,6 +66,7 @@ type context struct {
 
 	jobStore        *jobs.JobStore
 	lockScriptStore *bitcoin.LockScriptStore
+	internalRouter  action.Router
 	internalService *event.Service
 	jobBus          *event.JobBus
 	proposalMaster  *governance.ProposalMasterStore
@@ -113,12 +114,14 @@ func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *node.Context) (
 	ctx.jobStore = jobs.NewJobStore(cfg, ctx.dbDir())
 	ctx.lockScriptStore = bitcoin.NewLockScriptStore(cfg, ctx.dbDir())
 	ctx.actionRouter = action.NewRouter("action")
+	ctx.internalRouter = action.NewRouter("internal")
 	ctx.extStores = data.NewStorageRouter()
 
 	testEnv := os.Getenv("OLTEST")
 
 	btime := 600 * time.Second
 	ttime := 30 * time.Second
+	oltime := 3 * time.Second
 	if testEnv == "1" {
 		btime = 30 * time.Second
 		ttime = 3 * time.Second
@@ -126,15 +129,21 @@ func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *node.Context) (
 	ctx.jobBus = event.NewJobBus(event.Option{
 		BtcInterval: btime,
 		EthInterval: ttime,
+		OltInterval: oltime,
 	}, ctx.jobStore)
 
 	_ = transfer.EnableSend(ctx.actionRouter)
 	_ = staking.EnableApplyValidator(ctx.actionRouter)
 	_ = action_ons.EnableONS(ctx.actionRouter)
+
 	//"btc" service temporarily disabled
 	//_ = btc.EnableBTC(ctx.actionRouter)
+
 	_ = eth.EnableETH(ctx.actionRouter)
+	_ = eth.EnableInternalETH(ctx.internalRouter)
+
 	_ = action_gov.EnableGovernance(ctx.actionRouter)
+	_ = action_gov.EnableInternalGovernance(ctx.internalRouter)
 
 	return ctx, nil
 }
@@ -325,6 +334,7 @@ func (ctx *context) JobContext() *event.JobsContext {
 		ctx.node.ValidatorAddress(),         // validator address generated from validator key
 		ctx.lockScriptStore,
 		ctx.ethTrackers.WithState(ctx.deliver),
+		ctx.proposalMaster.WithState(ctx.deliver),
 		log.NewLoggerWithPrefix(ctx.logWriter, "internal_jobs").WithLevel(log.Level(ctx.cfg.Node.LogLevel)))
 }
 

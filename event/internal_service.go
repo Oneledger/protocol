@@ -7,10 +7,12 @@ package event
 import (
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/action/eth"
+	gov_action "github.com/Oneledger/protocol/action/governance"
 	"github.com/Oneledger/protocol/app/node"
 	"github.com/Oneledger/protocol/chains/ethereum"
 	"github.com/Oneledger/protocol/consensus"
 	ethereum2 "github.com/Oneledger/protocol/data/ethereum"
+	"github.com/Oneledger/protocol/data/governance"
 	"github.com/Oneledger/protocol/log"
 
 	"github.com/google/uuid"
@@ -148,6 +150,40 @@ func BroadcastReportFinalityETHTx(ethCtx *JobsContext, trackerName ethereum.Trac
 
 	if err != nil || !rep.OK {
 		ethCtx.Logger.Error("Error while broadcasting vote to Fail transaction ", jobID, err, rep.Log)
+		return err
+	}
+	return nil
+}
+
+func BroadcastGovExpireVotesTx(jobCtx *JobsContext, proposalID governance.ProposalID, jobID string) error {
+
+	expireVotes := &gov_action.ExpireVotes{
+		ProposalID:       proposalID,
+		ValidatorAddress: jobCtx.ValidatorAddress,
+	}
+
+	txData, err := expireVotes.Marshal()
+	if err != nil {
+		jobCtx.Logger.Error("Error while preparing expire votes txn ", jobID, err)
+		return err
+	}
+
+	uuidNew, _ := uuid.NewUUID()
+	internalExpireVotesTx := action.RawTx{
+		Type: action.EXPIRE_VOTES,
+		Data: txData,
+		Fee:  action.Fee{},
+		Memo: jobID + uuidNew.String(),
+	}
+
+	req := InternalBroadcastRequest{
+		RawTx: internalExpireVotesTx,
+	}
+	rep := BroadcastReply{}
+	err = jobCtx.Service.InternalBroadcast(req, &rep)
+
+	if err != nil || !rep.OK {
+		jobCtx.Logger.Error("Error while broadcasting expire votes transaction ", jobID, err, rep.Log)
 		return err
 	}
 	return nil

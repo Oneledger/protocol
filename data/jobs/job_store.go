@@ -63,6 +63,11 @@ func (js *JobStore) SaveJob(job Job) error {
 	return nil
 }
 
+func (js *JobStore) JobExists(jobID string) (bool, error) {
+	key := storage.StoreKey("job:" + js.chain.String() + ":" + jobID)
+	return js.Exists(key)
+}
+
 func (js *JobStore) GetJob(jobID string) (Job, error) {
 	key := storage.StoreKey("job:" + js.chain.String() + ":" + jobID)
 	dat, err := js.Get(key)
