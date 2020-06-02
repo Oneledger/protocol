@@ -134,19 +134,9 @@ func runWithdraw(ctx *action.Context, signedTx action.RawTx) (bool, action.Respo
 		return false, result
 	}
 
-	// 4. Check if the contributor has sufficient funds to withdraw for that proposal
+	// 4. withdraw
+	// deduct from proposal fund and check if the contributor has sufficient funds to withdraw for that proposal
 	withdrawAmount := balance.NewAmountFromBigInt(withdrawProposal.WithdrawValue.Value.BigInt())
-	//if proposalFund.BigInt().Cmp(withdrawAmount.BigInt()) < 0 {
-	//	ctx.Logger.Error("Insufficient funds to withdraw for this contributor :", withdrawProposal.Contributor)
-	//	result := action.Response{
-	//		Events: action.GetEvent(withdrawProposal.Tags(), "no_available__fund_to_withdraw_for_this_contributor"),
-	//		Log: action.ErrNotEnoughFund.Msg,
-	//	}
-	//	return false, result
-	//}
-
-	// 5. withdraw
-	// deduct from proposal fund
 	err = ctx.ProposalMasterStore.ProposalFund.DeductFunds(proposal.ProposalID, withdrawProposal.Contributor, withdrawAmount)
 	if err != nil {
 		ctx.Logger.Error("Failed to deduct funds from proposal:", withdrawProposal.ProposalID)
