@@ -205,8 +205,8 @@ func listProposals(cmd *cobra.Command, args []string) error {
 		return errors.New("error in getting proposals")
 	}
 
-	for _, p := range reply.Proposals {
-		printProposal(p)
+	for i, p := range reply.Proposals {
+		printProposal(p, reply.ProposalFunds[i])
 	}
 	fmt.Println("State", reply.State)
 	fmt.Println("Height", reply.Height)
@@ -214,7 +214,7 @@ func listProposals(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-func printProposal(p governance.Proposal) {
+func printProposal(p governance.Proposal, funds balance.Amount) {
 	fmt.Println("ProposalID", p.ProposalID)
 	fmt.Println("Type", p.Type)
 	fmt.Println("Status", p.Status)
@@ -225,5 +225,6 @@ func printProposal(p governance.Proposal) {
 	fmt.Println("FundingGoal", p.FundingGoal)
 	fmt.Println("VotingDeadline", p.VotingDeadline)
 	fmt.Println("PassPercentage", p.PassPercentage)
+	fmt.Println("CurrentFunds", funds.String())
 	fmt.Println()
 }

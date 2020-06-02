@@ -2,6 +2,7 @@ package client
 
 import (
 	"github.com/Oneledger/protocol/action"
+	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/governance"
 	"github.com/Oneledger/protocol/data/keys"
 )
@@ -22,9 +23,10 @@ type ListProposalsRequest struct {
 }
 
 type ListProposalsReply struct {
-	Proposals []governance.Proposal    `json:"proposals"`
-	State     governance.ProposalState `json:"state"`
-	Height    int64                    `json:"height"`
+	Proposals     []governance.Proposal    `json:"proposals"`
+	ProposalFunds []balance.Amount         `json:"proposal_funds"`
+	State         governance.ProposalState `json:"state"`
+	Height        int64                    `json:"height"`
 }
 
 type VoteProposalRequest struct {

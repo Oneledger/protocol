@@ -4,6 +4,7 @@ import (
 	"errors"
 
 	"github.com/Oneledger/protocol/client"
+	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/governance"
 	codes "github.com/Oneledger/protocol/status_codes"
 )
@@ -41,10 +42,18 @@ func (svc *Service) ListProposals(req client.ListProposalsRequest, reply *client
 		return false
 	})
 
+	// List current funds of each proposal
+	proposalFunds := make([]balance.Amount, len(proposals))
+	for i, prop := range proposals {
+		funds := governance.GetCurrentFunds(prop.ProposalID, svc.proposalMaster.ProposalFund)
+		proposalFunds[i] = *funds
+	}
+
 	*reply = client.ListProposalsReply{
-		Proposals: proposals,
-		State:     proposalState,
-		Height:    svc.proposalMaster.Proposal.GetState().Version(),
+		Proposals:     proposals,
+		ProposalFunds: proposalFunds,
+		State:         proposalState,
+		Height:        svc.proposalMaster.Proposal.GetState().Version(),
 	}
 
 	return nil
@@ -59,10 +68,13 @@ func (svc *Service) ListProposal(req client.ListProposalsRequest, reply *client.
 		return codes.ErrGetProposal
 	}
 
+	funds := governance.GetCurrentFunds(proposalID, svc.proposalMaster.ProposalFund)
+
 	*reply = client.ListProposalsReply{
-		Proposals: []governance.Proposal{*proposal},
-		State:     state,
-		Height:    svc.proposalMaster.Proposal.GetState().Version(),
+		Proposals:     []governance.Proposal{*proposal},
+		ProposalFunds: []balance.Amount{*funds},
+		State:         state,
+		Height:        svc.proposalMaster.Proposal.GetState().Version(),
 	}
 
 	return nil
