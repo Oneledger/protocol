@@ -41,9 +41,6 @@
     mode: '0755'
     remote_src: true
 
-- name: setup database
-  command: chdir=/opt/data/explorer_watcher_protector ./explorer setup --db {{ ip }}:5432/{{ my_database_name }}\?sslmode=disable --dbuser {{ username }} --sdk {{ fullnode_sdk_port }} --dbpassword {{ password }}
-
 - name: watcher script setup
   copy:  
     dest: "/opt/data/explorer_watcher_protector/watcher.sh"
