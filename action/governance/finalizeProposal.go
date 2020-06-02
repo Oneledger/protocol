@@ -102,52 +102,45 @@ func (finalizeProposalTx) ProcessFee(ctx *action.Context, signedTx action.Signed
 
 func runFinalizeProposal(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	finalizedProposal := FinalizeProposal{}
-
 	err := finalizedProposal.Unmarshal(tx.Data)
 	if err != nil {
 		return false, action.Response{}
 	}
 	proposal, err := ctx.ProposalMasterStore.Proposal.WithPrefixType(governance.ProposalStatePassed).Get(finalizedProposal.ProposalID)
 	if err != nil {
-		msg := "finalize_proposal_not_found"
 		result := action.Response{
-			Events: action.GetEvent(finalizedProposal.Tags(), msg),
-			Log:    errors.Wrap(err, msg).Error(),
+			Events: action.GetEvent(finalizedProposal.Tags(), action.ErrProposalNotFound.Msg),
+			Log:    action.ErrProposalNotFound.Error(),
 		}
 		return false, result
 	}
 	if !bytes.Equal(proposal.Proposer, finalizedProposal.Proposer) {
-		msg := "finalize_proposal_unauthorized_call"
 		result := action.Response{
-			Events: action.GetEvent(finalizedProposal.Tags(), msg),
-			Log:    errors.Wrap(err, msg).Error(),
+			Events: action.GetEvent(finalizedProposal.Tags(), action.ErrUnauthorizedCall.Msg),
+			Log:    action.ErrUnauthorizedCall.Error(),
 		}
 		return false, result
 	}
 	if proposal.Status != governance.ProposalStatusCompleted {
-		msg := "finalize_proposal_not_completed"
-		ctx.Logger.Error(msg)
 		result := action.Response{
-			Events: action.GetEvent(finalizedProposal.Tags(), msg),
-			Log:    errors.Wrap(err, msg).Error(),
+			Events: action.GetEvent(finalizedProposal.Tags(), action.ErrStatusNotCompleted.Msg),
+			Log:    action.ErrStatusNotCompleted.Error(),
 		}
 		return false, result
 	}
 
 	voteResult, err := ctx.ProposalMasterStore.ProposalVote.ResultSoFar(proposal.ProposalID, proposal.PassPercentage)
 	if err != nil {
-		msg := "finalize_proposal_vote_result_unavailable"
 		result := action.Response{
-			Events: action.GetEvent(finalizedProposal.Tags(), msg),
-			Log:    errors.Wrap(err, msg).Error(),
+			Events: action.GetEvent(finalizedProposal.Tags(), action.ErrUnabletoQueryVoteResult.Msg),
+			Log:    action.ErrUnabletoQueryVoteResult.Error(),
 		}
 		return false, result
 	}
 	if voteResult == governance.VOTE_RESULT_TBD {
-		msg := "finalize_proposal_vote_result_TBD"
 		result := action.Response{
-			Events: action.GetEvent(finalizedProposal.Tags(), msg),
-			Log:    errors.Wrap(err, msg).Error(),
+			Events: action.GetEvent(finalizedProposal.Tags(), action.ErrVotingTBD.Msg),
+			Log:    action.ErrVotingTBD.Error(),
 		}
 		return false, result
 	}
@@ -155,20 +148,18 @@ func runFinalizeProposal(ctx *action.Context, tx action.RawTx) (bool, action.Res
 		proposalDistribution := ctx.ProposalMasterStore.Proposal.GetOptionsByType(proposal.Type).PassedFundDistribution
 		err := distributeFunds(ctx, proposal, &proposalDistribution)
 		if err != nil {
-			msg := "finalize_proposal_passed_distribution_failed"
 			result := action.Response{
-				Events: action.GetEvent(finalizedProposal.Tags(), msg),
-				Log:    errors.Wrap(err, msg).Error(),
+				Events: action.GetEvent(finalizedProposal.Tags(), action.ErrFinalizeDistributtionFailed.Msg),
+				Log:    errors.Wrap(action.ErrFinalizeDistributtionFailed, err.Error()).Error(),
 			}
 			return false, result
 		}
 		if proposal.Type == governance.ProposalTypeConfigUpdate {
 			err := executeConfigUpdate(ctx, proposal)
 			if err != nil {
-				msg := "finalize_proposal_passed_config_update_failed"
 				result := action.Response{
-					Events: action.GetEvent(finalizedProposal.Tags(), msg),
-					Log:    errors.Wrap(err, msg).Error(),
+					Events: action.GetEvent(finalizedProposal.Tags(), action.ErrFinalizeConfigUpdateFailed.Msg),
+					Log:    errors.Wrap(action.ErrFinalizeConfigUpdateFailed, err.Error()).Error(),
 				}
 				return false, result
 			}
@@ -176,10 +167,9 @@ func runFinalizeProposal(ctx *action.Context, tx action.RawTx) (bool, action.Res
 		proposal.Status = governance.ProposalStatusFinalized
 		err = ctx.ProposalMasterStore.Proposal.WithPrefixType(governance.ProposalStatePassed).Set(proposal)
 		if err != nil {
-			msg := "finalize_proposal_passed_unable_to_Change_status"
 			result := action.Response{
-				Events: action.GetEvent(finalizedProposal.Tags(), msg),
-				Log:    errors.Wrap(err, msg).Error(),
+				Events: action.GetEvent(finalizedProposal.Tags(), action.ErrStatusUnableToSetFinalized.Msg),
+				Log:    action.ErrStatusUnableToSetFinalized.Error(),
 			}
 			return false, result
 
@@ -189,20 +179,18 @@ func runFinalizeProposal(ctx *action.Context, tx action.RawTx) (bool, action.Res
 		proposalDistribution := ctx.ProposalMasterStore.Proposal.GetOptionsByType(proposal.Type).FailedFundDistribution
 		err := distributeFunds(ctx, proposal, &proposalDistribution)
 		if err != nil {
-			msg := "finalize_proposal_failed_distribution_failed"
 			result := action.Response{
-				Events: action.GetEvent(finalizedProposal.Tags(), msg),
-				Log:    errors.Wrap(err, msg).Error(),
+				Events: action.GetEvent(finalizedProposal.Tags(), action.ErrFinalizeDistributtionFailed.Msg),
+				Log:    errors.Wrap(action.ErrFinalizeDistributtionFailed, err.Error()).Error(),
 			}
 			return false, result
 		}
 		proposal.Status = governance.ProposalStatusFinalized
 		err = ctx.ProposalMasterStore.Proposal.WithPrefixType(governance.ProposalStateFailed).Set(proposal)
 		if err != nil {
-			msg := "finalize_proposal_passed_unable_to_finalize_status"
 			result := action.Response{
-				Events: action.GetEvent(finalizedProposal.Tags(), msg),
-				Log:    errors.Wrap(err, msg).Error(),
+				Events: action.GetEvent(finalizedProposal.Tags(), action.ErrStatusUnableToSetFinalized.Msg),
+				Log:    action.ErrStatusUnableToSetFinalized.Error(),
 			}
 			return false, result
 
@@ -251,6 +239,7 @@ func distributeFunds(ctx *action.Context, proposal *governance.Proposal, proposa
 	}
 
 	//Bounty Program
+
 	bountyAddress := action.Address(ctx.ProposalMasterStore.Proposal.GetOptions().BountyProgramAddr)
 	err = ctx.Balances.AddToAddress(bountyAddress, getPercentageCoin(c, totalFunding, &fundTracker, proposalDistribution.BountyPool))
 	if err != nil {
@@ -260,6 +249,9 @@ func distributeFunds(ctx *action.Context, proposal *governance.Proposal, proposa
 	//ExecutionCost
 	executionAddress := action.Address(ctx.ProposalMasterStore.Proposal.GetOptionsByType(proposal.Type).ProposalExecutionCost)
 	err = ctx.Balances.AddToAddress(executionAddress, getPercentageCoin(c, totalFunding, &fundTracker, proposalDistribution.ExecutionCost))
+	if err != nil {
+		return errors.Wrap(err, "Failed in adding to Adding to Execution Address")
+	}
 
 	//Burn
 	getPercentageCoin(c, totalFunding, &fundTracker, proposalDistribution.Burn)

@@ -72,18 +72,28 @@ const (
 	ExternalErrUnableToCreateOLTLockTX = 400106
 	ErrUnmarshalingRedeem              = 400107
 
-	ERC20
+	//ERC20
 	ExternalErrUnableToCreateErc20OLTLockTX = 500100
 	ExternalErrTokenNotSuported             = 500101
 
-	Tracker
+	//Tracker
 	ETHTrackerNotFoundFailed  = 600100
 	ETHTrackerNotFoundSuccess = 600101
 	ETHTrackerNotFoundOngoing = 600102
 
-	Governance
+	//Governance
 	GovErrVoteSetupValidator    = 700100
 	GovErrVoteUpdateVote        = 700101
 	GovErrVoteDeleteVoteRecords = 700102
 	GovErrVoteCheckVoteResult   = 700103
+	ProposalNotFound            = 700104
+	UnauthorizedCall            = 700105
+	StatusNotCompleted          = 700106
+	StatusNotVoting             = 700107
+	StatusNotFunding            = 700108
+	VotingTBD                   = 700109
+	FinalizeDistributtionFailed = 700110
+	FinalizeConfigUpdateFailed  = 700111
+	StatusUnableToSetFinalized  = 700112
+	UnabletoQueryVoteResult     = 700113
 )
