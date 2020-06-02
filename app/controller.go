@@ -423,7 +423,7 @@ func updateProposals(proposalMaster *governance.ProposalMasterStore, jobStore *j
 				//Save Job to OneLedger Job Store
 				err := jobStore.WithChain(chain.ONELEDGER).SaveJob(checkVotesJob)
 				if err != nil {
-					return false
+					return true
 				}
 			}
 		}

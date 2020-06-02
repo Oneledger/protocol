@@ -67,12 +67,6 @@ func (j *JobGovCheckVotes) DoMyJob(ctx interface{}) {
 
 	//Create internal transaction and broadcast
 	err = BroadcastGovExpireVotesTx(govCtx, j.ProposalID, j.JobID)
-	if err != nil {
-		j.Status = jobs.Failed
-		govCtx.Logger.Error("gov_check_votes: error broadcasting" + err.Error())
-		return
-	}
-
 	j.Status = jobs.Completed
 }
 
