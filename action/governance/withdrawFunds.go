@@ -125,7 +125,7 @@ func runWithdraw(ctx *action.Context, signedTx action.RawTx) (bool, action.Respo
 	}
 
 	// 3. Check if the contributor has funded this proposal, if so, get the amount of funds
-	proposalFund, err := governance.GetCurrentFundsByContributor(proposal.ProposalID, withdrawProposal.Contributor, ctx.ProposalMasterStore.ProposalFund)
+	_, err = governance.GetCurrentFundsByContributor(proposal.ProposalID, withdrawProposal.Contributor, ctx.ProposalMasterStore.ProposalFund)
 	if err != nil {
 		ctx.Logger.Error("No available funds to withdraw for this contributor :", withdrawProposal.Contributor)
 		result := action.Response{
@@ -136,14 +136,14 @@ func runWithdraw(ctx *action.Context, signedTx action.RawTx) (bool, action.Respo
 
 	// 4. Check if the contributor has sufficient funds to withdraw for that proposal
 	withdrawAmount := balance.NewAmountFromBigInt(withdrawProposal.WithdrawValue.Value.BigInt())
-	if proposalFund.BigInt().Cmp(withdrawAmount.BigInt()) < 0 {
-		ctx.Logger.Error("Insufficient funds to withdraw for this contributor :", withdrawProposal.Contributor)
-		result := action.Response{
-			Events: action.GetEvent(withdrawProposal.Tags(), "no_available__fund_to_withdraw_for_this_contributor"),
-			Log: action.ErrNotEnoughFund.Msg,
-		}
-		return false, result
-	}
+	//if proposalFund.BigInt().Cmp(withdrawAmount.BigInt()) < 0 {
+	//	ctx.Logger.Error("Insufficient funds to withdraw for this contributor :", withdrawProposal.Contributor)
+	//	result := action.Response{
+	//		Events: action.GetEvent(withdrawProposal.Tags(), "no_available__fund_to_withdraw_for_this_contributor"),
+	//		Log: action.ErrNotEnoughFund.Msg,
+	//	}
+	//	return false, result
+	//}
 
 	// 5. withdraw
 	// deduct from proposal fund

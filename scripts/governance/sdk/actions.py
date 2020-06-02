@@ -277,6 +277,7 @@ def query_proposals(prefix):
 def query_proposal(proposal_id):
     req = {"proposal_id": proposal_id}
     resp = rpc_call('query.GetProposalByID', req)
+    print json.dumps(resp, indent=4)
     return resp["result"]
 
 

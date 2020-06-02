@@ -10,6 +10,7 @@ _initial_funding = (int("2") * 10 ** 9)
 _contributor = addr_list[1]
 _funds_amount = (int("2") * 10 ** 9)
 _withdraw_amount = (int("2") * 10 ** 9)
+_withdraw_amount_too_much = (int("5") * 10 ** 9)
 
 _prop = Proposal(_pid, "general", "proposal for funds withdrawing", _proposer, _initial_funding)
 _encoded_pid = _prop.get_encoded_pid()
@@ -70,6 +71,10 @@ if __name__ == "__main__":
     for x in range(_wait):
         print("wait for 60s, " + str(_wait * 10 - x * 10) + "s left")
         time.sleep(10)
+
+    print bcolors.WARNING + "#### TRY TO WITHDRAW MORE THAN FUNDED AMOUNT, SHOULD FAIL: ####" + bcolors.ENDC
+    withdraw_fund(_encoded_pid, _contributor, _withdraw_amount_too_much, _contributor)
+    time.sleep(5)
 
     print "#### PROPOSER'S BALANCE BEFORE WITHDRAWING: ####"
     query_balance(_proposer)
