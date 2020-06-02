@@ -25,5 +25,9 @@ func EnableGovernance(r action.Router) error {
 	if err != nil {
 		return errors.Wrap(err, "fundProposalTx")
 	}
+	err = r.AddHandler(action.PROPOSAL_FINALIZE, finalizeProposalTx{})
+	if err != nil {
+		return errors.Wrap(err, "finalizeProposalTx")
+	}
 	return nil
 }
