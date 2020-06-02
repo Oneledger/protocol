@@ -121,6 +121,7 @@ func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *node.Context) (
 
 	btime := 600 * time.Second
 	ttime := 30 * time.Second
+	oltime := 3 * time.Second
 	if testEnv == "1" {
 		btime = 30 * time.Second
 		ttime = 3 * time.Second
@@ -128,6 +129,7 @@ func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *node.Context) (
 	ctx.jobBus = event.NewJobBus(event.Option{
 		BtcInterval: btime,
 		EthInterval: ttime,
+		OltInterval: oltime,
 	}, ctx.jobStore)
 
 	_ = transfer.EnableSend(ctx.actionRouter)

@@ -412,10 +412,19 @@ func updateProposals(proposalMaster *governance.ProposalMasterStore, jobStore *j
 		height := deliver.Version()
 		//If the proposal is in Voting state and voting period expired, trigger internal tx to handle expiry
 		if proposal.Status == governance.ProposalStatusVoting && proposal.VotingDeadline < height {
+
+			//Create New Job to Expire the votes for current proposal
 			checkVotesJob := event.NewGovCheckVotesJob(proposal.ProposalID, proposal.Status)
-			err := jobStore.WithChain(chain.ETHEREUM).SaveJob(checkVotesJob)
-			if err != nil {
-				return false
+
+			//Check if the Job already exists
+			exists, _ := jobStore.WithChain(chain.ONELEDGER).JobExists(checkVotesJob.JobID)
+			if !exists {
+
+				//Save Job to OneLedger Job Store
+				err := jobStore.WithChain(chain.ONELEDGER).SaveJob(checkVotesJob)
+				if err != nil {
+					return false
+				}
 			}
 		}
 		return false
