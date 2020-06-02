@@ -122,14 +122,10 @@ func (t Type) String() string {
 		return "PROPOSAL_FUND"
 	case PROPOSAL_VOTE:
 		return "PROPOSAL_VOTE"
-<<<<<<< HEAD
 	case PROPOSAL_WITHDRAW_FUNDS:
 		return "PROPOSAL_WITHDRAW_FUNDS"
-
-=======
 	case EXPIRE_VOTES:
 		return "EXPIRE_VOTES"
->>>>>>> 66f78ec4446792f56fd613e46be6aee6820d8d28
 	default:
 		return "UNKNOWN"
 	}
