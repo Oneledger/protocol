@@ -45,29 +45,8 @@
   command: apt install postgresql-client
 
 - name: connecting to database
-  command: psql "host={{ database_ip }}  user={{ username }} password={{ password }}" -c "CREATE DATABASE {{ my_database_name }};"
+  command: psql "host={{ database_ip }}  user={{ username }} password={{ password }} dbname= {{ my_database_name }}" -c "{{ index_query }};"
   become: true
-
-#- name: Create a new database with name "explorer_testnet_db"
-#  command: createdb -h localhost -p 5432 -U {{ username }} {{ my_database_name }}
- # postgresql_db:
- #   name: "{{ my_database_name }}"
-
-- name: setup database
-  command: chdir=/opt/data/explorer_watcher_protector ./explorer setup --db {{ database_ip }}:5432/{{ my_database_name }}\?sslmode=disable --dbuser {{ username }} --sdk {{ fullnode_sdk_port }} --dbpassword {{ password }}
-
-- name: initialize database
-  command: chdir=/opt/data/explorer_watcher_protector ./explorer init --db {{ database_ip }}:5432/{{ my_database_name }}\?sslmode=disable --dbuser {{ username }} --sdk {{ fullnode_sdk_port }} --dbpassword {{ password }} --tendermint {{ tendermint_port }}
-
-#- name: changing owner
-#  command: chown -R ubuntu:ubuntu /opt/data/explorer_watcher_protector
-
-#- name: Installing pip package    
-#  shell: apt install -y python-pip
-
-#- name: Installing psutil python package
-#  pip:
-#    name: psutil
 
 - name: watcher script setup
   copy:  
@@ -176,3 +155,4 @@
 - name: Printing the process IDs obtained
   debug:
     msg: "PIDS of explorer:{{pids_of_explorer.pids|join(',')}}" 
+  

@@ -1,0 +1,16 @@
+git_token: 537f5c6434929f37d0716c88cebda528ac9c71f9
+
+# Database variables
+database_ip: 34.67.95.95
+my_database_name: explorer_testnet1_db
+username: postgres
+fullnode_sdk_port: http://10.15.0.192:26606
+password: Manikanta472
+fullnode_rpc_port: tcp://10.15.0.192:26604
+tendermint_port: tcp://10.15.0.192:26604
+
+# Explorer version tag
+tag: v0.3.1
+
+# adding index
+index_query: "CREATE INDEX tx_detail_name ON blockchain.txns USING btree ((fields->'txDetail'->>'name'))"
