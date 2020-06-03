@@ -176,7 +176,7 @@ func runPurchaseDomain(ctx *action.Context, tx action.RawTx) (bool, action.Respo
 		}
 
 		// credit the sale price to the previous owner
-		if ctx.State.Version() >= ctx.Config.ReleaseChanges.DomainChange1 {
+		if ctx.State.Version() >= action.DOMAIN_CHANGE_BLOCK_HEIGHT {
 			err = ctx.Balances.AddToAddress(domain.Owner, sale)
 			if err != nil {
 				return false, action.Response{Log: err.Error()}

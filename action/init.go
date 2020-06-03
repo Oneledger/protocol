@@ -41,6 +41,9 @@ const (
 	ERC20_LOCK               Type = 0x94
 	ERC20_REDEEM             Type = 0x95
 
+	//Domain Changes block height constant
+	DOMAIN_CHANGE_BLOCK_HEIGHT = 200000
+
 	//EOF here Only used as a marker to mark the end of Type list
 	//So that the query for Types can return all Types dynamically
 	//, when there is a change made in Type list
