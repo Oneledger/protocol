@@ -82,18 +82,19 @@ const (
 	ETHTrackerNotFoundOngoing = 600102
 
 	//Governance
-	GovErrVoteSetupValidator    = 700100
-	GovErrVoteUpdateVote        = 700101
-	GovErrVoteDeleteVoteRecords = 700102
-	GovErrVoteCheckVoteResult   = 700103
-	ProposalNotFound            = 700104
-	UnauthorizedCall            = 700105
-	StatusNotCompleted          = 700106
-	StatusNotVoting             = 700107
-	StatusNotFunding            = 700108
-	VotingTBD                   = 700109
-	FinalizeDistributtionFailed = 700110
-	FinalizeConfigUpdateFailed  = 700111
-	StatusUnableToSetFinalized  = 700112
-	UnabletoQueryVoteResult     = 700113
+	GovErrVoteSetupValidator       = 700100
+	GovErrVoteUpdateVote           = 700101
+	GovErrVoteDeleteVoteRecords    = 700102
+	GovErrVoteCheckVoteResult      = 700103
+	GovErrWithdrawCheckFundsFailed = 700104
+	ProposalNotFound               = 700105
+	UnauthorizedCall               = 700106
+	StatusNotCompleted             = 700107
+	StatusNotVoting                = 700108
+	StatusNotFunding               = 700109
+	VotingTBD                      = 700110
+	FinalizeDistributtionFailed    = 700111
+	FinalizeConfigUpdateFailed     = 700112
+	StatusUnableToSetFinalized     = 700113
+	UnabletoQueryVoteResult        = 700114
 )

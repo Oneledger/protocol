@@ -1,7 +1,6 @@
 package governance
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"math/big"
@@ -12,16 +11,15 @@ import (
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/governance"
-	"github.com/Oneledger/protocol/data/keys"
 )
 
 type FinalizeProposal struct {
-	ProposalID governance.ProposalID
-	Proposer   keys.Address
+	ProposalID       governance.ProposalID
+	ValidatorAddress action.Address
 }
 
 func (p FinalizeProposal) Signers() []action.Address {
-	return []action.Address{p.Proposer}
+	return []action.Address{p.ValidatorAddress}
 }
 
 func (p FinalizeProposal) Type() action.Type {
@@ -36,8 +34,8 @@ func (p FinalizeProposal) Tags() kv.Pairs {
 		Value: []byte(p.Type().String()),
 	}
 	tag2 := kv.Pair{
-		Key:   []byte("tx.proposer"),
-		Value: p.Proposer.Bytes(),
+		Key:   []byte("tx.Validator"),
+		Value: p.ValidatorAddress.Bytes(),
 	}
 	tag3 := kv.Pair{
 		Key:   []byte("tx.proposalID"),
@@ -78,13 +76,6 @@ func (finalizeProposalTx) Validate(ctx *action.Context, signedTx action.SignedTx
 	if err != nil {
 		return false, err
 	}
-
-	//Check if Funder address is valid oneLedger address
-	err = finalizedProposal.Proposer.Err()
-	if err != nil {
-		return false, errors.Wrap(err, "invalid proposer address")
-	}
-
 	return true, nil
 }
 
@@ -111,13 +102,6 @@ func runFinalizeProposal(ctx *action.Context, tx action.RawTx) (bool, action.Res
 		result := action.Response{
 			Events: action.GetEvent(finalizedProposal.Tags(), action.ErrProposalNotFound.Msg),
 			Log:    action.ErrProposalNotFound.Error(),
-		}
-		return false, result
-	}
-	if !bytes.Equal(proposal.Proposer, finalizedProposal.Proposer) {
-		result := action.Response{
-			Events: action.GetEvent(finalizedProposal.Tags(), action.ErrUnauthorizedCall.Msg),
-			Log:    action.ErrUnauthorizedCall.Error(),
 		}
 		return false, result
 	}
