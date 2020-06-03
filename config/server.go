@@ -452,12 +452,12 @@ type EthereumChainDriverConfig struct {
 }
 
 type ReleaseChangesConfig struct {
-	DomainChange1 string `toml:"domainChange_1" desc:"changes related to purchase and update domain"`
+	DomainChange1 int64 `toml:"domainChange_1" desc:"changes related to purchase and update domain"`
 }
 
 func DefaultReleaseChangesConfig() *ReleaseChangesConfig {
 	var cfg ReleaseChangesConfig
-	cfg.DomainChange1 = "200000"
+	cfg.DomainChange1 = 200000
 
 	return &cfg
 }
