@@ -2,7 +2,6 @@ package broadcast
 
 import (
 	"errors"
-
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/client"
 	"github.com/Oneledger/protocol/data/balance"

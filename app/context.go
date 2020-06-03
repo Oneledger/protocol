@@ -209,6 +209,7 @@ func (ctx *context) Services() (service.Map, error) {
 		Cfg:          ctx.cfg,
 		NodeContext:  ctx.node,
 		ValidatorSet: identity.NewValidatorStore("v", storage.NewState(ctx.chainstate)),
+		WitnessSet:   identity.NewWitnessStore("w", storage.NewState(ctx.chainstate)),
 		Domains:      ons,
 		Router:       ctx.actionRouter,
 		Logger:       log.NewLoggerWithPrefix(ctx.logWriter, "rpc").WithLevel(log.Level(ctx.cfg.Node.LogLevel)),

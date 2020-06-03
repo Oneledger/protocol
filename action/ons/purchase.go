@@ -176,9 +176,16 @@ func runPurchaseDomain(ctx *action.Context, tx action.RawTx) (bool, action.Respo
 		}
 
 		// credit the sale price to the previous owner
-		err = ctx.Balances.AddToAddress(domain.Beneficiary, sale)
-		if err != nil {
-			return false, action.Response{Log: err.Error()}
+		if ctx.State.Version() >= action.DOMAIN_CHANGE_BLOCK_HEIGHT {
+			err = ctx.Balances.AddToAddress(domain.Owner, sale)
+			if err != nil {
+				return false, action.Response{Log: err.Error()}
+			}
+		} else {
+			err = ctx.Balances.AddToAddress(domain.Beneficiary, sale)
+			if err != nil {
+				return false, action.Response{Log: err.Error()}
+			}
 		}
 
 		// deduct the saleprice from the offering
@@ -214,6 +221,8 @@ func runPurchaseDomain(ctx *action.Context, tx action.RawTx) (bool, action.Respo
 		return false, action.Response{Log: "error adding domain purchase: " + err.Error()}
 	}
 
+	previousOwner := domain.Owner
+
 	domain.ResetAfterSale(buy.Buyer, buy.Account, extend, ctx.State.Version())
 
 	err = ctx.Domains.DeleteAllSubdomains(domain.Name)
@@ -225,5 +234,5 @@ func runPurchaseDomain(ctx *action.Context, tx action.RawTx) (bool, action.Respo
 	if err != nil {
 		return false, action.Response{Log: errors.Wrap(err, "failed to update domain").Error()}
 	}
-	return true, action.Response{Events: action.GetEvent(buy.Tags(), "purchase_domain")}
+	return true, action.Response{Events: action.GetEvent(buy.Tags(), "purchase_domain"), Info: previousOwner.Humanize()}
 }

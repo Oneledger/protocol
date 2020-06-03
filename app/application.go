@@ -365,25 +365,36 @@ func (app *App) Prepare() error {
 
 	// Init witness store after genesis witnesses loaded in above NewNode
 	app.Context.witnesses.Init(chain.ETHEREUM, app.Context.node.ValidatorAddress())
+	// Adding internal Router
+	internalRouter := action.NewRouter("internal")
+	err = eth.EnableInternalETH(internalRouter)
+	if err != nil {
+		app.logger.Error("failed to register eth internal transaction")
+		return err
+	}
+	app.Context.internalService = event.NewService(app.Context.node,
+		log.NewLoggerWithPrefix(app.Context.logWriter, "internal_service"), internalRouter, app.node)
 
 	return nil
 }
 
 // Start initializes the state
 func (app *App) Start() error {
-	app.logger.Info("Starting node...")
 
 	err := app.Prepare()
 	if err != nil {
 		return err
 	}
 
+	// Starting App
 	err = app.node.Start()
 	if err != nil {
 		app.logger.Error("Failed to start consensus.Node")
 		return errors.Wrap(err, "failed to start new consensus.Node")
 	}
-
+	//Start Jobbus
+	_ = app.Context.jobBus.Start(app.Context.JobContext())
+	// Starting RPC
 	startRPC, err := app.rpcStarter()
 	if err != nil {
 		return errors.Wrap(err, "failed to prepare rpc service")
@@ -395,23 +406,12 @@ func (app *App) Start() error {
 		return err
 	}
 
-	internalRouter := action.NewRouter("internal")
 	//"btc" service temporarily disabled
 	//err = btc.EnableBTCInternalTx(internalRouter)
 	//if err != nil {
 	//	app.logger.Error("Failed to register btc internal transactions")
 	//	return err
 	//}
-	err = eth.EnableInternalETH(internalRouter)
-	if err != nil {
-		app.logger.Error("failed to register eth internal transaction")
-		return err
-	}
-
-	app.Context.internalService = event.NewService(app.Context.node,
-		log.NewLoggerWithPrefix(app.Context.logWriter, "internal_service"), internalRouter, app.node)
-
-	_ = app.Context.jobBus.Start(app.Context.JobContext())
 
 	return nil
 }

@@ -10,6 +10,16 @@ Create Sub Domain
 import sys
 from sdk.actions import *
 
+class bcolors:
+    HEADER = '\033[95m'
+    OKBLUE = '\033[94m'
+    OKGREEN = '\033[92m'
+    WARNING = '\033[93m'
+    FAIL = '\033[91m'
+    ENDC = '\033[0m'
+    BOLD = '\033[1m'
+    UNDERLINE = '\033[4m'
+
 if __name__ == "__main__":
     addrs = addresses()
 
@@ -67,4 +77,41 @@ if __name__ == "__main__":
     if not result["ok"]:
         sys.exit(-1)
 
+    """
+    ****** Create Sub domain based on sub domain above ******
+    """
+    print "---Creating Sub Domain---"
+
+    # Prepare sub domain
+    sub_sub_name = "max.bob.alice2.ol"
+    # Use same create price as above
+
+    # Get raw transaction
+    raw_txn = create_sub_domain(sub_sub_name, addrs[0], create_price, "http://myuri.com")
+    print "raw create sub domain transaction: ", raw_txn
+
+    # Sign Transaction
+    signed = sign(raw_txn, addrs[0])
+    print "signed create sub domain transaction: ", signed
+    print
+
+    # Broadcast Transaction
+    result = broadcast_commit(raw_txn, signed['signature']['Signed'], signed['signature']['Signer'])
+    print result
+    print "###################"
+    print
+
+    if not result["ok"]:
+        sys.exit(-1)
+
+    print bcolors.WARNING + "*** Get All Domains ***" + bcolors.ENDC
     print_all_domains(addrs[0])
+
+    print bcolors.WARNING + "*** Get All Parent Domains ***" + bcolors.ENDC
+    print_all_parent_domains(addrs[0])
+
+    print bcolors.WARNING + "*** Get All Sub Domains of Parent Domain ***" + bcolors.ENDC
+    print_all_sub_domains(name)
+
+    print bcolors.WARNING + "*** Get All Sub Domains of a Sub Domain ***" + bcolors.ENDC
+    print_all_sub_domains(sub_name)
