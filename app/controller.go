@@ -370,7 +370,7 @@ func doEthTransitions(js *jobs.JobStore, ts *ethereum.TrackerStore, myValAddr ke
 
 		if t.Type == ethereum.ProcessTypeLock || t.Type == ethereum.ProcessTypeLockERC {
 
-			logger.Debug("Processing Tracker : ", t.Type.String(), " | State :", t.State.String(), " | Finality Votes :", t.FinalityVotes)
+			logger.Debug("Processing Tracker : ", t.Type.String(), " | Tracker Name ", t.TrackerName.String(), " | State :", t.State.String(), " | Finality Votes :", t.FinalityVotes)
 			_, err := event.EthLockEngine.Process(t.NextStep(), ctx, transition.Status(t.State))
 			if err != nil {
 				logger.Error("failed to process eth tracker ProcessTypeLock", err)
@@ -378,7 +378,7 @@ func doEthTransitions(js *jobs.JobStore, ts *ethereum.TrackerStore, myValAddr ke
 			}
 
 		} else if t.Type == ethereum.ProcessTypeRedeem || t.Type == ethereum.ProcessTypeRedeemERC {
-			logger.Debug("Processing Tracker : ", t.Type.String(), " | State :", t.State.String(), " | Finality Votes :", t.FinalityVotes)
+			logger.Debug("Processing Tracker : ", t.Type.String(), " | Tracker Name ", t.TrackerName.String(), " | State :", t.State.String(), " | Finality Votes :", t.FinalityVotes)
 			_, err := event.EthRedeemEngine.Process(t.NextStep(), ctx, transition.Status(t.State))
 			if err != nil {
 				logger.Error("failed to process eth tracker ProcessTypeRedeem", err)
