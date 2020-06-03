@@ -17,7 +17,7 @@ type ProposalOption struct {
 	FundingDeadline        int64                    `json:"fundingDeadline"`
 	VotingDeadline         int64                    `json:"votingDeadline"`
 	PassPercentage         int                      `json:"passPercentage"`
-	PassedFundDistribution ProposalFundDistribution `json:"passed_fund_dustribution"`
+	PassedFundDistribution ProposalFundDistribution `json:"passed_fund_distribution"`
 	FailedFundDistribution ProposalFundDistribution `json:"failed_fund_distribution"`
 }
 
