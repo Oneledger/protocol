@@ -179,6 +179,7 @@ func (ctx *context) Action(header *Header, state *storage.State) *action.Context
 		log.NewLoggerWithPrefix(ctx.logWriter, "action").WithLevel(log.Level(ctx.cfg.Node.LogLevel)),
 		ctx.proposalMaster.WithState(state),
 		ctx.extStores,
+		ctx.cfg,
 	)
 
 	return actionCtx

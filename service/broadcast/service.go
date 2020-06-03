@@ -2,6 +2,7 @@ package broadcast
 
 import (
 	"errors"
+	"github.com/Oneledger/protocol/config"
 
 	"github.com/Oneledger/protocol/data"
 	"github.com/Oneledger/protocol/data/governance"
@@ -71,7 +72,7 @@ func (svc *Service) validateAndSignTx(req client.BroadcastRequest) ([]byte, erro
 	handler := svc.router.Handler(tx.Type)
 	ctx := action.NewContext(svc.router, nil, nil, nil, nil, svc.currencies,
 		svc.feePool, svc.validators, nil, svc.domains, svc.trackers, nil, nil, nil, svc.logger,
-		svc.proposalMaster, svc.extStores)
+		svc.proposalMaster, svc.extStores, config.Server{})
 
 	_, err = handler.Validate(ctx, signedTx)
 	if err != nil {
@@ -104,7 +105,7 @@ func (svc *Service) validateAndMtSignTx(req client.BroadcastMtSigRequest) ([]byt
 	handler := svc.router.Handler(tx.Type)
 	ctx := action.NewContext(svc.router, nil, nil, nil, nil, svc.currencies,
 		svc.feePool, svc.validators, nil, svc.domains, svc.trackers, nil, nil, nil, svc.logger,
-		svc.proposalMaster, svc.extStores)
+		svc.proposalMaster, svc.extStores, config.Server{})
 
 	_, err = handler.Validate(ctx, signedTx)
 	if err != nil {

@@ -302,6 +302,9 @@ func runDevnet(_ *cobra.Command, _ []string) error {
 			cfg.Consensus.CreateEmptyBlocks = false
 		}
 
+		//For Dev networks, need to use latest changes.
+		cfg.ReleaseChanges.DomainChange1 = 0
+
 		cfg.Network.RPCAddress = generateAddress(generatePort(), true)
 		cfg.Network.P2PAddress = generateAddress(generatePort(), true)
 		cfg.Network.SDKAddress = generateAddress(generatePort(), true, true)

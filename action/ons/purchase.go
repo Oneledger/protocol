@@ -176,9 +176,16 @@ func runPurchaseDomain(ctx *action.Context, tx action.RawTx) (bool, action.Respo
 		}
 
 		// credit the sale price to the previous owner
-		err = ctx.Balances.AddToAddress(domain.Owner, sale)
-		if err != nil {
-			return false, action.Response{Log: err.Error()}
+		if ctx.State.Version() >= ctx.Config.ReleaseChanges.DomainChange1 {
+			err = ctx.Balances.AddToAddress(domain.Owner, sale)
+			if err != nil {
+				return false, action.Response{Log: err.Error()}
+			}
+		} else {
+			err = ctx.Balances.AddToAddress(domain.Beneficiary, sale)
+			if err != nil {
+				return false, action.Response{Log: err.Error()}
+			}
 		}
 
 		// deduct the saleprice from the offering

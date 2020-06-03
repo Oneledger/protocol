@@ -1,6 +1,7 @@
 package action
 
 import (
+	"github.com/Oneledger/protocol/config"
 	"github.com/Oneledger/protocol/data"
 	abci "github.com/tendermint/tendermint/abci/types"
 
@@ -36,6 +37,7 @@ type Context struct {
 	LockScriptStore     *bitcoin.LockScriptStore
 	ProposalMasterStore *governance.ProposalMasterStore
 	ExtStores           data.Router
+	Config              config.Server
 }
 
 func NewContext(r Router, header *abci.Header, state *storage.State,
@@ -45,7 +47,7 @@ func NewContext(r Router, header *abci.Header, state *storage.State,
 	domains *ons.DomainStore, btcTrackers *bitcoin.TrackerStore,
 	ethTrackers *ethereum.TrackerStore, jobStore *jobs.JobStore,
 	lockScriptStore *bitcoin.LockScriptStore, logger *log.Logger, proposalmaster *governance.ProposalMasterStore,
-	extStores data.Router) *Context {
+	extStores data.Router, config config.Server) *Context {
 
 	return &Context{
 		Router:              r,
@@ -65,5 +67,6 @@ func NewContext(r Router, header *abci.Header, state *storage.State,
 		LockScriptStore:     lockScriptStore,
 		ProposalMasterStore: proposalmaster,
 		ExtStores:           extStores,
+		Config:              config,
 	}
 }
