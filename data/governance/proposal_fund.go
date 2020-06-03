@@ -31,3 +31,21 @@ func GetCurrentFunds(id ProposalID, store *ProposalFundStore) *balance.Amount {
 	}
 	return totalBalance
 }
+
+func GetCurrentFundsByContributor(id ProposalID, contributor keys.Address, store *ProposalFundStore) (*balance.Amount, error) {
+	funds := store.GetFundersForProposalID(id, func(proposalID ProposalID, fundingAddr keys.Address, amt *balance.Amount) ProposalFund {
+		return ProposalFund{
+			id:            proposalID,
+			address:       fundingAddr,
+			fundingAmount: amt,
+		}
+	})
+	contributorBalance := balance.NewAmountFromInt(0)
+	for _, fund := range funds {
+		if fund.address.Equal(contributor) {
+			contributorBalance = contributorBalance.Plus(fund.fundingAmount)
+			return contributorBalance, nil
+		}
+	}
+	return nil, ErrWithdrawCheckFundsFailed
+}
