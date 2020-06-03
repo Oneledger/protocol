@@ -158,7 +158,6 @@ func (ctx *context) Action(header *Header, state *storage.State) *action.Context
 		ctx.jobStore,
 		ctx.lockScriptStore,
 		log.NewLoggerWithPrefix(ctx.logWriter, "action").WithLevel(log.Level(ctx.cfg.Node.LogLevel)),
-		ctx.cfg,
 	)
 
 	return actionCtx

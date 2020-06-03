@@ -48,7 +48,6 @@ type Server struct {
 	Consensus      *ConsensusConfig           `toml:"consensus"`
 	ChainDriver    *ChainDriverConfig         `toml:"chain_driver"`
 	EthChainDriver *EthereumChainDriverConfig `toml:"ethereum_chain_driver"`
-	ReleaseChanges *ReleaseChangesConfig      `toml:"release_changes"`
 
 	chainID string
 	rootDir string
@@ -165,7 +164,6 @@ func DefaultServerConfig() *Server {
 		Consensus:      DefaultConsensusConfig(),
 		ChainDriver:    DefaultChainDriverConfig(),
 		EthChainDriver: DefaultEthConfig("", ""),
-		ReleaseChanges: DefaultReleaseChangesConfig(),
 	}
 }
 
@@ -449,17 +447,6 @@ type ChainDriverConfig struct {
 
 type EthereumChainDriverConfig struct {
 	Connection string `toml:"connection" desc:"ethereum node connection url default: http://localhost:7545"`
-}
-
-type ReleaseChangesConfig struct {
-	DomainChange1 int64 `toml:"domainChange_1" desc:"changes related to purchase and update domain"`
-}
-
-func DefaultReleaseChangesConfig() *ReleaseChangesConfig {
-	var cfg ReleaseChangesConfig
-	cfg.DomainChange1 = 200000
-
-	return &cfg
 }
 
 func DefaultChainDriverConfig() *ChainDriverConfig {
