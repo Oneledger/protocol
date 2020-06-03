@@ -23,6 +23,7 @@ type JobBus struct {
 type Option struct {
 	BtcInterval time.Duration
 	EthInterval time.Duration
+	OltInterval time.Duration
 }
 
 func NewJobBus(opt Option, store *jobs.JobStore) *JobBus {
@@ -37,6 +38,7 @@ func (j *JobBus) Start(ctx *JobsContext) error {
 	j.ctx = ctx
 	tickerBtc := time.NewTicker(j.opt.BtcInterval)
 	tickerEth := time.NewTicker(j.opt.EthInterval)
+	tickerOlt := time.NewTicker(j.opt.OltInterval)
 	go func() {
 		for {
 			select {
@@ -45,6 +47,8 @@ func (j *JobBus) Start(ctx *JobsContext) error {
 				DeleteCompletedJobs(j.ctx, j.store.WithChain(chain.BITCOIN))
 			case <-tickerEth.C:
 				ProcessAllJobs(j.ctx, j.store.WithChain(chain.ETHEREUM))
+			case <-tickerOlt.C:
+				ProcessAllJobs(j.ctx, j.store.WithChain(chain.ONELEDGER))
 			case <-j.quit:
 				tickerBtc.Stop()
 				tickerEth.Stop()

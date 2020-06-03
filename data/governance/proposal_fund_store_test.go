@@ -77,7 +77,7 @@ func TestProposalFundStore_Iterate(t *testing.T) {
 	//fmt.Println("Iterating Stores")
 	IDLIST := []ProposalID{ID2, ID1}
 	ok := store.iterate(func(proposalID ProposalID, fundingAddr keys.Address, amt *balance.Amount) bool {
-		//fmt.Println("ProposalID : ", proposalID, "ProposalAddress :", fundingAddr, "Proposal Amount :", amt.BigInt())
+		fmt.Println("ProposalID : ", proposalID, "ProposalAddress :", fundingAddr, "Proposal Amount :", amt.BigInt())
 		assert.Contains(t, IDLIST, proposalID, "")
 		return false
 	})

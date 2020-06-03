@@ -14,6 +14,10 @@ type (
 	VoteResult      int
 )
 
+func (p ProposalID) String() string {
+	return string(p)
+}
+
 func IDFromString(s string) ProposalID {
 	return ProposalID(s)
 }

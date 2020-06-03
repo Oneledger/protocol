@@ -15,6 +15,16 @@ ProposalStateActive = 0x31
 ProposalStatePassed = 0x32
 ProposalStateFailed = 0x33
 
+class bcolors:
+    HEADER = '\033[95m'
+    OKBLUE = '\033[94m'
+    OKGREEN = '\033[92m'
+    WARNING = '\033[93m'
+    FAIL = '\033[91m'
+    ENDC = '\033[0m'
+    BOLD = '\033[1m'
+    UNDERLINE = '\033[4m'
+
 
 class Proposal:
     def __init__(self, pid, pType, description, proposer, init_fund):
@@ -161,6 +171,54 @@ class ProposalVote:
                 return result["txHash"]
 
 
+class ProposalFundsWithdraw:
+    def __init__(self, pid, contributor, value, beneficiary):
+        self.pid = pid
+        self.contr = contributor
+        self.value = value
+        self.benefi = beneficiary
+
+    def _withdraw_funds(self, contr_address):
+        req = {
+            "proposal_id": self.pid,
+            "contributor_address": contr_address,
+            "withdraw_value": {
+                "currency": "OLT",
+                "value": convertBigInt(self.value),
+            },
+            "beneficiary_address": self.benefi,
+            "gasPrice": {
+                "currency": "OLT",
+                "value": "1000000000",
+            },
+            "gas": 40000,
+        }
+        resp = rpc_call('tx.WithdrawProposalFunds', req)
+        print resp
+        return resp["result"]["rawTx"]
+
+    def withdraw_fund(self, contr_address):
+        # create Tx
+        raw_txn = self._withdraw_funds(contr_address)
+
+        # sign Tx
+        signed = sign(raw_txn, self.contr)
+
+        # broadcast Tx
+        result = broadcast_commit(raw_txn, signed['signature']['Signed'], signed['signature']['Signer'])
+
+        if "ok" in result:
+            if not result["ok"]:
+                print bcolors.FAIL + "################### proposal funds withdraw failed:" + result["log"] + bcolors.ENDC
+                return result["txHash"]
+            else:
+                print "################### proposal funds withdrawn:" + self.pid
+                return result["txHash"]
+        else:
+            print bcolors.FAIL + "################### proposal funds withdraw failed:" + result["error"]["message"] + bcolors.ENDC
+
+
+
 class ProposalFinalize:
     def __init__(self, pid, address):
         self.pid = pid
@@ -257,4 +315,12 @@ def query_proposals(prefix):
 def query_proposal(proposal_id):
     req = {"proposal_id": proposal_id}
     resp = rpc_call('query.GetProposalByID', req)
+    print json.dumps(resp, indent=4)
+    return resp["result"]
+
+
+def query_balance(address):
+    req = {"address": address}
+    resp = rpc_call('query.Balance', req)
+    print json.dumps(resp, indent=4)
     return resp["result"]

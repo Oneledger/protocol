@@ -25,9 +25,25 @@ func EnableGovernance(r action.Router) error {
 	if err != nil {
 		return errors.Wrap(err, "fundProposalTx")
 	}
+	err = r.AddHandler(action.PROPOSAL_WITHDRAW_FUNDS, WithdrawFunds{})
+	if err != nil {
+		return errors.Wrap(err, "WithdrawProposalTx")
+	}
+	err = r.AddHandler(action.EXPIRE_VOTES, ExpireVotes{})
+	if err != nil {
+		return errors.Wrap(err, "ExpireVotesTx")
+	}
 	err = r.AddHandler(action.PROPOSAL_FINALIZE, finalizeProposalTx{})
 	if err != nil {
 		return errors.Wrap(err, "finalizeProposalTx")
+	}
+	return nil
+}
+
+func EnableInternalGovernance(r action.Router) error {
+	err := r.AddHandler(action.EXPIRE_VOTES, ExpireVotes{})
+	if err != nil {
+		return errors.Wrap(err, "ExpireVotesTx")
 	}
 	return nil
 }
