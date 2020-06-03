@@ -1,10 +1,9 @@
 package event
 
 import (
+	"fmt"
 	"strconv"
 
-	"github.com/Oneledger/protocol/action"
-	"github.com/Oneledger/protocol/action/eth"
 	"github.com/Oneledger/protocol/chains/ethereum"
 	trackerlib "github.com/Oneledger/protocol/data/ethereum"
 	"github.com/Oneledger/protocol/data/jobs"
@@ -71,57 +70,35 @@ func (job *JobETHVerifyRedeem) DoMyJob(ctx interface{}) {
 	}
 
 	addr := ethCtx.GetValidatorETHAddress()
-	status, err := cd.VerifyRedeem(addr, msg.From())
-	if err != nil {
-		ethCtx.Logger.Error("Error in verifying redeem :", job.GetJobID(), err)
+	status := cd.VerifyRedeem(addr, msg.From())
+	if status == ethereum.ErrorConnecting {
+		ethCtx.Logger.Error("Error connecting to HasValidatorSigned function in Smart Contract  :", job.JobID, err)
+		panic("Error connecting  to Smart Contract ")
 	}
-	if err == ethereum.ErrRedeemExpired {
+	if status == ethereum.Expired {
 		job.Status = jobs.Failed
-		BroadcastReportFinalityETHTx(ctx.(*JobsContext), job.TrackerName, job.JobID, false)
+		err := BroadcastReportFinalityETHTx(ctx.(*JobsContext), job.TrackerName, job.JobID, false)
+		if err != nil {
+			panic(fmt.Sprintf("Unable to broadcast failed TX for : %s %s", job.JobID, err))
+		}
+
+		return
 	}
-	if status == 0 {
+	if status == ethereum.Ongoing {
 		ethCtx.Logger.Info("Waiting for RedeemTx to be Completed ,67 % Signing Votes")
 	}
 	// create internal check finality to report that the redeem is done on ethereum chain
-	if status == 1 {
+	if status == ethereum.Success {
 		index, _ := tracker.CheckIfVoted(ethCtx.ValidatorAddress)
 		if index < 0 {
 			return
 		}
-		//TODO : Replace with BroadcastReportFinalityETHTx(ethCtx,job.TrackerName,job.JobID,true)
-		cf := &eth.ReportFinality{
-			TrackerName:      tracker.TrackerName,
-			Locker:           tracker.ProcessOwner,
-			ValidatorAddress: ethCtx.ValidatorAddress,
-			VoteIndex:        index,
-			Success:          true,
-		}
-
-		txData, err := cf.Marshal()
+		err := BroadcastReportFinalityETHTx(ethCtx, job.TrackerName, job.JobID, true)
 		if err != nil {
-			ethCtx.Logger.Error("Error while preparing mint txn ", job.GetJobID(), err)
-			return
+			panic(fmt.Sprintf("Unable to broadcast success TX for : %s ", job.JobID))
 		}
-
-		internalMintTx := action.RawTx{
-			Type: action.ETH_REPORT_FINALITY_MINT,
-			Data: txData,
-			Fee:  action.Fee{},
-			Memo: job.GetJobID(),
-		}
-
-		req := InternalBroadcastRequest{
-			RawTx: internalMintTx,
-		}
-		rep := BroadcastReply{}
-		err = ethCtx.Service.InternalBroadcast(req, &rep)
-
-		if err != nil || !rep.OK {
-			ethCtx.Logger.Error("error while broadcasting finality vote and mint txn ", job.GetJobID(), err, rep.Log)
-			return
-		}
-		//TODO END
 		job.Status = jobs.Completed
+		return
 	}
 }
 

@@ -43,6 +43,18 @@ func (n Name) IsSub() bool {
 	return subpattern.Match([]byte(n.String()))
 }
 
+func (n Name) IsSubTo(parent Name) bool {
+	return strings.HasSuffix(n.String(), parent.String())
+}
+
+func (n Name) EqualTo(m Name) bool {
+	if strings.Compare(string(n), string(m)) == 0 {
+		return true
+	} else {
+		return false
+	}
+}
+
 func (n Name) GetParentName() (Name, error) {
 
 	if !n.IsSub() {

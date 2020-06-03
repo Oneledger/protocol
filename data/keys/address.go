@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding"
 	"encoding/hex"
+	"fmt"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -35,7 +36,7 @@ func (a Address) Err() error {
 	case len(a) == 0:
 		return errors.New("address is empty")
 	case len(a) != 20:
-		return errors.New("address is the incorrect length: must be 20-bytes (40 characters after 0x prefix)")
+		return errors.New(fmt.Sprintf("address is the incorrect length: must be 20-bytes (40 hex characters after %s prefix)", utils.AddrPrefix))
 	}
 	return nil
 }
