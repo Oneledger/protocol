@@ -189,6 +189,40 @@ func BroadcastGovExpireVotesTx(jobCtx *JobsContext, proposalID governance.Propos
 	return nil
 }
 
+func BroadcastGovFinalizeVotesTx(jobCtx *JobsContext, proposalID governance.ProposalID, jobID string) error {
+
+	expireVotes := &gov_action.FinalizeProposal{
+		ProposalID:       proposalID,
+		ValidatorAddress: jobCtx.ValidatorAddress,
+	}
+
+	txData, err := expireVotes.Marshal()
+	if err != nil {
+		jobCtx.Logger.Error("Error while preparing expire votes txn ", jobID, err)
+		return err
+	}
+
+	uuidNew, _ := uuid.NewUUID()
+	internalFinalizeTx := action.RawTx{
+		Type: action.PROPOSAL_FINALIZE,
+		Data: txData,
+		Fee:  action.Fee{},
+		Memo: jobID + uuidNew.String(),
+	}
+
+	req := InternalBroadcastRequest{
+		RawTx: internalFinalizeTx,
+	}
+	rep := BroadcastReply{}
+	err = jobCtx.Service.InternalBroadcast(req, &rep)
+
+	if err != nil || !rep.OK {
+		jobCtx.Logger.Error("Error while broadcasting finalization votes transaction ", jobID, err, rep.Log)
+		return err
+	}
+	return nil
+}
+
 func (svc Service) ExistTx(hash []byte) bool {
 	reply, _ := svc.tmrpc.Tx(hash, false)
 	if reply != nil && reply.Height > 0 {

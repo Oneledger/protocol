@@ -97,87 +97,54 @@ func runFinalizeProposal(ctx *action.Context, tx action.RawTx) (bool, action.Res
 	if err != nil {
 		return false, action.Response{}
 	}
+	//Get Proposal
 	proposal, err := ctx.ProposalMasterStore.Proposal.WithPrefixType(governance.ProposalStatePassed).Get(finalizedProposal.ProposalID)
 	if err != nil {
-		result := action.Response{
-			Events: action.GetEvent(finalizedProposal.Tags(), action.ErrProposalNotFound.Msg),
-			Log:    action.ErrProposalNotFound.Error(),
-		}
-		return false, result
+		return logAndReturnFalse(ctx.Logger, governance.ErrProposalNotFound, finalizedProposal.Tags())
 	}
+	//Check Status is Completed
 	if proposal.Status != governance.ProposalStatusCompleted {
-		result := action.Response{
-			Events: action.GetEvent(finalizedProposal.Tags(), action.ErrStatusNotCompleted.Msg),
-			Log:    action.ErrStatusNotCompleted.Error(),
-		}
-		return false, result
+		return logAndReturnFalse(ctx.Logger, governance.ErrStatusNotCompleted, finalizedProposal.Tags())
 	}
-
+	//Get Vote Result
 	voteResult, err := ctx.ProposalMasterStore.ProposalVote.ResultSoFar(proposal.ProposalID, proposal.PassPercentage)
 	if err != nil {
-		result := action.Response{
-			Events: action.GetEvent(finalizedProposal.Tags(), action.ErrUnabletoQueryVoteResult.Msg),
-			Log:    action.ErrUnabletoQueryVoteResult.Error(),
-		}
-		return false, result
+		return logAndReturnFalse(ctx.Logger, governance.ErrUnabletoQueryVoteResult, finalizedProposal.Tags())
 	}
+	//Handle Result TBD
 	if voteResult == governance.VOTE_RESULT_TBD {
-		result := action.Response{
-			Events: action.GetEvent(finalizedProposal.Tags(), action.ErrVotingTBD.Msg),
-			Log:    action.ErrVotingTBD.Error(),
-		}
-		return false, result
+		return logAndReturnFalse(ctx.Logger, governance.ErrVotingTBD, finalizedProposal.Tags())
 	}
+	//Handle Result Passed
 	if voteResult == governance.VOTE_RESULT_PASSED {
 		proposalDistribution := ctx.ProposalMasterStore.Proposal.GetOptionsByType(proposal.Type).PassedFundDistribution
 		err := distributeFunds(ctx, proposal, &proposalDistribution)
 		if err != nil {
-			result := action.Response{
-				Events: action.GetEvent(finalizedProposal.Tags(), action.ErrFinalizeDistributtionFailed.Msg),
-				Log:    errors.Wrap(action.ErrFinalizeDistributtionFailed, err.Error()).Error(),
-			}
-			return false, result
+			return logAndReturnFalse(ctx.Logger, governance.ErrFinalizeDistributtionFailed, finalizedProposal.Tags())
 		}
 		if proposal.Type == governance.ProposalTypeConfigUpdate {
 			err := executeConfigUpdate(ctx, proposal)
 			if err != nil {
-				result := action.Response{
-					Events: action.GetEvent(finalizedProposal.Tags(), action.ErrFinalizeConfigUpdateFailed.Msg),
-					Log:    errors.Wrap(action.ErrFinalizeConfigUpdateFailed, err.Error()).Error(),
-				}
-				return false, result
+				return logAndReturnFalse(ctx.Logger, governance.ErrFinalizeConfigUpdateFailed, finalizedProposal.Tags())
 			}
 		}
 		proposal.Status = governance.ProposalStatusFinalized
 		err = ctx.ProposalMasterStore.Proposal.WithPrefixType(governance.ProposalStatePassed).Set(proposal)
 		if err != nil {
-			result := action.Response{
-				Events: action.GetEvent(finalizedProposal.Tags(), action.ErrStatusUnableToSetFinalized.Msg),
-				Log:    action.ErrStatusUnableToSetFinalized.Error(),
-			}
-			return false, result
-
+			return logAndReturnFalse(ctx.Logger, governance.ErrStatusUnableToSetFinalized, finalizedProposal.Tags())
 		}
 	}
+	//Handle Result Failed
 	if voteResult == governance.VOTE_RESULT_FAILED {
 		proposalDistribution := ctx.ProposalMasterStore.Proposal.GetOptionsByType(proposal.Type).FailedFundDistribution
 		err := distributeFunds(ctx, proposal, &proposalDistribution)
 		if err != nil {
-			result := action.Response{
-				Events: action.GetEvent(finalizedProposal.Tags(), action.ErrFinalizeDistributtionFailed.Msg),
-				Log:    errors.Wrap(action.ErrFinalizeDistributtionFailed, err.Error()).Error(),
-			}
-			return false, result
+			return logAndReturnFalse(ctx.Logger, governance.ErrFinalizeDistributtionFailed, finalizedProposal.Tags())
 		}
 		proposal.Status = governance.ProposalStatusFinalized
 		err = ctx.ProposalMasterStore.Proposal.WithPrefixType(governance.ProposalStateFailed).Set(proposal)
 		if err != nil {
-			result := action.Response{
-				Events: action.GetEvent(finalizedProposal.Tags(), action.ErrStatusUnableToSetFinalized.Msg),
-				Log:    action.ErrStatusUnableToSetFinalized.Error(),
-			}
-			return false, result
-
+			return logAndReturnFalse(ctx.Logger, governance.ErrStatusUnableToSetFinalized, finalizedProposal.Tags())
 		}
 	}
 	result := action.Response{
@@ -186,6 +153,7 @@ func runFinalizeProposal(ctx *action.Context, tx action.RawTx) (bool, action.Res
 	return true, result
 }
 
+//Function to distribute funds
 func distributeFunds(ctx *action.Context, proposal *governance.Proposal, proposalDistribution *governance.ProposalFundDistribution) error {
 	// Required Perimeters for Fund Distribution
 
@@ -248,9 +216,13 @@ func distributeFunds(ctx *action.Context, proposal *governance.Proposal, proposa
 	}
 	return nil
 }
+
+//Function to execute Config update to governanace
 func executeConfigUpdate(ctx *action.Context, proposal *governance.Proposal) error {
 	return nil
 }
+
+//Helper function to get percentage
 func getPercentageCoin(c balance.Currency, totalFunding *big.Float, fundTracker *float64, percentage float64) balance.Coin {
 	// TODO : How to deal with accuracy
 	amount, _ := big.NewFloat(1.0).Mul(totalFunding, big.NewFloat(percentage/100)).Float64()

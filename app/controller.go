@@ -3,10 +3,10 @@ package app
 import (
 	"encoding/hex"
 	"fmt"
-	"github.com/Oneledger/protocol/data/governance"
-
 	"math"
 	"runtime/debug"
+
+	"github.com/Oneledger/protocol/data/governance"
 
 	"github.com/pkg/errors"
 
@@ -427,6 +427,17 @@ func updateProposals(proposalMaster *governance.ProposalMasterStore, jobStore *j
 				}
 			}
 		}
+		if proposal.Status == governance.ProposalStatusCompleted {
+			finalizeJob := event.NewGovFinalizeProposalJob(proposal.ProposalID, proposal.Status)
+			exists, _ := jobStore.WithChain(chain.ONELEDGER).JobExists(finalizeJob.JobID)
+			if !exists {
+				err := jobStore.WithChain(chain.ONELEDGER).SaveJob(finalizeJob)
+				if err != nil {
+					return true
+				}
+			}
+		}
+
 		return false
 	})
 }

@@ -46,6 +46,10 @@ const (
 	WalletErrorGettingAccount = 200602
 	WalletErrorDeleteAccount  = 200603
 
+	BalanceError
+	BalanceErrorAddFailed   = 210600
+	BalanceErrorMinusFailed = 210601
+
 	AccountsError                     = 2007
 	AccountsErrorGeneratingNewAccount = 200701
 
@@ -76,6 +80,9 @@ const (
 	ExternalErrUnableToCreateErc20OLTLockTX = 500100
 	ExternalErrTokenNotSuported             = 500101
 
+	//ValidatorStore
+	ValidatorsUnableGetList = 410100
+
 	//Tracker
 	ETHTrackerNotFoundFailed  = 600100
 	ETHTrackerNotFoundSuccess = 600101
@@ -97,4 +104,8 @@ const (
 	FinalizeConfigUpdateFailed     = 700112
 	StatusUnableToSetFinalized     = 700113
 	UnabletoQueryVoteResult        = 700114
+	FundingDeadlineCrossed         = 700115
+	StatusUnableToSetVoting        = 700116
+	GovFundUnableToAdd             = 700117
+	GovFundUnableToDelete          = 700118
 )

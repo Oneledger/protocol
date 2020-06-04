@@ -20,7 +20,8 @@ const (
 	JobTypeETHSignRedeem    = "ethsignredeem"
 	JobTypeETHVerifyRedeem  = "verifyredeem"
 
-	JobTypeGOVCheckVotes = "govCheckVotes"
+	JobTypeGOVCheckVotes       = "govCheckVotes"
+	JobTypeGOVFinalizeProposal = "govFinalizeProposal"
 
 	MaxJobRetries = 10
 )
