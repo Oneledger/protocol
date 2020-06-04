@@ -11,7 +11,6 @@ pipeline {
         
         stage('clone infrastructure repo') {
             steps {
-                 dir(env.ANSIBLE_DIR) {
                     checkout([
                     $class: 'GitSCM', 
         	        branches: [[name: '*/devops']], 
@@ -22,7 +21,7 @@ pipeline {
     ])                
             }
         }
-    }
+    
        stage('update binary') {
             steps {
                 dir(env.ANSIBLE_DIR) {
