@@ -76,8 +76,5 @@ if __name__ == "__main__":
     # test fail a proposal
     test_fail_proposal()
 
-    print "#### PASSED PROPOSALS: ####"
-    query_proposals("passed")
-
-    print "#### FAILED PROPOSALS: ####"
-    query_proposals("failed")
+    print "#### Test vote proposals succeed: ####"
+    print ""

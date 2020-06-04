@@ -4,12 +4,11 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/pkg/errors"
-	"github.com/tendermint/tendermint/libs/kv"
-
 	"github.com/Oneledger/protocol/action"
 	gov "github.com/Oneledger/protocol/data/governance"
 	"github.com/Oneledger/protocol/data/keys"
+	"github.com/pkg/errors"
+	"github.com/tendermint/tendermint/libs/kv"
 )
 
 var _ action.Msg = &CancelProposal{}
@@ -20,12 +19,52 @@ type CancelProposal struct {
 	Reason     string
 }
 
-var _ action.Tx = CancelProposalTx{}
-
-type CancelProposalTx struct {
+func (cp CancelProposal) Signers() []action.Address {
+	return []action.Address{cp.Proposer.Bytes()}
 }
 
-func (c CancelProposalTx) Validate(ctx *action.Context, tx action.SignedTx) (bool, error) {
+func (cp CancelProposal) Type() action.Type {
+	return action.PROPOSAL_CANCEL
+}
+
+func (cp CancelProposal) Tags() kv.Pairs {
+	tags := make([]kv.Pair, 0)
+
+	tag := kv.Pair{
+		Key:   []byte("tx.type"),
+		Value: []byte(cp.Type().String()),
+	}
+	tag2 := kv.Pair{
+		Key:   []byte("tx.proposalID"),
+		Value: []byte(cp.ProposalId),
+	}
+	tag3 := kv.Pair{
+		Key:   []byte("tx.proposer"),
+		Value: cp.Proposer.Bytes(),
+	}
+	tag4 := kv.Pair{
+		Key:   []byte("tx.reason"),
+		Value: []byte(cp.Reason),
+	}
+
+	tags = append(tags, tag, tag2, tag3, tag4)
+	return tags
+}
+
+func (cp *CancelProposal) Marshal() ([]byte, error) {
+	return json.Marshal(cp)
+}
+
+func (cp *CancelProposal) Unmarshal(data []byte) error {
+	return json.Unmarshal(data, cp)
+}
+
+var _ action.Tx = cancelProposalTx{}
+
+type cancelProposalTx struct {
+}
+
+func (c cancelProposalTx) Validate(ctx *action.Context, tx action.SignedTx) (bool, error) {
 	ctx.Logger.Debug("Validate CancelProposalTx transaction for CheckTx", tx)
 
 	cc := &CancelProposal{}
@@ -56,16 +95,16 @@ func (c CancelProposalTx) Validate(ctx *action.Context, tx action.SignedTx) (boo
 	return true, nil
 }
 
-func (c CancelProposalTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
+func (c cancelProposalTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	ctx.Logger.Debug("ProcessCheck CancelProposalTx transaction for CheckTx", tx)
 	return runCancel(ctx, tx)
 }
 
-func (c CancelProposalTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas) (bool, action.Response) {
+func (c cancelProposalTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas) (bool, action.Response) {
 	return action.BasicFeeHandling(ctx, signedTx, start, size, 2)
 }
 
-func (c CancelProposalTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
+func (c cancelProposalTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	ctx.Logger.Debug("ProcessDeliver CancelProposalTx transaction for DeliverTx", tx)
 	return runCancel(ctx, tx)
 }
@@ -108,7 +147,7 @@ func runCancel(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	proposal.Outcome = gov.ProposalOutcomeCancelled
 	proposal.Description += " - Canceled"
 	if cc.Reason != "" {
-		proposal.Description += fmt.Sprintf("for reason: %v", cc.Reason)
+		proposal.Description += fmt.Sprintf(" for reason: %v", cc.Reason)
 	}
 	err = pms.Proposal.WithPrefixType(gov.ProposalStateFailed).Set(proposal)
 	if err != nil {
@@ -124,44 +163,4 @@ func runCancel(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	}
 
 	return true, action.Response{Events: action.GetEvent(cc.Tags(), "cancel_proposal_success")}
-}
-
-func (cc CancelProposal) Signers() []action.Address {
-	return []action.Address{cc.Proposer.Bytes()}
-}
-
-func (cc CancelProposal) Type() action.Type {
-	return action.PROPOSAL_CANCEL
-}
-
-func (cc CancelProposal) Tags() kv.Pairs {
-	tags := make([]kv.Pair, 0)
-
-	tag := kv.Pair{
-		Key:   []byte("tx.type"),
-		Value: []byte(cc.Type().String()),
-	}
-	tag2 := kv.Pair{
-		Key:   []byte("tx.proposalID"),
-		Value: []byte(cc.ProposalId),
-	}
-	tag3 := kv.Pair{
-		Key:   []byte("tx.proposer"),
-		Value: cc.Proposer.Bytes(),
-	}
-	tag4 := kv.Pair{
-		Key:   []byte("tx.reason"),
-		Value: []byte(cc.Reason),
-	}
-
-	tags = append(tags, tag, tag2, tag3, tag4)
-	return tags
-}
-
-func (cc *CancelProposal) Marshal() ([]byte, error) {
-	return json.Marshal(cc)
-}
-
-func (cc *CancelProposal) Unmarshal(data []byte) error {
-	return json.Unmarshal(data, cc)
 }

@@ -33,6 +33,6 @@ if __name__ == "__main__":
     fund_proposal(encoded_pid, _each_funding, addr_list[2])
     check_proposal_state(encoded_pid, ProposalStateActive, ProposalStatusVoting)
 
-    print "#### ACTIVE PROPOSALS: ####"
-    query_proposals("active")
+    print "#### Test fund proposals succeed: ####"
+    print ""
     
