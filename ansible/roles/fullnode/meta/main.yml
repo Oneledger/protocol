@@ -60,5 +60,5 @@ dependencies:
   when: logging == "true" 
 - role: gantsign.golang
   golang_gopath: "{{GOPATH}}"
-  golang_version: 1.11.6
+  golang_version: 1.13.10
   golang_install_dir: "{{GOLANG_INSTALL_DIR}}"
