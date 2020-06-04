@@ -2,6 +2,11 @@
 
 pipeline {
     
+    agent {
+        node {
+            label 'any'
+        }
+    }
     environment {
         ANSIBLE_DIR = 'ansible-scripts'
     }
