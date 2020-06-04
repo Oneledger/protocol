@@ -11,6 +11,3 @@ tendermint_port: tcp://10.15.0.192:26604
 
 # Explorer version tag
 tag: v0.3.1
-
-# adding index
-index_query: "CREATE INDEX tx_detail_name ON blockchain.txns USING btree ((fields->'txDetail'->>'name'))"

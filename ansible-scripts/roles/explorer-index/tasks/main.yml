@@ -44,8 +44,16 @@
 - name: Installing psql package
   command: apt install postgresql-client
 
+- name: copying index file
+  copy:
+    src: ../files/index_query.sql
+    dest: /tmp
+    owner: root
+    group: root
+    mode: '0755'
+
 - name: connecting to database
-  command: psql "host={{ database_ip }}  user={{ username }} password={{ password }} dbname= {{ my_database_name }}" -c "{{ index_query }};"
+  shell: psql "host={{ database_ip }}  user={{ username }} password={{ password }} dbname={{ my_database_name }}" < /tmp/index_query.sql
   become: true
 
 - name: watcher script setup
