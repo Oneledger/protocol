@@ -119,6 +119,7 @@ govtest: install
 	python scripts/governance/createProposals.py
 	python scripts/governance/fundProposals.py
 	python scripts/governance/cancelProposals.py
+	python scripts/governance/withdrawFunds.py
 	python scripts/governance/voteProposals.py
 	python scripts/governance/governanceCLI.py
 	@./scripts/stopNodes

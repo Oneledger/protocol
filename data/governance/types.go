@@ -24,6 +24,10 @@ func (id ProposalID) Err() error {
 	return nil
 }
 
+func (id ProposalID) String() string {
+	return string(id)
+}
+
 func (opinion VoteOpinion) String() string {
 	switch opinion {
 	case OPIN_UNKNOWN:

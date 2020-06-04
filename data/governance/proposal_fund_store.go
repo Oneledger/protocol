@@ -70,7 +70,12 @@ func (pf *ProposalFundStore) iterate(fn func(proposalID ProposalID, addr keys.Ad
 			}
 			arr := strings.Split(string(key), storage.DB_PREFIX)
 			proposalID := arr[1]
-			fundingAddress := keys.Address(arr[len(arr)-1])
+			fundingAddress:= keys.Address{}
+			err = fundingAddress.UnmarshalText([]byte(arr[len(arr)-1]))
+			if err != nil {
+				fmt.Println("err", err)
+				return true
+			}
 			return fn(ProposalID(proposalID), fundingAddress, amt)
 		},
 	)
@@ -118,6 +123,19 @@ func (pf *ProposalFundStore) AddFunds(proposalId ProposalID, fundingAddress keys
 		return errors.Wrap(err, errorGettingRecord)
 	}
 	return pf.set(key, *amt.Plus(amount))
+}
+
+func (pf *ProposalFundStore) DeductFunds(proposalId ProposalID, fundingAddress keys.Address, amount *balance.Amount) error {
+	key := storage.StoreKey(string(proposalId) + storage.DB_PREFIX + fundingAddress.String())
+	amt, err := pf.get(key)
+	if err != nil {
+		return errors.Wrap(err, errorGettingRecord)
+	}
+	result, err := amt.Minus(amount)
+	if err != nil {
+		return errors.Wrap(err, errorGettingRecord)
+	}
+	return pf.set(key, *result)
 }
 
 func (pf *ProposalFundStore) DeleteFunds(proposalId ProposalID, fundingAddress keys.Address) (bool, error) {
