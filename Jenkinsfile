@@ -13,15 +13,12 @@ pipeline {
                 sh 'apt-get update -y && apt-get install -y build-essential libleveldb-dev libsnappy-dev'
             }
         }
-        
-    stages {
-        
+       
         stage('cloning protocol repo'){
             steps {
                     sh 'git clone https://github.com/Oneledger/protocol.git'
                 }
             }
-        }
         
         stage('performing tests'){
             steps {
@@ -30,3 +27,4 @@ pipeline {
             }
         }
 }
+
