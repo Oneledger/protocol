@@ -37,6 +37,19 @@ func (opinion VoteOpinion) String() string {
 	}
 }
 
+func (status ProposalStatus) String() string {
+	switch status {
+	case ProposalStatusCompleted:
+		return "ProposalStatusCompleted"
+	case ProposalStatusVoting:
+		return "ProposalStatusVoting"
+	case ProposalStatusFunding:
+		return "ProposalStatusFunding"
+	default:
+		return "Invalid status"
+	}
+}
+
 func (opinion VoteOpinion) Err() error {
 	opName := opinion.String()
 	if opName == "" {

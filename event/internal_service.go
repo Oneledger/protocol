@@ -72,13 +72,11 @@ func (reply *BroadcastReply) FromResultBroadcastTx(result *ctypes.ResultBroadcas
 }
 
 func (svc Service) InternalBroadcast(request InternalBroadcastRequest, reply *BroadcastReply) error {
-
 	if err := svc.allowedTx(request.RawTx); err != nil {
 		return err
 	}
 
 	priKey := svc.nodeCtx.PrivVal()
-
 	h, err := priKey.GetHandler()
 	if err != nil {
 		return errors.Wrap(err, "wrong node private validator key")
@@ -94,7 +92,6 @@ func (svc Service) InternalBroadcast(request InternalBroadcastRequest, reply *Br
 			Signed: signed,
 		}},
 	}
-
 	result, err := svc.tmrpc.BroadcastTxSync(rawSignedTx.SignedBytes())
 	if err != nil {
 		return errors.Wrap(err, "error broadcast sync")
@@ -191,14 +188,14 @@ func BroadcastGovExpireVotesTx(jobCtx *JobsContext, proposalID governance.Propos
 
 func BroadcastGovFinalizeVotesTx(jobCtx *JobsContext, proposalID governance.ProposalID, jobID string) error {
 
-	expireVotes := &gov_action.FinalizeProposal{
+	finalizeProposal := &gov_action.FinalizeProposal{
 		ProposalID:       proposalID,
 		ValidatorAddress: jobCtx.ValidatorAddress,
 	}
 
-	txData, err := expireVotes.Marshal()
+	txData, err := finalizeProposal.Marshal()
 	if err != nil {
-		jobCtx.Logger.Error("Error while preparing expire votes txn ", jobID, err)
+		jobCtx.Logger.Error("Error while preparing finalizing votes txn ", jobID, err)
 		return err
 	}
 
@@ -209,7 +206,6 @@ func BroadcastGovFinalizeVotesTx(jobCtx *JobsContext, proposalID governance.Prop
 		Fee:  action.Fee{},
 		Memo: jobID + uuidNew.String(),
 	}
-
 	req := InternalBroadcastRequest{
 		RawTx: internalFinalizeTx,
 	}
@@ -217,7 +213,7 @@ func BroadcastGovFinalizeVotesTx(jobCtx *JobsContext, proposalID governance.Prop
 	err = jobCtx.Service.InternalBroadcast(req, &rep)
 
 	if err != nil || !rep.OK {
-		jobCtx.Logger.Error("Error while broadcasting finalization votes transaction ", jobID, err, rep.Log)
+		jobCtx.Logger.Error("Error while broadcasting finalizing votes transaction ", jobID, err, rep.Log)
 		return err
 	}
 	return nil

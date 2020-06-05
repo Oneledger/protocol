@@ -24,7 +24,6 @@ const (
 	ProposalStatusFunding   ProposalStatus = 0x23
 	ProposalStatusVoting    ProposalStatus = 0x24
 	ProposalStatusCompleted ProposalStatus = 0x25
-	ProposalStatusFinalized ProposalStatus = 0x26
 
 	//Proposal Outcome
 	ProposalOutcomeInProgress        ProposalOutcome = 0x26
@@ -34,10 +33,11 @@ const (
 	ProposalOutcomeCompleted         ProposalOutcome = 0x30
 
 	//Proposal States
-	ProposalStateError  ProposalState = 0xEE
-	ProposalStateActive ProposalState = 0x31
-	ProposalStatePassed ProposalState = 0x32
-	ProposalStateFailed ProposalState = 0x33
+	ProposalStateError     ProposalState = 0xEE
+	ProposalStateActive    ProposalState = 0x31
+	ProposalStatePassed    ProposalState = 0x32
+	ProposalStateFailed    ProposalState = 0x33
+	ProposalStateFinalized ProposalState = 0x34
 
 	//Vote Opinions
 	OPIN_UNKNOWN  VoteOpinion = 0x0

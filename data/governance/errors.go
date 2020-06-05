@@ -25,4 +25,9 @@ var (
 	ErrGovFundUnableToAdd          = codes.ProtocolError{Code: codes.GovFundUnableToAdd, Msg: "Funding unable to add funds"}
 	ErrGovFundUnableToDelete       = codes.ProtocolError{Code: codes.GovFundUnableToDelete, Msg: "Funding unable to delete Funds"}
 	ErrFundingDeadlineCrossed      = codes.ProtocolError{Code: codes.FundingDeadlineCrossed, Msg: "Funding deadline has been crossed"}
+	ErrGovFundBalanceMismatch      = codes.ProtocolError{Code: codes.GovFundBalanceMismatch, Msg: "Balance Mismatch While Burning Funds"}
+	NoError                        = codes.ProtocolError{
+		Code: 0,
+		Msg:  "No Error",
+	}
 )

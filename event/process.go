@@ -52,6 +52,7 @@ func (j *JobBus) Start(ctx *JobsContext) error {
 			case <-j.quit:
 				tickerBtc.Stop()
 				tickerEth.Stop()
+				tickerOlt.Stop()
 				return
 			}
 		}
@@ -78,8 +79,8 @@ func ProcessAllJobs(ctx *JobsContext, js *jobs.JobStore) {
 				if r := recover(); r != nil {
 					ctx.Logger.Info("panic in job: ", job.GetJobID())
 					ctx.Logger.Info(r)
-					panic(r)
 					debug.PrintStack()
+					panic(r)
 				}
 			}()
 			job.DoMyJob(ctx)

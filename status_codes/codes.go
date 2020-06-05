@@ -108,4 +108,5 @@ const (
 	StatusUnableToSetVoting        = 700116
 	GovFundUnableToAdd             = 700117
 	GovFundUnableToDelete          = 700118
+	GovFundBalanceMismatch         = 700119
 )

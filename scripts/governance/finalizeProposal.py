@@ -41,8 +41,7 @@ def test_pass_finalize_proposal():
     vote_proposal(encoded_pid, "YES", url_3, addr_list[0])
     check_proposal_state(encoded_pid, ProposalStatePassed, ProposalStatusCompleted)
 
-    finalize_proposal(encoded_pid, _proposer)
-    check_proposal_state(encoded_pid, ProposalStatePassed, ProposalStatusFinalized)
+    time.sleep(3)
 
 
 if __name__ == "__main__":

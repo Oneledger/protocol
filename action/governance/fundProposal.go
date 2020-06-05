@@ -102,12 +102,12 @@ func (fundProposalTx) Validate(ctx *action.Context, signedTx action.SignedTx) (b
 }
 
 func (fundProposalTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
-	ctx.Logger.Debug("Processing FundProposal Transaction for CheckTx", tx)
+	//ctx.Logger.Debug("Processing FundProposal Transaction for CheckTx", tx)
 	return runFundProposal(ctx, tx)
 }
 
 func (fundProposalTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
-	ctx.Logger.Debug("Processing FundProposal Transaction for DeliverTx", tx)
+	//ctx.Logger.Debug("Processing FundProposal Transaction for DeliverTx", tx)
 	return runFundProposal(ctx, tx)
 }
 
