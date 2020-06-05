@@ -87,4 +87,16 @@ const (
 	GovErrVoteDeleteVoteRecords    = 700102
 	GovErrVoteCheckVoteResult      = 700103
 	GovErrWithdrawCheckFundsFailed = 700104
+	GovErrGetProposalOptions       = 700105
+	GovErrInvalidProposalId        = 700106
+	GovErrInvalidProposalType      = 700107
+	GovErrInvalidProposerAddr      = 700108
+	GovErrInvalidProposalDesc      = 700109
+	GovErrProposalExists           = 700110
+	GovErrAddingProposalToDB       = 700111
+	GovErrProposalUnmarshal        = 700112
+	GovErrDeductFunding            = 700113
+	GovErrAddFunding			   = 700114
+	GovErrInvalidContributorAddr   = 700115
+	GovErrFundingHeightReached     = 700116
 )
