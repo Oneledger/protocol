@@ -17,30 +17,19 @@ pipeline {
                 sh 'apt-get update -y && apt-get install -y build-essential libleveldb-dev libsnappy-dev'
             }
         }
-        stage ('install'){
-            steps{
-                sh 'make update install'
+        
+    stages {
+        
+        stage('cloning protocol repo'){
+            steps {
+                    sh 'git clone https://github.com/Oneledger/protocol.git'
+                }
             }
         }
-        stage('unit test'){
-            steps{
-                sh 'make utest'
+        
+        stage('performing tests'){
+            steps {
+                    sh 'pwd; ls -lrt; ./test_script.sh'
+                }
             }
         }
-        stage ('full test'){
-            steps{
-                sh 'make fulltest'
-            }
-        }
-        // stage('install_c'){
-        //     steps{
-        //         sh 'make install_c'
-        //     }
-        // }
-    }
-    post {
-        always {
-            archiveArtifacts artifacts: "go/bin/*", fingerprint: true, onlyIfSuccessful: true
-        }
-    }
-}
