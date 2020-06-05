@@ -1,9 +1,5 @@
 pipeline {
     agent any
-    
-    tools {
-      go 'GO.1.13.1'
-    }
 
     environment {
         GO111MODULE="on"
