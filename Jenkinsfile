@@ -8,11 +8,6 @@ pipeline {
         PATH="${GOPATH}/bin:${PATH}"
     }
     stages{       
-        stage ('download apt dependency'){
-            steps{
-                sh 'sudo apt-get update -y && sudo apt-get install -y build-essential libleveldb-dev libsnappy-dev'
-            }
-        }
        
         stage('cloning protocol repo'){
             steps {
