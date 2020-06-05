@@ -25,6 +25,7 @@ type ListProposalsRequest struct {
 type ListProposalsReply struct {
 	Proposals     []governance.Proposal    `json:"proposals"`
 	ProposalFunds []balance.Amount         `json:"proposal_funds"`
+	ProposalVotes []governance.VoteStatus  `json:"proposal_votes"`
 	State         governance.ProposalState `json:"state"`
 	Height        int64                    `json:"height"`
 }

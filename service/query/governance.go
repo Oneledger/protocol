@@ -44,14 +44,21 @@ func (svc *Service) ListProposals(req client.ListProposalsRequest, reply *client
 
 	// List current funds of each proposal
 	proposalFunds := make([]balance.Amount, len(proposals))
+
+	// List current vote status of each proposal if available
+	proposalVotes := make([]governance.VoteStatus, len(proposals))
 	for i, prop := range proposals {
+		options := svc.proposalMaster.Proposal.GetOptionsByType(prop.Type)
 		funds := governance.GetCurrentFunds(prop.ProposalID, svc.proposalMaster.ProposalFund)
+		stat, _ := svc.proposalMaster.ProposalVote.ResultSoFar(prop.ProposalID, options.PassPercentage)
 		proposalFunds[i] = *funds
+		proposalVotes[i] = *stat
 	}
 
 	*reply = client.ListProposalsReply{
 		Proposals:     proposals,
 		ProposalFunds: proposalFunds,
+		ProposalVotes: proposalVotes,
 		State:         proposalState,
 		Height:        svc.proposalMaster.Proposal.GetState().Version(),
 	}
@@ -68,11 +75,14 @@ func (svc *Service) ListProposal(req client.ListProposalsRequest, reply *client.
 		return codes.ErrGetProposal
 	}
 
+	options := svc.proposalMaster.Proposal.GetOptionsByType(proposal.Type)
 	funds := governance.GetCurrentFunds(proposalID, svc.proposalMaster.ProposalFund)
+	stat, _ := svc.proposalMaster.ProposalVote.ResultSoFar(proposalID, options.PassPercentage)
 
 	*reply = client.ListProposalsReply{
 		Proposals:     []governance.Proposal{*proposal},
 		ProposalFunds: []balance.Amount{*funds},
+		ProposalVotes: []governance.VoteStatus{*stat},
 		State:         state,
 		Height:        svc.proposalMaster.Proposal.GetState().Version(),
 	}

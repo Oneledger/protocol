@@ -95,48 +95,54 @@ func (pvs *ProposalVoteStore) Delete(proposalID ProposalID) error {
 //ResultSoFar check and see if a proposal has already passed or failed
 //Proposal passed if passPercent already achieved
 //Proposal never pass if received enough NEGATIVE votes
-func (pvs *ProposalVoteStore) ResultSoFar(proposalID ProposalID, passPercent int) (VoteResult, error) {
+func (pvs *ProposalVoteStore) ResultSoFar(proposalID ProposalID, passPercent int) (*VoteStatus, error) {
 	info := fmt.Sprintf("Vote IsPassed: proposalID= %v", proposalID)
 
 	_, votes, err := pvs.GetVotesByID(proposalID)
 	if err != nil {
 		logger.Errorf("%v, getVotesByID failed", info)
-		return VOTE_RESULT_TBD, ErrVoteCheckVoteResultFailed
+		stat := NewVoteStatus(VOTE_RESULT_TBD, 0, 0, 0)
+		return stat, ErrVoteCheckVoteResultFailed
 	}
 
 	// Accumulates power of each opinion
-	totalPower := int64(0)
+	allPower := int64(0)
 	eachPower := make([]int64, 4)
 	for _, vote := range votes {
-		totalPower += vote.Power
+		allPower += vote.Power
 		eachPower[vote.Opinion] += vote.Power
 	}
 
 	// Excludes validators that give up voting in percent calculation
-	totalPower -= eachPower[OPIN_GIVEUP]
+	totalPower := allPower - eachPower[OPIN_GIVEUP]
 
 	// Calculate actual percentage
+	yesPower := eachPower[OPIN_POSITIVE]
+	noPower := eachPower[OPIN_NEGATIVE]
 	yesPercentage := 0.0
 	noPercentage := 0.0
 	passPercentage := float64(passPercent) / 100.0
 	if totalPower > 0 {
-		yesPercentage = float64(eachPower[OPIN_POSITIVE]) / float64(totalPower)
-		noPercentage = float64(eachPower[OPIN_NEGATIVE]) / float64(totalPower)
+		yesPercentage = float64(yesPower) / float64(totalPower)
+		noPercentage = float64(noPower) / float64(totalPower)
 	}
 
 	// Proposal passed if received enough votes of YES
 	if yesPercentage >= passPercentage {
 		logger.Infof("%v, passed, YES percentage= %v", info, yesPercentage)
-		return VOTE_RESULT_PASSED, nil
+		stat := NewVoteStatus(VOTE_RESULT_PASSED, yesPower, noPower, allPower)
+		return stat, nil
 	}
 	// Proposal failed if received enough votes of NO
 	if (1.0 - noPercentage) < passPercentage {
 		logger.Infof("%v, failed, NO percentage= %v", info, noPercentage)
-		return VOTE_RESULT_FAILED, nil
+		stat := NewVoteStatus(VOTE_RESULT_FAILED, yesPower, noPower, allPower)
+		return stat, nil
 	}
 
 	// Result to be dertermined
-	return VOTE_RESULT_TBD, nil
+	stat := NewVoteStatus(VOTE_RESULT_TBD, yesPower, noPower, allPower)
+	return stat, nil
 }
 
 // Iterate voting records by proposalID

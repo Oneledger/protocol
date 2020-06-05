@@ -1,11 +1,12 @@
 package event
 
 import (
+	"strconv"
+
 	"github.com/Oneledger/protocol/data/governance"
 	"github.com/Oneledger/protocol/data/jobs"
 	"github.com/Oneledger/protocol/storage"
 	"github.com/pkg/errors"
-	"strconv"
 )
 
 var _ jobs.Job = &JobGovCheckVotes{}
@@ -46,13 +47,13 @@ func (j *JobGovCheckVotes) DoMyJob(ctx interface{}) {
 	}
 
 	//Check number of votes
-	voteResult, err := proposalMaster.ProposalVote.ResultSoFar(j.ProposalID, proposal.PassPercentage)
+	stat, err := proposalMaster.ProposalVote.ResultSoFar(j.ProposalID, proposal.PassPercentage)
 	if err != nil {
 		j.Status = jobs.Failed
 		govCtx.Logger.Error(errors.Wrap(err, "gov_check_votes:"))
 		return
 	}
-	if voteResult == governance.VOTE_RESULT_PASSED {
+	if stat.Result == governance.VOTE_RESULT_PASSED {
 		j.Status = jobs.Failed
 		govCtx.Logger.Error("gov_check_votes: proposal has already been passed")
 		return

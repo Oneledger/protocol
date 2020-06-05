@@ -120,14 +120,14 @@ func runVote(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 
 	// Peek vote result based on collected votes so far
 	options := pms.Proposal.GetOptionsByType(proposal.Type)
-	result, err := pms.ProposalVote.ResultSoFar(vote.ProposalID, options.PassPercentage)
+	stat, err := pms.ProposalVote.ResultSoFar(vote.ProposalID, options.PassPercentage)
 	if err != nil {
 		return false, action.Response{
 			Log: fmt.Sprintf("vote proposal failed, id= %v, failed to peek vote result", vote.ProposalID)}
 	}
 
 	// Pass or fail this proposal if possible
-	if result == gov.VOTE_RESULT_PASSED {
+	if stat.Result == gov.VOTE_RESULT_PASSED {
 		proposal.Status = gov.ProposalStatusCompleted
 		proposal.Outcome = gov.ProposalOutcomeCompleted
 		err = pms.Proposal.WithPrefixType(gov.ProposalStatePassed).Set(proposal)
@@ -135,7 +135,7 @@ func runVote(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 			return false, action.Response{
 				Log: fmt.Sprintf("vote proposal failed, id= %v, failed to add proposal to PASSED store", vote.ProposalID)}
 		}
-	} else if result == gov.VOTE_RESULT_FAILED {
+	} else if stat.Result == gov.VOTE_RESULT_FAILED {
 		proposal.Status = gov.ProposalStatusCompleted
 		proposal.Outcome = gov.ProposalOutcomeInsufficientVotes
 		err = pms.Proposal.WithPrefixType(gov.ProposalStateFailed).Set(proposal)
@@ -146,7 +146,7 @@ func runVote(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	}
 
 	// Delete proposal in ACTIVE store
-	if result != gov.VOTE_RESULT_TBD {
+	if stat.Result != gov.VOTE_RESULT_TBD {
 		ok, err := pms.Proposal.WithPrefixType(gov.ProposalStateActive).Delete(vote.ProposalID)
 		if err != nil || !ok {
 			return false, action.Response{

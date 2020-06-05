@@ -205,26 +205,36 @@ func listProposals(cmd *cobra.Command, args []string) error {
 		return errors.New("error in getting proposals")
 	}
 
-	for i, p := range reply.Proposals {
-		printProposal(p, reply.ProposalFunds[i])
+	if len(reply.Proposals) == 0 {
+		return nil
 	}
-	fmt.Println("State", reply.State)
-	fmt.Println("Height", reply.Height)
+
+	for i, p := range reply.Proposals {
+		printProposal(p, reply.ProposalFunds[i], &reply.ProposalVotes[i])
+	}
+	fmt.Println("State : ", reply.State.String())
+	fmt.Println("Height: ", reply.Height)
 
 	return nil
 }
 
-func printProposal(p governance.Proposal, funds balance.Amount) {
-	fmt.Println("ProposalID", p.ProposalID)
-	fmt.Println("Type", p.Type)
-	fmt.Println("Status", p.Status)
-	fmt.Println("Outcome", p.Outcome)
-	fmt.Println("Description", p.Description)
-	fmt.Println("Proposer", p.Proposer.Humanize())
-	fmt.Println("FundingDeadline", p.FundingDeadline)
-	fmt.Println("FundingGoal", p.FundingGoal)
-	fmt.Println("VotingDeadline", p.VotingDeadline)
-	fmt.Println("PassPercentage", p.PassPercentage)
-	fmt.Println("CurrentFunds", funds.String())
+func printProposal(p governance.Proposal, funds balance.Amount, stat *governance.VoteStatus) {
+	fmt.Println("ProposalID : ", p.ProposalID)
+	fmt.Println("Type       : ", p.Type)
+	fmt.Println("Status     : ", p.Status)
+	fmt.Println("Outcome    : ", p.Outcome)
+	fmt.Println("Description: ", p.Description)
+	fmt.Println("Proposer   : ", p.Proposer.Humanize())
+	fmt.Println("Funding Deadline: ", p.FundingDeadline)
+	fmt.Println("Funding Goal    : ", p.FundingGoal)
+	fmt.Println("Voting Deadline : ", p.VotingDeadline)
+	fmt.Println("Pass Percentage : ", p.PassPercentage, "%")
+	fmt.Println("Current Funds   : ", funds.String())
+	if p.Status == governance.ProposalStatusVoting {
+		fmt.Println("Power YES  : ", stat.PowerYes)
+		fmt.Println("Power NO   : ", stat.PowerNo)
+		fmt.Println("Power All  : ", stat.PowerAll)
+		fmt.Println("Vote Result: ", stat.Result.String())
+	}
 	fmt.Println()
 }
