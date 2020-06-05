@@ -99,4 +99,8 @@ const (
 	GovErrAddFunding			   = 700114
 	GovErrInvalidContributorAddr   = 700115
 	GovErrFundingHeightReached     = 700116
+	GovErrNotInFunding             = 700117
+	GovErrGettingValidatorList     = 700118
+	GovErrSetupVotingValidator     = 700119
+	GovErrUpdateProposal           = 700120
 )

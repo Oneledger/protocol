@@ -50,10 +50,10 @@ var (
 	ErrDeductFunding          = codes.ProtocolError{codes.GovErrDeductFunding, "failed to deduct funds from address"}
 	ErrAddFunding             = codes.ProtocolError{codes.GovErrAddFunding, "failed to add funds to address"}
 	ErrFundingHeightReached   = codes.ProtocolError{codes.GovErrFundingHeightReached, "funding Height has already been reached"}
-	ErrInvalidContributorAddr = codes.ProtocolError{codes.GovErrInvalidContributorAddr, "invalid contributor address"}
-	ErrInvalidContributorAddr = codes.ProtocolError{codes.GovErrInvalidContributorAddr, "invalid contributor address"}
-	ErrInvalidContributorAddr = codes.ProtocolError{codes.GovErrInvalidContributorAddr, "invalid contributor address"}
-	ErrInvalidContributorAddr = codes.ProtocolError{codes.GovErrInvalidContributorAddr, "invalid contributor address"}
+	ErrNotInFunding           = codes.ProtocolError{codes.GovErrNotInFunding, "proposal not in funding stage"}
+	ErrGettingValidatorList   = codes.ProtocolError{codes.GovErrGettingValidatorList, "fund proposal failed in getting validator list"}
+	ErrSetupVotingValidator   = codes.ProtocolError{codes.GovErrSetupVotingValidator, "failed to setup voting validator"}
+	ErrUpdateProposal         = codes.ProtocolError{codes.GovErrUpdateProposal, "failed to update proposal"}
 	ErrInvalidContributorAddr = codes.ProtocolError{codes.GovErrInvalidContributorAddr, "invalid contributor address"}
 	ErrInvalidContributorAddr = codes.ProtocolError{codes.GovErrInvalidContributorAddr, "invalid contributor address"}
 )
