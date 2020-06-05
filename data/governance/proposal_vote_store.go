@@ -51,15 +51,25 @@ func (pvs *ProposalVoteStore) Setup(proposalID ProposalID, vote *ProposalVote) e
 func (pvs *ProposalVoteStore) Update(proposalID ProposalID, vote *ProposalVote) error {
 	info := fmt.Sprintf("Vote Update: proposalID= %v, %v", proposalID, vote.String())
 
+	// Get this vote record
 	key := GetKey(pvs.prefix, proposalID, vote)
-	exist := pvs.store.Exists(key)
-	if !exist {
+	msg, err := pvs.store.Get(key)
+	if err != nil {
 		logger.Errorf("%v, can't participate in voting", info)
 		return ErrVoteUpdateVoteFailed
 	}
 
-	value := vote.Bytes()
-	err := pvs.store.Set(key, value)
+	// Deserialize it
+	pv, err := (&ProposalVote{}).FromBytes(msg)
+	if err != nil {
+		logger.Errorf("%v, deserialize proposal vote failed", info)
+		return ErrVoteUpdateVoteFailed
+	}
+
+	// Update opinion field only
+	pv.Opinion = vote.Opinion
+	value := pv.Bytes()
+	err = pvs.store.Set(key, value)
 	if err != nil {
 		logger.Errorf("%v, storage failure", info)
 		return ErrVoteUpdateVoteFailed

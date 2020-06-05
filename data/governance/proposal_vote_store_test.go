@@ -147,7 +147,7 @@ func TestProposalVoteStore_Update(t *testing.T) {
 	t.Run("test updated vote records of a proposal, should match", func(t *testing.T) {
 		pvs, addrs := setupProposalVoteStore(t)
 		setupProposalVotes(t, pvs, addrs, 5, 3, 0, 2)
-		checkProposalVotes(t, pvs, addrs, 5, 3, 0, 2)
+		checkProposalVotes(t, pvs, addrs, 5, 3, 0, 1)
 	})
 	t.Run("test vote using invalid address, should fail", func(t *testing.T) {
 		pvs, _ := setupProposalVoteStore(t)
