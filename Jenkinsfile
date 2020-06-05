@@ -10,7 +10,7 @@ pipeline {
     stages{       
         stage ('download apt dependency'){
             steps{
-                sh 'apt-get update -y && apt-get install -y build-essential libleveldb-dev libsnappy-dev'
+                sh 'sudo apt-get update -y && sudo apt-get install -y build-essential libleveldb-dev libsnappy-dev'
             }
         }
        
