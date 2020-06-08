@@ -3,9 +3,10 @@ package governance
 import (
 	"fmt"
 
+	"github.com/pkg/errors"
+
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/storage"
-	"github.com/pkg/errors"
 )
 
 type ProposalVoteStore struct {
@@ -42,7 +43,7 @@ func (pvs *ProposalVoteStore) Setup(proposalID ProposalID, vote *ProposalVote) e
 		logger.Errorf("%v, storage failure", info)
 		return ErrVoteSetupValidatorFailed
 	}
-	logger.Info(info)
+	logger.Detail(info)
 
 	return nil
 }
@@ -74,7 +75,7 @@ func (pvs *ProposalVoteStore) Update(proposalID ProposalID, vote *ProposalVote) 
 		logger.Errorf("%v, storage failure", info)
 		return ErrVoteUpdateVoteFailed
 	}
-	logger.Info(info)
+	logger.Detail(info)
 
 	return nil
 }
@@ -97,7 +98,7 @@ func (pvs *ProposalVoteStore) Delete(proposalID ProposalID) error {
 		logger.Errorf("%v, delete failed", info)
 		return ErrVoteDeleteVoteRecordsFailed
 	}
-	logger.Info(info)
+	logger.Detail(info)
 
 	return nil
 }
@@ -139,13 +140,13 @@ func (pvs *ProposalVoteStore) ResultSoFar(proposalID ProposalID, passPercent int
 
 	// Proposal passed if received enough votes of YES
 	if yesPercentage >= passPercentage {
-		logger.Infof("%v, passed, YES percentage= %v", info, yesPercentage)
+		logger.Detailf("%v, passed, YES percentage= %v", info, yesPercentage)
 		stat := NewVoteStatus(VOTE_RESULT_PASSED, yesPower, noPower, allPower)
 		return stat, nil
 	}
 	// Proposal failed if received enough votes of NO
 	if (1.0 - noPercentage) < passPercentage {
-		logger.Infof("%v, failed, NO percentage= %v", info, noPercentage)
+		logger.Detailf("%v, failed, NO percentage= %v", info, noPercentage)
 		stat := NewVoteStatus(VOTE_RESULT_FAILED, yesPower, noPower, allPower)
 		return stat, nil
 	}
@@ -157,7 +158,7 @@ func (pvs *ProposalVoteStore) ResultSoFar(proposalID ProposalID, passPercent int
 
 // Iterate voting records by proposalID
 func (pvs *ProposalVoteStore) IterateByID(proposalID ProposalID, fn func(key []byte, value []byte) bool) (stopped bool) {
-	prefix := append(pvs.prefix, (proposalID + storage.DB_PREFIX)...)
+	prefix := append(pvs.prefix, proposalID+storage.DB_PREFIX...)
 	return pvs.store.IterateRange(
 		prefix,
 		storage.Rangefix(string(prefix)),
@@ -183,7 +184,7 @@ func (pvs *ProposalVoteStore) GetVotesByID(proposalID ProposalID) ([]keys.Addres
 			return true
 		}
 		votes = append(votes, vote)
-		prefix_len := len(append(pvs.prefix, (proposalID + storage.DB_PREFIX)...))
+		prefix_len := len(append(pvs.prefix, proposalID+storage.DB_PREFIX...))
 		addr := key[prefix_len:]
 		addrs = append(addrs, addr)
 		return false

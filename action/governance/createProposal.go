@@ -97,12 +97,12 @@ func (c CreateProposal) Validate(ctx *action.Context, signedTx action.SignedTx) 
 }
 
 func (c CreateProposal) ProcessCheck(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
-	ctx.Logger.Debug("Processing CreateProposal Transaction for CheckTx", tx)
+	ctx.Logger.Detail("Processing CreateProposal Transaction for CheckTx", tx)
 	return runTx(ctx, tx)
 }
 
 func (c CreateProposal) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
-	ctx.Logger.Debug("Processing CreateProposal Transaction for DeliverTx", tx)
+	ctx.Logger.Detail("Processing CreateProposal Transaction for DeliverTx", tx)
 	return runTx(ctx, tx)
 }
 

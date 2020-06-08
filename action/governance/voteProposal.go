@@ -26,7 +26,7 @@ type voteProposalTx struct {
 }
 
 func (v voteProposalTx) Validate(ctx *action.Context, tx action.SignedTx) (bool, error) {
-	ctx.Logger.Debug("Validate voteProposalTx transaction for CheckTx", tx)
+	ctx.Logger.Detail("Validate voteProposalTx transaction for CheckTx", tx)
 
 	vote := &VoteProposal{}
 	err := vote.Unmarshal(tx.Data)
@@ -63,7 +63,7 @@ func (v voteProposalTx) Validate(ctx *action.Context, tx action.SignedTx) (bool,
 }
 
 func (v voteProposalTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
-	ctx.Logger.Debug("ProcessCheck voteProposalTx transaction for CheckTx", tx)
+	ctx.Logger.Detail("ProcessCheck voteProposalTx transaction for CheckTx", tx)
 	return runVote(ctx, tx)
 }
 
@@ -72,7 +72,7 @@ func (v voteProposalTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx
 }
 
 func (v voteProposalTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
-	ctx.Logger.Debug("ProcessDeliver voteProposalTx transaction for DeliverTx", tx)
+	ctx.Logger.Detail("ProcessDeliver voteProposalTx transaction for DeliverTx", tx)
 	return runVote(ctx, tx)
 }
 

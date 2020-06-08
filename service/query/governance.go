@@ -37,7 +37,7 @@ func (svc *Service) ListProposals(req client.ListProposalsRequest, reply *client
 		return errors.New("invalid proposal state")
 	}
 	proposalStore := svc.proposalMaster.Proposal.WithPrefixType(proposalState)
-	proposals := make([]governance.Proposal, 1)
+	proposals := make([]governance.Proposal, 0)
 	proposalStore.Iterate(func(id governance.ProposalID, proposal *governance.Proposal) bool {
 		proposals = append(proposals, *proposal)
 		return false

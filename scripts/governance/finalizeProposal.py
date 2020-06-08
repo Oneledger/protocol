@@ -39,7 +39,7 @@ def test_pass_finalize_proposal():
 
     # 4th vote --> 75%
     vote_proposal(encoded_pid, "YES", url_3, addr_list[0])
-    check_proposal_state(encoded_pid, ProposalStatePassed, ProposalStatusCompleted)
+    # check_proposal_state(encoded_pid, ProposalStatePassed, ProposalStatusCompleted)
 
     time.sleep(3)
 

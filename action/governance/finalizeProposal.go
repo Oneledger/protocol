@@ -119,7 +119,6 @@ func runFinalizeProposal(ctx *action.Context, tx action.RawTx) (bool, action.Res
 		return logAndReturnFalse(ctx.Logger, governance.ErrProposalNotFound, finalizedProposal.Tags())
 	}
 	//Check Status is Completed
-	fmt.Println("Validator :", finalizedProposal.ValidatorAddress.String(), "Proposal : ", proposal.ProposalID)
 
 	if proposal.Status != governance.ProposalStatusCompleted {
 		return logAndReturnFalse(ctx.Logger, governance.ErrStatusNotCompleted, finalizedProposal.Tags())
