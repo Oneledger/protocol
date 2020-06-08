@@ -51,6 +51,14 @@ type FundProposalRequest struct {
 	Gas           int64                 `json:"gas"`
 }
 
+type CancelProposalRequest struct {
+	ProposalId governance.ProposalID `json:"proposal_id"`
+	Proposer   keys.Address          `json:"proposer"`
+	Reason     string                `json:"reason"`
+	GasPrice   action.Amount         `json:"gasPrice"`
+	Gas        int64                 `json:"gas"`
+}
+
 type WithdrawFundsRequest struct {
 	ProposalID    governance.ProposalID `json:"proposal_id"`
 	Contributor   keys.Address          `json:"contributor_address"`

@@ -105,13 +105,44 @@ func (s *Service) FundProposal(args client.FundProposalRequest, reply *client.Cr
 	return nil
 }
 
+func (s *Service) CancelProposal(args client.CancelProposalRequest, reply *client.CreateTxReply) error {
+	cancelProposal := gov.CancelProposal{
+		ProposalId: args.ProposalId,
+		Proposer:   args.Proposer,
+		Reason:     args.Reason,
+	}
+
+	data, err := cancelProposal.Marshal()
+	if err != nil {
+		return err
+	}
+
+	uuidNew, _ := uuid.NewUUID()
+	fee := action.Fee{
+		Price: args.GasPrice,
+		Gas:   args.Gas,
+	}
+
+	tx := &action.RawTx{
+		Type: action.PROPOSAL_CANCEL,
+		Data: data,
+		Fee:  fee,
+		Memo: uuidNew.String(),
+	}
+
+	packet := tx.RawBytes()
+	*reply = client.CreateTxReply{RawTx: packet}
+
+	return nil
+}
+
 func (s *Service) WithdrawProposalFunds(args client.WithdrawFundsRequest, reply *client.CreateTxReply) error {
 
 	withdrawProposal := gov.WithdrawFunds{
-		ProposalID:      args.ProposalID,
-		Contributor:     args.Contributor,
-		WithdrawValue:   args.WithdrawValue,
-		Beneficiary:     args.Beneficiary,
+		ProposalID:    args.ProposalID,
+		Contributor:   args.Contributor,
+		WithdrawValue: args.WithdrawValue,
+		Beneficiary:   args.Beneficiary,
 	}
 
 	data, err := withdrawProposal.Marshal()
