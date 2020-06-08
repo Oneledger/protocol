@@ -186,22 +186,26 @@ func distributeFunds(ctx *action.Context, proposal *governance.Proposal, proposa
 	if err != nil {
 		return action.ErrValidatorsUnableGetList
 	}
+	ctx.Logger.Detailf("Transferring to Validators ")
 	validatorEarningOLT := getPercentageCoin(c, totalFunding, &fundTracker, proposalDistribution.Validators).Divide(len(validatorList))
 
 	for _, v := range validatorList {
 		err = ctx.Balances.AddToAddress(v.Address, validatorEarningOLT)
+		ctx.Logger.Detailf("Validator : \"%v\" : \"%v", v.Address.String(), validatorEarningOLT)
 		if err != nil {
 			return *balance.ErrBalanceErrorAddFailed.Wrap(errors.New("Distribute to validators"))
 		}
 	}
 
 	//Fee Pool
+	ctx.Logger.Detailf("Transferring to Fee Pool")
 	err = ctx.FeePool.AddToPool(getPercentageCoin(c, totalFunding, &fundTracker, proposalDistribution.FeePool))
 	if err != nil {
 		return *balance.ErrBalanceErrorAddFailed.Wrap(errors.New("Distribute to Fee Pool"))
 	}
 
 	//Reward for Proposer
+	ctx.Logger.Detailf("Transferring to Proposer :\"%v\"", proposal.Proposer.String())
 	err = ctx.Balances.AddToAddress(proposal.Proposer, getPercentageCoin(c, totalFunding, &fundTracker, proposalDistribution.ProposerReward))
 	if err != nil {
 		return *balance.ErrBalanceErrorAddFailed.Wrap(errors.New("Distribute to Proposer"))
@@ -210,6 +214,7 @@ func distributeFunds(ctx *action.Context, proposal *governance.Proposal, proposa
 	//Bounty Program
 
 	bountyAddress := action.Address(ctx.ProposalMasterStore.Proposal.GetOptions().BountyProgramAddr)
+	ctx.Logger.Detailf("Transferring to Bounty Program :\"%v", bountyAddress.String())
 	err = ctx.Balances.AddToAddress(bountyAddress, getPercentageCoin(c, totalFunding, &fundTracker, proposalDistribution.BountyPool))
 	if err != nil {
 		return *balance.ErrBalanceErrorAddFailed.Wrap(errors.New("Distribute to Bounty Program"))
@@ -217,12 +222,14 @@ func distributeFunds(ctx *action.Context, proposal *governance.Proposal, proposa
 
 	//ExecutionCost
 	executionAddress := action.Address(ctx.ProposalMasterStore.Proposal.GetOptionsByType(proposal.Type).ProposalExecutionCost)
+	ctx.Logger.Detailf("Transferring to Execution Cost :\"%v", executionAddress.String())
 	err = ctx.Balances.AddToAddress(executionAddress, getPercentageCoin(c, totalFunding, &fundTracker, proposalDistribution.ExecutionCost))
 	if err != nil {
 		return *balance.ErrBalanceErrorAddFailed.Wrap(errors.New("Distribute to Execution Cost"))
 	}
 
 	//Burn
+	ctx.Logger.Detailf("Transferring to Burn Address ")
 	getPercentageCoin(c, totalFunding, &fundTracker, proposalDistribution.Burn)
 	if fundTracker != 0 {
 		return *governance.ErrGovFundBalanceMismatch.Wrap(errors.New(fmt.Sprintf("Extra Funding Amount Left %s", fundTracker)))
@@ -243,6 +250,7 @@ func executeConfigUpdate(ctx *action.Context, proposal *governance.Proposal) err
 func getPercentageCoin(c balance.Currency, totalFunding *big.Float, fundTracker *float64, percentage float64) balance.Coin {
 	// TODO : How to deal with accuracy
 	amount, _ := big.NewFloat(1.0).Mul(totalFunding, big.NewFloat(percentage/100)).Float64()
+	//fmt.Println("-------> Transferred ", c.NewCoinFromFloat64(amount))
 	*fundTracker = *fundTracker - amount
 	return c.NewCoinFromFloat64(amount)
 }
