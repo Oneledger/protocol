@@ -13,10 +13,10 @@ import (
 var _ action.Msg = &WithdrawFunds{}
 
 type WithdrawFunds struct {
-	ProposalID    governance.ProposalID
-	Contributor   keys.Address
-	WithdrawValue action.Amount
-	Beneficiary   keys.Address
+	ProposalID    governance.ProposalID `json:"proposal_id"`
+	Contributor   keys.Address `json:"contributor_address"`
+	WithdrawValue action.Amount `json:"withdraw_value"`
+	Beneficiary   keys.Address `json:"beneficiary_address"`
 
 }
 
