@@ -21,7 +21,51 @@ pipeline {
     ])   
             }
         }
-        
+        stage ('build binary'){
+            steps{
+                sh 'make install_c'
+            }
+        }
+        stage ('unit testing'){
+            steps{
+                sh 'make utest'
+            }
+        }
+        stage ('validator test'){
+            steps{
+                sh 'make applytest'
+            }
+        }
+        stage ('ons test'){
+            steps{
+                sh 'make onstest'
+            }
+        }
+        stage ('withdraw test'){
+            steps{
+                sh 'make withdrawtest'
+            }
+        }
+        stage ('governance test'){
+            steps{
+                sh 'make govtest'
+            }
+        }
+        stage ('all test'){
+            steps{
+                sh 'make alltest'
+            }
+        }
+        stage ('rpc Authtest'){
+            steps{
+                sh 'make rpcAuthtest'
+            }
+        }
+        stage ('coverage test'){
+            steps{
+                sh 'make coverage'
+            }
+        }
         
       stage('Results') {
           steps {
