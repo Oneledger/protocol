@@ -16,6 +16,8 @@ func translatePrefix(prefix string) governance.ProposalState {
 		return governance.ProposalStatePassed
 	case "failed":
 		return governance.ProposalStateFailed
+	case "finalized":
+		return governance.ProposalStateFinalized
 	default:
 		return governance.ProposalStateError
 	}
@@ -27,8 +29,7 @@ func (svc *Service) GetProposals(req client.GetProposalsRequest, reply *client.G
 		return errors.New("invalid proposal state")
 	}
 	proposalStore := svc.proposalMaster.Proposal.WithPrefixType(proposalState)
-	proposals := make([]governance.Proposal, 0)
-
+	proposals := make([]governance.Proposal, 1)
 	proposalStore.Iterate(func(id governance.ProposalID, proposal *governance.Proposal) bool {
 		proposals = append(proposals, *proposal)
 		return false
@@ -53,9 +54,9 @@ func (svc *Service) GetProposalByID(req client.GetProposalByIDRequest, reply *cl
 	proposalFunds := governance.GetCurrentFunds(proposalID, svc.proposalMaster.ProposalFund)
 
 	*reply = client.GetProposalByIDReply{
-		Proposal: *proposal,
+		Proposal:      *proposal,
 		ProposalFunds: *proposalFunds,
-		State:    state,
+		State:         state,
 	}
 
 	return nil

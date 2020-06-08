@@ -88,7 +88,15 @@ func (finalizeProposalTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (
 }
 
 func (finalizeProposalTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas) (bool, action.Response) {
-	return action.BasicFeeHandling(ctx, signedTx, start, size, 1)
+	ctx.State.ConsumeVerifySigGas(1)
+	ctx.State.ConsumeStorageGas(size)
+
+	// check the used gas for the tx
+	final := ctx.Balances.State.ConsumedGas()
+	used := int64(final - start)
+	ctx.Logger.Detail("Gas Used : ", used)
+
+	return true, action.Response{}
 }
 
 func runFinalizeProposal(ctx *action.Context, tx action.RawTx) (bool, action.Response) {

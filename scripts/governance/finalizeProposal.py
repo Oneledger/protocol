@@ -2,7 +2,7 @@ from sdk import *
 
 addr_list = addresses()
 
-_pid_pass = "id_20054"
+_pid_pass = "id_20055"
 _pid_fail = "id_20063"
 _proposer = addr_list[0]
 _initial_funding = (int("2") * 10 ** 9)
@@ -51,5 +51,5 @@ if __name__ == "__main__":
     print "#### ACTIVE PROPOSALS: ####"
     query_proposals("active")
 
-    print "#### PASSED PROPOSALS: ####"
-    query_proposals("passed")
+    print "#### FINALIZED PROPOSALS: ####"
+    query_proposals("finalized")

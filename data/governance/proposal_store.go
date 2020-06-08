@@ -14,9 +14,10 @@ type ProposalStore struct {
 
 	prefix []byte //Current Store Prefix
 
-	prefixActive []byte
-	prefixPassed []byte
-	prefixFailed []byte
+	prefixActive    []byte
+	prefixPassed    []byte
+	prefixFailed    []byte
+	prefixFinalized []byte
 
 	proposalOptions *ProposalOptionSet
 }
@@ -126,6 +127,8 @@ func (ps *ProposalStore) WithPrefixType(prefixType ProposalState) *ProposalStore
 		ps.prefix = ps.prefixPassed
 	case ProposalStateFailed:
 		ps.prefix = ps.prefixFailed
+	case ProposalStateFinalized:
+		ps.prefix = ps.prefixFinalized
 	}
 	return ps
 }
@@ -145,6 +148,10 @@ func (ps *ProposalStore) QueryAllStores(key ProposalID) (*Proposal, ProposalStat
 	proposal, err = ps.WithPrefixType(ProposalStateFailed).Get(key)
 	if err == nil {
 		return proposal, ProposalStateFailed, nil
+	}
+	proposal, err = ps.WithPrefixType(ProposalStateFinalized).Get(key)
+	if err == nil {
+		return proposal, ProposalStateFinalized, nil
 	}
 	return nil, ProposalStateError, errors.Wrap(err, errorGettingRecord)
 }
@@ -169,7 +176,7 @@ func (ps *ProposalStore) GetOptionsByType(typ ProposalType) *ProposalOption {
 	return nil
 }
 
-func NewProposalStore(prefixActive string, prefixPassed string, prefixFailed string, state *storage.State) *ProposalStore {
+func NewProposalStore(prefixActive string, prefixPassed string, prefixFailed string, prefixFinalized string, state *storage.State) *ProposalStore {
 	return &ProposalStore{
 		state:           state,
 		szlr:            serialize.GetSerializer(serialize.PERSISTENT),
@@ -177,6 +184,7 @@ func NewProposalStore(prefixActive string, prefixPassed string, prefixFailed str
 		prefixActive:    []byte(prefixActive),
 		prefixPassed:    []byte(prefixPassed),
 		prefixFailed:    []byte(prefixFailed),
+		prefixFinalized: []byte(prefixFinalized),
 		proposalOptions: &ProposalOptionSet{},
 	}
 }
