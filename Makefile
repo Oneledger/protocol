@@ -122,7 +122,6 @@ govtest: install
 	python scripts/governance/withdrawFunds.py
 	python scripts/governance/voteProposals.py
 	python scripts/governance/governanceCLI.py
-	python scripts/governance/withdrawFunds.py
 	@./scripts/stopNodes
 
 alltest: install_c
