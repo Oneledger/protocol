@@ -444,6 +444,9 @@ func (app *App) VerifyCache(tx []byte) bool {
 func marshalLog(ok bool, response action.Response, feeResponse action.Response) string {
 	var errorObj codes.ProtocolError
 	var err error
+	if response.Log == "" && feeResponse.Log == "" {
+		return ""
+	}
 	if !ok {
 		errorObj, err = codes.UnMarshalError(response.Log)
 		if err != nil {
