@@ -4,7 +4,10 @@
 
 package status_codes
 
-import "fmt"
+import (
+	"encoding/json"
+	"fmt"
+)
 
 /*
 	Protocol Error definition
@@ -25,6 +28,11 @@ func (se ProtocolError) ErrorMsg() string {
 func (se ProtocolError) Wrap(err error) *ProtocolError {
 	return &ProtocolError{se.Code,
 		se.Msg + ": " + err.Error()}
+}
+
+func (se ProtocolError) Marshal() string {
+	errInByte, _ := json.Marshal(se)
+	return string(errInByte)
 }
 
 func WrapError(err error, code int, msg string) *ProtocolError {
@@ -81,7 +89,7 @@ var (
 	ErrFailedToCalculateExpiry   = ProtocolError{ONSErrFailedToCalculateExpiry , "failed to calculate expiry"}
 	ErrFailedToCreateDomain      = ProtocolError{ONSErrFailedToCreateDomain , "failed to create domain"}
 	ErrFailedAddingDomainToStore = ProtocolError{ONSErrFailedAddingDomainToStore , "failed to add domain to store"}
-	ErrCannotRenewSubDomain      = ProtocolError{ONSErrErrCannotRenewSubDomain , "renew sub domain is not possible"}
+	ErrCannotRenewSubDomain      = ProtocolError{ONSErrCannotRenewSubDomain , "renew sub domain is not possible"}
 	//ErrFailedAddingDomainToStore = ProtocolError{ONSErrFailedAddingDomainToStore , "failed to add domain to store"}
 	//ErrFailedAddingDomainToStore = ProtocolError{ONSErrFailedAddingDomainToStore , "failed to add domain to store"}
 	//ErrFailedAddingDomainToStore = ProtocolError{ONSErrFailedAddingDomainToStore , "failed to add domain to store"}

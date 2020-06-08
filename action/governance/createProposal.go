@@ -115,7 +115,7 @@ func runTx(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	if err != nil {
 		result := action.Response{
 			Events: action.GetEvent(createProposal.Tags(), "create_proposal_failed_deserialize"),
-			Log: action.ErrorMarshal(action.ErrWrongTxType.Code, errors.Wrap(action.ErrWrongTxType, err.Error()).Error()),
+			Log: action.ErrWrongTxType.Wrap(err).Marshal(),
 		}
 		return false, result
 	}
@@ -143,7 +143,7 @@ func runTx(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	if ctx.ProposalMasterStore.Proposal.Exists(proposal.ProposalID) {
 		result := action.Response{
 			Events: action.GetEvent(createProposal.Tags(), "create_proposal_already_exists"),
-			Log: action.ErrorMarshal(action.ErrProposalExists.Code, action.ErrProposalExists.Msg),
+			Log: action.ErrProposalExists.Marshal(),
 		}
 		return false, result
 	}
@@ -154,7 +154,7 @@ func runTx(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	if err != nil {
 		result := action.Response{
 			Events: action.GetEvent(createProposal.Tags(), "create_proposal_failed"),
-			Log: action.ErrorMarshal(action.ErrAddingProposalToActiveStore.Code, action.ErrAddingProposalToActiveStore.Msg),
+			Log: action.ErrAddingProposalToActiveStore.Wrap(err).Marshal(),
 		}
 		return false, result
 	}
@@ -168,7 +168,7 @@ func runTx(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	if err != nil {
 		result := action.Response{
 			Events: action.GetEvent(createProposal.Tags(), "create_proposal_deduction_failed"),
-			Log: action.ErrorMarshal(action.ErrDeductFunding.Code, errors.Wrap(action.ErrDeductFunding, err.Error()).Error()),
+			Log: action.ErrDeductFunding.Wrap(err).Marshal(),
 		}
 		return false, result
 	}
@@ -184,7 +184,7 @@ func runTx(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 		}
 		result := action.Response{
 			Events: action.GetEvent(createProposal.Tags(), "create_proposal_funding_failed"),
-			Log: action.ErrorMarshal(action.ErrAddFunding.Code, action.ErrAddFunding.Msg),
+			Log: action.ErrAddFunding.Marshal(),
 		}
 		return false, result
 	}

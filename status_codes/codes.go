@@ -52,7 +52,7 @@ const (
 	ONSErrFailedToCalculateExpiry           = 100711
 	ONSErrFailedToCreateDomain              = 100712
 	ONSErrFailedAddingDomainToStore         = 100713
-	ONSErrErrCannotRenewSubDomain           = 100714
+	ONSErrCannotRenewSubDomain              = 100714
 
 
 
@@ -65,7 +65,7 @@ const (
 	AccountsErrorGeneratingNewAccount = 200701
 
 	// Transaction statuses
-	TxErrMisingData         = 300101
+	TxErrMissingData        = 300101
 	TxErrUnserializable     = 300102
 	TxErrWrongTxType        = 300103
 	TxErrInvalidAmount      = 300104

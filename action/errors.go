@@ -22,7 +22,7 @@ func ErrorMarshal(code int, msg string) string {
 }
 
 var (
-	ErrMissingData                     = codes.ProtocolError{codes.TxErrMisingData, "missing data in transaction"}
+	ErrMissingData                     = codes.ProtocolError{codes.TxErrMissingData, "missing data in transaction"}
 	ErrUnserializable                  = codes.ProtocolError{codes.TxErrUnserializable, "unserializable tx"}
 	ErrWrongTxType                     = codes.ProtocolError{codes.TxErrWrongTxType, "wrong tx type"}
 	ErrInvalidAmount                   = codes.ProtocolError{codes.TxErrInvalidAmount, "invalid amount"}
@@ -45,6 +45,7 @@ var (
 	ErrInvalidProposerAddr             = codes.ProtocolError{codes.GovErrInvalidProposerAddr, "invalid proposer address"}
 	ErrInvalidProposalDesc             = codes.ProtocolError{codes.GovErrInvalidProposalDesc, "invalid description of proposal"}
 	ErrProposalExists                  = codes.ProtocolError{codes.GovErrProposalExists, "proposal already exists"}
+	ErrProposalNotExists               = codes.ProtocolError{codes.GovErrProposalNotExists, "proposal not exists"}
 	ErrDeductFunding                   = codes.ProtocolError{codes.GovErrDeductFunding, "failed to deduct funds from address"}
 	ErrAddFunding                      = codes.ProtocolError{codes.GovErrAddFunding, "failed to add funds to address"}
 	ErrFundingHeightReached            = codes.ProtocolError{codes.GovErrFundingHeightReached, "funding height has already been reached"}
