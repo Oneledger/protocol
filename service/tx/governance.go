@@ -105,13 +105,44 @@ func (s *Service) FundProposal(args client.FundProposalRequest, reply *client.Cr
 	return nil
 }
 
+func (s *Service) CancelProposal(args client.CancelProposalRequest, reply *client.CreateTxReply) error {
+	cancelProposal := gov.CancelProposal{
+		ProposalId: args.ProposalId,
+		Proposer:   args.Proposer,
+		Reason:     args.Reason,
+	}
+
+	data, err := cancelProposal.Marshal()
+	if err != nil {
+		return err
+	}
+
+	uuidNew, _ := uuid.NewUUID()
+	fee := action.Fee{
+		Price: args.GasPrice,
+		Gas:   args.Gas,
+	}
+
+	tx := &action.RawTx{
+		Type: action.PROPOSAL_CANCEL,
+		Data: data,
+		Fee:  fee,
+		Memo: uuidNew.String(),
+	}
+
+	packet := tx.RawBytes()
+	*reply = client.CreateTxReply{RawTx: packet}
+
+	return nil
+}
+
 func (s *Service) WithdrawProposalFunds(args client.WithdrawFundsRequest, reply *client.CreateTxReply) error {
 
 	withdrawProposal := gov.WithdrawFunds{
-		ProposalID:      args.ProposalID,
-		Contributor:     args.Contributor,
-		WithdrawValue:   args.WithdrawValue,
-		Beneficiary:     args.Beneficiary,
+		ProposalID:    args.ProposalID,
+		Contributor:   args.Contributor,
+		WithdrawValue: args.WithdrawValue,
+		Beneficiary:   args.Beneficiary,
 	}
 
 	data, err := withdrawProposal.Marshal()
@@ -156,7 +187,7 @@ func translateVoteOpinion(opin string) governance.VoteOpinion {
 	}
 }
 
-func (s *Service) VoteProposal(args client.CreateVoteRequest, reply *client.CreateVoteReply) error {
+func (s *Service) VoteProposal(args client.VoteProposalRequest, reply *client.VoteProposalReply) error {
 	// this node address is voter
 	hPub, err := s.nodeContext.ValidatorPubKey().GetHandler()
 	if err != nil {
@@ -179,7 +210,7 @@ func (s *Service) VoteProposal(args client.CreateVoteRequest, reply *client.Crea
 	}
 
 	voteProposal := gov.VoteProposal{
-		ProposalID:       governance.ProposalID(args.ProposalID),
+		ProposalID:       governance.ProposalID(args.ProposalId),
 		Address:          args.Address,
 		ValidatorAddress: address,
 		Opinion:          opin,
@@ -210,7 +241,7 @@ func (s *Service) VoteProposal(args client.CreateVoteRequest, reply *client.Crea
 
 	// reply
 	signature := action.Signature{Signed: signed, Signer: pubkey}
-	*reply = client.CreateVoteReply{RawTx: rawData, Signature: signature}
+	*reply = client.VoteProposalReply{RawTx: rawData, Signature: signature}
 
 	return nil
 }

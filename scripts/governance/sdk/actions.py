@@ -24,7 +24,6 @@ class bcolors:
     BOLD = '\033[1m'
     UNDERLINE = '\033[4m'
 
-
 class Proposal:
     def __init__(self, pid, pType, description, proposer, init_fund):
         self.pid = pid
@@ -122,6 +121,47 @@ class ProposalFund:
                 print "################### proposal funded: " + self.pid
                 return result["txHash"]
 
+class ProposalCancel:
+    def __init__(self, pid, proposer, reason):
+        self.pid = pid
+        self.proposer = proposer
+        self.reason = reason
+
+    def _cancel_proposal(self):
+        req = {
+            "proposal_id": self.pid,
+            "proposer": self.proposer,
+            "reason": self.reason,
+            "gasPrice": {
+                "currency": "OLT",
+                "value": "1000000000",
+            },
+            "gas": 40000,
+        }
+    
+        resp = rpc_call('tx.CancelProposal', req)
+        return resp["result"]["rawTx"]
+
+    def send_cancel(self):
+        # create Tx
+        raw_txn = self._cancel_proposal()
+
+        # sign Tx
+        signed = sign(raw_txn, self.proposer)
+
+        # broadcast Tx
+        result = broadcast_commit(raw_txn, signed['signature']['Signed'], signed['signature']['Signer'])
+
+        if "ok" in result:
+            if not result["ok"]:
+                print "################### failed to cancel proposal: " + self.pid
+                return False
+            else:
+                print "################### proposal canceled: " + self.pid
+                return True
+        else:
+            print "################### failed to cancel proposal: " + self.pid
+            return False
 
 class ProposalVote:
     def __init__(self, pid, opinion, url, address):
@@ -261,25 +301,21 @@ def broadcast_sync(raw_tx, signature, pub_key):
 
 def query_proposals(prefix):
     req = {
-        "prefix": prefix,
-        "gasPrice":
-        {
-            "currency": "OLT",
-            "value": "1000000000",
-        },
-        "gas": 40000,
+        "proposal_id": "",
+        "state": prefix,
     }
 
-    resp = rpc_call('query.GetProposals', req)
+    resp = rpc_call('query.ListProposals', req)
     print json.dumps(resp, indent=4)
     return resp["result"]["proposals"]
 
 def query_proposal(proposal_id):
-    req = {"proposal_id": proposal_id}
-    resp = rpc_call('query.GetProposalByID', req)
-    print json.dumps(resp, indent=4)
-    return resp["result"]
-
+    req = {
+        "proposal_id": proposal_id,
+        "state": "",
+    }
+    resp = rpc_call('query.ListProposal', req)
+    return resp["result"]["proposals"][0], resp["result"]["state"]
 
 def query_balance(address):
     req = {"address": address}

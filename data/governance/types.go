@@ -14,12 +14,18 @@ type (
 	VoteResult      int
 )
 
-func (p ProposalID) String() string {
-	return string(p)
+func (id ProposalID) Err() error {
+	switch {
+	case len(id) == 0:
+		return errors.New("proposal id is empty")
+	case len(id) != 32:
+		return errors.New("proposal id length is incorrect: must be 32 hex characters")
+	}
+	return nil
 }
 
-func IDFromString(s string) ProposalID {
-	return ProposalID(s)
+func (id ProposalID) String() string {
+	return string(id)
 }
 
 func (opinion VoteOpinion) String() string {
