@@ -21,7 +21,7 @@ pipeline {
              alwaysLinkToLastBuild: true,
              keepAll: true,
              reportDir: 
-                          '*',
+                          '.',
              reportFiles: 'cover.html',
              reportName: 'Coverage report Dashboard'
 ])
