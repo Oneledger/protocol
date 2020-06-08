@@ -45,7 +45,6 @@ var (
 	ErrInvalidProposerAddr             = codes.ProtocolError{codes.GovErrInvalidProposerAddr, "invalid proposer address"}
 	ErrInvalidProposalDesc             = codes.ProtocolError{codes.GovErrInvalidProposalDesc, "invalid description of proposal"}
 	ErrProposalExists                  = codes.ProtocolError{codes.GovErrProposalExists, "proposal already exists"}
-	ErrProposalUnmarshal               = codes.ProtocolError{codes.GovErrProposalUnmarshal, "failed to unmarshal proposal"}
 	ErrDeductFunding                   = codes.ProtocolError{codes.GovErrDeductFunding, "failed to deduct funds from address"}
 	ErrAddFunding                      = codes.ProtocolError{codes.GovErrAddFunding, "failed to add funds to address"}
 	ErrFundingHeightReached            = codes.ProtocolError{codes.GovErrFundingHeightReached, "funding height has already been reached"}

@@ -81,7 +81,7 @@ func runWithdraw(ctx *action.Context, signedTx action.RawTx) (bool, action.Respo
 	err := withdrawProposal.Unmarshal(signedTx.Data)
 	if err != nil {
 		return false, action.Response{
-			Log: action.ErrorMarshal(action.ErrProposalUnmarshal.Code, errors.Wrap(action.ErrProposalUnmarshal, err.Error()).Error()),
+			Log: action.ErrorMarshal(action.ErrWrongTxType.Code, errors.Wrap(action.ErrWrongTxType, err.Error()).Error()),
 		}
 	}
 

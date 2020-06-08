@@ -140,7 +140,9 @@ func runCreate(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	create := &DomainCreate{}
 	err := create.Unmarshal(tx.Data)
 	if err != nil {
-		return false, action.Response{Log: err.Error()}
+		return false, action.Response{
+			Log: action.ErrorMarshal(action.ErrWrongTxType.Code, errors.Wrap(action.ErrWrongTxType, err.Error()).Error()),
+		}
 	}
 
 	isSub := create.Name.IsSub()

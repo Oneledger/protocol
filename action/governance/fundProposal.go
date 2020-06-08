@@ -120,7 +120,7 @@ func runFundProposal(ctx *action.Context, tx action.RawTx) (bool, action.Respons
 	err := fundProposal.Unmarshal(tx.Data)
 	if err != nil {
 		return false, action.Response{
-			Log: action.ErrorMarshal(action.ErrProposalUnmarshal.Code, errors.Wrap(action.ErrProposalUnmarshal, err.Error()).Error()),
+			Log: action.ErrorMarshal(action.ErrWrongTxType.Code, errors.Wrap(action.ErrWrongTxType, err.Error()).Error()),
 		}
 	}
 	//1. check if proposal exists

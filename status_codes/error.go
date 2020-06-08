@@ -81,6 +81,16 @@ var (
 	ErrFailedToCalculateExpiry   = ProtocolError{ONSErrFailedToCalculateExpiry , "failed to calculate expiry"}
 	ErrFailedToCreateDomain      = ProtocolError{ONSErrFailedToCreateDomain , "failed to create domain"}
 	ErrFailedAddingDomainToStore = ProtocolError{ONSErrFailedAddingDomainToStore , "failed to add domain to store"}
+	ErrCannotRenewSubDomain      = ProtocolError{ONSErrErrCannotRenewSubDomain , "renew sub domain is not possible"}
+	//ErrFailedAddingDomainToStore = ProtocolError{ONSErrFailedAddingDomainToStore , "failed to add domain to store"}
+	//ErrFailedAddingDomainToStore = ProtocolError{ONSErrFailedAddingDomainToStore , "failed to add domain to store"}
+	//ErrFailedAddingDomainToStore = ProtocolError{ONSErrFailedAddingDomainToStore , "failed to add domain to store"}
+	//ErrFailedAddingDomainToStore = ProtocolError{ONSErrFailedAddingDomainToStore , "failed to add domain to store"}
+	//ErrFailedAddingDomainToStore = ProtocolError{ONSErrFailedAddingDomainToStore , "failed to add domain to store"}
+	//ErrFailedAddingDomainToStore = ProtocolError{ONSErrFailedAddingDomainToStore , "failed to add domain to store"}
+	//ErrFailedAddingDomainToStore = ProtocolError{ONSErrFailedAddingDomainToStore , "failed to add domain to store"}
+	//ErrFailedAddingDomainToStore = ProtocolError{ONSErrFailedAddingDomainToStore , "failed to add domain to store"}
+
 
 
 
