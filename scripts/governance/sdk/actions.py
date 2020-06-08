@@ -25,7 +25,6 @@ class bcolors:
     BOLD = '\033[1m'
     UNDERLINE = '\033[4m'
 
-
 class Proposal:
     def __init__(self, pid, pType, description, proposer, init_fund):
         self.pid = pid
@@ -123,6 +122,47 @@ class ProposalFund:
                 print "################### proposal funded: " + self.pid
                 return result["txHash"]
 
+class ProposalCancel:
+    def __init__(self, pid, proposer, reason):
+        self.pid = pid
+        self.proposer = proposer
+        self.reason = reason
+
+    def _cancel_proposal(self):
+        req = {
+            "proposal_id": self.pid,
+            "proposer": self.proposer,
+            "reason": self.reason,
+            "gasPrice": {
+                "currency": "OLT",
+                "value": "1000000000",
+            },
+            "gas": 40000,
+        }
+    
+        resp = rpc_call('tx.CancelProposal', req)
+        return resp["result"]["rawTx"]
+
+    def send_cancel(self):
+        # create Tx
+        raw_txn = self._cancel_proposal()
+
+        # sign Tx
+        signed = sign(raw_txn, self.proposer)
+
+        # broadcast Tx
+        result = broadcast_commit(raw_txn, signed['signature']['Signed'], signed['signature']['Signer'])
+
+        if "ok" in result:
+            if not result["ok"]:
+                print "################### failed to cancel proposal: " + self.pid
+                return False
+            else:
+                print "################### proposal canceled: " + self.pid
+                return True
+        else:
+            print "################### failed to cancel proposal: " + self.pid
+            return False
 
 class ProposalVote:
     def __init__(self, pid, opinion, url, address):

@@ -81,3 +81,7 @@ if __name__ == "__main__":
 
     # test fail a proposal using cli
     test_fail_proposal_cli()
+
+    print "#### Test olclient governance CLI succeed: ####"
+    print ""
+    

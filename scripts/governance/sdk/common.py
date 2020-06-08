@@ -9,6 +9,13 @@ def fund_proposal(pid, amount, funder, secs=1):
     prop_fund.send_fund()
     time.sleep(secs)
 
+def cancel_proposal(pid, proposer, reason, secs=1):
+    # fund the proposal
+    prop_cancel = ProposalCancel(pid, proposer, reason)
+    res = prop_cancel.send_cancel()
+    time.sleep(secs)
+    return res
+
 def vote_proposal(pid, opinion, url, address, secs=1):
     # vote the proposal
     prop_vote = ProposalVote(pid, opinion, url, address)
