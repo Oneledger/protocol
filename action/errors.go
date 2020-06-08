@@ -23,6 +23,7 @@ var (
 	ErrInvalidCurrency                 = codes.ProtocolError{codes.TxErrInvalidFeeCurrency, "invalid amount"}
 	ErrTokenNotSupported               = codes.ProtocolError{codes.ExternalErrTokenNotSuported, "Token not supported"}
 
+	// governance error
 	ErrInvalidProposalId               = codes.ProtocolError{codes.GovErrInvalidProposalId, "invalid proposal id"}
 	ErrInvalidProposalType             = codes.ProtocolError{codes.GovErrInvalidProposalType, "invalid proposal type"}
 	ErrGetProposalOptions              = codes.ProtocolError{codes.GovErrGetProposalOptions, "failed to get proposal options"}
@@ -44,10 +45,11 @@ var (
 	ErrDeletingProposalFromFailedStore = codes.ProtocolError{codes.GovErrDeletingProposalFromFailedStore, "failed to delet proposal from FAILED store"}
 	ErrInvalidContributorAddr          = codes.ProtocolError{codes.GovErrInvalidContributorAddr, "invalid contributor address"}
 	ErrProposalWithdrawNotEligible     = codes.ProtocolError{codes.GovErrProposalWithdrawNotEligible, "proposal does not meet withdraw requirement"}
-	ErrNoSuchContributor               = codes.ProtocolError{codes.GovErrNoSuchContributor, "this contributor has not funded this proposal"}
+	ErrNoSuchContributor               = codes.ProtocolError{codes.GovErrNoSuchContributor, "no such contributor funded this proposal"}
 	ErrNotInVoting                     = codes.ProtocolError{codes.GovErrNotInVoting, "proposal not in VOTING status"}
 	ErrVotingHeightReached             = codes.ProtocolError{codes.GovErrVotingHeightReached, "voting height has already been reached"}
 	ErrAddingVoteToVoteStore           = codes.ProtocolError{codes.GovErrAddingVoteToVoteStore, "failed to add vote to vote store"}
 	ErrPeekingVoteResult               = codes.ProtocolError{codes.GovErrPeekingVoteResult, "failed to peek vote result"}
+	ErrUnmatchedProposer               = codes.ProtocolError{codes.GovErrUnmatchedProposer, "proposer does not match"}
 
 )

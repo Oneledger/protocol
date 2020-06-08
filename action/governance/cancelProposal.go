@@ -113,7 +113,9 @@ func runCancel(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	cc := &CancelProposal{}
 	err := cc.Unmarshal(tx.Data)
 	if err != nil {
-		return false, action.Response{Log: "calcel proposal failed, deserialization err"}
+		return false, action.Response{
+			Log: action.ErrWrongTxType.Wrap(err).Marshal(),
+		}
 	}
 
 	// Get Proposal from proposal ACTIVE store
@@ -121,25 +123,29 @@ func runCancel(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	proposal, err := pms.Proposal.WithPrefixType(gov.ProposalStateActive).Get(cc.ProposalId)
 	if err != nil {
 		return false, action.Response{
-			Log: fmt.Sprintf("calcel proposal failed, id= %v, proposal not found in ACTIVE store", cc.ProposalId)}
+			Log: action.ErrProposalNotExists.Wrap(err).Marshal(),
+		}
 	}
 
 	// Check if proposal is in FUNDING status
 	if proposal.Status != gov.ProposalStatusFunding {
 		return false, action.Response{
-			Log: fmt.Sprintf("cancel proposal failed, id= %v, proposal not in FUNDING status", cc.ProposalId)}
+			Log: action.ErrNotInFunding.Marshal(),
+		}
 	}
 
 	// Check if proposal funding height is passed
 	if ctx.Header.Height > proposal.FundingDeadline {
 		return false, action.Response{
-			Log: fmt.Sprintf("cancel proposal failed, id= %v, funding height passed", cc.ProposalId)}
+			Log: action.ErrFundingHeightReached.Marshal(),
+		}
 	}
 
 	// Check if proposer matches
 	if !proposal.Proposer.Equal(cc.Proposer) {
 		return false, action.Response{
-			Log: fmt.Sprintf("cancel proposal failed, id= %v, proposer does not match", cc.ProposalId)}
+			Log: action.ErrUnmatchedProposer.Marshal(),
+		}
 	}
 
 	// Update fields and add it to FAILED store
@@ -152,7 +158,8 @@ func runCancel(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	err = pms.Proposal.WithPrefixType(gov.ProposalStateFailed).Set(proposal)
 	if err != nil {
 		return false, action.Response{
-			Log: fmt.Sprintf("cancel proposal failed, id= %v, failed to add proposal to FAILED store", cc.ProposalId)}
+			Log: action.ErrAddingProposalToFailedStore.Wrap(err).Marshal(),
+		}
 	}
 
 	// Delete proposal in ACTIVE store

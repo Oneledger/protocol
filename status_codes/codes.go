@@ -128,4 +128,5 @@ const (
 	GovErrVotingHeightReached             = 700128
 	GovErrAddingVoteToVoteStore           = 700129
 	GovErrPeekingVoteResult               = 700130
+	GovErrUnmatchedProposer               = 700131
 )
