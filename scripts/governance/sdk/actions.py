@@ -8,11 +8,12 @@ ProposalStatusFunding    = 0x23
 ProposalStatusVoting     = 0x24
 ProposalStatusCompleted  = 0x25
 
-#Proposal States
-ProposalStateError   = 0xEE
-ProposalStateActive  = 0x31
-ProposalStatePassed  = 0x32
-ProposalStateFailed  = 0x33
+#Proposal Outcome
+ProposalOutcomeInProgress         = 0x26
+ProposalOutcomeInsufficientFunds  = 0x27
+ProposalOutcomeInsufficientVotes  = 0x28
+ProposalOutcomeCancelled          = 0x29
+ProposalOutcomeCompleted          = 0x30
 
 class bcolors:
     HEADER = '\033[95m'
@@ -261,8 +262,9 @@ def broadcast_sync(raw_tx, signature, pub_key):
 
 def query_proposals(prefix):
     req = {
-        "proposal_id": "",
         "state": prefix,
+        "proposer": "",
+        "proposal_type": "",
     }
 
     resp = rpc_call('query.ListProposals', req)
@@ -272,11 +274,10 @@ def query_proposals(prefix):
 def query_proposal(proposal_id):
     req = {
         "proposal_id": proposal_id,
-        "state": "",
     }
     resp = rpc_call('query.ListProposal', req)
     print json.dumps(resp, indent=4)
-    return resp["result"]["proposals"][0], resp["result"]["state"]
+    return resp["result"]["proposal"]
 
 def query_balance(address):
     req = {"address": address}

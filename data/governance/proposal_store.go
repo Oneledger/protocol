@@ -145,7 +145,26 @@ func (ps *ProposalStore) QueryAllStores(key ProposalID) (*Proposal, ProposalStat
 	if err == nil {
 		return proposal, ProposalStateFailed, nil
 	}
-	return nil, ProposalStateError, errors.Wrap(err, errorGettingRecord)
+	return nil, ProposalStateInvalid, errors.Wrap(err, errorGettingRecord)
+}
+
+// Filter proposals by Proposer and Type in a specified store
+func (ps *ProposalStore) FilterProposals(state ProposalState, proposer keys.Address, pType ProposalType) []Proposal {
+	prefix := ps.prefix
+	defer func() { ps.prefix = prefix }()
+
+	proposals := make([]Proposal, 0)
+	ps.WithPrefixType(state).Iterate(func(id ProposalID, proposal *Proposal) bool {
+		if pType != ProposalTypeInvalid && proposal.Type != pType {
+			return false
+		}
+		if len(proposer) != 0 && !proposal.Proposer.Equal(proposer) {
+			return false
+		}
+		proposals = append(proposals, *proposal)
+		return false
+	})
+	return proposals
 }
 
 func (ps *ProposalStore) SetOptions(pOpt *ProposalOptionSet) {

@@ -35,6 +35,8 @@ type VoteArguments struct {
 type ListProposalArguments struct {
 	ProposalID string `json:"proposalID"`
 	State      string `json:"state"`
+	Proposer   []byte `json:"proposer"`
+	Type       string `json:"type"`
 }
 
 var (
@@ -92,6 +94,8 @@ func setListArgs() {
 	// Transaction Parameters
 	listProposalCmd.Flags().StringVar(&listArgs.ProposalID, "id", "", "proposal ID")
 	listProposalCmd.Flags().StringVar(&listArgs.State, "state", "", "proposal state, active / passed / failed")
+	listProposalCmd.Flags().BytesHexVar(&listArgs.Proposer, "proposer", []byte{}, "proposer address")
+	listProposalCmd.Flags().StringVar(&listArgs.Type, "type", "", "proposal type, codechange / configupdate / general")
 }
 
 func init() {
@@ -191,38 +195,48 @@ func listProposals(cmd *cobra.Command, args []string) error {
 	Ctx := NewContext()
 	fullnode := Ctx.clCtx.FullNodeClient()
 
-	if listArgs.ProposalID == "" && listArgs.State == "" {
-		return errors.New("input is empty")
-	}
+	// List single proposal
+	if listArgs.ProposalID != "" {
+		req := client.ListProposalRequest{
+			ProposalId: governance.ProposalID(listArgs.ProposalID),
+		}
 
-	req := client.ListProposalsRequest{
-		ProposalId: governance.ProposalID(listArgs.ProposalID),
-		State:      listArgs.State,
-	}
+		reply, err := fullnode.ListProposal(req)
+		if err != nil {
+			return errors.New("error in getting proposal")
+		}
 
-	reply, err := fullnode.ListProposals(req)
-	if err != nil {
-		return errors.New("error in getting proposals")
-	}
+		printProposal(reply.Proposal, reply.Fund, &reply.Vote)
+		fmt.Println("Height: ", reply.Height)
+	} else { // List multiple proposals
+		req := client.ListProposalsRequest{
+			State:        listArgs.State,
+			Proposer:     listArgs.Proposer,
+			ProposalType: listArgs.Type,
+		}
 
-	if len(reply.Proposals) == 0 {
-		return nil
-	}
+		reply, err := fullnode.ListProposals(req)
+		if err != nil {
+			return errors.New("error in getting proposals")
+		}
 
-	for i, p := range reply.Proposals {
-		printProposal(p, reply.ProposalFunds[i], &reply.ProposalVotes[i])
-	}
-	fmt.Println("State : ", reply.State.String())
-	fmt.Println("Height: ", reply.Height)
+		if len(reply.Proposals) == 0 {
+			return nil
+		}
 
+		for i, p := range reply.Proposals {
+			printProposal(p, reply.ProposalFunds[i], &reply.ProposalVotes[i])
+		}
+		fmt.Println("Height: ", reply.Height)
+	}
 	return nil
 }
 
 func printProposal(p governance.Proposal, funds balance.Amount, stat *governance.VoteStatus) {
 	fmt.Println("ProposalID : ", p.ProposalID)
-	fmt.Println("Type       : ", p.Type)
-	fmt.Println("Status     : ", p.Status)
-	fmt.Println("Outcome    : ", p.Outcome)
+	fmt.Println("Type       : ", p.Type.String())
+	fmt.Println("Status     : ", p.Status.String())
+	fmt.Println("Outcome    : ", p.Outcome.String())
 	fmt.Println("Description: ", p.Description)
 	fmt.Println("Proposer   : ", p.Proposer.Humanize())
 	fmt.Println("Funding Deadline: ", p.FundingDeadline)

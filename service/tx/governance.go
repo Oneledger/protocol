@@ -2,7 +2,6 @@ package tx
 
 import (
 	"errors"
-	"strings"
 
 	"github.com/google/uuid"
 
@@ -14,22 +13,9 @@ import (
 	codes "github.com/Oneledger/protocol/status_codes"
 )
 
-func translateProposalType(propType string) governance.ProposalType {
-	switch propType {
-	case "codeChange":
-		return governance.ProposalTypeCodeChange
-	case "configUpdate":
-		return governance.ProposalTypeConfigUpdate
-	case "general":
-		return governance.ProposalTypeGeneral
-	default:
-		return governance.ProposalTypeError
-	}
-}
-
 func (s *Service) CreateProposal(args client.CreateProposalRequest, reply *client.CreateTxReply) error {
-	proposalType := translateProposalType(args.ProposalType)
-	if proposalType == governance.ProposalTypeError {
+	proposalType := governance.NewProposalType(args.ProposalType)
+	if proposalType == governance.ProposalTypeInvalid {
 		return errors.New("invalid proposal type")
 	}
 
@@ -108,10 +94,10 @@ func (s *Service) FundProposal(args client.FundProposalRequest, reply *client.Cr
 func (s *Service) WithdrawProposalFunds(args client.WithdrawFundsRequest, reply *client.CreateTxReply) error {
 
 	withdrawProposal := gov.WithdrawFunds{
-		ProposalID:      args.ProposalID,
-		Contributor:     args.Contributor,
-		WithdrawValue:   args.WithdrawValue,
-		Beneficiary:     args.Beneficiary,
+		ProposalID:    args.ProposalID,
+		Contributor:   args.Contributor,
+		WithdrawValue: args.WithdrawValue,
+		Beneficiary:   args.Beneficiary,
 	}
 
 	data, err := withdrawProposal.Marshal()
@@ -142,20 +128,6 @@ func (s *Service) WithdrawProposalFunds(args client.WithdrawFundsRequest, reply 
 	return nil
 }
 
-func translateVoteOpinion(opin string) governance.VoteOpinion {
-	opin = strings.ToUpper(opin)
-	switch opin {
-	case "YES":
-		return governance.OPIN_POSITIVE
-	case "NO":
-		return governance.OPIN_NEGATIVE
-	case "GIVEUP":
-		return governance.OPIN_GIVEUP
-	default:
-		return governance.OPIN_UNKNOWN
-	}
-}
-
 func (s *Service) VoteProposal(args client.VoteProposalRequest, reply *client.VoteProposalReply) error {
 	// this node address is voter
 	hPub, err := s.nodeContext.ValidatorPubKey().GetHandler()
@@ -173,7 +145,7 @@ func (s *Service) VoteProposal(args client.VoteProposalRequest, reply *client.Vo
 	}
 
 	// prepare Tx struct
-	opin := translateVoteOpinion(args.Opinion)
+	opin := governance.NewVoteOpinion(args.Opinion)
 	if opin == governance.OPIN_UNKNOWN {
 		return errors.New("invalid vote opinion")
 	}
