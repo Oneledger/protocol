@@ -16,6 +16,7 @@ pipeline {
             }
         
       stage('Results') {
+          steps {
              publishHTML([allowMissing: false,
              alwaysLinkToLastBuild: true,
              keepAll: true,
@@ -26,6 +27,7 @@ pipeline {
 ])
 
              } 
+           }
         }
 }
 
