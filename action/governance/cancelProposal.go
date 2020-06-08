@@ -158,8 +158,7 @@ func runCancel(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	// Delete proposal in ACTIVE store
 	ok, err := pms.Proposal.WithPrefixType(gov.ProposalStateActive).Delete(cc.ProposalId)
 	if err != nil || !ok {
-		return false, action.Response{
-			Log: fmt.Sprintf("cancel proposal failed, id= %v, failed to delete proposal from ACTIVE store", cc.ProposalId)}
+		panic(fmt.Sprintf("cancel proposal failed, id= %v, failed to delete proposal from ACTIVE store", cc.ProposalId))
 	}
 
 	return true, action.Response{Events: action.GetEvent(cc.Tags(), "cancel_proposal_success")}
