@@ -35,6 +35,13 @@ func (se ProtocolError) Marshal() string {
 	return string(errInByte)
 }
 
+func UnMarshalError(str string) (ProtocolError, error) {
+	errByte := []byte(str)
+	errObj := ProtocolError{}
+	err := json.Unmarshal(errByte, &errObj)
+	return errObj, err
+}
+
 func WrapError(err error, code int, msg string) *ProtocolError {
 	return &ProtocolError{code, msg + ": " + err.Error()}
 }
