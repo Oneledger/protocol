@@ -1,25 +1,9 @@
 package action
 
 import (
-	"encoding/json"
 	codes "github.com/Oneledger/protocol/status_codes"
 )
 
-// this struct is to build a unified structure for wrapped and unwrapped errors
-// so that it would be easy for sdk/client side to handles errors
-type ErrorToReturn struct {
-	Code int     `json:"code"`
-	Msg  string  `json:"msg"`
-}
-
-func ErrorMarshal(code int, msg string) string {
-	errStruct := ErrorToReturn{
-		Code: code,
-		Msg: msg,
-	}
-	errInByte, _ := json.Marshal(errStruct)
-	return string(errInByte)
-}
 
 var (
 	ErrMissingData                     = codes.ProtocolError{codes.TxErrMissingData, "missing data in transaction"}

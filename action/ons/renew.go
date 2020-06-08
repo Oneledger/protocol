@@ -132,14 +132,14 @@ func runRenew(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	err := renewDomain.Unmarshal(tx.Data)
 	if err != nil {
 		return false, action.Response{
-			Log: action.ErrorMarshal(action.ErrWrongTxType.Code, errors.Wrap(action.ErrWrongTxType, err.Error()).Error()),
+			Log: action.ErrWrongTxType.Wrap(err).Marshal(),
 		}
 	}
 
 	// domain should not be a sub domain
 	if renewDomain.Name.IsSub() {
 		return false, action.Response{
-			Log: action.ErrorMarshal(codes.ErrCannotRenewSubDomain.Code, codes.ErrCannotRenewSubDomain.Msg),
+			Log: codes.ErrCannotRenewSubDomain.Marshal(),
 		}
 	}
 
