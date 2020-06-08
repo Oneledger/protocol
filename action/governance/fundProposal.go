@@ -191,7 +191,7 @@ func runFundProposal(ctx *action.Context, tx action.RawTx) (bool, action.Respons
 		if err != nil {
 			result := action.Response{
 				Events: action.GetEvent(fundProposal.Tags(), "update_proposal_failed"),
-				Log: action.ErrorMarshal(action.ErrUpdateProposal.Code, errors.Wrap(action.ErrUpdateProposal, err.Error()).Error()),
+				Log: action.ErrorMarshal(action.ErrAddingProposalToDB.Code, errors.Wrap(action.ErrAddingProposalToDB, err.Error()).Error()),
 			}
 			return false, result
 		}
