@@ -57,7 +57,6 @@ const (
 	ONSErrInvalidDomainName                 = 100715
 
 
-
 	WalletError               = 2006
 	WalletErrorAddingAccount  = 200601
 	WalletErrorGettingAccount = 200602
