@@ -14,6 +14,10 @@ type (
 	VoteResult      int
 )
 
+func (id ProposalID) String() string {
+	return string(id)
+}
+
 func (id ProposalID) Err() error {
 	switch {
 	case len(id) == 0:
@@ -24,8 +28,19 @@ func (id ProposalID) Err() error {
 	return nil
 }
 
-func (id ProposalID) String() string {
-	return string(id)
+func (state ProposalState) String() string {
+	switch state {
+	case ProposalStateError:
+		return "Error"
+	case ProposalStateActive:
+		return "Active"
+	case ProposalStatePassed:
+		return "Passed"
+	case ProposalStateFailed:
+		return "Failed"
+	default:
+		return "Invalid state"
+	}
 }
 
 func (opinion VoteOpinion) String() string {
@@ -49,4 +64,17 @@ func (opinion VoteOpinion) Err() error {
 		return errors.New("vote opinion must be one of [UNKNOWN, POSITIVE, NEGATIVE, GIVEUP]")
 	}
 	return nil
+}
+
+func (opinion VoteResult) String() string {
+	switch opinion {
+	case VOTE_RESULT_PASSED:
+		return "Passed"
+	case VOTE_RESULT_FAILED:
+		return "Failed"
+	case VOTE_RESULT_TBD:
+		return "To Be Determined"
+	default:
+		return "Invalid vote result"
+	}
 }

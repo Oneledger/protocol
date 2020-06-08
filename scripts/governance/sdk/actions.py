@@ -315,6 +315,7 @@ def query_proposal(proposal_id):
         "state": "",
     }
     resp = rpc_call('query.ListProposal', req)
+    print json.dumps(resp, indent=4)
     return resp["result"]["proposals"][0], resp["result"]["state"]
 
 def query_balance(address):
