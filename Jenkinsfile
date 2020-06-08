@@ -20,7 +20,7 @@ pipeline {
              alwaysLinkToLastBuild: true,
              keepAll: true,
              reportDir: 
-             '/var/lib/jenkins/workspace/pipeline-job_jenkins-test/*',
+                          '${WORKSPACE}/*',
              reportFiles: 'cover.html',
              reportName: 'Docs Loadtest Dashboard'
 ])
