@@ -171,24 +171,7 @@ func (app *App) txChecker() txChecker {
 
 		feeOk, feeResponse := handler.ProcessFee(txCtx, *tx, gas, storage.Gas(len(msg.Tx)))
 
-		var errorObj codes.ProtocolError
-		if !ok {
-			errorObj, err = codes.UnMarshalError(response.Log)
-			if err != nil {
-				// means response.Log is a regular string, from where error marshal has not
-				// been done(will do it later)
-				errorObj = codes.ProtocolError{
-					Code: 000,
-					Msg: response.Log + feeResponse.Log,
-				}
-			}
-
-		}
-		if feeResponse.Log != "" {
-			errorObj.Msg += ", fee response log: " + feeResponse.Log
-		}
-
-		logString := errorObj.Marshal()
+		logString := marshalLog(ok, response, feeResponse)
 
 		result := ResponseCheckTx{
 			Code:      getCode(ok && feeOk).uint32(),
@@ -244,24 +227,7 @@ func (app *App) txDeliverer() txDeliverer {
 
 		feeOk, feeResponse := handler.ProcessFee(txCtx, *tx, gas, storage.Gas(len(msg.Tx)))
 
-		var errorObj codes.ProtocolError
-		if !ok {
-			errorObj, err = codes.UnMarshalError(response.Log)
-			if err != nil {
-				// means response.Log is a regular string, from where error marshal has not
-				// been done(will do it later)
-				errorObj = codes.ProtocolError{
-					Code: 000,
-					Msg: response.Log + feeResponse.Log,
-				}
-			}
-
-		}
-		if feeResponse.Log != "" {
-			errorObj.Msg += ", fee response log: " + feeResponse.Log
-		}
-
-		logString := errorObj.Marshal()
+		logString := marshalLog(ok, response, feeResponse)
 
 		result := ResponseDeliverTx{
 			Code:      getCode(ok && feeOk).uint32(),
@@ -473,4 +439,27 @@ func updateProposals(proposalMaster *governance.ProposalMasterStore, jobStore *j
 func (app *App) VerifyCache(tx []byte) bool {
 	hash := utils.SHA2(tx)
 	return app.Context.internalService.ExistTx(hash)
+}
+
+func marshalLog(ok bool, response action.Response, feeResponse action.Response) string {
+	var errorObj codes.ProtocolError
+	var err error
+	if !ok {
+		errorObj, err = codes.UnMarshalError(response.Log)
+		if err != nil {
+			// means response.Log is a regular string, from where error marshal has not
+			// been done(will do it later)
+			errorObj = codes.ProtocolError{
+				Code: codes.GeneralErr,
+				Msg: response.Log,
+			}
+		}
+
+	}
+	if feeResponse.Log != "" {
+		errorObj.Msg += ", fee response log: " + feeResponse.Log
+	}
+
+	return errorObj.Marshal()
+
 }

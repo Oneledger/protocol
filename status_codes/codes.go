@@ -5,6 +5,7 @@
 package status_codes
 
 const (
+	GeneralErr          = 1000 // temporary use to unify protocol and sdk error structure
 	InvalidParams       = 1001
 	IncorrectAddress    = 100101
 
