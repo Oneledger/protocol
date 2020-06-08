@@ -3,11 +3,11 @@ package ons
 import (
 	"bytes"
 	"encoding/json"
+	"github.com/tendermint/tendermint/libs/kv"
+
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/data/ons"
-	codes "github.com/Oneledger/protocol/status_codes"
 	"github.com/pkg/errors"
-	"github.com/tendermint/tendermint/libs/kv"
 )
 
 var _ Ons = &RenewDomain{}
@@ -131,16 +131,12 @@ func runRenew(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	renewDomain := &RenewDomain{}
 	err := renewDomain.Unmarshal(tx.Data)
 	if err != nil {
-		return false, action.Response{
-			Log: action.ErrWrongTxType.Wrap(err).Marshal(),
-		}
+		return false, action.Response{Log: err.Error()}
 	}
 
 	// domain should not be a sub domain
 	if renewDomain.Name.IsSub() {
-		return false, action.Response{
-			Log: codes.ErrCannotRenewSubDomain.Marshal(),
-		}
+		return false, action.Response{Log: "renew sub domain is not possible"}
 	}
 
 	// Check if domain is active, return error if it isn't

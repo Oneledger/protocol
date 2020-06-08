@@ -53,8 +53,7 @@ const (
 	ONSErrFailedToCalculateExpiry           = 100711
 	ONSErrFailedToCreateDomain              = 100712
 	ONSErrFailedAddingDomainToStore         = 100713
-	ONSErrCannotRenewSubDomain              = 100714
-	ONSErrInvalidDomainName                 = 100715
+	ONSErrInvalidDomainName                 = 100714
 
 
 	WalletError               = 2006

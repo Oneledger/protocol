@@ -96,7 +96,6 @@ var (
 	ErrFailedToCalculateExpiry   = ProtocolError{ONSErrFailedToCalculateExpiry , "failed to calculate expiry"}
 	ErrFailedToCreateDomain      = ProtocolError{ONSErrFailedToCreateDomain , "failed to create domain"}
 	ErrFailedAddingDomainToStore = ProtocolError{ONSErrFailedAddingDomainToStore , "failed to add domain to store"}
-	ErrCannotRenewSubDomain      = ProtocolError{ONSErrCannotRenewSubDomain , "renew sub domain is not possible"}
 	ErrInvalidDomainName         = ProtocolError{ONSErrInvalidDomainName , "invalid domain name"}
 
 
