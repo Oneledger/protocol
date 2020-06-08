@@ -185,7 +185,7 @@ func (app *App) txChecker() txChecker {
 
 		}
 		if feeResponse.Log != "" {
-			errorObj.Msg += feeResponse.Log
+			errorObj.Msg += ", fee response log: " + feeResponse.Log
 		}
 
 		logString := errorObj.Marshal()
@@ -244,10 +244,29 @@ func (app *App) txDeliverer() txDeliverer {
 
 		feeOk, feeResponse := handler.ProcessFee(txCtx, *tx, gas, storage.Gas(len(msg.Tx)))
 
+		var errorObj codes.ProtocolError
+		if !ok {
+			errorObj, err = codes.UnMarshalError(response.Log)
+			if err != nil {
+				// means response.Log is a regular string, from where error marshal has not
+				// been done(will do it later)
+				errorObj = codes.ProtocolError{
+					Code: 000,
+					Msg: response.Log + feeResponse.Log,
+				}
+			}
+
+		}
+		if feeResponse.Log != "" {
+			errorObj.Msg += ", fee response log: " + feeResponse.Log
+		}
+
+		logString := errorObj.Marshal()
+
 		result := ResponseDeliverTx{
 			Code:      getCode(ok && feeOk).uint32(),
 			Data:      response.Data,
-			Log:       response.Log + feeResponse.Log,
+			Log:       logString,
 			Info:      response.Info,
 			GasWanted: feeResponse.GasWanted,
 			GasUsed:   feeResponse.GasUsed,
