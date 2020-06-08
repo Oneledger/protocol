@@ -154,7 +154,7 @@ func runTx(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	if err != nil {
 		result := action.Response{
 			Events: action.GetEvent(createProposal.Tags(), "create_proposal_failed"),
-			Log: action.ErrorMarshal(action.ErrAddingProposalToDB.Code, action.ErrAddingProposalToDB.Msg),
+			Log: action.ErrorMarshal(action.ErrAddingProposalToActiveDB.Code, action.ErrAddingProposalToActiveDB.Msg),
 		}
 		return false, result
 	}
@@ -168,7 +168,7 @@ func runTx(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	if err != nil {
 		result := action.Response{
 			Events: action.GetEvent(createProposal.Tags(), "create_proposal_deduction_failed"),
-			Log: action.ErrorMarshal(action.ErrDeductFunding.Code, action.ErrAddingProposalToDB.Msg),
+			Log: action.ErrorMarshal(action.ErrDeductFunding.Code, errors.Wrap(action.ErrDeductFunding, err.Error()).Error()),
 		}
 		return false, result
 	}

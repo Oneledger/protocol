@@ -52,8 +52,12 @@ var (
 	ErrNotInFunding                 = codes.ProtocolError{codes.GovErrNotInFunding, "proposal not in FUNDING stage"}
 	ErrGettingValidatorList         = codes.ProtocolError{codes.GovErrGettingValidatorList, "fund proposal failed in getting validator list"}
 	ErrSetupVotingValidator         = codes.ProtocolError{codes.GovErrSetupVotingValidator, "failed to setup voting validator"}
-	ErrAddingProposalToDB           = codes.ProtocolError{codes.GovErrAddingProposalToDB, "failed to add proposal to db"}
-	ErrDeletingProposalFromDB       = codes.ProtocolError{codes.GovErrDeletingProposalFromDB, "failed to delet proposal from db"}
+	ErrAddingProposalToActiveDB     = codes.ProtocolError{codes.GovErrAddingProposalToActiveDB, "failed to add proposal to ACTIVE store"}
+	ErrDeletingProposalFromActiveDB = codes.ProtocolError{codes.GovErrDeletingProposalFromActiveDB, "failed to delet proposal from ACTIVE db"}
+	ErrAddingProposalToPassedDB     = codes.ProtocolError{codes.GovErrAddingProposalToPassedDB, "failed to add proposal to PASSED db"}
+	ErrDeletingProposalFromPassedDB = codes.ProtocolError{codes.GovErrDeletingProposalFromPassedDB, "failed to delet proposal from PASSED db"}
+	ErrAddingProposalToFailedDB     = codes.ProtocolError{codes.GovErrAddingProposalToFailedDB, "failed to add proposal to FAILED db"}
+	ErrDeletingProposalFromFailedDB = codes.ProtocolError{codes.GovErrDeletingProposalFromFailedDB, "failed to delet proposal from FAILED db"}
 	ErrInvalidContributorAddr       = codes.ProtocolError{codes.GovErrInvalidContributorAddr, "invalid contributor address"}
 	ErrProposalWithdrawNotEligible  = codes.ProtocolError{codes.GovErrProposalWithdrawNotEligible, "proposal does not meet withdraw requirement"}
 	ErrNoSuchContributor            = codes.ProtocolError{codes.GovErrNoSuchContributor, "this contributor has not funded this proposal"}

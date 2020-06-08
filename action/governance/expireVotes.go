@@ -90,7 +90,7 @@ func runExpireVotes(ctx *action.Context, tx action.RawTx) (bool, action.Response
 	if err != nil {
 		result := action.Response{
 			Events: action.GetEvent(expireVotes.Tags(), "expire_votes_failed"),
-			Log: action.ErrorMarshal(action.ErrAddingProposalToDB.Code, action.ErrAddingProposalToDB.Msg),
+			Log: action.ErrorMarshal(action.ErrAddingProposalToFailedDB.Code, action.ErrAddingProposalToFailedDB.Msg),
 		}
 		return false, result
 	}
@@ -106,7 +106,7 @@ func runExpireVotes(ctx *action.Context, tx action.RawTx) (bool, action.Response
 
 		result := action.Response{
 			Events: action.GetEvent(expireVotes.Tags(), "expire_votes_failed"),
-			Log: action.ErrorMarshal(action.ErrDeletingProposalFromDB.Code, action.ErrDeletingProposalFromDB.Msg),
+			Log: action.ErrorMarshal(action.ErrDeletingProposalFromFailedDB.Code, action.ErrDeletingProposalFromFailedDB.Msg),
 		}
 		return false, result
 	}
