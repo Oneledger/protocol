@@ -105,4 +105,8 @@ const (
 	GovErrSetupVotingValidator         = 700120
 	GovErrProposalWithdrawNotEligible  = 700121
 	GovErrNoSuchContributor            = 700122
+	GovErrNotInVoting                  = 700123
+	GovErrVotingHeightReached          = 700124
+	GovErrAddingVoteToVoteStore        = 700125
+	GovErrPeekingVoteResult            = 700126
 )

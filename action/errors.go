@@ -48,8 +48,8 @@ var (
 	ErrProposalUnmarshal            = codes.ProtocolError{codes.GovErrProposalUnmarshal, "failed to unmarshal proposal"}
 	ErrDeductFunding                = codes.ProtocolError{codes.GovErrDeductFunding, "failed to deduct funds from address"}
 	ErrAddFunding                   = codes.ProtocolError{codes.GovErrAddFunding, "failed to add funds to address"}
-	ErrFundingHeightReached         = codes.ProtocolError{codes.GovErrFundingHeightReached, "funding Height has already been reached"}
-	ErrNotInFunding                 = codes.ProtocolError{codes.GovErrNotInFunding, "proposal not in funding stage"}
+	ErrFundingHeightReached         = codes.ProtocolError{codes.GovErrFundingHeightReached, "funding height has already been reached"}
+	ErrNotInFunding                 = codes.ProtocolError{codes.GovErrNotInFunding, "proposal not in FUNDING stage"}
 	ErrGettingValidatorList         = codes.ProtocolError{codes.GovErrGettingValidatorList, "fund proposal failed in getting validator list"}
 	ErrSetupVotingValidator         = codes.ProtocolError{codes.GovErrSetupVotingValidator, "failed to setup voting validator"}
 	ErrAddingProposalToDB           = codes.ProtocolError{codes.GovErrAddingProposalToDB, "failed to add proposal to db"}
@@ -57,4 +57,9 @@ var (
 	ErrInvalidContributorAddr       = codes.ProtocolError{codes.GovErrInvalidContributorAddr, "invalid contributor address"}
 	ErrProposalWithdrawNotEligible  = codes.ProtocolError{codes.GovErrProposalWithdrawNotEligible, "proposal does not meet withdraw requirement"}
 	ErrNoSuchContributor            = codes.ProtocolError{codes.GovErrNoSuchContributor, "this contributor has not funded this proposal"}
+	ErrNotInVoting                  = codes.ProtocolError{codes.GovErrNotInVoting, "proposal not in VOTING status"}
+	ErrVotingHeightReached          = codes.ProtocolError{codes.GovErrVotingHeightReached, "voting height has already been reached"}
+	ErrAddingVoteToVoteStore        = codes.ProtocolError{codes.GovErrAddingVoteToVoteStore, "failed to add vote to vote store"}
+	ErrPeekingVoteResult            = codes.ProtocolError{codes.GovErrPeekingVoteResult, "failed to peek vote result"}
+
 )

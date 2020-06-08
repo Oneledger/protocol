@@ -2,8 +2,6 @@ package governance
 
 import (
 	"encoding/json"
-	"fmt"
-
 	"github.com/pkg/errors"
 	"github.com/tendermint/tendermint/libs/kv"
 
@@ -80,7 +78,9 @@ func runVote(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	vote := &VoteProposal{}
 	err := vote.Unmarshal(tx.Data)
 	if err != nil {
-		return false, action.Response{Log: "vote proposal failed, deserialization err"}
+		return false, action.Response{
+			Log: action.ErrorMarshal(action.ErrProposalUnmarshal.Code, errors.Wrap(action.ErrProposalUnmarshal, err.Error()).Error()),
+		}
 	}
 
 	// Get Proposal from proposal ACTIVE store
@@ -88,26 +88,30 @@ func runVote(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	proposal, err := pms.Proposal.WithPrefixType(gov.ProposalStateActive).Get(vote.ProposalID)
 	if err != nil {
 		return false, action.Response{
-			Log: fmt.Sprintf("vote proposal failed, id= %v, proposal not found in ACTIVE store", vote.ProposalID)}
+			Log: action.ErrorMarshal(action.ErrProposalExists.Code, errors.Wrap(action.ErrProposalExists, err.Error()).Error()),
+		}
 	}
 
 	// Check if proposal is in VOTING status
 	if proposal.Status != gov.ProposalStatusVoting {
 		return false, action.Response{
-			Log: fmt.Sprintf("vote proposal failed, id= %v, proposal not in VOTING status", vote.ProposalID)}
+			Log: action.ErrorMarshal(action.ErrNotInVoting.Code, action.ErrNotInVoting.Msg),
+		}
 	}
 
 	// Check if proposal voting height is passed
 	if ctx.Header.Height > proposal.VotingDeadline {
 		return false, action.Response{
-			Log: fmt.Sprintf("vote proposal failed, id= %v, voting height passed", vote.ProposalID)}
+			Log: action.ErrorMarshal(action.ErrVotingHeightReached.Code, action.ErrVotingHeightReached.Msg),
+		}
 	}
 
 	// Get validator's voting power
 	validator, err := ctx.Validators.Get(vote.ValidatorAddress)
 	if err != nil {
 		return false, action.Response{
-			Log: fmt.Sprintf("vote proposal failed, id= %v, validator not found", vote.ProposalID)}
+			Log: action.ErrorMarshal(action.ErrGettingValidatorList.Code, errors.Wrap(action.ErrGettingValidatorList, err.Error()).Error()),
+		}
 	}
 
 	// Add this vote to proposal vote store
@@ -115,7 +119,8 @@ func runVote(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	err = ctx.ProposalMasterStore.ProposalVote.Update(vote.ProposalID, pv)
 	if err != nil {
 		return false, action.Response{
-			Log: fmt.Sprintf("vote proposal failed, id= %v, failed to update vote store", vote.ProposalID)}
+			Log: action.ErrorMarshal(action.ErrAddingVoteToVoteStore.Code, errors.Wrap(action.ErrAddingVoteToVoteStore, err.Error()).Error()),
+		}
 	}
 
 	// Peek vote result based on collected votes so far
@@ -123,7 +128,8 @@ func runVote(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	result, err := pms.ProposalVote.ResultSoFar(vote.ProposalID, options.PassPercentage)
 	if err != nil {
 		return false, action.Response{
-			Log: fmt.Sprintf("vote proposal failed, id= %v, failed to peek vote result", vote.ProposalID)}
+			Log: action.ErrorMarshal(action.ErrPeekingVoteResult.Code, errors.Wrap(action.ErrPeekingVoteResult, err.Error()).Error()),
+		}
 	}
 
 	// Pass or fail this proposal if possible
@@ -133,7 +139,8 @@ func runVote(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 		err = pms.Proposal.WithPrefixType(gov.ProposalStatePassed).Set(proposal)
 		if err != nil {
 			return false, action.Response{
-				Log: fmt.Sprintf("vote proposal failed, id= %v, failed to add proposal to PASSED store", vote.ProposalID)}
+				Log: action.ErrorMarshal(action.ErrAddingProposalToDB.Code, errors.Wrap(action.ErrAddingProposalToDB, err.Error()).Error()),
+			}
 		}
 	} else if result == gov.VOTE_RESULT_FAILED {
 		proposal.Status = gov.ProposalStatusCompleted
@@ -141,7 +148,8 @@ func runVote(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 		err = pms.Proposal.WithPrefixType(gov.ProposalStateFailed).Set(proposal)
 		if err != nil {
 			return false, action.Response{
-				Log: fmt.Sprintf("vote proposal failed, id= %v, failed to add proposal to FAILED store", vote.ProposalID)}
+				Log: action.ErrorMarshal(action.ErrAddingProposalToDB.Code, errors.Wrap(action.ErrAddingProposalToDB, err.Error()).Error()),
+			}
 		}
 	}
 
@@ -150,7 +158,8 @@ func runVote(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 		ok, err := pms.Proposal.WithPrefixType(gov.ProposalStateActive).Delete(vote.ProposalID)
 		if err != nil || !ok {
 			return false, action.Response{
-				Log: fmt.Sprintf("vote proposal failed, id= %v, failed to delete proposal from ACTIVE store", vote.ProposalID)}
+				Log: action.ErrorMarshal(action.ErrDeletingProposalFromDB.Code, action.ErrDeletingProposalFromDB.Msg),
+			}
 		}
 	}
 
