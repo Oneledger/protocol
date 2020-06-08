@@ -13,8 +13,8 @@ import (
 	Protocol Error definition
 */
 type ProtocolError struct {
-	Code int
-	Msg  string
+	Code int          `json:"code"`
+	Msg  string		  `json:"msg"`
 }
 
 func (se ProtocolError) Error() string {
