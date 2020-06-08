@@ -14,11 +14,27 @@ type ProposalVote struct {
 	Power     int64
 }
 
+type VoteStatus struct {
+	Result   VoteResult
+	PowerYes int64
+	PowerNo  int64
+	PowerAll int64
+}
+
 func NewProposalVote(validator keys.Address, opinion VoteOpinion, power int64) *ProposalVote {
 	return &ProposalVote{
 		Validator: validator,
 		Opinion:   opinion,
 		Power:     power,
+	}
+}
+
+func NewVoteStatus(result VoteResult, yesPower, noPower, allPower int64) *VoteStatus {
+	return &VoteStatus{
+		Result:   result,
+		PowerYes: yesPower,
+		PowerNo:  noPower,
+		PowerAll: allPower,
 	}
 }
 

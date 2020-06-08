@@ -48,3 +48,6 @@ if __name__ == "__main__":
     failedList = query_proposals("failed")
     if len(failedList) != 0:
         sys.exit(-1)
+
+    print "#### Test create proposals succeed: ####"
+    print ""

@@ -47,7 +47,7 @@ def test_fail_proposal():
 
     # create proposal
     _prop.send_create()
-    time.sleep(3)
+    time.sleep(1)
     encoded_pid = _prop.pid
 
     # 1st fund
@@ -76,5 +76,5 @@ if __name__ == "__main__":
     # test fail a proposal
     test_fail_proposal()
 
-    print "#### ACTIVE PROPOSALS: ####"
-    query_proposals("active")
+    print "#### Test vote proposals succeed: ####"
+    print ""
