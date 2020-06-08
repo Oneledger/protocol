@@ -141,7 +141,7 @@ func runCreate(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	err := create.Unmarshal(tx.Data)
 	if err != nil {
 		return false, action.Response{
-			Log: action.ErrorMarshal(action.ErrWrongTxType.Code, errors.Wrap(action.ErrWrongTxType, err.Error()).Error()),
+			Log: action.ErrWrongTxType.Wrap(err).Marshal(),
 		}
 	}
 
@@ -150,7 +150,7 @@ func runCreate(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	// check domain existence and set to db
 	if ctx.Domains.Exists(create.Name) {
 		return false, action.Response{
-			Log: action.ErrorMarshal(codes.ErrDomainExists.Code, codes.ErrDomainExists.Msg),
+			Log: codes.ErrDomainExists.Marshal(),
 		}
 	}
 
@@ -159,7 +159,7 @@ func runCreate(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	err = ctx.Balances.MinusFromAddress(create.Owner.Bytes(), price)
 	if err != nil {
 		return false, action.Response{
-			Log: action.ErrorMarshal(codes.ErrDebitingFromAddress.Code, errors.Wrap(codes.ErrDebitingFromAddress, err.Error()).Error()),
+			Log: codes.ErrDebitingFromAddress.Wrap(err).Marshal(),
 		}
 	}
 
@@ -167,7 +167,7 @@ func runCreate(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	err = ctx.FeePool.AddToPool(price)
 	if err != nil {
 		return false, action.Response{
-			Log: action.ErrorMarshal(codes.ErrDebitingFromAddress.Code, errors.Wrap(codes.ErrDebitingFromAddress, err.Error()).Error()),
+			Log: codes.ErrAddingToFeePool.Wrap(err).Marshal(),
 		}
 	}
 
@@ -176,7 +176,7 @@ func runCreate(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	ok := verifyDomainName(create.Name, opt)
 	if !ok {
 		return false, action.Response{
-			Log: action.ErrorMarshal(codes.ErrAddingToFeePool.Code, codes.ErrAddingToFeePool.Msg),
+			Log: codes.ErrInvalidDomainName.Marshal(),
 		}
 	}
 
@@ -185,7 +185,7 @@ func runCreate(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 		ok = opt.IsValidURI(create.Uri)
 		if !ok {
 			return false, action.Response{
-				Log: action.ErrorMarshal(codes.ErrInvalidUri.Code, codes.ErrInvalidUri.Msg),
+				Log: codes.ErrInvalidUri.Marshal(),
 			}
 		}
 	}
@@ -197,28 +197,28 @@ func runCreate(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 		parentName, err := create.Name.GetParentName()
 		if err != nil {
 			return false, action.Response{
-				Log: action.ErrorMarshal(codes.ErrGettingParentName.Code, errors.Wrap(codes.ErrGettingParentName, err.Error()).Error()),
+				Log: codes.ErrGettingParentName.Wrap(err).Marshal(),
 			}
 		}
 		parent, err := ctx.Domains.Get(parentName)
 		//Check if Parent exists in Domain Store
 		if err != nil {
 			return false, action.Response{
-				Log: action.ErrorMarshal(codes.ErrParentDoesNotExist.Code, errors.Wrap(codes.ErrParentDoesNotExist, err.Error()).Error()),
+				Log: codes.ErrParentDoesNotExist.Wrap(err).Marshal(),
 			}
 		}
 
 		// check if sender is owner of Parent Domain
 		if !bytes.Equal(parent.Owner, create.Owner) {
 			return false, action.Response{
-				Log: action.ErrorMarshal(codes.ErrParentNotOwned.Code, codes.ErrParentNotOwned.Msg),
+				Log: codes.ErrParentNotOwned.Marshal(),
 			}
 		}
 
 		// buying price should be more than base domain price
 		if create.BuyingPrice.Value.BigInt().Cmp(opt.BaseDomainPrice.BigInt()) < 0 {
 			return false, action.Response{
-				Log: action.ErrorMarshal(action.ErrInvalidAmount.Code, action.ErrInvalidAmount.Msg),
+				Log: action.ErrInvalidAmount.Marshal(),
 			}
 		}
 
@@ -231,7 +231,7 @@ func runCreate(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 		extend, err := calculateExpiry(&create.BuyingPrice.Value, &opt.BaseDomainPrice, &opt.PerBlockFees)
 		if err != nil {
 			return false, action.Response{
-				Log: action.ErrorMarshal(codes.ErrFailedToCalculateExpiry.Code, errors.Wrap(codes.ErrFailedToCalculateExpiry, err.Error()).Error()),
+				Log: codes.ErrFailedToCalculateExpiry.Wrap(err).Marshal(),
 			}
 		}
 
@@ -249,14 +249,14 @@ func runCreate(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	)
 	if err != nil {
 		return false, action.Response{
-			Log: action.ErrorMarshal(codes.ErrFailedToCreateDomain.Code, errors.Wrap(codes.ErrFailedToCreateDomain, err.Error()).Error()),
+			Log: codes.ErrFailedToCreateDomain.Wrap(err).Marshal(),
 		}
 	}
 
 	err = ctx.Domains.Set(domain)
 	if err != nil {
 		return false, action.Response{
-			Log: action.ErrorMarshal(codes.ErrFailedAddingDomainToStore.Code, errors.Wrap(codes.ErrFailedAddingDomainToStore, err.Error()).Error()),
+			Log: codes.ErrFailedAddingDomainToStore.Wrap(err).Marshal(),
 		}
 	}
 

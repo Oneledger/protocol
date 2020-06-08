@@ -53,6 +53,7 @@ const (
 	ONSErrFailedToCreateDomain              = 100712
 	ONSErrFailedAddingDomainToStore         = 100713
 	ONSErrCannotRenewSubDomain              = 100714
+	ONSErrInvalidDomainName                 = 100715
 
 
 
@@ -97,8 +98,8 @@ const (
 	ETHTrackerNotFoundOngoing = 600102
 
 	Governance
-	GovErrVoteSetupValidator           = 700100
-	GovErrVoteUpdateVote               = 700101
+	GovErrVoteSetupValidator              = 700100
+	GovErrVoteUpdateVote                  = 700101
 	GovErrVoteDeleteVoteRecords           = 700102
 	GovErrVoteCheckVoteResult             = 700103
 	GovErrWithdrawCheckFundsFailed        = 700104
@@ -108,13 +109,13 @@ const (
 	GovErrInvalidProposerAddr             = 700108
 	GovErrInvalidProposalDesc             = 700109
 	GovErrProposalExists                  = 700110
-	GovErrAddingProposalToActiveStore     = 700111
-	GovErrDeletingProposalFromActiveStore = 700112
-	GovErrAddingProposalToPassedStore     = 700113
-	GovErrDeletingProposalFromPassedStore = 700114
-	GovErrAddingProposalToFailedStore     = 700115
-	GovErrDeletingProposalFromFailedStore = 700116
-	GovErrProposalUnmarshal               = 700117
+	GovErrProposalNotExists               = 700111
+	GovErrAddingProposalToActiveStore     = 700112
+	GovErrDeletingProposalFromActiveStore = 700113
+	GovErrAddingProposalToPassedStore     = 700114
+	GovErrDeletingProposalFromPassedStore = 700115
+	GovErrAddingProposalToFailedStore     = 700116
+	GovErrDeletingProposalFromFailedStore = 700117
 	GovErrDeductFunding                   = 700118
 	GovErrAddFunding                      = 700119
 	GovErrInvalidContributorAddr          = 700120
@@ -124,8 +125,8 @@ const (
 	GovErrSetupVotingValidator            = 700124
 	GovErrProposalWithdrawNotEligible     = 700125
 	GovErrNoSuchContributor               = 700126
-	GovErrNotInVoting                  = 700127
-	GovErrVotingHeightReached          = 700128
-	GovErrAddingVoteToVoteStore        = 700129
-	GovErrPeekingVoteResult            = 700130
+	GovErrNotInVoting                     = 700127
+	GovErrVotingHeightReached             = 700128
+	GovErrAddingVoteToVoteStore           = 700129
+	GovErrPeekingVoteResult               = 700130
 )
