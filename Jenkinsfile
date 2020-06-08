@@ -23,7 +23,7 @@ pipeline {
              reportDir: 
                           '${WORKSPACE}/*',
              reportFiles: 'cover.html',
-             reportName: 'Docs Loadtest Dashboard'
+             reportName: 'Coverage report Dashboard'
 ])
 
              } 
