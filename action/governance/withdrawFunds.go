@@ -81,7 +81,7 @@ func runWithdraw(ctx *action.Context, signedTx action.RawTx) (bool, action.Respo
 	err := withdrawProposal.Unmarshal(signedTx.Data)
 	if err != nil {
 		return false, action.Response{
-			Log: action.ErrorMarshal(action.ErrWrongTxType.Code, errors.Wrap(action.ErrWrongTxType, err.Error()).Error()),
+			Log: action.ErrWrongTxType.Wrap(err).Marshal(),
 		}
 	}
 
@@ -94,7 +94,7 @@ func runWithdraw(ctx *action.Context, signedTx action.RawTx) (bool, action.Respo
 		ctx.Logger.Error("Proposal does not exist :", withdrawProposal.ProposalID)
 		result := action.Response{
 			Events: action.GetEvent(withdrawProposal.Tags(), "withdraw_proposal_does_not_exist"),
-			Log: action.ErrorMarshal(action.ErrProposalExists.Code, errors.Wrap(action.ErrProposalExists, err.Error()).Error()),
+			Log: action.ErrProposalNotExists.Marshal(),
 		}
 		return false, result
 	}
@@ -104,7 +104,7 @@ func runWithdraw(ctx *action.Context, signedTx action.RawTx) (bool, action.Respo
 		ctx.Logger.Error("Proposal does not meet withdraw requirement", withdrawProposal.ProposalID)
 		result := action.Response{
 			Events: action.GetEvent(withdrawProposal.Tags(), "withdraw_proposal_does_not_meet_withdraw_requirement"),
-			Log: action.ErrorMarshal(action.ErrProposalWithdrawNotEligible.Code, action.ErrProposalWithdrawNotEligible.Msg),
+			Log: action.ErrProposalWithdrawNotEligible.Marshal(),
 		}
 		return false, result
 	}
@@ -116,7 +116,7 @@ func runWithdraw(ctx *action.Context, signedTx action.RawTx) (bool, action.Respo
 		ctx.Logger.Error("Failed to add proposal to FAILED store :", proposal.ProposalID)
 		result := action.Response{
 			Events: action.GetEvent(withdrawProposal.Tags(), "failed_to_add_proposal_to_failed_store"),
-			Log: action.ErrorMarshal(action.ErrAddingProposalToFailedStore.Code, errors.Wrap(action.ErrAddingProposalToFailedStore, err.Error()).Error()),
+			Log: action.ErrAddingProposalToFailedStore.Wrap(err).Marshal(),
 		}
 		return false, result
 	}
@@ -125,7 +125,7 @@ func runWithdraw(ctx *action.Context, signedTx action.RawTx) (bool, action.Respo
 		ctx.Logger.Error("Failed to delete proposal from ACTIVE store :", proposal.ProposalID)
 		result := action.Response{
 			Events: action.GetEvent(withdrawProposal.Tags(), "failed_to_delete_proposal_from_active_store"),
-			Log: action.ErrorMarshal(action.ErrDeletingProposalFromActiveStore.Code, action.ErrDeletingProposalFromActiveStore.Msg),
+			Log: action.ErrDeletingProposalFromActiveStore.Wrap(err).Marshal(),
 		}
 		return false, result
 	}
@@ -136,7 +136,7 @@ func runWithdraw(ctx *action.Context, signedTx action.RawTx) (bool, action.Respo
 		ctx.Logger.Error("No available funds to withdraw for this contributor :", withdrawProposal.Contributor)
 		result := action.Response{
 			Events: action.GetEvent(withdrawProposal.Tags(), "no_available__fund_to_withdraw_for_this_contributor"),
-			Log: action.ErrorMarshal(action.ErrNoSuchContributor.Code, errors.Wrap(action.ErrNoSuchContributor, err.Error()).Error()),
+			Log: action.ErrNoSuchContributor.Wrap(err).Marshal(),
 		}
 		return false, result
 	}
@@ -149,7 +149,7 @@ func runWithdraw(ctx *action.Context, signedTx action.RawTx) (bool, action.Respo
 		ctx.Logger.Error("Failed to deduct funds from proposal:", withdrawProposal.ProposalID)
 		result := action.Response{
 			Events: action.GetEvent(withdrawProposal.Tags(), "withdraw_proposal_deduct_fund_failed"),
-			Log: action.ErrorMarshal(action.ErrDeductFunding.Code, errors.Wrap(action.ErrDeductFunding, err.Error()).Error()),
+			Log: action.ErrDeductFunding.Wrap(err).Marshal(),
 		}
 		return false, result
 	}
@@ -165,7 +165,7 @@ func runWithdraw(ctx *action.Context, signedTx action.RawTx) (bool, action.Respo
 		}
 		result := action.Response{
 			Events: action.GetEvent(withdrawProposal.Tags(), "withdraw_proposal_addition_failed"),
-			Log: action.ErrorMarshal(action.ErrAddFunding.Code, action.ErrAddFunding.Msg),
+			Log: action.ErrAddFunding.Marshal(),
 		}
 		return false, result
 	}

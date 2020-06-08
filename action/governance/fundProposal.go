@@ -120,7 +120,7 @@ func runFundProposal(ctx *action.Context, tx action.RawTx) (bool, action.Respons
 	err := fundProposal.Unmarshal(tx.Data)
 	if err != nil {
 		return false, action.Response{
-			Log: action.ErrorMarshal(action.ErrWrongTxType.Code, errors.Wrap(action.ErrWrongTxType, err.Error()).Error()),
+			Log: action.ErrWrongTxType.Wrap(err).Marshal(),
 		}
 	}
 	//1. check if proposal exists
@@ -129,7 +129,7 @@ func runFundProposal(ctx *action.Context, tx action.RawTx) (bool, action.Respons
 		ctx.Logger.Error("Proposal does not exist :", fundProposal.ProposalId)
 		result := action.Response{
 			Events: action.GetEvent(fundProposal.Tags(), "fund_proposal_does_not_exist"),
-			Log: action.ErrorMarshal(action.ErrProposalExists.Code, errors.Wrap(action.ErrProposalExists, err.Error()).Error()),
+			Log: action.ErrProposalNotExists.Wrap(err).Marshal(),
 		}
 		return false, result
 	}
@@ -140,7 +140,7 @@ func runFundProposal(ctx *action.Context, tx action.RawTx) (bool, action.Respons
 		ctx.Logger.Debug("Funding Height has already been reached")
 		result := action.Response{
 			Events: action.GetEvent(fundProposal.Tags(), "fund_proposal_height_crossed"),
-			Log: action.ErrorMarshal(action.ErrFundingHeightReached.Code, action.ErrFundingHeightReached.Msg),
+			Log: action.ErrFundingHeightReached.Marshal(),
 		}
 		return false, result
 
@@ -151,7 +151,7 @@ func runFundProposal(ctx *action.Context, tx action.RawTx) (bool, action.Respons
 		ctx.Logger.Debug("Cannot fund proposal , Current proposal state : ", proposal.Status)
 		result := action.Response{
 			Events: action.GetEvent(fundProposal.Tags(), "fund_proposal_not_funding_state"),
-			Log: action.ErrorMarshal(action.ErrNotInFunding.Code, action.ErrNotInFunding.Msg),
+			Log: action.ErrNotInFunding.Marshal(),
 		}
 		return false, result
 	}
@@ -173,7 +173,7 @@ func runFundProposal(ctx *action.Context, tx action.RawTx) (bool, action.Respons
 		validatorList, err := ctx.Validators.GetValidatorSet()
 		if err != nil {
 			return false, action.Response{
-				Log: action.ErrorMarshal(action.ErrGettingValidatorList.Code, errors.Wrap(action.ErrGettingValidatorList, err.Error()).Error()),
+				Log: action.ErrGettingValidatorList.Wrap(err).Marshal(),
 			}
 		}
 		for _, v := range validatorList {
@@ -181,7 +181,7 @@ func runFundProposal(ctx *action.Context, tx action.RawTx) (bool, action.Respons
 			err = ctx.ProposalMasterStore.ProposalVote.Setup(proposal.ProposalID, vote)
 			if err != nil {
 				return false, action.Response{
-					Log: action.ErrorMarshal(action.ErrSetupVotingValidator.Code, errors.Wrap(action.ErrSetupVotingValidator, err.Error()).Error()),
+					Log: action.ErrSetupVotingValidator.Wrap(err).Marshal(),
 				}
 			}
 		}
@@ -191,7 +191,7 @@ func runFundProposal(ctx *action.Context, tx action.RawTx) (bool, action.Respons
 		if err != nil {
 			result := action.Response{
 				Events: action.GetEvent(fundProposal.Tags(), "update_proposal_failed"),
-				Log: action.ErrorMarshal(action.ErrAddingProposalToActiveStore.Code, errors.Wrap(action.ErrAddingProposalToActiveStore, err.Error()).Error()),
+				Log: action.ErrAddingProposalToActiveStore.Wrap(err).Marshal(),
 			}
 			return false, result
 		}
@@ -203,7 +203,7 @@ func runFundProposal(ctx *action.Context, tx action.RawTx) (bool, action.Respons
 	if err != nil {
 		result := action.Response{
 			Events: action.GetEvent(fundProposal.Tags(), "fund_proposal_deduction_failed"),
-			Log: action.ErrorMarshal(action.ErrDeductFunding.Code, errors.Wrap(action.ErrDeductFunding, err.Error()).Error()),
+			Log: action.ErrDeductFunding.Wrap(err).Marshal(),
 		}
 		return false, result
 	}
@@ -212,7 +212,7 @@ func runFundProposal(ctx *action.Context, tx action.RawTx) (bool, action.Respons
 		ctx.Logger.Error("Failed to add funds to proposal:", fundProposal.ProposalId)
 		result := action.Response{
 			Events: action.GetEvent(fundProposal.Tags(), "fund_proposal_AddFund_failed"),
-			Log: action.ErrorMarshal(action.ErrAddFunding.Code, errors.Wrap(action.ErrAddFunding, err.Error()).Error()),
+			Log: action.ErrAddFunding.Wrap(err).Marshal(),
 		}
 		return false, result
 	}
