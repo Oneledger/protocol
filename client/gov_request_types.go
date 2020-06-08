@@ -17,36 +17,28 @@ type CreateProposalRequest struct {
 	Gas            int64         `json:"gas"`
 }
 
-type GetProposalsRequest struct {
-	Prefix   string        `json:"prefix"`
-	GasPrice action.Amount `json:"gasPrice"`
-	Gas      int64         `json:"gas"`
+type ListProposalsRequest struct {
+	ProposalId governance.ProposalID `json:"proposal_id"`
+	State      string                `json:"state"`
 }
 
-type GetProposalsResponse struct {
-	Proposals []governance.Proposal `json:"proposals"`
-	Height    int64                 `json:"height"`
+type ListProposalsReply struct {
+	Proposals     []governance.Proposal    `json:"proposals"`
+	ProposalFunds []balance.Amount         `json:"proposal_funds"`
+	ProposalVotes []governance.VoteStatus  `json:"proposal_votes"`
+	State         governance.ProposalState `json:"state"`
+	Height        int64                    `json:"height"`
 }
 
-type GetProposalByIDRequest struct {
-	ProposalID string `json:"proposal_id"`
-}
-
-type GetProposalByIDReply struct {
-	Proposal governance.Proposal      `json:"proposal"`
-	ProposalFunds balance.Amount	  `json:"proposal_funds"`
-	State    governance.ProposalState `json:"state"`
-}
-
-type CreateVoteRequest struct {
-	ProposalID string        `json:"proposal_id"`
+type VoteProposalRequest struct {
+	ProposalId string        `json:"proposal_id"`
 	Opinion    string        `json:"opinion"`
 	Address    keys.Address  `json:"address"`
 	GasPrice   action.Amount `json:"gasPrice"`
 	Gas        int64         `json:"gas"`
 }
 
-type CreateVoteReply struct {
+type VoteProposalReply struct {
 	RawTx     []byte           `json:"rawTx"`
 	Signature action.Signature `json:"signature"`
 }
@@ -59,11 +51,19 @@ type FundProposalRequest struct {
 	Gas           int64                 `json:"gas"`
 }
 
+type CancelProposalRequest struct {
+	ProposalId governance.ProposalID `json:"proposal_id"`
+	Proposer   keys.Address          `json:"proposer"`
+	Reason     string                `json:"reason"`
+	GasPrice   action.Amount         `json:"gasPrice"`
+	Gas        int64                 `json:"gas"`
+}
+
 type WithdrawFundsRequest struct {
 	ProposalID    governance.ProposalID `json:"proposal_id"`
-	Contributor   keys.Address			`json:"contributor_address"`
-	WithdrawValue action.Amount			`json:"withdraw_value"`
-	Beneficiary   keys.Address			`json:"beneficiary_address"`
+	Contributor   keys.Address          `json:"contributor_address"`
+	WithdrawValue action.Amount         `json:"withdraw_value"`
+	Beneficiary   keys.Address          `json:"beneficiary_address"`
 	GasPrice      action.Amount         `json:"gasPrice"`
 	Gas           int64                 `json:"gas"`
 }

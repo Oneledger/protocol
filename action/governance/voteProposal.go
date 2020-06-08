@@ -23,7 +23,7 @@ var _ action.Tx = voteProposalTx{}
 type voteProposalTx struct {
 }
 
-func (a voteProposalTx) Validate(ctx *action.Context, tx action.SignedTx) (bool, error) {
+func (v voteProposalTx) Validate(ctx *action.Context, tx action.SignedTx) (bool, error) {
 	ctx.Logger.Debug("Validate voteProposalTx transaction for CheckTx", tx)
 
 	vote := &VoteProposal{}
@@ -44,8 +44,8 @@ func (a voteProposalTx) Validate(ctx *action.Context, tx action.SignedTx) (bool,
 	}
 
 	// validate params
-	if len(vote.ProposalID) == 0 {
-		return false, errors.New("empty proposalID")
+	if err = vote.ProposalID.Err(); err != nil {
+		return false, errors.Wrap(err, "invalid proposal id")
 	}
 	if err = vote.Address.Err(); err != nil {
 		return false, errors.Wrap(err, "invalid voter address")
@@ -60,16 +60,16 @@ func (a voteProposalTx) Validate(ctx *action.Context, tx action.SignedTx) (bool,
 	return true, nil
 }
 
-func (a voteProposalTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
+func (v voteProposalTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	ctx.Logger.Debug("ProcessCheck voteProposalTx transaction for CheckTx", tx)
 	return runVote(ctx, tx)
 }
 
-func (a voteProposalTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas) (bool, action.Response) {
+func (v voteProposalTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas) (bool, action.Response) {
 	return action.BasicFeeHandling(ctx, signedTx, start, size, 2)
 }
 
-func (a voteProposalTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
+func (v voteProposalTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	ctx.Logger.Debug("ProcessDeliver voteProposalTx transaction for DeliverTx", tx)
 	return runVote(ctx, tx)
 }
@@ -125,7 +125,7 @@ func runVote(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 
 	// Peek vote result based on collected votes so far
 	options := pms.Proposal.GetOptionsByType(proposal.Type)
-	result, err := pms.ProposalVote.ResultSoFar(vote.ProposalID, options.PassPercentage)
+	stat, err := pms.ProposalVote.ResultSoFar(vote.ProposalID, options.PassPercentage)
 	if err != nil {
 		return false, action.Response{
 			Log: action.ErrPeekingVoteResult.Wrap(err).Marshal(),
@@ -133,7 +133,7 @@ func runVote(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	}
 
 	// Pass or fail this proposal if possible
-	if result == gov.VOTE_RESULT_PASSED {
+	if stat.Result == gov.VOTE_RESULT_PASSED {
 		proposal.Status = gov.ProposalStatusCompleted
 		proposal.Outcome = gov.ProposalOutcomeCompleted
 		err = pms.Proposal.WithPrefixType(gov.ProposalStatePassed).Set(proposal)
@@ -142,7 +142,7 @@ func runVote(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 				Log: action.ErrAddingProposalToPassedStore.Wrap(err).Marshal(),
 			}
 		}
-	} else if result == gov.VOTE_RESULT_FAILED {
+	} else if stat.Result == gov.VOTE_RESULT_FAILED {
 		proposal.Status = gov.ProposalStatusCompleted
 		proposal.Outcome = gov.ProposalOutcomeInsufficientVotes
 		err = pms.Proposal.WithPrefixType(gov.ProposalStateFailed).Set(proposal)
@@ -154,7 +154,7 @@ func runVote(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	}
 
 	// Delete proposal in ACTIVE store
-	if result != gov.VOTE_RESULT_TBD {
+	if stat.Result != gov.VOTE_RESULT_TBD {
 		ok, err := pms.Proposal.WithPrefixType(gov.ProposalStateActive).Delete(vote.ProposalID)
 		if err != nil || !ok {
 			return false, action.Response{
