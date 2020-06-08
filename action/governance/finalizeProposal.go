@@ -126,18 +126,18 @@ func runFinalizeProposal(ctx *action.Context, tx action.RawTx) (bool, action.Res
 	}
 
 	//Get Vote Result
-	voteResult, err := ctx.ProposalMasterStore.ProposalVote.ResultSoFar(proposal.ProposalID, proposal.PassPercentage)
+	voteStatus, err := ctx.ProposalMasterStore.ProposalVote.ResultSoFar(proposal.ProposalID, proposal.PassPercentage)
 	if err != nil {
 		return logAndReturnFalse(ctx.Logger, governance.ErrUnabletoQueryVoteResult, finalizedProposal.Tags())
 	}
 
 	//Handle Result TBD
-	if voteResult == governance.VOTE_RESULT_TBD {
+	if voteStatus.Result == governance.VOTE_RESULT_TBD {
 		return logAndReturnFalse(ctx.Logger, governance.ErrVotingTBD, finalizedProposal.Tags())
 	}
 
 	//Handle Result Passed
-	if voteResult == governance.VOTE_RESULT_PASSED {
+	if voteStatus.Result == governance.VOTE_RESULT_PASSED {
 		proposalDistribution := ctx.ProposalMasterStore.Proposal.GetOptionsByType(proposal.Type).PassedFundDistribution
 		protocolErr := distributeFunds(ctx, proposal, &proposalDistribution)
 		if protocolErr != governance.NoError {
@@ -156,7 +156,7 @@ func runFinalizeProposal(ctx *action.Context, tx action.RawTx) (bool, action.Res
 	}
 
 	//Handle Result Failed
-	if voteResult == governance.VOTE_RESULT_FAILED {
+	if voteStatus.Result == governance.VOTE_RESULT_FAILED {
 		proposalDistribution := ctx.ProposalMasterStore.Proposal.GetOptionsByType(proposal.Type).FailedFundDistribution
 		protocolErr := distributeFunds(ctx, proposal, &proposalDistribution)
 		if protocolErr != governance.NoError {

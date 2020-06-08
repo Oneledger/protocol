@@ -67,7 +67,6 @@ func (svc *Service) ListProposals(req client.ListProposalsRequest, reply *client
 	return nil
 }
 
-// list single proposal by id
 func (svc *Service) ListProposal(req client.ListProposalsRequest, reply *client.ListProposalsReply) error {
 	proposalID := governance.ProposalID(req.ProposalId)
 	proposal, state, err := svc.proposalMaster.Proposal.QueryAllStores(proposalID)
@@ -80,10 +79,6 @@ func (svc *Service) ListProposal(req client.ListProposalsRequest, reply *client.
 	funds := governance.GetCurrentFunds(proposalID, svc.proposalMaster.ProposalFund)
 	stat, _ := svc.proposalMaster.ProposalVote.ResultSoFar(proposalID, options.PassPercentage)
 
-	*reply = client.GetProposalByIDReply{
-		Proposal:      *proposal,
-		ProposalFunds: *proposalFunds,
-		State:         state,
 	*reply = client.ListProposalsReply{
 		Proposals:     []governance.Proposal{*proposal},
 		ProposalFunds: []balance.Amount{*funds},
