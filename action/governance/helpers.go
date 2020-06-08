@@ -18,3 +18,11 @@ func logAndReturnFalse(logger *log.Logger, error status_codes.ProtocolError, tag
 	}
 	return false, result
 }
+
+func logAndReturnTrue(logger *log.Logger, tags kv.Pairs, eventType string) (bool, action.Response) {
+	logger.Detail(eventType)
+	result := action.Response{
+		Events: action.GetEvent(tags, eventType),
+	}
+	return true, result
+}

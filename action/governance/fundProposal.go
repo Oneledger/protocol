@@ -188,8 +188,6 @@ func runFundProposal(ctx *action.Context, tx action.RawTx) (bool, action.Respons
 		}
 		return logAndReturnFalse(ctx.Logger, governance.ErrGovFundUnableToAdd, fundProposal.Tags())
 	}
-	result := action.Response{
-		Events: action.GetEvent(fundProposal.Tags(), "fund_proposal_success"),
-	}
-	return true, result
+
+	return logAndReturnTrue(ctx.Logger, fundProposal.Tags(), "fund_proposal_success")
 }

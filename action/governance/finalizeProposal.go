@@ -168,10 +168,7 @@ func runFinalizeProposal(ctx *action.Context, tx action.RawTx) (bool, action.Res
 		}
 	}
 	fmt.Println("Finalized Validator :", finalizedProposal.ValidatorAddress.String(), "Proposal : ", proposal.ProposalID)
-	result := action.Response{
-		Events: action.GetEvent(finalizedProposal.Tags(), "finalize_proposal_success"),
-	}
-	return true, result
+	return logAndReturnTrue(ctx.Logger, finalizedProposal.Tags(), "finalize_proposal_success")
 }
 
 //Function to distribute funds
