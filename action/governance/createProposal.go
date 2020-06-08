@@ -154,7 +154,7 @@ func runTx(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	if err != nil {
 		result := action.Response{
 			Events: action.GetEvent(createProposal.Tags(), "create_proposal_failed"),
-			Log: action.ErrorMarshal(action.ErrAddingProposalToActiveDB.Code, action.ErrAddingProposalToActiveDB.Msg),
+			Log: action.ErrorMarshal(action.ErrAddingProposalToActiveStore.Code, action.ErrAddingProposalToActiveStore.Msg),
 		}
 		return false, result
 	}

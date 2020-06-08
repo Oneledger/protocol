@@ -116,7 +116,7 @@ func runWithdraw(ctx *action.Context, signedTx action.RawTx) (bool, action.Respo
 		ctx.Logger.Error("Failed to add proposal to FAILED store :", proposal.ProposalID)
 		result := action.Response{
 			Events: action.GetEvent(withdrawProposal.Tags(), "failed_to_add_proposal_to_failed_store"),
-			Log: action.ErrorMarshal(action.ErrAddingProposalToFailedDB.Code, errors.Wrap(action.ErrAddingProposalToFailedDB, err.Error()).Error()),
+			Log: action.ErrorMarshal(action.ErrAddingProposalToFailedStore.Code, errors.Wrap(action.ErrAddingProposalToFailedStore, err.Error()).Error()),
 		}
 		return false, result
 	}
@@ -125,7 +125,7 @@ func runWithdraw(ctx *action.Context, signedTx action.RawTx) (bool, action.Respo
 		ctx.Logger.Error("Failed to delete proposal from ACTIVE store :", proposal.ProposalID)
 		result := action.Response{
 			Events: action.GetEvent(withdrawProposal.Tags(), "failed_to_delete_proposal_from_active_store"),
-			Log: action.ErrorMarshal(action.ErrDeletingProposalFromActiveDB.Code, action.ErrDeletingProposalFromActiveDB.Msg),
+			Log: action.ErrorMarshal(action.ErrDeletingProposalFromActiveStore.Code, action.ErrDeletingProposalFromActiveStore.Msg),
 		}
 		return false, result
 	}

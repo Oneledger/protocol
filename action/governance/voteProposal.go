@@ -139,7 +139,7 @@ func runVote(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 		err = pms.Proposal.WithPrefixType(gov.ProposalStatePassed).Set(proposal)
 		if err != nil {
 			return false, action.Response{
-				Log: action.ErrorMarshal(action.ErrAddingProposalToPassedDB.Code, errors.Wrap(action.ErrAddingProposalToPassedDB, err.Error()).Error()),
+				Log: action.ErrorMarshal(action.ErrAddingProposalToPassedStore.Code, errors.Wrap(action.ErrAddingProposalToPassedStore, err.Error()).Error()),
 			}
 		}
 	} else if result == gov.VOTE_RESULT_FAILED {
@@ -148,7 +148,7 @@ func runVote(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 		err = pms.Proposal.WithPrefixType(gov.ProposalStateFailed).Set(proposal)
 		if err != nil {
 			return false, action.Response{
-				Log: action.ErrorMarshal(action.ErrAddingProposalToFailedDB.Code, errors.Wrap(action.ErrAddingProposalToFailedDB, err.Error()).Error()),
+				Log: action.ErrorMarshal(action.ErrAddingProposalToFailedStore.Code, errors.Wrap(action.ErrAddingProposalToFailedStore, err.Error()).Error()),
 			}
 		}
 	}
@@ -158,7 +158,7 @@ func runVote(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 		ok, err := pms.Proposal.WithPrefixType(gov.ProposalStateActive).Delete(vote.ProposalID)
 		if err != nil || !ok {
 			return false, action.Response{
-				Log: action.ErrorMarshal(action.ErrDeletingProposalFromActiveDB.Code, action.ErrDeletingProposalFromActiveDB.Msg),
+				Log: action.ErrorMarshal(action.ErrDeletingProposalFromActiveStore.Code, action.ErrDeletingProposalFromActiveStore.Msg),
 			}
 		}
 	}

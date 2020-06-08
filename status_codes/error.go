@@ -67,10 +67,22 @@ var (
 	ErrGetTx           = ProtocolError{TxNotFound, "error get tx from tendermint"}
 
 	// ONS errors
-	ErrBadName        = ProtocolError{DomainMissing, "domain name not provided"}
-	ErrBadOwner       = ProtocolError{OwnerAddressMissing, "owner address not provided"}
-	ErrDomainNotFound = ProtocolError{DomainNotFound, "domain not found"}
-	ErrFlagNotSet     = ProtocolError{OnSaleFlagNotSet, "onsale flag not set"}
+	ErrBadName                   = ProtocolError{ONSErrDomainMissing, "domain name not provided"}
+	ErrBadOwner                  = ProtocolError{ONSErrOwnerAddressMissing, "owner address not provided"}
+	ErrDomainNotFound            = ProtocolError{DomainNotFound, "domain not found"}
+	ErrFlagNotSet                = ProtocolError{ONSErrOnSaleFlagNotSet, "onsale flag not set"}
+	ErrDomainExists              = ProtocolError{ONSErrDomainExists, "domain already exists"}
+	ErrDebitingFromAddress       = ProtocolError{ONSErrDebitingFromAddress, "cannot debit from address"}
+	ErrAddingToFeePool           = ProtocolError{ONSErrAddingToFeePool, "cannot add to fee pool"}
+	ErrInvalidUri                = ProtocolError{ONSErrInvalidUri , "invalid uri"}
+	ErrGettingParentName         = ProtocolError{ONSErrGettingParentName , "cannot get parent name"}
+	ErrParentDoesNotExist        = ProtocolError{ONSErrParentDoesNotExist , "parent domain does not exist"}
+	ErrParentNotOwned            = ProtocolError{ONSErrParentNotOwned , "parent domain not owned"}
+	ErrFailedToCalculateExpiry   = ProtocolError{ONSErrFailedToCalculateExpiry , "failed to calculate expiry"}
+	ErrFailedToCreateDomain      = ProtocolError{ONSErrFailedToCreateDomain , "failed to create domain"}
+	ErrFailedAddingDomainToStore = ProtocolError{ONSErrFailedAddingDomainToStore , "failed to add domain to store"}
+
+
 
 	// Tx errors
 
