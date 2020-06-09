@@ -28,7 +28,7 @@ pipeline {
 
         stage('utest') {
           steps {
-              def statusCode = sh 'make utest', returnStatus:true
+              sh 'make utest', returnStatus:true
         }
     }
 
