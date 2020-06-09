@@ -28,12 +28,12 @@ pipeline {
 
         stage('utest') {
           steps {
-        catchError {
-            build job: sh 'make utest'
+              sh 'make utest'
+              catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
+              sh "exit 1"
+            }
         }
-        echo currentBuild.result
     }
-}
 
         stage ('validator test'){
             steps{
