@@ -26,11 +26,19 @@ pipeline {
             }
         }
 
-        stage('unit testing'){
-            steps{
-            build job: sh 'make utest', propagate: false
-    }
-}
+        stage('unit testing') {
+            steps {
+                script {
+                    try {
+                        sh 'make utest'
+                    } catch (e) {
+                        currentBuild.result = 'FAILURE'
+                        throw e
+                    }
+                }
+            }
+        }
+
 
         stage ('validator test'){
             steps{
