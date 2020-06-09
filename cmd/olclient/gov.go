@@ -206,7 +206,7 @@ func listProposals(cmd *cobra.Command, args []string) error {
 			return errors.New("error in getting proposal")
 		}
 
-		printProposal(reply.Proposal, reply.Fund, &reply.Vote)
+		printProposal(reply.Proposals[0], reply.ProposalFunds[0], &reply.ProposalVotes[0])
 		fmt.Println("Height: ", reply.Height)
 	} else { // List multiple proposals
 		req := client.ListProposalsRequest{

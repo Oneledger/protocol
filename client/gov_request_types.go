@@ -21,13 +21,6 @@ type ListProposalRequest struct {
 	ProposalId governance.ProposalID `json:"proposal_id"`
 }
 
-type ListProposalReply struct {
-	Proposal governance.Proposal   `json:"proposal"`
-	Fund     balance.Amount        `json:"fund"`
-	Vote     governance.VoteStatus `json:"vote"`
-	Height   int64                 `json:"height"`
-}
-
 type ListProposalsRequest struct {
 	State        string       `json:"state"`
 	Proposer     keys.Address `json:"proposer"`
@@ -36,8 +29,8 @@ type ListProposalsRequest struct {
 
 type ListProposalsReply struct {
 	Proposals     []governance.Proposal   `json:"proposals"`
-	ProposalFunds []balance.Amount        `json:"proposal_funds"`
-	ProposalVotes []governance.VoteStatus `json:"proposal_votes"`
+	ProposalFunds []balance.Amount        `json:"funds"`
+	ProposalVotes []governance.VoteStatus `json:"votes"`
 	Height        int64                   `json:"height"`
 }
 

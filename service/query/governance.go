@@ -10,7 +10,7 @@ import (
 )
 
 // list single proposal by id
-func (svc *Service) ListProposal(req client.ListProposalRequest, reply *client.ListProposalReply) error {
+func (svc *Service) ListProposal(req client.ListProposalRequest, reply *client.ListProposalsReply) error {
 	proposalID := governance.ProposalID(req.ProposalId)
 	proposal, _, err := svc.proposalMaster.Proposal.QueryAllStores(proposalID)
 	if err != nil {
@@ -22,11 +22,11 @@ func (svc *Service) ListProposal(req client.ListProposalRequest, reply *client.L
 	funds := governance.GetCurrentFunds(proposalID, svc.proposalMaster.ProposalFund)
 	stat, _ := svc.proposalMaster.ProposalVote.ResultSoFar(proposalID, options.PassPercentage)
 
-	*reply = client.ListProposalReply{
-		Proposal: *proposal,
-		Fund:     *funds,
-		Vote:     *stat,
-		Height:   svc.proposalMaster.Proposal.GetState().Version(),
+	*reply = client.ListProposalsReply{
+		Proposals:     []governance.Proposal{*proposal},
+		ProposalFunds: []balance.Amount{*funds},
+		ProposalVotes: []governance.VoteStatus{*stat},
+		Height:        svc.proposalMaster.Proposal.GetState().Version(),
 	}
 
 	return nil
