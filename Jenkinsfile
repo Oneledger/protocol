@@ -32,7 +32,7 @@ pipeline {
                     try {
                         sh 'make utest'
                     } catch (e) {
-                        unstable('Stage failed!')
+                        unstable('Unit testing stage failed!')
                         sh 'exit 0'
                     }
                 }
