@@ -7,6 +7,7 @@ import (
 	"github.com/tendermint/tendermint/libs/kv"
 
 	"github.com/Oneledger/protocol/action"
+	"github.com/Oneledger/protocol/consensus"
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/governance"
 	"github.com/Oneledger/protocol/data/keys"
@@ -20,6 +21,7 @@ type CreateProposal struct {
 	Description    string
 	Proposer       keys.Address
 	InitialFunding action.Amount
+	ConfigUpdate   consensus.GovernanceState
 }
 
 func (c CreateProposal) Validate(ctx *action.Context, signedTx action.SignedTx) (bool, error) {
@@ -122,7 +124,9 @@ func runTx(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 
 	//Get Proposal options based on type.
 	options := ctx.ProposalMasterStore.Proposal.GetOptionsByType(createProposal.ProposalType)
-
+	if createProposal.ProposalType == governance.ProposalTypeConfigUpdate {
+		err, ok := validateConfig(ctx, createProposal)
+	}
 	//Calculate Deadlines
 	//Actual voting deadline will be setup in funding Tx
 	fundingDeadline := ctx.Header.Height + options.FundingDeadline
@@ -234,4 +238,8 @@ func (c CreateProposal) Marshal() ([]byte, error) {
 
 func (c *CreateProposal) Unmarshal(bytes []byte) error {
 	return json.Unmarshal(bytes, c)
+}
+
+func validateConfig(ctx *action.Context, proposal CreateProposal) (error, bool) {
+
 }
