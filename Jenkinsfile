@@ -20,25 +20,20 @@ pipeline {
     ])   
             }
         }
-        try {
         stage ('build binary'){
             steps{
                 sh 'make install_c'
             }
         }
-     } catch (Exception e) {
-       echo "stage failed, but we still continue"
-     }
-        
-        try {
-        stage ('unit testing'){
-               steps {
-                sh 'make utest'
-             }
+
+        stage('utest') {
+          steps {
+        catchError {
+            build job: sh 'make utest'
         }
- } catch (Exception e) {
-    echo "Stage failed, but we still continue"
- }
+        echo currentBuild.result
+    }
+}
 
         stage ('validator test'){
             steps{
