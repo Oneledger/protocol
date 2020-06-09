@@ -31,12 +31,13 @@ pipeline {
             steps {
                 script {
                         sh 'make utest'
-                } catchError (stageResult: 'FAILURE') {
+                 catchError (stageResult: 'FAILURE') {
                         
                         sh 'exit 0'
                     }
                 }
             }
+        }
         
 
 
