@@ -32,7 +32,7 @@ pipeline {
                     try {
                         sh 'make utest'
                     } catch (e) {
-                        currentStage.result = 'FAILURE'
+                        buildResult: 'SUCCESS', stageResult: 'FAILURE'
                         sh 'exit 0'
                     }
                 }
