@@ -28,7 +28,7 @@ pipeline {
 
         stage('utest') {
           steps {
-              sh 'make utest' || true
+              sh 'make utest' || exit 1
         }
     }
 
