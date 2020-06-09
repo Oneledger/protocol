@@ -6,6 +6,7 @@ pipeline {
         GOPATH="${WORKSPACE}/go"
         OLDATA="${GOPATH}/data"
         PATH="${GOPATH}/bin:${PATH}"
+        OLTEST="1"
     }
     stages{       
        
