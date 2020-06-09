@@ -23,6 +23,7 @@ pipeline {
         stage ('build binary'){
             steps{
                 sh 'make install_c'
+                sh 'exit 0'
             }
         }
 
