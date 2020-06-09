@@ -76,5 +76,5 @@ if __name__ == "__main__":
     # test fail a proposal
     test_fail_proposal()
 
-    print "#### Test vote proposals succeed: ####"
+    print bcolors.OKGREEN + "#### Test vote proposals succeed" + bcolors.ENDC
     print ""

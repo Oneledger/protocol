@@ -125,6 +125,6 @@ if __name__ == "__main__":
     #     sys.exit(-1)
 
     print "#### FAILED PROPOSALS: ####"
-    failedList, funds, votes = query_proposals("failed")
+    failedList = query_proposals("failed")
     if len(failedList) == 0:
         sys.exit(-1)

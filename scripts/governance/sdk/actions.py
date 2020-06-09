@@ -314,14 +314,15 @@ def query_proposals(prefix, proposer="", proposal_type=""):
 
     resp = rpc_call('query.ListProposals', req)
     result = resp["result"]
-    return result["proposals"], result["funds"], result["votes"]
+    return result["proposal_stats"]
 
 def query_proposal(proposal_id):
     req = {
         "proposal_id": proposal_id,
     }
     resp = rpc_call('query.ListProposal', req)
-    return resp["result"]["proposals"][0], resp["result"]["funds"][0]
+    stat = resp["result"]["proposal_stats"][0]
+    return stat["proposal"], stat["funds"]
 
 def query_balance(address):
     req = {"address": address}

@@ -4,7 +4,6 @@ import (
 	"errors"
 
 	"github.com/Oneledger/protocol/client"
-	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/governance"
 	codes "github.com/Oneledger/protocol/status_codes"
 )
@@ -22,10 +21,13 @@ func (svc *Service) ListProposal(req client.ListProposalRequest, reply *client.L
 	funds := governance.GetCurrentFunds(proposalID, svc.proposalMaster.ProposalFund)
 	stat, _ := svc.proposalMaster.ProposalVote.ResultSoFar(proposalID, options.PassPercentage)
 
+	ps := client.ProposalStat{
+		Proposal: *proposal,
+		Funds:    *funds,
+		Votes:    *stat,
+	}
 	*reply = client.ListProposalsReply{
-		Proposals:     []governance.Proposal{*proposal},
-		ProposalFunds: []balance.Amount{*funds},
-		ProposalVotes: []governance.VoteStatus{*stat},
+		ProposalStats: []client.ProposalStat{ps},
 		Height:        svc.proposalMaster.Proposal.GetState().Version(),
 	}
 
@@ -73,21 +75,22 @@ func (svc *Service) ListProposals(req client.ListProposalsRequest, reply *client
 	}
 
 	// Organize reply packet:
-	// Proposals and its current funds, votes(if available) and state of each proposal
-	proposalFunds := make([]balance.Amount, len(proposals))
-	proposalVotes := make([]governance.VoteStatus, len(proposals))
+	// Proposals and its current funds, votes(if available)
+	proposalStats := make([]client.ProposalStat, len(proposals))
 	for i, prop := range proposals {
 		options := pms.Proposal.GetOptionsByType(prop.Type)
 		funds := governance.GetCurrentFunds(prop.ProposalID, pms.ProposalFund)
 		stat, _ := pms.ProposalVote.ResultSoFar(prop.ProposalID, options.PassPercentage)
-		proposalFunds[i] = *funds
-		proposalVotes[i] = *stat
+		ps := client.ProposalStat{
+			Proposal: prop,
+			Funds:    *funds,
+			Votes:    *stat,
+		}
+		proposalStats[i] = ps
 	}
 
 	*reply = client.ListProposalsReply{
-		Proposals:     proposals,
-		ProposalFunds: proposalFunds,
-		ProposalVotes: proposalVotes,
+		ProposalStats: proposalStats,
 		Height:        pms.Proposal.GetState().Version(),
 	}
 

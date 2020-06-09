@@ -27,11 +27,15 @@ type ListProposalsRequest struct {
 	ProposalType string       `json:"proposal_type"`
 }
 
+type ProposalStat struct {
+	Proposal governance.Proposal   `json:"proposal"`
+	Funds    balance.Amount        `json:"funds"`
+	Votes    governance.VoteStatus `json:"votes"`
+}
+
 type ListProposalsReply struct {
-	Proposals     []governance.Proposal   `json:"proposals"`
-	ProposalFunds []balance.Amount        `json:"funds"`
-	ProposalVotes []governance.VoteStatus `json:"votes"`
-	Height        int64                   `json:"height"`
+	ProposalStats []ProposalStat `json:"proposal_stats"`
+	Height        int64          `json:"height"`
 }
 
 type VoteProposalRequest struct {

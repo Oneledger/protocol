@@ -85,6 +85,6 @@ if __name__ == "__main__":
 
     test_cancel_someone_else_proposal()
 
-    print "#### Test cancel proposals succeed: ####"
+    print bcolors.OKGREEN + "#### Test cancel proposals succeed" + bcolors.ENDC
     print ""
     

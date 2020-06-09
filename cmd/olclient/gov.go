@@ -206,7 +206,8 @@ func listProposals(cmd *cobra.Command, args []string) error {
 			return errors.New("error in getting proposal")
 		}
 
-		printProposal(reply.Proposals[0], reply.ProposalFunds[0], &reply.ProposalVotes[0])
+		ps := reply.ProposalStats[0]
+		printProposal(ps.Proposal, ps.Funds, &ps.Votes)
 		fmt.Println("Height: ", reply.Height)
 	} else { // List multiple proposals
 		req := client.ListProposalsRequest{
@@ -220,12 +221,12 @@ func listProposals(cmd *cobra.Command, args []string) error {
 			return errors.New("error in getting proposals")
 		}
 
-		if len(reply.Proposals) == 0 {
+		if len(reply.ProposalStats) == 0 {
 			return nil
 		}
 
-		for i, p := range reply.Proposals {
-			printProposal(p, reply.ProposalFunds[i], &reply.ProposalVotes[i])
+		for _, ps := range reply.ProposalStats {
+			printProposal(ps.Proposal, ps.Funds, &ps.Votes)
 		}
 		fmt.Println("Height: ", reply.Height)
 	}

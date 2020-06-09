@@ -79,7 +79,7 @@ def create_some_proposals():
 def check_proposals(props, expected_pids):
     pids = []
     for prop in props:
-        pids.append(prop["proposal_id"])
+        pids.append(prop["proposal"]["proposal_id"])
     expected_pids.sort()
     pids.sort()
     if pids != expected_pids:
@@ -97,29 +97,29 @@ if __name__ == "__main__":
     print bcolors.OKGREEN + "#### Test query proposals by ID succeed" + bcolors.ENDC
 
     # query proposals of proposer_0
-    props, funds, votes = query_proposals("", _proposer_0, "")
+    props = query_proposals("", _proposer_0, "")
     check_proposals(props, by_proposer[_proposer_0])
 
     # query proposals of proposer_1
-    props, funds, votes = query_proposals("", _proposer_1, "")
+    props = query_proposals("", _proposer_1, "")
     check_proposals(props, by_proposer[_proposer_1])
 
     # query proposals of proposer_2
-    props, funds, votes = query_proposals("", _proposer_2, "")
+    props = query_proposals("", _proposer_2, "")
     check_proposals(props, by_proposer[_proposer_2])
 
     print bcolors.OKGREEN + "#### Test query proposals by proposer succeed" + bcolors.ENDC
 
     # query proposals of type "general"
-    props, funds, votes = query_proposals("", "", "general")
+    props = query_proposals("", "", "general")
     check_proposals(props, by_type[ProposalTypeGeneral])
 
     # query proposals of type "codechange"
-    props, funds, votes = query_proposals("", "", "codechange")
+    props = query_proposals("", "", "codechange")
     check_proposals(props, by_type[ProposalTypeCodeChange])
 
     # query proposals of type "configupdate"
-    props, funds, votes = query_proposals("", "", "configupdate")
+    props = query_proposals("", "", "configupdate")
     check_proposals(props, by_type[ProposalTypeConfigUpdate])
 
     print bcolors.OKGREEN + "#### Test query proposals by type succeed" + bcolors.ENDC
