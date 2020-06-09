@@ -6,7 +6,6 @@ pipeline {
         GOPATH="${WORKSPACE}/go"
         OLDATA="${GOPATH}/data"
         PATH="${GOPATH}/bin:${PATH}"
-        OLTEST="1"
     }
     stages{       
        
@@ -30,15 +29,15 @@ pipeline {
         stage('unit testing') {
             steps {
                 script {
+                    try {
                         sh 'make utest'
-                 catchError (stageResult: 'FAILURE') {
-                        
-                        sh 'exit 0'
+                    } catch (e) {
+                        currentStage.result = 'FAILURE'
+                        throw e
                     }
                 }
             }
         }
-        
 
 
         stage ('validator test'){
