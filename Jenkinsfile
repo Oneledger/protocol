@@ -30,15 +30,14 @@ pipeline {
         stage('unit testing') {
             steps {
                 script {
-                    try {
                         sh 'make utest'
-                    } catchError (stageResult: 'FAILURE') {
+                } catchError (stageResult: 'FAILURE') {
                         
                         sh 'exit 0'
                     }
                 }
             }
-        }
+        
 
 
         stage ('validator test'){
