@@ -27,7 +27,7 @@ pipeline {
             }
         }
 
-        script {
+        stage ('utest') {
            try {
              sh 'make utest'
   } catch (Exception e) {
