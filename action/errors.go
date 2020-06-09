@@ -42,10 +42,10 @@ var (
 	ErrAddingProposalToPassedStore     = codes.ProtocolError{codes.GovErrAddingProposalToPassedStore, "failed to add proposal to PASSED store"}
 	ErrAddingProposalToFailedStore     = codes.ProtocolError{codes.GovErrAddingProposalToFailedStore, "failed to add proposal to FAILED store"}
 	ErrDeletingProposalFromFailedStore = codes.ProtocolError{codes.GovErrDeletingProposalFromFailedStore, "failed to delet proposal from FAILED store"}
-	ErrInvalidContributorAddr          = codes.ProtocolError{codes.GovErrInvalidContributorAddr, "invalid contributor address"}
+	ErrInvalidFunderAddr               = codes.ProtocolError{codes.GovErrInvalidFunderAddr, "invalid funder address"}
 	ErrInvalidBeneficiaryAddr          = codes.ProtocolError{codes.GovErrInvalidBeneficiaryAddr, "invalid withdraw beneficiary address"}
 	ErrProposalWithdrawNotEligible     = codes.ProtocolError{codes.GovErrProposalWithdrawNotEligible, "proposal does not meet withdraw requirement"}
-	ErrNoSuchContributor               = codes.ProtocolError{codes.GovErrNoSuchContributor, "no such contributor funded this proposal"}
+	ErrNoSuchFunder                    = codes.ProtocolError{codes.GovErrNoSuchFunder, "no such funder funded this proposal"}
 	ErrNotInVoting                     = codes.ProtocolError{codes.GovErrNotInVoting, "proposal not in VOTING status"}
 	ErrVotingHeightReached             = codes.ProtocolError{codes.GovErrVotingHeightReached, "voting height has already been reached"}
 	ErrAddingVoteToVoteStore           = codes.ProtocolError{codes.GovErrAddingVoteToVoteStore, "failed to add vote to vote store"}

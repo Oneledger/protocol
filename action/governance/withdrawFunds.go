@@ -13,10 +13,10 @@ import (
 var _ action.Msg = &WithdrawFunds{}
 
 type WithdrawFunds struct {
-	ProposalID    governance.ProposalID   `json:"proposal_id"`
-	Contributor   keys.Address 			  `json:"contributor_address"`
-	WithdrawValue action.Amount 		  `json:"withdraw_value"`
-	Beneficiary   keys.Address 			  `json:"beneficiary_address"`
+	ProposalID    governance.ProposalID `json:"proposal_id"`
+	Funder        keys.Address          `json:"funder_address"`
+	WithdrawValue action.Amount         `json:"withdraw_value"`
+	Beneficiary   keys.Address          `json:"beneficiary_address"`
 
 }
 
@@ -47,10 +47,10 @@ func (wp WithdrawFunds) Validate(ctx *action.Context, signedTx action.SignedTx) 
 		return false, errors.Wrap(action.ErrInvalidAmount, withdrawFunds.WithdrawValue.String())
 	}
 
-	//Check if fund contributor address is valid oneLedger address
-	err = withdrawFunds.Contributor.Err()
+	//Check if fund funder address is valid oneLedger address
+	err = withdrawFunds.Funder.Err()
 	if err != nil {
-		return false, errors.Wrap(action.ErrInvalidContributorAddr, err.Error())
+		return false, errors.Wrap(action.ErrInvalidFunderAddr, err.Error())
 	}
 
 	//Check if withdraw beneficiary address is valid oneLedger address
@@ -130,21 +130,21 @@ func runWithdraw(ctx *action.Context, signedTx action.RawTx) (bool, action.Respo
 		return false, result
 	}
 
-	// 3. Check if the contributor has funded this proposal, if so, get the amount of funds
-	_, err = governance.GetCurrentFundsByContributor(proposal.ProposalID, withdrawProposal.Contributor, ctx.ProposalMasterStore.ProposalFund)
+	// 3. Check if the funder has funded this proposal, if so, get the amount of funds
+	_, err = governance.GetCurrentFundsByFunder(proposal.ProposalID, withdrawProposal.Funder, ctx.ProposalMasterStore.ProposalFund)
 	if err != nil {
-		ctx.Logger.Error("No available funds to withdraw for this contributor :", withdrawProposal.Contributor)
+		ctx.Logger.Error("No available funds to withdraw for this funder :", withdrawProposal.Funder)
 		result := action.Response{
-			Events: action.GetEvent(withdrawProposal.Tags(), "no_available__fund_to_withdraw_for_this_contributor"),
-			Log: action.ErrNoSuchContributor.Wrap(err).Marshal(),
+			Events: action.GetEvent(withdrawProposal.Tags(), "no_available__fund_to_withdraw_for_this_funder"),
+			Log: action.ErrNoSuchFunder.Wrap(err).Marshal(),
 		}
 		return false, result
 	}
 
 	// 4. withdraw
-	// deduct from proposal fund and check if the contributor has sufficient funds to withdraw for that proposal
+	// deduct from proposal fund and check if the funder has sufficient funds to withdraw for that proposal
 	withdrawAmount := balance.NewAmountFromBigInt(withdrawProposal.WithdrawValue.Value.BigInt())
-	err = ctx.ProposalMasterStore.ProposalFund.DeductFunds(proposal.ProposalID, withdrawProposal.Contributor, withdrawAmount)
+	err = ctx.ProposalMasterStore.ProposalFund.DeductFunds(proposal.ProposalID, withdrawProposal.Funder, withdrawAmount)
 	if err != nil {
 		ctx.Logger.Error("Failed to deduct funds from proposal:", withdrawProposal.ProposalID)
 		result := action.Response{
@@ -158,7 +158,7 @@ func runWithdraw(ctx *action.Context, signedTx action.RawTx) (bool, action.Respo
 	err = ctx.Balances.AddToAddress(withdrawProposal.Beneficiary.Bytes(), coin)
 	if err != nil {
 		// return funds to proposal
-		err = ctx.ProposalMasterStore.ProposalFund.AddFunds(proposal.ProposalID, withdrawProposal.Contributor, withdrawAmount)
+		err = ctx.ProposalMasterStore.ProposalFund.AddFunds(proposal.ProposalID, withdrawProposal.Funder, withdrawAmount)
 		if err != nil {
 			ctx.Logger.Error("Failed to return funds to proposal:", withdrawProposal.ProposalID)
 			panic("error returning funds to proposal")
@@ -178,7 +178,7 @@ func runWithdraw(ctx *action.Context, signedTx action.RawTx) (bool, action.Respo
 }
 
 func (wp WithdrawFunds) Signers() []action.Address {
-	return []action.Address{wp.Contributor}
+	return []action.Address{wp.Funder}
 }
 
 func (wp WithdrawFunds) Type() action.Type {
@@ -197,8 +197,8 @@ func (wp WithdrawFunds) Tags() kv.Pairs {
 		Value: []byte(string(wp.ProposalID)),
 	}
 	tag3 := kv.Pair{
-		Key:   []byte("tx.contributor"),
-		Value: wp.Contributor.Bytes(),
+		Key:   []byte("tx.funder"),
+		Value: wp.Funder.Bytes(),
 	}
 	tag4 := kv.Pair{
 		Key:   []byte("tx.withdrawValue"),

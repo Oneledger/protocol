@@ -211,16 +211,16 @@ class ProposalVote:
 
 
 class ProposalFundsWithdraw:
-    def __init__(self, pid, contributor, value, beneficiary):
+    def __init__(self, pid, funder, value, beneficiary):
         self.pid = pid
-        self.contr = contributor
+        self.funder = funder
         self.value = value
         self.benefi = beneficiary
 
-    def _withdraw_funds(self, contr_address):
+    def _withdraw_funds(self, funder_address):
         req = {
             "proposal_id": self.pid,
-            "contributor_address": contr_address,
+            "funder_address": funder_address,
             "withdraw_value": {
                 "currency": "OLT",
                 "value": convertBigInt(self.value),
@@ -241,7 +241,7 @@ class ProposalFundsWithdraw:
         raw_txn = self._withdraw_funds(contr_address)
 
         # sign Tx
-        signed = sign(raw_txn, self.contr)
+        signed = sign(raw_txn, self.funder)
 
         # broadcast Tx
         result = broadcast_commit(raw_txn, signed['signature']['Signed'], signed['signature']['Signer'])

@@ -116,20 +116,20 @@ const (
 	GovErrDeletingProposalFromFailedStore = 700116
 	GovErrDeductFunding                   = 700117
 	GovErrAddFunding                      = 700118
-	GovErrInvalidContributorAddr          = 700119
-	GovErrInvalidBeneficiaryAddr		  = 700120
+	GovErrInvalidFunderAddr               = 700119
+	GovErrInvalidBeneficiaryAddr          = 700120
 	GovErrFundingHeightReached            = 700121
 	GovErrNotInFunding                    = 700122
 	GovErrGettingValidatorList            = 700123
 	GovErrSetupVotingValidator            = 700124
 	GovErrProposalWithdrawNotEligible     = 700125
-	GovErrNoSuchContributor               = 700126
+	GovErrNoSuchFunder                    = 700126
 	GovErrNotInVoting                     = 700127
 	GovErrVotingHeightReached             = 700128
 	GovErrAddingVoteToVoteStore           = 700129
 	GovErrPeekingVoteResult               = 700130
 	GovErrUnmatchedProposer               = 700131
-	GovErrInvalidVoterId				  = 700132
-	GovErrInvalidValidatorAddr			  = 700133
-	GovErrInvalidVoteOpinion 			  = 700134
+	GovErrInvalidVoterId                  = 700132
+	GovErrInvalidValidatorAddr            = 700133
+	GovErrInvalidVoteOpinion              = 700134
 )

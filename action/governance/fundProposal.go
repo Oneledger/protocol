@@ -95,7 +95,7 @@ func (fundProposalTx) Validate(ctx *action.Context, signedTx action.SignedTx) (b
 	//Check if Funder address is valid oneLedger address
 	err = fundProposal.FunderAddress.Err()
 	if err != nil {
-		return false, errors.Wrap(action.ErrInvalidContributorAddr, err.Error())
+		return false, errors.Wrap(action.ErrInvalidFunderAddr, err.Error())
 	}
 
 	return true, nil
