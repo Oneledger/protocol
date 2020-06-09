@@ -27,14 +27,13 @@ pipeline {
             }
         }
 
-        stage('utest') {
-          steps {
-              sh 'make utest'
-              catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
-              sh 'exit 1'
-            }
-        }
-    }
+        script {
+           try {
+             sh 'make utest'
+  } catch (Exception e) {
+      sh 'Handle the exception!'
+  }
+}
 
         stage ('validator test'){
             steps{
