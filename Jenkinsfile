@@ -28,12 +28,14 @@ pipeline {
         }
 
         stage ('utest') {
+            steps {
            try {
              sh 'make utest'
   } catch (Exception e) {
       sh 'Handle the exception!'
   }
 }
+        }
 
         stage ('validator test'){
             steps{
