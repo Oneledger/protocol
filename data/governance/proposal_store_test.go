@@ -183,6 +183,15 @@ func TestProposalStore_IterateProposalType(t *testing.T) {
 	assert.Equal(t, 2, proposalCount)
 }
 
+func TestProposalStore_FilterProposals(t *testing.T) {
+	proposals_general := proposalStore.FilterProposals(ProposalStateActive, keys.Address{}, ProposalTypeGeneral)
+	proposals_codeupdate := proposalStore.FilterProposals(ProposalStateActive, keys.Address{}, ProposalTypeCodeChange)
+	proposals_cfgupdate := proposalStore.FilterProposals(ProposalStateActive, keys.Address{}, ProposalTypeConfigUpdate)
+	assert.Equal(t, 2, len(proposals_general))
+	assert.Equal(t, 4, len(proposals_codeupdate))
+	assert.Equal(t, 4, len(proposals_cfgupdate))
+}
+
 func TestProposalStore_SetOptions(t *testing.T) {
 	err := govStore.SetProposalOptions(proposalOpt)
 	assert.Equal(t, nil, err)

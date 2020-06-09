@@ -35,17 +35,17 @@ if __name__ == "__main__":
     time.sleep(5)
 
     print "#### ACTIVE PROPOSALS: ####"
-    activeList = query_proposals("active")
+    activeList, funds, votes = query_proposals("active")
     if len(activeList) != len(proposals):
         sys.exit(-1)
 
     print "#### PASSED PROPOSALS: ####"
-    passedList = query_proposals("passed")
+    passedList, funds, votes = query_proposals("passed")
     if len(passedList) != 0:
         sys.exit(-1)
 
     print "#### FAILED PROPOSALS: ####"
-    failedList = query_proposals("failed")
+    failedList, funds, votes = query_proposals("failed")
     if len(failedList) != 0:
         sys.exit(-1)
 

@@ -3,6 +3,11 @@ import sys
 import hashlib
 from rpc_call import *
 
+#Proposal Types
+ProposalTypeConfigUpdate = 0x20
+ProposalTypeCodeChange   = 0x21
+ProposalTypeGeneral      = 0x22
+
 #Proposal Status
 ProposalStatusFunding    = 0x23
 ProposalStatusVoting     = 0x24
@@ -300,24 +305,23 @@ def broadcast_sync(raw_tx, signature, pub_key):
     })
     return resp["result"]
 
-def query_proposals(prefix):
+def query_proposals(prefix, proposer="", proposal_type=""):
     req = {
         "state": prefix,
-        "proposer": "",
-        "proposal_type": "",
+        "proposer": proposer,
+        "proposal_type": proposal_type,
     }
 
     resp = rpc_call('query.ListProposals', req)
-    print json.dumps(resp, indent=4)
-    return resp["result"]["proposals"]
+    result = resp["result"]
+    return result["proposals"], result["proposal_funds"], result["proposal_votes"]
 
 def query_proposal(proposal_id):
     req = {
         "proposal_id": proposal_id,
     }
     resp = rpc_call('query.ListProposal', req)
-    print json.dumps(resp, indent=4)
-    return resp["result"]["proposal"]
+    return resp["result"]["proposal"], resp["result"]["fund"]
 
 def query_balance(address):
     req = {"address": address}

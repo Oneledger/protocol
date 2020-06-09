@@ -48,11 +48,16 @@ def list_proposal_cli(pid, node):
         print "olclient list proposal failed"
         sys.exit(-1)
 
-def check_proposal_state(pid, outcome_expected, status_expected):
-    # check proposal status and outcome
-    prop = query_proposal(pid)
-    if prop['Status'] != status_expected:
+def check_proposal_state(pid, outcome_expected, status_expected, type_expected=ProposalTypeGeneral, funds=-1):
+    # check proposal status, outcome, status, fund
+    prop, cur_fund = query_proposal(pid)
+    if prop['status'] != status_expected:
         sys.exit(-1)
-    if prop['Outcome'] != outcome_expected:
+    if prop['outcome'] != outcome_expected:
+        sys.exit(-1)
+    if prop['proposal_type'] != type_expected:
+        sys.exit(-1)
+    cur_fund = int(cur_fund)
+    if funds != -1 and funds != cur_fund:
         sys.exit(-1)
     
