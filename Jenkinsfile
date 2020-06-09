@@ -29,6 +29,9 @@ pipeline {
         stage ('unit testing'){
             steps{
                 sh 'make utest'
+                catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
+                    sh "exit 1"
+                }
             }
         }
         stage ('validator test'){
