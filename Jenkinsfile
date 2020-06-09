@@ -52,37 +52,78 @@ pipeline {
                 }
             }
         }
-        stage ('ons test'){
-            steps{
-                sh 'make onstest'
+        stage('ons test') {
+            steps {
+                script {
+                    try {
+                        sh 'make onstest'
+                    } catch (e) {
+                        unstable('ons testing stage failed!')
+                        sh 'exit 0'
+                    }
+                }
             }
         }
-        stage ('withdraw test'){
-            steps{
-                sh 'make withdrawtest'
+        stage('withdraw test') {
+            steps {
+                script {
+                    try {
+                        sh 'make withdrawtest'
+                    } catch (e) {
+                        unstable('withdraw testing stage failed!')
+                        sh 'exit 0'
+                    }
+                }
             }
         }
-        stage ('governance test'){
-            steps{
-                sh 'make govtest'
+         stage('governance test') {
+            steps {
+                script {
+                    try {
+                        sh 'make govtest'
+                    } catch (e) {
+                        unstable('governance testing stage failed!')
+                        sh 'exit 0'
+                    }
+                }
             }
         }
-        stage ('all test'){
-            steps{
-                sh 'make alltest'
+        stage('all test') {
+            steps {
+                script {
+                    try {
+                        sh 'make alltest'
+                    } catch (e) {
+                        unstable('all testing stage failed!')
+                        sh 'exit 0'
+                    }
+                }
             }
         }
-        stage ('rpc Authtest'){
-            steps{
-                sh 'make rpcAuthtest'
+         stage('rpcAuthtest') {
+            steps {
+                script {
+                    try {
+                        sh 'make rpcAuthtest'
+                    } catch (e) {
+                        unstable('rpcAuthtesting stage failed!')
+                        sh 'exit 0'
+                    }
+                }
             }
         }
-        stage ('coverage test'){
-            steps{
-                sh 'make coverage'
+        stage('coverage test') {
+            steps {
+                script {
+                    try {
+                        sh 'make coverage'
+                    } catch (e) {
+                        unstable('coverage testing stage failed!')
+                        sh 'exit 0'
+                    }
+                }
             }
         }
-        
       stage('Results') {
           steps {
              publishHTML([allowMissing: false,
