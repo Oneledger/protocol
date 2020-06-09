@@ -33,7 +33,7 @@ pipeline {
                         sh 'make utest'
                     } catch (e) {
                         warnError('Stage failed!')
-                        sh 'exit 0'
+                        sh 'exit 1'
                     }
                 }
             }
