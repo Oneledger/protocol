@@ -30,7 +30,7 @@ func (e ExpireVotes) Validate(ctx *action.Context, signedTx action.SignedTx) (bo
 
 	//Check if proposal id is valid
 	if len(expireVotes.ProposalID) <= 0 {
-		return false, errors.New("invalid proposal id")
+		return false, action.ErrInvalidProposalId
 	}
 
 	return true, nil

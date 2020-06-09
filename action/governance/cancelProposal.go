@@ -86,10 +86,10 @@ func (c cancelProposalTx) Validate(ctx *action.Context, tx action.SignedTx) (boo
 
 	// validate params
 	if err = cc.ProposalId.Err(); err != nil {
-		return false, errors.Wrap(err, "invalid proposal id")
+		return false, action.ErrInvalidProposalId
 	}
 	if err = cc.Proposer.Err(); err != nil {
-		return false, errors.Wrap(err, "invalid proposer address")
+		return false, action.ErrInvalidProposerAddr
 	}
 
 	return true, nil

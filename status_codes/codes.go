@@ -112,12 +112,12 @@ const (
 	GovErrAddingProposalToActiveStore     = 700112
 	GovErrDeletingProposalFromActiveStore = 700113
 	GovErrAddingProposalToPassedStore     = 700114
-	GovErrDeletingProposalFromPassedStore = 700115
-	GovErrAddingProposalToFailedStore     = 700116
-	GovErrDeletingProposalFromFailedStore = 700117
-	GovErrDeductFunding                   = 700118
-	GovErrAddFunding                      = 700119
-	GovErrInvalidContributorAddr          = 700120
+	GovErrAddingProposalToFailedStore     = 700115
+	GovErrDeletingProposalFromFailedStore = 700116
+	GovErrDeductFunding                   = 700117
+	GovErrAddFunding                      = 700118
+	GovErrInvalidContributorAddr          = 700119
+	GovErrInvalidBeneficiaryAddr		  = 700120
 	GovErrFundingHeightReached            = 700121
 	GovErrNotInFunding                    = 700122
 	GovErrGettingValidatorList            = 700123
@@ -129,4 +129,7 @@ const (
 	GovErrAddingVoteToVoteStore           = 700129
 	GovErrPeekingVoteResult               = 700130
 	GovErrUnmatchedProposer               = 700131
+	GovErrInvalidVoterId				  = 700132
+	GovErrInvalidValidatorAddr			  = 700133
+	GovErrInvalidVoteOpinion 			  = 700134
 )

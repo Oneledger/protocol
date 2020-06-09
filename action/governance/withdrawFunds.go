@@ -50,13 +50,13 @@ func (wp WithdrawFunds) Validate(ctx *action.Context, signedTx action.SignedTx) 
 	//Check if fund contributor address is valid oneLedger address
 	err = withdrawFunds.Contributor.Err()
 	if err != nil {
-		return false, errors.Wrap(err, "invalid withdraw contributor address")
+		return false, errors.Wrap(action.ErrInvalidContributorAddr, err.Error())
 	}
 
 	//Check if withdraw beneficiary address is valid oneLedger address
 	err = withdrawFunds.Beneficiary.Err()
 	if err != nil {
-		return false, errors.Wrap(err, "invalid withdraw beneficiary address")
+		return false, errors.Wrap(action.ErrInvalidBeneficiaryAddr, err.Error())
 	}
 
 	return true, nil
@@ -94,7 +94,7 @@ func runWithdraw(ctx *action.Context, signedTx action.RawTx) (bool, action.Respo
 		ctx.Logger.Error("Proposal does not exist :", withdrawProposal.ProposalID)
 		result := action.Response{
 			Events: action.GetEvent(withdrawProposal.Tags(), "withdraw_proposal_does_not_exist"),
-			Log: action.ErrProposalNotExists.Marshal(),
+			Log: action.ErrProposalNotExists.Wrap(err).Marshal(),
 		}
 		return false, result
 	}

@@ -40,10 +40,10 @@ var (
 	ErrAddingProposalToActiveStore     = codes.ProtocolError{codes.GovErrAddingProposalToActiveStore, "failed to add proposal to ACTIVE store"}
 	ErrDeletingProposalFromActiveStore = codes.ProtocolError{codes.GovErrDeletingProposalFromActiveStore, "failed to delet proposal from ACTIVE store"}
 	ErrAddingProposalToPassedStore     = codes.ProtocolError{codes.GovErrAddingProposalToPassedStore, "failed to add proposal to PASSED store"}
-	ErrDeletingProposalFromPassedStore = codes.ProtocolError{codes.GovErrDeletingProposalFromPassedStore, "failed to delet proposal from PASSED store"}
 	ErrAddingProposalToFailedStore     = codes.ProtocolError{codes.GovErrAddingProposalToFailedStore, "failed to add proposal to FAILED store"}
 	ErrDeletingProposalFromFailedStore = codes.ProtocolError{codes.GovErrDeletingProposalFromFailedStore, "failed to delet proposal from FAILED store"}
 	ErrInvalidContributorAddr          = codes.ProtocolError{codes.GovErrInvalidContributorAddr, "invalid contributor address"}
+	ErrInvalidBeneficiaryAddr          = codes.ProtocolError{codes.GovErrInvalidBeneficiaryAddr, "invalid withdraw beneficiary address"}
 	ErrProposalWithdrawNotEligible     = codes.ProtocolError{codes.GovErrProposalWithdrawNotEligible, "proposal does not meet withdraw requirement"}
 	ErrNoSuchContributor               = codes.ProtocolError{codes.GovErrNoSuchContributor, "no such contributor funded this proposal"}
 	ErrNotInVoting                     = codes.ProtocolError{codes.GovErrNotInVoting, "proposal not in VOTING status"}
@@ -51,5 +51,8 @@ var (
 	ErrAddingVoteToVoteStore           = codes.ProtocolError{codes.GovErrAddingVoteToVoteStore, "failed to add vote to vote store"}
 	ErrPeekingVoteResult               = codes.ProtocolError{codes.GovErrPeekingVoteResult, "failed to peek vote result"}
 	ErrUnmatchedProposer               = codes.ProtocolError{codes.GovErrUnmatchedProposer, "proposer does not match"}
+	ErrInvalidVoterId                  = codes.ProtocolError{codes.GovErrInvalidVoterId, "invalid voter id"}
+	ErrInvalidValidatorAddr            = codes.ProtocolError{codes.GovErrInvalidValidatorAddr, "invalid validator address"}
+	ErrInvalidVoteOpinion              = codes.ProtocolError{codes.GovErrInvalidVoteOpinion, "invalid vote opinion"}
 
 )

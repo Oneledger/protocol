@@ -45,16 +45,16 @@ func (v voteProposalTx) Validate(ctx *action.Context, tx action.SignedTx) (bool,
 
 	// validate params
 	if err = vote.ProposalID.Err(); err != nil {
-		return false, errors.Wrap(err, "invalid proposal id")
+		return false, action.ErrInvalidProposalId
 	}
 	if err = vote.Address.Err(); err != nil {
-		return false, errors.Wrap(err, "invalid voter address")
+		return false, action.ErrInvalidVoterId
 	}
 	if !ctx.Validators.IsValidatorAddress(vote.ValidatorAddress) {
-		return false, errors.Wrap(err, "not a validator address")
+		return false, action.ErrInvalidValidatorAddr
 	}
 	if err = vote.Opinion.Err(); err != nil {
-		return false, errors.Wrap(err, "invalid vote opinion")
+		return false, action.ErrInvalidVoteOpinion
 	}
 
 	return true, nil
