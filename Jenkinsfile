@@ -32,8 +32,8 @@ pipeline {
                 script {
                     try {
                         sh 'make utest'
-                    } catch (e) {
-                        currentBuild.result = 'SUCCESS'
+                    } catchError (stageResult: 'FAILURE') {
+                        
                         sh 'exit 0'
                     }
                 }
