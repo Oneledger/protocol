@@ -28,7 +28,9 @@ pipeline {
 
         try {
         stage ('unit testing'){
+               steps {
                 sh 'make utest'
+             }
         }
  } catch (Exception e) {
     echo "Stage failed, but we still continue"
