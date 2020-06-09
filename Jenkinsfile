@@ -20,12 +20,16 @@ pipeline {
     ])   
             }
         }
+        try {
         stage ('build binary'){
             steps{
                 sh 'make install_c'
             }
         }
-
+     } catch (Exception e) {
+       echo "stage failed, but we still continue"
+     }
+        
         try {
         stage ('unit testing'){
                steps {
