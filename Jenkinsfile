@@ -26,11 +26,11 @@ pipeline {
             }
         }
 
-        stage('utest') {
-          steps {
-              sh 'make utest', returnStatus:true
-        }
+        stage('unit testing'){
+            steps{
+            build job: sh 'make utest', propagate: false
     }
+}
 
         stage ('validator test'){
             steps{
