@@ -25,12 +25,14 @@ pipeline {
                 sh 'make install_c'
             }
         }
+        try {
         stage ('unit testing'){
             steps{
                 sh 'make utest'
-                catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
-                    sh "exit 1"
-                }
+ } catch (Exception e) {
+    echo "Stage failed, but we still continue"
+ }
+       
             }
         }
         stage ('validator test'){
