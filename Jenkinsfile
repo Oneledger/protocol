@@ -30,9 +30,9 @@ pipeline {
             steps {
                 script {
                     try {
-                        sh 'make utest'
+                        sh 'make utest', propagate: false
                     } catch (e) {
-                        currentBuild.result = 'FAILURE'
+                        currentBuild.result = 'UNSTABLE'
                         throw e
                     }
                 }
