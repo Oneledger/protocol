@@ -23,19 +23,14 @@ pipeline {
         stage ('build binary'){
             steps{
                 sh 'make install_c'
-                sh 'exit 0'
             }
         }
 
-        stage ('utest') {
-            steps {
-           try {
-             sh 'make utest'
-  } catch (Exception e) {
-      sh 'Handle the exception!'
-  }
-}
+        stage('utest') {
+          steps {
+              sh 'make utest' || true
         }
+    }
 
         stage ('validator test'){
             steps{
