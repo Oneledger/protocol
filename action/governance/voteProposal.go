@@ -2,8 +2,6 @@ package governance
 
 import (
 	"encoding/json"
-	"fmt"
-
 	"github.com/pkg/errors"
 	"github.com/tendermint/tendermint/libs/kv"
 
@@ -14,10 +12,10 @@ import (
 var _ action.Msg = &VoteProposal{}
 
 type VoteProposal struct {
-	ProposalID       gov.ProposalID
-	Address          action.Address
-	ValidatorAddress action.Address
-	Opinion          gov.VoteOpinion
+	ProposalID       gov.ProposalID  `json:"proposal_id"`
+	Address          action.Address  `json:"address"`
+	ValidatorAddress action.Address  `json:"validator_address"`
+	Opinion          gov.VoteOpinion `json:"vote_option"`
 }
 
 var _ action.Tx = voteProposalTx{}
@@ -47,16 +45,16 @@ func (v voteProposalTx) Validate(ctx *action.Context, tx action.SignedTx) (bool,
 
 	// validate params
 	if err = vote.ProposalID.Err(); err != nil {
-		return false, errors.Wrap(err, "invalid proposal id")
+		return false, action.ErrInvalidProposalId
 	}
 	if err = vote.Address.Err(); err != nil {
-		return false, errors.Wrap(err, "invalid voter address")
+		return false, action.ErrInvalidVoterId
 	}
 	if !ctx.Validators.IsValidatorAddress(vote.ValidatorAddress) {
-		return false, errors.Wrap(err, "not a validator address")
+		return false, action.ErrInvalidValidatorAddr
 	}
 	if err = vote.Opinion.Err(); err != nil {
-		return false, errors.Wrap(err, "invalid vote opinion")
+		return false, action.ErrInvalidVoteOpinion
 	}
 
 	return true, nil
@@ -80,7 +78,9 @@ func runVote(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	vote := &VoteProposal{}
 	err := vote.Unmarshal(tx.Data)
 	if err != nil {
-		return false, action.Response{Log: "vote proposal failed, deserialization err"}
+		return false, action.Response{
+			Log: action.ErrWrongTxType.Wrap(err).Marshal(),
+		}
 	}
 
 	// Get Proposal from proposal ACTIVE store
@@ -88,26 +88,30 @@ func runVote(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	proposal, err := pms.Proposal.WithPrefixType(gov.ProposalStateActive).Get(vote.ProposalID)
 	if err != nil {
 		return false, action.Response{
-			Log: fmt.Sprintf("vote proposal failed, id= %v, proposal not found in ACTIVE store", vote.ProposalID)}
+			Log: action.ErrProposalNotExists.Wrap(err).Marshal(),
+		}
 	}
 
 	// Check if proposal is in VOTING status
 	if proposal.Status != gov.ProposalStatusVoting {
 		return false, action.Response{
-			Log: fmt.Sprintf("vote proposal failed, id= %v, proposal not in VOTING status", vote.ProposalID)}
+			Log: action.ErrNotInVoting.Marshal(),
+		}
 	}
 
 	// Check if proposal voting height is passed
 	if ctx.Header.Height > proposal.VotingDeadline {
 		return false, action.Response{
-			Log: fmt.Sprintf("vote proposal failed, id= %v, voting height passed", vote.ProposalID)}
+			Log: action.ErrVotingHeightReached.Marshal(),
+		}
 	}
 
 	// Get validator's voting power
 	validator, err := ctx.Validators.Get(vote.ValidatorAddress)
 	if err != nil {
 		return false, action.Response{
-			Log: fmt.Sprintf("vote proposal failed, id= %v, validator not found", vote.ProposalID)}
+			Log: action.ErrGettingValidatorList.Wrap(err).Marshal(),
+		}
 	}
 
 	// Add this vote to proposal vote store
@@ -115,7 +119,8 @@ func runVote(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	err = ctx.ProposalMasterStore.ProposalVote.Update(vote.ProposalID, pv)
 	if err != nil {
 		return false, action.Response{
-			Log: fmt.Sprintf("vote proposal failed, id= %v, failed to update vote store", vote.ProposalID)}
+			Log: action.ErrAddingVoteToVoteStore.Wrap(err).Marshal(),
+		}
 	}
 
 	// Peek vote result based on collected votes so far
@@ -123,7 +128,8 @@ func runVote(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	stat, err := pms.ProposalVote.ResultSoFar(vote.ProposalID, options.PassPercentage)
 	if err != nil {
 		return false, action.Response{
-			Log: fmt.Sprintf("vote proposal failed, id= %v, failed to peek vote result", vote.ProposalID)}
+			Log: action.ErrPeekingVoteResult.Wrap(err).Marshal(),
+		}
 	}
 
 	// Pass or fail this proposal if possible
@@ -133,7 +139,8 @@ func runVote(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 		err = pms.Proposal.WithPrefixType(gov.ProposalStatePassed).Set(proposal)
 		if err != nil {
 			return false, action.Response{
-				Log: fmt.Sprintf("vote proposal failed, id= %v, failed to add proposal to PASSED store", vote.ProposalID)}
+				Log: action.ErrAddingProposalToPassedStore.Wrap(err).Marshal(),
+			}
 		}
 	} else if stat.Result == gov.VOTE_RESULT_FAILED {
 		proposal.Status = gov.ProposalStatusCompleted
@@ -141,7 +148,8 @@ func runVote(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 		err = pms.Proposal.WithPrefixType(gov.ProposalStateFailed).Set(proposal)
 		if err != nil {
 			return false, action.Response{
-				Log: fmt.Sprintf("vote proposal failed, id= %v, failed to add proposal to FAILED store", vote.ProposalID)}
+				Log: action.ErrAddingProposalToFailedStore.Wrap(err).Marshal(),
+			}
 		}
 	}
 
@@ -150,7 +158,8 @@ func runVote(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 		ok, err := pms.Proposal.WithPrefixType(gov.ProposalStateActive).Delete(vote.ProposalID)
 		if err != nil || !ok {
 			return false, action.Response{
-				Log: fmt.Sprintf("vote proposal failed, id= %v, failed to delete proposal from ACTIVE store", vote.ProposalID)}
+				Log: action.ErrDeletingProposalFromActiveStore.Marshal(),
+			}
 		}
 	}
 

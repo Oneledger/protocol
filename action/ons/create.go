@@ -2,9 +2,8 @@ package ons
 
 import (
 	"bytes"
-	"encoding/hex"
 	"encoding/json"
-	"fmt"
+	codes "github.com/Oneledger/protocol/status_codes"
 	"github.com/tendermint/tendermint/libs/kv"
 	"math/big"
 
@@ -141,27 +140,35 @@ func runCreate(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	create := &DomainCreate{}
 	err := create.Unmarshal(tx.Data)
 	if err != nil {
-		return false, action.Response{Log: err.Error()}
+		return false, action.Response{
+			Log: action.ErrWrongTxType.Wrap(err).Marshal(),
+		}
 	}
 
 	isSub := create.Name.IsSub()
 
 	// check domain existence and set to db
 	if ctx.Domains.Exists(create.Name) {
-		return false, action.Response{Log: fmt.Sprintf("domain already exist: %s", create.Name)}
+		return false, action.Response{
+			Log: codes.ErrDomainExists.Marshal(),
+		}
 	}
 
 	// we debit the buying price from Sender
 	price := create.BuyingPrice.ToCoin(ctx.Currencies)
 	err = ctx.Balances.MinusFromAddress(create.Owner.Bytes(), price)
 	if err != nil {
-		return false, action.Response{Log: errors.Wrap(err, hex.EncodeToString(create.Owner)).Error()}
+		return false, action.Response{
+			Log: codes.ErrDebitingFromAddress.Wrap(err).Marshal(),
+		}
 	}
 
 	// add domain price to feepool
 	err = ctx.FeePool.AddToPool(price)
 	if err != nil {
-		return false, action.Response{Log: err.Error()}
+		return false, action.Response{
+			Log: codes.ErrAddingToFeePool.Wrap(err).Marshal(),
+		}
 	}
 
 	opt := ctx.Domains.GetOptions()
@@ -169,7 +176,7 @@ func runCreate(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	ok := verifyDomainName(create.Name, opt)
 	if !ok {
 		return false, action.Response{
-			Log: ErrInvalidDomain.Error(),
+			Log: codes.ErrInvalidDomainName.Marshal(),
 		}
 	}
 
@@ -178,7 +185,7 @@ func runCreate(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 		ok = opt.IsValidURI(create.Uri)
 		if !ok {
 			return false, action.Response{
-				Log: "invalid uri provided",
+				Log: codes.ErrInvalidUri.Marshal(),
 			}
 		}
 	}
@@ -189,22 +196,30 @@ func runCreate(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 		// if sub-domain, check if parent exists on our blockchain
 		parentName, err := create.Name.GetParentName()
 		if err != nil {
-			return false, action.Response{Log: err.Error()}
+			return false, action.Response{
+				Log: codes.ErrGettingParentName.Wrap(err).Marshal(),
+			}
 		}
 		parent, err := ctx.Domains.Get(parentName)
 		//Check if Parent exists in Domain Store
 		if err != nil {
-			return false, action.Response{Log: "Parent domain doesn't exist, cannot create sub domain!"}
+			return false, action.Response{
+				Log: codes.ErrParentDoesNotExist.Wrap(err).Marshal(),
+			}
 		}
 
 		// check if sender is owner of Parent Domain
 		if !bytes.Equal(parent.Owner, create.Owner) {
-			return false, action.Response{Log: "parent domain not owned"}
+			return false, action.Response{
+				Log: codes.ErrParentNotOwned.Marshal(),
+			}
 		}
 
 		// buying price should be more than base domain price
 		if create.BuyingPrice.Value.BigInt().Cmp(opt.BaseDomainPrice.BigInt()) < 0 {
-			return false, action.Response{Log: action.ErrInvalidAmount.Error()}
+			return false, action.Response{
+				Log: action.ErrInvalidAmount.Marshal(),
+			}
 		}
 
 		// set subdomain expiry height same as parent expiry height
@@ -216,7 +231,7 @@ func runCreate(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 		extend, err := calculateExpiry(&create.BuyingPrice.Value, &opt.BaseDomainPrice, &opt.PerBlockFees)
 		if err != nil {
 			return false, action.Response{
-				Log: err.Error(),
+				Log: codes.ErrFailedToCalculateExpiry.Wrap(err).Marshal(),
 			}
 		}
 
@@ -233,12 +248,16 @@ func runCreate(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 		expiry,
 	)
 	if err != nil {
-		return false, action.Response{Log: err.Error()}
+		return false, action.Response{
+			Log: codes.ErrFailedToCreateDomain.Wrap(err).Marshal(),
+		}
 	}
 
 	err = ctx.Domains.Set(domain)
 	if err != nil {
-		return false, action.Response{Log: err.Error()}
+		return false, action.Response{
+			Log: codes.ErrFailedAddingDomainToStore.Wrap(err).Marshal(),
+		}
 	}
 
 	result := action.Response{
