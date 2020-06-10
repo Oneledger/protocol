@@ -96,7 +96,7 @@ const (
 	ETHTrackerNotFoundSuccess = 600101
 	ETHTrackerNotFoundOngoing = 600102
 
-	Governance
+	GovErr								  = 7001
 	GovErrVoteSetupValidator              = 700100
 	GovErrVoteUpdateVote                  = 700101
 	GovErrVoteDeleteVoteRecords           = 700102
