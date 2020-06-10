@@ -69,7 +69,7 @@ type CancelProposalRequest struct {
 
 type WithdrawFundsRequest struct {
 	ProposalID    governance.ProposalID `json:"proposal_id"`
-	Contributor   keys.Address          `json:"contributor_address"`
+	Funder        keys.Address          `json:"funder_address"`
 	WithdrawValue action.Amount         `json:"withdraw_value"`
 	Beneficiary   keys.Address          `json:"beneficiary_address"`
 	GasPrice      action.Amount         `json:"gasPrice"`

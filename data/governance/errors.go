@@ -10,5 +10,5 @@ var (
 	ErrVoteUpdateVoteFailed        = codes.ProtocolError{Code: codes.GovErrVoteUpdateVote, Msg: "ErrVote, failed to vote proposal"}
 	ErrVoteDeleteVoteRecordsFailed = codes.ProtocolError{Code: codes.GovErrVoteDeleteVoteRecords, Msg: "ErrVote, failed to delete voting records"}
 	ErrVoteCheckVoteResultFailed   = codes.ProtocolError{Code: codes.GovErrVoteCheckVoteResult, Msg: "ErrVote, failed to check voting result"}
-	ErrWithdrawCheckFundsFailed    = codes.ProtocolError{Code: codes.GovErrWithdrawCheckFundsFailed, Msg: "ErrWithdraw, failed to check available funds to withdraw for this contributor"}
+	ErrWithdrawCheckFundsFailed    = codes.ProtocolError{Code: codes.GovErrWithdrawCheckFundsFailed, Msg: "ErrWithdraw, failed to check available funds to withdraw for this funder"}
 )

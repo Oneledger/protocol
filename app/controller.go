@@ -29,6 +29,7 @@ import (
 	"github.com/Oneledger/protocol/utils"
 	"github.com/Oneledger/protocol/utils/transition"
 	"github.com/Oneledger/protocol/version"
+	codes "github.com/Oneledger/protocol/status_codes"
 )
 
 // The following set of functions will be passed to the abciController
@@ -170,10 +171,12 @@ func (app *App) txChecker() txChecker {
 
 		feeOk, feeResponse := handler.ProcessFee(txCtx, *tx, gas, storage.Gas(len(msg.Tx)))
 
+		logString := marshalLog(ok, response, feeResponse)
+
 		result := ResponseCheckTx{
 			Code:      getCode(ok && feeOk).uint32(),
 			Data:      response.Data,
-			Log:       response.Log + feeResponse.Log,
+			Log:       logString,
 			Info:      response.Info,
 			GasWanted: feeResponse.GasWanted,
 			GasUsed:   feeResponse.GasUsed,
@@ -224,10 +227,12 @@ func (app *App) txDeliverer() txDeliverer {
 
 		feeOk, feeResponse := handler.ProcessFee(txCtx, *tx, gas, storage.Gas(len(msg.Tx)))
 
+		logString := marshalLog(ok, response, feeResponse)
+
 		result := ResponseDeliverTx{
 			Code:      getCode(ok && feeOk).uint32(),
 			Data:      response.Data,
-			Log:       response.Log + feeResponse.Log,
+			Log:       logString,
 			Info:      response.Info,
 			GasWanted: feeResponse.GasWanted,
 			GasUsed:   feeResponse.GasUsed,
@@ -434,4 +439,30 @@ func updateProposals(proposalMaster *governance.ProposalMasterStore, jobStore *j
 func (app *App) VerifyCache(tx []byte) bool {
 	hash := utils.SHA2(tx)
 	return app.Context.internalService.ExistTx(hash)
+}
+
+func marshalLog(ok bool, response action.Response, feeResponse action.Response) string {
+	var errorObj codes.ProtocolError
+	var err error
+	if response.Log == "" && feeResponse.Log == "" {
+		return ""
+	}
+	if !ok {
+		errorObj, err = codes.UnMarshalError(response.Log)
+		if err != nil {
+			// means response.Log is a regular string, from where error marshal has not
+			// been done(will do it later)
+			errorObj = codes.ProtocolError{
+				Code: codes.GeneralErr,
+				Msg: response.Log,
+			}
+		}
+
+	}
+	if feeResponse.Log != "" {
+		errorObj.Msg += ", fee response log: " + feeResponse.Log
+	}
+
+	return errorObj.Marshal()
+
 }

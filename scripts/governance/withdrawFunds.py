@@ -7,7 +7,7 @@ addr_list = addresses()
 _pid = "id_30034"
 _proposer = addr_list[0]
 _initial_funding = (int("2") * 10 ** 9)
-_contributor = addr_list[1]
+_funder = addr_list[1]
 _funds_amount = (int("2") * 10 ** 9)
 _withdraw_amount = (int("2") * 10 ** 9)
 _withdraw_amount_too_much = (int("5") * 10 ** 9)
@@ -25,17 +25,17 @@ def fund_proposal(pid, amount, funder):
     time.sleep(2)
 
 
-def withdraw_fund(pid, contributor, amount, beneficiary):
+def withdraw_fund(pid, funder, amount, beneficiary):
     # fund the proposal
-    fund_withdraw = ProposalFundsWithdraw(pid, contributor, amount, beneficiary)
-    fund_withdraw.withdraw_fund(contributor)
+    fund_withdraw = ProposalFundsWithdraw(pid, funder, amount, beneficiary)
+    fund_withdraw.withdraw_fund(funder)
     time.sleep(2)
 
 
-def withdraw_fund_malicious(wrong_contributor, pid, contributor, amount, beneficiary):
+def withdraw_fund_malicious(wrong_funder, pid, funder, amount, beneficiary):
     # fund the proposal
-    fund_withdraw = ProposalFundsWithdraw(pid, contributor, amount, beneficiary)
-    fund_withdraw.withdraw_fund(wrong_contributor)
+    fund_withdraw = ProposalFundsWithdraw(pid, funder, amount, beneficiary)
+    fund_withdraw.withdraw_fund(wrong_funder)
     time.sleep(2)
 
 
@@ -52,28 +52,28 @@ if __name__ == "__main__":
     print "#### PROPOSER'S BALANCE AFTER CREATING PROPOSAL: ####"
     query_balance(_proposer)
 
-    print "#### CONTRIBUTOR'S BALANCE BEFORE FUNDING: ####"
-    query_balance(_contributor)
+    print "#### FUNDER'S BALANCE BEFORE FUNDING: ####"
+    query_balance(_funder)
 
     print "#### THIS PROPOSAL BEFORE FUNDING: ####"
     query_proposal(_encoded_pid)
 
     # fund proposal
-    fund_proposal(_encoded_pid, _initial_funding, _contributor)
+    fund_proposal(_encoded_pid, _initial_funding, _funder)
     time.sleep(5)
 
     print "#### THIS PROPOSAL AFTER FUNDING: ####"
     query_proposal(_encoded_pid)
 
-    print "#### CONTRIBUTOR'S BALANCE AFTER FUNDING: ####"
-    query_balance(_contributor)
+    print "#### FUNDER'S BALANCE AFTER FUNDING: ####"
+    query_balance(_funder)
 
     for x in range(_wait):
         print("wait for 60s, " + str(_wait * 10 - x * 10) + "s left")
         time.sleep(10)
 
     print bcolors.WARNING + "#### TRY TO WITHDRAW MORE THAN FUNDED AMOUNT, SHOULD FAIL: ####" + bcolors.ENDC
-    withdraw_fund(_encoded_pid, _contributor, _withdraw_amount_too_much, _contributor)
+    withdraw_fund(_encoded_pid, _funder, _withdraw_amount_too_much, _funder)
     time.sleep(5)
 
     print "#### PROPOSER'S BALANCE BEFORE WITHDRAWING: ####"
@@ -92,25 +92,25 @@ if __name__ == "__main__":
     print "#### PROPOSER'S BALANCE AFTER WITHDRAWING: ####"
     query_balance(_proposer)
 
-    print "#### CONTRIBUTOR'S BALANCE BEFORE WITHDRAWING: ####"
-    query_balance(_contributor)
+    print "#### FUNDER'S BALANCE BEFORE WITHDRAWING: ####"
+    query_balance(_funder)
 
     # withdraw proposal funds
-    withdraw_fund(_encoded_pid, _contributor, _withdraw_amount, _contributor)
+    withdraw_fund(_encoded_pid, _funder, _withdraw_amount, _funder)
     time.sleep(5)
 
-    print "#### CONTRIBUTOR'S BALANCE AFTER WITHDRAWING: ####"
-    query_balance(_contributor)
+    print "#### FUNDER'S BALANCE AFTER WITHDRAWING: ####"
+    query_balance(_funder)
 
     print "#### THIS PROPOSAL AFTER FULLY WITHDRAWING: ####"
     query_proposal(_encoded_pid)
 
     print bcolors.WARNING + "#### TRY TO WITHDRAW WHEN NO FUNDS TO WITHDRAW, SHOULD FAIL: ####" + bcolors.ENDC
-    withdraw_fund(_encoded_pid, _contributor, _withdraw_amount, _contributor)
+    withdraw_fund(_encoded_pid, _funder, _withdraw_amount, _funder)
     time.sleep(5)
 
-    print bcolors.WARNING + "#### TRY TO WITHDRAW OTHER CONTRIBUTOR'S FUNDS, SHOULD FAIL: ####" + bcolors.ENDC
-    withdraw_fund_malicious(_proposer, _encoded_pid, _contributor, _withdraw_amount, _contributor)
+    print bcolors.WARNING + "#### TRY TO WITHDRAW OTHER FUNDER'S FUNDS, SHOULD FAIL: ####" + bcolors.ENDC
+    withdraw_fund_malicious(_proposer, _encoded_pid, _funder, _withdraw_amount, _funder)
     time.sleep(5)
 
     # below applied when run withdrawFunds.py only

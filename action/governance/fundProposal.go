@@ -15,9 +15,9 @@ import (
 var _ action.Msg = &FundProposal{}
 
 type FundProposal struct {
-	ProposalId    governance.ProposalID
-	FunderAddress keys.Address
-	FundValue     action.Amount
+	ProposalId    governance.ProposalID  `json:"proposal_id"`
+	FunderAddress keys.Address           `json:"funder_address"`
+	FundValue     action.Amount 		 `json:"fund_value"`
 }
 
 func (fp FundProposal) Signers() []action.Address {
@@ -95,7 +95,7 @@ func (fundProposalTx) Validate(ctx *action.Context, signedTx action.SignedTx) (b
 	//Check if Funder address is valid oneLedger address
 	err = fundProposal.FunderAddress.Err()
 	if err != nil {
-		return false, errors.Wrap(err, "invalid funder address")
+		return false, errors.Wrap(action.ErrInvalidFunderAddr, err.Error())
 	}
 
 	return true, nil
@@ -119,7 +119,9 @@ func runFundProposal(ctx *action.Context, tx action.RawTx) (bool, action.Respons
 	fundProposal := FundProposal{}
 	err := fundProposal.Unmarshal(tx.Data)
 	if err != nil {
-		return false, action.Response{}
+		return false, action.Response{
+			Log: action.ErrWrongTxType.Wrap(err).Marshal(),
+		}
 	}
 	//1. check if proposal exists
 	proposal, err := ctx.ProposalMasterStore.Proposal.Get(fundProposal.ProposalId)
@@ -127,6 +129,7 @@ func runFundProposal(ctx *action.Context, tx action.RawTx) (bool, action.Respons
 		ctx.Logger.Error("Proposal does not exist :", fundProposal.ProposalId)
 		result := action.Response{
 			Events: action.GetEvent(fundProposal.Tags(), "fund_proposal_does_not_exist"),
+			Log: action.ErrProposalNotExists.Wrap(err).Marshal(),
 		}
 		return false, result
 	}
@@ -137,6 +140,7 @@ func runFundProposal(ctx *action.Context, tx action.RawTx) (bool, action.Respons
 		ctx.Logger.Debug("Funding Height has already been reached")
 		result := action.Response{
 			Events: action.GetEvent(fundProposal.Tags(), "fund_proposal_height_crossed"),
+			Log: action.ErrFundingHeightReached.Marshal(),
 		}
 		return false, result
 
@@ -147,6 +151,7 @@ func runFundProposal(ctx *action.Context, tx action.RawTx) (bool, action.Respons
 		ctx.Logger.Debug("Cannot fund proposal , Current proposal state : ", proposal.Status)
 		result := action.Response{
 			Events: action.GetEvent(fundProposal.Tags(), "fund_proposal_not_funding_state"),
+			Log: action.ErrNotInFunding.Marshal(),
 		}
 		return false, result
 	}
@@ -167,13 +172,17 @@ func runFundProposal(ctx *action.Context, tx action.RawTx) (bool, action.Respons
 		//In the value, we will just update the Voting power. The vote / opinion field remains empty for now
 		validatorList, err := ctx.Validators.GetValidatorSet()
 		if err != nil {
-			return false, action.Response{Log: "Fund proposal failed in getting validator list"}
+			return false, action.Response{
+				Log: action.ErrGettingValidatorList.Wrap(err).Marshal(),
+			}
 		}
 		for _, v := range validatorList {
 			vote := governance.NewProposalVote(v.Address, governance.OPIN_UNKNOWN, v.Power)
 			err = ctx.ProposalMasterStore.ProposalVote.Setup(proposal.ProposalID, vote)
 			if err != nil {
-				return false, action.Response{Log: "setup voting validator failed"}
+				return false, action.Response{
+					Log: action.ErrSetupVotingValidator.Wrap(err).Marshal(),
+				}
 			}
 		}
 
@@ -182,6 +191,7 @@ func runFundProposal(ctx *action.Context, tx action.RawTx) (bool, action.Respons
 		if err != nil {
 			result := action.Response{
 				Events: action.GetEvent(fundProposal.Tags(), "update_proposal_failed"),
+				Log: action.ErrAddingProposalToActiveStore.Wrap(err).Marshal(),
 			}
 			return false, result
 		}
@@ -193,6 +203,7 @@ func runFundProposal(ctx *action.Context, tx action.RawTx) (bool, action.Respons
 	if err != nil {
 		result := action.Response{
 			Events: action.GetEvent(fundProposal.Tags(), "fund_proposal_deduction_failed"),
+			Log: action.ErrDeductFunding.Wrap(err).Marshal(),
 		}
 		return false, result
 	}
@@ -201,6 +212,7 @@ func runFundProposal(ctx *action.Context, tx action.RawTx) (bool, action.Respons
 		ctx.Logger.Error("Failed to add funds to proposal:", fundProposal.ProposalId)
 		result := action.Response{
 			Events: action.GetEvent(fundProposal.Tags(), "fund_proposal_AddFund_failed"),
+			Log: action.ErrAddFunding.Wrap(err).Marshal(),
 		}
 		return false, result
 	}
