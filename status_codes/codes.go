@@ -5,11 +5,9 @@
 package status_codes
 
 const (
+	GeneralErr          = 999 // all errors without error code
 	InvalidParams       = 1001
 	IncorrectAddress    = 100101
-	DomainMissing       = 100102
-	OwnerAddressMissing = 100103
-	OnSaleFlagNotSet    = 100104
 
 	IOError        = 1002
 	IOErrorNodeKey = 100201
@@ -41,6 +39,23 @@ const (
 	InternalErrorListWitnesses              = 100610
 	InternalErrorGettingProposal            = 100611
 
+	ONSError                                = 1007
+	ONSErrDomainMissing                     = 100701
+	ONSErrOwnerAddressMissing               = 100702
+	ONSErrOnSaleFlagNotSet                  = 100703
+	ONSErrDomainExists                      = 100704
+	ONSErrDebitingFromAddress               = 100705
+	ONSErrAddingToFeePool                   = 100706
+	ONSErrInvalidUri		                = 100707
+	ONSErrGettingParentName                 = 100708
+	ONSErrParentDoesNotExist                = 100709
+	ONSErrParentNotOwned                    = 100710
+	ONSErrFailedToCalculateExpiry           = 100711
+	ONSErrFailedToCreateDomain              = 100712
+	ONSErrFailedAddingDomainToStore         = 100713
+	ONSErrInvalidDomainName                 = 100714
+
+
 	WalletError               = 2006
 	WalletErrorAddingAccount  = 200601
 	WalletErrorGettingAccount = 200602
@@ -54,7 +69,7 @@ const (
 	AccountsErrorGeneratingNewAccount = 200701
 
 	// Transaction statuses
-	TxErrMisingData         = 300101
+	TxErrMissingData        = 300101
 	TxErrUnserializable     = 300102
 	TxErrWrongTxType        = 300103
 	TxErrInvalidAmount      = 300104
@@ -88,6 +103,42 @@ const (
 	ETHTrackerNotFoundSuccess = 600101
 	ETHTrackerNotFoundOngoing = 600102
 
+	GovErr								  = 7001
+	GovErrVoteSetupValidator              = 700100
+	GovErrVoteUpdateVote                  = 700101
+	GovErrVoteDeleteVoteRecords           = 700102
+	GovErrVoteCheckVoteResult             = 700103
+	GovErrWithdrawCheckFundsFailed        = 700104
+	GovErrGetProposalOptions              = 700105
+	GovErrInvalidProposalId               = 700106
+	GovErrInvalidProposalType             = 700107
+	GovErrInvalidProposerAddr             = 700108
+	GovErrInvalidProposalDesc             = 700109
+	GovErrProposalExists                  = 700110
+	GovErrProposalNotExists               = 700111
+	GovErrAddingProposalToActiveStore     = 700112
+	GovErrDeletingProposalFromActiveStore = 700113
+	GovErrAddingProposalToPassedStore     = 700114
+	GovErrAddingProposalToFailedStore     = 700115
+	GovErrDeletingProposalFromFailedStore = 700116
+	GovErrDeductFunding                   = 700117
+	GovErrAddFunding                      = 700118
+	GovErrInvalidFunderAddr               = 700119
+	GovErrInvalidBeneficiaryAddr          = 700120
+	GovErrFundingHeightReached            = 700121
+	GovErrNotInFunding                    = 700122
+	GovErrGettingValidatorList            = 700123
+	GovErrSetupVotingValidator            = 700124
+	GovErrProposalWithdrawNotEligible     = 700125
+	GovErrNoSuchFunder                    = 700126
+	GovErrNotInVoting                     = 700127
+	GovErrVotingHeightReached             = 700128
+	GovErrAddingVoteToVoteStore           = 700129
+	GovErrPeekingVoteResult               = 700130
+	GovErrUnmatchedProposer               = 700131
+	GovErrInvalidVoterId                  = 700132
+	GovErrInvalidValidatorAddr            = 700133
+	GovErrInvalidVoteOpinion              = 700134
 	//Governance
 	GovErrVoteSetupValidator       = 700100
 	GovErrVoteUpdateVote           = 700101

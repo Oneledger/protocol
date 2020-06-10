@@ -4,14 +4,17 @@
 
 package status_codes
 
-import "fmt"
+import (
+	"encoding/json"
+	"fmt"
+)
 
 /*
 	Protocol Error definition
 */
 type ProtocolError struct {
-	Code int
-	Msg  string
+	Code int          `json:"code"`
+	Msg  string		  `json:"msg"`
 }
 
 func (se ProtocolError) Error() string {
@@ -25,6 +28,18 @@ func (se ProtocolError) ErrorMsg() string {
 func (se ProtocolError) Wrap(err error) *ProtocolError {
 	return &ProtocolError{se.Code,
 		se.Msg + ": " + err.Error()}
+}
+
+func (se ProtocolError) Marshal() string {
+	errInByte, _ := json.Marshal(se)
+	return string(errInByte)
+}
+
+func UnMarshalError(str string) (ProtocolError, error) {
+	errByte := []byte(str)
+	errObj := ProtocolError{}
+	err := json.Unmarshal(errByte, &errObj)
+	return errObj, err
 }
 
 func WrapError(err error, code int, msg string) *ProtocolError {
@@ -67,10 +82,23 @@ var (
 	ErrGetTx           = ProtocolError{TxNotFound, "error get tx from tendermint"}
 
 	// ONS errors
-	ErrBadName        = ProtocolError{DomainMissing, "domain name not provided"}
-	ErrBadOwner       = ProtocolError{OwnerAddressMissing, "owner address not provided"}
-	ErrDomainNotFound = ProtocolError{DomainNotFound, "domain not found"}
-	ErrFlagNotSet     = ProtocolError{OnSaleFlagNotSet, "onsale flag not set"}
+	ErrBadName                   = ProtocolError{ONSErrDomainMissing, "domain name not provided"}
+	ErrBadOwner                  = ProtocolError{ONSErrOwnerAddressMissing, "owner address not provided"}
+	ErrDomainNotFound            = ProtocolError{DomainNotFound, "domain not found"}
+	ErrFlagNotSet                = ProtocolError{ONSErrOnSaleFlagNotSet, "onsale flag not set"}
+	ErrDomainExists              = ProtocolError{ONSErrDomainExists, "domain already exists"}
+	ErrDebitingFromAddress       = ProtocolError{ONSErrDebitingFromAddress, "cannot debit from address"}
+	ErrAddingToFeePool           = ProtocolError{ONSErrAddingToFeePool, "cannot add to fee pool"}
+	ErrInvalidUri                = ProtocolError{ONSErrInvalidUri , "invalid uri"}
+	ErrGettingParentName         = ProtocolError{ONSErrGettingParentName , "cannot get parent name"}
+	ErrParentDoesNotExist        = ProtocolError{ONSErrParentDoesNotExist , "parent domain does not exist"}
+	ErrParentNotOwned            = ProtocolError{ONSErrParentNotOwned , "parent domain not owned"}
+	ErrFailedToCalculateExpiry   = ProtocolError{ONSErrFailedToCalculateExpiry , "failed to calculate expiry"}
+	ErrFailedToCreateDomain      = ProtocolError{ONSErrFailedToCreateDomain , "failed to create domain"}
+	ErrFailedAddingDomainToStore = ProtocolError{ONSErrFailedAddingDomainToStore , "failed to add domain to store"}
+	ErrInvalidDomainName         = ProtocolError{ONSErrInvalidDomainName , "invalid domain name"}
+
+
 
 	// Tx errors
 

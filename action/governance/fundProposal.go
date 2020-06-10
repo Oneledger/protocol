@@ -15,9 +15,9 @@ import (
 var _ action.Msg = &FundProposal{}
 
 type FundProposal struct {
-	ProposalId    governance.ProposalID
-	FunderAddress keys.Address
-	FundValue     action.Amount
+	ProposalId    governance.ProposalID  `json:"proposal_id"`
+	FunderAddress keys.Address           `json:"funder_address"`
+	FundValue     action.Amount 		 `json:"fund_value"`
 }
 
 func (fp FundProposal) Signers() []action.Address {
@@ -95,7 +95,7 @@ func (fundProposalTx) Validate(ctx *action.Context, signedTx action.SignedTx) (b
 	//Check if Funder address is valid oneLedger address
 	err = fundProposal.FunderAddress.Err()
 	if err != nil {
-		return false, errors.Wrap(err, "invalid funder address")
+		return false, errors.Wrap(action.ErrInvalidFunderAddr, err.Error())
 	}
 
 	return true, nil
@@ -119,7 +119,9 @@ func runFundProposal(ctx *action.Context, tx action.RawTx) (bool, action.Respons
 	fundProposal := FundProposal{}
 	err := fundProposal.Unmarshal(tx.Data)
 	if err != nil {
-		return false, action.Response{}
+		return false, action.Response{
+			Log: action.ErrWrongTxType.Wrap(err).Marshal(),
+		}
 	}
 	//1. check if proposal exists
 

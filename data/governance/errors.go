@@ -30,4 +30,5 @@ var (
 		Code: 0,
 		Msg:  "No Error",
 	}
+	ErrWithdrawCheckFundsFailed    = codes.ProtocolError{Code: codes.GovErrWithdrawCheckFundsFailed, Msg: "ErrWithdraw, failed to check available funds to withdraw for this funder"}
 )

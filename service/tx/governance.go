@@ -140,7 +140,7 @@ func (s *Service) WithdrawProposalFunds(args client.WithdrawFundsRequest, reply 
 
 	withdrawProposal := gov.WithdrawFunds{
 		ProposalID:    args.ProposalID,
-		Contributor:   args.Contributor,
+		Funder:        args.Funder,
 		WithdrawValue: args.WithdrawValue,
 		Beneficiary:   args.Beneficiary,
 	}
