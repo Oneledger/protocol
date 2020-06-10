@@ -407,7 +407,7 @@ func updateProposals(proposalMaster *governance.ProposalMasterStore, jobStore *j
 	//Iterate through all active proposals
 	proposals := proposalMaster.Proposal.WithState(deliver)
 	activeProposals := proposals.WithPrefixType(governance.ProposalStateActive)
-	passedProposals := proposals.WithPrefixType(governance.ProposalStatePassed)
+
 	activeProposals.Iterate(func(id governance.ProposalID, proposal *governance.Proposal) bool {
 		height := deliver.Version()
 		//If the proposal is in Voting state and voting period expired, trigger internal tx to handle expiry
@@ -430,7 +430,7 @@ func updateProposals(proposalMaster *governance.ProposalMasterStore, jobStore *j
 
 		return false
 	})
-	//fmt.Println("Active : ", activeProposals, "Passed :", passedProposals)
+	passedProposals := proposals.WithPrefixType(governance.ProposalStatePassed)
 	passedProposals.Iterate(func(id governance.ProposalID, proposal *governance.Proposal) bool {
 		fmt.Println("Proposal : ", id, "|Status : ", proposal.Status.String())
 		if proposal.Status == governance.ProposalStatusCompleted {
