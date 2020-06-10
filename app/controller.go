@@ -430,6 +430,7 @@ func updateProposals(proposalMaster *governance.ProposalMasterStore, jobStore *j
 
 		return false
 	})
+
 	passedProposals := proposals.WithPrefixType(governance.ProposalStatePassed)
 	passedProposals.Iterate(func(id governance.ProposalID, proposal *governance.Proposal) bool {
 		fmt.Println("Proposal : ", id, "|Status : ", proposal.Status.String())
