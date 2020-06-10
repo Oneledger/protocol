@@ -12,7 +12,7 @@ _each_funding = (int("5") * 10 ** 9)
 _funding_goal_general = (int("10") * 10 ** 9)
 
 def test_pass_proposal_cli():
-    _prop = Proposal(_pid_pass, "general", "proposal for vote", _proposer, _initial_funding)
+    _prop = Proposal(_pid_pass, "general", "proposal for vote", "proposal headline", _proposer, _initial_funding)
 
     # create proposal
     _prop.send_create()
@@ -46,7 +46,7 @@ def test_pass_proposal_cli():
     list_proposal_cli(encoded_pid, node_1)
 
 def test_fail_proposal_cli():
-    _prop = Proposal(_pid_fail, "general", "proposal for vote", _proposer, _initial_funding)
+    _prop = Proposal(_pid_fail, "general", "proposal for vote", "proposal headline", _proposer, _initial_funding)
 
     # create proposal
     _prop.send_create()

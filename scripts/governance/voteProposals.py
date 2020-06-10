@@ -12,7 +12,7 @@ _each_funding = (int("5") * 10 ** 9)
 _funding_goal_general = (int("10") * 10 ** 9)
 
 def test_pass_proposal():
-    _prop = Proposal(_pid_pass, "general", "proposal for vote", _proposer, _initial_funding)
+    _prop = Proposal(_pid_pass, "general", "proposal for vote", "proposal headline", _proposer, _initial_funding)
 
     # create proposal
     _prop.send_create()
@@ -43,7 +43,7 @@ def test_pass_proposal():
     check_proposal_state(encoded_pid, ProposalStatePassed, ProposalStatusCompleted)
 
 def test_fail_proposal():
-    _prop = Proposal(_pid_fail, "general", "proposal for vote", _proposer, _initial_funding)
+    _prop = Proposal(_pid_fail, "general", "proposal for vote", "proposal headline", _proposer, _initial_funding)
 
     # create proposal
     _prop.send_create()

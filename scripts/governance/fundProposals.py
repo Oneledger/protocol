@@ -10,7 +10,7 @@ _initial_funding = (int("2") * 10 ** 9)
 _each_funding = (int("3") * 10 ** 9)
 _funding_goal_general = (int("10") * 10 ** 9)
 
-_prop = Proposal(_pid, "general", "proposal for fund", _proposer, _initial_funding)
+_prop = Proposal(_pid, "general", "proposal for fund", "proposal headline", _proposer, _initial_funding)
 
 if __name__ == "__main__":
     # create proposal
