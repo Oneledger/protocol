@@ -1,10 +1,11 @@
 package governance
 
 import (
+	"testing"
+
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/serialize"
 	"github.com/magiconair/properties/assert"
-	"testing"
 )
 
 var proposal = Proposal{

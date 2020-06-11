@@ -15,7 +15,7 @@ func init() {
 
 const (
 	//Proposal Types
-	ProposalTypeError        ProposalType = 0xEE
+	ProposalTypeInvalid      ProposalType = 0xEE
 	ProposalTypeConfigUpdate ProposalType = 0x20
 	ProposalTypeCodeChange   ProposalType = 0x21
 	ProposalTypeGeneral      ProposalType = 0x22

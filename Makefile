@@ -20,10 +20,7 @@ install_c:
 #
 # test with send transaction in loadtest
 #
-fulltest: install
-	@./scripts/stopNodes
-	@./scripts/resetDev
-	@./scripts/startDev
+fulltest: reset
 	@./scripts/testsend
 	@./scripts/stopNodes
 
@@ -33,12 +30,10 @@ fulltest: install
 status:
 	@./scripts/status
 
-
-
 #
 # install and restart the network
 #
-restart: install
+restart: install_c
 	@./scripts/stopNodes
 	@./scripts/startDev
 
@@ -62,32 +57,22 @@ utest:
 coverage:
 	go tool cover -html=a.out -o cover.html
 
-
 #
 # run apply validator tests
 #
-applytest: install
-	@./scripts/stopNodes
-	@./scripts/resetDev
-	@./scripts/startDev
+applytest: reset
 	@./scripts/testapply
 	@./scripts/getValidators
 	@./scripts/stopNodes
 
-purgetest: install
-	@./scripts/stopDev
-	@./scripts/resetDev
-	@./scripts/startDev
+purgetest: reset
 	@./scripts/testpurgevalidator
 	@./scripts/stopDev
 
 #
 # run ons tests
 #
-onstest: install
-	@./scripts/stopNodes
-	@./scripts/resetDev
-	@./scripts/startDev
+onstest: reset
 	@./scripts/testsend
 	python scripts/ons/create_domain.py
 	python scripts/ons/create_sub_domain.py
@@ -99,10 +84,7 @@ onstest: install
 #
 # run ons tests
 #
-withdrawtest: install
-	@./scripts/stopNodes
-	@./scripts/resetDev
-	@./scripts/startDev
+withdrawtest: reset
 	@./scripts/testsend
 	@./scripts/testsend
 	python scripts/reward/withdraw.py
@@ -111,10 +93,7 @@ withdrawtest: install
 #
 # run governance tests
 #
-govtest: install
-	@./scripts/stopNodes
-	@./scripts/resetDev
-	@./scripts/startDev
+govtest: reset
 	@./scripts/testsend
 	python scripts/governance/createProposals.py
 	python scripts/governance/fundProposals.py
@@ -122,12 +101,12 @@ govtest: install
 	python scripts/governance/withdrawFunds.py
 	python scripts/governance/voteProposals.py
 	python scripts/governance/governanceCLI.py
+	make reset
+	@./scripts/testsend
+	python scripts/governance/queryProposals.py
 	@./scripts/stopNodes
 
-alltest: install_c
-	@./scripts/stopNodes
-	@./scripts/resetDev
-	@./scripts/startDev
+alltest: reset
 	@./scripts/testsend
 	@./scripts/getValidators
 	@./scripts/testsend
@@ -141,21 +120,19 @@ alltest: install_c
 	python scripts/txTypes/listTxTypes.py
 	@./scripts/stopNodes
 
-
-
-reset: install
+reset: install_c
 	@./scripts/stopNodes
 	@./scripts/resetDev
 	@./scripts/startDev
 # 	@./scripts/testapply
 # 	@./scripts/testsend
 
-resetMain: install
+resetMain: install_c
 	@./scripts/stopNodes
 	@./scripts/resetMainnet
 	@./scripts/startMainnet
 
-rpcAuthtest: install
+rpcAuthtest: install_c
 	@./scripts/stopNodes
 	@./scripts/resetDev
 	python scripts/rpcAuth/setup.py
@@ -163,17 +140,14 @@ rpcAuthtest: install
 	python scripts/rpcAuth/rpcTestAuth.py
 	@./scripts/stopNodes
 
-
 stop:
 	@./scripts/stopNodes
-
 
 start:
 	@./scripts/startDev
 
-
 save:
 	@./scripts/stopNodes
-	go install -i github.com/Oneledger/protocol/cmd/...
+	make install
 	@./scripts/saveState
 	@./scripts/startDev

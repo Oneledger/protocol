@@ -13,7 +13,7 @@ _funding_goal_general = (int("10") * 10 ** 9)
 
 def gen_prop():
     global _pid
-    prop = Proposal(str(_pid), "general", "proposal for fund", _proposer, _initial_funding)
+    prop = Proposal(str(_pid), "general", "proposal for fund", "proposal headline", _proposer, _initial_funding)
     _pid += 1
     return prop
 
@@ -25,18 +25,18 @@ def test_normal_cancel():
     encoded_pid = prop.pid
 
     # check proposal state
-    check_proposal_state(encoded_pid, ProposalStateActive, ProposalStatusFunding)
+    check_proposal_state(encoded_pid, ProposalOutcomeInProgress, ProposalStatusFunding)
 
     # 1st fund
     fund_proposal(encoded_pid, _each_funding, addr_list[0])
 
     # 2nd fund
     fund_proposal(encoded_pid, _each_funding, addr_list[1])
-    check_proposal_state(encoded_pid, ProposalStateActive, ProposalStatusFunding)
+    check_proposal_state(encoded_pid, ProposalOutcomeInProgress, ProposalStatusFunding)
 
     # cancel this proposal
     cancel_proposal(encoded_pid, _proposer, "changed mind")
-    check_proposal_state(encoded_pid, ProposalStateFailed, ProposalStatusCompleted)
+    check_proposal_state(encoded_pid, ProposalOutcomeCancelled, ProposalStatusCompleted)
     return encoded_pid
 
 def test_cancel_noactive_proposal(pid_not_active):
@@ -44,7 +44,7 @@ def test_cancel_noactive_proposal(pid_not_active):
     res = cancel_proposal(pid_not_active, _proposer, "try a weird cancel")
     if res:
         sys.exit(-1)
-    check_proposal_state(pid_not_active, ProposalStateFailed, ProposalStatusCompleted)
+    check_proposal_state(pid_not_active, ProposalOutcomeCancelled, ProposalStatusCompleted)
 
 def test_cancel_proposal_in_voting_status():
     # create proposal
@@ -55,13 +55,13 @@ def test_cancel_proposal_in_voting_status():
 
     # 1st fund
     fund_proposal(encoded_pid, _big_funding, addr_list[1])
-    check_proposal_state(encoded_pid, ProposalStateActive, ProposalStatusVoting)
+    check_proposal_state(encoded_pid, ProposalOutcomeInProgress, ProposalStatusVoting)
 
     # cancel this proposal, should fail
     res = cancel_proposal(encoded_pid, _proposer, "too late to changed mind")
     if res:
         sys.exit(-1)
-    check_proposal_state(encoded_pid, ProposalStateActive, ProposalStatusVoting)
+    check_proposal_state(encoded_pid, ProposalOutcomeInProgress, ProposalStatusVoting)
 
 def test_cancel_someone_else_proposal():
     # create proposal
@@ -74,7 +74,7 @@ def test_cancel_someone_else_proposal():
     res = cancel_proposal(encoded_pid, addr_list[1], "do bad things")
     if res:
         sys.exit(-1)
-    check_proposal_state(encoded_pid, ProposalStateActive, ProposalStatusFunding)
+    check_proposal_state(encoded_pid, ProposalOutcomeInProgress, ProposalStatusFunding)
 
 if __name__ == "__main__":
     pid_canceled = test_normal_cancel()
@@ -85,6 +85,6 @@ if __name__ == "__main__":
 
     test_cancel_someone_else_proposal()
 
-    print "#### Test cancel proposals succeed: ####"
+    print bcolors.OKGREEN + "#### Test cancel proposals succeed" + bcolors.ENDC
     print ""
     

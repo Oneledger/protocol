@@ -12,7 +12,7 @@ _funds_amount = (int("2") * 10 ** 9)
 _withdraw_amount = (int("2") * 10 ** 9)
 _withdraw_amount_too_much = (int("5") * 10 ** 9)
 
-_prop = Proposal(_pid, "general", "proposal for funds withdrawing", _proposer, _initial_funding)
+_prop = Proposal(_pid, "general", "proposal for funds withdrawing", "proposal headline", _proposer, _initial_funding)
 _encoded_pid = _prop.get_encoded_pid()
 
 _wait = 6

@@ -17,6 +17,7 @@ var _ action.Msg = &CreateProposal{}
 type CreateProposal struct {
 	ProposalID     governance.ProposalID   `json:"proposal_id"`
 	ProposalType   governance.ProposalType `json:"proposal_type"`
+	Headline       string                  `json:"proposal_headline"`
 	Description    string                  `json:"proposal_description"`
 	Proposer       keys.Address            `json:"proposer_address"`
 	InitialFunding action.Amount           `json:"initial_funding"`
@@ -134,6 +135,7 @@ func runTx(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 		createProposal.ProposalID,
 		createProposal.ProposalType,
 		createProposal.Description,
+		createProposal.Headline,
 		createProposal.Proposer,
 		fundingDeadline,
 		options.FundingGoal,

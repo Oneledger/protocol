@@ -146,6 +146,11 @@ func (c *ServiceClient) ListCurrencies() (out *ListCurrenciesReply, err error) {
 	return
 }
 
+func (c *ServiceClient) ListProposal(req ListProposalRequest) (out *ListProposalsReply, err error) {
+	err = c.Call("query.ListProposal", req, &out)
+	return
+}
+
 func (c *ServiceClient) ListProposals(req ListProposalsRequest) (out *ListProposalsReply, err error) {
 	err = c.Call("query.ListProposals", req, &out)
 	return

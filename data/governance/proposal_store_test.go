@@ -94,8 +94,8 @@ func init() {
 
 		fundingGoal := balance.NewAmountFromBigInt(opt.FundingGoal.BigInt())
 
-		proposals = append(proposals, NewProposal(ProposalID(time.Now().String()), ProposalType(k), "Test Proposal", proposer,
-			opt.FundingDeadline, fundingGoal, opt.VotingDeadline, opt.PassPercentage))
+		proposals = append(proposals, NewProposal(ProposalID(time.Now().String()), ProposalType(k), "Test Proposal",
+			"Test Headline", proposer, opt.FundingDeadline, fundingGoal, opt.VotingDeadline, opt.PassPercentage))
 	}
 
 	//Create Test DB
@@ -181,6 +181,15 @@ func TestProposalStore_IterateProposalType(t *testing.T) {
 		return false
 	}, ProposalTypeGeneral)
 	assert.Equal(t, 2, proposalCount)
+}
+
+func TestProposalStore_FilterProposals(t *testing.T) {
+	proposals_general := proposalStore.FilterProposals(ProposalStateActive, keys.Address{}, ProposalTypeGeneral)
+	proposals_codeupdate := proposalStore.FilterProposals(ProposalStateActive, keys.Address{}, ProposalTypeCodeChange)
+	proposals_cfgupdate := proposalStore.FilterProposals(ProposalStateActive, keys.Address{}, ProposalTypeConfigUpdate)
+	assert.Equal(t, 2, len(proposals_general))
+	assert.Equal(t, 4, len(proposals_codeupdate))
+	assert.Equal(t, 4, len(proposals_cfgupdate))
 }
 
 func TestProposalStore_SetOptions(t *testing.T) {

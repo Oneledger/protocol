@@ -3,17 +3,23 @@ import sys
 
 from rpc_call import *
 
-# Proposal Status
-ProposalStatusFunding = 0x23
-ProposalStatusVoting = 0x24
-ProposalStatusCompleted = 0x25
-ProposalStatusFinalized = 0x26
+#Proposal Types
+ProposalTypeConfigUpdate = 0x20
+ProposalTypeCodeChange   = 0x21
+ProposalTypeGeneral      = 0x22
 
-# Proposal States
-ProposalStateError = 0xEE
-ProposalStateActive = 0x31
-ProposalStatePassed = 0x32
-ProposalStateFailed = 0x33
+#Proposal Status
+ProposalStatusFunding    = 0x23
+ProposalStatusVoting     = 0x24
+ProposalStatusCompleted  = 0x25
+
+#Proposal Outcome
+ProposalOutcomeInProgress         = 0x26
+ProposalOutcomeInsufficientFunds  = 0x27
+ProposalOutcomeInsufficientVotes  = 0x28
+ProposalOutcomeCancelled          = 0x29
+ProposalOutcomeCompleted          = 0x30
+
 
 class bcolors:
     HEADER = '\033[95m'
@@ -25,10 +31,12 @@ class bcolors:
     BOLD = '\033[1m'
     UNDERLINE = '\033[4m'
 
+
 class Proposal:
-    def __init__(self, pid, pType, description, proposer, init_fund):
+    def __init__(self, pid, pType, description, headline, proposer, init_fund):
         self.pid = pid
         self.pty = pType
+        self.headline = headline
         self.des = description
         self.proposer = proposer
         self.init_fund = init_fund
@@ -36,6 +44,7 @@ class Proposal:
     def _create_proposal(self):
         req = {
             "proposal_id": self.pid,
+            "headline": self.headline,
             "description": self.des,
             "proposer": self.proposer,
             "proposal_type": self.pty,
@@ -337,24 +346,24 @@ def broadcast_sync(raw_tx, signature, pub_key):
     })
     return resp["result"]
 
-def query_proposals(prefix):
+def query_proposals(prefix, proposer="", proposal_type=""):
     req = {
-        "proposal_id": "",
         "state": prefix,
+        "proposer": proposer,
+        "proposal_type": proposal_type,
     }
 
     resp = rpc_call('query.ListProposals', req)
-    print json.dumps(resp, indent=4)
-    return resp["result"]["proposals"]
+    result = resp["result"]
+    return result["proposal_stats"]
 
 def query_proposal(proposal_id):
     req = {
         "proposal_id": proposal_id,
-        "state": "",
     }
     resp = rpc_call('query.ListProposal', req)
-    print json.dumps(resp, indent=4)
-    return resp["result"]["proposals"][0], resp["result"]["state"]
+    stat = resp["result"]["proposal_stats"][0]
+    return stat["proposal"], stat["funds"]
 
 def query_balance(address):
     req = {"address": address}
