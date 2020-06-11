@@ -39,14 +39,18 @@ func NewProposalState(prefix string) ProposalState {
 		return ProposalStatePassed
 	case "failed":
 		return ProposalStateFailed
+	case "finalized":
+		return ProposalStateFinalized
+	case "finalizeFailed":
+		return ProposalStateFinalizeFailed
 	default:
-		return ProposalStateInvalid
+		return ProposalStateError
 	}
 }
 
 func (state ProposalState) String() string {
 	switch state {
-	case ProposalStateInvalid:
+	case ProposalStateError:
 		return "Error"
 	case ProposalStateActive:
 		return "Active"
@@ -54,6 +58,10 @@ func (state ProposalState) String() string {
 		return "Passed"
 	case ProposalStateFailed:
 		return "Failed"
+	case ProposalStateFinalized:
+		return "Finalized"
+	case ProposalStateFinalizeFailed:
+		return "FinalizeFailed"
 	default:
 		return "Invalid state"
 	}
@@ -142,19 +150,6 @@ func (opinion VoteOpinion) String() string {
 		return "Giveup"
 	default:
 		return "Invalid opinion"
-	}
-}
-
-func (status ProposalStatus) String() string {
-	switch status {
-	case ProposalStatusCompleted:
-		return "ProposalStatusCompleted"
-	case ProposalStatusVoting:
-		return "ProposalStatusVoting"
-	case ProposalStatusFunding:
-		return "ProposalStatusFunding"
-	default:
-		return "Invalid status"
 	}
 }
 

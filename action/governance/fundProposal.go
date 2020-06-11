@@ -186,7 +186,7 @@ func runFundProposal(ctx *action.Context, tx action.RawTx) (bool, action.Respons
 	if err != nil {
 		errA := ctx.Balances.AddToAddress(fundProposal.FunderAddress.Bytes(), coin)
 		if errA != nil {
-			panic(balance.ErrBalanceErrorAddFailed.Msg)
+			logAndReturnFalse(ctx.Logger, governance.ErrGovFundUnableToAdd, fundProposal.Tags(), errA)
 		}
 		return logAndReturnFalse(ctx.Logger, governance.ErrGovFundUnableToAdd, fundProposal.Tags(), err)
 	}

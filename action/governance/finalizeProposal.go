@@ -282,7 +282,7 @@ func setToFinalize(ctx *action.Context, proposal *governance.Proposal) error {
 	if !ok {
 		ok, err = ctx.ProposalMasterStore.Proposal.WithPrefixType(governance.ProposalStateFinalized).Delete(proposal.ProposalID)
 		if !ok {
-			panic(errors.Wrap(err, "error deleting proposal from finalize prefix(Potentially two copies of same proposal)"))
+			return errors.Wrap(err, "error deleting proposal from finalize prefix")
 		}
 		return err
 	}
@@ -298,7 +298,7 @@ func setToFinalizeFailed(ctx *action.Context, proposal *governance.Proposal) err
 	if !ok {
 		ok, err = ctx.ProposalMasterStore.Proposal.WithPrefixType(governance.ProposalStateFinalizeFailed).Delete(proposal.ProposalID)
 		if !ok {
-			panic(errors.Wrap(err, "error deleting proposal from finalize prefix(Potentially two copies of same proposal)"))
+			return errors.Wrap(err, "error deleting proposal from finalize prefix")
 		}
 		return err
 	}

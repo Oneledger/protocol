@@ -8,20 +8,6 @@ import (
 	codes "github.com/Oneledger/protocol/status_codes"
 )
 
-func translatePrefix(prefix string) governance.ProposalState {
-	switch prefix {
-	case "active":
-		return governance.ProposalStateActive
-	case "passed":
-		return governance.ProposalStatePassed
-	case "failed":
-		return governance.ProposalStateFailed
-	case "finalized":
-		return governance.ProposalStateFinalized
-	case "finalizeFailed":
-		return governance.ProposalStateFinalizeFailed
-	default:
-		return governance.ProposalStateError
 // list single proposal by id
 func (svc *Service) ListProposal(req client.ListProposalRequest, reply *client.ListProposalsReply) error {
 	proposalID := governance.ProposalID(req.ProposalId)
@@ -54,7 +40,7 @@ func (svc *Service) ListProposals(req client.ListProposalsRequest, reply *client
 	pState := governance.NewProposalState(req.State)
 	pType := governance.NewProposalType(req.ProposalType)
 	if req.State != "" {
-		if pState == governance.ProposalStateInvalid {
+		if pState == governance.ProposalStateError {
 			return errors.New("invalid proposal state")
 		}
 	}
@@ -69,7 +55,7 @@ func (svc *Service) ListProposals(req client.ListProposalsRequest, reply *client
 			return errors.New("invalid proposer address")
 		}
 	}
-	if pState == governance.ProposalStateInvalid &&
+	if pState == governance.ProposalStateError &&
 		pType == governance.ProposalTypeInvalid && len(req.Proposer) == 0 {
 		return errors.New("invalid request parameters")
 	}
@@ -77,15 +63,19 @@ func (svc *Service) ListProposals(req client.ListProposalsRequest, reply *client
 	// Query in single store if specified
 	pms := svc.proposalMaster
 	var proposals []governance.Proposal
-	if pState != governance.ProposalStateInvalid {
+	if pState != governance.ProposalStateError {
 		proposals = pms.Proposal.FilterProposals(pState, req.Proposer, pType)
 	} else { // Query in all stores otherwise
 		active := pms.Proposal.FilterProposals(governance.ProposalStateActive, req.Proposer, pType)
 		passed := pms.Proposal.FilterProposals(governance.ProposalStatePassed, req.Proposer, pType)
 		failed := pms.Proposal.FilterProposals(governance.ProposalStateFailed, req.Proposer, pType)
+		finalized := pms.Proposal.FilterProposals(governance.ProposalStateFinalized, req.Proposer, pType)
+		finalizeFailed := pms.Proposal.FilterProposals(governance.ProposalStateFinalizeFailed, req.Proposer, pType)
 		proposals = append(proposals, active...)
 		proposals = append(proposals, passed...)
 		proposals = append(proposals, failed...)
+		proposals = append(proposals, finalized...)
+		proposals = append(proposals, finalizeFailed...)
 	}
 
 	// Organize reply packet:
