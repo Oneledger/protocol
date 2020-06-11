@@ -19,6 +19,8 @@ func translatePrefix(prefix string) governance.ProposalState {
 		return governance.ProposalStateFailed
 	case "finalized":
 		return governance.ProposalStateFinalized
+	case "finalizeFailed":
+		return governance.ProposalStateFinalizeFailed
 	default:
 		return governance.ProposalStateError
 	}

@@ -15,9 +15,9 @@ import (
 var _ action.Msg = &FundProposal{}
 
 type FundProposal struct {
-	ProposalId    governance.ProposalID  `json:"proposal_id"`
-	FunderAddress keys.Address           `json:"funder_address"`
-	FundValue     action.Amount 		 `json:"fund_value"`
+	ProposalId    governance.ProposalID `json:"proposal_id"`
+	FunderAddress keys.Address          `json:"funder_address"`
+	FundValue     action.Amount         `json:"fund_value"`
 }
 
 func (fp FundProposal) Signers() []action.Address {
@@ -95,7 +95,7 @@ func (fundProposalTx) Validate(ctx *action.Context, signedTx action.SignedTx) (b
 	//Check if Funder address is valid oneLedger address
 	err = fundProposal.FunderAddress.Err()
 	if err != nil {
-		return false, errors.Wrap(action.ErrInvalidFunderAddr, err.Error())
+		return false, errors.Wrap(action.ErrInvalidAddress, err.Error())
 	}
 
 	return true, nil
@@ -127,18 +127,18 @@ func runFundProposal(ctx *action.Context, tx action.RawTx) (bool, action.Respons
 
 	proposal, err := ctx.ProposalMasterStore.Proposal.WithPrefixType(governance.ProposalStateActive).Get(fundProposal.ProposalId)
 	if err != nil {
-		return logAndReturnFalse(ctx.Logger, governance.ErrProposalNotFound, fundProposal.Tags())
+		return logAndReturnFalse(ctx.Logger, governance.ErrProposalNotExists, fundProposal.Tags(), err)
 	}
 
 	//2. Check if the Funding height is already reached
 	//  If the proposal has already passed Funding height, reject the transaction
 	if ctx.Header.Height > proposal.FundingDeadline {
-		return logAndReturnFalse(ctx.Logger, governance.ErrFundingDeadlineCrossed, fundProposal.Tags())
+		return logAndReturnFalse(ctx.Logger, governance.ErrFundingDeadlineCrossed, fundProposal.Tags(), err)
 	}
 	//3. Check if the Proposal is in funding stage
 	//  If the proposal is not in FUNDING state, reject the transaction
 	if proposal.Status != governance.ProposalStatusFunding {
-		return logAndReturnFalse(ctx.Logger, governance.ErrStatusNotFunding, fundProposal.Tags())
+		return logAndReturnFalse(ctx.Logger, governance.ErrStatusNotFunding, fundProposal.Tags(), err)
 	}
 
 	//4. Check if the Proposal has reached funding goal, when this contribution is added
@@ -157,20 +157,20 @@ func runFundProposal(ctx *action.Context, tx action.RawTx) (bool, action.Respons
 		//In the value, we will just update the Voting power. The vote / opinion field remains empty for now
 		validatorList, err := ctx.Validators.GetValidatorSet()
 		if err != nil {
-			return logAndReturnFalse(ctx.Logger, action.ErrValidatorsUnableGetList, fundProposal.Tags())
+			return logAndReturnFalse(ctx.Logger, action.ErrGettingValidatorList, fundProposal.Tags(), err)
 		}
 		for _, v := range validatorList {
 			vote := governance.NewProposalVote(v.Address, governance.OPIN_UNKNOWN, v.Power)
 			err = ctx.ProposalMasterStore.ProposalVote.Setup(proposal.ProposalID, vote)
 			if err != nil {
-				return logAndReturnFalse(ctx.Logger, governance.ErrVoteSetupValidatorFailed, fundProposal.Tags())
+				return logAndReturnFalse(ctx.Logger, governance.ErrSetupVotingValidator, fundProposal.Tags(), err)
 			}
 		}
 
 		//7. Update proposal status to VOTING
 		err = ctx.ProposalMasterStore.Proposal.WithPrefixType(governance.ProposalStateActive).Set(proposal)
 		if err != nil {
-			return logAndReturnFalse(ctx.Logger, governance.ErrStatusUnableToSetVoting, fundProposal.Tags())
+			return logAndReturnFalse(ctx.Logger, governance.ErrStatusUnableToSetVoting, fundProposal.Tags(), err)
 
 		}
 	}
@@ -179,16 +179,16 @@ func runFundProposal(ctx *action.Context, tx action.RawTx) (bool, action.Respons
 	coin := fundProposal.FundValue.ToCoin(ctx.Currencies)
 	err = ctx.Balances.MinusFromAddress(fundProposal.FunderAddress.Bytes(), coin)
 	if err != nil {
-		return logAndReturnFalse(ctx.Logger, balance.ErrBalanceErrorMinusFailed, fundProposal.Tags())
+		return logAndReturnFalse(ctx.Logger, balance.ErrBalanceErrorMinusFailed, fundProposal.Tags(), err)
 
 	}
 	err = ctx.ProposalMasterStore.ProposalFund.AddFunds(proposal.ProposalID, fundProposal.FunderAddress, fundingAmount)
 	if err != nil {
-		err = ctx.Balances.AddToAddress(fundProposal.FunderAddress.Bytes(), coin)
-		if err != nil {
+		errA := ctx.Balances.AddToAddress(fundProposal.FunderAddress.Bytes(), coin)
+		if errA != nil {
 			panic(balance.ErrBalanceErrorAddFailed.Msg)
 		}
-		return logAndReturnFalse(ctx.Logger, governance.ErrGovFundUnableToAdd, fundProposal.Tags())
+		return logAndReturnFalse(ctx.Logger, governance.ErrGovFundUnableToAdd, fundProposal.Tags(), err)
 	}
 
 	return logAndReturnTrue(ctx.Logger, fundProposal.Tags(), "fund_proposal_success")

@@ -2,6 +2,7 @@ package governance
 
 import (
 	"encoding/json"
+
 	"github.com/pkg/errors"
 	"github.com/tendermint/tendermint/libs/kv"
 
@@ -14,11 +15,11 @@ import (
 var _ action.Msg = &CreateProposal{}
 
 type CreateProposal struct {
-	ProposalID     governance.ProposalID    `json:"proposal_id"`
-	ProposalType   governance.ProposalType  `json:"proposal_type"`
-	Description    string              		`json:"proposal_description"`
-	Proposer       keys.Address       		`json:"proposer_address"`
-	InitialFunding action.Amount      		`json:"initial_funding"`
+	ProposalID     governance.ProposalID   `json:"proposal_id"`
+	ProposalType   governance.ProposalType `json:"proposal_type"`
+	Description    string                  `json:"proposal_description"`
+	Proposer       keys.Address            `json:"proposer_address"`
+	InitialFunding action.Amount           `json:"initial_funding"`
 }
 
 func (c CreateProposal) Validate(ctx *action.Context, signedTx action.SignedTx) (bool, error) {
@@ -41,7 +42,7 @@ func (c CreateProposal) Validate(ctx *action.Context, signedTx action.SignedTx) 
 
 	options := ctx.ProposalMasterStore.Proposal.GetOptionsByType(createProposal.ProposalType)
 	if options == nil {
-		return false, action.ErrGetProposalOptions
+		return false, governance.ErrGetProposalOptions
 	}
 
 	// the currency should be OLT
@@ -55,7 +56,7 @@ func (c CreateProposal) Validate(ctx *action.Context, signedTx action.SignedTx) 
 
 	//Check if Proposal ID is valid
 	if len(createProposal.ProposalID) <= 0 {
-		return false, action.ErrInvalidProposalId
+		return false, governance.ErrInvalidProposalId
 	}
 
 	//Get Proposal options based on type.
@@ -79,17 +80,17 @@ func (c CreateProposal) Validate(ctx *action.Context, signedTx action.SignedTx) 
 	case governance.ProposalTypeCodeChange:
 	case governance.ProposalTypeConfigUpdate:
 	default:
-		return false, action.ErrInvalidProposalType
+		return false, governance.ErrInvalidProposalType
 	}
 
 	//Check if proposer address is valid oneLedger address
 	err = createProposal.Proposer.Err()
 	if err != nil {
-		return false, errors.Wrap(action.ErrInvalidProposerAddr, err.Error())
+		return false, errors.Wrap(action.ErrInvalidAddress, err.Error())
 	}
 
 	if len(createProposal.Description) == 0 {
-		return false, action.ErrInvalidProposalDesc
+		return false, governance.ErrInvalidProposalDesc
 	}
 
 	return true, nil
@@ -115,7 +116,7 @@ func runTx(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	if err != nil {
 		result := action.Response{
 			Events: action.GetEvent(createProposal.Tags(), "create_proposal_failed_deserialize"),
-			Log: action.ErrWrongTxType.Wrap(err).Marshal(),
+			Log:    action.ErrWrongTxType.Wrap(err).Marshal(),
 		}
 		return false, result
 	}
@@ -143,7 +144,7 @@ func runTx(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	if ctx.ProposalMasterStore.Proposal.Exists(proposal.ProposalID) {
 		result := action.Response{
 			Events: action.GetEvent(createProposal.Tags(), "create_proposal_already_exists"),
-			Log: action.ErrProposalExists.Marshal(),
+			Log:    governance.ErrProposalExists.Marshal(),
 		}
 		return false, result
 	}
@@ -154,7 +155,7 @@ func runTx(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	if err != nil {
 		result := action.Response{
 			Events: action.GetEvent(createProposal.Tags(), "create_proposal_failed"),
-			Log: action.ErrAddingProposalToActiveStore.Wrap(err).Marshal(),
+			Log:    governance.ErrAddingProposalToActiveStore.Wrap(err).Marshal(),
 		}
 		return false, result
 	}
@@ -168,7 +169,7 @@ func runTx(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	if err != nil {
 		result := action.Response{
 			Events: action.GetEvent(createProposal.Tags(), "create_proposal_deduction_failed"),
-			Log: action.ErrDeductFunding.Wrap(err).Marshal(),
+			Log:    governance.ErrDeductFunding.Wrap(err).Marshal(),
 		}
 		return false, result
 	}
@@ -184,7 +185,7 @@ func runTx(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 		}
 		result := action.Response{
 			Events: action.GetEvent(createProposal.Tags(), "create_proposal_funding_failed"),
-			Log: action.ErrAddFunding.Marshal(),
+			Log:    governance.ErrAddFunding.Marshal(),
 		}
 		return false, result
 	}

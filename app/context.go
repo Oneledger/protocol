@@ -149,7 +149,7 @@ func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *node.Context) (
 }
 
 func NewProposalMasterStore(chainstate *storage.ChainState) *governance.ProposalMasterStore {
-	proposals := governance.NewProposalStore("propActive", "propPassed", "propFailed", "propFinalized", storage.NewState(chainstate))
+	proposals := governance.NewProposalStore("propActive", "propPassed", "propFailed", "propFinalized", "propFinalizeFailed", storage.NewState(chainstate))
 	proposalFunds := governance.NewProposalFundStore("propFunds", storage.NewState(chainstate))
 	proposalVotes := governance.NewProposalVoteStore("propVotes", storage.NewState(chainstate))
 	return governance.NewProposalMasterStore(proposals, proposalFunds, proposalVotes)

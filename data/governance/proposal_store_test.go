@@ -106,7 +106,7 @@ func init() {
 	govStore = NewStore("g", cs)
 
 	//Create Proposal store
-	proposalStore = NewProposalStore("p_active", "p_passed", "p_failed", "p_finalized", cs)
+	proposalStore = NewProposalStore("p_active", "p_passed", "p_failed", "p_finalized", "p_finalizeFailed", cs)
 }
 
 func TestProposalStore_Set(t *testing.T) {

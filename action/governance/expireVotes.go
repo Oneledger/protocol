@@ -2,17 +2,19 @@ package governance
 
 import (
 	"encoding/json"
-	"github.com/Oneledger/protocol/action"
-	"github.com/Oneledger/protocol/data/governance"
+
 	"github.com/pkg/errors"
 	"github.com/tendermint/tendermint/libs/kv"
+
+	"github.com/Oneledger/protocol/action"
+	"github.com/Oneledger/protocol/data/governance"
 )
 
 var _ action.Msg = &ExpireVotes{}
 
 type ExpireVotes struct {
-	ProposalID       governance.ProposalID  `json:"proposal_id"`
-	ValidatorAddress action.Address         `json:"validator_address"`
+	ProposalID       governance.ProposalID `json:"proposal_id"`
+	ValidatorAddress action.Address        `json:"validator_address"`
 }
 
 func (e ExpireVotes) Validate(ctx *action.Context, signedTx action.SignedTx) (bool, error) {
@@ -30,7 +32,7 @@ func (e ExpireVotes) Validate(ctx *action.Context, signedTx action.SignedTx) (bo
 
 	//Check if proposal id is valid
 	if len(expireVotes.ProposalID) <= 0 {
-		return false, action.ErrInvalidProposalId
+		return false, governance.ErrInvalidProposalId
 	}
 
 	return true, nil
@@ -66,7 +68,7 @@ func runExpireVotes(ctx *action.Context, tx action.RawTx) (bool, action.Response
 	if err != nil {
 		result := action.Response{
 			Events: action.GetEvent(expireVotes.Tags(), "expire_votes_failed_deserialize"),
-			Log: action.ErrWrongTxType.Wrap(err).Marshal(),
+			Log:    action.ErrWrongTxType.Wrap(err).Marshal(),
 		}
 		return false, result
 	}
@@ -76,7 +78,7 @@ func runExpireVotes(ctx *action.Context, tx action.RawTx) (bool, action.Response
 	if err != nil {
 		result := action.Response{
 			Events: action.GetEvent(expireVotes.Tags(), "expire_votes_failed"),
-			Log: action.ErrProposalNotExists.Wrap(err).Marshal(),
+			Log:    governance.ErrProposalNotExists.Wrap(err).Marshal(),
 		}
 		return false, result
 	}
@@ -90,7 +92,7 @@ func runExpireVotes(ctx *action.Context, tx action.RawTx) (bool, action.Response
 	if err != nil {
 		result := action.Response{
 			Events: action.GetEvent(expireVotes.Tags(), "expire_votes_failed"),
-			Log: action.ErrAddingProposalToFailedStore.Wrap(err).Marshal(),
+			Log:    governance.ErrAddingProposalToFailedStore.Wrap(err).Marshal(),
 		}
 		return false, result
 	}
@@ -106,7 +108,7 @@ func runExpireVotes(ctx *action.Context, tx action.RawTx) (bool, action.Response
 
 		result := action.Response{
 			Events: action.GetEvent(expireVotes.Tags(), "expire_votes_failed"),
-			Log: action.ErrDeletingProposalFromFailedStore.Marshal(),
+			Log:    governance.ErrDeletingProposalFromFailedStore.Marshal(),
 		}
 		return false, result
 	}

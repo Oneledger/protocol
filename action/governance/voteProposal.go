@@ -2,6 +2,7 @@ package governance
 
 import (
 	"encoding/json"
+
 	"github.com/pkg/errors"
 	"github.com/tendermint/tendermint/libs/kv"
 
@@ -45,16 +46,16 @@ func (v voteProposalTx) Validate(ctx *action.Context, tx action.SignedTx) (bool,
 
 	// validate params
 	if err = vote.ProposalID.Err(); err != nil {
-		return false, action.ErrInvalidProposalId
+		return false, gov.ErrInvalidProposalId
 	}
 	if err = vote.Address.Err(); err != nil {
-		return false, action.ErrInvalidVoterId
+		return false, gov.ErrInvalidVoterId
 	}
 	if !ctx.Validators.IsValidatorAddress(vote.ValidatorAddress) {
 		return false, action.ErrInvalidValidatorAddr
 	}
 	if err = vote.Opinion.Err(); err != nil {
-		return false, action.ErrInvalidVoteOpinion
+		return false, gov.ErrInvalidVoteOpinion
 	}
 
 	return true, nil
@@ -88,21 +89,21 @@ func runVote(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	proposal, err := pms.Proposal.WithPrefixType(gov.ProposalStateActive).Get(vote.ProposalID)
 	if err != nil {
 		return false, action.Response{
-			Log: action.ErrProposalNotExists.Wrap(err).Marshal(),
+			Log: gov.ErrProposalNotExists.Wrap(err).Marshal(),
 		}
 	}
 
 	// Check if proposal is in VOTING status
 	if proposal.Status != gov.ProposalStatusVoting {
 		return false, action.Response{
-			Log: action.ErrNotInVoting.Marshal(),
+			Log: gov.ErrStatusNotVoting.Marshal(),
 		}
 	}
 
 	// Check if proposal voting height is passed
 	if ctx.Header.Height > proposal.VotingDeadline {
 		return false, action.Response{
-			Log: action.ErrVotingHeightReached.Marshal(),
+			Log: gov.ErrVotingHeightReached.Marshal(),
 		}
 	}
 
@@ -119,7 +120,7 @@ func runVote(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	err = ctx.ProposalMasterStore.ProposalVote.Update(vote.ProposalID, pv)
 	if err != nil {
 		return false, action.Response{
-			Log: action.ErrAddingVoteToVoteStore.Wrap(err).Marshal(),
+			Log: gov.ErrAddingVoteToVoteStore.Wrap(err).Marshal(),
 		}
 	}
 
@@ -128,7 +129,7 @@ func runVote(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	stat, err := pms.ProposalVote.ResultSoFar(vote.ProposalID, options.PassPercentage)
 	if err != nil {
 		return false, action.Response{
-			Log: action.ErrPeekingVoteResult.Wrap(err).Marshal(),
+			Log: gov.ErrPeekingVoteResult.Wrap(err).Marshal(),
 		}
 	}
 
@@ -139,7 +140,7 @@ func runVote(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 		err = pms.Proposal.WithPrefixType(gov.ProposalStatePassed).Set(proposal)
 		if err != nil {
 			return false, action.Response{
-				Log: action.ErrAddingProposalToPassedStore.Wrap(err).Marshal(),
+				Log: gov.ErrAddingProposalToPassedStore.Wrap(err).Marshal(),
 			}
 		}
 	} else if stat.Result == gov.VOTE_RESULT_FAILED {
@@ -148,7 +149,7 @@ func runVote(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 		err = pms.Proposal.WithPrefixType(gov.ProposalStateFailed).Set(proposal)
 		if err != nil {
 			return false, action.Response{
-				Log: action.ErrAddingProposalToFailedStore.Wrap(err).Marshal(),
+				Log: gov.ErrAddingProposalToFailedStore.Wrap(err).Marshal(),
 			}
 		}
 	}
@@ -158,7 +159,7 @@ func runVote(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 		ok, err := pms.Proposal.WithPrefixType(gov.ProposalStateActive).Delete(vote.ProposalID)
 		if err != nil || !ok {
 			return false, action.Response{
-				Log: action.ErrDeletingProposalFromActiveStore.Marshal(),
+				Log: gov.ErrDeletingProposalFromActiveStore.Marshal(),
 			}
 		}
 	}
