@@ -49,6 +49,7 @@ func (j *JobBus) Start(ctx *JobsContext) error {
 				ProcessAllJobs(j.ctx, j.store.WithChain(chain.ETHEREUM))
 			case <-tickerOlt.C:
 				ProcessAllJobs(j.ctx, j.store.WithChain(chain.ONELEDGER))
+				DeleteCompletedJobs(j.ctx, j.store.WithChain(chain.ONELEDGER))
 			case <-j.quit:
 				tickerBtc.Stop()
 				tickerEth.Stop()
@@ -124,13 +125,13 @@ func DeleteCompletedJobs(ctx *JobsContext, js *jobs.JobStore) {
 			jobkeys = append(jobkeys, job.GetJobID())
 		}
 	})
-
 	for _, key := range jobkeys {
 
 		job, err := js.GetJob(key)
 		if err != nil {
 			fmt.Println("err getting job by key", err)
 		}
+
 		if job.IsDone() {
 			err = js.DeleteJob(job)
 			if err != nil {
