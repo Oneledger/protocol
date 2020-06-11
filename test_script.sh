@@ -1,5 +1,7 @@
 #!/bin/bash
 
+pwd
+
 # to build binary
 make install_c
 
