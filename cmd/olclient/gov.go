@@ -197,10 +197,16 @@ func listProposals(cmd *cobra.Command, args []string) error {
 
 	// List single proposal
 	if listArgs.ProposalID != "" {
-		req := client.ListProposalRequest{
-			ProposalId: governance.ProposalID(listArgs.ProposalID),
+		pID := governance.ProposalID(listArgs.ProposalID)
+		if listArgs.ProposalID != "" {
+			if err := pID.Err(); err != nil {
+				return err
+			}
 		}
 
+		req := client.ListProposalRequest{
+			ProposalId: pID,
+		}
 		reply, err := fullnode.ListProposal(req)
 		if err != nil {
 			return errors.New("error in getting proposal")
@@ -210,10 +216,28 @@ func listProposals(cmd *cobra.Command, args []string) error {
 		printProposal(ps.Proposal, ps.Funds, &ps.Votes)
 		fmt.Println("Height: ", reply.Height)
 	} else { // List multiple proposals
+		pState := governance.NewProposalState(listArgs.State)
+		pType := governance.NewProposalType(listArgs.Type)
+		proposer := keys.Address(listArgs.Proposer)
+		if listArgs.State != "" {
+			if pState == governance.ProposalStateInvalid {
+				return errors.New("invalid proposal state")
+			}
+		}
+		if listArgs.Type != "" {
+			if pType == governance.ProposalTypeInvalid {
+				return errors.New("invalid proposal type")
+			}
+		}
+		if len(listArgs.Proposer) != 0 {
+			if err := proposer.Err(); err != nil {
+				return errors.New("invalid proposer address")
+			}
+		}
 		req := client.ListProposalsRequest{
-			State:        listArgs.State,
-			Proposer:     listArgs.Proposer,
-			ProposalType: listArgs.Type,
+			State:        pState,
+			Proposer:     proposer,
+			ProposalType: pType,
 		}
 
 		reply, err := fullnode.ListProposals(req)

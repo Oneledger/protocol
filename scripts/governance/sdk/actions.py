@@ -4,6 +4,7 @@ import hashlib
 from rpc_call import *
 
 #Proposal Types
+ProposalTypeInvalid      = 0xEE
 ProposalTypeConfigUpdate = 0x20
 ProposalTypeCodeChange   = 0x21
 ProposalTypeGeneral      = 0x22
@@ -20,6 +21,11 @@ ProposalOutcomeInsufficientVotes  = 0x28
 ProposalOutcomeCancelled          = 0x29
 ProposalOutcomeCompleted          = 0x30
 
+#Proposal States
+ProposalStateInvalid = 0xEE
+ProposalStateActive  = 0x31
+ProposalStatePassed  = 0x32
+ProposalStateFailed  = 0x33
 
 class bcolors:
     HEADER = '\033[95m'
@@ -43,12 +49,12 @@ class Proposal:
 
     def _create_proposal(self):
         req = {
-            "proposal_id": self.pid,
+            "proposalId": self.pid,
             "headline": self.headline,
             "description": self.des,
             "proposer": self.proposer,
-            "proposal_type": self.pty,
-            "initial_funding": {
+            "proposalType": self.pty,
+            "initialFunding": {
                 "currency": "OLT",
                 "value": convertBigInt(self.init_fund),
             },
@@ -98,12 +104,12 @@ class ProposalFund:
 
     def _fund_proposal(self):
         req = {
-            "proposal_id": self.pid,
-            "fund_value": {
+            "proposalId": self.pid,
+            "fundValue": {
                 "currency": "OLT",
                 "value": convertBigInt(self.value),
             },
-            "funder_address": self.funder,
+            "funderAddress": self.funder,
             "gasPrice": {
                 "currency": "OLT",
                 "value": "1000000000",
@@ -139,7 +145,7 @@ class ProposalCancel:
 
     def _cancel_proposal(self):
         req = {
-            "proposal_id": self.pid,
+            "proposalId": self.pid,
             "proposer": self.proposer,
             "reason": self.reason,
             "gasPrice": {
@@ -182,7 +188,7 @@ class ProposalVote:
 
     def _vote_proposal(self):
         req = {
-            "proposal_id": self.pid,
+            "proposalId": self.pid,
             "opinion": self.opin,
             "address": self.address,
             "gasPrice": {
@@ -229,13 +235,13 @@ class ProposalFundsWithdraw:
 
     def _withdraw_funds(self, funder_address):
         req = {
-            "proposal_id": self.pid,
-            "funder_address": funder_address,
-            "withdraw_value": {
+            "proposalId": self.pid,
+            "funderAddress": funder_address,
+            "withdrawValue": {
                 "currency": "OLT",
                 "value": convertBigInt(self.value),
             },
-            "beneficiary_address": self.benefi,
+            "beneficiaryAddress": self.benefi,
             "gasPrice": {
                 "currency": "OLT",
                 "value": "1000000000",
@@ -309,23 +315,23 @@ def broadcast_sync(raw_tx, signature, pub_key):
     })
     return resp["result"]
 
-def query_proposals(prefix, proposer="", proposal_type=""):
+def query_proposals(prefix, proposer="", proposalType=ProposalTypeInvalid):
     req = {
         "state": prefix,
         "proposer": proposer,
-        "proposal_type": proposal_type,
+        "proposalType": proposalType,
     }
 
     resp = rpc_call('query.ListProposals', req)
     result = resp["result"]
-    return result["proposal_stats"]
+    return result["proposalStats"]
 
 def query_proposal(proposal_id):
     req = {
-        "proposal_id": proposal_id,
+        "proposalId": proposal_id,
     }
     resp = rpc_call('query.ListProposal', req)
-    stat = resp["result"]["proposal_stats"][0]
+    stat = resp["result"]["proposalStats"][0]
     return stat["proposal"], stat["funds"]
 
 def query_balance(address):

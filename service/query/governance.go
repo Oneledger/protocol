@@ -37,38 +37,22 @@ func (svc *Service) ListProposal(req client.ListProposalRequest, reply *client.L
 // list single proposal by id or list proposals
 func (svc *Service) ListProposals(req client.ListProposalsRequest, reply *client.ListProposalsReply) error {
 	// Validate parameters
-	pState := governance.NewProposalState(req.State)
-	pType := governance.NewProposalType(req.ProposalType)
-	if req.State != "" {
-		if pState == governance.ProposalStateInvalid {
-			return errors.New("invalid proposal state")
-		}
-	}
-	if req.ProposalType != "" {
-		if pType == governance.ProposalTypeInvalid {
-			return errors.New("invalid proposal type")
-		}
-	}
 	if len(req.Proposer) != 0 {
 		err := req.Proposer.Err()
 		if err != nil {
 			return errors.New("invalid proposer address")
 		}
 	}
-	if pState == governance.ProposalStateInvalid &&
-		pType == governance.ProposalTypeInvalid && len(req.Proposer) == 0 {
-		return errors.New("invalid request parameters")
-	}
 
 	// Query in single store if specified
 	pms := svc.proposalMaster
 	var proposals []governance.Proposal
-	if pState != governance.ProposalStateInvalid {
-		proposals = pms.Proposal.FilterProposals(pState, req.Proposer, pType)
+	if req.State != governance.ProposalStateInvalid {
+		proposals = pms.Proposal.FilterProposals(req.State, req.Proposer, req.ProposalType)
 	} else { // Query in all stores otherwise
-		active := pms.Proposal.FilterProposals(governance.ProposalStateActive, req.Proposer, pType)
-		passed := pms.Proposal.FilterProposals(governance.ProposalStatePassed, req.Proposer, pType)
-		failed := pms.Proposal.FilterProposals(governance.ProposalStateFailed, req.Proposer, pType)
+		active := pms.Proposal.FilterProposals(governance.ProposalStateActive, req.Proposer, req.ProposalType)
+		passed := pms.Proposal.FilterProposals(governance.ProposalStatePassed, req.Proposer, req.ProposalType)
+		failed := pms.Proposal.FilterProposals(governance.ProposalStateFailed, req.Proposer, req.ProposalType)
 		proposals = append(proposals, active...)
 		proposals = append(proposals, passed...)
 		proposals = append(proposals, failed...)

@@ -38,17 +38,17 @@ type ProposalOptionSet struct {
 }
 
 type Proposal struct {
-	ProposalID      ProposalID      `json:"proposal_id"`
-	Type            ProposalType    `json:"proposal_type"`
+	ProposalID      ProposalID      `json:"proposalId"`
+	Type            ProposalType    `json:"proposalType"`
 	Status          ProposalStatus  `json:"status"`
 	Outcome         ProposalOutcome `json:"outcome"`
 	Headline        string          `json:"headline"`
 	Description     string          `json:"descr"`
 	Proposer        keys.Address    `json:"proposer"`
-	FundingDeadline int64           `json:"funding_deadline"`
-	FundingGoal     *balance.Amount `json:"funding_goal"`
-	VotingDeadline  int64           `json:"voting_deadline"`
-	PassPercentage  int             `json:"pass_percent"`
+	FundingDeadline int64           `json:"fundingDeadline"`
+	FundingGoal     *balance.Amount `json:"fundingGoal"`
+	VotingDeadline  int64           `json:"votingDeadline"`
+	PassPercentage  int             `json:"passPercent"`
 }
 
 func NewProposal(proposalID ProposalID, propType ProposalType, desc string, headline string, proposer keys.Address, fundingDeadline int64, fundingGoal *balance.Amount,

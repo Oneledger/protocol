@@ -55,7 +55,7 @@ def check_proposal_state(pid, outcome_expected, status_expected, type_expected=P
         sys.exit(-1)
     if prop['outcome'] != outcome_expected:
         sys.exit(-1)
-    if prop['proposal_type'] != type_expected:
+    if prop['proposalType'] != type_expected:
         sys.exit(-1)
     cur_fund = int(cur_fund)
     if funds != -1 and funds != cur_fund:
