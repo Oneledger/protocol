@@ -14,11 +14,12 @@ import (
 var _ action.Msg = &CreateProposal{}
 
 type CreateProposal struct {
-	ProposalID     governance.ProposalID    `json:"proposal_id"`
-	ProposalType   governance.ProposalType  `json:"proposal_type"`
-	Description    string              		`json:"proposal_description"`
-	Proposer       keys.Address       		`json:"proposer_address"`
-	InitialFunding action.Amount      		`json:"initial_funding"`
+	ProposalID     governance.ProposalID   `json:"proposal_id"`
+	ProposalType   governance.ProposalType `json:"proposal_type"`
+	Headline       string                  `json:"proposal_headline"`
+	Description    string                  `json:"proposal_description"`
+	Proposer       keys.Address            `json:"proposer_address"`
+	InitialFunding action.Amount           `json:"initial_funding"`
 }
 
 func (c CreateProposal) Validate(ctx *action.Context, signedTx action.SignedTx) (bool, error) {
@@ -115,7 +116,7 @@ func runTx(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	if err != nil {
 		result := action.Response{
 			Events: action.GetEvent(createProposal.Tags(), "create_proposal_failed_deserialize"),
-			Log: action.ErrWrongTxType.Wrap(err).Marshal(),
+			Log:    action.ErrWrongTxType.Wrap(err).Marshal(),
 		}
 		return false, result
 	}
@@ -133,6 +134,7 @@ func runTx(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 		createProposal.ProposalID,
 		createProposal.ProposalType,
 		createProposal.Description,
+		createProposal.Headline,
 		createProposal.Proposer,
 		fundingDeadline,
 		options.FundingGoal,
@@ -143,7 +145,7 @@ func runTx(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	if ctx.ProposalMasterStore.Proposal.Exists(proposal.ProposalID) {
 		result := action.Response{
 			Events: action.GetEvent(createProposal.Tags(), "create_proposal_already_exists"),
-			Log: action.ErrProposalExists.Marshal(),
+			Log:    action.ErrProposalExists.Marshal(),
 		}
 		return false, result
 	}
@@ -154,7 +156,7 @@ func runTx(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	if err != nil {
 		result := action.Response{
 			Events: action.GetEvent(createProposal.Tags(), "create_proposal_failed"),
-			Log: action.ErrAddingProposalToActiveStore.Wrap(err).Marshal(),
+			Log:    action.ErrAddingProposalToActiveStore.Wrap(err).Marshal(),
 		}
 		return false, result
 	}
@@ -168,7 +170,7 @@ func runTx(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	if err != nil {
 		result := action.Response{
 			Events: action.GetEvent(createProposal.Tags(), "create_proposal_deduction_failed"),
-			Log: action.ErrDeductFunding.Wrap(err).Marshal(),
+			Log:    action.ErrDeductFunding.Wrap(err).Marshal(),
 		}
 		return false, result
 	}
@@ -184,7 +186,7 @@ func runTx(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 		}
 		result := action.Response{
 			Events: action.GetEvent(createProposal.Tags(), "create_proposal_funding_failed"),
-			Log: action.ErrAddFunding.Marshal(),
+			Log:    action.ErrAddFunding.Marshal(),
 		}
 		return false, result
 	}

@@ -11,14 +11,14 @@ _initial_funding_insufficient = (int("1") * 10 ** 8)
 _initial_funding_too_much = (int("100") * 10 ** 9)
 _funding_goal = (int("10") * 10 ** 9)
 
-proposals = [Proposal("proposal description A", "codeChange", "10001", _proposer, _initial_funding),
-             Proposal("proposal description B", "codeChange", "10002", _proposer, _initial_funding),
-             Proposal("proposal description C", "configUpdate", "10003", _proposer, _initial_funding),
-             Proposal("proposal description E", "general", "10005", _proposer, _initial_funding),
-             Proposal("proposal description F", "general", "10006", _proposer, _initial_funding)
+proposals = [Proposal("proposal description A", "codeChange", "10001", "headline A", _proposer, _initial_funding),
+             Proposal("proposal description B", "codeChange", "10002", "headline B",  _proposer, _initial_funding),
+             Proposal("proposal description C", "configUpdate", "10003", "headline C",  _proposer, _initial_funding),
+             Proposal("proposal description E", "general", "10005", "headline E", _proposer, _initial_funding),
+             Proposal("proposal description F", "general", "10006", "headline F", _proposer, _initial_funding)
              ]
-proposal_littleInitFund = Proposal("proposal description D", "configUpdate", "10004", _proposer, _initial_funding_insufficient)
-proposal_hugeInitFund = Proposal("proposal description G", "general", "10007", _proposer, _initial_funding_too_much)
+proposal_littleInitFund = Proposal("proposal description D", "configUpdate", "10004", "headline D", _proposer, _initial_funding_insufficient)
+proposal_hugeInitFund = Proposal("proposal description G", "general", "10007", "headline G", _proposer, _initial_funding_too_much)
 
 if __name__ == "__main__":
     # create normal proposals
