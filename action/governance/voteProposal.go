@@ -15,7 +15,7 @@ type VoteProposal struct {
 	ProposalID       gov.ProposalID  `json:"proposal_id"`
 	Address          action.Address  `json:"address"`
 	ValidatorAddress action.Address  `json:"validator_address"`
-	Opinion          gov.VoteOpinion `json:"vote_option"`
+	Opinion          gov.VoteOpinion `json:"vote_opinion"`
 }
 
 var _ action.Tx = voteProposalTx{}
