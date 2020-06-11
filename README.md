@@ -1,5 +1,5 @@
 
-# OneLedger Protocol 
+# OneLedger  Protocol 
 
 This repo is the OneLedger blockchain full-node, which is currently an ABCi app based on low-level parts of the Tendermint consensus library
 
