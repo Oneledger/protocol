@@ -1,6 +1,8 @@
 package governance
 
 import (
+	"errors"
+
 	"github.com/Oneledger/protocol/log"
 
 	"github.com/tendermint/tendermint/libs/kv"
@@ -11,6 +13,9 @@ import (
 
 //Helper Function to log error
 func logAndReturnFalse(logger *log.Logger, error status_codes.ProtocolError, tags kv.Pairs, err error) (bool, action.Response) {
+	if err == nil {
+		err = errors.New("No Err String")
+	}
 	logger.Error(error)
 	result := action.Response{
 		Events: action.GetEvent(tags, error.Msg),
